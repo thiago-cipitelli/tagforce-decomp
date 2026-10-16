@@ -89,6 +89,7 @@ def main(elf_dir, sym_dir, nid_file=None):
         if m == "BOOT":
             continue
         lines = []
+        seen = {}
         for lib, nid, stub in imports(p):
             if (lib, nid) in exp:
                 src = "BOOT" if lib == "libehsys" else lib
@@ -96,6 +97,11 @@ def main(elf_dir, sym_dir, nid_file=None):
                 name = names.get(src, {}).get(target) or f"{'ehsys' if lib == 'libehsys' else lib}_{target:08X}"
             else:
                 name = sce.get(nid) or f"{lib}_{nid:08X}"
+            if name in seen:  # same BOOT function exported under several NIDs -> keep names unique
+                seen[name] += 1
+                name = f"{name}__{seen[name]}"
+            else:
+                seen[name] = 1
             lines.append(f"{name} = 0x{stub:08X}; // type:func import:{lib} nid:{nid:08X}")
         out = os.path.join(sym_dir, m + ".txt")
         head = ""

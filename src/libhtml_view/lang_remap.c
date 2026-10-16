@@ -1,3 +1,5 @@
+// @range 0x0880439C-0x08804414
+// @data 0x08808770-0x08808788
 extern int cfg_get_language(void);
 
 /* 0x0880439c: maps the config language id to the download-site language index */

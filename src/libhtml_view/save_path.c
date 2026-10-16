@@ -1,6 +1,9 @@
+// @range 0x088044B8-0x08804508
+// @data 0x08808830-0x08808840
 extern char *strcpy(char *, const char *); extern char *strcat(char *, const char *); extern void *memset(void *, int, unsigned int);
 
 extern void region_game_id(char *out);
+
 
 /* 0x088044b8: builds "/PSP/SAVEDATA/<GAMEID>" */
 void save_path_build(char *out)
