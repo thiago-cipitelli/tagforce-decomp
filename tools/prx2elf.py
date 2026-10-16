@@ -108,6 +108,10 @@ def convert(src, dst, base):
     for s in secs:
         if s[2] & 2:  # SHF_ALLOC
             s[3] += base
+        if names[s[0]] == ".bss" and s[5] == 0:
+            # PRX .bss headers carry size 0; the real size is PT_LOAD memsz - filesz. gmodules put a
+            # multi-MB heap at the start of .bss, so Ghidra needs the true extent to map globals.
+            s[5] = u32(img, phoff + 20) - u32(img, phoff + 16)
 
     # append: abiflags data, new shstrtab, new section table
     abi_off = len(img)
@@ -126,7 +130,10 @@ def convert(src, dst, base):
         img += struct.pack("<IIIIIIIIII", *s)
 
     struct.pack_into("<H", img, 0x10, ET_EXEC)
-    w32(img, 0x18, find_module_start(img, secs, names, base, u32(img, phoff + 4)))
+    # PSP kernel semantics: syslib module_start if exported, else the (relocated) ELF e_entry.
+    # gmodules have no module_start and e_entry 0, so their entry is the first function of .text.
+    entry = find_module_start(img, secs, names, base, u32(img, phoff + 4)) or (u32(img, 0x18) + base)
+    w32(img, 0x18, entry)
     w32(img, 0x20, new_shoff)
     struct.pack_into("<H", img, 0x30, len(secs))
     open(dst, "wb").write(img)
