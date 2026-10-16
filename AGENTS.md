@@ -40,7 +40,7 @@ Cada fase tem um *entregável verificável*. Não avance de fase sem o entregáv
 | # | Fase | Entregável | Estado |
 |---|---|---|---|
 | 0 | Infraestrutura de análise | ISO extraída, PRX convertidos em ELF estático, REA+Ghidra abrindo `BOOT.elf` | **concluída** (2026-10-16) |
-| 1 | Mapa do binário | `docs/architecture.md` + `symbols/*.txt` com nomes de funções/globais do BOOT e de cada gmodule | **~85%**: init, VFS, cenas, modmgr, gráficos, gmodules inventariados; 680/680 funções da libehsys usadas por gmodules nomeadas (32 `ehsysq_` incertas). Falta: structs internas por gmodule, globais nomeadas, evidências REA citadas |
+| 1 | Mapa do binário | `docs/architecture.md`, `docs/gmodules.md`, `symbols/*.txt` | **concluída** (2026-10-16): init, VFS, cenas, modmgr, gráficos; 680/680 funções da libehsys usadas por gmodules nomeadas (a maioria `inferred`, 30 com `[?]`); 66 globais do BOOT nomeadas; 22 gmodules classificados (cena / biblioteca de sub-tela importada por NID / biblioteca importada) com entrada, máquina de estados e dados. Pendente para fases seguintes: structs de estado por gmodule, 460 exports da libehsys que nenhum gmodule chama |
 | 2 | Formatos de dados | `tools/` lendo EHP, CIP, cardinfo, scripts, snd; `docs/formats.md` | **em andamento**: EHP, GIM, CIP/CPM e banco de cartas prontos e validados; faltam snd, scripts de história, ehf, efs, ydc |
 | 3 | Build reproduzível (matching) | `splat` + mwccpsp 2.4.1 via wibo + Makefile; `libhtml_view` (21 KB) 100% matching como prova de pipeline | a fazer |
 | 4 | Decompilação do código do jogo | `src/<módulo>/*.c` funcionalmente equivalentes, com matching nas partes críticas | a fazer |

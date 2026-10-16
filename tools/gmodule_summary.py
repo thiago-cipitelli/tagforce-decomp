@@ -22,7 +22,11 @@ print("|---|---|---|---|---|---|---|")
 for d in sorted(glob.glob(os.path.join(dec, "lib*"))):
     m = os.path.basename(d)
     idx = [l.split("\t") for l in open(os.path.join(d, "index.tsv")).read().splitlines()[1:]]
-    entry = open(os.path.join(d, "module_entry.c")).read() if os.path.exists(os.path.join(d, "module_entry.c")) else ""
+    entry = ""
+    for cand in ("module_start.c", "entry.c", "module_entry.c"):
+        if os.path.exists(os.path.join(d, cand)):
+            entry = open(os.path.join(d, cand)).read()
+            break
     reg = re.search(r"ehscript_register\((\w+),\s*&?(\w+)", entry) or re.search(r"ehsys_0883D0F8\((\w+),\s*&?(\w+)", entry)
     role = "cena" if reg else ("biblioteca" if "return 0" in entry else "?")
     mainexit = f"`{reg.group(1)}` / `{reg.group(2)}`" if reg else "—"

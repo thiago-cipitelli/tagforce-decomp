@@ -1,3 +1,4 @@
+module_entry = 0x08804000; // type:func seed
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 ehsys_08819394 = 0x088065B0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x088065B8; // type:func import:libehsys nid:4BDEB2A8

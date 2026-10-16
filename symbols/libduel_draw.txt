@@ -1,4 +1,5 @@
-module_entry = 0x08804000; // type:func seed
+module_start = 0x08805BF4; // type:func seed PRX e_entry; calls ehscript_register
+text_start = 0x08804000; // type:func seed first function of .text (not the entry)
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 libduel_eng_088FE884 = 0x0886B25C; // type:func import:libduel_eng nid:AA91D845
 libduel_eng_088FE898 = 0x0886B264; // type:func import:libduel_eng nid:D476C5C3

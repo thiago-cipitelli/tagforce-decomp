@@ -1,4 +1,5 @@
-module_entry = 0x08804000; // type:func seed
+module_start = 0x088060C4; // type:func seed PRX e_entry; calls ehscript_register
+text_start = 0x08804000; // type:func seed first function of .text (not the entry)
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 ehsys_08819394 = 0x08809538; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08809540; // type:func import:libehsys nid:4BDEB2A8
