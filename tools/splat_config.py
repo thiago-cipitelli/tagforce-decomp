@@ -13,7 +13,7 @@ shnum, shstr = struct.unpack_from("<H", d, 0x30)[0], struct.unpack_from("<H", d,
 secs = [struct.unpack_from("<IIIIIIIIII", d, shoff + i * 40) for i in range(shnum)]
 st = secs[shstr][4]
 name = lambda s: d[st + s[0]:d.index(b"\0", st + s[0])].decode()
-alloc = [(name(s), s) for s in secs if s[2] & 2 and name(s) not in (".MIPS.abiflags",)]
+alloc = [(name(s), s) for s in secs if s[2] & 2 and s[5] and name(s) not in (".MIPS.abiflags",)]
 alloc.sort(key=lambda x: x[1][3])
 text_off, text_vram = alloc[0][1][4], alloc[0][1][3]
 kind = {".text": "asm", ".sceStub.text": "asm", ".data": "data", ".bss": "bss"}
@@ -66,6 +66,7 @@ print(f"""options:
   base_path: ..
   target_path: build/elf/{m}.elf
   asm_path: asm/{m}
+  asset_path: assets/{m}
   src_path: src/{m}
   ld_script_path: build/{m}.ld
   symbol_addrs_path: build/{m}.syms.txt

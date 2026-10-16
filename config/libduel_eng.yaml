@@ -1,0 +1,44 @@
+options:
+  platform: psp
+  compiler: GCC
+  basename: libduel_eng
+  base_path: ..
+  target_path: build/elf/libduel_eng.elf
+  asm_path: asm/libduel_eng
+  asset_path: assets/libduel_eng
+  src_path: src/libduel_eng
+  ld_script_path: build/libduel_eng.ld
+  symbol_addrs_path: build/libduel_eng.syms.txt
+  undefined_funcs_auto_path: build/libduel_eng.undefined_funcs_auto.txt
+  undefined_syms_auto_path: build/libduel_eng.undefined_syms_auto.txt
+  find_file_boundaries: False
+  migrate_rodata_to_functions: False
+  section_order: [".text", ".sceStub.text", ".data", ".rodata", ".bss"]
+  ld_dependencies: False
+  ld_align_section_vram_end: False
+  ld_align_segment_start: 0
+segments:
+  - [0x0, bin, header]
+  - name: libduel_eng
+    type: code
+    start: 0x60
+    vram: 0x8804000
+    bss_size: 0x6820
+    subalign: 4
+    subsegments:
+      - [0x60, asm, text]
+      - [0xFDC00, asm, sceStub_text]
+      - [0x1002E8, bin, lib_ent_top]
+      - [0x1002EC, bin, lib_ent]
+      - [0x10030C, bin, lib_ent_btm]
+      - [0x100310, bin, lib_stub_top]
+      - [0x100314, bin, lib_stub]
+      - [0x10032C, bin, lib_stub_btm]
+      - [0x100330, bin, rodata_sceModuleInfo]
+      - [0x100364, bin, rodata_sceResident]
+      - [0x1007FC, bin, rodata_sceNid]
+      - [0x101B70, bin, rodata_sceVstub]
+      - [0x101B90, data, data]
+      - { start: 0x10FA50, type: bss, vram: 0x89139F0, name: bss }
+  - [0x10FA50]
+

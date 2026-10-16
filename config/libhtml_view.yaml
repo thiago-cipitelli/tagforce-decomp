@@ -5,6 +5,7 @@ options:
   base_path: ..
   target_path: build/elf/libhtml_view.elf
   asm_path: asm/libhtml_view
+  asset_path: assets/libhtml_view
   src_path: src/libhtml_view
   ld_script_path: build/libhtml_view.ld
   symbol_addrs_path: build/libhtml_view.syms.txt

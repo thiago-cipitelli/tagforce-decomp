@@ -1450,8 +1450,8 @@ net_mark_dirty_a = 0x0886E6C8; // type:func export inferred DAT_08e35904=1 [?] n
 net_set_local_byte1 = 0x0886E6FC; // type:func export inferred (v) in 0886E668() record, dirty nid:5E50EE86
 ehsys_0886E730 = 0x0886E730; // type:func export nid:64597979
 net_mark_dirty_b = 0x0886E764; // type:func export inferred DAT_08e35904=1 [?] nid:B722881B
-peer_count = 0x0886E798; // type:func export inferred DAT_08e20704 [?] returns DAT_08e20704 [?] nid:F59F3BD3
-peer_count2 = 0x0886E7A4; // type:func export inferred DAT_08e20708 [?] returns DAT_08e20708 [?] nid:BA0DA4DE
+peer_count_get = 0x0886E798; // type:func export inferred DAT_08e20704 [?] returns DAT_08e20704 [?] nid:F59F3BD3
+peer_count2_get = 0x0886E7A4; // type:func export inferred DAT_08e20708 [?] returns DAT_08e20708 [?] nid:BA0DA4DE
 peers_all_match = 0x0886E7B0; // type:func export inferred (a, b, c) over peer records [?] nid:3F68D487
 ehsys_0886E874 = 0x0886E874; // type:func export nid:090CB0EA
 peer_cur_byte1 = 0x0886E89C; // type:func export inferred nid:173C81DF

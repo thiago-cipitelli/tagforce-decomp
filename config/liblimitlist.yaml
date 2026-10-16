@@ -1,0 +1,44 @@
+options:
+  platform: psp
+  compiler: GCC
+  basename: liblimitlist
+  base_path: ..
+  target_path: build/elf/liblimitlist.elf
+  asm_path: asm/liblimitlist
+  asset_path: assets/liblimitlist
+  src_path: src/liblimitlist
+  ld_script_path: build/liblimitlist.ld
+  symbol_addrs_path: build/liblimitlist.syms.txt
+  undefined_funcs_auto_path: build/liblimitlist.undefined_funcs_auto.txt
+  undefined_syms_auto_path: build/liblimitlist.undefined_syms_auto.txt
+  find_file_boundaries: False
+  migrate_rodata_to_functions: False
+  section_order: [".text", ".sceStub.text", ".data", ".rodata", ".bss"]
+  ld_dependencies: False
+  ld_align_section_vram_end: False
+  ld_align_segment_start: 0
+segments:
+  - [0x0, bin, header]
+  - name: liblimitlist
+    type: code
+    start: 0x60
+    vram: 0x8804000
+    bss_size: 0x5C0
+    subalign: 4
+    subsegments:
+      - [0x60, asm, text]
+      - [0x5598, asm, sceStub_text]
+      - [0x7C80, bin, lib_ent_top]
+      - [0x7C84, bin, lib_ent]
+      - [0x7CA4, bin, lib_ent_btm]
+      - [0x7CA8, bin, lib_stub_top]
+      - [0x7CAC, bin, lib_stub]
+      - [0x7CC4, bin, lib_stub_btm]
+      - [0x7CC8, bin, rodata_sceModuleInfo]
+      - [0x7CFC, bin, rodata_sceResident]
+      - [0x7D38, bin, rodata_sceNid]
+      - [0x90AC, bin, rodata_sceVstub]
+      - [0x90CC, data, data]
+      - { start: 0x96B0, type: bss, vram: 0x880D650, name: bss }
+  - [0x96B0]
+

@@ -1,0 +1,44 @@
+options:
+  platform: psp
+  compiler: GCC
+  basename: libtutorial
+  base_path: ..
+  target_path: build/elf/libtutorial.elf
+  asm_path: asm/libtutorial
+  asset_path: assets/libtutorial
+  src_path: src/libtutorial
+  ld_script_path: build/libtutorial.ld
+  symbol_addrs_path: build/libtutorial.syms.txt
+  undefined_funcs_auto_path: build/libtutorial.undefined_funcs_auto.txt
+  undefined_syms_auto_path: build/libtutorial.undefined_syms_auto.txt
+  find_file_boundaries: False
+  migrate_rodata_to_functions: False
+  section_order: [".text", ".sceStub.text", ".data", ".rodata", ".bss"]
+  ld_dependencies: False
+  ld_align_section_vram_end: False
+  ld_align_segment_start: 0
+segments:
+  - [0x0, bin, header]
+  - name: libtutorial
+    type: code
+    start: 0x60
+    vram: 0x8804000
+    bss_size: 0x7B50
+    subalign: 4
+    subsegments:
+      - [0x60, asm, text]
+      - [0x72E4, asm, sceStub_text]
+      - [0x9F74, bin, lib_ent_top]
+      - [0x9F78, bin, lib_ent]
+      - [0x9F98, bin, lib_ent_btm]
+      - [0x9F9C, bin, lib_stub_top]
+      - [0x9FA0, bin, lib_stub]
+      - [0x9FE0, bin, lib_stub_btm]
+      - [0x9FE4, bin, rodata_sceModuleInfo]
+      - [0xA018, bin, rodata_sceResident]
+      - [0xA08C, bin, rodata_sceNid]
+      - [0xB6D4, bin, rodata_sceVstub]
+      - [0xB6F4, data, data]
+      - { start: 0xC020, type: bss, vram: 0x880FFC0, name: bss }
+  - [0xC020]
+

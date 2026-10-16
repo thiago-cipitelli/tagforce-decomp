@@ -5,4 +5,5 @@ import re, sys
 for line in open(f"symbols/{sys.argv[1]}.txt"):
     m = re.match(r"(\w+)\s*=\s*(0x[0-9A-Fa-f]+);\s*//\s*type:(func|data)", line)
     if m:
-        print(f"{m.group(1)} = {m.group(2)}; // type:{m.group(3)}")
+        # splat has no generic "data" type; emit data symbols untyped (size/type inferred from the disassembly)
+        print(f"{m.group(1)} = {m.group(2)};" + ("" if m.group(3) == "data" else " // type:func"))

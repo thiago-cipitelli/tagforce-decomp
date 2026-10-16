@@ -15,7 +15,7 @@ OUT      := build/$(MODULE).rebuilt.elf
 
 ASM_SRCS := $(shell find asm/$(MODULE) -name '*.s' 2>/dev/null)
 C_SRCS   := $(shell find src/$(MODULE) -name '*.c' 2>/dev/null)
-BIN_SRCS := $(shell find assets -maxdepth 1 -name '*.bin' 2>/dev/null)
+BIN_SRCS := $(shell find assets/$(MODULE) -maxdepth 1 -name '*.bin' 2>/dev/null)
 ASM_OBJS := $(ASM_SRCS:%.s=build/%.s.o)
 C_OBJS   := $(C_SRCS:%.c=build/%.c.o)
 BIN_OBJS := $(BIN_SRCS:%.bin=build/%.bin.o)
@@ -34,6 +34,7 @@ $(LD_SCRIPT): config/$(MODULE).yaml
 	$(SPLAT) split $<
 	@# ponytail: spimdisasm emits N64-style `.set gp=64`; psp-as (32-bit) rejects it
 	find asm/$(MODULE) -name '*.s' -exec sed -i '/^\.set gp=64/d' {} +
+	python3 tools/fix_asm.py $(AS) $(ASFLAGS) -- $$(find asm/$(MODULE) -name '*.s')
 	python3 tools/fix_ld.py config/$(MODULE).yaml $(LD_SCRIPT)
 
 build/%.s.o: %.s
@@ -52,6 +53,9 @@ $(OUT): $(LD_SCRIPT) $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)
 	$(LD) -EL -T $(LD_SCRIPT) -Map build/$(MODULE).map -o $@ $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)
 
 clean:
-	rm -rf build/asm build/src build/assets $(OUT) build/$(MODULE).map $(LD_SCRIPT) asm/$(MODULE) assets
+	rm -rf build/asm/$(MODULE) build/src/$(MODULE) build/assets/$(MODULE) $(OUT) build/$(MODULE).map $(LD_SCRIPT) asm/$(MODULE) assets/$(MODULE)
 
-.PHONY: all check clean
+.PHONY: all check check-all clean
+
+check-all:
+	@for m in $$(ls build/elf | sed 's/\.elf$$//'); do printf '%s: ' $$m; $(MAKE) --no-print-directory MODULE=$$m check 2>&1 | tail -1; done

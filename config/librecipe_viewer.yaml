@@ -1,0 +1,44 @@
+options:
+  platform: psp
+  compiler: GCC
+  basename: librecipe_viewer
+  base_path: ..
+  target_path: build/elf/librecipe_viewer.elf
+  asm_path: asm/librecipe_viewer
+  asset_path: assets/librecipe_viewer
+  src_path: src/librecipe_viewer
+  ld_script_path: build/librecipe_viewer.ld
+  symbol_addrs_path: build/librecipe_viewer.syms.txt
+  undefined_funcs_auto_path: build/librecipe_viewer.undefined_funcs_auto.txt
+  undefined_syms_auto_path: build/librecipe_viewer.undefined_syms_auto.txt
+  find_file_boundaries: False
+  migrate_rodata_to_functions: False
+  section_order: [".text", ".sceStub.text", ".data", ".rodata", ".bss"]
+  ld_dependencies: False
+  ld_align_section_vram_end: False
+  ld_align_segment_start: 0
+segments:
+  - [0x0, bin, header]
+  - name: librecipe_viewer
+    type: code
+    start: 0x60
+    vram: 0x8804000
+    bss_size: 0x1B20
+    subalign: 4
+    subsegments:
+      - [0x60, asm, text]
+      - [0x69FC, asm, sceStub_text]
+      - [0x90E4, bin, lib_ent_top]
+      - [0x90E8, bin, lib_ent]
+      - [0x9108, bin, lib_ent_btm]
+      - [0x910C, bin, lib_stub_top]
+      - [0x9110, bin, lib_stub]
+      - [0x9128, bin, lib_stub_btm]
+      - [0x912C, bin, rodata_sceModuleInfo]
+      - [0x9160, bin, rodata_sceResident]
+      - [0x91A0, bin, rodata_sceNid]
+      - [0xA514, bin, rodata_sceVstub]
+      - [0xA534, data, data]
+      - { start: 0xA950, type: bss, vram: 0x880E8F0, name: bss }
+  - [0xA950]
+

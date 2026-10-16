@@ -1,0 +1,44 @@
+options:
+  platform: psp
+  compiler: GCC
+  basename: libshop
+  base_path: ..
+  target_path: build/elf/libshop.elf
+  asm_path: asm/libshop
+  asset_path: assets/libshop
+  src_path: src/libshop
+  ld_script_path: build/libshop.ld
+  symbol_addrs_path: build/libshop.syms.txt
+  undefined_funcs_auto_path: build/libshop.undefined_funcs_auto.txt
+  undefined_syms_auto_path: build/libshop.undefined_syms_auto.txt
+  find_file_boundaries: False
+  migrate_rodata_to_functions: False
+  section_order: [".text", ".sceStub.text", ".data", ".rodata", ".bss"]
+  ld_dependencies: False
+  ld_align_section_vram_end: False
+  ld_align_segment_start: 0
+segments:
+  - [0x0, bin, header]
+  - name: libshop
+    type: code
+    start: 0x60
+    vram: 0x8804000
+    bss_size: 0x7787C0
+    subalign: 4
+    subsegments:
+      - [0x60, asm, text]
+      - [0x145B4, asm, sceStub_text]
+      - [0x16C9C, bin, lib_ent_top]
+      - [0x16CA0, bin, lib_ent]
+      - [0x16CC0, bin, lib_ent_btm]
+      - [0x16CC4, bin, lib_stub_top]
+      - [0x16CC8, bin, lib_stub]
+      - [0x16CE0, bin, lib_stub_btm]
+      - [0x16CE4, bin, rodata_sceModuleInfo]
+      - [0x16D18, bin, rodata_sceResident]
+      - [0x16D5C, bin, rodata_sceNid]
+      - [0x180D0, bin, rodata_sceVstub]
+      - [0x18140, data, data]
+      - { start: 0x1C580, type: bss, vram: 0x8820520, name: bss }
+  - [0x1C580]
+
