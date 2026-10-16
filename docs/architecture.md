@@ -1,4 +1,6 @@
-# Arquitetura do jogo (fase 1, em andamento)
+# Arquitetura do jogo (fase 1)
+
+Evidências REA citadas neste documento (sessão Ghidra 12.1.3, perfil `psp-elf32-exec-eabi32-allegrex-v2`): `ev_813a27b3…` (inventário do BOOT: 1898 procedimentos, 1398 strings), `ev_1db9797e…` (xref da tabela de diretórios `0x088ee1d4` → string `gmodule/`), `ev_a7572215…` (nomes dos 274 imports aplicados por NID), `ev_967ae9bc…` (`0x0883d0f8` = `lui v0,0x890`, referenciado só pela tabela de exports em `0x08871984`). As demais observações vêm da exportação headless do mesmo Ghidra (`tools/ghidra/ExportDecomp.java`) e são verificáveis pelo endereço citado em `build/decomp/<módulo>/`.
 
 Fonte das observações: `build/elf/BOOT.elf` (SHA-256 `fd01f7ac…82f03`), analisado com Ghidra 12.1.3 + ghidra-allegrex via REA (inventário: Evidence `ev_813a27b3…`) e via exportação headless (`tools/ghidra/ExportDecomp.java`, saída em `build/decomp/BOOT/`). Endereços são do ELF relocado na base `0x08804000`. Legenda: **[obs]** observado no binário, **[inf]** inferido, **[?]** desconhecido.
 
