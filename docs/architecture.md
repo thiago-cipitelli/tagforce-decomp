@@ -138,7 +138,19 @@ Todos importam a `libehsys` inteira (1245 NIDs). Uso real: 680 funções distint
 - **Fontes**: contexto em `PTR_DAT_088ee900+0x50c00..`; `font_set_size`, `font_set_color`, `font_draw_text`, `font_print`.
 - **Som**: `se_play(id)` (`0x0886568c`) → `se_play_pan`; sistema SAS/Atrac3+ em `snd_*`.
 - **Heap**: `heap_create` (magic `"HOGE"` `0x45474f48`), `heap_alloc`, `heap_malloc_cur` + `malloc/free` da MSL.
-- **UI**: `menu_update` (`0x0884b6cc`, 1,5 KB) lê o pad e toca SE; `menu_reset`.
+- **UI**: `menu_update` (`0x0884b6cc`, 1,5 KB) lê o pad e toca SE; `menu_reset`, `menu_open/add_item/remove_item/draw/draw_item/draw_frame/cursor_y/wait_select`. Janela padrão `window01.gim` do pack de sistema (`syspack_get`).
+- **Cartas em jogo**: `card_db_load` + acessores `card_get_*` (§formats.md), `card_draw`, `card_draw_glow`, `cardinfo_open/update/draw/close` (painel de detalhes, `0x0885a1a4` 3 KB), `cardlist_*` (listas com `cil_0000<l>.gim`), ~40 predicados `card_is_in_group_<id>` com listas de ids fixas (regras especiais de cartas codificadas na engine, não em dados), `card_same_name`, `card_id_remap_*` (artes alternativas), `card_id_from_password`.
+- **Inventário e decks**: `inv_*` (`0x0883f3xx..0x0883f8xx`): 1 registro de 2 bytes por carta via `FUN_0883f340(id)`; byte 1 bits 0-6 = quantidade, bit 7 flag; byte 0 = flags (bit0, bits1-2 estado, bit3, nibble alto). `deck_slot_*`: registros de 18 bytes (`FUN_08840d2c`), `deck_validate` (`0x0884cb1c`: main 40..80, extra ≤30, side ≤15, duplicatas por `qsort`), `deck_build_from_recipe` lê `RCP%03d.ydc`.
+- **Save / estado do jogo**: struct principal via `sysstate_get` (`0x0883e90c`): flags em +4 (`sysflag_set/test`), dinheiro em +0x54 (`money_add`, teto 999999999), dia em +0x4c (`day_advance`, 99 = fim), nome do jogador em +0x4b76 (`sysstate_set_player_name`), blob 0x200 em +0x4976, checksum em `sysstate_checksum`; `newgame_init` (`0x0883e670`) zera 0xfca4 bytes. Segundo bloco `sysstate2_*` (via `0x0883eec8`) com `duel_record_add`. `game_state_get` (`0x08840a6c`, `DAT_08a76840`) tem slots de 0x188 bytes (parceiros) e é carregado por `gamestate_load`.
+- **Config**: `cfg_get/set_*` sobre o registro de `FUN_0884065c` (idioma em `cfg_get_language`, 3 bits).
+- **Rede ad hoc**: `net_*`/`peer_*` (`0x0886e5xx..0x08869dxx`): fila de envio de 32, registros de peer de 0x100 bytes, scan/MAC, estados 0xb/0x15/0x1e.
+- **Modelos 3D**: formato `TGMT` (`tgm_relocate` `0x0882d91c` converte offsets em ponteiros, `tgm_get_bone_matrix`), `model_*`/`anim_*` com `quat_slerp`, `dl_bone_matrix`. Animações 2D `EHF` (magic `EHF\x1a`, `ehf_*`).
+- **Texturas em VRAM**: `texcache_*` (`0x082929xx`), 0x300 slots.
+- **Compressão**: `gzip_decompress` (`0x0881f6e4`), `is_gzip`; os scripts de história vêm como `.bin.gz` dentro dos EHPs.
+- **Matemática**: `vec2/3/4_*`, `mat3/mat4_*`, `quat_*`, `sinf/cosf/atanf/acosf/powf/sqrtf` (MSL) e variantes VFPU (`*_vfpu`).
+- **Região**: `region_get` (`0x088418f0`) retorna constante 1 (build US); `region_game_id` escolhe `ULJM05151`/`ULUS10136`/`SLPS10000`.
+
+Estado da nomenclatura: as 680 funções da `libehsys` chamadas por gmodules têm nome em `symbols/BOOT.txt`; 32 estão marcadas `ehsysq_` (propósito não identificado) e a maioria é `inferred` por comportamento. 460 exports nunca chamados por gmodules continuam `ehsys_<addr>`.
 
 ## 13. Como os NIDs ajudam [inf]
 
