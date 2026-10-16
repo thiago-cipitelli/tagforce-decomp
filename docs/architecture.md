@@ -58,7 +58,11 @@ Contexto em `0x089056b8` (100 bytes): `+0 dirIdx`, `+4 nomeDoMódulo[32]`, `+0x2
 
 Escalonamento cooperativo: `main` chama `ehscript_yield_to` (`0x0883d0a4`) que dá `sceKernelResumeThread(ehscript)` e dorme; a cena, a cada frame, faz `sceKernelWakeupThread(main)` e dorme. Um frame = uma volta do loop de `main`.
 
-**[?] Em aberto:** qual função de `libehsys` grava `fnPrincipal`/`fnSaída` (+0x44/+0x48) e o próximo nome de cena. Nenhuma escrita direta encontrada no BOOT; provavelmente via ponteiro de struct. A entrada do gmodule (`e_entry = 0` → kernel usa início de `.text`) deve chamá-la. Em investigação em `build/decomp/libtitle/`.
+**Registro da cena [obs]:** o gmodule não tem `module_start`; com `e_entry = 0` o kernel chama o início de `.text`. Em `libtitle`, `0x08804000` é `module_entry`: chama `ehscript_register(fnPrincipal, fnSaída, dados)` = `libehsys` `0x0883d0f8` (NID `…`; o Ghidra não a cria porque nada no BOOT a chama, só a tabela de exports). O próximo nome de cena é gravado por `ehscript_set_module(nome)` (`0x0883d118`, exportada).
+
+**Frame da cena [obs]:** o `main` de uma cena (`libtitle` `0x08804034`) é `init(); decidir sub-tela pela transição anterior (scene_get_transition_info, 0x08853c60); sys_state_set_callbacks(0xd, cb1, cb2) (0x0883d464); while (estado != 0x28) sys_frame_wait();` onde `sys_frame_wait` (`0x08859044`) devolve o controle ao `main` do BOOT até o próximo frame. A lógica da tela roda nos callbacks registrados e na máquina de estados do gmodule (`libtitle` `0x08806ef0`, 40 estados).
+
+**Memória do gmodule [obs]:** o PRX declara `.bss` com tamanho 0 no cabeçalho de seção, mas `PT_LOAD.memsz` é 12,7 MB: `libtitle` cria um heap de `0xc00000` no início do `.bss` (`ehsys_08837B28(0x088306f0, 0xc00000)`) e seus globais ficam depois, em `0x094306f0+`. `prx2elf.py` agora grava o tamanho real do `.bss` para o Ghidra mapear esses endereços.
 
 ## 5. Gerenciador de módulos "modmgr" [obs]
 
