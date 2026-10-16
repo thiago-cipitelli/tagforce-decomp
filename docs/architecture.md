@@ -112,8 +112,21 @@ nome NUL-terminado; na versão ≥ 3 o nome é seguido de u32 tamanho. Versão <
 |---|---|---|---|
 | libtitle, libfield, libstory, libshop, libdeck, libdeck_swap, libdeck_tutorial, libselect_card, libcardalbum, libcharalist, libconv_machine, libduelrecord, libhtml_view, liblabo, liblimitlist, libpassword, librecipe_viewer, libtutorial, libtutoriallist | cena (carregada pela thread ehscript) | `.text+0` chama `ehscript_register(main, exit, dados)` | 0–7 funções (callbacks de UI) |
 | libduel_eng | biblioteca do motor de duelo (id 8 no modmgr) | `.text+0` retorna 0 | 143 funções, importadas pela libduel_draw |
-| libduel_draw | renderização do duelo (id 9) | [?] | 38 |
-| libduel_mgr | orquestra o duelo | [?] | 0 |
+| libduel_draw | biblioteca de renderização do duelo (id 9) | `.text+0` só ordena 4 tabelas de parâmetros com `qsort` (string de debug `host0:../src/duel_draw/DuelViewParam.txt`: o diretório de origem se chamava `src/duel_draw/`) | 38 |
+| libduel_mgr | **cena** do duelo: carrega eng+draw pelo modmgr e orquestra | `ehscript_register(0x08804034, 0x08804a34, dados)` | 0 |
+
+### Duelos de tutorial e puzzle são dados [obs]
+
+`libduel_eng` exporta `duel_start_tutorial` (`0x0884b3c4`, modo 3) e `duel_start_puzzle` (`0x0884b47c`, modo 4), que chamam `duel_setup_load_text` (`0x0884c140`): LP 8000, turno 1, depois lê linha a linha (`duel_read_line`) e interpreta com `duel_setup_parse_line` (`0x0884b684`), que posiciona cartas via `duel_cmd` (`0x088d4c00`, comandos 0x44 e 0x3a). O texto vem de `USRDIR/tutorial/tutorial_<idioma>.ehp`, entradas `NN_field_set.txt` (ao lado de `NN_duel_command.bin` e `NN_message_res.bin`). Formato INI-like, comentários `//` em Shift-JIS com o nome da carta:
+
+```
+[DUEL QUESTION]
+Phase=Draw
+[Player0]
+PlayerLP0=8000
+CardInDeck0_001=4367	//	<nome da carta>
+EquipAct=... SrcPlayer/SrcLocate/SrcCardID/DstPlayer/DstLocate, durações ONLYINTURN|ONLYFACETURN|ONLYFACE|DURINGFACE|PERMANENT|FOREVER
+```
 
 Todos importam a `libehsys` inteira (1245 NIDs). Uso real: 680 funções distintas. Ranking por pontos de chamada em `build/ehsys_usage.tsv`; as 10 mais chamadas: `draw_sprite` (997), `ehsys_0883AF84` (800), `se_play` (702), `memset` (700), `table_get_entry` (470), `dl_ambient_color` (453), `gim_set_texture` (398), `font_set_size` (370), `ehsys_0883A4E4` (354), `dl_set_tex_filter` (346).
 
