@@ -5,7 +5,7 @@ Block chain after the 16-byte magic: {u16 id, u16 _, u32 size, u32 next, u32 dat
 ids: 2 root, 3 picture (containers), 4 image, 5 palette, 0xFF file info.
 Image/palette header at block+0x10: u16 hdr_size(0x30) u16 _ u16 format u16 order u16 w u16 h u16 bpp
 u16 pitch_align u16 height_align u16 _ u32 _ u32 level_table_off u32 data_off ... ; pixels at block+0x10+data_off.
-formats: 0 RGBA5650 1 RGBA5551 2 RGBA4444 3 RGBA8888 4 INDEX4 5 INDEX8 6 INDEX16 7 INDEX32. order 1 = PSP swizzle.
+formats: 0 RGBA5650 1 RGBA5551 2 RGBA4444 3 RGBA8888 4 INDEX4 5 INDEX8 6 INDEX16 7 INDEX32 8 DXT1(PSP). order 1 = PSP swizzle.
 
 usage: gim.py FILE.gim [OUT.png]
 """
@@ -45,6 +45,31 @@ def unswizzle(buf, pitch, height):
     return bytes(out)
 
 
+def c565(v):
+    return ((v >> 11 & 31) * 255 // 31, (v >> 5 & 63) * 255 // 63, (v & 31) * 255 // 31)
+
+
+def dxt1_psp(buf, w, h):
+    """PSP DXT1: per 4x4 block, u32 indices FIRST, then u16 color0, u16 color1 (PC order is reversed)."""
+    out = bytearray(w * h * 4)
+    bw = w // 4
+    for bi in range(min(len(buf) // 8, bw * (h // 4))):
+        idx, c0, c1 = struct.unpack_from("<IHH", buf, bi * 8)
+        r0, g0, b0 = c565(c0)
+        r1, g1, b1 = c565(c1)
+        if c0 > c1:
+            pal = [(r0, g0, b0, 255), (r1, g1, b1, 255), ((2 * r0 + r1) // 3, (2 * g0 + g1) // 3, (2 * b0 + b1) // 3, 255),
+                   ((r0 + 2 * r1) // 3, (g0 + 2 * g1) // 3, (b0 + 2 * b1) // 3, 255)]
+        else:
+            pal = [(r0, g0, b0, 255), (r1, g1, b1, 255), ((r0 + r1) // 2, (g0 + g1) // 2, (b0 + b1) // 2, 255), (0, 0, 0, 0)]
+        bx, by = (bi % bw) * 4, (bi // bw) * 4
+        for py in range(4):
+            for px in range(4):
+                o = ((by + py) * w + bx + px) * 4
+                out[o:o + 4] = bytes(pal[(idx >> (2 * (py * 4 + px))) & 3])
+    return bytes(out)
+
+
 def px_rgba(fmt, v):
     if fmt == 0:
         return ((v & 31) * 255 // 31, ((v >> 5) & 63) * 255 // 63, ((v >> 11) & 31) * 255 // 31, 255)
@@ -65,6 +90,8 @@ def decode(d):
     if img is None:
         raise SystemExit("no image block")
     fmt, order, w, h, bpp, pa, ha, data = img
+    if fmt == 8:
+        return w, h, dxt1_psp(d[data:], w, h)
     pitch = (w * bpp // 8 + pa - 1) // pa * pa
     rows = (h + ha - 1) // ha * ha
     buf = d[data:data + pitch * rows]

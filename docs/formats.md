@@ -55,7 +55,12 @@ Verificado: Blue-Eyes (índice 1) → `0xbea58fa7 0x00408810` = id 4007, ATK 300
 
 ## CIP / CPM — imagens das cartas (`card/cardh_e.cip`, `card/cardm_e.cip`) [obs parcial]
 
-Abertos por `cip_open_h` / `cip_open_m` (`0x08853d1c` / `0x08853dd4`), nome por idioma (`card/cardh_<l>.cip`). Lidos assincronamente pelo ehfile em blocos de 0x800. Cabeçalho (0x30 bytes): magic `CIP\x1a` (h) ou `CPM\x1a` (m), u32 tamanho, 0, 0, u32 `0x5f18` [?], u32 primeiro id (4007), u32 último id (6957), u32 0x30, u32 chunks por imagem (h=2, m=1). Depois do cabeçalho vem uma tabela e, alinhadas a 0x800, as imagens em slots fixos de `chunks × 0x800` bytes (`FUN_08854708(ctx, índice)` lê `índice × chunks × 0x800`). Decodificação dos pixels [?]: `FUN_088548a4` chama `gim_set_texture`, então cada slot provavelmente é um GIM.
+Abertos por `cip_open_h` / `cip_open_m` (`0x08853d1c` / `0x08853dd4`), nome por idioma (`card/cardh_<l>.cip`). Lidos assincronamente pelo ehfile em blocos de 0x800. Cabeçalho (0x30 bytes): magic `CIP\x1a` (h) ou `CPM\x1a` (m), u32 tamanho, 0, 0, u32 tamanho da tabela (0x5f18), u32 primeiro id (4007), u32 último id (6957), u32 0x30, u32 chunks por slot (h=2, m=1). Tabela `{u32 chunk, u32 0}` (bit 31 = sem imagem, 75 casos; 501 zerados) e, a partir de `(0x30 + tabela + 0x7ff) & ~0x7ff` = 0x6000, slots fixos de `chunks × 0x800` bytes (`FUN_08854708(ctx, índice)` lê `índice × chunks × 0x800`). **Slot N = índice da carta** (validado: slot 1 = Blue-Eyes White Dragon nos dois arquivos).
+
+- `cardh` (4 KB/slot): um GIM formato 8 = **DXT1 da PSP** (bloco 4×4: u32 índices primeiro, depois u16 cor0, u16 cor1), 128×64, data em slot+0xc0. A carta de 64×128 está guardada como duas metades lado a lado (esquerda = topo, direita = base); as últimas 12 linhas da textura caem no cabeçalho do slot seguinte (borda preta da carta).
+- `cardm` (2 KB/slot): DXT1 cru 64×64, sem cabeçalho.
+
+`tools/cip.py FILE.cip INDEX OUT.png` extrai e recompõe. O papel da tabela de chunks ainda está aberto [?] (os valores não batem com `índice × chunks`).
 
 ## Scripts de tutorial/puzzle [obs][val]
 
