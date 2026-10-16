@@ -122,11 +122,16 @@ Ponto de partida: o repositório do TF5 já tem extrator EHP; o header aqui é o
 | Caminho | Responsabilidade |
 |---|---|
 | `tools/extract_iso.py` | Extrai a ISO (pycdlib) para `extracted/`. |
-| `tools/prx2elf.py` | Aplica relocações PRX na base `0x08804000`, converte em `ET_EXEC`, anexa `.MIPS.abiflags`, resolve `module_start`. Exigido pelo perfil PSP do REA. |
-| `build/` (gitignored) | ELFs convertidos e, futuramente, saída do build. |
+| `tools/prx2elf.py` | Aplica relocações PRX na base `0x08804000`, converte em `ET_EXEC`, anexa `.MIPS.abiflags`, resolve entry (module_start ou início de `.text`), corrige tamanho do `.bss`. Exigido pelo perfil PSP do REA. |
+| `tools/ghidra/ExportDecomp.java` | Headless Ghidra: aplica `symbols/<m>.txt` (cria funções que faltam), exporta C decompilado de todas as funções em `build/decomp/<m>/*.c` + `index.tsv` (endereço, nome, tamanho, callees, callers, strings). Leitura em massa: `grep` no índice. |
+| `tools/nids.py` | Gera `build/nids.txt` (lib, NID, nome) a partir dos stubs do pspsdk. |
+| `tools/link_map.py` | Resolve os stubs de import de cada gmodule para funções do BOOT (`libehsys`) por NID e regenera a parte gerada de `symbols/<gmodule>.txt`. Rodar após nomear funções do BOOT. |
+| `tools/rea_seeds.py` | Gera `build/rea_seeds.tsv` (linhas `seed` dos símbolos) para `REA_GHIDRA_SEED_FILE`. |
+| `tools/ehp.py`, `tools/gim.py` | Extrai pacotes EHP; decodifica texturas GIM para PNG. |
+| `build/` (gitignored) | ELFs convertidos, decompilação exportada, dados extraídos de EHP, saída do build. |
 | `extracted/` (gitignored) | Conteúdo da ISO. |
-| `docs/` (a criar) | `architecture.md`, `formats/`, decisões. |
-| `symbols/` (a criar) | Nomes de funções/dados por módulo, formato splat. Fonte de verdade de nomenclatura. |
+| `docs/` | `architecture.md` (mapa do binário), `formats.md` (formatos de dados). |
+| `symbols/` | Nomes de funções/dados por módulo, formato splat. Fonte de verdade de nomenclatura. Em `symbols/<gmodule>.txt`, só edite acima do marcador `// --- generated imports below`. |
 | `src/` (a criar) | C reconstruído, um diretório por módulo original (`boot/`, `duel_eng/`, ...). |
 | `platform/` (a criar) | `psp/` e `pc/` implementando a mesma API. |
 | `config/` (a criar) | Configs do splat por módulo. |
