@@ -93,6 +93,40 @@ O BOOT **não importa `sceGu*`**: importa só `sceGe_user` e `sceDisplay`. A lib
 
 274 funções em 28 bibliotecas (lista completa em `symbols/BOOT.txt`): ThreadManForUser 43, IoFileMgrForUser 33, sceMpeg 25, sceUtility 23, sceSasCore 21, sceNetAdhoc 14, sceGe_user 12, ModuleMgrForUser 11, sceNetAdhocctl 10, sceAudio 9, sceAtrac3plus 9, sceNetAdhocMatching 9, SysMemUserForUser 8, sceLibFont 7, sceDisplay 6, UtilsForUser 6, sceUmdUser 5, sceNet 4, InterruptManager 3, LoadExecForUser 3, StdioForUser 3, sceCtrl 3, Kernel_Library 2, sceDmac 1, sceOpenPSID 1, sceRtc 1, sceSuspendForUser 1, sceWlanDrv 1. Seis NIDs sem nome na tabela do pspsdk.
 
-## 10. Como os NIDs ajudam [inf]
+## 10. Formato EHP [obs, validado]
+
+Recuperado de `ehp_find` (`0x08833bc8`), `ehp_find_entry` (`0x08833bb8`), `ehp_entry_size` (`0x08833f48`) e `ehp_is_valid` (`0x08833c88`); `tools/ehp.py` lista e extrai, validado nos 303 `.ehp` do disco sem nenhuma entrada fora dos limites.
+
+```
++0  "EHP" u8 versão (3 no TF1)     +4  u32 tamanho total
++8  "NOT "                          +12 u32 count
++16 count × { u32 name_off, u32 data_off }   (offsets do início do arquivo; ordenado por nome, busca binária com strcmp 0x08810fd0)
+nome NUL-terminado; na versão ≥ 3 o nome é seguido de u32 tamanho. Versão < 3: tamanho = data_off seguinte − data_off.
+```
+
+`ehp_find(pack, nome, &tamanho)` devolve `pack + data_off`. Os packs ficam inteiros em memória. `table_get_entry` (`0x088433a4`) é um acessor para outro formato de tabela `{count, tableOff, base}` usado pelos `.bin` internos (ex.: `CARD_*.bin` em `duelsys/cardinfo_*.ehp`).
+
+## 11. gmodules [obs]
+
+| Módulo | Papel | Entrada | Exports |
+|---|---|---|---|
+| libtitle, libfield, libstory, libshop, libdeck, libdeck_swap, libdeck_tutorial, libselect_card, libcardalbum, libcharalist, libconv_machine, libduelrecord, libhtml_view, liblabo, liblimitlist, libpassword, librecipe_viewer, libtutorial, libtutoriallist | cena (carregada pela thread ehscript) | `.text+0` chama `ehscript_register(main, exit, dados)` | 0–7 funções (callbacks de UI) |
+| libduel_eng | biblioteca do motor de duelo (id 8 no modmgr) | `.text+0` retorna 0 | 143 funções, importadas pela libduel_draw |
+| libduel_draw | renderização do duelo (id 9) | [?] | 38 |
+| libduel_mgr | orquestra o duelo | [?] | 0 |
+
+Todos importam a `libehsys` inteira (1245 NIDs). Uso real: 680 funções distintas. Ranking por pontos de chamada em `build/ehsys_usage.tsv`; as 10 mais chamadas: `draw_sprite` (997), `ehsys_0883AF84` (800), `se_play` (702), `memset` (700), `table_get_entry` (470), `dl_ambient_color` (453), `gim_set_texture` (398), `font_set_size` (370), `ehsys_0883A4E4` (354), `dl_set_tex_filter` (346).
+
+## 12. Engine: subsistemas identificados na libehsys [obs/inf]
+
+- **Display lists (`dl_*`)**: a engine monta comandos GE diretamente (`dl_push1 0x0883529c`, `dl_push 0x08835308`) em listas por camada (`dl_select_layer 0x0883a29c`, `dl_set_list 0x0883a3b4`), com `dl_color` (AMC/AMA/DMC/SMC), `dl_tex_mode` (TMODE/TPSM), `dl_tex_image` (TSIZE/TBP/TBW), `dl_tex_filter`, `dl_draw_array` (VTYPE/BASE/VADDR). `draw_sprite` (`0x0883ad8c`, 8 parâmetros) é a primitiva 2D.
+- **Matrizes VFPU (`mtx_*`)**: pilha de matrizes M300 em `0x08905100` (`mtx_push/pop/identity/store`), `mtx_flush` (`0x0883636c`) despeja as sujas na display list.
+- **Texturas GIM**: `gim_set_texture` (`0x08835704`) lê o cabeçalho `MIG.00.1PSP` e emite TPSM/TSIZE.
+- **Fontes**: contexto em `PTR_DAT_088ee900+0x50c00..`; `font_set_size`, `font_set_color`, `font_draw_text`, `font_print`.
+- **Som**: `se_play(id)` (`0x0886568c`) → `se_play_pan`; sistema SAS/Atrac3+ em `snd_*`.
+- **Heap**: `heap_create` (magic `"HOGE"` `0x45474f48`), `heap_alloc`, `heap_malloc_cur` + `malloc/free` da MSL.
+- **UI**: `menu_update` (`0x0884b6cc`, 1,5 KB) lê o pad e toca SE; `menu_reset`.
+
+## 13. Como os NIDs ajudam [inf]
 
 NID = 4 primeiros bytes de SHA-1 do nome da função. Ao nomear uma função de `libehsys` pelo comportamento, dá para testar candidatos de nome contra o NID exportado (`build/boot_exports.json`) e recuperar o nome original. Ainda não explorado.
