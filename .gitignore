@@ -1,0 +1,6 @@
+# game data: never commit (provide your own copy)
+*.iso
+*.cso
+extracted/
+build/
+__pycache__/
