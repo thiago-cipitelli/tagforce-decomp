@@ -1,4 +1,8 @@
 module_entry = 0x08804000; // type:func seed
+field_get_card = 0x088E6998; // type:func inferred (player, zone) -> card id, table DAT_08915e8c
+duel_setup_parse_line = 0x0884B684; // type:func inferred parses text lines (EquipAct=, SrcPlayer, DstLocate, ONLYINTURN...) of a duel field setup script
+duel_setup_load_text = 0x0884C140; // type:func inferred LP=8000, turn 1, then places cards from parsed lines via FUN_088d4c00
+duel_cmd = 0x088D4C00; // type:func inferred (cmd, player, cardId, arg): 0x44 place card, 0x3a set extra
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 ehsys_08819394 = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
