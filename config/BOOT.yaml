@@ -172,7 +172,10 @@ segments:
       - [0x68B70, c, msgbox]
       - [0x68CA0, asm, msgbox_asm_0886CC40]
       - [0x68D64, c, msgbox]
-      - [0x68FB0, asm, text_9]
+      - [0x68FB0, c, extdata]
+      - [0x69B10, asm, extdata_asm_0886DAB0]
+      - [0x69E88, c, extdata]
+      - [0x6A104, asm, text_9]
       - [0x6AD8C, asm, sceStub_text]
       - [0x6B61C, bin, lib_ent_top]
       - [0x6B620, bin, lib_ent]
@@ -223,6 +226,8 @@ segments:
       - [0xEC7EC, .data, savedata]
       - [0xEC804, .data, msd]
       - [0xEC80C, data, data_13]
+      - [0xECCF4, .data, extdata]
+      - [0xECD10, data, data_14]
       - { start: 0xECD20, type: bss, vram: 0x88F0CC0, name: bss }
   - [0xECD20]
 

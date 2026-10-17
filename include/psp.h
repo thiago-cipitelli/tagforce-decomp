@@ -23,6 +23,17 @@ typedef struct SceIoStat {
     unsigned int st_private[6];
 } SceIoStat; /* 0x58 */
 
+typedef struct SceIoDirent {
+    SceIoStat d_stat;
+    char d_name[256];
+    void *d_private;
+    int dummy;
+} SceIoDirent; /* 0x160 */
+
+int sceIoDopen(const char *dirname);
+int sceIoDread(int fd, SceIoDirent *dir);
+int sceIoDclose(int fd);
+
 SceUID sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int priority, int stack, SceUInt attr, void *opt);
 int sceKernelStartThread(SceUID thid, SceSize args, void *argp);
 SceUID sceKernelCreateSema(const char *name, SceUInt attr, int init, int max, void *opt);
