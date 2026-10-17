@@ -150,6 +150,9 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Ordem dos `case` com `default` compartilhado** (`savedata_params_init`): o corpo de `case 1: default:` aparece por último no código; escrevê-lo no meio da lista muda a tabela de saltos.
 - **Literais `.data` lidos por asm de outros arquivos** (`"DATA0"`, `snd_bank_cfg`) precisam virar arrays nomeados (ou símbolos em `symbols/`), senão o link falha com `D_xxxxxxxx` indefinido.
 
+- **Laço com contagem constante sem desenrolar** (`snd_bank.c`): `for (i = 0; i < 16; i++)`, `while` e `do { } while (i < 16)` com `i++` no corpo são desenrolados ×8 pelo `-O4,p`; `do { ... } while (++i < 16)` não é, e gera exatamente o laço simples do original (contador incrementado antes do `slti`, ponteiro avançado no delay slot). Útil sempre que o original tem um laço curto de trip count conhecido que não foi desenrolado.
+- **`unsigned short` em parâmetro faz o chamador mascarar** (`andi 0xffff` antes do `jal`) além do mascaramento no callee; quando o original não mascara na chamada, o callee foi declarado com `int`/`unsigned int` e trunca internamente (`unsigned short key = id;`).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
