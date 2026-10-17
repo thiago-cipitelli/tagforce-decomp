@@ -11,6 +11,43 @@ for line in open(yaml):
     if m:
         order[m.group(3)] = int(m.group(1), 16)
 text = open(ld).read()
+
+# --- TEXT block: a C file split by `@asm` ranges appears several times as `obj(.text)`; replace each
+# occurrence by that range's functions as `obj(.text.<func>)` (sections renamed by tools/rename_sections.py)
+import glob as _glob, os as _os
+module = _os.path.basename(yaml)[:-5]
+subs = []  # (offset, type, name) of the code segment's subsegments
+seg_off = seg_vram = None
+for line in open(yaml):
+    m = re.match(r"\s*start:\s*0x([0-9A-Fa-f]+)", line)
+    if m and seg_off is None: seg_off = int(m.group(1), 16)
+    m = re.match(r"\s*vram:\s*0x([0-9A-Fa-f]+)", line)
+    if m and seg_vram is None: seg_vram = int(m.group(1), 16)
+    m = re.match(r"\s*-\s*\[0x([0-9A-Fa-f]+),\s*(\w+),\s*(\w+)\]", line)
+    if m: subs.append((int(m.group(1), 16), m.group(2), m.group(3)))
+subs.sort()
+funcs = {}
+for line in open(f"symbols/{module}.txt"):
+    m = re.match(r"(\w+)\s*=\s*0x([0-9A-Fa-f]+);\s*//\s*type:func", line)
+    if m: funcs[int(m.group(2), 16)] = m.group(1)
+c_count = {}
+for k, (off, typ, nm) in enumerate(subs):
+    if typ != "c": continue
+    c_count[nm] = c_count.get(nm, 0) + 1
+if any(n > 1 for n in c_count.values()):
+    for k, (off, typ, nm) in enumerate(subs):
+        if typ != "c" or c_count[nm] < 2: continue
+        lo = seg_vram + off - seg_off
+        hi = seg_vram + (subs[k + 1][0] - seg_off) if k + 1 < len(subs) else 1 << 32
+        names = [funcs[a] for a in sorted(funcs) if lo <= a < hi]
+        pat = re.compile(rf"^(\s*)(\S*/{re.escape(nm)}\.c\.o)\(\.text\);?\s*$", re.M)
+        mm = pat.search(text)
+        if not mm: raise SystemExit(f"fix_ld: {nm}.c.o(.text) not found for subsegment {k}")
+        repl = "\n".join(f"{mm.group(1)}{mm.group(2)}(.text.{f});" for f in names)
+        text = text[:mm.start()] + repl + text[mm.end():]
+    print(f"fix_ld: expanded per-function sections for {[n for n, c in c_count.items() if c > 1]}")
+# every other C object: take all its renamed function sections at once
+text = re.sub(r"(\S+\.c\.o)\(\.text\);", r"\1(.text .text.*);", text)
 def block(name):
     s = text.index(f"{name}_START = .;"); e = text.index(f"{name}_END = .;")
     return s, e

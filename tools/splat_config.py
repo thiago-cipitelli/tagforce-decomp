@@ -25,7 +25,14 @@ for cf in sorted(glob.glob(f"src/{m}/*.c")):
     src = open(cf).read()
     mm = re.search(r"//\s*@range\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src)
     if mm:
-        ranges.append((int(mm.group(1), 16), int(mm.group(2), 16), os.path.basename(cf)[:-2]))
+        a, b, cname = int(mm.group(1), 16), int(mm.group(2), 16), os.path.basename(cf)[:-2]
+        # `// @asm 0xA-0xB`: functions inside the range that stay in asm (tools/fix_ld.py interleaves
+        # the C object's per-function sections around them)
+        asm = sorted((int(x.group(1), 16), int(x.group(2), 16)) for x in re.finditer(r"//\s*@asm\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src))
+        cur = a
+        for x, y in asm:
+            ranges.append((cur, x, cname)); ranges.append((x, y, f"{cname}_asm_{x:08X}")); cur = y
+        ranges.append((cur, b, cname))
     for md in re.finditer(r"//\s*@data\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src):
         dranges.append((int(md.group(1), 16), int(md.group(2), 16), os.path.basename(cf)[:-2]))
 ranges.sort(); dranges.sort()
@@ -41,7 +48,7 @@ for n, s in alloc:
         for a, b, cname in ranges:
             if a > cur:
                 subs.append(f"      - [0x{off + cur - vram:X}, asm, text_{i}]"); i += 1
-            subs.append(f"      - [0x{off + a - vram:X}, c, {cname}]")
+            subs.append(f"      - [0x{off + a - vram:X}, {'asm' if '_asm_' in cname else 'c'}, {cname}]")
             cur = b
         if cur < vram + size:
             subs.append(f"      - [0x{off + cur - vram:X}, asm, text_{i}]")

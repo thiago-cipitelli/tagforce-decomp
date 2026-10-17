@@ -10,8 +10,9 @@ module, src = sys.argv[1], sys.argv[2]
 flags = sys.argv[sys.argv.index("--flags") + 1] if "--flags" in sys.argv else "-O4,p -sdatathreshold 0 -i include"
 text = open(src).read()
 lo, hi = (int(x, 16) for x in re.search(r"//\s*@range\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", text).groups())
+asm = [(int(a, 16), int(b, 16)) for a, b in re.findall(r"//\s*@asm\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", text)]
 funcs = sorted((int(m.group(2), 16), m.group(1)) for m in re.finditer(r"^(\w+)\s*=\s*(0x[0-9A-Fa-f]+);\s*//\s*type:func", open(f"symbols/{module}.txt").read(), re.M)
-         if lo <= int(m.group(2), 16) < hi)
+         if lo <= int(m.group(2), 16) < hi and not any(a <= int(m.group(2), 16) < b for a, b in asm))
 obj = f"build/{os.path.basename(src)[:-2]}.check.o"
 r = subprocess.run(["tools/mwcc.sh", *flags.split(), "-c", src, "-o", obj], capture_output=True, text=True)
 if r.returncode:

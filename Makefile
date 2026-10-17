@@ -44,6 +44,7 @@ build/%.s.o: %.s
 build/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	$(MWCC) $(MWCC_FLAGS) -c $< -o $@
+	@python3 tools/rename_sections.py $@
 
 build/%.bin.o: %.bin
 	@mkdir -p $(dir $@)
