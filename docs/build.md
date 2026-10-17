@@ -57,6 +57,10 @@ Cada item custou tentativas; vale consultar antes de brigar com uma função.
 - **Chamadas com menos argumentos que o protótipo** no original (`gim_set_texture(*dl)` em `menu_item_build_text`): declarar a função sem protótipo (`void *gim_set_texture();`) e chamar como o original. Já `mem_swap(heap, a, b)` com 3 argumentos era ilusão do Ghidra: o `li a3, 2` estava içado e reaproveitado na comparação `flip == 2` (`menu_sprite`); passar `2` bate.
 - Parâmetros `short` geram `seh` no prólogo (normalização); se o original não tem `seh`, o parâmetro é `int` (`menu_sprite`). `uvoff[0] + (p->x + p->w)` reproduz a ordem dos `addu`.
 - Jump tables de funções mantidas em `@asm` ficam no asm de dados; o `@rodata` do `.c` só cobre as tabelas das funções em C (`menu_draw.c`: 0x08875718-0x08875734, sem o padding até 0x08875740).
+- **Arrays `const` com inicializador vão para `.rodata`**; se o original tem a tabela em `.data`, declarar sem `const` (`font_color_table`). Ordem das definições = ordem no `.data`.
+- Um `.c` com funções em `@asm` que têm literais/templates próprios (`font_init`, `font_glyph_quad`): o `@data` do `.c` só cobre os objetos definidos pelo C (`font.c`: 0x088EE8C4-0x088EE904); os templates ficam no asm de dados com nome e `size:` em `symbols/`. mwcc emite uma seção `.data` por objeto, mas `fix_ld` ainda coloca todas juntas: um `.c` não pode ter dois `@data` separados (pendência: `rename_sections` para `.data.<sym>`).
+- `while (lo <= hi) { mid = (lo + hi) / 2; … }` bate a busca binária de `u16_bsearch`; a forma `do/while` com `mid` pré-calculado não.
+- `switch` com `case`s compartilhando corpo: um dos casos recebe o corpo no delay slot do `beql`, os demais pulam para um bloco comum (`wc_break_class`: tests na ordem inversa dos `case`, corpos na ordem do fonte).
 - Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
 ## Pipeline

@@ -14,7 +14,7 @@ void on_exit_cleanup(void);
 void hold_pool_create(void);
 int main_thread_init(void);
 int font_init(int);
-int font_set_param2c(int);
+int font_set_layer(int);
 void dl_set_mode(int);
 void gfx_pool_init(void *, int, int, int, int);
 int snd_init(void);
@@ -113,7 +113,7 @@ void main(void)
     sys_init(&sys_config);
     main_thread_init();
     font_init(0);
-    font_set_param2c(4);
+    font_set_layer(4);
     dl_set_mode(1);
     gfx_pool_init(gfx_pool_mem, 4, 4, 0x40, 4);
     sys_frame_end();
