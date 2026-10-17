@@ -22,8 +22,27 @@ typedef struct SaveExtra {             /* SysSave +0x13C0 (DuelRecords + 0x51C) 
     unsigned char unk0[0x94];
     int unk94;                         /* newgame: 0x92784 */
     int unk98;                         /* newgame: 999 */
-    unsigned char unk9c[0x3DF8 - 0x13C0 - 0x9C];
 } SaveExtra;
+
+typedef struct InvRec {                /* per-card inventory record, 4 bytes, SysSave +0x1558 */
+    unsigned char flag0 : 1;
+    unsigned char state : 2;           /* 0 none, 1 seen, 2 owned */
+    unsigned char flag3 : 1;
+    unsigned char hi : 3;
+    unsigned char bit7 : 1;
+    unsigned char count : 7;           /* 0..99 */
+    unsigned char flag7b : 1;
+    unsigned char limit : 2;           /* 0 forbidden .. 3 unlimited */
+    unsigned char pad2 : 6;
+    unsigned char pad3;
+} InvRec;
+
+typedef struct RecipeData {            /* recipe_load output / current deck, 0x108 */
+    unsigned int n_main, n_extra, n_side;
+    unsigned short main_ids[80];
+    unsigned short extra_ids[15];
+    unsigned short side_ids[31];
+} RecipeData;
 
 typedef struct SysSave {               /* 0x08A66B98, 0xFCA4 bytes used (+4 pad in GameGlobals) */
     int version;                       /* +0x00 0x10002 */
@@ -38,18 +57,21 @@ typedef struct SysSave {               /* 0x08A66B98, 0xFCA4 bytes used (+4 pad 
     unsigned char unk5c[0xEA4 - 0x5C];
     DuelRecords records;               /* +0xEA4 */
     SaveExtra extra;                   /* +0x13C0 */
+    unsigned char unk145c[0x1558 - 0x145C];
+    InvRec inv[2600];                  /* +0x1558 indexed by card index */
     unsigned char event_seen[0x40];    /* +0x3DF8 stat_event_record */
-    unsigned char flag_3e38[0x4936 - 0x3E38];
-    unsigned short deck_name[32];      /* +0x4936 recipe name of recipe 0 */
-    unsigned char tail[0xFCA8 - 0x4976];
+    unsigned char flag_3e38[0x4820 - 0x3E38];
+    RecipeData deck;                   /* +0x4820 current deck */
+    unsigned short partner_count;      /* +0x4928 < 4 */
+    unsigned short partner_ids[3];     /* +0x492A */
+    unsigned short partner_state[3];   /* +0x4930 1..3 */
+    unsigned short deck_name[32];      /* +0x4936 */
+    unsigned char blob[0x200];         /* +0x4976 */
+    unsigned short player_name[64];    /* +0x4B76 */
+    unsigned char unk4bf6[0x8FF0 - 0x4BF6];
+    unsigned char flagrec[48][0x2A];   /* +0x8FF0 sysflag2 records */
+    unsigned char tail[0xFCA8 - 0x97D0];
 } SysSave;
-
-typedef struct RecipeData {            /* recipe_load output, 0x108 */
-    unsigned int n_main, n_extra, n_side;
-    unsigned short main_ids[80];
-    unsigned short extra_ids[15];
-    unsigned short side_ids[31];
-} RecipeData;
 
 typedef struct GameGlobals {           /* 0x08A66A80 */
     unsigned int sysflags;             /* +0x000 */
@@ -83,6 +105,16 @@ extern unsigned char pack_loading[];    /* loading.ehf + gims */
 extern unsigned char pack_sysmsg[];     /* sysmsg_?.bin */
 
 SysSave *sysstate_get(void);
+RecipeData *deck_get(void);
+int deck_count(int which);
+unsigned short deck_get_card(int which, int i);
+int partner_count_get(void);
+unsigned short partner_id_get(int i);
+int partner_state_get(int i);
+int inv_get_count(unsigned short id);
+void inv_set_limit(unsigned short id, unsigned short v);
+void sysstate_set_player_name(const unsigned short *name);
+extern const unsigned short card_limit_table[0xA6];   /* 0x0887544C: (card id, limit) pairs */
 DuelRecords *duel_records_get(void);
 SaveExtra *sysstate2_get_ptr_51c(void);
 int sysstate_checksum(void);

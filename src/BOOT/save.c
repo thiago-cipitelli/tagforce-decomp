@@ -15,10 +15,10 @@ int cfg_get_language(void);
 void cfg_set_byte0_bits0_2(int);
 void str_to_wide(unsigned short *dst, int max, const char *src);
 void recipe_load(int n, RecipeData *out);
-void rec3_set_u32(int which, unsigned int v);
-void rec3_set_u16(int which, int i, int v);
+void deck_set_count(int which, unsigned int v);
+void deck_set_card(int which, int i, int v);
 void inv_adjust_count(int id, int dir);
-void inv_set_bits1_2_to_2(int id);
+void inv_set_state2(int id);
 unsigned short *recipe_get_name(int n);
 unsigned short *wcscpy(unsigned short *, const unsigned short *);
 int sysflag_get2(int id);
@@ -63,23 +63,23 @@ void newgame_init(void)
         dst++;
     } while (n < 8);
     recipe_load(0, &rec);
-    rec3_set_u32(1, rec.n_main);
+    deck_set_count(1, rec.n_main);
     for (i = 0; i < rec.n_main; i++) {
-        rec3_set_u16(1, i, rec.main_ids[i]);
+        deck_set_card(1, i, rec.main_ids[i]);
         inv_adjust_count(rec.main_ids[i], 1);
-        inv_set_bits1_2_to_2(rec.main_ids[i]);
+        inv_set_state2(rec.main_ids[i]);
     }
-    rec3_set_u32(2, rec.n_extra);
+    deck_set_count(2, rec.n_extra);
     for (i = 0; i < rec.n_extra; i++) {
-        rec3_set_u16(2, i, rec.extra_ids[i]);
+        deck_set_card(2, i, rec.extra_ids[i]);
         inv_adjust_count(rec.extra_ids[i], 1);
-        inv_set_bits1_2_to_2(rec.main_ids[i]); /* sic: original indexes the main list */
+        inv_set_state2(rec.main_ids[i]); /* sic: original indexes the main list */
     }
-    rec3_set_u32(3, rec.n_side);
+    deck_set_count(3, rec.n_side);
     for (i = 0; i < rec.n_side; i++) {
-        rec3_set_u16(3, i, rec.side_ids[i]);
+        deck_set_card(3, i, rec.side_ids[i]);
         inv_adjust_count(rec.side_ids[i], 1);
-        inv_set_bits1_2_to_2(rec.main_ids[i]); /* sic */
+        inv_set_state2(rec.main_ids[i]); /* sic */
     }
     wcscpy(s->deck_name, recipe_get_name(0));
     sysflag_set2(0, 2);
