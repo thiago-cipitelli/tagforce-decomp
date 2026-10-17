@@ -164,6 +164,9 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Argumento constante já num registrador**: `li a0,2; beql v1,a0` antes de uma chamada sem preparação visível de argumento indica que a chamada recebe a constante do teste (`sceUtilitySavedataUpdate(2)` depois de `msd_status == 2`); passar a variável (`msd_status`) não bate.
 - **Fim do `@data`**: uma global adjacente lida por código ainda em asm não pode ficar dentro do `@data` do arquivo C (o link falha com `undefined reference to D_<addr>`); `msd.c` termina em `0x088F07AC`, antes da palavra usada pela rede.
 
+- **`li` morto entre testes de `switch`** (`msgbox_update_buttons`): `li v0,1` sem uso entre o último `beq` e o `b` do bloco seguinte é a constante de um `case 1:` que divide o corpo com `default:`; o desvio para o corpo (que é a instrução seguinte) some, a carga fica. `switch (res) { case 1: default: r = 5; break; case 2: r = 3; break; case 3: r = 4; break; }` bate; a cadeia `if`/`else if` não.
+- **Ponteiros locais para membros de uma global** (`msgbox.c`): `MenuWidget *w = &msgbox.widget; MenuItemDef *d = &msgbox.widget.def;` gera um `lui`/`addiu` próprio para cada um (o original guarda os dois em registradores `s`); escrever `w->def.x` reaproveita `w` com deslocamento. Funções `static` chamadas por uma função que ficou em `@asm` precisam deixar de ser `static` (o objeto asm não vê símbolos locais), o que não mudou o código delas.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
