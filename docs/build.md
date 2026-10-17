@@ -61,6 +61,8 @@ Cada item custou tentativas; vale consultar antes de brigar com uma função.
 - Um `.c` com funções em `@asm` que têm literais/templates próprios (`font_init`, `font_glyph_quad`): o `@data` do `.c` só cobre os objetos definidos pelo C (`font.c`: 0x088EE8C4-0x088EE904); os templates ficam no asm de dados com nome e `size:` em `symbols/`. mwcc emite uma seção `.data` por objeto, mas `fix_ld` ainda coloca todas juntas: um `.c` não pode ter dois `@data` separados (pendência: `rename_sections` para `.data.<sym>`).
 - `while (lo <= hi) { mid = (lo + hi) / 2; … }` bate a busca binária de `u16_bsearch`; a forma `do/while` com `mid` pré-calculado não.
 - `switch` com `case`s compartilhando corpo: um dos casos recebe o corpo no delay slot do `beql`, os demais pulam para um bloco comum (`wc_break_class`: tests na ordem inversa dos `case`, corpos na ordem do fonte).
+- O `Makefile` apaga `asm/<m>/` antes do `splat split`: a renumeração dos segmentos (`text_N.s`) deixava arquivos velhos que o `find` continuava montando e linkando (símbolos duplicados).
+- Templates de inicializadores locais (`unsigned int cmds[20] = {…}` em `font_dl_glyph_header`) viram um objeto anônimo em `.data` no ponto da função; o `@data` do `.c` tem de cobrir exatamente esses bytes (`font_tags.c`: 0x088EE9E0-0x088EEA30) e os valores têm de ser copiados do ELF palavra a palavra (um erro de byte desloca tudo).
 - Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
 ## Pipeline

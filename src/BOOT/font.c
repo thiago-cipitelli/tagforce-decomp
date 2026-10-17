@@ -24,7 +24,7 @@ void *dl_push1(void *list, unsigned int word);
 void *font_alloc_cb(void *data, unsigned int size);
 void font_free_cb(void *data, void *p);
 void font_scratch_reset(void);
-int font_layout_text(FontCtx *f, FontLayout *st, char *text, int flags);
+int font_layout_text(FontCtx *f, FontLayout *st, unsigned short *text, int wrap);
 void mem_move(void *dst, void *src, unsigned int n);
 extern const unsigned char font_half_width[0x2300];   /* .rodata 0x08875760: use font2 for these codes */
 extern FontCtx font_ctx_storage;
@@ -307,7 +307,7 @@ unsigned int font_set_color(unsigned int c)
     FontCtx *f = font_ctx_ptr;
 
     f->color = c;
-    f->color2 = font_shadow_color();
+    f->color2 = font_shadow_color(c);
     return c;
 }
 
@@ -316,17 +316,17 @@ unsigned int font_get_color(void)
     return font_ctx_ptr->color;
 }
 
-/* Width in 26.6 of an 8-bit string laid out without limits. */
-int font_measure_text(char *text)
+/* Width in 26.6 of a UCS-2 string laid out without limits. */
+int font_measure_text(unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     FontLayout st;
 
     memset(&st, 0, sizeof st);
     st.xmax = 0x7FFFFFFF;
-    st.base_size_x = f->size_x;
+    st.cur_size_x = f->size_x;
     st.size_x = f->size_x;
-    st.base_size_y = f->size_y;
+    st.cur_size_y = f->size_y;
     st.size_y = f->size_y;
     return font_layout_text(f, &st, text, 0);
 }

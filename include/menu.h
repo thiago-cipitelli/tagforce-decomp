@@ -38,7 +38,7 @@ typedef struct MenuItemDef {           /* 0x78 bytes, owned by the caller */
     unsigned char font_size;           /* +0x4C */
     unsigned char pad4d[3];
     unsigned int text_color;           /* +0x50 */
-    char *title;                       /* +0x54 8-bit text */
+    unsigned short *title;             /* +0x54 UCS-2 */
     unsigned char title_font_size;     /* +0x58 */
     unsigned char pad59[3];
     unsigned int title_color;          /* +0x5C */
@@ -67,7 +67,7 @@ typedef struct MenuItem {              /* 0xC0 bytes, heap-allocated */
     short pad8a;
     int saved_show_title;              /* +0x8C */
     unsigned short *saved_text;        /* +0x90 */
-    char *saved_title;                 /* +0x94 */
+    unsigned short *saved_title;       /* +0x94 */
     unsigned int saved_text_color;     /* +0x98 */
     unsigned int saved_title_color;    /* +0x9C */
     int counter;                       /* +0xA0 animation step */

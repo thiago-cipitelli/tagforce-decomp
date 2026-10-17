@@ -31,6 +31,7 @@ check: all
 
 $(LD_SCRIPT): config/$(MODULE).yaml
 	python3 tools/splat_symbols.py $(MODULE) > build/$(MODULE).syms.txt
+	rm -rf asm/$(MODULE)
 	$(SPLAT) split $<
 	@# ponytail: spimdisasm emits N64-style `.set gp=64`; psp-as (32-bit) rejects it
 	find asm/$(MODULE) -name '*.s' -exec sed -i '/^\.set gp=64/d' {} +
