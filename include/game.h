@@ -181,6 +181,7 @@ extern unsigned char pack_sysmsg[];     /* sysmsg_?.bin */
 
 SysSave *sysstate_get(void);
 FlagRec *flagrec_get(int id);
+int inv_get_state(unsigned short id);
 DeckCur *deck_cur_get(void);
 DeckSlot *deck_slots_get(void);
 DeckName *deck_names_get(void);

@@ -41,6 +41,11 @@ Cada item custou tentativas; vale consultar antes de brigar com uma função.
 - `p[i + 0x97D0]` com `unsigned char *p = (unsigned char *)s` gera `addu; lui 1; lbu -0x6830(...)`; `s->byte_97d0[i]` gera `addiu 0x7FFF; addiu 0x17D1` (`sysstate_get_byte_97d0`), mas no setter vizinho é o acesso por campo que bate (`sysstate_max_byte_97d0`).
 - Ordem das funções no objeto = ordem das **definições** no fonte (`static` usadas antes de definidas precisam de protótipo: `state_noop_*` ficam depois de `sys_state_set_default_callbacks`). `check_file.py` não detecta isso; só o `make check`.
 - Variável `unsigned short` ou `int` para laço com `lhu`: `int bestv` + indexação `d[i].value` bate em `deck_find_best_slot`; ponteiro incrementado troca `$a0`/`$a2`.
+- **`while (*s)` vs `while (*s != 0)`:** com `!= 0` o valor carregado fica vivo no laço (um `lhu` por iteração, em `$a2`); com `while (*p)` sobre uma **cópia local do ponteiro** (`const u16 *p = s;`) o compilador recarrega `*p` a cada iteração em `$v1`, como o original de `wcschr_index`. `while (*s)` sem cópia gera `andi v1,v1,0xFFFF` no lugar da recarga.
+- **Máscara de argumento `unsigned short`:** o chamador faz `andi a0,x,0xFFFF` só se o protótipo visível declara o parâmetro `unsigned short`; função sem protótipo (declaração implícita) ou com parâmetro `int` passa o registrador direto (`inv_get_state` em `inv_collection_permille`). Protótipos em `include/game.h` devem copiar a assinatura da definição.
+- `if (flag) { A } else { B }` gera `beql flag==0 → B` com A em sequência; a ordem dos ramos no fonte é a ordem no binário (`partner_table_lookup`).
+- Tabelas de dados inicializadas (`static T tab[N] = {...}`) saem uma seção `.data` por objeto, alinhadas a 4, na ordem das definições; `const` não é necessário (o original as tem em `.data`). As de `wstr.c` foram geradas a partir dos bytes do ELF.
+- `*p++ = *s++` em ramo `if/else` com `p++` duplicado nos dois ramos (`wcsncpy`): o original tem o `addiu p` em cada ramo, isto é, `if (*s == 0) { *p = 0; p++; } else { *p = *s; s++; p++; }`.
 - Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
 ## Pipeline
