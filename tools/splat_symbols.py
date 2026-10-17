@@ -5,5 +5,9 @@ import re, sys
 for line in open(f"symbols/{sys.argv[1]}.txt"):
     m = re.match(r"(\w+)\s*=\s*(0x[0-9A-Fa-f]+);\s*//\s*type:(func|data)", line)
     if m:
-        # splat has no generic "data" type; emit data symbols untyped (size/type inferred from the disassembly)
-        print(f"{m.group(1)} = {m.group(2)};" + ("" if m.group(3) == "data" else " // type:func"))
+        # splat has no generic "data" type; emit data symbols untyped (size/type inferred from the disassembly).
+        # `size:0xNN` is passed through so references into the object become `sym+off` (needed when the
+        # object is defined in C and the asm still references its interior).
+        sz = re.search(r"\bsize:(0x[0-9A-Fa-f]+)", line)
+        extra = (" // type:func" if m.group(3) == "func" else "") + (f" {'//' if m.group(3) == 'data' else ''} size:{sz.group(1)}" if sz else "")
+        print(f"{m.group(1)} = {m.group(2)};" + extra)

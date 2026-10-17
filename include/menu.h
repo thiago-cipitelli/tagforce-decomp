@@ -47,11 +47,22 @@ typedef struct Menu {                  /* 0x4C bytes */
     void *heap;                        /* +0x48 */
 } Menu;
 
-/* frame paddings, const shorts in .rodata (0x08875636..) */
-extern const short menu_pad_y;
-extern const short menu_pad_x;
-extern const short menu_pad_w;
-extern const short menu_pad_h;
+typedef struct WPiece {                /* a window01.gim sub-rectangle, in texels */
+    short x, y, w, h;
+} WPiece;
+
+/* .rodata of the menu unit (0x08875600..0x088756D8), defined in menu.c */
+extern const char window01_gim[];
+extern const WPiece wframe_a[10];      /* style 0..3 frame: 4 corners, top, left, right, bottom, center, tab */
+extern const WPiece wtitle[4];         /* title bar pieces */
+extern const int wstep_a[2];           /* texel offset per style (x, y) for frame A */
+extern const WPiece wframe_b[9];       /* style 4..7 frame */
+extern const int wstep_b[2];
+/* frame border sizes used for the content rectangle */
+#define MENU_PAD_Y (wframe_a[4].h)
+#define MENU_PAD_X (wframe_a[5].w)
+#define MENU_PAD_W (wframe_a[6].w)
+#define MENU_PAD_H (wframe_a[7].h)
 
 void menu_init(Menu *m, void *heap);
 int menu_add_item(Menu *m, MenuItemDef *def);

@@ -1,4 +1,5 @@
 // @range 0x088433F0-0x08843D78
+// @rodata 0x08875600-0x088756D8
 // @asm 0x08843600-0x08843918
 // @asm 0x088439FC-0x08843A68
 /* Menu/window layer: item registry (16 slots on the caller's heap), draw-order layout, item state
@@ -9,7 +10,6 @@
 #include "game.h"
 #include "menu.h"
 
-extern const char window01_gim[];      /* "window01.gim" (.rodata) */
 unsigned char *syspack_get(void);
 void *ehp_find(void *pack, const char *name, int flags);
 void *heap_alloc(void *heap, int size);
@@ -22,6 +22,19 @@ int font_get_flag8000(void);
 void font_set_flag4(int v);
 void font_set_flag8000(int v);
 int font_measure_wtext2(int maxw, int maxh, unsigned short *text);
+
+const char window01_gim[] = "window01.gim";
+const WPiece wframe_a[10] = {
+    { 0, 0, 3, 3 }, { 28, 0, 4, 3 }, { 0, 13, 3, 4 }, { 28, 13, 4, 4 }, { 3, 0, 1, 3 },
+    { 0, 3, 3, 1 }, { 28, 3, 4, 1 }, { 3, 13, 1, 4 }, { 3, 3, 1, 8 }, { 9, 13, 7, 10 },
+};
+const WPiece wtitle[4] = { { 36, 0, 1, 4 }, { 32, 0, 4, 24 }, { 52, 0, 12, 24 }, { 36, 4, 1, 1 } };
+const int wstep_a[2] = { 0, 24 };
+const WPiece wframe_b[9] = {
+    { 0, 96, 2, 2 }, { 13, 96, 3, 2 }, { 0, 109, 2, 3 }, { 13, 109, 3, 3 }, { 2, 96, 1, 2 },
+    { 0, 98, 2, 1 }, { 13, 99, 3, 1 }, { 3, 109, 1, 3 }, { 2, 98, 1, 11 },
+};
+const int wstep_b[2] = { 16, 0 };
 
 void menu_init(Menu *m, void *heap)
 {
@@ -182,15 +195,15 @@ int menu_cursor_y(Menu *m, MenuItemDef *def)
     if (i != -1) {
         d = m->items[i]->def;
         if (d->text == 0)
-            return d->pad_t + (d->y + (menu_pad_y + 1));
+            return d->pad_t + (d->y + (MENU_PAD_Y + 1));
         font_set_size(d->font_size, d->font_size);
         f4 = font_get_flag4();
         f8 = font_get_flag8000();
         font_set_flag4(d->font_flag4);
         font_set_flag8000(d->font_flag8000);
-        py = menu_pad_y;
-        ww = -2 - menu_pad_w - menu_pad_x - d->pad_r - d->pad_l;
-        hh = -2 - menu_pad_h - py - d->pad_b - d->pad_t;
+        py = MENU_PAD_Y;
+        ww = -2 - MENU_PAD_W - MENU_PAD_X - d->pad_r - d->pad_l;
+        hh = -2 - MENU_PAD_H - py - d->pad_b - d->pad_t;
         w = font_measure_wtext2((ww + d->w) * 64, (hh + d->h) * 64, d->text); /* 26.6 fixed */
         font_set_flag4(f4);
         font_set_flag8000(f8);
@@ -208,11 +221,11 @@ void menu_item_rect(Menu *m, MenuItemDef *def, int *x, int *y, int *w, int *h)
 
     if (i != -1) {
         d = m->items[i]->def;
-        *x = (menu_pad_x + 1) + (d->x + d->pad_l);
-        *y = (menu_pad_y + 1) + (d->y + d->pad_t);
-        t = -2 - menu_pad_w - menu_pad_x - d->pad_r - d->pad_l;
+        *x = (MENU_PAD_X + 1) + (d->x + d->pad_l);
+        *y = (MENU_PAD_Y + 1) + (d->y + d->pad_t);
+        t = -2 - MENU_PAD_W - MENU_PAD_X - d->pad_r - d->pad_l;
         *w = t + d->w;
-        t = -2 - menu_pad_h - menu_pad_y - d->pad_b - d->pad_t;
+        t = -2 - MENU_PAD_H - MENU_PAD_Y - d->pad_b - d->pad_t;
         *h = t + d->h;
     }
 }
