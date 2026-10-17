@@ -71,4 +71,17 @@ int sceRtcGetCurrentTick(unsigned long long *tick);
 void sceGuStart(int ctx, void *list, int size);
 int sceGuFinish(void);
 
+
+/* sceMpeg / UMD / async IO used by pmf_umd.c */
+int sceMpegRingbufferAvailableSize(void *rb);
+int sceMpegRingbufferPut(void *rb, int packets, int available);
+int sceKernelDelayThread(SceUInt us);
+int sceKernelExitThread(int status);
+int sceKernelWaitSemaCB(SceUID sema, int signal, SceUInt *timeout);
+int sceUmdCancelWaitDriveStat(void);
+int sceUmdWaitDriveStatCB(int stat, SceUInt timeout);
+int sceIoReadAsync(SceUID fd, void *data, SceSize size);
+int sceIoWaitAsyncCB(SceUID fd, long long *res);
+int sceKernelReferEventFlagStatus(SceUID evf, void *status);
+
 #endif
