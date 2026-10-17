@@ -157,6 +157,9 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Funções que repassam um argumento sem tocá-lo** (`snd_voice_free_one`): o original não carrega `$a1` antes do `j`, porque a função recebe o segundo parâmetro e o repassa. Escrever a chamada com uma constante gera um `move a1,zero` a mais.
 - **`r |= 1` vs `r = 1`**: `r = 0; if (bit) r |= 1; else r = 0x20;` gera `ori s0,s0,1`/`li s0,32` como no original (`snd_obj_status`).
 
+- **Globais `volatile`** (`snd_rand`): quando o original recarrega o mesmo global várias vezes na mesma expressão (`lw` repetidos sem store no meio), o estado foi declarado `volatile`. `return g = expr;` devolve o valor calculado sem recarregar o global.
+- **Outra toolchain dentro do BOOT**: os wrappers `__sceSas*` em 0x08862D28-0x088634C4 têm prólogo `addiu sp,-16; sw ra,0(sp)`, o código de erro `0x80420100` montado no delay slot e saltos `j` de volta ao epílogo, padrões que o mwccpsp não produz. Ficam em asm.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
