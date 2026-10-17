@@ -201,6 +201,16 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Posição do parâmetro `float`**: no EABI o `float` vai para `$f12` em qualquer posição, mas a posição na lista muda a ordem das cópias no prólogo (`tgma_apply` tem `t` por último).
 - **Ponteiro para subcampo** (`tgma_apply`): `unsigned int *ls = (unsigned int *)(layer + 0x18)` gera o `addiu a0,s2,24` no delay slot do `beqz` do original; acessar `layer + 0x18` e `layer + 0x1C` direto não.
 
+- **Rótulo compartilhado dentro do `switch`** (`snd_group_read_done`): o original testa 0, -1, -2 e põe o corpo de `case 0` antes do código comum; sai com `case -2: case -1: goto shared; case 0: data = …; shared: …`. Sem o `goto`, a ordem dos rótulos que dá os testes certos põe os corpos na ordem errada.
+- **Caminho de falha antes do sucesso** (`snd_group_load`): `if (f() == 0) { fail: … } else { …; goto fail; }` reproduz o original que testa o retorno, faz a limpeza em linha e volta a ela com `b` no fim do caminho de sucesso.
+- **Corpo inteiro dentro do teste e `return 0` no fim** (`snd_fader_update`): `if (a != b || n != 0) { …; return 1; } return 0;` gera o `beqzl … move v0,zero` direto para o epílogo; com `if (a == b && n == 0) return 0;` no começo sai `bnez` + `b`.
+- **`sqrtf` também é intrínseco** (vira `sqrt.s`): o BOOT chama a rotina VFPU em 0x0881D1A4, renomeada `sqrtf_vfpu`, como `abs` → `int_abs`.
+- **Laço que o compilador desenrola**: `for (i = 5; i >= 0; i--)` com 6 iterações sai desenrolado; o original mantém o laço, o que se obtém com `do { i--; …; } while (i >= 0);`.
+- **`abs` à mão**: `if (d < 0) d = -d; v += d;` gera `bgezl … addu` / `negu; addu`; o intrínseco `abs` gera `neg` em vez de `negu`.
+- **Campos acessados por ponteiro-base** (`snd_obj_3d`, `snd_slots_update`): quando o original carrega vários campos ou globais pelo mesmo registrador (`addiu a1,s5,52` e depois `0(a1)`, `16(a1)`, `24(a1)`), há uma sub-struct (`SndPos`) ou um bloco de globais (`snd_3d`, `snd_cur_slot`+`snd_slot_tab`) acessado por ponteiro.
+- **Matrizes locais em ordem inversa**: o mwccpsp põe a primeira declarada no endereço mais alto da pilha; `snd_obj_3d` declara `in, d, v, dir, n` para que fiquem em 112, 96, 80, 64, 48.
+- **Rotinas soft-float do GCC** (`fp-bit.c`) no BOOT: `__adddf3` 0x088180B8, `__subdf3` 0x08818120, `__muldf3` 0x08818194, `__divdf3` 0x0881850C, `__fixdfsi` 0x08818CA0, `__extendsfdf2` 0x088179A8, `__truncdfsf2` 0x08818DEC, `__muldi3` 0x08816C3C; são os nomes que o mwccpsp emite para `double` e `long long`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

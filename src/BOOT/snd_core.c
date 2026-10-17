@@ -139,7 +139,7 @@ unsigned int snd_obj_status(int handle)
     unsigned int r = 0;
 
     o = snd_obj_find(handle);
-    if (o != 0 && o->voice >= 0) {
+    if (o != 0 && o->index >= 0) {
         st = o->state;
         if (st & 0x2000)
             r |= 1;
@@ -283,7 +283,7 @@ int snd_obj_query(int handle, signed char dt)
 
 int snd_set_master_volume(int vol, int time)
 {
-    int old = snd_master.cur << 1;
+    int old = snd_master.target << 1;
     snd_fader_set(&snd_master, (short)((unsigned int)(vol * 0x8103) >> 8), time);
     return old;
 }
@@ -367,10 +367,10 @@ int snd_fx_setup(int type, int wet_l, int wet_r)
 
 #endif
 
-/* Public handle of an object: voice << 16 | id, with bit 29 set. */
+/* Public handle of an object: index << 16 | id, with bit 29 set. */
 unsigned int snd_obj_handle(SndObj *o)
 {
     if (o == 0)
         return 0;
-    return (o->voice << 16 | (unsigned short)o->id) | 0x20000000;
+    return (o->index << 16 | (unsigned short)o->id) | 0x20000000;
 }

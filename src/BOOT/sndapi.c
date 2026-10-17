@@ -51,7 +51,7 @@ extern unsigned char snd_bank_cfg[];    /* 0x088B7DE0 "SHDS" sound bank configur
 void *heap_create(void *mem, unsigned int size);
 void *heap_alloc(void *heap, int size);
 void heap_set_level(void *heap, void *p);
-void snd_group_cmd_sync(int cmd, int flag);
+void snd_group_release_all(int cmd, int flag);
 unsigned int snd_bank_offset();
 void snd_callbacks_default(SndCallbacks *cb);
 void snd_thread_start(void *cfg, SndCallbacks *cb);
@@ -59,8 +59,8 @@ void snd_bank_open_async(int a, int b);
 void snd_sas_init(int a, int b);
 void snd_set_channel_volume(int ch, int vol, int time);
 void snd_set_master_volume(int vol, int time);
-void bgm_fade_params(int a, int b, int c, int d);
-void bgm_cmd_sync(int x, int flag);
+void snd_group_load(int a, int b, int c, int d);
+void snd_group_release(int x, int flag);
 void bgm_start(int id, int id2, int pos, int loop, int flags);
 int se_play_pan(int id, int pan, int c);
 int snd_obj_base_id(int obj);
@@ -73,7 +73,7 @@ int snd_obj_set_volume();
 int snd_obj_query();
 int snd_obj_status();
 int snd_seq_entry();
-int snd_stream_read_done(void *obj, int a);
+int snd_group_read_done(void *obj, int a);
 void snd_set_volume(int ch, int vol);
 SysConfig *cfg_get(void);
 unsigned short charmap_lookup(int c, int flag);
@@ -136,13 +136,13 @@ unsigned short voice_tbl_c[10] = { 0x13E, 0x0, 0x1, 0x0, 0x141, 0x0, 0x2, 0x0, 0
 
 void snd_heap_set(void *heap)
 {
-    snd_group_cmd_sync(-0x105, 1);
+    snd_group_release_all(-0x105, 1);
     snd_heap = heap;
 }
 
 void snd_heap_reset(void)
 {
-    snd_group_cmd_sync(-0x105, 1);
+    snd_group_release_all(-0x105, 1);
     snd_heap = snd_heap_main;
 }
 
@@ -162,7 +162,7 @@ int snd_read_done_cb(void *arg, int result)
 {
     if (result <= 0)
         return 0;
-    snd_stream_read_done(arg, 0);
+    snd_group_read_done(arg, 0);
     return 1;
 }
 
@@ -266,22 +266,22 @@ int snd_is_muted(void)
 
 void bgm_fade(int x)
 {
-    bgm_fade_params(x, 0, x, 0);
+    snd_group_load(x, 0, x, 0);
 }
 
 void bgm_cmd3(int x)
 {
-    bgm_cmd_sync(x, 1);
+    snd_group_release(x, 1);
 }
 
 void snd_cmd_fefb(void)
 {
-    snd_group_cmd_sync(-0x105, 1);
+    snd_group_release_all(-0x105, 1);
 }
 
 void snd_cmd_fefa(void)
 {
-    snd_group_cmd_sync(-0x106, 1);
+    snd_group_release_all(-0x106, 1);
 }
 
 void bgm_play(int id)
