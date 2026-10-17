@@ -75,10 +75,11 @@ typedef struct SaveRec {               /* SysSave +0x4BF8, saved decks (sysstate
 
 typedef struct PlayerSlot {            /* GameState +0x120, 4 entries */
     unsigned short type;               /* 0 none, 1 player, <0x98 character id */
-    unsigned short pad2;
+    unsigned short type2;              /* character variant (voice table) */
     unsigned short deck_id;            /* recipe id; 0x15F..0x162 special */
     unsigned short rec_index;          /* saved deck index when deck_id == 0x160 */
-    unsigned char pad8[8];
+    unsigned int pad8;
+    int voice_obj;                     /* +0x0C sound object of the character's voices */
     unsigned short name[24];
     unsigned short deck_name[32];
     RecipeData recipe;
@@ -87,7 +88,9 @@ typedef struct PlayerSlot {            /* GameState +0x120, 4 entries */
 typedef struct GameState {             /* 0x08A76840, 0x740 */
     RecipeData deck;                   /* player's deck for the session */
     unsigned short extra[3];           /* +0x108 partner states or 4,4,4 */
-    unsigned char pad10e[0x120 - 0x10E];
+    unsigned char pad10e[0x11A - 0x10E];
+    unsigned char partner_mode;        /* +0x11A 2 = tag duel */
+    unsigned char pad11b[0x120 - 0x11B];
     PlayerSlot slot[4];
 } GameState;
 

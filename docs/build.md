@@ -146,6 +146,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Ordem de declaração dos locais decide a alocação de `$s`** quando os ranges de vida são equivalentes (`int h` antes de `line`/`v` em `calc_scroll`; `int y1, x1` em `draw_frame`); locais declarados num bloco interno não morrem para o alocador (`{ int x5 = x + 5; }` ainda é reaproveitado depois do bloco).
 - **Cópias mortas após `b??l`**: o original de `cardinfo_draw` mantém a primeira instrução do bloco destino (já copiada para o delay slot) em 8 blocos else/case, deixando instruções inalcançáveis; o mesmo fonte compilado hoje as remove. Em funções casadas isso só aparece em corpos de `switch` e no join de `if` sem else com `return` (`modmgr_update`, `duel_record_add`). Causa não identificada: `cardinfo_draw` fica em asm.
 
+- **Tamanho de tabelas `.data` vem do layout, não do conteúdo**: `voice_pairs` tem 0x17C bytes (47 registros de 8 + 4 de preenchimento); declarar `[47][4]` encolhe o objeto em 4 bytes e desloca todo o `.data` seguinte (o erro aparece como `.data (length)` e diffs em `.text` muito antes do arquivo). Medir o intervalo até o próximo símbolo.
+- **Ordem dos `case` com `default` compartilhado** (`savedata_params_init`): o corpo de `case 1: default:` aparece por último no código; escrevê-lo no meio da lista muda a tabela de saltos.
+- **Literais `.data` lidos por asm de outros arquivos** (`"DATA0"`, `snd_bank_cfg`) precisam virar arrays nomeados (ou símbolos em `symbols/`), senão o link falha com `D_xxxxxxxx` indefinido.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
