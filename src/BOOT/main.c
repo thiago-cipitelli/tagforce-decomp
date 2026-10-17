@@ -11,14 +11,14 @@
 #include "game.h"
 
 void movie_exit_cleanup(void);
-void hold_pool_create(void);
+void net_hold_create(void);
 int main_thread_init(void);
 int font_init(int);
 int font_set_layer(int);
 void dl_set_mode(int);
 void gfx_pool_init(void *, int, int, int, int);
 int snd_init(void);
-void frame_debug_update(void);
+void net_frame(void);
 void snd_channels_update(void);
 void snd_stream_update(void);
 void snd_channels_reset(void);
@@ -106,7 +106,7 @@ void main(void)
     SceUID cb;
 
     free(malloc(0x10));
-    hold_pool_create();
+    net_hold_create();
     sceUmdActivate(1, "disc0:");
     sceUmdWaitDriveStat(0x20);
     ehfile_build_lbn_table(0x10000);
@@ -128,7 +128,7 @@ void main(void)
         ehscript_yield_to(); /* run the scene for one frame */
         frame_tick();
         sys_state_update();
-        frame_debug_update();
+        net_frame();
         sys_frame_end();
         sys_check_reboot();
     }

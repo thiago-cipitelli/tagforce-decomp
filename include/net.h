@@ -56,6 +56,13 @@ typedef struct NetSession {            /* 0x08E20650 */
     unsigned int ev_pos;               /* +0x3A4 write offset in net_events */
 } NetSession;
 
+typedef struct SceNetAdhocctlAdhocId {
+    int type;
+    char product[9];
+    unsigned char pad[3];
+} SceNetAdhocctlAdhocId;
+
+extern SceNetAdhocctlAdhocId net_product; /* 0x088F07AC */
 extern NetPeer net_peers[9];           /* 0x08E2008C */
 extern NetSession net;                 /* 0x08E20650 */
 extern unsigned char net_events[0x10000]; /* 0x08E209F8 ring of 0xB0-byte slots: "mbox" + NetEvent */

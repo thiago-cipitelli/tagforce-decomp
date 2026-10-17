@@ -185,6 +185,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`x - K <= 3` e `x - K < 4`** (sem sinal) também escolhem registradores diferentes para o resultado do `sltiu` (`at` contra `v1`), como `> 10`/`>= 11`.
 - **Vetor endereçado direto no original**: o anel `net_events` (0x08E209F8) logo após `NetSession` é usado como `lui`/`addiu` próprio mais o deslocamento; como membro da struct, o compilador soma o deslocamento do campo ao endereço de `net`. Declarar como global separada.
 
+- **Retorno antecipado com valor** (`net_host`): `if (net_get_state() != 0xB) return 0; … return 1;` gera o `beql v0,K → corpo` com `b` + `move v0,zero` do original; `if (st == 0xB) { …; return 1; } return 0;` põe o corpo em linha. Em funções `void`, o `return;` antecipado não reproduz o mesmo leiaute (`net_toggle_pick` ficou em asm).
+- **Laços com ponteiro e índice** (`net_main.c`): a ordem das declarações escolhe os registradores `s` e a ordem no inicializador do `for` escolhe a ordem das instruções (`for (i = 0, p = net_peers; …)` gera `lui s0` / `move s1,zero` / `addiu s0`). `build/tmp/perm.py`-style: permutar as declarações até bater é mais rápido que raciocinar sobre o alocador.
+- **Funções-ponte de 8 bytes** (`j alvo; nop`): exports como `net_set_state` e `net_get_param_export` são `return alvo(args);` sem prólogo.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

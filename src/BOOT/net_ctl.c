@@ -12,7 +12,6 @@
 extern unsigned int netctl_flags;      /* 0x08E309F8 handler events, bit per event */
 extern int netctl_error;               /* 0x08E309FC */
 extern unsigned char ptp_buf[];        /* 0x08E30A00 int count, then 6-byte MACs */
-extern char net_product[];             /* 0x088F07AC SceNetAdhocctlAdhocId "ULJM05151" */
 extern unsigned char net_group[8];     /* 0x08E20084 group name / matching opt data */
 
 int netctl_handler_id = -1;
@@ -69,7 +68,7 @@ int ptp_flush(void);
 int ptp_accept(void);
 int ptp_update(void);
 
-static int (*const netconf_start[3])(void *) = { netconf_connect, netconf_create, netconf_join };
+static int (*const netconf_modes[3])(void *) = { netconf_connect, netconf_create, netconf_join };
 
 void netctl_reset(void)
 {
@@ -111,7 +110,7 @@ int netctl_init(void)
     int r;
 
     r = sceNetInit(0x20000, 0x28, 0, 0x28, 0);
-    if (r >= 0 && (r = sceNetAdhocInit()) >= 0 && (r = sceNetAdhocctlInit(0x1C00, 0x30, net_product)) >= 0) {
+    if (r >= 0 && (r = sceNetAdhocInit()) >= 0 && (r = sceNetAdhocctlInit(0x1C00, 0x30, &net_product)) >= 0) {
         netctl_reset();
         r = sceNetAdhocctlAddHandler(netctl_handler, 0);
         if (r >= 0) {
@@ -156,7 +155,7 @@ int netctl_scan(void)
 
 int netctl_connect(void)
 {
-    int r = netconf_start[0](0);
+    int r = netconf_modes[0](0);
 
     if (r < 0) {
         net_state_enter(-1);
@@ -265,9 +264,9 @@ int netctl_wait_disconnect(void)
             break;
         case 7:
             if (net.hello.role == 1) {
-                r = netconf_start[1](net_group);
+                r = netconf_modes[1](net_group);
             } else {
-                r = netconf_start[2](net_group);
+                r = netconf_modes[2](net_group);
             }
             if (r < 0) {
                 net_state_enter(0);

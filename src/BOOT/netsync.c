@@ -38,7 +38,7 @@ extern NetXfer netsync_xfer;                   /* 0x08E35910 */
 extern NetQueue netsync_q;                     /* 0x08E35920 */
 extern int netsync_q_delay;                    /* 0x08E35A2C */
 extern int netsync_send_size;                  /* 0x08E35A30 */
-extern unsigned int net_flags;                 /* 0x08E1FD90 */
+extern unsigned int net_frame_count;           /* 0x08E1FD90 */
 
 void *heap_create(void *mem, int size);
 void *heap_alloc(void *heap, int size);
@@ -107,7 +107,7 @@ int netsync_exchange(void)
     }
     self = peer_self_get();
     other = self ^ 1;
-    if (net_flags & 1) {
+    if (net_frame_count & 1) {
         memcpy(peer_records[self], local_record, 0x100);
         memcpy(mac, net.macs[other], 6);
         sceNetAdhocPdpSend(netsync_pdp, mac, 0x315, local_record, 0x100, 0, 1);
