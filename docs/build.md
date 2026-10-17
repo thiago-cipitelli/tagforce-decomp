@@ -9,7 +9,7 @@ Todos os 23 módulos (`BOOT` + 22 gmodules) são reconstruídos **byte a byte** 
 - Binário: `mwccpsp.exe` **3.0.1 build 219** (`tools/ext/mwccpsp_219/`, da coleção do decomp.me), executado com `wibo` 1.1.0. O `.comment` dos módulos diz "MW MIPS C Compiler (2.4.1.01)", mas esse texto é o do front-end e é igual em todos os builds 3.0.1; o build 219 gera código idêntico nas funções testadas e o build 121 não (4 palavras diferentes em `save_path_build`).
 - Flags confirmadas: **`-O4,p -sdatathreshold 0`**. `-O4,s` bate nas funções sem laço mas não em `ehfile_busy` (0x0882F468): com `,s` o laço indexa (`sll`+`addu`), com `,p` incrementa o ponteiro como no original. `-O2` não bate.
 - Include path: `-i include` (o `-I` do mwcc exige `-Ipath` sem espaço).
-- Strings literais vão para `.data` por padrão (o módulo original não tem `.rodata`); jump tables saem em `.rodata` do objeto e o linker original as fundia no `.data` logo após o `.data` do mesmo objeto. `tools/fix_ld.py` reproduz isso no script do splat.
+- Strings literais vão para `.data` por padrão (o módulo original não tem `.rodata`); jump tables saem em `.rodata` do objeto. Nos gmodules o linker original as fundia no `.data` logo após o `.data` do mesmo objeto (`fix_ld.py` reproduz isso por padrão). No BOOT todas as `.rodata` dos objetos vêm **antes** de todos os `.data` (região 0x08872F50–0x088EB0xx, 129 jump tables): o `.c` declara `// @rodata 0xA-0xB`, `splat_config.py` emite um subsegmento `.data` chamado `<arq>__rodata` e `fix_ld.py` o troca por `<arq>.c.o(.rodata)` naquela posição (`deck.c`).
 - Headers em `include/`: `psp.h` (protótipos sce* usados, tipos Sce*), `libc.h` (MSL), `ehfile.h` (tipos do subsistema). Sem headers da MSL no pacote: `sceIoLseek` é declarado devolvendo `int` porque o código original só testa `$v0`.
 - O mwcc emite **uma seção `.text` por função** e **uma `.data` por literal**; `mwcc_check.py` localiza a função pela seção do símbolo. Literais idênticos de um mesmo `.c` são unificados (o `""` do nome da thread e do FPL).
 
@@ -36,6 +36,11 @@ Cada item custou tentativas; vale consultar antes de brigar com uma função.
 - `f(x = g())` faz o argumento sair de `$v0` em vez do registrador da variável.
 - **Caudas idênticas são fundidas:** um `switch` em que cada `case` faz o mesmo store com índice diferente vira uma cadeia `beql` com o `addiu` no delay slot e um bloco comum, e os corpos originais ficam como código morto (`stat_event_record`, 616 B dos quais 264 mortos). Escrever `kind += N; break;` + store comum gera o código sem os blocos mortos (não bate).
 - Fallthrough entre `case`s não adjacentes no fonte: `goto` para um rótulo dentro do `case` seguinte (`ehscript_thread`, 3→5 com `case 4: break;` no meio) bate; mover o `case 4` muda a ordem dos testes.
+- **Registrador do resultado de comparação com constante:** `x < c`, `x > c` e `x <= c` saem em `$at` (`slti $at`); `x >= c` sai em um temporário (`slti $v0`/`$v1`). Semanticamente iguais, bytes diferentes: `if (n >= 5)` vs `if (n > 4)` (`deck_slot_set_level`), `do {} while (i <= 0x4A)` vs `< 0x4B` (`req_flags_any`), `if (v > 8000) … else …` vs `v >= 0x1F41` (`deck_slot_set_value`), `if (v >= 2) { … } return 0;` vs `if (v < 2) return 0;` (`value_to_tier`).
+- Tipo de retorno `int` em getters de `unsigned short`: o chamador original compara `$v0` direto (sem `andi 0xFFFF`) em `deck_slot_get_level`/`req_flag_get`; declarar o retorno `int` bate nos dois lados.
+- `p[i + 0x97D0]` com `unsigned char *p = (unsigned char *)s` gera `addu; lui 1; lbu -0x6830(...)`; `s->byte_97d0[i]` gera `addiu 0x7FFF; addiu 0x17D1` (`sysstate_get_byte_97d0`), mas no setter vizinho é o acesso por campo que bate (`sysstate_max_byte_97d0`).
+- Ordem das funções no objeto = ordem das **definições** no fonte (`static` usadas antes de definidas precisam de protótipo: `state_noop_*` ficam depois de `sys_state_set_default_callbacks`). `check_file.py` não detecta isso; só o `make check`.
+- Variável `unsigned short` ou `int` para laço com `lhu`: `int bestv` + indexação `d[i].value` bate em `deck_find_best_slot`; ponteiro incrementado troca `$a0`/`$a2`.
 - Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
 ## Pipeline
@@ -65,7 +70,8 @@ Hoje em asm: `stat_event_record` (0x0883E13C, blocos mortos), `day_threshold` (0
 ```c
 // @range 0x088044B8-0x08804508   ← vram coberto pelas funções deste arquivo (em ordem de endereço)
 // @asm   0x0883E13C-0x0883E3A4   ← função dentro da faixa que fica em asm (opcional, repetível)
-// @data  0x08808830-0x08808840   ← vram do .data que este arquivo gera (literais, jump tables); opcional, repetível
+// @data  0x08808830-0x08808840   ← vram do .data que este arquivo gera (literais); opcional, repetível
+// @rodata 0x08875598-0x08875600  ← vram das jump tables quando ficam longe dos literais (BOOT); opcional
 ```
 A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type:func matched src/<m>/arq.c`) para o asm restante referenciá-la.
 

@@ -91,6 +91,26 @@ typedef struct GameState {             /* 0x08A76840, 0x740 */
     PlayerSlot slot[4];
 } GameState;
 
+typedef struct DeckSlot {              /* SysSave +0x64, 160 entries indexed by character id */
+    unsigned short level;              /* 0..3 */
+    unsigned short count;              /* cards[] used, <= 6 */
+    unsigned short cards[6];
+    unsigned short value;              /* 0..8000 */
+} DeckSlot;                            /* 0x12 */
+
+typedef struct DeckName {              /* SysSave +0xBA4, 384 entries */
+    unsigned short set : 1;
+    unsigned short val : 8;
+    unsigned short pad : 7;
+} DeckName;
+
+typedef struct DeckCur {               /* SysSave +0x97EC */
+    unsigned short bit0 : 1;
+    unsigned short which : 3;
+    unsigned short val : 8;
+    unsigned short pad : 4;
+} DeckCur;
+
 typedef struct SysSave {               /* 0x08A66B98, 0xFCA4 bytes used (+4 pad in GameGlobals) */
     int version;                       /* +0x00 0x10002 */
     unsigned int flags;                /* +0x04 bit flags (sysflag_test/set) */
@@ -102,8 +122,8 @@ typedef struct SysSave {               /* 0x08A66B98, 0xFCA4 bytes used (+4 pad 
     int money;                         /* +0x54 0..999999999 */
     int money_total;                   /* +0x58 */
     SysConfig cfg;                     /* +0x5C */
-    unsigned char deck_slots[0xBA4 - 0x64]; /* +0x64 0x12-byte deck slot records */
-    unsigned char deck_names[0xEA4 - 0xBA4]; /* +0xBA4 */
+    DeckSlot deck_slots[160];          /* +0x64 */
+    DeckName deck_names[384];          /* +0xBA4 */
     DuelRecords records;               /* +0xEA4 */
     SaveExtra extra;                   /* +0x13C0 */
     unsigned char unk145c[0x1558 - 0x145C];
@@ -122,8 +142,9 @@ typedef struct SysSave {               /* 0x08A66B98, 0xFCA4 bytes used (+4 pad 
     unsigned char unk8d38[0x8FF0 - 0x8D38];
     FlagRec flagrec[48];               /* +0x8FF0 */
     unsigned char byte_97d0[0x18];     /* +0x97D0 */
-    unsigned int unk97e8;
-    unsigned char deck_cur[4];         /* +0x97EC */
+    int unk97e8;                       /* +0x97E8 max stage reached (sysflag_apply) */
+    DeckCur deck_cur;                  /* +0x97EC */
+    unsigned char pad97ee[2];
     unsigned char unk97f0[0xFCA8 - 0x97F0];
 } SysSave;
 
@@ -140,7 +161,7 @@ typedef struct GameGlobals {           /* 0x08A66A80 */
     void *loading_ehf;                 /* +0x024 "loading.ehf" from pack_loading */
     unsigned char info[0x8C];          /* +0x028 sys_info_get() */
     unsigned int frame_counter;        /* +0x0B4 */
-    unsigned int req_flags[24];        /* +0x0B8 */
+    unsigned char req_flags[0x60];     /* +0x0B8 */
     SysSave save;                      /* +0x118 */
     GameState game_state;              /* +0xFDC0 */
     unsigned char game_state2[0x2A0];  /* +0x10500 */
@@ -160,6 +181,13 @@ extern unsigned char pack_sysmsg[];     /* sysmsg_?.bin */
 
 SysSave *sysstate_get(void);
 FlagRec *flagrec_get(int id);
+DeckCur *deck_cur_get(void);
+DeckSlot *deck_slots_get(void);
+DeckName *deck_names_get(void);
+void sysflag_recs_init(void);
+SysConfig *cfg_get(void);
+int region_get(void);
+int cfg_get_language(void);
 SaveRec *sysstate_rec_get(int i);
 GameState *game_state_get(void);
 unsigned short *sysstate_get_name(void);

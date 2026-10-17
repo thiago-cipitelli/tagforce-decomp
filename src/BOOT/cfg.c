@@ -284,17 +284,17 @@ void gamestate_load(const void *src)
 }
 #endif
 
-unsigned char *deck_cur_get(void)
+DeckCur *deck_cur_get(void)
 {
-    return sysstate_get()->deck_cur;
+    return &sysstate_get()->deck_cur;
 }
 
-unsigned char *deck_slots_get(void)
+DeckSlot *deck_slots_get(void)
 {
     return sysstate_get()->deck_slots;
 }
 
-unsigned char *deck_names_get(void)
+DeckName *deck_names_get(void)
 {
     return sysstate_get()->deck_names;
 }
@@ -309,7 +309,7 @@ unsigned char *sysstate_get_ptr_97f0(void)
     return sysstate_get()->unk97f0;
 }
 
-unsigned int sysstate_get_u32_97e8(void)
+int sysstate_get_u32_97e8(void)
 {
     return sysstate_get()->unk97e8;
 }

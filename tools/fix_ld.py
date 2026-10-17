@@ -51,9 +51,10 @@ text = re.sub(r"(\S+\.c\.o)\(\.text\);", r"\1(.text .text.*);", text)
 def block(name):
     s = text.index(f"{name}_START = .;"); e = text.index(f"{name}_END = .;")
     return s, e
-ds, de = block("libhtml_view_DATA") if "libhtml_view_DATA_START" in text else block(re.search(r"(\w+)_DATA_START = \.;", text).group(1) + "_DATA")
+mod = re.search(r"(\w+)_TEXT_START = \.;", text).group(1)  # the module's own blocks, not header_DATA
+ds, de = block(mod + "_DATA")
 data_lines = [l for l in text[ds:de].splitlines()[1:] if l.strip()]
-rs, re_ = block(re.search(r"(\w+)_RODATA_START = \.;", text).group(1) + "_RODATA")
+rs, re_ = block(mod + "_RODATA")
 ro_lines = [l for l in text[rs:re_].splitlines()[1:] if l.strip()]
 def key(l):
     m = re.search(r"/([\w.]+)\.(c|s|bin)\.o\(", l)
@@ -61,9 +62,17 @@ def key(l):
     nm = nm.replace(".data", "")
     return order.get(nm, 10**9)
 merged = []
+has_rodata_range = {m.group(1) for m in re.finditer(r"/(\w+)__rodata\.c\.o\(\.data\)", text)}
 for l in sorted(data_lines, key=key):
+    rm = re.search(r"/(\w+)__rodata\.c\.o\(\.data\)", l)
+    if rm:  # @rodata placeholder -> the real object's .rodata at this position
+        merged.append(l.replace(f"{rm.group(1)}__rodata.c.o(.data)", f"{rm.group(1)}.c.o(.rodata)"))
+        ro_lines = [r for r in ro_lines if f"/{rm.group(1)}.c.o(.rodata)" not in r]
+        continue
     merged.append(l)
     m = re.search(r"/([\w.]+)\.c\.o\(\.data\)", l)
+    if m and m.group(1) in has_rodata_range:
+        continue
     if m:
         ro = [r for r in ro_lines if f"/{m.group(1)}.c.o(.rodata)" in r]
         merged += ro

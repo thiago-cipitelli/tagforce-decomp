@@ -35,6 +35,11 @@ for cf in sorted(glob.glob(f"src/{m}/*.c")):
         ranges.append((cur, b, cname))
     for md in re.finditer(r"//\s*@data\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src):
         dranges.append((int(md.group(1), 16), int(md.group(2), 16), os.path.basename(cf)[:-2]))
+    # `// @rodata 0xA-0xB`: the object's .rodata (jump tables, const arrays). The original linker put all
+    # .rodata inputs before all .data inputs inside .data, so it lands far from the file's literals; it is
+    # emitted as a `.data` subsegment named <file>__rodata and tools/fix_ld.py rewrites the linker line.
+    for md in re.finditer(r"//\s*@rodata\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src):
+        dranges.append((int(md.group(1), 16), int(md.group(2), 16), os.path.basename(cf)[:-2] + "__rodata"))
 ranges.sort(); dranges.sort()
 subs = []
 for n, s in alloc:
