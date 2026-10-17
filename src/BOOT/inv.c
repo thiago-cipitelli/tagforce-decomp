@@ -504,11 +504,11 @@ void sysstate_blob_set(const void *src)
     memcpy(s->blob, src, sizeof s->blob);
 }
 
-unsigned char *flagrec_get(int id)
+FlagRec *flagrec_get(int id)
 {
     SysSave *s = sysstate_get();
 
     if (id >= 0x30)
         return 0;
-    return s->flagrec[id];
+    return &s->flagrec[id];
 }

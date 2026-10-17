@@ -58,7 +58,7 @@ Correções automáticas no split (`tools/fix_asm.py`): formas VFPU que o psp-as
 
 O mwcc emite **uma seção `.text` por função**. `tools/rename_sections.py` (chamado pelo Makefile após cada compilação) renomeia cada uma para `.text.<função>`; assim o linker script pode colocar funções individualmente. Um `.c` declara `// @asm 0xA-0xB` para cada função da sua faixa que continua em asm: `splat_config.py` divide o segmento em `[c, arq] [asm, arq_asm_A] [c, arq] …` e `fix_ld.py` troca cada `arq.c.o(.text)` repetido pela lista `arq.c.o(.text.f1); arq.c.o(.text.f2); …` das funções daquela sub-faixa (pelos endereços em `symbols/`). Os demais objetos C recebem `(.text .text.*)`. A versão C da função fica no arquivo sob `#ifdef NON_MATCHING` para o port. `check_file.py` ignora as faixas `@asm`.
 
-Hoje em asm: `stat_event_record` (0x0883E13C, blocos mortos), `day_threshold` (0x0883EAB4, laço desenrolado pelo compilador; corpo bate, prólogo não), `day_calc` (0x0883ED7C, layout do `case 2`).
+Hoje em asm: `stat_event_record` (0x0883E13C, blocos mortos), `day_threshold` (0x0883EAB4, laço desenrolado pelo compilador; corpo bate, prólogo não), `day_calc` (0x0883ED7C, layout do `case 2`), `gamestate_load` (0x08840A78, só um temporário `$a1`/`$a0` difere).
 
 ## Convenção dos arquivos C
 
