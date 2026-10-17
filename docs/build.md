@@ -160,6 +160,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Globais `volatile`** (`snd_rand`): quando o original recarrega o mesmo global várias vezes na mesma expressão (`lw` repetidos sem store no meio), o estado foi declarado `volatile`. `return g = expr;` devolve o valor calculado sem recarregar o global.
 - **Outra toolchain dentro do BOOT**: os wrappers `__sceSas*` em 0x08862D28-0x088634C4 têm prólogo `addiu sp,-16; sw ra,0(sp)`, o código de erro `0x80420100` montado no delay slot e saltos `j` de volta ao epílogo, padrões que o mwccpsp não produz. Ficam em asm.
 
+- **Máquinas de estado do save-data (`msd.c`)**: os estados 0..11 e 96..99 de cada `msd_run_*` são um `switch` (cadeia de testes, sem tabela) e o status do utilitário é testado com `if (st == 4 || st == 1 || st == 2) break;` seguido de um `switch (st) { case 0: … case 3: … }`; o código de erro também é `switch` com os `case` explícitos antes de `default` (`case 0x8011032A: case 0x80110325: default:`), mesmo quando caem no mesmo corpo. `err = p->base[7] == 2 ? p->abort_status : p->base[7];` junta os dois caminhos antes da chamada seguinte (o `move a0,zero` fica num único delay slot); `err = …; if (err == 2) err = …;` duplica a preparação da chamada. Para o corpo fora de linha ser o do valor igual (`beqz x → B; A`), escrever `if (x != 0) A else B`.
+- **Argumento constante já num registrador**: `li a0,2; beql v1,a0` antes de uma chamada sem preparação visível de argumento indica que a chamada recebe a constante do teste (`sceUtilitySavedataUpdate(2)` depois de `msd_status == 2`); passar a variável (`msd_status`) não bate.
+- **Fim do `@data`**: uma global adjacente lida por código ainda em asm não pode ficar dentro do `@data` do arquivo C (o link falha com `undefined reference to D_<addr>`); `msd.c` termina em `0x088F07AC`, antes da palavra usada pela rede.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
