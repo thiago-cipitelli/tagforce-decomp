@@ -196,6 +196,11 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Faixas de `@asm` pelo próximo símbolo**: o tamanho que o `check_file.py` mostra é o da função compilada, não o do original; o fim da faixa é o endereço da função seguinte em `symbols/BOOT.txt`.
 - **Tabelas de `.data` precisam estar em `symbols/`**: o asm referencia o início de cada tabela por `D_<endereço>`; sem a linha `type:data`, o link falha com `undefined reference`.
 
+- **`switch` de duas fases** (`ehf_cam.c`): os comandos EHF testam `phase == 6` antes de `phase == 5` e põem o corpo de 5 primeiro; é `switch (phase) { case 5: …; case 6: …; }` (testes na ordem inversa dos rótulos, corpos na ordem do fonte).
+- **Vetor local com inicializador não constante** (`float *out[3] = { &a, &b, &c }`) gera o laço de zeragem byte a byte seguido das stores; `char fmt[] = "fff"` copia o modelo de `.data` byte a byte (ou em laço, a partir de 7 bytes).
+- **Posição do parâmetro `float`**: no EABI o `float` vai para `$f12` em qualquer posição, mas a posição na lista muda a ordem das cópias no prólogo (`tgma_apply` tem `t` por último).
+- **Ponteiro para subcampo** (`tgma_apply`): `unsigned int *ls = (unsigned int *)(layer + 0x18)` gera o `addiu a0,s2,24` no delay slot do `beqz` do original; acessar `layer + 0x18` e `layer + 0x1C` direto não.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
