@@ -189,6 +189,13 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Laços com ponteiro e índice** (`net_main.c`): a ordem das declarações escolhe os registradores `s` e a ordem no inicializador do `for` escolhe a ordem das instruções (`for (i = 0, p = net_peers; …)` gera `lui s0` / `move s1,zero` / `addiu s0`). Permutar as declarações (`tools/perm_decls.py`) até bater é mais rápido que raciocinar sobre o alocador.
 - **Funções-ponte de 8 bytes** (`j alvo; nop`): exports como `net_set_state` e `net_get_param_export` são `return alvo(args);` sem prólogo.
 
+- **`abs` é intrínseco** (`cardlist.c`): o mwccpsp expande `abs(x)` em linha; o original chama a função de 0x0880A5B4, renomeada `int_abs` em `symbols/BOOT.txt` para que a chamada saia como `jal`.
+- **Tamanho de struct local decide o quadro** (`card_draw_ehf_frame`): todos os deslocamentos de pilha errados pelo mesmo valor (8) indicam struct local menor que a do original; `EhfFrame` tem 0x68 bytes, não 0x60.
+- **Dados de função local**: o modelo de um vetor ou struct local inicializado (`unsigned short label[] = {'A','T','K','/',0}`), um `static` dentro da função e as strings L"…" saem em `.data` no ponto da função, na ordem do fonte; vetores `const unsigned short` globais vão para `.rodata` antes das tabelas de saltos. Um vetor local `= {0}` dentro de um laço gera laço de zeragem byte a byte.
+- **Função em asm que tinha dados locais**: ao mover para `@asm`, o modelo do vetor local some do `.o` e o `.data` encolhe. Defini-lo como global nomeada no mesmo ponto do fonte (`cardlist_pair_init`, 0x30 bytes, antes de `cardlist_draw_pair_at`) e em `symbols/`. O `check_file.py` não vê isso; só o `make check`.
+- **Faixas de `@asm` pelo próximo símbolo**: o tamanho que o `check_file.py` mostra é o da função compilada, não o do original; o fim da faixa é o endereço da função seguinte em `symbols/BOOT.txt`.
+- **Tabelas de `.data` precisam estar em `symbols/`**: o asm referencia o início de cada tabela por `D_<endereço>`; sem a linha `type:data`, o link falha com `undefined reference`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
