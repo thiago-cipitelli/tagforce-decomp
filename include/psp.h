@@ -57,5 +57,18 @@ int sceIoGetstat(const char *file, SceIoStat *stat);
 
 int sceUmdGetDriveStat(void);
 int sceUmdWaitDriveStat(int stat);
+int sceUmdActivate(int unit, const char *drive);
+
+typedef int (*SceKernelCallbackFunction)(int arg1, int arg2, void *arg);
+SceUID sceKernelCreateCallback(const char *name, SceKernelCallbackFunction func, void *arg);
+int sceKernelRegisterExitCallback(SceUID cb);
+int sceKernelExitGame(void);
+int sceKernelLoadExec(const char *file, void *param);
+int sceKernelChangeCurrentThreadAttr(SceUInt clear, SceUInt set);
+int sceRtcGetCurrentTick(unsigned long long *tick);
+
+/* libgu (statically linked) */
+void sceGuStart(int ctx, void *list, int size);
+int sceGuFinish(void);
 
 #endif

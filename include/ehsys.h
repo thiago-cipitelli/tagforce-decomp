@@ -14,11 +14,16 @@ int pad_init(void);
 int pad_update(void);
 
 /* sys_init configuration block (BOOT main passes 0x088EE288) */
+typedef struct HeapSpec {
+    void *addr;
+    unsigned int size;
+} HeapSpec;
+
 typedef struct SysInitCfg {
     const char **dirs;    /* +0x00 ehfile directory table */
     int modmgr_arg1;      /* +0x04 replaces -1 in the static module table */
     int modmgr_arg2;      /* +0x08 replaces -2 */
-    unsigned int heap[2]; /* +0x0C display-list heap {addr, size} */
+    HeapSpec dl_heap;     /* +0x0C display-list heap */
     int gfx_mode;         /* +0x14 */
     int fps;              /* +0x18 30 or 60 */
 } SysInitCfg;
@@ -88,7 +93,7 @@ void sys_frame_wait(void);       /* called by scenes once per frame */
 
 int gfx_init(int mode, int fps);
 int gfx_frame_end(void);
-int dl_init(unsigned int *heap);
+int dl_init(HeapSpec *heap);
 int dl_submit(void);
 void vram_init(void);
 

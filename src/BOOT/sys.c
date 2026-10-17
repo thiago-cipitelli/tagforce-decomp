@@ -174,7 +174,7 @@ int sys_init(SysInitCfg *cfg)
     gfx_init(cfg->gfx_mode, cfg->fps == 30 ? 30 : 60);
     ehfile_init(&cfg->dirs);
     modmgr_init(cfg->modmgr_arg1, cfg->modmgr_arg2);
-    dl_init(cfg->heap);
+    dl_init(&cfg->dl_heap);
     pad_init();
     vram_init();
     return 1;

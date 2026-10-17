@@ -2,7 +2,7 @@
 
 ## Resultado
 
-Todos os 23 módulos (`BOOT` + 22 gmodules) são reconstruídos **byte a byte** a partir do split do splat (`make check-all`). Código já em C compilado pelo compilador original e linkado no lugar exato: `libhtml_view` (2 funções) e, no `BOOT`, `src/BOOT/ehfile.c` (VFS, 29 funções, 0x0882ECAC–0x0882FC3C) `src/BOOT/modmgr.c` (gerenciador de módulos + espera de frame + menu de depuração, 19 funções, 0x08859044–0x08859824, com a tabela estática de módulos em `.data`) e `src/BOOT/sys.c` (thread de cenas `ehscript`, `sys_init`, pilha de estados, 17 funções, 0x0883CEB0–0x0883D708).
+Todos os 23 módulos (`BOOT` + 22 gmodules) são reconstruídos **byte a byte** a partir do split do splat (`make check-all`). Código já em C compilado pelo compilador original e linkado no lugar exato: `libhtml_view` (2 funções) e, no `BOOT`, `src/BOOT/ehfile.c` (VFS, 29 funções, 0x0882ECAC–0x0882FC3C) `src/BOOT/modmgr.c` (gerenciador de módulos + espera de frame + menu de depuração, 19 funções, 0x08859044–0x08859824, com a tabela estática de módulos em `.data`) `src/BOOT/sys.c` (thread de cenas `ehscript`, `sys_init`, pilha de estados, 17 funções, 0x0883CEB0–0x0883D708) e `src/BOOT/main.c` (`main`, laço de frame, reset, overlay de loading, acessores dos globais do jogo, 27 funções, 0x0883DD58–0x0883E670, com `dir_table`/`game_module_table`/`sys_config` em `.data`).
 
 ## Compilador
 
@@ -31,6 +31,10 @@ Cada item custou tentativas; vale consultar antes de brigar com uma função.
 - `return x` logo após `x = f()` reaproveita `$v0` (sem `move`): `if (id <= 0) return id;` bate onde `if (id > 0) {...} return id;` não.
 - Função que no original não escreve `$v0` antes de voltar é `void` (um `int f(void)` com `return 1;` muda a alocação de registradores mesmo onde o `li v0,1` some).
 - `asm { addi $v0, $ra, 0 }` dentro de uma função C reproduz instruções soltas do original (`ehscript_set_static` tem um `addi` sem efeito).
+- Comparação com constante: `x >= 0x20F580` bate onde `x > 0x20F57F` troca os registradores (`$at`).
+- Ordem de avaliação: `SysSave *s = sysstate_get(); s->flags |= 1 << bit;` carrega a máscara depois da chamada; `sysstate_get()->flags |= 1 << bit` calcula a máscara antes e a guarda em `$s0`.
+- `f(x = g())` faz o argumento sair de `$v0` em vez do registrador da variável.
+- **Caudas idênticas são fundidas:** um `switch` em que cada `case` faz o mesmo store com índice diferente vira uma cadeia `beql` com o `addiu` no delay slot e um bloco comum, e os corpos originais ficam como código morto (`stat_event_record`, 616 B dos quais 264 mortos). Escrever `kind += N; break;` + store comum gera o código sem os blocos mortos (não bate).
 - Fallthrough entre `case`s não adjacentes no fonte: `goto` para um rótulo dentro do `case` seguinte (`ehscript_thread`, 3→5 com `case 4: break;` no meio) bate; mover o `case 4` muda a ordem dos testes.
 - Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
