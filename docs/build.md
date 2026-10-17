@@ -46,6 +46,9 @@ Cada item custou tentativas; vale consultar antes de brigar com uma função.
 - `if (flag) { A } else { B }` gera `beql flag==0 → B` com A em sequência; a ordem dos ramos no fonte é a ordem no binário (`partner_table_lookup`).
 - Tabelas de dados inicializadas (`static T tab[N] = {...}`) saem uma seção `.data` por objeto, alinhadas a 4, na ordem das definições; `const` não é necessário (o original as tem em `.data`). As de `wstr.c` foram geradas a partir dos bytes do ELF.
 - `*p++ = *s++` em ramo `if/else` com `p++` duplicado nos dois ramos (`wcsncpy`): o original tem o `addiu p` em cada ramo, isto é, `if (*s == 0) { *p = 0; p++; } else { *p = *s; s++; p++; }`.
+- **Laços desenrolados ×8** (`wstr_reverse`, cópias e preenchimentos de `wsprintf`, `wfmt_float_digits`): são obra do `-O4,p`; um `for` simples reproduz o desenrolamento e o laço de resto. `s[n - i - 1]` (não `s[n - 1 - i]`) dobra o `-1` no offset do `lhu`.
+- **Varargs:** `include/stdarg.h` próprio. `va_start` = `__builtin_next_arg(parm) - ((__builtin_args_info(2) >= 8) ? 0 : (8 - __builtin_args_info(2)) * 4)` (não dobra a constante, como o original: `li v1,2; slti v0,v1,8 …`); `va_arg` avança o ponteiro (alinhando a 8 para `double`) e lê em `ap - sizeof`. `(float)double` chama `__truncdfsf2` (nomes libgcc no runtime da MSL). `(k >> 1) & 1` gera `ext` sem builtin.
+- `build/shape_diff.py SRC FUNC ADDR [--regs]`: diff estrutural ignorando nomes de registradores; útil para separar forma de alocação (`wsprintf`: forma igual, alocação diferente — fica em `@asm`).
 - Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
 ## Pipeline
