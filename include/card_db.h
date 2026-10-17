@@ -112,4 +112,48 @@ int card_is_in_group_16a3(int id);
 int card_is_in_group_160f(int id);
 int card_is_in_group_18be(int id);
 
+/* card_groups.c */
+int card_is_in_group_198c(int id);
+int card_is_in_group_1a6f(int id);
+int card_is_in_group_1a6f_b(int id);
+int card_is_in_group_1a6x(int id);
+int card_is_in_group_1946(int id);
+int card_is_in_group_1a2f(int id);
+int card_is_in_group_1973(int id);
+int card_is_in_group_19bf(int id);
+int card_is_in_group_19bb(int id);
+int card_is_in_group_18b2(int id);
+int card_is_in_group_18a4(int id);
+int card_is_in_group_183f(int id);
+int card_is_in_group_1a5c(int id);
+int card_is_1a5c_or_1a53(int id);
+int card_is_1a6c(int id);
+int card_is_in_group_1a75(int id);
+int card_is_in_group_1a90(int id);
+int card_is_in_group_1aad(int id);
+int card_is_in_group_1b2d(int id);
+int card_get_special_group(int id);
+int card_get_special_class(int id);
+int card_attribute_icon_in_2_3(int id);
+int card_is_group_b(int id);
+int card_is_group_c(int id);
+int card_is_in_group_1a58(int id);
+int card_not_in_group_1a6f(int id);
+int card_get_type_class(int id);
+int card_is_in_group_1909(int id);
+int card_get_group_value_1983(int id);
+int card_is_in_group_1983(int id);
+int card_is_in_group_1a0c(int id);
+int card_is_in_group_132b(int id);
+int card_is_in_group_1a60(int id);
+int card_is_in_group_1517(int id);
+int card_is_in_group_1872(int id);
+int card_not_in_group_1a53(int id);
+int card_is_in_group_17d2(int id);
+int card_is_in_group_147e(int id);
+int card_is_1a9f(int id);
+int card_is_in_group_17ae(int id);
+int card_id_remap_164a(int id);
+int card_id_remap_1a6c(int id, int *out);
+
 #endif
