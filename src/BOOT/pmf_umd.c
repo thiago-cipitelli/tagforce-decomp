@@ -5,25 +5,17 @@
    the read thread) and the "DvdUmdRetry*" wrappers that retry sceIo calls while the UMD is not
    ready. Also the codec module load/unload pairs used around a movie. */
 #include "psp.h"
+#include "movie.h"
 
-typedef struct PmfReader {    /* ring-buffer feeder state shared with the movie module */
-    int total;                /* +0 bytes to feed (file size) */
-    int state;                /* +4 0 idle, 1 running, 2 error, 3 done */
-    void *rb;                 /* +8 SceMpegRingbuffer */
-    void *evf;                /* +C owner object with the event flag */
-} PmfReader;
 
 int dbg_printf(const char *fmt, ...);
-int movie_evf_status(void *obj, unsigned int *out);
-void movie_evf_set(void *obj, int bits);
-int movie_read(void *file, void *buf, int size);
 int modmgr_load_by_id(int id);
 int modmgr_update(int id);
 
-int pmf_reader_attach(PmfReader *s, void *rb, void *evf)
+int pmf_reader_attach(PmfReader *s, void *rb, MovieCtrl *ctrl)
 {
     s->rb = rb;
-    s->evf = evf;
+    s->ctrl = ctrl;
     return 0;
 }
 
@@ -34,7 +26,7 @@ int pmf_reader_start(PmfReader *s, int total)
     return 0;
 }
 
-int pmf_reader_noop(void)
+int pmf_reader_term(void)
 {
     return 0;
 }
@@ -54,7 +46,7 @@ int pmf_reader_is_paused(PmfReader *s)
 {
     unsigned int st;
 
-    movie_evf_status(s->evf, &st);
+    movie_evf_status(s->ctrl, &st);
     return (st & 4) == 4;
 }
 
@@ -63,7 +55,7 @@ int pmf_reader_idle(PmfReader *s)
     unsigned int st;
     int n;
 
-    movie_evf_status(s->evf, &st);
+    movie_evf_status(s->ctrl, &st);
     if (pmf_reader_is_paused(s) == 1)
         return 1;
     n = pmf_reader_available(s);
@@ -77,13 +69,13 @@ int pmf_reader_available(PmfReader *s)
 
 int pmf_reader_signal_error(PmfReader *s)
 {
-    movie_evf_set(s->evf, 0xC00);
+    movie_evf_set(s->ctrl, 0xC00);
     return 0;
 }
 
 int pmf_reader_signal_done(PmfReader *s)
 {
-    movie_evf_set(s->evf, 4);
+    movie_evf_set(s->ctrl, 4);
     return 0;
 }
 
@@ -91,7 +83,7 @@ int pmf_reader_check_abort(PmfReader *s)
 {
     unsigned int st;
 
-    movie_evf_status(s->evf, &st);
+    movie_evf_status(s->ctrl, &st);
     if ((unsigned char)st == 0xFF)
         pmf_reader_set_state(s, 3);
     return 0;
@@ -259,7 +251,7 @@ int DvdUmdRetryReadCB(SceUID fd, void *buf, SceSize size)
 /* Reads whole 2 KB blocks; returns the block count, or -1 when a partial block came back. */
 int pmf_read_blocks(void *buf, int blocks, void *file)
 {
-    int n = movie_read(file, buf, blocks << 11);
+    int n = movie_read((MovieFile *)file, buf, blocks << 11);
 
     if (n < 0)
         return n;
@@ -293,10 +285,10 @@ int duel_modules_unload(void)
     return 0;
 }
 
-extern int cardview_a, cardview_b;
+extern unsigned int movie_mem_base, movie_mem_size;
 
-void cardview_set_ab(int a, int b)
+void movie_set_memory(unsigned int base, unsigned int size)
 {
-    cardview_a = a;
-    cardview_b = b;
+    movie_mem_base = base;
+    movie_mem_size = size;
 }

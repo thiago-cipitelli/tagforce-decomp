@@ -10,7 +10,7 @@
 #include "modmgr.h"
 #include "game.h"
 
-void on_exit_cleanup(void);
+void movie_exit_cleanup(void);
 void hold_pool_create(void);
 int main_thread_init(void);
 int font_init(int);
@@ -82,7 +82,7 @@ SysInitCfg sys_config = { dir_table, 1, 0, { dl_heap, 0x15C000 }, 0, 30 };
 
 static int exit_callback(int arg1, int arg2, void *common)
 {
-    on_exit_cleanup();
+    movie_exit_cleanup();
     sceKernelExitGame();
     return 0;
 }

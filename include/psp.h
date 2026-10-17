@@ -84,4 +84,50 @@ int sceIoReadAsync(SceUID fd, void *data, SceSize size);
 int sceIoWaitAsyncCB(SceUID fd, long long *res);
 int sceKernelReferEventFlagStatus(SceUID evf, void *status);
 
+
+/* movie.c (PSMF player) */
+int sceMpegInit(void);
+int sceMpegFinish(void);
+int sceMpegRingbufferQueryMemSize(int packets);
+int sceMpegRingbufferConstruct(void *rb, int packets, void *data, int size, int (*cb)(void *, int, void *), void *arg);
+int sceMpegRingbufferDestruct(void *rb);
+int sceMpegQueryMemSize(int mode);
+int sceMpegCreate(void *mpeg, void *data, int size, void *rb, int frame_width, int mode, int ddrtop);
+int sceMpegDelete(void *mpeg);
+void *sceMpegRegistStream(void *mpeg, int type, int num);
+int sceMpegUnRegistStream(void *mpeg, void *stream);
+void *sceMpegMallocAvcEsBuf(void *mpeg);
+int sceMpegFreeAvcEsBuf(void *mpeg, void *es);
+int sceMpegQueryStreamOffset(void *mpeg, void *buf, int *offset);
+int sceMpegQueryStreamSize(void *buf, int *size);
+int sceMpegInitAu(void *mpeg, void *es, void *au);
+int sceMpegQueryAtracEsSize(void *mpeg, int *es_size, int *out_size);
+int sceMpegGetAvcAu(void *mpeg, void *stream, void *au, int *attr);
+int sceMpegGetAtracAu(void *mpeg, void *stream, void *au, int *attr);
+int sceMpegAvcDecode(void *mpeg, void *au, int frame_width, void **buffer, int *got);
+int sceMpegAvcDecodeStop(void *mpeg, int frame_width, void **buffer, int *got);
+int sceMpegAtracDecode(void *mpeg, void *au, void *buffer, int init);
+int sceMpegFlushAllStream(void *mpeg);
+int sceMpeg_4571CC64(void *mpeg); /* sceMpegAvcDecodeFlush */
+int sceDisplaySetMode(int mode, int width, int height);
+int sceDisplaySetFrameBuf(void *top, int buffer_width, int format, int sync);
+float sceDisplayGetFramePerSec(void);
+SceUID sceKernelCreateEventFlag(const char *name, int attr, int bits, void *opt);
+int sceKernelDeleteEventFlag(SceUID evf);
+int sceKernelSetEventFlag(SceUID evf, unsigned int bits);
+int sceKernelClearEventFlag(SceUID evf, unsigned int bits);
+int sceKernelWaitEventFlag(SceUID evf, unsigned int bits, unsigned int wait, unsigned int *out, SceUInt *timeout);
+int sceCtrlReadBufferPositive(void *pad, int count);
+int sceCtrlSetSamplingMode(int mode);
+int sceDmacMemcpy(void *dst, const void *src, unsigned int size);
+SceUID sceIoOpenAsync(const char *file, int flags, int mode);
+int sceKernelPowerTick(int type);
+int sceKernelDelayThreadCB(SceUInt us);
+int sceKernelCheckCallback(void);
+int sceKernelChangeThreadPriority(SceUID thid, int prio);
+void *sceGeEdramGetAddr(void);
+int sceKernelWaitThreadEnd(SceUID thid, SceUInt *timeout);
+int sceKernelWaitThreadEndCB(SceUID thid, SceUInt *timeout);
+int sceKernelDeleteThread(SceUID thid);
+
 #endif
