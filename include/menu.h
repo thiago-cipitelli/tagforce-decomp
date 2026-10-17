@@ -131,3 +131,85 @@ void mem_swap(void *heap, void *a, void *b, int n);
 unsigned int color_lerp(float t, unsigned int a, unsigned int b);
 
 #endif
+
+/* ---- menu widget (menu_widget.c): a window with a list and/or OK/YES/NO/CANCEL buttons ---- */
+typedef struct MenuWidget MenuWidget;
+typedef void *(*MenuDrawItemFn)(void *dl, int index, int x, int y);
+typedef void *(*MenuDrawRectFn)(void *dl, int x, int y, int w, int h);
+typedef void *(*MenuDrawCursorFn)(void *dl, MenuWidget *w, int x, int y, int cw, int ch);
+
+struct MenuWidget {                    /* 0x120 */
+    Menu menu;                         /* +0x000 */
+    MenuItemDef def;                   /* +0x04C the window */
+    void *heap;                        /* +0x0C4 */
+    unsigned char no_input : 1;        /* +0x0C8 */
+    unsigned char no_cancel : 1;       /* cancel does not close */
+    unsigned char cancel_blocked : 1;  /* cancel only beeps */
+    unsigned char keep_open : 1;       /* stays open after accept/cancel */
+    unsigned char f0_4 : 1;
+    unsigned char cancel_resets : 1;   /* cancel returns to the initial cursor/button */
+    unsigned char accept_blocked : 1;
+    unsigned char wrap : 1;            /* list wraps around */
+    unsigned char skip_disabled : 1;   /* +0x0C9 */
+    unsigned char center : 1;
+    unsigned char keep_dl : 1;         /* menu_draw restarts the list at the saved position */
+    unsigned char style : 4;           /* 0 none, odd = horizontal list, even = vertical */
+    unsigned char f1_7 : 1;
+    unsigned char buttons : 4;         /* +0x0CA 0 none, 1 OK, 2 OK/CANCEL, 3 YES/NO, 4 YES/NO/CANCEL */
+    unsigned char f2_hi : 4;
+    unsigned char pad0cb;
+    unsigned short count;              /* +0x0CC list entries */
+    unsigned char rows;                /* +0x0CE visible entries, 0 = all */
+    unsigned char pad0cf;
+    unsigned short scroll;             /* +0x0D0 */
+    unsigned char cursor : 5;          /* +0x0D2 */
+    unsigned char pad0d2 : 3;
+    unsigned char button : 4;          /* +0x0D3 */
+    unsigned char pad0d3 : 4;
+    unsigned char initial;             /* +0x0D4 initial cursor / button */
+    unsigned char pad0d5[3];
+    unsigned int selected;             /* +0x0D8 bit per entry: drawn highlighted */
+    unsigned int disabled;             /* +0x0DC bit per entry */
+    short arrow_off;                   /* +0x0E0 */
+    short pad0e2;
+    void *icon_gim;                    /* +0x0E4 buttom_icon1.gim */
+    unsigned char cancelled : 1;       /* +0x0E8 */
+    unsigned char accepted : 1;
+    unsigned char pad0e8 : 6;
+    unsigned char state;               /* +0x0E9 0 idle, 1 opening, 2 open, 3 active, 4 blink, 5 closing, 6 closed */
+    unsigned char pad0ea[2];
+    int blink;                         /* +0x0EC */
+    unsigned short item_w;             /* +0x0F0 */
+    unsigned short item_h;             /* +0x0F2 */
+    unsigned short item_x;             /* +0x0F4 */
+    unsigned short item_y;             /* +0x0F6 */
+    unsigned short cursor_w;           /* +0x0F8 */
+    unsigned short cursor_h;           /* +0x0FA */
+    MenuDrawItemFn draw_item;          /* +0x0FC */
+    MenuDrawRectFn draw_all;           /* +0x100 replaces the whole content */
+    MenuDrawRectFn draw_before;        /* +0x104 */
+    MenuDrawRectFn draw_after;         /* +0x108 */
+    MenuDrawCursorFn draw_cursor;      /* +0x10C */
+    MenuDrawCursorFn draw_cursor_post; /* +0x110 */
+    MenuDrawCursorFn draw_selected;    /* +0x114 */
+    MenuDrawCursorFn draw_selected_post; /* +0x118 */
+    PadState *pad;                     /* +0x11C input override */
+};
+
+void menu_open(MenuWidget *w);
+void menu_draw(void **dl, MenuWidget *w);
+int menu_update(MenuWidget *w);
+void menu_set_button(MenuWidget *w, unsigned char b);
+void menu_set_cursor(MenuWidget *w, int index);
+void menu_finish(MenuWidget *w);
+void menu_reset(MenuWidget *w);
+void *menu_draw_button(void *dl, MenuWidget *w, int x, int y, int which, int lit);
+void *menu_draw_cursor(void *dl, MenuWidget *w, int x, int y, int cw, int ch);
+void menu_draw_selected(void *dl, MenuWidget *w, int x, int y, int cw, int ch);
+void menu_draw_box(void *dl, int x, int y, int w, int h);
+int menu_item_counter(MenuWidget *w);
+void menu_cursor_prev(MenuWidget *w);
+void menu_cursor_prev1(MenuWidget *w);
+void menu_cursor_next(MenuWidget *w);
+void menu_cursor_next1(MenuWidget *w);
+void *menu_draw_arrow(void *dl, int x, int y, int dir);
