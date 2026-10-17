@@ -173,7 +173,12 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Base em registrador para global ou buffer local** (`netsync.c`): `NetXfer *x = &netsync_xfer;` ou `unsigned char *p = pkt;` são dobrados pelo compilador em `lui` + deslocamento por acesso (ou `sp+N`), mesmo com várias escritas; o original guarda `lui`/`addiu` (ou `addiu s0,sp,16`) num registrador e usa deslocamentos. Passar o endereço por um cast de tipo (`(NetXfer *)(char *)&netsync_xfer`, `int pkt[0x40]` com `p = (unsigned char *)pkt`) impede a dobra e bate.
 - **Chamada sem argumento a função com parâmetro** (`peer_self_u32`): o original chama `peer_get()` sem passar `i`; reproduz-se com uma definição no estilo K&R (`unsigned char *peer_get(i) int i; { … }`) e protótipo sem parâmetros, o que permite a chamada vazia. Um cast para ponteiro de função gera `jalr`.
-- **`check_file.py` mascara os alvos de `jal`**: chamar a função errada com o mesmo protótipo (`memcmp` 0x0881133C em vez de `memcmp2` 0x0880DC98) passa no `check_file` e só aparece no `make check` (diferença em `.text` no endereço da chamada).
+- **`check_file.py` mascara os campos relocados** (alvos de `jal`, `%hi`/`%lo`): chamar a função errada com o mesmo protótipo (`memcmp` 0x0881133C em vez de `memcmp2` 0x0880DC98) ou apontar para o campo errado de uma global (`memset(&net.role, …)` em vez de `net + 4`) passa no `check_file` e só aparece no `make check`.
+
+- **`switch` reconhecido pela ordem dos testes** (`net_ctl.c`): cadeias de `x == K` sobre o estado são `switch` quando os testes saem na ordem inversa da dos corpos; `net_update` tem 16 rótulos em 9 corpos, escritos na ordem dos corpos e, dentro de cada grupo, na ordem inversa dos testes. Um `switch` de 0x14..0x1D com `case 0x1A: case 0x1B: break;` gera tabela só quando os `case` estão na ordem dos corpos do original (`case 0x1D` primeiro).
+- **`x == 5 || x == 6` vira teste de faixa** (`(x - 5) < 2`); o original testa os dois valores separadamente, o que se reproduz com `if (x != 5 && x != 6) { } else { … }`.
+- **Tempo de 64 bits**: `(unsigned long long)(sceKernelGetSystemTimeWide() - t) > 5000000` gera o par `subu`/`sltu` com teste da palavra alta por `bnez` do original; sem o cast o compilador testa a palavra alta com sinal (`bgtz`/`bltz`).
+- **`x > 10` e `x >= 11` não são equivalentes para o compilador**: um gera `slti at,…; bnez at`, o outro `slti v0,…; bnezl v0` (`net_update`); quando um não bate, testar o outro.
 
 ## Pendências
 

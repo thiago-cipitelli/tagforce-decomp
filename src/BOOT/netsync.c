@@ -8,6 +8,7 @@
 #include "psp.h"
 #include "libc.h"
 #include "game.h"
+#include "net.h"
 
 extern unsigned char peer_records[4][0x100];   /* 0x08E34BF0 */
 extern unsigned char local_record[0x100];      /* 0x08E34FF0 */
@@ -37,24 +38,12 @@ extern NetXfer netsync_xfer;                   /* 0x08E35910 */
 extern NetQueue netsync_q;                     /* 0x08E35920 */
 extern int netsync_q_delay;                    /* 0x08E35A2C */
 extern int netsync_send_size;                  /* 0x08E35A30 */
-/* ad hoc session (net module) */
 extern unsigned int net_flags;                 /* 0x08E1FD90 */
-extern unsigned char net_peers[][0xA4];        /* 0x08E2008C, MAC at +8 */
-extern int net_role;                           /* 0x08E206D4 1 = host */
-extern int net_peer_sel;                       /* 0x08E206EC */
-extern int peer_count;                         /* 0x08E20704 */
-extern int peer_self;                          /* 0x08E20708 own player index */
-typedef struct NetSession {            /* 0x08E20650; role, count and self above are fields too */
-    unsigned char pad0[0xC0];
-    unsigned char macs[4][6];          /* +0xC0 per player */
-} NetSession;
-extern NetSession net_sess;
 
 void *heap_create(void *mem, int size);
 void *heap_alloc(void *heap, int size);
 void heap_set_level(void *heap, void *p);
 int sysvar_get_a98(void);
-void net_fail(void);
 int memcmp2(const void *a, const void *b, int n);
 int sceNetGetLocalEtherAddr(unsigned char *mac);
 int sceNetAdhocPdpCreate(unsigned char *mac, unsigned short port, unsigned int bufsize, int unk);
@@ -79,11 +68,11 @@ int netsync_open(void)
 {
     netsync_pdp = -1;
     sceNetGetLocalEtherAddr(netsync_mac);
-    if (net_role == 1) {
+    if (net.role == 1) {
         netsync_is_host = 1;
     } else {
         netsync_is_host = 0;
-        memcpy(netsync_host_mac, net_peers[net_peer_sel] + 8, 6);
+        memcpy(netsync_host_mac, net_peers[net.peer_sel].mac, 6);
     }
     netsync_pdp = sceNetAdhocPdpCreate(netsync_mac, 0x315, 0x800, 0);
     memset(local_record, 0, 0x100);
@@ -120,7 +109,7 @@ int netsync_exchange(void)
     other = self ^ 1;
     if (net_flags & 1) {
         memcpy(peer_records[self], local_record, 0x100);
-        memcpy(mac, net_sess.macs[other], 6);
+        memcpy(mac, net.macs[other], 6);
         sceNetAdhocPdpSend(netsync_pdp, mac, 0x315, local_record, 0x100, 0, 1);
         netsync_dirty = 0;
     }
@@ -129,7 +118,7 @@ int netsync_exchange(void)
         if (sceNetAdhocPdpRecv(netsync_pdp, mac, &port, data, &len, 0, 1) == 0x80410709) {
             break;
         }
-        if (port == 0x315 && memcmp2(net_sess.macs[other], mac, 6) == 0) {
+        if (port == 0x315 && memcmp2(net.macs[other], mac, 6) == 0) {
             memcpy(peer_records[other], data, 0x100);
         }
     }
@@ -171,14 +160,14 @@ int netsync_exchange_queued(void)
     other = self ^ 1;
     netsync_queue_pop();
     memcpy(peer_records[self], local_record, netsync_send_size);
-    memcpy(mac, net_sess.macs[other], 6);
+    memcpy(mac, net.macs[other], 6);
     sceNetAdhocPdpSend(netsync_pdp, mac, 0x315, local_record, netsync_send_size, 0, 1);
     for (;;) {
         len = 0x100;
         if (sceNetAdhocPdpRecv(netsync_pdp, mac, &port, data, &len, 0, 1) == 0x80410709) {
             break;
         }
-        if (port == 0x315 && memcmp2(net_sess.macs[other], mac, 6) == 0) {
+        if (port == 0x315 && memcmp2(net.macs[other], mac, 6) == 0) {
             memcpy(peer_records[other], data, len);
         }
     }
@@ -263,12 +252,12 @@ void local_record_set_u32(int v)
 
 int peer_count_get(void)
 {
-    return peer_count;
+    return net.peer_count;
 }
 
 int peer_self_get(void)
 {
-    return peer_self;
+    return net.self;
 }
 
 /* 1 when every player's record has byte 0 == a, byte 1 == b (4: any), byte 2 == c (0xFF: any). */
