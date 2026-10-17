@@ -180,6 +180,11 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Tempo de 64 bits**: `(unsigned long long)(sceKernelGetSystemTimeWide() - t) > 5000000` gera o par `subu`/`sltu` com teste da palavra alta por `bnez` do original; sem o cast o compilador testa a palavra alta com sinal (`bgtz`/`bltz`).
 - **`x > 10` e `x >= 11` não são equivalentes para o compilador**: um gera `slti at,…; bnez at`, o outro `slti v0,…; bnezl v0` (`net_update`); quando um não bate, testar o outro.
 
+- **Rótulos vazios que criam a tabela de saltos** (`net_event_guest`/`net_event_host`): um `switch` sobre 0..10 com 6 casos usados vira cadeia de testes; o original tem tabela de 11 entradas, que se obtém acrescentando os valores restantes como `case 2: case 3: case 5: case 9: break;` (ou com `case 0:` quando a entrada 0 também vai para o fim).
+- **Atribuição dentro da condição** (`if ((i = net_peer_find(…)) >= 0)`): coloca o `move s0,v0` no delay slot do `bltz v0`; `i = f(); if (i >= 0)` testa `s0` depois do `move` e deixa um `nop`.
+- **`x - K <= 3` e `x - K < 4`** (sem sinal) também escolhem registradores diferentes para o resultado do `sltiu` (`at` contra `v1`), como `> 10`/`>= 11`.
+- **Vetor endereçado direto no original**: o anel `net_events` (0x08E209F8) logo após `NetSession` é usado como `lui`/`addiu` próprio mais o deslocamento; como membro da struct, o compilador soma o deslocamento do campo ao endereço de `net`. Declarar como global separada.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

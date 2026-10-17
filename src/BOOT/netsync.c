@@ -68,7 +68,7 @@ int netsync_open(void)
 {
     netsync_pdp = -1;
     sceNetGetLocalEtherAddr(netsync_mac);
-    if (net.role == 1) {
+    if (net.hello.role == 1) {
         netsync_is_host = 1;
     } else {
         netsync_is_host = 0;

@@ -4,25 +4,37 @@
 #ifndef NET_H
 #define NET_H
 
+typedef struct NetHello {              /* 0x94, our matching hello/opt data (net.hello) */
+    unsigned char name[0x80];          /* +0x00 */
+    int role;                          /* +0x80 1 host */
+    int guests;                        /* +0x84 joined guests (host) */
+    int max_peers;                     /* +0x88 */
+    unsigned char ver[6];              /* +0x8C */
+    unsigned short ver_id;             /* +0x92 */
+} NetHello;
+
 typedef struct NetPeer {               /* 0xA4, 9 at 0x08E2008C (matching targets) */
-    int state;                         /* +0x00 2 hello pending, 5 joined, 6 linked */
+    int state;                         /* +0x00 1 seen, 2 hello, 3 requested, 4 selected, 5 joined, 6 linked */
     int timeout;                       /* +0x04 */
     unsigned char mac[6];              /* +0x08 */
     unsigned char pad0e[2];
-    unsigned char info[0x30];          /* +0x10 hello/opt data */
-    unsigned char pad40[0xA2 - 0x40];
-    unsigned short tag;                /* +0xA2 */
+    NetHello hello;                    /* +0x10 */
 } NetPeer;
+
+typedef struct NetEvent {              /* 0xAC, queued to the event Mbx */
+    void *link;                        /* +0x00 SceKernelMsgPacket */
+    int unk04;
+    int event;                         /* +0x08 PSP_ADHOC_MATCHING_EVENT_* */
+    unsigned char mac[6];              /* +0x0C */
+    unsigned char pad12[2];
+    int optlen;                        /* +0x14 */
+    unsigned char opt[0x94];           /* +0x18 */
+} NetEvent;
 
 typedef struct NetSession {            /* 0x08E20650 */
     int state;                         /* +0x000 */
-    unsigned char pad004[0x84 - 0x04]; /* +0x004 (+0x004..+0x097 cleared by netctl_init) */
-    int role;                          /* +0x084 1 host */
-    int unk088;                        /* +0x088 */
-    int max_peers;                     /* +0x08C */
-    unsigned char ver[6];              /* +0x090 */
-    unsigned short ver_id;             /* +0x096 */
-    int unk098;                        /* +0x098 */
+    NetHello hello;                    /* +0x004 cleared by netctl_init */
+    NetHello *target;                  /* +0x098 hello of the joined host */
     int peer_sel;                      /* +0x09C */
     int unk0a0;                        /* +0x0A0 */
     int failed;                        /* +0x0A4 */
@@ -33,14 +45,20 @@ typedef struct NetSession {            /* 0x08E20650 */
     int self;                          /* +0x0B8 */
     int retry;                         /* +0x0BC */
     unsigned char macs[9][6];          /* +0x0C0 per player */
-    unsigned char pad0f6[0xFC - 0xF6];
+    unsigned char host_mac[6];         /* +0x0F6 */
     int ptp_peer;                      /* +0x0FC peer index of the PTP link */
     long long t_open;                  /* +0x100 */
     long long t_retry;                 /* +0x108 */
+    unsigned char dialog[0x244];       /* +0x110 SceUtilityMsgDialogParams */
+    unsigned char adhoc_conf[0xC];     /* +0x354 netconf adhoc param: group name, timeout */
+    unsigned char netconf[0x40];       /* +0x360 SceUtilityNetconfData */
+    int peers_seen;                    /* +0x3A0 */
+    unsigned int ev_pos;               /* +0x3A4 write offset in net_events */
 } NetSession;
 
 extern NetPeer net_peers[9];           /* 0x08E2008C */
 extern NetSession net;                 /* 0x08E20650 */
+extern unsigned char net_events[0x10000]; /* 0x08E209F8 ring of 0xB0-byte slots: "mbox" + NetEvent */
 
 void net_state_enter(int s);
 void net_fail(void);

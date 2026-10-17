@@ -116,8 +116,8 @@ int netctl_init(void)
         r = sceNetAdhocctlAddHandler(netctl_handler, 0);
         if (r >= 0) {
             netctl_handler_id = r;
-            memset(net.pad004, 0, 0x94);
-            net.max_peers = 9;
+            memset(&net.hello, 0, 0x94);
+            net.hello.max_peers = 9;
             return 0;
         }
     }
@@ -264,7 +264,7 @@ int netctl_wait_disconnect(void)
             net_finish();
             break;
         case 7:
-            if (net.role == 1) {
+            if (net.hello.role == 1) {
                 r = netconf_start[1](net_group);
             } else {
                 r = netconf_start[2](net_group);
