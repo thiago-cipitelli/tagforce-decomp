@@ -148,6 +148,19 @@ typedef struct SysSave {               /* 0x08A66B98, 0xFCA4 bytes used (+4 pad 
     unsigned char unk97f0[0xFCA8 - 0x97F0];
 } SysSave;
 
+typedef struct SceneTrans {            /* how the current scene was entered (scene_get_transition_info) */
+    unsigned short type;               /* 1 push, 2 pop, 3 reset */
+    unsigned short from;               /* scene id to return to on pop */
+    unsigned short scene;              /* module id, see scene_module_name */
+    unsigned short arg;
+} SceneTrans;
+
+typedef struct SceneStack {            /* g_game.info, 0x8C */
+    int count;
+    SceneTrans cur;
+    SceneTrans stack[16];
+} SceneStack;
+
 typedef struct GameGlobals {           /* 0x08A66A80 */
     unsigned int sysflags;             /* +0x000 */
     unsigned int rand_state;           /* +0x004 MSVC LCG */
