@@ -78,7 +78,8 @@ typedef struct PlayerSlot {            /* GameState +0x120, 4 entries */
     unsigned short type2;              /* character variant (voice table) */
     unsigned short deck_id;            /* recipe id; 0x15F..0x162 special */
     unsigned short rec_index;          /* saved deck index when deck_id == 0x160 */
-    unsigned int pad8;
+    unsigned short net_id;             /* +0x08 ad hoc player index */
+    unsigned short pad0a;
     int voice_obj;                     /* +0x0C sound object of the character's voices */
     unsigned short name[24];
     unsigned short deck_name[32];

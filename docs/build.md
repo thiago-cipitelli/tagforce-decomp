@@ -171,6 +171,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Gerador `rand3` embutido**: o código que embaralha os arquivos YGTF expande o LCG de `rand3_seeds[rand3_slot]` em linha (`*= 0x41C64E6D; += 0x3039; (s >> 16) & 0x7FFF`), com o resultado como `int` (o `%` usa `div`, não `divu`); a primeira chamada mascarada com `& 0x1FF` tem de ser escrita à parte (`(s >> 16) & 0x1FF`, um único `ext`). Trocar índices (`j = RAND3() % len; t = buf[j]; …`) bate; ponteiros (`a = buf + RAND3() % len`) mudam a alocação.
 - **`while (a && b)` com chamada no segundo teste**: `while (n < 256) { if (sceIoDread(…) <= 0) break; … }` reproduz o teste no topo mais o teste repetido no fim do original; `while (n < 256 && sceIoDread(…) > 0)` não.
 
+- **Base em registrador para global ou buffer local** (`netsync.c`): `NetXfer *x = &netsync_xfer;` ou `unsigned char *p = pkt;` são dobrados pelo compilador em `lui` + deslocamento por acesso (ou `sp+N`), mesmo com várias escritas; o original guarda `lui`/`addiu` (ou `addiu s0,sp,16`) num registrador e usa deslocamentos. Passar o endereço por um cast de tipo (`(NetXfer *)(char *)&netsync_xfer`, `int pkt[0x40]` com `p = (unsigned char *)pkt`) impede a dobra e bate.
+- **Chamada sem argumento a função com parâmetro** (`peer_self_u32`): o original chama `peer_get()` sem passar `i`; reproduz-se com uma definição no estilo K&R (`unsigned char *peer_get(i) int i; { … }`) e protótipo sem parâmetros, o que permite a chamada vazia. Um cast para ponteiro de função gera `jalr`.
+- **`check_file.py` mascara os alvos de `jal`**: chamar a função errada com o mesmo protótipo (`memcmp` 0x0881133C em vez de `memcmp2` 0x0880DC98) passa no `check_file` e só aparece no `make check` (diferença em `.text` no endereço da chamada).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
