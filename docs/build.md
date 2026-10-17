@@ -2,7 +2,7 @@
 
 ## Resultado
 
-Todos os 23 módulos (`BOOT` + 22 gmodules) são reconstruídos **byte a byte** a partir do split do splat (`make check-all`). Código já em C compilado pelo compilador original e linkado no lugar exato: `libhtml_view` (2 funções) e, no `BOOT`, o subsistema `ehfile` inteiro (`src/BOOT/ehfile.c`, 29 funções, 0x0882ECAC–0x0882FC3C).
+Todos os 23 módulos (`BOOT` + 22 gmodules) são reconstruídos **byte a byte** a partir do split do splat (`make check-all`). Código já em C compilado pelo compilador original e linkado no lugar exato: `libhtml_view` (2 funções) e, no `BOOT`, `src/BOOT/ehfile.c` (VFS, 29 funções, 0x0882ECAC–0x0882FC3C) e `src/BOOT/modmgr.c` (gerenciador de módulos + espera de frame + menu de depuração, 19 funções, 0x08859044–0x08859824, com a tabela estática de módulos em `.data`).
 
 ## Compilador
 
@@ -22,10 +22,13 @@ Cada item custou tentativas; vale consultar antes de brigar com uma função.
 - **Ordem de declaração dos locais** decide a atribuição de `$s0..$s7` e a posição na pilha (`ehfile_get_size`: `st, path, size`; `ehfile_build_lbn_table`: `pvd, ptab, ptab_size, ptab_lbn, fd`). `tools/perm_decls.py` testa todas as permutações contra os bytes originais.
 - **Stores a campos distintos são reordenados** pelo escalonador: a ordem no fonte que bate pode ser diferente da ordem dos `sw` (`names_end` antes de `table_end`/`table`).
 - **`if (x)` materializa booleano** (`sltu`/`xori`) quando `x` é um valor carregado; `== 0` em resultado de chamada vira `beqz` direto. `break`/`return` dentro de laço mudam o lado do desvio; `do { } while (cond)` com `break` reproduz os laços de retry.
-- **`switch` emite os testes em ordem inversa** à dos `case` e os corpos na ordem do fonte (`ehfile_thread`: `case 0` antes de `case 1`).
+- **`switch` emite os testes em ordem inversa à dos `case`** e os corpos na ordem do fonte (`ehfile_thread`: `case 0` antes de `case 1`; `modmgr_load_ex`: `case -1` escrito primeiro para ser testado por último). Um `if`/`else if` com dois valores também pode ser um `switch` no original (`modmgr_init`).
 - **Tail call:** `return f(...)` com os mesmos argumentos vira `j f` (os aliases de exportação `ehfile_*_alias`, `ehfile_close`).
 - **Acesso desalinhado:** struct com `#pragma pack(1)` gera `lwl/lwr` (registro de diretório ISO9660).
-- **`ins` nunca saiu de C** para `read_u32_before` (união de bitfields vai para a pilha, máscaras viram `and/or`). A função ficou como `asm` do mwcc (sintaxe `asm tipo f(args) { instruções }`) sob `#ifndef NON_MATCHING`, com a versão C ao lado.
+- **Intrínsecos Allegrex:** `max`/`min`/`ins`/`ext` (e `clz`, `seb`, `rotr`, `bitrev`, `sqrt_s`…) só saem de `__builtin_allegrex_*`; nenhuma forma em C puro gera essas instruções (união de bitfields vai para a pilha, `a > b ? a : b` vira `slt`/`beqzl`). `include/allegrex.h` define `ALLEGREX_MAX/MIN/INS/EXT` com fallback em C para o port. Lista completa: `strings mwccpsp.exe | grep __builtin_allegrex`. O mwcc também aceita funções `asm tipo f(args) { ... }` como último recurso.
+- Expressões booleanas: `!p` gera `sltu v0,zero,p; xori 1`; `p == 0` gera `xor; sltiu 1`. A ordem das instruções independentes no prólogo segue a ordem dos statements no fonte.
+- `*p++ = *q++` incrementa `q` antes de `p`; o original (`menu_count_lines`) tem `p++` antes de `q++`, isto é, foi escrito como `*p = *q; p++; q++;`.
+- `return x` logo após `x = f()` reaproveita `$v0` (sem `move`): `if (id <= 0) return id;` bate onde `if (id > 0) {...} return id;` não.
 - Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
 ## Pipeline

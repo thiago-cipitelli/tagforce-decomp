@@ -6,6 +6,7 @@
 #include "psp.h"
 #include "libc.h"
 #include "ehfile.h"
+#include "allegrex.h"
 
 #define SECTOR 0x800
 
@@ -278,27 +279,18 @@ int ehfile_is_gzip(const void *p)
 }
 
 /* Little-endian u32 ending at p+off: the gzip ISIZE trailer (uncompressed size) of a buffer of
-   `off` bytes. The original uses `ins`; mwccpsp never emitted it from any C form tried, so the
-   matching build keeps the 9 instructions as an asm function. */
-#ifdef NON_MATCHING
+   `off` bytes. The original builds it with the Allegrex `ins` intrinsic. */
 unsigned int read_u32_before(const unsigned char *p, int off)
 {
-    return p[off - 4] | (p[off - 3] << 8) | (p[off - 2] << 16) | (p[off - 1] << 24);
+    unsigned int v;
+
+    p += off;
+    v = p[-4];
+    v = ALLEGREX_INS(v, p[-3], 8, 8);
+    v = ALLEGREX_INS(v, p[-2], 16, 8);
+    v = ALLEGREX_INS(v, p[-1], 24, 8);
+    return v;
 }
-#else
-asm unsigned int read_u32_before(const unsigned char *p, int off)
-{
-    addu $v1, $a0, $a1
-    lbu  $v0, -4($v1)
-    lbu  $a1, -3($v1)
-    lbu  $a0, -2($v1)
-    ins  $v0, $a1, 8, 8
-    lbu  $v1, -1($v1)
-    ins  $v0, $a0, 16, 8
-    jr   $ra
-    ins  $v0, $v1, 24, 8
-}
-#endif
 
 int ehfile_busy(void)
 {

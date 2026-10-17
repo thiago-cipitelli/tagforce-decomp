@@ -32,6 +32,17 @@ int sceKernelSignalSema(SceUID sema, int signal);
 SceUID sceKernelCreateFpl(const char *name, int part, int attr, unsigned int size, unsigned int blocks, void *opt);
 int sceKernelAllocateFpl(SceUID fpl, void **data, unsigned int *timeout);
 SceUID sceKernelLoadModule(const char *path, int flags, void *opt);
+int sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status, void *opt);
+int sceKernelStopModule(SceUID modid, SceSize argsize, void *argp, int *status, void *opt);
+int sceKernelUnloadModule(SceUID modid);
+int sceKernelWakeupThread(SceUID thid);
+
+int sceUtilityLoadNetModule(int module);
+int sceUtilityUnloadNetModule(int module);
+int sceUtilityLoadAvModule(int module);
+int sceUtilityUnloadAvModule(int module);
+int sceUtilityLoadUsbModule(int module);
+int sceUtilityUnloadUsbModule(int module);
 
 SceUID sceIoOpen(const char *file, int flags, int mode);
 int sceIoClose(SceUID fd);
