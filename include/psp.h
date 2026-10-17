@@ -36,6 +36,11 @@ int sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status,
 int sceKernelStopModule(SceUID modid, SceSize argsize, void *argp, int *status, void *opt);
 int sceKernelUnloadModule(SceUID modid);
 int sceKernelWakeupThread(SceUID thid);
+int sceKernelSleepThread(void);
+int sceKernelSuspendThread(SceUID thid);
+int sceKernelResumeThread(SceUID thid);
+SceUID sceKernelGetThreadId(void);
+int sceKernelGetThreadCurrentPriority(void);
 
 int sceUtilityLoadNetModule(int module);
 int sceUtilityUnloadNetModule(int module);

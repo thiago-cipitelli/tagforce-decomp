@@ -29,8 +29,10 @@ segments:
       - [0x60, asm, text_0]
       - [0x2AD0C, c, ehfile]
       - [0x2BC9C, asm, text_1]
+      - [0x38F10, c, sys]
+      - [0x39768, asm, text_2]
       - [0x550A4, c, modmgr]
-      - [0x55884, asm, text_2]
+      - [0x55884, asm, text_3]
       - [0x6AD8C, asm, sceStub_text]
       - [0x6B61C, bin, lib_ent_top]
       - [0x6B620, bin, lib_ent]
@@ -44,8 +46,10 @@ segments:
       - [0x6EB38, data, data_0]
       - [0xE9960, .data, ehfile]
       - [0xE99B4, data, data_1]
+      - [0xEA104, .data, sys]
+      - [0xEA128, data, data_2]
       - [0xEC058, .data, modmgr]
-      - [0xEC144, data, data_2]
+      - [0xEC144, data, data_3]
       - { start: 0xECD20, type: bss, vram: 0x88F0CC0, name: bss }
   - [0xECD20]
 

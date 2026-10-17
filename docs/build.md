@@ -2,7 +2,7 @@
 
 ## Resultado
 
-Todos os 23 módulos (`BOOT` + 22 gmodules) são reconstruídos **byte a byte** a partir do split do splat (`make check-all`). Código já em C compilado pelo compilador original e linkado no lugar exato: `libhtml_view` (2 funções) e, no `BOOT`, `src/BOOT/ehfile.c` (VFS, 29 funções, 0x0882ECAC–0x0882FC3C) e `src/BOOT/modmgr.c` (gerenciador de módulos + espera de frame + menu de depuração, 19 funções, 0x08859044–0x08859824, com a tabela estática de módulos em `.data`).
+Todos os 23 módulos (`BOOT` + 22 gmodules) são reconstruídos **byte a byte** a partir do split do splat (`make check-all`). Código já em C compilado pelo compilador original e linkado no lugar exato: `libhtml_view` (2 funções) e, no `BOOT`, `src/BOOT/ehfile.c` (VFS, 29 funções, 0x0882ECAC–0x0882FC3C) `src/BOOT/modmgr.c` (gerenciador de módulos + espera de frame + menu de depuração, 19 funções, 0x08859044–0x08859824, com a tabela estática de módulos em `.data`) e `src/BOOT/sys.c` (thread de cenas `ehscript`, `sys_init`, pilha de estados, 17 funções, 0x0883CEB0–0x0883D708).
 
 ## Compilador
 
@@ -29,6 +29,9 @@ Cada item custou tentativas; vale consultar antes de brigar com uma função.
 - Expressões booleanas: `!p` gera `sltu v0,zero,p; xori 1`; `p == 0` gera `xor; sltiu 1`. A ordem das instruções independentes no prólogo segue a ordem dos statements no fonte.
 - `*p++ = *q++` incrementa `q` antes de `p`; o original (`menu_count_lines`) tem `p++` antes de `q++`, isto é, foi escrito como `*p = *q; p++; q++;`.
 - `return x` logo após `x = f()` reaproveita `$v0` (sem `move`): `if (id <= 0) return id;` bate onde `if (id > 0) {...} return id;` não.
+- Função que no original não escreve `$v0` antes de voltar é `void` (um `int f(void)` com `return 1;` muda a alocação de registradores mesmo onde o `li v0,1` some).
+- `asm { addi $v0, $ra, 0 }` dentro de uma função C reproduz instruções soltas do original (`ehscript_set_static` tem um `addi` sem efeito).
+- Fallthrough entre `case`s não adjacentes no fonte: `goto` para um rótulo dentro do `case` seguinte (`ehscript_thread`, 3→5 com `case 4: break;` no meio) bate; mover o `case 4` muda a ordem dos testes.
 - Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
 ## Pipeline
