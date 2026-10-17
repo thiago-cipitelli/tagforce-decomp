@@ -42,8 +42,8 @@ Cada fase tem um *entregável verificável*. Não avance de fase sem o entregáv
 | 0 | Infraestrutura de análise | ISO extraída, PRX convertidos em ELF estático, REA+Ghidra abrindo `BOOT.elf` | **concluída** (2026-10-16) |
 | 1 | Mapa do binário | `docs/architecture.md`, `docs/gmodules.md`, `symbols/*.txt` | **concluída** (2026-10-16): init, VFS, cenas, modmgr, gráficos; 680/680 funções da libehsys usadas por gmodules nomeadas (a maioria `inferred`, 30 com `[?]`); 66 globais do BOOT nomeadas; 22 gmodules classificados (cena / biblioteca de sub-tela importada por NID / biblioteca importada) com entrada, máquina de estados e dados. Pendente para fases seguintes: structs de estado por gmodule, 460 exports da libehsys que nenhum gmodule chama |
 | 2 | Formatos de dados | `tools/` lendo EHP, CIP, cardinfo, scripts, snd; `docs/formats.md` | **em andamento**: EHP, GIM, CIP/CPM e banco de cartas prontos e validados; faltam snd, scripts de história, ehf, efs, ydc |
-| 3 | Build reproduzível (matching) | `splat` + mwccpsp via wibo + Makefile; `libhtml_view` (21 KB) 100% matching como prova de pipeline | **concluída** (2026-10-16): `make MODULE=libhtml_view check` → MATCH; compilador = mwccpsp 3.0.1 build 219, `-O4,s -sdatathreshold 0`; 2 funções em C linkadas no lugar; ver `docs/build.md` |
-| 4 | Decompilação do código do jogo | `src/<módulo>/*.c` funcionalmente equivalentes, com matching nas partes críticas | a fazer |
+| 3 | Build reproduzível (matching) | `splat` + mwccpsp via wibo + Makefile; `libhtml_view` (21 KB) 100% matching como prova de pipeline | **concluída** (2026-10-16): `make MODULE=libhtml_view check` → MATCH; compilador = mwccpsp 3.0.1 build 219, `-O4,p -sdatathreshold 0`; pipeline estendido a todos os 23 módulos (`make check-all` → MATCH); ver `docs/build.md` |
+| 4 | Decompilação do código do jogo | `src/<módulo>/*.c` funcionalmente equivalentes, com matching nas partes críticas | **em andamento** (início 2026-10-16): BOOT `ehfile` (VFS, 29 funções, 3,9 KB) 100% matching em `src/BOOT/ehfile.c`; `make MODULE=BOOT check` → MATCH |
 | 5 | Camada de plataforma | `platform/psp` e `platform/pc` com a mesma API; jogo compila nos dois alvos | a fazer |
 | 6 | Port PC jogável | Menu → história → duelo completo rodando em PC com assets da ISO | a fazer |
 | 7 | Paridade e polimento | Vídeo PMF, áudio Atrac3+, save compatível, resolução/aspect, input | a fazer |
@@ -93,7 +93,7 @@ Ponto de partida: o repositório do TF5 já tem extrator EHP; o header aqui é o
 - **Python 3 (pyenv):** todas as ferramentas em `tools/`. Só stdlib + `pycdlib` (extração de ISO).
 - **Ghidra 12.1.3 + ghidra-allegrex v21.4:** análise estática. Instalado em `~/opt/ghidra_12.1.3_PUBLIC`, extensão em `Ghidra/Extensions/ghidra-allegrex`.
 - **REA (rea-agents 6.5.0, MCP):** interface do agente para o Ghidra. Registrado em `~/.claude.json` com `GHIDRA_INSTALL_DIR` e `JAVA_HOME` (JDK 21 via sdkman). Hopper está instalado mas **não suporta MIPS**; não usar.
-- **splat64 0.50.1 + spimdisasm + rabbitizer** no venv `.venv`; **wibo 1.1.0 + mwccpsp 3.0.1 build 219** em `tools/ext/` (gitignored); **pspdev v20261001** (`psp-as`, `psp-ld`) em `~/opt/pspdev`. Pipeline em `docs/build.md`: `make MODULE=<m> check`.
+- **splat64 0.50.1 + spimdisasm + rabbitizer** no venv `.venv`; **wibo 1.1.0 + mwccpsp 3.0.1 build 219** em `tools/ext/` (gitignored); **pspdev v20261001** (`psp-as`, `psp-ld`) em `~/opt/pspdev`. Pipeline em `docs/build.md`: `make MODULE=<m> check`, `make check-all`. Flags do compilador: `-O4,p -sdatathreshold 0 -i include`.
 - **PPSSPP:** executar e depurar o original e o build PSP (ainda não instalado).
 - **SDL2, OpenGL, ffmpeg, CMake:** port PC (fase 5+).
 
@@ -111,7 +111,7 @@ Ponto de partida: o repositório do TF5 já tem extrator EHP; o header aqui é o
   ```
 - **Analisar via REA:** `open_binary` com `path` absoluto de `build/elf/<módulo>.elf` e `provider_id: "ghidra"`. A primeira abertura de cada binário roda a auto-análise do Ghidra (1 a 3 min). Fechar com `close_binary` ao trocar de módulo.
 - **Testes:** cada ferramenta em `tools/` tem um sanity check executável; `prx2elf.py` é validado por: todos os `j/jal` do BOOT caírem dentro de `.text`, entry `0x08804000` começando com prólogo, e Ghidra reconhecendo ~1900 funções.
-- **Build (matching):** `make MODULE=libhtml_view check` (split → assemble/compile → link → compara seções com `build/elf/<m>.elf`). Função isolada: `tools/mwcc_check.py src/<m>/x.c func <m> 0xADDR`. Convenção dos `.c`: cabeçalho `// @range` e `// @data` (ver `docs/build.md`).
+- **Build (matching):** `make MODULE=BOOT check` (split → assemble/compile → link → compara seções com `build/elf/<m>.elf`). Arquivo inteiro: `tools/check_file.py <m> src/<m>/x.c`; função isolada: `tools/mwcc_check.py src/<m>/x.c func <m> 0xADDR`; variantes de fonte em massa: `tools/perm_decls.py`. Convenção dos `.c`: cabeçalho `// @range` e `// @data`; funções e globais nomeados em `symbols/<m>.txt` com `matched src/...` (ver `docs/build.md`, seção "O que o mwccpsp faz com o fonte").
 
 ---
 
@@ -132,9 +132,12 @@ Ponto de partida: o repositório do TF5 já tem extrator EHP; o header aqui é o
 | `extracted/` (gitignored) | Conteúdo da ISO. |
 | `docs/` | `architecture.md` (mapa do binário), `formats.md` (formatos de dados). |
 | `symbols/` | Nomes de funções/dados por módulo, formato splat. Fonte de verdade de nomenclatura. Em `symbols/<gmodule>.txt`, só edite acima do marcador `// --- generated imports below`. |
-| `src/` (a criar) | C reconstruído, um diretório por módulo original (`boot/`, `duel_eng/`, ...). |
+| `src/<módulo>/` | C reconstruído, um arquivo por subsistema do módulo original (`src/BOOT/ehfile.c`, ...). Cada arquivo cobre uma faixa contígua de código (`@range`). |
+| `include/` | `psp.h` (sce*), `libc.h` (MSL), um header por subsistema (`ehfile.h`). |
+| `tools/splat_config.py`, `tools/splat_symbols.py`, `tools/fix_ld.py`, `tools/fix_asm.py` | Geração da config do splat a partir do ELF, símbolos em formato estrito, correções do linker script e do asm (ver `docs/build.md`). |
+| `tools/mwcc.sh`, `tools/mwcc_check.py`, `tools/check_file.py`, `tools/perm_decls.py`, `tools/compare_sections.py`, `tools/diff_words.py` | Compilador original via wibo e verificação de matching por função, por arquivo, por seção. |
 | `platform/` (a criar) | `psp/` e `pc/` implementando a mesma API. |
-| `config/` (a criar) | Configs do splat por módulo. |
+| `config/` | Configs do splat por módulo, geradas por `tools/splat_config.py` (regenerar ao criar/alterar `@range`/`@data`). |
 
 ### Fatos do binário (não reinvestigar)
 

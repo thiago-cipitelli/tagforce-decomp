@@ -2,14 +2,31 @@
 
 ## Resultado
 
-`libhtml_view` é reconstruído **byte a byte** a partir do split do splat, com duas funções já em C compiladas pelo compilador original e linkadas no lugar exato (`make MODULE=libhtml_view check` → `MATCH` em todas as 13 seções carregáveis).
+Todos os 23 módulos (`BOOT` + 22 gmodules) são reconstruídos **byte a byte** a partir do split do splat (`make check-all`). Código já em C compilado pelo compilador original e linkado no lugar exato: `libhtml_view` (2 funções) e, no `BOOT`, o subsistema `ehfile` inteiro (`src/BOOT/ehfile.c`, 29 funções, 0x0882ECAC–0x0882FC3C).
 
 ## Compilador
 
 - Binário: `mwccpsp.exe` **3.0.1 build 219** (`tools/ext/mwccpsp_219/`, da coleção do decomp.me), executado com `wibo` 1.1.0. O `.comment` dos módulos diz "MW MIPS C Compiler (2.4.1.01)", mas esse texto é o do front-end e é igual em todos os builds 3.0.1; o build 219 gera código idêntico nas funções testadas e o build 121 não (4 palavras diferentes em `save_path_build`).
-- Flags confirmadas: `-O4,s -sdatathreshold 0`. `-O4,p` produz o mesmo código nas funções testadas até agora; a distinção ficará para uma função com laços. `-O2` não bate.
+- Flags confirmadas: **`-O4,p -sdatathreshold 0`**. `-O4,s` bate nas funções sem laço mas não em `ehfile_busy` (0x0882F468): com `,s` o laço indexa (`sll`+`addu`), com `,p` incrementa o ponteiro como no original. `-O2` não bate.
+- Include path: `-i include` (o `-I` do mwcc exige `-Ipath` sem espaço).
 - Strings literais vão para `.data` por padrão (o módulo original não tem `.rodata`); jump tables saem em `.rodata` do objeto e o linker original as fundia no `.data` logo após o `.data` do mesmo objeto. `tools/fix_ld.py` reproduz isso no script do splat.
-- Sem headers da MSL no pacote: os `.c` declaram protótipos próprios (`extern`), por enquanto.
+- Headers em `include/`: `psp.h` (protótipos sce* usados, tipos Sce*), `libc.h` (MSL), `ehfile.h` (tipos do subsistema). Sem headers da MSL no pacote: `sceIoLseek` é declarado devolvendo `int` porque o código original só testa `$v0`.
+- O mwcc emite **uma seção `.text` por função** e **uma `.data` por literal**; `mwcc_check.py` localiza a função pela seção do símbolo. Literais idênticos de um mesmo `.c` são unificados (o `""` do nome da thread e do FPL).
+
+## O que o mwccpsp faz com o fonte (aprendido no `ehfile`)
+
+Cada item custou tentativas; vale consultar antes de brigar com uma função.
+
+- **Base de struct em registrador salvo:** `EhfileState *s = &ehfile_state;` faz o compilador materializar `lui/addiu` em `$sN` e acessar `0x40C($s1)`; acesso direto `ehfile_state.campo` vira `lui/lw %lo(sym+off)`. O original mistura os dois estilos por função (ver `ehfile_read_async` vs `ehfile_init`).
+- **`T *const p = &g;`** impede a propagação da constante no primeiro acesso: só assim `ehfile_term` carrega `0x410($s0)` antes do primeiro `blezl`. Ponteiro simples dobra o primeiro acesso em `lui/lw` direto.
+- **Ordem de declaração dos locais** decide a atribuição de `$s0..$s7` e a posição na pilha (`ehfile_get_size`: `st, path, size`; `ehfile_build_lbn_table`: `pvd, ptab, ptab_size, ptab_lbn, fd`). `tools/perm_decls.py` testa todas as permutações contra os bytes originais.
+- **Stores a campos distintos são reordenados** pelo escalonador: a ordem no fonte que bate pode ser diferente da ordem dos `sw` (`names_end` antes de `table_end`/`table`).
+- **`if (x)` materializa booleano** (`sltu`/`xori`) quando `x` é um valor carregado; `== 0` em resultado de chamada vira `beqz` direto. `break`/`return` dentro de laço mudam o lado do desvio; `do { } while (cond)` com `break` reproduz os laços de retry.
+- **`switch` emite os testes em ordem inversa** à dos `case` e os corpos na ordem do fonte (`ehfile_thread`: `case 0` antes de `case 1`).
+- **Tail call:** `return f(...)` com os mesmos argumentos vira `j f` (os aliases de exportação `ehfile_*_alias`, `ehfile_close`).
+- **Acesso desalinhado:** struct com `#pragma pack(1)` gera `lwl/lwr` (registro de diretório ISO9660).
+- **`ins` nunca saiu de C** para `read_u32_before` (união de bitfields vai para a pilha, máscaras viram `and/or`). A função ficou como `asm` do mwcc (sintaxe `asm tipo f(args) { instruções }`) sob `#ifndef NON_MATCHING`, com a versão C ao lado.
+- Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
 ## Pipeline
 
@@ -24,7 +41,8 @@ build/elf/<m>.elf  (PRX relocado, tools/prx2elf.py)
    ▼  tools/compare_sections.py build/elf/<m>.elf build/<m>.rebuilt.elf   (compara cada seção pelo vram)
 ```
 
-Comandos: `make MODULE=libhtml_view check`, `make clean`. Verificação por função antes de integrar: `tools/mwcc_check.py SRC.c FUNC MODULE 0xADDR` (mascara campos relocados usando o `.rel.text` do objeto).
+Comandos: `make MODULE=BOOT check`, `make check-all` (todos os módulos), `make clean`. Verificação antes de integrar: `tools/check_file.py MODULE src/MODULE/x.c` (todas as funções do `@range`), `tools/mwcc_check.py SRC.c FUNC MODULE 0xADDR` (uma função, mostra as palavras diferentes), `tools/diff_words.py build/elf/M.elf build/M.rebuilt.elf .text` (depois do link). Desmontar o objeto compilado: `psp-objdump -dr build/x.check.o`.
+Correções automáticas no split (`tools/fix_asm.py`): formas VFPU que o psp-as rejeita (`vrot` com lista de rotação, `vpfxd` com máscara) e `.double`/`.dword` (o psp-as alinharia a 8 e deslocaria o `.data`) viram `.word` com os bytes originais.
 
 ## Convenção dos arquivos C
 
@@ -45,6 +63,5 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 ## Pendências
 
-- `-O4,s` vs `-O4,p`: achar função discriminante.
-- Headers: reconstruir um `include/` com protótipos da `libehsys` e tipos comuns em vez de `extern` por arquivo.
-- Estender `make` para BOOT (segmentos extras: `.rodata.sce*`, `.lib.*`) e para módulos com `e_entry` ≠ 0; o gerador de config já lê as seções do ELF, então deve ser direto.
+- `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
+- `include/` só tem o que o `ehfile` usa; crescer por subsistema.

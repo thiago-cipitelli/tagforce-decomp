@@ -5,7 +5,7 @@ AS      := $(PSPDEV)/bin/psp-as
 LD      := $(PSPDEV)/bin/psp-ld
 OBJCOPY := $(PSPDEV)/bin/psp-objcopy
 MWCC    := tools/mwcc.sh
-MWCC_FLAGS ?= -O4,s -sdatathreshold 0
+MWCC_FLAGS ?= -O4,p -sdatathreshold 0 -i include
 ASFLAGS := -march=allegrex -mabi=eabi -EL -I include -I asm/$(MODULE)
 SPLAT   := .venv/bin/splat
 

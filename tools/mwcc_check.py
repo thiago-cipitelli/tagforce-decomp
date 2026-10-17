@@ -27,33 +27,34 @@ def elf_sections(d):
 
 
 def object_function(obj, func):
+    """mwcc emits one .text section per function: locate the function's section through its symbol
+    and the REL section whose sh_info points at it."""
     d = open(obj, "rb").read()
     by, secs = elf_sections(d)
     symtab, strtab = by[".symtab"], by[".strtab"]
-    text_idx = secs.index(by[".text"])
     for i in range(symtab[5] // 16):
         name, value, size, info, other, shndx = struct.unpack_from("<IIIBBH", d, symtab[4] + i * 16)
         nm = d[strtab[4] + name:d.index(b"\0", strtab[4] + name)].decode()
-        if nm == func and shndx == text_idx:
+        if nm == func and info & 0xF == 2:  # STT_FUNC
             break
     else:
         raise SystemExit(f"{func}: not found in {obj}")
-    text = by[".text"]
+    text = secs[shndx]
     code = d[text[4] + value:text[4] + value + size]
     relocs = {}
-    rel = by.get(".rel.text")
-    if rel:
-        for j in range(rel[4], rel[4] + rel[5], 8):
-            off, info = struct.unpack_from("<II", d, j)
-            if value <= off < value + size:
-                relocs[off - value] = info & 0xFF
+    for rel in secs:
+        if rel[1] == 9 and rel[7] == shndx:  # SHT_REL targeting the function's section
+            for j in range(rel[4], rel[4] + rel[5], 8):
+                off, info = struct.unpack_from("<II", d, j)
+                if value <= off < value + size:
+                    relocs[off - value] = info & 0xFF
     return code, relocs
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("src"); ap.add_argument("func"); ap.add_argument("module"); ap.add_argument("addr")
-    ap.add_argument("--flags", default="-O4,s -sdatathreshold 0"); ap.add_argument("--build", default=os.environ.get("MWCC_BUILD", "219"))
+    ap.add_argument("--flags", default="-O4,p -sdatathreshold 0 -i include"); ap.add_argument("--build", default=os.environ.get("MWCC_BUILD", "219"))
     ap.add_argument("--size", type=int, default=0)
     a = ap.parse_args()
     obj = os.path.join("build", os.path.basename(a.src)[:-2] + f".{a.build}.o")
