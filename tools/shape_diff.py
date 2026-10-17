@@ -25,6 +25,7 @@ def dis(b, path):
             ins = re.sub(r"\b(zero|at|v[01]|a[0-3]|t[0-9]|s[0-8]|fp|gp|sp|ra|k[01])\b", "R", ins)
             ins = re.sub(r"\$f\d+", "F", ins)
             ins = re.sub(r"0x[0-9a-f]+ <[^>]*>", "TGT", ins)  # branch targets
+            ins = re.sub(r"^(jal|j)\s+0x[0-9a-f]+", r"\1 TGT", ins)  # call targets (relocs differ)
         lines.append(f"{int(m.group(1),16):4x}: {ins}")
     return lines
 a, b = dis(want, "build/tmp/shape_orig.bin"), dis(code, "build/tmp/shape_new.bin")

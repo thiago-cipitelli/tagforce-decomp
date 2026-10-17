@@ -60,12 +60,12 @@ int menu_add_item(Menu *m, MenuItemDef *def)
         return 0;
     }
     memset(it, 0, sizeof(MenuItem));
-    it->unk00 = 0;
-    it->unk04 = 0;
-    it->unkAC = 0;
+    it->verts = 0;
+    it->nverts = 0;
+    it->nverts2 = 0;
     it->def = def;
     it->state = 0;
-    it->unkA0 = 0;
+    it->counter = 0;
     dl = dl_select_layer(4, 0);
     menu_item_build(&dl, it, m);
     dl_set_list(dl);
@@ -94,7 +94,7 @@ void menu_free_items(Menu *m)
 /* Structure matches (register-agnostic diff: 198 = 198 instructions); mwcc assigns the loop
    temporaries to other registers (i->a0, k->v1 in the original). Kept in asm. */
 /* Builds every item in ascending def->order (insertion sort into a local index list). */
-void menu_layout(void *dl, Menu *m)
+void menu_layout(void **dl, Menu *m)
 {
     int order[16];
     int count = 0;
@@ -144,7 +144,7 @@ int menu_item_open(Menu *m, MenuItemDef *def)
     if (i != -1) {
         it = m->items[i];
         it->state = 1;
-        it->unkA0 = 0;
+        it->counter = 0;
         return 1;
     }
     return 0;
@@ -158,7 +158,7 @@ int menu_item_close(Menu *m, MenuItemDef *def)
     if (i != -1) {
         it = m->items[i];
         it->state = 3;
-        it->unkA0 = 0;
+        it->counter = 0;
         return 1;
     }
     return 0;

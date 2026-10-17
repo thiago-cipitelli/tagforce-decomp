@@ -54,6 +54,9 @@ Cada item custou tentativas; vale consultar antes de brigar com uma função.
 - Getters com índice: `if (i != -1) { ...; return 1; } return 0;` bate (`beql i == -1 → fim` com o `0` no delay slot); `if (i == -1) return 0;` não (`menu_item_open`, `menu_remove_item`, `menu_item_state`).
 - Constantes `const` globais e strings de `const char []` vão para `.rodata` (uma seção por objeto): no BOOT ficam na região de rodata (0x08875600…), longe dos literais do TU; `menu.c` as usa como `extern const` definidas pelo asm de dados (símbolos `type:data` em `symbols/`).
 - **Alocação de registradores em funções grandes:** `wsprintf`, `menu_layout` e `menu_item_is_open` têm a forma exata (diff estrutural igual) mas registradores/`$fp`/layout de pilha diferentes; ficam em `@asm` com o C sob `NON_MATCHING`. Não vale insistir: o objetivo é o port.
+- **Chamadas com menos argumentos que o protótipo** no original (`gim_set_texture(*dl)` em `menu_item_build_text`): declarar a função sem protótipo (`void *gim_set_texture();`) e chamar como o original. Já `mem_swap(heap, a, b)` com 3 argumentos era ilusão do Ghidra: o `li a3, 2` estava içado e reaproveitado na comparação `flip == 2` (`menu_sprite`); passar `2` bate.
+- Parâmetros `short` geram `seh` no prólogo (normalização); se o original não tem `seh`, o parâmetro é `int` (`menu_sprite`). `uvoff[0] + (p->x + p->w)` reproduz a ordem dos `addu`.
+- Jump tables de funções mantidas em `@asm` ficam no asm de dados; o `@rodata` do `.c` só cobre as tabelas das funções em C (`menu_draw.c`: 0x08875718-0x08875734, sem o padding até 0x08875740).
 - Divisão com sinal por potência de 2 (`(int)x / 0x800`) gera o ajuste `bgez`/`addiu 0x7FF`/`sra`; ponteiros subtraídos como `(unsigned)a - (unsigned)b` dão `srl`, como `LbnEntry *` dão o ajuste com sinal.
 
 ## Pipeline
