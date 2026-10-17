@@ -1346,11 +1346,11 @@ ehfile_read_sync = 0x08859174; // type:func export matched src/BOOT/modmgr.c nid
 modmgr_load_by_id = 0x0885937C; // type:func matched src/BOOT/modmgr.c export inferred (id) -> 08859394(id,0,0,&DAT_08be9f70,0) nid:96BC2DC8
 modmgr_load_ex = 0x08859394; // type:func matched src/BOOT/modmgr.c export inferred (id, a, b, cb, d) nid:597CDADD
 modmgr_none_loading = 0x088594D0; // type:func matched src/BOOT/modmgr.c export inferred true if no registry entry in state 1 nid:4E8B47D4
-fade_start = 0x08859824; // type:func export inferred (type,arg,frames) struct DAT_08bea43c nid:D470D0B2
-fade_start_in = 0x088598D8; // type:func export inferred same + flag 1 nid:5998BFD7
-fade_is_active = 0x0885998C; // type:func export inferred counter<duration nid:450CD6C5
-fade_finish = 0x088599A4; // type:func export inferred nid:C721E899
-fade_apply = 0x088599D4; // type:func export inferred (color*) computes fade color by type nid:878EE1D3
+fade_start = 0x08859824; // type:func matched src/BOOT/fade.c export (type, color, frames) fade out nid:D470D0B2
+fade_start_in = 0x088598D8; // type:func matched src/BOOT/fade.c export same with in = 1 nid:5998BFD7
+fade_is_done = 0x0885998C; // type:func matched src/BOOT/fade.c export duration < counter nid:450CD6C5
+fade_finish = 0x088599A4; // type:func matched src/BOOT/fade.c export counter = duration + 1 nid:C721E899
+fade_apply = 0x088599D4; // type:func matched src/BOOT/fade.c export (list**) draws the step, returns 1 when over nid:878EE1D3
 cardinfo_open = 0x08859DF0; // type:func export inferred (card_id, a, b) DAT_08bea44c, fade_start(1,black,16) nid:50D6F57B
 cardinfo_update = 0x08859E98; // type:func export inferred 780B nid:B779C0DF
 cardinfo_draw = 0x0885A1A4; // type:func export inferred 3 KB nid:C1F72EF5
@@ -1821,3 +1821,9 @@ cip_is_cpm = 0x0885488C; // type:func matched src/BOOT/cip.c
 cip_draw = 0x088548A4; // type:func matched src/BOOT/cip.c
 cip_names_h = 0x088EF3C0; // type:data size:0x18 matched src/BOOT/cip.c
 cip_names_m = 0x088EF450; // type:data size:0x18 matched src/BOOT/cip.c
+rand3_slot = 0x08905108; // type:data size:0x4 index into rand3_seeds (effects module 0x0882684c.., fade_apply)
+rand3_seeds = 0x088EDFD4; // type:data size:0xC0 16 x 3 LCG seeds (0x41C64E6D, 0x15A4E35, 0x343FD) used by the effects module; fade_apply zeroes [slot][0]
+fade_begin = 0x08859C38; // type:func matched src/BOOT/fade.c
+fade_end = 0x08859CA4; // type:func matched src/BOOT/fade.c
+fade_fill = 0x08859CDC; // type:func matched src/BOOT/fade.c
+fade_wipe_line = 0x08859D4C; // type:func matched src/BOOT/fade.c

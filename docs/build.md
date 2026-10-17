@@ -132,6 +132,12 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`if (!c->busy) { ... }` antes de um `return` final** gera `bnezl busy,END; move v0,X` (salto direto ao epílogo); `if (c->busy) return X;` gera o padrão "salta por cima". Mesma lógica, código diferente.
 - **Ordem de instruções segue a ordem de avaliação do fonte**: `buf = slots + (next * chunks) << 11; next++;` vs `i = next++; buf = ...` (`cip_alloc_slot`); `base = ...; nread = ...;` troca `$t0`/`$t1` (`cip_prefetch_cb`); `(unsigned char *)c + size + 0xAC` vs `(unsigned char *)&c->hdr + size` troca os operandos do `addu` (`cip_header_ready`); `idx = id - c->hdr.first_id;` antes de `cip_table(c)` deixa o `subu` no delay slot do `jal` e carrega `first_id` antes da chamada.
 
+- **`min`/`max`/`ext`/`ins` do Allegrex só saem por intrínseco**: `if (a < b) b = a`, `?:` e variantes com `unsigned short` nunca viram `min`; `__builtin_allegrex_min(a, b)` (macro `ALLEGREX_MIN` em `include/allegrex.h`, com fallback em C para o port) gera a instrução (`fade_apply`). `(x >> 24) & 0xFF` vira `ext` sem intrínseco.
+- **Loads de globais não são reaproveitados depois de um join**: em `fade_apply` o `duration` lido para o `min` é reusado no `t = duration - t` (mesmo bloco estendido) mas recarregado para a divisão após o `if`; um local `int dur = fade_state.duration` mantém o valor em registrador e quebra o matching. Usar o global diretamente onde o original recarrega.
+- **Ordem dos operandos de `|`, `<`, `addu`** segue o fonte: `rgb | (a << 24)` vs `(a << 24) | rgb` troca os operandos do `or`; `counter > duration` carrega `counter` primeiro, `duration < counter` carrega `duration` primeiro (mesmo `slt`). `if (x1 <= x0) return` vs `if (x0 >= x1)` muda `slt v0`/`slt at` (`fade_wipe_line`).
+- **Alocação de `$s` em laços consecutivos** (`fade_apply`): o segundo laço `for` recebe `(j, x)` em vez de reutilizar `(i, y)`: com as mesmas variáveis o par `s0/s1` não troca como no original. **Operando esquerdo de `|`**: `(alpha << 24) | rgb` só bate com `alpha` como variável local atribuída antes (`alpha = (unsigned char)(...)`); inline, o `or` sai com os operandos invertidos.
+- **`if (x1 > 480) x1 = 480; x1 -= x0;`** duplica o `subu` no delay slot do `bnezl` e no caminho else; escrever o if/else com duas subtrações não bate.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
