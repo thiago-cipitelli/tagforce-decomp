@@ -153,6 +153,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Laço com contagem constante sem desenrolar** (`snd_bank.c`): `for (i = 0; i < 16; i++)`, `while` e `do { } while (i < 16)` com `i++` no corpo são desenrolados ×8 pelo `-O4,p`; `do { ... } while (++i < 16)` não é, e gera exatamente o laço simples do original (contador incrementado antes do `slti`, ponteiro avançado no delay slot). Útil sempre que o original tem um laço curto de trip count conhecido que não foi desenrolado.
 - **`unsigned short` em parâmetro faz o chamador mascarar** (`andi 0xffff` antes do `jal`) além do mascaramento no callee; quando o original não mascara na chamada, o callee foi declarado com `int`/`unsigned int` e trunca internamente (`unsigned short key = id;`).
 
+- **Tabelas que o original percorre a partir do global anterior** (`snd_voice_alloc/free`): o laço começa em `&snd_voice_tab` (a máscara `busy`) e escreve em `4(p)`, `8(p)`, `9(p)`, avançando 12 bytes; um array de registros declarado separadamente gera `0(p)` e o endereço do array. Modelar com um registro cujo primeiro campo é o fim do registro anterior (`SndVoiceRec`) e avançar o ponteiro em 12.
+- **Funções que repassam um argumento sem tocá-lo** (`snd_voice_free_one`): o original não carrega `$a1` antes do `j`, porque a função recebe o segundo parâmetro e o repassa. Escrever a chamada com uma constante gera um `move a1,zero` a mais.
+- **`r |= 1` vs `r = 1`**: `r = 0; if (bit) r |= 1; else r = 0x20;` gera `ori s0,s0,1`/`li s0,32` como no original (`snd_obj_status`).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
