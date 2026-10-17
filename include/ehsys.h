@@ -3,9 +3,12 @@
 #define EHSYS_H
 
 typedef struct PadState {
-    unsigned int unk0;
-    unsigned int held;      /* +0x04 buttons currently down (PSP_CTRL_*) */
-    unsigned int unk8[7];
+    unsigned int down;      /* +0x00 buttons currently down (PSP_CTRL_*) */
+    unsigned int held;      /* +0x04 buttons down this frame with repeat (menus navigate on it) */
+    unsigned int unk8, unkC;
+    int analog_x;           /* +0x10 0..255 */
+    int analog_y;           /* +0x14 0..255, dead zone 0x62..0x9E */
+    unsigned int unk18, unk1C, unk20;
     unsigned int pressed;   /* +0x24 buttons that went down this frame */
 } PadState;
 
