@@ -393,6 +393,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Testes encadeados num só `&&`** (`duel_eff_fd690`, `fdaf8`): o mwcc encadeia o primeiro teste que falha direto para o fim (`beqzl … move v0,zero`) e manda os seguintes para um bloco `move v0,zero; b fim; nop`. Quando o original tem o primeiro teste encadeado e os outros no bloco, todos estão no mesmo `if (A && B && C) {…} return 0;`; ifs aninhados ou um `if (!A) return 0;` separado não reproduzem. **XOR com o jogador do turno** (`duel_eff_fab50`, `fdd6c`): `p = duel_turn_player; p ^= duel_w_089148FC;` carrega o jogador do turno primeiro e reproduz o `xor a2,a2,a1` do original; `p = duel_turn_player ^ duel_w_089148FC` troca os operandos. **`DuelAct` +0x14 como `int idx`** (índice em `duel.list`, lido com `lw`) no mesmo `union` de `DuelSrc`.
 
+- **Valor de retorno pré-carregado** (`duel_eff_fde68`): um `case` que devolve o que está em `v0` sem carregar nada (`bnel … corpo; b fim; nop`) é um `int r = 0x7C;` declarado no topo do handler, que o mwcc põe em `v0` junto com a constante da primeira comparação do `switch`; `if (x == 0) return r;` reproduz o desvio. Um `?:` entre duas constantes no fim de um passo sai como `if (c) r = A; else r = B; return r;`. Para que um teste com `duel_act_target` no meio ainda fique no mesmo `&&`, a chamada e os campos entram como expressão vírgula (`(t = duel_act_target(a, 0), q = t & 0xFF, …, duel_0884E440(a, q, z) != 0)`).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
