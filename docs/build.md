@@ -385,6 +385,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **`DuelAct` +0x14 como `DuelSrc`** (`effects_k.c`): o mesmo halfword é lido como `uid:9, player:1, zone:4` (carta que causou a ação) num `union` anônimo com os campos de byte antigos (`b14`, `b15_*`). Um ponteiro local `DuelSrc *s = &a->src;` reproduz o `addiu s1,a0,0x14` e as releituras por `s1` do original (`duel_eff_fc4c8`). `MIN(f(), g())` com chamadas reproduz as duas chamadas repetidas do original (`duel_eff_fc534`). Quando o original não usa `a1` mas o handler não repassa `b` a um handler, procurar o callee que recebe `b` (`duel_0886CE90(a, b)`). O tipo do parâmetro do callee muda a ordem das cargas antes da chamada: `int uid` em vez de `unsigned short` (`duel_088E6628`).
 
+- **O `1` de `1 - player` num registrador de argumento é um argumento `1`** (`duel_eff_fced0`, `fd058`): quando o original carrega `li a3,1` e faz `subu a0,a3,v1`, a chamada tem um quarto argumento igual a 1 e o compilador reaproveita o registrador já carregado; com o protótipo certo (`duel_088C7478(q, i, &hand[i], 1)`) a ordem sai igual. `!!f()` como condição gera o `sltu v0,zero,v0; xori v0,v0,1; bnezl` do original (`duel_eff_fca90`). Um `switch` com o `default: return K;` antes dos `case` evita o trampolim `b fim` que o `return K;` depois do `switch` gera. O tipo do último parâmetro (`int` em vez de `unsigned short`) muda o ponto em que o argumento anterior é calculado.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
