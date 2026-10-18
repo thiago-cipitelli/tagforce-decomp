@@ -1,4 +1,4 @@
-// @range 0x088EFEE4-0x088F0730
+// @range 0x088EFEE4-0x088F0D28
 // @asm 0x088EFEE4-0x088F009C
 /* Cards fitting a zone, targets of the chain, counters on the field, and adding and removing cards in
    the graveyard and in zone F. */
@@ -6,12 +6,14 @@
 #include "card_db.h"
 
 int duel_slot_e8170(unsigned int p, int z, int id);
+int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
 DuelCard *duel_field_card_deb2c(void);
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_act_resolve_6a230(DuelAct *a);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
 int duel_card_same(DuelCard *a, DuelCard *b);
 int duel_grave_remove(unsigned int p, unsigned int i);
+void duel_card_copy_to(DuelCard *src, DuelCard *dst);
 
 #ifdef NON_MATCHING /* the equip branch places its `faceup != 0` block after the `return 1` */
 /* Card id may be in zone z of player p (monsters in the spell/trap zones, equips, a few others). */
@@ -179,4 +181,114 @@ int duel_grave_remove_card(unsigned int p, DuelCard *c)
         }
     }
     return 0;
+}
+
+/* Moves the card with unique id `uid` to the top of the graveyard of player p. */
+void duel_grave_to_top(unsigned int p, unsigned short uid)
+{
+    int i;
+
+    p &= 1;
+    for (i = duel.players[p].n_grave - 1; i >= 0; i--) {
+        if (uid == CARD_UID(duel.players[p].grave[i])) {
+            duel_card_copy_to(&duel.players[p].grave[i], &duel.players[p].grave[duel.players[p].n_grave]);
+            for (; (unsigned int)i < duel.players[p].n_grave; i++) {
+                duel_card_copy(&duel.players[p].grave[i], &duel.players[p].grave[i + 1]);
+            }
+            return;
+        }
+    }
+}
+
+/* Same for zone F, its mark moving with it. */
+void duel_zone_f_to_top(unsigned int p, unsigned short uid)
+{
+    int i;
+
+    p &= 1;
+    for (i = duel.players[p].n_f - 1; i >= 0; i--) {
+        if (uid == CARD_UID(duel.players[p].zone_f[i])) {
+            duel_card_copy(&duel.players[p].zone_f[duel.players[p].n_f], &duel.players[p].zone_f[i]);
+            duel.players[p].marks[duel.players[p].n_f] = duel.players[p].marks[i];
+            for (; (unsigned int)i < duel.players[p].n_f; i++) {
+                duel_card_copy(&duel.players[p].zone_f[i], &duel.players[p].zone_f[i + 1]);
+                duel.players[p].marks[i] = duel.players[p].marks[i + 1];
+            }
+            return;
+        }
+    }
+}
+
+/* Topmost card in the graveyard of player p with the same name as id, -1 if none. */
+int duel_grave_find_name(unsigned int p, int id)
+{
+    int i;
+
+    for (i = duel.players[p & 1].n_grave - 1; i >= 0; i--) {
+        if (card_same_name(duel.players[p & 1].grave[i].id, id)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Position (1-based) of card c in the graveyard of player p, 0 if not there. */
+int duel_grave_pos(unsigned int p, DuelCard *c)
+{
+    unsigned int i;
+
+    p &= 1;
+    for (i = 0; i < duel.players[p].n_grave; i++) {
+        if (duel_card_same(&duel.players[p].grave[i], c)) {
+            return i + 1;
+        }
+    }
+    return 0;
+}
+
+int duel_grave_count_id(unsigned int p, unsigned int id)
+{
+    int n = 0;
+    unsigned int i;
+
+    p &= 1;
+    for (i = 0; i < duel.players[p].n_grave; i++) {
+        if (id == duel.players[p].grave[i].id) {
+            n++;
+        }
+    }
+    return n;
+}
+
+int duel_grave_count_id_b21(unsigned int p, unsigned int id)
+{
+    int n = 0;
+    unsigned int i;
+
+    p &= 1;
+    for (i = 0; i < duel.players[p].n_grave; i++) {
+        if (id == duel.players[p].grave[i].id) {
+            if (!duel.players[p].grave[i].b21) {
+                n++;
+            }
+        }
+    }
+    return n;
+}
+
+int duel_grave_count_id_free(unsigned int p, unsigned int id)
+{
+    unsigned int q = p & 1;
+    unsigned int i;
+    int n = 0;
+
+    for (i = 0; i < duel.players[q].n_grave; i++) {
+        if (id == duel.players[q].grave[i].id) {
+            if (!duel.players[q].grave[i].b21 &&
+                duel_slot_effect_with(p, 11, id, CARD_UID(duel.players[q].grave[i])) == 0) {
+                n++;
+            }
+        }
+    }
+    return n;
 }

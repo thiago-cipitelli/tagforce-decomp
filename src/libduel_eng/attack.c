@@ -12,7 +12,7 @@ unsigned int duel_slot_effect_arg(unsigned int p, int z, int id);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 int duel_slot_counter(unsigned int p, int z, int id);
 int duel_slot_count_14c0(unsigned int p, int z);
-int duel_count_f0b3c(unsigned int p, int id);
+int duel_grave_count_id(unsigned int p, int id);
 int duel_attack_check(unsigned int p, int z, int arg);
 int duel_can_direct_attack(unsigned int p, int z);
 int duel_direct_attack_kind(unsigned int p, int z, int arg);
@@ -86,7 +86,7 @@ int duel_attack_forbidden(unsigned int p, int z)
         case 0x186C:
             return duel_slot_counter(p, z, 0x186C) >= duel_slot_count_14c0(p, z) + 1;
         case 0x19C1:
-            return duel_slot_counter(p, z, 0x19C1) >= duel_count_f0b3c(p, 0x19C1) + 1;
+            return duel_slot_counter(p, z, 0x19C1) >= duel_grave_count_id(p, 0x19C1) + 1;
         case 0x1A4E:
             if (duel_slot_effect_arg(p, z, 0x1505) == 0) {
                 return 1;

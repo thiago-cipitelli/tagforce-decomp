@@ -9,7 +9,8 @@ typedef struct DuelCard {              /* 4: a card reference */
     unsigned short id : 13;
     unsigned short owner : 1;          /* also bit 0 of the instance id */
     unsigned short f14 : 2;
-    unsigned short lo6 : 6;
+    unsigned short lo5 : 5;
+    unsigned short b21 : 1;
     unsigned short uid_hi : 8;         /* instance id bits 1-8 */
     unsigned short f30 : 2;
 } DuelCard;
