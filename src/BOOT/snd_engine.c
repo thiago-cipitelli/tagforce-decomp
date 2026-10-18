@@ -1,11 +1,41 @@
-// @range 0x0885EB88-0x0885F05C
+// @range 0x0885E634-0x0885F05C
 // @asm 0x0885EB94-0x0885EC2C
-/* Sound library, engine side: thread start, the bank file opened for direct reads, the per-frame
+// @data 0x088F03BC-0x088F0428
+/* Sound library, engine side: initialization (state, lists, callbacks or heap, semaphores, SAS,
+   object pool, threads), thread start, the bank file opened for direct reads, the per-frame
    pause/resume step and the frame update of every active sound (waiting for group data, 3D, start,
    fader end, stream end). */
 #include "psp.h"
 #include "libc.h"
 #include "snd.h"
+
+typedef struct SndCallbacks {
+    int (*read)(void *name, void *buf, int size, int off);
+    void *(*alloc)(int size);
+    void (*free)(void *p);
+    void *heap;                        /* +0x0C group data goes to this buffer instead of alloc */
+    int heap_size;                     /* +0x10 size of `heap`, or of a VPL created when heap is 0 */
+} SndCallbacks;
+
+typedef struct SndVoiceTab {
+    unsigned int busy;                 /* mask of SAS voices in use */
+    SndVoiceSlot v[32];                /* 0x08C1B058 snd_voice_slots */
+} SndVoiceTab;
+
+typedef struct SndCur {
+    short slot;                        /* current slot, -1 none */
+    short pad;
+    SndObj *obj[4];
+} SndCur;
+
+typedef struct SndFxState {            /* 0x08C1AFC8 (SndFx in snd_out.c) */
+    unsigned char type;
+    unsigned char mode;
+    unsigned char pad2[2];
+    SndFader8 amount;                  /* +0x04 */
+    int vpl;                           /* +0x0C */
+    short *buf;                        /* +0x10 */
+} SndFxState;
 
 typedef struct SndGroup {
     int data;
@@ -14,12 +44,57 @@ typedef struct SndGroup {
     unsigned char state;               /* +0x0C 1 failed */
 } SndGroup;
 
+extern SndList snd_idle_list;          /* 0x08C1AFE0 */
+extern SndList snd_stream_list;        /* 0x08C1AFEC */
+extern SndList snd_sas_list;           /* 0x08C1AFF8 */
 extern SndList snd_active;             /* 0x08C1B004 */
+extern SndFader snd_bgm_master;        /* 0x08C1B010 */
+extern SndFader snd_master;            /* 0x08C1B01C */
+extern short snd_ch_volume[3];         /* 0x08C1B028 */
+extern SndCur snd_cur_slot;            /* 0x08C1B030 */
+extern int snd_sema;                   /* 0x08C1B044 */
+extern int snd_atrac_sema;             /* 0x08C1B048 */
+extern int snd_bank_sema;              /* 0x08C1B04C */
+extern int snd_obj_sema;               /* 0x08C1B050 */
+extern SndVoiceTab snd_voice_tab;      /* 0x08C1B054 */
+extern SndObj snd_obj_pool[34];        /* 0x08C1B1D8 */
+extern SndFxState snd_fx;              /* 0x08C1AFC8 */
+extern int snd_3d;                     /* 0x08C1D750 */
+extern unsigned int snd_rand_hist_tab[32][2]; /* 0x08C1D77C */
+extern int snd_unused_87c;             /* 0x08C1D87C */
+extern int snd_unused_880;             /* 0x08C1D880 */
+extern int snd_voice_next;             /* 0x08C1D884 */
+extern int snd_voice_cur;              /* 0x08C1D888 */
+extern void *snd_bank;                 /* 0x08C1D88C */
+extern unsigned char snd_out_mode[4];  /* 0x08C1D890 */
+extern short snd_fx_type;              /* 0x08C1D89A */
+extern int snd_vpl;                    /* 0x08C1D89C */
+extern int snd_group_buf_size;              /* 0x08C1D8A0 */
+extern void *snd_group_buf;                 /* 0x08C1D8A4 */
+extern int snd_n_groups;               /* 0x08C1D8AC */
+extern void *snd_cb_read;              /* 0x08C1D8B8 */
+extern void *snd_cb_free;              /* 0x08C1D8BC */
+extern void *snd_cb_alloc;             /* 0x08C1D8C0 */
+extern int snd_idle_evf;               /* 0x08E1FD84 */
 extern unsigned short snd_cfg_flags;   /* 0x08C1D894 0x2000 reads take an offset, 0x4000 3D enabled */
 extern int snd_data_base;              /* 0x08C1D8B0 */
 extern int snd_fd;                     /* 0x08C1D8B4 psp_snddat.bin, -1 when read through the callback */
 
-int snd_thread_init(void *cfg, void *cb, int prio, int prio2);
+void snd_fader_init(SndFader *f, short v);
+void snd_fader8_init(SndFader8 *f, signed char v);
+int snd_bank_init(void *cfg);
+void snd_list_init(SndList *l, int link_off);
+int sceWaveInit_wrap(void);
+int wave_set_sample(int ch, int n);
+int wave_set_volume(int ch, int l, int r);
+int snd_sas_open(int grain);
+void snd_out_mode_apply(unsigned char a, unsigned char b);
+void snd_handles_reset(void);
+void snd_fx_setup(int type, int a, int b);
+void snd_rand_seed(unsigned int seed);
+int snd_thread_main(unsigned int args, void *argp);
+int snd_idle_thread(unsigned int args, void *argp);
+int sceKernelCreateVpl(const char *name, int part, int attr, int size, void *opt);
 int snd_group_of(unsigned int id);
 SndGroup *snd_group_get(unsigned int g);
 int snd_group_data(unsigned int g);
@@ -32,7 +107,152 @@ int snd_sas_set_pause(unsigned int mask, int on);
 int sceIoOpenAsync(const char *path, int flags, int mode);
 int sceIoWaitAsyncCB(int fd, long long *res);
 
-int snd_thread_start(void *cfg, void *cb)
+/* Returns 0, or 1 bad bank header, 2 heap without size, 3 VPL, 4 semaphore, 5 sceWave, 6 SAS,
+   7 thread creation, 8 thread start or event flag, 9 no read callback. The priorities are unused. */
+int snd_thread_init(void *cfg, SndCallbacks *cb, int prio, int prio2)
+{
+    int i;
+    int j;
+    SndObj *o;
+    SndCur *c;
+    int th;
+
+    snd_fd = -1;
+    snd_data_base = 0;
+    snd_fader_init(&snd_master, 0x4000);
+    snd_fader_init(&snd_bgm_master, -0x8000);
+    i = 0;
+    do {
+        snd_ch_volume[i] = 0x1000;
+    } while (++i < 3);
+    snd_cb_alloc = 0;
+    snd_cb_free = 0;
+    snd_cb_read = 0;
+    snd_group_buf = 0;
+    snd_group_buf_size = 0;
+    snd_vpl = -1;
+    snd_fx_type = -1;
+    snd_cfg_flags = 0;
+    snd_n_groups = 0;
+    snd_unused_87c = -1;
+    snd_3d = 0;
+    snd_unused_880 = 3;
+    snd_voice_next = 0;
+    snd_voice_cur = 0;
+    snd_bank = 0;
+    snd_out_mode[1] = 4;
+    snd_out_mode[3] = 4;
+    snd_out_mode[0] = 1;
+    snd_out_mode[2] = 1;
+    if (snd_bank_init(cfg) == 0) {
+        return 1;
+    }
+    snd_list_init(&snd_active, 8);
+    snd_list_init(&snd_sas_list, 0);
+    snd_list_init(&snd_stream_list, 0);
+    snd_list_init(&snd_idle_list, 0);
+    if (cb != 0) {
+        snd_cb_read = cb->read;
+        if (snd_cb_read == 0) {
+            return 9;
+        }
+        snd_cb_alloc = cb->alloc;
+        snd_cb_free = cb->free;
+        snd_group_buf = cb->heap;
+        snd_group_buf_size = cb->heap_size;
+        if (snd_group_buf != 0) {
+            if (snd_group_buf_size == 0) {
+                return 2;
+            }
+            snd_cb_alloc = 0;
+            snd_cb_free = 0;
+        } else if (snd_group_buf_size != 0) {
+            snd_vpl = sceKernelCreateVpl("SndHeapVPL", 2, 0, snd_group_buf_size, 0);
+            if (snd_vpl < 0) {
+                return 3;
+            }
+        }
+    }
+    snd_obj_sema = sceKernelCreateSema("SndSema", 0, 1, 1, 0);
+    if (snd_obj_sema <= 0) {
+        return 4;
+    }
+    snd_atrac_sema = sceKernelCreateSema("SndAtracDecodeSema", 0, 1, 1, 0);
+    if (snd_atrac_sema <= 0) {
+        return 4;
+    }
+    snd_bank_sema = sceKernelCreateSema("SndLoadSema", 0, 1, 1, 0);
+    if (snd_bank_sema <= 0) {
+        return 4;
+    }
+    snd_sema = sceKernelCreateSema("SndSeqSema", 0, 1, 1, 0);
+    if (snd_sema <= 0) {
+        return 4;
+    }
+    if (sceWaveInit_wrap() != 0) {
+        return 5;
+    }
+    wave_set_sample(2, 0x100);
+    wave_set_volume(2, 0x8000, 0x8000);
+    if (snd_sas_open(0x100) < 0) {
+        return 6;
+    }
+    o = snd_obj_pool;
+    for (i = 0; i < 34; i++, o++) {
+        o->index = -1;
+        *(int *)&o->sid = -0x101;
+        o->id = -0x101;
+        for (j = 0; j < 8; j++) {
+            snd_fader_init(&o->fade[j], 0);
+        }
+    }
+    snd_voice_tab.busy = 0;
+    i = 0;
+    do {
+        snd_voice_tab.v[i].obj = 0;
+        snd_voice_tab.v[i].flags = 0;
+    } while (++i < 32);
+    c = &snd_cur_slot;
+    c->slot = -1;
+    i = 0;
+    do {
+        c->obj[i] = 0;
+    } while (++i < 4);
+    for (i = 0; i < 32; i++) {
+        snd_rand_hist_tab[i][0] = 0;
+    }
+    snd_out_mode_apply(4, 1);
+    snd_handles_reset();
+    snd_fx_setup(-1, 0, 0);
+    snd_fx.type = 0;
+    snd_fx.vpl = -1;
+    snd_fx.buf = 0;
+    snd_fader8_init(&snd_fx.amount, 0);
+    th = sceKernelCreateThread("snd_thread_main", snd_thread_main, 0x10, 0x3800, 0, 0);
+    if (th < 0) {
+        return 7;
+    }
+    if (sceKernelStartThread(th, 0, 0) != 0) {
+        return 8;
+    }
+    th = sceKernelCreateEventFlag("SndSeqEvt", 0, 0, 0);
+    if (th <= 0) {
+        return 8;
+    }
+    snd_idle_evf = th;
+    th = sceKernelCreateThread("snd_thread_seq", snd_idle_thread, 0x11, 0x1000, 0, 0);
+    if (th < 0) {
+        return 7;
+    }
+    if (sceKernelStartThread(th, 0, 0) != 0) {
+        return 8;
+    }
+    snd_rand_seed(0x55555555);
+    snd_cfg_flags = 0x8000;
+    return 0;
+}
+
+int snd_thread_start(void *cfg, SndCallbacks *cb)
 {
     return snd_thread_init(cfg, cb, 0x10, 0x6F);
 }

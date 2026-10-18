@@ -233,6 +233,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`|=` condicional por valor** (`snd_obj_begin`, envelope SAS): `switch (m) { case 1: a |= 0x4000; break; … }` gera a cadeia `beql m,K → chamada` com o `ori` no delay slot; a cadeia `if/else if` gera `bnel` + `b`.
 - **`if (x < 0) x = 0;` seguido do teste de teto**: escrever `if (x >= 0x54) x = 0x53;` (e `if (x >= 0x80) store 0x7F; else store x;`) dá o `slti v0` sem likely e o `sb` duplicado do original; `x > 0x53` põe o resultado em `$at` com `bnezl`.
 
+- **Global inicializada e depois percorrida** (`snd_thread_init`, `snd_cur_slot`): `c = &snd_cur_slot; c->slot = -1; do { c->obj[i] = 0; } while (++i < 4);` gera os dois `lui` antes do `sh`, como no original; escrever direto em `snd_cur_slot.slot` agenda o `sh` logo após o primeiro `lui`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
