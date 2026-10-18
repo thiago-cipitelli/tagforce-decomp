@@ -228,6 +228,11 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Ponteiro local recalculado a cada iteração** (`snd_thread_main`): `SndFader *m = &snd_master;` declarado dentro do corpo do `for (;;)` gera o `lui`/`addiu` no começo de cada volta, como no original; os testes em `snd_master.cur`/`.target` continuam por endereço direto e só a chamada e a leitura final passam por `m`.
 - **Nomes de globais únicos no BOOT**: o splat rejeita símbolo duplicado (`Duplicate symbol detected`); antes de nomear uma global, `grep` em `symbols/BOOT.txt` (o `movie.c` já tinha `snd_out_idx`).
 
+- **Dois retornos de erro seguidos** (`snd_obj_begin`): `if (grp == 0 || d == 0) return -1;` gera `beqzl grp → epílogo` com o `-1` no delay slot, seguido de `bnezl d → corpo`; dois `if` separados geram `bnez` + `b` para cada um.
+- **Ordem dos testes de um `switch` com `case`s agrupados**: os testes saem na ordem inversa dos rótulos também dentro do grupo; testes `4, 3, 1, 2` vêm de `case 2: case 1: …; case 3: case 4: …`.
+- **`|=` condicional por valor** (`snd_obj_begin`, envelope SAS): `switch (m) { case 1: a |= 0x4000; break; … }` gera a cadeia `beql m,K → chamada` com o `ori` no delay slot; a cadeia `if/else if` gera `bnel` + `b`.
+- **`if (x < 0) x = 0;` seguido do teste de teto**: escrever `if (x >= 0x54) x = 0x53;` (e `if (x >= 0x80) store 0x7F; else store x;`) dá o `slti v0` sem likely e o `sb` duplicado do original; `x > 0x53` põe o resultado em `$at` com `bnezl`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
