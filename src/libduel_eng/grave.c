@@ -1,4 +1,4 @@
-// @range 0x088EFEE4-0x088F0D28
+// @range 0x088EFEE4-0x088F1190
 // @asm 0x088EFEE4-0x088F009C
 /* Cards fitting a zone, targets of the chain, counters on the field, and adding and removing cards in
    the graveyard and in zone F. */
@@ -13,7 +13,8 @@ int duel_act_resolve_6a230(DuelAct *a);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
 int duel_card_same(DuelCard *a, DuelCard *b);
 int duel_grave_remove(unsigned int p, unsigned int i);
-void duel_card_copy_to(DuelCard *src, DuelCard *dst);
+void duel_card_swap(DuelCard *a, DuelCard *b);
+int duel_zone_f_remove(unsigned int p, unsigned int i);
 
 #ifdef NON_MATCHING /* the equip branch places its `faceup != 0` block after the `return 1` */
 /* Card id may be in zone z of player p (monsters in the spell/trap zones, equips, a few others). */
@@ -191,7 +192,7 @@ void duel_grave_to_top(unsigned int p, unsigned short uid)
     p &= 1;
     for (i = duel.players[p].n_grave - 1; i >= 0; i--) {
         if (uid == CARD_UID(duel.players[p].grave[i])) {
-            duel_card_copy_to(&duel.players[p].grave[i], &duel.players[p].grave[duel.players[p].n_grave]);
+            duel_card_swap(&duel.players[p].grave[i], &duel.players[p].grave[duel.players[p].n_grave]);
             for (; (unsigned int)i < duel.players[p].n_grave; i++) {
                 duel_card_copy(&duel.players[p].grave[i], &duel.players[p].grave[i + 1]);
             }
@@ -288,6 +289,106 @@ int duel_grave_count_id_free(unsigned int p, unsigned int id)
                 duel_slot_effect_with(p, 11, id, CARD_UID(duel.players[q].grave[i])) == 0) {
                 n++;
             }
+        }
+    }
+    return n;
+}
+
+/* Removes card i from zone F of player p. */
+int duel_zone_f_remove(unsigned int p, unsigned int i)
+{
+    unsigned int j;
+
+    p &= 1;
+    if (i < duel.players[p].n_f) {
+        duel.players[p].n_f--;
+        for (j = i; j < duel.players[p].n_f; j++) {
+            duel_card_copy(&duel.players[p].zone_f[j], &duel.players[p].zone_f[j + 1]);
+            duel.players[p].marks[j] = duel.players[p].marks[j + 1];
+        }
+        return 1;
+    }
+    return 0;
+}
+
+int duel_zone_f_remove_card(unsigned int p, DuelCard *c)
+{
+    unsigned int i;
+
+    for (i = 0; i < duel.players[p & 1].n_f; i++) {
+        if (duel_card_same(&duel.players[p & 1].zone_f[i], c)) {
+            return duel_zone_f_remove(p, i);
+        }
+    }
+    return 0;
+}
+
+/* Swaps zone D and the graveyard of player p. */
+void duel_swap_d_grave(unsigned int p)
+{
+    int d;
+    int g;
+    int i;
+
+    p &= 1;
+    d = duel.players[p].n_d;
+    g = duel.players[p].n_grave;
+    for (i = MAX(d, g) - 1; i >= 0; i--) {
+        duel_card_swap(&duel.players[p].zone_d[i], &duel.players[p].grave[i]);
+    }
+    duel.players[p].n_d = g;
+    duel.players[p].n_grave = d;
+}
+
+int duel_grave_count_monsters(unsigned int p)
+{
+    unsigned int i;
+    int n;
+
+    p &= 1;
+    i = 0;
+    n = 0;
+    for (; i < duel.players[p].n_grave; i++) {
+        if (card_is_monster(duel.players[p].grave[i].id)) {
+            n++;
+        }
+    }
+    return n;
+}
+
+int duel_grave_count_1a6f(unsigned int p)
+{
+    unsigned int i;
+    int n;
+
+    p &= 1;
+    i = 0;
+    n = 0;
+    for (; i < duel.players[p].n_grave; i++) {
+        if (card_is_in_group_1a6f(duel.players[p].grave[i].id)) {
+            n++;
+        }
+    }
+    return n;
+}
+
+/* Monsters in zone F of player p, those marked 0x80 excluded. */
+int duel_zone_f_count_monsters(unsigned int p)
+{
+    unsigned int i;
+    int n = 0;
+
+    p &= 1;
+    for (i = 0; i < duel.players[p].n_f; i++) {
+        switch ((unsigned char)duel.players[p].marks[i]) {
+        case 0x80:
+            break;
+        case 0x40:
+        default:
+            if (card_is_monster(duel.players[p].zone_f[i].id)) {
+                n++;
+            }
+            break;
         }
     }
     return n;
