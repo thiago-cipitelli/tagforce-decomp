@@ -331,6 +331,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`if (f()) z = g(); else z = -1; return z;`** gera `beqzl v0 → li v0,-1` com a chamada no caminho direto; o ternário ou `if (!f()) return -1;` gera `bgtzl`/`bnezl` com a chamada depois.
 - **`if (x) return 0;` seguido de mais código gera `beqz x; nop; b fim; move v0,zero`** (`field_st.c`): o `return 0` vira bloco próprio com desvio ao epílogo; quando o original testa duas condições assim em sequência, são dois `if` separados, não um `||`. Um `&&` de três termos dentro de um único `if (…) return 0; return 1;` reproduz o `beqzl → li v0,1` (`duel_can_place_st`).
 - **Limite do laço por ternário** (`duel_count_field_cards`): `end = fzone != 0 ? 11 : 10;` com acesso direto `duel.players[p & 1].field[i]` (base calculada depois do teste do laço); `if/else` inverte os blocos e um `DuelPlayer *pl` local adianta o cálculo da base.
+- **`bgtzl → li v0,1` seguido de outro teste** (`duel_monster_can_act`): é um único `if ((int)(x & 2) > 0 || (a == 0 && b == 0)) return 1;`; com dois `if` o compilador inverte para `blezl`. Num `switch` cujos casos terminam em `break` antes de `return 1`, um `default: return 1;` explícito cria um segundo bloco `li v0,1` que o original não tem.
+- **Bitfields de `DuelCard` lidos por endereço fixo** (`duel_field_protected`): `duel.players[p & 1].field[z].card.uid_hi` direto (sem `DuelSlot *` local) faz o compilador guardar os endereços +0x31/+0x32 em `$s` antes do laço, como no original; com o ponteiro local a base sai calculada antes do teste de `id`.
 
 ## Pendências
 
