@@ -333,6 +333,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Limite do laço por ternário** (`duel_count_field_cards`): `end = fzone != 0 ? 11 : 10;` com acesso direto `duel.players[p & 1].field[i]` (base calculada depois do teste do laço); `if/else` inverte os blocos e um `DuelPlayer *pl` local adianta o cálculo da base.
 - **`bgtzl → li v0,1` seguido de outro teste** (`duel_monster_can_act`): é um único `if ((int)(x & 2) > 0 || (a == 0 && b == 0)) return 1;`; com dois `if` o compilador inverte para `blezl`. Num `switch` cujos casos terminam em `break` antes de `return 1`, um `default: return 1;` explícito cria um segundo bloco `li v0,1` que o original não tem.
 - **Bitfields de `DuelCard` lidos por endereço fixo** (`duel_field_protected`): `duel.players[p & 1].field[z].card.uid_hi` direto (sem `DuelSlot *` local) faz o compilador guardar os endereços +0x31/+0x32 em `$s` antes do laço, como no original; com o ponteiro local a base sai calculada antes do teste de `id`.
+- **`case` que cai no grupo seguinte** (`duel_attack_forbidden`): quando o `return 0` de um caso condicional é o mesmo bloco do grupo de ids que sempre retorna 0, o fonte é `case A: if (!cond) break; case B: case C: return 0;` (queda), não um `return 0` próprio. Um teste `if (id == X) … else if (id == Y) … else return 0;` cujos corpos saem na ordem inversa dos testes é um `switch` com `default: return 0;` (`duel_can_attack`).
+- **Uma única leitura de `flags` reaproveitada** (`duel_attack_forbidden`): `unsigned int f = slot.flags;` para os testes de bit e depois `SLOT_ACTIVE(&slot)` (a macro, não a expressão com `f`): o compilador reaproveita o registro de `f` e a ordem `faceup` primeiro se mantém.
 
 ## Pendências
 

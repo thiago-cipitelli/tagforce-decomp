@@ -27,6 +27,7 @@ typedef struct DuelSlot {              /* 0x14: a field zone */
 } DuelSlot;
 
 /* face up and not negated (bits 1 and 5 of the flags) */
+#define CARD_UID(c) ((c).owner + ((c).uid_hi << 1))
 #define SLOT_ACTIVE(s) ((s)->faceup & ~((s)->flags >> 5 & 1) & ~((s)->flags >> 1 & 1))
 
 #define EFF_PLAYER(e) ((e)->src & 0xFF)
@@ -67,7 +68,9 @@ typedef struct DuelSpecial {           /* 0x08913F10, 0x130: two cards held outs
     int player[2];
     int pad8[5];
     int zone[2];                       /* +0x1C */
-    int pad24[40];
+    int pad24;
+    int uid;                           /* +0x28 card uid (owner + uid_hi * 2) */
+    int pad2c[38];
     DuelSlot slot[2];                  /* +0xC4 */
     int padec[17];
 } DuelSpecial;

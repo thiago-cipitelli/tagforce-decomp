@@ -4,8 +4,6 @@
 #include "duel.h"
 #include "card_db.h"
 
-#define CARD_UID(c) ((c).owner + ((c).uid_hi << 1))
-
 extern unsigned int duel_view_player;  /* 0x089139F4 */
 extern int duel_err;                   /* 0x0891965C */
 
