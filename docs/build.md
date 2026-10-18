@@ -237,6 +237,16 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Registradores temporários vivos através de uma chamada** (`snd_streams_decode`): o original mantém `$t7`, `$t8` e `$v0` (ponteiros e contador da mistura) através das chamadas a `snd_stereo_widen`/`snd_box_filter`, funções do mesmo arquivo que não tocam nesses registradores. O mwcc build 219 com `-O4,p` não faz isso: testes com folha definida antes no mesmo arquivo, com e sem pressão de registradores, sempre salvam os valores em `$s`/pilha. Uma função com esse traço não bate; fica em `@asm` com o C sob `NON_MATCHING`.
 
+- **Ponteiro que pode ser arquivo ou instância** (`ehf.c`): `i = *(int *)e == EHF_MAGIC ? ehf_resolve(e) : e;` (macro `EHF_INST`) gera o `bnel` com `move v0,a0` no delay slot do original; `if (magic) e = ehf_resolve(e);` gera `bne` + `nop` ou um `bnel` que duplica a carga seguinte.
+- **Retorno escondido**: uma função que termina com `li v0,1; sb v0,…` e retorna sem tocar mais em `$v0` é `int` com `x = 1; return 1;` (`ehf_inst_reset`); declarada `void`, o compilador evita `$v0` como temporário em toda a função e os registradores mudam.
+- **Ordem dos parâmetros com float e ponteiro**: `dl_tex_scale(list, 1.0f, 1.0f)` e `mat4_translate2(m, x, y)`, não `(x, y, m)`. Os registradores são os mesmos (`$a0`, `$f12`, `$f13`), mas a ordem de avaliação dos argumentos muda o que vai para o delay slot do `jal`.
+- **Parâmetros u16 passados já estendidos**: se o chamador carrega com `lhu` e o chamado usa o valor sem `andi 0xffff`, o parâmetro é `int` (`ehf_track_eval(…, int start, int frame)`); declarado `unsigned short`, o chamado mascara de novo e o chamador avalia os argumentos em outra ordem.
+- **Cópia de struct vs. elemento a elemento**: `*cx = global;` copia por `lwc1`/`swc1` (às vezes com um `lui` por palavra); `d.x = g.x; …` com `int` sai em `lw`/`sw`, um `lui` por elemento (`ehf_draw` usa a segunda forma, `ehf_track_eval` a primeira).
+- **Teste de laço no topo** (`ehf_clip_step`): `for (;;) { if (cmd >= end) break; … }` mantém a comparação no começo do laço, como no original; `for`/`while` são rotacionados com o teste no fim. Para um laço que sai com `return` (`ehf_list_remove`), `do { if (achou) goto found; k = k->next; } while (k != head); return head; found: …` põe o corpo do achado depois do laço.
+- **Combinação de transformações de cor** (`ehf_draw_list`): calcular os oito valores em temporários e só então gravar no struct reproduz as gravações agrupadas no fim; `cx.add[i] += …` grava campo a campo.
+- **Matriz local de 18 floats** (`ehf_draw_begin`): um buraco de 8 bytes acima de um `float[16]` no quadro do original indica uma matriz declarada maior (ou um local não usado); `float m[18]` reproduz o leiaute.
+- **Valores em registradores temporários através de chamada a função do mesmo arquivo** (`ehf_draw_text`): o original deixa o ponteiro do caractere em `$v0` durante `ehf_track_eval`, que não usa `$v0`. Isso só se reproduz se o chamado compilar exatamente igual; com o chamado em `@asm`, o chamador também fica em asm.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

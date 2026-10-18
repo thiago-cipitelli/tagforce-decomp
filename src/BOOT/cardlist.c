@@ -111,7 +111,7 @@ void *gfx_end_2d(void *list);
 void ehf_get_size(void *ehf, int *w, int *h);
 void *ehf_draw(void *list, void *ehf, void *frame);
 void ehf_set_anim(void *ehf, int first, int last);
-void ehsys_0882FD74(float a, float b, float c, float d, void *ehf, int view);
+void ehf_inst_init(float a, float b, float c, float d, void *ehf, int view);
 void *ehp_find(void *pack, const char *name, int flags);
 unsigned char *syspack_get(void);
 int region_get(void);
@@ -397,7 +397,7 @@ void cardlist_init(CardListCfg *cfg)
         c->cfg.cil_gim = ehp_find(pack, region_get() == 0 ? "cil_0000j.gim" : "cil_0000e.gim", 0);
     }
     if (c->cfg.frame_view != 0) {
-        ehsys_0882FD74(480.0f, 272.0f, 240.0f, 136.0f, c->cfg.frame_ehf, c->cfg.frame_view);
+        ehf_inst_init(480.0f, 272.0f, 240.0f, 136.0f, c->cfg.frame_ehf, c->cfg.frame_view);
     }
 }
 
