@@ -5,11 +5,6 @@
 #include "duel.h"
 #include "card_db.h"
 
-typedef struct DuelAct {               /* card being activated */
-    unsigned short id;
-    unsigned char player;              /* +0x02 bit 0 */
-} DuelAct;
-
 extern int duel_effects_off;           /* 0x08914914 */
 
 int duel_count_active(int id);
@@ -123,10 +118,10 @@ int duel_slot_ref_immune(unsigned int p, int z, int opp)
 int duel_act_immune(DuelAct *a, unsigned int p, int z)
 {
     if (card_get_type(a->id) == 0x17) {
-        return duel_slot_ref_immune(p, z, p != (a->player & 1));
+        return duel_slot_ref_immune(p, z, p != a->player);
     }
     if (card_get_type(a->id) == 0x16 || (z >= 5 && z < 10 && card_is_monster(a->id))) {
-        return duel_slot_immune(p, z, p != (a->player & 1));
+        return duel_slot_immune(p, z, p != a->player);
     }
     return 0;
 }

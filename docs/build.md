@@ -349,6 +349,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Atualizar um campo duas vezes sem ponteiro local** (`duel_mark_attacked`): `slot.flags |= A; slot.flags |= 1 << (slot.flags >> 22 & 1 ? 23 : 22);` direto deixa o endereço em `a2` e gera o ternário com `beqzl … li v1,22`; com `unsigned int *f` local o compilador usa base + deslocamento 0x40.
 - **Testes de bit aninhados com um `return 0` só no fim** (`duel_slot_ref`, `duel_slot_immunity`): `bnel bit → fim, v0=0` seguido de `bnez bit2 → bloco "move v0,zero"` vem de `if (!(f >> 5 & 1) && !(f >> 1 & 1)) { switch … } return 0;` depois dos `return 0` antecipados; e `bnezl → fim, v0=r` de `if (f() == 0) { … } return r;`.
 - **`||` de chamada em `if (tipo == X || (z >= 5 && z < 10 && g(id))) return h(...); return 0;`** (`duel_act_immune`) reproduz `bnezl → fim, move v0,zero` para o primeiro limite e o bloco `return 0` compartilhado para os outros.
+- **`DuelAct` com bitfields de `unsigned char`** (`include/duel.h`): `a->player` (1 bit) e `a->zone` (5 bits, `sll 26; srl 27`) como bitfields; `a->player & 1` sobre o bitfield gera um `andi` a mais. O local `DuelAct a = { 0 };` gera o laço de zeragem byte a byte do original (`duel_card_can_affect`).
+- **`int x = cond || !f(id);`** gera `x = 1; if (cond) pula; v = !f(); if (v) pula; x = 0` (`sltu; xori; bnez` seguido de `move sN,zero`), forma vista em `duel_act_can_affect` (que segue em asm porque o `st` anterior, materializado em `a0` no original, é fundido nos desvios pelo compilador).
 
 ## Pendências
 

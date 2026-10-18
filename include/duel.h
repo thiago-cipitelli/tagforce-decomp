@@ -64,6 +64,17 @@ typedef struct DuelEffect {            /* 8: entry of the effect lists */
     unsigned short next;               /* +0x06 */
 } DuelEffect;
 
+typedef struct DuelAct {               /* 0x18: card being activated or resolved */
+    unsigned short id;
+    unsigned char player : 1;          /* +0x02 */
+    unsigned char zone : 5;
+    unsigned char b2_6 : 2;
+    unsigned char b3_0 : 4;            /* +0x03 */
+    unsigned char b3_4 : 2;
+    unsigned char b3_6 : 2;
+    unsigned char pad4[20];
+} DuelAct;
+
 typedef struct DuelSpecial {           /* 0x08913F10, 0x130: two cards held outside the zones */
     int player[2];
     int pad8[5];
