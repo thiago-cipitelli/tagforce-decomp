@@ -18,7 +18,7 @@ int duel_slot_has_effect(unsigned int p, int z, int id);
 unsigned int duel_act_target2(DuelAct *a, int i);
 int duel_grave_find_uid(unsigned int p, unsigned int uid);
 int duel_0884E5E0(DuelAct *a);
-void duel_088FF1F4(void *dst, int fmt, void *arg);
+void duel_wfmt_s(void *dst, int fmt, void *arg);
 void duel_0884ACD8(unsigned int p, void *msg);
 int duel_0884E440(int id);
 void duel_088359E8(unsigned int p, int id, int (*fn)(int id));
@@ -58,7 +58,7 @@ int duel_eff_f85d4(DuelAct *a)
         }
         return 0;
     case 0x7F:
-        duel_088FF1F4(buf, 0x45, card_get_name(duel.list[i].id));
+        duel_wfmt_s(buf, 0x45, card_get_name(duel.list[i].id));
         duel_0884ACD8(a->player, buf);
         duel_088359E8(a->player, 0x10D3, duel_0884E440);
         return 0x7E;
