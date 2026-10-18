@@ -253,6 +253,12 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Mesmo campo no teste e no corpo do laço** (`ehp_unload`): `while (e->name != 0) { f((char *)p + *(int *)e); … }` relê o campo no corpo, como o original; com `e->name` nos dois lugares o compilador reaproveita a carga do teste.
 - **Inicialização dentro do `for`** (`ehp_read_entry`): `for (i = 0, m = tab; …)` põe o `addiu` do ponteiro no delay slot do teste de entrada, depois do `i = 0`.
 
+- **Soma de inteiros mantém a ordem; ponteiro não** (`gfx_copy_frame`): `(void *)(tab[b] + (int)edram)` gera `addu v0,v1,v0` como no original; com aritmética de ponteiro (`(char *)edram + tab[b]`), o compilador normaliza os operandos.
+- **Resultado de chamada usado como argumento e guardado** (`gfx_draw_target`): `dl_set_cur_list_base(layer = dl_select_layer(layer, &size));` passa `$v0` direto e copia para `$s` em paralelo; com duas instruções, o argumento sai do registrador `$s`.
+- **Estado repartido em dois structs** (`gfx_state` 0x08905084 e `gfx_flip` 0x0890508C): o original endereça `on_flip` como `8($s0)` com `$s0 = &hcount`, então o bloco a partir de `hcount` é um objeto próprio.
+- **`ins` para endereço não-cacheado** (`dl_state_reset`): o original monta `(p & 0x0FFFFFFF) | 0x40000000` com `ins` (inserção de bits); nenhuma forma em C (máscara + or, bitfield em union) gera `ins` no mwcc 3.0.1, então a função fica em asm.
+- **Dados de funções em asm**: strings e tabelas usadas só por funções que ficaram em `@asm` precisam virar globais nomeadas no C (`gfx_host_dir`, `gfx_tga_header`…), senão o `.data` do objeto encolhe.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
