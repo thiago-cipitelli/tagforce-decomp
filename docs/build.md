@@ -218,6 +218,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Laços sobre listas intrusivas** (`snd_group_stop`, `snd_duck_update`): `for (;;) { if (o == 0) break; cur = o; o = snd_list_next(l, o); … cur … }` reproduz o teste no topo e o `move` no delay slot da chamada seguinte.
 - **`tools/splat_config.py`**: uma faixa `@asm` que termina junto com o `@range` não gera mais um segmento `c` vazio (que fazia o linker descartar as seções do arquivo seguinte).
 
+- **Retorno 0 por dois caminhos** (`snd_obj_pause_update`): com `f = &o->fade[2];` antes de `if (o->fade[2].cur == o->fade[2].target) { if (f->count == 0) { …; return 1; } } return 0;` o primeiro teste vira `bne` para o `move v0,zero` final com o `addiu` de `f` no delay slot e o segundo vira `bnezl` direto para o epílogo, como no original.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

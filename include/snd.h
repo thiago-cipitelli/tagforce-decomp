@@ -58,7 +58,7 @@ typedef struct SndStream {             /* SndObj +0xA8: decoder and level-meter 
     } u;
     unsigned char pad20[2];
     unsigned short sflags;             /* +0x22 0x10 meter reset, 0x40, 0x80 */
-    short meter;                       /* +0x24 */
+    unsigned short meter;              /* +0x24 */
     unsigned short level;              /* +0x26 */
     short peak;                        /* +0x28 */
     short shown;                       /* +0x2A */
