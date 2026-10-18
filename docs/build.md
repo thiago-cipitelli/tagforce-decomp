@@ -389,6 +389,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Registradores de argumento preservados apontam a assinatura** (`duel_eff_f84a4`, `fa920`): quando o original evita `a0`/`a1` num trecho sem chamadas e usa `a2`, o handler recebe `(DuelAct *a, int b)` e passa os dois a uma chamada adiante (`duel_08883FBC(a, b)`, `duel_0886CE38(a, b)`). Uma faixa `@asm` pode esconder uma função curta sem nome depois da que foi decompilada (`duel_eff_f8544` dentro da antiga faixa de `f84a4`): conferir o tamanho da função contra a faixa antes de tirar o `@asm`, senão o link falha com `func_<ADDR>` indefinido. Uma função tirada do asm que gera tabela de saltos precisa da faixa `@data` da tabela no arquivo (`effects_c.c`), senão a tabela vai para `.rodata` e desloca todo o `.data`.
 
+- **Resultado de chamada num local antes da expressão** (`duel_eff_fd560`): `int c = duel_field_controller(...); f(..., a->uid * 8 + c * 4 + 1);` reproduz o `addu v0,v1,v0` (termo do uid primeiro) do original; com a chamada dentro da expressão o mwcc soma na ordem inversa. Um `if (step == 0x80) {...}` cujo outro caminho o original põe depois do corpo é um `switch (duel_step) { case 0x80: …; default: … }` (`duel_eff_fd4c8`). Nomes `ehsys_<ADDR>` no C exportado do Ghidra são imports do BOOT resolvidos pelo endereço do BOOT, não funções locais: o alvo real é o stub em `0x08903…` (`card_is_attribute9`), e o `check_file` não pega o erro porque mascara os `jal`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
