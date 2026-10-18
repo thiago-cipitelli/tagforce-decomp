@@ -72,8 +72,19 @@ typedef struct DuelAct {               /* 0x18: card being activated or resolved
     unsigned char b3_0 : 4;            /* +0x03 */
     unsigned char b3_4 : 2;
     unsigned char b3_6 : 2;
-    unsigned char pad4[20];
+    unsigned short b4_0 : 6;           /* +0x04 */
+    unsigned short uid : 9;
+    unsigned short b4_15 : 1;
+    unsigned char n_targets;           /* +0x06 */
+    unsigned char pad7[17];
 } DuelAct;
+
+typedef struct DuelChain {             /* 0x08914350 */
+    unsigned char pad0[0x300];
+    DuelAct acts[16];                  /* +0x300 */
+    int unk480;
+    int len;                           /* +0x484 */
+} DuelChain;
 
 typedef struct DuelSpecial {           /* 0x08913F10, 0x130: two cards held outside the zones */
     int player[2];
@@ -98,6 +109,7 @@ typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
 } Duel;
 
 extern Duel duel;
+extern DuelChain duel_chain;
 extern DuelSpecial duel_special;       /* 0x08913F10 */
 extern DuelEffect duel_effects[];      /* 0x089185C8 */
 

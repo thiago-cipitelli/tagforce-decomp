@@ -351,6 +351,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`||` de chamada em `if (tipo == X || (z >= 5 && z < 10 && g(id))) return h(...); return 0;`** (`duel_act_immune`) reproduz `bnezl → fim, move v0,zero` para o primeiro limite e o bloco `return 0` compartilhado para os outros.
 - **`DuelAct` com bitfields de `unsigned char`** (`include/duel.h`): `a->player` (1 bit) e `a->zone` (5 bits, `sll 26; srl 27`) como bitfields; `a->player & 1` sobre o bitfield gera um `andi` a mais. O local `DuelAct a = { 0 };` gera o laço de zeragem byte a byte do original (`duel_card_can_affect`).
 - **`int x = cond || !f(id);`** gera `x = 1; if (cond) pula; v = !f(); if (v) pula; x = 0` (`sltu; xori; bnez` seguido de `move sN,zero`), forma vista em `duel_act_can_affect` (que segue em asm porque o `st` anterior, materializado em `a0` no original, é fundido nos desvios pelo compilador).
+- **`if (x > 4)` contra `if (x >= 5)`** (`duel_field_act`): o primeiro gera `slti at,x,5; bnez at → fora`, o segundo `slti v0` (o resultado vira valor); casar o registro `at`/`v0` do `slti` é escolher entre as duas grafias.
+- **Ponteiro do contador como expressão separada** (`duel_grave_add`, `duel_zone_f_add`): `int p = c->owner & 1; DuelCard *dst = &duel.players[p].grave[duel.players[p].n_grave]; int id = c->id;` e depois `duel.players[p].n_grave++` reproduz o `&n_grave` com o símbolo deslocado (`D_08915E70`) separado da base da pilha; o `& 1` no bitfield `owner` vira `sll 26; ext 31,1`; o `(unsigned short)id` na chamada gera o `andi 0xffff`. Um índice separado do laço (`for (j = i; …)`) mantém `i` em `a1` (`duel_grave_remove`).
 
 ## Pendências
 
