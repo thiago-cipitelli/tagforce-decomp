@@ -1,5 +1,4 @@
 // @range 0x088EDE6C-0x088EE93C
-// @asm 0x088EE16C-0x088EE248
 /* Direct attacks: allowed for monster z of player p, and blocked while the opponent has a monster
    that can be attacked. */
 #include "duel.h"
@@ -78,7 +77,6 @@ int duel_direct_attack_allowed(unsigned int p, int z)
     return !duel_slot_has_effect(p, 11, 0x195B);
 }
 
-#ifdef NON_MATCHING /* the two jumps to the `return 1` block keep empty delay slots in the original */
 /* Player p has a monster that can be attacked. */
 int duel_has_attack_target(unsigned int p)
 {
@@ -98,15 +96,12 @@ int duel_has_attack_target(unsigned int p)
                 case 0x164E:
                     continue;
                 }
-                return 1;
-            } else {
-                return 1;
             }
+            return 1;
         }
     }
     return 0;
 }
-#endif
 
 int duel_can_direct_attack(unsigned int p, int z)
 {

@@ -39,8 +39,6 @@ segments:
       - [0xE8638, c, attack_check]
       - [0xE9340, c, attack_target]
       - [0xE9ECC, c, direct_attack]
-      - [0xEA1CC, asm, direct_attack_asm_088EE16C]
-      - [0xEA2A8, c, direct_attack]
       - [0xEA99C, c, control]
       - [0xEAA90, asm, control_asm_088EEA30]
       - [0xEAFE4, c, control]
