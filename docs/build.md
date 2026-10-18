@@ -339,6 +339,9 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`li v0,1; b fim; nop`** (atraso não preenchido) vem de `goto ok;` para um rótulo `ok: return 1;`; `return 1` direto põe o `li` no atraso. O teste `beqzl arg → fim; li v0,1` sai de `if (arg != 0) { …; goto fail; } ok: return 1;`.
 - **`(unsigned short)((unsigned char)p | (unsigned char)z << 8)`** gera `andi z; sll; andi p; or v0,v1,v0` (registros na ordem do original); com `& 0xFF` os registros trocam.
 - **Grupos de `case` com o mesmo corpo**: `case A: case B: x = 1000; break;` testa B com `beql` + atraso e A com `beq` para o corpo; dois `case` separados com corpos iguais dobram os dois em `beql`.
+- **`switch` de um caso só** (`duel_can_attack_target`): `beql x,K → corpo; b depois` (o teste verdadeiro desvia, o falso salta) é `switch (x) { case K: …; break; }`; `if (x == K)` ou `if (x == K && …)` gera `bnel` para depois.
+- **Resto da função dentro de `if (arg != 0) { … } return 1;`**: o `beqzl arg → fim; li v0,1` e o `bgtz … → li v0,1` sem atraso preenchido no fim vêm do `return 1` compartilhado depois do bloco; `if (arg == 0) return 1;` no meio gera `bnezl` + `b`.
+- **`if (a == 0 || f(b) == 0) return 0;`** gera `beqzl a → fim; move v0,zero` e o segundo teste com bloco `move v0,zero; b fim; nop`; dois `if` separados geram `bnezl`.
 
 ## Pendências
 
