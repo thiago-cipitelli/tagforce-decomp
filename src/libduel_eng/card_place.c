@@ -23,7 +23,7 @@ int duel_card_protected(int id, int uid);
 void duel_bzero(void *p, int n);
 void duel_088DF554(unsigned int p, int z, int bit, int v);
 int duel_count_active(int id);
-void duel_slot_e01fc(unsigned int p, int z, int a, int id, int b);
+void duel_slot_effect_add(unsigned int p, int z, int a, int id, int b);
 unsigned int duel_field_flag9(unsigned int p, int z);
 
 /* Card uid is one of the targets of activation a (only for the cards that keep targets). */
@@ -197,7 +197,7 @@ void duel_place_st(unsigned int p, int z, DuelCard *c, int up)
     duel_088DF554(p, z, 0x14, up == 0);
     duel_088DF554(p, z, 7, up);
     if (up == 0 && card_get_type(id) == 0x16 && duel_count_active(0x1390)) {
-        duel_slot_e01fc(p, z, (p == duel_turn_player) << 4 | 1, 0x1390, 0);
+        duel_slot_effect_add(p, z, (p == duel_turn_player) << 4 | 1, 0x1390, 0);
     }
 }
 #endif

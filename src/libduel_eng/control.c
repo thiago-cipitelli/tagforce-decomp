@@ -14,7 +14,7 @@ int duel_field_attr_is(unsigned int p, int z, int attr);
 unsigned int duel_slot_immunity(unsigned int p, int z);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);
 int duel_effect_applies(int id, unsigned int p, unsigned int ref);
-void duel_slot_e01fc(unsigned int p, int z, int a, int id, int b);
+void duel_slot_effect_add(unsigned int p, int z, int a, int id, int b);
 int duel_slot_eef84(unsigned int p, int z);
 
 /* Monster z of player p has declared an attack (bit 21) and used one of its two attacks. */
@@ -27,7 +27,7 @@ void duel_mark_attacked(unsigned int p, int z)
     case 0x18A6:
     case 0x19C1:
     case 0x1A4E:
-        duel_slot_e01fc(p, z, 1, field_get_card(p, z), 0);
+        duel_slot_effect_add(p, z, 1, field_get_card(p, z), 0);
         break;
     }
 }

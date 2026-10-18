@@ -33,9 +33,9 @@ void duel_zone_f_remove_card(unsigned int p, DuelCard *c);
 void duel_grave_remove_card(unsigned int p, DuelCard *c);
 int duel_d_remove(unsigned int p, DuelCard *c);
 int duel_c_remove(unsigned int p, DuelCard *c);
-void duel_088E05E0(DuelCard *c);
-void duel_088E0110(unsigned int p, int z);
-void duel_088E0374(DuelSlot *s);
+void duel_effects_drop_card(DuelCard *c);
+void duel_effects_clear_src(unsigned int p, int z);
+void duel_slot_effects_free(DuelSlot *s);
 void duel_088E0890(int uid);
 void duel_bzero(void *p, int n);
 void duel_hand_add(unsigned int p, DuelCard *c);
@@ -187,7 +187,7 @@ void duel_piles_swap(unsigned int p, DuelDecks *d)
 
 void duel_slot_clear(DuelSlot *s)
 {
-    duel_088E0374(s);
+    duel_slot_effects_free(s);
     duel_bzero(s, 0x14);
 }
 
@@ -205,11 +205,11 @@ void duel_card_take(unsigned int p, int zone, int i)
         break;
     case 0xE:
         duel_grave_remove_card(p, c);
-        duel_088E05E0(c);
+        duel_effects_drop_card(c);
         break;
     case 0xF:
         duel_zone_f_remove_card(p, c);
-        duel_088E05E0(c);
+        duel_effects_drop_card(c);
         break;
     case 0xB:
         duel_hand_remove_card(p, c);
@@ -220,7 +220,7 @@ void duel_card_take(unsigned int p, int zone, int i)
         if (z > 10) {
             duel_slot_clear(p == duel_special.player[0] && zone == duel_special.zone[0] ? &duel_special.slot[0] : &duel_special.slot[1]);
         } else {
-            duel_088E0110(p, z);
+            duel_effects_clear_src(p, z);
             duel_slot_clear(&duel.players[p & 1].field[z]);
             duel.zone_off &= ~(1 << (i + (zone + p * 16)));
         }
@@ -263,7 +263,7 @@ void duel_card_put(unsigned int p, int zone, unsigned int arg, DuelCard *c)
         break;
     }
     if (c->owner == p && zone != 0xE && zone > 10) {
-        duel_088E05E0(c);
+        duel_effects_drop_card(c);
     }
     switch (zone) {
     case 0xC:
