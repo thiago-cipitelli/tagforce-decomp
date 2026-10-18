@@ -364,6 +364,7 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Id lido como `int` com cast nas chamadas** (`duel_field_level`, caso 10): `int cid = slot.card.id; if (cid != 0 && …) { card_get_type((unsigned short)cid); switch ((unsigned short)cid) … }` mantém o id em `v1` para o teste e só copia para `$s0` depois; um `unsigned short cid` declarado dentro do `if` vai direto para `$s0`.
 - **Variável de laço reaproveitada** (`duel_field_type_ex`): o jogador da origem de cada efeito (`src & 0xFF`) mora no mesmo `$s3` que o `q` do laço anterior: o fonte reaproveita `q = src & 0xFF;` em vez de declarar `player`. A zona (`ext 8,8`) é `unsigned int`, não `unsigned short` (que repete `andi 0xffff` ao indexar).
 - **Ordem das declarações com inicializadores que chamam funções**: `int best = 0;` declarado antes de `int id = …; unsigned int imm = f(); …` põe o `move s2,zero` antes da primeira chamada, como no original; achado por força bruta das permutações das declarações (144 variantes, uma dá 0).
+- **`check_file` mascara chamadas para funções do mesmo arquivo**: um `jal` local aparece como `jal 0x0` e pode esconder uma diferença de uma instrução só vista no build completo (`duel_field_attr_is`: `and v0,v0,v1` no original contra `and v0,v1,v0`; nenhuma grafia de `f() & 1 << k` inverteu os operandos, ficou em asm).
 
 ## Pendências
 

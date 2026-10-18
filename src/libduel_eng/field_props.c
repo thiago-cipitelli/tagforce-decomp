@@ -1,10 +1,12 @@
-// @range 0x088F6380-0x088F70B0
+// @range 0x088F6380-0x088F71D8
+// @asm 0x088F71A4-0x088F71D8
 /* Effective level of monster z of player p: printed level, copies, level-changing effects in its
    list, 0x15E3 and 0x150B. */
 #include "duel.h"
 #include "card_db.h"
 
 int duel_slot_e1854(unsigned int p, int z);
+int field_get_card(unsigned int p, int z);
 unsigned int duel_slot_immunity(unsigned int p, int z);
 unsigned int duel_slot_ref(unsigned int p, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);
@@ -366,3 +368,29 @@ int duel_field_kind(unsigned int p, int z)
 {
     return duel_field_kind_ex(p, z, 0);
 }
+
+/* Kind of monster z of player p as a bit mask (0x18C7 and 0x19EF count as kinds 3-6 too). */
+unsigned int duel_field_attrs(unsigned int p, int z)
+{
+    int stamp;
+    int kind = duel_field_kind_ex(p, z, (unsigned int *)&stamp);
+
+    if (stamp == 0) {
+        switch (field_get_card(p, z)) {
+        case 0x18C7:
+        case 0x19EF:
+            if (SLOT_ACTIVE(&duel.players[p & 1].field[z])) {
+                return 1 << kind | 0x78;
+            }
+            break;
+        }
+    }
+    return 1 << kind;
+}
+
+#ifdef NON_MATCHING /* the original ANDs the call result first (and v0,v0,v1); mwcc swaps the operands */
+int duel_field_attr_is(unsigned int p, int z, int kind)
+{
+    return (int)(duel_field_attrs(p, z) & 1 << kind) > 0;
+}
+#endif
