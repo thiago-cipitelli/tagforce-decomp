@@ -247,6 +247,12 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Matriz local de 18 floats** (`ehf_draw_begin`): um buraco de 8 bytes acima de um `float[16]` no quadro do original indica uma matriz declarada maior (ou um local não usado); `float m[18]` reproduz o leiaute.
 - **Valores em registradores temporários através de chamada a função do mesmo arquivo** (`ehf_draw_text`): o original deixa o ponteiro do caractere em `$v0` durante `ehf_track_eval`, que não usa `$v0`. Isso só se reproduz se o chamado compilar exatamente igual; com o chamado em `@asm`, o chamador também fica em asm.
 
+- **Teste do valor retornado** (`ehp_find`, `ehp_read_entry`): `if ((e = f()) != 0)` testa `$v0` com a cópia para `$s` no delay slot, como no original; `e = f(); if (e != 0)` testa o registrador `$s`.
+- **Byte alto como versão** (`ehp.c`): `p->magic >> 24 & 0xFF` com `magic` `int` gera `lw` + `ext`; com `unsigned` sai `srl`, e um bitfield de 8 bits sai `lbu`.
+- **Global repartida**: quando o original endereça uma tabela por um símbolo próprio (`addiu …,%lo(tab)` com o campo em +4), a contagem e a tabela são duas globais (`ehp_mount_n` 0x08903860, `ehp_mount_tab` 0x08903864), não um struct; com struct, a contagem é relida depois de cada gravação na tabela.
+- **Mesmo campo no teste e no corpo do laço** (`ehp_unload`): `while (e->name != 0) { f((char *)p + *(int *)e); … }` relê o campo no corpo, como o original; com `e->name` nos dois lugares o compilador reaproveita a carga do teste.
+- **Inicialização dentro do `for`** (`ehp_read_entry`): `for (i = 0, m = tab; …)` põe o `addiu` do ponteiro no delay slot do teste de entrada, depois do `i = 0`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
