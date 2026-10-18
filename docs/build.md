@@ -262,6 +262,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Laço de zeragem byte a byte** (`mat4_inv_rigid`, `ehsys_0883C50C`): `beqz p; li n,16; sb zero; addiu n,-1; bnez` no começo de um bloco é o `= { 0 }` de um local (array ou struct). `EhfVec4 r = { 0 }; r.x = …; out[0] = r;` reproduz até a cópia do struct pelo stack.
 - **Template de local inicializado vai para o começo do `.data` do objeto**: o mwcc põe o template anônimo (`@282`) numa seção própria que o linker coloca antes das globais do arquivo. Quando o original o tem no meio dos dados, copiar de uma global nomeada (`EhfVec4 r = ehf_row3;`) gera o mesmo código (só as palavras não sobrescritas são lidas) e mantém a ordem.
 
+- **Endereço de campo guardado entre chamadas** (`gim_upload`, `gim_find_block`): quando o original faz `addiu $sN, root, 4` no delay slot da primeira chamada e depois `lw 0($sN)`, o fonte tinha um ponteiro para o campo: `unsigned int *sz = &root->size;` usado nas duas buscas `(char *)root + *sz`.
+- **Parâmetro modificado num laço** (`gim_walk`, `gim_block_find`): quando os `$s` dos parâmetros saem em ordem inversa à do original, copiar o parâmetro que o laço avança para um local (`GimBlock *b = start;`) reproduz a alocação.
+- **Ordem dos `case` com corpos distintos** (`gim_upload`): os corpos saem na ordem do fonte, então `case 4: case 8: size /= 2; break;` vem antes de `case 0: … size *= 2;` quando o original tem a divisão primeiro, mesmo com a tabela de saltos.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

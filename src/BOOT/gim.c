@@ -1,6 +1,6 @@
 // @range 0x08835650-0x08835F48
 // @asm 0x088357C0-0x08835CAC
-// @asm 0x08835DF4-0x08835F48
+// @asm 0x08835DF4-0x08835EB0
 /* GIM textures: block search in the GIM tree, texture setup (format, image of a frame, CLUT of
    the palette block), sprite-sheet cells, and binding a texture from outside a display list. A
    GIM loaded in VRAM records the address and the frame there in place of the "PSP" signature. */
@@ -109,13 +109,14 @@ void gim_bind_frame(Gim *g, int frame)
     sceGuStart(2, buf, size);
 }
 
-#ifdef NON_MATCHING /* the original reloads root->size through a pointer to the field (addiu + lw) for the second search */
+#ifdef NON_MATCHING /* register allocation and scheduling of the frame/CLUT selection differ */
 /* Texture mode and image of `frame` of the GIM's image, then its CLUT when it has a palette. */
 void *gim_set_texture_frame(void *list, Gim *g, int frame)
 {
     GimBlock *root = &g->root;
-    GimBlock *pal = gim_block_find(root, (GimBlock *)((char *)root + g->root.size), 5, 0);
-    GimBlock *blk = gim_block_find(root, (GimBlock *)((char *)root + g->root.size), 4, 0);
+    unsigned int *sz = &root->size;
+    GimBlock *pal = gim_block_find(root, (GimBlock *)((char *)root + *sz), 5, 0);
+    GimBlock *blk = gim_block_find(root, (GimBlock *)((char *)root + *sz), 4, 0);
     GimImage *img = (GimImage *)((char *)blk + blk->data);
     GimImage *clut;
     int off;
@@ -165,8 +166,9 @@ void *gim_set_texture_frame(void *list, Gim *g, int frame)
 void *gim_set_texture_sub(void *list, Gim *g, int frame, int cell, int pframe, int pcell)
 {
     GimBlock *root = &g->root;
-    GimBlock *pal = gim_block_find(root, (GimBlock *)((char *)root + g->root.size), 5, 0);
-    GimBlock *blk = gim_block_find(root, (GimBlock *)((char *)root + g->root.size), 4, 0);
+    unsigned int *sz = &root->size;
+    GimBlock *pal = gim_block_find(root, (GimBlock *)((char *)root + *sz), 5, 0);
+    GimBlock *blk = gim_block_find(root, (GimBlock *)((char *)root + *sz), 4, 0);
     GimImage *img = (GimImage *)((char *)blk + blk->data);
     GimImage *clut;
     int off;
@@ -270,13 +272,13 @@ GimBlock *gim_block_find(GimBlock *b, GimBlock *end, unsigned int id, int nth)
 }
 #endif
 
-#ifdef NON_MATCHING /* same reload of root->size as gim_set_texture_frame */
 /* Data of the image (4) or palette (5) block. */
 void *gim_find_block(Gim *g, int id)
 {
     GimBlock *root = &g->root;
-    GimBlock *pal = gim_block_find(root, (GimBlock *)((char *)root + g->root.size), 5, 0);
-    GimBlock *blk = gim_block_find(root, (GimBlock *)((char *)root + g->root.size), 4, 0);
+    unsigned int *sz = &root->size;
+    GimBlock *pal = gim_block_find(root, (GimBlock *)((char *)root + *sz), 5, 0);
+    GimBlock *blk = gim_block_find(root, (GimBlock *)((char *)root + *sz), 4, 0);
 
     if (id == 4) {
         return (char *)blk + blk->data;
@@ -286,4 +288,3 @@ void *gim_find_block(Gim *g, int id)
     }
     return 0;
 }
-#endif
