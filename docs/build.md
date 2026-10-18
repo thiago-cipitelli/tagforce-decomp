@@ -395,6 +395,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Valor de retorno pré-carregado** (`duel_eff_fde68`): um `case` que devolve o que está em `v0` sem carregar nada (`bnel … corpo; b fim; nop`) é um `int r = 0x7C;` declarado no topo do handler, que o mwcc põe em `v0` junto com a constante da primeira comparação do `switch`; `if (x == 0) return r;` reproduz o desvio. Um `?:` entre duas constantes no fim de um passo sai como `if (c) r = A; else r = B; return r;`. Para que um teste com `duel_act_target` no meio ainda fique no mesmo `&&`, a chamada e os campos entram como expressão vírgula (`(t = duel_act_target(a, 0), q = t & 0xFF, …, duel_0884E440(a, q, z) != 0)`).
 
+- **Ponteiro local para um buffer da pilha** (`duel_msg_post`): o original guarda `&m` num `$s` (`addiu s1,sp,0x20` no delay slot da primeira chamada) e o usa no `memset`/`memcpy`/envio, enquanto os campos são gravados direto pelo `sp`; isso sai com `DuelNetMsg *p = &m;` atribuído antes da primeira chamada. `g->slot[k].campo` gera `addu v0,v0,base`; o original soma a base primeiro (`addu v0,base,v0`), o que só saiu com a conta em bytes (`*(unsigned short *)((char *)g + k * 0x188 + 0x128)`).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
