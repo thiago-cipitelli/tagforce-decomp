@@ -12,7 +12,7 @@
 
 void movie_exit_cleanup(void);
 void net_hold_create(void);
-int main_thread_init(void);
+int efs_init(void);
 int font_init(int);
 int font_set_layer(int);
 void dl_set_mode(int);
@@ -111,7 +111,7 @@ void main(void)
     sceUmdWaitDriveStat(0x20);
     ehfile_build_lbn_table(0x10000);
     sys_init(&sys_config);
-    main_thread_init();
+    efs_init();
     font_init(0);
     font_set_layer(4);
     dl_set_mode(1);

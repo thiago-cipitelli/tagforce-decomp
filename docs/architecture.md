@@ -147,7 +147,7 @@ Todos importam a `libehsys` inteira (1245 NIDs). Uso real: 680 funções distint
 - **Config**: `cfg_get/set_*` sobre o registro de `FUN_0884065c` (idioma em `cfg_get_language`, 3 bits).
 - **Rede ad hoc**: `net_*`/`peer_*` (`0x0886e5xx..0x08869dxx`): fila de envio de 32, registros de peer de 0x100 bytes, scan/MAC, estados 0xb/0x15/0x1e.
 - **Modelos 3D**: formato `TGMT` (`tgm_relocate` `0x0882d91c` converte offsets em ponteiros, `tgm_get_bone_matrix`), `model_*`/`anim_*` com `quat_slerp`, `dl_bone_matrix`. Animações 2D `EHF` (magic `EHF\x1a`, `ehf_*`).
-- **Texturas em VRAM**: `texcache_*` (`0x082929xx`), 0x300 slots.
+- **Efeitos EFS**: `efs_*` (`0x0882923C`-`0x0882AD90`, `src/BOOT/efs.c`): arquivos .efs com árvores de comandos EHF, 0x300 instâncias numa lista circular.
 - **Compressão**: `gzip_decompress` (`0x0881f6e4`), `is_gzip`; os scripts de história vêm como `.bin.gz` dentro dos EHPs.
 - **Matemática**: `vec2/3/4_*`, `mat3/mat4_*`, `quat_*`, `sinf/cosf/atanf/acosf/powf/sqrtf` (MSL) e variantes VFPU (`*_vfpu`).
 - **Região**: `region_get` (`0x088418f0`) retorna constante 1 (build US); `region_game_id` escolhe `ULJM05151`/`ULUS10136`/`SLPS10000`.

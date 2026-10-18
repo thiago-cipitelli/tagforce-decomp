@@ -301,6 +301,15 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Cadeia de atribuição** (`ehf_cmd_sprite`): `base = v = alloc(…)` copia primeiro para `v`; `v = base = …` inverte os `move`.
 - **Parâmetro copiado para `$s` cedo** (`ehf_ptcl_cone`, em asm): quando o original guarda o ponteiro de saída num `$s` só depois das primeiras contas, mas o nosso o copia na entrada (e os temporários mudam de `$t` para `$a`), nenhuma variação de declaração mudou isso; idem para o nome carregado em `$v1` antes do `ehp_find` em `ehf_cmd_tex`.
 
+- **Permutar a ordem dos comandos, não só das declarações** (`efs_load`): `tools/perm_decls.py` aceita comandos inteiros no lugar de `{DECLS}`; a ordem das atribuições independentes (`end = …; base = …; str = …;`) decide os registradores temporários e a ordem dos `lw` quando a das declarações não basta.
+- **Busca com saída por `goto`** (`efs_start`): `for (…) { if (livre) goto found; } return 0; found:` reproduz o laço que cai direto no `return 0`; `break` + `if (i >= N) return 0;` gera um teste a mais.
+- **Ponteiro local para a global grande** (`efs.c`): `EfsMgr *e = &efs;` faz o primeiro acesso sair absoluto (`lui 0x890; lw 12744`) e os seguintes pela base `$s0` com `lui 0x1; addu` (deslocamentos > 0x7FFF); funções que usam só endereços absolutos escrevem `efs.campo`. Dá para misturar os dois na mesma função (`efs_update`, `efs_inst_free`).
+- **Ponteiro para o elemento antes do teste** (`efs_term`, `efs_load`): `EfsInst *inst = &efs.insts[i]; if (inst->mem) efs_inst_free(inst);` põe o cálculo do argumento no delay slot do `beqz` e deixa o `jal` com `nop`; indexar duas vezes gera `beqzl`.
+- **Blocos esvaziados pelo branch-likely ficam no binário quando o bloco tinha outro predecessor** (`efs_set_args`, `efs_inst_init`): quando o original repete uma instrução logo depois de um `b`, o fonte tem o código duplicado nos caminhos (um `dst++` em cada `case`, `argq = 0` no `else` comum às duas condições). `efs_run` tem esses blocos em todas as fases e ficou em asm.
+- **Retorno do valor de entrada sem tail call** (`light_reset`): `if (list == 0) return list; list = light_apply(list); return list;` dá `move v0,s0` e `jal` + epílogo; `return light_apply(list)` vira `j`.
+- **Parâmetro recebido como handle** (`efs_send`): `void *h` copiado para `EfsInst *inst = h` muda a ordem de alocação dos `$s` entre os parâmetros.
+- **Dados de um arquivo terminando fora do alinhamento de 16** (`camera.c`): quando o próximo objeto do original era alinhado a 16 mas o trecho seguinte fica em asm, o `@data` termina no fim real do último objeto (0x088ED7AC) e o preenchimento vai para o asm.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

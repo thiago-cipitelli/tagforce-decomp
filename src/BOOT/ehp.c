@@ -66,7 +66,7 @@ void mem_move(void *dst, void *src, unsigned int n);
 char *strrchr_str(char *s, int c);
 void tgma_relocate(void *p);
 void tgm_relocate(void *p);
-void ehsys_0882B650(void *(*fn)(char *name));
+void tms_set_lookup(void *(*fn)(char *name));
 void ehsys_0882B65C(void *p);
 void gim_reset(void *gim);
 int ehf_tex_foreach(void *f, unsigned char *flags, int (*cb)(EhpPack *pack, EhfTexName *t), void *arg);
@@ -374,7 +374,7 @@ int ehp_relocate(EhpPack *p)
                     break;
                 case 0x736D742E:
                     st->cur = p;
-                    ehsys_0882B650(ehp_tms_find);
+                    tms_set_lookup(ehp_tms_find);
                     ehsys_0882B65C(data);
                     break;
                 case 0x746D742E:
