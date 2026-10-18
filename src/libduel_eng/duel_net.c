@@ -4,7 +4,7 @@
    of the duel state for the other modules. */
 #include "duel.h"
 #include "libc.h"
-#include "game.h"
+#include "duel_setup.h"
 
 typedef struct DuelNetMsg {            /* 0x100, record of one player; sent from +0x04 */
     int len;
@@ -24,17 +24,11 @@ typedef struct DuelNetRec {            /* 0x104, copy of peer_get(i) */
     int pad100;
 } DuelNetRec;
 
-typedef struct DuelDeckBlk {           /* 0x108 */
-    unsigned char b[0x108];
-} DuelDeckBlk;
-
 extern DuelNetRec duel_net_cur;        /* 0x089196A0 */
 extern DuelNetRec duel_net_in[4];      /* 0x089197B0 */
 extern int duel_net_done[4];           /* 0x08919BC0 */
 extern unsigned char duel_net_last[4][8]; /* 0x08919BD0 */
 extern unsigned char duel_net_seq;     /* 0x08919BF0 */
-extern DuelDeckBlk duel_deck_blk2[2];  /* 0x08919BF4 */
-extern DuelDeckBlk D_089139F0[];
 extern unsigned char D_08914A30[];
 
 void *game_state2_get(void);
@@ -46,7 +40,7 @@ int memcmp2(const void *a, const void *b, int n);
 int netsync_local_side(void);
 void netsync_queue_push(void *rec, int size);
 int duel_msg_class(int cmd);
-int duel_088FE724(int side);
+int duel_tag_slot(int side);
 void duel_memcpy(void *dst, void *src, int n);
 int duel_cmd();
 int duel_088D4CD8();
@@ -140,7 +134,7 @@ int duel_msg_post(unsigned short *buf, int size)
         break;
     case 2:
         /* g->slot[k].net_id; the original adds the base first */
-        m.mask = 1 << *(unsigned short *)((char *)g + duel_088FE724(netsync_local_side() ^ 1) * 0x188 + 0x128);
+        m.mask = 1 << *(unsigned short *)((char *)g + duel_tag_slot(netsync_local_side() ^ 1) * 0x188 + 0x128);
         break;
     }
     m.side = netsync_local_side();
@@ -193,26 +187,26 @@ void *duel_get_14a30(void)
     return D_08914A30;
 }
 
-void *duel_deck_blk(int i)
+RecipeData *duel_deck_get(int i)
 {
-    return D_089139F0[i].b + 0x14;
+    return &duel_setup.deck[i];
 }
 
-void duel_deck_blk_set(int i, void *src)
+void duel_deck_set(int i, void *src)
 {
-    duel_memcpy(D_089139F0[i].b + 0x14, src, 0x108);
+    duel_memcpy(&duel_setup.deck[i], src, 0x108);
 }
 
-void duel_deck_blk_set_any(int i, void *src)
+void duel_deck_set4(int i, void *src)
 {
     switch (i) {
     case 0:
     case 1:
-        duel_memcpy(D_089139F0[i].b + 0x14, src, 0x108);
+        duel_memcpy(&duel_setup.deck[i], src, 0x108);
         break;
     case 2:
     case 3:
-        duel_memcpy(&duel_deck_blk2[i - 2], src, 0x108);
+        duel_memcpy(&duel_decks2[i - 2], src, 0x108);
         break;
     }
 }

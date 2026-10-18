@@ -397,6 +397,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Ponteiro local para um buffer da pilha** (`duel_msg_post`): o original guarda `&m` num `$s` (`addiu s1,sp,0x20` no delay slot da primeira chamada) e o usa no `memset`/`memcpy`/envio, enquanto os campos são gravados direto pelo `sp`; isso sai com `DuelNetMsg *p = &m;` atribuído antes da primeira chamada. `g->slot[k].campo` gera `addu v0,v0,base`; o original soma a base primeiro (`addu v0,base,v0`), o que só saiu com a conta em bytes (`*(unsigned short *)((char *)g + k * 0x188 + 0x128)`).
 
+- **Valor 0/1 sem `sltiu` encadeado** (`duel_5250_in_range`): `int r = 0; … if (x <= 6) goto end; if (x >= 0x49) goto end; r = 1; end: return r;` reproduz os dois desvios com `at` do original; `x >= 7 && x < 0x49` vira expressão booleana com `xori`, e a ordem de declaração (`int r = 0;` antes de `x`) decide o registrador de `x`. Um `if (v > 0) {…}` cujo outro caminho só devolve `v` sai com `if (v <= 0) return v; return …;` (`duel_088FE810`). Bits lidos de uma palavra antes do teste: guardar o segundo bit num local (`unsigned int b24 = f >> 24 & 1; r = (f & 1) || b24;`) para o `ext` vir antes do `andi` (`duel_player_protected`).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
