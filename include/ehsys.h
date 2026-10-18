@@ -50,17 +50,23 @@ typedef struct SysInitCfg {
 
 /* display/engine parameters, zeroed and defaulted by sys_config_init (0x0890565C, 0x5C bytes) */
 typedef struct SysConf {
-    int width, height, x, y;          /* +0x00 480x272 */
-    int vwidth, vheight, vx, vy;      /* +0x10 */
-    int flag;                         /* +0x20 = 1 */
-    int unk24[4];
+    int width, height;                /* +0x00 480x272 */
+    int scissor_x, scissor_y;         /* +0x08 */
+    int scissor_w, scissor_h;         /* +0x10 */
+    int scissor_on;                   /* +0x18 */
+    int tfunc;                        /* +0x1C texture function (dl_tex_func) */
+    int tfunc_comp;                   /* +0x20 = 1 (rgba) */
+    int tfunc_double;                 /* +0x24 color doubling (dl_enable 21) */
+    int tex_map;                      /* +0x28 dl_tex_map_mode */
+    int tex_proj;                     /* +0x2C */
+    unsigned int clear_depth;         /* +0x30 */
     unsigned int clear_color;         /* +0x34 */
     unsigned int clear_stencil;       /* +0x38 */
-    int unk3c;
+    int tex_psm;                      /* +0x3C */
     int near_z;                       /* +0x40 50000 */
     int far_z;                        /* +0x44 10000 */
-    int unk48;
-    int unk4c[4];                     /* +0x4C 16,16,16,16 */
+    unsigned int *prim;               /* +0x48 vertex count to patch (dl_prim_begin) */
+    int sprite_size[4];               /* +0x4C 16,16,16,16 (draw_set_offsets) */
 } SysConf;
 
 typedef struct SysState {

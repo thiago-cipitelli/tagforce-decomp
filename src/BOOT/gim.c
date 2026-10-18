@@ -48,8 +48,8 @@ void sceGuStart(int cid, void *list, int size);
 int sceGuFinish(void);
 void *dl_tex_mode(void *list, int psm, int maxmips, int a2, int swizzle);
 void *dl_tex_image(void *list, int mip, int w, int h, int tbw, void *addr);
-void *ehsys_0883C57C(void *list, int psm, int shift, int mask, int start);
-void *ehsys_0883C50C(void *list, int n, void *clut);
+void *dl_clut_mode(void *list, int psm, int shift, int mask, int start);
+void *dl_clut_load(void *list, int n, void *clut);
 
 GimBlock *gim_block_find(GimBlock *b, GimBlock *end, unsigned int id, int nth);
 void *gim_set_texture_frame(void *list, Gim *g, int frame);
@@ -155,8 +155,8 @@ void *gim_set_texture_frame(void *list, Gim *g, int frame)
     } else {
         off = *(int *)((char *)clut + clut->offsets);
     }
-    list = ehsys_0883C57C(list, clut->format, 0, 0xFF, 0);
-    return ehsys_0883C50C(list, n, (char *)clut + off);
+    list = dl_clut_mode(list, clut->format, 0, 0xFF, 0);
+    return dl_clut_load(list, n, (char *)clut + off);
 }
 #endif
 
@@ -217,8 +217,8 @@ void *gim_set_texture_sub(void *list, Gim *g, int frame, int cell, int pframe, i
     } else {
         off = *(int *)((char *)clut + clut->offsets);
     }
-    list = ehsys_0883C57C(list, clut->format, 0, 0xFF, 0);
-    return ehsys_0883C50C(list, n, (char *)clut + off);
+    list = dl_clut_mode(list, clut->format, 0, 0xFF, 0);
+    return dl_clut_load(list, n, (char *)clut + off);
 }
 #endif
 

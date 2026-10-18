@@ -17,27 +17,27 @@ void sys_config_init(void)
     memset(&sys_conf, 0, sizeof sys_conf);
     sys_conf.width = 480;
     sys_conf.height = 272;
-    sys_conf.x = 0;
-    sys_conf.y = 0;
-    sys_conf.vwidth = 480;
-    sys_conf.vheight = 272;
-    sys_conf.vx = 0;
-    sys_conf.vy = 0;
-    sys_conf.flag = 1;
-    sys_conf.unk24[0] = 0;
-    sys_conf.unk24[1] = 0;
-    sys_conf.unk24[2] = 0;
-    sys_conf.unk24[3] = 0;
+    sys_conf.scissor_x = 0;
+    sys_conf.scissor_y = 0;
+    sys_conf.scissor_w = 480;
+    sys_conf.scissor_h = 272;
+    sys_conf.scissor_on = 0;
+    sys_conf.tfunc = 0;
+    sys_conf.tfunc_comp = 1;
+    sys_conf.tfunc_double = 0;
+    sys_conf.tex_map = 0;
+    sys_conf.tex_proj = 0;
+    sys_conf.clear_depth = 0;
     sys_conf.clear_color = 0;
     sys_conf.clear_stencil = 0;
-    sys_conf.unk3c = 0;
+    sys_conf.tex_psm = 0;
     sys_conf.near_z = 50000;
     sys_conf.far_z = 10000;
-    sys_conf.unk48 = 0;
-    sys_conf.unk4c[0] = 16;
-    sys_conf.unk4c[1] = 16;
-    sys_conf.unk4c[2] = 16;
-    sys_conf.unk4c[3] = 16;
+    sys_conf.prim = 0;
+    sys_conf.sprite_size[0] = 16;
+    sys_conf.sprite_size[1] = 16;
+    sys_conf.sprite_size[2] = 16;
+    sys_conf.sprite_size[3] = 16;
 }
 
 int ehscript_start(const char *name, int dir, void (*static_fn)(void))

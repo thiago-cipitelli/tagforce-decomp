@@ -26,9 +26,9 @@ void sceGuStart(int cid, void *list, int size);
 int sceGuFinish(void);
 void *mtx_flush(void *list);
 void *dl_draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
-void *ehsys_0883A988(void *list, int a, int b, int c, int d, int e, int f);
-void *ehsys_0883AAC4(void *list, int a, int b, int c, int d, int e);
-void *ehsys_0883ABC0(void *list, int a, int b, int c, int d, int e, int f, int g);
+void *dl_draw_array_n(void *list, int a, int b, int c, int d, int e, int f);
+void *dl_draw_bezier(void *list, int a, int b, int c, int d, int e);
+void *dl_draw_spline(void *list, int a, int b, int c, int d, int e, int f, int g);
 void mtx_store(int mode);
 void mtx_get34(float *m);
 void mat4_mul(float *out, float *a, float *b);
@@ -75,7 +75,7 @@ void draw_0883A988_now(int a, int b, int c, int d, int e, int f)
     base = dl_get_cur_list_base();
     n = sceGuFinish();
     dl_set_list((char *)base + n - 8);
-    list = ehsys_0883A988(mtx_flush(dl_select_layer(layer, 0)), a, b, c, d, e, f);
+    list = dl_draw_array_n(mtx_flush(dl_select_layer(layer, 0)), a, b, c, d, e, f);
     layer2 = dl_get_layer();
     dl_set_list(list);
     dl_set_cur_list_base(buf = dl_select_layer(layer2, &size));
@@ -84,7 +84,7 @@ void draw_0883A988_now(int a, int b, int c, int d, int e, int f)
 
 void *draw_0883A988(void *list, int a, int b, int c, int d, int e, int f)
 {
-    return ehsys_0883A988(mtx_flush(list), a, b, c, d, e, f);
+    return dl_draw_array_n(mtx_flush(list), a, b, c, d, e, f);
 }
 
 void draw_0883AAC4_now(int a, int b, int c, int d, int e)
@@ -101,7 +101,7 @@ void draw_0883AAC4_now(int a, int b, int c, int d, int e)
     base = dl_get_cur_list_base();
     n = sceGuFinish();
     dl_set_list((char *)base + n - 8);
-    list = ehsys_0883AAC4(mtx_flush(dl_select_layer(layer, 0)), a, b, c, d, e);
+    list = dl_draw_bezier(mtx_flush(dl_select_layer(layer, 0)), a, b, c, d, e);
     layer2 = dl_get_layer();
     dl_set_list(list);
     dl_set_cur_list_base(buf = dl_select_layer(layer2, &size));
@@ -110,7 +110,7 @@ void draw_0883AAC4_now(int a, int b, int c, int d, int e)
 
 void *draw_0883AAC4(void *list, int a, int b, int c, int d, int e)
 {
-    return ehsys_0883AAC4(mtx_flush(list), a, b, c, d, e);
+    return dl_draw_bezier(mtx_flush(list), a, b, c, d, e);
 }
 
 void draw_0883ABC0_now(int a, int b, int c, int d, int e, int f, int g)
@@ -127,7 +127,7 @@ void draw_0883ABC0_now(int a, int b, int c, int d, int e, int f, int g)
     base = dl_get_cur_list_base();
     n = sceGuFinish();
     dl_set_list((char *)base + n - 8);
-    list = ehsys_0883ABC0(mtx_flush(dl_select_layer(layer, 0)), a, b, c, d, e, f, g);
+    list = dl_draw_spline(mtx_flush(dl_select_layer(layer, 0)), a, b, c, d, e, f, g);
     layer2 = dl_get_layer();
     dl_set_list(list);
     dl_set_cur_list_base(buf = dl_select_layer(layer2, &size));
@@ -136,7 +136,7 @@ void draw_0883ABC0_now(int a, int b, int c, int d, int e, int f, int g)
 
 void *draw_0883ABC0(void *list, int a, int b, int c, int d, int e, int f, int g)
 {
-    return ehsys_0883ABC0(mtx_flush(list), a, b, c, d, e, f, g);
+    return dl_draw_spline(mtx_flush(list), a, b, c, d, e, f, g);
 }
 
 #ifdef NON_MATCHING /* float-heavy, kept in asm */

@@ -199,9 +199,9 @@ void *dl_morph_weight(float w, void *list, int i);
 void *dl_light_mode(void *list, int mode);
 void *dl_draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
 void *gim_set_texture(void *list, void *gim);
-void *ehsys_0883B838(void *list, int light, int type, int comps, float *pos);
-void *ehsys_0883B908(void *list, int light, int comp, unsigned int color);
-void *ehsys_0883BD24(void *list, int mode, unsigned int color);
+void *dl_light(void *list, int light, int type, int comps, float *pos);
+void *dl_light_color(void *list, int light, int comp, unsigned int color);
+void *dl_material(void *list, int mode, unsigned int color);
 
 EhfInst *ehf_resolve(EhfFile *f);
 int ehf_inst_reset(EhfInst *e, EhfFile *f, int keep);
@@ -1180,19 +1180,19 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
         CLAMP255(cx.add[3]);
         col = cx.add[0] + cx.add[1] * 0x100 + cx.add[3] * 0x1000000 + cx.add[2] * 0x10000;
         list = dl_material_colors(list, col, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
-        list = ehsys_0883BD24(list, 1, (unsigned char)mh->alpha * 0x1000000 + (mh->color & 0xFFFFFF));
+        list = dl_material(list, 1, (unsigned char)mh->alpha * 0x1000000 + (mh->color & 0xFFFFFF));
         zero[0] = 0.0f;
         zero[1] = 0.0f;
         zero[2] = 0.0f;
-        list = ehsys_0883B908(list, 0, 2, col);
-        list = ehsys_0883B908(list, 0, 4, col);
-        list = ehsys_0883B838(list, 0, 0, 6, zero);
+        list = dl_light_color(list, 0, 2, col);
+        list = dl_light_color(list, 0, 4, col);
+        list = dl_light(list, 0, 0, 6, zero);
         lpos[0] = ehf_light_pos[0];
         lpos[1] = ehf_light_pos[1] * -1.0f;
         lpos[2] = ehf_light_pos[2];
-        list = ehsys_0883B908(list, 1, 2, col);
-        list = ehsys_0883B908(list, 1, 4, col);
-        list = ehsys_0883B838(list, 1, 0, 6, lpos);
+        list = dl_light_color(list, 1, 2, col);
+        list = dl_light_color(list, 1, 4, col);
+        list = dl_light(list, 1, 0, 6, lpos);
         list = dl_enable(list, 0xB);
         list = dl_light_mode(list, 1);
         list = dl_draw_array(list, (mh->prim & 0x7FFFF) >> 16, mh->vtype & 0xFFFFFF, mh->prim & 0xFFFF, 0,
@@ -1269,7 +1269,7 @@ void *ehf_draw_text(void *list, EhfInst *e, EhfClip *c, unsigned int frame, floa
         shape = (int *)((char *)e->file + e->hdr->chars + gl->chr);
         mat4_translate2(g2, ((float *)shape)[1], ((float *)shape)[2]);
         list = dl_set_matrix(list, 1, g2);
-        list = ehsys_0883BD24(list, 1, gl->color);
+        list = dl_material(list, 1, gl->color);
         mh = (EhfMesh *)((char *)shape + 0x20);
         mend = (EhfMesh *)((char *)mh + shape[3]);
         for (; mh < mend; mh++) {

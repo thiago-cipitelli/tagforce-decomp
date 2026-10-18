@@ -97,8 +97,8 @@ void *dl_color(void *list, unsigned int color);
 void *dl_scissor(void *list, int x, int y, int w, int h);
 void *dl_draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
 void *dl_alloc_inline(void **list, int size);
-void *dl_push_const_09c(void *list);
-void *dl_push_const_0a0(void *list);
+void *dl_tex_sync(void *list);
+void *dl_tex_flush(void *list);
 void *draw_set_offsets(void *list, int tw, int th, int w, int h);
 void *draw_sprite(void *list, int x, int y, int z, int u, int v, int a, int b);
 void *gim_set_texture(void *list, void *gim);
@@ -512,7 +512,7 @@ void *cardlist_draw_pair_at(void *list, int x, int y, CardView *a, CardView *b)
                 } else {
                     tex = cardlist_get_picture(id, v->shown_variant);
                 }
-                list = dl_push_const_09c(cardlist_draw_picture_small(list, x + pos[0] + 0x1C, y + pos[1] + 0xD, tex, v->vram, v->fade));
+                list = dl_tex_sync(cardlist_draw_picture_small(list, x + pos[0] + 0x1C, y + pos[1] + 0xD, tex, v->vram, v->fade));
             }
         }
         list = dl_disable(list, 9);
@@ -830,7 +830,7 @@ void *cardlist_draw_picture(void *list, int x, int y, void *tex, int vram, unsig
         list = dl_ambient_color(list, 0xFFFFFFFF);
         w = 0x6C;
     }
-    list = dl_push_const_0a0(list);
+    list = dl_tex_flush(list);
     list = dl_tex_func(list, 0, 0);
     list = dl_tex_mode(list, 3, 0, 0, 0);
     list = dl_tex_image(list, 0, 0x80, 0x100, 0x80, (char *)sceGeEdramGetAddr() + vram);
@@ -858,7 +858,7 @@ void *cardlist_draw_picture_small(void *list, int x, int y, void *tex, int vram,
         list = dl_ambient_color(list, 0xFFFFFFFF);
         w = 0x4E;
     }
-    list = dl_push_const_0a0(list);
+    list = dl_tex_flush(list);
     list = dl_tex_func(list, 0, 0);
     list = dl_tex_mode(list, 3, 0, 0, 0);
     list = dl_tex_image(list, 0, 0x80, 0x100, 0x80, (char *)sceGeEdramGetAddr() + vram);

@@ -273,6 +273,13 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Condição negada guardada numa variável** (`pad_angle`): `moved = !(abs(dx) < 0x20 && abs(dy) < 0x20); if (moved) …` gera `slti; beqzl …; xori` como no original; o `if (!(…))` direto vira `beqz` + `bnezl`.
 
+- **Palavras de comando do GE** (`dl.c`): o `or` com o parâmetro mais à esquerda sai por último no original, então `func | (mask << 16 | 0xDB000000 | ref << 8)` (e `psm | (shift << 2 | (start << 16 | 0xC5000000 | mask << 8))`); sem os parênteses o mwcc começa pelo primeiro operando. `ext` sai de deslocamento + máscara: `(p >> 24 & 0xF) << 16` (BASE), `x >> 8 & 0xFFFFFF` (float para o GE); `((p & 0xFFFFFFF) >> 24)` também gera `ext` numa variável, mas não num parâmetro convertido.
+- **Índice crescente em array local** (`dl_draw_array`, `dl_prim_begin`): `n = 0; cmd[n++] = …` (cada acesso recalcula `sll/addu` sobre `$sp`); `cmd[n] … n += 2` gera endereço base fixo.
+- **Cadeia de testes em ordem inversa = `switch`** (`dl_material`, `dl_light_color`, `dl_light_spot`): `li 4; beq; li 2; beql; li 1; beql` vem de `switch` com `case 1, 2, 4` nessa ordem no fonte; os testes em ordem direta (`beqz; li 1; bnel; li 2; bnel`) são `if/else if` (`draw_sprite`).
+- **Valor usado só como temporário vai para outra posição do array** (`dl_disable`, `dl_scissor`): quando um `int` local cai no registrador errado, declará-lo `unsigned int` (ou usar um slot do próprio array, `cmd[3] = x + w - 1; … | cmd[3]`) muda a ordem de alocação.
+- **Locais `float` inicializados antes do array** (`dl_viewport`): o original converte os parâmetros e grava nos slots antes do laço de zeragem; isso só sai com `float x = cx; …` declarados antes de `unsigned int cmd[4] = { 0 };` (inicialização na declaração, na ordem do stack).
+- **`push` em laço que devolve o ponteiro** (`dl_draw_array_n`): o original mantém a lista em `$v0` com `bnezl … move a0,v0`; reatribuir a variável do parâmetro (`list = dl_push1(list, …)`) leva para `$a0` e acrescenta `move v0,a0`; uma variável nova (`p = dl_push(…); p = dl_push1(p, …); return p;`) reproduz.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
