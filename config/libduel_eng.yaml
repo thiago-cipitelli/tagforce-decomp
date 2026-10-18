@@ -27,6 +27,10 @@ segments:
     subalign: null
     subsegments:
       - [0x60, asm, text_0]
+      - [0xE1860, c, card_place]
+      - [0xE1980, asm, card_place_asm_088E5920]
+      - [0xE1A10, c, card_place]
+      - [0xE1C48, asm, card_place_asm_088E5BE8]
       - [0xE1FE4, c, card_find]
       - [0xE2374, asm, card_find_asm_088E6314]
       - [0xE23D8, c, card_find]

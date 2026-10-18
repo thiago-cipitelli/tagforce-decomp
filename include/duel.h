@@ -6,14 +6,14 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 typedef struct DuelCard {              /* 4: a card reference */
-    unsigned short id : 13;
-    unsigned short owner : 1;          /* also bit 0 of the instance id */
-    unsigned short b14 : 1;
-    unsigned short b15 : 1;
-    unsigned short lo5 : 5;
-    unsigned short b21 : 1;
-    unsigned short uid_hi : 8;         /* instance id bits 1-8 */
-    unsigned short f30 : 2;
+    unsigned int id : 13;
+    unsigned int owner : 1;          /* also bit 0 of the instance id */
+    unsigned int b14 : 1;
+    unsigned int b15 : 1;
+    unsigned int lo5 : 5;
+    unsigned int b21 : 1;
+    unsigned int uid_hi : 8;         /* instance id bits 1-8 */
+    unsigned int f30 : 2;
 } DuelCard;
 
 /* instance id of a card reference */

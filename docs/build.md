@@ -413,6 +413,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Ordem dos `case` pela tabela de saltos** (`duel_card_put`): com tabela, os corpos saem na ordem do fonte e a tabela dá o endereço de cada um; ordenar as entradas por endereço dá a ordem dos `case` no fonte (aqui 0xC, 0xD, 0xE, 0xF, 0xB, `default`, 0x10). Um `if (z == 0xB || z == 0xD || z == 0xC)` que o original testa com `beql` em sequência é um `switch` com os três rótulos juntos; o `||` vira teste de faixa. Um índice somado em partes (`1 << (i + (zone + p * 16))`) evita que o mwcc reaproveite `zone + i` já calculado. Um ponteiro escolhido por `&&` direto no argumento (`f(a && b ? &x : &y)`) reproduz o `bne; beql; b` do original.
 
+- **`DuelCard` com bitfields `unsigned int`** (`card_place.c`): a cópia de uma carta (`*dst = *src`) sai no original como `lwc1`/`swc1`, a cópia de um struct de 4 bytes alinhado a 4; com bitfields de `unsigned short` (alinhamento 2) o mwcc copia por halfwords. Trocar para `unsigned int` manteve todos os outros arquivos da libduel_eng iguais (o mwcc continua estreitando os acessos aos campos para `lhu`/`lbu`). As entradas de `duel.list[]` têm um contador de 2 bits nos bits 13–14 (`DuelListCard.placed`), acessado por um cast.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
