@@ -370,6 +370,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Operandos de `xor` em `q != a->player`** (`duel_eff_f8564`): com `q = duel.turn_player ^ i` numa variável local o compilador gera `xor a2,a0,v0` como o original.
 - **Retorno antecipado que vira o caminho do desvio** (handlers): o original prefere `beqzl cond → fim, li v0,K` com o resto em queda; isso sai de `if (cond != 0) { …; return X; } return K;` (o `return K` depois do bloco), não de `if (cond == 0) return K;` no topo. Valores devolvidos sem `li` (o registro já tem a constante de um teste do `switch`, ex.: `return 0x7D` num caso 0x7F) também indicam o caminho.
 - **Tipo dos parâmetros pelos call sites**: se um call site carrega a variável com `lhu` e outro passa uma `int` com `lw` sem máscara, o parâmetro é `int` e a primeira variável é `unsigned short` (`Duel.unk3830`).
+- **Valor comparado reaproveitado como argumento** (`duel_eff_f9024`): `ext a1,…; li v1,14; bnel a1,v1` e depois a chamada com `a1` intacto vem de `zone = …; if (zone == 14) f(p, zone, …)` (a variável, não a constante 14).
+- **Tabela de salto de função mantida em asm**: se a função com `switch` denso ficar em `@asm`, o `@data` da tabela não pode ser declarado no `.c` (o C sob `NON_MATCHING` não a emite e o link falha com `undefined reference to jtbl_…`).
 
 ## Pendências
 
