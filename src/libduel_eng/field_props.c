@@ -1,4 +1,4 @@
-// @range 0x088F6380-0x088F6C2C
+// @range 0x088F6380-0x088F70B0
 /* Effective level of monster z of player p: printed level, copies, level-changing effects in its
    list, 0x15E3 and 0x150B. */
 #include "duel.h"
@@ -243,4 +243,126 @@ unsigned int duel_field_type_ex(unsigned int p, int z, int skip)
         }
     }
     return type & 0xFFFF;
+}
+
+/* Effective kind (card_get_kind) of monster z of player p, with the stamp of the card that set it. */
+int duel_field_kind_ex(unsigned int p, int z, unsigned int *stamp)
+{
+    int i;
+    unsigned int q;
+    unsigned int e;
+    int best = 0;
+    int kind;
+    int id = duel.players[p & 1].field[z].card.id;
+    unsigned int imm = duel_slot_immunity(p, z);
+    unsigned int ref = duel_slot_ref(p, z);
+
+    if (stamp != 0) {
+        *stamp = 0;
+    }
+    if (id == 0) {
+        return 0;
+    }
+    kind = card_get_kind(id);
+    if (z >= 5) {
+        return kind;
+    }
+    if (duel.players[p & 1].field[z].faceup == 0) {
+        return kind;
+    }
+    if (id == 0x19ED) {
+        unsigned short r = duel_slot_e1854(p, z);
+
+        if (r != 0xFFFF) {
+            return duel_field_kind_ex(r & 0xFF, (unsigned char)((r & 0xFFFF) >> 8), 0);
+        }
+    }
+    for (q = 0; (int)q < 2; q++) {
+        for (i = 5; i < 10; i++) {
+            if ((int)(ref & ((p != q) + 1)) <= 0 && duel.players[q & 1].field[i].card.id == 0x171F &&
+                SLOT_ACTIVE(&duel.players[q & 1].field[i]) && best < duel.players[q & 1].field[i].unk4 &&
+                duel.players[q & 1].field[i].link != 0) {
+                best = duel.players[q & 1].field[i].unk4;
+                kind = duel.players[q & 1].field[i].link;
+            }
+        }
+    }
+    for (e = duel.players[p & 1].field[z].effects; e != 0;) {
+        DuelEffect *ef = &duel.effects[e];
+        unsigned short src = ef->src;
+        unsigned int zone;
+
+        q = src & 0xFF;
+        zone = src >> 8 & 0xFF;
+        e = ef->next;
+        switch (ef->kind & 0xF) {
+        case 3:
+            switch (src) {
+            case 0x183B:
+                if (ef->arg >= best) {
+                    kind = duel.players[p & 1].field[z].link;
+                }
+                break;
+            }
+            break;
+        case 5:
+            switch (src) {
+            case 0x1602:
+            case 0x1608:
+                if (best == 0) {
+                    kind = ef->arg & 0xF;
+                    e = duel.effects[duel.effects[(unsigned short)e].next].next;
+                }
+                break;
+            case 0x1472:
+                if (best == 0) {
+                    switch (id) {
+                    case 0x1472:
+                    case 0x1809:
+                        kind = 5;
+                        break;
+                    case 0x1636:
+                        kind = 3;
+                        break;
+                    case 0x172F:
+                        kind = 2;
+                        break;
+                    }
+                }
+                break;
+            }
+            break;
+        case 10:
+            if (duel.players[q & 1].field[zone].card.id != 0 && SLOT_ACTIVE(&duel.players[q & 1].field[zone]) &&
+                best < duel.players[q & 1].field[zone].unk4) {
+                int cid = duel.players[q & 1].field[zone].card.id;
+
+                if (card_get_type((unsigned short)cid) == 0x17) {
+                    if ((int)(ref & ((p != q) + 1)) > 0) {
+                        break;
+                    }
+                } else if ((int)(imm & ((p != q) + 1)) > 0) {
+                    break;
+                }
+                switch ((unsigned short)cid) {
+                case 0x145B:
+                    if (duel.players[q & 1].field[zone].link != 0) {
+                        best = duel.players[q & 1].field[zone].unk4;
+                        kind = duel.players[q & 1].field[zone].link;
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    if (stamp != 0) {
+        *stamp = best;
+    }
+    return kind;
+}
+
+int duel_field_kind(unsigned int p, int z)
+{
+    return duel_field_kind_ex(p, z, 0);
 }
