@@ -1,6 +1,6 @@
 // @range 0x0882644C-0x08827030
 // @asm 0x0882644C-0x0882684C
-// @data 0x088ED3E0-0x088ED3F0
+// @data 0x088ED3D0-0x088ED3F0
 /* EHF particles, part 1: the particle pool (aging and expiry), the emitter (spawns one particle
    every `period` seconds, position and velocity from callbacks set by the commands that follow),
    and position generators: random point in a box, in a box moving between two centers, on a disc. */
@@ -63,6 +63,8 @@ extern EhfPool *ehf_pool;              /* 0x088FA020 */
 extern EhfEmitter *ehf_emitter;        /* 0x088FA024 */
 extern int rand3_slot;
 extern unsigned int rand3_seeds[][3];
+
+Vec4 ehf_ptcl_x = { 1.0f, 0.0f, 0.0f, 0.0f }; /* fallback cone axis (particle3.c) */
 
 GfxState *gfx_get_state(void);
 void vec3_add(float *out, float *a, float *b);
