@@ -368,6 +368,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Handlers de efeito de carta** (`effects_a.c` em diante): recebem o `DuelAct` e retornam o próximo passo da corrente (`duel_step`, 0x7A-0x80) ou 0; os testes de `duel_step` são `switch` com os casos em ordem decrescente (0x80 primeiro), e um caso que retorna o valor de comparação de outro (`return 0x7E` no caso 0x7F) reaproveita o registro da constante.
 - **`(x & 0xFF) - 1` sobre um `unsigned char`** gera o `andi 0xff` redundante antes do `addiu -1` (`duel_eff_f82b8`); `(unsigned char)x - 1` ou uma variável local não geram.
 - **Operandos de `xor` em `q != a->player`** (`duel_eff_f8564`): com `q = duel.turn_player ^ i` numa variável local o compilador gera `xor a2,a0,v0` como o original.
+- **Retorno antecipado que vira o caminho do desvio** (handlers): o original prefere `beqzl cond → fim, li v0,K` com o resto em queda; isso sai de `if (cond != 0) { …; return X; } return K;` (o `return K` depois do bloco), não de `if (cond == 0) return K;` no topo. Valores devolvidos sem `li` (o registro já tem a constante de um teste do `switch`, ex.: `return 0x7D` num caso 0x7F) também indicam o caminho.
+- **Tipo dos parâmetros pelos call sites**: se um call site carrega a variável com `lhu` e outro passa uma `int` com `lw` sem máscara, o parâmetro é `int` e a primeira variável é `unsigned short` (`Duel.unk3830`).
 
 ## Pendências
 

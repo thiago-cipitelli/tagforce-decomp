@@ -17,7 +17,7 @@ extern int duel_step;                  /* 0x089148F8 */
 
 void duel_088C7CF0(void);
 void duel_088C7BA4(void);
-void duel_088CA384(unsigned int p, unsigned short id, int a);
+void duel_088CA384(unsigned int p, int id, int a);
 void duel_08832894(unsigned int p, unsigned short id);
 void duel_08832950(unsigned int p, unsigned short id);
 int duel_0886CE38(void);
