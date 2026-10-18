@@ -76,7 +76,7 @@ void mat4_transpose(Mat4 *out, Mat4 *m);
 void quat_to_mat4(Mat4 *out, Vec4 *q);
 void vec3_normalize2(Vec4 *out, Vec4 *v);
 void vec3_cross(Vec4 *out, Vec4 *a, Vec4 *b);
-void tgm_get_bone_matrix(void *model, Mat4 *out, int bone);
+void model_get_bone(void *model, Mat4 *out, int bone);
 
 #define FRAME16(n) ((int)*(unsigned short *)&(n)->frame)
 

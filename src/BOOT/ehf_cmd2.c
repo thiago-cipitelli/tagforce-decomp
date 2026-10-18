@@ -156,7 +156,7 @@ int ehf_cmd_bone(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
         return 0;
     }
     mtx_push();
-    tgm_get_bone_matrix(*(void **)a[0], &m, a[1]);
+    model_get_bone(*(void **)a[0], &m, a[1]);
     mtx_mult(&m);
     return 2;
 }

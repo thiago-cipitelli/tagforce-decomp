@@ -21,7 +21,7 @@ int ehf_cmd_bone_args(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     }
     ehf_cmd_args(0, cmd, 0, out, fmt);
     mtx_push();
-    tgm_get_bone_matrix(*(void **)&model, &m, idx);
+    model_get_bone(*(void **)&model, &m, idx);
     mtx_mult(&m);
     return 2;
 }

@@ -313,6 +313,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Protótipo local escolhe a ordem dos argumentos float** (`tms_draw`): a mesma `dl_tex_offset` definida como `(float u, float v, list)` em `dl.c` é declarada em `tms.c` como `(list, u, v)`; os registradores são os mesmos (`$a0`, `$f12`, `$f13`), mas a ordem da avaliação muda o que vai para o delay slot do `jal`.
 - **`switch` sobre um bit** (`tms_draw`): dois testes `beql v,1` / `beqzl v` seguidos de corpos na ordem 0, 1 são `switch (flags & 1) { case 0: …; case 1: …; }`, com `continue` dentro dos `case`.
 
+- **`check_file.py` não confere o destino dos `jal`** (`model_draw`): a relocação `R_MIPS_26` é comparada só pelo opcode, então chamar `mtx_mark_cur_dirty` no lugar do invólucro `model_mtx_dirty` passa no arquivo e só falha no `make MODULE=BOOT check`. Funções minúsculas entre duas funções nomeadas (um `j` + `nop`) costumam ser esses invólucros.
+- **Laço de contagem com teste no topo** (`model_load`): `while (1) { if (*p == -1) break; p++; i++; }` mantém o teste antes do corpo (`beql` para a saída com a gravação no delay slot); `for (…; *p != -1; …)` é rotacionado pelo compilador.
+- **Matriz identidade carregada float a float** (`model_load`): o template de 64 bytes copiado com 16 `lwc1`/`swc1` vem de uma struct de 16 `float` com `aligned(16)`; um `Mat4` com `float m[16]` gera o laço de cópia de pares de palavras.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

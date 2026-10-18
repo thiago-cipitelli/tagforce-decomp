@@ -22,9 +22,9 @@ int inv_get_limit(unsigned short id);         /* u16 results used unmasked here:
 int card_limit_default(unsigned short id);
 int sysflag_test(unsigned int bit);
 void *model_load(void *data, int flags);
-void model_anim_reset(void *model, void *anim);
+void model_anim_set(void *model, void *anim);
 void model_anim_play(void *model, int idx, int flags);
-void model_set_anim_ptr(void *model, void *anim);
+void model_set_tgma(void *model, void *anim);
 void model_update(void *model, void *dt);
 void model_draw(void *model, void *params);
 int u16_cmp(const void *a, const void *b);
@@ -293,14 +293,14 @@ int cardinfo_model_cb(void **obj, void *scene, unsigned char *item, int msg)
             anim2 = ehp_find(pack, p[4], 0);
         obj[2] = model_load(data, 0);
         if (anim1 != 0) {
-            model_anim_reset(obj[2], anim1);
+            model_anim_set(obj[2], anim1);
             model_anim_play(obj[2], 0, 2);
             memset(anim, 0, sizeof anim);
             anim[0] = 0;
             model_update(obj[2], anim);
         }
         if (anim2 != 0)
-            model_set_anim_ptr(obj[2], anim2);
+            model_set_tgma(obj[2], anim2);
         return 0xC;
     case 5:
         if (obj[2] == 0)

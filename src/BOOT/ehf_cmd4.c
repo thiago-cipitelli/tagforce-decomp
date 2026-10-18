@@ -103,7 +103,7 @@ int ehf_cmd_bone_points(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
 
     switch (phase) {
     case 5:
-        tgm_get_bone_matrix(a[2].p, &m, a[3].i);
+        model_get_bone(a[2].p, &m, a[3].i);
         mat4_transform_vec4(a[0].p, &m, a[0].p);
         mat4_transform_vec4(a[1].p, &m, a[1].p);
         return 0;
