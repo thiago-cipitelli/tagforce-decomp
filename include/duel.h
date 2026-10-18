@@ -82,12 +82,11 @@ typedef struct DuelStats {             /* duel_field_stats */
 
 typedef struct DuelAct {               /* 0x18: card being activated or resolved */
     unsigned short id;
-    unsigned char player : 1;          /* +0x02 */
-    unsigned char zone : 5;
-    unsigned char b2_6 : 2;
-    unsigned char b3_0 : 4;            /* +0x03 */
-    unsigned char b3_4 : 2;
-    unsigned char b3_6 : 2;
+    unsigned short player : 1;         /* +0x02 */
+    unsigned short zone : 5;
+    unsigned short kind : 6;
+    unsigned short b3_4 : 2;
+    unsigned short b3_6 : 2;
     unsigned short b4_0 : 2;           /* +0x04 */
     unsigned short b4_2 : 1;
     unsigned short b4_3 : 3;
@@ -144,7 +143,8 @@ typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
     int msg_done;                      /* +0x3794 */
     unsigned char pad3798[0x3830 - 0x3798];
     unsigned short unk3830;
-    unsigned char pad3832[0x3840 - 0x3832];
+    unsigned short unk3832;
+    unsigned char pad3834[0x3840 - 0x3834];
 } Duel;
 
 extern Duel duel;

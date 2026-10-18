@@ -372,6 +372,9 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Tipo dos parâmetros pelos call sites**: se um call site carrega a variável com `lhu` e outro passa uma `int` com `lw` sem máscara, o parâmetro é `int` e a primeira variável é `unsigned short` (`Duel.unk3830`).
 - **Valor comparado reaproveitado como argumento** (`duel_eff_f9024`): `ext a1,…; li v1,14; bnel a1,v1` e depois a chamada com `a1` intacto vem de `zone = …; if (zone == 14) f(p, zone, …)` (a variável, não a constante 14).
 - **Tabela de salto de função mantida em asm**: se a função com `switch` denso ficar em `@asm`, o `@data` da tabela não pode ser declarado no `.c` (o C sob `NON_MATCHING` não a emite e o link falha com `undefined reference to jtbl_…`).
+- **Handlers com dois parâmetros** (`effects_d.c`): quando o handler repassa o segundo argumento ao handler genérico (`return duel_0888229C(a, b);`), o original não toca em `a1` no corpo; declarar só `DuelAct *a` faz o compilador usar `a1` como temporário. `if (x != 0) return f(a, b); return 0;` gera `beqzl x → fim, v0=0` com a chamada em queda.
+- **Zona do `DuelAct` como `unsigned char`** (`unsigned char z = a->zone;`) gera o `andi 0xff` depois do `srl` do bitfield, como nos handlers originais.
+- **`DuelAct` +0x02 como bitfields de `unsigned short`** (`player:1, zone:5, kind:6, …`): o tipo de ativação (`(u16 & 0xfff) >> 6`) cruza os dois bytes; com `unsigned short` os acessos de `player`/`zone` continuam `lbu` e o de `kind` sai `lhu; sll 20; srl 26`.
 
 ## Pendências
 
