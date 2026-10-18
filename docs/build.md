@@ -415,6 +415,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **`DuelCard` com bitfields `unsigned int`** (`card_place.c`): a cópia de uma carta (`*dst = *src`) sai no original como `lwc1`/`swc1`, a cópia de um struct de 4 bytes alinhado a 4; com bitfields de `unsigned short` (alinhamento 2) o mwcc copia por halfwords. Trocar para `unsigned int` manteve todos os outros arquivos da libduel_eng iguais (o mwcc continua estreitando os acessos aos campos para `lhu`/`lbu`). As entradas de `duel.list[]` têm um contador de 2 bits nos bits 13–14 (`DuelListCard.placed`), acessado por um cast.
 
+- **Lista de cartas como global própria** (`effect_list.c`): os acessos do original a `duel.list[uid]` com o deslocamento do campo dobrado no endereço (`addiu v0,v0,%lo(0x08917DCA)`) só saem com uma global separada no mesmo endereço (`extern DuelListCard duel_cards[512];`, símbolo `duel_cards = 0x08917DC8`); pelo membro `duel.list` o mwcc soma o deslocamento no `lhu`. As listas de efeitos são percorridas com `while (e != 0) { ef = &duel.effects[e]; e = ef->next; if (…) return ef; } return 0;`; o índice devolvido (`duel_slot_effect_index`) fica na variável do laço com o próximo num local. O nibble alto de `DuelEffect.kind` lido como bitfield (`kind_hi : 4`) dá o `sll 24; srl 28` do original.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
