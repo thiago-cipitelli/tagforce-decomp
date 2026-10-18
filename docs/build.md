@@ -335,6 +335,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Bitfields de `DuelCard` lidos por endereço fixo** (`duel_field_protected`): `duel.players[p & 1].field[z].card.uid_hi` direto (sem `DuelSlot *` local) faz o compilador guardar os endereços +0x31/+0x32 em `$s` antes do laço, como no original; com o ponteiro local a base sai calculada antes do teste de `id`.
 - **`case` que cai no grupo seguinte** (`duel_attack_forbidden`): quando o `return 0` de um caso condicional é o mesmo bloco do grupo de ids que sempre retorna 0, o fonte é `case A: if (!cond) break; case B: case C: return 0;` (queda), não um `return 0` próprio. Um teste `if (id == X) … else if (id == Y) … else return 0;` cujos corpos saem na ordem inversa dos testes é um `switch` com `default: return 0;` (`duel_can_attack`).
 - **Uma única leitura de `flags` reaproveitada** (`duel_attack_forbidden`): `unsigned int f = slot.flags;` para os testes de bit e depois `SLOT_ACTIVE(&slot)` (a macro, não a expressão com `f`): o compilador reaproveita o registro de `f` e a ordem `faceup` primeiro se mantém.
+- **Campos de struct preenchida por chamada copiados para locais** (`duel_attack_check`): quando o original carrega `st.attr`, `st.level`, `st.atk` em `$s`/pilha logo depois de `duel_field_stats(p, z, &st)`, o fonte tinha `atk = st.atk; attr = st.attr; level = st.level;`; usar `st.x` direto muda a alocação inteira (700 palavras de diferença contra 180). A ordem das declarações decide os slots de spill (`ref`, `atk`).
+- **`li v0,1; b fim; nop`** (atraso não preenchido) vem de `goto ok;` para um rótulo `ok: return 1;`; `return 1` direto põe o `li` no atraso. O teste `beqzl arg → fim; li v0,1` sai de `if (arg != 0) { …; goto fail; } ok: return 1;`.
+- **`(unsigned short)((unsigned char)p | (unsigned char)z << 8)`** gera `andi z; sll; andi p; or v0,v1,v0` (registros na ordem do original); com `& 0xFF` os registros trocam.
+- **Grupos de `case` com o mesmo corpo**: `case A: case B: x = 1000; break;` testa B com `beql` + atraso e A com `beq` para o corpo; dois `case` separados com corpos iguais dobram os dois em `beql`.
 
 ## Pendências
 
