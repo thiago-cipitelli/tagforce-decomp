@@ -68,7 +68,7 @@ void tgma_relocate(void *p);
 void tgm_relocate(void *p);
 void ehsys_0882B650(void *(*fn)(char *name));
 void ehsys_0882B65C(void *p);
-void ehsys_08835650(void *gim);
+void gim_reset(void *gim);
 int ehf_tex_foreach(void *f, unsigned char *flags, int (*cb)(EhpPack *pack, EhfTexName *t), void *arg);
 void *ehf_inst_init(float w, float h, float cx, float cy, void *f, void *e);
 
@@ -364,7 +364,7 @@ int ehp_relocate(EhpPack *p)
                 key = EXT4(ext);
                 switch (key) {
                 case 0x6D69672E:
-                    ehsys_08835650(data);
+                    gim_reset(data);
                     break;
                 case 0x6668652E:
                     strcpy(buf, name);
