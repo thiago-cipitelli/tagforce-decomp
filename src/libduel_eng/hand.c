@@ -14,7 +14,7 @@ int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_counter(unsigned int p, int z, int id);
 int duel_card_check_9148(unsigned int p, int id);
 int duel_card_dfac8(unsigned int p, int id, int a);
-void duel_field_e6cf8(unsigned int p, DuelCard *c);
+void duel_c_push(unsigned int p, DuelCard *c);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
 int duel_card_same(DuelCard *a, DuelCard *b);
 void duel_bzero(void *p, int n);
@@ -126,7 +126,7 @@ void duel_hand_add(unsigned int p, DuelCard *c)
 
     if (id != 0 && card_is_attribute9((unsigned short)id) == 0) {
         if (card_get_attribute_icon(c->id) == 3) {
-            duel_field_e6cf8(c->owner, c);
+            duel_c_push(c->owner, c);
         } else {
             duel_card_copy(dst, c);
             duel.players[p & 1].n_hand++;

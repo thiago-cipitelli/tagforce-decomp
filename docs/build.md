@@ -409,6 +409,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Localização empacotada** (`duel_card_locate`): o original monta `jogador | zona << 8` num `unsigned short` antes de juntar o índice (`(unsigned short)((p & 0xFF) | 0xE00) | (unsigned short)i << 16`), e o laço das duas cartas especiais reaproveita o índice `i` dos outros laços. O índice do Ghidra pode omitir funções de 8 bytes (`j alvo; li a2,K`) entre duas funções: conferir os endereços da faixa contra o desmonte cru antes de dar o arquivo por completo (`duel_slot_counter_1513`), senão o `.text` encolhe 8 bytes e tudo depois se desloca. **`duel.list[512]`** (0x800 bytes em +0x1F6C, até os efeitos).
 
+- **`field_get_card`** (`piles.c`): o `switch (id)` sobre os ids especiais (`case 0x19A6`, `0x19BC`, `0x1A74`) reproduz os `beql` do original, e `if (id == -1 || duel_card_protected(id, -1)) return 0x1A74;` reaproveita o `-1` da comparação como segundo argumento. Contadores de pilha: a ordem de inicialização no `for` decide quem vai no delay slot do primeiro teste (`for (i = 0, n = 0; …)` num caso, `for (n = 0, i = 0; …)` no outro).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
