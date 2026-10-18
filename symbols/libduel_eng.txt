@@ -297,6 +297,17 @@ duel_08894A84 = 0x08894A84; // type:func inferred handler
 duel_088CC178 = 0x088CC178; // type:func inferred
 duel_08832988 = 0x08832988; // type:func inferred
 duel_0888229C = 0x0888229C; // type:func inferred handler
+duel_eff_f9c00 = 0x088F9C00; // type:func asm (@asm in src/libduel_eng/effects_e.c, C under NON_MATCHING)
+duel_eff_f9ed0 = 0x088F9ED0; // type:func asm (@asm in src/libduel_eng/effects_e.c, C under NON_MATCHING)
+duel_eff_fa080 = 0x088FA080; // type:func asm (@asm in src/libduel_eng/effects_e.c, C under NON_MATCHING)
+duel_08832974 = 0x08832974; // type:func inferred
+duel_08861480 = 0x08861480; // type:func inferred
+duel_0884ADAC = 0x0884ADAC; // type:func inferred
+duel_0889BD04 = 0x0889BD04; // type:func inferred handler
+duel_0887F728 = 0x0887F728; // type:func inferred handler
+duel_088D1684 = 0x088D1684; // type:func inferred
+duel_088C6728 = 0x088C6728; // type:func inferred
+duel_088AA224 = 0x088AA224; // type:func inferred
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
