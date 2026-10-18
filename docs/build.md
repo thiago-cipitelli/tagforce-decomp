@@ -266,6 +266,11 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Parâmetro modificado num laço** (`gim_walk`, `gim_block_find`): quando os `$s` dos parâmetros saem em ordem inversa à do original, copiar o parâmetro que o laço avança para um local (`GimBlock *b = start;`) reproduz a alocação.
 - **Ordem dos `case` com corpos distintos** (`gim_upload`): os corpos saem na ordem do fonte, então `case 4: case 8: size /= 2; break;` vem antes de `case 0: … size *= 2;` quando o original tem a divisão primeiro, mesmo com a tabela de saltos.
 
+- **Bitfields** (`heap.c`): o mwcc aloca do bit menos significativo; um campo de 1 bit no topo da palavra é lido como `lbu +3; sll 24; srl 31` e gravado com `lbu/andi 0x7f/ori 0x80/sb`. Um campo de 6 bits comparado direto (`h->pad < 0x11`) ganha um `andi 0xff` a mais; lido para um `int` local antes da comparação sai como no original (`slti`).
+- **Comparação com `sizeof`** (`heap_alloc`): `tabsize < (n + 2) * sizeof(HeapEnt)` gera `sltu` (o `sizeof` torna a expressão sem sinal); com `* 4` sai `slt`.
+- **Dois nomes para o mesmo valor** (`heap_create`): `subu v0,a0,a0` não dobrado no original vem de duas variáveis que o alocador juntou no mesmo registrador (`h = mem = malloc(...)`; `pad = (char *)h - (char *)mem`); com uma só variável o compilador dobra para zero.
+- **Retorno compartilhado no fim** (`heap_merge`): ramos que terminam todos em `return 1` saem com o bloco comum no fim da função quando o fonte usa `if/else if` com um único `return` depois; `return` dentro de cada ramo põe o bloco no meio.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
