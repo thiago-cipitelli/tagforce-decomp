@@ -62,6 +62,10 @@ segments:
       - [0xF3204, asm, field_props_asm_088F71A4]
       - [0xF3238, c, msg]
       - [0xF3478, asm, text_2]
+      - [0xF3F14, c, effects_a]
+      - [0xF4504, asm, effects_a_asm_088F84A4]
+      - [0xF45C4, c, effects_a]
+      - [0xF4634, asm, text_3]
       - [0xFDC00, asm, sceStub_text]
       - [0x1002E8, bin, lib_ent_top]
       - [0x1002EC, bin, lib_ent]
@@ -76,6 +80,8 @@ segments:
       - [0x101B90, data, data_0]
       - [0x10DF80, .data, stat_reason]
       - [0x10DFA0, data, data_1]
+      - [0x10E020, .data, effects_a]
+      - [0x10E0BC, data, data_2]
       - { start: 0x10FA50, type: bss, vram: 0x89139F0, name: bss }
   - [0x10FA50]
 
