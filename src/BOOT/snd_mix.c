@@ -1,8 +1,10 @@
-// @range 0x0885C688-0x0885D078
+// @range 0x0885C688-0x0885D948
 // @asm 0x0885CB30-0x0885CEC4
+// @asm 0x0885D078-0x0885D948
 /* Sound library, mixer: per-frame fader update and SAS voice parameters, key on and end detection
    of the SAS voices, the echo ring buffer (0x3000 stereo frames) the streams feed and the output
-   reads back at half level, stream filters, ordering of the active streams and the level of a block. */
+   reads back at half level, stream filters, ordering of the active streams, the level of a block and
+   the Atrac stream decoder that fills each stream's PCM ring and mixes it into the output block. */
 #include "psp.h"
 #include "libc.h"
 #include "snd.h"
@@ -13,11 +15,17 @@ typedef struct SndStreamRef {          /* snd_streams_sorted output */
 } SndStreamRef;
 
 extern SndList snd_stream_list;        /* 0x08C1AFEC */
+extern SndList snd_sas_list;           /* 0x08C1AFF8 */
 extern SndList snd_active;             /* 0x08C1B004 */
 extern SndFader snd_bgm_master;        /* 0x08C1B010 */
 extern SndVoiceSlot snd_voice_slots[32]; /* 0x08C1B058 */
 extern int snd_echo_pos;               /* 0x08BEA49C in frames */
 extern short snd_echo_buf[0x6000];     /* 0x08BEA4A0 */
+extern short snd_filter_hist[][16][2]; /* 0x08BF64E8 per stream */
+extern short snd_mix_buf[2][0x200];    /* 0x08BF6680 */
+extern int snd_mix_idx;                /* 0x08BF6E80 */
+extern unsigned char snd_voice_pcm[][0x6000]; /* 0x08BF6EC0 per stream: 0x1000-frame ring + overflow */
+extern int snd_atrac_sema;             /* 0x08C1B048 */
 
 int snd_fader_update(SndFader *f);
 int snd_obj_volume(SndObj *o, int sq);
@@ -28,6 +36,11 @@ int snd_voice_set_volume(int v, int l, int r, int el, int er);
 int snd_voice_set_pitch(int v, int pitch);
 int snd_voice_key_on(int v);
 unsigned int snd_sas_end_flags(void);
+int snd_fader8_update(SndFader8 *f);
+int sceAtracResetPlayPosition(int id, int sample, int a, int b);
+int sceAtracSetLoopNum(int id, int n);
+int sceAtracGetLoopStatus(int id, int *loops, int *status);
+int sceAtracDecodeData(int id, short *out, int *n, int *end, int *remain);
 void snd_voice_free(unsigned int mask, int reset);
 
 void snd_faders_update(void)
@@ -334,3 +347,284 @@ int snd_block_level(short *p)
     } while (n > 0);
     return sum >> 8;
 }
+
+#ifdef NON_MATCHING /* the original keeps $t7/$t8/$v0 live across the calls to snd_stereo_widen and
+   snd_box_filter (which leave them untouched); mwcc build 219 with our flags always saves them in
+   $s registers or on the stack, so the register allocation and frame cannot match */
+/* Decodes the active Atrac streams into their PCM rings (0x1000 frames, decoded ahead by up to
+   `budget` frames, less when many SAS voices are active) and mixes 0x100 frames of each into the
+   current output block: copied when it is the only stream of the first pass, else added with
+   saturation. Handles the loop points and the end of the stream. */
+void snd_streams_decode(int mix)
+{
+    SndStreamRef list[7];
+    int loops;
+    int tmp;
+    short r;
+    short l;
+    int remain;
+    int end;
+    int decoded;
+    int n;
+    int budget;
+    SndStreamRef *e;
+    SndObj *o;
+    SndStream *s;
+    int id;
+    int v;
+    unsigned int *pcm;
+    unsigned int *pcm_hi;
+    short (*hist)[2];
+    int loop_end;
+    int rd0;
+    int filled;
+    unsigned int *dst;
+    unsigned int *a;
+    unsigned int *b;
+    int cnt;
+    int wrap;
+    int rd;
+    int x;
+    int lo;
+
+    sceKernelWaitSema(snd_atrac_sema, 1, 0);
+    tmp = snd_sas_list.count;
+    budget = 0xC00;
+    if (tmp >= 4) {
+        budget = 0x800;
+        if (tmp >= 8) {
+            budget = 0;
+        }
+    }
+    n = snd_streams_sorted(list);
+    for (e = list; (o = e->obj) != 0; e++) {
+        if (o->state & 0x10) {
+            continue;
+        }
+        v = o->index - 0x1C;
+        snd_obj_pan_lr(o, &l, &r, 0x40);
+        id = o->s.atrac;
+        s = &o->s;
+        if (!(s->sflags & 0x80)) {
+            s->sflags |= 0x80;
+            if (s->u.st.end < s->pos) {
+                tmp = s->u.st.loop;
+                if (tmp < 0) {
+                    tmp = 0;
+                }
+                s->pos = s->decoded = tmp;
+            }
+            sceAtracResetPlayPosition(id, s->pos, 0, 0);
+            sceAtracSetLoopNum(id, -1);
+            s->u.st.start = 0;
+            s->wr = s->u.st.rd = 0x800;
+        }
+        if (s->e7) {
+            s->e7 = 0;
+            sceAtracSetLoopNum(id, 0);
+        }
+        sceAtracGetLoopStatus(id, &loops, &tmp);
+        loop_end = s->u.st.end;
+        if (loops < 0) {
+            loop_end = s->u.st.loop2;
+        }
+        if (s->pos >= s->u.st.end) {
+            continue;
+        }
+        if (s->fade8.cur != s->fade8.target) {
+            snd_fader8_update(&s->fade8);
+        }
+        rd0 = s->u.st.rd;
+        filled = 0;
+        pcm = (unsigned int *)snd_voice_pcm[v];
+        pcm_hi = (unsigned int *)(snd_voice_pcm[v] + 0x4000);
+        hist = snd_filter_hist[v];
+        do {
+            decoded = 0;
+            if (s->sflags & 1) {
+                goto out;
+            }
+            if (e->left < 0x100 || budget - s->u.st.c4 > 0) {
+                tmp = s->decoded - s->pos;
+                if ((s->sflags & 0x40) && s->u.st.c4 < tmp) {
+                    goto out;
+                }
+                v = s->wr;
+                dst = pcm + v;
+                tmp = sceAtracDecodeData(id, (short *)dst, &decoded, &end, &remain);
+                if (tmp != 0 && tmp != (int)0x80630024) {
+                    goto next;
+                }
+                if (o->state & 0x20) {
+                    tmp = snd_block_level((short *)dst);
+                    if (s->sflags & 0x10) {
+                        s->sflags &= ~0x10;
+                        s->meter = tmp;
+                    } else {
+                        tmp += s->meter;
+                        s->meter = tmp >> 1;
+                    }
+                }
+                s->decoded += decoded;
+                v += decoded;
+                budget = -1;
+                if (v > 0x1000) {
+                    v -= 0x1000;
+                    memcpy(pcm, pcm_hi, v * 4);
+                    s->sflags |= 0x40;
+                }
+                s->wr = v;
+            }
+        out:
+            if (!(s->sflags & 0x40)) {
+                goto next;
+            }
+            rd = s->u.st.rd;
+            b = pcm + rd;
+            dst = (unsigned int *)snd_mix_buf[snd_mix_idx] + filled;
+            tmp = 0x100 - filled;
+            cnt = s->decoded - s->pos;
+            a = b;
+            wrap = 0;
+            if (tmp < cnt) {
+                cnt = tmp;
+            }
+            rd += cnt;
+            s->pos += cnt;
+            filled += cnt;
+            if (rd >= 0x1000) {
+                rd -= 0x1000;
+                b = pcm;
+                wrap = rd;
+                cnt -= rd;
+            }
+            s->u.st.rd = rd;
+            if (s->e6 == 2) {
+                snd_stereo_widen((short *)hist, (short *)a, cnt);
+            } else if (s->e6 == 1 && s->fade8.cur != 0) {
+                snd_box_filter((short *)hist, (short *)a, cnt, s->fade8.cur);
+            }
+            if (r != 0 || l != 0) {
+                if (mix == 0 && n == 1) {
+                    if (r == 0x1000 && l == 0x1000) {
+                        while (--cnt >= 0) {
+                            *dst++ = *a++;
+                        }
+                        while (--wrap >= 0) {
+                            *dst++ = *b++;
+                        }
+                    } else {
+                        while (--cnt >= 0) {
+                            x = *a;
+                            lo = (short)x * l >> 12;
+                            if (lo < 0) {
+                                lo++;
+                            }
+                            tmp = (x >> 16) * r >> 12;
+                            if (tmp < 0) {
+                                tmp++;
+                            }
+                            *dst = (lo & 0xFFFF) | tmp << 16;
+                            dst++;
+                            a++;
+                        }
+                        while (--wrap >= 0) {
+                            x = *b;
+                            lo = (short)x * l >> 12;
+                            if (lo < 0) {
+                                lo++;
+                            }
+                            tmp = (x >> 16) * r >> 12;
+                            if (tmp < 0) {
+                                tmp++;
+                            }
+                            *dst = (lo & 0xFFFF) | tmp << 16;
+                            dst++;
+                            b++;
+                        }
+                    }
+                } else {
+                    while (--cnt >= 0) {
+                        x = *a;
+                        lo = (short)x * l >> 12;
+                        if (lo < 0) {
+                            lo++;
+                        }
+                        lo += ((short *)dst)[0];
+                        if (lo < -0x8000) {
+                            lo = -0x8000;
+                        } else if (lo > 0x7FFF) {
+                            lo = 0x7FFF;
+                        }
+                        tmp = (x >> 16) * r >> 12;
+                        if (tmp < 0) {
+                            tmp++;
+                        }
+                        tmp += ((short *)dst)[1];
+                        if (tmp < -0x8000) {
+                            tmp = -0x8000;
+                        } else if (tmp > 0x7FFF) {
+                            tmp = 0x7FFF;
+                        }
+                        *dst = (lo & 0xFFFF) | tmp << 16;
+                        dst++;
+                        a++;
+                    }
+                    while (--wrap >= 0) {
+                        x = *b;
+                        lo = (short)x * l >> 12;
+                        if (lo < 0) {
+                            lo++;
+                        }
+                        lo += ((short *)dst)[0];
+                        if (lo < -0x8000) {
+                            lo = -0x8000;
+                        } else if (lo > 0x7FFF) {
+                            lo = 0x7FFF;
+                        }
+                        tmp = (x >> 16) * r >> 12;
+                        if (tmp < 0) {
+                            tmp++;
+                        }
+                        tmp += ((short *)dst)[1];
+                        if (tmp < -0x8000) {
+                            tmp = -0x8000;
+                        } else if (tmp > 0x7FFF) {
+                            tmp = 0x7FFF;
+                        }
+                        *dst = (lo & 0xFFFF) | tmp << 16;
+                        dst++;
+                        b++;
+                    }
+                }
+            }
+            tmp = s->decoded - s->u.st.start - loop_end;
+            if (tmp >= 0) {
+                if (loops == 0) {
+                    s->sflags |= 1;
+                } else {
+                    s->u.st.start = s->u.st.loop2 - s->u.st.loop;
+                }
+            }
+            if (s->pos >= s->u.st.end && loops == 0 && filled < 0x100) {
+                do {
+                    *dst++ = 0;
+                } while (++filled < 0x100);
+            }
+        } while (filled < 0x100);
+        o->frames++;
+        if (s->decoded >= loop_end && s->pos >= loop_end) {
+            tmp = s->u.st.start;
+            s->pos -= tmp;
+            s->decoded -= tmp;
+            s->u.st.start = 0;
+        }
+        if (s->e4) {
+            snd_echo_add(o, (short *)(pcm + rd0));
+        }
+    next:;
+    }
+    sceKernelSignalSema(snd_atrac_sema, 1);
+    snd_echo_mix(snd_mix_buf[snd_mix_idx]);
+}
+#endif

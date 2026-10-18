@@ -47,7 +47,8 @@ typedef struct SndStream {             /* SndObj +0xA8: decoder and level-meter 
             int end;                   /* +0x10 */
             int loop;                  /* +0x14 <0 no loop */
             int loop2;                 /* +0x18 */
-            unsigned short c4;         /* +0x1C */
+            short c4;                  /* +0x1C max samples per decode call */
+            unsigned short rd;         /* +0x1E read index in the PCM ring (frames) */
         } st;
         struct {                       /* kinds 0-2 */
             unsigned short b4;
@@ -56,8 +57,8 @@ typedef struct SndStream {             /* SndObj +0xA8: decoder and level-meter 
             unsigned short send_pan;   /* +0x12 */
         } v;
     } u;
-    unsigned char pad20[2];
-    unsigned short sflags;             /* +0x22 0x10 meter reset, 0x40, 0x80 */
+    unsigned short wr;                 /* +0x20 write index in the PCM ring (frames) */
+    unsigned short sflags;             /* +0x22 1 ended, 0x10 meter reset, 0x40 ring primed, 0x80 started */
     unsigned short meter;              /* +0x24 */
     unsigned short level;              /* +0x26 */
     short peak;                        /* +0x28 */

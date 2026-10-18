@@ -235,6 +235,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Global inicializada e depois percorrida** (`snd_thread_init`, `snd_cur_slot`): `c = &snd_cur_slot; c->slot = -1; do { c->obj[i] = 0; } while (++i < 4);` gera os dois `lui` antes do `sh`, como no original; escrever direto em `snd_cur_slot.slot` agenda o `sh` logo após o primeiro `lui`.
 
+- **Registradores temporários vivos através de uma chamada** (`snd_streams_decode`): o original mantém `$t7`, `$t8` e `$v0` (ponteiros e contador da mistura) através das chamadas a `snd_stereo_widen`/`snd_box_filter`, funções do mesmo arquivo que não tocam nesses registradores. O mwcc build 219 com `-O4,p` não faz isso: testes com folha definida antes no mesmo arquivo, com e sem pressão de registradores, sempre salvam os valores em `$s`/pilha. Uma função com esse traço não bate; fica em `@asm` com o C sob `NON_MATCHING`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
