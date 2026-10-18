@@ -8,7 +8,8 @@
 typedef struct DuelCard {              /* 4: a card reference */
     unsigned short id : 13;
     unsigned short owner : 1;          /* also bit 0 of the instance id */
-    unsigned short f14 : 2;
+    unsigned short b14 : 1;
+    unsigned short b15 : 1;
     unsigned short lo5 : 5;
     unsigned short b21 : 1;
     unsigned short uid_hi : 8;         /* instance id bits 1-8 */
@@ -104,9 +105,12 @@ typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
     unsigned int zone_off;             /* +0x1F5C zone bits (player * 16 + zone) of disabled zones */
     int unk1f60;
     int cur_card;                      /* +0x1F64 */
-    unsigned char pad1f68[0x276C - 0x1F68];
-    DuelEffect effects[538];           /* +0x276C, entry 0 unused */
-    int pad383c;
+    int unk1f68;
+    DuelCard list[64];                 /* +0x1F6C */
+    unsigned char pad206c[0x276C - 0x206C];
+    DuelEffect effects[513];           /* +0x276C, entry 0 unused */
+    unsigned int turn_player;          /* +0x3774 [?] */
+    unsigned char pad3778[0x3840 - 0x3778];
 } Duel;
 
 extern Duel duel;

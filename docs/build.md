@@ -355,6 +355,9 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Ponteiro do contador como expressão separada** (`duel_grave_add`, `duel_zone_f_add`): `int p = c->owner & 1; DuelCard *dst = &duel.players[p].grave[duel.players[p].n_grave]; int id = c->id;` e depois `duel.players[p].n_grave++` reproduz o `&n_grave` com o símbolo deslocado (`D_08915E70`) separado da base da pilha; o `& 1` no bitfield `owner` vira `sll 26; ext 31,1`; o `(unsigned short)id` na chamada gera o `andi 0xffff`. Um índice separado do laço (`for (j = i; …)`) mantém `i` em `a1` (`duel_grave_remove`).
 - **Ordem dos zeramentos antes do laço** (`duel_grave_count_monsters`): quando o original zera o acumulador antes do `beqz` e o índice no atraso (o contrário do que `int i; int n = 0; for (i = 0; …)` dá), escrever `p &= 1; i = 0; n = 0; for (; …)`; o `perm_decls`/permutação de comandos acha a ordem.
 - **`switch` sobre o byte baixo** (`duel_zone_f_count_monsters`): `switch ((unsigned char)marks[i]) { case 0x80: break; case 0x40: default: … }` gera `lbu` e os dois testes (0x40 com `beql` para o corpo do `default`).
+- **Limite inferior por ternário** (`duel_list_card_level`): `bgtz x → L; nop; b L; li x,1` é `x = x <= 0 ? 1 : x;` (ou `x < 1 ? 1 : x`); `if (x <= 0) x = 1;` e `x > 0 ? x : 1` geram `blezl`.
+- **Valor da comparação reaproveitado como argumento** (`duel_list_card_level`): `duel_is_cur_card()` chamada com `a0` ainda valendo o id do slot (já comparado com 0x150B) vem de `duel_is_cur_card(slot.card.id)` no fonte, não da constante.
+- **Bits 14 e 15 de `DuelCard`** (`b14`, `b15`, antes `f14 : 2`): `lbu +1; sll 25` testa o bit 14 (`duel_grave_card_usable`).
 
 ## Pendências
 
