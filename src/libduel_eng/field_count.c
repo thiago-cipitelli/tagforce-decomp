@@ -288,7 +288,7 @@ int duel_zone_usable(unsigned int p, unsigned int z)
                     }
                 }
             }
-            for (i = 0; i < duel.players[q & 1].n_marks; i++) {
+            for (i = 0; i < duel.players[q & 1].n_f; i++) {
                 unsigned short m = duel.players[q & 1].marks[i];
                 unsigned char b = m >> 8;
 

@@ -325,6 +325,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`i <= 10` gera `slti at,i,11`** (`field_count.c`): laços até 11 com `slti at` no original foram escritos com `<=`; `i < 11` gera `slti v0`.
 - **MIN/MAX em ternário** (`duel_count_free_monster_zones`): `n = MIN(n, 5 - f(p)); n = MAX(n, 0);` reproduz a segunda chamada de `f` e o `blezl`; o mesmo com `if` não casa.
 - **Campos de 16 bits lidos por máscara, não por bitfield** (`DuelEffect.src`, `marks`): o original carrega com `lhu` e separa com `andi`/`ext`; macros `x & 0xFF` / `x >> 8 & 0xFF` reproduzem, structs de bytes ou bitfields geram `lbu` ou cópia pela pilha.
+- **`switch` com casos em ordem crescente e corpos na ordem do fonte** (`tribute.c`): os testes saem na ordem inversa dos rótulos e os corpos na ordem em que aparecem; um grupo de ids que só retorna 0 é um único bloco de `case` (dois blocos `return 0` separados geram um `beql` direto ao epílogo para um deles). Cadeias de `if (c != A && c != B …) return 0;` viraram `switch` dentro de um `if (… && …)` (`duel_double_tribute`).
+- **Ordem dos operandos de `&` decide registradores** (`SLOT_ACTIVE`): `faceup & ~(flags >> 5 & 1) & ~(flags >> 1 & 1)` carrega `faceup` em `v1`; com o termo de `flags` primeiro os registradores trocam.
+- **Comparação com valor montado de 16 bits** (`duel_count_tributable_except`): `except != (unsigned short)(q & 0xFF | (z & 0xFF) << 8)` gera o `andi 0xffff`; o laço de `z` é `int` (com `unsigned` sai `sltiu`).
+- **`if (f()) z = g(); else z = -1; return z;`** gera `beqzl v0 → li v0,-1` com a chamada no caminho direto; o ternário ou `if (!f()) return -1;` gera `bgtzl`/`bnezl` com a chamada depois.
 
 ## Pendências
 

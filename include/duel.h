@@ -27,7 +27,7 @@ typedef struct DuelSlot {              /* 0x14: a field zone */
 } DuelSlot;
 
 /* face up and not negated (bits 1 and 5 of the flags) */
-#define SLOT_ACTIVE(s) (~((s)->flags >> 5 & 1) & (s)->faceup & ~((s)->flags >> 1 & 1))
+#define SLOT_ACTIVE(s) ((s)->faceup & ~((s)->flags >> 5 & 1) & ~((s)->flags >> 1 & 1))
 
 #define EFF_PLAYER(e) ((e)->src & 0xFF)
 #define EFF_ZONE(e) ((e)->src >> 8 & 0xFF)
@@ -40,7 +40,7 @@ typedef struct DuelPlayer {            /* 0xFAC, two from 0x08915E5C */
     int n_d;                           /* +0x010 zone 0xD */
     unsigned int n_grave;              /* +0x014 zone 0xE */
     int n_18;                          /* +0x018 */
-    unsigned int n_marks;              /* +0x01C entries of marks[] */
+    unsigned int n_f;                  /* +0x01C zone 0xF and marks[] */
     int unk20[4];                      /* +0x020 */
     DuelSlot field[11];                /* +0x030 0-4 monsters, 5-9 spells/traps, 10 field spell */
     unsigned short unk10c[5];          /* +0x10C */
@@ -52,7 +52,7 @@ typedef struct DuelPlayer {            /* 0xFAC, two from 0x08915E5C */
     DuelCard zone_c[60];               /* +0x620 zone 0xC */
     DuelCard grave[220];               /* +0x710 zone 0xE */
     DuelCard zone_f[220];              /* +0xA80 zone 0xF */
-    unsigned short marks[222];         /* +0xDF0 kind | player << 8 | zone << 12 */
+    unsigned short marks[222];         /* +0xDF0 parallel to zone_f: kind | player << 8 | zone << 12 */
 } DuelPlayer;
 
 typedef struct DuelEffect {            /* 8: entry of the effect lists */
@@ -76,7 +76,9 @@ typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
     DuelPlayer players[2];
     unsigned int mode;                 /* +0x1F58 bit 0: the special cards count as on the field */
     unsigned int zone_off;             /* +0x1F5C zone bits (player * 16 + zone) of disabled zones */
-    unsigned char pad1f60[0x276C - 0x1F60];
+    int unk1f60;
+    int cur_card;                      /* +0x1F64 */
+    unsigned char pad1f68[0x276C - 0x1F68];
     DuelEffect effects[538];           /* +0x276C, entry 0 unused */
     int pad383c;
 } Duel;
