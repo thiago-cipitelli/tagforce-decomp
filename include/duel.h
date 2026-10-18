@@ -95,7 +95,8 @@ typedef struct DuelAct {               /* 0x18: card being activated or resolved
     unsigned short b4_15 : 1;
     unsigned char n_targets;           /* +0x06 */
     unsigned char n7;                  /* +0x07 */
-    unsigned char pad8[13];
+    unsigned short w[6];               /* +0x08 */
+    unsigned char b14;
     unsigned char b15_0 : 1;           /* +0x15 */
     unsigned char b15_1 : 1;
     unsigned char b15_2 : 1;
