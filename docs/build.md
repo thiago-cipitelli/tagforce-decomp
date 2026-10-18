@@ -225,6 +225,9 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Valor de retorno guardado numa variável** (`snd_voices_update`): `end = f(); if (end & bit)` gera `and v1,v0,s1`; `if (f() & bit)` gera os operandos na outra ordem.
 - **Divisão por 2 do original**: `x >> 1` seguido de `if (x < 0) x++` (não é `x / 2`, que soma o sinal antes do deslocamento); aparece no eco do mixer.
 
+- **Ponteiro local recalculado a cada iteração** (`snd_thread_main`): `SndFader *m = &snd_master;` declarado dentro do corpo do `for (;;)` gera o `lui`/`addiu` no começo de cada volta, como no original; os testes em `snd_master.cur`/`.target` continuam por endereço direto e só a chamada e a leitura final passam por `m`.
+- **Nomes de globais únicos no BOOT**: o splat rejeita símbolo duplicado (`Duplicate symbol detected`); antes de nomear uma global, `grep` em `symbols/BOOT.txt` (o `movie.c` já tinha `snd_out_idx`).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
