@@ -280,6 +280,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Locais `float` inicializados antes do array** (`dl_viewport`): o original converte os parâmetros e grava nos slots antes do laço de zeragem; isso só sai com `float x = cx; …` declarados antes de `unsigned int cmd[4] = { 0 };` (inicialização na declaração, na ordem do stack).
 - **`push` em laço que devolve o ponteiro** (`dl_draw_array_n`): o original mantém a lista em `$v0` com `bnezl … move a0,v0`; reatribuir a variável do parâmetro (`list = dl_push1(list, …)`) leva para `$a0` e acrescenta `move v0,a0`; uma variável nova (`p = dl_push(…); p = dl_push1(p, …); return p;`) reproduz.
 
+- **Argumento `float` por último no protótipo** (`spline_eval`): quando o `mtc1`/`mov.s` do `$f12` cai no delay slot do `jal`, o float é o último argumento do fonte (`vec3_scale_w(out, a, s)`); com o float primeiro ele é avaliado antes dos ponteiros.
+- **Variável nova para o valor derivado de um parâmetro** (`spline_eval`): `f = t - k` mantém `t` em `$f12` sem cópia; `t -= k` obriga a copiar o parâmetro para um `$f` salvo na entrada. Já o reuso de um parâmetro morto (`ring = (start + k) % ring` em `spline_eval_ring`) economiza um `$s` como no original.
+- **Argumentos avaliados da direita para a esquerda só via temporário** (`spline_eval_ring`): quando o original calcula o terceiro argumento antes do segundo, guardar o terceiro numa variável antes da chamada.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
