@@ -33,8 +33,6 @@ segments:
       - [0x2BDA8, c, ehf]
       - [0x2BDD4, asm, ehf_asm_0882FD74]
       - [0x2C044, c, ehf]
-      - [0x2C6D4, asm, ehf_asm_08830674]
-      - [0x2C890, c, ehf]
       - [0x2CEAC, asm, ehf_asm_08830E4C]
       - [0x2D11C, c, ehf]
       - [0x2D5F4, asm, ehf_asm_08831594]

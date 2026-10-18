@@ -259,6 +259,9 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`ins` para endereço não-cacheado** (`dl_state_reset`): o original monta `(p & 0x0FFFFFFF) | 0x40000000` com `ins` (inserção de bits); nenhuma forma em C (máscara + or, bitfield em union) gera `ins` no mwcc 3.0.1, então a função fica em asm.
 - **Dados de funções em asm**: strings e tabelas usadas só por funções que ficaram em `@asm` precisam virar globais nomeadas no C (`gfx_host_dir`, `gfx_tga_header`…), senão o `.data` do objeto encolhe.
 
+- **Laço de zeragem byte a byte** (`mat4_inv_rigid`, `ehsys_0883C50C`): `beqz p; li n,16; sb zero; addiu n,-1; bnez` no começo de um bloco é o `= { 0 }` de um local (array ou struct). `EhfVec4 r = { 0 }; r.x = …; out[0] = r;` reproduz até a cópia do struct pelo stack.
+- **Template de local inicializado vai para o começo do `.data` do objeto**: o mwcc põe o template anônimo (`@282`) numa seção própria que o linker coloca antes das globais do arquivo. Quando o original o tem no meio dos dados, copiar de uma global nomeada (`EhfVec4 r = ehf_row3;`) gera o mesmo código (só as palavras não sobrescritas são lidas) e mantém a ordem.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

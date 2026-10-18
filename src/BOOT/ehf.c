@@ -1,7 +1,6 @@
 // @range 0x0882FC3C-0x08833420
 // @asm 0x0882FCE8-0x0882FD48
 // @asm 0x0882FD74-0x0882FFE4
-// @asm 0x08830674-0x08830830
 // @asm 0x08830E4C-0x088310BC
 // @asm 0x08831594-0x0883297C
 // @asm 0x08832E68-0x08833420
@@ -74,6 +73,10 @@ typedef struct EhfTrack {              /* keyframes of a placed character */
     unsigned short pad2a;
     unsigned char keys[1];             /* +0x2C u16 frame then the values of each flag */
 } EhfTrack;
+
+typedef struct EhfVec4 {
+    float x, y, z, w;
+} EhfVec4;
 
 typedef struct EhfColor {              /* Flash color transform: mul (0x100 = 1) then add */
     int mul[4];
@@ -150,7 +153,7 @@ EhfColor ehf_color_identity = { { 0x100, 0x100, 0x100, 0x100 }, { 0, 0, 0, 0 } }
 #define EHF_COLOR_SET(d, s) \
     ((d).mul[0] = (s).mul[0], (d).mul[1] = (s).mul[1], (d).mul[2] = (s).mul[2], (d).mul[3] = (s).mul[3], \
      (d).add[0] = (s).add[0], (d).add[1] = (s).add[1], (d).add[2] = (s).add[2], (d).add[3] = (s).add[3])
-float ehf_row3[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+EhfVec4 ehf_row3 = { 0.0f, 0.0f, 0.0f, 1.0f };
 float ehf_light_scale[3] = { 32768.0f, 32768.0f, 1.0f };
 float ehf_light_dir[3] = { -5.0f, 10.0f, 5.0f };
 
@@ -529,45 +532,46 @@ void *ehf_draw(void *list, EhfInst *e, EhfOpts *o)
     return ehf_draw_end(list, e, o);
 }
 
-#ifdef NON_MATCHING /* the original zeroes each row with an inline byte loop before the copy */
-/* Inverse of a rigid transform: transposed rotation and the rotated negated translation. */
-void mat4_inv_rigid(float *out, float *m)
+float *mat4_inv_rigid(float *out, float *m)
 {
     float tx = -m[12];
     float ty = -m[13];
     float tz = -m[14];
-    float r[4];
 
-    memset(r, 0, sizeof(r));
-    r[0] = m[0];
-    r[1] = m[4];
-    r[2] = m[8];
-    out[0] = r[0];
-    out[1] = r[1];
-    out[2] = r[2];
-    out[3] = r[3];
-    memset(r, 0, sizeof(r));
-    r[0] = m[1];
-    r[1] = m[5];
-    r[2] = m[9];
-    out[4] = r[0];
-    out[5] = r[1];
-    out[6] = r[2];
-    out[7] = r[3];
-    memset(r, 0, sizeof(r));
-    r[0] = m[2];
-    r[1] = m[6];
-    r[2] = m[10];
-    out[8] = r[0];
-    out[9] = r[1];
-    out[10] = r[2];
-    out[11] = r[3];
-    out[12] = m[0] * tx + m[1] * ty + m[2] * tz;
-    out[13] = m[4] * tx + m[5] * ty + m[6] * tz;
-    out[14] = m[8] * tx + m[9] * ty + m[10] * tz;
-    out[15] = ehf_row3[3];
+    {
+        EhfVec4 r = { 0 };
+
+        r.x = m[0];
+        r.y = m[4];
+        r.z = m[8];
+        ((EhfVec4 *)out)[0] = r;
+    }
+    {
+        EhfVec4 r = { 0 };
+
+        r.x = m[1];
+        r.y = m[5];
+        r.z = m[9];
+        ((EhfVec4 *)out)[1] = r;
+    }
+    {
+        EhfVec4 r = { 0 };
+
+        r.x = m[2];
+        r.y = m[6];
+        r.z = m[10];
+        ((EhfVec4 *)out)[2] = r;
+    }
+    {
+        EhfVec4 r = ehf_row3;
+
+        r.x = m[0] * tx + m[1] * ty + m[2] * tz;
+        r.y = m[4] * tx + m[5] * ty + m[6] * tz;
+        r.z = m[8] * tx + m[9] * ty + m[10] * tz;
+        ((EhfVec4 *)out)[3] = r;
+    }
+    return out;
 }
-#endif
 
 float *vec3_rotate(float *out, float *m, float *v)
 {
