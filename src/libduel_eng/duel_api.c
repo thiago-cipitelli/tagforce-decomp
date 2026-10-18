@@ -31,7 +31,7 @@ extern int duel_host_args[4];          /* 0x0891A184 */
 
 void duel_0884B368(RecipeData *d);
 void duel_0884B184();
-int duel_088E79F0(int a, RecipeData *d);
+int duel_piles_swap(int a, RecipeData *d);
 int duel_tag_slot(int side);
 GameState *game_state_get(void);
 int duel_setup_10_get(void);
@@ -53,7 +53,7 @@ void duel_start_decks(int a)
 
 int duel_088FE66C(int a)
 {
-    return duel_088E79F0(a, duel_decks2);
+    return duel_piles_swap(a, duel_decks2);
 }
 
 unsigned int duel_unk3830_get(int i)

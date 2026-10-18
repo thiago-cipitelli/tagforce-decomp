@@ -411,6 +411,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **`field_get_card`** (`piles.c`): o `switch (id)` sobre os ids especiais (`case 0x19A6`, `0x19BC`, `0x1A74`) reproduz os `beql` do original, e `if (id == -1 || duel_card_protected(id, -1)) return 0x1A74;` reaproveita o `-1` da comparação como segundo argumento. Contadores de pilha: a ordem de inicialização no `for` decide quem vai no delay slot do primeiro teste (`for (i = 0, n = 0; …)` num caso, `for (n = 0, i = 0; …)` no outro).
 
+- **Ordem dos `case` pela tabela de saltos** (`duel_card_put`): com tabela, os corpos saem na ordem do fonte e a tabela dá o endereço de cada um; ordenar as entradas por endereço dá a ordem dos `case` no fonte (aqui 0xC, 0xD, 0xE, 0xF, 0xB, `default`, 0x10). Um `if (z == 0xB || z == 0xD || z == 0xC)` que o original testa com `beql` em sequência é um `switch` com os três rótulos juntos; o `||` vira teste de faixa. Um índice somado em partes (`1 << (i + (zone + p * 16))`) evita que o mwcc reaproveite `zone + i` já calculado. Um ponteiro escolhido por `&&` direto no argumento (`f(a && b ? &x : &y)`) reproduz o `bne; beql; b` do original.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
