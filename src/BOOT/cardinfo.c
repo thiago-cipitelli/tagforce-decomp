@@ -139,21 +139,21 @@ int cardinfo_update(void)
         return 0;
     }
     {
-        if (pad->held & region_pick_value()) {
+        if (pad->b.trig & region_pick_value()) {
             fade_start_in(1, 0xFF000000, 16);
             cardinfo_view_state = 3;
             se_play(0x6214);
         }
         if (cardinfo_flags.has_alt) {
             pict = inv_get_hi(cardinfo_card_id);
-            if (pad->held & 0x100) {
+            if (pad->b.trig & 0x100) {
                 pict = (pict + cardinfo_n_pict - 1) % cardinfo_n_pict;
                 inv_set_hi(cardinfo_card_id, pict);
                 if (cardinfo_flags.has_lists)
                     cardinfo_calc_scroll();
                 se_play(0x621B);
             }
-            if (pad->held & 0x200) {
+            if (pad->b.trig & 0x200) {
                 pict = (pict + 1) % cardinfo_n_pict;
                 inv_set_hi(cardinfo_card_id, pict);
                 if (cardinfo_flags.has_lists)
@@ -161,7 +161,7 @@ int cardinfo_update(void)
                 se_play(0x621B);
             }
         }
-        if (pad->held & 0x80) {
+        if (pad->b.trig & 0x80) {
             if (cardinfo_flags.has_lists)
                 n = 3;
             else
@@ -170,7 +170,7 @@ int cardinfo_update(void)
             cardinfo_calc_scroll();
             se_play(0x6212);
         }
-        if (pad->held & 0x20) {
+        if (pad->b.trig & 0x20) {
             if (cardinfo_flags.has_lists)
                 n = 3;
             else
@@ -179,15 +179,15 @@ int cardinfo_update(void)
             cardinfo_calc_scroll();
             se_play(0x6212);
         }
-        ay = pad->analog_y;
+        ay = pad->b.analog_y;
         delta = 0;
         if (ay > 0x9E)
             delta = (ay - 0x9E) * 4;
         if (ay < 0x62)
             delta = (ay - 0x62) * 4;
-        if (pad->down & 0x10)
+        if (pad->b.down & 0x10)
             delta = -0x80;
-        if (pad->down & 0x40)
+        if (pad->b.down & 0x40)
             delta = 0x80;
         s = cardinfo_scroll + delta;
         if ((int)s <= 0)

@@ -54,14 +54,14 @@ int menu_wait_select(const char *text, int idx, int (*cancel_cb)(void))
                 return -2;
             }
         }
-        if (pad->pressed & 0x10) {
+        if (pad->b.dir_rep & 0x10) {
             idx = (idx + n - 1) % n;
-        } else if (pad->pressed & 0x40) {
+        } else if (pad->b.dir_rep & 0x40) {
             idx = (idx + 1) % n;
-        } else if (pad->held & 0x2000) {
+        } else if (pad->b.trig & 0x2000) {
             sys_frame_wait();
             return idx;
-        } else if (pad->held & 0x4000) {
+        } else if (pad->b.trig & 0x4000) {
             sys_frame_wait();
             return -1;
         }

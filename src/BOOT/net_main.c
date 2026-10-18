@@ -350,7 +350,7 @@ void net_frame(void)
     case -1:
         break;
     default:
-        if (pad->down & 1) {
+        if (pad->b.down & 1) {
             if (++net_pad_count >= 90) {
                 net_state_enter(0x24);
                 net_pad_count = 0;

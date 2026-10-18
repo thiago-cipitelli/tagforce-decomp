@@ -369,7 +369,7 @@ int menu_update(MenuWidget *w)
     } else if (w->no_input) {
         return -1;
     }
-    pressed = pad->pressed;
+    pressed = pad->b.dir_rep;
     accept = region_pick_value(0);
     cancel = region_pick_value(1);
     if (pressed & cancel & 0xFFFF) {
@@ -418,20 +418,20 @@ int menu_update(MenuWidget *w)
     style = w->style;
     if (style != 0) {
         if (style & 1) {
-            if (pad->held & 0x80) {
+            if (pad->b.trig & 0x80) {
                 menu_cursor_prev(w);
                 se_play(0x6212);
             }
-            if (pad->held & 0x20) {
+            if (pad->b.trig & 0x20) {
                 menu_cursor_next(w);
                 se_play(0x6212);
             }
         } else {
-            if (pad->held & 0x10) {
+            if (pad->b.trig & 0x10) {
                 menu_cursor_prev(w);
                 se_play(0x6212);
             }
-            if (pad->held & 0x40) {
+            if (pad->b.trig & 0x40) {
                 menu_cursor_next(w);
                 se_play(0x6212);
             }
@@ -443,7 +443,7 @@ int menu_update(MenuWidget *w)
     bits = menu_button_bits[w->buttons];
     b = w->button;
     nb = b;
-    if (pad->held & 0x80) {
+    if (pad->b.trig & 0x80) {
         for (i = 1; i < 8; i++) {
             if (bits & (1 << ((b + 8 - i) & 7))) {
                 nb = (b + 8 - i) & 7;
@@ -455,7 +455,7 @@ int menu_update(MenuWidget *w)
             w->button = nb;
         }
     }
-    if (pad->held & 0x20) {
+    if (pad->b.trig & 0x20) {
         k = nb;
         for (i = 1; i < 8; i++) {
             k++;

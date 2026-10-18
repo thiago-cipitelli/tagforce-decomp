@@ -94,7 +94,7 @@ void sys_check_reboot(void)
 
     if (ehfile_busy())
         return;
-    if ((pad->pressed & 0x309) != 0x309)
+    if ((pad->b.dir_rep & 0x309) != 0x309)
         return;
     if (sysvar_get_a90())
         return;

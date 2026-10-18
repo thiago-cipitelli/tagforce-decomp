@@ -2,14 +2,31 @@
 #ifndef EHSYS_H
 #define EHSYS_H
 
-typedef struct PadState {
+typedef struct PadBits {
     unsigned int down;      /* +0x00 buttons currently down (PSP_CTRL_*) */
-    unsigned int held;      /* +0x04 buttons down this frame with repeat (menus navigate on it) */
-    unsigned int unk8, unkC;
+    unsigned int trig;      /* +0x04 buttons that went down this frame */
+    unsigned int release;   /* +0x08 buttons that went up this frame */
+    unsigned int rep;       /* +0x0C trig plus per-button auto-repeat */
     int analog_x;           /* +0x10 0..255 */
-    int analog_y;           /* +0x14 0..255, dead zone 0x62..0x9E */
-    unsigned int unk18, unk1C, unk20;
-    unsigned int pressed;   /* +0x24 buttons that went down this frame */
+    int analog_y;           /* +0x14 0..255 */
+    unsigned int dir;       /* +0x18 down plus the stick as d-pad bits (dead zone 0x21..0xDE) */
+    unsigned int dir_trig;  /* +0x1C */
+    unsigned int dir_release; /* +0x20 */
+    unsigned int dir_rep;   /* +0x24 dir_trig plus repeat after 15 frames, every 4 */
+} PadBits;
+
+typedef struct PadCtrl {    /* SceCtrlData */
+    unsigned int time;
+    unsigned int buttons;
+    unsigned char lx, ly;
+    unsigned char rsrv[6];
+} PadCtrl;
+
+typedef struct PadState {   /* pad_state 0x08905534 */
+    PadBits b;
+    PadCtrl last;           /* +0x28 last sample, reused when reading fails */
+    int dir_count;          /* +0x38 */
+    int ignore_hold;        /* +0x3C when set, HOLD centers the stick */
 } PadState;
 
 PadState *pad_get(void);

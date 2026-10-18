@@ -271,6 +271,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Dois nomes para o mesmo valor** (`heap_create`): `subu v0,a0,a0` não dobrado no original vem de duas variáveis que o alocador juntou no mesmo registrador (`h = mem = malloc(...)`; `pad = (char *)h - (char *)mem`); com uma só variável o compilador dobra para zero.
 - **Retorno compartilhado no fim** (`heap_merge`): ramos que terminam todos em `return 1` saem com o bloco comum no fim da função quando o fonte usa `if/else if` com um único `return` depois; `return` dentro de cada ramo põe o bloco no meio.
 
+- **Condição negada guardada numa variável** (`pad_angle`): `moved = !(abs(dx) < 0x20 && abs(dy) < 0x20); if (moved) …` gera `slti; beqzl …; xori` como no original; o `if (!(…))` direto vira `beqz` + `bnezl`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
