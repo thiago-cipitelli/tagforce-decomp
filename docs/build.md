@@ -403,6 +403,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Fim da libduel_eng** (`duel_result.c`, `duel_finish.c`): as funções grandes de fim de duelo (recordes, bônus, títulos, `duel_finish`) têm um `switch` por índice num laço de 40 a 118 casos; o C sai do mesmo tamanho ou quase, mas o mwcc distribui os `$s` de outro jeito e nenhuma ordem de declaração muda isso (permutações completas testadas), então ficaram em asm com o C sob `NON_MATCHING`. A tabela de saltos dessas funções fica no asm (sem `@data`). Numa busca binária, comparar o campo lido num `int` local (`int v = c->id; if (v == key)`) dá a ordem de operandos do original.
 
+- **Laços de zona com `pl` fora do laço** (`field_find.c`): `DuelPlayer *pl = &duel.players[p & 1];` antes do laço e `pl->field[i]` dentro reproduzem o ponteiro de slot `pl + 5 * 0x14` que o mwcc cria para laços de 5 a 10; um `DuelSlot *s` declarado dentro do laço não. O resultado de `field_get_card` num local (`int c = field_get_card(p, i); if (c == id …)`) dá a ordem `bnel v0,id` do original. Um `if (a == 0) return b; if (b == 0) return a; return MIN(a, b);` reproduz o mínimo não nulo (`duel_min_order_both`). Um teste com `card_is_monster` cujo ramo de monstros vem primeiro no código é `if (card_is_monster(id) != 0) {…} else {…}`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

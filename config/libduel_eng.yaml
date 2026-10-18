@@ -27,6 +27,9 @@ segments:
     subalign: null
     subsegments:
       - [0x60, asm, text_0]
+      - [0xE4D54, c, field_find]
+      - [0xE4D54, asm, field_find_asm_088E8CF4]
+      - [0xE4FE8, c, field_find]
       - [0xE5544, c, field_count]
       - [0xE5D9C, asm, field_count_asm_088E9D3C]
       - [0xE60F8, c, field_count]
