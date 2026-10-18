@@ -8,9 +8,10 @@ obj = "build/tmp/shape.o"
 r = subprocess.run(["tools/mwcc.sh", "-O4,p", "-sdatathreshold", "0", "-i", "include", "-c", src, "-o", obj], capture_output=True, text=True)
 if r.returncode: print(r.stdout, r.stderr); sys.exit(1)
 code, relocs = object_function(obj, fn)
-orig = open("build/elf/BOOT.elf", "rb").read()
+MOD = os.environ.get("MODULE", "BOOT")
+orig = open(f"build/elf/{MOD}.elf", "rb").read()
 # original size: up to the next function symbol in symbols/BOOT.txt
-funcs = sorted(int(m.group(1), 16) for m in re.finditer(r"= 0x([0-9A-Fa-f]+); // type:func", open("symbols/BOOT.txt").read()))
+funcs = sorted(int(m.group(1), 16) for m in re.finditer(r"= 0x([0-9A-Fa-f]+); // type:func", open(f"symbols/{MOD}.txt").read()))
 end = next((a for a in funcs if a > addr), addr + len(code))
 want = orig[addr - BASE + SEG: end - BASE + SEG]
 def dis(b, path):

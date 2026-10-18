@@ -26,7 +26,11 @@ segments:
     bss_size: 0x6820
     subalign: null
     subsegments:
-      - [0x60, asm, text]
+      - [0x60, asm, text_0]
+      - [0xE5544, c, field_count]
+      - [0xE5D9C, asm, field_count_asm_088E9D3C]
+      - [0xE60F8, c, field_count]
+      - [0xE629C, asm, text_1]
       - [0xFDC00, asm, sceStub_text]
       - [0x1002E8, bin, lib_ent_top]
       - [0x1002EC, bin, lib_ent]

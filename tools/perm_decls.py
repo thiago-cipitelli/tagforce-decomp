@@ -15,7 +15,7 @@ src = head + "\n".join(body.replace("{NAME}", f"f_{i}").replace("{DECLS}", "\n  
 open("build/tmp/perm.c", "w").write(src)
 r = subprocess.run(["tools/mwcc.sh", "-O4,p", "-sdatathreshold", "0", "-i", "include", "-c", "build/tmp/perm.c", "-o", "build/tmp/perm.o"], capture_output=True, text=True)
 if r.returncode: print(r.stdout, r.stderr); sys.exit(1)
-orig = open("build/elf/BOOT.elf", "rb").read()
+orig = open("build/elf/%s.elf" % os.environ.get("MODULE", "BOOT"), "rb").read()
 best = []
 for i, p in enumerate(perms):
     code, relocs = object_function("build/tmp/perm.o", f"f_{i}")

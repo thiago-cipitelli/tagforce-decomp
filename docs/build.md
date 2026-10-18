@@ -321,6 +321,11 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Ordem da declaração muda o modo de cópia do template** (`anim_eval`): `MatF id = {…}` declarado antes de `unsigned short b = t->root;` sai como laço de cópia de palavras; declarado depois, sai float a float (`lwc1`/`swc1`) como no original.
 - **Peso extra em `$f14`** (`model_update`): um produto calculado num registrador alto (`$f14`) antes de uma chamada é o terceiro argumento float da chamada (`anim_blend(…, m->frame * k)`), não uma variável local.
 
+- **libduel_eng** (`include/duel.h`): o estado do duelo é um bloco de 0x3840 bytes em `0x08915E5C` (`Duel`: dois `DuelPlayer` de 0xFAC, modo, lista de efeitos de 8 bytes em +0x276C). Os acessos casam com `DuelPlayer *pl = &duel.players[p & 1]; … pl->field[i]` (índice, não ponteiro incrementado); o compilador indexa por `mult` com 0xFAC. Contadores de laço declarados antes do acumulador (`int i; int n = 0;`).
+- **`i <= 10` gera `slti at,i,11`** (`field_count.c`): laços até 11 com `slti at` no original foram escritos com `<=`; `i < 11` gera `slti v0`.
+- **MIN/MAX em ternário** (`duel_count_free_monster_zones`): `n = MIN(n, 5 - f(p)); n = MAX(n, 0);` reproduz a segunda chamada de `f` e o `blezl`; o mesmo com `if` não casa.
+- **Campos de 16 bits lidos por máscara, não por bitfield** (`DuelEffect.src`, `marks`): o original carrega com `lhu` e separa com `andi`/`ext`; macros `x & 0xFF` / `x >> 8 & 0xFF` reproduzem, structs de bytes ou bitfields geram `lbu` ou cópia pela pilha.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

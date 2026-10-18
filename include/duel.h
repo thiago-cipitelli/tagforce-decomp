@@ -1,0 +1,88 @@
+/* libduel_eng: duel state (see src/libduel_eng/). Names of the zone arrays are provisional. */
+#ifndef DUEL_H
+#define DUEL_H
+
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+typedef struct DuelCard {              /* 4: a card reference */
+    unsigned short id : 13;
+    unsigned short owner : 1;          /* also bit 0 of the instance id */
+    unsigned short f14 : 2;
+    unsigned short lo6 : 6;
+    unsigned short uid_hi : 8;         /* instance id bits 1-8 */
+    unsigned short f30 : 2;
+} DuelCard;
+
+/* instance id of a card reference */
+
+typedef struct DuelSlot {              /* 0x14: a field zone */
+    DuelCard card;
+    unsigned short unk4;               /* +0x04 */
+    unsigned short pos;                /* +0x06 */
+    unsigned short faceup;             /* +0x08 */
+    unsigned short effects;            /* +0x0A head of its effect list */
+    unsigned int link;                 /* +0x0C */
+    unsigned int flags;                /* +0x10 */
+} DuelSlot;
+
+/* face up and not negated (bits 1 and 5 of the flags) */
+#define SLOT_ACTIVE(s) (~((s)->flags >> 5 & 1) & (s)->faceup & ~((s)->flags >> 1 & 1))
+
+#define EFF_PLAYER(e) ((e)->src & 0xFF)
+#define EFF_ZONE(e) ((e)->src >> 8 & 0xFF)
+
+typedef struct DuelPlayer {            /* 0xFAC, two from 0x08915E5C */
+    int lp;
+    int unk4;                          /* +0x004 */
+    int unk8;                          /* +0x008 */
+    unsigned int n_hand;               /* +0x00C zone 0xB */
+    int n_d;                           /* +0x010 zone 0xD */
+    unsigned int n_grave;              /* +0x014 zone 0xE */
+    int n_18;                          /* +0x018 */
+    unsigned int n_marks;              /* +0x01C entries of marks[] */
+    int unk20[4];                      /* +0x020 */
+    DuelSlot field[11];                /* +0x030 0-4 monsters, 5-9 spells/traps, 10 field spell */
+    unsigned short unk10c[5];          /* +0x10C */
+    unsigned short effects;            /* +0x116 head of the player's effect list */
+    int unk118;                        /* +0x118 */
+    unsigned int flags;                /* +0x11C */
+    DuelCard hand[160];                /* +0x120 zone 0xB */
+    DuelCard zone_d[160];              /* +0x3A0 zone 0xD */
+    DuelCard zone_c[60];               /* +0x620 zone 0xC */
+    DuelCard grave[220];               /* +0x710 zone 0xE */
+    DuelCard zone_f[220];              /* +0xA80 zone 0xF */
+    unsigned short marks[222];         /* +0xDF0 kind | player << 8 | zone << 12 */
+} DuelPlayer;
+
+typedef struct DuelEffect {            /* 8: entry of the effect lists */
+    unsigned short src;                /* source card: player | zone << 8 */
+    unsigned char kind;                /* +0x02 low nibble: kind */
+    unsigned char pad3;
+    unsigned short arg;                /* +0x04 */
+    unsigned short next;               /* +0x06 */
+} DuelEffect;
+
+typedef struct DuelSpecial {           /* 0x08913F10, 0x130: two cards held outside the zones */
+    int player[2];
+    int pad8[5];
+    int zone[2];                       /* +0x1C */
+    int pad24[40];
+    DuelSlot slot[2];                  /* +0xC4 */
+    int padec[17];
+} DuelSpecial;
+
+typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
+    DuelPlayer players[2];
+    unsigned int mode;                 /* +0x1F58 bit 0: the special cards count as on the field */
+    unsigned int zone_off;             /* +0x1F5C zone bits (player * 16 + zone) of disabled zones */
+    unsigned char pad1f60[0x276C - 0x1F60];
+    DuelEffect effects[538];           /* +0x276C, entry 0 unused */
+    int pad383c;
+} Duel;
+
+extern Duel duel;
+extern DuelSpecial duel_special;       /* 0x08913F10 */
+extern DuelEffect duel_effects[];      /* 0x089185C8 */
+
+#endif
