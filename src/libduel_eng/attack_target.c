@@ -14,7 +14,7 @@ int field_get_card(unsigned int p, int z);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_field_atk(unsigned int p, int z);
 int duel_field_e5ae0(unsigned int p, int z);
-int duel_field_f6380(unsigned int p, int z);
+int duel_field_level(unsigned int p, int z);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
@@ -128,7 +128,7 @@ int duel_can_attack_target(unsigned int p, int z, unsigned int q, int i, int arg
         case 0x179D:
             for (j = 0; j <= 4; j++) {
                 if (duel.players[q & 1].field[j].card.id != 0 && duel.players[q & 1].field[j].faceup != 0 &&
-                    duel_field_e5ae0(q, j) && duel_field_f6380(q, j) <= 3) {
+                    duel_field_e5ae0(q, j) && duel_field_level(q, j) <= 3) {
                     return 0;
                 }
             }

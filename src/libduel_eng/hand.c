@@ -153,7 +153,7 @@ int duel_hand_remove_card(unsigned int p, DuelCard *c)
     return 0;
 }
 
-static int duel_level_cb(DuelEffect *e, int *ctx)
+int duel_level_cb(DuelEffect *e, int *ctx)
 {
     if ((e->kind & 0xF) < 6 && e->src == 0x18D9 && (e->arg & 0xFFF) == ctx[0]) {
         ctx[1] = e->arg >> 12;
