@@ -44,8 +44,6 @@ segments:
       - [0x3057C, c, gfx]
       - [0x308A8, asm, gfx_asm_08834848]
       - [0x31190, c, gfx]
-      - [0x31538, asm, gfx_asm_088354D8]
-      - [0x315F0, c, gfx]
       - [0x316B0, c, gim]
       - [0x31820, asm, gim_asm_088357C0]
       - [0x31D0C, c, gim]

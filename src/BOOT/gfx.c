@@ -1,6 +1,5 @@
 // @range 0x0883451C-0x08835650
 // @asm 0x08834848-0x08835130
-// @asm 0x088354D8-0x08835590
 // @data 0x088ED9CC-0x088EDFC4
 /* Graphics frame: GE/libgu initialization, end of frame (vsync with a 30 fps cap, flip callback,
    swap), draw targets, screenshots to host0: as BMP or TGA, and the GE state tracker: every
@@ -8,6 +7,7 @@
    command, enqueued at the end of the frame) can restore it. */
 #include "psp.h"
 #include "libc.h"
+#include "allegrex.h"
 
 typedef struct GfxState {              /* 0x08905084 */
     unsigned int frame;                /* bit 0: displayed buffer */
@@ -471,28 +471,19 @@ char *dl_state_flush(char *list)
     return list + n * 4;
 }
 
-#ifdef NON_MATCHING /* the original builds the uncached pointer with ins (bit insert), which no C form reproduces */
 void dl_state_reset(void)
 {
-    union {
-        unsigned int *p;
-        struct {
-            unsigned int off : 28;
-            unsigned int seg : 4;
-        } b;
-    } u;
-    int b;
-    int i;
+    unsigned int fr = gfx_state.frame;
+    unsigned int *u = (unsigned int *)ALLEGREX_INS((unsigned int)gfx_ge_defaults, 4, 28, 4);
+    int b = (fr & 1) * 4;
+    int i = 0;
     unsigned char *f;
 
-    b = (gfx_state.frame & 1) * 4;
-    u.p = gfx_ge_defaults;
-    u.b.seg = 4;
-    u.p[0x9C] = *(unsigned int *)((char *)gfx_fbp_cmd + b);
-    u.p[0x9D] = *(unsigned int *)((char *)gfx_fbw_cmd + b);
+    u[0x9C] = *(unsigned int *)((char *)gfx_fbp_cmd + b);
+    u[0x9D] = *(unsigned int *)((char *)gfx_fbw_cmd + b);
     dl_saved_n = 0;
     f = dl_dirty;
-    for (i = 0; i < 0x100; i++) {
+    for (; i < 0x100; i++) {
         if (*f != 0xFF) {
             *f = 0;
         }
@@ -500,7 +491,6 @@ void dl_state_reset(void)
     }
     sceGeListSync(sceGeListEnQueue(gfx_ge_defaults, 0, -1, 0), 0);
 }
-#endif
 
 /* Copies the displayed frame (or `src`) to `dst` (default: the displayed frame). */
 void gfx_copy_frame(void *dst, void *src)
