@@ -399,6 +399,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Valor 0/1 sem `sltiu` encadeado** (`duel_5250_in_range`): `int r = 0; … if (x <= 6) goto end; if (x >= 0x49) goto end; r = 1; end: return r;` reproduz os dois desvios com `at` do original; `x >= 7 && x < 0x49` vira expressão booleana com `xori`, e a ordem de declaração (`int r = 0;` antes de `x`) decide o registrador de `x`. Um `if (v > 0) {…}` cujo outro caminho só devolve `v` sai com `if (v <= 0) return v; return …;` (`duel_088FE810`). Bits lidos de uma palavra antes do teste: guardar o segundo bit num local (`unsigned int b24 = f >> 24 & 1; r = (f & 1) || b24;`) para o `ext` vir antes do `andi` (`duel_player_protected`).
 
+- **Endereço base de chamada mais índice** (`duel_save_once_cc`, `duel_save_once_120`): o original soma o índice antes da base (`addu v0,s0,v0`) quando a conta é feita em inteiro (`(unsigned char *)((int)base + i) + 0xCC`); `base + i + 0xCC` em ponteiro soma na ordem inversa e `&base[i + 0xCC]` soma a constante primeiro. Um `if (*p == 0) { *p = 1; return 1; } return 0;` reproduz o `bnezl … move v0,zero` com o `li v0,1` reaproveitado no `sb`. Um id lido com `lhu` e comparado sem `andi` é `int` (`duel_deck_stats`).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
