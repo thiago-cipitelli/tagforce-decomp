@@ -1,6 +1,6 @@
 // @range 0x088EF170-0x088EF5EC
-/* Effect immunity of monster z of player p: bit 1 against its controller's effects, bit 0 against
-   the opponent's (cards with built-in immunity, 0x1693, 0x1667, 0x17A1), and the same for the
+/* Effect immunity of monster z of player p: bit 0 against its controller's effects, bit 1 against
+   the opponent's (tested with `opp + 1`) (cards with built-in immunity, 0x1693, 0x1667, 0x17A1), and the same for the
    effects that target it (0x19C3, 0x194E, 0x1437). */
 #include "duel.h"
 #include "card_db.h"
