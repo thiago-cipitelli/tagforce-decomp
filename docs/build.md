@@ -405,6 +405,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Laços de zona com `pl` fora do laço** (`field_find.c`): `DuelPlayer *pl = &duel.players[p & 1];` antes do laço e `pl->field[i]` dentro reproduzem o ponteiro de slot `pl + 5 * 0x14` que o mwcc cria para laços de 5 a 10; um `DuelSlot *s` declarado dentro do laço não. O resultado de `field_get_card` num local (`int c = field_get_card(p, i); if (c == id …)`) dá a ordem `bnel v0,id` do original. Um `if (a == 0) return b; if (b == 0) return a; return MIN(a, b);` reproduz o mínimo não nulo (`duel_min_order_both`). Um teste com `card_is_monster` cujo ramo de monstros vem primeiro no código é `if (card_is_monster(id) != 0) {…} else {…}`.
 
+- **`!(x) != 0` como condição** (`duel_slot_faceup_live`, `duel_slot_e8170`): gera o `sltu v,zero,x; xori v,v,1; beqz` do original, que `!x` (que dá `bnez`) e `x == 0` não geram. Um teste em dois tempos (`ok = 1;` e depois `if (ok && …) r = 1;`) reproduz o `move s1,a0` com o `1` do `sllv` reaproveitado. O contador de bit de zona (`1 << (p * 16 + i)`) que o original mantém num `$s` próprio só sai com uma variável explícita (`for (i = 0, b = p << 4; …; i++, b++)`), e mesmo assim o mwcc troca os registradores do contador e do ponteiro de slot; essas funções ficaram em asm (`field_find.c`, `field_active.c`). **`DuelSpecAct`** (0x38, `duel_special.act[2]` em +0x2C): id e uid da carta especial ativada.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

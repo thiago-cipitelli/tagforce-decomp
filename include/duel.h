@@ -127,13 +127,24 @@ typedef struct DuelChain {             /* 0x08914350 */
     int len;                           /* +0x484 */
 } DuelChain;
 
+typedef struct DuelSpecAct {           /* 0x38 */
+    int unk0;
+    int unk4;
+    int unk8;                          /* +0x08 */
+    int uid;                           /* +0x0C */
+    int id;                            /* +0x10 */
+    int pad14[8];
+    int unk34;                         /* +0x34 */
+} DuelSpecAct;
+
 typedef struct DuelSpecial {           /* 0x08913F10, 0x130: two cards held outside the zones */
     int player[2];
     int pad8[5];
     int zone[2];                       /* +0x1C */
     int pad24;
     int uid;                           /* +0x28 card uid (owner + uid_hi * 2) */
-    int pad2c[38];
+    DuelSpecAct act[2];                /* +0x2C by player */
+    int pad9c[10];
     DuelSlot slot[2];                  /* +0xC4 */
     int padec[17];
 } DuelSpecial;

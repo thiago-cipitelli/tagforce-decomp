@@ -27,6 +27,12 @@ segments:
     subalign: null
     subsegments:
       - [0x60, asm, text_0]
+      - [0xE412C, c, field_active]
+      - [0xE4428, asm, field_active_asm_088E83C8]
+      - [0xE48E4, c, field_active]
+      - [0xE4980, asm, field_active_asm_088E8920]
+      - [0xE4B34, c, field_active]
+      - [0xE4B74, asm, field_active_asm_088E8B14]
       - [0xE4D54, c, field_find]
       - [0xE4D54, asm, field_find_asm_088E8CF4]
       - [0xE4FE8, c, field_find]
