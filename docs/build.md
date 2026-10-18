@@ -345,6 +345,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Variáveis de laço locais ao `case`** (`duel_direct_attack_kind`): quando cada laço de um `switch` usa registros diferentes (a0/a1 trocados, `$s` em outra ordem), cada caso declarava as suas: `case X: { int j; int all; … }` (as chaves fecham antes do próximo rótulo; a queda continua valendo). Variáveis da função inteira compartilhadas pelos laços dão a alocação errada.
 - **`sltu; xori; bnezl` dentro de um laço de busca** é `if (!(!slot.card.id)) { all = 0; break; }` (dupla negação que o compilador não simplifica; provavelmente uma macro de "zona vazia"). A flag começa em `a0` reaproveitando o `li a0,1` da constante de `1 - p`.
 - **`beqzl faceup → fora; all = 0`** num laço com dois testes é `if (id != 0 && (faceup == 0 || atk < X)) { all = 0; break; }` (um `||`); dois `if` aninhados invertem o desvio.
+- **`if (a() || b()) return 1;` dentro de um `case`** (`duel_slot_eef84`): gera `bnel → fim, li v0,1` para o primeiro e o bloco `li v0,1; b fim; nop` (atraso vazio) para o segundo; dois `if` separados geram `beqzl` e atrasos preenchidos.
+- **Atualizar um campo duas vezes sem ponteiro local** (`duel_mark_attacked`): `slot.flags |= A; slot.flags |= 1 << (slot.flags >> 22 & 1 ? 23 : 22);` direto deixa o endereço em `a2` e gera o ternário com `beqzl … li v1,22`; com `unsigned int *f` local o compilador usa base + deslocamento 0x40.
 
 ## Pendências
 
