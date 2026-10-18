@@ -41,15 +41,18 @@ $(LD_SCRIPT): config/$(MODULE).yaml
 build/%.s.o: %.s
 	@mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) -o $@ $<
+	@python3 tools/min_align.py $@
 
 build/%.c.o: %.c
 	@mkdir -p $(dir $@)
 	$(MWCC) $(MWCC_FLAGS) -c $< -o $@
 	@python3 tools/rename_sections.py $@
+	@python3 tools/min_align.py $@
 
 build/%.bin.o: %.bin
 	@mkdir -p $(dir $@)
 	$(LD) -r -b binary -o $@ $<
+	@python3 tools/min_align.py $@
 
 $(OUT): $(LD_SCRIPT) $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)
 	$(LD) -EL -T $(LD_SCRIPT) -Map build/$(MODULE).map -o $@ $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)

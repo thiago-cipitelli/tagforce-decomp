@@ -24,7 +24,7 @@ segments:
     start: 0x60
     vram: 0x8804000
     bss_size: 0x1B20
-    subalign: 4
+    subalign: null
     subsegments:
       - [0x60, asm, text]
       - [0x69FC, asm, sceStub_text]

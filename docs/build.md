@@ -97,7 +97,9 @@ build/elf/<m>.elf  (PRX relocado, tools/prx2elf.py)
 ```
 
 Comandos: `make MODULE=BOOT check`, `make check-all` (todos os módulos), `make clean`. Verificação antes de integrar: `tools/check_file.py MODULE src/MODULE/x.c` (todas as funções do `@range`), `tools/mwcc_check.py SRC.c FUNC MODULE 0xADDR` (uma função, mostra as palavras diferentes), `tools/diff_words.py build/elf/M.elf build/M.rebuilt.elf .text` (depois do link). Desmontar o objeto compilado: `psp-objdump -dr build/x.check.o`.
-Correções automáticas no split (`tools/fix_asm.py`): formas VFPU que o psp-as rejeita (`vrot` com lista de rotação, `vpfxd` com máscara) e `.double`/`.dword` (o psp-as alinharia a 8 e deslocaria o `.data`) viram `.word` com os bytes originais.
+Correções automáticas no split (`tools/fix_asm.py`): formas VFPU que o psp-as rejeita (`vrot` com lista de rotação, `vpfxd` com máscara) e `.double`/`.dword` (o psp-as alinharia a 8 e deslocaria o `.data`) viram `.word` com os bytes originais; `.align 3` vira `.align 2`.
+
+**Alinhamento das seções:** o link original punha toda seção de entrada em fronteira de 4 bytes, mas os templates de tipos com `__attribute__((aligned(16)))` (Vec4/Mat4 dos handlers EHF, `ehf_cmd.c`: "III" em 0x088ED200 e o Vec4 em 0x088ED210) mantinham os 16. Por isso o segmento não usa `SUBALIGN` (`subalign: null` em `splat_config.py`) e `tools/min_align.py` (chamado pelo Makefile em todo objeto `.s.o`, `.c.o` e `.bin.o`) sobe para 4 o alinhamento das seções menores, o que reproduz o `SUBALIGN(4)` de antes sem truncar os 16.
 
 ## Funções que ficam em asm dentro de um arquivo C (`@asm`)
 
@@ -285,6 +287,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Argumentos avaliados da direita para a esquerda só via temporário** (`spline_eval_ring`): quando o original calcula o terceiro argumento antes do segundo, guardar o terceiro numa variável antes da chamada.
 
 - **VFPU no mwcc** (`mtx.c`, 30/30 matching): o assembler embutido do mwccpsp aceita VFPU. Funções C com blocos `asm { … }` no meio (o original guarda a matriz corrente em M300 entre chamadas) e funções inteiras `asm void f(…) { …; jr ra; <delay> }` reproduzem o original. Sintaxe que bate: `sv.q C300, 0(p)` com `register float *p` local (o C carrega o ponteiro, o bloco usa o registrador), `;` separando instruções num macro de uma linha, `vrot.q C010, S100, [0, c, s, 0]` (imm decodificado do word: bits 0-1 posição do cos, 2-3 do sin, 4 nega o sin), `vcst.s S101, VFPU_2_PI`, `vfim.s S123, -1.0` (literal float), `vpfxs -X, X, X, X`, `vcmp.s ez, …`, `vcmovt.s S200, S203, 0`; o que não tiver sintaxe conhecida vai como `.word 0x…` (`vpfxd` em `mtx_look_at`). Para o port, cada bloco tem um `#else` em C sobre `vfpu_m300`.
+
+- **Handlers EHF** (`ehf_cmd.c`, `ehf_cmd2.c`): o ponteiro para os argumentos é um local inicializado na declaração (`float *a = cmd->a.f;`), calculado no delay slot do primeiro teste; quando o original o calcula depois de uma chamada no `$s` (`ehf_cmd_trs`), a atribuição vem antes da chamada (`a = …; mtx_push();`). Fases múltiplas são `switch (phase)` com os `case` na ordem dos corpos. Um teste que só pula o corpo é `if (cond) { … } return 0;`, não `if (!cond) return 0;` (`ehf_cmd_hold`, `ehf_cmd_loop`). O array de saídas de `ehf_cmd_args` é inicializado na declaração (`void *out[2] = { &pos, &dir };` → laço de zeragem + atribuições) e declarado antes do `char fmt[] = "…"` (template copiado byte a byte depois). Um vetor `{ a[0], a[1], a[2], 1.0f }` gera template {0,0,0,1} copiado inteiro e sobrescrito (`ehf_cmd_cull`); `node->time` relido em cada uso, sem local (`ehf_cmd_spin`).
+- **Templates de função em asm:** quando a função dona do primeiro template fica em `@asm`, o arquivo inteiro passa a usar globais nomeadas na ordem dos dados (template anônimo vai para antes das globais), e as funções em C copiam byte a byte de `unsigned char fmt_x[4]` com o endereço do array local guardado antes (`f = (char *)fmt; fmt[0] = ehf_fmt_ii[0]; …`), o que reproduz a cópia do template (`ehf_cmd2.c`).
+- **Ordem das declarações e endereço na pilha:** nos handlers EHF o primeiro local declarado fica no endereço mais alto (`Vec4 pos; Vec4 dir;` → pos acima); quando não bater, permutar só os locais da pilha.
 
 ## Pendências
 

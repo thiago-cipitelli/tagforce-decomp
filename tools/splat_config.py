@@ -98,7 +98,7 @@ segments:
     start: 0x{text_off:X}
     vram: 0x{text_vram:X}
     bss_size: 0x{bss_size:X}
-    subalign: 4
+    subalign: null
     subsegments:
 {chr(10).join(subs)}
   - [0x{end:X}]

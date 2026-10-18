@@ -6,6 +6,10 @@ import re, subprocess, sys
 i = sys.argv.index("--")
 as_cmd, files = sys.argv[1:i], sys.argv[i + 1:]
 def words(line):
+    # splat aligns 8-byte data to 8 (`.align 3`); the original link only had 4-byte alignment there, and
+    # the linker script no longer forces SUBALIGN(4) (C objects need their own 16-byte alignment).
+    if line.strip() == ".align 3":
+        return ".align 2"
     # `.double`/`.dword` make psp-as insert 8-byte alignment padding the original link never had
     # (the data section only starts 4-aligned); emit the same bytes as two `.word`.
     m = re.match(r"(\s*/\* \w+ \w+ ([0-9A-Fa-f]{16}) \*/)\s+\.(double|dword)\s", line)
