@@ -401,6 +401,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Endereço base de chamada mais índice** (`duel_save_once_cc`, `duel_save_once_120`): o original soma o índice antes da base (`addu v0,s0,v0`) quando a conta é feita em inteiro (`(unsigned char *)((int)base + i) + 0xCC`); `base + i + 0xCC` em ponteiro soma na ordem inversa e `&base[i + 0xCC]` soma a constante primeiro. Um `if (*p == 0) { *p = 1; return 1; } return 0;` reproduz o `bnezl … move v0,zero` com o `li v0,1` reaproveitado no `sb`. Um id lido com `lhu` e comparado sem `andi` é `int` (`duel_deck_stats`).
 
+- **Fim da libduel_eng** (`duel_result.c`, `duel_finish.c`): as funções grandes de fim de duelo (recordes, bônus, títulos, `duel_finish`) têm um `switch` por índice num laço de 40 a 118 casos; o C sai do mesmo tamanho ou quase, mas o mwcc distribui os `$s` de outro jeito e nenhuma ordem de declaração muda isso (permutações completas testadas), então ficaram em asm com o C sob `NON_MATCHING`. A tabela de saltos dessas funções fica no asm (sem `@data`). Numa busca binária, comparar o campo lido num `int` local (`int v = c->id; if (v == key)`) dá a ordem de operandos do original.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

@@ -543,6 +543,13 @@ duel_088E66AC = 0x088E66AC; // type:func inferred
 duel_w_0891A194 = 0x0891A194; // type:data inferred
 duel_w_0891A198 = 0x0891A198; // type:data inferred
 duel_w_0891A19C = 0x0891A19C; // type:data inferred
+duel_char_known = 0x08900C94; // type:func matched src/libduel_eng/duel_finish.c
+duel_titles_check = 0x08900CD4; // type:func asm (@asm in src/libduel_eng/duel_finish.c, C under NON_MATCHING)
+duel_finish = 0x08901730; // type:func asm (@asm in src/libduel_eng/duel_finish.c, C under NON_MATCHING)
+duel_char_find = 0x08901AC8; // type:func matched src/libduel_eng/duel_finish.c
+duel_char_data = 0x08901B3C; // type:func matched src/libduel_eng/duel_finish.c
+duel_chars = 0x089135FC; // type:data inferred DuelChar[41]
+duel_deck_stats_cur = 0x0891A1A0; // type:data inferred DeckStats
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
