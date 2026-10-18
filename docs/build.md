@@ -310,6 +310,9 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Parâmetro recebido como handle** (`efs_send`): `void *h` copiado para `EfsInst *inst = h` muda a ordem de alocação dos `$s` entre os parâmetros.
 - **Dados de um arquivo terminando fora do alinhamento de 16** (`camera.c`): quando o próximo objeto do original era alinhado a 16 mas o trecho seguinte fica em asm, o `@data` termina no fim real do último objeto (0x088ED7AC) e o preenchimento vai para o asm.
 
+- **Protótipo local escolhe a ordem dos argumentos float** (`tms_draw`): a mesma `dl_tex_offset` definida como `(float u, float v, list)` em `dl.c` é declarada em `tms.c` como `(list, u, v)`; os registradores são os mesmos (`$a0`, `$f12`, `$f13`), mas a ordem da avaliação muda o que vai para o delay slot do `jal`.
+- **`switch` sobre um bit** (`tms_draw`): dois testes `beql v,1` / `beqzl v` seguidos de corpos na ordem 0, 1 são `switch (flags & 1) { case 0: …; case 1: …; }`, com `continue` dentro dos `case`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
