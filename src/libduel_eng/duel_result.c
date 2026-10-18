@@ -1,16 +1,23 @@
-// @range 0x088FF3FC-0x088FF8C4
+// @range 0x088FF3FC-0x088FFFDC
+// @asm 0x088FF8C4-0x088FFFDC
 /* After the duel: kind of result of a tag series, deck statistics for the rewards, one-time
    flags in the save. */
 #include "card_db.h"
 #include "libc.h"
+#include "duel.h"
+#include "duel_setup.h"
 
 typedef struct DuelResults {           /* game_state2_get(), 0x2A0 */
-    unsigned char pad0[0x20];
+    unsigned char pad0[0x10];
+    unsigned int frames;               /* +0x10 duel time in frames */
+    int unk14;
+    int lp_left[2];                    /* +0x18 */
     int result;                        /* +0x20 */
     int mode;                          /* +0x24 8: series of duels */
     unsigned char pad28[0xC];
     unsigned short n_duels;            /* +0x34 */
-    unsigned short duels[1];           /* +0x36 result of each duel: 1, 2, 3 */
+    unsigned short duels[3];           /* +0x36 result of each duel: 1, 2, 3 */
+    int cur[0x28];                     /* +0x3C records set by this duel */
 } DuelResults;
 
 typedef struct DeckStats {             /* 0x68 */
@@ -28,6 +35,8 @@ typedef struct DeckStats {             /* 0x68 */
 
 DuelResults *game_state2_get(void);
 int sysflag_test(int bit);
+int duel_stat_get(int i);
+extern int duel_view_player;
 
 int duel_series_result(void)
 {
@@ -180,3 +189,148 @@ int duel_save_once_120(int i)
     }
     return 0;
 }
+
+#ifdef NON_MATCHING /* same steps; the original keeps the duel results in $s0 and the save records in $s5, and gives the
+                        record pointer $s1 */
+#define REC_MAX(e)                                                             \
+    v = (e);                                                                   \
+    if (*best < v) {                                                           \
+        *best = v;                                                             \
+        *cur = v;                                                              \
+    }                                                                          \
+    break
+
+/* Update the 40 duel records of the save (maximums, two minimums) after a duel and mark the
+   records broken by this duel. */
+void duel_records_update(void)
+{
+    DuelResults *r;
+    int v;
+    int *rec;
+    int *best;
+    int i;
+    int *cur;
+
+    r = game_state2_get();
+    cur = (int *)((unsigned char *)r + 0x3C);
+    rec = (int *)sysstate2_get_ptr_51c();
+    best = rec;
+
+    for (i = 0; i < 0x28; i++, cur++, best++) {
+        *cur = 0;
+        switch (i) {
+        case 0:
+            REC_MAX(duel_stat_get(0x13));
+        case 1:
+            REC_MAX(duel_stat_get(0x14));
+        case 3:
+            REC_MAX(duel_stat_get(0x2E));
+        case 4:
+            REC_MAX(duel_stat_get(0x2F));
+        case 5:
+            REC_MAX(duel_stat_get(4) + duel_stat_get(6) + duel_stat_get(2));
+        case 6:
+            REC_MAX(duel_stat_get(4));
+        case 7:
+            REC_MAX(duel_stat_get(6));
+        case 8:
+            REC_MAX(duel_stat_get(7));
+        case 9: {
+            int a = duel_stat_get(3);
+            int b = duel_stat_get(5);
+
+            b = MAX(b, a);
+            REC_MAX(MAX(b, duel_stat_get(1)));
+        }
+        case 10:
+            REC_MAX(duel_stat_get(0xF) + duel_stat_get(0xE));
+        case 11:
+            REC_MAX(duel_stat_get(0xF));
+        case 12:
+            REC_MAX(duel_stat_get(0xE));
+        case 13:
+            REC_MAX(duel_stat_get(0x27));
+        case 14:
+            REC_MAX(duel_stat_get(0x15) + duel_stat_get(0x16) + duel_stat_get(0x18) + duel_stat_get(0x23) +
+                    duel_stat_get(0x24) + duel_stat_get(0x19));
+        case 15:
+            REC_MAX(duel_stat_get(0x15));
+        case 16:
+            REC_MAX(duel_stat_get(0x16));
+        case 17:
+            REC_MAX(duel_stat_get(0x18));
+        case 18:
+            REC_MAX(duel_stat_get(0x23));
+        case 19:
+            REC_MAX(duel_stat_get(0x24));
+        case 20:
+            REC_MAX(duel_stat_get(0x19));
+        case 21:
+            REC_MAX(duel_stat_get(0x17));
+        case 22:
+            REC_MAX(duel_stat_get(0));
+        case 23:
+            REC_MAX(duel_stat_get(0x30));
+        case 24:
+            REC_MAX(duel_stat_get(0x1F));
+        case 25:
+            REC_MAX(duel_stat_get(0x21));
+        case 26:
+            REC_MAX(duel_stat_get(0x22));
+        case 27:
+            REC_MAX(duel_stat_get(0x2D));
+        case 28:
+            REC_MAX(duel_stat_get(0xB));
+        case 30:
+            REC_MAX(duel_stat_get(0x34));
+        case 31:
+            REC_MAX(duel_stat_get(0x25));
+        case 32:
+            REC_MAX(duel_stat_get(0x26));
+        case 33:
+            REC_MAX(duel_stat_get(0x28));
+        case 34:
+            REC_MAX(duel_stat_get(0x29));
+        case 35:
+            REC_MAX(duel_stat_get(0x2B));
+        case 36:
+            REC_MAX(r->lp_left[duel_view_player ^ 1]);
+        case 37:
+            if (duel_setup.unk228 == 10) {
+                break;
+            }
+            if (duel_setup.unk228 == 11) {
+                break;
+            }
+            v = (unsigned int)r->frames / 30 + 1;
+            if (v < *best) {
+                *best = v;
+                *cur = v;
+            }
+            break;
+        case 38:
+            if (duel_setup.unk228 == 10) {
+                break;
+            }
+            if (duel_setup.unk228 == 11) {
+                break;
+            }
+            v = duel.turn + 1;
+            if (v < *best) {
+                *best = v;
+                *cur = v;
+            }
+            break;
+        case 39:
+            v = duel.turn + 1;
+            if (*best < v) {
+                *best = v;
+                *cur = v;
+            }
+        }
+        if (*cur != 0) {
+            ((unsigned char *)rec)[i + 0xA0] = 1;
+        }
+    }
+}
+#endif
