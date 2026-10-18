@@ -27,6 +27,12 @@ segments:
     subalign: 4
     subsegments:
       - [0x60, asm, text_0]
+      - [0x1C010, c, postfx]
+      - [0x1C0FC, asm, postfx_asm_0882009C]
+      - [0x1CA5C, c, postfx]
+      - [0x1CB7C, asm, postfx_asm_08820B1C]
+      - [0x1CF1C, c, postfx]
+      - [0x1CF34, asm, text_1]
       - [0x2AD0C, c, ehfile]
       - [0x2BC9C, c, ehf]
       - [0x2BD48, asm, ehf_asm_0882FCE8]
@@ -235,7 +241,7 @@ segments:
       - [0x5DFE8, asm, snd_obj_asm_08861F88]
       - [0x5E50C, c, snd_obj]
       - [0x5ECBC, c, snd_rand]
-      - [0x5ED88, asm, text_1]
+      - [0x5ED88, asm, text_2]
       - [0x612C0, c, sndapi]
       - [0x6154C, asm, sndapi_asm_088654EC]
       - [0x6163C, c, sndapi]
