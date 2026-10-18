@@ -57,6 +57,8 @@ segments:
       - [0xEDEBC, c, field_bonus]
       - [0xEE7BC, asm, field_bonus_asm_088F275C]
       - [0xEEDD0, asm, text_1]
+      - [0xF1DB4, c, stat_reason]
+      - [0xF23E0, asm, text_2]
       - [0xFDC00, asm, sceStub_text]
       - [0x1002E8, bin, lib_ent_top]
       - [0x1002EC, bin, lib_ent]
@@ -68,7 +70,9 @@ segments:
       - [0x100364, bin, rodata_sceResident]
       - [0x1007FC, bin, rodata_sceNid]
       - [0x101B70, bin, rodata_sceVstub]
-      - [0x101B90, data, data]
+      - [0x101B90, data, data_0]
+      - [0x10DF80, .data, stat_reason]
+      - [0x10DFA0, data, data_1]
       - { start: 0x10FA50, type: bss, vram: 0x89139F0, name: bss }
   - [0x10FA50]
 

@@ -358,6 +358,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Limite inferior por ternário** (`duel_list_card_level`): `bgtz x → L; nop; b L; li x,1` é `x = x <= 0 ? 1 : x;` (ou `x < 1 ? 1 : x`); `if (x <= 0) x = 1;` e `x > 0 ? x : 1` geram `blezl`.
 - **Valor da comparação reaproveitado como argumento** (`duel_list_card_level`): `duel_is_cur_card()` chamada com `a0` ainda valendo o id do slot (já comparado com 0x150B) vem de `duel_is_cur_card(slot.card.id)` no fonte, não da constante.
 - **Bits 14 e 15 de `DuelCard`** (`b14`, `b15`, antes `f14 : 2`): `lbu +1; sll 25` testa o bit 14 (`duel_grave_card_usable`).
+- **Tabela de salto de `switch` no `@data`** (`stat_reason.c`): um `switch` denso (casos 6-13) gera `jtbl_XXXX` no `.data` do objeto; basta declarar `// @data` com o intervalo exato da tabela (0x20 bytes para 8 casos) e o build casa os endereços dos casos. A ordem dos corpos segue o fonte (os casos 10-13 antes dos 6-7 no original).
+- **Índice de lista de efeitos como `unsigned int`** (`duel_effect_reason`): com `unsigned short e` o compilador repete `andi 0xffff` ao indexar; o original carrega `next` com `lhu` e usa direto. Em `duel_slot_markers` a ordem `DuelStats st; DuelStats st2;` decide qual fica em sp+0x28 e qual em sp+0x54.
 
 ## Pendências
 
