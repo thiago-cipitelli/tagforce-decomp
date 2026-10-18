@@ -329,6 +329,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Ordem dos operandos de `&` decide registradores** (`SLOT_ACTIVE`): `faceup & ~(flags >> 5 & 1) & ~(flags >> 1 & 1)` carrega `faceup` em `v1`; com o termo de `flags` primeiro os registradores trocam.
 - **Comparação com valor montado de 16 bits** (`duel_count_tributable_except`): `except != (unsigned short)(q & 0xFF | (z & 0xFF) << 8)` gera o `andi 0xffff`; o laço de `z` é `int` (com `unsigned` sai `sltiu`).
 - **`if (f()) z = g(); else z = -1; return z;`** gera `beqzl v0 → li v0,-1` com a chamada no caminho direto; o ternário ou `if (!f()) return -1;` gera `bgtzl`/`bnezl` com a chamada depois.
+- **`if (x) return 0;` seguido de mais código gera `beqz x; nop; b fim; move v0,zero`** (`field_st.c`): o `return 0` vira bloco próprio com desvio ao epílogo; quando o original testa duas condições assim em sequência, são dois `if` separados, não um `||`. Um `&&` de três termos dentro de um único `if (…) return 0; return 1;` reproduz o `beqzl → li v0,1` (`duel_can_place_st`).
+- **Limite do laço por ternário** (`duel_count_field_cards`): `end = fzone != 0 ? 11 : 10;` com acesso direto `duel.players[p & 1].field[i]` (base calculada depois do teste do laço); `if/else` inverte os blocos e um `DuelPlayer *pl` local adianta o cálculo da base.
 
 ## Pendências
 
