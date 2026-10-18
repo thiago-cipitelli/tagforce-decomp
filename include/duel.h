@@ -67,15 +67,17 @@ typedef struct DuelEffect {            /* 8: entry of the effect lists */
 } DuelEffect;
 
 typedef struct DuelStats {             /* duel_field_stats */
-    int type;
-    int attr;                          /* +0x04 */
+    int id;
+    int attr;                          /* +0x04 type */
     int unk8;
-    unsigned int mask;                 /* +0x0C */
+    unsigned int mask;                 /* +0x0C attribute bits */
     int level;                         /* +0x10 */
     int atk;                           /* +0x14 */
-    int pad18[3];
+    int def;                           /* +0x18 */
+    int batk;                          /* +0x1C base ATK */
+    int bdef;                          /* +0x20 base DEF */
     unsigned int imm;                  /* +0x24 */
-    int pad28;
+    unsigned int imm2;                 /* +0x28 */
 } DuelStats;
 
 typedef struct DuelAct {               /* 0x18: card being activated or resolved */
@@ -122,7 +124,10 @@ typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
     unsigned char pad206c[0x276C - 0x206C];
     DuelEffect effects[513];           /* +0x276C, entry 0 unused */
     unsigned int turn_player;          /* +0x3774 [?] */
-    unsigned char pad3778[0x3840 - 0x3778];
+    unsigned int turn;                 /* +0x3778 [?] */
+    int unk377c;
+    int phase;                         /* +0x3780 [?] */
+    unsigned char pad3784[0x3840 - 0x3784];
 } Duel;
 
 extern Duel duel;
