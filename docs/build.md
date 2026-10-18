@@ -377,6 +377,7 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`DuelAct` +0x02 como bitfields de `unsigned short`** (`player:1, zone:5, kind:6, …`): o tipo de ativação (`(u16 & 0xfff) >> 6`) cruza os dois bytes; com `unsigned short` os acessos de `player`/`zone` continuam `lbu` e o de `kind` sai `lhu; sll 20; srl 26`.
 - **Atribuição em cadeia de bitfields** (`duel_eff_fa6e4`): `a->b4_3 = a->b4_2 = a->b4_1 = 1;` gera o `sll; ext` que relê o bit recém-escrito para o próximo campo, como no original; três atribuições separadas de `1` não.
 - **Ponto aberto nos handlers**: em vários handlers o original calcula a zona (`(t >> 8) & 0xFF`) antes do jogador ou põe o `1` de `1 - player` em `a2`/`a3`; nenhuma grafia testada reproduziu a ordem, e esses ficaram em asm (`duel_eff_f9ed0`, `fa288`, `fa5c8`, `fa6e4`, `fa800`).
+- **Tipos das variáveis intermediárias pelos `andi` nas chamadas** (`effects_h.c`): `andi a3,s0,0xffff` só no momento da chamada indica variável `int` e parâmetro `unsigned short`; um `unsigned short` local gera o `andi` já na carga. Um caminho com um único `return 0` no fim (blocos `if/else` aninhados) reproduz os desvios `beqz → bloco "move v0,zero"` do original melhor que retornos antecipados.
 
 ## Pendências
 
