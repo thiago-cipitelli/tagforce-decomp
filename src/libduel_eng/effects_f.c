@@ -1,6 +1,6 @@
 // @range 0x088FA288-0x088FA920
 // @asm 0x088FA288-0x088FA488
-// @asm 0x088FA5C8-0x088FA920
+// @asm 0x088FA6E4-0x088FA920
 /* Card effect handlers (continued). */
 #include "duel.h"
 #include "card_db.h"
@@ -25,7 +25,7 @@ void duel_088CAE24(unsigned int p, DuelCard *c, int a);
 int duel_088DFCC8(unsigned int uid);
 void duel_088C7CF0(void);
 void duel_088C7BA4(void);
-void duel_088C6508(unsigned int p, int id, int a);
+void duel_088C6508(unsigned int p, int id, int a, int b);
 void duel_088CBAA4(void);
 void duel_088D1858(int x, unsigned int p, int z);
 void duel_088C9344(int x, unsigned int p, int z, int a);
@@ -102,7 +102,6 @@ int duel_eff_fa488(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the constant 1 of 1 - player goes to a3 in the original */
 int duel_eff_fa5c8(DuelAct *a)
 {
     switch (duel_step) {
@@ -115,7 +114,7 @@ int duel_eff_fa5c8(DuelAct *a)
             int r = duel_rand(duel.players[(1 - a->player) & 1].n_18);
             unsigned int q = 1 - a->player;
 
-            duel_088C6508(q, duel.players[q & 1].zone_c[r].id, 0);
+            duel_088C6508(q, duel.players[q & 1].zone_c[r].id, 0, 1);
             return 0x7F;
         }
         return 0x7E;
@@ -125,9 +124,8 @@ int duel_eff_fa5c8(DuelAct *a)
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* the original computes the zone before the player */
+#ifdef NON_MATCHING /* the original computes the zone before the player; uid = a->uid as third argument of duel_088CBAA4 */
 int duel_eff_fa6e4(int x, DuelAct *a)
 {
     unsigned int z;

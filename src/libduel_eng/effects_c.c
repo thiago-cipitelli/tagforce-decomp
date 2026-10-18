@@ -1,5 +1,6 @@
 // @range 0x088F9024-0x088F9668
-// @asm 0x088F920C-0x088F9668
+// @asm 0x088F943C-0x088F9668
+// @data 0x0891205C-0x08912078
 /* Card effect handlers (continued). */
 #include "duel.h"
 #include "card_db.h"
@@ -23,7 +24,7 @@ int duel_088DFE24(unsigned int p, unsigned int q);
 void duel_088CB400(unsigned int p, void *c, int a);
 void duel_088C77D4(unsigned int p, int id, int a, int b);
 DuelCard *duel_0884C7CC(void);
-void duel_0884C588(unsigned int p, int a, unsigned short id, unsigned int b);
+void duel_0884C588(unsigned int p, int a, int id, int b);
 void duel_0884ACD8(unsigned int p, int msg);
 int duel_08835AC0(void);
 void duel_088C77EC(unsigned int p, int i);
@@ -82,7 +83,6 @@ int duel_eff_f9024(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original loads the constant argument 6 before the shifted fourth argument */
 int duel_eff_f920c(DuelAct *a)
 {
     switch (duel_step) {
@@ -128,7 +128,6 @@ int duel_eff_f920c(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* the uid argument of the 0x7E step is scheduled differently */
 int duel_eff_f943c(DuelAct *a)

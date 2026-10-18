@@ -1,5 +1,4 @@
 // @range 0x088F7EB4-0x088F85D4
-// @asm 0x088F84A4-0x088F8564
 // @data 0x08911FC0-0x0891205C
 /* Message state queries, the class of each message command, and the first card effect handlers:
    each handler gets the activated card and returns the next step of the chain (0x7A-0x80) or 0. */
@@ -30,7 +29,7 @@ unsigned int duel_act_target2(DuelAct *a, int i);
 int duel_grave_find_uid(unsigned int p, unsigned int uid);
 void duel_088CA428(unsigned int p, unsigned int uid, int a);
 int duel_0887DB24(void);
-void duel_08883FBC(void);
+void duel_08883FBC(DuelAct *a, int b);
 void duel_088C7DD4(unsigned int p, int a, int b);
 void duel_088C625C(unsigned int p, int a, int b);
 
@@ -222,20 +221,24 @@ int duel_eff_f8438(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* same code; the original loads the player into a2 instead of a0 */
-int duel_eff_f84a4(DuelAct *a)
+int duel_eff_f84a4(DuelAct *a, int b)
 {
     if (!a->b4_2) {
         if (duel.players[a->player & 1].flags >> 16 & 1) {
             return 0;
         }
-        duel_08883FBC();
+        duel_08883FBC(a, b);
     }
     duel_088C7DD4(a->player, 0x15, 1);
     duel_088C7DD4(a->player, 0x16, 1);
     return 0;
 }
-#endif
+
+int duel_eff_f8544(int x, DuelAct *a)
+{
+    a->b4_5 = 1;
+    return 0;
+}
 
 int duel_eff_f8564(DuelAct *a)
 {

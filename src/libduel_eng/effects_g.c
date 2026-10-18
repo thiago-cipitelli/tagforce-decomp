@@ -1,5 +1,5 @@
 // @range 0x088FA920-0x088FAEFC
-// @asm 0x088FA920-0x088FAC94
+// @asm 0x088FAB50-0x088FAC94
 /* Card effect handlers (continued). */
 #include "duel.h"
 
@@ -18,7 +18,7 @@ void duel_088328FC(unsigned int p);
 DuelCard *duel_0884C7CC(void);
 void duel_088CB554(unsigned int p, DuelCard *c);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
-int duel_0886CE38(void);
+int duel_0886CE38();
 int duel_card_dfac8(unsigned int p, int id, int a);
 void duel_0884AD40(int msg, int uid);
 int duel_088AA224(DuelAct *a);
@@ -31,7 +31,6 @@ void duel_0882619C(unsigned int p, DuelCard *c, int a, int b, unsigned int d);
 void duel_0884AF68(int msg, int uid, int a);
 int duel_0887DB24(void);
 
-#ifdef NON_MATCHING /* the original keeps the player in a2 instead of a1 */
 int duel_eff_fa920(DuelAct *a, int b)
 {
     unsigned int p = a->player ^ a->opp;
@@ -48,7 +47,7 @@ int duel_eff_fa920(DuelAct *a, int b)
         duel_0884C588(p, 6, a->id, duel_088AA224(a));
         return 0x7D;
     case 0x7D:
-        if (duel_0886CE38() && duel_card_dfac8(p, duel_0884C7CC()->id, 1)) {
+        if (duel_0886CE38(a, b) && duel_card_dfac8(p, duel_0884C7CC()->id, 1)) {
             if (duel_player_type[p] == 1) {
                 duel_w_08919624 = duel_0884C7CC()->id == 0x18AA;
             } else {
@@ -74,7 +73,6 @@ int duel_eff_fa920(DuelAct *a, int b)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* the original loads the turn player first into a0 for the xor */
 int duel_eff_fab50(unsigned int p)

@@ -1,5 +1,6 @@
 // @range 0x088F9C00-0x088FA288
-// @asm 0x088F9C00-0x088FA288
+// @asm 0x088F9C00-0x088F9ED0
+// @asm 0x088FA080-0x088FA288
 /* Card effect handlers (continued). */
 #include "duel.h"
 #include "card_db.h"
@@ -25,7 +26,7 @@ void duel_088C7CF0(void);
 void duel_088C7BA4(void);
 void duel_088C78E0(unsigned int p);
 void duel_088328FC(unsigned int p);
-void duel_088CB400();
+void duel_088CB400(unsigned int p, DuelCard *c, int a);
 int duel_088DFE24(unsigned int p, unsigned int q);
 int duel_088A9008(DuelAct *a, int b, int c);
 int duel_0884E440();
@@ -104,7 +105,6 @@ int duel_eff_f9c00(DuelAct *a, int b)
 }
 #endif
 
-#ifdef NON_MATCHING /* the constant 1 of 1 - player goes to a2 in the original */
 int duel_eff_f9ed0(DuelAct *a)
 {
     switch (duel_step) {
@@ -135,7 +135,7 @@ int duel_eff_f9ed0(DuelAct *a)
         if (i >= 0) {
             unsigned int q = 1 - a->player;
 
-            duel_088CB400(q, &duel.players[q & 1].grave[i]);
+            duel_088CB400(q, &duel.players[q & 1].grave[i], 1);
             return 0x7E;
         }
         return 0x7D;
@@ -146,7 +146,6 @@ int duel_eff_f9ed0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* branch layout of the 0x80 step */
 int duel_eff_fa080(DuelAct *a)
