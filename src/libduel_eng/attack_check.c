@@ -38,8 +38,8 @@ int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_count_card_state(unsigned int p, int id, int state);
 int duel_has_effect_atk(unsigned int p, int id, int atk);
 int duel_has_effect_attr(unsigned int p, int id, int attr);
-int duel_attack_ee16c(unsigned int p);
-int duel_attack_ede6c(unsigned int p, int z);
+int duel_has_attack_target(unsigned int p);
+int duel_direct_attack_allowed(unsigned int p, int z);
 
 #define BITS_16_18(f) ((f) >> 16 & 1 || (f) >> 17 & 1 || (f) >> 18 & 1)
 
@@ -174,7 +174,7 @@ int duel_attack_check(unsigned int p, int z, int arg)
         }
         break;
     }
-    if (duel_attack_ee16c(q) == 0 && duel_attack_ede6c(p, z) == 0) {
+    if (duel_has_attack_target(q) == 0 && duel_direct_attack_allowed(p, z) == 0) {
         goto fail;
     }
     if (arg != 0) {

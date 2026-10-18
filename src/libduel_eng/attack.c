@@ -15,7 +15,7 @@ int duel_slot_count_14c0(unsigned int p, int z);
 int duel_count_f0b3c(unsigned int p, int id);
 int duel_attack_check(unsigned int p, int z, int arg);
 int duel_can_direct_attack(unsigned int p, int z);
-int duel_can_attack_ee28c(unsigned int p, int z, int arg);
+int duel_direct_attack_kind(unsigned int p, int z, int arg);
 int duel_can_attack_target(unsigned int p, int z, unsigned int q, int i, int arg);
 int duel_can_attack(unsigned int p, int z, int arg);
 
@@ -113,7 +113,7 @@ int duel_can_attack_any(unsigned int p, int z, int arg)
     if (duel_can_direct_attack(p, z)) {
         return 1;
     }
-    if (duel_can_attack_ee28c(p, z, 1)) {
+    if (duel_direct_attack_kind(p, z, 1)) {
         return 1;
     }
     for (i = 0; i <= 4; i++) {
