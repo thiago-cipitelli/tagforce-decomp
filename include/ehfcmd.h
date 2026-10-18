@@ -16,6 +16,12 @@ typedef struct EhfNode {
     float time;                        /* +0x08 */
 } EhfNode;
 
+typedef union EhfArg {
+    int i;
+    float f;
+    void *p;
+} EhfArg;
+
 typedef struct EhfCmd {
     unsigned char pad0[3];
     unsigned char argc;                /* +0x03 */
