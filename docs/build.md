@@ -391,6 +391,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Resultado de chamada num local antes da expressão** (`duel_eff_fd560`): `int c = duel_field_controller(...); f(..., a->uid * 8 + c * 4 + 1);` reproduz o `addu v0,v1,v0` (termo do uid primeiro) do original; com a chamada dentro da expressão o mwcc soma na ordem inversa. Um `if (step == 0x80) {...}` cujo outro caminho o original põe depois do corpo é um `switch (duel_step) { case 0x80: …; default: … }` (`duel_eff_fd4c8`). Nomes `ehsys_<ADDR>` no C exportado do Ghidra são imports do BOOT resolvidos pelo endereço do BOOT, não funções locais: o alvo real é o stub em `0x08903…` (`card_is_attribute9`), e o `check_file` não pega o erro porque mascara os `jal`.
 
+- **Testes encadeados num só `&&`** (`duel_eff_fd690`, `fdaf8`): o mwcc encadeia o primeiro teste que falha direto para o fim (`beqzl … move v0,zero`) e manda os seguintes para um bloco `move v0,zero; b fim; nop`. Quando o original tem o primeiro teste encadeado e os outros no bloco, todos estão no mesmo `if (A && B && C) {…} return 0;`; ifs aninhados ou um `if (!A) return 0;` separado não reproduzem. **XOR com o jogador do turno** (`duel_eff_fab50`, `fdd6c`): `p = duel_turn_player; p ^= duel_w_089148FC;` carrega o jogador do turno primeiro e reproduz o `xor a2,a2,a1` do original; `p = duel_turn_player ^ duel_w_089148FC` troca os operandos. **`DuelAct` +0x14 como `int idx`** (índice em `duel.list`, lido com `lw`) no mesmo `union` de `DuelSrc`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

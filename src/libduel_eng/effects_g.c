@@ -1,5 +1,4 @@
 // @range 0x088FA920-0x088FAEFC
-// @asm 0x088FAB50-0x088FAC94
 /* Card effect handlers (continued). */
 #include "duel.h"
 
@@ -74,10 +73,10 @@ int duel_eff_fa920(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original loads the turn player first into a0 for the xor */
 int duel_eff_fab50(unsigned int p)
 {
-    p = duel_turn_player ^ duel_w_089148FC;
+    p = duel_turn_player;
+    p ^= duel_w_089148FC;
 
     switch (duel_step) {
     case 0x80:
@@ -104,7 +103,6 @@ int duel_eff_fab50(unsigned int p)
     }
     return 0;
 }
-#endif
 
 int duel_eff_fac94(DuelAct *a, int b)
 {

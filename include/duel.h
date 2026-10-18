@@ -116,8 +116,8 @@ typedef struct DuelAct {               /* 0x18: card being activated or resolved
             unsigned char b15_4 : 4;
         };
         DuelSrc src;                   /* +0x14 card that caused the action */
+        int idx;                       /* +0x14 index into duel.list for some handlers */
     };
-    unsigned char pad16[2];
 } DuelAct;
 
 typedef struct DuelChain {             /* 0x08914350 */
