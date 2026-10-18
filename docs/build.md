@@ -220,6 +220,11 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Retorno 0 por dois caminhos** (`snd_obj_pause_update`): com `f = &o->fade[2];` antes de `if (o->fade[2].cur == o->fade[2].target) { if (f->count == 0) { …; return 1; } } return 0;` o primeiro teste vira `bne` para o `move v0,zero` final com o `addiu` de `f` no delay slot e o segundo vira `bnezl` direto para o epílogo, como no original.
 
+- **Temporários por laço** (`snd_echo_add`): dois laços iguais em que o contador de um e o temporário do outro trocam de registrador indicam um `int v` declarado dentro de cada corpo; com um `v` único os dois laços usam os mesmos registradores.
+- **Índice em vez de ponteiro** (`snd_streams_sorted`): `out[i]`/`out[j]` deixam o compilador reduzir o endereço a um ponteiro que avança 8 bytes, calculado só depois do teste de entrada do laço interno; com ponteiros explícitos o cálculo sai antes do teste.
+- **Valor de retorno guardado numa variável** (`snd_voices_update`): `end = f(); if (end & bit)` gera `and v1,v0,s1`; `if (f() & bit)` gera os operandos na outra ordem.
+- **Divisão por 2 do original**: `x >> 1` seguido de `if (x < 0) x++` (não é `x / 2`, que soma o sinal antes do deslocamento); aparece no eco do mixer.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

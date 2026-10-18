@@ -106,8 +106,10 @@ typedef struct SndVoiceSlot {          /* 32 SAS voices, 12 bytes each, after th
     SndObj *obj;
     unsigned char b8;
     unsigned char flags;               /* 0x40 started */
-    unsigned char pad[2];
-    int unk;
+    signed char angle;                 /* +0x06 pan angle */
+    unsigned char pad7;
+    unsigned char voice;               /* +0x08 SAS voice number */
+    unsigned char pad9[3];
 } SndVoiceSlot;
 
 void *snd_list_next(SndList *l, void *node);
