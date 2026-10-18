@@ -4,16 +4,6 @@
 #include "duel.h"
 #include "card_db.h"
 
-typedef struct DuelStats {             /* duel_field_stats */
-    int type;
-    int attr;                          /* +0x04 */
-    int unk8;
-    unsigned int mask;                 /* +0x0C */
-    int level;                         /* +0x10 */
-    int atk;                           /* +0x14 */
-    int pad18[5];
-} DuelStats;
-
 extern unsigned int duel_view_player;
 extern int duel_err;
 
