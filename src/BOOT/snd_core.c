@@ -218,18 +218,18 @@ int snd_obj_meter_level(int handle)
     if ((st & 0x2000) == 0)
         return 0;
     if ((st & 0x20) == 0) {
-        o->sflags |= 0x10;
-        o->level = 0;
-        o->meter = 0;
-        o->acc = 0;
-        o->shown = 0;
-        o->peak = 0;
-        o->tick = 0;
-        o->step = 0;
+        o->s.sflags |= 0x10;
+        o->s.level = 0;
+        o->s.meter = 0;
+        o->s.acc = 0;
+        o->s.shown = 0;
+        o->s.peak = 0;
+        o->s.tick = 0;
+        o->s.step = 0;
         o->state |= 0x20;
         return 0;
     }
-    return o->level;
+    return o->s.level;
 }
 
 /* Smoothed mouth level for lip sync, advanced by `dt` ticks. */
@@ -245,38 +245,38 @@ int snd_obj_query(int handle, signed char dt)
         return -1;
     if ((o->state & 0x20) == 0)
         return 0;
-    lv = (int)(o->level << 12) >> 14;
+    lv = (int)(o->s.level << 12) >> 14;
     if (lv < 0x1000) {
         v = 0x1000 - lv;
         v = 0x1000 - (v * v >> 12);
     } else {
         v = 0x1000;
     }
-    if (o->peak > 0x3FF && v < 0x200)
+    if (o->s.peak > 0x3FF && v < 0x200)
         v = 0;
     if (v < 0x100) {
-        if (o->peak == 0 && o->tick < 4) {
-            o->acc = 0;
+        if (o->s.peak == 0 && o->s.tick < 4) {
+            o->s.acc = 0;
         } else {
-            o->tick = 5;
-            o->acc = 0;
+            o->s.tick = 5;
+            o->s.acc = 0;
         }
     } else {
-        o->acc = (v + (unsigned short)o->acc) >> 1;
+        o->s.acc = (v + (unsigned short)o->s.acc) >> 1;
     }
-    dt = o->tick + dt;
-    o->tick = dt;
+    dt = o->s.tick + dt;
+    o->s.tick = dt;
     if (dt < 6) {
         if (dt > 3)
-            return o->peak;
-        o->shown += o->step;
+            return o->s.peak;
+        o->s.shown += o->s.step;
     } else {
-        o->peak = o->acc;
-        o->acc = 0;
-        o->tick = 0;
-        o->step = (o->peak - o->shown) >> 2;
+        o->s.peak = o->s.acc;
+        o->s.acc = 0;
+        o->s.tick = 0;
+        o->s.step = (o->s.peak - o->s.shown) >> 2;
     }
-    return o->shown;
+    return o->s.shown;
 }
 
 #endif

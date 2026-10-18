@@ -32,7 +32,8 @@ for cf in sorted(glob.glob(f"src/{m}/*.c")):
         cur = a
         for x, y in asm:
             ranges.append((cur, x, cname)); ranges.append((x, y, f"{cname}_asm_{x:08X}")); cur = y
-        ranges.append((cur, b, cname))
+        if cur < b:  # an @asm range that ends the file leaves no trailing C segment
+            ranges.append((cur, b, cname))
     for md in re.finditer(r"//\s*@data\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src):
         dranges.append((int(md.group(1), 16), int(md.group(2), 16), os.path.basename(cf)[:-2]))
     # `// @rodata 0xA-0xB`: the object's .rodata (jump tables, const arrays). The original linker put all

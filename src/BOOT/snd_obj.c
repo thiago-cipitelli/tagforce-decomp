@@ -871,11 +871,11 @@ void snd_obj_send_lr(SndObj *o, short *l, short *r)
     if (((o->id >> 16) & 0xF) - 1 <= 1) {
         return;
     }
-    vol = o->send * o->volA2 >> 12;
+    vol = o->s.u.v.send * o->volA2 >> 12;
     if (vol == 0) {
         return;
     }
-    p = snd_pan_table[o->send_pan * 0x40A0 >> 14];
+    p = snd_pan_table[o->s.u.v.send_pan * 0x40A0 >> 14];
     if (p == 0x40) {
         t = vol;
         VOL_SQ(t);

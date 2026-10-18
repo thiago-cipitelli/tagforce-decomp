@@ -211,6 +211,13 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Matrizes locais em ordem inversa**: o mwccpsp põe a primeira declarada no endereço mais alto da pilha; `snd_obj_3d` declara `in, d, v, dir, n` para que fiquem em 112, 96, 80, 64, 48.
 - **Rotinas soft-float do GCC** (`fp-bit.c`) no BOOT: `__adddf3` 0x088180B8, `__subdf3` 0x08818120, `__muldf3` 0x08818194, `__divdf3` 0x0881850C, `__fixdfsi` 0x08818CA0, `__extendsfdf2` 0x088179A8, `__truncdfsf2` 0x08818DEC, `__muldi3` 0x08816C3C; são os nomes que o mwccpsp emite para `double` e `long long`.
 
+- **Laço que continua depois de achar** (`bgm_slot_play`): o original guarda o último slot vazio e só para num slot suspenso; o `b` de volta ao incremento (em vez do fim do laço) mostra quando o `break` não existe.
+- **Parâmetro `unsigned short` vs conversão no chamador**: um parâmetro `unsigned short` é renormalizado (`andi …,0xffff`) a cada uso e a cada repasse a um parâmetro `int`; se o original passa o registrador cru, o parâmetro é `int` e as conversões `(unsigned short)` estão nas expressões (`snd_obj_start_retry`, `voice_start`).
+- **Sub-struct pelo registrador-base** (`SndStream` em `SndObj +0xA8`): `s = &o->s` antes de uma sequência de stores gera o `addiu s0,s2,168` do original e os deslocamentos relativos a ele.
+- **`default: return;` no fim do `switch`**: o `b` para o epílogo com `nop` do original; com `break` o compilador põe o primeiro `lw` do epílogo no delay slot.
+- **Laços sobre listas intrusivas** (`snd_group_stop`, `snd_duck_update`): `for (;;) { if (o == 0) break; cur = o; o = snd_list_next(l, o); … cur … }` reproduz o teste no topo e o `move` no delay slot da chamada seguinte.
+- **`tools/splat_config.py`**: uma faixa `@asm` que termina junto com o `@range` não gera mais um segmento `c` vazio (que fazia o linker descartar as seções do arquivo seguinte).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

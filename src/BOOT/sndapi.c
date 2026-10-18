@@ -68,7 +68,7 @@ void snd_stop_fade(int x, int ms);
 void snd_group_cmd(int cmd, int arg);
 int snd_obj_count_bgm();
 int snd_obj_count_se();
-int snd_obj_set_pan();
+int snd_cur_set_volume();
 int snd_obj_set_volume();
 int snd_obj_query();
 int snd_obj_status();
@@ -335,7 +335,7 @@ void snd_cmd_fef8(void)          { snd_group_cmd(-0x108, 0); }
 void snd_cmd_fef8_arg(int arg)   { snd_group_cmd(-0x108, arg); }
 int snd_count_bgm()              { return snd_obj_count_bgm(); }
 int snd_count_se()               { return snd_obj_count_se(); }
-int bgm_set_pan()                { return snd_obj_set_pan(); }
+int bgm_set_pan()                { return snd_cur_set_volume(); }
 int bgm_set_volume()             { return snd_obj_set_volume(); }
 int bgm_query()                  { return snd_obj_query(); }
 int bgm_get_status()             { return snd_obj_status(); }

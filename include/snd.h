@@ -37,41 +37,69 @@ typedef struct SndPos {                /* 3D position of an object, 0x1C */
     unsigned short pad1a;
 } SndPos;
 
-typedef struct SndObj {                /* a playing sound */
-    unsigned char pad00[0x18];
+typedef struct SndStream {             /* SndObj +0xA8: decoder and level-meter state */
+    int atrac;                         /* +0x00 sceAtrac id (streams) or 0 */
+    int pos;                           /* +0x04 stream position, or SAS voice mask */
+    int decoded;                       /* +0x08 */
+    union {
+        struct {                       /* kinds 3-4 */
+            int start;                 /* +0x0C */
+            int end;                   /* +0x10 */
+            int loop;                  /* +0x14 <0 no loop */
+            int loop2;                 /* +0x18 */
+            unsigned short c4;         /* +0x1C */
+        } st;
+        struct {                       /* kinds 0-2 */
+            unsigned short b4;
+            unsigned short send;       /* +0x0E effect send level */
+            unsigned short b8;
+            unsigned short send_pan;   /* +0x12 */
+        } v;
+    } u;
+    unsigned char pad20[2];
+    unsigned short sflags;             /* +0x22 0x10 meter reset, 0x40, 0x80 */
+    short meter;                       /* +0x24 */
+    unsigned short level;              /* +0x26 */
+    short peak;                        /* +0x28 */
+    short shown;                       /* +0x2A */
+    short step;                        /* +0x2C */
+    short acc;                         /* +0x2E */
+    signed char tick;                  /* +0x30 */
+    unsigned char pad31[3];
+    SndFader8 fade8;                   /* +0x34 */
+    unsigned char e4, e5, e6, e7;      /* +0x3C */
+} SndStream;
+
+typedef struct SndObj {                /* a playing sound, 0x118 per slot of snd_obj_pool */
+    unsigned char pad00[0x14];
+    void (*on_end)(int handle, unsigned short id); /* +0x14 called when the sound is released */
     unsigned short sid;                /* +0x18 sound id looked up by snd_obj_find */
-    unsigned char pad1a[2];
+    unsigned short pad1a;
     unsigned int id;                   /* +0x1C low 16: sound id; bits 16-19 kind; 0x100000 SE; 0x300000 channel */
-    unsigned char pad20[4];
+    void *name;                        /* +0x20 read request of the group data */
     int frames;                        /* +0x24 */
-    unsigned short state;              /* +0x28 0x10 paused, 0x20 level meter, 0x80, 0x100 3D, 0x1000, 0x2000 playing */
-    unsigned char pad2a[6];
+    unsigned short state;              /* +0x28 0x10 paused, 0x20 level meter, 0x40 suspended, 0x80 stop at fade end, 0x100 faders moving, 0x400 owns group data, 0x1000 waiting for data, 0x2000 playing, 0x4000 */
+    unsigned short pad2a;
+    unsigned short fade_in;            /* +0x2C fader ticks, kept to restart a suspended BGM */
+    unsigned short fade_out;           /* +0x2E */
     signed char index;                 /* +0x30 index in snd_obj_pool, <0 when free */
     unsigned char pad31;
     signed char order;                 /* +0x32 start order among sounds of the same class, <0 none */
-    unsigned char pad33;
+    unsigned char kind;                /* +0x33 (id >> 16) & 0xF: 0 sequence, 1-2 SAS, 3-4 Atrac stream */
     SndPos p3d;                        /* +0x34 */
-    SndFader fade[8];                  /* +0x50 0 channel, 5 distance, 6 pan, 7 pitch, ... */
+    SndFader fade[8];                  /* +0x50 0 channel, 1 stop, 2 pause, 3 volume, 5 distance, 6 pan, 7 pitch */
     short volA0;                       /* +0xA0 */
     short volA2;                       /* +0xA2 volume */
-    unsigned short volA4;              /* +0xA4 */
+    unsigned short volA4;              /* +0xA4 pitch */
     unsigned short volA6;              /* +0xA6 */
-    int atrac;                         /* +0xA8 sceAtrac id */
-    int stream_pos;                    /* +0xAC */
-    int decoded;                       /* +0xB0 */
-    unsigned char padB4[2];
-    unsigned short send;               /* +0xB6 effect send level */
-    unsigned char padB8[2];
-    unsigned short send_pan;           /* +0xBA */
-    unsigned char padBC[0xE];
-    unsigned short sflags;             /* +0xCA 0x10 meter reset, 0x40, 0x80 */
-    short meter;                       /* +0xCC */
-    unsigned short level;              /* +0xCE */
-    short peak;                        /* +0xD0 */
-    short shown;                       /* +0xD2 */
-    short step;                        /* +0xD4 */
-    short acc;                         /* +0xD6 */
-    signed char tick;                  /* +0xD8 */
+    SndStream s;                       /* +0xA8 */
+    int e8;                            /* +0xE8 */
+    unsigned char padEC[0x24];
+    unsigned char b110;                /* +0x110 */
+    unsigned char pad111[2];
+    unsigned char b113;                /* +0x113 */
+    unsigned short pause_time;         /* +0x114 fader ticks of pause/resume */
+    short pan_arg;                     /* +0x116 */
 } SndObj;
 
 typedef struct SndVoiceSlot {          /* 32 SAS voices, 12 bytes each, after the busy mask */
