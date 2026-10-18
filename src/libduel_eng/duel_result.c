@@ -1,5 +1,5 @@
-// @range 0x088FF3FC-0x088FFFDC
-// @asm 0x088FF8C4-0x088FFFDC
+// @range 0x088FF3FC-0x08900C94
+// @asm 0x088FF8C4-0x08900C94
 /* After the duel: kind of result of a tag series, deck statistics for the rewards, one-time
    flags in the save. */
 #include "card_db.h"
@@ -10,14 +10,16 @@
 typedef struct DuelResults {           /* game_state2_get(), 0x2A0 */
     unsigned char pad0[0x10];
     unsigned int frames;               /* +0x10 duel time in frames */
-    int unk14;
+    int unk14;                         /* +0x14 */
     int lp_left[2];                    /* +0x18 */
     int result;                        /* +0x20 */
     int mode;                          /* +0x24 8: series of duels */
-    unsigned char pad28[0xC];
+    int lp[2];                         /* +0x28 */
+    unsigned char pad30[4];
     unsigned short n_duels;            /* +0x34 */
     unsigned short duels[3];           /* +0x36 result of each duel: 1, 2, 3 */
     int cur[0x28];                     /* +0x3C records set by this duel */
+    int bonus[0x53];                   /* +0xDC [0x52]: total */
 } DuelResults;
 
 typedef struct DeckStats {             /* 0x68 */
@@ -37,6 +39,16 @@ DuelResults *game_state2_get(void);
 int sysflag_test(int bit);
 int duel_stat_get(int i);
 extern int duel_view_player;
+extern unsigned int duel_turn_player;
+extern int duel_w_0891A194;
+extern int duel_w_0891A198;
+extern int duel_w_0891A19C;
+int deck_slot_get_level(int i);
+int day_next(void);
+int sysvar_get_a98(void);
+unsigned int duel_turn_get(void);
+int duel_tag_slot(int side);
+int duel_card_used(int id);
 
 int duel_series_result(void)
 {
@@ -331,6 +343,451 @@ void duel_records_update(void)
         if (*cur != 0) {
             ((unsigned char *)rec)[i + 0xA0] = 1;
         }
+    }
+}
+#endif
+
+#ifdef NON_MATCHING /* same steps; the original assigns the $s registers of the pointers and the index differently */
+/* Bonuses of the duel (r->bonus[i]); a bonus counts only the first time it is earned (save +0xCC).
+   With any new bonus, bonus 0x52 too, and the total is 30 per new bonus. */
+void duel_bonus_calc(void)
+{
+    DuelResults *r = game_state2_get();
+    int *cur = r->cur;
+    unsigned char *rec = (unsigned char *)sysstate2_get_ptr_51c();
+    unsigned char *g = (unsigned char *)game_state_get();
+    int n = 0;
+    int i;
+    int *b;
+    int k;
+
+    for (i = 0, b = cur; i < 0x53; i++, b++) {
+        b[0x28] = 0;
+        switch (i) {
+        case 0:
+            for (k = 2; k < 0x98; k++) {
+                if (deck_slot_get_level(k) == 3) {
+                    b[0x28] += 2;
+                }
+            }
+            break;
+        case 1:
+            b[0x28] = day_next() * 2;
+            break;
+        case 2:
+            if (sysflag_test(7)) {
+                for (k = 0; k < 0x76; k++) {
+                    if (rec[k + 0x120] != 0) {
+                        b[0x28] += 2;
+                    }
+                }
+            }
+            break;
+        case 5:
+            b[0x28] = (duel_turn_get() + 1) * 2;
+            break;
+        case 6:
+            if (g[0x11A] == 2) {
+                b[0x28] = 0x32;
+            }
+            break;
+        case 7:
+            if (sysvar_get_a98()) {
+                b[0x28] = 0x32;
+            }
+            break;
+        case 8:
+            if (g[0x119] == 2 && duel_series_result() == 1) {
+                b[0x28] = 0x32;
+            }
+            break;
+        case 9:
+            if (duel_w_0891A194 != 0) {
+                b[0x28] = 400;
+            }
+            break;
+        case 10:
+            b[0x28] = duel_w_0891A198 * 25;
+            break;
+        case 11:
+            if (duel_setup.unk228 == 2) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 12:
+            if (duel_setup.unk228 != 10 && duel_setup.unk228 != 11 && duel.turn + 1 < 6) {
+                b[0x28] = 10;
+            }
+            break;
+        case 13:
+            if (r->unk14 != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 14:
+            if (duel_turn_player != duel_view_player) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 15:
+            if (g[0x11A] == 2 && duel_turn_player == duel_view_player && duel_w_0891A19C != duel_tag_slot(duel_view_player)) {
+                b[0x28] = 10;
+            }
+            break;
+        case 16:
+            if (r->lp[duel_view_player] <= 1000) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 17:
+            if (r->lp[duel_view_player] <= 100) {
+                b[0x28] = 100;
+            }
+            break;
+        case 18:
+            if (duel_setup.unk228 != 10 && duel_setup.unk228 != 11 && duel_stat_get(0x36) == 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 19:
+            if (r->lp[duel_view_player] >= 20000) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 20:
+            if (r->lp[duel_view_player] == 0x1662) {
+                b[0x28] = 0x23D;
+            }
+            break;
+        case 21:
+            if ((unsigned int)duel.players[duel_view_player & 1].n_d < 6) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 22:
+            if (duel.players[duel_view_player & 1].n_d == 0) {
+                b[0x28] = 100;
+            }
+            break;
+        case 23:
+            k = duel_stat_get(0x1F);
+            if (k > 9) {
+                b[0x28] = k * 2;
+            }
+            break;
+        case 24:
+            k = duel_stat_get(0x21);
+            if (k > 9) {
+                b[0x28] = k * 2;
+            }
+            break;
+        case 25:
+            if (duel_setup.unk228 != 10 && duel_setup.unk228 != 11 && duel_stat_get(0x1F) == 0) {
+                b[0x28] = 0xF;
+            }
+            break;
+        case 26:
+            if (duel_setup.unk228 != 10 && duel_setup.unk228 != 11 && duel_stat_get(0x21) == 0) {
+                b[0x28] = 0xF;
+            }
+            break;
+        case 27:
+            b[0x28] = duel_stat_get(0x23) * 4;
+            break;
+        case 28:
+            b[0x28] = duel_stat_get(0x24) * 4;
+            break;
+        case 29:
+            b[0x28] = duel_stat_get(0x18) * 4;
+            break;
+        case 30:
+            if (duel_setup.unk228 != 10 && duel_setup.unk228 != 11 && duel_stat_get(0x19) == 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 31:
+            k = duel_stat_get(0x25);
+            if (k > 2) {
+                b[0x28] = k * 2;
+            }
+            break;
+        case 32:
+            k = duel_stat_get(0);
+            if (k > 2999) {
+                b[0x28] = k / 500;
+            }
+            break;
+        case 33: {
+            int a = duel_stat_get(3);
+
+            k = duel_stat_get(5);
+            k = MAX(k, a);
+            a = duel_stat_get(1);
+            k = MAX(a, k);
+            if (k > 2999) {
+                b[0x28] = k / 250;
+            }
+            break;
+        }
+        case 34:
+            k = duel_stat_get(0x14);
+            if (k > 4999) {
+                b[0x28] = k / 250;
+            }
+            break;
+        case 35:
+            k = duel_stat_get(5);
+            if (k > 1499) {
+                b[0x28] = k / 50;
+            }
+            break;
+        case 36:
+            if (duel_stat_get(0x37) != 0) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 37:
+            if (r->mode == 1 && duel_stat_get(1) == 0 && (duel_stat_get(3) != 0 || duel_stat_get(5) != 0)) {
+                b[0x28] = 10;
+            }
+            break;
+        case 38:
+            if (r->mode == 1 && duel_stat_get(3) == 0 && duel_stat_get(5) == 0 && duel_stat_get(1) != 0) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 39:
+            k = duel_stat_get(0xF);
+            if (k > 7) {
+                b[0x28] = k * 4;
+            }
+            break;
+        case 40:
+            k = duel_stat_get(0xD);
+            if (k > 7) {
+                b[0x28] = k * 4;
+            }
+            break;
+        case 41:
+            k = duel_stat_get(0x26);
+            if (k > 4) {
+                b[0x28] = k * 4;
+            }
+            break;
+        case 42:
+            k = duel_stat_get(0x28);
+            if (k > 4) {
+                b[0x28] = k * 4;
+            }
+            break;
+        case 43:
+            k = duel_stat_get(0x29);
+            if (k > 4) {
+                b[0x28] = k * 4;
+            }
+            break;
+        case 44:
+            k = duel_stat_get(0x2B);
+            if (k > 4) {
+                b[0x28] = k * 4;
+            }
+            break;
+        case 45:
+            k = duel_stat_get(0x34);
+            if (k > 2) {
+                b[0x28] = k * 4;
+            }
+            break;
+        case 46:
+            k = duel_stat_get(0x2E);
+            if (k > 4) {
+                b[0x28] = k * 4;
+            }
+            break;
+        case 47:
+            k = duel_stat_get(0x30);
+            if (k > 2) {
+                b[0x28] = k * 6;
+            }
+            break;
+        case 48:
+            if (duel_stat_get(0x3B) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 49:
+            if (duel_stat_get(0x3C) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 50:
+            if (duel_stat_get(0x3D) != 0) {
+                b[0x28] = 0x3C;
+            }
+            break;
+        case 51:
+            b[0x28] = r->lp_left[duel_view_player ^ 1] * 20;
+            break;
+        case 52:
+            if (duel_setup.unk228 == 3) {
+                b[0x28] = 0x32;
+            }
+            break;
+        case 53:
+            if (duel_setup.unk228 == 4) {
+                b[0x28] = 100;
+            }
+            break;
+        case 54:
+            if (duel_setup.unk228 == 7) {
+                b[0x28] = 0x32;
+            }
+            break;
+        case 55:
+            if (duel_setup.unk228 == 6) {
+                b[0x28] = 0x32;
+            }
+            break;
+        case 56:
+            if (duel_stat_get(0x3F) != 0) {
+                b[0x28] = 1;
+            }
+            break;
+        case 57:
+            if (duel_card_used(0xFE9) != 0) {
+                b[0x28] = 0x1E;
+            }
+            break;
+        case 58:
+            if (duel_card_used(0x1117) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 59:
+            if (duel_card_used(0x111C) != 0) {
+                b[0x28] = 0x1E;
+            }
+            break;
+        case 60:
+            if (duel_card_used(0x1122) != 0) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 61:
+            if (duel_card_used(0x112E) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 62:
+            if (duel_card_used(0x128C) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 63:
+            if (duel_card_used(0x138A) != 0) {
+                b[0x28] = 0x1E;
+            }
+            break;
+        case 64:
+            if (duel_card_used(0x146E) != 0) {
+                b[0x28] = 0x1E;
+            }
+            break;
+        case 65:
+            if (duel_card_used(0x15B4) != 0) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 66:
+            if (duel_card_used(0x1645) != 0) {
+                b[0x28] = 0x1E;
+            }
+            break;
+        case 67:
+            if (duel_card_used(0x17EE) != 0) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 68:
+            if (duel_card_used(0x183D) != 0) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 69:
+            if (duel_card_used(0x1905) != 0) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 70:
+            if (duel_card_used(0x1A4E) != 0) {
+                b[0x28] = 0x14;
+            }
+            break;
+        case 71:
+            if (duel_card_used(0x162D) != 0) {
+                b[0x28] = 5;
+            }
+            break;
+        case 72:
+            if (duel_stat_get(0x40) != 0) {
+                b[0x28] = 5;
+            }
+            break;
+        case 73:
+            if (duel_card_used(0x16A3) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 74:
+            if (duel_card_used(0x16CF) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 75:
+            if (duel_card_used(0x16DC) != 0) {
+                b[0x28] = 5;
+            }
+            break;
+        case 76:
+            if (duel_card_used(0x17A8) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 77:
+            if (duel_card_used(0x17CA) != 0) {
+                b[0x28] = 5;
+            }
+            break;
+        case 78:
+            if (duel_card_used(0x184E) != 0) {
+                b[0x28] = 5;
+            }
+            break;
+        case 79:
+            if (duel_card_used(0x188D) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        case 80:
+            if (duel_card_used(0x143F) != 0) {
+                b[0x28] = 0x1E;
+            }
+            break;
+        case 81:
+            if (duel_card_used(0x143D) != 0) {
+                b[0x28] = 10;
+            }
+            break;
+        }
+        if (b[0x28] != 0 && duel_save_once_cc(i)) {
+            n++;
+        }
+    }
+    if (n != 0) {
+        if (duel_save_once_cc(0x52)) {
+            n++;
+        }
+        cur[0x28 + 0x52] = n * 30;
     }
 }
 #endif

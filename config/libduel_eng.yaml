@@ -105,7 +105,7 @@ segments:
       - [0xFB254, asm, duel_text_asm_088FF1F4]
       - [0xFB45C, c, duel_result]
       - [0xFB924, asm, duel_result_asm_088FF8C4]
-      - [0xFC03C, asm, text_3]
+      - [0xFCCF4, asm, text_3]
       - [0xFDC00, asm, sceStub_text]
       - [0x1002E8, bin, lib_ent_top]
       - [0x1002EC, bin, lib_ent]
