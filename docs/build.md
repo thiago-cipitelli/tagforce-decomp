@@ -317,6 +317,10 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Laço de contagem com teste no topo** (`model_load`): `while (1) { if (*p == -1) break; p++; i++; }` mantém o teste antes do corpo (`beql` para a saída com a gravação no delay slot); `for (…; *p != -1; …)` é rotacionado pelo compilador.
 - **Matriz identidade carregada float a float** (`model_load`): o template de 64 bytes copiado com 16 `lwc1`/`swc1` vem de uma struct de 16 `float` com `aligned(16)`; um `Mat4` com `float m[16]` gera o laço de cópia de pares de palavras.
 
+- **`else` com a constante que o compilador já sabia** (`anim_eval`): um `beql v,ffff` com `andi v1,a3,0xffff` (a constante) no delay slot vem de `if (b != 0xFFFF) { … } else { b = 0xFFFF; }` — atribuição redundante no fonte que o mwcc materializa a partir do registrador da constante.
+- **Ordem da declaração muda o modo de cópia do template** (`anim_eval`): `MatF id = {…}` declarado antes de `unsigned short b = t->root;` sai como laço de cópia de palavras; declarado depois, sai float a float (`lwc1`/`swc1`) como no original.
+- **Peso extra em `$f14`** (`model_update`): um produto calculado num registrador alto (`$f14`) antes de uma chamada é o terceiro argumento float da chamada (`anim_blend(…, m->frame * k)`), não uma variável local.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

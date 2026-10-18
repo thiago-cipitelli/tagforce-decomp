@@ -1,5 +1,4 @@
 // @range 0x0882C428-0x0882D208
-// @asm 0x0882CB48-0x0882CE3C
 // @asm 0x0882D160-0x0882D1B4
 // @data 0x088ED7D0-0x088ED820
 /* Models: a TGMS geometry with its bone matrices (local and skinned), the TGMT animations it
@@ -106,7 +105,7 @@ int is_gzip(const void *p);
 int gzip_decompress(void *dst, int dst_len, const void *src, int *out_size);
 void mat4_mul(Mat4 *out, Mat4 *a, Mat4 *b);
 void anim_eval(TgmtCore *a, TmsCore *t, Mat4 *bones, float *dt, float frame);
-void anim_blend(TgmtCore *a, TmsCore *t, Mat4 *bones, TgmtCore *prev, float *dt, float frame, float prev_frame);
+void anim_blend(TgmtCore *a, TmsCore *t, Mat4 *bones, TgmtCore *prev, float *dt, float frame, float prev_frame, float w);
 void tgma_apply(TgmaCore *anim, TmsCore *model, void *mats, void *uv, float t);
 void mtx_mark_cur_dirty(void);
 unsigned int *dl_enable(unsigned int *list, int state);
@@ -341,7 +340,6 @@ void model_set_tgma(Model *m, TgmaCore *a)
     m->tgma_time = 0.0f;
 }
 
-#ifdef NON_MATCHING /* the blend test product lands in $f14 instead of $f1 */
 /* Advances the animations by *dt frames (1 when null) and rebuilds the skin matrices. */
 void model_update(Model *m, float *dt)
 {
@@ -387,7 +385,7 @@ void model_update(Model *m, float *dt)
                 m->flags &= ~1;
                 anim_eval(a, t, m->bones, dt, m->frame);
             } else {
-                anim_blend(a, t, m->bones, m->prev, dt, m->frame, m->prev_frame);
+                anim_blend(a, t, m->bones, m->prev, dt, m->frame, m->prev_frame, m->frame * k);
             }
         }
         for (i = 0; i < m->tms->nbones; i++) {
@@ -402,7 +400,6 @@ void model_update(Model *m, float *dt)
         tgma_apply(ma, t, m->mats, m->texs, m->tgma_time);
     }
 }
-#endif
 
 /* Opaque pass on layer[0], translucent pass on layer[1]. */
 void model_draw(Model *m, ModelDraw *c)
