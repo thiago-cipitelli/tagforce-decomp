@@ -381,6 +381,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Guarda e chamada numa só condição** (`duel_eff_fb81c`): `if (a->b4_2 == 0 && f(a, 0, 0)) {...} return 0x7F;` gera o `bnezl → li v0,0x7F` do original; o `if (a->b4_2) return 0x7F;` separado inverte o desvio. Guardar `t & 0xFF` numa variável própria antes da zona reproduz o `andi a1` logo depois da chamada. Em contadores, declarar o índice antes do acumulador (`unsigned int i; int n;`) troca os registradores `s1`/`s2` para os do original.
 
+- **Argumentos que o original não passa** (`duel_eff_fbcd4`): quando o registrador de um argumento guarda um valor velho (o quociente de `link / 10` em `a2`), a chamada tem menos argumentos que o protótipo usado em outros arquivos; declarar a função em K&R (`void duel_088CC178();`) no arquivo. Handlers que repassam `b` a outro handler (`return f(a, b);`) mantêm `a1` livre e trocam os registradores de todo o corpo, por isso o protótipo `(DuelAct *a, int b)` vale mesmo quando o próprio handler não usa `b`. Um `switch` de um só `case` com `default` reproduz `beql K → corpo; b default; nop`, que o `if/else` não reproduz.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
