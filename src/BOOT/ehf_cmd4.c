@@ -2,7 +2,7 @@
 // @asm 0x088243E4-0x088245CC
 // @asm 0x08824830-0x088249E4
 // @asm 0x08825000-0x088252EC
-// @data 0x088ED284-0x088ED2F0
+// @data 0x088ED284-0x088ED380
 /* EHF command handlers, part 4: an axis billboard turned towards a fixed up vector, points carried
    by a bone, trails (a ring of positions, one or two channels, optionally smoothed by a cyclic
    spline), interpolation between keyframes and callbacks. The constants are named globals because
@@ -41,6 +41,15 @@ Mat4 ehf_billboard_basis2 = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.
 unsigned char ehf_fmt_nnn[4] = "nnn";
 char ehf_fmt_ffff[8] = "FFff";
 unsigned char ehf_fmt_f[4] = "F";
+/* Axis gizmo of ehf_cmd_axis (ehf_prim.c): two sets of three vertices (vertex type 0x1E0). */
+unsigned int ehf_axis_vtx[0x90 / 4] = {
+    0x00000000, 0x00000000, 0x3F800000, 0x00000000, 0x3F5DB3D7, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0xBF000000, 0xBF5DB3D7, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0x3F000000, 0xBF5DB3D7, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0xBF000000, 0xBFDDB3D7, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0x3F000000, 0xBFDDB3D7, 0x00000000,
+};
 
 extern EhfTrail *ehf_trail;            /* 0x088FA004 trail of the command being drawn */
 

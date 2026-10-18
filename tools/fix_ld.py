@@ -78,5 +78,14 @@ for l in sorted(data_lines, key=key):
         merged += ro
         ro_lines = [r for r in ro_lines if r not in ro]
 new = text[:ds] + text[ds:de].splitlines()[0] + "\n" + "\n".join(merged) + "\n        " + text[de:rs] + text[rs:re_].splitlines()[0] + "\n" + "\n".join(ro_lines) + ("\n        " if ro_lines else "        ") + text[re_:]
+# static C functions still called from asm (an asm-kept function of the same file): the asm needs a
+# global name, so define it at the function's address
+provides = []
+for line in open(f"symbols/{module}.txt"):
+    m = re.match(r"(\w+)\s*=\s*(0x[0-9A-Fa-f]+);\s*//\s*type:func static", line)
+    if m:
+        provides.append(f"PROVIDE({m.group(1)} = {m.group(2)});")
+if provides:
+    new = new.rstrip("\n") + "\n" + "\n".join(provides) + "\n"
 open(ld, "w").write(new)
 print(f"fix_ld: {len(merged)} data entries ordered, {len(ro_lines)} rodata entries left")

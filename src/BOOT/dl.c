@@ -42,7 +42,7 @@ unsigned int *dl_push1(unsigned int *list, unsigned int cmd);
 int sceGuSendList(int mode, void *list, int a2, int a3, void *arg);
 void sceGuStart(int cid, void *list, int size);
 int sceGuFinish(void);
-void ehsys_088254E0(void);
+void ehf_prim_reset(void);
 void sceKernelDcacheWritebackInvalidateAll(void);
 
 int dl_layers_reset(int half);
@@ -102,7 +102,7 @@ int dl_layers_reset(int half)
     d->lists[0] = p + (((unsigned int)sceGuFinish() >> 2) - 2);
     d->half = half;
     d->cur = 0;
-    ehsys_088254E0();
+    ehf_prim_reset();
     return 1;
 }
 
