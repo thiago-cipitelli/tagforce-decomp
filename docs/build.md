@@ -379,6 +379,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Ponto aberto nos handlers**: em vários handlers o original calcula a zona (`(t >> 8) & 0xFF`) antes do jogador ou põe o `1` de `1 - player` em `a2`/`a3`; nenhuma grafia testada reproduziu a ordem, e esses ficaram em asm (`duel_eff_f9ed0`, `fa288`, `fa5c8`, `fa6e4`, `fa800`).
 - **Tipos das variáveis intermediárias pelos `andi` nas chamadas** (`effects_h.c`): `andi a3,s0,0xffff` só no momento da chamada indica variável `int` e parâmetro `unsigned short`; um `unsigned short` local gera o `andi` já na carga. Um caminho com um único `return 0` no fim (blocos `if/else` aninhados) reproduz os desvios `beqz → bloco "move v0,zero"` do original melhor que retornos antecipados.
 
+- **Guarda e chamada numa só condição** (`duel_eff_fb81c`): `if (a->b4_2 == 0 && f(a, 0, 0)) {...} return 0x7F;` gera o `bnezl → li v0,0x7F` do original; o `if (a->b4_2) return 0x7F;` separado inverte o desvio. Guardar `t & 0xFF` numa variável própria antes da zona reproduz o `andi a1` logo depois da chamada. Em contadores, declarar o índice antes do acumulador (`unsigned int i; int n;`) troca os registradores `s1`/`s2` para os do original.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
