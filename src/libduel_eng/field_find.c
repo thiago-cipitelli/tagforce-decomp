@@ -6,7 +6,7 @@
 
 int field_get_card(unsigned int p, int z);
 int duel_field_same_name(unsigned int p, int z, int id);
-int duel_088E677C(unsigned int p, int z);
+int duel_slot_value_1909(unsigned int p, int z);
 
 #ifdef NON_MATCHING /* same code; the original gives the zone bit counter and the slot pointer the other $s registers */
 /* Active monsters of player p with card id, flag bit 18 set, in enabled zones. */
@@ -150,7 +150,7 @@ int duel_count_card_state(unsigned int p, int id, int x)
     for (i = 5; i <= 10; i++) {
         int c = field_get_card(p, i);
 
-        if (c > 0 && c == id && SLOT_ACTIVE(&pl->field[i]) && duel_088E677C(p, i) < x) {
+        if (c > 0 && c == id && SLOT_ACTIVE(&pl->field[i]) && duel_slot_value_1909(p, i) < x) {
             n++;
         }
     }

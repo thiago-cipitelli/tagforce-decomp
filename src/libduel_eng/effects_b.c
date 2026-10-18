@@ -175,7 +175,7 @@ unsigned int duel_act_target(DuelAct *a, int i);
 int field_get_card(unsigned int p, int z);
 void duel_088C7810(unsigned int p, int a);
 void duel_088328FC(unsigned int p);
-unsigned int duel_088E5F84(unsigned int uid);
+unsigned int duel_card_locate(unsigned int uid);
 void duel_088CAE24(unsigned int p, DuelCard *c, int a);
 void duel_088C6508(unsigned int p, int id, int a, int b);
 void duel_0882619C(unsigned int p, DuelCard *c, int a, int b, int d);
@@ -254,7 +254,7 @@ int duel_eff_f8b34(DuelAct *a)
         if (duel_w_08914900 < a->w[4]) {
             DuelCard *c = &duel_w_0891524C.cards[duel_w_08914900];
 
-            if ((unsigned char)((duel_088E5F84(CARD_UID(*c)) & 0xFFFF) >> 8) == 11) {
+            if ((unsigned char)((duel_card_locate(CARD_UID(*c)) & 0xFFFF) >> 8) == 11) {
                 duel_088CAE24(p, c, 0);
             }
             duel_w_08914900++;

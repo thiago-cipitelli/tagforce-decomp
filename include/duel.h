@@ -156,8 +156,7 @@ typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
     int unk1f60;
     int cur_card;                      /* +0x1F64 */
     int unk1f68;
-    DuelCard list[64];                 /* +0x1F6C */
-    unsigned char pad206c[0x276C - 0x206C];
+    DuelCard list[512];                /* +0x1F6C every card of the duel by uid */
     DuelEffect effects[513];           /* +0x276C, entry 0 unused */
     unsigned int turn_player;          /* +0x3774 [?] */
     unsigned int turn;                 /* +0x3778 [?] */

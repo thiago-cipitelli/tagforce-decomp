@@ -407,6 +407,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **`!(x) != 0` como condição** (`duel_slot_faceup_live`, `duel_slot_e8170`): gera o `sltu v,zero,x; xori v,v,1; beqz` do original, que `!x` (que dá `bnez`) e `x == 0` não geram. Um teste em dois tempos (`ok = 1;` e depois `if (ok && …) r = 1;`) reproduz o `move s1,a0` com o `1` do `sllv` reaproveitado. O contador de bit de zona (`1 << (p * 16 + i)`) que o original mantém num `$s` próprio só sai com uma variável explícita (`for (i = 0, b = p << 4; …; i++, b++)`), e mesmo assim o mwcc troca os registradores do contador e do ponteiro de slot; essas funções ficaram em asm (`field_find.c`, `field_active.c`). **`DuelSpecAct`** (0x38, `duel_special.act[2]` em +0x2C): id e uid da carta especial ativada.
 
+- **Localização empacotada** (`duel_card_locate`): o original monta `jogador | zona << 8` num `unsigned short` antes de juntar o índice (`(unsigned short)((p & 0xFF) | 0xE00) | (unsigned short)i << 16`), e o laço das duas cartas especiais reaproveita o índice `i` dos outros laços. O índice do Ghidra pode omitir funções de 8 bytes (`j alvo; li a2,K`) entre duas funções: conferir os endereços da faixa contra o desmonte cru antes de dar o arquivo por completo (`duel_slot_counter_1513`), senão o `.text` encolhe 8 bytes e tudo depois se desloca. **`duel.list[512]`** (0x800 bytes em +0x1F6C, até os efeitos).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

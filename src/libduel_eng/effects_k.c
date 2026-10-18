@@ -39,10 +39,10 @@ void duel_088C7CF0(void);
 void duel_088C7BA4(void);
 int duel_0884E4E4(DuelAct *a);
 void duel_088D1D58(DuelAct *a, int b);
-int duel_088E6628(unsigned int p, int uid);
+int duel_hand_find_uid(unsigned int p, int uid);
 void duel_088C7810(unsigned int p, int a);
 void duel_08832950(unsigned int p, unsigned short id);
-unsigned int duel_088E5F84(unsigned int uid);
+unsigned int duel_card_locate(unsigned int uid);
 void duel_088CAF24(DuelAct *a, unsigned int p, DuelCard *c);
 int duel_0884E9E8(DuelAct *a, int b);
 int duel_0887F8E4(DuelAct *a, int b);
@@ -192,7 +192,7 @@ int duel_eff_fc704(DuelAct *a)
 
 int duel_eff_fc738(DuelAct *a)
 {
-    int i = duel_088E6628(a->player, a->src.uid);
+    int i = duel_hand_find_uid(a->player, a->src.uid);
 
     switch (duel_step) {
     case 0x80: {
@@ -220,7 +220,7 @@ int duel_eff_fc738(DuelAct *a)
 
 int duel_eff_fc850(DuelAct *a)
 {
-    unsigned int t = duel_088E5F84(a->src.uid);
+    unsigned int t = duel_card_locate(a->src.uid);
     unsigned int p = t & 0xFF;
     unsigned int i = (unsigned short)(t >> 16);
     unsigned int z = (unsigned char)((t & 0xFFFF) >> 8);
@@ -235,7 +235,7 @@ int duel_eff_fc8cc(DuelAct *a, int b)
 {
     int i;
 
-    if (duel_0886CE38(a, b) && (i = duel_088E6628(a->player, a->w[0])) >= 0) {
+    if (duel_0886CE38(a, b) && (i = duel_hand_find_uid(a->player, a->w[0])) >= 0) {
         unsigned int p = a->player;
 
         duel_088263A8(p, &duel.players[p & 1].hand[i], 1, a->id << 16);

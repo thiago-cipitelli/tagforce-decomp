@@ -12,7 +12,7 @@ extern int duel_w_08919654;
 
 int duel_pick_st_zone(unsigned int p);
 unsigned int duel_act_target2(DuelAct *a, int i);
-unsigned int duel_088E5F84(unsigned int uid);
+unsigned int duel_card_locate(unsigned int uid);
 DuelCard *duel_field_card_deb2c(unsigned int p, int zone, int i);
 int duel_list_card_level(unsigned int p, int i);
 void duel_088C7BA4(void);
@@ -52,7 +52,7 @@ int duel_eff_f9024(DuelAct *a)
 
             duel_088C7BA4();
             for (i = a->n7 - 1; i >= 0; i--) {
-                unsigned int r = duel_088E5F84(duel_act_target2(a, i));
+                unsigned int r = duel_card_locate(duel_act_target2(a, i));
                 unsigned int zone = (unsigned char)((r & 0xFFFF) >> 8);
 
                 if (zone == 14) {

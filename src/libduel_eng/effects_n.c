@@ -20,7 +20,7 @@ void duel_08835978(int (*fn)(int id));
 int duel_08835AC0(void);
 void duel_0884AF68(int msg, int uid, int a);
 int duel_pick_monster_zone();
-DuelCard *duel_088E6700(int uid);
+DuelCard *duel_card_by_uid(int uid);
 void duel_0882619C(unsigned int p, DuelCard *c, int a, int b, unsigned int d);
 int duel_field_atk(unsigned int p, int z);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
@@ -28,7 +28,7 @@ void duel_088CC594(unsigned int p, int z, int a, int id);
 extern int duel_w_089148FC;
 extern unsigned int duel_turn_player;
 int duel_0886CE38(DuelAct *a, int b);
-unsigned int duel_088E5F84(int idx);
+unsigned int duel_card_locate(int idx);
 int card_is_monster(int id);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
@@ -72,7 +72,7 @@ int duel_eff_fd690(DuelAct *a, int b)
         return 0x80;
     case 0x7D:
         a->w[3] = duel_pick_monster_zone(q);
-        duel_0882619C(q, duel_088E6700(a->w[2]), 1, duel_w_08919624, 0);
+        duel_0882619C(q, duel_card_by_uid(a->w[2]), 1, duel_w_08919624, 0);
         return 0x7C;
     case 0x7C: {
         int atk = duel_field_atk(q, a->w[3]);
@@ -150,7 +150,7 @@ int duel_eff_fdaf8(DuelAct *a, int b)
         if (duel_0886CE38(a, b) == 0) {
             return 0;
         }
-        t = duel_088E5F84(a->idx);
+        t = duel_card_locate(a->idx);
         q = t & 0xFF;
         i = (unsigned short)(t >> 16);
         if ((unsigned char)((t & 0xFFFF) >> 8) == 0xE && card_is_monster(duel.list[a->idx].id) != 0 &&
