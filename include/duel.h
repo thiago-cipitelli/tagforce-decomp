@@ -80,6 +80,13 @@ typedef struct DuelStats {             /* duel_field_stats */
     unsigned int imm2;                 /* +0x28 */
 } DuelStats;
 
+typedef struct DuelSrc {
+    unsigned short uid : 9;
+    unsigned short player : 1;
+    unsigned short zone : 4;
+    unsigned short b14 : 2;
+} DuelSrc;
+
 typedef struct DuelAct {               /* 0x18: card being activated or resolved */
     unsigned short id;
     unsigned short player : 1;         /* +0x02 */
@@ -98,12 +105,17 @@ typedef struct DuelAct {               /* 0x18: card being activated or resolved
     unsigned char n_targets;           /* +0x06 */
     unsigned char n7;                  /* +0x07 */
     unsigned short w[6];               /* +0x08 */
-    unsigned char b14;
-    unsigned char b15_0 : 1;           /* +0x15 */
-    unsigned char b15_1 : 1;
-    unsigned char b15_2 : 1;
-    unsigned char b15_3 : 1;
-    unsigned char b15_4 : 4;
+    union {
+        struct {
+            unsigned char b14;
+            unsigned char b15_0 : 1;   /* +0x15 */
+            unsigned char b15_1 : 1;
+            unsigned char b15_2 : 1;
+            unsigned char b15_3 : 1;
+            unsigned char b15_4 : 4;
+        };
+        DuelSrc src;                   /* +0x14 card that caused the action */
+    };
     unsigned char pad16[2];
 } DuelAct;
 

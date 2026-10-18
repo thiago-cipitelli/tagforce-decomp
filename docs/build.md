@@ -383,6 +383,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Argumentos que o original não passa** (`duel_eff_fbcd4`): quando o registrador de um argumento guarda um valor velho (o quociente de `link / 10` em `a2`), a chamada tem menos argumentos que o protótipo usado em outros arquivos; declarar a função em K&R (`void duel_088CC178();`) no arquivo. Handlers que repassam `b` a outro handler (`return f(a, b);`) mantêm `a1` livre e trocam os registradores de todo o corpo, por isso o protótipo `(DuelAct *a, int b)` vale mesmo quando o próprio handler não usa `b`. Um `switch` de um só `case` com `default` reproduz `beql K → corpo; b default; nop`, que o `if/else` não reproduz.
 
+- **`DuelAct` +0x14 como `DuelSrc`** (`effects_k.c`): o mesmo halfword é lido como `uid:9, player:1, zone:4` (carta que causou a ação) num `union` anônimo com os campos de byte antigos (`b14`, `b15_*`). Um ponteiro local `DuelSrc *s = &a->src;` reproduz o `addiu s1,a0,0x14` e as releituras por `s1` do original (`duel_eff_fc4c8`). `MIN(f(), g())` com chamadas reproduz as duas chamadas repetidas do original (`duel_eff_fc534`). Quando o original não usa `a1` mas o handler não repassa `b` a um handler, procurar o callee que recebe `b` (`duel_0886CE90(a, b)`). O tipo do parâmetro do callee muda a ordem das cargas antes da chamada: `int uid` em vez de `unsigned short` (`duel_088E6628`).
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
