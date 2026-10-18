@@ -347,6 +347,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`beqzl faceup → fora; all = 0`** num laço com dois testes é `if (id != 0 && (faceup == 0 || atk < X)) { all = 0; break; }` (um `||`); dois `if` aninhados invertem o desvio.
 - **`if (a() || b()) return 1;` dentro de um `case`** (`duel_slot_eef84`): gera `bnel → fim, li v0,1` para o primeiro e o bloco `li v0,1; b fim; nop` (atraso vazio) para o segundo; dois `if` separados geram `beqzl` e atrasos preenchidos.
 - **Atualizar um campo duas vezes sem ponteiro local** (`duel_mark_attacked`): `slot.flags |= A; slot.flags |= 1 << (slot.flags >> 22 & 1 ? 23 : 22);` direto deixa o endereço em `a2` e gera o ternário com `beqzl … li v1,22`; com `unsigned int *f` local o compilador usa base + deslocamento 0x40.
+- **Testes de bit aninhados com um `return 0` só no fim** (`duel_slot_ref`, `duel_slot_immunity`): `bnel bit → fim, v0=0` seguido de `bnez bit2 → bloco "move v0,zero"` vem de `if (!(f >> 5 & 1) && !(f >> 1 & 1)) { switch … } return 0;` depois dos `return 0` antecipados; e `bnezl → fim, v0=r` de `if (f() == 0) { … } return r;`.
+- **`||` de chamada em `if (tipo == X || (z >= 5 && z < 10 && g(id))) return h(...); return 0;`** (`duel_act_immune`) reproduz `bnezl → fim, move v0,zero` para o primeiro limite e o bloco `return 0` compartilhado para os outros.
 
 ## Pendências
 
