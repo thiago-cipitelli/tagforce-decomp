@@ -284,6 +284,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Variável nova para o valor derivado de um parâmetro** (`spline_eval`): `f = t - k` mantém `t` em `$f12` sem cópia; `t -= k` obriga a copiar o parâmetro para um `$f` salvo na entrada. Já o reuso de um parâmetro morto (`ring = (start + k) % ring` em `spline_eval_ring`) economiza um `$s` como no original.
 - **Argumentos avaliados da direita para a esquerda só via temporário** (`spline_eval_ring`): quando o original calcula o terceiro argumento antes do segundo, guardar o terceiro numa variável antes da chamada.
 
+- **VFPU no mwcc** (`mtx.c`, 30/30 matching): o assembler embutido do mwccpsp aceita VFPU. Funções C com blocos `asm { … }` no meio (o original guarda a matriz corrente em M300 entre chamadas) e funções inteiras `asm void f(…) { …; jr ra; <delay> }` reproduzem o original. Sintaxe que bate: `sv.q C300, 0(p)` com `register float *p` local (o C carrega o ponteiro, o bloco usa o registrador), `;` separando instruções num macro de uma linha, `vrot.q C010, S100, [0, c, s, 0]` (imm decodificado do word: bits 0-1 posição do cos, 2-3 do sin, 4 nega o sin), `vcst.s S101, VFPU_2_PI`, `vfim.s S123, -1.0` (literal float), `vpfxs -X, X, X, X`, `vcmp.s ez, …`, `vcmovt.s S200, S203, 0`; o que não tiver sintaxe conhecida vai como `.word 0x…` (`vpfxd` em `mtx_look_at`). Para o port, cada bloco tem um `#else` em C sobre `vfpu_m300`.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

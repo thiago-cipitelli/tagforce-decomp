@@ -169,7 +169,7 @@ void mat4_identity(float *m);
 void mat4_mul(float *out, float *a, float *b);
 float cosf_vfpu(float x);
 float sinf_vfpu(float x);
-void mtx_store(int mode);
+void mtx_set_mode(int mode);
 void mtx_push(void);
 void mtx_pop(void);
 void mtx_identity(void);
@@ -637,9 +637,9 @@ void *ehf_draw_begin(void *list, EhfInst *e, EhfOpts *o)
     } else {
         list = dl_disable(list, 1);
     }
-    mtx_store(1);
+    mtx_set_mode(1);
     mtx_push();
-    mtx_store(2);
+    mtx_set_mode(2);
     mtx_push();
     mtx_identity();
     scale[0] = ehf_light_scale[0];
@@ -657,10 +657,10 @@ void *ehf_draw_begin(void *list, EhfInst *e, EhfOpts *o)
 
 void *ehf_draw_end(void *list, EhfInst *e, EhfOpts *o)
 {
-    mtx_store(1);
+    mtx_set_mode(1);
     mtx_pop();
     list = mtx_commit(list);
-    mtx_store(2);
+    mtx_set_mode(2);
     mtx_pop();
     list = mtx_commit(list);
     return dl_tex_scale(list, 1.0f, 1.0f);

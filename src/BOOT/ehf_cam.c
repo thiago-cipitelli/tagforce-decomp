@@ -30,7 +30,7 @@ typedef struct Tgma {
 } Tgma;
 
 int ehf_cmd_args(void *st, void *cmd, int first, void *out, const char *fmt);
-void mtx_store(int mode);
+void mtx_set_mode(int mode);
 void mtx_push(void);
 void mtx_pop(void);
 void mtx_identity(void);
@@ -48,17 +48,17 @@ int ehf_cmd_perspective(void *a, void *b, void *cmd, int phase)
         char fmt[] = "fff";
 
         ehf_cmd_args(0, cmd, 0, out, fmt);
-        mtx_store(0);
+        mtx_set_mode(0);
         mtx_push();
         mtx_identity();
         mtx_perspective(fovy, 480.0f / 272.0f, near, far);
-        mtx_store(2);
+        mtx_set_mode(2);
         return 0x80000000;
     }
     case 6: {
-        mtx_store(0);
+        mtx_set_mode(0);
         mtx_pop();
-        mtx_store(2);
+        mtx_set_mode(2);
         return 0;
     }
     }
@@ -74,22 +74,22 @@ int ehf_cmd_ortho(void *a, void *b, void *cmd, int phase)
         char fmt[] = "ffffff";
 
         ehf_cmd_args(0, cmd, 0, out, fmt);
-        mtx_store(0);
+        mtx_set_mode(0);
         mtx_push();
         mtx_identity();
         mtx_ortho(l, r, bo, t, n, f);
-        mtx_store(1);
+        mtx_set_mode(1);
         mtx_push();
         mtx_identity();
-        mtx_store(2);
+        mtx_set_mode(2);
         return 0x80000000;
     }
     case 6: {
-        mtx_store(1);
+        mtx_set_mode(1);
         mtx_pop();
-        mtx_store(0);
+        mtx_set_mode(0);
         mtx_pop();
-        mtx_store(2);
+        mtx_set_mode(2);
         return 0;
     }
     }
@@ -105,17 +105,17 @@ int ehf_cmd_look_at(void *a, void *b, void *cmd, int phase)
         char fmt[] = "III";
 
         ehf_cmd_args(0, cmd, 0, out, fmt);
-        mtx_store(1);
+        mtx_set_mode(1);
         mtx_push();
         mtx_identity();
         mtx_look_at(eye, target, up);
-        mtx_store(2);
+        mtx_set_mode(2);
         return 0x80000000;
     }
     case 6: {
-        mtx_store(1);
+        mtx_set_mode(1);
         mtx_pop();
-        mtx_store(2);
+        mtx_set_mode(2);
         return 0;
     }
     }

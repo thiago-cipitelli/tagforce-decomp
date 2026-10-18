@@ -53,7 +53,7 @@ extern EhpMount ehp_mount_tab[16];     /* 0x08903864 */
 extern int gfx_saved_mtx_mode;         /* 0x0890385C */
 
 int mtx_get_mode(void);
-void mtx_store(int mode);
+void mtx_set_mode(int mode);
 void mtx_push(void);
 void mtx_pop(void);
 void mtx_identity(void);
@@ -107,7 +107,7 @@ int ehf_tex_or_flags(char *f, unsigned char *flags)
 void gfx_begin_2d(void *list)
 {
     gfx_saved_mtx_mode = mtx_get_mode();
-    mtx_store(0);
+    mtx_set_mode(0);
     mtx_push();
     mtx_identity();
     mtx_ortho(0.0f, 480.0f, 272.0f, 0.0f, -1000.0f, 1000.0f);
@@ -116,11 +116,11 @@ void gfx_begin_2d(void *list)
 
 void *gfx_end_2d(void *list)
 {
-    mtx_store(0);
+    mtx_set_mode(0);
     mtx_pop();
     list = mtx_commit(list);
     if (gfx_saved_mtx_mode != -1) {
-        mtx_store(gfx_saved_mtx_mode);
+        mtx_set_mode(gfx_saved_mtx_mode);
         gfx_saved_mtx_mode = -1;
     }
     return list;

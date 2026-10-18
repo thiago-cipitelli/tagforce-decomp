@@ -29,7 +29,7 @@ void *dl_draw_array(void *list, int prim, int vtype, int count, void *indices, v
 void *dl_draw_array_n(void *list, int a, int b, int c, int d, int e, int f);
 void *dl_draw_bezier(void *list, int a, int b, int c, int d, int e);
 void *dl_draw_spline(void *list, int a, int b, int c, int d, int e, int f, int g);
-void mtx_store(int mode);
+void mtx_set_mode(int mode);
 void mtx_get34(float *m);
 void mat4_mul(float *out, float *a, float *b);
 void mat4_transform_vec4(float *out, float *m, float *v);
@@ -163,9 +163,9 @@ int draw_sphere_visible(DrawSphere *s)
     c[7] = c[9] + 4186116.0f;
     c[8] = c[3] * c[3] / 4.0f + c[9];
     c[9] = c[4] * c[4] / 4.0f + c[9];
-    mtx_store(1);
+    mtx_set_mode(1);
     mtx_get34(proj);
-    mtx_store(2);
+    mtx_set_mode(2);
     mtx_get34(view);
     mat4_mul(pv, proj, view);
     mat4_transform_vec4(v, pv, s->pos);

@@ -16,7 +16,7 @@ int main_thread_init(void);
 int font_init(int);
 int font_set_layer(int);
 void dl_set_mode(int);
-void gfx_pool_init(void *, int, int, int, int);
+void mtx_init(void *, int, int, int, int);
 int snd_init(void);
 void net_frame(void);
 void snd_channels_update(void);
@@ -115,7 +115,7 @@ void main(void)
     font_init(0);
     font_set_layer(4);
     dl_set_mode(1);
-    gfx_pool_init(gfx_pool_mem, 4, 4, 0x40, 4);
+    mtx_init(gfx_pool_mem, 4, 4, 0x40, 4);
     sys_frame_end();
     modmgr_register_table(game_module_table);
     snd_init();
