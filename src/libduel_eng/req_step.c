@@ -1,5 +1,5 @@
-// @range 0x088DABD8-0x088DEB2C
-// @asm 0x088DABD8-0x088DB520
+// @range 0x088DA5EC-0x088DEB2C
+// @asm 0x088DA5EC-0x088DB520
 // @asm 0x088DBB3C-0x088DC1A0
 // @asm 0x088DC4E0-0x088DCA4C
 // @asm 0x088DD038-0x088DD1A4
@@ -47,6 +47,7 @@ typedef struct DuelReq {               /* 0x08914A30: request being carried out 
 
 extern DuelReq duel_req;
 extern unsigned int duel_req_step;                 /* 0x08915240 */
+extern unsigned int duel_req_count;    /* 0x08915244 */
 extern DuelCard duel_card_tmp;         /* 0x08915248 */
 
 int duel_hand_find_uid(unsigned int p, int uid);
@@ -118,6 +119,96 @@ unsigned int duel_zone_faceup(unsigned int p, int z, int i);
 void duel_add_counters(unsigned int p, int id, int n);
 void duel_set_flag4(unsigned int p, int id);
 unsigned short duel_zone_pos(unsigned int p, int z, int i);
+
+int card_is_attribute9(int id);
+int card_get_level(int id);
+
+#ifdef NON_MATCHING /* draft */
+/* Move the card with uid w from zone arg of player p to pile loc (0xD deck, 0xE graveyard, 0xF banished
+   zone), counting what goes to the graveyard. */
+void duel_req_send(void)
+{
+    unsigned int w = duel_req.w;
+    unsigned int z = duel_req.arg;
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int to_zone = *(unsigned short *)&duel_req.loc;
+    unsigned int t = duel_card_locate(duel_req.w);
+    DuelCard *c;
+    unsigned int i;
+    int not_deck;
+    DuelLoc from;
+    DuelLoc to;
+
+    switch (duel_req_step) {
+    case 0:
+        if (duel_req_flag(0x2A) == 0) {
+            duel_req_step++;
+        }
+        break;
+    case 1:
+        duel_host_call(0x2A, p, z, w);
+        duel_req_count = 0;
+        duel_req_step++;
+        break;
+    case 2:
+        if (duel_req_flag(0x2A) == 0) {
+            duel_req_step++;
+        }
+        break;
+    case 3:
+        c = duel_field_card_deb2c(p, z, t >> 16);
+        c->b20 = 0;
+        c->b17 = 0;
+        c->b19 = 0;
+        c->b18 = 0;
+        if (to_zone == 0xE && card_is_attribute9(c->id) == 0) {
+            if (z < 5 && card_is_monster(c->id)) {
+                if (p == c->owner) {
+                    duel.players[p & 1].flags |= 0x2000000;
+                }
+                if (card_get_level(c->id) >= 8) {
+                    duel_slot_effect_add(p, 11, 1, 0x165A, 0);
+                }
+                duel_add_counters(0, 0x14BF, 1 << (c->owner << 3));
+                duel_add_counters(1, 0x14BF, 1 << (c->owner << 3));
+            }
+            duel_add_counters(0, 0x1361, 1 << (c->owner << 3));
+            duel_add_counters(1, 0x1361, 1 << (c->owner << 3));
+            if (card_is_monster(c->id)) {
+                duel_set_flag4(1 - c->owner, 0x1574);
+            }
+        }
+        if (to_zone == 0xF && card_is_attribute9(c->id) == 0) {
+            duel_add_counters(0, 0x16DA, 1);
+            duel_add_counters(1, 0x16DA, 1);
+        }
+        if (p == duel_view_player) {
+            duel_0884DB38(0x1E, 1);
+        }
+        duel_card_copy(&duel_card_tmp, c);
+        i = t >> 16 & 0xFF;
+        from.player = p;
+        from.zone = z;
+        from.idx = i;
+        from.b15 = duel_zone_pos(from.player, from.zone, i);
+        from.b14 = duel_zone_faceup(from.player, from.zone, from.idx);
+        not_deck = to_zone != 0xD;
+        to.player = duel_card_tmp.owner;
+        to.zone = to_zone;
+        to.idx = not_deck;
+        duel_card_take(from.player, from.zone, from.idx);
+        duel_card_put(to.player, to.zone, to_zone != 0xF && not_deck, &duel_card_tmp);
+        to.b15 = duel_zone_pos(to.player, to.zone, not_deck);
+        to.b14 = duel_zone_faceup(to.player, to.zone, to.idx);
+        duel_host_call(0x18, CARD_UID(duel_card_tmp) | 0x80000, *(unsigned short *)&from, *(unsigned short *)&to);
+        duel_req_step++;
+        break;
+    default:
+        duel_busy_0891523C = 0;
+        break;
+    }
+}
+#endif
 
 #ifdef NON_MATCHING /* draft */
 /* Banish the card at arg (zone | index << 8; piles: card uid w) of player p. loc: 1 show it, 0x30
@@ -623,7 +714,6 @@ void duel_req_draw(void)
 }
 
 
-extern unsigned int duel_req_count;    /* 0x08915244 */
 
 #ifdef NON_MATCHING /* draft: the s registers of the flags and the order of the location stores differ */
 /* Send arg cards from the top of the deck to the graveyard, or banish them (loc bits: 1 always,

@@ -751,6 +751,7 @@ duel_req_announce_field = 0x088DB610; // type:func matched src/libduel_eng/req_s
 duel_req_point = 0x088DB858; // type:func matched src/libduel_eng/req_step.c
 duel_req_activate = 0x088DB240; // type:func asm (@asm in src/libduel_eng/req_step.c, C under NON_MATCHING)
 duel_req_banish = 0x088DABD8; // type:func asm (@asm in src/libduel_eng/req_step.c, C under NON_MATCHING)
+duel_req_send = 0x088DA5EC; // type:func asm (@asm in src/libduel_eng/req_step.c, C under NON_MATCHING)
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
