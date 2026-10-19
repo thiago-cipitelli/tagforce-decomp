@@ -29,6 +29,22 @@ DuelCard *duel_0884C7CC(void);
 int duel_0884E5E0(DuelAct *a);
 int duel_0880A8AC(unsigned int p, unsigned int q);
 int duel_field_level(unsigned int p, int z);
+int duel_count_monsters(unsigned int p);
+int duel_count_monsters_fn(unsigned int p, int (*fn)(int id));
+int duel_count_name(unsigned int p, int id);
+int duel_hand_count_name(unsigned int p, unsigned short id);
+int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
+int duel_act_immune(DuelAct *a, unsigned int p, int z);
+int duel_slot_ef098();
+int field_get_card(unsigned int p, int z);
+int duel_088154D8(unsigned int p);
+int duel_088086D4(int id, int a);
+int duel_088070A8(int id);
+unsigned int duel_088077D4(unsigned int p, int a);
+
+extern struct DuelDlgHead {
+    int unk0;
+} duel_dlg_cards;
 
 #ifdef NON_MATCHING /* the original keeps the constant 1 in a3 for both calls and loads the MAX operands in the other order */
 int duel_ai_0881D0D8(DuelAct *a)
