@@ -740,6 +740,9 @@ duel_turn = 0x089195D4; // type:data inferred turn counter (alias of Duel.turn)
 duel_phase = 0x089195DC; // type:data inferred phase (alias of Duel.phase)
 duel_w_089195FC = 0x089195FC; // type:data inferred
 duel_w_08919600 = 0x08919600; // type:data inferred
+duel_req_draw = 0x088DC1A0; // type:func matched src/libduel_eng/req_step.c
+duel_req_mill = 0x088DC4E0; // type:func asm (@asm in src/libduel_eng/req_step.c, C under NON_MATCHING)
+duel_req_count = 0x08915244; // type:data inferred
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
