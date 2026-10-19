@@ -1,4 +1,4 @@
-// @range 0x0886F23C-0x08877564
+// @range 0x0886F23C-0x08877A70
 // @asm 0x0886F23C-0x0886F390
 // @asm 0x0886F3B4-0x0886F65C
 // @asm 0x0886F974-0x0886FA90
@@ -30,6 +30,7 @@
 // @asm 0x088766B0-0x088768A8
 // @asm 0x08876AEC-0x08876CF0
 // @asm 0x088770C0-0x088771D4
+// @asm 0x088775A0-0x08877624
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
 
@@ -150,6 +151,12 @@ int duel_088752D8(DuelAct *a, int b);
 int duel_08878260(DuelAct *a);
 int duel_count_attr(unsigned int p, int attr);
 int duel_count_grave_kind(unsigned int p, int kind);
+int duel_count_attack_targets(unsigned int p, int z);
+int duel_direct_attack_kind(unsigned int p, int z, int arg);
+int duel_count_faceup_skip(unsigned int p, int id, int skip);
+int duel_count_free_st_zones(unsigned int p);
+int duel_088559C0(DuelAct *a, unsigned int p, int z);
+int duel_088769A8(DuelAct *a, int b);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 int duel_088750DC(DuelAct *a, int b);
 
@@ -3211,7 +3218,7 @@ int duel_08876904(DuelAct *a)
     return 0;
 }
 
-int duel_088769A8(DuelAct *a)
+int duel_088769A8(DuelAct *a, int b)
 {
     struct DuelActX *x;
     int r;
@@ -3473,4 +3480,145 @@ int duel_088774AC(DuelAct *a, DuelAct *b)
         return 0;
     }
     return (duel_act_e403c(b) & 2) > 0;
+}
+
+int duel_08877564(DuelAct *a)
+{
+    unsigned int p = a->player;
+
+    if (duel.players[p & 1].n_d != 0) {
+        return 2;
+    }
+    return 0;
+}
+
+#ifdef NON_MATCHING /* branch layout differs */
+int duel_088775A0(DuelAct *a, int b)
+{
+    int n;
+
+    if (duel_0886F65C(a, b) != 0) {
+        n = duel_count_attack_targets(duel_special.player[0], duel_special.zone[0]);
+        if (n >= 2) {
+            return 1;
+        }
+        if (n != 0 && duel_direct_attack_kind(duel_special.player[0], duel_special.zone[0], 1) == 1) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+    return 0;
+}
+#endif
+
+int duel_08877624(DuelAct *a, int b)
+{
+    unsigned int p = a->player;
+
+    if (duel.players[(1 - p) & 1].n_hand == 0) {
+        return 0;
+    }
+    if (duel_slot_has_effect(p, 11, 0x1846) != 0 || duel_special.unk24 != 0) {
+        return duel_088769A8(a, b);
+    }
+    return 0;
+}
+
+int duel_088776BC(DuelAct *a)
+{
+    if (duel_card_check_9148(a->player, a->id) != 3) {
+        return 0;
+    }
+    return duel_0884E5E0(a) > 1;
+}
+
+int duel_08877710(DuelAct *a, int b)
+{
+    struct DuelActX *x;
+
+    if (a->kind == 0x16) {
+        x = &a->x;
+        if (a->src.player != 1 - a->player) {
+            return 0;
+        }
+        if (x->s_zone2 != 0xE) {
+            return 0;
+        }
+        if (card_is_monster(duel.list[x->s_uid].id) == 0) {
+            return 0;
+        }
+        if ((x->s_uid & 1) != 1 - a->player) {
+            return 0;
+        }
+        return duel_0886CE38(a, b);
+    }
+    return 0;
+}
+
+int duel_08877810(DuelAct *a)
+{
+    return duel_088DFCC8(a->uid) != 0;
+}
+
+int duel_08877838(DuelAct *a)
+{
+    return duel_0884E690(a, (int (*)(int))duel_088559C0) > 0;
+}
+
+int duel_0887785C(DuelAct *a)
+{
+    if (duel_count_faceup_skip(a->player, a->id, a->zone) >= 2) {
+        if (duel_phase != 0 && duel_find_effect_card(1 - a->player, 0x178B, -1) != 0) {
+            return 0;
+        }
+    }
+    return 2;
+}
+
+int duel_088778E0(DuelAct *a, int b)
+{
+    unsigned int p = a->player;
+
+    if ((unsigned int)duel.players[p & 1].n_d < 4) {
+        return 0;
+    }
+    return duel_0886CE38(a, b);
+}
+
+int duel_08877938(DuelAct *a)
+{
+    if (a->kind != 0x23) {
+        if (duel_0884E948(a, a->player) != 5) {
+            return 0;
+        }
+    }
+    return 2;
+}
+
+int duel_08877988(DuelAct *a)
+{
+    if (a->kind == 5) {
+        return duel_count_free_st_zones(a->player) > 0;
+    }
+    return 1;
+}
+
+int duel_088779C4(DuelAct *a)
+{
+    return duel_turn_player != a->player;
+}
+
+int duel_088779E0(DuelAct *a, int b)
+{
+    unsigned int p;
+
+    if (duel_slot_has_effect(a->player, 11, a->id) == 0) {
+        return 0;
+    }
+    p = a->player;
+    if (duel.players[p & 1].n_d != 0) {
+        return duel_0886CE38(a, b);
+    }
+    return 0;
 }
