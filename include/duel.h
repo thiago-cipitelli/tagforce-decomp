@@ -121,7 +121,7 @@ typedef struct DuelAct {               /* 0x18: card being activated or resolved
         };
         DuelSrc src;                   /* +0x14 card that caused the action */
         int idx;                       /* +0x14 index into duel.list for some handlers */
-        struct {                       /* +0x14 as a word */
+        struct DuelActX {              /* +0x14 as a word */
             unsigned int s_uid : 9;
             unsigned int s_player : 1;
             unsigned int s_zone : 4;
