@@ -1,7 +1,9 @@
-// @range 0x0884D050-0x0884DD94
+// @range 0x0884D050-0x0884E228
 // @asm 0x0884D72C-0x0884D874
 // @asm 0x0884D874-0x0884D9B8
 // @asm 0x0884DBAC-0x0884DD94
+// @asm 0x0884DD94-0x0884DF2C
+// @asm 0x0884E02C-0x0884E1D8
 /* End of the duel: the reason each player wins or loses (LP, deck out, Exodia and the other
    special victories), the end-of-duel presentation, replaying the input log. */
 #include "duel.h"
@@ -48,6 +50,19 @@ int duel_08827544(void);
 int duel_card_used_e66ac(unsigned int id);
 unsigned int card_get_type(int id);
 int card_get_prop5_hi(int id);
+int field_get_card(unsigned int p, int z);
+int duel_field_atk(unsigned int p, int z);
+int duel_zone_usable(unsigned int p, unsigned int z);
+int card_is_attribute9(int id);
+int card_same_name(int id, int id2);
+int duel_req_flag(int f);
+int duel_host_call(int a, int b, int c, int d);
+void duel_0884E02C(void);
+
+extern int duel_w_08919630;
+extern int duel_w_08919634;
+extern int duel_w_08919638;
+extern int duel_w_0891963C;
 
 extern int (*duel_end_steps[])(void);  /* 0x089125F0, ends with 0 */
 extern int (*duel_end_steps2[])(void); /* 0x0891260C, ends with 0 */
@@ -379,3 +394,96 @@ void duel_0884DBAC(DuelAct *a, int i)
     duel_0884DB38(0x20, 1);
 }
 #endif
+
+#ifdef NON_MATCHING /* register allocation of the two loops not reproduced */
+void duel_0884DD94(void)
+{
+    int ids[5];
+    int n = 0;
+    int k = 0;
+    int z;
+    int *pp = ids;
+
+    for (z = 0; z <= 4; z++) {
+        int id = field_get_card(duel_view_player, z);
+
+        if (id != 0) {
+            *pp++ = id;
+            n++;
+            duel_0884DAF0(0, duel_field_atk(duel_view_player, z));
+        }
+        if (duel_zone_usable(duel_view_player ^ 1, z) == 0) {
+            k++;
+        }
+    }
+    if (n >= 3) {
+        int i;
+
+        for (i = 0; i <= n - 3; i++) {
+            if (card_is_attribute9(ids[i]) == 0) {
+                int j;
+                int c = 0;
+
+                for (j = i + 1; j < n; j++) {
+                    if (card_same_name(ids[i], ids[j]) != 0) {
+                        c++;
+                    }
+                }
+                if (c > 1) {
+                    duel_0884DA24(0x3B, 1);
+                }
+            }
+        }
+    }
+    if (n == 5) {
+        duel_0884DA24(0x3C, 1);
+    }
+    if (k == 5) {
+        duel_0884DA24(0x3D, 1);
+    }
+}
+#endif
+
+int duel_0884DF2C(int (*fn)(unsigned int p, int z, int a))
+{
+    int n = 0;
+    unsigned int p;
+    int z;
+
+    for (p = 0; (int)p < 2; p++) {
+        for (z = 0; z <= 10; z++) {
+            if (fn(p, z, 0) != 0) {
+                n++;
+            }
+        }
+    }
+    return n;
+}
+
+int duel_0884DFB0(void)
+{
+    if (duel_req_flag(3) != 0) {
+        return 1;
+    }
+    if (duel_w_08919630 != 0) {
+        if (!duel_w_08919634) {
+            duel_w_08919634 = 1;
+            duel_host_call(3, 0, 0, 0);
+        }
+        return 1;
+    }
+    duel_w_08919634 = 0;
+    return 0;
+}
+
+int duel_0884E1D8(void)
+{
+    if (duel_w_0891963C == 0) {
+        return 0;
+    }
+    duel_0884E02C();
+    if (duel_w_08919638 == 0) {
+        duel_w_0891963C = 0;
+    }
+    return 1;
+}
