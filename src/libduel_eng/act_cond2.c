@@ -1,4 +1,4 @@
-// @range 0x0886F23C-0x08872384
+// @range 0x0886F23C-0x08872CE8
 // @asm 0x0886F23C-0x0886F390
 // @asm 0x0886F3B4-0x0886F65C
 // @asm 0x0886F974-0x0886FA90
@@ -86,6 +86,18 @@ int duel_locks_ok(int p, int monster);
 int duel_0886CD90(DuelAct *a, int b);
 int duel_card_fits_zone(unsigned int p, int z, int id);
 int duel_field_level(unsigned int p, int z);
+int duel_count_monsters_fn(unsigned int p, int (*fn)(int id));
+int card_is_in_group_160f(int id);
+int duel_0886CDC4(DuelAct *a, int b);
+int duel_0886CE90(DuelAct *a, int b);
+int duel_0886CF1C(DuelAct *a, int b);
+int duel_0886CFE0(DuelAct *a, int b);
+int duel_slot_has_effect2(unsigned int p, int z, int id);
+int field_get_card(unsigned int p, int z);
+int duel_count_type(unsigned int p, unsigned int type);
+int duel_088770C0(DuelAct *a, int b);
+extern unsigned int duel_w_089147E4;
+extern unsigned short duel_w_089147E8[];
 int duel_list_counter(int uid, int id);
 
 typedef struct DuelListCard {
@@ -204,7 +216,7 @@ int duel_0886F59C(DuelAct *a, int b)
 }
 #endif
 
-int duel_0886F65C(DuelAct *a)
+int duel_0886F65C(DuelAct *a, int b)
 {
     if (a->kind != 0x12) {
         return 0;
@@ -1393,4 +1405,220 @@ int duel_0887221C(DuelAct *a)
 int duel_08872360(DuelAct *a)
 {
     return duel_grave_count_monsters(a->player) > 0;
+}
+
+int duel_08872384(DuelAct *a)
+{
+    unsigned short *src = (unsigned short *)&a->src;
+    int q = 1 - duel_turn_player;
+    DuelSpecAct *s = &duel_special.act[q];
+
+    if (a->kind == 0xD && a->player == q && s->unk8 != 0 && src[0] < src[1] &&
+        duel_act_immune(a, duel_special.player[0], duel_special.zone[0]) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+int duel_08872434(DuelAct *a)
+{
+    if (duel_locks_ok(a->player, 1) == 0) {
+        return 0;
+    }
+    if (a->kind != 0x23) {
+        if (duel_088BFFD8(a->player, a->id, 0) <= 4) {
+            return 0;
+        }
+    } else {
+        if (duel_088BFFD8(a->player, a->id, 0) <= 2) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int duel_088724D8(DuelAct *a, int b)
+{
+    if (duel_count_monsters_fn(a->player, card_is_in_group_160f) != 0) {
+        return duel_0886F65C(a, b);
+    }
+    return 0;
+}
+
+int duel_0887252C(DuelAct *a, int b)
+{
+    if (duel_0886CE90(a, b) == 0) {
+        return 0;
+    }
+    return duel_0886CDC4(a, b) != 0;
+}
+
+int duel_08872578(DuelAct *a)
+{
+    unsigned char z = a->zone;
+    unsigned int p = a->player;
+
+    if (a->uid != CARD_UID(duel.players[p & 1].field[a->zone].card)) {
+        return 0;
+    }
+    return duel_slot_e1854(p, z) != 0xFFFF;
+}
+
+/* A face-up monster of group 0x160F is a target of chain link b. */
+int duel_0887261C(DuelAct *a, DuelAct *b)
+{
+    int i;
+
+    if (b == 0) {
+        return 0;
+    }
+    duel_w_089147E8[duel_w_089147E4 & 0x7F] = 0;
+    if (duel_0886CF1C(a, (int)b) == 0) {
+        return 0;
+    }
+    for (i = 0; i < b->n_targets; i++) {
+        int t = duel_act_target(b, i);
+        int z = (unsigned short)t >> 8 & 0xFF;
+
+        if (z < 5) {
+            int p = t & 0xFF;
+
+            if (duel.players[p & 1].field[z].faceup != 0 && card_is_in_group_160f(field_get_card(p, z))) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int duel_08872720(DuelAct *a)
+{
+    if (a->kind == 0x14) {
+        if (duel_special.unk8 != 0) {
+            return 0;
+        }
+        if (duel_special.player[0] == a->player &&
+            (unsigned short)duel_field_type(duel_special.player[0], duel_special.zone[0]) == 3) {
+            return 1;
+        }
+        if (duel_special.player[1] == a->player &&
+            (unsigned short)duel_field_type(duel_special.player[1], duel_special.zone[1]) == 3) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int duel_088727E4(DuelAct *a)
+{
+    return duel_slot_has_effect2(a->player, 11, 0x14C0);
+}
+
+int duel_088727F8(DuelAct *a, int b)
+{
+    if (duel_phase_ok2(a->player) == 0) {
+        return 0;
+    }
+    if (duel_0886CFE0(a, b) != 0) {
+        return 2;
+    }
+    return 0;
+}
+
+int duel_08872858(DuelAct *a)
+{
+    if (duel_count_type(a->player, 3) != 0) {
+        unsigned int p = a->player;
+
+        if (duel.players[p & 1].lp > 500) {
+            if (duel_088DFE24(p, 1 - p) && duel_088BFFD8(a->player, a->id, 0)) {
+                return 2;
+            }
+            if (duel_088DFE24(a->player, a->player) && duel_088BFFD8(1 - a->player, a->id, 0)) {
+                return 2;
+            }
+        }
+    }
+    return a->b3_4 == 0;
+}
+
+int duel_08872954(DuelAct *a)
+{
+    unsigned int p = a->player;
+
+    return duel_tributable(p ^ a->opp, p, a->zone) != 0;
+}
+
+/* The two special cards and a's zone share the same link value. */
+int duel_08872990(DuelAct *a)
+{
+    unsigned char z = a->zone;
+    unsigned int p = a->player;
+    unsigned int link = duel.players[p & 1].field[z].link;
+    unsigned int t;
+
+    if (a->kind != 0xD) {
+        return 1;
+    }
+    if (duel_special.player[0] == p && duel_special.zone[0] == z) {
+        t = duel_field_type(duel_special.player[1], duel_special.zone[1]) & 0xFFFF;
+        return t != 0 && t == link;
+    }
+    if (duel_special.player[1] == p && duel_special.zone[1] == z) {
+        t = duel_field_type(duel_special.player[0], duel_special.zone[0]) & 0xFFFF;
+        return t != 0 && t == link;
+    }
+    return 0;
+}
+
+int duel_08872AB8(void)
+{
+    return (unsigned int)duel_phase < 4;
+}
+
+int duel_08872AC8(DuelAct *a, int b)
+{
+    unsigned int p;
+
+    if ((unsigned int)(a->kind - 0x12) < 2) {
+        p = a->player;
+        if (duel_turn_player != p) {
+            return 0;
+        }
+        if (duel_special.player[0] != p || duel_special.zone[0] != a->zone) {
+            if (duel_special.player[1] != p || duel_special.zone[1] != a->zone) {
+                return 0;
+            }
+        }
+        return duel_088770C0(a, b);
+    }
+    return 0;
+}
+
+int duel_08872B7C(DuelAct *a, int b)
+{
+    if (duel_phase != 2) {
+        return 0;
+    }
+    if (duel_0886CD90(a, b) == 0) {
+        return 0;
+    }
+    return duel_0886CDC4(a, b) != 0;
+}
+
+/* b: a spell of type 0x17 aimed at one face-up monster of type 1. */
+int duel_08872BE4(DuelAct *a, DuelAct *b)
+{
+    if (duel_0886CDC4(a, (int)b)) {
+        if (b != 0 && b->n_targets == 1 && card_is_in_group_147e(b->id) == 0 && card_get_type(b->id) == 0x17) {
+            int t = duel_act_target(b, 0);
+            int p = t & 0xFF;
+            int z = (unsigned short)t >> 8 & 0xFF;
+
+            if (z < 5 && duel.players[p & 1].field[z].faceup != 0 && (unsigned short)duel_field_type(p, z) == 1) {
+                return 2;
+            }
+        }
+    }
+    return a->b3_4 == 0;
 }

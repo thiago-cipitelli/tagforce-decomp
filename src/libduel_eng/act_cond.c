@@ -124,7 +124,7 @@ int duel_0886CD90(DuelAct *a, int b)
     return !duel_slot_has_effect(a->player, a->zone, 0xFB6);
 }
 
-int duel_0886CDC4(DuelAct *a)
+int duel_0886CDC4(DuelAct *a, int b)
 {
     int n;
 
@@ -176,7 +176,7 @@ int duel_0886CF1C(DuelAct *a, int b)
     return 0;
 }
 
-int duel_0886CFE0(DuelAct *a)
+int duel_0886CFE0(DuelAct *a, int b)
 {
     return duel_088BFFD8(a->player, a->id, duel_088AA224(a)) != 0;
 }

@@ -81,7 +81,7 @@ segments:
       - [0x6DC5C, c, act_cond2]
       - [0x6DFD0, asm, act_cond2_asm_08871F70]
       - [0x6E05C, c, act_cond2]
-      - [0x6E3E4, asm, text_2]
+      - [0x6ED48, asm, text_2]
       - [0xD2E48, c, req_effect]
       - [0xD2E48, asm, req_effect_asm_088D6DE8]
       - [0xD4A84, c, req_effect]
