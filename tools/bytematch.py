@@ -37,6 +37,10 @@ if token and project:
                                 "commit_message": git("log", "-1", "--format=%s"), "commit_timestamp": git("log", "-1", "--format=%cI")})
     req = urllib.request.Request(f"https://bytematch.dev/api/v1/projects/{project}/reports?{q}",
                                  data=open(f"{OUT}/bytematch.zip", "rb").read(), method="POST",
-                                 headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip"})
-    with urllib.request.urlopen(req) as r:
-        print("uploaded:", r.status, r.read().decode()[:200])
+                                 headers={"Authorization": f"Bearer {token}", "Content-Type": "application/zip",
+                                          "User-Agent": "tagforce-decomp-bytematch/1.0"})
+    try:
+        with urllib.request.urlopen(req) as r:
+            print("uploaded:", r.status, r.read().decode()[:200])
+    except urllib.error.HTTPError as e:
+        sys.exit(f"upload failed: {e.code} {e.read().decode(errors='replace')[:500]}")
