@@ -1,9 +1,10 @@
-// @range 0x088C2F80-0x088C3B48
+// @range 0x088C2F80-0x088C4448
 // @asm 0x088C3018-0x088C3058
 // @asm 0x088C3058-0x088C30D4
 // @asm 0x088C321C-0x088C3348
 // @asm 0x088C3804-0x088C39F0
 // @asm 0x088C39F0-0x088C3B48
+// @asm 0x088C3F80-0x088C4448
 /* State checks run between the steps of the duel: continuous cards whose condition ended are
    destroyed or lose their effect. */
 #include "duel.h"
@@ -26,10 +27,18 @@ void duel_088C89BC(unsigned int p, int z, int id, int c);
 void duel_088C7940(void);
 void duel_088D1438(unsigned int p, int z, int a, int b);
 void duel_088CC1A0(unsigned int p, int z, unsigned int v);
-void duel_088CC178(unsigned int p, unsigned char z, unsigned int v);
+void duel_088CC178(unsigned int p, int z, unsigned int v);
 void duel_088C7E68(unsigned int p, int z, int a, int b);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 int duel_088C3058(DuelEffect *e, int *ctx);
+void duel_088CC284(unsigned int p, int z, int n);
+void duel_088CC1D0(unsigned int p, int z, int f);
+void duel_088CC4B4(unsigned int p, int z, int n);
+void duel_088C4448(unsigned int p, int a, unsigned int uid);
+
+extern int duel_phase;
+
+extern unsigned int duel_turn;
 
 int duel_088C2F80(void)
 {
@@ -262,3 +271,86 @@ int duel_088C39F0(void)
     return 0;
 }
 #endif
+
+int duel_088C3B48(void)
+{
+    unsigned int i;
+    unsigned int q;
+    int z;
+
+    for (i = 0; (int)i < 2; i++) {
+        q = duel_turn_player ^ i;
+        for (z = 0; z <= 4; z++) {
+            if (field_get_card(q, z) == 0x1744) {
+                duel_088C7E68(q, z, 4, 0);
+            }
+        }
+    }
+    return 0;
+}
+
+int duel_088C3BD8(void)
+{
+    unsigned int q;
+    int z;
+    unsigned int i;
+
+    for (i = 0; (int)i < 2; i++) {
+        q = duel_turn_player ^ i;
+        for (z = 0; z <= 4; z++) {
+            if (field_get_card(q, z) == 0x1817 && duel.players[q & 1].field[z].faceup != 0 &&
+                duel_slot_counter(q, z, 0x1817) != 0) {
+                if (!(duel.players[q & 1].field[z].flags >> 5 & 1)) {
+                    duel_088CC284(q, z, duel_slot_counter(q, z, 0x1817));
+                }
+                duel_088C89BC(q, z, 0x1817, 1);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int duel_088C3D08(void)
+{
+    unsigned int p;
+    int z;
+
+    if (duel_phase == 7) {
+        return 0;
+    }
+    p = duel_turn_player;
+    for (z = 0; z <= 4; z++) {
+        if (field_get_card(p, z) == 0x1810 && duel.players[p & 1].field[z].faceup != 0 &&
+            duel_turn + 1 != (duel.players[p & 1].field[z].link >> 16 & 0xFFFF)) {
+            unsigned int n = (unsigned short)duel.players[p & 1].field[z].link;
+
+            duel_088CC1D0(p, z, 1);
+            duel_088CC178(p, z, (n + 1 & 0xFFFF) | (duel_turn + 1 & 0xFFFF) << 16);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int duel_088C3E34(void)
+{
+    unsigned int q;
+    int z;
+    unsigned int i;
+
+    for (i = 0; (int)i < 2; i++) {
+        q = duel_turn_player ^ i;
+        for (z = 0; z <= 4; z++) {
+            if (field_get_card(q, z) == 0x1A8D && (duel.players[q & 1].field[z].flags >> 4 & 1)) {
+                duel_088C7E68(q, z, 4, 0);
+                if (SLOT_ACTIVE(&duel.players[q & 1].field[z])) {
+                    duel_088C4448(q, z, CARD_UID(duel.players[q & 1].field[z].card));
+                    duel_088CC4B4(q, z, 2);
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
