@@ -1,6 +1,7 @@
-// @range 0x0886CB44-0x0886D654
+// @range 0x0886CB44-0x0886DBC4
 // @asm 0x0886CD24-0x0886CD90
 // @asm 0x0886D050-0x0886D0C4
+// @asm 0x0886D828-0x0886DBC4
 /* Activation conditions of cards (DuelAct *a): enough cards to pay or tribute, free zones, phase and
    turn, cards in the piles. */
 #include "duel.h"
@@ -32,6 +33,11 @@ int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_0884E5E0(DuelAct *a);
 int duel_find_st(unsigned int p, int id);
+unsigned short duel_slot_e1854(unsigned int p, int z);
+int duel_count_free_zones(unsigned int p);
+int duel_zone_usable(unsigned int p, unsigned int z);
+unsigned int duel_act_target(DuelAct *a, int i);
+void duel_0886AF00(unsigned int p, int z, int id);
 
 int duel_0886CB44(unsigned int p, int n, int uid, int monster, int all)
 {
@@ -320,3 +326,132 @@ int duel_0886D580(DuelAct *a)
     }
     return 1;
 }
+
+int duel_0886D654(DuelAct *a)
+{
+    unsigned int p = a->player;
+    unsigned int q = p ^ a->opp;
+    unsigned int src = duel_slot_e1854(p, a->zone);
+    unsigned int sp;
+    unsigned int sz;
+
+    if ((src & 0xFFFF) == 0xFFFF) {
+        return 0;
+    }
+    sz = (unsigned char)((src & 0xFFFF) >> 8);
+    sp = src & 0xFF;
+    if (duel_tributable(q, sp, sz) == 0) {
+        return 0;
+    }
+    if (duel_count_free_zones(q) == 0 && (sp != q || duel_zone_usable(sp, sz) == 0)) {
+        return 0;
+    }
+    if (duel_phase_ok2(q) == 0) {
+        return 0;
+    }
+    return duel.players[q & 1].n_d != 0;
+}
+
+int duel_0886D754(DuelAct *a)
+{
+    int need = 0;
+
+    switch (a->id) {
+    case 0x12D2:
+        need = 4;
+        break;
+    case 0x1710:
+        need = 2;
+        break;
+    }
+    if (a->kind != 0x23 && (duel.players[a->player & 1].flags >> 16 & 1)) {
+        return 0;
+    }
+    if (duel_0886CD1C(a, a->player) < need) {
+        return 0;
+    }
+    return duel_phase_ok2(a->player) != 0;
+}
+
+#ifdef NON_MATCHING /* the original reuses the registers of a and b for the target fields */
+/* Activation b (the chain link a answers) targets or concerns a trap card other than a's own. */
+int duel_0886D828(DuelAct *a, DuelAct *b)
+{
+    unsigned int t;
+    unsigned int tp;
+    unsigned int tz;
+    int id;
+    unsigned int z;
+    int i;
+
+    if (b == 0) {
+        return 0;
+    }
+    if (a->player == (b->player ^ b->opp)) {
+        return 0;
+    }
+    switch (b->id) {
+    case 0xFFA:
+    case 0x1086:
+    case 0x12E6:
+    case 0x132D:
+    case 0x134C:
+    case 0x134D:
+    case 0x16B8:
+    case 0x1364:
+        t = duel_act_target(b, 0);
+        tp = t & 0xFF;
+        tz = (unsigned char)((t & 0xFFFF) >> 8);
+        id = duel.players[tp & 1].field[tz].card.id;
+        if (id == 0) {
+            return 0;
+        }
+        if (tp == a->player && tz == a->zone) {
+            return 0;
+        }
+        if (card_get_type((unsigned short)id) == 0x17) {
+            return 1;
+        }
+        return 0;
+    case 0x149B:
+        t = duel_act_target(b, 0);
+        tp = t & 0xFF;
+        tz = (unsigned char)((t & 0xFFFF) >> 8);
+        id = duel.players[tp & 1].field[tz].card.id;
+        if (id == 0) {
+            return 0;
+        }
+        if (tp == a->player && tz == a->zone) {
+            return 0;
+        }
+        if (card_get_type((unsigned short)id) == 0x17) {
+            return 1;
+        }
+        duel_0886AF00(tp, tz, id);
+        return 0;
+    case 0x11F0:
+        for (i = 0; i < 2; i++) {
+            t = duel_act_target(b, i);
+            tp = t & 0xFF;
+            tz = (unsigned char)((t & 0xFFFF) >> 8);
+            id = duel.players[tp & 1].field[tz].card.id;
+            if (id != 0 && (tp != a->player || tz != a->zone) && card_get_type((unsigned short)id) == 0x17) {
+                return 1;
+            }
+        }
+        return 0;
+    case 0x1246:
+    case 0x131B:
+    case 0x131C:
+    case 0x1321:
+        for (z = 5; (int)z < 10; z++) {
+            id = duel.players[a->player].field[z].card.id;
+            if (id != 0 && z != a->zone && card_get_type((unsigned short)id) == 0x17) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return 0;
+}
+#endif
