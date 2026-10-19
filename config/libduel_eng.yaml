@@ -113,7 +113,7 @@ segments:
       - [0x75E80, c, act_cond2]
       - [0x75F08, asm, act_cond2_asm_08879EA8]
       - [0x75FC0, c, act_cond2]
-      - [0x76780, asm, text_2]
+      - [0x76CBC, asm, text_2]
       - [0xD2E48, c, req_effect]
       - [0xD2E48, asm, req_effect_asm_088D6DE8]
       - [0xD4A84, c, req_effect]
