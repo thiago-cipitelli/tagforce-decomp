@@ -1,4 +1,5 @@
-// @range 0x088DD57C-0x088DEB2C
+// @range 0x088DCF34-0x088DEB2C
+// @asm 0x088DD038-0x088DD1A4
 // @asm 0x088DD660-0x088DD708
 // @asm 0x088DD88C-0x088DD98C
 // @asm 0x088DE360-0x088DEB2C
@@ -74,6 +75,191 @@ void duel_0884CD24(void);
 void duel_0884DA24(int a, int b);
 
 extern int duel_ids_08911D2C[5];
+
+void duel_effects_end_turn(void);
+void duel_effects_tick(void);
+void duel_0884DAF0(int a, int b);
+
+/* Enter phase ph. */
+void duel_req_phase(int ph)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+
+    if (duel_req_step == 0) {
+        duel_host_call(4, p, ph, 0);
+        duel.phase = ph;
+        duel_effects_end_turn();
+        duel_req_step++;
+    } else if (duel_req_flag(4) == 0) {
+        duel_host_call(0x24, 0, 0, 0);
+        duel_busy_0891523C = 0;
+    }
+}
+
+void duel_req_phase_0(void)
+{
+    duel_req_phase(0);
+}
+
+void duel_req_phase_1(void)
+{
+    duel_req_phase(1);
+}
+
+void duel_req_phase_2(void)
+{
+    duel_req_phase(2);
+}
+
+void duel_req_phase_3(void)
+{
+    duel_req_phase(3);
+}
+
+void duel_req_phase_4(void)
+{
+    duel_req_phase(4);
+}
+
+void duel_req_phase_5(void)
+{
+    duel_req_phase(5);
+}
+
+void duel_req_wait_5(void)
+{
+    if (duel_req_flag(5) == 0) {
+        duel_0884DA24(10, 0);
+        duel_busy_0891523C = 0;
+    }
+}
+
+#ifdef NON_MATCHING /* the pointer and counter registers of the two graveyard loops are swapped */
+/* End of turn: clear the high flags of every zone and of the mode, mark the graveyard and zone F
+   cards as old, count down the timed effects. */
+void duel_req_end_turn(void)
+{
+    unsigned int p;
+    int z;
+    unsigned int i;
+    unsigned int j;
+
+    duel_host_call(0x48, (duel_req.id & 0x8000) != 0, 0, 0);
+    for (p = 0; (int)p < 2; p++) {
+        for (z = 0; z <= 11; z++) {
+            duel.players[p & 1].field[z].flags = (unsigned short)duel.players[p & 1].field[z].flags;
+        }
+    }
+    duel.mode &= 0xFFFF;
+    for (p = 0; (int)p < 2; p++) {
+        for (i = 0; i < duel.players[p & 1].n_grave; i++) {
+            duel.players[p & 1].grave[i].b20 = 1;
+        }
+        for (j = 0; j < duel.players[p & 1].n_f; j++) {
+            duel.players[p & 1].zone_f[j].b20 = 1;
+        }
+    }
+    duel_effects_tick();
+    duel_busy_0891523C = 0;
+}
+#endif
+
+void duel_req_wait_frames(void)
+{
+    if (duel_req_step++ >= duel_req.arg) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+void duel_req_mode_bit(void)
+{
+    unsigned int bit = duel_req.arg;
+    unsigned int on = *(unsigned short *)&duel_req.loc;
+
+    if (on != 0) {
+        duel.mode |= 1 << bit;
+    } else {
+        duel.mode &= ~(1 << bit);
+    }
+    duel_host_call(0x24, 0, 0, 0);
+    duel_busy_0891523C = 0;
+}
+
+void duel_req_player_bit(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int bit = duel_req.arg;
+    unsigned int on = *(unsigned short *)&duel_req.loc;
+
+    if (on != 0) {
+        duel.players[p & 1].flags |= 1 << bit;
+    } else {
+        duel.players[p & 1].flags &= ~(1 << bit);
+    }
+    duel_host_call(0x24, 0, 0, 0);
+    duel_busy_0891523C = 0;
+}
+
+void duel_req_slot_bit(void)
+{
+    duel_088DF554((duel_req.id & 0x8000) != 0, duel_req.arg, *(unsigned short *)&duel_req.loc, duel_req.w);
+    duel_host_call(0x24, 0, 0, 0);
+    duel_busy_0891523C = 0;
+}
+
+void duel_req_cur_card(void)
+{
+    duel.cur_card = duel_req.arg;
+    if (duel_req_step == 0) {
+        duel_req_step++;
+        duel_host_call(6, duel.cur_card, 0, 0);
+    } else if (duel_req_flag(6) == 0) {
+        duel_host_call(0x24, 0, 0, 0);
+        duel_busy_0891523C = 0;
+    }
+}
+
+void duel_req_host_42(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = duel_req.arg;
+
+    if (duel_req_step == 0) {
+        duel_host_call(0x42, p, arg, 0);
+        duel_req_step++;
+    } else if (duel_req_flag(0x42) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+void duel_req_host_2e(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = duel_req.arg;
+    unsigned int loc = *(unsigned short *)&duel_req.loc;
+
+    if (duel_req_step == 0) {
+        duel_host_call(0x2E, p, arg, loc);
+        duel_0884DAF0(0x25, loc);
+        duel_req_step++;
+    } else if (duel_req_flag(0x2E) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+void duel_req_host_2f(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = duel_req.arg;
+    unsigned int loc = *(unsigned short *)&duel_req.loc;
+
+    if (duel_req_step == 0) {
+        duel_host_call(0x2F, p, arg, loc);
+        duel_req_step++;
+    } else if (duel_req_flag(0x2F) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
 
 void duel_req_host_37(void)
 {
