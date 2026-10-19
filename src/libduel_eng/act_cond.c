@@ -1,4 +1,4 @@
-// @range 0x0886CB44-0x0886DBC4
+// @range 0x0886CB44-0x0886DE70
 // @asm 0x0886CD24-0x0886CD90
 // @asm 0x0886D050-0x0886D0C4
 // @asm 0x0886D828-0x0886DBC4
@@ -38,6 +38,9 @@ int duel_count_free_zones(unsigned int p);
 int duel_zone_usable(unsigned int p, unsigned int z);
 unsigned int duel_act_target(DuelAct *a, int i);
 void duel_0886AF00(unsigned int p, int z, int id);
+unsigned short duel_slot_src13(unsigned int p, int z);
+int duel_slot_has_effect2(unsigned int p, int z, int id);
+int duel_08871F70(DuelAct *a, int b);
 
 int duel_0886CB44(unsigned int p, int n, int uid, int monster, int all)
 {
@@ -97,7 +100,7 @@ int duel_0886CD24(DuelAct *a, unsigned int p)
 }
 #endif
 
-int duel_0886CD90(DuelAct *a)
+int duel_0886CD90(DuelAct *a, int b)
 {
     return !duel_slot_has_effect(a->player, a->zone, 0xFB6);
 }
@@ -455,3 +458,67 @@ int duel_0886D828(DuelAct *a, DuelAct *b)
     return 0;
 }
 #endif
+
+int duel_0886DBC4(DuelAct *a, int b)
+{
+    unsigned int p = a->player;
+
+    if (duel_slot_src13(p, a->zone) != 0xFFFF) {
+        return 0;
+    }
+    if (duel_pick_st_zone(p) == -1) {
+        return 0;
+    }
+    return duel_0886CD90(a, b);
+}
+
+int duel_0886DC4C(DuelAct *a)
+{
+    if (a->kind == 2) {
+        unsigned char z = a->zone;
+        unsigned int p = a->player;
+
+        if (!(duel.players[p & 1].field[z].flags >> 4 & 1)) {
+            return 0;
+        }
+        if (duel_tributable(p, p, z) == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int duel_0886DCEC(DuelAct *a, int b)
+{
+    if (a->kind == 2) {
+        return duel_slot_has_effect2(a->player, a->zone, a->id);
+    }
+    return duel_08871F70(a, b);
+}
+
+int duel_0886DD40(DuelAct *a, int b)
+{
+    if (duel_phase != 2) {
+        return 0;
+    }
+    return duel_0886CD90(a, b);
+}
+
+int duel_0886DD78(DuelAct *a)
+{
+    unsigned int z = a->zone;
+    unsigned int p = a->player;
+
+    if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
+        return 0;
+    }
+    return duel.players[p & 1].field[z].faceup != 0;
+}
+
+int duel_0886DE0C(DuelAct *a)
+{
+    if (duel_phase_ok2(a->player) == 0) {
+        return 0;
+    }
+    return duel.players[a->player & 1].n_hand != 0;
+}
