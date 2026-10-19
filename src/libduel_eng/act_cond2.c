@@ -1,4 +1,4 @@
-// @range 0x0886F23C-0x08871424
+// @range 0x0886F23C-0x08871C28
 // @asm 0x0886F23C-0x0886F390
 // @asm 0x0886F3B4-0x0886F65C
 // @asm 0x0886F974-0x0886FA90
@@ -11,6 +11,11 @@
 // @asm 0x08870848-0x088708E4
 // @asm 0x08870968-0x08870A38
 // @asm 0x08870A94-0x08870B4C
+// @asm 0x08871B14-0x08871BFC
+// @asm 0x088719DC-0x08871A68
+// @asm 0x08871674-0x088717B4
+// @asm 0x0887153C-0x08871674
+// @asm 0x08871424-0x0887153C
 // @asm 0x08870348-0x088704BC
 // @asm 0x088705DC-0x088706CC
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
@@ -65,6 +70,15 @@ int duel_hand_can_discard(unsigned int p, int n, int uid, int monster, int type1
 int duel_is_cur_card(int id, int b);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_0886F89C(DuelAct *b, unsigned int p, int z);
+int duel_slot_effect_arg(unsigned int p, int z, int id);
+int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
+int card_is_attribute6(int id);
+int card_attribute_icon_in_2_3(int id);
+int duel_has_st_12be(unsigned int p);
+int duel_card_check_9148(unsigned int p, int id);
+int duel_0884E948(DuelAct *a, unsigned int p);
+int duel_zone_free(unsigned int p, int z);
+int duel_list_counter(int uid, int id);
 
 typedef struct DuelListCard {
     unsigned short id : 13;
@@ -986,3 +1000,210 @@ int duel_0887138C(DuelAct *a)
     return 0;
 }
 #endif
+
+#ifdef NON_MATCHING /* branch layout and registers differ */
+int duel_08871424(DuelAct *a)
+{
+    unsigned int sp;
+    unsigned int sz;
+
+    if ((unsigned int)(a->kind - 8) > 1) {
+        return 0;
+    }
+    sp = a->src.player;
+    sz = a->src.zone;
+    if (!a->y.y15_6) {
+        return 0;
+    }
+    if (a->y.y15_7) {
+        return 0;
+    }
+    if (sp == a->player) {
+        return 0;
+    }
+    if (duel.players[sp & 1].field[sz].card.id == 0) {
+        return 0;
+    }
+    if (duel.players[sp & 1].field[sz].pos == 0) {
+        return 0;
+    }
+    if (duel.players[sp & 1].field[sz].faceup != 0) {
+        return 0;
+    }
+    if (duel_act_can_target(a, sp, sz) != 0) {
+        return 2;
+    }
+    return 0;
+}
+#endif
+
+#ifdef NON_MATCHING /* branch layout and registers differ */
+int duel_0887153C(DuelAct *a, int b)
+{
+    int uid = duel_slot_effect_arg(a->player, 11, 0x1415);
+    unsigned int t;
+    unsigned int tz;
+    DuelCard *c;
+
+    if (duel_0886CE38(a, b) != 0 && uid >= 0) {
+        t = duel_card_locate(uid);
+        tz = (t & 0xFFFF) >> 8;
+        c = duel_field_card_deb2c(t & 0xFF, tz, t >> 16);
+        if (tz == 0xE && card_is_monster(c->id) && duel_grave_card_usable(a->player, t & 0xFF, t >> 16)) {
+            if (card_is_attribute6(c->id) == 0) {
+                return 1;
+            }
+            if (card_attribute_icon_in_2_3(c->id) == 0 || duel_has_st_12be(a->player)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+#endif
+
+#ifdef NON_MATCHING /* branch layout and registers differ */
+/* Every other card in the hand belongs to a's player. */
+int duel_08871674(DuelAct *a)
+{
+    unsigned int p;
+    unsigned int i;
+
+    if (duel_count_monsters(a->player) == 0) {
+        return 0;
+    }
+    p = a->player;
+    for (i = 0; i < duel.players[p].n_hand; i++) {
+        p = a->player;
+        if (a->uid != CARD_UID(duel.players[p].hand[i]) && p != duel_field_card_deb2c(p, 0xB, i)->owner) {
+            return 0;
+        }
+    }
+    return 1;
+}
+#endif
+
+int duel_088717B4(DuelAct *a)
+{
+    if (duel_0886CB44(a->player, 1, a->uid, 0, 1)) {
+        return 2;
+    }
+    return a->b3_4 == 0;
+}
+
+int duel_08871818(DuelAct *a)
+{
+    if (a->kind != 0x23 && duel_card_check_9148(a->player, 0xFC9) > 0) {
+        return 1;
+    }
+    return 0;
+}
+
+int duel_08871868(DuelAct *a)
+{
+    if (duel_0884E948(a, 1 - a->player) == 0) {
+        return 0;
+    }
+    if (duel_0884E948(a, a->player) != 0) {
+        return 2;
+    }
+    return 0;
+}
+
+int duel_088718C8(DuelAct *a)
+{
+    int p; int z; int n = 0;
+
+    for (p = 0; p < 2; p++) {
+        for (z = 0; z <= 4; z++) {
+            if (duel_zone_free(p, z)) {
+                n++;
+            }
+        }
+    }
+    return n >= 2;
+}
+
+int duel_08871940(DuelAct *a)
+{
+    if (duel_card_check_9148(a->player, 0x1433) || duel_card_check_9148(a->player, 0x1434)) {
+        if (duel.players[a->player & 1].flags >> 17 & 1) {
+            return 0;
+        }
+        return !duel_slot_has_effect(a->player, 11, 0x12F3);
+    }
+    return 0;
+}
+
+#ifdef NON_MATCHING /* branch layout and registers differ */
+/* Some face-up monster of a's player belongs to the opponent. */
+int duel_088719DC(DuelAct *a)
+{
+    unsigned int p = a->player;
+    int z;
+
+    for (z = 0; z <= 4; z++) {
+        if (duel.players[p & 1].field[z].card.id != 0 && duel.players[p & 1].field[z].faceup != 0 && p != duel.players[p & 1].field[z].card.owner) {
+            return 1;
+        }
+    }
+    return 0;
+}
+#endif
+
+int duel_08871A68(DuelAct *a)
+{
+    if (a->kind != 0x23) {
+        if (duel_card_check_9148(a->player, 0x1532) == 0) {
+            return 0;
+        }
+        if (duel_card_check_9148(a->player, 0x1686) == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int duel_08871ADC(DuelAct *a)
+{
+    if (duel_list_counter(a->uid, a->id) < 3) {
+        return 2;
+    }
+    return 1;
+}
+
+#ifdef NON_MATCHING /* branch layout and registers differ */
+int duel_08871B14(DuelAct *a, int b)
+{
+    unsigned int p;
+
+    if (a->b3_4 != 2) {
+        p = a->player;
+        if (duel_tributable(p ^ a->opp, p, a->zone) != 0) {
+            return 1;
+        }
+        return 0;
+    }
+    if (b != 0) {
+        return 0;
+    }
+    if (duel_turn_player != a->player) {
+        return 0;
+    }
+    if (duel.mode & 1) {
+        return 0;
+    }
+    if (duel_slot_has_effect(a->player, 11, a->id) == 0) {
+        return 0;
+    }
+    if (duel_088BFFD8(a->player, a->id, 0) != 0) {
+        return 1;
+    }
+    return 0;
+}
+#endif
+
+int duel_08871BFC(DuelAct *a)
+{
+    return duel_count_tributable_except(a->player, -1) > 1;
+}
