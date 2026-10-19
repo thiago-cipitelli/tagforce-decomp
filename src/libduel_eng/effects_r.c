@@ -1,8 +1,8 @@
-// @range 0x0888146C-0x088830F4
+// @range 0x0888146C-0x08883114
 // @asm 0x088823E0-0x088824E4
 // @asm 0x0888293C-0x08882B04
 // @asm 0x08882B04-0x08882D9C
-// @asm 0x08882D9C-0x088830F4
+// @asm 0x08882D9C-0x08883114
 /* Card effect handlers (DuelAct *a), after effects_p.c. */
 #include "duel.h"
 
