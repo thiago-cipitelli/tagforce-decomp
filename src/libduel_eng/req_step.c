@@ -1,4 +1,5 @@
-// @range 0x088DB520-0x088DEB2C
+// @range 0x088DB240-0x088DEB2C
+// @asm 0x088DB240-0x088DB520
 // @asm 0x088DBB3C-0x088DC1A0
 // @asm 0x088DC4E0-0x088DCA4C
 // @asm 0x088DD038-0x088DD1A4
@@ -110,6 +111,71 @@ int field_get_card(unsigned int p, int z);
 int card_is_in_group_1909(int id);
 int duel_slot_value_1909(unsigned int p, int z);
 int duel_list_find_id(unsigned int p, unsigned int id);
+
+void duel_grave_to_top(unsigned int p, unsigned short uid);
+int duel_zone_card_id(unsigned int p, int z, int i);
+void duel_zone_f_to_top(unsigned int p, unsigned short uid);
+
+#ifdef NON_MATCHING /* the two halves of the location are computed in the other order */
+/* Activation of card loc from zone arg (uid w): bring it to the top of its pile, announce it,
+   point at it. */
+void duel_req_activate(void)
+{
+    int z;
+    unsigned int id;
+    unsigned int w;
+    unsigned int t;
+    int i;
+    unsigned int p;
+
+    p = (duel_req.id & 0x8000) != 0;
+    z = duel_req.arg;
+    id = *(unsigned short *)&duel_req.loc;
+    w = duel_req.w;
+    t = duel_card_locate(w);
+    i = -1;
+    if ((t & 0xFF) == p && (unsigned char)((t & 0xFFFF) >> 8) == z) {
+        i = t >> 16 & 0xFFFF;
+    }
+    switch (duel_req_step) {
+    case 0:
+        if (z == 0xE && i >= 0 && i != duel.players[p & 1].n_grave - 1) {
+            duel_grave_to_top(p, w);
+            duel_host_call(0x16, p, z, w);
+        }
+        if (z == 0xF && i >= 0 && i != duel.players[p & 1].n_f - 1) {
+            duel_zone_f_to_top(p, w);
+            duel_host_call(0x16, p, z, w);
+        }
+        duel_req_step++;
+        break;
+    case 1:
+        if (duel_req_flag(0x16) == 0) {
+            duel_host_call(0x43, p, id, 0);
+            duel_req_step++;
+        }
+        break;
+    case 2:
+        if (duel_req_flag(0x43) == 0) {
+            if (i < 0 || (z < 11 && duel_zone_card_id(p, z, i) == 0)) {
+                duel_host_call(0x20, (unsigned short)((p & 1) | 0x20), id, w);
+            } else {
+                duel_host_call(0x20, (unsigned short)((i & 0xFF) << 6 | ((z & 0x1F) << 1 | (p & 1))), id, w);
+            }
+            duel_req_step++;
+        }
+        break;
+    case 3:
+        if (duel_req_flag(0x20) == 0) {
+            if (duel_phase == 2) {
+                duel.players[duel_turn_player & 1].flags |= 0x100000;
+            }
+            duel_busy_0891523C = 0;
+        }
+        break;
+    }
+}
+#endif
 
 DuelCard *duel_card_by_uid(int uid);
 
@@ -300,7 +366,6 @@ unsigned short duel_uid_next(unsigned int p);
 void duel_zone_f_add(DuelCard *c, unsigned short mark);
 void duel_grave_add(DuelCard *c);
 void duel_c_push(unsigned int p, DuelCard *c);
-unsigned short duel_zone_card_id(unsigned int p, int z, int i);
 int duel_0884CD88(unsigned int p, int z);
 
 #ifdef NON_MATCHING /* draft */
