@@ -1273,6 +1273,10 @@ duel_0887FCA8 = 0x0887FCA8; // type:func matched src/libduel_eng/effects_p.c
 duel_088D15B4 = 0x088D15B4; // type:func inferred
 duel_0887FD20 = 0x0887FD20; // type:func asm (@asm in src/libduel_eng/effects_p.c, C under NON_MATCHING)
 duel_088800E0 = 0x088800E0; // type:func matched src/libduel_eng/effects_p.c
+duel_08880204 = 0x08880204; // type:func asm (@asm in src/libduel_eng/effects_p.c, C under NON_MATCHING)
+duel_08880624 = 0x08880624; // type:func asm (@asm in src/libduel_eng/effects_p.c, C under NON_MATCHING)
+duel_088D1AC8 = 0x088D1AC8; // type:func inferred
+duel_h_0891968E = 0x0891968E; // type:data inferred halfword flag
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
