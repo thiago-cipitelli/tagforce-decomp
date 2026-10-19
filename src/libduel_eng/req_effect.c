@@ -1,5 +1,5 @@
-// @range 0x088D7AB8-0x088D9080
-// @asm 0x088D7AB8-0x088D8A24
+// @range 0x088D7604-0x088D9080
+// @asm 0x088D7604-0x088D8A24
 // @asm 0x088D8AB8-0x088D8B1C
 // @asm 0x088D8C50-0x088D8CF8
 // @asm 0x088D8DD0-0x088D9080
@@ -29,8 +29,6 @@ extern int duel_order_ctr;
 extern unsigned int duel_view_player;
 extern DuelCard duel_card_tmp;
 
-void duel_effects_move_src(unsigned short from, unsigned short to);
-void *memcpy(void *dst, const void *src, unsigned int n);
 extern unsigned int duel_turn_player;
 extern int duel_phase;
 
@@ -47,14 +45,91 @@ int field_get_card(unsigned int p, int z);
 int card_get_group_value_1983(int id);
 int duel_slot_counter_kind(unsigned int p, int z, int id, int kind);
 void duel_0884DB38(int a, int b);
-
-void duel_slot_effects_reset(unsigned int p, unsigned int z);
-
-
+int duel_grave_find_uid(unsigned int p, int uid);
+int duel_f_find_uid(unsigned int p, int uid);
+void duel_grave_to_top(unsigned int p, unsigned short uid);
+void duel_zone_f_to_top(unsigned int p, unsigned short uid);
+unsigned int duel_card_locate(unsigned int uid);
+unsigned short duel_zone_pos(unsigned int p, int z, int i);
+unsigned int duel_zone_faceup(unsigned int p, int z, int i);
+void duel_card_take(unsigned int p, int zone, int i);
+void duel_card_put(unsigned int p, int zone, unsigned int arg, DuelCard *c);
 void duel_bzero(void *p, int n);
 void duel_slot_effects_free_keep(DuelSlot *s);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
+void duel_effects_move_src(unsigned short from, unsigned short to);
+void *memcpy(void *dst, const void *src, unsigned int n);
+void duel_slot_effects_reset(unsigned int p, unsigned int z);
+
+#ifdef NON_MATCHING /* draft */
+/* Move the card at location arg (its uid in the index bits) to location loc + offset; w: low byte
+   and bit 8 go to the new place. */
+void duel_req_move_card(void)
+{
+    DuelLoc src = duel_req.loc;
+    unsigned int uid = duel_req.arg >> 6;
+    unsigned int sp = duel_req.arg & 1;
+    unsigned int sz = (duel_req.arg & 0x3F) >> 1;
+    unsigned int t = duel_card_locate(uid);
+    unsigned int w = duel_req.w;
+    unsigned int off = *(unsigned short *)&duel_req.loc >> 6;
+    unsigned int tz = (*(unsigned short *)&duel_req.loc & 0x3F) >> 1;
+    unsigned int tp = *(unsigned short *)&duel_req.loc & 1;
+    DuelCard *c;
+    unsigned int i;
+    DuelLoc from;
+    DuelLoc to;
+
+    (void)src;
+    switch (duel_req_step) {
+    case 0:
+        if (sz == 0xE && duel.players[sp].n_grave - 1 != duel_grave_find_uid(sp, uid)) {
+            duel_grave_to_top(sp, uid);
+            duel_host_call(0x16, sp, 0xE, uid);
+        }
+        if (sz == 0xF && duel.players[sp].n_f - 1 != duel_f_find_uid(sp, uid)) {
+            duel_zone_f_to_top(sp, uid);
+            duel_host_call(0x16, sp, 0xF, uid);
+        }
+        duel_req_step++;
+        break;
+    case 1:
+        if (duel_req_flag(0x16) != 0) {
+            break;
+        }
+        c = duel_field_card_deb2c(sp, sz, t >> 16);
+        c->b18 = 0;
+        c->b19 = 0;
+        c->b17 = 0;
+        c->b20 = 0;
+        c->b21 = 0;
+        duel_card_copy(&duel_card_tmp, c);
+        i = t >> 16 & 0xFF;
+        from.player = sp;
+        from.zone = sz;
+        from.idx = i;
+        from.b15 = duel_zone_pos(from.player, from.zone, i);
+        from.b14 = duel_zone_faceup(from.player, from.zone, from.idx);
+        to.player = tp;
+        to.zone = tz + off;
+        to.idx = 0;
+        to.b15 = w >> 8;
+        to.b14 = w;
+        duel_card_take(from.player, from.zone, from.idx);
+        duel_card_put(to.player, to.zone, (w & 0xFF) | (w >> 8) << 8, &duel_card_tmp);
+        duel_host_call(0x18, CARD_UID(duel_card_tmp), *(unsigned short *)&from, *(unsigned short *)&to);
+        if (tp == duel_view_player && (w & 0xFF) == 0 && tz > 4 && tz < 11) {
+            duel_0884DB38(0x1D, 1);
+        }
+        duel_req_step++;
+        break;
+    case 2:
+        duel_busy_0891523C = 0;
+        break;
+    }
+}
+#endif
 
 #ifdef NON_MATCHING /* draft */
 /* Move the card of zone arg to zone loc (player | zone << 8); into a spell/trap zone it loses its
