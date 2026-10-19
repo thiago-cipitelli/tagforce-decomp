@@ -1139,6 +1139,13 @@ duel_088796E0 = 0x088796E0; // type:func matched src/libduel_eng/act_cond2.c
 duel_08879744 = 0x08879744; // type:func matched src/libduel_eng/act_cond2.c
 duel_08879780 = 0x08879780; // type:func matched src/libduel_eng/act_cond2.c
 duel_088797B8 = 0x088797B8; // type:func matched src/libduel_eng/act_cond2.c
+duel_0887981C = 0x0887981C; // type:func matched src/libduel_eng/act_cond2.c
+duel_08879854 = 0x08879854; // type:func matched src/libduel_eng/act_cond2.c
+duel_08879964 = 0x08879964; // type:func matched src/libduel_eng/act_cond2.c
+duel_088799B0 = 0x088799B0; // type:func matched src/libduel_eng/act_cond2.c
+duel_08879ADC = 0x08879ADC; // type:func matched src/libduel_eng/act_cond2.c
+duel_08879B48 = 0x08879B48; // type:func matched src/libduel_eng/act_cond2.c
+duel_08879C60 = 0x08879C60; // type:func matched src/libduel_eng/act_cond2.c
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
