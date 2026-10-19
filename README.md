@@ -1,5 +1,9 @@
 # Yu-Gi-Oh! GX Tag Force (PSP, ULUS-10136) decompilation
 
+[![Code](https://bytematch.dev/thiago-cipitelli/tagforce-decomp.svg?label=Code&measure=matched_code_percent)](https://bytematch.dev/thiago-cipitelli/tagforce-decomp)
+[![Fuzzy](https://bytematch.dev/thiago-cipitelli/tagforce-decomp.svg?label=Fuzzy&measure=fuzzy_match_percent)](https://bytematch.dev/thiago-cipitelli/tagforce-decomp)
+[![Functions](https://bytematch.dev/thiago-cipitelli/tagforce-decomp.svg?label=Functions&measure=matched_functions)](https://bytematch.dev/thiago-cipitelli/tagforce-decomp)
+
 Goal: reconstruct the game's C source and build a native PC port.
 Modelled on [ygo-tf-5-decomp](https://github.com/angelof-exe/ygo-tf-5-decomp).
 
