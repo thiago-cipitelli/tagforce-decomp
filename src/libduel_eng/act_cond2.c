@@ -1,8 +1,11 @@
-// @range 0x0886F23C-0x08871008
+// @range 0x0886F23C-0x08871424
 // @asm 0x0886F23C-0x0886F390
 // @asm 0x0886F3B4-0x0886F65C
 // @asm 0x0886F974-0x0886FA90
 // @asm 0x0886FAC0-0x0886FD74
+// @asm 0x08871008-0x08871168
+// @asm 0x088711BC-0x0887132C
+// @asm 0x0887138C-0x08871424
 // @asm 0x08870C54-0x08870EF8
 // @asm 0x08870F90-0x08871008
 // @asm 0x08870848-0x088708E4
@@ -60,6 +63,8 @@ unsigned int duel_field_type(unsigned int p, int z);
 int duel_card_dfac8(unsigned int p, int id, int field);
 int duel_hand_can_discard(unsigned int p, int n, int uid, int monster, int type16);
 int duel_is_cur_card(int id, int b);
+int duel_find_effect_card(unsigned int p, int id, int z);
+int duel_0886F89C(DuelAct *b, unsigned int p, int z);
 
 typedef struct DuelListCard {
     unsigned short id : 13;
@@ -869,5 +874,115 @@ int duel_08870F90(DuelAct *a, int b)
         r = duel_0886CE38(a, b);
     }
     return r;
+}
+#endif
+
+#ifdef NON_MATCHING /* branch layout and registers differ */
+int duel_08871008(DuelAct *a, DuelAct *b)
+{
+    unsigned int p;
+
+    if (b != 0 && b->id == a->id) {
+        return 0;
+    }
+    if ((unsigned int)(a->kind - 0x12) >= 2) {
+        return 0;
+    }
+    p = a->player;
+    if (duel_special.player[0] == 1 - p && duel_special.player[1] == p && duel_special.zone[1] < 5 &&
+        duel.players[duel_special.player[1] & 1].field[duel_special.zone[1]].card.id != 0) {
+        return 1;
+    }
+    return 0;
+}
+#endif
+
+#ifdef NON_MATCHING /* branch layout and registers differ */
+int duel_088710D8(DuelAct *a)
+{
+    unsigned int p = a->player;
+    int r;
+
+    if (duel.players[(p ^ a->opp) & 1].n_d == 0) {
+        r = 0;
+    } else if (duel_phase == 0) {
+        r = 1;
+    } else if (duel_find_effect_card(1 - p, 0x178B, -1) == 0) {
+        r = 1;
+    } else {
+        r = 0;
+    }
+    return r;
+}
+#endif
+
+int duel_08871168(DuelAct *a)
+{
+    if (duel_phase != 2) {
+        return 0;
+    }
+    return !(duel.players[a->player & 1].flags >> 20 & 1);
+}
+
+#ifdef NON_MATCHING /* branch layout and registers differ */
+int duel_088711BC(DuelAct *a, DuelAct *b)
+{
+    int z;
+    unsigned int p;
+
+    if (b != 0 && duel_act_target_is_monster(b)) {
+        if (a->player != (b->player ^ b->opp) && card_is_monster(b->id) == 0 &&
+            a->player == (unsigned char)duel_act_target(b, 0) && (duel_act_target(b, 0) & 0xFFFF) >> 8 < 5) {
+            for (z = 0; z <= 4; z++) {
+                if (duel_act_can_target(a, a->player, z) && duel_0886F89C(b, a->player, z)) {
+                    return 2;
+                }
+            }
+        }
+    }
+    if (a->kind != 0x12) {
+        return 0;
+    }
+    if (duel_special.unk8 == 0) {
+        p = a->player;
+        if (duel_special.player[0] != p && duel_special.player[1] == p) {
+            return 1;
+        }
+    }
+    return 0;
+}
+#endif
+
+int duel_0887132C(DuelAct *a)
+{
+    if (a->kind == 0x23) {
+        return 0;
+    }
+    if (duel_count_active(0x13F2) >= 1) {
+        return 0;
+    }
+    return duel_phase_ok2(a->player) != 0;
+}
+
+#ifdef NON_MATCHING /* branch layout and registers differ */
+int duel_0887138C(DuelAct *a)
+{
+    unsigned int t;
+    unsigned int tp;
+    unsigned int ti;
+
+    if (a->b3_4 != 2) {
+        return 0;
+    }
+    t = duel_card_locate((unsigned int)a->idx >> 1);
+    tp = t & 0xFF;
+    ti = t >> 16 & 0xFFFF;
+    if ((unsigned char)((t & 0xFFFF) >> 8) != 0xF) {
+        return 0;
+    }
+    if (*(unsigned char *)&duel.players[tp & 1].marks[ti] == 0x40) {
+        return 1;
+    }
+    return 0;
 }
 #endif
