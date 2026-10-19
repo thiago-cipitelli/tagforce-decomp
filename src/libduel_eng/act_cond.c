@@ -1,9 +1,10 @@
-// @range 0x0886CB44-0x0886E3F0
+// @range 0x0886CB44-0x0886E784
 // @asm 0x0886CD24-0x0886CD90
 // @asm 0x0886D050-0x0886D0C4
 // @asm 0x0886D828-0x0886DBC4
 // @asm 0x0886DE70-0x0886E074
 // @asm 0x0886E250-0x0886E2B8
+// @asm 0x0886E590-0x0886E784
 /* Activation conditions of cards (DuelAct *a): enough cards to pay or tribute, free zones, phase and
    turn, cards in the piles. */
 #include "duel.h"
@@ -51,6 +52,10 @@ int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 int card_is_attribute6(int id);
 int card_attribute_icon_in_2_3(int id);
 int duel_has_st_12be(unsigned int p);
+int duel_0884E948(DuelAct *a, unsigned int p);
+int duel_count_active(int id);
+int duel_088DFE24(int p, unsigned int q);
+int duel_08827D98(unsigned int p, int uid);
 
 extern unsigned int duel_chain2_n;     /* 0x08914920 */
 extern unsigned char duel_chain2_kind[]; /* 0x08914928 */
@@ -142,7 +147,7 @@ int duel_0886CE38(DuelAct *a, int b)
     return duel_phase_ok2(p) != 0;
 }
 
-int duel_0886CE90(DuelAct *a)
+int duel_0886CE90(DuelAct *a, int b)
 {
     unsigned int p = a->player ^ a->opp;
 
@@ -680,3 +685,101 @@ int duel_0886E35C(DuelAct *a)
     }
     return duel_0886CD1C(a, a->player) != 0;
 }
+
+int duel_0886E3F0(DuelAct *a)
+{
+    switch (a->kind) {
+    case 7:
+    case 6:
+        return 1;
+    }
+    return 0;
+}
+
+int duel_0886E428(DuelAct *a)
+{
+    if (duel_0884E948(a, a->player) < 2) {
+        return 0;
+    }
+    if (duel_0884E948(a, 1 - a->player) < 1) {
+        return 0;
+    }
+    return 2;
+}
+
+int duel_0886E48C(DuelAct *a, int b)
+{
+    if (duel_count_active(0x12FB) >= 1) {
+        return 0;
+    }
+    return duel_0886CE90(a, b);
+}
+
+int duel_0886E4D8(DuelAct *a)
+{
+    unsigned int need;
+
+    switch (a->id) {
+    case 0x12CC:
+        need = 3;
+        break;
+    case 0x12EC:
+        need = 2;
+        break;
+    default:
+        need = 1;
+        break;
+    }
+    return !(duel.players[(a->player ^ a->opp) & 1].n_d < need);
+}
+
+int duel_0886E53C(DuelAct *a)
+{
+    if (duel_088DFE24(a->player, 1 - a->player) != 0) {
+        return duel_088BFFD8(a->player, a->id, 0) > 0;
+    }
+    return 0;
+}
+
+#ifdef NON_MATCHING /* the phase tests and the hand loop are laid out differently */
+/* Paying 500 LP to activate is allowed when another card in the hand could be used now and the chain
+   does not already hold all of them. */
+int duel_0886E590(DuelAct *a)
+{
+    unsigned int p = a->player;
+    int ok;
+    int n;
+    unsigned int i;
+    int k;
+
+    if (duel_turn_player == p) {
+        ok = 1;
+        if (duel_phase != 2 && duel_phase != 4) {
+            ok = 0;
+        }
+    } else {
+        ok = duel_phase == 3;
+    }
+    if (ok && duel.players[p].lp > 500) {
+        n = 0;
+        for (i = 0; i < duel.players[p].n_hand; i++) {
+            if (duel_08827D98(p, CARD_UID(duel.players[p].hand[i]))) {
+                n++;
+            }
+            p = a->player;
+        }
+        if (n != 0) {
+            for (k = duel_chain.len - 1; k >= 0; k--) {
+                if (a->uid != duel_chain.acts[k].uid) {
+                    break;
+                }
+                n--;
+            }
+            if (n != 0) {
+                return 2;
+            }
+        }
+    }
+    return a->b3_4 != 3;
+}
+#endif
