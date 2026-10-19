@@ -1,4 +1,4 @@
-// @range 0x0886F23C-0x08871C28
+// @range 0x0886F23C-0x08872384
 // @asm 0x0886F23C-0x0886F390
 // @asm 0x0886F3B4-0x0886F65C
 // @asm 0x0886F974-0x0886FA90
@@ -11,6 +11,7 @@
 // @asm 0x08870848-0x088708E4
 // @asm 0x08870968-0x08870A38
 // @asm 0x08870A94-0x08870B4C
+// @asm 0x08871F70-0x08871FFC
 // @asm 0x08871B14-0x08871BFC
 // @asm 0x088719DC-0x08871A68
 // @asm 0x08871674-0x088717B4
@@ -78,6 +79,13 @@ int duel_has_st_12be(unsigned int p);
 int duel_card_check_9148(unsigned int p, int id);
 int duel_0884E948(DuelAct *a, unsigned int p);
 int duel_zone_free(unsigned int p, int z);
+int duel_pick_st_zone(unsigned int p);
+int duel_slot_efb84(unsigned int p, int z);
+int duel_08875530(void);
+int duel_locks_ok(int p, int monster);
+int duel_0886CD90(DuelAct *a, int b);
+int duel_card_fits_zone(unsigned int p, int z, int id);
+int duel_field_level(unsigned int p, int z);
 int duel_list_counter(int uid, int id);
 
 typedef struct DuelListCard {
@@ -1206,4 +1214,183 @@ int duel_08871B14(DuelAct *a, int b)
 int duel_08871BFC(DuelAct *a)
 {
     return duel_count_tributable_except(a->player, -1) > 1;
+}
+
+int duel_08871C28(DuelAct *a)
+{
+    return (unsigned int)duel.players[a->player & 1].n_d > 2;
+}
+
+int duel_08871C5C(DuelAct *a)
+{
+    return duel_0886CD24(a, a->player) >= 2;
+}
+
+int duel_08871C84(DuelAct *a)
+{
+    return !(duel.players[a->player & 1].field[a->zone].pos != 0);
+}
+
+int duel_08871CD0(DuelAct *a)
+{
+    return duel.players[a->player & 1].field[a->zone].pos != 0;
+}
+
+int duel_08871D18(DuelAct *a)
+{
+    if (a->kind == 0x23) {
+        return 1;
+    }
+    return duel.players[1 - a->player & 1].lp > 3000;
+}
+
+int duel_08871D74(DuelAct *a)
+{
+    if (duel.players[1 - a->player & 1].n_hand != 0 && duel_0886CD24(a, a->player) > 0) {
+        return 1;
+    }
+    return 0;
+}
+
+int duel_08871DDC(DuelAct *a)
+{
+    if (a->b3_4 != 2) {
+        return 0;
+    }
+    if (duel_pick_st_zone(a->player) < 0) {
+        return 0;
+    }
+    return (int)duel_grave_find_uid(a->player, a->uid) >= 0;
+}
+
+int duel_08871E50(DuelAct *a)
+{
+    return duel_pick_st_zone(a->player) >= 0;
+}
+
+int duel_08871E78(DuelAct *a)
+{
+    if (duel_phase_ok2(a->player) == 0) {
+        return 0;
+    }
+    return duel_slot_efb84(a->player, a->zone) != 0;
+}
+
+int duel_08871EC8(DuelAct *a)
+{
+    if (duel_phase != 2 && duel_phase != 4) {
+        return 0;
+    }
+    return duel_08875530();
+}
+
+int duel_08871F0C(DuelAct *a)
+{
+    if (a->kind != 0x23 && duel_phase != 2) {
+        return 0;
+    }
+    return duel_count_monsters_pos(1 - a->player, 1, 0) > 0;
+}
+
+#ifdef NON_MATCHING /* a beq with an empty delay slot where mwcc emits beql */
+int duel_08871F70(DuelAct *a, int b)
+{
+    int r;
+
+    if (a->kind == 0x14) {
+        if (duel_special.player[0] != duel_special.player[1] && duel.players[a->player & 1].field[a->zone].pos != 0) {
+            r = 1;
+        } else {
+            r = 0;
+        }
+    } else {
+        r = 0;
+    }
+    return r;
+}
+#endif
+
+int duel_08871FFC(DuelAct *a)
+{
+    unsigned int p = a->player;
+
+    if (duel.players[p & 1].n_hand == 0) {
+        return 0;
+    }
+    return duel_locks_ok(p, 1) != 0;
+}
+
+int duel_08872054(DuelAct *a)
+{
+    if (duel_phase_ok2(a->player) == 0) {
+        return 0;
+    }
+    return duel_088BFFD8(a->player, a->id, 0) != 0;
+}
+
+int duel_088720A4(DuelAct *a, int b)
+{
+    if (duel_088DFE24(a->player, a->player) == 0) {
+        return 0;
+    }
+    if (duel_0886CD90(a, b) == 0) {
+        return 0;
+    }
+    if (duel_slot_has_effect(a->player, 11, 0x14A0)) {
+        return duel_count_monsters(a->player) > 1;
+    }
+    return duel_088BFFD8(a->player, a->id, 0) > 0;
+}
+
+int duel_0887214C(DuelAct *a)
+{
+    return duel_088BFFD8(a->player, a->id, 0) > 1;
+}
+
+/* Some spell/trap on the field could go to a zone of either player. */
+int duel_0887217C(void)
+{
+    int p;
+    int z;
+
+    for (p = 0; p < 2; p++) {
+        for (z = 5; z < 10; z++) {
+            if (duel_card_fits_zone(p, z, duel.players[p & 1].field[z].card.id)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int duel_0887221C(DuelAct *a)
+{
+    int n;
+    int p;
+    int z;
+
+    if (duel_088DFE24(a->player, a->player)) {
+        if (duel_slot_has_effect(a->player, 11, 0x14A0)) {
+            n = duel_count_monsters(a->player);
+        } else {
+            n = duel_grave_count_monsters(a->player);
+        }
+        if (n != 0) {
+            for (p = 0; p < 2; p++) {
+                for (z = 0; z < 5; z++) {
+                    int lv = duel_field_level(p, z);
+
+                    if (duel.players[p & 1].field[z].card.id != 0 && duel.players[p & 1].field[z].faceup != 0 && lv != 0 && lv <= n) {
+                        return 2;
+                    }
+                }
+            }
+        }
+    }
+    return a->b3_4 == 3 ? 0 : 3;
+}
+
+int duel_08872360(DuelAct *a)
+{
+    return duel_grave_count_monsters(a->player) > 0;
 }
