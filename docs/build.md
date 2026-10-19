@@ -429,6 +429,13 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Campos do +0x14 do `DuelAct`** (`act_cond2.c`): quando o original guarda `a + 0x14` num `$s` e lê o campo dali (`addiu s0,a0,20; …; lhu v0,0(s0)`), o fonte tinha um ponteiro para esse campo declarado no topo (`unsigned short *src = (unsigned short *)&a->src;`). Uma cadeia em que só o primeiro teste devolve direto e os outros caem em blocos próprios (`if (k == 0x16) … else if (k == 2) …`) sai com `int r;` atribuído em cada ramo e um só `return r;`. Testes de bits soltos do +0x14 usam as visões `y` (bytes 0x15 e 0x16) e `x` (palavra) de duel.h.
 
+## Relatório de progresso (objdiff / ByteMatch)
+
+- `tools/ext/objdiff-cli` (v3.8.2, binário da release `encounter/objdiff`, gitignored).
+- `.venv/bin/python tools/objdiff_gen.py [MÓDULO...]` gera `objdiff.json` (gitignored) e os objetos em `build/objdiff/<m>/`. O alvo de cada `src/<m>/x.c` vem de um split alternativo do splat (`build/objdiff/<m>.yaml`), em que os segmentos `c`/`.data` da config viram `asm`/`data` com nomes únicos (`x__N`, `x__rodata__N`). São montados com os `x_asm_*` e juntados por `psp-ld -r`. A base é o `.c` compilado com `-DNON_MATCHING`, para que as funções em `@asm` mostrem o score fuzzy. Se o rascunho não compila (hoje só `menu.c`), usa-se o build normal. Os segmentos só em asm (`text_N`, `data_N`) entram como unidades sem base. `sceStub` e `bss` ficam de fora.
+- `python3 tools/bytematch.py` roda `objdiff-cli report generate` e escreve `build/objdiff/functional.json` com as funções que têm C mas não batem (score entre 0 e 100). Empacota `build/objdiff/bytematch.zip` no layout de artefato de CI e imprime o progresso por módulo. Com `BYTEMATCH_TOKEN` e `BYTEMATCH_PROJECT=dono/repo` definidos, envia o zip para `bytematch.dev` (versão `ULUS-10136`, commit `HEAD`). Recusa o envio se `src/` ou `include/` tiver mudanças não commitadas. Sanity check: as unidades C do `libhtml_view` têm de sair 100%.
+- Números de 2026-10-18: total 10,1% do código batendo (14,8% fuzzy), BOOT 44,0% (64,3%), libduel_eng 10,5% (15,7%). São 1810 de 11039 funções batendo e 309 com C que não bate.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).

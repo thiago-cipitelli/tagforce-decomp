@@ -8,3 +8,4 @@ tools/ext/
 .venv/
 asm/
 assets/
+objdiff.json
