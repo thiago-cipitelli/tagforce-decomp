@@ -1,4 +1,4 @@
-// @range 0x0886F23C-0x0887B104
+// @range 0x0886F23C-0x0887B618
 // @asm 0x0886F23C-0x0886F390
 // @asm 0x0886F3B4-0x0886F65C
 // @asm 0x0886F974-0x0886FA90
@@ -36,6 +36,9 @@
 // @asm 0x08879D5C-0x08879E20
 // @asm 0x08879EA8-0x08879F60
 // @asm 0x0887AD38-0x0887AE84
+// @asm 0x0887B360-0x0887B404
+// @asm 0x0887B404-0x0887B4F0
+// @asm 0x0887B4F0-0x0887B5A8
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
 
@@ -183,6 +186,9 @@ int duel_0885E154(DuelAct *a, unsigned int p, int z);
 int duel_count_type_skip(unsigned int p, unsigned int type, int skip);
 int duel_0886C99C(unsigned int p, int n, int uid, int mode);
 int card_get_attribute_icon(int id);
+int duel_08855F54(DuelAct *a, unsigned int p, int z);
+int card_not_in_group_1a6f(int id);
+int duel_08876AA0(DuelAct *a, int b);
 int duel_08876174(DuelAct *a, int b);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 int duel_088750DC(DuelAct *a, int b);
@@ -4986,6 +4992,148 @@ int duel_0887B09C(DuelAct *a)
     }
     if (duel_088BFFD8(a->player, a->id, duel_088AA224(a)) != 0) {
         return 2;
+    }
+    return 0;
+}
+
+int duel_0887B104(DuelAct *a, int b)
+{
+    unsigned int p;
+
+    if (b != 0) {
+        return 0;
+    }
+    p = a->player;
+    if (duel_turn_player != p) {
+        return 0;
+    }
+    if (duel_phase != 2 && duel_phase != 4) {
+        return 0;
+    }
+    if (duel_grave_find_name(p, a->id) < 0) {
+        return 0;
+    }
+    if (duel_088DFE24(a->player, a->player) == 0) {
+        return 0;
+    }
+    return duel_088BFFD8(a->player, a->id, 0) > 1;
+}
+
+int duel_0887B1C4(DuelAct *a, int b)
+{
+    if ((unsigned int)duel.players[(1 - a->player) & 1].n_d < 2) {
+        return 0;
+    }
+    return duel_0886CE90(a, b);
+}
+
+int duel_0887B224(DuelAct *a)
+{
+    return duel_0884E690(a, (int (*)(int))duel_08855F54) > 1;
+}
+
+int duel_0887B24C(DuelAct *a)
+{
+    if (duel_special.player[0] == a->player) {
+        return 0;
+    }
+    return duel_special.player[0] != duel_special.player[1];
+}
+
+int duel_0887B280(DuelAct *a)
+{
+    return duel_slot_effect_with(a->player, 11, a->id, a->uid) != 0;
+}
+
+int duel_0887B2B8(DuelAct *a)
+{
+    if (duel_0886CD1C(a, a->player) < 3) {
+        return 0;
+    }
+    if (duel_phase_ok2(a->player) == 0) {
+        return 0;
+    }
+    if (duel_088BFFD8(a->player, a->id, 0x194F) < 2) {
+        return 0;
+    }
+    return duel_088BFFD8(a->player, a->id, 0x1950) >= 1;
+}
+
+int duel_0887B34C(void)
+{
+    return !duel_special.unk8;
+}
+
+#ifdef NON_MATCHING /* branch layout differs */
+int duel_0887B360(DuelAct *a, int b)
+{
+    if (duel_08876AA0(a, b) == 0) {
+        return 0;
+    }
+    if (a->kind == 0x23) {
+        if (duel_0886CD1C(a, a->player) != 0) {
+            return 2;
+        }
+        return 0;
+    }
+    a->w[2] = 0;
+    if (duel_0884E5E0(a) < 2) {
+        return 0;
+    }
+    a->w[2] = 2;
+    if (duel_0884E5E0(a) != 0) {
+        return 2;
+    }
+    return 0;
+}
+#endif
+
+#ifdef NON_MATCHING /* registers differ */
+int duel_0887B404(DuelAct *a)
+{
+    if (duel_count_tributable_except(a->player, -1) == 0) {
+        return 0;
+    }
+    if (a->kind == 8) {
+        int id = duel.list[a->src.uid].id;
+
+        if (a->src.player != 1 - a->player) {
+            return 0;
+        }
+        if (card_attribute_icon_is3(id) == 0) {
+            return 0;
+        }
+        if (card_not_in_group_1a6f(id) == 0) {
+            return 0;
+        }
+        return a->y.y16_1 != 0;
+    }
+    return 0;
+}
+#endif
+
+#ifdef NON_MATCHING /* branch layout differs */
+int duel_0887B4F0(DuelAct *a)
+{
+    struct DuelActX *x;
+
+    switch (a->kind) {
+    case 0x1B:
+    case 0x16:
+        x = &a->x;
+        if (a->src.player == a->player && a->src.zone < 5 && !a->y.y16_7 && x->s_b17 && a->y.y15_7 &&
+            x->s_zone2 == 0xE) {
+            return 1;
+        }
+    }
+    return 0;
+}
+#endif
+
+int duel_0887B5A8(DuelAct *a, int b)
+{
+    if (duel_0886CD90(a, b) != 0) {
+        return duel.players[a->player & 1].field[a->zone].link != 0;
     }
     return 0;
 }
