@@ -27,6 +27,13 @@ segments:
     subalign: null
     subsegments:
       - [0x60, asm, text_0]
+      - [0x19138, c, ai_cond0]
+      - [0x19138, asm, ai_cond0_asm_0881D0D8]
+      - [0x191DC, c, ai_cond0]
+      - [0x191DC, asm, ai_cond0_asm_0881D17C]
+      - [0x19378, c, ai_cond0]
+      - [0x19F00, asm, ai_cond0_asm_0881DEA0]
+      - [0x19FF4, c, ai_cond0]
       - [0x1A100, c, ai_cond]
       - [0x1A2DC, asm, ai_cond_asm_0881E27C]
       - [0x1A3A8, c, ai_cond]

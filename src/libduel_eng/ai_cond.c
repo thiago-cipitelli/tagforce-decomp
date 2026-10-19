@@ -34,7 +34,7 @@ int duel_0884E5E0(DuelAct *a);
 int duel_0884E948(DuelAct *a, unsigned int p);
 int duel_0881A038(DuelAct *a, int b);
 int duel_08819FEC(DuelAct *a, int b);
-int duel_0881D6EC(DuelAct *a, int b);
+int duel_ai_0881D6EC(DuelAct *a, int b);
 int duel_088159C8(unsigned int p, unsigned int mask, int (*fn)());
 int duel_088171C8();
 int duel_0880AEF4(unsigned int p, int id);
@@ -139,7 +139,7 @@ int duel_ai_0881E27C(DuelAct *a)
 
 int duel_ai_0881E348(DuelAct *a, int b)
 {
-    return duel_08819FEC(a, b) != 0 && duel_0881D6EC(a, b) != 0;
+    return duel_08819FEC(a, b) != 0 && duel_ai_0881D6EC(a, b) != 0;
 }
 
 int duel_ai_0881E394(DuelAct *a, int b)
