@@ -1,4 +1,4 @@
-// @range 0x088DCF34-0x088DEB2C
+// @range 0x088DCA4C-0x088DEB2C
 // @asm 0x088DD038-0x088DD1A4
 // @asm 0x088DD660-0x088DD708
 // @asm 0x088DD88C-0x088DD98C
@@ -70,6 +70,10 @@ void duel_player_flag_set(unsigned int p, unsigned int bit, int on);
 extern int duel_w_08919624;
 extern unsigned short duel_str_08913528[];
 extern unsigned int duel_089195C8;
+extern unsigned int duel_turn;         /* 0x089195D4 = duel.turn */
+extern int duel_phase;                 /* 0x089195DC = duel.phase */
+extern int duel_w_089195FC;
+extern int duel_w_08919600;
 
 void duel_0884CD24(void);
 void duel_0884DA24(int a, int b);
@@ -79,6 +83,148 @@ extern int duel_ids_08911D2C[5];
 void duel_effects_end_turn(void);
 void duel_effects_tick(void);
 void duel_0884DAF0(int a, int b);
+
+void duel_d_shuffle(unsigned int p);
+void duel_d_reverse(unsigned int p);
+unsigned int duel_card_locate(unsigned int uid);
+int duel_d_remove(unsigned int p, DuelCard *c);
+void duel_d_push_top(unsigned int p, DuelCard *c);
+void duel_d_push(unsigned int p, DuelCard *c);
+void duel_mode_set(unsigned int bit, int on);
+
+void duel_req_d_shuffle(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = (duel_req.arg & 0xFFFF) | *(unsigned short *)&duel_req.loc << 16;
+
+    switch (duel_req_step) {
+    case 0:
+        if ((unsigned int)duel.players[p & 1].n_d <= 1) {
+            duel_busy_0891523C = 0;
+        } else {
+            duel_host_call(0x13, p, 0, 0);
+            duel_req_step++;
+        }
+        break;
+    case 1:
+        if (duel_req_flag(0x13) == 0) {
+            duel_089195C8 = arg;
+            duel_d_shuffle(p);
+            duel_host_call(0x14, p, 0xD, 0);
+            duel_busy_0891523C = 0;
+        }
+        break;
+    }
+}
+
+void duel_req_d_reverse(void)
+{
+    unsigned int arg = duel_req.arg;
+
+    switch (duel_req_step) {
+    case 0:
+        duel_mode_set(2, arg);
+        duel_d_reverse(0);
+        duel_d_reverse(1);
+        duel_host_call(0x14, 0, 0xD, 0);
+        duel_host_call(0x14, 1, 0xD, 0);
+        duel_busy_0891523C = 0;
+        break;
+    }
+}
+
+/* Put the card with uid back on top (w 0) or at the bottom of player p's deck. */
+void duel_req_d_return(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int zone = duel_req.arg;
+    unsigned int w = duel_req.w;
+    unsigned int t = duel_card_locate(*(unsigned short *)&duel_req.loc);
+    unsigned int z = (unsigned char)((t & 0xFFFF) >> 8);
+
+    if (z == zone) {
+        DuelCard c = *duel_field_card_deb2c(t & 0xFF, z, (unsigned short)(t >> 16));
+
+        duel_d_remove(p, &c);
+        if (w != 0) {
+            duel_d_push(p, &c);
+        } else {
+            duel_d_push_top(p, &c);
+        }
+        duel_host_call(0x14, p, 0xD, 0);
+    }
+    duel_busy_0891523C = 0;
+}
+
+void duel_req_host_15(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = duel_req.arg;
+
+    switch (duel_req_step) {
+    case 0:
+        duel_host_call(0x15, p, arg, 0);
+        duel_req_step++;
+        break;
+    case 1:
+        if (duel_req_flag(0x15) == 0) {
+            duel_busy_0891523C = 0;
+        }
+        break;
+    }
+}
+
+void duel_req_host_1(void)
+{
+    if (duel_req_step == 0) {
+        duel_host_call(1, 0, 0, 0);
+        duel_req_step++;
+    } else if (duel_req_flag(1) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+/* Coin or dice result arg (seen from the viewer when the request is the opponent's). */
+void duel_req_host_2(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int r = duel_req.arg;
+
+    if (duel_req_step == 0) {
+        if (p == (duel_view_player ^ 1)) {
+            switch (r) {
+            case 1:
+                r = 2;
+                break;
+            case 2:
+                r = 1;
+                break;
+            }
+            duel.unk3788 = r;
+            duel.players[0].unk20[3] = *(unsigned short *)&duel_req.loc;
+            duel.players[1].unk20[3] = duel_req.w;
+        }
+        duel_host_call(2, r, 0, 0);
+        duel_req_step++;
+    } else if (duel_req_flag(2) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+/* Next turn. */
+void duel_req_next_turn(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+
+    duel_turn_player ^= 1;
+    duel_turn++;
+    duel_w_089195FC = 0;
+    duel_w_08919600 = 0;
+    duel_phase = 7;
+    duel_0884DA24(0x38, duel.players[duel_view_player & 1].lp < duel.players[(duel_view_player ^ 1) & 1].lp);
+    duel_host_call(5, 1 - p, 0, 0);
+    duel_busy_0891523C = 0;
+}
 
 /* Enter phase ph. */
 void duel_req_phase(int ph)
