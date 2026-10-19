@@ -1,5 +1,5 @@
-// @range 0x088D86B8-0x088D9080
-// @asm 0x088D86B8-0x088D8A24
+// @range 0x088D8354-0x088D9080
+// @asm 0x088D8354-0x088D8A24
 // @asm 0x088D8AB8-0x088D8B1C
 // @asm 0x088D8C50-0x088D8CF8
 // @asm 0x088D8DD0-0x088D9080
@@ -27,6 +27,8 @@ extern unsigned int duel_req_step;
 extern int duel_busy_0891523C;
 extern int duel_order_ctr;
 extern unsigned int duel_view_player;
+extern unsigned int duel_turn_player;
+extern int duel_phase;
 
 int duel_req_flag(int i);
 int duel_host_call(int a, int b, int c, int d);
@@ -43,6 +45,72 @@ int duel_slot_counter_kind(unsigned int p, int z, int id, int kind);
 void duel_0884DB38(int a, int b);
 
 void duel_slot_effects_reset(unsigned int p, unsigned int z);
+
+#ifdef NON_MATCHING /* draft */
+/* Change the position of the monster in zone arg (w: by an effect; loc: also flip it). */
+void duel_req_change_pos(void)
+{
+    short by_effect = duel_req.w;
+    unsigned int flip = *(unsigned short *)&duel_req.loc;
+    unsigned int z = duel_req.arg;
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    DuelSlot *s = &duel.players[p & 1].field[z];
+    unsigned int q;
+    int k;
+
+    if (s->card.id == 0) {
+        duel_busy_0891523C = 0;
+        return;
+    }
+    switch (duel_req_step) {
+    case 0:
+        if (duel_req.w != 0 && *(unsigned short *)&duel_req.loc == 0) {
+            duel_host_call(0x46, p, 1 - s->pos, 0);
+        }
+        duel_req_step++;
+        break;
+    case 1:
+        if (duel_req_flag(0x46) != 0) {
+            break;
+        }
+        if (by_effect != 0 && flip != 0) {
+            duel_088DF554(p, z, 1, 1);
+        }
+        duel_host_call(0x1A, (1 - s->pos & 1) << 15 | ((flip ^ s->faceup) & 1) << 14 | p | (z & 0x1F) << 1,
+                       by_effect == 0 && flip != 0, 0);
+        duel_req_step++;
+        break;
+    case 2:
+        if (duel_req_flag(0x1A) != 0) {
+            break;
+        }
+        s->pos = !(s->pos != 0);
+        s->faceup = flip ^ s->faceup;
+        if (s->faceup == 0 && flip != 0) {
+            duel_slot_effects_reset(p, z);
+            if (p == duel_view_player) {
+                duel_0884DB38(0x1C, 1);
+            }
+        }
+        if (s->pos != 0 && field_get_card(p, z) == 0x1743) {
+            for (q = 0; (int)q < 2; q++) {
+                for (k = 0; k < 5; k++) {
+                    duel_effects_free_src(duel.players[q & 1].field[k].effects, p | (z & 0xFF) << 8, 1);
+                }
+            }
+        }
+        if (duel_phase == 2) {
+            duel.players[duel_turn_player & 1].flags |= 0x100000;
+        }
+        if (flip != 0) {
+            duel_088DF554(p, z, 0x13, s->faceup);
+            s->flags |= 0x80;
+        }
+        duel_busy_0891523C = 0;
+        break;
+    }
+}
+#endif
 
 #ifdef NON_MATCHING /* draft: the original keeps the zone address parts in s registers */
 /* Turn the card in zone arg face up or down (w: 1 reveal first, 2 set, 4 announce, 8 only show). */
