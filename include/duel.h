@@ -160,6 +160,10 @@ typedef struct DuelChain {             /* 0x08914350 */
     DuelAct acts[16];                  /* +0x300 */
     int unk480;
     int len;                           /* +0x484 */
+    unsigned char pad488[0x5D0 - 0x488];
+    unsigned int n_kinds;              /* +0x5D0 */
+    int unk5d4;
+    unsigned char kinds[16];           /* +0x5D8 kind of each pending entry [?] */
 } DuelChain;
 
 typedef struct DuelSpecAct {           /* 0x38 */
