@@ -167,7 +167,12 @@ typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
     int unk378c;
     int unk3790;
     int msg_done;                      /* +0x3794 */
-    unsigned char pad3798[0x3830 - 0x3798];
+    int unk3798;                       /* +0x3798 */
+    int unk379c;
+    int unk37a0;                       /* +0x37A0 */
+    unsigned char pad37a4[0x37D4 - 0x37A4];
+    int unk37d4;                       /* +0x37D4 */
+    unsigned char pad37d8[0x3830 - 0x37D8];
     unsigned short unk3830;
     unsigned short unk3832;
     unsigned char pad3834[0x3840 - 0x3834];

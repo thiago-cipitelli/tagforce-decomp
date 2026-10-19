@@ -67,7 +67,7 @@ int duel_eff_faefc(DuelAct *a)
 }
 #endif
 
-int duel_df180(unsigned int p, int z, int a);
+int duel_zone_faceup(unsigned int p, int z, int a);
 void duel_088C7880(unsigned int p);
 void duel_088CB980(unsigned int p);
 void duel_088C625C(unsigned int p, int a, int b);
@@ -88,7 +88,7 @@ int duel_eff_fb168(DuelAct *a)
         int id = duel.players[p & 1].zone_d[0].id;
         int uid = CARD_UID(duel.players[p & 1].zone_d[0]);
 
-        if (duel_df180(p, 0xD, 0) == 0) {
+        if (duel_zone_faceup(p, 0xD, 0) == 0) {
             duel_088C7880(a->player);
         }
         duel_088CB980(a->player);
