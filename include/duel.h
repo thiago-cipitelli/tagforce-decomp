@@ -133,7 +133,7 @@ typedef struct DuelAct {               /* 0x18: card being activated or resolved
             unsigned int s_zone2 : 4;      /* bits 19-22 */
             unsigned int s_b23 : 9;
         } x;
-        struct {                       /* +0x14 by bytes */
+        struct DuelActY {              /* +0x14 by bytes */
             unsigned char y14;
             unsigned char y15_0 : 1;
             unsigned char y15_1 : 1;
