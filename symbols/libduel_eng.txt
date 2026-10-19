@@ -1017,6 +1017,14 @@ duel_08875480 = 0x08875480; // type:func matched src/libduel_eng/act_cond2.c
 duel_088754C8 = 0x088754C8; // type:func matched src/libduel_eng/act_cond2.c
 duel_08875530 = 0x08875530; // type:func matched src/libduel_eng/act_cond2.c
 duel_08875578 = 0x08875578; // type:func matched src/libduel_eng/act_cond2.c
+duel_088755C0 = 0x088755C0; // type:func matched src/libduel_eng/act_cond2.c
+duel_08875668 = 0x08875668; // type:func matched src/libduel_eng/act_cond2.c
+duel_088756BC = 0x088756BC; // type:func matched src/libduel_eng/act_cond2.c
+duel_088757B0 = 0x088757B0; // type:func matched src/libduel_eng/act_cond2.c
+duel_08875824 = 0x08875824; // type:func matched src/libduel_eng/act_cond2.c
+duel_088758A4 = 0x088758A4; // type:func matched src/libduel_eng/act_cond2.c
+duel_088758FC = 0x088758FC; // type:func matched src/libduel_eng/act_cond2.c
+duel_088759E4 = 0x088759E4; // type:func matched src/libduel_eng/act_cond2.c
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
