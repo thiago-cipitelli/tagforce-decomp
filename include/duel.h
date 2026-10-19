@@ -145,7 +145,7 @@ typedef struct DuelSpecial {           /* 0x08913F10, 0x130: two cards held outs
     int player[2];
     int pad8[5];
     int zone[2];                       /* +0x1C */
-    int pad24;
+    int unk24;                         /* +0x24 */
     int uid;                           /* +0x28 card uid (owner + uid_hi * 2) */
     DuelSpecAct act[2];                /* +0x2C by player */
     int pad9c[10];

@@ -1,4 +1,5 @@
-// @range 0x088D8A24-0x088D9080
+// @range 0x088D86B8-0x088D9080
+// @asm 0x088D86B8-0x088D8A24
 // @asm 0x088D8AB8-0x088D8B1C
 // @asm 0x088D8C50-0x088D8CF8
 // @asm 0x088D8DD0-0x088D9080
@@ -40,6 +41,86 @@ int field_get_card(unsigned int p, int z);
 int card_get_group_value_1983(int id);
 int duel_slot_counter_kind(unsigned int p, int z, int id, int kind);
 void duel_0884DB38(int a, int b);
+
+void duel_slot_effects_reset(unsigned int p, unsigned int z);
+
+#ifdef NON_MATCHING /* draft: the original keeps the zone address parts in s registers */
+/* Turn the card in zone arg face up or down (w: 1 reveal first, 2 set, 4 announce, 8 only show). */
+void duel_req_flip(void)
+{
+    unsigned int z = duel_req.arg;
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    DuelSlot *s = &duel.players[p & 1].field[z];
+    unsigned int pos = *(unsigned short *)&duel_req.loc;
+    unsigned int w = duel_req.w;
+    unsigned int show = w & 1;
+    unsigned int set = w & 2;
+    unsigned int ann = w & 4;
+    unsigned int only = w & 8;
+    unsigned int id = s->card.id;
+
+    if (id == 0) {
+        duel_busy_0891523C = 0;
+        return;
+    }
+    switch (duel_req_step) {
+    case 0:
+        if (show) {
+            duel_special.unk24 = id;
+            duel_host_call(0x47, p, id, 0);
+        }
+        if (ann) {
+            duel_host_call(0x47, p, id, 1);
+        }
+        duel_req_step++;
+        break;
+    case 1:
+        if (duel_req_flag(0x47) != 0) {
+            break;
+        }
+        if (ann || set) {
+            duel_088DF554(p, z, 1, 1);
+        }
+        if (only == 0) {
+            duel_host_call(0x1A, (s->pos & 1) << 15 | (1 - s->faceup & 1) << 14 | p | (z & 0x1F) << 1, set == 0, 0);
+        } else {
+            duel_host_call(0x1A, (s->pos & 1) << 15 | (pos & 1) << 14 | p | (z & 0x1F) << 1, 1, 0);
+        }
+        duel_req_step++;
+        break;
+    case 2:
+        if (duel_req_flag(0x1A) != 0) {
+            break;
+        }
+        if (only == 0) {
+            s->faceup = !(s->faceup != 0);
+            if (s->faceup == 0) {
+                duel_slot_effects_reset(p, z);
+                if (p == duel_view_player && z < 5) {
+                    duel_0884DB38(0x1C, 1);
+                }
+            } else {
+                duel_order_ctr++;
+                s->unk4 = duel_order_ctr;
+            }
+            if (z < 5) {
+                duel_088DF554(p, z, 0x13, s->faceup);
+            }
+        }
+        if (ann) {
+            duel_host_call(0x43, p, id, 1);
+        }
+        s->flags |= 0x80;
+        duel_req_step++;
+        break;
+    case 3:
+        if (duel_req_flag(0x43) == 0) {
+            duel_busy_0891523C = 0;
+        }
+        break;
+    }
+}
+#endif
 
 /* Add an effect entry (loc bit 15: to the list card arg instead of the zone). */
 void duel_req_effect_add(void)
