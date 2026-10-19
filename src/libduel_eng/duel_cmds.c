@@ -1,4 +1,4 @@
-// @range 0x088C77D4-0x088C7E68
+// @range 0x088C77D4-0x088C7F18
 // @asm 0x088C7954-0x088C7B90
 /* Commands to the presentation (duel_cmd: command | 0x8000 for player 1, two halfwords) and the
    nesting counter of the effect being shown. */
@@ -20,6 +20,7 @@ unsigned int duel_hand_locked(unsigned int p);
 void duel_mode_set(unsigned int bit, int on);
 void duel_player_flag_set(unsigned int p, unsigned int bit, int on);
 void duel_msg_send(unsigned short cmd, int arg, void *data, int len);
+void duel_088DF554(unsigned int p, int z, unsigned int bit, int on);
 
 void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b)
 {
@@ -136,5 +137,13 @@ void duel_088C7DD4(unsigned int p, unsigned int bit, unsigned int on)
     if (on != (duel.players[p & 1].flags >> bit & 1)) {
         duel_player_flag_set(p, bit, on);
         duel_cmd((p ? 0x8000 : 0) | 0x22, bit, on, 0);
+    }
+}
+
+void duel_088C7E68(unsigned int p, unsigned int z, unsigned int bit, unsigned int on)
+{
+    if (on != (duel.players[p & 1].field[z].flags >> bit & 1)) {
+        duel_088DF554(p, z, bit, on);
+        duel_cmd((p ? 0x8000 : 0) | 0x2A, z, bit, on & 0xFFFF);
     }
 }

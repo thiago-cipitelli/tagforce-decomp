@@ -180,7 +180,7 @@ segments:
       - [0xC3834, c, duel_cmds]
       - [0xC39B4, asm, duel_cmds_asm_088C7954]
       - [0xC3BF0, c, duel_cmds]
-      - [0xC3EC8, asm, text_5]
+      - [0xC3F78, asm, text_5]
       - [0xCD42C, c, act_apply]
       - [0xCD724, asm, act_apply_asm_088D16C4]
       - [0xCD8AC, c, act_apply]
