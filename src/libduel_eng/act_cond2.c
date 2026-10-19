@@ -1,4 +1,4 @@
-// @range 0x0886F23C-0x0887D15C
+// @range 0x0886F23C-0x0887D650
 // @asm 0x0886F23C-0x0886F390
 // @asm 0x0886F3B4-0x0886F65C
 // @asm 0x0886F974-0x0886FA90
@@ -47,6 +47,7 @@
 // @asm 0x0887C30C-0x0887C40C
 // @asm 0x0887C93C-0x0887CAE8
 // @asm 0x0887CFB4-0x0887D0EC
+// @asm 0x0887D15C-0x0887D280
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
 
@@ -212,6 +213,10 @@ unsigned int duel_list_effect_arg(int uid, int id);
 int duel_08827DA4(unsigned int p, int uid, int a, int b);
 int duel_08876F80(DuelAct *a, int b);
 int duel_088784D0(DuelAct *a);
+int card_is_in_group_1a6f_b(int id);
+unsigned int duel_slot_immunity(unsigned int p, int z);
+int duel_effect_applies(int id, unsigned int p, unsigned int ref);
+unsigned int duel_slot_link_1a0c(unsigned int p, int z);
 int duel_08876AA0(DuelAct *a, int b);
 int duel_08876174(DuelAct *a, int b);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
@@ -5852,4 +5857,107 @@ int duel_0887D0EC(DuelAct *a, int b)
         return 0;
     }
     return duel_0886CF1C(a, b);
+}
+
+#ifdef NON_MATCHING /* branch layout differs */
+int duel_0887D15C(DuelAct *a)
+{
+    if (a->kind == 0x1B && a->src.player == a->player) {
+        if (a->src.zone > 4) {
+            return 0;
+        }
+        if (a->y.y16_2 != a->player && !a->y.y16_0 && a->y.y15_7 && a->x.s_zone2 == 0xE &&
+            card_is_in_group_1a6x(duel.list[a->src.uid].id) != 0) {
+            if (duel_088BFFD8(a->player, a->id, 0) == 0) {
+                return 0;
+            }
+            if (duel_count_free_monster_zones(a->player) != 0) {
+                return duel_phase_ok2(a->player) != 0;
+            }
+            return 0;
+        }
+    }
+    return 0;
+}
+#endif
+
+int duel_0887D280(DuelAct *a)
+{
+    unsigned int p;
+
+    if (duel_088E9150(0x1A77) == 0) {
+        return 0;
+    }
+    p = a->player;
+    if (duel_tributable(p, p, a->zone) == 0) {
+        return 0;
+    }
+    if (duel_phase_ok2(a->player) == 0) {
+        return 0;
+    }
+    if (duel.players[a->player & 1].n_d == 0 && duel_088BFFD8(a->player, a->id, duel_088AA224(a)) == 0) {
+        return 0;
+    }
+    return 1;
+}
+
+int duel_0887D350(DuelAct *a)
+{
+    return (unsigned short)duel_slot_e1854(a->player, a->zone) == 0xFFFF;
+}
+
+int duel_0887D384(DuelAct *a, int b)
+{
+    if (duel_0886CD90(a, b) == 0) {
+        return 0;
+    }
+    if (duel_0886CDC4(a, b) == 0) {
+        return 0;
+    }
+    return duel.players[(1 - a->player) & 1].n_hand != 0;
+}
+
+int duel_0887D40C(DuelAct *a)
+{
+    unsigned int imm = duel_slot_immunity(a->player, a->zone);
+
+    if (card_is_in_group_1a6f_b(duel.list[a->uid].id) != 0 && duel_effect_applies(0x1A77, a->player, imm) != 0) {
+        return !a->idx;
+    }
+    return a->idx;
+}
+
+int duel_0887D4AC(DuelAct *a, int b)
+{
+    if (duel_phase_ok2(a->player) == 0) {
+        return 0;
+    }
+    if (duel.players[a->player & 1].n_d == 0 && duel_088BFFD8(a->player, a->id, duel_088AA224(a)) == 0) {
+        return 0;
+    }
+    return 1;
+}
+
+int duel_0887D544(DuelAct *a, int b)
+{
+    unsigned int p = a->player;
+
+    if (duel_tributable(p, p, a->zone) == 0) {
+        return 0;
+    }
+    if (duel_slot_link_1a0c(a->player, a->zone) == 0) {
+        return 0;
+    }
+    if (duel.players[a->player & 1].n_d != 0) {
+        return duel_0886CE38(a, b);
+    }
+    return 0;
+}
+
+int duel_0887D5F8(DuelAct *a, int b)
+{
+    if (duel_slot_has_effect(a->player, a->zone, a->id) != 0) {
+        return duel_08876174(a, b);
+    }
+    return 0;
 }
