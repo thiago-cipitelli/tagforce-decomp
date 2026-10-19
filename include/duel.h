@@ -10,7 +10,8 @@ typedef struct DuelCard {              /* 4: a card reference */
     unsigned int owner : 1;          /* also bit 0 of the instance id */
     unsigned int b14 : 1;
     unsigned int b15 : 1;
-    unsigned int lo2 : 2;
+    unsigned int b16 : 1;
+    unsigned int b17 : 1;
     unsigned int b18 : 1;
     unsigned int b19 : 1;
     unsigned int b20 : 1;

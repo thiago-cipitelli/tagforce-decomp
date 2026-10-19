@@ -1,4 +1,4 @@
-// @range 0x088DBA04-0x088DEB2C
+// @range 0x088DB520-0x088DEB2C
 // @asm 0x088DBB3C-0x088DC1A0
 // @asm 0x088DC4E0-0x088DCA4C
 // @asm 0x088DD038-0x088DD1A4
@@ -110,6 +110,126 @@ int field_get_card(unsigned int p, int z);
 int card_is_in_group_1909(int id);
 int duel_slot_value_1909(unsigned int p, int z);
 int duel_list_find_id(unsigned int p, unsigned int id);
+
+DuelCard *duel_card_by_uid(int uid);
+
+/* Ask for the activation of card arg, then show it. */
+void duel_req_announce(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = duel_req.arg;
+
+    switch (duel_req_step) {
+    case 0:
+        duel_host_call(0x43, p, duel_req.arg, 0);
+        duel_req_step++;
+        break;
+    case 1:
+        if (duel_req_flag(0x43) == 0) {
+            duel_host_call(0x20, (unsigned short)((p & 1) | 0x20), arg, 0);
+            duel_req_step++;
+        }
+        break;
+    case 2:
+        if (duel_req_flag(0x20) == 0) {
+            duel_busy_0891523C = 0;
+        }
+        break;
+    }
+}
+
+/* Same, pointing at every active copy of card arg on the field (loc: on both sides). */
+void duel_req_announce_field(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int id = duel_req.arg;
+    unsigned int both = *(unsigned short *)&duel_req.loc;
+    unsigned int lo;
+    unsigned int q;
+    unsigned int z;
+    int n;
+    unsigned int hi;
+
+    switch (duel_req_step) {
+    case 0:
+        duel_host_call(0x43, p, duel_req.arg, 0);
+        duel_req_step++;
+        break;
+    case 1:
+        if (duel_req_flag(0x43) != 0) {
+            break;
+        }
+        n = 0;
+        if (card_is_monster(id) != 0) {
+            lo = 0;
+            hi = 4;
+        } else {
+            lo = 5;
+            hi = 10;
+        }
+        for (q = 0; (int)q < 2; q++) {
+            if (both != 0 || q == p) {
+                for (z = lo; (int)z <= (int)hi; z++) {
+                    if (id == duel.players[q & 1].field[z].card.id && SLOT_ACTIVE(&duel.players[q & 1].field[z])) {
+                        duel_host_call(0x20, (unsigned short)((q & 1) | (z & 0x1F) << 1), id, CARD_UID(duel.players[q & 1].field[z].card));
+                        n++;
+                    }
+                }
+            }
+        }
+        if (n == 0) {
+            duel_host_call(0x20, (unsigned short)((p & 1) | 0x20), id, 0);
+        }
+        duel_req_step++;
+        break;
+    case 2:
+        if (duel_req_flag(0x20) == 0) {
+            duel_busy_0891523C = 0;
+        }
+        break;
+    }
+}
+
+/* Point at the card with uid loc in zone arg of player p. */
+void duel_req_point(void)
+{
+    int z;
+    unsigned int uid;
+    unsigned int t;
+    unsigned int i;
+    unsigned int p;
+
+    p = (duel_req.id & 0x8000) != 0;
+    z = duel_req.arg;
+    uid = *(unsigned short *)&duel_req.loc;
+    t = duel_card_locate(uid);
+    i = 0;
+
+    switch (duel_req_step) {
+    case 0:
+        if (z == 0xB || z >= 0x10) {
+            duel_busy_0891523C = 0;
+            break;
+        }
+        if (p == (t & 0xFF) && z == (unsigned char)((t & 0xFFFF) >> 8)) {
+            i = t >> 16 & 0xFFFF;
+        } else if (z < 11 && duel.players[p & 1].field[z].card.id == 0) {
+            duel_busy_0891523C = 0;
+            return;
+        }
+        if (z == 0xE && duel.list[uid].id == 0x1571) {
+            duel_card_by_uid(uid)->b17 = 0;
+        }
+        duel_host_call(0x21, p, z, i);
+        duel_req_step++;
+        break;
+    case 1:
+        if (duel_req_flag(0x21) == 0) {
+            duel_busy_0891523C = 0;
+        }
+        break;
+    }
+}
 
 /* Add an effect entry of kind w from zone arg (player | zone << 8) to zone loc. */
 void duel_req_add_effect(void)
