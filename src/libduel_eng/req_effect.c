@@ -1,5 +1,5 @@
-// @range 0x088D7604-0x088D9080
-// @asm 0x088D7604-0x088D8A24
+// @range 0x088D6DE8-0x088D9080
+// @asm 0x088D6DE8-0x088D8A24
 // @asm 0x088D8AB8-0x088D8B1C
 // @asm 0x088D8C50-0x088D8CF8
 // @asm 0x088D8DD0-0x088D9080
@@ -45,6 +45,12 @@ int field_get_card(unsigned int p, int z);
 int card_get_group_value_1983(int id);
 int duel_slot_counter_kind(unsigned int p, int z, int id, int kind);
 void duel_0884DB38(int a, int b);
+int card_is_attribute9(int id);
+int card_is_monster(int id);
+int card_get_level(int id);
+void duel_add_counters(unsigned int p, int id, int n);
+void duel_set_flag4(unsigned int p, int id);
+void duel_player_flag_set(unsigned int p, unsigned int bit, int on);
 int duel_grave_find_uid(unsigned int p, int uid);
 int duel_f_find_uid(unsigned int p, int uid);
 void duel_grave_to_top(unsigned int p, unsigned short uid);
@@ -61,6 +67,134 @@ DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 void duel_effects_move_src(unsigned short from, unsigned short to);
 void *memcpy(void *dst, const void *src, unsigned int n);
 void duel_slot_effects_reset(unsigned int p, unsigned int z);
+
+#ifdef NON_MATCHING /* draft */
+/* Move a card from location arg to the end of pile loc (or index loc >> 6), with the graveyard
+   counters and the messages for the viewer (w: 1 show, 8 not by battle, 0x10/0x20 level bits,
+   0x40/0x2000 zone F mark). */
+void duel_req_move(void)
+{
+    unsigned int w = duel_req.w;
+    unsigned int ti = *(unsigned short *)&duel_req.loc >> 6;
+    unsigned int si = duel_req.arg >> 6;
+    unsigned int sz = (duel_req.arg & 0x3F) >> 1;
+    unsigned int tz = (*(unsigned short *)&duel_req.loc & 0x3F) >> 1;
+    unsigned int tp = *(unsigned short *)&duel_req.loc & 1;
+    unsigned int sp = duel_req.arg & 1;
+    unsigned int *c;
+    unsigned int mark;
+    unsigned int pos;
+    DuelLoc from;
+    DuelLoc to;
+
+    if (sz + si < 11) {
+        sz += si;
+        si = 0;
+    }
+    switch (duel_req_step) {
+    case 0:
+        c = (unsigned int *)duel_field_card_deb2c(sp, sz, si);
+        ((DuelCard *)c)->b18 = (w & 1) != 0;
+        ((DuelCard *)c)->b19 = 0;
+        ((DuelCard *)c)->b17 = 0;
+        ((DuelCard *)c)->b20 = 0;
+        *c = (*c & ~0x18000) | ((w & 0x10) != 0 | ((w & 0x20) != 0) << 1) << 15;
+        if (tz == 0xE && card_is_attribute9(((DuelCard *)c)->id) == 0) {
+            if (sz < 5 && !(w & 8) && card_is_monster(((DuelCard *)c)->id)) {
+                if (sp == tp) {
+                    duel.players[sp].flags |= 0x2000000;
+                }
+                if (card_get_level(((DuelCard *)c)->id) >= 8) {
+                    duel_slot_effect_add(sp, 11, 1, 0x165A, 0);
+                }
+                duel_add_counters(0, 0x14BF, 1 << (((DuelCard *)c)->owner << 3));
+                duel_add_counters(1, 0x14BF, 1 << (((DuelCard *)c)->owner << 3));
+            }
+            duel_add_counters(0, 0x1361, 1 << (((DuelCard *)c)->owner << 3));
+            duel_add_counters(1, 0x1361, 1 << (((DuelCard *)c)->owner << 3));
+            if (card_is_monster(((DuelCard *)c)->id)) {
+                duel_set_flag4(1 - ((DuelCard *)c)->owner, 0x1574);
+            }
+        }
+        if (tz == 0xC || tz == 0xD || tz == 0xB) {
+            ((DuelCard *)c)->b14 = 0;
+            *c &= ~0x18000;
+            ((DuelCard *)c)->b21 = 0;
+        }
+        duel_card_copy(&duel_card_tmp, (DuelCard *)c);
+        if (sp == (duel_view_player ^ 1) && (w & 1)) {
+            if (tz == 0xF && card_is_attribute9(((DuelCard *)c)->id) == 0) {
+                duel_0884DB38(0x26, 1);
+                if (card_is_monster(duel_card_tmp.id)) {
+                    duel_0884DB38(0x27, 1);
+                }
+            }
+            if (tz == 0xB) {
+                duel_0884DB38(0x2B, 1);
+            }
+            if (tz == 0xD) {
+                duel_0884DB38(0x2C, 1);
+            }
+            if (sz < 5 && (tz == 0xB || tz == 0xD)) {
+                duel_0884DB38(0x2A, 1);
+            }
+        }
+        switch (tz) {
+        case 0xB:
+            ti = duel.players[tp].n_hand;
+            duel_player_flag_set(tp, 2, 1);
+            break;
+        case 0xF:
+            if (ti != 0) {
+                ti = duel.players[tp].n_f;
+            }
+            break;
+        case 0xE:
+            if (ti != 0) {
+                ti = duel.players[tp].n_grave;
+            }
+            break;
+        case 0xC:
+            if (ti != 0) {
+                ti = duel.players[tp].n_18;
+            }
+            break;
+        case 0xD:
+            if (ti != 0) {
+                ti = duel.players[tp].n_d;
+            }
+            break;
+        }
+        from.player = sp;
+        from.zone = sz;
+        from.idx = si;
+        pos = duel_zone_pos(from.player, from.zone, si & 0xFF);
+        from.b15 = pos;
+        from.b14 = duel_zone_faceup(from.player, from.zone, from.idx);
+        ti &= 0xFF;
+        to.player = tp;
+        to.zone = tz;
+        to.idx = ti;
+        duel_card_take(from.player, from.zone, from.idx);
+        mark = tz == 0xF ? 0 : ti;
+        if (w & 0x2040) {
+            if (w & 0x2000) {
+                sz = 0xFF;
+            }
+            mark = (sp | (pos & 1) << 2 | from.b14 << 1 | (sz & 0xF) << 4) << 8 | 0x40;
+        }
+        duel_card_put(to.player, to.zone, mark, &duel_card_tmp);
+        to.b15 = duel_zone_pos(to.player, to.zone, ti);
+        to.b14 = duel_zone_faceup(to.player, to.zone, to.idx);
+        duel_host_call(0x18, CARD_UID(duel_card_tmp), *(unsigned short *)&from, *(unsigned short *)&to);
+        duel_req_step++;
+        break;
+    case 1:
+        duel_busy_0891523C = 0;
+        break;
+    }
+}
+#endif
 
 #ifdef NON_MATCHING /* draft */
 /* Move the card at location arg (its uid in the index bits) to location loc + offset; w: low byte
