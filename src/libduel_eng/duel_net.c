@@ -29,7 +29,7 @@ extern DuelNetRec duel_net_in[4];      /* 0x089197B0 */
 extern int duel_net_done[4];           /* 0x08919BC0 */
 extern unsigned char duel_net_last[4][8]; /* 0x08919BD0 */
 extern unsigned char duel_net_seq;     /* 0x08919BF0 */
-extern unsigned char D_08914A30[];
+extern unsigned char duel_req[];         /* 0x08914A30 */
 
 void *game_state2_get(void);
 int peer_count_get(void);
@@ -184,7 +184,7 @@ Duel *duel_get(void)
 
 void *duel_get_14a30(void)
 {
-    return D_08914A30;
+    return duel_req;
 }
 
 RecipeData *duel_deck_get(int i)
