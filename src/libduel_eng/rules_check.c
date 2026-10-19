@@ -1,4 +1,4 @@
-// @range 0x088DF0B0-0x088DFFC0
+// @range 0x088DEB2C-0x088DFFC0
 // @asm 0x088DFAC8-0x088DFC10
 // @asm 0x088DFE9C-0x088DFFC0
 /* Rule checks for a player: cards that forbid drawing, summoning or activating, cards that can be
@@ -37,6 +37,69 @@ extern unsigned int duel_turn_player;
 extern unsigned char duel_msg_state;
 extern int duel_busy_0891523C;
 extern int duel_busy_08915238;
+
+/* Card i places after zone z of player p, as a pointer, an id and an instance id. */
+DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i)
+{
+    switch (z) {
+    case 0xC:
+        return &duel.players[p & 1].zone_c[i];
+    case 0xD:
+        return &duel.players[p & 1].zone_d[i];
+    case 0xE:
+        return &duel.players[p & 1].grave[i];
+    case 0xF:
+        return &duel.players[p & 1].zone_f[i];
+    case 0xB:
+        return &duel.players[p & 1].hand[i];
+    }
+    if (z + i > 10) {
+        return &(p == duel_special.player[0] && z == duel_special.zone[0] ? &duel_special.slot[0] : &duel_special.slot[1])->card;
+    }
+    return &duel.players[p & 1].field[z + i].card;
+}
+
+unsigned short duel_zone_card_id(unsigned int p, int z, int i)
+{
+    switch (z) {
+    case 0xC:
+        return duel.players[p & 1].zone_c[i].id;
+    case 0xD:
+        return duel.players[p & 1].zone_d[i].id;
+    case 0xE:
+        return duel.players[p & 1].grave[i].id;
+    case 0xF:
+        return duel.players[p & 1].zone_f[i].id;
+    case 0xB:
+        return duel.players[p & 1].hand[i].id;
+    }
+    if (z + i > 10) {
+        return (p == duel_special.player[0] && z == duel_special.zone[0] ? &duel_special.slot[0] : &duel_special.slot[1])->card.id;
+    }
+    return duel.players[p & 1].field[z + i].card.id;
+}
+
+int duel_zone_card_uid(unsigned int p, int z, int i)
+{
+    switch (z) {
+    case 0xC:
+        return CARD_UID(duel.players[p & 1].zone_c[i]);
+    case 0xD:
+        return CARD_UID(duel.players[p & 1].zone_d[i]);
+    case 0xE:
+        return CARD_UID(duel.players[p & 1].grave[i]);
+    case 0xF:
+        return CARD_UID(duel.players[p & 1].zone_f[i]);
+    case 0xB:
+        return CARD_UID(duel.players[p & 1].hand[i]);
+    }
+    if (z + i > 10) {
+        DuelSlot *s = p == duel_special.player[0] && z == duel_special.zone[0] ? &duel_special.slot[0] : &duel_special.slot[1];
+
+        return CARD_UID(s->card);
+    }
+    return CARD_UID(duel.players[p & 1].field[z + i].card);
+}
 
 /* Position of the card i places after zone z of player p (0 for the piles). */
 unsigned short duel_zone_pos(unsigned int p, int z, int i)
