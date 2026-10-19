@@ -427,6 +427,8 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Condições de ativação** (`act_cond.c`): um teste final que devolve 1 com o caminho de 0 em bloco próprio sai com `if (a && b) return 0; return 1;` (`a->zone > 10 && pick < 0`), não com dois `return 1`; um `if (x >= 2) return 2; return 0;` dá o `slti v; bnezl` que `if (x < 2) return 0; return 2;` não dá depois de outros testes. Um `if (!f()) return 0;` seguido do `return 1` comum reproduz o `bnezl v0 … li v0,1`. Funções que só repassam o segundo argumento (`(DuelAct *a, int b)`) precisam do parâmetro mesmo sem usá-lo, para o chamador não zerar `a1`. Antes de criar um arquivo, conferir as funções da faixa no asm dividido (os `glabel` de `asm/<m>/text_*.s`) ou no desmonte do ELF: o índice do Ghidra omite funções (`duel_hand_can_discard` em 0x0886CB68), e uma função esquecida dentro do `@range` some do link (`undefined reference`).
 
+- **Campos do +0x14 do `DuelAct`** (`act_cond2.c`): quando o original guarda `a + 0x14` num `$s` e lê o campo dali (`addiu s0,a0,20; …; lhu v0,0(s0)`), o fonte tinha um ponteiro para esse campo declarado no topo (`unsigned short *src = (unsigned short *)&a->src;`). Uma cadeia em que só o primeiro teste devolve direto e os outros caem em blocos próprios (`if (k == 0x16) … else if (k == 2) …`) sai com `int r;` atribuído em cada ramo e um só `return r;`. Testes de bits soltos do +0x14 usam as visões `y` (bytes 0x15 e 0x16) e `x` (palavra) de duel.h.
+
 ## Pendências
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
