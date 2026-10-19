@@ -1,4 +1,6 @@
-// @range 0x088DDAC0-0x088DEB2C
+// @range 0x088DD57C-0x088DEB2C
+// @asm 0x088DD660-0x088DD708
+// @asm 0x088DD88C-0x088DD98C
 // @asm 0x088DE360-0x088DEB2C
 /* Steps of the requests the engine carries out one per frame (duel_req, duel_req_step): input log, messages,
    graveyard and hand moves, summoning and setting a card from the hand. */
@@ -67,6 +69,152 @@ void duel_player_flag_set(unsigned int p, unsigned int bit, int on);
 extern int duel_w_08919624;
 extern unsigned short duel_str_08913528[];
 extern unsigned int duel_089195C8;
+
+void duel_0884CD24(void);
+void duel_0884DA24(int a, int b);
+
+extern int duel_ids_08911D2C[5];
+
+void duel_req_host_37(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = duel_req.arg;
+    unsigned int lo = *(unsigned short *)&duel_req.loc & 0xFF;
+    unsigned int hi = *(unsigned short *)&duel_req.loc >> 8 & 0xFF;
+    unsigned int w = duel_req.w;
+
+    if (duel_req_step == 0) {
+        duel_0884CD24();
+        duel_host_call(0x37, (unsigned short)((p & 0xFF) | (arg & 0xFF) << 8), (unsigned short)((lo & 0xFF) | (hi & 0xFF) << 8), w);
+        duel_req_step++;
+    } else if (duel_req_flag(0x37) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+#ifdef NON_MATCHING /* the registers of the player and of the location are swapped */
+void duel_req_host_38(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = duel_req.arg;
+    unsigned int loc = *(unsigned short *)&duel_req.loc;
+
+    if (duel_req_step == 0) {
+        duel_0884CD24();
+        duel_host_call(0x38, p, arg, loc);
+        duel_req_step++;
+    } else if (duel_req_flag(0x38) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+#endif
+
+void duel_req_host_3a(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+
+    if (duel_req_step == 0) {
+        duel_host_call(0x3A, p, 0, 0);
+        duel_req_step++;
+    } else if (duel_req_flag(0x3A) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+void duel_req_host_39(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = duel_req.arg;
+
+    if (duel_req_step == 0) {
+        duel_host_call(0x39, p, arg, 0);
+        duel_req_step++;
+    } else if (duel_req_flag(0x39) == 0) {
+        if (arg != 0) {
+            duel_0884DA24(0x40, 1);
+        }
+        duel_busy_0891523C = 0;
+    }
+}
+
+void duel_req_host_3b(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int arg = duel_req.arg;
+    unsigned int loc = *(unsigned short *)&duel_req.loc;
+
+    if (duel_req_step == 0) {
+        duel_host_call(0x3B, p, loc, arg);
+        duel_req_step++;
+    } else if (duel_req_flag(0x3B) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+#ifdef NON_MATCHING /* the registers of the player and of the table pointer are swapped */
+/* Point at the spell/trap zones holding the five cards of the table. */
+void duel_req_host_3b_table(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int k;
+    int *id;
+    int z;
+
+    if (duel_req_step == 0) {
+        for (k = 0, id = duel_ids_08911D2C; (int)k < 5; k++, id++) {
+            for (z = 5; z < 10; z++) {
+                int c = duel.players[p & 1].field[z].card.id;
+
+                if (c == *id) {
+                    duel_host_call(0x3B, p, z, (unsigned short)((k & 0xFF) | 0x100));
+                    break;
+                }
+            }
+        }
+        duel_req_step++;
+    } else if (duel_req_flag(0x3B) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+#endif
+
+void duel_req_host_3c(void)
+{
+    unsigned int p = (duel_req.id & 0x8000) != 0;
+
+    if (duel_req_step == 0) {
+        duel_host_call(0x3C, p, 0, 0);
+        duel_req_step++;
+    } else if (duel_req_flag(0x3C) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+void duel_req_host_3d(void)
+{
+    unsigned int arg = duel_req.arg;
+
+    if (duel_req_step == 0) {
+        if (arg == 0) {
+            duel.unk377c = duel.turn;
+        }
+        duel_host_call(0x3D, arg, 0, 0);
+        duel_req_step++;
+    } else if (duel_req_flag(0x3D) == 0) {
+        duel_busy_0891523C = 0;
+    }
+}
+
+void duel_req_host_36(void)
+{
+    duel_host_call(0x36, duel_req.arg, 0, 0);
+    duel_busy_0891523C = 0;
+}
+
+void duel_req_done(void)
+{
+    duel_busy_0891523C = 0;
+}
 
 /* Rewind the input log to the entry 99 with the request's argument. */
 void duel_req_log_seek(void)
