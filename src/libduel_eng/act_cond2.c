@@ -1,4 +1,4 @@
-// @range 0x0886F23C-0x08877F8C
+// @range 0x0886F23C-0x08878458
 // @asm 0x0886F23C-0x0886F390
 // @asm 0x0886F3B4-0x0886F65C
 // @asm 0x0886F974-0x0886FA90
@@ -148,7 +148,7 @@ int duel_act_target2(DuelAct *a, int i);
 int duel_act_target_flag9(DuelAct *a);
 unsigned int duel_field_flag9(unsigned int p, int z);
 int duel_088752D8(DuelAct *a, int b);
-int duel_08878260(DuelAct *a);
+int duel_08878260(void);
 int duel_count_attr(unsigned int p, int attr);
 int duel_count_grave_kind(unsigned int p, int kind);
 int duel_count_attack_targets(unsigned int p, int z);
@@ -161,6 +161,8 @@ int duel_08858704(DuelAct *a, unsigned int p, int z);
 int duel_08877ED4(DuelAct *a, int b);
 int duel_08877E04(DuelAct *a, int b);
 int duel_088734E8(void);
+int card_get_atk_q(int id);
+int duel_08876174(DuelAct *a, int b);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 int duel_088750DC(DuelAct *a, int b);
 
@@ -3366,7 +3368,7 @@ int duel_08877024(DuelAct *a, int b)
 
 int duel_0887707C(DuelAct *a)
 {
-    if (duel_08878260(a) == 0) {
+    if (duel_08878260() == 0) {
         return 0;
     }
     return duel_field_def(duel_special.player[1], duel_special.zone[1]) >= 2000;
@@ -3773,4 +3775,108 @@ int duel_08877ED4(DuelAct *a, int b)
         }
     }
     return 1;
+}
+
+int duel_08877F8C(DuelAct *a)
+{
+    unsigned int i;
+    int best = -1;
+    int z;
+
+    for (i = 0; i < duel.players[a->player & 1].n_hand; i++) {
+        int id = duel.players[a->player & 1].hand[i].id;
+        int atk = card_get_atk_q(id);
+
+        if (card_is_monster(id) != 0 && best < atk && atk != 0xFFFF &&
+            duel_088DFCC8(CARD_UID(duel.players[a->player & 1].hand[i])) != 0) {
+            best = atk;
+        }
+    }
+    if (best < 0) {
+        return 0;
+    }
+    a->w[2] = best;
+    for (z = 0; z <= 4; z++) {
+        if (!(!duel_0884E3E4(a, 1 - a->player, z))) {
+            return 2;
+        }
+    }
+    return 0;
+}
+
+int duel_08878138(DuelAct *a)
+{
+    unsigned int i;
+    unsigned int p;
+
+    if (duel_slot_efb84(a->player, a->zone) == 0) {
+        return 0;
+    }
+    if (duel_0886CD1C(a, a->player) == 0 && duel_zone_usable(a->player, a->zone) == 0) {
+        return 0;
+    }
+    if (duel_phase_ok2(a->player) == 0) {
+        return 0;
+    }
+    for (i = 0; i < duel.players[(p = a->player) & 1].n_hand; i++) {
+        if (!(!duel_088BFFD8(p, a->id, i))) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int duel_08878260(void)
+{
+    if (duel_special.unk8 != 0) {
+        return 0;
+    }
+    if (duel.players[duel_special.player[1] & 1].field[duel_special.zone[1]].faceup == 0) {
+        return 0;
+    }
+    return duel.players[duel_special.player[1] & 1].field[duel_special.zone[1]].pos != 0;
+}
+
+int duel_088782E0(DuelAct *a, int b)
+{
+    if (duel_count_attr(0, 6) != 0 || duel_count_attr(1, 6) != 0) {
+        return duel_08876174(a, b);
+    }
+    return 0;
+}
+
+int duel_08878340(DuelAct *a)
+{
+    int z;
+
+    for (z = 0; z <= 4; z++) {
+        if (!(!duel_zone_free(1 - a->player, z))) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int duel_088783AC(DuelAct *a)
+{
+    int r = 0;
+    unsigned int n = duel.players[(1 - a->player) & 1].n_hand;
+
+    if (n != 0) {
+        if (n <= 3) {
+            r = 1;
+        }
+    }
+    return r;
+}
+
+int duel_088783FC(DuelAct *a)
+{
+    unsigned int q = (1 - a->player) & 1;
+    int r = 1;
+
+    if (duel.players[q].n_hand == 0 && duel.players[q].n_d == 0) {
+        r = 0;
+    }
+    return r;
 }
