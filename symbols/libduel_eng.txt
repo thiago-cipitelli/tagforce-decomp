@@ -761,6 +761,7 @@ duel_req_counters = 0x088D8DD0; // type:func asm (@asm in src/libduel_eng/req_ef
 duel_req_flip = 0x088D86B8; // type:func asm (@asm in src/libduel_eng/req_effect.c, C under NON_MATCHING)
 duel_req_change_pos = 0x088D8354; // type:func asm (@asm in src/libduel_eng/req_effect.c, C under NON_MATCHING)
 duel_req_swap_zones = 0x088D7EA4; // type:func asm (@asm in src/libduel_eng/req_effect.c, C under NON_MATCHING)
+duel_req_move_zone = 0x088D7AB8; // type:func asm (@asm in src/libduel_eng/req_effect.c, C under NON_MATCHING)
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8

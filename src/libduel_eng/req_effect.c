@@ -1,5 +1,5 @@
-// @range 0x088D7EA4-0x088D9080
-// @asm 0x088D7EA4-0x088D8A24
+// @range 0x088D7AB8-0x088D9080
+// @asm 0x088D7AB8-0x088D8A24
 // @asm 0x088D8AB8-0x088D8B1C
 // @asm 0x088D8C50-0x088D8CF8
 // @asm 0x088D8DD0-0x088D9080
@@ -28,6 +28,9 @@ extern int duel_busy_0891523C;
 extern int duel_order_ctr;
 extern unsigned int duel_view_player;
 extern DuelCard duel_card_tmp;
+
+void duel_effects_move_src(unsigned short from, unsigned short to);
+void *memcpy(void *dst, const void *src, unsigned int n);
 extern unsigned int duel_turn_player;
 extern int duel_phase;
 
@@ -47,8 +50,72 @@ void duel_0884DB38(int a, int b);
 
 void duel_slot_effects_reset(unsigned int p, unsigned int z);
 
-void duel_effects_move_src(unsigned short from, unsigned short to);
-void *memcpy(void *dst, const void *src, unsigned int n);
+
+void duel_bzero(void *p, int n);
+void duel_slot_effects_free_keep(DuelSlot *s);
+void duel_card_copy(DuelCard *dst, DuelCard *src);
+DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
+
+#ifdef NON_MATCHING /* draft */
+/* Move the card of zone arg to zone loc (player | zone << 8); into a spell/trap zone it loses its
+   position and value. */
+void duel_req_move_zone(void)
+{
+    unsigned int a = duel_req.arg;
+    unsigned int b = *(unsigned short *)&duel_req.loc;
+    unsigned int ap = a & 0xFF;
+    unsigned int az = a >> 8;
+    unsigned int bp = b & 0xFF;
+    unsigned int bz = b >> 8;
+    DuelSlot *dst;
+    DuelLoc from;
+    DuelLoc to;
+
+    switch (duel_req_step) {
+    case 0:
+        if (az < 11 && bz < 11) {
+            duel_req_step = 1;
+        } else {
+            duel_busy_0891523C = 0;
+        }
+        break;
+    case 1:
+        duel_card_copy(&duel_card_tmp, duel_field_card_deb2c(ap, az, 0));
+        if (bp == duel_view_player && az < 5 && bz < 5) {
+            duel_0884DB38(0x2D, 1);
+        }
+        from.player = a;
+        from.zone = az;
+        from.idx = 0;
+        from.b15 = duel.players[a & 1].field[az].pos;
+        from.b14 = duel.players[a & 1].field[az].faceup;
+        to = from;
+        to.player = b;
+        to.zone = bz;
+        if (bz > 4) {
+            to.b15 = 0;
+        }
+        dst = &duel.players[b & 1].field[bz];
+        memcpy(dst, &duel.players[a & 1].field[az], sizeof(DuelSlot));
+        duel_card_copy(&dst->card, &duel_card_tmp);
+        duel_bzero(&duel.players[a & 1].field[az], sizeof(DuelSlot));
+        duel.zone_off &= ~(1 << (az + ap * 16));
+        dst->flags &= ~0x200000;
+        duel_effects_move_src(ap | az << 8, bp | bz << 8);
+        if (bz > 4) {
+            duel_slot_effects_free_keep(dst);
+            dst->pos = 0;
+            dst->link = 0;
+        }
+        duel_host_call(0x18, CARD_UID(duel_card_tmp), *(unsigned short *)&from, *(unsigned short *)&to);
+        duel_req_step++;
+        break;
+    default:
+        duel_busy_0891523C = 0;
+        break;
+    }
+}
+#endif
 
 #ifdef NON_MATCHING /* draft */
 /* Swap the cards of zones arg and loc (player | zone << 8): exchange the slots, hide the ids while
