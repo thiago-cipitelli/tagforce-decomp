@@ -121,6 +121,37 @@ typedef struct DuelAct {               /* 0x18: card being activated or resolved
         };
         DuelSrc src;                   /* +0x14 card that caused the action */
         int idx;                       /* +0x14 index into duel.list for some handlers */
+        struct {                       /* +0x14 as a word */
+            unsigned int s_uid : 9;
+            unsigned int s_player : 1;
+            unsigned int s_zone : 4;
+            unsigned int s_b14 : 1;
+            unsigned int s_b15 : 1;
+            unsigned int s_b16 : 1;
+            unsigned int s_b17 : 1;
+            unsigned int s_b18 : 1;
+            unsigned int s_zone2 : 4;      /* bits 19-22 */
+            unsigned int s_b23 : 9;
+        } x;
+        struct {                       /* +0x14 by bytes */
+            unsigned char y14;
+            unsigned char y15_0 : 1;
+            unsigned char y15_1 : 1;
+            unsigned char y15_2 : 1;
+            unsigned char y15_3 : 1;
+            unsigned char y15_4 : 1;
+            unsigned char y15_5 : 1;
+            unsigned char y15_6 : 1;
+            unsigned char y15_7 : 1;
+            unsigned char y16_0 : 1;
+            unsigned char y16_1 : 1;
+            unsigned char y16_2 : 1;
+            unsigned char y16_3 : 1;
+            unsigned char y16_4 : 1;
+            unsigned char y16_5 : 1;
+            unsigned char y16_6 : 1;
+            unsigned char y16_7 : 1;
+        } y;
     };
 } DuelAct;
 
