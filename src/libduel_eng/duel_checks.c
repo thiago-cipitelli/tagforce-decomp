@@ -1,6 +1,4 @@
 // @range 0x088C2F80-0x088C4448
-// @asm 0x088C3018-0x088C3058
-// @asm 0x088C3058-0x088C30D4
 // @asm 0x088C321C-0x088C3348
 // @asm 0x088C3804-0x088C39F0
 // @asm 0x088C39F0-0x088C3B48
@@ -24,7 +22,7 @@ int duel_slot_foreach_effect(unsigned int p, int z, int (*fn)(DuelEffect *e, int
 void duel_088C44E4(unsigned int p, int a);
 void duel_088C5E70(unsigned int p, int a);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
-void duel_088C7940(void);
+void duel_088C7940(int a);
 void duel_088D1438(unsigned int p, int z, int a, int b);
 void duel_088CC1A0(unsigned int p, int z, unsigned int v);
 void duel_088CC178(unsigned int p, int z, unsigned int v);
@@ -59,36 +57,31 @@ int duel_088C2F80(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* register allocation and bitfield extraction not reproduced */
 int duel_088C3018(void)
 {
     unsigned int c = duel_count_active(0x1510) > 0;
 
     if (c != (duel.mode >> 2 & 1)) {
-        duel_088C7940();
+        duel_088C7940(c);
         return 1;
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* register allocation and bitfield extraction not reproduced */
 int duel_088C3058(DuelEffect *e, int *ctx)
 {
     switch (e->kind & 0xF) {
     case 2:
         return e->src == 0x1598;
     case 10:
-        return 1;
     case 11:
         return 1;
     case 6:
     case 7:
-        return (e->kind >> 4 & 1) > 0;
+        return (((DuelEffectBits *)e)->kind_hi & 1) > 0;
     }
     return 0;
 }
-#endif
 
 int duel_088C30D4(void)
 {

@@ -3,7 +3,6 @@
 // @asm 0x0886D050-0x0886D0C4
 // @asm 0x0886D828-0x0886DBC4
 // @asm 0x0886DE70-0x0886E074
-// @asm 0x0886E250-0x0886E2B8
 // @asm 0x0886E590-0x0886E784
 /* Activation conditions of cards (DuelAct *a): enough cards to pay or tribute, free zones, phase and
    turn, cards in the piles. */
@@ -633,21 +632,19 @@ int duel_0886E1A8(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* the test of bit 7 branches the other way */
 int duel_0886E250(DuelAct *a)
 {
     if (a->kind == 0xB) {
         if (a->y.y15_1 != 1 - a->player) {
             return 0;
         }
-        if (!a->y.y15_7) {
+        if (a->y.y15_7 == 0) {
             return 0;
         }
         return a->y.y15_6 != 0;
     }
     return 0;
 }
-#endif
 
 int duel_0886E2B8(DuelAct *a, int b)
 {

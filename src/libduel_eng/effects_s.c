@@ -1,8 +1,5 @@
 // @range 0x08883114-0x08884118
 // @asm 0x08883324-0x088837E4
-// @asm 0x08883918-0x08883AF0
-// @asm 0x08883C18-0x08883DE4
-// @asm 0x08883FE4-0x08884118
 /* Card effect handlers (DuelAct *a), after effects_r.c. */
 #include "duel.h"
 
@@ -35,7 +32,7 @@ void duel_088D13CC(DuelAct *a, unsigned int mask);
 void duel_088C4604(DuelAct *a, unsigned int p, int n);
 unsigned short duel_slot_e1854(unsigned int p, int z);
 void duel_088D1438(unsigned int p, int z, int a, int b);
-int duel_card_can_affect(unsigned int p, int z, unsigned short id, unsigned char zone, int arg);
+int duel_card_can_affect();
 int duel_slot_immune(unsigned int p, int z, int opp);
 int duel_0888A020(DuelAct *a, int b);
 void duel_08832AF4(unsigned int p, int z, int a, int b);
@@ -203,12 +200,11 @@ int duel_088837E4(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores e desvios */
 int duel_08883918(DuelAct *a)
 {
     unsigned int loc;
     unsigned int q;
-    unsigned int z;
+    int z;
     unsigned int p;
     int s;
 
@@ -237,7 +233,6 @@ int duel_08883918(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_08883AF0(DuelAct *a)
 {
@@ -262,7 +257,6 @@ int duel_08883AF0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores e desvios */
 int duel_08883C18(DuelAct *a, int b)
 {
     unsigned int t;
@@ -291,7 +285,6 @@ int duel_08883C18(DuelAct *a, int b)
     }
     return duel_0888A020(a, b);
 }
-#endif
 
 int duel_08883DE4(DuelAct *a)
 {
@@ -353,7 +346,6 @@ int duel_08883FDC(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores e desvios */
 int duel_08883FE4(DuelAct *a, int b)
 {
     unsigned int t;
@@ -371,8 +363,8 @@ int duel_08883FE4(DuelAct *a, int b)
                 duel_088C8DC4(t, a->player | a->zone << 8);
             }
         }
-        break;
+        return 0;
     }
     return 0;
 }
-#endif
+

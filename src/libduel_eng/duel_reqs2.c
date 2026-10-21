@@ -6,7 +6,6 @@
 // @asm 0x088CA184-0x088CA270
 // @asm 0x088CA270-0x088CA384
 // @asm 0x088CA384-0x088CA428
-// @asm 0x088CA428-0x088CA4E8
 /* More commands to the presentation: a card is flipped or changes position (0x35), moves between
    zones (0x3D, 0x3E), goes from the hand or the graveyard to the field (0x3F). */
 #include "duel.h"
@@ -164,17 +163,16 @@ void duel_088CA384(unsigned int p, int i, int f)
 }
 #endif
 
-#ifdef NON_MATCHING /* branch layout and argument packing not reproduced */
 int duel_088CA428(unsigned int p, unsigned int uid, int f)
 {
     int k;
 
-    if (duel_grave_find_uid(p, uid) < 0) {
-        return 0;
+    if (duel_grave_find_uid(p, uid) >= 0) {
+        k = card_attribute_icon_is3(duel.list[uid].id) ? 0xC : 0xD;
+        duel_cmd(0x3F, (uid & 0x3FF) << 6 | ((p & 1) | 0x1C), !f << 6 | ((p & 1) | (k & 0x1F) << 1), 0);
+        duel_088AFD5C(0x24, 0);
+        return 1;
     }
-    k = card_attribute_icon_is3(duel_cards[uid].id) ? 0xC : 0xD;
-    duel_cmd(0x3F, (uid & 0x3FF) << 6 | (p & 1) | 0x1C, !(f != 0) << 6 | (p & 1) | k << 1, 0);
-    duel_088AFD5C(0x24, 0);
-    return 1;
+    return 0;
 }
-#endif
+

@@ -1,5 +1,4 @@
 // @range 0x0887DB24-0x0888146C
-// @asm 0x0887DB24-0x0887DBB4
 // @asm 0x0887DC94-0x0887DDB0
 // @asm 0x0887E140-0x0887F728
 // @asm 0x0887F8E4-0x0887FCA8
@@ -110,7 +109,6 @@ int card_is_in_group_198c(int id);
 int duel_0886CE38();
 extern unsigned int duel_view_player;
 
-#ifdef NON_MATCHING /* branch layout differs */
 int duel_0887DB24(DuelAct *a)
 {
     int t;
@@ -123,11 +121,9 @@ int duel_0887DB24(DuelAct *a)
         if (duel_0884E440(a, p, z) != 0 && duel_088D14B8(a, p, z) != 0) {
             return 1;
         }
-        return 0;
     }
     return 0;
 }
-#endif
 
 void duel_0887DBB4(DuelAct *a)
 {

@@ -1,7 +1,6 @@
 // @range 0x08810370-0x08811BDC
 // @asm 0x08810944-0x08810AE0
 // @asm 0x08810D08-0x08810EFC
-// @asm 0x088110E0-0x088111F8
 // @asm 0x088111F8-0x08811264
 // @asm 0x088119FC-0x08811B24
 /* Conditions of the computer player: LP against the strongest ATK, monsters on the field, the chain. */
@@ -11,7 +10,6 @@ int card_get_special_group(unsigned short id);
 
 extern int duel_phase;
 extern unsigned int duel_turn_player;
-
 
 int duel_08809FC4();
 int duel_0880F8C4(DuelAct *a, int b);
@@ -339,12 +337,11 @@ int duel_088110C4(DuelAct *a)
     return duel_turn_player == a->player;
 }
 
-#ifdef NON_MATCHING /* registradores */
 int duel_088110E0(DuelAct *a)
 {
     unsigned int p = a->player;
     unsigned int q = 1 - p;
-    unsigned int n = duel.players[q & 1].n_grave;
+    int n = duel.players[q & 1].n_grave;
 
     if ((unsigned int)duel.players[p & 1].n_d <= 4 && (unsigned int)duel.players[p & 1].n_d < (unsigned int)duel.players[q & 1].n_d) {
         return 1;
@@ -362,7 +359,6 @@ int duel_088110E0(DuelAct *a)
     }
     return 1;
 }
-#endif
 
 #ifdef NON_MATCHING /* desvio da comparação */
 int duel_088111F8(DuelAct *a)

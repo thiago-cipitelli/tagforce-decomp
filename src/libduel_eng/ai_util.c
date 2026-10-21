@@ -1,7 +1,6 @@
 // @range 0x08809B50-0x0880B448
 // @asm 0x08809DA8-0x08809F2C
 // @asm 0x0880A54C-0x0880A8AC
-// @asm 0x0880AA04-0x0880ABE0
 // @asm 0x0880ADF4-0x0880AEF4
 // @asm 0x0880B17C-0x0880B30C
 // @asm 0x0880B30C-0x0880B448
@@ -425,7 +424,6 @@ int duel_0880A934(unsigned int p, unsigned short id)
     return n > 1;
 }
 
-#ifdef NON_MATCHING /* register allocation and branch layout not reproduced */
 int duel_0880AA04(int id, int f)
 {
     switch (id) {
@@ -451,7 +449,6 @@ int duel_0880AA04(int id, int f)
     case 0x172C:
     case 0x1310:
     case 0x1281:
-        return 1;
     case 0x1284:
         return 1;
     case 0x10F4:
@@ -467,13 +464,11 @@ int duel_0880AA04(int id, int f)
     case 0x17A6:
     case 0x1636:
     case 0x150A:
-        return 1;
     case 0x1992:
         return 1;
     }
     return 0;
 }
-#endif
 
 int duel_0880ABE0(DuelAct *a, unsigned int p)
 {

@@ -3,7 +3,6 @@
 // @asm 0x088140DC-0x08814248
 // @asm 0x08814248-0x08814384
 // @asm 0x08814384-0x08814548
-// @asm 0x08814548-0x08814618
 // @asm 0x08814684-0x08814744
 // @asm 0x08814744-0x08814924
 /* Conditions of the computer player against a card being activated (b, may be null). */
@@ -294,7 +293,6 @@ int duel_08813FF8(DuelAct *a, DuelAct *b)
     unsigned int p;
     unsigned int z;
 
-
     if (b == 0) {
         return 0;
     }
@@ -424,7 +422,6 @@ int duel_08814384(DuelAct *a, DuelAct *b)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem dos desvios e registradores */
 int duel_08814548(DuelAct *a, DuelAct *b)
 {
     if (duel_0886CD1C(a, 1 - a->player) == 3) {
@@ -442,11 +439,9 @@ int duel_08814548(DuelAct *a, DuelAct *b)
                 return 1;
             }
         }
-        return 0;
     }
     return 0;
 }
-#endif
 
 int duel_08814618(DuelAct *a, DuelAct *b)
 {

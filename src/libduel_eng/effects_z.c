@@ -1,5 +1,5 @@
 // @range 0x0888B904-0x0888C1A8
-// @asm 0x0888B904-0x0888BAE0
+// @asm 0x0888B9A8-0x0888BAE0
 // @asm 0x0888BBE4-0x0888BDE0
 // @asm 0x0888BF08-0x0888C0AC
 // @asm 0x0888C10C-0x0888C1A8
@@ -38,7 +38,6 @@ void duel_088C78E0(unsigned int p);
 void duel_088D192C(DuelAct *a, unsigned int p, int z);
 void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, unsigned short c);
 
-#ifdef NON_MATCHING /* registradores ($t0 vs $v1, ordem das cargas) */
 int duel_0888B904(DuelAct *a)
 {
     unsigned int loc;
@@ -49,11 +48,13 @@ int duel_0888B904(DuelAct *a)
         p = loc & 0xFF;
         z = (unsigned short)loc >> 8 & 0xFF;
         if (duel_0884E440(a, p, z) != 0) {
-            duel_088C87A8(p, z, a->id, (unsigned short)((duel_turn_player != a->player) << 4 | 1));
+            duel_088C87A8(p, z, a->id, (unsigned short)((duel_turn_player != a->player) << 4 | 1), a->player);
         }
     }
     return 0;
 }
+
+#ifdef NON_MATCHING /* registradores ($t0 vs $v1, ordem das cargas) */
 
 int duel_0888B9A8(DuelAct *a)
 {
