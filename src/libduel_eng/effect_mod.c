@@ -12,15 +12,6 @@ typedef struct DuelListCard {
     unsigned short effects;
 } DuelListCard;
 
-typedef struct DuelEffectBits {
-    unsigned short src;
-    unsigned char kind : 4;
-    unsigned char kind_hi : 4;
-    unsigned char pad3;
-    unsigned short arg;
-    unsigned short next;
-} DuelEffectBits;
-
 extern DuelListCard duel_cards[512];
 
 void duel_bzero(void *p, int n);
