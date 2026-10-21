@@ -17,12 +17,12 @@ platform layer. The project is modelled on [ygo-tf-5-decomp](https://github.com/
 | Module | What it is | Code matching | Fuzzy | Functions matching |
 |---|---|---|---|---|
 | `BOOT` | runtime: init, main loop, VFS, scenes, sound, graphics, EHF animation, network, save data | 44.0% | 64.3% | 1253 / 2208 |
-| `libduel_eng` | duel engine: rules, card effects, CPU player | 22.4% | 31.7% | 1489 / 3429 |
+| `libduel_eng` | duel engine: rules, card effects, CPU player | 40.5% | 52.1% | 2183 / 3429 |
 | `libhtml_view` | smallest gmodule, proof of the build pipeline | 9.8% | 9.8% | 2 / 16 |
 | 19 other gmodules | duel presentation, field, story, shop, deck editor, title… | 0% | 0% | 0 / 5386 |
-| **total** | | **14.2%** | **20.4%** | **2744 / 11039** |
+| **total** | | **20.5%** | **27.5%** | **3438 / 11039** |
 
-Numbers from 2026-10-20 (`python3 tools/bytematch.py`); the badges above are live. The whole game
+Numbers from 2026-10-21 (`python3 tools/bytematch.py`); the badges above are live. The whole game
 rebuilds byte-identical today: the parts without C are kept as assembly. Per-file progress and the
 largest ranges still without C are in [docs/progress.md](docs/progress.md).
 

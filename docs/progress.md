@@ -1,13 +1,13 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-20 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-21 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 14,2% | 20,4% | 2744 / 11039 |
+| total | 20,5% | 27,5% | 3438 / 11039 |
 | BOOT | 44,0% | 64,3% | 1253 / 2208 |
-| libduel_eng | 22,4% | 31,7% | 1489 / 3429 |
+| libduel_eng | 40,5% | 52,1% | 2183 / 3429 |
 | libhtml_view | 9,8% | 9,8% | 2 / 16 |
 | demais 19 gmodules | 0% | 0% | 0 / 5386 |
 
