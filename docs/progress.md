@@ -21,7 +21,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 **libduel_eng**
 
 ```
-0x08894A84-0x088C2F80   636 functions   189692 bytes
+0x0889522C-0x088C2F80   624 functions   187732 bytes
 0x08832B54-0x0884ACD0   254 functions    98684 bytes
 0x0884ED08-0x08864DF0   257 functions    90344 bytes
 0x08820618-0x088324F0   123 functions    73432 bytes
@@ -156,7 +156,7 @@ Conhecido no BOOT: `0x08804000`-`0x0881FFB0` é libgu, MSL, libgcc e sceDeflt co
 | [`effects_ze.c`](../src/libduel_eng/effects_ze.c) | 0x08890820-0x088917D4 | 13 | 1 | handlers: invocação por tributo do próprio monstro, invocação pelo oponente, alvo em S/T com máscara por jogador, carta virada com flip especial |
 | [`effects_zf.c`](../src/libduel_eng/effects_zf.c) | 0x088917D4-0x08892554 | 8 | 3 | handlers: dano a todos os monstros do oponente, dano/ganho por contagem de alvos (switch de ids), swap de ATK entre dois alvos, fila de uids em duel_chain, callback de efeito 0x14C0 |
 | [`effects_zg.c`](../src/libduel_eng/effects_zg.c) | 0x08892554-0x08894158 | 23 | 2 | handlers: tributo por nível vindo do cemitério, efeitos 0x14C4/0x17C2, alvos duplos, troca de mão entre jogadores, cartas de unk3832 de volta, dano por máscara, fim de turno com tabela de saltos, despacho por id (0x14FD-0x1694), invocação alternada pelos dois jogadores |
-| [`effects_zh.c`](../src/libduel_eng/effects_zh.c) | 0x08894158-0x08894A84 | 7 | 1 | handlers: escolha de tipo de carta da mão do oponente (dano 700), descarte do topo do cemitério, contadores por zona, duas máquinas com tabela de saltos (0x7B-0x80) |
+| [`effects_zh.c`](../src/libduel_eng/effects_zh.c) | 0x08894158-0x0889522C | 16 | 2 | handlers: escolha de tipo de carta da mão do oponente (dano 700), descarte do topo do cemitério, contadores por zona, duas máquinas com tabela de saltos (0x7B-0x80), aposta entre jogadores (dano 500 por ponto), recarga da mão até 4 |
 | [`duel_checks.c`](../src/libduel_eng/duel_checks.c) | 0x088C2F80-0x088C4448 | 11 | 6 | verificações de estado entre os passos: cartas contínuas cuja condição acabou são destruídas ou perdem o efeito |
 | [`duel_lp.c`](../src/libduel_eng/duel_lp.c) | 0x088C4448-0x088C4864 | 9 | 0 | mudanças de PV: dano e recuperação com as cartas que os impedem, comandos 0x25-0x30, evento `DuelLpEv` |
 | [`duel_draws.c`](../src/libduel_eng/duel_draws.c) | 0x088C4864-0x088C77D4 | 11 | 7 | pagamento de PV, compra e envio de cartas do deck e da zona D com seus comandos; os passos longos em asm |
