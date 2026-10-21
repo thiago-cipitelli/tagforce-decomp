@@ -1,10 +1,10 @@
 // @range 0x08819F94-0x0881C118
+// @asm 0x0881AF78-0x0881B020
 // @asm 0x0881A118-0x0881A1E4
 // @asm 0x0881A2B4-0x0881A3EC
 // @asm 0x0881A3EC-0x0881A554
 // @asm 0x0881A7C0-0x0881A960
 // @asm 0x0881A960-0x0881AA48
-// @asm 0x0881AF78-0x0881B020
 // @asm 0x0881B1E4-0x0881B2C0
 /* Conditions the computer player checks before activating a card (continued in ai_cond1.c). */
 #include "duel.h"

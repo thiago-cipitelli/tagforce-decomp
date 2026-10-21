@@ -1,4 +1,5 @@
 // @range 0x0886F23C-0x0887DB24
+// @asm 0x08876404-0x0887648C
 // @asm 0x0886F23C-0x0886F390
 // @asm 0x0886F3B4-0x0886F65C
 // @asm 0x0886F974-0x0886FA90
@@ -11,7 +12,6 @@
 // @asm 0x08870848-0x088708E4
 // @asm 0x08870968-0x08870A38
 // @asm 0x08870A94-0x08870B4C
-// @asm 0x08871F70-0x08871FFC
 // @asm 0x08871B14-0x08871BFC
 // @asm 0x088719DC-0x08871A68
 // @asm 0x08871674-0x088717B4
@@ -26,11 +26,9 @@
 // @asm 0x088746D0-0x0887477C
 // @asm 0x08874DAC-0x08874E3C
 // @asm 0x08875AD0-0x08875BD4
-// @asm 0x08876404-0x0887648C
 // @asm 0x088766B0-0x088768A8
 // @asm 0x08876AEC-0x08876CF0
 // @asm 0x088770C0-0x088771D4
-// @asm 0x088775A0-0x08877624
 // @asm 0x08878538-0x088785E0
 // @asm 0x08878FA4-0x08879194
 // @asm 0x08879D5C-0x08879E20
@@ -1434,23 +1432,15 @@ int duel_08871F0C(DuelAct *a)
     return duel_count_monsters_pos(1 - a->player, 1, 0) > 0;
 }
 
-#ifdef NON_MATCHING /* a beq with an empty delay slot where mwcc emits beql */
 int duel_08871F70(DuelAct *a, int b)
 {
-    int r;
-
     if (a->kind == 0x14) {
         if (duel_special.player[0] != duel_special.player[1] && duel.players[a->player & 1].field[a->zone].pos != 0) {
-            r = 1;
-        } else {
-            r = 0;
+            return 1;
         }
-    } else {
-        r = 0;
     }
-    return r;
+    return 0;
 }
-#endif
 
 int duel_08871FFC(DuelAct *a)
 {
@@ -3562,7 +3552,6 @@ int duel_08877564(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* branch layout differs */
 int duel_088775A0(DuelAct *a, int b)
 {
     int n;
@@ -3574,13 +3563,10 @@ int duel_088775A0(DuelAct *a, int b)
         }
         if (n != 0 && duel_direct_attack_kind(duel_special.player[0], duel_special.zone[0], 1) == 1) {
             return 1;
-        } else {
-            return 0;
         }
     }
     return 0;
 }
-#endif
 
 int duel_08877624(DuelAct *a, int b)
 {

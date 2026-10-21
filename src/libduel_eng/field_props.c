@@ -1,5 +1,4 @@
 // @range 0x088F6380-0x088F71D8
-// @asm 0x088F71A4-0x088F71D8
 /* Effective level of monster z of player p: printed level, copies, level-changing effects in its
    list, 0x15E3 and 0x150B. */
 #include "duel.h"
@@ -388,9 +387,9 @@ unsigned int duel_field_attrs(unsigned int p, int z)
     return 1 << kind;
 }
 
-#ifdef NON_MATCHING /* the original ANDs the call result first (and v0,v0,v1); mwcc swaps the operands */
 int duel_field_attr_is(unsigned int p, int z, int kind)
 {
-    return (int)(duel_field_attrs(p, z) & 1 << kind) > 0;
+    unsigned int v = duel_field_attrs(p, z);
+
+    return (int)(v & 1 << kind) > 0;
 }
-#endif
