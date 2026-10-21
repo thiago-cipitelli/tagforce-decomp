@@ -1,7 +1,5 @@
 // @range 0x08892554-0x08894158
-// @data 0x089118C4-0x089118DC
-// @asm 0x08892554-0x088927AC
-// @asm 0x08893390-0x088934A0
+// @data 0x089118AC-0x089118DC
 /* Card effect handlers (DuelAct *a), after effects_zf.c. */
 #include "duel.h"
 
@@ -96,7 +94,6 @@ void duel_088D1C70(DuelAct *a, unsigned int p, int z);
 void duel_0882619C(unsigned int p, DuelCard *c, int a, int b, unsigned int c2);
 unsigned int duel_088D13CC(DuelAct *a, unsigned int mask);
 
-#ifdef NON_MATCHING /* teste da zona 0xE salta direto ao epílogo (original: bne para o `return 0` comum); q/z em $s1/$s0 trocados */
 int duel_08892554(DuelAct *a)
 {
     unsigned int uid;
@@ -123,7 +120,6 @@ int duel_08892554(DuelAct *a)
                     }
                 }
             }
-            return 0;
         }
         return 0;
     case 0x7F:
@@ -140,10 +136,10 @@ int duel_08892554(DuelAct *a)
     case 0x7D:
         if (duel_08835AC0() != 0) {
             q = duel_w_0891964C;
-            uid = duel_w_08919650 + duel_w_08919654;
-            a->w[q] |= 1 << uid;
-            a->w[2] -= duel_field_level(q, uid);
-            duel_088CB914(q, uid);
+            i = duel_w_08919650 + duel_w_08919654;
+            a->w[q] |= 1 << i;
+            a->w[2] -= duel_field_level(q, i);
+            duel_088CB914(q, i);
             return --duel_w_089148FC != 0 ? 0x7E : 0x7C;
         }
         return 0x7E;
@@ -159,7 +155,6 @@ int duel_08892554(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088927AC(DuelAct *a, DuelAct *b)
 {
@@ -466,7 +461,6 @@ int duel_08893230(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* teste da zona 0xE vira bnel direto ao epílogo (original: bne para o `return 0` comum, como 08892554) */
 int duel_08893390(DuelAct *a)
 {
     unsigned int loc;
@@ -479,19 +473,17 @@ int duel_08893390(DuelAct *a)
     if (duel_phase_ok2(a->player) == 0) {
         return 0;
     }
-    if (a->n7 != 1) {
-        return 0;
-    }
-    loc = duel_card_locate(duel_act_target2(a, 0));
-    p = loc & 0xFF;
-    i = loc >> 16 & 0xFFFF;
-    if (((unsigned short)loc >> 8 & 0xFF) == 0xE && duel_grave_card_usable(a->player, p, i) != 0) {
-        duel_0882619C(a->player, &duel.players[p & 1].grave[i], 1, 1, a->id << 16 | 0x20);
-        return 0x7F;
+    if (a->n7 == 1) {
+        loc = duel_card_locate(duel_act_target2(a, 0));
+        p = loc & 0xFF;
+        i = loc >> 16 & 0xFFFF;
+        if (((unsigned short)loc >> 8 & 0xFF) == 0xE && duel_grave_card_usable(a->player, p, i) != 0) {
+            duel_0882619C(a->player, &duel.players[p & 1].grave[i], 1, 1, a->id << 16 | 0x20);
+            return 0x7F;
+        }
     }
     return 0;
 }
-#endif
 
 int duel_088934A0(DuelAct *a)
 {

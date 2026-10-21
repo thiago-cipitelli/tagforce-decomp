@@ -1,7 +1,6 @@
 // @range 0x08894158-0x08895C8C
 // @data 0x089118DC-0x0891190C
 // @asm 0x08894500-0x088946B4
-// @asm 0x08894DE8-0x08894F78
 /* Card effect handlers (DuelAct *a), after effects_zg.c. */
 #include "duel.h"
 
@@ -413,7 +412,6 @@ int duel_08894D84(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* testes da zona 0xE viram bnel direto ao epílogo (original: bne para o bloco de retorno, como 08892554) */
 int duel_08894DE8(DuelAct *a)
 {
     unsigned int loc;
@@ -430,23 +428,24 @@ int duel_08894DE8(DuelAct *a)
             if (((unsigned short)loc >> 8 & 0xFF) == 0xE && duel_grave_card_usable(a->player, p, i) != 0) {
                 duel_088263A8(a->player, &duel.players[p & 1].grave[i], 1, 0x20);
             }
-            return 0x7F;
         }
         return 0x7F;
     case 0x7F:
         if (duel_088DFE24(a->player, 1 - a->player) != 0) {
             loc = duel_card_locate(duel_act_target2(a, 1));
             if (((unsigned short)loc >> 8 & 0xFF) == 0xE) {
-                o = duel.players[(loc & 0xFF) & 1].grave[loc >> 16 & 0xFFFF].owner;
-                duel_088CB400(o, &duel.players[(loc & 0xFF) & 1].grave[loc >> 16 & 0xFFFF], a->player != o);
+                DuelCard *c;
+
+                p = loc & 0xFF;
+                c = &duel.players[p & 1].grave[loc >> 16 & 0xFFFF];
+                o = c->owner;
+                duel_088CB400(o, c, a->player != o);
             }
-            return 0x7E;
         }
         return 0x7E;
     }
     return 0;
 }
-#endif
 
 int duel_08894F78(DuelAct *a)
 {

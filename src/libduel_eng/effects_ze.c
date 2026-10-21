@@ -1,5 +1,4 @@
 // @range 0x08890820-0x088917D4
-// @asm 0x08891438-0x088916E8
 /* Card effect handlers (DuelAct *a), after effects_zd.c. */
 #include "duel.h"
 
@@ -343,41 +342,36 @@ int duel_088913BC(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* id == 0 salta direto para o retorno (original: beqz para um `li 100; b; nop` interno); $s0/$s1 de id e z trocados */
 int duel_08891438(DuelAct *a)
 {
     unsigned int t;
     unsigned int p;
     unsigned int z;
-    unsigned int id;
     unsigned int o;
 
     switch (duel_step) {
     case 0x80:
         if (duel_088A9008(a, 0, 0) != 0) {
-        t = duel_act_target(a, 0);
-        p = t & 0xFF;
-        z = (unsigned short)t >> 8 & 0xFF;
-        id = duel.players[p & 1].field[z].card.id;
-        if (id != 0) {
-        if (duel.players[p & 1].field[z].faceup == 0) {
-            duel_088C9344(a, p, z, 0);
-            duel_088C4508(p, id);
-            duel_088C7B90(0x1E);
-            if (card_get_type(id) == 0x17 && !a->b4_4) {
-                if (duel_0886AF00(p, z, id) != 0) {
-                    duel_088C4448(p, z, CARD_UID(duel.players[p & 1].field[z].card));
-                    duel_0884F91C((unsigned short)id | ((p << 31 & 0x80000000) | 0x44000000 | (z << 16 & 0x1F0000)),
-                                  CARD_UID(duel.players[p & 1].field[z].card));
-                } else {
-                    return 0x7F;
-                }
-            } else {
+            t = duel_act_target(a, 0);
+            p = t & 0xFF;
+            z = (unsigned short)t >> 8 & 0xFF;
+            t = duel.players[p & 1].field[z].card.id;
+            if (t != 0 && duel.players[p & 1].field[z].faceup == 0) {
                 duel_088C9344(a, p, z, 0);
+                duel_088C4508(p, t);
+                duel_088C7B90(0x1E);
+                if (card_get_type(t) == 0x17 && !a->b4_4) {
+                    if (duel_0886AF00(p, z, t) != 0) {
+                        duel_088C4448(p, z, CARD_UID(duel.players[p & 1].field[z].card));
+                        duel_0884F91C((unsigned short)t | ((p << 31 & 0x80000000) | 0x44000000 | (z << 16 & 0x1F0000)),
+                                      CARD_UID(duel.players[p & 1].field[z].card));
+                    } else {
+                        return 0x7F;
+                    }
+                } else {
+                    duel_088C9344(a, p, z, 0);
+                }
             }
-        }
-        }
-        return 100;
         }
         return 100;
     case 0x7F:
@@ -398,7 +392,6 @@ int duel_08891438(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088916E8(DuelAct *a)
 {
