@@ -60,7 +60,17 @@ $(OUT): $(LD_SCRIPT) $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)
 clean:
 	rm -rf build/asm/$(MODULE) build/src/$(MODULE) build/assets/$(MODULE) $(OUT) build/$(MODULE).map $(LD_SCRIPT) asm/$(MODULE) assets/$(MODULE)
 
-.PHONY: all check check-all clean
+.PHONY: all check check-all clean verify
 
 check-all:
 	@for m in $$(ls build/elf | sed 's/\.elf$$//'); do printf '%s: ' $$m; $(MAKE) --no-print-directory MODULE=$$m check 2>&1 | tail -1; done
+
+# full gate before a commit: regenerate the splat config from the @range/@data headers, re-split,
+# check $(MODULE), refresh the generated imports of every symbols file, check all modules.
+verify:
+	python3 tools/splat_config.py $(MODULE) > config/$(MODULE).yaml
+	rm -rf build/asm/$(MODULE)
+	@$(MAKE) --no-print-directory check 2>&1 | tail -1 | grep -qx MATCH || { echo "$(MODULE) BAD"; exit 1; }
+	python3 tools/link_map.py build/elf symbols >/dev/null
+	@n=$$($(MAKE) --no-print-directory check-all 2>&1 | grep -c ': MATCH$$'); t=$$(ls build/elf/*.elf | wc -l); \
+	  [ "$$n" = "$$t" ] || { echo "check-all $$n/$$t"; exit 1; }; echo "ALL MATCH"
