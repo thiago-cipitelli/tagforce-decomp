@@ -28,6 +28,11 @@ for name, m in [("total", report["measures"])] + [(c["id"], c["measures"]) for c
           f"{m.get('matched_functions', 0)}/{m.get('total_functions', 0)} functions")
 print(f"{len(functional)} functions with non-matching C -> {OUT}/bytematch.zip")
 
+if os.path.exists(".env"):  # KEY=VALUE lines, gitignored; the environment wins
+    for line in open(".env"):
+        k, _, v = line.strip().partition("=")
+        if k and not k.startswith("#") and v:
+            os.environ.setdefault(k, v)
 token, project = os.environ.get("BYTEMATCH_TOKEN"), os.environ.get("BYTEMATCH_PROJECT")
 if token and project:
     git = lambda *a: subprocess.run(["git", *a], capture_output=True, text=True, check=True).stdout.strip()

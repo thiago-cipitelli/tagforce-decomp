@@ -9,3 +9,4 @@ tools/ext/
 asm/
 assets/
 objdiff.json
+.env
