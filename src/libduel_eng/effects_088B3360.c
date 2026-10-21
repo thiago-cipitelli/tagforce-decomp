@@ -1,4 +1,4 @@
-// @range 0x088B3360-0x088B3F18
+// @range 0x088B3360-0x088B4560
 // @asm 0x088B3A10-0x088B3AEC
 /* Candidate lists: cards of a pile offered for selection (duel_088BFC64(p, zone, i)), after effects_088B2D0C.c. */
 #include "duel.h"
@@ -6,6 +6,8 @@
 void duel_088BFC64(unsigned int p, int z, int i);
 int card_is_monster(int id);
 int card_get_def_q(int id);
+int card_get_atk_q(int id);
+int card_get_kind(int id);
 unsigned int card_get_type(int id);
 int card_same_name(int id, int name);
 int card_is_in_group_1a58(int id);
@@ -235,5 +237,103 @@ void duel_088B3E90(unsigned int p)
 
     for (i = 0; i < (unsigned int)duel.players[(1 - p) & 1].n_d && i < 5; i++) {
         duel_088BFC64(1 - p, 0xD, i);
+    }
+}
+
+void duel_088B3F18(unsigned int p)
+{
+    unsigned int i;
+
+    for (i = 0; i < duel.players[(1 - p) & 1].n_grave; i++) {
+        duel_088BFC64(1 - p, 0xE, i);
+    }
+    for (i = 0; i < duel.players[p & 1].n_grave; i++) {
+        duel_088BFC64(p, 0xE, i);
+    }
+}
+
+void duel_088B3FF0(unsigned int p)
+{
+    unsigned int i;
+
+    for (i = 0; i < duel.players[p & 1].n_d; i++) {
+        int id = duel.players[p & 1].zone_d[i].id;
+
+        if (card_is_monster(id) && card_get_atk_q(id) < 0x5DD && duel_card_dfac8(p, id, 1) &&
+            duel_slot_effect_with(p, 0xB, 0x12A1, CARD_UID(duel.players[p & 1].zone_d[i])) == 0) {
+            duel_088BFC64(p, 0xD, i);
+        }
+    }
+}
+
+void duel_088B4108(unsigned int p, int id, int b)
+{
+    unsigned int i;
+    int k;
+
+    if (b != 0) {
+        for (k = 0; k < 5; k++) {
+            for (i = 0; i < duel.players[(1 - p) & 1].n_d; i++) {
+                if (duel.unk3832[k - 8] /* duel +0x3822: 5 card ids [?] */ == duel.players[(1 - p) & 1].zone_d[i].id) {
+                    break;
+                }
+            }
+            duel_088BFC64(1 - p, 0xD, i);
+        }
+    } else {
+        for (i = 0; i < duel.players[p & 1].n_d; i++) {
+            if (duel_slot_effect_with(p, 0xB, 0x12A1, CARD_UID(duel.players[p & 1].zone_d[i])) == 0) {
+                duel_088BFC64(p, 0xD, i);
+            }
+        }
+    }
+}
+
+void duel_088B426C(unsigned int p)
+{
+    unsigned int i;
+
+    for (i = 0; i < duel.players[p & 1].n_d; i++) {
+        if (!card_is_monster(duel.players[p & 1].zone_d[i].id)) {
+            switch (duel.players[p & 1].zone_d[i].id) {
+            case 0x1497:
+            case 0x1498:
+            case 0x1499:
+            case 0x149A:
+            case 0x17AD:
+            case 0x17AE:
+                break;
+            default:
+                duel_088BFC64(p, 0xD, i);
+                break;
+            }
+        }
+    }
+}
+
+void duel_088B4368(unsigned int p)
+{
+    unsigned int i;
+
+    for (i = 0; i < duel.players[(1 - p) & 1].n_grave; i++) {
+        if (card_get_type(duel.players[(1 - p) & 1].grave[i].id) == 0x16) {
+            duel_088BFC64(1 - p, 0xE, i);
+        }
+    }
+}
+
+void duel_088B4418(unsigned int p, int id)
+{
+    unsigned int i;
+
+    for (i = 0; i < duel.players[p & 1].n_d; i++) {
+        int c = duel.players[p & 1].zone_d[i].id;
+
+        if (card_is_monster(c) && card_get_atk_q(c) < 0x5DD) {
+            if (card_get_kind(c) == card_get_kind(id) && duel_card_dfac8(p, c, 1) &&
+                duel_slot_effect_with(p, 0xB, 0x12A1, CARD_UID(duel.players[p & 1].zone_d[i])) == 0) {
+                duel_088BFC64(p, 0xD, i);
+            }
+        }
     }
 }
