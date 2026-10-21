@@ -538,7 +538,8 @@ int duel_08899D34(DuelAct *a)
                         f = duel.players[p & 1].field[z].faceup;
                         t = duel.players[p & 1].field[z].pos;
                         ctrl = duel_field_controller(p, z, 1);
-                        v[p] = f + (t * 2 + (CARD_UID(duel.players[p & 1].field[z].card) * 8 + ctrl * 4));
+                        uid = CARD_UID(duel.players[p & 1].field[z].card);
+                        v[p] = f + (t * 2 + (uid * 8 + ctrl * 4));
                     }
                 }
             }
