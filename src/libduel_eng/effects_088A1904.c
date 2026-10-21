@@ -1,6 +1,5 @@
 // @range 0x088A1904-0x088A3430
 // @asm 0x088A2950-0x088A2B64
-// @asm 0x088A332C-0x088A3430
 /* Card effect handlers (DuelAct *a). */
 #include "duel.h"
 
@@ -87,7 +86,7 @@ extern int duel_w_08919650;
 extern unsigned int duel_turn_player;
 void duel_088C9D24(DuelAct *a, unsigned int p, int z);
 int duel_0887F8E4(DuelAct *a, int b);
-void duel_08832894(unsigned int p, unsigned short id);
+void duel_08832894(unsigned int p, int id);
 
 int duel_088A1904(DuelAct *a)
 {
@@ -691,7 +690,6 @@ int duel_088A32A4(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* `a` vai para $a2 e `p` para $a0 no case 0x7F (o original mantém `a` em $a0) */
 int duel_088A332C(DuelAct *a, int b)
 {
     unsigned int p;
@@ -708,11 +706,11 @@ int duel_088A332C(DuelAct *a, int b)
         if (n == 0) {
             return 0;
         }
-        if (duel_w_089148FC < n) {
-            duel_08832894(p, a->id);
-            return 0x7E;
+        if (n <= duel_w_089148FC) {
+            return 0;
         }
-        return 0;
+        duel_08832894(p, a->id);
+        return 0x7E;
     case 0x7E:
         if (duel_h_0891968E != 0) {
             duel_088CA384(a->player, duel_w_0891968C, 0);
@@ -721,4 +719,3 @@ int duel_088A332C(DuelAct *a, int b)
     }
     return 0;
 }
-#endif
