@@ -21,13 +21,15 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 **libduel_eng**
 
 ```
-0x088966D8-0x088C2F80   607 functions   182440 bytes
 0x08832B54-0x0884ACD0   254 functions    98684 bytes
 0x0884ED08-0x08864DF0   257 functions    90344 bytes
 0x08820618-0x088324F0   123 functions    73432 bytes
 0x08865F2C-0x0886CB44    68 functions    27672 bytes
+0x088BC9E0-0x088C2F80    86 functions    26016 bytes
+0x088A67D8-0x088ACCF8    59 functions    25888 bytes
 0x08804000-0x08809B50    43 functions    23376 bytes
 0x088D1DF4-0x088D6DE8    43 functions    20468 bytes
+0x0889CD38-0x088A1904    64 functions    19404 bytes
 0x088CC8EC-0x088D13CC     7 functions    19168 bytes
 ```
 
@@ -158,6 +160,25 @@ Conhecido no BOOT: `0x08804000`-`0x0881FFB0` é libgu, MSL, libgcc e sceDeflt co
 | [`effects_zg.c`](../src/libduel_eng/effects_zg.c) | 0x08892554-0x08894158 | 27 | 0 | handlers: tributo por nível vindo do cemitério, efeitos 0x14C4/0x17C2, alvos duplos, troca de mão entre jogadores, cartas de unk3832 de volta, dano por máscara, fim de turno com tabela de saltos, despacho por id (0x14FD-0x1694), invocação alternada pelos dois jogadores |
 | [`effects_zh.c`](../src/libduel_eng/effects_zh.c) | 0x08894158-0x08895C8C | 28 | 1 | handlers: escolha de tipo de carta da mão (dano 700 / destruir a carta especial), descarte do topo do cemitério, contadores por zona, máquinas com tabela de saltos (0x7B-0x80), aposta entre jogadores, recarga da mão até 4, invocação de token por id (0x12A0-0x1A37), adivinhação 0/1, carta da zona D por nome |
 | [`effects_zi.c`](../src/libduel_eng/effects_zi.c) | 0x08895C8C-0x088966D8 | 8 | 0 | handlers: carta virada para o dono com troca de alvo, invocação múltipla pelo nível (0x157A/0x1978), dano/destruição por w[2], carta do topo do deck revelada (0x159D) |
+| [`effects_088966D8.c`](../src/libduel_eng/effects_088966D8.c) | 0x088966D8-0x08898B10 | 22 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_08898B10.c`](../src/libduel_eng/effects_08898B10.c) | 0x08898B10-0x0889A75C | 22 | 3 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_0889A75C.c`](../src/libduel_eng/effects_0889A75C.c) | 0x0889A75C-0x0889C150 | 19 | 4 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_0889C150.c`](../src/libduel_eng/effects_0889C150.c) | 0x0889C150-0x0889CD38 | 9 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088A1904.c`](../src/libduel_eng/effects_088A1904.c) | 0x088A1904-0x088A3430 | 25 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088A3430.c`](../src/libduel_eng/effects_088A3430.c) | 0x088A3430-0x088A49F8 | 17 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088A49F8.c`](../src/libduel_eng/effects_088A49F8.c) | 0x088A49F8-0x088A6464 | 26 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088A6464.c`](../src/libduel_eng/effects_088A6464.c) | 0x088A6464-0x088A67D8 | 2 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088ACCF8.c`](../src/libduel_eng/effects_088ACCF8.c) | 0x088ACCF8-0x088AE378 | 15 | 6 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088AE378.c`](../src/libduel_eng/effects_088AE378.c) | 0x088AE378-0x088AF390 | 15 | 3 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088AF390.c`](../src/libduel_eng/effects_088AF390.c) | 0x088AF390-0x088AFD5C | 11 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088AFD5C.c`](../src/libduel_eng/effects_088AFD5C.c) | 0x088AFD5C-0x088B08B8 | 4 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088B153C.c`](../src/libduel_eng/effects_088B153C.c) | 0x088B153C-0x088B1854 | 4 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088B1EAC.c`](../src/libduel_eng/effects_088B1EAC.c) | 0x088B1EAC-0x088B2460 | 5 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088B2D0C.c`](../src/libduel_eng/effects_088B2D0C.c) | 0x088B2D0C-0x088B2F34 | 3 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088B3360.c`](../src/libduel_eng/effects_088B3360.c) | 0x088B3360-0x088B4560 | 20 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088B7D94.c`](../src/libduel_eng/effects_088B7D94.c) | 0x088B7D94-0x088B9CC8 | 35 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088B9CC8.c`](../src/libduel_eng/effects_088B9CC8.c) | 0x088B9CC8-0x088BB8C0 | 28 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088BB8C0.c`](../src/libduel_eng/effects_088BB8C0.c) | 0x088BB8C0-0x088BC9E0 | 17 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`duel_checks.c`](../src/libduel_eng/duel_checks.c) | 0x088C2F80-0x088C4448 | 11 | 6 | verificações de estado entre os passos: cartas contínuas cuja condição acabou são destruídas ou perdem o efeito |
 | [`duel_lp.c`](../src/libduel_eng/duel_lp.c) | 0x088C4448-0x088C4864 | 9 | 0 | mudanças de PV: dano e recuperação com as cartas que os impedem, comandos 0x25-0x30, evento `DuelLpEv` |
 | [`duel_draws.c`](../src/libduel_eng/duel_draws.c) | 0x088C4864-0x088C77D4 | 11 | 7 | pagamento de PV, compra e envio de cartas do deck e da zona D com seus comandos; os passos longos em asm |
