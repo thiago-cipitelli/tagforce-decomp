@@ -4,7 +4,6 @@
 // @asm 0x08865838-0x08865A48
 // @asm 0x08865ABC-0x08865C10
 // @asm 0x08865C10-0x08865E14
-// @asm 0x08865E3C-0x08865F2C
 /* Card effect handlers (descriptor callbacks of the card effect tables). */
 #include "duel.h"
 
@@ -495,7 +494,6 @@ int duel_08865E14(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* branch layout and register allocation not reproduced */
 int duel_08865E3C(DuelAct *a)
 {
     switch (duel_w_08914904) {
@@ -514,7 +512,7 @@ int duel_08865E3C(DuelAct *a)
     }
     case 1:
         if (duel_08835AC0() != 0) {
-            int i = duel_w_08919654;
+            unsigned int i = duel_w_08919654;
 
             duel_088CAE34(duel_w_0891964C, i);
             return 1;
@@ -524,4 +522,4 @@ int duel_08865E3C(DuelAct *a)
     }
     return 0;
 }
-#endif
+

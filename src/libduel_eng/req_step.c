@@ -1,6 +1,6 @@
 // @range 0x088DA5EC-0x088DEB2C
 // @asm 0x088DA5EC-0x088DB520
-// @asm 0x088DBB3C-0x088DC1A0
+// @asm 0x088DBD4C-0x088DC1A0
 // @asm 0x088DC4E0-0x088DCA4C
 // @asm 0x088DD038-0x088DD1A4
 // @asm 0x088DD660-0x088DD708
@@ -323,7 +323,6 @@ void duel_req_banish(void)
 }
 #endif
 
-
 int duel_zone_card_id(unsigned int p, int z, int i);
 void duel_zone_f_to_top(unsigned int p, unsigned short uid);
 
@@ -530,11 +529,10 @@ void duel_req_add_effect(void)
     }
 }
 
-#ifdef NON_MATCHING /* the registers of the player and of the zone are swapped */
 /* Add a counter to the card in zone arg (loc 0: clear them), or show a counter on a list card (w). */
 void duel_req_counter(void)
 {
-    unsigned int p = (duel_req.id & 0x8000) != 0;
+    int p = (duel_req.id & 0x8000) != 0;
     unsigned int z = duel_req.arg;
     unsigned int loc = *(unsigned short *)&duel_req.loc;
     int w = duel_req.w;
@@ -570,7 +568,6 @@ void duel_req_counter(void)
     duel_host_call(0x24, 0, 0, 0);
     duel_busy_0891523C = 0;
 }
-#endif
 
 int card_attribute_icon_in_2_3(int id);
 unsigned short duel_uid_next(unsigned int p);
@@ -712,8 +709,6 @@ void duel_req_draw(void)
         break;
     }
 }
-
-
 
 #ifdef NON_MATCHING /* draft: the s registers of the flags and the order of the location stores differ */
 /* Send arg cards from the top of the deck to the graveyard, or banish them (loc bits: 1 always,
@@ -1562,7 +1557,6 @@ void duel_step_summon(void)
         break;
     }
 }
-
 
 /* Steps of setting a spell or trap from the hand. */
 void duel_step_set_st(void)

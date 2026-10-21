@@ -1,6 +1,5 @@
 // @range 0x088CB400-0x088CBB64
 // @asm 0x088CB55C-0x088CB728
-// @asm 0x088CB728-0x088CB778
 // @asm 0x088CB778-0x088CB8EC
 /* Commands to the presentation for cards moving between the piles and the field (0x33, 0x3F, 0x41),
    attacks (0x29), the shuffle of the zones (0x49) and a card leaving a zone (0x43). */
@@ -51,13 +50,11 @@ int duel_088CB554(unsigned int p, DuelCard *c)
     return duel_088CB55C(p, c, 1);
 }
 
-#ifdef NON_MATCHING /* order of the zone and player fields of the packed location differs */
-void duel_088CB728(unsigned int p, int z, int uid, unsigned int q, int qz, int a, int b)
+void duel_088CB728(int p, int z, int uid, unsigned int q, int qz, int a, int b)
 {
-    duel_cmd(0x41, (uid & 0x3FF) << 6 | ((z & 0x1F) << 1 | (p & 1)), (q & 1) | (qz & 0x1F) << 1,
+    duel_cmd(0x41, (uid & 0x3FF) << 6 | ((p & 1) | (z & 0x1F) << 1), (q & 1) | (qz & 0x1F) << 1,
              (a & 0xFF) | (b & 0xFF) << 8);
 }
-#endif
 
 void duel_088CB8EC(unsigned int p, int a, int b, int c)
 {

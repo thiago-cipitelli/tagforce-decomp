@@ -1,7 +1,6 @@
 // @range 0x08819F94-0x0881C118
 // @asm 0x0881AF78-0x0881B020
 // @asm 0x0881A118-0x0881A1E4
-// @asm 0x0881A2B4-0x0881A3EC
 // @asm 0x0881A3EC-0x0881A554
 // @asm 0x0881A7C0-0x0881A960
 // @asm 0x0881A960-0x0881AA48
@@ -165,11 +164,12 @@ int duel_ai_0881A288(DuelAct *a)
     return duel_0880ACA0(1 - a->player) > 0;
 }
 
-#ifdef NON_MATCHING /* branch order of the zone owner tests not reproduced */
 int duel_ai_0881A2B4(DuelAct *a)
 {
     int z;
     unsigned short t;
+    unsigned int p;
+    unsigned int k;
 
     if (duel_find_st(a->player, 0x1366) >= 0) {
         return 1;
@@ -179,22 +179,21 @@ int duel_ai_0881A2B4(DuelAct *a)
         return 1;
     }
     z = duel_find_st(a->player, 0x137D);
-    if (z < 0) {
-        return 0;
-    }
-    t = duel_slot_e1854(a->player, z);
-    if (t == 0xFFFF) {
-        return 1;
-    }
-    if (duel.players[t & 1].field[t >> 8].card.id == 0x11E4) {
-        return 1;
-    }
-    if (duel.players[t & 1].field[t >> 8].card.id == 0xFD6) {
-        return 1;
+    if (z >= 0) {
+        t = duel_slot_e1854(a->player, z);
+        if (t == 0xFFFF) {
+            return 1;
+        }
+        p = t & 0xFF;
+        k = t >> 8 & 0xFF;
+        switch (duel.players[p & 1].field[k].card.id) {
+        case 0xFD6:
+        case 0x11E4:
+            return 1;
+        }
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* branch order of the LP and count tests not reproduced */
 int duel_ai_0881A3EC(DuelAct *a)

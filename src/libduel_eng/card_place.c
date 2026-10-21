@@ -1,5 +1,4 @@
 // @range 0x088E5800-0x088E5F84
-// @asm 0x088E5920-0x088E59B0
 // @asm 0x088E5BE8-0x088E5F84
 /* Small card rules (targets of an activation, kinds), card references (copy, swap, compare), the
    next uid of a player, and placing a card in a monster or spell/trap zone. */
@@ -57,28 +56,25 @@ int duel_act_target_is_monster(DuelAct *a)
     return a->n_targets == 1 && (unsigned char)((duel_act_target(a, 0) & 0xFFFF) >> 8) < 5;
 }
 
-#ifdef NON_MATCHING /* the original keeps the 1 of the n_targets test as the return value */
 int duel_act_target_flag9(DuelAct *a)
 {
     unsigned int t = duel_act_target(a, 0);
     unsigned int p = t & 0xFF;
     int z = (unsigned char)((t & 0xFFFF) >> 8);
 
-    if (a->n_targets == 1) {
-        if (z < 5 || z > 10) {
-            if (z < 5) {
-                if (duel_field_flag9(p, z)) {
-                    return 1;
-                }
-                return 0;
-            }
-            return 0;
-        }
+    if (a->n_targets != 1) {
+        return 0;
+    }
+    if (z >= 5 && z < 11) {
         return 1;
+    }
+    if (z < 5) {
+        if (duel_field_flag9(p, z)) {
+            return 1;
+        }
     }
     return 0;
 }
-#endif
 
 int duel_card_e59b0(int id)
 {

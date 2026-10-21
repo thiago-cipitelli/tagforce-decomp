@@ -4,9 +4,6 @@
 // @asm 0x0881C538-0x0881C6D4
 // @asm 0x0881C6D4-0x0881C850
 // @asm 0x0881C8F4-0x0881CA34
-// @asm 0x0881CA90-0x0881CC24
-// @asm 0x0881CCA0-0x0881CE34
-// @asm 0x0881CE34-0x0881CFF4
 // @asm 0x0881CFF4-0x0881D0D8
 /* Conditions the computer player checks before activating a card (continued in ai_cond0.c). */
 #include "duel.h"
@@ -263,7 +260,6 @@ int duel_ai_0881CA34(DuelAct *a)
     return duel_can_special_summon(p) != 0;
 }
 
-#ifdef NON_MATCHING /* the strongest attack position monster test keeps a dead branch; count test inverted */
 int duel_ai_0881CA90(DuelAct *a)
 {
     DuelStats st;
@@ -273,14 +269,11 @@ int duel_ai_0881CA90(DuelAct *a)
     if (duel_08836868(a->player) == 0) {
         return 0;
     }
-    if (duel_count_monsters(1 - a->player) <= 0) {
-        return 0;
-    }
-    {
+    if (duel_count_monsters(1 - a->player) > 0) {
         m = 0;
         for (z = 0; z < 5; z++) {
             if (duel.players[a->player & 1].field[z].card.id != 0 && duel.players[a->player & 1].field[z].pos == 0) {
-                m = MAX(duel_field_atk(a->player, z), m);
+                m = MAX(m, duel_field_atk(a->player, z));
             }
         }
         for (z = 0; z < 5; z++) {
@@ -296,7 +289,6 @@ int duel_ai_0881CA90(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_ai_0881CC24(DuelAct *a)
 {
@@ -312,7 +304,6 @@ int duel_ai_0881CC24(DuelAct *a)
     return !(n < 2);
 }
 
-#ifdef NON_MATCHING /* same shape as duel_ai_0881CA90 */
 int duel_ai_0881CCA0(DuelAct *a)
 {
     DuelStats st;
@@ -322,14 +313,11 @@ int duel_ai_0881CCA0(DuelAct *a)
     if (duel_08836868(a->player) == 0) {
         return 0;
     }
-    if (duel_count_monsters(1 - a->player) <= 0) {
-        return 0;
-    }
-    {
+    if (duel_count_monsters(1 - a->player) > 0) {
         m = 0;
         for (z = 0; z < 5; z++) {
             if (duel.players[a->player & 1].field[z].card.id != 0 && duel.players[a->player & 1].field[z].pos == 0) {
-                m = MAX(duel_field_atk(a->player, z), m);
+                m = MAX(m, duel_field_atk(a->player, z));
             }
         }
         for (z = 0; z < 5; z++) {
@@ -345,34 +333,30 @@ int duel_ai_0881CCA0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* same shape as duel_ai_0881CA90 */
 int duel_ai_0881CE34(DuelAct *a)
 {
     DuelStats st;
     int m = 0;
     int z;
 
-    if (duel_08836868(a->player) != 0) {
-        for (z = 0; z < 5; z++) {
-            if (duel.players[a->player & 1].field[z].card.id != 0 && duel.players[a->player & 1].field[z].pos == 0) {
-                m = MAX(duel_field_atk(a->player, z), m);
-            }
+    if (duel_08836868(a->player) == 0) {
+        return 0;
+    }
+    for (z = 0; z < 5; z++) {
+        if (duel.players[a->player & 1].field[z].card.id != 0 && duel.players[a->player & 1].field[z].pos == 0) {
+            m = MAX(m, duel_field_atk(a->player, z));
         }
-        for (z = 0; z < 5; z++) {
-            if (duel_0884E3E4(a, 1 - a->player, z) != 0) {
-                int lo;
-                int hi;
-
-                duel_field_stats(1 - a->player, z, &st);
-                lo = st.def;
-                hi = st.atk;
-                if (duel.players[(1 - a->player) & 1].field[z].pos != 0) {
-                    lo = st.atk;
-                    hi = st.def;
+    }
+    for (z = 0; z < 5; z++) {
+        if (duel_0884E3E4(a, 1 - a->player, z) != 0) {
+            duel_field_stats(1 - a->player, z, &st);
+            if (duel.players[(1 - a->player) & 1].field[z].pos == 0) {
+                if (st.atk >= m && st.def < m) {
+                    return 1;
                 }
-                if (hi >= m && lo < m) {
+            } else {
+                if (st.def >= m && st.atk < m) {
                     return 1;
                 }
             }
@@ -380,7 +364,6 @@ int duel_ai_0881CE34(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* the original folds the faceup offset into the base address of duel */
 int duel_ai_0881CFF4(DuelAct *a)
