@@ -198,7 +198,7 @@ int duel_eff_fdd6c(DuelAct *a)
         duel_08832AF4(p, p == a->player ? a->zone : -1, 1, 1);
         return 0x7E;
     case 0x7E:
-        if (duel.unk3832 != 0) {
+        if (duel.unk3832[0] != 0) {
             duel_088C5424(p, 2000);
         } else {
             duel_088C4604(a, p, 2000);

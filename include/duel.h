@@ -228,9 +228,8 @@ typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
     unsigned char pad37a8[0x37D4 - 0x37A8];
     int unk37d4;                       /* +0x37D4 */
     unsigned char pad37d8[0x3830 - 0x37D8];
-    unsigned short unk3830;
-    unsigned short unk3832;
-    unsigned char pad3834[0x3840 - 0x3834];
+    unsigned short unk3830;            /* +0x3830 count of unk3832 (also duel_w_0891968C) */
+    unsigned short unk3832[7];         /* +0x3832 */
 } Duel;
 
 extern Duel duel;

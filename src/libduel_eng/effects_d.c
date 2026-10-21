@@ -56,7 +56,7 @@ int duel_eff_f96c0(DuelAct *a, int b)
         duel_08832AF4(p, z, 1, duel_w_08919624);
         return 0x7E;
     case 0x7E:
-        if (duel.unk3832 == 0) {
+        if (duel.unk3832[0] == 0) {
             duel_088CC4B4(p, z, -1);
         }
         return 0;
