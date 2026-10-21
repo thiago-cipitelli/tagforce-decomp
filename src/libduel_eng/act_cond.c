@@ -1,5 +1,4 @@
 // @range 0x0886CB44-0x0886E784
-// @asm 0x0886CD24-0x0886CD90
 // @asm 0x0886D050-0x0886D0C4
 // @asm 0x0886D828-0x0886DBC4
 // @asm 0x0886DE70-0x0886E074
@@ -110,13 +109,13 @@ int duel_0886CD1C(DuelAct *a, unsigned int p)
     return duel_count_free_monster_zones(p);
 }
 
-#ifdef NON_MATCHING /* the found test is computed before the player load in the original */
 /* Cards in the hand of a's player besides card a itself. */
 int duel_0886CD24(DuelAct *a, unsigned int p)
 {
-    return duel.players[a->player & 1].n_hand - (duel_hand_find_uid(p, a->uid) < 0 ^ 1);
+    int f = duel_hand_find_uid(p, a->uid) >= 0;
+
+    return duel.players[a->player & 1].n_hand - f;
 }
-#endif
 
 int duel_0886CD90(DuelAct *a, int b)
 {

@@ -1,7 +1,6 @@
 // @range 0x08810370-0x08811BDC
 // @asm 0x08810944-0x08810AE0
 // @asm 0x08810D08-0x08810EFC
-// @asm 0x088111F8-0x08811264
 // @asm 0x088119FC-0x08811B24
 /* Conditions of the computer player: LP against the strongest ATK, monsters on the field, the chain. */
 #include "duel.h"
@@ -360,15 +359,16 @@ int duel_088110E0(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* desvio da comparação */
 int duel_088111F8(DuelAct *a)
 {
     unsigned int p = a->player;
     unsigned int n = duel.players[(1 - p) & 1].n_grave;
 
-    return n < (unsigned int)duel.players[p & 1].n_d && (int)n >= 3;
+    if (n >= (unsigned int)duel.players[p & 1].n_d) {
+        return 0;
+    }
+    return (int)n >= 3;
 }
-#endif
 
 int duel_08811264(DuelAct *a)
 {
