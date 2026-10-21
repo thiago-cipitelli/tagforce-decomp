@@ -422,7 +422,7 @@ segments:
       - [0x90714, c, effects_zh]
       - [0x90E48, asm, effects_zh_asm_08894DE8]
       - [0x90FD8, c, effects_zh]
-      - [0x916D8, asm, text_10]
+      - [0x91CEC, asm, text_10]
       - [0xBEFE0, c, duel_checks]
       - [0xBF078, asm, duel_checks_asm_088C3018]
       - [0xBF0B8, c, duel_checks]

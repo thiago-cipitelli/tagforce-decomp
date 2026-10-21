@@ -1,4 +1,4 @@
-// @range 0x08894158-0x08895678
+// @range 0x08894158-0x08895C8C
 // @data 0x089118DC-0x0891190C
 // @asm 0x08894500-0x088946B4
 // @asm 0x08894DE8-0x08894F78
@@ -81,6 +81,17 @@ int duel_count_free_monster_zones(unsigned int p);
 int duel_can_set(unsigned int p);
 int duel_phase_ok2();
 void duel_0882619C(unsigned int p, DuelCard *c, int a, int b, int d);
+void duel_08832950(unsigned int p, unsigned short id);
+int duel_hand_count_monsters(unsigned int p);
+void duel_08832880(unsigned int p, unsigned short id, int a);
+DuelCard *duel_field_card_deb2c(unsigned int p, int zone, int i);
+void duel_088CA384(unsigned int p, int i, int f);
+void duel_088C7810(unsigned int p, int a);
+void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, int c);
+int duel_d_find_name(unsigned int p, int id);
+void duel_088CB554(unsigned int p, DuelCard *c);
+int duel_grave_find_uid(unsigned int p, int uid);
+int duel_08880D54(DuelAct *a, int b);
 
 int duel_08894158(DuelAct *a, DuelAct *b)
 {
@@ -607,4 +618,146 @@ int duel_08895448(DuelAct *a)
     c.owner = a->player;
     duel_0882619C(a->player, &c, 1, mode, a->id << 16 | 1);
     return 0;
+}
+
+int duel_08895678(DuelAct *a)
+{
+    char buf[512];
+
+    switch (duel_step) {
+    case 0x80:
+        if (duel.players[1 - a->player & 1].n_hand != 0 || duel_count_monsters(1 - a->player) != 0) {
+            duel_08832950(1 - a->player, a->id);
+            return 0x7F;
+        }
+        return 0;
+    case 0x7F:
+        duel_wfmt_s(buf, (char *)0x108, duel_08861480(a->id, duel_w_0891968C));
+        duel_0884ACD8(a->player, buf);
+        return 0x7E;
+    case 0x7E:
+        switch (duel_w_0891968C) {
+        case 0:
+            duel_088327F8(1 - a->player, 1, 1);
+            return 0;
+        case 1:
+            duel_088328E8(1 - a->player, a->id, 0);
+            break;
+        }
+        return 0x7D;
+    case 0x7D:
+        duel_088D147C(a, duel_w_0891968C & 0xFF, duel_w_0891968C >> 8 & 0xFF);
+        return 0;
+    }
+    return 0;
+}
+
+int duel_088957DC(DuelAct *a)
+{
+    switch (duel_step) {
+    case 0x80:
+        duel_08832B18(a->player, a->zone);
+        return 0x7F;
+    case 0x7F:
+        if (duel_w_0891968C == 6) {
+            return 0x80;
+        }
+        duel_088D147C(a, 1 - a->player, duel_w_0891968C - 1);
+        return 0;
+    }
+    return 0;
+}
+
+int duel_08895860(DuelAct *a)
+{
+    int w;
+    unsigned int o;
+
+    switch (duel_step) {
+    case 0x80:
+        if (duel.players[1 - a->player & 1].n_hand == 0) {
+            return 0;
+        }
+        if (duel_hand_count_monsters(1 - a->player) == 0) {
+            return 100;
+        }
+        duel_08832880(a->player, a->id, 1);
+        return 0x7F;
+    case 0x7F:
+        w = duel_w_0891968C;
+        o = duel_field_card_deb2c(1 - a->player, 0xB, w)->owner;
+        duel_088CA384(1 - a->player, w, 1);
+        duel_088C78E0(o);
+        return 0;
+    case 100:
+        duel_088C7810(1 - a->player, 1);
+        return 99;
+    case 99:
+        duel_0884ACD8(a->player, (void *)0x11);
+        return 0x62;
+    case 0x62:
+        duel_088C7810(1 - a->player, 0);
+        return 0;
+    }
+    return 0;
+}
+
+int duel_088959D8(DuelAct *a)
+{
+    if (a->b4_2) {
+        return 0;
+    }
+    if (duel_088C5E70(a->player, 2) != 0) {
+        duel_088C77D4(a->player, a->id, (unsigned short)((unsigned char)((duel_turn_player == a->player) + 3) << 4 | 1), 0);
+    }
+    return 0;
+}
+
+int duel_08895A64(DuelAct *a, int b)
+{
+    if (duel.mode & 1) {
+        return 0;
+    }
+    if (!(duel.mode >> 1 & 1)) {
+        return 0;
+    }
+    if (duel_0884E398(a, b) != 2) {
+        return 0;
+    }
+    if (duel.players[duel_special.player[0] & 1].field[duel_special.zone[0]].card.id != 0) {
+        duel_088C87D8(a, duel_special.player[0], duel_special.zone[0], a->player | a->zone << 8, 8, 0);
+    }
+    return 0;
+}
+
+int duel_08895B44(DuelAct *a)
+{
+    int i;
+    int n = a->w[0];
+
+    switch (duel_step) {
+    case 0x80:
+        i = duel_d_find_name(1 - a->player, n);
+        if (i < 0) {
+            duel_0884ACD8(a->player, (void *)0xD);
+            return 0x78;
+        }
+        duel_088CB554(1 - a->player, &duel.players[1 - a->player & 1].zone_d[i]);
+        return 100;
+    case 0x78:
+        duel_088328FC(a->player);
+        return 100;
+    case 100:
+        duel_088C78E0(1 - a->player);
+        return 0;
+    }
+    return 0;
+}
+
+int duel_08895C30(DuelAct *a, int b)
+{
+    if (duel_grave_find_uid(a->player, a->uid) < 0) {
+        return 0;
+    }
+    return duel_08880D54(a, b);
 }
