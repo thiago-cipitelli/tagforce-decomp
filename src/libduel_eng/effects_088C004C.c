@@ -209,7 +209,7 @@ int duel_088C0668(int id)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o teste do bit 5 sai como beqz para o corpo seguido de b fim, que nem o if, nem o switch de um case, nem ifs aninhados reproduzem; o p | z << 8 sai com registradores trocados */
+#ifdef NON_MATCHING /* o teste do bit 5 sai como beqz para o corpo seguido de b fim, que nem o if, nem o switch de um case, nem ifs aninhados reproduzem */
 void duel_088C07FC(unsigned int p, int z, int c)
 {
     int q;
@@ -223,7 +223,7 @@ void duel_088C07FC(unsigned int p, int z, int c)
                 for (k = 0; k < 5; k++) {
                     if (duel.players[q & 1].field[k].card.id != 0 && duel.players[q & 1].field[k].faceup != 0 &&
                         (unsigned short)duel_field_type(q, k) == 2 && duel_st_affects(q, k, p, z)) {
-                        duel_088C87A8(q, k, p & 0xFF | (z & 0xFF) << 8, 7, 0);
+                        duel_088C87A8(q, k, (unsigned char)p | (unsigned char)z << 8, 7, 0);
                     }
                 }
             }
