@@ -479,7 +479,7 @@ int duel_088977BC(DuelAct *a)
 {
     unsigned int t;
     unsigned int p;
-    unsigned int z;
+    int z;
     unsigned int x;
     int v;
 
@@ -499,7 +499,7 @@ int duel_088977BC(DuelAct *a)
         if (duel_088A9008(a, 0, 0) != 0) {
             t = duel_act_target(a, 0);
             p = t & 0xFF;
-            z = (unsigned short)t >> 8 & 0xFF;
+            z = (unsigned char)((t & 0xFFFF) >> 8);
             if (duel.players[p & 1].field[z].faceup != 0 && duel_act_immune(a, p, z) == 0) {
                 q = (char *)&c;
                 n = 4;
@@ -519,12 +519,12 @@ int duel_088977BC(DuelAct *a)
     case 0x7F:
         t = duel_act_target(a, 0);
         p = t & 0xFF;
-        z = (unsigned short)t >> 8 & 0xFF;
+        z = (unsigned char)((t & 0xFFFF) >> 8);
         duel_field_stats(p, z, &st);
         duel_088C87A8(a->player, duel_w_089148FC, 0x1602, 5,
                       (card_get_type(st.id) & 0xFF) << 8 | (unsigned char)((card_get_kind(st.id) & 0xF) | (card_get_level(st.id) & 0xF) << 4));
-        duel_088C87A8(a->player, duel_w_089148FC, 0x1602, 5, st.batk >= 0x10000 ? 0xFFFF : st.batk);
-        duel_088C87A8(a->player, duel_w_089148FC, 0x1602, 5, st.bdef >= 0x10000 ? 0xFFFF : st.bdef);
+        duel_088C87A8(a->player, duel_w_089148FC, 0x1602, 5, st.batk > 0xFFFF ? 0xFFFF : st.batk);
+        duel_088C87A8(a->player, duel_w_089148FC, 0x1602, 5, st.bdef > 0xFFFF ? 0xFFFF : st.bdef);
         duel_088C87A8(p, z, (unsigned short)((unsigned char)a->player | (unsigned char)duel_w_089148FC << 8), 7, 0);
         break;
     }

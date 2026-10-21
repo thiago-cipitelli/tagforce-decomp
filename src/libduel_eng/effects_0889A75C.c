@@ -1,6 +1,5 @@
 // @range 0x0889A75C-0x0889C150
 // @data 0x0891193C-0x08911974
-// @asm 0x0889B958-0x0889BAA8
 // @asm 0x0889C080-0x0889C150
 /* Card effect handlers (DuelAct *a), after effects_08898B10.c. */
 #include "duel.h"
@@ -505,7 +504,6 @@ int duel_0889B904(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a->id << 16 duplicado nos dois caminhos do teste de 0x16BE */
 int duel_0889B958(DuelAct *a)
 {
     unsigned int q;
@@ -524,17 +522,18 @@ int duel_0889B958(DuelAct *a)
     if (((unsigned short)loc >> 8 & 0xFF) == 0xF && duel_zone_f_card_usable(q, p, i)) {
         if (duel_count_free_monster_zones(q) != 0) {
             k = 2;
-            if (a->id == 0x16BE) {
+            switch (a->id) {
+            case 0x16BE:
                 k = 0;
+                break;
             }
-            duel_0882619C(q, &duel.players[p & 1].zone_f[i], 1, k, a->id << 16);
+            duel_0882619C(q, &duel.players[p & 1].zone_f[i], 1, k, (a->id & 0xFFFF) << 16);
         } else if (duel_088DFCC8(a->uid)) {
             duel_088CB490(p, a->uid);
         }
     }
     return 0;
 }
-#endif
 
 int duel_0889BAA8(DuelAct *a)
 {

@@ -1,5 +1,4 @@
 // @range 0x0889C150-0x0889CD38
-// @asm 0x0889C8E0-0x0889CAF4
 /* Card effect handlers (DuelAct *a), after effects_0889A75C.c. */
 #include "duel.h"
 
@@ -231,17 +230,17 @@ int duel_0889C774(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* pressão de registradores: o original guarda q, i e ponteiros na pilha */
 int duel_0889C8E0(DuelAct *a)
 {
+    int i;
+    int z;
+    int bit;
+    int k;
     unsigned int q;
+
     int flag;
     unsigned int mask;
-    int i;
     unsigned int p;
-    int bit;
-    int z;
-    int k;
     int id;
 
     q = 1 - a->player;
@@ -252,7 +251,7 @@ int duel_0889C8E0(DuelAct *a)
     for (i = 0; i < 2; i++) {
         p = duel_turn_player ^ i;
         bit = p << 4;
-        for (z = 0; z < 11; z++, bit++) {
+        for (z = 0; z <= 10; bit++, z++) {
             if (mask & 1 << bit) {
                 id = duel.players[p & 1].field[z].card.id;
                 for (k = duel.players[q & 1].n_hand - 1; k >= 0; k--) {
@@ -274,7 +273,6 @@ int duel_0889C8E0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0889CAF4(DuelAct *a)
 {
