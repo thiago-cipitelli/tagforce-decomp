@@ -1,5 +1,6 @@
-// @range 0x088C004C-0x088C0CD0
+// @range 0x088C004C-0x088C134C
 // @asm 0x088C07FC-0x088C09C8
+// @asm 0x088C0CD0-0x088C134C
 /* Effect helpers after the candidate lists (effects_088BC9E0.c): whether a card is in the chain, the
    active field spell, and loops over the monster or spell/trap zones holding a card. */
 #include "duel.h"
@@ -21,6 +22,14 @@ int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
 int duel_088E9150(int id);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
+int duel_slot_ref_immune(unsigned int p, int z, int opp);
+int duel_slot_immune(unsigned int p, int z, int opp);
+int duel_field_level(unsigned int p, int z);
+void duel_088C448C(int p, int a);
+void duel_088C7C54(void);
+int duel_088C9878(unsigned int p, int z, int x, int y, int id, int opp);
+void duel_088C7CF0(void);
+extern int duel_w_08911B78[5];             /* 0x15FB, 0x10EF, 0x17A6, 0x197B, 0x1704 */
 extern unsigned int duel_turn_player;
 extern unsigned int duel_w_089147E0;
 extern unsigned int duel_w_08917DB8;
@@ -279,3 +288,118 @@ void duel_088C0BB0(unsigned int p, int z)
         }
     }
 }
+
+#ifdef NON_MATCHING /* no segundo laço o jogador e os ponteiros de best/ids saem em $s1-$s3 rodados, e o MAX das magias carrega best antes do unk4 */
+int duel_088C0CD0(void)
+{
+    int p;
+    int z;
+    unsigned int k;
+    int n;
+    int q;
+    int b;
+
+    int best[5][2] = { { -1, -1 }, { -1, -1 }, { -1, -1 }, { -1, -1 }, { -1, -1 } };
+    int sel[2][5];
+    int r = 0;
+    int id = duel_w_08911B78[4];
+    int ok;
+    int c;
+    int j;
+
+    n = 0;
+
+    for (p = 0; p < 2; p++) {
+        for (z = 0; z < 5; z++) {
+            if (SLOT_ACTIVE(&duel.players[p & 1].field[z]) && id == field_get_card(p, z)) {
+                best[4][p] = MAX(best[4][p], duel.players[p & 1].field[z].unk4);
+                n++;
+            }
+        }
+        for (z = 5; z < 10; z++) {
+            if (SLOT_ACTIVE(&duel.players[p & 1].field[z])) {
+                for (k = 0; k < 4; k++) {
+                    if (duel_w_08911B78[k] == field_get_card(p, z)) {
+                        best[k][p] = MAX(duel.players[p & 1].field[z].unk4, best[k][p]);
+                        n++;
+                    }
+                }
+            }
+        }
+    }
+    if (n == 0) {
+        return 0;
+    }
+    for (p = 0; p < 2; p++) {
+        for (z = 0; z <= 4; z++) {
+            if (duel.players[p & 1].field[z].card.id != 0 && duel.players[p & 1].field[z].faceup != 0) {
+                sel[p][z] = 0;
+                b = -1;
+                for (k = 0; k < 5; k++) {
+                    for (q = 0; q < 2; q++) {
+                        if (b < best[k][q]) {
+                            ok = 0;
+                            switch (duel_w_08911B78[k]) {
+                            case 0x15FB:
+                                ok = !duel_slot_ref_immune(p, z, p != q);
+                                break;
+                            case 0x10EF:
+                                ok = !duel_slot_ref_immune(p, z, p != q) && (unsigned short)duel_field_type(p, z) == 1;
+                                break;
+                            case 0x17A6:
+                                ok = !duel_slot_immune(p, z, p != q) && duel_field_level(p, z) >= 4;
+                                break;
+                            case 0x197B:
+                                ok = !duel_slot_ref_immune(p, z, p != q) && duel_field_level(p, z) < 4;
+                                break;
+                            case 0x1704:
+                                ok = !duel_slot_ref_immune(p, z, p != q) && p != q && (unsigned short)duel_field_type(p, z) == 10;
+                                break;
+                            }
+                            if (ok) {
+                                b = best[k][q];
+                                sel[p][z] = duel_w_08911B78[k];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for (k = 0; k < 5; k++) {
+        if (best[k][0] >= 0 || best[k][1] >= 0) {
+            c = 0;
+            for (j = 0; j < 2; j++) {
+                q = duel_turn_player ^ j;
+                for (z = 0; z <= 4; z++) {
+                    if (duel.players[q & 1].field[z].card.id != 0 && duel.players[q & 1].field[z].faceup != 0 &&
+                        duel_w_08911B78[k] == sel[q][z]) {
+                        ok = 0;
+                        switch (duel_w_08911B78[k]) {
+                        case 0x10EF:
+                        case 0x17A6:
+                            ok = !duel.players[q & 1].field[z].pos;
+                            break;
+                        case 0x15FB:
+                        case 0x1704:
+                        case 0x197B:
+                            ok = duel.players[q & 1].field[z].pos;
+                            break;
+                        }
+                        if (ok) {
+                            if (c++ == 0) {
+                                duel_088C448C(-1, duel_w_08911B78[k]);
+                            }
+                            duel_088C7C54();
+                            duel_088C9878(q, z, 0, 0, duel_w_08911B78[k], best[k][1 - q] >= 0);
+                            duel_088C7CF0();
+                            r = 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return r;
+}
+#endif
