@@ -411,7 +411,7 @@ segments:
       - [0x90560, asm, effects_zh_asm_08894500]
       - [0x90714, c, effects_zh]
       - [0x91CEC, c, effects_zi]
-      - [0x91EAC, asm, text_10]
+      - [0x92738, asm, text_10]
       - [0xBEFE0, c, duel_checks]
       - [0xBF078, asm, duel_checks_asm_088C3018]
       - [0xBF0B8, c, duel_checks]
