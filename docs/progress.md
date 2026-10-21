@@ -21,7 +21,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 **libduel_eng**
 
 ```
-0x08890094-0x088C2F80   701 functions   208620 bytes
+0x08890820-0x088C2F80   695 functions   206688 bytes
 0x08832B54-0x0884ACD0   254 functions    98684 bytes
 0x0884ED08-0x08864DF0   257 functions    90344 bytes
 0x08820618-0x088324F0   123 functions    73432 bytes
@@ -118,7 +118,7 @@ Conhecido no BOOT: `0x08804000`-`0x0881FFB0` é libgu, MSL, libgcc e sceDeflt co
 | [`extdata.c`](../src/BOOT/extdata.c) | 0x0886CF50-0x0886E0A4 | 9 | 2 | arquivos YGTF .YGC/.YGR/.YGL da pasta do save: listagem, leitura, verificação e desembaralhamento |
 | [`netsync.c`](../src/BOOT/netsync.c) | 0x0886E0A4-0x0886ED2C | 26 | 3 | troca de registros de 0x100 bytes por jogador via PDP ad hoc, fila de pacotes, transferência em blocos de 0x80, lado do jogador local |
 
-## libduel_eng (90 arquivos, 1542 funções batendo, 307 em asm)
+## libduel_eng (91 arquivos, 1546 funções batendo, 309 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -152,6 +152,7 @@ Conhecido no BOOT: `0x08804000`-`0x0881FFB0` é libgu, MSL, libgcc e sceDeflt co
 | [`effects_za.c`](../src/libduel_eng/effects_za.c) | 0x0888C1A8-0x0888E5D4 | 21 | 2 | filtro de escolha na mão, troca de três cartas da mão com o oponente, ATK fixo e marcas no alvo, fichas por id da carta, invocação na fase 5, monstros do cemitério de volta pela escolha da lista, troca com a carta especial, marcas com ATK/5 e contadores, invocação pela carta especial do turno, cartas viradas para baixo na zona, troca de monstros entre jogadores, dano fixo, compras da mão |
 | [`effects_zb.c`](../src/libduel_eng/effects_zb.c) | 0x0888E5D4-0x0888F420 | 7 | 3 | handlers: máscara de zonas pelos alvos, cartas no cemitério dos dois jogadores, soma de ATK dos monstros controlados, LP dos dois jogadores, marcas por cartas no cemitério, cartas da mão ou do deck para o campo |
 | [`effects_zc.c`](../src/libduel_eng/effects_zc.c) | 0x0888F420-0x08890094 | 2 | 3 | handlers: troca de cartas da mão entre os jogadores, carta do cemitério para a zona de magia, contador de níveis 0x1497-0x149A, ataque forçado contra a carta especial |
+| [`effects_zd.c`](../src/libduel_eng/effects_zd.c) | 0x08890094-0x08890820 | 4 | 2 | handlers: invocação do deck com pedido ao oponente, dano pelo ATK do monstro escolhido, carta do campo de volta, máscara de monstros com DEF até o ATK do alvo |
 | [`duel_checks.c`](../src/libduel_eng/duel_checks.c) | 0x088C2F80-0x088C4448 | 11 | 6 | verificações de estado entre os passos: cartas contínuas cuja condição acabou são destruídas ou perdem o efeito |
 | [`duel_lp.c`](../src/libduel_eng/duel_lp.c) | 0x088C4448-0x088C4864 | 9 | 0 | mudanças de PV: dano e recuperação com as cartas que os impedem, comandos 0x25-0x30, evento `DuelLpEv` |
 | [`duel_draws.c`](../src/libduel_eng/duel_draws.c) | 0x088C4864-0x088C77D4 | 11 | 7 | pagamento de PV, compra e envio de cartas do deck e da zona D com seus comandos; os passos longos em asm |
