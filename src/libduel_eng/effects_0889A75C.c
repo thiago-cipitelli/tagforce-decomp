@@ -1,7 +1,6 @@
 // @range 0x0889A75C-0x0889C150
 // @data 0x0891193C-0x08911974
 // @asm 0x0889A9C8-0x0889AAC4
-// @asm 0x0889B64C-0x0889B790
 // @asm 0x0889B958-0x0889BAA8
 // @asm 0x0889BDC0-0x0889C150
 /* Card effect handlers (DuelAct *a), after effects_08898B10.c. */
@@ -451,18 +450,18 @@ int duel_0889B4D4(DuelAct *a, DuelAct *b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* falta o andi 0xff redundante antes de n7 - 1 */
 int duel_0889B64C(DuelAct *a)
 {
     int u;
     int g;
+    unsigned char n;
 
     switch (duel_step) {
     case 0x80:
         duel_w_089148FC = 0;
     case 0x7F:
-        if (a->n7 != 0) {
-            u = duel_act_target2(a, a->n7 - 1);
+        if ((n = a->n7) != 0) {
+            u = duel_act_target2(a, n - 1);
             g = duel_grave_find_uid(a->player, u);
             if (g >= 0) {
                 duel_088CA428(a->player, CARD_UID(duel.players[a->player & 1].grave[g]), 1);
@@ -478,7 +477,6 @@ int duel_0889B64C(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0889B790(DuelAct *a)
 {
