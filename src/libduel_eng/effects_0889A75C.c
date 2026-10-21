@@ -1,8 +1,6 @@
 // @range 0x0889A75C-0x0889C150
 // @data 0x0891193C-0x08911974
-// @asm 0x0889A9C8-0x0889AAC4
-// @asm 0x0889B958-0x0889BAA8
-// @asm 0x0889BDC0-0x0889C150
+// @asm 0x0889C080-0x0889C150
 /* Card effect handlers (DuelAct *a), after effects_08898B10.c. */
 #include "duel.h"
 
@@ -39,7 +37,7 @@ int duel_field_atk(unsigned int p, int z);
 int card_is_attribute9(int id);
 int card_get_atk(int id);
 int duel_grave_count_id(unsigned int p, int id);
-void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, int c);
+void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, unsigned short c);
 int duel_088C97F0(DuelAct *a, unsigned int p, int z, int b, int c);
 int duel_0887F80C(DuelAct *a, DuelAct *b);
 void duel_088C7810(unsigned int p, int a);
@@ -141,14 +139,13 @@ int duel_0889A794(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores s de z e sum trocados */
 int duel_0889A9C8(DuelAct *a)
 {
     unsigned int loc;
     unsigned int p;
-    unsigned int z;
-    int sum;
+    int z;
     int i;
+    int sum;
 
     if (duel_088A9008(a, 0, &loc)) {
         p = loc & 0xFF;
@@ -165,7 +162,6 @@ int duel_0889A9C8(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0889AAC4(DuelAct *a)
 {
@@ -508,7 +504,6 @@ int duel_0889B904(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a->id << 16 duplicado nos dois caminhos do teste de 0x16BE */
 int duel_0889B958(DuelAct *a)
 {
     unsigned int q;
@@ -527,17 +522,18 @@ int duel_0889B958(DuelAct *a)
     if (((unsigned short)loc >> 8 & 0xFF) == 0xF && duel_zone_f_card_usable(q, p, i)) {
         if (duel_count_free_monster_zones(q) != 0) {
             k = 2;
-            if (a->id == 0x16BE) {
+            switch (a->id) {
+            case 0x16BE:
                 k = 0;
+                break;
             }
-            duel_0882619C(q, &duel.players[p & 1].zone_f[i], 1, k, a->id << 16);
+            duel_0882619C(q, &duel.players[p & 1].zone_f[i], 1, k, (a->id & 0xFFFF) << 16);
         } else if (duel_088DFCC8(a->uid)) {
             duel_088CB490(p, a->uid);
         }
     }
     return 0;
 }
-#endif
 
 int duel_0889BAA8(DuelAct *a)
 {
@@ -599,12 +595,11 @@ int duel_0889BD04(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores s de z, i e n trocados */
 int duel_0889BDC0(DuelAct *a)
 {
     int t;
     unsigned int p;
-    unsigned int z;
+    int z;
     int i;
     int v;
 
@@ -632,7 +627,7 @@ int duel_0889BDC0(DuelAct *a)
                 t = duel.players[(1 - a->player) & 1].n_hand * 200;
                 break;
             case 0x1890:
-                for (i = 0; i < 5; i++) {
+                for (i = 0; i <= 4; i++) {
                     if (i == z) {
                         continue;
                     }
@@ -642,9 +637,7 @@ int duel_0889BDC0(DuelAct *a)
                         duel_088C87D8(a, a->player, i, a->id, 2, 1);
                     }
                 }
-                if (t >= 0xFFFF) {
-                    t = 0xFFFF;
-                }
+                t = MIN(t, 0xFFFF);
                 break;
             case 0x18CA:
                 if (!card_is_attribute9(a->w[1])) {
@@ -663,7 +656,6 @@ int duel_0889BDC0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* extração do bit player de src (sll/srl/ext) diferente */
 int duel_0889C080(DuelAct *a)
