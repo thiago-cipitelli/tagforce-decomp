@@ -1,5 +1,4 @@
 // @range 0x0886CB44-0x0886E784
-// @asm 0x0886D050-0x0886D0C4
 // @asm 0x0886D828-0x0886DBC4
 // @asm 0x0886DE70-0x0886E074
 // @asm 0x0886E590-0x0886E784
@@ -187,7 +186,6 @@ int duel_0886D01C(DuelAct *a)
     return n[0] != 0 || n[1] != 0;
 }
 
-#ifdef NON_MATCHING /* the last test is not shared with the other returns */
 int duel_0886D050(DuelAct *a, int b)
 {
     unsigned int p;
@@ -203,11 +201,10 @@ int duel_0886D050(DuelAct *a, int b)
         return 0;
     }
     if (a->kind == 0xE) {
-        return a->y.y16_5 == p;
+        return a->y.y16_5 == p ? 1 : 0;
     }
     return 0;
 }
-#endif
 
 int duel_0886D0C4(DuelAct *a)
 {

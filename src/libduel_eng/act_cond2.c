@@ -1,8 +1,6 @@
 // @range 0x0886F23C-0x0887DB24
-// @asm 0x08876404-0x0887648C
 // @asm 0x0886F2C0-0x0886F390
-// @asm 0x0886F3B4-0x0886F65C
-// @asm 0x0886FBA4-0x0886FD74
+// @asm 0x0886F4CC-0x0886F65C
 // @asm 0x08871008-0x08871168
 // @asm 0x088711BC-0x0887132C
 // @asm 0x08870C54-0x08870EF8
@@ -15,12 +13,8 @@
 // @asm 0x088703E0-0x088704BC
 // @asm 0x088705DC-0x088706CC
 // @asm 0x088731C0-0x088732B4
-// @asm 0x08873368-0x088733C0
 // @asm 0x08873B8C-0x08873C84
-// @asm 0x088745A8-0x088746D0
 // @asm 0x088746D0-0x0887477C
-// @asm 0x08874DAC-0x08874E3C
-// @asm 0x08875AD0-0x08875BD4
 // @asm 0x088766B0-0x088768A8
 // @asm 0x08876AEC-0x08876CF0
 // @asm 0x088770C0-0x088771D4
@@ -28,13 +22,9 @@
 // @asm 0x08879D5C-0x08879E20
 // @asm 0x08879EA8-0x08879F60
 // @asm 0x0887AD38-0x0887AE84
-// @asm 0x0887B404-0x0887B4F0
 // @asm 0x0887B9D4-0x0887BC28
-// @asm 0x0887BE90-0x0887BF40
-// @asm 0x0887BFA4-0x0887C068
 // @asm 0x0887C93C-0x0887CAE8
 // @asm 0x0887CFB4-0x0887D0EC
-// @asm 0x0887D868-0x0887D990
 // @asm 0x0887D990-0x0887DB24
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
@@ -256,32 +246,33 @@ int duel_0886F390(DuelAct *a)
     return duel_0886CD1C(a, a->player) != 0;
 }
 
-#ifdef NON_MATCHING /* branch layout and registers differ */
 int duel_0886F3B4(DuelAct *a, DuelAct *b)
 {
-    if (b == 0) {
-        switch (a->kind) {
-        case 0x21:
-        case 0x20:
-        case 0x1F:
-            break;
-        default:
+    DuelSrc *s = &a->src;
+
+    if (b != 0) {
+        if (card_is_monster(b->id)) {
             return 0;
         }
-        return duel.players[a->src.player].field[a->src.zone].card.id != 0;
+        if (b->zone > 10) {
+            return 0;
+        }
+        if (b->b3_4 != 0) {
+            return 0;
+        }
+        return !card_is_in_group_147e(b->id) ? 1 : 0;
     }
-    if (card_is_monster(b->id)) {
-        return 0;
+    switch (a->kind) {
+    case 0x1F:
+    case 0x20:
+    case 0x21:
+        if (duel.players[s->player & 1].field[s->zone].card.id != 0) {
+            return 1;
+        }
+        break;
     }
-    if (b->zone > 10) {
-        return 0;
-    }
-    if (b->b3_4 != 0) {
-        return 0;
-    }
-    return card_is_in_group_147e(b->id) == 0;
+    return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* branch layout and registers differ */
 int duel_0886F4CC(DuelAct *a, int b)
@@ -458,55 +449,29 @@ int duel_0886FAC0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original reads the +0x14 fields through a pointer */
 int duel_0886FBA4(DuelAct *a)
 {
-    int ok;
-    int ok2;
+    DuelSrc *s = &a->src;
+    struct DuelActX *x = &a->x;
+    struct DuelActY *y = &a->y;
+    int id;
 
-    if (a->kind != 0x1B || a->y.y16_2 == a->player || a->src.player != a->player) {
+    if (a->kind != 0x1B) {
         return 0;
     }
-    switch (a->id) {
-    case 0x135B:
-        ok = 0;
-        if (a->src.zone < 5) {
-            ok = card_is_monster(duel_cards[a->src.uid].id) != 0;
+    if (y->y16_2 != a->player && s->player == a->player) {
+        id = duel.list[s->uid].id;
+        switch (a->id) {
+        case 0x134C:
+            return s->zone >= 5 && card_get_type(id) != 0x17 && !y->y16_7 && x->s_zone2 == 0xE;
+        case 0x134D:
+            return s->zone >= 5 && card_get_type(id) == 0x17 && !y->y16_7 && x->s_zone2 == 0xE;
+        case 0x135B:
+            return s->zone < 5 && card_is_monster(id) != 0 && x->s_zone2 == 0xB;
         }
-        if (ok) {
-            return a->x.s_zone2 == 0xB;
-        }
-        return 0;
-    case 0x134D:
-        ok = 0;
-        if (a->src.zone > 4) {
-            ok = card_get_type(duel_cards[a->src.uid].id) == 0x17;
-        }
-        ok2 = 0;
-        if (ok) {
-            ok2 = !a->y.y16_7;
-        }
-        if (ok2) {
-            return a->x.s_zone2 == 0xE;
-        }
-        return 0;
-    case 0x134C:
-        ok = 0;
-        if (a->src.zone > 4) {
-            ok = card_get_type(duel_cards[a->src.uid].id) != 0x17;
-        }
-        ok2 = 0;
-        if (ok) {
-            ok2 = !a->y.y16_7;
-        }
-        if (!ok2) {
-            return 0;
-        }
-        return a->x.s_zone2 == 0xE;
     }
     return 0;
 }
-#endif
 
 int duel_0886FD74(DuelAct *a)
 {
@@ -1888,18 +1853,16 @@ int duel_088732E0(DuelAct *a, DuelAct *b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* branch layout differs */
 int duel_08873368(DuelAct *a)
 {
     if (duel_turn_player != 1 - a->player) {
         return 0;
     }
     if (a->kind == 0x19) {
-        return !a->y.y15_2;
+        return !a->y.y15_2 ? 1 : 0;
     }
     return 0;
 }
-#endif
 
 int duel_088733C0(DuelAct *a)
 {
@@ -2345,12 +2308,11 @@ int duel_08874528(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registers differ */
 int duel_088745A8(DuelAct *a, int b)
 {
     unsigned int p;
-    int r;
     struct DuelActX *x;
+    struct DuelActY *y;
     int id;
 
     if (duel_0886CE38(a, b) == 0) {
@@ -2362,19 +2324,17 @@ int duel_088745A8(DuelAct *a, int b)
     }
     if (a->kind == 0x1B) {
         x = &a->x;
-        if (a->src.player == p && a->src.zone < 5 && !x->s_b23 && a->x.s_b15 && x->s_zone2 == 0xE) {
+        y = &a->y;
+        if (a->src.player == p && a->src.zone < 5 && !y->y16_7 && a->y.y15_7 && x->s_zone2 == 0xE) {
             id = duel.list[x->s_uid].id;
             if (card_is_attribute9(id) != 0) {
                 return 0;
             }
-            r = card_is_monster(id);
-            return r != 0;
+            return card_is_monster(id) != 0 ? 1 : 0;
         }
-        return 0;
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* branch layout differs */
 int duel_088746D0(DuelAct *a)
@@ -2551,17 +2511,16 @@ int duel_08874D7C(DuelAct *a)
     return (unsigned int)duel_phase < 4;
 }
 
-#ifdef NON_MATCHING /* branch layout differs */
 int duel_08874DAC(DuelAct *a)
 {
-    if (duel_count_monsters(1 - a->player) > duel_count_monsters(a->player)) {
-        if (a->kind == 6) {
-            return a->src.player == a->player;
-        }
+    if (duel_count_monsters(1 - a->player) <= duel_count_monsters(a->player)) {
+        return 0;
+    }
+    if (a->kind == 6) {
+        return a->src.player == a->player ? 1 : 0;
     }
     return 0;
 }
-#endif
 
 int duel_08874E3C(DuelAct *a)
 {
@@ -2887,23 +2846,25 @@ int duel_08875A34(DuelAct *a, int b)
     return 1;
 }
 
-#ifdef NON_MATCHING /* registers and branch layout differ */
 int duel_08875AD0(DuelAct *a)
 {
     struct DuelActX *x;
+    struct DuelActY *y;
 
-    if (duel_088DFCC8(a->uid) != 0) {
-        if (a->kind != 0x16 && a->kind != 0x1B) {
-            return 0;
-        }
+    if (duel_088DFCC8(a->uid) == 0) {
+        return 0;
+    }
+    switch (a->kind) {
+    case 0x1B:
+    case 0x16:
         x = &a->x;
-        if (a->src.player == a->player && a->src.zone < 5 && !x->s_b23 && a->x.s_b15 && x->s_zone2 == 0xE) {
+        y = &a->y;
+        if (a->src.player == a->player && a->src.zone < 5 && !y->y16_7 && a->y.y15_7 && x->s_zone2 == 0xE) {
             return card_same_name(duel.list[x->s_uid].id, 0x1691);
         }
     }
     return 0;
 }
-#endif
 
 int duel_08875BD4(DuelAct *a)
 {
@@ -3109,7 +3070,6 @@ int duel_08876370(DuelAct *a)
     return duel.players[p & 1].n_f >= 4 && duel.players[p & 1].n_grave == 0;
 }
 
-#ifdef NON_MATCHING /* branch layout differs */
 int duel_08876404(DuelAct *a)
 {
     unsigned int p = a->player;
@@ -3117,12 +3077,15 @@ int duel_08876404(DuelAct *a)
     if (duel.players[p & 1].n_f <= 1) {
         return 0;
     }
-    if (a->kind == 0x23 || (duel_088E9150(0x16CB) != 0 || duel_088E9150(0x16E4) != 0)) {
+    switch (a->kind) {
+    case 0x23:
+        return 1;
+    }
+    if (duel_088E9150(0x16CB) != 0 || duel_088E9150(0x16E4) != 0) {
         return 1;
     }
     return 0;
 }
-#endif
 
 int duel_0887648C(DuelAct *a, int b)
 {
@@ -5081,15 +5044,17 @@ int duel_0887B360(DuelAct *a, int b)
     return 2;
 }
 
-#ifdef NON_MATCHING /* registers differ */
 int duel_0887B404(DuelAct *a)
 {
+    struct DuelActY *y;
+    int id;
+
     if (duel_count_tributable_except(a->player, -1) == 0) {
         return 0;
     }
     if (a->kind == 8) {
-        int id = duel.list[a->src.uid].id;
-
+        y = &a->y;
+        id = duel.list[a->src.uid].id;
         if (a->src.player != 1 - a->player) {
             return 0;
         }
@@ -5099,11 +5064,10 @@ int duel_0887B404(DuelAct *a)
         if (card_not_in_group_1a6f(id) == 0) {
             return 0;
         }
-        return a->y.y16_1 != 0;
+        return y->y16_1 != 0;
     }
     return 0;
 }
-#endif
 
 int duel_0887B4F0(DuelAct *a)
 {
@@ -5345,7 +5309,6 @@ int duel_0887BDEC(DuelAct *a, int b)
     return duel_0886CDC4(a, b);
 }
 
-#ifdef NON_MATCHING /* branch layout differs */
 int duel_0887BE90(DuelAct *a)
 {
     if (duel_088757B0(a) == 0) {
@@ -5357,18 +5320,15 @@ int duel_0887BE90(DuelAct *a)
     if (duel_count_free_monster_zones(a->player) <= 2) {
         return 0;
     }
-    if (a->kind == 0x23) {
+    switch (a->kind) {
+    case 0x23:
         return 1;
     }
-    if (duel_card_check_9148(a->player, 0x19A3) != 0) {
+    if (duel_card_check_9148(a->player, 0x19A3) != 0 || duel_card_check_9148(a->player, 0x19A4) != 0) {
         return 1;
     }
-    if (duel_card_check_9148(a->player, 0x19A4) == 0) {
-        return 0;
-    }
-    return 1;
+    return 0;
 }
-#endif
 
 int duel_0887BF40(DuelAct *a, int b)
 {
@@ -5383,7 +5343,6 @@ int duel_0887BF7C(DuelAct *a)
     return duel_grave_count_id(a->player, 0x19A7) != 0;
 }
 
-#ifdef NON_MATCHING /* branch layout differs */
 int duel_0887BFA4(DuelAct *a, int b)
 {
     if (a->kind == 0xF) {
@@ -5396,11 +5355,10 @@ int duel_0887BFA4(DuelAct *a, int b)
         if (duel_0886CDC4(a, b) == 0) {
             return 0;
         }
-        return duel.players[a->player & 1].n_d != 0;
+        return duel.players[a->player & 1].n_d != 0 ? 1 : 0;
     }
     return 0;
 }
-#endif
 
 int duel_0887C068(DuelAct *a, DuelAct *b)
 {
@@ -5984,28 +5942,32 @@ int duel_0887D810(DuelAct *a)
     return duel_count_faceup_name(p, 0x1AA7) > 0;
 }
 
-#ifdef NON_MATCHING /* registers differ */
 int duel_0887D868(DuelAct *a)
 {
-    int n;
     int z;
+    int n;
+    struct DuelActX *x;
+    struct DuelActY *y;
 
-    if (a->kind != 0x16 && a->kind != 0x1B) {
-        return 0;
-    }
-    if (a->src.player == a->player && !a->y.y16_7 && a->y.y15_7 && a->x.s_zone2 == 0xE &&
-        card_get_type(duel.list[a->src.uid].id) == 9) {
-        n = 0;
-        for (z = 5; z <= 9; z++) {
-            if (duel_st_zone_free(1 - a->player, z) != 0) {
-                n++;
+    switch (a->kind) {
+    case 0x1B:
+    case 0x16:
+        x = &a->x;
+        y = &a->y;
+        if (a->src.player == a->player && !y->y16_7 && a->y.y15_7 && x->s_zone2 == 0xE &&
+            card_get_type(duel.list[x->s_uid].id) == 9) {
+            n = 0;
+            for (z = 5; z < 10; z++) {
+                if (duel_st_zone_free(1 - a->player, z) != 0) {
+                    n++;
+                }
+
             }
+            return n > 2 ? 1 : 0;
         }
-        return n > 2;
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* loop layout differs */
 int duel_0887D990(DuelAct *a)
