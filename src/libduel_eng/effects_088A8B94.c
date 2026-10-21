@@ -1,15 +1,11 @@
 // @range 0x088A8B94-0x088AF390
-// @data 0x089119A8-0x08911A20
+// @data 0x089119A8-0x08911A38
 // @asm 0x088A9174-0x088A92E0
 // @asm 0x088ABE60-0x088AC0E0
 // @asm 0x088AC6A0-0x088AC82C
-// @asm 0x088ACE70-0x088AD128
-// @asm 0x088AD368-0x088AD47C
 // @asm 0x088AD8BC-0x088ADC34
 // @asm 0x088ADF28-0x088ADFC0
-// @asm 0x088AE1F8-0x088AE314
 // @asm 0x088AE378-0x088AE548
-// @asm 0x088AEE0C-0x088AF0DC
 /* Target list of a DuelAct (w[0..4], then duel_chain.uids from w[5]) and effect handlers. */
 #include "duel.h"
 
@@ -1676,7 +1672,7 @@ int duel_slot_effect_arg(unsigned int p, int z, int id);
 unsigned int duel_card_locate(unsigned int uid);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 void duel_0884AD40(int msg, int uid);
-int duel_08871868(DuelAct *a);
+int duel_08871868(DuelAct *a, int b);  /* defined with one parameter; b keeps $a1 live as in the original */
 int duel_zone_free(unsigned int p, int z);
 void duel_088CB938(unsigned int p, int a);
 int duel_list_counter(int uid, int id);
@@ -1713,7 +1709,6 @@ int duel_088ACCF8(DuelAct *a)
     return 1;
 }
 
-
 int duel_088ACDF8(DuelAct *a, unsigned int p, int z)
 {
     if (duel_0884E3E4(a, p, z) == 0) {
@@ -1728,8 +1723,7 @@ int duel_088ACDF8(DuelAct *a, unsigned int p, int z)
     return 1;
 }
 
-#ifdef NON_MATCHING /* m[1] em $a1 (original: $a2 com move antes da chamada) */
-int duel_088ACE70(DuelAct *a)
+int duel_088ACE70(DuelAct *a, int b)
 {
     int m[2];
     int z;
@@ -1752,7 +1746,8 @@ int duel_088ACE70(DuelAct *a)
     case 0:
         a->n_targets = 0;
         a->n7 = 0;
-        if (duel_08871868(a) == 0) {
+        if (duel_08871868(a, b) == 0) {
+
             return 1;
         }
         if (duel_player_type[a->player] == 1) {
@@ -1797,7 +1792,6 @@ int duel_088ACE70(DuelAct *a)
     }
     return 1;
 }
-#endif
 
 int duel_088AD128(DuelAct *a, int p, int z)
 {
@@ -1855,7 +1849,6 @@ int duel_088AD30C(DuelAct *a, int b)
     return duel_088AA1C0(a, b);
 }
 
-#ifdef NON_MATCHING /* o original assume que duel_088A8B94 preserva $a1 (mesma unidade de compilação?) */
 int duel_088AD368(DuelAct *a)
 {
     unsigned int t;
@@ -1882,7 +1875,6 @@ int duel_088AD368(DuelAct *a)
     }
     return 1;
 }
-#endif
 
 int duel_088AD47C(DuelAct *a, int b)
 {
@@ -2040,7 +2032,6 @@ int duel_088AD8BC(DuelAct *a)
     return 0;
 }
 #endif
-
 
 int duel_088DFE24(unsigned int p, unsigned int q);
 void duel_088329D0();
@@ -2212,7 +2203,6 @@ int duel_088ADFC0(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* o original assume que duel_088A8B94 preserva \$a0 */
 int duel_088AE1F8(DuelAct *a)
 {
     switch (duel_w_08914908) {
@@ -2235,7 +2225,6 @@ int duel_088AE1F8(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088AE314(DuelAct *a)
 {
@@ -2252,7 +2241,6 @@ int duel_088AE348(DuelAct *a)
 }
 
 /* Card effect handlers (DuelAct *a): target selection on duel_w_08914908, after effects_088ACCF8.c. */
-
 
 int card_is_attribute9(int id);
 int duel_field_e5ae0(unsigned int p, int z);
@@ -2551,7 +2539,6 @@ int duel_088AED54(DuelAct *a, int p, int z)
     return 1;
 }
 
-#ifdef NON_MATCHING /* o original assume que duel_088A8B94 (static na mesma unidade) preserva $a0; bate com ela static no arquivo */
 int duel_088AEE0C(DuelAct *a)
 {
     unsigned int p;
@@ -2595,9 +2582,7 @@ int duel_088AEE0C(DuelAct *a)
     }
     return 1;
 }
-#endif
 
-#ifdef NON_MATCHING /* o original assume que duel_088A8B94 (static na mesma unidade) preserva $a0; bate com ela static no arquivo */
 int duel_088AEFB4(DuelAct *a)
 {
     switch (duel_w_08914908) {
@@ -2622,7 +2607,6 @@ int duel_088AEFB4(DuelAct *a)
     }
     return 1;
 }
-#endif
 
 void duel_088AF0DC(DuelAct *a, DuelAct *b)
 {
