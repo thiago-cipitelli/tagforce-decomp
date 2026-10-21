@@ -14,15 +14,6 @@ typedef struct DuelListCard {          /* view of duel.list[] entries */
     unsigned short effects;
 } DuelListCard;
 
-typedef struct DuelEffectBits {        /* view of DuelEffect with the kind byte as nibbles */
-    unsigned short src;
-    unsigned char kind : 4;
-    unsigned char kind_hi : 4;
-    unsigned char pad3;
-    unsigned short arg;
-    unsigned short next;
-} DuelEffectBits;
-
 extern DuelListCard duel_cards[512];
 
 #define EFF(i) (&duel.effects[i])

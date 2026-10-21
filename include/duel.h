@@ -70,6 +70,15 @@ typedef struct DuelEffect {            /* 8: entry of the effect lists */
     unsigned short next;               /* +0x06 */
 } DuelEffect;
 
+typedef struct DuelEffectBits {        /* view of DuelEffect with the kind byte as nibbles */
+    unsigned short src;
+    unsigned char kind : 4;
+    unsigned char kind_hi : 4;
+    unsigned char pad3;
+    unsigned short arg;
+    unsigned short next;
+} DuelEffectBits;
+
 typedef struct DuelStats {             /* duel_field_stats */
     int id;
     int attr;                          /* +0x04 type */
@@ -160,7 +169,10 @@ typedef struct DuelChain {             /* 0x08914350 */
     DuelAct acts[16];                  /* +0x300 */
     int unk480;
     int len;                           /* +0x484 */
-    unsigned char pad488[0x5D0 - 0x488];
+    unsigned char pad488[0x494 - 0x488];
+    unsigned int uids_head;            /* +0x494 ring of card uids: uids[head & 0x7F] = count, then the uids */
+    unsigned short uids[128];          /* +0x498 */
+    unsigned char pad598[0x5D0 - 0x598];
     unsigned int n_kinds;              /* +0x5D0 */
     int unk5d4;
     unsigned char kinds[16];           /* +0x5D8 kind of each pending entry [?] */
