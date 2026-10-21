@@ -439,6 +439,11 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Laços seguidos e índices**: reaproveitar a variável de um laço no seguinte (`z` do laço das zonas como índice do cemitério) e escrever `i < (unsigned int)n_d` quando o original compara com `sltu`; um limite lido uma vez só é uma local (`n = n_hand; for (i = 0; i < n; i++)`). `perm_locals.py` só permuta as declarações antes da primeira linha em branco: deixar ali só as 4-6 duvidosas.
 - **Último `case` que cai no epílogo**: terminar com `break` em vez de `return 0` (um `default: return 0;` explícito cria um bloco a mais).
 
+- **Função `static` chamada de fora do arquivo** (`effects_088A8B94.c`): quando um helper precisa ser `static` para o chamador manter `$a0`-`$a2` (ver acima) mas também é chamado por asm ou por outro `.c`, a linha em `symbols/` leva `type:func static matched …`; `fix_ld.py` então emite um `PROVIDE` com o nome para os outros chamadores.
+- **Definições K&R** (`effects_088A8B94.c`): uma função chamada com quantidades diferentes de argumentos por chamadores que batem é definida sem protótipo (`int f(a, b) DuelAct *a; int b; { … }`) e declarada `int f();`.
+- **Recarga depois de store no `duel_chain`**: quando o original relê um campo depois de gravar em `duel_chain.uids`, `*(volatile unsigned int *)&campo` reproduz a recarga; acessar o mesmo objeto pelo nome do membro (`duel_chain.n_kinds`) também força a recarga que globais separados não forçam.
+- **Lista de candidatos como struct** (`effects_088BC9E0.c`): `duel_088BFC64` só bateu com a lista em 0x08915258 declarada como uma struct (`n`, `cards[512]`, `zones[512]`); com globais separados o compilador não relê o contador.
+
 ## Análise via Ghidra e REA (opcional)
 
 - Export headless (alimenta `tools/decomp_view.py`): `$GHIDRA/support/analyzeHeadless build/ghidra tf -import build/elf/<m>.elf -scriptPath tools/ghidra -postScript ExportDecomp.java symbols/<m>.txt build/decomp/<m> -deleteProject` (Ghidra 12.1.3 com ghidra-allegrex v21.4 em `Ghidra/Extensions/`). Gera um `.c` por função e `index.tsv` (endereço, nome, tamanho, callees, callers, strings).

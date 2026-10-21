@@ -26,8 +26,7 @@ MODULE=libduel_eng python3 tools/list_funcs.py 0x08889BE4 0x0888B000   # functio
 
 [docs/progress.md](docs/progress.md) lists every C file and the open ranges. The current front lines:
 
-- `libduel_eng` `0x0889CD38`-`0x088A1904`, `0x088A67D8`-`0x088ACCF8`, `0x088BC9E0`-`0x088C2F80`: card effect handlers (`DuelAct *a`, step machines on
-  `duel_step`), the files `src/libduel_eng/effects_<addr>.c` around them show the style. Many small functions, good first work.
+- `libduel_eng`: about 270 functions kept in asm with a C draft under `#ifdef NON_MATCHING`, many only a few words off; `docs/build.md` lists the source shapes that fixed similar ones. Good first work.
 - `libduel_eng` `0x08804000`-`0x088324F0`, `0x08832B54`-`0x0884ACD0`: CPU player logic.
 - The other 19 gmodules (`libduel_draw`, `libfield`, `libstory`, …) have not been started: there is
   room for someone to take a whole module.
