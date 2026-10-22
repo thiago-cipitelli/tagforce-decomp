@@ -456,6 +456,18 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Definições K&R** (`effects_088A8B94.c`): uma função chamada com quantidades diferentes de argumentos por chamadores que batem é definida sem protótipo (`int f(a, b) DuelAct *a; int b; { … }`) e declarada `int f();`.
 - **Recarga depois de store no `duel_chain`**: quando o original relê um campo depois de gravar em `duel_chain.uids`, `*(volatile unsigned int *)&campo` reproduz a recarga; acessar o mesmo objeto pelo nome do membro (`duel_chain.n_kinds`) também força a recarga que globais separados não forçam.
 - **Lista de candidatos como struct** (`effects_088BC9E0.c`): `duel_088BFC64` só bateu com a lista em 0x08915258 declarada como uma struct (`n`, `cards[512]`, `zones[512]`); com globais separados o compilador não relê o contador.
+- **gmodules: `switch` com faixas** (`libpassword`): o mwcc aceita `case 2 ... 9:`; um `switch` que vira poucas faixas sai como árvore de comparações (`bltz` + `slti 10`) em vez de jump table. Listar os casos um a um gera a tabela.
+- **`switch` terminado em `return 0` sem `default:`** (`password_update`, `st_found`): bate; `default: return 0;` acrescenta um bloco.
+- **`x *= 10; x += d[i];` em comandos separados** (`libpassword`) reproduz o laço desenrolado que começa com `0*10`; `x = x*10 + d[i]` dobra a conta e troca os operandos do `addu`.
+- **Bitfield `--`/`++`** dá `addiu 255`/`addiu 1` + `andi`; `x = x - 1` dá `addiu -1`.
+- **Função `inline` com `switch` repetida** (`liblabo`, `voicetest_row_count`): o original tem o mesmo `switch` duas vezes inline; `inline int f(unsigned short)` bate, `static` não é expandida e vai parar entre as tabelas.
+- **Acessor inline com teste invertido** (`libduelrecord`, `drec_entry`): `if (i >= count[t]) return 0; return &e[t][i];` dá `slt v0` + `bnezl` + `b; move v0,zero`; a forma `<`, ternário ou macro dá `slt at` + `beqzl`.
+- **Tabelas como structs de bitfields** (`libduelrecord`): `sll 16; srl 17` + `andi 1` vêm de `struct { unsigned short visible:1; text:15; }`; `>> 1` daria `ext`.
+- **Clamps com `max`/`min` do Allegrex** (barras de rolagem de `libduelrecord`/`libtutoriallist`): `ALLEGREX_MAX(page*track/total, 10)`, `ALLEGREX_MIN(ALLEGREX_MAX(…, 0), track - len)`.
+- **Ordem de literais e tabelas no `.data` de um gmodule:** a tabela global inicializada cujas strings vêm depois do literal de uma função é definida depois dessa função (`drec_files` depois de `duelrecord_init`); a jtbl sai primeiro quando o arquivo não emite `.data` antes dela, e as tabelas `static const` definidas depois da função vêm em seguida.
+- **Mesma forma, código diferente entre funções** (`libtutoriallist`): `if (rows + h > 8) top++; else cursor++;` bateu em `tlist_input`, mas `tlist_build` precisou de `if (rows + h < 9) cursor++; else top++;`. Teste as duas orientações.
+- **Variáveis importadas do BOOT (`.sceVstub`):** `rand3_seeds`/`rand3_slot` ficam no endereço 0 no ELF convertido (`lui 0; lw 0`). O `link_map` lê os vstubs e o `fix_ld` define cada uma com `PROVIDE(nome = 0)`, então o C as usa como `extern` normal. O objdiff ainda as conta como diferença de relocação (por isso a libpassword aparece com 32/33 no ByteMatch).
+- **Exports de um gmodule renomeados:** os outros gmodules que os importam (a liblabo chama libpassword, libtutoriallist, libduelrecord, ...) passam a ver o nome novo na parte gerada do `symbols/`; o C que chamava `libX_ADDR` precisa do nome novo (`build/tmp/fix_xmod.py` troca pelo endereço) e o módulo chamador precisa de novo `make MODULE=<m> verify` para re-splitar.
 
 ## Código GCC como funções `asm` do mwcc
 
