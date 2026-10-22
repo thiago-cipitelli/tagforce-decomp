@@ -1,7 +1,6 @@
 // @range 0x08837B28-0x088390C4
 // @asm 0x08837B28-0x08837D10
 // @asm 0x08837FA4-0x08838468
-// @asm 0x0883864C-0x08838AF0
 /* "HOGE" heap: a sorted table of block boundaries, each word holding an address and a free flag
    (block i spans ent[i].addr to ent[i + 1].addr). The table lives in a block of the heap itself
    and grows by doubling, moving to the lowest free block when possible. Allocation is best fit
@@ -151,67 +150,63 @@ void heap_stats(Heap *h, int *used, int *freed)
     }
 }
 
-#ifdef NON_MATCHING /* unrolled copies and register allocation differ */
+#ifdef NON_MATCHING /* com a forma do original (cópia antes do crescimento no lugar, laço de best_fit com goto found, src/dst locais) os registradores s0..s3 saem invertidos: o original dá h=s3, want=s2, t=s1, ne=s0 */
 /* Doubles the table: in place when the block after it is free and large enough, otherwise in a
    new block (the old one is freed). Returns 1 when the table could stay in place. */
 int heap_grow_table(Heap *h)
 {
     HeapEnt *t = heap_find_entry(h, h->ent);
-    HeapEnt *d;
-    HeapEnt *s;
-    HeapEnt *end;
     HeapEnt *ne;
-    unsigned int want;
-    unsigned int old;
-    int delta;
+    int want;
     int len;
 
     if (t[1].free) {
-        old = t[1].addr;
-        if (h->tabsize < t[2].addr - old) {
-            t[1].addr = old + h->tabsize;
+        if (t[2].addr - t[1].addr <= h->tabsize) {
+            HeapEnt *src, *dst, *end;
+
+            end = h->ent + h->n;
+            dst = t + 1;
+            for (src = t + 2; src <= end; src++) {
+                *dst++ = *src;
+            }
+            h->n--;
+            h->tabsize = t[1].addr - t[0].addr;
+        } else {
+            t[1].addr += h->tabsize;
             h->tabsize <<= 1;
-            return 1;
         }
-        end = h->ent + h->n;
-        d = t + 1;
-        for (s = t + 2; s <= end; s++) {
-            *d++ = *s;
-        }
-        h->n--;
-        h->tabsize = t[1].addr - t[0].addr;
         return 1;
     }
     want = h->tabsize << 1;
     if (want <= h->tabsize + 0x40) {
         return 0;
     }
-    while ((ne = heap_best_fit(h, want)) == 0) {
-        want = h->tabsize + (int)(want - h->tabsize) / 2 & ~0xF;
-        if ((int)want <= (int)(h->tabsize + 0x40)) {
-            return 0;
-        }
-    }
+    do {
+        if ((ne = heap_best_fit(h, want)) != 0)
+            goto found;
+        want = h->tabsize + (want - h->tabsize) / 2 & ~0xF;
+    } while (h->tabsize + 0x40 < want);
+    return 0;
+found:
     len = h->tabsize;
     memcpy((void *)ne->addr, h->ent, len);
-    delta = ne->addr - (unsigned int)h->ent;
-    ne = (HeapEnt *)((char *)ne + (ne->addr - (unsigned int)h->ent));
-    ((HeapEnt *)((char *)t + delta))->free = 1;
-    len *= 2;
+    t = (HeapEnt *)((int)ne->addr + ((int)t - (int)h->ent));
+    ne = (HeapEnt *)((int)ne->addr + ((int)ne - (int)h->ent));
+    t->free = 1;
     ne->free = 0;
+    len *= 2;
     h->ent = (HeapEnt *)ne->addr;
-    if ((int)(ne[1].addr - ne[0].addr) <= len) {
-        h->tabsize = ne[1].addr - ne[0].addr;
-    } else {
-        end = h->ent + h->n;
-        for (s = end, d = end + 1; s >= ne + 1; s--) {
-            *d-- = *s;
+    if (len < (int)(ne[1].addr - ne[0].addr)) {
+        HeapEnt *src, *dst;
+
+        for (src = h->ent + h->n, dst = src + 1; src >= ne + 1; src--) {
+            *dst-- = *src;
         }
         h->n++;
         ne[1].addr = ne[0].addr + len;
         ne[1].free = 1;
-        h->tabsize = ne[1].addr - ne[0].addr;
     }
+    h->tabsize = ne[1].addr - ne[0].addr;
     h->level = ALLEGREX_MIN(3, h->level + 1);
     return 0;
 }
@@ -295,14 +290,16 @@ HeapEnt *heap_find_entry(Heap *h, void *p)
     return 0;
 }
 
-#ifdef NON_MATCHING /* com os ramos na ordem do original (!top primeiro) ainda sobra a cópia desenrolada, ~22 instruções mais longa, e a alocação dos temporários dos bitfields */
 /* Splits `size` bytes off free block `e`: from its top (`top`) or its bottom, joining a free
-   neighbour when there is one. Returns the entry of the new used block, 0 if the table is full. */
+   neighbour when there is one. Returns the entry of the new used block, 0 if the table is full.
+   The table end goes through `end` (copied into s) so the unrolled copy reuses it, and the
+   second copy has its own src/dst, as in the original's register use. */
 HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top)
 {
     unsigned int sz = size + 0xF & ~0xF;
     HeapEnt *s;
     HeapEnt *d;
+    HeapEnt *end;
 
     if (!top) {
         if (e[1].free) {
@@ -318,7 +315,8 @@ HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top)
         if (h->tabsize < (h->n + 2) * sizeof(HeapEnt)) {
             return 0;
         }
-        s = h->ent + h->n;
+        end = h->ent + h->n;
+        s = end;
         for (d = s + 1; s >= e + 1; s--) {
             *d-- = *s;
         }
@@ -340,16 +338,20 @@ HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top)
     if (h->tabsize < (h->n + 2) * sizeof(HeapEnt)) {
         return 0;
     }
-    s = h->ent + h->n;
-    for (d = s + 1; s >= e + 1; s--) {
-        *d-- = *s;
+    {
+        HeapEnt *src, *dst;
+
+        end = h->ent + h->n;
+        src = end;
+        for (dst = src + 1; src >= e + 1; src--) {
+            *dst-- = *src;
+        }
     }
     h->n++;
     e[1].addr = e[2].addr - sz;
     e[1].free = 1;
     return e + 1;
 }
-#endif
 
 /* Merges free block `e` with its free neighbours by removing boundaries. */
 int heap_merge(Heap *h, HeapEnt *e)
