@@ -2,7 +2,6 @@
 // @data 0x088EE9E0-0x088EEA58
 // @asm 0x0884900C-0x08849B14
 // @asm 0x08849C9C-0x0884A430
-// @asm 0x0884A654-0x0884A8A4
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
    capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph
    quads. Also the sceFont allocator callbacks over FontCtx.scratch. */
@@ -577,137 +576,92 @@ void font_rubi_quad(int x, int y, int code)
         f->dl = dl_push(f->dl, cmds, 11);
     }
 }
-#ifdef NON_MATCHING
 
 /* Copies src to dst dropping "$R" tags and the "(...)" ruby bodies (keeps the base text). */
 void wtext_strip_tags(unsigned short *dst, unsigned short *src)
 {
-    unsigned short c = *src;
+    unsigned short c;
     int in_ruby = 0;
-    unsigned short *next;
     int k;
 
-    for (;;) {
-        if (c == 0) {
-            *dst = 0;
-            return;
-        }
-        next = src + 1;
+    while ((c = *src++) != 0) {
         if (c == '$') {
-            c = *next;
-            next = src + 2;
-            if (c != 'R')
-                goto copy;
-            in_ruby = 1;
-        } else {
-        copy:
-            if (in_ruby) {
-                if (c == '(') {
-                    k = wcschr_index(next, ')');
-                    next = next + k + 1;
-                    in_ruby = 0;
-                    goto skip;
-                }
-                *dst = c;
-            } else {
-                *dst = c;
+            c = *src++;
+            if (c == 'R') {
+                in_ruby = 1;
+                continue;
             }
-            dst++;
         }
-    skip:
-        c = *next;
-        src = next;
+        if (in_ruby && c == '(') {
+            k = wcschr_index(src, ')');
+            src += k + 1;
+            in_ruby = 0;
+        } else {
+            *dst++ = c;
+        }
     }
+    *dst = 0;
 }
 
 /* Copies src to dst keeping only the ruby text of "$Rbase(ruby)" groups. */
 void wtext_strip_tags2(unsigned short *dst, unsigned short *src)
 {
-    unsigned short c = *src;
+    unsigned short c;
     int in_ruby = 0;
-    unsigned short *next;
     int k;
 
-    for (;;) {
-        if (c == 0) {
-            *dst = 0;
-            return;
-        }
-        next = src + 1;
+    while ((c = *src++) != 0) {
         if (c == '$') {
-            c = *next;
-            next = src + 2;
-            if (c != 'R')
-                goto copy;
-            k = wcschr_index(next, '(');
-            next = next + k + 1;
-            in_ruby = 1;
-        } else {
-        copy:
-            if (in_ruby) {
-                if (c == ')') {
-                    in_ruby = 0;
-                    goto skip;
-                }
-                *dst = c;
-            } else {
-                *dst = c;
+            c = *src++;
+            if (c == 'R') {
+                k = wcschr_index(src, '(');
+                src += k + 1;
+                in_ruby = 1;
+                continue;
             }
-            dst++;
         }
-    skip:
-        c = *next;
-        src = next;
+        if (in_ruby && c == ')') {
+            in_ruby = 0;
+        } else {
+            *dst++ = c;
+        }
     }
+    *dst = 0;
 }
 
 /* Number of visible characters in src (tags and ruby bodies excluded). */
-int wtext_count_tags(unsigned short *src)
+int wtext_count_tags(unsigned short *text)
 {
-    unsigned short c = *src;
+    unsigned short c;
     int n = 0;
+    unsigned short *src = text;
     int in_ruby = 0;
-    unsigned short *next;
     int k;
 
-    for (;;) {
-        if (c == 0)
-            return n;
-        next = src + 1;
+    while ((c = *src++) != 0) {
         if (c == '$') {
-            c = *next;
-            next = src + 2;
-            if (c == 'f') {
-                next = src + 3;
-            } else if (c == 'F') {
-                next = src + 3;
-            } else if (c == 'C') {
-                next = src + 3;
-            } else {
-                if (c != 'R')
-                    goto count;
+            c = *src++;
+            switch (c) {
+            case 'R':
                 in_ruby = 1;
-            }
-        } else {
-        count:
-            if (in_ruby) {
-                if (c == '(') {
-                    k = wcschr_index(next, ')');
-                    next = next + k + 1;
-                    in_ruby = 0;
-                } else {
-                    n++;
-                }
-            } else {
-                n++;
+                continue;
+            case 'C':
+            case 'F':
+            case 'f':
+                src++;
+                continue;
             }
         }
-        c = *next;
-        src = next;
+        if (in_ruby && c == '(') {
+            k = wcschr_index(src, ')');
+            src += k + 1;
+            in_ruby = 0;
+        } else {
+            n++;
+        }
     }
+    return n;
 }
-
-#endif
 
 /* Literal of font_layout_end (kept in asm), defined here so that it sits between the template of
    font_dl_glyph_header and the one of font_sample_glyph_size in .data. */
