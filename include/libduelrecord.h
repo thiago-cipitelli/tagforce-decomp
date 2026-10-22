@@ -47,6 +47,14 @@ extern DuelRecordState drec;
 extern void *drec_pack;                /* 0x0880A804 database/duelrecord.ehp in memory */
 extern DrecPackFlags drec_pack_flags;
 
+/* entry i of tab t, or 0 past the end */
+inline DrecEntry *drec_entry(unsigned short t, int i)
+{
+    if (i >= drec.count[t])
+        return 0;
+    return &drec.entries[t][i];
+}
+
 void *drec_get_file(unsigned short id);
 int drec_tab_rows(); /* K&R definition: callers pass an int, the callee truncates */
 unsigned short drec_text_index(unsigned short tab, unsigned short i);

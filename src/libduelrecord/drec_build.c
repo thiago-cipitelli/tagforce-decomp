@@ -261,14 +261,6 @@ unsigned short drec_text_index(unsigned short tab, unsigned short i)
     return 0;
 }
 
-/* entry i of tab t, or 0 past the end */
-inline DrecEntry *drec_entry(unsigned short t, int i)
-{
-    if (i >= drec.count[t])
-        return 0;
-    return &drec.entries[t][i];
-}
-
 /* largest scroll position: first entry of the last page (9 lines) */
 int drec_tab_rows(tab)
 unsigned short tab;

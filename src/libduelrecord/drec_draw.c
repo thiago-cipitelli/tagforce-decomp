@@ -1,6 +1,5 @@
 // @range 0x08804690-0x088060A4
 // @asm 0x08804690-0x088049DC
-// @asm 0x08804D00-0x088051E8
 // @asm 0x08805DE0-0x088060A4
 // @data 0x0880A5CC-0x0880A5D4
 /* Drawing of the duel record screen: title bar with the completion percentage, tab strip, list
@@ -24,15 +23,7 @@ void *drec_draw_bar_frame(void *list, int x, int y, unsigned char down, unsigned
                           int show, unsigned int t, void *gim);
 void *drec_draw_scrollbar(void *list, int x, int y, int h, int pos, int page, int total);
 
-#ifdef NON_MATCHING /* o original testa i < count em $v0 com bnezl e reaproveita &drec.count[tab] para scroll[tab]; o inline daqui testa em $at e recalcula o endereço (70 palavras) */
-/* entry i of tab t, or 0 past the end */
-inline DrecEntry *drec_entry(int t, int i)
-{
-    if (i < drec.count[t])
-        return &drec.entries[t][i];
-    return 0;
-}
-
+#ifdef NON_MATCHING /* forma igual (mesmo inline de drec_tab_rows); o original deixa uma cópia morta do sll no alvo dos dois bnezl do inline (8 bytes a mais, que deslocam o resto) */
 void duelrecord_draw(void)
 {
     void *list;
@@ -157,7 +148,6 @@ void *drec_draw_header(void *list)
     return font_text_clear();
 }
 
-#ifdef NON_MATCHING /* forma igual; o original zera t no delay slot do blez e troca as posições de list/l na pilha (14 palavras) */
 void *drec_draw_list_frame(void *list, int x, int y, int w, int h)
 {
     void *gim;
@@ -170,7 +160,7 @@ void *drec_draw_list_frame(void *list, int x, int y, int w, int h)
     int tw;
     int u1;
     int dy;
-    void *l;
+    void *dl; /* list carried across the tabs */
 
     gim = drec_get_file(0x1002);
     if (gim == 0)
@@ -199,51 +189,55 @@ void *drec_draw_list_frame(void *list, int x, int y, int w, int h)
     list = draw_sprite(list, x + 6, y0 + 6, 0, 0x46, v + 6, 0, 0);
 
     font_set_size(0xD, 0xD);
+    dl = list;
     t = 0;
-    v = 0;
-    for (; t < drec.n_tabs; t++, v += 32) {
-        tw = w / (drec.n_tabs - t);
-        dy = 0;
-        w -= tw;
-        if (t == 0)
-            u0 = 0;
-        else
-            u0 = 0x10;
-        if (t == drec.n_tabs - 1)
-            u1 = 0x30;
-        else
-            u1 = 0x20;
-        if (t == drec.tab) {
-            l = dl_ambient_color(list, 0xFFFFFFFF);
-            font_set_color(0xFFFFFFFF);
-        } else {
-            u0 += 8;
-            u1 += 8;
-            dy = 2;
-            l = dl_ambient_color(list, 0x80FFFFFF);
-            font_set_color(0xFF808080);
-        }
-        l = gim_set_texture(l, gim);
-        l = dl_set_tex_filter(l, 0, 0);
-        l = draw_set_offsets(l, 8, 0x12, 8, 0x12);
-        l = draw_sprite(l, x, y, 0, u0, v, 0, 0);
-        l = draw_sprite(l, x + tw - 8, y, 0, u1, v, 0, 0);
-        l = draw_set_offsets(l, 1, 0x12, tw - 0x10, 0x12);
-        l = draw_sprite(l, x + 8, y, 0, u0 + 4, v, 0, 0);
-        if (t != drec.tab) {
-            l = dl_scissor(l, x, y + dy, tw - 8, 0xD);
-            l = dl_enable(l, 2);
-        }
-        font_text_set(l);
-        font_draw_text((x + 4) << 6, (y + 3 + dy) << 6, (tw - 8) << 6,
-                       table_get_entry(drec_get_file(0x1020), t + 0x10D));
-        list = dl_disable(font_text_clear(), 2);
-        x += tw;
+    if (drec.n_tabs > 0) {
+        v = 0;
+        do {
+            tw = w / (drec.n_tabs - t);
+            dy = 0;
+            w -= tw;
+            if (t == 0)
+                u0 = 0;
+            else
+                u0 = 0x10;
+            if (t == drec.n_tabs - 1)
+                u1 = 0x30;
+            else
+                u1 = 0x20;
+            if (t == drec.tab) {
+                list = dl_ambient_color(dl, 0xFFFFFFFF);
+                font_set_color(0xFFFFFFFF);
+            } else {
+                u0 += 8;
+                u1 += 8;
+                dy = 2;
+                list = dl_ambient_color(dl, 0x80FFFFFF);
+                font_set_color(0xFF808080);
+            }
+            list = gim_set_texture(list, gim);
+            list = dl_set_tex_filter(list, 0, 0);
+            list = draw_set_offsets(list, 8, 0x12, 8, 0x12);
+            list = draw_sprite(list, x, y, 0, u0, v, 0, 0);
+            list = draw_sprite(list, x + tw - 8, y, 0, u1, v, 0, 0);
+            list = draw_set_offsets(list, 1, 0x12, tw - 0x10, 0x12);
+            list = draw_sprite(list, x + 8, y, 0, u0 + 4, v, 0, 0);
+            if (t != drec.tab) {
+                list = dl_scissor(list, x, y + dy, tw - 8, 0xD);
+                list = dl_enable(list, 2);
+            }
+            font_text_set(list);
+            font_draw_text((x + 4) << 6, (y + 3 + dy) << 6, (tw - 8) << 6,
+                           table_get_entry(drec_get_file(0x1020), t + 0x10D));
+            dl = dl_disable(font_text_clear(), 2);
+            x += tw;
+            t++;
+            v += 32;
+        } while (t < drec.n_tabs);
     }
-    return list;
+    return dl;
 }
 
-#endif
 
 void *drec_draw_entry(void *list, int x, int y, DrecEntry *e)
 {

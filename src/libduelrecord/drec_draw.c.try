@@ -1,0 +1,128 @@
+// @range 0x08804690-0x088060A4
+// @data 0x0880A5CC-0x0880A5D4
+/* Drawing of the duel record screen: title bar with the completion percentage, tab strip, list
+   lines (number, text, value column, "new" mark) and the scroll bar with its blinking arrows. */
+#include "libc.h"
+#include "allegrex.h"
+#include "font.h"
+#include "libduelrecord.h"
+
+void *dl_select_layer(int layer, unsigned int *size);
+int dl_set_list(void *list);
+
+void *drec_clear_bg(void *list);
+void *drec_draw_header(void *list);
+void *drec_draw_list_frame(void *list, int x, int y, int w, int h);
+void *drec_draw_entry(void *list, int x, int y, DrecEntry *e);
+void *drec_draw_new_mark(void *list, int x, int y, int w, int h);
+void drec_draw_number(int x, int y, int value, unsigned short digits, unsigned short step, int pad);
+void *drec_draw_value(void *list, int x, int y, DrecEntry *e)
+{
+    void *gim;
+
+    gim = drec_get_file(0x1003);
+    if (gim == 0)
+        return list;
+    list = gim_set_texture(list, gim);
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = dl_set_tex_filter(list, 0, 0);
+    list = draw_set_offsets(list, 0xC, 0xC, 0xC, 0xC);
+    list = draw_sprite(list, x, y + 1, 0, 0, 0, 0, 0);
+    list = draw_set_offsets(list, 4, 0xD, 4, 0xD);
+    list = draw_sprite(list, x + 0xD, y, 0, 0x40, 0x10, 0, 0);
+    list = draw_sprite(list, x + 0x43, y, 0, 0x4C, 0x10, 0, 0);
+    list = draw_set_offsets(list, 1, 0xD, 0x32, 0xD);
+    list = draw_sprite(list, x + 0x11, y, 0, 0x44, 0x10, 0, 0);
+    font_text_set(list);
+    font_set_color(0xFFFFFFFF);
+    if ((int)e->value > 999999999)
+        e->value = 999999999;
+    if (drec.tab == 0 && e->index == 0x25) {
+        /* play time: minutes:seconds */
+        short colon[2] = { ':', 0 };
+        int sec = (int)e->value % 60;
+
+        font_set_size(0xC, 0xE);
+        drec_draw_number(x + 0x3D, y, sec, 2, 9, 1);
+        font_draw_text((x + 0x2E) << 6, y << 6, (0x1E0 - (x + 0x2E)) << 6, (unsigned short *)colon);
+        drec_draw_number(x + 0x22, y, (int)e->value / 60, 2, 9, 0);
+    } else if ((int)e->value > 999999) {
+        font_set_size(8, 0xE);
+        drec_draw_number(x + 0x40, y, e->value, 9, 6, 0);
+    } else {
+        font_set_size(0xC, 0xE);
+        drec_draw_number(x + 0x3D, y, e->value, 6, 9, 0);
+    }
+    return font_text_clear();
+}
+
+void *drec_draw_bar_frame(void *list, int x, int y, unsigned char down, unsigned int period, int blink,
+                          int show, unsigned int t, void *gim)
+{
+    unsigned int half = period >> 1;
+    int v;
+    float a;
+
+    if (down == 1)
+        v = 8;
+    else
+        v = 0;
+    list = gim_set_texture(list, gim);
+    list = dl_set_tex_filter(list, 0, 0);
+    if (show) {
+        list = dl_ambient_color(list, 0xFFFFFFFF);
+        list = draw_set_offsets(list, 8, 8, 8, 8);
+        list = draw_sprite(list, x, y, 0, 0x2E, v + 0x30, 0, 0);
+    }
+    if (!blink)
+        return list;
+    t %= period;
+    if (t < half)
+        a = (float)t / (float)half;
+    else
+        a = (float)(period - t) / (float)half;
+    if (a < 0.0f)
+        a = 0.0f;
+    if (a > 1.0f)
+        a = 1.0f;
+    list = dl_ambient_color(list, (unsigned int)(255.0f * a) << 24 | 0xFFFFFF);
+    list = draw_set_offsets(list, 8, 8, 8, 8);
+    list = draw_sprite(list, x, y, 0, 0x2E, v, 0, 0);
+    return list;
+}
+
+void *drec_draw_scrollbar(void *list, int x, int y, int h, int pos, int page, int total)
+{
+    void *gim;
+    int at = h - 2; /* track length, then thumb offset */
+    int len;
+
+    gim = drec_get_file(0x1003);
+    if (gim == 0)
+        return list;
+    if (total > page) {
+        len = ALLEGREX_MAX(page * at / total, 10);
+        at = ALLEGREX_MIN(ALLEGREX_MAX(pos * (at - len) / total, 0), at - len);
+    } else {
+        len = at;
+        at = 0;
+    }
+    list = dl_set_tex_filter(list, 0, 0);
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = gim_set_texture(list, gim);
+    list = draw_set_offsets(list, 8, 5, 8, 5);
+    list = draw_sprite(list, x, y, 0, 0x37, 0, 0, 0);
+    list = draw_sprite(list, x, y + h - 5, 0, 0x37, 0xF, 0, 0);
+    list = draw_set_offsets(list, 8, 5, 8, h - 10);
+    list = draw_sprite(list, x, y + 5, 0, 0x37, 5, 0, 0);
+    list = draw_set_offsets(list, 4, 5, 4, 5);
+    at += y;
+    list = draw_sprite(list, x + 2, at + 2, 0, 0x37, 0x14, 0, 0);
+    list = draw_sprite(list, x + 2, len + at - 3, 0, 0x37, 0x23, 0, 0);
+    list = draw_set_offsets(list, 4, 5, 4, len - 10);
+    list = draw_sprite(list, x + 2, at + 7, 0, 0x37, 0x19, 0, 0);
+    list = drec_draw_bar_frame(list, x, y - 7, 0, gfx_get_state()[1], pos > 0, 1, gfx_get_state()[0], gim);
+    list = drec_draw_bar_frame(list, x, y + h + 2, 1, gfx_get_state()[1], pos < total, 1, gfx_get_state()[0],
+                               gim);
+    return list;
+}
