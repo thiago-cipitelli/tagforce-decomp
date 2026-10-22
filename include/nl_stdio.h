@@ -76,13 +76,13 @@ void func_0880C330(NlReent *r);        /* __sinit */
 int ehsys_0880C040(NlFile *fp);        /* fflush */
 void *func_0880D554(NlReent *r, unsigned int n);            /* _malloc_r */
 void *func_088100A0(NlReent *r, void *p, unsigned int n);   /* _realloc_r */
-int func_0880C8EC(NlReent *r, NlFile *fp, NlUio *uio);      /* __sfvwrite_r */
+int func_0880C8EC(NlFile *fp, NlUio *uio);                  /* __sfvwrite */
 
 #define nl_getreent heap_get_current
 #define nl_sinit func_0880C330
 #define nl_fflush ehsys_0880C040
 #define nl_malloc_r func_0880D554
 #define nl_realloc_r func_088100A0
-#define nl_sfvwrite_r func_0880C8EC
+#define nl_sfvwrite func_0880C8EC
 
 #endif
