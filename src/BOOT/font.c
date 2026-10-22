@@ -1,7 +1,6 @@
 // @range 0x08845AC0-0x08847008
 // @asm 0x08845AC0-0x08845DDC
 // @data 0x088EE8C4-0x088EE904
-// @asm 0x08845E10-0x08846010
 // @asm 0x088462E8-0x0884638C
 // @asm 0x088469E8-0x08846EA0
 /* Font layer: libfont.prx setup, the 256-slot glyph atlas with LRU replacement, glyph quads,
@@ -100,15 +99,13 @@ int font_set_layer(char layer)
     return old;
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm (font_draw_wtext_simple: register allocation; font_printf*: the va_list local takes a
-   4-byte stack slot the original does not have; font_glyph_find: register allocation). */
-/* Draws tag-free UCS-2 text at (x, y) in 26.6, wrapping at xmax back to x0; returns x << 16 | y. */
+/* Draws tag-free UCS-2 text at (x, y) in 26.6, wrapping at xmax back to x0; returns x << 16 | y.
+   c is int (font_glyph_cache gets it unmasked); the tests compare its low 16 bits. */
 unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     SceFontGlyphImage img;
-    unsigned short c;
+    int c;
     int began = 0;
     unsigned int slot;
     int adv;
@@ -118,10 +115,8 @@ unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned sho
     img.buf_h = 32;
     img.bytes_per_line = 16;
     img.pad = 0;
-    c = *text;
-    while (c != 0) {
-        text++;
-        if (c >= 0x20) {
+    while ((c = *text++) != 0) {
+        if ((unsigned short)c >= 0x20) {
             slot = font_glyph_cache(&img, c);
             if (!began) {
                 began = 1;
@@ -134,17 +129,19 @@ unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned sho
             }
             font_glyph_quad(x, y, slot);
             x += adv;
-        } else if (c == '\n') {
-            y += f->line_h * f->size_y / 20;
-            x = x0;
+        } else {
+            switch ((unsigned short)c) {
+            case '\n':
+                y += f->line_h * f->size_y / 20;
+                x = x0;
+                break;
+            }
         }
-        c = *text;
     }
     if (began)
         font_dl_end();
-    return x << 16 | (y & 0xFFFF);
+    return (x & 0xFFFF) << 16 | (y & 0xFFFF);
 }
-#endif
 
 void font_printf(int x, int y, const char *fmt, ...)
 {
