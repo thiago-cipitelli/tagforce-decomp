@@ -1,5 +1,4 @@
 // @range 0x088594D0-0x08859AC8
-// @asm 0x08859888-0x0885994C
 /* Computer player: more target tests (DuelAct *a, p, z). */
 #include "duel.h"
 
@@ -103,7 +102,6 @@ int duel_088597D4(DuelAct *a, unsigned int p, int z)
     return card_attribute_icon_is3(id) != 0;
 }
 
-#ifdef NON_MATCHING /* o mwcc reaproveita o 0 do slti no fim e põe um b a mais */
 int duel_08859888(DuelAct *a, unsigned int p, int z)
 {
     int id = duel.players[p & 1].field[z].card.id;
@@ -120,9 +118,8 @@ int duel_08859888(DuelAct *a, unsigned int p, int z)
     if (z >= 5) {
         return 0;
     }
-    return id != 0;
+    return id != 0 ? 1 : 0;
 }
-#endif
 
 int duel_0885994C(DuelAct *a, unsigned int p, int z)
 {

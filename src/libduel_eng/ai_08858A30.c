@@ -1,5 +1,4 @@
 // @range 0x08858A30-0x088594D0
-// @asm 0x08859120-0x088594D0
 // @asm 0x08858E2C-0x08859120
 /* Computer player: more target tests (DuelAct *a, p, z). */
 #include "duel.h"
@@ -191,7 +190,6 @@ int duel_08858E2C(DuelAct *a, unsigned int p, int z)
 }
 #endif
 
-#ifdef NON_MATCHING /* os dois 'beqz; nop' dos casos 0x17AB/0x17AC saem como beqzl com xori no atraso */
 int duel_08859120(DuelAct *a, unsigned int p, int z)
 {
     DuelSlot *s;
@@ -233,9 +231,9 @@ int duel_08859120(DuelAct *a, unsigned int p, int z)
         }
         break;
     case 0x17AB:
-        return !(duel_field_e5ae0(p, z) != 0 && card_is_attribute9(s->card.id) != 0) && duel_field_level(p, z) == 2;
+        return duel_field_e5ae0(p, z) != 0 && !card_is_attribute9(s->card.id) && duel_field_level(p, z) == 2;
     case 0x17AC:
-        return !(duel_field_e5ae0(p, z) != 0 && card_is_attribute9(s->card.id) != 0) && duel_field_level(p, z) == 1;
+        return duel_field_e5ae0(p, z) != 0 && !card_is_attribute9(s->card.id) && duel_field_level(p, z) == 1;
     case 0x17F9:
         return duel_field_attr_is(p, z, 3);
     case 0x1882:
@@ -255,4 +253,4 @@ int duel_08859120(DuelAct *a, unsigned int p, int z)
     }
     return 0;
 }
-#endif
+
