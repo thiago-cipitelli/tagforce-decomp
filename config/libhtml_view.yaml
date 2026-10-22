@@ -26,11 +26,13 @@ segments:
     bss_size: 0x6003C0
     subalign: null
     subsegments:
-      - [0x60, asm, text_0]
+      - [0x60, c, html_net]
       - [0x3FC, c, lang_remap]
-      - [0x474, asm, text_1]
+      - [0x474, c, html_url]
       - [0x518, c, save_path]
-      - [0x568, asm, text_2]
+      - [0x568, c, html_viewer]
+      - [0x568, asm, html_viewer_asm_08804508]
+      - [0x744, c, html_viewer]
       - [0x854, asm, sceStub_text]
       - [0x2FF4, bin, lib_ent_top]
       - [0x2FF8, bin, lib_ent]
@@ -44,9 +46,9 @@ segments:
       - [0x47A8, bin, rodata_sceVstub]
       - [0x47C8, data, data_0]
       - [0x47D0, .data, lang_remap]
-      - [0x47E8, data, data_1]
+      - [0x47E8, .data, html_url]
       - [0x4890, .data, save_path]
-      - [0x48A0, data, data_2]
+      - [0x48A0, data, data_1]
       - { start: 0x48B0, type: bss, vram: 0x8808850, name: bss }
   - [0x48B0]
 
