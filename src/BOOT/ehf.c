@@ -1,5 +1,4 @@
 // @range 0x0882FC3C-0x08833420
-// @asm 0x0882FCE8-0x0882FD48
 // @asm 0x0882FD74-0x0882FFE4
 // @asm 0x08830E4C-0x088310BC
 // @asm 0x08831594-0x0883297C
@@ -241,30 +240,26 @@ int ehf_tex_foreach(EhfFile *f, unsigned char *flags, void (*cb)(void *arg, EhfT
     return 1;
 }
 
-#ifdef NON_MATCHING /* the null checks branch differently (bnez vs bnezl around the header pointer) */
 int ehf_tex_set(EhfFile *f, void *gim, int i)
 {
+    EhfHdr *hd;
     EhfTex *t;
-    EhfTex *base;
 
-    if (f == 0) {
+    if (f == 0 || gim == 0) {
         return 0;
     }
-    if (gim == 0) {
+    hd = &f->h;
+    if (hd->tex == 0) {
         return 0;
     }
-    if (f->h.tex == 0) {
-        return 0;
-    }
-    base = (EhfTex *)((char *)f + f->h.tex);
-    t = base + i;
-    if ((EhfTex *)((char *)base + f->h.tex_size) < t) {
+    f = (EhfFile *)((char *)f + hd->tex);   /* the table start reuses f, as in the original */
+    t = (EhfTex *)f + i;
+    if ((EhfTex *)((char *)f + hd->tex_size) < t) {
         return 0;
     }
     t->gim = gim;
     return 1;
 }
-#endif
 
 int ehf_get_u32_1c(EhfFile *f)
 {

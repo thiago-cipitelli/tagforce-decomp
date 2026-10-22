@@ -1,6 +1,5 @@
 // @range 0x088243E4-0x088253FC
 // @asm 0x088243E4-0x088245CC
-// @asm 0x08824830-0x088249E4
 // @asm 0x08825094-0x088252EC
 // @data 0x088ED284-0x088ED380
 /* EHF command handlers, part 4: an axis billboard turned towards a fixed up vector, points carried
@@ -155,7 +154,6 @@ int ehf_cmd_trail(EhfTrail *t, EhfNode *node, EhfCmd *cmd, int phase)
     }
 }
 
-#ifdef NON_MATCHING /* the original tests the node flag with the return path as the branch target */
 /* 0x10302: appends the points arg0 (and arg1) to the current trail, every frame the node moved. */
 int ehf_cmd_trail_add(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
 {
@@ -165,11 +163,7 @@ int ehf_cmd_trail_add(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
 
     switch (phase) {
     case 5:
-        if (node->unk4 == 0) {
-            return 0;
-        }
-        ring = t->a.ring;
-        if (!ring && t->a.n >= t->a.max) {
+        if (node->unk4 == 0 || ((ring = t->a.ring) == 0 && t->a.n >= t->a.max)) {
             return 0;
         }
         a = cmd->a.p;
@@ -192,7 +186,6 @@ int ehf_cmd_trail_add(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     }
     return 0;
 }
-#endif
 
 /* Point `idx` of the current trail (from the oldest; negative counts back from the newest). */
 int ehf_trail_get(int idx, Vec4 *p0, Vec4 *p1)
