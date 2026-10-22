@@ -28,13 +28,17 @@
 #define GLYPH_BLANK  10
 #define GLYPH_CURSOR 12
 
+typedef struct KeyCursor {             /* keypad cursor, 2 bytes */
+    unsigned char anim : 4;            /* 0 idle, 1 key press animating, 3 after a reset */
+    unsigned char col : 4;             /* column 0-2 */
+    unsigned char row : 4;             /* row: 0 the enter key, 1 clear/0/back, 2-4 digits 1-9 */
+    unsigned char pad : 4;
+} KeyCursor;
+
 typedef struct PasswordState {         /* 0x08B0B670, 0x1140 bytes cleared by password_init */
     unsigned short scene;              /* +0x00 password_update state */
     unsigned short step;               /* +0x02 step inside the scene state */
-    unsigned char key_anim : 4;        /* +0x04 0 idle, 1 key press animating, 3 reset */
-    unsigned char col : 4;             /*       keypad cursor column 0-2 */
-    unsigned char row : 4;             /* +0x05 keypad cursor row 0 (enter) - 4 */
-    unsigned char pad05 : 4;
+    KeyCursor cur;                     /* +0x04 */
     unsigned char ndigits : 4;         /* +0x06 digits typed */
     unsigned char pad06 : 4;
     unsigned char digits[8];           /* +0x07 */
@@ -56,6 +60,11 @@ typedef struct PasswordState {         /* 0x08B0B670, 0x1140 bytes cleared by pa
     void *cip;                         /* +0x113C card image reader */
 } PasswordState;
 
+typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
+    unsigned int lcg;                  /* x * 0x41C64E6D + 0x3039 */
+    unsigned int b, c;
+} RandSeed;
+
 typedef struct PasswordLoad {          /* 0x08B177C0 */
     unsigned char ready : 1;           /* no file read in flight */
     unsigned char step : 7;
@@ -64,15 +73,17 @@ typedef struct PasswordLoad {          /* 0x08B177C0 */
 extern PasswordState pw;
 extern PasswordLoad pw_load;
 extern void *pw_pack;                  /* labo/password.ehp */
+extern int rand3_slot;                 /* BOOT variable imports (NIDs F464F466, AE605361); */
+extern RandSeed rand3_seeds[];         /* unresolved (0) in the relocated ELF */
 
 void *res_get(unsigned short id);
 void keypad_reset(void);
 void digits_refresh(void);
 int card_is_forbidden(unsigned short id);
-void key_set_anim(unsigned short key, short mode);
+void key_set_anim(unsigned short key, unsigned short mode);
 int key_anim_done(void);
 void digit_set_anim(unsigned short slot, unsigned short glyph);
-unsigned char key_at(short col, short row);
+unsigned char key_at(unsigned short col, unsigned short row);
 void key_select(unsigned short key);
 
 /* BOOT */
