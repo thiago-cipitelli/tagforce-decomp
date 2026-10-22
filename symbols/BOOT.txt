@@ -2580,3 +2580,5 @@ _strtoll_r = 0x08812998; // type:func asm (@asm in src/BOOT/strtol.c, C under NO
 _strtoul_r = 0x08812C68; // type:func asm (@asm in src/BOOT/strtol.c, C under NON_MATCHING) newlib
 strtoul = 0x08812E14; // type:func matched src/BOOT/strtol.c newlib
 _strtoull_r = 0x08812E64; // type:func asm (@asm in src/BOOT/strtol.c, C under NON_MATCHING) newlib
+nl_submore = 0x08813108; // type:func matched src/BOOT/ungetc.c newlib __submore
+ungetc = 0x088131F8; // type:func matched src/BOOT/ungetc.c newlib
