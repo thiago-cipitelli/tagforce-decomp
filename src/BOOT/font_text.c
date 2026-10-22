@@ -1,6 +1,5 @@
 // @range 0x08847008-0x08848C68
 // @asm 0x08847008-0x08847FC8
-// @asm 0x088482F0-0x0884856C
 // @asm 0x0884876C-0x08848C68
 /* UCS-2 text layout and drawing. A FontLayout carries the pen; font_layout_wtext consumes one
    line into FontCtx.cmds (glyphs, size and color changes, ruby) and font_layout_end draws it. */
@@ -442,49 +441,51 @@ int font_measure_wtext(int w, unsigned short *text)
     return rx;
 }
 
-#ifdef NON_MATCHING /* registradores/pilha diferentes (forma do original) */
-
 /* Lays out `text` word-wrapped in a w x h box without drawing; returns width << 16 | height. */
 unsigned int font_measure_wtext2(int w, int h, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     FontLayout st;
-    int line_h, step, best = 0, lw;
-    unsigned short *p;
-    int more;
+    int lw;
+    unsigned short *p = text;
+    int best = 0;       /* widest line */
+    int line_h;
+    int step;
+    int more;           /* another line still fits below this one */
+    unsigned short flags;
+    int lh;             /* line height, 26.6 */
 
     if (w < 0)
         return 0;
     if (text == 0)
         return 0;
     memset(&st, 0, sizeof st);
-    st.size_x = f->size_x;
-    st.size_y = f->size_y;
-    st.flags |= 8;
-    line_h = f->line_h * st.size_y / 20;
-    step = line_h;
-    if (f->flags & 4)
-        step = line_h + 0x40;
-    line_h = f->unk50c3c + line_h;
     st.xmax = w;
-    if (f->flags & 4)
-        st.xmax = w - 0x40;
-    st.cur_size_x = st.size_x;
-    st.cur_size_y = st.size_y;
-    p = text;
+    st.size_x = st.cur_size_x = f->size_x;
+    st.size_y = st.cur_size_y = f->size_y;
+    st.flags |= 8;
+    lh = f->line_h * (int)f->size_y / 20;
+    flags = f->flags;
+    step = lh;
+    if (flags & 4)
+        step = lh + 0x40;
+    line_h = f->unk50c3c + lh;
+    if (flags & 4)
+        st.xmax -= 0x40;
     if (f->flags & 0x8000) {
-        st.line_h = line_h + 0x1C0;
         st.line_x0 = 0;
         st.y += 0x1C0;
+        line_h += 0x1C0;
         st.ruby_xmax = st.xmax;
-        line_h = st.line_h;
+        st.line_h = line_h;
     }
-    lw = best;
     while (st.y + step < h) {
-        more = step + st.y + line_h < h;
+        more = 1;
+        if (step + (st.y + line_h) >= h)
+            more = 0;
         lw = font_layout_text(f, &st, p, more);
-        if (lw <= best)
-            lw = best;
+        if (best < lw)
+            best = lw;
         p += st.consumed;
         st.consumed = 0;
         if (p == text || p[-1] == 0 || !more)
@@ -497,14 +498,11 @@ unsigned int font_measure_wtext2(int w, int h, unsigned short *text)
         }
         st.x = 0;
         st.y += line_h;
-        best = lw;
     }
     if (f->flags & 4)
-        lw += 0x40;
-    return lw << 16 | ((st.y + step) & 0xFFFF);
+        best += 0x40;
+    return (best & 0xFFFF) << 16 | ((st.y + step) & 0xFFFF);
 }
-
-#endif
 
 /* Height in 26.6 of `text` word-wrapped at width w. */
 int font_wtext_lines(int w, unsigned short *text)
