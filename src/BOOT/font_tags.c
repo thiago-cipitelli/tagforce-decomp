@@ -1,6 +1,6 @@
 // @range 0x0884900C-0x0884A9B4
 // @data 0x088EE9E0-0x088EEA58
-// @asm 0x0884900C-0x088499CC
+// @asm 0x0884900C-0x08849778
 // @asm 0x08849C9C-0x08849E54
 // @asm 0x08849F44-0x0884A430
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
@@ -239,43 +239,27 @@ int font_run_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned 
     }
 }
 
+#endif
 /* Handles the character after '$'; fills *cmd for size/color changes. Returns the next position. */
 unsigned short *font_parse_tag(FontCtx *f, FontLayout *st, FontCmd *cmd, unsigned short *p)
 {
-    unsigned short c = *p;
     unsigned short *next = p + 1;
-    unsigned short dummy1, dummy2;
+    unsigned short dummy2, dummy1;
     unsigned int color;
     unsigned short n;
 
-    if (c == 'R') {
-        if (f->flags & 0x8000) {
-            font_ruby_measure(f, next, &st->ruby_pad, &st->ruby_w, &dummy1, &dummy2);
-            st->ruby_x = st->x + (st->ruby_w >> 1);
-            st->ruby_y = st->y - 0x1C0;
-        }
-        st->flags |= 2;
-    } else if (c == 'f') {
-        st->force_upper = 0;
-        if (st->flags & 0x10) {
-            cmd->kind = 2;
-            cmd->a = st->size_x;
-            cmd->b = st->size_y;
-            st->flags &= ~0x10;
-            st->cur_size_x = st->size_x;
-            st->cur_size_y = st->size_y;
-            st->yoff = 0;
-        }
-    } else if (c == 'F') {
-        st->force_upper = 1;
-    } else if (c == 'C') {
+    switch (*p) {
+    case '$':
+        st->flags |= 0x20;
+        return p;
+    case 'C':
         n = *next;
-        next = p + 2;
+        next++;
         if (f->flags & 2) {
-            if (n < '0' || n > '9')
-                n = n - 0x37;
+            if (n >= '0' && n <= '9')
+                n -= '0';
             else
-                n = n - '0';
+                n += (unsigned short)-0x37;   /* hex letter: n - (0x41 - 10) */
             if (n == 0) {
                 st->color = f->color;
                 st->color2 = f->color2;
@@ -291,18 +275,39 @@ unsigned short *font_parse_tag(FontCtx *f, FontLayout *st, FontCmd *cmd, unsigne
                 cmd->b = st->color2;
             }
         }
-    } else {
-        next = p;
-        if (c == '$')
-            st->flags |= 0x20;
+        break;
+    case 'F':
+        st->force_upper = 1;
+        break;
+    case 'f':
+        st->force_upper = 0;
+        if (st->flags & 0x10) {
+            cmd->kind = 2;
+            cmd->a = st->size_x;
+            cmd->b = st->size_y;
+            st->flags &= ~0x10;
+            st->cur_size_x = st->size_x;
+            st->cur_size_y = st->size_y;
+            st->yoff = 0;
+        }
+        break;
+    case 'R':
+        if (f->flags & 0x8000) {
+            font_ruby_measure(f, next, &st->ruby_pad, &st->ruby_w, &dummy1, &dummy2);
+            st->ruby_x = st->x + st->ruby_w / 2u;
+            st->ruby_y = st->y - 0x1C0;
+        }
+        st->flags |= 2;
+        break;
+    default:
+        return p;
     }
     return next;
 }
 
 /* Measures a "$Rbase(ruby)" group at p: *pad = extra advance per base character, *w = extra
    width of the ruby beyond the base, *total = width of the wider of the two, *last = last base
-   character. Returns the position after ')'. */#endif
-
+   character. Returns the position after ')'. */
 unsigned short *font_ruby_measure(FontCtx *f, unsigned short *p, unsigned short *pad, unsigned short *w, unsigned short *total, unsigned short *last)
 {
     unsigned short base[24];
