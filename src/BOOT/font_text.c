@@ -1,6 +1,7 @@
 // @range 0x08847008-0x08848C68
 // @asm 0x08847008-0x08847FC8
-// @asm 0x088482F0-0x08848C68
+// @asm 0x088482F0-0x0884856C
+// @asm 0x0884876C-0x08848C68
 /* UCS-2 text layout and drawing. A FontLayout carries the pen; font_layout_wtext consumes one
    line into FontCtx.cmds (glyphs, size and color changes, ruby) and font_layout_end draws it. */
 #include "psp.h"
@@ -503,44 +504,49 @@ unsigned int font_measure_wtext2(int w, int h, unsigned short *text)
     return lw << 16 | ((st.y + step) & 0xFFFF);
 }
 
+#endif
+
 /* Height in 26.6 of `text` word-wrapped at width w. */
 int font_wtext_lines(int w, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     FontLayout st;
-    int line_h, step, best = 0, lw;
-    unsigned short *p;
+    int lw;
+    unsigned short *p = text;
+    int best = 0;       /* widest line; computed but not returned */
+    int line_h;
+    int step;
+    unsigned short flags;
+    int h;              /* line height, 26.6 */
 
     if (w < 0)
         return 0;
     if (text == 0)
         return 0;
     memset(&st, 0, sizeof st);
-    st.size_x = f->size_x;
-    st.size_y = f->size_y;
-    st.flags |= 8;
-    line_h = f->line_h * st.size_y / 20;
-    step = line_h;
-    if (f->flags & 4)
-        step = line_h + 0x40;
-    line_h = f->unk50c3c + line_h;
     st.xmax = w;
-    if (f->flags & 4)
-        st.xmax = w - 0x40;
-    p = text;
-    st.cur_size_x = st.size_x;
-    st.cur_size_y = st.size_y;
+    st.size_x = st.cur_size_x = f->size_x;
+    st.size_y = st.cur_size_y = f->size_y;
+    st.flags |= 8;
+    h = f->line_h * (int)f->size_y / 20;
+    flags = f->flags;
+    step = h;
+    if (flags & 4)
+        step = h + 0x40;
+    line_h = f->unk50c3c + h;
+    if (flags & 4)
+        st.xmax -= 0x40;
     if (f->flags & 0x8000) {
-        line_h += 0x1C0;
         st.line_x0 = 0;
         st.y += 0x1C0;
+        line_h += 0x1C0;
         st.ruby_xmax = st.xmax;
         st.line_h = line_h;
     }
     for (;;) {
         lw = font_layout_text(f, &st, p, 1);
-        if (lw <= best)
-            lw = best;
+        if (best < lw)
+            best = lw;
         p += st.consumed;
         st.consumed = 0;
         if (p == text || p[-1] == 0)
@@ -553,11 +559,11 @@ int font_wtext_lines(int w, unsigned short *text)
         }
         st.x = 0;
         st.y += line_h;
-        best = lw;
     }
     return st.y + step;
 }
 
+#ifdef NON_MATCHING /* registradores/pilha diferentes (forma do original) */
 /* Measures one line of text with the same rules as font_layout_wtext but emits no commands.
    Returns the pen x after the text (26.6). */
 int font_layout_text(FontCtx *f, FontLayout *st, unsigned short *text, int wrap)
