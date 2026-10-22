@@ -53,7 +53,9 @@ extern short wside_h;                  /* 0x088EE8C2 */
 
 #ifdef NON_MATCHING
 /* As três funções abaixo têm a estrutura do original, mas o mwcc aloca registradores e pilha de
-   outro jeito (menu_item_build/menu_item_build_frame: 2,4 KB cada). Ficam em asm; este C é para o
+   outro jeito (menu_item_build/menu_item_build_frame: 2,4 KB cada; menu_item_build_text: o
+   original dá s0 a dl, s1 a d e s3 a m, aqui invertidos, com qualquer ordem de declaração ou
+   parâmetro void *). Ficam em asm; este C é para o
    port. As tabelas de saltos das versões em asm ficam em 0x088756D8..0x088756F8. */
 /* State machine of one item; (re)builds its frame when the definition changed. */
 void menu_item_build(void **dl, MenuItem *it, Menu *m)

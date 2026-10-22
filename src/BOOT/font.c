@@ -1,6 +1,6 @@
 // @range 0x08845AC0-0x08847008
-// @asm 0x08845AC0-0x08845DDC
 // @data 0x088EE8C4-0x088EE904
+// @asm 0x08845AC0-0x08845DDC
 // @asm 0x088462E8-0x0884638C
 // @asm 0x088469E8-0x08846EA0
 /* Font layer: libfont.prx setup, the 256-slot glyph atlas with LRU replacement, glyph quads,
@@ -35,7 +35,9 @@ unsigned int font_color_table[15] = {
 FontCtx *font_ctx_ptr = &font_ctx_storage;
 
 #ifdef NON_MATCHING
-/* Kept in asm: register allocation and the double copy of the FontNewLibParams template differ. */
+/* Fica em asm: o original copia o modelo de FontNewLibParams (0x088EE904, logo depois do @data
+   deste arquivo) palavra a palavra para um temporário e dele para params, como um literal composto;
+   casar exige mover o modelo e "libfont.prx" para o @data do arquivo. */
 int font_init(void *fs)
 {
     FontNewLibParams params = { 0, 2, 0, font_alloc_cb, font_free_cb, 0, 0, 0, 0, 0, 0 };

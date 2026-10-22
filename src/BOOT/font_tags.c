@@ -72,7 +72,7 @@ done:
     return c;
 }
 
-#ifdef NON_MATCHING /* register allocation differs (sizes match within a few words). */
+#ifdef NON_MATCHING /* font_word_width e font_run_width: o original usa s7/s8 para cópias mascaradas de c e t e por isso guarda w na pilha; com c unsigned short ou int e o teste de maiúscula em if/else invertido fica em ~150 palavras */
 /* Width in 26.6 of the word starting at p (up to the next breakable character), including the
    ruby padding, so that a word is not split across lines. */
 int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned short *p, int wrap)
