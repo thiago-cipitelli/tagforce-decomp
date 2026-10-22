@@ -16,10 +16,6 @@ extern int duel_phase;
 extern unsigned short duel_h_0891968E;
 extern int duel_player_type[2];
 extern unsigned short duel_w_0891968C;
-extern struct {
-    unsigned char b0 : 1;
-    unsigned char zone : 4;
-} duel_b_08914A14;
 
 int card_is_monster(int id);
 int card_is_attribute9(int id);
@@ -347,14 +343,14 @@ int duel_0888A52C(DuelAct *a, int b)
         case 0x17B7:
         case 0x1A36:
         case 0x1A9B:
-            duel_088C87A8(p, duel_b_08914A14.zone, p | z << 8, 0x17, 0);
+            duel_088C87A8(p, duel_summon.zone, p | z << 8, 0x17, 0);
             break;
         case 0x1366:
         case 0x15E6:
         case 0x1880:
         case 0x1881:
         case 0x19D7:
-            duel_088C8B70(p, p | z << 8, p | duel_b_08914A14.zone << 8);
+            duel_088C8B70(p, p | z << 8, p | duel_summon.zone << 8);
             break;
         }
         return 100;

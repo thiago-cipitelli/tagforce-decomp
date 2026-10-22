@@ -241,6 +241,34 @@ typedef struct Duel {                  /* 0x08915E5C, 0x3840 */
     unsigned short unk3832[7];         /* +0x3832 */
 } Duel;
 
+typedef struct DuelSummon {            /* 0x08914A14: summon being prepared (tributes, costs) */
+    unsigned int player : 1;
+    unsigned int zone : 4;
+    unsigned int b5 : 1;
+    unsigned int kind : 2;             /* 0 set, 1 face-up, 2 [?] (duel_summon_init) */
+    unsigned int id : 15;              /* card id */
+    unsigned int uid : 9;              /* instance id */
+    unsigned short unk4;               /* +0x04 */
+    unsigned short res_id;             /* +0x06 card whose effect paid the summon (0x197F, 0x19B2...) */
+    unsigned char n;                   /* +0x08 tributes picked */
+    unsigned char unk9;
+    unsigned short uids[3];            /* +0x0A */
+    unsigned short locs[3];            /* +0x10 tributes: player | zone << 8 */
+    unsigned char f0 : 1;              /* +0x16 (duel_w_08914A2A) */
+    unsigned char f1 : 1;              /* summoned by an effect without tributes [?] */
+    unsigned char f2 : 1;
+    unsigned char f3 : 1;
+    unsigned char f4 : 2;              /* tributes asked by the caller */
+    unsigned char f6 : 2;
+    unsigned char unk17;
+    unsigned char step;                /* +0x18 */
+    unsigned char step2;               /* +0x19 (duel_ai_step2) */
+    unsigned char step3;               /* +0x1A */
+    unsigned char unk1b;
+} DuelSummon;
+
+extern DuelSummon duel_summon;
+
 extern Duel duel;
 extern DuelChain duel_chain;
 extern DuelSpecial duel_special;       /* 0x08913F10 */
