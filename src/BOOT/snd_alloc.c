@@ -1,5 +1,5 @@
 // @range 0x0885F05C-0x0885FAA8
-// @asm 0x0885F05C-0x0885FAA8
+// @asm 0x0885F230-0x0885FAA8
 // @data 0x088F0114-0x088F03BC
 /* Sound library, allocation and start: history of the last variant picked per sound, choice of the
    object slot for a new sound (free slot, suspended BGM or the oldest of the same class), and the
@@ -111,22 +111,21 @@ int sceAtracGetMaxSample(int id, int *n);
 int sceAtracGetSoundSample(int id, int *end, int *loop_start, int *loop_end);
 int sceAtracSetLoopNum(int id, int n);
 
-#ifdef NON_MATCHING /* the scan loop swaps its index and pointer registers ($a0/$v1); 11 words */
 /* Moves the history entry of (id, pan) to the front, or a fresh one (oldest dropped) when absent. */
 SndRandHist *snd_rand_hist(unsigned int id, int pan)
 {
     SndRandHist e;
     unsigned int key = pan << 16 | (id & 0xFFFF);
-    int i;
     int j = -1;
     SndRandHist *h = snd_rand_hist_tab;
+    int i;
 
-    for (i = 0; i < 32; i++) {
-        if (h[i].key == key) {
+    for (i = 0; i < 32; i++, h++) {
+        if (h->key == key) {
             j = i;
             break;
         }
-        if (h[i].key == 0) {
+        if (h->key == 0) {
             j = i;
         }
     }
@@ -148,7 +147,6 @@ SndRandHist *snd_rand_hist(unsigned int id, int pan)
     }
     return snd_rand_hist_tab;
 }
-#endif
 
 #ifdef NON_MATCHING /* the SE tail returns through branch-likely to the epilogue instead of the original's bltzl + b; 34 words */
 /* Object slot for a new sound, <0 none. Voices (kinds 1-2) use slots 0-3 for one-shot sounds and

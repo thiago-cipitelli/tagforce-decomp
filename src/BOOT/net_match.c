@@ -276,6 +276,7 @@ int net_peer_drop(int i)
     return 0;
 }
 
+/* Index of the peer with `mac`, adding it when there is room; -1 when full. */
 int net_peer_find(unsigned char *mac)
 {
     NetPeer *p;
@@ -296,10 +297,6 @@ int net_peer_find(unsigned char *mac)
     }
     return -1;
 }
-
-#ifdef NON_MATCHING /* the original clears i before finishing the address of net_peers */
-/* Index of the peer with `mac`, adding it when there is room; -1 when full. */
-#endif
 
 void net_event_guest(NetEvent *ev)
 {
@@ -432,6 +429,7 @@ void net_event_host(NetEvent *ev)
     }
 }
 
+/* Uniform integer in [lo, hi]. */
 int rand_range(int lo, int hi)
 {
     unsigned int r;
@@ -442,10 +440,6 @@ int rand_range(int lo, int hi)
     r = rand_next() / (0x7FFFFFFFU / (hi - lo + 1) + 1);
     return r + lo;
 }
-
-#ifdef NON_MATCHING /* the original adds lo straight into v0; this keeps it in s0 and moves */
-/* Uniform integer in [lo, hi]. */
-#endif
 
 int net_get_param(unsigned char *mac)
 {

@@ -2,8 +2,6 @@
 // @data 0x088F07AC-0x088F0908
 // @rodata 0x088EB050-0x088EB068
 // @asm 0x08868DC8-0x08868E40
-// @asm 0x08869028-0x088690F8
-// @asm 0x0886936C-0x088694F0
 /* Ad hoc front end: the state-entry hook, the peer and scan lists shown by the lobby screens,
    the per-frame driver called from main (pad/UMD watchdogs, link watchdog), the functions the
    gmodules call, the netconf / message dialogs and the net module loading. */
@@ -190,18 +188,19 @@ int net_peer_joined(unsigned char *mac)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original copies i to s2 only after the count tests */
 void net_scan_unpick(int i)
 {
-    if (net_scan.npicked != 0 && i < net_scan.npicked) {
-        for (; i < 8; i++) {
-            memcpy(net_scan.picked[i], net_scan.picked[i + 1], 6);
-        }
-        memset(net_scan.picked[8], 0, 6);
-        net_scan.npicked--;
+    int j;
+
+    if (net_scan.npicked == 0 || net_scan.npicked <= i) {
+        return;
     }
+    for (j = i; j < 8; j++) {
+        memcpy(net_scan.picked[j], net_scan.picked[j + 1], 6);
+    }
+    memset(net_scan.picked[8], 0, 6);
+    net_scan.npicked--;
 }
-#endif
 
 int net_scan_pick_find(unsigned char *mac)
 {
@@ -275,7 +274,6 @@ void net_scan_build(void)
     }
 }
 
-#ifdef NON_MATCHING /* MAC and watch pointers in swapped registers */
 /* Link watchdog while the game runs: every other player must stay visible. */
 void net_watch(void)
 {
@@ -288,11 +286,12 @@ void net_watch(void)
         goto fail;
     }
     net_alive = 0;
-    for (i = 0, w = net_watch_tab; i < net.peer_count; i++, w++) {
+    for (i = 0; i < net.peer_count; i++) {
         if (i == net.self) {
             net_alive++;
         } else {
             r = sceNetAdhocctlGetPeerInfo(net.macs[i], 0x98, &info);
+            w = &net_watch_tab[i];
             if (r == 0x80410716) {
                 w->miss++;
                 if (w->seen != 0) {
@@ -321,7 +320,6 @@ fail:
         net_fail();
     }
 }
-#endif
 
 /* Called from main every frame while ad hoc is on. */
 void net_frame(void)

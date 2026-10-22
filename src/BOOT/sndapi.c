@@ -405,6 +405,7 @@ int partner_voice_id(unsigned int chr, unsigned int variant)
     return id + gamestate_partner_mode();
 }
 
+/* Sound id for voice `arg` of the character in player slot `slot`, 0 when none. */
 int partner_voice_play(int slot, int arg)
 {
     PlayerSlot *p = &game_state_get()->slot[slot];
@@ -416,11 +417,6 @@ int partner_voice_play(int slot, int arg)
         return id + arg;
     return 0;
 }
-
-#ifdef NON_MATCHING /* sense of the likely branch on the base id */
-/* Sound id for voice `arg` of the character in player slot `slot`, 0 when none. */
-
-#endif
 
 int gamestate_slot_snd(int slot, int arg)
 {
