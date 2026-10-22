@@ -1,6 +1,4 @@
 // @range 0x0882D9F0-0x0882ECAC
-// @asm 0x0882DE34-0x0882E3B4
-// @asm 0x0882E89C-0x0882ECAC
 // @data 0x088ED860-0x088ED900
 /* TGMT skeletal animation: bones walked depth first from the root of the TGMS hierarchy, each
    one the parent matrix times the keyed translation, the slerped rotation and the keyed scale;
@@ -148,9 +146,8 @@ void anim_eval(Tgmt *a, TmsSkel *t, Mat4 *bones, float frame, AnimUpd *u)
 
 MatF anim_blend_id = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 
-#ifdef NON_MATCHING /* the frame argument is saved one instruction later in the prologue */
 /* Same blending animation p at frame `pframe` into a at `frame` by w. */
-void anim_blend(Tgmt *a, TmsSkel *t, Mat4 *bones, Tgmt *p, float frame, float pframe, float w, AnimUpd *u)
+void anim_blend(Tgmt *a, TmsSkel *t, Mat4 *bones, float frame, Tgmt *p, float pframe, float w, AnimUpd *u)
 {
     unsigned short b = t->root;
     MatF id = anim_blend_id;
@@ -253,7 +250,6 @@ void anim_blend(Tgmt *a, TmsSkel *t, Mat4 *bones, Tgmt *p, float frame, float pf
         }
     }
 }
-#endif
 
 float anim_cubic(float p0, float p1, float p2, float p3, float s)
 {
@@ -351,7 +347,6 @@ void anim_eval_track(Vec4 *out, Tgmt *a, RotTrack *tr, float t)
 
 Vec4 anim_quat_id = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-#ifdef NON_MATCHING /* the two key pointers are computed in another order around the first load */
 void anim_eval_track_packed(float t, Vec4 *out, Tgmt *a, RotTrack *tr)
 {
     unsigned int *times = &a->rtimes[tr->first];
@@ -359,9 +354,13 @@ void anim_eval_track_packed(float t, Vec4 *out, Tgmt *a, RotTrack *tr)
     int n = tr->n;
     int lo;
     int hi;
+    Vec4 q0;
+    Vec4 q1;
+    Vec4 id;
 
     if (n == 0) {
-        *out = anim_quat_id;
+        id = anim_quat_id;
+        *out = id;
     } else if (n == 1) {
         out->x = v[0] / 32760.0f;
         out->y = v[1] / 32760.0f;
@@ -379,10 +378,6 @@ void anim_eval_track_packed(float t, Vec4 *out, Tgmt *a, RotTrack *tr)
         out->z = v[2] / 32760.0f;
         out->w = v[3] / 32760.0f;
     } else {
-        short *p0;
-        short *p1;
-        Vec4 q0;
-        Vec4 q1;
         float f;
 
         lo = 0;
@@ -397,18 +392,16 @@ void anim_eval_track_packed(float t, Vec4 *out, Tgmt *a, RotTrack *tr)
             }
         }
         f = (t - (float)times[lo]) / (float)(times[hi] - times[lo]);
-        p0 = v + lo * 4;
-        p1 = v + hi * 4;
-        q0.x = p0[0] / 32760.0f;
-        q0.y = p0[1] / 32760.0f;
-        q0.z = p0[2] / 32760.0f;
-        q0.w = p0[3] / 32760.0f;
-        q1.x = p1[0] / 32760.0f;
-        q1.y = p1[1] / 32760.0f;
-        q1.z = p1[2] / 32760.0f;
-        q1.w = p1[3] / 32760.0f;
+        q0.x = v[lo * 4 + 0] / 32760.0f;
+        q0.y = v[lo * 4 + 1] / 32760.0f;
+        q0.z = v[lo * 4 + 2] / 32760.0f;
+        q0.w = v[lo * 4 + 3] / 32760.0f;
+        q1.x = v[hi * 4 + 0] / 32760.0f;
+        q1.y = v[hi * 4 + 1] / 32760.0f;
+        q1.z = v[hi * 4 + 2] / 32760.0f;
+        q1.w = v[hi * 4 + 3] / 32760.0f;
         quat_slerp(out, &q0, &q1, f);
         quat_normalize(out, out);
     }
 }
-#endif
+

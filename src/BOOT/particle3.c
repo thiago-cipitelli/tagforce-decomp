@@ -1,6 +1,5 @@
 // @range 0x08827B8C-0x08828590
 // @asm 0x08827B8C-0x08827D98
-// @asm 0x08828334-0x08828424
 // @data 0x088ED434-0x088ED474
 /* EHF particles, part 3: positions in a cone around a direction, emitter positions moved into the
    current model space, velocity generators (constant, radial from a center) and the per-frame
@@ -264,7 +263,6 @@ int ehf_cmd_ptcl_vel_radial(EhfRadial *r, EhfNode *node, EhfCmd *cmd, int phase)
     return 0;
 }
 
-#ifdef NON_MATCHING /* register allocation of the frame time computation differs (as ehf_cmd_pool) */
 /* 0x10: moves the live particles of the current pool by their velocity. */
 int ehf_cmd_ptcl_move(void *inst, EhfNode *node, EhfCmd *cmd, int phase)
 {
@@ -272,7 +270,8 @@ int ehf_cmd_ptcl_move(void *inst, EhfNode *node, EhfCmd *cmd, int phase)
 
     switch (phase) {
     case 5: {
-        float dt = node->unk4 * (1.0f / gfx_get_state()->fps);
+        int fps = gfx_get_state()->fps;
+        float dt = node->unk4 * (1.0f / fps);
         EhfParticle *p;
         EhfParticle *end;
 
@@ -288,7 +287,7 @@ int ehf_cmd_ptcl_move(void *inst, EhfNode *node, EhfCmd *cmd, int phase)
     }
     return 0;
 }
-#endif
+
 
 /* 0xD0017: adds the vector argument to the velocity of the live particles. */
 int ehf_cmd_ptcl_accel(void *inst, EhfNode *node, EhfCmd *cmd, int phase)

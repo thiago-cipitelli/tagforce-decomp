@@ -509,7 +509,7 @@ int model_set_buf_size(Model *m, int size)
     return 1;
 }
 
-#ifdef NON_MATCHING /* the original leaves the delay slots after the stores unfilled */
+#ifdef NON_MATCHING /* cópias mortas após beqzl/beql (o lw do corpo repetido depois do slot), mesmo caso de cardinfo_draw */
 /* Texture (0) or draw (1) hook; v != -1 sets it. Returns the previous one. */
 void *model_hook(Model *m, int which, void *v)
 {

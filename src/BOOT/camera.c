@@ -1,5 +1,4 @@
 // @range 0x0882AD90-0x0882B65C
-// @asm 0x0882AE08-0x0882AECC
 // @data 0x088ED770-0x088ED7AC
 /* Camera (position, target, up, view matrix) and the four GE lights kept with their enable bits,
    re-emitted into a display list on demand. */
@@ -79,17 +78,18 @@ Vec4 camera_def_pos = { 0.0f, 0.0f, 1.0f, 1.0f };
 Vec4 camera_def_target = { 0.0f, 0.0f, 0.0f, 1.0f };
 Vec4 camera_def_up = { 0.0f, 1.0f, 0.0f, 0.0f };
 
-#ifdef NON_MATCHING /* the target template is loaded before the position one */
 void camera_reset(void)
 {
-    Vec4 pos = camera_def_pos;
-    Vec4 target = camera_def_target;
-    Vec4 up = camera_def_up;
+    Vec4 pos;
+    Vec4 target;
+    Vec4 up;
 
     camera_ptr = &camera_data;
+    up = camera_def_up;
+    target = camera_def_target;
+    pos = camera_def_pos;
     camera_set(&pos, &target, &up);
 }
-#endif
 
 void camera_clear(void)
 {
