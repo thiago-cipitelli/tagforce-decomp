@@ -14,8 +14,8 @@ typedef struct Vec4 {
     float x, y, z, w;
 } __attribute__((aligned(16))) Vec4;
 
-void vfpu_rng_save(unsigned int *st);
-void vfpu_rng_load(unsigned int *st);
+int vfpu_rng_save(unsigned int *st);
+int vfpu_rng_load(unsigned int *st);
 
 #ifndef __MWERKS__
 #include <math.h>
