@@ -1,6 +1,5 @@
 // @range 0x0882B65C-0x0882C428
 // @asm 0x0882B914-0x0882BA88
-// @asm 0x0882C300-0x0882C414
 // @data 0x088ED7B0-0x088ED7D0
 /* TGMS model geometry: relocation of the header, materials with four texture layers (texture
    from the TMS set or a hook, lighting, alpha test, depth, blend, masks, environment-map callbacks),
@@ -259,7 +258,7 @@ unsigned int *tms_tex_apply(unsigned int *list, TmsTex *x)
     return list;
 }
 
-#ifdef NON_MATCHING /* the vertex pointer argument is computed before the vertex type */
+#ifdef NON_MATCHING /* o original põe &draws[k] em v0 e lê offset depois de prim/count (soma no delay slot do jal); aqui d vai para a2 e offset é lido primeiro; nenhuma forma de d/offset mudou isso */
 unsigned int *tms_draw_prims(unsigned int *list, Tms *t, float *bones, TmsMat *m)
 {
     int i;
@@ -491,7 +490,12 @@ unsigned int *tms_env_light_add(unsigned int *list, int after)
 
 DrawSphere tms_sphere_def = { { 0.0f, 0.0f, 0.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 0.0f };
 
-#ifdef NON_MATCHING /* one mul.s operand order of the radius */
+/* sqrt(x * k): k chega como valor, por isso o mul.s sai com k no segundo operando. */
+static inline float tms_scaled_sqrt(float x, float k)
+{
+    return sqrtf(x * k);
+}
+
 /* Bounding sphere of the box against the frustum. */
 int tms_visible(Tms *t)
 {
@@ -507,10 +511,9 @@ int tms_visible(Tms *t)
     dy = t->bmax[1] - t->bmin[1];
     s.pos.z = (t->bmin[2] + t->bmax[2]) * 0.5f;
     dz = t->bmax[2] - t->bmin[2];
-    s.radius = sqrtf(0.25f * (dx * dx + dy * dy + dz * dz));
+    s.radius = tms_scaled_sqrt(dx * dx + dy * dy + dz * dz, 0.25f);
     return draw_sphere_visible(&s);
 }
-#endif
 
 void *tms_alloc(unsigned int size)
 {
