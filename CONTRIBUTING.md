@@ -30,8 +30,9 @@ MODULE=libduel_eng python3 tools/list_funcs.py 0x08889BE4 0x0888B000   # functio
 - `libduel_eng` `0x08804000`-`0x088324F0` (CPU player logic) and `0x08865F2C`-`0x0886CB44`; a dozen very large CPU step machines between `0x08832B54` and `0x08864DF0` are still asm only.
 - The other 19 gmodules (`libduel_draw`, `libfield`, `libstory`, …) have not been started: there is
   room for someone to take a whole module.
-- `BOOT` is mostly done. What is left is SDK and GCC-compiled code (libgu, MSL, libgcc) that
-  `mwccpsp` cannot match.
+- `BOOT` has C for its whole `.text`; about 400 functions remain in `@asm` with a C draft under
+  `NON_MATCHING`. The GCC-compiled SDK code is written as mwcc `asm` functions with portable C under
+  `#else`; the ones left in `@asm` load data with `lui`/`%lo`, which the inline assembler can't express.
 
 Before starting a range, open an issue titled `claim: <module> 0xLO-0xHI` so two people don't work on
 the same functions. Close it with the PR.

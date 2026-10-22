@@ -454,6 +454,24 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Recarga depois de store no `duel_chain`**: quando o original relê um campo depois de gravar em `duel_chain.uids`, `*(volatile unsigned int *)&campo` reproduz a recarga; acessar o mesmo objeto pelo nome do membro (`duel_chain.n_kinds`) também força a recarga que globais separados não forçam.
 - **Lista de candidatos como struct** (`effects_088BC9E0.c`): `duel_088BFC64` só bateu com a lista em 0x08915258 declarada como uma struct (`n`, `cards[512]`, `zones[512]`); com globais separados o compilador não relê o contador.
 
+## Código GCC como funções `asm` do mwcc
+
+O SDK linkado no BOOT (libgu, newlib, libgcc fp-bit, libvfpu, libccc, libfpu, libdeflt, libsas/libwave; nomes recuperados pelos NIDs de export, `sha1(nome)`) foi compilado com GCC ou escrito à mão e não sai de C pelo mwcc. Cada função vira uma função `asm` do mwcc com o C portável ao lado:
+
+```c
+#ifdef __MWERKS__
+asm void sceVfpuVector3Add(ScePspFVector3 *d, const ScePspFVector3 *a, const ScePspFVector3 *b) { ... }
+#else
+void sceVfpuVector3Add(...) { /* equivalente em C para o port */ }
+#endif
+```
+
+- O corpo sai do objdump (`-z`, senão ele esconde palavras zero e parece que o mwcc descarta `nop`s; não descarta, e o padding depois do `jr` fica). Geradores (gitignored, cópias locais): `build/tmp/boot-a/vfpu_asm/gen2.py` e `build/tmp/boot-b/vgen.py` (objdump → corpo asm, com `.word` por palavra quando nada mais serve).
+- Sintaxe aceita: sem sufixo de registrador VFPU (`S000`, não `S000.s`); `li` como `addiu r, zero, imm` ou `ori` conforme o opcode (o mwcc monta `li` como `addi`); `vfim.s S030, -2.0`; condições de `vcmp` em minúsculas; `ror`/`rorv` como `rotr`/`rotrv`; `divu a, b` com dois operandos; `jalr ra, rs`; `break` só como `.word`; rótulos locais `@3c:` com `j @3c`, `jal`/`bltzal` para rótulo local; `jal símbolo` só para símbolos com protótipo no arquivo; `la r, sym+off` reproduz `lui r; addiu r, r` com relocações HI16/LO16.
+- **Limite:** não há sintaxe `%hi`/`%lo` (nem `hi()`, `@ha`, `@l`) para um `lui r` seguido de `lw/lwc1 x(r)`; `lwc1 $f, sym` monta com `$at`. Essas funções ficam `@asm` com o C sob `NON_MATCHING`. Nunca use `.word` para um `lui` de endereço absoluto: o link aceita, mas a relocação some.
+- Funções falsas do Ghidra (corpo de `case` de jump table separado) precisam ficar dentro do `@asm` da função mãe, senão o link falha no rótulo da jtbl.
+- Renomear um `ehsys_*`/`func_*` quebra os `.c` que o chamam pelo nome antigo: `grep` em `src/` antes, ou corrija por endereço depois de um merge.
+
 ## Análise via Ghidra e REA (opcional)
 
 - Export headless (alimenta `tools/decomp_view.py`): `$GHIDRA/support/analyzeHeadless build/ghidra tf -import build/elf/<m>.elf -scriptPath tools/ghidra -postScript ExportDecomp.java symbols/<m>.txt build/decomp/<m> -deleteProject` (Ghidra 12.1.3 com ghidra-allegrex v21.4 em `Ghidra/Extensions/`). Gera um `.c` por função e `index.tsv` (endereço, nome, tamanho, callees, callers, strings).
@@ -470,4 +488,4 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
 - `include/` só tem o que o `ehfile` usa; crescer por subsistema.
-- BOOT ainda em asm sem C: `0x08804000`-`0x0881FFB0` (libgu, MSL, libgcc fp-bit e sceDeflt compilados com GCC, mais a biblioteca vetorial VFPU de `0x0881A000`-`0x0881F000`, funções curtas que dá para escrever como `asm` inteiras como em `mtx.c`), `ehf_cmd_args` (`0x08820ED4`, 8 KB: conversor de argumentos dos comandos EHF por letra de destino — `N`/`O`/`P`/`Q` inteiros de 4/1/2/3 componentes, `F`/`G`/`H`/`I` e `f`/`g`/`h`/`i` floats, `n`/`p`/`q` ponteiros — e por tipo de origem `F`/`N`/`f`/`n`/`V`/`I`/`v`/`i`; gerado por macro, precisa de C funcional para o port) e `0x08862D28`-`0x08865260` (libsas/libwave do SDK, GCC).
+- BOOT: todo o `.text` em C. Faltam as ~400 funções em `@asm`; na parte do SDK compilada com GCC, quase todas porque carregam dados por `lui r` + `lw/lwc1 x(r)` (ver "Código GCC como funções `asm` do mwcc").
