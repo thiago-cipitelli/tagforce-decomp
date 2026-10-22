@@ -2,8 +2,8 @@
 // @data 0x088F04AC-0x088F078C
 // @rodata 0x088EAFE0-0x088EB030
 // @asm 0x088657A8-0x0886591C
-// @asm 0x08865A50-0x08865B50
 // @asm 0x08865BC4-0x08865CB0
+// @asm 0x08865B20-0x08865B50
 /* Game-side sound glue: heap and loader callbacks handed to the sound library (0x0885C688..0x08865260,
    still asm), the BGM/SE API exported to the gmodules (thin wrappers), character voice tables,
    per-player voice channels, movie_play with the configured volume, and the save-data path helpers
@@ -431,32 +431,36 @@ void snd_channels_reset(void)
     memset(&snd_channel_tab, 0, sizeof(SndChannelTab));
 }
 
-#ifdef NON_MATCHING /* the original indexes the queue from the table base (base + slot*0x80 + n*0x10 + 0x10) */
 /* Queues voice `se` of the slot's character with a delay (frames) after the previous one. */
 int partner_snd_channel(int slot, int se, int delay)
 {
     PlayerSlot *p = &game_state_get()->slot[slot];
-    int n;
+    int *n;
+    SndChannelSlot *q;
 
     if (p->voice_obj == 0)
         return 0;
-    n = snd_channel_tab.active[slot];
-    if (n >= 8)
+    n = &snd_channel_tab.active[slot];
+    if (*n >= 8)
         return 0;
-    snd_channel_tab.ch[slot].q[n].state = 0;
-    snd_channel_tab.ch[slot].q[n].delay = delay;
-    snd_channel_tab.ch[slot].q[n].se_id = se + snd_obj_base_id(p->voice_obj);
-    snd_channel_tab.active[slot]++;
+    q = &snd_channel_tab.ch[slot].q[*n];
+    q->state = 0;
+    q->delay = delay;
+    q->se_id = se + snd_obj_base_id(p->voice_obj);
+    (*n)++;
     return 1;
 }
 
+/* Sound id at the head of the slot's queue, 0 when empty. */
+#ifdef NON_MATCHING /* the original schedules the table address after the index shift */
 int snd_channel_get_u32(int slot)
 {
-    if (snd_channel_tab.active[slot] == 0)
-        return 0;
-    return snd_channel_tab.ch[slot].q[0].se_id;
-}
+    SndChannelTab *t = &snd_channel_tab;
 
+    if (t->active[slot] != 0)
+        return ((SndChannelSlot *)((char *)t + slot * 0x80))[1].se_id;
+    return 0;
+}
 #endif
 
 /* Stops the slot's current voice. */
