@@ -1,5 +1,4 @@
 // @range 0x088060A4-0x08806A2C
-// @asm 0x088060A4-0x088066B0
 // @data 0x0880A5D4-0x0880A7D0
 /* Builds the three tabs of the duel record screen from the save (visible items, values, "new"
    flags, text heights), the pad handling (tab switch, scroll, exit) and the item tables (text index
@@ -70,7 +69,6 @@ DrecItem drec_items2[130] = { /* 12 unused zero entries at the end */
     { 1, 0x0EA }, { 1, 0x0EB }, { 1, 0x0EC }, { 0, 0x0ED },
 };
 
-#ifdef NON_MATCHING /* forma igual; nas abas 2 e 1 o original troca os registradores do ponteiro da tabela e do contador number (s1/s5, s2/s6), e o addiu do ponteiro sai depois dos zeros (18 palavras) */
 void drec_build(void)
 {
     int i;
@@ -96,9 +94,9 @@ void drec_build(void)
     number = 0;
     list0 = heap_alloc(drec.heap, 0x28 * sizeof(DrecEntry));
     memset(list0, 0, 0x28 * sizeof(DrecEntry));
-    e = list0;
     n = 0;
-    for (it = drec_items0, i = 0; i < 0x28; it++, i++) {
+    e = list0;
+    for (i = 0, it = drec_items0; i < 0x28; it++, i++) {
         if (it->visible) {
             e->index = i;
             e->number = number;
@@ -120,25 +118,23 @@ void drec_build(void)
 
     list2 = heap_alloc(drec.heap, 0x76 * sizeof(DrecEntry));
     memset(list2, 0, 0x76 * sizeof(DrecEntry));
-    e = list2;
     n = 0;
     number = 0;
-    for (it = drec_items2, i = 0; i < 0x76; it++, i++) {
-        if (it->visible) {
-            e->number = number;
+    for (i = 0; i < 0x76; i++) {
+        if (drec_items2[i].visible) {
+            list2[n].number = number;
             total++;
             number++;
             if (drec.save[DREC_SAVE_STATE2 + i] != 0) {
-                e->index = i;
-                e->is_new = drec.save[DREC_SAVE_STATE2 + i] == 1;
-                if (e->is_new)
+                list2[n].index = i;
+                list2[n].is_new = drec.save[DREC_SAVE_STATE2 + i] == 1;
+                if (list2[n].is_new)
                     drec.save[DREC_SAVE_STATE2 + i] = 2;
-                e->has_value = 0;
-                e->value = 0;
-                e->lines = (font_wtext_lines(0x6600, table_get_entry(drec_get_file(0x1020), drec_text_index(2, i))) + 0x40) / line_h;
+                list2[n].has_value = 0;
+                list2[n].value = 0;
+                list2[n].lines = (font_wtext_lines(0x6600, table_get_entry(drec_get_file(0x1020), drec_text_index(2, i))) + 0x40) / line_h;
                 unlocked++;
                 n++;
-                e++;
             }
         }
     }
@@ -150,8 +146,8 @@ void drec_build(void)
     e = list1;
     n = 0;
     number = 0;
-    for (it = drec_items1, i = 0; i < 0x53; it++, i++) {
-        if (it->visible) {
+    for (i = 0; i < 0x53; i++) {
+        if (drec_items1[i].visible) {
             e->number = number;
             total++;
             number++;
@@ -201,8 +197,6 @@ void drec_build(void)
         drec.n_tabs--;
     drec.percent = unlocked * 100 / total;
 }
-
-#endif
 
 void drec_input(void)
 {
