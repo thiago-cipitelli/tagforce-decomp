@@ -23,7 +23,7 @@ int nl_exponent(char *p0, int exp, int fmtch);
 int nl_swsetup(NlFile *fp);
 int _wcrtomb_r(NlReent *r, char *s, int wc, NlMbState *ps);
 int _wcsrtombs_r(NlReent *r, char *dst, const int **src, unsigned int len, NlMbState *ps);
-char *func_0880AAC4(NlReent *r, double d, int mode, int ndigits, int *decpt, int *sign, char **rve); /* _dtoa_r */
+char *_dtoa_r(NlReent *r, double d, int mode, int ndigits, int *decpt, int *sign, char **rve); /* _dtoa_r */
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING)
 char **func_0880CF10(NlReent *r);      /* _localeconv_r: first field decimal_point */
@@ -61,7 +61,7 @@ L_088133B0:
     jr ra
     addiu sp, sp, 16
 L_088133C4:
-    jal func_0880C8EC
+    jal libc_sfvwrite
     nop
     sw zero, 4(s0)
     move v1, v0
@@ -114,7 +114,7 @@ asm int nl_sbprintf(NlFile *fp, const char *fmt, va_list ap)
     move s0, v0
     bltz v0, L_08813454
     move a0, sp
-    jal ehsys_0880C040
+    jal fflush
     nop
     addiu v1, zero, -1
     movn s0, v1, v0
@@ -190,7 +190,7 @@ L_088134B4:
 L_088134E8:
     jal heap_get_current
     nop
-    jal func_0880C330
+    jal libc_sinit
     move a0, v0
     j L_088134B4
     nop
@@ -772,7 +772,7 @@ L_08814F98:
     move t1, s4
     move t2, s6
     addiu t3, sp, 20
-    jal func_0880AAC4
+    jal _dtoa_r
     sw v0, 0(sp)
     move s1, v0
     xori v1, s5, 0x67
@@ -879,7 +879,7 @@ char *nl_cvt(NlReent *data, double value, int ndigits, int flags, char *sign, in
     } else {
         *sign = '\0';
     }
-    digits = func_0880AAC4(data, value, mode, ndigits, decpt, &dsgn, &rve);
+    digits = _dtoa_r(data, value, mode, ndigits, decpt, &dsgn, &rve);
     if ((ch != 'g' && ch != 'G') || (flags & F_ALT)) {
         bp = digits + ndigits;
         if (ch == 'f') {

@@ -3,8 +3,8 @@
    whole `asm` function; the C below is the newlib code, used outside the PSP build. */
 #include "nl_stdio.h"
 
-void func_0880C4D0(NlReent *r, void *p); /* _free_r */
-void func_0880CF9C(NlFile *fp);          /* __smakebuf */
+void _free_r(NlReent *r, void *p); /* _free_r */
+void libc_smakebuf(NlFile *fp);          /* __smakebuf */
 
 #ifdef __MWERKS__
 asm int nl_swsetup(NlFile *fp)
@@ -38,7 +38,7 @@ L_08816B40:
     jal heap_get_current
     nop
     lw a1, 48(s0)
-    jal func_0880C4D0
+    jal _free_r
     move a0, v0
     lhu a1, 12(s0)
     sw zero, 48(s0)
@@ -82,14 +82,14 @@ L_08816C0C:
     j L_08816BE8
     sw v1, 8(s0)
 L_08816C14:
-    jal func_0880CF9C
+    jal libc_smakebuf
     move a0, s0
     j L_08816BCC
     lhu v1, 12(s0)
 L_08816C24:
     jal heap_get_current
     nop
-    jal func_0880C330
+    jal libc_sinit
     move a0, v0
     j L_08816B40
     lhu a1, 12(s0)
@@ -107,7 +107,7 @@ int nl_swsetup(NlFile *fp)
         if (fp->flags & NL_SRD) {
             if (fp->ub.base != 0) {
                 if (fp->ub.base != fp->ubuf) {
-                    func_0880C4D0(nl_getreent(), fp->ub.base);
+                    _free_r(nl_getreent(), fp->ub.base);
                 }
                 fp->ub.base = 0;
             }
@@ -118,7 +118,7 @@ int nl_swsetup(NlFile *fp)
         fp->flags |= NL_SWR;
     }
     if (fp->bf.base == 0) {
-        func_0880CF9C(fp);
+        libc_smakebuf(fp);
     }
     if (fp->flags & NL_SLBF) {
         fp->w = 0;

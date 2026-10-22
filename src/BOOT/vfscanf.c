@@ -17,7 +17,7 @@ unsigned int func_0880C3B4(void *buf, unsigned int size, unsigned int n, NlFile 
 int func_0880DA9C(NlReent *r, int *pwc, const char *s, unsigned int n, NlMbState *ps); /* _mbrtowc_r */
 int func_0880CDFC(int wc);             /* iswspace */
 extern int D_088EB5A0;                 /* __mb_cur_max */
-double func_088116A4(NlReent *r, const char *s, char **end); /* _strtod_r */
+double _svfprintf_r(NlReent *r, const char *s, char **end); /* _strtod_r */
 long _strtol_r(NlReent *r, const char *s, char **end, int base);
 unsigned long _strtoul_r(NlReent *r, const char *s, char **end, int base);
 long long _strtoll_r(NlReent *r, const char *s, char **end, int base);
@@ -57,7 +57,7 @@ L_088151E8:
 L_0881521C:
     jal heap_get_current
     nop
-    jal func_0880C330
+    jal libc_sinit
     move a0, v0
     j L_088151E8
     nop
@@ -735,7 +735,7 @@ fskip:
                     }
                     sprintf(exp_start, "e%ld", new_exp);
                 }
-                res = func_088116A4(rptr, buf, 0);
+                res = _svfprintf_r(rptr, buf, 0);
                 if (flags & (S_LONG | S_LONGDBL)) {
                     *va_arg(ap, double *) = res;
                 } else {

@@ -25,7 +25,7 @@ asm int nl_submore(NlFile *fp)
     lw a1, 48(s2)
     sll s4, s3, 0x1
     move a0, v0
-    jal func_088100A0
+    jal _realloc_r
     move a2, s4
     move s1, v0
     beqz s1, L_08813180
@@ -52,7 +52,7 @@ L_088131A0:
     jal heap_get_current
     nop
     move a0, v0
-    jal func_0880D554
+    jal _malloc_r
     addiu a1, zero, 1024
     move s1, v0
     beqz s1, L_08813180
@@ -207,7 +207,7 @@ L_08813338:
     j L_088132AC
     sw v1, 0(s0)
 L_08813350:
-    jal ehsys_0880C040
+    jal fflush
     move a0, s0
     bnez v0, L_088132AC
     addiu a3, zero, -1
@@ -220,7 +220,7 @@ L_08813350:
 L_08813378:
     jal heap_get_current
     nop
-    jal func_0880C330
+    jal libc_sinit
     move a0, v0
     j L_08813234
     lhu v0, 12(s0)

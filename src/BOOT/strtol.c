@@ -15,7 +15,7 @@ typedef struct Reent {
 } Reent;
 
 Reent *heap_get_current(void);
-double func_088116A4(Reent *r, const char *s, char **end);   /* _strtod_r */
+double _svfprintf_r(Reent *r, const char *s, char **end);   /* _strtod_r */
 float __truncdfsf2(double d);
 long _strtol_r(Reent *r, const char *s, char **end, int base);
 unsigned long _strtoul_r(Reent *r, const char *s, char **end, int base);
@@ -44,7 +44,7 @@ asm double strtod(const char *s, char **end)
     move s0, a0
     move a0, v0
     move a1, s0
-    jal func_088116A4
+    jal _svfprintf_r
     move a2, s1
     lw ra, 8(sp)
     lw s1, 4(sp)
@@ -55,7 +55,7 @@ asm double strtod(const char *s, char **end)
 #else
 double strtod(const char *s, char **end)
 {
-    return func_088116A4(heap_get_current(), s, end);
+    return _svfprintf_r(heap_get_current(), s, end);
 }
 #endif
 
@@ -71,7 +71,7 @@ asm float strtof(const char *s, char **end)
     move s0, a0
     move a0, v0
     move a2, s1
-    jal func_088116A4
+    jal _svfprintf_r
     move a1, s0
     move a0, v0
     jal __truncdfsf2
@@ -85,7 +85,7 @@ asm float strtof(const char *s, char **end)
 #else
 float strtof(const char *s, char **end)
 {
-    return (float)func_088116A4(heap_get_current(), s, end);
+    return (float)_svfprintf_r(heap_get_current(), s, end);
 }
 #endif
 

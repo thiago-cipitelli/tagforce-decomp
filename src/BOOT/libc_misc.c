@@ -34,7 +34,7 @@ typedef struct LibcFile {              /* newlib FILE (see libc_stdio.c) */
 
 void *heap_get_current(void);
 int _vfprintf_r(void *r, LibcFile *fp, const char *fmt, va_list ap);
-int libc_vfprintf(LibcFile *fp, const char *fmt, va_list ap);
+int vfprintf(LibcFile *fp, const char *fmt, va_list ap);
 void _free_r(void *r, void *p);
 void libc_cleanup_glue(void *r, void *glue);
 int fflush(LibcFile *fp);
@@ -91,7 +91,7 @@ asm int dbg_printf(const char *fmt, ...)
     sw t3, 44(sp)
     move a1, s0
     lw a0, 8(v0)
-    jal libc_vfprintf
+    jal vfprintf
     addiu a2, sp, 20
     lw ra, 4(sp)
     lw s0, 0(sp)
@@ -105,7 +105,7 @@ int dbg_printf(const char *fmt, ...)
     int n;
 
     va_start(ap, fmt);
-    n = libc_vfprintf(*(LibcFile **)((char *)heap_get_current() + 8), fmt, ap);
+    n = vfprintf(*(LibcFile **)((char *)heap_get_current() + 8), fmt, ap);
     va_end(ap);
     return n;
 }
