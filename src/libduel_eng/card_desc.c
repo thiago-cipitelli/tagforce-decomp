@@ -1,4 +1,4 @@
-// @range 0x0884E228-0x0884ED08
+// @range 0x0884E228-0x0884F038
 /* Effect descriptors of the cards: four tables sorted by card id (by the b3_4 kind of the action),
    each entry with the handlers of the card. duel_card_desc finds the entry of an action; the other
    functions call one handler or count the zones its target test accepts. */
@@ -21,6 +21,14 @@ extern int duel_targeting_off;
 extern DuelAct *duel_w_089147DC;
 
 void duel_088327F8(unsigned int p, int id, int n);
+int duel_088619FC();
+int duel_08861D44();
+int duel_08863060();
+int duel_088647E8();
+int duel_088657D8();
+int duel_08866A3C();
+int duel_088681A8();
+int duel_08866608();
 
 int duel_0884E228(void)
 {
@@ -381,4 +389,109 @@ int duel_0884ECD4(DuelAct *a)
     DuelCardDesc *d = duel_card_desc(a);
 
     return d != 0 && d->resolve != 0;
+}
+
+int duel_0884ED08(DuelAct *a)
+{
+    DuelCardDesc *d;
+    int (*f)(DuelAct *, int);
+
+    switch (a->b3_4) {
+    case 0:
+        break;
+    case 3:
+        break;
+    default:
+        goto ok;
+    }
+    return 0;
+ok:
+    d = duel_card_desc(a);
+    if (d != 0) {
+        f = d->fn10;
+        if (f == duel_088619FC) {
+            return 1;
+        }
+        if (f == duel_08861D44) {
+            return 1;
+        }
+        if (f == duel_08863060) {
+            return 1;
+        }
+        if (f == duel_088647E8) {
+            return 1;
+        }
+        if (f == duel_088657D8) {
+            return 1;
+        }
+        if (f == duel_08866A3C) {
+            return 1;
+        }
+        if (f == duel_088681A8) {
+            return 1;
+        }
+        if (f == duel_08866608) {
+            return 1;
+        }
+        switch (a->id) {
+        case 0x1147:
+        case 0x1181:
+        case 0x19CB:
+        case 0x16C1:
+        case 0x16F8:
+        case 0x16F9:
+        case 0x17C5:
+        case 0x18E0:
+        case 0x18EC:
+        case 0x1A28:
+        case 0x1A58:
+            return 1;
+        case 0x10D6:
+        case 0x16CD:
+        case 0x1A61:
+            return 1;
+        case 0x13C7:
+        case 0x188F:
+            if (a->kind == 0x16) {
+                return 1;
+            }
+            break;
+        case 0x1503:
+            if (a->kind != 5) {
+                return 1;
+            }
+            break;
+        case 0x15D0:
+            if (a->kind != 0xF) {
+                return 1;
+            }
+            break;
+        case 0x17D5:
+        case 0x1817:
+            if (a->kind == 2) {
+                return 1;
+            }
+            break;
+        case 0x11CF:
+        case 0x17D7:
+        case 0x17D8:
+            if (a->kind == 5) {
+                return 1;
+            }
+            break;
+        case 0x19D3:
+            if (a->kind == 0xF) {
+                return 1;
+            }
+            break;
+        case 0x1A6D:
+        case 0x1A6E:
+        case 0x1A6F:
+            if (a->idx == 0) {
+                return 1;
+            }
+            break;
+        }
+    }
+    return 0;
 }
