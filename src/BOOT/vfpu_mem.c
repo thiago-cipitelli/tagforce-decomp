@@ -4,7 +4,7 @@
    prefix/condition control registers and the random generator state saved, restored and reset.
    Hand-written code kept as whole `asm` functions. Outside the PSP build the copies are the libc
    ones, the register file is emulated by a C VfpuContext and the generator state is vfpu_rcx
-   (src/BOOT/vfpu_vec.c). */
+   (src/BOOT/vfpu_color.c). */
 
 typedef struct VfpuContext {
     unsigned int regs[128];            /* S000..S733, in sv.q order (C000, C010, ...) */
