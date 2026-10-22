@@ -1,7 +1,8 @@
 // @range 0x088615D0-0x08862C5C
 // @data 0x088F0428-0x088F04AC
 // @asm 0x08861CA0-0x08861D60
-// @asm 0x08861F88-0x088624AC
+// @asm 0x08861F88-0x0886205C
+// @asm 0x0886205C-0x088624AC
 /* Sound library, object side (continued): handles of the object pool, lookup by sound id, start
    order of sounds of a class, the 4 slots of the current sound, group data loading through the
    read/alloc callbacks or the VPL, the 3D model (distance curve, pan from the angle, Doppler pitch),
@@ -494,15 +495,15 @@ int snd_read(void *name, void *buf, int size, int off)
 
 /* Volume (0x1000 = full) at distance `dist`: full up to near, linear to vol_mid at mid, then to
    vol_far at far. */
-#ifdef NON_MATCHING /* the original loads vol_far before the compare instead of in its delay slot */
+#ifdef NON_MATCHING /* the original schedules the vol_far load right before the far compare (after
+   the mid load), not before the near compare; every C placement tried puts it elsewhere (6 words) */
 int snd_curve_volume(float dist, SndCurve *c)
 {
+    int base = c->vol_far;
     int v = 0x1000;
-    int base;
     int d;
 
     if (dist > c->near) {
-        base = c->vol_far;
         v = base;
         if (dist < c->far) {
             if (dist < c->mid) {
