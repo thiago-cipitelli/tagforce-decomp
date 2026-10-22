@@ -2756,7 +2756,7 @@ duel_08853470 = 0x08853470; // type:func matched src/libduel_eng/ai_08853340.c
 duel_088535C0 = 0x088535C0; // type:func matched src/libduel_eng/ai_08853340.c
 duel_08853660 = 0x08853660; // type:func matched src/libduel_eng/ai_08853340.c
 duel_088537F4 = 0x088537F4; // type:func matched src/libduel_eng/ai_08853340.c
-duel_08850164 = 0x08850164; // type:func inferred
+duel_08850164 = 0x08850164; // type:func asm (@asm in src/libduel_eng/ai_08850164.c, C under NON_MATCHING)
 duel_08850F44 = 0x08850F44; // type:func inferred
 duel_088B0C88 = 0x088B0C88; // type:func inferred
 duel_w_089148E8 = 0x089148E8; // type:data inferred
@@ -2821,6 +2821,8 @@ duel_08859888 = 0x08859888; // type:func matched src/libduel_eng/ai_088594D0.c
 duel_0885994C = 0x0885994C; // type:func matched src/libduel_eng/ai_088594D0.c
 duel_0885A15C = 0x0885A15C; // type:func inferred (DuelAct *a, p, z) callback for duel_0884E690
 duel_0885F2E4 = 0x0885F2E4; // type:func inferred (DuelAct *a, p, z) callback for duel_0884E690
+duel_w_089147D8 = 0x089147D8; // type:data inferred next chain link announced by duel_08850164
+duel_w_089148F4 = 0x089148F4; // type:data inferred
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
