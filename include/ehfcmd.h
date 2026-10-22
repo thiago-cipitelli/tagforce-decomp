@@ -50,7 +50,13 @@ typedef struct EhfMtxState {           /* instance state of command 0x10003 */
 } EhfMtxState;
 
 
-int ehf_cmd_args(int *state, EhfCmd *cmd, int first, void **out, char *fmt);
+typedef struct EhfArgState {           /* what ehf_cmd_args consumed */
+    int n;                             /* outputs converted (also the return value) */
+    int ntypes;                        /* source type letters */
+    int nwords;                        /* value words after the type string pointer */
+} EhfArgState;
+
+int ehf_cmd_args(EhfArgState *state, EhfCmd *cmd, int first, void **out, char *fmt);
 unsigned int *dl_select_layer(int layer, unsigned int *size);
 int dl_set_list(unsigned int *list);
 unsigned int *postfx_get_param(void);
