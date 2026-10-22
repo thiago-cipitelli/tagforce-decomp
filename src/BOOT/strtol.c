@@ -1,4 +1,5 @@
 // @range 0x088126E8-0x08813108
+// @asm 0x088126E8-0x088126F8
 // @asm 0x08812784-0x08812948
 // @asm 0x08812998-0x08812E14
 // @asm 0x08812E64-0x08813108
@@ -28,17 +29,8 @@ unsigned long _strtoul_r(Reent *r, const char *s, char **end, int base);
 #define C_LOWER(c) ((c) >= 'a' && (c) <= 'z')
 #endif
 
-/* A cold block of _strtod_r (0x08811670-...) placed here by GCC: it bumps a local and jumps back
-   into the function. Not callable on its own, so there is no C version. */
-#ifdef __MWERKS__
-asm void strtod_r_tail(void)
-{
-    lw v0, 20(sp)
-    addiu v0, v0, 1
-    .word 0x0A2045BC  /* j 0x88116f0 */
-    sw v0, 20(sp)
-}
-#endif
+/* 0x088126E8: a cold block of _strtod_r placed here by GCC (it bumps a local and jumps back into
+   the function with an absolute `j`); not callable on its own, so it stays in asm and has no C. */
 
 #ifdef __MWERKS__
 asm double strtod(const char *s, char **end)
