@@ -57,7 +57,7 @@ unsigned int *dl_light_mode(unsigned int *list, int mode);
 unsigned int *dl_ambient_light(unsigned int *list, unsigned int color);
 Vec4 *vec3_sub_w(Vec4 *out, Vec4 *a, Vec4 *b);
 void mat4_look_at(Mat4 *out, Vec4 *pos, Vec4 *dir, Vec4 *up);
-void mat4_to_mat3(float *out, Mat4 *m);
+void mat4_inverse_ortho(float *out, Mat4 *m);
 void mtx_set_view_dir(Vec4 *v);
 
 void camera_update(Camera *cam)
@@ -68,7 +68,7 @@ void camera_update(Camera *cam)
     vec3_sub_w(&cam->dir, &cam->pos, &cam->target);
     vec3_normalize2(&cam->dir, &cam->dir);
     mat4_look_at(&cam->view, &cam->pos, &cam->dir, &cam->up);
-    mat4_to_mat3(cam->rot, &cam->view);
+    mat4_inverse_ortho(cam->rot, &cam->view);
     mtx_set_view_dir(&cam->dir);
 }
 

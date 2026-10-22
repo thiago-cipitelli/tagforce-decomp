@@ -41,7 +41,7 @@ void font_text_set(void *list);
 void *font_text_clear(void);
 void font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, unsigned int color);
 int font_draw_text(int x, int y, int w, unsigned short *text);
-float truncf(float f);
+float ceilf_vfpu(float f);
 void color_unpack(float *out, unsigned int rgba);
 unsigned int color_pack(float *v);
 void vec4_lerp2(float t, float *out, float *a, float *b);
@@ -246,8 +246,8 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
                         cw = (d->max_w == 0 ? 480 : d->max_w) - mw;
                         ch = (d->max_h == 0 ? 272 : d->max_h) - mh;
                         sz = font_measure_wtext2(cw << 6, ch << 6, d->text);
-                        d->w = (short)(int)((float)mw + truncf((float)(sz >> 16) / 64.0f));
-                        d->h = (short)(int)((float)mh + truncf((float)(sz & 0xFFFF) / 64.0f));
+                        d->w = (short)(int)((float)mw + ceilf_vfpu((float)(sz >> 16) / 64.0f));
+                        d->h = (short)(int)((float)mh + ceilf_vfpu((float)(sz & 0xFFFF) / 64.0f));
                         font_set_flag4(f4);
                         font_set_flag8000(f8);
                     }
@@ -268,8 +268,8 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
                     font_set_flag8000(0);
                     tw = font_measure_text(d->title);
                     th = font_get_height();
-                    d->title_w = (short)(int)((float)wtitle[2].w + (float)wtitle[1].w + truncf((float)tw / 64.0f + 1.0f) + 4.0f);
-                    d->title_h = (short)(int)((float)wtitle[0].h + truncf((float)th / 64.0f + 1.0f) + -1.0f);
+                    d->title_w = (short)(int)((float)wtitle[2].w + (float)wtitle[1].w + ceilf_vfpu((float)tw / 64.0f + 1.0f) + 4.0f);
+                    d->title_h = (short)(int)((float)wtitle[0].h + ceilf_vfpu((float)th / 64.0f + 1.0f) + -1.0f);
                     font_set_flag4(f4);
                     font_set_flag8000(f8);
                 }

@@ -76,7 +76,7 @@ void mtx_get_view_dir(Vec4 *out);
 int draw_sphere_visible(DrawSphere *s);
 void mat4_identity(Mat4 *m);
 void mat4_rotate_xyz(Mat4 *out, Mat4 *m, Vec4 *v);
-void mat4_transform_vec3(Mat4 *out, Mat4 *m, Vec4 *v);
+void mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v);
 void mat4_transform_vec4(Vec4 *out, Mat4 *m, Vec4 *v);
 void mat4_transpose(Mat4 *out, Mat4 *m);
 void quat_to_mat4(Mat4 *out, Vec4 *q);
