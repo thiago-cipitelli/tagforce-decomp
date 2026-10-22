@@ -1,4 +1,15 @@
 module_entry = 0x08804000; // type:func seed
+labo_main = 0x08804034; // type:func matched src/liblabo/labo_menu.c
+labo_exit = 0x088048C4; // type:func matched src/liblabo/labo_menu.c
+labo_draw = 0x088048CC; // type:func matched src/liblabo/labo_menu.c
+labo_draw_exit = 0x08804954; // type:func matched src/liblabo/labo_menu.c
+labo_menu_draw = 0x0880495C; // type:func matched src/liblabo/labo_menu.c
+labo_module_loaded = 0x08804AA8; // type:func matched src/liblabo/labo_menu.c
+voicetest_load = 0x08804AD0; // type:func
+voicetest_update = 0x08804C2C; // type:func
+voicetest_draw = 0x08805378; // type:func
+labo_scene_data = 0x0880A600; // type:data
+labo = 0x0890A624; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x088054F8; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08805500; // type:func import:libehsys nid:4BDEB2A8
