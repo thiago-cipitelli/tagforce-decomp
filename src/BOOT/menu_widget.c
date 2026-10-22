@@ -3,8 +3,6 @@
 // @asm 0x0884A9B4-0x0884BCF0
 // @asm 0x0884BE28-0x0884C260
 // @asm 0x0884C2D4-0x0884C518
-// @asm 0x0884C5F0-0x0884C66C
-// @asm 0x0884C6FC-0x0884C7CC
 /* Menu widget: a window (menu.c) hosting a scrollable list with a blinking cursor and/or a row of
    OK / YES / NO / CANCEL buttons (buttom_icon1.gim), driven by the pad. */
 #include "psp.h"
@@ -677,34 +675,36 @@ void menu_cursor_prev(MenuWidget *w)
     }
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm: the original decrements in branch-likely delay slots. */
+/* One entry up: cursor, then scroll, then (unless no_wrap) to the last entry. */
 void menu_cursor_prev1(MenuWidget *w)
 {
     int rows = w->rows;
+    int cur = w->cursor;
     int count = w->count;
     int scroll = w->scroll;
-    int cur = w->cursor;
     int vis = rows;
 
     if (count < rows)
         vis = count;
-    if (cur != 0) {
-        cur--;
-    } else if (scroll != 0) {
-        scroll--;
-    } else if (w->wrap) {
-        if (rows == 0) {
-            cur = count - 1;
+    if (cur == 0) {
+        if (scroll == 0) {
+            if (!w->no_wrap) {
+                if (rows == 0) {
+                    cur = count - 1;
+                } else {
+                    scroll = count - vis;
+                    cur = vis - 1;
+                }
+            }
         } else {
-            scroll = count - vis;
-            cur = vis - 1;
+            scroll--;
         }
+    } else {
+        cur--;
     }
     w->cursor = cur;
     w->scroll = scroll;
 }
-#endif
 
 void menu_cursor_next(MenuWidget *w)
 {
@@ -721,45 +721,40 @@ void menu_cursor_next(MenuWidget *w)
     }
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm (register allocation). */
+/* One entry down: cursor, then scroll, then (unless no_wrap) back to the first entry. */
 void menu_cursor_next1(MenuWidget *w)
 {
-    int rows = w->rows;
-    int count = w->count;
     int cur = w->cursor;
+    int rows = w->rows;
     int scroll = w->scroll;
+    int count = w->count;
     int vis = rows;
-    int nc;
 
     if (count < rows)
         vis = count;
     if (rows == 0) {
-        if (!(w->wrap) || cur < count - 1) {
-            if (count != 0) {
-                w->cursor = (cur + 1) % count;
-                w->scroll = scroll;
-                return;
-            }
-            nc = 0;
+        if (w->no_wrap && cur >= count - 1) {
+            cur = count - 1;
+        } else if (count == 0) {
+            cur = 0;
         } else {
-            nc = count - 1;
+            cur = (cur + 1) % count;
         }
-    } else if (cur < vis - 1) {
-        nc = cur + 1;
-    } else {
-        nc = cur;
-        if (scroll < count - vis) {
+    } else if (cur >= vis - 1) {
+        if (scroll >= count - vis) {
+            if (!w->no_wrap) {
+                cur = 0;
+                scroll = 0;
+            }
+        } else {
             scroll++;
-        } else if (w->wrap) {
-            nc = 0;
-            scroll = 0;
         }
+    } else {
+        cur++;
     }
-    w->cursor = nc;
+    w->cursor = cur;
     w->scroll = scroll;
 }
-#endif
 
 /* Scroll arrow (12 x 12 from the icon texture row at v = 72), blinking with the frame counter. */
 void *menu_draw_arrow(void *dl, int x, int y, int dir)

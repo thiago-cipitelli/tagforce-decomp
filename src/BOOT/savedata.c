@@ -1,6 +1,5 @@
 // @range 0x08866068-0x088668C0
 // @data 0x088F078C-0x088F07A4
-// @asm 0x088662DC-0x0886651C
 /* Save data through sceUtilitySavedata: fills the 0x600-byte param block (SFO texts from sysmsg,
    icon0/pic1 from msd.ehp, the fixed encryption key), message dialog, and the per-mode init
    helpers (autosave, save, load, delete, size query). The update state machines that follow stay
@@ -9,7 +8,7 @@
 #include "libc.h"
 #include "savedata.h"
 
-extern unsigned char msd_code[8];      /* 0x08E1FD40 */
+extern char msd_code[8];               /* 0x08E1FD40 */
 extern void *msd_heap;                 /* 0x08E1FD70 */
 extern SaveParam *msd_param;           /* 0x08E1FD74 */
 extern void *msd_data;                 /* 0x08E1FD78 */
@@ -88,28 +87,18 @@ void savedata_free(void)
     }
 }
 
-#ifdef NON_MATCHING /* the original is 0x30 bytes longer: each wsprintf call site keeps its own sysmsg_get */
 /* Message text for dialog `msg`, with the save code (8 bytes) or "!" where the message has %s/%c. */
 void savedata_format_msg(int msg, unsigned short *out)
 {
     unsigned short code[8];
 
-    if (msg == 0x19 || msg == 0xB || msg == 9 || msg == 7 || msg == 6) {
-        wsprintf(out, sysmsg_get(msg));
-    } else if (msg == 10 || msg == 8) {
-        wsprintf(out, sysmsg_get(msg), 0x2122);
-    } else if (msg == 5) {
-        memset(code, 0, 0x10);
-        code[0] = msd_code[0];
-        code[1] = msd_code[1];
-        code[2] = msd_code[2];
-        code[3] = msd_code[3];
-        code[4] = msd_code[4];
-        code[5] = msd_code[5];
-        code[6] = msd_code[6];
-        code[7] = msd_code[7];
-        wsprintf(out, sysmsg_get(5), code);
-    } else if (msg == 4 || msg == 3 || msg == 2) {
+    switch (msg) {
+    case 1:
+        wsprintf(out, sysmsg_get(msg), 0x2122, 0x2122);
+        break;
+    case 2:
+    case 3:
+    case 4:
         memset(code, 0, 0x10);
         code[0] = msd_code[0];
         code[1] = msd_code[1];
@@ -120,12 +109,32 @@ void savedata_format_msg(int msg, unsigned short *out)
         code[6] = msd_code[6];
         code[7] = msd_code[7];
         wsprintf(out, sysmsg_get(msg), 0x2122, code);
-    } else if (msg == 1) {
-        wsprintf(out, sysmsg_get(msg), 0x2122, 0x2122);
+        break;
+    case 5:
+        memset(code, 0, 0x10);
+        code[0] = msd_code[0];
+        code[1] = msd_code[1];
+        code[2] = msd_code[2];
+        code[3] = msd_code[3];
+        code[4] = msd_code[4];
+        code[5] = msd_code[5];
+        code[6] = msd_code[6];
+        code[7] = msd_code[7];
+        wsprintf(out, sysmsg_get(msg), code);
+        break;
+    case 8:
+    case 10:
+        wsprintf(out, sysmsg_get(msg), 0x2122);
+        break;
+    case 6:
+    case 7:
+    case 9:
+    case 11:
+    case 25:
+        wsprintf(out, sysmsg_get(msg));
+        break;
     }
 }
-
-#endif
 
 #define SAVE_COMMON(MODE, OVERWRITE)                              \
     memset(msd_param, 0, 0x600);                                  \
