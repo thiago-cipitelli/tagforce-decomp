@@ -1,5 +1,4 @@
 // @range 0x0882644C-0x08827030
-// @asm 0x0882644C-0x0882684C
 // @data 0x088ED3D0-0x088ED3F0
 /* EHF particles, part 1: the particle pool (aging and expiry), the emitter (spawns one particle
    every `period` seconds, position and velocity from callbacks set by the commands that follow),
@@ -73,12 +72,12 @@ void vec3_lerp(float t, float *out, float *a, float *b);
 float sinf(float x);
 float cosf(float x);
 
-#ifdef NON_MATCHING /* register allocation of the frame time computation differs */
 /* 0xE: pool of arg0 particles; drawn children see it as the current pool. */
 int ehf_cmd_pool(EhfPool *pool, EhfNode *node, EhfCmd *cmd, int phase)
 {
     unsigned int flag = 0;
     int n;
+    int size;
 
     switch (phase) {
     case 2:
@@ -90,7 +89,8 @@ int ehf_cmd_pool(EhfPool *pool, EhfNode *node, EhfCmd *cmd, int phase)
         ehf_pool = pool;
         flag = 0x80000000;
     case 1:
-        return flag | (cmd->a.i[0] * sizeof(EhfParticle) + 0x10);
+        size = cmd->a.i[0] * sizeof(EhfParticle) + 0x10;
+        return size | flag;
     case 3:
         ehf_pool = 0;
         return 0;
@@ -98,14 +98,12 @@ int ehf_cmd_pool(EhfPool *pool, EhfNode *node, EhfCmd *cmd, int phase)
         ehf_pool = pool;
         return 0x80000000;
     case 6: {
-        float inv = 1.0f / gfx_get_state()->fps;
-        int dn = node->unk4;
+        int fps = gfx_get_state()->fps;
+        float dt = node->unk4 * (1.0f / fps);
         EhfParticle *p;
         EhfParticle *end;
-        float dt;
 
         ehf_pool = 0;
-        dt = dn * inv;
         for (p = pool->p, end = p + pool->n; p < end; p++) {
             if (p->pos.w > 0.0f) {
                 p->pos.w += dt;
@@ -119,14 +117,13 @@ int ehf_cmd_pool(EhfPool *pool, EhfNode *node, EhfCmd *cmd, int phase)
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* same as ehf_cmd_pool */
 /* 0x1C: emitter: every arg1 seconds a free particle of the current pool gets lifetime arg0, and
    arg2 rounds of the pool are emitted. */
-int ehf_cmd_emitter(EhfEmitter *e, EhfNode *node, EhfCmd *cmd, int phase)
+int ehf_cmd_emitter(void *inst, EhfNode *node, EhfCmd *cmd, int phase)
 {
     EhfArg *a = (EhfArg *)cmd->a.i;
+    EhfEmitter *e = inst;
 
     switch (phase) {
     case 1:
@@ -150,7 +147,8 @@ int ehf_cmd_emitter(EhfEmitter *e, EhfNode *node, EhfCmd *cmd, int phase)
     case 6: {
         EhfPool *pool = ehf_pool;
         EhfParticle *base = pool->p;
-        float dt = (float)node->unk4 * (1.0f / gfx_get_state()->fps);
+        int fps = gfx_get_state()->fps;
+        float dt = node->unk4 * (1.0f / fps);
         EhfParticle *p;
 
         if (e->bursts != 0) {
@@ -193,7 +191,6 @@ int ehf_cmd_emitter(EhfEmitter *e, EhfNode *node, EhfCmd *cmd, int phase)
     }
     return 0;
 }
-#endif
 
 #define RAND15(s) ((int)((s) >> 16 & 0x7FFF))
 
