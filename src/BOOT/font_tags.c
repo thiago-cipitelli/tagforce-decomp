@@ -1,8 +1,8 @@
 // @range 0x0884900C-0x0884A9B4
-// @data 0x088EE9E0-0x088EEA30
+// @data 0x088EE9E0-0x088EEA58
 // @asm 0x0884900C-0x08849B14
 // @asm 0x08849C9C-0x0884A430
-// @asm 0x0884A654-0x0884A91C
+// @asm 0x0884A654-0x0884A8A4
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
    capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph
    quads. Also the sceFont allocator callbacks over FontCtx.scratch. */
@@ -10,6 +10,8 @@
 #include "libc.h"
 #include "ehsys.h"
 #include "font.h"
+
+extern char font_rubi_gim_name[16];
 
 int wcschr_index(const unsigned short *s, unsigned short c);
 unsigned short *wcsncpy(unsigned short *d, const unsigned short *s, unsigned int n);
@@ -492,7 +494,7 @@ void font_layout_end(FontCtx *f, FontLayout *st)
                 n = 0;
             }
             if (f->rubi_gim == 0)
-                f->rubi_gim = ehp_find(syspack_get(), "rubi_font00.gim", 0);
+                f->rubi_gim = ehp_find(syspack_get(), font_rubi_gim_name, 0);
             f->dl = dl_push1(f->dl, 0x13000000);
             f->dl = gim_set_texture(f->dl, f->rubi_gim);
             f->dl = dl_set_tex_filter(f->dl, 0, 0);
@@ -539,8 +541,6 @@ int font_get_cursor_y(void)
     return font_ctx_ptr->cursor_y;
 }
 
-/* Kept in asm: register allocation differs. The "rubi_font00.gim" literal, the ruby sample strings
-   and the glyph header template live in the asm .data (0x088EE9E0..0x088EEA58). */
 /* One 8x8 ruby glyph (kana 0x3041..0x30FF from rubi_font00.gim) at (x, y) in 26.6. */
 void font_rubi_quad(int x, int y, int code)
 {
@@ -707,16 +707,21 @@ int wtext_count_tags(unsigned short *src)
     }
 }
 
+#endif
+
+/* Literal of font_layout_end (kept in asm), defined here so that it sits between the template of
+   font_dl_glyph_header and the one of font_sample_glyph_size in .data. */
+char font_rubi_gim_name[16] = "rubi_font00.gim";
+
 /* Width and height (26.6) of the language's sample glyph: width << 16 | height. */
 unsigned int font_sample_glyph_size(void)
 {
     unsigned short samples[6][2] = { { 0x3042, 0 }, { 'A', 0 }, { 'A', 0 }, { 'A', 0 }, { 'A', 0 }, { 'A', 0 } };
-    int w;
+    unsigned int w;
 
-    w = font_measure_text(samples[cfg_get_language()]);
-    return (unsigned short)w << 16 | (unsigned short)font_line_height();
+    w = (unsigned short)font_measure_text(samples[cfg_get_language()]) << 16;
+    return w | (unsigned short)font_line_height();
 }
-#endif
 
 void font_scratch_reset(void)
 {
