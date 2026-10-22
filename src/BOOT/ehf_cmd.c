@@ -182,14 +182,14 @@ int ehf_cmd_srt(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     switch (n) {
     case 1:
         mat4_identity(&m);
-        mat4_transform_vec3(&m, &m, &t);
+        mat4_translate(&m, &m, &t);
         break;
     case 2:
         mat4_identity(&m);
         if (&r != 0) {
             mat4_rotate_xyz(&m, &m, &r);
         }
-        mat4_transform_vec3(&m, &m, &t);
+        mat4_translate(&m, &m, &t);
         break;
     case 3:
         mat4_identity(&m);
@@ -199,7 +199,7 @@ int ehf_cmd_srt(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
         if (&r != 0) {
             mat4_rotate_xyz(&m, &m, &r);
         }
-        mat4_transform_vec3(&m, &m, &t);
+        mat4_translate(&m, &m, &t);
         break;
     default:
         return 0;
