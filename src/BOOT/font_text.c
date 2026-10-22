@@ -1,5 +1,6 @@
 // @range 0x08847008-0x08848C68
-// @asm 0x08847008-0x08847FC8
+// @asm 0x08847008-0x08847330
+// @asm 0x08847768-0x08847FC8
 // @asm 0x0884876C-0x08848C68
 /* UCS-2 text layout and drawing. A FontLayout carries the pen; font_layout_wtext consumes one
    line into FontCtx.cmds (glyphs, size and color changes, ruby) and font_layout_end draws it. */
@@ -90,18 +91,23 @@ int font_draw_text(int x, int y, int w, unsigned short *text)
     return n;
 }
 
+#endif
+
 /* Draws word-wrapped text in the w x h box (26.6); at most max_glyphs glyphs (-1 = all).
    Returns the number of characters consumed. */
 int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max_glyphs)
 {
     FontCtx *f = font_ctx_ptr;
+    int bottom = y + h;      /* lowest baseline allowed, 26.6 */
+    unsigned short *p = text;
+    int n = 0;
     FontLayout st, saved;
     void *dl;
     unsigned int color, color2;
-    int line_h, step;
-    int n = 0;
+    int line_h, step, lh;
+    unsigned short flags;
+    int more;                /* another line still fits below this one */
     int r;
-    unsigned short *p;
 
     if (w < 0)
         return 0;
@@ -112,36 +118,37 @@ int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max
         f->dl = f->saved_dl;
     memset(&st, 0, sizeof st);
     st.xmax = x + w;
-    st.size_x = f->size_x;
-    st.size_y = f->size_y;
-    color = f->color;
-    color2 = f->color2;
-    st.flags |= 8;
-    line_h = f->line_h * st.size_y / 20;
-    step = line_h;
-    if (f->flags & 4)
-        step = line_h + 0x40;
-    line_h = f->unk50c3c + line_h;
-    if (f->flags & 4)
-        st.xmax -= 0x40;
     st.y = y;
+    st.x = x;
+    st.size_x = st.cur_size_x = f->size_x;
+    st.cur_size_y = st.size_y = f->size_y;
+    color = f->color;
+    st.color = color;
+    color2 = f->color2;
+    st.max_glyphs = max_glyphs;
+    st.flags |= 8;
+    st.color2 = color2;
+    lh = f->line_h * (int)st.size_y / 20;
+    flags = f->flags;
+    step = lh;
+    if (flags & 4)
+        step = lh + 0x40;
+    line_h = f->unk50c3c + lh;
+    if (flags & 4)
+        st.xmax -= 0x40;
     if (f->flags & 0x8000) {
-        line_h += 0x1C0;
-        st.y = y + 0x1C0;
-        st.ruby_xmax = st.xmax;
         st.line_x0 = x;
+        st.y += 0x1C0;
+        line_h += 0x1C0;
+        st.ruby_xmax = st.xmax;
         st.line_h = line_h;
     }
-    st.x = x;
-    st.color = color;
-    st.color2 = color2;
-    st.cur_size_x = st.size_x;
-    st.cur_size_y = st.size_y;
-    st.max_glyphs = max_glyphs;
     memcpy(&saved, &st, sizeof st);
-    p = text;
-    while (st.y + step <= y + h) {
-        r = font_layout_wtext(f, &st, p, step + st.y + line_h <= y + h);
+    while (st.y + step <= bottom) {
+        more = 1;
+        if (step + (st.y + line_h) > bottom)
+            more = 0;
+        r = font_layout_wtext(f, &st, p, more);
         n += st.consumed;
         p += st.consumed;
         st.consumed = 0;
@@ -153,16 +160,16 @@ int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max
         } else {
             if (r != 1)
                 break;
-            if ((f->flags & 0x8000) && (st.flags & 2) && st.x <= st.ruby_x + (st.ruby_pad >> 1)) {
-                st.ruby_x = x + (st.ruby_w >> 1);
+            if ((f->flags & 0x8000) && (st.flags & 2) && st.ruby_x + (int)(st.ruby_pad / 2u) >= st.x) {
+                st.ruby_x = x + (int)(st.ruby_w / 2u);
                 st.ruby_y = st.y + line_h - 0x1C0;
             }
             if (f->flags & 8) {
                 while (*p == ' ')
                     p++;
             }
-            st.y += line_h;
             st.x = x;
+            st.y += line_h;
         }
     }
     font_layout_end(f, &saved);
@@ -183,6 +190,7 @@ int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max
     return n;
 }
 
+#ifdef NON_MATCHING /* registradores/pilha diferentes (forma do original) */
 /* Lays out one line of UCS-2 text into f->cmds. Tags: $R...(ruby) $f $F (lower/upper small caps)
    $Cn (color) $$ (literal). Returns 0 at end of text, 1 at a line break (when `wrap`),
    2 when max_glyphs is reached, -1 when the command buffer is full. */
