@@ -1,6 +1,5 @@
 // @range 0x088042F4-0x08805B0C
 // @asm 0x088042F4-0x088046E8
-// @asm 0x08805764-0x08805A3C
 /* Drawing of the screen: animated background (bg.ehf), title bar, the two tabs, the lesson rows
    (number + title in a frame), the cursor box and the scroll bar with its blinking arrows. */
 #include "libtutoriallist.h"
@@ -367,22 +366,24 @@ unsigned int *tlist_draw_arrow(unsigned int *list, int x, int y, unsigned char d
     return draw_sprite(list, x, y, 0, 46, v, 0, 0);
 }
 
-#ifdef NON_MATCHING /* alocação: o original põe o deslocamento do cursor no registrador de track ($s8) e y + h no de list ($s7); aqui o mwcc derrama o deslocamento na pilha (sw 72(sp)) */
 /* scroll bar: knob size and position from the rows above the window, the window and the total */
 unsigned int *tlist_draw_scrollbar(unsigned int *list, int x, int y, int h, int pos, int page, int total)
 {
     int track = h - 2;         /* becomes the knob offset */
     void *parts = tlres_get(0x1003);
     int knob;
+    int period_up;             /* blink period of each arrow (one second) */
+    int period_down;
 
     if (parts == 0)
         return list;
-    if (page < total) {
-        knob = ALLEGREX_MAX(page * track / total, 10);
-        track = ALLEGREX_MIN(ALLEGREX_MAX(pos * (track - knob) / (total - page), 0), track - knob);
-    } else {
+    if (total <= page) {
         knob = track;
         track = 0;
+    } else {
+        knob = ALLEGREX_MAX(page * track / total, 10);
+        /* `h - 2 - knob`, not `track - knob`: the original recomputes it (move; subu) */
+        track = ALLEGREX_MIN(ALLEGREX_MAX(pos * (track - knob) / (total - page), 0), h - 2 - knob);
     }
     list = dl_set_tex_filter(list, 0, 0);
     list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -393,16 +394,16 @@ unsigned int *tlist_draw_scrollbar(unsigned int *list, int x, int y, int h, int 
     list = draw_set_offsets(list, 8, 5, 8, h - 10);
     list = draw_sprite(list, x, y + 5, 0, 55, 5, 0, 0);
     list = draw_set_offsets(list, 4, 5, 4, 5);
-    track = y + track;
-    list = draw_sprite(list, x + 2, track + 2, 0, 55, 40, 0, 0);
-    list = draw_sprite(list, x + 2, knob + track - 3, 0, 55, 55, 0, 0);
+    list = draw_sprite(list, x + 2, y + track + 2, 0, 55, 40, 0, 0);
+    list = draw_sprite(list, x + 2, knob + (y + track - 3), 0, 55, 55, 0, 0);
     list = draw_set_offsets(list, 4, 5, 4, knob - 10);
-    list = draw_sprite(list, x + 2, track + 7, 0, 55, 45, 0, 0);
-    list = tlist_draw_arrow(list, x, y - 7, 0, gfx_get_state()->fps, pos > 0, 1, gfx_get_state()->frame, parts);
-    return tlist_draw_arrow(list, x, y + h + 2, 1, gfx_get_state()->fps, pos < total - page, 1,
-                            gfx_get_state()->frame, parts);
+    list = draw_sprite(list, x + 2, y + track + 7, 0, 55, 45, 0, 0);
+    period_up = gfx_get_state()->fps;
+    list = tlist_draw_arrow(list, x, y - 7, 0, period_up, pos > 0, 1, gfx_get_state()->frame, parts);
+    period_down = gfx_get_state()->fps;
+    return tlist_draw_arrow(list, x, y + h + 2, 1, period_down, pos < total - page, 1, gfx_get_state()->frame,
+                            parts);
 }
-#endif
 
 /* lesson number, right-aligned, drawn digit by digit from the right */
 void tlist_draw_number(int x, int y, int n)

@@ -30,8 +30,6 @@ segments:
       - [0x354, c, tlist_draw]
       - [0x354, asm, tlist_draw_asm_088042F4]
       - [0x748, c, tlist_draw]
-      - [0x17C4, asm, tlist_draw_asm_08805764]
-      - [0x1A9C, c, tlist_draw]
       - [0x1B6C, c, tlist_res]
       - [0x1F70, c, tlist_list]
       - [0x2610, asm, sceStub_text]
