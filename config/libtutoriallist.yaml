@@ -29,7 +29,7 @@ segments:
       - [0x60, c, tlist_main]
       - [0x354, asm, text_0]
       - [0x1B6C, c, tlist_res]
-      - [0x1F70, asm, text_1]
+      - [0x1F70, c, tlist_list]
       - [0x2610, asm, sceStub_text]
       - [0x4CF8, bin, lib_ent_top]
       - [0x4CFC, bin, lib_ent]
