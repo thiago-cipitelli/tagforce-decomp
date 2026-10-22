@@ -371,15 +371,14 @@ unsigned int font_shadow_color(unsigned int c)
         return ((a << 6) / 255) << 24;
     return ((a << 7) / 255) << 24;
 }
-#ifdef NON_MATCHING
-
 /* Emits the ruby characters of "(...)" at p as glyph commands above the base text. */
+#ifdef NON_MATCHING /* 3 palavras: o original carrega c direto em s0 e passa o valor cru a wc_no_line_start (`move a0,s0` no atraso), refazendo a máscara no teste (v0); com c int o mwcc reaproveita a máscara do teste (a0) na chamada; com c unsigned short ele mascara na cópia para s0 (48 palavras) */
 unsigned short *font_ruby_layout(FontCtx *f, FontLayout *st, unsigned short *p)
 {
-    unsigned short c;
+    int c;
 
     while ((c = *p++) != ')') {
-        if (c < 0x20)
+        if ((unsigned short)c < 0x20)
             break;
         if (st->ruby_x + 0x1C0 > st->ruby_xmax) {
             if (!(st->flags & 8) || wc_no_line_start(c) != 0) {
@@ -390,7 +389,7 @@ unsigned short *font_ruby_layout(FontCtx *f, FontLayout *st, unsigned short *p)
         f->cmds[f->ncmds].kind = 1;
         f->cmds[f->ncmds].a = st->ruby_x;
         f->cmds[f->ncmds].b = st->ruby_y;
-        f->cmds[f->ncmds].c = c;
+        f->cmds[f->ncmds].c = c & 0xFFFF;
         st->ruby_x += st->ruby_w + 0x1C0;
         f->ncmds++;
         if (f->ncmds > 0xFF)
