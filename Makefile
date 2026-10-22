@@ -71,6 +71,6 @@ verify:
 	python3 tools/splat_config.py $(MODULE) > config/$(MODULE).yaml
 	rm -rf build/asm/$(MODULE)
 	@$(MAKE) --no-print-directory check 2>&1 | tail -1 | grep -qx MATCH || { echo "$(MODULE) BAD"; exit 1; }
-	python3 tools/link_map.py build/elf symbols >/dev/null
+	python3 tools/link_map.py build/elf symbols tools/psp_nids.txt >/dev/null
 	@n=$$($(MAKE) --no-print-directory check-all 2>&1 | grep -c ': MATCH$$'); t=$$(ls build/elf/*.elf | wc -l); \
 	  [ "$$n" = "$$t" ] || { echo "check-all $$n/$$t"; exit 1; }; echo "ALL MATCH"

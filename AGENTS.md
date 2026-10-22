@@ -124,7 +124,7 @@ Ponto de partida: o repositório do TF5 já tem extrator EHP; o header aqui é o
 | `tools/extract_iso.py` | Extrai a ISO (pycdlib) para `extracted/`. |
 | `tools/prx2elf.py` | Aplica relocações PRX na base `0x08804000`, converte em `ET_EXEC`, anexa `.MIPS.abiflags`, resolve entry (module_start ou início de `.text`), corrige tamanho do `.bss`. Exigido pelo perfil PSP do REA. |
 | `tools/ghidra/ExportDecomp.java` | Headless Ghidra: aplica `symbols/<m>.txt` (cria funções que faltam), exporta C decompilado de todas as funções em `build/decomp/<m>/*.c` + `index.tsv` (endereço, nome, tamanho, callees, callers, strings). Leitura em massa: `grep` no índice. |
-| `tools/nids.py` | Gera `build/nids.txt` (lib, NID, nome) a partir dos stubs do pspsdk. |
+| `tools/nids.py`, `tools/psp_nids.txt` | Gera a tabela (lib, NID, nome) a partir dos stubs do pspsdk; o `make verify` passa a tabela ao `link_map`, que nomeia os imports `sce*` dos gmodules. |
 | `tools/link_map.py` | Resolve os stubs de import de cada gmodule para funções do BOOT (`libehsys`) por NID e regenera a parte gerada de `symbols/<gmodule>.txt`. Rodar após nomear funções do BOOT. |
 | `tools/rea_seeds.py` | Gera `build/rea_seeds.tsv` (linhas `seed` dos símbolos) para `REA_GHIDRA_SEED_FILE`. |
 | `tools/ehp.py`, `tools/gim.py` | Extrai pacotes EHP; decodifica texturas GIM para PNG. |
