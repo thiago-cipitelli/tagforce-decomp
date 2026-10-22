@@ -190,6 +190,12 @@ typedef struct DuelSpecAct {           /* 0x38 */
     int unk34;                         /* +0x34 */
 } DuelSpecAct;
 
+typedef struct DuelSpecRec {           /* 0x14: last target answered by each special card [?] */
+    int w0;
+    int a[2];                          /* player, zone */
+    int b[2];
+} DuelSpecRec;
+
 typedef struct DuelSpecial {           /* 0x08913F10, 0x130: two cards held outside the zones */
     int player[2];
     int unk8;                          /* +0x08 */
@@ -198,7 +204,7 @@ typedef struct DuelSpecial {           /* 0x08913F10, 0x130: two cards held outs
     int unk24;                         /* +0x24 */
     int uid;                           /* +0x28 card uid (owner + uid_hi * 2) */
     DuelSpecAct act[2];                /* +0x2C by player */
-    int pad9c[10];
+    DuelSpecRec recs[2];               /* +0x9C */
     DuelSlot slot[2];                  /* +0xC4 */
     int padec[17];
 } DuelSpecial;
