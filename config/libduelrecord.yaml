@@ -33,7 +33,9 @@ segments:
       - [0xD60, asm, drec_draw_asm_08804D00]
       - [0x1248, c, drec_draw]
       - [0x1E40, asm, drec_draw_asm_08805DE0]
-      - [0x2104, asm, text_0]
+      - [0x2104, c, drec_build]
+      - [0x2104, asm, drec_build_asm_088060A4]
+      - [0x2710, c, drec_build]
       - [0x2A8C, asm, sceStub_text]
       - [0x5174, bin, lib_ent_top]
       - [0x5178, bin, lib_ent]
@@ -47,7 +49,7 @@ segments:
       - [0x65A0, bin, rodata_sceVstub]
       - [0x65C0, .data, drec_main]
       - [0x662C, .data, drec_draw]
-      - [0x6634, data, data_0]
+      - [0x6634, .data, drec_build]
       - { start: 0x6830, type: bss, vram: 0x880A7D0, name: bss }
   - [0x6830]
 

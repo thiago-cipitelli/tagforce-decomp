@@ -48,8 +48,8 @@ extern void *drec_pack;                /* 0x0880A804 database/duelrecord.ehp in 
 extern DrecPackFlags drec_pack_flags;
 
 void *drec_get_file(unsigned short id);
-int drec_tab_rows(int tab);
-unsigned short drec_text_index(int tab, int i);
+int drec_tab_rows(); /* K&R definition: callers pass an int, the callee truncates */
+unsigned short drec_text_index(unsigned short tab, unsigned short i);
 
 /* BOOT */
 void *heap_create(void *mem, int size);
