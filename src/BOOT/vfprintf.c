@@ -10,9 +10,9 @@
 #include "nl_stdio.h"
 #include "stdarg.h"
 #ifdef __MWERKS__
-void func_08818894(void);
-void func_0881891C(void);
-void func_08818D74(void);
+void __eqdf2(void);
+void __nedf2(void);
+void __negdf2(void);
 #endif
 
 
@@ -793,7 +793,7 @@ L_08814FF8:
     move a0, s2
     move a2, zero
     move a3, zero
-    jal func_08818894
+    jal __eqdf2
     move a1, s3
     lw v1, 16(sp)
     movz v1, s0, v0
@@ -839,7 +839,7 @@ L_08815094:
 L_0881509C:
     move a2, zero
     move a3, zero
-    jal func_0881891C
+    jal __nedf2
     move a1, s3
     beqzl v0, L_08815094
     lw v0, 0(s6)
@@ -848,7 +848,7 @@ L_0881509C:
     j L_08815090
     sw v0, 0(s6)
 L_088150C4:
-    jal func_08818D74
+    jal __negdf2
     move a1, s3
     move s2, v0
     move s3, v1
