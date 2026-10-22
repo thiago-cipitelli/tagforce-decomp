@@ -1,4 +1,4 @@
-// @range 0x08861E7C-0x08862648
+// @range 0x08861E7C-0x0886268C
 // @asm 0x08862208-0x088622B8
 /* The computer player: handlers of the cards it activates. */
 #include "duel.h"
@@ -234,4 +234,12 @@ int duel_088622B8(DuelAct *a, int b)
         return 0;
     }
     return 0;
+}
+
+int duel_08862648(DuelAct *a)
+{
+    if (a->kind == 2) {
+        duel_088D1AC8(a->player, a->zone);
+    }
+    return 1;
 }
