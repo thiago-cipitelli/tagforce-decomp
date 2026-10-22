@@ -443,10 +443,10 @@ int partner_snd_channel(int slot, int se, int delay)
 #ifdef NON_MATCHING /* the original schedules the table address after the index shift */
 int snd_channel_get_u32(int slot)
 {
-    SndChannelTab *t = &snd_channel_tab;
+    SndChannelTab *const t = &snd_channel_tab;
 
     if (t->active[slot] != 0)
-        return ((SndChannelSlot *)((char *)t + slot * 0x80))[1].se_id;
+        return t->ch[slot].q[0].se_id;
     return 0;
 }
 #endif
