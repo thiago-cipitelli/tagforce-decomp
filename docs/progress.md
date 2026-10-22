@@ -5,10 +5,10 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-22 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 26,4% | 34,0% | 4442 / 11039 |
+| total | 26,5% | 34,0% | 4454 / 11039 |
 | BOOT | 58,8% | 79,1% | 1777 / 2208 |
 | libduel_eng | 51,3% | 64,5% | 2663 / 3429 |
-| libhtml_view | 9,8% | 9,8% | 2 / 16 |
+| libhtml_view | 76,6% | 99,3% | 14 / 16 |
 | demais 19 gmodules | 0% | 0% | 0 / 5386 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
@@ -313,9 +313,13 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`duel_result.c`](../src/libduel_eng/duel_result.c) | 0x088FF3FC-0x08900C94 | 5 | 2 | resultado de uma série de duelos em dupla, estatísticas do deck para as recompensas, marcas de uma vez no save, atualização dos 40 recordes de duelo, cálculo dos 82 bônus do duelo |
 | [`duel_finish.c`](../src/libduel_eng/duel_finish.c) | 0x08900C94-0x08901BA0 | 3 | 2 | fim do duelo: resultados, 118 títulos, tabela de personagens com busca binária |
 
-## libhtml_view (2 arquivos, 2 funções batendo, 0 em asm)
+## libhtml_view (5 arquivos, 14 funções batendo, 2 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
+| [`html_net.c`](../src/libhtml_view/html_net.c) | 0x08804000-0x0880439C | 9 | 0 | entrada da cena (ehscript_register), laço por quadro e subida/descida da pilha de rede do visor: módulos de rede, sceNet/Inet/Resolver/Apctl, SSL, HTTP/HTTPS e cookies |
 | [`lang_remap.c`](../src/libhtml_view/lang_remap.c) | 0x0880439C-0x08804414 | 1 | 0 | 0x0880439c: maps the config language id to the download-site language index |
+| [`html_url.c`](../src/libhtml_view/html_url.c) | 0x08804414-0x088044B8 | 1 | 0 | página inicial do visor: página de download do Tag Force no site da Konami conforme a região (jp, us, eu) |
 | [`save_path.c`](../src/libhtml_view/save_path.c) | 0x088044B8-0x08804508 | 1 | 0 | 0x088044b8: builds "/PSP/SAVEDATA/<GAMEID>" |
+| [`html_viewer.c`](../src/libhtml_view/html_viewer.c) | 0x08804508-0x088047F4 | 2 | 2 | sessão do sceUtilityHtmlViewer: parâmetros (pasta de download = pasta do save, 3 abas, 6 MB de memória no .bss) e a máquina de estados rede → visor → fim |
+
