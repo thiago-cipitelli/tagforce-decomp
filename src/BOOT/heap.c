@@ -39,8 +39,8 @@ HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top);
 int heap_merge(Heap *h, HeapEnt *e);
 int heap_relocate_table(Heap *h);
 
-#ifdef NON_MATCHING /* the malloc result lands in $v0 instead of being coalesced with the parameter */
 /* Creates a heap of `size` bytes in `mem` (allocated when 0). */
+#ifdef NON_MATCHING /* o original calcula h->pad com `subu v0,a0,a0` (h e mem no mesmo registrador); aqui o resultado do malloc fica em v0 e os temporários dos bitfields mudam. Todas as formas de cópia (h = mem = f(), local raw, cópia depois do teste) dobram para zero ou deixam mem em v0 */
 Heap *heap_create(Heap *mem, unsigned int size)
 {
     Heap *h = mem;
@@ -115,7 +115,6 @@ void *heap_alloc(Heap *h, int n)
     heap_relocate_table(h);
     return (void *)size;
 }
-
 
 int heap_set_level(Heap *h, void *p)
 {

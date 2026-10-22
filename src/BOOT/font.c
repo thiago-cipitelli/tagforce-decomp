@@ -1,6 +1,6 @@
 // @range 0x08845AC0-0x08847008
-// @data 0x088EE8C4-0x088EE904
 // @asm 0x08845AC0-0x08845DDC
+// @data 0x088EE8C4-0x088EE904
 // @asm 0x08845E10-0x08846010
 // @asm 0x088462E8-0x0884638C
 // @asm 0x0884641C-0x088466AC
@@ -198,9 +198,9 @@ void font_printf_box64(int x, int y, int x0, int xmax, const char *fmt, ...)
     font_mbs_to_wcs(wbuf, 0x800, buf);
     font_draw_wtext_simple(x, y, x0, xmax, wbuf);
 }
-#ifdef NON_MATCHING
 
 /* Binary search in the sorted index: slot of `code`, or 0x100 + insertion position. */
+#ifdef NON_MATCHING /* o original calcula (mid - 1) * 4 sem dobrar o -1 no deslocamento, mascara code em a1 no atraso do blez e guarda mid em v0; while/do-while, índice ou ponteiro local, cópia de code e o teste final invertido ficam em 30-36 palavras */
 int font_glyph_find(unsigned short code)
 {
     FontCtx *f = font_ctx_ptr;
