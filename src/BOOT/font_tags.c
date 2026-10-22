@@ -1,6 +1,6 @@
 // @range 0x0884900C-0x0884A9B4
 // @data 0x088EE9E0-0x088EEA58
-// @asm 0x0884900C-0x08849778
+// @asm 0x088490EC-0x08849778
 // @asm 0x08849C9C-0x08849E54
 // @asm 0x08849F44-0x0884A430
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
@@ -31,16 +31,14 @@ void *gim_set_texture(void *list, void *gim);
 void font_glyph_vertices(short *v, int x, int y, int slot);
 extern const unsigned char font_clut[32];           /* .rodata 0x08875740: 16-entry 16-bit palette of the 4bpp atlas */
 
-#ifdef NON_MATCHING
-/* Kept in asm: register allocation differs (sizes match within a few words). */
 /* Next printable character after the tags at p; `in_ruby` skips a "(...)" ruby body. */
 unsigned short wtext_next_char(FontCtx *f, unsigned short *p, int in_ruby)
 {
-    int c = 0;
+    unsigned short c = 0;
     unsigned short *q;
     int k;
 
-    while (*p != 0) {
+    while (*p) {
         c = *p;
         q = p + 1;
         if (c == '$') {
@@ -57,7 +55,7 @@ unsigned short wtext_next_char(FontCtx *f, unsigned short *p, int in_ruby)
                 in_ruby = 1;
                 break;
             default:
-                return c;
+                goto done;
             }
         } else {
             if (in_ruby == 0)
@@ -70,9 +68,11 @@ unsigned short wtext_next_char(FontCtx *f, unsigned short *p, int in_ruby)
             p = q + (k + 1);
         }
     }
+done:
     return c;
 }
 
+#ifdef NON_MATCHING /* register allocation differs (sizes match within a few words). */
 /* Width in 26.6 of the word starting at p (up to the next breakable character), including the
    ruby padding, so that a word is not split across lines. */
 int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned short *p, int wrap)
