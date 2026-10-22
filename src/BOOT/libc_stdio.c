@@ -344,12 +344,10 @@ size_t fread(void *buf, size_t size, size_t count, LibcFile *fp)
 #endif
 
 #ifdef NON_MATCHING /* GCC: dlmalloc state through %hi/%lo */
-/* ponytail: the port uses the host allocator for every malloc-family entry point */
-void free(void *p);
-
+/* the port's allocator is platform_malloc (see libc_malloc.c) */
 void _free_r(void *r, void *p)
 {
-    free(p);
+    platform_free(p);
 }
 
 int _malloc_trim_r(void *r, size_t pad)
