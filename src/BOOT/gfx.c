@@ -73,7 +73,7 @@ void gu_set_color_mask(int m);
 void gu_set_param_50(int v);
 void gu_set_param_4c(int v);
 void gu_set_param_494(int v);
-void ehsys_08806378(int psm, int sx, int sy, int w, int h, int srcw, void *src, int dx, int dy, int destw, void *dest);
+void sceGuCopyImage(int psm, int sx, int sy, int w, int h, int srcw, void *src, int dx, int dy, int destw, void *dest);
 void ehsys_0880847C(void);
 int sceGeEdramSetAddrTranslation(int width);
 int sceGeListEnQueue(const void *list, void *stall, int cbid, void *arg);
@@ -357,7 +357,7 @@ void gfx_save_bmp(unsigned int buf)
     fb = (gfx_get_state()->frame & 1) ? 0x88000 : 0;
     sceKernelDcacheWritebackInvalidateAll();
     sceGuStart(0, gfx_bmp_list, 0x100);
-    ehsys_08806378(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
+    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
     sceGuFinish();
     sceGuSync(0, 0);
     RGBA_TO_BGR(p);
@@ -387,7 +387,7 @@ void gfx_save_tga(unsigned int buf)
     fb = (gfx_get_state()->frame & 1) ? 0x88000 : 0;
     sceKernelDcacheWritebackInvalidateAll();
     sceGuStart(0, gfx_tga_list, 0x100);
-    ehsys_08806378(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
+    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
     sceGuFinish();
     sceGuSync(0, 0);
     RGBA_TO_BGR(p);
@@ -504,7 +504,7 @@ void gfx_copy_frame(void *dst, void *src)
         dst = fb;
     }
     sceKernelDcacheWritebackInvalidateAll();
-    ehsys_08806378(3, 0, 0, 480, 272, 0x200, src, 0, 0, 0x200, dst);
+    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, src, 0, 0, 0x200, dst);
 }
 
 void *gfx_set_flip_cb(void (*cb)(void))
