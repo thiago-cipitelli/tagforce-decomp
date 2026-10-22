@@ -1,6 +1,5 @@
 // @range 0x08804690-0x088060A4
 // @asm 0x08804690-0x088049DC
-// @asm 0x08805DE0-0x088060A4
 // @data 0x0880A5CC-0x0880A5D4
 /* Drawing of the duel record screen: title bar with the completion percentage, tab strip, list
    lines (number, text, value column, "new" mark) and the scroll bar with its blinking arrows. */
@@ -238,7 +237,6 @@ void *drec_draw_list_frame(void *list, int x, int y, int w, int h)
     return dl;
 }
 
-
 void *drec_draw_entry(void *list, int x, int y, DrecEntry *e)
 {
     void *gim;
@@ -409,12 +407,13 @@ void *drec_draw_bar_frame(void *list, int x, int y, unsigned char down, unsigned
     return list;
 }
 
-#ifdef NON_MATCHING /* o original reaproveita o registrador do trilho para a posição do polegar sem derramar na pilha; aqui a posição vai para a pilha (105 palavras) */
 void *drec_draw_scrollbar(void *list, int x, int y, int h, int pos, int page, int total)
 {
     void *gim;
     int at = h - 2; /* track length, then thumb offset */
-    int len;
+    unsigned int period_up;
+    int len;  /* thumb length */
+    unsigned int period_down;
 
     gim = drec_get_file(0x1003);
     if (gim == 0)
@@ -424,7 +423,7 @@ void *drec_draw_scrollbar(void *list, int x, int y, int h, int pos, int page, in
         at = 0;
     } else {
         len = ALLEGREX_MAX(page * at / total, 10);
-        at = ALLEGREX_MIN(ALLEGREX_MAX(pos * (at - len) / total, 0), at - len);
+        at = ALLEGREX_MIN(ALLEGREX_MAX(pos * (at - len) / total, 0), h - 2 - len);
     }
     list = dl_set_tex_filter(list, 0, 0);
     list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -435,14 +434,15 @@ void *drec_draw_scrollbar(void *list, int x, int y, int h, int pos, int page, in
     list = draw_set_offsets(list, 8, 5, 8, h - 10);
     list = draw_sprite(list, x, y + 5, 0, 0x37, 5, 0, 0);
     list = draw_set_offsets(list, 4, 5, 4, 5);
-    at += y;
-    list = draw_sprite(list, x + 2, at + 2, 0, 0x37, 0x14, 0, 0);
-    list = draw_sprite(list, x + 2, len + at - 3, 0, 0x37, 0x23, 0, 0);
+    list = draw_sprite(list, x + 2, y + at + 2, 0, 0x37, 0x14, 0, 0);
+    list = draw_sprite(list, x + 2, y + at - 3 + len, 0, 0x37, 0x23, 0, 0);
     list = draw_set_offsets(list, 4, 5, 4, len - 10);
-    list = draw_sprite(list, x + 2, at + 7, 0, 0x37, 0x19, 0, 0);
-    list = drec_draw_bar_frame(list, x, y - 7, 0, gfx_get_state()[1], pos > 0, 1, gfx_get_state()[0], gim);
-    list = drec_draw_bar_frame(list, x, y + h + 2, 1, gfx_get_state()[1], pos < total, 1, gfx_get_state()[0],
+    list = draw_sprite(list, x + 2, y + at + 7, 0, 0x37, 0x19, 0, 0);
+    period_up = gfx_get_state()[1];
+    list = drec_draw_bar_frame(list, x, y - 7, 0, period_up, pos > 0, 1, gfx_get_state()[0], gim);
+    period_down = gfx_get_state()[1];
+    list = drec_draw_bar_frame(list, x, y + h + 2, 1, period_down, pos < total, 1, gfx_get_state()[0],
                                gim);
     return list;
 }
-#endif
+
