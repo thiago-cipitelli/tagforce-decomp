@@ -64,6 +64,42 @@ def imports(path):
     return out
 
 
+def var_exports(path):
+    """(lib, nid) -> address of the variables a module exports (after its functions in the entry table)."""
+    d, by, cstr, v2o = load(path)
+    out = {}
+    ent = by[".lib.ent"]
+    e = ent[4]
+    while e < ent[4] + ent[5]:
+        nm, ver, attr, ln, vc, fc, tb = struct.unpack_from("<IHHBBHI", d, e)
+        if nm:
+            for k in range(vc):
+                out[(cstr(nm), u32(d, v2o(tb) + 4 * (fc + k)))] = u32(d, v2o(tb) + 4 * (vc + fc + fc + k))
+        e += ln * 4
+    return out
+
+
+def var_imports(path):
+    """(lib, nid) of the variables a gmodule imports (.sceVstub). prx2elf leaves their references at 0."""
+    d, by, cstr, v2o = load(path)
+    out = []
+    stub = by[".lib.stub"]
+    e = stub[4]
+    while e < stub[4] + stub[5]:
+        nm, ver, attr, ln, vc, fc, nt, stt, vt = struct.unpack_from("<IHHBBHIII", d, e)
+        for k in range(vc):
+            out.append((cstr(nm), u32(d, v2o(vt) + 8 * k + 4)))
+        e += ln * 4
+    return out
+
+
+def var_import_names(elf_dir, sym_dir, module):
+    """Names (from BOOT's symbols) of the variables `module` imports; C references them at address 0."""
+    exp = var_exports(os.path.join(elf_dir, "BOOT.elf"))
+    boot = read_symbols(os.path.join(sym_dir, "BOOT.txt"))
+    return [boot.get(exp.get((lib, nid)), f"{lib}_var_{nid:08X}") for lib, nid in var_imports(os.path.join(elf_dir, module + ".elf"))]
+
+
 def read_symbols(path):
     names = {}
     if os.path.exists(path):

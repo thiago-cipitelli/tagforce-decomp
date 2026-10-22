@@ -3,7 +3,7 @@
  1. inside the DATA block, order input sections by their original file offset (from the yaml),
  2. the C objects' .rodata is merged right after their .data (the original modules have no .rodata).
 usage: fix_ld.py config/MODULE.yaml build/MODULE.ld"""
-import re, sys
+import os, re, sys
 yaml, ld = sys.argv[1], sys.argv[2]
 order = {}  # object basename -> offset
 for line in open(yaml):
@@ -85,6 +85,11 @@ for line in open(f"symbols/{module}.txt"):
     m = re.match(r"(\w+)\s*=\s*(0x[0-9A-Fa-f]+);\s*//\s*type:func static", line)
     if m:
         provides.append(f"PROVIDE({m.group(1)} = {m.group(2)});")
+# variables imported from BOOT (.sceVstub): the converted ELF keeps their references at 0
+if module != "BOOT":
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from link_map import var_import_names
+    provides += [f"PROVIDE({n} = 0);" for n in var_import_names("build/elf", "symbols", module)]
 if provides:
     new = new.rstrip("\n") + "\n" + "\n".join(provides) + "\n"
 open(ld, "w").write(new)

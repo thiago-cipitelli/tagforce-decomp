@@ -30,9 +30,9 @@ int fade_apply(void **list);
 
 /* sub-screen gmodules, imported by NID (stub names come from tools/link_map.py):
    init / update (nonzero = finished) / draw */
-void libpassword_08804008(void);
-int libpassword_088040C0(void);
-void libpassword_08804844(void);
+void password_init(void);
+int password_update(void);
+void password_draw(void);
 void libselect_card_08804008(int a, int b, int c, int d);
 int libselect_card_088041C4(void);
 void libselect_card_08807630(void);
@@ -132,11 +132,11 @@ void labo_main(void)
         case 2:
             switch (labo.load) {
             case 1:
-                libpassword_08804008();
+                password_init();
                 labo.load = 2;
                 break;
             case 2:
-                if (libpassword_088040C0()) {
+                if (password_update()) {
                     sceKernelStopModule(labo.modid, 0, 0, 0, 0);
                     sceKernelUnloadModule(labo.modid);
                     fade_start(1, 0xFF000000, 16);
@@ -380,7 +380,7 @@ static const char labo_module_names[9][32] = {
 };
 
 static void (*const labo_draw_table[12])(void) = {
-    0, labo_menu_draw, libpassword_08804844, libselect_card_08807630, libconv_machine_08804B50,
+    0, labo_menu_draw, password_draw, libselect_card_08807630, libconv_machine_08804B50,
     libcardalbum_08805CA4, libcharalist_08804F48, libduelrecord_08804690, liblimitlist_08806490,
     libtutoriallist_088042F4, voicetest_draw, labo_menu_draw,
 };

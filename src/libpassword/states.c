@@ -1,6 +1,5 @@
 // @range 0x0880597C-0x08807460
 // @rodata 0x0880B460-0x0880B484
-// @asm 0x08805A68-0x08805D8C
 /* Password screen scenes: intro message, keypad input (8 digits), digit reveal and lookup
    (card_id_from_password), card found (name typed out, card added to the collection), not found,
    quit. Messages come from strTbl_<lang>.bin and are typed out one glyph every 2 frames. */
@@ -32,7 +31,6 @@ void digits_refresh(void)
     }
 }
 
-#ifdef NON_MATCHING /* o C bate byte a byte (check_file OK); só o link falha: rand3_seeds/rand3_slot são imports de variável do BOOT (.rodata.sceVstub, NIDs AE605361/F464F466) que ficam em 0 no ELF relocado e o linker script não define símbolos em 0 */
 /* scene 1: intro message; keys flash at random while it types out */
 void st_intro(void)
 {
@@ -82,7 +80,7 @@ void st_intro(void)
         break;
     }
 }
-#endif
+
 
 /* scene 2: keypad. Circle/cross (region dependent) press the key under the cursor or quit,
    square deletes, the d-pad moves (only the enter row once 8 digits are typed) */
