@@ -14,4 +14,9 @@ void *malloc(size_t);
 void free(void *);
 void qsort(void *, size_t, size_t, int (*)(const void *, const void *));
 void *bsearch(const void *, const void *, size_t, size_t, int (*)(const void *, const void *));
+/* allocator of the PC port (platform/): the port C of the newlib malloc family sits on it */
+void *platform_malloc(size_t n);
+void platform_free(void *p);
+void *platform_realloc(void *p, size_t n);
+void *platform_memalign(size_t align, size_t n);
 #endif

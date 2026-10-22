@@ -58,8 +58,8 @@ void *sceGuSwapBuffers(void);
 int sceGuDisplay(int state);
 void *sceGuSetCallback(int signal, void (*cb)(int));
 void gu_DrawBuffer(int psm, void *fbp, int fbw);
-void ehsys_08805B54(int w, int h, void *fbp, int fbw);
-void ehsys_08805C84(int psm, void *fbp, int fbw);
+void sceGuDispBuffer(int w, int h, void *fbp, int fbw);
+void sceGuDrawBufferList(int psm, void *fbp, int fbw);
 void gu_DepthBuffer(void *zbp, int zbw);
 void gu_Disable(int state);
 void gu_Enable(int state);
@@ -73,8 +73,8 @@ void gu_set_color_mask(int m);
 void gu_set_param_50(int v);
 void gu_set_param_4c(int v);
 void gu_set_param_494(int v);
-void ehsys_08806378(int psm, int sx, int sy, int w, int h, int srcw, void *src, int dx, int dy, int destw, void *dest);
-void ehsys_0880847C(void);
+void sceGuCopyImage(int psm, int sx, int sy, int w, int h, int srcw, void *src, int dx, int dy, int destw, void *dest);
+void sceGuDebugFlush(void);
 int sceGeEdramSetAddrTranslation(int width);
 int sceGeListEnQueue(const void *list, void *stall, int cbid, void *arg);
 int sceGeListSync(int qid, int mode);
@@ -175,7 +175,7 @@ int gfx_init(void *arg, int fps)
     dl_state_init();
     sceGuStart(0, list, sizeof(list));
     gu_DrawBuffer(3, 0, 0x200);
-    ehsys_08805B54(480, 272, (void *)0x88000, 0x200);
+    sceGuDispBuffer(480, 272, (void *)0x88000, 0x200);
     gu_DepthBuffer((void *)0x110000, 0x200);
     gu_Disable(6);
     gu_Offset(0x710, 0x778);
@@ -207,7 +207,7 @@ int gfx_frame_end(void)
 
     sceDisplayGetAccumulatedHcount();
     sceGuSync(0, 0);
-    ehsys_0880847C();
+    sceGuDebugFlush();
     if (gfx_state.fps == 30) {
         if (sceDisplayGetVcount() - gfx_last_vcount < 2) {
             sceDisplayWaitVblankStartCB();
@@ -357,7 +357,7 @@ void gfx_save_bmp(unsigned int buf)
     fb = (gfx_get_state()->frame & 1) ? 0x88000 : 0;
     sceKernelDcacheWritebackInvalidateAll();
     sceGuStart(0, gfx_bmp_list, 0x100);
-    ehsys_08806378(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
+    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
     sceGuFinish();
     sceGuSync(0, 0);
     RGBA_TO_BGR(p);
@@ -387,7 +387,7 @@ void gfx_save_tga(unsigned int buf)
     fb = (gfx_get_state()->frame & 1) ? 0x88000 : 0;
     sceKernelDcacheWritebackInvalidateAll();
     sceGuStart(0, gfx_tga_list, 0x100);
-    ehsys_08806378(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
+    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
     sceGuFinish();
     sceGuSync(0, 0);
     RGBA_TO_BGR(p);
@@ -410,7 +410,7 @@ void gfx_draw_target(unsigned int *list, int psm, void *fbp, unsigned int zbp, u
     dl_set_list(list + 2);
     dl_set_cur_list_base(layer = dl_select_layer(layer, &size));
     sceGuStart(2, layer, size);
-    ehsys_08805C84(psm, fbp, fbw);
+    sceGuDrawBufferList(psm, fbp, fbw);
     layer = dl_get_layer();
     list = dl_get_cur_list_base();
     n = sceGuFinish();
@@ -504,7 +504,7 @@ void gfx_copy_frame(void *dst, void *src)
         dst = fb;
     }
     sceKernelDcacheWritebackInvalidateAll();
-    ehsys_08806378(3, 0, 0, 480, 272, 0x200, src, 0, 0, 0x200, dst);
+    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, src, 0, 0, 0x200, dst);
 }
 
 void *gfx_set_flip_cb(void (*cb)(void))
