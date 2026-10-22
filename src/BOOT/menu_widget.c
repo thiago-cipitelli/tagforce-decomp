@@ -1,7 +1,6 @@
 // @range 0x0884A9B4-0x0884C8D0
 // @data 0x088EEA58-0x088EEBA0
 // @asm 0x0884A9B4-0x0884BCF0
-// @asm 0x0884BE28-0x0884C15C
 /* Menu widget: a window (menu.c) hosting a scrollable list with a blinking cursor and/or a row of
    OK / YES / NO / CANCEL buttons (buttom_icon1.gim), driven by the pad. */
 #include "psp.h"
@@ -508,8 +507,6 @@ void menu_reset(MenuWidget *w)
     w->state = 0;
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm (register allocation). */
 /* One button (60 x 24 from buttom_icon1.gim) with its localized label; `lit` draws the
    highlighted frame and, while blinking, the flashing overlay. */
 void *menu_draw_button(void *dl, MenuWidget *w, int x, int y, int which, int lit)
@@ -517,48 +514,36 @@ void *menu_draw_button(void *dl, MenuWidget *w, int x, int y, int which, int lit
     int show = lit;
     unsigned short *label;
     unsigned int t;
-    int u, v, tw, th, dx, dy;
-    unsigned char sx;
+    int u, v, tw, dy;
 
-    if (w->state == 4) {
-        if (w->blink & 2) {
-            dl = gim_set_texture(dl, w->icon_gim);
-            goto frame;
-        }
-        if (lit == 1)
-            show = 0;
-    }
+    if (w->state == 4 && !((w->blink >> 1) & 1) && lit == 1)
+        show = 0;
     dl = gim_set_texture(dl, w->icon_gim);
-frame:
     dl = dl_ambient_color(dl, 0xFFFFFFFF);
     dl = dl_set_tex_filter(dl, 0, 0);
     dl = draw_set_offsets(dl, 60, 24, 60, 24);
-    if (show == 0) {
-        dl = draw_sprite(dl, x, y, 0, 0, 0, 0, 0);
-    } else {
-        if (which < 3) {
-            if (which == 0) {
-                u = 60;
-                v = 24;
-            } else {
-                u = 60;
-                v = 0;
-            }
-        } else {
+    if (show != 0) {
+        if (which >= 3) {
             u = 0;
+            v = 24;
+        } else if (which != 0) {
+            u = 60;
+            v = 0;
+        } else {
+            u = 60;
             v = 24;
         }
         dl = draw_sprite(dl, x, y, 0, u, v, 0, 0);
         dl = draw_sprite(dl, x, y, 0, 0, 48, 0, 0);
+    } else {
+        dl = draw_sprite(dl, x, y, 0, 0, 0, 0, 0);
     }
     if (lit != 0 && w->state != 4) {
         t = *gfx_get_state() % 33;
-        if (t < 17)
-            t <<= 7;
-        else
-            t = (33 - t) * 0x80;
-        t = (t & 0xFFF) >> 4;
-        dl = dl_ambient_color(dl, t | t << 8 | t << 24 | t << 16);
+        if (t > 16)
+            t = 33 - t;
+        t = (t << 7) >> 4 & 0xFF;
+        dl = dl_ambient_color(dl, t | (t << 8 | (t << 24 | t << 16)));
         dl = dl_blend_func(dl, 0, 2, 10, 0xFFFFFFFF, 0xFFFFFFFF);
         dl = draw_set_offsets(dl, 60, 24, 60, 24);
         dl = draw_sprite(dl, x, y, 0, 60, 48, 0, 0);
@@ -568,21 +553,17 @@ frame:
     if (label != 0) {
         font_set_size(10, 12);
         font_set_color(0xFF000000);
-        sx = font_measure_wtext(0xF00, label);
-        font_set_size(sx, 12);
-        tw = font_measure_text(label);
+        font_set_size((unsigned char)font_measure_wtext(0xF00, label), 12);
+        tw = font_measure_text(label) >> 6;
         font_text_set(dl);
-        th = font_line_height();
-        dy = (24 - (th >> 6)) / 2;
-        dx = (60 - (tw >> 6)) / 2;
-        x += dx;
-        font_draw_text(x * 64, (y + dy + 1) * 64, (480 - x) * 64, label);
+        dy = (24 - (font_line_height() >> 6)) / 2;
+        y = y + dy + 1;
+        x += (60 - tw) / 2;
+        font_draw_text(x * 64, y * 64, (480 - x) * 64, label);
         dl = font_text_clear();
     }
     return dl;
 }
-
-#endif
 
 /* The list cursor: a pulsing light-blue box (menu_draw_box); hidden on the off phase of the
    accept blink. */
