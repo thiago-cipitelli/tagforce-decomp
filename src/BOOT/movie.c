@@ -4,8 +4,6 @@
 // @asm 0x08851D10-0x08851F4C
 // @asm 0x08852070-0x08852144
 // @asm 0x08852708-0x088527AC
-// @asm 0x088527E8-0x08852900
-// @asm 0x08852BCC-0x08852C48
 /* PMF movie player (Sony PSMF sample code): movie_run() builds the sceMpeg ring buffer and decoder
    in the block set by movie_set_memory, starts the display/read/sound threads and runs the decode
    loop until the stream ends or the user skips. Control flow between threads uses two event flags
@@ -138,7 +136,8 @@ int snd_volume = 0x8000;
 #define ALIGN64(x) (((x) + 0x3F) & ~0x3F)
 
 /* Plays a .pmf: returns 0 at the end, 1 when skipped. flags: 1 mute, 2 any key skips, 4 no skip. */
-#ifdef NON_MATCHING /* structure matches; register allocation and scheduling differ */
+
+#ifdef NON_MATCHING /* forma igual; o original põe rb_size, mpeg_size e au em s6, s7, s8 (o mwcc dá s7, s8, s6) e troca s0/s2; permutar as declarações piora (35 palavras) */
 int movie_run(const char *path, unsigned int flags, int volume, int packets)
 {
     void *mpeg;
@@ -367,17 +366,16 @@ int ctrl_abort(MovieCtrl *c)
 }
 
 /* Decode loop of the main thread. Returns 0 at the end of the stream, 1 when skipped, <0 on error. */
-#ifdef NON_MATCHING /* structure matches; register allocation and scheduling differ */
+
+#ifdef NON_MATCHING /* forma igual (52 palavras, só registradores): o original dá s0 a r e s1..s5 a ctrl, vid, reader, au, mpeg; o mwcc põe os parâmetros em s0..s4 e r em s5, com qualquer ordem de declaração */
 int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *reader, MovieVid *vid, MovieCtrl *ctrl)
 {
-    int r, res;
+    int r;
     int init = 1;
     int ended = -1;
 
     while (pmf_reader_idle(reader) != 1) { /* wait for the ring buffer to fill */
-        res = ctrl_is_error(ctrl);
-        r = res;
-        if (res != 0)
+        if ((r = ctrl_is_error(ctrl)) != 0)
             goto fail;
         ctrl_wait_vblank2(ctrl);
         sceKernelDelayThreadCB(1000);
@@ -395,23 +393,16 @@ int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *r
         }
         if (pmf_reader_is_paused(reader) == 1 && packets << 2 == sceMpegRingbufferAvailableSize(rb))
             break;
-        res = ctrl_is_error(ctrl);
-        r = res;
-        if (res != 0)
+        if ((r = ctrl_is_error(ctrl)) != 0)
             goto fail;
         if (movie_has_sound == 1) {
-            res = movie_decode_atrac(mpeg, au, vid, init);
-            r = res;
-            if (res < 0) {
-                if (r != 0x80618001)
-                    goto fail;
-            } else {
+            if ((r = movie_decode_atrac(mpeg, au, vid, init)) >= 0) {
                 init = 0;
+            } else if (r != 0x80618001) {
+                goto fail;
             }
         }
-        res = movie_decode_avc(mpeg, au, vid);
-        r = res;
-        if (res != 0x80618001 && r < 0)
+        if ((r = movie_decode_avc(mpeg, au, vid)) != 0x80618001 && r < 0)
             goto fail;
         ctrl_wait_vblank2(ctrl);
         sceKernelCheckCallback();
@@ -419,9 +410,7 @@ int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *r
     }
     movie_evf_set(ctrl, 8);
     do {
-        res = movie_decode_avc_stop(mpeg, vid);
-        r = res;
-        if (res < 0)
+        if ((r = movie_decode_avc_stop(mpeg, vid)) < 0)
             goto fail;
         ctrl_wait_vblank2(ctrl);
     } while (r != 0);
@@ -455,7 +444,8 @@ int movie_read_header(void *mpeg, MovieFile *file, int *size, int *offset)
 }
 
 /* 1 when the user skipped the movie (movie_result = 10). */
-#ifdef NON_MATCHING /* structure matches; register allocation and scheduling differ */
+
+#ifdef NON_MATCHING /* o original carrega pad_cur e grava pad_prev antes do `sw ra`, com o `li a1,1` no atraso do jal; o mwcc põe a gravação no atraso (só escalonamento, 6 palavras) */
 int movie_poll_input(void)
 {
     unsigned int pad[4];
@@ -652,7 +642,7 @@ int snd_thread(SceSize args, void *argp)
     return 0;
 }
 
-#ifdef NON_MATCHING /* structure matches; register allocation and scheduling differ */
+#ifdef NON_MATCHING /* o original lê snd_out_idx antes do `sw ra` e intercala o epílogo com o xor de snd_out_idx (escalonamento, 26 palavras) */
 int snd_output(MovieSnd *s, void *buf)
 {
     memcpy((void *)snd_out[snd_out_idx], buf, s->bufsize);
@@ -681,34 +671,33 @@ char movie_dev_ms0[] = "ms0:";
 char movie_msg_bad_device[] = "fatal error : non-supported device\n";
 
 /* Records the device prefix of path; activates the UMD for disc0:. */
-#ifdef NON_MATCHING /* structure matches; register allocation and scheduling differ */
+
 int movie_file_init(MovieFile *f, const char *path)
 {
     int r;
 
     if (memcmp2(path, movie_dev_host0, 6) == 0) {
         strcpy(f->dev, movie_dev_host0);
-        r = 0;
     } else if (memcmp2(path, movie_dev_disc0, 6) == 0) {
         strcpy(f->dev, movie_dev_disc0);
         r = sceUmdActivate(1, movie_dev_disc0);
         if (r < 0) {
             dbg_printf(movie_msg_umd_activate, r);
-            return r;
+            goto end;
         }
         umd_retry_init();
-        r = 0;
     } else if (memcmp2(path, movie_dev_ms0, 4) == 0) {
         strcpy(f->dev, movie_dev_ms0);
-        r = 0;
     } else {
         dbg_printf(movie_msg_bad_device);
         r = -1;
         f->fd = r;
+        goto end;
     }
+    r = 0;
+end:
     return r;
 }
-#endif
 
 int movie_file_open(MovieFile *f, const char *path, int flags)
 {
@@ -794,19 +783,17 @@ int movie_umd_term(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* structure matches; register allocation and scheduling differ */
 int vid_init(MovieVid *v, MovieDisp *disp, MovieSnd *snd, int n, unsigned int *mem)
 {
     v->disp = disp;
     v->snd = snd;
     v->pts = 0;
     v->pts = (int *)*mem;
-    *mem = (*mem + n * 4 + 0x3F) & ~0x3F;
+    *mem = (unsigned int)((int)*mem + n * 4 + 0x3F) & ~0x3F;
     v->n = n;
     vid_pts_step = (int)((90000.0f / sceDisplayGetFramePerSec()) * 2.0f);
     return 0;
 }
-#endif
 
 int vid_reset(MovieVid *v)
 {
