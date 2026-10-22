@@ -1,5 +1,5 @@
 // @range 0x08847008-0x08848C68
-// @asm 0x08847008-0x0884816C
+// @asm 0x08847008-0x08847FC8
 // @asm 0x088482F0-0x08848C68
 /* UCS-2 text layout and drawing. A FontLayout carries the pen; font_layout_wtext consumes one
    line into FontCtx.cmds (glyphs, size and color changes, ruby) and font_layout_end draws it. */
@@ -354,51 +354,54 @@ done:
     return r;
 }
 
+#endif
+
 /* Single-line draw that shrinks the font until the text fits in w (26.6). */
 int font_draw_wtext(int x, int y, int w, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
+    int k = 1;          /* size step */
+    int limit;          /* width to fit, 26.6 */
+    int r;
     unsigned char sx, sy;
-    int tw, limit, k, r;
+    int tw;
+    unsigned short flags;
     unsigned int scaled;
 
     if (w < 0)
         return 0;
-    if (text == 0)
-        return 0;
-    if (*text == 0)
+    if (text == 0 || *text == 0)
         return 0;
     font_get_size(&sx, &sy);
     tw = font_measure_text(text);
-    if (tw < 1)
+    if (tw <= 0)
         return 0;
+    flags = f->flags;
     limit = w;
-    if (f->flags & 4)
+    if (flags & 4)
         limit = w - 0x40;
-    k = 1;
-    if (!(f->flags & 0x8000) && !(f->flags & 0x4000)) {
+    if (flags & 0x8000 || flags & 0x4000) {
+        for (; tw > limit; k++) {
+            if ((int)sx < k + 6)
+                break;
+            font_set_size(sx - k, sy);
+            tw = font_measure_text(text);
+        }
+    } else {
         if (limit < tw) {
             do {
                 if ((int)sx < k + 6)
                     break;
                 scaled = sx - k;
                 k++;
-            } while (limit < tw * (int)scaled / (int)sx);
+            } while (tw * (int)scaled / (int)sx > limit);
         }
         font_set_size(sx - k + 1, sy);
-    } else {
-        while (limit < tw && k + 6 <= (int)sx) {
-            font_set_size(sx - k, sy);
-            tw = font_measure_text(text);
-            k++;
-        }
     }
     r = font_draw_text(x, y, w, text);
     font_set_size(sx, sy);
     return r;
 }
-
-#endif
 
 /* Font width (percent / 5) that makes `text` fit in w (26.6): the current width when it already
    fits, 0 for no text. The font size is restored afterwards. */
