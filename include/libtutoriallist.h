@@ -78,6 +78,8 @@ unsigned int *tlist_draw_entry(unsigned int *list, int x, int y, int id);
 unsigned int *tlist_draw_frame(unsigned int *list, int x, int y, int w, int h);
 unsigned int *tlist_draw_cursor(unsigned int *list, int x, int y, int w, int h);
 unsigned int *tlist_draw_scrollbar(unsigned int *list, int x, int y, int h, int pos, int page, int total);
+unsigned int *tlist_draw_arrow(unsigned int *list, int x, int y, unsigned char down, unsigned int period,
+                               int blink, int base, unsigned int time, void *gim);
 void tlist_draw_number(int x, int y, int n);
 void tlres_init(void);
 int tlres_poll(void);
