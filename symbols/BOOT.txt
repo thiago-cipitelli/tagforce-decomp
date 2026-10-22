@@ -1119,11 +1119,11 @@ table_get_entry = 0x088433A4; // type:func export matched src/BOOT/wfmt.c nid:E5
 menu_init = 0x088433F0; // type:func export matched src/BOOT/menu.c loads window01.gim from syspack nid:30FECAEF
 menu_add_item = 0x0884344C; // type:func export matched src/BOOT/menu.c alloc 0xc0, max 16 nid:50B8DF28
 menu_free_items = 0x0884359C; // type:func export matched src/BOOT/menu.c nid:5DF04F49
-menu_layout = 0x08843600; // type:func export asm (@asm in src/BOOT/menu.c, C under NON_MATCHING) sorts items by def->order and builds them 792B nid:14BFFB01
+menu_layout = 0x08843600; // type:func export asm (@asm in src/BOOT/menu.c, C under NON_MATCHING) sorts items by def->z and builds them 792B nid:14BFFB01
 menu_remove_item = 0x08843918; // type:func export matched src/BOOT/menu.c nid:834A6E13
 menu_item_open = 0x08843968; // type:func export matched src/BOOT/menu.c state=1 nid:D7155BDE
 menu_item_close = 0x088439B0; // type:func export matched src/BOOT/menu.c nid:FA53F08C
-menu_item_is_open = 0x088439FC; // type:func export asm (@asm in src/BOOT/menu.c, C under NON_MATCHING) state 2 or 4 nid:F60A4259
+menu_item_is_open = 0x088439FC; // type:func export matched src/BOOT/menu.c state 2 or 4 nid:F60A4259
 menu_cursor_y = 0x08843A68; // type:func export matched src/BOOT/menu.c nid:8AC7E9E7
 menu_item_rect = 0x08843BE8; // type:func export matched src/BOOT/menu.c (menu, ?, x*, y*, w*, h*) nid:6B9DF7E8
 menu_item_state = 0x08843CF4; // type:func export matched src/BOOT/menu.c (menu) -> +0x84 or -1 nid:8867335A
