@@ -2,7 +2,7 @@
 // @data 0x088EE9E0-0x088EEA30
 // @asm 0x0884900C-0x08849B14
 // @asm 0x08849C9C-0x0884A430
-// @asm 0x0884A4DC-0x0884A91C
+// @asm 0x0884A654-0x0884A91C
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
    capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph
    quads. Also the sceFont allocator callbacks over FontCtx.scratch. */
@@ -539,11 +539,10 @@ int font_get_cursor_y(void)
     return font_ctx_ptr->cursor_y;
 }
 
-#ifdef NON_MATCHING
 /* Kept in asm: register allocation differs. The "rubi_font00.gim" literal, the ruby sample strings
    and the glyph header template live in the asm .data (0x088EE9E0..0x088EEA58). */
 /* One 8x8 ruby glyph (kana 0x3041..0x30FF from rubi_font00.gim) at (x, y) in 26.6. */
-void font_rubi_quad(int x, int y, unsigned short code)
+void font_rubi_quad(int x, int y, int code)
 {
     FontCtx *f = font_ctx_ptr;
     short v[10];
@@ -552,8 +551,8 @@ void font_rubi_quad(int x, int y, unsigned short code)
     unsigned short k;
     int u, w;
 
-    if (code > 0x303F || code < 0x3100) {
-        k = code - 0x3040;
+    if ((unsigned short)code > 0x303F || (unsigned short)code < 0x3100) {
+        k = (code & 0xFFFF) - 0x3040;
         u = (k & 0xF) * 8;
         w = (k >> 4) * 8;
         v[0] = u;
@@ -578,6 +577,7 @@ void font_rubi_quad(int x, int y, unsigned short code)
         f->dl = dl_push(f->dl, cmds, 11);
     }
 }
+#ifdef NON_MATCHING
 
 /* Copies src to dst dropping "$R" tags and the "(...)" ruby bodies (keeps the base text). */
 void wtext_strip_tags(unsigned short *dst, unsigned short *src)

@@ -209,7 +209,7 @@ void font_layout_end(FontCtx *f, FontLayout *st);
 void *font_flush_quads(void **dl, void *verts, int n);
 int font_get_cursor_x(void);
 int font_get_cursor_y(void);
-void font_rubi_quad(int x, int y, unsigned short code);
+void font_rubi_quad(int x, int y, int code);
 void wtext_strip_tags(unsigned short *dst, unsigned short *src);
 void wtext_strip_tags2(unsigned short *dst, unsigned short *src);
 int wtext_count_tags(unsigned short *src);
