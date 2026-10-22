@@ -59,7 +59,7 @@ extern GuCallbacks gu_cb;              /* 0x088F0CE0 */
 void gu_ctx_finish(GuList *l, int mode, unsigned int arg);
 void gu_ctx_state(GuList *l, int state, int on);
 void gu_ctx_matrix(GuList *l, int type, const float *m);
-void gu_update_stall(void);
+int gu_update_stall(void);
 
 /* float -> GE float24 argument */
 #define GU_F24(f) (gu_float_bits(f) >> 8)

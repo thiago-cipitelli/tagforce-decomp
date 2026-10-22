@@ -74,7 +74,7 @@ void gu_set_param_50(int v);
 void gu_set_param_4c(int v);
 void gu_set_param_494(int v);
 void sceGuCopyImage(int psm, int sx, int sy, int w, int h, int srcw, void *src, int dx, int dy, int destw, void *dest);
-void ehsys_0880847C(void);
+void sceGuDebugFlush(void);
 int sceGeEdramSetAddrTranslation(int width);
 int sceGeListEnQueue(const void *list, void *stall, int cbid, void *arg);
 int sceGeListSync(int qid, int mode);
@@ -207,7 +207,7 @@ int gfx_frame_end(void)
 
     sceDisplayGetAccumulatedHcount();
     sceGuSync(0, 0);
-    ehsys_0880847C();
+    sceGuDebugFlush();
     if (gfx_state.fps == 30) {
         if (sceDisplayGetVcount() - gfx_last_vcount < 2) {
             sceDisplayWaitVblankStartCB();

@@ -18,7 +18,7 @@ int sceDisplaySetFrameBuf(void *top, int buffer_width, int format, int sync);
 void *sceGeEdramGetAddr(void);
 
 int sceGuFinishId(unsigned int id);
-void gu_update_stall(void);
+int gu_update_stall(void);
 int sceGeContinue(void);
 
 #ifdef NON_MATCHING /* GCC: every function loads the libgu globals through %hi/%lo */
