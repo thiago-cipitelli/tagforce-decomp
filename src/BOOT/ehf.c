@@ -282,13 +282,13 @@ EhfInst *ehf_resolve(EhfFile *f)
     return e;
 }
 
-#ifdef NON_MATCHING /* the instance pointer is kept in $a1 until after the merge in the original */
+#ifdef NON_MATCHING /* o original só move o parâmetro e ($a1) para $s1 depois do merge do if (e==0); aqui o mwcc copia $s1=$a1 cedo, antes do teste; hd antes de mv já alinha os registradores do load (v0/v1), restam 9 palavras */
 /* Sets up `e` (or the instance embedded in `f`) for a w x h display; negative sizes take the
    movie bounds. */
 EhfInst *ehf_inst_init(float w, float h, EhfFile *f, EhfInst *e)
 {
-    EhfMovie *mv = (EhfMovie *)((char *)f + f->h.movie);
     EhfHdr *hd = &f->h;
+    EhfMovie *mv = (EhfMovie *)((char *)f + hd->movie);
 
     if (e == 0) {
         e = (EhfInst *)((char *)f + hd->inst);

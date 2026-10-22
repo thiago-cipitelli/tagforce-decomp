@@ -317,7 +317,7 @@ int efs_send(void *h, int phase, int a, int b)
     return 1;
 }
 
-#ifdef NON_MATCHING /* one addu operand order (index + table) */
+#ifdef NON_MATCHING /* addu com a ordem dos operandos trocada (tab+offset vs offset+tab) ao indexar tab[mid-1]; tentativas: EfsCmd**p=tab+(mid-1), EfsCmd*e=tab[mid-1] reaproveitado, EfsCmd**q=tab+mid com q[-1], int k=mid-1 separado -- todas pioraram para 24-71 palavras */
 /* Root `name` in the loaded files (binary search in each file's sorted table). */
 int efs_find(EfsRef *out, char *name)
 {
