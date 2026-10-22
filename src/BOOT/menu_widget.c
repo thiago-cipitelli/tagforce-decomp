@@ -1,8 +1,6 @@
 // @range 0x0884A9B4-0x0884C8D0
 // @data 0x088EEA58-0x088EEBA0
-// @asm 0x0884A9B4-0x0884BCF0
-// @asm 0x0884BE28-0x0884C260
-// @asm 0x0884C2D4-0x0884C518
+// @asm 0x0884ACB4-0x0884BCF0
 /* Menu widget: a window (menu.c) hosting a scrollable list with a blinking cursor and/or a row of
    OK / YES / NO / CANCEL buttons (buttom_icon1.gim), driven by the pad. */
 #include "psp.h"
@@ -11,6 +9,7 @@
 #include "game.h"
 #include "font.h"
 #include "menu.h"
+#include "allegrex.h"
 
 unsigned char *syspack_get(void);
 void *ehp_find(void *pack, const char *name, int flags);
@@ -53,55 +52,56 @@ unsigned short *menu_button_labels[6][5] = {
 unsigned char menu_button_bits[5] = { 0x00, 0x02, 0x12, 0x0C, 0x1C };
 char buttom_icon1_gim[] = "buttom_icon1.gim"; /* (sic) the icon sheet of the buttons and arrows */
 
-#ifdef NON_MATCHING
-/* menu_open, menu_draw and menu_update: structure follows the original, register allocation does not.
-   Kept in asm. */
 /* Sizes the window to its list and buttons, loads the icons and opens it. */
 void menu_open(MenuWidget *w)
 {
     MenuItemDef *d = &w->def;
-    unsigned int rows, n, style;
-    int cw, ch, min_w;
-    unsigned char set, b, i, k;
+    int n, cw, ch, min_w;
+    unsigned char *pack;
+    unsigned int bits;
+    int b;
+    int i;
+    int k;
 
     w->state = 1;
     menu_init(&w->menu, w->heap);
     menu_add_item(&w->menu, d);
     if (d->auto_size != 0) {
-        rows = w->rows;
+        n = w->rows;
         cw = 0;
         min_w = 0;
-        if (rows == 0)
-            rows = w->count;
-        n = w->count;
-        if (n >= rows)
-            n = rows;
-        style = w->style;
-        if (style != 0) {
-            if (style & 1)
-                k = w->item_w * n;
+        if (n == 0)
+            n = w->count;
+        if (w->count < n)
+            n = w->count;
+        if (w->style != 0) {
+            cw = d->pad_l + d->pad_r + 9;
+            if (w->style & 1)
+                cw += w->item_w * n;
             else
-                k = w->item_w;
-            cw = d->pad_l + d->pad_r + 9 + (style & 1 ? w->item_w * n : w->item_w);
+                cw += w->item_w;
         }
-        set = w->buttons;
-        if (set != 0) {
-            if (set == 4)
-                min_w = 0xE3;
-            else if (set == 3)
-                min_w = 0xA7;
-            else if (set == 2)
-                min_w = 0xA7;
-            else if (set == 1)
-                min_w = 0x57;
+        if (w->buttons != 0) {
+        switch (w->buttons) {
+        case 1:
+            min_w = 0x57;
+            break;
+        case 2:
+        case 3:
+            min_w = 0xA7;
+            break;
+        case 4:
+            min_w = 0xE3;
+            break;
         }
-        if (cw < min_w)
-            cw = min_w;
+        }
+        cw = ALLEGREX_MAX(cw, min_w);
         if (d->w < cw)
             d->w = cw;
-        ch = menu_cursor_y(&w->menu, d) - d->y + d->pad_b + 5;
-        if (style != 0) {
-            if (style & 1)
+        ch = menu_cursor_y(&w->menu, d) - d->y;
+        ch += d->pad_b + 5;
+        if (w->style != 0) {
+            if (w->style & 1)
                 ch += w->item_h;
             else
                 ch += w->item_h * n;
@@ -117,25 +117,24 @@ void menu_open(MenuWidget *w)
     if (w->cursor_h == 0)
         w->cursor_h = w->item_h;
     if (w->icon_gim == 0) {
-        if (syspack_get() != 0)
-            w->icon_gim = ehp_find(syspack_get(), buttom_icon1_gim, 0);
+        pack = syspack_get();
+        if (pack != 0)
+            w->icon_gim = ehp_find(pack, buttom_icon1_gim, 0);
     }
     if (w->buttons != 0) {
+        bits = menu_button_bits[w->buttons];
         b = w->button;
         k = b;
-        for (i = 0; i < 8; i++) {
-            if (menu_button_bits[w->buttons] & (1 << (k & 7))) {
+        for (i = 0; i < 8; i++, k++) {
+            if (bits & (1 << (k & 7))) {
                 b = (b + i) & 7;
                 break;
             }
-            k++;
         }
         w->button = b;
     }
-    if (w->style != 0) {
-        if (w->skip_disabled && (w->disabled >> (w->scroll + w->cursor)) & 1)
-            menu_cursor_next(w);
-    }
+    if (w->style != 0 && w->skip_disabled && (w->disabled >> (w->scroll + w->cursor)) & 1)
+        menu_cursor_next(w);
     if (d->open_anim < 1) {
         w->state = 3;
     } else {
@@ -144,6 +143,9 @@ void menu_open(MenuWidget *w)
     }
 }
 
+#ifdef NON_MATCHING
+/* menu_draw and menu_update: structure follows the original, register allocation does not.
+   Kept in asm. */
 /* Draws the window, its list (with cursor, highlights and arrows) and the buttons; the window
    alpha follows the open/close animation of the item. */
 void menu_draw(void **dl, MenuWidget *w)
@@ -509,8 +511,6 @@ void menu_reset(MenuWidget *w)
     w->state = 0;
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm (register allocation). */
 /* One button (60 x 24 from buttom_icon1.gim) with its localized label; `lit` draws the
    highlighted frame and, while blinking, the flashing overlay. */
 void *menu_draw_button(void *dl, MenuWidget *w, int x, int y, int which, int lit)
@@ -518,48 +518,36 @@ void *menu_draw_button(void *dl, MenuWidget *w, int x, int y, int which, int lit
     int show = lit;
     unsigned short *label;
     unsigned int t;
-    int u, v, tw, th, dx, dy;
-    unsigned char sx;
+    int u, v, tw, dy;
 
-    if (w->state == 4) {
-        if (w->blink & 2) {
-            dl = gim_set_texture(dl, w->icon_gim);
-            goto frame;
-        }
-        if (lit == 1)
-            show = 0;
-    }
+    if (w->state == 4 && !((w->blink >> 1) & 1) && lit == 1)
+        show = 0;
     dl = gim_set_texture(dl, w->icon_gim);
-frame:
     dl = dl_ambient_color(dl, 0xFFFFFFFF);
     dl = dl_set_tex_filter(dl, 0, 0);
     dl = draw_set_offsets(dl, 60, 24, 60, 24);
-    if (show == 0) {
-        dl = draw_sprite(dl, x, y, 0, 0, 0, 0, 0);
-    } else {
-        if (which < 3) {
-            if (which == 0) {
-                u = 60;
-                v = 24;
-            } else {
-                u = 60;
-                v = 0;
-            }
-        } else {
+    if (show != 0) {
+        if (which >= 3) {
             u = 0;
+            v = 24;
+        } else if (which != 0) {
+            u = 60;
+            v = 0;
+        } else {
+            u = 60;
             v = 24;
         }
         dl = draw_sprite(dl, x, y, 0, u, v, 0, 0);
         dl = draw_sprite(dl, x, y, 0, 0, 48, 0, 0);
+    } else {
+        dl = draw_sprite(dl, x, y, 0, 0, 0, 0, 0);
     }
     if (lit != 0 && w->state != 4) {
         t = *gfx_get_state() % 33;
-        if (t < 17)
-            t <<= 7;
-        else
-            t = (33 - t) * 0x80;
-        t = (t & 0xFFF) >> 4;
-        dl = dl_ambient_color(dl, t | t << 8 | t << 24 | t << 16);
+        if (t > 16)
+            t = 33 - t;
+        t = (t << 7) >> 4 & 0xFF;
+        dl = dl_ambient_color(dl, t | (t << 8 | (t << 24 | t << 16)));
         dl = dl_blend_func(dl, 0, 2, 10, 0xFFFFFFFF, 0xFFFFFFFF);
         dl = draw_set_offsets(dl, 60, 24, 60, 24);
         dl = draw_sprite(dl, x, y, 0, 60, 48, 0, 0);
@@ -569,15 +557,13 @@ frame:
     if (label != 0) {
         font_set_size(10, 12);
         font_set_color(0xFF000000);
-        sx = font_measure_wtext(0xF00, label);
-        font_set_size(sx, 12);
-        tw = font_measure_text(label);
+        font_set_size((unsigned char)font_measure_wtext(0xF00, label), 12);
+        tw = font_measure_text(label) >> 6;
         font_text_set(dl);
-        th = font_line_height();
-        dy = (24 - (th >> 6)) / 2;
-        dx = (60 - (tw >> 6)) / 2;
-        x += dx;
-        font_draw_text(x * 64, (y + dy + 1) * 64, (480 - x) * 64, label);
+        dy = (24 - (font_line_height() >> 6)) / 2;
+        y = y + dy + 1;
+        x += (60 - tw) / 2;
+        font_draw_text(x * 64, y * 64, (480 - x) * 64, label);
         dl = font_text_clear();
     }
     return dl;
@@ -595,18 +581,14 @@ void *menu_draw_cursor(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
             return dl;
     } else {
         t = *gfx_get_state() % 33;
-        if (t >= 17)
-            t = (33 - t) * 0x80;
-        else
-            t <<= 7;
-        color = ((t >> 4) + 0x7F) * 0x1000000 | 0x80FF;
+        if (t > 16)
+            t = 33 - t;
+        color = (unsigned char)(((t << 7) >> 4) + 0x7F) << 24 | 0x80FF;
     }
     dl = gim_set_texture(dl, w->menu.window_gim);
     dl = dl_ambient_color(dl, color);
-    menu_draw_box(dl, x, y, cw, ch);
-    return dl;
+    return menu_draw_box(dl, x, y, cw, ch);
 }
-#endif
 
 /* Highlight box of a selected entry (steady color). */
 void menu_draw_selected(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
@@ -616,12 +598,11 @@ void menu_draw_selected(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
     menu_draw_box(dl, x, y, cw, ch);
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm (spill order of the parameters). */
-/* 9-slice box from the 12 x 12 corner pieces at (0..12, 112..124) of the window texture. */
-void menu_draw_box(void *dl, int x, int y, int w, int h)
+/* 9-slice box from the 12 x 12 corner pieces at (0..12, 112..124) of the window texture; returns
+   the list (menu_draw_cursor passes it on). */
+void *menu_draw_box(void *dl, int x, int y, int w, int h)
 {
-    int x1, y1;
+    int y1, x1;
 
     dl = dl_set_tex_filter(dl, 0, 0);
     dl = draw_set_offsets(dl, 4, 4, 4, 4);
@@ -643,10 +624,10 @@ void menu_draw_box(void *dl, int x, int y, int w, int h)
     }
     if (w > 8 && h > 8) {
         dl = draw_set_offsets(dl, 4, 4, w - 8, h - 8);
-        draw_sprite(dl, x + 4, y + 4, 0, 4, 0x74, 0, 0);
+        dl = draw_sprite(dl, x + 4, y + 4, 0, 4, 0x74, 0, 0);
     }
+    return dl;
 }
-#endif
 
 /* Animation counter of the widget's window item (0 when not found). */
 int menu_item_counter(MenuWidget *w)

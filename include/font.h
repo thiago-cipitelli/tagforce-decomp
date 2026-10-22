@@ -124,10 +124,9 @@ typedef struct SceFontCharInfo {       /* 0x3C */
     unsigned int bitmap_w, bitmap_h;
     int bitmap_left, bitmap_top;
     int w, h, ascender, descender, bearing_hx, bearing_hy, bearing_vx, bearing_vy;
-    short advance_h;                   /* +0x30, 26.6 */
-    short advance_v;
+    int advance_h;                     /* +0x30, 26.6 */
+    int advance_v;
     unsigned short shadow_flags, shadow_id;
-    int pad;
 } SceFontCharInfo;
 
 typedef struct SceFontGlyphImage {     /* 0x18 */
@@ -142,8 +141,8 @@ int sceFontFindOptimumFont(int lib, SceFontStyle *style, unsigned int *err);
 int sceFontOpen(int lib, int index, int mode, unsigned int *err);
 int sceFontGetFontInfo(int font, SceFontInfo *info);
 int sceFontSetAltCharacterCode(int lib, unsigned short code);
-int sceFontGetCharInfo(int font, unsigned short code, SceFontCharInfo *info);
-int sceFontGetCharGlyphImage(int font, unsigned short code, SceFontGlyphImage *img);
+int sceFontGetCharInfo(int font, unsigned int code, SceFontCharInfo *info);
+int sceFontGetCharGlyphImage(int font, unsigned int code, SceFontGlyphImage *img);
 
 /* font.c */
 int font_init(void *fs);
@@ -151,7 +150,7 @@ void font_mbs_reset(void);
 int font_mbs_to_wcs(unsigned short *dst, unsigned int n, const char *src);
 int font_set_layer(char layer);
 unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned short *text);
-int font_glyph_find(unsigned short code);
+int font_glyph_find(unsigned int code);
 void font_dl_begin(int layer);
 void font_dl_end(void);
 void font_glyph_quad(int x, int y, int slot);

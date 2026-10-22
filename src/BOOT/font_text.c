@@ -1,5 +1,6 @@
 // @range 0x08847008-0x08848C68
-// @asm 0x08847008-0x08848C68
+// @asm 0x08847768-0x08847FC8
+// @asm 0x0884876C-0x08848C68
 /* UCS-2 text layout and drawing. A FontLayout carries the pen; font_layout_wtext consumes one
    line into FontCtx.cmds (glyphs, size and color changes, ruby) and font_layout_end draws it. */
 #include "psp.h"
@@ -12,21 +13,17 @@ int wcschr_index(const unsigned short *s, unsigned short c);
 unsigned short towupper(unsigned short c);
 int wc_is_lower(unsigned short c);
 
-#ifdef NON_MATCHING
-/* All eight functions keep the original structure (sizes within a few percent) but mwcc allocates
-   registers and the stack differently; they stay in asm and this C is the port's version. */
 /* Draws `text` at (x, y) in 26.6 inside width w (26.6), one line, breaking words that do not fit.
    Returns the number of characters consumed. */
 int font_draw_text(int x, int y, int w, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
+    unsigned short *p = text;
+    int n = 0;
     FontLayout st, saved;
     void *dl;
     unsigned int color, color2;
-    unsigned char sx, sy;
-    int n = 0;
     int r;
-    unsigned short *p;
 
     if (w < 0)
         return 0;
@@ -37,28 +34,23 @@ int font_draw_text(int x, int y, int w, unsigned short *text)
         f->dl = f->saved_dl;
     memset(&st, 0, sizeof st);
     st.xmax = x + w;
-    sx = f->size_x;
-    sy = f->size_y;
-    color = f->color;
-    color2 = f->color2;
+    st.y = y;
+    st.x = x;
+    st.size_x = st.cur_size_x = f->size_x;
+    st.size_y = st.cur_size_y = f->size_y;
+    st.color = f->color;
+    st.color2 = f->color2;
     st.max_glyphs = -1;
     if (f->flags & 4)
-        st.xmax -= 0x40;
-    st.y = y;
+        st.xmax = x + w - 0x40;
     if (f->flags & 0x8000) {
-        st.y = y + 0x1C0;
+        st.y += 0x1C0;
         st.ruby_xmax = st.xmax;
     }
-    st.x = x;
-    st.color = color;
-    st.color2 = color2;
-    st.size_x = sx;
-    st.size_y = sy;
-    st.cur_size_x = sx;
-    st.cur_size_y = sy;
+    color = st.color;
+    color2 = st.color2;
     memcpy(&saved, &st, sizeof st);
     r = font_layout_wtext(f, &st, text, 0);
-    p = text;
     while (r < 0) {
         font_layout_end(f, &saved);
         p += st.consumed;
@@ -66,7 +58,7 @@ int font_draw_text(int x, int y, int w, unsigned short *text)
         st.consumed = 0;
         if (p == text)
             break;
-        st.nglyphs = st.max_glyphs; /* (sic) copied from the original: local_c = local_54 */
+        st.nglyphs = saved.nglyphs;
         memcpy(&saved, &st, sizeof st);
         r = font_layout_wtext(f, &st, p, 0);
     }
@@ -81,11 +73,11 @@ int font_draw_text(int x, int y, int w, unsigned short *text)
     if (f->flags & 0x8000)
         st.y -= 0x1C0;
     f->cursor_x = st.x;
-    f->cursor_y = f->unk50c3c + st.y + f->line_h * sy / 20;
+    f->cursor_y = f->unk50c3c + (st.y + f->line_h * st.size_y / 20);
     f->color = color;
     f->color2 = color2;
-    f->size_x = sx;
-    f->size_y = sy;
+    f->size_x = st.size_x;
+    f->size_y = st.size_y;
     return n;
 }
 
@@ -94,13 +86,16 @@ int font_draw_text(int x, int y, int w, unsigned short *text)
 int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max_glyphs)
 {
     FontCtx *f = font_ctx_ptr;
+    int bottom = y + h;      /* lowest baseline allowed, 26.6 */
+    unsigned short *p = text;
+    int n = 0;
     FontLayout st, saved;
     void *dl;
     unsigned int color, color2;
-    int line_h, step;
-    int n = 0;
+    int line_h, step, lh;
+    unsigned short flags;
+    int more;                /* another line still fits below this one */
     int r;
-    unsigned short *p;
 
     if (w < 0)
         return 0;
@@ -111,36 +106,37 @@ int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max
         f->dl = f->saved_dl;
     memset(&st, 0, sizeof st);
     st.xmax = x + w;
-    st.size_x = f->size_x;
-    st.size_y = f->size_y;
-    color = f->color;
-    color2 = f->color2;
-    st.flags |= 8;
-    line_h = f->line_h * st.size_y / 20;
-    step = line_h;
-    if (f->flags & 4)
-        step = line_h + 0x40;
-    line_h = f->unk50c3c + line_h;
-    if (f->flags & 4)
-        st.xmax -= 0x40;
     st.y = y;
+    st.x = x;
+    st.size_x = st.cur_size_x = f->size_x;
+    st.cur_size_y = st.size_y = f->size_y;
+    color = f->color;
+    st.color = color;
+    color2 = f->color2;
+    st.max_glyphs = max_glyphs;
+    st.flags |= 8;
+    st.color2 = color2;
+    lh = f->line_h * (int)st.size_y / 20;
+    flags = f->flags;
+    step = lh;
+    if (flags & 4)
+        step = lh + 0x40;
+    line_h = f->unk50c3c + lh;
+    if (flags & 4)
+        st.xmax -= 0x40;
     if (f->flags & 0x8000) {
-        line_h += 0x1C0;
-        st.y = y + 0x1C0;
-        st.ruby_xmax = st.xmax;
         st.line_x0 = x;
+        st.y += 0x1C0;
+        line_h += 0x1C0;
+        st.ruby_xmax = st.xmax;
         st.line_h = line_h;
     }
-    st.x = x;
-    st.color = color;
-    st.color2 = color2;
-    st.cur_size_x = st.size_x;
-    st.cur_size_y = st.size_y;
-    st.max_glyphs = max_glyphs;
     memcpy(&saved, &st, sizeof st);
-    p = text;
-    while (st.y + step <= y + h) {
-        r = font_layout_wtext(f, &st, p, step + st.y + line_h <= y + h);
+    while (st.y + step <= bottom) {
+        more = 1;
+        if (step + (st.y + line_h) > bottom)
+            more = 0;
+        r = font_layout_wtext(f, &st, p, more);
         n += st.consumed;
         p += st.consumed;
         st.consumed = 0;
@@ -152,16 +148,16 @@ int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max
         } else {
             if (r != 1)
                 break;
-            if ((f->flags & 0x8000) && (st.flags & 2) && st.x <= st.ruby_x + (st.ruby_pad >> 1)) {
-                st.ruby_x = x + (st.ruby_w >> 1);
+            if ((f->flags & 0x8000) && (st.flags & 2) && st.ruby_x + (int)(st.ruby_pad / 2u) >= st.x) {
+                st.ruby_x = x + (int)(st.ruby_w / 2u);
                 st.ruby_y = st.y + line_h - 0x1C0;
             }
             if (f->flags & 8) {
                 while (*p == ' ')
                     p++;
             }
-            st.y += line_h;
             st.x = x;
+            st.y += line_h;
         }
     }
     font_layout_end(f, &saved);
@@ -182,6 +178,7 @@ int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max
     return n;
 }
 
+#ifdef NON_MATCHING /* forma do original, mas registradores/pilha diferentes (fica em asm; este C é a versão do port) */
 /* Lays out one line of UCS-2 text into f->cmds. Tags: $R...(ruby) $f $F (lower/upper small caps)
    $Cn (color) $$ (literal). Returns 0 at end of text, 1 at a line break (when `wrap`),
    2 when max_glyphs is reached, -1 when the command buffer is full. */
@@ -353,82 +350,91 @@ done:
     return r;
 }
 
+#endif
+
 /* Single-line draw that shrinks the font until the text fits in w (26.6). */
 int font_draw_wtext(int x, int y, int w, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
+    int k = 1;          /* size step */
+    int limit;          /* width to fit, 26.6 */
+    int r;
     unsigned char sx, sy;
-    int tw, limit, k, r;
+    int tw;
+    unsigned short flags;
     unsigned int scaled;
 
     if (w < 0)
         return 0;
-    if (text == 0)
-        return 0;
-    if (*text == 0)
+    if (text == 0 || *text == 0)
         return 0;
     font_get_size(&sx, &sy);
     tw = font_measure_text(text);
-    if (tw < 1)
+    if (tw <= 0)
         return 0;
+    flags = f->flags;
     limit = w;
-    if (f->flags & 4)
+    if (flags & 4)
         limit = w - 0x40;
-    k = 1;
-    if (!(f->flags & 0x8000) && !(f->flags & 0x4000)) {
+    if (flags & 0x8000 || flags & 0x4000) {
+        for (; tw > limit; k++) {
+            if ((int)sx < k + 6)
+                break;
+            font_set_size(sx - k, sy);
+            tw = font_measure_text(text);
+        }
+    } else {
         if (limit < tw) {
             do {
                 if ((int)sx < k + 6)
                     break;
                 scaled = sx - k;
                 k++;
-            } while (limit < tw * (int)scaled / (int)sx);
+            } while (tw * (int)scaled / (int)sx > limit);
         }
         font_set_size(sx - k + 1, sy);
-    } else {
-        while (limit < tw && k + 6 <= (int)sx) {
-            font_set_size(sx - k, sy);
-            tw = font_measure_text(text);
-            k++;
-        }
     }
     r = font_draw_text(x, y, w, text);
     font_set_size(sx, sy);
     return r;
 }
 
-/* Font width (percent / 5) that makes `text` fit in w (26.6); 0 when it fits or is empty. */
+/* Font width (percent / 5) that makes `text` fit in w (26.6): the current width when it already
+   fits, 0 for no text. The font size is restored afterwards. */
 int font_measure_wtext(int w, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     unsigned char sx, sy, rx, ry;
-    int tw, k, n;
+    int tw, k;
+    unsigned short gw, n;
 
     if (w < 0)
         return 0;
-    if (text == 0)
-        return 0;
-    if (*text == 0)
+    if (text == 0 || *text == 0)
         return 0;
     font_get_size(&sx, &sy);
     tw = font_measure_text(text);
-    if (tw > 0 && w < tw + 0x40) {
-        if (w < tw + 0x40) {
-            n = wcslen(text);
-            k = (tw + 0x40 - w) / (n & 0xFFFF) / (f->max_glyph_w / 20 & 0xFFFF);
-            k = k - 1;
+    if (tw <= 0)
+        return sx;
+    if (tw + 0x40 <= w)
+        return sx;
+    if (w < tw + 0x40) {
+        gw = f->max_glyph_w / 20;
+        n = wcslen(text);
+        k = (tw + 0x40 - w) / n / gw;
+        k = k - 1;
+        if ((int)sx < k + 6)
+            k = sx - 6;
+        for (; tw + 0x40 > w; k++) {
             if ((int)sx < k + 6)
-                k = sx - 6;
-            for (; w < tw + 0x40 && k + 6 <= (int)sx; k++) {
-                font_set_size(sx - k, sy);
-                tw = font_measure_text(text);
-            }
+                break;
+            font_set_size(sx - k, sy);
+            tw = font_measure_text(text);
         }
-        font_get_size(&rx, &ry);
-        font_set_size(sx, sy);
-        return rx;
     }
-    return sx;
+    font_get_size(&rx, &ry);
+    font_set_size(sx, sy);
+    return rx;
 }
 
 /* Lays out `text` word-wrapped in a w x h box without drawing; returns width << 16 | height. */
@@ -436,42 +442,46 @@ unsigned int font_measure_wtext2(int w, int h, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     FontLayout st;
-    int line_h, step, best = 0, lw;
-    unsigned short *p;
-    int more;
+    int lw;
+    unsigned short *p = text;
+    int best = 0;       /* widest line */
+    int line_h;
+    int step;
+    int more;           /* another line still fits below this one */
+    unsigned short flags;
+    int lh;             /* line height, 26.6 */
 
     if (w < 0)
         return 0;
     if (text == 0)
         return 0;
     memset(&st, 0, sizeof st);
-    st.size_x = f->size_x;
-    st.size_y = f->size_y;
-    st.flags |= 8;
-    line_h = f->line_h * st.size_y / 20;
-    step = line_h;
-    if (f->flags & 4)
-        step = line_h + 0x40;
-    line_h = f->unk50c3c + line_h;
     st.xmax = w;
-    if (f->flags & 4)
-        st.xmax = w - 0x40;
-    st.cur_size_x = st.size_x;
-    st.cur_size_y = st.size_y;
-    p = text;
+    st.size_x = st.cur_size_x = f->size_x;
+    st.size_y = st.cur_size_y = f->size_y;
+    st.flags |= 8;
+    lh = f->line_h * (int)f->size_y / 20;
+    flags = f->flags;
+    step = lh;
+    if (flags & 4)
+        step = lh + 0x40;
+    line_h = f->unk50c3c + lh;
+    if (flags & 4)
+        st.xmax -= 0x40;
     if (f->flags & 0x8000) {
-        st.line_h = line_h + 0x1C0;
         st.line_x0 = 0;
         st.y += 0x1C0;
+        line_h += 0x1C0;
         st.ruby_xmax = st.xmax;
-        line_h = st.line_h;
+        st.line_h = line_h;
     }
-    lw = best;
     while (st.y + step < h) {
-        more = step + st.y + line_h < h;
+        more = 1;
+        if (step + (st.y + line_h) >= h)
+            more = 0;
         lw = font_layout_text(f, &st, p, more);
-        if (lw <= best)
-            lw = best;
+        if (best < lw)
+            best = lw;
         p += st.consumed;
         st.consumed = 0;
         if (p == text || p[-1] == 0 || !more)
@@ -484,11 +494,10 @@ unsigned int font_measure_wtext2(int w, int h, unsigned short *text)
         }
         st.x = 0;
         st.y += line_h;
-        best = lw;
     }
     if (f->flags & 4)
-        lw += 0x40;
-    return lw << 16 | ((st.y + step) & 0xFFFF);
+        best += 0x40;
+    return (best & 0xFFFF) << 16 | ((st.y + step) & 0xFFFF);
 }
 
 /* Height in 26.6 of `text` word-wrapped at width w. */
@@ -496,39 +505,42 @@ int font_wtext_lines(int w, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     FontLayout st;
-    int line_h, step, best = 0, lw;
-    unsigned short *p;
+    int lw;
+    unsigned short *p = text;
+    int best = 0;       /* widest line; computed but not returned */
+    int line_h;
+    int step;
+    unsigned short flags;
+    int h;              /* line height, 26.6 */
 
     if (w < 0)
         return 0;
     if (text == 0)
         return 0;
     memset(&st, 0, sizeof st);
-    st.size_x = f->size_x;
-    st.size_y = f->size_y;
-    st.flags |= 8;
-    line_h = f->line_h * st.size_y / 20;
-    step = line_h;
-    if (f->flags & 4)
-        step = line_h + 0x40;
-    line_h = f->unk50c3c + line_h;
     st.xmax = w;
-    if (f->flags & 4)
-        st.xmax = w - 0x40;
-    p = text;
-    st.cur_size_x = st.size_x;
-    st.cur_size_y = st.size_y;
+    st.size_x = st.cur_size_x = f->size_x;
+    st.size_y = st.cur_size_y = f->size_y;
+    st.flags |= 8;
+    h = f->line_h * (int)f->size_y / 20;
+    flags = f->flags;
+    step = h;
+    if (flags & 4)
+        step = h + 0x40;
+    line_h = f->unk50c3c + h;
+    if (flags & 4)
+        st.xmax -= 0x40;
     if (f->flags & 0x8000) {
-        line_h += 0x1C0;
         st.line_x0 = 0;
         st.y += 0x1C0;
+        line_h += 0x1C0;
         st.ruby_xmax = st.xmax;
         st.line_h = line_h;
     }
     for (;;) {
         lw = font_layout_text(f, &st, p, 1);
-        if (lw <= best)
-            lw = best;
+        if (best < lw)
+            best = lw;
         p += st.consumed;
         st.consumed = 0;
         if (p == text || p[-1] == 0)
@@ -541,11 +553,11 @@ int font_wtext_lines(int w, unsigned short *text)
         }
         st.x = 0;
         st.y += line_h;
-        best = lw;
     }
     return st.y + step;
 }
 
+#ifdef NON_MATCHING /* forma do original, mas registradores/pilha diferentes (fica em asm; este C é a versão do port) */
 /* Measures one line of text with the same rules as font_layout_wtext but emits no commands.
    Returns the pen x after the text (26.6). */
 int font_layout_text(FontCtx *f, FontLayout *st, unsigned short *text, int wrap)

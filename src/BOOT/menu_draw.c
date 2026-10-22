@@ -1,7 +1,6 @@
 // @range 0x08843D78-0x08845AC0
-// @rodata 0x08875718-0x08875734
+// @rodata 0x088756F8-0x08875734
 // @asm 0x08843D78-0x088454DC
-// @asm 0x088454DC-0x088455B0
 /* Window rendering for the menu layer: open/close animation state machine, 9-slice frame built
    from window01.gim pieces into the layer-4 display list, title bar and text. */
 #include "psp.h"
@@ -53,10 +52,11 @@ extern short wside_w;                  /* 0x088EE8C0 */
 extern short wside_h;                  /* 0x088EE8C2 */
 
 #ifdef NON_MATCHING
-/* The four functions below have the original's structure but mwcc allocates registers and the
-   stack differently (menu_item_build/menu_item_build_frame: 2.4 KB each) or unrolls a counting
-   loop the original does not (menu_item_sprite_count). They stay in asm; this C is for the port.
-   The .rodata jump tables of the asm versions live at 0x088756D8..0x08875740. */
+/* As três funções abaixo têm a estrutura do original, mas o mwcc aloca registradores e pilha de
+   outro jeito (menu_item_build/menu_item_build_frame: 2,4 KB cada; menu_item_build_text: o
+   original dá s0 a dl, s1 a d e s3 a m, aqui invertidos, com qualquer ordem de declaração ou
+   parâmetro void *). Ficam em asm; este C é para o
+   port. As tabelas de saltos das versões em asm ficam em 0x088756D8..0x088756F8. */
 /* State machine of one item; (re)builds its frame when the definition changed. */
 void menu_item_build(void **dl, MenuItem *it, Menu *m)
 {
@@ -476,6 +476,8 @@ void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
         it->nverts2 = n;
 }
 
+#endif
+
 /* Number of sprites (2 vertices each) the frame needs. */
 int menu_item_sprite_count(MenuItem *it, int ghost)
 {
@@ -508,16 +510,16 @@ int menu_item_sprite_count(MenuItem *it, int ghost)
         n += 8;
     h = h - fr[0].h - fr[2].h;
     n += 16;
-    k = 0;
-    while (k < h) {
-        k += 8;
-        n += 2;
+    if (h > 0) {
+        k = 0;
+        do {
+            n += 2;
+        } while ((k += 8) < h);
     }
     if (d->tab != 0 && d->style < 4)
         n += 2;
     return n;
 }
-#endif
 
 /* Top-left and bottom-right of a w x h box placed at (x, y) according to the anchor mode. */
 void menu_anchor_rect(float *tl, float *br, int x, int y, int w, int h, int anchor)

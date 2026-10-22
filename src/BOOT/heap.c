@@ -1,7 +1,5 @@
 // @range 0x08837B28-0x088390C4
 // @asm 0x08837B28-0x08837D10
-// @asm 0x08837FA4-0x08838468
-// @asm 0x0883864C-0x088390C4
 /* "HOGE" heap: a sorted table of block boundaries, each word holding an address and a free flag
    (block i spans ent[i].addr to ent[i + 1].addr). The table lives in a block of the heap itself
    and grows by doubling, moving to the lowest free block when possible. Allocation is best fit
@@ -39,8 +37,8 @@ HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top);
 int heap_merge(Heap *h, HeapEnt *e);
 int heap_relocate_table(Heap *h);
 
-#ifdef NON_MATCHING /* the malloc result lands in $v0 instead of being coalesced with the parameter */
 /* Creates a heap of `size` bytes in `mem` (allocated when 0). */
+#ifdef NON_MATCHING /* o original calcula h->pad com `subu v0,a0,a0` (h e mem no mesmo registrador); aqui o resultado do malloc fica em v0 e os temporários dos bitfields mudam. Todas as formas de cópia (h = mem = f(), local raw, cópia depois do teste) dobram para zero ou deixam mem em v0 */
 Heap *heap_create(Heap *mem, unsigned int size)
 {
     Heap *h = mem;
@@ -116,7 +114,6 @@ void *heap_alloc(Heap *h, int n)
     return (void *)size;
 }
 
-
 int heap_set_level(Heap *h, void *p)
 {
     HeapEnt *e = heap_find_entry(h, p);
@@ -152,71 +149,70 @@ void heap_stats(Heap *h, int *used, int *freed)
     }
 }
 
-#ifdef NON_MATCHING /* unrolled copies and register allocation differ */
 /* Doubles the table: in place when the block after it is free and large enough, otherwise in a
    new block (the old one is freed). Returns 1 when the table could stay in place. */
 int heap_grow_table(Heap *h)
 {
     HeapEnt *t = heap_find_entry(h, h->ent);
-    HeapEnt *d;
-    HeapEnt *s;
-    HeapEnt *end;
     HeapEnt *ne;
-    unsigned int want;
-    unsigned int old;
-    int delta;
+    int want;
     int len;
+    int room;
 
     if (t[1].free) {
-        old = t[1].addr;
-        if (h->tabsize < t[2].addr - old) {
-            t[1].addr = old + h->tabsize;
+        if (t[2].addr - t[1].addr <= h->tabsize) {
+            HeapEnt *src, *dst, *end;
+
+            end = h->ent + h->n;
+            dst = t + 1;
+            for (src = t + 2; src <= end; src++) {
+                *dst++ = *src;
+            }
+            h->n--;
+            h->tabsize = t[1].addr - t[0].addr;
+        } else {
+            t[1].addr += h->tabsize;
             h->tabsize <<= 1;
-            return 1;
         }
-        end = h->ent + h->n;
-        d = t + 1;
-        for (s = t + 2; s <= end; s++) {
-            *d++ = *s;
-        }
-        h->n--;
-        h->tabsize = t[1].addr - t[0].addr;
         return 1;
     }
     want = h->tabsize << 1;
-    if (want <= h->tabsize + 0x40) {
-        return 0;
+    if (want > h->tabsize + 0x40) {
+        do {
+            if ((ne = heap_best_fit(h, want)) != 0)
+                goto found;
+            want = h->tabsize + (want - h->tabsize) / 2 & ~0xF;
+        } while (want > h->tabsize + 0x40);
     }
-    while ((ne = heap_best_fit(h, want)) == 0) {
-        want = h->tabsize + (int)(want - h->tabsize) / 2 & ~0xF;
-        if ((int)want <= (int)(h->tabsize + 0x40)) {
-            return 0;
-        }
-    }
+    return 0;
+found:
     len = h->tabsize;
     memcpy((void *)ne->addr, h->ent, len);
-    delta = ne->addr - (unsigned int)h->ent;
-    ne = (HeapEnt *)((char *)ne + (ne->addr - (unsigned int)h->ent));
-    ((HeapEnt *)((char *)t + delta))->free = 1;
-    len *= 2;
+    t = (HeapEnt *)((int)ne->addr + ((int)t - (int)h->ent));
+    ne = (HeapEnt *)((int)ne->addr + ((int)ne - (int)h->ent));
+    t->free = 1;
     ne->free = 0;
+    len *= 2;
     h->ent = (HeapEnt *)ne->addr;
-    if ((int)(ne[1].addr - ne[0].addr) <= len) {
-        h->tabsize = ne[1].addr - ne[0].addr;
-    } else {
+    room = ne[1].addr - ne[0].addr;
+    if (len < room) {
+        HeapEnt *src, *dst, *end;
+
         end = h->ent + h->n;
-        for (s = end, d = end + 1; s >= ne + 1; s--) {
-            *d-- = *s;
+        src = end;
+        for (dst = src + 1; src >= ne + 1; src--) {
+            *dst-- = *src;
         }
         h->n++;
         ne[1].addr = ne[0].addr + len;
         ne[1].free = 1;
-        h->tabsize = ne[1].addr - ne[0].addr;
+        room = ne[1].addr - ne[0].addr;
     }
+    h->tabsize = room;
     h->level = ALLEGREX_MIN(3, h->level + 1);
     return 0;
 }
-#endif
+
 
 HeapEnt *heap_best_fit(Heap *h, unsigned int size)
 {
@@ -296,63 +292,69 @@ HeapEnt *heap_find_entry(Heap *h, void *p)
     return 0;
 }
 
-#ifdef NON_MATCHING /* unrolled copies and register allocation differ */
 /* Splits `size` bytes off free block `e`: from its top (`top`) or its bottom, joining a free
-   neighbour when there is one. Returns the entry of the new used block, 0 if the table is full. */
+   neighbour when there is one. Returns the entry of the new used block, 0 if the table is full.
+   The table end goes through `end` (copied into s) so the unrolled copy reuses it, and the
+   second copy has its own src/dst, as in the original's register use. */
 HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top)
 {
     unsigned int sz = size + 0xF & ~0xF;
     HeapEnt *s;
     HeapEnt *d;
+    HeapEnt *end;
 
-    if (top) {
+    if (!top) {
         if (e[1].free) {
-            e[1].addr = e[2].addr - sz;
+            e[1].addr = e[0].addr + sz;
             e[1].free = 1;
-            return e + 1;
+            return e;
         }
         if (e[-1].free) {
-            e[0].addr = e[1].addr - sz;
+            e[0].addr = e[-1].addr + sz;
             e[0].free = 1;
-            return e;
+            return e - 1;
         }
         if (h->tabsize < (h->n + 2) * sizeof(HeapEnt)) {
             return 0;
         }
-        s = h->ent + h->n;
+        end = h->ent + h->n;
+        s = end;
         for (d = s + 1; s >= e + 1; s--) {
             *d-- = *s;
         }
         h->n++;
-        e[1].addr = e[2].addr - sz;
-        e[1].free = 1;
-        return e + 1;
-    }
-    if (e[1].free) {
         e[1].addr = e[0].addr + sz;
         e[1].free = 1;
         return e;
     }
+    if (e[1].free) {
+        e[1].addr = e[2].addr - sz;
+        e[1].free = 1;
+        return e + 1;
+    }
     if (e[-1].free) {
-        e[0].addr = e[-1].addr + sz;
+        e[0].addr = e[1].addr - sz;
         e[0].free = 1;
-        return e - 1;
+        return e;
     }
     if (h->tabsize < (h->n + 2) * sizeof(HeapEnt)) {
         return 0;
     }
-    s = h->ent + h->n;
-    for (d = s + 1; s >= e + 1; s--) {
-        *d-- = *s;
+    {
+        HeapEnt *src, *dst;
+
+        end = h->ent + h->n;
+        src = end;
+        for (dst = src + 1; src >= e + 1; src--) {
+            *dst-- = *src;
+        }
     }
     h->n++;
-    e[1].addr = e[0].addr + sz;
+    e[1].addr = e[2].addr - sz;
     e[1].free = 1;
-    return e;
+    return e + 1;
 }
-#endif
 
-#ifdef NON_MATCHING /* temporaries of the second unrolled copy differ */
 /* Merges free block `e` with its free neighbours by removing boundaries. */
 int heap_merge(Heap *h, HeapEnt *e)
 {
@@ -378,37 +380,36 @@ int heap_merge(Heap *h, HeapEnt *e)
             h->n--;
         }
     } else if (e[1].free) {
+        HeapEnt *src, *dst; /* locais do ramo: com s/d os temporários do laço desenrolado mudam */
+
         end = h->ent + h->n;
-        d = e + 1;
-        for (s = e + 2; s <= end; s++) {
-            *d++ = *s;
+        dst = e + 1;
+        for (src = e + 2; src <= end; src++) {
+            *dst++ = *src;
         }
         h->n--;
     }
     return 1;
 }
-#endif
 
-#ifdef NON_MATCHING /* register allocation differs */
 /* Moves the table down into the free block in front of it when there is one. */
 int heap_relocate_table(Heap *h)
 {
-    HeapEnt *t = h->ent;
-    HeapEnt *b = &t[1];
+    HeapEnt *b = &h->ent[1];
     unsigned int next;
     unsigned int room;
     HeapEnt *e;
     unsigned int sz;
 
-    if (!t[1].free) {
+    if (!b->free) {
         return 1;
     }
-    next = t[2].addr;
-    if ((unsigned int)t == next) {
+    next = b[1].addr;
+    if ((unsigned int)h->ent == next) {
         mem_move((void *)b->addr, (void *)next, (h->n + 1) * 4);
-        t[2].addr = b->addr + h->tabsize;
-        t[2].free = 1;
-        t[1].free = 0;
+        b[1].addr = b->addr + h->tabsize;
+        b[1].free = 1;
+        b->free = 0;
         h->ent = (HeapEnt *)b->addr;
         return 1;
     }
@@ -426,11 +427,12 @@ int heap_relocate_table(Heap *h)
         }
     }
     e = heap_find_entry(h, h->ent);
-    t[1].free = 0;
+    b->free = 0;
     e->free = 1;
     memcpy((void *)b->addr, h->ent, h->tabsize);
-    h->ent = (HeapEnt *)((HeapEnt *)((char *)b + (b->addr - (unsigned int)h->ent)))->addr;
+    /* b inside the copied table gives the new table address */
+    h->ent = (HeapEnt *)((HeapEnt *)((int)b->addr + ((int)b - (int)h->ent)))->addr;
     h->level = ALLEGREX_MIN(3, h->level + 1);
     return 1;
 }
-#endif
+

@@ -1,6 +1,5 @@
 // @range 0x0886C904-0x0886CF50
 // @asm 0x0886C904-0x0886C9FC
-// @asm 0x0886CC40-0x0886CD04
 /* In-game message box: a centred window with UCS-2 text, either plain (closes on demand,
    type 0) or with buttons through the menu widget (type 1 OK, type 2 YES/NO). One box at a
    time; msgbox_update returns 1 while it is open, then 2 closed, 3 yes/ok, 4 no, 5 other. */
@@ -33,7 +32,7 @@ void msgbox_open_buttons(void *heap, unsigned short *text, int buttons, int init
 int msgbox_update_plain(void **dl);
 int msgbox_update_buttons(void **dl);
 
-#ifdef NON_MATCHING /* the type tests take their constants in other registers and delay slots */
+#ifdef NON_MATCHING /* o original grava m->kind antes dos testes e carrega o 2 em v0 (beql com o `li v0,1` do case 2 no atraso); o mwcc usa a3 para o 2 e põe a gravação no atraso do beq. Ternário, if/else, cast no switch e `case 0` não mudam isso */
 int msgbox_open(unsigned short *text, void *heap, int type, int flag)
 {
     MsgBox *m = &msgbox;
@@ -136,17 +135,20 @@ void msgbox_open_plain(void *heap, unsigned short *text)
     d->y = 136.0f - d->h * 0.5f;
 }
 
-#ifdef NON_MATCHING /* the original keeps a dead `move v1,s1` before font_set_flag8(1) */
 int msgbox_update_plain(void **dl)
 {
     MsgBox *m = &msgbox;
     MenuItemDef *d = &msgbox.def;
     int r = 1;
 
-    if (region_get() != 0) {
+    switch (region_get()) {
+    case 1:
+    default:
         font_set_flag8(1);
-    } else {
+        break;
+    case 0:
         font_set_flag1(1);
+        break;
     }
     menu_layout(dl, &m->menu);
     if (menu_item_state(&m->menu, d) != 2) {
@@ -158,7 +160,6 @@ int msgbox_update_plain(void **dl)
     }
     return r;
 }
-#endif
 
 void msgbox_open_buttons(void *heap, unsigned short *text, int buttons, int initial)
 {

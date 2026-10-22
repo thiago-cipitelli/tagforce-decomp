@@ -1,9 +1,7 @@
 // @range 0x08845AC0-0x08847008
 // @data 0x088EE8C4-0x088EE904
 // @asm 0x08845AC0-0x08845DDC
-// @asm 0x08845E10-0x08846010
 // @asm 0x088462E8-0x0884638C
-// @asm 0x0884641C-0x088466AC
 // @asm 0x088469E8-0x08846EA0
 /* Font layer: libfont.prx setup, the 256-slot glyph atlas with LRU replacement, glyph quads,
    size/color state and the UCS-2 line-breaking character classes. Text layout is in font_draw.c. */
@@ -37,7 +35,9 @@ unsigned int font_color_table[15] = {
 FontCtx *font_ctx_ptr = &font_ctx_storage;
 
 #ifdef NON_MATCHING
-/* Kept in asm: register allocation and the double copy of the FontNewLibParams template differ. */
+/* Fica em asm: o original copia o modelo de FontNewLibParams (0x088EE904, logo depois do @data
+   deste arquivo) palavra a palavra para um temporário e dele para params, como um literal composto;
+   casar exige mover o modelo e "libfont.prx" para o @data do arquivo. */
 int font_init(void *fs)
 {
     FontNewLibParams params = { 0, 2, 0, font_alloc_cb, font_free_cb, 0, 0, 0, 0, 0, 0 };
@@ -101,15 +101,13 @@ int font_set_layer(char layer)
     return old;
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm (font_draw_wtext_simple: register allocation; font_printf*: the va_list local takes a
-   4-byte stack slot the original does not have; font_glyph_find: register allocation). */
-/* Draws tag-free UCS-2 text at (x, y) in 26.6, wrapping at xmax back to x0; returns x << 16 | y. */
+/* Draws tag-free UCS-2 text at (x, y) in 26.6, wrapping at xmax back to x0; returns x << 16 | y.
+   c is int (font_glyph_cache gets it unmasked); the tests compare its low 16 bits. */
 unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     SceFontGlyphImage img;
-    unsigned short c;
+    int c;
     int began = 0;
     unsigned int slot;
     int adv;
@@ -119,10 +117,8 @@ unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned sho
     img.buf_h = 32;
     img.bytes_per_line = 16;
     img.pad = 0;
-    c = *text;
-    while (c != 0) {
-        text++;
-        if (c >= 0x20) {
+    while ((c = *text++) != 0) {
+        if ((unsigned short)c >= 0x20) {
             slot = font_glyph_cache(&img, c);
             if (!began) {
                 began = 1;
@@ -135,17 +131,19 @@ unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned sho
             }
             font_glyph_quad(x, y, slot);
             x += adv;
-        } else if (c == '\n') {
-            y += f->line_h * f->size_y / 20;
-            x = x0;
+        } else {
+            switch ((unsigned short)c) {
+            case '\n':
+                y += f->line_h * f->size_y / 20;
+                x = x0;
+                break;
+            }
         }
-        c = *text;
     }
     if (began)
         font_dl_end();
-    return x << 16 | (y & 0xFFFF);
+    return (x & 0xFFFF) << 16 | (y & 0xFFFF);
 }
-#endif
 
 void font_printf(int x, int y, const char *fmt, ...)
 {
@@ -198,26 +196,25 @@ void font_printf_box64(int x, int y, int x0, int xmax, const char *fmt, ...)
     font_mbs_to_wcs(wbuf, 0x800, buf);
     font_draw_wtext_simple(x, y, x0, xmax, wbuf);
 }
-#ifdef NON_MATCHING
 
 /* Binary search in the sorted index: slot of `code`, or 0x100 + insertion position. */
-int font_glyph_find(unsigned short code)
+#ifdef NON_MATCHING /* 29 palavras: o original calcula (mid - 1) * 4 sem dobrar o -1 no deslocamento e materializa lo < mid em v1 (slt v1, não at); índice ou ponteiro local, >=/> nos testes e do-while não mudam. O parâmetro é unsigned int (o chamador font_glyph_cache passa code sem máscara) */
+int font_glyph_find(unsigned int code)
 {
     FontCtx *f = font_ctx_ptr;
     int lo = 0;
     int hi = f->count + 1;
     int mid = hi / 2;
+    unsigned short c = code;
 
-    if (mid > 0) {
-        do {
-            if (f->index[mid - 1].code < code)
-                lo = mid;
-            else if (code < f->index[mid - 1].code)
-                hi = mid;
-            else
-                break;
-            mid = (lo + hi) / 2;
-        } while (lo < mid);
+    while (lo < mid) {
+        if (f->index[mid - 1].code < c)
+            lo = mid;
+        else if (c < f->index[mid - 1].code)
+            hi = mid;
+        else
+            break;
+        mid = (lo + hi) / 2;
     }
     if (lo < mid)
         return mid - 1;
@@ -238,10 +235,12 @@ void font_dl_end(void)
     dl_set_list(dl_push1(font_ctx_ptr->dl, 0x13000000));
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm: the second uv word is computed after the float stores in the original. */
 /* GE commands of one glyph quad: 2 vertices (u16 uv, float xyz) drawn with the atlas texture */
+#ifdef NON_MATCHING
 static const GlyphCmds glyph_cmds_template = { 0x14000000, 0x0100000C, 0x0800002C, { 0x00010001, 0, 0, 0 }, { 0x00150015, 0, 0, 0 }, 0x04060002 };
+#else
+extern const GlyphCmds glyph_cmds_template; /* 0x088EE93C, no .data em asm (fora do @data deste arquivo) */
+#endif
 
 /* Emits a 2-vertex textured quad for atlas cell `slot` at (x, y) in 26.6. */
 void font_glyph_quad(int x, int y, int slot)
@@ -256,16 +255,17 @@ void font_glyph_quad(int x, int y, int slot)
     cmds = glyph_cmds_template;
     q = (unsigned int *)((char *)f->dl + 12);
     f->dl = dl_push(f->dl, &cmds, 12);
-    q[0] = (v & 0xFFFF) << 16 | (u & 0xFFFF);
     fx = (float)x * 0.015625f - (float)(f->size_x * 7) / 20.0f;
     fy = (float)y * 0.015625f - (float)(f->size_y * 7) / 20.0f;
+    q[0] = (v & 0xFFFF) << 16 | (u & 0xFFFF);
     ((float *)q)[1] = fx;
     ((float *)q)[2] = fy;
+    fx += (float)(unsigned int)f->size_x * 28.0f / 20.0f;
+    fy += (float)(unsigned int)f->size_y * 28.0f / 20.0f;
     q[4] = ((v + 28) & 0xFFFF) << 16 | ((u + 28) & 0xFFFF);
-    ((float *)q)[5] = fx + (float)(unsigned int)f->size_x * 28.0f / 20.0f;
-    ((float *)q)[6] = fy + (float)(unsigned int)f->size_y * 28.0f / 20.0f;
+    ((float *)q)[5] = fx;
+    ((float *)q)[6] = fy;
 }
-#endif
 
 /* Same quad written as two 16-byte vertices (u16 uv, float xyz) into v. */
 void font_glyph_vertices(short *v, int x, int y, int slot)
@@ -348,19 +348,20 @@ int font_line_height(void)
 }
 
 #ifdef NON_MATCHING
-/* Kept in asm: 1.2 KB, register allocation differs; the LRU/index logic above is the port version. */
 /* Returns the atlas slot of `code`, rendering it with sceFont into the least recently used slot
    when absent; keeps the sorted index and the LRU list up to date. */
+/* Fica em asm (60 palavras): forma igual, mas o original dá f a s1 e font a s5 (aqui trocados) e
+   mascara code mais tarde; nenhuma ordem de declaração muda isso. */
 unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
 {
     FontCtx *f = font_ctx_ptr;
-    int font = f->font;
     int i = font_glyph_find(code);
-    unsigned int slot;
-    unsigned int pos;
-    unsigned int evict;
+    int font = f->font;
+    int slot;
+    int pos;
+    int evict;
     SceFontCharInfo ci;
-    unsigned char bitmap[0x200];
+    unsigned char bitmap[0x200] __attribute__((aligned(8)));
     unsigned char *src, *dst;
     int k;
 
@@ -369,10 +370,10 @@ unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
         slot = f->count;
         if (slot == 0x100) {
             evict = font_glyph_find(f->slots[f->lru_head].code);
-            if ((int)pos < (int)evict) {
+            if (pos < evict) {
                 mem_move(&f->index[pos + 1], &f->index[pos], (evict - pos) * 4);
-            } else if ((int)evict < (int)pos) {
-                pos = i - 0x101;
+            } else if (evict < pos) {
+                pos--;
                 if (pos != evict)
                     mem_move(&f->index[evict], &f->index[evict + 1], (pos - evict) * 4);
             }
@@ -380,15 +381,16 @@ unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
             f->lru_head = f->slots[slot].next;
             f->slots[f->lru_head].prev = 0xFFFF;
             f->count--;
-        } else if (slot == 0) {
+        } else if (slot != 0) {
+            if (slot != pos)
+                mem_move(&f->index[pos + 1], &f->index[pos], (slot - pos) * 4);
+        } else {
             f->lru_head = 0;
-        } else if (slot != pos) {
-            mem_move(&f->index[pos + 1], &f->index[pos], (slot - pos) * 4);
         }
         f->slots[slot].code = code;
         f->index[pos].code = code;
         f->index[pos].slot = slot;
-        if ((code & 0xFFFF) < 0x2300 && font_half_width[code & 0xFFFF] != 0)
+        if ((unsigned short)code < 0x2300 && font_half_width[(unsigned short)code] != 0)
             font = f->font2;
         sceFontGetCharInfo(font, code, &ci);
         f->slots[slot].advance = ci.advance_h;
@@ -400,7 +402,7 @@ unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
         img->buffer = bitmap;
         sceFontGetCharGlyphImage(font, code, img);
         src = bitmap;
-        dst = f->atlas + (slot & 0xF) * 0x80 + ((int)slot >> 4) * 0x2000;
+        dst = f->atlas + slot / 16 * 0x2000 + slot % 16 * 0x80;
         for (k = 0; k < 4; k++) {
             memcpy(dst, src, 0x80);
             src += 0x80;

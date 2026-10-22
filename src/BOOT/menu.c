@@ -1,7 +1,6 @@
 // @range 0x088433F0-0x08843D78
 // @rodata 0x08875600-0x088756D8
 // @asm 0x08843600-0x08843918
-// @asm 0x088439FC-0x08843A68
 /* Menu/window layer: item registry (16 slots on the caller's heap), draw-order layout, item state
    and geometry. Rendering itself is in menu_draw.c. The paddings live in .rodata (asm). */
 #include "psp.h"
@@ -90,15 +89,15 @@ void menu_free_items(Menu *m)
     memset(m, 0, sizeof(Menu));
 }
 
-#ifdef NON_MATCHING
-/* Structure matches (register-agnostic diff: 198 = 198 instructions); mwcc assigns the loop
-   temporaries to other registers (i->a0, k->v1 in the original). Kept in asm. */
-/* Builds every item in ascending def->order (insertion sort into a local index list). */
+/* Builds every item in ascending def->z (insertion sort into a local index list). */
+#ifdef NON_MATCHING /* forma igual (198 instruções); os temporários dos laços saem um registrador acima do original (o item em a1 em vez de t0, as constantes 0x80000000 em a3/t0 em vez de a2/a3). Com as 720 ordens de declaração, `it` no primeiro laço ou if no lugar do continue, fica em 67 palavras */
 void menu_layout(void **dl, Menu *m)
 {
     int order[16];
     int count = 0;
-    int i, k, j;
+    int j;
+    int i;
+    int k;
     MenuItem *it;
 
     memset(order, -1, sizeof order);
@@ -106,7 +105,7 @@ void menu_layout(void **dl, Menu *m)
         if (m->items[i] == 0)
             continue;
         for (k = 0; k < count; k++) {
-            if (m->items[i]->def->order < m->items[k]->def->order)
+            if (m->items[i]->def->z < m->items[k]->def->z)
                 break;
         }
         for (j = count - 1; j >= k; j--)
@@ -117,7 +116,7 @@ void menu_layout(void **dl, Menu *m)
     for (i = 0; i < count; i++) {
         it = m->items[order[i]];
         menu_item_build(dl, it, m);
-        if (it->def->has_text != 0)
+        if (it->def->visible != 0)
             menu_item_build_text(dl, it, m);
         it->cur = *it->def;
     }
@@ -164,24 +163,21 @@ int menu_item_close(Menu *m, MenuItemDef *def)
     return 0;
 }
 
-#ifdef NON_MATCHING
-/* The original emits two separate `return 1` blocks for states 4 and 2 and a jump to the next
-   instruction; no if/switch form reproduces it. Kept in asm. */
 int menu_item_is_open(Menu *m, MenuItemDef *def)
 {
     int i = menu_find_item(m, def);
 
-    if (i == -1)
-        return 0;
-    switch (m->items[i]->state) {
-    case 2:
-    case 4:
-        return 1;
-    default:
-        return 0;
+    if (i != -1) {
+        switch (m->items[i]->state) {
+        case 2:
+        case 4:
+            return 1;
+        default:
+            return 0;
+        }
     }
+    return 0;
 }
-#endif
 
 /* Baseline y of the text cursor after the item's text, in pixels. */
 int menu_cursor_y(Menu *m, MenuItemDef *def)

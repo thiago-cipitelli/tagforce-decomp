@@ -1,6 +1,6 @@
 // @range 0x0884900C-0x0884A9B4
 // @data 0x088EE9E0-0x088EEA58
-// @asm 0x0884900C-0x08849778
+// @asm 0x088490EC-0x08849778
 // @asm 0x08849C9C-0x08849E54
 // @asm 0x08849F44-0x0884A430
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
@@ -31,16 +31,14 @@ void *gim_set_texture(void *list, void *gim);
 void font_glyph_vertices(short *v, int x, int y, int slot);
 extern const unsigned char font_clut[32];           /* .rodata 0x08875740: 16-entry 16-bit palette of the 4bpp atlas */
 
-#ifdef NON_MATCHING
-/* Kept in asm: register allocation differs (sizes match within a few words). */
 /* Next printable character after the tags at p; `in_ruby` skips a "(...)" ruby body. */
 unsigned short wtext_next_char(FontCtx *f, unsigned short *p, int in_ruby)
 {
-    int c = 0;
+    unsigned short c = 0;
     unsigned short *q;
     int k;
 
-    while (*p != 0) {
+    while (*p) {
         c = *p;
         q = p + 1;
         if (c == '$') {
@@ -57,7 +55,7 @@ unsigned short wtext_next_char(FontCtx *f, unsigned short *p, int in_ruby)
                 in_ruby = 1;
                 break;
             default:
-                return c;
+                goto done;
             }
         } else {
             if (in_ruby == 0)
@@ -70,9 +68,11 @@ unsigned short wtext_next_char(FontCtx *f, unsigned short *p, int in_ruby)
             p = q + (k + 1);
         }
     }
+done:
     return c;
 }
 
+#ifdef NON_MATCHING /* font_word_width e font_run_width: o original usa s7/s8 para cópias mascaradas de c e t e por isso guarda w na pilha; com c unsigned short ou int e o teste de maiúscula em if/else invertido fica em ~150 palavras */
 /* Width in 26.6 of the word starting at p (up to the next breakable character), including the
    ruby padding, so that a word is not split across lines. */
 int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned short *p, int wrap)
@@ -371,15 +371,14 @@ unsigned int font_shadow_color(unsigned int c)
         return ((a << 6) / 255) << 24;
     return ((a << 7) / 255) << 24;
 }
-#ifdef NON_MATCHING
-
 /* Emits the ruby characters of "(...)" at p as glyph commands above the base text. */
+#ifdef NON_MATCHING /* 3 palavras: o original carrega c direto em s0 e passa o valor cru a wc_no_line_start (`move a0,s0` no atraso), refazendo a máscara no teste (v0); com c int o mwcc reaproveita a máscara do teste (a0) na chamada; com c unsigned short ele mascara na cópia para s0 (48 palavras) */
 unsigned short *font_ruby_layout(FontCtx *f, FontLayout *st, unsigned short *p)
 {
-    unsigned short c;
+    int c;
 
     while ((c = *p++) != ')') {
-        if (c < 0x20)
+        if ((unsigned short)c < 0x20)
             break;
         if (st->ruby_x + 0x1C0 > st->ruby_xmax) {
             if (!(st->flags & 8) || wc_no_line_start(c) != 0) {
@@ -390,7 +389,7 @@ unsigned short *font_ruby_layout(FontCtx *f, FontLayout *st, unsigned short *p)
         f->cmds[f->ncmds].kind = 1;
         f->cmds[f->ncmds].a = st->ruby_x;
         f->cmds[f->ncmds].b = st->ruby_y;
-        f->cmds[f->ncmds].c = c;
+        f->cmds[f->ncmds].c = c & 0xFFFF;
         st->ruby_x += st->ruby_w + 0x1C0;
         f->ncmds++;
         if (f->ncmds > 0xFF)
