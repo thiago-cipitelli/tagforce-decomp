@@ -602,7 +602,7 @@ void card_draw(void *list, int x, int y, unsigned int id)
 }
 
 /* Exported: like cardlist_build but only the picture. */
-#ifdef NON_MATCHING /* the original loads pv->fade before pv->vram */
+#ifdef NON_MATCHING /* o original lê pv->vram (t0) antes de pv->fade (t1) para a chamada de cardlist_draw_picture; aqui a ordem se inverte (2 palavras). Ordem dos locais, acesso por v./pv-> e ternário não mudam */
 void *card_panel_draw(void *list, int x, int y, CardPanel *p)
 {
     CardView v;
