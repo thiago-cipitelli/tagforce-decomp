@@ -206,7 +206,7 @@ void menu_reset(MenuWidget *w);
 void *menu_draw_button(void *dl, MenuWidget *w, int x, int y, int which, int lit);
 void *menu_draw_cursor(void *dl, MenuWidget *w, int x, int y, int cw, int ch);
 void menu_draw_selected(void *dl, MenuWidget *w, int x, int y, int cw, int ch);
-void menu_draw_box(void *dl, int x, int y, int w, int h);
+void *menu_draw_box(void *dl, int x, int y, int w, int h); /* devolve a lista (menu_draw_cursor repassa) */
 int menu_item_counter(MenuWidget *w);
 void menu_cursor_prev(MenuWidget *w);
 void menu_cursor_prev1(MenuWidget *w);

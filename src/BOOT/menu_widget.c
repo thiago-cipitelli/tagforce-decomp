@@ -1,8 +1,7 @@
 // @range 0x0884A9B4-0x0884C8D0
 // @data 0x088EEA58-0x088EEBA0
 // @asm 0x0884A9B4-0x0884BCF0
-// @asm 0x0884BE28-0x0884C260
-// @asm 0x0884C2D4-0x0884C518
+// @asm 0x0884BE28-0x0884C15C
 /* Menu widget: a window (menu.c) hosting a scrollable list with a blinking cursor and/or a row of
    OK / YES / NO / CANCEL buttons (buttom_icon1.gim), driven by the pad. */
 #include "psp.h"
@@ -583,6 +582,8 @@ frame:
     return dl;
 }
 
+#endif
+
 /* The list cursor: a pulsing light-blue box (menu_draw_box); hidden on the off phase of the
    accept blink. */
 void *menu_draw_cursor(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
@@ -595,18 +596,14 @@ void *menu_draw_cursor(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
             return dl;
     } else {
         t = *gfx_get_state() % 33;
-        if (t >= 17)
-            t = (33 - t) * 0x80;
-        else
-            t <<= 7;
-        color = ((t >> 4) + 0x7F) * 0x1000000 | 0x80FF;
+        if (t > 16)
+            t = 33 - t;
+        color = (unsigned char)(((t << 7) >> 4) + 0x7F) << 24 | 0x80FF;
     }
     dl = gim_set_texture(dl, w->menu.window_gim);
     dl = dl_ambient_color(dl, color);
-    menu_draw_box(dl, x, y, cw, ch);
-    return dl;
+    return menu_draw_box(dl, x, y, cw, ch);
 }
-#endif
 
 /* Highlight box of a selected entry (steady color). */
 void menu_draw_selected(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
@@ -616,12 +613,11 @@ void menu_draw_selected(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
     menu_draw_box(dl, x, y, cw, ch);
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm (spill order of the parameters). */
-/* 9-slice box from the 12 x 12 corner pieces at (0..12, 112..124) of the window texture. */
-void menu_draw_box(void *dl, int x, int y, int w, int h)
+/* 9-slice box from the 12 x 12 corner pieces at (0..12, 112..124) of the window texture; returns
+   the list (menu_draw_cursor passes it on). */
+void *menu_draw_box(void *dl, int x, int y, int w, int h)
 {
-    int x1, y1;
+    int y1, x1;
 
     dl = dl_set_tex_filter(dl, 0, 0);
     dl = draw_set_offsets(dl, 4, 4, 4, 4);
@@ -643,10 +639,10 @@ void menu_draw_box(void *dl, int x, int y, int w, int h)
     }
     if (w > 8 && h > 8) {
         dl = draw_set_offsets(dl, 4, 4, w - 8, h - 8);
-        draw_sprite(dl, x + 4, y + 4, 0, 4, 0x74, 0, 0);
+        dl = draw_sprite(dl, x + 4, y + 4, 0, 4, 0x74, 0, 0);
     }
+    return dl;
 }
-#endif
 
 /* Animation counter of the widget's window item (0 when not found). */
 int menu_item_counter(MenuWidget *w)
