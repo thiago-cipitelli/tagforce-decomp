@@ -1,5 +1,6 @@
 // @range 0x08847008-0x08848C68
-// @asm 0x08847008-0x08848C68
+// @asm 0x08847008-0x0884816C
+// @asm 0x088482F0-0x08848C68
 /* UCS-2 text layout and drawing. A FontLayout carries the pen; font_layout_wtext consumes one
    line into FontCtx.cmds (glyphs, size and color changes, ruby) and font_layout_end draws it. */
 #include "psp.h"
@@ -13,7 +14,7 @@ unsigned short towupper(unsigned short c);
 int wc_is_lower(unsigned short c);
 
 #ifdef NON_MATCHING
-/* All eight functions keep the original structure (sizes within a few percent) but mwcc allocates
+/* These functions keep the original structure (sizes within a few percent) but mwcc allocates
    registers and the stack differently; they stay in asm and this C is the port's version. */
 /* Draws `text` at (x, y) in 26.6 inside width w (26.6), one line, breaking words that do not fit.
    Returns the number of characters consumed. */
@@ -397,39 +398,47 @@ int font_draw_wtext(int x, int y, int w, unsigned short *text)
     return r;
 }
 
-/* Font width (percent / 5) that makes `text` fit in w (26.6); 0 when it fits or is empty. */
+#endif
+
+/* Font width (percent / 5) that makes `text` fit in w (26.6): the current width when it already
+   fits, 0 for no text. The font size is restored afterwards. */
 int font_measure_wtext(int w, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     unsigned char sx, sy, rx, ry;
-    int tw, k, n;
+    int tw, k;
+    unsigned short gw, n;
 
     if (w < 0)
         return 0;
-    if (text == 0)
-        return 0;
-    if (*text == 0)
+    if (text == 0 || *text == 0)
         return 0;
     font_get_size(&sx, &sy);
     tw = font_measure_text(text);
-    if (tw > 0 && w < tw + 0x40) {
-        if (w < tw + 0x40) {
-            n = wcslen(text);
-            k = (tw + 0x40 - w) / (n & 0xFFFF) / (f->max_glyph_w / 20 & 0xFFFF);
-            k = k - 1;
+    if (tw <= 0)
+        return sx;
+    if (tw + 0x40 <= w)
+        return sx;
+    if (w < tw + 0x40) {
+        gw = f->max_glyph_w / 20;
+        n = wcslen(text);
+        k = (tw + 0x40 - w) / n / gw;
+        k = k - 1;
+        if ((int)sx < k + 6)
+            k = sx - 6;
+        for (; tw + 0x40 > w; k++) {
             if ((int)sx < k + 6)
-                k = sx - 6;
-            for (; w < tw + 0x40 && k + 6 <= (int)sx; k++) {
-                font_set_size(sx - k, sy);
-                tw = font_measure_text(text);
-            }
+                break;
+            font_set_size(sx - k, sy);
+            tw = font_measure_text(text);
         }
-        font_get_size(&rx, &ry);
-        font_set_size(sx, sy);
-        return rx;
     }
-    return sx;
+    font_get_size(&rx, &ry);
+    font_set_size(sx, sy);
+    return rx;
 }
+
+#ifdef NON_MATCHING /* registradores/pilha diferentes (forma do original) */
 
 /* Lays out `text` word-wrapped in a w x h box without drawing; returns width << 16 | height. */
 unsigned int font_measure_wtext2(int w, int h, unsigned short *text)
