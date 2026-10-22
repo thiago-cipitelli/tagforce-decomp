@@ -784,7 +784,7 @@ int ccc_is_valid_sjis(unsigned int c)
 
 /* sceCccStrlenUTF16: characters before the terminator */
 #ifdef __MWERKS__
-asm int ehsys_08819AE0(const u16 *s)
+asm int ccc_strlen_utf16(const u16 *s)
 {
     addiu sp, sp, -32
     sw s0, 16(sp)
@@ -805,7 +805,7 @@ L_08819B0C:
     addiu sp, sp, 32
 }
 #else
-int ehsys_08819AE0(const u16 *s)
+int ccc_strlen_utf16(const u16 *s)
 {
     int n = 0;
 
@@ -852,7 +852,7 @@ int ccc_strlen_utf8(const u8 *s)
 
 /* sceCccStrlenSJIS */
 #ifdef __MWERKS__
-asm int ehsys_08819B58(const u8 *s)
+asm int ccc_strlen_sjis(const u8 *s)
 {
     addiu sp, sp, -32
     sw s0, 16(sp)
@@ -873,7 +873,7 @@ L_08819B84:
     addiu sp, sp, 32
 }
 #else
-int ehsys_08819B58(const u8 *s)
+int ccc_strlen_sjis(const u8 *s)
 {
     int n = 0;
 
