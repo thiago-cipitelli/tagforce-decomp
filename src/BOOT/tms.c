@@ -1,5 +1,4 @@
 // @range 0x0882B65C-0x0882C428
-// @asm 0x0882B65C-0x0882B858
 // @asm 0x0882B914-0x0882BA88
 // @asm 0x0882C300-0x0882C414
 // @data 0x088ED7B0-0x088ED7D0
@@ -176,7 +175,6 @@ float sqrtf(float x);
 void *heap_malloc_cur(int align, unsigned int size);
 void free(void *p);
 
-#ifdef NON_MATCHING /* the texture name relocation adds in the other operand order */
 Tms *tms_relocate(Tms *t)
 {
     int i;
@@ -221,14 +219,14 @@ Tms *tms_relocate(Tms *t)
                     l->tex = 0;
                 }
                 switch ((int)l->fn) {
+                default:
+                    l->fn = 0;
+                    break;
                 case 1:
                     l->fn = tms_env_reflect;
                     break;
                 case 2:
                     l->fn = tms_env_light;
-                    break;
-                default:
-                    l->fn = 0;
                     break;
                 }
             }
@@ -236,7 +234,7 @@ Tms *tms_relocate(Tms *t)
         for (i = 0; i < t->ntexs; i++) {
             TmsTex *x = &t->texs[i];
 
-            x->name += (int)t->names;
+            x->name = (char *)((int)t->names + (int)x->name);
             if (tms_lookup != 0) {
                 x->gim = tms_lookup(x->name);
             }
@@ -244,7 +242,6 @@ Tms *tms_relocate(Tms *t)
     }
     return t;
 }
-#endif
 
 unsigned int *tms_tex_apply(unsigned int *list, TmsTex *x)
 {

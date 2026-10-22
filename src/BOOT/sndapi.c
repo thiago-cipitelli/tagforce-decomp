@@ -1,9 +1,7 @@
 // @range 0x08865260-0x08866068
 // @data 0x088F04AC-0x088F078C
 // @rodata 0x088EAFE0-0x088EB030
-// @asm 0x088654EC-0x088655DC
 // @asm 0x088657A8-0x0886591C
-// @asm 0x0886595C-0x088659D8
 // @asm 0x08865A50-0x08865B50
 // @asm 0x08865BC4-0x08865CB0
 /* Game-side sound glue: heap and loader callbacks handed to the sound library (0x0885C688..0x08865260,
@@ -217,16 +215,19 @@ void snd_init(void)
     snd_set_volume(2, 12);
 }
 
-#ifdef NON_MATCHING /* cfg_get_byte3: base+i+3 operand order; snd_set_volume: branch layout of the channel chain */
 int cfg_get_byte3(int i)
 {
-    return *((unsigned char *)cfg_get() + i + 3);
+    SysConfig *c = cfg_get();
+
+    return c->bytes3[i];
 }
 
 /* Config volume 0..15 for channel 0 BGM, 1 SE, 2 voice (muted outside Japanese). */
 void snd_set_volume(int ch, int vol)
 {
-    *((unsigned char *)cfg_get() + ch + 3) = vol;
+    SysConfig *c = cfg_get();
+
+    c->bytes3[ch] = vol;
     if (vol != 0)
         vol = vol * 8 + 7;
     switch (ch) {
@@ -244,8 +245,6 @@ void snd_set_volume(int ch, int vol)
         break;
     }
 }
-
-#endif
 
 void snd_mute_on(void)
 {
@@ -406,18 +405,20 @@ int partner_voice_id(unsigned int chr, unsigned int variant)
     return id + gamestate_partner_mode();
 }
 
-#ifdef NON_MATCHING /* sense of the likely branch on the base id */
-/* Sound id for voice `arg` of the character in player slot `slot`, 0 when none. */
 int partner_voice_play(int slot, int arg)
 {
     PlayerSlot *p = &game_state_get()->slot[slot];
     int id = partner_voice_id(p->type, p->type2);
     if (id == 0)
         return 0;
-    if ((id = snd_obj_base_id(id)) == 0)
-        return 0;
-    return id + arg;
+    id = snd_obj_base_id(id);
+    if (id != 0)
+        return id + arg;
+    return 0;
 }
+
+#ifdef NON_MATCHING /* sense of the likely branch on the base id */
+/* Sound id for voice `arg` of the character in player slot `slot`, 0 when none. */
 
 #endif
 

@@ -4,7 +4,6 @@
 // @asm 0x08868DC8-0x08868E40
 // @asm 0x08869028-0x088690F8
 // @asm 0x0886936C-0x088694F0
-// @asm 0x08869BF0-0x08869D7C
 /* Ad hoc front end: the state-entry hook, the peer and scan lists shown by the lobby screens,
    the per-frame driver called from main (pad/UMD watchdogs, link watchdog), the functions the
    gmodules call, the netconf / message dialogs and the net module loading. */
@@ -551,25 +550,24 @@ int net_join_tagged(int i, unsigned short *me)
     return 1;
 }
 
-#ifdef NON_MATCHING /* register allocation of the copy loop; toggle_pick lays out the count test the other way */
 /* Exported (host lobby): the scan list. */
 void net_get_scan(int *out)
 {
     NetScanEntry *d;
     int i;
-    NetScanEntry *e;
 
     memset(out, 0, 0x244);
     if (net_get_state() != 0x1E) {
         return;
     }
-    for (i = 0, e = net_scan.e; i < net_scan.count; i++, e++, out += 0x10) {
+    for (i = 0; i < net_scan.count; i++) {
         d = (NetScanEntry *)(out + 1);
-        d->valid = e->valid;
-        d->joined = e->joined;
-        d->index = e->index;
-        d->tag = e->tag;
-        memcpy(d->name, e->name, 0x30);
+        d->valid = net_scan.e[i].valid;
+        d->joined = net_scan.e[i].joined;
+        d->index = net_scan.e[i].index;
+        d->tag = net_scan.e[i].tag;
+        memcpy(d->name, net_scan.e[i].name, 0x30);
+        out += 0x10;
     }
 }
 
@@ -580,10 +578,7 @@ void net_toggle_pick(int i)
     int r;
     int n;
 
-    if (net_get_state() != 0x1E) {
-        return;
-    }
-    if (i >= net_scan.count) {
+    if (net_get_state() != 0x1E || net_scan.count <= i) {
         return;
     }
     mac = net_scan.macs[i];
@@ -596,7 +591,6 @@ void net_toggle_pick(int i)
         memcpy(net_scan.picked[n], mac, 6);
     }
 }
-#endif
 
 /* Exported (host): drop joined players that were not picked and start the PTP handshake. */
 void net_start_game(void)

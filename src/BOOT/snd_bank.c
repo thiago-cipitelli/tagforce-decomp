@@ -1,6 +1,5 @@
 // @range 0x0885DE90-0x0885E634
 // @asm 0x0885DF70-0x0885DFE8
-// @asm 0x0885E434-0x0885E4EC
 // @asm 0x0885E524-0x0885E634
 /* Sound library, bank side: the "SHDS" header of psp_snddat.bin (sound entries, groups, offsets and
    base ids), per-voice filter state, the 16-slot handle cache and the intrusive doubly linked lists
@@ -321,7 +320,6 @@ int snd_list_contains(SndList *l, void *node)
     return 1;
 }
 
-#ifdef NON_MATCHING /* load order of tail/link_off (one addu operand swap) */
 void snd_list_append(SndList *l, void *node)
 {
     SndLink *k = (SndLink *)((unsigned char *)node + l->link_off);
@@ -334,7 +332,7 @@ void snd_list_append(SndList *l, void *node)
     } else {
         k->prev = l->tail;
         k->next = 0;
-        ((SndLink *)((unsigned char *)l->tail + l->link_off))->next = node;
+        ((SndLink *)((unsigned int)l->tail + l->link_off))->next = node;
         l->tail = node;
     }
     l->count++;
@@ -343,21 +341,24 @@ void snd_list_append(SndList *l, void *node)
 void snd_list_remove(SndList *l, void *node)
 {
     SndLink *k = (SndLink *)((unsigned char *)node + l->link_off);
+    SndLink *o;
 
-    if (k->prev == 0)
+    if (k->prev == 0) {
         l->head = k->next;
-    else
-        ((SndLink *)((unsigned char *)k->prev + l->link_off))->next = k->next;
-    if (k->next == 0)
+    } else {
+        o = (SndLink *)((unsigned int)k->prev + l->link_off);
+        o->next = k->next;
+    }
+    if (k->next == 0) {
         l->tail = k->prev;
-    else
-        ((SndLink *)((unsigned char *)k->next + l->link_off))->prev = k->prev;
+    } else {
+        o = (SndLink *)((unsigned int)k->next + l->link_off);
+        o->prev = k->prev;
+    }
     k->next = 0;
     k->prev = 0;
     l->count--;
 }
-
-#endif
 
 void *snd_list_next(SndList *l, void *node)
 {
