@@ -1,13 +1,13 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-21 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-22 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 20,5% | 27,5% | 3438 / 11039 |
+| total | 24,3% | 31,8% | 3918 / 11039 |
 | BOOT | 44,0% | 64,3% | 1253 / 2208 |
-| libduel_eng | 40,5% | 52,1% | 2183 / 3429 |
+| libduel_eng | 51,3% | 64,5% | 2663 / 3429 |
 | libhtml_view | 9,8% | 9,8% | 2 / 16 |
 | demais 19 gmodules | 0% | 0% | 0 / 5386 |
 
@@ -21,16 +21,16 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 **libduel_eng**
 
 ```
-0x08832B54-0x0884ACD0   254 functions    98684 bytes
-0x0884ED08-0x08864DF0   257 functions    90344 bytes
 0x08820618-0x088324F0   123 functions    73432 bytes
 0x08865F2C-0x0886CB44    68 functions    27672 bytes
+0x08839360-0x0883F0DC     7 functions    23932 bytes
 0x08804000-0x08809B50    43 functions    23376 bytes
 0x088D1DF4-0x088D6DE8    43 functions    20468 bytes
 0x088CC8EC-0x088D13CC     7 functions    19168 bytes
 0x0880B448-0x0880FDF4    29 functions    18860 bytes
 0x08815E90-0x08819F94    27 functions    16644 bytes
 0x088B4560-0x088B7D94    63 functions    14388 bytes
+0x088F2D70-0x088F5D54     1 functions    12260 bytes
 ```
 
 **BOOT**
@@ -120,7 +120,7 @@ Conhecido no BOOT: `0x08804000`-`0x0881FFB0` é libgu, MSL, libgcc e sceDeflt co
 | [`extdata.c`](../src/BOOT/extdata.c) | 0x0886CF50-0x0886E0A4 | 9 | 2 | arquivos YGTF .YGC/.YGR/.YGL da pasta do save: listagem, leitura, verificação e desembaralhamento |
 | [`netsync.c`](../src/BOOT/netsync.c) | 0x0886E0A4-0x0886ED2C | 26 | 3 | troca de registros de 0x100 bytes por jogador via PDP ad hoc, fila de pacotes, transferência em blocos de 0x80, lado do jogador local |
 
-## libduel_eng (91 arquivos, 1546 funções batendo, 309 em asm)
+## libduel_eng (161 arquivos, 2666 funções batendo, 311 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -134,21 +134,63 @@ Conhecido no BOOT: `0x08804000`-`0x0881FFB0` é libgu, MSL, libgcc e sceDeflt co
 | [`ai_cond0.c`](../src/libduel_eng/ai_cond0.c) | 0x0881D0D8-0x0881E0A0 | 22 | 3 | mais condições da IA por carta: mão e cemitério sem cartas proibidas, PV, nível e ATK do monstro escolhido |
 | [`ai_cond.c`](../src/libduel_eng/ai_cond.c) | 0x0881E0A0-0x08820618 | 74 | 4 | condições que o jogador do computador verifica antes de ativar cada carta: PV do oponente, contagens no campo, na mão e no cemitério, alvos aceitos pelo descritor |
 | [`duel_event.c`](../src/libduel_eng/duel_event.c) | 0x088324F0-0x08832B54 | 32 | 0 | eventos do duelo para a apresentação: um registro pendente de jogador, tipo e duas meias-palavras ou uma lista curta, enviado ao outro console como mensagem 0x1E; 32 wrappers por tipo |
+| [`ai_08832B54.c`](../src/libduel_eng/ai_08832B54.c) | 0x08832B54-0x08834734 | 19 | 1 | IA: escolha de uma carta da mão para um efeito, passos das mensagens da corrente |
+| [`ai_08834734.c`](../src/libduel_eng/ai_08834734.c) | 0x08834734-0x08835AEC | 17 | 1 | IA: passos de ação do computador, quais cartas da mão e do campo podem agir, escolha por zona |
+| [`ai_08835AEC.c`](../src/libduel_eng/ai_08835AEC.c) | 0x08835AEC-0x08836868 | 15 | 0 | IA: despachante de escolhas por `duel_w_08919630`, setters de escolha, leitura da tabela `duel_ai_tab` (23 entradas id/zona/check/apply) |
+| [`ai_08836868.c`](../src/libduel_eng/ai_08836868.c) | 0x08836868-0x08837500 | 8 | 1 | IA: travas da fase de batalha, checagens de quem pode atacar, retrato do ataque |
+| [`ai_08837500.c`](../src/libduel_eng/ai_08837500.c) | 0x08837500-0x08838548 | 3 | 0 | IA: máquinas de passos da batalha (atacante, depois alvo) |
+| [`ai_08838548.c`](../src/libduel_eng/ai_08838548.c) | 0x08838548-0x08839360 | 3 | 1 | IA: efeitos na declaração de ataque |
+| [`ai_0883F0DC.c`](../src/libduel_eng/ai_0883F0DC.c) | 0x0883F0DC-0x088400B0 | 21 | 1 | IA: avaliação de jogadas por zona e contador de passos em registrador |
+| [`ai_088400B0.c`](../src/libduel_eng/ai_088400B0.c) | 0x088400B0-0x08840B5C | 13 | 0 | IA: checagens de cartas do campo e da mão para a jogada do computador |
+| [`ai_08840B5C.c`](../src/libduel_eng/ai_08840B5C.c) | 0x08840B5C-0x088415C4 | 29 | 0 | IA: condições por carta e stubs de chamada final |
+| [`ai_088415C4.c`](../src/libduel_eng/ai_088415C4.c) | 0x088415C4-0x088420F4 | 21 | 0 | IA: escolha de alvos e máscaras de zonas |
+| [`ai_08842C24.c`](../src/libduel_eng/ai_08842C24.c) | 0x08842C24-0x08843858 | 6 | 1 | IA: máquinas de passos com tabela de saltos (duel_0884356C) |
+| [`ai_08843858.c`](../src/libduel_eng/ai_08843858.c) | 0x08843858-0x08844024 | 16 | 1 | IA: condições e escolhas do computador |
+| [`ai_08844024.c`](../src/libduel_eng/ai_08844024.c) | 0x08844024-0x0884451C | 26 | 1 | IA: condições curtas por carta |
+| [`ai_0884451C.c`](../src/libduel_eng/ai_0884451C.c) | 0x0884451C-0x08844C2C | 21 | 0 | IA: condições curtas por carta |
+| [`ai_08844C2C.c`](../src/libduel_eng/ai_08844C2C.c) | 0x08844C2C-0x088451E8 | 13 | 1 | IA: máquinas de passos de escolha |
+| [`ai_08846498.c`](../src/libduel_eng/ai_08846498.c) | 0x08846498-0x08846584 | 1 | 0 | IA: ajudante isolado entre duas máquinas de passos grandes |
+| [`ai_088480D0.c`](../src/libduel_eng/ai_088480D0.c) | 0x088480D0-0x088482F8 | 2 | 0 | registros dos alvos respondidos pelas cartas especiais (`DuelSpecial.recs` em +0x9C) |
 | [`duel_dialog.c`](../src/libduel_eng/duel_dialog.c) | 0x0884ACD0-0x0884B094 | 18 | 1 | pedidos de diálogo ao host, duel_host_call 0x31 por subcomando: mensagens, pergunta com cartas ou texto, sim/não, só para o jogador local |
 | [`duel_pick.c`](../src/libduel_eng/duel_pick.c) | 0x0884C718-0x0884D050 | 21 | 1 | lista de cartas que um diálogo oferece, `DuelPick` em 0x0891524C com zona e número de cada carta em bitfield, flags de exibição, gerador aleatório LCG do duelo, tamanho das pilhas, Exodia e cartas de vitória especial |
 | [`duel_end.c`](../src/libduel_eng/duel_end.c) | 0x0884D050-0x0884E228 | 14 | 5 | fim do duelo: motivo de vitória de cada jogador em +0x20..+0x2C do `DuelPlayer`, apresentação do fim, reprodução do log de entradas, passos finais por tabela, contadores e flags do registro do duelo em 0x08913C1C, pedido de desistência |
-| [`card_desc.c`](../src/libduel_eng/card_desc.c) | 0x0884E228-0x0884ED08 | 23 | 0 | descritores de efeito das cartas: quatro tabelas de 0x18 bytes ordenadas por id conforme o tipo da ação, busca binária `static` cujos chamadores guardam argumentos em t-regs, chamada dos handlers de condição, alvo e resolução, máscara e contagens das zonas aceitas pelo alvo |
+| [`card_desc.c`](../src/libduel_eng/card_desc.c) | 0x0884E228-0x0884F038 | 24 | 0 | descritores de efeito das cartas: quatro tabelas de 0x18 bytes ordenadas por id conforme o tipo da ação, busca binária `static` cujos chamadores guardam argumentos em t-regs, chamada dos handlers de condição, alvo e resolução, máscara e contagens das zonas aceitas pelo alvo |
+| [`ai_0884F038.c`](../src/libduel_eng/ai_0884F038.c) | 0x0884F038-0x08850164 | 11 | 0 | IA: resolução de mensagens e escolhas da corrente |
+| [`ai_08850164.c`](../src/libduel_eng/ai_08850164.c) | 0x08850164-0x08850F44 | 0 | 1 | máquina de passos da resolução da corrente (em asm) |
+| [`ai_08853340.c`](../src/libduel_eng/ai_08853340.c) | 0x08853340-0x08853CE8 | 11 | 0 | IA: ações pendentes da corrente (`DuelChain.pending`) |
+| [`ai_08853CE8.c`](../src/libduel_eng/ai_08853CE8.c) | 0x08853CE8-0x08854D4C | 1 | 0 | `duel_act_check_08853CE8`: checagem de 4 KB de ações por id |
+| [`ai_08854D4C.c`](../src/libduel_eng/ai_08854D4C.c) | 0x08854D4C-0x08855214 | 6 | 0 | IA: ajudantes de checagem de ação |
+| [`ai_08855214.c`](../src/libduel_eng/ai_08855214.c) | 0x08855214-0x08855908 | 1 | 0 | IA: checagem de ação isolada |
+| [`ai_08855908.c`](../src/libduel_eng/ai_08855908.c) | 0x08855908-0x08856860 | 14 | 0 | IA: filtros de alvo e condições por carta |
+| [`ai_08856860.c`](../src/libduel_eng/ai_08856860.c) | 0x08856860-0x08856EE0 | 0 | 1 | IA: condição por carta (em asm) |
+| [`ai_08856EE0.c`](../src/libduel_eng/ai_08856EE0.c) | 0x08856EE0-0x08857B34 | 13 | 0 | IA: filtros de alvo e condições por carta |
+| [`ai_08857B34.c`](../src/libduel_eng/ai_08857B34.c) | 0x08857B34-0x08858A30 | 14 | 1 | IA: filtros de alvo e condições por carta |
+| [`ai_08858A30.c`](../src/libduel_eng/ai_08858A30.c) | 0x08858A30-0x088594D0 | 5 | 1 | IA: filtros de alvo e condições por carta |
+| [`ai_088594D0.c`](../src/libduel_eng/ai_088594D0.c) | 0x088594D0-0x08859AC8 | 6 | 0 | IA: filtros de alvo e condições por carta |
+| [`ai_08859AC8.c`](../src/libduel_eng/ai_08859AC8.c) | 0x08859AC8-0x0885B4B8 | 21 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_0885B4B8.c`](../src/libduel_eng/ai_0885B4B8.c) | 0x0885B4B8-0x0885C594 | 17 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_0885C594.c`](../src/libduel_eng/ai_0885C594.c) | 0x0885C594-0x0885D4E4 | 19 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_0885D4E4.c`](../src/libduel_eng/ai_0885D4E4.c) | 0x0885D4E4-0x0885E1DC | 16 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_0885E1DC.c`](../src/libduel_eng/ai_0885E1DC.c) | 0x0885E1DC-0x0885F2E4 | 18 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_0885F2E4.c`](../src/libduel_eng/ai_0885F2E4.c) | 0x0885F2E4-0x088601AC | 17 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_088601AC.c`](../src/libduel_eng/ai_088601AC.c) | 0x088601AC-0x08860A88 | 7 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_08860A88.c`](../src/libduel_eng/ai_08860A88.c) | 0x08860A88-0x0886191C | 5 | 0 | IA: tabelas id→constante em switch (inclui switch aninhado por id e opção) |
+| [`ai_0886191C.c`](../src/libduel_eng/ai_0886191C.c) | 0x0886191C-0x08861E7C | 10 | 1 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_08861E7C.c`](../src/libduel_eng/ai_08861E7C.c) | 0x08861E7C-0x08862E24 | 7 | 2 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_08862E24.c`](../src/libduel_eng/ai_08862E24.c) | 0x08862E24-0x08863284 | 7 | 1 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_08863284.c`](../src/libduel_eng/ai_08863284.c) | 0x08863284-0x08864044 | 11 | 1 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
+| [`ai_08864044.c`](../src/libduel_eng/ai_08864044.c) | 0x08864044-0x08864DF0 | 8 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
 | [`effects_q.c`](../src/libduel_eng/effects_q.c) | 0x08864DF0-0x08865F2C | 24 | 5 | callbacks de descritores de efeito em 0x08864DF0: passos com contador, máscaras de zonas, valores da zona, escolhas na mão |
 | [`act_cond.c`](../src/libduel_eng/act_cond.c) | 0x0886CB44-0x0886E784 | 47 | 3 | condições de ativação das cartas sobre o `DuelAct`: descartar da mão, zonas livres, fase e turno, tributos, cartas nas pilhas, carta especial como alvo, armadilhas como alvo da corrente, contadores e posição na zona, carta especial e mão do oponente, cartas no deck |
 | [`act_cond2.c`](../src/libduel_eng/act_cond2.c) | 0x0886F23C-0x0887DB24 | 397 | 32 | mais condições: cemitério e mão, monstros na mão, alvos de uma corrente, cartas que voltam ao cemitério ou ao deck, monstros virados, tributos, cartas especiais, alvos virados para cima de um grupo, carta especial do oponente, descartes de custo, mão e campo cheios, LP baixo, buscas na mão, nível do monstro especial, cartas do oponente mandadas ao cemitério, zonas de magia livres, contadores exigidos na zona, entrada na fase de batalha, somas de contadores, cinco cartas no cemitério, diferença de LP, cartas exigidas no campo, zona F, alvos no cemitério, magia de campo, diferença de 7000 LP, DEF do monstro especial, alvos de ataque do monstro especial, alvos da corrente na zona, maior ATK na mão, bits de estado da zona, monstros de defesa do tipo 0x12, atributos 3 a 6 no campo, cópias no cemitério, atributos dos monstros oferecíveis, cartas na zona F, atributos da carta que causou a ação, nomes no cemitério e na mão, tipo da carta que causou a ação, cartas nomeadas no cemitério, bits 16 e 17 do jogador, cartas 0x19A3/0x19A4, zona de origem pelo valor da zona, nível das cartas da corrente, diferença de 8000 LP, imunidade da zona a 0x1A77, zonas de magia livres do oponente |
-| [`effects_p.c`](../src/libduel_eng/effects_p.c) | 0x0887DB24-0x0888146C | 16 | 11 | Card effect handlers (DuelAct *a): what a's card does when it resolves |
+| [`effects_p.c`](../src/libduel_eng/effects_p.c) | 0x0887DB24-0x0888146C | 16 | 12 | Card effect handlers (DuelAct *a): what a's card does when it resolves |
 | [`effects_r.c`](../src/libduel_eng/effects_r.c) | 0x0888146C-0x08883114 | 24 | 4 | handlers de efeito depois de effects_p: passos por duel_step, alvos e máscaras de zonas, trocas de controle, contadores de turno, compras e descartes |
 | [`effects_s.c`](../src/libduel_eng/effects_s.c) | 0x08883114-0x08884118 | 11 | 1 | handlers: virar e destruir pela DEF, cartas viradas para baixo reveladas, trocas de zona de magia, metade do ATK como dano |
 | [`effects_t.c`](../src/libduel_eng/effects_t.c) | 0x08884118-0x08884F18 | 8 | 5 | handlers: invocação especial da mão, comandos de virar, ATK/DEF originais guardados na zona, descarte de cartas da mão |
 | [`effects_u.c`](../src/libduel_eng/effects_u.c) | 0x08884F18-0x08885B70 | 7 | 2 | handlers: cartas de mesmo nome mandadas de todas as pilhas, fichas invocadas por tabela, mãos devolvidas e recompradas, metade do ATK como dano, ataque forçado |
 | [`effects_v.c`](../src/libduel_eng/effects_v.c) | 0x08885B70-0x08886984 | 6 | 5 | handlers: maior ou menor ATK/DEF entre os alvos, três alvos de uma vez, cartas do cemitério devolvidas, carta escolhida na mão do oponente, máscaras de zonas do oponente |
 | [`effects_w.c`](../src/libduel_eng/effects_w.c) | 0x08886984-0x08887618 | 16 | 2 | handlers: zonas com um efeito destruídas, cartas viradas para cima todas de uma vez, invocação pela carta especial do turno, descarte e recompra |
-| [`effects_x.c`](../src/libduel_eng/effects_x.c) | 0x08887618-0x08889BE4 | 13 | 6 | handlers: troca de controle e de alvo, cartas reveladas da mão do oponente, invocações especiais do deck, da mão e do cemitério com zonas livres por jogador, dano e PV pelo número de cartas no cemitério ou viradas; tabelas de salto no `@data` |
+| [`effects_x.c`](../src/libduel_eng/effects_x.c) | 0x08887618-0x08889BE4 | 13 | 7 | handlers: troca de controle e de alvo, cartas reveladas da mão do oponente, invocações especiais do deck, da mão e do cemitério com zonas livres por jogador, dano e PV pelo número de cartas no cemitério ou viradas; tabelas de salto no `@data` |
 | [`effects_y.c`](../src/libduel_eng/effects_y.c) | 0x08889BE4-0x0888B904 | 17 | 5 | handlers: invocações do deck por jogador alternado, cartas do cemitério e da zona F de volta ao campo, troca de zona com a carta especial, dano igual ao ATK do alvo, máscaras de zonas por tipo de carta |
 | [`effects_z.c`](../src/libduel_eng/effects_z.c) | 0x0888B904-0x0888C1A8 | 4 | 6 | handlers que chamam duel_088C87A8 sem protótipo: marcas em cartas do campo pelo jogador da vez, compras dos dois jogadores, carta do cemitério para a zona de magia, carta 0x13EA do deck |
 | [`effects_za.c`](../src/libduel_eng/effects_za.c) | 0x0888C1A8-0x0888E5D4 | 21 | 2 | filtro de escolha na mão, troca de três cartas da mão com o oponente, ATK fixo e marcas no alvo, fichas por id da carta, invocação na fase 5, monstros do cemitério de volta pela escolha da lista, troca com a carta especial, marcas com ATK/5 e contadores, invocação pela carta especial do turno, cartas viradas para baixo na zona, troca de monstros entre jogadores, dano fixo, compras da mão |
@@ -164,10 +206,13 @@ Conhecido no BOOT: `0x08804000`-`0x0881FFB0` é libgu, MSL, libgcc e sceDeflt co
 | [`effects_08898B10.c`](../src/libduel_eng/effects_08898B10.c) | 0x08898B10-0x0889A75C | 22 | 3 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_0889A75C.c`](../src/libduel_eng/effects_0889A75C.c) | 0x0889A75C-0x0889C150 | 22 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_0889C150.c`](../src/libduel_eng/effects_0889C150.c) | 0x0889C150-0x0889CD38 | 10 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_0889CD38.c`](../src/libduel_eng/effects_0889CD38.c) | 0x0889CD38-0x088A1904 | 64 | 0 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`effects_088A1904.c`](../src/libduel_eng/effects_088A1904.c) | 0x088A1904-0x088A3430 | 25 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088A3430.c`](../src/libduel_eng/effects_088A3430.c) | 0x088A3430-0x088A49F8 | 17 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088A49F8.c`](../src/libduel_eng/effects_088A49F8.c) | 0x088A49F8-0x088A6464 | 26 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088A6464.c`](../src/libduel_eng/effects_088A6464.c) | 0x088A6464-0x088A67D8 | 2 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_088A67D8.c`](../src/libduel_eng/effects_088A67D8.c) | 0x088A67D8-0x088A8B94 | 11 | 3 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
+| [`effects_088A8B94.c`](../src/libduel_eng/effects_088A8B94.c) | 0x088A8B94-0x088AF390 | 77 | 7 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`effects_088AF390.c`](../src/libduel_eng/effects_088AF390.c) | 0x088AF390-0x088AFD5C | 11 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088AFD5C.c`](../src/libduel_eng/effects_088AFD5C.c) | 0x088AFD5C-0x088B08B8 | 4 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088B153C.c`](../src/libduel_eng/effects_088B153C.c) | 0x088B153C-0x088B1854 | 4 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
@@ -177,20 +222,17 @@ Conhecido no BOOT: `0x08804000`-`0x0881FFB0` é libgu, MSL, libgcc e sceDeflt co
 | [`effects_088B7D94.c`](../src/libduel_eng/effects_088B7D94.c) | 0x088B7D94-0x088B9CC8 | 35 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088B9CC8.c`](../src/libduel_eng/effects_088B9CC8.c) | 0x088B9CC8-0x088BB8C0 | 28 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088BB8C0.c`](../src/libduel_eng/effects_088BB8C0.c) | 0x088BB8C0-0x088BC9E0 | 17 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
-| [`effects_0889CD38.c`](../src/libduel_eng/effects_0889CD38.c) | 0x0889CD38-0x088A1904 | 64 | 0 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
-| [`effects_088A67D8.c`](../src/libduel_eng/effects_088A67D8.c) | 0x088A67D8-0x088A8B94 | 11 | 3 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
-| [`effects_088A8B94.c`](../src/libduel_eng/effects_088A8B94.c) | 0x088A8B94-0x088AF390 | 77 | 7 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`effects_088BC9E0.c`](../src/libduel_eng/effects_088BC9E0.c) | 0x088BC9E0-0x088C004C | 49 | 4 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`effects_088C004C.c`](../src/libduel_eng/effects_088C004C.c) | 0x088C004C-0x088C134C | 10 | 2 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`effects_088C134C.c`](../src/libduel_eng/effects_088C134C.c) | 0x088C134C-0x088C2F80 | 18 | 3 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
-| [`duel_checks.c`](../src/libduel_eng/duel_checks.c) | 0x088C2F80-0x088C4448 | 13 | 2 | verificações de estado entre os passos: cartas contínuas cuja condição acabou são destruídas ou perdem o efeito |
+| [`duel_checks.c`](../src/libduel_eng/duel_checks.c) | 0x088C2F80-0x088C4448 | 13 | 4 | verificações de estado entre os passos: cartas contínuas cuja condição acabou são destruídas ou perdem o efeito |
 | [`duel_lp.c`](../src/libduel_eng/duel_lp.c) | 0x088C4448-0x088C4864 | 9 | 0 | mudanças de PV: dano e recuperação com as cartas que os impedem, comandos 0x25-0x30, evento `DuelLpEv` |
-| [`duel_draws.c`](../src/libduel_eng/duel_draws.c) | 0x088C4864-0x088C77D4 | 11 | 0 | pagamento de PV, compra e envio de cartas do deck e da zona D com seus comandos; os passos longos em asm |
-| [`duel_cmds.c`](../src/libduel_eng/duel_cmds.c) | 0x088C77D4-0x088C7F18 | 14 | 0 | comandos à apresentação via duel_cmd com 0x8000 para o jogador 1, contador de aninhamento do efeito exibido |
+| [`duel_draws.c`](../src/libduel_eng/duel_draws.c) | 0x088C4864-0x088C77D4 | 11 | 7 | pagamento de PV, compra e envio de cartas do deck e da zona D com seus comandos; os passos longos em asm |
+| [`duel_cmds.c`](../src/libduel_eng/duel_cmds.c) | 0x088C77D4-0x088C7F18 | 14 | 1 | comandos à apresentação via duel_cmd com 0x8000 para o jogador 1, contador de aninhamento do efeito exibido |
 | [`duel_reqs.c`](../src/libduel_eng/duel_reqs.c) | 0x088C87A8-0x088C936C | 13 | 4 | comandos à apresentação sobre uma zona: 0x36 carta chega, 0x37 efeito de uma carta, 0x38 contador, 0x42 movimento com seus efeitos |
-| [`duel_reqs2.c`](../src/libduel_eng/duel_reqs2.c) | 0x088C936C-0x088CA4E8 | 5 | 5 | mais comandos à apresentação: virar/mudar posição 0x35, mover entre zonas 0x3D/0x3E, da mão ou do cemitério ao campo 0x3F |
-| [`duel_hand.c`](../src/libduel_eng/duel_hand.c) | 0x088CA4E8-0x088CAF24 | 7 | 1 | cartas que saem da mão para o cemitério, a zona D ou o campo, comando 0x33 e evento com o bitfield `DuelMoveEv` |
-| [`duel_moves.c`](../src/libduel_eng/duel_moves.c) | 0x088CB400-0x088CBB64 | 13 | 0 | comandos de movimento entre pilhas e campo 0x33/0x3F/0x41, ataques 0x29, embaralhar zonas 0x49, carta saindo de uma zona 0x43 |
+| [`duel_reqs2.c`](../src/libduel_eng/duel_reqs2.c) | 0x088C936C-0x088CA4E8 | 5 | 7 | mais comandos à apresentação: virar/mudar posição 0x35, mover entre zonas 0x3D/0x3E, da mão ou do cemitério ao campo 0x3F |
+| [`duel_hand.c`](../src/libduel_eng/duel_hand.c) | 0x088CA4E8-0x088CAF24 | 7 | 2 | cartas que saem da mão para o cemitério, a zona D ou o campo, comando 0x33 e evento com o bitfield `DuelMoveEv` |
+| [`duel_moves.c`](../src/libduel_eng/duel_moves.c) | 0x088CB400-0x088CBB64 | 13 | 2 | comandos de movimento entre pilhas e campo 0x33/0x3F/0x41, ataques 0x29, embaralhar zonas 0x49, carta saindo de uma zona 0x43 |
 | [`duel_counters.c`](../src/libduel_eng/duel_counters.c) | 0x088CC178-0x088CC8EC | 8 | 0 | comandos de valores e contadores numa carta 0x3A-0x3C e as cartas que reagem a eles |
 | [`act_apply.c`](../src/libduel_eng/act_apply.c) | 0x088D13CC-0x088D1DF4 | 29 | 1 | wrappers de duel_act_apply 0x088D1094: um efeito do tipo 0xB, 0xD, 0xE ou 0xF numa máscara de zonas, teste de uma zona, carta de ação montada na pilha com `= {0}` |
 | [`req_effect.c`](../src/libduel_eng/req_effect.c) | 0x088D6DE8-0x088D9080 | 3 | 9 | pedidos que mexem nas entradas de efeito e nos valores de uma zona: adicionar, mudar, liberar, ordem de ativação, valor, contadores, virar uma carta, mudar a posição, trocar duas zonas, mover para outra zona ou lugar, mover de qualquer lugar a uma pilha |

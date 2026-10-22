@@ -26,8 +26,8 @@ MODULE=libduel_eng python3 tools/list_funcs.py 0x08889BE4 0x0888B000   # functio
 
 [docs/progress.md](docs/progress.md) lists every C file and the open ranges. The current front lines:
 
-- `libduel_eng`: about 270 functions kept in asm with a C draft under `#ifdef NON_MATCHING`, many only a few words off; `docs/build.md` lists the source shapes that fixed similar ones. Good first work.
-- `libduel_eng` `0x08804000`-`0x088324F0`, `0x08832B54`-`0x0884ACD0`: CPU player logic.
+- `libduel_eng`: about 300 functions kept in asm with a C draft under `#ifdef NON_MATCHING`, many only a few words off; `docs/build.md` lists the source shapes that fixed similar ones. Good first work.
+- `libduel_eng` `0x08804000`-`0x088324F0` (CPU player logic) and `0x08865F2C`-`0x0886CB44`; a dozen very large CPU step machines between `0x08832B54` and `0x08864DF0` are still asm only.
 - The other 19 gmodules (`libduel_draw`, `libfield`, `libstory`, …) have not been started: there is
   room for someone to take a whole module.
 - `BOOT` is mostly done. What is left is SDK and GCC-compiled code (libgu, MSL, libgcc) that

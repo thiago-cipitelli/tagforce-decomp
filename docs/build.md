@@ -438,6 +438,16 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Argumento que parece não usado**: quando `$a1`/`$a2`/`$t0` já têm um valor na chamada sem motivo aparente, o original o passa (`duel_088C7810(1 - p, 1)`, `duel_088CAB04(q, i, 1)`, `duel_088C87A8(…, a->player)`); handlers que não tocam `$a1` são `(DuelAct *a, int b)` e repassam `b`. Função sem valor de retorno tem de ser `void` (senão `$v0` difere no fim).
 - **Laços seguidos e índices**: reaproveitar a variável de um laço no seguinte (`z` do laço das zonas como índice do cemitério) e escrever `i < (unsigned int)n_d` quando o original compara com `sltu`; um limite lido uma vez só é uma local (`n = n_hand; for (i = 0; i < n; i++)`). `perm_locals.py` só permuta as declarações antes da primeira linha em branco: deixar ali só as 4-6 duvidosas.
 - **Último `case` que cai no epílogo**: terminar com `break` em vez de `return 0` (um `default: return 0;` explícito cria um bloco a mais).
+- **Contador de passo mantido em registrador** (`ai_0883F0DC.c`): `for (; (i = duel_w_08919608) < 10; duel_w_08919608++)` com `unsigned int i` mantém o valor carregado no laço como o original.
+- **`z << 16` sem redução de força** (`ai_0883F0DC.c`, `ai_08853340.c`): `(unsigned int)z << 16 & 0x1F0000` impede o mwcc de trocar o deslocamento por um contador `+0x10000` dentro do laço.
+- **`if (A == K1 || A == K2)` em `beq` separados** (`ai_08834734.c`): sai de um `switch` com grupo de `case`; `addiu v1,v1,-K` seguido de comparações pequenas é `switch (x - K)`.
+- **Leituras antes dos stores** (`ai_08836868.c`): o mwcc não sobe um load acima de um store em global; a instrução que lê (`duel_atk_zone = a + b;`) vem antes dos `= 0`.
+- **Símbolo+deslocamento dobrado no `lui/addiu`** (`ai_08837500.c`): `*(T *)((char *)&duel.players[0].field[0].f + (p & 1) * 0xFAC + z * 20)` com constantes `int`; `sizeof` quebra o CSE.
+- **`return x < K ? 1 : 0;` num `case`** (`ai_0884F038.c`): o `return x < K;` puro divide um `b fim` com o retorno antecipado.
+- **Grupo com desvio direto ao epílogo** (`ai_08853CE8.c`): num `switch` grande por id, um teste que salta direto ao `fim` (`beql … fim`) é o primeiro de um grupo cujo corpo é `return K`; junte-o ao grupo.
+- **Chamada sem argumentos a função K&R** (`card_desc.c`, `duel_0884ED08`): o original chama sem passar `$a0`; a definição K&R e o chamador no mesmo arquivo do `static` mantêm `a` em `$t1`.
+- **`default:` primeiro no `switch`** (`ai_0886191C.c`, `duel_08861CB4`) põe o corpo do default logo depois dos testes; `z > 4` dá `slti at` onde `z >= 5` dá `slti v0`.
+- **Problema aberto:** o `lhu` de `a->kind` antes de `if (a->kind == 0x23) return 1;` sai escalonado diferente no prólogo (`duel_08856860`, `duel_08858440`, `duel_08858E2C`, `duel_08870E94`).
 
 - **Função `static` chamada de fora do arquivo** (`effects_088A8B94.c`): quando um helper precisa ser `static` para o chamador manter `$a0`-`$a2` (ver acima) mas também é chamado por asm ou por outro `.c`, a linha em `symbols/` leva `type:func static matched …`; `fix_ld.py` então emite um `PROVIDE` com o nome para os outros chamadores.
 - **Definições K&R** (`effects_088A8B94.c`): uma função chamada com quantidades diferentes de argumentos por chamadores que batem é definida sem protótipo (`int f(a, b) DuelAct *a; int b; { … }`) e declarada `int f();`.
