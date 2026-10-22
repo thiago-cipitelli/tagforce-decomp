@@ -1,6 +1,5 @@
 // @range 0x08837B28-0x088390C4
 // @asm 0x08837B28-0x08837D10
-// @asm 0x08837FA4-0x08838468
 /* "HOGE" heap: a sorted table of block boundaries, each word holding an address and a free flag
    (block i spans ent[i].addr to ent[i + 1].addr). The table lives in a block of the heap itself
    and grows by doubling, moving to the lowest free block when possible. Allocation is best fit
@@ -150,7 +149,6 @@ void heap_stats(Heap *h, int *used, int *freed)
     }
 }
 
-#ifdef NON_MATCHING /* com a forma do original (cópia antes do crescimento no lugar, laço de best_fit com goto found, src/dst locais) os registradores s0..s3 saem invertidos: o original dá h=s3, want=s2, t=s1, ne=s0 */
 /* Doubles the table: in place when the block after it is free and large enough, otherwise in a
    new block (the old one is freed). Returns 1 when the table could stay in place. */
 int heap_grow_table(Heap *h)
@@ -159,6 +157,7 @@ int heap_grow_table(Heap *h)
     HeapEnt *ne;
     int want;
     int len;
+    int room;
 
     if (t[1].free) {
         if (t[2].addr - t[1].addr <= h->tabsize) {
@@ -178,14 +177,13 @@ int heap_grow_table(Heap *h)
         return 1;
     }
     want = h->tabsize << 1;
-    if (want <= h->tabsize + 0x40) {
-        return 0;
+    if (want > h->tabsize + 0x40) {
+        do {
+            if ((ne = heap_best_fit(h, want)) != 0)
+                goto found;
+            want = h->tabsize + (want - h->tabsize) / 2 & ~0xF;
+        } while (want > h->tabsize + 0x40);
     }
-    do {
-        if ((ne = heap_best_fit(h, want)) != 0)
-            goto found;
-        want = h->tabsize + (want - h->tabsize) / 2 & ~0xF;
-    } while (h->tabsize + 0x40 < want);
     return 0;
 found:
     len = h->tabsize;
@@ -196,21 +194,25 @@ found:
     ne->free = 0;
     len *= 2;
     h->ent = (HeapEnt *)ne->addr;
-    if (len < (int)(ne[1].addr - ne[0].addr)) {
-        HeapEnt *src, *dst;
+    room = ne[1].addr - ne[0].addr;
+    if (len < room) {
+        HeapEnt *src, *dst, *end;
 
-        for (src = h->ent + h->n, dst = src + 1; src >= ne + 1; src--) {
+        end = h->ent + h->n;
+        src = end;
+        for (dst = src + 1; src >= ne + 1; src--) {
             *dst-- = *src;
         }
         h->n++;
         ne[1].addr = ne[0].addr + len;
         ne[1].free = 1;
+        room = ne[1].addr - ne[0].addr;
     }
-    h->tabsize = ne[1].addr - ne[0].addr;
+    h->tabsize = room;
     h->level = ALLEGREX_MIN(3, h->level + 1);
     return 0;
 }
-#endif
+
 
 HeapEnt *heap_best_fit(Heap *h, unsigned int size)
 {
