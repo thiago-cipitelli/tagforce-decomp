@@ -5,14 +5,14 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-22 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 27,6% | 35,4% | 4547 / 11039 |
-| BOOT | 58,8% | 79,1% | 1777 / 2208 |
-| libduel_eng | 51,3% | 64,5% | 2663 / 3429 |
-| libhtml_view | 76,6% | 99,3% | 14 / 16 |
+| total | 27,9% | 35,4% | 4567 / 11039 |
+| BOOT | 59,2% | 79,1% | 1786 / 2208 |
+| libduel_eng | 51,5% | 64,5% | 2668 / 3429 |
+| libhtml_view | 100% | 100% | 16 / 16 |
 | liblabo | 100% | 100% | 13 / 13 |
-| libpassword | 86,3% | 100% | 32 / 33 |
-| libtutoriallist | 82,0% | 99,0% | 24 / 26 |
-| libduelrecord | 71,3% | 98,9% | 24 / 27 |
+| libpassword | 100% | 100% | 33 / 33 |
+| libtutoriallist | 89,5% | 99,8% | 25 / 26 |
+| libduelrecord | 92,2% | 99,9% | 26 / 27 |
 | demais 15 gmodules | 0% | 0% | 0 / 5287 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
@@ -317,7 +317,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`duel_result.c`](../src/libduel_eng/duel_result.c) | 0x088FF3FC-0x08900C94 | 5 | 2 | resultado de uma série de duelos em dupla, estatísticas do deck para as recompensas, marcas de uma vez no save, atualização dos 40 recordes de duelo, cálculo dos 82 bônus do duelo |
 | [`duel_finish.c`](../src/libduel_eng/duel_finish.c) | 0x08900C94-0x08901BA0 | 3 | 2 | fim do duelo: resultados, 118 títulos, tabela de personagens com busca binária |
 
-## libhtml_view (5 arquivos, 14 funções batendo, 2 em asm)
+## libhtml_view (5 arquivos, 16 funções batendo, 0 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -325,7 +325,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`lang_remap.c`](../src/libhtml_view/lang_remap.c) | 0x0880439C-0x08804414 | 1 | 0 | 0x0880439c: maps the config language id to the download-site language index |
 | [`html_url.c`](../src/libhtml_view/html_url.c) | 0x08804414-0x088044B8 | 1 | 0 | página inicial do visor: página de download do Tag Force no site da Konami conforme a região (jp, us, eu) |
 | [`save_path.c`](../src/libhtml_view/save_path.c) | 0x088044B8-0x08804508 | 1 | 0 | 0x088044b8: builds "/PSP/SAVEDATA/<GAMEID>" |
-| [`html_viewer.c`](../src/libhtml_view/html_viewer.c) | 0x08804508-0x088047F4 | 2 | 2 | sessão do sceUtilityHtmlViewer: parâmetros (pasta de download = pasta do save, 3 abas, 6 MB de memória no .bss) e a máquina de estados rede → visor → fim |
+| [`html_viewer.c`](../src/libhtml_view/html_viewer.c) | 0x08804508-0x088047F4 | 4 | 0 | sessão do sceUtilityHtmlViewer: parâmetros (pasta de download = pasta do save, 3 abas, 6 MB de memória no .bss) e a máquina de estados rede → visor → fim |
 
 ## liblabo (2 arquivos, 12 funções batendo, 0 em asm)
 
@@ -334,22 +334,22 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`labo_menu.c`](../src/liblabo/labo_menu.c) | 0x08804000-0x08804AD0 | 6 | 0 | entrada da cena 9 "Labo Debug Menu" (menu de desenvolvimento que ficou no jogo): máquina de estados com 12 estados, carga sob demanda dos gmodules de sub-tela, tabela de desenho por estado |
 | [`voicetest.c`](../src/liblabo/voicetest.c) | 0x08804AD0-0x088054F8 | 6 | 0 | teste de vozes do menu Labo ("Japanese Only"): personagem/sub/pack/voz, BGM e voz, fala lida de labo/voicetest.ehp; tabelas de BGM, formatos e rótulos SJIS |
 
-## libtutoriallist (4 arquivos, 24 funções batendo, 2 em asm)
+## libtutoriallist (4 arquivos, 25 funções batendo, 1 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`tlist_main.c`](../src/libtutoriallist/tlist_main.c) | 0x08804000-0x088042F4 | 5 | 0 | entrada da lista de tutoriais (init/update/result/draw, importada por libtitle, libstory e liblabo): heap do chamador ou FPL de 2 MB, lição pré-selecionada, fades, resultado |
-| [`tlist_draw.c`](../src/libtutoriallist/tlist_draw.c) | 0x088042F4-0x08805B0C | 8 | 2 | desenho: fundo bg.ehf, título, janela com duas abas, linhas com número e título em moldura 9-slice, cursor pulsante, barra de rolagem |
+| [`tlist_draw.c`](../src/libtutoriallist/tlist_draw.c) | 0x088042F4-0x08805B0C | 9 | 1 | desenho: fundo bg.ehf, título, janela com duas abas, linhas com número e título em moldura 9-slice, cursor pulsante, barra de rolagem |
 | [`tlist_res.c`](../src/libtutoriallist/tlist_res.c) | 0x08805B0C-0x08805F10 | 9 | 0 | leitura assíncrona de database/tutoriallist.ehp e tabela de recursos por id (qsort, busca binária, cache), letra do idioma |
 | [`tlist_list.c`](../src/libtutoriallist/tlist_list.c) | 0x08805F10-0x088065B0 | 2 | 0 | montagem das duas listas pelas lições concluídas (8-23 na aba 0, 0-7 em "básico"), altura dos títulos, rolagem até a pré-selecionada, entrada do pad |
 
-## libduelrecord (3 arquivos, 24 funções batendo, 3 em asm)
+## libduelrecord (3 arquivos, 26 funções batendo, 1 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`drec_main.c`](../src/libduelrecord/drec_main.c) | 0x08804000-0x08804690 | 13 | 0 | entrada do registro de duelos (init/update/draw, importada por libtitle, libstory e liblabo): máquina de estados da tela, carga de database/duelrecord.ehp e busca dos arquivos por id |
-| [`drec_draw.c`](../src/libduelrecord/drec_draw.c) | 0x08804690-0x088060A4 | 8 | 2 | desenho: cabeçalho com porcentagem, abas, linhas (número, texto, valor, tempo mm:ss, marca de novo piscando), barra de rolagem |
-| [`drec_build.c`](../src/libduelrecord/drec_build.c) | 0x088060A4-0x08806A2C | 3 | 1 | montagem das três abas a partir do save (40 contadores, 83 itens, 118 itens; aba 2 só com sysflag 7), porcentagem de conclusão, entrada do pad, tabelas de itens |
+| [`drec_draw.c`](../src/libduelrecord/drec_draw.c) | 0x08804690-0x088060A4 | 9 | 1 | desenho: cabeçalho com porcentagem, abas, linhas (número, texto, valor, tempo mm:ss, marca de novo piscando), barra de rolagem |
+| [`drec_build.c`](../src/libduelrecord/drec_build.c) | 0x088060A4-0x08806A2C | 4 | 0 | montagem das três abas a partir do save (40 contadores, 83 itens, 118 itens; aba 2 só com sysflag 7), porcentagem de conclusão, entrada do pad, tabelas de itens |
 
 ## libpassword (4 arquivos, 33 funções batendo, 0 em asm)
 
