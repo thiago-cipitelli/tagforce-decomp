@@ -1,5 +1,4 @@
 // @range 0x08847008-0x08848C68
-// @asm 0x08847008-0x08847330
 // @asm 0x08847768-0x08847FC8
 // @asm 0x0884876C-0x08848C68
 /* UCS-2 text layout and drawing. A FontLayout carries the pen; font_layout_wtext consumes one
@@ -14,21 +13,17 @@ int wcschr_index(const unsigned short *s, unsigned short c);
 unsigned short towupper(unsigned short c);
 int wc_is_lower(unsigned short c);
 
-#ifdef NON_MATCHING
-/* These functions keep the original structure (sizes within a few percent) but mwcc allocates
-   registers and the stack differently; they stay in asm and this C is the port's version. */
 /* Draws `text` at (x, y) in 26.6 inside width w (26.6), one line, breaking words that do not fit.
    Returns the number of characters consumed. */
 int font_draw_text(int x, int y, int w, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
+    unsigned short *p = text;
+    int n = 0;
     FontLayout st, saved;
     void *dl;
     unsigned int color, color2;
-    unsigned char sx, sy;
-    int n = 0;
     int r;
-    unsigned short *p;
 
     if (w < 0)
         return 0;
@@ -39,28 +34,23 @@ int font_draw_text(int x, int y, int w, unsigned short *text)
         f->dl = f->saved_dl;
     memset(&st, 0, sizeof st);
     st.xmax = x + w;
-    sx = f->size_x;
-    sy = f->size_y;
-    color = f->color;
-    color2 = f->color2;
+    st.y = y;
+    st.x = x;
+    st.size_x = st.cur_size_x = f->size_x;
+    st.size_y = st.cur_size_y = f->size_y;
+    st.color = f->color;
+    st.color2 = f->color2;
     st.max_glyphs = -1;
     if (f->flags & 4)
-        st.xmax -= 0x40;
-    st.y = y;
+        st.xmax = x + w - 0x40;
     if (f->flags & 0x8000) {
-        st.y = y + 0x1C0;
+        st.y += 0x1C0;
         st.ruby_xmax = st.xmax;
     }
-    st.x = x;
-    st.color = color;
-    st.color2 = color2;
-    st.size_x = sx;
-    st.size_y = sy;
-    st.cur_size_x = sx;
-    st.cur_size_y = sy;
+    color = st.color;
+    color2 = st.color2;
     memcpy(&saved, &st, sizeof st);
     r = font_layout_wtext(f, &st, text, 0);
-    p = text;
     while (r < 0) {
         font_layout_end(f, &saved);
         p += st.consumed;
@@ -68,7 +58,7 @@ int font_draw_text(int x, int y, int w, unsigned short *text)
         st.consumed = 0;
         if (p == text)
             break;
-        st.nglyphs = st.max_glyphs; /* (sic) copied from the original: local_c = local_54 */
+        st.nglyphs = saved.nglyphs;
         memcpy(&saved, &st, sizeof st);
         r = font_layout_wtext(f, &st, p, 0);
     }
@@ -83,15 +73,13 @@ int font_draw_text(int x, int y, int w, unsigned short *text)
     if (f->flags & 0x8000)
         st.y -= 0x1C0;
     f->cursor_x = st.x;
-    f->cursor_y = f->unk50c3c + st.y + f->line_h * sy / 20;
+    f->cursor_y = f->unk50c3c + (st.y + f->line_h * st.size_y / 20);
     f->color = color;
     f->color2 = color2;
-    f->size_x = sx;
-    f->size_y = sy;
+    f->size_x = st.size_x;
+    f->size_y = st.size_y;
     return n;
 }
-
-#endif
 
 /* Draws word-wrapped text in the w x h box (26.6); at most max_glyphs glyphs (-1 = all).
    Returns the number of characters consumed. */
@@ -190,7 +178,7 @@ int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max
     return n;
 }
 
-#ifdef NON_MATCHING /* registradores/pilha diferentes (forma do original) */
+#ifdef NON_MATCHING /* forma do original, mas registradores/pilha diferentes (fica em asm; este C é a versão do port) */
 /* Lays out one line of UCS-2 text into f->cmds. Tags: $R...(ruby) $f $F (lower/upper small caps)
    $Cn (color) $$ (literal). Returns 0 at end of text, 1 at a line break (when `wrap`),
    2 when max_glyphs is reached, -1 when the command buffer is full. */
@@ -569,7 +557,7 @@ int font_wtext_lines(int w, unsigned short *text)
     return st.y + step;
 }
 
-#ifdef NON_MATCHING /* registradores/pilha diferentes (forma do original) */
+#ifdef NON_MATCHING /* forma do original, mas registradores/pilha diferentes (fica em asm; este C é a versão do port) */
 /* Measures one line of text with the same rules as font_layout_wtext but emits no commands.
    Returns the pen x after the text (26.6). */
 int font_layout_text(FontCtx *f, FontLayout *st, unsigned short *text, int wrap)
