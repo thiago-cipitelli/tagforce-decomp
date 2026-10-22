@@ -164,79 +164,76 @@ int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned
 /* Width in 26.6 of the run of non-breakable characters starting at p. */
 int font_run_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned short *p)
 {
-    unsigned short c = *p;
-    char upper = st->force_upper;
-    unsigned int sx = st->cur_size_x;
+    unsigned short c;
+    unsigned char upper = st->force_upper;
+    unsigned char sx = st->cur_size_x;
     unsigned short flags = st->flags;
     int w = 0;
-    unsigned short *next;
     unsigned short t;
     int cls, slot;
 
-    for (;;) {
-        if (c == 0)
-            return w;
-        next = p + 1;
-        if (c < 0x20)
-            return w;
-        if (c == '$') {
-            t = *next;
-            if (t == 'R') {
-                next = p + 2;
-            } else if (t == 'f') {
-                upper = 0;
-                next = p + 2;
-            } else if (t == 'F') {
-                upper = 1;
-                next = p + 2;
-            } else {
-                if (t != 'C')
-                    goto glyph;
-                next = p + 3;
+    while ((c = *p++) != 0) {
+        if (c >= 0x20) {
+            if (c == '$') {
+                switch (*p) {
+                case 'C':
+                    p += 2;
+                    continue;
+                case 'F':
+                    upper = 1;
+                    p++;
+                    continue;
+                case 'f':
+                    upper = 0;
+                    p++;
+                    continue;
+                case 'R':
+                    p++;
+                    continue;
+                }
             }
-        } else {
-        glyph:
             if ((f->flags & 0x4000) || upper != 0) {
                 if (wc_is_upper(c) == 0) {
                     c = towupper(c);
                     if (!(flags & 0x10)) {
                         flags |= 0x10;
-                        sx = st->size_x * 10 / 12 & 0xFF;
+                        sx = st->size_x * 10 / 12;
                     }
                 } else if (flags & 0x10) {
                     sx = st->size_x;
-                    flags = 0;
+                    flags &= ~0x10;
                 }
             }
             cls = wc_break_class(c);
             if (cls == 0)
                 return w;
             if (cls == 1) {
-                t = wtext_next_char(f, next, 0);
+                t = wtext_next_char(f, p, 0);
                 if ((f->flags & 0x4000) || upper != 0) {
                     if (wc_is_upper(t) == 0) {
                         t = towupper(t);
                         if (!(flags & 0x10)) {
                             flags |= 0x10;
-                            sx = st->size_x * 10 / 12 & 0xFF;
+                            sx = st->size_x * 10 / 12;
                         }
                     } else if (flags & 0x10) {
                         sx = st->size_x;
-                        flags = 0;
+                        flags &= ~0x10;
                     }
                 }
-                cls = wc_break_class(t);
-                if (cls < 1) {
+                if (wc_break_class(t) <= 0) {
                     slot = font_glyph_cache(img, c);
-                    return w + f->slots[slot].advance * (int)sx / 20;
+                    w += f->slots[slot].advance * sx / 20;
+                    return w;
                 }
             }
             slot = font_glyph_cache(img, c);
-            w += f->slots[slot].advance * (int)sx / 20;
+            w += f->slots[slot].advance * sx / 20;
+        } else {
+            return w;
         }
-        c = *next;
-        p = next;
     }
+    return w;
 }
 
 #endif
