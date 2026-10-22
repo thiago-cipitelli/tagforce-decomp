@@ -301,7 +301,7 @@ int _lseek(int fd, int offset, int whence)
 #ifdef NON_MATCHING /* GCC: loads globals through %hi/%lo */
 SceUID libc_get_thread_module(void);
 SceUID heap_get_current(void);
-void libc_run_atexit(SceUID mod);
+void _reclaim_reent(SceUID mod);
 SceUID libc_module_of(SceUID mod);
 
 /* newlib _exit: only the main thread may call it; unloads a sub-module or exits the game. */
@@ -315,7 +315,7 @@ void _exit(int status)
         sceKernelPrintf("libc:%s: should be called from main thread\n", "_exit");
         sceKernelExitThread(status);
     }
-    libc_run_atexit(cur);
+    _reclaim_reent(cur);
     mod = libc_module_of(cur);
     if (ModuleMgrForUser_F0A26395() != mod) {
         sceKernelStopModule(mod, 0, 0, &res, 0);
