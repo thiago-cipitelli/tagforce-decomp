@@ -1,7 +1,8 @@
 // @range 0x08845AC0-0x08847008
 // @data 0x088EE8C4-0x088EE904
 // @asm 0x08845AC0-0x08845DDC
-// @asm 0x08845E10-0x0884638C
+// @asm 0x08845E10-0x08846010
+// @asm 0x088462E8-0x0884638C
 // @asm 0x0884641C-0x088466AC
 // @asm 0x088469E8-0x08846EA0
 /* Font layer: libfont.prx setup, the 256-slot glyph atlas with LRU replacement, glyph quads,
@@ -16,7 +17,7 @@ int ehfile_load_module(void *fs, const char *name);
 int region_get(void);
 void mbs_set_tables(void *a, void *b);
 int mbs_to_wcs(unsigned short *dst, unsigned int n, const char *src);
-void vsprintf_r(char *buf, const char *fmt, va_list ap);
+int vsprintf(char *buf, const char *fmt, va_list ap);
 void *dl_select_layer(int layer, unsigned int *size_out);
 void dl_set_list(void *list);
 void *dl_push(void *list, void *words, int n);
@@ -144,15 +145,16 @@ unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned sho
         font_dl_end();
     return x << 16 | (y & 0xFFFF);
 }
+#endif
 
 void font_printf(int x, int y, const char *fmt, ...)
 {
-    char buf[1084];
+    char buf[1024];
     unsigned short wbuf[1024];
     va_list ap;
 
     va_start(ap, fmt);
-    vsprintf_r(buf, fmt, ap);
+    vsprintf(buf, fmt, ap);
     memset(wbuf, 0, sizeof wbuf);
     font_mbs_to_wcs(wbuf, 0x800, buf);
     font_draw_wtext_simple(x << 6, y << 6, 0, 480 << 6, wbuf);
@@ -160,12 +162,12 @@ void font_printf(int x, int y, const char *fmt, ...)
 
 void font_printf_box(int x, int y, int x0, int xmax, const char *fmt, ...)
 {
-    char buf[1108];
+    char buf[1024];
     unsigned short wbuf[1024];
     va_list ap;
 
     va_start(ap, fmt);
-    vsprintf_r(buf, fmt, ap);
+    vsprintf(buf, fmt, ap);
     memset(wbuf, 0, sizeof wbuf);
     font_mbs_to_wcs(wbuf, 0x800, buf);
     font_draw_wtext_simple(x << 6, y << 6, x0 << 6, xmax << 6, wbuf);
@@ -173,12 +175,12 @@ void font_printf_box(int x, int y, int x0, int xmax, const char *fmt, ...)
 
 void font_printf64(int x, int y, const char *fmt, ...)
 {
-    char buf[1084];
+    char buf[1024];
     unsigned short wbuf[1024];
     va_list ap;
 
     va_start(ap, fmt);
-    vsprintf_r(buf, fmt, ap);
+    vsprintf(buf, fmt, ap);
     memset(wbuf, 0, sizeof wbuf);
     font_mbs_to_wcs(wbuf, 0x800, buf);
     font_draw_wtext_simple(x, y, 0, 480, wbuf);
@@ -186,16 +188,17 @@ void font_printf64(int x, int y, const char *fmt, ...)
 
 void font_printf_box64(int x, int y, int x0, int xmax, const char *fmt, ...)
 {
-    char buf[1108];
+    char buf[1024];
     unsigned short wbuf[1024];
     va_list ap;
 
     va_start(ap, fmt);
-    vsprintf_r(buf, fmt, ap);
+    vsprintf(buf, fmt, ap);
     memset(wbuf, 0, sizeof wbuf);
     font_mbs_to_wcs(wbuf, 0x800, buf);
     font_draw_wtext_simple(x, y, x0, xmax, wbuf);
 }
+#ifdef NON_MATCHING
 
 /* Binary search in the sorted index: slot of `code`, or 0x100 + insertion position. */
 int font_glyph_find(unsigned short code)
