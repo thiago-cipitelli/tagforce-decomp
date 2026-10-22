@@ -55,7 +55,7 @@ int duel_088619FC(DuelAct *a, int b)
 
     switch (duel_w_08914904) {
     case 0:
-        if (duel_0886B4E8() != 0) {
+        if (duel_0886B4E8(a) != 0) {
             duel_0884ACD8(q, 0x107);
             return -1;
         }
