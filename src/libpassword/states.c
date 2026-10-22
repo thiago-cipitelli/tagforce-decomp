@@ -32,7 +32,7 @@ void digits_refresh(void)
     }
 }
 
-#ifdef NON_MATCHING /* rand3_seeds/rand3_slot são imports de variável do BOOT (sceVstub) que ficam em 0 no ELF relocado; o link não tem como definir símbolos em 0 */
+#ifdef NON_MATCHING /* o C bate byte a byte (check_file OK); só o link falha: rand3_seeds/rand3_slot são imports de variável do BOOT (.rodata.sceVstub, NIDs AE605361/F464F466) que ficam em 0 no ELF relocado e o linker script não define símbolos em 0 */
 /* scene 1: intro message; keys flash at random while it types out */
 void st_intro(void)
 {
