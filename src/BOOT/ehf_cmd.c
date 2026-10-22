@@ -1,6 +1,5 @@
 // @range 0x08822F84-0x08823BD0
 // @asm 0x088234C4-0x088236D0
-// @asm 0x08823AD0-0x08823B6C
 // @data 0x088ED200-0x088ED230
 /* EHF command handlers, part 1: frame windows and loops, raw GE words, and the transform
    commands (translate, rotate, scale/rotate/translate from typed arguments, matrices, quaternions,
@@ -13,7 +12,6 @@
 #include "ehfcmd.h"
 
 extern unsigned int *postfx_param;     /* 0x088FA000 list saved by command 0xA */
-
 
 /* 0xA: draws the children into layer arg0, then returns to the previous list. */
 int ehf_cmd_layer(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
@@ -438,26 +436,28 @@ int ehf_cmd_rotate(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     return 2;
 }
 
-#ifdef NON_MATCHING /* the original interleaves the three components */
 /* 0x10009: rotation start + (speed + accel * time) * time. */
 int ehf_cmd_spin_accel(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
 {
     float *a = cmd->a.f;
     Vec4 r;
     float time;
+    float vx, vy, vz;
 
     if (phase != 5) {
         return 0;
     }
     time = node->time;
-    r.x = a[3] + (a[0] + a[6] * time) * time;
-    r.y = a[4] + (a[1] + a[7] * time) * time;
-    r.z = a[5] + (a[2] + a[8] * time) * time;
+    vx = a[0] + a[6] * time;
+    vy = a[1] + a[7] * time;
+    vz = a[2] + a[8] * time;
+    r.x = a[3] + vx * time;
+    r.y = a[4] + vy * time;
+    r.z = a[5] + vz * time;
     mtx_push();
     mtx_rotate_xyz(&r);
     return 2;
 }
-#endif
 
 /* 0x1000A: rotation by a quaternion. */
 int ehf_cmd_quat(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)

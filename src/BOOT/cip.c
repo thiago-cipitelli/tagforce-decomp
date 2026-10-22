@@ -2,7 +2,6 @@
 // @data 0x088EF28C-0x088EF468
 // @rodata 0x088B4960-0x088B499C
 // @asm 0x08853C94-0x08853D1C
-// @asm 0x088543CC-0x08854430
 // @asm 0x0885478C-0x0885488C
 /* Scene stack (push/pop/reset of gmodule scenes by id, with the transition record the scene reads
    on start) and the CIP/CPM card image reader: slot ring filled by ehfile_read_async callbacks,
@@ -280,26 +279,20 @@ int cip_query(void *handle, int id, int variant)
     return 0;
 }
 
-#ifdef NON_MATCHING /* only scheduling differs: the original copies the handle to t2 at the size test, not at entry */
 /* ehfile callback for the first 0x800 bytes: fetch the rest of the table if it is larger. */
 int cip_read_cb(void *handle, int n)
 {
-    Cip *c = (Cip *)handle;
-    int r;
+    Cip *c;
 
     if (n <= 0)
-        r = 0;
-    else if (c->hdr.table_size <= 0x800)
-        r = cip_header_ready(c, n);
-    else {
-        ehfile_read_async(c->dir, c->path, (unsigned char *)&c->hdr + 0x800, 0x800, c->hdr.table_size - 0x800,
-                          (EhfileCallback)cip_header_ready, c);
-        r = 1;
-    }
-    return r;
+        return 0;
+    c = (Cip *)handle;
+    if (c->hdr.table_size <= 0x800)
+        return cip_header_ready(c, n);
+    ehfile_read_async(c->dir, c->path, (unsigned char *)&c->hdr + 0x800, 0x800, c->hdr.table_size - 0x800,
+                      (EhfileCallback)cip_header_ready, c);
+    return 1;
 }
-
-#endif
 
 int cip_header_ready(Cip *c, int n)
 {

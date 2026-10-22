@@ -1,7 +1,7 @@
 // @range 0x088243E4-0x088253FC
 // @asm 0x088243E4-0x088245CC
 // @asm 0x08824830-0x088249E4
-// @asm 0x08825000-0x088252EC
+// @asm 0x08825094-0x088252EC
 // @data 0x088ED284-0x088ED380
 /* EHF command handlers, part 4: an axis billboard turned towards a fixed up vector, points carried
    by a bone, trails (a ring of positions, one or two channels, optionally smoothed by a cyclic
@@ -40,16 +40,6 @@ Vec4 ehf_up = { 0.0f, 1.0f, 0.0f, 1.0f };
 Mat4 ehf_billboard_basis2 = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 unsigned char ehf_fmt_nnn[4] = "nnn";
 char ehf_fmt_ffff[8] = "FFff";
-unsigned char ehf_fmt_f[4] = "F";
-/* Axis gizmo of ehf_cmd_axis (ehf_prim.c): two sets of three vertices (vertex type 0x1E0). */
-unsigned int ehf_axis_vtx[0x90 / 4] = {
-    0x00000000, 0x00000000, 0x3F800000, 0x00000000, 0x3F5DB3D7, 0x00000000,
-    0x00000000, 0x00000000, 0x3F800000, 0xBF000000, 0xBF5DB3D7, 0x00000000,
-    0x00000000, 0x00000000, 0x3F800000, 0x3F000000, 0xBF5DB3D7, 0x00000000,
-    0x00000000, 0x00000000, 0x3F800000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x3F800000, 0xBF000000, 0xBFDDB3D7, 0x00000000,
-    0x00000000, 0x00000000, 0x3F800000, 0x3F000000, 0xBFDDB3D7, 0x00000000,
-};
 
 extern EhfTrail *ehf_trail;            /* 0x088FA004 trail of the command being drawn */
 
@@ -370,7 +360,6 @@ int ehf_cmd_set_vec(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the address of the format lands after the first byte copy in the original */
 /* 0x10311: converts the argument 1 into *arg0. */
 int ehf_cmd_set_arg(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
 {
@@ -380,19 +369,24 @@ int ehf_cmd_set_arg(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     case 5: {
         void *v = cmd->a.p[0];
         void *out[1] = { v };
-        unsigned char fmt[2];
-        char *f;
+        char fmt[2] = "F";
 
-        f = (char *)fmt;
-        fmt[0] = ehf_fmt_f[0];
-        fmt[1] = ehf_fmt_f[1];
-        ehf_cmd_args(0, cmd, 1, out, f);
+        ehf_cmd_args(0, cmd, 1, out, fmt);
         return 0;
     }
     }
     return 0;
 }
-#endif
+
+/* Axis gizmo of ehf_cmd_axis (ehf_prim.c): two sets of three vertices (vertex type 0x1E0). */
+unsigned int ehf_axis_vtx[0x90 / 4] = {
+    0x00000000, 0x00000000, 0x3F800000, 0x00000000, 0x3F5DB3D7, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0xBF000000, 0xBF5DB3D7, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0x3F000000, 0xBF5DB3D7, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0xBF000000, 0xBFDDB3D7, 0x00000000,
+    0x00000000, 0x00000000, 0x3F800000, 0x3F000000, 0xBFDDB3D7, 0x00000000,
+};
 
 #ifdef NON_MATCHING /* register allocation and the copies of the key vectors differ */
 /* 0x10312: *arg0 interpolated between the keys (frame, vector) arg1, arg6, ... at the node frame. */

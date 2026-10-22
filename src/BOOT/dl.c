@@ -1,6 +1,5 @@
 // @range 0x08839F50-0x0883CEB0
 // @asm 0x0883A4E4-0x0883A6CC
-// @asm 0x0883AFAC-0x0883B0DC
 // @asm 0x0883B2A0-0x0883B684
 // @asm 0x0883BF38-0x0883C040
 // @asm 0x0883CBE8-0x0883CDB4
@@ -584,16 +583,14 @@ unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h)
     return list;
 }
 
-#ifdef NON_MATCHING /* scheduling of the vertex type fields differs */
 /* Opens a primitive whose vertex count is patched by dl_prim_end. */
 unsigned int *dl_prim_begin(unsigned int *list, unsigned int vtype, int prim, void *indices, void *vertices)
 {
     SysConf *c = &sys_conf;
     unsigned int cmd[8] = { 0 };
+    int n = 0;
     unsigned int ib = vtype >> 11 & 3;
-    int n;
 
-    n = 0;
     cmd[n++] = ib << 11 | 0x12000000 | (vtype >> 7 & 3) << 7;
     if (ib != 0) {
         cmd[n++] = BASE(indices);
@@ -607,7 +604,6 @@ unsigned int *dl_prim_begin(unsigned int *list, unsigned int vtype, int prim, vo
     cmd[n++] = 0x09000000;
     return dl_push(list, cmd, n);
 }
-#endif
 
 unsigned int *dl_prim_end(unsigned int *list)
 {

@@ -1,6 +1,5 @@
 // @range 0x0882923C-0x0882AD90
-// @asm 0x088292C0-0x08829308
-// @asm 0x08829798-0x08829AC4
+// @asm 0x08829880-0x08829AC4
 // @asm 0x08829B10-0x08829C00
 // @asm 0x08829C20-0x08829F60
 // @asm 0x0882A538-0x0882A99C
@@ -139,15 +138,14 @@ int efs_heap_init(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* the constant 1 lands in $v0 instead of $a0 */
-void efs_set_heap(void *heap)
+int efs_set_heap(void *heap)
 {
     EfsMgr *e = &efs;
     memset(e, 0, 0x91A0);
     e->heap_ext = 1;
     e->heap = heap;
+    return 1;
 }
-#endif
 
 int efs_term(void)
 {
@@ -289,15 +287,14 @@ int efs_inst_free(EfsInst *inst)
     return 1;
 }
 
-#ifdef NON_MATCHING /* the instance goes to $s1 through a handle parameter; one store order differs */
 /* Sends message `phase` (with argument words a, b) to the commands of the instance. */
 int efs_send(void *h, int phase, int a, int b)
 {
-    EfsInst *inst = h;
+    EfsInst *inst;
     EfsNode n;
     int kill;
 
-    if (inst == 0) {
+    if ((inst = h) == 0) {
         return 0;
     }
     if (inst->mem == 0) {
@@ -319,7 +316,6 @@ int efs_send(void *h, int phase, int a, int b)
     efs.kill = kill;
     return 1;
 }
-#endif
 
 #ifdef NON_MATCHING /* one addu operand order (index + table) */
 /* Root `name` in the loaded files (binary search in each file's sorted table). */

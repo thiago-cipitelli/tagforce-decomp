@@ -8,7 +8,6 @@
 // @asm 0x088569D4-0x08856C88
 // @asm 0x08856E08-0x08857148
 // @asm 0x08857DD8-0x088580AC
-// @asm 0x08858C7C-0x08858EE4
 /* Card list / card panel drawing: the card picture (read through cip.c into VRAM and drawn with
    a cross-fade when the card changes), its frame from cil_0000<l>.gim, level stars, attribute
    and type icons, ATK/DEF, the description box with scroll bar and blinking arrows, and the
@@ -1900,15 +1899,16 @@ void cardlist_view_to_panel(CardPanel *p, CardView *v)
 }
 
 /* Scroll bar of the description plus the two blinking arrows; timers[0..1] up, [2..3] down. */
-#ifdef NON_MATCHING /* register allocation and scheduling differ */
 void *card_draw_desc_arrows(void *list, int x, int y, int h, int w, CardView *v, int *timers)
 {
     int hh = h - 0x10;
+    int hh2 = hh - 2;
     unsigned int scroll = v->desc_scroll;
     unsigned int total = ((unsigned int)v->desc_max >> 6) + w;
-    int pos = (scroll >> 6) * (hh - 2) / total;
+    int pos = (scroll >> 6) * hh2 / total;
+    int st;
 
-    list = cardlist_draw_scrollbar(list, x, y + 8, hh, pos, ceil_to_int((float)w * (float)(hh - 2) / (float)(int)total));
+    list = cardlist_draw_scrollbar(list, x, y + 8, hh, pos, ceil_to_int((float)w * (float)hh2 / (float)(int)total));
     if (v->desc_scroll != 0) {
         if (timers[0] == 0) {
             timers[0] = gfx_get_state()[0];
@@ -1920,7 +1920,7 @@ void *card_draw_desc_arrows(void *list, int x, int y, int h, int w, CardView *v,
         timers[0] = 0;
         timers[1] = 0;
     }
-    list = cardlist_draw_arrow(list, x, y, 1, gfx_get_state()[1], timers[0], timers[1], gfx_get_state()[0]);
+    list = cardlist_draw_arrow(list, x, y, 1, (st = gfx_get_state()[1]), timers[0], timers[1], gfx_get_state()[0]);
     if ((unsigned int)v->desc_scroll < (unsigned int)v->desc_max) {
         if (timers[2] == 0) {
             timers[2] = gfx_get_state()[0];
@@ -1932,9 +1932,8 @@ void *card_draw_desc_arrows(void *list, int x, int y, int h, int w, CardView *v,
         timers[2] = 0;
         timers[3] = 0;
     }
-    return cardlist_draw_arrow(list, x, y + 9 + hh, 0, gfx_get_state()[1], timers[2], timers[3], gfx_get_state()[0]);
+    return cardlist_draw_arrow(list, x, y + 9 + hh, 0, (st = gfx_get_state()[1]), timers[2], timers[3], gfx_get_state()[0]);
 }
-#endif
 
 void *card_draw_counter_icon(void *list, int x, int y, int i)
 {

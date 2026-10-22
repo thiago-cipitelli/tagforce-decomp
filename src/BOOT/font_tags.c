@@ -1,7 +1,7 @@
 // @range 0x0884900C-0x0884A9B4
 // @data 0x088EE9E0-0x088EEA30
 // @asm 0x0884900C-0x08849B14
-// @asm 0x08849BEC-0x0884A430
+// @asm 0x08849C9C-0x0884A430
 // @asm 0x0884A4DC-0x0884A91C
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
    capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph
@@ -356,20 +356,17 @@ void *font_dl_glyph_header(void *dl, unsigned int color)
     return dl_push(dl, cmds, 20);
 }
 
-#ifdef NON_MATCHING
 /* Kept in asm: register allocation differs; font_layout_end is 1.2 KB. */
 /* Shadow color for text color c: alpha halved for light colors, quartered for dark ones. */
 unsigned int font_shadow_color(unsigned int c)
 {
     unsigned int a = (c >> 24) & 0xFF;
-    unsigned int t;
 
-    if ((((c & 0xFF0000) >> 16) * 114 + (c & 0xFF) * 299 + ((c & 0xFF00) >> 8) * 587) / 1000 < 0x80)
-        t = a << 6;
-    else
-        t = a << 7;
-    return (t / 255) << 24;
+    if (((c & 0xFF) * 299 + ((c & 0xFF00) >> 8) * 587 + ((c & 0xFF0000) >> 16) * 114) / 1000 < 0x80)
+        return ((a << 6) / 255) << 24;
+    return ((a << 7) / 255) << 24;
 }
+#ifdef NON_MATCHING
 
 /* Emits the ruby characters of "(...)" at p as glyph commands above the base text. */
 unsigned short *font_ruby_layout(FontCtx *f, FontLayout *st, unsigned short *p)
