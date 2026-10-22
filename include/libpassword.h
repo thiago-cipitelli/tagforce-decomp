@@ -109,7 +109,6 @@ extern int cip_is_idle(void *c);
 extern unsigned int cip_read_card(void *handle, int id, int variant);
 extern void cardlist_init(void *cfg);
 extern void cardlist_clear(void);
-extern void card_draw(void *list, int x, int y, unsigned int id);
 extern int card_id_from_password(unsigned int pass);
 extern int card_get_flag31(int id);
 extern unsigned short *card_get_name(int id);
