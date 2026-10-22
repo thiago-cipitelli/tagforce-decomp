@@ -1,6 +1,6 @@
 // @range 0x0884A9B4-0x0884C8D0
 // @data 0x088EEA58-0x088EEBA0
-// @asm 0x0884A9B4-0x0884BCF0
+// @asm 0x0884ACB4-0x0884BCF0
 /* Menu widget: a window (menu.c) hosting a scrollable list with a blinking cursor and/or a row of
    OK / YES / NO / CANCEL buttons (buttom_icon1.gim), driven by the pad. */
 #include "psp.h"
@@ -9,6 +9,7 @@
 #include "game.h"
 #include "font.h"
 #include "menu.h"
+#include "allegrex.h"
 
 unsigned char *syspack_get(void);
 void *ehp_find(void *pack, const char *name, int flags);
@@ -51,55 +52,56 @@ unsigned short *menu_button_labels[6][5] = {
 unsigned char menu_button_bits[5] = { 0x00, 0x02, 0x12, 0x0C, 0x1C };
 char buttom_icon1_gim[] = "buttom_icon1.gim"; /* (sic) the icon sheet of the buttons and arrows */
 
-#ifdef NON_MATCHING
-/* menu_open, menu_draw and menu_update: structure follows the original, register allocation does not.
-   Kept in asm. */
 /* Sizes the window to its list and buttons, loads the icons and opens it. */
 void menu_open(MenuWidget *w)
 {
     MenuItemDef *d = &w->def;
-    unsigned int rows, n, style;
-    int cw, ch, min_w;
-    unsigned char set, b, i, k;
+    int n, cw, ch, min_w;
+    unsigned char *pack;
+    unsigned int bits;
+    int b;
+    int i;
+    int k;
 
     w->state = 1;
     menu_init(&w->menu, w->heap);
     menu_add_item(&w->menu, d);
     if (d->auto_size != 0) {
-        rows = w->rows;
+        n = w->rows;
         cw = 0;
         min_w = 0;
-        if (rows == 0)
-            rows = w->count;
-        n = w->count;
-        if (n >= rows)
-            n = rows;
-        style = w->style;
-        if (style != 0) {
-            if (style & 1)
-                k = w->item_w * n;
+        if (n == 0)
+            n = w->count;
+        if (w->count < n)
+            n = w->count;
+        if (w->style != 0) {
+            cw = d->pad_l + d->pad_r + 9;
+            if (w->style & 1)
+                cw += w->item_w * n;
             else
-                k = w->item_w;
-            cw = d->pad_l + d->pad_r + 9 + (style & 1 ? w->item_w * n : w->item_w);
+                cw += w->item_w;
         }
-        set = w->buttons;
-        if (set != 0) {
-            if (set == 4)
-                min_w = 0xE3;
-            else if (set == 3)
-                min_w = 0xA7;
-            else if (set == 2)
-                min_w = 0xA7;
-            else if (set == 1)
-                min_w = 0x57;
+        if (w->buttons != 0) {
+        switch (w->buttons) {
+        case 1:
+            min_w = 0x57;
+            break;
+        case 2:
+        case 3:
+            min_w = 0xA7;
+            break;
+        case 4:
+            min_w = 0xE3;
+            break;
         }
-        if (cw < min_w)
-            cw = min_w;
+        }
+        cw = ALLEGREX_MAX(cw, min_w);
         if (d->w < cw)
             d->w = cw;
-        ch = menu_cursor_y(&w->menu, d) - d->y + d->pad_b + 5;
-        if (style != 0) {
-            if (style & 1)
+        ch = menu_cursor_y(&w->menu, d) - d->y;
+        ch += d->pad_b + 5;
+        if (w->style != 0) {
+            if (w->style & 1)
                 ch += w->item_h;
             else
                 ch += w->item_h * n;
@@ -115,25 +117,24 @@ void menu_open(MenuWidget *w)
     if (w->cursor_h == 0)
         w->cursor_h = w->item_h;
     if (w->icon_gim == 0) {
-        if (syspack_get() != 0)
-            w->icon_gim = ehp_find(syspack_get(), buttom_icon1_gim, 0);
+        pack = syspack_get();
+        if (pack != 0)
+            w->icon_gim = ehp_find(pack, buttom_icon1_gim, 0);
     }
     if (w->buttons != 0) {
+        bits = menu_button_bits[w->buttons];
         b = w->button;
         k = b;
-        for (i = 0; i < 8; i++) {
-            if (menu_button_bits[w->buttons] & (1 << (k & 7))) {
+        for (i = 0; i < 8; i++, k++) {
+            if (bits & (1 << (k & 7))) {
                 b = (b + i) & 7;
                 break;
             }
-            k++;
         }
         w->button = b;
     }
-    if (w->style != 0) {
-        if (w->skip_disabled && (w->disabled >> (w->scroll + w->cursor)) & 1)
-            menu_cursor_next(w);
-    }
+    if (w->style != 0 && w->skip_disabled && (w->disabled >> (w->scroll + w->cursor)) & 1)
+        menu_cursor_next(w);
     if (d->open_anim < 1) {
         w->state = 3;
     } else {
@@ -142,6 +143,9 @@ void menu_open(MenuWidget *w)
     }
 }
 
+#ifdef NON_MATCHING
+/* menu_draw and menu_update: structure follows the original, register allocation does not.
+   Kept in asm. */
 /* Draws the window, its list (with cursor, highlights and arrows) and the buttons; the window
    alpha follows the open/close animation of the item. */
 void menu_draw(void **dl, MenuWidget *w)
