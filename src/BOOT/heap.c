@@ -1,7 +1,8 @@
 // @range 0x08837B28-0x088390C4
 // @asm 0x08837B28-0x08837D10
 // @asm 0x08837FA4-0x08838468
-// @asm 0x0883864C-0x088390C4
+// @asm 0x0883864C-0x08838AF0
+// @asm 0x08838EC8-0x088390C4
 /* "HOGE" heap: a sorted table of block boundaries, each word holding an address and a free flag
    (block i spans ent[i].addr to ent[i + 1].addr). The table lives in a block of the heap itself
    and grows by doubling, moving to the lowest free block when possible. Allocation is best fit
@@ -351,7 +352,6 @@ HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top)
 }
 #endif
 
-#ifdef NON_MATCHING /* temporaries of the second unrolled copy differ */
 /* Merges free block `e` with its free neighbours by removing boundaries. */
 int heap_merge(Heap *h, HeapEnt *e)
 {
@@ -377,16 +377,17 @@ int heap_merge(Heap *h, HeapEnt *e)
             h->n--;
         }
     } else if (e[1].free) {
+        HeapEnt *src, *dst; /* locais do ramo: com s/d os temporários do laço desenrolado mudam */
+
         end = h->ent + h->n;
-        d = e + 1;
-        for (s = e + 2; s <= end; s++) {
-            *d++ = *s;
+        dst = e + 1;
+        for (src = e + 2; src <= end; src++) {
+            *dst++ = *src;
         }
         h->n--;
     }
     return 1;
 }
-#endif
 
 #ifdef NON_MATCHING /* register allocation differs */
 /* Moves the table down into the free block in front of it when there is one. */
