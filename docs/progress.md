@@ -39,7 +39,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 
 **BOOT**: nenhum trecho sem C. Todo o `.text` está em arquivos `.c`; o que falta são as funções em `@asm` (C sob `NON_MATCHING`). Na parte do SDK compilada com GCC (libgu, newlib, libgcc, libvfpu, libccc, libfpu, libdeflt, libsas/libwave) as funções são `asm` do mwcc com C portável sob `#else`; ficam em `@asm` as que carregam dados por `lui`/`%lo`, que o assembler embutido não aceita (ver `docs/build.md`).
 
-## BOOT (107 arquivos, 1453 funções batendo, 398 em asm)
+## BOOT (107 arquivos, 1471 funções batendo, 369 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -83,16 +83,16 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`ehf_cmd3.c`](../src/BOOT/ehf_cmd3.c) | 0x08824040-0x088243E4 | 3 | 0 | handlers dos comandos EHF: janelas e laços de quadros, palavras GE cruas, transformações, matrizes por mensagem, esferas de visibilidade, billboards, matriz de osso, escala, tremor aleatório, rastros em anel de uma ou duas trilhas suavizados por spline cíclica, interpolação de chaves, callbacks |
 | [`ehf_cmd4.c`](../src/BOOT/ehf_cmd4.c) | 0x088243E4-0x088253FC | 13 | 2 | handlers dos comandos EHF: janelas e laços de quadros, palavras GE cruas, transformações, matrizes por mensagem, esferas de visibilidade, billboards, matriz de osso, escala, tremor aleatório, rastros em anel de uma ou duas trilhas suavizados por spline cíclica, interpolação de chaves, callbacks |
 | [`ehf_prim.c`](../src/BOOT/ehf_prim.c) | 0x088253FC-0x0882644C | 9 | 1 | gizmo de eixos e primitivas cujos vértices vêm de comandos seguintes: início com espaço na lista ou vértices externos, coordenadas de textura, cores, posições, fita voltada para a câmera |
-| [`particle.c`](../src/BOOT/particle.c) | 0x0882644C-0x08827030 | 6 | 2 | partículas EHF: pool com envelhecimento, emissor periódico com callbacks de posição/velocidade, geradores em caixa, caixa móvel e disco com o gerador rand3 |
+| [`particle.c`](../src/BOOT/particle.c) | 0x0882644C-0x08827030 | 8 | 0 | partículas EHF: pool com envelhecimento, emissor periódico com callbacks de posição/velocidade, geradores em caixa, caixa móvel e disco com o gerador rand3 |
 | [`particle2.c`](../src/BOOT/particle2.c) | 0x08827030-0x08827B8C | 6 | 0 | geradores em anel, tetraédrico, casca esférica e cone, posições levadas ao espaço do modelo, velocidades constante e radial, movimento, aceleração e arrasto |
-| [`particle3.c`](../src/BOOT/particle3.c) | 0x08827B8C-0x08828590 | 9 | 2 | geradores em anel, tetraédrico, casca esférica e cone, posições levadas ao espaço do modelo, velocidades constante e radial, movimento, aceleração e arrasto |
+| [`particle3.c`](../src/BOOT/particle3.c) | 0x08827B8C-0x08828590 | 10 | 1 | geradores em anel, tetraédrico, casca esférica e cone, posições levadas ao espaço do modelo, velocidades constante e radial, movimento, aceleração e arrasto |
 | [`ptcl_draw.c`](../src/BOOT/ptcl_draw.c) | 0x08828590-0x0882923C | 7 | 1 | partículas desenhadas como quads de faixa de triângulos no espaço da câmera, cor fixa ou por chaves de idade, textura, tamanho e uv do sprite |
 | [`efs.c`](../src/BOOT/efs.c) | 0x0882923C-0x0882AD90 | 21 | 5 | efeitos .efs: carga com relocação por bytecode, raízes nomeadas com busca binária, 0x300 instâncias em lista circular no heap de efeitos, interpretador de árvores de comandos por fase, argumentos por formato, comandos de instância aninhada |
-| [`camera.c`](../src/BOOT/camera.c) | 0x0882AD90-0x0882B65C | 17 | 1 | câmera com look-at e as quatro luzes do GE com bits de ativação reemitidos na lista |
-| [`tms.c`](../src/BOOT/tms.c) | 0x0882B65C-0x0882C428 | 10 | 2 | geometria TGMS: relocação, materiais com quatro camadas de textura, hooks de textura e desenho, callbacks de mapa de ambiente, prims com cache de oito matrizes de osso, culling pela caixa |
+| [`camera.c`](../src/BOOT/camera.c) | 0x0882AD90-0x0882B65C | 18 | 0 | câmera com look-at e as quatro luzes do GE com bits de ativação reemitidos na lista |
+| [`tms.c`](../src/BOOT/tms.c) | 0x0882B65C-0x0882C428 | 11 | 1 | geometria TGMS: relocação, materiais com quatro camadas de textura, hooks de textura e desenho, callbacks de mapa de ambiente, prims com cache de oito matrizes de osso, culling pela caixa |
 | [`model.c`](../src/BOOT/model.c) | 0x0882C428-0x0882D208 | 19 | 1 | modelos: geometria TGMS com matrizes de osso e de skin, animações TGMT com cross-fade, buffers de animação descomprimida, animação de material TGMA, cópias de materiais e texturas, duas passadas de desenho com stencil e contorno |
 | [`toon.c`](../src/BOOT/toon.c) | 0x0882D208-0x0882D9F0 | 3 | 1 | rampas de toon shading desenhadas na VRAM a partir das tabelas do contexto de desenho, hook de textura das camadas iluminadas pela luz 0, relocação TGMT |
-| [`anim.c`](../src/BOOT/anim.c) | 0x0882D9F0-0x0882ECAC | 5 | 2 | animação esquelética TGMT: percurso em profundidade da hierarquia, translação/rotação/escala por chaves Bezier e quatérnios com slerp, cross-fade entre duas animações, quatérnios compactados em 16 bits |
+| [`anim.c`](../src/BOOT/anim.c) | 0x0882D9F0-0x0882ECAC | 7 | 0 | animação esquelética TGMT: percurso em profundidade da hierarquia, translação/rotação/escala por chaves Bezier e quatérnios com slerp, cross-fade entre duas animações, quatérnios compactados em 16 bits |
 | [`ehfile.c`](../src/BOOT/ehfile.c) | 0x0882ECAC-0x0882FC3C | 0 | 0 | VFS, 29 funções |
 | [`ehf.c`](../src/BOOT/ehf.c) | 0x0882FC3C-0x08833420 | 15 | 8 | player de animações EHF, formato tipo Flash em twips: acessores de arquivo/instância, timeline com comandos de colocar/remover, pool de clips em listas circulares por profundidade, avanço por tick, desenho com máscara por stencil, transformação de cor e matrizes 2D |
 | [`ehp.c`](../src/BOOT/ehp.c) | 0x08833420-0x0883451C | 10 | 1 | pacotes EHP: busca binária por nome ou ponteiro, relocação por extensão com ptrs.txt, TGMA/TGMT, TMS, EHF e GIM, handlers registrados, carga síncrona e assíncrona, tabela de pacotes montados, projeção 2D |
@@ -101,7 +101,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`vram.c`](../src/BOOT/vram.c) | 0x08835F48-0x088362E8 | 1 | 1 | área de texturas na VRAM depois dos framebuffers: alocador linear, envio de um quadro de GIM para a VRAM, percurso dos blocos do GIM |
 | [`mtx.c`](../src/BOOT/mtx.c) | 0x088362E8-0x088370A4 | 30 | 0 | pilhas de matrizes por tipo do GE com a matriz corrente em M300 da VFPU: init, emissão/flush das sujas para a lista, salvar/restaurar estado, identidade, rotações, translação, escala, perspectiva, ortho, look-at, push/pop; blocos `asm` VFPU no C com equivalente em C para o port |
 | [`draw.c`](../src/BOOT/draw.c) | 0x088370A4-0x08837B28 | 0 | 1 | primitivas dentro da lista ou imediatas fechando e reabrindo a sublista, teste de esfera contra o frustum, flags de matriz suja |
-| [`heap.c`](../src/BOOT/heap.c) | 0x08837B28-0x088390C4 | 3 | 5 | heap HOGE: tabela ordenada de fronteiras com bit de livre, guardada num bloco do próprio heap e dobrada quando enche, alocação best fit com divisão pelo topo, liberação com fusão, compactação |
+| [`heap.c`](../src/BOOT/heap.c) | 0x08837B28-0x088390C4 | 7 | 1 | heap HOGE: tabela ordenada de fronteiras com bit de livre, guardada num bloco do próprio heap e dobrada quando enche, alocação best fit com divisão pelo topo, liberação com fusão, compactação |
 | [`transform.c`](../src/BOOT/transform.c) | 0x088390C4-0x08839A8C | 2 | 2 | splines cúbicas pelas chaves: termos de segunda derivada por sistema tridiagonal, aberto ou em anel, e avaliação num índice fracionário |
 | [`pad.c`](../src/BOOT/pad.c) | 0x08839A8C-0x08839F50 | 2 | 1 | controle: amostra por quadro com reaproveitamento, máscaras de borda e auto-repeat por botão, analógico dobrado em direcional com repetição própria, tempos de repetição pela taxa de quadros, ângulo do analógico ou do direcional |
 | [`dl.c`](../src/BOOT/dl.c) | 0x08839F50-0x0883CEB0 | 73 | 6 | listas de comandos do GE: heap em duas metades com tabela de 16 camadas encadeadas por JUMP, troca de camada, e uma função por estado ou primitiva do GE montando as palavras no stack e empurrando com dl_push: enable/disable, matrizes, luzes, material, textura, CLUT, névoa, scissor, testes, blend, dither, sprite, clear, cópia de imagem; SysConf com os campos reais |
@@ -114,17 +114,17 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`deck.c`](../src/BOOT/deck.c) | 0x08840DC4-0x08841BD0 | 23 | 0 | Stage progress, per-character deck slots, deck/recipe comparison, request flags, region and language, and the language-dependent name/message packs |
 | [`wstr.c`](../src/BOOT/wstr.c) | 0x08841BD0-0x088420B4 | 1 | 0 | charmap, wcs* |
 | [`wfmt.c`](../src/BOOT/wfmt.c) | 0x088420B4-0x088433F0 | 6 | 1 | formatação UCS-2 |
-| [`menu.c`](../src/BOOT/menu.c) | 0x088433F0-0x08843D78 | 1 | 2 | registro de itens de janela |
-| [`menu_draw.c`](../src/BOOT/menu_draw.c) | 0x08843D78-0x08845AC0 | 7 | 4 | moldura 9-slice |
-| [`font.c`](../src/BOOT/font.c) | 0x08845AC0-0x08847008 | 8 | 4 | cache de glifos sceFont |
+| [`menu.c`](../src/BOOT/menu.c) | 0x088433F0-0x08843D78 | 1 | 1 | registro de itens de janela |
+| [`menu_draw.c`](../src/BOOT/menu_draw.c) | 0x08843D78-0x08845AC0 | 8 | 3 | moldura 9-slice |
+| [`font.c`](../src/BOOT/font.c) | 0x08845AC0-0x08847008 | 9 | 2 | cache de glifos sceFont |
 | [`font_text.c`](../src/BOOT/font_text.c) | 0x08847008-0x08848C68 | 0 | 0 | layout de texto UCS-2 com tags $R/$C/$f/$F, só C sob `NON_MATCHING` |
 | [`font_flags.c`](../src/BOOT/font_flags.c) | 0x08848C68-0x0884900C | 0 | 0 | Font layer state accessors: layout flags, extra line spacing, and the display list used while a menu item's text is being built |
-| [`font_tags.c`](../src/BOOT/font_tags.c) | 0x0884900C-0x0884A9B4 | 10 | 13 | Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph quads |
-| [`menu_widget.c`](../src/BOOT/menu_widget.c) | 0x0884A9B4-0x0884C8D0 | 3 | 6 | janela com lista rolável e botões |
+| [`font_tags.c`](../src/BOOT/font_tags.c) | 0x0884900C-0x0884A9B4 | 11 | 6 | Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph quads |
+| [`menu_widget.c`](../src/BOOT/menu_widget.c) | 0x0884A9B4-0x0884C8D0 | 4 | 2 | janela com lista rolável e botões |
 | [`card_db.c`](../src/BOOT/card_db.c) | 0x0884C8D0-0x0884EA38 | 5 | 2 | receitas RCP*.ydc, cardinfo_<lang>.ehp, acessores de carta, 64 + 2 callbacks de cena |
 | [`card_groups.c`](../src/BOOT/card_groups.c) | 0x0884EA38-0x08850A70 | 1 | 1 | listas de ids hard-coded como `switch`, classes especiais e ids alternativos |
 | [`pmf_umd.c`](../src/BOOT/pmf_umd.c) | 0x08850A70-0x0885133C | 18 | 0 | thread do ring buffer sceMpeg, wrappers DvdUmdRetry* da Sony, carga dos módulos de codec |
-| [`movie.c`](../src/BOOT/movie.c) | 0x0885133C-0x08853A2C | 62 | 6 | player PSMF da Sony: movie_run, threads display/read/sound, filas de pts e sincronia A/V |
+| [`movie.c`](../src/BOOT/movie.c) | 0x0885133C-0x08853A2C | 64 | 4 | player PSMF da Sony: movie_run, threads display/read/sound, filas de pts e sincronia A/V |
 | [`cip.c`](../src/BOOT/cip.c) | 0x08853A2C-0x08854920 | 22 | 2 | pilha de cenas scene_push/pop_to/reset_to + leitor CIP/CPM das imagens de carta com anel de slots e prefetch |
 | [`cardlist.c`](../src/BOOT/cardlist.c) | 0x08854920-0x08859044 | 52 | 6 | desenho de carta e painel: imagem com cross-fade, moldura cil_0000, estrelas, atributo, ATK/DEF, caixa de descrição com barra de rolagem, coluna de comparação do editor de deck, tabelas de vértices de 16 bits |
 | [`modmgr.c`](../src/BOOT/modmgr.c) | 0x08859044-0x08859824 | 14 | 0 | Frame wait, a debug text menu, synchronous file/module loads and the module manager |
@@ -147,7 +147,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`net_main.c`](../src/BOOT/net_main.c) | 0x08868DC8-0x0886A6EC | 48 | 1 | entrada de estados, listas do lobby, driver por quadro com watchdogs de pad/UMD/link, exports para os gmodules, diálogos netconf/mensagem, carga dos módulos de rede |
 | [`net_match.c`](../src/BOOT/net_match.c) | 0x0886A6EC-0x0886B654 | 17 | 0 | sceNetAdhocMatching host/convidado, callback que enfileira eventos num anel de pacotes Mbx, tabela de pares |
 | [`net_ctl.c`](../src/BOOT/net_ctl.c) | 0x0886B654-0x0886C904 | 22 | 1 | sceNetAdhocctl, máquina de estados net_update, handshake PTP com a lista de MACs, 22 + 1 em asm; `include/net.h` com NetSession/NetPeer |
-| [`msgbox.c`](../src/BOOT/msgbox.c) | 0x0886C904-0x0886CF50 | 6 | 2 | caixa de mensagem do jogo, simples ou com botões OK/SIM/NÃO via menu widget |
+| [`msgbox.c`](../src/BOOT/msgbox.c) | 0x0886C904-0x0886CF50 | 7 | 1 | caixa de mensagem do jogo, simples ou com botões OK/SIM/NÃO via menu widget |
 | [`extdata.c`](../src/BOOT/extdata.c) | 0x0886CF50-0x0886E0A4 | 9 | 2 | arquivos YGTF .YGC/.YGR/.YGL da pasta do save: listagem, leitura, verificação e desembaralhamento |
 | [`netsync.c`](../src/BOOT/netsync.c) | 0x0886E0A4-0x0886ED2C | 26 | 3 | troca de registros de 0x100 bytes por jogador via PDP ad hoc, fila de pacotes, transferência em blocos de 0x80, lado do jogador local |
 

@@ -456,6 +456,23 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Ponteiro que anda vs. índice** (`drec_build`): troca de `$s` entre um ponteiro de tabela e um contador em laços quase iguais vem de `p->x` com `p++` contra `tab[i].x`; teste cada laço nas duas formas (64 combinações resolveram as três abas). `for (i = 0, p = tab; …; p++, i++)` põe o `addiu` do ponteiro depois do zeramento.
 - **Cópia morta depois de `bnezl …; b; move`** (`tlist_draw`, `duelrecord_draw`, `cardinfo_draw`): o original deixa uma cópia da primeira instrução do ramo que o mwcc move para o delay slot; nenhuma das ~80 variantes testadas (acessor inline, ternário, goto, switch, tipos do índice) nem os builds 134-219 do mwccpsp reproduzem. Em teste isolado só apareceu com `return e;` num else interno (`heap_find_entry`). Problema aberto.
 - **Problema aberto:** o `lhu` de `a->kind` antes de `if (a->kind == 0x23) return 1;` sai escalonado diferente no prólogo (`duel_08856860`, `duel_08858440`, `duel_08858E2C`, `duel_08870E94`).
+- **Diferença grande costuma ser forma, não registrador** (BOOT `heap.c`, `font_text.c`, `menu_open`): compare com o original ignorando os registradores e reescreva o C a partir do asm; `heap_*` foi de 286 palavras a 0 assim.
+- **`li`/`move` morto entre testes** é a constante de um grupo `case K: default:` (`switch (region_get()) { case 1: default: A; break; case 0: B; break; }`).
+- **Ramo com temporários próprios** (`heap_relocate_table`): declarar `HeapEnt *src, *dst;` dentro do `else if` dá ao laço de cópia registradores diferentes dos da função.
+- **Booleano gravado por ramo** (`li s0,1` no delay slot, depois `move s0,zero`): `more = 1; if (cond) more = 0;`.
+- **Valor cru para a chamada, mascarado só nos testes** (`font_draw_wtext_simple`): `int c` passado direto e comparado como `(unsigned short)c`.
+- **`srl` em vez de `sra` numa metade unsigned short**: `(int)(x / 2u)`.
+- **Laço curto que não pode desenrolar**: `if (h > 0) { k = 0; do n += 2; while ((k += 8) < h); }`.
+- **`slt at` contra variável**: escreva a comparação ao contrário (`tw + 0x40 > w`); `w < tw + 0x40` cria um temporário.
+- **Dois blocos `return 1` de um `switch` de estado**: `if (i != -1) { switch (s) { case 2: case 4: return 1; default: return 0; } } return 0;`.
+- **Array na pilha 4 bytes fora**: `unsigned char buf[0x200] __attribute__((aligned(8)));`.
+- **Constante como segundo operando de `mul.s`** (`tms_visible`): o mwcc põe o literal primeiro; passe-o por um inline (`static inline float f(float x, float k) { return sqrtf(x * k); }` chamado com `0.25f`).
+- **Tempo de quadro a partir do fps** (`particle.c`): `int fps = gfx_get_state()->fps; float dt = n * (1.0f / fps);` reproduz o `cvt.s.w` no lugar; a conta inline não.
+- **Ordem dos operandos de `or`** (`ehf_cmd_pool`): só uma variável fixa a soma à esquerda: `size = n * sizeof(T) + 0x10; return size | flag;`.
+- **Ordem de cópias de struct** (`camera_reset`): com `Vec4 pos, target, up` declarados nessa ordem, atribuir `up`, `target`, `pos` reproduz as cópias intercaladas.
+- **Posição de um parâmetro float** (`anim_blend`): onde o float fica entre os ponteiros decide quando o `mov.s $f12` entra no prólogo; teste todas as posições.
+- **Índice em vez de ponteiros de chave** (`anim_eval_track_packed`): `v[lo * 4 + k]` em vez de `p0 = v + lo * 4`; uma constante copiada por um local (`Vec4 id = anim_quat_id; *out = id;`) reproduz a cópia pela pilha.
+- **`void *` convertido depois de outro local** (`ehf_cmd_emitter`): `EhfArg *a = …; EhfEmitter *e = inst;`.
 
 - **Função `static` chamada de fora do arquivo** (`effects_088A8B94.c`): quando um helper precisa ser `static` para o chamador manter `$a0`-`$a2` (ver acima) mas também é chamado por asm ou por outro `.c`, a linha em `symbols/` leva `type:func static matched …`; `fix_ld.py` então emite um `PROVIDE` com o nome para os outros chamadores.
 - **Definições K&R** (`effects_088A8B94.c`): uma função chamada com quantidades diferentes de argumentos por chamadores que batem é definida sem protótipo (`int f(a, b) DuelAct *a; int b; { … }`) e declarada `int f();`.
@@ -488,7 +505,7 @@ void sceVfpuVector3Add(...) { /* equivalente em C para o port */ }
 
 - O corpo sai do objdump (`-z`, senão ele esconde palavras zero e parece que o mwcc descarta `nop`s; não descarta, e o padding depois do `jr` fica). Geradores (gitignored, cópias locais): `build/tmp/boot-a/vfpu_asm/gen2.py` e `build/tmp/boot-b/vgen.py` (objdump → corpo asm, com `.word` por palavra quando nada mais serve).
 - Sintaxe aceita: sem sufixo de registrador VFPU (`S000`, não `S000.s`); `li` como `addiu r, zero, imm` ou `ori` conforme o opcode (o mwcc monta `li` como `addi`); `vfim.s S030, -2.0`; condições de `vcmp` em minúsculas; `ror`/`rorv` como `rotr`/`rotrv`; `divu a, b` com dois operandos; `jalr ra, rs`; `break` só como `.word`; rótulos locais `@3c:` com `j @3c`, `jal`/`bltzal` para rótulo local; `jal símbolo` só para símbolos com protótipo no arquivo; `la r, sym+off` reproduz `lui r; addiu r, r` com relocações HI16/LO16.
-- **Limite:** não há sintaxe `%hi`/`%lo` (nem `hi()`, `@ha`, `@l`) para um `lui r` seguido de `lw/lwc1 x(r)`; `lwc1 $f, sym` monta com `$at`. Essas funções ficam `@asm` com o C sob `NON_MATCHING`. Nunca use `.word` para um `lui` de endereço absoluto: o link aceita, mas a relocação some.
+- **Limite:** não há sintaxe `%hi`/`%lo` (nem `hi()`, `@ha`, `@l`) para um `lui r` seguido de `lw/lwc1 x(r)`; `lw/lwc1/sw r, sym` monta `lui $at` mesmo com `.set noat`/`.set nomacro`; `lw r, sym(base)` ignora a base (vira `0(zero)`, ou `gp` sem `-sdatathreshold 0`); `lui r, sym`, `sym@h`, `sym@ha`, `ha16()`, `hi16()`, `HI()` e o `__asm__` estilo GCC com `%hi` ou operando `"i"(&sym)` são rejeitados (testado em 2026-10-22). Essas funções ficam `@asm` com o C sob `NON_MATCHING`. Nunca use `.word` para um `lui` de endereço absoluto: o link aceita, mas a relocação some.
 - Funções falsas do Ghidra (corpo de `case` de jump table separado) precisam ficar dentro do `@asm` da função mãe, senão o link falha no rótulo da jtbl.
 - Renomear um `ehsys_*`/`func_*` quebra os `.c` que o chamam pelo nome antigo: `grep` em `src/` antes, ou corrija por endereço depois de um merge.
 
