@@ -3,7 +3,6 @@
 // @data 0x088EE8C4-0x088EE904
 // @asm 0x08845E10-0x08846010
 // @asm 0x088462E8-0x0884638C
-// @asm 0x0884641C-0x088466AC
 // @asm 0x088469E8-0x08846EA0
 /* Font layer: libfont.prx setup, the 256-slot glyph atlas with LRU replacement, glyph quads,
    size/color state and the UCS-2 line-breaking character classes. Text layout is in font_draw.c. */
@@ -238,10 +237,12 @@ void font_dl_end(void)
     dl_set_list(dl_push1(font_ctx_ptr->dl, 0x13000000));
 }
 
-#ifdef NON_MATCHING
-/* Kept in asm: the second uv word is computed after the float stores in the original. */
 /* GE commands of one glyph quad: 2 vertices (u16 uv, float xyz) drawn with the atlas texture */
+#ifdef NON_MATCHING
 static const GlyphCmds glyph_cmds_template = { 0x14000000, 0x0100000C, 0x0800002C, { 0x00010001, 0, 0, 0 }, { 0x00150015, 0, 0, 0 }, 0x04060002 };
+#else
+extern const GlyphCmds glyph_cmds_template; /* 0x088EE93C, no .data em asm (fora do @data deste arquivo) */
+#endif
 
 /* Emits a 2-vertex textured quad for atlas cell `slot` at (x, y) in 26.6. */
 void font_glyph_quad(int x, int y, int slot)
@@ -256,16 +257,17 @@ void font_glyph_quad(int x, int y, int slot)
     cmds = glyph_cmds_template;
     q = (unsigned int *)((char *)f->dl + 12);
     f->dl = dl_push(f->dl, &cmds, 12);
-    q[0] = (v & 0xFFFF) << 16 | (u & 0xFFFF);
     fx = (float)x * 0.015625f - (float)(f->size_x * 7) / 20.0f;
     fy = (float)y * 0.015625f - (float)(f->size_y * 7) / 20.0f;
+    q[0] = (v & 0xFFFF) << 16 | (u & 0xFFFF);
     ((float *)q)[1] = fx;
     ((float *)q)[2] = fy;
+    fx += (float)(unsigned int)f->size_x * 28.0f / 20.0f;
+    fy += (float)(unsigned int)f->size_y * 28.0f / 20.0f;
     q[4] = ((v + 28) & 0xFFFF) << 16 | ((u + 28) & 0xFFFF);
-    ((float *)q)[5] = fx + (float)(unsigned int)f->size_x * 28.0f / 20.0f;
-    ((float *)q)[6] = fy + (float)(unsigned int)f->size_y * 28.0f / 20.0f;
+    ((float *)q)[5] = fx;
+    ((float *)q)[6] = fy;
 }
-#endif
 
 /* Same quad written as two 16-byte vertices (u16 uv, float xyz) into v. */
 void font_glyph_vertices(short *v, int x, int y, int slot)
