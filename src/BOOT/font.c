@@ -196,24 +196,23 @@ void font_printf_box64(int x, int y, int x0, int xmax, const char *fmt, ...)
 }
 
 /* Binary search in the sorted index: slot of `code`, or 0x100 + insertion position. */
-#ifdef NON_MATCHING /* o original calcula (mid - 1) * 4 sem dobrar o -1 no deslocamento, mascara code em a1 no atraso do blez e guarda mid em v0; while/do-while, índice ou ponteiro local, cópia de code e o teste final invertido ficam em 30-36 palavras */
-int font_glyph_find(unsigned short code)
+#ifdef NON_MATCHING /* 29 palavras: o original calcula (mid - 1) * 4 sem dobrar o -1 no deslocamento e materializa lo < mid em v1 (slt v1, não at); índice ou ponteiro local, >=/> nos testes e do-while não mudam. O parâmetro é unsigned int (o chamador font_glyph_cache passa code sem máscara) */
+int font_glyph_find(unsigned int code)
 {
     FontCtx *f = font_ctx_ptr;
     int lo = 0;
     int hi = f->count + 1;
     int mid = hi / 2;
+    unsigned short c = code;
 
-    if (mid > 0) {
-        do {
-            if (f->index[mid - 1].code < code)
-                lo = mid;
-            else if (code < f->index[mid - 1].code)
-                hi = mid;
-            else
-                break;
-            mid = (lo + hi) / 2;
-        } while (lo < mid);
+    while (lo < mid) {
+        if (f->index[mid - 1].code < c)
+            lo = mid;
+        else if (c < f->index[mid - 1].code)
+            hi = mid;
+        else
+            break;
+        mid = (lo + hi) / 2;
     }
     if (lo < mid)
         return mid - 1;
@@ -347,19 +346,20 @@ int font_line_height(void)
 }
 
 #ifdef NON_MATCHING
-/* Kept in asm: 1.2 KB, register allocation differs; the LRU/index logic above is the port version. */
 /* Returns the atlas slot of `code`, rendering it with sceFont into the least recently used slot
    when absent; keeps the sorted index and the LRU list up to date. */
+/* Fica em asm (60 palavras): forma igual, mas o original dá f a s1 e font a s5 (aqui trocados) e
+   mascara code mais tarde; nenhuma ordem de declaração muda isso. */
 unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
 {
     FontCtx *f = font_ctx_ptr;
-    int font = f->font;
     int i = font_glyph_find(code);
-    unsigned int slot;
-    unsigned int pos;
-    unsigned int evict;
+    int font = f->font;
+    int slot;
+    int pos;
+    int evict;
     SceFontCharInfo ci;
-    unsigned char bitmap[0x200];
+    unsigned char bitmap[0x200] __attribute__((aligned(8)));
     unsigned char *src, *dst;
     int k;
 
@@ -368,10 +368,10 @@ unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
         slot = f->count;
         if (slot == 0x100) {
             evict = font_glyph_find(f->slots[f->lru_head].code);
-            if ((int)pos < (int)evict) {
+            if (pos < evict) {
                 mem_move(&f->index[pos + 1], &f->index[pos], (evict - pos) * 4);
-            } else if ((int)evict < (int)pos) {
-                pos = i - 0x101;
+            } else if (evict < pos) {
+                pos--;
                 if (pos != evict)
                     mem_move(&f->index[evict], &f->index[evict + 1], (pos - evict) * 4);
             }
@@ -379,15 +379,16 @@ unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
             f->lru_head = f->slots[slot].next;
             f->slots[f->lru_head].prev = 0xFFFF;
             f->count--;
-        } else if (slot == 0) {
+        } else if (slot != 0) {
+            if (slot != pos)
+                mem_move(&f->index[pos + 1], &f->index[pos], (slot - pos) * 4);
+        } else {
             f->lru_head = 0;
-        } else if (slot != pos) {
-            mem_move(&f->index[pos + 1], &f->index[pos], (slot - pos) * 4);
         }
         f->slots[slot].code = code;
         f->index[pos].code = code;
         f->index[pos].slot = slot;
-        if ((code & 0xFFFF) < 0x2300 && font_half_width[code & 0xFFFF] != 0)
+        if ((unsigned short)code < 0x2300 && font_half_width[(unsigned short)code] != 0)
             font = f->font2;
         sceFontGetCharInfo(font, code, &ci);
         f->slots[slot].advance = ci.advance_h;
@@ -399,7 +400,7 @@ unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
         img->buffer = bitmap;
         sceFontGetCharGlyphImage(font, code, img);
         src = bitmap;
-        dst = f->atlas + (slot & 0xF) * 0x80 + ((int)slot >> 4) * 0x2000;
+        dst = f->atlas + slot / 16 * 0x2000 + slot % 16 * 0x80;
         for (k = 0; k < 4; k++) {
             memcpy(dst, src, 0x80);
             src += 0x80;
