@@ -448,9 +448,10 @@ int efs_cmd_inst(EfsInst *inst, EfsNode *node, EfsCmd *cmd, int phase)
     case 1:
         return 0x30;
     case 2: {
-        void **a = cmd->a.p;
+        void **a;
 
         memset(inst, 0, 0x30);
+        a = cmd->a.p;
         if (a[0] == 0) {
             return 0x30;
         }
@@ -467,7 +468,6 @@ int efs_cmd_inst(EfsInst *inst, EfsNode *node, EfsCmd *cmd, int phase)
     case 4:
         if (inst->root != 0) {
             efs_inst_free(inst);
-            return 0;
         }
         return 0;
     case 5:

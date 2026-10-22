@@ -4,7 +4,6 @@
 // @asm 0x08854A68-0x08854D94
 // @asm 0x08854DA8-0x088552B0
 // @asm 0x088554E8-0x08855690
-// @asm 0x08855710-0x08855888
 // @asm 0x088569D4-0x08856C88
 // @asm 0x08856E08-0x08857148
 // @asm 0x08857DD8-0x088580AC
@@ -374,7 +373,7 @@ void *cardlist_sprite(void *list, int x, int y, unsigned short *r);
 void *cardlist_sprite_flip(void *list, int x, int y, unsigned short *r);
 void cardlist_number(int x, int y, int value);
 void cardlist_text(int x, int y, unsigned short *text);
-void card_draw_desc(void *list, int x, int y, int w, int h, unsigned short *line, unsigned short *text);
+void *card_draw_desc(void *list, int x, int y, int w, int h, unsigned short *line, unsigned short *text);
 void *card_draw_card(void *list, int x, int y, void *tex, unsigned short *name, unsigned short *line, unsigned short *desc, CardStats *s);
 void *cardlist_draw_quad(void *list, int x, int y);
 void *cardlist_get_picture(int id, int variant);
@@ -660,7 +659,6 @@ void *cardlist_draw_quad(void *list, int x, int y)
 }
 
 /* The full card: picture, attribute frame, name, level stars, type icons, ATK/DEF, text. */
-#ifdef NON_MATCHING /* the parameters land in other s registers */
 void *card_draw_card(void *list, int x, int y, void *tex, unsigned short *name, unsigned short *line, unsigned short *desc, CardStats *s)
 {
     list = card_draw_attr_frame(list, x, y, s->attr, s->attr_icon);
@@ -674,17 +672,15 @@ void *card_draw_card(void *list, int x, int y, void *tex, unsigned short *name, 
     } else {
         list = card_draw_stars(list, x, y, s->level);
     }
-    if (s->attr != 0xD && s->attr != 0xE) {
+    if (s->attr == 0xD || s->attr == 0xE) {
+    } else {
         list = card_draw_atkdef(list, x + 10, y + 0x87, s->atk, s->def);
     }
     if (s->attr - 0xDU < 2) {
-        card_draw_desc(list, x + 0xB, y + 0x79, 0x56, 0x18, 0, desc);
-    } else {
-        card_draw_desc(list, x + 0xB, y + 0x79, 0x56, 0xE, line, desc);
+        return card_draw_desc(list, x + 0xB, y + 0x79, 0x56, 0x18, 0, desc);
     }
-    return list;
+    return card_draw_desc(list, x + 0xB, y + 0x79, 0x56, 0xE, line, desc);
 }
-#endif
 
 /* Card background by attribute (and monster kind), with the separator line under the name. */
 void *card_draw_attr_frame(void *list, int x, int y, int attr, int kind)
@@ -1826,7 +1822,7 @@ void cardlist_text(int x, int y, unsigned short *text)
     font_set_flags(flags);
 }
 
-void card_draw_desc(void *list, int x, int y, int w, int h, unsigned short *line, unsigned short *text)
+void *card_draw_desc(void *list, int x, int y, int w, int h, unsigned short *line, unsigned short *text)
 {
     int f;
 
@@ -1837,7 +1833,7 @@ void card_draw_desc(void *list, int x, int y, int w, int h, unsigned short *line
     font_set_flag4(0);
     font_draw_wtext_ex(x << 6, y << 6, w << 6, h << 6, text, -1);
     font_set_flag4(f);
-    font_text_clear();
+    return font_text_clear();
 }
 
 void *cardlist_get_picture(int id, int variant)

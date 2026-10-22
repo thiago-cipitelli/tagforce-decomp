@@ -389,7 +389,7 @@ void cip_prefetch(Cip *c, int idx)
                       c->hdr.chunks * 0x5000, (EhfileCallback)cip_prefetch_cb, c);
 }
 
-#ifdef NON_MATCHING /* only register allocation inside the loop differs (chunks/slot/buf/chunk) */
+#ifdef NON_MATCHING /* with cip_table static (mwcc then keeps t-registers across the call; impossible while this asm references it) the frame matches and only buf/chunk swap a2/a3 */
 int cip_prefetch_cb(void *handle, int n)
 {
     Cip *c = (Cip *)handle;
@@ -397,6 +397,7 @@ int cip_prefetch_cb(void *handle, int n)
     unsigned char *buf;
     unsigned int chunk, base;
     int nread, slot, i;
+    unsigned int chunks;
 
     if (n < 0) {
         if (!c->closed)
@@ -405,9 +406,10 @@ int cip_prefetch_cb(void *handle, int n)
         base = ((c->hdr.table_size + 0x7FF) & ~0x7FF) >> 11;
         nread = n / (unsigned int)(c->hdr.chunks << 11);
         for (i = 0; i < nread; i++) {
+            chunks = c->hdr.chunks;
             slot = c->prefetch_idx + i;
-            buf = c->slots + slot * (c->hdr.chunks << 11);
-            chunk = base + c->hdr.chunks * slot;
+            buf = c->slots + slot * (chunks << 11);
+            chunk = base + chunks * slot;
             for (e = cip_table(c); e->chunk != 0xFFFFFFFF; e++) {
                 if ((e->chunk & 0x7FFFFFFF) == chunk) {
                     e->data = (unsigned int)buf;

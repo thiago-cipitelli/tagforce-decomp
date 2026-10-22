@@ -34,42 +34,41 @@ extern const unsigned char font_clut[32];           /* .rodata 0x08875740: 16-en
 /* Next printable character after the tags at p; `in_ruby` skips a "(...)" ruby body. */
 unsigned short wtext_next_char(FontCtx *f, unsigned short *p, int in_ruby)
 {
-    unsigned short c = *p;
-    unsigned short prev = 0;
-    unsigned short t;
+    int c = 0;
+    unsigned short *q;
     int k;
 
-    for (;;) {
-        t = c;
-        if (t == 0)
-            return prev;
-        if (t == '$') {
-            prev = p[1];
-            if (prev == 'R') {
-                p += 2;
+    while (*p != 0) {
+        c = *p;
+        q = p + 1;
+        if (c == '$') {
+            switch (*q) {
+            case 'C':
+                p = q + 2;
+                break;
+            case 'F':
+            case 'f':
+                p = q + 1;
+                break;
+            case 'R':
+                p = q + 1;
                 in_ruby = 1;
-            } else if (prev == 'f') {
-                p += 2;
-            } else if (prev == 'F') {
-                p += 2;
-            } else {
-                if (prev != 'C')
-                    return '$';
-                p += 3;
+                break;
+            default:
+                return c;
             }
         } else {
             if (in_ruby == 0)
-                return t;
-            if (t != '(')
-                return t;
-            k = wcschr_index(p + 1, ')');
+                break;
+            if (c != '(')
+                break;
+            k = wcschr_index(q, ')');
             if (k < 0)
-                return '(';
-            p = p + 1 + k + 1;
+                break;
+            p = q + (k + 1);
         }
-        c = *p;
-        prev = t;
     }
+    return c;
 }
 
 /* Width in 26.6 of the word starting at p (up to the next breakable character), including the
@@ -547,16 +546,20 @@ int font_get_cursor_y(void)
 void font_rubi_quad(int x, int y, unsigned short code)
 {
     FontCtx *f = font_ctx_ptr;
-    unsigned int cmds[11];
     short v[10];
+    unsigned int cmds[11] = { 0 };
     unsigned int base;
+    unsigned short k;
+    int u, w;
 
-    memset(cmds, 0, sizeof cmds);
     if (code > 0x303F || code < 0x3100) {
-        v[0] = ((code + 0xCFC0) & 0xF) * 8;
-        v[1] = (short)((unsigned short)(code + 0xCFC0) >> 4) * 8;
-        v[5] = v[0] + 7;
-        v[6] = v[1] + 7;
+        k = code - 0x3040;
+        u = (k & 0xF) * 8;
+        w = (k >> 4) * 8;
+        v[0] = u;
+        v[1] = w;
+        v[5] = u + 7;
+        v[6] = w + 7;
         v[2] = (x + 0x20) >> 6;
         v[7] = v[2] + 7;
         v[3] = (y + 0x20) >> 6;
@@ -564,12 +567,12 @@ void font_rubi_quad(int x, int y, unsigned short code)
         v[4] = 0;
         v[9] = 0;
         base = (unsigned int)f->dl + 0x1C;
-        cmds[0] = ((base & 0xFFFFFFF) >> 24) << 16 | 0x10000000;
+        cmds[0] = (base >> 24 & 0xF) << 16 | 0x10000000;
         cmds[1] = (base & 0xFFFFFF) | 0x08000000;
         memcpy(&cmds[2], v, 0x14);
         cmds[7] = 0x12800102;
         base = (unsigned int)f->dl + 8;
-        cmds[8] = ((base & 0xFFFFFFF) >> 24) << 16 | 0x10000000;
+        cmds[8] = (base >> 24 & 0xF) << 16 | 0x10000000;
         cmds[9] = (base & 0xFFFFFF) | 0x01000000;
         cmds[10] = 0x04060002;
         f->dl = dl_push(f->dl, cmds, 11);
