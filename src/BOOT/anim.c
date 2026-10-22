@@ -1,5 +1,5 @@
 // @range 0x0882D9F0-0x0882ECAC
-// @asm 0x0882DE34-0x0882E408
+// @asm 0x0882DE34-0x0882E3B4
 // @asm 0x0882E89C-0x0882ECAC
 // @data 0x088ED860-0x088ED900
 /* TGMT skeletal animation: bones walked depth first from the root of the TGMS hierarchy, each
@@ -255,16 +255,16 @@ void anim_blend(Tgmt *a, TmsSkel *t, Mat4 *bones, Tgmt *p, float frame, float pf
 }
 #endif
 
-#ifdef NON_MATCHING /* two mul.s with the operands swapped */
 float anim_cubic(float p0, float p1, float p2, float p3, float s)
 {
     float s2 = s * s;
     float r = 1.0f - s;
     float r2 = r * r;
+    float r3 = r2 * r;
+    float s3 = s2 * s;
 
-    return s2 * s * p3 + (3.0f * r * s2 * p2 + (r2 * r * p0 + 3.0f * r2 * s * p1));
+    return s3 * p3 + (3.0f * r * s2 * p2 + (r3 * p0 + 3.0f * r2 * s * p1));
 }
-#endif
 
 /* Cubic Bezier between keys a and b. */
 float anim_bezier(float t, AnimKey *a, AnimKey *b)

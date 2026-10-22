@@ -1,5 +1,5 @@
 // @range 0x0882923C-0x0882AD90
-// @asm 0x08829880-0x08829AC4
+// @asm 0x08829880-0x088299F4
 // @asm 0x08829B10-0x08829C00
 // @asm 0x08829C20-0x08829F60
 // @asm 0x0882A538-0x0882A99C
@@ -355,7 +355,6 @@ int efs_find(EfsRef *out, char *name)
 }
 #endif
 
-#ifdef NON_MATCHING /* the name offset is loaded before the table offset */
 /* Calls fn(name, arg) for every root of the loaded files. */
 void efs_foreach(void (*fn)(char *name, void *arg), void *arg)
 {
@@ -365,9 +364,12 @@ void efs_foreach(void (*fn)(char *name, void *arg), void *arg)
         EfsFile *f = efs.files[i];
 
         if (f != 0) {
-            char *str = (char *)f + f->str;
+            char *str;
             int k;
-            EfsCmd **tab = (EfsCmd **)((char *)f + f->tab);
+            EfsCmd **tab;
+
+            tab = (EfsCmd **)((char *)f + f->tab);
+            str = (char *)f + f->str;
 
             for (k = 0; k < f->n; k++, tab++) {
                 fn(str + ((*tab)->h.id & 0xFFFFFF), arg);
@@ -375,7 +377,6 @@ void efs_foreach(void (*fn)(char *name, void *arg), void *arg)
         }
     }
 }
-#endif
 
 int efs_heap_used(void)
 {
