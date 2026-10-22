@@ -149,7 +149,7 @@ struct MenuWidget {                    /* 0x120 */
     unsigned char f0_4 : 1;
     unsigned char cancel_resets : 1;   /* cancel returns to the initial cursor/button */
     unsigned char accept_blocked : 1;
-    unsigned char wrap : 1;            /* list wraps around */
+    unsigned char no_wrap : 1;         /* the cursor stops at the ends instead of wrapping */
     unsigned char skip_disabled : 1;   /* +0x0C9 */
     unsigned char center : 1;
     unsigned char keep_dl : 1;         /* menu_draw restarts the list at the saved position */

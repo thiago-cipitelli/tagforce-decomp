@@ -1,6 +1,5 @@
 // @range 0x08837B28-0x088390C4
 // @asm 0x08837B28-0x08837D10
-// @asm 0x08837D4C-0x08837E84
 // @asm 0x08837FA4-0x08838468
 // @asm 0x0883864C-0x088390C4
 /* "HOGE" heap: a sorted table of block boundaries, each word holding an address and a free flag
@@ -88,12 +87,11 @@ int heap_free_block(Heap *h)
     return 1;
 }
 
-#ifdef NON_MATCHING /* the size and the entry pointer swap $s0/$s1 */
 /* Best-fit allocation of `size` bytes (rounded to 16); 0 when no block fits. */
 void *heap_alloc(Heap *h, int n)
 {
-    int size = n;
     HeapEnt *e;
+    int size = n;
     HeapEnt *s;
 
     if (n <= 0) {
@@ -117,7 +115,7 @@ void *heap_alloc(Heap *h, int n)
     heap_relocate_table(h);
     return (void *)size;
 }
-#endif
+
 
 int heap_set_level(Heap *h, void *p)
 {

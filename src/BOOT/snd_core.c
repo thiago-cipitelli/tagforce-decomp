@@ -1,6 +1,5 @@
 // @range 0x08860DA4-0x088615D0
 // @asm 0x088610E0-0x08861304
-// @asm 0x08861354-0x08861450
 // @asm 0x088614D0-0x088615A4
 /* Sound library, object side: SAS voice allocation mask, per-channel volumes (BGM/SE/voice),
    counters over the active object list, the level meter used for lip sync, and the SAS
@@ -30,7 +29,7 @@ typedef struct SndBankHdr {
 extern SndBankHdr *snd_bank;           /* 0x08C1D88C */
 extern SndList snd_active;             /* 0x08C1B004 */
 extern SndFader snd_master;            /* 0x08C1B01C */
-extern short snd_ch_volume[3];         /* 0x08C1B028 */
+extern unsigned short snd_ch_volume[3]; /* 0x08C1B028 */
 extern short snd_cur_slot;             /* 0x08C1B030 */
 extern int snd_slot_tab[];             /* 0x08C1B034 */
 extern SndVoiceTab snd_voice_tab;      /* 0x08C1B054 */
@@ -46,7 +45,7 @@ void snd_voice_set_adsr(int v, int mask, int a, int d, int s, int r);
 void snd_voice_set_curve(int v, int mask, int a, int d, int s, int r);
 void snd_voice_key_off(int v);
 void snd_fader_set(SndFader *f, int value, int time);
-void snd_obj_fade(SndObj *o, int which, int value, int time);
+void snd_obj_fade(SndObj *o, int which, short value, int time);
 int snd_group_data(unsigned int g);
 void snd_fx_set_dry(int l, int r);
 void snd_fx_set_wet_on(int l, int r);
@@ -288,12 +287,11 @@ int snd_set_master_volume(int vol, int time)
     return old;
 }
 
-#ifdef NON_MATCHING /* channel match chain (goto into the list walk in the original) */
 /* Volume 0..127 of channel 0 BGM, 1 SE, 2 voice; ramps every active sound of the channel. */
 int snd_set_channel_volume(int ch, unsigned int vol, int time)
 {
-    short old = snd_ch_volume[ch];
-    short v;
+    int old = snd_ch_volume[ch];
+    int v;
     unsigned int match;
     SndObj *o;
 
@@ -301,24 +299,31 @@ int snd_set_channel_volume(int ch, unsigned int vol, int time)
         vol = 0x7F;
     v = vol * 0x1021 >> 7;
     snd_ch_volume[ch] = v;
-    if (time < 0)
-        return old;
-    match = -1;
-    if (ch == 2)
-        match = 0x300000;
-    else if (ch == 1)
-        match = 0x100000;
-    else if (ch == 0)
-        match = 0;
-    o = 0;
-    while ((o = snd_list_next(&snd_active, o)) != 0) {
-        if ((o->id & 0x300000) == match)
+    if (time >= 0) {
+        match = -1;
+        switch (ch) {
+        case 0:
+            match = 0;
+            break;
+        case 1:
+            match = 0x100000;
+            break;
+        case 2:
+            match = 0x300000;
+            break;
+        }
+        o = 0;
+        for (;;) {
+            o = snd_list_next(&snd_active, o);
+            if (o == 0)
+                break;
+            if ((o->id & 0x300000) != match)
+                continue;
             snd_obj_fade(o, 0, v, time);
+        }
     }
     return old;
 }
-
-#endif
 
 void snd_out_mode_apply(unsigned char a, unsigned char b)
 {

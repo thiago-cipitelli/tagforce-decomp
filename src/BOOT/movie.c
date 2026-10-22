@@ -3,11 +3,9 @@
 // @asm 0x088513E0-0x08851BA4
 // @asm 0x08851D10-0x08851F4C
 // @asm 0x08852070-0x08852144
-// @asm 0x088524D8-0x08852514
 // @asm 0x08852708-0x088527AC
 // @asm 0x088527E8-0x08852900
 // @asm 0x08852BCC-0x08852C48
-// @asm 0x08852C98-0x08852CF8
 /* PMF movie player (Sony PSMF sample code): movie_run() builds the sceMpeg ring buffer and decoder
    in the block set by movie_set_memory, starts the display/read/sound threads and runs the decode
    loop until the stream ends or the user skips. Control flow between threads uses two event flags
@@ -580,11 +578,10 @@ void snd_get_write_buf(MovieSnd *s, void **out)
         *out = 0;
 }
 
-#ifdef NON_MATCHING /* structure matches; register allocation and scheduling differ */
 int snd_push_pts(MovieSnd *s, int pts)
 {
     if (pts == -1) {
-        s->last_pts += snd_pts_step;
+        s->last_pts += (unsigned int)snd_pts_step;
         pts = s->last_pts;
     } else {
         s->last_pts = pts;
@@ -592,7 +589,6 @@ int snd_push_pts(MovieSnd *s, int pts)
     s->pts[s->wr] = pts;
     return 0;
 }
-#endif
 
 int snd_peek_pts(MovieSnd *s, int *out)
 {
@@ -834,11 +830,10 @@ int vid_zero(MovieVid *v)
     return 0;
 }
 
-#ifdef NON_MATCHING /* structure matches; register allocation and scheduling differ */
 int vid_push_pts(MovieVid *v, int pts)
 {
     if (pts == -1) {
-        v->last_pts += vid_pts_step;
+        v->last_pts += (unsigned int)vid_pts_step;
         pts = v->last_pts;
     } else {
         v->last_pts = pts;
@@ -848,7 +843,6 @@ int vid_push_pts(MovieVid *v, int pts)
     v->wr = (v->wr + 1) % v->n;
     return 0;
 }
-#endif
 
 int vid_pop_pts(MovieVid *v, int *out)
 {

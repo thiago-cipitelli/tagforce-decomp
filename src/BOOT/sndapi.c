@@ -1,11 +1,8 @@
 // @range 0x08865260-0x08866068
 // @data 0x088F04AC-0x088F078C
 // @rodata 0x088EAFE0-0x088EB030
-// @asm 0x088654EC-0x088655DC
-// @asm 0x088657A8-0x0886591C
-// @asm 0x0886595C-0x088659D8
-// @asm 0x08865A50-0x08865B50
 // @asm 0x08865BC4-0x08865CB0
+// @asm 0x08865B20-0x08865B50
 /* Game-side sound glue: heap and loader callbacks handed to the sound library (0x0885C688..0x08865260,
    still asm), the BGM/SE API exported to the gmodules (thin wrappers), character voice tables,
    per-player voice channels, movie_play with the configured volume, and the save-data path helpers
@@ -76,7 +73,7 @@ int snd_seq_entry();
 int snd_group_read_done(void *obj, int a);
 void snd_set_volume(int ch, int vol);
 SysConfig *cfg_get(void);
-unsigned short charmap_lookup(int c, int flag);
+int charmap_lookup(int ch, int *kind_out);
 int charmap_lookup3(int c);
 unsigned short region_pick_value(int flag);
 
@@ -217,16 +214,19 @@ void snd_init(void)
     snd_set_volume(2, 12);
 }
 
-#ifdef NON_MATCHING /* cfg_get_byte3: base+i+3 operand order; snd_set_volume: branch layout of the channel chain */
 int cfg_get_byte3(int i)
 {
-    return *((unsigned char *)cfg_get() + i + 3);
+    SysConfig *c = cfg_get();
+
+    return c->bytes3[i];
 }
 
 /* Config volume 0..15 for channel 0 BGM, 1 SE, 2 voice (muted outside Japanese). */
 void snd_set_volume(int ch, int vol)
 {
-    *((unsigned char *)cfg_get() + ch + 3) = vol;
+    SysConfig *c = cfg_get();
+
+    c->bytes3[ch] = vol;
     if (vol != 0)
         vol = vol * 8 + 7;
     switch (ch) {
@@ -244,8 +244,6 @@ void snd_set_volume(int ch, int vol)
         break;
     }
 }
-
-#endif
 
 void snd_mute_on(void)
 {
@@ -342,7 +340,6 @@ int bgm_get_status()             { return snd_obj_status(); }
 int snd_seq_get_u16()            { return snd_seq_entry(); }
 int snd_get_base_id(int obj)     { return snd_obj_base_id(obj); }
 
-#ifdef NON_MATCHING /* voice_table_find: loop and range-test layout; gamestate_partner_mode: result kept in a0 across the tests */
 /* Voice base id for a character: 0..0x28 use the pair list, 0x29.. derive from the charmap group. */
 int voice_table_find(unsigned int chr, unsigned int variant)
 {
@@ -351,33 +348,21 @@ int voice_table_find(unsigned int chr, unsigned int variant)
     int group, sub;
 
     if ((int)chr < 0x29) {
-        c = voice_pairs[0];
-        p = voice_pairs;
-        if (c != 0x98) {
-            while (c != chr || p[1] != variant) {
-                p += 4;
-                c = *p;
-                if (c == 0x98)
-                    return 0;
-            }
-            return p[2];
+        for (p = voice_pairs; *p != 0x98; p += 4) {
+            if (*p == (int)chr && p[1] == variant)
+                return p[2];
         }
     } else {
         group = charmap_lookup(chr, 0);
         sub = charmap_lookup3(chr);
-        if (group == 1000) {
-            if (sub < 3)
-                return voice_tbl_c[sub * 4];
-            return 0;
+        if (group == 1000 && sub < 3)
+            return voice_tbl_c[sub * 4];
+        if (group >= 100 && sub < 15) {
+            if (group < 400)
+                return voice_tbl_a[sub][0];
+            if (group < 500)
+                return voice_tbl_b[sub][0];
         }
-        if (group < 100)
-            return 0;
-        if (sub >= 15)
-            return 0;
-        if (group < 400)
-            return voice_tbl_a[sub][0];
-        if (group < 500)
-            return voice_tbl_b[sub][0];
     }
     return 0;
 }
@@ -386,17 +371,19 @@ int voice_table_find(unsigned int chr, unsigned int variant)
 int gamestate_partner_mode(void)
 {
     GameState *gs = game_state_get();
+    int r;
 
     if (gs->partner_mode == 2)
-        return 2;
-    if (gs->slot[0].type < 2)
-        return 0;
-    if (gs->slot[1].type < 2)
-        return 0;
-    return 1;
+        r = 2;
+    else if (gs->slot[0].type > 1) {
+        if (gs->slot[1].type < 2)
+            r = 0;
+        else
+            r = 1;
+    } else
+        r = 0;
+    return r;
 }
-
-#endif
 
 int partner_voice_id(unsigned int chr, unsigned int variant)
 {
@@ -406,7 +393,6 @@ int partner_voice_id(unsigned int chr, unsigned int variant)
     return id + gamestate_partner_mode();
 }
 
-#ifdef NON_MATCHING /* sense of the likely branch on the base id */
 /* Sound id for voice `arg` of the character in player slot `slot`, 0 when none. */
 int partner_voice_play(int slot, int arg)
 {
@@ -414,12 +400,11 @@ int partner_voice_play(int slot, int arg)
     int id = partner_voice_id(p->type, p->type2);
     if (id == 0)
         return 0;
-    if ((id = snd_obj_base_id(id)) == 0)
-        return 0;
-    return id + arg;
+    id = snd_obj_base_id(id);
+    if (id != 0)
+        return id + arg;
+    return 0;
 }
-
-#endif
 
 int gamestate_slot_snd(int slot, int arg)
 {
@@ -434,32 +419,36 @@ void snd_channels_reset(void)
     memset(&snd_channel_tab, 0, sizeof(SndChannelTab));
 }
 
-#ifdef NON_MATCHING /* the original indexes the queue from the table base (base + slot*0x80 + n*0x10 + 0x10) */
 /* Queues voice `se` of the slot's character with a delay (frames) after the previous one. */
 int partner_snd_channel(int slot, int se, int delay)
 {
     PlayerSlot *p = &game_state_get()->slot[slot];
-    int n;
+    int *n;
+    SndChannelSlot *q;
 
     if (p->voice_obj == 0)
         return 0;
-    n = snd_channel_tab.active[slot];
-    if (n >= 8)
+    n = &snd_channel_tab.active[slot];
+    if (*n >= 8)
         return 0;
-    snd_channel_tab.ch[slot].q[n].state = 0;
-    snd_channel_tab.ch[slot].q[n].delay = delay;
-    snd_channel_tab.ch[slot].q[n].se_id = se + snd_obj_base_id(p->voice_obj);
-    snd_channel_tab.active[slot]++;
+    q = &snd_channel_tab.ch[slot].q[*n];
+    q->state = 0;
+    q->delay = delay;
+    q->se_id = se + snd_obj_base_id(p->voice_obj);
+    (*n)++;
     return 1;
 }
 
+/* Sound id at the head of the slot's queue, 0 when empty. */
+#ifdef NON_MATCHING /* the original schedules the table address after the index shift */
 int snd_channel_get_u32(int slot)
 {
-    if (snd_channel_tab.active[slot] == 0)
-        return 0;
-    return snd_channel_tab.ch[slot].q[0].se_id;
-}
+    SndChannelTab *t = &snd_channel_tab;
 
+    if (t->active[slot] != 0)
+        return ((SndChannelSlot *)((char *)t + slot * 0x80))[1].se_id;
+    return 0;
+}
 #endif
 
 /* Stops the slot's current voice. */

@@ -1,5 +1,5 @@
 // @range 0x0885C688-0x0885D948
-// @asm 0x0885CB30-0x0885CEC4
+// @asm 0x0885CCE0-0x0885CEC4
 // @asm 0x0885D078-0x0885D948
 /* Sound library, mixer: per-frame fader update and SAS voice parameters, key on and end detection
    of the SAS voices, the echo ring buffer (0x3000 stereo frames) the streams feed and the output
@@ -206,36 +206,64 @@ void snd_echo_mix(short *out)
     snd_echo_pos = i;
 }
 
-#ifdef NON_MATCHING /* clamp branches written per sign in the original */
-static int clamp16(int v)
-{
-    return v < -0x8000 ? -0x8000 : v > 0x7FFF ? 0x7FFF : v;
-}
-
 /* Widens the stereo image: adds the L-R difference of the frame two back; `hist` carries the last two
-   differences across blocks. */
+   differences across blocks. Each sum is clamped to 16 bits on the side its sign can overflow. */
 void snd_stereo_widen(short *hist, short *buf, int n)
 {
     short save[2];
     short *p;
     int i;
+    short *s;
     int d;
+    int a;
+    int b;
 
-    for (i = 0, p = buf + (n - 2) * 2; i < 2; i++, p += 2) {
-        save[i] = clamp16(p[0] - p[1]);
+    for (s = buf + (n - 2) * 2, i = 0; i < 2; i++, s += 2) {
+        a = s[0] - s[1];
+        if (a < -0x8000)
+            a = -0x8000;
+        else if (a > 0x7FFF)
+            a = 0x7FFF;
+        save[i] = a;
     }
     for (p = buf + (n - 1) * 2; p >= buf + 4; p -= 2) {
         d = p[-4] - p[-3];
-        p[0] = clamp16(p[0] + d);
-        p[1] = clamp16(p[1] - d);
+        a = p[0] + d;
+        b = p[1] - d;
+        if (d >= 0) {
+            if (a > 0x7FFF)
+                a = 0x7FFF;
+            p[0] = a;
+            if (b < -0x8000)
+                b = -0x8000;
+            p[1] = b;
+        } else {
+            if (a < -0x8000)
+                a = -0x8000;
+            p[0] = a;
+            if (b > 0x7FFF)
+                b = 0x7FFF;
+            p[1] = b;
+        }
     }
     for (i = 1; i >= 0; i--, p -= 2) {
-        p[0] = clamp16(p[0] + hist[i]);
-        p[1] = clamp16(p[1] - hist[i]);
+        a = p[0] + hist[i];
+        if (a < -0x8000)
+            a = -0x8000;
+        else if (a > 0x7FFF)
+            a = 0x7FFF;
+        p[0] = a;
+        b = p[1] - hist[i];
+        if (b < -0x8000)
+            b = -0x8000;
+        else if (b > 0x7FFF)
+            b = 0x7FFF;
+        p[1] = b;
         hist[i] = save[i];
     }
 }
 
+#ifdef NON_MATCHING /* the original copies the 16 frames with an unrolled indexed loop, not memcpy */
 /* Box filter of `taps` frames over `n` stereo frames; `hist` holds the 16 frames before the block. */
 void snd_box_filter(short *hist, short *buf, int n, int taps)
 {

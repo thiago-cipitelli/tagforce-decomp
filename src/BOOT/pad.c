@@ -1,6 +1,5 @@
 // @range 0x08839A8C-0x08839F50
 // @asm 0x08839AC8-0x08839CFC
-// @asm 0x08839D08-0x08839D84
 // @rodata 0x08875390-0x0887539C
 /* Controller: one sample per frame (the previous one is reused when reading fails), edge and
    auto-repeat masks per button, the stick folded into d-pad bits with its own repeat, repeat
@@ -99,17 +98,22 @@ PadState *pad_get(void)
     return &pad_state;
 }
 
-#ifdef NON_MATCHING /* scheduling of the counter setup differs */
 /* Buttons whose repeat counter elapsed this frame (first repeat after the delay). */
 unsigned int pad_repeat(unsigned int down)
 {
-    signed char rate = pad_repeat_rate;
-    unsigned int bit = 1;
-    unsigned int i = 0;
-    int start = pad_repeat_delay - pad_repeat_rate;
-    unsigned int out = 0;
-    signed char *c = pad_repeat_count;
+    unsigned int out;
+    signed char rate;
+    unsigned int bit;
+    int start;
+    unsigned int i;
+    signed char *c;
 
+    out = 0;
+    rate = pad_repeat_rate;
+    i = 0;
+    bit = 1;
+    start = pad_repeat_delay - pad_repeat_rate;
+    c = pad_repeat_count;
     do {
         if (!(down & bit)) {
             *c = -start;
@@ -123,7 +127,6 @@ unsigned int pad_repeat(unsigned int down)
     } while (i < 32);
     return out;
 }
-#endif
 
 void pad_set_repeat_from_fps(void)
 {

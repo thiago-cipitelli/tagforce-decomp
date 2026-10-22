@@ -1,6 +1,5 @@
 // @range 0x0886C904-0x0886CF50
 // @asm 0x0886C904-0x0886C9FC
-// @asm 0x0886CAE4-0x0886CB10
 // @asm 0x0886CC40-0x0886CD04
 /* In-game message box: a centred window with UCS-2 text, either plain (closes on demand,
    type 0) or with buttons through the menu widget (type 1 OK, type 2 YES/NO). One box at a
@@ -102,18 +101,10 @@ int msgbox_close(void)
     return r;
 }
 
-#ifdef NON_MATCHING /* the original branches past a dead `li v0,1` for case 1 */
 int msgbox_kind(int type)
 {
-    switch (type) {
-    case 1:
-    case 2:
-        return 1;
-    default:
-        return 0;
-    }
+    switch (type) { default: return 0; case 1: return 1; case 2: return 1; }
 }
-#endif
 
 void msgbox_open_plain(void *heap, unsigned short *text)
 {

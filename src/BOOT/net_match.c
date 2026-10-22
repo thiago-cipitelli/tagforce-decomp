@@ -1,8 +1,6 @@
 // @range 0x0886A6EC-0x0886B654
 // @data 0x088F0908-0x088F0B74
 // @rodata 0x088EB068-0x088EB0DC
-// @asm 0x0886AF2C-0x0886B000
-// @asm 0x0886B51C-0x0886B588
 /* Ad hoc matching: sceNetAdhocMatching context (host or guest), the matching callback that
    queues each event into a ring of Mbx packets, and the per-frame event handlers that keep the
    peer table (net_peers) up to date. */
@@ -278,14 +276,13 @@ int net_peer_drop(int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original clears i before finishing the address of net_peers */
 /* Index of the peer with `mac`, adding it when there is room; -1 when full. */
 int net_peer_find(unsigned char *mac)
 {
-    NetPeer *p = net_peers;
+    NetPeer *p;
     int i;
 
-    for (i = 0; i < 9; i++, p++) {
+    for (i = 0, p = net_peers; i < 9; i++, p++) {
         if (memcmp2(p->mac, mac, 6) == 0) {
             return i;
         }
@@ -300,7 +297,6 @@ int net_peer_find(unsigned char *mac)
     }
     return -1;
 }
-#endif
 
 void net_event_guest(NetEvent *ev)
 {
@@ -433,16 +429,17 @@ void net_event_host(NetEvent *ev)
     }
 }
 
-#ifdef NON_MATCHING /* the original adds lo straight into v0; this keeps it in s0 and moves */
 /* Uniform integer in [lo, hi]. */
 int rand_range(int lo, int hi)
 {
+    unsigned int r;
+
     if (hi == lo) {
         return lo;
     }
-    return rand_next() / (0x7FFFFFFFU / (hi - lo + 1) + 1) + lo;
+    r = rand_next() / (0x7FFFFFFFU / (hi - lo + 1) + 1);
+    return r + lo;
 }
-#endif
 
 int net_get_param(unsigned char *mac)
 {
