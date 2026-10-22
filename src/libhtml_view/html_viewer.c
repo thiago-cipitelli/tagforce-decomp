@@ -1,5 +1,4 @@
 // @range 0x08804508-0x088047F4
-// @asm 0x08804508-0x088046E4
 /* sceUtilityHtmlViewer session: parameters (download folder = the game's save folder, start page by
    region, 6 MB working memory in .bss) and the per-frame state machine net init -> viewer -> net term. */
 typedef struct {
@@ -41,7 +40,7 @@ extern void html_url_build(char *out);
 extern void save_path_build(char *out);
 extern int sceUtilityHtmlViewerInitStart(SceUtilityHtmlViewerParam *p);
 extern int sceUtilityHtmlViewerGetStatus(void);
-extern int sceUtilityHtmlViewerUpdate(void);
+extern int sceUtilityHtmlViewerUpdate(int visible);
 extern int sceUtilityHtmlViewerShutdownStart(void);
 extern void sceGuSync(int mode, int what);
 extern int html_net_init(void);
@@ -54,10 +53,9 @@ extern char html_savedir[0x84];
 extern void *html_mem_ptr;
 extern char html_mem[];
 
-#ifdef NON_MATCHING /* start: o original mantém &html_param em $s0 já antes do primeiro bloco (o mwcc rematerializa o lui nos stores de size/language); update: constante 2 em $a0 e case 1 sem branch-likely (4 palavras) */
 int html_viewer_start(void *mem)
 {
-    SceUtilityHtmlViewerParam *p = &html_param;
+    SceUtilityHtmlViewerParam *const p = &html_param;
 
     memset(p, 0, sizeof *p);
     p->size = sizeof *p;
@@ -100,11 +98,10 @@ int html_viewer_update(void)
     sceGuSync(0, 0);
     switch (sceUtilityHtmlViewerGetStatus()) {
     case 1:
-        break;
     case 4:
-        return 0;
+        break;
     case 2:
-        sceUtilityHtmlViewerUpdate();
+        sceUtilityHtmlViewerUpdate(2);
         break;
     case 3:
         sceUtilityHtmlViewerShutdownStart();
@@ -114,7 +111,6 @@ int html_viewer_update(void)
     }
     return 0;
 }
-#endif
 
 void html_init(void)
 {
