@@ -5,11 +5,15 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-22 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 26,5% | 34,0% | 4454 / 11039 |
+| total | 27,6% | 35,4% | 4547 / 11039 |
 | BOOT | 58,8% | 79,1% | 1777 / 2208 |
 | libduel_eng | 51,3% | 64,5% | 2663 / 3429 |
 | libhtml_view | 76,6% | 99,3% | 14 / 16 |
-| demais 19 gmodules | 0% | 0% | 0 / 5386 |
+| liblabo | 100% | 100% | 13 / 13 |
+| libpassword | 86,3% | 100% | 32 / 33 |
+| libtutoriallist | 82,0% | 99,0% | 24 / 26 |
+| libduelrecord | 71,3% | 98,9% | 24 / 27 |
+| demais 15 gmodules | 0% | 0% | 0 / 5287 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -322,4 +326,37 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`html_url.c`](../src/libhtml_view/html_url.c) | 0x08804414-0x088044B8 | 1 | 0 | página inicial do visor: página de download do Tag Force no site da Konami conforme a região (jp, us, eu) |
 | [`save_path.c`](../src/libhtml_view/save_path.c) | 0x088044B8-0x08804508 | 1 | 0 | 0x088044b8: builds "/PSP/SAVEDATA/<GAMEID>" |
 | [`html_viewer.c`](../src/libhtml_view/html_viewer.c) | 0x08804508-0x088047F4 | 2 | 2 | sessão do sceUtilityHtmlViewer: parâmetros (pasta de download = pasta do save, 3 abas, 6 MB de memória no .bss) e a máquina de estados rede → visor → fim |
+
+## liblabo (2 arquivos, 12 funções batendo, 0 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`labo_menu.c`](../src/liblabo/labo_menu.c) | 0x08804000-0x08804AD0 | 6 | 0 | entrada da cena 9 "Labo Debug Menu" (menu de desenvolvimento que ficou no jogo): máquina de estados com 12 estados, carga sob demanda dos gmodules de sub-tela, tabela de desenho por estado |
+| [`voicetest.c`](../src/liblabo/voicetest.c) | 0x08804AD0-0x088054F8 | 6 | 0 | teste de vozes do menu Labo ("Japanese Only"): personagem/sub/pack/voz, BGM e voz, fala lida de labo/voicetest.ehp; tabelas de BGM, formatos e rótulos SJIS |
+
+## libtutoriallist (4 arquivos, 24 funções batendo, 2 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`tlist_main.c`](../src/libtutoriallist/tlist_main.c) | 0x08804000-0x088042F4 | 5 | 0 | entrada da lista de tutoriais (init/update/result/draw, importada por libtitle, libstory e liblabo): heap do chamador ou FPL de 2 MB, lição pré-selecionada, fades, resultado |
+| [`tlist_draw.c`](../src/libtutoriallist/tlist_draw.c) | 0x088042F4-0x08805B0C | 8 | 2 | desenho: fundo bg.ehf, título, janela com duas abas, linhas com número e título em moldura 9-slice, cursor pulsante, barra de rolagem |
+| [`tlist_res.c`](../src/libtutoriallist/tlist_res.c) | 0x08805B0C-0x08805F10 | 9 | 0 | leitura assíncrona de database/tutoriallist.ehp e tabela de recursos por id (qsort, busca binária, cache), letra do idioma |
+| [`tlist_list.c`](../src/libtutoriallist/tlist_list.c) | 0x08805F10-0x088065B0 | 2 | 0 | montagem das duas listas pelas lições concluídas (8-23 na aba 0, 0-7 em "básico"), altura dos títulos, rolagem até a pré-selecionada, entrada do pad |
+
+## libduelrecord (3 arquivos, 24 funções batendo, 3 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`drec_main.c`](../src/libduelrecord/drec_main.c) | 0x08804000-0x08804690 | 13 | 0 | entrada do registro de duelos (init/update/draw, importada por libtitle, libstory e liblabo): máquina de estados da tela, carga de database/duelrecord.ehp e busca dos arquivos por id |
+| [`drec_draw.c`](../src/libduelrecord/drec_draw.c) | 0x08804690-0x088060A4 | 8 | 2 | desenho: cabeçalho com porcentagem, abas, linhas (número, texto, valor, tempo mm:ss, marca de novo piscando), barra de rolagem |
+| [`drec_build.c`](../src/libduelrecord/drec_build.c) | 0x088060A4-0x08806A2C | 3 | 1 | montagem das três abas a partir do save (40 contadores, 83 itens, 118 itens; aba 2 só com sysflag 7), porcentagem de conclusão, entrada do pad, tabelas de itens |
+
+## libpassword (4 arquivos, 33 funções batendo, 0 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`password_main.c`](../src/libpassword/password_main.c) | 0x08804000-0x08804844 | 11 | 0 | entrada da Password Machine, despacho dos estados, recursos de labo/password.ehp (leitura assíncrona, tabela id→nome com qsort e busca binária, letra do idioma) |
+| [`draw.c`](../src/libpassword/draw.c) | 0x08804844-0x0880597C | 8 | 0 | desenho: fundo, monitor, janela de mensagens com texto rolando e cursor piscante, imagem da carta em 154 linhas com ondulação senoidal, teclado e dígitos (EHF) |
+| [`states.c`](../src/libpassword/states.c) | 0x0880597C-0x08807460 | 8 | 0 | cenas: introdução, teclado de 8 dígitos, conferência da senha (card_id_from_password, faixa 0xFA7-0x1B2D, 6 ids excluídos), carta encontrada e adicionada, não encontrada, sair |
+| [`keypad.c`](../src/libpassword/keypad.c) | 0x08807460-0x088078D0 | 6 | 0 | layout do teclado 3x4 e cursor, faixas de animação de key.ehf/nixi.ehf, ids de carta excluídos |
 

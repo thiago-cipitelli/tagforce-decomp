@@ -19,8 +19,9 @@ platform layer. The project is modelled on [ygo-tf-5-decomp](https://github.com/
 | `BOOT` | runtime: init, main loop, VFS, scenes, sound, graphics, EHF animation, network, save data | 58.8% | 79.1% | 1777 / 2208 |
 | `libduel_eng` | duel engine: rules, card effects, CPU player | 51.3% | 64.5% | 2663 / 3429 |
 | `libhtml_view` | smallest gmodule, proof of the build pipeline | 76.6% | 99.3% | 14 / 16 |
-| 19 other gmodules | duel presentation, field, story, shop, deck editor, title… | 0% | 0% | 0 / 5386 |
-| **total** | | **26.5%** | **34.0%** | **4454 / 11039** |
+| `liblabo`, `libpassword`, `libtutoriallist`, `libduelrecord` | debug menu, password machine, tutorial list, duel records | 71–100% | 99–100% | 93 / 99 |
+| 15 other gmodules | duel presentation, field, story, shop, deck editor, title… | 0% | 0% | 0 / 5287 |
+| **total** | | **27.6%** | **35.4%** | **4547 / 11039** |
 
 Numbers from 2026-10-22 (`python3 tools/bytematch.py`); the badges above are live. The whole game
 rebuilds byte-identical today: the parts without C are kept as assembly. Per-file progress and the
