@@ -1,7 +1,6 @@
 // @range 0x08865260-0x08866068
 // @data 0x088F04AC-0x088F078C
 // @rodata 0x088EAFE0-0x088EB030
-// @asm 0x088657A8-0x0886591C
 // @asm 0x08865BC4-0x08865CB0
 // @asm 0x08865B20-0x08865B50
 /* Game-side sound glue: heap and loader callbacks handed to the sound library (0x0885C688..0x08865260,
@@ -74,7 +73,7 @@ int snd_seq_entry();
 int snd_group_read_done(void *obj, int a);
 void snd_set_volume(int ch, int vol);
 SysConfig *cfg_get(void);
-unsigned short charmap_lookup(int c, int flag);
+int charmap_lookup(int ch, int *kind_out);
 int charmap_lookup3(int c);
 unsigned short region_pick_value(int flag);
 
@@ -341,7 +340,6 @@ int bgm_get_status()             { return snd_obj_status(); }
 int snd_seq_get_u16()            { return snd_seq_entry(); }
 int snd_get_base_id(int obj)     { return snd_obj_base_id(obj); }
 
-#ifdef NON_MATCHING /* voice_table_find: loop and range-test layout; gamestate_partner_mode: result kept in a0 across the tests */
 /* Voice base id for a character: 0..0x28 use the pair list, 0x29.. derive from the charmap group. */
 int voice_table_find(unsigned int chr, unsigned int variant)
 {
@@ -350,33 +348,21 @@ int voice_table_find(unsigned int chr, unsigned int variant)
     int group, sub;
 
     if ((int)chr < 0x29) {
-        c = voice_pairs[0];
-        p = voice_pairs;
-        if (c != 0x98) {
-            while (c != chr || p[1] != variant) {
-                p += 4;
-                c = *p;
-                if (c == 0x98)
-                    return 0;
-            }
-            return p[2];
+        for (p = voice_pairs; *p != 0x98; p += 4) {
+            if (*p == (int)chr && p[1] == variant)
+                return p[2];
         }
     } else {
         group = charmap_lookup(chr, 0);
         sub = charmap_lookup3(chr);
-        if (group == 1000) {
-            if (sub < 3)
-                return voice_tbl_c[sub * 4];
-            return 0;
+        if (group == 1000 && sub < 3)
+            return voice_tbl_c[sub * 4];
+        if (group >= 100 && sub < 15) {
+            if (group < 400)
+                return voice_tbl_a[sub][0];
+            if (group < 500)
+                return voice_tbl_b[sub][0];
         }
-        if (group < 100)
-            return 0;
-        if (sub >= 15)
-            return 0;
-        if (group < 400)
-            return voice_tbl_a[sub][0];
-        if (group < 500)
-            return voice_tbl_b[sub][0];
     }
     return 0;
 }
@@ -385,17 +371,19 @@ int voice_table_find(unsigned int chr, unsigned int variant)
 int gamestate_partner_mode(void)
 {
     GameState *gs = game_state_get();
+    int r;
 
     if (gs->partner_mode == 2)
-        return 2;
-    if (gs->slot[0].type < 2)
-        return 0;
-    if (gs->slot[1].type < 2)
-        return 0;
-    return 1;
+        r = 2;
+    else if (gs->slot[0].type > 1) {
+        if (gs->slot[1].type < 2)
+            r = 0;
+        else
+            r = 1;
+    } else
+        r = 0;
+    return r;
 }
-
-#endif
 
 int partner_voice_id(unsigned int chr, unsigned int variant)
 {
