@@ -21,8 +21,8 @@
    takes N words. Ints and floats convert with (int)/(float); a scalar component with an unknown
    letter is skipped.
    An unknown destination letter, or a source letter that starts no scalar or vector, stops the
-   parse. `state` (may be 0) receives the number
-   of outputs converted, type letters and value words consumed; the return is the output count. */
+   parse. `state` (may be 0) receives the number of outputs converted, type letters and value
+   words consumed; the return is the output count. */
 #include "libc.h"
 #include "ehfcmd.h"
 
