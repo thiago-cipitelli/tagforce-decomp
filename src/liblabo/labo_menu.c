@@ -51,9 +51,9 @@ void libduelrecord_08804690(void);
 void liblimitlist_088060CC(int a, int b);
 int liblimitlist_08806214(void);
 void liblimitlist_08806490(void);
-void libtutoriallist_08804008(int a, int b);
-int libtutoriallist_08804154(void);
-void libtutoriallist_088042F4(void);
+void tlist_init(int a, int b);
+int tlist_update(void);
+void tlist_draw(void);
 
 void voicetest_load(void);
 int voicetest_update(void);
@@ -265,11 +265,11 @@ void labo_main(void)
         case 9:
             switch (labo.load) {
             case 1:
-                libtutoriallist_08804008(0, 0);
+                tlist_init(0, 0);
                 labo.load = 2;
                 break;
             case 2:
-                if (libtutoriallist_08804154()) {
+                if (tlist_update()) {
                     sceKernelStopModule(labo.modid, 0, 0, 0, 0);
                     sceKernelUnloadModule(labo.modid);
                     fade_start(1, 0xFF000000, 16);
@@ -382,7 +382,7 @@ static const char labo_module_names[9][32] = {
 static void (*const labo_draw_table[12])(void) = {
     0, labo_menu_draw, password_draw, libselect_card_08807630, libconv_machine_08804B50,
     libcardalbum_08805CA4, libcharalist_08804F48, libduelrecord_08804690, liblimitlist_08806490,
-    libtutoriallist_088042F4, voicetest_draw, labo_menu_draw,
+    tlist_draw, voicetest_draw, labo_menu_draw,
 };
 
 static const char labo_menu_items[9][64] = {
