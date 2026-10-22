@@ -2822,10 +2822,13 @@ duel_atk_w1C = 0x08913F1C; // type:data inferred duel_special.zone[0]
 duel_atk_w20 = 0x08913F20; // type:data inferred duel_special.zone[1]
 duel_atk_w24 = 0x08913F24; // type:data inferred duel_special.unk24
 duel_08837B9C = 0x08837B9C; // type:func matched src/libduel_eng/ai_08837500.c attack target step machine
-duel_08838548 = 0x08838548; // type:func inferred
+duel_08838548 = 0x08838548; // type:func matched src/libduel_eng/ai_08838548.c
 duel_w_08913EF0 = 0x08913EF0; // type:data inferred direct attack chosen by the computer [?]
 duel_w_08913EFC = 0x08913EFC; // type:data inferred target zone chosen by the computer [?]
 duel_0880EB64 = 0x0880EB64; // type:func inferred
+duel_088385C8 = 0x088385C8; // type:func matched src/libduel_eng/ai_08838548.c
+duel_08838980 = 0x08838980; // type:func matched src/libduel_eng/ai_08838548.c
+duel_08838A84 = 0x08838A84; // type:func inferred
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ehsys_08819AE0 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
