@@ -1,7 +1,8 @@
 // @range 0x0884900C-0x0884A9B4
 // @data 0x088EE9E0-0x088EEA58
-// @asm 0x0884900C-0x08849B14
-// @asm 0x08849C9C-0x0884A430
+// @asm 0x0884900C-0x088499CC
+// @asm 0x08849C9C-0x08849E54
+// @asm 0x08849F44-0x0884A430
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
    capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph
    quads. Also the sceFont allocator callbacks over FontCtx.scratch. */
@@ -300,7 +301,8 @@ unsigned short *font_parse_tag(FontCtx *f, FontLayout *st, FontCmd *cmd, unsigne
 
 /* Measures a "$Rbase(ruby)" group at p: *pad = extra advance per base character, *w = extra
    width of the ruby beyond the base, *total = width of the wider of the two, *last = last base
-   character. Returns the position after ')'. */
+   character. Returns the position after ')'. */#endif
+
 unsigned short *font_ruby_measure(FontCtx *f, unsigned short *p, unsigned short *pad, unsigned short *w, unsigned short *total, unsigned short *last)
 {
     unsigned short base[24];
@@ -312,31 +314,32 @@ unsigned short *font_ruby_measure(FontCtx *f, unsigned short *p, unsigned short 
     *w = 0;
     *pad = 0;
     n = wcschr_index(p, '(');
-    if (n >= 0) {
-        wcsncpy(base, p, n);
-        if (n > 0)
-            *last = base[n - 1];
-        base[n] = 0;
-        bw = font_measure_text(base);
-        q = p + (n + 1);
-        k = wcschr_index(q, ')');
-        if (k > 0) {
-            rw = k * 0x1C0;
-            p = q + (k + 1);
-            if (bw < rw) {
-                *pad = (rw - bw) / n;
-                *w = 0;
-                *total = rw;
-            } else {
-                *pad = 0;
-                *w = (bw - k * 0x1C0) / k;
-                *total = bw;
-            }
-        }
+    if (n < 0) {
+        return p;
+    }
+    wcsncpy(base, p, n);
+    if (n > 0)
+        *last = base[n - 1];
+    base[n] = 0;
+    bw = font_measure_text(base);
+    q = p + (n + 1);
+    k = wcschr_index(q, ')');
+    if (k <= 0) {
+        return p;
+    }
+    rw = k * 0x1C0;
+    p = q + (k + 1);
+    if (bw < rw) {
+        *pad = (rw - bw) / n;
+        *w = 0;
+        *total = rw;
+    } else {
+        *pad = 0;
+        *w = (bw - rw) / k;
+        *total = bw;
     }
     return p;
 }
-#endif
 
 /* GE state for drawing glyph quads from the atlas: texture (ctx base, 512x256 4bpp), color. */
 void *font_dl_glyph_header(void *dl, unsigned int color)
@@ -371,63 +374,53 @@ unsigned int font_shadow_color(unsigned int c)
 /* Emits the ruby characters of "(...)" at p as glyph commands above the base text. */
 unsigned short *font_ruby_layout(FontCtx *f, FontLayout *st, unsigned short *p)
 {
-    unsigned short c = *p;
-    unsigned int ch;
-    FontCmd *o;
+    unsigned short c;
 
-    for (;;) {
-        ch = c;
-        p++;
-        if (ch == ')')
+    while ((c = *p++) != ')') {
+        if (c < 0x20)
             break;
-        if (ch < 0x20)
-            break;
-        if (st->ruby_xmax < st->ruby_x + 0x1C0) {
-            if (!(st->flags & 8) || wc_no_line_start(ch) != 0) {
+        if (st->ruby_x + 0x1C0 > st->ruby_xmax) {
+            if (!(st->flags & 8) || wc_no_line_start(c) != 0) {
                 st->ruby_y += st->line_h;
-                st->ruby_x = st->line_x0 + (st->ruby_w >> 1);
+                st->ruby_x = st->line_x0 + st->ruby_w / 2u;
             }
         }
-        o = &f->cmds[f->ncmds];
-        o->kind = 1;
-        o->a = st->ruby_x;
-        o->b = st->ruby_y;
-        o->c = ch;
+        f->cmds[f->ncmds].kind = 1;
+        f->cmds[f->ncmds].a = st->ruby_x;
+        f->cmds[f->ncmds].b = st->ruby_y;
+        f->cmds[f->ncmds].c = c;
         st->ruby_x += st->ruby_w + 0x1C0;
         f->ncmds++;
         if (f->ncmds > 0xFF)
             break;
-        c = *p;
     }
-    st->ruby_x -= st->ruby_w >> 1;
+    st->ruby_x -= (unsigned int)st->ruby_w >> 1;
     st->ruby_xmax = st->xmax;
     return p;
 }
 
+#endif
 /* Same as font_ruby_layout without emitting commands (measurement). */
 unsigned short *font_ruby_skip(FontCtx *f, FontLayout *st, unsigned short *p)
 {
-    unsigned short c = *p;
+    unsigned short c;
 
-    for (;;) {
-        p++;
-        if (c == ')')
-            break;
+    while ((c = *p++) != ')') {
         if (c < 0x20)
             break;
-        if (st->ruby_xmax < st->ruby_x + 0x1C0) {
+        if (st->ruby_x + 0x1C0 > st->ruby_xmax) {
             if (!(st->flags & 8) || wc_no_line_start(c) != 0) {
                 st->ruby_y += st->line_h;
-                st->ruby_x = st->line_x0 + (st->ruby_w >> 1);
+                st->ruby_x = st->line_x0 + st->ruby_w / 2u;
             }
         }
         st->ruby_x += st->ruby_w + 0x1C0;
-        c = *p;
     }
-    st->ruby_x -= st->ruby_w >> 1;
+    st->ruby_x -= (unsigned int)st->ruby_w >> 1;
     st->ruby_xmax = st->xmax;
     return p;
 }
+#ifdef NON_MATCHING
 
 /* Draws the commands of the current line: shadow pass (flag 4) then the main pass; ruby glyphs
    come from rubi_font00.gim. Resets the command count. */
