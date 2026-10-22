@@ -165,7 +165,10 @@ typedef struct DuelAct {               /* 0x18: card being activated or resolved
 } DuelAct;
 
 typedef struct DuelChain {             /* 0x08914350 */
-    unsigned char pad0[0x300];
+    union {
+        unsigned char pad0[0x300];
+        DuelAct pending[32];           /* actions queued by the computer player (duel_w_089147E0) */
+    };
     DuelAct acts[16];                  /* +0x300 */
     int unk480;
     int len;                           /* +0x484 */
