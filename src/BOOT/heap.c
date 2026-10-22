@@ -2,7 +2,6 @@
 // @asm 0x08837B28-0x08837D10
 // @asm 0x08837FA4-0x08838468
 // @asm 0x0883864C-0x08838AF0
-// @asm 0x08838EC8-0x088390C4
 /* "HOGE" heap: a sorted table of block boundaries, each word holding an address and a free flag
    (block i spans ent[i].addr to ent[i + 1].addr). The table lives in a block of the heap itself
    and grows by doubling, moving to the lowest free block when possible. Allocation is best fit
@@ -296,7 +295,7 @@ HeapEnt *heap_find_entry(Heap *h, void *p)
     return 0;
 }
 
-#ifdef NON_MATCHING /* unrolled copies and register allocation differ */
+#ifdef NON_MATCHING /* com os ramos na ordem do original (!top primeiro) ainda sobra a cópia desenrolada, ~22 instruções mais longa, e a alocação dos temporários dos bitfields */
 /* Splits `size` bytes off free block `e`: from its top (`top`) or its bottom, joining a free
    neighbour when there is one. Returns the entry of the new used block, 0 if the table is full. */
 HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top)
@@ -305,16 +304,16 @@ HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top)
     HeapEnt *s;
     HeapEnt *d;
 
-    if (top) {
+    if (!top) {
         if (e[1].free) {
-            e[1].addr = e[2].addr - sz;
+            e[1].addr = e[0].addr + sz;
             e[1].free = 1;
-            return e + 1;
+            return e;
         }
         if (e[-1].free) {
-            e[0].addr = e[1].addr - sz;
+            e[0].addr = e[-1].addr + sz;
             e[0].free = 1;
-            return e;
+            return e - 1;
         }
         if (h->tabsize < (h->n + 2) * sizeof(HeapEnt)) {
             return 0;
@@ -324,19 +323,19 @@ HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top)
             *d-- = *s;
         }
         h->n++;
-        e[1].addr = e[2].addr - sz;
-        e[1].free = 1;
-        return e + 1;
-    }
-    if (e[1].free) {
         e[1].addr = e[0].addr + sz;
         e[1].free = 1;
         return e;
     }
+    if (e[1].free) {
+        e[1].addr = e[2].addr - sz;
+        e[1].free = 1;
+        return e + 1;
+    }
     if (e[-1].free) {
-        e[0].addr = e[-1].addr + sz;
+        e[0].addr = e[1].addr - sz;
         e[0].free = 1;
-        return e - 1;
+        return e;
     }
     if (h->tabsize < (h->n + 2) * sizeof(HeapEnt)) {
         return 0;
@@ -346,9 +345,9 @@ HeapEnt *heap_split(Heap *h, HeapEnt *e, int size, int top)
         *d-- = *s;
     }
     h->n++;
-    e[1].addr = e[0].addr + sz;
+    e[1].addr = e[2].addr - sz;
     e[1].free = 1;
-    return e;
+    return e + 1;
 }
 #endif
 
@@ -389,26 +388,24 @@ int heap_merge(Heap *h, HeapEnt *e)
     return 1;
 }
 
-#ifdef NON_MATCHING /* register allocation differs */
 /* Moves the table down into the free block in front of it when there is one. */
 int heap_relocate_table(Heap *h)
 {
-    HeapEnt *t = h->ent;
-    HeapEnt *b = &t[1];
+    HeapEnt *b = &h->ent[1];
     unsigned int next;
     unsigned int room;
     HeapEnt *e;
     unsigned int sz;
 
-    if (!t[1].free) {
+    if (!b->free) {
         return 1;
     }
-    next = t[2].addr;
-    if ((unsigned int)t == next) {
+    next = b[1].addr;
+    if ((unsigned int)h->ent == next) {
         mem_move((void *)b->addr, (void *)next, (h->n + 1) * 4);
-        t[2].addr = b->addr + h->tabsize;
-        t[2].free = 1;
-        t[1].free = 0;
+        b[1].addr = b->addr + h->tabsize;
+        b[1].free = 1;
+        b->free = 0;
         h->ent = (HeapEnt *)b->addr;
         return 1;
     }
@@ -426,11 +423,12 @@ int heap_relocate_table(Heap *h)
         }
     }
     e = heap_find_entry(h, h->ent);
-    t[1].free = 0;
+    b->free = 0;
     e->free = 1;
     memcpy((void *)b->addr, h->ent, h->tabsize);
-    h->ent = (HeapEnt *)((HeapEnt *)((char *)b + (b->addr - (unsigned int)h->ent)))->addr;
+    /* b inside the copied table gives the new table address */
+    h->ent = (HeapEnt *)((HeapEnt *)((int)b->addr + ((int)b - (int)h->ent)))->addr;
     h->level = ALLEGREX_MIN(3, h->level + 1);
     return 1;
 }
-#endif
+
