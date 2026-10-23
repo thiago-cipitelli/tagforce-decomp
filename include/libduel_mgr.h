@@ -33,14 +33,40 @@ typedef struct DmgrBgm {               /* sound ids per duel kind */
 } DmgrBgm;
 
 typedef struct DmgrSeq {               /* dmgr +0x15C, zeroed at duel start */
-    unsigned char pad00[0xC];
-    unsigned short unk0c;              /* +0x0C */
-    unsigned short pad0e;
-    unsigned short unk10;              /* +0x10 */
-    unsigned char pad12[0x2C - 0x12];
+    unsigned short opening;            /* +0x00 the first turn's cut-in is pending */
+    unsigned short pending_card;       /* +0x02 card whose activation gets a cut-in */
+    unsigned short set_card;           /* +0x04 card just set */
+    unsigned short skip_card;          /* +0x06 */
+    unsigned short attack_on;          /* +0x08 */
+    unsigned short attack_player;      /* +0x0A */
+    unsigned short turn_player;        /* +0x0C */
+    unsigned short attrs;              /* +0x0E field attributes of the attacker */
+    unsigned short act_player;         /* +0x10 */
+    unsigned short attr_cutin;         /* +0x12 */
+    unsigned short target;             /* +0x14 card id of the attack target */
+    unsigned short pad16;
+    unsigned short mood;               /* +0x18 0 even, 1 winning, 2 losing */
+    unsigned short pad1a;
+    unsigned short n_monsters[4];      /* +0x1C per slot */
+    unsigned short n_spells[4];        /* +0x24 */
     DmgrBgm bgm;                       /* +0x2C */
-    unsigned char pad38[0x4C - 0x38];
+    unsigned short cur_bgm;            /* +0x38 */
+    unsigned short pad3a;
+    unsigned char pad3c[0x48 - 0x3C];
+    int bgm_started;                   /* +0x48 */
 } DmgrSeq;
+
+typedef struct DmgrEvent {             /* one queued presentation step, 0x10 */
+    unsigned short type;
+    unsigned short a, b, c, d;
+    unsigned short pad[3];
+} DmgrEvent;
+
+typedef struct DmgrQueue {             /* dmgr +0x58, ring of 16 events */
+    unsigned short head;
+    unsigned short tail;
+    DmgrEvent ev[16];
+} DmgrQueue;
 
 typedef struct DmgrDrawSetup {         /* passed to libduel_draw_08805D2C, 0x40 */
     int n;
@@ -69,7 +95,8 @@ typedef struct DuelMgr {               /* dmgr 0x0931BCB0, 0x92C bytes zeroed by
     unsigned short next_state;         /* +0x02E */
     unsigned short sub;                /* +0x030 */
     unsigned short fade;               /* +0x032 */
-    unsigned char pad34[0x15C - 0x34];
+    unsigned char pad34[0x58 - 0x34];
+    DmgrQueue queue;                   /* +0x058 */
     DmgrSeq seq;                       /* +0x15C */
     DmgrModArgs mod_args;              /* +0x1A8 */
     int start_loaded;                  /* +0x1BC start/start_all.ehp read */
@@ -87,6 +114,12 @@ typedef struct DuelMgr {               /* dmgr 0x0931BCB0, 0x92C bytes zeroed by
 } DuelMgr;
 
 extern DuelMgr dmgr;
+
+/* &gs->slot[k] the way the original adds it (base first): an accessor, not the inline expression */
+inline PlayerSlot *dmgr_slot(DmgrGameHdr *gs, int k)
+{
+    return &gs->slot[k];
+}
 
 /* BOOT */
 void *memset(void *, int, unsigned int);
