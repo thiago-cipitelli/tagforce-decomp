@@ -206,10 +206,10 @@ void *rv_draw_recipe(void *dl)
     int i;
     int n;
 
-    dl = rv_draw_digits(dl, 0x301CD, 0, g->n_main, 2, 0xFFFFFFFF, rvres_get(0x8009));
+    dl = rv_draw_digits(dl, 0x301CD, 0, g->c.n_main, 2, 0xFFFFFFFF, rvres_get(0x8009));
     limit = rv.shown;
-    if (g->n_main < limit)
-        limit = g->n_main;
+    if (g->c.n_main < limit)
+        limit = g->c.n_main;
     for (row = 0; row < 4; row++) {
         y += 33;
         if (g->row == row)
@@ -224,7 +224,7 @@ void *rv_draw_recipe(void *dl)
                 x = i * 175 / 7 + 300;
             else
                 x = i * 152 / (g->main_cols - 1) + 300;
-            e = &g->main[done + i];
+            e = &g->c.main[done + i];
             if (rv.state == 4 && g->col == i && g->row == row) {
                 sel_x = x;
                 sel = e;
@@ -238,10 +238,10 @@ void *rv_draw_recipe(void *dl)
     k = 0;
     done = 0;
     y += 11;
-    dl = rv_draw_digits(dl, 461 | (unsigned short)(y + 21) << 16, 0, g->n_side, 2, 0xFFFFFFFF, rvres_get(0x8009));
-    limit = rv.shown - g->n_main;
-    if (g->n_side < limit)
-        limit = g->n_side;
+    dl = rv_draw_digits(dl, 461 | (unsigned short)(y + 21) << 16, 0, g->c.n_side, 2, 0xFFFFFFFF, rvres_get(0x8009));
+    limit = rv.shown - g->c.n_main;
+    if (g->c.n_side < limit)
+        limit = g->c.n_side;
     for (; row < 6; row++) {
         y += 33;
         if (g->row == row)
@@ -256,7 +256,7 @@ void *rv_draw_recipe(void *dl)
                 x = i * 175 / 7 + 300;
             else
                 x = i * 152 / (g->side_cols - 1) + 300;
-            e = &g->side[done + i];
+            e = &g->c.side[done + i];
             if (rv.state == 4 && g->col == i && g->row == row) {
                 sel_x = x;
                 sel = e;
@@ -267,24 +267,24 @@ void *rv_draw_recipe(void *dl)
         }
         done = k;
     }
-    dl = rv_draw_digits(dl, 461 | (unsigned short)(y + 32) << 16, 0, g->n_extra, 2, 0xFFFFFFFF, rvres_get(0x8009));
-    n = rv.shown - g->n_main - g->n_side;
-    if (g->n_extra < n)
-        n = g->n_extra;
+    dl = rv_draw_digits(dl, 461 | (unsigned short)(y + 32) << 16, 0, g->c.n_extra, 2, 0xFFFFFFFF, rvres_get(0x8009));
+    n = rv.shown - g->c.n_main - g->c.n_side;
+    if (g->c.n_extra < n)
+        n = g->c.n_extra;
     if (g->row == row)
         sel_y = y + 44;
     for (i = 0; i < n; i++) {
         int x;
 
-        if (g->n_extra < 8)
+        if (g->c.n_extra < 8)
             x = i * 175 / 7 + 300;
         else
-            x = i * 152 / (g->n_extra - 1) + 300;
+            x = i * 152 / (g->c.n_extra - 1) + 300;
         if (rv.state == 4 && g->col == i && g->row == 6) {
             sel_x = x;
-            sel = &g->extra[i];
+            sel = &g->c.extra[i];
         } else {
-            dl = rv_draw_grid_card(dl, x, y + 44, &g->extra[i]);
+            dl = rv_draw_grid_card(dl, x, y + 44, &g->c.extra[i]);
         }
     }
     if (rv.state == 4) {

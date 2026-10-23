@@ -5,6 +5,7 @@
 
 #include "font.h"
 #include "ehsys.h"
+#include "game.h"
 
 typedef struct RvScroll {      /* scroll state of the card text */
     int card;                  /* +0x00 card shown, -1 none */
@@ -23,17 +24,21 @@ typedef struct RvEntry {       /* one card of the recipe, 6 bytes */
     unsigned char b5_hi : 6;
 } RvEntry;
 
+typedef struct RvCards {       /* the cards of the shown recipe, 0x2F0 bytes */
+    unsigned short n_main : 7; /* +0x00 */
+    unsigned short n_extra : 4;
+    unsigned short n_side : 5;
+    RvEntry main[80];          /* +0x02 */
+    RvEntry extra[15];         /* +0x1E2 */
+    RvEntry side[30];          /* +0x23C */
+} RvCards;
+
 typedef struct RvGrid {        /* the shown recipe (+0x18 of RecipeViewer) */
     unsigned char col;         /* +0x00 cursor in the recipe grid */
     unsigned char row;         /* +0x01 0..3 main, 4..5 side, 6 extra */
     unsigned short main_cols;  /* +0x02 cards per row of the main deck */
     unsigned short side_cols;  /* +0x04 cards per row of the side deck */
-    unsigned short n_main : 7; /* +0x06 */
-    unsigned short n_extra : 4;
-    unsigned short n_side : 5;
-    RvEntry main[80];          /* +0x08 */
-    RvEntry extra[15];         /* +0x1E8 */
-    RvEntry side[30];          /* +0x242 */
+    RvCards c;                 /* +0x06 */
 } RvGrid;
 
 typedef struct RvPos {         /* list position of a tab */
@@ -50,24 +55,25 @@ typedef struct RvRecipe {      /* one recipe (or saved deck) of the lists, 8 byt
     unsigned char pad7;
 } RvRecipe;
 
-typedef struct RvExtList {     /* a list read from the extra data, 0x208 bytes */
-    unsigned short name[0x104];
+typedef struct RvExtList {     /* a recipe read from the extra data, 0x208 bytes */
+    unsigned short name[0x80];
+    RecipeData recipe;         /* +0x100 */
 } RvExtList;
 
 typedef struct RvParams {      /* recipe_viewer_init argument */
     void *heap;
     void *cip;
     void *deck_pack;
-    int unk0c;
-    int unk10;
+    void (*on_delete)(int slot);
+    void (*on_select)(RecipeData *d, unsigned short *name);
 } RvParams;
 
 typedef struct RecipeViewer {  /* rv 0x0880EBE0 (.bss), 0x17E8 bytes cleared by recipe_viewer_init */
     unsigned short mode : 4;   /* +0x00 argument of recipe_viewer_init */
     unsigned short state : 8;  /* 0 load, 1 build, 2 fade in, 3 list, 4 recipe, 5 menu, 6 fade out, 7 release */
     unsigned short bits12 : 4;
-    unsigned char release;     /* +0x02 release step */
-    unsigned char pad03;
+    unsigned char step;        /* +0x02 step of the current state (load, card info, menu, release) */
+    unsigned char blink;       /* +0x03 blink counter of the menu state */
     unsigned short cancelled : 1; /* +0x04 */
     unsigned short busy : 1;
     unsigned short osk : 8;    /* name entry (on-screen keyboard) step */
@@ -76,7 +82,8 @@ typedef struct RecipeViewer {  /* rv 0x0880EBE0 (.bss), 0x17E8 bytes cleared by 
     unsigned short no_frame : 1; /* +0x05 bit 4: no cursor frame */
     unsigned short loaded : 1; /* resources ready */
     unsigned short bits14 : 2;
-    unsigned char pad06[4];
+    unsigned short held;       /* +0x06 up/down held (fast scrolling) */
+    unsigned short hold_time;  /* +0x08 */
     unsigned char tab : 2;     /* +0x0A 0 saved decks, 1 recipes, 2 extra data lists */
     unsigned char bits0a : 6;
     unsigned char pad0b;
@@ -98,8 +105,8 @@ typedef struct RecipeViewer {  /* rv 0x0880EBE0 (.bss), 0x17E8 bytes cleared by 
     void *heap;                /* +0x17CC */
     void *cip;                 /* +0x17D0 card picture reader */
     void *deck_pack;           /* +0x17D4 deck/all pack already in memory (from the caller), or 0 */
-    int unk17d8;
-    int unk17dc;
+    void (*on_delete)(int slot);  /* +0x17D8 called before a saved deck is reloaded */
+    void (*on_select)(RecipeData *d, unsigned short *name); /* +0x17DC */
     int fpl;                   /* +0x17E0 own 4 MB block when the caller passes no heap */
     void *fpl_mem;             /* +0x17E4 */
 } RecipeViewer;

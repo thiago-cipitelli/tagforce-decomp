@@ -16,8 +16,8 @@ void rv_counter_step(void);
 int rv_name_update(void);
 void rv_info_update(void);
 void rv_load_lists(void);
-void rv_set_tab_anim(void);
 void rv_set_title_anim(void);
+void rv_set_tab_anim(void);
 void rv_select(void);
 void rv_input_list(void);
 void rv_input_recipe(void);
@@ -41,8 +41,8 @@ void recipe_viewer_init(int mode, RvParams *p)
         rv.heap = p->heap;
         rv.cip = p->cip;
         rv.deck_pack = p->deck_pack;
-        rv.unk17d8 = p->unk0c;
-        rv.unk17dc = p->unk10;
+        rv.on_delete = p->on_delete;
+        rv.on_select = p->on_select;
     }
     rv.mode = mode;
     if (rv.heap == 0) {
@@ -123,8 +123,8 @@ int recipe_viewer_update(void)
     case 1:
         if (!rv.loaded && !rvres_poll())
             break;
-        rv_set_tab_anim();
         rv_set_title_anim();
+        rv_set_tab_anim();
         rv_select();
         rv.state = 2;
         fade_start(1, 0xFF000000, 16);
@@ -172,23 +172,23 @@ int recipe_viewer_update(void)
 
 int recipe_viewer_release(void)
 {
-    switch (rv.release) {
+    switch (rv.step) {
     case 0:
         switch (rv.mode) {
         default:
             cardlist_clear();
             cip_close(rv.cip);
-            rv.release++;
+            rv.step++;
             break;
         case 2:
         case 1:
-            rv.release = 2;
+            rv.step = 2;
             break;
         }
         break;
     case 1:
         if (cip_is_idle(rv.cip))
-            rv.release++;
+            rv.step++;
         break;
     case 2:
         switch (rv.mode) {
@@ -199,9 +199,9 @@ int recipe_viewer_release(void)
             rvres_free();
             break;
         }
-        if (rv.buf) {
-            heap_set_level(rv.heap, rv.buf);
-            rv.buf = 0;
+        if (rv.ext) {
+            heap_set_level(rv.heap, rv.ext);
+            rv.ext = 0;
         }
         if (rv.fpl > 0) {
             sceKernelFreeFpl(rv.fpl, rv.fpl_mem);
