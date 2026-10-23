@@ -10,3 +10,6 @@ asm/
 assets/
 objdiff.json
 .env
+
+# graphify (grafo de conhecimento local, regerável)
+graphify-out/
