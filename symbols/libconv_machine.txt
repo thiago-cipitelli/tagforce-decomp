@@ -60,6 +60,7 @@ cm_packs = 0x0880C6AC; // type:data
 cm_files = 0x0880C834; // type:data
 cm_files2 = 0x0880CA78; // type:data
 cm_models = 0x0880CB78; // type:data
+cm_groups = 0x0880D020; // type:data
 cm_anims = 0x0880D2F0; // type:data
 cm_card_vtx = 0x0880CBBC; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
