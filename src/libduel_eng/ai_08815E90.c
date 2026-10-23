@@ -1,4 +1,4 @@
-// @range 0x08815E90-0x08818C34
+// @range 0x08815E90-0x08819F94
 // @asm 0x08815E90-0x0881616C
 // @asm 0x0881616C-0x088163E4
 // @asm 0x0881657C-0x08816A74
@@ -7,6 +7,9 @@
 // @asm 0x088170EC-0x088171C8
 // @asm 0x088172F0-0x0881739C
 // @asm 0x08817598-0x08818C34
+// @asm 0x08818C34-0x088194D0
+// @asm 0x0881956C-0x08819B94
+// @asm 0x08819B94-0x08819F94
 /* Computer player: picking one of its cards (zone mask bit player * 16 + zone) to send away. */
 #include "duel.h"
 #include "card_db.h"
@@ -45,6 +48,23 @@ int duel_0880A17C(unsigned int p, unsigned int q, int skip, int fa, int fd);
 int duel_0880A54C(DuelAct *a, unsigned int p, int skip, int any);
 int duel_field_def(unsigned int p, int z);
 int duel_find_st(unsigned int p, int id);
+unsigned int duel_0884E538(DuelAct *a, int (*fn)(DuelAct *a, unsigned int p, int z));
+void duel_08835F34(unsigned int p, int z, int i, int k);
+void duel_08836028(void);
+int duel_08815BD0(unsigned int p, int (*f)(unsigned int p, int zone, int i), int atk, int def);
+int duel_08815AF8(unsigned int p, int (*f)(unsigned int p, int zone, int i), int (*g)(unsigned int p, int i));
+int duel_08805D18(unsigned int p, int id, int a, int dflt);
+unsigned int duel_08827D98(unsigned int p, int uid);
+
+extern unsigned int duel_ai_player;
+
+int duel_08815E90(unsigned int p, unsigned int mask);
+int duel_0881616C(unsigned int p, unsigned int mask, int a);
+int duel_0881657C(unsigned int p, unsigned int mask, int strong);
+int duel_08816A74(unsigned int p, int (*fn)(), int a, int keep);
+int duel_08816D74(DuelAct *a, unsigned int p);
+int duel_088170EC(unsigned int p, int z);
+int duel_088172F0(unsigned int p, int z);
 
 extern int duel_atk_zone;              /* 0x08913F2C */
 extern unsigned int duel_atk_tp;       /* 0x08913F14 */
@@ -943,8 +963,7 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
     case 0x142E: case 0x134B: case 0x12F8: case 0x1253: case 0x119B: case 0x119A: case 0x147E:
     case 0x137C: case 0x134D: case 0x134C: case 0x12EB: case 0x12E6: case 0x117B: case 0x1086:
     case 0xFFA:
-        /* the original leaves the third argument of duel_0881616C unset here; 0 assumed */
-        z = duel_0881616C(1 - a->player, mask, 0);
+        z = duel_0881616C(1 - a->player, mask, 1);
         if (z >= 0) {
             TARGET(1 - a->player, z);
         }
@@ -987,4 +1006,453 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
 }
 #undef TARGET
 #undef IN_MASK
+#endif
+
+#ifdef NON_MATCHING /* forma igual nos grupos de case; alocação de registradores (id, p, 1 - p e contadores) e os laços do primeiro grupo não reproduzidos */
+/* The computer chooses a card on the field for the effect fn of card id it is resolving. */
+void duel_08818C34(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p, int z))
+{
+    unsigned int mask = duel_0884E538(duel_w_089147DC, fn);
+    unsigned int q;
+    int z;
+    unsigned int b;
+
+    duel_w_08913CF4 = p;
+    duel_ai_player = p;
+    switch (id) {
+    case 0x1927:
+    case 0x140B:
+    case 0x15A3:
+    case 0x1957:
+        switch (id) {
+        case 0x1927:
+            for (z = 0, b = p << 4; z < 5; z++, b++) {
+                if ((mask & 1 << b) &&
+                    (duel.players[p & 1].field[z].flags >> 22 & 1) != (duel.players[p & 1].field[z].flags >> 23 & 1) &&
+                    (int)card_get_level(duel.players[p & 1].field[z].card.id) < 5) {
+                    duel_08835F34(p, z, 0, 0xB);
+                    return;
+                }
+            }
+            break;
+        case 0x140B:
+            for (z = 0, b = p << 4; z < 5; z++, b++) {
+                if ((mask & 1 << b) && duel_088BFFD8(p, id, duel_field_level(p, z)) != 0) {
+                    duel_08835F34(p, z, 0, 0xB);
+                    return;
+                }
+            }
+            break;
+        case 0x15A3:
+            for (z = 0, b = p << 4; z < 5; z++, b++) {
+                if ((mask & 1 << b) && card_attribute_icon_is3(duel.players[p & 1].field[z].card.id) == 0) {
+                    duel_08835F34(p, z, 0, 0xB);
+                    return;
+                }
+            }
+            break;
+        case 0x1957:
+            for (z = 5, b = p * 16 + 5; z < 10; z++, b++) {
+                if (mask & 1 << b) {
+                    duel_08835F34(p, z, 0, 0xB);
+                    return;
+                }
+            }
+            break;
+        }
+        /* fall through */
+    case 0x1:
+    case 0x1835:
+    case 0x13A8:
+    case 0x164B:
+    case 0x16A0:
+    case 0x17E1:
+    case 0x180E:
+    case 0x18CA:
+    case 0xFFF:
+    case 0x123B:
+    case 0x12C5:
+    case 0x13FC:
+    case 0x14C5:
+    case 0x14E4:
+    case 0x158C:
+    case 0x167D:
+    case 0x169B:
+    case 0x1702:
+    case 0x1708:
+    case 0x1713:
+    case 0x1715:
+    case 0x1753:
+    case 0x1768:
+    case 0x179B:
+    case 0x1855:
+    case 0x187E:
+    case 0x188C:
+    case 0x19B5:
+    case 0x19A5:
+        q = 1 - p;
+        z = duel_0881616C(q, mask, 0);
+        if (z >= 0) {
+            duel_08835F34(q, z, 0, 0xB);
+            return;
+        }
+        z = duel_0881657C(p, mask, 0);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x1470:
+    case 0x15DF:
+    case 0x1738:
+    case 0x1254:
+    case 0x12E3:
+    case 0x1711:
+    case 0x17F2:
+    case 0x1147:
+    case 0x1878:
+    case 0x11F0:
+    case 0x17EA:
+    case 0x1436:
+    case 0x192E:
+    case 0x1A35:
+        q = 1 - p;
+        z = duel_0881616C(q, mask, 1);
+        if (z >= 0) {
+            duel_08835F34(q, z, 0, 0xB);
+            return;
+        }
+        z = duel_088163E4(p, mask);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x1327:
+    case 0x1623:
+    case 0x1719:
+    case 0x17EC:
+    case 0x1AA6:
+        q = 1 - p;
+        z = duel_0881616C(q, mask, 0);
+        if (z >= 0) {
+            duel_08835F34(q, z, 0, 0xB);
+            return;
+        }
+        z = duel_088163E4(p, mask);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x1391:
+    case 0x151E:
+        z = duel_08815548(p, mask, 1, 0);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x1476:
+    case 0x140A:
+    case 0x148A:
+        q = 1 - p;
+        z = duel_08815548(q, mask, -1, -1);
+        if (z >= 0) {
+            duel_08835F34(q, z, 0, 0xB);
+            return;
+        }
+        z = duel_08815548(p, mask, 1, 1);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x17F5:
+        z = duel_088159C8(p, mask, duel_08817220);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x1A98:
+        if (duel_w_089147DC->w[2] != 0) {
+            duel_08836028();
+            return;
+        }
+        z = duel_088159C8(p, mask, duel_088174E0);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x1929:
+        z = duel_088159C8(p, mask, duel_088171C8);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x1928:
+    case 0x192A:
+    case 0x1A9A:
+        z = duel_088159C8(p, mask, duel_088172F0);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    }
+    z = duel_08815E20(1 - p, mask);
+    if (z >= 0) {
+        duel_08835F34(1 - p, z, 0, 0xB);
+    } else {
+        z = duel_08815E20(p, mask);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+        }
+    }
+}
+#endif
+
+/* Zones (bit q * 16 + z) of both players for which fn(q, z, 0) holds. */
+unsigned int duel_088194D0(int (*fn)(unsigned int q, int z, int i))
+{
+    unsigned int mask = 0;
+    int q;
+    int z;
+
+    for (q = 0; q < 2; q++) {
+        for (z = 0; z <= 10; z++) {
+            if (fn(q, z, 0) != 0) {
+                mask |= 1 << (z + q * 16);
+            }
+        }
+    }
+    return mask;
+}
+
+#ifdef NON_MATCHING /* ordem dos case e alocação de registradores não reproduzidas */
+/* The computer chooses a card (hand slots first for some ids) for the effect fn of card id. */
+void duel_0881956C(unsigned int p, int id, int (*fn)(unsigned int q, int z, int i))
+{
+    unsigned int mask;
+    unsigned int i;
+    int k;
+    int z;
+    int c;
+    unsigned int q;
+
+    duel_w_08913CF4 = p;
+    duel_ai_player = p;
+    mask = duel_088194D0(fn);
+    switch (id) {
+    case 0x198D:
+        for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+            c = duel.players[p & 1].hand[i].id;
+            if (duel_08806730(p, 1, c) == 0 && card_get_limit(c) > 2 && duel_0880AA04(c, 0) == 0) {
+                duel_08835F34(p, 0xB, i, 0xB);
+                return;
+            }
+        }
+        duel_08836028();
+        return;
+    case 0x1889:
+    case 0x1678:
+        z = duel_08815BD0(p, fn, 1, 1);
+        if (z >= 0) {
+            duel_08835F34(p, 0xB, z, 0xB);
+            return;
+        }
+        break;
+    case 0x18D9:
+    case 0x15E8:
+        z = duel_08815AF8(p, fn, duel_08817550);
+        if (z >= 0) {
+            duel_08835F34(p, 0xB, z, 0xB);
+            return;
+        }
+        break;
+    case 0x1764:
+    case 0x16DF:
+    case 0x1578:
+        z = duel_0881616C(1 - p, mask, 0);
+        if (z >= 0) {
+            duel_08835F34(1 - p, z, 0, 0xB);
+            return;
+        }
+        z = duel_088163E4(p, mask);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x12DC:
+        z = duel_0881616C(1 - p, mask, 0);
+        if (z >= 0) {
+            duel_08835F34(1 - p, z, 0, 0xB);
+            return;
+        }
+        z = duel_088159C8(p, mask, duel_0881739C);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x142A:
+        z = duel_088159C8(p, mask, duel_08816EA4);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        z = duel_088163E4(p, mask);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x15F3:
+    case 0x1544:
+        z = duel_0881616C(1 - p, mask, 1);
+        if (z >= 0) {
+            duel_08835F34(1 - p, z, 0, 0xB);
+            return;
+        }
+        z = duel_088163E4(p, mask);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x139C:
+        z = duel_088159C8(p, mask, duel_088170EC);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 3:
+        z = duel_08816A74(p, fn, 0, 0);
+        if (z >= 0) {
+            duel_08835F34(p, 0xB, z, 0xB);
+            return;
+        }
+        break;
+    case 0x15DC:
+    case 0x1888:
+    case 0x16D3:
+    case 0x132B:
+    case 2:
+        z = duel_08816A74(p, fn, 1, 0);
+        if (z >= 0) {
+            duel_08835F34(p, 0xB, z, 0xB);
+            return;
+        }
+        break;
+    case 1:
+        z = duel_0881616C(1 - p, mask, 0);
+        if (z >= 0) {
+            duel_08835F34(1 - p, z, 0, 0xB);
+            return;
+        }
+        z = duel_0881657C(p, mask, 0);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    }
+    /* any hand card of the opponent, then of p, that fn accepts (count of p's hand, as the original) */
+    for (k = 0; k < 2; k++) {
+        q = p ^ (k != 0) ^ 1;
+        for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+            if (fn(q, 0xB, i) != 0) {
+                duel_08835F34(q, 0xB, i, 0xB);
+                return;
+            }
+        }
+    }
+    z = duel_08815E20(1 - p, mask);
+    if (z >= 0) {
+        duel_08835F34(1 - p, z, 0, 0xB);
+    } else {
+        z = duel_08815E20(p, mask);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+        }
+    }
+}
+#endif
+
+
+#ifdef NON_MATCHING /* o original repete inline o cálculo da posição em três laços; a função auxiliar não reproduz */
+/* Position for the summon from the hand of card slot i: 6 attack, 4 defense, from the stats. */
+static int duel_ai_summon_pos(unsigned int p, int id, unsigned int f)
+{
+    int r = duel_08805D18(p, id, 0, 0);
+
+    if (r != 0 && !(f & 0x40)) {
+        r = 0;
+    }
+    if (r == 0 && !(f & 0x10)) {
+        r = 1;
+    }
+    return r == 0 ? 4 : 6;
+}
+
+/* The computer summons a monster from the hand: special cards, then set cards, then strong ones. */
+void duel_08819B94(unsigned int p)
+{
+    unsigned int i;
+    int id;
+    unsigned int f;
+
+    duel_w_08913CF4 = p;
+    for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+        id = duel.players[p & 1].hand[i].id;
+        switch (id) {
+        case 0x154B:
+        case 0x13B5:
+        case 0x1905:
+        case 5000:
+        case 4999:
+        case 0x1386:
+            f = duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i]));
+            if (f != 0) {
+                duel_08835F34(p, 0xB, i, duel_ai_summon_pos(p, id, f));
+                return;
+            }
+            break;
+        }
+    }
+    for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+        if (card_get_special_group(duel.players[p & 1].hand[i].id) != 0) {
+            f = duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i]));
+            if (f & 0x40) {
+                duel_08835F34(p, 0xB, i, 6);
+                return;
+            }
+        }
+    }
+    for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+        id = duel.players[p & 1].hand[i].id;
+        if ((int)card_get_level(id) >= 5) {
+            f = duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i]));
+            if (f != 0) {
+                duel_08835F34(p, 0xB, i, duel_ai_summon_pos(p, id, f));
+                return;
+            }
+        }
+    }
+    for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+        id = duel.players[p & 1].hand[i].id;
+        if (card_is_monster(id) != 0) {
+            f = duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i]));
+            if (f != 0) {
+                duel_08835F34(p, 0xB, i, duel_ai_summon_pos(p, id, f));
+                return;
+            }
+        }
+    }
+}
 #endif
