@@ -181,6 +181,8 @@ typedef struct DuelChain {             /* 0x08914350 */
     unsigned char kinds[16];           /* +0x5D8 kind of each pending entry [?] */
     unsigned char pad5e8[0x5F8 - 0x5E8];
     struct DuelActX srcs[16];          /* +0x5F8 source card of each pending entry [?] */
+    unsigned char pad638[0x6B0 - 0x638]; /* +0x6A0 count of ids (duel_w_089149F0), +0x6A8 index (duel_w_089149F8) */
+    int ids[3];                        /* +0x6B0 materials asked by the summon (duel_0882E1B8) */
 } DuelChain;
 
 typedef struct DuelSpecAct {           /* 0x38 */
