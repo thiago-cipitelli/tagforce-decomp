@@ -180,6 +180,38 @@ typedef struct DmgrJk {                /* start menu (janken for the first turn)
 
 extern DmgrJk *dmgr_jk;
 
+typedef struct DmgrAnim {              /* a frame counter that runs to len */
+    unsigned char on;
+    unsigned char pad;
+    short cur;
+    short len;
+} DmgrAnim;
+
+typedef struct DmgrPtEnt {             /* a player shown on the partner panel, 0x10 */
+    short kind;                        /* PlayerSlot.type: 0 none, 1 player, character id */
+    short type2;                       /* PlayerSlot.type2 */
+    short src;                         /* deck source: 0 saved deck, 1 recipe, 2-3 own name */
+    short deck;                        /* recipe id or saved deck index + 1 */
+    void *name;                        /* +0x08 */
+    void *deckname;                    /* +0x0C */
+} DmgrPtEnt;
+
+typedef struct DmgrPartner {           /* partner / versus panel, 0x6C on the heap */
+    void *heap;
+    void *pack;                        /* +0x04 */
+    int timer;                         /* +0x08 */
+    int state;                         /* +0x0C */
+    unsigned char net;                 /* +0x10 */
+    unsigned char mode;                /* +0x11 8 versus, 9 tag versus, 10 partner choice ... */
+    unsigned char pad12[2];
+    DmgrPtEnt ent[4];                  /* +0x14 */
+    DmgrAnim anim;                     /* +0x54 */
+    unsigned char pad5a[2];
+    void *ehf[4];                      /* +0x5C */
+} DmgrPartner;
+
+extern DmgrPartner *dmgr_pt;
+
 /* &gs->slot[k] the way the original adds it (base first): an accessor, not the inline expression */
 inline PlayerSlot *dmgr_slot(DmgrGameHdr *gs, int k)
 {
