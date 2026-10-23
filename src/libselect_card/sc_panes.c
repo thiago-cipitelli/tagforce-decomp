@@ -15,7 +15,7 @@ void *sc_draw_sort_icon(void *list, int sort, int x, int y);
 void *sc_draw_dir_icon(void *list, int dir, int x, int y);
 void *sc_draw_filter_icon(void *list, int filter, int x, int y);
 unsigned short sc_tab_rect(unsigned short tab, unsigned short sel, ScRect *r);
-int sc_list_count_id(ScList *l, short id, int same_name);
+unsigned short sc_list_count_id(ScList *l, unsigned short id, int same_name);
 void *sc_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned short type);
 void *sc_draw_attr_icon(void *list, unsigned short x, unsigned short y, unsigned short attr);
 void *sc_draw_kind_icon(void *list, unsigned short x, unsigned short y, unsigned short kind);
