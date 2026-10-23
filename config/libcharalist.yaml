@@ -26,7 +26,22 @@ segments:
     bss_size: 0x580
     subalign: null
     subsegments:
-      - [0x60, asm, text]
+      - [0x60, c, cl_res]
+      - [0x870, c, cl_main]
+      - [0xFA8, c, cl_draw]
+      - [0xFA8, asm, cl_draw_asm_08804F48]
+      - [0x13B4, c, cl_draw]
+      - [0x22FC, asm, cl_draw_asm_0880629C]
+      - [0x23C4, c, cl_draw]
+      - [0x3438, asm, cl_draw_asm_088073D8]
+      - [0x3830, c, cl_draw]
+      - [0x3FC8, c, cl_list]
+      - [0x42C4, asm, cl_list_asm_08808264]
+      - [0x587C, c, cl_list]
+      - [0x5974, asm, cl_list_asm_08809914]
+      - [0x5BEC, c, cl_list]
+      - [0x5CB4, asm, cl_list_asm_08809C54]
+      - [0x6338, c, cl_list]
       - [0x63AC, asm, sceStub_text]
       - [0x8A94, bin, lib_ent_top]
       - [0x8A98, bin, lib_ent]
@@ -38,7 +53,12 @@ segments:
       - [0x8B10, bin, rodata_sceResident]
       - [0x8B6C, bin, rodata_sceNid]
       - [0x9EE0, bin, rodata_sceVstub]
-      - [0x9F00, data, data]
+      - [0x9F00, .data, cl_main__rodata]
+      - [0x9F1C, .data, cl_res]
+      - [0xA078, .data, cl_main]
+      - [0xA07C, .data, cl_draw]
+      - [0xA198, .data, cl_list]
+      - [0xAAD4, data, data_0]
       - { start: 0xAAF0, type: bss, vram: 0x880EA90, name: bss }
   - [0xAAF0]
 
