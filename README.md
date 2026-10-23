@@ -20,10 +20,13 @@ platform layer. The project is modelled on [ygo-tf-5-decomp](https://github.com/
 | `libduel_eng` | duel engine: rules, card effects, CPU player | 61.7% | 81.2% | 2987 / 3429 |
 | `libhtml_view` | smallest gmodule, proof of the build pipeline | 100% | 100% | 16 / 16 |
 | `liblabo`, `libpassword`, `libtutoriallist`, `libduelrecord` | debug menu, password machine, tutorial list, duel records | 89–100% | 99.8–100% | 97 / 99 |
-| 15 other gmodules | duel presentation, field, story, shop, deck editor, title… | 0% | 0% | 0 / 5287 |
-| **total** | | **32.0%** | **41.3%** | **4915 / 11039** |
+| `libduel_mgr` | duel scene: setup, janken, presentation events, result screen | 37.9% | 87.9% | 97 / 158 |
+| `libselect_card` | card picker for rental, conversion and trading | 37.2% | 79.5% | 123 / 207 |
+| `libcardalbum`, `libcharalist`, `libconv_machine`, `liblimitlist`, `librecipe_viewer` | card binder, duelist list, card convert machine, forbidden/limited list, deck recipes | 56–82% | 90.7–99.7% | 254 / 296 |
+| 9 other gmodules | duel presentation, field, story, shop, deck editor, title… | 0% | 0% | 0 / 4626 |
+| **total** | | **36.6%** | **49.2%** | **5389 / 11039** |
 
-Numbers from 2026-10-22 (`python3 tools/bytematch.py`); the badges above are live. The whole game
+Numbers from 2026-10-23 (`python3 tools/bytematch.py`); the badges above are live. The whole game
 rebuilds byte-identical today: the parts without C are kept as assembly. Per-file progress and the
 largest ranges still without C are in [docs/progress.md](docs/progress.md).
 

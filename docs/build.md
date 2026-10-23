@@ -482,6 +482,20 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **`1 - p` escrito em cada uso** em vez de um local `q` dá o registrador do original para o oponente; o "terceiro argumento sumido" no Ghidra é o 1 que sobrou de `1 - p` (`duel_0881616C(1-p, mask, 1)`).
 - **Dois nomes para o mesmo global**: quando arquivos diferentes enxergam o mesmo objeto com structs diferentes (`duel_summon`/`DuelSummon` e `duel_atk_rec`/`DuelAtkRec` em 0x08914A14), declare o segundo nome em `symbols/` como `type:data alias`; o `fix_ld` faz `PROVIDE` dele e o splat o ignora. Um `#define` com cast `(*(T *)&g)` muda o código gerado.
 - **Armadilhas das ferramentas**: `func_asm.sh` esconde `lw`/`sw` de `$s` em `$sp`, inclusive recargas de spill (use `raw_asm.sh`); `check_file.py` ignora relocações, então campo errado (`n_hand` por `n_d`) ou `memcpy` (import da libehsys) no lugar de `duel_memcpy` (0x088FF0E8) só aparecem no `make check`; a ordem dos comandos no pseudocódigo do Ghidra não é a do fonte.
+- **`switch` denso que só atribui** (`libduel_mgr`): `case 1: lp = 2000; break; …` dá a cadeia `beql K → fim; li v0,X`; a cadeia de `if`/`else` não.
+- **Variável declarada dentro do bloco do `case`** (`case 5: { unsigned short mask; … }`) corrigiu a alocação de `$s` onde nenhuma ordem de declaração servia.
+- **`&s->campo` deixado em dois `addiu`** vem de aritmética inteira: `#define SLOT_RECIPE(s) ((RecipeData *)((int)(s) + 0x80))`.
+- **`addu` com o índice primeiro** para `&p->ent[i]`: acessor inline (`return &gs->slot[k];`) ou `(T *)p->ent + i`; `&p->ent[i]` troca os operandos.
+- **Índice em anel**: `t = q->tail + 1; q->tail = t < 16 ? t : 0;` com `int t`; `if (t > 15) t = 0;` não bate.
+- **Helpers de desenho**: `if (g == 0) return list; …; return f(...);` bate; `if (g != 0) { list = f(); } return list;` acrescenta `move s,v0; move v0,s`.
+- **Ponto {x, y} de 4 bytes num registrador** (`libselect_card`, `liblimitlist`): parâmetro `int pos`, desempacotado com `short x = pos & 0xFFFF; short y = pos >> 16 & 0xFFFF;`; uma struct por valor vai para a pilha.
+- **Valor externo gravado por ponteiro local força recarga depois da chamada**: `ScPack *p = f(1); p->data = sc.pack_a;` (`f(1)->data = sc.pack_a` mantém em `$s`).
+- **Impedir o mwcc de dobrar `&global`**: `T *p = &((S *)(char *)&g)->pos[t];` mantém a base num registrador.
+- **Cast na soma**: `x += (unsigned char)d;` com `int d` reproduz o `andi 0xff` tardio; `px = (px - step) & 0xFFFF` com `int px` dá o único `andi` de uma variável u16.
+- **Tabelas que o original alinha a 16**: `__attribute__((aligned(16)))`, senão o `.data` sai curto.
+- **Contagem regressiva no laço**: `t = -3 * i - 4` reduz para `a3 -= 3`; `-4 - i * 3` não.
+- **Templates de funções que ficaram em asm** viram globais nomeados definidos no mesmo ponto do arquivo; rótulos internos que o asm ainda usa vão em `symbols/` como `D_<addr> = …; // type:data alias`.
+- **Cópia morta depois de `beql; b`** apareceu também nos `*_draw` exportados de `libcardalbum`, `libcharalist`, `libconv_machine`, `liblimitlist` e `librecipe_viewer` (mesmo problema aberto de `tlist_draw`).
 
 - **Função `static` chamada de fora do arquivo** (`effects_088A8B94.c`): quando um helper precisa ser `static` para o chamador manter `$a0`-`$a2` (ver acima) mas também é chamado por asm ou por outro `.c`, a linha em `symbols/` leva `type:func static matched …`; `fix_ld.py` então emite um `PROVIDE` com o nome para os outros chamadores.
 - **Definições K&R** (`effects_088A8B94.c`): uma função chamada com quantidades diferentes de argumentos por chamadores que batem é definida sem protótipo (`int f(a, b) DuelAct *a; int b; { … }`) e declarada `int f();`.

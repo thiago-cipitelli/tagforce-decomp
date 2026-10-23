@@ -1,11 +1,11 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-22 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-23 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 32,0% | 41,3% | 4915 / 11039 |
+| total | 36,6% | 49,2% | 5389 / 11039 |
 | BOOT | 63,0% | 79,9% | 1815 / 2208 |
 | libduel_eng | 61,7% | 81,2% | 2987 / 3429 |
 | libhtml_view | 100% | 100% | 16 / 16 |
@@ -13,7 +13,14 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-22 (
 | libpassword | 100% | 100% | 33 / 33 |
 | libtutoriallist | 89,5% | 99,8% | 25 / 26 |
 | libduelrecord | 92,2% | 99,9% | 26 / 27 |
-| demais 15 gmodules | 0% | 0% | 0 / 5287 |
+| libduel_mgr | 37,9% | 87,9% | 97 / 158 |
+| libselect_card | 37,2% | 79,5% | 123 / 207 |
+| libcardalbum | 79,2% | 99,7% | 62 / 68 |
+| libcharalist | 60,2% | 90,7% | 41 / 50 |
+| libconv_machine | 79,9% | 97,1% | 44 / 47 |
+| liblimitlist | 82,1% | 97,3% | 56 / 62 |
+| librecipe_viewer | 56,3% | 91,7% | 51 / 69 |
+| demais 9 gmodules | 0% | 0% | 0 / 4626 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -381,4 +388,89 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`draw.c`](../src/libpassword/draw.c) | 0x08804844-0x0880597C | 8 | 0 | desenho: fundo, monitor, janela de mensagens com texto rolando e cursor piscante, imagem da carta em 154 linhas com ondulação senoidal, teclado e dígitos (EHF) |
 | [`states.c`](../src/libpassword/states.c) | 0x0880597C-0x08807460 | 8 | 0 | cenas: introdução, teclado de 8 dígitos, conferência da senha (card_id_from_password, faixa 0xFA7-0x1B2D, 6 ids excluídos), carta encontrada e adicionada, não encontrada, sair |
 | [`keypad.c`](../src/libpassword/keypad.c) | 0x08807460-0x088078D0 | 6 | 0 | layout do teclado 3x4 e cursor, faixas de animação de key.ehf/nixi.ehf, ids de carta excluídos |
+
+## libduel_mgr (5 arquivos, 97 funções batendo, 61 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`dmgr_main.c`](../src/libduel_mgr/dmgr_main.c) | 0x08804000-0x08805FF8 | 22 | 1 | entrada da cena 6, thread da cena (carga de libduel_draw e codecs, troca de deck, tutorial, duelo, resultado, rede), callbacks de saída e desenho, preparação do duelo (jogadores, decks, LP, música) |
+| [`dmgr_event.c`](../src/libduel_mgr/dmgr_event.c) | 0x08805FF8-0x08808A20 | 27 | 4 | fila de eventos de apresentação do duelo (cut-ins de personagem por carta-assinatura, música pelo humor dos LP, troca de turno e de parceiro, fim do duelo), despacho do callback do motor e reprodução quadro a quadro |
+| [`dmgr_janken.c`](../src/libduel_mgr/dmgr_janken.c) | 0x08808A20-0x0880C8E8 | 18 | 8 | menu de início do duelo: pedra-papel-tesoura para o primeiro turno (local ou ad hoc), jogar primeiro ou segundo, troca de decks dos parceiros pela rede, desenho |
+| [`dmgr_partner.c`](../src/libduel_mgr/dmgr_partner.c) | 0x0880C8E8-0x0880F9C0 | 21 | 17 | painel de parceiros e adversários (rostos, nomes, decks, animações EHF), tabela de rostos por personagem, utilitários de texto e sprite |
+| [`dmgr_result.c`](../src/libduel_mgr/dmgr_result.c) | 0x0880F9C0-0x08815888 | 9 | 31 | tela de resultado (bônus, recordes e títulos em páginas com rolagem, pagamento em dinheiro, placar da série, diálogos de revanche e de espera da rede) |
+
+## libselect_card (15 arquivos, 123 funções batendo, 84 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`sc_main.c`](../src/libselect_card/sc_main.c) | 0x08804000-0x08804D0C | 18 | 0 | entrada, init/update/unload, packs EHP e recursos por id, buscas por id e tipo→ícone |
+| [`sc_parts.c`](../src/libselect_card/sc_parts.c) | 0x08804D0C-0x08807630 | 21 | 3 | peças de desenho (dígitos, molduras, ícones, ATK/DEF, figura da carta, marcas, linha do tipo, contadores, barra de rolagem com setas, janela de ajuda) |
+| [`sc_draw.c`](../src/libselect_card/sc_draw.c) | 0x08807630-0x08808040 | 7 | 1 | desenho por quadro (export), camada de popups, fundo bg.ehf, janela do tipo, linhas separadoras e título |
+| [`sc_panes.c`](../src/libselect_card/sc_panes.c) | 0x08808040-0x088099CC | 3 | 6 | cabeçalhos dos painéis, contagens das abas, grade de figuras, linhas largas/estreitas |
+| [`sc_lists.c`](../src/libselect_card/sc_lists.c) | 0x088099CC-0x0880AD2C | 15 | 1 | listas dos dois painéis (ids do chamador, troca/conversão, aluguel, parceiro), adicionar/remover, totais, gravação do resultado |
+| [`sc_input.c`](../src/libselect_card/sc_input.c) | 0x0880AD2C-0x0880C940 | 6 | 12 | layouts/modos/abas por tipo e idioma, despacho da entrada, cursores grade/lista, paginação, saltos por grupo, moldura de foco |
+| [`sc_state.c`](../src/libselect_card/sc_state.c) | 0x0880C940-0x0880D54C | 7 | 4 | carta sob o cursor, tela de informação, preparação após a carga, troca de aba, ajuste de rolagem, histórico de desfazer |
+| [`sc_info.c`](../src/libselect_card/sc_info.c) | 0x0880D54C-0x0880E64C | 8 | 4 | faixa de informação da carta, ícones, botão com legenda, sombra do painel, valor da ordenação, abertura do menu de ações |
+| [`sc_action.c`](../src/libselect_card/sc_action.c) | 0x0880E64C-0x0880FFCC | 10 | 12 | menu de ações e submenus (marca, informação, limpar/restaurar, layout, marca de novidade) |
+| [`sc_sort.c`](../src/libselect_card/sc_sort.c) | 0x0880FFCC-0x08810BF4 | 6 | 3 | menu de ordenação ao vivo, ícones de ordem/direção |
+| [`sc_filter.c`](../src/libselect_card/sc_filter.c) | 0x08810BF4-0x088119C8 | 3 | 10 | ordenação estável pelas nove chaves, valores das chaves, filtro da marca, busca incremental com histórico, filtros por tipo/atributo/raça |
+| [`sc_match.c`](../src/libselect_card/sc_match.c) | 0x088119C8-0x088121D0 | 3 | 4 | filtros restantes e busca de texto (Horspool) em nome/texto normalizados |
+| [`sc_fmenu.c`](../src/libselect_card/sc_fmenu.c) | 0x088121D0-0x08813CF4 | 7 | 8 | menu de filtro (grade de valores por página), ícones/legendas dos valores, abertura da janela de palavra |
+| [`sc_word.c`](../src/libselect_card/sc_word.c) | 0x08813CF4-0x08815168 | 5 | 6 | busca por palavra (teclado do sistema, histórico, barra de progresso) |
+| [`sc_move.c`](../src/libselect_card/sc_move.c) | 0x08815168-0x08816DD4 | 4 | 10 | atualização do teclado do sistema, mover carta entre painéis com voo em curva e desfazer, popup de mensagens e confirmação de saída |
+
+## libcardalbum (7 arquivos, 62 funções batendo, 6 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`ca_main.c`](../src/libcardalbum/ca_main.c) | 0x08804000-0x08804408 | 4 | 0 | entrada, init/update exportados e liberação do álbum |
+| [`ca_res.c`](../src/libcardalbum/ca_res.c) | 0x08804408-0x08804D08 | 13 | 0 | recursos (database/cardalbum.ehp, texturas e modelos por id, leitores CIP, fila de pré-carga de figuras) |
+| [`ca_gfx.c`](../src/libcardalbum/ca_gfx.c) | 0x08804D08-0x08805CA4 | 10 | 1 | parte 3D: estado do GE, luz, câmera, capa, modelos das páginas com as figuras como textura, cursor 3D |
+| [`ca_draw.c`](../src/libcardalbum/ca_draw.c) | 0x08805CA4-0x0880681C | 4 | 2 | parte 2D: fundo, barra de título com percentual, menu de saltos, mão do cursor, dígitos |
+| [`ca_input.c`](../src/libcardalbum/ca_input.c) | 0x0880681C-0x08807CD0 | 12 | 1 | entrada (células, cantos, menu), pré-carga dos lados visíveis, carta sob o cursor, virada de página e salto animado |
+| [`ca_list.c`](../src/libcardalbum/ca_list.c) | 0x08807CD0-0x08808E5C | 14 | 1 | lista do álbum em ordem de sort, salto para índice/grupo, tela de detalhe, aceleração de virada, objetos de página |
+| [`ca_index.c`](../src/libcardalbum/ca_index.c) | 0x08808E5C-0x08809B30 | 5 | 1 | janela de índice por letra inicial (kana/alfabeto) e páginas extras |
+
+## libcharalist (4 arquivos, 41 funções batendo, 9 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`cl_res.c`](../src/libcharalist/cl_res.c) | 0x08804000-0x08804810 | 12 | 0 | database/charalist.ehp, recursos por id, bust-ups compactados de field/bustup/ e tabelas de voz |
+| [`cl_main.c`](../src/libcharalist/cl_main.c) | 0x08804810-0x08804F48 | 7 | 0 | entrada, init/update/resultado exportados, sorteio de duelista para a história e liberação |
+| [`cl_draw.c`](../src/libcharalist/cl_draw.c) | 0x08804F48-0x08807F68 | 18 | 3 | janela com três abas, linhas de duelista (rosto, número, nome, nível, estrelas, retrospecto), cursor, barras de rolagem e página de detalhe |
+| [`cl_list.c`](../src/libcharalist/cl_list.c) | 0x08807F68-0x0880A34C | 4 | 6 | abas montadas a partir dos encontros, entrada da lista e do detalhe (roupas, perfil, teste de voz), tabela de personagens e retrato |
+
+## libconv_machine (4 arquivos, 23 funções batendo, 2 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`cm_main.c`](../src/libconv_machine/cm_main.c) | 0x08804000-0x08804B50 | 15 | 0 | entrada, init/update exportados, liberação, carga dos pacotes e arquivos por idioma, busca de recursos e modelos |
+| [`cm_draw.c`](../src/libconv_machine/cm_draw.c) | 0x08804B50-0x08805FF8 | 8 | 2 | desenho exportado, fundo, painel da máquina, animações EHF, janela de mensagem, cartas, clarão, escurecimento, nome e dica |
+| [`cm_gfx.c`](../src/libconv_machine/cm_gfx.c) | 0x08805FF8-0x08806D4C | 0 | 0 | estado do GE, luzes, câmeras, tampa da máquina, cartas entrando e carta saindo com textura renderizada |
+| [`cm_states.c`](../src/libconv_machine/cm_states.c) | 0x08806D4C-0x08808A38 | 0 | 0 | estados (introdução, escolha das cartas, inserção, conversão, resultado com nome e ficha, pergunta de repetir), sorteio da carta pelo grupo, medidor e slots de animação |
+
+## liblimitlist (8 arquivos, 55 funções batendo, 7 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`ll_util.c`](../src/liblimitlist/ll_util.c) | 0x08804000-0x08804128 | 3 | 0 | índice no fileTbl.dat, busca de par (carta, valor), ícone do tipo e a lista oficial de proibidas/limitadas |
+| [`ll_draw.c`](../src/liblimitlist/ll_draw.c) | 0x08804128-0x08805948 | 14 | 0 | números, moldura 9-slice, ícones, ATK/DEF, figura da carta (arte alternativa), faixa do tipo, contadores, setas, barra de rolagem |
+| [`ll_scroll.c`](../src/liblimitlist/ll_scroll.c) | 0x08805948-0x08805A00 | 0 | 2 | rolagem do texto pelo analógico |
+| [`ll_res.c`](../src/liblimitlist/ll_res.c) | 0x08805A00-0x088060C4 | 9 | 0 | packs deck/all e limitlist.ehp assíncronos, tabelas id->recurso (qsort/bsearch), leitor CIP, lista de cartas |
+| [`ll_main.c`](../src/liblimitlist/ll_main.c) | 0x088060C4-0x08806490 | 4 | 0 | entrada, init (heap de 5 MB), máquina de estados, liberação em passos |
+| [`ll_screen.c`](../src/liblimitlist/ll_screen.c) | 0x08806490-0x0880740C | 6 | 2 | desenho da tela: fundo, abas com tamanhos, cabeçalho, linhas ou grade, contadores deck/parceiro/posse |
+| [`ll_list.c`](../src/liblimitlist/ll_list.c) | 0x0880740C-0x08808934 | 10 | 3 | montagem das listas, cursor lista/grade com paginação, abas, ficha da carta, verificação dos decks |
+| [`ll_menu.c`](../src/liblimitlist/ll_menu.c) | 0x08808934-0x08809538 | 9 | 0 | menus de ajuda, aviso de carta ilegal, listas (oficial/limpar/dados extras) |
+
+## librecipe_viewer (7 arquivos, 50 funções batendo, 19 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`rv_res.c`](../src/librecipe_viewer/rv_res.c) | 0x08804000-0x08804778 | 9 | 0 | packs deck/all (ou o do chamador) e deck/recipe_view, tabelas id->recurso, CIP, lista de cartas |
+| [`rv_util.c`](../src/librecipe_viewer/rv_util.c) | 0x08804778-0x08804918 | 4 | 0 | índice no fileTbl.dat, busca de par, ícone do tipo, parceiros que têm a carta |
+| [`rv_draw.c`](../src/librecipe_viewer/rv_draw.c) | 0x08804918-0x08805874 | 8 | 3 | dígitos em sprite, números, moldura, figura e marcas da carta, botão com texto, setas, rolagem analógica |
+| [`rv_screen.c`](../src/librecipe_viewer/rv_screen.c) | 0x08805874-0x08807A44 | 11 | 5 | fundo, título por modo, contagem/barras por tipo, grade da receita, listas com barra de rolagem, cursor |
+| [`rv_list.c`](../src/librecipe_viewer/rv_list.c) | 0x08807A44-0x08809274 | 5 | 7 | listas dos dados extras, entrada da lista e da grade, ficha da carta, piscar do menu, animações, montagem da grade |
+| [`rv_menu.c`](../src/librecipe_viewer/rv_menu.c) | 0x08809274-0x0880A248 | 9 | 4 | cartas por linha, entrada sob o cursor, revelação, menus de confirmação/opções, teclado na tela |
+| [`rv_main.c`](../src/librecipe_viewer/rv_main.c) | 0x0880A248-0x0880A99C | 4 | 0 | entrada, init (listas, heap de 4 MB), update com resultado, liberação |
 
