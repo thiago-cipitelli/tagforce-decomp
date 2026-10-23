@@ -1,4 +1,4 @@
-// @range 0x08820618-0x08826740
+// @range 0x08820618-0x08827618
 // @asm 0x08820E08-0x08820F60
 // @asm 0x08821124-0x08821888
 // @asm 0x08822000-0x088230CC
@@ -1857,4 +1857,421 @@ int duel_08826710(int id)
         return 3;
     }
     return 1;
+}
+
+int duel_08829988(int q, int z, int b);
+int duel_zone_usable(unsigned int p, unsigned int z);
+int duel_count_free_monster_zones(unsigned int p);
+
+/* Whether p has enough monsters to tribute for the card id (duel_08826710 tributes). */
+int duel_08826740(unsigned int p, int id)
+{
+    int ok = 0;
+    int n = duel_08826710(id);
+    int q;
+    int z;
+
+    duel_b_08914A14.player = p;
+    duel_b_08914A14.id = id;
+    duel_b_08914A14.f1 = 1;
+    duel_b_08914A14.n = 0;
+    for (q = 0; q < 2; q++) {
+        for (z = 0; z <= 4; z++) {
+            if (duel_08829988(q, z, 0) != 0) {
+                if (q == p && z <= 4 && duel_zone_usable(q, z) != 0) {
+                    ok = 1;
+                }
+                n--;
+            }
+        }
+    }
+    if (n > 0) {
+        return 0;
+    }
+    if (!ok && duel_count_free_monster_zones(p) == 0) {
+        return 0;
+    }
+    return 1;
+}
+
+int duel_count_tributable_except(unsigned int p, int src);
+int duel_0884DF2C(int (*fn)());
+int duel_0882ABB4();
+int duel_count_free_zones(unsigned int p);
+int duel_0882EE74(unsigned int p, int z, int b);
+int duel_0882EF84(unsigned int p, int z, int b);
+int duel_0882F0A4(unsigned int p, int z, int b);
+
+int duel_088268A8(unsigned int p, int id)
+{
+    int n;
+
+    duel_b_08914A14.player = p;
+    duel_b_08914A14.id = id;
+    duel_b_08914A14.f1 = 1;
+    duel_b_08914A14.n = 0;
+    n = duel_count_tributable_except(p, -1);
+    if (n < duel_08826710(id)) {
+        return 0;
+    }
+    return duel_0884DF2C(duel_0882ABB4) != 0;
+}
+
+/* Same check as duel_08826740 for the cards that tribute spells/traps too. */
+int duel_0882696C(unsigned int p, int id)
+{
+    int ok;
+    int n;
+    int (*fn)(unsigned int p, int z, int b);
+    int z;
+
+    duel_b_08914A14.player = p;
+    duel_b_08914A14.id = id;
+    duel_b_08914A14.f1 = 1;
+    duel_b_08914A14.n = 0;
+    ok = 0;
+    switch (id) {
+    case 0x19A3:
+        fn = duel_0882EE74;
+        n = 3;
+        break;
+    case 0x19A4:
+        fn = duel_0882EF84;
+        n = 3;
+        break;
+    case 0x19C8:
+        fn = duel_0882F0A4;
+        n = 2;
+        break;
+    }
+    for (z = 0; z <= 10; z++) {
+        if (fn(p, z, 0) != 0) {
+            if (z < 5) {
+                ok = 1;
+            }
+            n--;
+        }
+    }
+    if (n > 0) {
+        return 0;
+    }
+    if (!ok && duel_count_free_zones(p) == 0) {
+        return 0;
+    }
+    return 1;
+}
+
+typedef struct DuelIds3 {
+    int id[3];
+} DuelIds3;
+
+extern DuelIds3 duel_tri3_ids_a;       /* 0x08912494 */
+extern DuelIds3 duel_tri3_ids_b;       /* 0x089124A0 */
+
+int duel_08829EB8(int q, int z, int b);
+int duel_tributable(unsigned int p, unsigned int q, int z);
+
+int duel_08826AE0(unsigned int p, int id)
+{
+    int q;
+    int z;
+    int r;
+
+    duel_b_08914A14.player = p;
+    duel_b_08914A14.id = id;
+    duel_b_08914A14.f1 = 1;
+    duel_b_08914A14.n = 0;
+    for (q = 0; q < 2; q++) {
+        for (z = 0; z <= 4; z++) {
+            r = !duel_08829EB8(q, z, 0);
+            if (!r) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int duel_08826BC4(unsigned int p, int id)
+{
+    if (duel_hand_count_name(p, 0x15A3) != 0) {
+        return duel_08826AE0(p, id);
+    }
+    return 0;
+}
+
+/* Whether the three monsters of the table are on the field and can be tributed by p (the cards
+   that need three named monsters). */
+int duel_08826C0C(unsigned int p)
+{
+    int n = duel_count_free_monster_zones(p);
+    DuelIds3 t = duel_tri3_ids_a;
+    unsigned int q;
+    int k;
+    int id;
+    int found;
+    int z;
+
+    if (duel_count_active(0x13F2) > 0) {
+        return 0;
+    }
+    q = 1 - p;
+    for (k = 0; k < 3; k++) {
+        id = t.id[k];
+        found = 0;
+        for (z = 0; z <= 4; z++) {
+            if (id == field_get_card(p, z) && duel_tributable(p, p, z) != 0) {
+                found = 1;
+                if (duel_zone_usable(p, z) != 0) {
+                    n++;
+                }
+            }
+        }
+        for (z = 0; z <= 4; z++) {
+            if (id == field_get_card(q, z) && duel_tributable(p, q, z) != 0 && duel.players[q & 1].field[z].faceup != 0) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            return 0;
+        }
+    }
+    return n != 0;
+}
+
+/* Same with the second table; a card of the table in the hand also counts. */
+int duel_08826DB8(unsigned int p)
+{
+    int n = duel_count_free_monster_zones(p);
+    DuelIds3 t = duel_tri3_ids_b;
+    unsigned int q;
+    int k;
+    int id;
+    int found;
+    int z;
+
+    if (duel_count_active(0x13F2) > 0) {
+        return 0;
+    }
+    q = 1 - p;
+    for (k = 0; k < 3; k++) {
+        id = t.id[k];
+        found = 0;
+        for (z = 0; z <= 4; z++) {
+            if (id == field_get_card(p, z) && duel_tributable(p, p, z) != 0) {
+                found = 1;
+                if (duel_zone_usable(p, z) != 0) {
+                    n++;
+                }
+            }
+        }
+        for (z = 0; z <= 4; z++) {
+            if (id == field_get_card(q, z) && duel_tributable(p, q, z) != 0 && duel.players[q & 1].field[z].faceup != 0) {
+                found = 1;
+                break;
+            }
+        }
+        if ((found | duel_hand_count_name(p, t.id[k])) == 0) {
+            return 0;
+        }
+    }
+    return n != 0;
+}
+
+int duel_slot_has_effect(unsigned int p, int z, int id);
+int duel_0882A940(unsigned int p, int z, int b);
+int duel_0882EA4C(unsigned int p, int z, int b);
+int duel_count_name_unprotected(unsigned int p, int id);
+
+/* Whether p can tribute one of the two cards 0x13E5/0x13E7 (needs two tributes). */
+int duel_08826F74(unsigned int p)
+{
+    unsigned int q;
+    int z;
+    int k;
+
+    if (duel_count_tributable_except(p, -1) < 2) {
+        return 0;
+    }
+    for (k = 0; k < 2; k++) {
+        q = p ^ k;
+        for (z = 0; z <= 4; z++) {
+            if (duel_tributable(p, q, z) != 0) {
+                switch (field_get_card(q, z)) {
+                case 0x13E5:
+                case 0x13E7:
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+int duel_08827044(unsigned int p, int id)
+{
+    int z;
+    int r;
+
+    duel_b_08914A14.player = p;
+    duel_b_08914A14.id = id;
+    duel_b_08914A14.f1 = 1;
+    duel_b_08914A14.n = 0;
+    for (z = 0; z <= 4; z++) {
+        r = !duel_0882EA4C(p, z, 0);
+        if (!r) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Whether the opponent of p has two monsters p could tribute (cards that tribute the opponent's
+   monsters). */
+int duel_08827118(unsigned int p)
+{
+    int n = 0;
+    int z;
+
+    if (duel.players[p & 1].flags >> 17 & 1) {
+        return 0;
+    }
+    if (duel_slot_has_effect(p, 0xB, 0x12F3) != 0) {
+        return 0;
+    }
+    if (duel_count_active(0x13F2) > 0) {
+        return 0;
+    }
+    z = 0;
+    p = 1 - p;
+    for (; z <= 4; z++) {
+        if (duel_tributable(p, p, z) != 0) {
+            n++;
+        }
+    }
+    return n >= 2;
+}
+
+int duel_088271EC(unsigned int p)
+{
+    int z;
+    int r;
+
+    if (duel.players[p & 1].flags >> 17 & 1) {
+        return 0;
+    }
+    if (duel_count_active(0x13F2) > 0) {
+        return 0;
+    }
+    duel_b_08914A14.player = p;
+    duel_b_08914A14.f1 = 1;
+    duel_b_08914A14.n = 0;
+    p = 1 - p;
+    for (z = 0; z <= 4; z++) {
+        r = !duel_0882A940(p, z, 0);
+        if (!r) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Fusion and ritual-like cards: whether p controls the materials named by the card id. */
+int duel_088272E8(unsigned int p, int id)
+{
+    switch (id) {
+    case 0x15B1:
+        if (duel_count_name_unprotected(p, 0x1580) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x15B0) == 0) {
+            return 0;
+        }
+        break;
+    case 0x15B4:
+        if (duel_count_name_unprotected(p, 0x1580) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x15B0) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x15B3) == 0) {
+            return 0;
+        }
+        break;
+    case 0x15F9:
+        if (duel_count_name_unprotected(p, 0x1580) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x15B3) == 0) {
+            return 0;
+        }
+        break;
+    case 0x15FA:
+        if (duel_count_name_unprotected(p, 0x15B0) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x15B3) == 0) {
+            return 0;
+        }
+        break;
+    case 0x1953:
+        if (duel_count_name_unprotected(p, 0x1947) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x194B) == 0) {
+            return 0;
+        }
+        break;
+    case 0x1954:
+        if (duel_count_name_unprotected(p, 0x1953) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x15B4) == 0) {
+            return 0;
+        }
+        break;
+    case 0x1A6D:
+        if (duel_count_name_unprotected(p, 0x19FD) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x1A74) == 0) {
+            return 0;
+        }
+        break;
+    case 0x1A6E:
+        if (duel_count_name_unprotected(p, 0x19FD) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x1A70) == 0) {
+            return 0;
+        }
+        break;
+    case 0x1A6F:
+        if (duel_count_name_unprotected(p, 0x19FD) == 0) {
+            return 0;
+        }
+        if (duel_count_name_unprotected(p, 0x1A75) == 0) {
+            return 0;
+        }
+        break;
+    }
+    return 1;
+}
+
+int duel_08827544(int id)
+{
+    switch (id) {
+    case 0x1466:
+        return 3;
+    case 0x1483:
+    case 0x16C6:
+    case 0x19CA:
+        return 2;
+    case 0x1484: case 0x1485: case 0x1486: case 0x1487: case 0x16C5: case 0x16C7: case 0x16C8:
+    case 0x18B4: case 0x16C9: case 0x16CB: case 0x16E4:
+        return 1;
+    }
+    return 0;
 }
