@@ -85,7 +85,8 @@ typedef struct ScScroll {              /* analog-scrolled value */
 typedef struct ScCursor {              /* 0x28 */
     unsigned short id;                 /* +0x00 card under the cursor */
     unsigned short key;                /* +0x02 */
-    int timer;                         /* +0x04 frames on the same card */
+    unsigned short timer;              /* +0x04 frames on the same card */
+    unsigned short pad06;
     ScEnt *ent;                        /* +0x08 */
     ScScroll scroll;                   /* +0x0C analog-scrolled info text */
     unsigned char pad1c[0x0C];
@@ -143,7 +144,8 @@ typedef struct ScState {               /* 0x0881B5E0, 0x398 bytes cleared by lib
     unsigned short nhist;              /* +0x24C undo history of moves */
     ScMove hist[8];                    /* +0x24E */
     ScRect focus;                      /* +0x29E frame around the focused popup */
-    unsigned char flags2a6;            /* +0x2A6 */
+    unsigned char info_open : 1;       /* +0x2A6 card info screen running */
+    unsigned char pad2a6 : 7;
     unsigned char pad2a7;
     int *out_count;                    /* +0x2A8 */
     unsigned short *out_ids;           /* +0x2AC */

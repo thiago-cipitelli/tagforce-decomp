@@ -38,7 +38,7 @@ typedef struct ScTab {                 /* a tab button, 10 bytes */
     unsigned short pad08;
 } ScTab;
 
-void sc_set_panes(int n);
+void sc_set_panes(unsigned short which);
 void sc_select_tab(unsigned short side, unsigned short tab, int how);
 ScEnt *sc_cur_entry(unsigned short side);
 void sc_info_update(void);
@@ -348,7 +348,7 @@ void sc_window_anim(void)
 void sc_update_input(void)
 {
     pad_get();
-    if (!scv.busy && !(sc.flags2a6 & 1)) {
+    if (!scv.busy && !sc.info_open) {
         sc_scroll_update();
         if (scv.popup != 0) {
             sc_popup_update();
