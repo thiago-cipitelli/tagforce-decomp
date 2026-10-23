@@ -48,9 +48,9 @@ void libcharalist_08804F48(void);
 void duelrecord_init(int a);
 int duelrecord_update(void);
 void duelrecord_draw(void);
-void liblimitlist_088060CC(int a, int b);
-int liblimitlist_08806214(void);
-void liblimitlist_08806490(void);
+void limitlist_init(int a, int b);
+int limitlist_update(void);
+void limitlist_draw(void);
 void tlist_init(int a, int b);
 int tlist_update(void);
 void tlist_draw(void);
@@ -246,11 +246,11 @@ void labo_main(void)
         case 8:
             switch (labo.load) {
             case 1:
-                liblimitlist_088060CC(0, 0);
+                limitlist_init(0, 0);
                 labo.load = 2;
                 break;
             case 2:
-                if (liblimitlist_08806214()) {
+                if (limitlist_update()) {
                     sceKernelStopModule(labo.modid, 0, 0, 0, 0);
                     sceKernelUnloadModule(labo.modid);
                     fade_start(1, 0xFF000000, 16);
@@ -381,7 +381,7 @@ static const char labo_module_names[9][32] = {
 
 static void (*const labo_draw_table[12])(void) = {
     0, labo_menu_draw, password_draw, libselect_card_08807630, libconv_machine_08804B50,
-    libcardalbum_08805CA4, libcharalist_08804F48, duelrecord_draw, liblimitlist_08806490,
+    libcardalbum_08805CA4, libcharalist_08804F48, duelrecord_draw, limitlist_draw,
     tlist_draw, voicetest_draw, labo_menu_draw,
 };
 
