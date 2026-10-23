@@ -6,11 +6,20 @@
 #include "font.h"
 #include "ehsys.h"
 
+typedef struct LlPoint {       /* screen position, passed by value in one register */
+    short x, y;
+} LlPoint;
+
+typedef struct GfxState {      /* gfx_get_state() */
+    unsigned int frame;        /* +0x00 frame counter */
+    int fps;                   /* +0x04 30 or 60 */
+} GfxState;
+
 typedef struct LlEntry {       /* one card of a list, 6 bytes */
     unsigned short id;         /* card id */
     unsigned short file;       /* index in fileTbl.dat (text_start) */
-    unsigned char visible : 1;
-    unsigned char flags_pad : 7;
+    unsigned char lines : 7;   /* +0x04 set to 1 */
+    unsigned char flag7 : 1;
     unsigned char pad5;
 } LlEntry;
 
@@ -20,6 +29,10 @@ typedef struct LlScroll {      /* scroll state of the card text (+0x34 of LimitL
     unsigned int pos;          /* +0x08 */
     unsigned int max;          /* +0x0C */
 } LlScroll;
+
+typedef struct LlRect {
+    short x, y, w, h;
+} LlRect;
 
 typedef struct LimitList {     /* ll 0x0880D670 (.bss), 0x5C bytes cleared by limitlist_init */
     unsigned short state;      /* +0x00 0 load, 1 fade in, 2 list, 3/5 menu, 4 card info, 6 fade out, 7 release */
@@ -33,7 +46,7 @@ typedef struct LimitList {     /* ll 0x0880D670 (.bss), 0x5C bytes cleared by li
     unsigned short bits13 : 3;
     unsigned short top[3];     /* +0x06 first visible entry per list */
     unsigned short cursor[3];  /* +0x0C cursor relative to top per list */
-    short cur_x, cur_y, cur_w, cur_h; /* +0x12 cursor rectangle */
+    LlRect cur;                /* +0x12 cursor rectangle */
     unsigned short count[3];   /* +0x1A entries per list */
     LlEntry *list[3];          /* +0x20 */
     void *heap;                /* +0x2C */
@@ -62,7 +75,20 @@ typedef struct CardListCfg {   /* BOOT cardlist_init argument, 0x24 */
     int frame_view;
 } CardListCfg;
 
+typedef struct LlLimit {
+    unsigned short id;         /* card id */
+    unsigned short limit;      /* 0 forbidden, 1 limited, 2 semi-limited */
+} LlLimit;
+
+typedef struct LlSave {        /* a list found in the extra data, 0x108 bytes */
+    unsigned short name[0x80]; /* list name, also given to sysstate_set_player_name */
+    unsigned short count;      /* +0x100 */
+    unsigned short pad102;
+    LlLimit *limits;           /* +0x104 */
+} LlSave;
+
 extern LimitList ll;
+extern LlLimit ll_default_limits[93];
 extern LlResFlags llres_flags;
 extern void *llres_cipbuf;     /* 0x0880D650 CIP reader buffer */
 
@@ -101,6 +127,13 @@ void fade_start_in(unsigned char type, unsigned int color, unsigned short frames
 int fade_is_done(void);
 int fade_apply(void **list);
 void gfx_overlay_enable(int on);
+GfxState *gfx_get_state(void);
+PadState *pad_get(void);
+void *draw_sprite(void *list, int x, int y, int z, int u, int v, int a, int b);
+void *draw_set_offsets(void *list, int tw, int th, int w, int h);
+void *dl_ambient_color(void *list, unsigned int color);
+void *dl_set_tex_filter(void *list, int min, int mag);
+void *gim_set_texture(void *list, void *gim);
 
 /* this module */
 void llres_init(void);
