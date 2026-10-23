@@ -1247,5 +1247,5 @@ netsync_local_side = 0x0880B110; // type:func import:libehsys nid:906A916B
 netsync_side_player = 0x0880B118; // type:func import:libehsys nid:D60CF578
 libselect_card_08804008 = 0x0880B120; // type:func import:libselect_card nid:BF2B46D7
 libselect_card_088041C4 = 0x0880B128; // type:func import:libselect_card nid:5B395307
-libselect_card_088047A0 = 0x0880B130; // type:func import:libselect_card nid:4D3D501F
+select_card_release = 0x0880B130; // type:func import:libselect_card nid:4D3D501F
 libselect_card_08807630 = 0x0880B138; // type:func import:libselect_card nid:CFA64443
