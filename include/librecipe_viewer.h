@@ -18,8 +18,23 @@ typedef struct RvEntry {       /* one card of the recipe, 6 bytes */
     unsigned short file;       /* index in fileTbl.dat */
     unsigned char lines : 7;   /* +0x04 copies */
     unsigned char flag7 : 1;   /* new card */
-    unsigned char pad5;
+    unsigned char b5_0 : 1;    /* +0x05 */
+    unsigned char owned : 1;
+    unsigned char b5_hi : 6;
 } RvEntry;
+
+typedef struct RvGrid {        /* the shown recipe (+0x18 of RecipeViewer) */
+    unsigned char col;         /* +0x00 cursor in the recipe grid */
+    unsigned char row;         /* +0x01 0..3 main, 4..5 side, 6 extra */
+    unsigned short main_cols;  /* +0x02 cards per row of the main deck */
+    unsigned short side_cols;  /* +0x04 cards per row of the side deck */
+    unsigned short n_main : 7; /* +0x06 */
+    unsigned short n_extra : 4;
+    unsigned short n_side : 5;
+    RvEntry main[80];          /* +0x08 */
+    RvEntry extra[15];         /* +0x1E8 */
+    RvEntry side[30];          /* +0x242 */
+} RvGrid;
 
 typedef struct RvPos {         /* list position of a tab */
     unsigned short top;
@@ -29,9 +44,15 @@ typedef struct RvPos {         /* list position of a tab */
 typedef struct RvRecipe {      /* one recipe (or saved deck) of the lists, 8 bytes */
     unsigned short index;      /* +0x00 recipe number (1..350) or saved deck slot */
     unsigned short number;     /* +0x02 running number among the existing recipes */
-    unsigned char kind;        /* +0x04 DeckName.val */
-    unsigned char pad5[3];
+    unsigned char kind;        /* +0x04 DeckName.val (recipe author) */
+    unsigned char have;        /* +0x05 different cards owned */
+    unsigned char need;        /* +0x06 different cards in the recipe */
+    unsigned char pad7;
 } RvRecipe;
+
+typedef struct RvExtList {     /* a list read from the extra data, 0x208 bytes */
+    unsigned short name[0x104];
+} RvExtList;
 
 typedef struct RvParams {      /* recipe_viewer_init argument */
     void *heap;
@@ -51,23 +72,29 @@ typedef struct RecipeViewer {  /* rv 0x0880EBE0 (.bss), 0x17E8 bytes cleared by 
     unsigned short busy : 1;
     unsigned short osk : 8;    /* name entry (on-screen keyboard) step */
     unsigned short info : 1;   /* card info open */
-    unsigned short bits11 : 2;
+    unsigned short info_open : 1; /* BOOT card info screen drawn */
+    unsigned short no_frame : 1; /* +0x05 bit 4: no cursor frame */
     unsigned short loaded : 1; /* resources ready */
     unsigned short bits14 : 2;
     unsigned char pad06[4];
-    unsigned char tab : 2;     /* +0x0A */
+    unsigned char tab : 2;     /* +0x0A 0 saved decks, 1 recipes, 2 extra data lists */
     unsigned char bits0a : 6;
     unsigned char pad0b;
-    RvPos pos[4];              /* +0x0C */
-    unsigned char pad01c[0x310 - 0x1C];
+    RvPos pos[3];              /* +0x0C */
+    RvGrid grid;               /* +0x18 */
+    unsigned char shown;       /* +0x30E cards revealed so far (animation) */
+    unsigned char pad30f;
     RvScroll scroll;           /* +0x310 */
     unsigned char pad320[0xC];
     unsigned short n_recipes;  /* +0x32C */
     RvRecipe recipes[351];     /* +0x32E */
     RvRecipe decks[50];        /* +0xE26 saved decks */
     unsigned short padfb6;
-    void *buf;                 /* +0xFB8 */
-    unsigned char padfbc[0x17CC - 0xFBC];
+    struct RvExtList *ext;     /* +0xFB8 lists from the extra data */
+    int n_ext;                 /* +0xFBC */
+    RvRecipe ext_info[0xF];    /* +0xFC0 */
+    unsigned char pad1038[0x17C0 - 0x1038];
+    unsigned short n_type[6];  /* +0x17C0 cards per type in the shown recipe */
     void *heap;                /* +0x17CC */
     void *cip;                 /* +0x17D0 card picture reader */
     void *deck_pack;           /* +0x17D4 deck/all pack already in memory (from the caller), or 0 */
