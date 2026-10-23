@@ -18,7 +18,7 @@ typedef struct DuelAiCard {            /* 8 */
 extern unsigned int duel_ai_player;    /* 0x08919648 */
 extern int duel_w_0891963C;
 extern int duel_w_08913EC4;
-extern unsigned int duel_w_08913CFC;            /* step of duel_ai_step_08820E08 */
+extern unsigned int duel_ai_main_step;            /* step of duel_ai_step_08820E08 */
 extern unsigned int duel_turn_player;
 extern DuelAiCard duel_ai_field_cards[0x3D];   /* 0x089065E8 */
 extern DuelAiCard duel_ai_summons[0xB6];       /* 0x089067D0 */
@@ -238,7 +238,7 @@ int duel_ai_step_08820E08(void)
     unsigned int i;
     int r;
 
-    switch (duel_w_08913CFC) {
+    switch (duel_ai_main_step) {
     default:
         return 1;
     case 0:
@@ -248,22 +248,22 @@ int duel_ai_step_08820E08(void)
                 return 0;
             }
         }
-        duel_w_08913CFC++;
+        duel_ai_main_step++;
     case 1:
         if (duel_08820D44(p) != 0 && duel_08821888(p) != 0) {
             return 0;
         }
-        duel_w_08913CFC++;
+        duel_ai_main_step++;
     case 2:
         if (duel_08821124(p) != 0) {
             return 0;
         }
-        duel_w_08913CFC++;
+        duel_ai_main_step++;
     case 3:
         if (duel_08820948(p, 0) != 0) {
             return 0;
         }
-        duel_w_08913CFC++;
+        duel_ai_main_step++;
         return 1;
     }
 }
@@ -565,7 +565,7 @@ int duel_ai_step_08821ABC(void)
     int n;
     int z;
 
-    switch (duel_w_08913CFC) {
+    switch (duel_ai_main_step) {
     case 0:
         for (i = 0; i < 0x57; i++) {
             r = !duel_08820618(p, &duel_ai_st_cards[i]);
@@ -573,7 +573,7 @@ int duel_ai_step_08821ABC(void)
                 return 0;
             }
         }
-        duel_w_08913CFC++;
+        duel_ai_main_step++;
     case 1:
         if (duel_count_free_st_zones(p) >= 2 && duel_df664(p) != 0 && duel_0880AFC4(p) != 0) {
             n = 0;
