@@ -1,6 +1,10 @@
-// @range 0x08820618-0x08822000
+// @range 0x08820618-0x08824D34
 // @asm 0x08820E08-0x08820F60
 // @asm 0x08821124-0x08821888
+// @asm 0x08822000-0x088230CC
+// @asm 0x088230CC-0x088239EC
+// @asm 0x088239EC-0x08824798
+// @data 0x089078E8-0x08907908
 /* The computer player's choice of a card to activate (second part): the tables of cards checked
    on the field and in the hand, and the step machine that goes through them. */
 #include "duel.h"
@@ -611,10 +615,30 @@ typedef struct DuelAtkEv {             /* event argument of an attack (duel_088A
     unsigned int b18 : 2;
 } DuelAtkEv;
 
-extern struct {
-    unsigned char player : 1;
-    unsigned char zone : 4;
-} duel_b_08914A14;                     /* attacking card */
+typedef struct DuelAtkRec {            /* 0x08914A14, 0x1C: the attack being resolved (sent as is to the peer) */
+    unsigned int player : 1;           /* attacking card */
+    unsigned int zone : 4;
+    unsigned int b5 : 1;               /* the attack goes on (not cancelled) [?] */
+    unsigned int kind : 2;             /* bits 6-7 */
+    unsigned int id : 15;
+    unsigned int uid : 9;
+    unsigned short h18;                /* +0x04 duel_h_08914A18 */
+    unsigned short atk_id;             /* +0x06 duel_h_08914A1A */
+    unsigned char n;                   /* +0x08 number of targets */
+    unsigned char count;               /* +0x09 distinct targets */
+    unsigned short uids[3];            /* +0x0A */
+    unsigned short locs[3];            /* +0x10 player | zone << 8 */
+    unsigned char f0 : 1;              /* +0x16 duel_w_08914A2A */
+    unsigned char f1 : 1;
+    unsigned char owner : 1;           /* bit 0 of the uid of the attacking card */
+    unsigned char f3 : 1;
+    unsigned char f4 : 2;
+    unsigned char f6 : 1;
+    unsigned char f7 : 1;
+    unsigned char flags2;              /* +0x17 */
+} DuelAtkRec;
+
+extern DuelAtkRec duel_b_08914A14;
 extern unsigned short duel_h_08914A18;
 extern unsigned short duel_h_08914A1A;
 extern unsigned char duel_b_08914A1D;
@@ -675,4 +699,713 @@ int duel_ai_atk_08821C80(int kind)
     default:
         return 1;
     }
+}
+
+extern int duel_w_08919624;
+
+int duel_0880F1D0(unsigned int p, int id, int b, int n, unsigned short *locs, int c);
+void duel_0884AF68(int msg, int uid, int a);
+void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
+void duel_088C44E4(unsigned int p, int id);
+void duel_088D1B20(unsigned int p, unsigned int mask);
+void duel_088CC178(unsigned int p, int z, unsigned int v);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+int card_is_in_group_1a2f(int id);
+int card_get_kind(int id);
+int duel_field_attr_is(unsigned int p, int z, int attr);
+int duel_field_base_atk(unsigned int p, int z);
+void duel_field_stats(unsigned int p, int z, DuelStats *st);
+int duel_0886BCDC(void);
+unsigned int duel_card_locate(unsigned int uid);
+int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
+int duel_slot_e8170(unsigned int p, int z, int id);
+void duel_088CC4B4(unsigned int p, int z, int n);
+void duel_088C0BB0(unsigned int p, int z);
+int duel_slot_faceup_live(unsigned int p, int z);
+void duel_088C4448(unsigned int p, int z, unsigned int uid);
+
+/* Steps of the attack: announce, targets, damage calculation (duel_ai_atk_08821C80), end. */
+#ifdef NON_MATCHING /* forma quase igual (~330 palavras): alocação dos $s no passo 9 e ordem zona/jogador no 0x164F */
+int duel_ai_atk_08822000(void)
+{
+    DuelAtkRec *const a = &duel_b_08914A14;
+    int t[3];
+    DuelStats st;
+    DuelAtkEv ev;
+    int i;
+    int k;
+    int cnt;
+    unsigned int mask;
+    unsigned int id;
+    int atk;
+    int def;
+    unsigned int p;
+    unsigned char z;
+
+    switch (duel_ai_atk_step) {
+    case 0:
+        if (a->kind == 2) {
+            if (duel_player_type[a->player] == 1) {
+                duel_w_08919624 = duel_0880F1D0(a->player, a->id, a->b5, a->n, a->locs, 0);
+            } else {
+                duel_0884AF68(0xF7, a->uid, a->b5);
+            }
+        }
+        duel_ai_atk_step++;
+        return 0;
+    case 1:
+        if (a->kind == 2) {
+            a->kind = duel_w_08919624;
+            if (a->kind == 0) {
+                a->b5 = 1;
+            }
+        }
+        if (a->b5) {
+            duel_cmd((a->player ? 0x8000 : 0) | 0x60, a->id, a->kind, a->n);
+        }
+        a->count = 0;
+        mask = 0;
+        for (i = 0; i < a->n; i++) {
+            duel_cmd((a->locs[i] & 0xFF ? 0x8000 : 0) | 0x4A, (unsigned char)((a->locs[i] & 0xFFFF) >> 8), 0, 0);
+            if (i == 0 || a->locs[i] != a->locs[i - 1]) {
+                a->count++;
+            }
+        }
+        for (i = 0; i < a->n; i++) {
+            int loc = a->locs[i];
+            unsigned int q = loc & 0xFF;
+            unsigned int qz = (unsigned char)((loc & 0xFFFF) >> 8);
+
+            mask |= 1 << (qz + q * 16);
+            if (i > 0 && loc == a->locs[i - 1]) {
+                duel_088C44E4(a->player, duel.players[q & 1].field[qz].card.id);
+            }
+        }
+        duel_088D1B20(a->player, mask);
+        duel_cmd((a->player ? 0x8000 : 0) | 0x4F, a->id,
+                 (a->player & 1) | (a->zone & 0x1F) << 1 | (a->b5 & 1) << 14 | (a->kind & 1) << 15,
+                 a->owner + (a->uid << 1));
+        cnt = 0;
+        for (i = 0; i < a->n; i++) {
+            if (i == 0 || a->locs[i] != a->locs[i - 1]) {
+                t[cnt++] = a->locs[i];
+            }
+        }
+        id = a->id;
+        switch (id) {
+        case 0x1388:
+            if (a->b5 && cnt == 3) {
+                atk = 0;
+                def = 0;
+                for (i = 0; i < cnt; i++) {
+                    duel_field_stats(t[i] & 0xFF, (unsigned char)((t[i] & 0xFFFF) >> 8), &st);
+                    atk += st.batk;
+                    def += st.bdef;
+                }
+                duel_088CC178(a->player, a->zone,
+                              ((atk > 0xFFFF ? 0xFFFF : atk) & 0xFFFF) | ((def > 0xFFFF ? 0xFFFF : def) & 0xFFFF) << 16);
+            }
+            break;
+        case 0x164F:
+            if (cnt > 0) {
+                unsigned int qz = (unsigned char)((t[0] & 0xFFFF) >> 8);
+                unsigned int q = (unsigned char)t[0];
+
+                duel_088C87A8(a->player, a->zone, id, 5, CARD_UID(duel.players[q & 1].field[qz].card));
+            }
+            break;
+        case 0x1654:
+            if (a->b5 && cnt == 2) {
+                duel_088CC178(a->player, a->zone,
+                              duel_field_base_atk(t[0] & 0xFF, (unsigned char)((t[0] & 0xFFFF) >> 8)) +
+                              duel_field_base_atk(t[1] & 0xFF, (unsigned char)((t[1] & 0xFFFF) >> 8)));
+            }
+            break;
+        case 0x1688:
+            if (a->b5 && cnt == 1) {
+                duel_088CC178(a->player, a->zone,
+                              duel_field_base_atk(t[0] & 0xFF, (unsigned char)((t[0] & 0xFFFF) >> 8)) * 2);
+            }
+            break;
+        case 0x1838:
+        case 0x1864:
+            if (a->atk_id != 0) {
+                duel_088CC178(a->player, a->zone, 1);
+            }
+            break;
+        case 0x1A1D:
+            if (a->n != 0 && card_is_in_group_1a2f(duel.list[a->uids[0]].id) != 0) {
+                duel_088CC178(a->player, a->zone, duel.list[a->uids[0]].id * 10);
+            }
+            break;
+        case 0x1A20:
+            if (a->n == 0) {
+                duel_088C87A8(a->player, a->zone, id, 5, 0);
+            }
+            break;
+        case 0x1A21:
+            if (cnt == 1) {
+                duel_088C87A8(a->player, a->zone, id, 5, 0);
+            }
+            break;
+        case 0x1A30:
+            if (a->n != 0) {
+                k = a->locs[0];
+                if (duel_field_attr_is(k & 0xFF, (unsigned char)((k & 0xFFFF) >> 8), card_get_kind(id)) != 0) {
+                    duel_088CC178(a->player, a->zone, 1);
+                }
+            }
+            break;
+        }
+        duel_ai_atk_step++;
+        return 0;
+    case 2:
+        if (!a->b5) {
+            duel_ai_atk_step = 9;
+            return 0;
+        } else {
+            duel_cmd((a->player ? 0x8000 : 0) | 0x2C, a->id, a->zone, 0);
+            duel_ai_atk_step = 3;
+            return 0;
+        }
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+        return duel_ai_atk_08821C80(0x1F);
+    case 8:
+        z = a->zone;
+        p = a->player & 1;
+        if (duel.players[p & 1].field[z].card.id == 0) {
+            return 1;
+        }
+        duel_cmd((p ? 0x8000 : 0) | 0x45, z, duel_h_08914A18, a->n);
+        duel_ai_atk_step++;
+        return 0;
+    case 9:
+        if (duel_0886BCDC() != 0) {
+            return 0;
+        }
+        for (i = 0; i < a->n; i++) {
+            id = duel.list[a->uids[i]].id;
+            switch (id) {
+            case 0x14BA:
+                if (a->player != (a->locs[i] & 0xFF) || card_get_type(a->id) != card_get_type(id)) {
+                    break;
+                }
+            case 0x14F3: {
+                unsigned int o = a->uids[i] & 1;
+                unsigned int loc = duel_card_locate(a->uids[i]);
+
+                duel_0884F30C((unsigned short)id | ((unsigned char)((loc & 0xFFFF) >> 8) << 16 & 0x1F0000 |
+                                                    ((o << 31 & 0x80000000 | (a->player != o) << 24 & 0x1000000) | 0x400000)),
+                              a->uids[i], 0);
+                break;
+            }
+            }
+        }
+        cnt = 0;
+        for (i = 0; i < a->n; i++) {
+            if (i == 0 || a->locs[i] != a->locs[i - 1]) {
+                cnt++;
+            }
+        }
+        if (cnt >= 2) {
+            for (i = 5; i < 10; i++) {
+                if (duel_slot_e8170(a->player, i, 0x1662) != 0) {
+                    duel_0884F30C(a->player << 31 | 0x200000 | (unsigned int)i << 16 & 0x1F0000 | 0x1662,
+                                  CARD_UID(duel.players[a->player & 1].field[i].card), 0);
+                }
+            }
+        }
+        for (k = 0; k < 2; k++) {
+            p = duel_turn_player ^ k;
+            for (i = 5; i <= 9; i++) {
+                if (duel_slot_e8170(p, i, 0x19B2) != 0) {
+                    duel_088CC4B4(p, i, 1);
+                }
+            }
+        }
+        if (a->b5) {
+            duel_088C0BB0(a->player, a->zone);
+            if (duel_slot_faceup_live(a->player, a->zone) != 0) {
+                ev.player = a->player;
+                ev.zone = a->zone;
+                ev.faceup = 1;
+                ev.pos = a->kind & 1;
+                ev.uid = CARD_UID(duel.players[a->player & 1].field[a->zone].card);
+                ev.b16 = 0;
+                ev.b17 = (duel_h_08914A18 & 1) > 0;
+                ev.b18 = a->count;
+                switch (a->id) {
+                case 0x13B5:
+                case 0x154B:
+                    if (a->n < 3) {
+                        break;
+                    }
+                case 0x156A: case 0x158B: case 0x172D: case 0x1737: case 0x174D: case 0x17E2: case 0x182E:
+                case 0x185F: case 0x1864: case 0x18E0: case 0x1918: case 0x1A0A: case 0x1A1D: case 0x1A30:
+                    if (a->n == 0) {
+                        break;
+                    }
+                case 0x119A: case 0x120E: case 0x12B4: case 0x1334: case 0x1341: case 0x128E: case 0x1293:
+                case 0x128A: case 0x14AC: case 0x14C6: case 0x14CC: case 0x14FD: case 0x1503: case 0x1526:
+                case 0x158E: case 0x15B6: case 0x15D0: case 0x15D4: case 0x1617: case 0x164A: case 0x1694:
+                case 0x16F8: case 0x16FD: case 0x170C: case 0x17EE: case 0x1807: case 0x180B: case 0x180C:
+                case 0x189E: case 0x1900: case 0x1938: case 0x1996: case 0x19C0: case 0x19C6: case 0x19D3:
+                    duel_0884F30C(a->id | a->player << 31 | 0xC200000 | a->zone << 16 & 0x1F0000, ev.uid, *(unsigned int *)&ev);
+                    break;
+                }
+            }
+            z = a->zone;
+            p = a->player;
+            if (SLOT_ACTIVE(&duel.players[p & 1].field[z])) {
+                switch (a->id) {
+                case 0x1837:
+                case 0x1913:
+                case 0x1962:
+                    duel_088C4448(p, z, a->uid);
+                    duel_088CC4B4(a->player, a->zone, 3);
+                    break;
+                case 0x19BF:
+                    duel_088C4448(p, z, a->uid);
+                    duel_088CC4B4(a->player, a->zone, 2);
+                    break;
+                }
+            }
+        }
+        duel_ai_atk_step++;
+        return 0;
+    default:
+        return 1;
+    }
+}
+#endif
+
+extern unsigned char duel_b_08914A2F;
+
+int card_is_attribute6(int id);
+int card_attribute_icon_in_2_3(int id);
+int card_get_special_group(int id);
+int duel_field_level(unsigned int p, int z);
+void duel_088C448C(int p, int a);
+void duel_088D1438(unsigned int p, int z, int a, int b);
+void duel_088C7E68(unsigned int p, int z, int a, int b);
+int duel_0886B0E4(unsigned int a, unsigned short uid, int c);
+
+#define DUEL_EV(p, z, f, id) ((p) << 31 & 0x80000000 | (f) | (unsigned int)(z) << 16 & 0x1F0000 | (id))
+
+/* Steps of a direct attack [?]: same machine as duel_ai_atk_08822000 with the damage step 0x20. */
+#ifdef NON_MATCHING /* 3 palavras: o original põe o move a2 (terceiro argumento de duel_0886B0E4) no atraso do jal */
+int duel_ai_atk_088230CC(void)
+{
+    DuelAtkRec *const a = &duel_b_08914A14;
+    DuelAtkEv ev;
+    int f;
+    int i;
+    unsigned int q;
+    int k;
+    unsigned int code;
+    unsigned char z;
+    unsigned int p;
+
+    switch (duel_ai_atk_step) {
+    case 0:
+        duel_cmd((a->player ? 0x8000 : 0) | 0x60, a->id, 0, 4);
+        z = a->zone;
+        p = a->player;
+        if (duel.players[p & 1].field[z].pos != 0) {
+            duel_cmd((p ? 0x8000 : 0) | 0x34, z, 1, 1);
+            duel_b_08914A2F = 1;
+        } else {
+            duel_cmd((p ? 0x8000 : 0) | 0x35, z, 1, 2);
+            duel_b_08914A2F = 0;
+        }
+        duel_ai_atk_step++;
+        return 0;
+    case 1:
+        f = 0;
+        if (card_is_attribute6(a->id) != 0 && card_attribute_icon_in_2_3(a->id) != 0) {
+            f = 1;
+        }
+        duel_cmd((a->player ? 0x8000 : 0) | 0x2C, a->id, a->zone, f + 1);
+        duel_ai_atk_step++;
+        return 0;
+    case 2:
+        if (duel_field_level(a->player, a->zone) < 3 && duel_count_active(0x1255) > 0) {
+            duel_088C448C(-1, 0x1255);
+            duel_088D1438(a->player, a->zone, duel_find_effect_card(1 - a->player, 0x1255, -1) > 0, a->id);
+            return 1;
+        }
+        duel_ai_atk_step++;
+        return 0;
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+        return duel_ai_atk_08821C80(0x20);
+    case 8:
+        z = a->zone;
+        p = a->player;
+        if (duel.players[p & 1].field[z].card.id == 0) {
+            return 1;
+        }
+        duel_cmd((p ? 0x8000 : 0) | 0x45, z, duel_h_08914A18, a->n | 0x100);
+        duel_ai_atk_step++;
+        return 0;
+    case 9:
+        if (duel_0886BCDC() != 0) {
+            return 0;
+        }
+        duel_088C7E68(a->player, a->zone, 0x15, 1);
+        duel_088C0BB0(a->player, a->zone);
+        for (i = 0; i < 5; i++) {
+            if (i != a->zone && duel_slot_e8170(a->player, i, 0x18B6) != 0) {
+                duel_0884F30C(DUEL_EV(a->player, i, 0xE200000, 0x18B6),
+                              CARD_UID(duel.players[a->player & 1].field[i].card), 0);
+            }
+        }
+        if (duel_field_attr_is(a->player, a->zone, 5) != 0) {
+            int j;
+            int m;
+
+            for (m = 0; m < 2; m++) {
+                q = duel_turn_player ^ m;
+                for (j = 0; j < 5; j++) {
+                    if ((q != a->player || j != a->zone) && duel_slot_e8170(q, j, 0x19F0) != 0) {
+                        duel_0884F30C(DUEL_EV(q, j, 0xE200000, 0x19F0), CARD_UID(duel.players[q & 1].field[j].card), 0);
+                    }
+                }
+            }
+        }
+        if (duel_slot_faceup_live(a->player, a->zone) != 0) {
+            ev.player = a->player;
+            ev.zone = a->zone;
+            ev.faceup = 1;
+            ev.pos = a->kind;
+            ev.uid = CARD_UID(duel.players[a->player & 1].field[a->zone].card);
+            ev.b16 = 0;
+            ev.b17 = (duel_h_08914A18 & 1) > 0;
+            ev.b18 = 0;
+            switch (a->id) {
+            case 0x1005:
+                if (duel_b_08914A2F == 0) {
+                    break;
+                }
+            case 0x119A: case 0x120E: case 0x12B4: case 0x1334: case 0x1341: case 0x1293: case 0x128A:
+            case 0x152A: case 0x152B: case 0x152E: case 0x1533: case 0x16BC: case 0x16FA: case 0x16FD:
+            case 0x170C: case 0x186E: case 0x18BA: case 0x18BB: case 0x1900: case 0x19C6: case 0x19F1:
+            case 0x1A9F:
+                duel_0884F30C((unsigned short)a->id | ((a->player << 31 & 0x80000000 | 0xE200000) | a->zone << 16 & 0x1F0000),
+                              ev.uid, *(unsigned int *)&ev);
+                break;
+            }
+            if (card_get_special_group(a->id) != 0) {
+                int e = *(int *)&ev;
+
+                code = (unsigned short)a->id | ((a->player << 31 & 0x80000000 | 0xE200000) | a->zone << 16 & 0x1F0000);
+                if (duel_0886B0E4(code, ev.uid, e) != 0) {
+                    duel_cmd((a->player ? 0x8000 : 0) | 0x61, a->id, 0, 0);
+                    duel_0884F30C(code, ev.uid, e);
+                }
+            }
+        }
+        duel_ai_atk_step++;
+        return 0;
+    default:
+        return 1;
+    }
+}
+#endif
+
+extern unsigned int duel_w_089149F0;
+extern unsigned int duel_w_08914A00;
+
+int duel_no_1a1b(unsigned int p);
+int card_is_attribute9(int id);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
+int duel_field_atk(unsigned int p, int z);
+void duel_088328C8(unsigned int p, unsigned short a, unsigned int x, unsigned int y);
+int duel_ai_sum_088239EC(void);
+
+#ifdef NON_MATCHING /* o original deixa cópias mortas depois de beql/b nos ?: de duel_cmd (problema aberto) */
+/* Steps of a summon (or of the activation of a card from the hand) [?]. */
+int duel_ai_sum_088239EC(void)
+{
+    DuelAtkRec *const a = &duel_b_08914A14;
+    DuelAtkEv ev;
+    unsigned int p;
+    unsigned char z;
+    unsigned int v;
+    int ok;
+
+    switch (duel_ai_atk_step) {
+    case 0:
+        if (a->kind == 2) {
+            if (duel_no_1a1b(a->player) == 0) {
+                a->kind = 0;
+            } else {
+                p = a->player;
+                if (duel_player_type[p] == 1) {
+                    duel_w_08919624 = duel_0880F1D0(p, a->id, a->b5, a->n, a->locs, 1);
+                } else {
+                    if (((int)a->uid >> 1) == 0) {
+                        a->uid = p + duel.players[p & 1].unk4 * 2;
+                        duel.list[a->uid].id = a->id;
+                    }
+                    duel_0884AF68(0xF7, a->uid, a->b5);
+                }
+            }
+        }
+        duel_ai_atk_step++;
+        return 0;
+    case 1:
+        if (a->kind == 2) {
+            a->kind = duel_w_08919624;
+            if (a->kind == 0) {
+                a->b5 = 1;
+            }
+        }
+        if (a->b5) {
+            duel_cmd((a->player != duel_08821C3C(a->atk_id) ? 0x8000 : 0) | 0x60, a->id, a->kind,
+                     ((a->h18 & 1) != 0) + 5);
+        }
+        if (a->id == 0x14D5 && (duel_h_08914A18 & 0x20)) {
+            duel_088328C8(a->player, 0xFFFF, 1, 1);
+        }
+        duel_ai_atk_step++;
+        return 0;
+    case 2:
+        if (card_is_attribute9(a->id) != 0) {
+            duel_cmd((a->player ? 0x8000 : 0) | 0x48, (unsigned char)(a->b5 | a->kind << 1 | a->zone << 4) << 8, a->id, 0);
+        } else {
+            if (a->id == 0x1578) {
+                duel_088C77D4(a->player, 0x1578, 1, 0);
+            }
+            duel_cmd(0x2D, a->player | a->zone << 8, a->uid, a->b5 | a->kind << 8);
+            if (a->h18 & 1) {
+                switch (a->id) {
+                case 0x13A6:
+                    duel_088C87A8(a->player, a->zone, 0x13A6, 5, 0);
+                    break;
+                case 0x1472:
+                case 0x1636:
+                case 0x172F:
+                case 0x1809:
+                    duel_088C87A8(a->player, a->zone, 0x1472, 5, duel_card_locate(a->uid));
+                    duel_088C7E68(a->player, a->zone, 9, 1);
+                    break;
+                case 0x18FB:
+                    duel_088CC178(a->player, a->zone, duel_w_08914A00 >= 0x10000 ? 0xFFFF : duel_w_08914A00);
+                    break;
+                case 0x1A4E:
+                    duel_088CC178(a->player, a->zone, duel_w_089149F0);
+                    break;
+                }
+            }
+        }
+        duel_ai_atk_step = 8;
+        return 0;
+    case 8:
+        z = a->zone;
+        p = a->player;
+        if (duel.players[p & 1].field[z].card.id == 0) {
+            return 1;
+        }
+        duel_cmd((p ? 0x8000 : 0) | 0x45, z, duel_h_08914A18, a->n);
+        duel_ai_atk_step++;
+        return 0;
+    case 9:
+        if (duel_0886BCDC() != 0) {
+            return 0;
+        }
+        switch (a->atk_id) {
+        case 0x1A65:
+            duel_088C87A8(a->player, a->zone, 0x1A65, ((duel_turn_player != a->player) + 1) * 16 | 2, 0);
+            break;
+        case 0x1A31:
+            v = duel_field_atk(a->player, a->zone) / 2;
+            if ((int)v > 0xFFFF) {
+                v = 0xFFFF;
+            }
+            duel_088C87A8(a->player, a->zone, a->atk_id, 2, v);
+            break;
+        case 0x18FE:
+            duel_088C87A8(a->player, a->zone, 0x18FE, 3, 0);
+            duel_088C77D4(a->player, a->atk_id, 1, duel_field_base_atk(a->player, a->zone));
+            break;
+        case 0x19D2:
+            duel_088CC178(a->player, a->zone, 1);
+            break;
+        case 0x1595:
+            duel_088CC178(a->player, a->zone, 1 - a->player);
+            break;
+        case 0x17D1:
+        case 0x1822:
+        case 0x185E:
+            duel_088C87A8(a->player, a->zone, a->id, 3, 0);
+            break;
+        case 0x1481: case 0x156A: case 0x15ED: case 0x1619: case 0x16A4: case 0x17BE: case 0x1876:
+        case 0x1900: case 0x1944: case 0x1A7B:
+            duel_088C87A8(a->player, a->zone, a->atk_id, 2, 0);
+            break;
+        case 0x151E:
+            duel_088C87A8(a->player, a->zone, 0x151E, 1, 1);
+            break;
+        case 0x19F7:
+        case 0x19F8:
+            if (duel_h_08914A18 & 0x20) {
+                duel_088C87A8(a->player, a->zone, a->atk_id, 3, 0);
+            }
+            break;
+        case 0x14A7: case 0x14F7: case 0x188F: case 0x196B: case 0x196C: case 0x196D: case 0x196E:
+        case 0x1990: case 0x1A5C:
+            duel_088C87A8(a->player, a->zone, a->atk_id, 3, 0);
+            break;
+        case 0x12EA: case 0x17D5: case 0x1A2B: case 0x1A2C: case 0x1A2D: case 0x1A2E:
+            duel_088C87A8(a->player, a->zone, a->atk_id, 5, 0);
+            break;
+        }
+        if (duel_slot_faceup_live(a->player, a->zone) != 0) {
+            ok = 0;
+            switch (a->id) {
+            case 0x1A05:
+                ok = duel_h_08914A1A == 0x1A0C;
+                break;
+            case 0x19EF:
+            case 0x1A4E:
+                ok = (duel_h_08914A18 & 1) != 0;
+                break;
+            case 0x190A:
+                ok = 0;
+                if (duel_h_08914A1A == 0x190A) {
+                    ok = (duel_h_08914A18 & 0x20) == 0;
+                }
+                break;
+            case 0x176C:
+            case 0x185C:
+            case 0x1A28:
+            case 0x1A92:
+                ok = duel_h_08914A1A == a->id;
+                break;
+            case 0x16F7:
+                ok = (duel_h_08914A18 & 0x20) != 0;
+                break;
+            case 0x19F4:
+                ok = 1;
+                break;
+            case 0x12B1: case 0x1388: case 0x14FC: case 0x164A: case 0x167C: case 0x16F8: case 0x16FB:
+            case 0x1745: case 0x1788: case 0x17C9: case 0x17EE: case 0x1807: case 0x180B: case 0x180C:
+            case 0x19A7: case 0x1996:
+                ok = 1;
+                break;
+            }
+            if (ok) {
+                ev.player = a->player;
+                ev.zone = a->zone;
+                ev.faceup = 1;
+                ev.pos = a->kind;
+                ev.uid = CARD_UID(duel.players[a->player & 1].field[a->zone].card);
+                ev.b16 = 0;
+                ev.b17 = (duel_h_08914A18 & 1) > 0;
+                ev.b18 = duel_b_08914A1D;
+                duel_0884F30C((unsigned short)a->id | ((a->player << 31 & 0x80000000 | 0x10200000) | a->zone << 16 & 0x1F0000),
+                              ev.uid, *(unsigned int *)&ev);
+            }
+        }
+        duel_ai_atk_step++;
+        return 0;
+    default:
+        return 1;
+    }
+}
+#endif
+
+int card_is_group_c(int id);
+void duel_088C78E0(unsigned int p);
+
+/* Steps of a special summon [?]: targets, then the summon steps of duel_ai_sum_088239EC. */
+int duel_ai_atk_08824798(void)
+{
+    DuelAtkRec *const a = &duel_b_08914A14;
+    int i;
+    unsigned int mask;
+
+    switch (duel_ai_atk_step) {
+    case 0:
+        if (a->kind == 2) {
+            if (duel_player_type[a->player] == 1) {
+                duel_w_08919624 = duel_0880F1D0(a->player, a->id, a->b5, a->n, a->locs, 1);
+            } else {
+                duel_0884AF68(0xF7, a->uid, a->b5);
+            }
+        }
+        duel_ai_atk_step++;
+        return 0;
+    case 1:
+        if (a->kind == 2) {
+            a->kind = duel_w_08919624;
+            if (a->kind == 0) {
+                a->b5 = 1;
+            }
+        }
+        if (a->b5) {
+            duel_cmd((a->player ? 0x8000 : 0) | 0x60, a->id, a->kind, 6);
+        }
+        a->count = 0;
+        mask = 0;
+        for (i = 0; i < a->n; i++) {
+            duel_cmd((a->locs[i] & 0xFF ? 0x8000 : 0) | 0x4A, (unsigned char)((a->locs[i] & 0xFFFF) >> 8), 0, 0);
+            if (i == 0 || a->locs[i] != a->locs[i - 1]) {
+                a->count++;
+            }
+        }
+        for (i = 0; i < a->n; i++) {
+            mask |= 1 << ((unsigned char)((a->locs[i] & 0xFFFF) >> 8) + (a->locs[i] & 0xFF) * 16);
+        }
+        duel_088D1B20(a->player, mask);
+        duel_ai_atk_step++;
+        return 0;
+    case 2:
+        if (a->atk_id == 0x1578 || a->atk_id == 0x1A92) {
+            duel_088C77D4(a->player, a->id, 1, 0);
+            a->player ^= 1;
+        }
+        duel_cmd(0x2D, a->player | a->zone << 8, a->uid, a->b5 | a->kind << 8);
+        switch (a->id) {
+        case 0x18B4:
+            duel_088CC178(a->player, a->zone, duel_b_08914A14.locs[0] * 700);
+            break;
+        }
+        if (card_is_group_c(a->id) != 0) {
+            duel_ai_atk_step = 3;
+        } else {
+            duel_ai_atk_step = 8;
+        }
+        return 0;
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+        return duel_ai_atk_08821C80(0x21);
+    default:
+        if (duel_ai_sum_088239EC() != 0) {
+            switch (a->id) {
+            case 0x112E:
+            case 0x128C:
+            case 0x196B:
+            case 0x196C:
+            case 0x196D:
+            case 0x196E:
+                duel_088C78E0(a->player);
+                break;
+            }
+            break;
+        }
+        return 0;
+    }
+    return 1;
 }
