@@ -11,6 +11,7 @@
 #include "libc.h"
 #include "cip.h"
 #include "card_db.h"
+#include "game.h"
 
 /* sc.kind: what the screen is picking for */
 #define SC_KIND_RENTAL 0   /* labo/rental.ehp, the rental list comes from sysstate */
@@ -29,7 +30,7 @@ typedef struct ScEnt {                 /* one card line, 6 bytes */
 } ScEnt;
 
 typedef struct ScList {                /* 0x20: the cards of one pane */
-    unsigned short side;               /* +0x00 0 or 1 */
+    unsigned short tab;                /* +0x00 list shown (0 the cards owned, 1 the list being built) */
     unsigned short pad02;
     ScEnt *ents;                       /* +0x04 */
     unsigned short n;                  /* +0x08 entries in ents */
@@ -52,13 +53,14 @@ typedef struct ScList {                /* 0x20: the cards of one pane */
 
 typedef struct ScLayout {              /* 0x1E, copied from sc_layouts */
     short x, y, w, h;                  /* +0x00 frame of the pane */
-    short v8, va;                      /* +0x08 */
+    short row_x, row_y;                /* +0x08 first row (list mode) */
     unsigned short rows;               /* +0x0C visible rows (list mode) */
-    short ve, v10, v12, v14;           /* +0x0E */
+    short row_w, row_h;                /* +0x0E */
+    short grid_x, grid_y;              /* +0x12 first cell (grid mode) */
     unsigned short cols;               /* +0x16 columns (grid mode) */
-    short v18;                         /* +0x18 */
+    short cell_w;                      /* +0x18 */
     unsigned short grid_rows;          /* +0x1A visible rows (grid mode) */
-    short v1c;                         /* +0x1C */
+    short cell_h;                      /* +0x1C */
 } ScLayout;
 
 typedef struct ScPane {                /* 0x2C */
@@ -156,6 +158,9 @@ typedef struct ScIdList {              /* count, then sorted (id | sub << 16) wo
 } ScIdList;
 
 typedef int ScPt;                      /* screen position packed as x | y << 16 */
+/* entry at row i of the visible order, 0 past the end */
+#define SC_ENT(l, i) ((i) >= (l)->count ? 0 : &(l)->ents[(l)->order[i]])
+
 #define PT(x, y) ((unsigned short)(x) | (unsigned short)(y) << 16)
 
 typedef struct ScSprite {              /* sc_draw_sprite */
