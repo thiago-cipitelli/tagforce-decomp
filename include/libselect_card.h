@@ -74,12 +74,21 @@ typedef struct ScPane {                /* 0x2C */
 } ScPane;
 
 typedef struct ScView {                /* 0x0881B540, 0x94 bytes cleared by libselect_card_08804008 */
-    unsigned short mode : 4;           /* +0x00 pane layout (sc_modes) */
-    unsigned short side : 2;           /*       pane with the cursor */
-    unsigned short busy : 1;           /*       bit 6 */
-    unsigned short popup : 8;          /*       popup being shown */
-    unsigned short pad00 : 1;
-    unsigned char pad02[0x36];
+    union {
+        struct {
+            unsigned char mode : 4;    /* +0x00 pane layout (sc_modes) */
+            unsigned char side : 2;    /*       pane with the cursor */
+            unsigned char busy : 1;    /*       bit 6 */
+            unsigned char b07 : 1;
+        };
+        struct {
+            unsigned short f00 : 7;
+            unsigned short popup : 8;  /*       popup being shown */
+            unsigned short f15 : 1;
+        };
+    };
+    unsigned char pad02[0x0E];
+    unsigned char cursor[0x28];        /* +0x10 cursor box animation (sc_draw_cursor) */
     unsigned char info : 1;            /* +0x38 card info (cardinfo_*) shown */
     unsigned char pad38 : 7;
     unsigned char pad39[3];
@@ -93,6 +102,10 @@ typedef struct ScConfig {              /* libselect_card_08804008 cfg */
     void *pack_b;                      /* pack 2..4 already loaded by the caller */
 } ScConfig;
 
+typedef struct ScRect {
+    short x, y, w, h;
+} ScRect;
+
 typedef struct ScState {               /* 0x0881B5E0, 0x398 bytes cleared by libselect_card_08804008 */
     int kind;                          /* +0x000 SC_KIND_* */
     int state;                         /* +0x004 libselect_card_088041C4 state */
@@ -102,7 +115,7 @@ typedef struct ScState {               /* 0x0881B5E0, 0x398 bytes cleared by lib
     unsigned char blob[0x200];         /* +0x04C sysstate_blob_set */
     unsigned short u24c;               /* +0x24C */
     unsigned char pad24e[0x50];
-    short fx, fy, fw, fh;              /* +0x29E focus frame */
+    ScRect focus;                      /* +0x29E frame around the focused popup */
     unsigned short flags2a6;           /* +0x2A6 */
     int *out_count;                    /* +0x2A8 */
     unsigned short *out_ids;           /* +0x2AC */
@@ -232,6 +245,7 @@ void gfx_overlay_enable(int on);
 unsigned short region_pick_value(int flag);
 unsigned short *table_get_entry(void *t, unsigned int i);
 unsigned int *gfx_get_state(void);
+void cardinfo_draw(void);
 void *gfx_begin_2d(void *list);
 void *gfx_end_2d(void *list);
 void *ehf_draw(void *list, void *ehf, void *opts);
@@ -251,7 +265,7 @@ void *dl_set_tex_filter(void *list, int min, int mag);
 void *dl_blend_func(void *list, int op, int src, int dst, unsigned int srcfix, unsigned int dstfix);
 void *dl_ambient_color(void *list, unsigned int color);
 void *dl_scissor(void *list, int x, int y, int w, int h);
-void dl_alloc_inline(void **list, int bytes);
+void *dl_alloc_inline(void **list, int bytes);
 void *dl_draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
 void *draw_set_offsets(void *list, int tw, int th, int w, int h);
 void *draw_sprite(void *list, int x, int y, int z, int u, int v, int a, int b);
