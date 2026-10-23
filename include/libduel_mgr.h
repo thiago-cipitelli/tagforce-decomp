@@ -115,6 +115,71 @@ typedef struct DuelMgr {               /* dmgr 0x0931BCB0, 0x92C bytes zeroed by
 
 extern DuelMgr dmgr;
 
+typedef struct DmgrRect {
+    short x, y;
+    unsigned short w, h;               /* percent scale of the sprite */
+} DmgrRect;
+
+typedef struct DmgrJkCard {            /* a janken hand card, 0x1A */
+    unsigned char on : 1;
+    unsigned char hand : 3;            /* 0 rock, 1 scissors, 2 paper */
+    unsigned char pad0 : 4;
+    unsigned char pad1;
+    DmgrRect from;                     /* +0x02 */
+    DmgrRect cur;                      /* +0x0A */
+    DmgrRect to;                       /* +0x12 */
+} DmgrJkCard;
+
+typedef struct DmgrJkNet {             /* ad hoc state of the start menu */
+    unsigned char peer : 4;            /* own peer index */
+    unsigned char side : 2;
+    unsigned char host : 1;            /* this peer plays the side's first slot */
+    unsigned char b7 : 1;
+    unsigned char c5_0 : 1;            /* +0x01 */
+    unsigned char synced : 1;          /* partner decks received */
+    unsigned char c5_2 : 6;
+    unsigned char pad[2];
+} DmgrJkNet;
+
+typedef struct DmgrJk {                /* start menu (janken for the first turn), 0xE8 on the heap */
+    unsigned short first : 2;          /* +0x00 0 janken, 1 chosen by the series, 2 free duel */
+    unsigned short state : 8;
+    unsigned short pad00 : 6;
+    unsigned char sub;                 /* +0x02 */
+    unsigned char won : 1;             /* +0x03 won the janken */
+    unsigned char b3_1 : 7;
+    unsigned char pick[2];             /* +0x04 hand of each side */
+    unsigned char b6_0 : 3;            /* +0x06 */
+    unsigned char choice : 2;          /* go first (0) or second (1) */
+    unsigned char target : 2;          /* choice the cursor stops on */
+    unsigned char closed : 1;          /* the menu was closed by the scene */
+    unsigned char pad07;
+    unsigned short timer;              /* +0x08 */
+    unsigned char result : 4;          /* +0x0A 1 win, 2 lose, 3 draw */
+    unsigned char pad0a : 4;
+    unsigned char pad0b;
+    unsigned short anim[2];            /* +0x0C per side */
+    unsigned short t[2];               /* +0x10 */
+    unsigned short wait[2];            /* +0x14 */
+    void *text;                        /* +0x18 */
+    DmgrJkCard card[2][3];             /* +0x1C */
+    unsigned char bg_on : 1;           /* +0xB8 draw files[2] */
+    unsigned char title_on : 1;        /* draw files[3] */
+    unsigned char cursor_on : 1;
+    unsigned char partner_on : 1;      /* draw the partner panel */
+    unsigned char b8_4 : 4;
+    unsigned char padb9;
+    unsigned short res_anim[2];        /* +0xBA */
+    unsigned char padbe[2];
+    void *heap;                        /* +0xC0 */
+    DmgrJkNet net;                     /* +0xC4 */
+    unsigned char *netbuf;             /* +0xC8 */
+    void *pack;                        /* +0xCC */
+    void *files[6];                    /* +0xD0 */
+} DmgrJk;
+
+extern DmgrJk *dmgr_jk;
+
 /* &gs->slot[k] the way the original adds it (base first): an accessor, not the inline expression */
 inline PlayerSlot *dmgr_slot(DmgrGameHdr *gs, int k)
 {
