@@ -64,7 +64,7 @@ void libselect_card_08807630(void)
         list = dl_blend_func(list, 0, 2, 3, 0, 0);
         list = dl_disable(list, 1);
         list = sc_draw_bg(list);
-        list = sc_draw_cursor(list, scv.cursor);
+        list = sc_draw_cursor(list, &scv.cursor);
         list = sc_draw_panes(list);
         list = sc_draw_overlay(list);
         fade_apply(&list);

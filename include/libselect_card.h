@@ -75,6 +75,22 @@ typedef struct ScPane {                /* 0x2C */
     unsigned short pad2a;
 } ScPane;
 
+typedef struct ScScroll {              /* analog-scrolled value */
+    int id;                            /* +0x00 card shown (-1 none) */
+    int pad04;
+    unsigned int pos;                  /* +0x08 */
+    unsigned int max;                  /* +0x0C */
+} ScScroll;
+
+typedef struct ScCursor {              /* 0x28 */
+    unsigned short id;                 /* +0x00 card under the cursor */
+    unsigned short key;                /* +0x02 */
+    int timer;                         /* +0x04 frames on the same card */
+    ScEnt *ent;                        /* +0x08 */
+    ScScroll scroll;                   /* +0x0C analog-scrolled info text */
+    unsigned char pad1c[0x0C];
+} ScCursor;
+
 typedef struct ScView {                /* 0x0881B540, 0x94 bytes cleared by libselect_card_08804008 */
     union {
         struct {
@@ -89,8 +105,13 @@ typedef struct ScView {                /* 0x0881B540, 0x94 bytes cleared by libs
             unsigned short f15 : 1;
         };
     };
-    unsigned char pad02[0x0E];
-    unsigned char cursor[0x28];        /* +0x10 cursor box animation (sc_draw_cursor) */
+    unsigned short pad02;
+    int scroll_max;                    /* +0x04 wide view text scroll */
+    int scroll_pos;                    /* +0x08 */
+    unsigned char lock : 1;            /* +0x0C cursor info frozen */
+    unsigned char pad0c : 7;
+    unsigned char pad0d[3];
+    ScCursor cursor;                   /* +0x10 cursor box animation (sc_draw_cursor) */
     unsigned char info : 1;            /* +0x38 card info (cardinfo_*) shown */
     unsigned char pad38 : 7;
     unsigned char pad39[3];
@@ -104,6 +125,10 @@ typedef struct ScConfig {              /* libselect_card_08804008 cfg */
     void *pack_b;                      /* pack 2..4 already loaded by the caller */
 } ScConfig;
 
+typedef struct ScMove {                /* a card moved between the panes, 10 bytes */
+    unsigned char b[10];
+} ScMove;
+
 typedef struct ScRect {
     short x, y, w, h;
 } ScRect;
@@ -111,14 +136,15 @@ typedef struct ScRect {
 typedef struct ScState {               /* 0x0881B5E0, 0x398 bytes cleared by libselect_card_08804008 */
     int kind;                          /* +0x000 SC_KIND_* */
     int state;                         /* +0x004 libselect_card_088041C4 state */
-    unsigned short u08;                /* +0x008 */
+    unsigned short info_step;          /* +0x008 card info screen (sc_info_anim) */
     unsigned short unload_step;        /* +0x00A */
     ScList list[2];                    /* +0x00C */
     unsigned char blob[0x200];         /* +0x04C sysstate_blob_set */
-    unsigned short u24c;               /* +0x24C */
-    unsigned char pad24e[0x50];
+    unsigned short nhist;              /* +0x24C undo history of moves */
+    ScMove hist[8];                    /* +0x24E */
     ScRect focus;                      /* +0x29E frame around the focused popup */
-    unsigned short flags2a6;           /* +0x2A6 */
+    unsigned char flags2a6;            /* +0x2A6 */
+    unsigned char pad2a7;
     int *out_count;                    /* +0x2A8 */
     unsigned short *out_ids;           /* +0x2AC */
     int n_in;                          /* +0x2B0 */
@@ -189,11 +215,6 @@ typedef struct ScIconText {            /* sc_draw_icon_text */
     unsigned int color;                /* +0x0C 0 = black */
 } ScIconText;
 
-typedef struct ScScroll {              /* analog-scrolled value */
-    int pad00, pad04;
-    unsigned int pos;                  /* +0x08 */
-    unsigned int max;                  /* +0x0C */
-} ScScroll;
 
 extern ScView scv;
 extern ScState sc;
