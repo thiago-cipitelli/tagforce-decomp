@@ -218,6 +218,22 @@ typedef struct ScIconText {            /* sc_draw_icon_text */
 } ScIconText;
 
 
+typedef struct ScAction {              /* sc_action 0x0881B984, heap allocated */
+    unsigned char no_ent : 1;          /* +0x00 opened on an empty slot */
+    unsigned char pad00 : 7;
+    unsigned char pad01;
+    unsigned short step;               /* +0x02 */
+    ScEnt *ent;                        /* +0x04 */
+    unsigned short mode;               /* +0x08 sc_modes row being picked */
+    unsigned short side;               /* +0x0A pane of the other list */
+    unsigned short tab;                /* +0x0C its tab */
+    unsigned short mark;               /* +0x0E "new" mark picked */
+    struct MenuWidget *menu;                  /* +0x10 */
+    struct MenuWidget *sub;                   /* +0x14 */
+} ScAction;
+
+extern ScAction *sc_action;
+
 extern ScView scv;
 extern ScState sc;
 extern void *sc_cip_mem;

@@ -15,18 +15,6 @@ typedef struct ScButton {              /* sc_draw_button */
     unsigned short text;               /* +0x04 strTbl.bin entry */
 } ScButton;
 
-typedef struct ScAction {              /* sc_action 0x0881B984, heap allocated */
-    unsigned char no_ent : 1;          /* +0x00 opened on an empty slot */
-    unsigned char pad00 : 7;
-    unsigned char pad01;
-    unsigned short step;               /* +0x02 */
-    ScEnt *ent;                        /* +0x04 */
-    int pad08, pad0c;
-    MenuWidget *menu;                  /* +0x10 */
-    MenuWidget *sub;                   /* +0x14 */
-} ScAction;
-
-extern ScAction *sc_action;
 
 void font_set_flag4000(int on);
 unsigned short *card_get_desc(int id);
@@ -317,7 +305,7 @@ void sc_action_open(ScEnt *e)
     m->def.visible = 1;
     m->def.style = 0;
     m->def.y = 0x3A;
-    m->def.anchor = -1;
+    m->def.color = 0xFFFFFFFF;
     m->def.auto_size = 1;
     m->def.show_title = 1;
     m->def.max_w = 2;
