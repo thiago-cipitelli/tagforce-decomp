@@ -6,6 +6,7 @@
 
 #include "ehsys.h"
 #include "duel_setup.h"
+#include "menu.h"
 
 typedef struct DmgrGameHdr {           /* view of GameState +0x108.. used by the duel scene */
     unsigned char deck[0x108];
@@ -211,6 +212,61 @@ typedef struct DmgrPartner {           /* partner / versus panel, 0x6C on the he
 } DmgrPartner;
 
 extern DmgrPartner *dmgr_pt;
+
+typedef struct DmgrResItem {           /* an entry of the result text tables */
+    unsigned short on : 1;             /* shown on the result screen */
+    unsigned short text : 15;          /* line in strTbl.bin */
+} DmgrResItem;
+
+typedef struct DmgrResRec {            /* DuelResults +0x3C: what this duel earned */
+    int rec[0x28];                     /* +0x00 records */
+    int bonus[0x53];                   /* +0xA0 bonus points, [0x52] total */
+    unsigned char title[0x76];         /* +0x1EC titles won */
+} DmgrResRec;
+
+typedef struct DmgrResTab {            /* a page of the result screen, 0x0C */
+    unsigned short scroll;
+    unsigned short count;
+    unsigned short *ids;               /* +0x04 indices into the text table */
+    unsigned short *lines;             /* +0x08 height of each entry in lines */
+} DmgrResTab;
+
+typedef struct DmgrRes {               /* result screen, 0x1A4 on libduel_draw's heap */
+    unsigned short state;              /* +0x000 */
+    unsigned short sub;                /* +0x002 */
+    unsigned char tab : 4;             /* +0x004 current page */
+    unsigned char b4_hi : 4;
+    unsigned char pad05[3];
+    int total[4];                      /* +0x008 points per page: bonus, records, titles, money */
+    unsigned char bar : 4;             /* +0x018 page shown on the tab bar */
+    unsigned char bg : 2;              /* bg animation */
+    unsigned char b18_6 : 2;
+    unsigned char pad19;
+    short result_ehf;                  /* +0x01A win/lose/draw file, <0 none */
+    unsigned char result_on : 1;       /* +0x01C */
+    unsigned char prev_tab : 4;
+    unsigned char slide : 2;           /* direction of the page change */
+    unsigned char b1c_7 : 1;
+    unsigned char pad1d;
+    unsigned short timer;              /* +0x01E */
+    DmgrResTab tabs[4];                /* +0x020 */
+    DmgrResRec *rec;                   /* +0x050 */
+    void *heap;                        /* +0x054 */
+    MenuWidget menu;                   /* +0x058 */
+    unsigned char menu_kind : 2;       /* +0x178 1 continue, 2 net wait, 3 net lost */
+    unsigned char menu_done : 1;
+    unsigned char b178 : 5;
+    unsigned char pad179;
+    unsigned short n_peers;            /* +0x17A */
+    unsigned char net : 1;             /* +0x17C */
+    unsigned char loading : 1;
+    unsigned char b17c : 6;
+    unsigned char pad17d[3];
+    void *pack;                        /* +0x180 duel/result/result_?.ehp */
+    void *files[8];                    /* +0x184 */
+} DmgrRes;
+
+extern DmgrRes *dmgr_res;
 
 /* &gs->slot[k] the way the original adds it (base first): an accessor, not the inline expression */
 inline PlayerSlot *dmgr_slot(DmgrGameHdr *gs, int k)
