@@ -137,6 +137,46 @@ typedef struct ScRes {                 /* resource tables, 12 bytes */
     const char *name;                  /* +0x08 */
 } ScRes;
 
+typedef struct ScIdList {              /* count, then sorted (id | sub << 16) words */
+    int n;
+    unsigned int e[1];
+} ScIdList;
+
+typedef int ScPt;                      /* screen position packed as x | y << 16 */
+#define PT(x, y) ((unsigned short)(x) | (unsigned short)(y) << 16)
+
+typedef struct ScSprite {              /* sc_draw_sprite */
+    unsigned short x, y;
+    unsigned short w, h;
+    unsigned short u, v;
+} ScSprite;
+
+typedef struct ScStat {                /* sc_draw_stat, passed by value */
+    unsigned short kind;               /* 0 "ATK/", 1 "DEF/", 2/3 icons */
+    unsigned short value;              /* 0xFFFF = "?" */
+} ScStat;
+
+typedef struct ScCounter {             /* sc_draw_counters, 12 bytes x 3 */
+    unsigned char icon;                /* sc_count_icons row, 0 = none */
+    unsigned char pad01[3];
+    unsigned int color;                /* +0x04 */
+    unsigned char value;               /* +0x08 */
+    unsigned char pad09[3];
+} ScCounter;
+
+typedef struct ScIconText {            /* sc_draw_icon_text */
+    void *gim;
+    unsigned char u, v, w, h;          /* +0x04 */
+    unsigned short *text;              /* +0x08 */
+    unsigned int color;                /* +0x0C 0 = black */
+} ScIconText;
+
+typedef struct ScScroll {              /* analog-scrolled value */
+    int pad00, pad04;
+    unsigned int pos;                  /* +0x08 */
+    unsigned int max;                  /* +0x0C */
+} ScScroll;
+
 extern ScView scv;
 extern ScState sc;
 extern void *sc_cip_mem;
@@ -146,6 +186,30 @@ extern ScLoad sc_load;
 void res_free(void);
 void *res_get(unsigned short id);
 unsigned short sc_sort_key(unsigned short id, unsigned short *tab);
+int sc_id_find(unsigned short id, unsigned short sub, ScIdList *l);
+int sc_kind_icon(unsigned short kind);
+void *sc_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim);
+void *sc_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
+void *sc_draw_frame(void *list, int x, int y, int w, int h, void *gim, int style);
+void *sc_draw_sprite(void *list, ScSprite *s, void *gim);
+void *sc_draw_icon_a(void *list, ScPt pos, unsigned short id, void *gim);
+void *sc_draw_icon_b(void *list, ScPt pos, unsigned short id, void *gim);
+void *sc_draw_icon_c(void *list, ScPt pos, unsigned short id, void *gim);
+void *sc_draw_icon_d(void *list, ScPt pos, unsigned short id, void *gim);
+void *sc_draw_icon_e(void *list, ScPt pos, unsigned short id, void *gim);
+void *sc_draw_level(void *list, ScPt pos, unsigned short level, unsigned int color, void *gim);
+void *sc_draw_stat(void *list, unsigned int st, ScPt pos, unsigned short size, unsigned int color, void *gim);
+void *sc_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, ScEnt *e, void *gim, void *gim_alt, ScIdList *alt);
+void *sc_draw_card_marks(void *list, int x, int y, ScEnt *e, int show_count, int blink, int show_fixed, unsigned short rank, void *gim_digits, void *gim);
+void *sc_draw_row_frame(void *list, ScPt pos, unsigned short w, unsigned short kind, void *gim);
+void *sc_draw_flag_icon(void *list, ScPt pos, unsigned short kind, void *gim);
+void *sc_draw_counters(void *list, ScPt pos, ScCounter *c, void *gim_strip, void *gim);
+void *sc_draw_icon_text(void *list, ScIconText *t, int x, int y);
+void *sc_draw_arrow(void *list, int x, int y, unsigned char dir, unsigned int period, int blink, int base, unsigned int t, void *gim);
+void *sc_draw_scrollbar(void *list, int x, int y, int h, int pos, int first, int total, int frame, void *gim);
+void sc_scroll_analog(ScScroll *s);
+void *sc_draw_box(void *list, int x, int y, int w, int h, void *gim);
+void *sc_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *gim, void *strtbl);
 
 /* BOOT (libehsys) */
 int sceKernelFreeFpl(int fpl, void *data);
@@ -167,5 +231,35 @@ int fade_apply(void **list);
 void gfx_overlay_enable(int on);
 unsigned short region_pick_value(int flag);
 unsigned short *table_get_entry(void *t, unsigned int i);
+unsigned int *gfx_get_state(void);
+void *gfx_begin_2d(void *list);
+void *gfx_end_2d(void *list);
+void *ehf_draw(void *list, void *ehf, void *opts);
+int ehf_set_anim(void *e, int target, int limit);
+void *gim_set_texture(void *list, void *gim);
+void *gim_set_texture_frame(void *list, void *gim, int frame);
+void *dl_select_layer(int layer, unsigned int *size);
+int dl_set_list(void *list);
+void *dl_clear_color(void *list, unsigned int color);
+void *dl_clear_depth(void *list, unsigned int z);
+void *dl_clear_stencil(void *list, unsigned int s);
+void *dl_clear(void *list, unsigned int flags);
+void *dl_enable(void *list, int state);
+void *dl_disable(void *list, int state);
+void *dl_tex_func(void *list, int func, int comp);
+void *dl_set_tex_filter(void *list, int min, int mag);
+void *dl_blend_func(void *list, int op, int src, int dst, unsigned int srcfix, unsigned int dstfix);
+void *dl_ambient_color(void *list, unsigned int color);
+void *dl_scissor(void *list, int x, int y, int w, int h);
+void dl_alloc_inline(void **list, int bytes);
+void *dl_draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
+void *draw_set_offsets(void *list, int tw, int th, int w, int h);
+void *draw_sprite(void *list, int x, int y, int z, int u, int v, int a, int b);
+int inv_get_bit3(unsigned short id);
+int inv_get_hi(unsigned short id);
+int inv_get_bit0(unsigned short id);
+int inv_get_flag7(unsigned short id);
+void inv_set_flag7(unsigned short id, int on);
+int inv_get_count(unsigned short id);
 
 #endif

@@ -392,11 +392,6 @@ unsigned short sc_sort_key(unsigned short id, unsigned short *tab)
     return r;
 }
 
-typedef struct ScIdList {              /* count, then sorted (id | sub << 16) words */
-    int n;
-    unsigned int e[1];
-} ScIdList;
-
 /* copies of id in a sorted list */
 unsigned short sc_id_count(unsigned short id, ScIdList *l)
 {

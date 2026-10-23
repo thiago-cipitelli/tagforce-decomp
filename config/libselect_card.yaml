@@ -27,7 +27,13 @@ segments:
     subalign: null
     subsegments:
       - [0x60, c, sc_main]
-      - [0xD6C, asm, text_0]
+      - [0xD6C, c, sc_parts]
+      - [0xD6C, asm, sc_parts_asm_08804D0C]
+      - [0xF14, c, sc_parts]
+      - [0x22CC, asm, sc_parts_asm_0880626C]
+      - [0x2548, c, sc_parts]
+      - [0x2F9C, asm, sc_parts_asm_08806F3C]
+      - [0x3690, asm, text_0]
       - [0x12E34, asm, sceStub_text]
       - [0x1551C, bin, lib_ent_top]
       - [0x15520, bin, lib_ent]
@@ -42,7 +48,8 @@ segments:
       - [0x16970, .data, sc_main__rodata]
       - [0x1699C, data, data_0]
       - [0x16A70, .data, sc_main]
-      - [0x16DD0, data, data_1]
+      - [0x16DD0, .data, sc_parts]
+      - [0x16E88, data, data_1]
       - { start: 0x175A0, type: bss, vram: 0x881B540, name: bss }
   - [0x175A0]
 
