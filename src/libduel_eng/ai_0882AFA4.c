@@ -598,12 +598,12 @@ int duel_0882C8C0(void)
 }
 
 /* Summon with three tributes (starts at step 0x1E of duel_summon_tributes). */
-void duel_0882CA98(void)
+int duel_0882CA98(void)
 {
     switch (duel_summon.step) {
     case 0:
         duel_summon.step = 0x1E;
         break;
     }
-    duel_summon_tributes();
+    return duel_summon_tributes();
 }
