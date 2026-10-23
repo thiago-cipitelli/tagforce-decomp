@@ -4,7 +4,7 @@ containing only `name = 0xADDR; // type:func|data`. usage: splat_symbols.py MODU
 import re, sys
 for line in open(f"symbols/{sys.argv[1]}.txt"):
     m = re.match(r"(\w+)\s*=\s*(0x[0-9A-Fa-f]+);\s*//\s*type:(func|data)", line)
-    if m:
+    if m and " alias" not in line.split("type:", 1)[1][:10]:
         # splat has no generic "data" type; emit data symbols untyped (size/type inferred from the disassembly).
         # `size:0xNN` is passed through so references into the object become `sym+off` (needed when the
         # object is defined in C and the asm still references its interior).

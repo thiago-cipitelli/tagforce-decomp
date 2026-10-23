@@ -2008,6 +2008,7 @@ duel_088CB2AC = 0x088CB2AC; // type:func inferred
 duel_0888A324 = 0x0888A324; // type:func matched src/libduel_eng/effects_y.c
 duel_0888A52C = 0x0888A52C; // type:func matched src/libduel_eng/effects_y.c
 duel_summon = 0x08914A14; // type:data inferred summon being prepared (DuelSummon)
+duel_atk_rec = 0x08914A14; // type:data alias duel_summon seen as the attack/summon record (DuelAtkRec, ai_08820618.c)
 duel_0888A88C = 0x0888A88C; // type:func asm (@asm in src/libduel_eng/effects_y.c, C under NON_MATCHING)
 duel_0888A938 = 0x0888A938; // type:func asm (@asm in src/libduel_eng/effects_y.c, C under NON_MATCHING)
 duel_0888AB18 = 0x0888AB18; // type:func matched src/libduel_eng/effects_y.c

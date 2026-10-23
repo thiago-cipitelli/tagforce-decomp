@@ -27,7 +27,7 @@ typedef struct DuelAtkRec {            /* 0x08914A14, 0x1C: the attack being res
     unsigned char g3 : 5;
 } DuelAtkRec;
 
-#define duel_atk_rec (*(DuelAtkRec *)&duel_summon) /* duel_summon (duel.h) seen as the attack/summon record */
+extern DuelAtkRec duel_atk_rec;      /* duel_summon (duel.h) seen as the attack/summon record */
 extern unsigned short duel_h_08914A1A;
 
 int duel_08827544(int id);

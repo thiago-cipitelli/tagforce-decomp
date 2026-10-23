@@ -79,10 +79,11 @@ for l in sorted(data_lines, key=key):
         ro_lines = [r for r in ro_lines if r not in ro]
 new = text[:ds] + text[ds:de].splitlines()[0] + "\n" + "\n".join(merged) + "\n        " + text[de:rs] + text[rs:re_].splitlines()[0] + "\n" + "\n".join(ro_lines) + ("\n        " if ro_lines else "        ") + text[re_:]
 # static C functions still called from asm (an asm-kept function of the same file): the asm needs a
-# global name, so define it at the function's address
+# global name, so define it at the function's address; `type:data alias` names a second C view of a global
+# (another struct type for the same object) at the same address
 provides = []
 for line in open(f"symbols/{module}.txt"):
-    m = re.match(r"(\w+)\s*=\s*(0x[0-9A-Fa-f]+);\s*//\s*type:func static", line)
+    m = re.match(r"(\w+)\s*=\s*(0x[0-9A-Fa-f]+);\s*//\s*type:(?:func static|data alias)", line)
     if m:
         provides.append(f"PROVIDE({m.group(1)} = {m.group(2)});")
 # variables imported from BOOT (.sceVstub): the converted ELF keeps their references at 0
