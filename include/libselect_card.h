@@ -140,7 +140,7 @@ typedef struct ScState {               /* 0x0881B5E0, 0x398 bytes cleared by lib
     unsigned short info_step;          /* +0x008 card info screen (sc_info_anim) */
     unsigned short unload_step;        /* +0x00A */
     ScList list[2];                    /* +0x00C */
-    unsigned char blob[0x200];         /* +0x04C sysstate_blob_set */
+    unsigned short words[8][0x20];     /* +0x04C last search words (sysstate blob) */
     unsigned short nhist;              /* +0x24C undo history of moves */
     ScMove hist[8];                    /* +0x24E */
     ScRect focus;                      /* +0x29E frame around the focused popup */

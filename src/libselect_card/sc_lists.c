@@ -534,6 +534,6 @@ void sc_lists_save(void)
         }
         break;
     }
-    sysstate_blob_set(sc.blob);
+    sysstate_blob_set(sc.words);
     cfg_set_bits_1_0_2(sc_mode_for(scv.mode > 1 ? 2 : 1, scv.mode < 4, scv.pane[0].list_mode, scv.pane[1].list_mode));
 }

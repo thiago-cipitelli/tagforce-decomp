@@ -102,7 +102,7 @@ void sc_setup(void)
         sc_lists_build(0, 0);
     else
         sc_lists_build(*sc.out_count, sc.out_ids);
-    sysstate_blob_get(sc.blob);
+    sysstate_blob_get(sc.words);
     scv.side = 0;
     scv.pane[0].list = &sc.list[0];
     scv.pane[1].list = &sc.list[1];
