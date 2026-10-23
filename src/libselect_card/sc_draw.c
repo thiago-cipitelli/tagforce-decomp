@@ -12,7 +12,7 @@ typedef struct ScLineVtx {             /* dl_draw_array vertex: colour + positio
 } ScLineVtx;
 
 void *sc_draw_bg(void *list);
-void *sc_draw_cursor(void *list, void *cursor);
+void *sc_draw_info(void *list, ScCursor *c);
 void *sc_draw_panes(void *list);
 void *sc_draw_overlay(void *list);
 void *sc_draw_bg_ehf(void *list);
@@ -23,7 +23,7 @@ void *sc_draw_title(void *list);
 void *sc_draw_headers(void *list);
 int sc_popup_done(int id);
 void *sc_draw_sort_menu(void *list);
-void *sc_draw_filter_menu(void *list);
+void *sc_draw_action_menu(void *list);
 void *sc_draw_search(void *list);
 void *sc_draw_confirm(void *list);
 void *sc_draw_result(void *list);
@@ -64,7 +64,7 @@ void libselect_card_08807630(void)
         list = dl_blend_func(list, 0, 2, 3, 0, 0);
         list = dl_disable(list, 1);
         list = sc_draw_bg(list);
-        list = sc_draw_cursor(list, &scv.cursor);
+        list = sc_draw_info(list, &scv.cursor);
         list = sc_draw_panes(list);
         list = sc_draw_overlay(list);
         fade_apply(&list);
@@ -125,7 +125,7 @@ void *sc_draw_overlay(void *list)
         list = sc_draw_sort_menu(list);
         break;
     case 3:
-        list = sc_draw_filter_menu(list);
+        list = sc_draw_action_menu(list);
         break;
     case 4:
         list = sc_draw_search(list);

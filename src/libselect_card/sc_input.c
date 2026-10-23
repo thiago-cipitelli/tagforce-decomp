@@ -46,12 +46,12 @@ void sc_layout_scroll(int grid, unsigned short count, unsigned short view, unsig
 unsigned short sc_cur_index(void);
 int sc_sort_value(ScEnt *e, unsigned int sort);
 void sc_input_sort_menu(void);
-void sc_input_filter_menu(void);
+void sc_input_action_menu(void);
 void sc_input_search(void);
 void sc_input_confirm(void);
 void sc_input_result(void);
 void sc_popup_update(void);
-void sc_info_open(ScEnt *e);
+void sc_action_open(ScEnt *e);
 void sc_popup_open(int id, int arg);
 int sc_cancel_request(void);
 void sc_input_sort(void);
@@ -365,7 +365,7 @@ void sc_update_input(void)
                 sc_input_sort_menu();
                 break;
             case 3:
-                sc_input_filter_menu();
+                sc_input_action_menu();
                 break;
             case 4:
                 sc_input_search();
@@ -420,7 +420,7 @@ void sc_input_main(void)
         if (sc_cancel_request())
             se_play(0x6213);
     } else if (trig & 0x1000) {
-        sc_info_open(sc_cur_entry(scv.side));
+        sc_action_open(sc_cur_entry(scv.side));
         se_play(0x6216);
     } else if (trig & 0x8000) {
         side = scv.side;
