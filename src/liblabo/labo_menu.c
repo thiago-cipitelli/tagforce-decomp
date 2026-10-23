@@ -36,15 +36,15 @@ void password_draw(void);
 void libselect_card_08804008(int a, int b, int c, int d);
 int libselect_card_088041C4(void);
 void libselect_card_08807630(void);
-void libconv_machine_08804008(void);
-int libconv_machine_088040BC(void);
-void libconv_machine_08804B50(void);
-void libcardalbum_08804008(int a, int b);
-int libcardalbum_08804130(void);
-void libcardalbum_08805CA4(void);
-void libcharalist_08804830(int a, int b);
-int libcharalist_08804A4C(void);
-void libcharalist_08804F48(void);
+void conv_init(void);
+int conv_update(void);
+void conv_draw(void);
+void cardalbum_init(int a, int b);
+int cardalbum_update(void);
+void cardalbum_draw(void);
+void charalist_init(int a, int b);
+int charalist_update(void);
+void charalist_draw(void);
 void duelrecord_init(int a);
 int duelrecord_update(void);
 void duelrecord_draw(void);
@@ -170,11 +170,11 @@ void labo_main(void)
         case 4:
             switch (labo.load) {
             case 1:
-                libconv_machine_08804008();
+                conv_init();
                 labo.load = 2;
                 break;
             case 2:
-                if (libconv_machine_088040BC()) {
+                if (conv_update()) {
                     sceKernelStopModule(labo.modid, 0, 0, 0, 0);
                     sceKernelUnloadModule(labo.modid);
                     fade_start(1, 0xFF000000, 16);
@@ -189,11 +189,11 @@ void labo_main(void)
         case 5:
             switch (labo.load) {
             case 1:
-                libcardalbum_08804008(0, 0);
+                cardalbum_init(0, 0);
                 labo.load = 2;
                 break;
             case 2:
-                if (libcardalbum_08804130()) {
+                if (cardalbum_update()) {
                     sceKernelStopModule(labo.modid, 0, 0, 0, 0);
                     sceKernelUnloadModule(labo.modid);
                     fade_start(1, 0xFF000000, 16);
@@ -208,11 +208,11 @@ void labo_main(void)
         case 6:
             switch (labo.load) {
             case 1:
-                libcharalist_08804830(0, 0);
+                charalist_init(0, 0);
                 labo.load = 2;
                 break;
             case 2:
-                if (libcharalist_08804A4C()) {
+                if (charalist_update()) {
                     sceKernelStopModule(labo.modid, 0, 0, 0, 0);
                     sceKernelUnloadModule(labo.modid);
                     fade_start(1, 0xFF000000, 16);
@@ -380,8 +380,8 @@ static const char labo_module_names[9][32] = {
 };
 
 static void (*const labo_draw_table[12])(void) = {
-    0, labo_menu_draw, password_draw, libselect_card_08807630, libconv_machine_08804B50,
-    libcardalbum_08805CA4, libcharalist_08804F48, duelrecord_draw, limitlist_draw,
+    0, labo_menu_draw, password_draw, libselect_card_08807630, conv_draw,
+    cardalbum_draw, charalist_draw, duelrecord_draw, limitlist_draw,
     tlist_draw, voicetest_draw, labo_menu_draw,
 };
 
