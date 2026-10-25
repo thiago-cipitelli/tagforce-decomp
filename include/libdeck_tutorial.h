@@ -10,6 +10,92 @@
 #include "menu.h"
 #include "libselect_card.h"
 
+typedef struct DtEnt {           /* one card line, 6 bytes (libdeck DkEnt) */
+    unsigned short id;           /* card id */
+    unsigned short key;          /* sort key */
+    unsigned char count : 7;     /* +0x04 copies */
+    unsigned char fixed : 1;     /*       rented to the partner, cannot be removed */
+    unsigned char marked : 1;    /* +0x05 */
+    unsigned char b5_1 : 7;
+} DtEnt;
+
+typedef struct DtList {          /* 0x20: one card list (libdeck DkList) */
+    unsigned short tab;          /* +0x00 index in dt_lists */
+    unsigned short pad02;
+    DtEnt *ents;                 /* +0x04 */
+    unsigned short n;            /* +0x08 entries in ents */
+    unsigned short pad0a;
+    int total;                   /* +0x0C */
+    unsigned short *order;       /* +0x10 visible entries (indices into ents), sorted/filtered */
+    unsigned short count;        /* +0x14 entries in order */
+    union {
+        unsigned short u16;      /* +0x16 */
+        struct {
+            unsigned short sort : 4;   /* sort key */
+            unsigned short dir : 2;    /* sort direction */
+            unsigned short filter : 4; /* filter */
+            unsigned short pad16 : 6;
+        };
+    };
+    unsigned short u18;          /* +0x18 */
+    unsigned short u1a;          /* +0x1A */
+    union {
+        unsigned short u1c;      /* +0x1C */
+        struct {
+            unsigned char u1c_lo : 4;
+            unsigned char u1c_hi : 4;
+            unsigned char u1d_lo : 4;  /* +0x1D */
+            unsigned char u1d_hi : 4;
+        };
+    };
+    unsigned short pad1e;
+} DtList;
+
+typedef struct DtLayout {        /* 0x1E (libdeck DkLayout) */
+    short x, y, w, h;            /* +0x00 frame of the pane */
+    short row_x, row_y;          /* +0x08 first row (list mode) */
+    unsigned short rows;         /* +0x0C visible rows (list mode) */
+    short row_w, row_h;          /* +0x0E */
+    short grid_x, grid_y;        /* +0x12 first cell (grid mode) */
+    unsigned short cols;         /* +0x16 columns (grid mode) */
+    short cell_w;                /* +0x18 */
+    unsigned short grid_rows;    /* +0x1A visible rows (grid mode) */
+    short cell_h;                /* +0x1C */
+} DtLayout;
+
+typedef struct DtPane {          /* 0x2C (libdeck DkPane) */
+    DtList *list;                /* +0x00 */
+    unsigned char list_mode : 1; /* +0x04 one card per row (else grid) */
+    unsigned char pad04 : 7;
+    unsigned char pad05;
+    unsigned short top;          /* +0x06 first visible entry */
+    unsigned short cx;           /* +0x08 cursor column */
+    unsigned short cy;           /* +0x0A cursor row */
+    DtLayout lay;                /* +0x0C */
+    unsigned short pad2a;
+} DtPane;
+
+typedef struct DtScroll {        /* analog-scrolled value */
+    int id;                      /* +0x00 card shown (-1 none) */
+    int pad04;
+    unsigned int pos;            /* +0x08 */
+    unsigned int max;            /* +0x0C */
+} DtScroll;
+
+typedef struct DtCursor {        /* 0x28 */
+    unsigned short id;           /* +0x00 card under the cursor */
+    unsigned short key;          /* +0x02 */
+    unsigned short timer;        /* +0x04 frames on the same card */
+    unsigned short pad06;
+    DtEnt *ent;                  /* +0x08 */
+    DtScroll scroll;             /* +0x0C */
+    unsigned char pad1c[0x0C];
+} DtCursor;
+
+typedef struct DtRect {
+    short x, y, w, h;
+} DtRect;
+
 typedef struct DtCfg {           /* dt_init cfg */
     void *heap;                  /* parent heap (0: own 5 MB block) */
     void *cip;
@@ -74,28 +160,27 @@ typedef struct DtView {          /* dtv 0x08823950, 0x94 bytes: the ScView of li
     unsigned char lock : 1;      /* +0x0C */
     unsigned char pad0c : 7;
     unsigned char pad0d[3];
-    ScCursor cursor;             /* +0x10 */
+    DtCursor cursor;             /* +0x10 */
     unsigned char info : 4;      /* +0x38 */
     unsigned char no_draw : 1;   /*       the editor is not drawn (card info screen) */
     unsigned char pad38 : 3;
     unsigned char pad39[3];
-    ScPane pane[2];              /* +0x3C */
+    DtPane pane[2];              /* +0x3C */
 } DtView;
 
 extern DtView dtv;               /* 0x08823950 */
 
 typedef struct DtSt {            /* dts 0x088239F0, 0x3D4 bytes: the editor state */
-    ScList list[5];              /* +0x000 the card lists of the tabs */
-    unsigned char pad0a0[0x20];
+    DtList list[6];              /* +0x000 0 main, 1 side, 2 extra, 3 trunk, 4 extra (view), 5 rented */
     unsigned short name[0x20];   /* +0x0C0 deck name */
     unsigned short state;        /* +0x100 0 idle, 1 sort menu, 2 actions, 3 search, 4 confirm,
                                     5 result, 6/7 help */
     unsigned short unload_step;  /* +0x102 */
     unsigned char pad104[4];
-    unsigned short n_deck;       /* +0x108 cards in the deck */
-    unsigned short n_type[6];    /* +0x10A cards of each type */
+    unsigned short n_owned;      /* +0x108 different cards owned */
+    unsigned short n_type[6];    /* +0x10A cards of the deck per attribute icon (side deck in 3) */
     unsigned char pad116[0x368 - 0x116];
-    ScRect focus;                /* +0x368 frame around the focused popup */
+    DtRect focus;                /* +0x368 frame around the focused popup */
     unsigned char pad370[0x3BC - 0x370];
     void *heap;                  /* +0x3BC */
     void *cip;                   /* +0x3C0 */

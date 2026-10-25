@@ -575,7 +575,7 @@ DtShape dt_shapes[22] = {
    the others); the hole's border blinks */
 void *dt_draw_highlight(void *list, unsigned short kind)
 {
-    ScLayout *pane = 0;
+    DtLayout *pane = 0;
     DtVert *v = 0;
     int fixed = 0;
     int h = 0;

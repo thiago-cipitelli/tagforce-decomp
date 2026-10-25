@@ -26,15 +26,15 @@ void *dt_draw_icon_d(void *list, ScPt pos, unsigned short id, void *gim);
 void *dt_draw_icon_e(void *list, ScPt pos, unsigned short id, void *gim);
 void *dt_draw_level(void *list, ScPt pos, unsigned short level, unsigned int color, void *gim);
 void *dt_draw_stat(void *list, unsigned int st, ScPt pos, unsigned short size, unsigned int color, void *gim);
-void *dt_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, ScEnt *e, void *gim, void *gim_alt, ScIdList *alt);
-void *dt_draw_card_marks(void *list, int x, int y, ScEnt *e, int show_count, int blink, int show_fixed, unsigned short rank, void *gim_digits, void *gim);
+void *dt_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, DtEnt *e, void *gim, void *gim_alt, ScIdList *alt);
+void *dt_draw_card_marks(void *list, int x, int y, DtEnt *e, int show_count, int blink, int show_fixed, unsigned short rank, void *gim_digits, void *gim);
 void *dt_draw_row_frame(void *list, ScPt pos, unsigned short w, unsigned short kind, void *gim);
 void *dt_draw_flag_icon(void *list, ScPt pos, unsigned short kind, void *gim);
 void *dt_draw_counters(void *list, ScPt pos, ScCounter *c, void *gim_strip, void *gim);
 void *dt_draw_icon_text(void *list, ScIconText *t, int x, int y);
 void *dt_draw_arrow(void *list, int x, int y, unsigned char dir, unsigned int period, int blink, int base, unsigned int t, void *gim);
 void *dt_draw_scrollbar(void *list, int x, int y, int h, int pos, int first, int total, int frame, void *gim);
-void dt_scroll_analog(ScScroll *s);
+void dt_scroll_analog(DtScroll *s);
 void *dt_draw_box(void *list, int x, int y, int w, int h, void *gim);
 void *dt_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *gim, void *strtbl);
 
@@ -391,7 +391,7 @@ void *dt_draw_stat(void *list, unsigned int st, ScPt pos, unsigned short size, u
 }
 
 /* tile of a card picture in cis_all.gim (or the alternate picture list): page and u/v; 1 = alternate */
-int dt_card_tile(unsigned short *page, unsigned short *u, unsigned short *v, ScEnt *e, ScIdList *alt)
+int dt_card_tile(unsigned short *page, unsigned short *u, unsigned short *v, DtEnt *e, ScIdList *alt)
 {
     int n;
     int i;
@@ -416,7 +416,7 @@ int dt_card_tile(unsigned short *page, unsigned short *u, unsigned short *v, ScE
 }
 
 /* the 22x30 picture of a card, with a shadow when asked */
-void *dt_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, ScEnt *e, void *gim, void *gim_alt, ScIdList *alt)
+void *dt_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, DtEnt *e, void *gim, void *gim_alt, ScIdList *alt)
 {
     unsigned short page;
     unsigned short u;
@@ -441,7 +441,7 @@ void *dt_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color
 }
 
 /* marks over a picture: copies, the limit (or "new" blinking), and the rental rank */
-void *dt_draw_card_marks(void *list, int x, int y, ScEnt *e, int show_count, int blink, int show_fixed, unsigned short rank, void *gim_digits, void *gim)
+void *dt_draw_card_marks(void *list, int x, int y, DtEnt *e, int show_count, int blink, int show_fixed, unsigned short rank, void *gim_digits, void *gim)
 {
     int count;
     int lim;
@@ -719,7 +719,7 @@ void *dt_draw_scrollbar(void *list, int x, int y, int h, int pos, int first, int
 
 /* adds d to s->pos, clamped to 0..s->max (0 when max is 0) */
 #ifdef __MWERKS__
-static asm void dt_scroll_add(ScScroll *s, int d)
+static asm void dt_scroll_add(DtScroll *s, int d)
 {
     lw a3, 12(a0)
     bgez a1, @pos
@@ -745,7 +745,7 @@ static asm void dt_scroll_add(ScScroll *s, int d)
     nop
 }
 #else
-static void dt_scroll_add(ScScroll *s, int d)
+static void dt_scroll_add(DtScroll *s, int d)
 {
     unsigned int max = s->max;
     unsigned int pos = s->pos;
@@ -764,7 +764,7 @@ static void dt_scroll_add(ScScroll *s, int d)
 #endif
 
 /* the analog stick scrolls s */
-void dt_scroll_analog(ScScroll *s)
+void dt_scroll_analog(DtScroll *s)
 {
     PadState *pad = pad_get();
 

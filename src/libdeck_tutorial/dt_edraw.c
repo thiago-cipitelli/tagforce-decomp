@@ -45,7 +45,7 @@ int font_get_cursor_x(void);
 unsigned short *card_get_name(int id);
 unsigned short *card_get_desc(int id);
 unsigned short *card_info_fill(int id);
-void *cardlist_build(void *list, ScScroll *s);
+void *cardlist_build(void *list, DtScroll *s);
 unsigned int font_sample_glyph_size(void);
 int font_measure_text(unsigned short *text);
 int card_get_attribute_icon(int id);
@@ -62,12 +62,12 @@ void *dl_clear(void *list, unsigned int flags);
 
 void *dt_eres_get(unsigned short id);
 unsigned short dt_cur_index(unsigned short side);
-int dt_sort_value(ScEnt *e, unsigned int sort);
+int dt_sort_value(DtEnt *e, unsigned int sort);
 unsigned int dt_pane_size(unsigned short tab);
-unsigned short dt_tab_rect(unsigned short i, unsigned short sel, ScRect *r);
+unsigned short dt_tab_rect(unsigned short i, unsigned short sel, DtRect *r);
 int dt_kind_icon(unsigned short kind);
-int dt_list_count_id(ScList *l, unsigned short id, int sub);
-int dt_list_has(ScList *l, unsigned short id, unsigned char *value);
+int dt_list_count_id(DtList *l, unsigned short id, int sub);
+int dt_list_count_fixed(DtList *l, unsigned short id, unsigned short *n);
 void *dt_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim);
 void *dt_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
 void *dt_draw_frame(void *list, int x, int y, int w, int h, void *gim, int style);
@@ -78,8 +78,8 @@ void *dt_draw_icon_d(void *list, ScPt pos, unsigned short id, void *gim);
 void *dt_draw_icon_e(void *list, ScPt pos, unsigned short id, void *gim);
 void *dt_draw_level(void *list, ScPt pos, unsigned short level, unsigned int color, void *gim);
 void *dt_draw_stat(void *list, unsigned int st, ScPt pos, unsigned short size, unsigned int color, void *gim);
-void *dt_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, ScEnt *e, void *gim, void *gim_alt, ScIdList *alt);
-void *dt_draw_card_marks(void *list, int x, int y, ScEnt *e, int show_count, int blink, int show_fixed, unsigned short rank, void *gim_digits, void *gim);
+void *dt_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, DtEnt *e, void *gim, void *gim_alt, ScIdList *alt);
+void *dt_draw_card_marks(void *list, int x, int y, DtEnt *e, int show_count, int blink, int show_fixed, unsigned short rank, void *gim_digits, void *gim);
 void *dt_draw_row_frame(void *list, ScPt pos, unsigned short w, unsigned short kind, void *gim);
 void *dt_draw_flag_icon(void *list, ScPt pos, unsigned short kind, void *gim);
 void *dt_draw_counters(void *list, ScPt pos, DtCounter *c, void *gim_strip, void *gim);
@@ -97,7 +97,7 @@ void *dt_draw_confirm(void *list);
 void *dt_draw_result(void *list);
 void *dt_draw_popup(void *list);
 
-void *dt_draw_info(void *list, ScCursor *c);
+void *dt_draw_info(void *list, DtCursor *c);
 void *dt_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned short type);
 void *dt_draw_attr_icon(void *list, unsigned short x, unsigned short y, unsigned short attr);
 void *dt_draw_kind_icon(void *list, unsigned short x, unsigned short y, unsigned short kind);
@@ -113,21 +113,21 @@ void *dt_draw_grid_lines(void *list, unsigned short mode);
 void dt_line(DtLineVtx *v, unsigned short x, unsigned short y, unsigned short w);
 void *dt_draw_headers(void *list);
 void *dt_draw_counts(void *list);
-void *dt_draw_count(void *list, short x, ScRect *r, unsigned short ndig, int value);
+void *dt_draw_count(void *list, short x, DtRect *r, unsigned short ndig, int value);
 void *dt_draw_type_counts(void *list);
 void *dt_draw_type_bar(void *list);
 void *dt_draw_type_seg(void *list, int x, int y, int len, int dir, int kind);
 void *dt_draw_panes(void *list);
-void *dt_draw_rows(void *list, ScPane *p);
-void *dt_draw_grid(void *list, ScPane *p);
-void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short w, ScEnt *e, int blink);
-void *dt_draw_rows_small(void *list, ScPane *p);
-void *dt_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, ScEnt *e, int blink);
+void *dt_draw_rows(void *list, DtPane *p);
+void *dt_draw_grid(void *list, DtPane *p);
+void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short w, DtEnt *e, int blink);
+void *dt_draw_rows_small(void *list, DtPane *p);
+void *dt_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, DtEnt *e, int blink);
 
 #ifdef NON_MATCHING
 /* the strip under the panes: the card list's own strip in the deck modes, else name, icons, level,
    ATK/DEF and the description scrolling sideways */
-void *dt_draw_info(void *list, ScCursor *c)
+void *dt_draw_info(void *list, DtCursor *c)
 {
     void *r;
     int x;
@@ -257,9 +257,9 @@ void *dt_draw_shade(void *list, unsigned short side, unsigned short tab, int wit
 void *dt_draw_detail(void *list)
 {
     unsigned int side = dtv.side;
-    ScList *l = dtv.pane[side].list;
+    DtList *l = dtv.pane[side].list;
     unsigned short i = dt_cur_index(side);
-    ScEnt *e = SC_ENT(l, i);
+    DtEnt *e = SC_ENT(l, i);
     unsigned char sort = l->sort;
     unsigned int v;
     int w;
@@ -398,7 +398,7 @@ void dt_editor_draw(void)
 /* focus frame and help window (help position away from the cursor), then the state's popup */
 void *dt_draw_overlay(void *list)
 {
-    ScRect *f = &dts.focus;
+    DtRect *f = &dts.focus;
     int hx;
     int hy;
     void *gim;
@@ -522,7 +522,7 @@ void *dt_draw_title(void *list)
     list = font_text_clear();
     font_set_size(10, 12);
     font_set_color(0xFF000000);
-    return dt_draw_num_text(list, dt_count_x[cfg_get_language()], 5, dts.n_deck, 8, 4, 0);
+    return dt_draw_num_text(list, dt_count_x[cfg_get_language()], 5, dts.n_owned, 8, 4, 0);
 }
 
 /* separator lines under the rows of the list panes */
@@ -588,8 +588,8 @@ void dt_line(DtLineVtx *v, unsigned short x, unsigned short y, unsigned short w)
    the owned list, scroll bar */
 void *dt_draw_headers(void *list)
 {
-    ScPane *p;
-    ScList *l;
+    DtPane *p;
+    DtList *l;
     int x;
     int y;
     int show;
@@ -679,11 +679,11 @@ unsigned short dt_count_digits[6] = { 2, 2, 2, 6, 2, 1 };   /* digits of the cop
 /* the total of copies on the tab buttons of each pane (tab 4 is hidden in one-pane modes) */
 void *dt_draw_counts(void *list)
 {
-    ScPane *p = &dtv.pane[0];
+    DtPane *p = &dtv.pane[0];
     unsigned short sel = p->list->tab;
     unsigned int i;
     short x;
-    ScRect r;
+    DtRect r;
 
     if (dtv.mode < 2) {
         for (i = 0; i < 5; i++) {
@@ -710,7 +710,7 @@ void *dt_draw_counts(void *list)
 }
 #endif
 
-void *dt_draw_count(void *list, short x, ScRect *r, unsigned short ndig, int value)
+void *dt_draw_count(void *list, short x, DtRect *r, unsigned short ndig, int value)
 {
     if (r->w <= 0 || r->h <= 0)
         return list;
@@ -825,7 +825,7 @@ void *dt_draw_type_seg(void *list, int x, int y, int len, int dir, int kind)
 
 void *dt_draw_panes(void *list)
 {
-    ScPane *p = &dtv.pane[0];
+    DtPane *p = &dtv.pane[0];
 
     if (p->list_mode == 0)
         list = dt_draw_grid(list, p);
@@ -845,9 +845,9 @@ void *dt_draw_panes(void *list)
 
 #ifdef NON_MATCHING
 /* list mode: one card per row */
-void *dt_draw_rows(void *list, ScPane *p)
+void *dt_draw_rows(void *list, DtPane *p)
 {
-    ScList *l = p->list;
+    DtList *l = p->list;
     unsigned short tab = l->tab;
     unsigned short idx = p->top;
     short x = p->lay.x;
@@ -855,7 +855,7 @@ void *dt_draw_rows(void *list, ScPane *p)
     short y = p->lay.y + p->lay.row_y;
     unsigned short n = p->lay.rows;
     int i;
-    ScEnt *e;
+    DtEnt *e;
 
     if (n + idx >= l->count)
         n = l->count - idx;
@@ -871,16 +871,16 @@ void *dt_draw_rows(void *list, ScPane *p)
 
 #ifdef NON_MATCHING
 /* grid mode: card pictures with their marks */
-void *dt_draw_grid(void *list, ScPane *p)
+void *dt_draw_grid(void *list, DtPane *p)
 {
-    ScList *l = p->list;
+    DtList *l = p->list;
     unsigned short tab = l->tab;
     unsigned short idx = p->top;
     short y = p->lay.y + p->lay.grid_y;
     int row = 0;
     int col;
     short x;
-    ScEnt *e;
+    DtEnt *e;
 
     if (p->lay.grid_rows == 0)
         return list;
@@ -915,7 +915,7 @@ DtCounter dt_row_counters[3] = { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF00
 
 #ifdef NON_MATCHING
 /* a wide row: frame, picture, name, icons, level, ATK/DEF, then the counters of the three decks */
-void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short w, ScEnt *e, int blink)
+void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short w, DtEnt *e, int blink)
 {
     unsigned short attr = card_get_attribute_icon(e->id);
     int full = 0;
@@ -976,12 +976,12 @@ void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         if (card_attribute_icon_is3(e->id)) {
             c[0].icon = 0;
             c[1].icon = 3;
-            if (dt_list_has(&dts.list[1], e->id, &c[1].value))
+            if (dt_list_count_fixed(&dts.list[1], e->id, (unsigned short *)&c[1].value))
                 c[1].color = 0xFF0080FF;
         } else {
-            if (dt_list_has(&dts.list[0], e->id, &c[0].value))
+            if (dt_list_count_fixed(&dts.list[0], e->id, (unsigned short *)&c[0].value))
                 c[0].color = 0xFF0080FF;
-            if (dt_list_has(&dts.list[2], e->id, &c[1].value))
+            if (dt_list_count_fixed(&dts.list[2], e->id, (unsigned short *)&c[1].value))
                 c[1].color = 0xFF0080FF;
         }
         c[2].value = dt_list_count_id(&dts.list[3], e->id, 0);
@@ -995,9 +995,9 @@ void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
 
 #ifdef NON_MATCHING
 /* small rows of the second pane (modes 2 and 3) */
-void *dt_draw_rows_small(void *list, ScPane *p)
+void *dt_draw_rows_small(void *list, DtPane *p)
 {
-    ScList *l = p->list;
+    DtList *l = p->list;
     unsigned short tab = l->tab;
     unsigned short idx = p->top;
     short x = p->lay.x;
@@ -1005,7 +1005,7 @@ void *dt_draw_rows_small(void *list, ScPane *p)
     short y = p->lay.y + p->lay.row_y;
     unsigned short n = p->lay.rows;
     int i;
-    ScEnt *e;
+    DtEnt *e;
 
     if (n + idx >= l->count)
         n = l->count - idx;
@@ -1020,7 +1020,7 @@ void *dt_draw_rows_small(void *list, ScPane *p)
 #endif
 
 #ifdef NON_MATCHING
-void *dt_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, ScEnt *e, int blink)
+void *dt_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, DtEnt *e, int blink)
 {
     unsigned short attr = card_get_attribute_icon(e->id);
     int atk;
