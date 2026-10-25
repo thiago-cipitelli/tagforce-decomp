@@ -519,8 +519,8 @@ int shop_pack_loaded(void *pack, int size)
 }
 
 /* right-aligned number ending at x, `digits` places, with thousands commas if `commas` */
-void shop_draw_number(void *list, int x, unsigned short y, int value, unsigned short step,
-                      unsigned short digits, int commas)
+unsigned int *shop_draw_number(void *list, int x, unsigned short y, int value, unsigned short step,
+                               unsigned short digits, int commas)
 {
     unsigned short ch[2] = { '0', 0 };
     unsigned short cx = x;
@@ -546,18 +546,18 @@ void shop_draw_number(void *list, int x, unsigned short y, int value, unsigned s
             font_draw_text(cx << 6, y << 6, (480 - cx) << 6, ch);
         }
     }
-    font_text_clear();
+    return font_text_clear();
 }
 
 /* 2D sprites: textured, blended, no depth test */
-void shop_dl_2d(unsigned int *list)
+unsigned int *shop_dl_2d(unsigned int *list)
 {
     list = dl_enable(list, 9);
     list = dl_enable(list, 4);
     list = dl_tex_func(list, 0, 1);
     list = dl_set_tex_filter(list, 0, 0);
     list = dl_blend_func(list, 0, 2, 3, 0, 0);
-    dl_disable(list, 1);
+    return dl_disable(list, 1);
 }
 
 /* unlit 3D layer: shelf camera */

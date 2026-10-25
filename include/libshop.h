@@ -328,7 +328,18 @@ void mtx_perspective(float fovy, float aspect, float near, float far);
 void camera_set(Vec4 *pos, Vec4 *target, Vec4 *up);
 void camera_load_view(void);
 
+void *gim_set_texture(void *list, void *gim);
+unsigned int *dl_ambient_color(unsigned int *list, unsigned int color);
+unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
+unsigned int *draw_sprite(unsigned int *list, int x, int y, int z, int u, int v, int flip_uv, int flip_xy);
+GfxState *gfx_get_state(void);
+void se_play(int id);
+
 /* this module */
+unsigned int *shop_dl_2d(unsigned int *list);
+unsigned int *shop_clerk_draw(unsigned int *list);
+unsigned int *shop_pts_draw(unsigned int *list);
+void shop_msgwin_draw(unsigned int **list);
 void shop_main_update(void);
 int shop_main_input(void);
 void shop_draw_all(void);

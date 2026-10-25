@@ -296,7 +296,7 @@ void shop_clerk_update(void)
     }
 }
 
-void shop_clerk_draw(unsigned int *list)
+unsigned int *shop_clerk_draw(unsigned int *list)
 {
     EhfOpts o;
 
@@ -309,7 +309,7 @@ void shop_clerk_draw(unsigned int *list)
     list = gfx_begin_2d(list);
     list = ehf_draw(list, shop_clerk.eyes, &o);
     list = ehf_draw(list, shop_clerk.mouth, &o);
-    gfx_end_2d(list);
+    return gfx_end_2d(list);
 }
 
 void shop_clerk_set(int state)
