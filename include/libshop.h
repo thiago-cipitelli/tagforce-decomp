@@ -77,10 +77,10 @@ typedef struct ModelDraw {      /* BOOT model_draw options, 0x34 */
 
 typedef struct ShopItem {       /* a line of the bought list, 10 bytes */
     unsigned short id;          /* card */
-    unsigned short pad2;
-    unsigned short pad4;
-    unsigned short count;       /* +0x06 */
-    unsigned short pad8;
+    unsigned short key;         /* +0x02 sort key */
+    unsigned short pack;        /* +0x04 pack kind it came from */
+    unsigned short count;       /* +0x06 copies that came out */
+    unsigned short info;        /* +0x08 bits 0-3 rarity, 4-11 copies owned before */
 } ShopItem;
 
 typedef struct ShopBox {        /* a pack on the shelf: picture, position, name */
@@ -261,8 +261,9 @@ typedef struct ShopState {      /* shop 0x08E20530, 0x450 bytes cleared at start
     unsigned short n_items;     /* +0x1CC */
     unsigned short top;         /* +0x1CE */
     unsigned short cursor;      /* +0x1D0 */
-    unsigned short sort;        /* +0x1D2 */
-    unsigned char pad1d4[4];
+    unsigned short sort;        /* +0x1D2 sort key of the list */
+    unsigned short order_dir;   /* +0x1D4 */
+    unsigned short n_owned;     /* +0x1D6 cards in the collection */
     unsigned short timer;       /* +0x1D8 */
     unsigned short pad1da;
     MenuWidget menu;            /* +0x1DC */
@@ -410,6 +411,14 @@ void shop_model_set_box(unsigned short id, int pack);
 unsigned int *shop_ge_state(unsigned int *list);
 void shop_sel_update(void);
 int shop_load_deck_pack(void);
+
+/* card of line `i` of the bought list in display order, 0 past the end */
+static inline int shop_item_id_at(int i)
+{
+    if (i >= shop.n_items)
+        return 0;
+    return shop.items[shop.order[i]].id;
+}
 
 /* line `i` of the bought list in display order, 0 past the end */
 static inline ShopItem *shop_item_at(int i)
