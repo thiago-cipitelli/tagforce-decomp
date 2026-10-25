@@ -1,6 +1,5 @@
 // @range 0x0880C998-0x0880D454
-// @asm 0x0880CA5C-0x0880CB58
-// @rodata 0x0882AD80-0x0882ADC8
+// @rodata 0x0882AD68-0x0882ADC8
 /* Options screen of the main menu (state 17): enter/update/draw, the edit state (tcfg) and the copy
    of the system options in and out of it. */
 #include "libtitle.h"
@@ -27,7 +26,6 @@ void tcfg_enter(short state, short sub)
     title_ehf_load(13, 2, 0, 16);
 }
 
-#ifdef NON_MATCHING /* o caso 2 desvia para um bloco `return` próprio (salto para salto) que o mwcc encurta */
 void tcfg_screen_update(void)
 {
     Title *const t = &title;
@@ -39,12 +37,15 @@ void tcfg_screen_update(void)
     case 1:
         break;
     case 2:
-        if (title_ehf_frame(13) == 16) {
+        switch (title_ehf_frame(13)) {
+        case 16:
             title_ehf_anim(13, 2, 17, 96);
             t->sub++;
             break;
+        default:
+            return;
         }
-        return;
+        break;
     case 3:
         switch (tcfg_update()) {
         case 0:
@@ -64,7 +65,6 @@ void tcfg_screen_update(void)
         break;
     }
 }
-#endif
 
 void *tcfg_screen_draw(void *list)
 {
