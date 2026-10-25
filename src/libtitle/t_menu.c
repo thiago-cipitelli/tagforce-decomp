@@ -38,8 +38,8 @@ void title_menu_enter(int state, int menu, int no_check)
         t->step = 0;
         t->step2 = 0;
         t->frame = 0;
-        t->u040 = -1;
-        t->u044 = -1;
+        t->color0 = -1;
+        t->color1 = -1;
         break;
     default:
         if (no_check == 0) {
@@ -54,8 +54,8 @@ void title_menu_enter(int state, int menu, int no_check)
         t->step = 0;
         t->step2 = 0;
         t->frame = 0;
-        t->u040 = -1;
-        t->u044 = -1;
+        t->color0 = -1;
+        t->color1 = -1;
         if (menu == 0)
             title_menu_open(0);
         else
@@ -78,8 +78,8 @@ void title_menu_enter(int state, int menu, int no_check)
         t->step = 0;
         t->step2 = 0;
         t->frame = 0;
-        t->u040 = -1;
-        t->u044 = -1;
+        t->color0 = -1;
+        t->color1 = -1;
         break;
     case 6:
         title_menu_open(m - 3);
@@ -98,8 +98,8 @@ void title_menu_enter(int state, int menu, int no_check)
         t->step = 0;
         t->step2 = 0;
         t->frame = 0;
-        t->u040 = -1;
-        t->u044 = -1;
+        t->color0 = -1;
+        t->color1 = -1;
         break;
     }
     if (no_check == 0) {

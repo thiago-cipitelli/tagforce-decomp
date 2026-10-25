@@ -150,6 +150,64 @@ typedef struct TSlotInfo {             /* a player of the free duel setup (func_
     short deck;                        /* +0x06 */
 } TSlotInfo;
 
+typedef void *(*TPanelDrawFn)(void *list, int i, int x, int y, int w);
+
+typedef struct TTab {                  /* a tab of TPanel, 0x24 */
+    unsigned char state;
+    unsigned char pad01;
+    short x, y, w, h;                  /* +0x02 */
+    unsigned char pos : 2;             /* +0x0A 0 first, 1 middle, 2 last */
+    unsigned char cap : 2;
+    unsigned char b0a : 4;
+    unsigned char pad0b;
+    unsigned int color;                /* +0x0C */
+    unsigned int color_off;            /* +0x10 */
+    unsigned int text_color;           /* +0x14 */
+    unsigned int text_color_off;       /* +0x18 */
+    void *u1c;                         /* +0x1C */
+    TPanelDrawFn draw;                 /* +0x20 */
+} TTab;
+
+typedef struct TBox {                  /* frame of TPanel, 0x2C */
+    unsigned char state;
+    unsigned char pad01;
+    short x, y, w, h;                  /* +0x02 */
+    short pad0a;
+    unsigned int color;                /* +0x0C */
+    unsigned int color2;               /* +0x10 */
+    unsigned char b14;
+    unsigned char b15;
+    unsigned char f0 : 1;              /* +0x16 */
+    unsigned char f1 : 1;
+    unsigned char arrows : 1;
+    unsigned char f3 : 1;
+    unsigned char f4 : 1;
+    unsigned char f5 : 1;
+    unsigned char f6 : 2;
+    unsigned char b17;
+    unsigned char b18;
+    unsigned char rows;                /* +0x19 */
+    unsigned char rows2;               /* +0x1A */
+    unsigned char b1b;
+    short ix, iy, iw, ih;              /* +0x1C */
+    int u24;                           /* +0x24 */
+    int u28;                           /* +0x28 */
+} TBox;
+
+typedef struct TPanel {                /* title +0x508 */
+    TTab tab[4];                       /* +0x000 */
+    TBox box;                          /* +0x090 */
+    MenuWidget mw;                     /* +0x0BC the list */
+    unsigned char pad1dc[0x2FC - 0x1DC];
+    unsigned char f0 : 2;              /* +0x2FC */
+    unsigned char f2 : 1;
+    unsigned char f3 : 5;
+    unsigned char pad2fd;
+    short x, y, w, h;                  /* +0x2FE */
+    unsigned char cur;                 /* +0x306 current tab */
+    unsigned char n;                   /* +0x307 tabs */
+} TPanel;
+
 typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared by title_init */
     int ticks;                         /* +0x000 frames since the scene started, wraps at 0x10000 */
     int frame;                         /* +0x004 frames in the current step */
@@ -174,14 +232,17 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     PadState *pad;                     /* +0x030 */
     unsigned char pad034[0x03C - 0x034];
     int skip;                          /* +0x03C START pressed during the logos */
-    int u040;                          /* +0x040 */
-    int u044;                          /* +0x044 */
-    unsigned char pad048[0x0A0 - 0x048];
+    unsigned int color0;               /* +0x040 title screen colors (faded by cfade) */
+    unsigned int color1;               /* +0x044 */
+    unsigned char pad048[0x050 - 0x048];
+    TColorFade cfade;                  /* +0x050 */
+    unsigned char pad064[0x0A0 - 0x064];
     void *ehf[17];                     /* +0x0A0 EHF layers, by title_ehf_names index */
     Menu menu;                         /* +0x0E4 */
     unsigned char pad130[0x1A8 - 0x130];
     MenuWidget win[3];                 /* +0x1A8 */
-    unsigned char u508[0x870 - 0x508]; /* +0x508 */
+    TPanel panel;                      /* +0x508 tabbed list window */
+    unsigned char pad810[0x870 - 0x810];
     int arg;                           /* +0x870 value passed between the states */
     unsigned char pad874[0x87C - 0x874];
     TMenu tm[2];                       /* +0x87C main menu, sub menu */
@@ -189,7 +250,8 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     int lang;                          /* +0x3004 language of the loaded title pack */
     unsigned char cfg_lang;            /* +0x3008 */
     unsigned char sub_shown;           /* +0x3009 the sub-screen module draws */
-    unsigned char pad300a[0x3010 - 0x300A];
+    unsigned char pad300a[0x300C - 0x300A];
+    int voice;                         /* +0x300C title call voice still to fade out */
     void *packs[9];                    /* +0x3010 title_menu_X.ehp, by title_pack_names index */
     unsigned char pad3034[0x3038 - 0x3034];
     unsigned char b3038_0 : 1;         /* +0x3038 */
@@ -338,19 +400,19 @@ void func_0881F0A0(void);
 void *tmenu_gfx_setup(void *list, int mode);
 void *title_logo_draw(void *list);
 void title_sound_reset(int a);
-void func_0880B0B4(void);
+void title_screen_update(void);
 void func_08813134(void);
 void func_0880F950(void);
 void func_08821FB0(void);
-void func_0880BC20(void);
+void topt_update(void);
 void func_08813FC8(void);
 void func_0880CA5C(void);
 void func_0880EC68(void);
-void *func_0880B304(void *list);
+void *title_screen_draw(void *list);
 void *func_08813460(void *list);
 void *func_088102A0(void *list);
 void *func_08823090(void *list);
-void *func_0880BD50(void *list);
+void *topt_draw(void *list);
 void *func_0881DC1C(void *list);
 void *func_0880CB58(void *list);
 void *func_0880EF1C(void *list);
@@ -380,11 +442,11 @@ void func_088119D4(int a);
 void title_state_init(int state, int sub);
 void title_logo_enter(int state, int sub);
 void title_movie_enter(int state, int sub);
-void func_0880AFA0(void);
+
 void func_08813088(void);
 void func_0880F900(void);
 void func_08821D3C(void);
-void func_0880BB98(void);
+
 void func_08813DF4(void);
 void func_0880C998(void);
 void func_0880EB20(void);
@@ -398,7 +460,7 @@ void title_chara_open(void);
 void title_album_open(void);
 void title_record_open(void);
 void func_0880C0F0(void *heap, int a, int b, int c, int d, int e);
-void func_088108A0(void *p, void *heap);
+void tpanel_init(TPanel *p, void *heap);
 void func_0880C2F0(void);
 void func_088225A0(int a);
 void title_module_stop(void);
@@ -415,6 +477,14 @@ int title_flag8(void);
 void *title_msg_draw(void *list, int x, int y, int w, int a, int text, int b);
 
 /* this module */
+void *title_msg_text(void *list, int x, int y, int w, int file, int id);
+void title_msg_center(int x, int w, int file, int id, unsigned short **text, int *tx, int *tw);
+void *title_msg_font(void *list, int x, int y, int w, int file, int id, int align, int fw, int fh,
+                     unsigned int color);
+void *title_text_draw(void *list, int x, int y, int w, int a, unsigned short *text, int align);
+void *title_text_left(void *list, int x, int y, int w, unsigned short *text);
+void *title_text_wide(void *list, int x, int y, int w, unsigned short *text);
+void *title_text_box(void *list, int x, int y, int w, int a, unsigned short *text);
 void *title_pack(void);
 char *title_res_name(int i);
 char *title_sprite_name(int i);
@@ -431,7 +501,7 @@ void *title_sprite_ex(void *list, int kind, int idx, int x, int y, int w, int h,
                       short b, int color);
 void tcfade_init(TColorFade *f, unsigned int *dst, unsigned int to, unsigned short len);
 void tcfade_start(TColorFade *f);
-unsigned short tcfade_step(TColorFade *f);
+int tcfade_step(TColorFade *f);
 void title_fade_out(int kind);
 void title_fade(int kind, int frames);
 void title_fade_ex(int kind, int type, unsigned int color, int frames);

@@ -110,7 +110,7 @@ void title_init(void)
     twin_init(&title.win[2]);
     tmenu_init(&title.tm[0]);
     tmenu_init(&title.tm[1]);
-    func_088108A0(&title.u508, title.heap);
+    tpanel_init(&title.panel, title.heap);
 }
 
 void title_draw_cb(void)

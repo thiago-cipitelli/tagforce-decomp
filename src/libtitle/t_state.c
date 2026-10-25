@@ -14,6 +14,8 @@ void title_load_enter();
 void title_limit_open();
 void title_tlist_open();
 void title_dtut_open();
+void title_screen_enter();
+void topt_enter();
 
 /* sub 9 of the main menu: save the options, then back to the menu */
 void title_menu_save_update(void)
@@ -179,7 +181,7 @@ int title_set_state(int st, int sub)
         title_movie_enter(st, 0);
         break;
     case 5:
-        func_0880AFA0();
+        title_screen_enter(st, sub);
         break;
     case 6:
         func_08813088();
@@ -194,7 +196,7 @@ int title_set_state(int st, int sub)
         func_08821D3C();
         break;
     case 13:
-        func_0880BB98();
+        topt_enter(st, sub);
         break;
     case 14:
         func_08813DF4();

@@ -285,7 +285,7 @@ void tcfade_start(TColorFade *f)
 }
 
 /* one step of the color interpolation; returns 1 while running */
-unsigned short tcfade_step(TColorFade *f)
+int tcfade_step(TColorFade *f)
 {
     unsigned short len;
     unsigned short inv;

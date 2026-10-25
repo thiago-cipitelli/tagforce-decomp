@@ -54,7 +54,7 @@ int title_update(void)
         break;
     case 5:
         t->skip = 0;
-        func_0880B0B4();
+        title_screen_update();
         break;
     case 6:
         func_08813134();
@@ -69,7 +69,7 @@ int title_update(void)
         func_08821FB0();
         break;
     case 13:
-        func_0880BC20();
+        topt_update();
         break;
     case 14:
         func_08813FC8();
@@ -347,7 +347,7 @@ void title_draw(void)
         title_movie_play();
         break;
     case 5:
-        list = func_0880B304(list);
+        list = title_screen_draw(list);
         break;
     case 6:
         list = func_08813460(list);
@@ -368,7 +368,7 @@ void title_draw(void)
         list = func_08823090(list);
         break;
     case 13:
-        list = func_0880BD50(list);
+        list = topt_draw(list);
         break;
     case 14:
         list = func_0881DC1C(list);
