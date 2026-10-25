@@ -185,7 +185,7 @@ int title_set_state(int st, int sub)
         title_screen_enter(st, sub);
         break;
     case 6:
-        func_08813088();
+        text_enter();
         break;
     case 8:
         tname_enter();

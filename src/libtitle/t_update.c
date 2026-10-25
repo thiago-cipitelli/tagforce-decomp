@@ -57,7 +57,7 @@ int title_update(void)
         title_screen_update();
         break;
     case 6:
-        func_08813134();
+        text_update();
         break;
     case 8:
         tname_update();
@@ -350,7 +350,7 @@ void title_draw(void)
         list = title_screen_draw(list);
         break;
     case 6:
-        list = func_08813460(list);
+        list = text_draw(list);
         break;
     case 7:
         break;

@@ -367,6 +367,16 @@ tnum_draw_spr = 0x08826580; // type:func matched src/libtitle/t_chr.c
 tchr_find = 0x08826AB4; // type:func matched src/libtitle/t_chr.c
 tchr_face = 0x08826B28; // type:func matched src/libtitle/t_chr.c
 tchr_tab = 0x088302F0; // type:data
+text_enter = 0x08813088; // type:func matched src/libtitle/t_ext.c
+text_update = 0x08813134; // type:func matched src/libtitle/t_ext.c
+text_draw = 0x08813460; // type:func matched src/libtitle/t_ext.c
+text_legend = 0x0881357C; // type:func matched src/libtitle/t_ext.c
+text_list_init = 0x0881365C; // type:func matched src/libtitle/t_ext.c
+text_tab_label = 0x088137C8; // type:func matched src/libtitle/t_ext.c
+text_item = 0x088138A4; // type:func matched src/libtitle/t_ext.c
+text_head = 0x08813A34; // type:func matched src/libtitle/t_ext.c
+text_ext_reset = 0x08822578; // type:func
+tpad_accel = 0x0882563C; // type:func
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08826B8C; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08826B94; // type:func import:libehsys nid:4BDEB2A8

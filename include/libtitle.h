@@ -112,6 +112,26 @@ typedef struct TDuelOpts {             /* free duel options */
     unsigned char time : 4;            /*       answer time */
 } TDuelOpts;
 
+typedef struct TExtCard {              /* an extra data card (.YGC), 0x44 (BOOT ExtCard) */
+    unsigned short name[32];           /* +0x00 file name */
+    unsigned short id;                 /* +0x40 */
+    unsigned char invalid : 1;         /* +0x42 */
+    unsigned char pad42 : 7;
+    unsigned char pad43;
+} TExtCard;
+
+typedef struct TExtList {              /* extra data files read from the memory stick, title.duel +0x1188 */
+    unsigned char pad00[0x10];
+    void *mark;                        /* +0x10 heap level of the other lists */
+    TExtCard *card;                    /* +0x14 cards (state 6) */
+    unsigned char b0 : 1;              /* +0x18 */
+    unsigned char stage : 4;
+    unsigned char b5 : 3;
+    unsigned char pad19[3];
+    int n;                             /* +0x1C files found */
+    int loaded;                        /* +0x20 */
+} TExtList;
+
 typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char pad000[0xEB4];
     TDuelOpts opts;                    /* +0xEB4 */
@@ -119,7 +139,9 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned short anim;               /* +0x1178 frame counter of the setup screens */
     unsigned short pad117a;
     unsigned short card;               /* +0x117C */
-    unsigned char pad117e[0x2170 - 0x117E];
+    unsigned char pad117e[0x1188 - 0x117E];
+    TExtList ext;                      /* +0x1188 */
+    unsigned char pad11ac[0x2170 - 0x11AC];
     TDeckRec decks[4];                 /* +0x2170 */
 } TDuelCfg;
 
@@ -269,7 +291,9 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char pad3039[3];
     int sub_mod;                       /* +0x303C id of the sub-screen module */
     unsigned char skippable;           /* +0x3040 the logos can be skipped */
-    unsigned char pad3041[0x304C - 0x3041];
+    unsigned char pad3041[3];
+    int u3044;                         /* +0x3044 cleared when a list screen starts */
+    int u3048;                         /* +0x3048 */
     void *movie_mem;                   /* +0x304C */
     unsigned short msg_buf[0x201];     /* +0x3050 */
     short cursor_blink;                /* +0x3452 */
@@ -535,7 +559,7 @@ void *tmenu_gfx_setup(void *list, int mode);
 void *title_logo_draw(void *list);
 void title_sound_reset(int a);
 void title_screen_update(void);
-void func_08813134(void);
+void text_update(void);
 void tname_update(void);
 void func_08821FB0(void);
 void topt_update(void);
@@ -543,7 +567,7 @@ void func_08813FC8(void);
 void tcfg_screen_update(void);
 void tlang_update(void);
 void *title_screen_draw(void *list);
-void *func_08813460(void *list);
+void *text_draw(void *list);
 void *tname_draw(void *list);
 void *func_08823090(void *list);
 void *topt_draw(void *list);
@@ -577,7 +601,7 @@ void title_state_init(int state, int sub);
 void title_logo_enter(int state, int sub);
 void title_movie_enter(int state, int sub);
 
-void func_08813088(void);
+void text_enter(); /* (short state): set_state calls it with the state still in a0 */
 void tname_enter(void);
 void func_08821D3C(void);
 
@@ -663,5 +687,24 @@ void tmenu_back(TMenu *m);
 void tmenu_set_fade(TMenu *m, short len, short step);
 void *tmenu_draw(void *list, TMenu *m);
 unsigned int tmenu_text_color(TMenu *m, int i0);
+
+/* t_panel.c */
+void tbox_init(TBox *b);
+void ttab_init(TTab *t);
+void tpanel_list_init(TPanel *p, void *heap);
+int tpanel_update(TPanel *p);
+void *tpanel_draw(void *list, TPanel *p);
+void *tpanel_cursor(void *list);
+void *tframe_window(void *list, unsigned int color, int x, int y, int w, int h);
+void *tframe_bar(void *list, int sel, unsigned int color, int x, int y, int w, int h);
+void *tbox_small(void *list, int id, int x, int y, int w, int h);
+void *tbox_corner(void *list, TBoxDrawFn draw);
+void *tbox_header(void *list, TBoxDrawFn draw);
+void twin_help_init(MenuWidget *w, int state, int id, int file);
+void *tbox_help(void *list, int id, int file);
+void *tbox_side(void *list, int id, int n, TBoxDrawFn draw);
+void *tbox_main(void *list, TBoxDrawFn draw);
+/* t_partner.c */
+void tpartner_init(void *heap, void *pack, int mode);
 
 #endif
