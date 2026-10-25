@@ -47,7 +47,7 @@ unsigned short shop_items_count(unsigned short id);
 int shop_item_key(ShopItem *it, int key);
 unsigned int *shop_draw_sort_tab(unsigned int *list, int sort, int x, int y);
 unsigned int *shop_draw_order_tab(unsigned int *list, int order, int x, int y);
-unsigned int *shop_dialog_list(unsigned int *list);
+unsigned int *shop_sort_draw(unsigned int *list);
 unsigned int *shop_detail_draw(unsigned int *list);
 
 void *shop_ui_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
@@ -231,7 +231,7 @@ void shop_draw_list(void)
         list = shop_detail_draw(list);
         break;
     case 12:
-        list = shop_dialog_list(list);
+        list = shop_sort_draw(list);
         break;
     }
     dl_set_list(list);

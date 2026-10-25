@@ -56,9 +56,9 @@ void shop_buy_done_update(void);
 int shop_result_input(void);
 void shop_result_update(void);
 int shop_menu_input(void);
-void shop_menu_step(void);
+void shop_sort_update(void);
 void shop_card_detail(ShopItem *it);
-void shop_help_open(void);
+void shop_sort_open(void);
 void shop_dialog_open(int what, int arg);
 void shop_dialog_update(void);
 void shop_info_input(int *sel);
@@ -260,7 +260,7 @@ int shop_main_input(void)
     case 13:
         return shop_menu_input();
     case 12:
-        shop_menu_step();
+        shop_sort_update();
         break;
     case 8:
         if (shop_result_input())
@@ -475,7 +475,7 @@ void shop_list_input(void)
             if (it)
                 shop_card_detail(it);
             else
-                shop_help_open();
+                shop_sort_open();
             se_play(0x6216);
         }
     }
@@ -703,7 +703,7 @@ void shop_list_mark(void)
             se_play(0x6213);
         }
     } else if (b & 0x8000) {
-        shop_help_open();
+        shop_sort_open();
         se_play(0x6216);
     }
 }

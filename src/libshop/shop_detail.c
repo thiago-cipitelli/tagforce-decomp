@@ -30,7 +30,7 @@ void inv_set_flag7(unsigned short id, int on);
 void *dl_alloc_inline(unsigned int **list, int bytes);
 unsigned int *dl_draw_array(unsigned int *list, int prim, unsigned int vtype, int count, void *indices, void *vertices);
 void *shop_ui_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, UiEnt *e, void *gim, void *gim_alt, UiIdList *alt);
-void shop_help_open(void);
+void shop_sort_open(void);
 
 void shop_detail_close(void);
 void shop_detail_menu(void);
@@ -161,7 +161,7 @@ int shop_detail_wait(void)
     shop_detail_close();
     switch (r) {
     case 2:
-        shop_help_open();
+        shop_sort_open();
         se_play(0x6216);
         break;
     default:
