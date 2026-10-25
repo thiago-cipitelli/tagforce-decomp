@@ -148,7 +148,7 @@ typedef struct DsState {               /* ds 0x0881A680, 0x2EC bytes cleared by 
     unsigned char info_open : 1;       /* +0x2D2 card info screen running */
     unsigned char pad2d2 : 7;
     unsigned char pad2d3;
-    void *gs;                          /* +0x2D4 init arguments (libduel_mgr) */
+    int *gs;                           /* +0x2D4 init arguments (libduel_mgr game state; [0] = cards the deck must have) */
     int n_partners;                    /* +0x2D8 */
     void *partners;                    /* +0x2DC */
     int time_limit;                    /* +0x2E0 */
