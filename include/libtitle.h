@@ -90,7 +90,8 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char pad01b;
     short u01c;                        /* +0x01C */
     short prev_sub;                    /* +0x01E */
-    int u020;                          /* +0x020 */
+    short u020;                        /* +0x020 */
+    short pad022;
     void *heap;                        /* +0x024 */
     SceneTrans trans;                  /* +0x028 */
     unsigned char pad030[0x03C - 0x030];
@@ -108,7 +109,12 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char pad974[0x3008 - 0x974];
     unsigned char u3008;               /* +0x3008 */
     unsigned char sub_shown;           /* +0x3009 the sub-screen module draws */
-    unsigned char pad300a[0x303C - 0x300A];
+    unsigned char pad300a[0x3038 - 0x300A];
+    unsigned char b3038_0 : 1;         /* +0x3038 */
+    unsigned char b3038_1 : 1;
+    unsigned char busy : 1;            /*         a fade/transition is running */
+    unsigned char b3038_3 : 5;
+    unsigned char pad3039[3];
     int sub_mod;                       /* +0x303C id of the sub-screen module */
     unsigned char pad3040[0x3454 - 0x3040];
 } Title;
@@ -132,6 +138,15 @@ void bgm_cmd(int x);
 int ehfile_request_module(int dir, const char *name, int (*cb)(void *, int), void *arg);
 int sysstate_checksum(void);
 int cfg_get_language(void);
+int msd_open(int mode, void *heap);
+int msd_update(void);
+int card_db_load(void);
+void card_db_request_load(void);
+int sysvar_get_a94(void);
+void newgame_init(void);
+void fade_start(unsigned char type, unsigned int color, unsigned short frames);
+void fade_finish(void);
+void se_play(int id);
 
 /* sub-screen modules (imports) */
 typedef struct TRvParams TRvParams;
@@ -166,6 +181,31 @@ void libdeck_tutorial_08804554(void);
 /* this module, not named yet */
 int title_module_start(void *arg, int id);
 void func_0880AEF0(int mode, int id);
+void func_0880FBB8(int text, int a, int b);
+void *func_08808D48(void *list, MenuWidget *w, int center);
+int func_08808B44(void);
+void func_088119D4(int a);
+void func_08807218(int a, int b);
+void func_088072E4(void);
+void func_08807688(int a, int b);
+void func_0880AFA0(void);
+void func_08813088(void);
+void func_0880F900(void);
+void func_08821D3C(void);
+void func_0880BB98(void);
+void func_08813DF4(void);
+void func_0880C998(void);
+void func_0880EB20(void);
+void func_08809DC4(int a, unsigned short b);
+void func_08809E24(void);
+void func_0880A074(void);
+void func_0880A100(void);
+void func_08815ADC(void);
+void func_0880A390(void);
+void title_recipe_open(void);
+void title_chara_open(void);
+void title_album_open(void);
+void title_record_open(void);
 void func_0880C0F0(void *heap, int a, int b, int c, int d, int e);
 void func_08808B7C(MenuWidget *w);
 void func_088108A0(void *p, void *heap);
@@ -175,11 +215,11 @@ void func_0880A934(void);
 void func_088088E8(int a);
 void func_0880A41C(int id, int a, int b, int c);
 void func_08808AA4(int a, short b, short c);
-void func_088062B4(void);
-void func_088063D0(MenuWidget *w);
+void title_menu_save_update(void);
+void title_save_check_update(MenuWidget *w);
 void *func_0880A56C(void *list, int id);
 void *func_0880A5FC(void *list);
-void *func_08806538(void *list);
+void *title_save_check_draw(void *list);
 int func_0880A534(int id);
 void func_0880A4A8(int id, int a, int b, int c);
 int func_0880AA3C(void);
@@ -191,8 +231,8 @@ int title_update(void);
 int title_draw(void);
 void title_init(void);
 void title_goto(short state, short sub);
-int title_set_state(int state, unsigned int sub);
-void title_menu_enter(short state, int menu, int no_check);
+int title_set_state(int st, int sub);
+void title_menu_enter(int state, int menu, int no_check);
 void title_menu_open(int cursor);
 void title_sub_open_play(void);
 void title_sub_open_extra(void);

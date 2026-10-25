@@ -15,7 +15,7 @@ void title_sub_update_opt(void);
 void *title_sub_label_opt(void *list, int i, int x, int y, int w);
 
 /* menu: 0 = main list, 5/6 = a sub list, 14 = save check first */
-void title_menu_enter(short state, int menu, int no_check)
+void title_menu_enter(int state, int menu, int no_check)
 {
     Title *const t = &title;
     TMenu *const m1 = &title.tm[1];
@@ -132,10 +132,10 @@ void title_menu_update(void)
         title_sub_update_opt();
         break;
     case 9:
-        func_088062B4();
+        title_menu_save_update();
         break;
     case 14:
-        func_088063D0(w);
+        title_save_check_update(w);
         break;
     case 0:
     case 4:
@@ -177,7 +177,7 @@ void *title_menu_draw(void *list)
             list = tmenu_draw(list, &t->tm[1]);
             break;
         case 14:
-            list = func_08806538(list);
+            list = title_save_check_draw(list);
             break;
         case 4:
         case 7:

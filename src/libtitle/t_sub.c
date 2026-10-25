@@ -26,6 +26,9 @@ int title_record_loaded(void *arg, int id);
 int title_limit_loaded(void *arg, int id);
 int title_tlist_loaded(void *arg, int id);
 int title_dtut_loaded(void *arg, int id);
+void title_limit_open(short state);
+void title_tlist_open(short state, short arg);
+void title_dtut_open(short state);
 
 void title_recipe_open(void)
 {
