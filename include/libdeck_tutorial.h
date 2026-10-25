@@ -96,6 +96,31 @@ typedef struct DtRect {
     short x, y, w, h;
 } DtRect;
 
+typedef void *(*DtValueDraw)(void *list, unsigned short x, unsigned short y, unsigned short v);
+
+typedef struct DtFilterDef {     /* values of a filter kind (dt_filter_defs) */
+    unsigned short first;
+    unsigned short last;
+    DtValueDraw draw;            /* +0x04 */
+} DtFilterDef;
+
+typedef struct DtFilterMenu {    /* dt_fmenu 0x08824700, 0x18 bytes, heap allocated */
+    unsigned short step;         /* 0 kinds, 1 values, 2 closing */
+    unsigned char sub;           /* +0x02 step inside the values window */
+    unsigned char alt : 1;       /* +0x03 some card has an alternate picture */
+    unsigned char col : 4;       /*       cursor column */
+    unsigned char pad03 : 3;
+    unsigned char page : 4;      /* +0x04 cursor row, 0xF = the OK button */
+    unsigned char pad04 : 4;
+    unsigned char pad05[3];
+    unsigned int mask[2];        /* +0x08 values picked */
+    struct MenuWidget *kinds;    /* +0x10 */
+    struct MenuWidget *vals;     /* +0x14 */
+} DtFilterMenu;
+
+extern DtFilterMenu *dt_fmenu;   /* 0x08824700 */
+extern DtFilterDef dt_filter_defs[9]; /* 0x08821FAC */
+
 typedef struct DtCfg {           /* dt_init cfg */
     void *heap;                  /* parent heap (0: own 5 MB block) */
     void *cip;
