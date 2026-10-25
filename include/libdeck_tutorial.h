@@ -194,6 +194,17 @@ typedef struct DtSt {            /* dts 0x088239F0, 0x3D4 bytes: the editor stat
 
 extern DtSt dts;
 
+typedef struct DtFlags {         /* dt_flags 0x08823AF6 (dts+0x106) */
+    unsigned char lo : 4;
+    unsigned char info : 1;      /* bit 4: open the card info screen */
+    unsigned char deck_op : 2;   /* bits 5-6: deck operation picked in the action menu */
+    unsigned char b7 : 1;
+} DtFlags;
+
+extern unsigned short dt_scene_arg; /* 0x08823AF4 (dts+0x104) */
+extern DtFlags dt_flags;         /* 0x08823AF6 */
+extern unsigned char dt_help_page; /* 0x08823AF7 */
+
 typedef struct DtRes {           /* dt_res 0x08823DD0 */
     unsigned char ready : 1;
     unsigned char step : 7;

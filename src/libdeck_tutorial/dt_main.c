@@ -32,7 +32,7 @@ void dt_text_draw(void **list);
 void dt_editor_draw(void);
 void dt_editor_update(void);
 void dt_editor_input(void);
-void dt_script_update(void *s);
+int dt_input(PadBits *pad);
 void dt_pause_open(void);
 void dt_editor_start(unsigned short lesson);
 void dt_files_init(void);
@@ -108,7 +108,7 @@ int dt_update(void)
         } else {
             dt_editor_update();
             dt_editor_input();
-            dt_script_update(&dt.pad);
+            dt_input(&dt.pad);
             if (pad_get()->b.trig & 8)
                 dt_pause_open();
         }
