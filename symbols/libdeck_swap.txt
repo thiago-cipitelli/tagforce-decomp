@@ -162,6 +162,9 @@ ds_sub_items = 0x0881A300; // type:data
 ds_clear_items = 0x0881A314; // type:data
 ds_lists_reset = 0x08805800; // type:func
 ds_lists_clear = 0x08805924; // type:func
+ds_osk_open = 0x08815318; // type:func matched src/libdeck_swap/ds_osk.c
+ds_osk_update = 0x08815540; // type:func matched src/libdeck_swap/ds_osk.c
+ds_osk_lang = 0x0881A3D8; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08815ED4; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08815EDC; // type:func import:libehsys nid:4BDEB2A8
