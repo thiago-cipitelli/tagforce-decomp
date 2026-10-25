@@ -14,7 +14,7 @@ typedef struct TRvParams {             /* recipe_viewer_init argument */
     void *on_select;
 } TRvParams;
 
-typedef struct TDtParams {             /* libdeck_tutorial_08804008 argument */
+typedef struct TDtParams {             /* dt_init argument */
     void *heap;
     void *cip;
 } TDtParams;
@@ -441,11 +441,11 @@ void title_dtut_update(void)
     case 1:
         p.heap = t->heap;
         p.cip = 0;
-        libdeck_tutorial_08804008(t->arg, &p);
+        dt_init(t->arg, &p);
         t->sub++;
         break;
     }
-    if (libdeck_tutorial_0880418C() == 0) {
+    if (dt_update() == 0) {
         t->sub_shown = 1;
     } else {
         t->sub_shown = 0;
@@ -459,5 +459,5 @@ done:
 void title_dtut_draw(void)
 {
     if (title.sub_shown)
-        libdeck_tutorial_08804554();
+        dt_draw();
 }

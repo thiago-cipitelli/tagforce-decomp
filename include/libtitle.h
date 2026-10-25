@@ -546,9 +546,9 @@ void tlist_init(int mode, void *heap);
 int tlist_update(void);
 int tlist_result(void);
 void tlist_draw(void);
-void libdeck_tutorial_08804008(int id, TDtParams *p);
-int libdeck_tutorial_0880418C(void);
-void libdeck_tutorial_08804554(void);
+void dt_init(int id, TDtParams *p);
+int dt_update(void);
+void dt_draw(void);
 
 /* this module, not named yet */
 int title_module_start(void *arg, int id);
