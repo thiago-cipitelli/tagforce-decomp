@@ -60,7 +60,7 @@ int title_update(void)
         func_08813134();
         break;
     case 8:
-        func_0880F950();
+        tname_update();
         break;
     case 9:
         title_menu_update();
@@ -355,7 +355,7 @@ void title_draw(void)
     case 7:
         break;
     case 8:
-        list = func_088102A0(list);
+        list = tname_draw(list);
         break;
     case 9:
         list = title_menu_draw(list);
@@ -417,7 +417,7 @@ void title_draw(void)
     case 8:
         switch (t->sub) {
         case 2:
-            func_088104E8();
+            tname_osk_draw();
             break;
         case 3:
             if (t->step == 3)

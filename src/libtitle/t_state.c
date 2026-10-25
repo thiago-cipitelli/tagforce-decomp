@@ -59,7 +59,7 @@ void title_save_check_update(MenuWidget *unused)
 
     switch (title.step) {
     case 0:
-        func_0880FBB8(75, 1, 1);
+        title_prompt(75, 1, 1);
         t->step = 1;
         se_play(0x621A);
         break;
@@ -188,7 +188,7 @@ int title_set_state(int st, int sub)
         func_08813088();
         break;
     case 8:
-        func_0880F900();
+        tname_enter();
         break;
     case 9:
         title_menu_enter(st, sub, 0);
@@ -320,7 +320,7 @@ void title_newgame_confirm(void)
     switch (title.step) {
     case 0:
         se_play(0x621A);
-        func_0880FBB8(73, 2, 0);
+        title_prompt(73, 2, 0);
         t->step++;
     case 1:
         if (press & 8) {
@@ -419,7 +419,7 @@ void title_load_confirm(void)
     switch (title.step) {
     case 0:
         se_play(0x621A);
-        func_0880FBB8(74, 3, 0);
+        title_prompt(74, 3, 0);
         t->step++;
     case 1:
         switch (menu_update(w)) {
