@@ -131,22 +131,26 @@ typedef struct DtState {         /* dt 0x088228D0 (.bss), cleared by dt_init (0x
     unsigned short state;        /* +0x002 0 load, 1 fade in, 2 run, 3 fade out, 4 unload */
     int done;                    /* +0x004 actions done toward the step goal */
     void *parent_heap;           /* +0x008 */
-    unsigned char text_on;       /* +0x00C bit 0: overlays drawn */
+    unsigned char text_on : 1;   /* +0x00C L not held: the talk box and the boards run */
+    unsigned char pad00c : 7;
     unsigned char step;          /* +0x00D lesson step kind (9: buttons, 16: one button) */
     unsigned short show;         /* +0x00E bit 0 window, 1 highlight, 2 buttons, 4 button, 6 menu */
-    unsigned char pad010[8];
+    unsigned char *script;       /* +0x010 next lesson command */
+    unsigned char *loop;         /* +0x014 start of the command loop */
     PadBits pad;                 /* +0x018 input given to the editor */
     unsigned short goal;         /* +0x040 action the step waits for (3 a move opened, 4 a card put) */
     unsigned short goal_n;       /* +0x042 times it must be done */
-    unsigned char pad044[4];
-    unsigned short btn_mode;     /* +0x048 */
+    unsigned short press;        /* +0x044 step 9: 0 press btn_mask once, 1 press a card's button */
+    unsigned short press_step;   /* +0x046 */
+    unsigned short btn_mode;     /* +0x048 button press animation (dt_press_step) */
     unsigned short pad04a;
     unsigned int btn_mask;       /* +0x04C buttons shown with step 9 */
     unsigned short hl;           /* +0x050 highlighted area */
-    unsigned short pad052;
-    unsigned int btn_mask2;      /* +0x054 */
-    unsigned int btn_one;        /* +0x058 */
-    unsigned char pad05c[6];
+    short loop_n;                /* +0x052 command loop count (-1 until a shoulder button) */
+    unsigned int btn_mask2;      /* +0x054 buttons the player may use */
+    unsigned int btn_one;        /* +0x058 buttons held for the player */
+    unsigned int lock;           /* +0x05C menu items allowed in the next menu (dt_menu_lock) */
+    unsigned short lock_msg;     /* +0x060 message shown when a menu is locked */
     unsigned char text_box : 1;  /* +0x062 talk box shown */
     unsigned char board : 1;     /* full-screen board shown */
     unsigned char pad062 : 6;

@@ -208,7 +208,7 @@ void dt_draw(void)
             if (dt.step == 9)
                 list = dt_draw_buttons(list);
             list = dt_draw_one_button(list);
-            if (dt.text_on & 1) {
+            if (dt.text_on) {
                 if (dt.text_box)
                     dt_text_draw(&list);
                 if (dt.show & 1) {
