@@ -53,12 +53,50 @@ typedef struct DtState {         /* dt 0x088228D0 (.bss), cleared by dt_init (0x
 } DtState;
 
 extern DtState dt;
-extern ScView dtv;               /* 0x08823950 */
 
-typedef struct DtSt {            /* dts 0x088239F0, 0x3D4 bytes */
-    unsigned char pad000[0x102];
+typedef struct DtView {          /* dtv 0x08823950, 0x94 bytes: the ScView of libselect_card */
+    union {
+        struct {
+            unsigned char mode : 4;    /* +0x00 pane layout */
+            unsigned char side : 2;    /*       pane with the cursor */
+            unsigned char busy : 1;
+            unsigned char b07 : 1;
+        };
+        struct {
+            unsigned short f00 : 7;
+            unsigned short popup : 8;  /*       popup being shown */
+            unsigned short f15 : 1;
+        };
+    };
+    unsigned short pad02;
+    int scroll_max;              /* +0x04 */
+    int scroll_pos;              /* +0x08 */
+    unsigned char lock : 1;      /* +0x0C */
+    unsigned char pad0c : 7;
+    unsigned char pad0d[3];
+    ScCursor cursor;             /* +0x10 */
+    unsigned char info : 4;      /* +0x38 */
+    unsigned char no_draw : 1;   /*       the editor is not drawn (card info screen) */
+    unsigned char pad38 : 3;
+    unsigned char pad39[3];
+    ScPane pane[2];              /* +0x3C */
+} DtView;
+
+extern DtView dtv;               /* 0x08823950 */
+
+typedef struct DtSt {            /* dts 0x088239F0, 0x3D4 bytes: the editor state */
+    ScList list[5];              /* +0x000 the card lists of the tabs */
+    unsigned char pad0a0[0x20];
+    unsigned short name[0x20];   /* +0x0C0 deck name */
+    unsigned short state;        /* +0x100 0 idle, 1 sort menu, 2 actions, 3 search, 4 confirm,
+                                    5 result, 6/7 help */
     unsigned short unload_step;  /* +0x102 */
-    unsigned char pad104[0x3BC - 0x104];
+    unsigned char pad104[4];
+    unsigned short n_deck;       /* +0x108 cards in the deck */
+    unsigned short n_type[6];    /* +0x10A cards of each type */
+    unsigned char pad116[0x368 - 0x116];
+    ScRect focus;                /* +0x368 frame around the focused popup */
+    unsigned char pad370[0x3BC - 0x370];
     void *heap;                  /* +0x3BC */
     void *cip;                   /* +0x3C0 */
     void *cfg_cip;               /* +0x3C4 */
