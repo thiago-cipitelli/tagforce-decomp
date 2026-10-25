@@ -51,7 +51,8 @@ segments:
       - [0xC7EC, c, ds_fmenu]
       - [0xC9E0, asm, ds_fmenu_asm_08810980]
       - [0xCAD4, c, ds_fmenu]
-      - [0xCDC4, asm, text_2]
+      - [0xCDC4, c, ds_action]
+      - [0xE570, asm, text_2]
       - [0xE8E0, c, ds_parts]
       - [0xEA54, asm, ds_parts_asm_088129F4]
       - [0xEBFC, c, ds_parts]
@@ -80,9 +81,9 @@ segments:
       - [0x16248, .data, ds_sort]
       - [0x16258, .data, ds_filter]
       - [0x16284, .data, ds_fmenu]
-      - [0x16334, data, data_3]
+      - [0x16334, .data, ds_action]
       - [0x16380, .data, ds_parts]
-      - [0x16438, data, data_4]
+      - [0x16438, data, data_3]
       - { start: 0x16460, type: bss, vram: 0x881A400, name: bss }
   - [0x16460]
 
