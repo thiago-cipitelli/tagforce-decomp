@@ -451,7 +451,7 @@ int shop_bsearch(unsigned short key, void *base, int n, int size);
 void shop_clerk_load(void);
 void shop_menu_init(void *gim);
 void shop_tabs_init(void);
-void shop_draw_box(void *list, ShopBox *b, int x, int y);
+unsigned int *shop_draw_box(void *list, ShopBox *b, int x, int y);
 void *shop_ui_draw_icon_text(void *list, UiIconText *t, int x, int y);
 void shop_packs_free(void);
 void shop_models_free(void);

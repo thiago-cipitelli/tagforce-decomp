@@ -156,7 +156,7 @@ void shop_items_commit(void)
 }
 
 /* a pack on the shelf with its picture and name */
-void shop_draw_box(void *list, ShopBox *b, int x, int y)
+unsigned int *shop_draw_box(void *list, ShopBox *b, int x, int y)
 {
     UiIconText p;
 
@@ -167,7 +167,7 @@ void shop_draw_box(void *list, ShopBox *b, int x, int y)
     p.v = b->y;
     p.gim = shop_res_get(b->gim);
     p.text = table_get_entry(shop_str_get(0xC001), b->name);
-    shop_ui_draw_icon_text(list, &p, x, y);
+    return shop_ui_draw_icon_text(list, &p, x, y);
 }
 
 /* copies of card `id` in the bought list */
