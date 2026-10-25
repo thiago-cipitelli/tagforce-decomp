@@ -284,4 +284,14 @@ typedef struct DkRect {
 
 extern DkRect dk_focus;                /* 0x095D2698 frame around the focused item (popups, help position) */
 
+/* dk_move.c (W1): a card moved between the lists (Circle / Triangle) */
+extern struct DkFlight *dk_flight;     /* 0x08823950 heap allocated while a card moves */
+int dk_flight_open(void);
+int dk_flight_undo(void);
+int dk_flight_quick(void);
+int dk_flight_update(PadBits *pad);
+void *dk_flight_draw(void *list);
+int dk_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll);
+int dk_dst_pos(int tab, int id);
+
 #endif
