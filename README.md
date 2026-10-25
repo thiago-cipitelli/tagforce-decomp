@@ -22,11 +22,15 @@ platform layer. The project is modelled on [ygo-tf-5-decomp](https://github.com/
 | `liblabo`, `libpassword`, `libtutoriallist`, `libduelrecord` | debug menu, password machine, tutorial list, duel records | 89–100% | 99.8–100% | 97 / 99 |
 | `libduel_mgr` | duel scene: setup, janken, presentation events, result screen | 37.9% | 87.9% | 97 / 158 |
 | `libselect_card` | card picker for rental, conversion and trading | 37.2% | 79.5% | 123 / 207 |
+| `libdeck`, `libdeck_swap`, `libdeck_tutorial` | deck editor, deck swap between duels, deck-building lesson | 58–66% | 85–89% | 655 / 825 |
+| `libshop` | card shop: clerk, booster purchase, pack opening | 55.9% | 78.2% | 186 / 223 |
+| `libtitle` | title scene, main menu, options (about 150 functions still without C) | 35.4% | 44.6% | 244 / 434 |
+| `libtutorial` | scripted tutorial duels | 86.2% | 98.4% | 196 / 207 |
 | `libcardalbum`, `libcharalist`, `libconv_machine`, `liblimitlist`, `librecipe_viewer` | card binder, duelist list, card convert machine, forbidden/limited list, deck recipes | 56–82% | 90.7–99.7% | 254 / 296 |
-| 9 other gmodules | duel presentation, field, story, shop, deck editor, title… | 0% | 0% | 0 / 4626 |
-| **total** | | **36.6%** | **49.2%** | **5389 / 11039** |
+| `libduel_draw`, `libfield`, `libstory` | duel presentation, field map, story mode | 0% | 0% | 0 / 2937 |
+| **total** | | **46.6%** | **62.7%** | **6670 / 11039** |
 
-Numbers from 2026-10-23 (`python3 tools/bytematch.py`); the badges above are live. The whole game
+Numbers from 2026-10-25 (`python3 tools/bytematch.py`); the badges above are live. The whole game
 rebuilds byte-identical today: the parts without C are kept as assembly. Per-file progress and the
 largest ranges still without C are in [docs/progress.md](docs/progress.md).
 

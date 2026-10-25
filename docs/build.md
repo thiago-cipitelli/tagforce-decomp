@@ -496,6 +496,14 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 - **Contagem regressiva no laço**: `t = -3 * i - 4` reduz para `a3 -= 3`; `-4 - i * 3` não.
 - **Templates de funções que ficaram em asm** viram globais nomeados definidos no mesmo ponto do arquivo; rótulos internos que o asm ainda usa vão em `symbols/` como `D_<addr> = …; // type:data alias`.
 - **Cópia morta depois de `beql; b`** apareceu também nos `*_draw` exportados de `libcardalbum`, `libcharalist`, `libconv_machine`, `liblimitlist` e `librecipe_viewer` (mesmo problema aberto de `tlist_draw`).
+- **Módulos copiados** (`libdeck_swap`, `libdeck_tutorial`, partes de `libshop` e `libtitle`): boa parte do código é o mesmo fonte de `libselect_card`/`libdeck`/`libtutorial`. Mapear as funções por tamanho e palavras normalizadas (opcode mascarado + pares jal/hi-lo) contra o módulo já feito e copiar o C renomeando; a maioria bate sem mudança e as diferenças aparecem como diferença de tamanho.
+- **`case K: break;` em vez de `return 0;`** num estado que só retorna mantém o `b <move v0,zero compartilhado>; nop` do original.
+- **`w = cw = expr;`** dá duas cópias em registradores diferentes; `cw = w = expr` troca.
+- **Constantes float não dobradas**: `neg.s`/`mul.s` sobre constante vêm de um local (`float h = 7.634f;`); o menos unário não é dobrado depois da propagação.
+- **Escrever um campo e relê-lo** para o próximo mantém a extensão de sinal do original: `b->x = x; b->ix = b->x + 3;`.
+- **Chamado mascara parâmetros `short` mas o chamador passa int**: defina o chamado com `short` e mantenha um protótipo K&R para os chamadores (`void text_enter();`).
+- **Ordem das declarações de base muda a ordem dos `lui` no link**: `Title *const t = &title;` antes de `TPanel *p = &title.panel;`; o `check_file` não mostra, só o `diff_words` no ELF linkado.
+- **Ternário para subtração condicional**: `r += b >= 3 ? b - 3 : b;` dá `bnez` + `nop`; `if (b >= 3) b -= 3;` dá `bnezl`.
 
 - **Função `static` chamada de fora do arquivo** (`effects_088A8B94.c`): quando um helper precisa ser `static` para o chamador manter `$a0`-`$a2` (ver acima) mas também é chamado por asm ou por outro `.c`, a linha em `symbols/` leva `type:func static matched …`; `fix_ld.py` então emite um `PROVIDE` com o nome para os outros chamadores.
 - **Definições K&R** (`effects_088A8B94.c`): uma função chamada com quantidades diferentes de argumentos por chamadores que batem é definida sem protótipo (`int f(a, b) DuelAct *a; int b; { … }`) e declarada `int f();`.

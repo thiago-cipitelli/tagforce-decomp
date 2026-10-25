@@ -28,8 +28,7 @@ MODULE=libduel_eng python3 tools/list_funcs.py 0x08889BE4 0x0888B000   # functio
 
 - `libduel_eng`: about 300 functions kept in asm with a C draft under `#ifdef NON_MATCHING`, many only a few words off; `docs/build.md` lists the source shapes that fixed similar ones. Good first work.
 - `libduel_eng`: about 30 ranges still without C, mostly single large functions (`0x08839360`-`0x0883F0DC`, `0x088CC8EC`-`0x088D13CC`, the CPU step machines between `0x08832B54` and `0x08864DF0`); `list_funcs.py --gaps` lists them.
-- 9 gmodules (`libduel_draw`, `libfield`, `libstory`, `libtitle`, `libdeck`, …) have not been started: there is
-  room for someone to take a whole module.
+- `libduel_draw`, `libfield` and `libstory` have not been started, and `libtitle` still has two ranges without C (see docs/progress.md): room for someone to take a whole module.
 - `BOOT` has C for its whole `.text`; about 400 functions remain in `@asm` with a C draft under
   `NON_MATCHING`. The GCC-compiled SDK code is written as mwcc `asm` functions with portable C under
   `#else`; the ones left in `@asm` load data with `lui`/`%lo`, which the inline assembler can't express.

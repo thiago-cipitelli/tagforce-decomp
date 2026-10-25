@@ -1,11 +1,11 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-23 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-25 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 36,6% | 49,2% | 5389 / 11039 |
+| total | 46,6% | 62,7% | 6670 / 11039 |
 | BOOT | 63,0% | 79,9% | 1815 / 2208 |
 | libduel_eng | 61,7% | 81,2% | 2987 / 3429 |
 | libhtml_view | 100% | 100% | 16 / 16 |
@@ -20,7 +20,13 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-23 (
 | libconv_machine | 79,9% | 97,1% | 44 / 47 |
 | liblimitlist | 82,1% | 97,3% | 56 / 62 |
 | librecipe_viewer | 56,3% | 91,7% | 51 / 69 |
-| demais 9 gmodules | 0% | 0% | 0 / 4626 |
+| libdeck | 65,7% | 89,4% | 275 / 328 |
+| libdeck_swap | 61,4% | 84,8% | 156 / 204 |
+| libdeck_tutorial | 57,7% | 85,9% | 224 / 293 |
+| libshop | 55,9% | 78,2% | 186 / 223 |
+| libtitle | 35,4% | 44,6% | 244 / 434 |
+| libtutorial | 86,2% | 98,4% | 196 / 207 |
+| libduel_draw, libfield, libstory | 0% | 0% | 0 / 2937 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -43,6 +49,8 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 0x088D9080-0x088DA5EC     4 functions     5484 bytes
 0x088451E8-0x08846498     1 functions     4784 bytes
 ```
+
+**libtitle**: `0x08813AC4-0x0881F02C` (~110 funções: configuração do duelo livre e lobby ad hoc) e `0x08821D3C-0x0882647C` (~40 funções: estado 12 e telas de configuração).
 
 **BOOT**: nenhum trecho sem C. Todo o `.text` está em arquivos `.c`; o que falta são as funções em `@asm` (C sob `NON_MATCHING`). Na parte do SDK compilada com GCC (libgu, newlib, libgcc, libvfpu, libccc, libfpu, libdeflt, libsas/libwave) as funções são `asm` do mwcc com C portável sob `#else`; ficam em `@asm` as que carregam dados por `lui`/`%lo`, que o assembler embutido não aceita (ver `docs/build.md`).
 
