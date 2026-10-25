@@ -101,7 +101,7 @@ void *title_save_check_draw(void *list)
         break;
     case 1:
     case 2:
-        list = func_08808D48(list, &t->win[0], 1);
+        list = twin_draw_center(list, &t->win[0], 1);
         break;
     case 4:
         break;
@@ -450,13 +450,13 @@ void *title_load_draw(void *list)
         break;
     case 2:
         if (t->step > 0)
-            list = func_08808D48(list, w, 1);
+            list = twin_draw_center(list, w, 1);
         break;
     case 1:
         break;
     case 3:
         if (t->step > 0)
-            list = func_08808D48(list, w, 1);
+            list = twin_draw_center(list, w, 1);
         break;
     case 5:
         break;

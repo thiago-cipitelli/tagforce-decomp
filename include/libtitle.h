@@ -13,7 +13,7 @@
 #include "libc.h"
 #include "psp.h"
 
-typedef void *(*TMenuDrawFn)(void *list, int index, int x, int y, int w, int h);
+typedef void *(*TMenuDrawFn)(void *list, unsigned short index, int x, int y, int w, int h);
 
 typedef struct TMenu {                 /* list of panels with fading items, 0x7C */
     unsigned char state;               /* +0x00 0 start, 1 opening, 2 open, 3 input, 4 accepted, 5 anim, 6 cancel, 7 done */
@@ -318,7 +318,6 @@ void title_menu_update(void);
 void *title_menu_draw(void *list);
 void func_0880AEF0(int mode, int id);
 void func_0880FBB8(int text, int a, int b);
-void *func_08808D48(void *list, MenuWidget *w, int center);
 void func_088119D4(int a);
 void title_state_init(int state, int sub);
 void title_logo_enter(int state, int sub);
@@ -386,6 +385,7 @@ int title_fade_state(void);
 void twin_open(MenuWidget *w);
 void twin_init(MenuWidget *w);
 void *twin_draw(void *list, MenuWidget *w);
+void *twin_draw_center(void *list, MenuWidget *w, int center);
 int title_update(void);
 void title_draw(void);
 void title_init(void);
@@ -402,6 +402,6 @@ int tmenu_update(TMenu *m, int mode);
 void tmenu_back(TMenu *m);
 void tmenu_set_fade(TMenu *m, short len, short step);
 void *tmenu_draw(void *list, TMenu *m);
-unsigned int tmenu_text_color(TMenu *m, int i);
+unsigned int tmenu_text_color(TMenu *m, int i0);
 
 #endif

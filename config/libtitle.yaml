@@ -34,7 +34,12 @@ segments:
       - [0x3CF8, c, t_gfx]
       - [0x3DE0, asm, t_gfx_asm_08807D80]
       - [0x3EA4, c, t_gfx]
-      - [0x4DA8, asm, text_0]
+      - [0x4DA8, c, t_tmenu]
+      - [0x4F60, asm, t_tmenu_asm_08808F00]
+      - [0x553C, c, t_tmenu]
+      - [0x5658, asm, t_tmenu_asm_088095F8]
+      - [0x5CAC, c, t_tmenu]
+      - [0x5E24, asm, text_0]
       - [0x22BEC, asm, sceStub_text]
       - [0x253C4, bin, lib_ent_top]
       - [0x253C8, bin, lib_ent]
@@ -56,7 +61,8 @@ segments:
       - [0x2A3A0, .data, t_sub]
       - [0x2A434, .data, t_update]
       - [0x2A448, .data, t_gfx]
-      - [0x2A464, data, data_2]
+      - [0x2A464, .data, t_tmenu]
+      - [0x2A474, data, data_2]
       - { start: 0x2C740, type: bss, vram: 0x88306E0, name: bss }
   - [0x2C740]
 
