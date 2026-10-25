@@ -26,7 +26,11 @@ segments:
     bss_size: 0xDAF4C0
     subalign: null
     subsegments:
-      - [0x60, asm, text_0]
+      - [0x60, c, dk_lists]
+      - [0xCFC, asm, dk_lists_asm_08804C9C]
+      - [0xF34, c, dk_lists]
+      - [0x1960, asm, dk_lists_asm_08805900]
+      - [0x1D50, asm, text_0]
       - [0x78D4, c, dk_main]
       - [0x7D90, c, dk_pane]
       - [0x7E78, asm, dk_pane_asm_0880BE18]
@@ -50,10 +54,12 @@ segments:
       - [0x1D0F8, bin, rodata_sceNid]
       - [0x1E520, bin, rodata_sceVstub]
       - [0x1E540, data, data_0]
+      - [0x1EA60, .data, dk_lists]
+      - [0x1EA84, data, data_1]
       - [0x1EC44, .data, dk_pane]
-      - [0x1EC54, data, data_1]
+      - [0x1EC54, data, data_2]
       - [0x1F1D8, .data, dk_osk]
-      - [0x1F1E4, data, data_2]
+      - [0x1F1E4, data, data_3]
       - { start: 0x1F9B0, type: bss, vram: 0x8823950, name: bss }
   - [0x1F9B0]
 
