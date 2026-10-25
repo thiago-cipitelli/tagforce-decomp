@@ -105,7 +105,12 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     int arg;                           /* +0x870 value passed between the states */
     unsigned char pad874[0x87C - 0x874];
     TMenu tm[2];                       /* +0x87C main menu, sub menu */
-    unsigned char pad974[0x3454 - 0x974];
+    unsigned char pad974[0x3008 - 0x974];
+    unsigned char u3008;               /* +0x3008 */
+    unsigned char sub_shown;           /* +0x3009 the sub-screen module draws */
+    unsigned char pad300a[0x303C - 0x300A];
+    int sub_mod;                       /* +0x303C id of the sub-screen module */
+    unsigned char pad3040[0x3454 - 0x3040];
 } Title;
 
 extern Title title;
@@ -124,10 +129,43 @@ void deck_cur_get_u16_0(short *out);
 int sysstate_get_u32_97e8(void);
 void bgm_play(int id);
 void bgm_cmd(int x);
+int ehfile_request_module(int dir, const char *name, int (*cb)(void *, int), void *arg);
 int sysstate_checksum(void);
 int cfg_get_language(void);
 
+/* sub-screen modules (imports) */
+typedef struct TRvParams TRvParams;
+typedef struct TDtParams TDtParams;
+void recipe_viewer_init(int mode, TRvParams *p);
+int recipe_viewer_update(void);
+void recipe_viewer_draw(void);
+void charalist_init(unsigned short mode, void *heap);
+int charalist_update(void);
+int charalist_result_id(void);
+int charalist_result_costume(void);
+void charalist_random(void *heap);
+void charalist_draw(void);
+void charalist_res_free(void);
+void cardalbum_init(int mode, void *heap);
+int cardalbum_update(void);
+void cardalbum_draw(void);
+void duelrecord_init(void *heap);
+int duelrecord_update(void);
+void duelrecord_draw(void);
+void limitlist_init(int mode, void *heap);
+int limitlist_update(void);
+void limitlist_draw(void);
+void tlist_init(int mode, void *heap);
+int tlist_update(void);
+int tlist_result(void);
+void tlist_draw(void);
+void libdeck_tutorial_08804008(int id, TDtParams *p);
+int libdeck_tutorial_0880418C(void);
+void libdeck_tutorial_08804554(void);
+
 /* this module, not named yet */
+int title_module_start(void *arg, int id);
+void func_0880AEF0(int mode, int id);
 void func_0880C0F0(void *heap, int a, int b, int c, int d, int e);
 void func_08808B7C(MenuWidget *w);
 void func_088108A0(void *p, void *heap);
