@@ -27,10 +27,10 @@ void deck_name_copy_out(void *dst);
 /* other parts of this module */
 void dk_lists_init(void);
 void dk_lists_free(void);
-void func_08805CF0(void);
+void dk_deck_store(void);
 int func_0880931C(void *pad);
 void func_0880AF34(unsigned short mode);
-void func_0880BD30(void);
+void dk_cardlist_setup(void);
 void func_0880C728(void);
 void func_0880CB14(void);
 void func_0880D73C(void);
@@ -91,7 +91,7 @@ void dk_main(void)
     sys_state_set_callbacks(0, 0, 0);
     gfx_overlay_enable(1);
     sys_frame_wait();
-    func_08805CF0();
+    dk_deck_store();
     sys_frame_wait();
     scene_pop_to(4, dk_scene_arg);
 }
@@ -154,7 +154,7 @@ void dk_setup(void)
     }
     font_set_line_extra(0);
     menu_init(&dk_menu, dk_heap);
-    func_0880BD30();
+    dk_cardlist_setup();
     deck_name_copy_out(dk_deck_name);
     func_0880C728();
 }

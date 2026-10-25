@@ -214,4 +214,59 @@ extern int dk_module;                  /* 0x095D26F8 loaded sub-screen module (l
 void dk_setup(void);
 void dk_draw(void);
 
+/* dk_lists.c (W1): the block at dk_lists seen as one struct (alias dk_deck), for the fields the
+   original addresses from the dk_lists base */
+typedef struct DkDeck {                /* 0x095D2330 */
+    DkList lists[6];                   /* +0x000 0 main, 1 side, 2 extra, 3 trunk, 4 extra (view), 5 rented */
+    unsigned short name[32];           /* +0x0C0 dk_deck_name */
+    unsigned char pad100[8];
+    unsigned short owned_kinds;        /* +0x108 cards owned at least once */
+    unsigned short attr_count[6];      /* +0x10A cards of the deck per attribute icon */
+} DkDeck;
+
+extern DkDeck dk_deck;                 /* 0x095D2330 alias of dk_lists */
+extern unsigned short dk_undo_count;   /* 0x095D2646 entries in the undo history */
+int dk_list_find(DkList *l, unsigned short id);
+unsigned short dk_list_count_id(DkList *l, unsigned short id, int same_name);
+int dk_list_remove(DkList *l, int i);
+void dk_list_add(DkList *l, DkEnt *src, int pos);
+void dk_list_total(DkList *l);
+void dk_attr_count_update(void);
+
+/* dk_action.c (W3): scene state words and the card action menu (same layout as libselect_card ScAction) */
+typedef struct DkFlags {               /* dk_flags 0x095D2436 */
+    unsigned char lo : 4;
+    unsigned char info : 1;            /* bit 4: open the card info screen */
+    unsigned char deck_op : 2;         /* bits 5-6: 1 / 2 deck operation picked in the action menu */
+    unsigned char b7 : 1;
+} DkFlags;
+
+typedef struct DkAction {              /* dk_action 0x095D271C, 0x18 bytes, heap allocated */
+    unsigned char no_ent : 1;          /* +0x00 opened without a card (the first two items hidden) */
+    unsigned char pad00 : 7;
+    unsigned char pad01;
+    unsigned short step;               /* +0x02 */
+    DkEnt *ent;                        /* +0x04 */
+    unsigned short mode;               /* +0x08 layout being picked */
+    unsigned short side;               /* +0x0A pane of the other list */
+    unsigned short tab;                /* +0x0C its list */
+    unsigned short mark;               /* +0x0E "new" mark picked */
+    struct MenuWidget *menu;           /* +0x10 */
+    struct MenuWidget *sub;            /* +0x14 */
+} DkAction;
+
+extern unsigned short dk_state;        /* 0x095D2430 input state of the scene (0 lists, 2 action menu...) */
+extern DkFlags dk_flags;               /* 0x095D2436 */
+extern unsigned char dk_help_page;     /* 0x095D2437 help page asked for with START */
+extern DkAction *dk_action;            /* 0x095D271C */
+
+/* dk_pane.c (W2) */
+unsigned short dk_cur_index(unsigned short side);
+DkEnt *dk_cur_entry(unsigned short side);
+void dk_info_update(void);
+void dk_select_tab(unsigned short side, unsigned short tab, unsigned short how);
+unsigned short *dk_list_name(unsigned short tab);
+void dk_save_panes(unsigned short which);
+void *dk_res_get(unsigned short id);
+
 #endif
