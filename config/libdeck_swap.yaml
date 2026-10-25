@@ -80,7 +80,7 @@ segments:
       - [0xC9E0, asm, ds_fmenu_asm_08810980]
       - [0xCAD4, c, ds_fmenu]
       - [0xCDC4, c, ds_action]
-      - [0xE570, asm, text_1]
+      - [0xE570, c, ds_anim]
       - [0xE8E0, c, ds_parts]
       - [0xEA54, asm, ds_parts_asm_088129F4]
       - [0xEBFC, c, ds_parts]

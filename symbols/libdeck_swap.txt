@@ -163,7 +163,6 @@ ds_popup_timer = 0x0881A96C; // type:data
 ds_res_init = 0x0880407C; // type:func matched src/libdeck_swap/ds_res.c
 ds_load_step = 0x088040FC; // type:func matched src/libdeck_swap/ds_res.c
 ds_res_free = 0x088041A0; // type:func matched src/libdeck_swap/ds_res.c
-ds_update_anim = 0x08812510; // type:func
 res_cmp = 0x08804000; // type:func matched src/libdeck_swap/ds_res.c
 res_find = 0x08804010; // type:func matched src/libdeck_swap/ds_res.c
 ds_packs_free = 0x088041A8; // type:func matched src/libdeck_swap/ds_res.c
@@ -248,6 +247,8 @@ D_0881A190 = 0x0881A190; // type:data alias
 D_0881A194 = 0x0881A194; // type:data alias
 D_0881A198 = 0x0881A198; // type:data alias
 D_0881A19C = 0x0881A19C; // type:data alias
+ds_update_anim = 0x08812510; // type:func matched src/libdeck_swap/ds_anim.c
+ds_info_anim = 0x088126BC; // type:func matched src/libdeck_swap/ds_anim.c
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08815ED4; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08815EDC; // type:func import:libehsys nid:4BDEB2A8
