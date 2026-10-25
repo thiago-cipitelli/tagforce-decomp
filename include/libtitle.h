@@ -98,10 +98,27 @@ typedef struct TColorFade {            /* color interpolation written to *dst */
     unsigned short active;             /* +0x10 */
 } TColorFade;
 
+typedef struct TDeckRec {              /* a deck edited in the free duel setup, 0x148 */
+    RecipeData recipe;
+    unsigned short name[0x20];         /* +0x108 */
+} TDeckRec;
+
+typedef struct TDuelOpts {             /* free duel options */
+    unsigned char b0 : 5;
+    unsigned char tag : 1;             /* bit 5: tag duel */
+    unsigned char swap : 1;            /* bit 6: deck swap before the duel */
+    unsigned char b7 : 1;
+    unsigned char lp : 4;              /* +0x01 life points (title_lp_level) */
+    unsigned char time : 4;            /*       answer time */
+} TDuelOpts;
+
 typedef struct TDuelCfg {              /* title +0x974 */
-    unsigned char pad000[0x117C];
+    unsigned char pad000[0xEB4];
+    TDuelOpts opts;                    /* +0xEB4 */
+    unsigned char pad0eb6[0x117C - 0xEB6];
     unsigned short card;               /* +0x117C */
-    unsigned char pad117e[0x2690 - 0x117E];
+    unsigned char pad117e[0x2170 - 0x117E];
+    TDeckRec decks[4];                 /* +0x2170 */
 } TDuelCfg;
 
 typedef struct DeckFlags {             /* deck_cur_get_u16_0 */
@@ -109,13 +126,27 @@ typedef struct DeckFlags {             /* deck_cur_get_u16_0 */
     unsigned short rest : 15;
 } DeckFlags;
 
-typedef struct TGameHdr {             /* view of GameState +0x118.. */
-    unsigned char pad000[0x118];
-    unsigned char kind;                /* +0x118 1 story, 2 tutorial, 5 free duel ... */
-    unsigned char kind2;               /* +0x119 */
-    unsigned char partner_mode;        /* +0x11A */
+typedef struct TGameHdr {             /* view of GameState used by the duel setups */
+    unsigned char deck[0x110];
+    int mode;                          /* +0x110 duel_setup_mode (random) */
+    int side;                          /* +0x114 first player */
+    unsigned char kind;                /* +0x118 1 free duel, 2 tutorial, 3 lesson, 5 random duel */
+    unsigned char kind2;               /* +0x119 2: deck swap before the duel */
+    unsigned char partner_mode;        /* +0x11A 1 single, 2 tag duel */
     unsigned char tutorial;            /* +0x11B tutorial id */
+    unsigned char bgm_set;             /* +0x11C */
+    unsigned char rematch;             /* +0x11D */
+    unsigned char lp_level;            /* +0x11E starting life points */
+    unsigned char time_level;          /* +0x11F answer time limit */
+    PlayerSlot slot[4];                /* +0x120 */
 } TGameHdr;
+
+typedef struct TSlotInfo {             /* a player of the free duel setup (func_0881F6E0) */
+    short type;
+    short type2;
+    short deck_kind;                   /* 0 saved deck, 1 recipe, 2 the deck of the setup, 3 none */
+    short deck;                        /* +0x06 */
+} TSlotInfo;
 
 typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared by title_init */
     int ticks;                         /* +0x000 frames since the scene started, wraps at 0x10000 */
@@ -192,6 +223,10 @@ void scene_get_transition_info(SceneTrans *out);
 void deck_cur_get_u16_0(short *out);
 int sysstate_get_u32_97e8(void);
 void bgm_play(int id);
+void scene_push(int from, int scene, int arg);
+void gamestate_load(const void *src);
+void gamestate_fill_partner_list(RecipeData *deck, int with_side);
+unsigned int rand_next(void);
 unsigned short *table_get_entry(void *t, unsigned int i);
 unsigned short *card_get_name(int id);
 int wsprintf(unsigned short *out, unsigned short *fmt, ...);
@@ -277,6 +312,9 @@ void libdeck_tutorial_08804554(void);
 
 /* this module, not named yet */
 int title_module_start(void *arg, int id);
+unsigned short title_scene_push(int scene, unsigned short arg);
+void func_0881F6E0(TSlotInfo *out, int i);
+void func_0881F0A0(void);
 void *tmenu_gfx_setup(void *list, int mode);
 void *title_logo_draw(void *list);
 void func_0880A9A8(int a);
@@ -330,12 +368,11 @@ void func_0880BB98(void);
 void func_08813DF4(void);
 void func_0880C998(void);
 void func_0880EB20(void);
-void func_08809DC4(int a, unsigned short b);
-void func_08809E24(void);
-void func_0880A074(void);
-void func_0880A100(void);
+void title_random_duel_start(void);
+void title_lesson_start(void);
+void title_free_duel_start(void);
 void func_08815ADC(void);
-void func_0880A390(void);
+void title_dtut_duel_start(void);
 void title_recipe_open(void);
 void title_chara_open(void);
 void title_album_open(void);

@@ -206,7 +206,7 @@ int title_set_state(int st, int sub)
         func_0880EB20();
         break;
     case 20:
-        func_08809DC4(4, sub);
+        title_scene_push(4, sub);
         return 40;
     case 21:
         title_recipe_open();
@@ -236,18 +236,18 @@ int title_set_state(int st, int sub)
         break;
     case 31:
         newgame_init();
-        func_08809DC4(2, 0);
+        title_scene_push(2, 0);
         return 40;
     case 32:
-        func_08809E24();
+        title_random_duel_start();
         return 40;
     case 33:
-        func_0880A074();
+        title_lesson_start();
         return 40;
     case 34:
         charalist_res_free();
         func_0880A934();
-        func_0880A100();
+        title_free_duel_start();
         return 40;
     case 35:
         func_08815ADC();
@@ -257,10 +257,10 @@ int title_set_state(int st, int sub)
         break;
     case 37:
         sysvar_set_a90(1);
-        func_08809DC4(14, 0);
+        title_scene_push(14, 0);
         return 40;
     case 38:
-        func_0880A390();
+        title_dtut_duel_start();
         return 40;
     case 39:
         title_dtut_open(st);
