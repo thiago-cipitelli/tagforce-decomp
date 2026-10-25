@@ -158,16 +158,16 @@ void shop_items_commit(void)
 /* a pack on the shelf with its picture and name */
 void shop_draw_box(void *list, ShopBox *b, int x, int y)
 {
-    ShopPanel p;
+    UiIconText p;
 
     memset(&p, 0, sizeof(p));
-    p.b6 = 0x11;
-    p.b7 = 0x11;
-    p.x = b->x;
-    p.y = b->y;
+    p.w = 0x11;
+    p.h = 0x11;
+    p.u = b->x;
+    p.v = b->y;
     p.gim = shop_res_get(b->gim);
     p.text = table_get_entry(shop_str_get(0xC001), b->name);
-    shop_panel_draw(list, &p, x, y);
+    shop_ui_draw_icon_text(list, &p, x, y);
 }
 
 /* copies of card `id` in the bought list */

@@ -89,14 +89,6 @@ typedef struct ShopBox {        /* a pack on the shelf: picture, position, name 
     unsigned short name;
 } ShopBox;
 
-typedef struct ShopPanel {      /* argument of shop_panel_draw, 0x10 */
-    void *gim;
-    unsigned char x, y;
-    unsigned char b6, b7;
-    unsigned short *text;       /* +0x08 */
-    int pad0c;
-} ShopPanel;
-
 typedef struct ShopClerk {      /* shop_clerk 0x08F8EC10: the shop girl over the counter, 0x14 */
     unsigned char alt : 1;      /* the other clerk (pc_sei) and her music */
     unsigned char pad00 : 7;
@@ -184,6 +176,52 @@ typedef struct ShopPackDef {    /* shop_pack_defs 0x0881FE88: one of the 48 pack
     unsigned short rank;        /* +0x06 */
     ShopCardList *lists;        /* +0x08 4 rarities: common, rare, super, ultra */
 } ShopPackDef;
+
+typedef int UiPt;               /* screen position packed as x | y << 16 */
+#define PT(x, y) ((unsigned short)(x) | (unsigned short)(y) << 16)
+
+typedef struct UiEnt {          /* one card line as the shared drawing pieces see it, 6 bytes */
+    unsigned short id;
+    unsigned short key;         /* sort key */
+    unsigned char count : 7;    /* +0x04 copies */
+    unsigned char fixed : 1;
+    unsigned char marked : 1;   /* +0x05 */
+    unsigned char b5_1 : 1;
+    unsigned char rank : 3;
+    unsigned char b5_5 : 3;
+} UiEnt;
+
+typedef struct UiIdList {       /* count, then sorted (id | sub << 16) words */
+    int n;
+    unsigned int e[1];
+} UiIdList;
+
+typedef struct UiSprite {
+    unsigned short x, y;
+    unsigned short w, h;
+    unsigned short u, v;
+} UiSprite;
+
+typedef struct UiCounter {      /* 12 bytes x 3 */
+    unsigned char icon;
+    unsigned char pad01[3];
+    unsigned int color;
+    unsigned char value;
+    unsigned char pad09[3];
+} UiCounter;
+
+typedef struct UiIconText {
+    void *gim;
+    unsigned char u, v, w, h;
+    unsigned short *text;
+    unsigned int color;
+} UiIconText;
+
+typedef struct UiScroll {       /* analog-scrolled value */
+    int pad0[2];
+    unsigned int pos;           /* +0x08 */
+    unsigned int max;           /* +0x0C */
+} UiScroll;
 
 typedef struct ShopState {      /* shop 0x08E20530, 0x450 bytes cleared at start */
     unsigned short state;       /* +0x000 */
@@ -365,7 +403,7 @@ void shop_clerk_load(void);
 void shop_menu_init(void *gim);
 void shop_tabs_init(void);
 void shop_draw_box(void *list, ShopBox *b, int x, int y);
-void shop_panel_draw(void *list, ShopPanel *p, int x, int y);
+void *shop_ui_draw_icon_text(void *list, UiIconText *t, int x, int y);
 void shop_packs_free(void);
 void shop_models_free(void);
 void shop_model_set_box(unsigned short id, int pack);
