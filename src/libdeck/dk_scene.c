@@ -22,8 +22,8 @@ void cip_close(Cip *c);
 int cip_is_idle(Cip *c);
 void recipe_viewer_init(int op, void *cfg);
 int recipe_viewer_update(void);
-void libdeck_tutorial_08804008(int lesson, void *cfg);
-int libdeck_tutorial_0880418C(void);
+void dt_init(int lesson, void *cfg);
+int dt_update(void);
 
 void dk_popup_open(int msg, int arg);
 void dk_bg_anim_update(void);
@@ -51,7 +51,7 @@ typedef struct DkRecipeCfg {           /* recipe_viewer_init */
     void (*load)(void);
 } DkRecipeCfg;
 
-typedef struct DkTutorialCfg {         /* libdeck_tutorial_08804008 */
+typedef struct DkTutorialCfg {         /* dt_init */
     void *heap;
     void *pack;
 } DkTutorialCfg;
@@ -364,13 +364,13 @@ void dk_tutorial_run(void)
         }
         cfg.heap = dk_heap;
         cfg.pack = dk_pack_get();
-        libdeck_tutorial_08804008(dk_flags.lo, &cfg);
+        dt_init(dk_flags.lo, &cfg);
         dkv.tutorial = 1;
         dkv.loading = 0;
         dk_substep++;
         break;
     case 5:
-        if (libdeck_tutorial_0880418C() == 0)
+        if (dt_update() == 0)
             break;
         dkv.tutorial = 0;
         dkv.loading = 1;

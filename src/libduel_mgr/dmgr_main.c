@@ -46,11 +46,11 @@ void libduel_draw_088176A0(int cmd, int a, int b, int c);
 void libdeck_swap_08806654(void);
 void libdeck_swap_088157E8(void *gs, int n, void *partners);
 int libdeck_swap_088158E0(void);
-void libtutorial_088042D4(int id, void (*start)(void), void (*host)(void));
-void libtutorial_0880438C(void);
-void libtutorial_088043D8(void);
-int libtutorial_088044A4(void);
-int libtutorial_0880450C(void);
+void tut_init(int id, void (*start)(void), void (*host)(void));
+void tut_term(void);
+void tut_frame(void);
+int tut_is_finished(void);
+int tut_get_lock(void);
 
 /* this module */
 void dmgr_menu_draw(void);
@@ -444,7 +444,7 @@ int dmgr_draw(void)
         break;
     case 10:
         if (dmgr.sub == 1) {
-            libtutorial_088043D8();
+            tut_frame();
             duel_0884D874();
             req_flags_clear();
             libduel_draw_088061C0();
@@ -762,7 +762,7 @@ void dmgr_tutorial(void)
         while (!modmgr_none_loading()) {
             sys_frame_wait();
         }
-        libtutorial_088042D4(gs->tutorial, dmgr_tutorial_start_cb, dmgr_host_cb);
+        tut_init(gs->tutorial, dmgr_tutorial_start_cb, dmgr_host_cb);
         for (done = 0; done < 3; done++) {
             q->bgm.a[done] = dmgr_tutorial_bgm.a[done];
             q->bgm.b[done] = dmgr_tutorial_bgm.b[done];
@@ -771,15 +771,15 @@ void dmgr_tutorial(void)
         break;
     case 1:
         done = 0;
-        if (libtutorial_0880450C() == 0) {
+        if (tut_get_lock() == 0) {
             done = libduel_draw_088061FC();
         }
-        if (done | libtutorial_088044A4()) {
+        if (done | tut_is_finished()) {
             dmgr.sub++;
         }
         break;
     case 2:
-        libtutorial_0880438C();
+        tut_term();
         modmgr_update(11);
         gfx_overlay_enable(1);
         dmgr.sub = 0;

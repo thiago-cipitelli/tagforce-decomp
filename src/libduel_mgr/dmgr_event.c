@@ -56,7 +56,7 @@ void libduel_draw_0885563C(int a, int b);
 int libduel_draw_08855688(int a, int b, int c);
 void libduel_draw_08806228(int p, int a, int b, void (*cb)(void));
 void libduel_draw_088176A0(int cmd, int a, int b, int c);
-void libtutorial_088044B8(int a, unsigned short b, unsigned short c, unsigned short d);
+void tut_command(int a, unsigned short b, unsigned short c, unsigned short d);
 
 /* BOOT */
 unsigned int card_get_attribute(int id);
@@ -1521,7 +1521,7 @@ void dmgr_event_dispatch(void)
         dmgr_ev_damage(args);
         break;
     case 0x3E:
-        libtutorial_088044B8(args[1], args[2], args[3], args[3] >> 16);
+        tut_command(args[1], args[2], args[3], args[3] >> 16);
         break;
     case 0x0:
     case 0x6:

@@ -18,7 +18,7 @@ int fade_is_done(void);
 void cardlist_clear(void);
 void heap_free_block(void *h);
 void recipe_viewer_draw(void);
-void libdeck_tutorial_08804554(void);
+void dt_draw(void);
 void sysstate_blob_get(void *dst);
 int cfg_get_bits_1_0_2(void);
 void font_set_line_extra(int v);
@@ -124,7 +124,7 @@ void dk_draw(void)
     } else if (dkv.recipe) {
         recipe_viewer_draw();
     } else if (dkv.tutorial) {
-        libdeck_tutorial_08804554();
+        dt_draw();
     } else {
         dk_draw_scene();
     }
