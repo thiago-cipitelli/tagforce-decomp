@@ -91,6 +91,8 @@ segments:
       - [0x10A54, c, shop_sort]
       - [0x10C48, c, shop_dialog]
       - [0x10FB8, asm, text_0]
+      - [0x13E34, c, shop_lsort]
+      - [0x143C8, asm, shop_lsort_asm_08818368]
       - [0x145B4, asm, sceStub_text]
       - [0x16C9C, bin, lib_ent_top]
       - [0x16CA0, bin, lib_ent]
@@ -122,7 +124,8 @@ segments:
       - [0x1C470, .data, shop_anim]
       - [0x1C4E0, .data, shop_detail]
       - [0x1C4F4, .data, shop_sort]
-      - [0x1C554, data, data_5]
+      - [0x1C554, .data, shop_lsort]
+      - [0x1C564, data, data_5]
       - { start: 0x1C580, type: bss, vram: 0x8820520, name: bss }
   - [0x1C580]
 

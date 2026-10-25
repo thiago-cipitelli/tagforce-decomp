@@ -253,8 +253,13 @@ shop_sort_layout = 0x088149A0; // type:func
 shop_sort = 0x08F8EE08; // type:data
 shop_sort_keys = 0x08820494; // type:data
 shop_sort_dirs = 0x088204E8; // type:data
-shop_list_sort = 0x08817DD4; // type:func
+shop_list_sort = 0x08817DD4; // type:func matched src/libshop/shop_lsort.c
 shop_dialog = 0x08F8EE0C; // type:data
+shop_sort_cmp_up = 0x08818054; // type:func matched src/libshop/shop_lsort.c
+shop_sort_cmp_down = 0x088180DC; // type:func matched src/libshop/shop_lsort.c
+shop_sort_value = 0x08818164; // type:func matched src/libshop/shop_lsort.c
+shop_spell_order = 0x088204F4; // type:data
+shop_trap_order = 0x088204FC; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08818554; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x0881855C; // type:func import:libehsys nid:4BDEB2A8
