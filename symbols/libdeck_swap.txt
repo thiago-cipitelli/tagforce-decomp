@@ -214,6 +214,13 @@ ds_layouts = 0x0881A014; // type:data
 ds_modes = 0x0881A0AC; // type:data
 ds_tabs = 0x0881A0F0; // type:data
 ds_stream_anims = 0x0881A14C; // type:data
+libdeck_swap_08806654 = 0x08806654; // type:func matched src/libdeck_swap/ds_draw.c
+ds_draw_overlay = 0x0880687C; // type:func asm (@asm in src/libdeck_swap/ds_draw.c, C under NON_MATCHING)
+ds_draw_info = 0x08806B68; // type:func asm (@asm in src/libdeck_swap/ds_draw.c, C under NON_MATCHING)
+ds_draw_bg = 0x08807828; // type:func
+ds_draw_panes = 0x08808A54; // type:func
+ds_draw_sort_menu = 0x0880CE28; // type:func
+ds_draw_detail = 0x08807318; // type:func
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08815ED4; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08815EDC; // type:func import:libehsys nid:4BDEB2A8
