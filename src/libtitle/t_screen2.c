@@ -234,11 +234,11 @@ void *topt_draw(void *list)
         list = title_ehf_draw(list, 13);
         list = title_screen_label(list);
     }
-    b->arrows = 1;
+    b->no_cursor = 1;
     switch (t->sub) {
     case 3:
         w->draw_cursor = 0;
-        b->arrows = 0;
+        b->no_cursor = 0;
         break;
     case 4:
         break;
@@ -259,13 +259,13 @@ void topt_panel_init(void)
     tpanel_init(p, title.heap);
     w->count = 20;
     w->rows = 8;
-    b->rows = w->count;
-    b->rows2 = w->rows;
+    b->count = w->count;
+    b->n = w->rows;
     p->tab[0].draw = topt_tab_label;
     p->tab[1].draw = topt_tab_label;
     p->tab[2].draw = topt_tab_label;
-    b->u24 = 0;
-    b->u28 = 0;
+    b->text = 0;
+    b->draw = 0;
     w->draw_item = (MenuDrawItemFn)topt_item_label;
 }
 

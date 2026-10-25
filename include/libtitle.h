@@ -115,7 +115,9 @@ typedef struct TDuelOpts {             /* free duel options */
 typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char pad000[0xEB4];
     TDuelOpts opts;                    /* +0xEB4 */
-    unsigned char pad0eb6[0x117C - 0xEB6];
+    unsigned char pad0eb6[0x1178 - 0xEB6];
+    unsigned short anim;               /* +0x1178 frame counter of the setup screens */
+    unsigned short pad117a;
     unsigned short card;               /* +0x117C */
     unsigned char pad117e[0x2170 - 0x117E];
     TDeckRec decks[4];                 /* +0x2170 */
@@ -168,30 +170,32 @@ typedef struct TTab {                  /* a tab of TPanel, 0x24 */
     TPanelDrawFn draw;                 /* +0x20 */
 } TTab;
 
-typedef struct TBox {                  /* frame of TPanel, 0x2C */
+typedef void *(*TBoxDrawFn)(void *list, int i, int x, int y, int w, int h);
+
+typedef struct TBox {                  /* framed list box, 0x2C */
     unsigned char state;
     unsigned char pad01;
-    short x, y, w, h;                  /* +0x02 */
+    short x, y, w, h;                  /* +0x02 frame */
     short pad0a;
     unsigned int color;                /* +0x0C */
     unsigned int color2;               /* +0x10 */
-    unsigned char b14;
-    unsigned char b15;
-    unsigned char f0 : 1;              /* +0x16 */
+    unsigned char frame;               /* +0x14 frame sprite (title_sprites2) */
+    unsigned char style;               /* +0x15 frame style row */
+    unsigned char no_frame : 1;        /* +0x16 */
     unsigned char f1 : 1;
-    unsigned char arrows : 1;
-    unsigned char f3 : 1;
+    unsigned char no_cursor : 1;
+    unsigned char no_cells : 1;
     unsigned char f4 : 1;
-    unsigned char f5 : 1;
+    unsigned char no_scroll : 1;
     unsigned char f6 : 2;
-    unsigned char b17;
-    unsigned char b18;
-    unsigned char rows;                /* +0x19 */
-    unsigned char rows2;               /* +0x1A */
-    unsigned char b1b;
-    short ix, iy, iw, ih;              /* +0x1C */
-    int u24;                           /* +0x24 */
-    int u28;                           /* +0x28 */
+    unsigned char pos;                 /* +0x17 first visible + cursor */
+    unsigned char cursor;              /* +0x18 */
+    unsigned char count;               /* +0x19 entries */
+    unsigned char n;                   /* +0x1A visible cells */
+    unsigned char cols;                /* +0x1B */
+    short ix, iy, iw, ih;              /* +0x1C cell area / cell size */
+    unsigned short *text;              /* +0x24 */
+    TBoxDrawFn draw;                   /* +0x28 draws a cell */
 } TBox;
 
 typedef struct TPanel {                /* title +0x508 */
@@ -206,6 +210,8 @@ typedef struct TPanel {                /* title +0x508 */
     short x, y, w, h;                  /* +0x2FE */
     unsigned char cur;                 /* +0x306 current tab */
     unsigned char n;                   /* +0x307 tabs */
+    TBoxDrawFn draw2;                  /* +0x308 tab label of the two-column layout */
+    TBox box2;                         /* +0x30C */
 } TPanel;
 
 typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared by title_init */
@@ -242,7 +248,7 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char pad130[0x1A8 - 0x130];
     MenuWidget win[3];                 /* +0x1A8 */
     TPanel panel;                      /* +0x508 tabbed list window */
-    unsigned char pad810[0x870 - 0x810];
+    unsigned char pad840[0x870 - 0x840];
     int arg;                           /* +0x870 value passed between the states */
     unsigned char pad874[0x87C - 0x874];
     TMenu tm[2];                       /* +0x87C main menu, sub menu */
@@ -254,8 +260,7 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     int voice;                         /* +0x300C title call voice still to fade out */
     void *packs[9];                    /* +0x3010 title_menu_X.ehp, by title_pack_names index */
     unsigned char pad3034[0x3038 - 0x3034];
-    unsigned char b3038_0 : 1;         /* +0x3038 */
-    unsigned char b3038_1 : 1;
+    unsigned char cursor_mode : 2;     /* +0x3038 cursor frame: 0 steady, 1 blinks, 2 blinks then stops */
     unsigned char busy : 1;            /*         a fade/transition is running */
     unsigned char no_movie : 1;        /*         the opening movie was shown or skipped */
     unsigned char mod_loaded : 1;      /*         a sub-screen module is started */
@@ -266,7 +271,8 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char skippable;           /* +0x3040 the logos can be skipped */
     unsigned char pad3041[0x304C - 0x3041];
     void *movie_mem;                   /* +0x304C */
-    unsigned short msg_buf[0x202];     /* +0x3050 */
+    unsigned short msg_buf[0x201];     /* +0x3050 */
+    short cursor_blink;                /* +0x3452 */
 } Title;
 
 typedef struct TMsgLine {              /* a line of TMsgWin, 0x18 */
@@ -519,7 +525,7 @@ void title_menu_update(void);
 void *title_menu_draw(void *list);
 void title_story_start(int mode, int id);
 void title_prompt(int text, int a, int b);
-void func_088119D4(int a);
+void tframe_cursor_mode(int a);
 void title_state_init(int state, int sub);
 void title_logo_enter(int state, int sub);
 void title_movie_enter(int state, int sub);

@@ -118,7 +118,7 @@ int title_transition(void)
     Title *const t = &title;
 
     if (!title.busy && title_fade_state() == 2) {
-        func_088119D4(0);
+        tframe_cursor_mode(0);
         t->fade_state = 0;
         if (t->next_sub != 0xFFF) {
             if (t->next_sub == 0xFFE)
