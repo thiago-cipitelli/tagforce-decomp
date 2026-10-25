@@ -27,7 +27,7 @@ void sysstate_blob_get(void *dst);
 void cardlist_init(void *cfg);
 void ds_lists_init(void);
 void ds_set_mode(unsigned short mode);
-void ds_tabs_init(void);
+void ds_stream_anim(void);
 void ds_setup(void);
 void ds_res_free(void);
 void ds_packs_free(void);
@@ -231,7 +231,7 @@ void ds_setup(void)
     dsv.pane[0].list = &ds.list[0];
     dsv.pane[1].list = &ds.list[2];
     ds_set_mode(cfg_get_bits_1_0_2());
-    ds_tabs_init();
+    ds_stream_anim();
     memset(&cfg, 0, sizeof(cfg));
     cfg.gim = res_get(0x8007);
     cfg.digits_gim = res_get(0x8009);
