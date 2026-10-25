@@ -153,7 +153,7 @@ void title_free_duel_start(void)
     gs->mode = rand_next();
     gs->side = (unsigned char)((int)rand_next() % 2);
     for (i = 0; i < n; i++, q += sizeof(TDeckRec)) {
-        func_0881F6E0(&info, i);
+        tpt_get_ent(&info, i);
         gs->slot[i].type = info.type;
         gs->slot[i].type2 = info.type2;
         p = &gs->slot[i];
@@ -198,7 +198,7 @@ void title_free_duel_start(void)
             side = 1;
         gamestate_fill_partner_list(SLOT_RECIPE(ls), side);
     }
-    func_0881F0A0();
+    tpartner_free();
     title_scene_push(6, 0);
 }
 

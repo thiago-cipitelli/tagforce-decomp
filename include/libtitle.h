@@ -145,7 +145,7 @@ typedef struct TGameHdr {             /* view of GameState used by the duel setu
     PlayerSlot slot[4];                /* +0x120 */
 } TGameHdr;
 
-typedef struct TSlotInfo {             /* a player of the free duel setup (func_0881F6E0) */
+typedef struct TSlotInfo {             /* a player of the free duel setup (tpt_get_ent, the head of a TPtEnt) */
     short type;
     short type2;
     short deck_kind;                   /* 0 saved deck, 1 recipe, 2 the deck of the setup, 3 none */
@@ -313,6 +313,38 @@ typedef struct TMsgWin {               /* tmsg 0x09433B44: message window, 0x180
     float fx3;                         /* +0x178 */
     float fy3;                         /* +0x17C */
 } TMsgWin;
+
+typedef struct TAnim {                 /* a frame counter that runs to len */
+    unsigned char on;
+    unsigned char pad;
+    short cur;
+    short len;
+} TAnim;
+
+typedef struct TPtEnt {                /* a player shown on the partner panel, 0x10 */
+    short kind;                        /* PlayerSlot.type: 0 none, 1 player, character id */
+    short type2;                       /* PlayerSlot.type2 */
+    short src;                         /* deck source: 0 saved deck, 1 recipe, 2-3 own name */
+    short deck;                        /* recipe id or saved deck index + 1 */
+    void *name;                        /* +0x08 */
+    void *deckname;                    /* +0x0C */
+} TPtEnt;
+
+typedef struct TPartner {              /* partner / versus panel (copy of libduel_mgr's), 0x6C on the heap */
+    void *heap;
+    void *pack;                        /* +0x04 */
+    int timer;                         /* +0x08 */
+    int state;                         /* +0x0C */
+    unsigned char net;                 /* +0x10 */
+    unsigned char mode;                /* +0x11 8 versus, 9 tag versus, 10 partner choice ... */
+    unsigned char pad12[2];
+    TPtEnt ent[4];                     /* +0x14 */
+    TAnim anim;                        /* +0x54 */
+    unsigned char pad5a[2];
+    void *ehf[4];                      /* +0x5C */
+} TPartner;
+
+extern TPartner *tpt;
 
 extern Title title;
 extern TMsgWin tmsg;
@@ -482,8 +514,8 @@ void libdeck_tutorial_08804554(void);
 /* this module, not named yet */
 int title_module_start(void *arg, int id);
 unsigned short title_scene_push(int scene, unsigned short arg);
-void func_0881F6E0(TSlotInfo *out, int i);
-void func_0881F0A0(void);
+void tpt_get_ent(); /* (TPtEnt *dst, int i): the free duel setup reads the first fields into a TSlotInfo */
+void tpartner_free(void);
 void *tmenu_gfx_setup(void *list, int mode);
 void *title_logo_draw(void *list);
 void title_sound_reset(int a);
