@@ -6,24 +6,6 @@
    updated and drawn by a per-slot callback; faces are loaded on demand and drawn in a corner. */
 #include "libtutorial.h"
 
-typedef struct TutFace {         /* a loaded bust-up face (tut_face.c) */
-    void *heap;
-    void *pack;
-    void *body;
-    void *mouth;
-} TutFace;
-
-typedef struct TutFaceRef {
-    TutFace *face;
-    int chara;
-} TutFaceRef;
-
-typedef struct TutBox {          /* tutbox 0x08810224 */
-    MenuWidget box;              /* +0x000 window of slots 6..8 */
-    TutFaceRef faces[8];         /* +0x120 faces preloaded by the script */
-    int cur_face;                /* +0x160 face of the talk window being opened */
-} TutBox;
-
 typedef struct TutSlot TutSlot;
 typedef void *(*TutSlotFn)(void *list, int i, TutSlot *s);
 
@@ -45,7 +27,6 @@ struct TutSlot {                 /* tut_slots 0x08810388, 0x420 bytes */
 };
 
 extern TutSlot *tut_cur_slot;    /* 0x08810220 */
-extern TutBox tutbox;
 extern TutSlot tut_slots[9];
 extern void *tut_tex[4];         /* 0x08812EDC tuto_duel01, window02, tuto_bigwin01 (+ sprites) */
 

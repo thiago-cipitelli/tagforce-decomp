@@ -33,6 +33,21 @@ typedef struct Tut {             /* tut 0x0880FFC0 (.bss), cleared by tut_init (
 extern Tut tut;
 extern void *tut_pack;           /* 0x08810214 tutorial_<l>.ehp */
 
+typedef struct TutFace TutFace; /* a loaded bust-up face (tut_face.c) */
+
+typedef struct TutFaceRef {
+    TutFace *face;
+    int chara;
+} TutFaceRef;
+
+typedef struct TutBox {          /* tutbox 0x08810224 */
+    MenuWidget box;              /* +0x000 window of slots 6..8 */
+    TutFaceRef faces[8];         /* +0x120 faces preloaded by the script */
+    int cur_face;                /* +0x160 face of the talk window being opened */
+} TutBox;
+
+extern TutBox tutbox;
+
 /* BOOT (libehsys) */
 void *memset(void *, int, unsigned int);
 int sprintf(char *, const char *, ...);
