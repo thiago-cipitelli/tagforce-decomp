@@ -118,7 +118,11 @@ segments:
       - [0x13200, asm, dt_pane_asm_088171A0]
       - [0x13524, c, dt_pane]
       - [0x1365C, c, dt_eres]
-      - [0x13BD8, asm, text_0]
+      - [0x13BD8, c, dt_sort]
+      - [0x14600, asm, dt_sort_asm_088185A0]
+      - [0x14654, c, dt_sort]
+      - [0x14828, asm, dt_sort_asm_088187C8]
+      - [0x14EF4, asm, text_0]
       - [0x19378, asm, sceStub_text]
       - [0x1BA60, bin, lib_ent_top]
       - [0x1BA64, bin, lib_ent]
@@ -153,7 +157,8 @@ segments:
       - [0x1E244, .data, dt_action]
       - [0x1E2BC, .data, dt_pane]
       - [0x1E2CC, .data, dt_eres]
-      - [0x1E580, data, data_5]
+      - [0x1E580, .data, dt_sort]
+      - [0x1E5D8, data, data_5]
       - { start: 0x1E930, type: bss, vram: 0x88228D0, name: bss }
   - [0x1E930]
 
