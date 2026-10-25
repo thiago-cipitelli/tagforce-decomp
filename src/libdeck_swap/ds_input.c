@@ -19,13 +19,13 @@ void ds_input_sort_menu(void);
 void ds_input_action_menu(void);
 void ds_sort_menu_open(void);
 void ds_sort_menu_update(void);
-void ds_input_confirm(void);
+void ds_fmenu_update(void);
 void ds_input_result(void);
 void ds_popup_update(void);
 void ds_action_open(DsEnt *e);
 void ds_popup_open(int id, int arg);
 int ds_flight_open(void);
-void ds_input_filter(void);
+void ds_fmenu_open(void);
 int ds_input_move(void);
 void ds_input_main(void);
 void ds_input_help(void);
@@ -66,7 +66,7 @@ void ds_update_input(void)
                 ds_sort_menu_update();
                 break;
             case 5:
-                ds_input_confirm();
+                ds_fmenu_update();
                 break;
             case 6:
                 ds_input_result();
@@ -203,7 +203,7 @@ void ds_input_help_b(void)
         ds_sort_menu_open();
         se_play(0x6216);
     } else if (trig & 0x1000) {
-        ds_input_filter();
+        ds_fmenu_open();
         se_play(0x6216);
     } else if ((trig & 1) && ds.nhist > 0) {
         ds_input_move();
