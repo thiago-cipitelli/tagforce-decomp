@@ -170,7 +170,7 @@ void title_wait_update(void)
     case 0:
         gfx_overlay_enable(1);
         func_0880A9A8(0);
-        func_08807E44(0);
+        title_lang_load(0);
         t->sub++;
         break;
     case 1:
@@ -185,7 +185,7 @@ void title_wait_update(void)
 
 void title_logo_enter(int state, int sub)
 {
-    func_08808900(4, 1, 0xFF000000, 30);
+    title_fade_ex(4, 1, 0xFF000000, 30);
     title.state = state;
     title.sub = sub;
     title.next_sub = 0xFFE;
@@ -215,9 +215,9 @@ void title_logo_update(void)
     case 1:
         if (t->skip) {
             fade_finish();
-            t->u020 = 0;
+            t->fade_state = 0;
             t->frame = 0;
-            func_08808AF4(1, 7, 5, 0);
+            title_goto_fade_n(1, 7, 5, 0);
             t->frame = 0;
             t->sub = 2;
         } else if (t->frame > 60) {
@@ -228,23 +228,23 @@ void title_logo_update(void)
         }
         break;
     case 2:
-        if (t->u020 == 0) {
+        if (t->fade_state == 0) {
             if (t->skip) {
-                func_08808AF4(1, 30, 5, 0);
+                title_goto_fade_n(1, 30, 5, 0);
                 t->frame = 0;
             } else {
                 if (cfg_get_language() == 0)
-                    func_08808AF4(3, 30, 0xFFF, 0xFFE);
+                    title_goto_fade_n(3, 30, 0xFFF, 0xFFE);
                 else
-                    func_08808AF4(1, 30, 4, 0);
+                    title_goto_fade_n(1, 30, 4, 0);
                 t->frame = 0;
             }
         }
         break;
     case 3:
         t->skippable = 1;
-        if (t->u020 == 0) {
-            func_08808AF4(2, 30, 0xFFF, 0xFFE);
+        if (t->fade_state == 0) {
+            title_goto_fade_n(2, 30, 0xFFF, 0xFFE);
             t->frame = 0;
         }
         if (t->skip) {
@@ -255,13 +255,13 @@ void title_logo_update(void)
     case 4:
         if (t->skip) {
             fade_finish();
-            t->u020 = 0;
+            t->fade_state = 0;
             t->frame = 0;
-            func_08808AF4(1, 7, 5, 0);
+            title_goto_fade_n(1, 7, 5, 0);
             t->frame = 0;
             t->sub = 5;
         } else if (t->frame > 60) {
-            func_08808AF4(1, 30, 4, 0);
+            title_goto_fade_n(1, 30, 4, 0);
             t->frame = 0;
             t->sub = 5;
         } else {
@@ -278,7 +278,7 @@ void title_logo_update(void)
         if (t->frame < 90)
             t->skip = 0;
         if (t->frame > 300 || t->skip) {
-            func_08808AF4(1, 30, 3, 0);
+            title_goto_fade_n(1, 30, 3, 0);
             t->frame = 0;
             t->sub = 8;
         } else {
@@ -395,8 +395,8 @@ void title_draw(void)
         list = title_load_draw(list);
         break;
     }
-    if (fade_apply(&list) == 1 && t->u020 == 1)
-        t->u020 = 2;
+    if (fade_apply(&list) == 1 && t->fade_state == 1)
+        t->fade_state = 2;
     dl_set_list(list);
     switch (t->prev_state) {
     case 0:

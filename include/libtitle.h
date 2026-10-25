@@ -60,6 +60,50 @@ typedef struct TMenu {                 /* list of panels with fading items, 0x7C
     TMenuDrawFn draw;                  /* +0x78 draws the label of an item */
 } TMenu;
 
+typedef struct TSprite {               /* title_sprites, 0x98 */
+    union {
+        struct {
+            unsigned char kind;
+            unsigned char gim;         /* +0x01 index into title_gim_names */
+        };
+        int hdr;
+    };
+    char name[0x80];                   /* +0x04 */
+    short x, y, w, h;                  /* +0x84 */
+    short u, v;                        /* +0x8C */
+    short tw, th;                      /* +0x90 */
+    short a, b;                        /* +0x94 */
+} TSprite;
+
+typedef struct TSpr16 {                /* title_sprites2, 0x16 */
+    unsigned char kind;
+    unsigned char gim;                 /* +0x01 index into title_gim_names */
+    short x, y, w, h;                  /* +0x02 */
+    short u, v;                        /* +0x0A */
+    short tw, th;                      /* +0x0E */
+    short a, b;                        /* +0x12 */
+} TSpr16;
+
+typedef struct TRes {                  /* title_res: a file inside the title pack, 0x84 */
+    int pack;
+    char name[0x80];
+} TRes;
+
+typedef struct TColorFade {            /* color interpolation written to *dst */
+    unsigned int *dst;
+    unsigned int from;                 /* +0x04 */
+    unsigned int to;                   /* +0x08 */
+    unsigned short len;                /* +0x0C frames */
+    unsigned short t;                  /* +0x0E */
+    unsigned short active;             /* +0x10 */
+} TColorFade;
+
+typedef struct TDuelCfg {              /* title +0x974 */
+    unsigned char pad000[0x117C];
+    unsigned short card;               /* +0x117C */
+    unsigned char pad117e[0x2690 - 0x117E];
+} TDuelCfg;
+
 typedef struct DeckFlags {             /* deck_cur_get_u16_0 */
     unsigned short b0 : 1;
     unsigned short rest : 15;
@@ -90,7 +134,7 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char pad01b;
     short prev_state;                  /* +0x01C */
     short prev_sub;                    /* +0x01E */
-    unsigned short u020;               /* +0x020 */
+    unsigned short fade_state;         /* +0x020 0 none, 1 fading, 2 fade done */
     short pad022;
     void *heap;                        /* +0x024 */
     SceneTrans trans;                  /* +0x028 */
@@ -107,10 +151,13 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     int arg;                           /* +0x870 value passed between the states */
     unsigned char pad874[0x87C - 0x874];
     TMenu tm[2];                       /* +0x87C main menu, sub menu */
-    unsigned char pad974[0x3008 - 0x974];
-    unsigned char u3008;               /* +0x3008 */
+    TDuelCfg duel;                     /* +0x974 */
+    int lang;                          /* +0x3004 language of the loaded title pack */
+    unsigned char cfg_lang;            /* +0x3008 */
     unsigned char sub_shown;           /* +0x3009 the sub-screen module draws */
-    unsigned char pad300a[0x3038 - 0x300A];
+    unsigned char pad300a[0x3010 - 0x300A];
+    void *packs[9];                    /* +0x3010 title_menu_X.ehp, by title_pack_names index */
+    unsigned char pad3034[0x3038 - 0x3034];
     unsigned char b3038_0 : 1;         /* +0x3038 */
     unsigned char b3038_1 : 1;
     unsigned char busy : 1;            /*         a fade/transition is running */
@@ -121,10 +168,16 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char skippable;           /* +0x3040 the logos can be skipped */
     unsigned char pad3041[0x304C - 0x3041];
     void *movie_mem;                   /* +0x304C */
-    unsigned char pad3050[0x3454 - 0x3050];
+    unsigned short msg_buf[0x202];     /* +0x3050 */
 } Title;
 
 extern Title title;
+extern char title_pack_names[9][64];
+extern char title_ehf_names[17][64];
+extern char title_gim_names[22][64];
+extern TRes title_res[18];
+extern TSprite title_sprites[39];
+extern TSpr16 title_sprites2[];
 extern unsigned char title_heap_mem[0xC00000];
 extern unsigned char title_scene_data[];
 
@@ -139,6 +192,14 @@ void scene_get_transition_info(SceneTrans *out);
 void deck_cur_get_u16_0(short *out);
 int sysstate_get_u32_97e8(void);
 void bgm_play(int id);
+unsigned short *table_get_entry(void *t, unsigned int i);
+unsigned short *card_get_name(int id);
+int wsprintf(unsigned short *out, unsigned short *fmt, ...);
+void cfg_set_byte0_bits0_2(int v);
+int ehfile_get_size(int dir, const char *name);
+int ehfile_read_async_alias(int dir, const char *name, void *buf, int size, int (*cb)(void *, int), void *arg);
+int ehp_mount(void (*cb)(void *), void *pack);
+void fade_start_in(int type, unsigned int color, int frames);
 unsigned int *dl_select_layer(int layer, unsigned int *size);
 void *dl_color(void *list, unsigned int color);
 void *dl_enable(void *list, int state);
@@ -180,7 +241,7 @@ int card_db_load(void);
 void card_db_request_load(void);
 int sysvar_get_a94(void);
 void newgame_init(void);
-void fade_start(unsigned char type, unsigned int color, unsigned short frames);
+void fade_start(int type, unsigned int color, int frames);
 void fade_finish(void);
 void se_play(int id);
 
@@ -219,9 +280,6 @@ int title_module_start(void *arg, int id);
 void *tmenu_gfx_setup(void *list, int mode);
 void *title_logo_draw(void *list);
 void func_0880A9A8(int a);
-void func_08807E44(int a);
-void func_08808900(int a, int b, unsigned int color, int frames);
-void func_08808AF4(int a, short b, short c, short d);
 void func_0880B0B4(void);
 void func_08813134(void);
 void func_0880F950(void);
@@ -261,7 +319,6 @@ void *title_menu_draw(void *list);
 void func_0880AEF0(int mode, int id);
 void func_0880FBB8(int text, int a, int b);
 void *func_08808D48(void *list, MenuWidget *w, int center);
-int func_08808B44(void);
 void func_088119D4(int a);
 void title_state_init(int state, int sub);
 void title_logo_enter(int state, int sub);
@@ -285,14 +342,11 @@ void title_chara_open(void);
 void title_album_open(void);
 void title_record_open(void);
 void func_0880C0F0(void *heap, int a, int b, int c, int d, int e);
-void func_08808B7C(MenuWidget *w);
 void func_088108A0(void *p, void *heap);
 void func_0880C2F0(void);
 void func_088225A0(int a);
 void func_0880A934(void);
-void func_088088E8(int a);
 void func_0880A41C(int id, int a, int b, int c);
-void func_08808AA4(int a, short b, short c);
 void title_menu_save_update(void);
 void title_save_check_update(MenuWidget *w);
 void *func_0880A56C(void *list, int id);
@@ -305,6 +359,33 @@ int func_0880AA88(void);
 void *func_0880ACB0(void *list, int x, int y, int w, int a, int text, int b);
 
 /* this module */
+void *title_pack(void);
+char *title_res_name(int i);
+char *title_sprite_name(int i);
+char *title_sprite_gim(TSpr16 *tab, int i);
+char *title_gim_name(int i);
+char *title_ehf_name(int i);
+unsigned short *title_msg(int id);
+unsigned short *title_text(int id, int file);
+void title_lang_load(int mode);
+void *title_sprite(void *list, int kind, int idx, int x, int y);
+void *title_sprite_flip(void *list, int kind, int idx, int x, int y, short a, short b);
+void *title_sprite_uv(void *list, int kind, int idx, int x, int y, int du, int dv, short a, short b);
+void *title_sprite_ex(void *list, int kind, int idx, int x, int y, int w, int h, int du, int dv, short a,
+                      short b, int color);
+void tcfade_init(TColorFade *f, unsigned int *dst, unsigned int to, unsigned short len);
+void tcfade_start(TColorFade *f);
+unsigned short tcfade_step(TColorFade *f);
+void title_fade_out(int kind);
+void title_fade(int kind, int frames);
+void title_fade_ex(int kind, int type, unsigned int color, int frames);
+void title_goto_step(int kind, short state, short sub, short step);
+void title_goto_fade(int kind, short state, short sub);
+void title_goto_fade_n(int kind, int frames, short state, short sub);
+int title_fade_state(void);
+void twin_open(MenuWidget *w);
+void twin_init(MenuWidget *w);
+void *twin_draw(void *list, MenuWidget *w);
 int title_update(void);
 void title_draw(void);
 void title_init(void);

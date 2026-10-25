@@ -23,7 +23,7 @@ void title_menu_save_update(void)
     switch (title.step) {
     case 0:
         bgm_cmd(600);
-        func_08808AA4(0, 0xFFF, 0xFFF);
+        title_goto_fade(0, 0xFFF, 0xFFF);
         t->step++;
         t->next_step = 2;
         break;
@@ -73,7 +73,7 @@ void title_save_check_update(MenuWidget *unused)
             case 2:
                 menu_finish(w);
                 t->step = 3;
-                func_08808AA4(1, 0xFFF, 9);
+                title_goto_fade(1, 0xFFF, 9);
                 break;
             }
         }
@@ -114,9 +114,9 @@ int title_transition(void)
 {
     Title *const t = &title;
 
-    if (!title.busy && func_08808B44() == 2) {
+    if (!title.busy && title_fade_state() == 2) {
         func_088119D4(0);
-        t->u020 = 0;
+        t->fade_state = 0;
         if (t->next_sub != 0xFFF) {
             if (t->next_sub == 0xFFE)
                 t->sub++;

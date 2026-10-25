@@ -105,9 +105,9 @@ void title_init(void)
     tmenu_init(&title.tm[0]);
     font_set_flag2(1);
     func_0880C0F0(title.heap, 0x27, 0x140, 0xE, 0, 0);
-    func_08808B7C(&title.win[0]);
-    func_08808B7C(&title.win[1]);
-    func_08808B7C(&title.win[2]);
+    twin_init(&title.win[0]);
+    twin_init(&title.win[1]);
+    twin_init(&title.win[2]);
     tmenu_init(&title.tm[0]);
     tmenu_init(&title.tm[1]);
     func_088108A0(&title.u508, title.heap);

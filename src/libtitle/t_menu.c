@@ -29,7 +29,7 @@ void title_menu_enter(int state, int menu, int no_check)
     m = menu;
     switch (m) {
     case 14:
-        func_088088E8(0);
+        title_fade_out(0);
         title_menu_open(t->ret_menu - 3);
         t->ret_pending = 1;
         t->sub = 13;
@@ -43,7 +43,7 @@ void title_menu_enter(int state, int menu, int no_check)
         break;
     default:
         if (no_check == 0) {
-            func_088088E8(0);
+            title_fade_out(0);
             t->state = state;
             t->sub = 0;
             t->next_sub = 0xFFE;
@@ -67,7 +67,7 @@ void title_menu_enter(int state, int menu, int no_check)
         m1->cursor = t->arg;
         t->arg = 0;
         if (no_check == 0) {
-            func_088088E8(0);
+            title_fade_out(0);
             t->state = state;
             t->next_sub = menu;
             t->sub = 15;
@@ -87,7 +87,7 @@ void title_menu_enter(int state, int menu, int no_check)
         m1->cursor = t->arg;
         t->arg = 0;
         if (no_check == 0) {
-            func_088088E8(0);
+            title_fade_out(0);
             t->state = state;
             t->next_sub = menu;
             t->sub = 15;
@@ -116,7 +116,7 @@ void title_menu_update(void)
 
     switch (title.sub) {
     case 1:
-        func_08808B7C(w);
+        twin_init(w);
         t->sub++;
         break;
     case 2:
@@ -264,7 +264,7 @@ void title_main_menu_update(void)
                 m->blink = 0;
                 m->mode = 2;
                 bgm_cmd(600);
-                func_08808AA4(1, 5, 0);
+                title_goto_fade(1, 5, 0);
                 t->frame = 0;
                 t->step++;
                 break;
@@ -272,16 +272,16 @@ void title_main_menu_update(void)
                 title_sub_open_play();
                 break;
             case 1:
-                func_08808AA4(1, 12, 0);
+                title_goto_fade(1, 12, 0);
                 t->step++;
                 break;
             case 8:
                 bgm_cmd(600);
-                func_08808AA4(1, 13, 0);
+                title_goto_fade(1, 13, 0);
                 t->step++;
                 break;
             case 4:
-                func_08808AA4(1, 14, 0);
+                title_goto_fade(1, 14, 0);
                 t->step++;
                 break;
             case 2:
@@ -291,15 +291,15 @@ void title_main_menu_update(void)
                 title_sub_open_opt();
                 break;
             case 5:
-                func_08808AA4(1, 17, 0);
+                title_goto_fade(1, 17, 0);
                 t->step++;
                 break;
             case 6:
-                func_08808AA4(1, 0xFFF, 9);
+                title_goto_fade(1, 0xFFF, 9);
                 t->step++;
                 break;
             case 7:
-                func_08808AA4(1, 19, 0);
+                title_goto_fade(1, 19, 0);
                 t->step++;
                 break;
             case -3:
@@ -403,7 +403,7 @@ void title_sub_update_play(void)
             bgm_cmd(600);
             t->step++;
             t->frame = 0;
-            func_08808AA4(1, r + 27, 0);
+            title_goto_fade(1, r + 27, 0);
             break;
         case -3:
         case -1:
@@ -487,12 +487,12 @@ void title_sub_update_extra(void)
             break;
         case 0:
             bgm_cmd(600);
-            func_08808AA4(1, 20, 0);
+            title_goto_fade(1, 20, 0);
             t->step++;
             break;
         case 1:
             bgm_cmd(600);
-            func_08808AA4(1, 21, 0);
+            title_goto_fade(1, 21, 0);
             t->step++;
             break;
         }
@@ -573,34 +573,34 @@ void title_sub_update_opt(void)
             break;
         case 0:
             bgm_cmd(600);
-            func_08808AA4(1, 22, 0);
+            title_goto_fade(1, 22, 0);
             t->step++;
             break;
         case 1:
-            func_08808AA4(1, 23, 0);
+            title_goto_fade(1, 23, 0);
             t->step++;
             break;
         case 2:
             bgm_cmd(600);
-            func_08808AA4(1, 24, -1);
+            title_goto_fade(1, 24, -1);
             t->step++;
             break;
         case 3:
-            func_08808AA4(1, 25, 0);
+            title_goto_fade(1, 25, 0);
             t->step++;
             break;
         case 4:
             bgm_cmd(600);
-            func_08808AA4(1, 26, 0);
+            title_goto_fade(1, 26, 0);
             t->step++;
             break;
         case 5:
             bgm_cmd(600);
-            func_08808AA4(1, 36, 0);
+            title_goto_fade(1, 36, 0);
             t->step++;
             break;
         case 6:
-            func_08808AA4(1, 6, 0);
+            title_goto_fade(1, 6, 0);
             t->step++;
             break;
         case -3:
