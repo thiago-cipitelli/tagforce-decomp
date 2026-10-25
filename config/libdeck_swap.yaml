@@ -60,7 +60,7 @@ segments:
       - [0x10230, c, ds_parts]
       - [0x10C84, asm, ds_parts_asm_08814C24]
       - [0x11378, c, ds_osk]
-      - [0x11840, asm, text_3]
+      - [0x11840, c, ds_scene]
       - [0x11F34, asm, sceStub_text]
       - [0x1474C, bin, lib_ent_top]
       - [0x14750, bin, lib_ent]
