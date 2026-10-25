@@ -31,10 +31,26 @@ typedef struct DkList {                /* 0x20: one card list (owned cards, deck
     int total;                         /* +0x0C */
     unsigned short *order;             /* +0x10 visible entries (indices into ents), sorted/filtered */
     unsigned short count;              /* +0x14 entries in order */
-    unsigned short u16;                /* +0x16 */
+    union {
+        unsigned short u16;            /* +0x16 */
+        struct {
+            unsigned short sort : 4;   /*       sort key */
+            unsigned short dir : 2;    /*       sort direction */
+            unsigned short filter : 4; /*       filter */
+            unsigned short pad16 : 6;
+        };
+    };
     unsigned short u18;                /* +0x18 */
     unsigned short u1a;                /* +0x1A */
-    unsigned short u1c;                /* +0x1C */
+    union {
+        unsigned short u1c;            /* +0x1C */
+        struct {
+            unsigned char u1c_lo : 4;
+            unsigned char u1c_hi : 4;
+            unsigned char u1d_lo : 4;  /* +0x1D */
+            unsigned char u1d_hi : 4;
+        };
+    };
     unsigned short pad1e;
 } DkList;
 
@@ -87,5 +103,115 @@ void inv_set_flag7(unsigned short id, int on);
 int inv_get_count(unsigned short id);
 
 /* ---- per-file additions below (append only; keep each file's block together) ---- */
+
+/* dk_main.c (W2): the view state at 0x095D2290, same layout as libselect_card ScView (0x94 bytes) */
+typedef struct DkLayout {              /* 0x1E */
+    short x, y, w, h;                  /* +0x00 frame of the pane */
+    short row_x, row_y;                /* +0x08 first row (list mode) */
+    unsigned short rows;               /* +0x0C visible rows (list mode) */
+    short row_w, row_h;                /* +0x0E */
+    short grid_x, grid_y;              /* +0x12 first cell (grid mode) */
+    unsigned short cols;               /* +0x16 columns (grid mode) */
+    short cell_w;                      /* +0x18 */
+    unsigned short grid_rows;          /* +0x1A visible rows (grid mode) */
+    short cell_h;                      /* +0x1C */
+} DkLayout;
+
+typedef struct DkPane {                /* 0x2C */
+    DkList *list;                      /* +0x00 */
+    unsigned char list_mode : 1;       /* +0x04 one card per row (else grid) */
+    unsigned char pad04 : 7;
+    unsigned char pad05;
+    unsigned short top;                /* +0x06 first visible entry */
+    unsigned short cx;                 /* +0x08 cursor column */
+    unsigned short cy;                 /* +0x0A cursor row */
+    DkLayout lay;                      /* +0x0C */
+    unsigned short pad2a;
+} DkPane;
+
+typedef struct DkScroll {              /* analog-scrolled value */
+    int id;                            /* +0x00 card shown (-1 none) */
+    int pad04;
+    unsigned int pos;                  /* +0x08 */
+    unsigned int max;                  /* +0x0C */
+} DkScroll;
+
+typedef struct DkCursor {              /* 0x28 */
+    unsigned short id;                 /* +0x00 card under the cursor */
+    unsigned short key;                /* +0x02 */
+    unsigned short timer;              /* +0x04 frames on the same card */
+    unsigned short pad06;
+    DkEnt *ent;                        /* +0x08 */
+    DkScroll scroll;                   /* +0x0C */
+    unsigned char pad1c[0x0C];
+} DkCursor;
+
+typedef struct DkView {                /* dkv 0x095D2290, 0x94 bytes cleared by dk_init */
+    union {
+        struct {
+            unsigned char mode : 4;    /* +0x00 pane layout */
+            unsigned char side : 2;    /*       pane with the cursor */
+            unsigned char busy : 1;
+            unsigned char b07 : 1;
+        };
+        struct {
+            unsigned short f00 : 7;
+            unsigned short popup : 8;  /*       popup being shown */
+            unsigned short f15 : 1;
+        };
+    };
+    unsigned short pad02;
+    int scroll_max;                    /* +0x04 */
+    int scroll_pos;                    /* +0x08 */
+    unsigned char lock : 1;            /* +0x0C */
+    unsigned char pad0c : 7;
+    unsigned char pad0d[3];
+    DkCursor cursor;                   /* +0x10 */
+    unsigned char info : 1;            /* +0x38 card info (cardinfo_*) shown */
+    unsigned char recipe : 1;          /*       librecipe_viewer shown */
+    unsigned char tutorial : 1;        /*       libdeck_tutorial shown */
+    unsigned char help : 1;            /*       help viewer shown */
+    unsigned char pad38 : 4;
+    unsigned char pad39[3];
+    DkPane pane[2];                    /* +0x3C */
+} DkView;
+
+extern DkView dkv;                     /* 0x095D2290 */
+
+/* dk_fmenu.c (W3): the filter menu (kinds list + values grid), same layout as libselect_card ScFilterMenu */
+typedef void *(*DkValueDraw)(void *list, unsigned short x, unsigned short y, unsigned short v);
+
+typedef struct DkFilterDef {           /* values of a filter kind (dk_filter_defs) */
+    unsigned short first;
+    unsigned short last;
+    DkValueDraw draw;                  /* +0x04 */
+} DkFilterDef;
+
+typedef struct DkFilterMenu {          /* dk_fmenu 0x095D2718, 0x18 bytes, heap allocated */
+    unsigned short step;               /* 0 kinds, 1 values, 2 closing */
+    unsigned char sub;                 /* +0x02 step inside the values window */
+    unsigned char alt : 1;             /* +0x03 some card has an alternate picture */
+    unsigned char col : 4;             /*       cursor column */
+    unsigned char pad03 : 3;
+    unsigned char page : 4;            /* +0x04 cursor row, 0xF = the OK button */
+    unsigned char pad04 : 4;
+    unsigned char pad05[3];
+    unsigned int mask[2];              /* +0x08 values picked */
+    struct MenuWidget *kinds;          /* +0x10 */
+    struct MenuWidget *vals;           /* +0x14 */
+} DkFilterMenu;
+
+extern DkFilterMenu *dk_fmenu;         /* 0x095D2718 */
+extern DkFilterDef dk_filter_defs[9];  /* 0x08822F94 */
+
+/* dk_main.c (W2): scene globals (inside the 0x3D4 block cleared from dk_lists) */
+extern unsigned short dk_scene_arg;    /* 0x095D2434 argument of the scene transition (2: back to the field) */
+extern unsigned char dk_profile[];     /* 0x095D2446 sysstate blob */
+extern unsigned char dk_deck_name[];   /* 0x095D23F0 0x40 bytes */
+extern struct Menu dk_menu;            /* 0x095D26A0 */
+extern Cip *dk_cip;                    /* 0x095D26F0 */
+extern int dk_module;                  /* 0x095D26F8 loaded sub-screen module (librecipe_viewer, libdeck_tutorial) */
+void dk_setup(void);
+void dk_draw(void);
 
 #endif
