@@ -114,16 +114,6 @@ unsigned int *shop_ge_state(unsigned int *list)
     return dl_color(list, 0xFF0000FF);
 }
 
-/* the line under the cursor of the bought list */
-inline ShopItem *shop_cur_item(void)
-{
-    int i = shop.top + shop.cursor;
-
-    if (i >= shop.n_items)
-        return 0;
-    return &shop.items[shop.order[i]];
-}
-
 /* the card under the cursor; restarts the info timer when it changes */
 void shop_sel_update(void)
 {

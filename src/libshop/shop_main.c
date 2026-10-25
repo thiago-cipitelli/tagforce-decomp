@@ -116,7 +116,7 @@ void shop_init(int mode, int arg)
 int shop_update(void)
 {
     shop_main_update();
-    return shop_main_draw();
+    return shop_main_input();
 }
 
 /* export */
