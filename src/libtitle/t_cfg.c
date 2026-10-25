@@ -1,5 +1,6 @@
-// @range 0x0880C998-0x0880CE48
+// @range 0x0880C998-0x0880D454
 // @asm 0x0880CA5C-0x0880CB58
+// @rodata 0x0882AD80-0x0882ADC8
 /* Options screen of the main menu (state 17): enter/update/draw, the edit state (tcfg) and the copy
    of the system options in and out of it. */
 #include "libtitle.h"
@@ -9,6 +10,7 @@ void *tcfg_draw(void *list);
 void tcfg_create(void *heap, void *pack, int mode);
 void tcfg_read(TCfgVals *v);
 void tcfg_free(void);
+void tcfg_write(TCfgVals *v);
 
 void tcfg_enter(short state, short sub)
 {
@@ -129,4 +131,164 @@ void tcfg_write(TCfgVals *v)
 void tcfg_free(void)
 {
     heap_set_level(tcfg->heap, tcfg);
+}
+
+/* input of the options screen; 2 when it is closed (accepted or cancelled), 1 otherwise */
+int tcfg_update(void)
+{
+    TCfg *c = tcfg;
+    TCfgVals *v = &tcfg->cur;
+    PadState *pad = pad_get();
+    unsigned int rep;
+    unsigned int trig;
+    int first;
+
+    c->active = 1;
+    first = 0;
+    if (c->mode == 1)
+        first = 3;
+    rep = pad->b.rep;
+    trig = pad->b.trig;
+    if (rep & region_pick_value(0)) {
+        se_play(0x6213);
+        tcfg_write(v);
+        return 2;
+    }
+    if (rep & region_pick_value(1)) {
+        se_play(0x6214);
+        c->cur = c->orig;
+        tcfg_write(v);
+        return 2;
+    }
+    if (rep & 0x80) {
+        switch (c->step) {
+        case 0:
+            se_play(0x6212);
+            v->mode1 = 1;
+            break;
+        case 1:
+            if (v->speed != 0) {
+                se_play(0x6212);
+                v->speed--;
+            }
+            break;
+        case 2:
+            if (v->vol[0] != 0) {
+                se_play(0x6218);
+                v->vol[0]--;
+            }
+            snd_set_volume(2, v->vol[0]);
+            break;
+        case 3:
+            if (v->vol[1] != 0) {
+                se_play(0x6212);
+                v->vol[1]--;
+            }
+            snd_set_volume(0, v->vol[1]);
+            break;
+        case 4:
+            if (v->vol[2] != 0) {
+                se_play(0x6212);
+                v->vol[2]--;
+            }
+            snd_set_volume(1, v->vol[2]);
+            break;
+        case 5:
+            if (v->b134 != 0) {
+                se_play(0x6212);
+                v->b134--;
+            }
+            break;
+        case 6:
+            se_play(0x6212);
+            v->flag0 = 1;
+            break;
+        case 7:
+            se_play(0x6212);
+            v->flag2 = 1;
+            break;
+        case 8:
+            se_play(0x6212);
+            v->flag3 = 1;
+            break;
+        }
+    } else if (rep & 0x20) {
+        switch (c->step) {
+        case 0:
+            se_play(0x6212);
+            v->mode1 = 0;
+            break;
+        case 1:
+            if (v->speed < 2) {
+                se_play(0x6212);
+                v->speed++;
+            }
+            break;
+        case 2:
+            if (v->vol[0] < 15) {
+                se_play(0x6218);
+                v->vol[0]++;
+            }
+            snd_set_volume(2, v->vol[0]);
+            break;
+        case 3:
+            if (v->vol[1] < 15) {
+                se_play(0x6212);
+                v->vol[1]++;
+            }
+            snd_set_volume(0, v->vol[1]);
+            break;
+        case 4:
+            if (v->vol[2] < 15) {
+                se_play(0x6212);
+                v->vol[2]++;
+            }
+            snd_set_volume(1, v->vol[2]);
+            break;
+        case 5:
+            if (v->b134 < 3) {
+                se_play(0x6212);
+                v->b134++;
+            }
+            break;
+        case 6:
+            se_play(0x6212);
+            v->flag0 = 0;
+            break;
+        case 7:
+            se_play(0x6212);
+            v->flag2 = 0;
+            break;
+        case 8:
+            se_play(0x6212);
+            v->flag3 = 0;
+            break;
+        }
+    } else if ((trig & 0x10) || (rep & 0x10)) {
+        if (c->step > first) {
+            if (c->step == 3) {
+                se_play(0x6212);
+                c->step -= 2;
+            } else {
+                se_play(0x6212);
+                c->step--;
+            }
+        } else if (trig & 0x10) {
+            se_play(0x6212);
+            c->step = 8;
+        }
+    } else if ((trig & 0x40) || (rep & 0x40)) {
+        if (c->step < 8) {
+            se_play(0x6212);
+            c->step++;
+            if (cfg_get_language() != 0 && c->step == 2)
+                c->step++;
+        } else if (trig & 0x40) {
+            se_play(0x6212);
+            c->step = first;
+        }
+    }
+    c->blink++;
+    c->blink %= 0x1000000;
+    return 1;
 }

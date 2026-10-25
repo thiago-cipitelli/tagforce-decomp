@@ -326,10 +326,12 @@ typedef struct TCfg {                  /* options screen, heap allocated (tcfg),
     int step;                          /* +0x04 */
     TCfgVals cur;                      /* +0x08 */
     TCfgVals orig;                     /* +0x0C */
-    int u10;                           /* +0x10 */
+    unsigned char active;              /* +0x10 */
+    unsigned char pad11[3];
     void *heap;                        /* +0x14 */
     void *pack;                        /* +0x18 */
-    unsigned char pad1c[0x28 - 0x1C];
+    unsigned char pad1c[0x24 - 0x1C];
+    int blink;                         /* +0x24 */
     unsigned int color;                /* +0x28 */
     unsigned int color2;               /* +0x2C */
 } TCfg;
