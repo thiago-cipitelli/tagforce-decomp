@@ -170,6 +170,21 @@ typedef struct ShopMsgWin {     /* shop_msg 0x08F8EC24: the typewriter message w
     float to[2];                /* +0x178 */
 } ShopMsgWin;
 
+typedef struct ShopCardList {   /* cards of one rarity of a pack */
+    unsigned short *ids;
+    int n;
+} ShopCardList;
+
+typedef struct ShopPackDef {    /* shop_pack_defs 0x0881FE88: one of the 48 pack kinds, 12 bytes */
+    unsigned char state : 2;    /* 0 hidden, 1 sold out, 2 on sale */
+    unsigned char n_cards : 6;  /*   cards per pack */
+    unsigned char complete;     /* +0x01 percent of its cards owned */
+    unsigned short pad2;
+    unsigned short price;       /* +0x04 */
+    unsigned short rank;        /* +0x06 */
+    ShopCardList *lists;        /* +0x08 4 rarities: common, rare, super, ultra */
+} ShopPackDef;
+
 typedef struct ShopState {      /* shop 0x08E20530, 0x450 bytes cleared at start */
     unsigned short state;       /* +0x000 */
     unsigned char term : 4;     /* +0x002 release step of shop_term */
@@ -240,6 +255,7 @@ extern ShopState shop;
 extern ShopResFlags shop_res;
 extern ShopClerk shop_clerk;
 extern ShopMsgWin shop_msg;
+extern ShopPackDef shop_pack_defs[48];
 extern unsigned char shop_heap_mem[0x600000];
 extern unsigned char shop_cip_mem[0x16E000];
 extern void *shop_box_tex[48][3];

@@ -64,11 +64,11 @@ void shop_dialog_update(void);
 void shop_info_input(int *sel);
 void shop_tabs_hide(void);
 void shop_points_add(int delta, int x, int y);
-void shop_code_entered(void);
+void shop_packs_refresh(void);
 int shop_pack_can_buy(int pack);
 unsigned short shop_pack_price(int pack);
-int shop_points_left(void);
-void shop_cards_reset(void);
+int shop_bought_total(void);
+void shop_stock_save(void);
 void shop_open_start(void);
 void shop_after_open(void);
 int shop_item_key(ShopItem *it, int key);
@@ -226,7 +226,7 @@ int shop_main_input(void)
                 shop.code_pos++;
                 if (code[shop.code_pos] == 0) {
                     shop.code_done = 1;
-                    shop_code_entered();
+                    shop_packs_refresh();
                     se_play(0x621A);
                     return 0;
                 }
@@ -320,8 +320,8 @@ void shop_shelf_input(void)
             break;
         }
     } else if (pad->b.trig & region_pick_value(1)) {
-        if (shop_points_left() > 0) {
-            shop_cards_reset();
+        if (shop_bought_total() > 0) {
+            shop_stock_save();
             shop.state = 7;
             shop_msgwin_close();
             fade_start_in(1, 0xFF000000, 16);

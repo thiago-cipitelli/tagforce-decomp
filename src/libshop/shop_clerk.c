@@ -40,13 +40,13 @@ void shop_model_free(void *p);
 void shop_clerk_init(int alt);
 void shop_clerk_set(int state);
 int shop_clerk_voice_busy(void);
-void shop_code_entered(void);
+void shop_packs_refresh(void);
 void shop_msgwin_init(void *heap, int a1, int a2, int a3, int a4, int a5);
 void shop_tabs_setup(int x, int y, int w, int h);
 void *shop_menu_draw(void *dl, int x, int y, int w, int h);
 int shop_pack_can_buy(int pack);
 unsigned short shop_pack_rank(unsigned short pack);
-int shop_points_left(void);
+int shop_bought_total(void);
 void shop_draw_shelf(void);
 void shop_draw_shelf_ui(void);
 void shop_draw_counter(void);
@@ -73,7 +73,7 @@ void shop_setup(int alt)
     snd_cmd_fefa();
     bgm_fade(0x14F);
     shop_clerk_init(alt);
-    shop_code_entered();
+    shop_packs_refresh();
     shop_msgwin_init(shop.heap, 2, 0x1DC, 14, 0, 0);
     shop_msgwin_open();
     shop_tabs_setup(480, 2, 0x16A, 2);
@@ -110,7 +110,7 @@ void shop_after_open(void)
         heap_set_level(shop.heap, shop.order);
         shop.order = 0;
     }
-    shop_code_entered();
+    shop_packs_refresh();
     shop.pack = 0;
     shop.top = 0;
     shop.cursor = 0;
@@ -381,7 +381,7 @@ void shop_clerk_voice(unsigned short what)
         se = r + 3;
         break;
     case 3:
-        r = shop_points_left();
+        r = shop_bought_total();
         if (r > 0 && r % 20 == 0)
             se = 11;
         else if (rand_next_alias() % 2)
