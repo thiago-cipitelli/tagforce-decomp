@@ -75,7 +75,7 @@ int title_update(void)
         func_08813FC8();
         break;
     case 17:
-        func_0880CA5C();
+        tcfg_screen_update();
         break;
     case 19:
         func_0880EC68();
@@ -376,7 +376,7 @@ void title_draw(void)
     case 15:
         break;
     case 17:
-        list = func_0880CB58(list);
+        list = tcfg_screen_draw(list);
         break;
     case 19:
         list = func_0880EF1C(list);

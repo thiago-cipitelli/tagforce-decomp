@@ -200,6 +200,16 @@ tmsg_place = 0x0880C624; // type:func matched src/libtitle/t_msg.c
 tmsg_font_begin = 0x0880C768; // type:func matched src/libtitle/t_msg.c
 tmsg_font_end = 0x0880C844; // type:func matched src/libtitle/t_msg.c
 tmsg_paginate = 0x0880C868; // type:func matched src/libtitle/t_msg.c
+tcfg = 0x09433CC4; // type:data
+tcfg_enter = 0x0880C998; // type:func matched src/libtitle/t_cfg.c
+tcfg_screen_update = 0x0880CA5C; // type:func matched src/libtitle/t_cfg.c
+tcfg_screen_draw = 0x0880CB58; // type:func matched src/libtitle/t_cfg.c
+tcfg_create = 0x0880CBD0; // type:func matched src/libtitle/t_cfg.c
+tcfg_read = 0x0880CC80; // type:func matched src/libtitle/t_cfg.c
+tcfg_write = 0x0880CD8C; // type:func matched src/libtitle/t_cfg.c
+tcfg_free = 0x0880CE38; // type:func matched src/libtitle/t_cfg.c
+tcfg_draw = 0x0880D454; // type:func
+tcfg_update = 0x0880CE48; // type:func
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08826B8C; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08826B94; // type:func import:libehsys nid:4BDEB2A8

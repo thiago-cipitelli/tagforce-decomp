@@ -310,6 +310,31 @@ typedef struct TMsgWin {               /* tmsg 0x09433B44: message window, 0x180
 
 extern Title title;
 extern TMsgWin tmsg;
+
+typedef struct TCfgVals {              /* the options being edited, 4 bytes */
+    unsigned char mode1 : 1;           /* cfg_is_mode1 */
+    unsigned char speed : 2;           /* message speed (cfg byte 0 bits 4-5) */
+    unsigned char b134 : 2;            /* cfg_get_bits_1_3_4 */
+    unsigned char flag0 : 1;
+    unsigned char flag3 : 1;
+    unsigned char flag2 : 1;
+    unsigned char vol[3];              /* +0x01 volumes of channels 2, 0, 1 */
+} TCfgVals;
+
+typedef struct TCfg {                  /* options screen, heap allocated (tcfg), 0x30 */
+    int mode;                          /* +0x00 */
+    int step;                          /* +0x04 */
+    TCfgVals cur;                      /* +0x08 */
+    TCfgVals orig;                     /* +0x0C */
+    int u10;                           /* +0x10 */
+    void *heap;                        /* +0x14 */
+    void *pack;                        /* +0x18 */
+    unsigned char pad1c[0x28 - 0x1C];
+    unsigned int color;                /* +0x28 */
+    unsigned int color2;               /* +0x2C */
+} TCfg;
+
+extern TCfg *tcfg;
 /* title.ehf[i]; the original adds the index to &title as an integer (the field offset is not folded) */
 #define TITLE_EHF(i) (((Title *)((char *)&title + (i) * 4))->ehf[0])
 extern char title_pack_names[9][64];
@@ -334,6 +359,15 @@ int sysstate_get_u32_97e8(void);
 void bgm_play(int id);
 unsigned int cfg_get_byte0_bits4_5(void);
 int region_get(void);
+int cfg_is_mode1(void);
+unsigned int cfg_get_bits_1_3_4(void);
+unsigned int cfg_get_flag(int which);
+void cfg_set_byte0_bit3(int on);
+void cfg_set_byte0_bits4_5(int v);
+void cfg_set_bits_1_3_4(int v);
+void cfg_set_flag(int which, int on);
+int cfg_get_byte3(int i);
+void snd_set_volume(int channel, int vol);
 int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max_glyphs);
 int wcslen(const unsigned short *s);
 void scene_push(int from, int scene, int arg);
@@ -450,7 +484,7 @@ void func_0880F950(void);
 void func_08821FB0(void);
 void topt_update(void);
 void func_08813FC8(void);
-void func_0880CA5C(void);
+void tcfg_screen_update(void);
 void func_0880EC68(void);
 void *title_screen_draw(void *list);
 void *func_08813460(void *list);
@@ -458,7 +492,7 @@ void *func_088102A0(void *list);
 void *func_08823090(void *list);
 void *topt_draw(void *list);
 void *func_0881DC1C(void *list);
-void *func_0880CB58(void *list);
+void *tcfg_screen_draw(void *list);
 void *func_0880EF1C(void *list);
 void func_088104E8(void);
 void func_0881D2F4(void);
@@ -492,7 +526,6 @@ void func_0880F900(void);
 void func_08821D3C(void);
 
 void func_08813DF4(void);
-void func_0880C998(void);
 void func_0880EB20(void);
 void title_random_duel_start(void);
 void title_lesson_start(void);

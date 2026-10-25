@@ -6,8 +6,6 @@
 #include "libtitle.h"
 
 void bgm_fade_out(int x, int ms);
-int cfg_get_byte3(int i);
-void snd_set_volume(int channel, int vol);
 
 void title_start_menu_init(void);
 void title_start_menu_update(void);

@@ -16,6 +16,7 @@ void title_tlist_open();
 void title_dtut_open();
 void title_screen_enter();
 void topt_enter();
+void tcfg_enter();
 
 /* sub 9 of the main menu: save the options, then back to the menu */
 void title_menu_save_update(void)
@@ -202,7 +203,7 @@ int title_set_state(int st, int sub)
         func_08813DF4();
         break;
     case 17:
-        func_0880C998();
+        tcfg_enter(st, sub);
         break;
     case 19:
         func_0880EB20();
