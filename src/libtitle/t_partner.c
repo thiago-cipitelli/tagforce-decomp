@@ -29,16 +29,6 @@ typedef struct TPtSpr {               /* a sprite of the panel textures, 10 byte
     short r[4];                        /* u, v, w, h */
 } TPtSpr;
 
-typedef struct TChr {               /* face sprites of a character, 0x18 */
-    unsigned short id : 10;
-    unsigned short grp : 3;
-    unsigned short nvar : 2;
-    unsigned short b15 : 1;
-    unsigned short pad;
-    const char *code[3];
-    int face;                          /* +0x10 first face index, -1 none */
-    int pad14;
-} TChr;
 
 /* &tpt->ent[i]; written as pointer arithmetic, which adds the index first as the original does */
 #define PT_ENT(i) ((TPtEnt *)tpt->ent + (i))
@@ -87,9 +77,6 @@ void *title_text_wide(void *list, int x, int y, int w, unsigned short *text);
 void *title_text_left(void *list, int x, int y, int w, unsigned short *text);
 void *tpt_draw_chr(void *list, unsigned short kind, int x, int y, int scale, void *face,
                                void *body);
-TChr *tchr_find(unsigned short id);
-int tchr_face(unsigned short id, unsigned short var);
-extern TChr tchr_tab[41];
 
 void tpartner_init(void *heap, void *pack, int mode)
 {

@@ -110,6 +110,9 @@ segments:
       - [0x1DAFC, asm, t_partner_asm_08821A9C]
       - [0x1DC4C, c, t_partner]
       - [0x1DD9C, asm, text_1]
+      - [0x224DC, c, t_chr]
+      - [0x22748, asm, t_chr_asm_088266E8]
+      - [0x22B14, c, t_chr]
       - [0x22BEC, asm, sceStub_text]
       - [0x253C4, bin, lib_ent_top]
       - [0x253C8, bin, lib_ent]
@@ -147,6 +150,8 @@ segments:
       - [0x2A85C, data, data_5]
       - [0x2B3F8, .data, t_partner]
       - [0x2C1A0, data, data_6]
+      - [0x2C290, .data, t_chr]
+      - [0x2C728, data, data_7]
       - { start: 0x2C740, type: bss, vram: 0x88306E0, name: bss }
   - [0x2C740]
 

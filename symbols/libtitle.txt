@@ -361,7 +361,12 @@ D_0882FD82 = 0x0882FD82; // type:data alias
 D_0882FDB6 = 0x0882FDB6; // type:data alias
 D_0882FDB8 = 0x0882FDB8; // type:data alias
 D_0882FDBA = 0x0882FDBA; // type:data alias
-tpt_draw_chr = 0x088266E8; // type:func
+tpt_draw_chr = 0x088266E8; // type:func asm (@asm in src/libtitle/t_chr.c, C under NON_MATCHING)
+tnum_draw = 0x0882647C; // type:func matched src/libtitle/t_chr.c
+tnum_draw_spr = 0x08826580; // type:func matched src/libtitle/t_chr.c
+tchr_find = 0x08826AB4; // type:func matched src/libtitle/t_chr.c
+tchr_face = 0x08826B28; // type:func matched src/libtitle/t_chr.c
+tchr_tab = 0x088302F0; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08826B8C; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08826B94; // type:func import:libehsys nid:4BDEB2A8

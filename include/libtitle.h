@@ -344,6 +344,21 @@ typedef struct TPartner {              /* partner / versus panel (copy of libdue
     void *ehf[4];                      /* +0x5C */
 } TPartner;
 
+typedef struct TChr {               /* face sprites of a character, 0x18 */
+    unsigned short id : 10;
+    unsigned short grp : 3;
+    unsigned short nvar : 2;
+    unsigned short b15 : 1;
+    unsigned short pad;
+    const char *code[3];
+    int face;                          /* +0x10 first face index, -1 none */
+    int pad14;
+} TChr;
+
+TChr *tchr_find(unsigned short id);
+int tchr_face(unsigned short id, unsigned short var);
+extern TChr tchr_tab[41];
+
 extern TPartner *tpt;
 
 extern Title title;
