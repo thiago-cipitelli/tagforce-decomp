@@ -1,5 +1,7 @@
 module_start = 0x0880B874; // type:func seed PRX e_entry; calls ehscript_register
 text_start = 0x08804000; // type:func seed first function of .text (not the entry)
+dk_lists = 0x095D2330; // type:data size:0xC0
+dk_heap = 0x095D26EC; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x0881E870; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x0881E878; // type:func import:libehsys nid:4BDEB2A8
