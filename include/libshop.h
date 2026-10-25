@@ -225,6 +225,51 @@ typedef struct UiScroll {       /* analog-scrolled value */
     unsigned int max;           /* +0x0C */
 } UiScroll;
 
+typedef struct ShopOpenCard {   /* a card coming out of the pack, 0x60 */
+    unsigned short state;       /* +0x00 0 hidden, 2 flying, 3 shown, 4 leaving, 5 gone */
+    unsigned short timer;       /* +0x02 */
+    unsigned short id;          /* +0x04 */
+    unsigned short key;         /* +0x06 */
+    unsigned short pack;        /* +0x08 */
+    unsigned short n;           /* +0x0A */
+    int pad0c;
+    Vec4 pos;                   /* +0x10 */
+    Mat4 rot;                   /* +0x20 */
+} ShopOpenCard;
+
+typedef struct ShopOpenPack {   /* the pack model */
+    unsigned short kind;        /* +0x00 */
+    unsigned short pad[7];
+    Vec4 pos;                   /* +0x10 */
+    float rot;                  /* +0x20 */
+    float speed;                /* +0x24 */
+    int pad28[2];
+} ShopOpenPack;
+
+typedef struct ShopOpen {       /* shop_open, 0x520 allocated while packs are opened */
+    unsigned short step;        /* +0x000 */
+    unsigned short opened;      /* +0x002 packs of this kind opened */
+    unsigned short n_cards;     /* +0x004 */
+    unsigned short pad006[5];
+    ShopOpenPack pack;          /* +0x010 */
+    ShopOpenCard cards[10];     /* +0x040 */
+    unsigned short speed;       /* +0x400 1, 3 while the button is held */
+    unsigned short timer;       /* +0x402 */
+    unsigned char pad404[12];
+    Vec4 card_from;             /* +0x410 cards: in the pack */
+    Vec4 card_up;               /* +0x420 risen out of the pack */
+    Vec4 card_ctrl1;            /* +0x430 */
+    Vec4 card_mid;              /* +0x440 */
+    Vec4 card_ctrl2;            /* +0x450 */
+    Vec4 card_show;             /* +0x460 shown in front of the camera */
+    Vec4 card_ctrl3;            /* +0x470 */
+    Vec4 card_out;              /* +0x480 gone to the side */
+    Mat4 card_rot;              /* +0x490 face down */
+    Mat4 card_face;             /* +0x4D0 facing the camera */
+    unsigned short *cur;        /* +0x510 card whose picture is drawn */
+    unsigned char pad514[12];
+} ShopOpen;
+
 typedef struct ShopState {      /* shop 0x08E20530, 0x450 bytes cleared at start */
     unsigned short state;       /* +0x000 */
     unsigned char term : 4;     /* +0x002 release step of shop_term */
@@ -297,7 +342,7 @@ extern ShopResFlags shop_res;
 extern ShopClerk shop_clerk;
 extern ShopMsgWin shop_msg;
 extern ShopPackDef shop_pack_defs[48];
-extern struct ShopOpen *shop_open;
+extern ShopOpen *shop_open;
 extern unsigned char shop_heap_mem[0x600000];
 extern unsigned char shop_cip_mem[0x16E000];
 extern void *shop_box_tex[48][3];

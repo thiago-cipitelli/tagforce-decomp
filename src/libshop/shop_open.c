@@ -8,45 +8,6 @@
    cards are added to the bought list (copies of the same card are counted) before the list opens. */
 #include "libshop.h"
 
-typedef struct ShopOpenCard {   /* a card coming out of the pack, 0x60 */
-    unsigned short state;       /* +0x00 0 hidden, 2 flying, 3 shown, 4 leaving, 5 gone */
-    unsigned short timer;       /* +0x02 */
-    unsigned short id;          /* +0x04 */
-    unsigned short key;         /* +0x06 */
-    unsigned short pack;        /* +0x08 */
-    unsigned short n;           /* +0x0A */
-    int pad0c;
-    Vec4 pos;                   /* +0x10 */
-    Mat4 rot;                   /* +0x20 */
-} ShopOpenCard;
-
-typedef struct ShopOpenPack {   /* the pack model */
-    unsigned short kind;        /* +0x00 */
-    unsigned short pad[7];
-    Vec4 pos;                   /* +0x10 */
-    float rot;                  /* +0x20 */
-    float speed;                /* +0x24 */
-    int pad28[2];
-} ShopOpenPack;
-
-typedef struct ShopOpen {       /* shop_open, 0x520 allocated while packs are opened */
-    unsigned short step;        /* +0x000 */
-    unsigned short opened;      /* +0x002 packs of this kind opened */
-    unsigned short n_cards;     /* +0x004 */
-    unsigned short pad006[5];
-    ShopOpenPack pack;          /* +0x010 */
-    ShopOpenCard cards[10];     /* +0x040 */
-    unsigned short speed;       /* +0x400 1, 3 while the button is held */
-    unsigned short timer;       /* +0x402 */
-    unsigned char pad404[12];
-    Vec4 card_from;             /* +0x410 */
-    unsigned char pad420[0x70];
-    Mat4 card_rot;              /* +0x490 */
-    unsigned char pad4d0[0x40];
-    void *cur;                  /* +0x510 card whose picture is drawn */
-    unsigned char pad514[12];
-} ShopOpen;
-
 typedef struct ModelDrawOpts {  /* BOOT model_draw options, 0x34 */
     int layer[2];
     int pad[11];
@@ -83,7 +44,7 @@ Mat4 *mat4_mul_rot_y(Mat4 *out, Mat4 *m, float a);
 void mat4_mul(Mat4 *r, Mat4 *a, Mat4 *b);
 void vec4_copy(Vec4 *out, Vec4 *v);
 void vec4_sub(Vec4 *out, Vec4 *a, Vec4 *b);
-void vec4_scale(float s, Vec4 *out, Vec4 *v);
+void vec4_scale(Vec4 *out, Vec4 *v, float s);
 void vec3_add_w(Vec4 *out, Vec4 *a, Vec4 *b);
 int cip_query(void *c, unsigned short id, int alt);
 int inv_get_hi(unsigned short id);
@@ -96,7 +57,7 @@ int font_draw_wtext(int x, int y, int w, unsigned short *text);
 void *sceGeEdramGetAddr(void);
 void shop_open_layout(void);
 void shop_open_fly(float t, Vec4 *out, Vec4 *a, Vec4 *b, Vec4 *c);
-int shop_open_cards_done(void);
+int shop_open_cards_done(short speed);
 int shop_card_tex_hook();
 int shop_card_glow(int a, Mat4 *m, int rarity, int speed, void *vram);
 
@@ -193,7 +154,7 @@ int shop_result_input(void)
         }
         break;
     case 4:
-        if (shop_open_cards_done()) {
+        if (shop_open_cards_done(speed)) {
             shop_open->step = 5;
             shop_open->timer = 0;
         }
@@ -204,7 +165,7 @@ int shop_result_input(void)
             Vec4 d;
             Vec4 a = shop_open_v4, b = shop_open_v5, c;
             vec4_sub(&d, &b, &a);
-            vec4_scale(shop_open->timer / 12.0f, &d, &d);
+            vec4_scale(&d, &d, shop_open->timer / 12.0f);
             c = shop_open_v6;
             vec3_add_w(&shop_open->pack.pos, &c, &d);
         } else {
