@@ -35,8 +35,8 @@ void *dk_draw_attr_counts(void *list);
 void *dk_draw_attr_bars(void *list);
 void *dk_flight_draw(void *list);
 void *dk_action_draw(void *list);
-void *func_088115E4(void *list);
-void *func_08812444(void *list);
+void *dk_sort_menu_draw(void *list);
+void *dk_fmenu_draw(void *list);
 void *func_08819F80(void *list);
 void *func_088107C0(void *list);
 void *func_0880AF08(void *list);
@@ -131,10 +131,10 @@ void *dk_draw_overlay(void *list)
         list = dk_action_draw(list);
         break;
     case 3:
-        list = func_088115E4(list);
+        list = dk_sort_menu_draw(list);
         break;
     case 4:
-        list = func_08812444(list);
+        list = dk_fmenu_draw(list);
         break;
     case 5:
         list = func_08819F80(list);

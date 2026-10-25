@@ -32,8 +32,8 @@ int dk_flight_undo(void);
 void dk_deck_clear(void);
 void dk_lists_reset(void);
 void dk_word_open(void);
-void func_088118F4(void);
-void func_08810CD0(void);
+void dk_fmenu_open(void);
+void dk_sort_menu_open(void);
 void dk_action_free(void);
 void dk_action_step0(void);
 int dk_action_close(void);
@@ -364,12 +364,12 @@ void dk_action_step1(void)
     dk_action->sub = 0;
     switch (r) {
     case 0:
-        func_08810CD0();
+        dk_sort_menu_open();
         se_play(0x6216);
         dk_action_free();
         break;
     case 1:
-        func_088118F4();
+        dk_fmenu_open();
         se_play(0x6216);
         dk_action_free();
         break;
