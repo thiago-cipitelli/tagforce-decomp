@@ -234,6 +234,12 @@ D_0882E637 = 0x0882E637; // type:data alias
 D_0882E63A = 0x0882E63A; // type:data alias
 D_0882E63C = 0x0882E63C; // type:data alias
 D_0882E63E = 0x0882E63E; // type:data alias
+tlang_enter = 0x0880EB20; // type:func matched src/libtitle/t_lang.c
+tlang_update = 0x0880EC68; // type:func matched src/libtitle/t_lang.c
+tlang_draw = 0x0880EF1C; // type:func matched src/libtitle/t_lang.c
+tlang_label = 0x0880EFB4; // type:func matched src/libtitle/t_lang.c
+tlang_flag = 0x0880F0FC; // type:func matched src/libtitle/t_lang.c
+tlang_marker = 0x0880F2B0; // type:func matched src/libtitle/t_lang.c
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08826B8C; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08826B94; // type:func import:libehsys nid:4BDEB2A8

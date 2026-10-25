@@ -78,7 +78,7 @@ int title_update(void)
         tcfg_screen_update();
         break;
     case 19:
-        func_0880EC68();
+        tlang_update();
         break;
     case 21:
         title_recipe_update();
@@ -379,7 +379,7 @@ void title_draw(void)
         list = tcfg_screen_draw(list);
         break;
     case 19:
-        list = func_0880EF1C(list);
+        list = tlang_draw(list);
         break;
     case 22:
         break;

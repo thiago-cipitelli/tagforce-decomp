@@ -206,7 +206,7 @@ int title_set_state(int st, int sub)
         tcfg_enter(st, sub);
         break;
     case 19:
-        func_0880EB20();
+        tlang_enter();
         break;
     case 20:
         title_scene_push(4, sub);
