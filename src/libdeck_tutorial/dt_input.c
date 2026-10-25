@@ -28,7 +28,6 @@ int dt_flight_open(void);
 int dt_flight_undo(void);
 int dt_flight_quick(void);
 int dt_flight_update(PadBits *pad);
-extern unsigned short dt_undo_count;   /* 0x08823D06 */
 
 #define DK_ENT(l, i) ((i) >= (l)->count ? 0 : &(l)->ents[(l)->order[i]])
 

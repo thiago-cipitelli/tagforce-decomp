@@ -226,6 +226,23 @@ typedef struct DtFlags {         /* dt_flags 0x08823AF6 (dts+0x106) */
     unsigned char b7 : 1;
 } DtFlags;
 
+typedef struct DtAction {        /* dt_action 0x08824714, 0x18 bytes, heap allocated */
+    unsigned char no_ent : 1;    /* +0x00 opened without a card (the first two items hidden) */
+    unsigned char pad00 : 7;
+    unsigned char pad01;
+    unsigned short step;         /* +0x02 */
+    DtEnt *ent;                  /* +0x04 */
+    unsigned short mode;         /* +0x08 layout being picked */
+    unsigned short side;         /* +0x0A pane of the other list */
+    unsigned short tab;          /* +0x0C its list */
+    unsigned short mark;         /* +0x0E "new" mark picked */
+    struct MenuWidget *menu;     /* +0x10 */
+    struct MenuWidget *sub;      /* +0x14 */
+} DtAction;
+
+extern DtAction *dt_action;      /* 0x08824714 */
+extern unsigned short dt_undo_count; /* 0x08823D06 (dts+0x316) entries in the undo history */
+extern struct Menu dt_menu;      /* 0x08823D60 (dts+0x370) */
 extern unsigned short dt_scene_arg; /* 0x08823AF4 (dts+0x104) */
 extern DtFlags dt_flags;         /* 0x08823AF6 */
 extern unsigned char dt_help_page; /* 0x08823AF7 */

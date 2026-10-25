@@ -13,8 +13,6 @@
    deck limits, and the slot positions on screen. */
 #include "libdeck_tutorial.h"
 
-extern struct Menu dt_menu;            /* 0x08823D60 */
-extern unsigned short dt_undo_count;   /* 0x08823D06 */
 unsigned short dt_cur_index(unsigned short side);
 DtEnt *dt_cur_entry(unsigned short side);
 void dt_select_tab(unsigned short side, unsigned short tab, unsigned short how);
