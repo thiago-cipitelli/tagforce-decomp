@@ -1,5 +1,17 @@
 // libtitle.prx symbols (splat format)
-module_entry = 0x08804000; // type:func seed
+module_entry = 0x08804000; // type:func matched src/libtitle/t_main.c
+title_main = 0x08804034; // type:func matched src/libtitle/t_main.c
+title_exit = 0x08804218; // type:func matched src/libtitle/t_main.c
+title_init = 0x08804220; // type:func matched src/libtitle/t_main.c
+title_draw_cb = 0x08804308; // type:func matched src/libtitle/t_main.c
+title_exit_cb = 0x08804310; // type:func matched src/libtitle/t_main.c
+title_scene_data = 0x088306E0; // type:data
+title_heap_mem = 0x088306F0; // type:data
+title = 0x094306F0; // type:data
+title_goto = 0x088066B0; // type:func
+title_update = 0x08806EF0; // type:func
+tmenu_init = 0x08808DB4; // type:func
+title_draw = 0x088077E0; // type:func
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08826B8C; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08826B94; // type:func import:libehsys nid:4BDEB2A8
