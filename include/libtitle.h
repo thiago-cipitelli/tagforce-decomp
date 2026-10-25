@@ -330,7 +330,8 @@ typedef struct TCfg {                  /* options screen, heap allocated (tcfg),
     unsigned char pad11[3];
     void *heap;                        /* +0x14 */
     void *pack;                        /* +0x18 */
-    unsigned char pad1c[0x24 - 0x1C];
+    void *gim;                         /* +0x1C panel texture */
+    void *gim2;                        /* +0x20 options texture */
     int blink;                         /* +0x24 */
     unsigned int color;                /* +0x28 */
     unsigned int color2;               /* +0x2C */
