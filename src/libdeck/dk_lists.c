@@ -1,4 +1,4 @@
-// @range 0x08804000-0x08805CF0
+// @range 0x08804000-0x088060B0
 // @asm 0x08804C9C-0x08804ED4
 // @asm 0x08805900-0x08805CF0
 // @data 0x08822A00-0x08822A24
@@ -21,6 +21,18 @@ void func_08817D18(DkList *l);
 int func_0881538C(unsigned short icon);
 void dk_layout_scroll(int keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 int sceRtcGetCurrentClockLocalTime(void *time);
+void deck_clear(void);
+void deck_set_card(int which, int i, unsigned short id);
+void deck_set_count(int which, unsigned int n);
+void partner_id_set(int i, unsigned short v);
+void partner_state_set(int i, unsigned short v);
+void partner_count_set(unsigned short v);
+int inv_get_state(unsigned short id);
+void inv_set_state2(unsigned short id);
+void deck_name_copy_in(const void *src);
+void sysstate_blob_set(const void *src);
+void cfg_set_bits_1_0_2(int v);
+int dk_mode_for(unsigned short panes, int narrow, unsigned short mode_a, unsigned short mode_b);
 unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
 void dk_list_order_insert(DkList *l, int i, int pos);
 
@@ -692,3 +704,59 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
     dk_attr_count_update();
 }
 #endif
+
+/* one list written back as saved deck <which>: rented copies go back to the partner (state which),
+   the "new" marks of the cards seen are cleared */
+#define DK_DECK_STORE(which, ent)                                                    \
+    n = 0;                                                                           \
+    for (i = 0; i < l->n; i++) {                                                     \
+        e = ent;                                                                     \
+        deck_set_card(which, n, e->id);                                              \
+        n++;                                                                         \
+        if (e->fixed) {                                                              \
+            partner_id_set(k, e->id);                                                \
+            partner_state_set(k, which);                                             \
+            k++;                                                                     \
+        } else if (inv_get_state(e->id) == 1 && e->marked) {                         \
+            inv_set_state2(e->id);                                                   \
+        }                                                                            \
+    }                                                                                \
+    deck_set_count(which, n)
+
+/* writes the lists back to sysstate on exit: the three decks (main, extra, side in its shown
+   order), the partner's rental cards, the "new" marks, the deck name and the pane layout */
+void dk_deck_store(void)
+{
+    DkList *l;
+    int k;
+    int i;
+    int n;
+    DkEnt *e;
+
+    l = &dk_lists[5];
+    k = l->total;
+    for (i = 0; i < k; i++) {
+        partner_id_set(i, l->ents[i].id);
+        partner_state_set(i, 4);
+    }
+    deck_clear();
+    l = &dk_lists[0];
+    DK_DECK_STORE(1, &l->ents[i]);
+    l = &dk_lists[2];
+    DK_DECK_STORE(2, &l->ents[i]);
+    l = &dk_lists[1];
+    if (l->filter != 0)
+        func_08817D18(l);
+    func_08818BFC(l, 1, 0);
+    DK_DECK_STORE(3, &l->ents[l->order[i]]);
+    partner_count_set(k);
+    l = &dk_lists[3];
+    for (i = 0; i < l->n; i++) {
+        e = &l->ents[i];
+        if (inv_get_state(e->id) == 1 && e->marked)
+            inv_set_state2(e->id);
+    }
+    deck_name_copy_in(dk_deck_name);
+    sysstate_blob_set(dk_profile);
+    cfg_set_bits_1_0_2(dk_mode_for(dkv.mode > 1 ? 2 : 1, dkv.mode < 4, dkv.pane[0].list_mode, dkv.pane[1].list_mode));
+}

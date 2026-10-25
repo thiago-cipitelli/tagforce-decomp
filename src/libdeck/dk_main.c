@@ -31,11 +31,11 @@ void dk_deck_store(void);
 int func_0880931C(void *pad);
 void func_0880AF34(unsigned short mode);
 void dk_cardlist_setup(void);
-void func_0880C728(void);
-void func_0880CB14(void);
-void func_0880D73C(void);
-int func_0880D7A0(void);
-int func_0880D8DC(void);
+void dk_check_rewards(void);
+void dk_update(void);
+void dk_res_init(void);
+int dk_res_load(void);
+int dk_res_free(void);
 void func_0880DBD0(void);
 void *func_0881DF80(void *list);
 
@@ -66,8 +66,8 @@ void dk_init(void)
         snd_cmd_fefb();
         bgm_fade(330);
     }
-    func_0880D73C();
-    while (!func_0880D7A0())
+    dk_res_init();
+    while (!dk_res_load())
         sys_frame_wait();
     dk_setup();
 }
@@ -81,7 +81,7 @@ void dk_main(void)
     bgm_play(6);
     do {
         sys_frame_wait();
-        func_0880CB14();
+        dk_update();
     } while (!func_0880931C(pad_get()));
     fade_start_in(1, 0xFF000000, 16);
     if (dk_scene_arg != 2)
@@ -132,7 +132,7 @@ void dk_draw(void)
 
 int dk_draw_exit(void)
 {
-    return func_0880D8DC();
+    return dk_res_free();
 }
 
 void dk_setup(void)
@@ -156,5 +156,5 @@ void dk_setup(void)
     menu_init(&dk_menu, dk_heap);
     dk_cardlist_setup();
     deck_name_copy_out(dk_deck_name);
-    func_0880C728();
+    dk_check_rewards();
 }

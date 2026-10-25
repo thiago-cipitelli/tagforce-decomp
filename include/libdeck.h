@@ -171,7 +171,8 @@ typedef struct DkView {                /* dkv 0x095D2290, 0x94 bytes cleared by 
     unsigned char recipe : 1;          /*       librecipe_viewer shown */
     unsigned char tutorial : 1;        /*       libdeck_tutorial shown */
     unsigned char help : 1;            /*       help viewer shown */
-    unsigned char pad38 : 4;
+    unsigned char loading : 1;         /*       a sub-screen module is being loaded */
+    unsigned char pad38 : 3;
     unsigned char pad39[3];
     DkPane pane[2];                    /* +0x3C */
 } DkView;
