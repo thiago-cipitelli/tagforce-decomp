@@ -27,6 +27,9 @@ segments:
     subalign: null
     subsegments:
       - [0x60, asm, text_0]
+      - [0x6B88, c, ds_sortmenu]
+      - [0x7588, asm, ds_sortmenu_asm_0880B528]
+      - [0x75DC, c, ds_sortmenu]
       - [0x77B0, c, ds_sort]
       - [0x7CEC, asm, ds_sort_asm_0880BC8C]
       - [0x7E7C, asm, text_1]
@@ -58,6 +61,7 @@ segments:
       - [0x15C54, data, data_0]
       - [0x15D3C, .data, ds_parts__rodata]
       - [0x15D60, data, data_1]
+      - [0x16200, .data, ds_sortmenu]
       - [0x16248, .data, ds_sort]
       - [0x16258, .data, ds_filter]
       - [0x16284, data, data_2]
