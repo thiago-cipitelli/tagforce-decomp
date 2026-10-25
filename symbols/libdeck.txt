@@ -295,6 +295,15 @@ dk_help_ids = 0x08823120; // type:data size:0x18
 D_0882312C = 0x0882312C; // type:data alias
 dk_help_plus = 0x08823138; // type:data size:0x4
 D_0882313A = 0x0882313A; // type:data alias
+dk_draw_rows = 0x0880F284; // type:func
+dk_draw_grid = 0x0880F3BC; // type:func
+dk_draw_row = 0x0880F5E4; // type:func
+dk_draw_rows_small = 0x0880FB34; // type:func
+dk_draw_row_small = 0x0880FC6C; // type:func
+dk_row_counters = 0x08822EF0; // type:data
+dk_draw_type_icon = 0x088103A0; // type:func
+dk_draw_attr_icon = 0x0881040C; // type:func
+dk_draw_kind_icon = 0x08810478; // type:func
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x0881E870; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x0881E878; // type:func import:libehsys nid:4BDEB2A8

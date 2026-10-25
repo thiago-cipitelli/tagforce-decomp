@@ -19,8 +19,8 @@ extern DkButton dk_filter_icons[9];    /* 0x08822F5C */
 
 void *dk_res_get(unsigned short id);
 void *func_088104E4(void *list, unsigned short x, unsigned short y, unsigned short v);
-void *func_088103A0(void *list, unsigned short x, unsigned short y, unsigned short v);
-void *func_08810478(void *list, unsigned short x, unsigned short y, unsigned short v);
+void *dk_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned short v);
+void *dk_draw_kind_icon(void *list, unsigned short x, unsigned short y, unsigned short v);
 void *func_08810550(void *list, unsigned short x, unsigned short y, unsigned short v);
 void *dk_draw_fmenu_values(void *list, int x, int y, int w, int h);
 void *dk_draw_flag_value(void *list, unsigned short x, unsigned short y, unsigned short v);
@@ -32,8 +32,8 @@ unsigned short *dk_filter_label(unsigned short f, unsigned short v);
 DkFilterDef dk_filter_defs[9] = {
     { 0, 0, 0 },
     { 0, 5, (DkValueDraw)func_088104E4 },
-    { 1, 20, (DkValueDraw)func_088103A0 },
-    { 1, 6, (DkValueDraw)func_08810478 },
+    { 1, 20, (DkValueDraw)dk_draw_type_icon },
+    { 1, 6, (DkValueDraw)dk_draw_kind_icon },
     { 0, 2, (DkValueDraw)dk_draw_flag_value },
     { 1, 9, (DkValueDraw)dk_draw_spell_value },
     { 0, 3, (DkValueDraw)func_08810550 },
