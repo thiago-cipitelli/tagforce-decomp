@@ -269,7 +269,47 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned short msg_buf[0x202];     /* +0x3050 */
 } Title;
 
+typedef struct TMsgLine {              /* a line of TMsgWin, 0x18 */
+    int x, y;                          /* +0x00 */
+    int u08;
+    int h;                             /* +0x0C */
+    int start;                         /* +0x10 first character */
+    int count;                         /* +0x14 characters on the line */
+} TMsgLine;
+
+typedef struct TMsgWin {               /* tmsg 0x09433B44: message window, 0x180 */
+    int done;                          /* +0x000 */
+    int pad004;
+    Menu menu;                         /* +0x008 */
+    MenuItemDef def;                   /* +0x054 */
+    void *heap;                        /* +0x0CC */
+    int x;                             /* +0x0D0 */
+    int w0;                            /* +0x0D4 */
+    int size;                          /* +0x0D8 font size */
+    int nlines;                        /* +0x0DC */
+    int w;                             /* +0x0E0 */
+    unsigned short *text;              /* +0x0E4 */
+    int speed;                         /* +0x0E8 text speed option */
+    int u0ec;                          /* +0x0EC */
+    int style;                         /* +0x0F0 */
+    TMsgLine line[3];                  /* +0x0F4 */
+    int u13c;                          /* +0x13C */
+    int pos;                           /* +0x140 */
+    int u144;                          /* +0x144 */
+    int u148, u14c, u150, u154;        /* +0x148 */
+    int wide;                          /* +0x158 */
+    int u15c;                          /* +0x15C */
+    unsigned char pad160[0x168 - 0x160];
+    float fx;                          /* +0x168 */
+    float fy;                          /* +0x16C */
+    float fx2;                         /* +0x170 */
+    float fy2;                         /* +0x174 */
+    float fx3;                         /* +0x178 */
+    float fy3;                         /* +0x17C */
+} TMsgWin;
+
 extern Title title;
+extern TMsgWin tmsg;
 /* title.ehf[i]; the original adds the index to &title as an integer (the field offset is not folded) */
 #define TITLE_EHF(i) (((Title *)((char *)&title + (i) * 4))->ehf[0])
 extern char title_pack_names[9][64];
@@ -292,6 +332,10 @@ void scene_get_transition_info(SceneTrans *out);
 void deck_cur_get_u16_0(short *out);
 int sysstate_get_u32_97e8(void);
 void bgm_play(int id);
+unsigned int cfg_get_byte0_bits4_5(void);
+int region_get(void);
+int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max_glyphs);
+int wcslen(const unsigned short *s);
 void scene_push(int from, int scene, int arg);
 void gamestate_load(const void *src);
 void gamestate_fill_partner_list(RecipeData *deck, int with_side);
@@ -459,9 +503,9 @@ void title_recipe_open(void);
 void title_chara_open(void);
 void title_album_open(void);
 void title_record_open(void);
-void func_0880C0F0(void *heap, int a, int b, int c, int d, int e);
+void tmsg_init(void *heap, int x, int w, int size, int a, int style);
 void tpanel_init(TPanel *p, void *heap);
-void func_0880C2F0(void);
+void tmsg_free(void);
 void func_088225A0(int a);
 void title_module_stop(void);
 void title_ehf_load(int id, int a, int b, int c);
