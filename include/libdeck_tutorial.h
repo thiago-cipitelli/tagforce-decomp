@@ -269,6 +269,20 @@ int sceKernelCreateFpl(const char *name, int part, int attr, unsigned int size, 
 int sceKernelAllocateFpl(int fpl, void **data, unsigned int *timeout);
 int sceKernelChangeCurrentThreadAttr(unsigned int clear, unsigned int set);
 
+void *heap_alloc(void *h, int n);
+int heap_set_level(void *h, void *p);
+unsigned short *table_get_entry(void *t, unsigned int i);
+
+/* editor code copied from libdeck (dt_lists.c .. dt_word.c) */
+void *dt_eres_get(unsigned short id);
+unsigned short dt_cur_index(unsigned short side);
+DtEnt *dt_cur_entry(unsigned short side);
+void dt_info_update(void);
+void dt_select_tab(unsigned short side, unsigned short tab, unsigned short how);
+unsigned short *dt_list_name(unsigned short tab);
+void dt_save_panes(unsigned short which);
+void dt_bg_anim_update(void);
+
 /* dt_main.c */
 int dt_unload(void);
 void *dt_draw_highlight(void *list, unsigned short kind);
