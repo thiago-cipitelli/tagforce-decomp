@@ -376,10 +376,10 @@ unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
         list = shop_ui_draw_icon_b(list, PT(0xC4, ty), type, shop_res_get(0x2023));
     }
     memcpy(c, shop_row_counters, sizeof(c));
-    c[0].value = it->info & 0xF;
-    c[2].value = (it->info & 0xFFF) >> 4;
+    c[0].value = it->partners;
+    c[2].value = it->owned;
     total = shop_items_count(it->id);
-    owned = (it->info & 0xFFF) >> 4;
+    owned = it->owned;
     if (owned + total > 99) {
         c[2].color = 0xFF0000FF;
         if (owned > 99)

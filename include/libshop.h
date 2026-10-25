@@ -80,7 +80,9 @@ typedef struct ShopItem {       /* a line of the bought list, 10 bytes */
     unsigned short key;         /* +0x02 sort key */
     unsigned short pack;        /* +0x04 pack kind it came from */
     unsigned short count;       /* +0x06 copies that came out */
-    unsigned short info;        /* +0x08 bits 0-3 rarity, 4-11 copies owned before */
+    unsigned short partners : 4; /* +0x08 partner decks holding the card */
+    unsigned short owned : 8;   /*        copies owned */
+    unsigned short pad8 : 4;
 } ShopItem;
 
 typedef struct ShopBox {        /* a pack on the shelf: picture, position, name */
@@ -295,6 +297,7 @@ extern ShopResFlags shop_res;
 extern ShopClerk shop_clerk;
 extern ShopMsgWin shop_msg;
 extern ShopPackDef shop_pack_defs[48];
+extern struct ShopOpen *shop_open;
 extern unsigned char shop_heap_mem[0x600000];
 extern unsigned char shop_cip_mem[0x16E000];
 extern void *shop_box_tex[48][3];
