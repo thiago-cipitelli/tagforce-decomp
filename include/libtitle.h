@@ -74,7 +74,7 @@ typedef struct TGameHdr {             /* view of GameState +0x118.. */
 } TGameHdr;
 
 typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared by title_init */
-    int u000;                          /* +0x000 */
+    int ticks;                         /* +0x000 frames since the scene started, wraps at 0x10000 */
     int frame;                         /* +0x004 frames in the current step */
     short state;                       /* +0x008 scene state (title_update) */
     short next_state;                  /* +0x00A 0xFFF = none */
@@ -88,14 +88,15 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char ret_pending : 1;     /* +0x01A */
     unsigned char pad01a : 7;
     unsigned char pad01b;
-    short u01c;                        /* +0x01C */
+    short prev_state;                  /* +0x01C */
     short prev_sub;                    /* +0x01E */
-    short u020;                        /* +0x020 */
+    unsigned short u020;               /* +0x020 */
     short pad022;
     void *heap;                        /* +0x024 */
     SceneTrans trans;                  /* +0x028 */
-    unsigned char pad030[0x03C - 0x030];
-    int u03c;                          /* +0x03C */
+    PadState *pad;                     /* +0x030 */
+    unsigned char pad034[0x03C - 0x034];
+    int skip;                          /* +0x03C START pressed during the logos */
     int u040;                          /* +0x040 */
     int u044;                          /* +0x044 */
     unsigned char pad048[0x0E4 - 0x048];
@@ -113,10 +114,14 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char b3038_0 : 1;         /* +0x3038 */
     unsigned char b3038_1 : 1;
     unsigned char busy : 1;            /*         a fade/transition is running */
-    unsigned char b3038_3 : 5;
+    unsigned char no_movie : 1;        /*         the opening movie was shown or skipped */
+    unsigned char b3038_4 : 4;
     unsigned char pad3039[3];
     int sub_mod;                       /* +0x303C id of the sub-screen module */
-    unsigned char pad3040[0x3454 - 0x3040];
+    unsigned char skippable;           /* +0x3040 the logos can be skipped */
+    unsigned char pad3041[0x304C - 0x3041];
+    void *movie_mem;                   /* +0x304C */
+    unsigned char pad3050[0x3454 - 0x3050];
 } Title;
 
 extern Title title;
@@ -134,6 +139,37 @@ void scene_get_transition_info(SceneTrans *out);
 void deck_cur_get_u16_0(short *out);
 int sysstate_get_u32_97e8(void);
 void bgm_play(int id);
+unsigned int *dl_select_layer(int layer, unsigned int *size);
+void *dl_color(void *list, unsigned int color);
+void *dl_enable(void *list, int state);
+void *dl_disable(void *list, int state);
+void *dl_tex_func(void *list, int func, int rgba);
+void *dl_ambient_color(void *list, unsigned int color);
+void *dl_set_tex_filter(void *list, int min, int mag);
+void *dl_blend_func(void *list, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dl_clear_color(void *list, unsigned int rgba);
+void *dl_clear_stencil(void *list, int s);
+void *dl_clear_depth(void *list, int z);
+void *dl_scissor(void *list, int x, int y, int w, int h);
+void *gim_set_texture(void *list, void *gim);
+void *ehp_find(void *pack, const char *name, int *size);
+void *draw_set_offsets(void *list, int tw, int th, int w, int h);
+void *draw_sprite(void *list, int x, int y, int z, int u, int v, int a, int b);
+void *ehf_draw(void *list, void *e, void *opts);
+void *gfx_begin_2d(void *list);
+void *gfx_end_2d(void *list);
+void *dl_clear(void *list, int flags);
+int dl_set_list(void *list);
+int fade_apply(void **list);
+void msd_update_dialog(void);
+unsigned short region_pick_value(int flag);
+int duel_modules_load();
+int duel_modules_unload(void);
+int modmgr_none_loading_alias(void);
+void movie_set_memory(unsigned int base, unsigned int size);
+void movie_play(const char *path, unsigned int flags, int arg);
+int ehfile_make_path_alias(char *out, int dir, const char *name);
+void *sceGeEdramGetAddr(void);
 void bgm_cmd(int x);
 int ehfile_request_module(int dir, const char *name, int (*cb)(void *, int), void *arg);
 int sysstate_checksum(void);
@@ -180,14 +216,56 @@ void libdeck_tutorial_08804554(void);
 
 /* this module, not named yet */
 int title_module_start(void *arg, int id);
+void *tmenu_gfx_setup(void *list, int mode);
+void *title_logo_draw(void *list);
+void func_0880A9A8(int a);
+void func_08807E44(int a);
+void func_08808900(int a, int b, unsigned int color, int frames);
+void func_08808AF4(int a, short b, short c, short d);
+void func_0880B0B4(void);
+void func_08813134(void);
+void func_0880F950(void);
+void func_08821FB0(void);
+void func_0880BC20(void);
+void func_08813FC8(void);
+void func_0880CA5C(void);
+void func_0880EC68(void);
+void *func_0880B304(void *list);
+void *func_08813460(void *list);
+void *func_088102A0(void *list);
+void *func_08823090(void *list);
+void *func_0880BD50(void *list);
+void *func_0881DC1C(void *list);
+void *func_0880CB58(void *list);
+void *func_0880EF1C(void *list);
+void func_088104E8(void);
+void func_0881D2F4(void);
+void title_recipe_update(void);
+void title_chara_update(void);
+void title_album_update(void);
+void title_record_update(void);
+int title_limit_update(void);
+int title_tlist_update(int state);
+int title_chara_pick_update(int state);
+int title_load_update(void);
+void title_dtut_update(void);
+void title_album_draw(void);
+void title_record_draw(void);
+void title_limit_draw(void);
+void title_tlist_draw(void);
+void title_dtut_draw(void);
+void *title_load_draw(void *list);
+int title_transition(void);
+void title_menu_update(void);
+void *title_menu_draw(void *list);
 void func_0880AEF0(int mode, int id);
 void func_0880FBB8(int text, int a, int b);
 void *func_08808D48(void *list, MenuWidget *w, int center);
 int func_08808B44(void);
 void func_088119D4(int a);
-void func_08807218(int a, int b);
-void func_088072E4(void);
-void func_08807688(int a, int b);
+void title_state_init(int state, int sub);
+void title_logo_enter(int state, int sub);
+void title_movie_enter(int state, int sub);
 void func_0880AFA0(void);
 void func_08813088(void);
 void func_0880F900(void);
@@ -228,7 +306,7 @@ void *func_0880ACB0(void *list, int x, int y, int w, int a, int text, int b);
 
 /* this module */
 int title_update(void);
-int title_draw(void);
+void title_draw(void);
 void title_init(void);
 void title_goto(short state, short sub);
 int title_set_state(int st, int sub);

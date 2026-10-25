@@ -149,7 +149,7 @@ int title_transition(void)
 /* fades out, then title_transition enters state/sub */
 void title_goto(short state, short sub)
 {
-    func_08807218(2, 0);
+    title_state_init(2, 0);
     title.next_state = state;
     title.next_sub = sub;
 }
@@ -170,13 +170,13 @@ int title_set_state(int st, int sub)
     case 18:
         break;
     case 2:
-        func_08807218(st, 0);
+        title_state_init(st, 0);
         break;
     case 3:
-        func_088072E4();
+        title_logo_enter(st, sub);
         break;
     case 4:
-        func_08807688(st, 0);
+        title_movie_enter(st, 0);
         break;
     case 5:
         func_0880AFA0();

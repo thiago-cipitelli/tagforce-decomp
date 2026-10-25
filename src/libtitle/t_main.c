@@ -6,7 +6,7 @@
 
 void title_main(void);
 void title_exit(void);
-int title_draw_cb(void);
+void title_draw_cb(void);
 void title_exit_cb(void);
 
 int module_entry(void)
@@ -82,7 +82,7 @@ void title_main(void)
             title_goto(5, 0);
         break;
     }
-    sys_state_set_callbacks(13, title_draw_cb, (int (*)(void))title_exit_cb);
+    sys_state_set_callbacks(13, (int (*)(void))title_draw_cb, (int (*)(void))title_exit_cb);
     for (;;) {
         if (title_update() == 0x28)
             break;
@@ -113,9 +113,9 @@ void title_init(void)
     func_088108A0(&title.u508, title.heap);
 }
 
-int title_draw_cb(void)
+void title_draw_cb(void)
 {
-    return title_draw();
+    title_draw();
 }
 
 void title_exit_cb(void)
