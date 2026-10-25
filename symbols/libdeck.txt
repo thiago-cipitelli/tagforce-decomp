@@ -39,6 +39,16 @@ dk_list_count_id = 0x08804A3C; // type:func
 dk_list_builders = 0x08822A00; // type:data
 dk_list_caps = 0x08822A18; // type:data
 dk_owned_kinds = 0x095D2438; // type:data
+dk_fmenu_open_values = 0x08812510; // type:func
+dk_draw_fmenu_values = 0x088127B0; // type:func
+dk_draw_flag_value = 0x08812C90; // type:func
+dk_draw_spell_value = 0x08812D68; // type:func
+dk_draw_genre_value = 0x08812E84; // type:func
+dk_draw_filter_icon = 0x08812F78; // type:func
+dk_draw_check = 0x08813068; // type:func
+dk_filter_label = 0x0881312C; // type:func
+dk_func_08813268 = 0x08813268; // type:func
+dk_filter_icons = 0x08822F5C; // type:data size:0x38
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x0881E870; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x0881E878; // type:func import:libehsys nid:4BDEB2A8

@@ -29,6 +29,8 @@ segments:
       - [0x60, asm, text_0]
       - [0x78D4, c, dk_main]
       - [0x7D90, asm, text_1]
+      - [0x166FC, c, dk_osk]
+      - [0x16BC4, asm, text_2]
       - [0x1A8D0, asm, sceStub_text]
       - [0x1CFF0, bin, lib_ent_top]
       - [0x1CFF4, bin, lib_ent]
@@ -40,7 +42,9 @@ segments:
       - [0x1D0A8, bin, rodata_sceResident]
       - [0x1D0F8, bin, rodata_sceNid]
       - [0x1E520, bin, rodata_sceVstub]
-      - [0x1E540, data, data]
+      - [0x1E540, data, data_0]
+      - [0x1F1D8, .data, dk_osk]
+      - [0x1F1E4, data, data_1]
       - { start: 0x1F9B0, type: bss, vram: 0x8823950, name: bss }
   - [0x1F9B0]
 
