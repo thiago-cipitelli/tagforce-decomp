@@ -1,5 +1,5 @@
 // @range 0x08804000-0x088046B4
-// @data 0x0880F6A0-0x0880F6E0
+// @rodata 0x0880F6A0-0x0880F6E0
 /* Entry points of the tutorial duel (init / per-frame / term, exported to libduel_mgr): the step
    state machine (script, message window, waits for the player's action), the quit box opened with
    START and the game options that the lesson overrides and restores. */
@@ -153,7 +153,7 @@ int tut_is_finished(void)
 /* 0x088044B8: export; script command from the duel engine */
 void tut_command(int player, int cmd, int a, int b)
 {
-    tut_cmd_dispatch(player, cmd, a, b);
+    tut_cmd_dispatch(player, (unsigned short)cmd, a, b);
 }
 
 /* 0x088044C8: export; nonzero while a message window is open */

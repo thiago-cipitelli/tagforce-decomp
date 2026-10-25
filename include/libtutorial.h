@@ -53,6 +53,13 @@ int fade_apply(void **list);
 unsigned int *dl_select_layer(int layer, unsigned int *size);
 int dl_set_list(unsigned int *list);
 void sys_frame_wait(void);
+void *heap_alloc(void *h, int n);
+int heap_set_level(void *h, void *p);
+int ehfile_get_size(int dir, const char *name);
+int ehfile_read_async_alias(int dir, const char *name, void *buf, int size, int (*cb)(void *, int), void *arg);
+int ehp_mount(void (*cb)(void *), void *pack);
+void *ehp_find(void *pack, const char *name, int *size);
+unsigned short *table_get_entry(void *t, unsigned int i);
 
 /* libduel_draw / libduel_eng */
 int libduel_draw_088062E4(void);
@@ -71,7 +78,7 @@ void tut_cfg_save(void);
 void tut_cfg_restore(void);
 
 /* tut_cmd.c */
-void tut_cmd_dispatch(int player, unsigned short cmd, unsigned short a, unsigned short b);
+void tut_cmd_dispatch(int player, int cmd, unsigned short a, unsigned short b);
 void tut_arrows_clear(void);
 
 /* tut_res.c */
@@ -79,6 +86,13 @@ void tut_heap_init_thunk(void);
 void tut_heap_term_thunk(void);
 void tut_res_load(int lesson);
 void tut_res_free(void);
+void *tut_find(const char *name, int *size);
+void tut_release(void *p);
+unsigned short *tut_msg_get(int id);
+void *tut_duel_commands(int lesson);
+char *tut_field_set(int lesson);
+char *tut_field_reset_file(int n);
+void *tut_heap_get(void);
 
 /* tut_window.c */
 void tut_windows_init(void);
