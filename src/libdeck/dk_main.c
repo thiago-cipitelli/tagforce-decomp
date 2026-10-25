@@ -37,7 +37,7 @@ void dk_res_init(void);
 int dk_res_load(void);
 void dk_res_free_alias(void);
 void dk_draw_scene(void);
-void *func_0881DF80(void *list);
+void *dk_help_draw(void *list);
 
 extern unsigned char dk_scene_data[];  /* 0x0882427C */
 extern unsigned char dk_heap_mem[];    /* 0x08824290, 0xDAE000 bytes */
@@ -120,7 +120,7 @@ void dk_draw(void)
     if (dkv.info) {
         cardinfo_draw();
     } else if (dkv.help) {
-        dl_set_list(func_0881DF80(dl_select_layer(4, 0)));
+        dl_set_list(dk_help_draw(dl_select_layer(4, 0)));
     } else if (dkv.recipe) {
         recipe_viewer_draw();
     } else if (dkv.tutorial) {

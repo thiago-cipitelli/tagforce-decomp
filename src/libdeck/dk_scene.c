@@ -31,9 +31,9 @@ void dk_action_reopen(DkEnt *e);
 int dk_osk_open(void *a, void *b, int max, void *c);
 int dk_osk_update(int mode);
 void dk_help_init(int page, void *heap, void *gim, void *strtbl, void *labels);
-void func_0881DB9C(int page, void *heap, void *gim, void *strtbl, void *labels);
-int func_0881DC28(void);
-int func_0881E024(void);
+void dk_help_open(int page, void *heap, void *gim, void *strtbl, void *labels);
+int dk_help_update(void);
+int dk_help_close(void);
 void dk_deck_save(void);
 void dk_deck_load(void);
 void *dk_pack_get(void);
@@ -229,16 +229,16 @@ void dk_help_run(void)
         if (dk_help_page == 0xFF)
             dk_help_init(13, dk_heap, dk_res_get(0x8014), dk_res_get(0x8034), dk_res_get(0x8035));
         else
-            func_0881DB9C(dk_help_page, dk_heap, dk_res_get(0x8014), dk_res_get(0x8034), dk_res_get(0x8035));
+            dk_help_open(dk_help_page, dk_heap, dk_res_get(0x8014), dk_res_get(0x8034), dk_res_get(0x8035));
         dkv.help = 1;
         dk_substep++;
         return;
     case 2:
-        if (func_0881DC28() == 0)
+        if (dk_help_update() == 0)
             return;
         dk_substep++;
     case 3:
-        if (func_0881E024() == 0)
+        if (dk_help_close() == 0)
             return;
         dkv.help = 0;
         fade_start(1, 0xFF000000, 16);

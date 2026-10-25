@@ -26,12 +26,12 @@ void *func_088105BC(void *list, DkButton *b, int x, int y, unsigned int color);
 void *dk_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, DkEnt *e, void *gim, void *gim_alt, void *alt);
 void func_0880AF34(unsigned short mode);
 int dk_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b);
-void dk_func_08817D18(DkList *l);
-void func_08818BFC(DkList *l, unsigned short sort, unsigned short dir);
+void dk_list_filter_reset(DkList *l);
+void dk_list_sort(DkList *l, unsigned short sort, unsigned short dir);
 int dk_flight_undo(void);
 void dk_deck_clear(void);
 void dk_lists_reset(void);
-void func_088192C8(void);
+void dk_word_open(void);
 void func_088118F4(void);
 void func_08810CD0(void);
 void dk_action_free(void);
@@ -271,8 +271,8 @@ int dk_action_close(void)
     switch (r) {
     case 5:
         l = dkv.pane[dkv.side].list;
-        dk_func_08817D18(l);
-        func_08818BFC(l, l->sort, l->dir);
+        dk_list_filter_reset(l);
+        dk_list_sort(l, l->sort, l->dir);
         break;
     case 6:
         if (dk_flight_undo())
@@ -374,7 +374,7 @@ void dk_action_step1(void)
         dk_action_free();
         break;
     case 2:
-        func_088192C8();
+        dk_word_open();
         se_play(0x6216);
         dk_action_free();
         break;
@@ -485,7 +485,7 @@ void dk_action_step3(PadState *pad)
             dk_action->menu->cancelled = dk_action->menu->accepted = 0;
         } else {
             if (dk_action->mode > 1 && dkv.mode < 2)
-                dk_func_08817D18(&dk_deck.lists[dk_action->tab]);
+                dk_list_filter_reset(&dk_deck.lists[dk_action->tab]);
             menu_finish(dk_action->menu);
             dk_action->step = 10;
         }
@@ -618,7 +618,7 @@ void dk_action_step5(void)
     case 2:
         cfg_set_byte0_hi2(dk_action->mark);
         l = &dk_deck.lists[3];
-        dk_func_08817D18(l);
+        dk_list_filter_reset(l);
         if (dkv.pane[0].list->tab == 3) {
             dkv.pane[0].cy = 0;
             dkv.pane[0].cx = 0;

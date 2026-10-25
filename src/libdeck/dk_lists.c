@@ -16,8 +16,8 @@ unsigned short partner_id_get(int i);
 int partner_state_get(int i);
 
 unsigned short dk_sort_key(unsigned short id, void *tab);
-void func_08818BFC(DkList *l, int reset, int keep);
-void dk_func_08817D18(DkList *l);
+void dk_list_sort(DkList *l, int reset, int keep);
+void dk_list_filter_reset(DkList *l);
 int dk_kind_icon(unsigned short icon);
 void dk_layout_scroll(int keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 int sceRtcGetCurrentClockLocalTime(void *time);
@@ -73,15 +73,15 @@ void dk_lists_init(void)
             l->n = (*b)(l);
             dk_list_total(l);
             l->count = l->n;
-            func_08818BFC(l, 1, 0);
+            dk_list_sort(l, 1, 0);
         }
     }
     l = &dk_lists[4];
     dk_list_copy(l, &dk_lists[2], 1);
     dk_list_total(l);
     l->tab = 4;
-    func_08818BFC(l, 1, 0);
-    dk_func_08817D18(&dk_lists[3]);
+    dk_list_sort(l, 1, 0);
+    dk_list_filter_reset(&dk_lists[3]);
     dk_attr_count_update();
 }
 
@@ -482,7 +482,7 @@ void dk_lists_reset(void)
             l->n = (*b)(l);
             dk_list_total(l);
             l->count = l->n;
-            func_08818BFC(l, 1, 0);
+            dk_list_sort(l, 1, 0);
             l->u18 = 0;
             l->u1a = 0;
             l->u1c_lo = 0;
@@ -490,12 +490,12 @@ void dk_lists_reset(void)
             l->u1d_lo = 0;
         }
     }
-    dk_func_08817D18(&dk_lists[3]);
+    dk_list_filter_reset(&dk_lists[3]);
     l = &dk_lists[4];
     dk_list_copy(l, &dk_lists[2], 1);
     dk_list_total(l);
     l->tab = 4;
-    func_08818BFC(l, 1, 0);
+    dk_list_sort(l, 1, 0);
     l->u1c_lo = 0;
     l->u1c_hi = 0;
     l->u1d_lo = 0;
@@ -667,8 +667,8 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
             id = d->main_ids[i];
             dk_deck_take(dst, id);
         }
-        dk_func_08817D18(dst);
-        func_08818BFC(dst, 1, 0);
+        dk_list_filter_reset(dst);
+        dk_list_sort(dst, 1, 0);
     }
     {
         unsigned short id;
@@ -679,14 +679,14 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
             id = d->extra_ids[i];
             dk_deck_take(dst, id);
         }
-        dk_func_08817D18(dst);
-        func_08818BFC(dst, 1, 0);
+        dk_list_filter_reset(dst);
+        dk_list_sort(dst, 1, 0);
     }
     {
         DkList *dst = &dk_lists[4];
 
-        dk_func_08817D18(dst);
-        func_08818BFC(dst, 1, 0);
+        dk_list_filter_reset(dst);
+        dk_list_sort(dst, 1, 0);
     }
     {
         unsigned short id;
@@ -697,8 +697,8 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
             id = d->side_ids[i];
             dk_deck_take(dst, id);
         }
-        dk_func_08817D18(dst);
-        func_08818BFC(dst, 1, 0);
+        dk_list_filter_reset(dst);
+        dk_list_sort(dst, 1, 0);
     }
     dk_undo_count = 0;
     dk_attr_count_update();
@@ -746,8 +746,8 @@ void dk_deck_store(void)
     DK_DECK_STORE(2, &l->ents[i]);
     l = &dk_lists[1];
     if (l->filter != 0)
-        dk_func_08817D18(l);
-    func_08818BFC(l, 1, 0);
+        dk_list_filter_reset(l);
+    dk_list_sort(l, 1, 0);
     DK_DECK_STORE(3, &l->ents[l->order[i]]);
     partner_count_set(k);
     l = &dk_lists[3];
