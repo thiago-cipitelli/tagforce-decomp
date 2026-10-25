@@ -440,14 +440,14 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`cl_draw.c`](../src/libcharalist/cl_draw.c) | 0x08804F48-0x08807F68 | 18 | 3 | janela com três abas, linhas de duelista (rosto, número, nome, nível, estrelas, retrospecto), cursor, barras de rolagem e página de detalhe |
 | [`cl_list.c`](../src/libcharalist/cl_list.c) | 0x08807F68-0x0880A34C | 4 | 6 | abas montadas a partir dos encontros, entrada da lista e do detalhe (roupas, perfil, teste de voz), tabela de personagens e retrato |
 
-## libconv_machine (4 arquivos, 23 funções batendo, 2 em asm)
+## libconv_machine (4 arquivos, 44 funções batendo, 3 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`cm_main.c`](../src/libconv_machine/cm_main.c) | 0x08804000-0x08804B50 | 15 | 0 | entrada, init/update exportados, liberação, carga dos pacotes e arquivos por idioma, busca de recursos e modelos |
 | [`cm_draw.c`](../src/libconv_machine/cm_draw.c) | 0x08804B50-0x08805FF8 | 8 | 2 | desenho exportado, fundo, painel da máquina, animações EHF, janela de mensagem, cartas, clarão, escurecimento, nome e dica |
-| [`cm_gfx.c`](../src/libconv_machine/cm_gfx.c) | 0x08805FF8-0x08806D4C | 0 | 0 | estado do GE, luzes, câmeras, tampa da máquina, cartas entrando e carta saindo com textura renderizada |
-| [`cm_states.c`](../src/libconv_machine/cm_states.c) | 0x08806D4C-0x08808A38 | 0 | 0 | estados (introdução, escolha das cartas, inserção, conversão, resultado com nome e ficha, pergunta de repetir), sorteio da carta pelo grupo, medidor e slots de animação |
+| [`cm_gfx.c`](../src/libconv_machine/cm_gfx.c) | 0x08805FF8-0x08806D4C | 9 | 1 | estado do GE, luzes, câmeras, tampa da máquina, cartas entrando e carta saindo com textura renderizada |
+| [`cm_states.c`](../src/libconv_machine/cm_states.c) | 0x08806D4C-0x08808A38 | 12 | 0 | estados (introdução, escolha das cartas, inserção, conversão, resultado com nome e ficha, pergunta de repetir), sorteio da carta pelo grupo, medidor e slots de animação |
 
 ## liblimitlist (8 arquivos, 55 funções batendo, 7 em asm)
 
@@ -473,4 +473,139 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`rv_list.c`](../src/librecipe_viewer/rv_list.c) | 0x08807A44-0x08809274 | 5 | 7 | listas dos dados extras, entrada da lista e da grade, ficha da carta, piscar do menu, animações, montagem da grade |
 | [`rv_menu.c`](../src/librecipe_viewer/rv_menu.c) | 0x08809274-0x0880A248 | 9 | 4 | cartas por linha, entrada sob o cursor, revelação, menus de confirmação/opções, teclado na tela |
 | [`rv_main.c`](../src/librecipe_viewer/rv_main.c) | 0x0880A248-0x0880A99C | 4 | 0 | entrada, init (listas, heap de 4 MB), update com resultado, liberação |
+
+## libtitle (21 arquivos, 243 funções batendo, 41 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`t_main.c`](../src/libtitle/t_main.c) | 0x08804000-0x08804348 | 6 | 0 | entrada do módulo, thread da cena 13, init e callbacks |
+| [`t_menu.c`](../src/libtitle/t_menu.c) | 0x08804348-0x088056EC | 16 | 0 | menu principal (checagem do save, lista principal e sublistas) |
+| [`t_sub.c`](../src/libtitle/t_sub.c) | 0x088056EC-0x088062B4 | 27 | 0 | sub-telas carregadas pelo título (PRX, callbacks, init/update/draw) |
+| [`t_state.c`](../src/libtitle/t_state.c) | 0x088062B4-0x08806EF0 | 13 | 0 | troca de estado após o fade, avisos de save, fluxo de novo jogo |
+| [`t_update.c`](../src/libtitle/t_update.c) | 0x08806EF0-0x08807C98 | 10 | 0 | update/draw por quadro (despacho por estado, boot, logos, filme) |
+| [`t_gfx.c`](../src/libtitle/t_gfx.c) | 0x08807C98-0x08808D48 | 32 | 1 | recursos e desenho (logos, pacotes por idioma, mensagens, sprites, fade) |
+| [`t_tmenu.c`](../src/libtitle/t_tmenu.c) | 0x08808D48-0x08809DC4 | 8 | 2 | menus de painéis (fade escalonado, cursor, aceitar/cancelar) |
+| [`t_scene.c`](../src/libtitle/t_scene.c) | 0x08809DC4-0x0880A41C | 5 | 1 | saída para o duelo (GameState de duelo aleatório, lições, duelo livre, tutoriais) |
+| [`t_res.c`](../src/libtitle/t_res.c) | 0x0880A41C-0x0880AFA0 | 15 | 1 | camadas EHF, placa da tela, módulos de sub-tela, reset do som |
+| [`t_screen.c`](../src/libtitle/t_screen.c) | 0x0880AFA0-0x0880B7D0 | 7 | 0 | tela de título, novo jogo, continuar |
+| [`t_screen2.c`](../src/libtitle/t_screen2.c) | 0x0880B7D0-0x0880C0F0 | 10 | 1 | tela de opções do menu |
+| [`t_msg.c`](../src/libtitle/t_msg.c) | 0x0880C0F0-0x0880C998 | 10 | 2 | janela de mensagem (até três linhas, paginação) |
+| [`t_cfg.c`](../src/libtitle/t_cfg.c) | 0x0880C998-0x0880D454 | 8 | 0 | tela de opções (estado 17) e cópia das opções do sistema |
+| [`t_cfgdraw.c`](../src/libtitle/t_cfgdraw.c) | 0x0880D454-0x0880EB20 | 2 | 6 | desenho das opções (grupos, medidor de volume, setas, ON/OFF) |
+| [`t_lang.c`](../src/libtitle/t_lang.c) | 0x0880EB20-0x0880F438 | 6 | 0 | seleção de idioma (estado 19), recarga do pacote e do banco de cartas |
+| [`t_osk.c`](../src/libtitle/t_osk.c) | 0x0880F438-0x0880F900 | 0 | 2 | teclado na tela (SceUtility OSK), mesmo código da librecipe_viewer |
+| [`t_name.c`](../src/libtitle/t_name.c) | 0x0880F900-0x088106D8 | 14 | 0 | novo jogo (estado 8: nome, confirmação, gravação) e title_prompt |
+| [`t_panel.c`](../src/libtitle/t_panel.c) | 0x088106D8-0x08813088 | 20 | 7 | caixa de células com rolagem, abas, janela com abas, quadros de nove peças, cursor piscante, caixas prontas e ajudas |
+| [`t_ext.c`](../src/libtitle/t_ext.c) | 0x08813088-0x08813AC4 | 8 | 0 | cartas de dados extras (estado 6): .YGC do Memory Stick, carta nova recebida em três cópias |
+| [`t_partner.c`](../src/libtitle/t_partner.c) | 0x0881F02C-0x08821D3C | 22 | 17 | painel de parceiros/adversários (cópia do dmgr_partner.c com quatro funções a mais) |
+| [`t_chr.c`](../src/libtitle/t_chr.c) | 0x0882647C-0x08826B8C | 4 | 1 | números com a fonte e com sprites de dígitos, retrato do personagem, tabela de rostos |
+
+## libdeck (21 arquivos, 275 funções batendo, 53 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`dk_lists.c`](../src/libdeck/dk_lists.c) | 0x08804000-0x088060B0 | 21 | 2 | listas de cartas do editor (principal, side, extra, baú, view do extra, alugadas ao parceiro): montagem a partir do sysstate, inclusão/remoção, ordem visível, totais, gravar/carregar deck |
+| [`dk_move.c`](../src/libdeck/dk_move.c) | 0x088060B0-0x0880931C | 10 | 7 | mover carta entre listas: janela de destino, voo em curva, desfazer, limites de cópias/proibidas, posição dos espaços |
+| [`dk_input.c`](../src/libdeck/dk_input.c) | 0x0880931C-0x0880A694 | 4 | 8 | entrada da tela de listas: despacho pelo estado, teclas de mover/ação/aba/layout, L/R, cursores, rolagem analógica, moldura de foco |
+| [`dk_mode.c`](../src/libdeck/dk_mode.c) | 0x0880A694-0x0880B874 | 7 | 3 | verificação do deck antes de gravar, popup de mensagens, troca de layout dos painéis, abas, animação do fundo |
+| [`dk_main.c`](../src/libdeck/dk_main.c) | 0x0880B874-0x0880BD30 | 7 | 0 | entrada do módulo, thread da cena (init, laço, fade, gravação), saída, callbacks de desenho |
+| [`dk_pane.c`](../src/libdeck/dk_pane.c) | 0x0880BD30-0x0880C728 | 6 | 4 | sprites da lista, entrada do cursor, texto da carta sob o cursor, troca de lista no painel, limites de rolagem, desfazer |
+| [`dk_scene.c`](../src/libdeck/dk_scene.c) | 0x0880C728-0x0880D6C0 | 9 | 0 | recompensas ao entrar pela história, nome do deck, atualização por quadro e sub-telas (info, ajuda, librecipe_viewer, libdeck_tutorial) |
+| [`dk_res.c`](../src/libdeck/dk_res.c) | 0x0880D6C0-0x0880DBD0 | 9 | 0 | pacote deck/all_%c.ehp assíncrono, leitor de imagens de carta, tabela de recursos e busca por id |
+| [`dk_draw.c`](../src/libdeck/dk_draw.c) | 0x0880DBD0-0x0880E4D0 | 8 | 0 | callback de desenho, camada de popups, bg.ehf, d_window0.ehf, nome do deck, linhas dos painéis |
+| [`dk_panes.c`](../src/libdeck/dk_panes.c) | 0x0880E4D0-0x0880F1E4 | 5 | 1 | cabeçalhos dos painéis, cópias nas abas, cartas do deck por atributo |
+| [`dk_cards.c`](../src/libdeck/dk_cards.c) | 0x0880F1E4-0x088103A0 | 3 | 4 | cartas em grade ou linhas e faixa da carta sob o cursor com descrição rolando |
+| [`dk_icons.c`](../src/libdeck/dk_icons.c) | 0x088103A0-0x08810CD0 | 7 | 1 | ícones de carta, botão com rótulo, sombra de painel/aba, balão do valor de ordenação |
+| [`dk_sortmenu.c`](../src/libdeck/dk_sortmenu.c) | 0x08810CD0-0x08812510 | 13 | 2 | menu de ordenação (chaves e direção, reordenação ao vivo) e lista de tipos do menu de filtro |
+| [`dk_fmenu.c`](../src/libdeck/dk_fmenu.c) | 0x08812510-0x08813268 | 6 | 2 | janela de valores do filtro, ícones dos valores, marca e rótulo |
+| [`dk_action.c`](../src/libdeck/dk_action.c) | 0x08813268-0x08815280 | 25 | 1 | menu de ações da carta e submenus (info, favorito, ordenar/filtrar/buscar, operações do deck, layout, novidade) |
+| [`dk_parts.c`](../src/libdeck/dk_parts.c) | 0x08815280-0x08817D18 | 25 | 3 | peças de desenho comuns (dígitos, molduras, ícones, ATK/DEF, imagem, contadores, barra de rolagem, ajuda dos botões) |
+| [`dk_filter.c`](../src/libdeck/dk_filter.c) | 0x08817D18-0x088192C8 | 10 | 10 | filtros e ordenação das listas (busca incremental, filtros por tipo/raça/nível/limite/gênero, Horspool, ordenação estável por 9 chaves) |
+| [`dk_word.c`](../src/libdeck/dk_word.c) | 0x088192C8-0x0881A69C | 9 | 2 | busca por palavra (janela com histórico, teclado do sistema, barra de progresso) |
+| [`dk_osk.c`](../src/libdeck/dk_osk.c) | 0x0881A69C-0x0881AB64 | 2 | 0 | teclado do sistema (SceUtilityOsk) para o nome do deck |
+| [`dk_help_ui.c`](../src/libdeck/dk_help_ui.c) | 0x0881AB64-0x0881D918 | 72 | 2 | widgets da ajuda: barra de botões, lista rolável por callbacks, tópicos, páginas, painel de texto com imagem, sprites em nove/três partes |
+| [`dk_help.c`](../src/libdeck/dk_help.c) | 0x0881D918-0x0881E870 | 17 | 1 | tela de ajuda (duelo e editor): abertura por id, estados com fade, imagem da página lida de help/ |
+
+## libshop (17 arquivos, 187 funções batendo, 36 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`shop_main.c`](../src/libshop/shop_main.c) | 0x08804000-0x088052F8 | 27 | 1 | entradas da cena (init/update/draw/term), recursos por id (bsearch), número, 2D, prateleira |
+| [`shop_gfx.c`](../src/libshop/shop_gfx.c) | 0x088052F8-0x08805AB4 | 8 | 0 | camadas 3D da loja e das cartas, estado do GE, seleção, espera do pack do deck, compra gravada |
+| [`shop_state.c`](../src/libshop/shop_state.c) | 0x08805AB4-0x08807CAC | 6 | 5 | máquina de estados da loja, código secreto, entrada principal e da prateleira, passos da compra |
+| [`shop_clerk.c`](../src/libshop/shop_clerk.c) | 0x08807CAC-0x08808B44 | 13 | 0 | modelos, a vendedora (carga, deslize, piscar, fala, voz) |
+| [`shop_msgwin.c`](../src/libshop/shop_msgwin.c) | 0x08808B44-0x08809D2C | 17 | 3 | janela de mensagens com texto digitado |
+| [`shop_points.c`](../src/libshop/shop_points.c) | 0x08809D2C-0x0880A960 | 16 | 0 | contador de DP |
+| [`shop_packs.c`](../src/libshop/shop_packs.c) | 0x0880A960-0x0880C238 | 11 | 3 | estado, preço, nome e desbloqueio dos packs, estoque, porcentagem de coleção |
+| [`shop_shelf.c`](../src/libshop/shop_shelf.c) | 0x0880C238-0x0880D298 | 9 | 3 | contador, gasto, prateleira e camadas |
+| [`shop_list.c`](../src/libshop/shop_list.c) | 0x0880D298-0x0880EF74 | 9 | 4 | lista das cartas compradas (linhas, contadores, cursor, balão da chave) |
+| [`shop_parts.c`](../src/libshop/shop_parts.c) | 0x0880EF74-0x088117B8 | 23 | 3 | peças de UI (mesma fonte de sc_parts da libselect_card) |
+| [`shop_open.c`](../src/libshop/shop_open.c) | 0x088117B8-0x08812C60 | 6 | 6 | abertura dos packs comprados, cartas somadas à lista |
+| [`shop_anim.c`](../src/libshop/shop_anim.c) | 0x08812C60-0x08813808 | 3 | 3 | animação do pack aberto e curvas das cartas |
+| [`shop_detail.c`](../src/libshop/shop_detail.c) | 0x08813808-0x08813FF4 | 9 | 0 | menu de uma carta comprada |
+| [`shop_sort.c`](../src/libshop/shop_sort.c) | 0x08813FF4-0x08814BE8 | 8 | 1 | diálogo de ordenação (chaves e direção, reordenação ao vivo) |
+| [`shop_dialog.c`](../src/libshop/shop_dialog.c) | 0x08814BE8-0x08814F58 | 3 | 0 | diálogos sim/não (sair, comprar, abrir a lista) |
+| [`shop_glow.c`](../src/libshop/shop_glow.c) | 0x08814F58-0x08817DD4 | 15 | 3 | brilho das cartas raras (barra de luz com scissor, efeitos super/ultra), ajudantes de GE e matriz |
+| [`shop_lsort.c`](../src/libshop/shop_lsort.c) | 0x08817DD4-0x08818554 | 4 | 1 | ordenação da lista (13 chaves, qsort estável), valor mostrado na linha |
+
+## libdeck_swap (20 arquivos, 156 funções batendo, 48 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`ds_res.c`](../src/libdeck_swap/ds_res.c) | 0x08804000-0x08804608 | 10 | 0 | packs deck/all_%c.ehp e deck/deckswap.ehp, recursos por id, passos da carga e montagem da tela |
+| [`ds_state.c`](../src/libdeck_swap/ds_state.c) | 0x08804608-0x08804E2C | 4 | 4 | entrada do cursor, texto de informação, troca de aba, rolagem, histórico de desfazer |
+| [`ds_lists.c`](../src/libdeck_swap/ds_lists.c) | 0x08804E2C-0x08805E58 | 13 | 1 | listas principal/side/extra montadas do RecipeData com as cartas dos parceiros fixas, totais, gravação do deck |
+| [`ds_mode.c`](../src/libdeck_swap/ds_mode.c) | 0x08805E58-0x08806654 | 3 | 4 | layouts dos painéis, abas, animação da janela e do fluxo de troca |
+| [`ds_draw.c`](../src/libdeck_swap/ds_draw.c) | 0x08806654-0x08806F0C | 1 | 2 | export de desenho por quadro, camada de popups, faixa de informação |
+| [`ds_icons.c`](../src/libdeck_swap/ds_icons.c) | 0x08806F0C-0x08807828 | 6 | 2 | ícones, botão com rótulo, sombra do painel, detalhe |
+| [`ds_bg.c`](../src/libdeck_swap/ds_bg.c) | 0x08807828-0x08808A54 | 12 | 1 | fundo, janela do fluxo com a diferença para o tamanho do deck, cabeçalhos e totais, atributos, tempo restante |
+| [`ds_cards.c`](../src/libdeck_swap/ds_cards.c) | 0x08808A54-0x08809804 | 3 | 3 | grade e linhas das cartas, linhas pequenas |
+| [`ds_input.c`](../src/libdeck_swap/ds_input.c) | 0x08809804-0x0880AB28 | 4 | 8 | despacho da entrada, estados de ajuda, cursores, páginas, grupos, rolagem, foco |
+| [`ds_sortmenu.c`](../src/libdeck_swap/ds_sortmenu.c) | 0x0880AB28-0x0880B750 | 8 | 1 | menu de ordenação |
+| [`ds_sort.c`](../src/libdeck_swap/ds_sort.c) | 0x0880B750-0x0880BE1C | 4 | 1 | ordenação estável, valor da chave |
+| [`ds_move.c`](../src/libdeck_swap/ds_move.c) | 0x0880BE1C-0x0880D23C | 3 | 8 | mover carta entre principal e extra (voo em curva, desfazer), posição das vagas |
+| [`ds_filter.c`](../src/libdeck_swap/ds_filter.c) | 0x0880D23C-0x0880DFFC | 9 | 5 | busca incremental, filtros, busca Horspool |
+| [`ds_word.c`](../src/libdeck_swap/ds_word.c) | 0x0880DFFC-0x0880F3E0 | 9 | 2 | janela da busca por palavra |
+| [`ds_fmenu.c`](../src/libdeck_swap/ds_fmenu.c) | 0x0880F3E0-0x08810D64 | 11 | 3 | menu de filtro e valores |
+| [`ds_action.c`](../src/libdeck_swap/ds_action.c) | 0x08810D64-0x08812510 | 20 | 0 | menu de ações e submenus |
+| [`ds_anim.c`](../src/libdeck_swap/ds_anim.c) | 0x08812510-0x08812880 | 2 | 0 | limite de tempo (popup de tempo esgotado), temporizador do cursor, tela de informação |
+| [`ds_parts.c`](../src/libdeck_swap/ds_parts.c) | 0x08812880-0x08815318 | 25 | 3 | peças de desenho |
+| [`ds_osk.c`](../src/libdeck_swap/ds_osk.c) | 0x08815318-0x088157E0 | 2 | 0 | teclado do sistema |
+| [`ds_scene.c`](../src/libdeck_swap/ds_scene.c) | 0x088157E0-0x08815ED4 | 7 | 0 | exports (init/update) e popups |
+
+## libtutorial (9 arquivos, 196 funções batendo, 11 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`tut_main.c`](../src/libtutorial/tut_main.c) | 0x08804000-0x088046B4 | 15 | 0 | exports, máquina de estados por quadro, trava |
+| [`tut_cmd.c`](../src/libtutorial/tut_cmd.c) | 0x088046B4-0x08805034 | 30 | 0 | comandos vindos da libduel_mgr |
+| [`tut_res.c`](../src/libtutorial/tut_res.c) | 0x08805034-0x088056E0 | 24 | 0 | pacote e recursos, ajudantes de sprintf |
+| [`tut_window.c`](../src/libtutorial/tut_window.c) | 0x088056E0-0x08806BC0 | 25 | 0 | janelas de mensagem |
+| [`tut_sprite.c`](../src/libtutorial/tut_sprite.c) | 0x08806BC0-0x08807A10 | 26 | 0 | sprites, destaques, pausa |
+| [`tut_arrow.c`](../src/libtutorial/tut_arrow.c) | 0x08807A10-0x08807E24 | 8 | 0 | setas |
+| [`tut_script.c`](../src/libtutorial/tut_script.c) | 0x08807E24-0x08809A5C | 48 | 2 | script da lição, montagem do duelo (%02d_field_set.txt), filtro de ações, gancho de eventos, sim/não |
+| [`tut_text.c`](../src/libtutorial/tut_text.c) | 0x08809A5C-0x0880AC6C | 14 | 9 | caixa de fala (texto digitado, páginas, ícone piscando) |
+| [`tut_face.c`](../src/libtutorial/tut_face.c) | 0x0880AC6C-0x0880B284 | 6 | 0 | animação dos rostos (bust-up) |
+
+## libdeck_tutorial (17 arquivos, 224 funções batendo, 69 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`dt_main.c`](../src/libdeck_tutorial/dt_main.c) | 0x08804000-0x088058E0 | 13 | 1 | init/carga/liberação, quadro, formas de destaque, dicas de botão, quadro de avisos |
+| [`dt_res.c`](../src/libdeck_tutorial/dt_res.c) | 0x088058E0-0x08805BE4 | 7 | 0 | pacote do tutorial |
+| [`dt_edraw.c`](../src/libdeck_tutorial/dt_edraw.c) | 0x08805BE4-0x08808C6C | 15 | 14 | desenho do editor (linhas, grade, contadores, informação) |
+| [`dt_parts.c`](../src/libdeck_tutorial/dt_parts.c) | 0x08808C6C-0x0880B704 | 25 | 3 | cópia de sc_parts.c (ícones, dígitos, figura da carta) |
+| [`dt_lists.c`](../src/libdeck_tutorial/dt_lists.c) | 0x0880B704-0x0880CDC8 | 18 | 1 | listas de cartas (cópia de dk_lists.c) |
+| [`dt_move.c`](../src/libdeck_tutorial/dt_move.c) | 0x0880CDC8-0x088100AC | 10 | 7 | mover/desfazer carta (dk_move.c) mais o contador de metas da lição |
+| [`dt_input.c`](../src/libdeck_tutorial/dt_input.c) | 0x088100AC-0x08811BB8 | 8 | 8 | entrada do editor, cursores, verificação do deck, popup |
+| [`dt_fmenu.c`](../src/libdeck_tutorial/dt_fmenu.c) | 0x08811BB8-0x088135A8 | 11 | 3 | menu de filtro, com entrada da lição e trava de itens |
+| [`dt_filter.c`](../src/libdeck_tutorial/dt_filter.c) | 0x088135A8-0x08814460 | 10 | 5 | filtros, busca de texto Horspool |
+| [`dt_mode.c`](../src/libdeck_tutorial/dt_mode.c) | 0x08814460-0x08814D44 | 4 | 2 | layouts dos painéis, abas, animação do fundo (sem lista do parceiro) |
+| [`dt_action.c`](../src/libdeck_tutorial/dt_action.c) | 0x08814D44-0x08816C34 | 24 | 1 | menu de ações da carta (sem renomear, sem páginas de ajuda) |
+| [`dt_pane.c`](../src/libdeck_tutorial/dt_pane.c) | 0x08816C34-0x088175FC | 7 | 4 | painéis, troca de aba, histórico de desfazer |
+| [`dt_eres.c`](../src/libdeck_tutorial/dt_eres.c) | 0x088175FC-0x08817B78 | 8 | 0 | atualização do cursor, recursos de deck/all_%c.ehp |
+| [`dt_sort.c`](../src/libdeck_tutorial/dt_sort.c) | 0x08817B78-0x08818E94 | 8 | 6 | menu de ordenação e chaves |
+| [`dt_word.c`](../src/libdeck_tutorial/dt_word.c) | 0x08818E94-0x0881A20C | 9 | 2 | busca por palavra (a lição define a palavra com dt_word_set) |
+| [`dt_lesson.c`](../src/libdeck_tutorial/dt_lesson.c) | 0x0881A20C-0x0881C0E8 | 34 | 3 | cartas da lição, início do editor, interpretador do script (24 opcodes), janelas de mensagem/saída |
+| [`dt_text.c`](../src/libdeck_tutorial/dt_text.c) | 0x0881C0E8-0x0881D318 | 13 | 9 | cópia de tut_text.c |
 
