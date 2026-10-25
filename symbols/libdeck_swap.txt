@@ -61,6 +61,13 @@ ds_osk = 0x0881A428; // type:data
 dsv = 0x0881A5E0; // type:data size:0x94
 ds = 0x0881A680; // type:data size:0x2EC
 res_get = 0x08804330; // type:func
+ds_list_sort = 0x0880B750; // type:func matched src/libdeck_swap/ds_sort.c
+ds_cmp_up = 0x0880B9D0; // type:func matched src/libdeck_swap/ds_sort.c
+ds_cmp_down = 0x0880BA58; // type:func matched src/libdeck_swap/ds_sort.c
+ds_sort_key_value = 0x0880BAE0; // type:func matched src/libdeck_swap/ds_sort.c
+ds_sort_value = 0x0880BC8C; // type:func asm (@asm in src/libdeck_swap/ds_sort.c, C under NON_MATCHING)
+ds_spell_order = 0x0881A1E8; // type:data
+ds_trap_order = 0x0881A1F0; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08815ED4; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08815EDC; // type:func import:libehsys nid:4BDEB2A8
