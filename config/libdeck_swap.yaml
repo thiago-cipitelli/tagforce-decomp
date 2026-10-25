@@ -27,13 +27,20 @@ segments:
     subalign: null
     subsegments:
       - [0x60, asm, text_0]
+      - [0x929C, c, ds_filter]
+      - [0x9458, asm, ds_filter_asm_0880D3F8]
+      - [0x974C, c, ds_filter]
+      - [0x9930, asm, ds_filter_asm_0880D8D0]
+      - [0x9A90, c, ds_filter]
+      - [0x9CF4, asm, ds_filter_asm_0880DC94]
+      - [0xA05C, asm, text_1]
       - [0xE8E0, c, ds_parts]
       - [0xEA54, asm, ds_parts_asm_088129F4]
       - [0xEBFC, c, ds_parts]
       - [0xFFB4, asm, ds_parts_asm_08813F54]
       - [0x10230, c, ds_parts]
       - [0x10C84, asm, ds_parts_asm_08814C24]
-      - [0x11378, asm, text_1]
+      - [0x11378, asm, text_2]
       - [0x11F34, asm, sceStub_text]
       - [0x1474C, bin, lib_ent_top]
       - [0x14750, bin, lib_ent]
@@ -48,8 +55,10 @@ segments:
       - [0x15C54, data, data_0]
       - [0x15D3C, .data, ds_parts__rodata]
       - [0x15D60, data, data_1]
+      - [0x16258, .data, ds_filter]
+      - [0x16284, data, data_2]
       - [0x16380, .data, ds_parts]
-      - [0x16438, data, data_2]
+      - [0x16438, data, data_3]
       - { start: 0x16460, type: bss, vram: 0x881A400, name: bss }
   - [0x16460]
 
