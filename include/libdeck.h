@@ -270,4 +270,11 @@ unsigned short *dk_list_name(unsigned short tab);
 void dk_save_panes(unsigned short which);
 void *dk_res_get(unsigned short id);
 
+/* dk_scene.c (W2) */
+extern unsigned short dk_substep;      /* 0x095D2432 step of the sub-screen being run */
+void dk_check_rewards(void);
+void dk_name_input_open(void *a, void *b, void *c);
+void dk_name_input_update(void);
+void dk_update(void);
+
 #endif
