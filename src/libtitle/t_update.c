@@ -129,7 +129,7 @@ void title_boot_update(void)
     switch (title.sub) {
     case 0:
         gfx_overlay_enable(1);
-        func_0880A9A8(1);
+        title_sound_reset(1);
         t->sub++;
         gfx_overlay_enable(0);
         break;
@@ -169,7 +169,7 @@ void title_wait_update(void)
     switch (title.sub) {
     case 0:
         gfx_overlay_enable(1);
-        func_0880A9A8(0);
+        title_sound_reset(0);
         title_lang_load(0);
         t->sub++;
         break;

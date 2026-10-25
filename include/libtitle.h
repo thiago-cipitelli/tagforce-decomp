@@ -122,8 +122,10 @@ typedef struct TDuelCfg {              /* title +0x974 */
 } TDuelCfg;
 
 typedef struct DeckFlags {             /* deck_cur_get_u16_0 */
-    unsigned short b0 : 1;
-    unsigned short rest : 15;
+    unsigned short b0 : 1;             /* a story character was chosen */
+    unsigned short kind : 3;
+    unsigned short chara : 8;
+    unsigned short rest : 4;
 } DeckFlags;
 
 typedef struct TGameHdr {             /* view of GameState used by the duel setups */
@@ -174,7 +176,8 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     int skip;                          /* +0x03C START pressed during the logos */
     int u040;                          /* +0x040 */
     int u044;                          /* +0x044 */
-    unsigned char pad048[0x0E4 - 0x048];
+    unsigned char pad048[0x0A0 - 0x048];
+    void *ehf[17];                     /* +0x0A0 EHF layers, by title_ehf_names index */
     Menu menu;                         /* +0x0E4 */
     unsigned char pad130[0x1A8 - 0x130];
     MenuWidget win[3];                 /* +0x1A8 */
@@ -193,7 +196,9 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char b3038_1 : 1;
     unsigned char busy : 1;            /*         a fade/transition is running */
     unsigned char no_movie : 1;        /*         the opening movie was shown or skipped */
-    unsigned char b3038_4 : 4;
+    unsigned char mod_loaded : 1;      /*         a sub-screen module is started */
+    unsigned char b3038_5 : 1;
+    unsigned char b3038_6 : 2;
     unsigned char pad3039[3];
     int sub_mod;                       /* +0x303C id of the sub-screen module */
     unsigned char skippable;           /* +0x3040 the logos can be skipped */
@@ -203,6 +208,8 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
 } Title;
 
 extern Title title;
+/* title.ehf[i]; the original adds the index to &title as an integer (the field offset is not folded) */
+#define TITLE_EHF(i) (((Title *)((char *)&title + (i) * 4))->ehf[0])
 extern char title_pack_names[9][64];
 extern char title_ehf_names[17][64];
 extern char title_gim_names[22][64];
@@ -266,6 +273,19 @@ void movie_set_memory(unsigned int base, unsigned int size);
 void movie_play(const char *path, unsigned int flags, int arg);
 int ehfile_make_path_alias(char *out, int dir, const char *name);
 void *sceGeEdramGetAddr(void);
+int ehf_set_anim(void *e, int target, int limit);
+int ehf_get_frame_count(void *e);
+unsigned int *gfx_get_state(void);
+void snd_cmd_fefb_0(void);
+int snd_count_bgm(void);
+int snd_count_se();
+void snd_cmd_fefb(void);
+void bgm_fade(int x);
+DeckSlot *deck_slot_get(int i);
+int sysflag_test(unsigned int bit);
+int deck_slot_get_level(int i);
+void deck_slot_set_level(int i, int n);
+void sysflag_apply(unsigned int which, int v);
 void bgm_cmd(int x);
 int ehfile_request_module(int dir, const char *name, int (*cb)(void *, int), void *arg);
 int sysstate_checksum(void);
@@ -317,7 +337,7 @@ void func_0881F6E0(TSlotInfo *out, int i);
 void func_0881F0A0(void);
 void *tmenu_gfx_setup(void *list, int mode);
 void *title_logo_draw(void *list);
-void func_0880A9A8(int a);
+void title_sound_reset(int a);
 void func_0880B0B4(void);
 void func_08813134(void);
 void func_0880F950(void);
@@ -354,7 +374,7 @@ void *title_load_draw(void *list);
 int title_transition(void);
 void title_menu_update(void);
 void *title_menu_draw(void *list);
-void func_0880AEF0(int mode, int id);
+void title_story_start(int mode, int id);
 void func_0880FBB8(int text, int a, int b);
 void func_088119D4(int a);
 void title_state_init(int state, int sub);
@@ -381,18 +401,18 @@ void func_0880C0F0(void *heap, int a, int b, int c, int d, int e);
 void func_088108A0(void *p, void *heap);
 void func_0880C2F0(void);
 void func_088225A0(int a);
-void func_0880A934(void);
-void func_0880A41C(int id, int a, int b, int c);
+void title_module_stop(void);
+void title_ehf_load(int id, int a, int b, int c);
 void title_menu_save_update(void);
 void title_save_check_update(MenuWidget *w);
-void *func_0880A56C(void *list, int id);
-void *func_0880A5FC(void *list);
+void *title_ehf_draw(void *list, int id);
+void *title_screen_label(void *list);
 void *title_save_check_draw(void *list);
-int func_0880A534(int id);
-void func_0880A4A8(int id, int a, int b, int c);
-int func_0880AA3C(void);
-int func_0880AA88(void);
-void *func_0880ACB0(void *list, int x, int y, int w, int a, int text, int b);
+int title_ehf_frame(int id);
+void title_ehf_anim(int id, int a, int b, int c);
+int title_any_deck(void);
+int title_flag8(void);
+void *title_msg_draw(void *list, int x, int y, int w, int a, int text, int b);
 
 /* this module */
 void *title_pack(void);

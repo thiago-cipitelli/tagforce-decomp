@@ -103,8 +103,8 @@ void title_menu_enter(int state, int menu, int no_check)
         break;
     }
     if (no_check == 0) {
-        func_0880A41C(5, 2, 0, 480);
-        func_0880A41C(6, 2, 0, 480);
+        title_ehf_load(5, 2, 0, 480);
+        title_ehf_load(6, 2, 0, 480);
         bgm_play(5);
     }
 }
@@ -156,10 +156,10 @@ void *title_menu_draw(void *list)
     Title *const t = &title;
 
     if (title.sub != 9) {
-        list = func_0880A56C(list, 6);
-        list = func_0880A56C(list, 5);
+        list = title_ehf_draw(list, 6);
+        list = title_ehf_draw(list, 5);
         if (t->sub >= 2 && t->sub != 14 && t->sub != 13 && t->sub != 15)
-            list = func_0880A5FC(func_0880A56C(list, 13));
+            list = title_screen_label(title_ehf_draw(list, 13));
         switch (t->sub) {
         case 0:
         case 1:
@@ -196,12 +196,12 @@ void *title_menu_draw(void *list)
 /* the menu panel EHF (layer 13): 0 not shown yet, 1 shown this frame, 2 sliding in, 3 in place */
 int title_menu_anim(void)
 {
-    int f = func_0880A534(13);
+    int f = title_ehf_frame(13);
 
     if (f < 16)
         return 0;
     if (f == 16) {
-        func_0880A4A8(13, 2, 17, 96);
+        title_ehf_anim(13, 2, 17, 96);
         return 1;
     }
     if (f < 96)
@@ -219,9 +219,9 @@ void title_menu_open(int cursor)
     m->style = 1;
     m->n = 9;
     m->b07 = 0;
-    if (func_0880AA3C() == 0)
+    if (title_any_deck() == 0)
         m->item[1] = 1;
-    if (func_0880AA88() == 0)
+    if (title_flag8() == 0)
         m->item[8] = 1;
     if (cfg_get_language() == 0) {
         m->n = 8;
@@ -241,7 +241,7 @@ void title_menu_open(int cursor)
     m->draw = (TMenuDrawFn)title_main_label;
     m->cursor = cursor;
     tmenu_update(m, 1);
-    func_0880A41C(13, 2, 0, 16);
+    title_ehf_load(13, 2, 0, 16);
 }
 
 void title_main_menu_update(void)
@@ -327,7 +327,7 @@ void *title_main_label(void *list, int i, int x, int y, int w)
         font_set_flag4(1);
         if (text >= 24)
             text++;
-        list = func_0880ACB0(list, x + 8, ty, w - 16, 0, text, 3);
+        list = title_msg_draw(list, x + 8, ty, w - 16, 0, text, 3);
     }
     return list;
 }
@@ -425,7 +425,7 @@ void *title_sub_label_play(void *list, int i, int x, int y, int w)
         font_set_size(15, 15);
         font_set_color(c);
         font_set_flag4(1);
-        list = func_0880ACB0(list, x + 8, ty, w - 16, 0, (unsigned short)i + 29, 3);
+        list = title_msg_draw(list, x + 8, ty, w - 16, 0, (unsigned short)i + 29, 3);
     }
     return list;
 }
@@ -512,7 +512,7 @@ void *title_sub_label_extra(void *list, int i, int x, int y, int w)
         font_set_size(15, 15);
         font_set_color(c);
         font_set_flag4(1);
-        list = func_0880ACB0(list, x + 8, ty, w - 16, 0, (unsigned short)i + 45, 3);
+        list = title_msg_draw(list, x + 8, ty, w - 16, 0, (unsigned short)i + 45, 3);
     }
     return list;
 }
@@ -623,7 +623,7 @@ void *title_sub_label_opt(void *list, int i, int x, int y, int w)
         font_set_size(15, 15);
         font_set_color(c);
         font_set_flag4(1);
-        list = func_0880ACB0(list, x + 8, ty, w - 16, 0, (unsigned short)i + 47, 3);
+        list = title_msg_draw(list, x + 8, ty, w - 16, 0, (unsigned short)i + 47, 3);
     }
     return list;
 }

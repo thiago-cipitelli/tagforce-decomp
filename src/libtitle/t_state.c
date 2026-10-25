@@ -228,7 +228,7 @@ int title_set_state(int st, int sub)
         break;
     case 27:
     case 28:
-        func_0880AEF0(state - 27, 0);
+        title_story_start(state - 27, 0);
         return 40;
     case 29:
     case 30:
@@ -246,7 +246,7 @@ int title_set_state(int st, int sub)
         return 40;
     case 34:
         charalist_res_free();
-        func_0880A934();
+        title_module_stop();
         title_free_duel_start();
         return 40;
     case 35:

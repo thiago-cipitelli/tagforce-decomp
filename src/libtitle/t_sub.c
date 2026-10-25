@@ -72,7 +72,7 @@ void title_recipe_update(void)
             break;
         case -2:
             t->sub_shown = 0;
-            func_0880A934();
+            title_module_stop();
             t->arg = 1;
             title_set_state(9, 5);
             break;
@@ -121,7 +121,7 @@ void title_chara_update(void)
         case 1:
         case 2:
             t->sub_shown = 0;
-            func_0880A934();
+            title_module_stop();
             title_set_state(9, 6);
             break;
         }
@@ -155,12 +155,12 @@ int title_chara_pick_update(int state)
                 mode = 2;
             else if (state == 30)
                 mode = 3;
-            func_0880AEF0(mode, charalist_result_id());
-            func_0880A934();
+            title_story_start(mode, charalist_result_id());
+            title_module_stop();
             return 40;
         case 2:
             t->sub_shown = 0;
-            func_0880A934();
+            title_module_stop();
             title_set_state(9, 3);
             break;
         }
@@ -206,7 +206,7 @@ void title_album_update(void)
         t->sub_shown = 1;
     } else {
         t->sub_shown = 0;
-        func_0880A934();
+        title_module_stop();
         t->arg = 1;
         title_set_state(9, 6);
     }
@@ -257,7 +257,7 @@ void title_record_update(void)
         t->sub_shown = 1;
     } else {
         t->sub_shown = 0;
-        func_0880A934();
+        title_module_stop();
         t->arg = 3;
         title_set_state(9, 6);
     }
@@ -311,13 +311,13 @@ int title_limit_update(void)
         break;
     case 2:
         t->sub_shown = 0;
-        func_0880A934();
+        title_module_stop();
         title_set_state(20, 2);
         t->prev_sub = t->sub;
         return 40;
     case 1:
         t->sub_shown = 0;
-        func_0880A934();
+        title_module_stop();
         t->arg = 4;
         title_set_state(9, 6);
         break;
@@ -381,7 +381,7 @@ int title_tlist_update(int state)
             t->sub_shown = 0;
             state = tlist_result();
             t->arg = state;
-            func_0880A934();
+            title_module_stop();
             if (state < 8)
                 state = title_set_state(39, 0);
             else
@@ -389,7 +389,7 @@ int title_tlist_update(int state)
             break;
         case 2:
             t->sub_shown = 0;
-            func_0880A934();
+            title_module_stop();
             t->arg = 2;
             title_set_state(9, 6);
             break;
@@ -449,7 +449,7 @@ void title_dtut_update(void)
         t->sub_shown = 1;
     } else {
         t->sub_shown = 0;
-        func_0880A934();
+        title_module_stop();
         title_set_state(24, (short)t->arg);
     }
 done:

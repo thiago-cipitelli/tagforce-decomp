@@ -123,5 +123,5 @@ void title_exit_cb(void)
     menu_free_items(&title.menu);
     func_0880C2F0();
     func_088225A0(0);
-    func_0880A934();
+    title_module_stop();
 }
