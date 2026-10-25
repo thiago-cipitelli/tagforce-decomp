@@ -123,6 +123,9 @@ void scene_get_transition_info(SceneTrans *out);
 void deck_cur_get_u16_0(short *out);
 int sysstate_get_u32_97e8(void);
 void bgm_play(int id);
+void bgm_cmd(int x);
+int sysstate_checksum(void);
+int cfg_get_language(void);
 
 /* this module, not named yet */
 void func_0880C0F0(void *heap, int a, int b, int c, int d, int e);
@@ -131,6 +134,19 @@ void func_088108A0(void *p, void *heap);
 void func_0880C2F0(void);
 void func_088225A0(int a);
 void func_0880A934(void);
+void func_088088E8(int a);
+void func_0880A41C(int id, int a, int b, int c);
+void func_08808AA4(int a, short b, short c);
+void func_088062B4(void);
+void func_088063D0(MenuWidget *w);
+void *func_0880A56C(void *list, int id);
+void *func_0880A5FC(void *list);
+void *func_08806538(void *list);
+int func_0880A534(int id);
+void func_0880A4A8(int id, int a, int b, int c);
+int func_0880AA3C(void);
+int func_0880AA88(void);
+void *func_0880ACB0(void *list, int x, int y, int w, int a, int text, int b);
 
 /* this module */
 int title_update(void);
@@ -139,7 +155,7 @@ void title_init(void);
 void title_goto(short state, short sub);
 int title_set_state(int state, unsigned int sub);
 void title_menu_enter(short state, int menu, int no_check);
-void title_menu_open(unsigned char cursor);
+void title_menu_open(int cursor);
 void title_sub_open_play(void);
 void title_sub_open_extra(void);
 void title_sub_open_opt(void);
@@ -149,6 +165,6 @@ int tmenu_update(TMenu *m, int mode);
 void tmenu_back(TMenu *m);
 void tmenu_set_fade(TMenu *m, short len, short step);
 void *tmenu_draw(void *list, TMenu *m);
-unsigned int tmenu_text_color(TMenu *m, unsigned short i);
+unsigned int tmenu_text_color(TMenu *m, int i);
 
 #endif
