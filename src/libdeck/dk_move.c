@@ -64,7 +64,7 @@ unsigned short dk_deck_count_forbidden(void);
 void dk_hist_push(DkHist *h);
 int dk_hist_pop(DkHist *h);
 void dk_layout_scroll(int keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
-unsigned int func_0880B454(unsigned short tab);
+unsigned int dk_tab_pos(unsigned short tab);
 void *dk_draw_shade(void *list, unsigned short side, unsigned short tab, int lit);
 void *dk_draw_card_pict(void *list, int x, int y, int z, unsigned int color, DkEnt *e, void *gim, void *gim_alt, void *alt);
 
@@ -745,7 +745,7 @@ void *dk_flight_draw_window(void *list, int card)
 void dk_flight_window_pos(void)
 {
     DkLayout *lay = &dkv.pane[dk_flight->dside].lay;
-    unsigned int tp = func_0880B454(dk_flight->dst[dk_flight->sel]);
+    unsigned int tp = dk_tab_pos(dk_flight->dst[dk_flight->sel]);
     unsigned short off = tp;
     unsigned short len = tp >> 16;
 
@@ -856,7 +856,7 @@ int dk_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
         }
     }
     if (off) {
-        tp = func_0880B454(tab);
+        tp = dk_tab_pos(tab);
         len = tp >> 16;
         x = tp;
         out[0] = (int)((unsigned int)len / 2 + (lay->x + x));

@@ -42,7 +42,7 @@ void dk_fmenu_values(PadState *pad);
 void dk_list_filter(DkList *l, unsigned int f, unsigned int *mask);
 void dk_layout_scroll(int keep, int cur, unsigned short view, unsigned short total,
                       unsigned short *top, unsigned short *cx, unsigned short *cy);
-void func_0880A8BC(int kind, unsigned short n);
+void dk_popup_open(int kind, unsigned short n);
 
 void dk_fmenu_free(void);
 void dk_fmenu_open_values(unsigned short f);
@@ -499,7 +499,7 @@ void dk_fmenu_values(PadState *pad)
                                  &dkv.pane[side].cx, &dkv.pane[side].cy);
             }
             dk_fmenu_free();
-            func_0880A8BC(6, l->count);
+            dk_popup_open(6, l->count);
             se_play(0x621A);
             dk_state = 0;
         }

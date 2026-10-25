@@ -29,7 +29,7 @@ void dk_lists_init(void);
 void dk_lists_free(void);
 void dk_deck_store(void);
 int dk_input(void *pad);
-void func_0880AF34(unsigned short mode);
+void dk_set_mode(unsigned short mode);
 void dk_cardlist_setup(void);
 void dk_check_rewards(void);
 void dk_update(void);
@@ -142,7 +142,7 @@ void dk_setup(void)
     dkv.side = 1;
     dkv.pane[0].list = &dk_lists[0];
     dkv.pane[1].list = &dk_lists[3];
-    func_0880AF34(cfg_get_bits_1_0_2());
+    dk_set_mode(cfg_get_bits_1_0_2());
     font_set_flag4(1);
     font_set_flag2(1);
     if (cfg_get_language() == 0) {

@@ -38,7 +38,7 @@ unsigned short *card_get_desc(int id);
 int font_measure_text(unsigned short *text);
 int partner_count_get(void);
 
-void func_0880B81C(void);
+void dk_bg_anim_update(void);
 void dk_layout_scroll(int keep, int cur, unsigned short view, unsigned short total,
                       unsigned short *top, unsigned short *cx, unsigned short *cy);
 
@@ -196,7 +196,7 @@ void dk_select_tab(unsigned short side, unsigned short tab, unsigned short how)
         dk_layout_scroll(keep, p->list->u1a,
                          (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)view << 8,
                          p->list->count, &p->top, &p->cx, &p->cy);
-        func_0880B81C();
+        dk_bg_anim_update();
     }
 }
 #endif

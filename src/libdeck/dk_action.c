@@ -24,7 +24,7 @@ void cfg_set_byte0_hi2(int v);
 void *dk_res_get(unsigned short id);
 void *dk_draw_button(void *list, DkButton *b, int x, int y, unsigned int color);
 void *dk_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, DkEnt *e, void *gim, void *gim_alt, void *alt);
-void func_0880AF34(unsigned short mode);
+void dk_set_mode(unsigned short mode);
 int dk_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b);
 void dk_list_filter_reset(DkList *l);
 void dk_list_sort(DkList *l, unsigned short sort, unsigned short dir);
@@ -47,7 +47,7 @@ void dk_action_deck_open(void);
 void dk_action_layout_open(void);
 void dk_action_mark_open(void);
 void dk_action_confirm_open(void);
-void dk_set_mode(int mode);
+void dk_action_set_mode(int mode);
 void *dk_action_draw_items(void *list, int x, int y, int w, int h);
 void *dk_draw_action_item(void *list, unsigned short i, int x, int y);
 void *dk_draw_layouts(void *list, int x, int y);
@@ -477,7 +477,7 @@ void dk_action_step3(PadState *pad)
     menu_update(m);
     if (m->state == 6) {
         if (m->cancelled) {
-            dk_set_mode(dk_action->mode % 8);
+            dk_action_set_mode(dk_action->mode % 8);
             menu_reset(m);
             heap_set_level(dk_heap, dk_action->sub);
             dk_action->sub = 0;
@@ -504,19 +504,19 @@ void dk_action_step3(PadState *pad)
     }
     if (pad->b.rep & 0x50) {
         m->cursor = (m->cursor + 4) % 8;
-        dk_set_mode(m->cursor % 8);
+        dk_action_set_mode(m->cursor % 8);
         se_play(0x6212);
         return;
     }
     if (pad->b.rep & 0x80) {
         m->cursor = (m->cursor % 4 + 3) % 4 + m->cursor / 4 * 4;
-        dk_set_mode(m->cursor % 8);
+        dk_action_set_mode(m->cursor % 8);
         se_play(0x6212);
         return;
     }
     if (pad->b.rep & 0x20) {
         m->cursor = (m->cursor % 4 + 1) % 4 + m->cursor / 4 * 4;
-        dk_set_mode(m->cursor % 8);
+        dk_action_set_mode(m->cursor % 8);
         se_play(0x6212);
     }
 }
@@ -793,11 +793,11 @@ void *dk_draw_mark_item(void *list, unsigned short i, int x, int y)
 }
 
 /* sets the pane layout; going from one list to two in the narrow layouts shows the list picked */
-void dk_set_mode(int mode)
+void dk_action_set_mode(int mode)
 {
     unsigned short panes = dkv.mode > 1 ? 2 : 1;
 
-    func_0880AF34(mode);
+    dk_set_mode(mode);
     if (dkv.side == 1 && dkv.mode > 1 && panes == 1)
         dk_select_tab(0, dk_action->tab, 2);
 }

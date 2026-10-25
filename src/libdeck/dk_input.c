@@ -18,11 +18,11 @@ void dk_action_open(DkEnt *e);
 void dk_action_update(PadBits *pad);
 void dk_sort_menu_update(PadBits *pad);
 void dk_fmenu_update(PadBits *pad);
-void func_08819460(PadBits *pad);
-int func_0880AD9C(void);
-int func_0880A694(unsigned short *arg);
-void func_0880A8BC(int id, unsigned short arg);
-void func_0880AF34(unsigned short mode);
+void dk_word_update(PadBits *pad);
+int dk_popup_update(void);
+int dk_deck_check(unsigned short *arg);
+void dk_popup_open(int id, unsigned short arg);
+void dk_set_mode(unsigned short mode);
 void dk_sort_menu_open(void);
 void dk_fmenu_open(void);
 void inv_set_flag7(unsigned short id, int on);
@@ -54,7 +54,7 @@ int dk_input(PadBits *pad)
         return 0;
     dk_scroll_update();
     if (dkv.popup != 0)
-        return func_0880AD9C();
+        return dk_popup_update();
     switch (dk_state) {
     case 0:
     case 6:
@@ -74,7 +74,7 @@ int dk_input(PadBits *pad)
         dk_fmenu_update(pad);
         break;
     case 5:
-        func_08819460(pad);
+        dk_word_update(pad);
         break;
     }
     dk_focus_update();
@@ -114,24 +114,24 @@ void dk_input_lists(PadBits *pad)
         dk_state = 0;
         trig = pad->trig;
         if (trig & region_pick_value(1)) {
-            switch (r = func_0880A694(&arg)) {
+            switch (r = dk_deck_check(&arg)) {
             case 0:
-                func_0880A8BC(3, 0);
+                dk_popup_open(3, 0);
                 se_play(0x621A);
                 break;
             case 5:
-                func_0880A8BC(5, arg);
+                dk_popup_open(5, arg);
                 se_play(0x621A);
                 break;
             default:
-                func_0880A8BC(4, r);
+                dk_popup_open(4, r);
                 se_play(0x621A);
                 break;
             }
         } else if (trig & region_pick_value(0)) {
             e = dk_flight_open();
             if (e > 0) {
-                func_0880A8BC(2, e);
+                dk_popup_open(2, e);
                 se_play(0x621A);
             } else {
                 se_play(0x6213);
@@ -154,7 +154,7 @@ void dk_input_lists(PadBits *pad)
                 b = (b + 1) & 1;
             m = dk_mode_for(panes, mode < 4, a, b);
             if (m >= 0) {
-                func_0880AF34(m);
+                dk_set_mode(m);
                 se_play(0x6213);
             }
         }

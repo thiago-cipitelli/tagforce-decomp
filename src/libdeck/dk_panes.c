@@ -17,7 +17,7 @@ void *dk_draw_digits(void *list, int pos, int pad, unsigned int value, unsigned 
 void *dk_draw_flag_icon(void *list, int pos, unsigned short kind, void *gim);
 void *dk_draw_scrollbar(void *list, int x, int y, int h, int pos, int first, int total, int frame, void *gim);
 void *dk_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
-unsigned short func_0880B4F0(unsigned short tab, unsigned short sel, DkRect *r);
+unsigned short dk_tab_rect(unsigned short tab, unsigned short sel, DkRect *r);
 void *dk_draw_counts(void *list);
 void *dk_draw_count(void *list, unsigned short x, DkRect *r, unsigned short ndig, int value);
 void *dk_draw_attr_bar(void *list, int x, int y, int len, int dir, int i);
@@ -140,14 +140,14 @@ void *dk_draw_counts(void *list)
         for (i = 0; i < n; i++) {
             if (i == 4)
                 continue;
-            x = func_0880B4F0(i, sel, &r);
+            x = dk_tab_rect(i, sel, &r);
             x += p->lay.x;
             r.x += p->lay.x;
             list = dk_draw_count(list, x, &r, dk_count_digits[i], dk_lists[i].total);
         }
     } else {
         for (i = 0; i < 3; i++) {
-            x = func_0880B4F0(i, sel, &r);
+            x = dk_tab_rect(i, sel, &r);
             x += p->lay.x;
             r.x += p->lay.x;
             list = dk_draw_count(list, x, &r, dk_count_digits[i], dk_lists[i].total);
@@ -155,7 +155,7 @@ void *dk_draw_counts(void *list)
         p = &dkv.pane[1];
         sel = p->list->tab;
         for (; i < n; i++) {
-            x = func_0880B4F0(i, sel, &r);
+            x = dk_tab_rect(i, sel, &r);
             x += p->lay.x;
             r.x += p->lay.x;
             list = dk_draw_count(list, x, &r, dk_count_digits[i], dk_lists[i].total);

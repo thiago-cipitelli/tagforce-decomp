@@ -37,9 +37,9 @@ void *dk_flight_draw(void *list);
 void *dk_action_draw(void *list);
 void *dk_sort_menu_draw(void *list);
 void *dk_fmenu_draw(void *list);
-void *func_08819F80(void *list);
+void *dk_draw_word(void *list);
 void *dk_draw_detail(void *list);
-void *func_0880AF08(void *list);
+void *dk_popup_draw(void *list);
 void *dk_draw_frame(void *list, int x, int y, int w, int h, void *gim, int style);
 void *dk_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *gim, void *strtbl);
 void *dk_draw_num_text(void *list, int x, int y, unsigned int value, int w, int ndig, int pad);
@@ -137,7 +137,7 @@ void *dk_draw_overlay(void *list)
         list = dk_fmenu_draw(list);
         break;
     case 5:
-        list = func_08819F80(list);
+        list = dk_draw_word(list);
         break;
     case 6:
         list = dk_draw_help(list, hx, hy, 0, 0xF001, dk_res_get(0x8013), dk_res_get(0x8033));
@@ -148,7 +148,7 @@ void *dk_draw_overlay(void *list)
         break;
     }
     if (dkv.popup != 0)
-        list = func_0880AF08(list);
+        list = dk_popup_draw(list);
     return list;
 }
 

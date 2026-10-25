@@ -25,8 +25,8 @@ int recipe_viewer_update(void);
 void libdeck_tutorial_08804008(int lesson, void *cfg);
 int libdeck_tutorial_0880418C(void);
 
-void func_0880A8BC(int msg, int arg);
-void func_0880B81C(void);
+void dk_popup_open(int msg, int arg);
+void dk_bg_anim_update(void);
 void dk_action_reopen(DkEnt *e);
 int dk_osk_open(void *a, void *b, int max, void *c);
 int dk_osk_update(int mode);
@@ -75,7 +75,7 @@ void dk_check_rewards(void)
         sysstate_max_byte_97d0(0, 2);
         dk_flags.lo = 0;
         if (cfg_is_mode1()) {
-            func_0880A8BC(7, dk_flags.lo);
+            dk_popup_open(7, dk_flags.lo);
             se_play(0x621A);
             return;
         }
@@ -86,7 +86,7 @@ void dk_check_rewards(void)
                 sysstate_max_byte_97d0(1, 2);
                 dk_flags.lo = 1;
                 if (cfg_is_mode1()) {
-                    func_0880A8BC(7, dk_flags.lo);
+                    dk_popup_open(7, dk_flags.lo);
                     se_play(0x621A);
                     return;
                 }
@@ -98,7 +98,7 @@ void dk_check_rewards(void)
         sysstate_max_byte_97d0(2, 2);
         dk_flags.lo = 2;
         if (cfg_is_mode1()) {
-            func_0880A8BC(7, dk_flags.lo);
+            dk_popup_open(7, dk_flags.lo);
             se_play(0x621A);
             return;
         }
@@ -115,7 +115,7 @@ void dk_check_rewards(void)
             sysstate_max_byte_97d0(3, 2);
             dk_flags.lo = 3;
             if (cfg_is_mode1()) {
-                func_0880A8BC(7, dk_flags.lo);
+                dk_popup_open(7, dk_flags.lo);
                 se_play(0x621A);
                 return;
             }
@@ -133,7 +133,7 @@ void dk_check_rewards(void)
             sysstate_max_byte_97d0(4, 2);
             dk_flags.lo = 4;
             if (cfg_is_mode1()) {
-                func_0880A8BC(7, dk_flags.lo);
+                dk_popup_open(7, dk_flags.lo);
                 se_play(0x621A);
             }
         }
@@ -382,7 +382,7 @@ void dk_tutorial_run(void)
         if (dk_res_load() == 0)
             break;
         dk_cardlist_setup();
-        func_0880B81C();
+        dk_bg_anim_update();
         dkv.loading = 0;
         fade_start(1, 0xFF000000, 16);
         dk_substep++;

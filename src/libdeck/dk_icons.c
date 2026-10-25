@@ -27,7 +27,7 @@ void *dk_draw_icon_c(void *list, int pos, unsigned short id, void *gim);
 void *dk_draw_icon_d(void *list, int pos, unsigned short id, void *gim);
 void *dk_draw_icon_e(void *list, int pos, unsigned short id, void *gim);
 void *dk_draw_icon_text(void *list, DkIconText *t, int x, int y);
-unsigned int func_0880B454(unsigned short tab);
+unsigned int dk_tab_pos(unsigned short tab);
 
 void *dk_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned short type)
 {
@@ -74,7 +74,7 @@ void *dk_draw_button(void *list, DkButton *b, int x, int y, unsigned int color)
 void *dk_draw_shade(void *list, unsigned short side, unsigned short tab, int show_tab)
 {
     DkLayout *lay = &dkv.pane[side].lay;
-    unsigned int pos = func_0880B454(tab);
+    unsigned int pos = dk_tab_pos(tab);
 
     list = dl_disable(list, 9);
     list = dl_tex_func(list, 4, 0);
