@@ -240,6 +240,10 @@ tlang_draw = 0x0880EF1C; // type:func matched src/libtitle/t_lang.c
 tlang_label = 0x0880EFB4; // type:func matched src/libtitle/t_lang.c
 tlang_flag = 0x0880F0FC; // type:func matched src/libtitle/t_lang.c
 tlang_marker = 0x0880F2B0; // type:func matched src/libtitle/t_lang.c
+tosk = 0x09433D40; // type:data
+tosk_lang = 0x0882E7F0; // type:data
+tosk_open = 0x0880F438; // type:func asm (@asm in src/libtitle/t_osk.c, C under NON_MATCHING)
+tosk_update = 0x0880F660; // type:func asm (@asm in src/libtitle/t_osk.c, C under NON_MATCHING)
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08826B8C; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08826B94; // type:func import:libehsys nid:4BDEB2A8

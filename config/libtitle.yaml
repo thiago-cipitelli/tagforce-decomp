@@ -59,7 +59,9 @@ segments:
       - [0x94B4, asm, t_cfgdraw_asm_0880D454]
       - [0xA994, c, t_cfgdraw]
       - [0xAB80, c, t_lang]
-      - [0xB498, asm, text_0]
+      - [0xB498, c, t_osk]
+      - [0xB498, asm, t_osk_asm_0880F438]
+      - [0xB960, asm, text_0]
       - [0x22BEC, asm, sceStub_text]
       - [0x253C4, bin, lib_ent_top]
       - [0x253C8, bin, lib_ent]
@@ -90,7 +92,8 @@ segments:
       - [0x2A464, .data, t_tmenu]
       - [0x2A474, .data, t_scene]
       - [0x2A4AC, .data, t_cfgdraw]
-      - [0x2A850, data, data_4]
+      - [0x2A850, .data, t_osk]
+      - [0x2A85C, data, data_4]
       - { start: 0x2C740, type: bss, vram: 0x88306E0, name: bss }
   - [0x2C740]
 
