@@ -4,7 +4,7 @@
 /* The per-frame input dispatch and the input of the main state: cursor moves in the grid and in
    the list, the help states while Square/Triangle are held (pages, sort groups, marks, the sort and
    filter menus, undo), paging, jumps between sort groups, the card text scroll and the focus frame
-   (same source as libdeck_swap ds_input.c). */
+   (same source as libselect_card sc_input.c). */
 #include "libdeck_swap.h"
 
 void ds_select_tab(unsigned short side, unsigned short tab, int how);
@@ -113,7 +113,7 @@ void ds_input_main(void)
     ds.state = 1;
     trig = pad->b.trig;
     if (trig & region_pick_value(1)) {
-        if (ds.list[0].total != *ds.gs) {
+        if (ds.list[0].total != ds.deck->n_main) {
             ds_popup_open(3, 0);
             se_play(0x621A);
         } else {

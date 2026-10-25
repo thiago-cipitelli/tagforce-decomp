@@ -34,14 +34,14 @@ int module_start(void)
     return 0;
 }
 
-/* export: gs = the game state (gs[0] the cards the deck must have), the partner decks */
-void libdeck_swap_088157E8(int *gs, int n_partners, void *partners)
+/* export: the deck to swap cards in (main, extra, side) and the partners whose cards it holds */
+void libdeck_swap_088157E8(RecipeData *deck, int n_partners, unsigned short *partners)
 {
     memset(&ds, 0, sizeof(ds));
     memset(&dsv, 0, sizeof(dsv));
     ds.heap = libduel_draw_0881CA74();
     ds.cip = libduel_draw_088046E4();
-    ds.gs = gs;
+    ds.deck = deck;
     ds.n_partners = n_partners;
     ds.partners = partners;
     sceKernelChangeCurrentThreadAttr(0, 0x4000);

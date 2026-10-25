@@ -5,8 +5,8 @@
 // @data 0x0881A1F8-0x0881A224
 /* The incremental text search of a pane and its word history, the card filters (kind, type, race,
    level ranges, spell/trap kinds, limit, genre/new/alternate picture) and the text match: a
-   Boyer-Moore-Horspool scan over the normalised card name and text (same source as libdeck_swap
-   ds_filter.c and ds_match.c). */
+   Boyer-Moore-Horspool scan over the normalised card name and text (same source as libselect_card
+   sc_filter.c and sc_match.c). */
 #include "libdeck_swap.h"
 
 typedef struct DsSearch {              /* ds_search 0x0881A40C */

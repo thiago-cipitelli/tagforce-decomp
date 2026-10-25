@@ -3,7 +3,7 @@
 // @asm 0x08804814-0x08804CFC
 /* Cursor index and entry, the cursor card's info text (measured to scroll it), tab switching with
    the saved scroll of each list, scroll clamping, saving the panes' scroll into their lists, and
-   the undo history of moves (same source as libdeck_swap ds_state.c). */
+   the undo history of moves (same source as libselect_card sc_state.c). */
 #include "libdeck_swap.h"
 
 int font_measure_text(unsigned short *text);

@@ -4,7 +4,7 @@
 // @asm 0x08814C24-0x08815318
 // @rodata 0x08819CDC-0x08819D00
 // @data 0x0881A320-0x0881A3D8
-/* Drawing pieces shared by the panes (same source as libdeck_swap ds_parts.c): lookups in sorted
+/* Drawing pieces shared by the panes (same source as libselect_card sc_parts.c): lookups in sorted
    id tables, digit strips, framed boxes, card icons (rarity, attribute, type, limit marks), the
    ATK/DEF value, a card's picture tile, the kind frame of a list row, the per-card counters, the
    scroll bar with its blinking arrows and the button help window. */
