@@ -35,7 +35,7 @@ void dk_check_rewards(void);
 void dk_update(void);
 void dk_res_init(void);
 int dk_res_load(void);
-int dk_res_free(void);
+void dk_res_free_alias(void);
 void func_0880DBD0(void);
 void *func_0881DF80(void *list);
 
@@ -44,7 +44,7 @@ extern unsigned char dk_heap_mem[];    /* 0x08824290, 0xDAE000 bytes */
 
 void dk_main(void);
 void dk_exit(void);
-int dk_draw_exit(void);
+void dk_draw_exit(void);
 
 int module_start(void)
 {
@@ -76,7 +76,7 @@ void dk_main(void)
 {
     dk_init();
     gfx_overlay_enable(0);
-    sys_state_set_callbacks(4, (int (*)(void))dk_draw, dk_draw_exit);
+    sys_state_set_callbacks(4, (int (*)(void))dk_draw, (int (*)(void))dk_draw_exit);
     fade_start(1, 0xFF000000, 16);
     bgm_play(6);
     do {
@@ -130,9 +130,9 @@ void dk_draw(void)
     }
 }
 
-int dk_draw_exit(void)
+void dk_draw_exit(void)
 {
-    return dk_res_free();
+    dk_res_free_alias();
 }
 
 void dk_setup(void)

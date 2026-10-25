@@ -41,7 +41,7 @@ int dk_res_load(void);
 void dk_cardlist_setup(void);
 
 extern int dk_tut_module;              /* 0x095D26FC libdeck_tutorial module id */
-extern void *dk_tut_mem;               /* 0x095D2700 */
+extern void *dk_cip_mem;               /* 0x095D2700 card image reader memory (released while the tutorial runs) */
 
 typedef struct DkRecipeCfg {           /* recipe_viewer_init */
     void *heap;
@@ -358,9 +358,9 @@ void dk_tutorial_run(void)
         if (cip_is_idle(dk_cip) == 0)
             break;
         dk_cip = 0;
-        if (dk_tut_mem != 0) {
-            heap_set_level(dk_heap, dk_tut_mem);
-            dk_tut_mem = 0;
+        if (dk_cip_mem != 0) {
+            heap_set_level(dk_heap, dk_cip_mem);
+            dk_cip_mem = 0;
         }
         cfg.heap = dk_heap;
         cfg.pack = dk_pack_get();
