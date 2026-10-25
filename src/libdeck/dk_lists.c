@@ -15,10 +15,10 @@ int partner_count_get(void);
 unsigned short partner_id_get(int i);
 int partner_state_get(int i);
 
-unsigned short dk_func_08815280(unsigned short id, void *tab);
+unsigned short dk_sort_key(unsigned short id, void *tab);
 void func_08818BFC(DkList *l, int reset, int keep);
-void func_08817D18(DkList *l);
-int func_0881538C(unsigned short icon);
+void dk_func_08817D18(DkList *l);
+int dk_kind_icon(unsigned short icon);
 void dk_layout_scroll(int keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 int sceRtcGetCurrentClockLocalTime(void *time);
 void deck_clear(void);
@@ -81,7 +81,7 @@ void dk_lists_init(void)
     dk_list_total(l);
     l->tab = 4;
     func_08818BFC(l, 1, 0);
-    func_08817D18(&dk_lists[3]);
+    dk_func_08817D18(&dk_lists[3]);
     dk_attr_count_update();
 }
 
@@ -98,7 +98,7 @@ unsigned short dk_list_build_owned(DkList *l)
     do {
         c = deck_card_free_count_a(id);
         if (card_get_flag31(id) && c > 0) {
-            unsigned short key = dk_func_08815280(id, dk_res_get(0x8031));
+            unsigned short key = dk_sort_key(id, dk_res_get(0x8031));
             e = &l->ents[n];
             e->id = id;
             e->key = key;
@@ -128,7 +128,7 @@ unsigned short name(DkList *l)                                                  
                                                                                       \
     for (i = 0; i < n; i++) {                                                         \
         id = deck_get_card(which, i);                                                 \
-        key = dk_func_08815280(id, dk_res_get(0x8031));                               \
+        key = dk_sort_key(id, dk_res_get(0x8031));                               \
         e = &l->ents[i];                                                              \
         e->id = id;                                                                   \
         e->key = key;                                                                 \
@@ -176,7 +176,7 @@ unsigned short dk_list_build_rented(DkList *l)
             break;
         default:
             id = partner_id_get(i);
-            key = dk_func_08815280(id, dk_res_get(0x8031));
+            key = dk_sort_key(id, dk_res_get(0x8031));
             e = &l->ents[n];
             e->id = id;
             e->key = key;
@@ -221,32 +221,32 @@ void dk_lists_free(void)
     }
 }
 
-int dk_list_find(DkList *l, unsigned short id)
+int dk_list_find(DkList *l, int id)
 {
     int i;
     int v;
 
     for (i = 0; i < l->n; i++) {
         v = l->ents[i].id;
-        if (v == id)
+        if (v == (unsigned short)id)
             return i;
     }
     return -1;
 }
 
 /* copies of id in l (and of the cards with the same name, when same_name) */
-unsigned short dk_list_count_id(DkList *l, unsigned short id, int same_name)
+int dk_list_count_id(DkList *l, unsigned short id, int same_name)
 {
-    unsigned short c = 0;
+    int c = 0;
     int i;
     DkEnt *e;
 
     for (i = 0; i < l->n; i++) {
         e = &l->ents[i];
         if (e->id == id)
-            c += e->count;
+            c = (unsigned short)(c + e->count);
         else if (same_name && card_same_name(id, e->id))
-            c += e->count;
+            c = (unsigned short)(c + e->count);
     }
     return c;
 }
@@ -461,7 +461,7 @@ void dk_attr_count_update(void)
 
     memset(dk_deck.attr_count, 0, sizeof(dk_deck.attr_count));
     for (i = 0; i < l->n; i++) {
-        k = func_0881538C(card_get_attribute_icon(l->ents[i].id));
+        k = dk_kind_icon(card_get_attribute_icon(l->ents[i].id));
         if (k >= 0)
             dk_deck.attr_count[k]++;
     }
@@ -490,7 +490,7 @@ void dk_lists_reset(void)
             l->u1d_lo = 0;
         }
     }
-    func_08817D18(&dk_lists[3]);
+    dk_func_08817D18(&dk_lists[3]);
     l = &dk_lists[4];
     dk_list_copy(l, &dk_lists[2], 1);
     dk_list_total(l);
@@ -632,7 +632,7 @@ static inline void dk_deck_take(DkList *dst, unsigned short id)
 
     memset(&e, 0, 6);
     e.id = id;
-    e.key = dk_func_08815280(id, dk_res_get(0x8031));
+    e.key = dk_sort_key(id, dk_res_get(0x8031));
     e.count = 1;
     l = (DkList *)(char *)&dk_lists[3];
     k = dk_list_find(l, id);
@@ -667,7 +667,7 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
             id = d->main_ids[i];
             dk_deck_take(dst, id);
         }
-        func_08817D18(dst);
+        dk_func_08817D18(dst);
         func_08818BFC(dst, 1, 0);
     }
     {
@@ -679,13 +679,13 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
             id = d->extra_ids[i];
             dk_deck_take(dst, id);
         }
-        func_08817D18(dst);
+        dk_func_08817D18(dst);
         func_08818BFC(dst, 1, 0);
     }
     {
         DkList *dst = &dk_lists[4];
 
-        func_08817D18(dst);
+        dk_func_08817D18(dst);
         func_08818BFC(dst, 1, 0);
     }
     {
@@ -697,7 +697,7 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
             id = d->side_ids[i];
             dk_deck_take(dst, id);
         }
-        func_08817D18(dst);
+        dk_func_08817D18(dst);
         func_08818BFC(dst, 1, 0);
     }
     dk_undo_count = 0;
@@ -746,7 +746,7 @@ void dk_deck_store(void)
     DK_DECK_STORE(2, &l->ents[i]);
     l = &dk_lists[1];
     if (l->filter != 0)
-        func_08817D18(l);
+        dk_func_08817D18(l);
     func_08818BFC(l, 1, 0);
     DK_DECK_STORE(3, &l->ents[l->order[i]]);
     partner_count_set(k);

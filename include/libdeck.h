@@ -227,8 +227,8 @@ typedef struct DkDeck {                /* 0x095D2330 */
 
 extern DkDeck dk_deck;                 /* 0x095D2330 alias of dk_lists */
 extern unsigned short dk_undo_count;   /* 0x095D2646 entries in the undo history */
-int dk_list_find(DkList *l, unsigned short id);
-unsigned short dk_list_count_id(DkList *l, unsigned short id, int same_name);
+int dk_list_find(DkList *l, int id);
+int dk_list_count_id(DkList *l, unsigned short id, int same_name);
 int dk_list_remove(DkList *l, int i);
 void dk_list_add(DkList *l, DkEnt *src, int pos);
 void dk_list_total(DkList *l);
@@ -276,5 +276,12 @@ void dk_check_rewards(void);
 void dk_name_input_open(void *a, void *b, void *c);
 void dk_name_input_update(void);
 void dk_update(void);
+
+/* dk_draw.c (W2) */
+typedef struct DkRect {
+    short x, y, w, h;
+} DkRect;
+
+extern DkRect dk_focus;                /* 0x095D2698 frame around the focused item (popups, help position) */
 
 #endif

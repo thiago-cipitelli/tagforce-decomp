@@ -36,7 +36,7 @@ void dk_update(void);
 void dk_res_init(void);
 int dk_res_load(void);
 void dk_res_free_alias(void);
-void func_0880DBD0(void);
+void dk_draw_scene(void);
 void *func_0881DF80(void *list);
 
 extern unsigned char dk_scene_data[];  /* 0x0882427C */
@@ -126,7 +126,7 @@ void dk_draw(void)
     } else if (dkv.tutorial) {
         libdeck_tutorial_08804554();
     } else {
-        func_0880DBD0();
+        dk_draw_scene();
     }
 }
 

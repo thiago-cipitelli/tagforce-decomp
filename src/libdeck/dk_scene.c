@@ -30,7 +30,7 @@ void func_0880B81C(void);
 void dk_action_reopen(DkEnt *e);
 int dk_osk_open(void *a, void *b, int max, void *c);
 int dk_osk_update(int mode);
-void func_0881D918(int page, void *heap, void *gim, void *strtbl, void *labels);
+void dk_help_init(int page, void *heap, void *gim, void *strtbl, void *labels);
 void func_0881DB9C(int page, void *heap, void *gim, void *strtbl, void *labels);
 int func_0881DC28(void);
 int func_0881E024(void);
@@ -227,7 +227,7 @@ void dk_help_run(void)
         if (fade_is_done() == 0)
             return;
         if (dk_help_page == 0xFF)
-            func_0881D918(13, dk_heap, dk_res_get(0x8014), dk_res_get(0x8034), dk_res_get(0x8035));
+            dk_help_init(13, dk_heap, dk_res_get(0x8014), dk_res_get(0x8034), dk_res_get(0x8035));
         else
             func_0881DB9C(dk_help_page, dk_heap, dk_res_get(0x8014), dk_res_get(0x8034), dk_res_get(0x8035));
         dkv.help = 1;
