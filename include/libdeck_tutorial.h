@@ -104,13 +104,16 @@ typedef struct DtCfg {           /* dt_init cfg */
 typedef struct DtState {         /* dt 0x088228D0 (.bss), cleared by dt_init (0x107C bytes) */
     unsigned short lesson;       /* +0x000 */
     unsigned short state;        /* +0x002 0 load, 1 fade in, 2 run, 3 fade out, 4 unload */
-    unsigned char pad004[4];
+    int done;                    /* +0x004 actions done toward the step goal */
     void *parent_heap;           /* +0x008 */
     unsigned char text_on;       /* +0x00C bit 0: overlays drawn */
     unsigned char step;          /* +0x00D lesson step kind (9: buttons, 16: one button) */
     unsigned short show;         /* +0x00E bit 0 window, 1 highlight, 2 buttons, 4 button, 6 menu */
     unsigned char pad010[8];
-    unsigned char script[0x30];  /* +0x018 lesson script runner (dt_script_*) */
+    PadBits pad;                 /* +0x018 input given to the editor */
+    unsigned short goal;         /* +0x040 action the step waits for (3 a move opened, 4 a card put) */
+    unsigned short goal_n;       /* +0x042 times it must be done */
+    unsigned char pad044[4];
     unsigned short btn_mode;     /* +0x048 */
     unsigned short pad04a;
     unsigned int btn_mask;       /* +0x04C buttons shown with step 9 */

@@ -25,7 +25,7 @@ void *dl_clear(void *list, unsigned int flags);
 void *dl_alloc_inline(void **list, int bytes);
 void *dl_draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
 int dt_pack_poll(void);
-unsigned int dt_pane_size(int which);
+unsigned int dt_tab_pos(int which);
 void dt_lists_free(void);
 void dt_text_term(void);
 void dt_text_draw(void **list);
@@ -108,7 +108,7 @@ int dt_update(void)
         } else {
             dt_editor_update();
             dt_editor_input();
-            dt_script_update(dt.script);
+            dt_script_update(&dt.pad);
             if (pad_get()->b.trig & 8)
                 dt_pause_open();
         }
@@ -590,7 +590,7 @@ void *dt_draw_highlight(void *list, unsigned short kind)
     switch (kind) {
     case 0:
         pane = &dtv.pane[0].lay;
-        size = dt_pane_size(0);
+        size = dt_tab_pos(0);
         x = pane->x + (size & 0xFFFF);
         w = size >> 16 & 0xFFFF;
         y = 0x17;
@@ -603,7 +603,7 @@ void *dt_draw_highlight(void *list, unsigned short kind)
             pane = &dtv.pane[0].lay;
         else
             pane = &dtv.pane[1].lay;
-        size = dt_pane_size(3);
+        size = dt_tab_pos(3);
         x = pane->x + (size & 0xFFFF);
         w = size >> 16 & 0xFFFF;
         y = 0x17;
@@ -613,7 +613,7 @@ void *dt_draw_highlight(void *list, unsigned short kind)
         break;
     case 2:
         pane = &dtv.pane[0].lay;
-        size = dt_pane_size(1);
+        size = dt_tab_pos(1);
         x = pane->x + (size & 0xFFFF);
         w = size >> 16 & 0xFFFF;
         y = 0x17;
@@ -623,7 +623,7 @@ void *dt_draw_highlight(void *list, unsigned short kind)
         break;
     case 3:
         pane = &dtv.pane[0].lay;
-        size = dt_pane_size(2);
+        size = dt_tab_pos(2);
         x = pane->x + (size & 0xFFFF);
         w = size >> 16 & 0xFFFF;
         y = 0x17;
