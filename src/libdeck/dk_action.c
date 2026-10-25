@@ -22,7 +22,7 @@ typedef struct DkLineVtx {
 int cfg_get_byte0_hi2(void);
 void cfg_set_byte0_hi2(int v);
 void *dk_res_get(unsigned short id);
-void *func_088105BC(void *list, DkButton *b, int x, int y, unsigned int color);
+void *dk_draw_button(void *list, DkButton *b, int x, int y, unsigned int color);
 void *dk_draw_card_pict(void *list, int x, int y, int shadow, unsigned int color, DkEnt *e, void *gim, void *gim_alt, void *alt);
 void func_0880AF34(unsigned short mode);
 int dk_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b);
@@ -723,7 +723,7 @@ void *dk_draw_action_item(void *list, unsigned short i, int x, int y)
             color = 0xFF808080;
         break;
     }
-    return func_088105BC(list, b, x, y + 1, color);
+    return dk_draw_button(list, b, x, y + 1, color);
 }
 
 /* the layout picker contents: cursor and the 8 layout icons */
@@ -762,7 +762,7 @@ DkButton dk_sub_items[4] = {
 
 void *dk_draw_sub_item(void *list, unsigned short i, int x, int y)
 {
-    return func_088105BC(list, &dk_sub_items[i], x, y + 1, 0);
+    return dk_draw_button(list, &dk_sub_items[i], x, y + 1, 0);
 }
 
 DkButton dk_deck_items[5] = {
@@ -782,14 +782,14 @@ void *dk_draw_deck_item(void *list, unsigned short i, int x, int y)
             color = 0xFF808080;
         break;
     }
-    return func_088105BC(list, b, x, y + 1, color);
+    return dk_draw_button(list, b, x, y + 1, color);
 }
 
 DkButton dk_mark_items[3] = { { 0x800A, 0x11, 0x22, 0x4C }, { 0x800A, 0x22, 0x22, 0x4D }, { 0x800A, 0x00, 0x22, 0x4E } };
 
 void *dk_draw_mark_item(void *list, unsigned short i, int x, int y)
 {
-    return func_088105BC(list, &dk_mark_items[i], x, y + 1, 0);
+    return dk_draw_button(list, &dk_mark_items[i], x, y + 1, 0);
 }
 
 /* sets the pane layout; going from one list to two in the narrow layouts shows the list picked */

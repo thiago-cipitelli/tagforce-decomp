@@ -65,7 +65,7 @@ void dk_hist_push(DkHist *h);
 int dk_hist_pop(DkHist *h);
 void dk_layout_scroll(int keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned int func_0880B454(unsigned short tab);
-void *func_08810674(void *list, unsigned short side, unsigned short tab, int lit);
+void *dk_draw_shade(void *list, unsigned short side, unsigned short tab, int lit);
 void *dk_draw_card_pict(void *list, int x, int y, int z, unsigned int color, DkEnt *e, void *gim, void *gim_alt, void *alt);
 
 void dk_flight_land(void);
@@ -712,7 +712,7 @@ void *dk_flight_draw_window(void *list, int card)
     unsigned int color = 0xFFFFFFFF;
     unsigned int st;
 
-    list = func_08810674(list, dk_flight->dside, dk_flight->dst[dk_flight->sel], 0);
+    list = dk_draw_shade(list, dk_flight->dside, dk_flight->dst[dk_flight->sel], 0);
     menu_layout(&list, &dk_menu);
     switch (dk_flight->step) {
     case 2:

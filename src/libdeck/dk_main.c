@@ -28,7 +28,7 @@ void deck_name_copy_out(void *dst);
 void dk_lists_init(void);
 void dk_lists_free(void);
 void dk_deck_store(void);
-int func_0880931C(void *pad);
+int dk_input(void *pad);
 void func_0880AF34(unsigned short mode);
 void dk_cardlist_setup(void);
 void dk_check_rewards(void);
@@ -82,7 +82,7 @@ void dk_main(void)
     do {
         sys_frame_wait();
         dk_update();
-    } while (!func_0880931C(pad_get()));
+    } while (!dk_input(pad_get()));
     fade_start_in(1, 0xFF000000, 16);
     if (dk_scene_arg != 2)
         bgm_cmd(600);
