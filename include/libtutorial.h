@@ -31,6 +31,7 @@ typedef struct Tut {             /* tut 0x0880FFC0 (.bss), cleared by tut_init (
 } Tut;
 
 extern Tut tut;
+extern void *tut_pack;           /* 0x08810214 tutorial_<l>.ehp */
 
 /* BOOT (libehsys) */
 void *memset(void *, int, unsigned int);

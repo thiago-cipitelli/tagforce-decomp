@@ -7,7 +7,6 @@
 
 extern char tut_strbuf[0x100];   /* 0x08810110 */
 extern int tut_load_done;        /* 0x08810210 */
-extern void *tut_pack;           /* 0x08810214 tutorial_<l>.ehp */
 extern void *tut_msgs;           /* 0x08810218 message table of the lesson */
 extern void *tut_heap;           /* 0x0881021C the duel's heap (libduel_draw) */
 
