@@ -97,13 +97,78 @@ typedef struct ShopPanel {      /* argument of shop_panel_draw, 0x10 */
     int pad0c;
 } ShopPanel;
 
-typedef struct ShopView {       /* shop_view 0x08F8EC10 */
-    unsigned char flags;        /* bit 0: the alternative field music is playing */
-} ShopView;
+typedef struct ShopClerk {      /* shop_clerk 0x08F8EC10: the shop girl over the counter, 0x14 */
+    unsigned char alt : 1;      /* the other clerk (pc_sei) and her music */
+    unsigned char pad00 : 7;
+    unsigned char pad01;
+    unsigned short state;       /* +0x02 0 idle, 1 sliding in, 2 blinking, 3 talking, 4 reacting, 5 sliding out */
+    short timeout;              /* +0x04 */
+    unsigned short count;       /* +0x06 */
+    short slide;                /* +0x08 x offset while she slides */
+    short pad0a;
+    void *eyes;                 /* +0x0C pc_*_e.ehf */
+    void *mouth;                /* +0x10 pc_*_m.ehf */
+} ShopClerk;
+
+typedef struct EhfOpts {        /* BOOT ehf_draw options */
+    int time;                   /* +0x00 */
+    void *tex_cb;
+    void *tex_arg;
+    unsigned int flags;         /* +0x0C 0x10000 position */
+    int angle;
+    float x, y;                 /* +0x14 */
+    int pad1c;
+    float sx, sy;               /* +0x20 */
+    void *eval_cb;
+    void *eval_arg;
+    unsigned int mask[2];       /* +0x30 */
+    int pad38[2];
+    int color[8];               /* +0x40 */
+} EhfOpts;
 
 /* shop.cur: pack on the shelf under the cursor, column in bits 0-6, row in bit 7 (0 front, 1 back) */
 #define SHELF_IDX(c) ((c) & 0x7F)
 #define SHELF_SIDE(c) ((c) >> 7 & 1)
+
+typedef struct ShopMsgLine {    /* one line of the message window, 0x18 */
+    int x, y;
+    int w;                      /* +0x08 width typed so far */
+    int h;                      /* +0x0C */
+    int start;                  /* +0x10 first character */
+    int len;                    /* +0x14 characters that fit */
+} ShopMsgLine;
+
+typedef struct ShopMsgWin {     /* shop_msg 0x08F8EC24: the typewriter message window, 0x180 */
+    int state;                  /* +0x000 0 hidden, 1 opening, 2 open, 3 closing */
+    float t;                    /* +0x004 open/close progress */
+    Menu menu;                  /* +0x008 */
+    MenuItemDef def;            /* +0x054 */
+    void *heap;                 /* +0x0CC */
+    int x;                      /* +0x0D0 */
+    int w;                      /* +0x0D4 */
+    int font_size;              /* +0x0D8 */
+    int n_lines;                /* +0x0DC */
+    int line_w;                 /* +0x0E0 */
+    unsigned short *text;       /* +0x0E4 */
+    int speed;                  /* +0x0E8 message speed option (0..2) */
+    int input;                  /* +0x0EC the player can advance the text */
+    int style;                  /* +0x0F0 */
+    ShopMsgLine lines[3];       /* +0x0F4 */
+    int line;                   /* +0x13C line being typed */
+    int start;                  /* +0x140 first character of the page */
+    int page;                   /* +0x144 */
+    int done;                   /* +0x148 the whole text is shown */
+    int closed;                 /* +0x14C */
+    int full;                   /* +0x150 the page is full */
+    int shown;                  /* +0x154 characters shown */
+    int narrow;                 /* +0x158 narrow font (Japanese) */
+    void *icon;                 /* +0x15C "next" arrow */
+    int blink;                  /* +0x160 */
+    int hold;                   /* +0x164 */
+    float pos[2];               /* +0x168 */
+    float from[2];              /* +0x170 */
+    float to[2];                /* +0x178 */
+} ShopMsgWin;
 
 typedef struct ShopState {      /* shop 0x08E20530, 0x450 bytes cleared at start */
     unsigned short state;       /* +0x000 */
@@ -173,7 +238,8 @@ typedef struct ShopResFlags {   /* shop_res 0x08E20BC0 */
 
 extern ShopState shop;
 extern ShopResFlags shop_res;
-extern ShopView shop_view;
+extern ShopClerk shop_clerk;
+extern ShopMsgWin shop_msg;
 extern unsigned char shop_heap_mem[0x600000];
 extern unsigned char shop_cip_mem[0x16E000];
 extern void *shop_box_tex[48][3];
@@ -250,9 +316,15 @@ void camera_load_view(void);
 void shop_main_update(void);
 int shop_main_input(void);
 void shop_draw_all(void);
-void shop_list_free(void);
+void shop_msgwin_free(void);
+void shop_msg_set(unsigned short *text, int title);
+int shop_msgwin_update(void);
+void shop_msgwin_open(void);
+void shop_msgwin_close(void);
+int shop_msg_typing(void);
+int shop_msgwin_moving(void);
 void shop_menu_free(void);
-void shop_list_init(int mode);
+void shop_setup(int mode);
 void shop_res_init(void);
 int shop_load_poll(void);
 void shop_res_free(void);
@@ -262,7 +334,7 @@ void *shop_ehf_get(unsigned short id);
 void *shop_str_get(unsigned short id);
 Model *shop_model_get(unsigned short id);
 int shop_bsearch(unsigned short key, void *base, int n, int size);
-void shop_info_init(void);
+void shop_clerk_load(void);
 void shop_menu_init(void *gim);
 void shop_tabs_init(void);
 void shop_draw_box(void *list, ShopBox *b, int x, int y);

@@ -108,7 +108,7 @@ void shop_init(int mode, int arg)
     memset(&shop, 0, 0x450);
     shop.heap = heap_create(shop_heap_mem, 0x600000);
     shop.arg = arg;
-    shop_list_init(mode);
+    shop_setup(mode);
     shop_res_init();
 }
 
@@ -131,7 +131,7 @@ int shop_term(void)
     switch (shop.term) {
     case 0:
         if (snd_count_se() == 0) {
-            if ((shop_view.flags & 1) == 0)
+            if (shop_clerk.alt == 0)
                 bgm_cmd3(0x149);
             else
                 bgm_cmd3(0x148);
@@ -140,7 +140,7 @@ int shop_term(void)
         break;
     case 1:
         menu_reset(&shop.menu);
-        shop_list_free();
+        shop_msgwin_free();
         shop_menu_free();
         cardlist_clear();
         shop_res_free();
@@ -174,7 +174,7 @@ void shop_scene_init(void)
     sceKernelChangeCurrentThreadAttr(0, 0x4000);
     memset(&shop, 0, 0x450);
     shop.heap = heap_create(shop_heap_mem, 0x600000);
-    shop_list_init(1);
+    shop_setup(1);
     shop_res_init();
     while (!shop_load_poll())
         sys_frame_wait();
@@ -201,10 +201,10 @@ void shop_scene_main(void)
 void shop_scene_exit(void)
 {
     menu_reset(&shop.menu);
-    shop_list_free();
+    shop_msgwin_free();
     shop_menu_free();
     cardlist_clear();
-    if ((shop_view.flags & 1) == 0)
+    if (shop_clerk.alt == 0)
         bgm_cmd3(0x149);
     else
         bgm_cmd3(0x148);
@@ -247,7 +247,7 @@ int shop_load_poll(void)
             shop_pack_get(0x1001);
             break;
         default:
-            shop_info_init();
+            shop_clerk_load();
             shop_menu_init(shop_res_get(0x2007));
             shop_tabs_init();
             shop_model_set_box(0x8002, shop.pack);

@@ -11,7 +11,6 @@
    window; the button code on the shelf. */
 #include "libshop.h"
 
-extern unsigned short shop_ui_state;    /* 0x08F8EC12 */
 
 unsigned short region_pick_value(int flag);
 void se_play(int id);
@@ -46,16 +45,12 @@ void shop_list_page(void);
 void shop_list_mark(void);
 void shop_list_jump(int back);
 int shop_list_find_group(int back);
-int shop_ui_busy(void);
-void shop_info_update(void);
-void shop_menu_update(void);
+void shop_clerk_update(void);
 void shop_tabs_update(void);
-void *shop_pack_msg(int pack, int alt);
-void shop_msg_set(void *text, int arg);
-void shop_ui_set(int what);
-void shop_hint_set(int what);
+unsigned short *shop_pack_msg(int pack, int alt);
+void shop_clerk_set(int what);
+void shop_clerk_voice(int what);
 void shop_list_open(void);
-void shop_list_leave(void);
 void shop_list_back(void);
 void shop_buy_done_update(void);
 int shop_result_input(void);
@@ -83,8 +78,8 @@ inline void shop_pack_msg_refresh(void)
 {
     if (shop.msg_dirty) {
         if ((unsigned short)shop_pack_can_buy(shop.pack) != 0) {
-            shop_msg_set(shop_pack_msg(shop.pack, shop_view.flags & 1), 0);
-            shop_ui_set(3);
+            shop_msg_set(shop_pack_msg(shop.pack, shop_clerk.alt), 0);
+            shop_clerk_set(3);
         }
         shop.msg_dirty = 0;
     }
@@ -97,18 +92,18 @@ void shop_main_update(void)
     float f;
 
     if (shop.state < 7) {
-        shop_info_update();
-        shop_menu_update();
+        shop_clerk_update();
+        shop_msgwin_update();
         shop_tabs_update();
     }
     switch (shop.state) {
     case 0:
-        if (shop_ui_busy() == 0 && shop_ui_state == 2) {
+        if (shop_msgwin_moving() == 0 && shop_clerk.state == 2) {
             shop.state = 1;
-            shop_msg_set(shop_pack_msg(shop.pack, shop_view.flags & 1), 0);
-            shop_ui_set(3);
+            shop_msg_set(shop_pack_msg(shop.pack, shop_clerk.alt), 0);
+            shop_clerk_set(3);
             if (shop.mode == 0)
-                shop_hint_set(0);
+                shop_clerk_voice(0);
         }
         break;
     case 1:
@@ -295,7 +290,7 @@ void shop_shelf_input(void)
         r = shop_pack_can_buy(shop.pack);
         switch (r) {
         case 1:
-            if ((shop_view.flags & 1) == 0)
+            if (shop_clerk.alt == 0)
                 shop_msg_set(table_get_entry(shop_str_get(0xC001), 0x1D), 0);
             else
                 shop_msg_set(table_get_entry(shop_str_get(0xC001), 0x1E), 0);
@@ -305,7 +300,7 @@ void shop_shelf_input(void)
             if (shop.back) {
                 shop.back = 0;
             } else {
-                shop_hint_set(2);
+                shop_clerk_voice(2);
                 se_play(0x6213);
             }
             shop.timer = 0;
@@ -328,11 +323,11 @@ void shop_shelf_input(void)
         if (shop_points_left() > 0) {
             shop_cards_reset();
             shop.state = 7;
-            shop_list_leave();
+            shop_msgwin_close();
             fade_start_in(1, 0xFF000000, 16);
             se_play(0x6214);
         } else {
-            shop_hint_set(5);
+            shop_clerk_voice(5);
             shop_dialog_open(1, 0);
             se_play(0x621A);
         }
@@ -373,7 +368,7 @@ void shop_pick_input(void)
         points = sysstate_get_u32_54(0);
         if (points < shop_pack_price(shop.pack)) {
             shop_dialog_open(2, 0);
-            shop_hint_set(4);
+            shop_clerk_voice(4);
         } else {
             if (shop.mode == 0) {
                 shop.mode = 1;
@@ -509,8 +504,8 @@ void shop_buy_step(void)
             shop.spent += shop_pack_price(shop.pack);
             se_play(0x6265);
             se_play(0x6267);
-            shop_ui_set(4);
-            shop_hint_set(3);
+            shop_clerk_set(4);
+            shop_clerk_voice(3);
             sysstate_set_byte_3e38(shop.pack);
             shop.step++;
         } else {
