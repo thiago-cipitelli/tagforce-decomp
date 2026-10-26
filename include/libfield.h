@@ -163,6 +163,26 @@ typedef struct FieldBgCmd {            /* argument of the room load command */
     int n_cells;
 } FieldBgCmd;
 
+typedef struct Mat4 {
+    float m[16];
+} Mat4;
+
+typedef struct FieldObj {              /* placed object of the room, 0x60 */
+    int *info;                         /* +0x00 info[2] = area */
+    void *model;                       /* +0x04 */
+    int pad08[2];
+    Mat4 mtx;                          /* +0x10 */
+    int mode;                          /* +0x50 */
+    int x54;
+    int pad58[2];
+} FieldObj;
+
+typedef struct ModelDrawOpts {         /* BOOT model_draw options, 0x34 */
+    int a;
+    int b;
+    int rest[11];
+} ModelDrawOpts;
+
 typedef struct FieldBg {               /* 0x08844980, 0x430: the room */
     int loading;                       /* +0x000 */
     int unloading;                     /* +0x004 */
@@ -170,13 +190,14 @@ typedef struct FieldBg {               /* 0x08844980, 0x430: the room */
     int id;                            /* +0x00C */
     void *model[2];                    /* +0x010 areas */
     void *door[2];                     /* +0x018 */
-    void *model2[2];                   /* +0x020 */
-    int pad028[0x3C8 / 4];
+    void *model2[2];                   /* +0x020 shadow/stencil models */
+    int pad028[2];
+    FieldObj obj[10];                  /* +0x030 */
     int n_models;                      /* +0x3F0 */
     int area;                          /* +0x3F4 */
     int prev_area;                     /* +0x3F8 */
     int n_doors;                       /* +0x3FC */
-    int pad400[1];
+    int n_objs;                        /* +0x400 */
     Vec3 light;                        /* +0x404 */
     int fade;                          /* +0x410 */
     unsigned int fade_t;               /* +0x414 */
@@ -252,6 +273,20 @@ void mtx_ortho(float l, float r, float b, float t, float n, float f);
 
 void model_free(void *m);
 void model_update(void *model, void *dt);
+
+void model_draw(void *model, void *params);
+void model_set_mask(void *m, unsigned int mask);
+void *model_hook(void *m, int which, void *v);
+void mat4_identity(Mat4 *m);
+void mat4_mul(Mat4 *out, Mat4 *a, Mat4 *b);
+void mtx_load(Mat4 *m);
+unsigned int *dl_depth_mask(unsigned int *list, int mask);
+unsigned int *dl_stencil_op(unsigned int *list, int fail, int zfail, int zpass);
+unsigned int *dl_stencil_func(unsigned int *list, int func, int ref, int mask);
+unsigned int *dl_pixel_mask(unsigned int *list, unsigned int mask);
+unsigned int *dl_enable(unsigned int *list, int state);
+unsigned int *dl_disable(unsigned int *list, int state);
+char *strstr(const char *s, const char *find);
 
 /* libfield, other files */
 void *fld_alloc(unsigned int size);            /* 0x0880BEF0 */
