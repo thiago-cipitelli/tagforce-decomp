@@ -1,11 +1,17 @@
-// @range 0x088162CC-0x08816E5C
-// @rodata 0x0882AFD8-0x0882B028
+// @range 0x088162CC-0x08817AC8
+// @rodata 0x0882AFD8-0x0882B0E4
 /* Free duel: drawing dispatch, the vs CPU screens, the cursor and regulation sub-screens. */
 #include "libtitle.h"
 
 void *tfd_icon_setup(void *list, MenuWidget *w, int x, int y, int cw, int ch);
 void *tfd_entry_draw(void *list);
 void *tfd_vscpu_draw(void *list);
+void tfd_cursor_init(void);
+void tfd_cursor_handler(void);
+void *tfd_cursor_icon(void *list);
+int tfd_sprite_slidein(void);
+void *tfd_cursor_item(void *dl, int index, int x, int y);
+unsigned short *sysstate_get_name(void);
 void *tfd_cursor_draw(void *list);
 void *tfd_regulation_draw(void *list);
 void *tfd_duelist_draw2(void *list);
@@ -356,5 +362,398 @@ void *tfd_vscpu_draw(void *list)
         list = tframe_cursor(list, 0xFFFFFFFF, 0x147, 0xF2, 0x97, 0x17);
     if ((unsigned int)(t->step - 0x14) < 2)
         list = twin_draw_center(list, win, 1);
+    return list;
+}
+
+void tfd_cursor_init(void)
+{
+    TDuelCfg *d = &title.duel;
+    MenuWidget *w = &title.win[0];
+    TDuelOpts *o = &d->opts;
+
+    title.step = 0;
+    title.step2 = 1;
+    d->opts.kind = 0;
+    title.frame = 0;
+    title.u86c = 0;
+    title.u86d = 2;
+    title.color0 = 0xFFFFFFFF;
+    title.color1 = 0xFFFFFFFF;
+    twin_init(w);
+    w->def.x = 4;
+    w->def.y = 98;
+    w->def.h = 132;
+    w->def.w = 320;
+    w->def.pad_l = 1;
+    w->def.pad_r = 2;
+    w->item_w = w->def.w - (w->def.pad_l + w->def.pad_r);
+    w->def.pad_t = 18;
+    w->def.color = 0xFFFFFFFF;
+    w->rows = 10;
+    w->count = 2;
+    w->no_input = 0;
+    w->no_cancel = 1;
+    w->keep_open = 1;
+    w->draw_cursor = (MenuDrawCursorFn)tpanel_cursor;
+    w->item_h = 14;
+    w->cursor_h = 14;
+    w->cursor_w = w->item_w - 8;
+    w->draw_item = tfd_cursor_item;
+    w->def.pad_b = 0;
+    w->def.open_anim = 0;
+    w->def.close_anim = 0;
+    w->draw_cursor_post = 0;
+    w->item_x = 0;
+    w->item_y = 0;
+    twin_open(w);
+    d->u001 = 0;
+    o->name = sysstate_get_name();
+    o->side = 2;
+    title_ehf_load(8, 2, 0, 0x1E0);
+    title_ehf_load(14, 2, 0, 0x11);
+}
+
+void tfd_cursor_update(void)
+{
+    Title *t = &title;
+    MenuWidget *w = &title.win[0];
+
+    switch (title.step) {
+    case 0:
+        t->step = 1;
+    case 1:
+        tfd_cursor_init();
+        t->step = 2;
+        title_fade_out(0);
+        break;
+    case 2:
+    case 3:
+        if (title_fade_state() == 0)
+            t->step = 4;
+        break;
+    case 4:
+        title_ehf_load(14, 2, 0, 0x11);
+        t->step = 5;
+        break;
+    case 5:
+        if (title_ehf_frame(14) == 0x11) {
+            title_ehf_anim(14, 2, 0x12, 0x35);
+            t->step = 11;
+        }
+        break;
+    case 11:
+        w->draw_cursor = 0;
+        tfd_cursor_handler();
+        switch (t->step2) {
+        case 0:
+            w->count = 1;
+            break;
+        case 1:
+            w->count = 2;
+            break;
+        case 2:
+            w->count = 2;
+            break;
+        case 3:
+            w->count = 2;
+            break;
+        case 4:
+            w->count = 5;
+            break;
+        case 5:
+            w->count = 5;
+            break;
+        case 6:
+            w->count = 0;
+            break;
+        case 7:
+        case 8:
+        case 9:
+            break;
+        }
+        break;
+    case 0x1B:
+        w->draw_cursor = (MenuDrawCursorFn)tpanel_cursor;
+        title_goto_fade(1, 0xFFF, 4);
+        t->step = 0x1E;
+        break;
+    case 0x1D:
+        title_goto_fade(1, 0xFFF, t->next_sub);
+        t->step = 0x1E;
+        tfd_evt_handler(3, 0);
+        break;
+    case 0x1E:
+    case 0x1F:
+        if (title_fade_state() == 0)
+            t->step = 0x21;
+        break;
+    case 0x21:
+        break;
+    }
+}
+
+void tfd_cursor_handler(void)
+{
+    Title *t = &title;
+    MenuWidget *w = &title.win[0];
+    TDuelOpts *o = &title.duel.opts;
+    int r;
+
+    r = menu_update(w);
+    switch (r) {
+    case -1:
+        break;
+    case -2:
+        if (t->step2 > 1) {
+            if (t->step2 > 3) {
+                if (!o->b7)
+                    t->step2 = 3;
+                else
+                    t->step2--;
+            } else {
+                t->step2--;
+            }
+            w->cancelled = w->accepted = 0;
+            w->scroll = 0;
+            w->cursor = 0;
+            switch (t->step2) {
+            case 0:
+                w->cursor = o->kind;
+                break;
+            case 1:
+                w->cursor = o->tag;
+                break;
+            case 2:
+                w->cursor = o->swap;
+                break;
+            case 3:
+                w->cursor = o->b7;
+                break;
+            case 4:
+                w->cursor = o->lp;
+                break;
+            case 5:
+                w->cursor = o->time;
+                break;
+            case 6:
+            case 7:
+            case 8:
+                break;
+            }
+        } else {
+            t->step = 0x1B;
+            t->step2 = 1;
+        }
+        break;
+    case -3:
+        break;
+    default:
+        switch (t->step2) {
+        case 0:
+            o->kind = r;
+            switch (r) {
+            case 0:
+                t->step2++;
+                break;
+            case 1:
+                t->step2 = 6;
+                break;
+            case 2:
+                t->step2 = 6;
+                break;
+            case 3:
+                t->step2 = 6;
+                break;
+            }
+            break;
+        case 1:
+            t->step2++;
+            o->tag = r;
+            break;
+        case 2:
+            t->step2++;
+            o->swap = r;
+            break;
+        case 3:
+            switch (r) {
+            case 0:
+                o->b7 = 0;
+                o->lp = 2;
+                o->time = 0;
+                t->step2 = 6;
+                break;
+            case 1:
+                o->b7 = 1;
+                t->step2++;
+                break;
+            }
+            break;
+        case 4:
+            t->step2++;
+            o->lp = r;
+            break;
+        case 5:
+            o->time = r;
+            t->step2 = 6;
+            break;
+        case 7:
+            t->step = 0x1D;
+            t->next_sub = 6;
+            break;
+        case 8:
+            t->step = 0x1D;
+            t->next_sub = 6;
+            break;
+        case 9:
+            t->step = 0x1D;
+            t->next_sub = 6;
+            break;
+        case 6:
+            t->step = 0x1D;
+            tframe_cursor_mode(1);
+            switch (o->kind) {
+            case 0:
+            case 2:
+                t->next_sub = 6;
+                break;
+            case 1:
+                t->next_sub = 0x10;
+                break;
+            case 3:
+                t->next_sub = 0x10;
+                break;
+            case 4:
+                t->next_sub = 0x10;
+                break;
+            }
+            break;
+        }
+        w->cancelled = w->accepted = 0;
+        w->scroll = 0;
+        w->cursor = 0;
+        break;
+    }
+}
+
+void *tfd_cursor_draw(void *list)
+{
+    Title *t = &title;
+    MenuWidget *w = &title.win[0];
+    TDuelOpts *o = &title.duel.opts;
+    int n = 0;
+
+    list = title_ehf_draw(list, 8);
+    if (title.step >= 5) {
+        list = title_ehf_draw(list, 14);
+        list = title_screen_label(list);
+    }
+    list = tbox_header(list, tfd_show_duelinfo);
+    list = tbox_corner(list, tfd_sprite_anim);
+    list = tfd_config_draw_text(list, 1, 9);
+    list = tbox_help(list, tfd_sprite_slidein(), 12);
+    menu_draw(&list, w);
+    if (t->step2 != 6)
+        list = tfd_cursor_icon(list);
+    if (t->step2 != 0) {
+        if (o->kind == 0) {
+            n = (short)(int)t->step2;
+            if (n <= 3)
+                n -= 1;
+            else
+                n -= 2;
+        } else {
+            n = 1;
+        }
+    }
+    list = tbox_side(list, 0x14, n, tfd_cursor_sprite);
+    if (t->step2 == 6)
+        list = tframe_cursor(list, 0xFFFFFFFF, 0x147, 0xF2, 0x97, 0x17);
+    return list;
+}
+
+void *tfd_cursor_icon(void *list)
+{
+    Title *t = &title;
+    int id = 0;
+
+    switch (title.step2) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+        id = t->step2 + 0x4C;
+        break;
+    case 6:
+    case 7:
+    case 8:
+        break;
+    }
+    return tbox_small(list, id, 9, 0x67, 0x135, 0x10);
+}
+
+void *tfd_cursor_item(void *list, int index, int x, int y)
+{
+    int k = 0;
+
+    switch (title.step2) {
+    case 0:
+        k = 0x52;
+        break;
+    case 1:
+        k = 0x58;
+        break;
+    case 2:
+        k = 0x5A;
+        break;
+    case 3:
+        k = 0x5C;
+        break;
+    case 4:
+        k = 0x68;
+        break;
+    case 5:
+        k = 0x6D;
+        break;
+    case 6:
+    case 7:
+    case 8:
+        break;
+    }
+    if (k != 0) {
+        k += (unsigned short)index;
+        list = title_msg_font(list, x, y, 0x100, 12, k, 0, 15, 15, 0xFF002020);
+    }
+    return list;
+}
+
+void *tfd_cursor_sprite(void *list, int i, int x, int y, int w, int h)
+{
+    TDuelOpts *o = &title.duel.opts;
+    int n = 0;
+
+    if (o->kind == 0) {
+        switch ((unsigned short)i) {
+        case 0:
+            n = o->tag + 0x58;
+            break;
+        case 1:
+            n = o->swap + 0x31;
+            break;
+        case 2:
+            n = o->lp + 0x34;
+            break;
+        case 3:
+            n = o->time + 0x39;
+            break;
+        }
+    } else if (o->kind == 1) {
+        n = 0x17;
+    } else {
+        n = o->kind + 0x51;
+    }
+    if (n != 0)
+        list = title_msg_font(list, x, y, w, 12, n, 2, 13, 13, 0xFF002020);
     return list;
 }
