@@ -217,6 +217,13 @@ typedef struct TFdPacket {             /* a player entry sent to the other machi
     unsigned char pad74[0x100 - 0x74];
 } TFdPacket;
 
+typedef struct TFdSel {                /* 8 */
+    unsigned short type;
+    unsigned char u02;
+    unsigned char dk;
+    int deck;
+} TFdSel;
+
 typedef struct TFdList {               /* title.duel +0x08, 0xEA8 bytes cleared by tfd_clear */
     unsigned char n;                   /* +0x000 */
     unsigned char pad001[3];
@@ -224,7 +231,11 @@ typedef struct TFdList {               /* title.duel +0x08, 0xEA8 bytes cleared 
     TFdDeck deck[9];                   /* +0x094 */
     TFdImpList imps;                   /* +0x514 net_get_hosts */
     TFdScan scan;                      /* +0x734 net_get_scan */
-    unsigned char pad978[0xEA8 - 0x978];
+    TFdPacket pkt;                     /* +0x978 sent by tfd_comm_machine */
+    TFdSel sel;                        /* +0xA78 */
+    RecipeData recv[4];                /* +0xA80 decks received from the other machines */
+    void *mark;                        /* +0xEA0 heap level */
+    unsigned char *buf;                /* +0xEA4 transfer buffer */
 } TFdList;
 
 typedef struct TFdTail {               /* title.duel +0x1180 */
@@ -235,12 +246,14 @@ typedef struct TFdTail {               /* title.duel +0x1180 */
 } TFdTail;
 
 typedef struct TDuelCfg {              /* title +0x974 */
-    unsigned char pad000;
-    unsigned char u001;                /* +0x001 */
-    unsigned char pad002[2];
-    unsigned char u004 : 4;            /* +0x004 */
-    unsigned char u004h : 4;
-    unsigned char u005;                /* +0x005 */
+    unsigned char u000;                /* +0x000 */
+    unsigned char u001;                /* +0x001 own machine (peer_self_get) */
+    unsigned char u002;                /* +0x002 */
+    unsigned char pad003;
+    unsigned char u004 : 4;            /* +0x004 partner */
+    unsigned char u004b4 : 1;
+    unsigned char u004h : 3;
+    unsigned char u005;                /* +0x005 tfd_comm_machine state */
     unsigned char pad006[2];
     TFdList list;                      /* +0x008 */
     unsigned char pad0eb0[0xEB4 - 0xEB0];
@@ -248,7 +261,7 @@ typedef struct TDuelCfg {              /* title +0x974 */
     TFdImp host;                       /* +0xEC4 net_get_host_info */
     unsigned char uf00[0x4C];          /* +0xF00 */
     unsigned char uf4c[0x1C];          /* +0xF4C */
-    unsigned char pad0f68[0x1178 - 0xF68];
+    RecipeData send[2];                /* +0xF68 decks sent to the other machines */
     unsigned short anim;               /* +0x1178 frame counter of the setup screens */
     unsigned char blink;               /* +0x117A counts 0..29 */
     unsigned char pad117b;

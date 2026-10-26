@@ -1,4 +1,5 @@
-// @range 0x0881494C-0x08814F08
+// @range 0x0881494C-0x088158B4
+// @rodata 0x0882AF94-0x0882AFD8
 /* Free duel over ad hoc: the player entries exchanged with the other machines. */
 #include "libtitle.h"
 
@@ -12,6 +13,15 @@ int peer_self_byte1(void);
 int tfd_get_seat(int i);
 void tpt_set_name(short i, int kind, int type2, int src, int deck, void *name);
 void tpt_set_all(short i, int kind, int type2, int src, int deck, void *name, void *deckname);
+unsigned short *sysstate_get_name(void);
+int peers_all_match(int a, int b, int c);
+int peer_self_byte2(void);
+int peer0_byte2(void);
+void tfd_import_populate(TFdPacket *p);
+int tfd_all_ready(TFdPacket *p);
+void tfd_chr_copy_draw(RecipeData *dst, TFdDeck *src);
+void netsync_transfer_setup(void *buf, void *src, int size);
+int netsync_transfer(void);
 
 void tfd_pt_send_packet(TFdPacket *pk, short who, short type, short type2, short kind, short deck, short side)
 {
@@ -146,4 +156,245 @@ void tfd_pt_recv_packet(void)
             }
         }
     }
+}
+
+int tfd_comm_machine(void)
+{
+    Title *t = &title;
+    TDuelCfg *d = &title.duel;
+    TFdList *l = &d->list;
+    TDuelOpts *o = &d->opts;
+    TFdPacket *pk = &l->pkt;
+    TFdDeck *e;
+    int i;
+    int n;
+
+    pad_get();
+    d->u001 = peer_self_get();
+    title.duel.list.n = peer_count_get();
+    switch (d->u005) {
+    case 0:
+        memset(pk, 0, sizeof(TFdPacket));
+        pk->kind = 1;
+        pk->ver = 1;
+        pk->b2 = 0;
+        wcsncpy(pk->name, sysstate_get_name(), 15);
+        local_record_set(pk);
+        d->u005++;
+        break;
+    case 1:
+        if (peers_all_match(1, 4, 0xFF)) {
+            tfd_import_populate(pk);
+            pk->ver = 2;
+            local_record_set(pk);
+            d->u005++;
+        }
+        break;
+    case 2:
+        if (o->kind == 0) {
+            if (!o->tag) {
+                if (peer_self_get() == 0) {
+                    if (peers_all_match(1, 2, 0xFF)) {
+                        pk->kind = 2;
+                        pk->ver = 1;
+                        local_record_set(pk);
+                        d->u005 = 3;
+                    }
+                } else if (peer_get(0)->kind == 2) {
+                    pk->kind = 2;
+                    pk->ver = 1;
+                    local_record_set(pk);
+                    d->u005 = 3;
+                }
+            } else {
+                if (peer_self_get() == 0) {
+                    if (peers_all_match(1, 2, 0xFF)) {
+                        pk->kind = 2;
+                        pk->ver = 1;
+                        local_record_set(pk);
+                        d->u005 = 4;
+                    }
+                } else if (peer_get(0)->kind == 2) {
+                    pk->kind = 2;
+                    pk->ver = 1;
+                    local_record_set(pk);
+                    d->u005 = 4;
+                }
+            }
+        }
+        break;
+    case 3:
+        tfd_pt_send_packet(pk, d->u001, l->deck[d->u001].type, l->deck[d->u001].u76, l->deck[d->u001].dk,
+                           (short)l->deck[d->u001].deck, l->deck[d->u001].side);
+        d->u005 = 4;
+        break;
+    case 4:
+        tfd_pt_recv_packet();
+        tfd_all_ready(pk);
+        if (t->step == 14) {
+            tfd_pt_send_packet(pk, d->u001, l->deck[d->u001].type, l->deck[d->u001].u76, l->deck[d->u001].dk,
+                               (short)l->deck[d->u001].deck, l->deck[d->u001].side);
+            t->step = 15;
+        } else if (t->step == 15) {
+            if (peer_self_byte1() == 2) {
+                pk->kind = 2;
+                pk->ver = 1;
+                local_record_set(pk);
+                t->step = 16;
+            }
+        } else if (t->step == 0x2B || t->step == 0x11) {
+            tfd_get_seat(d->u000);
+            tfd_pt_send_packet(pk, d->u000, l->sel.type, l->sel.u02, l->sel.dk, (short)l->sel.deck,
+                               l->deck[d->u001].side);
+            if (t->step == 0x2B)
+                t->step = 0x2C;
+            else
+                t->step = 0x12;
+        } else if (t->step == 0x2C || t->step == 0x12) {
+            if (peer_self_byte1() == 2) {
+                tfd_get_seat(d->u000);
+                e = &l->deck[d->u000];
+                e->type = l->sel.type;
+                e->u76 = l->sel.u02;
+                e->dk = l->sel.dk;
+                e->deck = l->sel.deck;
+                pk->kind = 2;
+                pk->ver = 1;
+                local_record_set(pk);
+                if (t->step == 0x2C)
+                    t->step = 0x2D;
+                else
+                    t->step = 0x13;
+            }
+        } else if (t->step == 0x2F) {
+            tfd_get_seat(d->u000);
+            tfd_pt_send_packet(pk, d->u000, l->sel.type, l->sel.u02, l->sel.dk, (short)l->sel.deck,
+                               l->deck[d->u001].side);
+            t->step = 0x30;
+        } else if (t->step == 0x30) {
+            if (peer_self_byte1() == 2) {
+                tfd_get_seat(d->u000);
+                e = &l->deck[d->u000];
+                e->type = l->sel.type;
+                e->u76 = l->sel.u02;
+                e->dk = l->sel.dk;
+                e->deck = l->sel.deck;
+                pk->kind = 2;
+                pk->ver = 1;
+                local_record_set(pk);
+                t->step = 0x31;
+            }
+        } else if (t->step == 0x16) {
+            pk->ver = 2;
+            pk->b2 = 1;
+            local_record_set(pk);
+            t->step = 0x17;
+        } else if (t->step == 0x17) {
+            pk->ver = 2;
+            pk->b2 = 1;
+            local_record_set(pk);
+            if (peer_self_byte1() == 2 && peer_self_byte2() == 1) {
+                t->step = 0x18;
+                d->u005 = 5;
+            }
+        }
+        break;
+    case 5:
+        pk->ver = 2;
+        pk->b2 = 1;
+        local_record_set(pk);
+        tfd_pt_recv_packet();
+        if (tfd_all_ready(pk)) {
+            d->u002 = d->u001;
+            d->u005 = 7;
+        }
+        break;
+    case 6:
+        if (peer_self_get() == 0) {
+            if (peers_all_match(2, 2, 2)) {
+                pk->b2 = 3;
+                local_record_set(pk);
+                d->u002 = d->u001;
+                d->u005++;
+            }
+        } else if (peer0_byte2() == 3) {
+            pk->b2 = 3;
+            local_record_set(pk);
+            d->u002 = d->u001;
+            d->u005++;
+        }
+        break;
+    case 7:
+        e = &l->deck[d->u002];
+        l->mark = heap_alloc(t->heap, 0x300);
+        l->buf = heap_alloc(t->heap, 0xC00);
+        tfd_chr_copy_draw(&d->send[0], e);
+        if (o->tag && d->u004b4 == 1)
+            tfd_chr_copy_draw(&d->send[1], &l->deck[d->u004]);
+        netsync_transfer_setup(l->buf, d->send, 0x300);
+        d->u005++;
+        break;
+    case 8:
+        if (netsync_transfer()) {
+            for (i = 0; i < peer_count_get(); i++)
+                memcpy(&l->recv[i], l->buf + i * 0x300, sizeof(RecipeData));
+            for (i = peer_count_get(); i < 4; i++)
+                memcpy(&l->recv[i], l->buf + ((i - 2) * 0x300 + sizeof(RecipeData)), sizeof(RecipeData));
+            heap_set_level(t->heap, l->mark);
+            heap_set_level(t->heap, l->buf);
+            d->u005 = 15;
+        }
+        break;
+    case 9:
+        pk->kind = 2;
+        pk->ver = 2;
+        pk->b2 = 12;
+        local_record_set(pk);
+        if (peers_all_match(2, 2, 12))
+            d->u005 = 10;
+        break;
+    case 10:
+        if (o->tag) {
+            if (d->u004b4 == 1) {
+                d->u002 = d->u004;
+                d->u005 = 11;
+            } else {
+                pk->ver = 1;
+                pk->kind = 7;
+                pk->b2 = 0;
+                local_record_set(pk);
+                d->u005 = 12;
+            }
+        } else {
+            d->u005 = 15;
+        }
+        break;
+    case 11:
+        l->mark = heap_alloc(t->heap, 0x180);
+        l->buf = heap_alloc(t->heap, 0x600);
+        d->u005++;
+        break;
+    case 12:
+        if (netsync_transfer()) {
+            for (n = peer_count_get(); n < 4; n++)
+                memcpy(&l->recv[n], l->buf + (n - 2) * 0x180, sizeof(RecipeData));
+            heap_set_level(t->heap, l->mark);
+            heap_set_level(t->heap, l->buf);
+            d->u005 = 13;
+        }
+        break;
+    case 13:
+        pk->kind = 2;
+        pk->ver = 2;
+        pk->b2 = 14;
+        local_record_set(pk);
+        if (peers_all_match(2, 2, 14))
+            d->u005 = 15;
+        break;
+    case 14:
+    case 15:
+    case 16:
+        break;
+    }
+    return 0;
 }

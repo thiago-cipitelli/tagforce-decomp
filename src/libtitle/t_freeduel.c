@@ -3,6 +3,23 @@
 /* Free duel setup (state 3 and its sub-screens): the player list, the deck list, the options panel. */
 #include "libtitle.h"
 
+/* layout checks (check_file masks relocated offsets) */
+#define TFD_AT(t, f, off) typedef char t##_##f##_at[(int)&((t *)0)->f == (off) ? 1 : -1]
+TFD_AT(Title, duel, 0x974);
+TFD_AT(TDuelCfg, list, 0x8);
+TFD_AT(TDuelCfg, opts, 0xEB4);
+TFD_AT(TDuelCfg, host, 0xEC4);
+TFD_AT(TDuelCfg, uf00, 0xF00);
+TFD_AT(TDuelCfg, send, 0xF68);
+TFD_AT(TDuelCfg, anim, 0x1178);
+TFD_AT(TDuelCfg, tail, 0x1180);
+TFD_AT(TFdList, deck, 0x94);
+TFD_AT(TFdList, imps, 0x514);
+TFD_AT(TFdList, pkt, 0x978);
+TFD_AT(TFdList, recv, 0xA80);
+TFD_AT(TFdTail, decks, 0xFF0);
+TFD_AT(TFdDeck, type, 0x74);
+
 unsigned short *chara_get_name(int set, int id);
 void *tfd_icon_setup(void *list, MenuWidget *w, int x, int y, int cw, int ch);
 int tfd_evt_handler(int a, int b);
