@@ -505,7 +505,13 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`t_name.c`](../src/libtitle/t_name.c) | 0x0880F900-0x088106D8 | 14 | 0 | novo jogo (estado 8: nome, confirmação, gravação) e title_prompt |
 | [`t_panel.c`](../src/libtitle/t_panel.c) | 0x088106D8-0x08813088 | 20 | 7 | caixa de células com rolagem, abas, janela com abas, quadros de nove peças, cursor piscante, caixas prontas e ajudas |
 | [`t_ext.c`](../src/libtitle/t_ext.c) | 0x08813088-0x08813AC4 | 8 | 0 | cartas de dados extras (estado 6): .YGC do Memory Stick, carta nova recebida em três cópias |
+| [`t_freeduel.c`](../src/libtitle/t_freeduel.c) | 0x08813AC4-0x0881494C | 8 | 0 | free duel: listas de jogadores e decks, painel de opções, despacho das sub-telas, eventos da rede ad hoc |
+| [`t_fdnet.c`](../src/libtitle/t_fdnet.c) | 0x0881494C-0x088162CC | 9 | 1 | free duel ad hoc: pacotes de jogador, máquina de troca de decks, GameState do duelo em rede, prontidão e assentos |
 | [`t_fdvscpu.c`](../src/libtitle/t_fdvscpu.c) | 0x088162CC-0x08818A88 | 23 | 2 | free duel: despacho do desenho, duelo vs CPU, configuração do duelo (cursor), regulamento e grade de jogadores |
+| [`t_fdduelist.c`](../src/libtitle/t_fdduelist.c) | 0x08818A88-0x088195B4 | 6 | 0 | free duel: escolha de duelista |
+| [`t_fdadhoc.c`](../src/libtitle/t_fdadhoc.c) | 0x088195B4-0x0881BA64 | 9 | 1 | free duel: topo do modo ad hoc (painéis, handlers, desenho) |
+| [`t_fdlobby.c`](../src/libtitle/t_fdlobby.c) | 0x0881BA64-0x0881E0CC | 28 | 4 | free duel: lobby da senha (cartas via libselect_card), info do duelo, entrada vs CPU, lista de opções |
+| [`t_fddraw.c`](../src/libtitle/t_fddraw.c) | 0x0881E0CC-0x0881F02C | 9 | 1 | free duel: títulos das caixas, ícones, escolha de personagem (libcharalist), mensagem de entrada |
 | [`t_partner.c`](../src/libtitle/t_partner.c) | 0x0881F02C-0x08821D3C | 22 | 17 | painel de parceiros/adversários (cópia do dmgr_partner.c com quatro funções a mais) |
 | [`t_chr.c`](../src/libtitle/t_chr.c) | 0x0882647C-0x08826B8C | 4 | 1 | números com a fonte e com sprites de dígitos, retrato do personagem, tabela de rostos |
 
