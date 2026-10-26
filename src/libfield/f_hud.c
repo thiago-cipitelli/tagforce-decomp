@@ -29,7 +29,7 @@ void fld_hud_panel_update(void);
 void fld_hud_box_free(void);
 void fld_hud_box_init(void);
 void fld_hud_box_update(void);
-void func_088158BC(void);
+void fld_hud_draw_free(void);
 
 int fld_sctab_state(void)
 {
@@ -102,7 +102,7 @@ void fld_hud_free(void)
     fld_hud_date_free();
     fld_hud_panel_free();
     fld_hud_box_free();
-    func_088158BC();
+    fld_hud_draw_free();
     menu_free_items(&field_hud.menu);
 }
 
