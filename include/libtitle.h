@@ -243,11 +243,60 @@ typedef struct TFdReady {
 } TFdReady;
 
 typedef struct TFdTail {               /* title.duel +0x1180 */
-    unsigned char pad000[8];
+    unsigned char pad000[3];
+    unsigned char u003;                /* +0x003 copy of title.duel.u000 */
+    unsigned char pad004[4];
     TExtList ext;                      /* +0x008 */
     unsigned char pad06c[0xFF0 - 0x6C];
     TDeckRec decks[4];                 /* +0xFF0 */
 } TFdTail;
+
+typedef struct TCardPanel {            /* BOOT CardPanel (cardlist_build): the card shown on a panel, 0x1C */
+    int id;
+    int vram;
+    int scroll;
+    int desc_max;
+    int shown_id;
+    int shown_variant;
+    int fade;
+} TCardPanel;
+
+typedef struct TCardListCfg {          /* BOOT cardlist_init argument, 0x24 */
+    void *gim;
+    void *digits_gim;
+    void *frame_ehf;
+    void *attr_gim;
+    void *kind_gim;
+    void *cil_gim;
+    void *icon_gim;
+    void *cip;                         /* +0x1C */
+    int frame_view;
+} TCardListCfg;
+
+typedef struct TFdPassSlot {           /* 4 */
+    unsigned short id;
+    unsigned char on : 1;              /* +0x02 */
+    unsigned char rest : 7;
+    unsigned char pad03;
+} TFdPassSlot;
+
+typedef struct TFdPass {               /* title.duel +0xF00: card choice of the password lobby, 0x4C */
+    void *cip;                         /* +0x00 card images (cip_open_m) */
+    void *mem;                         /* +0x04 */
+    TFdPassSlot slot[5];               /* +0x08 */
+    unsigned char pad1c[0x30 - 0x1C];
+    TCardPanel panel;                  /* +0x30 */
+} TFdPass;
+
+typedef struct TFdPassSel {            /* title.duel +0xF4C: libselect_card state, 0x1C */
+    unsigned char loaded : 1;          /* +0x00 libselect_card is started */
+    unsigned char rest : 7;
+    unsigned char pad01[3];
+    void *cip;                         /* +0x04 cip_open_h */
+    void *mem;                         /* +0x08 */
+    int n;                             /* +0x0C cards chosen */
+    unsigned short card[6];            /* +0x10 */
+} TFdPassSel;
 
 typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char u000;                /* +0x000 */
@@ -263,14 +312,22 @@ typedef struct TDuelCfg {              /* title +0x974 */
     TFdReady ready[4];                 /* +0xEB0 by seat */
     TDuelOpts opts;                    /* +0xEB4 */
     TFdImp host;                       /* +0xEC4 net_get_host_info */
-    unsigned char uf00[0x4C];          /* +0xF00 */
-    unsigned char uf4c[0x1C];          /* +0xF4C */
+    union {
+        unsigned char uf00[0x4C];      /* +0xF00 */
+        TFdPass pass;
+    };
+    union {
+        unsigned char uf4c[0x1C];      /* +0xF4C */
+        TFdPassSel psel;
+    };
     RecipeData send[2];                /* +0xF68 decks sent to the other machines */
     unsigned short anim;               /* +0x1178 frame counter of the setup screens */
     unsigned char blink;               /* +0x117A counts 0..29 */
     unsigned char pad117b;
     unsigned short card;               /* +0x117C */
-    unsigned char pad117e[0x1180 - 0x117E];
+    unsigned char card_win : 1;        /* +0x117E the prize card is given */
+    unsigned char pad117e : 7;
+    unsigned char pad117f;
     TFdTail tail;                      /* +0x1180 */
 } TDuelCfg;
 
@@ -406,7 +463,10 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char u86d;                /* +0x86D */
     unsigned char pad86e[2];
     int arg;                           /* +0x870 value passed between the states */
-    unsigned char pad874[0x87C - 0x874];
+    int u874;                          /* +0x874 */
+    unsigned char pad878[2];
+    unsigned char u87a;                /* +0x87A */
+    unsigned char pad87b;
     TMenu tm[2];                       /* +0x87C main menu, sub menu */
     TDuelCfg duel;                     /* +0x974 */
     int lang;                          /* +0x3004 language of the loaded title pack */
