@@ -1,11 +1,11 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-25 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-26 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 46,6% | 62,7% | 6670 / 11039 |
+| total | 48,9% | 65,3% | 7025 / 11039 |
 | BOOT | 63,0% | 79,9% | 1815 / 2208 |
 | libduel_eng | 61,7% | 81,2% | 2987 / 3429 |
 | libhtml_view | 100% | 100% | 16 / 16 |
@@ -24,9 +24,9 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-25 (
 | libdeck_swap | 61,4% | 84,8% | 156 / 204 |
 | libdeck_tutorial | 57,7% | 85,9% | 224 / 293 |
 | libshop | 55,9% | 78,2% | 186 / 223 |
-| libtitle | 35,4% | 44,6% | 244 / 434 |
+| libtitle | 64,6% | 77,0% | 333 / 434 |
 | libtutorial | 86,2% | 98,4% | 196 / 207 |
-| libfield | — | — | 266 / 652 |
+| libfield | 17,8% | 20,0% | 266 / 652 |
 | libduel_draw, libstory | 0% | 0% | 0 / 2285 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
@@ -51,7 +51,9 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 0x088451E8-0x08846498     1 functions     4784 bytes
 ```
 
-**libtitle**: `0x08813AC4-0x0881F02C` (~110 funções: configuração do duelo livre e lobby ad hoc) e `0x08821D3C-0x0882647C` (~40 funções: estado 12 e telas de configuração).
+**libtitle**: `0x08821D3C-0x0882647C` (52 funções, estado 12 e telas de configuração); o free duel `0x08813AC4-0x0881F02C` está todo em C.
+
+**libfield**: `0x08815FD8-0x0882BE80` (323 funções: janela de mensagens, câmera/luz, efeitos, sprites); `0x08804000-0x08815FD8` está em C.
 
 **BOOT**: nenhum trecho sem C. Todo o `.text` está em arquivos `.c`; o que falta são as funções em `@asm` (C sob `NON_MATCHING`). Na parte do SDK compilada com GCC (libgu, newlib, libgcc, libvfpu, libccc, libfpu, libdeflt, libsas/libwave) as funções são `asm` do mwcc com C portável sob `#else`; ficam em `@asm` as que carregam dados por `lui`/`%lo`, que o assembler embutido não aceita (ver `docs/build.md`).
 
@@ -483,7 +485,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`rv_menu.c`](../src/librecipe_viewer/rv_menu.c) | 0x08809274-0x0880A248 | 9 | 4 | cartas por linha, entrada sob o cursor, revelação, menus de confirmação/opções, teclado na tela |
 | [`rv_main.c`](../src/librecipe_viewer/rv_main.c) | 0x0880A248-0x0880A99C | 4 | 0 | entrada, init (listas, heap de 4 MB), update com resultado, liberação |
 
-## libtitle (21 arquivos, 243 funções batendo, 41 em asm)
+## libtitle (28 arquivos, 332 funções batendo, 50 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
