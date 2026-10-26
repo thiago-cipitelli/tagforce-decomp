@@ -253,7 +253,7 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char u000;                /* +0x000 */
     unsigned char u001;                /* +0x001 own machine (peer_self_get) */
     unsigned char u002;                /* +0x002 */
-    unsigned char pad003;
+    unsigned char u003;                /* +0x003 seat picked on the vs CPU screen */
     unsigned char u004 : 4;            /* +0x004 partner */
     unsigned char u004b4 : 1;
     unsigned char u004h : 3;
@@ -270,7 +270,9 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char blink;               /* +0x117A counts 0..29 */
     unsigned char pad117b;
     unsigned short card;               /* +0x117C */
-    unsigned char pad117e[0x1180 - 0x117E];
+    unsigned char card_ok : 1;         /* +0x117E inv_get_bit7_default1(card) == 0 */
+    unsigned char pad117e_1 : 7;
+    unsigned char pad117f;
     TFdTail tail;                      /* +0x1180 */
 } TDuelCfg;
 
