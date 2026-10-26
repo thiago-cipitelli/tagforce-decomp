@@ -256,7 +256,9 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char u003;                /* +0x003 seat picked on the vs CPU screen */
     unsigned char u004 : 4;            /* +0x004 partner */
     unsigned char u004b4 : 1;
-    unsigned char u004h : 3;
+    unsigned char u004b5 : 1;
+    unsigned char u004b6 : 1;          /*         set by tfd_rule_icon(1) */
+    unsigned char u004b7 : 1;
     unsigned char u005;                /* +0x005 tfd_comm_machine state */
     unsigned char pad006[2];
     TFdList list;                      /* +0x008 */

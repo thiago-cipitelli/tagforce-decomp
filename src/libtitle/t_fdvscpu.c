@@ -1,4 +1,4 @@
-// @range 0x088162CC-0x08818480
+// @range 0x088162CC-0x08818A88
 // @rodata 0x0882AFD8-0x0882B118
 // @asm 0x08817F98-0x08818480
 /* Free duel: drawing dispatch, the vs CPU screens, the cursor and regulation sub-screens. */
@@ -17,6 +17,13 @@ int tfd_regulation_input(void);
 int tfd_regulation_select();
 void text_ext_reset(void);
 int net_get_state(void);
+void *tfd_rule_init(void *list);
+void *tfd_rule_draw(void *list, int x, int y, int w, int h, int lit);
+void *tfd_icon_draw(void *list, int id, int x, int y);
+void *title_text_frame(void *list, int x, int y, int w, unsigned short *text, int align);
+void tpt_set_name(short i, int kind, int type2, int src, int deck, void *name);
+void tpt_set_mode(int mode);
+void *tbox_draw(void *list, TBox *b);
 void *tfd_rule_item(void *list, int i, int x, int y, int w, int h);
 void net_get_host_info(TFdImp *out);
 void *tfd_cursor_item(void *dl, int index, int x, int y);
@@ -1059,3 +1066,132 @@ int tfd_regulation_input(void)
     return -1;
 }
 #endif
+
+void *tfd_regulation_draw(void *list)
+{
+    Title *t = &title;
+    TBox *b = &title.box3;
+    TDuelCfg *d = &title.duel;
+    MenuWidget *w = &title.win[0];
+    TDuelOpts *o = &d->opts;
+    MenuWidget *win = &title.win[1];
+
+    if (d->u001)
+        list = title_ehf_draw(list, 7);
+    else
+        list = title_ehf_draw(list, 8);
+    if (t->step >= 5) {
+        list = title_ehf_draw(list, 14);
+        list = title_screen_label(list);
+    }
+    list = tbox_header(list, tfd_show_duelinfo);
+    if (t->sub == 6)
+        list = tbox_corner(list, tfd_sprite_anim);
+    list = tfd_config_draw_text(list, 1, 9);
+    menu_draw(&list, w);
+    if (t->sub == 6) {
+        if (t->u86c != 0 || t->step <= 10)
+            b->no_cursor = 1;
+        else
+            b->no_cursor = 0;
+        list = tbox_draw(list, b);
+        list = tfd_rule_init(list);
+    }
+    list = tbox_side(list, 0x14, o->kind == 0 ? 5 : 1, tfd_cursor_sprite);
+    if (t->u86c)
+        list = tframe_cursor(list, 0xFFFFFFFF, 0x147, 0xF2, 0x97, 0x17);
+    if (t->step == 0x14)
+        list = twin_draw_center(list, win, 1);
+    return list;
+}
+
+void *tfd_rule_init(void *list)
+{
+    return tbox_small(list, 0x74, 9, 0x67, 0x135, 0x10);
+}
+
+/* the flag byte of a TFdDeck (+0x7C), reached through its own pointer in tfd_rule_item */
+typedef struct TFdDeckFlags {
+    unsigned char dk : 2;
+    unsigned char kind : 3;
+    unsigned char side : 2;
+    unsigned char on : 1;
+} TFdDeckFlags;
+
+/* a cell of the regulation grid: a player of the list */
+void *tfd_rule_item(void *list, int i, int x, int y, int w, int h)
+{
+    unsigned short n = i;
+    int tx = x + 0x34;
+    int ty = y + 6;
+    int lit = 0;
+    int id = n + 0x5F;
+    Title *t = &title;
+    unsigned short *name = title.duel.list.deck[n].name;
+    TFdDeckFlags *f = (TFdDeckFlags *)((char *)t + n * sizeof(TFdDeck) + 0xA8C);
+
+    if (f->on)
+        lit = 1;
+    list = tfd_rule_draw(list, x, y, w, h, lit);
+    list = title_msg_font(list, x + 6, y + 5, 0x100, 12, id, 0, 15, 15, 0xFFFFFFFF);
+    if (name) {
+        font_set_size(13, 13);
+        font_set_color(0xFF004040);
+        font_set_flag4(1);
+        list = title_text_frame(list, tx, ty, 0x61, name, 2);
+    }
+    if (f->kind)
+        list = tfd_icon_draw(list, 5, x + 0x1D, y + 4);
+    return list;
+}
+
+void *tfd_rule_draw(void *list, int x, int y, int w, int h, int lit)
+{
+    short u = title_sprites2[0x49].u;
+    short v = title_sprites2[0x49].v;
+    short tw = title_sprites2[0x49].tw;
+    short th = title_sprites2[0x49].th;
+    short a = title_sprites2[0x49].a;
+    short b = title_sprites2[0x49].b;
+    short sx = x;
+    short sy = y;
+
+    list = tmenu_gfx_setup(list, 0);
+    if (lit)
+        list = dl_color(list, 0xFFFFFFFF);
+    else
+        list = dl_color(list, 0xA0FFFFFF);
+    list = gim_set_texture(list, ehp_find(title_pack(), title_sprite_gim(title_sprites2, 0x4A), 0));
+    list = draw_set_offsets(list, tw, th, tw, th);
+    return draw_sprite(list, sx, sy, 0, u, v, a, b);
+}
+
+void tfd_rule_icon(int net)
+{
+    TDuelCfg *d = &title.duel;
+
+    memset(d->ready, 0, sizeof(d->ready));
+    title.step = 0;
+    title.step2 = 0;
+    title.frame = 0;
+    title.u86c = 0;
+    title.u86d = 2;
+    d->u004b6 = 0;
+    if (net)
+        d->u004b6 = 1;
+    d->u000 = d->u001;
+    if (!net) {
+        title_ehf_load(10, 2, 0, 0x1DF);
+        title_ehf_load(12, 2, 0, 0);
+        title_ehf_load(15, 2, 0, 0x11);
+    }
+}
+
+void tfd_rule_sprite(int mode)
+{
+    int i;
+
+    for (i = 0; i < 4; i++)
+        tpt_set_name(i, 0, i, 3, 0, 0);
+    tpt_set_mode(mode);
+}
