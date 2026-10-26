@@ -80,10 +80,10 @@ void func_0881903C(void);
 void func_0881927C(void);
 void func_08819424(void);
 int func_08819634(void);
-void func_08810814(void);
-void func_08810F44(void);
-void func_08811BB8(void);
-void func_08811BCC(void);
+void fld_scene_update(void);
+void fld_scene_draw(void);
+void fld_scene_tab_init(void);
+void fld_scene_tab_free(void);
 void func_088128A4(void);
 void func_088128B8(void);
 void func_08812BD0(int a);
@@ -115,7 +115,7 @@ void func_0882AB24(void);
 
 extern int field_term0, field_term1, field_term2, field_term3, field_term4; /* 0x08FD1A30.. */
 extern unsigned int field_fade_colors[];       /* 0x0883884C */
-extern unsigned char field_scene_mem[];        /* 0x08FD1A74, 0xB8 */
+extern FieldScene field_scene;
 
 #ifdef NON_MATCHING /* o laço de 25 comandos sai desenrolado x8 com resto no original e x5 aqui */
 void fld_sys_init(void)
@@ -162,7 +162,7 @@ void fld_sys_update(void)
             func_0882AB24();
         fld_items_update();
         fld_npc_update();
-        func_08810814();
+        fld_scene_update();
         fld_bu_update();
         func_08817258();
         func_088274F4();
@@ -199,7 +199,7 @@ int fld_sys_draw(void)
             dl = dl_select_layer(3, 0);
             dl = func_08817BA4(dl);
             dl_set_list(dl);
-            func_08810F44();
+            fld_scene_draw();
             func_0882A068();
             fld_bu_draw();
             fld_npc_draw();
@@ -505,12 +505,12 @@ void fld_sys_poll_all(void)
 
 void fld_scene_init(void)
 {
-    memset(field_scene_mem, 0, 0xB8);
+    memset(&field_scene, 0, sizeof(FieldScene));
     func_088128A4();
     func_08825F7C();
     fld_player_init();
     func_0881BA90();
-    func_08811BB8();
+    fld_scene_tab_init();
 }
 
 void fld_scene_term(void)
@@ -525,6 +525,6 @@ void fld_scene_free(void)
     func_08825F90();
     fld_player_reset();
     func_0881BAA4();
-    func_08811BCC();
+    fld_scene_tab_free();
     func_0882A404();
 }

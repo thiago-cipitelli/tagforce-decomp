@@ -296,6 +296,47 @@ typedef struct FieldFadeCmd {
     int color;                         /* +0x08 index into field_fade_colors */
 } FieldFadeCmd;
 
+typedef struct FieldStory {            /* 0x40 */
+    int w[16];
+} FieldStory;
+
+typedef struct FieldScene {            /* 0x08FD1A74, 0xB8: state of the scene commands */
+    int loading;                       /* +0x00 */
+    int x04;                           /* +0x04 player placed */
+    int x08;
+    int saving;                        /* +0x0C */
+    int x10;
+    int x14;
+    int x18;
+    int x1c;
+    int bg;                            /* +0x20 */
+    int save[5];                       /* +0x24 */
+    int x38;
+    int x3c;
+    int x40;
+    int *file;                         /* +0x44 */
+    FieldStory story;                  /* +0x48 */
+    int x88;
+    int pad8c[7];
+    int xa8;
+    int padac[3];
+} FieldScene;
+
+typedef struct FieldSaveNpc {
+    int id;
+    int cx, cz;
+    int dir;
+} FieldSaveNpc;
+
+typedef struct FieldSave {             /* what the save command fills */
+    int bg;
+    float x, z;
+    int dir;
+    FieldSaveNpc npc[32];              /* +0x010 */
+    int n_npc;                         /* +0x210 */
+    int save[5];                       /* +0x214 */
+} FieldSave;
+
 typedef struct FieldMap {              /* fld_map_get() */
     int pad00[2];
     unsigned short w;                  /* +0x08 cells */
@@ -407,6 +448,7 @@ extern struct { int count; FieldPoolEnt e[1]; } field_pool_bg;     /* 0x08FD121C
 extern struct { int count; FieldPoolEnt e[10]; } field_pool_misc;  /* 0x08FD10D8 */
 extern struct { int count; FieldPoolEnt e[1]; } field_pool_voice;  /* 0x08FD10B4 */
 extern FieldRes field_res;
+extern FieldScene field_scene;             /* 0x08FD1A74 */
 extern FieldSys field_sys;                 /* 0x08FD1A44 */
 extern FieldCmd field_cmds[25];            /* 0x0883C640 */
 extern FieldItems field_items;             /* 0x08FD1420 */
@@ -537,6 +579,10 @@ int fld_dir_from_vec(Vec3 *v, int diag);
 void fld_dir_vec(Vec3 *out, int i);
 int fld_in_range(int x);
 void fld_pos_set(Vec3 *p, int cx, int cz);
+void fld_npc_all(FieldNpc **out, int *n);
+FieldChr *fld_player_get(void);
+void fld_player_setup(float x, float z, int dir);
+int fld_story_flag(int id, int mode);
 void fld_shadow_set(Vec3 *pos, void *shadow);
 void fld_cell_mark(int cx, int cz, int v);
 void fld_draw_add(float scale, void *shadow, int depth, int alpha, void *fn, void *arg);
