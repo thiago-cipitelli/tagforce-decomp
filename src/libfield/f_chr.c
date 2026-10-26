@@ -15,10 +15,7 @@ void fld_pos_set(Vec3 *pos, int x, int z);     /* 0x08807EE0 */
 int fld_chr_kind(int id);                      /* 0x08806DF0 */
 int fld_chr_tex(int id);                       /* 0x08806E6C */
 void fld_load_chr(int id, int n, int arg, FieldChr *c); /* 0x0880C53C */
-void fld_load_gim(int n, int arg, FieldChr *c);         /* 0x0880BF70 */
-void fld_shadow_set(Vec3 *pos, int *shadow);   /* 0x0881C7E4 */
 Vec3 *fld_light_dir(void);                     /* 0x08818878 */
-void fld_draw_add(float scale, int *shadow, int depth, int alpha, void (*fn)(), FieldChr *c); /* 0x0881CC4C */
 void fld_chr_draw_model(void);                 /* 0x08805DF4 */
 void fld_chr_draw_sprite(void);                /* 0x08806200 */
 void fld_chr_draw_flat(void);                  /* 0x08806AF0 */
@@ -67,8 +64,8 @@ int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir
         }
         break;
     case 1:
-        fld_load_gim(1, a, c);
-        fld_load_gim(fld_chr_tex(id), b, c);
+        fld_load_gim(1, (void *)a, c);
+        fld_load_gim(fld_chr_tex(id), (void *)b, c);
         break;
     case 2:
         fld_load_chr(id, 0, a, c);

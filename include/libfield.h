@@ -48,7 +48,8 @@ typedef struct FieldCtx {              /* 0x08FD1408, 0x18: fld_ctx_get() */
     unsigned int frame;                /* +0x00 frame counter */
     int pad04;
     int speaker;                       /* +0x08 slot talking, -1 none */
-    int pad0c[2];
+    int se_on;                         /* +0x0C */
+    int pad10;
     int x14;                           /* +0x14 */
 } FieldCtx;
 
@@ -335,6 +336,32 @@ typedef struct FieldBg {               /* 0x08844980, 0x430: the room */
     int pad424[3];
 } FieldBg;
 
+typedef struct Vec4 {
+    float x, y, z, w;
+} __attribute__((aligned(16))) Vec4;
+
+typedef struct FieldItem {             /* object lying on a cell, 0x60 */
+    int active;
+    int id;
+    Vec3 pos;                          /* +0x08 */
+    int pad14[3];
+    Mat4 mtx;                          /* +0x20 */
+} FieldItem;
+
+typedef struct FieldItems {            /* 0x08FD1420, 0x610 */
+    int loading_a;                     /* +0x000 */
+    int loading_b;                     /* +0x004 */
+    int *file;                         /* +0x008 */
+    void *gim;                         /* +0x00C */
+    FieldItem a[8];                    /* +0x010 */
+    FieldItem b[8];                    /* +0x310 */
+} FieldItems;
+
+typedef struct FieldItemCmd {          /* item of the place command, 0xC */
+    int id;
+    int x, z;
+} FieldItemCmd;
+
 typedef struct FieldLight {            /* 0x08838044[bg][3] */
     int light;
     int pad;
@@ -352,7 +379,9 @@ extern struct { int count; FieldPoolEnt e[2]; } field_pool_chr2;   /* 0x08FD1240
 extern struct { int count; FieldPoolEnt e[1]; } field_pool_bg;     /* 0x08FD121C */
 extern struct { int count; FieldPoolEnt e[10]; } field_pool_misc;  /* 0x08FD10D8 */
 extern struct { int count; FieldPoolEnt e[1]; } field_pool_voice;  /* 0x08FD10B4 */
-extern FieldRes field_res;                 /* 0x08FD10A0 */
+extern FieldRes field_res;
+extern FieldItems field_items;             /* 0x08FD1420 */
+extern FieldCtx field_ctx;                 /* 0x08FD1408 */                 /* 0x08FD10A0 */
 extern FieldResEnt field_res_gim[9];      /* 0x0883BEB8 */
 extern FieldGim field_gims[];              /* 0x0883C49C */               /* 0x08844DB0 */          /* 0x08844960 */
 extern Vec3 field_dirs[8];                 /* 0x08834AD4 */
@@ -452,6 +481,16 @@ void deck_cur_get_u16_0(short *out);
 void ehfile_read_async_alias(int dir, const char *name, void *buf, int size, int (*cb)(void *, int), void *arg);
 float sqrtf_vfpu(float x);
 
+int se_play(int id);
+void snd_cmd_fef9(void);
+int snd_count_se(void);
+void *gim_set_texture_frame(void *list, void *g, int frame);
+void *dl_alloc_inline(void **list, int size);
+void *draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
+Mat4 *mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v);
+
+void bgm_set_volume(int a, int b, int t);
+
 /* libfield, other files */
 void fld_chr_reset(FieldChr *c);
 void fld_chr_draw(FieldChr *c);
@@ -460,6 +499,11 @@ int fld_dir_from_vec(Vec3 *v, int diag);
 void fld_dir_vec(Vec3 *out, int i);
 int fld_in_range(int x);
 void fld_pos_set(Vec3 *p, int cx, int cz);
+void fld_shadow_set(Vec3 *pos, void *shadow);
+void fld_cell_mark(int cx, int cz, int v);
+void fld_draw_add(float scale, void *shadow, int depth, int alpha, void *fn, void *arg);
+void fld_load_gim(int name, void (*cb)(int *file, void *arg), void *arg);
+void *fld_gim_get(int i);
 int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir, int visible,
                   int arg8c, int a, int b, int fx);
 void fld_chr_get_pos(Vec3 *out, FieldChr *c);

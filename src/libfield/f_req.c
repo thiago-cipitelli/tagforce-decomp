@@ -11,7 +11,6 @@ void *fld_draw_cell(void *list, int x, int y, int u, int v, int sw, int sh, int 
 extern const char str_path_fmt[];              /* "%s/%s" */
 extern unsigned char field_dot0;               /* "." */
 extern unsigned char field_dot1;
-extern FieldCtx field_ctx;                     /* 0x08FD1408 */
 
 int fld_req_add(int kind, void *ent, void *ent2, void (*cb)(), void *arg, int front)
 {

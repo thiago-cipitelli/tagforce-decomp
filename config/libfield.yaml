@@ -114,7 +114,8 @@ segments:
       - [0x9554, c, f_tab]
       - [0x9554, asm, f_tab_asm_0880D4F4]
       - [0xADB0, c, f_tab]
-      - [0xB288, asm, text_0]
+      - [0xB288, c, f_item]
+      - [0xBC14, asm, text_0]
       - [0x27EE0, asm, sceStub_text]
       - [0x2A5C8, bin, lib_ent_top]
       - [0x2A5CC, bin, lib_ent]
@@ -131,6 +132,8 @@ segments:
       - [0x2EB18, data, data_1]
       - [0x343E4, .data, f_tab__rodata]
       - [0x3466C, data, data_2]
+      - [0x38690, .data, f_item]
+      - [0x386A0, data, data_3]
       - { start: 0x39D20, type: bss, vram: 0x883DCC0, name: bss }
   - [0x39D20]
 
