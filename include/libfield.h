@@ -192,6 +192,30 @@ typedef struct FieldPlayer {           /* 0x08849DD0, 0xC0 */
     int padac[5];
 } FieldPlayer;
 
+typedef struct FieldRes {              /* 0x08FD10A0, 0x14: file loader */
+    void *heap;                        /* +0x00 */
+    void *cip;                         /* +0x04 card pictures */
+    int *req;                          /* +0x08 request being served */
+    int x0c;
+    int busy;                          /* +0x10 */
+} FieldRes;
+
+typedef struct FieldResEnt {           /* cached file, 0x28 */
+    const char *name;
+    int pad04[3];
+    void *buf;                         /* +0x10 */
+    int *data;                         /* +0x14 */
+    int loading;                       /* +0x18 */
+    int waiters[2];                    /* +0x1C */
+    int discard;                       /* +0x24 */
+} FieldResEnt;
+
+typedef struct FieldGim {              /* 0x0883C49C[] */
+    int pad;
+    const char *name;
+    void *gim;
+} FieldGim;
+
 typedef struct FieldMap {              /* fld_map_get() */
     int pad00[2];
     unsigned short w;                  /* +0x08 cells */
@@ -269,7 +293,10 @@ extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */
 extern FieldChrGlb field_chr_glb;
 extern FieldPlayer field_player;           /* 0x08849DD0 */
-extern FieldNpcs field_npcs;               /* 0x08844DB0 */          /* 0x08844960 */
+extern FieldNpcs field_npcs;
+extern FieldRes field_res;                 /* 0x08FD10A0 */
+extern FieldResEnt field_res_gim[9];      /* 0x0883BEB8 */
+extern FieldGim field_gims[];              /* 0x0883C49C */               /* 0x08844DB0 */          /* 0x08844960 */
 extern Vec3 field_dirs[8];                 /* 0x08834AD4 */
 
 extern FieldBu field_bu;                   /* 0x08844620 */
@@ -344,6 +371,14 @@ char *strstr(const char *s, const char *find);
 
 float vec3_dot(Vec3 *a, Vec3 *b);
 float fabsf_vfpu(float x);
+
+void *heap_create(void *mem, int size);
+void *heap_alloc(void *heap, int size);
+void heap_set_level(void *heap, void *p);
+int heap_free_block(void *heap);
+void *cip_open_h(void *handle, int bufsize, int prefetch);
+void cip_close(void *c);
+int cip_is_idle(void *c);
 
 /* libfield, other files */
 void fld_chr_reset(FieldChr *c);
