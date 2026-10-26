@@ -243,7 +243,9 @@ typedef struct TFdReady {
 } TFdReady;
 
 typedef struct TFdTail {               /* title.duel +0x1180 */
-    unsigned char pad000[8];
+    unsigned char pad000[2];
+    unsigned char u002;                /* +0x002 title.arg on leaving the duelist choice */
+    unsigned char pad003[5];
     TExtList ext;                      /* +0x008 */
     unsigned char pad06c[0xFF0 - 0x6C];
     TDeckRec decks[4];                 /* +0xFF0 */
@@ -256,7 +258,9 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char pad003;
     unsigned char u004 : 4;            /* +0x004 partner */
     unsigned char u004b4 : 1;
-    unsigned char u004h : 3;
+    unsigned char u004b5 : 1;          /*        tfd_duelist_icon */
+    unsigned char u004b6 : 1;          /*        tfd_duelist_icon(on) */
+    unsigned char u004b7 : 1;
     unsigned char u005;                /* +0x005 tfd_comm_machine state */
     unsigned char pad006[2];
     TFdList list;                      /* +0x008 */
@@ -406,7 +410,8 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char u86d;                /* +0x86D */
     unsigned char pad86e[2];
     int arg;                           /* +0x870 value passed between the states */
-    unsigned char pad874[0x87C - 0x874];
+    int u874;                          /* +0x874 */
+    unsigned char pad878[0x87C - 0x878];
     TMenu tm[2];                       /* +0x87C main menu, sub menu */
     TDuelCfg duel;                     /* +0x974 */
     int lang;                          /* +0x3004 language of the loaded title pack */
