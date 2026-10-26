@@ -153,9 +153,13 @@ typedef struct FieldChrGlb {           /* 0x08844960, 0x20 */
     int light_w;                       /* +0x1C */
 } FieldChrGlb;
 
+typedef struct FieldCell {
+    short x, z;
+} FieldCell;
+
 typedef struct FieldBgCmd {            /* argument of the room load command */
     int id;                            /* bg id */
-    short *cells;                      /* cells (x, z) of the markers */
+    FieldCell *cells;                  /* marked cells */
     int n_cells;
 } FieldBgCmd;
 
@@ -177,7 +181,7 @@ typedef struct FieldBg {               /* 0x08844980, 0x430: the room */
     int fade;                          /* +0x410 */
     unsigned int fade_t;               /* +0x414 */
     FieldMap *map;                     /* +0x418 */
-    short *cells;                      /* +0x41C */
+    FieldCell *cells;                  /* +0x41C */
     int n_cells;                       /* +0x420 */
     int pad424[3];
 } FieldBg;
@@ -189,6 +193,7 @@ typedef struct FieldLight {            /* 0x08838044[bg][3] */
 
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
+extern int field_hall_cells[14][2];        /* 0x088382FC */
 extern FieldChrGlb field_chr_glb;          /* 0x08844960 */
 extern Vec3 field_dirs[8];                 /* 0x08834AD4 */
 
