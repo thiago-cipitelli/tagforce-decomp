@@ -78,8 +78,6 @@ segments:
       - [0x109AC, c, t_fdnet]
       - [0x11914, asm, t_fdnet_asm_088158B4]
       - [0x11B3C, c, t_fdnet]
-      - [0x11B3C, asm, t_fdnet_asm_08815ADC]
-      - [0x11F64, c, t_fdnet]
       - [0x1232C, asm, text_0]
       - [0x1B08C, c, t_partner]
       - [0x1B740, asm, t_partner_asm_0881F6E0]

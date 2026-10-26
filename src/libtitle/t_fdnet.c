@@ -1,11 +1,12 @@
 // @range 0x0881494C-0x088162CC
 // @rodata 0x0882AF94-0x0882AFD8
 // @asm 0x088158B4-0x08815ADC
-// @asm 0x08815ADC-0x08815F04
 /* Free duel over ad hoc: the player entries exchanged with the other machines. */
 #include "libtitle.h"
 
 unsigned short *tfd_partner_by_type();
+unsigned short *chara_get_name(int set, int id);
+unsigned short *recipe_get_name(int n);
 unsigned short *wcsncpy(unsigned short *dst, const unsigned short *src, int n);
 int peer_self_get(void);
 void local_record_set(TFdPacket *p);
@@ -463,6 +464,122 @@ void tfd_chr_copy_draw(RecipeData *dst, TFdDeck *src)
     }
 }
 #endif
+
+void tfd_chr_setup(void)
+{
+    TDuelCfg *d = &title.duel;
+    TFdList *l = &d->list;
+    TDuelOpts *o = &d->opts;
+    TFdDeck *e = &l->deck[0];
+    TGameHdr *gs = (TGameHdr *)game_state_get();
+    SysSave *ss = sysstate_get();
+    PlayerSlot *p;
+    int j;
+    int n;
+    int i;
+
+    peer_count_get();
+    peer_count_get();
+    gs->slot[0].type = 0;
+    gs->slot[1].type = 0;
+    gs->slot[2].type = 0;
+    gs->slot[3].type = 0;
+    n = 2;
+    gs->rematch = 2;
+    gs->kind = 1;
+    if (o->tag) {
+        gs->partner_mode = 2;
+        n = 4;
+    } else {
+        gs->partner_mode = 1;
+    }
+    if (o->swap)
+        gs->kind2 = 2;
+    else
+        gs->kind2 = 1;
+    gs->lp_level = title_lp_level(o->lp);
+    gs->time_level = o->time;
+    gs->bgm_set = 1;
+    gs->mode = 123;
+    gs->side = 0;
+    if (peer_count_get() < 3) {
+        for (i = 0; i < n; i++) {
+            int side;
+            e = &l->deck[i];
+            side = e->side;
+            if (i % 2 != 0)
+                side++;
+            e->side = side;
+        }
+    }
+    for (i = 0; i < n; i++) {
+        p = &gs->slot[i];
+        for (j = 0; j < n; j++) {
+            e = &l->deck[j];
+            if (e->side == i)
+                break;
+        }
+        memcpy(&p->recipe, &l->recv[j], sizeof(RecipeData));
+        if (e->type == 1) {
+            wtext_strip_tags(p->name, e->nick);
+        } else {
+            wtext_strip_tags(e->nick, chara_get_name(0, e->type));
+            wtext_strip_tags(p->name, e->nick);
+        }
+        if (e->type == 1) {
+            memcpy(p->deck_name, e->deckname, sizeof(p->deck_name));
+        } else if (e->type == 41) {
+            if (e->dk == 1) {
+                memcpy(e->deckname, recipe_get_name(e->deck), sizeof(e->deckname));
+                memcpy(p->deck_name, e->deckname, sizeof(p->deck_name));
+            } else {
+                memcpy(p->deck_name, e->deckname, sizeof(p->deck_name));
+            }
+        } else {
+            memcpy(e->deckname, recipe_get_name(e->deck), sizeof(e->deckname));
+            memcpy(p->deck_name, e->deckname, sizeof(p->deck_name));
+        }
+        p->deck_id = 0x15F;
+        p->rec_index = 0;
+        p->voice_obj = 0;
+        if (peer_count_get() < 3)
+            p->net_id = i % 2;
+        else
+            p->net_id = e->side;
+        if (e->type == 1)
+            p->type2 = p->net_id;
+        else
+            p->type2 = e->u76;
+        if (e->type == 1) {
+            if (j == peer_self_get()) {
+                if (e->type == 1)
+                    p->type = 1;
+                else
+                    p->type = 41;
+                if (e->dk == 0 && e->deck == 0) {
+                    deck_copy_out(&gs->deck);
+                    memcpy(gs->partner_state, ss->partner_state, sizeof(gs->partner_state));
+                } else {
+                    memcpy(&gs->deck, &p->recipe, sizeof(RecipeData));
+                    gs->partner_state[0] = 4;
+                    gs->partner_state[1] = 4;
+                    gs->partner_state[2] = 4;
+                }
+                {
+                    int side = 0;
+                    if (gs->kind2 == 2)
+                        side = 1;
+                    gamestate_fill_partner_list(&p->recipe, side);
+                }
+            } else {
+                p->type = 0;
+            }
+        } else {
+            p->type = e->type;
+        }
+    }
+    title_scene_push(6, 0);
+}
 
 void tfd_import_populate(TFdPacket *unused)
 {

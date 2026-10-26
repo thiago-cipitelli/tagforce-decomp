@@ -161,8 +161,7 @@ typedef struct TFdSeat {               /* a player of the free duel setup list, 
 typedef struct TFdDeck {               /* 0x80 */
     unsigned short *name;              /* +0x00 */
     unsigned short nick[0x18];         /* +0x04 */
-    unsigned short deckname[0x18];     /* +0x34 */
-    unsigned char pad64[0x74 - 0x64];
+    unsigned short deckname[0x20];     /* +0x34 */
     unsigned short type;               /* +0x74 */
     unsigned char u76;                 /* +0x76 */
     unsigned char pad77;
@@ -283,7 +282,9 @@ typedef struct DeckFlags {             /* deck_cur_get_u16_0 */
 } DeckFlags;
 
 typedef struct TGameHdr {             /* view of GameState used by the duel setups */
-    unsigned char deck[0x110];
+    RecipeData deck;                   /* +0x000 */
+    unsigned short partner_state[3];   /* +0x108 */
+    unsigned short pad10e;
     int mode;                          /* +0x110 duel_setup_mode (random) */
     int side;                          /* +0x114 first player */
     unsigned char kind;                /* +0x118 1 free duel, 2 tutorial, 3 lesson, 5 random duel */
