@@ -446,7 +446,8 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     int u3044;                         /* +0x3044 cleared when a list screen starts */
     int u3048;                         /* +0x3048 */
     void *movie_mem;                   /* +0x304C */
-    unsigned short msg_buf[0x201];     /* +0x3050 */
+    unsigned short msg_buf[0x200];     /* +0x3050 */
+    short u3450;                       /* +0x3450 frames of the random duelist roll (tfd_adhoctop_handler) */
     short cursor_blink;                /* +0x3452 */
 } Title;
 

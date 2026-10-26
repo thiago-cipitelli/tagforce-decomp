@@ -1,7 +1,6 @@
 // @range 0x088195B4-0x0881BA64
 // @rodata 0x0882B1D0-0x0882B2D4
 // @asm 0x088195B4-0x088198EC
-// @asm 0x0881A34C-0x0881AF0C
 // @data 0x0882F290-0x0882F370
 /* Free duel setup: the top of the ad hoc mode (own duelist, partner and the extra data step). */
 #include "libtitle.h"
@@ -412,6 +411,275 @@ void tfd_adhoctop_draw(int step)
         fade_finish();
         tfd_adhoctop_draw2();
     }
+}
+
+int tfd_adhoctop_handler(int tag)
+{
+    int type = 0;
+    int var = 0;
+    int deck = 0;
+    int y = 0;
+    Title *t = &title;
+    TDuelCfg *d = &title.duel;
+    TFdList *l = &d->list;
+    TFdDeck *me = &l->deck[d->u000];
+    int n = 0;
+    int moved = 0;
+    PadState *pad = pad_get();
+    unsigned int trig = pad->b.trig;
+    unsigned int rep = pad->b.rep;
+    TFdDeck *o;
+    TFdDeck *k;
+    int r;
+    int side;
+    int c;
+
+    if (title.u86d > 0)
+        n = t->u86d - 1;
+    if (t->u3450 == 0) {
+        if (tag) {
+            if (t->step2 == 0) {
+                if ((rep & 0x20) || (rep & 0x80)) {
+                    se_play(0x6212);
+                    if (t->arg / 2)
+                        t->arg -= 2;
+                    else
+                        t->arg += 2;
+                    moved = 1;
+                } else if (trig & region_pick_value(0)) {
+                    se_play(0x6213);
+                    r = t->arg;
+                    t->u86c = 0;
+                    t->step2 = 1;
+                    t->arg = 0;
+                    return r;
+                }
+                if (moved) {
+                    k = &l->deck[d->u001];
+                    o = &l->deck[d->u004];
+                    k->side = tfd_adhoctop_sprite(t->arg);
+                    k->kind = 1;
+                    if (k->dk == 2)
+                        tpt_set_all(k->side, 1, d->u001, k->dk, k->deck, k->name, t->duel.tail.decks[0].name);
+                    else
+                        tpt_set_name(k->side, 1, d->u001, k->dk, k->deck, k->name);
+                    tpt_set_name((k->side + 2) % 4, 0, 0, 3, 0, 0);
+                    o->side = (k->side + 2) % 4;
+                }
+            } else if (t->u86c == 0) {
+                if (rep & 0x8000) {
+                    if (t->arg == 2) {
+                        d->u000 = d->u004;
+                        if (title_any_deck()) {
+                            tfd_duelist_sprite(&type, &var, &deck, &y);
+                            tframe_cursor_mode(1);
+                            t->u3450 = 1;
+                            se_play(0x6213);
+                        } else {
+                            se_play(0x6215);
+                        }
+                    } else {
+                        se_play(0x6215);
+                    }
+                } else if (rep & 0x20) {
+                    se_play(0x6212);
+                    t->arg += 2;
+                    t->arg %= 4;
+                } else if (rep & 0x80) {
+                    se_play(0x6212);
+                    if (t->arg < 2)
+                        t->arg += 2;
+                    else
+                        t->arg -= 2;
+                } else if ((trig & 0x40) && (rep & 0x40)) {
+                    se_play(0x6212);
+                    if (t->arg % 2)
+                        t->u86c = n;
+                    else
+                        t->arg++;
+                } else if ((trig & 0x10) && (rep & 0x10)) {
+                    se_play(0x6212);
+                    if (t->arg % 2)
+                        t->arg--;
+                    else if (trig & 0x10)
+                        t->u86c = n;
+                }
+                if ((trig & region_pick_value(0)) && t->arg != 0) {
+                    tframe_cursor_mode(1);
+                    return 4;
+                }
+                if ((trig & region_pick_value(1)) || ((trig & region_pick_value(0)) && t->arg == 0)) {
+                    se_play(0x6213);
+                    k = &l->deck[d->u001];
+                    tpt_set_name(l->deck[d->u004].side, 0, 0, 3, 0, 0);
+                    t->step2 = 0;
+                    d->u004b4 = 0;
+                    t->arg = tfd_adhoctop_icon(k->side);
+                }
+            } else {
+                if (trig & 0x40) {
+                    se_play(0x6212);
+                    t->u86c = 0;
+                    if (t->arg < 2)
+                        t->arg = 0;
+                    else
+                        t->arg = 2;
+                } else if (rep & 0x10) {
+                    se_play(0x6212);
+                    t->u86c = 0;
+                    if (t->arg < 2)
+                        t->arg = 1;
+                    else
+                        t->arg = 3;
+                } else if (trig & region_pick_value(0)) {
+                    tframe_cursor_mode(1);
+                    se_play(0x6213);
+                    return 5;
+                }
+            }
+        } else if (t->step2 == 0) {
+            if (tfd_adhoctop_enter_init(0)) {
+                if ((rep & 0x20) || (rep & 0x80)) {
+                    if (t->arg / 2)
+                        t->arg -= 2;
+                    else
+                        t->arg += 2;
+                }
+            } else {
+                if ((rep & 0x20) || (rep & 0x80)) {
+                    if (t->arg / 2)
+                        t->arg -= 2;
+                    else
+                        t->arg += 2;
+                } else if (rep & 0x40) {
+                    if (t->arg % 2 == 1)
+                        t->arg--;
+                    else
+                        t->arg++;
+                } else if (rep & 0x10) {
+                    if (t->arg % 2 == 0)
+                        t->arg++;
+                    else
+                        t->arg--;
+                }
+            }
+            if (trig & region_pick_value(0)) {
+                t->step2++;
+                r = t->arg;
+                t->u86c = 0;
+                t->arg = 0;
+                return r;
+            }
+            if (trig & region_pick_value(1))
+                return -2;
+        } else if (tfd_adhoctop_enter_init(1)) {
+            c = t->u86c;
+            if (c == 0) {
+                if (rep & 0x20) {
+                    if (t->arg != 0)
+                        t->arg = 1;
+                    else
+                        t->arg++;
+                } else if (rep & 0x80) {
+                    if (t->arg != 0)
+                        t->arg = 1;
+                    else
+                        t->arg = 3;
+                }
+                if (t->arg == 3) {
+                    if (rep & 0x40)
+                        t->u86c = n;
+                    else if (rep & 0x10)
+                        t->arg = 2;
+                } else if (t->arg == 2) {
+                    if (rep & 0x40)
+                        t->arg = 3;
+                    else if (rep & 0x10)
+                        t->u86c = n;
+                } else if (rep & 0x40) {
+                    if (t->u86c < n)
+                        t->u86c++;
+                    else
+                        t->u86c = 0;
+                } else if (rep & 0x10) {
+                    if (t->u86c > 0)
+                        t->u86c--;
+                    else
+                        t->u86c = n;
+                }
+            } else if (rep & 0x40) {
+                if ((unsigned char)c < n) {
+                    t->u86c = c + 1;
+                } else {
+                    t->u86c = 0;
+                    if (t->arg)
+                        t->arg = 2;
+                }
+            } else if (rep & 0x10) {
+                if ((unsigned char)c > 0) {
+                    t->u86c = c - 1;
+                    if (t->arg)
+                        t->arg = 3;
+                } else {
+                    t->u86c = n;
+                }
+            }
+            if (trig & region_pick_value(0))
+                return t->u86c + 4;
+            if (trig & region_pick_value(1)) {
+                t->step2--;
+                t->arg = tfd_adhoctop_icon(me->side);
+                tpt_set_name(me->side, 0, 0, 3, 0, 0);
+                if (d->u004b4) {
+                    tpt_set_name(d->u004, 0, 0, 3, 0, 0);
+                    d->u004b4 = 0;
+                }
+            }
+        } else {
+            if (t->arg)
+                t->arg = 0;
+            if (rep & 0x40) {
+                if (t->u86c < n)
+                    t->u86c++;
+                else
+                    t->u86c = 0;
+            } else if (rep & 0x10) {
+                if (t->u86c > 0)
+                    t->u86c--;
+                else
+                    t->u86c = n;
+            }
+            if (trig & region_pick_value(0))
+                return t->u86c + 4;
+            if (trig & region_pick_value(1)) {
+                t->step2--;
+                t->arg = tfd_adhoctop_icon(me->side);
+                tpt_set_name(me->side, 0, 0, 3, 0, 0);
+                if (d->u004b4) {
+                    tpt_set_name(d->u004, 0, 0, 3, 0, 0);
+                    d->u004b4 = 0;
+                }
+            }
+        }
+    } else {
+        side = title.duel.list.deck[d->u004].side;
+        tfd_duelist_sprite(&type, &var, &deck, &y);
+        tpt_set_all(side, type, var, y, deck, 0, 0);
+        if (t->u3450 < 0x3C) {
+            se_play(0x6212);
+            t->u3450++;
+        } else {
+            tframe_cursor_mode(0);
+            l->sel.type = type;
+            l->sel.u02 = var;
+            l->sel.deck = deck;
+            l->sel.dk = y;
+            se_play(0x6213);
+            t->u3450 = 0;
+            return 6;
+        }
+    }
+    return -1;
 }
 
 int tfd_adhoctop_icon(int i)

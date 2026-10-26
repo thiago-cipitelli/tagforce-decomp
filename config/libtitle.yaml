@@ -83,8 +83,6 @@ segments:
       - [0x15614, c, t_fdadhoc]
       - [0x15614, asm, t_fdadhoc_asm_088195B4]
       - [0x1594C, c, t_fdadhoc]
-      - [0x163AC, asm, t_fdadhoc_asm_0881A34C]
-      - [0x16F6C, c, t_fdadhoc]
       - [0x17AC4, asm, text_1]
       - [0x1B08C, c, t_partner]
       - [0x1B740, asm, t_partner_asm_0881F6E0]
