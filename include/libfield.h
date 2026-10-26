@@ -347,6 +347,23 @@ typedef struct FieldHudMove {          /* +0x128 of FieldHud */
     int x20;
 } FieldHudMove;
 
+typedef struct Vec2 {
+    float x, y;
+} Vec2;
+
+typedef struct FieldHudSlide {         /* 0x10 */
+    int state;                         /* 0 off, 1 sliding, 2 done */
+    Vec2 pos;
+    float t;
+} FieldHudSlide;
+
+typedef struct FieldHudName {          /* 0x88 */
+    int state;                         /* 0 off, 1 sliding, 2 done */
+    Vec2 pos;
+    float t;
+    MenuItemDef item;                  /* +0x10 */
+} FieldHudName;
+
 typedef struct FieldHud {              /* 0x08FD1DAC, 0x200: the HUD of the field */
     int on;                            /* +0x000 */
     void *gim0;                        /* +0x004 */
@@ -354,10 +371,9 @@ typedef struct FieldHud {              /* 0x08FD1DAC, 0x200: the HUD of the fiel
     void *gim19;                       /* +0x00C */
     int p[5];                          /* +0x010 */
     Menu menu;                         /* +0x024 */
-    int item_on;                       /* +0x070 */
-    int pad074[3];
-    MenuItemDef item;                  /* +0x080 room name */
-    int pad0f8[12];
+    FieldHudName name;                 /* +0x070 room name window sliding in */
+    FieldHudSlide clock;               /* +0x0F8 clock slide-in */
+    int pad108[8];
     FieldHudMove move;                 /* +0x128 */
     int state2;                        /* +0x14C */
     int pad150[3];
@@ -625,6 +641,9 @@ int font_draw_text(int x, int y, int w, unsigned short *text);
 void *font_text_clear(void);
 unsigned short *table_get_entry(void *table, int i);
 unsigned int *gfx_get_state(void);
+
+Vec2 *vec2_lerp(Vec2 *out, Vec2 *a, Vec2 *b, float t);
+Vec2 *vec2_add(Vec2 *out, Vec2 *a, Vec2 *b);
 
 /* libfield, other files */
 void *fld_heap_get(void);

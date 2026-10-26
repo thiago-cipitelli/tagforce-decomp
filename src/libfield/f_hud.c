@@ -12,10 +12,10 @@
 int fld_bg_event(int bg, int cx, int cz);      /* 0x0880CF74 */
 int fld_bg_group(int x);
 void fld_hud_name_init(void);
-void func_08812FBC(void);
-void func_088130B8(void);
-void func_088130C0(void);
-void func_088130D0(void);
+void fld_hud_name_update(void);
+void fld_hud_clock_free(void);
+void fld_hud_clock_open(void);
+void fld_hud_clock_update(void);
 void func_08813E2C(void);
 void func_08813E34(void);
 void func_08813E44(void);
@@ -97,7 +97,7 @@ void fld_hud_init(void)
 
 void fld_hud_free(void)
 {
-    func_088130B8();
+    fld_hud_clock_free();
     func_08813E2C();
     func_088140D8();
     func_088147E0();
@@ -111,8 +111,8 @@ void fld_hud_update(void)
     FieldHud *h = &field_hud;
 
     if (field_hud.on) {
-        func_08812FBC();
-        func_088130D0();
+        fld_hud_name_update();
+        fld_hud_clock_update();
         func_08813E44();
         func_088140F0();
         func_08814404();
@@ -138,14 +138,14 @@ void fld_hud_open(int story)
     switch (story) {
     case 0:
         fld_hud_name_init();
-        func_088130C0();
+        fld_hud_clock_open();
         func_08813E34();
         func_088140E0();
         func_088147E8();
         func_08814B64();
         break;
     case 1:
-        func_088130C0();
+        fld_hud_clock_open();
         func_08813E34();
         func_088140E0();
         break;
@@ -268,8 +268,8 @@ void fld_hud_blink(int period, int duty, int kind)
 void fld_hud_name_init(void)
 {
     FieldHud *h = (FieldHud *)(char *)&field_hud;
-    int *on = (int *)(char *)&field_hud.item_on;
-    MenuItemDef *d = (MenuItemDef *)(char *)&field_hud.item;
+    int *on = (int *)(char *)&field_hud.name.state;
+    MenuItemDef *d = (MenuItemDef *)(char *)&field_hud.name.item;
     int g;
 
     fld_story_get();
