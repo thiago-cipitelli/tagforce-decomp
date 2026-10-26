@@ -403,7 +403,7 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char pad130[0x1A8 - 0x130];
     MenuWidget win[3];                 /* +0x1A8 */
     TPanel panel;                      /* +0x508 tabbed list window */
-    unsigned char pad840[0x86C - 0x840];
+    TBox box3;                         /* +0x840 free duel rules list */
     unsigned char u86c;                /* +0x86C */
     unsigned char u86d;                /* +0x86D */
     unsigned char pad86e[2];

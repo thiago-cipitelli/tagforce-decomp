@@ -1,5 +1,6 @@
-// @range 0x088162CC-0x08817AC8
-// @rodata 0x0882AFD8-0x0882B0E4
+// @range 0x088162CC-0x08818480
+// @rodata 0x0882AFD8-0x0882B118
+// @asm 0x08817F98-0x08818480
 /* Free duel: drawing dispatch, the vs CPU screens, the cursor and regulation sub-screens. */
 #include "libtitle.h"
 
@@ -10,6 +11,14 @@ void tfd_cursor_init(void);
 void tfd_cursor_handler(void);
 void *tfd_cursor_icon(void *list);
 int tfd_sprite_slidein(void);
+void tfd_regulation_init(void);
+void tfd_regulation_handler(void);
+int tfd_regulation_input(void);
+int tfd_regulation_select();
+void text_ext_reset(void);
+int net_get_state(void);
+void *tfd_rule_item(void *list, int i, int x, int y, int w, int h);
+void net_get_host_info(TFdImp *out);
 void *tfd_cursor_item(void *dl, int index, int x, int y);
 unsigned short *sysstate_get_name(void);
 void *tfd_cursor_draw(void *list);
@@ -757,3 +766,296 @@ void *tfd_cursor_sprite(void *list, int i, int x, int y, int w, int h)
         list = title_msg_font(list, x, y, w, 12, n, 2, 13, 13, 0xFF002020);
     return list;
 }
+
+void tfd_regulation_init(void)
+{
+    TBox *b = &title.box3;
+    TDuelCfg *d = &title.duel;
+
+    title.step = 0;
+    title.step2 = 0;
+    title.frame = 0;
+    title.u86c = 0;
+    title.u86d = 2;
+    title.color0 = 0xFFFFFFFF;
+    title.color1 = 0xFFFFFFFF;
+    tbox_init(b);
+    b->x = 4;
+    b->ix = b->x + 3;
+    b->y = 98;
+    b->iy = b->y + 23;
+    b->w = 320;
+    b->h = 132;
+    b->frame = 0x54;
+    b->style = 9;
+    b->f1 = 1;
+    b->no_cells = 1;
+    b->f4 = 1;
+    b->no_scroll = 1;
+    b->iw = 154;
+    b->ih = 25;
+    b->f6 = 1;
+    b->n = 8;
+    b->count = b->n;
+    b->cols = 2;
+    b->draw = tfd_rule_item;
+    b->pos = 0;
+    b->cursor = 0;
+    twin_help_init(&title.win[0], 14, tfd_sprite_slidein(), 12);
+    tfd_show_msgbox(&title.win[1], 0x72);
+    if (title.sub == 6) {
+        d->u001 = 0;
+    } else {
+        net_get_host_info(&d->host);
+        d->opts.name = d->host.name;
+        d->u001 = 1;
+    }
+    title_ehf_load(14, 2, 0, 0x11);
+}
+
+void tfd_regulation_update(void)
+{
+    Title *t = &title;
+    MenuWidget *win = &title.win[1];
+
+    switch (title.step) {
+    case 0:
+        t->step = 1;
+    case 1:
+        tfd_regulation_init();
+        tfd_clear();
+        t->step = 2;
+        title_fade_out(0);
+        break;
+    case 2:
+    case 3:
+        if (title_fade_state() == 0)
+            t->step = 4;
+        break;
+    case 4:
+        title_ehf_load(14, 2, 0, 0x11);
+        t->step = 5;
+        break;
+    case 5:
+        if (title_ehf_frame(14) == 0x11) {
+            title_ehf_anim(14, 2, 0x12, 0x35);
+            t->step = 11;
+        }
+        break;
+    case 11:
+        tfd_regulation_handler();
+        break;
+    case 0x14:
+        tframe_cursor_mode(0);
+        if (menu_update(win) != -1)
+            t->step = 0x16;
+        break;
+    case 0x1B:
+        title_goto_fade(1, 0xFFF, 3);
+        t->step = 0x1E;
+        break;
+    case 0x1C:
+        break;
+    case 0x1D:
+        title_goto_fade(1, 0xFFF, t->next_sub);
+        t->step2 = 0;
+        t->step = 0x1E;
+        break;
+    case 0x1E:
+    case 0x1F:
+        if (title_fade_state() == 0)
+            t->step = 0x21;
+        break;
+    case 0x21:
+        break;
+    }
+}
+
+void tfd_regulation_handler(void)
+{
+    Title *t = &title;
+    TDuelOpts *o = &title.duel.opts;
+    int r;
+
+    switch (r = tfd_regulation_input()) {
+    case -3:
+        break;
+    case -2:
+        t->step = 0x1B;
+        break;
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+        tfd_regulation_select(r);
+        return;
+    case 9:
+        if (tfd_regulation_select(r)) {
+            if (o->kind == 0) {
+                t->step = 0x1C;
+                tframe_cursor_mode(1);
+                if (o->tag == 0)
+                    t->next_sub = 8;
+                else
+                    t->next_sub = 9;
+                text_ext_reset();
+            } else {
+                t->step = 0x1D;
+                t->next_sub = 14;
+            }
+        }
+        break;
+    }
+}
+
+#ifdef NON_MATCHING /* o original mantém a constante 1 em $a0 (lim = 1 e o teste n < 1 com slt); o mwcc a propaga (li a3,1 / blez) */
+/* lim stays whatever the caller left in $a3 unless the kind sets it (the original reads an uninitialized value) */
+int tfd_regulation_select(int i, int unused1, int unused2, int lim)
+{
+    TDuelCfg *d = &title.duel;
+    TFdList *l = &d->list;
+    int n = 0;
+    int k;
+
+    if (d->opts.kind == 0)
+        lim = 1;
+    else if (d->opts.kind == 2)
+        lim = 1;
+    for (k = 0; k < 8; k++) {
+        if (title.duel.list.deck[k].kind != 0)
+            n++;
+    }
+    if (i < 9) {
+        TFdDeck *p = &l->deck[i];
+
+        if (n < lim) {
+            if (p->on) {
+                tfd_evt_handler(6, i);
+                return 1;
+            }
+            return 0;
+        }
+    } else if (i == 9) {
+        if (n >= 1) {
+            se_play(0x6213);
+            tfd_evt_handler(7, 0);
+            title.duel.list.n = n;
+            return 1;
+        }
+        se_play(0x6215);
+    }
+    return 0;
+}
+#endif
+
+#ifdef NON_MATCHING /* o se_play(0x6215) do original desvia para o bloco comum do return -1 (b; nop); o mwcc devolve -1 ali mesmo (b epílogo; li -1) */
+/* the player grid of the regulation screen (2 columns) and the duel start button below it */
+int tfd_regulation_input(void)
+{
+    int last;
+    Title *t = &title;
+    TBox *b = &title.box3;
+    int cols;
+    PadState *pad;
+    int rows;
+    unsigned int rep;
+    unsigned int trig;
+
+    cols = b->cols;
+    last = 0;
+    pad = pad_get();
+    rep = pad->b.rep;
+    trig = pad->b.trig;
+    if (title.sub == 6) {
+        if (b->count > 0)
+            last = b->count - 1;
+        if (cols == 0)
+            cols = 1;
+        rows = (b->n + b->n % 2) / cols;
+        if ((trig & 0x20) || (rep & 0x20)) {
+            if (t->u86c) {
+                if (trig & 0x20) {
+                    t->u86c = 0;
+                    b->pos = b->pos % rows;
+                    se_play(0x6212);
+                }
+            } else {
+                if (b->pos < rows) {
+                    b->pos += rows;
+                    if (b->pos > last)
+                        b->pos = last;
+                } else {
+                    t->u86c++;
+                }
+                se_play(0x6212);
+            }
+        } else if ((trig & 0x80) || (rep & 0x80)) {
+            if (t->u86c) {
+                b->pos = rows + b->pos % rows;
+                t->u86c = 0;
+                if (b->pos > last)
+                    b->pos = last;
+                se_play(0x6212);
+            } else if (rows <= b->pos) {
+                b->pos -= rows;
+                se_play(0x6212);
+            } else if (trig & 0x80) {
+                t->u86c++;
+                se_play(0x6212);
+            }
+        }
+        if (t->u86c == 0) {
+            if ((trig & 0x40) || (rep & 0x40)) {
+                if (b->pos < last) {
+                    b->pos++;
+                    se_play(0x6212);
+                } else if (trig & 0x40) {
+                    b->pos = 0;
+                    se_play(0x6212);
+                }
+            } else if ((trig & 0x10) || (rep & 0x10)) {
+                if (b->pos != 0) {
+                    b->pos--;
+                    se_play(0x6212);
+                } else if (trig & 0x10) {
+                    b->pos = last;
+                    se_play(0x6212);
+                }
+            }
+        }
+        b->cursor = b->pos;
+        if (b->cursor > b->n - 1)
+            b->cursor = b->n - 1;
+        if (rep & region_pick_value(0)) {
+            if (t->u86c)
+                return 9;
+            if (title.duel.list.deck[b->pos].kind != 0) {
+                se_play(0x6214);
+                tfd_evt_handler(6, b->pos);
+                return -1;
+            }
+            if (title.duel.list.deck[b->pos].on == 0) {
+                se_play(0x6215);
+            } else {
+                se_play(0x6213);
+                return b->pos;
+            }
+        } else {
+            if (rep & region_pick_value(1)) {
+                se_play(0x6214);
+                return -2;
+            }
+            return -1;
+        }
+    } else if (net_get_state() == 0x15 && (rep & region_pick_value(1))) {
+        se_play(0x6214);
+        tfd_evt_handler(2, 0);
+        return -2;
+    }
+    return -1;
+}
+#endif
