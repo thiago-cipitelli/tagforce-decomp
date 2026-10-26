@@ -26,7 +26,8 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-25 (
 | libshop | 55,9% | 78,2% | 186 / 223 |
 | libtitle | 35,4% | 44,6% | 244 / 434 |
 | libtutorial | 86,2% | 98,4% | 196 / 207 |
-| libduel_draw, libfield, libstory | 0% | 0% | 0 / 2937 |
+| libfield | — | — | 266 / 652 |
+| libduel_draw, libstory | 0% | 0% | 0 / 2285 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -624,3 +625,29 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`dt_lesson.c`](../src/libdeck_tutorial/dt_lesson.c) | 0x0881A20C-0x0881C0E8 | 34 | 3 | cartas da lição, início do editor, interpretador do script (24 opcodes), janelas de mensagem/saída |
 | [`dt_text.c`](../src/libdeck_tutorial/dt_text.c) | 0x0881C0E8-0x0881D318 | 13 | 9 | cópia de tut_text.c |
 
+## libfield (20 arquivos, 266 funções batendo, 63 em asm)
+
+Faixa `0x08804000-0x08815FD8` coberta; de `0x08815FD8` (janela de mensagens) a `0x0882BE80` ainda sem C.
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`f_main.c`](../src/libfield/f_main.c) | 0x08804000-0x088044D8 | 10 | 0 | entrada do módulo, thread da cena 5 (sala escolhida por menu, sequência de comandos de campo), exit, init, sala → bg |
+| [`f_bustup.c`](../src/libfield/f_bustup.c) | 0x088044D8-0x08805220 | 23 | 0 | retratos bust-up (até 3, corpo e boca EHF): fades, piscar, fala, comandos load/open/anim/close/unload |
+| [`f_chr.c`](../src/libfield/f_chr.c) | 0x08805220-0x08805DF4 | 13 | 3 | personagens SD do mapa: setup por tipo, contadores de animação, registro de desenho, oito direções, colisão (asm) |
+| [`f_chrdraw.c`](../src/libfield/f_chrdraw.c) | 0x08805DF4-0x08806FC4 | 3 | 9 | desenho dos personagens SD (modelo, folha de sprites, sprite plano em asm), projeção ortográfica, tipo de desenho por chara |
+| [`f_bg.c`](../src/libfield/f_bg.c) | 0x08806FC4-0x08807844 | 12 | 1 | sala: modelos, portas, células marcadas, área do jogador com crossfade, mapa de células |
+| [`f_map.c`](../src/libfield/f_map.c) | 0x08807844-0x08808214 | 4 | 4 | mapa de células: posição/célula, células marcadas, portas, hall especial (andável e altura em asm) |
+| [`f_bgdraw.c`](../src/libfield/f_bgdraw.c) | 0x08808214-0x08809C40 | 11 | 9 | carga e desenho da sala: modelos por área, sombras por stencil, objetos, máscara de malhas, gancho das portas, som das portas |
+| [`f_npc.c`](../src/libfield/f_npc.c) | 0x08809C40-0x0880AC74 | 19 | 4 | NPCs (32 com caminho) e figurantes (80): reset, desenho, próximos, NPC à frente, posição, virar para o jogador |
+| [`f_player.c`](../src/libfield/f_player.c) | 0x0880AC74-0x0880BB98 | 15 | 4 | jogador: setup, desenho, trava de entrada, efeito, marcação das células (update/entrada/movimento em asm) |
+| [`f_res.c`](../src/libfield/f_res.c) | 0x0880BB98-0x0880C1C4 | 12 | 1 | carregador: heap de 7,5 MB, leitor de cartas, cache dos GIM compartilhados |
+| [`f_pool.c`](../src/libfield/f_pool.c) | 0x0880C1C4-0x0880CA9C | 15 | 1 | pools de arquivos (SD, sala, sprites, vozes): descarga, tamanho, pedidos tipados, cancelamento, buscas |
+| [`f_req.c`](../src/libfield/f_req.c) | 0x0880CA9C-0x0880D4F4 | 18 | 2 | fila de pedidos e de callbacks, leituras assíncronas, contexto, hora do dia, comprimento, lerp de cor, sprites |
+| [`f_tab.c`](../src/libfield/f_tab.c) | 0x0880D4F4-0x0880F228 | 4 | 1 | tabelas de índice (bust-up, sala, grupo, voz) geradas das jump tables; chara → modelo em asm |
+| [`f_item.c`](../src/libfield/f_item.c) | 0x0880F228-0x0880FBB4 | 21 | 0 | efeitos sonoros do campo e objetos nas células (colocar, sombra, pegar, desenho) |
+| [`f_sys.c`](../src/libfield/f_sys.c) | 0x0880FBB4-0x08810814 | 25 | 2 | sistema do campo (update, desenho, init/free/term dos subsistemas) e comandos de script pela tabela de comandos |
+| [`f_scene.c`](../src/libfield/f_scene.c) | 0x08810814-0x08811BE0 | 20 | 4 | comandos de cena: história, posição do jogador, alvo da câmera, salvar posições, portas, esperas, GIM da cena |
+| [`f_hud.c`](../src/libfield/f_hud.c) | 0x08811BE0-0x08812FBC | 18 | 6 | HUD: janela do nome da sala, ícone do evento da célula, piscar, deslizar, textos dos menus |
+| [`f_hud2.c`](../src/libfield/f_hud2.c) | 0x08812FBC-0x08813308 | 6 | 0 | nome da sala e relógio deslizando, despacho do desenho do relógio |
+| [`f_hud3.c`](../src/libfield/f_hud3.c) | 0x08813308-0x08814D94 | 13 | 9 | partes do HUD deslizando (dia, data, ícone que voa, painel, caixa de mensagem); desenhos em asm |
+| [`f_digits.c`](../src/libfield/f_digits.c) | 0x08814D94-0x08815FD8 | 4 | 3 | dígitos em sprite, ícones das partes do dia, ponteiros do relógio |
