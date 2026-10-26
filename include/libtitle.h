@@ -160,7 +160,7 @@ typedef struct TFdSeat {               /* a player of the free duel setup list, 
 
 typedef struct TFdDeck {               /* 0x80 */
     unsigned short *name;              /* +0x00 */
-    unsigned char u04[0x30];           /* +0x04 */
+    unsigned short nick[0x18];         /* +0x04 */
     unsigned short deckname[0x18];     /* +0x34 */
     unsigned char pad64[0x74 - 0x64];
     unsigned short type;               /* +0x74 */
@@ -206,8 +206,8 @@ typedef struct TFdImpList {           /* 0x220 */
 
 typedef struct TFdPacket {             /* a player entry sent to the other machines (local_record_set), 0x100 */
     signed char kind;
-    unsigned char ver;
-    unsigned char b2;
+    signed char ver;
+    signed char b2;
     unsigned char pad03;
     unsigned short name[0x18];         /* +0x04 */
     unsigned char pad34[4];
@@ -238,6 +238,11 @@ typedef struct TFdList {               /* title.duel +0x08, 0xEA8 bytes cleared 
     unsigned char *buf;                /* +0xEA4 transfer buffer */
 } TFdList;
 
+typedef struct TFdReady {
+    unsigned char on : 1;
+    unsigned char rest : 7;
+} TFdReady;
+
 typedef struct TFdTail {               /* title.duel +0x1180 */
     unsigned char pad000[8];
     TExtList ext;                      /* +0x008 */
@@ -256,7 +261,7 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char u005;                /* +0x005 tfd_comm_machine state */
     unsigned char pad006[2];
     TFdList list;                      /* +0x008 */
-    unsigned char pad0eb0[0xEB4 - 0xEB0];
+    TFdReady ready[4];                 /* +0xEB0 by seat */
     TDuelOpts opts;                    /* +0xEB4 */
     TFdImp host;                       /* +0xEC4 net_get_host_info */
     unsigned char uf00[0x4C];          /* +0xF00 */

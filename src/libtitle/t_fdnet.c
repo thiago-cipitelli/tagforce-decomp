@@ -1,5 +1,7 @@
-// @range 0x0881494C-0x088158B4
+// @range 0x0881494C-0x088162CC
 // @rodata 0x0882AF94-0x0882AFD8
+// @asm 0x088158B4-0x08815ADC
+// @asm 0x08815ADC-0x08815F04
 /* Free duel over ad hoc: the player entries exchanged with the other machines. */
 #include "libtitle.h"
 
@@ -19,6 +21,7 @@ int peer_self_byte2(void);
 int peer0_byte2(void);
 void tfd_import_populate(TFdPacket *p);
 int tfd_all_ready(TFdPacket *p);
+int title_lp_level(int x);
 void tfd_chr_copy_draw(RecipeData *dst, TFdDeck *src);
 void netsync_transfer_setup(void *buf, void *src, int size);
 int netsync_transfer(void);
@@ -128,7 +131,7 @@ void tfd_pt_recv_packet(void)
                 dk->u76 = i;
                 seat = tfd_get_seat(i);
                 wcsncpy(dk->deckname, pk->name, 0x18);
-                tpt_set_all(seat, 1, i, 3, -1, dk->u04, dk->deckname);
+                tpt_set_all(seat, 1, i, 3, -1, dk->nick, dk->deckname);
                 wcsncpy((unsigned short *)&type, &pk->w3a, 1);
                 if (type != 0 && i < 2) {
                     dk = &l->deck[i + 2];
@@ -397,4 +400,148 @@ int tfd_comm_machine(void)
         break;
     }
     return 0;
+}
+
+#ifdef NON_MATCHING /* o case 2 (swap = 1) vira um bloco próprio no original; o mwcc o dobra no delay slot do teste */
+void tfd_chr_copy_draw(RecipeData *dst, TFdDeck *src)
+{
+    Title *t = &title;
+    TDuelOpts *o = &title.duel.opts;
+    TGameHdr *gs = (TGameHdr *)game_state_get();
+    PlayerSlot *p;
+    TFdTail *q;
+    int swap;
+
+    gs->rematch = 2;
+    gs->kind = 1;
+    gs->partner_mode = 1;
+    gs->kind2 = 1;
+    swap = 0;
+    gs->lp_level = title_lp_level(o->lp);
+    gs->time_level = o->time;
+    gs->bgm_set = 1;
+    gs->mode = rand_next();
+    gs->side = (unsigned char)((int)rand_next() % 2);
+    p = &gs->slot[0];
+    p->type = src->type;
+    p->type2 = src->u76;
+    if (p->type == 1 || p->type == 41) {
+        switch (src->dk) {
+        case 0:
+            if (src->deck == 0) {
+                p->deck_id = 0x162;
+                p->rec_index = 0;
+            } else {
+                int n = src->deck;
+                p->deck_id = 0x160;
+                p->rec_index = n - 1;
+            }
+            break;
+        case 1:
+            p->deck_id = src->deck;
+            p->rec_index = 0;
+            break;
+        case 2:
+            swap = 1;
+            break;
+        case 3:
+            swap = 1;
+            break;
+        }
+    } else {
+        p->deck_id = src->deck;
+        p->rec_index = 0;
+    }
+    gamestate_load(gs);
+    *dst = gs->slot[0].recipe;
+    if (swap) {
+        q = &t->duel.tail;
+        if (p->type == 1)
+            *dst = q->decks[0].recipe;
+        else
+            *dst = q->decks[1].recipe;
+    }
+}
+#endif
+
+void tfd_import_populate(TFdPacket *unused)
+{
+    TFdList *l = &title.duel.list;
+    TFdPacket *pk;
+    TFdDeck *e;
+    int i;
+
+    memset(l->deck, 0, sizeof(l->deck));
+    for (i = 0; i < peer_count_get(); i++) {
+        pk = peer_get(i);
+        e = &l->deck[i];
+        wcsncpy(e->nick, pk->name, 15);
+        e->name = e->nick;
+    }
+}
+
+int tfd_all_ready(TFdPacket *unused)
+{
+    TDuelCfg *d = &title.duel;
+    TDuelOpts *o = &d->opts;
+    TFdPacket *pk;
+    int seat;
+    int i;
+
+    for (i = 0; i < peer_count_get(); i++) {
+        pk = peer_get(i);
+        seat = tfd_get_seat(i);
+        if ((pk->kind == 2 && pk->ver == 2 && pk->b2 > 0) || pk->kind == 7) {
+            d->ready[seat].on = 1;
+            if (peer_count_get() < 3) {
+                seat = (seat + 2) % 4;
+                d->ready[seat].on = 1;
+            }
+        } else if (pk->kind == 2 && pk->b2 == 0) {
+            d->ready[seat].on = 0;
+            if (peer_count_get() < 3)
+                d->ready[(seat + 2) % 4].on = 0;
+        }
+    }
+    if (o->tag) {
+        int k = 0;
+        int j;
+        for (j = 0; j < 4; j++)
+            if (d->ready[j].on)
+                k++;
+        if (k >= 4)
+            return 1;
+    } else {
+        int k = 0;
+        int j;
+        for (j = 0; j < 2; j++)
+            if (d->ready[j].on)
+                k++;
+        if (k >= 2)
+            return 1;
+    }
+    return 0;
+}
+
+int tfd_get_seat(int i)
+{
+    int s;
+    int r;
+
+    if (title.sub == 8) {
+        r = i != peer_self_get();
+    } else if (peer_count_get() < 3) {
+        if (i == peer_self_get()) {
+            r = title.duel.list.deck[i].side;
+        } else {
+            s = (i + 2) % 4;
+            if (s == peer_self_get())
+                r = title.duel.list.deck[i].side;
+            else
+                r = title.duel.list.deck[i].side + 1;
+        }
+    } else {
+        r = title.duel.list.deck[i].side;
+    }
+    return r;
 }
