@@ -1,7 +1,6 @@
 // @range 0x0881E0CC-0x0881F02C
 // @data 0x0882F384-0x0882F398
-// @rodata 0x0882B364-0x0882B40C
-// @asm 0x0881E0CC-0x0881E7B0
+// @rodata 0x0882B344-0x0882B40C
 // @asm 0x0881EA4C-0x0881ECB4
 /* Free duel setup, the option list: the player rows, the box titles, the icons, the character pick
    (libcharalist) and the entry message. */
@@ -63,12 +62,256 @@ void *tfd_sprite_anim(void *list, int i, int x, int y, int w, int h);
 void *tfd_icon_draw(void *list, int id, int x, int y);
 int tfd_load_selectcard(void *arg, int id);
 
-#ifdef NON_MATCHING
+/* a row of the player list (TBoxDrawFn): kind, deck, life points, time, name */
 void *tfd_sprite_draw(void *list, unsigned short i, int x, int y, int w, int h)
 {
+    TDuelCfg *d = &title.duel;
+    Title *t = &title;
+    MenuWidget *mw = &title.panel.mw;
+    TFdList *l = &d->list;
+    TFdSeat *e = (TFdSeat *)&d->opts;
+    unsigned short *text;
+    int bw = w;
+    int ix = x;
+    int iy = y;
+    int tx;
+    int ty;
+    int k;
+    int tw = w;
+    int fstyle = 0;
+    unsigned int color = 0;
+    int style;
+    int bx;
+    int by;
+    int fk;
+    int icon;
+    int id;
+    int kind = 5;
+
+    if (title.sub == 4)
+        e = &l->seat[i + mw->scroll];
+    style = 9;
+    if (t->sub == 4) {
+        switch (e->kind) {
+        case 0:
+            if (e->b5)
+                style = 5;
+            else
+                style = 4;
+            break;
+        case 1:
+            style = 6;
+            break;
+        case 2:
+            style = 5;
+            break;
+        case 3:
+            style = 6;
+            break;
+        case 4:
+            style = 7;
+            break;
+        }
+        if (e->side == 0)
+            style = 0xB;
+    }
+    list = tframe_box(list, 0xFFFFFFFF, x, y, w, h, 0x54, style, 0);
+    for (k = 0; k < 8; k++) {
+        bx = x;
+        by = y;
+        tx = x;
+        ty = y;
+        fk = -1;
+        icon = 0xB;
+        id = 0;
+        text = 0;
+        switch (k) {
+        case 0:
+            bx = x + 0x16;
+            bw = 0x65;
+            kind = e->kind;
+            ix = bx - 0x12;
+            tx = bx + 3;
+            by = y + 4;
+            iy = by;
+            ty = by + 2;
+            tw = 0x5F;
+            if (kind == 0)
+                id = e->b5 + 0x2F;
+            else
+                id = kind + 0x52;
+            fstyle = 0xD;
+            fk = 0x5D;
+            color = 0xFF000000;
+            switch (kind) {
+            case 0:
+                if (e->b5)
+                    icon = 8;
+                else
+                    icon = 3;
+                break;
+            case 1:
+                icon = 9;
+                id = 0x57;
+                break;
+            case 2:
+                icon = 4;
+                break;
+            case 3:
+                icon = 6;
+                break;
+            case 4:
+                icon = 7;
+                break;
+            }
+            if (e->side == 0 || (t->sub == 5 && t->step2 < 2)) {
+                icon = 0xB;
+                id = 0;
+            }
+            break;
+        case 1:
+            bx = x + 0x7D;
+            bw = 0xAF;
+            by = y + 4;
+            tx = bx + 3;
+            ty = by + 2;
+            color = 0xFFFFFFFF;
+            tw = 0x38;
+            fk = 0x5D;
+            fstyle = 0xF;
+            if (kind == 0) {
+                id = e->b6 + 10;
+            } else if (kind == 1) {
+                text = e->card_name;
+                tw = 0xA7;
+            }
+            if (e->side == 0 || (t->sub == 5 && t->step2 < 3)) {
+                icon = 0xB;
+                id = 0;
+                text = 0;
+            }
+            break;
+        case 2:
+            bx = x + 0x7D;
+            by = y + 4;
+            bw = 0xAF;
+            if (kind == 0) {
+                tx = bx + 0x3A;
+                ty = by + 2;
+                tw = 0x38;
+                id = e->lo + 0x68;
+            }
+            if (e->side == 0 || (t->sub == 5 && t->step2 < 5)) {
+                icon = 0xB;
+                id = 0;
+            }
+            break;
+        case 3:
+            bx = x + 0x7D;
+            by = y + 4;
+            bw = 0xAF;
+            if (kind == 0) {
+                tx = x + 0xB4;
+                tw = 0x28;
+            }
+            break;
+        case 4:
+            if (kind == 0) {
+                tx = x + 0xDE;
+                tw = 0x20;
+            }
+            break;
+        case 5:
+            bx = x + 0x7D;
+            by = y + 4;
+            bw = 0xAF;
+            if (kind == 0) {
+                tx = bx + 0x78;
+                ty = by + 2;
+                tw = 0x34;
+                id = e->hi + 0x6D;
+            }
+            if (e->side == 0 || (t->sub == 5 && t->step2 < 6)) {
+                icon = 0xB;
+                id = 0;
+            }
+            break;
+        case 6:
+            bx = x + 0x16;
+            bw = 0xA3;
+            ix = bx - 0x12;
+            tx = bx + 3;
+            by = y + 0x15;
+            ty = by + 2;
+            iy = by;
+            tw = 0x9D;
+            switch (t->sub) {
+            case 5:
+                id = 0x10;
+                break;
+            case 6:
+            case 7:
+                if (kind != 1)
+                    id = 0x11;
+                else
+                    id = 0x17;
+                break;
+            default:
+                id = 0xE;
+                if (e->side != 0)
+                    id = 0x11;
+                break;
+            }
+            fstyle = 0xE;
+            color = 0xFF004040;
+            fk = 0x5D;
+            if (t->sub == 5)
+                icon = 2;
+            else if (id > 0xE)
+                icon = 1;
+            break;
+        case 7:
+            bx = x + 0xC7;
+            bw = 0x65;
+            ix = bx - 0xF;
+            tx = bx + 3;
+            by = y + 0x15;
+            ty = by + 2;
+            iy = by;
+            fstyle = 0xE;
+            tw = 0x5F;
+            fk = 0x5D;
+            color = 0xFF004040;
+            icon = 0;
+            break;
+        }
+        if (fk >= 0)
+            list = tframe_box(list, 0xFFFFFFFF, bx, by, bw, 0x10, fk, fstyle, 0);
+        if (icon != 0xB)
+            list = tfd_icon_draw(list, icon, ix, iy);
+        if (k != 7) {
+            if (id > 0) {
+                font_set_size(13, 13);
+                font_set_color(color);
+                font_set_flag4(1);
+                list = title_msg_draw(list, tx, ty, tw, 0xC, id, 2);
+            } else if (text != 0) {
+                font_set_size(13, 13);
+                font_set_color(color);
+                font_set_flag4(1);
+                list = title_text_frame(list, tx, ty, tw, text, 2);
+            }
+        } else {
+            text = e->name;
+            font_set_size(13, 13);
+            font_set_color(color);
+            font_set_flag4(1);
+            if (text != 0)
+                list = title_text_frame(list, tx, ty, tw, text, 2);
+        }
+    }
     return list;
 }
-#endif
 
 /* text of the help box */
 int tfd_sprite_slidein(void)

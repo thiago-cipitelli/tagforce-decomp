@@ -287,10 +287,10 @@ void tfd_lobby_draw(void)
 
 /* input of the lobby: the five cards (two rows), then the buttons; returns the card chosen,
    1 to start, -2 to leave, -1 otherwise */
-#ifdef NON_MATCHING /* forma dos desvios dos testes de pad diferente */
+#ifdef NON_MATCHING /* o original guarda cópias mortas após cada b??l (como cardinfo_draw); com Title *const t o resto bate */
 int tfd_lobby_handler(void)
 {
-    Title *t = &title;
+    Title *const t = &title;
     TFdPass *pa = &title.duel.pass;
     PadState *pad = pad_get();
     unsigned int rep = pad->b.rep;
