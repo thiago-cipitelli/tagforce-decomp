@@ -265,11 +265,11 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char u000;                /* +0x000 */
     unsigned char u001;                /* +0x001 own machine (peer_self_get) */
     unsigned char u002;                /* +0x002 */
-    unsigned char pad003;
+    unsigned char u003;                /* +0x003 seat picked on the vs CPU screen */
     unsigned char u004 : 4;            /* +0x004 partner */
     unsigned char u004b4 : 1;
     unsigned char u004b5 : 1;          /*        tfd_duelist_icon */
-    unsigned char u004b6 : 1;          /*        tfd_duelist_icon(on) */
+    unsigned char u004b6 : 1;          /*        tfd_duelist_icon(on), tfd_rule_icon(1) */
     unsigned char u004b7 : 1;
     unsigned char u005;                /* +0x005 tfd_comm_machine state */
     unsigned char pad006[2];
@@ -284,7 +284,9 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char blink;               /* +0x117A counts 0..29 */
     unsigned char pad117b;
     unsigned short card;               /* +0x117C */
-    unsigned char pad117e[0x1180 - 0x117E];
+    unsigned char card_ok : 1;         /* +0x117E inv_get_bit7_default1(card) == 0 */
+    unsigned char pad117e_1 : 7;
+    unsigned char pad117f;
     TFdTail tail;                      /* +0x1180 */
 } TDuelCfg;
 
@@ -415,7 +417,7 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char pad130[0x1A8 - 0x130];
     MenuWidget win[3];                 /* +0x1A8 */
     TPanel panel;                      /* +0x508 tabbed list window */
-    unsigned char pad840[0x86C - 0x840];
+    TBox box3;                         /* +0x840 free duel rules list */
     unsigned char u86c;                /* +0x86C */
     unsigned char u86d;                /* +0x86D */
     unsigned char pad86e[2];
