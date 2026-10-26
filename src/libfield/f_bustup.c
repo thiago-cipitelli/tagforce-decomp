@@ -36,7 +36,7 @@ void fld_bu_free_all(void)
 void fld_bu_update(void)
 {
     FieldBu *b = &field_bu;
-    int *ctx = fld_ctx_get();
+    FieldCtx *ctx = fld_ctx_get();
     int i;
     int j;
     FieldBuSlot *s;
@@ -62,9 +62,9 @@ void fld_bu_update(void)
                 }
                 break;
             case 2:
-                if (ctx[2] >= 0) {
+                if (ctx->speaker >= 0) {
                     for (j = 0; j < 3; j++) {
-                        if (j == ctx[2])
+                        if (j == ctx->speaker)
                             fld_bu_set_talk(j, 1);
                         else
                             fld_bu_set_talk(j, 0);

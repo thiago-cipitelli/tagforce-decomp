@@ -44,6 +44,12 @@ typedef struct EhfOpts {               /* BOOT ehf_draw options, 0x60 */
     int color[8];                      /* +0x40 */
 } EhfOpts;
 
+typedef struct FieldCtx {              /* fld_ctx_get() */
+    unsigned int frame;                /* +0x00 frame counter */
+    int pad04;
+    int speaker;                       /* +0x08 slot talking, -1 none */
+} FieldCtx;
+
 typedef struct FieldList {             /* argument of the field commands: an array and its count */
     void *items;
     int n;
@@ -100,6 +106,43 @@ typedef struct FieldBu {               /* 0x08844620, 0x340 */
     int voice;                         /* +0x33C */
 } FieldBu;
 
+typedef struct Vec3 {
+    float x, y, z;
+} Vec3;
+
+typedef struct FieldChr {              /* SD character on the map */
+    int kind;                          /* +0x00 1 = the player */
+    int id;                            /* +0x04 chara id */
+    int pad08[2];                      /* +0x08 */
+    int type;                          /* +0x10 */
+    Vec3 pos;                          /* +0x14 */
+    int anim;                          /* +0x20 0 idle, 1 walk */
+    int dir;                           /* +0x24 0..7 */
+    int frame;                         /* +0x28 */
+    int pad2c[5];
+    int shadow[16];                    /* +0x40 */
+    int visible;                       /* +0x80 */
+    int fx;                            /* +0x84 */
+    int run;                           /* +0x88 */
+    int arg8c;                         /* +0x8C */
+} FieldChr;
+
+typedef struct FieldMap {              /* fld_map_get() */
+    int pad00[2];
+    unsigned short w;                  /* +0x08 cells */
+    unsigned short h;                  /* +0x0A */
+} FieldMap;
+
+typedef struct FieldChrGlb {           /* 0x08844960, 0x20 */
+    int unloading;                     /* +0x00 */
+    int pad04[3];
+    Vec3 light;                        /* +0x10 */
+    int light_w;                       /* +0x1C */
+} FieldChrGlb;
+
+extern FieldChrGlb field_chr_glb;          /* 0x08844960 */
+extern Vec3 field_dirs[8];                 /* 0x08834AD4 */
+
 extern FieldBu field_bu;                   /* 0x08844620 */
 extern int field_bu_xpos[3];               /* 0x08834AC8 */
 extern FieldAnimFrame field_anim_frames[][19]; /* 0x08832AB8 */
@@ -138,6 +181,14 @@ void *gfx_end_2d(void *list);
 void *dl_select_layer(int layer, unsigned int *size_out);
 void dl_set_list(void *list);
 
+Vec3 *vec3_scale(float s, Vec3 *out, Vec3 *a);
+Vec3 *vec3_normalize(Vec3 *out, Vec3 *a);
+void vec3_add(Vec3 *out, Vec3 *a, Vec3 *b);
+Vec3 *vec3_sub(Vec3 *out, Vec3 *a, Vec3 *b);
+float *mat3_identity(float *m);
+float *mat3_rot_y(float *out, float *m, float angle);
+float *mat3_transform_vec3(Vec3 *out, float *m, Vec3 *v);
+
 /* libfield, other files */
 void *fld_alloc(unsigned int size);            /* 0x0880BEF0 */
 void fld_free(void *p);                        /* 0x0880BF00 */
@@ -145,7 +196,7 @@ void fld_unload(int kind, int name);           /* 0x0880C390 */
 int fld_load_size(int kind, int chara);        /* 0x0880C450 */
 void fld_load(int name, void (*cb)(int *file, void *arg), void *arg, int flag); /* 0x0880C588 */
 void fld_load_cancel_all(void);                /* 0x0880C744 */
-int *fld_ctx_get(void);                        /* 0x0880CF0C */
+FieldCtx *fld_ctx_get(void);                   /* 0x0880CF0C */
 int fld_mode_get(void);                        /* 0x0880ED50 */
 
 #endif
