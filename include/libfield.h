@@ -181,6 +181,17 @@ typedef struct FieldNpcs {             /* 0x08844DB0, 0x5020 */
     int talk_dir;                      /* +0x501C */
 } FieldNpcs;
 
+typedef struct FieldPlayer {           /* 0x08849DD0, 0xC0 */
+    int *file_a;                       /* +0x00 */
+    int *file_b;                       /* +0x04 */
+    int pad08[2];
+    FieldChr c;                        /* +0x10 */
+    int active;                        /* +0xA0 */
+    int lock;                          /* +0xA4 input disabled */
+    int busy;                          /* +0xA8 */
+    int padac[5];
+} FieldPlayer;
+
 typedef struct FieldMap {              /* fld_map_get() */
     int pad00[2];
     unsigned short w;                  /* +0x08 cells */
@@ -257,6 +268,7 @@ extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */
 extern FieldChrGlb field_chr_glb;
+extern FieldPlayer field_player;           /* 0x08849DD0 */
 extern FieldNpcs field_npcs;               /* 0x08844DB0 */          /* 0x08844960 */
 extern Vec3 field_dirs[8];                 /* 0x08834AD4 */
 
@@ -341,6 +353,14 @@ int fld_dir_from_vec(Vec3 *v, int diag);
 void fld_dir_vec(Vec3 *out, int i);
 int fld_in_range(int x);
 void fld_pos_set(Vec3 *p, int cx, int cz);
+int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir, int visible,
+                  int arg8c, int a, int b, int fx);
+void fld_chr_get_pos(Vec3 *out, FieldChr *c);
+void fld_chr_corners(float r, Vec3 *p, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d);
+void fld_map_height(float x, float z, Vec3 *p);
+void fld_pos_to_cell(float x, float z, int *cx, int *cz);
+int fld_map_attr(int x, int z);
+FieldMap *fld_map_get(void);
 void *fld_alloc(unsigned int size);            /* 0x0880BEF0 */
 void fld_free(void *p);                        /* 0x0880BF00 */
 void fld_unload(int kind, int name);           /* 0x0880C390 */
