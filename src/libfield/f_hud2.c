@@ -3,10 +3,10 @@
 #include "libfield.h"
 
 int fld_day_part(void);
-void *func_08813308(void *list);
-void *func_088135E8(void *list);
-void *func_08813AA8(void *list);
-void *func_08813D34(void *list);
+void *fld_hud_clock_draw_a(void *list);
+void *fld_hud_clock_draw_b(void *list);
+void *fld_hud_clock_hands(void *list);
+void *fld_hud_clock_mark(void *list);
 
 extern Vec2 field_name_from;                   /* 0x0883C7CC */
 extern Vec2 field_name_to;                     /* 0x0883C7D4 */
@@ -91,10 +91,10 @@ void *fld_hud_clock_draw(void *list)
     switch (region_get()) {
     case 1:
     default:
-        list = func_088135E8(list);
+        list = fld_hud_clock_draw_b(list);
         break;
     case 0:
-        list = func_08813308(list);
+        list = fld_hud_clock_draw_a(list);
         break;
     }
     switch (fld_day_part()) {
@@ -103,8 +103,8 @@ void *fld_hud_clock_draw(void *list)
         return list;
     }
     if (h->blink_kind != 3 || !h->blink_on || !h->blink)
-        list = func_08813D34(list);
+        list = fld_hud_clock_mark(list);
     if (h->blink_kind != 4 || !h->blink_on || !h->blink)
-        list = func_08813AA8(list);
+        list = fld_hud_clock_hands(list);
     return list;
 }

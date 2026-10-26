@@ -16,19 +16,19 @@ void fld_hud_name_update(void);
 void fld_hud_clock_free(void);
 void fld_hud_clock_open(void);
 void fld_hud_clock_update(void);
-void func_08813E2C(void);
-void func_08813E34(void);
-void func_08813E44(void);
-void func_088140D8(void);
-void func_088140E0(void);
-void func_088140F0(void);
-void func_08814404(void);
-void func_088147E0(void);
-void func_088147E8(void);
-void func_088147F8(void);
-void func_08814B5C(void);
-void func_08814B64(void);
-void func_08814C3C(void);
+void fld_hud_day_free(void);
+void fld_hud_day_open(void);
+void fld_hud_day_update(void);
+void fld_hud_date_free(void);
+void fld_hud_date_open(void);
+void fld_hud_date_update(void);
+void fld_hud_move_update(void);
+void fld_hud_panel_free(void);
+void fld_hud_panel_open(void);
+void fld_hud_panel_update(void);
+void fld_hud_box_free(void);
+void fld_hud_box_init(void);
+void fld_hud_box_update(void);
 void func_088158BC(void);
 
 int fld_sctab_state(void)
@@ -98,10 +98,10 @@ void fld_hud_init(void)
 void fld_hud_free(void)
 {
     fld_hud_clock_free();
-    func_08813E2C();
-    func_088140D8();
-    func_088147E0();
-    func_08814B5C();
+    fld_hud_day_free();
+    fld_hud_date_free();
+    fld_hud_panel_free();
+    fld_hud_box_free();
     func_088158BC();
     menu_free_items(&field_hud.menu);
 }
@@ -113,11 +113,11 @@ void fld_hud_update(void)
     if (field_hud.on) {
         fld_hud_name_update();
         fld_hud_clock_update();
-        func_08813E44();
-        func_088140F0();
-        func_08814404();
-        func_088147F8();
-        func_08814C3C();
+        fld_hud_day_update();
+        fld_hud_date_update();
+        fld_hud_move_update();
+        fld_hud_panel_update();
+        fld_hud_box_update();
         if (h->blink_on) {
             if ((int)(*gfx_get_state() % h->period) < h->duty)
                 h->blink = 1;
@@ -139,15 +139,15 @@ void fld_hud_open(int story)
     case 0:
         fld_hud_name_init();
         fld_hud_clock_open();
-        func_08813E34();
-        func_088140E0();
-        func_088147E8();
-        func_08814B64();
+        fld_hud_day_open();
+        fld_hud_date_open();
+        fld_hud_panel_open();
+        fld_hud_box_init();
         break;
     case 1:
         fld_hud_clock_open();
-        func_08813E34();
-        func_088140E0();
+        fld_hud_day_open();
+        fld_hud_date_open();
         break;
     }
     h->on = 1;
@@ -156,8 +156,8 @@ void fld_hud_open(int story)
 void fld_hud_box_open(unsigned short *title, int a, int b, int c, int d, int e)
 {
     int *p = field_hud.p;
-    int *st = &field_hud.state;
-    MenuItemDef *box = &field_hud.box;
+    int *st = &field_hud.boxw.state;
+    MenuItemDef *box = &field_hud.boxw.item;
 
     if (*st != 1) {
         box->title = title;
@@ -172,7 +172,7 @@ void fld_hud_box_open(unsigned short *title, int a, int b, int c, int d, int e)
 
 void fld_hud_box_close(void)
 {
-    int *st = &field_hud.state;
+    int *st = &field_hud.boxw.state;
 
     if (*st != 3)
         *st = 3;
@@ -199,13 +199,13 @@ void fld_hud_move(int arg, int x, int y)
 
     m->on = 1;
     m->arg = arg;
-    m->y = y;
-    m->y0 = y;
-    m->t = 0;
-    m->x20 = 0;
+    m->from.y = y;
+    m->pos.y = y;
+    m->t = 0.0f;
+    m->wait = 0;
     m->s = 1.0f;
-    m->x = x;
-    m->x0 = x;
+    m->from.x = x;
+    m->pos.x = x;
     fld_story_flag(0x621D, 0);
 }
 
@@ -216,7 +216,7 @@ int fld_hud_move_done(void)
 
 void fld_hud_show(void)
 {
-    int *st = &field_hud.state2;
+    int *st = &field_hud.panel.state;
 
     if (*st != 1)
         *st = 1;
@@ -224,7 +224,7 @@ void fld_hud_show(void)
 
 void fld_hud_hide(void)
 {
-    int *st = &field_hud.state2;
+    int *st = &field_hud.panel.state;
 
     if (*st != 3)
         *st = 3;
@@ -234,7 +234,7 @@ int fld_hud_hidden(void)
 {
     int r;
 
-    switch (field_hud.state2) {
+    switch (field_hud.panel.state) {
     case 0:
         r = 1;
         break;

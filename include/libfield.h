@@ -337,19 +337,19 @@ typedef struct FieldSave {             /* what the save command fills */
     int save[5];                       /* +0x214 */
 } FieldSave;
 
-typedef struct FieldHudMove {          /* +0x128 of FieldHud */
-    int on;
-    float x, y;                        /* +0x04 */
-    float x0, y0;                      /* +0x0C */
-    int arg;                           /* +0x14 */
-    int t;                             /* +0x18 */
-    float s;                           /* +0x1C */
-    int x20;
-} FieldHudMove;
-
 typedef struct Vec2 {
     float x, y;
 } Vec2;
+
+typedef struct FieldHudMove {          /* +0x128 of FieldHud */
+    int on;                            /* 0 off, 1 waiting, 2 moving */
+    Vec2 from;                         /* +0x04 */
+    Vec2 pos;                          /* +0x0C */
+    int arg;                           /* +0x14 */
+    float t;                           /* +0x18 */
+    float s;                           /* +0x1C scale */
+    int wait;                          /* +0x20 */
+} FieldHudMove;
 
 typedef struct FieldHudSlide {         /* 0x10 */
     int state;                         /* 0 off, 1 sliding, 2 done */
@@ -373,13 +373,11 @@ typedef struct FieldHud {              /* 0x08FD1DAC, 0x200: the HUD of the fiel
     Menu menu;                         /* +0x024 */
     FieldHudName name;                 /* +0x070 room name window sliding in */
     FieldHudSlide clock;               /* +0x0F8 clock slide-in */
-    int pad108[8];
+    FieldHudSlide day;                 /* +0x108 */
+    FieldHudSlide date;                /* +0x118 */
     FieldHudMove move;                 /* +0x128 */
-    int state2;                        /* +0x14C */
-    int pad150[3];
-    int state;                         /* +0x15C */
-    int pad160[3];
-    MenuItemDef box;                   /* +0x16C */
+    FieldHudSlide panel;               /* +0x14C */
+    FieldHudName boxw;                 /* +0x15C message box (item at +0x16C) */
     int blink_on;                      /* +0x1E4 */
     int blink;                         /* +0x1E8 */
     int blink_kind;                    /* +0x1EC */
