@@ -10,8 +10,8 @@
 
 void func_0881BF08(int a, int b);
 void func_0881BFC8(void);
-void func_08812E28(void);
-void func_08812DA0(int a, int b, int c);
+void fld_hud_hide(void);
+void fld_hud_move(int a, int b, int c);
 void func_0882623C(int a, int b, int c);
 void func_08817C80(void *gim);
 void func_08816860(void *gim);
@@ -20,7 +20,6 @@ void func_0881EDC8(void *heap, int a, int b);
 void fld_scene_gim_loaded(int *file, void *arg);
 
 extern unsigned char field_story_ext[0x10];    /* 0x08FD5748 */
-extern unsigned char field_scene_tab[0x280];   /* 0x08FD1B2C */
 
 FieldStory *fld_story_get(void)
 {
@@ -80,7 +79,7 @@ void fld_cmd_save_begin(void)
         s->x88 = 0;
         break;
     case 1:
-        func_08812E28();
+        fld_hud_hide();
         s->story.w[9] = 0;
         s->x88 = 12;
         break;
@@ -132,7 +131,7 @@ int fld_cmd_door_done(void)
 
 void fld_cmd_wait(int *a)
 {
-    func_08812DA0(*a, 250, 120);
+    fld_hud_move(*a, 250, 120);
     field_scene.x14 = 1;
 }
 
@@ -189,10 +188,10 @@ void fld_scene_gim_loaded(int *file, void *arg)
 
 void fld_scene_tab_init(void)
 {
-    memset(field_scene_tab, 0, 0x280);
+    memset(&field_scene_tab, 0, sizeof(FieldScTab));
 }
 
 void fld_scene_tab_free(void)
 {
-    memset(field_scene_tab, 0, 0x280);
+    memset(&field_scene_tab, 0, sizeof(FieldScTab));
 }

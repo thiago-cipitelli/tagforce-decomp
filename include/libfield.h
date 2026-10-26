@@ -337,6 +337,51 @@ typedef struct FieldSave {             /* what the save command fills */
     int save[5];                       /* +0x214 */
 } FieldSave;
 
+typedef struct FieldHudMove {          /* +0x128 of FieldHud */
+    int on;
+    float x, y;                        /* +0x04 */
+    float x0, y0;                      /* +0x0C */
+    int arg;                           /* +0x14 */
+    int t;                             /* +0x18 */
+    float s;                           /* +0x1C */
+    int x20;
+} FieldHudMove;
+
+typedef struct FieldHud {              /* 0x08FD1DAC, 0x200: the HUD of the field */
+    int on;                            /* +0x000 */
+    void *gim0;                        /* +0x004 */
+    void *gim1;                        /* +0x008 */
+    void *gim19;                       /* +0x00C */
+    int p[5];                          /* +0x010 */
+    Menu menu;                         /* +0x024 */
+    int item_on;                       /* +0x070 */
+    int pad074[3];
+    MenuItemDef item;                  /* +0x080 room name */
+    int pad0f8[12];
+    FieldHudMove move;                 /* +0x128 */
+    int state2;                        /* +0x14C */
+    int pad150[3];
+    int state;                         /* +0x15C */
+    int pad160[3];
+    MenuItemDef box;                   /* +0x16C */
+    int blink_on;                      /* +0x1E4 */
+    int blink;                         /* +0x1E8 */
+    int blink_kind;                    /* +0x1EC */
+    unsigned int period;               /* +0x1F0 */
+    int duty;                          /* +0x1F4 */
+    int t;                             /* +0x1F8 */
+    int phase;                         /* +0x1FC */
+} FieldHud;
+
+typedef struct FieldScTab {            /* 0x08FD1B2C, 0x280 */
+    int state;                         /* +0x000 */
+    MenuWidget w1;                     /* +0x004 */
+    unsigned short *texts[6];          /* +0x124 */
+    int idx[6];                        /* +0x13C */
+    MenuWidget w2;                     /* +0x154 */
+    unsigned short *texts2[3];         /* +0x274 */
+} FieldScTab;
+
 typedef struct FieldMap {              /* fld_map_get() */
     int pad00[2];
     unsigned short w;                  /* +0x08 cells */
@@ -448,6 +493,8 @@ extern struct { int count; FieldPoolEnt e[1]; } field_pool_bg;     /* 0x08FD121C
 extern struct { int count; FieldPoolEnt e[10]; } field_pool_misc;  /* 0x08FD10D8 */
 extern struct { int count; FieldPoolEnt e[1]; } field_pool_voice;  /* 0x08FD10B4 */
 extern FieldRes field_res;
+extern FieldHud field_hud;                 /* 0x08FD1DAC */
+extern FieldScTab field_scene_tab;         /* 0x08FD1B2C */
 extern FieldScene field_scene;             /* 0x08FD1A74 */
 extern FieldSys field_sys;                 /* 0x08FD1A44 */
 extern FieldCmd field_cmds[25];            /* 0x0883C640 */
@@ -569,6 +616,15 @@ unsigned int *view_init(unsigned int *list);
 void model_set_allocator(void *(*alloc)(unsigned int size), void (*freefn)(void *p));
 int efs_set_heap(void *heap);
 int efs_term(void);
+
+void font_text_set(void *list);
+void font_set_size(int w, int h);
+void font_set_flag4(int on);
+unsigned int font_set_color(unsigned int c);
+int font_draw_text(int x, int y, int w, unsigned short *text);
+void *font_text_clear(void);
+unsigned short *table_get_entry(void *table, int i);
+unsigned int *gfx_get_state(void);
 
 /* libfield, other files */
 void *fld_heap_get(void);

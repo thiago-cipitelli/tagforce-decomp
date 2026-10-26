@@ -84,10 +84,10 @@ void fld_scene_update(void);
 void fld_scene_draw(void);
 void fld_scene_tab_init(void);
 void fld_scene_tab_free(void);
-void func_088128A4(void);
-void func_088128B8(void);
-void func_08812BD0(int a);
-void func_08812E74(int a, int b, int c);
+void fld_hud_init(void);
+void fld_hud_free(void);
+void fld_hud_open(int a);
+void fld_hud_blink(int a, int b, int c);
 void func_0881BA90(void);
 void func_0881BAA4(void);
 void func_0881C770(void);
@@ -315,7 +315,7 @@ void fld_cmd_open(int *a)
         m = 1;
         break;
     }
-    func_08812BD0(m);
+    fld_hud_open(m);
     func_08817DB4();
     c = fld_ctx_get();
     c->se_on = 1;
@@ -400,29 +400,29 @@ void fld_cmd_x18(int *a)
     switch (*a) {
     case -1:
     default:
-        func_08812E74(-1, 0, 0);
+        fld_hud_blink(-1, 0, 0);
         func_08817DC4(-1, 0);
         break;
     case 0:
-        func_08812E74(10, 5, 0);
+        fld_hud_blink(10, 5, 0);
         break;
     case 1:
-        func_08812E74(10, 5, 1);
+        fld_hud_blink(10, 5, 1);
         break;
     case 2:
-        func_08812E74(10, 5, 2);
+        fld_hud_blink(10, 5, 2);
         break;
     case 3:
-        func_08812E74(10, 5, 3);
+        fld_hud_blink(10, 5, 3);
         break;
     case 4:
-        func_08812E74(10, 5, 4);
+        fld_hud_blink(10, 5, 4);
         break;
     case 6:
-        func_08812E74(10, 5, 5);
+        fld_hud_blink(10, 5, 5);
         break;
     case 7:
-        func_08812E74(10, 5, 6);
+        fld_hud_blink(10, 5, 6);
         break;
     case 5:
         func_08817DC4(10, 5);
@@ -506,7 +506,7 @@ void fld_sys_poll_all(void)
 void fld_scene_init(void)
 {
     memset(&field_scene, 0, sizeof(FieldScene));
-    func_088128A4();
+    fld_hud_init();
     func_08825F7C();
     fld_player_init();
     func_0881BA90();
@@ -521,7 +521,7 @@ void fld_scene_term(void)
 
 void fld_scene_free(void)
 {
-    func_088128B8();
+    fld_hud_free();
     func_08825F90();
     fld_player_reset();
     func_0881BAA4();
