@@ -103,13 +103,21 @@ typedef struct TDeckRec {              /* a deck edited in the free duel setup, 
     unsigned short name[0x20];         /* +0x108 */
 } TDeckRec;
 
-typedef struct TDuelOpts {             /* free duel options */
-    unsigned char b0 : 5;
+typedef struct TDuelOpts {             /* free duel options = own entry of the player list (TFdSeat layout), 0x10 */
+    unsigned char kind : 3;
+    unsigned char side : 2;
     unsigned char tag : 1;             /* bit 5: tag duel */
     unsigned char swap : 1;            /* bit 6: deck swap before the duel */
     unsigned char b7 : 1;
     unsigned char lp : 4;              /* +0x01 life points (title_lp_level) */
     unsigned char time : 4;            /*       answer time */
+    unsigned char st : 4;              /* +0x02 */
+    unsigned char b2 : 4;
+    unsigned char pad03;
+    unsigned short card;               /* +0x04 */
+    unsigned short pad06;
+    unsigned short *card_name;         /* +0x08 */
+    unsigned short *name;              /* +0x0C */
 } TDuelOpts;
 
 typedef struct TExtCard {              /* an extra data card (.YGC), 0x44 (BOOT ExtCard) */
@@ -159,28 +167,29 @@ typedef struct TFdDeck {               /* 0x80 */
     unsigned char pad7d[3];
 } TFdDeck;
 
-typedef struct TFdDeckInfo {           /* 0x3C */
-    int on;                            /* +0x00 */
-    int kind;                          /* +0x04 */
-    int u08, u0c;
-    unsigned short name[22];           /* +0x10 */
-} TFdDeckInfo;
+typedef struct TFdScanEnt {            /* a player joined to the host (BOOT NetScanEntry), 0x40 */
+    int valid;                         /* +0x00 */
+    int joined;                        /* +0x04 */
+    int index;                         /* +0x08 */
+    int tag;                           /* +0x0C */
+    unsigned short name[0x18];         /* +0x10 */
+} TFdScanEnt;
 
-typedef struct TFdDeckSrc {            /* argument of tfd_populate_config, 0x40 */
-    int u00;
-    TFdDeckInfo d;                     /* +0x04 */
-} TFdDeckSrc;
+typedef struct TFdScan {               /* net_get_scan (BOOT NetScan head), 0x244 */
+    int n;
+    TFdScanEnt e[9];                   /* +0x04 */
+} TFdScan;
 
-typedef struct TFdImp {                /* 0x3C */
-    int side;                          /* +0x00 */
+typedef struct TFdImp {                /* a host seen on the network (BOOT NetPeerInfo), 0x3C */
+    int side;                          /* +0x00 valid */
     unsigned short name[0x18];         /* +0x04 */
-    unsigned char kind;                /* +0x34 */
+    unsigned char kind;                /* +0x34 ver[0..4] */
     unsigned char b5;                  /* +0x35 */
     unsigned char b6;                  /* +0x36 */
     unsigned char lo;                  /* +0x37 */
     unsigned char hi;                  /* +0x38 */
     unsigned char pad39;
-    unsigned short card;               /* +0x3A */
+    unsigned short card;               /* +0x3A ver_id */
 } TFdImp;
 
 typedef struct TFdImpList {           /* 0x220 */
@@ -193,16 +202,21 @@ typedef struct TFdList {               /* title.duel +0x08, 0xEA8 bytes cleared 
     unsigned char pad001[3];
     TFdSeat seat[9];                   /* +0x004 */
     TFdDeck deck[9];                   /* +0x094 */
-    TFdImpList imps;                   /* +0x514 */
-    unsigned char pad734[0xEA8 - 0x734];
+    TFdImpList imps;                   /* +0x514 net_get_hosts */
+    TFdScan scan;                      /* +0x734 net_get_scan */
+    unsigned char pad978[0xEA8 - 0x978];
 } TFdList;
 
 typedef struct TDuelCfg {              /* title +0x974 */
-    unsigned char pad000[0x8];
+    unsigned char pad000;
+    unsigned char u001;                /* +0x001 */
+    unsigned char pad002[3];
+    unsigned char u005;                /* +0x005 */
+    unsigned char pad006[2];
     TFdList list;                      /* +0x008 */
     unsigned char pad0eb0[0xEB4 - 0xEB0];
     TDuelOpts opts;                    /* +0xEB4 */
-    unsigned char pad0eb6[0xF00 - 0xEB6];
+    TFdImp host;                       /* +0xEC4 net_get_host_info */
     unsigned char uf00[0x4C];          /* +0xF00 */
     unsigned char uf4c[0x1C];          /* +0xF4C */
     unsigned char pad0f68[0x1178 - 0xF68];
