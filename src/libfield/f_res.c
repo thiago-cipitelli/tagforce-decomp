@@ -7,7 +7,7 @@
 void fld_cip_open(void);
 void fld_req_init(void);                       /* 0x0880C860 */
 int fld_req_idle(void);                        /* 0x0880C97C */
-int fld_res_find(int name, FieldResEnt *tab, int n, int size); /* 0x0880C9BC */
+int fld_res_find(int name, int tab, int n, int size); /* 0x0880C9BC */
 void fld_req_add(int kind, FieldResEnt *e, int a, void (*cb)(), void *arg, int b); /* 0x0880CA9C */
 void fld_waiter_add(int *w, void (*cb)(), void *arg); /* 0x0880CBC0 */
 void fld_gims_free(void);
@@ -90,7 +90,7 @@ void *fld_cip_get(void)
 
 void fld_load_gim(int name, void (*cb)(int *file, void *arg), void *arg)
 {
-    FieldResEnt *e = &field_res_gim[fld_res_find(name, field_res_gim, 9, 0x28)];
+    FieldResEnt *e = &field_res_gim[fld_res_find(name, (int)field_res_gim, 9, 0x28)];
 
     if (e->data) {
         cb((int *)&e->data, arg);
@@ -107,7 +107,7 @@ void fld_load_gim(int name, void (*cb)(int *file, void *arg), void *arg)
 
 void fld_gim_free(int name)
 {
-    int i = fld_res_find(name, field_res_gim, 9, 0x28);
+    int i = fld_res_find(name, (int)field_res_gim, 9, 0x28);
     FieldResEnt *e;
 
     if (i >= 0) {

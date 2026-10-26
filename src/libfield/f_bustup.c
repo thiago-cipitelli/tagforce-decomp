@@ -360,7 +360,7 @@ void fld_bu_clear(FieldBuSlot *s)
 /* frame of an animation id in the table of the current mode (the first entry if missing) */
 FieldAnimFrame *fld_anim_frame(int chara, int anim)
 {
-    int mode = fld_mode_get();
+    int mode = fld_bu_index(chara);
     int i = 0;
     FieldAnimFrame *f = field_anim_frames[mode];
 

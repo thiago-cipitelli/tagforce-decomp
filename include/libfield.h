@@ -216,6 +216,29 @@ typedef struct FieldGim {              /* 0x0883C49C[] */
     void *gim;
 } FieldGim;
 
+typedef struct FieldPoolEnt {          /* loaded file of a pool, 0x20 */
+    int name;
+    void *buf;                         /* +0x04 */
+    int *data;                         /* +0x08 */
+    int loading;                       /* +0x0C */
+    int waiters[2];                    /* +0x10 */
+    int discard;                       /* +0x18 */
+    int x1c;
+} FieldPoolEnt;
+
+typedef struct FieldPool {
+    int count;
+    FieldPoolEnt e[1];
+} FieldPool;
+
+typedef struct FieldPoolDesc {         /* 0x0883C5B4[5]: chr, chr2, bg, misc, voice */
+    FieldPool *pool;
+    int n;
+    const char *dir;
+    const char **names;
+    int x10;
+} FieldPoolDesc;
+
 typedef struct FieldMap {              /* fld_map_get() */
     int pad00[2];
     unsigned short w;                  /* +0x08 cells */
@@ -294,6 +317,12 @@ extern int field_hall_cells[14][2];        /* 0x088382FC */
 extern FieldChrGlb field_chr_glb;
 extern FieldPlayer field_player;           /* 0x08849DD0 */
 extern FieldNpcs field_npcs;
+extern FieldPoolDesc field_pools[5];       /* 0x0883C5B4 */
+extern struct { int count; FieldPoolEnt e[12]; } field_pool_chr;   /* 0x08FD1284 */
+extern struct { int count; FieldPoolEnt e[2]; } field_pool_chr2;   /* 0x08FD1240 */
+extern struct { int count; FieldPoolEnt e[1]; } field_pool_bg;     /* 0x08FD121C */
+extern struct { int count; FieldPoolEnt e[10]; } field_pool_misc;  /* 0x08FD10D8 */
+extern struct { int count; FieldPoolEnt e[1]; } field_pool_voice;  /* 0x08FD10B4 */
 extern FieldRes field_res;                 /* 0x08FD10A0 */
 extern FieldResEnt field_res_gim[9];      /* 0x0883BEB8 */
 extern FieldGim field_gims[];              /* 0x0883C49C */               /* 0x08844DB0 */          /* 0x08844960 */
@@ -380,6 +409,11 @@ void *cip_open_h(void *handle, int bufsize, int prefetch);
 void cip_close(void *c);
 int cip_is_idle(void *c);
 
+int region_get(void);
+int cfg_get_language(void);
+int ehfile_get_size(int dir, const char *name);
+int sprintf(char *buf, const char *fmt, ...);
+
 /* libfield, other files */
 void fld_chr_reset(FieldChr *c);
 void fld_chr_draw(FieldChr *c);
@@ -403,6 +437,6 @@ int fld_load_size(int kind, int chara);        /* 0x0880C450 */
 void fld_load(int name, void (*cb)(int *file, void *arg), void *arg, int flag); /* 0x0880C588 */
 void fld_load_cancel_all(void);                /* 0x0880C744 */
 FieldCtx *fld_ctx_get(void);                   /* 0x0880CF0C */
-int fld_mode_get(void);                        /* 0x0880ED50 */
+int fld_bu_index(int chara);                   /* 0x0880ED50 */
 
 #endif
