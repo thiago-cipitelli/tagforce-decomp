@@ -195,10 +195,10 @@ void fld_req_init(void)
         e->buf = 0;
         e->data = 0;
         e->loading = 0;
-        memset(e->waiters, 0, 8);
+        memset(&e->waiters, 0, 8);
         e->discard = 0;
     }
-    field_res_gim[0].pad04[1] = (int)field_always_ehp[region][lang];
+    field_res_gim[0].file = field_always_ehp[region][lang];
     i = 0;
     g = field_gims;
     do {
@@ -248,15 +248,15 @@ int fld_res_find_free(int name, int tab, int n, int size)
 int fld_req_step(void *pack, int n)
 {
     FieldRes *r = &field_res;
-    int *q = (int *)&field_res.req;
-    int *cur;
+    FieldReqQ *q = &field_res.q;
+    FieldReq *cur;
 
     if (n > 0) {
-        cur = r->req;
+        cur = r->q.head;
         if (pack)
             ehp_mount(0, pack);
-        cur[1]++;
-        q[2] = 0;
+        cur->step++;
+        q->busy = 0;
         return 1;
     }
     return 0;

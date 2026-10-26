@@ -9,7 +9,7 @@ void fld_req_init(void);                       /* 0x0880C860 */
 int fld_req_idle(void);                        /* 0x0880C97C */
 int fld_res_find(int name, int tab, int n, int size); /* 0x0880C9BC */
 void fld_req_add(int kind, FieldResEnt *e, int a, void (*cb)(), void *arg, int b); /* 0x0880CA9C */
-void fld_waiter_add(int *w, void (*cb)(), void *arg); /* 0x0880CBC0 */
+void fld_waiter_add(FieldWaitQ *w, void (*cb)(), void *arg); /* 0x0880CBC0 */
 void fld_gims_free(void);
 void fld_req_cancel_all(void);                 /* 0x0880C7D4 */
 void fld_load_cancel_chr(void);
@@ -97,7 +97,7 @@ void fld_load_gim(int name, void (*cb)(int *file, void *arg), void *arg)
     } else {
         e->discard = 0;
         if (e->loading) {
-            fld_waiter_add(e->waiters, cb, arg);
+            fld_waiter_add(&e->waiters, cb, arg);
         } else {
             e->loading = 1;
             fld_req_add(0, e, 0, cb, arg, 0);
@@ -122,7 +122,7 @@ void fld_gim_free(int name)
             e->buf = 0;
             e->data = 0;
             e->loading = 0;
-            memset(e->waiters, 0, 8);
+            memset(&e->waiters, 0, 8);
             e->discard = 0;
         }
     }
@@ -141,7 +141,7 @@ void fld_gims_free(void)
             }
             e->data = 0;
             e->loading = 0;
-            memset(e->waiters, 0, 8);
+            memset(&e->waiters, 0, 8);
             e->discard = 0;
         }
     }

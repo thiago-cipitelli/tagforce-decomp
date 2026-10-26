@@ -44,11 +44,24 @@ typedef struct EhfOpts {               /* BOOT ehf_draw options, 0x60 */
     int color[8];                      /* +0x40 */
 } EhfOpts;
 
-typedef struct FieldCtx {              /* fld_ctx_get() */
+typedef struct FieldCtx {              /* 0x08FD1408, 0x18: fld_ctx_get() */
     unsigned int frame;                /* +0x00 frame counter */
     int pad04;
     int speaker;                       /* +0x08 slot talking, -1 none */
+    int pad0c[2];
+    int x14;                           /* +0x14 */
 } FieldCtx;
+
+typedef struct FieldWaiter {           /* callback waiting for a file, 0xC */
+    void (*cb)();
+    void *arg;
+    struct FieldWaiter *next;
+} FieldWaiter;
+
+typedef struct FieldWaitQ {
+    FieldWaiter *head;
+    FieldWaiter *tail;
+} FieldWaitQ;
 
 typedef struct FieldList {             /* argument of the field commands: an array and its count */
     void *items;
@@ -192,21 +205,37 @@ typedef struct FieldPlayer {           /* 0x08849DD0, 0xC0 */
     int padac[5];
 } FieldPlayer;
 
+typedef struct FieldReq {              /* queued load request, 0x1C */
+    int kind;                          /* +0x00 pool kind, 0 = shared GIM */
+    int step;                          /* +0x04 */
+    void *ent;                         /* +0x08 FieldResEnt or FieldPoolDesc */
+    void *ent2;                        /* +0x0C */
+    void *arg;                         /* +0x10 */
+    struct FieldReq *next;             /* +0x14 */
+    void (*cb)();                      /* +0x18 */
+} FieldReq;
+
+typedef struct FieldReqQ {
+    FieldReq *head;
+    FieldReq *tail;
+    int busy;                          /* a read is in flight */
+} FieldReqQ;
+
 typedef struct FieldRes {              /* 0x08FD10A0, 0x14: file loader */
     void *heap;                        /* +0x00 */
     void *cip;                         /* +0x04 card pictures */
-    int *req;                          /* +0x08 request being served */
-    int x0c;
-    int busy;                          /* +0x10 */
+    FieldReqQ q;                       /* +0x08 */
 } FieldRes;
 
 typedef struct FieldResEnt {           /* cached file, 0x28 */
     const char *name;
-    int pad04[3];
+    const char *dir;                   /* +0x04 */
+    const char *file;                  /* +0x08 */
+    int pack;                          /* +0x0C file is an EHP to mount */
     void *buf;                         /* +0x10 */
     int *data;                         /* +0x14 */
     int loading;                       /* +0x18 */
-    int waiters[2];                    /* +0x1C */
+    FieldWaitQ waiters;                /* +0x1C */
     int discard;                       /* +0x24 */
 } FieldResEnt;
 
@@ -413,6 +442,15 @@ int region_get(void);
 int cfg_get_language(void);
 int ehfile_get_size(int dir, const char *name);
 int sprintf(char *buf, const char *fmt, ...);
+
+void *draw_set_offsets(void *list, int tw, int th, int w, int h);
+void *draw_sprite(void *list, int x, int y, int z, int u, int v, int a, int b);
+void color_unpack(float *out, unsigned int rgba);
+void vec4_lerp2(float t, float *out, float *a, float *b);
+unsigned int color_pack(float *v);
+void deck_cur_get_u16_0(short *out);
+void ehfile_read_async_alias(int dir, const char *name, void *buf, int size, int (*cb)(void *, int), void *arg);
+float sqrtf_vfpu(float x);
 
 /* libfield, other files */
 void fld_chr_reset(FieldChr *c);
