@@ -128,9 +128,17 @@ typedef struct TExtCard {              /* an extra data card (.YGC), 0x44 (BOOT 
     unsigned char pad43;
 } TExtCard;
 
+typedef struct TExtRec {               /* a deck file of the extra data (ad hoc top), 0x208 */
+    unsigned short name[0x80];
+    RecipeData recipe;                 /* +0x100 */
+} TExtRec;
+
 typedef struct TExtList {              /* extra data files read from the memory stick, title.duel +0x1188 */
-    unsigned char pad00[0x10];
-    void *mark;                        /* +0x10 heap level of the other lists */
+    int type;                          /* +0x00 own character (tpt_get_ent) */
+    int u04;                           /* +0x04 */
+    int dk;                            /* +0x08 deck kind picked (func_08825720) */
+    int deck;                          /* +0x0C deck picked */
+    TExtRec *rec;                      /* +0x10 deck files (ad hoc top) */
     TExtCard *card;                    /* +0x14 cards (state 6) */
     unsigned char b0 : 1;              /* +0x18 */
     unsigned char stage : 4;
@@ -164,7 +172,7 @@ typedef struct TFdDeck {               /* 0x80 */
     unsigned short deckname[0x20];     /* +0x34 */
     unsigned short type;               /* +0x74 */
     unsigned char u76;                 /* +0x76 */
-    unsigned char pad77;
+    unsigned char u77;                 /* +0x77 own machine (tfd_adhoctop_update) */
     int deck;                          /* +0x78 */
     unsigned char dk : 2;              /* +0x7C deck kind (tfd_partner_by_type) */
     unsigned char kind : 3;
@@ -243,7 +251,11 @@ typedef struct TFdReady {
 } TFdReady;
 
 typedef struct TFdTail {               /* title.duel +0x1180 */
-    unsigned char pad000[8];
+    unsigned char pad000[2];
+    unsigned char u002;                /* +0x002 title.arg on leaving the duelist choice */
+    unsigned char u003;                /* +0x003 title.duel.u000 (tfd_adhoctop_draw2) */
+    unsigned char u004;                /* +0x004 ehf frame of layer 4 */
+    unsigned char pad005[3];
     TExtList ext;                      /* +0x008 */
     unsigned char pad06c[0xFF0 - 0x6C];
     TDeckRec decks[4];                 /* +0xFF0 */
@@ -256,7 +268,9 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char pad003;
     unsigned char u004 : 4;            /* +0x004 partner */
     unsigned char u004b4 : 1;
-    unsigned char u004h : 3;
+    unsigned char u004b5 : 1;          /*        tfd_duelist_icon */
+    unsigned char u004b6 : 1;          /*        tfd_duelist_icon(on) */
+    unsigned char u004b7 : 1;
     unsigned char u005;                /* +0x005 tfd_comm_machine state */
     unsigned char pad006[2];
     TFdList list;                      /* +0x008 */
@@ -406,7 +420,10 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char u86d;                /* +0x86D */
     unsigned char pad86e[2];
     int arg;                           /* +0x870 value passed between the states */
-    unsigned char pad874[0x87C - 0x874];
+    int u874;                          /* +0x874 */
+    unsigned char u878;                /* +0x878 */
+    unsigned char u879;                /* +0x879 */
+    unsigned char pad87a[0x87C - 0x87A];
     TMenu tm[2];                       /* +0x87C main menu, sub menu */
     TDuelCfg duel;                     /* +0x974 */
     int lang;                          /* +0x3004 language of the loaded title pack */
@@ -429,7 +446,8 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     int u3044;                         /* +0x3044 cleared when a list screen starts */
     int u3048;                         /* +0x3048 */
     void *movie_mem;                   /* +0x304C */
-    unsigned short msg_buf[0x201];     /* +0x3050 */
+    unsigned short msg_buf[0x200];     /* +0x3050 */
+    short u3450;                       /* +0x3450 frames of the random duelist roll (tfd_adhoctop_handler) */
     short cursor_blink;                /* +0x3452 */
 } Title;
 
