@@ -153,6 +153,42 @@ typedef struct FieldChrGlb {           /* 0x08844960, 0x20 */
     int light_w;                       /* +0x1C */
 } FieldChrGlb;
 
+typedef struct FieldBgCmd {            /* argument of the room load command */
+    int id;                            /* bg id */
+    short *cells;                      /* cells (x, z) of the markers */
+    int n_cells;
+} FieldBgCmd;
+
+typedef struct FieldBg {               /* 0x08844980, 0x430: the room */
+    int loading;                       /* +0x000 */
+    int unloading;                     /* +0x004 */
+    int *file;                         /* +0x008 */
+    int id;                            /* +0x00C */
+    void *model[2];                    /* +0x010 areas */
+    void *door[2];                     /* +0x018 */
+    void *model2[2];                   /* +0x020 */
+    int pad028[0x3C8 / 4];
+    int n_models;                      /* +0x3F0 */
+    int area;                          /* +0x3F4 */
+    int prev_area;                     /* +0x3F8 */
+    int n_doors;                       /* +0x3FC */
+    int pad400[1];
+    Vec3 light;                        /* +0x404 */
+    int fade;                          /* +0x410 */
+    unsigned int fade_t;               /* +0x414 */
+    FieldMap *map;                     /* +0x418 */
+    short *cells;                      /* +0x41C */
+    int n_cells;                       /* +0x420 */
+    int pad424[3];
+} FieldBg;
+
+typedef struct FieldLight {            /* 0x08838044[bg][3] */
+    int light;
+    int pad;
+} FieldLight;
+
+extern FieldBg field_bg_state;             /* 0x08844980 */
+extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern FieldChrGlb field_chr_glb;          /* 0x08844960 */
 extern Vec3 field_dirs[8];                 /* 0x08834AD4 */
 
@@ -208,6 +244,9 @@ void mtx_push(void);
 void mtx_pop(void);
 void mtx_identity(void);
 void mtx_ortho(float l, float r, float b, float t, float n, float f);
+
+void model_free(void *m);
+void model_update(void *model, void *dt);
 
 /* libfield, other files */
 void *fld_alloc(unsigned int size);            /* 0x0880BEF0 */
