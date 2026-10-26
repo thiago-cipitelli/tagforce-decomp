@@ -269,6 +269,33 @@ typedef struct FieldPoolDesc {         /* 0x0883C5B4[5]: chr, chr2, bg, misc, vo
     int x10;
 } FieldPoolDesc;
 
+typedef struct FieldSys {              /* 0x08FD1A44, 0x30: state of the field commands */
+    int x00;                           /* +0x00 */
+    int x04;
+    int x08;
+    int x0c;
+    int fading;                        /* +0x10 */
+    int x14;
+    int x18;
+    int active;                        /* +0x1C */
+    int drawing;                       /* +0x20 */
+    int mode;                          /* +0x24 */
+    int fade_out;                      /* +0x28 */
+    int x2c;
+} FieldSys;
+
+typedef struct FieldCmd {              /* 0x0883C640[25] */
+    void (*start)(void *arg);
+    int (*poll)(void *arg);
+    int busy;
+} FieldCmd;
+
+typedef struct FieldFadeCmd {
+    int out;
+    unsigned short frames;
+    int color;                         /* +0x08 index into field_fade_colors */
+} FieldFadeCmd;
+
 typedef struct FieldMap {              /* fld_map_get() */
     int pad00[2];
     unsigned short w;                  /* +0x08 cells */
@@ -380,6 +407,8 @@ extern struct { int count; FieldPoolEnt e[1]; } field_pool_bg;     /* 0x08FD121C
 extern struct { int count; FieldPoolEnt e[10]; } field_pool_misc;  /* 0x08FD10D8 */
 extern struct { int count; FieldPoolEnt e[1]; } field_pool_voice;  /* 0x08FD10B4 */
 extern FieldRes field_res;
+extern FieldSys field_sys;                 /* 0x08FD1A44 */
+extern FieldCmd field_cmds[25];            /* 0x0883C640 */
 extern FieldItems field_items;             /* 0x08FD1420 */
 extern FieldCtx field_ctx;                 /* 0x08FD1408 */                 /* 0x08FD10A0 */
 extern FieldResEnt field_res_gim[9];      /* 0x0883BEB8 */
@@ -491,7 +520,16 @@ Mat4 *mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v);
 
 void bgm_set_volume(int a, int b, int t);
 
+void fade_start(unsigned char type, unsigned int color, unsigned short frames);
+void fade_start_in(unsigned char type, unsigned int color, unsigned short frames);
+int fade_apply(void **list);
+unsigned int *view_init(unsigned int *list);
+void model_set_allocator(void *(*alloc)(unsigned int size), void (*freefn)(void *p));
+int efs_set_heap(void *heap);
+int efs_term(void);
+
 /* libfield, other files */
+void *fld_heap_get(void);
 void fld_chr_reset(FieldChr *c);
 void fld_chr_draw(FieldChr *c);
 float fld_vec3_len(Vec3 *v);
