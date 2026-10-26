@@ -127,6 +127,19 @@ typedef struct FieldChr {              /* SD character on the map */
     int arg8c;                         /* +0x8C */
 } FieldChr;
 
+typedef struct FieldVtx {              /* GU vertex: texture, color, position */
+    float u, v;
+    unsigned int color;
+    float x, y, z;
+} FieldVtx;
+
+typedef struct CharmapPos {            /* BOOT charmap_lookup2 */
+    unsigned char a;
+    unsigned char b;
+    unsigned char c : 4;
+    unsigned char hi : 4;
+} CharmapPos;
+
 typedef struct FieldMap {              /* fld_map_get() */
     int pad00[2];
     unsigned short w;                  /* +0x08 cells */
@@ -188,6 +201,13 @@ Vec3 *vec3_sub(Vec3 *out, Vec3 *a, Vec3 *b);
 float *mat3_identity(float *m);
 float *mat3_rot_y(float *out, float *m, float angle);
 float *mat3_transform_vec3(Vec3 *out, float *m, Vec3 *v);
+
+int charmap_lookup2(int code, CharmapPos *out);
+void mtx_set_mode(int mode);
+void mtx_push(void);
+void mtx_pop(void);
+void mtx_identity(void);
+void mtx_ortho(float l, float r, float b, float t, float n, float f);
 
 /* libfield, other files */
 void *fld_alloc(unsigned int size);            /* 0x0880BEF0 */
