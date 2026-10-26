@@ -132,12 +132,83 @@ typedef struct TExtList {              /* extra data files read from the memory 
     int loaded;                        /* +0x20 */
 } TExtList;
 
+typedef struct TFdSeat {               /* a player of the free duel setup list, 0x10 */
+    unsigned char kind : 3;            /* +0x00 */
+    unsigned char side : 2;
+    unsigned char b5 : 1;
+    unsigned char b6 : 1;
+    unsigned char b7 : 1;
+    unsigned char lo : 4;              /* +0x01 */
+    unsigned char hi : 4;
+    unsigned char st : 4;              /* +0x02 */
+    unsigned char b2 : 4;
+    unsigned char pad03;
+    unsigned short card;               /* +0x04 */
+    unsigned short pad06;
+    unsigned short *card_name;         /* +0x08 */
+    unsigned short *name;              /* +0x0C */
+} TFdSeat;
+
+typedef struct TFdDeck {               /* 0x80 */
+    unsigned short *name;              /* +0x00 */
+    unsigned char pad04[0x7C - 0x04];
+    unsigned char b0 : 2;              /* +0x7C */
+    unsigned char kind : 3;
+    unsigned char b5 : 2;
+    unsigned char on : 1;
+    unsigned char pad7d[3];
+} TFdDeck;
+
+typedef struct TFdDeckInfo {           /* 0x3C */
+    int on;                            /* +0x00 */
+    int kind;                          /* +0x04 */
+    int u08, u0c;
+    unsigned short name[22];           /* +0x10 */
+} TFdDeckInfo;
+
+typedef struct TFdDeckSrc {            /* argument of tfd_populate_config, 0x40 */
+    int u00;
+    TFdDeckInfo d;                     /* +0x04 */
+} TFdDeckSrc;
+
+typedef struct TFdImp {                /* 0x3C */
+    int side;                          /* +0x00 */
+    unsigned short name[0x18];         /* +0x04 */
+    unsigned char kind;                /* +0x34 */
+    unsigned char b5;                  /* +0x35 */
+    unsigned char b6;                  /* +0x36 */
+    unsigned char lo;                  /* +0x37 */
+    unsigned char hi;                  /* +0x38 */
+    unsigned char pad39;
+    unsigned short card;               /* +0x3A */
+} TFdImp;
+
+typedef struct TFdImpList {           /* 0x220 */
+    int n;
+    TFdImp e[9];                       /* +0x04 */
+} TFdImpList;
+
+typedef struct TFdList {               /* title.duel +0x08, 0xEA8 bytes cleared by tfd_clear */
+    unsigned char n;                   /* +0x000 */
+    unsigned char pad001[3];
+    TFdSeat seat[9];                   /* +0x004 */
+    TFdDeck deck[9];                   /* +0x094 */
+    TFdImpList imps;                   /* +0x514 */
+    unsigned char pad734[0xEA8 - 0x734];
+} TFdList;
+
 typedef struct TDuelCfg {              /* title +0x974 */
-    unsigned char pad000[0xEB4];
+    unsigned char pad000[0x8];
+    TFdList list;                      /* +0x008 */
+    unsigned char pad0eb0[0xEB4 - 0xEB0];
     TDuelOpts opts;                    /* +0xEB4 */
-    unsigned char pad0eb6[0x1178 - 0xEB6];
+    unsigned char pad0eb6[0xF00 - 0xEB6];
+    unsigned char uf00[0x4C];          /* +0xF00 */
+    unsigned char uf4c[0x1C];          /* +0xF4C */
+    unsigned char pad0f68[0x1178 - 0xF68];
     unsigned short anim;               /* +0x1178 frame counter of the setup screens */
-    unsigned short pad117a;
+    unsigned char blink;               /* +0x117A counts 0..29 */
+    unsigned char pad117b;
     unsigned short card;               /* +0x117C */
     unsigned char pad117e[0x1188 - 0x117E];
     TExtList ext;                      /* +0x1188 */
@@ -270,7 +341,10 @@ typedef struct Title {                 /* title 0x094306F0, 0x3454 bytes cleared
     unsigned char pad130[0x1A8 - 0x130];
     MenuWidget win[3];                 /* +0x1A8 */
     TPanel panel;                      /* +0x508 tabbed list window */
-    unsigned char pad840[0x870 - 0x840];
+    unsigned char pad840[0x86C - 0x840];
+    unsigned char u86c;                /* +0x86C */
+    unsigned char u86d;                /* +0x86D */
+    unsigned char pad86e[2];
     int arg;                           /* +0x870 value passed between the states */
     unsigned char pad874[0x87C - 0x874];
     TMenu tm[2];                       /* +0x87C main menu, sub menu */
@@ -563,7 +637,7 @@ void text_update(void);
 void tname_update(void);
 void func_08821FB0(void);
 void topt_update(void);
-void func_08813FC8(void);
+void tfd_update(void);
 void tcfg_screen_update(void);
 void tlang_update(void);
 void *title_screen_draw(void *list);
@@ -571,11 +645,11 @@ void *text_draw(void *list);
 void *tname_draw(void *list);
 void *func_08823090(void *list);
 void *topt_draw(void *list);
-void *func_0881DC1C(void *list);
+void *tfd_config_draw_rect(void *list);
 void *tcfg_screen_draw(void *list);
 void *tlang_draw(void *list);
 void tname_osk_draw(void);
-void func_0881D2F4(void);
+void tfd_net_lobby_machine(void);
 void title_recipe_update(void);
 void title_chara_update(void);
 void title_album_update(void);
@@ -605,12 +679,12 @@ void text_enter(); /* (short state): set_state calls it with the state still in 
 void tname_enter(void);
 void func_08821D3C(void);
 
-void func_08813DF4(void);
+void tfd_config_init();
 void tlang_enter(void);
 void title_random_duel_start(void);
 void title_lesson_start(void);
 void title_free_duel_start(void);
-void func_08815ADC(void);
+void tfd_chr_setup(void);
 void title_dtut_duel_start(void);
 void title_recipe_open(void);
 void title_chara_open(void);

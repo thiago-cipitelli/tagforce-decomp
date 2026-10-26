@@ -72,7 +72,7 @@ int title_update(void)
         topt_update();
         break;
     case 14:
-        func_08813FC8();
+        tfd_update();
         break;
     case 17:
         tcfg_screen_update();
@@ -371,7 +371,7 @@ void title_draw(void)
         list = topt_draw(list);
         break;
     case 14:
-        list = func_0881DC1C(list);
+        list = tfd_config_draw_rect(list);
         break;
     case 15:
         break;
@@ -446,7 +446,7 @@ void title_draw(void)
         title_limit_draw();
         break;
     case 14:
-        func_0881D2F4();
+        tfd_net_lobby_machine();
         break;
     case 24:
         title_tlist_draw();

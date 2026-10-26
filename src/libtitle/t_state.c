@@ -200,7 +200,7 @@ int title_set_state(int st, int sub)
         topt_enter(st, sub);
         break;
     case 14:
-        func_08813DF4();
+        tfd_config_init();
         break;
     case 17:
         tcfg_enter(st, sub);
@@ -253,7 +253,7 @@ int title_set_state(int st, int sub)
         title_free_duel_start();
         return 40;
     case 35:
-        func_08815ADC();
+        tfd_chr_setup();
         return 40;
     case 36:
         title_load_enter(st);
