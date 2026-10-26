@@ -43,7 +43,7 @@ void text_update(void)
     Title *const t = &title;
     TPanel *p = &title.panel;
     TBox *b = &p->box;
-    TExtList *e = &title.duel.ext;
+    TExtList *e = &title.duel.tail.ext;
     TExtCard card;
     unsigned int trig;
     int r;
@@ -208,7 +208,7 @@ void text_list_init(void)
     b->ih = 23;
     b->x = p->x;
     tpanel_list_init(p, title.heap);
-    w->count = title.duel.ext.n;
+    w->count = title.duel.tail.ext.n;
     w->rows = 8;
     if (w->count < w->rows)
         w->count = 8;
@@ -244,7 +244,7 @@ void *text_tab_label(void *list, int i, int x, int y, int w)
 /* a card of the list: the mark, the file name and the card name */
 void *text_item(void *list, int i, int x, int y)
 {
-    TExtList *e = &title.duel.ext;
+    TExtList *e = &title.duel.tail.ext;
     TExtCard card;
 
     if ((unsigned short)i < e->n) {

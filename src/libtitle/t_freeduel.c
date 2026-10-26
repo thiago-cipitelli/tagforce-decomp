@@ -1,4 +1,4 @@
-// @range 0x08813AC4-0x088148A8
+// @range 0x08813AC4-0x0881494C
 // @rodata 0x0882AF38-0x0882AF94
 /* Free duel setup (state 3 and its sub-screens): the player list, the deck list, the options panel. */
 #include "libtitle.h"
@@ -22,6 +22,9 @@ void net_toggle_pick(int i);
 void net_start_game(void);
 void net_get_host_players(TFdScan *out);
 void net_get_host_info(TFdImp *out);
+unsigned short *recipe_get_name(int n);
+int peer_self_get(void);
+void local_record_set(TFdPacket *p);
 void tfd_entry_update(void);
 void net_adhoc_start(void);
 int net_get_state(void);
@@ -429,4 +432,28 @@ int tfd_evt_handler(int a, int b)
         break;
     }
     return r;
+}
+
+unsigned short *tfd_partner_by_type(short who, short kind, int i)
+{
+    TFdTail *q = &title.duel.tail;
+    TExtList *e = &q->ext;
+    SaveRec *r;
+
+    if (kind == 0) {
+        if (i == 0) {
+            deck_name_copy_out(e->deckname);
+            return e->deckname;
+        }
+        r = sysstate_rec_get((short)i - 1);
+        if (r->used != 0)
+            return r->name;
+    } else if (kind == 1) {
+        return recipe_get_name((short)i);
+    } else if (kind == 2) {
+        if (who == 1)
+            return q->decks[0].name;
+        return q->decks[1].name;
+    }
+    return 0;
 }

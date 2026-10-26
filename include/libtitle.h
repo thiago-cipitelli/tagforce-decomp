@@ -138,6 +138,7 @@ typedef struct TExtList {              /* extra data files read from the memory 
     unsigned char pad19[3];
     int n;                             /* +0x1C files found */
     int loaded;                        /* +0x20 */
+    unsigned short deckname[32];       /* +0x24 deck_name_copy_out */
 } TExtList;
 
 typedef struct TFdSeat {               /* a player of the free duel setup list, 0x10 */
@@ -159,10 +160,16 @@ typedef struct TFdSeat {               /* a player of the free duel setup list, 
 
 typedef struct TFdDeck {               /* 0x80 */
     unsigned short *name;              /* +0x00 */
-    unsigned char pad04[0x7C - 0x04];
-    unsigned char b0 : 2;              /* +0x7C */
+    unsigned char u04[0x30];           /* +0x04 */
+    unsigned short deckname[0x18];     /* +0x34 */
+    unsigned char pad64[0x74 - 0x64];
+    unsigned short type;               /* +0x74 */
+    unsigned char u76;                 /* +0x76 */
+    unsigned char pad77;
+    int deck;                          /* +0x78 */
+    unsigned char dk : 2;              /* +0x7C deck kind (tfd_partner_by_type) */
     unsigned char kind : 3;
-    unsigned char b5 : 2;
+    unsigned char side : 2;
     unsigned char on : 1;
     unsigned char pad7d[3];
 } TFdDeck;
@@ -197,6 +204,19 @@ typedef struct TFdImpList {           /* 0x220 */
     TFdImp e[9];                       /* +0x04 */
 } TFdImpList;
 
+typedef struct TFdPacket {             /* a player entry sent to the other machines (local_record_set), 0x100 */
+    signed char kind;
+    unsigned char ver;
+    unsigned char b2;
+    unsigned char pad03;
+    unsigned short name[0x18];         /* +0x04 */
+    unsigned char pad34[4];
+    unsigned short w38, w3a, w3c, w3e, w40; /* +0x38 */
+    unsigned short pad42;
+    unsigned short name2[0x18];        /* +0x44 */
+    unsigned char pad74[0x100 - 0x74];
+} TFdPacket;
+
 typedef struct TFdList {               /* title.duel +0x08, 0xEA8 bytes cleared by tfd_clear */
     unsigned char n;                   /* +0x000 */
     unsigned char pad001[3];
@@ -207,10 +227,19 @@ typedef struct TFdList {               /* title.duel +0x08, 0xEA8 bytes cleared 
     unsigned char pad978[0xEA8 - 0x978];
 } TFdList;
 
+typedef struct TFdTail {               /* title.duel +0x1180 */
+    unsigned char pad000[8];
+    TExtList ext;                      /* +0x008 */
+    unsigned char pad06c[0xFF0 - 0x6C];
+    TDeckRec decks[4];                 /* +0xFF0 */
+} TFdTail;
+
 typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char pad000;
     unsigned char u001;                /* +0x001 */
-    unsigned char pad002[3];
+    unsigned char pad002[2];
+    unsigned char u004 : 4;            /* +0x004 */
+    unsigned char u004h : 4;
     unsigned char u005;                /* +0x005 */
     unsigned char pad006[2];
     TFdList list;                      /* +0x008 */
@@ -224,10 +253,8 @@ typedef struct TDuelCfg {              /* title +0x974 */
     unsigned char blink;               /* +0x117A counts 0..29 */
     unsigned char pad117b;
     unsigned short card;               /* +0x117C */
-    unsigned char pad117e[0x1188 - 0x117E];
-    TExtList ext;                      /* +0x1188 */
-    unsigned char pad11ac[0x2170 - 0x11AC];
-    TDeckRec decks[4];                 /* +0x2170 */
+    unsigned char pad117e[0x1180 - 0x117E];
+    TFdTail tail;                      /* +0x1180 */
 } TDuelCfg;
 
 typedef struct DeckFlags {             /* deck_cur_get_u16_0 */
