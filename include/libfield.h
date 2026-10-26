@@ -140,6 +140,47 @@ typedef struct CharmapPos {            /* BOOT charmap_lookup2 */
     unsigned char hi : 4;
 } CharmapPos;
 
+typedef struct FieldMob {              /* character with its loaded file, 0xA0 */
+    FieldChr c;
+    int active;                        /* +0x90 */
+    int loaded;                        /* +0x94 */
+    int *file;                         /* +0x98 */
+    int x9c;                           /* +0x9C */
+} FieldMob;
+
+typedef struct FieldNpc {              /* NPC walking a path, 0xF0 */
+    FieldMob m;
+    int xa0;
+    int xa4;
+    int xa8;
+    int xac;
+    int xb0;
+    int xb4;
+    int xb8;
+    int xbc;
+    int xc0;                           /* +0xC0 */
+    int turned;                        /* +0xC4 turned to the player while talking */
+    int saved_dir;                     /* +0xC8 */
+    int saved_anim;                    /* +0xCC */
+    int xd0;
+    int xd4;
+    int pad_d8[4];
+    int *path;                         /* +0xE8 */
+    int n_path;                        /* +0xEC */
+} FieldNpc;
+
+typedef struct FieldNpcs {             /* 0x08844DB0, 0x5020 */
+    int loading;                       /* +0x0000 */
+    int setting;                       /* +0x0004 */
+    int pad08[2];
+    FieldNpc npc[32];                  /* +0x0010 */
+    FieldMob mob[80];                  /* +0x1E10 */
+    int pending;                       /* +0x5010 */
+    int talking;                       /* +0x5014 */
+    int talk_id;                       /* +0x5018 */
+    int talk_dir;                      /* +0x501C */
+} FieldNpcs;
+
 typedef struct FieldMap {              /* fld_map_get() */
     int pad00[2];
     unsigned short w;                  /* +0x08 cells */
@@ -215,7 +256,8 @@ typedef struct FieldLight {            /* 0x08838044[bg][3] */
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */
-extern FieldChrGlb field_chr_glb;          /* 0x08844960 */
+extern FieldChrGlb field_chr_glb;
+extern FieldNpcs field_npcs;               /* 0x08844DB0 */          /* 0x08844960 */
 extern Vec3 field_dirs[8];                 /* 0x08834AD4 */
 
 extern FieldBu field_bu;                   /* 0x08844620 */
@@ -288,7 +330,17 @@ unsigned int *dl_enable(unsigned int *list, int state);
 unsigned int *dl_disable(unsigned int *list, int state);
 char *strstr(const char *s, const char *find);
 
+float vec3_dot(Vec3 *a, Vec3 *b);
+float fabsf_vfpu(float x);
+
 /* libfield, other files */
+void fld_chr_reset(FieldChr *c);
+void fld_chr_draw(FieldChr *c);
+float fld_vec3_len(Vec3 *v);
+int fld_dir_from_vec(Vec3 *v, int diag);
+void fld_dir_vec(Vec3 *out, int i);
+int fld_in_range(int x);
+void fld_pos_set(Vec3 *p, int cx, int cz);
 void *fld_alloc(unsigned int size);            /* 0x0880BEF0 */
 void fld_free(void *p);                        /* 0x0880BF00 */
 void fld_unload(int kind, int name);           /* 0x0880C390 */
