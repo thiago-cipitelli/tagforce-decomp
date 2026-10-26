@@ -2,7 +2,7 @@
 // @rodata 0x0882B1D0-0x0882B2D4
 // @asm 0x088195B4-0x088198EC
 // @asm 0x0881A34C-0x0881AF0C
-// @asm 0x0881B360-0x0881BA64
+// @data 0x0882F290-0x0882F370
 /* Free duel setup: the top of the ad hoc mode (own duelist, partner and the extra data step). */
 #include "libtitle.h"
 
@@ -28,6 +28,22 @@ int extdata_load(void *out, int *count);
 void func_08824DA8(void);
 void func_08824F3C(int type);
 int func_08825720(int type, int *dk, int *deck);
+int peer_count_get(void);
+int tfd_get_seat(int i);
+void *tpt_draw_frames(void *list, int mode);
+void *tpt_sprite_def(void *list, int i, short x, short y);
+void *tpartner_draw(void *list);
+void *tframe_cursor(void *list, unsigned int color, int x, int y, int w, int h);
+void *extdata_draw();
+void *tfd_show_duelinfo(void *list, int i, int x, int y, int w, int h);
+void *tfd_sprite_anim(void *list, int i, int x, int y, int w, int h);
+void *tfd_adhoc_pass_init(void *list, int n);
+void *func_08823BB4(void *list);
+void *func_08825BBC(void *list);
+
+typedef struct TRect {
+    int x, y, w, h;
+} TRect;
 
 #ifdef NON_MATCHING /* o terceiro bloco (parceiro do outro lado) troca registradores: a2/a3/t0 e a ordem do sw de deck */
 void tfd_adhoctop_init(void)
@@ -531,4 +547,108 @@ void tfd_adhoctop_icon2(void)
         }
         break;
     }
+}
+
+void *tfd_adhoctop_handler2(void *list)
+{
+    Title *t = &title;
+    TDuelCfg *d = &title.duel;
+    int i;
+    int icon;
+    int mode;
+    int seat;
+
+    if (t->step > 1) {
+        if (t->step < 0x22) {
+            list = title_ehf_draw(list, 10);
+            if (t->step >= 5) {
+                list = title_ehf_draw(list, 0xF);
+                list = title_screen_label(list);
+            }
+            list = title_ehf_draw(list, 0xC);
+            if (title_ehf_frame(0xC) == 0x7B)
+                se_play(0x628C);
+            else if (title_ehf_frame(0xC) == 0xAF)
+                se_play(0x628D);
+            if (t->step >= 11) {
+                list = tbox_header(list, tfd_show_duelinfo);
+                list = tbox_corner(list, tfd_sprite_anim);
+            }
+            if (t->step >= 11)
+                list = tpt_draw_frames(tfd_adhoc_pass_init(list, 2), 2);
+            if (t->step >= 7)
+                list = tpartner_draw(list);
+            if (t->step >= 0x1D)
+                list = title_ehf_draw(list, 0xB);
+            if (t->step == 11 && t->step2 == 0)
+                title.duel.list.seat[d->u001].kind = t->arg;
+            title.duel.list.seat[d->u001].st = t->step2;
+            if (t->step >= 11) {
+                for (i = title.duel.list.n - 1; i >= 0; i--) {
+                    TRect a[4] = { { 0x5A, 0x5F, 0x84, 0x17 }, { 0x5A, 0xC0, 0x84, 0x17 },
+                                   { 0x103, 0x5F, 0x84, 0x17 }, { 0x103, 0xC0, 0x84, 0x17 } };
+                    TRect b[5] = { { 0x5A, 0x77, 0x94, 0x17 }, { 0x5A, 0xD8, 0x94, 0x17 },
+                                   { 0xF3, 0x77, 0x94, 0x17 }, { 0xF3, 0xD8, 0x94, 0x17 },
+                                   { 0x147, 0xF2, 0x97, 0x17 } };
+                    TRect cur;
+
+                    if (d->u001 == i) {
+                        icon = title.duel.list.seat[i].kind;
+                        mode = t->step2;
+                    } else {
+                        mode = 0;
+                        seat = tfd_get_seat(i);
+                        if (peer_count_get() > 2)
+                            seat = tfd_get_seat(title.duel.list.deck[i].side);
+                        icon = tfd_adhoctop_icon(seat);
+                    }
+                    switch (mode) {
+                    case 0:
+                        list = tpt_sprite_def(list, i + 0xE, a[icon].x, a[icon].y - 9);
+                        break;
+                    case 1:
+                        if (t->u86c) {
+                            TRect *r = b + 4; /* b[4] copies through the integer registers */
+
+                            cur = *r;
+                        } else {
+                            switch (t->arg) {
+                            case 0:
+                                cur = a[tfd_adhoctop_icon(title.duel.list.deck[d->u001].side)];
+                                break;
+                            case 1:
+                                cur = b[tfd_adhoctop_icon(title.duel.list.deck[d->u001].side)];
+                                break;
+                            case 2:
+                                cur = a[tfd_adhoctop_icon(title.duel.list.deck[d->u004].side)];
+                                list = func_08823BB4(list);
+                                break;
+                            case 3:
+                                cur = b[tfd_adhoctop_icon(title.duel.list.deck[d->u004].side)];
+                                break;
+                            }
+                        }
+                        list = tframe_cursor(list, -1, cur.x, cur.y, cur.w, cur.h);
+                        break;
+                    }
+                }
+            }
+            if (t->step >= 11 && t->step < 0x22) {
+                int pos[4][2] = { { 0x11, 0xA8 }, { 0x11, 0x47 }, { 0x189, 0xA8 }, { 0x189, 0x47 } };
+                int off[4][2] = { { -14, 38 }, { -14, 38 }, { 50, 38 }, { 50, 38 } };
+                int ids[4] = { 0x6A, 0x6B, 0x6A, 0x6B };
+
+                for (i = 0; i < 4; i++) {
+                    if (d->ready[i].on)
+                        list = title_sprite(list, 1, ids[i], pos[i][0] + off[i][0], pos[i][1] + off[i][1]);
+                }
+            }
+        } else if (t->step < 0x2E) {
+            if (t->step >= 0x23 && t->step < 0x26)
+                list = extdata_draw();
+            else if (t->step > 0x26)
+                list = func_08825BBC(title_ehf_draw(list, 10));
+        }
+    }
+    return list;
 }
