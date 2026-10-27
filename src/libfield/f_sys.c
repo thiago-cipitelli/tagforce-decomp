@@ -64,11 +64,11 @@ void fmoney_add(int a, int b, int c);
 int fmoney_shown(void);
 void fmoney_open(void);
 void fmoney_blink(int a, int b);
-void func_08818724(void);
-void func_08818738(void);
-void func_08818740(void);
-void func_08818748(void);
-void func_0881876C(void);
+void fcam_init(void);
+void fcam_nop(void);
+void fcam_nop2(void);
+void fcam_update(void);
+void fcam_begin(void);
 void func_08818FFC(void);
 void func_08819010(void);
 void func_08819034(void);
@@ -151,7 +151,7 @@ void fld_sys_update(void)
         fmoney_update();
         fld_res_update();
         fmsg_update();
-        func_08818748();
+        fcam_update();
         func_0881903C();
         fld_bg_update();
         if (s->mode == 0)
@@ -188,7 +188,7 @@ int fld_sys_draw(void)
             dl = dl_select_layer(4, 0);
             fmsg_draw(&dl);
             dl_set_list(dl);
-            func_0881876C();
+            fcam_begin();
             func_0881927C();
             fld_bg_draw();
             fld_items_draw();
@@ -433,7 +433,7 @@ int fld_cmd_x18_done(void)
 
 void fld_sys_init_all(void)
 {
-    func_08818724();
+    fcam_init();
     func_0881C770();
     func_08818FFC();
     fld_bg_init();
@@ -458,7 +458,7 @@ void fld_sys_free_all(void)
     ftalk_nop();
     fld_bu_free_all();
     func_0881C7A8();
-    func_08818740();
+    fcam_nop2();
     func_088274EC();
     func_08829F94();
 }
@@ -467,7 +467,7 @@ void fld_sys_term_all(void)
 {
     int i;
 
-    func_08818738();
+    fcam_nop();
     func_0881C784();
     func_08819010();
     fld_bg_term();

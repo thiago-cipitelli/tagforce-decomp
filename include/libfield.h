@@ -623,6 +623,26 @@ typedef struct FieldMoney {            /* 0x08FD2280, 0x5C: the money counter of
 
 extern FieldMoney field_money;             /* 0x08FD2280 */
 
+typedef struct FieldShake {            /* 0x20 */
+    int forever;                       /* +0x00 */
+    int power;                         /* +0x04 0..3 */
+    int count;                         /* +0x08 */
+    int frames;                        /* +0x0C */
+    Vec4 off;                          /* +0x10 added to the eye and the target */
+} FieldShake;
+
+typedef struct FieldCam {              /* 0x08FD22E0, 0x80: camera and light of the field */
+    int shaking;                       /* +0x00 */
+    int x04;                           /* +0x04 */
+    int pad08[2];
+    FieldShake shake;                  /* +0x10 */
+    Vec4 light_dir;                    /* +0x30 view direction (row 3 of the camera) */
+    int light[15];                     /* +0x40 light_set data */
+    int mode;                          /* +0x7C 0 day, 1 evening, 2 night */
+} FieldCam;
+
+extern FieldCam field_cam;                 /* 0x08FD22E0 */
+
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */
