@@ -133,7 +133,8 @@ typedef struct FieldChr {              /* SD character on the map */
     int anim;                          /* +0x20 0 idle, 1 walk */
     int dir;                           /* +0x24 0..7 */
     int frame;                         /* +0x28 */
-    int pad2c[5];
+    Vec3 vel;                          /* +0x2C step of the last move */
+    int pad38[2];
     int shadow[16];                    /* +0x40 */
     int visible;                       /* +0x80 */
     int fx;                            /* +0x84 */
@@ -698,6 +699,18 @@ typedef struct FieldBm {               /* 0x08FD2360, 0x314: the campus map */
 } FieldBm;
 
 extern FieldBm field_bm;                   /* 0x08FD2360 */
+
+typedef struct FieldPartner {          /* 0x08FD2680, 0xB0: the partner walking behind the player */
+    int *file_a;                       /* +0x00 loaded model/sprite files */
+    int *file_b;                       /* +0x04 */
+    int active;                        /* +0x08 */
+    int pad0c;
+    FieldChr c;                        /* +0x10 */
+    Vec3 last;                         /* +0xA0 player position of the previous frame */
+    int padac;
+} FieldPartner;
+
+extern FieldPartner field_partner;
 
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */

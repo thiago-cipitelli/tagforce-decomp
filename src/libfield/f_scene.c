@@ -8,8 +8,8 @@
    scene GIM loaded with them. */
 #include "libfield.h"
 
-void func_0881BF08(int a, int b);
-void func_0881BFC8(void);
+void fpt_setup(int a, int b);
+void fpt_free(void);
 void fld_hud_hide(void);
 void fld_hud_move(int a, int b, int c);
 void func_0882623C(int a, int b, int c);
@@ -55,11 +55,11 @@ void fld_cmd_target(int *a)
     FieldScene *s = &field_scene;
 
     if (a[0] == -1) {
-        func_0881BFC8();
+        fpt_free();
         s->x08 = 0;
     } else {
         s->x08 = 1;
-        func_0881BF08(a[0], a[1]);
+        fpt_setup(a[0], a[1]);
     }
 }
 

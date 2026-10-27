@@ -84,8 +84,8 @@ void fld_hud_init(void);
 void fld_hud_free(void);
 void fld_hud_open(int a);
 void fld_hud_blink(int a, int b, int c);
-void func_0881BA90(void);
-void func_0881BAA4(void);
+void fpt_clear(void);
+void fpt_reset(void);
 void func_0881C770(void);
 void func_0881C784(void);
 void func_0881C7A8(void);
@@ -505,7 +505,7 @@ void fld_scene_init(void)
     fld_hud_init();
     func_08825F7C();
     fld_player_init();
-    func_0881BA90();
+    fpt_clear();
     fld_scene_tab_init();
 }
 
@@ -520,7 +520,7 @@ void fld_scene_free(void)
     fld_hud_free();
     func_08825F90();
     fld_player_reset();
-    func_0881BAA4();
+    fpt_reset();
     fld_scene_tab_free();
     func_0882A404();
 }

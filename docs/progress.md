@@ -53,7 +53,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 
 **libtitle**: todo o `.text` em C (restam 53 funções em asm).
 
-**libfield**: `0x0881BA90-0x0882BE80` (215 funções: menus, efeitos, sprites); `0x08804000-0x0881BA90` está em C.
+**libfield**: `0x0881C240-0x0882BE80` (204 funções: sombras, lista de desenho, menus, efeitos, sprites); `0x08804000-0x0881C240` está em C.
 
 **BOOT**: nenhum trecho sem C. Todo o `.text` está em arquivos `.c`; o que falta são as funções em `@asm` (C sob `NON_MATCHING`). Na parte do SDK compilada com GCC (libgu, newlib, libgcc, libvfpu, libccc, libfpu, libdeflt, libsas/libwave) as funções são `asm` do mwcc com C portável sob `#else`; ficam em `@asm` as que carregam dados por `lui`/`%lo`, que o assembler embutido não aceita (ver `docs/build.md`).
 
@@ -629,9 +629,9 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`dt_lesson.c`](../src/libdeck_tutorial/dt_lesson.c) | 0x0881A20C-0x0881C0E8 | 34 | 3 | cartas da lição, início do editor, interpretador do script (24 opcodes), janelas de mensagem/saída |
 | [`dt_text.c`](../src/libdeck_tutorial/dt_text.c) | 0x0881C0E8-0x0881D318 | 13 | 9 | cópia de tut_text.c |
 
-## libfield (25 arquivos, 364 funções batendo, 73 em asm)
+## libfield (26 arquivos, 373 funções batendo, 75 em asm)
 
-Faixa `0x08804000-0x0881BA90` coberta; de `0x0881BA90` a `0x0882BE80` ainda sem C.
+Faixa `0x08804000-0x0881C240` coberta; de `0x0881C240` a `0x0882BE80` ainda sem C.
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -660,3 +660,4 @@ Faixa `0x08804000-0x0881BA90` coberta; de `0x0881BA90` a `0x0882BE80` ainda sem 
 | [`f_money.c`](../src/libfield/f_money.c) | 0x08817AA4-0x08818724 | 17 | 1 | contador de dinheiro do HUD (field_money): ícone e valor entrando, quantia ganha ou gasta que aparece e voa até o contador, rolagem do valor com dígitos baixos aleatórios, sprites dos dígitos |
 | [`f_cam.c`](../src/libfield/f_cam.c) | 0x08818724-0x08818FFC | 18 | 0 | câmera, luz e estado do GE do campo (field_cam): câmera seguindo o jogador, luz da hora do dia, comando de tremor, quad de tela cheia |
 | [`f_bmap.c`](../src/libfield/f_bmap.c) | 0x08818FFC-0x0881BA90 | 25 | 6 | mapa do campus (field_bm): ilha com 14 lugares, cursor pelo d-pad ou pelo analógico (lugar mais próximo num cone de 45/60/75 graus), marcas das pessoas a encontrar, lista das salas da academia, salvar no mapa, fades; setup, abertura do comando, entrada, marcas, ícone e cursor em asm |
+| [`f_partner.c`](../src/libfield/f_partner.c) | 0x0881BA90-0x0881C240 | 9 | 2 | parceiro que anda atrás do jogador (field_partner): segue a posição do quadro anterior (velocidade dobrada correndo), desvia dos NPCs próximos, marca as células, começa na primeira célula andável em volta do jogador; update e posicionamento em asm |
