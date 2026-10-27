@@ -51,11 +51,11 @@ void fld_scene_term(void);
 void fld_scene_free(void);
 int fld_cmd_poll(int kind, void *arg);
 
-void func_08817218(void);
-void func_0881722C(void);
-void func_08817250(void);
-void func_08817258(void);
-void func_088173A4(void);
+void ftalk_clear(void);
+void ftalk_free(void);
+void ftalk_nop(void);
+void ftalk_update(void);
+void ftalk_draw(void);
 void func_08817AA4(int a, int b, int c, int d);
 void func_08817B5C(void);
 void func_08817B80(void);
@@ -160,7 +160,7 @@ void fld_sys_update(void)
         fld_npc_update();
         fld_scene_update();
         fld_bu_update();
-        func_08817258();
+        ftalk_update();
         func_088274F4();
         func_08829F9C();
         fld_sys_poll_all();
@@ -200,7 +200,7 @@ int fld_sys_draw(void)
             fld_bu_draw();
             fld_npc_draw();
             func_0881C904();
-            func_088173A4();
+            ftalk_draw();
             func_088275FC();
         }
     }
@@ -442,7 +442,7 @@ void fld_sys_init_all(void)
     fld_npc_init();
     fld_scene_init();
     fld_bu_init();
-    func_08817218();
+    ftalk_clear();
     func_088274B4();
     func_08829F5C();
 }
@@ -455,7 +455,7 @@ void fld_sys_free_all(void)
     fld_scene_free();
     fld_chr_free_all();
     fld_items_free();
-    func_08817250();
+    ftalk_nop();
     fld_bu_free_all();
     func_0881C7A8();
     func_08818740();
@@ -476,7 +476,7 @@ void fld_sys_term_all(void)
     fld_npc_term();
     fld_scene_term();
     fld_bu_term();
-    func_0881722C();
+    ftalk_free();
     func_088274C8();
     func_08829F70();
     for (i = 1; i < 9; i++)

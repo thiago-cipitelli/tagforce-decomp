@@ -555,6 +555,35 @@ int fmsg_active(void);
 int fmsg_waiting(void);
 int fmsg_moving(void);
 
+typedef struct FieldTalkMsg {          /* 0x10 */
+    int close;                         /* close the window when the text is done */
+    int closing;                       /* +0x04 */
+    int speaker;                       /* +0x08 slot talking (FieldCtx.speaker) */
+    float t;                           /* +0x0C window slide (R hides it) */
+} FieldTalkMsg;
+
+typedef struct FieldTalkChoice {       /* 0x138 */
+    MenuWidget w;                      /* the choice list */
+    unsigned short *texts[5];          /* +0x120 */
+    int result;                        /* +0x134 choice picked */
+} FieldTalkChoice;
+
+typedef struct FieldTalk {             /* 0x08FD212C, 0x154: the talk and choice commands */
+    int active;                        /* +0x000 */
+    int choosing;                      /* +0x004 */
+    int state;                         /* +0x008 0 none, 1 message, 2 choice */
+    FieldTalkMsg msg;                  /* +0x00C */
+    FieldTalkChoice ch;                /* +0x01C */
+} FieldTalk;
+
+typedef struct FieldTalkCmd {          /* argument of the talk command */
+    unsigned short *text;
+    int title;
+    int speaker;
+} FieldTalkCmd;
+
+extern FieldTalk field_talk;               /* 0x08FD212C */
+
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */
