@@ -133,10 +133,19 @@ typedef struct TExtRec {               /* a deck file of the extra data (ad hoc 
     RecipeData recipe;                 /* +0x100 */
 } TExtRec;
 
+typedef struct TDeckEnt {              /* a deck of the deck choice list, 6 */
+    unsigned short ok : 2;             /* deck_validate: 0 invalid, 1 ok, 2 marked */
+    unsigned short num : 10;           /* number shown */
+    unsigned short rest : 4;
+    unsigned short id;                 /* +0x02 recipe id / saved deck / file index */
+    unsigned char chara;               /* +0x04 owner of the recipe */
+    unsigned char pad05;
+} TDeckEnt;
+
 typedef struct TExtList {              /* extra data files read from the memory stick, title.duel +0x1188 */
     int type;                          /* +0x00 own character (tpt_get_ent) */
     int u04;                           /* +0x04 */
-    int dk;                            /* +0x08 deck kind picked (func_08825720) */
+    int dk;                            /* +0x08 deck kind picked (tdl_deck_input) */
     int deck;                          /* +0x0C deck picked */
     TExtRec *rec;                      /* +0x10 deck files (ad hoc top) */
     TExtCard *card;                    /* +0x14 cards (state 6) */
@@ -147,6 +156,16 @@ typedef struct TExtList {              /* extra data files read from the memory 
     int n;                             /* +0x1C files found */
     int loaded;                        /* +0x20 */
     unsigned short deckname[32];       /* +0x24 deck_name_copy_out */
+    TDeckEnt saved[51];                /* +0x064 own deck + 50 saved decks */
+    TDeckEnt recipe[351];              /* +0x196 recipes */
+    TDeckEnt file[256];                /* +0x9D0 deck files of the extra data */
+    unsigned short nrecipe;            /* +0xFD0 */
+    unsigned short pos[3];             /* +0xFD2 cursor by list */
+    unsigned short row[3];             /* +0xFD8 visible row by list */
+    unsigned char padfde[4];
+    unsigned short accel_keys;         /* +0xFE2 tpad_accel: keys held */
+    unsigned short accel_t;            /* +0xFE4 frames held */
+    unsigned short padfe6;
 } TExtList;
 
 typedef struct TFdSeat {               /* a player of the free duel setup list, 0x10 */
@@ -251,13 +270,13 @@ typedef struct TFdReady {
 } TFdReady;
 
 typedef struct TFdTail {               /* title.duel +0x1180 */
-    unsigned char pad000[2];
+    unsigned char u000;                /* +0x000 seats of the versus choice (2 or 6, tdl) */
+    unsigned char u001;                /* +0x001 sub-state the character/deck choice returns to */
     unsigned char u002;                /* +0x002 title.arg on leaving the duelist choice */
     unsigned char u003;                /* +0x003 title.duel.u000 (tfd_adhoctop_draw2) */
     unsigned char u004;                /* +0x004 ehf frame of layer 4 */
     unsigned char pad005[3];
     TExtList ext;                      /* +0x008 */
-    unsigned char pad06c[0xFF0 - 0x6C];
     TDeckRec decks[4];                 /* +0xFF0 */
 } TFdTail;
 
@@ -769,7 +788,7 @@ void title_sound_reset(int a);
 void title_screen_update(void);
 void text_update(void);
 void tname_update(void);
-void func_08821FB0(void);
+void tdl_update(void);
 void topt_update(void);
 void tfd_update(void);
 void tcfg_screen_update(void);
@@ -777,7 +796,7 @@ void tlang_update(void);
 void *title_screen_draw(void *list);
 void *text_draw(void *list);
 void *tname_draw(void *list);
-void *func_08823090(void *list);
+void *tdl_draw(void *list);
 void *topt_draw(void *list);
 void *tfd_config_draw_rect(void *list);
 void *tcfg_screen_draw(void *list);
@@ -811,7 +830,7 @@ void title_movie_enter(int state, int sub);
 
 void text_enter(); /* (short state): set_state calls it with the state still in a0 */
 void tname_enter(void);
-void func_08821D3C(void);
+void tdl_enter(); /* (short state, short sub): set_state calls it with them still in a0/a1 */
 
 void tfd_config_init();
 void tlang_enter(void);
@@ -827,7 +846,7 @@ void title_record_open(void);
 void tmsg_init(void *heap, int x, int w, int size, int a, int style);
 void tpanel_init(TPanel *p, void *heap);
 void tmsg_free(void);
-void func_088225A0(int a);
+void tdl_ext_free(int keep);
 void title_module_stop(void);
 void title_ehf_load(int id, int a, int b, int c);
 void title_menu_save_update(void);

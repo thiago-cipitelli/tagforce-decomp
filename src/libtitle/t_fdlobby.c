@@ -41,7 +41,7 @@ void inv_adjust_count(unsigned short id, int dir);
 void bgm_stop(int x);
 void *tfd_draw(void *list);
 void *tfd_cursor_sprite(void *list, int i, int x, int y, int w, int h);
-int func_0882527C(int id);
+int tdl_deck_default(int id);
 
 void *tfd_duelinfo_stub(void *list);
 void *tfd_duelinfo_update(void *list);

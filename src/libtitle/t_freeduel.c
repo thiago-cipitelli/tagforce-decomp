@@ -246,7 +246,7 @@ void tfd_update(void)
             case 21:
                 tpartner_free();
                 title_module_stop();
-                func_088225A0(0);
+                tdl_ext_free(0);
                 title_goto_fade(1, 9, 7);
                 t->sub = 22;
                 break;

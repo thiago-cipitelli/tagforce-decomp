@@ -24,9 +24,9 @@ void tfd_adhoctop_draw2(void);
 void extdata_open(void *heap);
 int extdata_scan(int kind, int *count);
 int extdata_load(void *out, int *count);
-void func_08824DA8(void);
-void func_08824F3C(int type);
-int func_08825720(int type, int *dk, int *deck);
+void tdl_decks_clear(void);
+void tdl_decks_build(int type);
+int tdl_deck_input(int type, int *dk, int *deck);
 int peer_count_get(void);
 int tfd_get_seat(int i);
 void *tpt_draw_frames(void *list, int mode);
@@ -37,8 +37,8 @@ void *extdata_draw();
 void *tfd_show_duelinfo(void *list, int i, int x, int y, int w, int h);
 void *tfd_sprite_anim(void *list, int i, int x, int y, int w, int h);
 void *tfd_adhoc_pass_init(void *list, int n);
-void *func_08823BB4(void *list);
-void *func_08825BBC(void *list);
+void *tdl_random_label(void *list);
+void *tdl_deck_draw(void *list);
 
 typedef struct TRect {
     int x, y, w, h;
@@ -288,7 +288,7 @@ void tfd_adhoctop_update(void)
     case 0x18:
     case 0x19:
         if (d->u005 == 0xF) {
-            func_088225A0(0);
+            tdl_ext_free(0);
             title_module_stop();
             title_goto_fade(1, 0x23, 0);
             t->step = 0x1E;
@@ -373,7 +373,7 @@ void tfd_adhoctop_draw(int step)
     if (ok) {
         switch (t->step) {
         case 0x22:
-            func_088225A0(0);
+            tdl_ext_free(0);
             extdata_open(t->heap);
             t->step = 0x23;
             break;
@@ -384,7 +384,7 @@ void tfd_adhoctop_draw(int step)
         case 0x24:
             if (e->n != 0) {
                 size = e->n * sizeof(TExtRec);
-                func_088225A0(0);
+                tdl_ext_free(0);
                 e->rec = heap_alloc(t->heap, size);
                 memset(e->rec, 0, size);
                 e->b0 = 1;
@@ -754,7 +754,7 @@ void tfd_adhoctop_draw2(void)
     TExtList *e = &q->ext;
     TDuelCfg *d = &title.duel;
 
-    func_08824DA8();
+    tdl_decks_clear();
     title.step2 = 0;
     title.frame = 0;
     title.u86c = 0;
@@ -783,7 +783,7 @@ void tfd_adhoctop_draw2(void)
         break;
     }
     title_ehf_load(4, 0, q->u004, q->u004);
-    func_08824F3C(e->type);
+    tdl_decks_build(e->type);
 }
 
 void tfd_adhoctop_icon2(void)
@@ -795,7 +795,7 @@ void tfd_adhoctop_icon2(void)
     int r;
     int i;
 
-    switch (func_08825720(e->type, &e->dk, &e->deck)) {
+    switch (tdl_deck_input(e->type, &e->dk, &e->deck)) {
     case -1:
         break;
     case -2:
@@ -889,7 +889,7 @@ void *tfd_adhoctop_handler2(void *list)
                                 break;
                             case 2:
                                 cur = a[tfd_adhoctop_icon(title.duel.list.deck[d->u004].side)];
-                                list = func_08823BB4(list);
+                                list = tdl_random_label(list);
                                 break;
                             case 3:
                                 cur = b[tfd_adhoctop_icon(title.duel.list.deck[d->u004].side)];
@@ -915,7 +915,7 @@ void *tfd_adhoctop_handler2(void *list)
             if (t->step >= 0x23 && t->step < 0x26)
                 list = extdata_draw();
             else if (t->step > 0x26)
-                list = func_08825BBC(title_ehf_draw(list, 10));
+                list = tdl_deck_draw(title_ehf_draw(list, 10));
         }
     }
     return list;

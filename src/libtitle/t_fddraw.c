@@ -37,7 +37,7 @@ void inv_adjust_count(unsigned short id, int dir);
 void bgm_stop(int x);
 void *tfd_draw(void *list);
 void *tfd_cursor_sprite(void *list, int i, int x, int y, int w, int h);
-int func_0882527C(int id);
+int tdl_deck_default(int id);
 
 void *tfd_duelinfo_stub(void *list);
 void *tfd_duelinfo_update(void *list);
@@ -552,7 +552,7 @@ void tfd_unload_modules(void)
         case 1:
             id = charalist_result_id();
             cos = charalist_result_costume();
-            deck = func_0882527C(id);
+            deck = tdl_deck_default(id);
             l->sel.u02 = cos;
             l->sel.type = id;
             if (id == 0x29)

@@ -1,11 +1,11 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-26 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-27 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 48,9% | 65,3% | 7025 / 11039 |
+| total | 49,5% | 65,9% | 7074 / 11039 |
 | BOOT | 63,0% | 79,9% | 1815 / 2208 |
 | libduel_eng | 61,7% | 81,2% | 2987 / 3429 |
 | libhtml_view | 100% | 100% | 16 / 16 |
@@ -24,7 +24,7 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-26 (
 | libdeck_swap | 61,4% | 84,8% | 156 / 204 |
 | libdeck_tutorial | 57,7% | 85,9% | 224 / 293 |
 | libshop | 55,9% | 78,2% | 186 / 223 |
-| libtitle | 64,6% | 77,0% | 333 / 434 |
+| libtitle | 75,4% | 89,7% | 382 / 434 |
 | libtutorial | 86,2% | 98,4% | 196 / 207 |
 | libfield | 17,8% | 20,0% | 266 / 652 |
 | libduel_draw, libstory | 0% | 0% | 0 / 2285 |
@@ -51,7 +51,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 0x088451E8-0x08846498     1 functions     4784 bytes
 ```
 
-**libtitle**: `0x08821D3C-0x0882647C` (52 funções, estado 12 e telas de configuração); o free duel `0x08813AC4-0x0881F02C` está todo em C.
+**libtitle**: todo o `.text` em C (restam 53 funções em asm).
 
 **libfield**: `0x08815FD8-0x0882BE80` (323 funções: janela de mensagens, câmera/luz, efeitos, sprites); `0x08804000-0x08815FD8` está em C.
 
@@ -485,7 +485,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`rv_menu.c`](../src/librecipe_viewer/rv_menu.c) | 0x08809274-0x0880A248 | 9 | 4 | cartas por linha, entrada sob o cursor, revelação, menus de confirmação/opções, teclado na tela |
 | [`rv_main.c`](../src/librecipe_viewer/rv_main.c) | 0x0880A248-0x0880A99C | 4 | 0 | entrada, init (listas, heap de 4 MB), update com resultado, liberação |
 
-## libtitle (28 arquivos, 332 funções batendo, 50 em asm)
+## libtitle (30 arquivos, 381 funções batendo, 53 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -516,6 +516,8 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`t_fdlobby.c`](../src/libtitle/t_fdlobby.c) | 0x0881BA64-0x0881E0CC | 28 | 4 | free duel: lobby da senha (cartas via libselect_card), info do duelo, entrada vs CPU, lista de opções |
 | [`t_fddraw.c`](../src/libtitle/t_fddraw.c) | 0x0881E0CC-0x0881F02C | 9 | 1 | free duel: títulos das caixas, ícones, escolha de personagem (libcharalist), mensagem de entrada |
 | [`t_partner.c`](../src/libtitle/t_partner.c) | 0x0881F02C-0x08821D3C | 22 | 17 | painel de parceiros/adversários (cópia do dmgr_partner.c com quatro funções a mais) |
+| [`t_duel.c`](../src/libtitle/t_duel.c) | 0x08821D3C-0x08824DA8 | 38 | 1 | duelo contra o computador (estado 12, item 1 do menu): regras (tag, troca de deck, LP, tempo), parceiro, adversários, personagem pela libcharalist |
+| [`t_deckpick.c`](../src/libtitle/t_deckpick.c) | 0x08824DA8-0x0882647C | 11 | 2 | escolha de deck das configurações de duelo (estado 12 e ad hoc): deck próprio e salvos, receitas, arquivos dos dados extras, linhas com dono e registro, repetição acelerada do cursor |
 | [`t_chr.c`](../src/libtitle/t_chr.c) | 0x0882647C-0x08826B8C | 4 | 1 | números com a fonte e com sprites de dígitos, retrato do personagem, tabela de rostos |
 
 ## libdeck (21 arquivos, 275 funções batendo, 53 em asm)

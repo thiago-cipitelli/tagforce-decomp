@@ -46,7 +46,7 @@ void *tfd_show_duelinfo(void *list, int i, int x, int y, int w, int h);
 void *tfd_sprite_anim(void *list, int i, int x, int y, int w, int h);
 void *tfd_cursor_sprite(void *list, int i, int x, int y, int w, int h);
 void *tframe_cursor(void *list, unsigned int color, int x, int y, int w, int h);
-void *func_08823248(void *list, MenuWidget *w, int x, int y, int cw, int ch);
+void *tdl_cursor(void *list, MenuWidget *w, int x, int y, int cw, int ch);
 
 void *tfd_draw(void *list)
 {
@@ -354,7 +354,7 @@ void *tfd_vscpu_draw(void *list)
 
     list = title_ehf_draw(list, 7);
     if (title.u86c == 0 && t->step >= 11)
-        w->draw_cursor = func_08823248;
+        w->draw_cursor = tdl_cursor;
     else
         w->draw_cursor = (MenuDrawCursorFn)tpanel_cursor;
     if (t->step >= 5) {

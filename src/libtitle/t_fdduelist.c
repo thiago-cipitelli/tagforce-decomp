@@ -21,9 +21,9 @@ void *tfd_show_duelinfo(void *list, int i, int x, int y, int w, int h);
 void *tfd_sprite_anim(void *list, int i, int x, int y, int w, int h);
 void tfd_adhoctop_draw(int step);
 void tfd_adhoctop_icon2(void);
-int func_088237D4(int a);
-int func_0882527C(int id);
-void *func_08825BBC(void *list);
+int tdl_partner_input(int a);
+int tdl_deck_default(int id);
+void *tdl_deck_draw(void *list);
 void tfd_duelist_draw(void);
 int tfd_duelist_enter_init(void);
 
@@ -179,7 +179,7 @@ void tfd_duelist_draw(void)
 
 int tfd_duelist_enter_init(void)
 {
-    return func_088237D4(0);
+    return tdl_partner_input(0);
 }
 
 void *tfd_duelist_draw2(void *list)
@@ -221,7 +221,7 @@ void *tfd_duelist_draw2(void *list)
     } else if (t->step >= 0x23 && t->step < 0x26) {
         list = extdata_draw();
     } else if (t->step > 0x26) {
-        list = func_08825BBC(title_ehf_draw(list, 10));
+        list = tdl_deck_draw(title_ehf_draw(list, 10));
     }
     return list;
 }
@@ -287,7 +287,7 @@ void tfd_duelist_sprite(int *id, int *costume, int *x, int *y)
         if (costume)
             *costume = charalist_result_costume();
         if (x)
-            *x = func_0882527C(*id);
+            *x = tdl_deck_default(*id);
         if (id && y) {
             if (*id == 1 || *id == 0x29)
                 *y = 0;
@@ -300,7 +300,7 @@ void tfd_duelist_sprite(int *id, int *costume, int *x, int *y)
         if (costume)
             *costume = 0;
         if (x)
-            *x = func_0882527C(*id);
+            *x = tdl_deck_default(*id);
         if (y)
             *y = 1;
     }

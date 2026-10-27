@@ -194,7 +194,7 @@ int title_set_state(int st, int sub)
         title_menu_enter(st, sub, 0);
         break;
     case 12:
-        func_08821D3C();
+        tdl_enter();
         break;
     case 13:
         topt_enter(st, sub);

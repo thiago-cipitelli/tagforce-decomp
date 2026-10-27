@@ -122,6 +122,6 @@ void title_exit_cb(void)
 {
     menu_free_items(&title.menu);
     tmsg_free();
-    func_088225A0(0);
+    tdl_ext_free(0);
     title_module_stop();
 }

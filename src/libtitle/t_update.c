@@ -66,7 +66,7 @@ int title_update(void)
         title_menu_update();
         break;
     case 12:
-        func_08821FB0();
+        tdl_update();
         break;
     case 13:
         topt_update();
@@ -365,7 +365,7 @@ void title_draw(void)
     case 11:
         break;
     case 12:
-        list = func_08823090(list);
+        list = tdl_draw(list);
         break;
     case 13:
         list = topt_draw(list);

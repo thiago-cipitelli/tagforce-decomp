@@ -59,7 +59,7 @@ void text_update(void)
     case 2:
         if (extdata_scan(0, &e->n) == 0)
             break;
-        func_088225A0(1);
+        tdl_ext_free(1);
         if (e->n != 0) {
             e->card = heap_alloc(t->heap, e->n * sizeof(TExtCard));
             e->b0 = 1;
@@ -125,7 +125,7 @@ void text_update(void)
         }
         break;
     case 9:
-        func_088225A0(1);
+        tdl_ext_free(1);
         t->arg = 6;
         title_set_state(9, 6);
         break;
