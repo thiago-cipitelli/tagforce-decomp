@@ -494,6 +494,67 @@ typedef struct FieldLight {            /* 0x08838044[bg][3] */
     int pad;
 } FieldLight;
 
+typedef struct FieldMsgLine {          /* a line of FieldMsg, 0x18 */
+    int x, y;                          /* +0x00 */
+    int shown;                         /* +0x08 width typed so far (pixels) */
+    int h;                             /* +0x0C */
+    int start;                         /* +0x10 first character */
+    int count;                         /* +0x14 characters on the line */
+} FieldMsgLine;
+
+typedef struct FieldMsg {              /* 0x08FD1FAC, 0x180: message window (libtitle's tmsg is a copy) */
+    int state;                         /* +0x000 0 off, 1 opening, 2 open, 3 closing */
+    float t;                           /* +0x004 slide 0..1 */
+    Menu menu;                         /* +0x008 */
+    MenuItemDef def;                   /* +0x054 */
+    void *heap;                        /* +0x0CC */
+    int x;                             /* +0x0D0 */
+    int w0;                            /* +0x0D4 */
+    int size;                          /* +0x0D8 font size */
+    int nlines;                        /* +0x0DC */
+    int w;                             /* +0x0E0 */
+    unsigned short *text;              /* +0x0E4 */
+    int speed;                         /* +0x0E8 text speed option */
+    int input;                         /* +0x0EC the player advances the text */
+    int style;                         /* +0x0F0 */
+    FieldMsgLine line[3];              /* +0x0F4 */
+    int cur;                           /* +0x13C line being typed */
+    int pos;                           /* +0x140 first character of the page */
+    int page;                          /* +0x144 */
+    int all;                           /* +0x148 the whole text is shown */
+    int done;                          /* +0x14C */
+    int more;                          /* +0x150 the page is full, more text follows */
+    int typed;                         /* +0x154 characters typed */
+    int wide;                          /* +0x158 */
+    void *cursor;                      /* +0x15C "next" cursor gim */
+    unsigned int blink;                /* +0x160 */
+    int lock;                          /* +0x164 */
+    Vec2 pos2;                         /* +0x168 window position */
+    Vec2 from;                         /* +0x170 */
+    Vec2 to;                           /* +0x178 */
+} FieldMsg;
+
+extern FieldMsg field_msg;                 /* 0x08FD1FAC */
+/* f_msg.c */
+void fmsg_init(void *heap, int x, int w, int size, int input, int style);
+void fmsg_reset(int x, int w, int size, int input, int style);
+void fmsg_free(void);
+int fmsg_update(void);
+void fmsg_draw(void **list);
+int fmsg_done(void);
+void fmsg_set_cursor(void *gim);
+MenuItemDef *fmsg_def(void);
+Vec2 *fmsg_pos(void);
+void fmsg_lock(int on);
+void fmsg_set_size(int size);
+void fmsg_set_input(int on);
+void fmsg_set_text(unsigned short *text, int title);
+void fmsg_open(void);
+void fmsg_close(void);
+int fmsg_active(void);
+int fmsg_waiting(void);
+int fmsg_moving(void);
+
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */

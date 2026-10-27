@@ -51,10 +51,6 @@ void fld_scene_term(void);
 void fld_scene_free(void);
 int fld_cmd_poll(int kind, void *arg);
 
-void func_08815FD8(void *heap, int a, int b, int c, int d, int e);
-void func_08816214(void);
-void func_088161D8(void);
-void func_0881654C(void **list);
 void func_08817218(void);
 void func_0881722C(void);
 void func_08817250(void);
@@ -143,7 +139,7 @@ void fld_sys_init(void)
         break;
     }
     func_08817AA4(500, a, 0x16C, b);
-    func_08815FD8(fld_heap_get(), 0x27, 400, 0xE, 1, 3);
+    fmsg_init(fld_heap_get(), 0x27, 400, 0xE, 1, 3);
 }
 #endif
 
@@ -154,7 +150,7 @@ void fld_sys_update(void)
     if (field_sys.active) {
         func_08817B80();
         fld_res_update();
-        func_08816214();
+        fmsg_update();
         func_08818748();
         func_0881903C();
         fld_bg_update();
@@ -190,7 +186,7 @@ int fld_sys_draw(void)
         }
         if (s->drawing) {
             dl = dl_select_layer(4, 0);
-            func_0881654C(&dl);
+            fmsg_draw(&dl);
             dl_set_list(dl);
             func_0881876C();
             func_0881927C();
@@ -226,7 +222,7 @@ int fld_sys_term(void)
         field_term2 = 1;
     }
     if (field_term3 == 0) {
-        func_088161D8();
+        fmsg_free();
         field_term3 = 1;
     }
     if (field_term4 == 0) {
@@ -348,8 +344,8 @@ void fld_cmd_close(void)
         break;
     }
     func_08817AA4(500, a, 0x16C, b);
-    func_088161D8();
-    func_08815FD8(fld_heap_get(), 0x27, 400, 0xE, 1, 3);
+    fmsg_free();
+    fmsg_init(fld_heap_get(), 0x27, 400, 0xE, 1, 3);
     fld_sys_term_all();
     s->active = 0;
     c = fld_ctx_get();

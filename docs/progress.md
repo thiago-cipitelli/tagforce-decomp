@@ -53,7 +53,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 
 **libtitle**: todo o `.text` em C (restam 53 funções em asm).
 
-**libfield**: `0x08815FD8-0x0882BE80` (323 funções: janela de mensagens, câmera/luz, efeitos, sprites); `0x08804000-0x08815FD8` está em C.
+**libfield**: `0x08817218-0x0882BE80` (296 funções: menus, câmera/luz, efeitos, sprites); `0x08804000-0x08817218` está em C.
 
 **BOOT**: nenhum trecho sem C. Todo o `.text` está em arquivos `.c`; o que falta são as funções em `@asm` (C sob `NON_MATCHING`). Na parte do SDK compilada com GCC (libgu, newlib, libgcc, libvfpu, libccc, libfpu, libdeflt, libsas/libwave) as funções são `asm` do mwcc com C portável sob `#else`; ficam em `@asm` as que carregam dados por `lui`/`%lo`, que o assembler embutido não aceita (ver `docs/build.md`).
 
@@ -629,7 +629,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`dt_lesson.c`](../src/libdeck_tutorial/dt_lesson.c) | 0x0881A20C-0x0881C0E8 | 34 | 3 | cartas da lição, início do editor, interpretador do script (24 opcodes), janelas de mensagem/saída |
 | [`dt_text.c`](../src/libdeck_tutorial/dt_text.c) | 0x0881C0E8-0x0881D318 | 13 | 9 | cópia de tut_text.c |
 
-## libfield (20 arquivos, 266 funções batendo, 63 em asm)
+## libfield (21 arquivos, 291 funções batendo, 65 em asm)
 
 Faixa `0x08804000-0x08815FD8` coberta; de `0x08815FD8` (janela de mensagens) a `0x0882BE80` ainda sem C.
 
@@ -655,3 +655,4 @@ Faixa `0x08804000-0x08815FD8` coberta; de `0x08815FD8` (janela de mensagens) a `
 | [`f_hud2.c`](../src/libfield/f_hud2.c) | 0x08812FBC-0x08813308 | 6 | 0 | nome da sala e relógio deslizando, despacho do desenho do relógio |
 | [`f_hud3.c`](../src/libfield/f_hud3.c) | 0x08813308-0x08814D94 | 13 | 9 | partes do HUD deslizando (dia, data, ícone que voa, painel, caixa de mensagem); desenhos em asm |
 | [`f_digits.c`](../src/libfield/f_digits.c) | 0x08814D94-0x08815FD8 | 4 | 3 | dígitos em sprite, ícones das partes do dia, ponteiros do relógio |
+| [`f_msg.c`](../src/libfield/f_msg.c) | 0x08815FD8-0x08817218 | 25 | 2 | janela de mensagens (field_msg; a tmsg da libtitle é uma cópia reduzida): moldura que entra e sai, até três linhas na velocidade das opções, páginas, cursor de "próximo", avanço e pulo pelo jogador |
