@@ -56,14 +56,14 @@ void ftalk_free(void);
 void ftalk_nop(void);
 void ftalk_update(void);
 void ftalk_draw(void);
-void func_08817AA4(int a, int b, int c, int d);
-void func_08817B5C(void);
-void func_08817B80(void);
-void *func_08817BA4(void *list);
-void func_08817C8C(int a, int b, int c);
-int func_08817DA0(void);
-void func_08817DB4(void);
-void func_08817DC4(int a, int b);
+void fmoney_init(int a, int b, int c, int d);
+void fmoney_free(void);
+void fmoney_update(void);
+void *fmoney_draw(void *list);
+void fmoney_add(int a, int b, int c);
+int fmoney_shown(void);
+void fmoney_open(void);
+void fmoney_blink(int a, int b);
 void func_08818724(void);
 void func_08818738(void);
 void func_08818740(void);
@@ -138,7 +138,7 @@ void fld_sys_init(void)
         b -= 0x10;
         break;
     }
-    func_08817AA4(500, a, 0x16C, b);
+    fmoney_init(500, a, 0x16C, b);
     fmsg_init(fld_heap_get(), 0x27, 400, 0xE, 1, 3);
 }
 #endif
@@ -148,7 +148,7 @@ void fld_sys_update(void)
     FieldSys *s = &field_sys;
 
     if (field_sys.active) {
-        func_08817B80();
+        fmoney_update();
         fld_res_update();
         fmsg_update();
         func_08818748();
@@ -193,7 +193,7 @@ int fld_sys_draw(void)
             fld_bg_draw();
             fld_items_draw();
             dl = dl_select_layer(3, 0);
-            dl = func_08817BA4(dl);
+            dl = fmoney_draw(dl);
             dl_set_list(dl);
             fld_scene_draw();
             func_0882A068();
@@ -218,7 +218,7 @@ int fld_sys_term(void)
         field_term1 = 1;
     }
     if (field_term2 == 0) {
-        func_08817B5C();
+        fmoney_free();
         field_term2 = 1;
     }
     if (field_term3 == 0) {
@@ -312,7 +312,7 @@ void fld_cmd_open(int *a)
         break;
     }
     fld_hud_open(m);
-    func_08817DB4();
+    fmoney_open();
     c = fld_ctx_get();
     c->se_on = 1;
     c->pad10 = 1;
@@ -333,7 +333,7 @@ void fld_cmd_close(void)
     FieldCtx *c;
 
     field_sys.x0c = 1;
-    func_08817B5C();
+    fmoney_free();
     a = 0x39;
     b = 0x39;
     switch (fld_day_part()) {
@@ -343,7 +343,7 @@ void fld_cmd_close(void)
         b -= 0x10;
         break;
     }
-    func_08817AA4(500, a, 0x16C, b);
+    fmoney_init(500, a, 0x16C, b);
     fmsg_free();
     fmsg_init(fld_heap_get(), 0x27, 400, 0xE, 1, 3);
     fld_sys_term_all();
@@ -382,7 +382,7 @@ int fld_cmd_fade_done(void)
 
 void fld_cmd_x14(int *a)
 {
-    func_08817C8C(*a, 200, 100);
+    fmoney_add(*a, 200, 100);
     field_sys.x14 = 1;
 }
 
@@ -397,7 +397,7 @@ void fld_cmd_x18(int *a)
     case -1:
     default:
         fld_hud_blink(-1, 0, 0);
-        func_08817DC4(-1, 0);
+        fmoney_blink(-1, 0);
         break;
     case 0:
         fld_hud_blink(10, 5, 0);
@@ -421,7 +421,7 @@ void fld_cmd_x18(int *a)
         fld_hud_blink(10, 5, 6);
         break;
     case 5:
-        func_08817DC4(10, 5);
+        fmoney_blink(10, 5);
         break;
     }
 }
@@ -495,7 +495,7 @@ void fld_sys_poll_all(void)
         s->x08 = 0;
     if (func_08819634())
         s->x04 = 0;
-    if (func_08817DA0())
+    if (fmoney_shown())
         s->x14 = 0;
 }
 

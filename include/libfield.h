@@ -584,6 +584,45 @@ typedef struct FieldTalkCmd {          /* argument of the talk command */
 
 extern FieldTalk field_talk;               /* 0x08FD212C */
 
+typedef struct FieldSpr {              /* a sprite of a texture */
+    short u, v, w, h;
+} FieldSpr;
+
+typedef struct FieldOff {
+    int x, y;
+} FieldOff;
+
+typedef struct FieldMoneySlide {       /* 0xC */
+    Vec2 pos;
+    float t;
+} FieldMoneySlide;
+
+typedef struct FieldMoneyPop {         /* the amount added, 0x10 */
+    Vec2 pos;
+    float t;                           /* +0x08 */
+    float scale;                       /* +0x0C */
+} FieldMoneyPop;
+
+typedef struct FieldMoney {            /* 0x08FD2280, 0x5C: the money counter of the HUD */
+    int wait;                          /* +0x00 */
+    int state;                         /* +0x04 0 off, 1 sliding in, 2 shown, 3 amount shown, 4 amount flies, 5 counting */
+    int shown;                         /* +0x08 */
+    int target;                        /* +0x0C */
+    int delta;                         /* +0x10 */
+    int step;                          /* +0x14 per frame while counting */
+    Vec2 from;                         /* +0x18 */
+    Vec2 to;                           /* +0x20 */
+    Vec2 dfrom;                        /* +0x28 where the amount appears */
+    int blink_on;                      /* +0x30 */
+    int period;                        /* +0x34 */
+    int duty;                          /* +0x38 */
+    void *gim;                         /* +0x3C */
+    FieldMoneySlide slide;             /* +0x40 */
+    FieldMoneyPop pop;                 /* +0x4C */
+} FieldMoney;
+
+extern FieldMoney field_money;             /* 0x08FD2280 */
+
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */

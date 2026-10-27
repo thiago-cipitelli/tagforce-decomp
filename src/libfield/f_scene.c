@@ -13,7 +13,7 @@ void func_0881BFC8(void);
 void fld_hud_hide(void);
 void fld_hud_move(int a, int b, int c);
 void func_0882623C(int a, int b, int c);
-void func_08817C80(void *gim);
+void fmoney_set_gim(void *gim);
 void func_08826074(void);
 void func_0881EDC8(void *heap, int a, int b);
 void fld_scene_gim_loaded(int *file, void *arg);
@@ -172,7 +172,7 @@ void fld_scene_gim_loaded(int *file, void *arg)
     field_scene.file = file;
     if (file) {
         g = fld_gim_get(0);
-        func_08817C80(fld_gim_get(2));
+        fmoney_set_gim(fld_gim_get(2));
         fmsg_set_cursor(g);
         func_08826074();
         if (s->story.w[9] == 1) {
