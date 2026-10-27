@@ -69,13 +69,13 @@ void fcam_nop(void);
 void fcam_nop2(void);
 void fcam_update(void);
 void fcam_begin(void);
-void func_08818FFC(void);
-void func_08819010(void);
-void func_08819034(void);
-void func_0881903C(void);
-void func_0881927C(void);
-void func_08819424(void);
-int func_08819634(void);
+void fbm_clear(void);
+void fbm_free(void);
+void fbm_nop(void);
+void fbm_update(void);
+void fbm_draw(void);
+void fbm_setup(FieldBmCmd *c);
+int fbm_ready(void);
 void fld_scene_update(void);
 void fld_scene_draw(void);
 void fld_scene_tab_init(void);
@@ -152,7 +152,7 @@ void fld_sys_update(void)
         fld_res_update();
         fmsg_update();
         fcam_update();
-        func_0881903C();
+        fbm_update();
         fld_bg_update();
         if (s->mode == 0)
             func_0882AB24();
@@ -189,7 +189,7 @@ int fld_sys_draw(void)
             fmsg_draw(&dl);
             dl_set_list(dl);
             fcam_begin();
-            func_0881927C();
+            fbm_draw();
             fld_bg_draw();
             fld_items_draw();
             dl = dl_select_layer(3, 0);
@@ -280,10 +280,10 @@ int fld_cmd_mode_done(void)
     return !field_sys.x00;
 }
 
-void fld_cmd_story(void)
+void fld_cmd_story(FieldBmCmd *c)
 {
     field_sys.x04 = 1;
-    func_08819424();
+    fbm_setup(c);
     field_sys.mode = 1;
 }
 
@@ -435,7 +435,7 @@ void fld_sys_init_all(void)
 {
     fcam_init();
     func_0881C770();
-    func_08818FFC();
+    fbm_clear();
     fld_bg_init();
     fld_items_init();
     fld_chr_init();
@@ -449,7 +449,7 @@ void fld_sys_init_all(void)
 
 void fld_sys_free_all(void)
 {
-    func_08819034();
+    fbm_nop();
     fld_bg_free();
     fld_npc_free();
     fld_scene_free();
@@ -469,7 +469,7 @@ void fld_sys_term_all(void)
 
     fcam_nop();
     func_0881C784();
-    func_08819010();
+    fbm_free();
     fld_bg_term();
     fld_items_term();
     fld_chr_term();
@@ -493,7 +493,7 @@ void fld_sys_poll_all(void)
 
     if (func_08827810())
         s->x08 = 0;
-    if (func_08819634())
+    if (fbm_ready())
         s->x04 = 0;
     if (fmoney_shown())
         s->x14 = 0;

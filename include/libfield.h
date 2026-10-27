@@ -643,6 +643,62 @@ typedef struct FieldCam {              /* 0x08FD22E0, 0x80: camera and light of 
 
 extern FieldCam field_cam;                 /* 0x08FD22E0 */
 
+typedef struct FieldBmCmd {            /* argument of the campus map command, 0x20 */
+    int a;
+    int b;
+    int home;                          /* +0x08 place id the player is at */
+    int *people;                       /* +0x0C place ids with someone to meet */
+    int n_people;                      /* +0x10 */
+    int alt;                           /* +0x14 */
+    void (*on_save)(void);             /* +0x18 */
+    void (*on_saved)(int ok);          /* +0x1C */
+} FieldBmCmd;
+
+typedef struct FieldBmFade {           /* 0x1C */
+    int on;
+    int out;                           /* +0x04 */
+    unsigned int color;                /* +0x08 */
+    unsigned int cur;                  /* +0x0C */
+    unsigned int t;                    /* +0x10 */
+    unsigned int len;                  /* +0x14 */
+    int layer;                         /* +0x18 3 under the menus, 4 over them */
+} FieldBmFade;
+
+typedef struct FieldBm {               /* 0x08FD2360, 0x314: the campus map */
+    int active;                        /* +0x000 */
+    int res[2];                        /* +0x004 result: 0 a place / 1 the home place, place id */
+    int *pack;                         /* +0x00C */
+    void *island;                      /* +0x010 bm_island.gim */
+    void *parts;                       /* +0x014 bm_parts.gim */
+    void *whole;                       /* +0x018 bm_efct_whole.ehf */
+    void *efct_m;                      /* +0x01C */
+    void *arrow[4];                    /* +0x020 bm_arrow11..14.ehf */
+    FieldBmCmd cmd;                    /* +0x030 */
+    int loaded;                        /* +0x050 */
+    int state;                         /* +0x054 */
+    Menu menu;                         /* +0x058 */
+    MenuItemDef item;                  /* +0x0A4 place name window */
+    int slide;                         /* +0x11C */
+    float slide_t;                     /* +0x120 */
+    float move_t;                      /* +0x124 */
+    int cur;                           /* +0x128 */
+    int prev;                          /* +0x12C */
+    int home;                          /* +0x130 */
+    int sub;                           /* +0x134 */
+    MenuWidget w;                      /* +0x138 the rooms of the academy */
+    int dest;                          /* +0x258 */
+    unsigned int marks[14];            /* +0x25C people at each place */
+    unsigned int sub_marks[5];         /* +0x294 */
+    unsigned short people[30];         /* +0x2A8 */
+    int n_people;                      /* +0x2E4 */
+    unsigned int blocked;              /* +0x2E8 */
+    int pad2ec[2];
+    int alt;                           /* +0x2F4 */
+    FieldBmFade fade;                  /* +0x2F8 */
+} FieldBm;
+
+extern FieldBm field_bm;                   /* 0x08FD2360 */
+
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */
