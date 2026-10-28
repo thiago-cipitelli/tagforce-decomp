@@ -1,11 +1,11 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-27 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-28 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 49,5% | 65,9% | 7074 / 11039 |
+| total | 51,6% | 68,9% | 7359 / 11039 |
 | BOOT | 63,0% | 79,9% | 1815 / 2208 |
 | libduel_eng | 61,7% | 81,2% | 2987 / 3429 |
 | libhtml_view | 100% | 100% | 16 / 16 |
@@ -26,7 +26,7 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-27 (
 | libshop | 55,9% | 78,2% | 186 / 223 |
 | libtitle | 75,4% | 89,7% | 382 / 434 |
 | libtutorial | 86,2% | 98,4% | 196 / 207 |
-| libfield | 17,8% | 20,0% | 266 / 652 |
+| libfield | 56,9% | 73,4% | 551 / 652 |
 | libduel_draw, libstory | 0% | 0% | 0 / 2285 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
@@ -629,9 +629,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`dt_lesson.c`](../src/libdeck_tutorial/dt_lesson.c) | 0x0881A20C-0x0881C0E8 | 34 | 3 | cartas da lição, início do editor, interpretador do script (24 opcodes), janelas de mensagem/saída |
 | [`dt_text.c`](../src/libdeck_tutorial/dt_text.c) | 0x0881C0E8-0x0881D318 | 13 | 9 | cópia de tut_text.c |
 
-## libfield (26 arquivos, 373 funções batendo, 75 em asm)
-
-Faixa `0x08804000-0x0881C240` coberta; de `0x0881C240` a `0x0882BE80` ainda sem C.
+## libfield (44 arquivos, 556 funções batendo, 91 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -651,9 +649,9 @@ Faixa `0x08804000-0x0881C240` coberta; de `0x0881C240` a `0x0882BE80` ainda sem 
 | [`f_item.c`](../src/libfield/f_item.c) | 0x0880F228-0x0880FBB4 | 21 | 0 | efeitos sonoros do campo e objetos nas células (colocar, sombra, pegar, desenho) |
 | [`f_sys.c`](../src/libfield/f_sys.c) | 0x0880FBB4-0x08810814 | 25 | 2 | sistema do campo (update, desenho, init/free/term dos subsistemas) e comandos de script pela tabela de comandos |
 | [`f_scene.c`](../src/libfield/f_scene.c) | 0x08810814-0x08811BE0 | 20 | 4 | comandos de cena: história, posição do jogador, alvo da câmera, salvar posições, portas, esperas, GIM da cena |
-| [`f_hud.c`](../src/libfield/f_hud.c) | 0x08811BE0-0x08812FBC | 18 | 6 | HUD: janela do nome da sala, ícone do evento da célula, piscar, deslizar, textos dos menus |
+| [`f_hud.c`](../src/libfield/f_hud.c) | 0x08811BE0-0x08812FBC | 18 | 2 | HUD: janela do nome da sala, ícone do evento da célula, piscar, deslizar, textos dos menus |
 | [`f_hud2.c`](../src/libfield/f_hud2.c) | 0x08812FBC-0x08813308 | 6 | 0 | nome da sala e relógio deslizando, despacho do desenho do relógio |
-| [`f_hud3.c`](../src/libfield/f_hud3.c) | 0x08813308-0x08814D94 | 13 | 9 | partes do HUD deslizando (dia, data, ícone que voa, painel, caixa de mensagem); desenhos em asm |
+| [`f_hud3.c`](../src/libfield/f_hud3.c) | 0x08813308-0x08814D94 | 13 | 8 | partes do HUD deslizando (dia, data, ícone que voa, painel, caixa de mensagem); desenhos em asm |
 | [`f_digits.c`](../src/libfield/f_digits.c) | 0x08814D94-0x08815FD8 | 4 | 3 | dígitos em sprite, ícones das partes do dia, ponteiros do relógio |
 | [`f_msg.c`](../src/libfield/f_msg.c) | 0x08815FD8-0x08817218 | 25 | 2 | janela de mensagens (field_msg; a tmsg da libtitle é uma cópia reduzida): moldura que entra e sai, até três linhas na velocidade das opções, páginas, cursor de "próximo", avanço e pulo pelo jogador |
 | [`f_talk.c`](../src/libfield/f_talk.c) | 0x08817218-0x08817AA4 | 13 | 1 | comandos de fala e escolha (field_talk): fala de um slot na janela de mensagens (fechando no fim), lista numerada de escolhas centrada, R esconde a janela |
@@ -661,3 +659,22 @@ Faixa `0x08804000-0x0881C240` coberta; de `0x0881C240` a `0x0882BE80` ainda sem 
 | [`f_cam.c`](../src/libfield/f_cam.c) | 0x08818724-0x08818FFC | 18 | 0 | câmera, luz e estado do GE do campo (field_cam): câmera seguindo o jogador, luz da hora do dia, comando de tremor, quad de tela cheia |
 | [`f_bmap.c`](../src/libfield/f_bmap.c) | 0x08818FFC-0x0881BA90 | 25 | 6 | mapa do campus (field_bm): ilha com 14 lugares, cursor pelo d-pad ou pelo analógico (lugar mais próximo num cone de 45/60/75 graus), marcas das pessoas a encontrar, lista das salas da academia, salvar no mapa, fades; setup, abertura do comando, entrada, marcas, ícone e cursor em asm |
 | [`f_partner.c`](../src/libfield/f_partner.c) | 0x0881BA90-0x0881C240 | 9 | 2 | parceiro que anda atrás do jogador (field_partner): segue a posição do quadro anterior (velocidade dobrada correndo), desvia dos NPCs próximos, marca as células, começa na primeira célula andável em volta do jogador; update e posicionamento em asm |
+| [`f_shadow.c`](../src/libfield/f_shadow.c) | 0x0881C240-0x0881CE68 | 14 | 1 | lista de desenho do campo (field_draw) ordenada por profundidade, sombras em stencil (cilindro de 12 lados iluminado por field_shadow) e atributos das células da sala (fld_map_attr/fld_cell_mark) |
+| [`f_bag.c`](../src/libfield/f_bag.c) | 0x0881CE68-0x0881EDC8 | 26 | 2 | janela da bolsa (field_bag): abas de itens e cartas trocadas com L/R, ajuda da entrada sob o cursor na janela de mensagem, menu de escolher/descartar carta |
+| [`f_cal.c`](../src/libfield/f_cal.c) | 0x0881EDC8-0x0881FFEC | 10 | 1 | PDA (field_cal, no heap): abertura, deslize da página, estados, moldura, linhas, título, caixa de nota e abas |
+| [`f_pdapage.c`](../src/libfield/f_pdapage.c) | 0x0881FFEC-0x08822898 | 8 | 5 | páginas do PDA: status do jogador (dias, duelos V/D/E, aproveitamento, cartas), opções, títulos das páginas, calendário do mês, lista de e-mails e e-mail aberto; moldura 9-slice, cursor, medidor e número alinhado à direita |
+| [`f_pdaparts.c`](../src/libfield/f_pdaparts.c) | 0x08822898-0x08824028 | 8 | 2 | peças das páginas do PDA: célula e marca do calendário, texto da data (ja/en), seta e barra de rolagem, item e cabeçalho de e-mail, barra de progresso, máscara do texto selecionado, entrada da barra de páginas |
+| [`f_pdamenu.c`](../src/libfield/f_pdamenu.c) | 0x08824028-0x08825F7C | 19 | 3 | lógica das páginas do PDA: opções (cfg/volumes), escolha de duas opções, registro de eventos e leitor com rolagem e voz, calendário, arquivos do pdapack (capa, event_name, option_msg_%c) e capa 3D |
+| [`f_get.c`](../src/libfield/f_get.c) | 0x08825F7C-0x08826BB0 | 15 | 0 | mensagem 'você obteve': item com ícone, ou carta girando em 3D (face renderizada na VRAM por hook do modelo) que abre o visualizador de cartas |
+| [`f_fx.c`](../src/libfield/f_fx.c) | 0x08826BB0-0x088274B4 | 10 | 0 | balões de emoção sobre os personagens (pool de 32), ícone animado ou sprite do chamador, de frente para a câmera |
+| [`f_date.c`](../src/libfield/f_date.c) | 0x088274B4-0x08827C44 | 9 | 1 | faixa da data do novo dia (JP: mês/dia (sem); US: 3rd mês (sem)) com contorno, segunda linha opcional e fade |
+| [`f_clock.c`](../src/libfield/f_clock.c) | 0x08827C44-0x08827FE4 | 3 | 1 | início do menu da hora (field_hour_menu): abertura, update, desenho, resultado |
+| [`f_hour.c`](../src/libfield/f_hour.c) | 0x08827FE4-0x088290BC | 14 | 3 | menu da hora até a qual esperar: janela de título, lista com texto de ajuda e seletor de hora em quartos de hora até 23:45 |
+| [`f_egg.c`](../src/libfield/f_egg.c) | 0x088290BC-0x08829F5C | 14 | 0 | sorteio do ovo dourado: itens girando sobre o jogador até apertar um botão; o ovo dourado mostra o modelo goldegg_pan e o efeito Effect_04 |
+| [`f_pict.c`](../src/libfield/f_pict.c) | 0x08829F5C-0x0882A3A8 | 9 | 0 | imagem em tela cheia dos comandos de cena, com fade de 15 frames; o id -2 faz fade de tela preta |
+| [`f_choice.c`](../src/libfield/f_choice.c) | 0x0882A3A8-0x0882A918 | 7 | 1 | menu de cinco escolhas (textos 0x2B..0x2F); devolve 1..5, ou 0 se cancelado |
+| [`f_amb.c`](../src/libfield/f_amb.c) | 0x0882A918-0x0882ABD4 | 3 | 0 | som ambiente por sala, mais o volume da fonte da sala 0x1D pela distância do jogador |
+| [`f_face.c`](../src/libfield/f_face.c) | 0x0882ABD4-0x0882B238 | 6 | 1 | rostos EHF animados do tutorial (body/mouth de tutorial/face/bu_xxx.ehp) com piscar e boca falando |
+| [`f_mark.c`](../src/libfield/f_mark.c) | 0x0882B238-0x0882B7C8 | 3 | 0 | marcador no stencil: prisma sobre o ponto alvo e cor pulsante na tela onde o stencil está marcado |
+| [`f_dlg.c`](../src/libfield/f_dlg.c) | 0x0882B7C8-0x0882BE80 | 5 | 0 | diálogo sim/não (fld_dlg_*), escolha do botão de face e desenho do painel de botões |
+
