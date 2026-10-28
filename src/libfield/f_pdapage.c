@@ -3,7 +3,6 @@
 // @asm 0x08820BD0-0x088213DC
 // @asm 0x088213DC-0x088216B0
 // @asm 0x088216B0-0x08821D24
-// @asm 0x088220D8-0x088223AC
 // @asm 0x0882244C-0x08822690
 // @data 0x0883D44C-0x0883D504
 /* The pages of the PDA: the player's status (days, duels won/lost/drawn, win rate, cards), the
@@ -37,7 +36,7 @@ unsigned short pda_wday_names_en[8] = { 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56
 #define PDA_XY(x, y) ((x) & 0xFFFF | ((y) & 0xFFFF) << 16)   /* packed position or uv */
 
 /* status page: days played, duel record and win rate, and the card count when the PDA has one */
-#ifdef NON_MATCHING /* regalloc */
+#ifdef NON_MATCHING /* função grande, não iterada: rebase de y e alocação de registradores */
 void *pda_draw_status(void *list, int x, int y)
 {
     unsigned short dot[2];
@@ -220,7 +219,7 @@ unsigned int pda_mail_label_width(void)
 }
 
 /* options page: nine rows, on/off switches, the speed and volume values and the three gauges */
-#ifdef NON_MATCHING /* regalloc */
+#ifdef NON_MATCHING /* função grande, não iterada: alocação de registradores */
 void *pda_draw_options(void *list, int x, int y)
 {
     void *gim = field_pda->gim;
@@ -322,7 +321,7 @@ void *pda_draw_options(void *list, int x, int y)
 #endif
 
 /* the page buttons; n < 4: the buttons slide in (n = frame), else the cursor is on the page */
-#ifdef NON_MATCHING /* regalloc */
+#ifdef NON_MATCHING /* variáveis de indução do laço (i*2 mantido à parte no original); ~120 palavras */
 void *pda_draw_tabs(void *list, int x, int y, int n)
 {
     unsigned short *title = 0;
@@ -376,7 +375,7 @@ void *pda_draw_tabs(void *list, int x, int y, int n)
 #endif
 
 /* calendar of the month shown: weekday header, the days with their marks, and the date of the cursor */
-#ifdef NON_MATCHING /* regalloc */
+#ifdef NON_MATCHING /* função grande, não iterada: alocação de registradores */
 void *pda_draw_calendar(void *list, int x, int y)
 {
     unsigned short date[512];
@@ -543,15 +542,14 @@ void *pda_draw_mail(void *list, int x0, int y0)
 }
 
 /* a page button: pos and uv pack x | y << 16, alpha 0..255, title 0 = none */
-#ifdef NON_MATCHING /* regalloc */
 void *pda_draw_tab(void *list, int pos, int uv, unsigned char alpha, unsigned short *title, int sel, int blink)
 {
-    int iu = uv & 0xFFFF;
-    void *gim = field_pda->gim;
     int x = pos & 0xFFFF;
+    int iu = uv & 0xFFFF;
     int y = pos >> 16 & 0xFFFF;
-    int iv = uv >> 16 & 0xFFFF;
+    void *gim = field_pda->gim;
     int frame = 0;
+    int iv = uv >> 16 & 0xFFFF;
     int u;
     unsigned int color;
     int h;
@@ -581,16 +579,15 @@ void *pda_draw_tab(void *list, int pos, int uv, unsigned char alpha, unsigned sh
         if (sel)
             font_set_color(color);
         else
-            font_set_color(alpha << 24 | 0x492B02);
-        h = 0x1E - (font_line_height() >> 6);
-        font_draw_text((x + 0x2D) << 6, (y + h / 2) << 6, (480 - (x + 0x2D)) << 6, title);
+            font_set_color((alpha & 0xFF) << 24 | 0x492B02);
+        h = (0x1E - (font_line_height() >> 6)) / 2;
+        font_draw_text((x + 0x2D) << 6, (y + h) << 6, (480 - (x + 0x2D)) << 6, title);
         list = font_text_clear();
     }
     if (sel)
         list = pda_draw_cursor(list, x + 3, y, 0xD8, 0x1F);
     return list;
 }
-#endif
 
 /* yellow cursor frame */
 void *pda_draw_cursor(void *list, int x, int y, int w, int h)
@@ -604,7 +601,7 @@ void *pda_draw_cursor(void *list, int x, int y, int w, int h)
 }
 
 /* nine-slice frame from the 8x8 corners at uv (u | v << 16) */
-#ifdef NON_MATCHING /* args */
+#ifdef NON_MATCHING /* o original calcula u+8/v+8 antes de x+8/y+8 nos argumentos; faltam 8 palavras */
 void *pda_draw_frame(void *list, int x, int y, int w, int h, int uv)
 {
     int u = uv & 0xFFFF;
@@ -620,16 +617,18 @@ void *pda_draw_frame(void *list, int x, int y, int w, int h, int uv)
     list = draw_sprite(list, x, by, 0, u, v + 8, 0, 0);
     list = draw_sprite(list, rx, by, 0, u + 8, v + 8, 0, 0);
     if (w > 0x10) {
-        int u8 = u + 8;
+        int u8;
 
         list = draw_set_offsets(list, 1, 8, w - 0x10, 8);
+        u8 = u + 8;
         list = draw_sprite(list, x + 8, y, 0, u8, v, 0, 0);
         list = draw_sprite(list, x + 8, by, 0, u8, v + 8, 0, 0);
     }
     if (h > 0x10) {
-        int v8 = v + 8;
+        int v8;
 
         list = draw_set_offsets(list, 8, 1, 8, h - 0x10);
+        v8 = v + 8;
         list = draw_sprite(list, x, y + 8, 0, u, v8, 0, 0);
         list = draw_sprite(list, rx, y + 8, 0, u + 8, v8, 0, 0);
     }

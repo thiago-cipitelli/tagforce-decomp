@@ -225,12 +225,11 @@ void *pda_draw_scrollbar(void *list, int x, int y, int h, int pos, int shown, in
 void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int sel);
 
 /* a mail of the list: frame, sender face, unread and important marks, header */
-#ifdef NON_MATCHING /* regalloc */
+#ifdef NON_MATCHING /* registrador do índice da face (t0 no original, t1 aqui); faltam 13 palavras */
 void *pda_draw_mail_item(void *list, int x, int y, FieldPdaMail *m, int sel)
 {
     int i;
     int face;
-    int u;
 
     if (field_pda->gim == 0)
         return list;
@@ -256,18 +255,18 @@ void *pda_draw_mail_item(void *list, int x, int y, FieldPdaMail *m, int sel)
             list = draw_set_offsets(list, 0x16, 0x0A, 0x16, 0x0A);
             list = draw_sprite(list, x + 5, y + 0x23, 0, 0xD7, 0x10, 0, 0);
         }
-        u = 199;
+        face = 199;
         if (m->important)
-            u += 17;
+            face += 17;
         list = draw_set_offsets(list, 0x11, 0x0C, 0x11, 0x0C);
-        list = draw_sprite(list, x + 0x19, y + 0x21, 0, u, 0x21, 0, 0);
+        list = draw_sprite(list, x + 0x19, y + 0x21, 0, face, 0x21, 0, 0);
     }
     return pda_draw_mail_head(list, x + 0x28, y + 4, 0x9E, m, sel);
 }
 #endif
 
 /* header of a mail: subject, sender and date */
-#ifdef NON_MATCHING /* regalloc */
+#ifdef NON_MATCHING /* permutação dos registradores salvos no laço dos rótulos e no fim; faltam 29 palavras */
 void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int sel)
 {
     unsigned short *labels[3];
@@ -316,9 +315,8 @@ void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int s
         lx = tx + field_pda->label_w;
         font_draw_text(lx, ty << 6, 0x400, table_get_entry(fld_gim_get(5), 0x61));
     }
-    lw = font_measure_text(table_get_entry(fld_gim_get(5), 0x61));
+    lw = field_pda->label_w + font_measure_text(table_get_entry(fld_gim_get(5), 0x61));
     ty = (y + 1) << 6;
-    lw += field_pda->label_w;
     lx = tx + lw;
     month = m->month - 5;
     lw = ((w - 2) << 6) - lw;

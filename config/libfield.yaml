@@ -205,8 +205,6 @@ segments:
       - [0x1D710, c, f_pdapage]
       - [0x1D710, asm, f_pdapage_asm_088216B0]
       - [0x1DD84, c, f_pdapage]
-      - [0x1E138, asm, f_pdapage_asm_088220D8]
-      - [0x1E40C, c, f_pdapage]
       - [0x1E4AC, asm, f_pdapage_asm_0882244C]
       - [0x1E6F0, c, f_pdapage]
       - [0x1E8F8, c, f_pdaparts]
