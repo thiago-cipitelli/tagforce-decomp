@@ -83,7 +83,8 @@ segments:
       - [0xAB7C, c, s_fldset]
       - [0xAC98, c, s_mode]
       - [0xBC44, c, s_mod]
-      - [0xC580, asm, text_2]
+      - [0xC580, c, s_ending]
+      - [0xCB44, asm, text_2]
       - [0xCD84, c, s_idmap]
       - [0xE788, c, s_msg]
       - [0xF35C, c, s_mail]
@@ -129,9 +130,9 @@ segments:
       - [0x1938C, .data, s_res]
       - [0x19390, .data, s_fldset]
       - [0x19668, .data, s_mod]
-      - [0x19810, data, data_4]
+      - [0x19810, .data, s_ending]
       - [0x19848, .data, s_msg]
-      - [0x19A5C, data, data_5]
+      - [0x19A5C, data, data_4]
       - { start: 0x19A70, type: bss, vram: 0x881DA10, name: bss }
   - [0x19A70]
 
