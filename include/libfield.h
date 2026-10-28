@@ -983,6 +983,40 @@ typedef struct FieldFxAnim {           /* 0x08839524[15]: icon animation of a ki
 } FieldFxAnim;
 
 extern FieldFx field_fx[32];               /* 0x08FD5910 */
+
+typedef struct FieldGetCard {          /* 0x90 */
+    void *model;                       /* +0x00 the card model */
+    int pad04[3];
+    Mat4 mtx;                          /* +0x10 */
+    unsigned int spin;                 /* +0x50 frames of the spin, 0..15 */
+    int pad54[3];
+    void *list[9];                     /* +0x60 textures given to cardlist_init */
+    int close;                         /* +0x84 close the message with the card */
+    int pad88[2];
+} FieldGetCard;
+
+typedef struct FieldGet {              /* 0x08FD5770, 0x1A0: the "you got" message */
+    int id;                            /* +0x000 item or card */
+    int done;                          /* +0x004 message read */
+    unsigned short text[0x80];         /* +0x008 */
+    int step;                          /* +0x108 */
+    int kind;                          /* +0x10C 0 none, 1 item, 2 card */
+    FieldGetCard card;                 /* +0x110 */
+} FieldGet;
+
+extern FieldGet field_get;                 /* 0x08FD5770 */
+
+typedef struct FieldDate {             /* 0x08FD6510, 0x98: the date banner */
+    int state;                         /* +0x00 0 off, 1 shown, 2 fading out */
+    unsigned int bg;                   /* +0x04 */
+    unsigned int shadow;               /* +0x08 */
+    unsigned int color;                /* +0x0C */
+    unsigned int time;                 /* +0x10 */
+    unsigned short text[0x40];         /* +0x14 */
+    int sub;                           /* +0x94 second line, -1 none */
+} FieldDate;
+
+extern FieldDate field_date;               /* 0x08FD6510 */
 /* ---- end 0x08824028-0x08827FE4 ---- */
 
 #endif
