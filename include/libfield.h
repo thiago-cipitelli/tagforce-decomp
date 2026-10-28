@@ -398,7 +398,9 @@ typedef struct FieldScTab {            /* 0x08FD1B2C, 0x280 */
 } FieldScTab;
 
 typedef struct FieldMap {              /* fld_map_get() */
-    int pad00[2];
+    int pad00;
+    unsigned short pad04;
+    unsigned short n;                  /* +0x06 cells (w * h) */
     unsigned short w;                  /* +0x08 cells */
     unsigned short h;                  /* +0x0A */
 } FieldMap;
@@ -712,6 +714,39 @@ typedef struct FieldPartner {          /* 0x08FD2680, 0xB0: the partner walking 
 
 extern FieldPartner field_partner;
 
+typedef struct FieldShVtx {            /* vertex of the shadow volume (texture, normal, position) */
+    float u, v;
+    short nx, ny, nz;
+    short x, y, z;
+} FieldShVtx;
+
+typedef struct FieldShadow {           /* 0x08FD2730, 0x50: the light of the stencil shadows */
+    Mat4 light;                        /* +0x00 rows: side, direction, side, origin */
+    int alpha;                         /* +0x40 */
+    int pad44[3];
+} FieldShadow;
+
+typedef struct FieldDrawEnt {          /* character queued for the frame, 0x50 */
+    Mat4 mtx;                          /* +0x00 copy of its shadow matrix (row 3: position) */
+    int volume;                        /* +0x40 casts a stencil shadow */
+    float scale;                       /* +0x44 width of the shadow */
+    void *(*fn)(void *list, FieldChr *c); /* +0x48 */
+    FieldChr *arg;                     /* +0x4C drawn in the last pass when arg->arg8c */
+} FieldDrawEnt;
+
+typedef struct FieldDraw {             /* 0x08FD2780, 0x28C0: draw list and cell attributes */
+    FieldDrawEnt ent[130];
+    int n;                             /* +0x28A0 */
+    int pad28a4[3];
+    int *cells;                        /* +0x28B0 one attribute per cell, 2 = taken by the partner */
+    int w;                             /* +0x28B4 */
+    int h;                             /* +0x28B8 */
+    int pad28bc;
+} FieldDraw;
+
+extern FieldShadow field_shadow;
+extern FieldDraw field_draw;
+
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */
@@ -876,7 +911,7 @@ void fld_player_setup(float x, float z, int dir);
 int fld_story_flag(int id, int mode);
 void fld_shadow_set(Vec3 *pos, void *shadow);
 void fld_cell_mark(int cx, int cz, int v);
-void fld_draw_add(float scale, void *shadow, int depth, int alpha, void *fn, void *arg);
+int fld_draw_add(float scale, void *shadow, int volume, int area, void *fn, void *arg);
 void fld_load_gim(int name, void (*cb)(int *file, void *arg), void *arg);
 void *fld_gim_get(int i);
 int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir, int visible,
