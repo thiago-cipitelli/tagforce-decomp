@@ -1,5 +1,4 @@
 // @range 0x0880681C-0x08807CD0
-// @asm 0x088077B8-0x08807CD0
 // @rodata 0x0880D694-0x0880D6AC
 /* Input of the browse state (card cells, page corners, bottom menu), the prefetch of the pictures of
    the visible sides, the cursor -> card lookups and the page turning (one page at a time, or an
@@ -453,7 +452,6 @@ void ca_turn_fwd(float speed)
         ca_page_new(7, 2, page + 1);
 }
 
-#ifdef NON_MATCHING /* o último laço (afastar as outras páginas) usa os temporários em outra ordem (p em v1, constantes 4/5 em a1/a2); forma igual */
 /* turning state: keeps turning towards the jump target, moves the other pages aside meanwhile */
 void ca_turn_update(void)
 {
@@ -533,9 +531,10 @@ void ca_turn_update(void)
         }
         return;
     }
+    t = ca.pages;
     dx = turning->speed * 0.06f / 25.0f;
     dz = turning->speed * 0.04f / 25.0f;
-    for (t = ca.pages; t; t = t->next) {
+    for (; t; t = t->next) {
         if (t != turning) {
             switch (turning->kind) {
             case 4:
@@ -558,4 +557,3 @@ void ca_turn_update(void)
         }
     }
 }
-#endif

@@ -1,5 +1,4 @@
 // @range 0x08807CD0-0x08808E5C
-// @asm 0x08808648-0x08808878
 // @data 0x0880DC50-0x0880DCB8
 /* The album contents and the page stack: the card list in sort order (owned cards plus the empty
    slots of the missing ones, the special cards appended on extra pages), jumps to a card index or to
@@ -267,7 +266,6 @@ void ca_cursor_fix(void)
     }
 }
 
-#ifdef NON_MATCHING /* só os operandos dos dois testes de grupo saem trocados (beq v0,s2 no original, beq s2,v0 aqui) */
 /* first card of the next (back = 0) or previous (back = 1) group of the sort order; -1 if none */
 int ca_find_group(int back)
 {
@@ -300,7 +298,8 @@ int ca_find_group(int back)
                 found = 1;
                 i = 0;
             } else if ((unsigned short)v != 0) {
-                if (card_get_sort_position((unsigned short)v) != group)
+                k = card_get_sort_position((unsigned short)v);
+                if (k != group)
                     found = 1;
             }
             if (found) {
@@ -322,7 +321,8 @@ int ca_find_group(int back)
             if (i >= ca.n_cards)
                 group = -1;
             if (ca.cards[i] != 0) {
-                if (card_get_sort_position(ca.cards[i]) != group)
+                k = card_get_sort_position(ca.cards[i]);
+                if (k != group)
                     break;
             }
         }
@@ -333,7 +333,6 @@ int ca_find_group(int back)
         return -1;
     return i;
 }
-#endif
 
 /* skip menu animation: 6 opening, 7 idle, 8 hidden, 0..5 pressing an entry */
 void ca_skipmenu_anim(int which)

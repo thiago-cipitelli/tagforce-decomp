@@ -1,6 +1,5 @@
 // @range 0x08805CA4-0x0880681C
 // @asm 0x08805CA4-0x08805F30
-// @asm 0x08806544-0x08806750
 // @data 0x0880DBA0-0x0880DC50
 /* 2D part of the screen and the per-frame draw export: background, title bar with the completion
    percentage, the skip menu with the page number, the pointing hand over the cursor and the digits. */
@@ -214,14 +213,13 @@ unsigned int *ca_draw_header(unsigned int *list)
     }
 }
 
-#ifdef NON_MATCHING /* o vetor local da barra fica em sp+0x7C no original, acima de opts; o mwcc o põe em sp+0x1C em todas as formas testadas */
 /* skip menu (animated) with "page/pages", or the label of the extra pages */
 unsigned int *ca_draw_footer(unsigned int *list)
 {
     void *ehf = ca_res_get(CA_SKIPMENU);
     CaPage *p;
     int w;
-    unsigned int opts[24];
+    unsigned int opts[24] __attribute__((aligned(16)));  /* 16-byte aligned like a VFPU block */
 
     if (ehf) {
         memset(opts, 0, sizeof(opts));
@@ -250,10 +248,6 @@ unsigned int *ca_draw_footer(unsigned int *list)
     }
     return list;
 }
-#endif
-
-/* template of the "/" of ca_draw_footer (kept in asm) */
-unsigned short ca_slash[2] = { '/', 0 };
 
 /* n right-aligned with its last digit at x, digits `step` pixels apart */
 unsigned int *ca_draw_number(unsigned int *list, int x, short y, int n, int step)
