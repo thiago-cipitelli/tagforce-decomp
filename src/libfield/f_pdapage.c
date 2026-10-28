@@ -16,7 +16,7 @@ void *fpda_event_names(int i);
 unsigned char fpda_cal_day(unsigned char month, unsigned char row, unsigned char col);
 unsigned char fpda_cal_mark(unsigned char month, unsigned char day);
 void *func_0881FBCC(void *list, int x, int y, unsigned short *title);
-void *fface_draw(void *list, int face, int x, int y);
+void *fface_draw(void *list, void *face, int x, int y);
 
 extern unsigned char pda_event_marks[16];      /* 0x0883D410 */
 
@@ -486,7 +486,7 @@ void *pda_draw_mail_list(void *list, int x, int y)
     for (i = 0, ty = y + 0x12; i < 5; i++, ty += 0x31) {
         n = field_pda->top + i;
         sel = 0;
-        if (n >= field_pda->n_mails) {
+        if (n >= field_pda->count) {
             m = 0;
         } else {
             if (i == field_pda->sel)
@@ -495,8 +495,8 @@ void *pda_draw_mail_list(void *list, int x, int y)
         }
         list = pda_draw_mail_item(list, x + 3, ty, m, sel);
     }
-    list = pda_draw_scrollbar(list, x + 0xCF, y + 0x1D, 0xDF, field_pda->top, 5, field_pda->n_mails);
-    if (field_pda->n_mails > 0)
+    list = pda_draw_scrollbar(list, x + 0xCF, y + 0x1D, 0xDF, field_pda->top, 5, field_pda->count);
+    if (field_pda->count > 0)
         list = pda_draw_cursor(list, x + 3, y + 0x12 + field_pda->sel * 0x31, 0xCA, 0x30);
     return list;
 }
@@ -517,8 +517,8 @@ void *pda_draw_mail(void *list, int x0, int y0)
     list = pda_draw_frame(list, x, y, 0xB5, 0xEB, 0x2F00D7);
     list = pda_draw_frame(list, x + 0x29, y + 8, 99, 0x47, 0x2F00D7);
     list = pda_draw_frame(list, x + 6, y + 0x86, 0xA9, 0x5F, 0x580047);
-    list = fface_draw(list, field_pda->face, x + 0x2C, y + 0x0B);
-    list = pda_draw_bar(list, x + 0x21, y + 0x52, field_pda->bar_pos, field_pda->bar_max);
+    list = fface_draw(list, field_pda->voice, x + 0x2C, y + 0x0B);
+    list = pda_draw_bar(list, x + 0x21, y + 0x52, field_pda->frame, field_pda->frames);
     list = pda_draw_mail_head(list, x + 7, y + 0x5D, 0xA6, &field_pda->mails[field_pda->top + field_pda->sel], 1);
     list = dl_scissor(list, x + 0x0B, y + 0x8B, 0x9E, 0x54);
     list = dl_enable(list, 2);
@@ -528,9 +528,9 @@ void *pda_draw_mail(void *list, int x0, int y0)
     if (cfg_get_language() == 0)
         font_set_flag8000(1);
     font_text_set(list);
-    ty = ((y + 0x8B) << 6) - field_pda->scroll;
+    ty = ((y + 0x8B) << 6) - field_pda->pos;
     for (i = 0; i < field_pda->n_lines; i++) {
-        font_draw_wtext_ex((x + 0x0B) << 6, ty, 0x2780, field_pda->text_h + 0x1500, field_pda->lines[i].text, -1);
+        font_draw_wtext_ex((x + 0x0B) << 6, ty, 0x2780, field_pda->max + 0x1500, field_pda->lines[i].text, -1);
         ty = font_get_cursor_y();
     }
     if (cfg_get_language() == 0)

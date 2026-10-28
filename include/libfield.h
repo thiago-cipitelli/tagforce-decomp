@@ -786,44 +786,7 @@ typedef struct FieldCalEvent {         /* event of the calendar, 0xC (sorted by 
     unsigned char pad05[7];
 } FieldCalEvent;
 
-typedef struct FieldCal {              /* *0x08FD5758, 0x2B4 (heap): the calendar */
-    unsigned short state;              /* +0x000 */
-    short pad02;
-    short x;                           /* +0x004 page position */
-    short y;                           /* +0x006 */
-    short x_home;                      /* +0x008 */
-    unsigned char cur : 4;             /* +0x00A tab under the cursor */
-    unsigned char cur_hi : 4;
-    unsigned char pad0b[0x15];
-    unsigned char x20;                 /* +0x020 */
-    unsigned char pad21[0x83];
-    int xa4;                           /* +0x0A4 */
-    void *heap;                        /* +0x0A8 */
-    void *gim;                         /* +0x0AC */
-    unsigned char flag_b0 : 1;         /* +0x0B0 */
-    unsigned char pad_b0 : 7;
-    unsigned char flag_b1_0 : 1;       /* +0x0B1 */
-    unsigned char flag_b1_1 : 1;
-    unsigned char pad_b1 : 6;
-    unsigned char t;                   /* +0x0B2 slide step 0..10 */
-    unsigned char padb3;
-    unsigned short timer;              /* +0x0B4 */
-    unsigned char month;               /* +0x0B6 */
-    unsigned char day;                 /* +0x0B7 */
-    unsigned char padb8[2];
-    unsigned char marks[4][42];        /* +0x0BA per month and day cell */
-    unsigned char pad162[2];
-    unsigned char n_events;            /* +0x164 */
-    unsigned char pad165[3];
-    FieldCalEvent *events;             /* +0x168 */
-    int pad16c[9];
-    unsigned char dlg : 1;             /* +0x190 the menu below is open */
-    unsigned char pad190 : 7;
-    unsigned char pad191[3];
-    MenuWidget menu;                   /* +0x194 */
-} FieldCal;
 
-extern FieldCal *field_cal;
 
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
@@ -1025,55 +988,92 @@ typedef struct FieldPdaMail {          /* a mail of the list, 0xC */
     unsigned short *title;             /* +0x08 */
 } FieldPdaMail;
 
-typedef struct FieldPdaLine {          /* a line of the open mail, 8 */
-    int x00;
+
+typedef struct FieldPdaEvent {         /* entry of the event log, 0xC */
+    unsigned short id : 10;            /* +0x00 */
+    unsigned short f10 : 1;
+    unsigned short read : 1;
+    unsigned short f12 : 4;
+    unsigned short voice;              /* +0x02 low 10 bits: voice file */
+    int pad04[2];
+} FieldPdaEvent;
+
+typedef struct FieldPdaLine {          /* a line of the open entry */
+    unsigned char part;                /* +0x00 voice part */
+    unsigned char pad01[3];
     unsigned short *text;              /* +0x04 */
 } FieldPdaLine;
 
-typedef struct FieldPda {              /* *0x08FD5758, 0x2B4: the PDA menu */
+/* *0x08FD5758, 0x2B4 (heap): the PDA (calendar, options, mail/event log and its reader). f_cal.c
+   opens it and slides the page; f_pdapage.c/f_pdaparts.c draw the pages; f_pdamenu.c runs them.
+   The anonymous unions are bytes the three codes access with different types. */
+typedef struct FieldPda {
     unsigned short state;              /* +0x000 */
-    unsigned char pad002[8];
+    unsigned short sub;                /* +0x002 step of the page */
+    short x;                           /* +0x004 page (and 3D cover) position */
+    short y;                           /* +0x006 */
+    short x_home;                      /* +0x008 */
     unsigned char tab : 4;             /* +0x00A page picked on the top bar (0..5) */
     unsigned char tab_hi : 4;
     unsigned char pad00b;
-    unsigned short cursor;             /* +0x00C */
-    unsigned char pad00e[9];
+    unsigned short cursor;             /* +0x00C option */
+    unsigned char saved[9];            /* +0x00E options on entry */
     unsigned char opt[9];              /* +0x017 option values */
     unsigned char opt_w;               /* +0x020 width of the value column */
-    unsigned char pad021[0x83];
+    unsigned char pad021;
+    unsigned short title[0x41];        /* +0x022 title of the save prompt */
     int label_w;                       /* +0x0A4 width of the mail labels (1/64 px) */
-    int x0a8;                          /* +0x0A8 */
+    void *heap;                        /* +0x0A8 */
     void *gim;                         /* +0x0AC pda parts */
-    unsigned char leaving : 1;         /* +0x0B0 page change in progress */
+    unsigned char leaving : 1;         /* +0x0B0 page change (or option confirm) in progress */
     unsigned char flags_hi : 7;
-    unsigned char wait;                /* +0x0B1 frames of the page change, bit 1 blinks the cursor */
-    unsigned char pad0b2[4];
+    union {                            /* +0x0B1 frames of the page change, bit 1 blinks the cursor */
+        unsigned char wait;
+        struct {
+            unsigned char wait_b0 : 1;
+            unsigned char blink : 1;
+            unsigned char wait_hi : 6;
+        };
+    };
+    unsigned char t;                   /* +0x0B2 slide step 0..10 */
+    unsigned char pad0b3;
+    unsigned short timer;              /* +0x0B4 */
     unsigned char today_month;         /* +0x0B6 */
     unsigned char today;               /* +0x0B7 */
     unsigned char month;               /* +0x0B8 month shown on the calendar (0..3) */
     unsigned char day;                 /* +0x0B9 calendar cursor (row * 7 + column) */
-    unsigned char pad0ba[0xA8];
-    unsigned char top;                 /* +0x162 first mail shown */
+    unsigned char marks[4][42];        /* +0x0BA per month and day cell */
+    unsigned char top;                 /* +0x162 first entry shown */
     unsigned char sel;                 /* +0x163 cursor row */
-    unsigned char n_mails;             /* +0x164 */
+    unsigned char count;               /* +0x164 entries */
     unsigned char pad165[3];
-    FieldPdaMail *mails;               /* +0x168 */
-    FieldPdaLine *lines;               /* +0x16C lines of the open mail */
+    union {                            /* +0x168 the same 0xC entries, seen by each page */
+        FieldPdaMail *mails;
+        FieldPdaEvent *events;
+        FieldCalEvent *cal_events;
+    };
+    FieldPdaLine *lines;               /* +0x16C lines of the open entry */
     unsigned char n_lines;             /* +0x170 */
-    unsigned char pad171[7];
-    unsigned short sel_x;              /* +0x178 selected text (1/64 px) */
-    unsigned short sel_y;              /* +0x17A */
-    unsigned short sel_w;              /* +0x17C */
-    unsigned short sel_h;              /* +0x17E */
-    unsigned short bar_pos;            /* +0x180 */
-    unsigned short bar_max;            /* +0x182 */
-    int scroll;                        /* +0x184 (1/64 px) */
-    int text_h;                        /* +0x188 */
-    int face;                          /* +0x18C sender portrait */
-    unsigned char pad190[0x124];
+    unsigned char line;                /* +0x171 line being read */
+    unsigned char pad172[2];
+    int *line_end;                     /* +0x174 bottom of each line (1/64 px) */
+    unsigned short read_x;             /* +0x178 read point: x in the line (1/64 px) */
+    unsigned short read_y;             /* +0x17A y in the window */
+    unsigned short speed;              /* +0x17C */
+    unsigned short lh;                 /* +0x17E line height */
+    unsigned short frame;              /* +0x180 gauge */
+    unsigned short frames;             /* +0x182 */
+    unsigned int pos;                  /* +0x184 scroll */
+    unsigned int max;                  /* +0x188 */
+    void *voice;                       /* +0x18C talking face of the sender */
+    unsigned char dlg : 1;             /* +0x190 the save menu below is open */
+    unsigned char pad190 : 7;
+    unsigned char pad191[3];
+    MenuWidget menu;                   /* +0x194 */
 } FieldPda;
 
 extern FieldPda *field_pda;                /* 0x08FD5758 */
+
 extern int (*field_pda_count)(void);       /* 0x08FD5754 */
 
 /* f_pdapage.c */
@@ -1200,70 +1200,10 @@ typedef struct FieldDate {             /* 0x08FD6510, 0x98: the date banner */
 } FieldDate;
 
 extern FieldDate field_date;               /* 0x08FD6510 */
-typedef struct FieldPdaEvent {         /* entry of the event log, 0xC */
-    unsigned short id : 10;            /* +0x00 */
-    unsigned short f10 : 1;
-    unsigned short read : 1;
-    unsigned short f12 : 4;
-    unsigned short voice;              /* +0x02 low 10 bits: voice file */
-    int pad04[2];
-} FieldPdaEvent;
 
-typedef struct FieldPdaEvLine {          /* a line of an event */
-    unsigned char part;                /* +0x00 voice part */
-    unsigned char pad01[3];
-    unsigned short *text;              /* +0x04 */
-} FieldPdaEvLine;
 
-/* ponytail: second view of *0x08FD5758 (also FieldCal, FieldPda); merge into one struct */
-typedef struct FieldPdaMenu {              /* *0x08FD5758: the PDA menu (only the fields of its pages) */
-    unsigned short state;              /* +0x000 */
-    unsigned short sub;                /* +0x002 */
-    short cover_x;                     /* +0x004 */
-    short pad006[3];
-    unsigned short cursor;             /* +0x00C option */
-    unsigned char saved[9];            /* +0x00E options on entry */
-    unsigned char opt[9];              /* +0x017 */
-    unsigned char pad020[2];
-    unsigned short title[0x43];        /* +0x022 */
-    void *heap;                        /* +0x0A8 */
-    int pad0ac;
-    unsigned char confirm : 1;         /* +0x0B0 */
-    unsigned char pad0b0 : 7;
-    unsigned char timer;               /* +0x0B1 */
-    unsigned short pad0b2;
-    unsigned short b4;                 /* +0x0B4 */
-    unsigned short pad0b6;
-    unsigned char month;               /* +0x0B8 calendar */
-    unsigned char day;                 /* +0x0B9 cell of the day */
-    unsigned char marks[4][42];        /* +0x0BA */
-    unsigned char top;                 /* +0x162 event log */
-    unsigned char sel;                 /* +0x163 */
-    unsigned char count;               /* +0x164 */
-    unsigned char pad165[3];
-    FieldPdaEvent *events;             /* +0x168 */
-    FieldPdaEvLine *lines;               /* +0x16C reader */
-    unsigned char nlines;              /* +0x170 */
-    unsigned char line;                /* +0x171 */
-    unsigned char pad172[2];
-    int *line_end;                     /* +0x174 bottom of each line (1/64 px) */
-    unsigned short acc;                /* +0x178 */
-    unsigned short y;                  /* +0x17A */
-    unsigned short speed;              /* +0x17C */
-    unsigned short lh;                 /* +0x17E line height */
-    unsigned short frame;              /* +0x180 */
-    unsigned short frames;             /* +0x182 */
-    unsigned int pos;                  /* +0x184 scroll */
-    unsigned int max;                  /* +0x188 */
-    void *voice;                       /* +0x18C */
-    unsigned char saving : 1;          /* +0x190 */
-    unsigned char pad190 : 7;
-    unsigned char pad191[3];
-    MenuWidget menu;                   /* +0x194 */
-} FieldPdaMenu;
 
-extern FieldPdaMenu *field_pdamenu;                       /* 0x08FD5758 */
-extern FieldPdaEvLine *(*field_pda_event_get)(int id); /* 0x08FD5750 */
+extern FieldPdaLine *(*field_pda_event_get)(int id); /* 0x08FD5750 */
 extern void *field_pda_cover;                       /* 0x08FD5760 */
 extern void *field_pda_names;                       /* 0x08FD5764 */
 extern void *field_pda_msgs;                        /* 0x08FD5768 */

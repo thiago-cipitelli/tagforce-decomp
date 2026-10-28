@@ -1,7 +1,7 @@
 // @range 0x0881EDC8-0x0881FFEC
 // @asm 0x0881FCEC-0x0881FFEC
 // @rodata 0x088392E0-0x08839344
-/* The calendar of the field (field_cal, on the heap): opening, the slide in and out of the page,
+/* The calendar of the field (field_pda, on the heap): opening, the slide in and out of the page,
    the per-state input and the frame, title bar and month tabs of the page. The pages themselves
    are drawn by the code that follows (0x0881FFEC on). */
 #include "libfield.h"
@@ -72,52 +72,52 @@ void fcal_open(void *heap, int pack, int mode)
     int n;
     FieldCalEvent *src;
 
-    if (field_cal == 0)
-        field_cal = heap_alloc(heap, sizeof(FieldCal));
-    memset(field_cal, 0, sizeof(FieldCal));
-    field_cal->heap = heap;
-    field_cal->gim = fpda_pack_gim(pack);
+    if (field_pda == 0)
+        field_pda = heap_alloc(heap, sizeof(FieldPda));
+    memset(field_pda, 0, sizeof(FieldPda));
+    field_pda->heap = heap;
+    field_pda->gim = fpda_pack_gim(pack);
     fpda_cover_model(pack);
     fpda_event_names(pack);
     fpda_option_msgs(pack);
-    field_cal->month = *(int *)fld_story_get()->w[0] - 5;
-    field_cal->day = *(int *)fld_story_get()->w[1];
-    field_cal->x20 = pda_opt_value_width();
-    field_cal->xa4 = pda_mail_label_width();
+    field_pda->today_month = *(int *)fld_story_get()->w[0] - 5;
+    field_pda->today = *(int *)fld_story_get()->w[1];
+    field_pda->opt_w = pda_opt_value_width();
+    field_pda->label_w = pda_mail_label_width();
     if (field_story_ext.mark != 0) {
         for (month = 0; month < 4; month++) {
             for (i = 0; i < 42; i++) {
                 int k = fpda_cal_day(month, i / 7, i % 7);
 
                 if (k > 0)
-                    field_cal->marks[month][i] = field_story_ext.mark(month + 5, k);
+                    field_pda->marks[month][i] = field_story_ext.mark(month + 5, k);
             }
         }
     }
     if (field_story_ext.events != 0) {
         src = field_story_ext.events(&n);
         if (n > 0) {
-            field_cal->events = heap_alloc(heap, n * sizeof(FieldCalEvent));
-            if (field_cal->events == 0) {
+            field_pda->cal_events = heap_alloc(heap, n * sizeof(FieldCalEvent));
+            if (field_pda->cal_events == 0) {
                 n = 0;
             } else {
-                memcpy(field_cal->events, src, n * sizeof(FieldCalEvent));
-                qsort(field_cal->events, n, sizeof(FieldCalEvent), fcal_event_cmp);
+                memcpy(field_pda->cal_events, src, n * sizeof(FieldCalEvent));
+                qsort(field_pda->cal_events, n, sizeof(FieldCalEvent), fcal_event_cmp);
             }
         }
-        field_cal->n_events = n;
+        field_pda->count = n;
     }
     switch (mode) {
     case 1:
-        field_cal->state = 9;
-        field_cal->t = 10;
-        field_cal->x = field_cal->x_home;
-        field_cal->timer = 0;
+        field_pda->state = 9;
+        field_pda->t = 10;
+        field_pda->x = field_pda->x_home;
+        field_pda->timer = 0;
         fpda_cover_close();
         break;
     default:
-        field_cal->x = -0x120;
-        field_cal->state = 1;
+        field_pda->x = -0x120;
+        field_pda->state = 1;
         se_play(0x6263);
         break;
     }
@@ -129,34 +129,34 @@ int fcal_update(void)
     int r;
     int k;
 
-    if (field_cal == 0)
+    if (field_pda == 0)
         return 1;
-    if (field_cal->dlg) {
-        r = menu_update(&field_cal->menu);
+    if (field_pda->dlg) {
+        r = menu_update(&field_pda->menu);
         if (r == -1)
             return 0;
         if (r == 2)
             return 5;
-        field_cal->dlg = 0;
+        field_pda->dlg = 0;
     }
-    switch (field_cal->state) {
+    switch (field_pda->state) {
     case 0:
         break;
     case 1:
-        k = 10 - field_cal->t; /* ease: (steps left)^2 */
+        k = 10 - field_pda->t; /* ease: (steps left)^2 */
         k *= k;
-        field_cal->x = (field_cal->x_home - 0x120) * k / 100;
-        field_cal->t++;
-        if (field_cal->t >= 10) {
-            field_cal->state = 2;
-            field_cal->x = field_cal->x_home;
+        field_pda->x = (field_pda->x_home - 0x120) * k / 100;
+        field_pda->t++;
+        if (field_pda->t >= 10) {
+            field_pda->state = 2;
+            field_pda->x = field_pda->x_home;
             se_play(0x6264);
         }
         break;
     case 2:
-        if (field_cal->timer++ >= 12) {
-            field_cal->state = 3;
-            field_cal->timer = 0;
+        if (field_pda->timer++ >= 12) {
+            field_pda->state = 3;
+            field_pda->timer = 0;
         }
         break;
     case 3:
@@ -171,16 +171,16 @@ int fcal_update(void)
     case 4:
         if (pad_get()->b.trig & 0x6000) {
             se_play(0x6214);
-            field_cal->state = 2;
+            field_pda->state = 2;
         }
         break;
     case 5:
         fpda_calendar_update();
         break;
     case 8:
-        if (field_cal->timer++ >= 4) {
-            field_cal->state = 9;
-            field_cal->timer = 0;
+        if (field_pda->timer++ >= 4) {
+            field_pda->state = 9;
+            field_pda->timer = 0;
         }
         break;
     case 9:
@@ -189,14 +189,14 @@ int fcal_update(void)
         fpda_options_update();
         break;
     case 11:
-        k = 10 - field_cal->t; /* ease: (steps left)^2 */
+        k = 10 - field_pda->t; /* ease: (steps left)^2 */
         k *= k;
-        field_cal->x = (field_cal->x_home - 0x120) * k / 100;
-        field_cal->t--;
-        if (field_cal->t != 0)
+        field_pda->x = (field_pda->x_home - 0x120) * k / 100;
+        field_pda->t--;
+        if (field_pda->t != 0)
             break;
-        field_cal->state = 12;
-        field_cal->x = -0x120;
+        field_pda->state = 12;
+        field_pda->x = -0x120;
     case 12:
         fcal_free();
         return 1;
@@ -209,7 +209,7 @@ void fcal_draw(void)
     void *list;
     void *gim;
 
-    if (field_cal == 0)
+    if (field_pda == 0)
         return;
     font_set_flag4(1);
     font_set_flag2(1);
@@ -227,19 +227,19 @@ void fcal_draw(void)
     list = dl_set_tex_filter(list, 0, 0);
     list = dl_blend_func(list, 0, 2, 3, 0, 0);
     list = dl_disable(list, 1);
-    list = fcal_draw_page(list, field_cal->x, field_cal->y);
-    list = fcal_draw_frame(list, field_cal->x, field_cal->y);
-    if (field_cal->dlg) {
-        menu_draw(&list, &field_cal->menu);
-    } else if (field_cal->state == 10) {
-        gim = field_cal->gim;
-        menu_draw(&list, &field_cal->menu);
+    list = fcal_draw_page(list, field_pda->x, field_pda->y);
+    list = fcal_draw_frame(list, field_pda->x, field_pda->y);
+    if (field_pda->dlg) {
+        menu_draw(&list, &field_pda->menu);
+    } else if (field_pda->state == 10) {
+        gim = field_pda->gim;
+        menu_draw(&list, &field_pda->menu);
         if (gim != 0) {
             list = gim_set_texture(list, gim);
             list = dl_ambient_color(list, 0xFFFFFFFF);
             list = dl_set_tex_filter(list, 0, 0);
             list = draw_set_offsets(list, 0x10, 0x10, 0x10, 0x10);
-            list = draw_sprite(list, field_cal->menu.def.x + 6, field_cal->menu.def.y - 0xE, 0, 0xC7, 0x2F, 0, 0);
+            list = draw_sprite(list, field_pda->menu.def.x + 6, field_pda->menu.def.y - 0xE, 0, 0xC7, 0x2F, 0, 0);
         }
     }
     dl_set_list(list);
@@ -249,15 +249,15 @@ void fcal_draw(void)
 
 void fcal_free(void)
 {
-    void *heap = field_cal->heap;
+    void *heap = field_pda->heap;
 
     fpda_cover_free();
-    if (field_cal->events != 0) {
-        heap_set_level(heap, field_cal->events);
-        field_cal->events = 0;
+    if (field_pda->cal_events != 0) {
+        heap_set_level(heap, field_pda->cal_events);
+        field_pda->cal_events = 0;
     }
-    heap_set_level(heap, field_cal);
-    field_cal = 0;
+    heap_set_level(heap, field_pda);
+    field_pda = 0;
 }
 
 /* qsort: latest month, then latest day first */
@@ -276,9 +276,9 @@ void *fcal_draw_frame(void *list, int x, int y)
 {
     int side;
 
-    if (field_cal->gim == 0)
+    if (field_pda->gim == 0)
         return list;
-    list = gim_set_texture(list, field_cal->gim);
+    list = gim_set_texture(list, field_pda->gim);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
     side = y + 8;
@@ -300,12 +300,12 @@ void *fcal_draw_page(void *list, int x, int y)
     int py = y + 4;
 
     list = fcal_draw_lines(list, px, py);
-    switch (field_cal->state) {
+    switch (field_pda->state) {
     case 0:
     case 1:
         break;
     case 2:
-        list = fcal_draw_tabs(list, px, py, field_cal->timer);
+        list = fcal_draw_tabs(list, px, py, field_pda->timer);
         title = table_get_entry(fld_gim_get(5), 0x31);
         break;
     case 3:
@@ -318,7 +318,7 @@ void *fcal_draw_page(void *list, int x, int y)
         title = table_get_entry(fld_gim_get(5), 0x34);
         break;
     case 8:
-        list = pda_draw_tabs(list, px, py, field_cal->timer);
+        list = pda_draw_tabs(list, px, py, field_pda->timer);
         title = table_get_entry(fld_gim_get(5), 0x35);
         break;
     case 9:
@@ -350,9 +350,9 @@ void *fcal_draw_lines(void *list, int x, int y)
 {
     int i;
 
-    if (field_cal->gim == 0)
+    if (field_pda->gim == 0)
         return list;
-    list = gim_set_texture(list, field_cal->gim);
+    list = gim_set_texture(list, field_pda->gim);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
     i = 0;
@@ -367,9 +367,9 @@ void *fcal_draw_lines(void *list, int x, int y)
 /* the title bar of the page */
 void *fcal_draw_title(void *list, int x, int y, unsigned short *text)
 {
-    if (field_cal->gim == 0)
+    if (field_pda->gim == 0)
         return list;
-    list = gim_set_texture(list, field_cal->gim);
+    list = gim_set_texture(list, field_pda->gim);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
     list = draw_set_offsets(list, 1, 1, 0xDD, 0x11);
@@ -386,9 +386,9 @@ void *fcal_draw_title(void *list, int x, int y, unsigned short *text)
 /* the note box at the bottom of the page (kept under its address: the pages call it) */
 void *func_0881FBCC(void *list, int x, int y, unsigned short *text)
 {
-    if (field_cal->gim == 0)
+    if (field_pda->gim == 0)
         return list;
-    list = gim_set_texture(list, field_cal->gim);
+    list = gim_set_texture(list, field_pda->gim);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
     list = pda_draw_frame(list, x + 3, y + 0xD1, 0xD8, 0x36, 0x580047);
@@ -425,7 +425,7 @@ void *fcal_draw_tabs(void *list, int x, int y, int step)
         unfolding = 1;
         last = (step - 1) / 2;
     } else {
-        text = table_get_entry(fld_gim_get(5), fcal_tab_titles[field_cal->cur]);
+        text = table_get_entry(fld_gim_get(5), fcal_tab_titles[field_pda->tab]);
     }
     list = func_0881FBCC(list, x, y, text);
     for (i = last; i >= 0; i--) {
@@ -433,8 +433,8 @@ void *fcal_draw_tabs(void *list, int x, int y, int step)
         alpha = 0xFF;
         lit = 0;
         cur = 0;
-        if (!unfolding && field_cal->cur == i) {
-            if (!field_cal->flag_b0 || field_cal->flag_b1_1 != 1)
+        if (!unfolding && field_pda->tab == i) {
+            if (!field_pda->leaving || field_pda->blink != 1)
                 lit = 1;
             cur = 1;
         }

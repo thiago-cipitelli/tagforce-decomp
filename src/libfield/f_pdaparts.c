@@ -364,9 +364,9 @@ void *pda_draw_mail_mask(void *list, int x, int y)
     list = gim_set_texture(list, field_pda->gim);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
-    left = (field_pda->sel_x + 0x20) >> 6;
-    h = ((field_pda->sel_y + field_pda->sel_h + 0x20) >> 6) - ((field_pda->sel_y + 0x20) >> 6);
-    top = y + ((field_pda->sel_y + 0x20) >> 6);
+    left = (field_pda->read_x + 0x20) >> 6;
+    h = ((field_pda->read_y + field_pda->lh + 0x20) >> 6) - ((field_pda->read_y + 0x20) >> 6);
+    top = y + ((field_pda->read_y + 0x20) >> 6);
     list = draw_set_offsets(list, 1, 1, 0x9E - left, h);
     list = draw_sprite(list, x + left, top, 0, 0x4F, 0x60, 0, 0);
     top += h;

@@ -2,7 +2,7 @@
 // @asm 0x08824028-0x0882405C
 // @asm 0x088249EC-0x08825218
 // @data 0x0883D530-0x0883D630
-/* Pages of the PDA (field_pdamenu, the menu opened on the map): the options page, the save prompt, the
+/* Pages of the PDA (field_pda, the menu opened on the map): the options page, the save prompt, the
    event log with its scrolling voiced reader, the calendar, the files of the PDA pack and the 3D cover
    drawn behind the pages. */
 #include "libfield.h"
@@ -93,18 +93,18 @@ void fpda_options_update(void)
     unsigned char max;
 
     if (pad->b.rep & 0x10) {
-        field_pdamenu->cursor = (field_pdamenu->cursor + 8) % 9;
-        if (cfg_get_language() != 0 && field_pdamenu->cursor == 2)
-            field_pdamenu->cursor--;
-        menu_reset(&field_pdamenu->menu);
+        field_pda->cursor = (field_pda->cursor + 8) % 9;
+        if (cfg_get_language() != 0 && field_pda->cursor == 2)
+            field_pda->cursor--;
+        menu_reset(&field_pda->menu);
         fpda_options_menu();
         se_play(0x6212);
     }
     if (pad->b.rep & 0x40) {
-        field_pdamenu->cursor = (field_pdamenu->cursor + 1) % 9;
-        if (cfg_get_language() != 0 && field_pdamenu->cursor == 2)
-            field_pdamenu->cursor++;
-        menu_reset(&field_pdamenu->menu);
+        field_pda->cursor = (field_pda->cursor + 1) % 9;
+        if (cfg_get_language() != 0 && field_pda->cursor == 2)
+            field_pda->cursor++;
+        menu_reset(&field_pda->menu);
         fpda_options_menu();
         se_play(0x6212);
     }
@@ -113,14 +113,14 @@ void fpda_options_update(void)
     if (pad->b.rep & 0x20)
         d = 1;
     if (d != 0) {
-        max = field_pda_opt_max[field_pdamenu->cursor];
-        v = (short)field_pdamenu->opt[field_pdamenu->cursor];
+        max = field_pda_opt_max[field_pda->cursor];
+        v = (short)field_pda->opt[field_pda->cursor];
         v += (short)d;
         if (v < 0)
             v = 0;
         if (v > max)
             v = max;
-        switch (field_pdamenu->cursor) {
+        switch (field_pda->cursor) {
         case 2:
             snd_set_volume(2, v);
             se_play(0x6218);
@@ -137,18 +137,18 @@ void fpda_options_update(void)
             se_play(0x6212);
             break;
         }
-        field_pdamenu->opt[field_pdamenu->cursor] = v;
+        field_pda->opt[field_pda->cursor] = v;
     }
     if (pad->b.trig & region_pick_value(1)) {
-        memcpy(field_pdamenu->opt, field_pdamenu->saved, 9);
+        memcpy(field_pda->opt, field_pda->saved, 9);
         fpda_options_apply();
-        field_pdamenu->state = 2;
-        menu_reset(&field_pdamenu->menu);
+        field_pda->state = 2;
+        menu_reset(&field_pda->menu);
         se_play(0x6214);
     } else if (pad->b.trig & region_pick_value(0)) {
         fpda_options_apply();
-        field_pdamenu->state = 2;
-        menu_reset(&field_pdamenu->menu);
+        field_pda->state = 2;
+        menu_reset(&field_pda->menu);
         se_play(0x6213);
     }
 }
@@ -156,60 +156,60 @@ void fpda_options_update(void)
 /* reads the options from the system config */
 void fpda_options_load(void)
 {
-    if (field_pdamenu != 0) {
+    if (field_pda != 0) {
         if (cfg_is_mode1())
-            field_pdamenu->opt[0] = 0;
+            field_pda->opt[0] = 0;
         else
-            field_pdamenu->opt[0] = 1;
-        field_pdamenu->opt[1] = cfg_get_byte0_bits4_5();
+            field_pda->opt[0] = 1;
+        field_pda->opt[1] = cfg_get_byte0_bits4_5();
         if (cfg_get_language() == 0)
-            field_pdamenu->opt[2] = cfg_get_byte3(2);
-        field_pdamenu->opt[3] = cfg_get_byte3(0);
-        field_pdamenu->opt[4] = cfg_get_byte3(1);
-        field_pdamenu->opt[5] = cfg_get_bits_1_3_4();
+            field_pda->opt[2] = cfg_get_byte3(2);
+        field_pda->opt[3] = cfg_get_byte3(0);
+        field_pda->opt[4] = cfg_get_byte3(1);
+        field_pda->opt[5] = cfg_get_bits_1_3_4();
         if (cfg_get_flag(0))
-            field_pdamenu->opt[6] = 0;
+            field_pda->opt[6] = 0;
         else
-            field_pdamenu->opt[6] = 1;
+            field_pda->opt[6] = 1;
         if (cfg_get_flag(2))
-            field_pdamenu->opt[7] = 0;
+            field_pda->opt[7] = 0;
         else
-            field_pdamenu->opt[7] = 1;
+            field_pda->opt[7] = 1;
         if (cfg_get_flag(3))
-            field_pdamenu->opt[8] = 0;
+            field_pda->opt[8] = 0;
         else
-            field_pdamenu->opt[8] = 1;
-        memcpy(field_pdamenu->saved, field_pdamenu->opt, 9);
+            field_pda->opt[8] = 1;
+        memcpy(field_pda->saved, field_pda->opt, 9);
     }
 }
 
 /* writes the options back to the system config */
 void fpda_options_apply(void)
 {
-    if (field_pdamenu != 0) {
-        if (field_pdamenu->opt[0])
+    if (field_pda != 0) {
+        if (field_pda->opt[0])
             cfg_set_byte0_bit3(0);
         else
             cfg_set_byte0_bit3(1);
-        if (field_pdamenu->opt[1] <= field_pda_opt_max[1])
-            cfg_set_byte0_bits4_5(field_pdamenu->opt[1]);
-        if (cfg_get_language() == 0 && field_pdamenu->opt[2] <= field_pda_opt_max[2])
-            snd_set_volume(2, field_pdamenu->opt[2]);
-        if (field_pdamenu->opt[3] <= field_pda_opt_max[3])
-            snd_set_volume(0, field_pdamenu->opt[3]);
-        if (field_pdamenu->opt[4] <= field_pda_opt_max[4])
-            snd_set_volume(1, field_pdamenu->opt[4]);
-        if (field_pdamenu->opt[5] <= field_pda_opt_max[5])
-            cfg_set_bits_1_3_4(field_pdamenu->opt[5]);
-        if (field_pdamenu->opt[6])
+        if (field_pda->opt[1] <= field_pda_opt_max[1])
+            cfg_set_byte0_bits4_5(field_pda->opt[1]);
+        if (cfg_get_language() == 0 && field_pda->opt[2] <= field_pda_opt_max[2])
+            snd_set_volume(2, field_pda->opt[2]);
+        if (field_pda->opt[3] <= field_pda_opt_max[3])
+            snd_set_volume(0, field_pda->opt[3]);
+        if (field_pda->opt[4] <= field_pda_opt_max[4])
+            snd_set_volume(1, field_pda->opt[4]);
+        if (field_pda->opt[5] <= field_pda_opt_max[5])
+            cfg_set_bits_1_3_4(field_pda->opt[5]);
+        if (field_pda->opt[6])
             cfg_set_flag(0, 0);
         else
             cfg_set_flag(0, 1);
-        if (field_pdamenu->opt[7])
+        if (field_pda->opt[7])
             cfg_set_flag(2, 0);
         else
             cfg_set_flag(2, 1);
-        if (field_pdamenu->opt[8])
+        if (field_pda->opt[8])
             cfg_set_flag(3, 0);
         else
             cfg_set_flag(3, 1);
@@ -221,11 +221,11 @@ int fpda_choice_update(void)
 {
     PadState *pad = pad_get();
 
-    if (field_pdamenu->confirm) {
-        if (field_pdamenu->timer++ >= 12) {
-            field_pdamenu->confirm = 0;
-            field_pdamenu->timer = 0;
-            switch (field_pdamenu->cursor) {
+    if (field_pda->leaving) {
+        if (field_pda->wait++ >= 12) {
+            field_pda->leaving = 0;
+            field_pda->wait = 0;
+            switch (field_pda->cursor) {
             case 0:
                 return 3;
             case 1:
@@ -235,22 +235,22 @@ int fpda_choice_update(void)
         return 0;
     }
     if (pad->b.trig & region_pick_value(1)) {
-        field_pdamenu->state = 2;
+        field_pda->state = 2;
         se_play(0x6214);
         return 0;
     }
     if (pad->b.trig & region_pick_value(0)) {
-        field_pdamenu->confirm = 1;
-        field_pdamenu->timer = 0;
+        field_pda->leaving = 1;
+        field_pda->wait = 0;
         se_play(0x6213);
         return 0;
     }
     if (pad->b.rep & 0x10) {
-        field_pdamenu->cursor = (field_pdamenu->cursor + 1) % 2;
+        field_pda->cursor = (field_pda->cursor + 1) % 2;
         se_play(0x6212);
     }
     if (pad->b.rep & 0x40) {
-        field_pdamenu->cursor = (field_pdamenu->cursor + 1) % 2;
+        field_pda->cursor = (field_pda->cursor + 1) % 2;
         se_play(0x6212);
     }
     return 0;
@@ -263,35 +263,35 @@ void fpda_events_update(void)
     int n;
 
     if (pad->b.rep & 0x10) {
-        if (field_pdamenu->sel > 0) {
-            field_pdamenu->sel--;
+        if (field_pda->sel > 0) {
+            field_pda->sel--;
             se_play(0x6212);
-        } else if (field_pdamenu->top > 0) {
-            field_pdamenu->top--;
+        } else if (field_pda->top > 0) {
+            field_pda->top--;
             se_play(0x6212);
         }
     }
     if (pad->b.rep & 0x40) {
-        n = field_pdamenu->count > 5 ? 5 : field_pdamenu->count;
-        if (field_pdamenu->sel < n - 1) {
-            field_pdamenu->sel++;
+        n = field_pda->count > 5 ? 5 : field_pda->count;
+        if (field_pda->sel < n - 1) {
+            field_pda->sel++;
             se_play(0x6212);
-        } else if (field_pdamenu->top < field_pdamenu->count - 5) {
-            field_pdamenu->top++;
+        } else if (field_pda->top < field_pda->count - 5) {
+            field_pda->top++;
             se_play(0x6212);
         }
     }
     pad = pad_get();
     if (pad->b.trig & region_pick_value(1)) {
-        field_pdamenu->state = 2;
+        field_pda->state = 2;
         se_play(0x6214);
         return;
     }
     pad = pad_get();
     if (pad->b.trig & region_pick_value(0)) {
-        if (field_pdamenu->top + field_pdamenu->sel < field_pdamenu->count) {
+        if (field_pda->top + field_pda->sel < field_pda->count) {
             fpda_reader_open();
-            field_pdamenu->state = 7;
+            field_pda->state = 7;
             se_play(0x6262);
         } else {
             se_play(0x6215);
@@ -307,73 +307,73 @@ void fpda_reader_update(void)
     int lim;
     unsigned int pos;
 
-    switch (field_pdamenu->sub) {
+    switch (field_pda->sub) {
     case 0:
-        if (fface_ready(field_pdamenu->voice) == 0)
+        if (fface_ready(field_pda->voice) == 0)
             return;
-        fface_set(field_pdamenu->voice, 1, 1, field_pdamenu->lines[0].part);
-        field_pdamenu->sub++;
+        fface_set(field_pda->voice, 1, 1, field_pda->lines[0].part);
+        field_pda->sub++;
         break;
     case 1:
-        field_pdamenu->acc += field_pdamenu->speed;
-        field_pdamenu->frame++;
-        if (field_pdamenu->frame >= field_pdamenu->frames) {
-            field_pdamenu->pos = field_pdamenu->max;
-            field_pdamenu->y = 0x1500;
-            field_pdamenu->frame = field_pdamenu->frames;
-            fface_set(field_pdamenu->voice, 0, 0, 0);
-            field_pdamenu->sub++;
+        field_pda->read_x += field_pda->speed;
+        field_pda->frame++;
+        if (field_pda->frame >= field_pda->frames) {
+            field_pda->pos = field_pda->max;
+            field_pda->read_y = 0x1500;
+            field_pda->frame = field_pda->frames;
+            fface_set(field_pda->voice, 0, 0, 0);
+            field_pda->sub++;
             bgm_stop(0x6262);
-        } else if (field_pdamenu->acc + field_pdamenu->speed > 0x2780) {
-            lim = 0x1500 - field_pdamenu->lh;
-            field_pdamenu->acc = 0;
-            field_pdamenu->y += field_pdamenu->lh;
-            if (lim < field_pdamenu->y) {
-                if ((pos = field_pdamenu->pos + (field_pdamenu->y - lim)) < field_pdamenu->max) {
-                    field_pdamenu->pos = pos;
-                    field_pdamenu->y = lim;
+        } else if (field_pda->read_x + field_pda->speed > 0x2780) {
+            lim = 0x1500 - field_pda->lh;
+            field_pda->read_x = 0;
+            field_pda->read_y += field_pda->lh;
+            if (lim < field_pda->read_y) {
+                if ((pos = field_pda->pos + (field_pda->read_y - lim)) < field_pda->max) {
+                    field_pda->pos = pos;
+                    field_pda->read_y = lim;
                 }
             }
-            if (field_pdamenu->line_end[field_pdamenu->line] <= field_pdamenu->pos + field_pdamenu->y) {
-                field_pdamenu->line++;
-                fface_set(field_pdamenu->voice, 1, 1, field_pdamenu->lines[field_pdamenu->line].part);
+            if (field_pda->line_end[field_pda->line] <= field_pda->pos + field_pda->read_y) {
+                field_pda->line++;
+                fface_set(field_pda->voice, 1, 1, field_pda->lines[field_pda->line].part);
             }
         }
-        if (field_pdamenu->y >= 0x1500 - field_pdamenu->lh * 2) {
-            if (field_pdamenu->max < field_pdamenu->pos + field_pdamenu->lh / (0x2780 / field_pdamenu->speed)) {
-                unsigned short d = field_pdamenu->max - field_pdamenu->pos;
+        if (field_pda->read_y >= 0x1500 - field_pda->lh * 2) {
+            if (field_pda->max < field_pda->pos + field_pda->lh / (0x2780 / field_pda->speed)) {
+                unsigned short d = field_pda->max - field_pda->pos;
 
-                field_pdamenu->pos = field_pdamenu->max;
-                field_pdamenu->y -= d;
+                field_pda->pos = field_pda->max;
+                field_pda->read_y -= d;
             } else {
-                field_pdamenu->pos = field_pdamenu->pos + field_pdamenu->lh / (0x2780 / field_pdamenu->speed);
-                field_pdamenu->y -= (unsigned short)(field_pdamenu->lh / (0x2780 / field_pdamenu->speed));
+                field_pda->pos = field_pda->pos + field_pda->lh / (0x2780 / field_pda->speed);
+                field_pda->read_y -= (unsigned short)(field_pda->lh / (0x2780 / field_pda->speed));
             }
         }
         if (pad_get()->b.trig & region_pick_value(0)) {
-            field_pdamenu->pos = field_pdamenu->max;
-            field_pdamenu->y = 0x1500;
-            field_pdamenu->frame = field_pdamenu->frames;
-            fface_set(field_pdamenu->voice, 0, 0, 0);
-            field_pdamenu->sub = 2;
+            field_pda->pos = field_pda->max;
+            field_pda->read_y = 0x1500;
+            field_pda->frame = field_pda->frames;
+            fface_set(field_pda->voice, 0, 0, 0);
+            field_pda->sub = 2;
             bgm_stop(0x6262);
         }
         break;
     case 2: {
         PadState *pad = pad_get();
-        unsigned int step = field_pdamenu->lh / 6;
+        unsigned int step = field_pda->lh / 6;
 
         if (pad->b.trig & region_pick_value(0)) {
             quit = 1;
         } else if (pad->b.dir & 0x10) {
-            if (field_pdamenu->pos <= step)
-                field_pdamenu->pos = 0;
+            if (field_pda->pos <= step)
+                field_pda->pos = 0;
             else
-                field_pdamenu->pos -= step;
+                field_pda->pos -= step;
         } else if (pad->b.dir & 0x40) {
-            field_pdamenu->pos += step;
-            if (field_pdamenu->pos > field_pdamenu->max)
-                field_pdamenu->pos = field_pdamenu->max;
+            field_pda->pos += step;
+            if (field_pda->pos > field_pda->max)
+                field_pda->pos = field_pda->max;
         }
         break;
     }
@@ -383,18 +383,18 @@ void fpda_reader_update(void)
     if (quit) {
         if (bgm_get_status(0x6262) & 0x21)
             bgm_stop(0x6262);
-        if (field_pdamenu->line_end != 0) {
-            heap_set_level(field_pdamenu->heap, field_pdamenu->line_end);
-            field_pdamenu->line_end = 0;
+        if (field_pda->line_end != 0) {
+            heap_set_level(field_pda->heap, field_pda->line_end);
+            field_pda->line_end = 0;
         }
-        if (field_pdamenu->lines != 0) {
-            heap_set_level(field_pdamenu->heap, field_pdamenu->lines);
-            field_pdamenu->lines = 0;
+        if (field_pda->lines != 0) {
+            heap_set_level(field_pda->heap, field_pda->lines);
+            field_pda->lines = 0;
         }
-        fface_free(field_pdamenu->voice);
-        field_pdamenu->voice = 0;
-        field_pdamenu->state = 6;
-        field_pdamenu->sub = 0;
+        fface_free(field_pda->voice);
+        field_pda->voice = 0;
+        field_pda->state = 6;
+        field_pda->sub = 0;
         se_play(0x6214);
     }
 }
@@ -404,61 +404,61 @@ void fpda_reader_update(void)
 /* loads the lines of the chosen event and lays them out */
 void fpda_reader_open(void)
 {
-    FieldPdaEvLine tmp[100];
-    FieldPdaEvLine *d;
-    FieldPdaEvLine *src;
+    FieldPdaLine tmp[100];
+    FieldPdaLine *d;
+    FieldPdaLine *src;
     FieldPdaEvent *ev;
     int total;
     int n = 0;
     int i;
     unsigned int g;
 
-    ev = &field_pdamenu->events[field_pdamenu->top + field_pdamenu->sel];
-    field_pdamenu->voice = fface_new(field_pdamenu->heap, ev->voice & 0x3FF);
+    ev = &field_pda->events[field_pda->top + field_pda->sel];
+    field_pda->voice = fface_new(field_pda->heap, ev->voice & 0x3FF);
     src = field_pda_event_get(ev->id);
     ev->read = 1;
     if (src->text != 0) {
         d = tmp;
         do {
-            memcpy(d, src, sizeof(FieldPdaEvLine));
+            memcpy(d, src, sizeof(FieldPdaLine));
             src++;
             d++;
             n++;
         } while (src->text != 0);
     }
-    field_pdamenu->lines = heap_alloc(field_pdamenu->heap, n * 8);
-    memcpy(field_pdamenu->lines, tmp, n * 8);
-    field_pdamenu->nlines = n;
-    field_pdamenu->line_end = heap_alloc(field_pdamenu->heap, n * 4);
-    memset(field_pdamenu->line_end, 0, n * 4);
-    field_pdamenu->line = 0;
+    field_pda->lines = heap_alloc(field_pda->heap, n * 8);
+    memcpy(field_pda->lines, tmp, n * 8);
+    field_pda->n_lines = n;
+    field_pda->line_end = heap_alloc(field_pda->heap, n * 4);
+    memset(field_pda->line_end, 0, n * 4);
+    field_pda->line = 0;
     font_set_size(14, 14);
     font_set_line_extra(0x80);
     if (cfg_get_language() == 0)
         font_set_flag8000(1);
     total = 0;
     for (i = 0; i < n; i++) {
-        total += font_wtext_lines(0x2780, field_pdamenu->lines[i].text);
+        total += font_wtext_lines(0x2780, field_pda->lines[i].text);
         total += 0x40;
-        field_pdamenu->line_end[i] = total;
+        field_pda->line_end[i] = total;
     }
     g = font_sample_glyph_size();
-    field_pdamenu->speed = ((g >> 16) & 0xFFFF) >> 2;
-    field_pdamenu->lh = (g & 0xFFFF) + 0x80;
+    field_pda->speed = ((g >> 16) & 0xFFFF) >> 2;
+    field_pda->lh = (g & 0xFFFF) + 0x80;
     if (cfg_get_language() == 0)
         font_set_flag8000(0);
     font_set_line_extra(0);
-    field_pdamenu->pos = 0;
+    field_pda->pos = 0;
     if (total - 0x40 < 0x1500)
-        field_pdamenu->max = 0;
+        field_pda->max = 0;
     else
-        field_pdamenu->max = total - 0x1540;
-    field_pdamenu->frames = (0x2780 / field_pdamenu->speed) * ((total - 0x40 + (field_pdamenu->lh - 1)) / field_pdamenu->lh);
-    field_pdamenu->frame = 0;
-    field_pdamenu->acc = 0;
-    field_pdamenu->y = 0;
-    field_pdamenu->b4 = 0;
-    field_pdamenu->sub = 0;
+        field_pda->max = total - 0x1540;
+    field_pda->frames = (0x2780 / field_pda->speed) * ((total - 0x40 + (field_pda->lh - 1)) / field_pda->lh);
+    field_pda->frame = 0;
+    field_pda->read_x = 0;
+    field_pda->read_y = 0;
+    field_pda->timer = 0;
+    field_pda->sub = 0;
 }
 #endif
 
@@ -466,30 +466,30 @@ void fpda_reader_open(void)
 void fpda_calendar_update(void)
 {
     PadState *pad = pad_get();
-    int day = field_pdamenu->day;
+    int day = field_pda->day;
     int moved = 0;
     int month, first, last, over;
 
     if (pad->b.trig & 0x6000) {
-        field_pdamenu->state = 2;
+        field_pda->state = 2;
         se_play(0x6214);
         return;
     }
     if (pad->b.trig & 0x100) {
-        field_pdamenu->month = (field_pdamenu->month + 3) % 4;
+        field_pda->month = (field_pda->month + 3) % 4;
         moved = 1;
     }
     if (pad->b.trig & 0x200) {
-        field_pdamenu->month = (field_pdamenu->month + 1) % 4;
+        field_pda->month = (field_pda->month + 1) % 4;
         moved = 1;
     }
     if (moved) {
-        first = 1 - field_pda_wday[field_pdamenu->month];
-        last = first + field_pda_mdays[field_pdamenu->month] - 1;
-        if (field_pdamenu->day < first)
-            field_pdamenu->day = first;
-        else if (last < field_pdamenu->day)
-            field_pdamenu->day = last;
+        first = 1 - field_pda_wday[field_pda->month];
+        last = first + field_pda_mdays[field_pda->month] - 1;
+        if (field_pda->day < first)
+            field_pda->day = first;
+        else if (last < field_pda->day)
+            field_pda->day = last;
         se_play(0x621B);
     } else {
         if (pad->b.rep & 0x10) {
@@ -508,27 +508,27 @@ void fpda_calendar_update(void)
             day += 1;
             se_play(0x6212);
         }
-        if (day != field_pdamenu->day) {
-            month = field_pdamenu->month;
+        if (day != field_pda->day) {
+            month = field_pda->month;
             first = 1 - field_pda_wday[month];
             last = first + field_pda_mdays[month] - 1;
             if (day < first) {
                 if (month > 0) {
-                    field_pdamenu->month = month - 1;
+                    field_pda->month = month - 1;
                     over = first - day;
-                    first = 1 - field_pda_wday[field_pdamenu->month];
-                    last = first + field_pda_mdays[field_pdamenu->month] - 1;
-                    field_pdamenu->day = last - over + 1;
+                    first = 1 - field_pda_wday[field_pda->month];
+                    last = first + field_pda_mdays[field_pda->month] - 1;
+                    field_pda->day = last - over + 1;
                 }
             } else if (last < day) {
                 if (month < 3) {
-                    field_pdamenu->month = month + 1;
+                    field_pda->month = month + 1;
                     over = day - (last + 1);
-                    first = 1 - field_pda_wday[field_pdamenu->month];
-                    field_pdamenu->day = first + over;
+                    first = 1 - field_pda_wday[field_pda->month];
+                    field_pda->day = first + over;
                 }
             } else {
-                field_pdamenu->day = day;
+                field_pda->day = day;
             }
         }
     }
@@ -570,19 +570,19 @@ unsigned char fpda_cal_mark(unsigned char month, unsigned char day)
     unsigned char c = fpda_cal_cell(month, day);
 
     if (c < 42)
-        return *(&field_pdamenu->marks[0][c] + month * 42);
+        return *(&field_pda->marks[0][c] + month * 42);
     return 0;
 }
 
 /* help window of the options page */
 void fpda_options_menu(void)
 {
-    MenuWidget *w = &field_pdamenu->menu;
+    MenuWidget *w = &field_pda->menu;
     MenuItemDef *d = &w->def;
     unsigned short pad[6] = { ' ', ' ', ' ', ' ', ' ', 0 };
 
-    wcscpy(field_pdamenu->title, pad);
-    wcscat(field_pdamenu->title, table_get_entry(fpda_option_msgs(0), 0x1C));
+    wcscpy(field_pda->title, pad);
+    wcscat(field_pda->title, table_get_entry(fpda_option_msgs(0), 0x1C));
     memset(w, 0, sizeof(MenuWidget));
     d->visible = 1;
     d->style = 0;
@@ -600,14 +600,14 @@ void fpda_options_menu(void)
     d->pad_b = 6;
     d->font_size = 12;
     d->text_color = 0xFF000000;
-    d->text = table_get_entry(fpda_option_msgs(0), field_pda_opt_msg[field_pdamenu->cursor]);
+    d->text = table_get_entry(fpda_option_msgs(0), field_pda_opt_msg[field_pda->cursor]);
     d->show_title = 1;
     d->auto_title = 1;
-    d->title = field_pdamenu->title;
+    d->title = field_pda->title;
     d->style2 = 2;
     d->title_font_size = 12;
     d->title_color = 0xFFFFFFFF;
-    w->heap = field_pdamenu->heap;
+    w->heap = field_pda->heap;
     w->no_cancel = 1;
     w->no_input = 1;
     menu_open(w);
@@ -616,7 +616,7 @@ void fpda_options_menu(void)
 /* YES/NO window of the save prompt, centered */
 void fpda_save_menu(void)
 {
-    MenuWidget *w = &field_pdamenu->menu;
+    MenuWidget *w = &field_pda->menu;
     MenuItemDef *d = &w->def;
 
     memset(w, 0, sizeof(MenuWidget));
@@ -637,7 +637,7 @@ void fpda_save_menu(void)
     d->text = table_get_entry(fld_gim_get(5), 100);
     d->open_anim = 2;
     d->close_anim = 2;
-    w->heap = field_pdamenu->heap;
+    w->heap = field_pda->heap;
     w->no_cancel = 1;
     w->buttons = 3;
     w->initial = 3;
@@ -646,7 +646,7 @@ void fpda_save_menu(void)
     menu_open(w);
     d->x = (480 - d->w) / 2;
     d->y = (272 - d->h) / 2;
-    field_pdamenu->saving = 1;
+    field_pda->dlg = 1;
 }
 
 void *fpda_pack_gim(void *pack)
@@ -781,7 +781,7 @@ void fpda_cover_draw(void)
 
     mtx_set_mode(2);
     memset(dt, 0, sizeof(dt));
-    if (field_pdamenu->state < 2)
+    if (field_pda->state < 2)
         dt[0] = 0.0f;
     else
         dt[0] = 1.0f;
@@ -789,7 +789,7 @@ void fpda_cover_draw(void)
     opts.a = 4;
     opts.b = 5;
     mtx_identity();
-    pos.x = field_pdamenu->cover_x * 0.01532f + -3.36f;
+    pos.x = field_pda->x * 0.01532f + -3.36f;
     pos.y = 0.0f;
     pos.z = 0.0f;
     m = fpda_cover_model(0);
