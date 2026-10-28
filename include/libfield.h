@@ -1017,6 +1017,90 @@ typedef struct FieldDate {             /* 0x08FD6510, 0x98: the date banner */
 } FieldDate;
 
 extern FieldDate field_date;               /* 0x08FD6510 */
+typedef struct FieldPdaEvent {         /* entry of the event log, 0xC */
+    unsigned short id : 10;            /* +0x00 */
+    unsigned short f10 : 1;
+    unsigned short read : 1;
+    unsigned short f12 : 4;
+    unsigned short voice;              /* +0x02 low 10 bits: voice file */
+    int pad04[2];
+} FieldPdaEvent;
+
+typedef struct FieldPdaLine {          /* a line of an event */
+    unsigned char part;                /* +0x00 voice part */
+    unsigned char pad01[3];
+    unsigned short *text;              /* +0x04 */
+} FieldPdaLine;
+
+typedef struct FieldPda {              /* *0x08FD5758: the PDA menu (only the fields of its pages) */
+    unsigned short state;              /* +0x000 */
+    unsigned short sub;                /* +0x002 */
+    short cover_x;                     /* +0x004 */
+    short pad006[3];
+    unsigned short cursor;             /* +0x00C option */
+    unsigned char saved[9];            /* +0x00E options on entry */
+    unsigned char opt[9];              /* +0x017 */
+    unsigned char pad020[2];
+    unsigned short title[0x43];        /* +0x022 */
+    void *heap;                        /* +0x0A8 */
+    int pad0ac;
+    unsigned char confirm : 1;         /* +0x0B0 */
+    unsigned char pad0b0 : 7;
+    unsigned char timer;               /* +0x0B1 */
+    unsigned short pad0b2;
+    unsigned short b4;                 /* +0x0B4 */
+    unsigned short pad0b6;
+    unsigned char month;               /* +0x0B8 calendar */
+    unsigned char day;                 /* +0x0B9 cell of the day */
+    unsigned char marks[4][42];        /* +0x0BA */
+    unsigned char top;                 /* +0x162 event log */
+    unsigned char sel;                 /* +0x163 */
+    unsigned char count;               /* +0x164 */
+    unsigned char pad165[3];
+    FieldPdaEvent *events;             /* +0x168 */
+    FieldPdaLine *lines;               /* +0x16C reader */
+    unsigned char nlines;              /* +0x170 */
+    unsigned char line;                /* +0x171 */
+    unsigned char pad172[2];
+    int *line_end;                     /* +0x174 bottom of each line (1/64 px) */
+    unsigned short acc;                /* +0x178 */
+    unsigned short y;                  /* +0x17A */
+    unsigned short speed;              /* +0x17C */
+    unsigned short lh;                 /* +0x17E line height */
+    unsigned short frame;              /* +0x180 */
+    unsigned short frames;             /* +0x182 */
+    unsigned int pos;                  /* +0x184 scroll */
+    unsigned int max;                  /* +0x188 */
+    void *voice;                       /* +0x18C */
+    unsigned char saving : 1;          /* +0x190 */
+    unsigned char pad190 : 7;
+    unsigned char pad191[3];
+    MenuWidget menu;                   /* +0x194 */
+} FieldPda;
+
+extern FieldPda *field_pda;                         /* 0x08FD5758 */
+extern FieldPdaLine *(*field_pda_event_get)(int id); /* 0x08FD5750 */
+extern void *field_pda_cover;                       /* 0x08FD5760 */
+extern void *field_pda_names;                       /* 0x08FD5764 */
+extern void *field_pda_msgs;                        /* 0x08FD5768 */
+typedef struct FieldClock {            /* 0x08FD65A8, 0x340: the clock (time to wait until) */
+    int state;                         /* +0x000 */
+    void *icon;                        /* +0x004 buttom_icon1.gim */
+    Menu menu;                         /* +0x008 */
+    MenuItemDef def;                   /* +0x054 */
+    MenuWidget w[2];                   /* +0x0CC */
+    int pad30c[3];
+    int result;                        /* +0x318 2 or 3 */
+    int hour;                          /* +0x31C time chosen */
+    int minute;                        /* +0x320 */
+    int first;                         /* +0x324 quarter of an hour of the current time + 1 */
+    int cur;                           /* +0x328 */
+    int pad32c;
+    int redraw;                        /* +0x330 */
+    int pad334[3];
+} FieldClock;
+
+extern FieldClock field_clock;             /* 0x08FD65A8 */
 /* ---- end 0x08824028-0x08827FE4 ---- */
 
 #endif
