@@ -775,6 +775,56 @@ typedef struct FieldBag {              /* 0x08FD5040, 0x708: the bag (items and 
 
 extern FieldBag field_bag;
 
+/* ---- 0x0881EDC8-0x0881FFEC (f_cal.c) ---- */
+typedef struct FieldCalEvent {         /* event of the calendar, 0xC (sorted by fcal_event_cmp) */
+    unsigned char pad00[3];
+    unsigned char b3lo : 2;
+    unsigned char month : 4;           /* +0x03 bits 2..5 */
+    unsigned char b3hi : 2;
+    unsigned char day : 6;             /* +0x04 */
+    unsigned char b4hi : 2;
+    unsigned char pad05[7];
+} FieldCalEvent;
+
+typedef struct FieldCal {              /* *0x08FD5758, 0x2B4 (heap): the calendar */
+    unsigned short state;              /* +0x000 */
+    short pad02;
+    short x;                           /* +0x004 page position */
+    short y;                           /* +0x006 */
+    short x_home;                      /* +0x008 */
+    unsigned char cur : 4;             /* +0x00A tab under the cursor */
+    unsigned char cur_hi : 4;
+    unsigned char pad0b[0x15];
+    unsigned char x20;                 /* +0x020 */
+    unsigned char pad21[0x83];
+    int xa4;                           /* +0x0A4 */
+    void *heap;                        /* +0x0A8 */
+    void *gim;                         /* +0x0AC */
+    unsigned char flag_b0 : 1;         /* +0x0B0 */
+    unsigned char pad_b0 : 7;
+    unsigned char flag_b1_0 : 1;       /* +0x0B1 */
+    unsigned char flag_b1_1 : 1;
+    unsigned char pad_b1 : 6;
+    unsigned char t;                   /* +0x0B2 slide step 0..10 */
+    unsigned char padb3;
+    unsigned short timer;              /* +0x0B4 */
+    unsigned char month;               /* +0x0B6 */
+    unsigned char day;                 /* +0x0B7 */
+    unsigned char padb8[2];
+    unsigned char marks[4][42];        /* +0x0BA per month and day cell */
+    unsigned char pad162[2];
+    unsigned char n_events;            /* +0x164 */
+    unsigned char pad165[3];
+    FieldCalEvent *events;             /* +0x168 */
+    int pad16c[9];
+    unsigned char dlg : 1;             /* +0x190 the menu below is open */
+    unsigned char pad190 : 7;
+    unsigned char pad191[3];
+    MenuWidget menu;                   /* +0x194 */
+} FieldCal;
+
+extern FieldCal *field_cal;
+
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */

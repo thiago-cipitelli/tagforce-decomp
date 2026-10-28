@@ -15,7 +15,7 @@ void fld_hud_move(int a, int b, int c);
 void func_0882623C(int a, int b, int c);
 void fmoney_set_gim(void *gim);
 void func_08826074(void);
-void func_0881EDC8(void *heap, int a, int b);
+void fcal_open(void *heap, int a, int b);
 void fld_scene_gim_loaded(int *file, void *arg);
 
 extern unsigned char field_story_ext[0x10];    /* 0x08FD5748 */
@@ -176,7 +176,7 @@ void fld_scene_gim_loaded(int *file, void *arg)
         fmsg_set_cursor(g);
         func_08826074();
         if (s->story.w[9] == 1) {
-            func_0881EDC8(fld_heap_get(), *(int *)s->file, 1);
+            fcal_open(fld_heap_get(), *(int *)s->file, 1);
             s->xa8 = 1;
         } else {
             s->xa8 = 0;
