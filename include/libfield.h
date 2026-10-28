@@ -931,4 +931,58 @@ void fld_load_cancel_all(void);                /* 0x0880C744 */
 FieldCtx *fld_ctx_get(void);                   /* 0x0880CF0C */
 int fld_bu_index(int chara);                   /* 0x0880ED50 */
 
+
+/* ---- 0x08824028-0x08827FE4 (agent-fc) ---- */
+typedef struct FieldVec4 {             /* a Vec4 on the stack without the 16-byte alignment */
+    float x, y, z, w;
+} FieldVec4;
+
+typedef struct FieldCamera {           /* BOOT camera_get() */
+    Vec4 pos;
+    Vec4 target;                       /* +0x10 */
+    Vec4 up;                           /* +0x20 */
+    Vec4 dir;                          /* +0x30 from the target to the eye */
+    Mat4 view;                         /* +0x40 */
+    float rot[16];                     /* +0x80 rotation part of the view */
+} FieldCamera;
+
+typedef struct FieldFxDef {            /* sprite given to fld_fx_attach instead of an icon */
+    void *gim;                         /* +0x00 */
+    unsigned short tw, th;             /* +0x04 texture size */
+    unsigned short u, v;               /* +0x08 */
+    unsigned short w, h;               /* +0x0C */
+    unsigned int color;                /* +0x10 */
+    int bubble;                        /* +0x14 */
+    short x, y;                        /* +0x18 offset of the sprite (1/64) */
+} FieldFxDef;
+
+typedef struct FieldFx {               /* emotion bubble over a character, 0x60 */
+    int active;                        /* +0x00 */
+    FieldChr *chr;                     /* +0x04 */
+    int pad08[2];
+    Mat4 mtx;                          /* +0x10 */
+    unsigned int time;                 /* +0x50 frames of the current step */
+    int step;                          /* +0x54 */
+    int kind;                          /* +0x58 */
+    FieldFxDef *def;                   /* +0x5C */
+} FieldFx;
+
+typedef struct FieldFxKind {           /* 0x08839470[15] */
+    int bubble;
+    unsigned short u, v;               /* first icon cell */
+    short x, y;                        /* offset of the icon (1/64) */
+} FieldFxKind;
+
+typedef struct FieldFxFrame {
+    int cell;
+    unsigned int time;
+} FieldFxFrame;
+
+typedef struct FieldFxAnim {           /* 0x08839524[15]: icon animation of a kind */
+    FieldFxFrame f[8];
+} FieldFxAnim;
+
+extern FieldFx field_fx[32];               /* 0x08FD5910 */
+/* ---- end 0x08824028-0x08827FE4 ---- */
+
 #endif
