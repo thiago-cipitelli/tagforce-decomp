@@ -443,8 +443,9 @@ int tut_action_filter(int player, int zone, int index, int kind)
 /* duel event sink installed with duel_host_cb_set: events the script waits for are held back and
    replayed later (tut_replay_event), the others go on to libduel_mgr */
 #ifdef NON_MATCHING
-/* tut_ev_saved = ev copia o struct da pilha por lwc1/swc1 com outra ordem de lw/lui nos dois
-   pontos de cópia (15 palavras); nenhuma forma de cópia testada bate */
+/* 15 palavras, só registradores: na cópia tut_ev_saved = ev do case 2 o original usa $a0 para a
+   palavra inteira e $v1 para os lui (e slti $v1 no teste de arg[1]); aqui $v1/$v0. Struct
+   assign, cópia por ponteiro, função inline, cast e forma do teste de 0x1000 dão o mesmo */
 void tut_event_hook(void)
 {
     TutWait *w = &tut_wait;
@@ -1113,8 +1114,9 @@ void tut_field_reset(int file, int turn)
 
 /* the leading face steps (0x67 command 0x17, character * 100) load the faces before the duel */
 #ifdef NON_MATCHING
-/* laço com flag done: o original guarda &tutbox em $s0 e testa done com sltu/xori no fim;
-   aqui os $s trocam (15 palavras) em todas as formas de laço testadas */
+/* 12 palavras: o original tem done em $s1 e i em $s2 (aqui trocados) e, no fim do laço, carrega
+   tut_pc em $a0 antes do sltu/xori de !done (aqui o sltu sobe); ordem das declarações, for/while/
+   do, ++i e chara/face por índice não mudam isso */
 void tut_script_preload_faces(void)
 {
     int done;
@@ -1123,14 +1125,14 @@ void tut_script_preload_faces(void)
     int c;
     TutFace **pf;
 
-    for (done = 0, i = 0; !done; tut_pc++) {
+    for (i = 0, done = 0; !done; tut_pc++) {
         st = &tut_script.step[tut_pc];
         if ((st->cmd & 0xFFF) != 0x67)
             return;
         if (st->a != 0x17)
             return;
-        pf = &tutbox.faces[i].face;
         c = st->b / 100;
+        pf = &tutbox.faces[i].face;
         tutbox.faces[i].chara = c;
         *pf = tut_face_load(tut_heap_get(), c);
         if (tut_face_ready(*pf))
