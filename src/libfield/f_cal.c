@@ -31,23 +31,23 @@ extern unsigned short fcal_tab_text[6];    /* 0x0883D430 */
 extern unsigned short fcal_tab_titles[6];  /* 0x0883D440 */
 
 /* the pages (0x0881FFEC on) */
-void *func_0882593C(int pack);
-void func_0882596C(int pack);
-void func_08825A48(int pack);
-void func_08825A94(int pack);
+void *fpda_pack_gim(int pack);
+void fpda_cover_model(int pack);
+void fpda_event_names(int pack);
+void fpda_option_msgs(int pack);
 unsigned char pda_opt_value_width(void);
 int pda_mail_label_width(void);
-int func_088254D0(unsigned char month, unsigned char week, unsigned char day);
-void func_08825F38(void);
+int fpda_cal_day(unsigned char month, unsigned char week, unsigned char day);
+void fpda_cover_close(void);
 void pda_input_menu(void);
-void func_08825218(void);
-void func_08824830(void);
-void func_088249EC(void);
-int func_08824668(void);
-void func_0882405C(void);
-void func_08825B38(void);
-void func_08825B6C(void);
-void func_08825E48(void);
+void fpda_calendar_update(void);
+void fpda_events_update(void);
+void fpda_reader_update(void);
+int fpda_choice_update(void);
+void fpda_options_update(void);
+void fpda_cover_free(void);
+void fpda_cover_begin(void);
+void fpda_cover_draw(void);
 void *pda_draw_status(void *list, int x, int y);
 void *pda_draw_tabs(void *list, int x, int y, int step);
 void *pda_draw_options(void *list, int x, int y);
@@ -76,10 +76,10 @@ void fcal_open(void *heap, int pack, int mode)
         field_cal = heap_alloc(heap, sizeof(FieldCal));
     memset(field_cal, 0, sizeof(FieldCal));
     field_cal->heap = heap;
-    field_cal->gim = func_0882593C(pack);
-    func_0882596C(pack);
-    func_08825A48(pack);
-    func_08825A94(pack);
+    field_cal->gim = fpda_pack_gim(pack);
+    fpda_cover_model(pack);
+    fpda_event_names(pack);
+    fpda_option_msgs(pack);
     field_cal->month = *(int *)fld_story_get()->w[0] - 5;
     field_cal->day = *(int *)fld_story_get()->w[1];
     field_cal->x20 = pda_opt_value_width();
@@ -87,7 +87,7 @@ void fcal_open(void *heap, int pack, int mode)
     if (field_story_ext.mark != 0) {
         for (month = 0; month < 4; month++) {
             for (i = 0; i < 42; i++) {
-                int k = func_088254D0(month, i / 7, i % 7);
+                int k = fpda_cal_day(month, i / 7, i % 7);
 
                 if (k > 0)
                     field_cal->marks[month][i] = field_story_ext.mark(month + 5, k);
@@ -113,7 +113,7 @@ void fcal_open(void *heap, int pack, int mode)
         field_cal->t = 10;
         field_cal->x = field_cal->x_home;
         field_cal->timer = 0;
-        func_08825F38();
+        fpda_cover_close();
         break;
     default:
         field_cal->x = -0x120;
@@ -163,10 +163,10 @@ int fcal_update(void)
         pda_input_menu();
         break;
     case 6:
-        func_08824830();
+        fpda_events_update();
         break;
     case 7:
-        func_088249EC();
+        fpda_reader_update();
         break;
     case 4:
         if (pad_get()->b.trig & 0x6000) {
@@ -175,7 +175,7 @@ int fcal_update(void)
         }
         break;
     case 5:
-        func_08825218();
+        fpda_calendar_update();
         break;
     case 8:
         if (field_cal->timer++ >= 4) {
@@ -184,9 +184,9 @@ int fcal_update(void)
         }
         break;
     case 9:
-        return func_08824668();
+        return fpda_choice_update();
     case 10:
-        func_0882405C();
+        fpda_options_update();
         break;
     case 11:
         k = 10 - field_cal->t; /* ease: (steps left)^2 */
@@ -243,15 +243,15 @@ void fcal_draw(void)
         }
     }
     dl_set_list(list);
-    func_08825B6C();
-    func_08825E48();
+    fpda_cover_begin();
+    fpda_cover_draw();
 }
 
 void fcal_free(void)
 {
     void *heap = field_cal->heap;
 
-    func_08825B38();
+    fpda_cover_free();
     if (field_cal->events != 0) {
         heap_set_level(heap, field_cal->events);
         field_cal->events = 0;

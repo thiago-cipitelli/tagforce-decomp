@@ -8,10 +8,10 @@
 #include "libfield.h"
 #include "allegrex.h"
 
-unsigned char func_08825530(unsigned char month, unsigned char day);
-void func_0882435C(void);
-void func_088255E4(void);
-void func_088257A0(void);
+unsigned char fpda_cal_cell(unsigned char month, unsigned char day);
+void fpda_options_load(void);
+void fpda_options_menu(void);
+void fpda_save_menu(void);
 
 unsigned short pda_mail_faces[14] = { 2, 3, 4, 5, 6, 8, 7, 10, 9, 0x27 };  /* senders with a face icon */
 unsigned short pda_tab_states[8] = { 8, 4, 6, 5, 10 };                     /* state of each page */
@@ -321,7 +321,7 @@ void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int s
     month = m->month - 5;
     lw = ((w - 2) << 6) - lw;
     day = m->day;
-    wday = func_08825530(month, day) % 7;
+    wday = fpda_cal_cell(month, day) % 7;
     font_draw_wtext(lx, ty, lw, m->title);
     font_draw_wtext(lx, ty + 0x340, lw, chara_get_name(0, m->chara));
     pda_date_text(date, month, day, wday);
@@ -387,15 +387,15 @@ int pda_input_menu(void)
             switch (field_pda->tab) {
             case 3:
                 field_pda->month = field_pda->today_month;
-                field_pda->day = func_08825530(field_pda->today_month, field_pda->today);
+                field_pda->day = fpda_cal_cell(field_pda->today_month, field_pda->today);
                 break;
             case 5:
-                func_088257A0();
+                fpda_save_menu();
                 se_play(0x621A);
                 return 0;
             case 4:
-                func_0882435C();
-                func_088255E4();
+                fpda_options_load();
+                fpda_options_menu();
                 break;
             }
             field_pda->state = pda_tab_states[field_pda->tab];

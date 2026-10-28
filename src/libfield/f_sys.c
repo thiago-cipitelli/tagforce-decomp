@@ -90,15 +90,15 @@ void fld_draw_clear(void);
 void fld_draw_term(void);
 void fld_cells_free(void);
 void fld_draw_flush(void);
-void func_08825F7C(void);
-void func_08825F90(void);
-void func_088274B4(void);
-void func_088274C8(void);
-void func_088274EC(void);
-void func_088274F4(void);
-void func_088275FC(void);
-void func_08827788(int a);
-int func_08827810(void);
+void fget_clear(void);
+void fget_free(void);
+void fdate_clear(void);
+void fdate_term(void);
+void fdate_nop(void);
+void fdate_update(void);
+void fdate_draw(void);
+void fdate_start(int a);
+int fdate_done(void);
 void func_08829F5C(void);
 void func_08829F70(void);
 void func_08829F94(void);
@@ -161,7 +161,7 @@ void fld_sys_update(void)
         fld_scene_update();
         fld_bu_update();
         ftalk_update();
-        func_088274F4();
+        fdate_update();
         func_08829F9C();
         fld_sys_poll_all();
         fld_ctx_get()->frame++;
@@ -201,7 +201,7 @@ int fld_sys_draw(void)
             fld_npc_draw();
             fld_draw_flush();
             ftalk_draw();
-            func_088275FC();
+            fdate_draw();
         }
     }
 }
@@ -302,7 +302,7 @@ void fld_cmd_open(int *a)
         a[1] = 1;
     s->x08 = 1;
     if (a[0])
-        func_08827788(a[1]);
+        fdate_start(a[1]);
     switch (s->mode) {
     case 0:
         m = 0;
@@ -443,7 +443,7 @@ void fld_sys_init_all(void)
     fld_scene_init();
     fld_bu_init();
     ftalk_clear();
-    func_088274B4();
+    fdate_clear();
     func_08829F5C();
 }
 
@@ -459,7 +459,7 @@ void fld_sys_free_all(void)
     fld_bu_free_all();
     fld_cells_free();
     fcam_nop2();
-    func_088274EC();
+    fdate_nop();
     func_08829F94();
 }
 
@@ -477,7 +477,7 @@ void fld_sys_term_all(void)
     fld_scene_term();
     fld_bu_term();
     ftalk_free();
-    func_088274C8();
+    fdate_term();
     func_08829F70();
     for (i = 1; i < 9; i++)
         fld_gim_free(i);
@@ -491,7 +491,7 @@ void fld_sys_poll_all(void)
 {
     FieldSys *s = &field_sys;
 
-    if (func_08827810())
+    if (fdate_done())
         s->x08 = 0;
     if (fbm_ready())
         s->x04 = 0;
@@ -503,7 +503,7 @@ void fld_scene_init(void)
 {
     memset(&field_scene, 0, sizeof(FieldScene));
     fld_hud_init();
-    func_08825F7C();
+    fget_clear();
     fld_player_init();
     fpt_clear();
     fld_scene_tab_init();
@@ -518,7 +518,7 @@ void fld_scene_term(void)
 void fld_scene_free(void)
 {
     fld_hud_free();
-    func_08825F90();
+    fget_free();
     fld_player_reset();
     fpt_reset();
     fld_scene_tab_free();

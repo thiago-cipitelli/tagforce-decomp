@@ -10,11 +10,11 @@
    frame, cursor, gauge and number pieces they share. */
 #include "libfield.h"
 
-unsigned char func_08824028(int row);
-void *func_08825A94(int i);
-void *func_08825A48(int i);
-unsigned char func_088254D0(unsigned char month, unsigned char row, unsigned char col);
-unsigned char func_08825584(unsigned char month, unsigned char day);
+unsigned char fpda_opt_max(int row);
+void *fpda_option_msgs(int i);
+void *fpda_event_names(int i);
+unsigned char fpda_cal_day(unsigned char month, unsigned char row, unsigned char col);
+unsigned char fpda_cal_mark(unsigned char month, unsigned char day);
 void *func_0881FBCC(void *list, int x, int y, unsigned short *title);
 void *func_0882AD34(void *list, int face, int x, int y);
 
@@ -176,20 +176,20 @@ void *pda_draw_status(void *list, int x, int y)
 /* widest value text of the text speed and volume options (pixels) */
 unsigned char pda_opt_value_width(void)
 {
-    int n = func_08824028(1);
+    int n = fpda_opt_max(1);
     unsigned int max = 0;
     unsigned int w;
     int i;
 
     font_set_size(0x0D, 0x0D);
     for (i = 0; i < n; i++) {
-        w = font_measure_text(table_get_entry(func_08825A94(0), pda_speed_names[i])) + 0x40;
+        w = font_measure_text(table_get_entry(fpda_option_msgs(0), pda_speed_names[i])) + 0x40;
         if (max < w)
             max = w;
     }
-    n = func_08824028(5);
+    n = fpda_opt_max(5);
     for (i = 0; i < n; i++) {
-        w = font_measure_text(table_get_entry(func_08825A94(0), pda_volume_names[i])) + 0x40;
+        w = font_measure_text(table_get_entry(fpda_option_msgs(0), pda_volume_names[i])) + 0x40;
         if (max < w)
             max = w;
     }
@@ -269,14 +269,14 @@ void *pda_draw_options(void *list, int x, int y)
         list = draw_set_offsets(list, 8, 0x0C, 8, 0x0C);
         if (cur != 0)
             list = draw_sprite(list, x + 0xA3 + shift - (field_pda->opt_w >> 1), y + rows[field_pda->cursor] + 5, 0, 0xB7, 0x30, 0, 0);
-        if (cur < func_08824028(field_pda->cursor))
+        if (cur < fpda_opt_max(field_pda->cursor))
             list = draw_sprite(list, (field_pda->opt_w >> 1) + x + 0xBA + shift, y + rows[field_pda->cursor] + 5, 0, 0xBF, 0x30, 0, 0);
     }
     font_text_set(list);
     font_set_size(0x0D, 0x0D);
     font_set_color(FONT_BROWN);
-    font_draw_text((x + 9) << 6, (y + 0x44) << 6, 0x32C0, table_get_entry(func_08825A94(0), 3));
-    font_draw_text((x + 9) << 6, (y + 0x95) << 6, 0x32C0, table_get_entry(func_08825A94(0), 7));
+    font_draw_text((x + 9) << 6, (y + 0x44) << 6, 0x32C0, table_get_entry(fpda_option_msgs(0), 3));
+    font_draw_text((x + 9) << 6, (y + 0x95) << 6, 0x32C0, table_get_entry(fpda_option_msgs(0), 7));
     names = pda_opt_names;
     vx = x + 0xB2 + shift;
     for (i = 0; i < 9; i++, names++) {
@@ -289,29 +289,29 @@ void *pda_draw_options(void *list, int x, int y)
             font_set_color(FONT_BROWN);
         if (i > 1)
             tx = x + 0x10;
-        font_draw_text(tx << 6, (y + rows[i] + 4) << 6, 0x2000, table_get_entry(func_08825A94(0), *names));
+        font_draw_text(tx << 6, (y + rows[i] + 4) << 6, 0x2000, table_get_entry(fpda_option_msgs(0), *names));
         switch (i) {
         case 0:
         case 6:
         case 7:
         case 8:
-            w = font_measure_text(table_get_entry(func_08825A94(0), 0x0C));
-            font_draw_text((x + 0xA0 - (w >> 7)) << 6, (y + rows[i] + 4) << 6, 0xA00, table_get_entry(func_08825A94(0), 0x0C));
-            w = font_measure_text(table_get_entry(func_08825A94(0), 0x0D));
-            font_draw_text((x + 0xC4 - (w >> 7)) << 6, (y + rows[i] + 4) << 6, 0xA00, table_get_entry(func_08825A94(0), 0x0D));
+            w = font_measure_text(table_get_entry(fpda_option_msgs(0), 0x0C));
+            font_draw_text((x + 0xA0 - (w >> 7)) << 6, (y + rows[i] + 4) << 6, 0xA00, table_get_entry(fpda_option_msgs(0), 0x0C));
+            w = font_measure_text(table_get_entry(fpda_option_msgs(0), 0x0D));
+            font_draw_text((x + 0xC4 - (w >> 7)) << 6, (y + rows[i] + 4) << 6, 0xA00, table_get_entry(fpda_option_msgs(0), 0x0D));
             break;
         case 1:
             v = &pda_speed_names[field_pda->opt[i]];
-            font_set_size(font_measure_wtext(0xF00, table_get_entry(func_08825A94(0), *v)), 0x0D);
-            w = font_measure_text(table_get_entry(func_08825A94(0), *v));
-            font_draw_wtext((vx - (w >> 7)) << 6, (y + rows[i] + 4) << 6, 0xF00, table_get_entry(func_08825A94(0), *v));
+            font_set_size(font_measure_wtext(0xF00, table_get_entry(fpda_option_msgs(0), *v)), 0x0D);
+            w = font_measure_text(table_get_entry(fpda_option_msgs(0), *v));
+            font_draw_wtext((vx - (w >> 7)) << 6, (y + rows[i] + 4) << 6, 0xF00, table_get_entry(fpda_option_msgs(0), *v));
             font_set_size(0x0D, 0x0D);
             break;
         case 5:
             v = &pda_volume_names[field_pda->opt[i]];
-            font_set_size(font_measure_wtext(0xF00, table_get_entry(func_08825A94(0), *v)), 0x0D);
-            w = font_measure_text(table_get_entry(func_08825A94(0), *v));
-            font_draw_wtext((vx - (w >> 7)) << 6, (y + rows[i] + 4) << 6, 0xF00, table_get_entry(func_08825A94(0), *v));
+            font_set_size(font_measure_wtext(0xF00, table_get_entry(fpda_option_msgs(0), *v)), 0x0D);
+            w = font_measure_text(table_get_entry(fpda_option_msgs(0), *v));
+            font_draw_wtext((vx - (w >> 7)) << 6, (y + rows[i] + 4) << 6, 0xF00, table_get_entry(fpda_option_msgs(0), *v));
             font_set_size(0x0D, 0x0D);
             break;
         }
@@ -406,7 +406,7 @@ void *pda_draw_calendar(void *list, int x, int y)
         list = draw_sprite(list, cx, y + 0x25, 0, 0x83, 0x3D, 0, 0);
     for (row = 0, cy = y + 0x33; row < 6; row++, cy += 0x1B) {
         for (col = 0, cx = x + 0x0A; col < 7; col++, cx += 0x1D) {
-            day = func_088254D0(field_pda->month, row, col);
+            day = fpda_cal_day(field_pda->month, row, col);
             list = pda_draw_day(list, (cx & 0xFFFF) | cy << 16, col,
                                 field_pda->month == field_pda->today_month && day == field_pda->today, day);
         }
@@ -414,10 +414,10 @@ void *pda_draw_calendar(void *list, int x, int y)
     list = pda_draw_cursor(list, x + 7 + field_pda->day % 7 * 0x1D, y + 0x30 + field_pda->day / 7 * 0x1B, 0x21, 0x1F);
     for (row = 0, cy = y + 0x3B; row < 6; row++, cy += 0x1B) {
         for (col = 0, cx = x + 0x14; col < 7; col++, cx += 0x1D) {
-            day = func_088254D0(field_pda->month, row, col);
+            day = fpda_cal_day(field_pda->month, row, col);
             kind = 0;
             if (day > 0) {
-                day = func_08825584(field_pda->month, day);
+                day = fpda_cal_mark(field_pda->month, day);
                 if (day != 0 && day < 12)
                     kind = pda_event_marks[day];
             }
@@ -459,15 +459,15 @@ void *pda_draw_calendar(void *list, int x, int y)
     font_set_size(0x0E, 0x0E);
     month = field_pda->month;
     col = field_pda->day % 7;
-    day = func_088254D0(month, field_pda->day / 7, col);
+    day = fpda_cal_day(month, field_pda->day / 7, col);
     pda_date_text(date, month, day, col);
     tx = (x + 0x0D) << 6;
     font_draw_wtext(tx, (y + 0xD9) << 6, 0x3100, date);
     if (cfg_get_language() == 0)
         font_set_flag8000(1);
-    kind = func_08825584(month, day);
+    kind = fpda_cal_mark(month, day);
     if (kind != 0 && kind < 12)
-        font_draw_wtext(tx, (y + 0xE8) << 6, 0x3100, table_get_entry(func_08825A48(0), kind));
+        font_draw_wtext(tx, (y + 0xE8) << 6, 0x3100, table_get_entry(fpda_event_names(0), kind));
     if (cfg_get_language() == 0)
         font_set_flag8000(0);
     return font_text_clear();

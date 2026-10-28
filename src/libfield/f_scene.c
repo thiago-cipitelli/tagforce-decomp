@@ -12,10 +12,10 @@ void fpt_setup(int a, int b);
 void fpt_free(void);
 void fld_hud_hide(void);
 void fld_hud_move(int a, int b, int c);
-void func_0882623C(int a, int b, int c);
+void fget_card_open(int a, int b, int c);
 void fmoney_set_gim(void *gim);
-void func_08826074(void);
 void fcal_open(void *heap, int a, int b);
+void fget_load(void);
 void fld_scene_gim_loaded(int *file, void *arg);
 
 extern unsigned char field_story_ext[0x10];    /* 0x08FD5748 */
@@ -156,7 +156,7 @@ int fld_cmd_sc18_done(int *out)
 void fld_cmd_x1c(int *a)
 {
     field_scene.x1c = 1;
-    func_0882623C(*a, 0, 0);
+    fget_card_open(*a, 0, 0);
 }
 
 int fld_cmd_x1c_done(void)
@@ -174,7 +174,7 @@ void fld_scene_gim_loaded(int *file, void *arg)
         g = fld_gim_get(0);
         fmoney_set_gim(fld_gim_get(2));
         fmsg_set_cursor(g);
-        func_08826074();
+        fget_load();
         if (s->story.w[9] == 1) {
             fcal_open(fld_heap_get(), *(int *)s->file, 1);
             s->xa8 = 1;
