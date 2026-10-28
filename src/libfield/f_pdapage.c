@@ -16,7 +16,7 @@ void *fpda_event_names(int i);
 unsigned char fpda_cal_day(unsigned char month, unsigned char row, unsigned char col);
 unsigned char fpda_cal_mark(unsigned char month, unsigned char day);
 void *func_0881FBCC(void *list, int x, int y, unsigned short *title);
-void *func_0882AD34(void *list, int face, int x, int y);
+void *fface_draw(void *list, int face, int x, int y);
 
 extern unsigned char pda_event_marks[16];      /* 0x0883D410 */
 
@@ -517,7 +517,7 @@ void *pda_draw_mail(void *list, int x0, int y0)
     list = pda_draw_frame(list, x, y, 0xB5, 0xEB, 0x2F00D7);
     list = pda_draw_frame(list, x + 0x29, y + 8, 99, 0x47, 0x2F00D7);
     list = pda_draw_frame(list, x + 6, y + 0x86, 0xA9, 0x5F, 0x580047);
-    list = func_0882AD34(list, field_pda->face, x + 0x2C, y + 0x0B);
+    list = fface_draw(list, field_pda->face, x + 0x2C, y + 0x0B);
     list = pda_draw_bar(list, x + 0x21, y + 0x52, field_pda->bar_pos, field_pda->bar_max);
     list = pda_draw_mail_head(list, x + 7, y + 0x5D, 0xA6, &field_pda->mails[field_pda->top + field_pda->sel], 1);
     list = dl_scissor(list, x + 0x0B, y + 0x8B, 0x9E, 0x54);

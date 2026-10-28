@@ -1267,24 +1267,143 @@ extern FieldPdaEvLine *(*field_pda_event_get)(int id); /* 0x08FD5750 */
 extern void *field_pda_cover;                       /* 0x08FD5760 */
 extern void *field_pda_names;                       /* 0x08FD5764 */
 extern void *field_pda_msgs;                        /* 0x08FD5768 */
-typedef struct FieldHourMenu {            /* 0x08FD65A8, 0x340: the clock (time to wait until) */
+/* ---- end 0x08824028-0x08827FE4 ---- */
+
+
+/* ---- 0x08827FE4-0x0882BE80 ---- */
+typedef struct FieldHourMenu {            /* 0x08FD65A8: menu of the hour to wait until */
     int state;                         /* +0x000 */
-    void *icon;                        /* +0x004 buttom_icon1.gim */
+    void *gim;                         /* +0x004 arrows */
     Menu menu;                         /* +0x008 */
-    MenuItemDef def;                   /* +0x054 */
-    MenuWidget w[2];                   /* +0x0CC */
-    int pad30c[3];
-    int result;                        /* +0x318 2 or 3 */
-    int hour;                          /* +0x31C time chosen */
+    MenuItemDef title;                 /* +0x054 */
+    MenuWidget w[2];                   /* +0x0CC choice list, +0x1EC hour picker */
+    unsigned short *texts[3];          /* +0x30C entries of the list */
+    int ok;                            /* +0x318 */
+    int hour;                          /* +0x31C */
     int minute;                        /* +0x320 */
-    int first;                         /* +0x324 quarter of an hour of the current time + 1 */
-    int cur;                           /* +0x328 */
-    int pad32c;
-    int redraw;                        /* +0x330 */
-    int pad334[3];
+    int sel;                           /* +0x324 quarter of hour picked */
+    int min_sel;                       /* +0x328 first quarter allowed */
+    int hint;                          /* +0x32C entry whose help text is shown */
+    int open;                          /* +0x330 */
+    int left;                          /* +0x334 arrow state: 0 hidden, 1 lit, 2 blinking */
+    int right;                         /* +0x338 */
+    unsigned int blink;                /* +0x33C */
 } FieldHourMenu;
 
-extern FieldHourMenu field_hour_menu;             /* 0x08FD65A8 */
-/* ---- end 0x08824028-0x08827FE4 ---- */
+typedef struct FclkPos {
+    int x, y;
+} FclkPos;
+
+extern FieldHourMenu field_hour_menu;          /* 0x08FD65A8 */
+
+typedef struct FieldIcon {             /* sprite over the head of the player (fld_player_fx), 0x1C */
+    void *gim;                         /* +0x00 */
+    short sx, sy;                      /* +0x04 */
+    short u, v;                        /* +0x08 */
+    short w, h;                        /* +0x0C */
+    unsigned int color;                /* +0x10 */
+    int mode;                          /* +0x14 */
+    short dx, dy;                      /* +0x18 */
+} FieldIcon;
+
+typedef struct FieldEgg {              /* 0x08FD68F0, 0x170: the golden egg lottery */
+    int state;                         /* +0x000 */
+    void *pack;                        /* +0x004 goldegg_pan model */
+    FieldIcon icon;                    /* +0x008 the item turning over the player */
+    int item;                          /* +0x024 */
+    unsigned int fade;                 /* +0x028 */
+    unsigned short text[64];           /* +0x02C */
+    unsigned int frame;                /* +0x0AC */
+    int *items;                        /* +0x0B0 */
+    int n_items;                       /* +0x0B4 */
+    int cur;                           /* +0x0B8 */
+    int rare;                          /* +0x0BC the golden egg can come out */
+    int kind;                          /* +0x0C0 */
+    int hit;                           /* +0x0C4 the golden egg came out */
+    int step;                          /* +0x0C8 */
+    unsigned int count;                /* +0x0CC */
+    void *model;                       /* +0x0D0 */
+    int pad0d4;
+    void *efs;                         /* +0x0D8 */
+    int pad0dc;
+    Mat4 mtx_model;                    /* +0x0E0 */
+    Mat4 mtx_efs;                      /* +0x120 */
+    int loaded;                        /* +0x160 */
+    int pad164[3];
+} FieldEgg;
+
+typedef struct FieldGeLight {          /* BOOT light_set data, 0x3C */
+    int type;                          /* +0x00 */
+    unsigned int diffuse;              /* +0x04 */
+    unsigned int specular;             /* +0x08 */
+    int kind;                          /* +0x0C */
+    Vec3 dir;                          /* +0x10 */
+    int rest[8];
+} FieldGeLight;
+
+extern FieldEgg field_egg;              /* 0x08FD68F0 */
+
+typedef struct FieldPict {             /* 0x08FD6A60, 0x18: full-screen picture */
+    int busy;                          /* +0x00 */
+    int state;                         /* +0x04 0 none, 1 fading in, 2 shown, 3 fading out */
+    void *gim;                         /* +0x08 */
+    unsigned int count;                /* +0x0C */
+    unsigned int color;                /* +0x10 */
+    int fade_only;                     /* +0x14 black screen, no picture */
+} FieldPict;
+
+typedef struct FieldChoice {           /* 0x08FD6A78, 0x1E4: menu of five choices */
+    Menu menu;                         /* +0x000 */
+    MenuItemDef title;                 /* +0x04C */
+    MenuWidget w;                      /* +0x0C4 */
+} FieldChoice;
+
+typedef struct FieldFace {             /* tutorial face, 0x18 (heap) */
+    void *heap;                        /* +0x00 */
+    void *pack;                        /* +0x04 bu_xxx.ehp */
+    void *body;                        /* +0x08 body.ehf */
+    void *mouth;                       /* +0x0C mouth.ehf */
+    unsigned short loaded : 1;         /* +0x10 */
+    unsigned short chara : 8;
+    unsigned short anim : 4;
+    unsigned short talk : 1;
+    unsigned short blink : 1;
+    unsigned short pad10 : 1;
+    unsigned short count;              /* +0x12 frames since the last blink */
+    unsigned short next;               /* +0x14 frames to the next blink */
+    unsigned char face : 4;            /* +0x16 row of fface_files */
+    unsigned char pad16 : 4;
+    unsigned char pad17;
+} FieldFace;
+
+typedef struct FaceFile {
+    unsigned short id;
+    const char *path;
+} FaceFile;
+
+typedef struct FaceAnim {
+    unsigned short id;
+    unsigned short frame;
+} FaceAnim;
+
+typedef struct FieldVtx8 {             /* GE vertex 0xA1: 8-bit uv, normal and position */
+    unsigned char u, v;
+    signed char nx, ny, nz;
+    signed char x, y, z;
+} FieldVtx8;
+
+typedef struct FieldDlg {              /* 0x08FD6C5C, 0x124: yes/no dialog */
+    int open;                          /* +0x000 */
+    MenuWidget w;                      /* +0x004 */
+} FieldDlg;
+
+typedef struct FdlgPos {
+    short x, y;
+} FdlgPos;
+
+extern FieldPict field_pict;            /* 0x08FD6A60 */
+extern FieldChoice field_choice;        /* 0x08FD6A78 */
+extern FieldDlg field_dlg;              /* 0x08FD6C5C */
+
 
 #endif

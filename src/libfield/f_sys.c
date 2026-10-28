@@ -99,15 +99,15 @@ void fdate_update(void);
 void fdate_draw(void);
 void fdate_start(int a);
 int fdate_done(void);
-void func_08829F5C(void);
-void func_08829F70(void);
-void func_08829F94(void);
-void func_08829F9C(void);
-void func_0882A068(void);
-void func_0882A404(void);
-void func_0882A918(void);
-void func_0882AB1C(void);
-void func_0882AB24(void);
+void fpic_clear(void);
+void fpic_term(void);
+void fpic_nop(void);
+void fpic_update(void);
+void fpic_draw(void);
+void fcho_close(void);
+void famb_start(void);
+void famb_stop(void);
+void famb_update(void);
 
 extern int field_term0, field_term1, field_term2, field_term3, field_term4; /* 0x08FD1A30.. */
 extern unsigned int field_fade_colors[];       /* 0x0883884C */
@@ -155,14 +155,14 @@ void fld_sys_update(void)
         fbm_update();
         fld_bg_update();
         if (s->mode == 0)
-            func_0882AB24();
+            famb_update();
         fld_items_update();
         fld_npc_update();
         fld_scene_update();
         fld_bu_update();
         ftalk_update();
         fdate_update();
-        func_08829F9C();
+        fpic_update();
         fld_sys_poll_all();
         fld_ctx_get()->frame++;
     }
@@ -196,7 +196,7 @@ int fld_sys_draw(void)
             dl = fmoney_draw(dl);
             dl_set_list(dl);
             fld_scene_draw();
-            func_0882A068();
+            fpic_draw();
             fld_bu_draw();
             fld_npc_draw();
             fld_draw_flush();
@@ -317,7 +317,7 @@ void fld_cmd_open(int *a)
     c->se_on = 1;
     c->pad10 = 1;
     if (s->mode == 0)
-        func_0882A918();
+        famb_start();
 }
 
 int fld_cmd_open_done(void)
@@ -352,7 +352,7 @@ void fld_cmd_close(void)
     c->se_on = 0;
     c->pad10 = 0;
     if (s->mode == 0)
-        func_0882AB1C();
+        famb_stop();
     s->x0c = 0;
 }
 
@@ -444,7 +444,7 @@ void fld_sys_init_all(void)
     fld_bu_init();
     ftalk_clear();
     fdate_clear();
-    func_08829F5C();
+    fpic_clear();
 }
 
 void fld_sys_free_all(void)
@@ -460,7 +460,7 @@ void fld_sys_free_all(void)
     fld_cells_free();
     fcam_nop2();
     fdate_nop();
-    func_08829F94();
+    fpic_nop();
 }
 
 void fld_sys_term_all(void)
@@ -478,7 +478,7 @@ void fld_sys_term_all(void)
     fld_bu_term();
     ftalk_free();
     fdate_term();
-    func_08829F70();
+    fpic_term();
     for (i = 1; i < 9; i++)
         fld_gim_free(i);
     fld_load_cancel_chr();
@@ -522,5 +522,5 @@ void fld_scene_free(void)
     fld_player_reset();
     fpt_reset();
     fld_scene_tab_free();
-    func_0882A404();
+    fcho_close();
 }

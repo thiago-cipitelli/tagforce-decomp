@@ -49,10 +49,10 @@ void *dl_color(void *list, unsigned int color);
 void *dl_fog(float near, float far, void *list, unsigned int color);
 void *dl_set_tex_filter(void *list, int min, int mag);
 /* voice player of the event reader (libfield, outside this file) */
-void *func_0882ABD4(void *heap, int id);
-int func_0882AD08(void *voice);
-void func_0882AF1C(void *voice, int a, int b, int part);
-void func_0882B0A4(void *voice);
+void *fface_new(void *heap, int id);
+int fface_ready(void *voice);
+void fface_set(void *voice, int a, int b, int part);
+void fface_free(void *voice);
 
 void fpda_options_menu(void);
 void fpda_options_apply(void);
@@ -309,9 +309,9 @@ void fpda_reader_update(void)
 
     switch (field_pdamenu->sub) {
     case 0:
-        if (func_0882AD08(field_pdamenu->voice) == 0)
+        if (fface_ready(field_pdamenu->voice) == 0)
             return;
-        func_0882AF1C(field_pdamenu->voice, 1, 1, field_pdamenu->lines[0].part);
+        fface_set(field_pdamenu->voice, 1, 1, field_pdamenu->lines[0].part);
         field_pdamenu->sub++;
         break;
     case 1:
@@ -321,7 +321,7 @@ void fpda_reader_update(void)
             field_pdamenu->pos = field_pdamenu->max;
             field_pdamenu->y = 0x1500;
             field_pdamenu->frame = field_pdamenu->frames;
-            func_0882AF1C(field_pdamenu->voice, 0, 0, 0);
+            fface_set(field_pdamenu->voice, 0, 0, 0);
             field_pdamenu->sub++;
             bgm_stop(0x6262);
         } else if (field_pdamenu->acc + field_pdamenu->speed > 0x2780) {
@@ -336,7 +336,7 @@ void fpda_reader_update(void)
             }
             if (field_pdamenu->line_end[field_pdamenu->line] <= field_pdamenu->pos + field_pdamenu->y) {
                 field_pdamenu->line++;
-                func_0882AF1C(field_pdamenu->voice, 1, 1, field_pdamenu->lines[field_pdamenu->line].part);
+                fface_set(field_pdamenu->voice, 1, 1, field_pdamenu->lines[field_pdamenu->line].part);
             }
         }
         if (field_pdamenu->y >= 0x1500 - field_pdamenu->lh * 2) {
@@ -354,7 +354,7 @@ void fpda_reader_update(void)
             field_pdamenu->pos = field_pdamenu->max;
             field_pdamenu->y = 0x1500;
             field_pdamenu->frame = field_pdamenu->frames;
-            func_0882AF1C(field_pdamenu->voice, 0, 0, 0);
+            fface_set(field_pdamenu->voice, 0, 0, 0);
             field_pdamenu->sub = 2;
             bgm_stop(0x6262);
         }
@@ -391,7 +391,7 @@ void fpda_reader_update(void)
             heap_set_level(field_pdamenu->heap, field_pdamenu->lines);
             field_pdamenu->lines = 0;
         }
-        func_0882B0A4(field_pdamenu->voice);
+        fface_free(field_pdamenu->voice);
         field_pdamenu->voice = 0;
         field_pdamenu->state = 6;
         field_pdamenu->sub = 0;
@@ -414,7 +414,7 @@ void fpda_reader_open(void)
     unsigned int g;
 
     ev = &field_pdamenu->events[field_pdamenu->top + field_pdamenu->sel];
-    field_pdamenu->voice = func_0882ABD4(field_pdamenu->heap, ev->voice & 0x3FF);
+    field_pdamenu->voice = fface_new(field_pdamenu->heap, ev->voice & 0x3FF);
     src = field_pda_event_get(ev->id);
     ev->read = 1;
     if (src->text != 0) {

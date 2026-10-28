@@ -13,30 +13,30 @@ void fld_dlg_open(unsigned short *text, int a, int b);
 int fld_dlg_update(void);
 void *fld_dlg_draw(void *list);
 /* the rest of the clock unit (0x08827FE4-) */
-void func_08827FE4(void);
-void func_088280F8(void);
-void func_088284CC(void);
-void func_088285AC(void);
-void func_08828708(void);
-void func_08828730(void);
-void func_088288EC(void);
-int func_08828920(void);
-void func_08828958(void);
-void *func_08828A90(void *list);
-void func_0882908C(int *out, int hour, int minute);
+void fclk_title_setup(void);
+void fclk_list_setup(void);
+void fclk_hint_init(void);
+void fclk_list_update(void);
+void fclk_time_open(void);
+void fclk_time_update(void);
+void fclk_finish(void);
+int fclk_closed(void);
+void fclk_free(void);
+void *fclk_time_draw(void *list);
+void fclk_time_to_index(int *out, int hour, int minute);
 
 void fclk_open(void)
 {
     FieldStory *st = fld_story_get();
 
     memset(&field_hour_menu, 0, sizeof(field_hour_menu));
-    field_hour_menu.redraw = 1;
-    func_0882908C(&field_hour_menu.cur, *(int *)st->w[3], *(int *)st->w[4]);
-    field_hour_menu.first = ++field_hour_menu.cur;
-    field_hour_menu.icon = ehp_find(syspack_get(), "buttom_icon1.gim", 0);
+    field_hour_menu.open = 1;
+    fclk_time_to_index(&field_hour_menu.min_sel, *(int *)st->w[3], *(int *)st->w[4]);
+    field_hour_menu.sel = ++field_hour_menu.min_sel;
+    field_hour_menu.gim = ehp_find(syspack_get(), "buttom_icon1.gim", 0);
     menu_init(&field_hour_menu.menu, fld_heap_get());
-    func_08827FE4();
-    func_088280F8();
+    fclk_title_setup();
+    fclk_list_setup();
     fld_story_flag(0x6216, 0);
 }
 
@@ -48,23 +48,23 @@ int fclk_update(void)
 
     switch (field_hour_menu.state) {
     case 0:
-        func_088284CC();
+        fclk_hint_init();
         c->state = 1;
         break;
     case 1:
-        func_088285AC();
+        fclk_list_update();
         return -1;
     case 2:
-        func_08828708();
+        fclk_time_open();
         c->state = 3;
         break;
     case 3:
-        func_08828730();
+        fclk_time_update();
         break;
     case 4:
         if (fmsg_done()) {
             c->state = 0;
-            c->redraw = 1;
+            c->open = 1;
         }
         break;
     case 5:
@@ -75,11 +75,11 @@ int fclk_update(void)
         switch (fld_dlg_update()) {
         case -2:
         case 3:
-            c->redraw = 0;
+            c->open = 0;
             c->state = 0;
             break;
         case 2:
-            c->result = 2;
+            c->ok = 2;
             c->state = 9;
             break;
         }
@@ -92,21 +92,21 @@ int fclk_update(void)
         switch (fld_dlg_update()) {
         case -2:
         case 3:
-            c->redraw = 0;
+            c->open = 0;
             c->state = 0;
             break;
         case 2:
-            c->result = 3;
+            c->ok = 3;
             c->state = 9;
             break;
         }
         break;
     case 9:
-        func_088288EC();
+        fclk_finish();
         c->state = 10;
         break;
     case 10:
-        if (func_08828920() != 0) {
+        if (fclk_closed() != 0) {
             c->state = 11;
         } else {
             menu_update(&c->w[0]);
@@ -114,8 +114,8 @@ int fclk_update(void)
         }
         break;
     case 11:
-        func_08828958();
-        return c->result;
+        fclk_free();
+        return c->ok;
     }
     return -1;
 }
@@ -133,7 +133,7 @@ void fclk_draw(void *list)
     switch (c->state) {
     case 3:
         if (c->w[1].state < 5)
-            list = func_08828A90(list);
+            list = fclk_time_draw(list);
         break;
     }
 }
