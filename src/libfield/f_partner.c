@@ -14,7 +14,7 @@ int fld_dir_nearest(Vec3 *v);
 void fld_chr_collide(float r, Vec3 *out, Vec3 *vel, Vec3 *pos, int flag);
 void fld_npc_near(FieldNpc **out, int *n, FieldNpc *p, float r);
 int fld_map_walkable(int x, int z, int flag);
-int func_0881CE04(int x, int z);
+int fld_cell_free(int x, int z);
 Vec3 *vec3_cross_nw(Vec3 *out, Vec3 *a, Vec3 *b);
 Vec3 *vec3_zero(Vec3 *out);
 
@@ -182,7 +182,7 @@ void fpt_place(void)
         z = p.z / 0.5f;
         ok = 1;
         ok &= fld_map_walkable(x, z, 0);
-        ok &= func_0881CE04(x, z);
+        ok &= fld_cell_free(x, z);
         ok &= fld_map_attr(x, z) != 3;
         if (ok) {
             c->dir = dir;

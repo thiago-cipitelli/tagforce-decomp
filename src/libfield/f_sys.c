@@ -86,10 +86,10 @@ void fld_hud_open(int a);
 void fld_hud_blink(int a, int b, int c);
 void fpt_clear(void);
 void fpt_reset(void);
-void func_0881C770(void);
-void func_0881C784(void);
-void func_0881C7A8(void);
-void func_0881C904(void);
+void fld_draw_clear(void);
+void fld_draw_term(void);
+void fld_cells_free(void);
+void fld_draw_flush(void);
 void func_08825F7C(void);
 void func_08825F90(void);
 void func_088274B4(void);
@@ -199,7 +199,7 @@ int fld_sys_draw(void)
             func_0882A068();
             fld_bu_draw();
             fld_npc_draw();
-            func_0881C904();
+            fld_draw_flush();
             ftalk_draw();
             func_088275FC();
         }
@@ -434,7 +434,7 @@ int fld_cmd_x18_done(void)
 void fld_sys_init_all(void)
 {
     fcam_init();
-    func_0881C770();
+    fld_draw_clear();
     fbm_clear();
     fld_bg_init();
     fld_items_init();
@@ -457,7 +457,7 @@ void fld_sys_free_all(void)
     fld_items_free();
     ftalk_nop();
     fld_bu_free_all();
-    func_0881C7A8();
+    fld_cells_free();
     fcam_nop2();
     func_088274EC();
     func_08829F94();
@@ -468,7 +468,7 @@ void fld_sys_term_all(void)
     int i;
 
     fcam_nop();
-    func_0881C784();
+    fld_draw_term();
     fbm_free();
     fld_bg_term();
     fld_items_term();

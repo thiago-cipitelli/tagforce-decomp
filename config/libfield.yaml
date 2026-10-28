@@ -195,7 +195,10 @@ segments:
       - [0x17F08, c, f_partner]
       - [0x1809C, asm, f_partner_asm_0881C03C]
       - [0x1825C, c, f_partner]
-      - [0x182A0, asm, text_0]
+      - [0x182A0, c, f_shadow]
+      - [0x18CAC, asm, f_shadow_asm_0881CC4C]
+      - [0x18D9C, c, f_shadow]
+      - [0x18EC8, asm, text_0]
       - [0x27EE0, asm, sceStub_text]
       - [0x2A5C8, bin, lib_ent_top]
       - [0x2A5CC, bin, lib_ent]
@@ -229,7 +232,8 @@ segments:
       - [0x388EC, .data, f_cam]
       - [0x38910, .data, f_bmap]
       - [0x38A28, .data, f_partner]
-      - [0x38A40, data, data_7]
+      - [0x38A40, .data, f_shadow]
+      - [0x39420, data, data_7]
       - { start: 0x39D20, type: bss, vram: 0x883DCC0, name: bss }
   - [0x39D20]
 

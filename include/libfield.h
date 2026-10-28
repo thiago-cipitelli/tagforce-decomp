@@ -721,7 +721,7 @@ typedef struct FieldShVtx {            /* vertex of the shadow volume (texture, 
 } FieldShVtx;
 
 typedef struct FieldShadow {           /* 0x08FD2730, 0x50: the light of the stencil shadows */
-    Mat4 light;                        /* +0x00 rows: side, direction, side, origin */
+    Vec4 light[4];                     /* +0x00 matrix rows: side, direction, side, origin */
     int alpha;                         /* +0x40 */
     int pad44[3];
 } FieldShadow;
