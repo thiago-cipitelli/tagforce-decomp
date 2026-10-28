@@ -34,7 +34,7 @@ unsigned int *draw_sprite(unsigned int *list, int x, int y, int z, int u, int v,
 /* lesson at row i of a tab, TL_NONE past the end */
 #define TL_ENTRY(tab, i) ((i) >= tl.count[tab] ? TL_NONE : tl.list[tab][i])
 
-#ifdef NON_MATCHING /* o original mantém a cópia morta da primeira instrução do bloco destino depois de cada `b` das três buscas na lista (bnezl; b; li 24; <cópia>), que o mwcc atual remove; o resto da forma é igual */
+#ifdef NON_MATCHING /* o original mantém a cópia morta da primeira instrução do bloco destino depois de cada `b` das três buscas na lista (bnezl; b; li 24; <cópia>), que o mwcc atual remove; o resto da forma é igual. Tentado sem sucesso: inline com return, goto, if/else, switch de 2 casos, `||` com termo dobrado; no mwcc 219 a cópia morta só sobrevive em corpo de case de switch e no último termo de `||` seguido de return (partner_id_set) */
 /* 0x088042f4: export, once per frame */
 void tlist_draw(void)
 {
