@@ -22,7 +22,7 @@ void *drec_draw_bar_frame(void *list, int x, int y, unsigned char down, unsigned
                           int show, unsigned int t, void *gim);
 void *drec_draw_scrollbar(void *list, int x, int y, int h, int pos, int page, int total);
 
-#ifdef NON_MATCHING /* forma igual (mesmo inline de drec_tab_rows); o original deixa uma cópia morta do sll no alvo dos dois bnezl do inline (8 bytes a mais, que deslocam o resto) */
+#ifdef NON_MATCHING /* forma igual (mesmo inline de drec_tab_rows); o original deixa uma cópia morta do sll no alvo dos dois bnezl do inline (8 bytes a mais, que deslocam o resto); mesmo problema e mesmas tentativas de tlist_draw (ver lá) */
 void duelrecord_draw(void)
 {
     void *list;
