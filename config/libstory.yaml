@@ -41,6 +41,8 @@ segments:
       - [0xF35C, asm, text_2]
       - [0xF90C, c, s_evlist]
       - [0xFCE4, asm, text_3]
+      - [0x11704, c, s_pickup]
+      - [0x11BB4, asm, text_4]
       - [0x13EC4, asm, sceStub_text]
       - [0x16724, bin, lib_ent_top]
       - [0x16728, bin, lib_ent]

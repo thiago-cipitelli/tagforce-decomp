@@ -81,19 +81,19 @@ typedef struct StoryChrFlags {         /* 0x0881DA1C points here (save data) */
     unsigned short recipes[150][6];    /* +0x20 recipes seen per character */
 } StoryChrFlags;
 
-typedef struct StoryChr {              /* static tables of a story character, 0x0881DA24[150] */
-    unsigned short *date_conds;        /* +0x00 6 u16: date range, values */
-    unsigned short *level_conds;       /* +0x04 3 u16: level, values */
-    short *flag_conds;                 /* +0x08 3 u16: chr flag, values */
-    short *story_conds;                /* +0x0C 3 u16: story flag, values */
-    unsigned short *levels;            /* +0x10 (level, value) pairs */
-    unsigned short *recipes;           /* +0x14 8 u16 entries */
-    unsigned short *looks_a;           /* +0x18 9 u16 entries */
-    unsigned short *looks_b;           /* +0x1C 9 u16 entries */
-    unsigned short *looks;             /* +0x20 25 u16 entries */
-    unsigned short *items;             /* +0x24 5 u16 entries */
-    int x28;                           /* +0x28 */
-    int x2c;                           /* +0x2C */
+typedef struct StoryChr {              /* script tables of a story character (Scr<i>_*.bin), 0x0881DA24[150] */
+    unsigned short *gp;                /* +0x00 G: 6 u16 (date range, place, x24) */
+    unsigned short *gs;                /* +0x04 G: 3 u16 (level, place, x24) */
+    short *gc;                         /* +0x08 G: 3 u16 (chr flag, place, x24) */
+    short *g;                          /* +0x0C G: 3 u16 (story flag, place, x24) */
+    unsigned short *step;              /* +0x10 Step: (level, affinity max) pairs */
+    unsigned short *deck;              /* +0x14 Deck: 8 u16 entries (date range, level, flag, story flag, recipe) */
+    unsigned short *dh;                /* +0x18 DH: 9 u16 entries */
+    unsigned short *dn;                /* +0x1C DN: 9 u16 entries */
+    unsigned short *sche;              /* +0x20 Sche: 25 u16 entries */
+    unsigned short *es;                /* +0x24 5 u16 entries */
+    void *ei;                          /* +0x28 */
+    void *el;                          /* +0x2C */
     int pad30;
     unsigned short name[0x40];         /* +0x34 */
     unsigned short deck_name[0x40];    /* +0xB4 */
@@ -250,10 +250,36 @@ typedef struct SevState {              /* 0x08ACB030, 0x84 */
 extern SevState sev;                   /* 0x08ACB030 */
 extern unsigned int *sev_done;         /* 0x08ACB02C 128 bits: event already seen */
 
-int story_date_in_range(int from_month, int from_day, int to_month, int to_day);
-int story_flag_get(unsigned int id);
-int st_chr_level(int chr);
-int st_chr_flag_get(int chr, unsigned int bit);
+typedef struct StalkList {             /* argument of the libfield list commands: array and count */
+    void *items;
+    int n;
+} StalkList;
+
+typedef struct StalkBu {               /* bust-up shown by the field (item of field command 0xE) */
+    int chara;                         /* +0x00 costume */
+    int index;                         /* +0x04 screen slot: 0 left, 1 centre, 2 right */
+    int anim;                          /* +0x08 */
+} StalkBu;
+
+typedef struct StalkBuAnim {           /* item of field command 0xF (bust-up animation) */
+    int index;
+    int anim;
+} StalkBuAnim;
+
+typedef struct StalkMsg {              /* argument of field command 0x13 (message window) */
+    unsigned short *text;              /* 0: close the window */
+    unsigned short *title;             /* speaker name */
+    int speaker;                       /* slot of the speaking bust-up, -1 none */
+} StalkMsg;
+
+typedef struct StalkState {            /* 0x08ACB0B4, 0x224 */
+    unsigned short text[256];          /* +0x000 expanded text of the message */
+    int chr[2];                        /* +0x200 script id of the character in each bust-up */
+    StalkBu bu[2];                     /* +0x208 */
+    int talk_pos;                      /* +0x220 slot of the one speaking, -1 none */
+} StalkState;
+
+extern StalkState stalk;               /* 0x08ACB0B4 */
 
 /* --- 0x088156A4-0x08817E64 --- */
 
