@@ -1,6 +1,5 @@
 // @range 0x08805FF8-0x08806D4C
-// @asm 0x08805FF8-0x08806428
-// @data 0x0880CC40-0x0880CD20
+// @data 0x0880CC1C-0x0880CD20
 /* 3D part of the machine: GE state, the two lights, the cameras (one per scene), the lid of the
    machine opening and closing, the cards flying into the slot and the card coming out (its face is
    rendered to a texture by the model's texture hook). */
@@ -28,7 +27,7 @@ typedef struct Light {         /* BOOT light, 0x3C */
 
 typedef struct Mat4 {
     float m[16];
-} Mat4;
+} __attribute__((aligned(16))) Mat4;
 
 typedef struct CmCam {         /* 0x30 */
     Vec3 tr;                   /* projection offset */
@@ -40,7 +39,6 @@ typedef struct CmCam {         /* 0x30 */
 } CmCam;
 
 extern Light cm_light0, cm_light1;
-extern Vec3 cm_light_pos0, cm_light_pos1;
 
 unsigned int *dl_offset(unsigned int *list, int x, int y);
 unsigned int *dl_viewport(unsigned int *list, int cx, int cy, int w, int h);
@@ -104,12 +102,10 @@ int cm_card_tex_hook(unsigned int **list, int a1, int tex);
 void cm_camera_set(int i);
 void cm_meter_set(int v);
 
-#ifdef NON_MATCHING /* os temporários dos literais compostos das luzes ficam em sp+0x58/0x64, acima da matriz, no original; o mwcc os põe abaixo dela */
-/* GE state of the screen, lights and projection; light positions from cm_light_pos0/1 (0x0880CC1C) */
+/* GE state of the screen, lights and projection; light positions copied from local templates (0x0880CC1C) */
 void cm_gfx_init(void)
 {
     unsigned int *list;
-    Mat4 m;
     int i;
 
     list = dl_select_layer(0, 0);
@@ -142,13 +138,19 @@ void cm_gfx_init(void)
     cm_light0.ambient = 0xFF000000;
     cm_light0.diffuse = 0xFFFFFFFF;
     cm_light0.specular = 0;
-    cm_light0.pos = (Vec3){ 0.0f, 2.0f, 3.0f };
+    {
+        Vec3 p0 = { 0.0f, 2.0f, 3.0f };
+        cm_light0.pos = *(Vec3 *)&p0;
+    }
     memset(&cm_light1, 0, sizeof(cm_light1));
     cm_light1.type = 0;
     cm_light1.ambient = 0xFF000000;
     cm_light1.diffuse = 0xFF404040;
     cm_light1.specular = 0;
-    cm_light1.pos = (Vec3){ 0.0f, 0.0f, -5.0f };
+    {
+        Vec3 p1 = { 0.0f, 0.0f, -5.0f };
+        cm_light1.pos = *(Vec3 *)&p1;
+    }
     list = lighting_enable(list);
     list = light_enable(list, 0);
     list = light_enable(list, 1);
@@ -160,7 +162,7 @@ void cm_gfx_init(void)
     list = dl_disable(list, 7);
     mtx_set_mode(0);
     mtx_identity();
-    mtx_perspective(0.17453292f, 1.7647059f, 30.0f, 300.0f);
+    mtx_perspective(0.17453294f, 1.7647059f, 30.0f, 300.0f);
     mtx_set_mode(1);
     mtx_identity();
     mtx_set_mode(2);
@@ -172,12 +174,15 @@ void cm_gfx_init(void)
     list = dl_tex_offset(list, 0.0f, 0.0f);
     list = dl_tex_scale(1.0f, -1.0f, list);
     list = dl_enable(list, 9);
-    mat4_identity(&m);
-    for (i = 0; i < 8; i++)
-        list = dl_bone_matrix(list, i, m.m);
+    {
+        Mat4 m;
+
+        mat4_identity(&m);
+        for (i = 0; i < 8; i++)
+            list = dl_bone_matrix(list, i, m.m);
+    }
     dl_set_list(list);
 }
-#endif
 
 /* per frame: lit 3D layer with the main camera */
 void cm_gfx_begin3d(void)

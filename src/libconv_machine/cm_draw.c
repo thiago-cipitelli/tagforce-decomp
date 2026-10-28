@@ -1,6 +1,5 @@
 // @range 0x08804B50-0x08805FF8
 // @asm 0x08804B50-0x08804F40
-// @asm 0x088054D8-0x08805BA4
 // @data 0x0880CBBC-0x0880CC1C
 /* 2D part of the machine and the per-frame draw export: background, machine panel, the EHF
    animations of the panel, the message window with its cursor, the card coming out (rendered to a
@@ -277,7 +276,6 @@ float cm_card_vtx[6][4] = {
     { 0.0f, 154.0f, 0.0f, 154.0f },
 };
 
-#ifdef NON_MATCHING /* não testado para matching */
 /* the converted card (zooming, then folding open) and the cards burning in the machine */
 unsigned int *cm_draw_cards(unsigned int *list)
 {
@@ -292,13 +290,20 @@ unsigned int *cm_draw_cards(unsigned int *list)
     float f;
     CmCard *c;
     int t;
+    int cw;
+    int ch;
+    int cx;
+    int cy;
 
-    if (cm.state == 4 && cm.result != 0) {
+    switch (cm.state) {
+    case 4:
+        if (cm.result == 0)
+            break;
         v = dl_alloc_inline(&list, 0x90);
         z = cm.zoom;
-        if (z >= 0x81)
+        if (z > 0x80)
             z = 0x80;
-        w = (z * 4 * 8 + z * 7) * 2 / 128;
+        w = z * 0x4E / 128;
         h = z * 0x70 / 128;
         x = (0xB9 - w) / 2 + 0x83;
         y = (0x8D - h) / 2 + 0x5A;
@@ -319,10 +324,11 @@ unsigned int *cm_draw_cards(unsigned int *list)
             v[i].color = cm.glow << 24 | 0xFFFFFF;
         }
         if (cm.zoom > 0x80) {
-            d = (cm.zoom - 0x80) * 0x6B / 8;
+            z = cm.zoom - 0x80;
+            d = z * 0x6B / 8;
             v[2].x += d;
-            v[3].y -= d;
-            d = (cm.zoom - 0x80) * 0x70 / 32;
+            v[3].x -= d;
+            d = z * 0x70 / 32;
             v[0].y += d;
             v[1].y += d;
             v[4].y -= d;
@@ -332,14 +338,6 @@ unsigned int *cm_draw_cards(unsigned int *list)
     }
     list = dl_tex_func(list, 0, 1);
     switch (cm.flash_fade) {
-    case 2:
-        if (cm.flash < 9) {
-            cm.flash = 0;
-            cm.flash_fade = 0;
-        } else {
-            cm.flash -= 8;
-        }
-        break;
     case 1:
         if (cm.flash >= 0xFB) {
             cm.flash = 0xFF;
@@ -348,15 +346,26 @@ unsigned int *cm_draw_cards(unsigned int *list)
             cm.flash += 4;
         }
         break;
+    case 2:
+        if (cm.flash < 9) {
+            cm.flash = 0;
+            cm.flash_fade = 0;
+        } else {
+            cm.flash -= 8;
+        }
+        break;
     }
     list = cm_draw_flash(list, cm.flash);
-    if (cm.state == 4) {
+    switch (cm.state) {
+    case 4:
         for (i = 0; i < cm.n_cards; i++) {
             c = &cm.flying[i];
             if (c->state == 3 && c->t > 0) {
                 t = 0x15 - c->t;
-                w = t * t * 0x4E / 0x1B9;
-                h = t * t * 0x70 / 0x1B9;
+                cw = t * t * 0x4E / 0x1B9;
+                ch = t * t * 0x70 / 0x1B9;
+                cx = c->x + 220.0f - cw / 2;
+                cy = c->y + 160.0f - ch / 2;
                 list = dl_tex_flush(list);
                 list = gfx_set_draw_target(list, 0x160000, 0xFFFFFFFF, 0x80, 0x100, 3);
                 list = card_draw(list, 0, 0, cm.cards[i]);
@@ -365,15 +374,15 @@ unsigned int *cm_draw_cards(unsigned int *list)
                 list = dl_tex_func(list, 0, 0);
                 list = dl_tex_mode(list, 3, 0, 0, 0);
                 list = dl_tex_image(list, 0, 0x80, 0x100, 0x80, sceGeEdramGetAddr() + 0x160000);
-                list = dl_ambient_color(list, (t * 0xFF / 0x15) << 24 | 0xFFFFFF);
-                list = draw_set_offsets(list, 0x6C, 0x9A, w, h);
-                list = draw_sprite(list, c->x + 220.0f - w / 2, c->y + 160.0f - h / 2, 0, 0, 0, 0, 0);
+                list = dl_ambient_color(list, (unsigned char)(t * 0xFF / 0x15) << 24 | 0xFFFFFF);
+                list = draw_set_offsets(list, 0x6C, 0x9A, cw, ch);
+                list = draw_sprite(list, cx, cy, 0, 0, 0, 0, 0);
             }
         }
     }
-    return dl_tex_func(list, 0, 1);
+    list = dl_tex_func(list, 0, 1);
+    return list;
 }
-#endif
 
 /* full screen white flash at `alpha` over the panel animation 4 */
 unsigned int *cm_draw_flash(unsigned int *list, unsigned char alpha)
