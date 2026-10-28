@@ -1009,4 +1009,110 @@ void fld_load_cancel_all(void);                /* 0x0880C744 */
 FieldCtx *fld_ctx_get(void);                   /* 0x0880CF0C */
 int fld_bu_index(int chara);                   /* 0x0880ED50 */
 
+/* ---- 0x0881FFEC-0x08824028: PDA pages (f_pdapage.c, f_pdaparts.c) ---- */
+typedef struct FieldPdaMail {          /* a mail of the list, 0xC */
+    unsigned char x00;
+    unsigned char b0 : 2;              /* +0x01 */
+    unsigned char unread : 1;          /* blinks */
+    unsigned char important : 1;
+    unsigned char b4 : 4;
+    unsigned short chara : 10;         /* +0x02 sender */
+    unsigned short month : 4;          /* month + 5 */
+    unsigned short b14 : 2;
+    unsigned char day : 6;             /* +0x04 */
+    unsigned char b6 : 2;
+    unsigned char pad05[3];
+    unsigned short *title;             /* +0x08 */
+} FieldPdaMail;
+
+typedef struct FieldPdaLine {          /* a line of the open mail, 8 */
+    int x00;
+    unsigned short *text;              /* +0x04 */
+} FieldPdaLine;
+
+typedef struct FieldPda {              /* *0x08FD5758, 0x2B4: the PDA menu */
+    unsigned short state;              /* +0x000 */
+    unsigned char pad002[8];
+    unsigned char tab : 4;             /* +0x00A page picked on the top bar (0..5) */
+    unsigned char tab_hi : 4;
+    unsigned char pad00b;
+    unsigned short cursor;             /* +0x00C */
+    unsigned char pad00e[9];
+    unsigned char opt[9];              /* +0x017 option values */
+    unsigned char opt_w;               /* +0x020 width of the value column */
+    unsigned char pad021[0x83];
+    int label_w;                       /* +0x0A4 width of the mail labels (1/64 px) */
+    int x0a8;                          /* +0x0A8 */
+    void *gim;                         /* +0x0AC pda parts */
+    unsigned char leaving : 1;         /* +0x0B0 page change in progress */
+    unsigned char flags_hi : 7;
+    unsigned char wait;                /* +0x0B1 frames of the page change, bit 1 blinks the cursor */
+    unsigned char pad0b2[4];
+    unsigned char today_month;         /* +0x0B6 */
+    unsigned char today;               /* +0x0B7 */
+    unsigned char month;               /* +0x0B8 month shown on the calendar (0..3) */
+    unsigned char day;                 /* +0x0B9 calendar cursor (row * 7 + column) */
+    unsigned char pad0ba[0xA8];
+    unsigned char top;                 /* +0x162 first mail shown */
+    unsigned char sel;                 /* +0x163 cursor row */
+    unsigned char n_mails;             /* +0x164 */
+    unsigned char pad165[3];
+    FieldPdaMail *mails;               /* +0x168 */
+    FieldPdaLine *lines;               /* +0x16C lines of the open mail */
+    unsigned char n_lines;             /* +0x170 */
+    unsigned char pad171[7];
+    unsigned short sel_x;              /* +0x178 selected text (1/64 px) */
+    unsigned short sel_y;              /* +0x17A */
+    unsigned short sel_w;              /* +0x17C */
+    unsigned short sel_h;              /* +0x17E */
+    unsigned short bar_pos;            /* +0x180 */
+    unsigned short bar_max;            /* +0x182 */
+    int scroll;                        /* +0x184 (1/64 px) */
+    int text_h;                        /* +0x188 */
+    int face;                          /* +0x18C sender portrait */
+    unsigned char pad190[0x124];
+} FieldPda;
+
+extern FieldPda *field_pda;                /* 0x08FD5758 */
+extern int (*field_pda_count)(void);       /* 0x08FD5754 */
+
+/* f_pdapage.c */
+void *pda_draw_frame(void *list, int x, int y, int w, int h, int uv);
+void *pda_draw_cursor(void *list, int x, int y, int w, int h);
+void *pda_draw_gauge(void *list, int x, int y, int level);
+void *pda_draw_tab(void *list, int pos, int uv, unsigned char alpha, unsigned short *title, int sel, int blink);
+/* f_pdaparts.c */
+void *pda_draw_number(void *list, short x, short y, unsigned int value, unsigned short step, unsigned short digits);
+void *pda_draw_day(void *list, int pos, int weekday, int today, int day);
+void *pda_draw_mark(void *list, int pos, int mark);
+void pda_date_text(unsigned short *buf, int month, int day, int wday);
+void *pda_draw_scrollbar(void *list, int x, int y, int h, int pos, int shown, int total);
+void *pda_draw_mail_item(void *list, int x, int y, FieldPdaMail *m, int sel);
+void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int sel);
+void *pda_draw_bar(void *list, int x, int y, int value, int max);
+void *pda_draw_mail_mask(void *list, int x, int y);
+
+/* libehsys (BOOT) used by the PDA pages */
+void *gim_set_texture(void *list, void *gim);
+void *dl_set_tex_filter(void *list, int min, int mag);
+void *dl_ambient_color(void *list, unsigned int color);
+void *dl_scissor(void *list, int x, int y, int w, int h);
+int font_measure_text(unsigned short *text);
+int font_measure_wtext(int w, unsigned short *text);
+int font_draw_wtext(int x, int y, int w, unsigned short *text);
+int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max_glyphs);
+int font_line_height(void);
+int font_get_cursor_y(void);
+void font_set_line_extra(int v);
+void font_set_flag8000(int on);
+unsigned short region_pick_value(int flag);
+unsigned short *chara_get_name(int i, int j);
+int wcslen(const unsigned short *s);
+unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
+unsigned short *wcscat(unsigned short *d, const unsigned short *s);
+int day_next(void);
+int day_calc(int which);
+int sysstate_get_u32_54(int i);
+void sysstate2_get_triplet(int which, unsigned int *out);
+
 #endif

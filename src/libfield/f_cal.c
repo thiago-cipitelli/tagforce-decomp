@@ -35,11 +35,11 @@ void *func_0882593C(int pack);
 void func_0882596C(int pack);
 void func_08825A48(int pack);
 void func_08825A94(int pack);
-unsigned char func_08820A04(void);
-int func_08820B04(void);
+unsigned char pda_opt_value_width(void);
+int pda_mail_label_width(void);
 int func_088254D0(unsigned char month, unsigned char week, unsigned char day);
 void func_08825F38(void);
-void func_08823DAC(void);
+void pda_input_menu(void);
 void func_08825218(void);
 void func_08824830(void);
 void func_088249EC(void);
@@ -48,15 +48,12 @@ void func_0882405C(void);
 void func_08825B38(void);
 void func_08825B6C(void);
 void func_08825E48(void);
-void *func_0881FFEC(void *list, int x, int y);
-void *func_088213DC(void *list, int x, int y, int step);
-void *func_08820BD0(void *list, int x, int y);
-void *func_08821E44(void *list, int x, int y);
-void *func_08821D24(void *list, int x, int y);
-void *func_088216B0(void *list, int x, int y);
-void *func_0882244C(void *list, int x, int y, int w, int h, unsigned int uv);
-void *func_088220D8(void *list, unsigned int xy, unsigned int uv, int alpha, unsigned short *text, int lit,
-                    int cur);
+void *pda_draw_status(void *list, int x, int y);
+void *pda_draw_tabs(void *list, int x, int y, int step);
+void *pda_draw_options(void *list, int x, int y);
+void *pda_draw_mail(void *list, int x, int y);
+void *pda_draw_mail_list(void *list, int x, int y);
+void *pda_draw_calendar(void *list, int x, int y);
 
 void fcal_free(void);
 int fcal_event_cmp(const void *a, const void *b);
@@ -85,8 +82,8 @@ void fcal_open(void *heap, int pack, int mode)
     func_08825A94(pack);
     field_cal->month = *(int *)fld_story_get()->w[0] - 5;
     field_cal->day = *(int *)fld_story_get()->w[1];
-    field_cal->x20 = func_08820A04();
-    field_cal->xa4 = func_08820B04();
+    field_cal->x20 = pda_opt_value_width();
+    field_cal->xa4 = pda_mail_label_width();
     if (field_story_ext.mark != 0) {
         for (month = 0; month < 4; month++) {
             for (i = 0; i < 42; i++) {
@@ -163,7 +160,7 @@ int fcal_update(void)
         }
         break;
     case 3:
-        func_08823DAC();
+        pda_input_menu();
         break;
     case 6:
         func_08824830();
@@ -317,31 +314,31 @@ void *fcal_draw_page(void *list, int x, int y)
         title = table_get_entry(fld_gim_get(5), 0x31);
         break;
     case 4:
-        list = func_0881FFEC(list, px, py);
+        list = pda_draw_status(list, px, py);
         title = table_get_entry(fld_gim_get(5), 0x34);
         break;
     case 8:
-        list = func_088213DC(list, px, py, field_cal->timer);
+        list = pda_draw_tabs(list, px, py, field_cal->timer);
         title = table_get_entry(fld_gim_get(5), 0x35);
         break;
     case 9:
-        list = func_088213DC(list, px, py, 4);
+        list = pda_draw_tabs(list, px, py, 4);
         title = table_get_entry(fld_gim_get(5), 0x35);
         break;
     case 10:
-        list = func_08820BD0(list, px, py);
+        list = pda_draw_options(list, px, py);
         title = table_get_entry(fld_gim_get(5), 0x36);
         break;
     case 7:
         title = table_get_entry(fld_gim_get(5), 0x32);
-        list = func_08821E44(list, px, py);
+        list = pda_draw_mail(list, px, py);
         break;
     case 6:
-        list = func_08821D24(list, px, py);
+        list = pda_draw_mail_list(list, px, py);
         title = table_get_entry(fld_gim_get(5), 0x32);
         break;
     case 5:
-        list = func_088216B0(list, px, py);
+        list = pda_draw_calendar(list, px, py);
         title = table_get_entry(fld_gim_get(5), 0x33);
         break;
     }
@@ -394,7 +391,7 @@ void *func_0881FBCC(void *list, int x, int y, unsigned short *text)
     list = gim_set_texture(list, field_cal->gim);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
-    list = func_0882244C(list, x + 3, y + 0xD1, 0xD8, 0x36, 0x580047);
+    list = pda_draw_frame(list, x + 3, y + 0xD1, 0xD8, 0x36, 0x580047);
     if (text == 0)
         return list;
     font_text_set(list);
@@ -442,7 +439,7 @@ void *fcal_draw_tabs(void *list, int x, int y, int step)
             cur = 1;
         }
         if (lit) {
-            list = func_088220D8(list, FCAL_XY(x, ty), FCAL_XY(0x16E, fcal_tab_v[i] * 24), 0xFF,
+            list = pda_draw_tab(list, FCAL_XY(x, ty), FCAL_XY(0x16E, fcal_tab_v[i] * 24), 0xFF,
                                  table_get_entry(fld_gim_get(5), fcal_tab_text[i]), 1, 1);
         } else {
             text = table_get_entry(fld_gim_get(5), fcal_tab_text[i]);
@@ -454,7 +451,7 @@ void *fcal_draw_tabs(void *list, int x, int y, int step)
                 }
                 alpha = 0xFF - ((d + 1) * 0x60 & 0xFF) & 0xFF;
             }
-            list = func_088220D8(list, FCAL_XY(x, ty), FCAL_XY(0x16E, fcal_tab_v[i] * 24), alpha, text, 0, cur);
+            list = pda_draw_tab(list, FCAL_XY(x, ty), FCAL_XY(0x16E, fcal_tab_v[i] * 24), alpha, text, 0, cur);
         }
     }
     return list;
