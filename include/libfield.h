@@ -747,6 +747,34 @@ typedef struct FieldDraw {             /* 0x08FD2780, 0x28C0: draw list and cell
 extern FieldShadow field_shadow;
 extern FieldDraw field_draw;
 
+/* ---- 0x0881CE68-0x0881EDC8 (f_bag.c) ---- */
+typedef struct FieldBagTab {           /* tab of the bag window, 0x14 */
+    unsigned short *text;              /* +0x00 set at open */
+    int x, y;                          /* +0x04 */
+    FieldSpr spr;                      /* +0x0C frame */
+} FieldBagTab;
+
+typedef struct FieldBag {              /* 0x08FD5040, 0x708: the bag (items and cards the player carries) */
+    int state;                         /* +0x000 */
+    int result;                        /* +0x004 1 closed, 2 item picked, 3 card picked */
+    int picked;                        /* +0x008 id picked */
+    void *gim_frame;                   /* +0x00C fld_gim_get(0) */
+    void *gim_icons;                   /* +0x010 fld_gim_get(3) */
+    Menu menu;                         /* +0x014 */
+    MenuItemDef title;                 /* +0x060 */
+    MenuItemDef frame;                 /* +0x0D8 */
+    MenuWidget w[4];                   /* +0x150 item list, card list, item menu, card menu */
+    int tab;                           /* +0x5D0 0 items, 1 cards */
+    int sel[2];                        /* +0x5D4 entry whose help is shown, per tab */
+    int ids0[21];                      /* +0x5DC item ids, in list order */
+    int ids1[51];                      /* +0x630 card ids, one entry per copy */
+    int *counts0;                      /* +0x6FC count of each item (story) */
+    int *counts1;                      /* +0x700 count of each card (story) */
+    void (*use)(int id, int n);        /* +0x704 adds n copies of a card (story) */
+} FieldBag;
+
+extern FieldBag field_bag;
+
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */
