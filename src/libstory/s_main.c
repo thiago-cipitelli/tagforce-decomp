@@ -19,7 +19,7 @@ extern unsigned char story_scene_data[];
 
 void st_res_init(void);
 void st_init_812728(void);
-void st_init_80c9e4(void);
+void st_story_init(void);
 void st_init_816890(void);
 void st_pl_init(void);
 void st_chr_init(void);
@@ -47,7 +47,7 @@ void sev_term(void);
 void st_pickup_term(void);
 void stalk_term(void);
 void st_term_815b68(void);
-void st_term_80c9f8(void);
+void st_story_term(void);
 void st_term_8168a4(void);
 void st_term_81660c(void);
 void st_term_817208(void);
@@ -89,7 +89,7 @@ void story_init_all(void)
 {
     st_res_init();
     st_init_812728();
-    st_init_80c9e4();
+    st_story_init();
     st_init_816890();
     st_pl_init();
     st_chr_init();
@@ -121,7 +121,7 @@ void story_term_all(void)
     st_pickup_term();
     stalk_term();
     st_term_815b68();
-    st_term_80c9f8();
+    st_story_term();
     st_term_8168a4();
     st_term_81660c();
     st_term_817208();

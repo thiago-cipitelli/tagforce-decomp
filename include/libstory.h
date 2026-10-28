@@ -84,8 +84,8 @@ typedef struct StoryChrFlags {         /* 0x0881DA1C points here (save data) */
 typedef struct StoryChr {              /* script tables of a story character (Scr<i>_*.bin), 0x0881DA24[150] */
     unsigned short *gp;                /* +0x00 G: 6 u16 (date range, place, x24) */
     unsigned short *gs;                /* +0x04 G: 3 u16 (level, place, x24) */
-    short *gc;                         /* +0x08 G: 3 u16 (chr flag, place, x24) */
-    short *g;                          /* +0x0C G: 3 u16 (story flag, place, x24) */
+    unsigned short *gc;                /* +0x08 G: 3 u16 (chr flag, place, x24) */
+    unsigned short *g;                 /* +0x0C G: 3 u16 (story flag, place, x24) */
     unsigned short *step;              /* +0x10 Step: (level, affinity max) pairs */
     unsigned short *deck;              /* +0x14 Deck: 8 u16 entries (date range, level, flag, story flag, recipe) */
     unsigned short *dh;                /* +0x18 DH: 9 u16 entries */
@@ -220,7 +220,7 @@ void *st_ehp_load(void *ehp, const char *name, int heap);
 
 /* --- 0x0880DE58-0x08810D24 --- */
 
-typedef struct StoryCtx {              /* 0x08AC9328 story_ctx, 0x1C (cleared by st_init_80c9e4) */
+typedef struct StoryCtx {              /* 0x08AC9328 story_ctx, 0x1C (cleared by st_story_init) */
     int x00;                           /* +0x00 */
     int prev;                          /* +0x04 sub-screen the story came back from */
     int state;                         /* +0x08 story mode state (dispatched by story_update) */
