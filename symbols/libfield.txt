@@ -643,6 +643,11 @@ field_date_space = 0x0883D658; // type:data
 field_get_icons = 0x08839368; // type:data
 field_get_icon_pos = 0x08839418; // type:data
 field_get_icon_frame = 0x08839420; // type:data
+fclk_open = 0x08827C44; // type:func matched src/libfield/f_clock.c
+fclk_update = 0x08827D10; // type:func asm (@asm in src/libfield/f_clock.c, C under NON_MATCHING)
+fclk_draw = 0x08827F20; // type:func matched src/libfield/f_clock.c
+fclk_get = 0x08827FC8; // type:func matched src/libfield/f_clock.c
+field_clock = 0x08FD65A8; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x0882BE80; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x0882BE88; // type:func import:libehsys nid:4BDEB2A8

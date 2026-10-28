@@ -206,7 +206,10 @@ segments:
       - [0x23514, c, f_date]
       - [0x2365C, asm, f_date_asm_088275FC]
       - [0x237E8, c, f_date]
-      - [0x23CA4, asm, text_1]
+      - [0x23CA4, c, f_clock]
+      - [0x23D70, asm, f_clock_asm_08827D10]
+      - [0x23F80, c, f_clock]
+      - [0x24044, asm, text_1]
       - [0x27EE0, asm, sceStub_text]
       - [0x2A5C8, bin, lib_ent_top]
       - [0x2A5CC, bin, lib_ent]
@@ -248,7 +251,8 @@ segments:
       - [0x39590, .data, f_pdapage]
       - [0x39690, .data, f_fx]
       - [0x396B0, .data, f_date]
-      - [0x396DC, data, data_9]
+      - [0x396DC, .data, f_clock]
+      - [0x396F0, data, data_9]
       - { start: 0x39D20, type: bss, vram: 0x883DCC0, name: bss }
   - [0x39D20]
 
