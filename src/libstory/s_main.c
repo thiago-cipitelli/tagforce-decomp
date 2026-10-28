@@ -17,7 +17,7 @@ int story_draw(void);
 
 extern unsigned char story_scene_data[];
 
-void st_init_80c728(void);
+void st_res_init(void);
 void st_init_812728(void);
 void st_init_80c9e4(void);
 void st_init_816890(void);
@@ -56,7 +56,7 @@ void st_term_817514(void);
 void st_term_8177d8(void);
 void st_term_817944(void);
 void st_term_81273c(void);
-void st_term_80c798(void);
+void st_res_term(void);
 
 int module_entry(int arg)
 {
@@ -87,7 +87,7 @@ void story_main(void)
 
 void story_init_all(void)
 {
-    st_init_80c728();
+    st_res_init();
     st_init_812728();
     st_init_80c9e4();
     st_init_816890();
@@ -130,7 +130,7 @@ void story_term_all(void)
     st_term_8177d8();
     st_term_817944();
     st_term_81273c();
-    st_term_80c798();
+    st_res_term();
 }
 
 void story_exit(void)

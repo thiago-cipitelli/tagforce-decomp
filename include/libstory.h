@@ -202,6 +202,22 @@ extern SttTables stt;                  /* 0x0882914C */
 int story_flag_get(unsigned int id);
 int story_date_in_range(int m0, int d0, int m1, int d1);
 
+typedef struct StRes {                 /* 0x08AC9180 heaps and the file loader, 0x1A8 */
+    unsigned char x000[0x18C];
+    void *heap[3];                     /* +0x18C 0: 2.25 MB (files), 1: 256 KB, 2: 128 KB */
+    void *file;                        /* +0x198 file being read by st_file_load */
+    int file_size;                     /* +0x19C */
+    int file_done;                     /* +0x1A0 set by the read callback */
+    int x1a4;
+} StRes;
+
+extern StRes st_res;                   /* 0x08AC9180 */
+
+void *st_save_buf(void);
+void *st_file_load(const char *path, int heap);
+void st_res_free(void *p, int heap);
+void *st_ehp_load(void *ehp, const char *name, int heap);
+
 /* --- 0x0880DE58-0x08810D24 --- */
 
 typedef struct StoryCtx {              /* 0x08AC9328 story_ctx, 0x1C (cleared by st_init_80c9e4) */
