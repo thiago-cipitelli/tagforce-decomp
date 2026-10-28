@@ -1,5 +1,4 @@
 // @range 0x08808E5C-0x08809B30
-// @asm 0x08809744-0x08809AB0
 // @data 0x0880DCB8-0x0880DD08
 /* The index window (select button): a grid of initial letters (kana in Japanese, A-Z elsewhere), dimmed
    when no owned card starts with it, plus an entry for the extra pages; choosing one jumps to the
@@ -195,17 +194,14 @@ unsigned int *ca_index_draw(unsigned int *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* o original guarda w na pilha e mantém y e a linha em registradores separados (yy e yy*64); o mwcc reduz yy*64 a um contador e sobra um $s */
 /* content of the window: cursor box, the letters, the extra-pages entry */
 void *ca_index_draw_cb(void *dl, int x, int y, int w, int h)
 {
     unsigned short ch[2] = { 0 };
     int col;
-    int k;
     int r;
     int c;
-    int yy;
-    int sy;
+    int k;
     int pos;
     int letter;
     int tw;
@@ -222,8 +218,8 @@ void *ca_index_draw_cb(void *dl, int x, int y, int w, int h)
     font_set_size(14, 14);
     font_text_set(dl);
     k = 0;
-    for (r = 0, yy = y; r < ca_index.rows; r++, yy += 22) {
-        for (c = 0, sy = yy << 6; c < ca_index.cols; c++, k++) {
+    for (r = 0; r < ca_index.rows; r++) {
+        for (c = 0; c < ca_index.cols; c++, k++) {
             letter = ca_index.layout[k];
             pos = c;
             if (ca_index.has[letter])
@@ -235,19 +231,20 @@ void *ca_index_draw_cb(void *dl, int x, int y, int w, int h)
             if (cfg_get_language() == 0 && c >= (int)(ca_index.cols / 2u))
                 pos++;
             px = ((unsigned int)(14 - tw) >> 1) + (x + pos * 22);
-            font_draw_text(px * 64, sy, (480 - px) * 64, ch);
+            font_draw_text(px * 64, (y + r * 22) * 64, (480 - px) * 64, ch);
         }
     }
     if (ca_index.extra) {
         font_set_color(0xFF000000);
         tw = font_measure_text(table_get_entry(ca_res_get(CA_STRINGS), 4)) >> 6;
-        px = x + ((unsigned int)(w - tw) >> 1);
-        font_draw_text(px * 64, (y + ca_index.rows * 22) * 64, (480 - px) * 64,
-                       table_get_entry(ca_res_get(CA_STRINGS), 4));
+        {
+            unsigned short *s = table_get_entry(ca_res_get(CA_STRINGS), 4);
+            px = x + ((unsigned int)(w - tw) >> 1);
+            font_draw_text(px * 64, (y + ca_index.rows * 22) * 64, (480 - px) * 64, s);
+        }
     }
     return font_text_clear();
 }
-#endif
 
 /* first card whose initial is `letter` */
 int ca_index_find(int letter)

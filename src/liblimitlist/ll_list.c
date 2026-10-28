@@ -1,5 +1,4 @@
 // @range 0x0880740C-0x08808934
-// @asm 0x0880740C-0x08807690
 // @asm 0x08808030-0x08808418
 // @data 0x0880D634-0x0880D63C
 /* The three lists (forbidden, limited, semi-limited) built from the card database, list/grid
@@ -45,13 +44,13 @@ static inline LlEntry *ll_entry(int tab)
     return &ll.list[t][i];
 }
 
-#ifdef NON_MATCHING /* só a alocação de $s do laço que monta as entradas difere (ponteiro da tabela, contador e deslocamento trocados) */
 void ll_build(void)
 {
     int j;
     int n;
-    unsigned short c;
+    int k;
     LlEntry *e;
+    unsigned short c;
     unsigned short f;
 
     unsigned short *ids[3];
@@ -79,13 +78,12 @@ void ll_build(void)
         ll.list[i] = heap_alloc(ll.heap, n * sizeof(LlEntry));
         e = ll.list[i];
         memset(e, 0, n * sizeof(LlEntry));
-        for (j = 0; j < n; j++) {
-            c = ids[i][j];
+        for (k = 0; k < n; k++, e++) {
+            c = ids[i][k];
             f = ll_file_index(c, llres_get(0x8031));
             e->id = c;
             e->file = f;
             e->lines = 1;
-            e++;
         }
     }
     for (i = 0; i < 3; i++)
@@ -100,7 +98,6 @@ void ll_build(void)
     ll_update_cursor();
     ll_select_card();
 }
-#endif
 
 void ll_free_lists(void)
 {
@@ -252,7 +249,7 @@ void ll_set_tab_anim(int tab)
         ehf_set_anim(e, tab, tab + 1);
 }
 
-#ifdef NON_MATCHING /* forma igual; a ordem dos loads iniciais (top, rep, count, cur) e os temporários diferem */
+#ifdef NON_MATCHING /* forma igual (o clamp do topo como `top + c > 0 ? top + c : 0` dá o blezl); só a ordem dos loads iniciais (top, rep, count, cur) e os temporários t* diferem */
 /* cursor of the name list (7 rows), wrapping at both ends */
 void ll_move_list(PadBits *pad)
 {
@@ -279,10 +276,8 @@ void ll_move_list(PadBits *pad)
     } else {
         c = cur + d;
         if (c < 0) {
-            top += c;
+            top = top + c > 0 ? top + c : 0;
             c = 0;
-            if (top <= 0)
-                top = 0;
         } else if (c >= 7) {
             if (count < 7)
                 top = 0;
@@ -306,22 +301,25 @@ void ll_move_list(PadBits *pad)
 }
 #endif
 
-#ifdef NON_MATCHING /* forma quase igual; registradores e o desvio do clamp do topo (blezl) diferem */
+#ifdef NON_MATCHING /* forma igual (clamp `top + row > 0 ? top + row : 0`, `rows > 6`, col antes de row); só sobra a troca t3/t4 entre t*2 (com dy) e changed no prólogo */
 /* cursor of the picture grid (11 x 6), wrapping at both ends */
 void ll_move_grid(PadBits *pad)
 {
-    unsigned int rep = pad->rep;
     unsigned int t = ll.tab;
+    unsigned int rep = pad->rep;
     int cur = ll.cursor[t];
-    int row = cur / 11;
     int col = cur % 11;
+    int row = cur / 11;
     int top = (ll.top[t] + 10) / 11;
     int rows = (ll.count[t] + 10) / 11;
-    int changed = 0;
-    int dy = 0;
-    int dx = 0;
+    int dx;
+    int dy;
     int c;
+    int changed;
 
+    dy = 0;
+    dx = 0;
+    changed = 0;
     if (rep & 0x40)
         dy++;
     if (rep & 0x10)
@@ -340,11 +338,10 @@ void ll_move_grid(PadBits *pad)
     } else {
         row += dy;
         if (row < 0) {
-            top += row;
-            top = top <= 0 ? 0 : top;
+            top = top + row > 0 ? top + row : 0;
             row = 0;
         } else if (row >= 6) {
-            if (rows >= 7) {
+            if (rows > 6) {
                 if (top + row >= rows)
                     top = rows - 6;
                 else

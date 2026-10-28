@@ -1,6 +1,5 @@
 // @range 0x08804D08-0x08805CA4
-// @asm 0x08804D08-0x088050A8
-// @data 0x0880DA4C-0x0880DBA0
+// @data 0x0880DA40-0x0880DBA0
 /* 3D part of the screen: GE state, light and camera of the binder, the cover model opening/closing,
    the page models (one copy per page, with the card pictures as texture hooks) animated through the
    page kinds while they turn, and the 3D cursor over the card cells. */
@@ -94,12 +93,11 @@ extern Vec4 ca_cam_pos, ca_cam_target, ca_cam_up;
 extern CaKind ca_kinds[8];
 extern CaCell ca_cells[18];
 
-#ifdef NON_MATCHING /* o temporário do literal composto da luz fica em sp+0x54, acima da matriz, no original; o mwcc o põe abaixo (sp+0x14) em todas as formas testadas */
 /* GE state of the screen, light and projection; the light direction template is ca_light_dir0 (0x0880DA40) */
 void ca_gfx_init(void)
 {
     unsigned int *list;
-    Mat4 m;
+    Mat4 m __attribute__((aligned(16)));  /* 16-byte aligned for the VFPU */
     int i;
 
     list = dl_select_layer(0, 0);
@@ -160,8 +158,6 @@ void ca_gfx_init(void)
         list = dl_bone_matrix(list, i, m.m);
     dl_set_list(list);
 }
-
-#endif
 
 /* per frame: lit 3D layer, camera pulled sideways while the cover opens */
 void ca_gfx_begin3d(void)

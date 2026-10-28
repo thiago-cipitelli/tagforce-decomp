@@ -254,7 +254,7 @@ void *ll_draw_grid(void *dl)
     return dl;
 }
 
-#ifdef NON_MATCHING /* mesma forma; o original calcula x + 29 logo depois de ll_draw_card e os $s diferem em todo o resto */
+#ifdef NON_MATCHING /* mesma forma; com cnt inicializado localmente (o original copia ll_row_counters como modelo, via lwc1), x = x + 29 e o nome num temporário, o prólogo e a cópia batem; sobram x re-mascarado em s0 no ramo do monstro e o x += 193 duplicado nos dois ramos (88 palavras) */
 /* one row of the name list */
 void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
 {
@@ -262,13 +262,17 @@ void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
     int yy;
 
     dl = ll_draw_kind(dl, (unsigned short)(x + 23) | y << 16, 318, icon, llres_get(0x8006));
-    font_text_set(ll_draw_card(dl, x, y, 1, 0xFFFFFFFF, e, llres_get(0x8001), llres_get(0x8002), llres_get(0x8032)));
-    x += 29;
+    dl = ll_draw_card(dl, x, y, 1, 0xFFFFFFFF, e, llres_get(0x8001), llres_get(0x8002), llres_get(0x8032));
+    x = x + 29;
+    font_text_set(dl);
     font_set_size(12, 12);
     font_set_color(0xFF000000);
     if (cfg_get_language() != 0)
         font_set_flag4000(1);
-    font_draw_text(x << 6, (y + 2) << 6, 16896, card_get_name(e->id));
+    {
+        unsigned short *name = card_get_name(e->id);
+        font_draw_text(x << 6, (y + 2) << 6, 16896, name);
+    }
     font_set_flag4000(0);
     dl = font_text_clear();
     if (icon == 7 || icon == 8) {
@@ -294,12 +298,9 @@ void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
     }
     x += 193;
     {
-        LlCounter cnt[3];
+        LlCounter cnt[3] = { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF000000, 0 }, { 4, { 0 }, 0xFF000000, 0 } };
         int i;
 
-        cnt[0] = ll_row_counters[0];
-        cnt[1] = ll_row_counters[1];
-        cnt[2] = ll_row_counters[2];
         if (card_attribute_icon_is3(e->id)) {
             /* extra deck card: the extra deck, partners holding it, then the rest */
             cnt[1].icon = 3;
