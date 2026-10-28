@@ -1,14 +1,6 @@
 // @range 0x08809A5C-0x0880AC6C
 // @data 0x0880F938-0x0880F954
-// @asm 0x08809B00-0x08809C5C
 // @asm 0x08809F94-0x0880A29C
-// @asm 0x0880A2D4-0x0880A35C
-// @asm 0x0880A3CC-0x0880A400
-// @asm 0x0880A440-0x0880A554
-// @asm 0x0880A590-0x0880A708
-// @asm 0x0880A708-0x0880A840
-// @asm 0x0880A840-0x0880A984
-// @asm 0x0880AA3C-0x0880AB18
 /* Text box of the talk windows: a menu window that slides in and out, the message typed line by
    line at the speed of the game options (or skipped with a button), pages of two or three lines
    and the blinking "next" icon while the box waits for the player. */
@@ -103,8 +95,6 @@ void tut_text_init(void *heap, int x, int w, int size, int wait, int style)
     tut_text_build();
 }
 
-#ifdef NON_MATCHING
-/* acessos absolutos ao tut_tb com um lui por campo e a ordem das gravações das posições float não saem iguais */
 void tut_text_reset(int x, int w, int size, int wait, int style)
 {
     TutText *t = &tut_tb;
@@ -122,13 +112,13 @@ void tut_text_reset(int x, int w, int size, int wait, int style)
     tut_tb.page_full = 0;
     tut_tb.next_pos = 0;
     tut_tb.flag8000 = 0;
-    tut_tb.pos2[0] = x;
+    tut_tb.from[0] = x;
     tut_tb.from[1] = 300.0f;
+    tut_tb.to[0] = x;
     tut_tb.to[1] = 210.0f;
+    tut_tb.pos2[0] = x;
     tut_tb.pos2[1] = 300.0f;
     tut_tb.def.x = x;
-    tut_tb.from[0] = tut_tb.pos2[0];
-    tut_tb.to[0] = tut_tb.pos2[0];
     if (region_get() == 0) {
         t->lines = 2;
         t->flag8000 = 1;
@@ -141,7 +131,6 @@ void tut_text_reset(int x, int w, int size, int wait, int style)
     tut_text_relayout();
     t->state = 0;
 }
-#endif
 
 /* per frame: slide, typing (speed 2 types every line at once), skip with the button; returns
    nonzero once the player confirmed the end of the text */
@@ -229,10 +218,12 @@ int tut_text_update(void)
 }
 
 #ifdef NON_MATCHING
-/* teste da região (região 0 e 1 com corpos separados) e alocação dos $s no laço das linhas */
+/* 16 palavras, só na chamada de tut_text_icon: o original faz move a0 e carrega
+   tut_text_icon_off[0]/[1] com um lui cada antes do ext do blink e dos lh de tut_text_icon_rect;
+   aqui os lui sobem e o blink é calculado primeiro. Arrays extern, structs no lugar dos arrays,
+   o quadro numa variável, protótipo sem tipos ou com short não mudam o escalonamento */
 void tut_text_draw(void **list)
 {
-    int r;
     TutText *t = &tut_tb;
     MenuItemDef *d = &tut_tb.def;
     unsigned short flags;
@@ -252,32 +243,32 @@ void tut_text_draw(void **list)
         flags = tut_text_font_begin();
         for (i = 0; i <= t->cur; i++) {
             l = &t->line[i];
-            r = region_get();
-            if (r == 1) {
-                y = l->y;
-                g = 1;
-                h = l->h + 1;
-            } else if (r == 0) {
-                y = l->y;
-                g = 1;
-                h = l->h + 1;
-            } else {
+            switch (region_get()) {
+            default:
                 g = 3;
                 y = l->y - 2;
                 h = l->h + 4;
+                break;
+            case 0:
+            case 1:
+                y = l->y;
+                g = 1;
+                h = l->h + 1;
+                break;
             }
             if (l->w > 0) {
                 if (y < 0x110) {
-                    if (y + h >= 0x110)
-                        h = 0x110 - y;
+                    h = (y + h < 0x110) ? h : 0x110 - y;
                     *list = dl_scissor(*list, l->x, y, l->w + 1, h);
                     *list = dl_enable(*list, 2);
                 }
                 if (y < 0x110) {
-                    off = (int)((float)t->page * ((float)t->lines * ((float)font_line_height() / 64.0f + (float)g)));
-                    menu_item_rect(&t->menu, d, &x0, &y0, &w0, &h0);
+                    float fh = (float)font_line_height() / 64.0f;
+
+                    off = -(int)((float)t->page * ((float)t->lines * (fh + (float)g)));
+                    menu_item_rect(&t->menu, &t->def, &x0, &y0, &w0, &h0);
                     font_text_set(*list);
-                    font_draw_wtext_ex(x0 << 6, (y0 - off) << 6, w0 << 6, 0x4400, t->text, -1);
+                    font_draw_wtext_ex(x0 << 6, (y0 + off) << 6, w0 << 6, 0x4400, t->text, -1);
                     *list = font_text_clear();
                 }
                 *list = dl_disable(*list, 2);
@@ -321,12 +312,11 @@ void tut_text_set_wait(int on)
 }
 
 /* name (the speaker) goes in the title bar */
-#ifdef NON_MATCHING
-/* o original guarda &tut_tb em $s0 antes das chamadas; o mwcc dobra o ponteiro em lui + deslocamento */
 void tut_text_set(unsigned short *text, unsigned short *name)
 {
     MenuItemDef *d = &tut_tb.def;
-    TutText *t;
+    /* both arms equal: keeps &tut_tb in $s0 across the calls (a plain pointer is folded) */
+    TutText *t = name ? &tut_tb : &tut_tb;
 
     d->show_title = name != 0;
     tut_tb.finished = 0;
@@ -336,13 +326,11 @@ void tut_text_set(unsigned short *text, unsigned short *name)
     tut_tb.page = 0;
     d->title = name;
     tut_tb.text = text;
-    t = (TutText *)(char *)&tut_tb;
     tut_text_layout();
     tut_text_paginate();
     if (t->state == 0)
         tut_text_open();
 }
-#endif
 
 void tut_text_open(void)
 {
@@ -367,26 +355,15 @@ int tut_text_typing(void)
     return t->state == 2;
 }
 
-#ifdef NON_MATCHING
-/* o case 1 do original salta para um bloco li v0,1 próprio (1 palavra) */
 int tut_text_anim_busy(void)
 {
-    int r;
-
     switch (tut_tb.state) {
-    default:
-        r = 0;
-        break;
     case 1:
-        r = 1;
-        break;
     case 3:
-        r = 1;
-        break;
+        return 1;
     }
-    return r;
+    return 0;
 }
-#endif
 
 /* slide target: x, y and width of the box */
 void tut_text_place(int x, int y, int w)
@@ -398,8 +375,6 @@ void tut_text_place(int x, int y, int w)
     tut_tb.def.w = w;
 }
 
-#ifdef NON_MATCHING
-/* ordem das gravações nos campos do MenuItemDef e registradores */
 void tut_text_build(void)
 {
     MenuItemDef *d = &tut_tb.def;
@@ -409,27 +384,26 @@ void tut_text_build(void)
     d->visible = 1;
     d->auto_title = 1;
     d->font_flag4 = 1;
+    d->style = tut_tb.style;
     d->style2 = 2;
     d->pad_t = 2;
-    d->style = tut_tb.style;
+    d->x = tut_tb.x;
     d->show_title = 0;
     d->y = 0xD2;
-    d->x = tut_tb.x;
+    d->w = tut_tb.w;
     d->text = 0;
     d->title = 0;
     d->h = 0x3C;
     d->color = 0xFFFFFFFF;
     d->title_color = 0xFFFFFFFF;
-    d->w = tut_tb.w;
-    d->text_color = 0xFF000000;
-    d->pad_l = 4;
     d->font_size = tut_tb.size;
     d->title_font_size = tut_tb.size;
+    d->text_color = 0xFF000000;
+    d->pad_l = 4;
     d->pad_r = 0x14;
     menu_add_item(&tut_tb.menu, d);
     tut_text_reset(tut_tb.x, tut_tb.w, tut_tb.size, tut_tb.wait, tut_tb.style);
 }
-#endif
 
 void tut_text_blink(void)
 {
@@ -440,8 +414,6 @@ void tut_text_blink(void)
 }
 
 /* type more of the current line; at its end go to the next line, the next page or stop */
-#ifdef NON_MATCHING
-/* base da linha corrente e ordem dos testes do fim de linha/página */
 void tut_text_advance(void)
 {
     TutText *t = &tut_tb;
@@ -462,10 +434,10 @@ void tut_text_advance(void)
     font_get_flag8000();
     flags = tut_text_font_begin();
     w = (font_measure_text(t->text + l->start) >> 6) + 1;
-    if (w >= t->text_w)
-        w = t->text_w;
+    w = (w < t->text_w) ? w : t->text_w;
     tut_text_font_end(flags);
-    l->w += tut_text_speeds[t->speed];
+    n = tut_text_speeds[t->speed];
+    l->w += n;
     if (l->w < w)
         return;
     l->w = w;
@@ -483,13 +455,9 @@ void tut_text_advance(void)
         t->cur++;
     }
 }
-#endif
 
-#ifdef NON_MATCHING
-/* teste da região (região 0 e 1 com corpos separados) e alocação dos $s do laço */
 void tut_text_layout(void)
 {
-    int r;
     TutText *t = &tut_tb;
     MenuItemDef *d = &tut_tb.def;
     unsigned short flags = tut_text_font_begin();
@@ -497,61 +465,62 @@ void tut_text_layout(void)
     int x, y, w, h;
     int lh;
     int i;
-    TutLine *l;
-    int dy;
-    int gap;
 
-    r = region_get();
-    g = (r == 1 || r == 0) ? 1 : 3;
+    switch (region_get()) {
+    case 0:
+    case 1:
+        g = 1;
+        break;
+    default:
+        g = 3;
+    }
     t->cur = 0;
     t->pos = 0;
     menu_item_rect(&t->menu, d, &x, &y, &w, &h);
     t->text_w = w;
     lh = font_line_height() >> 6;
-    for (i = 0, l = t->line, dy = 0, gap = 0; i < t->lines; i++, l++, dy += lh, gap += g) {
-        l->x = x;
-        l->y = y + dy;
-        l->w = 0;
-        l->h = lh;
-        l->start = 0;
+    for (i = 0; i < t->lines; i++) {
+        t->line[i].x = x;
+        t->line[i].y = y + i * lh;
+        t->line[i].w = 0;
+        t->line[i].h = lh;
+        t->line[i].start = 0;
         if (region_get() != 0)
-            l->y += gap;
+            t->line[i].y += i * g;
     }
     tut_text_font_end(flags);
 }
-#endif
 
-#ifdef NON_MATCHING
-/* teste da região (região 0 e 1 com corpos separados) e alocação dos $s do laço */
 void tut_text_relayout(void)
 {
-    int r;
     TutText *t = &tut_tb;
     MenuItemDef *d = &tut_tb.def;
     unsigned short flags = tut_text_font_begin();
-    int g;
-    int x, y, w, h;
     int lh;
+    int x, y, w, h;
     int i;
-    TutLine *l;
-    int dy;
-    int gap;
+    int g;
 
-    r = region_get();
-    g = (r == 1 || r == 0) ? 1 : 3;
+    switch (region_get()) {
+    case 0:
+    case 1:
+        g = 1;
+        break;
+    default:
+        g = 3;
+    }
     t->def.x = (int)t->pos2[0];
     t->def.y = (int)t->pos2[1];
     menu_item_rect(&t->menu, d, &x, &y, &w, &h);
     lh = (font_line_height() >> 6) + 1;
-    for (i = 0, l = t->line, dy = 0, gap = 0; i < t->lines; i++, l++, dy += lh, gap += g) {
-        l->x = x;
-        l->y = y + dy;
+    for (i = 0; i < t->lines; i++) {
+        t->line[i].x = x;
+        t->line[i].y = y + i * lh;
         if (region_get() != 0)
-            l->y += gap;
+            t->line[i].y += i * g;
     }
     tut_text_font_end(flags);
 }
-#endif
 
 /* frame-th w x h cell of a strip */
 void tut_text_icon(void **list, int x, int y, int z, int u, int v, int w, int h, int frame)
@@ -561,21 +530,22 @@ void tut_text_icon(void **list, int x, int y, int z, int u, int v, int w, int h,
 }
 
 /* font state of the box; returns the previous flags for tut_text_font_end */
-#ifdef NON_MATCHING
-/* forma igual, $s0/$s2 trocados entre o MenuItemDef e o espaçamento */
 unsigned short tut_text_font_begin(void)
 {
-    TutText *t;
-    MenuItemDef *d;
+    TutText *t = &tut_tb;
+    MenuItemDef *d = &tut_tb.def;
     unsigned short flags;
     int g;
-    int r;
 
-    t = &tut_tb;
-    d = &tut_tb.def;
     flags = font_get_flags();
-    r = region_get();
-    g = (r == 1 || r == 0) ? 1 : 3;
+    switch (region_get()) {
+    case 0:
+    case 1:
+        g = 1;
+        break;
+    default:
+        g = 3;
+    }
     if (region_get() == 0) {
         font_set_flag1(1);
         font_set_flag8000(t->flag8000);
@@ -590,7 +560,6 @@ unsigned short tut_text_font_begin(void)
     font_set_line_extra(g << 6);
     return flags;
 }
-#endif
 
 void tut_text_font_end(unsigned short flags)
 {
