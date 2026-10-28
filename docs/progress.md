@@ -5,7 +5,7 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-28 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 51,6% | 68,9% | 7359 / 11039 |
+| total | 54,2% | 71,6% | 8019 / 11039 |
 | BOOT | 63,0% | 79,9% | 1815 / 2208 |
 | libduel_eng | 61,7% | 81,2% | 2987 / 3429 |
 | libhtml_view | 100% | 100% | 16 / 16 |
@@ -15,19 +15,20 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-28 (
 | libduelrecord | 92,2% | 99,9% | 26 / 27 |
 | libduel_mgr | 37,9% | 87,9% | 97 / 158 |
 | libselect_card | 37,2% | 79,5% | 123 / 207 |
-| libcardalbum | 79,2% | 99,7% | 62 / 68 |
+| libcardalbum | 97,2% | 100% | 67 / 68 |
 | libcharalist | 60,2% | 90,7% | 41 / 50 |
-| libconv_machine | 79,9% | 97,1% | 44 / 47 |
-| liblimitlist | 82,1% | 97,3% | 56 / 62 |
+| libconv_machine | 94,7% | 99,1% | 46 / 47 |
+| liblimitlist | 85,4% | 99,3% | 58 / 62 |
 | librecipe_viewer | 56,3% | 91,7% | 51 / 69 |
 | libdeck | 65,7% | 89,4% | 275 / 328 |
 | libdeck_swap | 61,4% | 84,8% | 156 / 204 |
 | libdeck_tutorial | 57,7% | 85,9% | 224 / 293 |
 | libshop | 55,9% | 78,2% | 186 / 223 |
 | libtitle | 75,4% | 89,7% | 382 / 434 |
-| libtutorial | 86,2% | 98,4% | 196 / 207 |
+| libtutorial | 93,2% | 99,7% | 204 / 207 |
 | libfield | 56,9% | 73,4% | 551 / 652 |
-| libduel_draw, libstory | 0% | 0% | 0 / 2285 |
+| libstory | 85,5% | 98,5% | 643 / 676 |
+| libduel_draw | 0% | 0% | 0 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -53,7 +54,9 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 
 **libtitle**: todo o `.text` em C (restam 53 funções em asm).
 
-**libfield**: `0x0881C240-0x0882BE80` (204 funções: sombras, lista de desenho, menus, efeitos, sprites); `0x08804000-0x0881C240` está em C.
+**libfield**, **libstory**: todo o `.text` em C (restam 91 e 33 funções em asm).
+
+**libduel_draw**: nada em C ainda (0x08804000 em diante, 1609 funções, 412 KB).
 
 **BOOT**: nenhum trecho sem C. Todo o `.text` está em arquivos `.c`; o que falta são as funções em `@asm` (C sob `NON_MATCHING`). Na parte do SDK compilada com GCC (libgu, newlib, libgcc, libvfpu, libccc, libfpu, libdeflt, libsas/libwave) as funções são `asm` do mwcc com C portável sob `#else`; ficam em `@asm` as que carregam dados por `lui`/`%lo`, que o assembler embutido não aceita (ver `docs/build.md`).
 
@@ -430,17 +433,17 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`sc_word.c`](../src/libselect_card/sc_word.c) | 0x08813CF4-0x08815168 | 5 | 6 | busca por palavra (teclado do sistema, histórico, barra de progresso) |
 | [`sc_move.c`](../src/libselect_card/sc_move.c) | 0x08815168-0x08816DD4 | 4 | 10 | atualização do teclado do sistema, mover carta entre painéis com voo em curva e desfazer, popup de mensagens e confirmação de saída |
 
-## libcardalbum (7 arquivos, 62 funções batendo, 6 em asm)
+## libcardalbum (7 arquivos, 67 funções batendo, 1 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`ca_main.c`](../src/libcardalbum/ca_main.c) | 0x08804000-0x08804408 | 4 | 0 | entrada, init/update exportados e liberação do álbum |
 | [`ca_res.c`](../src/libcardalbum/ca_res.c) | 0x08804408-0x08804D08 | 13 | 0 | recursos (database/cardalbum.ehp, texturas e modelos por id, leitores CIP, fila de pré-carga de figuras) |
-| [`ca_gfx.c`](../src/libcardalbum/ca_gfx.c) | 0x08804D08-0x08805CA4 | 10 | 1 | parte 3D: estado do GE, luz, câmera, capa, modelos das páginas com as figuras como textura, cursor 3D |
-| [`ca_draw.c`](../src/libcardalbum/ca_draw.c) | 0x08805CA4-0x0880681C | 4 | 2 | parte 2D: fundo, barra de título com percentual, menu de saltos, mão do cursor, dígitos |
-| [`ca_input.c`](../src/libcardalbum/ca_input.c) | 0x0880681C-0x08807CD0 | 12 | 1 | entrada (células, cantos, menu), pré-carga dos lados visíveis, carta sob o cursor, virada de página e salto animado |
-| [`ca_list.c`](../src/libcardalbum/ca_list.c) | 0x08807CD0-0x08808E5C | 14 | 1 | lista do álbum em ordem de sort, salto para índice/grupo, tela de detalhe, aceleração de virada, objetos de página |
-| [`ca_index.c`](../src/libcardalbum/ca_index.c) | 0x08808E5C-0x08809B30 | 5 | 1 | janela de índice por letra inicial (kana/alfabeto) e páginas extras |
+| [`ca_gfx.c`](../src/libcardalbum/ca_gfx.c) | 0x08804D08-0x08805CA4 | 11 | 0 | parte 3D: estado do GE, luz, câmera, capa, modelos das páginas com as figuras como textura, cursor 3D |
+| [`ca_draw.c`](../src/libcardalbum/ca_draw.c) | 0x08805CA4-0x0880681C | 5 | 1 | parte 2D: fundo, barra de título com percentual, menu de saltos, mão do cursor, dígitos |
+| [`ca_input.c`](../src/libcardalbum/ca_input.c) | 0x0880681C-0x08807CD0 | 13 | 0 | entrada (células, cantos, menu), pré-carga dos lados visíveis, carta sob o cursor, virada de página e salto animado |
+| [`ca_list.c`](../src/libcardalbum/ca_list.c) | 0x08807CD0-0x08808E5C | 15 | 0 | lista do álbum em ordem de sort, salto para índice/grupo, tela de detalhe, aceleração de virada, objetos de página |
+| [`ca_index.c`](../src/libcardalbum/ca_index.c) | 0x08808E5C-0x08809B30 | 6 | 0 | janela de índice por letra inicial (kana/alfabeto) e páginas extras |
 
 ## libcharalist (4 arquivos, 41 funções batendo, 9 em asm)
 
@@ -451,26 +454,26 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`cl_draw.c`](../src/libcharalist/cl_draw.c) | 0x08804F48-0x08807F68 | 18 | 3 | janela com três abas, linhas de duelista (rosto, número, nome, nível, estrelas, retrospecto), cursor, barras de rolagem e página de detalhe |
 | [`cl_list.c`](../src/libcharalist/cl_list.c) | 0x08807F68-0x0880A34C | 4 | 6 | abas montadas a partir dos encontros, entrada da lista e do detalhe (roupas, perfil, teste de voz), tabela de personagens e retrato |
 
-## libconv_machine (4 arquivos, 44 funções batendo, 3 em asm)
+## libconv_machine (4 arquivos, 46 funções batendo, 1 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`cm_main.c`](../src/libconv_machine/cm_main.c) | 0x08804000-0x08804B50 | 15 | 0 | entrada, init/update exportados, liberação, carga dos pacotes e arquivos por idioma, busca de recursos e modelos |
-| [`cm_draw.c`](../src/libconv_machine/cm_draw.c) | 0x08804B50-0x08805FF8 | 8 | 2 | desenho exportado, fundo, painel da máquina, animações EHF, janela de mensagem, cartas, clarão, escurecimento, nome e dica |
-| [`cm_gfx.c`](../src/libconv_machine/cm_gfx.c) | 0x08805FF8-0x08806D4C | 9 | 1 | estado do GE, luzes, câmeras, tampa da máquina, cartas entrando e carta saindo com textura renderizada |
+| [`cm_draw.c`](../src/libconv_machine/cm_draw.c) | 0x08804B50-0x08805FF8 | 9 | 1 | desenho exportado, fundo, painel da máquina, animações EHF, janela de mensagem, cartas, clarão, escurecimento, nome e dica |
+| [`cm_gfx.c`](../src/libconv_machine/cm_gfx.c) | 0x08805FF8-0x08806D4C | 10 | 0 | estado do GE, luzes, câmeras, tampa da máquina, cartas entrando e carta saindo com textura renderizada |
 | [`cm_states.c`](../src/libconv_machine/cm_states.c) | 0x08806D4C-0x08808A38 | 12 | 0 | estados (introdução, escolha das cartas, inserção, conversão, resultado com nome e ficha, pergunta de repetir), sorteio da carta pelo grupo, medidor e slots de animação |
 
-## liblimitlist (8 arquivos, 55 funções batendo, 7 em asm)
+## liblimitlist (8 arquivos, 58 funções batendo, 4 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`ll_util.c`](../src/liblimitlist/ll_util.c) | 0x08804000-0x08804128 | 3 | 0 | índice no fileTbl.dat, busca de par (carta, valor), ícone do tipo e a lista oficial de proibidas/limitadas |
 | [`ll_draw.c`](../src/liblimitlist/ll_draw.c) | 0x08804128-0x08805948 | 14 | 0 | números, moldura 9-slice, ícones, ATK/DEF, figura da carta (arte alternativa), faixa do tipo, contadores, setas, barra de rolagem |
-| [`ll_scroll.c`](../src/liblimitlist/ll_scroll.c) | 0x08805948-0x08805A00 | 0 | 2 | rolagem do texto pelo analógico |
+| [`ll_scroll.c`](../src/liblimitlist/ll_scroll.c) | 0x08805948-0x08805A00 | 2 | 0 | rolagem do texto pelo analógico |
 | [`ll_res.c`](../src/liblimitlist/ll_res.c) | 0x08805A00-0x088060C4 | 9 | 0 | packs deck/all e limitlist.ehp assíncronos, tabelas id->recurso (qsort/bsearch), leitor CIP, lista de cartas |
 | [`ll_main.c`](../src/liblimitlist/ll_main.c) | 0x088060C4-0x08806490 | 4 | 0 | entrada, init (heap de 5 MB), máquina de estados, liberação em passos |
 | [`ll_screen.c`](../src/liblimitlist/ll_screen.c) | 0x08806490-0x0880740C | 6 | 2 | desenho da tela: fundo, abas com tamanhos, cabeçalho, linhas ou grade, contadores deck/parceiro/posse |
-| [`ll_list.c`](../src/liblimitlist/ll_list.c) | 0x0880740C-0x08808934 | 10 | 3 | montagem das listas, cursor lista/grade com paginação, abas, ficha da carta, verificação dos decks |
+| [`ll_list.c`](../src/liblimitlist/ll_list.c) | 0x0880740C-0x08808934 | 11 | 2 | montagem das listas, cursor lista/grade com paginação, abas, ficha da carta, verificação dos decks |
 | [`ll_menu.c`](../src/liblimitlist/ll_menu.c) | 0x08808934-0x08809538 | 9 | 0 | menus de ajuda, aviso de carta ilegal, listas (oficial/limpar/dados extras) |
 
 ## librecipe_viewer (7 arquivos, 50 funções batendo, 19 em asm)
@@ -593,7 +596,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`ds_osk.c`](../src/libdeck_swap/ds_osk.c) | 0x08815318-0x088157E0 | 2 | 0 | teclado do sistema |
 | [`ds_scene.c`](../src/libdeck_swap/ds_scene.c) | 0x088157E0-0x08815ED4 | 7 | 0 | exports (init/update) e popups |
 
-## libtutorial (9 arquivos, 196 funções batendo, 11 em asm)
+## libtutorial (9 arquivos, 204 funções batendo, 3 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -604,7 +607,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`tut_sprite.c`](../src/libtutorial/tut_sprite.c) | 0x08806BC0-0x08807A10 | 26 | 0 | sprites, destaques, pausa |
 | [`tut_arrow.c`](../src/libtutorial/tut_arrow.c) | 0x08807A10-0x08807E24 | 8 | 0 | setas |
 | [`tut_script.c`](../src/libtutorial/tut_script.c) | 0x08807E24-0x08809A5C | 48 | 2 | script da lição, montagem do duelo (%02d_field_set.txt), filtro de ações, gancho de eventos, sim/não |
-| [`tut_text.c`](../src/libtutorial/tut_text.c) | 0x08809A5C-0x0880AC6C | 14 | 9 | caixa de fala (texto digitado, páginas, ícone piscando) |
+| [`tut_text.c`](../src/libtutorial/tut_text.c) | 0x08809A5C-0x0880AC6C | 22 | 1 | caixa de fala (texto digitado, páginas, ícone piscando) |
 | [`tut_face.c`](../src/libtutorial/tut_face.c) | 0x0880AC6C-0x0880B284 | 6 | 0 | animação dos rostos (bust-up) |
 
 ## libdeck_tutorial (17 arquivos, 224 funções batendo, 69 em asm)
@@ -677,4 +680,37 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`f_face.c`](../src/libfield/f_face.c) | 0x0882ABD4-0x0882B238 | 6 | 1 | rostos EHF animados do tutorial (body/mouth de tutorial/face/bu_xxx.ehp) com piscar e boca falando |
 | [`f_mark.c`](../src/libfield/f_mark.c) | 0x0882B238-0x0882B7C8 | 3 | 0 | marcador no stencil: prisma sobre o ponto alvo e cor pulsante na tela onde o stencil está marcado |
 | [`f_dlg.c`](../src/libfield/f_dlg.c) | 0x0882B7C8-0x0882BE80 | 5 | 0 | diálogo sim/não (fld_dlg_*), escolha do botão de face e desenho do painel de botões |
+
+
+## libstory (27 arquivos, 643 funções batendo, 33 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`s_main.c`](../src/libstory/s_main.c) | 0x08804000-0x08804270 | 7 | 0 | entrada do módulo, thread da cena (init de todos os subsistemas, laço da história, term e saída) |
+| [`s_chr.c`](../src/libstory/s_chr.c) | 0x08804270-0x088062FC | 92 | 13 | personagens da história (150): tabelas de script Scr<i>_G/Step/Deck/DH/DN/Sche/ES/EI/EL, estado salvo (nível, afinidade, flags, posição, visual, deck), condições e a atualização diária que escolhe visual, lugar e deck |
+| [`s_player.c`](../src/libstory/s_player.c) | 0x088062FC-0x08806A18 | 48 | 3 | estado do jogador na história: sala atual/anterior e posição, ids de eventos, pontos (0..999), contagem dos 20 itens e 50 cartas, bits de cartas já obtidas |
+| [`s_vm.c`](../src/libstory/s_vm.c) | 0x08806A18-0x088075F4 | 11 | 1 | interpretador de script da história: estado story_vm (script, pc, status, textos da escolha), início do script pendente, laço de despacho dos 165 opcodes 0xC351-0xC3F5 |
+| [`s_vmcond.c`](../src/libstory/s_vmcond.c) | 0x088075F4-0x08808E68 | 43 | 1 | instruções 0xC351-0xC37E: falas, janela de escolha (comando 0x14 do campo), desvio aleatório e blocos condicionais que pulam até o marcador op+0x23 |
+| [`s_vmops.c`](../src/libstory/s_vmops.c) | 0x08808E68-0x0880B3E4 | 86 | 3 | instruções 0xC3A0-0xC3F5 (inventário, dinheiro, pontos, flags, comandos do campo, montagem de duelo, som, personagens no mapa, parceiro) e auxiliares do interpretador |
+| [`s_cal.c`](../src/libstory/s_cal.c) | 0x0880B3E4-0x0880C728 | 52 | 4 | calendário da história (mês 1..8 = maio..dezembro, dia, 73 períodos de 15 min a partir de 5:45; dia da semana, dias restantes), flags da história e flag2, capítulo por data e tabelas de texto/ramificação |
+| [`s_res.c`](../src/libstory/s_res.c) | 0x0880C728-0x0880C9E4 | 7 | 0 | heaps da cena, leitura de um EHP inteiro esperando quadro a quadro e extração de membro gzip de um EHP |
+| [`s_story.c`](../src/libstory/s_story.c) | 0x0880C9E4-0x0880DE58 | 11 | 1 | modo história: início (áreas do save entregues aos subsistemas, novo jogo ou retorno de sub-cena), despacho por quadro de ~0x35 estados, saída, avanço de data e hora, comandos de campo 0/3/10 |
+| [`s_fldset.c`](../src/libstory/s_fldset.c) | 0x0880DE58-0x0880EC38 | 9 | 2 | montagem do campo pela história (personagens da sala com rotas e multidão dos dias de evento, parceiro, eventos, itens, flag noturna, ligações das salas, fade) |
+| [`s_mode.c`](../src/libstory/s_mode.c) | 0x0880EC38-0x0880FBE4 | 10 | 0 | estados do modo história em volta do campo (abrir o campo, mapa de salas, passeio livre e o despacho do resultado, resultado dos menus do script, checagem do final) |
+| [`s_modtab.c`](../src/libstory/s_modtab.c) | 0x0880FBE4-0x08810520 | 27 | 0 | tabela dos 12 PRX que a história carrega (libfield, libshop e sub-telas), troca de módulo e callbacks init/update/term de cada um |
+| [`s_ending.c`](../src/libstory/s_ending.c) | 0x08810520-0x08810AE4 | 13 | 0 | ganho de item, destino do fim do passeio livre, nomes da multidão, filme dos créditos (pool HeapMovie, módulos de duelo descarregados) e save de conclusão |
+| [`s_sv.c`](../src/libstory/s_sv.c) | 0x08810AE4-0x08810D24 | 23 | 0 | variáveis da história no save (capítulo 0..199, posição alternativa, tipo de multidão) e tabelas de scripts ES/EI/EL com busca por id |
+| [`s_idmap.c`](../src/libstory/s_idmap.c) | 0x08810D24-0x08812728 | 16 | 0 | remapeamentos de ids dos scripts para índices das tabelas do BOOT (personagens, registros, itens, slots de deck) e sala↔bg do campo, em switches densos |
+| [`s_msg.c`](../src/libstory/s_msg.c) | 0x08812728-0x088132FC | 12 | 0 | pacotes de texto da história (script/st0N_t01_brain.ehp e pacote do idioma; rota e3/ residual), tabelas entregues a cada subsistema e mensagens por personagem/evento sob demanda |
+| [`s_mail.c`](../src/libstory/s_mail.c) | 0x088132FC-0x088138AC | 10 | 3 | e-mails do PDA (100 registros com bitfields no save, tabela MailESM, textos MailEL/MailEI, recebimento via fld_cmd 0x12, lista e anexos) |
+| [`s_evlist.c`](../src/libstory/s_evlist.c) | 0x088138AC-0x08813C84 | 9 | 0 | eventos de mapa da história: tabela filtrada por data, nível e flags, mais os 128 bits de eventos já vistos |
+| [`s_talk.c`](../src/libstory/s_talk.c) | 0x08813C84-0x088156A4 | 22 | 1 | diálogos: janela de mensagem e bust-ups dos falantes pelos comandos 0xE/0xF/0x10/0x13/0x14 do libfield; expansão das tags do texto ($Mnnnn, 《Cnnn?v》, 《PLAYER》) |
+| [`s_pickup.c`](../src/libstory/s_pickup.c) | 0x088156A4-0x08815B54 | 10 | 0 | itens no mapa (tabela filtrada por lugar, data, nível e flags; bits de itens já pegos por rota) |
+| [`s_duel.c`](../src/libstory/s_duel.c) | 0x08815B54-0x088165F8 | 31 | 0 | montagem do duelo pedido pelo script (GameState: regra, oponentes, parceiro, decks, trajes), duelos de lição e parâmetros de lição |
+| [`s_free.c`](../src/libstory/s_free.c) | 0x088165F8-0x08816890 | 18 | 0 | calendário do duelo livre (datas → entrada da tabela, entrada de hoje) e três palavras de estado |
+| [`s_ev.c`](../src/libstory/s_ev.c) | 0x08816890-0x088171F4 | 30 | 1 | getters de personagem normal/alternativo, início do script de evento por tipo, modo da história, pedidos ao campo (lição, saída, noite), fade do campo |
+| [`s_morning.c`](../src/libstory/s_morning.c) | 0x088171F4-0x08817500 | 18 | 0 | plano da manhã (datas → script ESM), pacotes de texto da manhã, pontes para o calendário |
+| [`s_mod.c`](../src/libstory/s_mod.c) | 0x08817500-0x088177C4 | 8 | 0 | módulos de sub-tela (12 slots, carga via ehfile_request_module + sceKernelStartModule, descarga, gancho por quadro) |
+| [`s_bu.c`](../src/libstory/s_bu.c) | 0x088177C4-0x08817930 | 4 | 0 | retratos (bust-up) pedidos ao campo (carga pelo comando 12, descarga pelo 13) |
+| [`s_snd.c`](../src/libstory/s_snd.c) | 0x08817930-0x08817E64 | 16 | 0 | música e sons (bgm da sala por dia/noite/duelo, tocar/parar/esperar, efeito de variação de pontos) |
 
