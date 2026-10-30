@@ -37,8 +37,8 @@ typedef struct DdWait {                /* argument of the wait-for-condition tas
 extern DdTasksTail dd_tasks;
 extern const int dd_glow_kind;
 extern int D_08C582B0;
-extern int D_08C582B4;
-extern int D_08C582B8;
+extern int dd_act_hook;
+extern int dd_act_menu;
 
 void *dd_alloc(int n);
 int dd_free(void *p);
@@ -475,12 +475,12 @@ void func_08820EA8(int card, int flag)
 
 void func_08820F28(void)
 {
-    memset(&D_08C582B8, 0, 0x9C);
-    D_08C582B4 = 0;
+    memset(&dd_act_menu, 0, 0x9C);
+    dd_act_hook = 0;
 }
 
 void func_08820F58(void)
 {
-    memset(&D_08C582B8, 0, 0x9C);
-    D_08C582B4 = 0;
+    memset(&dd_act_menu, 0, 0x9C);
+    dd_act_hook = 0;
 }

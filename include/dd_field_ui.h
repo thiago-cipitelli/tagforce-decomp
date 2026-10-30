@@ -90,7 +90,7 @@ typedef struct DdMsgWin {              /* 0x08C58A40, 0x144 */
     MenuWidget w;                      /* +0x000 */
     void (*on_close)(void);            /* +0x120 called once by func_08825778 */
     void *(*draw_hook)(void *dl);      /* +0x124 drawing before the window */
-    void (*on_move)(MenuWidget *w, int old); /* +0x128 the cursor moved */
+    void (*on_move)(MenuWidget *w, int old, int cur); /* +0x128 the cursor moved */
     int (*update)(void);               /* +0x12C replaces the menu update */
     int result;                        /* +0x130 menu_update's last answer */
     unsigned short *title;             /* +0x134 heap copies of the texts */

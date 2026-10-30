@@ -1,6 +1,5 @@
 // @range 0x08825088-0x08825DDC
 // @asm 0x088250E8-0x088252B0
-// @asm 0x08825674-0x08825728
 // @asm 0x08825A14-0x08825A70
 /* The message window (one MenuWidget, dd_msg_win, shared by the duel's questions and choices:
    open/update/draw/close, heap copies of its texts, hooks), the number choice drawn in it, and the
@@ -39,7 +38,7 @@ int func_088257C4(void);
 MenuWidget *func_08825818(void);
 void func_088259D8(void);
 void func_088259E4(void *(*fn)(void *dl));
-void func_088259F0(void (*fn)(MenuWidget *w, int old));
+void func_088259F0(void (*fn)(MenuWidget *w, int old, int cur));
 void func_088259FC(void (*fn)(void));
 void func_08825A08(int (*fn)(void));
 void func_08825A70(int v);
@@ -187,23 +186,23 @@ void *func_088255E8(void *dl)
     return dl;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores diferente (forma igual) */
 /* per frame: menu update while the input is on; returns nonzero when the window is done */
 int func_08825674(void)
 {
     int old;
     DdMsgWin *m = &dd_msg_win;
+    int cur;
 
     if (dd_msg_win.update)
         return m->update();
     old = m->w.scroll + m->w.cursor;
     if (dd_input_on())
         m->result = menu_update(&m->w);
-    if (old != m->w.scroll + m->w.cursor && m->on_move)
-        m->on_move(&m->w, old);
+    cur = m->w.scroll + m->w.cursor;
+    if (old != cur && m->on_move)
+        m->on_move(&m->w, old, cur);
     return !func_08825728();
 }
-#endif
 
 /* the window is open (not idle, opening or closed) */
 int func_08825728(void)
@@ -309,7 +308,7 @@ void func_088259E4(void *(*fn)(void *dl))
     dd_msg_win.draw_hook = fn;
 }
 
-void func_088259F0(void (*fn)(MenuWidget *w, int old))
+void func_088259F0(void (*fn)(MenuWidget *w, int old, int cur))
 {
     dd_msg_win.on_move = fn;
 }

@@ -1,126 +1,198 @@
 // @range 0x08820F88-0x08822B0C
 // @asm 0x08820F88-0x088212B0
-// @asm 0x088212C4-0x0882192C
-// @asm 0x08821954-0x08821F38
-// @asm 0x08821F70-0x08821FA0
-// @asm 0x08821FA8-0x088228B8
-// @asm 0x088228F0-0x08822B0C
-/* The action window over a field location (summon, set, activate, attack...), the card-action icons, the message windows of kinds 0-2 (plain, yes/no, choice) and their menu hooks.
-   Functions under NON_MATCHING stay in asm; their C is the Ghidra pseudocode cleaned of the address
-   names (Ghidra types: undefined4 = int-sized, code = function pointer), kept for the port. */
+// @asm 0x08821460-0x088215A0
+// @asm 0x088215A0-0x08821868
+// @asm 0x08821954-0x08821A3C
+// @asm 0x08821A3C-0x08821BAC
+// @asm 0x08821DBC-0x08821F38
+// @asm 0x08821FA8-0x0882214C
+// @asm 0x0882228C-0x08822520
+// @asm 0x08822520-0x088226C0
+// @asm 0x08822914-0x08822B0C
+// @data 0x08876110-0x08876200
+/* The action window over a field location (summon, set, activate, attack... as icons of
+   dd_act_tab, placed next to the card on screen) and the message windows of the duel's other
+   questions: the battle position choice, the chain confirmation with the cards involved, yes/no and
+   the "use this card?" choice between a card and its back. */
 #include "dd_field_ui.h"
 
-#ifdef NON_MATCHING
-typedef unsigned char undefined;
-typedef unsigned char undefined1;
-typedef unsigned short undefined2;
-typedef unsigned int undefined4;
-typedef unsigned char byte;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef void (*code)();
-#endif
+typedef struct DdLocSrc {              /* where the action window's location comes from */
+    void (*get)(DdLoc *out);
+} DdLocSrc;
 
-int func_08821460();
-int func_088215A0();
-int func_08822914();
-int func_08825AFC();
-extern int D_08C582B4;
-extern int D_08C58358;
+typedef struct DdActMenu {             /* 0x08C582B8, 0x9C */
+    DdLocSrc src;                      /* +0x00 */
+    int n;                             /* +0x04 */
+    int act[32];                       /* +0x08 rows of dd_act_tab */
+    int text_w;                        /* +0x88 widest action name */
+    MenuWidget *w;                     /* +0x8C */
+    int sel;                           /* +0x90 menu_update's answer */
+    unsigned int bits;                 /* +0x94 actions allowed (bit = DdActIcon.act), 0x2000 card shown */
+    int card;                          /* +0x98 */
+} DdActMenu;
+
+typedef struct DdActIcon {             /* 0x08876110: icon (u, v in the sheet), name and action */
+    int u, v;
+    int text;
+    int act;
+} DdActIcon;
+
+typedef struct DdPosSel {              /* 0x08C58354: battle position choice */
+    unsigned int mask;                 /* positions offered */
+    int cur;                           /* +0x04 */
+    MenuWidget *w;                     /* +0x08 */
+} DdPosSel;
+
+typedef struct DdChainSel {            /* 0x08C58360: chain confirmation, 0x4C */
+    MenuWidget *w;
+    int uid[16];                       /* +0x04 cards involved */
+    int n;                             /* +0x44 */
+    int more;                          /* +0x48 more than shown */
+} DdChainSel;
+
+extern int (*dd_act_hook)(DdLoc loc, int *acts, int n); /* 0x08C582B4 >0: action (+1) chosen at once */
+extern DdActMenu dd_act_menu;
+extern DdPosSel dd_pos_sel;
+extern DdChainSel dd_chain_sel;
+extern int dd_yesno_default;           /* 0x08C583AC open on "no" */
+extern int dd_sel_flag;                /* 0x08C583B0 */
+extern int dd_sel_card;                /* 0x08C583B4 */
+
+DdActIcon dd_act_tab[15] = {
+    { 91, 66, 7, 0 },   { 65, 79, 2, 1 },   { 26, 79, 8, 2 },  { 78, 66, 9, 3 },
+    { 65, 66, 1, 4 },   { 39, 66, 10, 5 },  { 104, 92, 65, 6 }, { 52, 66, 64, 7 },
+    { 26, 66, 5, 8 },   { 13, 66, 6, 9 },   { 0, 79, 11, 10 }, { 65, 92, 12, 11 },
+    { 104, 66, 13, 12 }, { 0, 66, 4, 13 },  { 0, 66, 47, 14 },
+};
+
+int dv_w624_set();
+int dv_list_id(int i);
+char *dv_chain(void);
+int dv_088695B8(int side, int other, int z, void *a);
+int dv_08869728(int side, int i, void *a);
+int dv_088BFFD8(int side, int id, int i);
+unsigned int dv_n_hand(int side);
+int dv_hand_uid(int side, int i);
+int dv_slot_uid(int side, int z);
+int dv_zone_c_uid(int side, int i);
+int dv_zone_d_uid(int side, int i);
+unsigned int dv_08835AEC(int side, int z, unsigned int i);
+int dv_zone_card_id(int side, int z, int i);
+int dv_n_grave(int side);
+int dv_n_f(int side);
+int dd_loc_visible(DdLoc loc);
+void dd_info_select_uid(int uid);
+void dd_act(int player, int zone, int idx, int act);
+int dd_is_tag_duel(void);
+int card_is_monster(int id);
+void *dd_card_texture(void *list, int id);
+unsigned short *dd_text(int id);
+void *dd_gim_get(int id);
+int dd_input_on(void);
+unsigned int *dd_pad(void);
+void dd_mode_push(int m);
+void dd_mode_set_flag(int f);
+void dd_mode_set_card(int card);
+DdCobj *dd_cobj_at(int player, int zone, int index);
+void dd_slot_xform(float *pos, float *rot, DdLoc at);
+float *mat4_transform_vec4(float *out, float *m, float *v);
+unsigned int *dl_set_tex_filter(unsigned int *list, int min, int mag);
+int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max_glyphs);
+unsigned int font_measure_wtext2(int w, int h, unsigned short *text);
+void func_08825824(unsigned short *title, unsigned short *text, int kind, void (*setup)(MenuWidget *w, int open));
+int func_08825728(void);
+void func_088259E4(void *(*fn)(void *dl));
+void func_088259F0(void (*fn)(MenuWidget *w, int old, int cur));
+void func_088259FC(void (*fn)(void));
+void func_08825A08(int (*fn)(void));
+int func_08825A14(void);
+void func_08825AFC(unsigned short *text);
+void func_08825B7C(int v);
 void func_088212B0(void);
-void func_088212B8(int v);
-int func_0882192C(int list);
-void func_08821F38(int a, int b, int i);
+void func_088212B8(int (*hook)(DdLoc loc, int *acts, int n));
+unsigned int *func_088212C4(unsigned int *dl, int x, int y, int act);
+void func_0882136C(MenuWidget *w, int open);
+void func_08821460(void);
+void func_088215A0(void);
+void func_08821868(void);
+void func_088218CC(DdLoc loc, int act);
+void *func_0882192C(void *list);
+void func_08821954(unsigned int *dl, unsigned short i, int x, int y);
+unsigned int func_08821A3C(DdLoc loc);
+int func_08821BAC(void);
+unsigned short *func_08821C90(int text);
+void func_08821DBC(MenuWidget *w, int open);
+void func_08821F38(MenuWidget *w, int old, int i);
+void func_08821F70(void);
 void *func_08821FA0(void *list);
+unsigned int *func_08821FA8(unsigned int *dl, unsigned short i, int x, int y);
+void func_088221C4(MenuWidget *w, int open);
+void func_08822240(void);
+void func_0882228C(unsigned int *dl);
+void func_08822520(void);
+void func_08822740(MenuWidget *w, int open);
+void func_088227EC(void);
 void func_088228B8(MenuWidget *w, int open);
+void func_088228F0(void);
+unsigned int *func_08822914(unsigned int *dl, unsigned short i, int x, int y);
 
-#ifdef NON_MATCHING
-// 08820f88 size=808
-void func_08820F88(undefined4 *param_1)
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+/* opens the action window of the location given by src; a single plain action (or the hook) acts
+   at once */
+void func_08820F88(DdLocSrc *src)
 {
-  short sVar1;
-  int iVar2;
-  uint uVar3;
-  uint uVar4;
-  undefined4 uVar5;
-  int iVar6;
-  undefined4 *puVar7;
-  ushort local_4 [2];
-  puVar7 = &D_08C582B8;
-  (*(code *)*param_1)(local_4);
-  D_08C582B8 = *param_1;
-  D_08C582BC = 0;
-  D_08C58340 = 0;
-  D_08C58344 = 0;
-  D_08C58350 = dv_zone_card_id((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
-  thunk_FUN_08821460();
-  if ((D_08C582B4 == (code *)0x0) ||
-     (iVar6 = (*D_08C582B4)((int)(short)local_4[0],&D_08C582C0,D_08C582BC), iVar6 < 1)) {
-    if (D_08C582BC == 0) {
-      se_play(0x6215);
+    DdActMenu *m = &dd_act_menu;
+    DdLoc loc;
+    DdCobj *o;
+    int r;
+    int i;
+
+    src->get(&loc);
+    dd_act_menu.n = 0;
+    dd_act_menu.text_w = 0;
+    dd_act_menu.src = *src;
+    dd_act_menu.w = 0;
+    dd_act_menu.card = dv_zone_card_id(loc.player, loc.zone, loc.idx);
+    func_088212B0();
+    if (dd_act_hook && (r = dd_act_hook(loc, m->act, m->n)) > 0) {
+        func_088218CC(loc, r - 1);
+        return;
     }
-    else {
-      iVar6 = 0;
-      if (0 < D_08C582BC) {
-        do {
-          if ((puVar7[2] != 0xb) && (puVar7[2] != 0xd)) break;
-          iVar6 = iVar6 + 1;
-          puVar7 = puVar7 + 1;
-        } while (iVar6 < D_08C582BC);
-      }
-      if ((iVar6 == D_08C582BC) && (D_08C582C0 == 0xb)) {
-        func_088218CC((int)(short)local_4[0]);
+    if (m->n == 0) {
+        se_play(0x6215);
+        return;
+    }
+    for (i = 0; i < m->n; i++) {
+        if (m->act[i] != 11 && m->act[i] != 13)
+            break;
+    }
+    if (i == m->n && m->act[0] == 11) {
+        func_088218CC(loc, m->act[0]);
         se_play(0x6213);
-      }
-      else {
-        func_08825824(0,0,0x20,func_0882136C);
-        dd_mode_push(4);
-        iVar6 = dd_is_tag_duel();
-        if (iVar6 == 0) {
-          dd_mode_set_flag(0x31);
-        }
-        func_088259FC(func_08821868);
-        func_088259E4(func_0882192C);
-        func_08825A08(func_08821BAC);
-        func_08825B7C(1);
-        se_play(0x6216);
-        uVar4 = (uint)(byte)local_4[0];
-        uVar3 = (uVar4 & 0x3f) >> 1;
-        if (uVar3 == 0xc) {
-          local_4[0] = local_4[0] & 0x3f;
-        }
-        else if (uVar3 == 0xd) {
-          local_4[0] = local_4[0] & 0x3f;
-        }
-        else if (uVar3 == 0xf) {
-          sVar1 = dv_n_f(uVar4 & 1);
-          local_4[0] = local_4[0] & 0x3f | (sVar1 + -1) * 0x40;
-        }
-        else if (uVar3 == 0xe) {
-          sVar1 = dv_n_grave(uVar4 & 1);
-          local_4[0] = local_4[0] & 0x3f | (sVar1 + -1) * 0x40;
-        }
-        iVar6 = dd_cobj_at((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
-        if (iVar6 != 0) {
-          iVar2 = dd_loc_visible((int)(short)local_4[0]);
-          if (iVar2 == 0) {
-            if (-1 < (int)*(char *)(iVar6 + 0x8d) << 0x1a) {
-              return;
-            }
-            uVar5 = *(undefined4 *)(iVar6 + 0x88);
-          }
-          else {
-            uVar5 = *(undefined4 *)(iVar6 + 0x88);
-          }
-          dd_info_select_uid(uVar5);
-        }
-      }
+        return;
     }
-  }
-  else {
-    func_088218CC((int)(short)local_4[0],iVar6 + -1);
-  }
-  return;
+    func_08825824(0, 0, 0x20, func_0882136C);
+    dd_mode_push(4);
+    if (dd_is_tag_duel() == 0)
+        dd_mode_set_flag(0x31);
+    func_088259FC(func_08821868);
+    func_088259E4(func_0882192C);
+    func_08825A08(func_08821BAC);
+    func_08825B7C(1);
+    se_play(0x6216);
+    if (loc.zone == 12)
+        loc.idx = 0;
+    else if (loc.zone == 13)
+        loc.idx = 0;
+    else if (loc.zone == 15)
+        loc.idx = dv_n_f(loc.player) - 1;
+    else if (loc.zone == 14)
+        loc.idx = dv_n_grave(loc.player) - 1;
+    if ((short)loc.idx < 0)
+        loc.idx = 0;
+    o = dd_cobj_at(loc.player, loc.zone, loc.idx);
+    if (o != 0 && (dd_loc_visible(loc) || o->b5))
+        dd_info_select_uid(o->uid);
 }
 #endif
 
@@ -129,742 +201,571 @@ void func_088212B0(void)
     func_08821460();
 }
 
-void func_088212B8(int v)
+void func_088212B8(int (*hook)(DdLoc loc, int *acts, int n))
 {
-    D_08C582B4 = v;
+    dd_act_hook = hook;
 }
 
-#ifdef NON_MATCHING
-// 088212c4 size=168
-void func_088212C4(undefined4 param_1,undefined4 param_2,undefined4 param_3,int param_4)
+/* icon of action row act */
+unsigned int *func_088212C4(unsigned int *dl, int x, int y, int act)
 {
-  undefined4 uVar1;
-  uVar1 = dd_gim_get(0x40005);
-  uVar1 = gim_set_texture(param_1,uVar1);
-  uVar1 = draw_set_offsets(uVar1,0xd,0xd,0xd,0xd);
-  draw_sprite(uVar1,param_2,param_3,0,*(undefined4 *)(&D_08876110 + param_4 * 0x10),
-              *(undefined4 *)(&D_08876114 + param_4 * 0x10),0,0);
-  return;
-}
-#endif
+    DdActIcon *row = &dd_act_tab[act];
 
-#ifdef NON_MATCHING
-// 0882136c size=244
-void func_0882136C(int param_1,int param_2)
+    dl = gim_set_texture(dl, dd_gim_get(0x40005));
+    dl = draw_set_offsets(dl, 13, 13, 13, 13);
+    return draw_sprite(dl, x, y, 0, row->u, row->v, 0, 0);
+}
+
+/* window setup: a row per action; after the layout, sized to the widest name */
+void func_0882136C(MenuWidget *w, int open)
 {
-  if (param_2 == 0) {
-    *(short *)(param_1 + 0xf0) = (short)D_08C58340 + 0x12;
-    *(undefined2 *)(param_1 + 0xf8) = *(undefined2 *)(param_1 + 0xf0);
-    *(short *)(param_1 + 0x6c) =
-         *(short *)(param_1 + 0x92) + *(short *)(param_1 + 0xf0) + 8 + *(short *)(param_1 + 0x90);
-    D_08C58344 = param_1;
-    if (*(short *)(param_1 + 0x5a) < 0) {
-      *(undefined2 *)(param_1 + 0x5a) = 0;
+    DdActMenu *m = &dd_act_menu;
+    MenuItemDef *d = &w->def;
+
+    if (open) {
+        func_088212B0();
+        w->cancel_blocked = 0;
+        w->count = m->n;
+        w->rows = m->n;
+        w->item_w = 100;
+        w->item_h = 15;
+        w->draw_item = (MenuDrawItemFn)func_08821954;
+        d->tab = 1;
+        d->pad_t = 2;
+        d->pad_b = 2;
+        d->pad_l = 2;
+        d->pad_r = 2;
+    } else {
+        w->item_w = m->text_w + 18;
+        w->cursor_w = w->item_w;
+        d->w = d->pad_r + (w->item_w + 8 + d->pad_l);
+        m->w = w;
+        if (d->y < 0)
+            d->y = 0;
     }
-  }
-  else {
-    thunk_FUN_08821460();
-    *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xfb;
-    *(short *)(param_1 + 0xcc) = (short)D_08C582BC;
-    *(char *)(param_1 + 0xce) = (char)D_08C582BC;
-    *(undefined2 *)(param_1 + 0xf0) = 100;
-    *(undefined2 *)(param_1 + 0xf2) = 0xf;
-    *(code **)(param_1 + 0xfc) = func_08821954;
-    *(undefined1 *)(param_1 + 0x56) = 1;
-    *(undefined2 *)(param_1 + 0x94) = 2;
-    *(undefined2 *)(param_1 + 0x96) = 2;
-    *(undefined2 *)(param_1 + 0x90) = 2;
-    *(undefined2 *)(param_1 + 0x92) = 2;
-  }
-  return;
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08821460 size=320
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+/* the actions allowed at the location and the widest of their names */
 void func_08821460(void)
 {
-  uint uVar1;
-  undefined4 uVar2;
-  int iVar3;
-  undefined4 *puVar4;
-  undefined *puVar5;
-  uint uVar6;
-  int iVar7;
-  int iVar8;
-  int iVar9;
-  undefined4 *puVar10;
-  short local_4 [2];
-  puVar10 = &D_08C582B8;
-  (*D_08C582B8)(local_4);
-  uVar1 = func_08821A3C((int)local_4[0]);
-  iVar9 = 0;
-  iVar8 = 0;
-  D_08C5834C = uVar1;
-  font_set_size(0xc,0xc);
-  uVar6 = 0;
-  puVar5 = &D_08876110;
-  puVar4 = puVar10;
-  while ((uVar6 < 0xf && (iVar9 < 0x21))) {
-    if ((uVar1 & 1 << (*(uint *)(puVar5 + 0xc) & 0x1f)) != 0) {
-      puVar4[2] = uVar6;
-      puVar4 = puVar4 + 1;
-      iVar9 = iVar9 + 1;
+    DdActMenu *m = &dd_act_menu;
+    DdActIcon *row;
+    DdLoc loc;
+    unsigned int bits;
+    unsigned int i;
+    int n;
+    int maxw;
+    int w;
+    int k;
+
+    dd_act_menu.src.get(&loc);
+    bits = func_08821A3C(loc);
+    dd_act_menu.bits = bits;
+    n = 0;
+    maxw = 0;
+    font_set_size(12, 12);
+    row = dd_act_tab;
+    for (i = 0; i < 15 && n <= 32; i++, row++) {
+        if (bits & (1 << row->act)) {
+            m->act[n] = i;
+            n++;
+        }
     }
-    puVar5 = puVar5 + 0x10;
-    uVar6 = uVar6 + 1;
-  }
-  iVar7 = 0;
-  if (0 < iVar9) {
-    do {
-      uVar2 = func_08821C90(*(undefined4 *)(puVar10[2] * 0x10 + 0x8876118));
-      iVar3 = font_measure_text(uVar2);
-      iVar3 = iVar3 >> 6;
-      if (iVar3 <= iVar8) {
-        iVar3 = iVar8;
-      }
-      iVar7 = iVar7 + 1;
-      puVar10 = puVar10 + 1;
-      iVar8 = iVar3;
-    } while (iVar7 < iVar9);
-  }
-  D_08C58340 = iVar8;
-  D_08C582BC = iVar9;
-  if (0x20 < iVar9) {
-    D_08C582BC = 0x20;
-  }
-  return;
+    for (k = 0; k < n; k++) {
+        w = font_measure_text(func_08821C90(dd_act_tab[m->act[k]].text)) >> 6;
+        if (maxw < w)
+            maxw = w;
+    }
+    m->text_w = maxw;
+    m->n = n;
+    if (n > 32)
+        m->n = 32;
 }
 #endif
 
-#ifdef NON_MATCHING
-// 088215a0 size=712
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+/* places the window above the card on screen, its tab pointing at the card */
 void func_088215A0(void)
 {
-  int iVar1;
-  int iVar2;
-  short sVar3;
-  float fVar4;
-  undefined1 auStack_140 [64];
-  undefined1 auStack_100 [64];
-  undefined1 auStack_c0 [64];
-  undefined1 auStack_80 [64];
-  undefined4 local_40;
-  undefined4 local_3c;
-  undefined4 local_38;
-  undefined4 local_34;
-  float local_30;
-  float local_2c;
-  float local_24;
-  undefined4 local_20;
-  undefined4 local_1c;
-  undefined4 local_18;
-  undefined4 local_14;
-  ushort local_4 [2];
-  if (D_08C58344 != 0) {
-    (*D_08C582B8)(local_4);
-    iVar2 = dd_cobj_at((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
-    if ((iVar2 == 0) || (((byte)local_4[0] & 0x3f) >> 1 != 0xb)) {
-      dd_slot_xform(&local_20,&local_40,(int)(short)local_4[0]);
-    }
-    else {
-      local_20 = *(undefined4 *)(iVar2 + 0x10);
-      local_1c = *(undefined4 *)(iVar2 + 0x14);
-      local_18 = *(undefined4 *)(iVar2 + 0x18);
-      local_14 = *(undefined4 *)(iVar2 + 0x1c);
-      local_40 = *(undefined4 *)(iVar2 + 0x40);
-      local_3c = *(undefined4 *)(iVar2 + 0x44);
-      local_38 = *(undefined4 *)(iVar2 + 0x48);
-      local_34 = *(undefined4 *)(iVar2 + 0x4c);
+    DdActMenu *m = &dd_act_menu;
+    FxMat4 model, view, proj, mvp;
+    FxVec4 rot, scr, pos;
+    DdLoc loc;
+    DdCobj *o;
+    MenuItemDef *d;
+
+    if (dd_act_menu.w == 0)
+        return;
+    m->src.get(&loc);
+    o = dd_cobj_at(loc.player, loc.zone, loc.idx);
+    if (o != 0 && loc.zone == 11) {
+        pos = *(FxVec4 *)&o->pos;
+        rot = *(FxVec4 *)&o->rot;
+    } else {
+        dd_slot_xform(&pos.x, &rot.x, loc);
     }
     mtx_set_mode(2);
-    mtx_get34(auStack_c0);
+    mtx_get34(proj.m);
     mtx_set_mode(1);
-    mtx_get34(auStack_100);
+    mtx_get34(view.m);
     mtx_set_mode(0);
-    mtx_get34(auStack_140);
-    mat4_mul(auStack_80,auStack_100,auStack_c0);
-    mat4_mul(auStack_80,auStack_140,auStack_80);
+    mtx_get34(model.m);
+    mat4_mul(mvp.m, view.m, proj.m);
+    mat4_mul(mvp.m, model.m, mvp.m);
     mtx_set_mode(2);
-    local_14 = 0x3f800000;
-    mat4_transform_vec4(&local_30,auStack_80,&local_20);
-    iVar1 = D_08C58344;
-    fVar4 = ((local_30 * 480.0) / local_24 + 2122.0) - 1808.0;
-    iVar2 = (int)*(short *)(D_08C58344 + 0x6c);
-    if (iVar2 < 0) {
-      iVar2 = iVar2 + 1;
-    }
-    *(short *)(D_08C58344 + 0x58) = (short)(int)(fVar4 - (float)(iVar2 >> 1));
-    *(short *)(iVar1 + 0x5a) =
-         (short)(int)(((((local_2c * -272.0) / local_24 + 2044.0) - 1912.0) - 20.0) -
-                     (float)(int)*(short *)(iVar1 + 0x6e));
-    if ((int)*(short *)(iVar1 + 0x58) + (int)*(short *)(iVar1 + 0x6c) < 0x1e1) {
-      sVar3 = *(short *)(iVar1 + 0x58);
-    }
-    else {
-      *(short *)(iVar1 + 0x58) = 0x1e0 - *(short *)(iVar1 + 0x6c);
-      sVar3 = *(short *)(iVar1 + 0x58);
-    }
-    if (sVar3 < 0x94) {
-      *(undefined2 *)(iVar1 + 0x58) = 0x94;
-      sVar3 = *(short *)(iVar1 + 0x5a);
-    }
-    else {
-      sVar3 = *(short *)(iVar1 + 0x5a);
-    }
-    if (sVar3 < 0) {
-      *(undefined2 *)(iVar1 + 0x5a) = 0;
-      sVar3 = *(short *)(iVar1 + 0x58);
-    }
-    else {
-      sVar3 = *(short *)(iVar1 + 0x58);
-    }
-    sVar3 = (short)(int)(fVar4 - (float)(int)sVar3);
-    *(short *)(iVar1 + 0x74) = sVar3;
-    if (sVar3 < 4) {
-      *(undefined2 *)(iVar1 + 0x74) = 4;
-      sVar3 = *(short *)(iVar1 + 0x6c);
-    }
-    else {
-      sVar3 = *(short *)(iVar1 + 0x6c);
-    }
-    if (sVar3 + -4 < (int)*(short *)(iVar1 + 0x74)) {
-      *(short *)(iVar1 + 0x74) = (short)(sVar3 + -4);
-    }
-  }
-  return;
+    pos.w = 1.0f;
+    mat4_transform_vec4(&scr.x, mvp.m, &pos.x);
+    scr.x = 480.0f * scr.x / scr.w;
+    scr.y = -272.0f * scr.y / scr.w;
+    scr.x += 2122.0f;
+    scr.y += 2044.0f;
+    scr.x -= 1808.0f;
+    scr.y -= 1912.0f;
+    scr.y -= 20.0f;
+    d = &m->w->def;
+    d->x = scr.x - (float)(d->w / 2);
+    d->y = scr.y - (float)d->h;
+    if (d->x + d->w > 480)
+        d->x = 480 - d->w;
+    if (d->x < 148)
+        d->x = 148;
+    if (d->y < 0)
+        d->y = 0;
+    d->tab_x = scr.x - (float)d->x;
+    if (d->tab_x < 4)
+        d->tab_x = 4;
+    if (d->tab_x > d->w - 4)
+        d->tab_x = d->w - 4;
 }
 #endif
 
-#ifdef NON_MATCHING
-// 08821868 size=100
+/* close hook: does the chosen action */
 void func_08821868(void)
 {
-  int iVar1;
-  short local_4 [2];
-  if (-1 < D_08C58348) {
-    iVar1 = (&D_08C582C0)[D_08C58348];
-    (*D_08C582B8)(local_4);
-    func_088218CC((int)local_4[0],(&D_0887611C)[iVar1 * 4]);
-  }
-  return;
-}
-#endif
+    DdActMenu *m = &dd_act_menu;
+    DdActIcon *row;
+    DdLoc loc;
 
-#ifdef NON_MATCHING
-// 088218cc size=96
-void func_088218CC(ushort param_1,int param_2)
+    if (dd_act_menu.sel >= 0) {
+        row = &dd_act_tab[m->act[dd_act_menu.sel]];
+        m->src.get(&loc);
+        func_088218CC(loc, row->act);
+    }
+}
+
+/* action act at loc: the duel's actions, or 13 = card detail mode */
+void func_088218CC(DdLoc loc, int act)
 {
-  undefined1 local_4;
-  if (param_2 < 0xd) {
-    local_4 = (byte)param_1;
-    dd_act(local_4 & 1,(local_4 & 0x3f) >> 1,param_1 >> 6);
-  }
-  else if (param_2 == 0xd) {
-    dd_mode_push(5);
-  }
-  return;
+    if (act < 13)
+        dd_act(loc.player, loc.zone, loc.idx, act);
+    else if (act == 13)
+        dd_mode_push(5);
 }
-#endif
 
-int func_0882192C(int list)
+/* draw hook: keeps the window over the card */
+void *func_0882192C(void *list)
 {
     func_088215A0();
     return list;
 }
 
-#ifdef NON_MATCHING
-// 08821954 size=232
-void func_08821954(undefined4 param_1,uint param_2,int param_3,int param_4)
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+/* row i: icon and name */
+void func_08821954(unsigned int *dl, unsigned short i, int x, int y)
 {
-  undefined4 uVar1;
-  undefined4 uVar2;
-  int iVar3;
-  iVar3 = (&D_08C582C0)[param_2 & 0xffff];
-  uVar1 = dl_set_color(param_1,0xffffffff);
-  uVar1 = dl_set_tex_filter(uVar1,0,1);
-  uVar1 = func_088212C4(uVar1,param_3,param_4 + 1,(&D_08C582C0)[param_2 & 0xffff]);
-  font_set_size(0xc,0xc);
-  uVar2 = func_08821C90(*(undefined4 *)(iVar3 * 0x10 + 0x8876118));
-  font_text_set(uVar1);
-  font_set_color(0xff000000);
-  font_draw_text((param_3 + 0xf) * 0x40,(param_4 + 1) * 0x40,(0x1e0 - (param_3 + 0xf)) * 0x40,uVar2)
-  ;
-  font_text_clear();
-  return;
+    int *a = &dd_act_menu.act[i];
+    DdActIcon *row = &dd_act_tab[*a];
+    unsigned short *text;
+
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = dl_set_tex_filter(dl, 0, 1);
+    dl = func_088212C4(dl, x, y + 1, *a);
+    font_set_size(12, 12);
+    text = func_08821C90(row->text);
+    font_text_set(dl);
+    font_set_color(0xFF000000);
+    font_draw_text((x + 15) << 6, (y + 1) << 6, (480 - (x + 15)) << 6, text);
+    font_text_clear();
 }
 #endif
 
-#ifdef NON_MATCHING
-// 08821a3c size=368
-uint func_08821A3C(ushort param_1)
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+/* allowed actions of a location; a visible card also becomes the detail card */
+unsigned int func_08821A3C(DdLoc loc)
 {
-  uint uVar1;
-  int iVar2;
-  int iVar3;
-  undefined4 uVar4;
-  uint uVar5;
-  uint uVar6;
-  byte local_4;
-  local_4 = (byte)param_1;
-  uVar6 = (local_4 & 0x3f) >> 1;
-  uVar5 = local_4 & 1;
-  uVar1 = dv_08835AEC(uVar5,uVar6,param_1 >> 6);
-  if (uVar6 == 0xc) {
-    iVar2 = dv_zone_c_uid(uVar5,0);
-    param_1 = param_1 & 0x3f;
-  }
-  else if (uVar6 == 0xd) {
-    iVar2 = dv_zone_d_uid(uVar5,0);
-    param_1 = param_1 & 0x3f;
-  }
-  else if (uVar6 == 0xf) {
-    iVar2 = 0;
-  }
-  else if (uVar6 == 0xe) {
-    iVar2 = 0;
-  }
-  else if (uVar6 == 0xb) {
-    iVar2 = dv_hand_uid(uVar5,param_1 >> 6);
-  }
-  else {
-    iVar2 = dv_slot_uid(uVar5,uVar6);
-  }
-  if ((0 < iVar2) && (iVar3 = dd_loc_visible((int)(short)param_1), iVar3 != 0)) {
-    uVar1 = uVar1 | 0x2000;
-    uVar4 = duel_088FEA90(iVar2);
-    dd_mode_set_card(uVar4);
-  }
-  return uVar1;
-}
-#endif
+    int idx = loc.idx;
+    int zone = loc.zone;
+    int player = loc.player;
+    unsigned int bits = dv_08835AEC(player, zone, idx);
+    int uid;
 
-#ifdef NON_MATCHING
-// 08821bac size=228
-bool func_08821BAC(void)
-{
-  int iVar1;
-  int iVar2;
-  int unaff_s0;
-  undefined4 *puVar3;
-  puVar3 = &D_08C582B8;
-  iVar1 = dd_pad();
-  iVar2 = dd_input_on();
-  if (iVar2 != 0) {
-    if ((((D_08C5834C & 0x1000) != 0) && ((*(uint *)(iVar1 + 4) & 0x200) != 0)) &&
-       (*(char *)(D_08C58344 + 0xe9) == '\x03')) {
-      iVar2 = 0;
-      iVar1 = unaff_s0;
-      if (0 < D_08C582BC) {
-        do {
-          iVar1 = iVar2;
-          if (puVar3[2] == 0xc) break;
-          iVar2 = iVar2 + 1;
-          puVar3 = puVar3 + 1;
-          iVar1 = unaff_s0;
-        } while (iVar2 < D_08C582BC);
-      }
-      menu_set_cursor(D_08C58344,iVar1);
-      se_play(0x6213);
+    if (zone == 12) {
+        uid = dv_zone_c_uid(player, 0);
+        loc.idx = 0;
+    } else if (zone == 13) {
+        uid = dv_zone_d_uid(player, 0);
+        loc.idx = 0;
+    } else if (zone == 15) {
+        uid = 0;
+    } else if (zone == 14) {
+        uid = 0;
+    } else if (zone == 11) {
+        uid = dv_hand_uid(player, idx);
+    } else {
+        uid = dv_slot_uid(player, zone);
     }
-    D_08C58348 = menu_update(D_08C58344);
-  }
-  iVar1 = func_08825728();
-  return iVar1 == 0;
-}
-#endif
-
-#ifdef NON_MATCHING
-// 08821c90 size=144
-void func_08821C90(int param_1)
-{
-  int iVar1;
-  if ((param_1 == 0x41) && ((D_08C5834C & 0xc0) != 0xc0)) {
-    param_1 = 3;
-  }
-  if (((param_1 == 0x40) && (iVar1 = card_is_monster(D_08C58350), iVar1 == 0)) &&
-     ((D_08C5834C & 0xc0) != 0xc0)) {
-    param_1 = 3;
-  }
-  dd_text(param_1);
-  return;
-}
-#endif
-
-#ifdef NON_MATCHING
-// 08821d20 size=156
-void func_08821D20(undefined4 param_1,undefined4 param_2)
-{
-  memset(&D_08C58354,0,0xc);
-  D_08C58354 = param_2;
-  func_08825824(param_1,param_1,0x30,func_08821DBC);
-  dd_mode_push(4);
-  dd_mode_set_flag(0x31);
-  func_088259FC(func_08821F70);
-  func_088259E4(&func_08821FA0);
-  func_088259F0(func_08821F38);
-  se_play(0x6216);
-  return;
-}
-#endif
-
-#ifdef NON_MATCHING
-// 08821dbc size=380
-void func_08821DBC(int param_1,int param_2)
-{
-  byte bVar1;
-  int iVar2;
-  uint uVar3;
-  uint uVar4;
-  int iVar5;
-  if (param_2 == 0) {
-    font_set_size(*(undefined1 *)(param_1 + 0x98),*(undefined1 *)(param_1 + 0x98));
-    iVar5 = 0;
-    do {
-      iVar2 = dd_text(iVar5 + 0xe);
-      if (iVar2 != 0) {
-        font_measure_text(iVar2);
-      }
-      iVar5 = iVar5 + 1;
-    } while (iVar5 < 5);
-    iVar5 = (int)*(short *)(param_1 + 0x90) + (int)*(short *)(param_1 + 0x92) + 8;
-    if (*(short *)(param_1 + 0x6c) < iVar5) {
-      *(short *)(param_1 + 0x6c) = (short)iVar5;
-      bVar1 = *(byte *)(param_1 + 0xd2);
+    if (uid > 0 && dd_loc_visible(loc)) {
+        bits |= 0x2000;
+        dd_mode_set_card(dv_list_id(uid));
     }
-    else {
-      bVar1 = *(byte *)(param_1 + 0xd2);
-    }
-    func_08821F38(param_1,0,(uint)*(ushort *)(param_1 + 0xd0) + (bVar1 & 0x1f));
-  }
-  else {
-    uVar4 = 0;
-    uVar3 = 1;
-    while (((D_08C58354 & uVar3) == 0 && (uVar4 = uVar4 + 1, (int)uVar4 < 6))) {
-      uVar3 = 1 << (uVar4 & 0x1f);
-    }
-    *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xfb;
-    *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xdf | 0x20;
-    *(char *)(param_1 + 0xd4) = (char)uVar4;
-    *(undefined2 *)(param_1 + 0xcc) = 6;
-    *(undefined1 *)(param_1 + 0xce) = 6;
-    *(uint *)(param_1 + 0xdc) = ~D_08C58354;
-    *(byte *)(param_1 + 0xc9) = *(byte *)(param_1 + 0xc9) & 0xfe | 1;
-    *(undefined2 *)(param_1 + 0xf0) = 0x28;
-    *(undefined2 *)(param_1 + 0xf2) = 0x28;
-    *(code **)(param_1 + 0xfc) = func_08821FA8;
-    *(undefined2 *)(param_1 + 0xf4) = 5;
-    *(undefined2 *)(param_1 + 0xf8) = 0x1e;
-    *(undefined2 *)(param_1 + 0xfa) = 0x28;
-    D_08C5835C = param_1;
-  }
-  return;
+    return bits;
 }
 #endif
 
-void func_08821F38(int a, int b, int i)
+/* window update; R jumps to the attack row (when attacking is allowed) */
+int func_08821BAC(void)
+{
+    DdActMenu *m = &dd_act_menu;
+    unsigned int *pad = dd_pad();
+    int k;
+    int i;
+
+    if (dd_input_on()) {
+        if ((m->bits & 0x1000) && (pad[1] & 0x200) && m->w->state == 3) {
+            /* k stays unset when there is no attack row (as in the original) */
+            for (i = 0; i < m->n; i++) {
+                if (m->act[i] == 12) {
+                    k = i;
+                    break;
+                }
+            }
+            menu_set_cursor(m->w, k);
+            se_play(0x6213);
+        }
+        m->sel = menu_update(m->w);
+    }
+    if (!func_08825728())
+        return 1;
+    return 0;
+}
+
+/* name of an action; "activate" texts fall back to text 3 unless the card allows both */
+unsigned short *func_08821C90(int text)
+{
+    DdActMenu *m = &dd_act_menu;
+
+    if (text == 0x41 && (m->bits & 0xC0) != 0xC0)
+        text = 3;
+    if (text == 0x40 && card_is_monster(m->card) == 0 && (m->bits & 0xC0) != 0xC0)
+        text = 3;
+    return dd_text(text);
+}
+
+/* battle position choice among mask (6 icons) */
+void func_08821D20(unsigned short *text, unsigned int mask)
+{
+    memset(&dd_pos_sel, 0, sizeof(DdPosSel));
+    dd_pos_sel.mask = mask;
+    func_08825824(text, text, 0x30, func_08821DBC);
+    dd_mode_push(4);
+    dd_mode_set_flag(0x31);
+    func_088259FC(func_08821F70);
+    func_088259E4(func_08821FA0);
+    func_088259F0(func_08821F38);
+    se_play(0x6216);
+}
+
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+void func_08821DBC(MenuWidget *w, int open)
+{
+    DdPosSel *p = &dd_pos_sel;
+    unsigned short *t;
+    int tw;
+    int i;
+
+    if (open) {
+        for (i = 0; i <= 5; i++) {
+            if (p->mask & (1 << i))
+                break;
+        }
+        w->cancel_blocked = 0;
+        w->cancel_resets = 1;
+        w->initial = i;
+        w->count = 6;
+        w->rows = 6;
+        w->disabled = ~p->mask;
+        w->skip_disabled = 1;
+        w->item_w = 40;
+        w->item_h = 40;
+        w->draw_item = (MenuDrawItemFn)func_08821FA8;
+        w->item_x = 5;
+        w->cursor_w = 30;
+        w->cursor_h = 40;
+        p->w = w;
+    } else {
+        font_set_size(w->def.font_size, w->def.font_size);
+        tw = 0;
+        for (i = 0; i < 5; i++) {
+            t = dd_text(i + 14);
+            if (t)
+                font_measure_text(t);  /* the width is not kept (tw stays 0) */
+        }
+        if (w->def.w < tw + (w->def.pad_l + w->def.pad_r + 8))
+            w->def.w = tw + (w->def.pad_l + w->def.pad_r + 8);
+        func_08821F38(w, 0, w->scroll + w->cursor);
+    }
+}
+#endif
+
+/* cursor hook: the name of the position as the window text */
+void func_08821F38(MenuWidget *w, int old, int i)
 {
     func_08825AFC(dd_text(i + 0xE));
-    D_08C58358 = i;
+    dd_pos_sel.cur = i;
 }
 
-#ifdef NON_MATCHING
 void func_08821F70(void)
 {
-    if (func_08825A14() >= 0)
-        dv_w624_set();
+    int r = func_08825A14();
+
+    if (r >= 0)
+        dv_w624_set(r);
 }
-#endif
 
 void *func_08821FA0(void *list)
 {
     return list;
 }
 
-#ifdef NON_MATCHING
-// 08821fa8 size=420
-undefined4 func_08821FA8(undefined4 param_1,uint param_2,int param_3,int param_4)
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+/* position icon i (dimmed when not offered); the arrow over the initial one blinks */
+unsigned int *func_08821FA8(unsigned int *dl, unsigned short i, int x, int y)
 {
-  undefined4 uVar1;
-  int iVar2;
-  uint *puVar3;
-  uint uVar4;
-  uint uVar5;
-  undefined4 uVar6;
-  uVar4 = param_2 & 0xffff;
-  uVar5 = D_08C58354 & 1 << (param_2 & 0x1f);
-  uVar1 = dl_set_color(param_1,0xffffffff);
-  uVar1 = dl_set_tex_filter(uVar1,0,1);
-  iVar2 = dd_gim_get(0x40025);
-  if (iVar2 != 0) {
-    uVar1 = gim_set_texture(uVar1,iVar2);
-  }
-  if (uVar5 == 0) {
-    uVar6 = 0x20;
-  }
-  else {
-    uVar6 = 0;
-  }
-  uVar1 = draw_set_offsets(uVar1,0x14,0x20,0x14,0x20);
-  uVar1 = draw_sprite(uVar1,param_3 + 10,param_4 + 4,0,uVar4 * 0x14,uVar6,0,0);
-  if (uVar4 != 0) {
-    if (uVar4 - 1 == (uint)*(byte *)(D_08C5835C + 0xd4)) {
-      puVar3 = (uint *)gfx_get_state();
-      uVar4 = ((uint)((ulonglong)*puVar3 * 0x88888889 >> 0x20) & 0xf) >> 3;
+    unsigned int on = dd_pos_sel.mask & (1 << i);
+    void *gim;
+    int v;
+    int blink;
+
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = dl_set_tex_filter(dl, 0, 1);
+    gim = dd_gim_get(0x40025);
+    if (gim)
+        dl = gim_set_texture(dl, gim);
+    if (on)
+        v = 0;
+    else
+        v = 32;
+    dl = draw_set_offsets(dl, 20, 32, 20, 32);
+    dl = draw_sprite(dl, x + 10, y + 4, 0, i * 20, v, 0, 0);
+    if (i > 0) {
+        if (i - 1 == dd_pos_sel.w->initial)
+            blink = *(unsigned int *)gfx_get_state() / 15 >> 3 & 1;
+        else
+            blink = 1;
+        dl = draw_set_offsets(dl, 7, 11, 7, 11);
+        dl = draw_sprite(dl, x - 3, y + 15, 0, 120, blink << 5, 0, 0);
     }
-    else {
-      uVar4 = 1;
-    }
-    uVar1 = draw_set_offsets(uVar1,7,0xb,7,0xb);
-    uVar1 = draw_sprite(uVar1,param_3 + -3,param_4 + 0xf,0,0x78,uVar4 << 5,0,0);
-  }
-  return uVar1;
+    return dl;
 }
 #endif
 
-#ifdef NON_MATCHING
-// 0882214c size=120
-void func_0882214C(undefined4 param_1)
+/* chain confirmation (yes/no) showing the cards involved */
+void func_0882214C(unsigned short *text)
 {
-  memset(&D_08C58360,0,0x4c);
-  func_08822520();
-  func_08825824(0,param_1,3,&func_088221C4);
-  dd_mode_push(4);
-  dd_mode_set_flag(0x31);
-  func_088259FC(func_08822240);
-  se_play(0x621a);
-  return;
+    memset(&dd_chain_sel, 0, sizeof(DdChainSel));
+    func_08822520();
+    func_08825824(0, text, 3, func_088221C4);
+    dd_mode_push(4);
+    dd_mode_set_flag(0x31);
+    func_088259FC(func_08822240);
+    se_play(0x621A);
 }
-#endif
 
-#ifdef NON_MATCHING
-/* menu setup hook of the message window kind 2 (D_08C58360) */
 void func_088221C4(MenuWidget *w, int open)
 {
-    int *st = (int *)&D_08C58360;
+    DdChainSel *c = &dd_chain_sel;
 
-    if (open == 0)
-        return;
-    st[0] = (int)w;
-    w->cancel_blocked = 0;
-    w->cancel_resets = 1;
-    w->initial = 3;
-    w->draw_before = (MenuDrawRectFn)func_0882228C;
-    if (st[0x44 / 4] > 0)
-        w->def.h = 0x28;
-    else
-        w->def.h = 2;
+    if (open) {
+        c->w = w;
+        w->cancel_blocked = 0;
+        w->cancel_resets = 1;
+        w->initial = 3;
+        w->draw_before = (MenuDrawRectFn)func_0882228C;
+        if (c->n > 0)
+            w->def.pad_b = 40;
+        else
+            w->def.pad_b = 2;
+    }
 }
-#endif
 
-#ifdef NON_MATCHING
+/* answer: yes (1 or 2) */
 void func_08822240(void)
 {
-    int r = func_08825A14();
     int v;
 
-    if (r == 2)
-        v = 1;
-    else if (r == 1)
-        v = 1;
-    else
+    switch (func_08825A14()) {
+    case 3:
+    default:
         v = 0;
+        break;
+    case 1:
+    case 2:
+        v = 1;
+        break;
+    }
     dv_w624_set(v);
 }
-#endif
 
-#ifdef NON_MATCHING
-// 0882228c size=660
-void func_0882228C(undefined4 param_1)
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+/* the cards of the chain in a row under the text ("..." when they don't fit) */
+void func_0882228C(unsigned int *dl)
 {
-  int iVar1;
-  undefined4 uVar2;
-  undefined4 uVar3;
-  int iVar4;
-  int iVar5;
-  int iVar6;
-  int iVar7;
-  undefined4 *puVar8;
-  int iVar9;
-  undefined2 local_8;
-  undefined2 local_6;
-  undefined2 local_4;
-  undefined2 local_2;
-  puVar8 = &D_08C58360;
-  iVar4 = (int)*(short *)(D_08C58360 + 0x6c);
-  iVar1 = iVar4;
-  if (iVar4 < 0) {
-    iVar1 = iVar4 + 1;
-  }
-  iVar6 = (int)*(short *)(D_08C58360 + 0x58) + (iVar1 >> 1);
-  iVar5 = (int)*(short *)(D_08C58360 + 0x5a) + (int)*(short *)(D_08C58360 + 0x6e);
-  iVar1 = (iVar4 + -9) / 0x16;
-  iVar4 = D_08C583A4;
-  iVar9 = D_08C583A8;
-  if (iVar1 < D_08C583A4) {
-    iVar9 = 1;
-    iVar4 = iVar1;
-  }
-  uVar2 = dl_enable(param_1,9);
-  uVar2 = dl_set_color(uVar2,0xffffffff);
-  uVar2 = dl_disable(uVar2,4);
-  iVar1 = iVar4;
-  if (iVar9 != 0) {
-    iVar1 = iVar4 + -1;
-  }
-  iVar7 = 0;
-  if (0 < iVar1) {
-    do {
-      uVar3 = duel_088FEA90(puVar8[1]);
-      uVar2 = dd_card_texture(uVar2,uVar3);
-      uVar2 = draw_set_offsets(uVar2,0x40,0x40,0x14,0x1e);
-      uVar2 = draw_sprite(uVar2,(int)((float)iVar6 + ((float)iVar7 - (float)iVar4 / 2.0) * 22.0 +
-                                     1.0),iVar5 + -0x28,0,0,0,0,0);
-      iVar7 = iVar7 + 1;
-      puVar8 = puVar8 + 1;
-    } while (iVar7 < iVar1);
-  }
-  uVar2 = dl_enable(uVar2,4);
-  if (iVar9 != 0) {
-    local_8 = D_08876200;
-    local_6 = D_08876202;
-    local_4 = D_08876204;
-    local_2 = D_08876206;
-    iVar1 = (int)((float)iVar6 + ((float)iVar7 - (float)iVar4 / 2.0) * 22.0 + 1.0);
-    font_text_set(uVar2);
-    font_set_size(6,0xc);
-    font_set_color(0xff000000);
-    font_draw_text(iVar1 << 6,(iVar5 + -0x1f) * 0x40,(0x1e0 - iVar1) * 0x40,&local_8);
-    font_text_clear();
-  }
-  return;
+    DdChainSel *c = &dd_chain_sel;
+    MenuWidget *w = dd_chain_sel.w;
+    int cx = w->def.x + w->def.w / 2;
+    int fit = (w->def.w - 9) / 22;
+    int by = w->def.y + w->def.h - 25;
+    int more = dd_chain_sel.more;
+    int n = dd_chain_sel.n;
+    int cnt;
+    int i;
+    int x;
+
+    if (fit < n) {
+        n = fit;
+        more = 1;
+    }
+    dl = dl_enable(dl, 9);
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = dl_disable(dl, 4);
+    if (more)
+        cnt = n - 1;
+    else
+        cnt = n;
+    for (i = 0; i < cnt; i++) {
+        dl = dd_card_texture(dl, dv_list_id(c->uid[i]));
+        dl = draw_set_offsets(dl, 64, 64, 20, 30);
+        dl = draw_sprite(dl, 1.0f + ((float)cx + 22.0f * ((float)i - (float)n / 2.0f)), by - 15, 0, 0, 0, 0, 0);
+    }
+    dl = dl_enable(dl, 4);
+    if (more) {
+        unsigned short dots[4] = { 0x30FB, 0x30FB, 0x30FB, 0 };
+
+        x = 1.0f + ((float)cx + 22.0f * ((float)i - (float)n / 2.0f));
+        font_text_set(dl);
+        font_set_size(6, 12);
+        font_set_color(0xFF000000);
+        font_draw_text(x << 6, (by - 6) << 6, (480 - x) << 6, dots);
+        font_text_clear();
+    }
 }
 #endif
 
-#ifdef NON_MATCHING
-// 08822520 size=416
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+/* collects the cards the current chain link involves (16 at most) */
 void func_08822520(void)
 {
-  int iVar1;
-  int iVar2;
-  undefined4 uVar3;
-  int iVar4;
-  int iVar5;
-  D_08C583A4 = 0;
-  D_08C583A8 = 0;
-  iVar1 = duel_088FEED0();
-  if (*(int *)(iVar1 + 0x484) == 0) {
-    iVar1 = 0;
-  }
-  else {
-    iVar1 = iVar1 + (*(int *)(iVar1 + 0x484) + -1) * 0x18 + 0x300;
-  }
-  iVar4 = 0;
-  do {
-    iVar5 = 0;
-    do {
-      iVar2 = dv_088695B8(0,iVar4,iVar5,iVar1);
-      if (iVar2 != 0) {
-        uVar3 = dv_slot_uid(iVar4,iVar5);
-        (&D_08C58364)[D_08C583A4] = uVar3;
-        D_08C583A4 = D_08C583A4 + 1;
-        if (0xf < D_08C583A4) goto D_088226A4;
-      }
-      iVar5 = iVar5 + 1;
-    } while (iVar5 < 0xb);
-    iVar4 = iVar4 + 1;
-  } while (iVar4 < 2);
-  iVar4 = dv_n_hand(0);
-  iVar5 = 0;
-  if (0 < iVar4) {
-    do {
-      iVar2 = dv_08869728(0,iVar5,iVar1);
-      if (iVar2 != 0) {
-        uVar3 = dv_hand_uid(0,iVar5);
-        (&D_08C58364)[D_08C583A4] = uVar3;
-        D_08C583A4 = D_08C583A4 + 1;
-        if (0xf < D_08C583A4) goto D_088226A4;
-      }
-      iVar5 = iVar5 + 1;
-    } while (iVar5 < iVar4);
-  }
-  iVar1 = dv_088BFFD8(0,0xfffe,0xe);
-  if (iVar1 != 0) {
-D_088226A4:
-    D_08C583A8 = 1;
-  }
-  return;
+    DdChainSel *c = &dd_chain_sel;
+    char *chain;
+    void *link;
+    int p, z, i, n;
+
+    dd_chain_sel.n = 0;
+    dd_chain_sel.more = 0;
+    chain = dv_chain();
+    if (*(int *)(chain + 0x484) != 0)
+        link = chain + (*(int *)(chain + 0x484) - 1) * 0x18 + 0x300;
+    else
+        link = 0;
+    for (p = 0; p < 2; p++) {
+        for (z = 0; z < 11; z++) {
+            if (dv_088695B8(0, p, z, link)) {
+                c->uid[c->n] = dv_slot_uid(p, z);
+                c->n++;
+                if (c->n >= 16) {
+                    c->more = 1;
+                    return;
+                }
+            }
+        }
+    }
+    n = dv_n_hand(0);
+    for (i = 0; i < n; i++) {
+        if (dv_08869728(0, i, link)) {
+            c->uid[c->n] = dv_hand_uid(0, i);
+            c->n++;
+            if (c->n >= 16) {
+                c->more = 1;
+                return;
+            }
+        }
+    }
+    if (dv_088BFFD8(0, 0xFFFE, 14))
+        c->more = 1;
 }
 #endif
 
-#ifdef NON_MATCHING
-// 088226c0 size=128
-void func_088226C0(undefined4 param_1,int param_2,undefined4 param_3)
+/* yes/no (with_no) or OK question; def_no opens on "no" */
+void func_088226C0(unsigned short *text, int with_no, int def_no)
 {
-  D_08C583AC = param_3;
-  if (param_2 == 0) {
-    func_08825824(0,param_1,1,&func_08822740);
-  }
-  else {
-    func_08825824(0,param_1,3,&func_08822740);
-  }
-  dd_mode_push(4);
-  dd_mode_set_flag(0x31);
-  func_088259FC(func_088227EC);
-  se_play(0x621a);
-  return;
+    dd_yesno_default = def_no;
+    if (with_no)
+        func_08825824(0, text, 3, func_08822740);
+    else
+        func_08825824(0, text, 1, func_08822740);
+    dd_mode_push(4);
+    dd_mode_set_flag(0x31);
+    func_088259FC(func_088227EC);
+    se_play(0x621A);
 }
-#endif
 
-#ifdef NON_MATCHING
-/* menu setup hook of the yes/no window */
 void func_08822740(MenuWidget *w, int open)
 {
-    if (open != 0) {
+    MenuItemDef *d = &w->def;
+
+    if (open) {
         w->cancel_blocked = 0;
         w->cancel_resets = 1;
         if (w->buttons == 1)
             w->initial = 1;
         else
             w->initial = 3;
-        w->def.pad_b = 0;
-    } else if (D_08C583AC != 0) {
+        d->pad_b = 0;
+    } else if (dd_yesno_default) {
         w->cursor = 1;
         w->button = 3;
     }
 }
-#endif
 
-#ifdef NON_MATCHING
 void func_088227EC(void)
 {
-    int r = func_08825A14();
     int v;
 
-    if (r == 2)
-        v = 1;
-    else if (r == 1)
-        v = 1;
-    else
+    switch (func_08825A14()) {
+    case 3:
+    default:
         v = 0;
+        break;
+    case 1:
+    case 2:
+        v = 1;
+        break;
+    }
     dv_w624_set(v);
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08822838 size=128
-void func_08822838(undefined4 param_1,undefined2 param_2,undefined4 param_3)
+/* "use the card?" between the card face and its back (flag 0: back shown as no card) */
+void func_08822838(unsigned short *text, unsigned short card, int flag)
 {
-  D_08C583B4 = duel_088FEA90(param_2);
-  D_08C583B0 = param_3;
-  func_08825824(0,param_1,0x30,&func_088228B8);
-  dd_mode_push(4);
-  dd_mode_set_flag(0x31);
-  func_088259FC(func_088228F0);
-  se_play(0x621a);
-  return;
+    dd_sel_card = dv_list_id(card);
+    dd_sel_flag = flag;
+    func_08825824(0, text, 0x30, func_088228B8);
+    dd_mode_push(4);
+    dd_mode_set_flag(0x31);
+    func_088259FC(func_088228F0);
+    se_play(0x621A);
 }
-#endif
 
 void func_088228B8(MenuWidget *w, int open)
 {
@@ -877,67 +778,54 @@ void func_088228B8(MenuWidget *w, int open)
     w->draw_item = (MenuDrawItemFn)func_08822914;
 }
 
-#ifdef NON_MATCHING
 void func_088228F0(void)
 {
     dv_w624_set(func_08825A14() != 0);
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08822914 size=504
-undefined4 func_08822914(undefined4 param_1,short param_2,int param_3,int param_4)
+#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+/* choice i: the card upright (0) or sideways (1) with its caption */
+unsigned int *func_08822914(unsigned int *dl, unsigned short i, int x, int y)
 {
-  undefined2 uVar1;
-  undefined4 uVar2;
-  undefined4 uVar3;
-  uint uVar4;
-  int iVar5;
-  int iVar6;
-  undefined4 uVar7;
-  undefined4 uVar8;
-  undefined4 uVar9;
-  if (param_2 != 0) {
-    iVar6 = 0x12;
-    iVar5 = 7;
-    uVar7 = 0x2c;
-    uVar8 = 0x1f;
-    uVar9 = 0x18;
-  }
-  else {
-    iVar6 = 0x19;
-    iVar5 = 0;
-    uVar7 = 0x1f;
-    uVar8 = 0x2c;
-    uVar9 = 0x17;
-  }
-  uVar2 = dl_set_color(param_1,0xffffffff);
-  uVar3 = dl_set_tex_filter(uVar2,0,1);
-  uVar2 = D_08C583B4;
-  if ((param_2 != 0) && (D_08C583B0 == 0)) {
-    uVar2 = 0;
-  }
-  uVar2 = dd_card_texture(uVar3,uVar2);
-  uVar7 = draw_set_offsets(uVar2,0x40,0x40,uVar7,uVar8);
-  uVar7 = draw_sprite(uVar7,param_3 + iVar6,param_4 + 0xc + iVar5,0,0,0,0,param_2 != 0);
-  uVar1 = font_get_flags();
-  font_text_set(uVar7);
-  font_set_size(0xc,0xc);
-  iVar5 = cfg_get_language();
-  if (iVar5 != 0) {
-    font_set_flag8(1);
-  }
-  uVar7 = dd_text(uVar9);
-  uVar4 = font_measure_wtext2(0x1400,0x600,uVar7);
-  iVar5 = -((uVar4 & 0xffff) >> 6);
-  if (iVar5 < 0) {
-    iVar5 = iVar5 + 1;
-  }
-  font_set_color(0xff000000);
-  font_draw_wtext_ex((param_3 + (0x28 - ((int)(uVar4 >> 0x16) >> 1))) * 0x40,
-                 (param_4 + 0x4a + (iVar5 >> 1)) * 0x40,0x1400,0x600,uVar7,0xffffffff);
-  uVar7 = font_text_clear();
-  font_set_flags(uVar1);
-  return uVar7;
+    int flip, dx, dy, tw, th, msg;
+    int flags;
+    unsigned short *text;
+    unsigned int m;
+    int tx, ty;
+
+    if (i == 0) {
+        flip = 0;
+        dx = 25;
+        dy = 0;
+        tw = 31;
+        th = 44;
+        msg = 23;
+    } else {
+        flip = 1;
+        dx = 18;
+        dy = 7;
+        tw = 44;
+        th = 31;
+        msg = 24;
+    }
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = dl_set_tex_filter(dl, 0, 1);
+    dl = dd_card_texture(dl, (i != 0 && dd_sel_flag == 0) ? 0 : dd_sel_card);
+    dl = draw_set_offsets(dl, 64, 64, tw, th);
+    dl = draw_sprite(dl, x + dx, y + 12 + dy, 0, 0, 0, 0, flip);
+    flags = font_get_flags();
+    font_text_set(dl);
+    font_set_size(12, 12);
+    if (cfg_get_language())
+        font_set_flag8(1);
+    text = dd_text(msg);
+    m = font_measure_wtext2(0x1400, 0x600, text);
+    tx = 40 - (int)(m >> 22) / 2;
+    ty = -(int)((m & 0xFFFF) >> 6) / 2;
+    font_set_color(0xFF000000);
+    font_draw_wtext_ex((x + tx) << 6, (y + 74 + ty) << 6, 0x1400, 0x600, text, -1);
+    dl = font_text_clear();
+    font_set_flags(flags);
+    return dl;
 }
 #endif
