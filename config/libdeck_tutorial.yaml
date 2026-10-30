@@ -84,6 +84,8 @@ segments:
       - [0xBFD4, c, dt_move]
       - [0xC10C, c, dt_input]
       - [0xC714, asm, dt_input_asm_088106B4]
+      - [0xCB00, c, dt_input]
+      - [0xD12C, asm, dt_input_asm_088110CC]
       - [0xD3DC, c, dt_input]
       - [0xDC18, c, dt_fmenu]
       - [0xE04C, asm, dt_fmenu_asm_08811FEC]
