@@ -62,10 +62,15 @@ int font_init(void *fs)
     style.style = 0;
     best = sceFontFindOptimumFont(f->lib, &style, &err);
     f->font = sceFontOpen(f->lib, 0, 0, &err);
-    if (region_get() == 1 || region_get() == 0)
+    switch (region_get()) {
+    case 1:
+    case 0:
         f->font2 = f->font;
-    else
+        break;
+    default:
         f->font2 = sceFontOpen(f->lib, best, 0, &err);
+        break;
+    }
     err = sceFontGetFontInfo(f->font, &info);
     f->max_glyph_w = info.max_glyph_w_i;
     f->line_h = info.max_glyph_h_i;

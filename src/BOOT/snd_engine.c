@@ -258,7 +258,7 @@ int snd_thread_start(void *cfg, SndCallbacks *cb)
 }
 
 /* Reads go straight to `fd` (or the file named by `fd` when it is a pointer) from offset `off`. */
-#ifdef NON_MATCHING /* the original branches forward (branch-likely) into the open and wait paths */
+#ifdef NON_MATCHING /* lógica conferida com o asm; o original entra nos ramos de open e wait por bgezl + b (padrão da cópia morta, docs/matching.md) e salva ra antes do primeiro teste: 31 palavras diferem */
 void snd_bank_open_async(int fd, int off)
 {
     long long res;

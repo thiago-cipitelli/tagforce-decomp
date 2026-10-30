@@ -1,5 +1,5 @@
 // @range 0x08860DA4-0x088615D0
-// @asm 0x088610E0-0x08861304
+// @asm 0x088610E0-0x08861198
 // @asm 0x088614D0-0x088615A4
 /* Sound library, object side: SAS voice allocation mask, per-channel volumes (BGM/SE/voice),
    counters over the active object list, the level meter used for lip sync, and the SAS
@@ -197,88 +197,90 @@ int snd_obj_base_id(int obj)
     return snd_bank->base_ids[obj];
 }
 
-#ifdef NON_MATCHING /* branch layout of the kind test and the meter arithmetic */
+#ifdef NON_MATCHING /* meter_level: lógica conferida; 24 palavras: o original põe &o->s em a1 (aqui a0) e grava tick a partir de (short)(unsigned short)0 em v1 (andi zero + seh), forma não achada. */
 /* Arms the level meter of a streamed sound (kind 3/4); returns its current level, -1 if none. */
 int snd_obj_meter_level(int handle)
 {
     SndObj *o = snd_obj_find(handle);
-    unsigned int kind;
-    unsigned short st;
+    SndStream *s;
+    int st;
 
     if (o == 0)
         return -1;
-    kind = (o->id & 0xFFFFF) >> 16;
-    if (kind == 3)
-        st = o->state;
-    else if (kind == 4)
-        st = o->state;
-    else
+    switch ((o->id >> 16) & 0xF) {
+    case 4:
+    case 3:
+        break;
+    default:
         return -1;
+    }
+    st = o->state;
     if ((st & 0x2000) == 0)
         return 0;
+    s = &o->s;
     if ((st & 0x20) == 0) {
-        o->s.sflags |= 0x10;
-        o->s.level = 0;
-        o->s.meter = 0;
-        o->s.acc = 0;
-        o->s.shown = 0;
-        o->s.peak = 0;
-        o->s.tick = 0;
-        o->s.step = 0;
+        s->sflags |= 0x10;
+        s->level = 0;
+        s->meter = 0;
+        s->acc = 0;
+        s->shown = 0;
+        s->peak = 0;
+        s->tick = 0;
+        s->step = 0;
         o->state |= 0x20;
         return 0;
     }
-    return o->s.level;
+    return s->level;
 }
+
+#endif
 
 /* Smoothed mouth level for lip sync, advanced by `dt` ticks. */
 int snd_obj_query(int handle, signed char dt)
 {
     SndObj *o = snd_obj_find(handle);
-    unsigned int lv;
+    SndStream *s;
     int v;
 
     if (o == 0)
         return -1;
-    if (snd_obj_meter_level((int)o) < 0)
+    if (snd_obj_meter_level((int)o) < 0) /* the object itself as the handle, as the original */
         return -1;
     if ((o->state & 0x20) == 0)
         return 0;
-    lv = (int)(o->s.level << 12) >> 14;
-    if (lv < 0x1000) {
-        v = 0x1000 - lv;
-        v = 0x1000 - (v * v >> 12);
-    } else {
+    v = (int)(o->s.level << 12) >> 14;
+    s = &o->s;
+    if (v >= 0x1000) {
         v = 0x1000;
+    } else {
+        v = 0x1000 - v;
+        v = 0x1000 - (v * v >> 12);
     }
-    if (o->s.peak > 0x3FF && v < 0x200)
+    if (s->peak >= 0x400 && v < 0x200)
         v = 0;
     if (v < 0x100) {
-        if (o->s.peak == 0 && o->s.tick < 4) {
-            o->s.acc = 0;
-        } else {
-            o->s.tick = 5;
-            o->s.acc = 0;
-        }
+        if (s->peak != 0 || s->tick >= 4)
+            s->tick = 5;
+        s->acc = 0;
     } else {
-        o->s.acc = (v + (unsigned short)o->s.acc) >> 1;
+        s->acc = (v + (unsigned short)s->acc) >> 1;
     }
-    dt = o->s.tick + dt;
-    o->s.tick = dt;
-    if (dt < 6) {
-        if (dt > 3)
-            return o->s.peak;
-        o->s.shown += o->s.step;
+    v = dt;
+    dt = s->tick + v;
+    s->tick = dt;
+    if (dt >= 6) {
+        s->peak = *(unsigned short *)&s->acc;
+        s->acc = 0;
+        s->tick = 0;
+        s->step = (s->peak - s->shown) >> 2;
+    } else if (dt >= 4) {
+        return s->peak;
     } else {
-        o->s.peak = o->s.acc;
-        o->s.acc = 0;
-        o->s.tick = 0;
-        o->s.step = (o->s.peak - o->s.shown) >> 2;
+        s->shown += s->step;
     }
-    return o->s.shown;
+    return s->shown;
 }
 
-#endif
 
 int snd_set_master_volume(int vol, int time)
 {

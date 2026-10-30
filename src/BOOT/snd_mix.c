@@ -263,36 +263,53 @@ void snd_stereo_widen(short *hist, short *buf, int n)
     }
 }
 
-#ifdef NON_MATCHING /* the original copies the 16 frames with an unrolled indexed loop, not memcpy */
+#ifdef NON_MATCHING /* lógica corrigida (quociente negativo +1, laço interno do-while); 31 palavras: só registradores (o original dá t1 ao k externo, t0 a i e t4/t5/t6 a idx/r/l), nenhuma ordem de declaração resolve */
 /* Box filter of `taps` frames over `n` stereo frames; `hist` holds the 16 frames before the block. */
 void snd_box_filter(short *hist, short *buf, int n, int taps)
 {
     short save[32];
     int k;
-    int j;
     int idx;
     int l;
     int r;
+    int i;
 
-    memcpy(save, buf + (n - 16) * 2, sizeof save);
+    for (i = 0, k = (n - 16) * 2; i < 32; i++, k++) {
+        save[i] = buf[k];
+    }
     if (taps != 0) {
         for (k = (n - 1) * 2; k >= 0; k -= 2) {
             l = 0;
             r = 0;
-            for (j = 0, idx = k; j < taps; j++, idx -= 2) {
-                if (idx < 0) {
-                    l += hist[idx + 32];
-                    r += hist[idx + 33];
-                } else {
+            i = 0;
+            idx = k;
+            do { /* no test before the first pass: one frame even when taps < 0 */
+                if (idx >= 0) {
                     l += buf[idx];
                     r += buf[idx + 1];
+                } else {
+                    short *h = &hist[idx + 32];
+
+                    l += h[0];
+                    r += h[1];
                 }
-            }
-            buf[k] = l / taps;
-            buf[k + 1] = r / taps;
+                i++;
+                idx -= 2;
+            } while (i < taps);
+            /* quotients below zero are bumped by one (as the original) */
+            r /= taps;
+            if (r < 0)
+                r++;
+            l /= taps;
+            if (l < 0)
+                l++;
+            buf[k] = l;
+            buf[k + 1] = r;
         }
     }
-    memcpy(hist, save, sizeof save);
+    for (i = 0; i < 32; i++) {
+        hist[i] = save[i];
+    }
 }
 #endif
 

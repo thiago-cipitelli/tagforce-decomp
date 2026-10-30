@@ -194,7 +194,7 @@ int font_layout_wtext(FontCtx *f, FontLayout *st, unsigned short *text, int wrap
     int slot, adv, extra, pad, w;
     int yoff;
     int cls;
-    unsigned int sx, sy;
+    int sx, sy;
     FontCmd *o;
 
     img.buf_w = 32;
@@ -209,11 +209,18 @@ int font_layout_wtext(FontCtx *f, FontLayout *st, unsigned short *text, int wrap
             break;
         pad = 0;
         if (!(st->flags & 0x20) && c == '$') {
-            memset(&cmd, 0, sizeof cmd);
+            {
+                unsigned char *d = (unsigned char *)&cmd;
+                int n = sizeof cmd;
+
+                if (d)
+                    do {
+                        *d++ = 0;
+                    } while (--n);
+            }
             next = font_parse_tag(f, st, &cmd, next);
             if (cmd.kind != 0) {
-                memcpy(&f->cmds[f->ncmds], &cmd, sizeof cmd);
-                f->ncmds++;
+                memcpy(&f->cmds[f->ncmds++], &cmd, sizeof cmd);
                 if (f->ncmds > 0xFF) {
                     r = -1;
                     break;
@@ -569,7 +576,7 @@ int font_layout_text(FontCtx *f, FontLayout *st, unsigned short *text, int wrap)
     int pending_break = 0;
     int slot, adv, extra, pad, w;
     int cls;
-    unsigned int sx, sy;
+    int sx, sy;
 
     img.buf_w = 32;
     img.buf_h = 32;

@@ -125,13 +125,14 @@ int netsync_exchange(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* queue_pop loads size[head] before bumping head; exchange_queued loads the pdp id and the size in the other order */
+#ifdef NON_MATCHING /* queue_pop: lógica conferida; só a alocação difere (o original põe head em a3 e reaproveita a1 para head+1): 11 palavras. exchange_queued loads the pdp id and the size in the other order */
 /* Moves the oldest queued packet into the local record after 5 frames. */
 void netsync_queue_pop(void)
 {
     NetQueue *q = (NetQueue *)(char *)&netsync_q;
     unsigned char *rec;
     int i;
+    int size;
 
     if (netsync_q_delay < 5) {
         netsync_q_delay++;
@@ -141,9 +142,10 @@ void netsync_queue_pop(void)
         memcpy(rec + 4, q->buf[q->head], q->size[q->head]);
         heap_set_level(q->heap, q->buf[q->head]);
         i = q->head;
+        size = q->size[i];
         netsync_q_delay = 0;
-        q->head = (q->head + 1) & 0x1F;
-        netsync_send_size = q->size[i] + 4;
+        q->head = (i + 1) & 0x1F;
+        netsync_send_size = size + 4;
     }
 }
 

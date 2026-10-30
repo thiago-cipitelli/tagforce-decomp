@@ -1,9 +1,7 @@
 // @range 0x08823BD0-0x08824040
-// @asm 0x08823BD0-0x08823D58
 // @data 0x088ED230-0x088ED278
 /* EHF command handlers, part 2: billboards (facing the camera, or turning about an axis towards
-   it) and bone matrices. The constants copied by the handlers are named globals here because the
-   function that owns the first one stays in asm. */
+   it) and bone matrices. The constants copied by the handlers are named globals here. */
 #include "psp.h"
 #include "libc.h"
 #include "ehfcmd.h"
@@ -12,9 +10,9 @@ Mat4 ehf_billboard_basis = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0
 unsigned char ehf_fmt_ii[4] = "II";
 unsigned char ehf_fmt_i[4] = "I";
 
-#ifdef NON_MATCHING /* the original loads only the constant words of the matrix initializer; mwcc 3.0.1 copies the whole template */
 /* Loads a matrix at `pos` (in the current space) whose z axis is `dir` and whose y axis faces the
-   camera. */
+   camera. The constant column is read word by word from the template (an initializer list makes
+   mwcc copy the whole template first). */
 int ehf_billboard_axis(Vec4 *pos, Vec4 *dir)
 {
     Vec4 p;
@@ -35,15 +33,30 @@ int ehf_billboard_axis(Vec4 *pos, Vec4 *dir)
     vec3_cross(&y, &x, &z);
     vec3_normalize2(&y, &y);
     {
-        Mat4 m = { x.x, x.y, x.z, 0.0f, z.x, z.y, z.z, 0.0f, y.x, y.y, y.z, 0.0f, p.x, p.y, p.z, 1.0f };
+        Mat4 m;
 
+        m.m[0] = x.x;
+        m.m[1] = x.y;
+        m.m[2] = x.z;
+        m.m[3] = ehf_billboard_basis.m[3];
+        m.m[4] = z.x;
+        m.m[5] = z.y;
+        m.m[6] = z.z;
+        m.m[7] = ehf_billboard_basis.m[7];
+        m.m[8] = y.x;
+        m.m[9] = y.y;
+        m.m[10] = y.z;
+        m.m[11] = ehf_billboard_basis.m[11];
+        m.m[12] = p.x;
+        m.m[13] = p.y;
+        m.m[14] = p.z;
+        m.m[15] = ehf_billboard_basis.m[15];
         cur = m;
     }
     mtx_push();
     mtx_load(&cur);
     return 2;
 }
-#endif
 
 /* 0x1000C: axis billboard from float arguments (position, direction). */
 int ehf_cmd_billboard_axis(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)

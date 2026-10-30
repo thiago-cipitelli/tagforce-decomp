@@ -35,7 +35,7 @@ void font_set_flag8000(int v);
 void font_set_color(unsigned int c);
 int font_measure_wtext2(int maxw, int maxh, unsigned short *text);
 int font_measure_text(unsigned short *text);
-int font_get_height(void);
+int font_line_height(void);
 void font_text_set(void *list);
 void *font_text_clear(void);
 void font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, unsigned int color);
@@ -267,7 +267,7 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
                     font_set_flag4(d->font_flag4);
                     font_set_flag8000(0);
                     tw = font_measure_text(d->title);
-                    th = font_get_height();
+                    th = font_line_height();
                     d->title_w = (short)(int)((float)wtitle[2].w + (float)wtitle[1].w + ceilf_vfpu((float)tw / 64.0f + 1.0f) + 4.0f);
                     d->title_h = (short)(int)((float)wtitle[0].h + ceilf_vfpu((float)th / 64.0f + 1.0f) + -1.0f);
                     font_set_flag4(f4);

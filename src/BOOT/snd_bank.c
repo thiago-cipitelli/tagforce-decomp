@@ -1,5 +1,4 @@
 // @range 0x0885DE90-0x0885E634
-// @asm 0x0885DF70-0x0885DFE8
 // @asm 0x0885E524-0x0885E634
 /* Sound library, bank side: the "SHDS" header of psp_snddat.bin (sound entries, groups, offsets and
    base ids), per-voice filter state, the 16-slot handle cache and the intrusive doubly linked lists
@@ -115,27 +114,26 @@ int snd_entry_b3(unsigned int id)
     return snd_bank->entries[id & 0xFFFF].b3;
 }
 
-#ifdef NON_MATCHING /* register assignment of n/bank and the early-return layout */
 /* Group containing sound id `id` (base_ids is sorted), -1 when none. */
 int snd_group_of(unsigned int id)
 {
     int n = snd_n_groups;
     SndBank *b = snd_bank;
-    unsigned short key;
+    unsigned int key;
     int i;
 
-    if (b == 0 || n == 0)
-        return -1;
-    i = -1;
-    key = id;
-    while (++i < n) {
-        if (key < b->base_ids[i])
-            return i - 1;
+    if (b != 0 && n != 0) {
+        i = -1;
+        key = id & 0xFFFF;
+        while (++i < n) {
+            if (b->base_ids[i] > key)
+                break;
+        }
+        return i - 1;
     }
-    return i - 1;
+    return -1;
 }
 
-#endif
 
 int snd_group_data_of(unsigned int id)
 {
