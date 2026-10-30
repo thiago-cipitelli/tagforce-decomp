@@ -1,7 +1,6 @@
 // @range 0x08839360-0x0883F0DC
 // @asm 0x08839360-0x0883A2BC
 // @asm 0x0883A2BC-0x0883AEF8
-// @asm 0x0883AEF8-0x0883B4A8
 // @asm 0x0883B4A8-0x0883BB00
 // @asm 0x0883BB00-0x0883D798
 // @asm 0x0883D798-0x0883E63C
@@ -92,7 +91,7 @@ unsigned int duel_088D13D8(unsigned int p, unsigned short id, unsigned int mask)
 
 #define ATK_SLOT(p, z) (&duel.players[(p) & 1].field[(z)])
 /* event word of duel_0884F30C: card id, player bit 31, zone bits 16-20 */
-#define BATTLE_EV(id, p, z, k) ((unsigned short)(id) | ((p) << 31 & 0x80000000) | (k) | ((z) << 16 & 0x1F0000))
+#define BATTLE_EV(id, p, z, k) ((unsigned short)(id) | (((p) << 31 & 0x80000000) | (k) | ((z) << 16 & 0x1F0000)))
 
 #ifdef NON_MATCHING /* forma próxima; diferem a ordem do cálculo de loc e a escolha de registradores */
 /* p: attacking player; returns 1 when the damage step is over */
@@ -520,11 +519,10 @@ typedef struct DuelDmgEv {             /* argument of the event 14 (battle damag
         unsigned char *d_ = (unsigned char *)(a);           \
         int n_ = sizeof(DuelAct);                           \
         if (d_ != 0) {                                      \
-            for (; n_ != 0; n_--) *d_++ = 0;                \
+            do { *d_++ = 0; } while (--n_);                 \
         }                                                   \
     } while (0)
 
-#ifdef NON_MATCHING /* não comparado em detalhe */
 /* p: attacking player; damage events and the cards destroyed by the battle */
 int duel_0883AEF8(unsigned int p)
 {
@@ -532,8 +530,9 @@ int duel_0883AEF8(unsigned int p)
     DuelSpecAct *a = &duel_special.act[p];
     DuelSpecAct *o = &duel_special.act[1 - p];
     DuelDmgEv ev;
-    DuelAct x2;
+    int v;
     DuelAct x1;
+    DuelAct x2;
     unsigned int q;
     int i;
     int n;
@@ -543,8 +542,8 @@ int duel_0883AEF8(unsigned int p)
         if (duel_atk_w24 == 0) {
             duel_088C7BA4();
             for (i = 0; i < 2; i++) {
-                if (duel_special.recs[i].w0 != 0) {
-                    ev.dmg = (unsigned int)duel_special.recs[i].w0 >= 0x10000 ? 0xFFFF : duel_special.recs[i].w0;
+                if ((v = duel_special.recs[i].w0) != 0) {
+                    ev.dmg = (unsigned int)v > 0xFFFF ? 0xFFFF : v;
                     ev.p = duel_special.recs[i].a[0];
                     ev.z = duel_special.recs[i].a[1];
                     ev.q = duel_special.recs[i].b[0];
@@ -639,7 +638,6 @@ int duel_0883AEF8(unsigned int p)
     }
     return 1;
 }
-#endif
 
 #ifdef NON_MATCHING /* não comparado em detalhe */
 /* p: attacking player; events of the cards that won or lost the battle */
@@ -648,8 +646,8 @@ int duel_0883B4A8(unsigned int p)
     unsigned int tp = duel_atk_tp;
     DuelSpecAct *a = &duel_special.act[p];
     DuelSpecAct *o = &duel_special.act[1 - p];
-    unsigned int ev;
     int r;
+    unsigned int ev;
     struct DuelActX x;
 
     if (duel_atk_direct != 0) {
@@ -689,8 +687,6 @@ int duel_0883B4A8(unsigned int p)
             }
             break;
         case 0x15D9:
-            r = o->pad14[6];
-            break;
         case 0x18E6:
             r = o->pad14[6];
             break;
@@ -713,8 +709,6 @@ int duel_0883B4A8(unsigned int p)
         switch (o->id) {
         case 0x10A6:
         case 0x1310:
-            r = 1;
-            break;
         case 0x14F1:
             r = 1;
             break;
@@ -734,8 +728,6 @@ int duel_0883B4A8(unsigned int p)
             r = a->pad14[6] != 0 && p != tp;
             break;
         case 0x15D9:
-            r = a->pad14[6];
-            break;
         case 0x18E6:
             r = a->pad14[6];
             break;
