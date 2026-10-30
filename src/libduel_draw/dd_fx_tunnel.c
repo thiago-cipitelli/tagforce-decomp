@@ -1,5 +1,5 @@
 // @range 0x0883AB6C-0x0883B62C
-// @asm 0x0883AC7C-0x0883B62C
+// @asm 0x0883AC7C-0x0883B620
 /* The tunnel of effects 27-31, 38-41 and 54: a disc of 33 textured rings that scrolls toward the
    center, with light streaks bursting at random angles (task of 0x67CC bytes). */
 #include "dd_fx.h"
@@ -174,3 +174,9 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
     return d->t < d->end ? 2 : 4;
 }
 #endif
+
+/* export: argument of the effects 32-37 and 52-53 (sound of the duel state, from dd_state_se_play) */
+void dd_fx_set_arg0(int v)
+{
+    dd_fx_table.arg0 = v;
+}

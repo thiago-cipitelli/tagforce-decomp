@@ -15,7 +15,7 @@ void dd_chara_select(void);
 void dd_chara_set_voice(int v);
 void dd_chara_redraw(int state);
 void dd_chara_anim(int v, int a);
-void func_0883B620(int id);
+void dd_fx_set_arg0(int id);
 void dd_voice_play(int v, int a);
 
 /* sound per duel state 0..9 (others: 7) */
@@ -123,7 +123,7 @@ void dd_state_se_play(int n)
 {
     if (n < 0 || n > 9)
         n = 7;
-    func_0883B620(dd_state_se_tab[n]);
+    dd_fx_set_arg0(dd_state_se_tab[n]);
 }
 
 /* export: plays commentary line v */

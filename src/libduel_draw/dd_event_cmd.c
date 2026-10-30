@@ -51,7 +51,7 @@ int dd_cobj_hide();
 int dd_cobj_extra_up();
 int dd_cobjs_counters();
 int dd_zone_anim_update();
-int func_0880D028();
+int dd_zone_anim_busy();
 int dd_hl_push();
 int dd_hl_pop();
 int dd_lpp_set();
@@ -432,7 +432,7 @@ int dd_ev_11(int zone, int tplayer, int tzone)
 int dd_ev_12(void)
 {
     dd_zone_anim_update(1);
-    func_0882059C(0xC, func_0880D028, 0);
+    func_0882059C(0xC, dd_zone_anim_busy, 0);
     dd_ev_8817670(0x46);
     dd_mark_hide();
     return 1;
@@ -643,7 +643,7 @@ int dd_ev_36(void)
     if (dv_phase() != 3)
         return 1;
     dd_zone_anim_update(0);
-    func_0882059C(0, func_0880D028, 0);
+    func_0882059C(0, dd_zone_anim_busy, 0);
     if (dv_mode_bit(1) == 0)
         dd_mark_hide();
     return 1;
