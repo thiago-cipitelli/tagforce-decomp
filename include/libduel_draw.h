@@ -288,4 +288,221 @@ void func_08826E30(int layer, int cx, int cy);              /* 3D begin with the
 void *dl_tex_offset(float u, float v, void *list);
 void mtx_rotate_z(float a);
 
+/* effects 32-37 / 52-53, nine styles (tasks of dd_fx32.c) */
+void *func_08826BD8(void *list, int x, int y, int w, int h); /* texture = a w x h tile of the frame buffer */
+void *func_08826B6C(void *list);                            /* texture = the frame buffer */
+float func_08827A00(int t, int n, int end);                 /* fade out over the last n frames of end */
+float roundf_vfpu(float x);                                 /* BOOT */
+
+typedef struct DdFx32Blades {          /* 0x128: 12 blades flying toward the camera */
+    int t;
+    int flags;                         /* bit 0: alive */
+    int frame[12];
+    ScePspFVector3 pos[12];
+    float speed[12];
+    float ang[12];
+} DdFx32Blades;
+
+typedef struct DdFx32Motes {           /* 0x58: 4 billboards flying toward the camera */
+    int t;
+    int flags;
+    int frame[4];
+    float speed[4];
+    ScePspFVector3 pos[4];
+} DdFx32Motes;
+
+typedef struct DdFx32Spin {            /* 0xE8: 8 spinning billboards */
+    int t;
+    int flags;
+    int frame[8];
+    float speed[8];
+    ScePspFVector3 pos[8];
+    float ang[8];
+    float spin[8];
+} DdFx32Spin;
+
+typedef struct DdFx32S0 {              /* style 0, 0x3014 bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    DdFxSlot *slot;                    /* +0x0010 */
+    unsigned int se_done;              /* +0x0014 */
+    int blade_next;                    /* +0x0018 */
+    DdRingVtx blade_v[8][9][2];        /* +0x001C 8 frames, strips of 9 segments */
+    unsigned char idx[18];             /* +0x0B5C */
+    DdFx32Blades blade[24];            /* +0x0B70 */
+    int mote_next;                     /* +0x2730 */
+    DdRingVtx mote_v[4][2];            /* +0x2734 */
+    DdFx32Motes mote[24];              /* +0x27D4 */
+} DdFx32S0;
+
+typedef struct DdFx32S1 {              /* style 1, 0x21A24 bytes */
+    int grow;                          /* +0x00000 */
+    int grow_end;                      /* +0x00004 */
+    int t;                             /* +0x00008 */
+    int end;                           /* +0x0000C */
+    int frame;                         /* +0x00010 */
+    DdFxSlot *slot;                    /* +0x00014 */
+    unsigned int se_done;              /* +0x00018 */
+    int mote_next;                     /* +0x0001C */
+    DdRingVtx mote_v[4][2];            /* +0x00020 */
+    DdFx32Motes mote[24];              /* +0x000C0 */
+    ScePspFVector3 center;             /* +0x00900 */
+    DdTCVtx tube[49][33];              /* +0x0090C rings of a wavy tube going into the screen */
+    DdTCVtx tube_buf[2][49][33];       /* +0x0A0A4 */
+    unsigned short idx[48][66];        /* +0x1CFD4 */
+    float tex_u, tex_v;                /* +0x1E894 */
+    float phase[49][33];               /* +0x1E89C */
+    int spin_next;                     /* +0x201E0 */
+    DdRingVtx spin_v[8][4];            /* +0x201E4 */
+    DdFx32Spin spin[24];               /* +0x20464 */
+} DdFx32S1;
+
+typedef struct DdFx32S2 {              /* style 2, 0xC8C8 bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    DdFxSlot *slot;                    /* +0x0010 */
+    unsigned int se_done;              /* +0x0014 */
+    ScePspFVector3 center;             /* +0x0018 */
+    DdTCVtx tube[49][33];              /* +0x0024 */
+    unsigned short idx[48][66];        /* +0x97BC */
+    float tex_u, tex_v;                /* +0xB07C */
+    int spin_next;                     /* +0xB084 */
+    DdRingVtx spin_v[8][4];            /* +0xB088 */
+    DdFx32Spin spin[24];               /* +0xB308 */
+} DdFx32S2;
+
+typedef struct DdFx32Comets {          /* 0x98: 6 comets flying toward the camera */
+    int t;
+    int flags;
+    int frame[6];
+    ScePspFVector3 pos[6];
+    float speed[6];
+    float ang[6];
+} DdFx32Comets;
+
+typedef struct DdFx32S3 {              /* style 3, 0x2230 bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    DdFxSlot *slot;                    /* +0x0010 */
+    unsigned int se_done;              /* +0x0014 */
+    int comet_next;                    /* +0x0018 */
+    DdTCVtx tail_v[8][9][2];           /* +0x001C 8 frames, strips of 9 segments */
+    DdTCVtx head_v[8][2];              /* +0x0D9C */
+    unsigned char idx[18];             /* +0x0F1C */
+    DdFx32Comets comet[32];            /* +0x0F30 */
+} DdFx32S3;
+
+typedef struct DdScrVtx {              /* TRANSFORM_2D | TEXTURE_16BIT | VERTEX_16BIT */
+    short u, v;
+    short x, y, z;
+} DdScrVtx;
+
+typedef struct DdFx32S4 {              /* style 4, 0xD564 bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    int frame;                         /* +0x0010 */
+    DdFxSlot *slot;                    /* +0x0014 */
+    unsigned int se_done;              /* +0x0018 */
+    ScePspFVector3 center;             /* +0x001C */
+    DdTCVtx tube[49][33];              /* +0x0028 */
+    unsigned short idx[48][66];        /* +0x97C0 */
+    float tex_u, tex_v;                /* +0xB080 */
+    int spin_next;                     /* +0xB088 */
+    DdRingVtx spin_v[8][4];            /* +0xB08C */
+    DdFx32Spin spin[24];               /* +0xB30C */
+    DdScrVtx grid[9][9];               /* +0xC8CC the screen as a 9 x 9 grid that wobbles */
+    DdScrVtx grid_buf[2][9][9];        /* +0xCBF6 */
+    unsigned char grid_idx[8][18];     /* +0xD24A */
+    float phase[9][9];                 /* +0xD2DC */
+    float sign[9][9];                  /* +0xD420 */
+} DdFx32S4;
+
+typedef struct DdFx32Spin4 {           /* 0x78: 4 spinning billboards */
+    int t;
+    int flags;
+    int frame[4];
+    float speed[4];
+    ScePspFVector3 pos[4];
+    float ang[4];
+    float spin[4];
+} DdFx32Spin4;
+
+typedef struct DdFx32S5 {              /* style 5, 0xE62C bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    int frame;                         /* +0x0010 */
+    DdFxSlot *slot;                    /* +0x0014 */
+    unsigned int se_done;              /* +0x0018 */
+    ScePspFVector3 center;             /* +0x001C */
+    DdTCVtx tube[49][33];              /* +0x0028 */
+    unsigned short idx[48][66];        /* +0x97C0 */
+    float tex_u, tex_v;                /* +0xB080 */
+    int spin_next;                     /* +0xB088 */
+    DdRingVtx spin_v[8][4];            /* +0xB08C */
+    DdFx32Spin4 spin[24];              /* +0xB30C */
+    DdScrVtx grid[16][16];             /* +0xBE4C */
+    DdScrVtx grid_buf[2][16][16];      /* +0xC84C */
+    unsigned char grid_idx[15][32];    /* +0xDC4C */
+    float phase[16][16];               /* +0xDE2C */
+    float sign[16][16];                /* +0xE22C */
+} DdFx32S5;
+
+typedef struct DdFx32Beams {           /* 0xA8: 8 beams around the center */
+    int t;
+    int flags;
+    ScePspFVector3 pos[8];
+    float ang[8];
+    float width[8];
+} DdFx32Beams;
+
+typedef struct DdFx32S6 {              /* style 6, 0x13E8 bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    DdFxSlot *slot;                    /* +0x0010 */
+    unsigned int se_done;              /* +0x0014 */
+    int beam_next;                     /* +0x0018 */
+    DdTCVtx beam_v[49][3];             /* +0x001C edge, center, edge along z */
+    unsigned char idx_a[98];           /* +0x0DE4 left half: 3i, 3i + 1 */
+    unsigned char idx_b[98];           /* +0x0E46 right half: 3i + 1, 3i + 2 */
+    DdFx32Beams beam[8];               /* +0x0EA8 */
+} DdFx32S6;
+
+typedef struct DdFx32S7 {              /* style 7, 0x2DEC bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    DdFxSlot *slot;                    /* +0x0010 */
+    unsigned int se_done;              /* +0x0014 */
+    int blade_next;                    /* +0x0018 */
+    DdRingVtx blade_v[8][7][2];        /* +0x001C 8 frames, strips of 7 segments */
+    unsigned char idx[14];             /* +0x08DC */
+    DdFx32Blades blade[32];            /* +0x08EC */
+} DdFx32S7;
+
+typedef struct DdFx32S8 {              /* style 8, 0xB084 bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    DdFxSlot *slot;                    /* +0x0010 */
+    unsigned int se_done;              /* +0x0014 */
+    ScePspFVector3 center;             /* +0x0018 */
+    DdTCVtx tube[49][33];              /* +0x0024 */
+    unsigned short idx[48][66];        /* +0x97BC */
+    float tex_u, tex_v;                /* +0xB07C */
+} DdFx32S8;
+
 #endif
