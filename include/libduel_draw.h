@@ -165,4 +165,27 @@ typedef struct DdFxHead {              /* common start of the work of an effect 
     DdFxArg *arg;                      /* +0x14 */
 } DdFxHead;
 
+typedef struct DdFxHalo {              /* halo around bone 38 (dd_fx_aura_halo), 0x2A0 */
+    int t;                             /* +0x000 */
+    int frame;                         /* +0x004 */
+    int pad08[2];
+    FxMat4 mtx;                        /* +0x010 */
+    float alpha;                       /* +0x050 */
+    int visible;                       /* +0x054 */
+    FxVtxC yellow[18];                 /* +0x058 fan */
+    FxVtxC blue[18];                   /* +0x178 */
+} DdFxHalo;
+
+typedef struct DdFxCircle {            /* spell circle (dd_fx_aura_circle), 0x180 */
+    int t;                             /* +0x000 */
+    int frame;                         /* +0x004 */
+    int bone;                          /* +0x008 -1: none */
+    int pad0c;
+    FxMat4 mtx;                        /* +0x010 */
+    int started;                       /* +0x050 */
+    unsigned int se;                   /* +0x054 */
+    FxVtx ring[6];                     /* +0x058 */
+    FxVtx blade[6];                    /* +0x0E8 */
+} DdFxCircle;
+
 #endif
