@@ -1,6 +1,4 @@
 // @range 0x0880CA9C-0x0880D4F4
-// @asm 0x0880CF74-0x0880D0F8
-// @asm 0x0880D2B4-0x0880D4F4
 /* Queue of the load requests and the callbacks waiting for each file, the asynchronous reads, the
    field context (frame counter), the time of day and small helpers (lengths, color lerp, sprites). */
 #include "libfield.h"
@@ -195,6 +193,32 @@ int fld_time_index(int h)
     return 2;
 }
 
+/* event of the cell (x, z) of the room bg: 1 the shop counter of room 0x14 (before evening), 2 its
+   board, 3 and 4 the two doors of room 0x20 */
+int fld_bg_event(int bg, int x, int z)
+{
+    int r = 0;
+
+    switch (bg) {
+    case 20:
+        if ((x == 1 && z == 4) || (x == 2 && z == 4) || (x == 3 && z == 4) || (x == 4 && z == 4)
+            || (x == 5 && z == 4) || (x == 6 && z == 4)) {
+            if (fld_day_part() < 2)
+                r = 1;
+        } else if ((x == 3 && z == 6) || (x == 4 && z == 6)) {
+            r = 2;
+        }
+        break;
+    case 32:
+        if ((x == 32 && z == 2) || (x == 33 && z == 2))
+            r = 3;
+        if ((x == 30 && z == 2) || (x == 31 && z == 2))
+            r = 4;
+        break;
+    }
+    return r;
+}
+
 float fld_stick_axis(int v)
 {
     int d;
@@ -245,4 +269,45 @@ void *fld_draw_cell(void *list, int x, int y, int u, int v, int sw, int sh, int 
 {
     list = draw_set_offsets(list, sw, sh, dw, dh);
     return draw_sprite(list, x, y, 0, u, v, 0, 0);
+}
+
+/* nine-patch: the sprite (u, v, w, h) drawn as a frame of w2 x h2 at (x, y), keeping the corners
+   (left/right widths, top/bottom heights) and stretching the edges and the middle */
+void *fld_draw_frame(void *list, int x, int y, int u, int v, int w, int h, int w2, int h2, int top,
+                     int bottom, int left, int right)
+{
+    int vb;
+    int ur;
+    int yb;
+    int xr;
+    int mw2;
+    int mw;
+    int um;
+    int xm;
+    int vm;
+    int mh;
+    int ym;
+    int mh2;
+
+    list = fld_draw_cell1(list, x, y, u, v, left, top);
+    vb = v + h - bottom;
+    yb = y + h2 - bottom;
+    list = fld_draw_cell1(list, x, yb, u, vb, left, bottom);
+    ur = u + w - right;
+    xr = x + w2 - right;
+    list = fld_draw_cell1(list, xr, y, ur, v, right, top);
+    list = fld_draw_cell1(list, xr, yb, ur, vb, right, bottom);
+    mw2 = w2 - (left + right);
+    mw = w - (left + right);
+    um = u + left;
+    xm = x + left;
+    list = fld_draw_cell(list, xm, y, um, v, mw, top, mw2, top);
+    list = fld_draw_cell(list, xm, yb, um, vb, mw, bottom, mw2, bottom);
+    mh = h - (top + bottom);
+    vm = v + top;
+    ym = y + top;
+    mh2 = h2 - (top + bottom);
+    list = fld_draw_cell(list, x, ym, u, vm, left, mh, left, mh2);
+    list = fld_draw_cell(list, xr, ym, ur, vm, right, mh, right, mh2);
+    return fld_draw_cell(list, xm, ym, um, vm, mw, mh, mw2, mh2);
 }

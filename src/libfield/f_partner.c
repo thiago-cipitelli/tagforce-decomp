@@ -11,7 +11,7 @@ FieldChr *fld_player_get(void);
 void fld_chr_update(FieldChr *c);
 int fld_dir_nearest(Vec3 *v);
 /* the caller passes a fifth argument (0) that fld_chr_collide does not read */
-void fld_chr_collide(float r, Vec3 *out, Vec3 *vel, Vec3 *pos, int flag);
+void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r, int flag);
 void fld_npc_near(FieldNpc **out, int *n, FieldNpc *p, float r);
 int fld_map_walkable(int x, int z, int flag);
 int fld_cell_free(int x, int z);
@@ -37,18 +37,25 @@ void fpt_reset(void)
     fld_chr_reset(&field_partner.c);
 }
 
-#ifdef NON_MATCHING /* the original copies each direction template through a stack temporary; mwcc propagates the copy */
+#ifdef NON_MATCHING /* lógica conferida (fpt_up/fpt_down são os modelos locais up/down). 26 palavras: mov.s $f12 depois dos ponteiros em vec3_scale (speed variável) e ordem das cópias de c->vel e das divisões por 0.5 */
 void fpt_update(void)
 {
     FieldPartner *p = &field_partner;
     FieldChr *c = &field_partner.c;
     FieldChr *pl = fld_player_get();
     float speed = 0.1f;
-    Vec3 d;
     Vec3 e;
+    Vec3 d;
     FieldNpc *near[32];
+    Vec3 up;
+    Vec3 down;
+    float m[9];
+    Vec3 side;
+    Vec3 to;
+    Vec3 t;
     int n;
     int i;
+    float k;
 
     if (field_partner.active == 0)
         return;
@@ -58,22 +65,21 @@ void fpt_update(void)
     e = d;
     d.y = 0.0f;
     if (fld_vec3_len(&e) < 1.0f) {
-        Vec3 up = fpt_up;
-        Vec3 down = fpt_down;
-
         vec3_normalize(&d, &d);
         vec3_scale(speed, &d, &d);
-        fld_chr_collide(speed, &d, &d, &c->pos, 0);
+        fld_chr_collide(&d, &d, &c->pos, speed, 0);
         vec3_normalize(&d, &d);
         vec3_scale(speed, &d, &d);
+        {
+            Vec3 tmp = { 0.0f, 1.0f, 0.0f };
+            up = *(Vec3 *)&tmp;
+        }
+        {
+            Vec3 tmp = { 0.0f, -1.0f, 0.0f };
+            down = *(Vec3 *)&tmp;
+        }
         fld_npc_near(near, &n, (FieldNpc *)c, 0.5f);
         for (i = 0; i < n; i++) {
-            Vec3 to;
-            Vec3 side;
-            float m[9];
-            Vec3 t;
-            float k;
-
             vec3_sub(&to, &near[i]->m.c.pos, &c->pos);
             if (vec3_dot(&to, &d) < 0.0f)
                 continue;
@@ -99,7 +105,10 @@ void fpt_update(void)
         fld_cell_mark(c->pos.x / 0.5f, c->pos.z / 0.5f, 0);
         vec3_add(&c->pos, &c->pos, &c->vel);
         fld_cell_mark(c->pos.x / 0.5f, c->pos.z / 0.5f, 2);
-        c->anim = fld_vec3_len(&d) > 0.0f;
+        if (fld_vec3_len(&d) > 0.0f)
+            c->anim = 1;
+        else
+            c->anim = 0;
         c->dir = fld_dir_nearest(&c->vel);
     } else {
         c->anim = 0;

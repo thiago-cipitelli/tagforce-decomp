@@ -108,6 +108,101 @@ int fld_npc_place_done(void)
     return !field_npcs.loading;
 }
 
+typedef struct FieldNpcPlace {          /* one character of the place command, 0x40 */
+    int kind;
+    int id;
+    int xc0;                           /* +0x08 */
+    int x;                             /* +0x0C */
+    int z;                             /* +0x10 */
+    int x2;                            /* +0x14 */
+    int z2;                            /* +0x18 */
+    int visible;                       /* +0x1C */
+    int mob;                           /* +0x20 extra character, else an NPC */
+    int xa4;                           /* +0x24 */
+    int dir;                           /* +0x28 */
+    int xd0;                           /* +0x2C */
+    int xd4;                           /* +0x30 */
+    int fx;                            /* +0x34 */
+    void *path;                        /* +0x38 0x18 bytes per point */
+    int n_path;                        /* +0x3C */
+} FieldNpcPlace;
+
+typedef struct FieldNpcPlaceCmd {
+    FieldNpcPlace *e;
+    int n;
+    int talk_id;
+    int talk_dir;
+} FieldNpcPlaceCmd;
+
+void fld_npc_loaded_a(int *file, FieldNpc *n);
+void fld_npc_loaded_b(int *file, FieldNpc *n);
+int fld_npc_free_slot(void);
+int fld_mob_free_slot(void);
+int fld_fx_attach(FieldChr *c, int kind, int b);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. ~118 palavras: o mwcc tira do laço os endereços de fld_npc_loaded_a/b (s8 e pilha); o original os recalcula a cada chamada e guarda size e fx em s6/s8 */
+/* places the characters of the command; with no free slot the original reuses the slot of the
+   previous character (an uninitialized pointer for the first one, kept here) */
+void fld_npc_cmd_place(FieldNpcPlaceCmd *cmd)
+{
+    FieldNpcs *b;
+    FieldNpc *n;
+    FieldMob *m;
+    FieldNpcPlace *e;
+    int i;
+    int k;
+    int fx;
+    int size;
+
+    field_npcs.loading = 1;
+    b = &field_npcs;
+    for (i = 0; i < cmd->n; i++) {
+        e = &cmd->e[i];
+        if (e->mob != 0) {
+            k = fld_mob_free_slot();
+            if (k != -1)
+                m = &b->mob[k];
+            m->active = 0;
+            b->pending++;
+            m->loaded = 1;
+            fld_chr_setup(&m->c, e->kind, e->id, e->x, e->z, 1, e->dir, e->visible, 1, (int)fld_npc_loaded_a,
+                          (int)fld_npc_loaded_b, 0);
+        } else {
+            k = fld_npc_free_slot();
+            if (k != -1)
+                n = &b->npc[k];
+            n->m.active = 0;
+            n->xa4 = e->xa4;
+            n->xa8 = (rand() & 0xFFFF) % 120 + 90;
+            n->m.x9c = e->x;
+            n->xa0 = e->z;
+            n->xac = e->x2;
+            n->xb0 = e->z2;
+            n->xb4 = e->x2;
+            n->xb8 = e->z2;
+            n->xc0 = e->xc0;
+            n->xd0 = e->xd0;
+            n->xd4 = e->xd4;
+            fx = fld_fx_attach((FieldChr *)n, e->fx, 0);
+            if (e->path != 0) {
+                size = e->n_path * 0x18;
+                n->n_path = e->n_path;
+                n->path = fld_alloc(size);
+                memcpy(n->path, e->path, size);
+            }
+            b->pending++;
+            n->m.loaded = 1;
+            fld_chr_setup(&n->m.c, e->kind, e->id, e->x2, e->z2, 1, e->dir, e->visible, 0, (int)fld_npc_loaded_a,
+                          (int)fld_npc_loaded_b, fx);
+        }
+    }
+    b->talk_id = cmd->talk_id;
+    b->talk_dir = cmd->talk_dir;
+    if (cmd->n <= 0)
+        b->loading = 0;
+}
+#endif
+
 void fld_npc_cmd_move(int *a)
 {
     FieldNpcs *b = &field_npcs;

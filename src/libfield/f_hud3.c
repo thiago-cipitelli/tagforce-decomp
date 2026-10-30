@@ -3,8 +3,6 @@
 // @asm 0x088135E8-0x08813914
 // @asm 0x08813914-0x08813AA8
 // @asm 0x08813AA8-0x08813D34
-// @asm 0x08813D34-0x08813E2C
-// @asm 0x08813F18-0x088140D8
 // @asm 0x088141C4-0x08814404
 // @asm 0x08814514-0x088147E0
 // @asm 0x08814930-0x08814B5C
@@ -21,6 +19,48 @@ extern Vec2 field_panel_to;                    /* 0x0883C858 */
 extern Vec2 field_box_pos;                     /* 0x0883C860 */
 extern Vec2 field_box_from;                    /* 0x0883C868 */
 extern Vec2 field_box_to;                      /* 0x0883C870 */
+
+void *dl_ambient_color(void *list, unsigned int color);
+FieldStory *fld_story_get(void);
+void *dl_set_tex_filter(void *list, int min, int mag);
+void *fld_draw_cell1(void *list, int x, int y, int u, int v, int w, int h);
+void *fld_clock_hands(void *list, int x, int y, int z, int h, int m);
+void *fld_day_icon(void *list, int n, int x, int y, int z);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 43 palavras: o teste de blink_kind sai bnel/beqz sem likely no original e a lista volta em v0 sem cópia (aqui com return explícito) */
+/* the clock face of the HUD slid to field_hud.clock.pos: the two plates, then the weekday icon unless
+   it blinks off (blink_kind 2) */
+void *fld_hud_clock_face(void *list, int dx1, int dx2, int dx3)
+{
+    FieldHud *h = &field_hud;
+    FieldHudSlide *s = &field_hud.clock;
+    FieldStory *st = fld_story_get();
+
+    list = gim_set_texture(list, field_hud.gim0);
+    list = fld_draw_cell1(list, s->pos.x + (float)dx1, s->pos.y, 0, 0x58, 0xC0, 0x16);
+    list = fld_draw_cell1(list, s->pos.x + (float)dx2, s->pos.y + 21.0f, 0x1C, 0x6E, 0xA4, 0x12);
+    if (field_hud.blink_kind == 2 && h->blink_on != 0 && h->blink != 0)
+        return list;
+    if (st->w[2] != 0) {
+        list = gim_set_texture(list, h->gim1);
+        list = fld_day_icon(list, *(int *)st->w[2], s->pos.x + (float)dx3, s->pos.y + 22.0f, 0);
+    }
+    return list;
+}
+#endif
+
+/* the hands of the small clock of the HUD at the hour and minute of the story */
+void *fld_hud_clock_mark(void *list)
+{
+    FieldHudSlide *s = &field_hud.clock;
+    FieldStory *st = fld_story_get();
+
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = dl_set_tex_filter(list, 0, 0);
+    list = gim_set_texture(list, field_hud.gim0);
+    list = fld_draw_cell1(list, s->pos.x + 79.0f, s->pos.y, 0, 0x20, 0x2A, 0x2A);
+    return fld_clock_hands(list, s->pos.x + 97.0f, s->pos.y + 1.0f, 0, *(int *)st->w[3], *(int *)st->w[4]);
+}
 
 void fld_hud_day_free(void)
 {
@@ -51,6 +91,48 @@ void fld_hud_day_update(void)
     case 2:
         break;
     }
+}
+
+typedef struct FieldHudCell {           /* sprite of a HUD part, 0xC */
+    short u, v, w, h;
+    int gim;                           /* index in field_hud.gim0.. */
+} FieldHudCell;
+
+typedef struct FieldHudDayPos {         /* weekday plate by language, 8 */
+    signed char x, y;
+    unsigned char u, v, w, h;
+    signed char dx, dy;                /* the day number */
+} FieldHudDayPos;
+
+extern const FieldHudDayPos field_day_pos[];   /* 0x08838984 */
+extern const FieldHudCell field_day_digits;    /* 0x088389B4 */
+extern const char str_d[];                     /* 0x0883C7F4 "%d" */
+void *fld_digits(void *list, char *s, int x, int y, int z, int u, int v, int w, int h, int gap,
+                 float scale);
+
+/* the weekday plate of the HUD and the day of the month */
+void *fld_hud_day_draw(void *list)
+{
+    FieldHud *h = &field_hud;
+    FieldHudSlide *s = &field_hud.day;
+    FieldStory *st = fld_story_get();
+    const FieldHudDayPos *p;
+    char buf[256];
+
+    if (s->state == 0)
+        return list;
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = dl_set_tex_filter(list, 0, 0);
+    list = gim_set_texture(list, h->gim1);
+    p = &field_day_pos[cfg_get_language()];
+    list = fld_draw_cell1(list, s->pos.x + (float)p->x, s->pos.y + (float)p->y, p->u, p->v, p->w, p->h);
+    if (st->w[5] != 0) {
+        sprintf(buf, str_d, *(int *)st->w[5]);
+        list = gim_set_texture(list, (&h->gim0)[field_day_digits.gim]);
+        list = fld_digits(list, buf, s->pos.x + (float)p->dx, s->pos.y + (float)p->dy, 0, field_day_digits.u,
+                          field_day_digits.v, field_day_digits.w, field_day_digits.h, -1, 1.0f);
+    }
+    return list;
 }
 
 void fld_hud_date_free(void)

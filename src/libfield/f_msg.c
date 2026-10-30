@@ -325,7 +325,7 @@ int fmsg_moving(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the loads of x/w0/size/style are scheduled before the constant stores of the item */
+#ifdef NON_MATCHING /* lógica conferida. 34 palavras: o mwcc adianta as leituras de x/w0/size/style para antes dos stores constantes; o original lê cada uma junto do uso (cast por char * e base FieldMsg * não mudam) */
 void fmsg_create(void)
 {
     MenuItemDef *d = &field_msg.def;

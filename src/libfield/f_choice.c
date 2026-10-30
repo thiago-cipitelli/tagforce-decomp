@@ -1,5 +1,4 @@
 // @range 0x0882A3A8-0x0882A918
-// @asm 0x0882A844-0x0882A918
 // @rodata 0x08839A4C-0x08839A74
 /* Menu of five choices of the scene commands (field_choice): a title window and a list of the
    texts 0x2B..0x2F of the field table; returns 1..5 for the choice, 0 when cancelled. */
@@ -143,10 +142,9 @@ int fcho_list_width(void)
     return max + 1;
 }
 
-#ifdef NON_MATCHING /* the original loads the text id before the calls, in the prologue */
 void *fcho_list_item(void *list, unsigned int i, int x, int y)
 {
-    int id = fcho_texts[i & 0xFFFF];
+    int id = ((unsigned short *)fcho_texts)[i & 0xFFFF];
 
     font_set_flag8000(cfg_get_language() == 0);
     font_text_set(list);
@@ -157,4 +155,3 @@ void *fcho_list_item(void *list, unsigned int i, int x, int y)
     font_draw_text((x + 4) << 6, (y + 1) << 6, (0x1E0 - (x + 4)) << 6, table_get_entry(fld_gim_get(5), id));
     return font_text_clear();
 }
-#endif
