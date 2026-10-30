@@ -20,10 +20,10 @@ int movie_play(const char *path, unsigned int flags, int arg);
 void *sceGeEdramGetAddr(void);
 
 int dd_int_cmp(const void *a, const void *b);
-void func_0882837C(void);
-void func_088283D4(void);
-void func_08828470(void *s, int a, int b);
-void func_08828528(void *s, int a, int b);
+void dd_mon_on_start(void);
+void dd_mon_on_event(void);
+void dd_mon_on_frame(void *s, int a, int b);
+void dd_mon_bone(void *s, int a, int b);
 void *dd_alloc_sub(int size);
 void dd_free_sub(void *p);
 
@@ -31,7 +31,7 @@ typedef struct FxVec4u {               /* Vec4 without the 16-byte alignment */
     float x, y, z, w;
 } FxVec4u;
 
-typedef struct DdCharSetup6 {          /* callbacks of the character setup (func_088282E4) */
+typedef struct DdCharSetup6 {          /* callbacks of the character setup (dd_mon_cb_init) */
     int pad00[5];
     int (*load)(void);                 /* +0x14 */
     int (*unload)(void);               /* +0x18 */
@@ -160,19 +160,19 @@ void dd_chara_setup_06b(DdCharSetup6 *s)
 
 int dd_c6b_load(void)
 {
-    func_0882837C();
+    dd_mon_on_start();
     return 0;
 }
 
 int dd_c6b_unload(void)
 {
-    func_088283D4();
+    dd_mon_on_event();
     return 0;
 }
 
 void dd_c6b_anim(void *s, int a, int b)
 {
-    func_08828470(s, a, b);
+    dd_mon_on_frame(s, a, b);
 }
 
 int dd_c6b_motion(void *s, int motion)
@@ -236,7 +236,7 @@ int dd_c6b_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
 
 void dd_c6b_term(void *s, int a, int b)
 {
-    func_08828528(s, a, b);
+    dd_mon_bone(s, a, b);
 }
 
 /* Export (libduel_mgr): starts reading the movie of (card, kind) into dd_movie_buf. */
@@ -323,19 +323,19 @@ void dd_chara_setup_06a(DdCharSetup6 *s)
 
 int dd_c6a_load(void)
 {
-    func_0882837C();
+    dd_mon_on_start();
     return 0;
 }
 
 int dd_c6a_unload(void)
 {
-    func_088283D4();
+    dd_mon_on_event();
     return 0;
 }
 
 void dd_c6a_anim(void *s, int a, int b)
 {
-    func_08828470(s, a, b);
+    dd_mon_on_frame(s, a, b);
 }
 
 int dd_c6a_motion(void *s, int motion)
@@ -399,5 +399,5 @@ int dd_c6a_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
 
 void dd_c6a_term(void *s, int a, int b)
 {
-    func_08828528(s, a, b);
+    dd_mon_bone(s, a, b);
 }

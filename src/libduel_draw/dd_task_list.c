@@ -60,29 +60,29 @@ void func_08822C2C(void);
 int region_get(void);
 void dd_lp_load(int *a);
 void dd_lp_unload(void);
-void func_088260A4(void);
-void func_088260DC(void);
-void func_08826130(void);
+void dd_task_init(void);
+void dd_task_term_all(void);
+void dd_task_update(void);
 void efs_update(void);
 void mtx_clear_dirty(void);
-int func_08831290(int h);
+int dd_fx_flipup_risen(int h);
 int func_08806C84(int id);
 int func_08825728(void);
-void func_088264D4(int h);
+void dd_task_pause(int h);
 void func_08820EA8(int a, int b);
 void func_08820E58(int a);
-int func_08826410(int h);
+int dd_task_alive(int h);
 void func_08820938(DdTask *t, void *arg);
 void func_08820A8C(void *out, void *pos, int back);
 int func_0880D0B4(int player, int zone);
-int func_0882C2B4(int id, void *pos, void *cb, void *arg, float a, float b);
+int dd_fx_rays_start_t(int id, void *pos, void *cb, void *arg, float a, float b);
 void func_08820980(void);
-int func_088312C4(int id, int *xy, int a, int b);
+int dd_fx_flipup_start(int id, int *xy, int a, int b);
 int func_088667BC(int uid);
 int func_088668E4(int player, int zone);
 void func_08820CC0(void *a, void *b, DdLoc l);
-int func_0882C888(int a, int b, int c, void *d, void *cb, void *arg);
-int func_0882C8D4(int a, int b, int c, void *d, void *cb, void *arg);
+int dd_fx_summon_start_t(int a, int b, int c, void *d, void *cb, void *arg);
+int dd_fx_summon_start_dark_t(int a, int b, int c, void *d, void *cb, void *arg);
 void func_088091C8(int uid);
 unsigned int *dl_set_tex_filter(unsigned int *list, int min, int mag);
 void dd_task_remove(DdTask *t);
@@ -130,7 +130,7 @@ void dd_tasks_init(void)
     memset(&key, 0, sizeof(key));
     key = region_get();
     dd_lp_load(&key);
-    func_088260A4();
+    dd_task_init();
 }
 
 #ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
@@ -149,7 +149,7 @@ void dd_tasks_term(void)
         dd_task_remove(cur);
     }
     dd_lp_unload();
-    func_088260DC();
+    dd_task_term_all();
 }
 #endif
 
@@ -183,7 +183,7 @@ void dd_tasks_draw(void)
     mtx_clear_dirty();
     mtx_set_mode(2);
     mtx_identity();
-    func_08826130();
+    dd_task_update();
 }
 #endif
 
@@ -262,7 +262,7 @@ void dd_card_fx_start(DdCard *c)
     else
         id = -1;
     func_08820A8C(out, (char *)c + 0x40, pos[2] < 0.0f);
-    c->fx = func_0882C2B4(id, pos, func_08820980, c, ((float *)out)[1],
+    c->fx = dd_fx_rays_start_t(id, pos, func_08820980, c, ((float *)out)[1],
                           (float)func_0880D0B4(c->loc.player, c->loc.zone));
 }
 #endif
@@ -291,7 +291,7 @@ void dd_banner_update(float dt, DdTask *t, void *arg)
         }
         if (b->done != 0) {
             if (func_08825728() == 0) {
-                func_088264D4(b->handle);
+                dd_task_pause(b->handle);
                 b->handle = -1;
                 dd_task_remove_cur();
                 func_08820EA8(b->id, 0);
@@ -303,7 +303,7 @@ void dd_banner_update(float dt, DdTask *t, void *arg)
         }
         break;
     case 1:
-        if (func_08831290(b->handle) != 0) {
+        if (dd_fx_flipup_risen(b->handle) != 0) {
             b->t0 = t->time;
             b->state = 2;
         }
@@ -323,7 +323,7 @@ void dd_banner_open(DdBanner *b)
     xy[0] = 0x13A;
     xy[2] = 0;
     xy[1] = 0x7A;
-    b->handle = func_088312C4(b->id, xy, 0, 0);
+    b->handle = dd_fx_flipup_start(b->id, xy, 0, 0);
     b->state = 1;
 }
 
@@ -358,7 +358,7 @@ void dd_banner_summon(DdCard *c)
     l.b15 = func_088668E4(player, zone);
     func_08820CC0(a, pos, *(DdLoc *)&l);
     func_08820A8C(out, pos, ((float *)a)[2] < 0.0f);
-    b->handle = func_0882C888(((int *)out)[1], func_0880D0B4(c->loc.player, c->loc.zone), b->id, a,
+    b->handle = dd_fx_summon_start_t(((int *)out)[1], func_0880D0B4(c->loc.player, c->loc.zone), b->id, a,
                               dd_banner_open, b);
     func_088091C8(c->uid);
     req_flag_set(0x33);
@@ -404,7 +404,7 @@ void dd_banner_set(DdCard *c)
         id = -1;
     func_08820CC0(a, pos, *(DdLoc *)&l);
     func_08820A8C(out, pos, ((float *)a)[2] < 0.0f);
-    b->handle = func_0882C8D4(((int *)out)[1], func_0880D0B4(c->loc.player, c->loc.zone), id, a,
+    b->handle = dd_fx_summon_start_dark_t(((int *)out)[1], func_0880D0B4(c->loc.player, c->loc.zone), id, a,
                               dd_banner_open, b);
     func_088091C8(c->uid);
     req_flag_set(0);
@@ -437,7 +437,7 @@ void dd_bigcard_update(float dt, DdTask *t, int *arg)
 {
     if (t->time <= 1.25f)
         return;
-    if (arg[2] != 0 && func_08826410(arg[2]) != 0) {
+    if (arg[2] != 0 && dd_task_alive(arg[2]) != 0) {
         req_flag_set(arg[3]);
         return;
     }

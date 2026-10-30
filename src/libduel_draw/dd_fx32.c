@@ -92,7 +92,7 @@ void dd_fx32_kind(int id, int *grow, int *end)
 /* depth test off, depth writes on (the id is not used) */
 void *dd_fx32_depth(void *list, int id)
 {
-    return func_0882698C(list, 0, 1);
+    return dd_depth_enable(list, 0, 1);
 }
 
 /* except for effect 33, draws only over the pixels the field left empty: marks them in the stencil */
@@ -104,10 +104,10 @@ void dd_fx32_mask_begin(int id)
         list = dl_select_layer(7, 0);
         list = dl_clear_depth(list, 0);
         list = dl_clear(list, 0x12);
-        list = func_088266D8(list, 0, 1, 1, 0, 0, 0, 0);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_enable(list, 0, 1, 1, 0, 0, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
         list = dl_color(list, 0xFF000000);
-        list = func_0882698C(list, 1, 1);
+        list = dd_depth_enable(list, 1, 1);
         list = dl_depth_func(list, 2);
         list = dl_enable(list, 3);
         list = dl_stencil_op(list, 1, 0xFF, 0xFF);
@@ -138,11 +138,11 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d);
 
 int dd_fx32_s0_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_fx32_s0_update, a, b, sizeof(DdFx32S0));
+    int task = dd_task_create(dd_fx32_s0_update, a, b, sizeof(DdFx32S0));
     DdFx32S0 *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -171,14 +171,14 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
     int w;
     int h;
 
-    func_08827738();
+    dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
-    in = func_08827A2C(d->t, 8, 1);
-    out = 1.0f - func_088279A4(d->t - (d->end - 8), 8);
-    func_08827258(&bill);
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    in = dd_ease_sin(d->t, 8, 1);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_mtx_billboard_cam(&bill);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
 
     /* the blades: 8 frames of a 4 x 2 sheet stretched along z */
     if (phase == 1) {
@@ -219,10 +219,10 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
             d->blade_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
     list = dd_fx32_depth(list, s->id);
-    list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-    list = func_08826A64(list, 14);
+    list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+    list = dd_tex_pack(list, 14);
     list = dl_color(list, 0xFFA0DCFF);
     mtx_set_mode(2);
     mtx_push();
@@ -231,7 +231,7 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
         bl = &d->blade[i];
         if (!(bl->flags & 1))
             continue;
-        list = dl_ambient_light(list, (unsigned int)(out * func_08827AD4(bl->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
+        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(bl->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
         for (j = 0; j < 12; j++) {
             mtx_push();
             mtx_translate(&bl->pos[j]);
@@ -280,10 +280,10 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
             d->mote_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
     list = dd_fx32_depth(list, s->id);
-    list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-    list = func_08826A64(list, 10);
+    list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+    list = dd_tex_pack(list, 10);
     list = dl_color(list, 0xC8A0DCFF);
     mtx_set_mode(2);
     mtx_push();
@@ -292,8 +292,8 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
         m = &d->mote[i];
         if (!(m->flags & 1))
             continue;
-        func_088279A4(m->t, 24);
-        list = dl_ambient_light(list, (unsigned int)(out * func_08827AD4(m->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
+        dd_ease_lin(m->t, 24);
+        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(m->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
         for (j = 0; j < 4; j++) {
             mtx_push();
             mtx_translate(&m->pos[j]);
@@ -314,22 +314,22 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
     /* flash: the screen copied tile by tile (64 x 32) and added back tinted */
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 0, 0);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
         list = dl_color(list, (unsigned int)(in * 200.0f * out) << 24 | 0xA0DCFF);
         for (i = 0, y = 0; i < 9; i++, y += 32) {
             h = i < 8 ? 32 : 272 - y;
             for (j = 0, x = 0; j < 8; j++, x += 64) {
                 w = j < 7 ? 64 : 480 - x;
-                list = func_08826BD8(list, x, y, 64, 32);
+                list = dd_tex_fb_rect(list, x, y, 64, 32);
                 list = draw_set_offsets(list, w, h, w, h);
                 list = draw_sprite(list, x, y, 0, 0, 0, 0, 0);
             }
         }
         dl_set_list(list);
     }
-    func_08827668();
+    dd_mtx_pop_all();
     if (run == 1) {
         if (d->grow < d->grow_end)
             d->grow++;
@@ -346,11 +346,11 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d);
 
 int dd_fx32_s1_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_fx32_s1_update, a, b, sizeof(DdFx32S1));
+    int task = dd_task_create(dd_fx32_s1_update, a, b, sizeof(DdFx32S1));
     DdFx32S1 *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -382,15 +382,15 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
     int i;
     int j;
 
-    func_08827738();
+    dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
-    in = func_08827A2C(d->t, 8, 1);
-    out = 1.0f - func_088279A4(d->t - (d->end - 8), 8);
-    func_08827258(&bill);
+    in = dd_ease_sin(d->t, 8, 1);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_mtx_billboard_cam(&bill);
     buf = d->frame % 2;
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
 
     /* motes */
     if (phase == 1) {
@@ -424,10 +424,10 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
             d->mote_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
     list = dd_fx32_depth(list, s->id);
-    list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-    list = func_08826A64(list, 10);
+    list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+    list = dd_tex_pack(list, 10);
     list = dl_color(list, 0xFF0000FF);
     mtx_set_mode(2);
     mtx_push();
@@ -436,8 +436,8 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
         m = &d->mote[i];
         if (!(m->flags & 1))
             continue;
-        func_088279A4(m->t, 24);
-        list = dl_ambient_light(list, (unsigned int)(out * func_08827AD4(m->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
+        dd_ease_lin(m->t, 24);
+        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(m->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
         for (j = 0; j < 4; j++) {
             mtx_push();
             mtx_translate(&m->pos[j]);
@@ -482,10 +482,10 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
         list = dd_fx32_depth(list, s->id);
-        list = func_088269D8(list, 1, 0, 6, 3, 0, 0);
-        list = func_08826A64(list, 9);
+        list = dd_blend_enable(list, 1, 0, 6, 3, 0, 0);
+        list = dd_tex_pack(list, 9);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -561,10 +561,10 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
             d->spin_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 2, 2, 10, 0, -1);
-    list = func_08826A64(list, 5);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 2, 2, 10, 0, -1);
+    list = dd_tex_pack(list, 5);
     list = dl_color(list, 0x80FFFFFF);
     mtx_set_mode(2);
     mtx_push();
@@ -573,8 +573,8 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
         sp = &d->spin[i];
         if (!(sp->flags & 1))
             continue;
-        func_088279A4(sp->t, 24);
-        list = dl_ambient_light(list, (unsigned int)(out * func_08827AD4(sp->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
+        dd_ease_lin(sp->t, 24);
+        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(sp->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
         for (j = 0; j < 8; j++) {
             mtx_push();
             mtx_translate(&sp->pos[j]);
@@ -592,7 +592,7 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
     }
     mtx_pop();
     dl_set_list(list);
-    func_08827668();
+    dd_mtx_pop_all();
     d->frame++;
     if (run == 1) {
         if (d->grow < d->grow_end)
@@ -610,11 +610,11 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d);
 
 int dd_fx32_s2_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_fx32_s2_update, a, b, sizeof(DdFx32S2));
+    int task = dd_task_create(dd_fx32_s2_update, a, b, sizeof(DdFx32S2));
     DdFx32S2 *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -644,14 +644,14 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
     int i;
     int j;
 
-    func_08827738();
+    dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
-    in = func_08827A2C(d->t, 8, 1);
-    out = func_088279A4(d->t - (d->end - 8), 8);
-    func_08827258(&bill);
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    in = dd_ease_sin(d->t, 8, 1);
+    out = dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_mtx_billboard_cam(&bill);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
 
     /* the tube: 49 rings of 33 vertices */
     if (phase == 1) {
@@ -680,10 +680,10 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
         list = dd_fx32_depth(list, s->id);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-        list = func_08826A64(list, 12);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_pack(list, 12);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -748,10 +748,10 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
             d->spin_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, 0);
-    list = func_08826A64(list, 5);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
+    list = dd_tex_pack(list, 5);
     list = dl_color(list, 0xFFFFFFFF);
     mtx_set_mode(2);
     mtx_push();
@@ -760,8 +760,8 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
         sp = &d->spin[i];
         if (!(sp->flags & 1))
             continue;
-        func_088279A4(sp->t, 24);
-        list = dl_ambient_light(list, (unsigned int)((1.0f - out) * func_08827AD4(sp->t, 24, 1) * 255.0f) << 24
+        dd_ease_lin(sp->t, 24);
+        list = dl_ambient_light(list, (unsigned int)((1.0f - out) * dd_ease_cos(sp->t, 24, 1) * 255.0f) << 24
                                           | 0xFFFFFF);
         for (j = 0; j < 8; j++) {
             mtx_push();
@@ -780,7 +780,7 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
     }
     mtx_pop();
     dl_set_list(list);
-    func_08827668();
+    dd_mtx_pop_all();
     if (run == 1) {
         if (d->grow < d->grow_end)
             d->grow++;
@@ -797,11 +797,11 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d);
 
 int dd_fx32_s3_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_fx32_s3_update, a, b, sizeof(DdFx32S3));
+    int task = dd_task_create(dd_fx32_s3_update, a, b, sizeof(DdFx32S3));
     DdFx32S3 *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -827,14 +827,14 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
     int i;
     int j;
 
-    func_08827738();
+    dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
-    func_08827A2C(d->t, 8, 1);
-    out = 1.0f - func_088279A4(d->t - (d->end - 8), 8);
-    func_08827258(&bill);
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    dd_ease_sin(d->t, 8, 1);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_mtx_billboard_cam(&bill);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
     if (phase == 1) {
         for (i = 0; i < 8; i++) {
             tu = i % 4 * 0.25f;
@@ -909,10 +909,10 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
             d->comet_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
     list = dd_fx32_depth(list, s->id);
-    list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-    list = func_08826A64(list, 15);
+    list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+    list = dd_tex_pack(list, 15);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
@@ -920,7 +920,7 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
         c = &d->comet[i];
         if (!(c->flags & 1))
             continue;
-        list = dl_ambient_light(list, (unsigned int)(out * func_08827AD4(c->t, 32, 1) * 255.0f) << 24 | 0xFFFFFF);
+        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(c->t, 32, 1) * 255.0f) << 24 | 0xFFFFFF);
         for (j = 0; j < 6; j++) {
             mtx_push();
             mtx_translate(&c->pos[j]);
@@ -941,7 +941,7 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
     mtx_pop();
     dl_set_list(list);
     dd_fx32_mask_end(s->id);
-    func_08827668();
+    dd_mtx_pop_all();
     if (run == 1) {
         if (d->grow < d->grow_end)
             d->grow++;
@@ -958,11 +958,11 @@ int dd_fx32_s4_update(int phase, DdFx32S4 *d);
 
 int dd_fx32_s4_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_fx32_s4_update, a, b, sizeof(DdFx32S4));
+    int task = dd_task_create(dd_fx32_s4_update, a, b, sizeof(DdFx32S4));
     DdFx32S4 *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -1011,14 +1011,14 @@ int dd_fx32_s4_update(int phase, DdFx32S4 *d)
     int i;
     int j;
 
-    func_08827738();
+    dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
-    in = func_08827A2C(d->t, 8, 1);
-    out = func_088279A4(d->t - (d->end - 16), 16);
-    func_08827258(&bill);
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    in = dd_ease_sin(d->t, 8, 1);
+    out = dd_ease_lin(d->t - (d->end - 16), 16);
+    dd_mtx_billboard_cam(&bill);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
 
     /* the tube */
     if (phase == 1) {
@@ -1047,10 +1047,10 @@ int dd_fx32_s4_update(int phase, DdFx32S4 *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
         list = dd_fx32_depth(list, s->id);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-        list = func_08826A64(list, 12);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_pack(list, 12);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -1115,9 +1115,9 @@ int dd_fx32_s4_update(int phase, DdFx32S4 *d)
             d->spin_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_08826A64(list, 5);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_tex_pack(list, 5);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
@@ -1125,13 +1125,13 @@ int dd_fx32_s4_update(int phase, DdFx32S4 *d)
         sp = &d->spin[i];
         if (!(sp->flags & 1))
             continue;
-        func_088279A4(sp->t, 24);
-        list = dl_ambient_light(list, (unsigned int)((1.0f - out) * func_08827AD4(sp->t, 24, 1) * 255.0f) << 24
+        dd_ease_lin(sp->t, 24);
+        list = dl_ambient_light(list, (unsigned int)((1.0f - out) * dd_ease_cos(sp->t, 24, 1) * 255.0f) << 24
                                           | 0xFFFFFF);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
         list = dl_color(list, 0xFF1860FF);
         list = dd_fx32_s4_spin_draw(list, 0, 4, sp, d, &bill);
-        list = func_088269D8(list, 1, 2, 6, 10, 0, -1);
+        list = dd_blend_enable(list, 1, 2, 6, 10, 0, -1);
         list = dl_color(list, 0xFFFFFFFF);
         list = dd_fx32_s4_spin_draw(list, 4, 8, sp, d, &bill);
         if (sp->t < 23)
@@ -1168,10 +1168,10 @@ int dd_fx32_s4_update(int phase, DdFx32S4 *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 4, 0, 1, 1);
-        list = func_0882698C(list, 0, 0);
-        list = func_088269D8(list, 1, 0, 2, 3, 0, -1);
-        list = func_08826B6C(list);
+        list = dd_tex_enable(list, 1, 1, 1, 4, 0, 1, 1);
+        list = dd_depth_enable(list, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 2, 3, 0, -1);
+        list = dd_tex_fb(list);
         for (i = 1; i < 8; i++) {
             for (j = 1; j < 8; j++) {
                 ang = d->sign[i][j] * (d->phase[i][j] + d->frame * 0.043633234f);
@@ -1180,12 +1180,12 @@ int dd_fx32_s4_update(int phase, DdFx32S4 *d)
             }
         }
         memcpy(d->grid_buf[buf], d->grid, sizeof(d->grid));
-        list = dl_color(list, (unsigned int)(in * 226.0f * func_08827A00(d->t, 8, d->end)) << 24 | 0x818);
+        list = dl_color(list, (unsigned int)(in * 226.0f * dd_ease_lin_out(d->t, 8, d->end)) << 24 | 0x818);
         for (i = 0; i < 8; i++)
             list = draw_array(list, 4, 0x800902, 18, d->grid_idx[i], d->grid_buf[buf]);
         dl_set_list(list);
     }
-    func_08827668();
+    dd_mtx_pop_all();
     d->frame++;
     if (run == 1) {
         if (d->grow < d->grow_end)
@@ -1203,11 +1203,11 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d);
 
 int dd_fx32_s5_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_fx32_s5_update, a, b, sizeof(DdFx32S5));
+    int task = dd_task_create(dd_fx32_s5_update, a, b, sizeof(DdFx32S5));
     DdFx32S5 *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -1238,14 +1238,14 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
     int i;
     int j;
 
-    func_08827738();
+    dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
-    in = func_08827A2C(d->t, 8, 1);
-    out = 1.0f - func_088279A4(d->t - (d->end - 8), 8);
-    func_08827258(&bill);
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    in = dd_ease_sin(d->t, 8, 1);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_mtx_billboard_cam(&bill);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
 
     /* the tube */
     if (phase == 1) {
@@ -1274,10 +1274,10 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
         list = dd_fx32_depth(list, s->id);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-        list = func_08826A64(list, 9);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_pack(list, 9);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -1342,9 +1342,9 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
             d->spin_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_08826A64(list, 20);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_tex_pack(list, 20);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
@@ -1352,9 +1352,9 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
         sp = &d->spin[i];
         if (!(sp->flags & 1))
             continue;
-        func_088279A4(sp->t, 24);
-        list = dl_ambient_light(list, (unsigned int)(out * func_08827AD4(sp->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
+        dd_ease_lin(sp->t, 24);
+        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(sp->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
         list = dl_color(list, 0x80FFFFFF);
         for (j = 0; j < 4; j++) {
             mtx_push();
@@ -1400,10 +1400,10 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 0, 0);
-        list = func_088269D8(list, 1, 0, 2, 3, 0, -1);
-        list = func_08826B6C(list);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 2, 3, 0, -1);
+        list = dd_tex_fb(list);
         for (i = 1; i < 15; i++) {
             for (j = 1; j < 15; j++) {
                 ang = d->sign[i][j] * (d->phase[i][j] + d->frame * 0.34906587f);
@@ -1417,7 +1417,7 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
             list = draw_array(list, 4, 0x800902, 32, d->grid_idx[i], d->grid_buf[buf]);
         dl_set_list(list);
     }
-    func_08827668();
+    dd_mtx_pop_all();
     d->frame++;
     if (run == 1) {
         if (d->grow < d->grow_end)
@@ -1435,11 +1435,11 @@ int dd_fx32_s6_update(int phase, DdFx32S6 *d);
 
 int dd_fx32_s6_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_fx32_s6_update, a, b, sizeof(DdFx32S6));
+    int task = dd_task_create(dd_fx32_s6_update, a, b, sizeof(DdFx32S6));
     DdFx32S6 *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -1463,13 +1463,13 @@ int dd_fx32_s6_update(int phase, DdFx32S6 *d)
     int i;
     int j;
 
-    func_08827738();
+    dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
-    func_08827A2C(d->t, 8, 1);
-    out = 1.0f - func_088279A4(d->t - (d->end - 8), 8);
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    dd_ease_sin(d->t, 8, 1);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
     if (phase == 1) {
         for (i = 0; i < 49; i++) {
             v = d->beam_v[i];
@@ -1516,10 +1516,10 @@ int dd_fx32_s6_update(int phase, DdFx32S6 *d)
             d->beam_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
     list = dd_fx32_depth(list, s->id);
-    list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-    list = func_08826A64(list, 21);
+    list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+    list = dd_tex_pack(list, 21);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
@@ -1527,14 +1527,14 @@ int dd_fx32_s6_update(int phase, DdFx32S6 *d)
         b = &d->beam[i];
         if (!(b->flags & 1))
             continue;
-        e = func_08827A2C(b->t, 8, 1);
-        list = dl_ambient_light(list, (unsigned int)(out * func_08827AD4(b->t, 8, 1) * 255.0f) << 24 | 0xFFFFFF);
+        e = dd_ease_sin(b->t, 8, 1);
+        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(b->t, 8, 1) * 255.0f) << 24 | 0xFFFFFF);
         for (j = 0; j < 8; j++) {
             list = dl_tex_offset(0.0f, DD_RAND(r) / 32767.0f, list);
             mtx_push();
             mtx_translate(&b->pos[j]);
             mtx_rotate_z(b->ang[j]);
-            func_088272BC(b->width[j] * e, 0.0f, 1.0f);
+            dd_scale3(b->width[j] * e, 0.0f, 1.0f);
             list = draw_array(list, 4, 0x99F, 98, d->idx_a, d->beam_v);
             list = draw_array(list, 4, 0x99F, 98, d->idx_b, d->beam_v);
             mtx_pop();
@@ -1547,7 +1547,7 @@ int dd_fx32_s6_update(int phase, DdFx32S6 *d)
     mtx_pop();
     dl_set_list(list);
     dd_fx32_mask_end(s->id);
-    func_08827668();
+    dd_mtx_pop_all();
     if (run == 1) {
         if (d->grow < d->grow_end)
             d->grow++;
@@ -1564,11 +1564,11 @@ int dd_fx32_s7_update(int phase, DdFx32S7 *d);
 
 int dd_fx32_s7_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_fx32_s7_update, a, b, sizeof(DdFx32S7));
+    int task = dd_task_create(dd_fx32_s7_update, a, b, sizeof(DdFx32S7));
     DdFx32S7 *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -1590,13 +1590,13 @@ int dd_fx32_s7_update(int phase, DdFx32S7 *d)
     int i;
     int j;
 
-    func_08827738();
+    dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
-    func_08827A2C(d->t, 8, 1);
-    out = func_088279A4(d->t - (d->end - 8), 8);
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    dd_ease_sin(d->t, 8, 1);
+    out = dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
     if (phase == 1) {
         for (i = 0; i < 8; i++) {
             for (j = 0; j < 7; j++) {
@@ -1635,10 +1635,10 @@ int dd_fx32_s7_update(int phase, DdFx32S7 *d)
             d->blade_next = 0;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
     list = dd_fx32_depth(list, s->id);
-    list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-    list = func_08826A64(list, 14);
+    list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+    list = dd_tex_pack(list, 14);
     list = dl_color(list, 0xFFC864FF);
     mtx_set_mode(2);
     mtx_push();
@@ -1647,7 +1647,7 @@ int dd_fx32_s7_update(int phase, DdFx32S7 *d)
         bl = &d->blade[i];
         if (!(bl->flags & 1))
             continue;
-        list = dl_ambient_light(list, (unsigned int)((1.0f - out) * func_08827AD4(bl->t, 32, 1) * 255.0f) << 24
+        list = dl_ambient_light(list, (unsigned int)((1.0f - out) * dd_ease_cos(bl->t, 32, 1) * 255.0f) << 24
                                           | 0xFFFFFF);
         for (j = 0; j < 12; j++) {
             mtx_push();
@@ -1665,7 +1665,7 @@ int dd_fx32_s7_update(int phase, DdFx32S7 *d)
     mtx_pop();
     dl_set_list(list);
     dd_fx32_mask_end(s->id);
-    func_08827668();
+    dd_mtx_pop_all();
     if (run == 1) {
         if (d->grow < d->grow_end)
             d->grow++;
@@ -1682,11 +1682,11 @@ int dd_fx32_s8_update(int phase, DdFx32S8 *d);
 
 int dd_fx32_s8_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_fx32_s8_update, a, b, sizeof(DdFx32S8));
+    int task = dd_task_create(dd_fx32_s8_update, a, b, sizeof(DdFx32S8));
     DdFx32S8 *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -1708,13 +1708,13 @@ int dd_fx32_s8_update(int phase, DdFx32S8 *d)
     int i;
     int j;
 
-    func_08827738();
+    dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
-    in = func_08827A2C(d->t, 8, 1);
-    out = func_088279A4(d->t - (d->end - 8), 8);
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    in = dd_ease_sin(d->t, 8, 1);
+    out = dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
     if (phase == 1) {
         vec3_set(&d->center, 0.0f, 120.0f, 160.0f);
         for (i = 0; i < 49; i++) {
@@ -1741,10 +1741,10 @@ int dd_fx32_s8_update(int phase, DdFx32S8 *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
         list = dd_fx32_depth(list, s->id);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-        list = func_08826A64(list, 12);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+        list = dd_tex_pack(list, 12);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -1759,7 +1759,7 @@ int dd_fx32_s8_update(int phase, DdFx32S8 *d)
         dl_set_list(list);
     }
     dd_fx32_mask_end(s->id);
-    func_08827668();
+    dd_mtx_pop_all();
     if (run == 1) {
         if (d->grow < d->grow_end)
             d->grow++;

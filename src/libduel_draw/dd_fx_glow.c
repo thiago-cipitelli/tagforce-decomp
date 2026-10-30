@@ -26,18 +26,18 @@ FxVec4 *vec4_set(FxVec4 *out, float x, float y, float z, float w);
 FxVec3 *vec3_lerp(FxVec3 *out, FxVec3 *a, FxVec3 *b, float t);
 float sinf(float x);
 
-float func_088279A4(int t, int len);
-void func_08827738(void);
-void func_08827668(void);
-void func_08827258(FxMat4 *out);
-void func_08827ED4(int bone, FxVec3 *out);
-int func_08827F68(int se, int t, int at, unsigned int *flags, unsigned int bit);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+float dd_ease_lin(int t, int len);
+void dd_mtx_push_saved(void);
+void dd_mtx_pop_all(void);
+void dd_mtx_billboard_cam(FxMat4 *out);
+void dd_slot_pos(int bone, FxVec3 *out);
+int dd_cue_se(int se, int t, int at, unsigned int *flags, unsigned int bit);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 FxMat4 *dd_chara_view(void);
 FxMat4 *dd_chara_proj(void);
 void dd_chara_set_08813FB4(int arg);
@@ -88,10 +88,10 @@ int dd_fx_glow_update(int phase, DdFxGlow *w);
 
 int dd_fx_hit_se_start(DdFxArg *arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_hit_se_update, a, b, sizeof(DdFxHitSe));
+    int task = dd_task_create(dd_fx_hit_se_update, a, b, sizeof(DdFxHitSe));
 
     if (task != -1)
-        ((DdFxHitSe *)func_08826440(task))->arg = arg;
+        ((DdFxHitSe *)dd_task_mem(task))->arg = arg;
     return task;
 }
 
@@ -111,7 +111,7 @@ int dd_fx_hit_se_update(int phase, DdFxHitSe *w)
             break;
         }
     }
-    func_08827F68(w->se, w->wait, w->delay, &w->se_done, 1);
+    dd_cue_se(w->se, w->wait, w->delay, &w->se_done, 1);
     if (w->wait == w->hit && w->hit_done == 0) {
         w->hit_done = 1;
         dd_chara_set_08813FB4(0);
@@ -162,10 +162,10 @@ void dd_fx_glow_times(int id, int who, int f, int *delay, int *len, int *fade_in
 
 int dd_fx_glow_start(DdFxArg *arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_glow_update, a, b, sizeof(DdFxGlow));
+    int task = dd_task_create(dd_fx_glow_update, a, b, sizeof(DdFxGlow));
 
     if (task != -1)
-        ((DdFxGlow *)func_08826440(task))->arg = arg;
+        ((DdFxGlow *)dd_task_mem(task))->arg = arg;
     return task;
 }
 
@@ -226,18 +226,18 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
     int j;
     int k;
 
-    func_08827738();
+    dd_mtx_push_saved();
     if (phase == 1)
         dd_fx_glow_times(((int *)arg)[2], ((int *)arg)[3], arg->id, &w->delay, &w->len, &w->fade_in);
     if (w->fade_in == 1)
-        in = func_088279A4(w->t, 8);
+        in = dd_ease_lin(w->t, 8);
     else
         in = 1.0f;
     if (w->len < 0)
         out = 1.0f;
     else
-        out = 1.0f - func_088279A4(w->t - (w->len - 16), 16);
-    func_08827258(&cam);
+        out = 1.0f - dd_ease_lin(w->t - (w->len - 16), 16);
+    dd_mtx_billboard_cam(&cam);
     mat4_copy(&proj, dd_chara_proj());
     mat4_copy(&view, dd_chara_view());
     mat4_mul(&vp, &view, &proj);
@@ -270,10 +270,10 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
         a150 = in * 150.0f * out;
         a255 = in * 255.0f * out;
         rot = (float)w->frame * 0.08726647f;
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 1, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-        list = func_08826A64(list, 15);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 1, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+        list = dd_tex_pack(list, 15);
         list = dl_ambient_light(list, 0xFFFFFFFF);
         mtx_set_mode(2);
         mtx_push();
@@ -284,7 +284,7 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
 
             for (i = 0; i < 4; i++)
                 for (j = 0; j < 3; j++)
-                    func_08827ED4(limb_bones[i][j], &limb[i][j]);
+                    dd_slot_pos(limb_bones[i][j], &limb[i][j]);
             for (i = 0; i < 4; i++) {
                 for (j = 0; j < 2; j++) {
                     if (i < 2)
@@ -305,7 +305,7 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
             FxVec3 spine[4];
 
             for (i = 0; i < 4; i++)
-                func_08827ED4(spine_bones[i], &spine[i]);
+                dd_slot_pos(spine_bones[i], &spine[i]);
             vec3_lerp(&spine[0], &spine[0], &spine[1], 0.5f);
             vec3_lerp(&spine[2], &spine[2], &spine[3], 0.5f);
             for (i = 0; i < 8; i++) {
@@ -319,7 +319,7 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
             FxVec3 head[2];
 
             for (i = 0; i < 2; i++)
-                func_08827ED4(head_bones[i], &head[i]);
+                dd_slot_pos(head_bones[i], &head[i]);
             for (i = 0; i < 2; i++)
                 list = dd_fx_glow_sprite(list, &head[i], (float)a255 * (sinf(w->ph_head[i] + rot) * 0.2f + 0.8f),
                                          w->rect[2], &cam, &vp);
@@ -331,7 +331,7 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
 
             for (i = 0; i < 2; i++)
                 for (j = 0; j < 2; j++)
-                    func_08827ED4(arm_bones[i][j], &arm[i][j]);
+                    dd_slot_pos(arm_bones[i][j], &arm[i][j]);
             for (i = 0; i < 2; i++) {
                 for (j = 0; j < 2; j++) {
                     if (i == 0)
@@ -350,17 +350,17 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
             FxVec3 c;
 
             for (i = 0; i < 3; i++)
-                func_08827ED4(core_bones[i], &core[i]);
+                dd_slot_pos(core_bones[i], &core[i]);
             vec3_lerp(&core[1], &core[1], &core[2], 0.5f);
             vec3_lerp(&c, &core[1], &core[0], 1.1f);
-            list = func_088269D8(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
+            list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
             list = dd_fx_glow_sprite(list, &c, (float)a255 * 0.8f * (sinf(w->ph_core + rot) * 0.2f + 0.8f),
                                      w->rect[3], &cam, &vp);
         }
         mtx_pop();
         dl_set_list(list);
     }
-    func_08827668();
+    dd_mtx_pop_all();
     w->frame++;
     if (w->len < 0) {
         if (run == 1) {

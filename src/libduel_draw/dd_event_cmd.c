@@ -104,8 +104,8 @@ int func_08824544();
 int func_08824CC8();
 int func_08824F3C();
 int func_088259D8();
-int func_08825DDC();
-int func_0882B724();
+int dd_wait_dots_open();
+int dd_dice_open();
 int dd_chara_set_anim_range();
 int dd_mark_show();
 int dd_mark_hide();
@@ -874,7 +874,7 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
         func_08824CC8(msg);
         break;
     case 9:
-        func_0882B724(msg, arg & 0xFFFF, arg >> 16);
+        dd_dice_open(msg, arg & 0xFFFF, arg >> 16);
         break;
     case 10:
         hi = arg >> 16;
@@ -887,7 +887,7 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
         func_08823674(msg);
         break;
     case 13:
-        func_08825DDC(msg);
+        dd_wait_dots_open(msg);
         break;
     }
 done:

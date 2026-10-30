@@ -16,20 +16,20 @@ void mtx_identity(void);
 void mtx_translate(FxVec3 *v);
 void mtx_mult(FxMat4 *m);
 
-float func_088279D8(int t, int len);
-float func_08827A00(int t, int len, int end);
-float func_08827A2C(int t, int len, int n);
-float func_08827B94(int t, int len, int end, int n);
-void func_088277BC(void);
-void func_08827668(void);
-void func_08827258(FxMat4 *out);
-void func_08827ED4(int bone, FxVec3 *out);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+float dd_ease_lin_inv(int t, int len);
+float dd_ease_lin_out(int t, int len, int end);
+float dd_ease_sin(int t, int len, int n);
+float dd_ease_cos_out(int t, int len, int end, int n);
+void dd_mtx_push_cam(void);
+void dd_mtx_pop_all(void);
+void dd_mtx_billboard_cam(FxMat4 *out);
+void dd_slot_pos(int bone, FxVec3 *out);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 
 typedef struct FxVtx2D {               /* GU_TRANSFORM_2D | GU_COLOR_8888 | GU_VERTEX_16BIT */
     unsigned int color;
@@ -53,10 +53,10 @@ int dd_fx_eyes_update(int phase, DdFxEyes *w);
 
 int dd_fx_eyes_start(DdFxArg *arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_eyes_update, a, b, sizeof(DdFxEyes));
+    int task = dd_task_create(dd_fx_eyes_update, a, b, sizeof(DdFxEyes));
 
     if (task != -1)
-        ((DdFxEyes *)func_08826440(task))->arg = arg;
+        ((DdFxEyes *)dd_task_mem(task))->arg = arg;
     return task;
 }
 
@@ -78,13 +78,13 @@ int dd_fx_eyes_update(int phase, DdFxEyes *w)
     int j;
     float S;
 
-    func_088277BC();
+    dd_mtx_push_cam();
     for (i = 0, side = -1; i < 2; i++, side += 2) {
-        func_08827ED4(bones.bone[i], &eye[i]);
+        dd_slot_pos(bones.bone[i], &eye[i]);
         eye[i].x += (float)side * -1.0f;
         eye[i].y += -0.2f;
     }
-    func_08827258(&cam);
+    dd_mtx_billboard_cam(&cam);
     if (phase == 1) {
         w->screen[0][0].color = 0; w->screen[0][0].x = 0; w->screen[0][0].y = 0; w->screen[0][0].z = 0;
         w->screen[0][1].color = 0; w->screen[0][1].x = 0; w->screen[0][1].y = 272; w->screen[0][1].z = 0;
@@ -93,11 +93,11 @@ int dd_fx_eyes_update(int phase, DdFxEyes *w)
         memcpy(w->screen[1], w->screen[0], sizeof(w->screen[0]));
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 0, 1, 1, 0, 0, 1, 1);
-    list = func_0882698C(list, 0, 1);
-    list = func_088269D8(list, 1, 2, 2, 10, 0, 0xFFFFFFFF);
-    ia = func_08827A00(w->t, 40, 60) * 255.0f;
-    ib = func_088279D8(w->t, 40) * 255.0f;
+    list = dd_tex_enable(list, 0, 1, 1, 0, 0, 1, 1);
+    list = dd_depth_enable(list, 0, 1);
+    list = dd_blend_enable(list, 1, 2, 2, 10, 0, 0xFFFFFFFF);
+    ia = dd_ease_lin_out(w->t, 40, 60) * 255.0f;
+    ib = dd_ease_lin_inv(w->t, 40) * 255.0f;
     c = ia << 24 | 0xFFFFFF;
     w->screen[buf][0].color = c;
     w->screen[buf][1].color = c;
@@ -120,15 +120,15 @@ int dd_fx_eyes_update(int phase, DdFxEyes *w)
         w->flare[5] = w->flare[1];
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 0, 1);
-    list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 3);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 0, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 3);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    a = func_08827A2C(w->t, 20, 1) * 255.0f;
-    list = dl_ambient_light(list, (unsigned int)(a * func_08827B94(w->t, 40, 60, 1)) << 24 | 0xFFFFFF);
+    a = dd_ease_sin(w->t, 20, 1) * 255.0f;
+    list = dl_ambient_light(list, (unsigned int)(a * dd_ease_cos_out(w->t, 40, 60, 1)) << 24 | 0xFFFFFF);
     for (j = 0; j < 2; j++) {
         mtx_push();
         mtx_translate(&eye[j]);
@@ -138,7 +138,7 @@ int dd_fx_eyes_update(int phase, DdFxEyes *w)
     }
     mtx_pop();
     dl_set_list(list);
-    func_08827668();
+    dd_mtx_pop_all();
     w->frame++;
     if (run == 1)
         w->t++;

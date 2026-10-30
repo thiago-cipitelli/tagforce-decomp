@@ -14,17 +14,17 @@ void mtx_push(void);
 void mtx_pop(void);
 void mtx_load(FxMat4 *m);
 
-void func_088277BC(void);
-void func_08827668(void);
-void func_08827944(float a, FxMat4 *out, FxMat4 *m);
-float func_088279A4(int t, int len);
-float func_08827A00(int t, int len, int end);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+void dd_mtx_push_cam(void);
+void dd_mtx_pop_all(void);
+void dd_mat4_rot_x(float a, FxMat4 *out, FxMat4 *m);
+float dd_ease_lin(int t, int len);
+float dd_ease_lin_out(int t, int len, int end);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 void dd_chara_bone_mtx(void *out, int bone);
 
 typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
@@ -78,10 +78,10 @@ void dd_fx_nsea_times(int id, int *delay, int *len)
 
 int dd_fx_nsea_start(DdFxArg *arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_nsea_update, a, b, sizeof(DdFxNsea));
+    int task = dd_task_create(dd_fx_nsea_update, a, b, sizeof(DdFxNsea));
 
     if (task != -1)
-        ((DdFxNsea *)func_08826440(task))->h.arg = arg;
+        ((DdFxNsea *)dd_task_mem(task))->h.arg = arg;
     return task;
 }
 
@@ -100,11 +100,11 @@ int dd_fx_nsea_update(int phase, DdFxNsea *w)
 
     W = 31.0f;
     H = 44.0f;
-    func_088277BC();
+    dd_mtx_push_cam();
     if (phase == 1)
         dd_fx_nsea_times(arg->id, &w->h.delay, &w->h.len);
     dd_chara_bone_mtx(&w->mtx, 39);
-    func_08827944(1.5707964f, &w->mtx, &w->mtx);
+    dd_mat4_rot_x(1.5707964f, &w->mtx, &w->mtx);
     switch (arg->id) {
     case 24:
     case 25:
@@ -112,10 +112,10 @@ int dd_fx_nsea_update(int phase, DdFxNsea *w)
         in = 1.0f;
         break;
     default:
-        in = func_088279A4(w->h.t, 8);
+        in = dd_ease_lin(w->h.t, 8);
         break;
     }
-    out = func_08827A00(w->h.t, 16, w->h.len);
+    out = dd_ease_lin_out(w->h.t, 16, w->h.len);
     if (phase == 1) {
         w->quad[0].u = 0.0f; w->quad[0].v = 0.0f; w->quad[0].x = -W; w->quad[0].y = H; w->quad[0].z = 0.0f;
         w->quad[1].u = 0.0f; w->quad[1].v = 0.2f; w->quad[1].x = -W; w->quad[1].y = -H; w->quad[1].z = 0.0f;
@@ -134,17 +134,17 @@ int dd_fx_nsea_update(int phase, DdFxNsea *w)
     }
     if (w->h.wait == w->h.delay) {
         list = dl_select_layer(7, 0);
-        list = func_0882698C(list, 0, 0);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-        list = func_08826A64(list, 9);
+        list = dd_depth_enable(list, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
+        list = dd_tex_pack(list, 9);
         list = dl_color(list, 0x8080C4FF);
         mtx_set_mode(2);
         mtx_push();
         mtx_load(&w->mtx);
         list = dl_ambient_light(list, (unsigned int)(255.0f * in * out) << 24 | 0xFFFFFF);
-        list = func_088266D8(list, 0, 1, 1, 0, 0, 0, 0);
+        list = dd_tex_enable(list, 0, 1, 1, 0, 0, 0, 0);
         list = draw_array(list, 4, 0x19C, 10, 0, w->frame);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
         tv = RAND15() / 32767.0f;
         tu = RAND15() / 32767.0f;
         list = dl_tex_offset(tu, tv, list);
@@ -153,7 +153,7 @@ int dd_fx_nsea_update(int phase, DdFxNsea *w)
         mtx_pop();
         dl_set_list(list);
     }
-    func_08827668();
+    dd_mtx_pop_all();
     w->h.frame++;
     if (run == 1) {
         if (w->h.wait < w->h.delay)

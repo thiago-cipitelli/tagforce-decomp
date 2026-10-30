@@ -15,7 +15,7 @@ ScePspFVector3 dd_ring_up = { 0.0f, 1.0f, 0.0f };
 /* the full ring is done when its flash has held for 30 frames, the others at their end time */
 int dd_ring_done(int task)
 {
-    DdRingFx *d = func_08826440(task);
+    DdRingFx *d = dd_task_mem(task);
 
     if (d == 0)
         return 1;
@@ -26,11 +26,11 @@ int dd_ring_done(int task)
 
 int dd_ring_start(int count, int a, int b)
 {
-    int task = func_0882623C(dd_ring_update, a, b, sizeof(DdRingFx));
+    int task = dd_task_create(dd_ring_update, a, b, sizeof(DdRingFx));
     DdRingFx *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->count = count;
         switch (count) {
         case 20:
@@ -48,7 +48,7 @@ int dd_ring_start(int count, int a, int b)
 #ifdef NON_MATCHING /* função de 2,9 KB: quadro 16 bytes menor, testes de bit materializados e registradores diferem */
 int dd_ring_update(int phase, DdRingFx *d)
 {
-    int step = func_08828290();
+    int step = dd_anim_step();
     ScePspFVector3 eye = dd_ring_eye;
     ScePspFVector3 at = { 0 };
     ScePspFVector3 up = dd_ring_up;
@@ -72,13 +72,13 @@ int dd_ring_update(int phase, DdRingFx *d)
     int j;
     int k;
 
-    func_08826EE4(0.69813174f, 1.7647059f, 1.0f, 10000.0f, 6, 314, 132, &eye, &at, &up);
+    dd_cam_begin(0.69813174f, 1.7647059f, 1.0f, 10000.0f, 6, 314, 132, &eye, &at, &up);
     if (d->t < 420)
-        in = func_088279A4(d->t, 16);
+        in = dd_ease_lin(d->t, 16);
     else
         in = 0.0f;
-    out = func_088279D8(d->out, 16);
-    func_08827214(&bill);
+    out = dd_ease_lin_inv(d->out, 16);
+    dd_mtx_billboard_view(&bill);
     if (d->count == 20) {
         if (!(d->flags & 1) && d->t >= 360) {
             func_0880773C(0x169C);
@@ -90,9 +90,9 @@ int dd_ring_update(int phase, DdRingFx *d)
 
     /* dim the field */
     list = dl_select_layer(2, 0);
-    list = func_088266D8(list, 0, 1, 1, 0, 0, 1, 1);
-    list = func_0882698C(list, 0, 1);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, -1);
+    list = dd_tex_enable(list, 0, 1, 1, 0, 0, 1, 1);
+    list = dd_depth_enable(list, 0, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, -1);
     list = dl_color(list, (unsigned int)(128.0f * in * out) << 24);
     list = draw_set_offsets(list, 0, 0, 480, 272);
     list = draw_sprite(list, 0, 0, 0, 0, 0, 0, 0);
@@ -141,10 +141,10 @@ int dd_ring_update(int phase, DdRingFx *d)
     }
 
     list = dl_select_layer(6, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 0, 1);
-    list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-    list = func_08826A64(list, 5);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 0, 1);
+    list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+    list = dd_tex_pack(list, 5);
     list = dl_color(list, 0xFF3050FF);
     mtx_set_mode(2);
     mtx_push();
@@ -153,7 +153,7 @@ int dd_ring_update(int phase, DdRingFx *d)
         f = &d->flame[i];
         if (!(f->flags & 1))
             continue;
-        a = out * func_088279A4(f->t, 16);
+        a = out * dd_ease_lin(f->t, 16);
         sc = 1.0f;
         if (d->flags & 2)
             sc = 1.5f;
@@ -180,8 +180,8 @@ int dd_ring_update(int phase, DdRingFx *d)
         for (k = 0, p = f->p; k < 32; k++, p++) {
             if (!(p->flags & 1))
                 continue;
-            list = dl_ambient_light(list, (unsigned int)(a * 255.0f * func_088279A4(p->t, 4) *
-                                                         func_08827AD4(p->t - 16, 16, 1)) << 24 | 0xFFFFFF);
+            list = dl_ambient_light(list, (unsigned int)(a * 255.0f * dd_ease_lin(p->t, 4) *
+                                                         dd_ease_cos(p->t - 16, 16, 1)) << 24 | 0xFFFFFF);
             vec3_set(&pos, p->pos.x, p->pos.y + p->vy * p->t, p->pos.z);
             vec3_scale(&pos, &pos, sc);
             vec3_add(&pos, &pos, &f->pos);
@@ -203,10 +203,10 @@ int dd_ring_update(int phase, DdRingFx *d)
     /* white flash of the full ring */
     if (d->flags & 2) {
         list = dl_select_layer(6, 0);
-        a = func_08827AD4(d->flash, 30, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088266D8(list, 0, 1, 1, 0, 0, 1, 1);
-        list = func_088269D8(list, 1, 0, 2, 3, 0, -1);
+        a = dd_ease_cos(d->flash, 30, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_tex_enable(list, 0, 1, 1, 0, 0, 1, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 3, 0, -1);
         list = dl_color(list, (unsigned int)(a * 200.0f) << 24 | 0xFFFFFF);
         list = draw_set_offsets(list, 0, 0, 480, 272);
         list = draw_sprite(list, 0, 0, 0, 0, 0, 0, 0);
@@ -220,7 +220,7 @@ int dd_ring_update(int phase, DdRingFx *d)
                 d->flash_end = 30;
         }
     }
-    func_08826FEC(6);
+    dd_cam_end(6);
     if (d->end < 0)
         d->t += step;
     else if (d->t < d->end)

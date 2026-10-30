@@ -23,7 +23,7 @@ typedef void (*code)();
 
 int func_0880CE48();
 int func_08820E34();
-int func_08831788();
+int dd_fx_ringglow_done();
 int dd_ring_done();
 extern int D_08C582B0;
 extern int D_08C582B4;
@@ -80,7 +80,7 @@ void func_08820138(int param_1,int param_2)
   *puVar2 = uVar1;
   puVar2[1] = param_1;
   puVar2[2] = param_2;
-  func_088344E0(local_18 + param_1 * 3,param_2,uVar5,uVar4,uVar3,0xff,local_30 + param_1 * 3,
+  dd_fx_lpjump_start_move(local_18 + param_1 * 3,param_2,uVar5,uVar4,uVar3,0xff,local_30 + param_1 * 3,
                dd_task_free_pair,puVar2);
   return;
 }
@@ -132,7 +132,7 @@ void func_08820344(int param_1)
     func_0880CE48(param_1,0);
     *puVar2 = uVar4;
     puVar2[1] = param_1;
-    func_08835364(param_1 == 0,uVar3,func_088202A0,puVar2);
+    dd_fx_coinfly_start(param_1 == 0,uVar3,func_088202A0,puVar2);
     func_08820E34(1);
   }
   else {
@@ -170,7 +170,7 @@ void func_08820430(undefined4 param_1,undefined4 param_2,undefined4 param_3,uint
   local_8 = (param_4 & 2) != 0 ^ 1;
   local_4 = (param_4 & 4) != 0 ^ 1;
   uVar3 = dd_flag_task(0x37);
-  func_08834AFC(param_2,&local_c,&dd_flag_task_done,uVar3);
+  dd_fx_coin_start(param_2,&local_c,&dd_flag_task_done,uVar3);
   return;
 }
 #endif
@@ -195,7 +195,7 @@ void func_088204BC(int param_1,undefined4 param_2)
   }
   local_8[0] = param_2;
   uVar3 = dd_flag_task(0x38);
-  func_08834F70(1,local_8,param_1 == 0,&dd_flag_task_done,uVar3);
+  dd_fx_die_start(1,local_8,param_1 == 0,&dd_flag_task_done,uVar3);
   return;
 }
 #endif
@@ -266,7 +266,7 @@ void func_08820678(undefined4 param_1,undefined4 param_2,undefined4 param_3)
 {
   undefined4 uVar1;
   uVar1 = dd_flag_task(0x35);
-  func_088357B0(param_3,param_2,param_1,&dd_flag_task_done,uVar1);
+  dd_fx_fusion_start(param_3,param_2,param_1,&dd_flag_task_done,uVar1);
   return;
 }
 #endif
@@ -323,7 +323,7 @@ void func_088207A8(void)
 
 void func_08820808(void *t, int h)
 {
-    if (func_08831788(h) != 0)
+    if (dd_fx_ringglow_done(h) != 0)
         dd_task_remove_cur();
     req_flag_set(0x39);
 }
@@ -335,7 +335,7 @@ void func_08820840(int param_1,undefined4 param_2)
   float fVar1;
   fVar1 = (float)func_08807034();
   if (1.0 / fVar1 <= *(float *)(param_1 + 0x14)) {
-    func_088264D4(param_2);
+    dd_task_pause(param_2);
     *(code **)(param_1 + 0xc) = func_08820808;
   }
   req_flag_set(0x39);
@@ -359,7 +359,7 @@ void func_088208B0(void)
   local_28 = 0x13a;
   local_24 = 0x84;
   local_20 = 0;
-  uVar1 = func_088317BC(&local_28,0,0);
+  uVar1 = dd_fx_ringglow_start(&local_28,0,0);
   memset(auStack_1c,0,0x1c);
   local_10 = func_08820840;
   local_14 = 0;
@@ -538,11 +538,11 @@ undefined4 func_08820D40(int param_1)
       iVar1 = *(int *)(param_1 + 0x90);
     }
     else {
-      func_08832200((float)dd_glow_kind,*(int *)(param_1 + 0x94),param_1 + 0x10,auStack_90);
+      dd_fx_spin_move((float)dd_glow_kind,*(int *)(param_1 + 0x94),param_1 + 0x10,auStack_90);
       iVar1 = *(int *)(param_1 + 0x90);
     }
     if (iVar1 != -1) {
-      func_08832200((float)dd_glow_kind,iVar1,param_1 + 0x10,auStack_90);
+      dd_fx_spin_move((float)dd_glow_kind,iVar1,param_1 + 0x10,auStack_90);
     }
   }
   return 0;

@@ -22,21 +22,21 @@ FxVec3 *vec3_set(FxVec3 *out, float x, float y, float z);
 float sinf(float x);
 float cosf(float x);
 
-float func_088279A4(int t, int len);
-float func_08827A2C(int t, int len, int n);
-float func_08827AD4(int t, int len, int n);
-int func_08827D98(int percent);
-void func_08827840(void);
-void func_08827668(void);
-void func_08827288(FxMat4 *out);
-void func_08827300(float x, float y, float z);
-void func_088272BC(float x, float y, float z);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+float dd_ease_lin(int t, int len);
+float dd_ease_sin(int t, int len, int n);
+float dd_ease_cos(int t, int len, int n);
+int dd_rand_percent(int percent);
+void dd_mtx_push_field(void);
+void dd_mtx_pop_all(void);
+void dd_mtx_billboard_field(FxMat4 *out);
+void dd_translate3(float x, float y, float z);
+void dd_scale3(float x, float y, float z);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 
 typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
     unsigned int lcg;
@@ -91,10 +91,10 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w);
 
 int dd_fx_bolt_start(int arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_bolt_update, a, b, sizeof(DdFxBolt));
+    int task = dd_task_create(dd_fx_bolt_update, a, b, sizeof(DdFxBolt));
 
     if (task != -1)
-        ((DdFxBolt *)func_08826440(task))->arg = arg;
+        ((DdFxBolt *)dd_task_mem(task))->arg = arg;
     return task;
 }
 
@@ -128,8 +128,8 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
     int j;
     int k;
 
-    func_08827840();
-    func_08827288(&cam);
+    dd_mtx_push_field();
+    dd_mtx_billboard_field(&cam);
     if (phase == 1) {
         for (i = 0; i < 17; i++) {
             w->idx[i * 2] = i * 3;
@@ -151,7 +151,7 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
         b = &w->bolt[w->cur];
         b->flags |= 1;
         b->t = 0;
-        if (func_08827D98(10) == 1) {
+        if (dd_rand_percent(10) == 1) {
             b->big = 1;
             b->scale = 1.0f;
             vec3_set(&b->pos, 0.0f, 0.0f, 0.0f);
@@ -195,8 +195,8 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
         b = &w->bolt[j];
         if (!(b->flags & 1))
             continue;
-        s = b->scale * (func_08827A2C(b->t, 32, 1) * 0.2f + 0.8f);
-        c = (unsigned int)(func_08827AD4(b->t - 8, 24, 1) * 255.0f);
+        s = b->scale * (dd_ease_sin(b->t, 32, 1) * 0.2f + 0.8f);
+        c = (unsigned int)(dd_ease_cos(b->t - 8, 24, 1) * 255.0f);
         n = b->t * 5;
         if (b->big == 0)
             c >>= 1;
@@ -206,10 +206,10 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
             n = 17;
         mtx_push();
         mtx_translate(&b->pos);
-        list = func_0882698C(list, 0, 1);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-        list = func_08826A64(list, 27);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+        list = dd_tex_pack(list, 27);
         c = c << 24 | 0xFFFFFF;
         list = dl_ambient_light(list, c);
         for (i = 0; i < n; i++) {
@@ -221,21 +221,21 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
                 b->v[buf][i][1].color = 0xFFFFFFFF;
         }
         mtx_push();
-        func_08827300(0.0f, 3.7f, 0.0f);
-        func_088272BC(s, 1.0f, 0.0f);
+        dd_translate3(0.0f, 3.7f, 0.0f);
+        dd_scale3(s, 1.0f, 0.0f);
         for (k = 0; k < 4; k++) {
             list = dl_tex_offset(b->u[k], 0.0f, list);
             for (i = 0; i < 2; i++)
                 list = draw_array(list, 4, 0x99F, n * 2, w->idx, &b->v[buf][0][i]);
         }
         mtx_pop();
-        list = func_0882698C(list, 0, 1);
-        list = func_088266D8(list, 1, 1, 1, 0, 1, 0, 0);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-        list = func_08826A64(list, 3);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 1, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
+        list = dd_tex_pack(list, 3);
         list = dl_ambient_light(list, c);
         mtx_push();
-        func_08827300(0.0f, 3.7f, 0.0f);
+        dd_translate3(0.0f, 3.7f, 0.0f);
         mtx_mult(&cam);
         list = draw_array(list, 5, 0x19F, 6, 0, w->flash_a);
         list = draw_array(list, 5, 0x19F, 6, 0, w->flash_b);
@@ -243,7 +243,7 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
         if (n == 17) {
             mtx_push();
             mtx_translate(&b->end);
-            func_088272BC(s, s, 0.0f);
+            dd_scale3(s, s, 0.0f);
             mtx_mult(&cam);
             list = draw_array(list, 5, 0x19F, 6, 0, w->end_a);
             list = draw_array(list, 5, 0x19F, 6, 0, w->end_b);
@@ -285,26 +285,26 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
             w->ring_cur = 0;
     }
     list = dl_select_layer(1, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
-    list = func_0882698C(list, 0, 1);
-    list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 27);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
+    list = dd_depth_enable(list, 0, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 27);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    func_08827300(0.0f, 3.7f, 0.0f);
+    dd_translate3(0.0f, 3.7f, 0.0f);
     mtx_rotate_x(-0.13962634f);
     for (i = 0; i < 24; i++) {
         r = &w->ring[i];
         if (r->flags & 1) {
-            s = func_08827A2C(r->t, 24, 1) * 0.1f + 0.9f;
-            list = dl_ambient_light(list, (unsigned int)(func_088279A4(r->t, 4) * 255.0f *
-                                                         func_08827AD4(r->t - 4, 20, 1)) << 24 | 0xFFFFFF);
+            s = dd_ease_sin(r->t, 24, 1) * 0.1f + 0.9f;
+            list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(r->t, 4) * 255.0f *
+                                                         dd_ease_cos(r->t - 4, 20, 1)) << 24 | 0xFFFFFF);
             list = dl_tex_offset(r->u, 0.0f, list);
             mtx_push();
             mtx_translate(&r->pos);
             mtx_rotate_y(r->angle);
-            func_088272BC(s, 0.0f, s);
+            dd_scale3(s, 0.0f, s);
             list = draw_array(list, 5, 0x19F, 6, 0, w->ring_v);
             mtx_pop();
             if (r->t < 23)
@@ -315,7 +315,7 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
     }
     mtx_pop();
     dl_set_list(list);
-    func_08827668();
+    dd_mtx_pop_all();
     w->parity++;
     w->frame++;
     return 2;

@@ -24,18 +24,18 @@ FxVec3 *vec3_add(FxVec3 *out, FxVec3 *a, FxVec3 *b);
 float sinf(float x);
 float cosf(float x);
 
-float func_088279A4(int t, int len);
-float func_088279D8(int t, int len);
-float func_08827A2C(int t, int len, int n);
-void func_08827840(void);
-void func_08827668(void);
-void func_08827288(FxMat4 *out);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+float dd_ease_lin(int t, int len);
+float dd_ease_lin_inv(int t, int len);
+float dd_ease_sin(int t, int len, int n);
+void dd_mtx_push_field(void);
+void dd_mtx_pop_all(void);
+void dd_mtx_billboard_field(FxMat4 *out);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 
 typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
     unsigned int lcg;
@@ -71,13 +71,13 @@ int dd_fx_petal_update(int phase, DdFxPetal *w);
 
 int dd_fx_petal_start(int arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_petal_update, a, b, sizeof(DdFxPetal));
+    int task = dd_task_create(dd_fx_petal_update, a, b, sizeof(DdFxPetal));
     DdFxPetal *w;
 
     if (task != -1) {
         FxVec3 pos = { 0.0f, 7.46299982f, -44.6949997f };
 
-        w = func_08826440(task);
+        w = dd_task_mem(task);
         w->arg = arg;
         w->pos = pos;
     }
@@ -100,8 +100,8 @@ int dd_fx_petal_update(int phase, DdFxPetal *w)
     int n;
     int i;
 
-    func_08827840();
-    func_08827288(&cam);
+    dd_mtx_push_field();
+    dd_mtx_billboard_field(&cam);
     if (phase == 1) {
         for (i = 0; i < 8; i++) {
             f = (float)(i % 4) * 0.25f;
@@ -136,10 +136,10 @@ int dd_fx_petal_update(int phase, DdFxPetal *w)
         }
     }
     list = dl_select_layer(1, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 5);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 5);
     list = dl_color(list, 0xC8FFEBEB);
     list = dl_depth_range_i(list, -5);
     mtx_set_mode(2);
@@ -149,9 +149,9 @@ int dd_fx_petal_update(int phase, DdFxPetal *w)
     for (i = 0; i < 128; i++) {
         p = &w->petal[i];
         if (p->flags & 1) {
-            f = func_088279A4(p->t, 512);
-            r = func_08827A2C(p->t, 16, 1);
-            list = dl_ambient_light(list, (unsigned int)(func_088279D8(p->t - 256, 256) * 255.0f) << 24 | 0xFFFFFF);
+            f = dd_ease_lin(p->t, 512);
+            r = dd_ease_sin(p->t, 16, 1);
+            list = dl_ambient_light(list, (unsigned int)(dd_ease_lin_inv(p->t - 256, 256) * 255.0f) << 24 | 0xFFFFFF);
             vec3_scale(&a, &p->out, r * 2.0f + 1.0f);
             vec3_scale(&b, &p->drift, f);
             vec3_add(&q, &a, &b);
@@ -170,7 +170,7 @@ int dd_fx_petal_update(int phase, DdFxPetal *w)
     mtx_pop();
     list = dl_depth_range_i(list, 0);
     dl_set_list(list);
-    func_08827668();
+    dd_mtx_pop_all();
     w->parity++;
     w->frame++;
     return 2;

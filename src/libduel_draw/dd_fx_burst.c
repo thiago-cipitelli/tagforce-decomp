@@ -18,7 +18,7 @@ int dd_fx78_arg(DdFxOwner *o)
     int sub;
     int r;
 
-    func_08827F54(o, &type, &sub);
+    dd_pair_get(o, &type, &sub);
     switch (type) {
     case 40: case 13: case 14: case 15: case 16: case 17:
         r = 1;
@@ -86,11 +86,11 @@ int dd_burst_update(int phase, DdBurstFx *d);
 
 int dd_burst_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_burst_update, a, b, sizeof(DdBurstFx));
+    int task = dd_task_create(dd_burst_update, a, b, sizeof(DdBurstFx));
     DdBurstFx *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -119,16 +119,16 @@ int dd_burst_update(int phase, DdBurstFx *d)
     int sign;
     int i;
 
-    func_08827738();
+    dd_mtx_push_saved();
     if (phase == 1)
         dd_burst_kind(s->type, s->sub, s->id, &d->grow_end, &d->end);
-    out = 1.0f - func_088279A4(d->t - (d->end - 16), 16);
-    func_08827258(&bill);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 16), 16);
+    dd_mtx_billboard_cam(&bill);
     if (d->grow == d->grow_end && d->placed == 0) {
         d->placed = 1;
-        func_08827F14(0x25, &d->pos);
+        dd_slot_pos2(0x25, &d->pos);
     }
-    func_08827F68(0x6235, d->grow, d->grow_end, &d->se_done, 1);
+    dd_cue_se(0x6235, d->grow, d->grow_end, &d->se_done, 1);
 
     /* the glow */
     if (phase == 1) {
@@ -146,10 +146,10 @@ int dd_burst_update(int phase, DdBurstFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-        list = func_08826A64(list, 3);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+        list = dd_tex_pack(list, 3);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -182,10 +182,10 @@ int dd_burst_update(int phase, DdBurstFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-        list = func_08826A64(list, 14);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_pack(list, 14);
         list = dl_color(list, 0xC8A0DCFF);
         mtx_set_mode(2);
         mtx_push();
@@ -222,16 +222,16 @@ int dd_burst_update(int phase, DdBurstFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 0, 1, 1, 0, 1, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_enable(list, 0, 1, 1, 0, 1, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
         mtx_translate(&d->pos);
         mtx_mult(&bill);
-        sc = func_08827A2C(d->t, d->end, 1) * 0.3f + 0.7f;
-        func_088272BC(sc, sc, 0.0f);
+        sc = dd_ease_sin(d->t, d->end, 1) * 0.3f + 0.7f;
+        dd_scale3(sc, sc, 0.0f);
         list = dl_ambient_light(list, (unsigned int)(out * 255.0f) << 24 | 0xFFFFFF);
         list = draw_array(list, 4, 0x99C, 130, d->idx_a, d->ring);
         list = draw_array(list, 4, 0x99C, 130, d->idx_b, d->ring);
@@ -269,16 +269,16 @@ int dd_burst_update(int phase, DdBurstFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 1, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-        list = func_08826A64(list, 14);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 1, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_pack(list, 14);
         list = dl_color(list, 0xFFA0DCFF);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
         mtx_translate(&d->pos);
-        sc = func_08827A2C(d->t, d->end, 1) * 0.1f + 0.9f;
+        sc = dd_ease_sin(d->t, d->end, 1) * 0.1f + 0.9f;
         list = dl_ambient_light(list, (unsigned int)(out * 255.0f) << 24 | 0xFFFFFF);
         for (i = 0; i < 64; i++) {
             vec3_scale(&pos, &d->mote[i].pos, sc);
@@ -291,7 +291,7 @@ int dd_burst_update(int phase, DdBurstFx *d)
         mtx_pop();
         dl_set_list(list);
     }
-    func_08827668();
+    dd_mtx_pop_all();
     if (run == 1) {
         if (d->grow < d->grow_end)
             d->grow++;
@@ -308,11 +308,11 @@ int dd_burst2_update(int phase, DdBurst2Fx *d);
 
 int dd_burst2_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_burst2_update, a, b, sizeof(DdBurst2Fx));
+    int task = dd_task_create(dd_burst2_update, a, b, sizeof(DdBurst2Fx));
     DdBurst2Fx *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -346,7 +346,7 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
     int sign;
     int i;
 
-    func_08827738();
+    dd_mtx_push_saved();
     if (phase == 1) {
         dd_burst_kind(s->type, s->sub, s->id, &d->grow_end, &d->end);
         d->end += 16;
@@ -356,14 +356,14 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
         if (s->type == 18 && s->sub == 1)
             d->se = 0x6229;
     }
-    in = func_088279A4(d->t, 8);
-    out = 1.0f - func_088279A4(d->t - (d->end - 16), 16);
-    func_08827258(&bill);
+    in = dd_ease_lin(d->t, 8);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 16), 16);
+    dd_mtx_billboard_cam(&bill);
     if (d->grow == d->grow_end && d->placed == 0) {
         d->placed = 1;
-        func_08827F14(0x25, &d->pos);
+        dd_slot_pos2(0x25, &d->pos);
     }
-    func_08827F68(d->se, d->grow, d->grow_end, &d->se_done, 1);
+    dd_cue_se(d->se, d->grow, d->grow_end, &d->se_done, 1);
 
     /* flame tongues: a strip curving over 60 degrees, swirled 16 times */
     if (phase == 1) {
@@ -410,10 +410,10 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 3, 0, -1);
-        list = func_08826A64(list, 12);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 3, 0, -1);
+        list = dd_tex_pack(list, 12);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -465,24 +465,24 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-        list = func_0882698C(list, 1, 1);
-        list = func_08826A64(list, 5);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+        list = dd_depth_enable(list, 1, 1);
+        list = dd_tex_pack(list, 5);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
         mtx_translate(&d->pos);
         mtx_scale3(&d->scale);
-        sc = func_088279A4(d->t, d->end) * 0.8f + 0.2f;
+        sc = dd_ease_lin(d->t, d->end) * 0.8f + 0.2f;
         list = dl_ambient_light(list, (unsigned int)(in * 255.0f * out) << 24 | 0xFFFFFF);
         for (i = 0; i < 32; i++) {
             vec3_scale(&pos, &d->mote[i].pos, sc);
             mtx_push();
             mtx_translate(&pos);
             mtx_mult(&bill);
-            list = func_088269D8(list, 1, 0, 2, 3, 0, -1);
+            list = dd_blend_enable(list, 1, 0, 2, 3, 0, -1);
             list = draw_array(list, 6, 0x19F, 2, 0, d->mote_v[d->mote[i].frame]);
-            list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
+            list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
             list = draw_array(list, 6, 0x19F, 2, 0, d->mote_v2[d->mote[i].frame]);
             mtx_pop();
         }
@@ -508,17 +508,17 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 0, 1, 1, 0, 1, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_enable(list, 0, 1, 1, 0, 1, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
         mtx_translate(&d->pos);
         mtx_scale3(&d->scale);
         mtx_mult(&bill);
-        sc = func_088279A4(d->t, d->end) * 0.7f + 0.3f;
-        func_088272BC(sc, sc, 0.0f);
+        sc = dd_ease_lin(d->t, d->end) * 0.7f + 0.3f;
+        dd_scale3(sc, sc, 0.0f);
         list = dl_ambient_light(list, (unsigned int)(out * 255.0f) << 24 | 0xFFFFFF);
         list = draw_array(list, 4, 0x99C, 130, d->idx_a, d->ring);
         list = draw_array(list, 4, 0x99C, 130, d->idx_b, d->ring);
@@ -542,10 +542,10 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-        list = func_08826A64(list, 3);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+        list = dd_tex_pack(list, 3);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -557,7 +557,7 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
         mtx_pop();
         dl_set_list(list);
     }
-    func_08827668();
+    dd_mtx_pop_all();
     d->frame++;
     if (run == 1) {
         if (d->grow < d->grow_end)

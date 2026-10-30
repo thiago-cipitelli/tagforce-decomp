@@ -14,7 +14,7 @@
 
 /* one running visual effect, the user data of its task (0x08C5AB80[4]) */
 typedef struct DdFxSlot {
-    int task;                          /* +0x00 task handle (func_0882623C), -1 when free */
+    int task;                          /* +0x00 task handle (dd_task_create), -1 when free */
     int param;                         /* +0x04 set by dd_fx_set_param */
     int type;                          /* +0x08 kind of the owner */
     int sub;                           /* +0x0C sub-kind of the owner */
@@ -30,7 +30,7 @@ typedef struct DdFxTable {             /* 0x08C5AB74, 0x80 bytes */
     int pad6c[5];
 } DdFxTable;
 
-/* the object an effect is attached to (a card model on the field; type/sub read by func_08827F54) */
+/* the object an effect is attached to (a card model on the field; type/sub read by dd_pair_get) */
 typedef struct DdFxOwner {
     int type;                          /* +0x00 */
     int sub;                           /* +0x04 */
@@ -45,10 +45,10 @@ typedef struct DdFxOwner {
 extern DdFxTable dd_fx_table;
 
 /* task list of the module (outside this range) */
-int func_0882623C(void *update, int a, int b, int size);   /* task_create: returns a handle or -1 */
-void *func_08826440(int task);                              /* task user data (zeroed, `size` bytes) */
-int func_0882636C(int task);                                /* task_kill */
-void func_08827F54(DdFxOwner *o, int *type, int *sub);      /* owner kind */
+int dd_task_create(void *update, int a, int b, int size);   /* task_create: returns a handle or -1 */
+void *dd_task_mem(int task);                              /* task user data (zeroed, `size` bytes) */
+int dd_task_kill(int task);                                /* task_kill */
+void dd_pair_get(DdFxOwner *o, int *type, int *sub);      /* owner kind */
 
 /* inline rand3 LCG of the BOOT (variable imports, 0 in the relocated ELF) */
 typedef struct DdRandSeed {
@@ -61,15 +61,15 @@ extern DdRandSeed rand3_seeds[];
                     (int)((r)->lcg >> 16 & 0x7FFF))
 
 /* drawing helpers of the module (outside this range) */
-int func_08828290(void);                                    /* frames elapsed since the last update */
-float func_088279A4(int t, int n);                          /* clamp(t, 0, n) / n */
-float func_088279D8(int t, int n);                          /* 1 - func_088279A4 */
-float func_08827A2C(int t, int n, int k);                   /* ease out: sin(x*pi/2) applied k times */
-float func_08827B6C(int t, int n, int k);                   /* 1 - ease in */
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrap_u, int wrap_v);
-void *func_0882698C(void *list, int on, int mask);          /* depth test */
-void *func_088269D8(void *list, int on, int op, int src, int dst, int fix_a, int fix_b); /* blending */
-void *func_08826A64(void *list, int tex);                   /* binds texture `tex` of the duel packs */
+int dd_anim_step(void);                                    /* frames elapsed since the last update */
+float dd_ease_lin(int t, int n);                          /* clamp(t, 0, n) / n */
+float dd_ease_lin_inv(int t, int n);                          /* 1 - dd_ease_lin */
+float dd_ease_sin(int t, int n, int k);                   /* ease out: sin(x*pi/2) applied k times */
+float dd_ease_cos_inv(int t, int n, int k);                   /* 1 - ease in */
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrap_u, int wrap_v);
+void *dd_depth_enable(void *list, int on, int mask);          /* depth test */
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, int fix_a, int fix_b); /* blending */
+void *dd_tex_pack(void *list, int tex);                   /* binds texture `tex` of the duel packs */
 
 /* BOOT */
 void *dl_select_layer(int layer, unsigned int *size);
@@ -160,11 +160,11 @@ typedef struct DdRingFx {
     int flash_end;                     /* +0x4940 0-30 */
 } DdRingFx;
 
-void func_08826EE4(float fov, float aspect, float znear, float zfar, int layer, int cx, int cy,
+void dd_cam_begin(float fov, float aspect, float znear, float zfar, int layer, int cx, int cy,
                    ScePspFVector3 *eye, ScePspFVector3 *at, ScePspFVector3 *up); /* 3D camera begin */
-void func_08826FEC(int layer);                               /* 3D camera end */
-void func_08827214(ScePspFMatrix4 *m);                      /* billboard matrix of the camera */
-float func_08827AD4(int t, int n, int k);                   /* ease in */
+void dd_cam_end(int layer);                               /* 3D camera end */
+void dd_mtx_billboard_view(ScePspFMatrix4 *m);                      /* billboard matrix of the camera */
+float dd_ease_cos(int t, int n, int k);                   /* ease in */
 int func_0880773C(int se);                                  /* plays a sound effect */
 
 /* BOOT */
@@ -215,7 +215,7 @@ typedef struct DdTrailFx {
     int frame;                         /* +0x0010 parity picks the vertex buffer */
     DdFxSlot *slot;                    /* +0x0014 */
     int variant;                       /* +0x0018 1: with sparks and ring (dd_fx13_start_b) */
-    unsigned int se_done;              /* +0x001C bits of func_08827F68 */
+    unsigned int se_done;              /* +0x001C bits of dd_cue_se */
     int se_a;                          /* +0x0020 */
     int se_b;                          /* +0x0024 */
     int se_at;                         /* +0x0028 */
@@ -240,16 +240,16 @@ typedef struct DdTrailFx {
     int pad7f64[3];
 } DdTrailFx;
 
-void func_08827738(void);                                   /* 3D begin (duel camera matrices) */
-void func_08827668(void);                                   /* 3D end */
-void func_08827F14(int node, ScePspFVector3 *out);          /* position of a node of the scene */
-void func_08827ED4(int node, ScePspFVector3 *out);
-void func_08827258(ScePspFMatrix4 *m);                      /* billboard matrix of the duel camera */
-void func_08827408(ScePspFMatrix4 *m);                      /* view x projection */
-int func_08827F68(int se, int t, int at, unsigned int *done, unsigned int bit); /* sound once at `at` */
-void func_08827BA4(float len, ScePspFVector3 *out);         /* random vector of length `len` */
-void func_088272BC(float x, float y, float z);              /* mtx_scale3 of (x, y, z) */
-void *func_08826C80(void *list);                            /* binds a copy of the frame buffer */
+void dd_mtx_push_saved(void);                                   /* 3D begin (duel camera matrices) */
+void dd_mtx_pop_all(void);                                   /* 3D end */
+void dd_slot_pos2(int node, ScePspFVector3 *out);          /* position of a node of the scene */
+void dd_slot_pos(int node, ScePspFVector3 *out);
+void dd_mtx_billboard_cam(ScePspFMatrix4 *m);                      /* billboard matrix of the duel camera */
+void dd_mtx_mvp_cam(ScePspFMatrix4 *m);                      /* view x projection */
+int dd_cue_se(int se, int t, int at, unsigned int *done, unsigned int bit); /* sound once at `at` */
+void dd_rand_dir(float len, ScePspFVector3 *out);         /* random vector of length `len` */
+void dd_scale3(float x, float y, float z);              /* mtx_scale3 of (x, y, z) */
+void *dd_tex_fb_copy(void *list);                            /* binds a copy of the frame buffer */
 
 /* BOOT */
 ScePspFVector4 *vec4_set(ScePspFVector4 *out, float x, float y, float z, float w);
@@ -282,16 +282,16 @@ typedef struct DdTunnelFx {
     DdStreak streak[8];                /* +0x670C */
 } DdTunnelFx;
 
-void func_08826E30(int layer, int cx, int cy);              /* 3D begin with the screen center */
+void dd_cam_default(int layer, int cx, int cy);              /* 3D begin with the screen center */
 
 /* BOOT */
 void *dl_tex_offset(float u, float v, void *list);
 void mtx_rotate_z(float a);
 
 /* effects 32-37 / 52-53, nine styles (tasks of dd_fx32.c) */
-void *func_08826BD8(void *list, int x, int y, int w, int h); /* texture = a w x h tile of the frame buffer */
-void *func_08826B6C(void *list);                            /* texture = the frame buffer */
-float func_08827A00(int t, int n, int end);                 /* fade out over the last n frames of end */
+void *dd_tex_fb_rect(void *list, int x, int y, int w, int h); /* texture = a w x h tile of the frame buffer */
+void *dd_tex_fb(void *list);                            /* texture = the frame buffer */
+float dd_ease_lin_out(int t, int n, int end);                 /* fade out over the last n frames of end */
 float roundf_vfpu(float x);                                 /* BOOT */
 
 typedef struct DdFx32Blades {          /* 0x128: 12 blades flying toward the camera */
@@ -525,8 +525,8 @@ typedef struct DdRippleFx {
 } DdRippleFx;
 
 void dd_chara_bone_mtx(ScePspFMatrix4 *out, int node);            /* matrix of a node of the scene */
-void func_08827598(ScePspFMatrix4 *out, ScePspFMatrix4 *m);   /* rotation part of m */
-void func_08827300(float x, float y, float z);              /* mtx_translate of (x, y, z) */
+void dd_mtx_strip(ScePspFMatrix4 *out, ScePspFMatrix4 *m);   /* rotation part of m */
+void dd_translate3(float x, float y, float z);              /* mtx_translate of (x, y, z) */
 
 /* BOOT */
 ScePspFVector4 *mat4_transform_xyz(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v);
@@ -561,8 +561,8 @@ typedef struct DdHaloFx {
     DdHaloSpark spark[12];             /* +0x350 */
 } DdHaloFx;
 
-void func_0882745C(float fov, float aspect, float znear, float zfar); /* replaces the projection */
-void func_08827548(void);                                   /* restores the projection */
+void dd_proj_set(float fov, float aspect, float znear, float zfar); /* replaces the projection */
+void dd_proj_restore(void);                                   /* restores the projection */
 ScePspFVector4 *dd_chara_pos(void);                        /* camera up vector */
 
 /* BOOT */

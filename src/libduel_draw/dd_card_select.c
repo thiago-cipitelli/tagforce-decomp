@@ -121,8 +121,8 @@ int func_08864F58(void);
 void func_08864B80(void);
 void func_0886A1FC(void);
 void func_08825B9C(MenuWidget *w);
-unsigned int *func_08828DD0(unsigned int *list, int a, int n, float *v, int b);
-unsigned int *func_0882923C(unsigned int *list, int a, float *p, float *q);
+unsigned int *dd_wline_draw(unsigned int *list, int a, int n, float *v, int b);
+unsigned int *dd_wline_sprite(unsigned int *list, int a, float *p, float *q);
 unsigned int *func_088212C4(unsigned int *list, int x, int y, int icon);
 unsigned int *func_088046F0(unsigned int *list, int uid);
 int func_08866DAC(void);
@@ -472,7 +472,7 @@ void *dd_sel_draw_item(void *dl, int i, int x, int y)
     r[4] = (float)(y + 0x15);
     r[7] = (float)(y + 0x93);
     r[10] = r[7];
-    list = func_08828DD0(list, 0, 4, r, 1);
+    list = dd_wline_draw(list, 0, 4, r, 1);
     gim = func_088044B0(0x40005);
     if (gim != 0)
         list = gim_set_texture(list, gim);
@@ -862,8 +862,8 @@ void *dd_sel_sort_draw_item(void *dl, int i, int x, int y)
     r[9] = r[0];
     r[10] = r[7];
     list = dl_ambient_color(list, 0xFF808080);
-    list = func_0882923C(list, 0, &r[0], &r[6]);
-    list = func_08828DD0(list, 0, 4, r, 1);
+    list = dd_wline_sprite(list, 0, &r[0], &r[6]);
+    list = dd_wline_draw(list, 0, 4, r, 1);
     gim = func_088044B0(0x40005);
     if (gim != 0)
         list = gim_set_texture(list, gim);
@@ -873,9 +873,9 @@ void *dd_sel_sort_draw_item(void *dl, int i, int x, int y)
         r[k + 1] -= 4.0f;
     }
     list = dl_ambient_color(list, 0x80FFFFFF);
-    list = func_0882923C(list, 0, &r[0], &r[6]);
+    list = dd_wline_sprite(list, 0, &r[0], &r[6]);
     list = dl_ambient_color(list, 0xFFFFFFFF);
-    list = func_08828DD0(list, 0, 4, r, 1);
+    list = dd_wline_draw(list, 0, 4, r, 1);
     gim = func_088044B0(0x40005);
     if (gim != 0)
         list = gim_set_texture(list, gim);

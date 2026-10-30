@@ -28,10 +28,10 @@ void func_088650E4(void);
 void func_08858800(void);
 void func_08813840(DdCharSlot *s, int all);
 void *func_088138B8(void *list, DdCharSlot *s);
-void func_088276BC(void);
+void dd_mtx_save(void);
 void func_088138F8(DdCharSlot *s);
 void func_08813974(DdCharSlot *s);
-void func_088282E4(int chr, int variant, void *setup);
+void dd_mon_cb_init(int chr, int variant, void *setup);
 void func_08813554(DdCharSlot *s, void *setup);
 void func_08813684(DdCharSlot *s);
 void dd_lp_close(void);
@@ -145,7 +145,7 @@ void dd_chara_draw(void)
     mtx_identity();
     mtx_perspective(fovy, aspect, near, far);
     list = mtx_flush_alias(list);
-    func_088276BC();
+    dd_mtx_save();
     dl_set_list(list);
     mtx_set_mode(0);
     mtx_pop();
@@ -175,7 +175,7 @@ void dd_chara_load(int i, int chr, int variant)
     char setup[52];
 
     fn = dd_chara_setup_fn(chr, variant);
-    func_088282E4(chr, variant, setup);
+    dd_mon_cb_init(chr, variant, setup);
     if (fn != 0)
         fn(setup);
     func_08813554(s, setup);

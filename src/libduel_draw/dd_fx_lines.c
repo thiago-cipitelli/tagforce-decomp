@@ -22,21 +22,21 @@ float cosf(float x);
 FxVec3 *vec3_set(FxVec3 *out, float x, float y, float z);
 FxVec3 *vec3_scale(FxVec3 *out, FxVec3 *v, float s);
 
-float func_088279A4(int t, int len);
-float func_088279D8(int t, int len);
-float func_08827A2C(int t, int len, int n);
-float func_08827AD4(int t, int len, int n);
-void func_088272BC(float x, float y, float z);
-void func_08826E30(int layer, int a, int b);
-void func_08826FEC(int layer);
-int func_08828028(int se, int t, int at, int len, unsigned int *flags, unsigned int bit);
-int func_0882810C(int se, int t, int at, int len, unsigned int *flags, unsigned int bit);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+float dd_ease_lin(int t, int len);
+float dd_ease_lin_inv(int t, int len);
+float dd_ease_sin(int t, int len, int n);
+float dd_ease_cos(int t, int len, int n);
+void dd_scale3(float x, float y, float z);
+void dd_cam_default(int layer, int a, int b);
+void dd_cam_end(int layer);
+int dd_cue_se_at(int se, int t, int at, int len, unsigned int *flags, unsigned int bit);
+int dd_cue_bgm_fade(int se, int t, int at, int len, unsigned int *flags, unsigned int bit);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 
 typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
     unsigned int lcg;
@@ -106,10 +106,10 @@ void dd_fx_lines_set(int v)
 
 int dd_fx_lines_start(DdFxArg *arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_lines_update, a, b, sizeof(DdFxLines));
+    int task = dd_task_create(dd_fx_lines_update, a, b, sizeof(DdFxLines));
 
     if (task != -1)
-        ((DdFxLines *)func_08826440(task))->h.arg = arg;
+        ((DdFxLines *)dd_task_mem(task))->h.arg = arg;
     return task;
 }
 
@@ -141,13 +141,13 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
     int i;
     int j;
 
-    func_08826E30(7, 0xF0, 0x88);
+    dd_cam_default(7, 0xF0, 0x88);
     if (phase == 1)
         dd_fx_lines_times(arg->id, &w->h.delay, &w->h.len);
-    in = func_088279A4(w->h.t, 16);
-    out = func_088279D8(w->h.t - (w->h.len - 16), 16);
-    func_08828028(0x6237, w->h.wait, w->h.delay, 16, &w->se, 1);
-    func_0882810C(0x6237, w->h.t, w->h.len - 16, 16, &w->se, 2);
+    in = dd_ease_lin(w->h.t, 16);
+    out = dd_ease_lin_inv(w->h.t - (w->h.len - 16), 16);
+    dd_cue_se_at(0x6237, w->h.wait, w->h.delay, 16, &w->se, 1);
+    dd_cue_bgm_fade(0x6237, w->h.t, w->h.len - 16, 16, &w->se, 2);
     if (phase == 1) {
         for (i = 0; i < 33; i++) {
             fr = (float)i / 32.0f;
@@ -174,10 +174,10 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
     }
     if (w->h.wait == w->h.delay) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
-        list = func_0882698C(list, 0, 0);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-        list = func_08826A64(list, 12);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_depth_enable(list, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
+        list = dd_tex_pack(list, 12);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -227,10 +227,10 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
     }
     if (w->h.wait == w->h.delay) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-        list = func_08826A64(list, 14);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+        list = dd_tex_pack(list, 14);
         list = dl_color(list, 0xFFFF8764);
         mtx_set_mode(2);
         mtx_push();
@@ -239,7 +239,7 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
             sp = &w->spark[i];
             if (sp->flags & 1) {
                 a = out * in * sinf((float)sp->t * 3.1415927f / 16.0f) * 255.0f;
-                s = func_088279D8(sp->t, 16);
+                s = dd_ease_lin_inv(sp->t, 16);
                 list = dl_ambient_light(list, (unsigned int)a << 24 | 0xFFFFFF);
                 for (j = 0; j < 8; j++) {
                     vec3_scale(&p, &sp->p[j].dir, s + 0.5f);
@@ -283,22 +283,22 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
     }
     if (w->h.wait == w->h.delay) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-        list = func_08826A64(list, 3);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+        list = dd_tex_pack(list, 3);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
         for (i = 0; i < 8; i++) {
             f = &w->flare[i];
             if (f->flags & 1) {
-                s = f->scale * (func_08827A2C(f->t, 8, 1) * 0.8f + 0.2f);
-                a = out * in * func_08827AD4(f->t, 8, 1) * 255.0f;
+                s = f->scale * (dd_ease_sin(f->t, 8, 1) * 0.8f + 0.2f);
+                a = out * in * dd_ease_cos(f->t, 8, 1) * 255.0f;
                 list = dl_ambient_light(list, (unsigned int)a << 24 | 0xFFFFFF);
                 mtx_push();
                 mtx_rotate_z(f->angle);
-                func_088272BC(s, s, 0.0f);
+                dd_scale3(s, s, 0.0f);
                 list = draw_array(list, 5, 0x19F, 6, 0, w->flare_v);
                 mtx_pop();
                 if (f->t < 7)
@@ -310,7 +310,7 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
         mtx_pop();
         dl_set_list(list);
     }
-    func_08826FEC(7);
+    dd_cam_end(7);
     w->h.frame++;
     if (run == 1) {
         if (w->h.wait < w->h.delay)

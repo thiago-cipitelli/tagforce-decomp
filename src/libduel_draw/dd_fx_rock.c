@@ -27,22 +27,22 @@ float fabsf_vfpu(float x);
 float sinf(float x);
 float cosf(float x);
 
-float func_088279A4(int t, int len);
-float func_08827AD4(int t, int len, int n);
-float func_08827B6C(int t, int len, int n);
-void func_08827840(void);
-void func_08827668(void);
-void func_08827288(FxMat4 *out);
-void func_08827300(float x, float y, float z);
-void func_088272BC(float x, float y, float z);
-void func_088278E4(float a, float *out, float *m);
+float dd_ease_lin(int t, int len);
+float dd_ease_cos(int t, int len, int n);
+float dd_ease_cos_inv(int t, int len, int n);
+void dd_mtx_push_field(void);
+void dd_mtx_pop_all(void);
+void dd_mtx_billboard_field(FxMat4 *out);
+void dd_translate3(float x, float y, float z);
+void dd_scale3(float x, float y, float z);
+void dd_mat3_rot_x(float a, float *out, float *m);
 void func_08807890(FxVec4 *up);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 
 typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
     unsigned int lcg;
@@ -120,20 +120,20 @@ void dd_fx_rock_spray(int phase, int side, DdFxRock *w, FxMat4 *cam)
             c = 0;
     }
     list = dl_select_layer(1, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 0, 1);
-    list = func_088269D8(list, 1, 0, 6, 7, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 5);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 0, 1);
+    list = dd_blend_enable(list, 1, 0, 6, 7, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 5);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    func_08827300(0.0f, 3.0f, 0.0f);
+    dd_translate3(0.0f, 3.0f, 0.0f);
     for (i = 0; i < 64; i++, p++) {
         if (p->flags & 1) {
-            s = func_088279A4(p->t, 64) * 0.9f + 0.1f;
-            y = func_08827B6C(p->t, 64, 2);
-            list = dl_ambient_light(list, (unsigned int)(func_088279A4(p->t, 8) * 255.0f *
-                                                         func_08827AD4(p->t - 56, 8, 1)) << 24 | 0xFFFFFF);
+            s = dd_ease_lin(p->t, 64) * 0.9f + 0.1f;
+            y = dd_ease_cos_inv(p->t, 64, 2);
+            list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(p->t, 8) * 255.0f *
+                                                         dd_ease_cos(p->t - 56, 8, 1)) << 24 | 0xFFFFFF);
             mtx_push();
             vec3_set(&v, p->dir.x * s, p->dir.y * y, p->dir.z * s);
             mat3_transform_vec3(&v, w->tilt, &v);
@@ -155,10 +155,10 @@ void dd_fx_rock_spray(int phase, int side, DdFxRock *w, FxMat4 *cam)
 
 int dd_fx_rock_start(int arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_rock_update, a, b, sizeof(DdFxRock));
+    int task = dd_task_create(dd_fx_rock_update, a, b, sizeof(DdFxRock));
 
     if (task != -1)
-        ((DdFxRock *)func_08826440(task))->arg = arg;
+        ((DdFxRock *)dd_task_mem(task))->arg = arg;
     return task;
 }
 
@@ -179,8 +179,8 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
     int j;
     int n;
 
-    func_08827840();
-    func_08827288(&cam);
+    dd_mtx_push_field();
+    dd_mtx_billboard_field(&cam);
     if (phase == 1) {
         float rows[3] = { 0.0f, 0.6f, 1.0f };
         FxVec4 dir = { 0.0f, 1.0f, 0.0f, 1.0f };
@@ -218,7 +218,7 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
         vec3_set(&m[0], x.x, x.y, x.z);
         vec3_set(&m[1], y.x, y.y, y.z);
         vec3_set(&m[2], z.x, z.y, z.z);
-        func_088278E4(-0.2617994f, w->tilt, (float *)m);
+        dd_mat3_rot_x(-0.2617994f, w->tilt, (float *)m);
         vec4_set((FxVec4 *)&w->mtx.m[0], x.x, x.y, x.z, 0.0f);
         vec4_set((FxVec4 *)&w->mtx.m[4], y.x, y.y, y.z, 0.0f);
         vec4_set((FxVec4 *)&w->mtx.m[8], z.x, z.y, z.z, 0.0f);
@@ -239,22 +239,22 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
         }
     }
     list = dl_select_layer(1, 0);
-    list = func_0882698C(list, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
     mtx_set_mode(2);
     mtx_push();
     mtx_load(&w->mtx);
     list = dl_ambient_light(list, 0xFFFFFFFF);
-    list = func_088266D8(list, 1, 1, 1, 4, 0, 0, 0);
-    list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 9);
+    list = dd_tex_enable(list, 1, 1, 1, 4, 0, 0, 0);
+    list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 9);
     list = dl_tex_offset(0.0f, w->scroll, list);
     mtx_push();
-    func_088272BC(0.85f, 1.0f, 0.85f);
+    dd_scale3(0.85f, 1.0f, 0.85f);
     list = draw_array(list, 4, 0x19F, 34, 0, w->swirl);
     mtx_pop();
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
-    list = func_088269D8(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 12);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
+    list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 12);
     list = dl_tex_offset(0.0f, w->scroll, list);
     list = draw_array(list, 4, 0x19F, 34, 0, w->swirl);
     w->scroll -= 0.02f;
@@ -292,22 +292,22 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
         }
     }
     list = dl_select_layer(1, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 25);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 25);
     list = dl_color(list, 0xFF9B9B9B);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    func_08827300(0.0f, 3.5f, 0.0f);
+    dd_translate3(0.0f, 3.5f, 0.0f);
     for (i = 0; i < 16; i++) {
         DdPart *r = &w->rock[i];
 
         if (r->flags & 1) {
-            k = func_08827B6C(r->t, 64, 1);
-            list = dl_ambient_light(list, (unsigned int)(func_088279A4(r->t, 8) * 255.0f *
-                                                         func_08827AD4(r->t - 56, 8, 1)) << 24 | 0xFFFFFF);
+            k = dd_ease_cos_inv(r->t, 64, 1);
+            list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(r->t, 8) * 255.0f *
+                                                         dd_ease_cos(r->t - 56, 8, 1)) << 24 | 0xFFFFFF);
             mtx_push();
             vec3_set(&v, r->dir.x, r->dir.y * k, r->dir.z);
             mtx_translate(&v);
@@ -323,7 +323,7 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
     mtx_pop();
     dl_set_list(list);
     dd_fx_rock_spray(phase, 1, w, &cam);
-    func_08827668();
+    dd_mtx_pop_all();
     w->frame++;
     return 2;
 }

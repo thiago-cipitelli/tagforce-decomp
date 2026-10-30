@@ -23,17 +23,17 @@ FxVec3 *vec3_set(FxVec3 *out, float x, float y, float z);
 float sinf(float x);
 float cosf(float x);
 
-float func_088279A4(int t, int len);
-float func_08827AD4(int t, int len, int n);
-void func_088277BC(void);
-void func_08827668(void);
-void func_08827598(FxMat4 *out, FxMat4 *m);
-int func_08827F68(int se, int t, int at, unsigned int *flags, unsigned int bit);
+float dd_ease_lin(int t, int len);
+float dd_ease_cos(int t, int len, int n);
+void dd_mtx_push_cam(void);
+void dd_mtx_pop_all(void);
+void dd_mtx_strip(FxMat4 *out, FxMat4 *m);
+int dd_cue_se(int se, int t, int at, unsigned int *flags, unsigned int bit);
 int func_08813FC4(int who, int ev);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 void dd_chara_bone_mtx(void *out, int bone);
 int dd_chara_get_08813FBC(void);
 
@@ -69,7 +69,7 @@ int dd_fx_aura_halo(int phase, DdFxHalo *w, DdFxArg *arg)
         }
     }
     if (w->visible != 0) {
-        func_088277BC();
+        dd_mtx_push_cam();
         dd_chara_bone_mtx(&w->mtx, 38);
         if (phase == 1) {
             switch (((int *)arg)[2]) {
@@ -106,19 +106,19 @@ int dd_fx_aura_halo(int phase, DdFxHalo *w, DdFxArg *arg)
             }
         }
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 0, 1, 1, 0, 1, 1, 1);
-        list = func_0882698C(list, 1, 1);
+        list = dd_tex_enable(list, 0, 1, 1, 0, 1, 1, 1);
+        list = dd_depth_enable(list, 1, 1);
         mtx_set_mode(2);
         mtx_push();
         mtx_load(&w->mtx);
         list = dl_ambient_light(list, (unsigned int)(w->alpha * (sinf((float)w->frame * 0.08726647f) * 0.2f + 0.8f) * 255.0f) << 24 | 0xFFFFFF);
-        list = func_088269D8(list, 1, 2, 2, 10, 0, 0xFFFFFFFF);
+        list = dd_blend_enable(list, 1, 2, 2, 10, 0, 0xFFFFFFFF);
         list = draw_array(list, 5, 0x19C, 18, 0, w->yellow);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
         list = draw_array(list, 5, 0x19C, 18, 0, w->blue);
         mtx_pop();
         dl_set_list(list);
-        func_08827668();
+        dd_mtx_pop_all();
         if (dd_chara_get_08813FBC() == 1)
             w->alpha = 1.0f;
         else
@@ -183,14 +183,14 @@ int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
             return 2;
         w->started = 1;
     }
-    func_08827F68(0x6227, w->t, 0, &w->se, 1);
-    func_088277BC();
+    dd_cue_se(0x6227, w->t, 0, &w->se, 1);
+    dd_mtx_push_cam();
     dd_chara_bone_mtx(&w->mtx, w->bone);
-    func_08827598(&rot, &w->mtx);
+    dd_mtx_strip(&rot, &w->mtx);
     mat4_transform_vec4(&up, &rot, &up);
     mat4_translate(&w->mtx, &w->mtx, &up);
-    in = func_088279A4(w->t, 4) * 0.5f + 0.5f;
-    k = func_08827AD4(w->t, 16, 1);
+    in = dd_ease_lin(w->t, 4) * 0.5f + 0.5f;
+    k = dd_ease_cos(w->t, 16, 1);
     if (phase == 1) {
         w->ring[0].u = 0.5f; w->ring[0].v = 0.5f; w->ring[0].color = 0xFF00AAFF;
         w->ring[0].x = 0.0f; w->ring[0].y = 0.09555846f; w->ring[0].z = 0.0f;
@@ -205,10 +205,10 @@ int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
         w->ring[5] = w->ring[1];
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 3);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 3);
     mtx_set_mode(2);
     mtx_push();
     mtx_load(&w->mtx);
@@ -235,10 +235,10 @@ int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
         w->blade[5].x = -3.0f; w->blade[5].y = 0.0f; w->blade[5].z = -14.4f;
     }
     list = dl_select_layer(7, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 3);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 3);
     mtx_set_mode(2);
     mtx_push();
     mtx_load(&w->mtx);
@@ -258,7 +258,7 @@ int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
     }
     mtx_pop();
     dl_set_list(list);
-    func_08827668();
+    dd_mtx_pop_all();
     w->frame++;
     if (run == 1 && w->t < 16)
         w->t++;

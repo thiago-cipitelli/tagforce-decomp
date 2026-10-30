@@ -23,19 +23,19 @@ FxVec3 *vec3_copy(FxVec3 *out, FxVec3 *v);
 float sinf(float x);
 float cosf(float x);
 
-float func_08827A2C(int t, int len, int n);
-float func_08827AD4(int t, int len, int n);
-void func_08827840(void);
-void func_08827668(void);
-void func_08827288(FxMat4 *out);
-void func_08827300(float x, float y, float z);
-void func_088272BC(float x, float y, float z);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+float dd_ease_sin(int t, int len, int n);
+float dd_ease_cos(int t, int len, int n);
+void dd_mtx_push_field(void);
+void dd_mtx_pop_all(void);
+void dd_mtx_billboard_field(FxMat4 *out);
+void dd_translate3(float x, float y, float z);
+void dd_scale3(float x, float y, float z);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 
 typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
     unsigned int lcg;
@@ -88,10 +88,10 @@ int dd_fx_splash_update(int phase, DdFxSplash *w);
 
 int dd_fx_splash_start(int arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_splash_update, a, b, sizeof(DdFxSplash));
+    int task = dd_task_create(dd_fx_splash_update, a, b, sizeof(DdFxSplash));
 
     if (task != -1)
-        ((DdFxSplash *)func_08826440(task))->arg = arg;
+        ((DdFxSplash *)dd_task_mem(task))->arg = arg;
     return task;
 }
 
@@ -117,8 +117,8 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
     int i;
     int j;
 
-    func_08827840();
-    func_08827288(&cam);
+    dd_mtx_push_field();
+    dd_mtx_billboard_field(&cam);
     if (w->frame >= 308) {
         on = w->frame < 319;
         if (on) {
@@ -163,23 +163,23 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
             w->ripple_cur = 0;
     }
     list = dl_select_layer(1, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 12);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 12);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    func_08827300(0.0f, 0.01f, 0.0f);
+    dd_translate3(0.0f, 0.01f, 0.0f);
     for (i = 0; i < 48; i++) {
         r = &w->ripple[i];
         if (r->flags & 1) {
-            list = dl_ambient_light(list, (unsigned int)(func_08827AD4(r->t, r->life, 1) * 255.0f) << 24 | 0xFFFFFF);
+            list = dl_ambient_light(list, (unsigned int)(dd_ease_cos(r->t, r->life, 1) * 255.0f) << 24 | 0xFFFFFF);
             list = dl_tex_offset(r->u, r->v, list);
             mtx_push();
             mtx_translate(&r->pos);
-            s = func_08827A2C(r->t, r->life, 1);
-            func_088272BC(s, 0.0f, s);
+            s = dd_ease_sin(r->t, r->life, 1);
+            dd_scale3(s, 0.0f, s);
             list = draw_array(list, 4, 0x99F, 34, w->ripple_idx, w->ripple_v[0]);
             list = draw_array(list, 4, 0x99F, 34, w->ripple_idx, &w->ripple_v[0][1]);
             mtx_pop();
@@ -221,23 +221,23 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
             w->spray_cur = 0;
     }
     list = dl_select_layer(1, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 9);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 10, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 9);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    func_08827300(0.0f, -0.3f, 0.0f);
+    dd_translate3(0.0f, -0.3f, 0.0f);
     for (i = 0; i < 32; i++) {
         r = &w->spray[i];
         if (r->flags & 1) {
-            list = dl_ambient_light(list, (unsigned int)(func_08827AD4(r->t, r->life, 1) * 255.0f) << 24 | 0xFFFFFF);
+            list = dl_ambient_light(list, (unsigned int)(dd_ease_cos(r->t, r->life, 1) * 255.0f) << 24 | 0xFFFFFF);
             list = dl_tex_offset(r->u, r->v, list);
             mtx_push();
             mtx_translate(&r->pos);
-            s = func_08827A2C(r->t, r->life, 1) * 0.5f + 1.0f;
-            func_088272BC(s, func_08827AD4(r->t, r->life, 1), s);
+            s = dd_ease_sin(r->t, r->life, 1) * 0.5f + 1.0f;
+            dd_scale3(s, dd_ease_cos(r->t, r->life, 1), s);
             list = draw_array(list, 4, 0x99F, 34, w->spray_idx, w->spray_v[0]);
             list = draw_array(list, 4, 0x99F, 34, w->spray_idx, &w->spray_v[0][1]);
             mtx_pop();
@@ -282,29 +282,29 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
             w->drop_cur = 0;
     }
     list = dl_select_layer(1, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 32);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 32);
     list = dl_color(list, 0xFFFFFFFF);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    func_08827300(0.0f, -0.3f, 0.0f);
+    dd_translate3(0.0f, -0.3f, 0.0f);
     for (i = 0; i < 32; i++) {
         d = &w->drop[i];
         if (d->flags & 1) {
-            s = func_08827A2C(d->t, d->life, 1);
+            s = dd_ease_sin(d->t, d->life, 1);
             k = sinf((float)d->t * 2.4434612f / (float)d->life);
             f = s + 1.0f;
-            list = dl_ambient_light(list, (unsigned int)(func_08827AD4(d->t, d->life, 1) * 255.0f) << 24 | 0xFFFFFF);
+            list = dl_ambient_light(list, (unsigned int)(dd_ease_cos(d->t, d->life, 1) * 255.0f) << 24 | 0xFFFFFF);
             for (j = 0; j < 4; j++) {
                 vec3_set(&p, d->p[j].dir.x * f, d->p[j].dir.y * k, d->p[j].dir.z * f);
                 vec3_add(&p, &p, &d->p[j].pos);
                 mtx_push();
                 mtx_translate(&p);
                 mtx_mult(&cam);
-                func_088272BC(s, s, 0.0f);
+                dd_scale3(s, s, 0.0f);
                 list = draw_array(list, 6, 0x183, 2, 0, w->cell[d->p[j].cell]);
                 mtx_pop();
             }
@@ -316,7 +316,7 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
     }
     mtx_pop();
     dl_set_list(list);
-    func_08827668();
+    dd_mtx_pop_all();
     if (w->frame < 419)
         w->frame++;
     else

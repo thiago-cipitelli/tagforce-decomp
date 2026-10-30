@@ -53,11 +53,11 @@ void dd_fxc_kind(int id, int *grow, int *end)
 
 int dd_fx13_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_trail_update, a, b, sizeof(DdTrailFx));
+    int task = dd_task_create(dd_trail_update, a, b, sizeof(DdTrailFx));
     DdTrailFx *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
         d->variant = 0;
     }
@@ -70,7 +70,7 @@ int dd_fx13_start_b(DdFxSlot *s, int a, int b)
     DdTrailFx *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->variant = 1;
     }
     return task;
@@ -106,7 +106,7 @@ int dd_trail_update(int phase, DdTrailFx *d)
     int j;
     int n;
 
-    func_08827738();
+    dd_mtx_push_saved();
     if (phase == 1) {
         dd_fxc_kind(s->id, &d->grow_end, &d->end);
         switch (s->id) {
@@ -151,13 +151,13 @@ int dd_trail_update(int phase, DdTrailFx *d)
             break;
         }
     }
-    in = func_08827A2C(d->t, 4, 1);
-    out = 1.0f - func_088279A4(d->t - (d->end - 8), 8);
-    func_08827F14(0x25, &head);
-    func_08827ED4(0x17, &ring);
-    func_08827258(&bill);
-    func_08827F68(d->se_a, d->t, d->se_at, &d->se_done, 1);
-    func_08827F68(d->se_b, d->t, d->se_at, &d->se_done, 2);
+    in = dd_ease_sin(d->t, 4, 1);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_slot_pos2(0x25, &head);
+    dd_slot_pos(0x17, &ring);
+    dd_mtx_billboard_cam(&bill);
+    dd_cue_se(d->se_a, d->t, d->se_at, &d->se_done, 1);
+    dd_cue_se(d->se_b, d->t, d->se_at, &d->se_done, 2);
 
     /* the ribbons */
     if (phase == 1) {
@@ -185,9 +185,9 @@ int dd_trail_update(int phase, DdTrailFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 0, 1, 1, 0, 0, 0, 0);
-        list = func_0882698C(list, 1, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_enable(list, 0, 1, 1, 0, 0, 0, 0);
+        list = dd_depth_enable(list, 1, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -296,10 +296,10 @@ int dd_trail_update(int phase, DdTrailFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-        list = func_0882698C(list, 1, 1);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-        list = func_08826A64(list, 3);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+        list = dd_depth_enable(list, 1, 1);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+        list = dd_tex_pack(list, 3);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -334,7 +334,7 @@ int dd_trail_update(int phase, DdTrailFx *d)
             for (j = 0; j < 8; j++) {
                 sp->p[j].frame = DD_RAND(r) % 4;
                 vec3_set(&sp->p[j].pos, d->curve[0][j].x, d->curve[0][j].y, d->curve[0][j].z);
-                func_08827BA4(5.0f, &sp->p[j].vel);
+                dd_rand_dir(5.0f, &sp->p[j].vel);
             }
             if (d->spark_next < 15)
                 d->spark_next++;
@@ -343,10 +343,10 @@ int dd_trail_update(int phase, DdTrailFx *d)
         }
         if (d->grow == d->grow_end) {
             list = dl_select_layer(7, 0);
-            list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-            list = func_0882698C(list, 1, 1);
-            list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-            list = func_08826A64(list, 14);
+            list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+            list = dd_depth_enable(list, 1, 1);
+            list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+            list = dd_tex_pack(list, 14);
             list = dl_color(list, 0xFFE6FF64);
             mtx_set_mode(2);
             mtx_push();
@@ -355,8 +355,8 @@ int dd_trail_update(int phase, DdTrailFx *d)
                 sp = &d->spark[i];
                 if (!(sp->flags & 1))
                     continue;
-                e = func_08827A2C(sp->t, 16, 1);
-                list = dl_ambient_light(list, (unsigned int)(out * in * func_08827AD4(sp->t, 16, 1) * 255.0f) << 24
+                e = dd_ease_sin(sp->t, 16, 1);
+                list = dl_ambient_light(list, (unsigned int)(out * in * dd_ease_cos(sp->t, 16, 1) * 255.0f) << 24
                                                   | 0xFFFFFF);
                 for (j = 0; j < 8; j++) {
                     vec3_scale(&pos, &sp->p[j].vel, e * 0.3f + 0.7f);
@@ -395,16 +395,16 @@ int dd_trail_update(int phase, DdTrailFx *d)
             }
         }
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-        list = func_08826C80(list);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_fb_copy(list);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
         mtx_translate(&ring);
         mtx_mult(&bill);
-        func_08827408(&vp);
+        dd_mtx_mvp_cam(&vp);
         for (i = 0; i < 34; i++) {
             w = dd_trail_w;
             w.x = d->fan[i].x;
@@ -418,16 +418,16 @@ int dd_trail_update(int phase, DdTrailFx *d)
         for (i = 0; i < 3; i++) {
             sc = i / 3.0f * 0.3f + 1.0f;
             list = dl_ambient_light(list, (unsigned int)(out * (1.0f - i / 3.0f) * 255.0f *
-                                                         func_08827A2C(d->grow, d->grow_end, 1)) << 24 | 0xFFFFFF);
+                                                         dd_ease_sin(d->grow, d->grow_end, 1)) << 24 | 0xFFFFFF);
             mtx_push();
-            func_088272BC(sc, sc, 0.0f);
+            dd_scale3(sc, sc, 0.0f);
             list = draw_array(list, 5, 0x19F, 34, 0, d->fan_buf[buf]);
             mtx_pop();
         }
         mtx_pop();
         dl_set_list(list);
     }
-    func_08827668();
+    dd_mtx_pop_all();
     d->frame++;
     if (run == 1) {
         if (d->grow < d->grow_end)

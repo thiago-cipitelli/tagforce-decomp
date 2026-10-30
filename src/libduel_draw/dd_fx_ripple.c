@@ -52,11 +52,11 @@ void dd_ripple_kind(int type, int sub, int id, int *grow, int *end)
 
 int dd_fx51_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_ripple_update, a, b, sizeof(DdRippleFx));
+    int task = dd_task_create(dd_ripple_update, a, b, sizeof(DdRippleFx));
     DdRippleFx *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -86,7 +86,7 @@ int dd_ripple_update(int phase, DdRippleFx *d)
     int type;
     int i;
 
-    func_08827738();
+    dd_mtx_push_saved();
     if (phase == 1) {
         dd_ripple_kind(s->type, s->sub, s->id, &d->grow_end, &d->end);
         if (s->type == 8 && s->id == 62)
@@ -110,19 +110,19 @@ int dd_ripple_update(int phase, DdRippleFx *d)
             break;
         }
     }
-    in = func_088279A4(d->t, 8);
-    out = 1.0f - func_088279A4(d->t - (d->end - 16), 16);
-    func_08827258(&bill);
+    in = dd_ease_lin(d->t, 8);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 16), 16);
+    dd_mtx_billboard_cam(&bill);
     dd_chara_bone_mtx(&node, d->node);
     /* the large models: move the node a little toward the camera */
     type = s->type;
     if ((type >= 47 && type <= 101) || (type >= 137 && type < 152)) {
         off = dd_ripple_off;
-        func_08827598(&rot, &node);
+        dd_mtx_strip(&rot, &node);
         mat4_transform_xyz(&off, &rot, &off);
         mat4_translate(&node, &node, &off);
     }
-    func_08827F68(0x6229, d->grow, d->grow_end, &d->se_done, 1);
+    dd_cue_se(0x6229, d->grow, d->grow_end, &d->se_done, 1);
 
     /* the ring */
     if (phase == 1) {
@@ -145,16 +145,16 @@ int dd_ripple_update(int phase, DdRippleFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-        list = func_08826C80(list);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_fb_copy(list);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
-        func_08827300(node.w.x, node.w.y, node.w.z);
+        dd_translate3(node.w.x, node.w.y, node.w.z);
         mtx_mult(&bill);
-        func_08827408(&vp);
+        dd_mtx_mvp_cam(&vp);
         for (i = 0; i < 34; i++) {
             w = dd_ripple_w;
             w.x = d->fan[i].x;
@@ -169,7 +169,7 @@ int dd_ripple_update(int phase, DdRippleFx *d)
             sc = i / 16.0f * 1.5f + 1.0f;
             list = dl_ambient_light(list, (unsigned int)(out * (1.0f - i / 16.0f) * 255.0f * in) << 24 | 0xFFFFFF);
             mtx_push();
-            func_088272BC(sc, sc, 0.0f);
+            dd_scale3(sc, sc, 0.0f);
             list = draw_array(list, 5, 0x19F, 34, 0, d->fan_buf[buf]);
             mtx_pop();
         }
@@ -217,9 +217,9 @@ int dd_ripple_update(int phase, DdRippleFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 0, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_enable(list, 0, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
         mtx_set_mode(2);
         mtx_push();
         mtx_load(&node);
@@ -229,7 +229,7 @@ int dd_ripple_update(int phase, DdRippleFx *d)
         mtx_pop();
         dl_set_list(list);
     }
-    func_08827668();
+    dd_mtx_pop_all();
     d->frame++;
     if (run == 1) {
         if (d->grow < d->grow_end)

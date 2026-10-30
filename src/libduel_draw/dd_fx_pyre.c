@@ -80,11 +80,11 @@ void dd_fx_set_arg4(int v)
 
 int dd_fx83_start(DdFxSlot *s, int red, int a, int b)
 {
-    int task = func_0882623C(dd_pyre_update, a, b, sizeof(DdPyreFx));
+    int task = dd_task_create(dd_pyre_update, a, b, sizeof(DdPyreFx));
     DdPyreFx *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
         d->red = red;
     }
@@ -130,14 +130,14 @@ int dd_pyre_update(int phase, DdPyreFx *d)
     int i;
     int j;
 
-    func_08827738();
-    func_0882745C(0.0f, 0.0f, 1.0f, 0.0f);
+    dd_mtx_push_saved();
+    dd_proj_set(0.0f, 0.0f, 1.0f, 0.0f);
     if (phase == 1)
         dd_pyre_kind(s->id, &d->grow_end, &d->end);
-    in = func_088279A4(d->t, 16);
-    out = 1.0f - func_088279A4(d->t - (d->end - 16), 16);
+    in = dd_ease_lin(d->t, 16);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 16), 16);
     grow = d->t * 0.003f + 1.0f;
-    func_08827258(&bill);
+    dd_mtx_billboard_cam(&bill);
 
     /* first frame: under the node, turned over (above it for effects 84 and 90) */
     if (d->grow == 0 && d->placed == 0) {
@@ -147,7 +147,7 @@ int dd_pyre_update(int phase, DdPyreFx *d)
         if (flip) {
             node = dd_pyre_down;
             mat4_copy(&tmp, &d->m);
-            func_08827598(&tmp, &tmp);
+            dd_mtx_strip(&tmp, &tmp);
             mat4_transform_vec4(&node, &tmp, &node);
             mat4_identity(&tmp);
             mat4_mul_rot_x(&tmp, &tmp, 3.1415927f);
@@ -156,7 +156,7 @@ int dd_pyre_update(int phase, DdPyreFx *d)
         } else {
             node = dd_pyre_up;
             mat4_copy(&rot, &d->m);
-            func_08827598(&rot, &rot);
+            dd_mtx_strip(&rot, &rot);
             mat4_transform_vec4(&node, &rot, &node);
             mat4_identity(&rot);
             mat4_mul_rot_x(&rot, &rot, -1.5707964f);
@@ -164,7 +164,7 @@ int dd_pyre_update(int phase, DdPyreFx *d)
             mat4_translate(&d->m, &d->m, &node);
         }
     }
-    func_08827F68(0x622A, d->grow, d->grow_end, &d->se_done, 1);
+    dd_cue_se(0x622A, d->grow, d->grow_end, &d->se_done, 1);
 
     /* the petals */
     if (phase == 1) {
@@ -186,10 +186,10 @@ int dd_pyre_update(int phase, DdPyreFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-        list = func_08826A64(list, 3);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_pack(list, 3);
         mtx_set_mode(2);
         mtx_push();
         mtx_load(&d->m);
@@ -201,7 +201,7 @@ int dd_pyre_update(int phase, DdPyreFx *d)
         for (i = 0; i < 16; i++) {
             ang = 6.2831855f * i / 16.0f + d->frame * 0.0034906587f;
             mtx_push();
-            func_08827300(rad * sinf(ang), 0.0f, grow * 5.0f * cosf(ang));
+            dd_translate3(rad * sinf(ang), 0.0f, grow * 5.0f * cosf(ang));
             mtx_rotate_y(ang);
             mtx_rotate_x(0.17453294f);
             mtx_scale3(&scale);
@@ -244,10 +244,10 @@ int dd_pyre_update(int phase, DdPyreFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-        list = func_0882698C(list, 0, 1);
-        list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-        list = func_08826A64(list, d->red == 0 ? 16 : 13);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+        list = dd_depth_enable(list, 0, 1);
+        list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+        list = dd_tex_pack(list, d->red == 0 ? 16 : 13);
         list = dl_color(list, d->red == 0 ? 0x808CD2FF : 0xB28282FF);
         mtx_set_mode(2);
         mtx_push();
@@ -256,12 +256,12 @@ int dd_pyre_update(int phase, DdPyreFx *d)
             sp = &d->spark[i];
             if (!(sp->flags & 1))
                 continue;
-            list = dl_ambient_light(list, (unsigned int)(out * in * func_08827AD4(sp->t, 32, 1) * 255.0f) << 24
+            list = dl_ambient_light(list, (unsigned int)(out * in * dd_ease_cos(sp->t, 32, 1) * 255.0f) << 24
                                               | 0xFFFFFF);
             for (j = 0; j < 3; j++) {
                 mtx_push();
                 mat4_transform_vec4(&w, &d->m, &sp->pos[j]);
-                func_08827300(w.x, w.y, w.z);
+                dd_translate3(w.x, w.y, w.z);
                 mtx_mult(&bill);
                 list = draw_array(list, 6, 0x183, 2, 0, d->spark_v[sp->frame[j]]);
                 mtx_pop();
@@ -338,10 +338,10 @@ int dd_pyre_update(int phase, DdPyreFx *d)
         }
         if (d->grow == d->grow_end) {
             list = dl_select_layer(7, 0);
-            list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
-            list = func_0882698C(list, 0, 1);
-            list = func_088269D8(list, 1, 0, 2, 10, 0, -1);
-            list = func_08826A64(list, 11);
+            list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
+            list = dd_depth_enable(list, 0, 1);
+            list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
+            list = dd_tex_pack(list, 11);
             mtx_set_mode(2);
             mtx_push();
             mtx_identity();
@@ -353,8 +353,8 @@ int dd_pyre_update(int phase, DdPyreFx *d)
                 f = &d->flare[i];
                 if (!(f->flags & 1))
                     continue;
-                e = func_08827A2C(f->t, 8, 1);
-                list = dl_ambient_light(list, (unsigned int)(out * in * func_08827AD4(f->t, 8, 1) * 255.0f) << 24
+                e = dd_ease_sin(f->t, 8, 1);
+                list = dl_ambient_light(list, (unsigned int)(out * in * dd_ease_cos(f->t, 8, 1) * 255.0f) << 24
                                                   | 0xFFFFFF);
                 for (j = 0; j < 4; j++) {
                     /* a frame whose z follows the flare and whose x faces the camera */
@@ -362,7 +362,7 @@ int dd_pyre_update(int phase, DdPyreFx *d)
                     mat4_mul_rot_y(&tmp, &tilt, f->ang[j]);
                     mat4_translate(&tmp, &tmp, &off);
                     mat4_mul(&tmp, &d->m, &tmp);
-                    func_08827598(&rot, &tmp);
+                    dd_mtx_strip(&rot, &tmp);
                     mat4_transform_vec4(&dir, &rot, &axis);
                     vec3_normalize2(&back, &dir);
                     vec3_cross(&side, &back, &up);
@@ -386,8 +386,8 @@ int dd_pyre_update(int phase, DdPyreFx *d)
             dl_set_list(list);
         }
     }
-    func_08827548();
-    func_08827668();
+    dd_proj_restore();
+    dd_mtx_pop_all();
     d->frame++;
     if (run == 1) {
         if (d->grow < d->grow_end)

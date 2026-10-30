@@ -55,10 +55,10 @@ extern int dd_pose_a_sorted;               /* 0x08C54634 */
 extern int dd_pose_b_sorted;               /* 0x08C54638 */
 
 int func_08865330(void);
-int func_0882837C(void);
-int func_088283D4(void);
-int func_08828470(void *o, int a);
-int func_08828528(void *o, int a);
+int dd_mon_on_start(void);
+int dd_mon_on_event(void);
+int dd_mon_on_frame(void *o, int a);
+int dd_mon_bone(void *o, int a);
 int dd_int_cmp(const void *a, const void *b);
 void dd_cursor_set(int a, int b, int c, int d);
 unsigned int *dd_disc_material(unsigned int *list, DdTexMat *m, void *gim);
@@ -205,20 +205,20 @@ void dd_hooka_install(void **h)
 
 int dd_hooka_init(void *o)
 {
-    func_0882837C();
+    dd_mon_on_start();
     return 0;
 }
 
 int dd_hooka_term(void *o)
 {
-    func_088283D4();
+    dd_mon_on_event();
     return 0;
 }
 
 
 int dd_hooka_bone_cb(void *o, int a)
 {
-    return func_08828470(o, a);
+    return dd_mon_on_frame(o, a);
 }
 
 /* model bone -> skeleton bone */
@@ -308,20 +308,20 @@ void dd_hookb_install(void **h)
 
 int dd_hookb_init(void *o)
 {
-    func_0882837C();
+    dd_mon_on_start();
     return 0;
 }
 
 int dd_hookb_term(void *o)
 {
-    func_088283D4();
+    dd_mon_on_event();
     return 0;
 }
 
 
 int dd_hookb_bone_cb(void *o, int a)
 {
-    return func_08828470(o, a);
+    return dd_mon_on_frame(o, a);
 }
 
 /* model bone -> skeleton bone */
@@ -386,5 +386,5 @@ int dd_hookb_pose(void *o, float *pos, float *rot, int id)
 
 int dd_hookb_2c(void *o, int a)
 {
-    return func_08828528(o, a);
+    return dd_mon_bone(o, a);
 }

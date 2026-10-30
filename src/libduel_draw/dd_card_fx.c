@@ -48,19 +48,19 @@ void dd_task_remove(DdTask *t);
 void dd_bigcard_draw(DdTask *t, int *arg);
 void dd_bigcard_update(float dt, DdTask *t, int *arg);
 void dd_bigcard_leave(DdTask *t, void *arg);
-int func_08830468(int card, int *xy, int a, int b);
-int func_0883076C(int *xy, int a, int b);
+int dd_fx_cardaura_start(int card, int *xy, int a, int b);
+int dd_fx_noise_start(int *xy, int a, int b);
 int func_08819A70(void);
 int func_0880CC64(void);
 void func_08820938(DdTask *t, void *arg);
 void func_08809184(int uid);
 void func_08820A8C(void *out, void *pos, int back);
-int func_08832138(float k, int a, float *pos, void *b, int c, int d, int e);
+int dd_fx_spin_start(float k, int a, float *pos, void *b, int c, int d, int e);
 void func_0880CDD8(DdCard *c, void (*cb)(void));
 void func_0880CE10(DdCard *c, void (*cb)(void));
 void func_08820D40(void);
-void func_088264D4(int h);
-void func_0882636C(int h);
+void dd_task_pause(int h);
+void dd_task_kill(int h);
 void dd_popup(int player, int zone, int card, int flag, int text);
 
 /* shows a card picture (or a text) now */
@@ -80,9 +80,9 @@ void dd_popup_now(int player, int card, int flag, int text)
     xy[2] = 0;
     xy[1] = 0x7A;
     if (text == 0)
-        p->handle = func_08830468(p->card, xy, 0, 0);
+        p->handle = dd_fx_cardaura_start(p->card, xy, 0, 0);
     else
-        p->handle = func_0883076C(xy, 0, 0);
+        p->handle = dd_fx_noise_start(xy, 0, 0);
     memset(&t, 0, sizeof(t));
     t.draw = (void (*)(DdTask *, void *))dd_bigcard_draw;
     t.update = (void (*)(float, DdTask *, void *))dd_bigcard_update;
@@ -148,7 +148,7 @@ void dd_glow_on(DdCard *c)
     *(DdVec4 *)pos = *(DdVec4 *)((char *)c + 0x10);
     if (c->loc.zone != 0xB)
         pos[1] += 0.2f;
-    c->glow = func_08832138((float)dd_glow_kind, 1, pos, dir, -1, 0, 0);
+    c->glow = dd_fx_spin_start((float)dd_glow_kind, 1, pos, dir, -1, 0, 0);
     for (i = 0; i < 512; i++) {
         if (dd_tasks.glow[i] == 0) {
             dd_tasks.glow[i] = c;
@@ -166,7 +166,7 @@ void dd_glow_off(DdCard *c)
 
     if (c->glow == -1)
         return;
-    func_088264D4(c->glow);
+    dd_task_pause(c->glow);
     c->glow = -1;
     for (i = 0; i < 512; i++) {
         if (c == dd_tasks.glow[i]) {
@@ -188,7 +188,7 @@ void dd_glow_all_off(void)
     for (i = 0; i < 512; i++) {
         c = s->glow[i];
         if (c != 0 && c->glow != -1) {
-            func_088264D4(c->glow);
+            dd_task_pause(c->glow);
             c->glow = -1;
             s->glow[i] = 0;
             func_0880CE10(c, func_08820D40);
@@ -200,7 +200,7 @@ void dd_glow_all_off(void)
 void dd_effect_leave(DdTask *t, int *arg)
 {
     if (*arg != 0) {
-        func_0882636C(*arg);
+        dd_task_kill(*arg);
         *arg = 0;
     }
     dd_free(arg);

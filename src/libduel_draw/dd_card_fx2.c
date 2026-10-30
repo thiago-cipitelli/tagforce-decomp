@@ -67,12 +67,12 @@ int func_08866BC0(int player, int zone, int idx);
 float *quat_mul(float *out, float *a, float *b);
 void func_08820A8C(void *out, void *q, int back);
 float func_0880D0B4(int player, int zone);
-int func_0882EDF0(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
-int func_08832138(float k, int a, float *pos, void *b, int c, int d, int e);
+int dd_fx_spiral_start_ex(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
+int dd_fx_spin_start(float k, int a, float *pos, void *b, int c, int d, int e);
 void func_0880CDD8(DdCard *c, void (*cb)(void));
 void func_0880CE10(DdCard *c, void (*cb)(void));
 void func_08820D40(void);
-void func_088264D4(int h);
+void dd_task_pause(int h);
 int func_0880CB44(void);
 int func_0880CC64(void);
 int func_0880CD38(void);
@@ -80,21 +80,21 @@ void func_0880C9BC(int a);
 void func_0880C48C(int a, int b);
 void func_08820938(DdTask *t, void *arg);
 void func_08820988(float *out, float *m);
-void func_0882DA4C(int id, float *pos, float *dir, int a, int b, float s, float zone_kind);
-int func_0882F7E0(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
-void func_08830AAC(void *a, void *b, void (*cb)(DdCard *c));
+void dd_fx_shatter_start_t(int id, float *pos, float *dir, int a, int b, float s, float zone_kind);
+int dd_fx_twist_start_t(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
+void dd_fx_orb_start(void *a, void *b, void (*cb)(DdCard *c));
 int func_08866B00(int player, int zone);
 int func_08866AE8(int player, int zone);
 int func_08866AD0(int player, int zone);
 int func_08866B30(int player, int zone);
 int func_08866B48(int player, int zone);
 int func_08866B18(int player, int zone);
-void func_08833340(int up, float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
-void func_08832BE4(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
-void func_08833E80(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
-void func_088338C8(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
-void func_088333E0(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
-void func_08832B54(float *pos, int from, int to, void (*done)(DdCounter *), DdCounter *c);
+void dd_fx_tally_start(int up, float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
+void dd_fx_counter_start2(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
+void dd_fx_blink_start(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
+void dd_fx_throb_start(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
+void dd_fx_tally_start_fixed(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
+void dd_fx_counter_start(float *pos, int from, int to, void (*done)(DdCounter *), DdCounter *c);
 int func_088667BC(int uid);
 void dd_ring_start(int value, void (*done)(DdTask *), DdTask *t);
 int func_08866998(int uid);
@@ -197,12 +197,12 @@ void dd_beam_set(DdCard *c, int player, int zone, DdBeamFn fn)
 
 void dd_beam_summon(DdCard *c)
 {
-    dd_beam(c, func_0882EDF0);
+    dd_beam(c, dd_fx_spiral_start_ex);
 }
 
 void dd_beam_set2(DdCard *c, int player, int zone)
 {
-    dd_beam_set(c, player, zone, func_0882F7E0);
+    dd_beam_set(c, player, zone, dd_fx_twist_start_t);
 }
 
 /* target mark of a card; graves and decks share one mark per zone */
@@ -232,7 +232,7 @@ void dd_mark_on(DdCard *c)
     *(DdVec4 *)pos = *(DdVec4 *)((char *)c + 0x10);
     if (c->loc.zone != 0xB)
         pos[1] += 0.2f;
-    h = func_08832138((float)dd_glow_kind, 0, pos, dir, -1, 0, 0);
+    h = dd_fx_spin_start((float)dd_glow_kind, 0, pos, dir, -1, 0, 0);
     if (pile_zone) {
         pile[0] = h;
         pile[1] = 1;
@@ -260,11 +260,11 @@ void dd_mark_off(DdCard *c)
         n = dd_tasks.pile_mark[zone][1] - 1;
         dd_tasks.pile_mark[zone][1] = n;
         if (n == 0) {
-            func_088264D4(dd_tasks.pile_mark[zone][0]);
+            dd_task_pause(dd_tasks.pile_mark[zone][0]);
             dd_tasks.pile_mark[zone][0] = -1;
         }
     } else if (c->mark != -1) {
-        func_088264D4(c->mark);
+        dd_task_pause(c->mark);
         c->mark = -1;
         for (i = 0; i < 512; i++) {
             if (c == dd_tasks.glow[i]) {
@@ -287,7 +287,7 @@ void dd_mark_all_off(void)
     for (i = 0; i < 512; i++) {
         c = s->glow[i];
         if (c != 0 && c->mark != -1) {
-            func_088264D4(c->mark);
+            dd_task_pause(c->mark);
             c->mark = -1;
             s->glow[i] = 0;
             func_0880CE10(c, func_08820D40);
@@ -369,7 +369,7 @@ void dd_flip(DdCard *c)
     }
     quat_to_mat4(m, (float *)((char *)c + 0x40));
     func_08820988(dir, m);
-    func_0882DA4C(c->id, (float *)((char *)c + 0x10), dir, 0, 0, 1.0f, func_0880D0B4(c->loc.player, c->loc.zone));
+    dd_fx_shatter_start_t(c->id, (float *)((char *)c + 0x10), dir, 0, 0, 1.0f, func_0880D0B4(c->loc.player, c->loc.zone));
 }
 
 void dd_flip_now(DdCard *c)
@@ -379,7 +379,7 @@ void dd_flip_now(DdCard *c)
 
     quat_to_mat4(m, (float *)((char *)c + 0x40));
     func_08820988(dir, m);
-    func_0882DA4C(c->id, (float *)((char *)c + 0x10), dir, 0, 0, 1.0f, func_0880D0B4(c->loc.player, c->loc.zone));
+    dd_fx_shatter_start_t(c->id, (float *)((char *)c + 0x10), dir, 0, 0, 1.0f, func_0880D0B4(c->loc.player, c->loc.zone));
 }
 
 void dd_shake_done(DdCard *c)
@@ -391,7 +391,7 @@ void dd_shake_done(DdCard *c)
 void dd_shake(DdCard *c)
 {
     c->b4 = 1;
-    func_08830AAC((char *)c + 0x20, (char *)c + 0x30, dd_shake_done);
+    dd_fx_orb_start((char *)c + 0x20, (char *)c + 0x30, dd_shake_done);
 }
 #endif
 
@@ -410,7 +410,7 @@ void dd_stat_counter(DdCard *c, int delta, int def)
         delta = 0;
     if (to < 1)
         to = 0;
-    func_08833340(def == 0, (float *)((char *)c + 0x10), delta, to, dd_flag_task_done, dd_flag_task(0x25));
+    dd_fx_tally_start(def == 0, (float *)((char *)c + 0x10), delta, to, dd_flag_task_done, dd_flag_task(0x25));
 }
 #endif
 
@@ -451,7 +451,7 @@ void dd_damage_counter(float *pos, int value, int uid)
     t.arg = c;
     c->popup = dd_task_add(&t);
     req_flag_set(c->flag);
-    func_08832B54(pos, from, to, dd_counter_done, c);
+    dd_fx_counter_start(pos, from, to, dd_counter_done, c);
 }
 #endif
 
@@ -517,17 +517,17 @@ void dd_num_counter(DdCard *c, int delta, int kind)
 
     if (kind == 3) {
         get = func_08866AD0;
-        show = func_08832BE4;
+        show = dd_fx_counter_start2;
         flag = 0x26;
     } else if (kind == 2) {
         get = func_08866B30;
-        show = func_08833E80;
+        show = dd_fx_blink_start;
     } else if (kind == 1) {
         get = func_08866B48;
-        show = func_088338C8;
+        show = dd_fx_throb_start;
     } else if (kind == 0) {
         get = func_08866B18;
-        show = func_088333E0;
+        show = dd_fx_tally_start_fixed;
     } else {
         return;
     }

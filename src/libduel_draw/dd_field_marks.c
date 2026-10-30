@@ -16,7 +16,7 @@ typedef unsigned int uint;
 typedef void (*code)();
 #endif
 
-int func_088264D4();
+int dd_task_pause();
 void func_08823068(int h);
 
 #ifdef NON_MATCHING
@@ -69,7 +69,7 @@ void func_08822B90(void)
     while( true ) {
       piVar5 = (int *)((int)puVar2 + iVar1);
       if (*piVar5 != -1) {
-        func_088264D4();
+        dd_task_pause();
         *piVar5 = -1;
         piVar5[0x20] = 0;
       }
@@ -230,10 +230,10 @@ void func_08822E30(ushort param_1,ushort param_2,undefined1 param_3,int param_4)
   }
   func_08820A8C(auStack_40,auStack_30,local_18 < 0.0);
   if (param_4 == 0) {
-    func_08831C58(0x3f800000,uVar7,auStack_20,auStack_40,0xffffffff,0,0);
+    dd_fx_mark_start(0x3f800000,uVar7,auStack_20,auStack_40,0xffffffff,0,0);
   }
   else {
-    func_08831D28(0x3f800000,param_4,uVar7,auStack_20,auStack_40,0xffffffff,0,0);
+    dd_fx_mark_start_layer(0x3f800000,param_4,uVar7,auStack_20,auStack_40,0xffffffff,0,0);
   }
   return;
 }
@@ -242,5 +242,5 @@ void func_08822E30(ushort param_1,ushort param_2,undefined1 param_3,int param_4)
 void func_08823068(int h)
 {
     if (h != -1)
-        func_088264D4(h);
+        dd_task_pause(h);
 }

@@ -17,19 +17,19 @@ void *mat3_rot_z(float *out, float *m, float angle);
 FxVec3 *mat3_transform_vec3(FxVec3 *out, float *m, FxVec3 *v);
 FxVec3 *vec3_set(FxVec3 *out, float x, float y, float z);
 
-float func_088279A4(int t, int len);
-float func_088279D8(int t, int len);
-float func_08827A2C(int t, int len, int n);
-float func_08827B6C(int t, int len, int n);
-int func_08828290(void);
+float dd_ease_lin(int t, int len);
+float dd_ease_lin_inv(int t, int len);
+float dd_ease_sin(int t, int len, int n);
+float dd_ease_cos_inv(int t, int len, int n);
+int dd_anim_step(void);
 int func_08806434(int a, int b);
-int func_08827F68(int se, int t, int at, unsigned int *flags, unsigned int bit);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
-void *func_08826C80(void *list);
+int dd_cue_se(int se, int t, int at, unsigned int *flags, unsigned int bit);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+void *dd_tex_fb_copy(void *list);
 
 typedef struct FxVtxS {                /* GU_TEXTURE_16BIT | GU_VERTEX_16BIT, 2D */
     short u, v;
@@ -72,10 +72,10 @@ void dd_fx_transition(int out, int id, void *a, void *b)
 
 int dd_fx_swirl_start(int out, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_swirl_update, a, b, sizeof(DdFxSwirl));
+    int task = dd_task_create(dd_fx_swirl_update, a, b, sizeof(DdFxSwirl));
 
     if (task != -1)
-        ((DdFxSwirl *)func_08826440(task))->out = out;
+        ((DdFxSwirl *)dd_task_mem(task))->out = out;
     return task;
 }
 
@@ -83,7 +83,7 @@ int dd_fx_swirl_start(int out, void *a, void *b)
 int dd_fx_swirl_update(int phase, DdFxSwirl *w)
 {
     int buf = w->frame % 2;
-    int step = func_08828290();
+    int step = dd_anim_step();
     void *list;
     float k;
     float s;
@@ -101,11 +101,11 @@ int dd_fx_swirl_update(int phase, DdFxSwirl *w)
     int t;
 
     if (w->out == 0)
-        k = func_08827A2C(w->t, 16, 1);
+        k = dd_ease_sin(w->t, 16, 1);
     else
-        k = func_08827B6C(w->t, 16, 1);
+        k = dd_ease_cos_inv(w->t, 16, 1);
     if (func_08806434(8, -1) == 0)
-        func_08827F68(0x6248, w->t, 0, &w->se, 1);
+        dd_cue_se(0x6248, w->t, 0, &w->se, 1);
     if (phase == 1) {
         for (i = 0; i < 21; i++) {
             y = ((float)i / 20.0f * 2.0f + -1.0f) * 136.0f;
@@ -130,9 +130,9 @@ int dd_fx_swirl_update(int phase, DdFxSwirl *w)
         }
     }
     list = dl_select_layer(2, 0);
-    list = func_0882698C(list, 0, 0);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, 0);
-    list = func_08826C80(list);
+    list = dd_depth_enable(list, 0, 0);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
+    list = dd_tex_fb_copy(list);
     s = k;
     if (w->out != 0)
         s = 1.0f - k;
@@ -153,15 +153,15 @@ int dd_fx_swirl_update(int phase, DdFxSwirl *w)
         }
     }
     memcpy(w->buf[buf], w->grid, sizeof(w->grid));
-    list = func_088266D8(list, 0, 1, 1, 0, 0, 1, 1);
+    list = dd_tex_enable(list, 0, 1, 1, 0, 0, 1, 1);
     list = dl_color(list, 0xFF000000);
     list = draw_set_offsets(list, 0, 0, 480, 272);
     list = draw_sprite(list, 0, 0, 0, 0, 0, 0, 0);
     if (w->out == 0)
-        alpha = func_088279A4(w->t, 8) * 255.0f;
+        alpha = dd_ease_lin(w->t, 8) * 255.0f;
     else
-        alpha = (1.0f - func_088279A4(w->t - 8, 8)) * 255.0f;
-    list = func_088266D8(list, 1, 1, 1, 0, 0, 1, 1);
+        alpha = (1.0f - dd_ease_lin(w->t - 8, 8)) * 255.0f;
+    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
     list = dl_color(list, alpha << 24 | 0xFFFFFF);
     for (i = 0; i < 20; i++)
         list = draw_array(list, 4, 0x800902, 62, w->idx, w->buf[buf][i]);
@@ -177,28 +177,28 @@ int dd_fx_swirl_update(int phase, DdFxSwirl *w)
 
 int dd_fx_black_start(int out, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_black_update, a, b, sizeof(DdFxBlack));
+    int task = dd_task_create(dd_fx_black_update, a, b, sizeof(DdFxBlack));
 
     if (task != -1)
-        ((DdFxBlack *)func_08826440(task))->out = out;
+        ((DdFxBlack *)dd_task_mem(task))->out = out;
     return task;
 }
 
 int dd_fx_black_update(int phase, DdFxBlack *w)
 {
-    int step = func_08828290();
+    int step = dd_anim_step();
     float a;
     void *list;
     int t;
 
     if (w->out == 0)
-        a = func_088279D8(w->t, 60);
+        a = dd_ease_lin_inv(w->t, 60);
     else
-        a = func_088279A4(w->t, 60);
+        a = dd_ease_lin(w->t, 60);
     list = dl_select_layer(1, 0);
-    list = func_0882698C(list, 0, 1);
-    list = func_088266D8(list, 0, 1, 1, 0, 0, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, 0xFFFFFFFF);
+    list = dd_depth_enable(list, 0, 1);
+    list = dd_tex_enable(list, 0, 1, 1, 0, 0, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0xFFFFFFFF);
     list = dl_color(list, (unsigned int)(a * 255.0f) << 24);
     list = draw_set_offsets(list, 0, 0, 480, 272);
     list = draw_sprite(list, 0, 0, 0, 0, 0, 0, 0);

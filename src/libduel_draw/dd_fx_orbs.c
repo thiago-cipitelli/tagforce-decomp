@@ -16,11 +16,11 @@ int dd_orb_bands[2][2] = { { 0, 64 }, { 64, 128 } };
 
 int dd_orbs_start(int count, int flag, int a, int b)
 {
-    int task = func_0882623C(dd_orbs_update, a, b, sizeof(DdOrbFx));
+    int task = dd_task_create(dd_orbs_update, a, b, sizeof(DdOrbFx));
     DdOrbFx *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->count = count;
         d->flag = flag;
     }
@@ -43,7 +43,7 @@ void dd_orb_draw(float alpha, DdOrb *o, int flag, int x, int y, int step)
     int sh = (float)h;
     int hu;
 
-    list = dl_color(list, (unsigned int)(alpha * (255.0f * func_088279A4(t, 16))) << 24 | 0xFFFFFF);
+    list = dl_color(list, (unsigned int)(alpha * (255.0f * dd_ease_lin(t, 16))) << 24 | 0xFFFFFF);
     list = draw_set_offsets(list, w, h, sw, sh);
     list = draw_sprite(list, x + -sw / 2, y + -sh / 2, 0, u, v, 0, 0);
     o->tick += step;
@@ -62,7 +62,7 @@ void dd_orb_draw(float alpha, DdOrb *o, int flag, int x, int y, int step)
         v = 31.0f;
         h = -v / 2;
         sh = -v / 2 + 4;
-        sw = (unsigned int)(alpha * (255.0f * func_088279A4(o->t2, 16)));
+        sw = (unsigned int)(alpha * (255.0f * dd_ease_lin(o->t2, 16)));
         if (flag == 0)
             u += 32;
         sh = sh + 5.0f * sinf(0.08726647f * o->t2 + o->phase2);
@@ -80,7 +80,7 @@ void dd_orb_draw(float alpha, DdOrb *o, int flag, int x, int y, int step)
 /* phase 1 = first frame; returns 2 while running, 4 when done */
 int dd_orbs_update(int phase, DdOrbFx *d)
 {
-    int step = func_08828290();
+    int step = dd_anim_step();
     DdRandSeed *r;
     DdOrb *o;
     DdSparkSet *set;
@@ -110,14 +110,14 @@ int dd_orbs_update(int phase, DdOrbFx *d)
         if (d->count == 1)
             d->fade = 16;
     }
-    fade = func_088279A4(d->fade, 16);
-    out = func_088279D8(d->t - (d->end - 16), 16);
+    fade = dd_ease_lin(d->fade, 16);
+    out = dd_ease_lin_inv(d->t - (d->end - 16), 16);
 
     /* dim the field */
     list = dl_select_layer(2, 0);
-    list = func_088266D8(list, 0, 1, 1, 0, 0, 1, 1);
-    list = func_0882698C(list, 0, 1);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, -1);
+    list = dd_tex_enable(list, 0, 1, 1, 0, 0, 1, 1);
+    list = dd_depth_enable(list, 0, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, -1);
     list = dl_color(list, (unsigned int)(128.0f * fade * out) << 24);
     list = draw_set_offsets(list, 0, 0, 480, 272);
     list = draw_sprite(list, 0, 0, 0, 0, 0, 0, 0);
@@ -150,13 +150,13 @@ int dd_orbs_update(int phase, DdOrbFx *d)
 
     /* the orbs */
     list = dl_select_layer(6, 0);
-    list = func_0882698C(list, 0, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, 0);
-    list = func_08826A64(list, 30);
+    list = dd_depth_enable(list, 0, 0);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
+    list = dd_tex_pack(list, 30);
     dl_set_list(list);
     if (d->count == 5)
-        k = func_08827B6C(d->t - 32, 32, 1) * 3.0f + 1.0f;
+        k = dd_ease_cos_inv(d->t - 32, 32, 1) * 3.0f + 1.0f;
     else
         k = 1.0f;
     a = fade * out;
@@ -164,7 +164,7 @@ int dd_orbs_update(int phase, DdOrbFx *d)
         o = &d->orb[i];
         if (o->flags & 1) {
             s = sinf(0.08726647f * o->t + o->phase);
-            e = func_08827A2C(o->t, 32, 1);
+            e = dd_ease_sin(o->t, 32, 1);
             x = (xo - 90) * e + 314.0f;
             y = e * ((int)(k * 5.0f * s) - 40) + 157.0f;
             o->x = x;
@@ -177,7 +177,7 @@ int dd_orbs_update(int phase, DdOrbFx *d)
     for (i = 0; i < 5; i++) {
         set = &d->set[i];
         if (set->flags & 1) {
-            a = func_088279A4(set->t, 32);
+            a = dd_ease_lin(set->t, 32);
             set->t += step;
             if (set->t >= 32)
                 set->t = 32;
@@ -209,10 +209,10 @@ int dd_orbs_update(int phase, DdOrbFx *d)
 
     /* the sparks */
     list = dl_select_layer(6, 0);
-    list = func_0882698C(list, 0, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, 0);
-    list = func_08826A64(list, 5);
+    list = dd_depth_enable(list, 0, 0);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
+    list = dd_tex_pack(list, 5);
     list = draw_set_offsets(list, 32, 32, 25, 25);
     for (i = 0; i < 5; i++) {
         set = &d->set[i];

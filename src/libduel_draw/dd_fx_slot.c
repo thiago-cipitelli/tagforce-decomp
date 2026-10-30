@@ -74,7 +74,7 @@ void dd_fx_start(DdFxOwner *o, int id)
     int level = 96;
     int arg;
 
-    func_08827F54(o, &type, &sub);
+    dd_pair_get(o, &type, &sub);
     if (o->fx != 0) {
         ok = 0;
     } else {
@@ -199,7 +199,7 @@ void dd_fx_stop(DdFxOwner *o)
     DdFxSlot *s = o->fx;
 
     if (s != 0) {
-        func_0882636C(s->task);
+        dd_task_kill(s->task);
         s->task = -1;
         o->fx = 0;
     }
@@ -223,7 +223,7 @@ void dd_fx2_start(DdFxOwner *o, int id)
     if (o->fx2 != 0) {
         ok = 0;
     } else {
-        func_08827F54(o, &type, &sub);
+        dd_pair_get(o, &type, &sub);
         switch (type) {
         case 12:
             if (id == 250) {
@@ -259,7 +259,7 @@ void dd_fx2_stop(DdFxOwner *o)
     DdFxSlot *s = o->fx2;
 
     if (s != 0) {
-        func_0882636C(s->task);
+        dd_task_kill(s->task);
         s->task = -1;
         o->fx2 = 0;
     }
@@ -279,7 +279,7 @@ void dd_fx3_start(DdFxOwner *o, int id)
     DdFxSlot *s = 0;
     int ok = 1;
 
-    func_08827F54(o, &type, &sub);
+    dd_pair_get(o, &type, &sub);
     if (o->fx3 != 0) {
         ok = 0;
     } else {
@@ -323,7 +323,7 @@ void dd_fx3_stop(DdFxOwner *o)
 
     if (s != 0) {
         snd_cmd_fef9();
-        func_0882636C(s->task);
+        dd_task_kill(s->task);
         s->task = -1;
         o->fx3 = 0;
     }

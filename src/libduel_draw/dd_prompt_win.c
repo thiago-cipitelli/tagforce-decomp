@@ -22,7 +22,7 @@ typedef void (*code)();
 
 int func_08824D7C();
 int func_08825A14();
-int func_0882A294();
+int dd_pick_mask();
 int func_08866988();
 extern int D_08C5881C;
 extern int D_08C58828;
@@ -142,7 +142,7 @@ void func_0882382C(undefined4 param_1,uint param_2,int param_3,int param_4)
     local_3c = local_60;
     local_38 = local_44;
     uVar2 = dl_set_color(param_1,0xffffffff);
-    uVar2 = func_08828DD0(uVar2,0,4,&local_60,1);
+    uVar2 = dd_wline_draw(uVar2,0,4,&local_60,1);
     font_text_set(uVar2);
     font_set_size(0xc,0xc);
     iVar3 = duel_088FEE68();
@@ -309,7 +309,7 @@ void func_08823E34(undefined4 param_1,undefined4 param_2,undefined4 param_3)
   local_c = 0x19;
   local_8 = param_2;
   local_4 = param_2;
-  func_088299D0(&local_2c);
+  dd_pick_init(&local_2c);
   func_08825824(uVar1,param_1,0x30,func_08823F44);
   dd_mode_push(4);
   dd_mode_set_flag(0x31);
@@ -329,22 +329,22 @@ void func_08823F44(int param_1,int param_2)
   short sVar3;
   short sVar4;
   if (param_2 == 0) {
-    func_08829BA8();
+    dd_pick_open_confirm();
   }
   else {
     D_08C5881C = param_1;
-    func_08829AB4();
+    dd_pick_setup();
     *(code **)(param_1 + 0x100) = func_0882404C;
     *(int *)(param_1 + 0xdc) = ~(D_08C58818 >> 1);
     *(undefined4 *)(param_1 + 0x60) = 0;
     sVar2 = *(short *)(param_1 + 0x90);
     sVar3 = *(short *)(param_1 + 0x92);
-    sVar4 = func_0882A1EC(param_1);
+    sVar4 = dd_pick_width(param_1);
     *(short *)(param_1 + 0x6c) = sVar2 + sVar3 + sVar4 + 0x5c;
     sVar2 = *(short *)(param_1 + 0x94);
     sVar3 = *(short *)(param_1 + 0x96);
     bVar1 = *(byte *)(param_1 + 0x98);
-    sVar4 = func_0882A22C(param_1);
+    sVar4 = dd_pick_height(param_1);
     *(ushort *)(param_1 + 0x6e) = (ushort)bVar1 + sVar2 + sVar3 + sVar4 + 0x2a;
   }
   return;
@@ -353,13 +353,13 @@ void func_08823F44(int param_1,int param_2)
 
 void func_08823FF4(void)
 {
-    func_08866988(func_0882A294(D_08C5881C));
+    func_08866988(dd_pick_mask(D_08C5881C));
 }
 
 #ifdef NON_MATCHING
 int func_0882401C(void)
 {
-    func_08829E2C(D_08C5881C);
+    dd_pick_update(D_08C5881C);
     return func_08825728() == 0;
 }
 #endif
@@ -388,8 +388,8 @@ void func_0882404C(undefined4 param_1,int param_2,int param_3)
   float local_14;
   float local_c;
   float local_8;
-  iVar2 = func_0882A1EC(D_08C5881C);
-  iVar3 = func_0882A22C(D_08C5881C);
+  iVar2 = dd_pick_width(D_08C5881C);
+  iVar3 = dd_pick_height(D_08C5881C);
   pfVar5 = (float *)0x48;
   pfVar6 = &local_48;
   pfVar1 = pfVar6;
@@ -422,7 +422,7 @@ void func_0882404C(undefined4 param_1,int param_2,int param_3)
   uVar4 = dl_set_color(param_1,0xffffffff);
   uVar4 = draw_set_offsets(uVar4,1,1,(int)(fVar8 + 2.0),(int)(fVar7 + 1.0));
   uVar4 = draw_sprite(uVar4,(int)(local_48 - 1.0),(int)(local_44 - 1.0),0,0x36,0x65,0,0);
-  uVar4 = func_08828DD0(uVar4,0,6,&local_48,1);
+  uVar4 = dd_wline_draw(uVar4,0,6,&local_48,1);
   iVar2 = func_088044B0(0x40005);
   if (iVar2 != 0) {
     uVar4 = gim_set_texture(uVar4,iVar2);
@@ -438,7 +438,7 @@ void func_0882404C(undefined4 param_1,int param_2,int param_3)
     font_draw_text(iVar3 << 6,(int)(local_44 + 2.0) << 6,(0x1e0 - iVar3) * 0x40,iVar2);
     uVar4 = font_text_clear();
   }
-  func_08829BBC(uVar4,D_08C5881C,param_2 + 0x2d,param_3 + 0x18,0xffffffff,0xffffffff);
+  dd_pick_draw(uVar4,D_08C5881C,param_2 + 0x2d,param_3 + 0x18,0xffffffff,0xffffffff);
   return;
 }
 #endif
@@ -513,7 +513,7 @@ void func_08824544(undefined4 param_1,undefined4 param_2)
   local_c = 0x19;
   local_8 = 1;
   local_4 = 1;
-  func_088299D0(&local_2c);
+  dd_pick_init(&local_2c);
   D_08C58824 = param_2;
   func_08825824(uVar1,param_1,0x30,func_0882464C);
   dd_mode_push(4);
@@ -534,22 +534,22 @@ void func_0882464C(int param_1,int param_2)
   short sVar3;
   short sVar4;
   if (param_2 == 0) {
-    func_08829BA8();
+    dd_pick_open_confirm();
   }
   else {
     D_08C58820 = param_1;
-    func_08829AB4();
+    dd_pick_setup();
     *(code **)(param_1 + 0x100) = func_08824794;
     *(uint *)(param_1 + 0xdc) = ~(D_08C58824 >> 1);
     *(undefined4 *)(param_1 + 0x60) = 0;
     sVar2 = *(short *)(param_1 + 0x90);
     sVar3 = *(short *)(param_1 + 0x92);
-    sVar4 = func_0882A1EC(param_1);
+    sVar4 = dd_pick_width(param_1);
     *(short *)(param_1 + 0x6c) = sVar2 + sVar3 + sVar4 + 0x5c;
     sVar2 = *(short *)(param_1 + 0x94);
     sVar3 = *(short *)(param_1 + 0x96);
     bVar1 = *(byte *)(param_1 + 0x98);
-    sVar4 = func_0882A22C(param_1);
+    sVar4 = dd_pick_height(param_1);
     *(ushort *)(param_1 + 0x6e) = (ushort)bVar1 + sVar2 + sVar3 + sVar4 + 0x2a;
   }
   return;
@@ -564,7 +564,7 @@ void func_088246FC(void)
   uint uVar2;
   uint uVar3;
   uint uVar4;
-  uVar1 = func_0882A294(D_08C58820);
+  uVar1 = dd_pick_mask(D_08C58820);
   uVar3 = 1;
   uVar2 = 2;
   while ((uVar4 = uVar3, (uVar1 & uVar2) == 0 && (uVar3 = uVar3 + 1, uVar4 = 0, (int)uVar3 < 0x15)))
@@ -579,7 +579,7 @@ void func_088246FC(void)
 #ifdef NON_MATCHING
 int func_08824764(void)
 {
-    func_08829E2C(D_08C58820);
+    dd_pick_update(D_08C58820);
     return func_08825728() == 0;
 }
 #endif
@@ -608,8 +608,8 @@ void func_08824794(undefined4 param_1,int param_2,int param_3)
   float local_14;
   float local_c;
   float local_8;
-  iVar2 = func_0882A1EC(D_08C58820);
-  iVar3 = func_0882A22C(D_08C58820);
+  iVar2 = dd_pick_width(D_08C58820);
+  iVar3 = dd_pick_height(D_08C58820);
   pfVar5 = (float *)0x48;
   pfVar6 = &local_48;
   pfVar1 = pfVar6;
@@ -642,7 +642,7 @@ void func_08824794(undefined4 param_1,int param_2,int param_3)
   uVar4 = dl_set_color(param_1,0xffffffff);
   uVar4 = draw_set_offsets(uVar4,1,1,(int)(fVar8 + 2.0),(int)(fVar7 + 1.0));
   uVar4 = draw_sprite(uVar4,(int)(local_48 - 1.0),(int)(local_44 - 1.0),0,0x36,0x65,0,0);
-  uVar4 = func_08828DD0(uVar4,0,6,&local_48,1);
+  uVar4 = dd_wline_draw(uVar4,0,6,&local_48,1);
   iVar2 = func_088044B0(0x40005);
   if (iVar2 != 0) {
     uVar4 = gim_set_texture(uVar4,iVar2);
@@ -658,7 +658,7 @@ void func_08824794(undefined4 param_1,int param_2,int param_3)
     font_draw_text(iVar3 << 6,(int)(local_44 + 2.0) << 6,(0x1e0 - iVar3) * 0x40,iVar2);
     uVar4 = font_text_clear();
   }
-  func_08829BBC(uVar4,D_08C58820,param_2 + 0x2d,param_3 + 0x18,0xffffffff,0xffffffff);
+  dd_pick_draw(uVar4,D_08C58820,param_2 + 0x2d,param_3 + 0x18,0xffffffff,0xffffffff);
   return;
 }
 #endif
@@ -763,7 +763,7 @@ void func_08824D7C(undefined4 param_1,int param_2,int param_3)
   uVar3 = menu_draw_cursor(param_1,D_08C58828,param_2 + 4,param_3 + 4,0x5c,0x5c);
   uVar3 = dl_set_color(uVar3,0xffffffff);
   uVar3 = dl_set_tex_filter(uVar3,0,1);
-  uVar3 = func_0882A94C(0x3fc00000,uVar3,param_2,param_3,100,100,!bVar1);
+  uVar3 = dd_coin_tex(0x3fc00000,uVar3,param_2,param_3,100,100,!bVar1);
   uVar3 = dl_disable(uVar3,1);
   uVar3 = gim_set_texture(uVar3,*(undefined4 *)(iVar5 + 0xe4));
   uVar3 = menu_draw_arrow(uVar3,param_2,param_3 + 0x30,2);

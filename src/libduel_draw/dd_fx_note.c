@@ -22,18 +22,18 @@ FxVec3 *vec3_add(FxVec3 *out, FxVec3 *a, FxVec3 *b);
 float sinf(float x);
 void model_get_bone(void *model, FxMat4 *out, int bone);
 
-float func_088279A4(int t, int len);
-float func_088279D8(int t, int len);
-void func_08827840(void);
-void func_08827668(void);
+float dd_ease_lin(int t, int len);
+float dd_ease_lin_inv(int t, int len);
+void dd_mtx_push_field(void);
+void dd_mtx_pop_all(void);
 void *func_088078C4(void);
-void func_08827BA4(float len, FxVec3 *out);
-int func_0882623C(void *update, void *a, void *b, int size);
-void *func_08826440(int task);
-void *func_0882698C(void *list, int on, int mask);
-void *func_088269D8(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
-void *func_08826A64(void *list, int tex);
-void *func_088266D8(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
+void dd_rand_dir(float len, FxVec3 *out);
+int dd_task_create(void *update, void *a, void *b, int size);
+void *dd_task_mem(int task);
+void *dd_depth_enable(void *list, int on, int mask);
+void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dd_tex_pack(void *list, int tex);
+void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, int wrapu, int wrapv);
 
 typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
     unsigned int lcg;
@@ -68,10 +68,10 @@ int dd_fx_note_update(int phase, DdFxNote *w);
 
 int dd_fx_note_start(int arg, void *a, void *b)
 {
-    int task = func_0882623C(dd_fx_note_update, a, b, sizeof(DdFxNote));
+    int task = dd_task_create(dd_fx_note_update, a, b, sizeof(DdFxNote));
 
     if (task != -1)
-        ((DdFxNote *)func_08826440(task))->arg = arg;
+        ((DdFxNote *)dd_task_mem(task))->arg = arg;
     return task;
 }
 
@@ -88,7 +88,7 @@ int dd_fx_note_update(int phase, DdFxNote *w)
     FxVec3 pos;
     int i;
 
-    func_08827840();
+    dd_mtx_push_field();
     model_get_bone(func_088078C4(), &m, 4);
     vec3_set(&pos, m.m[12], m.m[13], m.m[14]);
     if (phase == 1) {
@@ -116,21 +116,21 @@ int dd_fx_note_update(int phase, DdFxNote *w)
         sign = RAND15();
         n->angle = RAND15() / 32767.0f * 0.69813174f * (float)((sign & 1) * 2 - 1);
         n->phase = RAND15() / 32767.0f * 6.2831855f;
-        func_08827BA4(1.0f, &n->offset);
+        dd_rand_dir(1.0f, &n->offset);
     }
     list = dl_select_layer(1, 0);
-    list = func_088266D8(list, 1, 1, 1, 0, 1, 1, 1);
-    list = func_0882698C(list, 1, 1);
-    list = func_088269D8(list, 1, 0, 2, 3, 0, 0xFFFFFFFF);
-    list = func_08826A64(list, 31);
+    list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
+    list = dd_depth_enable(list, 1, 1);
+    list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0xFFFFFFFF);
+    list = dd_tex_pack(list, 31);
     list = dl_color(list, 0xFFFFFFFF);
     list = dl_enable(list, 7);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
     if (n->flags & 1) {
-        f = func_088279D8(n->t - (n->life - n->fade_out), n->fade_out);
-        list = dl_ambient_light(list, (unsigned int)(func_088279A4(n->t, n->fade_in) * 255.0f * f) << 24 | 0xFFFFFF);
+        f = dd_ease_lin_inv(n->t - (n->life - n->fade_out), n->fade_out);
+        list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(n->t, n->fade_in) * 255.0f * f) << 24 | 0xFFFFFF);
         vec3_add(&p, &n->offset, &pos);
         p.y += sinf(n->phase + (float)n->t * 0.17453294f) * 0.15f;
         mtx_push();
@@ -146,7 +146,7 @@ int dd_fx_note_update(int phase, DdFxNote *w)
     mtx_pop();
     list = dl_disable(list, 7);
     dl_set_list(list);
-    func_08827668();
+    dd_mtx_pop_all();
     w->frame++;
     return 2;
 }

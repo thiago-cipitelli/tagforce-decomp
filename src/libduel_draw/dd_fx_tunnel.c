@@ -29,11 +29,11 @@ void dd_tunnel_kind(int id, int *grow, int *end)
 
 int dd_fx27_start(DdFxSlot *s, int a, int b)
 {
-    int task = func_0882623C(dd_tunnel_update, a, b, sizeof(DdTunnelFx));
+    int task = dd_task_create(dd_tunnel_update, a, b, sizeof(DdTunnelFx));
     DdTunnelFx *d;
 
     if (task != -1) {
-        d = func_08826440(task);
+        d = dd_task_mem(task);
         d->slot = s;
     }
     return task;
@@ -60,12 +60,12 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
     int i;
     int j;
 
-    func_08826E30(7, 240, 136);
+    dd_cam_default(7, 240, 136);
     if (phase == 1)
         dd_tunnel_kind(s->id, &d->grow_end, &d->end);
-    in = func_08827A2C(d->t, 8, 1);
-    out = func_088279A4(d->t - (d->end - 8), 8);
-    func_08827F68(0x6236, d->grow, d->grow_end, &d->se_done, 1);
+    in = dd_ease_sin(d->t, 8, 1);
+    out = dd_ease_lin(d->t - (d->end - 8), 8);
+    dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
 
     /* the disc */
     if (phase == 1) {
@@ -92,10 +92,10 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
-        list = func_0882698C(list, 0, 0);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-        list = func_08826A64(list, 9);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_depth_enable(list, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+        list = dd_tex_pack(list, 9);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -132,10 +132,10 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
-        list = func_088266D8(list, 1, 1, 1, 0, 0, 0, 0);
-        list = func_0882698C(list, 0, 0);
-        list = func_088269D8(list, 1, 0, 6, 10, 0, -1);
-        list = func_08826A64(list, 23);
+        list = dd_tex_enable(list, 1, 1, 1, 0, 0, 0, 0);
+        list = dd_depth_enable(list, 0, 0);
+        list = dd_blend_enable(list, 1, 0, 6, 10, 0, -1);
+        list = dd_tex_pack(list, 23);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
@@ -143,15 +143,15 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
             st = &d->streak[i];
             if (!(st->flags & 1))
                 continue;
-            e = func_08827A2C(st->t, 8, 1);
-            list = dl_ambient_light(list, (unsigned int)((1.0f - out) * func_08827AD4(st->t, 8, 1) * 255.0f) << 24
+            e = dd_ease_sin(st->t, 8, 1);
+            list = dl_ambient_light(list, (unsigned int)((1.0f - out) * dd_ease_cos(st->t, 8, 1) * 255.0f) << 24
                                               | 0xFFFFFF);
             for (j = 0; j < 4; j++) {
                 u = DD_RAND(r) / 32767.0f;
                 list = dl_tex_offset(DD_RAND(r) / 32767.0f, u, list);
                 mtx_push();
                 mtx_rotate_z(st->ang[j]);
-                func_088272BC(e * 0.5f + 0.5f, 1.0f, 0.0f);
+                dd_scale3(e * 0.5f + 0.5f, 1.0f, 0.0f);
                 list = draw_array(list, 4, 0x19F, 6, 0, d->streak_quad);
                 mtx_pop();
             }
@@ -163,7 +163,7 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
         mtx_pop();
         dl_set_list(list);
     }
-    func_08826FEC(7);
+    dd_cam_end(7);
     d->frame++;
     if (run == 1) {
         if (d->grow < d->grow_end)
