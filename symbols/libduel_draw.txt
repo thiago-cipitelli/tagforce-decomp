@@ -88,6 +88,15 @@ dd_fx_aura_update = 0x0884D3EC; // type:func matched src/libduel_draw/dd_fx_card
 dd_fx_fade_set = 0x0884D488; // type:func matched src/libduel_draw/dd_fx_fade.c
 dd_fx_fade_cb = 0x0884D4A8; // type:func matched src/libduel_draw/dd_fx_fade.c
 dd_fx_fade = 0x08C5ABE0; // type:data size:0x14
+dd_fx_transition = 0x0884F3D0; // type:func matched src/libduel_draw/dd_fx_swirl.c
+dd_fx_swirl_start = 0x0884F410; // type:func matched src/libduel_draw/dd_fx_swirl.c
+dd_fx_swirl_update = 0x0884F468; // type:func asm (@asm in src/libduel_draw/dd_fx_swirl.c, C under NON_MATCHING)
+dd_fx_black_start = 0x0884FB88; // type:func matched src/libduel_draw/dd_fx_swirl.c
+dd_fx_black_update = 0x0884FBE0; // type:func matched src/libduel_draw/dd_fx_swirl.c
+dd_fx_note_start = 0x0884FD60; // type:func matched src/libduel_draw/dd_fx_note.c
+dd_fx_note_update = 0x0884FDB8; // type:func asm (@asm in src/libduel_draw/dd_fx_note.c, C under NON_MATCHING)
+dd_fx_splash_start = 0x0885036C; // type:func matched src/libduel_draw/dd_fx_splash.c
+dd_fx_splash_update = 0x088503C4; // type:func asm (@asm in src/libduel_draw/dd_fx_splash.c, C under NON_MATCHING)
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 duel_mode_bit = 0x0886B25C; // type:func import:libduel_eng nid:AA91D845
 duel_turn_player_get = 0x0886B264; // type:func import:libduel_eng nid:D476C5C3
