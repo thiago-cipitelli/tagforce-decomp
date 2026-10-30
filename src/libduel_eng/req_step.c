@@ -5,7 +5,7 @@
 // @asm 0x088DD038-0x088DD1A4
 // @asm 0x088DD660-0x088DD708
 // @asm 0x088DD88C-0x088DD98C
-// @asm 0x088DE360-0x088DEB2C
+// @asm 0x088DE360-0x088DEAF8
 /* Steps of the requests the engine carries out one per frame (duel_req, duel_req_step): input log, messages,
    graveyard and hand moves, summoning and setting a card from the hand. */
 #include "duel.h"
@@ -1626,3 +1626,9 @@ void duel_step_set_st(void)
     }
 }
 #endif
+
+/* 0x088DEAF8: a zona z do jogador p */
+DuelSlot *duel_slot_ptr(unsigned int p, int z)
+{
+    return &duel.players[p & 1].field[z];
+}

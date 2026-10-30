@@ -694,6 +694,128 @@ int duel_08888D60(DuelAct *a)
     return 0;
 }
 
+#ifdef NON_MATCHING
+int duel_08870188(DuelAct *a);
+int duel_count_active(int id);
+void duel_088C9D24(DuelAct *a, unsigned int p, int z);
+int duel_088C97F0(DuelAct *a, unsigned int p, int z, int b, int c);
+void duel_0884CC68(int k);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088AFD5C();
+
+/* 93 palavras, todas no laço do passo 0x78: o original põe i em $s1 e o ponteiro de a->w[i] em $s0 (o mwcc
+   troca) e agenda os campos de ev em outra ordem */
+/* steps of a card that turns up to three monsters of its player face down and back (the change of each is
+   sent as event 8, 9 or 11) */
+int duel_08888ED0(DuelAct *a)
+{
+    int i;
+    int z;
+    int k;
+    struct DuelActX ev;
+
+    if (a->b4_2) {
+        return 0;
+    }
+    switch (duel_step) {
+    case 0x80:
+        if (!duel_08870188(a)) {
+            return 0;
+        }
+        if (!duel_088A9008(a, 0, 0)) {
+            return 0;
+        }
+        if (duel_088BFF78(a->player, a->id, 0) < 2) {
+            duel_0884ACD8(a->player, 0xD);
+            return 0x6E;
+        }
+        a->w[4] = (unsigned int)(a->w[0] << 18) >> 23;
+        a->w[0] = ((unsigned short)duel_act_target(a, 0) >> 8) & 0xFF;
+        return 0x7E;
+    case 0x7E:
+        duel_0884ACD8(a->player, 0x20);
+        return 0x7D;
+    case 0x7D:
+        duel_0884C588(a->player, 8, a->id, 0);
+        return 0x7C;
+    case 0x7C:
+        duel_w_08914900 = duel.players[a->player & 1].field[a->w[0]].faceup
+                          + duel.players[a->player & 1].field[a->w[0]].pos * 2;
+        if (duel_count_active(0x135D)) {
+            if (duel.players[a->player & 1].field[a->w[0]].pos == 0) {
+                duel_088C97F0(a, a->player, a->w[0], 0, 0);
+            }
+        } else {
+            duel_088C9D24(a, a->player, a->w[0]);
+        }
+        duel_w_089148FC = 0;
+        return 0x7B;
+    case 0x7B:
+        if (duel_w_089148FC < 2) {
+            i = duel_w_089148FC;
+            z = duel_pick_monster_zone(a->player);
+            duel_0884CC68(i + 1);
+            duel_088C7B90(0xF);
+            duel_0882619C(a->player, duel_0884C7CC(), 0, 1, 0);
+            a->w[i + 1] = z;
+            duel_w_089148FC++;
+            return 0x7B;
+        }
+        duel_w_089148FC = 0;
+        return 0x7A;
+    case 0x7A:
+        for (i = 0; i < 3; i++) {
+            duel_088C87A8(a->player, a->w[i], a->id, 1, 0);
+        }
+        return 0x79;
+    case 0x79:
+        duel_088CB9E0(a->player, 1 << a->w[2] | (1 << a->w[0] | 1 << a->w[1]));
+        return 0x78;
+    case 0x78:
+        duel_088C7BA4();
+        for (i = 0; i < 3; i++) {
+            z = a->w[i];
+            ev.s_player = a->player;
+            ev.s_zone = z;
+            ev.s_b15 = duel.players[a->player & 1].field[z].faceup;
+            ev.s_b14 = duel.players[a->player & 1].field[z].pos;
+            ev.s_uid = CARD_UID(duel.players[a->player & 1].field[z].card);
+            ev.s_b16 = 0;
+            ev.s_b17 = 0;
+            if (ev.s_uid == a->w[4]) {
+                unsigned char b = ev.s_b15;
+
+                if (duel_w_08914900 != b + ev.s_b14 * 2) {
+                    k = 0;
+                    switch (b) {
+                    case 0:
+                        k = 9;
+                    }
+                    if (b == (duel_w_08914900 & 1)) {
+                        k = 0xB;
+                    }
+                    if (k) {
+                        duel_088AFD5C((unsigned short)k, ev);
+                    }
+                }
+            } else {
+                duel_088AFD5C(8, ev);
+            }
+        }
+        duel_088C7CF0();
+        duel_088C78E0(a->player);
+        return 0;
+    case 0x6E:
+        duel_088328FC(1 - a->player);
+        return 0x64;
+    case 0x64:
+        duel_088C78E0(a->player);
+        return 0;
+    }
+    return 0;
+}
+#endif
+
 #ifdef NON_MATCHING /* ordem dos argumentos de duel_088C67F0 */
 int duel_08889434(DuelAct *a)
 {
