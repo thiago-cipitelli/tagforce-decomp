@@ -3,7 +3,6 @@
 // @asm 0x088139EC-0x08813B7C
 // @asm 0x08813D60-0x08813EC0
 // @asm 0x088140F8-0x088143A8
-// @asm 0x088143A8-0x08814460
 // @data 0x08822024-0x08822050
 /* (The code of libdeck dk_filter.c, first half; the lesson has no "new" filter.) Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
    with its word history, the filters (kind, type, race, level ranges, spell/trap kinds, limit,
@@ -126,13 +125,14 @@ unsigned short dt_search_step(DtList *l)
 }
 
 
-#ifdef NON_MATCHING /* laços do histórico com outra alocação ($s trocados) */
-* the matches become the visible order; the word goes on top of the history */
+#ifdef NON_MATCHING /* 8 palavras: len e o ponteiro do histórico com $s0/$s2 trocados (já com o ponteiro explícito e a melhor ordem de declarações) */
+/* the matches become the visible order; the word goes on top of the history */
 void dt_search_finish(DtList *l)
 {
-    int len;
     int i;
+    DtWordsView *v;
     int k;
+    int len;
 
     if (dt_search.out != 0) {
         memcpy(l->order, dt_search.out, dt_search.n << 1);
@@ -141,14 +141,14 @@ void dt_search_finish(DtList *l)
         dt_search.out = 0;
     }
     l->filter = 8;
-    k = 7;
     len = wcslen(dt_search.word);
-    for (i = 0; i < 8; i++) {
-        if (DK_WORDS[i][0] == 0) {
+    k = 7;
+    for (i = 0, v = (DtWordsView *)&dts; i < 8; i++, v = (DtWordsView *)((char *)v + 64)) {
+        if (v->words[0][0] == 0) {
             k = i;
             break;
         }
-        if (len == wcslen(DK_WORDS[i]) && wcscmp(DK_WORDS[i], dt_search.word) == 0) {
+        if (len == wcslen(v->words[0]) && wcscmp(v->words[0], dt_search.word) == 0) {
             k = i;
             break;
         }
@@ -165,8 +165,8 @@ DtFilterFn dt_filters[9] = {
 };
 
 
-#ifdef NON_MATCHING /* laço com a tabela de filtros; alocação diferente */
-* keeps the entries passing filter f (arg its parameter); returns the count */
+#ifdef NON_MATCHING /* 65 palavras, 1 instrução a menos: o original guarda e no a1 (move a0,a1 para dt_filter_attr) e lê e->id antes do teste do filtro nulo */
+/* keeps the entries passing filter f (arg its parameter); returns the count */
 int dt_list_filter(DtList *l, unsigned short f, unsigned int *arg)
 {
     unsigned short *tmp = heap_alloc(dts.heap, l->count << 1);
@@ -246,8 +246,8 @@ int dt_filter_level(unsigned short id, unsigned int mask)
 }
 
 
-#ifdef NON_MATCHING /* o default da tabela de saltos interna sai com beqz+nop no original */
-* spell and trap kinds */
+#ifdef NON_MATCHING /* 2 palavras: o default da tabela de saltos interna sai com beqz+nop para o move v0,zero no original (o mwcc usa beqzl para o epílogo); default explícito, case 1 vazio e default no fim do switch externo não resolvem */
+/* spell and trap kinds */
 int dt_filter_spelltrap(unsigned short id, unsigned int mask)
 {
     switch (card_get_attribute_icon(id)) {
@@ -352,8 +352,8 @@ int dt_text_match(unsigned short id, unsigned short *word)
 }
 
 
-#ifdef NON_MATCHING /* ordem de um bne no laço de busca */
-* Horspool search of word (n chars) in text */
+#ifdef NON_MATCHING /* 2 palavras: move t2,a3 (j) no delay do bne em vez de antes dele; while/for(;;) e ordem das atribuições não resolvem */
+/* Horspool search of word (n chars) in text */
 unsigned short *dt_find_text(unsigned short *text, unsigned short *word, int n)
 {
     int i;
@@ -407,24 +407,20 @@ unsigned short *dt_find_text(unsigned short *text, unsigned short *word, int n)
 #endif
 
 
-#ifdef NON_MATCHING /* teste do caractere e máscaras u16 com outra alocação */
-* upper case, full-width ASCII to half width, katakana to hiragana */
+/* upper case, full-width ASCII to half width, katakana to hiragana */
 void dt_fold_text(unsigned short *dst, unsigned short *src)
 {
-    unsigned short c = *src++;
+    unsigned short c;
 
-    while (c != 0) {
-        if (c >= 0xFF01 && c < 0xFF5E)
+    while ((c = *src++) != 0) {
+        if (c >= 0xFF01 && c <= 0xFF5D)
             c += 0x120;
         if (c >= 0x30A1 && c <= 0x30F4)
             c += (unsigned short)(0x3041 - 0x30A1);
         else
             c = towupper(c);
-        *dst = c;
-        dst++;
-        c = *src++;
+        *dst++ = c;
     }
     *dst = 0;
 }
-#endif
 
