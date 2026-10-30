@@ -4,7 +4,7 @@
 /* Camera, fog and lights of the field: read from the tracks of the background's camera file
    (bone 0 the camera, bones 1..4 the lights) or the default set; the field spell effects that
    start with a background. */
-#include "libduel_draw.h"
+#include "dd_d1.h"
 
 float keyframe_eval(void *track, float t);
 void anim_eval_track(DdVec4 *out, void *tms, void *tr, float t);

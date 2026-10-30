@@ -3,7 +3,7 @@
 /* The 3D field behind the cards: two background slots (fmagicNNNN.ehp model, animation and
    camera tracks) that cross-fade when the field spell changes, the camera, fog and lights set from
    the background's tracks, and the queries other parts make (view matrix, projection). */
-#include "libduel_draw.h"
+#include "dd_d1.h"
 
 void mtx_set_mode(int mode);
 void mtx_identity(void);

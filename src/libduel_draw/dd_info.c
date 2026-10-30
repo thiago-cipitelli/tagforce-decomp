@@ -5,7 +5,7 @@
 /* Card info panel of the duel (BOOT cardlist): one panel, or two side by side when the player
    opens it or browses the field; the panel slides in and out, shows the printed stats of the card
    and its current values on the field (ATK/DEF, counters, field spell bonuses). */
-#include "libduel_draw.h"
+#include "dd_d1.h"
 
 typedef struct CardListCfg {           /* BOOT cardlist_init */
     void *gim;

@@ -3,16 +3,16 @@
 /* Module entry and the API the duel manager calls (libduel_mgr imports them by NID): heap and
    loader setup, the duel parameters (characters, decks), the loading of the duel resources, the
    start and end of the duel view, and small forwards to the field and menu code. */
-#include "libduel_draw.h"
+#include "dd_d1.h"
 
 /* other ranges of libduel_draw */
 void dd_param_load(int a, const char *path);
 void dd_view_init(void);
 void dd_view_free(void);
 void dd_info_select_uid();
-void func_08809B1C(void);
-void func_08809B40(int i, RecipeData *deck);
-void func_08809CFC(int side, int v);
+void dd_cobjs_setup(void);
+void dd_cobjs_add_deck(int i, RecipeData *deck);
+void dd_cobjs_map(int side, int v);
 void func_0880BEB0(void);
 void func_0880CDCC();
 void func_08811D18(int side, int lp, int a);
@@ -182,11 +182,11 @@ int func_08806030(void)
     dd_view_init();
     func_0881E00C();
     func_08859DF8();
-    func_08809B1C();
+    dd_cobjs_setup();
     for (i = 0; i < sc->p.n; i++)
-        func_08809B40(i, sc->p.deck[i]);
-    func_08809CFC(0, sc->disk[func_0886675C(0)]);
-    func_08809CFC(1, sc->disk[func_0886675C(1)]);
+        dd_cobjs_add_deck(i, sc->p.deck[i]);
+    dd_cobjs_map(0, sc->disk[func_0886675C(0)]);
+    dd_cobjs_map(1, sc->disk[func_0886675C(1)]);
     func_08811D18(0, 8000, 1);
     func_08811D18(1, 8000, 1);
     func_08811D98(func_08866744(sc->first), 1);

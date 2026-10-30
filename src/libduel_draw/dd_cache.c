@@ -6,7 +6,7 @@
 /* Data loaded for the duel: the card image cache (CIP, medium and large), the field backgrounds
    (duel/bg/fmagicNNNN.ehp) and the character cut-ins with their faces and voices; the binary
    search shared by the resource tables. */
-#include "libduel_draw.h"
+#include "dd_d1.h"
 
 void dd_cards_term(void);
 void dd_cutin_free(void);

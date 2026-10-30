@@ -2,7 +2,7 @@
 // @data 0x08872BE0-0x08874410
 /* Resource tables of the duel scene: the packs (basic/cutin EHPs loaded on demand by region and
    language) and the models, textures, EHF animations and string tables found inside them. */
-#include "libduel_draw.h"
+#include "dd_d1.h"
 
 DdModelRes dd_models[0x26] = {
     { 0x10001, 0x80001, "duel-bg-fmagic05-base.tms", 0, "duel-bg-fmagic05-base.tma", 0 },

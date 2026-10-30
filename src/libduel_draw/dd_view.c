@@ -1,7 +1,7 @@
 // @range 0x08807064-0x0880720C
 /* The duel view as a whole: init and free of its parts (field, cursor, cards, LP panel...), the
    3D pass of each frame and the per-frame update, gated by the scene flags. */
-#include "libduel_draw.h"
+#include "dd_d1.h"
 
 /* other ranges of libduel_draw */
 void dd_field_init(void);
@@ -12,10 +12,10 @@ void dd_info_init(void);
 void dd_info_term(void);
 void dd_info_draw(void);
 void dd_info_update(float dt);
-void func_08809B1C(void);
-void func_08809CE4(void);
-void func_08809E4C(void);
-void func_08809EF0(float dt);
+void dd_cobjs_setup(void);
+void dd_cobjs_clear(void);
+void dd_cobjs_draw(void);
+void dd_cobjs_update(float dt);
 void func_088116FC(void);
 void func_08811710(void);
 void func_08811718(void);
@@ -35,7 +35,7 @@ void dd_view_init(void)
     dd_field_init();
     dd_info_init();
     func_08814DFC();
-    func_08809B1C();
+    dd_cobjs_setup();
     func_08816FD0();
     func_088116FC();
 }
@@ -44,7 +44,7 @@ void dd_view_free(void)
 {
     dd_field_free();
     dd_info_term();
-    func_08809CE4();
+    dd_cobjs_clear();
     func_08816FE4();
     func_08811710();
 }
@@ -56,7 +56,7 @@ void dd_view_draw3d(void)
     if (dd_scene_flags(1, -1))
         dd_field_draw();
     if (dd_scene_flags(2, -1))
-        func_08809E4C();
+        dd_cobjs_draw();
     if (dd_scene_flags(4, -1))
         func_08811718();
     if (dd_scene_flags(4, -1))
@@ -67,7 +67,7 @@ void dd_view_update(float dt)
 {
     if (dd_scene_flags(1, -1))
         dd_field_update(dt);
-    func_08809EF0(dt);
+    dd_cobjs_update(dt);
     func_08811C60(dt);
     dd_info_update(dt);
 }

@@ -3,7 +3,7 @@
 /* The duel scene itself: the scene flags, the standalone test main (loads two recipe decks and
    libduel_eng.prx and runs a duel without libduel_mgr), the per-frame draw of the layers, the
    view state (tag duel, the two highlighted card locations) and small queries on the game state. */
-#include "libduel_draw.h"
+#include "dd_d1.h"
 
 /* other ranges of libduel_draw */
 void func_08805C34(int base, int size);
@@ -18,7 +18,7 @@ void func_088061C8(void);
 int func_088061FC(void);
 void dd_view_draw3d(void);
 void dd_view_update(float dt);
-DdCardObj *func_0880B7B8(int player, int zone, int index);
+
 void func_08811D48();
 int func_0881351C(void);
 void func_0881CA40(void);
@@ -356,13 +356,13 @@ void dd_view_locs_set(DdLoc a, DdLoc b)
 {
     DdView *v = &dd_view;
 
-    if (a.index > 0 && a.index < 5) {
-        a.zone += a.index;
-        a.index = 0;
+    if (a.idx > 0 && a.idx < 5) {
+        a.zone += a.idx;
+        a.idx = 0;
     }
-    if (b.index > 0 && b.index < 5) {
-        b.zone += b.index;
-        b.index = 0;
+    if (b.idx > 0 && b.idx < 5) {
+        b.zone += b.idx;
+        b.idx = 0;
     }
     v->a = a;
     v->b = b;
@@ -374,7 +374,7 @@ int dd_loc_visible(DdLoc loc)
     int zone = loc.zone;
     int player;
     unsigned int index;
-    DdCardObj *c;
+    DdCobj *c;
 
     if (zone == 11)
         goto own;
@@ -387,19 +387,19 @@ int dd_loc_visible(DdLoc loc)
     case 12:
     case 14:
     case 15:
-        return func_08866BC0(loc.player, zone, loc.index) != 0;
+        return func_08866BC0(loc.player, zone, loc.idx) != 0;
     }
 field:
-    c = func_0880B7B8(loc.player, zone, loc.index);
-    if (c && c->shown)
+    c = dd_cobj_at(loc.player, zone, loc.idx);
+    if (c && c->loc.f14)
         return 1;
 own:
     player = loc.player;
-    if (func_08866940(player) || func_08866BC0(player, zone, index = loc.index))
+    if (func_08866940(player) || func_08866BC0(player, zone, index = loc.idx))
         return 1;
-    c = func_0880B7B8(player, zone, index);
+    c = dd_cobj_at(player, zone, index);
     if (c) {
-        if (c->f8c_7 || c->f8c_6 || c->f8d_0)
+        if (c->a7 || c->a6 || c->b0)
             return 1;
     }
     return 0;
