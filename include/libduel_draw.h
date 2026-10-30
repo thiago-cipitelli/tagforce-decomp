@@ -8,6 +8,7 @@
 #include "game.h"
 #include "libc.h"
 #include "psp.h"
+#include "vfpu.h"
 
 /* ---- 0x08837098-0x0884774C ---- */
 
@@ -122,5 +123,65 @@ typedef struct DdOrbFx {
     DdOrb orb[5];                      /* +0x18 */
     DdSparkSet set[5];                 /* +0xE0 */
 } DdOrbFx;
+
+/* the ring of 20 flames turning in perspective (task data, 0x4944 bytes) */
+typedef struct DdRingVtx {             /* GU_SPRITES vertex: TEXTURE_32BITF | VERTEX_32BITF */
+    float u, v;
+    float x, y, z;
+} DdRingVtx;
+
+typedef struct DdRingSpark {           /* 0x1C */
+    int flags;                         /* bit 0: alive */
+    int t;
+    int frame;                         /* 0-7: d->quad[frame] */
+    float vy;
+    ScePspFVector3 pos;
+} DdRingSpark;
+
+typedef struct DdRingFlame {           /* 0x398 */
+    int flags;                         /* bit 0: shown */
+    int t;
+    ScePspFVector3 pos;                /* on the ring */
+    int next;                          /* ring index of the next spark */
+    DdRingSpark p[32];
+} DdRingFlame;
+
+typedef struct DdRingFx {
+    int t;                             /* +0x0000 */
+    int end;                           /* +0x0004 -1: until stopped */
+    int out;                           /* +0x0008 fade out 0-16 */
+    int count;                         /* +0x000C flames (20: the full ring with the flash) */
+    int shown;                         /* +0x0010 */
+    int tick;                          /* +0x0014 frames to the next flame */
+    int flags;                         /* +0x0018 bit 0: sound played, bit 1: flash */
+    DdRingVtx quad[8][2];              /* +0x001C the 8 frames of the flame sheet */
+    DdRingFlame flame[20];             /* +0x015C */
+    int flash;                         /* +0x493C 0-30 */
+    int flash_end;                     /* +0x4940 0-30 */
+} DdRingFx;
+
+void func_08826EE4(float fov, float aspect, float znear, float zfar, int layer, int cx, int cy,
+                   ScePspFVector3 *eye, ScePspFVector3 *at, ScePspFVector3 *up); /* 3D camera begin */
+void func_08826FEC(int layer);                               /* 3D camera end */
+void func_08827214(ScePspFMatrix4 *m);                      /* billboard matrix of the camera */
+float func_08827AD4(int t, int n, int k);                   /* ease in */
+int func_0880773C(int se);                                  /* plays a sound effect */
+
+/* BOOT */
+ScePspFMatrix3 *mat3_identity(ScePspFMatrix3 *out);
+ScePspFMatrix3 *mat3_rot_x(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle);
+ScePspFVector3 *mat3_transform_vec3(ScePspFVector3 *out, const ScePspFMatrix3 *m, const ScePspFVector3 *v);
+ScePspFVector3 *vec3_set(ScePspFVector3 *out, float x, float y, float z);
+ScePspFVector3 *vec3_scale(ScePspFVector3 *out, const ScePspFVector3 *v, float s);
+ScePspFVector3 *vec3_add(ScePspFVector3 *out, const ScePspFVector3 *a, const ScePspFVector3 *b);
+void *dl_ambient_light(void *list, unsigned int color);
+void *draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
+void mtx_set_mode(int mode);
+void mtx_push(void);
+void mtx_pop(void);
+void mtx_identity(void);
+void mtx_translate(ScePspFVector3 *v);
+void mtx_mult(ScePspFMatrix4 *m);
+void mtx_scale3(ScePspFVector3 *v);
 
 #endif

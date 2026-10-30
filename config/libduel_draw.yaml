@@ -27,6 +27,10 @@ segments:
     subalign: null
     subsegments:
       - [0x60, asm, text_0]
+      - [0x330F8, c, dd_fx_orbs]
+      - [0x33168, asm, dd_fx_orbs_asm_08837108]
+      - [0x340C8, c, dd_fx_ring]
+      - [0x3419C, asm, dd_fx_ring_asm_0883813C]
       - [0x34D3C, c, dd_fx_slot]
       - [0x35634, asm, text_1]
       - [0x672BC, asm, sceStub_text]
@@ -43,6 +47,9 @@ segments:
       - [0x6BDEC, data, data_0]
       - [0x6C254, .data, dd_fx_slot__rodata]
       - [0x6C804, data, data_1]
+      - [0x72BB4, .data, dd_fx_orbs]
+      - [0x72BFC, .data, dd_fx_ring]
+      - [0x72C14, data, data_2]
       - { start: 0x79070, type: bss, vram: 0x887D010, name: bss }
   - [0x79070]
 
