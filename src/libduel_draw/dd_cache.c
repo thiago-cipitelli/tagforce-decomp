@@ -186,7 +186,7 @@ void dd_cutin_setup(int *ids, int *subs, int n)
     int i;
 
     if (c->heap == 0)
-        c->heap = func_0881CA54(func_08806D04() ? 0x2D0000 : 0x5A0000);
+        c->heap = func_0881CA54(dd_is_tag_duel() ? 0x2D0000 : 0x5A0000);
     c->n = 0;
     for (i = 0; i < n; i++) {
         c->slot[c->n].id = ids[i];

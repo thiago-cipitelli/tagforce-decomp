@@ -11,6 +11,7 @@
 #include "psp.h"
 #include "cip.h"
 #include "card_db.h"
+#include "duel_setup.h"
 
 /* ---- 0x08804000-0x088143A4 ---- */
 typedef struct Model Model;            /* BOOT model (opaque here) */
@@ -122,6 +123,138 @@ typedef struct DdCutins {              /* 0x0887D010 */
     void *heap;                        /* +0x84 */
 } DdCutins;
 
+typedef struct DdDuelParam {           /* duel parameters from libduel_mgr, 0x40 */
+    int n;                             /* players (2, or 4 in a tag duel) */
+    int chr[4];                        /* +0x04 charmap character of each player */
+    int sub[4];                        /* +0x14 cut-in variant */
+    RecipeData *deck[4];               /* +0x24 */
+    int disk[2];                       /* +0x34 duel disk of players 0/1 */
+    int first;                         /* +0x3C player who starts */
+} DdDuelParam;
+
+typedef struct DdScene {               /* 0x08C3CDBC */
+    int active;                        /* duel view running */
+    int result;                        /* +0x04 returned to libduel_mgr each frame */
+    int flags;                         /* +0x08 dd_scene_flags */
+    int eng;                           /* +0x0C libduel_eng.prx module (standalone test) */
+    DdDuelParam p;                     /* +0x10 */
+    int disk[2];                       /* +0x50 */
+    int first;                         /* +0x58 */
+    RecipeData decks[4];               /* +0x5C copies of p.deck */
+} DdScene;
+
+int efs_set_heap(void *heap);
+int efs_term(void);
+unsigned int *dl_select_layer(int layer, unsigned int *size);
+unsigned int *view_init(unsigned int *list);
+int dl_set_list(void *list);
+void model_set_allocator(void *(*alloc)(unsigned int size), void (*freefn)(void *p));
+void font_set_flag2(int on);
+
+typedef struct DdLoc {                 /* card location: player, zone, index in the zone */
+    unsigned short player : 1;
+    unsigned short zone : 5;
+    unsigned short index : 10;
+} DdLoc;
+
+typedef struct DdView {                /* 0x08C3D238, 0x20 */
+    int tag;                           /* tag duel view */
+    int x04;
+    unsigned short x08;
+    DdLoc a;                           /* +0x0A highlighted locations */
+    DdLoc b;                           /* +0x0C */
+    unsigned short x0e;
+    int x10;
+    int x14;
+    int idle[2];                       /* +0x18 frames each player held the input */
+} DdView;
+
+typedef struct DdCardObj {             /* card drawn on the field (0x0880B7B8) */
+    unsigned char pad00[0x85];
+    unsigned char f85_lo : 6;
+    unsigned char shown : 1;           /* +0x85 bit 6 */
+    unsigned char f85_7 : 1;
+    unsigned char pad86[0x8C - 0x86];
+    signed char f8c_lo : 6;
+    signed char f8c_6 : 1;
+    signed char f8c_7 : 1;
+    signed char f8d_0 : 1;
+} DdCardObj;
+
+typedef struct DdVec3 {
+    float x, y, z;
+} DdVec3;
+
+typedef struct DdVec4 {
+    float x, y, z, w;
+} DdVec4;
+
+typedef struct DdMat {
+    float m[16];
+} DdMat;
+
+typedef struct DdLight {               /* BOOT Light, 0x3C */
+    int type;                          /* 0 directional, 1 point, 2 spot */
+    unsigned int ambient;              /* +0x04 */
+    unsigned int diffuse;              /* +0x08 */
+    unsigned int specular;             /* +0x0C */
+    float pos[3];                      /* +0x10 */
+    float dir[3];                      /* +0x1C */
+    float spot_exp;                    /* +0x28 */
+    float spot_cutoff;                 /* +0x2C */
+    float atten[3];                    /* +0x30 */
+} DdLight;
+
+typedef struct DdCam {                 /* camera, fog and lights of the field, 0x150 */
+    DdVec4 eye;                        /* +0x00 */
+    DdVec4 up;                         /* +0x10 */
+    DdVec4 at;                         /* +0x20 */
+    float fov;                         /* +0x30 */
+    float near;                        /* +0x34 */
+    float far;                         /* +0x38 */
+    int fog;                           /* +0x3C */
+    float fog_near;                    /* +0x40 */
+    float fog_far;                     /* +0x44 */
+    unsigned int fog_color;            /* +0x48 */
+    unsigned int ambient;              /* +0x4C */
+    int light_on[4];                   /* +0x50 */
+    DdLight light[4];                  /* +0x60 */
+} DdCam;
+
+typedef struct DdFieldSlot {           /* background slot, 0x28 */
+    int id;                            /* fmagic number, -1 none */
+    void *tms;                         /* +0x04 from filelist-ptrs.txt */
+    void *tmt;                         /* +0x08 */
+    void *tma;                         /* +0x0C */
+    void *cam;                         /* +0x10 camera/light tracks */
+    int state;                         /* +0x14 0 free, 1 loading, 2 fading in, 3 shown, 4 leaving */
+    Model *model;                      /* +0x18 */
+    float time;                        /* +0x1C */
+    int fresh;                         /* +0x20 effect not started yet */
+    int fx;                            /* +0x24 effect handle, -1 none */
+} DdFieldSlot;
+
+typedef struct DdField {               /* 0x08C3D260, 0x220 */
+    DdFieldSlot slot[2];
+    int cur;                           /* +0x050 slot shown */
+    int next;                          /* +0x054 background requested meanwhile, -1 none */
+    int mode;                          /* +0x058 1: default camera */
+    int pad5c;
+    DdCam cam;                         /* +0x060 */
+    int loaded;                        /* +0x1B0 set by the load transition callback */
+    int cleared;                       /* +0x1B4 set by the show transition callback */
+    int pad1b8[2];
+    DdMat view;                        /* +0x1C0 */
+    float fov;                         /* +0x200 */
+    float aspect;
+    float near;
+    float far;
+    DdVec4 dir;                        /* +0x210 */
+} DdField;
+
+extern DdField dd_field;
+extern DdScene dd_scene;
+extern DdView dd_view;
 extern DdModelRes dd_models[0x26];
 extern DdPack dd_packs[4];
 extern DdGimRes dd_gims[0x23];
@@ -139,6 +272,35 @@ void *dd_ehf_get(int id);
 void *dd_gim_get(int id);
 void *dd_bin_get(int id);
 void *dd_pack_get(int id);
-int func_08806D04(void);
+void dd_test_main(void);
+void dd_test_exit(void);
+int dd_scene_flags(int mask, int on);
+void dd_view_draw(void);
+PadState *dd_pad_get(void);
+void dd_view_clear(void);
+void dd_view_term(void);
+void dd_view_tag_set(int tag);
+int dd_is_tag_duel(void);
+void dd_view_locs_get(DdLoc *a, DdLoc *b);
+void *dd_bg_get(int id);
+void dd_bg_release(int id);
+int dd_bg_filelist(int id, int *a, int *b, int *c, int *d);
+void *dl_clear_color(void *list, unsigned int rgba);
+void *dl_clear_depth(void *list, int z);
+void *dl_clear_stencil(void *list, unsigned int s);
+void *dl_clear(void *list, int flags);
+unsigned int *dl_disable(unsigned int *list, int state);
+void *dl_enable(void *list, int state);
+void dd_res_sort(void);
+void dd_res_term(void);
+void dd_res_release(void);
+void dd_cards_reset(void);
+void dd_cards_add_deck(RecipeData *deck);
+int dd_cards_ready_m(void);
+int dd_cards_ready_h(void);
+void dd_cutin_setup(int *ids, int *subs, int n);
+void dd_cutin_free(void);
+void dd_cutin_load(void);
+int dd_cutin_ready(void);
 
 #endif
