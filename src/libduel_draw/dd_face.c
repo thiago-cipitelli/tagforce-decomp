@@ -1,6 +1,6 @@
 // @range 0x0881299C-0x0881351C
 // @data 0x08875104-0x0887541C
-// @asm 0x0881299C-0x0881351C
+// @asm 0x0881299C-0x088131F0
 /* Portraits of the duelists on the LP panel: the frame, the cut-in face (kao.gim/karada.gim of
    the character's cut-in pack) or the icon of the character, the blinking turn marker, the
    pad button icon; the sprite table of duel_thing01.gim used by the panel. */
@@ -144,43 +144,57 @@ void *dd_face_frame(void *list, int x, int y, int w, int h, int side)
     list = draw_set_offsets(list, 4, 1, 4, h - 7);
     return draw_sprite(list, xr, y + 3, 0, u + 0x2B, 3, 0, 0);
 }
+#endif
 
 /* blinking glow over the portrait of the player on turn */
 void *dd_face_blink(void *list, int side)
 {
-    unsigned int f = *gfx_get_state();
-    int x = side == 0 ? 0x8A : 0x1A9;
-    int a = 20 - f % 40;
-    void *gim = dd_gim_get(0x4001F);
+    unsigned int f = *gfx_get_state() % 40;
+    int x;
+    int y;
+    int a;
+    unsigned int color;
+    void *gim;
 
+    if (side == 0) {
+        x = 0x8A;
+        y = 0x12;
+    } else {
+        x = 0x1A9;
+        y = 0x12;
+    }
+    a = 20 - f;
+    color = (a * a * 200 / 400) << 24 | 0xFFFFFF;
+    gim = dd_gim_get(0x4001F);
     if (gim)
         list = gim_set_texture(list, gim);
     list = dl_enable(list, 4);
     list = dl_disable(list, 1);
     list = dl_blend_func(list, 0, 2, 10, 0, 0xFFFFFFFF);
-    list = dl_ambient_color(list, (a * a * 200 / 400) << 24 | 0xFFFFFF);
+    list = dl_ambient_color(list, color);
     list = dl_tex_func(list, 0, 1);
     list = draw_set_offsets(list, 0x20, 0x20, 0x40, 0x40);
-    list = draw_sprite(list, x, 0x12, 0, 0x60, side << 5, 0, 0);
+    list = draw_sprite(list, x, y, 0, 0x60, side << 5, 0, 0);
     list = dl_enable(list, 1);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     return dl_blend_func(list, 0, 2, 3, 0, 0);
 }
-#endif
 
-#ifdef NON_MATCHING /* forma não reproduzida */
 /* pad icon by the portrait of the player who acts */
 void *dd_turn_icon(void *list)
 {
     int x;
+    int y;
 
-    if (dd_input_player() == 0)
+    if (dd_input_player() == 0) {
         x = 0x94;
-    else
+        y = 0x4A;
+    } else {
         x = 0x1CD;
-    return dd_button_icon(list, x, 0x4A);
+        y = 0x4A;
+    }
+    return dd_button_icon(list, x, y);
 }
-#endif
 
 typedef struct DdIconUv {
     int u;
@@ -190,7 +204,6 @@ typedef struct DdIconUv {
 DdIconUv dd_button_uv[4] = { { 0x0, 0x54 }, { 0x12, 0x54 }, { 0x0, 0x6A }, { 0x12, 0x6A } };
 char dd_button_gim[] = "buttom_icon1.gim";
 
-#ifdef NON_MATCHING /* forma não reproduzida */
 /* animated pad button (4 frames) from the system pack */
 void *dd_button_icon(void *list, int x, int y)
 {
@@ -203,18 +216,16 @@ void *dd_button_icon(void *list, int x, int y)
     if (gim == 0)
         return list;
     list = gim_set_texture(list, gim);
-    f = *gfx_get_state();
+    f = *gfx_get_state() / 15 & 3;
     list = dl_enable(list, 9);
     list = dl_disable(list, 1);
     list = dl_disable(list, 4);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = draw_set_offsets(list, 0x12, 0x16, 0x12, 0x16);
-    f = f / 30 & 3;
     list = draw_sprite(list, x, y, 0, dd_button_uv[f].u, dd_button_uv[f].v, 0, 0);
     list = dl_enable(list, 4);
     return dl_enable(list, 1);
 }
-#endif
 
 DdUv dd_uv[86] = {
     { 0x0, 0x0, 0x7, 0x9 }, { 0x7, 0x0, 0x7, 0x9 }, { 0xE, 0x0, 0x7, 0x9 }, { 0x15, 0x0, 0x7, 0x9 },

@@ -97,12 +97,13 @@ void dd_cobjs_map(int side, int deck)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem do lui/sll no cálculo do endereço */
+#ifdef NON_MATCHING /* 1 palavra: o original soma índice + base (addu v1,v0,v1), aqui base + índice em todas as formas tentadas */
 int dd_cobjs_map_get(int side)
 {
-    DdCobjs *b = &dd_cobjs;
+    char *b = (char *)&dd_cobjs;
 
-    return b->map[side != 0];
+    b = b + (side != 0) * 4;
+    return ((DdCobjs *)b)->map[0];
 }
 #endif
 

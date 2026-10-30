@@ -8,7 +8,6 @@
 // @asm 0x0881FAF8-0x0881FB28
 // @asm 0x0881FB28-0x0881FBD4
 // @asm 0x0881FC48-0x0881FD30
-// @asm 0x0881FD30-0x0881FDB4
 // @asm 0x0881FDB4-0x0881FEC0
 // @asm 0x0881FEC0-0x0881FFB8
 // @data 0x088760B0-0x088760D0
@@ -456,26 +455,28 @@ void dd_damage_counter(float *pos, int value, int uid)
 #endif
 
 /* waits for the card popup to close before the counter */
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_counter_wait(float dt, DdTask *t, void *arg)
 {
     DdCounter *c = t->arg;
-    DdTask *p;
-    float pos[4] = { 0 };
+    DdTask *const head = &dd_tasks.head;
+    DdTask *p = head;
+    float pos[4];
 
-    for (p = &dd_tasks.head; p != c->popup; ) {
-        p = p->prev;
-        if (p == &dd_tasks.head)
+    do {
+        if (p == c->popup)
             break;
-    }
-    if (p == &dd_tasks.head) {
+        p = p->prev;
+    } while (p != head);
+    if (p != head) {
+        req_flag_set(c->flag);
+    } else {
+        char *d = (char *)pos;
+        int n = 16;
+        if (d) do { *d++ = 0; } while (--n);
         dd_damage_counter(pos, c->value, c->uid);
         dd_task_remove_cur();
-    } else {
-        req_flag_set(c->flag);
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_counter(DdCard *card, int value, int uid)

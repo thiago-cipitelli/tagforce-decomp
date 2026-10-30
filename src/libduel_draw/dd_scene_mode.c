@@ -1,16 +1,11 @@
 // @range 0x0881CA2C-0x0881DF94
 // @asm 0x0881CA74-0x0881CA80
 // @asm 0x0881CAC8-0x0881CB84
-// @asm 0x0881CB90-0x0881CC60
-// @asm 0x0881CC60-0x0881CCF8
 // @asm 0x0881CCF8-0x0881CD80
 // @asm 0x0881CD80-0x0881CDD4
 // @asm 0x0881CDD4-0x0881CEDC
 // @asm 0x0881CEDC-0x0881CFF8
-// @asm 0x0881CFF8-0x0881D044
 // @asm 0x0881D1B0-0x0881D658
-// @asm 0x0881D87C-0x0881D9E0
-// @asm 0x0881D9E0-0x0881DB14
 // @asm 0x0881DBC8-0x0881DC40
 // @asm 0x0881DC40-0x0881DE48
 // @data 0x08875F84-0x088760B0
@@ -27,12 +22,15 @@ typedef struct DdModeDef {
     void (*leave)(void);
 } DdModeDef;
 
+typedef struct DdModeEnt {             /* a mode and its request flag (-1 none) */
+    int mode;
+    int flag;
+} DdModeEnt;
+
 typedef struct DdModeStack {           /* 0x44 at 0x08C57468 */
     int mode;                          /* +0x00 */
     int flag;                          /* +0x04 request flag while the mode runs, -1 none */
-    struct {
-        int mode, flag;
-    } stack[4];                        /* +0x08 */
+    DdModeEnt stack[4];                /* +0x08 */
     int depth;                         /* +0x28 */
     int entering;                      /* +0x2C first frame: wait for the input to settle */
     int cancel_armed;                  /* +0x30 the cancel button was released */
@@ -197,6 +195,7 @@ unsigned int *dd_pad(void);
 int dd_input_on(void);
 void dd_act(int player, int zone, int idx, int act);
 void dd_m5_close(void);
+unsigned int *dd_mode_draw_one(unsigned int *list, int m);
 void dd_menu3_update(void);
 int dd_menu3_busy(void);
 unsigned int *dd_menu3_draw(unsigned int *list);
@@ -275,35 +274,30 @@ int dd_mode_get(void)
 }
 
 /* enters a mode over the current one */
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 void dd_mode_push(int m)
 {
-    DdModeStack *s = &dd_mode;
+    DdModeDef *t = dd_modes;
 
     req_flag_get(0);
-    s->stack[s->depth].mode = s->mode;
-    s->stack[s->depth].flag = s->flag;
-    s->depth++;
-    s->flag = -1;
-    s->entering = 1;
-    s->mode = m;
+    dd_mode.stack[dd_mode.depth] = *(DdModeEnt *)&dd_mode;
+    dd_mode.depth++;
+    dd_mode.mode = m;
+    dd_mode.flag = -1;
+    dd_mode.entering = 1;
     if (dd_modes[m].enter != 0)
-        dd_modes[m].enter();
+        t[m].enter();
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 void dd_mode_pop(void)
 {
     DdModeStack *s = &dd_mode;
+    DdModeDef *t = dd_modes;
 
     if (dd_modes[dd_mode.mode].leave != 0)
-        dd_modes[s->mode].leave();
+        t[s->mode].leave();
     s->depth--;
-    s->mode = s->stack[s->depth].mode;
-    s->flag = s->stack[s->depth].flag;
+    *(DdModeEnt *)s = s->stack[s->depth];
 }
-#endif
 
 #ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 unsigned int *dd_mode_draw(unsigned int *list)
@@ -387,21 +381,16 @@ int dd_mode_cancel(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 int dd_mode_can_x(void)
 {
-    int m = dd_mode_get();
-    int r;
-
-    if (m == 5)
-        r = 0;
-    else if (m == 9 || m == 8)
-        r = 0;
-    else
-        r = 1;
-    return r;
+    switch (dd_mode_get()) {
+    case 8:
+    case 9:
+    case 5:
+        return 0;
+    }
+    return 1;
 }
-#endif
 
 void dd_mode_set_flag(int f)
 {
@@ -671,7 +660,6 @@ void dd_m5_enter(void)
     fade_start_in(1, 0xFF000000, 0x10);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 unsigned int *dd_m5_draw(unsigned int *list)
 {
     DdModeStack *s = &dd_mode;
@@ -679,17 +667,8 @@ unsigned int *dd_m5_draw(unsigned int *list)
 
     dl_set_list(list);
     switch (dd_mode.phase) {
-    case 1:
-        list = dl_select_layer(4, 0);
-        list = dl_clear_color(list, 0xFF000000);
-        list = dl_clear_depth(list, 0);
-        list = dl_clear_stencil(list, 0);
-        list = dl_clear(list, 0x17);
-        dl_set_list(list);
-        cardinfo_draw();
-        break;
-    case 2:
     case 0:
+    case 2:
         if (s->depth > 0) {
             list = dl_select_layer(layer, 0);
             list = dd_mode_draw_one(list, s->stack[s->depth - 1].mode);
@@ -701,42 +680,51 @@ unsigned int *dd_m5_draw(unsigned int *list)
         list = dl_enable(list, 1);
         dl_set_list(list);
         break;
+    case 1:
+        list = dl_select_layer(4, 0);
+        list = dl_clear_color(list, 0xFF000000);
+        list = dl_clear_depth(list, 0);
+        list = dl_clear_stencil(list, 0);
+        list = dl_clear(list, 0x17);
+        dl_set_list(list);
+        cardinfo_draw();
+        break;
     }
     list = dl_select_layer(layer, 0);
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 void dd_m5_update(void)
 {
+    DdModeStack *s = &dd_mode;
     int done = 0;
+    void *gim;
     void **pack;
 
     switch (dd_mode.phase) {
+    case 0:
+        if (fade_is_done() != 0) {
+            dd_scene_flags(7, 0);
+            s->phase = 1;
+            gim = dd_gim_get(0x4001B);
+            cardinfo_open(s->card, gim, dd_gim_get(0x4001C));
+            cardinfo_set_layer(8);
+            pack = dd_bin_get(0x80024);
+            cardinfo_set_lists(dd_gim_get(0x40024), pack[1], pack[0]);
+        }
+        break;
+    case 2:
+        if (fade_is_done() != 0)
+            dd_mode_pop();
+        break;
     case 1:
         if (dd_input_on() != 0)
             done = cardinfo_update();
         if (done != 0)
             dd_m5_close();
         break;
-    case 2:
-        if (fade_is_done() != 0)
-            dd_mode_pop();
-        break;
-    case 0:
-        if (fade_is_done() != 0) {
-            dd_scene_flags(7, 0);
-            dd_mode.phase = 1;
-            cardinfo_open(dd_mode.card, dd_gim_get(0x4001B), dd_gim_get(0x4001C));
-            cardinfo_set_layer(8);
-            pack = dd_bin_get(0x80024);
-            cardinfo_set_lists(dd_gim_get(0x40024), pack[1], pack[0]);
-        }
-        break;
     }
 }
-#endif
 
 void dd_m5_leave(void)
 {

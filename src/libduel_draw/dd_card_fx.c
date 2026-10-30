@@ -1,7 +1,5 @@
 // @range 0x0881EBA0-0x0881F0A8
 // @asm 0x0881EBA0-0x0881ECA0
-// @asm 0x0881ECA0-0x0881ED0C
-// @asm 0x0881ED0C-0x0881EE28
 // @asm 0x0881EE28-0x0881EF2C
 // @asm 0x0881EF2C-0x0881EFB4
 // @asm 0x0881EFB4-0x0881F03C
@@ -93,46 +91,42 @@ void dd_popup_now(int player, int card, int flag, int text)
 #endif
 
 /* waiting popup: starts when the commentary is off and the camera idle */
-#ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_popup_wait(float dt, DdTask *t, DdCardPopup *p)
 {
-    if (dd_voice_active() == 0 && dd_cobjs_idle() != 0) {
-        dd_popup(p->player, 0x10, p->card, 0, p->text);
-        dd_task_remove_cur();
+    if (dd_voice_active() != 0 || dd_cobjs_idle() == 0) {
+        req_flag_set(p->flag);
         return;
     }
-    req_flag_set(p->flag);
+    dd_popup(p->player, 0x10, p->card, 0, p->text);
+    dd_task_remove_cur();
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_popup(int player, int zone, int card, int flag, int text)
 {
     DdCardPopup *p;
     DdTask t;
 
-    if (dd_voice_active() == 0 && dd_cobjs_idle() != 0) {
-        dd_popup_now(player, card, flag, text);
-        req_flag_set(flag);
-        if (zone == 0x10)
-            dd_info_select(card);
-        else
-            dd_cursor_set(player, zone, 0, 1);
+    if (dd_voice_active() != 0 || dd_cobjs_idle() == 0) {
+        p = dd_alloc(sizeof(DdCardPopup));
+        memset(p, 0, sizeof(DdCardPopup));
+        p->player = player;
+        p->card = card;
+        p->flag = flag;
+        p->text = text;
+        memset(&t, 0, sizeof(t));
+        t.update = (void (*)(float, DdTask *, void *))dd_popup_wait;
+        t.leave = func_08820938;
+        t.arg = p;
+        dd_task_add(&t);
         return;
     }
-    p = dd_alloc(sizeof(DdCardPopup));
-    memset(p, 0, sizeof(DdCardPopup));
-    p->player = player;
-    p->card = card;
-    p->flag = flag;
-    p->text = text;
-    memset(&t, 0, sizeof(t));
-    t.update = (void (*)(float, DdTask *, void *))dd_popup_wait;
-    t.leave = func_08820938;
-    t.arg = p;
-    dd_task_add(&t);
+    dd_popup_now(player, card, flag, text);
+    req_flag_set(flag);
+    if (zone == 0x10)
+        dd_info_select(card);
+    else
+        dd_cursor_set(player, zone, 0, 1);
 }
-#endif
 
 /* starts the glow of a card */
 #ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */

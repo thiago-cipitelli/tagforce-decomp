@@ -1,11 +1,7 @@
 // @range 0x0881DF94-0x0881EBA0
-// @asm 0x0881DFD0-0x0881E00C
-// @asm 0x0881E0D0-0x0881E150
-// @asm 0x0881E150-0x0881E214
 // @asm 0x0881E214-0x0881E2A8
 // @asm 0x0881E344-0x0881E3B8
 // @asm 0x0881E3B8-0x0881E468
-// @asm 0x0881E478-0x0881E5BC
 // @asm 0x0881E610-0x0881E7EC
 // @asm 0x0881E7EC-0x0881E9F0
 // @asm 0x0881EAAC-0x0881EBA0
@@ -96,21 +92,16 @@ void dd_menu3_update(void)
         *(int *)((char *)w + 0x524) = menu_update(w);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
 int dd_menu3_busy(void)
 {
-    int r;
-
-    if (dd_menu3.state == 6) {
-        r = 0;
-    } else {
-        r = 1;
-        if (dd_menu3.state == 1 || dd_menu3.state == 0)
-            r = 0;
+    switch (dd_menu3.state) {
+    case 0:
+    case 1:
+    case 6:
+        return 0;
     }
-    return r;
+    return 1;
 }
-#endif
 
 void dd_tasks_init(void)
 {
@@ -133,51 +124,48 @@ void dd_tasks_init(void)
     dd_task_init();
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
 void dd_tasks_term(void)
 {
+    DdTask *s = &dd_tasks.head;
     DdTask *t;
+    DdTask *next;
 
     func_08822B90();
     dd_mark_term();
     func_088252B8();
     t = dd_tasks.head.prev;
-    while (t != 0 && t != &dd_tasks.head) {
-        DdTask *cur = t;
-
-        t = t->prev;
-        dd_task_remove(cur);
+    while (t && t != s) {
+        next = t->prev;
+        dd_task_remove(t);
+        t = next;
     }
     dd_lp_unload();
     dd_task_term_all();
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
 void dd_tasks_draw(void)
 {
+    DdTasks *s = &dd_tasks;
+    DdTask *head;
     DdTask *t;
-    DdTask *next;
 
     func_088252C0();
     func_08822C2C();
     mtx_set_mode(2);
     efs_update();
     t = dd_tasks.head.prev;
-    if (t != &dd_tasks.head) {
-        for (;;) {
-            if (t->draw != 0)
-                t->draw(t, t->arg);
-            if (dd_tasks.remove_cur != 0) {
-                dd_tasks.remove_cur = 0;
-                next = t->prev;
-                dd_task_remove(t);
-            } else {
-                next = t->prev;
-            }
-            if (next == &dd_tasks.head)
-                break;
-            t = next;
+    head = &s->head;
+    while (t != head) {
+        if (t->draw != 0)
+            t->draw(t, t->arg);
+        if (s->remove_cur == 0) {
+            t = t->prev;
+        } else {
+            DdTask *cur = t;
+
+            s->remove_cur = 0;
+            t = t->prev;
+            dd_task_remove(cur);
         }
     }
     mtx_clear_dirty();
@@ -185,31 +173,26 @@ void dd_tasks_draw(void)
     mtx_identity();
     dd_task_update();
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
+#ifdef NON_MATCHING /* 2 palavras: na chamada indireta o original monta a0 antes de f12; bate chamando por um cast para (DdTask *, void *, float), que não foi usado porque a convenção do Windows x64 não é a mesma */
 void dd_tasks_update(float dt)
 {
-    DdTask *t;
-    DdTask *next;
+    DdTasks *s = &dd_tasks;
+    DdTask *t = dd_tasks.head.prev;
 
-    t = dd_tasks.head.prev;
-    if (t == &dd_tasks.head)
-        return;
-    for (;;) {
-        t->time = t->time + dt;
+    while (t != &s->head) {
+        t->time += dt;
         if (t->update != 0)
             t->update(dt, t, t->arg);
-        if (dd_tasks.remove_cur != 0) {
-            dd_tasks.remove_cur = 0;
-            next = t->prev;
-            dd_task_remove(t);
+        if (s->remove_cur == 0) {
+            t = t->prev;
         } else {
-            next = t->prev;
+            DdTask *cur = t;
+
+            s->remove_cur = 0;
+            t = t->prev;
+            dd_task_remove(cur);
         }
-        if (next == &dd_tasks.head)
-            break;
-        t = next;
     }
 }
 #endif
@@ -276,31 +259,12 @@ void dd_banner_leave(DdTask *t, void *arg)
     func_08820938(t, arg);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
 void dd_banner_update(float dt, DdTask *t, void *arg)
 {
     DdBanner *b = arg;
 
     switch (b->state) {
-    case 2:
-        if (t->time - b->t0 < 0.5f)
-            break;
-        if (dd_08806C84(b->player) == 0) {
-            b->done = 1;
-            b->id = -1;
-        }
-        if (b->done != 0) {
-            if (func_08825728() == 0) {
-                dd_task_pause(b->handle);
-                b->handle = -1;
-                dd_task_remove_cur();
-                func_08820EA8(b->id, 0);
-                return;
-            }
-        } else if (func_08825728() == 0 && dd_mode_can_x() != 0) {
-            b->done = 1;
-            func_08820E58(b->id);
-        }
+    case 0:
         break;
     case 1:
         if (dd_fx_flipup_risen(b->handle) != 0) {
@@ -308,13 +272,29 @@ void dd_banner_update(float dt, DdTask *t, void *arg)
             b->state = 2;
         }
         break;
-    case 0:
-        req_flag_set(0x33);
+    case 2:
+        if (t->time - b->t0 < 0.5f)
+            break;
+        if (dd_08806C84(b->player) == 0) {
+            b->done = 1;
+            b->id = -1;
+        }
+        if (b->done != 0 && func_08825728() == 0) {
+            dd_task_pause(b->handle);
+            b->handle = -1;
+            dd_task_remove_cur();
+            func_08820EA8(b->id, 0);
+            return;
+        }
+        if (func_08825728() == 0 && dd_mode_can_x() != 0) {
+            b->done = 1;
+            func_08820E58(b->id);
+        }
         break;
     }
+    req_flag_set(0x33);
     req_flag_set(0);
 }
-#endif
 
 void dd_banner_open(DdBanner *b)
 {

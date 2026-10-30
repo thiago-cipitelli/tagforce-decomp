@@ -3,7 +3,9 @@
 // @asm 0x0880C758-0x0880C9BC
 // @asm 0x0880CB44-0x0880CBF4
 // @asm 0x0880CC64-0x0880CD38
-// @asm 0x0880CE60-0x0880D31C
+// @asm 0x0880CE60-0x0880D028
+// @asm 0x0880D028-0x0880D0B4
+// @asm 0x0880D16C-0x0880D31C
 /* Card objects, continued: fusion gathering (the cards fly to the middle), state bits and the
    per-object effect links, the queries "is anything still moving", the stack height of a pile,
    the counters of the monster zones and the stack of highlighted locations. */
@@ -337,8 +339,8 @@ void dd_zone_anim_update(int live)
             }
             if (a < 0) {
                 dv_field_stats(p, z, st);
-                a = st[7];
-                bv = st[8];
+                a = st[5];
+                bv = st[6];
             }
             if (za->a != a || za->b != bv) {
                 za->a0 = za->a;
@@ -358,24 +360,47 @@ void dd_zone_anim_update(int live)
 }
 #endif
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
+/* 1 while a counter animation of a monster zone is running (wait callback of the event commands) */
+#ifdef NON_MATCHING /* o original mantém o teste de entrada do laço interno e não reduz o índice z a ponteiro; 33 palavras */
+int dd_zone_anim_busy(void)
+{
+    int p;
+    int z;
+
+    for (p = 0; p < 2; p++) {
+        for (z = 0; z < 5; z++) {
+            if (dd_cobjs.za[p][z].t < dd_cobjs.za[p][z].dur)
+                return 1;
+        }
+    }
+    return 0;
+}
+#endif
+
 /* scale of a counter value v of kind k (digits) */
 float dd_count_scale(int k, int v)
 {
-    v += k * 16;
-    if (v == 0x8000)
-        return 1.0f;
-    if (v >= 0x200 && v <= 0x2000)
-        return 6.0f;
-    if (v >= 0x10 && v <= 0x100)
-        return 4.0f;
-    if (v >= 0 && v <= 4)
-        return 2.0f;
-    if (v > 4 && v < 10)
-        return 1.0f;
-    return 0.0f;
+    float r = 0.0f;
+
+    switch (v + k * 16) {
+    case 5 ... 9:
+        r = 1.0f;
+        break;
+    case 0 ... 4:
+        r = 2.0f;
+        break;
+    case 0x10 ... 0x100:
+        r = 4.0f;
+        break;
+    case 0x200 ... 0x2000:
+        r = 6.0f;
+        break;
+    case 0x8000:
+        r = 1.0f;
+        break;
+    }
+    return r;
 }
-#endif
 
 #ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
 /* pushes location (p, zone) on the highlight stack with value v */
