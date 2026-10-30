@@ -58,6 +58,20 @@ int card_same_name(int id, int id2);
 int duel_req_flag(int f);
 int duel_host_call(int a, int b, int c, int d);
 void duel_0884E02C(void);
+void duel_0884C588(unsigned int p, int a, int id, int b);
+void duel_0882AF5C(int a, int b, int c);
+void duel_088348BC(int a, unsigned int p);
+int card_is_monster(int id);
+void duel_08834734(int a, int b, int c);
+void duel_08834614(int a);
+void duel_0883449C(int a);
+void duel_088346F8(void);
+void duel_08834850(unsigned short k);
+void duel_088349BC(void);
+extern unsigned int duel_w_08919640;
+extern unsigned int duel_w_0891964C;
+extern int duel_w_08919650;
+extern int duel_w_08919628;
 
 extern int duel_w_08919630;
 extern int duel_w_08919634;
@@ -475,6 +489,68 @@ int duel_0884DFB0(void)
     duel_w_08919634 = 0;
     return 0;
 }
+
+#ifdef NON_MATCHING /* 9 palavras: o switch interno do case 3 usa $a2 (o mwcc usa $v1) e o original sai dele por um `b`
+                       comum ao fim do case 3 (o mwcc salta direto ao fim); switch, if/||, inline: mesmo resultado */
+/* runs the computer's pending action (duel_w_08919640: its kind) */
+void duel_0884E02C(void)
+{
+    int z;
+
+    switch (duel_w_08919640) {
+    case 8:
+    case 9:
+        duel_08834850(duel_w_08919640);
+        break;
+    case 5:
+        duel_088346F8();
+        break;
+    case 6:
+        duel_0882AF5C(0, 0, 1);
+        break;
+    case 7:
+        duel_08834734(0, 0, 0);
+        break;
+    case 4:
+        duel_0882AF5C(1, 0, 1);
+        break;
+    case 2:
+        duel_0882AF5C(1, 1, 0);
+        break;
+    case 3:
+        switch (duel_w_08919650) {
+        case 0xB:
+            if (card_is_monster(duel_w_08919628)) {
+                duel_08834614(0);
+            } else {
+                duel_08834734(1, 0, 0);
+            }
+            break;
+        case 0xC:
+        case 0xD:
+        case 0xE:
+        case 0xF:
+            duel_088348BC(0, duel_w_0891964C);
+            break;
+        default:
+            duel_0883449C(0);
+            break;
+        }
+        break;
+    case 10:
+        duel_088349BC();
+        break;
+    case 1:
+        z = duel_w_08919650;
+        duel_0884C588(duel_w_0891964C, z - 0xB, -1, z);
+        duel_w_08919638 = 0;
+        break;
+    default:
+        duel_w_08919638 = 0;
+        break;
+    }
+}
+#endif
 
 int duel_0884E1D8(void)
 {

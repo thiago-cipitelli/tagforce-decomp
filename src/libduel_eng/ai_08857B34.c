@@ -1,5 +1,5 @@
 // @range 0x08857B34-0x08858A30
-// @asm 0x08858440-0x0885861C
+// @asm 0x08858440-0x08858594
 /* Computer player: more target tests (DuelAct *a, p, z). */
 #include "duel.h"
 
@@ -217,6 +217,21 @@ int duel_08858440(DuelAct *a, unsigned int p, int z)
     return 1;
 }
 #endif
+
+/* 0x08858594: alvo é um monstro do oponente de a, com carta, e sem pos (+0x06) */
+int duel_08858594(DuelAct *a, unsigned int p, int z)
+{
+    if (z >= 5) {
+        return 0;
+    }
+    if (duel.players[p & 1].field[z].card.id == 0) {
+        return 0;
+    }
+    if (a->player == p) {
+        return 0;
+    }
+    return !duel.players[p & 1].field[z].pos;
+}
 
 int duel_0885861C(DuelAct *a, unsigned int p, int z)
 {

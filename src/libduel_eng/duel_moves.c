@@ -1,6 +1,4 @@
 // @range 0x088CB400-0x088CC178
-// @asm 0x088CB55C-0x088CB728
-// @asm 0x088CB778-0x088CB8EC
 /* Commands to the presentation for cards moving between the piles and the field (0x33, 0x3F, 0x41),
    attacks (0x29), the shuffle of the zones (0x49) and a card leaving a zone (0x43). */
 #include "duel.h"
@@ -26,7 +24,19 @@ void duel_088C1B88(unsigned int p, int z);
 void duel_088CC284(unsigned int p, int z, int n);
 void duel_088CC4B4(unsigned int p, int z, int n);
 
-/* 0x088CB55C, 0x088CB778: kept in asm. */
+typedef struct DuelMoveEv {            /* event argument of a card moving (see hand_add.c) */
+    unsigned short uid : 9;
+    unsigned short player : 1;
+    unsigned short b10 : 1;
+    unsigned short opp : 1;
+    unsigned short zone : 4;
+    unsigned short pad;
+} DuelMoveEv;
+
+void duel_088C77EC(unsigned int p, int uid);
+int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
+void duel_088AFD5C(int kind, DuelMoveEv ev);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short k, int b);
 
 void duel_088CB400(unsigned int p, DuelCard *c, int a)
 {
@@ -62,10 +72,74 @@ int duel_088CB554(unsigned int p, DuelCard *c)
     return duel_088CB55C(p, c, 1);
 }
 
+/* card c of zone 0xD of p to his hand (revealed when f) */
+int duel_088CB55C(unsigned int p, DuelCard *c, int f)
+{
+    unsigned int i;
+    DuelMoveEv ev;
+    int uid;
+
+    uid = CARD_UID(*c);
+    for (i = 0; i < duel.players[p & 1].n_d; i++) {
+        if (uid == CARD_UID(duel.players[p & 1].zone_d[i])) {
+            unsigned int n;
+
+            ev.player = p;
+            ev.b10 = 1;
+            ev.uid = uid;
+            n = duel.players[p & 1].n_hand;
+            duel_cmd(0x3F, (uid & 0x3FF) << 6 | ((p & 1) | 0x1A), (n & 0x3FF) << 6 | (p & 1 | 0x16), 0);
+            if (f) {
+                duel_088C77EC(p, uid);
+            }
+            switch (c->id) {
+            case 0x17CC:
+                duel_0884F30C((p << 31 & 0x80000000) | 0x34500000 | (c->id & 0xFFFF), uid, ev);
+                break;
+            }
+            duel_088AFD5C(0x1A, ev);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void duel_088CB728(int p, int z, int uid, unsigned int q, int qz, int a, int b)
 {
     duel_cmd(0x41, (uid & 0x3FF) << 6 | ((p & 1) | (z & 0x1F) << 1), (q & 1) | (qz & 0x1F) << 1,
              (a & 0xFF) | (b & 0xFF) << 8);
+}
+
+/* command 0x41, then the effects (kind < 6) of q of the cards 0x1A21, 0x1A20, 0x1A1F, 0x1814, 0x17D5, 0x17D2
+   aimed at uid follow it to q, qz */
+void duel_088CB778(int p, int z, int uid, unsigned int q, int qz, int a, int b)
+{
+    unsigned int e;
+
+    duel_cmd(0x41, (uid & 0x3FF) << 6 | ((p & 1) | (z & 0x1F) << 1), (q & 1) | (qz & 0x1F) << 1,
+             (a & 0xFF) | (b & 0xFF) << 8);
+    e = duel.players[q & 1].effects;
+    while (e != 0) {
+        DuelEffect *ef = &duel.effects[e];
+        int k;
+
+        e = ef->next;
+        k = ef->kind & 0xF;
+        if (k < 6) {
+            switch (ef->src) {
+            case 0x17D2:
+            case 0x17D5:
+            case 0x1814:
+            case 0x1A1F:
+            case 0x1A20:
+            case 0x1A21:
+                if (ef->arg == uid) {
+                    duel_088C87A8(q, qz, ef->src, (k & 0xF) | (((DuelEffectBits *)ef)->kind_hi & 0xF) << 4, 0);
+                }
+                break;
+            }
+        }
+    }
 }
 
 void duel_088CB8EC(unsigned int p, int a, int b, int c)
