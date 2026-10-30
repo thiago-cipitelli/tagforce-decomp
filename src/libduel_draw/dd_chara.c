@@ -51,10 +51,10 @@ void dd_ryusen_set_chara(unsigned int chr, int variant);
 void dd_ryusen_set_alpha(int alpha, int now);
 
 typedef void (*DdCharSetup)(void *setup);
-void func_08814B4C(void *);
+void dd_hookb_install(void *);
 void func_0885DF50(void *);
 void func_0885B188(void *);
-void func_088148B0(void *);
+void dd_hooka_install(void *);
 void dd_chara_setup_06b(void *);
 void dd_chara_setup_06a(void *);
 void func_0885C900(void *);
@@ -338,10 +338,10 @@ DdCharSetup dd_chara_setup_fn(int chr, int variant)
     int code;
 
     switch (chr) {
-    case 2: fn = func_08814B4C; break;
+    case 2: fn = dd_hookb_install; break;
     case 3: fn = func_0885DF50; break;
     case 4: fn = func_0885B188; break;
-    case 5: fn = func_088148B0; break;
+    case 5: fn = dd_hooka_install; break;
     case 6:
         if (variant == 0)
             fn = dd_chara_setup_06a;

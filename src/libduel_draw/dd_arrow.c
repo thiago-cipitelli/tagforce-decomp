@@ -46,15 +46,15 @@ void model_draw(void *m, void *c);
 void req_flag_set(int i);
 void se_play(int id);
 
-void *func_0881CA54(int size);
-void func_0881CA64(void *p);
-DdObj *func_0881E2A8(DdObj *desc);
-void func_0881E330(void);
-void func_0881E344(DdObj *o);
-void func_08816024(void (*fn)(short, int));
+void *dd_alloc(int size);
+void dd_free(void *p);
+DdObj *dd_task_add(DdObj *desc);
+void dd_task_remove_cur(void);
+void dd_task_remove(DdObj *o);
+void dd_cursor_unlisten(void (*fn)(short, int));
 void func_0880A8E0(void *pos, void *rot, short at);
 float func_08807034(void);
-void func_0881554C(short *loc);
+void dd_cursor_get(short *loc);
 void *func_088044B0(int id);
 void *func_08804268(int id);
 void *func_088045C0(int id);
@@ -94,7 +94,7 @@ void dd_mark_term(void)
     DdMarkMgr *k = &dd_mark;
 
     if (k->marker != 0)
-        func_0881E344(k->marker);
+        dd_task_remove(k->marker);
     memset(k, 0, sizeof(*k));
 }
 
@@ -111,8 +111,8 @@ void dd_mark_hide(void)
     DdMarkMgr *k = &dd_mark;
 
     if (k->marker != 0) {
-        func_08816024(dd_mark_point);
-        func_0881E344(k->marker);
+        dd_cursor_unlisten(dd_mark_point);
+        dd_task_remove(k->marker);
         k->marker = 0;
     }
     if (k->arrow != 0)
@@ -185,12 +185,12 @@ void dd_mark_create(int player, int zone)
     DdMarker *m;
     DdObj desc;
 
-    m = func_0881CA54(sizeof(DdMarker));
+    m = dd_alloc(sizeof(DdMarker));
     m->at.player = player;
     m->at.zone = zone;
     memset(&desc, 0, sizeof(desc));
     desc.data = m;
-    dd_mark.marker = func_0881E2A8(&desc);
+    dd_mark.marker = dd_task_add(&desc);
     dd_mark_reset();
 }
 
@@ -212,7 +212,7 @@ void dd_mark_reset(void)
     o->draw = (DdObjFn)dd_mark_draw;
     o->update = (DdObjFn)dd_mark_idle;
     o->free = (DdObjFn)dd_mark_free;
-    func_0881554C(cur);
+    dd_cursor_get(cur);
     dd_mark_point(cur[0], 0);
 }
 
@@ -253,14 +253,14 @@ void dd_mark_draw(DdObj *o, DdMarker *m)
 void dd_mark_free(DdObj *o, DdMarker *m)
 {
     if (m != 0)
-        func_0881CA64(m);
+        dd_free(m);
 }
 
 void dd_mark_idle(void)
 {
     short cur[2];
 
-    func_0881554C(cur);
+    dd_cursor_get(cur);
     dd_mark_point(cur[0], 0);
 }
 
@@ -349,7 +349,7 @@ void dd_arrow_new(FxVec3 *from, FxVec3 *to, unsigned int color)
     void *pack;
     DdObj desc;
 
-    a = func_0881CA54(sizeof(DdArrow));
+    a = dd_alloc(sizeof(DdArrow));
     memset(a, 0, sizeof(DdArrow));
     pack = func_088045C0(0x80001);
     a->tex_ptcl = ehp_find(pack, "perticle_for_arrow.gim", 0);
@@ -363,7 +363,7 @@ void dd_arrow_new(FxVec3 *from, FxVec3 *to, unsigned int color)
     desc.update = (DdObjFn)dd_arrow_update;
     desc.free = (DdObjFn)dd_arrow_free;
     desc.data = a;
-    dd_mark.arrow = func_0881E2A8(&desc);
+    dd_mark.arrow = dd_task_add(&desc);
 }
 
 void dd_arrow_kill(void)
@@ -374,7 +374,7 @@ void dd_arrow_kill(void)
 
 void dd_arrow_free(DdObj *o, DdArrow *a)
 {
-    func_0881CA64(a);
+    dd_free(a);
 }
 
 #define RGB_A(rgb, a) ((rgb) << 8 >> 8 | (a) << 24)
@@ -481,7 +481,7 @@ void dd_arrow_update(DdObj *o, DdArrow *a)
         all_dark &= v > 0 ? 0 : 1;
     }
     if (all_dark)
-        func_0881E330();
+        dd_task_remove_cur();
 }
 
 /* Draws the 4 vertices `v` as a quad facing the camera at `pos`. */

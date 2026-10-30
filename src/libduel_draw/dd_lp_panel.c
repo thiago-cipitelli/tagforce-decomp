@@ -53,9 +53,9 @@ void *mat3_mul(float *out, float *a, float *b);
 FxVec3 *mat3_transform_vec3(FxVec3 *out, float *m, FxVec3 *v);
 
 void *func_088045C0(int id);
-void *func_0881CA54(int size);
-DdObj *func_0881E2A8(DdObj *desc);
-void func_0881E344(DdObj *o);
+void *dd_alloc(int size);
+DdObj *dd_task_add(DdObj *desc);
+void dd_task_remove(DdObj *o);
 void func_08857C60(void *digits, int value);
 void func_08857100(DdObj *o, void *data);
 void func_08857A40(DdObj *o, void *data);
@@ -162,7 +162,7 @@ void dd_lp_count(int x, int y, int from, int to)
         to = 0;
     if (to > 99999)
         to = 99999;
-    c = func_0881CA54(sizeof(DdLpCount));
+    c = dd_alloc(sizeof(DdLpCount));
     c->x = x;
     c->y = y;
     c->from = from;
@@ -199,7 +199,7 @@ void dd_lp_count(int x, int y, int from, int to)
     desc.update = func_08857A40;
     desc.free = func_088581EC;
     desc.data = c;
-    dd_lp.obj = func_0881E2A8(&desc);
+    dd_lp.obj = dd_task_add(&desc);
 }
 #endif
 
@@ -215,7 +215,7 @@ void dd_lp_show(int x, int y, int lp0, int lp1)
     int v;
     int i;
 
-    s = func_0881CA54(sizeof(DdLpShow));
+    s = dd_alloc(sizeof(DdLpShow));
     s->x = x;
     s->y = y;
     s->active = 1;
@@ -318,7 +318,7 @@ void dd_lp_show(int x, int y, int lp0, int lp1)
     desc.update = func_08858784;
     desc.free = func_088587C8;
     desc.data = s;
-    dd_lp.obj = func_0881E2A8(&desc);
+    dd_lp.obj = dd_task_add(&desc);
     se_play(0x622C);
 }
 #endif
@@ -333,7 +333,7 @@ void dd_lp_close(void)
     DdLpMgr *m = &dd_lp;
 
     if (m->obj != 0) {
-        func_0881E344(m->obj);
+        dd_task_remove(m->obj);
         m->obj = 0;
     }
 }

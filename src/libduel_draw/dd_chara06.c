@@ -19,13 +19,13 @@ int sys_frame_end(void);
 int movie_play(const char *path, unsigned int flags, int arg);
 void *sceGeEdramGetAddr(void);
 
-int func_0881DF4C(const void *a, const void *b);
+int dd_int_cmp(const void *a, const void *b);
 void func_0882837C(void);
 void func_088283D4(void);
 void func_08828470(void *s, int a, int b);
 void func_08828528(void *s, int a, int b);
-void *func_0881CA80(int size);
-void func_0881CA90(void *p);
+void *dd_alloc_sub(int size);
+void dd_free_sub(void *p);
 
 typedef struct FxVec4u {               /* Vec4 without the 16-byte alignment */
     float x, y, z, w;
@@ -220,11 +220,11 @@ int dd_c6b_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
     DdCamEntry *e;
 
     if (dd_c6b_sorted == 0) {
-        qsort(dd_c6b_cams, 5, sizeof(DdCamEntry), func_0881DF4C);
+        qsort(dd_c6b_cams, 5, sizeof(DdCamEntry), dd_int_cmp);
         dd_c6b_sorted = 1;
     }
     key.id = id;
-    e = bsearch(&key, dd_c6b_cams, 5, sizeof(DdCamEntry), func_0881DF4C);
+    e = bsearch(&key, dd_c6b_cams, 5, sizeof(DdCamEntry), dd_int_cmp);
     if (e == 0)
         return 0;
     *eye = *(FxVec4u *)&e->v[0];
@@ -260,13 +260,13 @@ int libduel_draw_08855688(int card, int kind, unsigned int flags)
     if (name == 0)
         return -1;
     ehfile_make_path_alias(path, 3, name);
-    mem = func_0881CA80(0x17CC00);
+    mem = dd_alloc_sub(0x17CC00);
     movie_set_memory((unsigned int)mem, 0x17CC00);
     sys_frame_end();
     r = movie_play(path, flags, 40);
     memset(sceGeEdramGetAddr(), 0, 0x110000);
     movie_set_memory(0, 0);
-    func_0881CA90(mem);
+    dd_free_sub(mem);
     return r != 0;
 }
 
@@ -383,11 +383,11 @@ int dd_c6a_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
     DdCamEntry *e;
 
     if (dd_c6a_sorted == 0) {
-        qsort(dd_c6a_cams, 5, sizeof(DdCamEntry), func_0881DF4C);
+        qsort(dd_c6a_cams, 5, sizeof(DdCamEntry), dd_int_cmp);
         dd_c6a_sorted = 1;
     }
     key.id = id;
-    e = bsearch(&key, dd_c6a_cams, 5, sizeof(DdCamEntry), func_0881DF4C);
+    e = bsearch(&key, dd_c6a_cams, 5, sizeof(DdCamEntry), dd_int_cmp);
     if (e == 0)
         return 0;
     *eye = *(FxVec4u *)&e->v[0];
