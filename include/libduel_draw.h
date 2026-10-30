@@ -37,6 +37,12 @@ unsigned int *dl_blend_func(unsigned int *list, int op, int src, int dst, unsign
 
 #define DD_TASK_MAX 254
 
+typedef struct DdFxVert {              /* GE vertex: float texture, 8888 colour, float position (0x19F) */
+    float u, v;
+    unsigned int color;
+    float x, y, z;
+} DdFxVert;
+
 typedef struct DdMon {                 /* monster model instance played by the duel scene */
     int chara;                         /* +0x000 character of the voice set (< 41: story) */
     int x04;                           /* +0x004 variant of the voice set */
