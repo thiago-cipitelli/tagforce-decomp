@@ -1,5 +1,4 @@
 // @range 0x0880C1C4-0x0880CA9C
-// @asm 0x0880C1C4-0x0880C390
 /* File pools of the loader (SD characters, room models, sprites, voices): unload by name, size of a
    file before reading it, the typed load requests, cancelling a pool, the reset of the caches and
    the lookups in the tables. */
@@ -8,12 +7,74 @@
 void fld_pool_load(int kind, int name, void (*cb)(), void *arg, int flag); /* 0x0880C1C4 */
 int fld_chr_index(int id);                     /* 0x0880D4F4 */
 int fld_voice_index(int id);                   /* 0x0880F154 */
+int fld_res_find(int name, int tab, int n, int size);
+int fld_res_find_free(int name, int tab, int n, int size);
+int fld_req_add(int kind, void *ent, void *ent2, void (*cb)(), void *arg, int front);
+int fld_waiter_add(FieldWaitQ *w, void (*cb)(), void *arg);
 int fld_req_pending(void);                     /* 0x0880CCF4 */
 void fld_res_update(void);
 void fld_res_cancel(void);
 
 extern const char str_path_fmt[];              /* "%s/%s" */
 extern const char *field_always_ehp[][6];      /* 0x0883C28C */
+
+/* asks for the file name of a pool: an entry is made for it if needed; cb(&e->data, arg) at once
+   when it is loaded, else queued behind the load in progress or a new typed request */
+void fld_pool_load(int kind, int name, void (*cb)(), void *arg, int flag)
+{
+    FieldPoolDesc *d = &field_pools[kind];
+    FieldPool *p = d->pool;
+    FieldPoolEnt *e = p->e;
+    int i;
+    int type;
+    int *ld;
+    FieldPoolEnt *f;
+
+    for (;;) {
+        i = fld_res_find(name, (int)e, d->n, 0x20);
+        if (i >= 0)
+            break;
+        i = fld_res_find_free(name, (int)e, d->n, 0x20);
+        e[i].name = name;
+        p->count++;
+    }
+    f = &e[i];
+    if (f->data != 0) {
+        cb(&f->data, arg);
+        return;
+    }
+    f->discard = 0;
+    ld = &f->loading;
+    if (*ld != 0) {
+        fld_waiter_add((FieldWaitQ *)f->waiters, cb, arg);
+    } else {
+        *ld = 1;
+        type = -1;
+        switch (kind) {
+        case 0:
+            type = 1;
+            f->x1c = fld_chr_index(f->name);
+            break;
+        case 1:
+            type = 2;
+            f->x1c = fld_chr_index(f->name);
+            break;
+        case 2:
+            type = 3;
+            f->x1c = fld_bg_index(f->name);
+            break;
+        case 3:
+            type = 4;
+            f->x1c = fld_bu_index(f->name);
+            break;
+        case 4:
+            type = 5;
+            f->x1c = fld_voice_index(f->name);
+            break;
+        }
+        fld_req_add(type, d, f, cb, arg, flag);
+    }
+}
 
 void fld_unload(int kind, int name)
 {

@@ -37,7 +37,7 @@ void fpt_reset(void)
     fld_chr_reset(&field_partner.c);
 }
 
-#ifdef NON_MATCHING /* lógica conferida (fpt_up/fpt_down são os modelos locais up/down). 69 palavras: posições de pilha dos locais do laço, mov.s $f12 depois dos ponteiros em vec3_scale, ordem das cópias de c->vel e das divisões por 0.5 */
+#ifdef NON_MATCHING /* lógica conferida (fpt_up/fpt_down são os modelos locais up/down). 26 palavras: mov.s $f12 depois dos ponteiros em vec3_scale (speed variável) e ordem das cópias de c->vel e das divisões por 0.5 */
 void fpt_update(void)
 {
     FieldPartner *p = &field_partner;
@@ -47,8 +47,15 @@ void fpt_update(void)
     Vec3 e;
     Vec3 d;
     FieldNpc *near[32];
+    Vec3 up;
+    Vec3 down;
+    float m[9];
+    Vec3 side;
+    Vec3 to;
+    Vec3 t;
     int n;
     int i;
+    float k;
 
     if (field_partner.active == 0)
         return;
@@ -58,30 +65,21 @@ void fpt_update(void)
     e = d;
     d.y = 0.0f;
     if (fld_vec3_len(&e) < 1.0f) {
-        Vec3 up;
-        Vec3 down;
-
         vec3_normalize(&d, &d);
         vec3_scale(speed, &d, &d);
         fld_chr_collide(&d, &d, &c->pos, speed, 0);
         vec3_normalize(&d, &d);
         vec3_scale(speed, &d, &d);
         {
-            Vec3 t = { 0.0f, 1.0f, 0.0f };
-            up = *(Vec3 *)&t;
+            Vec3 tmp = { 0.0f, 1.0f, 0.0f };
+            up = *(Vec3 *)&tmp;
         }
         {
-            Vec3 t = { 0.0f, -1.0f, 0.0f };
-            down = *(Vec3 *)&t;
+            Vec3 tmp = { 0.0f, -1.0f, 0.0f };
+            down = *(Vec3 *)&tmp;
         }
         fld_npc_near(near, &n, (FieldNpc *)c, 0.5f);
         for (i = 0; i < n; i++) {
-            Vec3 to;
-            Vec3 side;
-            float m[9];
-            Vec3 t;
-            float k;
-
             vec3_sub(&to, &near[i]->m.c.pos, &c->pos);
             if (vec3_dot(&to, &d) < 0.0f)
                 continue;
