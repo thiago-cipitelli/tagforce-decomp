@@ -99,6 +99,57 @@ void mtx_get34(DdMat4 *m);
 void mat4_mul(DdMat4 *out, DdMat4 *a, DdMat4 *b);
 void mat4_transform_vec4(DdVec4A *out, DdMat4 *m, DdVec4A *v);
 void se_play(int id);
+void *dl_enable(void *list, int state);
+void *dl_disable(void *list, int state);
+void *dl_scissor(void *list, int x, int y, int w, int h);
+void *dl_color(void *list, unsigned int color);
+void *dl_blend_func(void *list, int op, int src, int dst, unsigned int srcfix, unsigned int dstfix);
+float ceilf_vfpu(float x);
+unsigned short *table_get_entry(void *t, unsigned int i);
+unsigned int *gfx_get_state(void);
+int region_get(void);
+unsigned short region_pick_value(int flag);
+PadState *pad_get(void);
+
+typedef struct DdList DdList;
+typedef void *(*DdListRectFn)(void *dl, int x, int y, int w, int h);
+typedef void *(*DdListItemFn)(void *dl, int i, int x, int y, int w, int h);
+
+struct DdList {                        /* scrolling list widget, 0x34 */
+    unsigned short count;              /* 0x00 */
+    unsigned short cursor;             /* 0x02 */
+    unsigned char active : 1;          /* 0x04 takes input */
+    unsigned char no_cancel : 1;
+    unsigned char no_accept : 1;
+    unsigned char no_move : 1;
+    unsigned char pad4 : 4;
+    char pad5[3];
+    int result;                        /* 0x08 1 cancel, 2 accept */
+    short x, y;                        /* 0x0C */
+    unsigned short w, h;               /* 0x10 */
+    short pad_t, pad_b, pad_l, pad_r;  /* 0x14 */
+    DdListRectFn draw_bg;              /* 0x1C */
+    DdListItemFn draw_item;            /* 0x20 */
+    DdListItemFn draw_item_bg;         /* 0x24 */
+    DdListRectFn draw_cursor;          /* 0x28 */
+    int (*item_h)(int i, int w);       /* 0x2C */
+    short scroll;                      /* 0x30 */
+    unsigned short total;              /* 0x32 */
+};
+
+void list_reset(DdList *l);
+void list_layout(DdList *l);
+void *list_draw(void *dl, DdList *l);
+void list_term(DdList *l);
+void list_set_active(DdList *l, int on);
+int list_cursor(DdList *l);
+void list_set_cursor(DdList *l, int c);
+void listw_input_reset(DdList *l);
+void listw_input(DdList *l);
+void listw_term(DdList *l);
+void listw_set_active(DdList *l, int on);
+int listw_cursor(DdList *l);
+void listw_set_cursor(DdList *l, int c);
 
 /* base model (other ranges of this module) */
 int func_0882837C(void *self, void *a, void *b);
