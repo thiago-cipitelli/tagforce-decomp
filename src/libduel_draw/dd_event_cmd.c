@@ -66,10 +66,10 @@ int dd_mode_cancel();
 int dd_mode_set_card();
 unsigned int *dd_pad();
 int dd_act();
-int func_0881ED0C();
-int func_0881EE28();
-int func_0881EF2C();
-int func_0881EFB4();
+int dd_popup();
+int dd_glow_on();
+int dd_glow_off();
+int dd_glow_all_off();
 int func_0881F454();
 int func_0881F460();
 int func_0881F46C();
@@ -608,7 +608,7 @@ int dd_ev_31(void)
 
 int dd_ev_32(DdLoc2 p, int a)
 {
-    func_0881ED0C(func_08866744(p.player), p.zone, a, 0x20, 0);
+    dd_popup(func_08866744(p.player), p.zone, a, 0x20, 0);
     return 1;
 }
 
@@ -616,7 +616,7 @@ int dd_ev_33(int player, int zone, int idx)
 {
     int v = func_08866B90(func_08866744(player), zone, idx);
 
-    func_0881ED0C(func_08866744(player), zone, v, 0x21, 1);
+    dd_popup(func_08866744(player), zone, v, 0x21, 1);
     return 1;
 }
 
@@ -696,13 +696,13 @@ int dd_ev_40(int player, int zone, int idx)
 
     if (card == 0)
         return 1;
-    func_0881EE28(card);
+    dd_glow_on(card);
     return 1;
 }
 
 int dd_ev_41(void)
 {
-    func_0881EFB4();
+    dd_glow_all_off();
     return 1;
 }
 
@@ -712,7 +712,7 @@ int dd_ev_42(int player, int zone, int idx)
 
     if (card == 0)
         return 1;
-    func_0881EF2C(card);
+    dd_glow_off(card);
     func_0881F454(card);
     card->b4 = 1;
     return 1;
@@ -759,7 +759,7 @@ void dd_ev_flip_done(DdFlip *f)
     DdLoc l = f->loc;
 
     if (f->value > 0)
-        func_0881ED0C(l.player, l.zone, f->value, 0x2F, 0);
+        dd_popup(l.player, l.zone, f->value, 0x2F, 0);
     func_0880D21C(l.player, l.zone, l.idx);
     dd_free(f);
 }
@@ -794,7 +794,7 @@ int dd_ev_47(int player, int zone, int idx)
         dd_cutin_play(&d);
     } else {
         if (v != 0 && !(((unsigned char *)h)[4] & 2) && !(((unsigned char *)h)[4] & 4))
-            func_0881ED0C(func_08866744(player), zone, v, 0x2F, 0);
+            dd_popup(func_08866744(player), zone, v, 0x2F, 0);
         func_0880D21C(func_08866744(player), zone, idx);
     }
     return 1;

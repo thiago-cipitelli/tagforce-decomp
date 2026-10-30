@@ -52,7 +52,6 @@ extern int (*dd_act_filter)(void);     /* 0x08C574D8 */
 extern int dd_no_input;                /* 0x08C574DC */
 extern int dd_msg_loaded;              /* 0x08C574E0 */
 extern MenuWidget dd_menu3;            /* 0x08C574E4 */
-extern int dd_menu3_result;            /* 0x08C57A08 */
 
 void dd_m1_enter(void);
 unsigned int *dd_m1_draw(unsigned int *list);

@@ -176,12 +176,18 @@ typedef struct DdEvState {             /* 0x2C at 0x08C5476C */
 typedef struct DdCard {                /* a card object of the field (other ranges own it) */
     char unk0[0x80];
     unsigned short id;                 /* +0x80 card id */
-    short unk82[3];
+    DdLoc2 loc;                        /* +0x82 */
+    DdLoc2 loc2;                       /* +0x84 bit 14: face up */
+    short unk86;
     int uid;                           /* +0x88 instance */
     unsigned char unk8c;
     signed char b0 : 4;                /* +0x8D */
     signed char b4 : 1;
     signed char b5 : 1;
+    char unk8e[2];
+    int glow;                          /* +0x90 glow effect, -1 none */
+    int unk94;
+    int fx;                            /* +0x98 */
 } DdCard;
 
 typedef struct DdFlip {                /* argument of the flip cut-in's end callback */
