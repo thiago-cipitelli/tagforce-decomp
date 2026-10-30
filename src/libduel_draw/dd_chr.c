@@ -1,9 +1,9 @@
 // @range 0x0881351C-0x088143A4
 // @data 0x0887541C-0x088755B8
 // @asm 0x08813554-0x08813840
-// @asm 0x08813974-0x08813D48
+// @asm 0x08813AB8-0x08813C40
+// @asm 0x08813CF4-0x08813D48
 // @asm 0x08813D8C-0x08813F1C
-// @asm 0x08813FE0-0x088140A0
 // @asm 0x088141A4-0x088143A4
 /* Duel characters (partner/rival model from the cut-in pack): setup and free, the model with its
    animations (gzip'd TGMT), the voice track, the per-frame animation and draw, bone matrices for
@@ -96,25 +96,23 @@ void dd_chr_term(void)
     memset(&dd_chr_mgr, 0, sizeof(DdChrMgr));
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
+typedef struct DdChrDesc {             /* the first 13 words of DdChr, copied from the caller */
+    int w[13];
+} DdChrDesc;
+
+#ifdef NON_MATCHING /* lógica conferida; o cálculo de voice (ramos com bgezl/bnel no original) e os registradores diferem: 51 palavras */
 /* takes the description (13 words) and the voice and word tables of the cut-in pack */
 void dd_chr_init(DdChr *c, DdChr *desc)
 {
-    int i;
-    int *d;
-    int *s;
     int voice;
     void *pack;
 
     memset(c, 0, sizeof(DdChr));
-    for (i = 13, d = (int *)c, s = (int *)desc; i > 0; i--)
-        *d++ = *s++;
+    *(DdChrDesc *)c = *(DdChrDesc *)desc;
     if (charmap_lookup(c->chr, 0) >= 0)
         voice = 1;
-    else if (c->chr == 0x12 && c->sub == 2)
-        voice = 1;
     else
-        voice = 0;
+        voice = (c->chr == 0x12 && c->sub == 2) ? 1 : 0;
     pack = dd_cutin_get(c->chr, c->sub);
     if (voice)
         pack = ehp_find(pack, dd_chr_s_voice, 0);
@@ -191,39 +189,38 @@ void dd_chr_tick(DdChr *c)
                        (int)model_anim_frame(c->model), c->done);
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* advances the animation and the voice; 1 when the animation ended */
 int dd_chr_update(DdChr *c, float dt)
 {
     Model *m = dd_hook_anim(c);
-    float f0;
-    float f1;
+    int on;
+    int f0;
+    int f1;
     DdModelUpd upd;
 
     if (m) {
         c->done = 0;
-        f0 = model_anim_frame(m);
+        on = dd_hook_true(c);
+        f0 = (int)model_anim_frame(m);
         memset(&upd, 0, sizeof(upd));
-        if (dd_hook_true(c))
-            upd.dt = dt * (float)(int)gfx_get_state()[1];
-        else
-            upd.dt = 0.0f;
+        upd.dt = on ? dt * (float)(int)gfx_get_state()[1] : 0.0f;
         upd.cb = dd_hook_bone;
         upd.chr = c->chr;
         upd.c = c;
         model_update(m, (float *)&upd);
-        f1 = model_anim_frame(m);
-        if ((int)f0 < (int)f1)
+        f1 = (int)model_anim_frame(m);
+        if (f0 < f1)
             c->done = 1;
-        else if ((int)f1 == model_anim_frame_count(m))
+        else if (f1 == model_anim_frame_count(m))
             c->done = 1;
     }
     c->time += dt;
     if (c->voice)
         c->vtime += dt;
-    return dd_chr_anim_done(c) != 0;
+    if (dd_chr_anim_done(c) != 0)
+        return 1;
+    return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* plays animation `anim` (from the animation table, gzip'd TGMT decompressed) */
@@ -282,31 +279,24 @@ void dd_chr_anim_set(DdChr *c, int anim)
 }
 #endif
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* voice track of the character (voice01.vtmt.gz) */
 void dd_chr_voice_load(DdChr *c)
 {
-    void *pack = dd_cutin_get(c->chr, c->sub);
-    void *t = ehp_find(pack, dd_chr_s_vtmt, 0);
+    void *t = (void *)dd_chr_s_vtmt;
     int size;
 
+    t = ehp_find(dd_cutin_get(c->chr, c->sub), t, 0);
     if (t == 0)
         return;
-    if (t == 0) {
-        c->voice = 0;
-    } else {
-        if (is_gzip(t)) {
-            if (c->vbuf == 0)
-                c->vbuf = dd_alloc(0x10000);
-            gzip_decompress(c->vbuf, 0x10000, t, &size);
-            c->vbuf = tgm_relocate(c->vbuf);
-            t = c->vbuf;
-        }
-        c->voice = t;
+    if (t != 0 && is_gzip(t)) {
+        if (c->vbuf == 0)
+            c->vbuf = dd_alloc(0x10000);
+        gzip_decompress(c->vbuf, 0x10000, t, &size);
+        t = c->vbuf = tgm_relocate(c->vbuf);
     }
+    c->voice = t;
     c->vtime = 0.0f;
 }
-#endif
 
 #ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* last frame of the current animation */
@@ -410,25 +400,25 @@ int dd_chr_part_hidden(DdChr *c, int bit)
     return !(c->mask & 1 << bit);
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* start of animation `anim` (disc sounds of the duel disk animations) */
 int dd_chr_anim_cb(DdChr *c, int index, int arg)
 {
+    int r = 0;
+
     switch (c->anim) {
-    case 10:
-    case 0x17:
-        dd_fx_set_arg4(1);
-        break;
-    case 9:
     case 0x16:
+    case 9:
         dd_fx_set_arg4(0);
         break;
+    case 0x17:
+    case 10:
+        dd_fx_set_arg4(1);
+        break;
     }
-    if (c->on_start == 0)
-        return 0;
-    return c->on_start(c, index, arg);
+    if (c->on_start != 0)
+        r = c->on_start(c, index, arg);
+    return r;
 }
-#endif
 
 int dd_chr_cb_stop(DdChr *c, int index, int a, int b)
 {
