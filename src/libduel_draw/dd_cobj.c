@@ -8,14 +8,14 @@
 
 /* other ranges of libduel_draw */
 void dd_cobjs_init(void);
-void func_0880E45C(void);
-void func_0880E4D4(void);
-void func_0880E61C(void);
-void func_0880E65C(void);
-void func_0880E6C4(void);
-void func_0880E788(void);
-void func_0880EB70(void);
-void func_0880F4D4(void);
+void dd_board_choose_flag(void);
+void dd_board_begin(void);
+void dd_board_end(void);
+void dd_board_sheet(void);
+void dd_board_overlay(void);
+void dd_board_piles(void);
+void dd_board_cards(void);
+void dd_board_marks(void);
 void dd_hand_layout0(int a, int b);
 void dd_hand_layout1(int a, int b);
 void func_08811210(float dt);
@@ -116,19 +116,19 @@ int dd_cobjs_map_other(int side)
 /* draws the card objects (flag 2 of the scene) */
 void dd_cobjs_draw(void)
 {
-    func_0880E45C();
-    func_0880E4D4();
-    func_0880E65C();
-    func_0880E6C4();
-    func_0880E788();
+    dd_board_choose_flag();
+    dd_board_begin();
+    dd_board_sheet();
+    dd_board_overlay();
+    dd_board_piles();
     dd_hand_layout0(dd_cobjs.x168f0, 0);
     dd_hand_layout1(dd_cobjs.x168f0, 0);
     dd_cobjs.x168f0 = 0;
-    func_0880EB70();
+    dd_board_cards();
     if (func_088667AC() == 3 && !func_0882092C())
-        func_0880F4D4();
+        dd_board_marks();
     func_08815678();
-    func_0880E61C();
+    dd_board_end();
 }
 
 #ifdef NON_MATCHING /* o laço de zonas mantém o teste no topo a cada volta do laço externo */
