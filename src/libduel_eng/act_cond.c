@@ -1,4 +1,4 @@
-// @range 0x0886CB44-0x0886E784
+// @range 0x0886CB44-0x0886F23C
 // @asm 0x0886D828-0x0886DBC4
 // @asm 0x0886DE70-0x0886E074
 // @asm 0x0886E590-0x0886E784
@@ -53,6 +53,16 @@ int duel_0884E948(DuelAct *a, unsigned int p);
 int duel_count_active(int id);
 int duel_088DFE24(int p, unsigned int q);
 int duel_08827D98(unsigned int p, int uid);
+int card_is_in_group_147e(int id);
+int card_is_in_group_132b(int id);
+int card_get_prop5_hi(int id);
+unsigned int duel_field_type(unsigned int p, int z);
+int duel_card_check_9148(unsigned int p, int id);
+int duel_sum_e68a0(unsigned int p);
+int duel_088613D8(DuelAct *a);
+int duel_088770C0(DuelAct *a, DuelAct *b);
+unsigned int duel_act_e3920(DuelAct *a);
+int duel_act_target_is_monster(DuelAct *a);
 
 extern unsigned int duel_chain2_n;     /* 0x08914920 */
 extern unsigned char duel_chain2_kind[]; /* 0x08914928 */
@@ -776,3 +786,188 @@ int duel_0886E590(DuelAct *a)
     return a->b3_4 != 3;
 }
 #endif
+
+/* can card a be activated in answer to the action b (a card being activated or resolved)? */
+int duel_0886E784(DuelAct *a, DuelAct *b)
+{
+    unsigned int t;
+    unsigned int q;
+    int z;
+
+    if (b == 0) {
+        return 0;
+    }
+    if (b->zone > 10) {
+        return 0;
+    }
+    if (b->b3_4) {
+        return 0;
+    }
+    if (card_is_in_group_147e(b->id)) {
+        return 0;
+    }
+    switch (a->id) {
+    case 0x12F5:
+        return b->player == a->player ? 0 : b->id == 0x10F6;
+    case 0x12F6:
+        return b->player == a->player ? 0 : b->id == 0x12EA;
+    case 0x12F7:
+        return b->player == a->player ? 0 : b->id == 0x10F7;
+    case 0x131C:
+        return b->player == a->player ? 0 : (b->id == 0x1246) << 1;
+    case 0x12FE:
+    case 0x15FC:
+    case 0x16A6:
+        return card_get_type(b->id) != 0x16 ? 0 : duel_0886CDC4(a, (int)b);
+    case 0x12FF:
+        return card_get_type(b->id) == 0x17;
+    case 0x1721:
+        if (b->player == a->player) {
+            return 0;
+        }
+        if (duel_phase != 3) {
+            return 0;
+        }
+        return card_get_type(b->id) == 0x17 ? 1 : 0;
+    case 0x140D:
+        if (b->player == a->player) {
+            return 0;
+        }
+        return card_get_type(b->id) == 0x16 ? 1 : 0;
+    case 0x1470:
+        if (b->player == a->player) {
+            return 0;
+        }
+        if (card_get_type(b->id) != 0x16) {
+            return 0;
+        }
+        return duel_act_e3920(b) ? duel_0886CDC4(a, (int)b) : 0;
+    case 0x148F:
+        if (card_get_type(b->id) != 0x16) {
+            return 0;
+        }
+        return duel_act_target_is_monster(b) != 0 ? 1 : 0;
+    case 0x153E: /* a spell targeting a face-up monster, with field type 2 */
+        if (b->n_targets == 1 && !card_is_monster(b->id)) {
+            t = duel_act_target(b, 0);
+            q = t & 0xFF;
+            z = (unsigned char)((t & 0xFFFF) >> 8);
+            if (z < 5 && duel.players[q & 1].field[z].faceup != 0 && (unsigned short)duel_field_type(q, z) == 2) {
+                return 1;
+            }
+        }
+        return 0;
+    case 0x1541:
+        z = !card_is_monster(b->id);
+        if (z) {
+            z = duel_act_e3920(b) != 0;
+        }
+        if (z) {
+            z = (int)duel_act_e3920(b) < 4;
+        }
+        return z;
+    case 0x15F1:
+        if (card_get_type(b->id) != 0x16) {
+            return 0;
+        }
+        if (duel_act_target_is_monster(b)) {
+            return 1;
+        }
+        return duel_hand_can_discard(a->player, 1, a->uid, 0, 1) != 0 ? 1 : 0;
+    case 0x162A:
+        return b->id == 0x12EC;
+    case 0x1634:
+        if (card_get_type(b->id) != 0x16) {
+            z = 0;
+        } else {
+            z = duel_sum_e68a0(a->player) >= duel_088613D8(a);
+        }
+        return z;
+    case 0x16DD:
+        if (card_get_type(b->id) != 0x16) {
+            return 0;
+        }
+        return duel_0886CB44(a->player, 1, a->uid, 0, 1) != 0 ? 1 : 0;
+    case 0x176B:
+        if (card_get_type(b->id) != 0x16) {
+            return 0;
+        }
+        return card_get_prop5_hi(b->id) == 3 ? 1 : 0;
+    case 0x18DD:
+        if (b->player == a->player) {
+            return 0;
+        }
+        if (card_get_type(b->id) != 0x16) {
+            return 0;
+        }
+        return card_get_prop5_hi(b->id) == 4 ? 1 : 0;
+    case 0x18DE:
+        if (b->player == a->player) {
+            return 0;
+        }
+        if (card_get_type(b->id) != 0x17) {
+            return 0;
+        }
+        return card_get_prop5_hi(b->id) == 4 ? 1 : 0;
+    case 0x1960:
+        return duel_card_check_9148(a->player, 0x18A6) > 0;
+    case 0x148C: /* a spell of the opponent during his turn */
+        if (duel_turn_player == 1 - (a->player ^ a->opp) && (b->player ^ b->opp) != (a->player ^ a->opp) &&
+            card_get_type(b->id) == 0x16) {
+            return duel_tributable(a->player ^ a->opp, a->player, a->zone);
+        }
+        return 0;
+    case 0x14B6:
+        if (card_get_type(b->id) == 0x16 && card_get_prop5_hi(b->id) == 0) {
+            return 1;
+        }
+        return 0;
+    case 0x14C7:
+        if (card_get_type(b->id) == 0x17 && card_get_prop5_hi(b->id) == 0) {
+            return 1;
+        }
+        return 0;
+    case 0x17C6:
+    case 0x19E2:
+        return card_get_type(b->id) == 0x17;
+    case 0x17D4:
+    case 0x19E1:
+        return card_get_type(b->id) == 0x16;
+    case 0x183A:
+        if ((b->player ^ b->opp) != (a->player ^ a->opp) && card_get_type(b->id) == 0x17) {
+            return duel_tributable(a->player ^ a->opp, a->player, a->zone);
+        }
+        return 0;
+    case 0x1A24:
+        if (b->player == a->player) {
+            return 0;
+        }
+        return card_get_type(b->id) != 0x17 ? 0 : duel_088770C0(a, b);
+    case 0x1A25:
+        if (b->player == a->player) {
+            return 0;
+        }
+        return card_get_type(b->id) != 0x16 ? 0 : duel_088770C0(a, b);
+    case 0x12DA:
+        if (!card_is_in_group_132b(b->id)) {
+            return 0;
+        }
+        switch (b->id) {
+        case 0x12FA:
+            if (duel.players[(1 - a->player) & 1].n_hand == 0) {
+                return 0;
+            }
+            break;
+        case 0x1324:
+        case 0x1325:
+        case 0x12F0:
+        case 0x132B:
+            if (!duel_0886CD24(a, a->player)) {
+                return 0;
+            }
+            break;
+        }
+        return 1;
+    }
+    return 0;
+}
