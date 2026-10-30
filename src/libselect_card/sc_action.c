@@ -1,16 +1,9 @@
 // @range 0x0880E64C-0x0880FFCC
-// @asm 0x0880E6F8-0x0880E95C
 // @asm 0x0880E95C-0x0880EA84
 // @asm 0x0880EA84-0x0880EC54
 // @asm 0x0880EC54-0x0880ECD4
-// @asm 0x0880ECD4-0x0880EEB8
-// @asm 0x0880EEFC-0x0880F044
-// @asm 0x0880F1BC-0x0880F568
 // @asm 0x0880F678-0x0880F808
-// @asm 0x0880F808-0x0880FA68
 // @asm 0x0880FA68-0x0880FB4C
-// @asm 0x0880FB4C-0x0880FD4C
-// @asm 0x0880FDC0-0x0880FF4C
 // @data 0x0881B378-0x0881B3DC
 /* The card action menu and its sub-menus: favourite mark, card info, sort/filter submenu, clear
    or reset the list, pane layout picker (2x4 grid of layouts), "new" mark picker, the items drawn
@@ -49,7 +42,7 @@ void sc_action_clear_open(void);
 void sc_action_layout_open(void);
 void sc_action_mark_open(void);
 void sc_action_confirm_open(void);
-void *sc_draw_rule(void *list, ScLineVtx *v, short x, short y, short w);
+void *sc_draw_rule(void *list, ScLineVtx *v, int x, int y, int w);
 void *sc_draw_action_item(void *list, unsigned short i, int x, int y);
 void *sc_draw_layouts(void *list, int x, int y);
 void *sc_draw_sub_item(void *list, unsigned short i, int x, int y);
@@ -72,7 +65,6 @@ void sc_action_free(void)
     sc_action = 0;
 }
 
-#ifdef NON_MATCHING /* cadeia de testes do resultado com blocos duplicados no original */
 /* step 0: the action menu itself */
 void sc_action_step0(void)
 {
@@ -83,39 +75,45 @@ void sc_action_step0(void)
         return;
     if (r >= 0 && sc_action->no_ent == 1)
         r += 2;
-    if (r == 6 || r == 5 || r == -2) {
+    switch (r) {
+    case -2:
+    case 5:
+    case 6:
         menu_finish(sc_action->menu);
         sc_action->step = 10;
         return;
     }
     sc_action->menu->no_cancel = 0;
-    if (r == 3) {
-        sc_action_clear_open();
-        se_play(0x6216);
-        sc_action->step = 2;
-    } else if (r == 4) {
-        sc_action_layout_open();
-        se_play(0x6216);
-        sc_action->step = 3;
-    } else if (r == 2) {
+    switch (r) {
+    case 0:
+        sc.info_open = 1;
+        sc_action->menu->cancelled = sc_action->menu->accepted = 0;
+        break;
+    case 1:
+        id = sc_action->ent->id;
+        if (inv_get_flag7(id))
+            inv_set_flag7(id, 0);
+        else
+            inv_set_flag7(id, 1);
+        sc_action->menu->cancelled = sc_action->menu->accepted = 0;
+        break;
+    case 2:
         sc_action_menu_sub();
         se_play(0x6216);
         sc_action->step = 1;
-    } else if (r == 1) {
-        id = sc_action->ent->id;
-        if (inv_get_flag7(id) == 0)
-            inv_set_flag7(id, 1);
-        else
-            inv_set_flag7(id, 0);
-        sc_action->menu->accepted = 0;
-        sc_action->menu->cancelled = 0;
-    } else if (r == 0) {
-        sc.info_open = 1;
-        sc_action->menu->accepted = 0;
-        sc_action->menu->cancelled = 0;
+        break;
+    case 4:
+        sc_action_layout_open();
+        se_play(0x6216);
+        sc_action->step = 3;
+        break;
+    case 3:
+        sc_action_clear_open();
+        se_play(0x6216);
+        sc_action->step = 2;
+        break;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* o original duplica a gravação do estado depois do mover (bloco esvaziado pelo desvio likely) */
 /* step 10: wait for the close, then run the chosen action */
@@ -207,7 +205,6 @@ void sc_action_menu_sub(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* cadeia de testes e alocação diferentes */
 /* step 1 */
 void sc_action_step1(void)
 {
@@ -218,36 +215,45 @@ void sc_action_step1(void)
         return;
     if (m->state == 3) {
         menu_finish(m);
-        if (r == 2 || r == 1 || r == 0)
+        switch (r) {
+        case 0:
+        case 1:
+        case 2:
             menu_finish(sc_action->menu);
+            break;
+        }
         return;
     }
     menu_reset(m);
     heap_set_level(sc.heap, sc_action->sub);
     sc_action->sub = 0;
-    if (r == -2) {
-        sc_action->step = 0;
-        sc_action->menu->accepted = 0;
-        sc_action->menu->cancelled = 0;
-    } else if (r == 3) {
-        sc_action_mark_open();
-        se_play(0x6216);
-        sc_action->step = 4;
-    } else if (r == 2) {
-        sc_input_mark();
-        se_play(0x6216);
-        sc_action_free();
-    } else if (r == 1) {
-        sc_input_filter();
-        se_play(0x6216);
-        sc_action_free();
-    } else if (r == 0) {
+    switch (r) {
+    case 0:
         sc_input_sort();
         se_play(0x6216);
         sc_action_free();
+        break;
+    case 1:
+        sc_input_filter();
+        se_play(0x6216);
+        sc_action_free();
+        break;
+    case 2:
+        sc_input_mark();
+        se_play(0x6216);
+        sc_action_free();
+        break;
+    case 3:
+        sc_action_mark_open();
+        se_play(0x6216);
+        sc_action->step = 4;
+        break;
+    case -2:
+        sc_action->step = 0;
+        sc_action->menu->cancelled = sc_action->menu->accepted = 0;
+        break;
     }
 }
-#endif
 
 void sc_action_clear_open(void)
 {
@@ -255,7 +261,6 @@ void sc_action_clear_open(void)
         menu_open(sc_action->sub);
 }
 
-#ifdef NON_MATCHING /* cadeia de testes e alocação diferentes */
 /* step 2: clear the list (1) or reset it (0) */
 void sc_action_step2(void)
 {
@@ -268,25 +273,26 @@ void sc_action_step2(void)
     menu_reset(m);
     heap_set_level(sc.heap, sc_action->sub);
     sc_action->sub = 0;
-    if (r == 1) {
-        sc_lists_clear();
-        sc.nhist = 0;
-        done = 1;
-    } else if (r == 0) {
+    switch (r) {
+    case 0:
         sc_lists_reset();
         sc.nhist = 0;
         done = 1;
+        break;
+    case 1:
+        sc_lists_clear();
+        sc.nhist = 0;
+        done = 1;
+        break;
     }
     if (done) {
         menu_finish(sc_action->menu);
         sc_action->step = 10;
     } else {
         sc_action->step = 0;
-        sc_action->menu->accepted = 0;
-        sc_action->menu->cancelled = 0;
+        sc_action->menu->cancelled = sc_action->menu->accepted = 0;
     }
 }
-#endif
 
 /* the layout picker: 4 x 2 grid of pane layouts */
 void sc_action_layout_open(void)
@@ -315,63 +321,57 @@ void sc_action_layout_open(void)
     menu_open(m);
 }
 
-#ifdef NON_MATCHING /* testes do pad e atualização do cursor com outra alocação */
 /* step 3: d-pad picks a layout (previewed at once), accept keeps it, cancel restores */
 void sc_action_step3(void)
 {
     MenuWidget *m = sc_action->sub;
     PadState *pad = pad_get();
     unsigned int rep;
+    int c;
 
     menu_update(m);
     if (m->state == 6) {
         if (m->cancelled) {
-            sc_set_mode_u(sc_action->mode & 7);
+            sc_set_mode_u(sc_action->mode % 8);
             menu_reset(m);
             heap_set_level(sc.heap, sc_action->sub);
             sc_action->sub = 0;
             sc_action->step = 0;
-            sc_action->menu->accepted = 0;
-            sc_action->menu->cancelled = 0;
-            return;
+            sc_action->menu->cancelled = sc_action->menu->accepted = 0;
+        } else {
+            if (sc_action->mode > 1 && scv.mode < 2)
+                sc_list_filter_reset(&sc.list[sc_action->tab]);
+            menu_finish(sc_action->menu);
+            sc_action->step = 10;
         }
-        if (sc_action->mode > 1 && scv.mode < 2)
-            sc_list_filter_reset(&sc.list[sc_action->tab]);
-        menu_finish(sc_action->menu);
-        sc_action->step = 10;
         return;
     }
     if (pad->b.trig & region_pick_value(1)) {
         m->cancelled = 1;
         menu_finish(m);
         se_play(0x6214);
-        return;
-    }
-    if (pad->b.trig & region_pick_value(0)) {
+    } else if (pad->b.trig & region_pick_value(0)) {
         menu_set_cursor(m, m->cursor);
         se_play(0x6213);
-        return;
-    }
-    rep = pad->b.rep;
-    if (rep & 0x50) {
-        m->cursor = (m->cursor + 4) & 7;
-        sc_set_mode_u(m->cursor & 7);
-        se_play(0x6212);
-        return;
-    }
-    if (rep & 0x80) {
-        m->cursor = (((m->cursor & 3) + 3) & 3) + (m->cursor & 0x1C);
-        sc_set_mode_u(m->cursor & 7);
-        se_play(0x6212);
-        return;
-    }
-    if (rep & 0x20) {
-        m->cursor = (((m->cursor & 3) + 1) & 3) + (m->cursor & 0x1C);
-        sc_set_mode_u(m->cursor & 7);
-        se_play(0x6212);
+    } else {
+        rep = pad->b.rep;
+        if (rep & 0x50) {
+            m->cursor = (m->cursor + 4) % 8;
+            sc_set_mode_u(m->cursor % 8);
+            se_play(0x6212);
+        } else if (rep & 0x80) {
+            c = m->cursor;
+            m->cursor = (c % 4 + 3) % 4 + (unsigned char)c / 4 * 4;
+            sc_set_mode_u(m->cursor % 8);
+            se_play(0x6212);
+        } else if (rep & 0x20) {
+            c = m->cursor;
+            m->cursor = (c % 4 + 1) % 4 + (unsigned char)c / 4 * 4;
+            sc_set_mode_u(m->cursor % 8);
+            se_play(0x6212);
+        }
     }
 }
-#endif
 
 /* the "new" mark picker */
 void sc_action_mark_open(void)
@@ -451,7 +451,6 @@ void sc_action_confirm_open(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* alocação e ordem dos zeramentos diferentes */
 /* step 5: yes stores the mark and drops the lists' marks */
 void sc_action_step5(void)
 {
@@ -464,21 +463,32 @@ void sc_action_step5(void)
     if (r == -1)
         return;
     menu_reset(m);
-    if (r == 2) {
+    switch (r) {
+    case -2:
+    case 3:
+        sc_action->step = 0;
+        sc_action->menu->cancelled = sc_action->menu->accepted = 0;
+        break;
+    case 2:
         cfg_set_byte0_hi2(sc_action->mark);
         l = 0;
         a = 0;
         b = 0;
-        if (sc.kind == 2) {
-            a = scv.pane[0].list->tab == 0;
+        switch (sc.kind) {
+        case 1:
             l = &sc.list[0];
+            if (scv.pane[0].list->tab == 0)
+                a = 1;
             if (scv.pane[1].list->tab == 0)
                 b = 1;
-        } else if (sc.kind == 1) {
-            a = scv.pane[0].list->tab == 0;
+            break;
+        case 2:
             l = &sc.list[0];
+            if (scv.pane[0].list->tab == 0)
+                a = 1;
             if (scv.pane[1].list->tab == 0)
                 b = 1;
+            break;
         }
         if (l != 0) {
             sc_list_filter_reset(l);
@@ -492,26 +502,19 @@ void sc_action_step5(void)
                 scv.pane[1].cx = 0;
                 scv.pane[1].top = 0;
             }
-            l->u1c_hi = 0;
-            l->u1c_lo = 0;
-            l->u1a = 0;
-            l->u18 = 0;
+            l->u18 = l->u1a = l->u1c_lo = l->u1c_hi = 0;
         }
         heap_set_level(sc.heap, sc_action->sub);
         sc_action->sub = 0;
         menu_finish(sc_action->menu);
         sc_action->step = 10;
-    } else if (r == 3 || r == -2) {
-        sc_action->step = 0;
-        sc_action->menu->accepted = 0;
-        sc_action->menu->cancelled = 0;
+        break;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* laço de vértices com outra alocação */
 /* a two-tone rule under a menu item */
-void *sc_draw_rule(void *list, ScLineVtx *v, short x, short y, short w)
+void *sc_draw_rule(void *list, ScLineVtx *v, int x, int y, int w)
 {
     int i;
     ScLineVtx *p;
@@ -534,44 +537,48 @@ void *sc_draw_rule(void *list, ScLineVtx *v, short x, short y, short w)
 }
 #endif
 
-#ifdef NON_MATCHING /* laço com saída no meio; alocação diferente */
 /* the items of the action menu: card picture on top, then the buttons with rules */
 void *sc_action_draw_items(void *list, int x, int y, int w, int h)
 {
     MenuWidget *m = sc_action->menu;
-    unsigned int first = 0;
+    int first = 0;
     int n = 7;
-    unsigned int i;
-    unsigned int k;
+    int i;
+    int k;
     int dx;
 
     if (!sc_action->no_ent) {
         list = sc_draw_card_pict(list, x + 2, y + 2, 1, 0xFFFFFFFF, sc_action->ent, res_get(0x8001), res_get(0x8002), res_get(0x8032));
     } else {
         first = 2;
-        n = 5;
+        n -= 2;
     }
-    if (n == 0)
-        return list;
-    for (i = 0, k = first; ; ) {
+    for (i = 0; i < n; i++) {
+        k = i + first;
         dx = 0;
-        if (k == 1 || k == 0)
-            dx = 0x1D;
+        switch (k) {
+        case 0:
+        case 1:
+            dx += 0x1D;
+            break;
+        }
         if (m->cursor == i)
-            list = menu_draw_cursor(list, m, m->item_x + x + dx, y + m->item_y, m->cursor_w - dx, m->cursor_h);
+            list = menu_draw_cursor(list, m, m->item_x + (x + dx), y + m->item_y, m->cursor_w - dx, m->cursor_h);
         list = sc_draw_action_item(list, k, x + dx, y);
         y += m->item_h;
-        if (k == 4 || k == 1) {
+        switch (k) {
+        case 1:
             list = sc_draw_rule(list, dl_alloc_inline(&list, 0x30), x, y + 1, m->item_w);
             y += 4;
+            break;
+        case 4:
+            list = sc_draw_rule(list, dl_alloc_inline(&list, 0x30), x, y + 1, m->item_w);
+            y += 4;
+            break;
         }
-        i++;
-        if ((int)i >= n)
-            return list;
-        k = i + first;
     }
+    return list;
 }
-#endif
 
 ScButton sc_action_items[7] = {
     { 0x800B, 0x33, 0x11, 0x50 }, { 0x800B, 0x44, 0x11, 0x51 }, { 0x800B, 0x33, 0x22, 0x18 },
@@ -595,33 +602,36 @@ void *sc_draw_action_item(void *list, unsigned short i, int x, int y)
     return sc_draw_button(list, b, x, y + 1, color);
 }
 
-#ifdef NON_MATCHING /* divisões com sinal e laço com outra alocação */
 /* the layout picker contents: cursor and the 8 layout icons */
 void *sc_draw_layouts(void *list, int x, int y)
 {
     void *gim = res_get(0x800A);
+    int px = x;
     MenuWidget *m = sc_action->sub;
-    unsigned char c = m->cursor;
+    int c = m->cursor;
     int i;
-    int px;
+    int u;
+    int v;
 
-    list = menu_draw_cursor(list, m, x + c % 4 * 36 - 2, y + c / 4 * 20 - 2, 36, 20);
+    list = menu_draw_cursor(list, m, x + c % 4 * 36 - 2, y + (unsigned char)c / 4 * 20 - 2, 36, 20);
     if (gim == 0)
         return list;
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
     list = gim_set_texture(list, gim);
     list = draw_set_offsets(list, 32, 16, 32, 16);
-    for (i = 0, px = x; i < 8; i++, px += 36) {
+    for (i = 0; i < 8; i++) {
+        u = i / 4 * 32 + 64;
+        v = i % 4 * 16 + 64;
         if (i == 4) {
             px = x;
             y += 20;
         }
-        list = draw_sprite(list, px, y, 0, i / 4 * 32 + 64, i % 4 * 16 + 64, 0, 0);
+        list = draw_sprite(list, px, y, 0, u, v, 0, 0);
+        px += 36;
     }
     return list;
 }
-#endif
 
 ScButton sc_sub_items[4] = {
     { 0x800B, 0x11, 0x00, 0x55 }, { 0x800B, 0x22, 0x00, 0x56 }, { 0x8008, 0x66, 0x31, 0x12 }, { 0x800B, 0x22, 0x11, 0x4B },
