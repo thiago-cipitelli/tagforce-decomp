@@ -1,31 +1,15 @@
 // @range 0x08819C04-0x0881CA2C
 // @asm 0x08819C30-0x08819F2C
 // @asm 0x08819F2C-0x0881A020
-// @asm 0x0881A020-0x0881A0AC
 // @asm 0x0881A0AC-0x0881A458
-// @asm 0x0881A458-0x0881A494
-// @asm 0x0881A4BC-0x0881A4F8
 // @asm 0x0881A504-0x0881ABD8
 // @asm 0x0881ABD8-0x0881AFC0
-// @asm 0x0881B004-0x0881B134
-// @asm 0x0881B134-0x0881B1AC
-// @asm 0x0881B21C-0x0881B340
-// @asm 0x0881B340-0x0881B3C0
-// @asm 0x0881B48C-0x0881B598
-// @asm 0x0881B5A4-0x0881B6E0
-// @asm 0x0881B70C-0x0881B9B4
-// @asm 0x0881BA40-0x0881BACC
 // @asm 0x0881BACC-0x0881BCB8
 // @asm 0x0881BCB8-0x0881BE90
 // @asm 0x0881BE90-0x0881BF1C
 // @asm 0x0881BF1C-0x0881BFA8
-// @asm 0x0881BFA8-0x0881BFF0
-// @asm 0x0881BFF0-0x0881C144
-// @asm 0x0881C150-0x0881C250
 // @asm 0x0881C3A8-0x0881C510
 // @asm 0x0881C510-0x0881C678
-// @asm 0x0881C678-0x0881C764
-// @asm 0x0881C764-0x0881C8F0
 // @asm 0x0881C91C-0x0881C9A0
 // @data 0x08875E60-0x08875F84
 /* The card list window of prompts (choose N cards out of a list: deck search, graveyard, ...):
@@ -33,6 +17,7 @@
    (key and direction), a filter window by card kind and an options window (card info, sort,
    filter, ...). */
 #include "dd_field_ui.h"
+#include "allegrex.h"
 
 typedef struct DdSelDesc {             /* what the caller passes to dd_sel_open */
     int n;
@@ -87,7 +72,8 @@ extern DdSel dd_sel;                   /* 0x08C547B4 */
 DdSelOpt dd_sel_opts[5] = {
     { 0, 0, 0x42, 4 }, { 1, 0x4E, 0x69, 0x35 }, { 2, 0x5B, 0x69, 0x36 }, { 3, 0x4E, 0x5C, 0x34 }, { 4, 0x34, 0x4F, 0x33 },
 };
-unsigned short dd_sel_qmark[2] = { '?', 0 };
+typedef struct DdQ { short c[2]; } DdQ;
+short dd_sel_qmark[2] = { '?', 0 };
 /* (attribute-icon mask, icon) of the row icons */
 int dd_sel_icons[11][2] = {
     { 2, 0 }, { 4, 2 }, { 8, 3 }, { 0x10, 1 }, { 0x20, 4 }, { 0x40, 6 }, { 0x80, 5 }, { 0x100, 7 }, { 0x200, 7 },
@@ -283,24 +269,23 @@ void dd_sel_open_engine(int max, int min, unsigned short *title, int reverse)
 }
 #endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
+void *dd_sel_sub_draw(void *list);
+void *dd_sel_sub_draw2(void *list);
+void *dd_sel_sub_draw3(void *list);
+
 void *dd_sel_draw(void *list)
 {
-    menu_draw(&list, &dd_sel.list);
-    switch (dd_sel.mode) {
-    case 1:
-        menu_draw(&list, &dd_sel.sub);
-        break;
-    case 2:
-        menu_draw(&list, &dd_sel.sub);
-        break;
-    case 3:
-        menu_draw(&list, &dd_sel.sub);
-        break;
-    }
+    DdSel *s = &dd_sel;
+
+    menu_draw(&list, &s->list);
+    if (dd_sel.mode == 1)
+        list = dd_sel_sub_draw(list);
+    else if (s->mode == 2)
+        list = dd_sel_sub_draw2(list);
+    else if (s->mode == 3)
+        list = dd_sel_sub_draw3(list);
     return list;
 }
-#endif
 
 int dd_sel_sort_update(void);
 void dd_sel_open_sort(void);
@@ -403,16 +388,16 @@ void dd_sel_update(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 int dd_sel_busy(void)
 {
-    if (dd_sel.list.state == 6)
+    switch (dd_sel.list.state) {
+    case 0:
+    case 1:
+    case 6:
         return 0;
-    if (dd_sel.list.state == 1 || dd_sel.list.state == 0)
-        return 0;
+    }
     return 1;
 }
-#endif
 
 int dd_sel_active(void)
 {
@@ -425,14 +410,14 @@ void dd_sel_set_minmax(int min, int max)
     dd_sel.max = max;
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 int dd_sel_get_picked(int *out)
 {
+    DdSel *s = &dd_sel;
+
     if (out != 0)
-        memcpy(out, dd_sel.picked, dd_sel.n_picked << 2);
-    return dd_sel.n_picked;
+        memcpy(out, s->picked, s->n_picked << 2);
+    return s->n_picked;
 }
-#endif
 
 void dd_sel_close(void)
 {
@@ -646,49 +631,51 @@ void dd_sel_show(int i)
     dd_info_select(uid);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_toggle(int i)
 {
+    int id = dd_sel.order[i];
     DdSel *s = &dd_sel;
+    int n = dd_sel.n_picked;
     int k;
 
-    for (k = 0; k < s->n_picked; k++) {
-        if (s->order[i] == s->picked[k]) {
-            if (k < s->n_picked - 1)
-                memcpy(&s->picked[k], &s->picked[k + 1], (s->n_picked - k - 1) * 4);
+    for (k = 0; k < n; k++) {
+        if (id == s->picked[k]) {
+            if (k < n - 1)
+                memcpy(&s->picked[k], &s->picked[k + 1], (n - k - 1) * 4);
             s->n_picked--;
             se_play(0x6214);
             return;
         }
     }
-    if (s->n_picked < s->max) {
-        s->picked[s->n_picked] = s->order[i];
+    if (n >= s->max) {
+        se_play(0x6215);
+    } else {
+        s->picked[n] = id;
         s->n_picked++;
         se_play(0x6213);
         if (s->n_picked >= s->max) {
             s->done = 1;
             s->list.no_cancel = 0;
         }
-    } else {
-        se_play(0x6215);
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_unpick(int i)
 {
-    if (dd_sel.n_picked != 0) {
-        dd_sel.n_picked--;
+    DdSel *s = &dd_sel;
+
+    if (dd_sel.n_picked == 0) {
+        if (s->list.cancel_blocked) {
+            se_play(0x6215);
+            return;
+        }
+        menu_finish(&s->list);
         se_play(0x6214);
-    } else if (dd_sel.list.cancel_blocked) {
-        se_play(0x6215);
     } else {
-        menu_finish(&dd_sel.list);
+        s->n_picked--;
         se_play(0x6214);
     }
 }
-#endif
 
 /* end of the prompt: the picks go back to the engine */
 void dd_sel_done_cb(void)
@@ -704,26 +691,20 @@ void dd_sel_done_cb(void)
 }
 
 /* ATK/DEF digits right-aligned at x + 0x15 ("?" when unknown) */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 unsigned int *dd_sel_draw_number(unsigned int *list, int x, int y, int v)
 {
-    char d[4];
-    unsigned short q[2];
+    short q[2];
 
     font_text_set(list);
     font_set_size(10, 0xC);
     if (v < 0) {
-        q[0] = dd_sel_qmark[0];
-        q[1] = dd_sel_qmark[1];
-        font_draw_text(x << 6, y << 6, (0x1E0 - x) << 6, q);
+        *(DdQ *)q = *(DdQ *)dd_sel_qmark;
+        font_draw_text(x << 6, y << 6, (0x1E0 - x) << 6, (unsigned short *)q);
     } else {
         x += 0x15;
-        if (v < 0)
-            v = 0;
-        if (v > 9999)
-            v = 9999;
+        v = ALLEGREX_MIN(ALLEGREX_MAX(v, 0), 9999);
         do {
-            memset(d, 0, sizeof(d));
+            char d[4] = { 0 };
             d[0] = v % 10 + '0';
             font_draw_text(x << 6, y << 6, (0x1E0 - x) << 6, (unsigned short *)d);
             v /= 10;
@@ -732,28 +713,30 @@ unsigned int *dd_sel_draw_number(unsigned int *list, int x, int y, int v)
     }
     return font_text_clear();
 }
-#endif
+
+typedef struct DdSelIconTab {
+    int v[11][2];                      /* (flag mask, icon) */
+} DdSelIconTab;
 
 /* up to two icons of a candidate's flags */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 int dd_sel_icons_of(int *out, int attr)
 {
-    int tab[11][2];
-    int n = 0;
+    DdSelIconTab tab;
+    int n;
     int i;
 
-    memcpy(tab, dd_sel_icons, sizeof(tab));
+    tab = *(DdSelIconTab *)dd_sel_icons;
+    n = 0;
     for (i = 0; i < 11; i++) {
-        if (attr & tab[i][0]) {
+        if (attr & tab.v[i][0]) {
             n++;
-            *out++ = tab[i][1];
-            if (n >= 2)
-                return n;
+            *out++ = tab.v[i][1];
+            if (n > 1)
+                break;
         }
     }
     return n;
 }
-#endif
 
 unsigned int *dd_sel_draw_icon(unsigned int *list, int x, int y, int icon)
 {
@@ -766,72 +749,73 @@ unsigned int *dd_sel_draw_icon(unsigned int *list, int x, int y, int icon)
 }
 
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_open_sort(void)
 {
-    DdSel *s = &dd_sel;
+    MenuWidget *w = &dd_sel.sub;
+    MenuItemDef *d = &w->def;
 
-    func_08825B9C(&s->sub);
-    s->sub.def.title = dd_text(0x21);
-    s->sub.cancel_blocked = 0;
-    s->sub.style = 3;
-    s->sub.count = 10;
-    s->sub.rows = 10;
-    s->sub.draw_item = (MenuDrawItemFn)dd_sel_sort_draw_item;
-    s->sub.item_h = 0x11;
-    s->sub.item_w = 0x11;
-    menu_open(&s->sub);
-    s->sub.def.x = 0xF0;
-    s->sub.def.y = 0x32;
-    memcpy(s->saved, s->order, s->n << 2);
-    s->n_saved = s->n;
-    s->dir_saved = s->dir;
-    s->key_saved = s->key;
+    func_08825B9C(w);
+    d->title = dd_text(0x21);
+    w->cancel_blocked = 0;
+    w->style = 3;
+    w->count = 10;
+    w->rows = 10;
+    w->draw_item = (MenuDrawItemFn)dd_sel_sort_draw_item;
+    w->item_h = 0x11;
+    w->item_w = 0x11;
+    menu_open(w);
+    d->x = 0xF0;
+    d->y = 0x32;
+    memcpy(dd_sel.saved, dd_sel.order, dd_sel.n << 2);
+    dd_sel.n_saved = dd_sel.n;
+    dd_sel.dir_saved = dd_sel.dir;
+    dd_sel.key_saved = dd_sel.key;
     se_play(0x6216);
 }
-#endif
 
 void dd_sel_sub_reset(void)
 {
     menu_reset(&dd_sel.sub);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 int dd_sel_sort_update(void)
 {
+    MenuWidget *w = &dd_sel.sub;
     DdSel *s = &dd_sel;
-    int r = menu_update(&s->sub);
+    int r = menu_update(w);
     unsigned int *pad;
-    int k, flip, moved;
+    int k;
+    int changed;
 
-    if (r != -1) {
-        if (r == -2) {
-            memcpy(s->order, s->saved, 0x800);
-            s->key = s->key_saved;
-            s->dir = s->dir_saved;
+    if (r == -1) {
+        changed = 0;
+        pad = dd_pad();
+        if (menu_item_is_open(&w->menu, &w->def) == 0)
+            return 0;
+        if (pad[1] & 0x50) {
+            changed = 1;
+            s->dir = !s->dir;
+            se_play(0x6212);
         }
-        dd_sel_sub_reset();
-        return 1;
-    }
-    pad = dd_pad();
-    if (menu_item_is_open(&s->sub.menu, &s->sub.def) == 0)
+        k = w->scroll + w->cursor;
+        if (s->key != k) {
+            s->key = k;
+            changed = 1;
+        }
+        if (changed) {
+            memcpy(s->order, s->saved, s->n << 2);
+            dd_sel_sort(s->order, s->n, s->key, s->dir);
+        }
         return 0;
-    flip = (pad[1] & 0x50) != 0;
-    if (flip) {
-        s->dir = !s->dir;
-        se_play(0x6212);
     }
-    k = s->sub.scroll + s->sub.cursor;
-    moved = s->key != k;
-    if (moved)
-        s->key = k;
-    if (moved || flip) {
-        memcpy(s->order, s->saved, s->n << 2);
-        dd_sel_sort(s->order, s->n, s->key, s->dir);
+    if (r == -2) {
+        memcpy(s->order, s->saved, 0x800);
+        s->key = s->key_saved;
+        s->dir = s->dir_saved;
     }
-    return 0;
+    dd_sel_sub_reset();
+    return 1;
 }
-#endif
 
 void *dd_sel_sub_draw(void *list)
 {
@@ -840,48 +824,50 @@ void *dd_sel_sub_draw(void *list)
 }
 
 /* an entry of the sort window; the current key also shows both directions */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void *dd_sel_sort_draw_item(void *dl, int i, int x, int y)
 {
+    DdSel *s = &dd_sel;
     unsigned int *list = dl_ambient_color(dl, 0xFFFFFFFF);
     void *gim = dd_gim_get(0x40005);
-    float r[12] = { 0 };
     int k;
 
     if (gim != 0)
         list = gim_set_texture(list, gim);
-    list = dd_sel_draw_key(list, x, y, (unsigned short)i);
-    if ((unsigned short)i != dd_sel.sub.scroll + dd_sel.sub.cursor)
-        return list;
-    r[0] = (float)(x + 8);
-    r[1] = (float)(y + 0x1A);
-    r[3] = (float)(x + 0x19);
-    r[4] = r[1];
-    r[6] = r[3];
-    r[7] = (float)(y + 0x2B);
-    r[9] = r[0];
-    r[10] = r[7];
-    list = dl_ambient_color(list, 0xFF808080);
-    list = dd_wline_sprite(list, 0, &r[0], &r[6]);
-    list = dd_wline_draw(list, 0, 4, r, 1);
-    gim = dd_gim_get(0x40005);
-    if (gim != 0)
-        list = gim_set_texture(list, gim);
-    list = dd_sel_draw_dir(list, (int)r[0], (int)r[1], dd_sel.dir == 0);
-    for (k = 0; k < 12; k += 3) {
-        r[k] -= 4.0f;
-        r[k + 1] -= 4.0f;
+    i = (unsigned short)i;
+    list = dd_sel_draw_key(list, x, y, i);
+    if (i == s->sub.scroll + s->sub.cursor) {
+        float r[12] = { 0 };
+
+        r[0] = (float)(x + 8);
+        r[1] = (float)(y + 0x1A);
+        r[3] = (float)(x + 0x19);
+        r[4] = r[1];
+        r[6] = r[3];
+        r[7] = (float)(y + 0x2B);
+        r[9] = r[0];
+        r[10] = r[7];
+        list = dl_ambient_color(list, 0xFF808080);
+        list = dd_wline_sprite(list, 0, &r[0], &r[6]);
+        list = dd_wline_draw(list, 0, 4, r, 1);
+        gim = dd_gim_get(0x40005);
+        if (gim != 0)
+            list = gim_set_texture(list, gim);
+        list = dd_sel_draw_dir(list, (int)r[0], (int)r[1], !s->dir);
+        for (k = 0; k < 12; k += 3) {
+            r[k] -= 4.0f;
+            r[k + 1] -= 4.0f;
+        }
+        list = dl_ambient_color(list, 0x80FFFFFF);
+        list = dd_wline_sprite(list, 0, &r[0], &r[6]);
+        list = dl_ambient_color(list, 0xFFFFFFFF);
+        list = dd_wline_draw(list, 0, 4, r, 1);
+        gim = dd_gim_get(0x40005);
+        if (gim != 0)
+            list = gim_set_texture(list, gim);
+        list = dd_sel_draw_dir(list, (int)r[0], (int)r[1], s->dir);
     }
-    list = dl_ambient_color(list, 0x80FFFFFF);
-    list = dd_wline_sprite(list, 0, &r[0], &r[6]);
-    list = dl_ambient_color(list, 0xFFFFFFFF);
-    list = dd_wline_draw(list, 0, 4, r, 1);
-    gim = dd_gim_get(0x40005);
-    if (gim != 0)
-        list = gim_set_texture(list, gim);
-    return dd_sel_draw_dir(list, (int)r[0], (int)r[1], dd_sel.dir);
+    return list;
 }
-#endif
 
 unsigned int *dd_sel_draw_key(unsigned int *list, int x, int y, int key)
 {
@@ -889,13 +875,12 @@ unsigned int *dd_sel_draw_key(unsigned int *list, int x, int y, int key)
     return draw_sprite(list, x, y, 0, dd_sel_key_uv[key].u, dd_sel_key_uv[key].v, 0, 0);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 unsigned int *dd_sel_draw_dir(unsigned int *list, int x, int y, int dir)
 {
+    dir = dir != 0;
     list = draw_set_offsets(list, 0x11, 0x11, 0x11, 0x11);
-    return draw_sprite(list, x, y, 0, dd_sel_dir_uv[dir != 0].u, dd_sel_dir_uv[dir != 0].v, 0, 0);
+    return draw_sprite(list, x, y, 0, dd_sel_dir_uv[dir].u, dd_sel_dir_uv[dir].v, 0, 0);
 }
-#endif
 
 typedef struct DdSelKey {
     unsigned short id;
@@ -932,16 +917,17 @@ void dd_sel_sort(int *list, int n, int key, int dir)
 
 /* sort value of a card for a key (0 list order, 1 sort, 2 kind, 3 level, 4 ATK, 5 DEF, 6 type,
    7 attribute, 8 spell/trap kind, 9 limit) */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
+#ifdef NON_MATCHING /* lógica conferida (tabelas de magia/armadilha estavam trocadas); o case 0 sai com beql e desloca o resto: 93 palavras */
 int dd_sel_key_of(int i, int id, int key)
 {
+    DdSel *s = &dd_sel;
     int a;
 
     switch (key) {
     case 0:
-        if (dd_sel.reverse != 0)
-            i = 0x200 - i;
-        return i;
+        if (s->reverse == 0)
+            return i;
+        return 0x200 - i;
     case 1:
         return card_get_sort(id);
     case 2:
@@ -949,126 +935,135 @@ int dd_sel_key_of(int i, int id, int key)
     case 9:
         return card_get_limit(id);
     }
-    a = card_get_attribute_icon(id);
-    if (a == 8) {
-        if (key == 8)
-            return dd_sel_spell_order[card_get_prop5_hi(id)];
-    } else if (a == 7) {
+    switch (card_get_attribute_icon(id)) {
+    case 7:
         if (key == 8)
             return dd_sel_trap_order[card_get_prop5_hi(id)];
-    } else {
+        break;
+    case 8:
+        if (key == 8)
+            return dd_sel_spell_order[card_get_prop5_hi(id)];
+        break;
+    default:
         switch (key) {
-        case 7:
-            return card_get_kind(id);
-        case 6:
-            return card_get_type(id);
-        case 5:
-            a = card_get_def(id);
-            if (a != 0xFFFF)
-                return 0xFFFF - a;
-            return 0x10000;
+        case 3:
+            return 0xFFFF - card_get_level(id);
         case 4:
             a = card_get_atk(id);
             if (a != 0xFFFF)
                 return 0xFFFF - a;
             return 0x10000;
-        case 3:
-            return 0xFFFF - card_get_level(id);
+        case 5:
+            a = card_get_def(id);
+            if (a != 0xFFFF)
+                return 0xFFFF - a;
+            return 0x10000;
+        case 6:
+            return card_get_type(id);
+        case 7:
+            return card_get_kind(id);
         }
     }
     return 0xFFFF7FFF;
 }
 #endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
+#ifdef NON_MATCHING /* só o fim difere: o original faz beqz/nop; b; li; move no último teste (11 palavras) */
 int dd_sel_cmp_down(const void *pa, const void *pb)
 {
     const DdSelKey *a = pa;
     const DdSelKey *b = pb;
+    int r;
 
     if (a->key == b->key) {
         if (a->idx < b->idx)
-            return -1;
-        if (b->idx < a->idx)
-            return 1;
-        return 0;
+            r = -1;
+        else if (b->idx < a->idx)
+            r = 1;
+        else
+            r = 0;
+    } else if (a->key == 0xFFFF7FFF)
+        r = 1;
+    else if (b->key == 0xFFFF7FFF)
+        r = -1;
+    else if (b->key > a->key)
+        r = -1;
+    else if (a->key > b->key)
+        r = 1;
+    else {
+        r = 0;
     }
-    if (a->key == 0xFFFF7FFF)
-        return 1;
-    if (b->key == 0xFFFF7FFF)
-        return -1;
-    if (a->key < b->key)
-        return -1;
-    if (b->key < a->key)
-        return 1;
-    return 0;
+    return r;
 }
 #endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
+#ifdef NON_MATCHING /* só o fim difere: o original faz beqz/nop; b; li; move no último teste (11 palavras) */
 int dd_sel_cmp_up(const void *pa, const void *pb)
 {
     const DdSelKey *a = pa;
     const DdSelKey *b = pb;
+    int r;
 
     if (a->key == b->key) {
-        if (b->idx < a->idx)
-            return -1;
-        if (a->idx < b->idx)
-            return 1;
-        return 0;
-    }
-    if (a->key == 0xFFFF7FFF)
-        return 1;
-    if (b->key == 0xFFFF7FFF)
-        return -1;
-    if (a->key < b->key)
-        return 1;
-    if (b->key < a->key)
-        return -1;
-    return 0;
+        if (a->idx > b->idx)
+            r = -1;
+        else if (b->idx > a->idx)
+            r = 1;
+        else
+            r = 0;
+    } else if (a->key == 0xFFFF7FFF)
+        r = 1;
+    else if (b->key == 0xFFFF7FFF)
+        r = -1;
+    else if (b->key > a->key)
+        r = 1;
+    else if (a->key > b->key)
+        r = -1;
+    else
+        r = 0;
+    return r;
 }
 #endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 int dd_sel_can_accept(void)
-{
-    if (dd_sel.min == 0 && dd_sel.max == 0)
-        return 1;
-    if (dd_sel.n_picked < dd_sel.min)
-        return 0;
-    return 1;
-}
-#endif
-
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
-void dd_sel_open_opts(void)
 {
     DdSel *s = &dd_sel;
 
+    if (dd_sel.min == 0 && s->max == 0)
+        return 1;
+    if (s->n_picked >= s->min)
+        return 1;
+    return 0;
+}
+
+void dd_sel_open_opts(void)
+{
+    MenuWidget *w = &dd_sel.sub;
+    MenuItemDef *d = &w->def;
+    MenuItemDef *ld = &dd_sel.list.def;
+
     dd_sel_build_opts();
-    func_08825B9C(&s->sub);
-    s->sub.def.pad_t = 2;
-    s->sub.def.pad_b = 2;
-    s->sub.def.pad_l = 2;
-    s->sub.def.pad_r = 2;
-    s->sub.def.title = 0;
-    s->sub.cancel_blocked = 0;
-    s->sub.style = 2;
-    s->sub.def.show_title = 0;
-    s->sub.draw_item = (MenuDrawItemFn)dd_sel_opts_draw_item;
-    s->sub.count = s->n_opts;
-    s->sub.rows = s->n_opts;
-    s->sub.item_h = 0x11;
-    s->sub.item_w = s->opts_w + 0x12;
-    menu_open(&s->sub);
-    s->sub.def.style2 = 1;
-    s->sub.def.z = s->sub.def.w / 2;
-    s->sub.def.x = s->list.def.x + s->list.def.w / 2 - s->sub.def.w / 2;
-    s->sub.def.y = s->list.def.y + s->list.def.h - 0x1E - s->sub.def.title_w;
+    func_08825B9C(w);
+    d->pad_t = 2;
+    d->pad_b = 2;
+    d->pad_l = 2;
+    d->pad_r = 2;
+    d->title = 0;
+    w->cancel_blocked = 0;
+    w->style = 2;
+    d->show_title = 0;
+    w->count = dd_sel.n_opts;
+    w->draw_item = (MenuDrawItemFn)dd_sel_opts_draw_item;
+    w->rows = dd_sel.n_opts;
+    w->item_w = dd_sel.opts_w + 0x12;
+    w->item_h = 0x11;
+    menu_open(w);
+    d->tab = 1;
+    d->tab_x = d->w / 2;
+    d->x = ld->x + ld->w / 2 - d->w / 2;
+    d->y = ld->y + ld->h - 0x1E - d->h;
     se_play(0x6216);
 }
-#endif
 
 void dd_sel_sub_reset2(void)
 {
@@ -1076,11 +1071,10 @@ void dd_sel_sub_reset2(void)
 }
 
 /* 0 open, 1 closed, 2 sort, 3 filter */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 int dd_sel_opts_update(void)
 {
     DdSel *s = &dd_sel;
-    int r = menu_update(&s->sub);
+    int r = menu_update(&dd_sel.sub);
     int ret;
 
     if (r == -1)
@@ -1088,29 +1082,28 @@ int dd_sel_opts_update(void)
     ret = 1;
     if (r != -2) {
         switch (s->opts[r]) {
-        case 4:
-            hl_open();
-            break;
-        case 3:
-            opt_open();
-            break;
-        case 2:
-            ret = 3;
-            break;
-        case 1:
-            ret = 2;
-            break;
         case 0:
             dd_mode_set_card(s->ids[s->order[s->list.scroll + s->list.cursor]]);
             dd_mode_push(5);
             dd_mode_set_flag(0x31);
+            break;
+        case 1:
+            ret = 2;
+            break;
+        case 2:
+            ret = 3;
+            break;
+        case 3:
+            opt_open();
+            break;
+        case 4:
+            hl_open();
             break;
         }
     }
     dd_sel_sub_reset2();
     return ret;
 }
-#endif
 
 void *dd_sel_sub_draw2(void *list)
 {
@@ -1172,71 +1165,78 @@ void dd_sel_build_opts(void)
 #endif
 
 /* entries passing filter (0 all, else the attribute icon of dd_sel_filter_icon) */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
+#ifdef NON_MATCHING /* lógica conferida; só registradores $s trocados (n, want, i, p): 22 palavras */
 int dd_sel_filter(int *out, int n, int filter)
 {
+    DdSel *s = &dd_sel;
     int want, k, i;
+    int *p;
 
-    if (filter != 0) {
-        want = dd_sel_filter_icon[filter];
-        k = 0;
-        for (i = 0; i < n; i++) {
-            if (card_get_attribute_icon(dd_sel.ids[i]) == want) {
-                *out++ = i;
-                k++;
-            }
-        }
-        return k;
+    if (filter == 0) {
+        for (i = 0; i < n; i++)
+            out[i] = i;
+        return n;
     }
-    for (i = 0; i < n; i++)
-        out[i] = i;
-    return n;
+    want = dd_sel_filter_icon[filter];
+    k = 0;
+    p = out;
+    for (i = 0; i < n; i++) {
+        if (card_get_attribute_icon(s->ids[i]) == want) {
+            *p++ = i;
+            k++;
+        }
+    }
+    return k;
 }
 #endif
 
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_open_filter(void)
 {
-    DdSel *s = &dd_sel;
+    MenuWidget *w = &dd_sel.sub;
+    MenuItemDef *d = &w->def;
 
-    func_08825B9C(&s->sub);
-    s->sub.def.title = dd_text(0x42);
-    s->sub.cancel_blocked = 0;
-    s->sub.style = 3;
-    s->sub.count = 7;
-    s->sub.rows = 7;
-    s->sub.draw_item = (MenuDrawItemFn)dd_sel_filter_draw_item;
-    s->sub.item_h = 0x11;
-    s->sub.item_w = 0x11;
-    menu_open(&s->sub);
-    s->sub.def.x = 0xF0;
-    s->sub.def.y = 0x32;
-    memcpy(s->saved, s->order, s->n << 2);
-    s->filter_saved = s->filter;
+    func_08825B9C(w);
+    d->title = dd_text(0x42);
+    w->cancel_blocked = 0;
+    w->style = 3;
+    w->count = 7;
+    w->rows = 7;
+    w->draw_item = (MenuDrawItemFn)dd_sel_filter_draw_item;
+    w->item_h = 0x11;
+    w->item_w = 0x11;
+    menu_open(w);
+    d->x = 0xF0;
+    d->y = 0x32;
+    memcpy(dd_sel.saved, dd_sel.order, dd_sel.n << 2);
+    dd_sel.filter_saved = dd_sel.filter;
     se_play(0x6216);
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 int dd_sel_filter_update(void)
 {
+    MenuWidget *w = &dd_sel.sub;
     DdSel *s = &dd_sel;
-    int r = menu_update(&s->sub);
+    int r = menu_update(w);
     int f;
+    int changed;
 
     if (r == -1) {
-        f = s->sub.scroll + s->sub.cursor;
-        if (s->filter == f)
-            return 0;
-        s->filter = f;
-        s->n = dd_sel_filter(s->filt, s->n_all, f);
-        memcpy(s->order, s->filt, s->n << 2);
-        dd_sel_sort(s->order, s->n, s->key, s->dir);
-        s->list.count = s->n;
-        if ((unsigned short)s->n <= s->list.scroll + s->list.cursor) {
-            s->list.cursor = 0;
-            s->list.scroll = 0;
+        changed = 0;
+        f = w->scroll + w->cursor;
+        if (s->filter != f) {
+            s->filter = f;
+            changed = 1;
+        }
+        if (changed) {
+            s->n = dd_sel_filter(s->filt, s->n_all, s->filter);
+            memcpy(s->order, s->filt, s->n << 2);
+            dd_sel_sort(s->order, s->n, s->key, s->dir);
+            s->list.count = s->n;
+            if (s->list.scroll + s->list.cursor >= s->list.count) {
+                s->list.scroll = 0;
+                s->list.cursor = 0;
+            }
         }
         return 0;
     }
@@ -1246,15 +1246,14 @@ int dd_sel_filter_update(void)
         dd_sel_sort(s->order, s->n, s->key, s->dir);
         s->list.count = s->n;
         s->filter = s->filter_saved;
-        if ((unsigned short)s->n <= s->list.scroll + s->list.cursor) {
-            s->list.cursor = 0;
+        if (s->list.scroll + s->list.cursor >= s->list.count) {
             s->list.scroll = 0;
+            s->list.cursor = 0;
         }
     }
     dd_sel_sub_reset();
     return 1;
 }
-#endif
 
 void *dd_sel_sub_draw3(void *list)
 {
