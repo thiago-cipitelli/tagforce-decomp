@@ -1,7 +1,6 @@
 // @range 0x088C2F80-0x088C4448
 // @asm 0x088C321C-0x088C3348
 // @asm 0x088C39F0-0x088C3B48
-// @asm 0x088C3F80-0x088C4448
 // @data 0x08913518-0x08913528
 /* State checks run between the steps of the duel: continuous cards whose condition ended are
    destroyed or lose their effect. */
@@ -387,7 +386,6 @@ int duel_088C3E34(void)
     return 0;
 }
 
-#ifdef NON_MATCHING
 extern int duel_w_0891961C;
 extern unsigned int duel_w_08919620;
 extern int duel_w_089195EC;
@@ -524,4 +522,3 @@ busy:
     duel_088C7CF0();
     return 1;
 }
-#endif
