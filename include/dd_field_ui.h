@@ -85,5 +85,30 @@ int card_get_atk(int id);
 int card_get_def(int id);
 int card_is_attribute9(int id);
 
+/* message window (dd_msg_win.c): one MenuWidget shared by the duel's questions and choices */
+typedef struct DdMsgWin {              /* 0x08C58A40, 0x144 */
+    MenuWidget w;                      /* +0x000 */
+    void (*on_close)(void);            /* +0x120 called once by func_08825778 */
+    void *(*draw_hook)(void *dl);      /* +0x124 drawing before the window */
+    void (*on_move)(MenuWidget *w, int old); /* +0x128 the cursor moved */
+    int (*update)(void);               /* +0x12C replaces the menu update */
+    int result;                        /* +0x130 menu_update's last answer */
+    unsigned short *title;             /* +0x134 heap copies of the texts */
+    unsigned short *text;              /* +0x138 */
+    int x13c;                          /* +0x13C */
+    int hidden;                        /* +0x140 */
+} DdMsgWin;
+
+typedef struct DdNumPrompt {           /* 0x08C58A2C: number choice (dd_prompt_win.c, drawn by dd_msg_win.c) */
+    int min;
+    int max;
+    int step;
+    int fmt;                           /* dialog text id of the number format */
+    MenuWidget *w;                     /* +0x10 */
+} DdNumPrompt;
+
+extern DdMsgWin dd_msg_win;
+extern DdNumPrompt dd_num_prompt;
+extern unsigned short dd_num_text[256]; /* 0x08C5882C */
 
 #endif

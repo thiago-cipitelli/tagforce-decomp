@@ -1,120 +1,87 @@
 // @range 0x08825088-0x08825DDC
-// @asm 0x08825088-0x088252B0
-// @asm 0x088252C0-0x08825580
-// @asm 0x08825588-0x08825764
-// @asm 0x08825778-0x088257B8
-// @asm 0x088257D0-0x08825818
-// @asm 0x08825824-0x088259D8
+// @asm 0x088250E8-0x088252B0
+// @asm 0x08825674-0x08825728
 // @asm 0x08825A14-0x08825A70
-// @asm 0x08825A7C-0x08825B7C
-// @asm 0x08825B9C-0x08825DDC
-/* The message window system: formatted texts, the shared menu window (open/update/draw/close), its string buffers, the LP/phase marks over the field and the action-list window opener (message kind 13).
-   Functions under NON_MATCHING stay in asm; their C is the Ghidra pseudocode cleaned of the address
-   names (Ghidra types: undefined4 = int-sized, code = function pointer), kept for the port. */
+/* The message window (one MenuWidget, dd_msg_win, shared by the duel's questions and choices:
+   open/update/draw/close, heap copies of its texts, hooks), the number choice drawn in it, and the
+   bouncing marks over the monsters that can still attack. */
 #include "dd_field_ui.h"
 
-#ifdef NON_MATCHING
-typedef unsigned char undefined;
-typedef unsigned char undefined1;
-typedef unsigned short undefined2;
-typedef unsigned int undefined4;
-typedef unsigned char byte;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef void (*code)();
-#endif
+extern FxVtx D_08876228[];             /* quad of the attack mark */
 
-extern int D_08C58A40;
-extern int D_08C58B60;
-extern int D_08C58B64;
-extern int D_08C58B68;
-extern int D_08C58B6C;
-extern int D_08C58B70;
-extern int D_08C58B7C;
-extern int D_08C58B80;
+int dd_free(void *p);
+void *dd_alloc(int n);
+void *dd_heap_get(void);
+int dd_input_on(void);
+void *dd_gim_get(int id);
+DdCobj *dd_cobj_at(int player, int zone, int index);
+void dd_slot_xform(float *pos, float *rot, DdPos at);
+int dd_mark_is_at(int player, int zone);
+int dv_phase(void);
+int dv_turn_side(void);
+int dv_can_attack_any(int side, int z, int arg);
+float sinf_vfpu(float x);
+void *draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
+int wsprintf(unsigned short *out, const unsigned short *fmt, ...);
+int wcslen(const unsigned short *s);
+unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
+int func_0882092C(void);
+unsigned short *func_08825088(int i);
 void func_088252B0(void);
 void func_088252B8(void);
+void func_08825394(int player, int zone);
+void *func_088254FC(void *dl);
 void func_08825580(void);
+int func_08825728(void);
 int func_08825764(void);
 void func_088257B8(void);
 int func_088257C4(void);
-int *func_08825818(void);
+MenuWidget *func_08825818(void);
 void func_088259D8(void);
-void func_088259E4(int v);
-void func_088259F0(int v);
-void func_088259FC(int v);
-void func_08825A08(int v);
+void func_088259E4(void *(*fn)(void *dl));
+void func_088259F0(void (*fn)(MenuWidget *w, int old));
+void func_088259FC(void (*fn)(void));
+void func_08825A08(int (*fn)(void));
 void func_08825A70(int v);
+void func_08825A7C(unsigned short *title);
+void func_08825AFC(unsigned short *text);
 void func_08825B7C(int v);
 void func_08825B88(int on);
+void func_08825B9C(MenuWidget *w);
 
-#ifdef NON_MATCHING
-// 08825088 size=96
-undefined * func_08825088(int param_1)
+/* text of entry i of the number choice */
+unsigned short *func_08825088(int i)
 {
-  undefined4 uVar1;
-  uVar1 = dlg_get_text(D_08C58A38);
-  wsprintf(&D_08C5882C,uVar1,D_08C58A2C + param_1 * D_08C58A34);
-  return &D_08C5882C;
+    wsprintf(dd_num_text, dlg_get_text(dd_num_prompt.fmt), dd_num_prompt.min + i * dd_num_prompt.step);
+    return dd_num_text;
 }
-#endif
 
-#ifdef NON_MATCHING
-// 088250e8 size=456
-void func_088250E8(undefined4 param_1,int param_2,int param_3)
+#ifdef NON_MATCHING /* registradores dos argumentos das setas diferentes; o +1 dobra com o +20 */
+/* MenuWidget draw_all of the number choice: the number in a cursor box, arrows when it can change */
+void func_088250E8(void *dl, int x, int y, int w_, int h_)
 {
-  ushort uVar1;
-  int iVar2;
-  int iVar3;
-  undefined4 uVar4;
-  int iVar5;
-  int iVar6;
-  int iVar7;
-  undefined4 uVar8;
-  int iVar9;
-  int iVar10;
-  int iVar11;
-  iVar2 = D_08C58A3C;
-  iVar11 = (uint)*(ushort *)(D_08C58A3C + 0xd0) + (*(byte *)(D_08C58A3C + 0xd2) & 0x1f);
-  iVar3 = ((int)*(short *)(D_08C58A3C + 0x6c) - (int)*(short *)(D_08C58A3C + 0x90)) -
-          (int)*(short *)(D_08C58A3C + 0x92);
-  if (iVar3 < 0) {
-    iVar3 = iVar3 + 1;
-  }
-  iVar3 = iVar3 >> 1;
-  font_set_size(0xc,0xc);
-  font_set_color(0xff000000);
-  uVar4 = func_08825088(iVar11);
-  iVar5 = font_measure_text(uVar4);
-  iVar10 = iVar5 >> 6;
-  iVar6 = font_line_height();
-  iVar9 = iVar6 >> 6;
-  iVar6 = iVar6 >> 7;
-  if (iVar9 < 0) {
-    iVar6 = iVar9 + 1 >> 1;
-  }
-  iVar7 = param_3 + (0x14 - iVar6);
-  iVar5 = iVar5 >> 7;
-  if (iVar10 < 0) {
-    iVar5 = iVar10 + 1 >> 1;
-  }
-  iVar5 = param_2 + (iVar3 - iVar5);
-  uVar8 = menu_draw_cursor(param_1,iVar2,iVar5 + -10,iVar7 + -5,iVar10 + 0x14,iVar9 + 10);
-  font_text_set(uVar8);
-  font_draw_text(iVar5 * 0x40,iVar7 * 0x40,(0x1e0 - iVar5) * 0x40,uVar4);
-  uVar4 = font_text_clear();
-  uVar4 = gim_set_texture(uVar4,*(undefined4 *)(iVar2 + 0xe4));
-  if (iVar11 == 0) {
-    uVar1 = *(ushort *)(iVar2 + 0xcc);
-  }
-  else {
-    uVar4 = menu_draw_arrow(uVar4,param_2 + iVar3 + -4,(param_3 + 0x14) - iVar6,1);
-    uVar1 = *(ushort *)(iVar2 + 0xcc);
-  }
-  if (iVar11 < (int)(uVar1 - 1)) {
-    menu_draw_arrow(uVar4,param_2 + iVar3 + -4,iVar6 + param_3 + 0x15,0);
-  }
-  return;
+    MenuWidget *w = dd_num_prompt.w;
+    int tx;
+    int i = w->scroll + w->cursor;
+    int cx = (w->def.w - w->def.pad_l - w->def.pad_r) / 2;
+    unsigned short *text;
+    int tw, th, ty;
+
+    font_set_size(12, 12);
+    font_set_color(0xFF000000);
+    text = func_08825088(i);
+    tw = font_measure_text(text) >> 6;
+    th = font_line_height() >> 6;
+    ty = y + (20 - th / 2);
+    tx = x + (cx - tw / 2);
+    dl = menu_draw_cursor(dl, w, tx - 10, ty - 5, tw + 20, th + 10);
+    font_text_set(dl);
+    font_draw_text(tx << 6, ty << 6, (480 - tx) << 6, text);
+    dl = gim_set_texture(font_text_clear(), w->icon_gim);
+    if (i > 0)
+        dl = menu_draw_arrow(dl, x + cx - 4, y + 20 - th / 2, 1);
+    if (i < w->count - 1)
+        menu_draw_arrow(dl, x + cx - 4, y + 20 + th / 2 + 1, 0);
 }
 #endif
 
@@ -126,431 +93,374 @@ void func_088252B8(void)
 {
 }
 
-#ifdef NON_MATCHING
-// 088252c0 size=212
+/* battle phase: a mark over every monster of the turn player that can still attack */
 void func_088252C0(void)
 {
-  int iVar1;
-  undefined4 uVar2;
-  int iVar3;
-  iVar1 = duel_088FE8A4();
-  if ((iVar1 == 3) && (iVar1 = func_0882092C(), iVar1 == 0)) {
-    uVar2 = dv_turn_side();
-    iVar1 = 0;
-    do {
-      iVar3 = dv_can_attack_any(uVar2,iVar1,1);
-      if ((((iVar3 != 0) && (iVar3 = dd_cobj_at(uVar2,iVar1,0), iVar3 != 0)) &&
-          (*(float *)(iVar3 + 0x74) <= *(float *)(iVar3 + 0x70))) &&
-         (iVar3 = dd_mark_is_at(uVar2,iVar1), iVar3 == 0)) {
-        func_08825394(uVar2,iVar1);
-      }
-      iVar1 = iVar1 + 1;
-    } while (iVar1 < 5);
-  }
-  return;
-}
-#endif
+    int side;
+    int z;
+    DdCobj *o;
 
-#ifdef NON_MATCHING
-// 08825394 size=360
-void func_08825394(byte param_1,byte param_2)
-{
-  uint *puVar1;
-  undefined4 uVar2;
-  float fVar3;
-  undefined1 auStack_70 [64];
-  undefined1 auStack_30 [16];
-  undefined1 auStack_20 [4];
-  float local_1c;
-  ushort local_4;
-  local_4 = (ushort)(byte)(param_1 & 1 | (param_2 & 0x1f) << 1);
-  dd_slot_xform(auStack_20,auStack_30,local_4);
-  quat_to_mat4(auStack_70,auStack_30);
-  puVar1 = (uint *)gfx_get_state();
-  fVar3 = (float)sinf_vfpu((float)*puVar1 / 10.0);
-  local_1c = local_1c + fVar3 * 5.0 + 10.0;
-  mtx_push();
-  mtx_identity();
-  mtx_translate(auStack_20);
-  mtx_mult(auStack_70);
-  uVar2 = dl_select_layer(4,0);
-  uVar2 = dl_set_color(uVar2,0xffffffff);
-  uVar2 = func_088254FC(uVar2);
-  dl_set_list(uVar2);
-  mtx_pop();
-  return;
+    if (dv_phase() == 3) {
+        switch (func_0882092C()) {
+        case 0:
+            side = dv_turn_side();
+            for (z = 0; z <= 4; z++) {
+                if (dv_can_attack_any(side, z, 1) != 0 && (o = dd_cobj_at(side, z, 0)) != 0 && !(o->t < o->dur)
+                    && dd_mark_is_at(side, z) == 0)
+                    func_08825394(side, z);
+            }
+            break;
+        }
+    }
 }
-#endif
 
-#ifdef NON_MATCHING
-// 088254fc size=132
-void func_088254FC(undefined4 param_1)
+/* the bouncing mark over one zone */
+void func_08825394(int player, int zone)
 {
-  undefined4 uVar1;
-  uVar1 = dd_gim_get(0x40006);
-  uVar1 = gim_set_texture(param_1,uVar1);
-  uVar1 = dl_enable(uVar1,4);
-  uVar1 = dl_blend_func(uVar1,0,2,3,0,0);
-  draw_array(uVar1,4,0x183,4,0,&D_08876228);
-  return;
+    DdPos at;
+    FxVec4 pos;
+    FxVec4 rot;
+    FxMat4 m;
+    void *dl;
+
+    at.player = player;
+    at.zone = zone;
+    at.f14 = 0;
+    at.f15 = 0;
+    at.idx = 0;
+    dd_slot_xform(&pos.x, &rot.x, at);
+    quat_to_mat4(m.m, &rot.x);
+    pos.y += 10.0f + 5.0f * sinf_vfpu((float)*(unsigned int *)gfx_get_state() / 10.0f);
+    mtx_push();
+    mtx_identity();
+    mtx_translate(&pos.x);
+    mtx_mult(m.m);
+    dl = dl_select_layer(4, 0);
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = func_088254FC(dl);
+    dl_set_list(dl);
+    mtx_pop();
 }
-#endif
+
+void *func_088254FC(void *dl)
+{
+    dl = gim_set_texture(dl, dd_gim_get(0x40006));
+    dl = dl_enable(dl, 4);
+    dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
+    return draw_array(dl, 4, 0x183, 4, 0, D_08876228);
+}
 
 void func_08825580(void)
 {
 }
 
-#ifdef NON_MATCHING
-// 08825588 size=96
+/* closes the window and frees its texts */
 void func_08825588(void)
 {
-  menu_reset(&D_08C58A40);
-  if (D_08C58B74 != 0) {
-    dd_free(D_08C58B74);
-    D_08C58B74 = 0;
-  }
-  if (D_08C58B78 != 0) {
-    dd_free();
-    D_08C58B78 = 0;
-  }
-  return;
+    DdMsgWin *m = &dd_msg_win;
+
+    menu_reset(&m->w);
+    if (dd_msg_win.title) {
+        dd_free(m->title);
+        m->title = 0;
+    }
+    if (m->text) {
+        dd_free(m->text);
+        m->text = 0;
+    }
+}
+
+/* draws the window (Japanese font flag by language) */
+void *func_088255E8(void *dl)
+{
+    DdMsgWin *m = &dd_msg_win;
+    int flags = font_get_flags();
+
+    if (cfg_get_language() == 0)
+        font_set_flag1(1);
+    else
+        font_set_flag8(1);
+    if (m->draw_hook)
+        dl = m->draw_hook(dl);
+    menu_draw(&dl, &m->w);
+    font_set_flags(flags);
+    return dl;
+}
+
+#ifdef NON_MATCHING /* alocação de registradores diferente (forma igual) */
+/* per frame: menu update while the input is on; returns nonzero when the window is done */
+int func_08825674(void)
+{
+    int old;
+    DdMsgWin *m = &dd_msg_win;
+
+    if (dd_msg_win.update)
+        return m->update();
+    old = m->w.scroll + m->w.cursor;
+    if (dd_input_on())
+        m->result = menu_update(&m->w);
+    if (old != m->w.scroll + m->w.cursor && m->on_move)
+        m->on_move(&m->w, old);
+    return !func_08825728();
 }
 #endif
 
-#ifdef NON_MATCHING
-// 088255e8 size=140
-undefined4 func_088255E8(undefined4 param_1)
+/* the window is open (not idle, opening or closed) */
+int func_08825728(void)
 {
-  undefined2 uVar1;
-  int iVar2;
-  undefined4 local_4;
-  local_4 = param_1;
-  uVar1 = font_get_flags();
-  iVar2 = cfg_get_language();
-  if (iVar2 == 0) {
-    font_set_flag1(1);
-  }
-  else {
-    font_set_flag8(1);
-  }
-  if (D_08C58B64 != (code *)0x0) {
-    local_4 = (*D_08C58B64)(local_4);
-  }
-  menu_draw(&local_4,&D_08C58A40);
-  font_set_flags(uVar1);
-  return local_4;
-}
-#endif
-
-#ifdef NON_MATCHING
-// 08825674 size=180
-uint func_08825674(void)
-{
-  uint uVar1;
-  int iVar2;
-  int iVar3;
-  if (D_08C58B6C == (code *)0x0) {
-    iVar3 = (uint)D_08C58B10 + (D_08C58B12 & 0x1f);
-    iVar2 = dd_input_on();
-    if (iVar2 != 0) {
-      D_08C58B70 = menu_update(&D_08C58A40);
+    switch (dd_msg_win.w.state) {
+    case 0:
+    case 1:
+    case 6:
+        return 0;
     }
-    if ((iVar3 != (uint)D_08C58B10 + (D_08C58B12 & 0x1f)) && (D_08C58B68 != (code *)0x0)) {
-      (*D_08C58B68)(&D_08C58A40,iVar3);
-    }
-    iVar2 = func_08825728();
-    uVar1 = iVar2 != 0 ^ 1;
-  }
-  else {
-    uVar1 = (*D_08C58B6C)();
-  }
-  return uVar1;
+    return 1;
 }
-#endif
-
-#ifdef NON_MATCHING
-// 08825728 size=60
-undefined4 func_08825728(void)
-{
-  undefined4 uVar1;
-  if (D_08C58B29 == '\x06') {
-    uVar1 = 0;
-  }
-  else {
-    uVar1 = 1;
-    if ((D_08C58B29 == '\x01') || (D_08C58B29 == '\0')) {
-      uVar1 = 0;
-    }
-  }
-  return uVar1;
-}
-#endif
 
 int func_08825764(void)
 {
-    return *((unsigned char *)&D_08C58A40 + 0xE9) == 3;
+    return dd_msg_win.w.state == 3;
 }
 
-#ifdef NON_MATCHING
+/* calls the close hook once */
 void func_08825778(void)
 {
-    if (D_08C58B60 != 0) {
-        ((void (*)(void))D_08C58B60)();
-        D_08C58B60 = 0;
+    DdMsgWin *m = &dd_msg_win;
+
+    if (dd_msg_win.on_close) {
+        m->on_close();
+        m->on_close = 0;
     }
 }
-#endif
 
 void func_088257B8(void)
 {
-    menu_finish((MenuWidget *)&D_08C58A40);
+    menu_finish(&dd_msg_win.w);
 }
 
 int func_088257C4(void)
 {
-    return D_08C58B7C;
+    return dd_msg_win.x13c;
 }
 
-#ifdef NON_MATCHING
 int func_088257D0(void)
 {
-    return D_08C58B80 == 0;
-}
-#endif
-
-#ifdef NON_MATCHING
-// 088257e4 size=52
-void func_088257E4(short param_1,short param_2)
-{
-  D_08C58A98 = D_08C58A98 + param_1;
-  D_08C58A9A = D_08C58A9A + param_2;
-  return;
-}
-#endif
-
-int *func_08825818(void)
-{
-    return &D_08C58A40;
+    return !dd_msg_win.hidden;
 }
 
-#ifdef NON_MATCHING
-// 08825824 size=436
-void func_08825824(undefined4 param_1,undefined4 param_2,int param_3,code *param_4)
+/* moves the window */
+void func_088257E4(int dx, int dy)
 {
-  undefined2 uVar1;
-  int iVar2;
-  memset(&D_08C58A40,0,0x144);
-  func_08825B9C(&D_08C58A40);
-  func_08825A7C(param_1);
-  func_08825AFC(param_2);
-  if ((param_3 == 0x30) || (param_3 == 0x20)) {
-    if (param_3 < 0) {
-      param_3 = param_3 + 0xf;
+    dd_msg_win.w.def.x += (short)dx;
+    dd_msg_win.w.def.y += (short)dy;
+}
+
+MenuWidget *func_08825818(void)
+{
+    return &dd_msg_win.w;
+}
+
+/* opens the window: kind 1/3 = OK / YES-NO buttons, 0x20/0x30 = list styles; setup(w, 1) before
+   and setup(w, 0) after the layout; centred on the screen */
+void func_08825824(unsigned short *title, unsigned short *text, int kind, void (*setup)(MenuWidget *w, int open))
+{
+    DdMsgWin *m = &dd_msg_win;
+    int flags;
+
+    memset(m, 0, sizeof(DdMsgWin));
+    func_08825B9C(&m->w);
+    func_08825A7C(title);
+    func_08825AFC(text);
+    switch (kind) {
+    case 0:
+        break;
+    case 1:
+    case 3:
+        m->w.buttons = kind;
+        break;
+    case 0x20:
+    case 0x30:
+        m->w.style = kind / 16;
+        break;
     }
-    D_08C58B09 = D_08C58B09 & 0x87 | (byte)((param_3 >> 4 & 0xfU) << 3);
-  }
-  else if ((param_3 == 3) || (param_3 == 1)) {
-    D_08C58B0A = D_08C58B0A & 0xf0 | (byte)param_3 & 0xf;
-  }
-  D_08C58AA4 = 0x109;
-  if (param_4 != (code *)0x0) {
-    (*param_4)(&D_08C58A40,1);
-  }
-  uVar1 = font_get_flags();
-  iVar2 = cfg_get_language();
-  if (iVar2 == 0) {
-    font_set_flag1(1);
-  }
-  else {
-    font_set_flag8(1);
-  }
-  menu_open(&D_08C58A40);
-  font_set_flags(uVar1);
-  iVar2 = (int)D_08C58AAC;
-  if (iVar2 < 0) {
-    iVar2 = iVar2 + 1;
-  }
-  D_08C58A98 = 0x13a - (short)(iVar2 >> 1);
-  iVar2 = (int)D_08C58AAE;
-  if (iVar2 < 0) {
-    iVar2 = iVar2 + 1;
-  }
-  D_08C58A9A = 0x84 - (short)(iVar2 >> 1);
-  if (param_4 != (code *)0x0) {
-    (*param_4)(&D_08C58A40,0);
-  }
-  return;
+    m->w.def.max_w = 265;
+    if (setup)
+        setup(&m->w, 1);
+    flags = font_get_flags();
+    if (cfg_get_language() == 0)
+        font_set_flag1(1);
+    else
+        font_set_flag8(1);
+    menu_open(&m->w);
+    font_set_flags(flags);
+    m->w.def.x = 314 - m->w.def.w / 2;
+    m->w.def.y = 132 - m->w.def.h / 2;
+    if (setup)
+        setup(&m->w, 0);
 }
-#endif
 
 void func_088259D8(void)
 {
-    menu_reset((MenuWidget *)&D_08C58A40);
+    menu_reset(&dd_msg_win.w);
 }
 
-void func_088259E4(int v)
+void func_088259E4(void *(*fn)(void *dl))
 {
-    D_08C58B64 = v;
+    dd_msg_win.draw_hook = fn;
 }
 
-void func_088259F0(int v)
+void func_088259F0(void (*fn)(MenuWidget *w, int old))
 {
-    D_08C58B68 = v;
+    dd_msg_win.on_move = fn;
 }
 
-void func_088259FC(int v)
+void func_088259FC(void (*fn)(void))
 {
-    D_08C58B60 = v;
+    dd_msg_win.on_close = fn;
 }
 
-void func_08825A08(int v)
+void func_08825A08(int (*fn)(void))
 {
-    D_08C58B6C = v;
+    dd_msg_win.update = fn;
 }
 
-#ifdef NON_MATCHING
-// 08825a14 size=88
+#ifdef NON_MATCHING /* o original tem um "b; move v0,zero" morto a mais, não reproduzido */
+/* the answer: with buttons only 1-3 count */
 int func_08825A14(void)
 {
-  int iVar1;
-  iVar1 = D_08C58B70;
-  if (((((D_08C58B0A & 0xf) != 0) && (D_08C58B70 != 3)) && (D_08C58B70 != 2)) &&
-     (D_08C58B70 != 1)) {
-    iVar1 = 0;
-  }
-  return iVar1;
+    DdMsgWin *m = &dd_msg_win;
+
+    if (dd_msg_win.w.buttons) {
+        switch (m->result) {
+        case 1:
+        case 2:
+        case 3:
+            return m->result;
+        }
+        return 0;
+    }
+    return m->result;
 }
 #endif
 
 void func_08825A70(int v)
 {
-    D_08C58B70 = v;
+    dd_msg_win.result = v;
 }
 
-#ifdef NON_MATCHING
-// 08825a7c size=128
-void func_08825A7C(int param_1)
+/* heap copy of the title */
+void func_08825A7C(unsigned short *title)
 {
-  int iVar1;
-  if (D_08C58B74 != 0) {
-    dd_free(D_08C58B74);
-    D_08C58B74 = 0;
-  }
-  if (param_1 != 0) {
-    iVar1 = wcslen(param_1);
-    D_08C58B74 = dd_alloc((iVar1 + 1) * 2);
-    if (D_08C58B74 != 0) {
-      wcscpy(D_08C58B74,param_1);
-    }
-  }
-  D_08C58AE0 = D_08C58B74;
-  return;
-}
-#endif
+    DdMsgWin *m = &dd_msg_win;
 
-#ifdef NON_MATCHING
-// 08825afc size=128
-void func_08825AFC(int param_1)
-{
-  int iVar1;
-  if (D_08C58B78 != 0) {
-    dd_free(D_08C58B78);
-    D_08C58B78 = 0;
-  }
-  if (param_1 != 0) {
-    iVar1 = wcslen(param_1);
-    D_08C58B78 = dd_alloc((iVar1 + 1) * 2);
-    if (D_08C58B78 != 0) {
-      wcscpy(D_08C58B78,param_1);
+    if (dd_msg_win.title) {
+        dd_free(m->title);
+        m->title = 0;
     }
-  }
-  D_08C58AC4 = D_08C58B78;
-  return;
+    if (title) {
+        m->title = dd_alloc((wcslen(title) + 1) * 2);
+        if (m->title)
+            wcscpy(m->title, title);
+    }
+    m->w.def.title = m->title;
 }
-#endif
+
+/* heap copy of the text */
+void func_08825AFC(unsigned short *text)
+{
+    DdMsgWin *m = &dd_msg_win;
+
+    if (dd_msg_win.text) {
+        dd_free(m->text);
+        m->text = 0;
+    }
+    if (text) {
+        m->text = dd_alloc((wcslen(text) + 1) * 2);
+        if (m->text)
+            wcscpy(m->text, text);
+    }
+    m->w.def.text = m->text;
+}
 
 void func_08825B7C(int v)
 {
-    D_08C58B7C = v;
+    dd_msg_win.x13c = v;
 }
 
 void func_08825B88(int on)
 {
-    D_08C58B80 = !on;
+    dd_msg_win.hidden = !on;
 }
 
-#ifdef NON_MATCHING
-// 08825b9c size=576
-void func_08825B9C(int param_1)
+/* default settings of the widget */
+void func_08825B9C(MenuWidget *w)
 {
-  undefined4 uVar1;
-  memset(param_1,0,0x120);
-  *(undefined4 *)(param_1 + 0x4c) = 1;
-  *(undefined4 *)(param_1 + 0x50) = 0;
-  *(undefined1 *)(param_1 + 0x54) = 0;
-  *(undefined1 *)(param_1 + 0x55) = 2;
-  *(undefined1 *)(param_1 + 0x56) = 0;
-  *(undefined2 *)(param_1 + 0x58) = 0;
-  *(undefined2 *)(param_1 + 0x5a) = 0;
-  *(undefined2 *)(param_1 + 0x5c) = 0;
-  *(undefined4 *)(param_1 + 0x60) = 1;
-  *(undefined2 *)(param_1 + 0x6c) = 0;
-  *(undefined2 *)(param_1 + 0x6e) = 0;
-  *(undefined4 *)(param_1 + 0x70) = 0xffffffff;
-  *(undefined2 *)(param_1 + 0x74) = 0;
-  *(undefined4 *)(param_1 + 0x78) = 1;
-  *(undefined4 *)(param_1 + 0x7c) = 1;
-  *(undefined2 *)(param_1 + 0x80) = 0;
-  *(undefined2 *)(param_1 + 0x82) = 0;
-  *(undefined4 *)(param_1 + 0x84) = 0;
-  *(undefined4 *)(param_1 + 0x88) = 1;
-  *(undefined2 *)(param_1 + 0x90) = 10;
-  *(undefined2 *)(param_1 + 0x92) = 10;
-  *(undefined2 *)(param_1 + 0x94) = 8;
-  *(undefined2 *)(param_1 + 0x96) = 8;
-  *(undefined1 *)(param_1 + 0x98) = 0xc;
-  *(undefined4 *)(param_1 + 0x9c) = 0xff000000;
-  *(undefined4 *)(param_1 + 0xa0) = 0;
-  *(undefined1 *)(param_1 + 0xa4) = 0xc;
-  *(undefined4 *)(param_1 + 0xa8) = 0xffffffff;
-  *(undefined4 *)(param_1 + 0xac) = 2;
-  *(undefined4 *)(param_1 + 0xb0) = 2;
-  *(undefined4 *)(param_1 + 0xb4) = 0x3f800000;
-  *(undefined4 *)(param_1 + 0xb8) = 0x3f800000;
-  *(undefined4 *)(param_1 + 0xbc) = 0;
-  uVar1 = dd_heap_get();
-  *(undefined4 *)(param_1 + 0xc4) = uVar1;
-  *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xfe;
-  *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xfd | 2;
-  *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xfb | 4;
-  *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xf7;
-  *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xdf;
-  *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xbf;
-  *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0x7f;
-  *(byte *)(param_1 + 0xc9) = *(byte *)(param_1 + 0xc9) & 0xfe;
-  *(byte *)(param_1 + 0xc9) = *(byte *)(param_1 + 0xc9) & 0x87;
-  *(byte *)(param_1 + 0xca) = *(byte *)(param_1 + 0xca) & 0xf0;
-  *(undefined2 *)(param_1 + 0xcc) = 0;
-  *(undefined1 *)(param_1 + 0xce) = 0;
-  *(undefined2 *)(param_1 + 0xd0) = 0;
-  *(byte *)(param_1 + 0xd2) = *(byte *)(param_1 + 0xd2) & 0xe0;
-  *(byte *)(param_1 + 0xd3) = *(byte *)(param_1 + 0xd3) & 0xf0;
-  *(undefined1 *)(param_1 + 0xd4) = 0;
-  *(undefined4 *)(param_1 + 0xd8) = 0;
-  *(undefined4 *)(param_1 + 0xdc) = 0;
-  *(undefined2 *)(param_1 + 0xe0) = 0;
-  *(undefined2 *)(param_1 + 0xf0) = 0;
-  *(undefined2 *)(param_1 + 0xf2) = 0;
-  *(undefined2 *)(param_1 + 0xf4) = 0;
-  *(undefined2 *)(param_1 + 0xf6) = 0;
-  *(undefined2 *)(param_1 + 0xf8) = 0;
-  *(undefined2 *)(param_1 + 0xfa) = 0;
-  *(undefined4 *)(param_1 + 0xfc) = 0;
-  *(undefined4 *)(param_1 + 0x100) = 0;
-  *(undefined4 *)(param_1 + 0x10c) = 0;
-  *(undefined4 *)(param_1 + 0x110) = 0;
-  *(undefined4 *)(param_1 + 0x114) = 0;
-  *(undefined4 *)(param_1 + 0x118) = 0;
-  return;
+    MenuItemDef *d = &w->def;
+
+    memset(w, 0, sizeof(MenuWidget));
+    d->visible = 1;
+    d->gim = 0;
+    d->style = 0;
+    d->style2 = 2;
+    d->tab = 0;
+    d->x = 0;
+    d->y = 0;
+    d->z = 0;
+    d->auto_size = 1;
+    d->w = 0;
+    d->h = 0;
+    d->color = 0xFFFFFFFF;
+    d->tab_x = 0;
+    d->show_title = 1;
+    d->auto_title = 1;
+    d->title_w = 0;
+    d->title_h = 0;
+    d->text = 0;
+    d->font_flag4 = 1;
+    d->pad_l = 10;
+    d->pad_r = 10;
+    d->pad_t = 8;
+    d->pad_b = 8;
+    d->font_size = 12;
+    d->text_color = 0xFF000000;
+    d->title = 0;
+    d->title_font_size = 12;
+    d->title_color = 0xFFFFFFFF;
+    d->open_anim = 2;
+    d->close_anim = 2;
+    d->scale_x = 1.0f;
+    d->scale_y = 1.0f;
+    d->anchor = 0;
+    w->heap = dd_heap_get();
+    w->no_input = 0;
+    w->no_cancel = 1;
+    w->cancel_blocked = 1;
+    w->keep_open = 0;
+    w->cancel_resets = 0;
+    w->accept_blocked = 0;
+    w->no_wrap = 0;
+    w->skip_disabled = 0;
+    w->style = 0;
+    w->buttons = 0;
+    w->count = 0;
+    w->rows = 0;
+    w->scroll = 0;
+    w->cursor = 0;
+    w->button = 0;
+    w->initial = 0;
+    w->selected = 0;
+    w->disabled = 0;
+    w->arrow_off = 0;
+    w->item_w = 0;
+    w->item_h = 0;
+    w->item_x = 0;
+    w->item_y = 0;
+    w->cursor_w = 0;
+    w->cursor_h = 0;
+    w->draw_item = 0;
+    w->draw_all = 0;
+    w->draw_cursor = 0;
+    w->draw_cursor_post = 0;
+    w->draw_selected = 0;
+    w->draw_selected_post = 0;
 }
-#endif
