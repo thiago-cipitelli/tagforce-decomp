@@ -63,7 +63,7 @@ void dd_effect_detach(DdTask *t);
 void dd_bigcard_leave(DdTask *t, void *arg);
 DdTask *dd_popup_now(int player, int card, int flag, int text);
 void dd_cursor_lock(int on);
-int func_08866BC0(int player, int zone, int idx);
+int dv_zone_faceup(int player, int zone, int idx);
 float *quat_mul(float *out, float *a, float *b);
 void func_08820A8C(void *out, void *q, int back);
 float func_0880D0B4(int player, int zone);
@@ -83,22 +83,22 @@ void func_08820988(float *out, float *m);
 void dd_fx_shatter_start_t(int id, float *pos, float *dir, int a, int b, float s, float zone_kind);
 int dd_fx_twist_start_t(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
 void dd_fx_orb_start(void *a, void *b, void (*cb)(DdCard *c));
-int func_08866B00(int player, int zone);
-int func_08866AE8(int player, int zone);
-int func_08866AD0(int player, int zone);
-int func_08866B30(int player, int zone);
-int func_08866B48(int player, int zone);
-int func_08866B18(int player, int zone);
+int dv_slot_link_1a0c(int player, int zone);
+int dv_slot_e68a0(int player, int zone);
+int dv_slot_min_1130(int player, int zone);
+int dv_slot_counter_1513(int player, int zone);
+int dv_slot_counter_1439(int player, int zone);
+int dv_slot_counter_1a90(int player, int zone);
 void dd_fx_tally_start(int up, float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
 void dd_fx_counter_start2(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
 void dd_fx_blink_start(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
 void dd_fx_throb_start(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
 void dd_fx_tally_start_fixed(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
 void dd_fx_counter_start(float *pos, int from, int to, void (*done)(DdCounter *), DdCounter *c);
-int func_088667BC(int uid);
+int dv_list_id(int uid);
 void dd_ring_start(int value, void (*done)(DdTask *), DdTask *t);
-int func_08866998(int uid);
-int func_088667C4(int a, int b);
+int dv_player_side_bit(int uid);
+int dv_hand_uid(int a, int b);
 void func_08811D60(int a, int b);
 
 void dd_beam(DdCard *c, DdBeamFn fn);
@@ -149,7 +149,7 @@ void dd_beam(DdCard *c, DdBeamFn fn)
     t.draw = 0;
     t.arg = h;
     task = dd_task_add(&t);
-    known = func_08866BC0(c->loc.player, c->loc.zone, c->loc.zone < 0xB ? 0 : c->loc.idx);
+    known = dv_zone_faceup(c->loc.player, c->loc.zone, c->loc.zone < 0xB ? 0 : c->loc.idx);
     if (known == 0) {
         *(DdVec4 *)rot = *(DdVec4 *)((char *)c + 0x40);
     } else {
@@ -181,7 +181,7 @@ void dd_beam_set(DdCard *c, int player, int zone, DdBeamFn fn)
     t.draw = 0;
     t.arg = h;
     task = dd_task_add(&t);
-    if (func_08866BC0(c->loc.player, c->loc.zone, c->loc.zone < 0xB ? 0 : c->loc.idx) == 0) {
+    if (dv_zone_faceup(c->loc.player, c->loc.zone, c->loc.zone < 0xB ? 0 : c->loc.idx) == 0) {
         *(DdVec4 *)rot = *(DdVec4 *)((char *)c + 0x40);
     } else {
         *(DdVec4 *)up = dd_beam_up2;
@@ -189,7 +189,7 @@ void dd_beam_set(DdCard *c, int player, int zone, DdBeamFn fn)
     }
     func_08820A8C(dir, rot, ((float *)c)[6] < 0.0f);
     *h = fn(1.0f, func_0880D0B4(c->loc.player, c->loc.zone),
-            func_08866BC0(player, zone, zone < 0xB ? 0 : c->loc.idx) == 0 ? -1 : c->id,
+            dv_zone_faceup(player, zone, zone < 0xB ? 0 : c->loc.idx) == 0 ? -1 : c->id,
             (float *)((char *)c + 0x10), dir, dd_effect_detach, task);
     req_flag_set(0x2D);
 }
@@ -402,9 +402,9 @@ void dd_stat_counter(DdCard *c, int delta, int def)
     int to;
 
     if (def == 0)
-        to = func_08866B00(c->loc.player, c->loc.zone);
+        to = dv_slot_link_1a0c(c->loc.player, c->loc.zone);
     else
-        to = func_08866AE8(c->loc.player, c->loc.zone);
+        to = dv_slot_e68a0(c->loc.player, c->loc.zone);
     delta = to - delta;
     if (delta < 1)
         delta = 0;
@@ -421,7 +421,7 @@ void dd_counter_flag(float dt, DdTask *t, DdCounter *c)
 
 void dd_counter_done(DdCounter *c)
 {
-    if (func_088667BC(c->uid) == 0x169C && c->value < 0x14)
+    if (dv_list_id(c->uid) == 0x169C && c->value < 0x14)
         dd_ring_start(c->value, dd_flag_task_done, dd_flag_task(0x23));
     dd_task_remove(c->popup);
 }
@@ -490,7 +490,7 @@ void dd_counter(DdCard *card, int value, int uid)
         dd_damage_counter(pos, value, uid);
         return;
     }
-    popup = dd_popup_now(func_08866998(uid), func_088667BC(uid), 0x23, 0);
+    popup = dd_popup_now(dv_player_side_bit(uid), dv_list_id(uid), 0x23, 0);
     c = dd_alloc(sizeof(DdCounter));
     memset(c, 0, sizeof(DdCounter));
     c->value = value;
@@ -516,17 +516,17 @@ void dd_num_counter(DdCard *c, int delta, int kind)
     int to;
 
     if (kind == 3) {
-        get = func_08866AD0;
+        get = dv_slot_min_1130;
         show = dd_fx_counter_start2;
         flag = 0x26;
     } else if (kind == 2) {
-        get = func_08866B30;
+        get = dv_slot_counter_1513;
         show = dd_fx_blink_start;
     } else if (kind == 1) {
-        get = func_08866B48;
+        get = dv_slot_counter_1439;
         show = dd_fx_throb_start;
     } else if (kind == 0) {
-        get = func_08866B18;
+        get = dv_slot_counter_1a90;
         show = dd_fx_tally_start_fixed;
     } else {
         return;

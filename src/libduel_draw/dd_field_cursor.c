@@ -22,8 +22,8 @@ DdLoc dd_cursor_grid[7][7] = {
 int func_0880B770(int player, int zone);
 int dd_cursor_nearest_slot(int player, DdCursor *c);
 int dd_cursor_nearest_hand(int player, DdCursor *c);
-int func_08866884(int player);
-int func_0886689C(int player);
+int dv_n_grave(int player);
+int dv_n_f(int player);
 void dd_cursor_set(int player, int zone, int idx, int save);
 
 void dd_cursor_init(void)
@@ -237,10 +237,10 @@ void dd_cursor_get(DdLoc *out)
 
     switch (l.zone) {
     case 0xE:
-        l.idx = func_08866884(l.player) - 1;
+        l.idx = dv_n_grave(l.player) - 1;
         break;
     case 0xF:
-        l.idx = func_0886689C(l.player) - 1;
+        l.idx = dv_n_f(l.player) - 1;
         break;
     case 0xD:
         l.idx = 0;

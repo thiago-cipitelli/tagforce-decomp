@@ -56,13 +56,13 @@ void *func_088045C0(int id);
 void *dd_alloc(int size);
 DdObj *dd_task_add(DdObj *desc);
 void dd_task_remove(DdObj *o);
-void func_08857C60(void *digits, int value);
-void func_08857100(DdObj *o, void *data);
-void func_08857A40(DdObj *o, void *data);
-void func_088581EC(DdObj *o, void *data);
-void func_08858224(DdObj *o, void *data);
-void func_08858784(DdObj *o, void *data);
-void func_088587C8(DdObj *o, void *data);
+void lpc_digits_set(void *digits, int value);
+void lpc_draw(DdObj *o, void *data);
+void lpc_update(DdObj *o, void *data);
+void lpc_free(DdObj *o, void *data);
+void lps_draw(DdObj *o, void *data);
+void lps_update(DdObj *o, void *data);
+void lps_free(DdObj *o, void *data);
 
 typedef struct DdLpMgr {               /* 0x08C5B294, 0x30 */
     DdObj *obj;                        /* +0x00 */
@@ -193,11 +193,11 @@ void dd_lp_count(int x, int y, int from, int to)
         else
             c->wide = 1;
     }
-    func_08857C60(c->digits, c->from);
+    lpc_digits_set(c->digits, c->from);
     memset(&desc, 0, sizeof(desc));
-    desc.draw = func_08857100;
-    desc.update = func_08857A40;
-    desc.free = func_088581EC;
+    desc.draw = lpc_draw;
+    desc.update = lpc_update;
+    desc.free = lpc_free;
     desc.data = c;
     dd_lp.obj = dd_task_add(&desc);
 }
@@ -314,9 +314,9 @@ void dd_lp_show(int x, int y, int lp0, int lp1)
             s->wide[1] = 1;
     }
     memset(&desc, 0, sizeof(desc));
-    desc.draw = func_08858224;
-    desc.update = func_08858784;
-    desc.free = func_088587C8;
+    desc.draw = lps_draw;
+    desc.update = lps_update;
+    desc.free = lps_free;
     desc.data = s;
     dd_lp.obj = dd_task_add(&desc);
     se_play(0x622C);

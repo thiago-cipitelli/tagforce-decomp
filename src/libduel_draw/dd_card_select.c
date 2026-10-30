@@ -117,22 +117,22 @@ void dd_mode_set_flag(int id);
 void dd_mode_set_sel_cb(void (*cb)(void));
 void dd_mode_set_card(int id);
 int func_08806D04(void);
-int func_08864F58(void);
-void func_08864B80(void);
-void func_0886A1FC(void);
+int hl_allowed(void);
+void hl_open(void);
+void opt_open(void);
 void func_08825B9C(MenuWidget *w);
 unsigned int *dd_wline_draw(unsigned int *list, int a, int n, float *v, int b);
 unsigned int *dd_wline_sprite(unsigned int *list, int a, float *p, float *q);
 unsigned int *func_088212C4(unsigned int *list, int x, int y, int icon);
 unsigned int *func_088046F0(unsigned int *list, int uid);
-int func_08866DAC(void);
-unsigned short *func_08866DBC(int i);
-int func_08866DC4(int id);
+int dv_0884C824(void);
+unsigned short *dv_0884C7EC(int i);
+int dv_0884C8E4(int id);
 int duel_0884C830(int id);
-void func_088660A8(int a);
-void func_08866DA4(int id);
-void func_08866988(int n);
-void func_08866DCC(int id, int k);
+void declare_open(int a);
+void dv_0884C7C0(int id);
+void dv_w624_set(int n);
+void dv_0884CB8C(int id, int k);
 unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
 void *memcpy(void *d, const void *s, unsigned int n);
 int menu_cursor_y(Menu *m, MenuItemDef *def);
@@ -262,13 +262,13 @@ void dd_sel_open_engine(int max, int min, unsigned short *title, int reverse)
     int ids[512];
     int n, i;
 
-    n = func_08866DAC();
+    n = dv_0884C824();
     if (max > n)
         max = n;
     if (min > n)
         min = n;
     for (i = 0; i < n; i++)
-        ids[i] = *func_08866DBC(i) & 0x1FFF;
+        ids[i] = *dv_0884C7EC(i) & 0x1FFF;
     memset(&d, 0, sizeof(d));
     d.ids = ids;
     d.unk4 = 0;
@@ -450,7 +450,7 @@ void *dd_sel_draw_item(void *dl, int i, int x, int y)
     DdSel *s = &dd_sel;
     unsigned int *list = dl;
     int id = s->order[(unsigned short)i];
-    int f = func_08866DC4(id);
+    int f = dv_0884C8E4(id);
     int uid;
     float r[12] = { 0 };
     int icons[2];
@@ -697,10 +697,10 @@ void dd_sel_done_cb(void)
     int n = dd_sel_get_picked(picks);
     int i;
 
-    func_08866DA4(picks[0]);
-    func_08866988(n);
+    dv_0884C7C0(picks[0]);
+    dv_w624_set(n);
     for (i = 0; i < n; i++)
-        func_08866DCC(picks[i], i + 1);
+        dv_0884CB8C(picks[i], i + 1);
 }
 
 /* ATK/DEF digits right-aligned at x + 0x15 ("?" when unknown) */
@@ -1089,10 +1089,10 @@ int dd_sel_opts_update(void)
     if (r != -2) {
         switch (s->opts[r]) {
         case 4:
-            func_08864B80();
+            hl_open();
             break;
         case 3:
-            func_0886A1FC();
+            opt_open();
             break;
         case 2:
             ret = 3;
@@ -1146,7 +1146,7 @@ void dd_sel_build_opts(void)
 
     if (s->done == 0) {
         id = s->order[s->list.scroll + s->list.cursor];
-        func_08866DC4(id);
+        dv_0884C8E4(id);
         if (duel_0884C830(id) >= 1) {
             s->opts[0] = 0;
             n = 1;
@@ -1157,7 +1157,7 @@ void dd_sel_build_opts(void)
     n += 2;
     if (func_08806D04() == 0)
         s->opts[n++] = 3;
-    if (func_08864F58() != 0)
+    if (hl_allowed() != 0)
         s->opts[n++] = 4;
     s->opts_w = 0;
     s->n_opts = n;

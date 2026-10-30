@@ -15,7 +15,7 @@ void func_0882308C(void);
 void func_0882331C(void *draw);
 void func_08823328(int (*done)(void));
 MenuItemDef *func_08823310(void);
-int func_08866D9C(void);               /* pending count (libduel_eng duel_088B2094) */
+int dv_088B2094(void);               /* pending count (libduel_eng duel_088B2094) */
 void *func_088044B0(int id);
 void *gim_set_texture(void *list, void *gim);
 unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
@@ -37,7 +37,7 @@ void dd_wait_dots_open(void)
     dh = 40 - d->pad_b;
     d->h += dh;
     d->pad_b = 40;
-    dd_wait_dots.total = func_08866D9C();
+    dd_wait_dots.total = dv_088B2094();
     dd_wait_dots.delay = 10;
 }
 
@@ -59,7 +59,7 @@ unsigned int *dd_wait_dots_draw(unsigned int *list, Menu *m, MenuItemDef *d)
     if (gim == 0)
         return list;
     list = gim_set_texture(list, gim);
-    n = w->total - func_08866D9C();
+    n = w->total - dv_088B2094();
     list = dl_ambient_color(list, 0xFFFFFFFF);
     for (i = 0; i < n; i++) {
         list = draw_set_offsets(list, 17, 17, 17, 17);
@@ -77,7 +77,7 @@ int dd_wait_dots_done(void)
 {
     DdWaitDots *w = &dd_wait_dots;
 
-    if (func_08866D9C() <= 0) {
+    if (dv_088B2094() <= 0) {
         if (w->delay <= 0)
             return 1;
         w->delay--;

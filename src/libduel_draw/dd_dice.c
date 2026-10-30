@@ -90,7 +90,7 @@ void func_08825A08(void *fn);
 int func_08825728(void);
 void func_08825B9C(MenuWidget *w);
 void *dd_text(int a);
-int func_08866988(unsigned int mask);
+int dv_w624_set(unsigned int mask);
 
 unsigned int dd_coin_tex_tmpl[16] = {
     0x00000000, 0x00000000, 0xBF800000, 0x00000000, 0x00000000, 0x3F800000, 0x00000000, 0x00000000,
@@ -310,7 +310,7 @@ void dd_dice_mask(void)
 
     for (i = 0; i < d->n_picked; i++)
         m |= 1 << d->picked[i];
-    func_08866988(m);
+    dv_w624_set(m);
 }
 
 #ifdef NON_MATCHING /* alocação de registradores e um bloco de junção a mais (forma igual) */

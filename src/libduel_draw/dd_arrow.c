@@ -58,7 +58,7 @@ void dd_cursor_get(short *loc);
 void *func_088044B0(int id);
 void *func_08804268(int id);
 void *func_088045C0(int id);
-unsigned int func_088669CC(int player, int zone, int idx);
+unsigned int dv_08835AEC(int player, int zone, int idx);
 int func_08806434(int a, int b);
 int func_088062E4(void);
 
@@ -337,7 +337,7 @@ int dd_arrow_ok(DdLoc loc, int hl)
         if (zone < 0 || zone > 4)
             return 0;
     }
-    r = func_088669CC(loc.player, zone, loc.idx);
+    r = dv_08835AEC(loc.player, zone, loc.idx);
     if (hl != 0 || (r & 0x800))
         return 1;
     return 0;

@@ -21,14 +21,14 @@ struct DdTask {
     void *arg;
 };
 
-typedef struct DdPopup {               /* 0x18 */
+typedef struct DdCardPopup {               /* 0x18 */
     int player;
     int card;                          /* +0x04 */
     int handle;                        /* +0x08 */
     int flag;                          /* +0x0C request flag while shown */
     int done;                          /* +0x10 */
     int text;                          /* +0x14 0: card picture, else a text popup */
-} DdPopup;
+} DdCardPopup;
 
 typedef struct DdTasks {
     DdTask head;
@@ -67,11 +67,11 @@ void dd_popup(int player, int zone, int card, int flag, int text);
 #ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_popup_now(int player, int card, int flag, int text)
 {
-    DdPopup *p = dd_alloc(sizeof(DdPopup));
+    DdCardPopup *p = dd_alloc(sizeof(DdCardPopup));
     int xy[3];
     DdTask t;
 
-    memset(p, 0, sizeof(DdPopup));
+    memset(p, 0, sizeof(DdCardPopup));
     p->player = player;
     p->card = card;
     p->flag = flag;
@@ -94,7 +94,7 @@ void dd_popup_now(int player, int card, int flag, int text)
 
 /* waiting popup: starts when the commentary is off and the camera idle */
 #ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
-void dd_popup_wait(float dt, DdTask *t, DdPopup *p)
+void dd_popup_wait(float dt, DdTask *t, DdCardPopup *p)
 {
     if (func_08819A70() == 0 && func_0880CC64() != 0) {
         dd_popup(p->player, 0x10, p->card, 0, p->text);
@@ -108,7 +108,7 @@ void dd_popup_wait(float dt, DdTask *t, DdPopup *p)
 #ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_popup(int player, int zone, int card, int flag, int text)
 {
-    DdPopup *p;
+    DdCardPopup *p;
     DdTask t;
 
     if (func_08819A70() == 0 && func_0880CC64() != 0) {
@@ -120,8 +120,8 @@ void dd_popup(int player, int zone, int card, int flag, int text)
             dd_cursor_set(player, zone, 0, 1);
         return;
     }
-    p = dd_alloc(sizeof(DdPopup));
-    memset(p, 0, sizeof(DdPopup));
+    p = dd_alloc(sizeof(DdCardPopup));
+    memset(p, 0, sizeof(DdCardPopup));
     p->player = player;
     p->card = card;
     p->flag = flag;

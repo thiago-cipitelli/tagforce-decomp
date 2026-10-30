@@ -52,7 +52,7 @@ void func_08820F88(undefined4 *param_1)
   D_08C582BC = 0;
   D_08C58340 = 0;
   D_08C58344 = 0;
-  D_08C58350 = func_08866B90((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
+  D_08C58350 = dv_zone_card_id((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
   thunk_FUN_08821460();
   if ((D_08C582B4 == (code *)0x0) ||
      (iVar6 = (*D_08C582B4)((int)(short)local_4[0],&D_08C582C0,D_08C582BC), iVar6 < 1)) {
@@ -93,11 +93,11 @@ void func_08820F88(undefined4 *param_1)
           local_4[0] = local_4[0] & 0x3f;
         }
         else if (uVar3 == 0xf) {
-          sVar1 = func_0886689C(uVar4 & 1);
+          sVar1 = dv_n_f(uVar4 & 1);
           local_4[0] = local_4[0] & 0x3f | (sVar1 + -1) * 0x40;
         }
         else if (uVar3 == 0xe) {
-          sVar1 = func_08866884(uVar4 & 1);
+          sVar1 = dv_n_grave(uVar4 & 1);
           local_4[0] = local_4[0] & 0x3f | (sVar1 + -1) * 0x40;
         }
         iVar6 = func_0880B7B8((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
@@ -409,13 +409,13 @@ uint func_08821A3C(ushort param_1)
   local_4 = (byte)param_1;
   uVar6 = (local_4 & 0x3f) >> 1;
   uVar5 = local_4 & 1;
-  uVar1 = func_088669CC(uVar5,uVar6,param_1 >> 6);
+  uVar1 = dv_08835AEC(uVar5,uVar6,param_1 >> 6);
   if (uVar6 == 0xc) {
-    iVar2 = func_088667F4(uVar5,0);
+    iVar2 = dv_zone_c_uid(uVar5,0);
     param_1 = param_1 & 0x3f;
   }
   else if (uVar6 == 0xd) {
-    iVar2 = func_088667DC(uVar5,0);
+    iVar2 = dv_zone_d_uid(uVar5,0);
     param_1 = param_1 & 0x3f;
   }
   else if (uVar6 == 0xf) {
@@ -425,10 +425,10 @@ uint func_08821A3C(ushort param_1)
     iVar2 = 0;
   }
   else if (uVar6 == 0xb) {
-    iVar2 = func_088667C4(uVar5,param_1 >> 6);
+    iVar2 = dv_hand_uid(uVar5,param_1 >> 6);
   }
   else {
-    iVar2 = func_088668B4(uVar5,uVar6);
+    iVar2 = dv_slot_uid(uVar5,uVar6);
   }
   if ((0 < iVar2) && (iVar3 = func_08806E58((int)(short)param_1), iVar3 != 0)) {
     uVar1 = uVar1 | 0x2000;
@@ -572,7 +572,7 @@ void func_08821F38(int a, int b, int i)
 void func_08821F70(void)
 {
     if (func_08825A14() >= 0)
-        func_08866988();
+        dv_w624_set();
 }
 #endif
 
@@ -669,7 +669,7 @@ void func_08822240(void)
         v = 1;
     else
         v = 0;
-    func_08866988(v);
+    dv_w624_set(v);
 }
 #endif
 
@@ -763,9 +763,9 @@ void func_08822520(void)
   do {
     iVar5 = 0;
     do {
-      iVar2 = func_08866E24(0,iVar4,iVar5,iVar1);
+      iVar2 = dv_088695B8(0,iVar4,iVar5,iVar1);
       if (iVar2 != 0) {
-        uVar3 = func_088668B4(iVar4,iVar5);
+        uVar3 = dv_slot_uid(iVar4,iVar5);
         (&D_08C58364)[D_08C583A4] = uVar3;
         D_08C583A4 = D_08C583A4 + 1;
         if (0xf < D_08C583A4) goto D_088226A4;
@@ -774,13 +774,13 @@ void func_08822520(void)
     } while (iVar5 < 0xb);
     iVar4 = iVar4 + 1;
   } while (iVar4 < 2);
-  iVar4 = func_0886683C(0);
+  iVar4 = dv_n_hand(0);
   iVar5 = 0;
   if (0 < iVar4) {
     do {
-      iVar2 = func_08866E48(0,iVar5,iVar1);
+      iVar2 = dv_08869728(0,iVar5,iVar1);
       if (iVar2 != 0) {
-        uVar3 = func_088667C4(0,iVar5);
+        uVar3 = dv_hand_uid(0,iVar5);
         (&D_08C58364)[D_08C583A4] = uVar3;
         D_08C583A4 = D_08C583A4 + 1;
         if (0xf < D_08C583A4) goto D_088226A4;
@@ -788,7 +788,7 @@ void func_08822520(void)
       iVar5 = iVar5 + 1;
     } while (iVar5 < iVar4);
   }
-  iVar1 = func_08866E60(0,0xfffe,0xe);
+  iVar1 = dv_088BFFD8(0,0xfffe,0xe);
   if (iVar1 != 0) {
 D_088226A4:
     D_08C583A8 = 1;
@@ -847,7 +847,7 @@ void func_088227EC(void)
         v = 1;
     else
         v = 0;
-    func_08866988(v);
+    dv_w624_set(v);
 }
 #endif
 
@@ -880,7 +880,7 @@ void func_088228B8(MenuWidget *w, int open)
 #ifdef NON_MATCHING
 void func_088228F0(void)
 {
-    func_08866988(func_08825A14() != 0);
+    dv_w624_set(func_08825A14() != 0);
 }
 #endif
 

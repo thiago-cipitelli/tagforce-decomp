@@ -54,7 +54,7 @@ extern DdHookAnim *dd_hook_default_anim;   /* 0x08C54630 */
 extern int dd_pose_a_sorted;               /* 0x08C54634 */
 extern int dd_pose_b_sorted;               /* 0x08C54638 */
 
-int func_08865330(void);
+int voice_is_playing(void);
 int dd_mon_on_start(void);
 int dd_mon_on_event(void);
 int dd_mon_on_frame(void *o, int a);
@@ -161,7 +161,7 @@ int dd_hook_true(void)
 
 int dd_hook_8147d0(void)
 {
-    return func_08865330() != 0;
+    return voice_is_playing() != 0;
 }
 
 /* material of "duel_disc_02.iff": the deck texture, or texturing off */

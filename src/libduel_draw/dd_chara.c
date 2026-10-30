@@ -22,10 +22,10 @@ int sysvar_get_a98(void);
 int charmap_lookup(int ch, int *kind_out);
 int charmap_lookup2(int code, DdCharInfo *out);
 
-void func_088587EC(void);
-void func_08865060(void);
-void func_088650E4(void);
-void func_08858800(void);
+void caption_init(void);
+void voice_tables_init(void);
+void voice_tables_term(void);
+void caption_term(void);
 void func_08813840(DdCharSlot *s, int all);
 void *func_088138B8(void *list, DdCharSlot *s);
 void dd_mtx_save(void);
@@ -36,12 +36,12 @@ void func_08813554(DdCharSlot *s, void *setup);
 void func_08813684(DdCharSlot *s);
 void dd_lp_close(void);
 void func_08813AB8(DdCharSlot *s, int arg);
-void func_0886529C(DdCharSlot *s);
-void func_088652BC(DdCharSlot *s, int a, int b);
+void voice_reset(DdCharSlot *s);
+void voice_start(DdCharSlot *s, int a, int b);
 int func_08813F1C(DdCharSlot *s);
 void func_08813D48(DdCharSlot *s, void *out, int bone);
 void func_08813D8C(DdCharSlot *s, void *out, int bone);
-void func_0886533C(DdCharSlot *s);
+void voice_stop(DdCharSlot *s);
 void func_08813FB4(DdCharSlot *s, int arg);
 int func_08813FBC(DdCharSlot *s);
 void *func_0880507C(unsigned int chr, int variant);
@@ -52,45 +52,45 @@ void dd_ryusen_set_alpha(int alpha, int now);
 
 typedef void (*DdCharSetup)(void *setup);
 void dd_hookb_install(void *);
-void func_0885DF50(void *);
-void func_0885B188(void *);
+void chr3_setup(void *);
+void chr4_setup(void *);
 void dd_hooka_install(void *);
 void dd_chara_setup_06b(void *);
 void dd_chara_setup_06a(void *);
-void func_0885C900(void *);
-void func_0885D6CC(void *);
-void func_0885C0F8(void *);
-void func_0885AC28(void *);
-void func_0885AED8(void *);
-void func_0885BD80(void *);
-void func_0885E4B0(void *);
-void func_0885ECB4(void *);
-void func_088676D8(void *);
-void func_0885E744(void *);
-void func_0885EF5C(void *);
-void func_0885B9FC(void *);
-void func_0885B6E8(void *);
-void func_08860F88(void *);
-void func_0885CBB0(void *);
-void func_0885B438(void *);
-void func_0885CE58(void *);
-void func_0885D97C(void *);
-void func_0885D41C(void *);
-void func_0885C650(void *);
-void func_0885C3A0(void *);
-void func_0885F4BC(void *);
-void func_0885D108(void *);
-void func_0885DCA0(void *);
-void func_0885EA04(void *);
-void func_0885A1C8(void *);
-void func_0885E200(void *);
-void func_0885F20C(void *);
-void func_08859F18(void *);
-void func_08860CD8(void *);
-void func_08867980(void *);
-void func_08867C30(void *);
-void func_0885F980(void *);
-void func_0885A478(void *);
+void chr7_setup(void *);
+void chr8_setup(void *);
+void chr9_setup(void *);
+void chr10_setup(void *);
+void chr11_setup(void *);
+void chr12_setup(void *);
+void chr13_setup(void *);
+void chr14_setup(void *);
+void chr15_setup(void *);
+void chr16_setup(void *);
+void chr17_setup(void *);
+void chr18_setup(void *);
+void chr18_alt_setup(void *);
+void chr19_setup(void *);
+void chr20_setup(void *);
+void chr21_setup(void *);
+void chr22_setup(void *);
+void chr23_setup(void *);
+void chr24_setup(void *);
+void chr25_setup(void *);
+void chr26_setup(void *);
+void chr27_setup(void *);
+void chr28_setup(void *);
+void chr30_setup(void *);
+void chr31_setup(void *);
+void chr32_setup(void *);
+void chr33_setup(void *);
+void chr36_setup(void *);
+void chr37_setup(void *);
+void chr38_setup(void *);
+void chr40_setup(void *);
+void chr1000_setup(void *);
+void chr_generic_setup(void *);
+void chr_kind3_setup(void *);
 
 extern DdCharMgr dd_chara_mgr;
 
@@ -103,8 +103,8 @@ void dd_chara_init(void)
 {
     memset(&dd_chara_mgr, 0, sizeof(dd_chara_mgr));
     dd_chara_mgr.cur_idx = -1;
-    func_088587EC();
-    func_08865060();
+    caption_init();
+    voice_tables_init();
 }
 
 void dd_chara_term(void)
@@ -113,8 +113,8 @@ void dd_chara_term(void)
     int i;
     DdCharMgr *p;
 
-    func_088650E4();
-    func_08858800();
+    voice_tables_term();
+    caption_term();
     for (i = 0, p = m; i < 4; i++, p = (DdCharMgr *)((char *)p + sizeof(DdCharSlot)))
         func_08813840(p->slot, 1);
     memset(m, 0, sizeof(*m));
@@ -221,13 +221,13 @@ int dd_chara_redraw(int arg)
     dd_ryusen_set_chara(m->cur->chr, m->cur->variant);
     dd_ryusen_set_alpha(0xFF, 1);
     func_08813AB8(m->cur, arg);
-    func_0886529C(m->cur);
+    voice_reset(m->cur);
     return 1;
 }
 
 void dd_chara_anim(int a, int b)
 {
-    func_088652BC(dd_chara_mgr.cur, a, b);
+    voice_start(dd_chara_mgr.cur, a, b);
 }
 
 int dd_chara_ready(void)
@@ -283,7 +283,7 @@ float *dd_chara_pos(void)
 void dd_chara_busy_set(void)
 {
     dd_chara_mgr.busy = 1;
-    func_0886533C(dd_chara_mgr.cur);
+    voice_stop(dd_chara_mgr.cur);
 }
 
 int dd_chara_busy(void)
@@ -339,8 +339,8 @@ DdCharSetup dd_chara_setup_fn(int chr, int variant)
 
     switch (chr) {
     case 2: fn = dd_hookb_install; break;
-    case 3: fn = func_0885DF50; break;
-    case 4: fn = func_0885B188; break;
+    case 3: fn = chr3_setup; break;
+    case 4: fn = chr4_setup; break;
     case 5: fn = dd_hooka_install; break;
     case 6:
         if (variant == 0)
@@ -348,45 +348,45 @@ DdCharSetup dd_chara_setup_fn(int chr, int variant)
         else
             fn = dd_chara_setup_06b;
         break;
-    case 7: fn = func_0885C900; break;
-    case 8: fn = func_0885D6CC; break;
-    case 9: fn = func_0885C0F8; break;
-    case 10: fn = func_0885AC28; break;
-    case 11: fn = func_0885AED8; break;
-    case 12: fn = func_0885BD80; break;
-    case 13: fn = func_0885E4B0; break;
-    case 14: fn = func_0885ECB4; break;
-    case 15: fn = func_088676D8; break;
-    case 16: fn = func_0885E744; break;
-    case 17: fn = func_0885EF5C; break;
+    case 7: fn = chr7_setup; break;
+    case 8: fn = chr8_setup; break;
+    case 9: fn = chr9_setup; break;
+    case 10: fn = chr10_setup; break;
+    case 11: fn = chr11_setup; break;
+    case 12: fn = chr12_setup; break;
+    case 13: fn = chr13_setup; break;
+    case 14: fn = chr14_setup; break;
+    case 15: fn = chr15_setup; break;
+    case 16: fn = chr16_setup; break;
+    case 17: fn = chr17_setup; break;
     case 18:
         if (variant == 0)
-            fn = func_0885B9FC;
+            fn = chr18_setup;
         else
-            fn = func_0885B6E8;
+            fn = chr18_alt_setup;
         break;
-    case 19: fn = func_08860F88; break;
-    case 20: fn = func_0885CBB0; break;
-    case 21: fn = func_0885B438; break;
-    case 22: fn = func_0885CE58; break;
-    case 23: fn = func_0885D97C; break;
-    case 24: fn = func_0885D41C; break;
-    case 25: fn = func_0885C650; break;
-    case 26: fn = func_0885C3A0; break;
-    case 27: fn = func_0885F4BC; break;
-    case 28: fn = func_0885D108; break;
+    case 19: fn = chr19_setup; break;
+    case 20: fn = chr20_setup; break;
+    case 21: fn = chr21_setup; break;
+    case 22: fn = chr22_setup; break;
+    case 23: fn = chr23_setup; break;
+    case 24: fn = chr24_setup; break;
+    case 25: fn = chr25_setup; break;
+    case 26: fn = chr26_setup; break;
+    case 27: fn = chr27_setup; break;
+    case 28: fn = chr28_setup; break;
     case 29: fn = 0; break;
-    case 30: fn = func_0885DCA0; break;
-    case 31: fn = func_0885EA04; break;
-    case 32: fn = func_0885A1C8; break;
-    case 33: fn = func_0885E200; break;
+    case 30: fn = chr30_setup; break;
+    case 31: fn = chr31_setup; break;
+    case 32: fn = chr32_setup; break;
+    case 33: fn = chr33_setup; break;
     case 34: fn = 0; break;
     case 35: fn = 0; break;
-    case 36: fn = func_0885F20C; break;
-    case 37: fn = func_08859F18; break;
-    case 38: fn = func_08860CD8; break;
+    case 36: fn = chr36_setup; break;
+    case 37: fn = chr37_setup; break;
+    case 38: fn = chr38_setup; break;
     case 39: fn = 0; break;
-    case 40: fn = func_08867980; break;
+    case 40: fn = chr40_setup; break;
     }
     if (fn == 0) {
         DdCharInfo info = { 0 };
@@ -394,13 +394,13 @@ DdCharSetup dd_chara_setup_fn(int chr, int variant)
         code = charmap_lookup(chr, 0);
         charmap_lookup2(code, &info);
         if (code == 1000)
-            fn = func_08867C30;
+            fn = chr1000_setup;
         else if (info.kind < 3)
-            fn = func_0885F980;
+            fn = chr_generic_setup;
         else if (info.kind == 3)
-            fn = func_0885A478;
+            fn = chr_kind3_setup;
         else
-            fn = func_0885F980;
+            fn = chr_generic_setup;
     }
     return fn;
 }

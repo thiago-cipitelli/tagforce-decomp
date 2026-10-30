@@ -7,10 +7,6 @@
    attack, damage and destruction animations. */
 #include "dd_d3.h"
 
-typedef struct DdMat4 {
-    float m[16];
-} __attribute__((aligned(16))) DdMat4;
-
 typedef struct DdQuat {
     float x, y, z, w;
 } __attribute__((aligned(16))) DdQuat;
@@ -39,9 +35,9 @@ void dd_fx3_stop(void);
 void dd_fx_stop(int a, int anim, int c, int d);
 void dd_fx3_set_param(void);
 void dd_fx_set_param(DdMon *m, int anim, int c, int frame, int flag);
-void func_08865124(DdMon *m, int anim, int c, int frame, int flag);
-void func_088589F0(int on);
-void func_088589DC(int voice, int id);
+void voice_event(DdMon *m, int anim, int c, int frame, int flag);
+void caption_enable(int on);
+void caption_set(int voice, int id);
 void func_08806434(int a, int b);
 int func_08814118(DdModel *model, int bone);
 void dd_lp_count(int x, int y, int a, int b);
@@ -95,7 +91,7 @@ int dd_mon_on_start(int a, int b, int c)
 {
     dd_fx3_start();
     dd_fx_start(a, b, c);
-    func_088589F0(0);
+    caption_enable(0);
     return 0;
 }
 
@@ -116,7 +112,7 @@ int dd_mon_on_frame(DdMon *m, int anim, int c, int frame, int flag)
 {
     dd_fx3_set_param();
     dd_fx_set_param(m, anim, c, frame, flag);
-    func_08865124(m, anim, c, frame, flag);
+    voice_event(m, anim, c, frame, flag);
     dd_mon_voice(m, anim, c, frame, flag);
     dd_mon_panels(m, anim, c, frame, flag);
     return 0;
@@ -295,14 +291,14 @@ void dd_mon_voice(DdMon *m, int anim, int c, int frame, int flag)
     v = snd_channel_get_u32(m->chan);
     played = partner_voice_play(m->chan, 0);
     if (v == 0) {
-        func_088589F0(0);
+        caption_enable(0);
         return;
     }
     story = m->chara < 41;
     id = partner_table_lookup(story, gamestate_partner_mode(), v - played, (unsigned short *)m->x0c);
     if (id >= 0) {
-        func_088589F0(1);
-        func_088589DC(m->voice, id);
+        caption_enable(1);
+        caption_set(m->voice, id);
     }
 }
 

@@ -71,20 +71,20 @@ void func_0880A8E0(float *pos, float *rot, DdLoc2 loc);
 int func_0880702C(void);
 int func_08806E58(DdLoc loc);
 void func_088091C8(int id);
-int func_08866BF0(int player, int zone, int idx);
-int func_08866998(int h);
-int func_088669B4(int a);
-int func_08866A0C(void);
-int func_0886683C(int player);
-unsigned int func_088669CC(int player, int zone, int idx);
-int func_08866BD8(int player, int zone);
+int dv_zone_card_uid(int player, int zone, int idx);
+int dv_player_side_bit(int h);
+int dv_must_answer(int a);
+int dv_08835924(void);
+int dv_n_hand(int player);
+unsigned int dv_08835AEC(int player, int zone, int idx);
+int dv_zone_count(int player, int zone);
 void *func_08804268(int id);
 void *func_088044B0(int id);
 int func_08806BC4(void);
 float func_0880CC04(int n);
 unsigned int *func_088212C4(unsigned int *list, int x, int y, int icon);
-int func_08866884(int player);
-int func_0886689C(int player);
+int dv_n_grave(int player);
+int dv_n_f(int player);
 void dd_cursor_update(void);
 unsigned int *dd_cursor_draw_normal(unsigned int *list);
 unsigned int *dd_cursor_draw_locked(unsigned int *list);
@@ -112,9 +112,9 @@ void dd_cursor_draw(void)
     else
         c->lit = 1;
     if (func_08806E58(c->cur) != 0) {
-        h = func_08866BF0(c->cur.player, c->cur.zone, c->cur.idx);
+        h = dv_zone_card_uid(c->cur.player, c->cur.zone, c->cur.idx);
         if (h > 0) {
-            if (func_08866998(h) != 0)
+            if (dv_player_side_bit(h) != 0)
                 c->lit = 1;
             else
                 c->lit = 0;
@@ -182,10 +182,10 @@ void dd_cursor_update(void)
     idx = c->cur.idx;
     switch (zone) {
     case 0xE:
-        idx = func_08866884(player) - 1;
+        idx = dv_n_grave(player) - 1;
         break;
     case 0xF:
-        idx = func_0886689C(player) - 1;
+        idx = dv_n_f(player) - 1;
         break;
     case 0xD:
         idx = 0;
@@ -230,9 +230,9 @@ void dd_cursor_first_target(void)
     int player, k, zone, n, i;
     unsigned int f;
 
-    if (func_088669B4(0) == 0)
+    if (dv_must_answer(0) == 0)
         return;
-    switch (func_08866A0C()) {
+    switch (dv_08835924()) {
     case 4:
     case 5:
     case 6:
@@ -244,11 +244,11 @@ void dd_cursor_first_target(void)
             for (k = 0; k < 16; k++) {
                 zone = order[player][k];
                 if (zone == 0xB)
-                    n = func_0886683C(player);
+                    n = dv_n_hand(player);
                 else
                     n = 1;
                 for (i = 0; i < n; i++) {
-                    f = func_088669CC(player, zone, i);
+                    f = dv_08835AEC(player, zone, i);
                     if (f != 0 && (f & 0x808) != 0) {
                         dd_cursor_set(player, zone, i, 0);
                         return;
@@ -268,7 +268,7 @@ void dd_cursor_cycle(void)
     int found;
     int player, zone, n, i;
 
-    switch (func_08866A0C()) {
+    switch (dv_08835924()) {
     case 2:
         dd_cursor_hand_toggle();
         break;
@@ -288,11 +288,11 @@ void dd_cursor_cycle(void)
         for (player = 0; player < 2; player++) {
             for (zone = 0; zone < 16; zone++) {
                 if (zone == 0xB)
-                    n = func_08866BD8(player, zone);
+                    n = dv_zone_count(player, zone);
                 else
                     n = 1;
                 for (i = 0; i < n; i++) {
-                    if ((func_088669CC(player, zone, i) & ~0x402) != 0) {
+                    if ((dv_08835AEC(player, zone, i) & ~0x402) != 0) {
                         found = 1;
                         goto out;
                     }
@@ -659,7 +659,7 @@ unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
         sy += -33.0f;
     }
     n = 0;
-    f = func_088669CC(loc.player, loc.zone, loc.idx);
+    f = dv_08835AEC(loc.player, loc.zone, loc.idx);
     for (i = 0; i < 13; i++) {
         if (f & (1 << i))
             icons[n++] = i;
@@ -691,7 +691,7 @@ void dd_cursor_hand_toggle(void)
             dd_cursor_set(c->hand_back.player, c->hand_back.zone, c->hand_back.idx, 0);
         else
             dd_cursor_set(0, 2, 0, 0);
-    } else if (func_0886683C(0) != 0) {
+    } else if (dv_n_hand(0) != 0) {
         c->hand_back = c->cur;
         dd_cursor_set(0, 0xB, c->hand_idx, 0);
     }
@@ -711,11 +711,11 @@ void dd_cursor_next_target(void)
     for (player = 0; player < 2; player++) {
         for (zone = 0; zone < 16; zone++) {
             if (zone == 0xB)
-                n = func_08866BD8(player, zone);
+                n = dv_zone_count(player, zone);
             else
                 n = 1;
             for (i = 0; i < n; i++) {
-                if ((func_088669CC(player, zone, i) & ~0x402) == 0)
+                if ((dv_08835AEC(player, zone, i) & ~0x402) == 0)
                     continue;
                 if (have == 0) {
                     l.player = player;

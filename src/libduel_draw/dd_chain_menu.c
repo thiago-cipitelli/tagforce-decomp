@@ -17,7 +17,7 @@ typedef unsigned int uint;
 typedef void (*code)();
 #endif
 
-int func_08866D94();
+int dv_08832D08();
 extern int D_08C58584;
 extern int D_08C5880C;
 int *func_08823310(void);
@@ -239,5 +239,5 @@ void func_088235C4(byte param_1)
 
 int func_08823650(void)
 {
-    return func_08866D94() == 0;
+    return dv_08832D08() == 0;
 }

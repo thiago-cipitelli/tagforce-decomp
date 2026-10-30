@@ -135,10 +135,10 @@ void func_088252C0(void)
   int iVar3;
   iVar1 = duel_088FE8A4();
   if ((iVar1 == 3) && (iVar1 = func_0882092C(), iVar1 == 0)) {
-    uVar2 = func_0886677C();
+    uVar2 = dv_turn_side();
     iVar1 = 0;
     do {
-      iVar3 = func_08866AA0(uVar2,iVar1,1);
+      iVar3 = dv_can_attack_any(uVar2,iVar1,1);
       if ((((iVar3 != 0) && (iVar3 = func_0880B7B8(uVar2,iVar1,0), iVar3 != 0)) &&
           (*(float *)(iVar3 + 0x74) <= *(float *)(iVar3 + 0x70))) &&
          (iVar3 = dd_mark_is_at(uVar2,iVar1), iVar3 == 0)) {

@@ -78,8 +78,8 @@ int func_0880D0B4(int player, int zone);
 int dd_fx_rays_start_t(int id, void *pos, void *cb, void *arg, float a, float b);
 void func_08820980(void);
 int dd_fx_flipup_start(int id, int *xy, int a, int b);
-int func_088667BC(int uid);
-int func_088668E4(int player, int zone);
+int dv_list_id(int uid);
+int dv_slot_pos(int player, int zone);
 void func_08820CC0(void *a, void *b, DdLoc l);
 int dd_fx_summon_start_t(int a, int b, int c, void *d, void *cb, void *arg);
 int dd_fx_summon_start_dark_t(int a, int b, int c, void *d, void *cb, void *arg);
@@ -342,7 +342,7 @@ void dd_banner_summon(DdCard *c)
     char out[16];
 
     memset(b, 0, sizeof(DdBanner));
-    b->id = func_088667BC(uid);
+    b->id = dv_list_id(uid);
     b->player = player;
     memset(&t, 0, sizeof(t));
     t.draw = dd_banner_draw;
@@ -355,7 +355,7 @@ void dd_banner_summon(DdCard *c)
     l.idx = 0;
     l.b14 = 1;
     b->state = 0;
-    l.b15 = func_088668E4(player, zone);
+    l.b15 = dv_slot_pos(player, zone);
     func_08820CC0(a, pos, *(DdLoc *)&l);
     func_08820A8C(out, pos, ((float *)a)[2] < 0.0f);
     b->handle = dd_fx_summon_start_t(((int *)out)[1], func_0880D0B4(c->loc.player, c->loc.zone), b->id, a,
@@ -383,8 +383,8 @@ void dd_banner_set(DdCard *c)
     int id;
 
     memset(b, 0, sizeof(DdBanner));
-    b->id = func_088667BC(uid);
-    b->id = func_088667BC(uid);
+    b->id = dv_list_id(uid);
+    b->id = dv_list_id(uid);
     b->player = player;
     memset(&t, 0, sizeof(t));
     t.draw = dd_banner_draw;
@@ -397,7 +397,7 @@ void dd_banner_set(DdCard *c)
     l.idx = 0;
     l.b14 = 1;
     b->state = 0;
-    l.b15 = func_088668E4(player, zone);
+    l.b15 = dv_slot_pos(player, zone);
     if (up)
         id = b->id;
     else

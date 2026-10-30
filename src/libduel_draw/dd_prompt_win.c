@@ -23,7 +23,7 @@ typedef void (*code)();
 int func_08824D7C();
 int func_08825A14();
 int dd_pick_mask();
-int func_08866988();
+int dv_w624_set();
 extern int D_08C5881C;
 extern int D_08C58828;
 void func_08823808(void);
@@ -102,7 +102,7 @@ void func_08823724(int param_1,int param_2)
 
 void func_08823808(void)
 {
-    func_08866988(func_08825A14());
+    dv_w624_set(func_08825A14());
 }
 
 #ifdef NON_MATCHING
@@ -353,7 +353,7 @@ void func_08823F44(int param_1,int param_2)
 
 void func_08823FF4(void)
 {
-    func_08866988(dd_pick_mask(D_08C5881C));
+    dv_w624_set(dd_pick_mask(D_08C5881C));
 }
 
 #ifdef NON_MATCHING
@@ -732,7 +732,7 @@ void func_08824D18(MenuWidget *w, int open)
 
 void func_08824D58(void)
 {
-    func_08866988(func_08825A14());
+    dv_w624_set(func_08825A14());
 }
 
 #ifdef NON_MATCHING
@@ -824,6 +824,6 @@ void func_08824FF0(MenuWidget *w, int open)
 #ifdef NON_MATCHING
 void func_0882504C(void)
 {
-    func_08866988(D_08C58A2C + func_08825A14() * D_08C58A34);
+    dv_w624_set(D_08C58A2C + func_08825A14() * D_08C58A34);
 }
 #endif

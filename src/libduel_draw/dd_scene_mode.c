@@ -74,30 +74,30 @@ unsigned int *dd_m5_draw(unsigned int *list);
 void dd_m5_update(void);
 void dd_m5_leave(void);
 unsigned int *dd_m10_draw(unsigned int *list);
-void func_08859EB8(void);
-unsigned int *func_08859EC8(unsigned int *list);
-void func_08859ED0(void);
-void func_08859EC0(void);
-void func_0885F7A0(void);
-unsigned int *func_0885F7D8(unsigned int *list);
-void func_0885F7E0(void);
-void func_0885F7D0(void);
-void func_08864BD0(void);
-unsigned int *func_08864CFC(unsigned int *list);
-void func_08864E00(void);
-void func_08864CB0(void);
-void func_0886A274(void);
-unsigned int *func_0886A2D8(unsigned int *list);
-void func_0886A300(void);
-void func_0886A2D0(void);
-void func_0886AEC4(void);
-unsigned int *func_0886AEF0(unsigned int *list);
-void func_0886AEF8(void);
-void func_0886AEE4(void);
-void func_088589FC(void);
-unsigned int *func_08858A64(unsigned int *list);
-void func_08859170(void);
-void func_08858A5C(void);
+void zone_nop1(void);
+unsigned int *zone_identity(unsigned int *list);
+void zone_confirm_hurry(void);
+void zone_nop2(void);
+void browse_start(void);
+unsigned int *browse_identity(unsigned int *list);
+void browse_update(void);
+void browse_nop(void);
+void hl_start(void);
+unsigned int *hl_draw(unsigned int *list);
+void hl_update(void);
+void hl_term(void);
+void opt_start(void);
+unsigned int *opt_draw_layer(unsigned int *list);
+void opt_tick(void);
+void opt_term(void);
+void sel_begin(void);
+unsigned int *sel_draw(unsigned int *list);
+void sel_update(void);
+void sel_end(void);
+void debug_menu_init(void);
+unsigned int *debug_menu_draw(unsigned int *list);
+void debug_menu_update(void);
+void debug_menu_term(void);
 
 DdModeDef dd_modes[13] = {
     { 0, 0, 0, 0, 0 },
@@ -106,13 +106,13 @@ DdModeDef dd_modes[13] = {
     { 3, dd_m3_enter, dd_m3_draw, dd_m3_update, dd_m3_leave },
     { 4, dd_m4_enter, dd_m4_draw, dd_m4_update, dd_m4_leave },
     { 5, dd_m5_enter, dd_m5_draw, dd_m5_update, dd_m5_leave },
-    { 6, func_08859EB8, func_08859EC8, func_08859ED0, func_08859EC0 },
-    { 7, func_0885F7A0, func_0885F7D8, func_0885F7E0, func_0885F7D0 },
-    { 8, func_08864BD0, func_08864CFC, func_08864E00, func_08864CB0 },
-    { 9, func_0886A274, func_0886A2D8, func_0886A300, func_0886A2D0 },
-    { 10, func_0886AEC4, func_0886AEF0, func_0886AEF8, func_0886AEE4 },
+    { 6, zone_nop1, zone_identity, zone_confirm_hurry, zone_nop2 },
+    { 7, browse_start, browse_identity, browse_update, browse_nop },
+    { 8, hl_start, hl_draw, hl_update, hl_term },
+    { 9, opt_start, opt_draw_layer, opt_tick, opt_term },
+    { 10, sel_begin, sel_draw, sel_update, sel_end },
     { 10, 0, dd_m10_draw, 0, 0 },
-    { 12, func_088589FC, func_08858A64, func_08859170, func_08858A5C },
+    { 12, debug_menu_init, debug_menu_draw, debug_menu_update, debug_menu_term },
 };
 DdVec4 dd_cam_up __attribute__((aligned(16))) = { 0.0f, 1.0f, 0.0f, 0.0f };
 DdVec4 dd_cam_fwd __attribute__((aligned(16))) = { 0.0f, 0.0f, -1.0f, 0.0f };
@@ -123,21 +123,21 @@ int req_flag_get(int i);
 int func_08806434(int a, int b);
 int func_08806BC4(void);
 int func_08806D04(void);
-int func_08864B80(void);
+int hl_open(void);
 void func_088090DC(int v);
 int func_0880CC64(void);
-int func_0886677C(void);
-int func_08866914(void);
-int func_08866958(int a);
-void func_0886A3F4(void);
+int dv_turn_side(void);
+int dv_player_is2(void);
+int dv_is_type0(int a);
+void guide_draw(void);
 int func_08825764(void);
 void func_088257B8(void);
-int func_0885F8E0(void);
-void func_0885F8F4(void);
-int func_08864F3C(void);
+int browse_active(void);
+void browse_close(void);
+int hl_running(void);
 void func_08864F50(void);
-int func_0886A3A0(void);
-void func_0886A3C4(void);
+int opt_is_open(void);
+void opt_close(void);
 int dd_sel_active(void);
 void dd_sel_close(void);
 int dd_sel_busy(void);
@@ -146,13 +146,13 @@ void *dd_sel_draw(void *list);
 void dd_sel_reset(void);
 void dd_cursor_move(int key);
 void dd_cursor_cycle(void);
-unsigned int func_088669CC(int player, int zone, int idx);
-int func_08866B90(int player, int zone, int idx);
+unsigned int dv_08835AEC(int player, int zone, int idx);
+int dv_zone_card_id(int player, int zone, int idx);
 int func_08806E58(DdLoc l);
-void func_08866EC8(void *arg);
+void popup_open(void *arg);
 void func_08820F88(void *arg);
 void duel_08836028(void);
-void func_0885F76C(void);
+void browse_mode_set7(void);
 void func_08825580(void);
 unsigned int *func_088255E8(unsigned int *list);
 unsigned int *func_08825674(void);
@@ -188,7 +188,7 @@ void mtx_perspective(float fovy, float aspect, float near, float far);
 void camera_set(float *pos, float *target, float *up);
 void camera_load_view(void);
 void func_08807018(int a);
-void func_088669E4(int player, int zone, int idx, int act);
+void dv_08835F34(int player, int zone, int idx, int act);
 void func_08807908(void);
 int dd_mode_get(void);
 void dd_mode_pop(void);
@@ -340,7 +340,7 @@ void dd_mode_update(void)
     }
     if (y < 0x62)
         func_088090DC((y - 0x62) * 4);
-    if (func_08806D04() == 0 && (pad[1] & 8) && func_08864B80() != 0)
+    if (func_08806D04() == 0 && (pad[1] & 8) && hl_open() != 0)
         se_play(0x6217);
     if (s->entering == 0 && dd_modes[s->mode].update != 0)
         dd_modes[s->mode].update();
@@ -368,16 +368,16 @@ int dd_mode_cancel(void)
             cardinfo_close();
         break;
     case 7:
-        if (func_0885F8E0() != 0)
-            func_0885F8F4();
+        if (browse_active() != 0)
+            browse_close();
         break;
     case 8:
-        if (func_08864F3C() != 0)
+        if (hl_running() != 0)
             func_08864F50();
         break;
     case 9:
-        if (func_0886A3A0() != 0)
-            func_0886A3C4();
+        if (opt_is_open() != 0)
+            opt_close();
         break;
     case 12:
         dd_mode_pop();
@@ -433,9 +433,9 @@ unsigned int *dd_m1_draw(unsigned int *list)
     int layer = dl_get_layer();
 
     dl_set_list(list);
-    if (func_08806BC4() == 0 && (pad[0] & 0x100) && func_0886677C() == func_08866914() &&
-        func_08866958(func_08866914()) != 0 && func_08806D04() == 0) {
-        func_0886A3F4();
+    if (func_08806BC4() == 0 && (pad[0] & 0x100) && dv_turn_side() == dv_player_is2() &&
+        dv_is_type0(dv_player_is2()) != 0 && func_08806D04() == 0) {
+        guide_draw();
         if (dd_hand_hint == 0) {
             dd_hand_hint = 1;
             se_play(0x621A);
@@ -515,20 +515,20 @@ void dd_m1_update(void)
             player = 1;
             zone = 0xF;
         }
-        if (player >= 0 && (func_088669CC(player, zone, 0) & 2)) {
+        if (player >= 0 && (dv_08835AEC(player, zone, 0) & 2)) {
             dd_act(player, zone, 0, 1);
             s->cancel_armed = 0;
         }
         return;
     }
     if (pad[1] & ((region_pick_value(1) & 0xFFFF) | 0x200)) {
-        if (func_088669CC(0, 0xD, 0) & 0x1000) {
+        if (dv_08835AEC(0, 0xD, 0) & 0x1000) {
             se_play(0x6213);
             dd_act(0, 0xD, 0, 0xC);
             s->cancel_armed = 0;
             return;
         }
-        if (func_088669CC(1, 0xD, 0) & 0x1000) {
+        if (dv_08835AEC(1, 0xD, 0) & 0x1000) {
             se_play(0x6213);
             dd_act(1, 0xD, 0, 0xC);
             s->cancel_armed = 0;
@@ -543,12 +543,12 @@ void dd_m1_update(void)
         s->cancel_armed = 0;
     } else if (k & 0x1000) {
         dd_cursor_get(&l);
-        arg.card = func_08866B90(l.player, l.zone, l.idx);
+        arg.card = dv_zone_card_id(l.player, l.zone, l.idx);
         memset(&arg, 0, sizeof(arg));
         if (func_08806E58(l) == 0)
             arg.card = 0;
         arg.get = dd_cursor_get;
-        func_08866EC8(&arg);
+        popup_open(&arg);
         s->cancel_armed = 0;
     } else if ((pad[2] & (region_pick_value(1) & 0xFFFF)) && s->cancel_armed != 0) {
         duel_08836028();
@@ -584,7 +584,7 @@ void dd_m2_update(void)
 
     dd_sel_update();
     if (dd_sel_active() != 0 && (pad[1] & 0x8000)) {
-        func_0885F76C();
+        browse_mode_set7();
         return;
     }
     if (dd_sel_busy() != 0)
@@ -645,7 +645,7 @@ void dd_m4_update(void)
     int done = (int)func_08825674();
 
     if (func_08825764() != 0 && func_088257D0() != 0 && func_088257C4() != 1 && (pad[1] & 0x8000)) {
-        func_0885F76C();
+        browse_mode_set7();
         return;
     }
     if (done != 0) {
@@ -849,7 +849,7 @@ void dd_act(int player, int zone, int idx, int act)
 {
     if (dd_act_filter == 0 || dd_act_filter() != 0) {
         func_08807018(0);
-        func_088669E4(player, zone, idx, act);
+        dv_08835F34(player, zone, idx, act);
     }
 }
 
