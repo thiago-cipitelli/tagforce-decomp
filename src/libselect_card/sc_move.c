@@ -15,7 +15,8 @@
 #include "menu.h"
 
 typedef struct ScOsk {                 /* see sc_word.c */
-    int state;
+    unsigned char state;               /* +0x00 0 idle, 1 opening, 2 running, 3 closing, 4 closed */
+    unsigned char pad01[3];
     unsigned int base[12];
     int datacount;
     unsigned int *data;
@@ -84,19 +85,22 @@ void sc_flight_free(void);
 int sc_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll);
 int sc_dst_pos(int tab, unsigned short id);
 
-#ifdef NON_MATCHING /* laço da cópia com '$' dobrado e alocação diferentes */
+#ifdef NON_MATCHING /* lógica conferida com o asm (sceUtilityOskUpdate(2), não 1; state é u8); 65 palavras:
+                       laço da cópia com '$' dobrado e alocação diferentes */
 /* per frame while the keyboard runs: fades, utility status; 1 when closed */
 int sc_popup_done(int layer)
 {
     void *list;
-    unsigned short *d;
     unsigned int i;
     int n;
-    unsigned short c;
-    int r;
+    int c;
     unsigned short *p;
+    int r;
 
-    if (sc_osk.state == 3 || sc_osk.state == 2 || sc_osk.state == 1) {
+    switch (sc_osk.state) {
+    case 1:
+    case 2:
+    case 3:
         list = dl_select_layer(layer, 0);
         if (fade_apply(&list)) {
             if (sc_osk.state == 1)
@@ -105,40 +109,50 @@ int sc_popup_done(int layer)
                 sc_osk.state = 4;
         }
         dl_set_list(list);
+        break;
     }
     sceGuSync(0, 0);
-    if (sc_osk.state == 4) {
+    switch (sc_osk.state) {
+    case 0:
         sysvar_set_a90(0);
         return 1;
-    }
-    if (sc_osk.state == 3)
-        return 0;
-    if (sc_osk.state == 2 || sc_osk.state == 1) {
-        r = sceUtilityOskGetStatus();
-        if (r != 4 && (r == 3 || (r == 2 && sceUtilityOskUpdate(1) != 0))) {
+    case 1:
+    case 2:
+        switch (sceUtilityOskGetStatus()) {
+        case 0:
+        case 1:
+            break;
+        case 2:
+            if (sceUtilityOskUpdate(2) == 0)
+                break;
+        case 3:
             r = sceUtilityOskShutdownStart();
             if (sc_osk.base[7] == 0) {
-                d = sc_osk.target;
                 n = 0;
                 i = 0;
                 if (wcslen(sc_osk.out) != 0) {
-                    for (p = sc_osk.out, c = *p; c != 0; c = *++p) {
+                    for (p = sc_osk.out; (c = *p) != 0; p++) {
                         if (c == '$')
-                            d[n++] = '$';
-                        d[n++] = c;
-                        i++;
-                        if (i >= (unsigned int)wcslen(sc_osk.out))
+                            sc_osk.target[n++] = c;
+                        sc_osk.target[n++] = c;
+                        if (++i >= wcslen(sc_osk.out))
                             break;
                     }
                 }
-                d[n] = 0;
+                sc_osk.target[n] = 0;
             }
             if (sc_osk.done != 0)
                 sc_osk.done(sc_osk.out, r);
             fade_start(2, 0xA0000000, 8);
             sc_osk.state = 3;
+            break;
+        case 4:
+            break;
         }
-    } else if (sc_osk.state == 0) {
+        break;
+    case 3:
+        return 0;
+    case 4:
         sysvar_set_a90(0);
         return 1;
     }
@@ -216,7 +230,8 @@ int sc_cancel_request(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* laços de busca e bitfields com outra alocação */
+#ifdef NON_MATCHING /* lógica conferida com o asm (faltava o teste morto de idx < 0 com sc_flight_free);
+                       laços de busca e bitfields com outra alocação */
 /* Triangle: undoes the last move */
 int sc_input_move(void)
 {
@@ -268,6 +283,10 @@ int sc_input_move(void)
                 f->idx = i;
                 break;
             }
+        }
+        if ((int)f->idx < 0) {  /* never: idx is a u16, but the original keeps the test */
+            sc_flight_free();
+            return 0;
         }
     }
     for (i = 0; i < l->count; i++) {
