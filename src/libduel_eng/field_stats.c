@@ -891,7 +891,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     }
                     break;
                 }
-                if (card_get_type(s->card.id) == 2) {
+                if (card_get_prop5_hi(s->card.id) == 2) {
                     atk_bon += atk_fld;
                     atk_fld = 0;
                     def_bon += def_fld;
@@ -906,7 +906,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             id = s->card.id;
             if (id != 0) {
                 if (s->faceup != 0 && !SLOT_NEGATED(s)) {
-                    if (card_get_prop5_hi(id) == 0x17) {
+                    if (card_get_type(id) == 0x17) {
                         v = IMMUNE(st->imm2, p, sp);
                     } else {
                         v = IMMUNE(st->imm, p, sp);
