@@ -4,7 +4,6 @@
 // @asm 0x08809E74-0x0880A054
 // @asm 0x0880A2B8-0x0880ADA8
 // @asm 0x0880ADA8-0x0880B58C
-// @asm 0x0880B58C-0x0880BC54
 // @asm 0x0880BC54-0x0880BEA4
 // @asm 0x0880C2C8-0x0880C4EC
 // @data 0x0881A6F8-0x0881A774
@@ -642,18 +641,22 @@ void dmgr_jk_cards_hover(void)
     }
 }
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
+#ifdef NON_MATCHING /* lógica conferida com o asm. 185 palavras: o original guarda o resultado de dmgr_jk_cards_move e as variáveis do laço final em t4-t6 (o chamado não os usa); o mwcc usa s0-s2 e desloca o resto; anim[i] testado com bgtzl no case 3 */
 void dmgr_jk_pick(void)
 {
     PadState *pad = pad_get();
+    unsigned char hand;
+    unsigned char msg[2];
     DmgrJkCard tmp;
     DmgrJkCard *a;
     DmgrJkCard *b;
-    unsigned char *peer;
-    unsigned char msg[2];
-    unsigned char hand;
+    signed char *peer;
     int i;
+    int j;
     int k;
+    int m0;
+    int m1;
+    int n;
 
     switch (dmgr_jk->sub) {
     case 0:
@@ -665,7 +668,26 @@ void dmgr_jk_pick(void)
         }
         dmgr_jk->sub++;
     case 1:
-        if ((pad->b.trig & region_pick_value(0)) == 0) {
+        if ((pad->b.trig & region_pick_value(0)) != 0) {
+            if (sysvar_get_a98() != 0) {
+                msg[0] = dmgr_jk->pick[0];
+                msg[1] = 0;
+                if (netsync_side_player((dmgr_jk->net.side + 1) & 1) == 4 && dmgr_jk->net.peer == 0) {
+                    dmgr_jk_cpu_pick();
+                    msg[1] = dmgr_jk->pick[1];
+                }
+                dmgr_jk_send(3, 2, 1, msg, 2);
+                dmgr_jk->wait[0] = 1;
+                dmgr_jk->sub = 3;
+            } else {
+                dmgr_jk->text = 0;
+                dmgr_jk_cpu_pick();
+                dmgr_jk->sub = 4;
+                dmgr_jk->anim[1] = 1;
+            }
+            dmgr_jk->anim[0] = 1;
+            se_play(0x6213);
+        } else {
             if (pad->b.rep & 0x80) {
                 dmgr_jk->pick[0] = (dmgr_jk->pick[0] + 2) % 3;
                 se_play(0x6212);
@@ -677,9 +699,9 @@ void dmgr_jk_pick(void)
             if (sysvar_get_a98() != 0) {
                 k = netsync_side_player((dmgr_jk->net.side + 1) & 1);
                 if (k == 4) {
-                    peer = peer_get(0);
+                    peer = (signed char *)peer_get(0);
                 } else {
-                    peer = peer_get(k);
+                    peer = (signed char *)peer_get(k);
                 }
                 if (peer[2] == 1 && dmgr_jk->anim[1] == 0) {
                     dmgr_jk->anim[1] = 1;
@@ -688,36 +710,18 @@ void dmgr_jk_pick(void)
                 hand = dmgr_jk->pick[0];
                 dmgr_jk_send(3, 2, 0, &hand, 1);
             }
-        } else {
-            if (sysvar_get_a98() == 0) {
-                dmgr_jk->text = 0;
-                dmgr_jk_cpu_pick();
-                dmgr_jk->sub = 4;
-                dmgr_jk->anim[1] = 1;
-            } else {
-                msg[0] = dmgr_jk->pick[0];
-                msg[1] = 0;
-                if (netsync_side_player((dmgr_jk->net.side + 1) & 1) == 4 && dmgr_jk->net.peer == 0) {
-                    dmgr_jk_cpu_pick();
-                    msg[1] = dmgr_jk->pick[1];
-                }
-                dmgr_jk_send(3, 2, 1, msg, 2);
-                dmgr_jk->wait[0] = 1;
-                dmgr_jk->sub = 3;
-            }
-            dmgr_jk->anim[0] = 1;
-            se_play(0x6213);
         }
         break;
     case 2:
         for (i = 0; i < 2; i++) {
             k = netsync_side_player(i);
+            j = i != dmgr_jk->net.side;
             if (k == 4) {
-                peer = peer_get(0);
-                dmgr_jk->pick[i != dmgr_jk->net.side] = peer[5];
+                peer = (signed char *)peer_get(0);
+                dmgr_jk->pick[j] = peer[5];
             } else {
-                peer = peer_get(k);
-                dmgr_jk->pick[i != dmgr_jk->net.side] = peer[4];
+                peer = (signed char *)peer_get(k);
+                dmgr_jk->pick[j] = peer[4];
             }
             if (peer[2] == 1) {
                 if (i == 0) {
@@ -736,12 +740,13 @@ void dmgr_jk_pick(void)
         if (peers_all_match(3, 2, 1) != 0) {
             for (i = 0; i < 2; i++) {
                 k = netsync_side_player(i);
+                j = i != dmgr_jk->net.side;
                 if (k == 4) {
-                    peer = peer_get(0);
-                    dmgr_jk->pick[i != dmgr_jk->net.side] = peer[5];
+                    peer = (signed char *)peer_get(0);
+                    dmgr_jk->pick[j] = peer[5];
                 } else {
-                    peer = peer_get(k);
-                    dmgr_jk->pick[i != dmgr_jk->net.side] = peer[4];
+                    peer = (signed char *)peer_get(k);
+                    dmgr_jk->pick[j] = peer[4];
                 }
                 if (dmgr_jk->anim[i] == 0) {
                     dmgr_jk->anim[i] = 1;
@@ -780,24 +785,24 @@ void dmgr_jk_pick(void)
         }
         break;
     case 5:
-        i = dmgr_jk_cards_move(0x18, 0);
-        k = dmgr_jk_cards_move(0x18, 1);
-        if (i != 0 && k != 0) {
+        m0 = dmgr_jk_cards_move(0x18, 0);
+        m1 = dmgr_jk_cards_move(0x18, 1);
+        if (m0 != 0 && m1 != 0) {
             switch ((dmgr_jk->pick[0] - dmgr_jk->pick[1] + 3) % 3) {
-            case 2:
-                dmgr_jk->res_anim[0] = 1;
-                dmgr_jk->res_anim[1] = 2;
-                dmgr_jk->result = 1;
+            case 0:
+                dmgr_jk->res_anim[0] = 3;
+                dmgr_jk->res_anim[1] = 3;
+                dmgr_jk->result = 3;
                 break;
             case 1:
                 dmgr_jk->res_anim[0] = 2;
                 dmgr_jk->res_anim[1] = 1;
                 dmgr_jk->result = 2;
                 break;
-            case 0:
-                dmgr_jk->res_anim[0] = 3;
-                dmgr_jk->res_anim[1] = 3;
-                dmgr_jk->result = 3;
+            case 2:
+                dmgr_jk->res_anim[0] = 1;
+                dmgr_jk->res_anim[1] = 2;
+                dmgr_jk->result = 1;
                 break;
             }
             dmgr_jk->sub++;
@@ -815,22 +820,16 @@ void dmgr_jk_pick(void)
         }
         break;
     }
-    for (i = 0; i < 2; i++) {
-        switch (dmgr_jk->anim[i]) {
-        case 2:
-            if (dmgr_jk_cards_move(8, i) != 0) {
-                dmgr_jk->anim[i]++;
-                dmgr_jk->t[i] = 0;
-            }
-            break;
+    for (n = 0; n < 2; n++) {
+        switch (dmgr_jk->anim[n]) {
         case 1:
-            a = &dmgr_jk->card[i][dmgr_jk->pick[i]];
-            b = &dmgr_jk->card[i][2];
+            a = &dmgr_jk->card[n][dmgr_jk->pick[n]];
+            b = &dmgr_jk->card[n][2];
             tmp = *a;
             *a = *b;
             *b = tmp;
-            b = dmgr_jk->card[i];
-            if (i == 0) {
+            b = dmgr_jk->card[n];
+            if (n == 0) {
                 b[0].from = b[0].cur;
                 b[0].to.x = 0xF0;
                 b[0].to.y = 0xD2;
@@ -852,8 +851,14 @@ void dmgr_jk_pick(void)
                 b[2].to.x = 0xF0;
                 b[2].to.y = 0x40;
             }
-            dmgr_jk->anim[i]++;
-            dmgr_jk->t[i] = 0;
+            dmgr_jk->anim[n]++;
+            dmgr_jk->t[n] = 0;
+            break;
+        case 2:
+            if (dmgr_jk_cards_move(8, n) != 0) {
+                dmgr_jk->anim[n]++;
+                dmgr_jk->t[n] = 0;
+            }
             break;
         }
     }
@@ -1001,52 +1006,28 @@ void dmgr_jk_reveal(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* função grande: alocação dos buffers de mensagem na pilha diferente */
 void dmgr_jk_choose(void)
 {
-    PadState *pad;
-    unsigned char *peer;
-    unsigned int r;
-    unsigned char msg5[8];
+    unsigned char c0;
+    unsigned char c1;
+    unsigned char msg[5];
     unsigned int r2;
     unsigned int r3;
-    unsigned char msg[8];
-    unsigned char c1;
-    unsigned char c0;
+    unsigned int r;
+    unsigned char msg5[5];
+    PadState *pad;
+    signed char *peer;
+    unsigned int rl;
     int input = 0;
     int k;
 
-    if (sysvar_get_a98() == 0) {
-        if (!dmgr_jk->won) {
-            if (++dmgr_jk->timer < 0x2E || dmgr_jk->choice != dmgr_jk->target) {
-                dmgr_jk->choice = (dmgr_jk->timer & 3) >> 1;
-                dmgr_jk_title_anim(dmgr_jk->choice);
-            } else {
-                r = rand_next_alias();
-                dmgr_jk->choice = dmgr_jk->target;
-                dmgr_jk_title_anim(dmgr_jk->choice + 2);
-                dmgr_jk->state = 10;
-                dmgr_jk->sub = 0;
-                dmgr_jk->timer = 0;
-                dmgr_jk->text = 0;
-                ((DmgrGameHdr *)game_state_get())->mode = r;
-                se_play(0x6213);
-            }
-        } else {
-            input = 1;
-        }
-    } else {
+    if (sysvar_get_a98() != 0) {
         if (dmgr_jk->won && dmgr_jk->net.host) {
             input = 1;
             goto input;
         }
         if (netsync_side_player((dmgr_jk->net.side + 1) & 1) == 4 && dmgr_jk->net.peer == 0) {
-            if (++dmgr_jk->timer < 0x2E || dmgr_jk->choice != dmgr_jk->target) {
-                dmgr_jk->choice = (dmgr_jk->timer & 3) >> 1;
-                dmgr_jk_title_anim(dmgr_jk->choice);
-                c0 = dmgr_jk->choice;
-                dmgr_jk_send(4, 2, 0, &c0, 1);
-            } else {
+            if (++dmgr_jk->timer > 0x2D && dmgr_jk->choice == dmgr_jk->target) {
                 r2 = rand_next_alias();
                 dmgr_jk->choice = dmgr_jk->target;
                 msg[0] = dmgr_jk->choice;
@@ -1059,20 +1040,25 @@ void dmgr_jk_choose(void)
                 dmgr_jk->timer = 0;
                 dmgr_jk->text = 0;
                 se_play(0x6213);
+            } else {
+                dmgr_jk->choice = dmgr_jk->timer >> 1 & 1;
+                dmgr_jk_title_anim(dmgr_jk->choice);
+                c0 = dmgr_jk->choice;
+                dmgr_jk_send(4, 2, 0, &c0, 1);
             }
         } else {
-            if (!dmgr_jk->won) {
-                k = netsync_side_player((dmgr_jk->net.side + 1) & 1);
-                if (k == 4) {
-                    k = 0;
-                }
-                peer = peer_get(k);
-            } else {
+            if (dmgr_jk->won) {
                 k = netsync_side_player(dmgr_jk->net.side);
                 if (k == 4) {
                     k = 0;
                 }
-                peer = peer_get(k);
+                peer = (signed char *)peer_get(k);
+            } else {
+                k = netsync_side_player((dmgr_jk->net.side + 1) & 1);
+                if (k == 4) {
+                    k = 0;
+                }
+                peer = (signed char *)peer_get(k);
             }
             if (peer[0] == 4 && peer[1] == 2) {
                 dmgr_jk->choice = peer[4];
@@ -1091,21 +1077,30 @@ void dmgr_jk_choose(void)
                 }
             }
         }
+    } else {
+        if (dmgr_jk->won) {
+            input = 1;
+        } else {
+            if (++dmgr_jk->timer > 0x2D && dmgr_jk->choice == dmgr_jk->target) {
+                rl = rand_next_alias();
+                dmgr_jk->choice = dmgr_jk->target;
+                dmgr_jk_title_anim(dmgr_jk->choice + 2);
+                dmgr_jk->state = 10;
+                dmgr_jk->sub = 0;
+                dmgr_jk->timer = 0;
+                dmgr_jk->text = 0;
+                ((DmgrGameHdr *)game_state_get())->mode = rl;
+                se_play(0x6213);
+            } else {
+                dmgr_jk->choice = dmgr_jk->timer >> 1 & 1;
+                dmgr_jk_title_anim(dmgr_jk->choice);
+            }
+        }
     }
 input:
     if (input) {
         pad = pad_get();
-        if ((pad->b.trig & region_pick_value(0)) == 0) {
-            if (pad->b.rep & 0x50) {
-                dmgr_jk->choice = (dmgr_jk->choice + 1) & 1;
-                dmgr_jk_title_anim(dmgr_jk->choice);
-                se_play(0x6212);
-            }
-            if (sysvar_get_a98() != 0) {
-                c1 = dmgr_jk->choice;
-                dmgr_jk_send(4, 2, 0, &c1, 1);
-            }
-        } else {
+        if ((pad->b.trig & region_pick_value(0)) != 0) {
             r = rand_next_alias();
             dmgr_jk_title_anim(dmgr_jk->choice + 2);
             if (sysvar_get_a98() != 0) {
@@ -1118,10 +1113,19 @@ input:
             dmgr_jk->sub = 0;
             se_play(0x6213);
             dmgr_jk->text = 0;
+        } else {
+            if (pad->b.rep & 0x50) {
+                dmgr_jk->choice = (dmgr_jk->choice + 1) & 1;
+                dmgr_jk_title_anim(dmgr_jk->choice);
+                se_play(0x6212);
+            }
+            if (sysvar_get_a98() != 0) {
+                c1 = dmgr_jk->choice;
+                dmgr_jk_send(4, 2, 0, &c1, 1);
+            }
         }
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* o caso 0 do original sai por "li v0,0; b fim; nop", que o mwcc funde no atraso */
 int dmgr_jk_done(void)
