@@ -52,8 +52,6 @@ segments:
       - [0x8150, c, t_msg]
       - [0x83A0, asm, t_msg_asm_0880C340]
       - [0x8428, c, t_msg]
-      - [0x8438, asm, t_msg_asm_0880C3D8]
-      - [0x854C, c, t_msg]
       - [0x89F8, c, t_cfg]
       - [0x94B4, c, t_cfgdraw]
       - [0x94B4, asm, t_cfgdraw_asm_0880D454]

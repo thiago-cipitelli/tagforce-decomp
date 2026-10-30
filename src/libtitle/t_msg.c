@@ -1,6 +1,5 @@
 // @range 0x0880C0F0-0x0880C998
 // @asm 0x0880C340-0x0880C3C8
-// @asm 0x0880C3D8-0x0880C4EC
 /* The message window of the title (tmsg): a system menu frame with up to three lines of text laid out
    by the font layer, the line positions and the text pagination. */
 #include "libtitle.h"
@@ -108,7 +107,6 @@ void tmsg_mark_done(void)
     tmsg.done = 1;
 }
 
-#ifdef NON_MATCHING /* ordem dos lui/stores dos campos difere */
 void tmsg_create(void)
 {
     MenuItemDef *const d = &tmsg.def;
@@ -118,27 +116,26 @@ void tmsg_create(void)
     d->visible = 1;
     d->auto_title = 1;
     d->font_flag4 = 1;
+    d->style = tmsg.style;
     d->style2 = 2;
     d->pad_t = 2;
-    d->style = tmsg.style;
     d->show_title = 0;
-    d->y = 210;
     d->x = tmsg.x;
+    d->y = 210;
     d->text = 0;
     d->title = 0;
+    d->w = tmsg.w0;
     d->h = 60;
     d->color = 0xFFFFFFFF;
     d->title_color = 0xFFFFFFFF;
-    d->w = tmsg.w0;
+    d->font_size = tmsg.size;
     d->text_color = 0xFF000000;
     d->pad_l = 4;
-    d->font_size = tmsg.size;
     d->title_font_size = tmsg.size;
     d->pad_r = 20;
     menu_add_item(&tmsg.menu, d);
     tmsg_reset(tmsg.x, tmsg.w0, tmsg.size, tmsg.u0ec, tmsg.style);
 }
-#endif
 
 void tmsg_layout(void)
 {
