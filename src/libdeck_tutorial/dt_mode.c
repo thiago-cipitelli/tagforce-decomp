@@ -143,9 +143,9 @@ void dt_set_mode(unsigned short mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original não encadeia os saltos para o fim (cada grupo termina num b para o epílogo), como sc_mode_for */
+#ifdef NON_MATCHING /* 32 palavras: o original não encadeia os saltos para o fim (os "r = -1" dos testes de b caem num bloco b próprio para o epílogo), como sc_mode_for; já com parâmetros u16 e os testes na ordem do asm */
 /* dt_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
-int dt_mode_for(short panes, int narrow, short a, short b)
+int dt_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)
 {
     int r = 1;
 
@@ -154,33 +154,33 @@ int dt_mode_for(short panes, int narrow, short a, short b)
             r = 0;
         else if (a != 0)
             r = -1;
-    } else if (narrow == 0) {
-        if (a == 0) {
-            if (b == 1)
-                r = 7;
-            else if (b == 0)
-                r = 5;
-            else
-                r = -1;
-        } else if (a == 1) {
-            if (b == 1)
-                r = 4;
-            else if (b == 0)
-                r = 6;
-            else
-                r = -1;
-        } else {
+    } else if (narrow) {
+        if (a != 0) {
             r = -1;
+        } else {
+            if (b == 1)
+                r = 3;
+            else if (b == 0)
+                r = 2;
+            else
+                r = -1;
         }
     } else if (a == 0) {
         if (b == 1)
-            r = 3;
+            r = 7;
         else if (b == 0)
-            r = 2;
+            r = 5;
         else
             r = -1;
-    } else {
+    } else if (a != 1) {
         r = -1;
+    } else {
+        if (b == 1)
+            r = 4;
+        else if (b == 0)
+            r = 6;
+        else
+            r = -1;
     }
     return r;
 }

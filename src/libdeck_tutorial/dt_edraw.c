@@ -1,15 +1,12 @@
 // @range 0x08805BE4-0x08808C6C
 // @asm 0x08805BE4-0x08805FC0
-// @asm 0x08806294-0x088063E0
 // @asm 0x088063E0-0x088068F0
 // @asm 0x08806A6C-0x08806D54
 // @asm 0x088071CC-0x0880779C
 // @asm 0x0880779C-0x08807994
 // @asm 0x08807A5C-0x08807B58
-// @asm 0x08807B58-0x08807DB8
 // @asm 0x08807DB8-0x08807EC0
 // @asm 0x08807F60-0x08808098
-// @asm 0x08808098-0x088082AC
 // @asm 0x088082AC-0x088087EC
 // @asm 0x088087EC-0x08808924
 // @asm 0x08808924-0x08808C6C
@@ -63,7 +60,7 @@ void *dl_clear(void *list, unsigned int flags);
 void *dt_eres_get(unsigned short id);
 unsigned short dt_cur_index(unsigned short side);
 int dt_sort_value(DtEnt *e, unsigned int sort);
-unsigned int dt_pane_size(unsigned short tab);
+unsigned int dt_tab_pos(unsigned short tab);
 unsigned short dt_tab_rect(unsigned short i, unsigned short sel, DtRect *r);
 int dt_kind_icon(unsigned short kind);
 int dt_list_count_id(DtList *l, unsigned short id, int sub);
@@ -90,12 +87,12 @@ void *dt_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
 void *dt_draw_sort_icon(void *list, unsigned short sort, int x, int y);
 void *dt_draw_dir_icon(void *list, unsigned short dir, int x, int y);
 void *dt_draw_filter_icon(void *list, unsigned short filter, int x, int y);
-void *dt_draw_sort_menu(void *list);
-void *dt_draw_action_menu(void *list);
-void *dt_draw_search(void *list);
-void *dt_draw_confirm(void *list);
-void *dt_draw_result(void *list);
-void *dt_draw_popup(void *list);
+void *dt_flight_draw(void *list);
+void *dt_action_draw(void *list);
+void *dt_sort_menu_draw(void *list);
+void *dt_fmenu_draw(void *list);
+void *dt_draw_word(void *list);
+void *dt_popup_draw(void *list);
 
 void *dt_draw_info(void *list, DtCursor *c);
 void *dt_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned short type);
@@ -113,7 +110,7 @@ void *dt_draw_grid_lines(void *list, unsigned short mode);
 void dt_line(DtLineVtx *v, unsigned short x, unsigned short y, unsigned short w);
 void *dt_draw_headers(void *list);
 void *dt_draw_counts(void *list);
-void *dt_draw_count(void *list, short x, DtRect *r, unsigned short ndig, int value);
+void *dt_draw_count();    /* K&R: the callers pass x zero-extended (unsigned short) */
 void *dt_draw_type_counts(void *list);
 void *dt_draw_type_bar(void *list);
 void *dt_draw_type_seg(void *list, int x, int y, int len, int dir, int kind);
@@ -231,26 +228,25 @@ void *dt_draw_ibutton(void *list, DtButton *b, int x, int y, unsigned int color)
     return dt_draw_icon_text(list, &t, x, y);
 }
 
-#ifdef NON_MATCHING
 /* darkens pane side and tab button tab */
 void *dt_draw_shade(void *list, unsigned short side, unsigned short tab, int with_tab)
 {
-    unsigned int pos = dt_pane_size(tab);
+    DtLayout *lay = &dtv.pane[side].lay;
+    unsigned int pos = dt_tab_pos(tab);
 
     list = dl_disable(list, 9);
     list = dl_tex_func(list, 4, 0);
     list = dl_ambient_color(list, 0x80000000);
-    list = draw_set_offsets(list, 0, 0, dtv.pane[side].lay.w, dtv.pane[side].lay.h);
-    list = draw_sprite(list, dtv.pane[side].lay.x, dtv.pane[side].lay.y, 0, 0, 0, 0, 0);
+    list = draw_set_offsets(list, 0, 0, lay->w, lay->h);
+    list = draw_sprite(list, lay->x, lay->y, 0, 0, 0, 0, 0);
     if (with_tab) {
-        list = draw_set_offsets(list, 0, 0, pos >> 16, 0xF);
-        list = draw_sprite(list, dtv.pane[side].lay.x + (pos & 0xFFFF), 0x17, 0, 0, 0, 0, 0);
+        list = draw_set_offsets(list, 0, 0, (pos >> 16) & 0xFFFF, 0xF);
+        list = draw_sprite(list, lay->x + (pos & 0xFFFF), 0x17, 0, 0, 0, 0, 0);
     }
     list = dl_enable(list, 9);
     list = dl_tex_func(list, 0, 1);
     return dl_ambient_color(list, 0xFFFFFFFF);
 }
-#endif
 
 #ifdef NON_MATCHING
 /* the value of the sort key of the cursor's card, in a bubble beside the scroll bar */
@@ -394,7 +390,7 @@ void dt_editor_draw(void)
     }
 }
 
-#ifdef NON_MATCHING
+#ifdef NON_MATCHING /* chamadas por estado corrigidas pela tabela de saltos (1 dt_flight_draw, 2 dt_action_draw, 3 dt_sort_menu_draw, 4 dt_fmenu_draw, 5 dt_draw_word); o resto ainda difere (772 contra 744 bytes) */
 /* focus frame and help window (help position away from the cursor), then the state's popup */
 void *dt_draw_overlay(void *list)
 {
@@ -436,19 +432,19 @@ void *dt_draw_overlay(void *list)
     }
     switch (dts.state) {
     case 1:
-        list = dt_draw_sort_menu(list);
+        list = dt_flight_draw(list);
         break;
     case 2:
-        list = dt_draw_action_menu(list);
+        list = dt_action_draw(list);
         break;
     case 3:
-        list = dt_draw_search(list);
+        list = dt_sort_menu_draw(list);
         break;
     case 4:
-        list = dt_draw_confirm(list);
+        list = dt_fmenu_draw(list);
         break;
     case 5:
-        list = dt_draw_result(list);
+        list = dt_draw_word(list);
         break;
     case 6:
         list = dt_draw_help(list, hx, hy, 0, 0xF001, dt_eres_get(0x8013), dt_eres_get(0x8033));
@@ -459,7 +455,7 @@ void *dt_draw_overlay(void *list)
         break;
     }
     if (dtv.popup != 0)
-        list = dt_draw_popup(list);
+        list = dt_popup_draw(list);
     return list;
 }
 #endif
@@ -675,42 +671,55 @@ void *dt_draw_headers(void *list)
 
 unsigned short dt_count_digits[6] = { 2, 2, 2, 6, 2, 1 };   /* digits of the copy count of each tab */
 
-#ifdef NON_MATCHING
+#ifdef NON_MATCHING /* 24 palavras: a ordem entre a carga de lay.x e a máscara do retorno de dt_tab_rect, e a posição do sh de r.x */
 /* the total of copies on the tab buttons of each pane (tab 4 is hidden in one-pane modes) */
 void *dt_draw_counts(void *list)
 {
     DtPane *p = &dtv.pane[0];
     unsigned short sel = p->list->tab;
-    unsigned int i;
-    short x;
+    int i;
+    unsigned short x;
+    short lx;
     DtRect r;
 
     if (dtv.mode < 2) {
         for (i = 0; i < 5; i++) {
-            if (i != 4) {
-                x = dt_tab_rect(i, sel, &r);
-                r.x += dtv.pane[0].lay.x;
-                list = dt_draw_count(list, x + dtv.pane[0].lay.x, &r, dt_count_digits[i], dts.list[i].total);
-            }
+            if (i == 4)
+                continue;
+            x = dt_tab_rect(i, sel, &r);
+            lx = p->lay.x;
+            x += (unsigned short)lx;
+            r.x += lx;
+            list = dt_draw_count(list, x, &r, dt_count_digits[i], dts.list[i].total);
         }
     } else {
         for (i = 0; i < 3; i++) {
             x = dt_tab_rect(i, sel, &r);
-            r.x += dtv.pane[0].lay.x;
-            list = dt_draw_count(list, x + dtv.pane[0].lay.x, &r, dt_count_digits[i], dts.list[i].total);
+            lx = p->lay.x;
+            x += (unsigned short)lx;
+            r.x += lx;
+            list = dt_draw_count(list, x, &r, dt_count_digits[i], dts.list[i].total);
         }
-        sel = dtv.pane[1].list->tab;
+        p = &dtv.pane[1];
+        sel = p->list->tab;
         for (; i < 5; i++) {
             x = dt_tab_rect(i, sel, &r);
-            r.x += dtv.pane[1].lay.x;
-            list = dt_draw_count(list, x + dtv.pane[1].lay.x, &r, dt_count_digits[i], dts.list[i].total);
+            lx = p->lay.x;
+            x += (unsigned short)lx;
+            r.x += lx;
+            list = dt_draw_count(list, x, &r, dt_count_digits[i], dts.list[i].total);
         }
     }
     return list;
 }
 #endif
 
-void *dt_draw_count(void *list, short x, DtRect *r, unsigned short ndig, int value)
+void *dt_draw_count(list, x, r, ndig, value)
+void *list;
+short x;
+DtRect *r;
+unsigned short ndig;
+int value;
 {
     if (r->w <= 0 || r->h <= 0)
         return list;
@@ -750,18 +759,19 @@ void *dt_draw_type_counts(void *list)
 }
 #endif
 
-#ifdef NON_MATCHING
 /* the type proportions of the deck as a bar (vertical in the deck modes) */
 void *dt_draw_type_bar(void *list)
 {
-    unsigned int total = dts.n_type[0] + dts.n_type[1] + dts.n_type[2] + dts.n_type[3] + dts.n_type[4] + dts.n_type[5];
+    int total;
     int base;
     int len;
     int pos[7];
     int i;
-    unsigned short *n;
-    int *p;
+    int sum;
 
+    total = 0;
+    for (i = 0; i < 6; i++)
+        total += dts.n_type[i];
     if (dtv.mode < 4) {
         base = 0x14;
         len = 0x6F;
@@ -770,31 +780,24 @@ void *dt_draw_type_bar(void *list)
         len = 0x7A;
     }
     memset(pos, 0, 0x18);
-    if (total != 0) {
-        unsigned int s1 = dts.n_type[0] + dts.n_type[1];
-        unsigned int s2 = s1 + dts.n_type[2];
-        unsigned int s3 = s2 + dts.n_type[3];
-        unsigned int s4 = s3 + dts.n_type[4];
-
+    if (total > 0) {
+        sum = 0;
         pos[0] = base;
-        pos[1] = base + len * dts.n_type[0] / total;
-        pos[2] = base + len * s1 / total;
-        pos[3] = base + len * s2 / total;
-        pos[4] = base + len * s3 / total;
-        pos[5] = base + len * s4 / total;
-        pos[6] = base + len * (s4 + dts.n_type[5]) / total;
+        for (i = 0; i < 6; i++) {
+            sum += dts.n_type[i];
+            pos[i + 1] = base + len * sum / total;
+        }
     }
-    for (i = 0, n = dts.n_type, p = pos; i < 6; i++, n++, p++) {
-        if (*n != 0) {
+    for (i = 0; i < 6; i++) {
+        if (dts.n_type[i] != 0) {
             if (dtv.mode < 4)
-                list = dt_draw_type_seg(list, 0x8D, p[0], p[1] - p[0], 0, i);
+                list = dt_draw_type_seg(list, 0x8D, pos[i], pos[i + 1] - pos[i], 0, i);
             else
-                list = dt_draw_type_seg(list, p[0], 0x12, p[1] - p[0], 3, i);
+                list = dt_draw_type_seg(list, pos[i], 0x12, pos[i + 1] - pos[i], 3, i);
         }
     }
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING
 /* one segment of the bar: a 3-texel strip of icon05.gim row 0x7A + kind, rotated by dir */
@@ -843,72 +846,72 @@ void *dt_draw_panes(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING
+#ifdef NON_MATCHING /* 12 palavras: o original calcula e (SC_ENT) com bnezl e só depois carrega row_w; aqui a carga de row_w vai para o delay do bnez */
 /* list mode: one card per row */
 void *dt_draw_rows(void *list, DtPane *p)
 {
     DtList *l = p->list;
-    unsigned short tab = l->tab;
-    unsigned short idx = p->top;
-    short x = p->lay.x;
-    short dx = p->lay.row_x;
-    short y = p->lay.y + p->lay.row_y;
-    unsigned short n = p->lay.rows;
+    DtLayout *lay = &p->lay;
+    int blink = 1;
+    unsigned short n;
+    unsigned short x;
+    unsigned short y;
+    unsigned short idx;
     int i;
     DtEnt *e;
 
+    if (l->tab == 5)
+        blink = 0;
+    idx = p->top;
+    x = lay->x + lay->row_x;
+    y = lay->y + lay->row_y;
+    n = lay->rows;
     if (n + idx >= l->count)
         n = l->count - idx;
     for (i = 0; i < n; i++) {
         e = SC_ENT(l, idx);
-        list = dt_draw_row(list, x + dx, y, p->lay.row_w, e, tab != 5);
+        list = dt_draw_row(list, x, y, lay->row_w, e, blink);
         idx++;
-        y += p->lay.row_h;
+        y += lay->row_h;
     }
     return list;
 }
 #endif
 
-#ifdef NON_MATCHING
 /* grid mode: card pictures with their marks */
 void *dt_draw_grid(void *list, DtPane *p)
 {
     DtList *l = p->list;
-    unsigned short tab = l->tab;
-    unsigned short idx = p->top;
-    short y = p->lay.y + p->lay.grid_y;
-    int row = 0;
+    DtLayout *lay = &p->lay;
+    int blink = 1;
+    unsigned short x;
+    unsigned short idx;
+    unsigned short y;
+    int row;
     int col;
-    short x;
     DtEnt *e;
 
-    if (p->lay.grid_rows == 0)
-        return list;
-    while (idx < l->count) {
-        col = 0;
-        x = p->lay.x + p->lay.grid_x;
-        if (p->lay.cols != 0) {
-            for (;;) {
-                e = SC_ENT(l, idx);
-                list = dt_draw_card_pict(list, x, y, 1, 0xFFFFFFFF, e, dt_eres_get(0x8001), dt_eres_get(0x8002), dt_eres_get(0x8032));
-                list = dt_draw_card_marks(list, x, y, e, 1, 0, tab != 5, 0, dt_eres_get(0x8009), dt_eres_get(0x800A));
-                idx++;
-                x += p->lay.cell_w;
-                if (idx >= l->count)
-                    break;
-                col++;
-                if (col >= p->lay.cols)
-                    break;
-            }
+    if (l->tab == 5)
+        blink = 0;
+    y = lay->y + lay->grid_y;
+    idx = p->top;
+    for (row = 0; row < lay->grid_rows; row++) {
+        if (idx >= l->count)
+            break;
+        x = lay->x + lay->grid_x;
+        for (col = 0; col < lay->cols; col++) {
+            e = SC_ENT(l, idx);
+            list = dt_draw_card_pict(list, x, y, 1, 0xFFFFFFFF, e, dt_eres_get(0x8001), dt_eres_get(0x8002), dt_eres_get(0x8032));
+            list = dt_draw_card_marks(list, x, y, e, 1, 0, blink, 0, dt_eres_get(0x8009), dt_eres_get(0x800A));
+            x += lay->cell_w;
+            idx++;
+            if (idx >= l->count)
+                break;
         }
-        row++;
-        y += p->lay.cell_h;
-        if (row >= p->lay.grid_rows)
-            return list;
+        y += lay->cell_h;
     }
     return list;
 }
-#endif
 
 /* the three counters of a row (template of dt_draw_row's local) */
 DtCounter dt_row_counters[3] = { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF000000, 0 }, { 4, { 0 }, 0xFF000000, 0 } };
@@ -993,27 +996,33 @@ void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
 }
 #endif
 
-#ifdef NON_MATCHING
+#ifdef NON_MATCHING /* 12 palavras: como dt_draw_rows */
 /* small rows of the second pane (modes 2 and 3) */
 void *dt_draw_rows_small(void *list, DtPane *p)
 {
     DtList *l = p->list;
-    unsigned short tab = l->tab;
-    unsigned short idx = p->top;
-    short x = p->lay.x;
-    short dx = p->lay.row_x;
-    short y = p->lay.y + p->lay.row_y;
-    unsigned short n = p->lay.rows;
+    DtLayout *lay = &p->lay;
+    int blink = 1;
+    unsigned short n;
+    unsigned short x;
+    unsigned short y;
+    unsigned short idx;
     int i;
     DtEnt *e;
 
+    if (l->tab == 5)
+        blink = 0;
+    idx = p->top;
+    x = lay->x + lay->row_x;
+    y = lay->y + lay->row_y;
+    n = lay->rows;
     if (n + idx >= l->count)
         n = l->count - idx;
     for (i = 0; i < n; i++) {
         e = SC_ENT(l, idx);
-        list = dt_draw_row_small(list, x + dx, y, p->lay.row_w, e, tab != 5);
+        list = dt_draw_row_small(list, x, y, lay->row_w, e, blink);
         idx++;
-        y += p->lay.row_h;
+        y += lay->row_h;
     }
     return list;
 }

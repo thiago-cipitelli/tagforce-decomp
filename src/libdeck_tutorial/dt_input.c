@@ -1,5 +1,6 @@
 // @range 0x088100AC-0x08811BB8
-// @asm 0x088106B4-0x0881137C
+// @asm 0x088106B4-0x08810AA0
+// @asm 0x088110CC-0x0881137C
 // @rodata 0x08820FF0-0x08821030
 // @data 0x08821F4C-0x08821F74
 /* Input of the editor (the code of libdeck dk_input.c and the popup of dk_mode.c): dispatch by
@@ -52,8 +53,8 @@ void inv_set_flag7(unsigned short id, int on);
 void dt_input_lists(PadBits *pad);
 void dt_input_shoulder_l(PadBits *pad);
 void dt_input_shoulder_r(PadBits *pad);
-void dt_cursor_grid(unsigned short side, PadBits *pad);
-void dt_cursor_list(unsigned short side, PadBits *pad);
+void dt_cursor_grid(int side, PadBits *pad);
+void dt_cursor_list(int side, PadBits *pad);
 void dt_cursor_switch();
 void dt_page(int up);
 void dt_jump(int up);
@@ -234,317 +235,327 @@ void dt_input_shoulder_r(PadBits *pad)
     }
 }
 
-#ifdef NON_MATCHING /* cursores, páginas, grupos, rolagem e foco: mesmas funções que ficaram em asm na libselect_card (sc_input.c); registradores e ordem dos testes diferem */
+#ifdef NON_MATCHING /* 28 palavras: alocação dos temporários do cálculo inicial (base do painel em v1 no original, cx/cy/top em outra ordem) e o blezl do "if (top <= 0) top = 0" (o mwcc dá bgtz para o fim); mesma lógica de dt_cursor_list */
 /* grid cursor: d-pad moves, wraps to the other pane at the left/right edges, scrolls by rows */
-void dt_cursor_grid(unsigned short side, PadBits *pad)
+void dt_cursor_grid(int side, PadBits *pad)
 {
-    unsigned int cols = dtv.pane[side].lay.cols;
-    unsigned int cx = dtv.pane[side].cx;
-    unsigned int cy = dtv.pane[side].cy;
-    int top = (dtv.pane[side].top + cols - 1) / cols;
-    unsigned int rows = dtv.pane[side].lay.grid_rows;
+    DtPane *p = &dtv.pane[(unsigned short)side];
+    int cols = p->lay.cols;
+    int top = (p->top + cols - 1) / cols;
+    int cy = p->cy;
+    int cx = p->cx;
+    int rows = p->lay.grid_rows;
     unsigned int rep = pad->rep;
-    int total = (dtv.pane[side].list->count + cols - 1) / cols;
-    unsigned int dy;
-    unsigned int dx;
-    unsigned short ocy;
-    unsigned short otop;
-    unsigned int ntop;
+    int total = (p->list->count + cols - 1) / cols;
+    int dx;
+    int dy;
+    int changed = 0;
+    int nx;
+    int ny;
 
-    dy = (rep & 0x40) != 0;
+    dy = 0;
+    dx = 0;
+    if (rep & 0x40)
+        dy++;
     if (rep & 0x10)
         dy--;
-    dx = (rep & 0x20) != 0;
+    if (rep & 0x20)
+        dx++;
     if (rep & 0x80)
         dx--;
-    dx = cx + dx;
-    if ((int)dx < 0) {
-        dt_cursor_switch(side, rows, 1, cy);
+    nx = cx + dx;
+    if (nx < 0) {
+        dt_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
-    } else if ((int)dx < (int)cols) {
-        if (top + cy == 0 && (pad->trig & 0x10)) {
-            if (total < (int)rows)
-                top = 0;
-            else
-                top = total - rows;
-            dy = rows - 1;
-        } else if ((int)(top + cy) < total - 1 || cy != rows - 1 || !(pad->trig & 0x40)) {
-            dy = cy + dy;
-            if ((int)dy < 0) {
-                top += dy;
-                if (top < 1)
-                    top = 0;
-                dy = 0;
-            } else if ((int)rows <= (int)dy) {
-                if ((int)rows < total) {
-                    if ((int)(top + dy) < total)
-                        top += dy - (rows - 1);
-                    else
-                        top = total - rows;
-                    dy = rows - 1;
-                } else {
-                    dy = rows - 1;
-                }
-            }
-        } else {
-            dy = 0;
-            top = 0;
-        }
-        if (cx != dx)
-            dtv.pane[side].cx = dx;
-        ocy = dtv.pane[side].cy;
-        if (ocy != dy)
-            dtv.pane[side].cy = dy;
-        ntop = top * cols;
-        otop = dtv.pane[side].top;
-        if (otop != ntop)
-            dtv.pane[side].top = ntop;
-        if (otop != ntop || ocy != dy || cx != dx)
-            se_play(0x6212);
+    } else if (nx >= cols) {
+        dt_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
+        se_play(0x6212);
     } else {
-        dt_cursor_switch(side, rows, 0, cy);
-        se_play(0x6212);
+        if (top + cy == 0 && (pad->trig & 0x10)) {
+            if (total >= rows)
+                top = total - rows;
+            else
+                top = 0;
+            ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top += ny;
+                ny = 0;
+                if (top <= 0)
+                    top = 0;
+            } else if (ny >= rows) {
+                if (rows < total) {
+                    if (top + ny >= total)
+                        top = total - rows;
+                    else
+                        top += ny - (rows - 1);
+                }
+                ny = rows - 1;
+            }
+        }
+        if (cx != nx) {
+            p->cx = nx;
+            changed = 1;
+        }
+        if (p->cy != ny) {
+            p->cy = ny;
+            changed = 1;
+        }
+        if (p->top != top * cols) {
+            p->top = top * cols;
+            changed = 1;
+        }
+        if (changed)
+            se_play(0x6212);
     }
 }
+#endif
 
- /* idem dt_cursor_grid */
+#ifdef NON_MATCHING /* 3 palavras: "top += ny; if (top <= 0) top = 0; ny = 0;" sai no original como blezl para a instrução seguinte e "b; ny = 0"; aqui bgtz direto para o fim (ny = 0 antes do teste é a forma mais próxima) */
 /* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
-void dt_cursor_list(unsigned short side, PadBits *pad)
+void dt_cursor_list(int side, PadBits *pad)
 {
-    unsigned int cy = dtv.pane[side].cy;
-    unsigned int rows = dtv.pane[side].lay.rows;
+    DtPane *p = &dtv.pane[(unsigned short)side];
+    int cy = p->cy;
+    int rows = p->lay.rows;
     unsigned int rep = pad->rep;
-    unsigned int top = dtv.pane[side].top;
-    unsigned int total = dtv.pane[side].list->count;
-    unsigned int dy;
-    unsigned short otop;
+    int top = p->top;
+    int total = p->list->count;
+    int changed = 0;
+    int dy;
+    int ny;
 
     if (rep & 0x80) {
-        dt_cursor_switch(side, rows, 1, cy);
+        dt_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
     } else if (rep & 0x20) {
-        dt_cursor_switch(side, rows, 0, cy);
+        dt_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
         se_play(0x6212);
     } else {
-        dy = (rep & 0x40) != 0;
+        dy = 0;
+        if (rep & 0x40)
+            dy++;
         if (rep & 0x10)
             dy--;
         if (top + cy == 0 && (pad->trig & 0x10)) {
-            if (total < rows)
-                top = 0;
-            else
+            if (total >= rows)
                 top = total - rows;
-            dy = rows - 1;
-        } else if ((int)(top + cy) < (int)(total - 1) || cy != rows - 1 || !(pad->trig & 0x40)) {
-            dy = cy + dy;
-            if ((int)dy < 0) {
-                top += dy;
-                if ((int)top < 1)
+            else
+                top = 0;
+            ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top += ny;
+                ny = 0;
+                if (top <= 0)
                     top = 0;
-                dy = 0;
-            } else if ((int)rows <= (int)dy) {
+            } else if (ny >= rows) {
                 if (total < rows)
                     top = 0;
-                else if ((int)(top + dy) < (int)total)
-                    top += dy - (rows - 1);
-                else
+                else if (top + ny >= total)
                     top = total - rows;
-                dy = rows - 1;
+                else
+                    top += ny - (rows - 1);
+                ny = rows - 1;
             }
-        } else {
-            dy = 0;
-            top = 0;
         }
-        if (cy != dy)
-            dtv.pane[side].cy = dy;
-        otop = dtv.pane[side].top;
-        if (otop != top)
-            dtv.pane[side].top = top;
-        if (otop != top || cy != dy)
+        if (cy != ny) {
+            p->cy = ny;
+            changed = 1;
+        }
+        if (p->top != top) {
+            p->top = top;
+            changed = 1;
+        }
+        if (changed)
             se_play(0x6212);
     }
 }
+#endif
 
- /* definição K&R chamada com 4 argumentos; alocação diferente */
-/* moves the cursor to the other pane (dir 1 = enter from the right), keeping its height */
+/* moves the cursor to the other pane (dir 1 = enter from the right), keeping its height; the callers
+   pass 4 arguments, so to is whatever the fifth register holds (used only when from is neither 0 nor 1,
+   which the callers never pass) */
 void dt_cursor_switch(from, rows, dir, cy, to)
-short from;
+unsigned short from;
 unsigned short rows;
-short dir;
+unsigned short dir;
 unsigned short cy;
-unsigned int to;
+unsigned short to;
 {
-    short cx = 0;
-    unsigned int t;
-    unsigned int n;
+    DtPane *p;
+    unsigned short cx = 0;
+    unsigned short n;
 
-    if (from == 1) {
-        to = 0;
-        t = to;
-    } else if (from == 0) {
-        if (dtv.mode < 2)
-            to = 0;
-        else
+    switch (from) {
+    case 0:
+        if (dtv.mode > 1)
             to = 1;
-        t = to;
-    } else {
-        t = to & 0xFFFF;
+        else
+            to = 0;
+        break;
+    case 1:
+        to = 0;
+        break;
     }
-    if (dtv.pane[t].list_mode == 0) {
-        if (dir == 1) {
-            cx = dtv.pane[t].lay.cols - 1;
-            n = dtv.pane[t].lay.grid_rows;
-        } else {
-            n = dtv.pane[t].lay.grid_rows;
-        }
+    p = &dtv.pane[to];
+    if (p->list_mode == 0) {
+        if (dir == 1)
+            cx = p->lay.cols - 1;
+        n = p->lay.grid_rows;
     } else {
-        n = dtv.pane[t].lay.rows;
+        n = p->lay.rows;
     }
     if (n != rows) {
-        cy = (int)((rows >> 1) + cy * n) / (int)rows;
-        if (n <= cy)
+        cy = (int)(((unsigned int)rows >> 1) + cy * n) / (int)rows;
+        if (cy >= n)
             cy = n - 1;
     }
     dtv.side = to;
-    dtv.pane[t].cx = cx;
-    dtv.pane[t].cy = cy;
+    p->cx = cx;
+    p->cy = cy;
 }
 
- /* registradores e ordem dos testes diferem */
-/* L/R: a page up or down */
+/* L/R: a page up or down (the first row shown is rounded down to a row) */
 void dt_page(int up)
 {
-    unsigned int side = dtv.side;
-    unsigned int total = dtv.pane[side].list->count;
-    unsigned short cols;
-    unsigned int top;
-    unsigned int view;
-    int n;
+    DtPane *p = &dtv.pane[dtv.side];
+    int total = p->list->count;
+    int cols;
+    int top;
+    int view;
 
-    if (dtv.pane[side].list_mode == 0) {
-        cols = dtv.pane[side].lay.cols;
-        top = (dtv.pane[side].top + cols - 1) / cols;
+    if (p->list_mode == 0) {
+        cols = p->lay.cols;
+        top = p->top / cols;
         total = (total + cols - 1) / cols;
-        view = dtv.pane[side].lay.grid_rows;
+        view = p->lay.grid_rows;
     } else {
-        view = dtv.pane[side].lay.rows;
-        top = dtv.pane[side].top;
+        view = p->lay.rows;
+        top = p->top;
         cols = 1;
     }
-    if ((int)view < (int)total) {
-        if (up == 0) {
-            n = top + view;
-            if ((int)(total - view) < (int)(top + view))
-                n = total - view;
-        } else if ((int)top < (int)view) {
-            n = 0;
-        } else {
-            n = top - view;
-        }
-        if (dtv.pane[side].list_mode == 0)
-            dtv.pane[side].top = n * cols;
-        else
-            dtv.pane[side].top = n;
+    if (total <= view) {
+        p->top = 0;
     } else {
-        dtv.pane[side].top = 0;
+        if (up) {
+            if (top < view)
+                top = 0;
+            else
+                top -= view;
+        } else {
+            top += view;
+            if (total - view < top)
+                top = total - view;
+        }
+        if (p->list_mode == 0)
+            p->top = top * cols;
+        else
+            p->top = top;
     }
 }
 
- /* registradores e ordem dos testes diferem */
 /* jumps to the next/previous group of the sort key */
 void dt_jump(int up)
 {
-    unsigned int side = dtv.side;
-    unsigned int total = dtv.pane[side].list->count;
+    DtPane *p = &dtv.pane[dtv.side];
+    int total = p->list->count;
     int i;
-    unsigned int cols;
-    int last;
+    int cols;
     int row;
-    unsigned short n;
+    int last;
 
-    if (total == 0 || (i = dt_find_group(up)) < 0)
+    if (total == 0)
         return;
-    if (dtv.pane[side].list_mode == 0) {
-        cols = dtv.pane[side].lay.cols;
-        last = (int)(total + cols - 1) / (int)cols - dtv.pane[side].lay.grid_rows;
-        row = i / (int)cols;
-        if (last < i / (int)cols)
+    i = dt_find_group(up);
+    if (i < 0)
+        return;
+    if (p->list_mode == 0) {
+        cols = p->lay.cols;
+        last = p->lay.grid_rows;
+        row = i / cols;
+        last = (total + cols - 1) / cols - last;
+        if (last < row)
             row = last;
         if (row < 0)
-            n = 0;
-        else
-            n = row * dtv.pane[side].lay.cols;
-        dtv.pane[side].top = n;
-        dtv.pane[side].cx = i % (int)cols;
-        dtv.pane[side].cy = (int)(i - dtv.pane[side].top) / (int)cols;
+            row = 0;
+        p->top = row * cols;
+        p->cx = i % cols;
+        p->cy = (i - p->top) / cols;
+    } else if (i < p->lay.rows) {
+        p->top = 0;
+        p->cy = i;
     } else {
-        n = i;
-        if (i < dtv.pane[side].lay.rows) {
-            dtv.pane[side].top = 0;
-            dtv.pane[side].cy = n;
+        last = total - p->lay.rows;
+        if (last < i) {
+            p->top = last;
+            p->cy = i - p->top;
         } else {
-            last = total - dtv.pane[side].lay.rows;
-            if (last < i) {
-                dtv.pane[side].top = last;
-                dtv.pane[side].cy = n - dtv.pane[side].top;
-            } else {
-                dtv.pane[side].top = n;
-                dtv.pane[side].cy = 0;
-            }
+            p->top = i;
+            p->cy = 0;
         }
     }
 }
 
- /* laços de busca com o ternário de entrada; alocação diferente */
 /* index of the first card of the next (up = 0) or previous sort group from the cursor, -1 none */
 int dt_find_group(int up)
 {
+    int k;
     DtList *l = dtv.pane[dtv.side].list;
-    unsigned int i = dt_cur_index(dtv.side);
-    unsigned int n = l->count;
-    unsigned int sort = l->sort;
-    DtEnt *e;
+    int i = (unsigned short)dt_cur_index(dtv.side);
+    unsigned short sort = l->sort;
+    int n = l->count;
+    DtEnt *e = i >= n ? 0 : &l->ents[l->order[i]];
     int v;
     int w;
+    int j;
 
-    e = DK_ENT(l, i);
-    if (e == 0) {
-        i = n - 1;
-    } else if (up == 0) {
-        v = dt_sort_value(e, sort);
-        if (sort - 4 < 2 && v > 0)
+    if (e == 0)
+        return n - 1;
+    if (up) {
+        if (i <= 0)
+            return -1;
+        j = i - 1;
+        v = dt_sort_value(j >= n ? 0 : &l->ents[l->order[j]], sort);
+        if ((sort == 4 || sort == 5) && v > 0)
             v /= 100;
-        for (i++; (int)i < (int)n; i++) {
-            w = dt_sort_value((int)i < (int)l->count ? &l->ents[l->order[i]] : 0, sort);
-            if (sort - 4 < 2 && w > 0)
+        for (k = j - 1; k >= 0; k--) {
+            w = dt_sort_value(DK_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
+                w /= 100;
+            if (w != v) {
+                k++;
+                break;
+            }
+        }
+        if (k < 0)
+            k = 0;
+    } else {
+        v = dt_sort_value(e, sort);
+        if ((sort == 4 || sort == 5) && v > 0)
+            v /= 100;
+        for (k = i + 1; k < n; k++) {
+            w = dt_sort_value(DK_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
                 w /= 100;
             if (w != v)
                 break;
         }
-        if (!((int)i < (int)n))
-            i = -1;
-    } else if (i == 0) {
-        i = -1;
-    } else {
-        v = dt_sort_value((int)(i - 1) < (int)n ? &l->ents[l->order[i - 1]] : 0, sort);
-        if (sort - 4 < 2 && v > 0)
-            v /= 100;
-        for (i -= 2; (int)i >= 0; i--) {
-            w = dt_sort_value((int)i < (int)l->count ? &l->ents[l->order[i]] : 0, sort);
-            if (sort - 4 < 2 && w > 0)
-                w /= 100;
-            if (w != v) {
-                i++;
-                break;
-            }
-        }
-        if ((int)i < 0)
-            i = 0;
+        if (k >= n)
+            return -1;
     }
-    return i;
+    return k;
 }
 
- /* o original guarda max e max + 0x76C0 em registradores */
+#ifdef NON_MATCHING /* 59 palavras: o original guarda max e max + 0x76C0 em registradores */
 /* analog scrolling of the card info text (one pane) or of the wide view */
 void dt_scroll_update(void)
 {
@@ -579,37 +590,33 @@ void dt_scroll_update(void)
             dtv.scroll_pos -= dtv.scroll_max + 0x76C0;
     }
 }
+#endif
 
+#ifdef NON_MATCHING /* 56 palavras: a ordem das cargas no ramo da grade (x, grid_x, cx... no original) e a alocação; tentadas a ordem dos stores, a multiplicação comutada e o ponteiro do layout por dtv */
 /* the focus frame follows the cursor */
 void dt_focus_update(void)
 {
-    unsigned int side = dtv.side;
+    unsigned char side = dtv.side;
     DtPane *p = &dtv.pane[side];
-    short cy;
+    DtLayout *lay = &p->lay;
+    DtRect *f = &dts.focus;
 
     if (p->list_mode == 0) {
-        dts.focus.x = p->lay.x + p->lay.grid_x + p->cx * p->lay.cell_w;
-        dts.focus.w = 0x17;
-        dts.focus.y = p->lay.y + p->lay.grid_y + p->cy * p->lay.cell_h;
-        dts.focus.h = 0x1F;
-        return;
-    }
-    if (side == 1) {
-        cy = dtv.pane[1].cy;
-        if (dtv.mode < 4) {
-            dts.focus.x = dtv.pane[1].lay.x + dtv.pane[1].lay.row_x;
-            dts.focus.y = dtv.pane[1].lay.y + dtv.pane[1].lay.row_y + dtv.pane[1].cy * dtv.pane[1].lay.row_h;
-            dts.focus.w = dtv.pane[1].lay.row_w - 1;
-            dts.focus.h = dtv.pane[1].lay.row_h - 1;
-            return;
-        }
+        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->w = 0x17;
+        f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
+        f->h = 0x1F;
+    } else if (side == 1 && dtv.mode < 4) {
+        f->x = lay->x + lay->row_x;
+        f->w = (unsigned short)lay->row_w - 1;
+        f->y = lay->y + lay->row_y + p->cy * (unsigned short)lay->row_h;
+        f->h = (unsigned short)lay->row_h - 1;
     } else {
-        cy = p->cy;
+        f->x = lay->x + lay->row_x + 1;
+        f->w = (unsigned short)lay->row_w - 3;
+        f->y = lay->y + lay->row_y + 1 + p->cy * (unsigned short)lay->row_h;
+        f->h = (unsigned short)lay->row_h - 1;
     }
-    dts.focus.x = p->lay.x + p->lay.row_x + 1;
-    dts.focus.w = p->lay.row_w - 3;
-    dts.focus.y = p->lay.y + p->lay.row_y + 1 + cy * p->lay.row_h;
-    dts.focus.h = p->lay.row_h - 1;
 }
 #endif
 

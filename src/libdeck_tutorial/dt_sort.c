@@ -1,6 +1,6 @@
 // @range 0x08817B78-0x08818E94
 // @asm 0x088185A0-0x088185F4
-// @asm 0x088187C8-0x08818E94
+// @asm 0x08818D04-0x08818E94
 // @data 0x08822520-0x08822578
 /* The sort menu (the code of libdeck dk_sortmenu.c, first half: a list of the sort keys and a small
    up/down menu beside it; the pane is re-sorted live while the cursor moves and restored on cancel)
@@ -247,7 +247,7 @@ void *dt_draw_dir_item(void *list, int i, int x, int y)
     return dt_draw_ibutton(list, &dt_dir_icons[i], x, y + 1, 0);
 }
 
-#ifdef NON_MATCHING /* temporários a1/a2/a3 trocados (como sc_sort_menu_place) */
+#ifdef NON_MATCHING /* 7 palavras: base, h e a soma em a3/a2/a1 no original e a1/a3/a2 aqui (como sc/dk/ds_sort_menu_place); ordem das declarações e das instruções, sem temporários e com a soma separada não resolvem */
 /* keeps the direction menu beside the key under the cursor */
 void dt_sort_menu_place(void)
 {
@@ -315,160 +315,158 @@ typedef struct DtSearch {              /* dt_search 0x095D2720 */
 void qsort(void *base, unsigned int n, unsigned int size, int (*cmp)(const void *, const void *));
 int dt_cmp_up(const void *pa, const void *pb);
 int dt_cmp_down(const void *pa, const void *pb);
-int dt_sort_key_value(DtEnt *e, int sort);
+int dt_sort_key_value(DtEnt *e, unsigned short sort);
 
-#ifdef NON_MATCHING /* contador e ponteiro em $s trocados */
-* sorts the visible order of l by key sort, dir 0 up, 1 down */
-void dt_list_sort(DtList *l, int sort, unsigned short dir)
+/* sorts the visible order of l by key sort, dir 0 up, 1 down */
+void dt_list_sort(DtList *l, unsigned short sort, unsigned short dir)
 {
+    unsigned short n;
+    DtKey *k;
     int i;
-    unsigned int n = l->count;
-    DtKey *k = heap_alloc(dts.heap, n << 3);
-    DtKey *p;
-    unsigned short idx;
+    unsigned short id;
 
-    for (i = 0, p = k; i < (int)n; i++, p++) {
-        idx = l->order[i];
-        p->idx = idx;
-        p->pos = i;
-        p->value = dt_sort_key_value(&l->ents[idx], sort);
+    n = l->count;
+    k = heap_alloc(dts.heap, n << 3);
+    for (i = 0; i < n; i++) {
+        id = l->order[i];
+        k[i].idx = id;
+        k[i].pos = i;
+        k[i].value = dt_sort_key_value(&l->ents[id], sort);
     }
     if (dir == 0)
-        qsort(k, n, 8, dt_cmp_up);
+        qsort(k, (int)n, sizeof(DtKey), dt_cmp_up);
     else if (dir == 1)
-        qsort(k, n, 8, dt_cmp_down);
-    for (i = 0; i < (int)n; i++)
+        qsort(k, (int)n, sizeof(DtKey), dt_cmp_down);
+    for (i = 0; i < n; i++)
         l->order[i] = k[i].idx;
     if (k != 0)
         heap_set_level(dts.heap, k);
     l->sort = sort;
     l->dir = dir;
 }
-#endif
 
-
-#ifdef NON_MATCHING /* retornos em blocos próprios com b e o valor no atraso */
 int dt_cmp_up(const void *pa, const void *pb)
 {
     const DtKey *a = pa;
     const DtKey *b = pb;
-    int r;
 
     if (a->value == b->value) {
         if (a->pos < b->pos)
-            r = -1;
-        else if (b->pos < a->pos)
-            r = 1;
-        else
-            r = 0;
-    } else if (a->value == -2)
-        r = 1;
-    else if (b->value == -2)
-        r = -1;
-    else if (a->value < b->value)
-        r = -1;
-    else if (b->value < a->value)
-        r = 1;
-    else
-        r = 0;
-    return r;
+            return -1;
+        if (b->pos < a->pos)
+            return 1;
+    } else {
+        if (a->value == -2)
+            return 1;
+        if (b->value == -2)
+            return -1;
+        if (a->value < b->value)
+            return -1;
+        if (b->value < a->value)
+            return 1;
+    }
+    return 0;
 }
-#endif
 
-
-#ifdef NON_MATCHING /* idem dt_cmp_up */
 int dt_cmp_down(const void *pa, const void *pb)
 {
     const DtKey *a = pa;
     const DtKey *b = pb;
-    int r;
 
     if (a->value == b->value) {
-        if (b->pos < a->pos)
-            r = -1;
-        else if (a->pos < b->pos)
-            r = 1;
-        else
-            r = 0;
-    } else if (a->value == -2)
-        r = 1;
-    else if (b->value == -2)
-        r = -1;
-    else if (a->value < b->value)
-        r = 1;
-    else if (b->value < a->value)
-        r = -1;
-    else
-        r = 0;
-    return r;
+        if (a->pos > b->pos)
+            return -1;
+        if (a->pos < b->pos)
+            return 1;
+    } else {
+        if (a->value == -2)
+            return 1;
+        if (b->value == -2)
+            return -1;
+        if (a->value < b->value)
+            return 1;
+        if (b->value < a->value)
+            return -1;
+    }
+    return 0;
 }
-#endif
 
+/* order of the spell and trap icons (card_get_prop5_hi) under the "type" key */
 unsigned char dt_spell_order[8] = { 9, 9, 2, 1, 4, 0, 3, 0 };
 unsigned char dt_trap_order[8] = { 0x13, 0x0A, 0x13, 0x13, 0x0B, 0x13, 0x13, 0 };
 
-
-#ifdef NON_MATCHING /* cadeia de testes da chave em outra ordem */
-* value of key sort for a card (smaller sorts first), -2 none */
-int dt_sort_key_value(DtEnt *e, int key)
+/* value of key sort for a card (smaller sorts first), -2 none */
+int dt_sort_key_value(DtEnt *e, unsigned short sort)
 {
-    unsigned short sort = key;
     int v;
 
     switch (sort) {
     case 1:
         return card_get_sort(e->id);
     case 2:
-        return card_get_attribute_icon(e->id);
+        v = card_get_attribute_icon(e->id);
+        break;
     case 9:
-        return card_get_limit(e->id);
-    }
-    switch (card_get_attribute_icon(e->id)) {
-    case 7:
-        if (sort == 8)
-            return dt_spell_order[card_get_prop5_hi(e->id)];
-        return -2;
-    case 8:
-        if (sort == 8)
-            return dt_trap_order[card_get_prop5_hi(e->id)];
+        v = card_get_limit(e->id);
         break;
     default:
-        switch (sort) {
-        case 3:
-            return 0xFFFF - card_get_level(e->id);
-        case 4:
-            v = card_get_atk_q(e->id);
-            return v == 0xFFFF ? 0x10000 : 0xFFFF - v;
-        case 5:
-            v = card_get_def_q(e->id);
-            return v == 0xFFFF ? 0x10000 : 0xFFFF - v;
-        case 6:
-            return card_get_type(e->id);
+        switch (card_get_attribute_icon(e->id)) {
         case 7:
-            return card_get_kind(e->id);
+            if (sort == 8)
+                return dt_spell_order[card_get_prop5_hi(e->id)];
+            break;
+        case 8:
+            if (sort != 8)
+                break;
+            return dt_trap_order[card_get_prop5_hi(e->id)];
+        default:
+            switch (sort) {
+            case 3:
+                return 0xFFFF - card_get_level(e->id);
+            case 4:
+                v = card_get_atk_q(e->id);
+                if (v == 0xFFFF)
+                    return 0x10000;
+                return 0xFFFF - v;
+            case 5:
+                v = card_get_def_q(e->id);
+                if (v == 0xFFFF)
+                    return 0x10000;
+                return 0xFFFF - v;
+            case 6:
+                return card_get_type(e->id);
+            case 7:
+                return card_get_kind(e->id);
+            }
+            break;
         }
+        v = -2;
         break;
     }
-    return -2;
+    return v;
 }
-#endif
 
+#ifdef NON_MATCHING /* 50 palavras: com break em todos os casos o código sai 32 bytes menor que o original, que mantém desvios para outro b (o fim do caso 7/8) e um li v0,-2 próprio antes do epílogo; com return nos casos (forma de ds_sort_value) sai 36 bytes maior */
+/* the value shown for key sort (-1 = "?", -2 none) */
 
-#ifdef NON_MATCHING /* cadeia de testes da chave em outra ordem */
-* the value shown for key sort (-1 = "?", -2 none) */
 int dt_sort_value(DtEnt *e, unsigned short sort)
 {
     int v;
 
-    if (sort == 9) {
-        v = card_get_limit(e->id);
-    } else if (sort == 2) {
-        v = card_get_attribute_icon(e->id);
-    } else if (sort == 1) {
+    switch (sort) {
+    case 1:
         v = card_get_sort_position(e->id);
-    } else {
+        break;
+    case 2:
         v = card_get_attribute_icon(e->id);
-        if (v == 8 || v == 7) {
+        break;
+    case 9:
+        v = card_get_limit(e->id);
+        break;
+    default:
+        switch (card_get_attribute_icon(e->id)) {
+        case 7:
+        case 8:
             if (sort == 8) {
                 v = card_get_prop5_hi(e->id);
                 if (v == 0)
@@ -476,25 +474,36 @@ int dt_sort_value(DtEnt *e, unsigned short sort)
             } else {
                 v = -2;
             }
-        } else if (sort == 7) {
-            v = card_get_kind(e->id);
-        } else if (sort == 6) {
-            v = card_get_type(e->id);
-        } else if (sort == 5) {
-            v = card_get_def_q(e->id);
-            if (v == 0xFFFF)
-                v = -1;
-        } else if (sort == 4) {
-            v = card_get_atk_q(e->id);
-            if (v == 0xFFFF)
-                v = -1;
-        } else if (sort == 3) {
-            v = card_get_level(e->id);
-        } else {
-            v = -2;
+            break;
+        default:
+            switch (sort) {
+            case 3:
+                v = card_get_level(e->id);
+                break;
+            case 4:
+                v = card_get_atk_q(e->id);
+                if (v == 0xFFFF)
+                    v = -1;
+                break;
+            case 5:
+                v = card_get_def_q(e->id);
+                if (v == 0xFFFF)
+                    v = -1;
+                break;
+            case 6:
+                v = card_get_type(e->id);
+                break;
+            case 7:
+                v = card_get_kind(e->id);
+                break;
+            default:
+                v = -2;
+                break;
+            }
+            break;
         }
+        break;
     }
     return v;
 }
 #endif
-
