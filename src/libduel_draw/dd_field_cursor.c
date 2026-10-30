@@ -20,8 +20,8 @@ DdLoc dd_cursor_grid[7][7] = {
 };
 
 int func_0880B770(int player, int zone);
-int func_08816064(int player, DdCursor *c);
-int func_08816180(int player, DdCursor *c);
+int dd_cursor_nearest_slot(int player, DdCursor *c);
+int dd_cursor_nearest_hand(int player, DdCursor *c);
 int func_08866884(int player);
 int func_0886689C(int player);
 void dd_cursor_set(int player, int zone, int idx, int save);
@@ -57,7 +57,7 @@ void dd_cursor_move(int key)
         step = 0;
         if (cur.player == 0) {
             if (key == 0x10) {
-                dd_cursor_set(c->cur.player, func_08816064(c->cur.player, c), 0, 0);
+                dd_cursor_set(c->cur.player, dd_cursor_nearest_slot(c->cur.player, c), 0, 0);
                 se_play(0x6212);
                 return;
             }
@@ -67,7 +67,7 @@ void dd_cursor_move(int key)
                 step = 1;
         } else {
             if (key == 0x40) {
-                dd_cursor_set(c->cur.player, func_08816064(c->cur.player, c), 0, 0);
+                dd_cursor_set(c->cur.player, dd_cursor_nearest_slot(c->cur.player, c), 0, 0);
                 se_play(0x6212);
                 return;
             }
@@ -150,7 +150,7 @@ void dd_cursor_move(int key)
                     idx = func_0880B770(idx, 0xB) - 1;
                 }
             } else {
-                idx = func_08816180(c->cur.player, c);
+                idx = dd_cursor_nearest_hand(c->cur.player, c);
             }
             c->cur.zone = dd_cursor_grid[c->row][c->col].zone;
             c->cur.idx = idx;

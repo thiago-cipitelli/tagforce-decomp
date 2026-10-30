@@ -59,8 +59,8 @@ int func_0882837C(void);
 int func_088283D4(void);
 int func_08828470(void *o, int a);
 int func_08828528(void *o, int a);
-int func_0881DF4C(const void *a, const void *b);
-void func_088153E4(int a, int b, int c, int d);
+int dd_int_cmp(const void *a, const void *b);
+void dd_cursor_set(int a, int b, int c, int d);
 unsigned int *dd_disc_material(unsigned int *list, DdTexMat *m, void *gim);
 
 /* used by dd_disc_tex_hook (kept in asm) */
@@ -267,11 +267,11 @@ int dd_hooka_pose(void *o, float *pos, float *rot, int id)
     int key;
 
     if (dd_pose_a_sorted == 0) {
-        qsort(dd_pose_a, 5, sizeof(DdPose), func_0881DF4C);
+        qsort(dd_pose_a, 5, sizeof(DdPose), dd_int_cmp);
         dd_pose_a_sorted = 1;
     }
     key = id;
-    e = bsearch(&key, dd_pose_a, 5, sizeof(DdPose), func_0881DF4C);
+    e = bsearch(&key, dd_pose_a, 5, sizeof(DdPose), dd_int_cmp);
     if (e == 0)
         return 0;
     *(DdVec4 *)pos = *(DdVec4 *)e->pos;
@@ -370,11 +370,11 @@ int dd_hookb_pose(void *o, float *pos, float *rot, int id)
     int key;
 
     if (dd_pose_b_sorted == 0) {
-        qsort(dd_pose_b, 5, sizeof(DdPose), func_0881DF4C);
+        qsort(dd_pose_b, 5, sizeof(DdPose), dd_int_cmp);
         dd_pose_b_sorted = 1;
     }
     key = id;
-    e = bsearch(&key, dd_pose_b, 5, sizeof(DdPose), func_0881DF4C);
+    e = bsearch(&key, dd_pose_b, 5, sizeof(DdPose), dd_int_cmp);
     if (e == 0)
         return 0;
     *(DdVec4 *)pos = *(DdVec4 *)e->pos;

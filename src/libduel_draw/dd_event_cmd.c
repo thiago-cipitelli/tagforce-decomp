@@ -58,14 +58,14 @@ int func_08811D18();
 int func_08811D98();
 int func_08811DC4();
 int dd_ev_36();
-int func_08819F2C();
-void *func_0881CA54();
-int func_0881CA64();
-int func_0881CB90();
-int func_0881CEDC();
-int func_0881D858();
-unsigned int *func_0881DE50();
-int func_0881DEC4();
+int dd_sel_open_engine();
+void *dd_alloc();
+int dd_free();
+int dd_mode_push();
+int dd_mode_cancel();
+int dd_mode_set_card();
+unsigned int *dd_pad();
+int dd_act();
 int func_0881ED0C();
 int func_0881EE28();
 int func_0881EF2C();
@@ -110,7 +110,7 @@ int func_0884D98C();
 int func_0884E150();
 int func_0884E18C();
 int func_0884E1E8();
-int func_0881CC60();
+int dd_mode_pop();
 int func_0884DA8C();
 int func_0884DA98();
 int func_088660A8();
@@ -219,7 +219,7 @@ int dd_ev_03(void)
         }
         if (found != 0) {
             if (cfg_get_flag(3) != 0) {
-                func_0881DEC4(player, 0xD, 0, 0xC);
+                dd_act(player, 0xD, 0, 0xC);
             } else {
                 dd_cursor_set(player, 0xD, 0, 0);
                 memset(&arg, 0, sizeof(arg));
@@ -761,7 +761,7 @@ void dd_ev_flip_done(DdFlip *f)
     if (f->value > 0)
         func_0881ED0C(l.player, l.zone, f->value, 0x2F, 0);
     func_0880D21C(l.player, l.zone, l.idx);
-    func_0881CA64(f);
+    dd_free(f);
 }
 
 /* 47: a face-down card is flipped (cut-in when requested by event 46) */
@@ -776,7 +776,7 @@ int dd_ev_47(int player, int zone, int idx)
 
     if (dd_ev_flip_cutin != 0) {
         dd_ev_flip_cutin = 0;
-        f = func_0881CA54(8);
+        f = dd_alloc(8);
         memset(f, 0, 8);
         f->loc.player = func_08866744(player);
         f->loc.zone = zone;
@@ -844,7 +844,7 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
             break;
         case 1:
         case 0:
-            if ((*func_0881DE50() & (region_pick_value(0) & 0xFFFF)) == 0)
+            if ((*dd_pad() & (region_pick_value(0) & 0xFFFF)) == 0)
                 goto done;
             if (func_08806D04() != 0)
                 goto done;
@@ -852,8 +852,8 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
         default:
             goto done;
         }
-        if ((*func_0881DE50() & (region_pick_value(0) & 0xFFFF)) == 0 &&
-            (*func_0881DE50() & (region_pick_value(1) & 0xFFFF)) != 0)
+        if ((*dd_pad() & (region_pick_value(0) & 0xFFFF)) == 0 &&
+            (*dd_pad() & (region_pick_value(1) & 0xFFFF)) != 0)
             break;
         func_0882214C(msg, arg);
         break;
@@ -904,18 +904,18 @@ int dd_ev_50(int player, int kind)
     void *msg;
 
     if (kind == 0x4A) {
-        func_08819F2C(1, 1, 0, 0);
+        dd_sel_open_engine(1, 1, 0, 0);
     } else if (kind == 0x4D || kind == 0x4C || kind == 0x4B) {
         func_088660A8(kind);
     } else if (kind >= 0x28 && kind <= 0x47) {
-        func_08819F2C(kind - 0x27, 1, 0, 0);
+        dd_sel_open_engine(kind - 0x27, 1, 0, 0);
     } else if (kind == 0x27) {
     } else if (kind == 0x48) {
-        func_08819F2C(func_08866DAC(), 0, 0, 0);
+        dd_sel_open_engine(func_08866DAC(), 0, 0, 0);
     } else if (kind >= 7 && kind <= 0x26) {
-        func_08819F2C(kind - 6, kind - 6, 0, 0);
+        dd_sel_open_engine(kind - 6, kind - 6, 0, 0);
     } else if (kind == 6) {
-        func_08819F2C(1, 1, 0, 0);
+        dd_sel_open_engine(1, 1, 0, 0);
     } else if (kind == 5 || kind == 4 || kind == 3 || kind == 2 || kind == 1) {
         zone = 0;
         ok = 0;
@@ -933,7 +933,7 @@ int dd_ev_50(int player, int kind)
         msg = dlg_get_text((kind - 1) * 2 + func_08866744(player) + 0x246);
         if (kind != 5)
             dd_cursor_set(func_08866744(player), zone, 0, 1);
-        func_08819F2C(0, 0, msg, ok);
+        dd_sel_open_engine(0, 0, msg, ok);
     }
     return 1;
 }
@@ -967,12 +967,12 @@ int dd_ev_53(int player, int uid, int n)
     int i;
     int *p;
 
-    list = func_0881CA54(n << 2);
+    list = dd_alloc(n << 2);
     p = list;
     for (i = 0; i < n; i++)
         *p++ = func_08866DB4(i);
     func_08820678(func_088667BC(uid), list, n);
-    func_0881CA64(list);
+    dd_free(list);
     return 1;
 }
 #endif
@@ -1005,8 +1005,8 @@ int dd_ev_57(int a, int on)
 int dd_ev_58(void)
 {
     if (sysvar_get_a98() == 0 && cfg_get_flag(0) != 0) {
-        func_0881D858(0xFBB);
-        func_0881CB90(0xB);
+        dd_mode_set_card(0xFBB);
+        dd_mode_push(0xB);
     }
     return 1;
 }
@@ -1028,7 +1028,7 @@ int dd_ev_61(int kind)
 {
     switch (kind) {
     case 0:
-        func_0882059C(0x3D, func_0881CEDC);
+        func_0882059C(0x3D, dd_mode_cancel);
         break;
     case 1:
         break;
@@ -1056,9 +1056,9 @@ void func_088199C8(int on)
     if (on != 0) {
         func_0884DA8C();
         func_08806434(8, 1);
-        func_0881CB90(6);
+        dd_mode_push(6);
     } else {
-        func_0881CC60();
+        dd_mode_pop();
         func_08806434(8, 0);
         func_0884DA98();
     }

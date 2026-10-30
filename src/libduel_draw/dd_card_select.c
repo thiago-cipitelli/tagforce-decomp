@@ -105,17 +105,17 @@ DdUv16 dd_sel_filter_uv[7] = {
     { 0x66, 0x5E }, { 0, 0x5E }, { 0x11, 0x5E }, { 0x22, 0x5E }, { 0x33, 0x5E }, { 0x44, 0x5E }, { 0x55, 0x5E },
 };
 
-unsigned short *func_0881DBC8(int id);
-unsigned int *func_0881DE50(void);
-void *func_0881CA54(int size);
-void func_0881CA64(void *p);
+unsigned short *dd_text(int id);
+unsigned int *dd_pad(void);
+void *dd_alloc(int size);
+void dd_free(void *p);
 void *func_0881CA74(void);
 void *func_088044B0(int id);
 void func_08809184(int uid);
-void func_0881CB90(int id);
-void func_0881D044(int id);
-void func_0881D664(void (*cb)(void));
-void func_0881D858(int id);
+void dd_mode_push(int id);
+void dd_mode_set_flag(int id);
+void dd_mode_set_sel_cb(void (*cb)(void));
+void dd_mode_set_card(int id);
 int func_08806D04(void);
 int func_08864F58(void);
 void func_08864B80(void);
@@ -186,7 +186,7 @@ void dd_sel_open(DdSelDesc *d)
 {
     DdSel *s = &dd_sel;
     MenuItemDef *w = &dd_sel.list.def;
-    unsigned short *title = func_0881DBC8(0x2E);
+    unsigned short *title = dd_text(0x2E);
 
     memset(s, 0, sizeof(DdSel));
     s->n_all = d->n;
@@ -276,9 +276,9 @@ void dd_sel_open_engine(int max, int min, unsigned short *title, int reverse)
     d.reverse = reverse;
     d.title = title;
     dd_sel_open(&d);
-    func_0881CB90(2);
-    func_0881D664(dd_sel_done_cb);
-    func_0881D044(0x31);
+    dd_mode_push(2);
+    dd_mode_set_sel_cb(dd_sel_done_cb);
+    dd_mode_set_flag(0x31);
     dd_sel_set_minmax(min, max);
 }
 #endif
@@ -316,7 +316,7 @@ void dd_sel_unpick(int i);
 void dd_sel_update(void)
 {
     DdSel *s = &dd_sel;
-    unsigned int *pad = func_0881DE50();
+    unsigned int *pad = dd_pad();
     unsigned int ok = region_pick_value(0) & 0xFFFF;
     unsigned int cancel = region_pick_value(1) & 0xFFFF;
     int i;
@@ -575,7 +575,7 @@ void *dd_sel_draw_after(void *dl, int x0, int y0, int w0, int h0)
     int y = menu_cursor_y(&s->list.menu, &s->list.def);
     int w = s->list.def.w;
     int cx = w - 9;
-    unsigned short *t = func_0881DBC8(0x2D);
+    unsigned short *t = dd_text(0x2D);
     void *gim;
     int px, bw, pos, size, tw, n;
 
@@ -592,7 +592,7 @@ void *dd_sel_draw_after(void *dl, int x0, int y0, int w0, int h0)
     list = dd_sel_draw_key(list, px + 0xC, y - 1, s->key);
     list = dd_sel_draw_dir(list, px + 0x1F, y - 1, s->dir);
     if (s->filter != 0) {
-        t = func_0881DBC8(0x42);
+        t = dd_text(0x42);
         font_text_set(list);
         font_draw_text((px + 0x35) << 6, (y + 2) << 6, (0x1E0 - (px + 0x35)) << 6, t);
         list = font_text_clear();
@@ -621,9 +621,9 @@ void *dd_sel_draw_after(void *dl, int x0, int y0, int w0, int h0)
     cx = x + 4 + cx / 2;
     font_set_size(0xC, 0xC);
     if (s->min == 0 && s->max == 0)
-        t = func_0881DBC8(0x31);
+        t = dd_text(0x31);
     else
-        t = func_0881DBC8(0x16);
+        t = dd_text(0x16);
     tw = (font_measure_text(t) >> 6) + 2;
     list = menu_draw_button(list, &s->list, cx - 0x1E, y + 0xA8, 0, s->done != 0);
     font_set_size(0xC, 0xC);
@@ -765,7 +765,6 @@ unsigned int *dd_sel_draw_icon(unsigned int *list, int x, int y, int icon)
     return draw_sprite(list, x, y, 0, (icon % 8) << 4, (icon / 8) << 4, 0, 0);
 }
 
-void *dd_sel_sort_draw_item(void *list, int i, int x, int y);
 
 #ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_open_sort(void)
@@ -773,7 +772,7 @@ void dd_sel_open_sort(void)
     DdSel *s = &dd_sel;
 
     func_08825B9C(&s->sub);
-    s->sub.def.title = func_0881DBC8(0x21);
+    s->sub.def.title = dd_text(0x21);
     s->sub.cancel_blocked = 0;
     s->sub.style = 3;
     s->sub.count = 10;
@@ -814,7 +813,7 @@ int dd_sel_sort_update(void)
         dd_sel_sub_reset();
         return 1;
     }
-    pad = func_0881DE50();
+    pad = dd_pad();
     if (menu_item_is_open(&s->sub.menu, &s->sub.def) == 0)
         return 0;
     flip = (pad[1] & 0x50) != 0;
@@ -914,7 +913,7 @@ void dd_sel_sort(int *list, int n, int key, int dir)
 
     if (n == 0)
         return;
-    k = func_0881CA54(n << 3);
+    k = dd_alloc(n << 3);
     for (i = 0, p = k; i < n; i++, p++) {
         p->id = list[i];
         p->idx = i;
@@ -927,7 +926,7 @@ void dd_sel_sort(int *list, int n, int key, int dir)
     for (i = 0; i < n; i++)
         list[i] = k[i].id;
     if (k != 0)
-        func_0881CA64(k);
+        dd_free(k);
 }
 #endif
 
@@ -1102,9 +1101,9 @@ int dd_sel_opts_update(void)
             ret = 2;
             break;
         case 0:
-            func_0881D858(s->ids[s->order[s->list.scroll + s->list.cursor]]);
-            func_0881CB90(5);
-            func_0881D044(0x31);
+            dd_mode_set_card(s->ids[s->order[s->list.scroll + s->list.cursor]]);
+            dd_mode_push(5);
+            dd_mode_set_flag(0x31);
             break;
         }
     }
@@ -1130,7 +1129,7 @@ void *dd_sel_opts_draw_item(void *dl, int i, int x, int y)
     list = draw_set_offsets(list, 0xD, 0xD, 0xD, 0xD);
     list = draw_sprite(list, x, y + 1, 0, o->u, o->v, 0, 0);
     font_set_size(0xC, 0xC);
-    t = func_0881DBC8(o->text);
+    t = dd_text(o->text);
     font_text_set(list);
     font_set_color(0xFF000000);
     font_draw_text((x + 0xF) << 6, (y + 1) << 6, (0x1E0 - (x + 0xF)) << 6, t);
@@ -1164,7 +1163,7 @@ void dd_sel_build_opts(void)
     s->n_opts = n;
     font_set_size(0xC, 0xC);
     for (i = 0; i < s->n_opts; i++) {
-        w = font_measure_text(func_0881DBC8(dd_sel_opts[s->opts[i]].text)) >> 6;
+        w = font_measure_text(dd_text(dd_sel_opts[s->opts[i]].text)) >> 6;
         if (w <= s->opts_w)
             w = s->opts_w;
         s->opts_w = w;
@@ -1195,7 +1194,6 @@ int dd_sel_filter(int *out, int n, int filter)
 }
 #endif
 
-void *dd_sel_filter_draw_item(void *list, int i, int x, int y);
 
 #ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_open_filter(void)
@@ -1203,7 +1201,7 @@ void dd_sel_open_filter(void)
     DdSel *s = &dd_sel;
 
     func_08825B9C(&s->sub);
-    s->sub.def.title = func_0881DBC8(0x42);
+    s->sub.def.title = dd_text(0x42);
     s->sub.cancel_blocked = 0;
     s->sub.style = 3;
     s->sub.count = 7;

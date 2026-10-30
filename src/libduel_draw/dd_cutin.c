@@ -11,8 +11,8 @@ extern DdCutin dd_cutin;               /* 0x08C546D0 */
 int dd_cutin_speed_tab[4] = { 1, 1, 2, 2 };
 
 int func_08806434(int a, int b);
-unsigned short *func_0881DBC8(int id);
-int *func_0881DE50(void);
+unsigned short *dd_text(int id);
+int *dd_pad(void);
 int dd_cutin_speed(void);
 void dd_cutin_play(DdCutinDesc *d);
 
@@ -60,7 +60,7 @@ unsigned int *dd_cutin_draw(unsigned int *list)
     if (c->cur.always != 0 || cfg_get_bits_1_3_4() < 2)
         req_flag_set(c->cur.flag);
     if (c->cur.text_frame > 0 && c->cur.text_frame < opts[0]) {
-        text = func_0881DBC8(c->cur.text);
+        text = dd_text(c->cur.text);
         font_text_set(list);
         font_set_size(0xC, 0xC);
         font_set_color(0xFFFFFFFF);
@@ -90,7 +90,7 @@ unsigned int *dd_cutin_draw(unsigned int *list)
 void dd_cutin_update(void)
 {
     DdCutin *c = &dd_cutin;
-    int *sys = func_0881DE50();
+    int *sys = dd_pad();
     void *e;
     int cnt, f, shown;
     int target, limit;

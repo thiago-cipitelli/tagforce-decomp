@@ -6,8 +6,8 @@
 #include "libduel_draw.h"
 
 int func_08806434(int a, int b);
-void func_0881CB90(int id);
-void func_0881CC60(void);
+void dd_mode_push(int id);
+void dd_mode_pop(void);
 void func_0884DA8C(void);
 void func_0884DA98(void);
 int func_0884DA54(void);
