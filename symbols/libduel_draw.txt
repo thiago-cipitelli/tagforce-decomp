@@ -639,6 +639,15 @@ lp_heart_uv = 0x08877860; // type:data size:0x18
 lp_digit_speed = 0x08870D3C; // type:data size:0x14
 lp_digit3d_uv = 0x08870D50; // type:data size:0x50
 lp_digit2d_uv = 0x08870DA0; // type:data size:0x50
+lps_draw = 0x08858224; // type:func matched src/libduel_draw/dd_lp_show.c
+lps_back = 0x08858310; // type:func matched src/libduel_draw/dd_lp_show.c
+lps_digits = 0x088583D8; // type:func asm (@asm in src/libduel_draw/dd_lp_show.c, C under NON_MATCHING)
+lps_glyph = 0x08858614; // type:func asm (@asm in src/libduel_draw/dd_lp_show.c, C under NON_MATCHING)
+lps_back_2d = 0x088586F0; // type:func matched src/libduel_draw/dd_lp_show.c
+lps_update = 0x08858784; // type:func matched src/libduel_draw/dd_lp_show.c
+lps_free = 0x088587C8; // type:func matched src/libduel_draw/dd_lp_show.c
+lp_glyph_uv_j = 0x08870DF0; // type:data size:0x50
+lp_glyph_uv = 0x08870E40; // type:data size:0x50
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 duel_mode_bit = 0x0886B25C; // type:func import:libduel_eng nid:AA91D845
 duel_turn_player_get = 0x0886B264; // type:func import:libduel_eng nid:D476C5C3
