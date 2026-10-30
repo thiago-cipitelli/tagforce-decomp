@@ -1,5 +1,4 @@
 // @range 0x08804608-0x08804E2C
-// @asm 0x08804674-0x088046FC
 // @asm 0x08804814-0x08804CFC
 /* Cursor index and entry, the cursor card's info text (measured to scroll it), tab switching with
    the saved scroll of each list, scroll clamping, saving the panes' scroll into their lists, and
@@ -27,16 +26,13 @@ unsigned short ds_cur_index(unsigned short side)
     return r;
 }
 
-#ifdef NON_MATCHING /* o original calcula o ponteiro do painel antes da chamada e o guarda em s0 */
 DsEnt *ds_cur_entry(unsigned short side)
 {
     DsPane *p = &dsv.pane[side];
     unsigned short i = ds_cur_index(side);
-    DsList *l = p->list;
 
-    return DS_ENT(l, i);
+    return i >= p->list->count ? 0 : &p->list->ents[p->list->order[i]];
 }
-#endif
 
 /* the cursor moved to another card: reset the timer, measure its text */
 void ds_info_update(void)

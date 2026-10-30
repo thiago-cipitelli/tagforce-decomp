@@ -59,8 +59,6 @@ segments:
       - [0x787C, c, dk_mode]
       - [0x78D4, c, dk_main]
       - [0x7D90, c, dk_pane]
-      - [0x7E78, asm, dk_pane_asm_0880BE18]
-      - [0x7F00, c, dk_pane]
       - [0x8018, asm, dk_pane_asm_0880BFB8]
       - [0x82D0, c, dk_pane]
       - [0x8334, asm, dk_pane_asm_0880C2D4]

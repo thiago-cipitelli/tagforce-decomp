@@ -1,6 +1,6 @@
 // @range 0x0880BE1C-0x0880D23C
 // @asm 0x0880BE1C-0x0880C7C0
-// @asm 0x0880C7F0-0x0880CDF0
+// @asm 0x0880C87C-0x0880CDF0
 // @asm 0x0880CE28-0x0880D198
 // @asm 0x0880D198-0x0880D1B0
 /* Moving a card between the main and the extra deck (Circle, undo with Triangle): the entry is
@@ -210,18 +210,16 @@ void ds_flight_take(void)
     ds_list_remove(&ds.list[ds_flight->src], ds_flight->idx);
 }
 
-#ifdef NON_MATCHING /* o original indexa ds.list pelo campo de 16 bits com a base calculada antes */
 void ds_flight_land(void)
 {
-    unsigned int bits = *(unsigned short *)((char *)ds_flight + 6);
+    DsList *l = &ds.list[ds_flight->dst];
     DsEnt e;
 
     memcpy(&e, &ds_flight->ent, 6);
     e.count = 1;
     e.marked = 1;
-    ds_list_add(&ds.list[(bits & 0x3FF) >> 7], &e);
+    ds_list_add(l, &e);
 }
-#endif
 
 #ifdef NON_MATCHING /* contas em float com outra alocação de $f */
 /* the flight: path through a control point, 10 frames of quadratic curve, landing */

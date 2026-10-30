@@ -28,8 +28,6 @@ segments:
     subsegments:
       - [0x60, c, ds_res]
       - [0x668, c, ds_state]
-      - [0x6D4, asm, ds_state_asm_08804674]
-      - [0x75C, c, ds_state]
       - [0x874, asm, ds_state_asm_08804814]
       - [0xD5C, c, ds_state]
       - [0xE8C, c, ds_lists]
@@ -67,7 +65,7 @@ segments:
       - [0x7E7C, c, ds_move]
       - [0x7E7C, asm, ds_move_asm_0880BE1C]
       - [0x8820, c, ds_move]
-      - [0x8850, asm, ds_move_asm_0880C7F0]
+      - [0x88DC, asm, ds_move_asm_0880C87C]
       - [0x8E50, c, ds_move]
       - [0x8E88, asm, ds_move_asm_0880CE28]
       - [0x91F8, c, ds_move]
