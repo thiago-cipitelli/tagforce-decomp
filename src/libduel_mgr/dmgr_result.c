@@ -3,14 +3,11 @@
 // @asm 0x0880F9C0-0x0880FEAC
 // @asm 0x0880FEAC-0x08810750
 // @asm 0x0881093C-0x088109EC
-// @asm 0x08810A5C-0x08810BA0
 // @asm 0x08810C2C-0x08810DCC
 // @asm 0x08810DCC-0x088111DC
 // @asm 0x088111DC-0x08811270
 // @asm 0x08811270-0x08811460
-// @asm 0x08811460-0x088116F4
 // @asm 0x088116F4-0x08811754
-// @asm 0x08811754-0x0881185C
 // @asm 0x088119B4-0x08811BC4
 // @asm 0x08811BC4-0x08811C98
 // @asm 0x08811C98-0x08812124
@@ -25,7 +22,6 @@
 // @asm 0x088139B4-0x08813C0C
 // @asm 0x08813C0C-0x08814274
 // @asm 0x08814274-0x088146E8
-// @asm 0x088146E8-0x0881499C
 // @asm 0x0881499C-0x08814C60
 // @asm 0x08814C60-0x08814DCC
 // @asm 0x08814DCC-0x08815050
@@ -92,13 +88,13 @@ void *dd_heap_get(void);
 void dmgr_res_free(void);
 void dmgr_res_bg_anim(unsigned short mode);
 int dmgr_res_bg_done(void);
-void dmgr_res_result_anim(short mode);
+void dmgr_res_result_anim(unsigned short mode);
 int dmgr_res_result_done(void);
-short dmgr_res_series(void);
+unsigned short dmgr_res_series(void);
 void dmgr_res_input(void);
 void dmgr_res_slide(void);
 void dmgr_res_measure(void);
-void dmgr_res_menu_open(short kind);
+void dmgr_res_menu_open(unsigned short kind);
 void dmgr_res_send(unsigned char a, unsigned char b);
 void *dmgr_res_load(void);
 int dmgr_res_load_done(void *pack, int r);
@@ -120,7 +116,7 @@ unsigned int *dmgr_res_draw_series(unsigned int *list);
 unsigned int *dmgr_res_page_frame(unsigned int *list, int x, int u, int v);
 unsigned int *dmgr_res_page_header(unsigned int *list, int x, int page);
 unsigned int *dmgr_res_draw_box(unsigned int *list, int x, int y, int w, int h, int u, int v);
-unsigned int *dmgr_res_draw_number(unsigned int *list, unsigned short x, short y, int n, unsigned short step,
+unsigned int *dmgr_res_draw_number(unsigned int *list, short x, short y, int n, unsigned short step,
                                    unsigned short digits, int pad);
 unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, unsigned int period, int blink,
                                   int on, unsigned int frame, void *gim);
@@ -606,8 +602,7 @@ int dmgr_res_bg_done(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
-void dmgr_res_result_anim(short mode)
+void dmgr_res_result_anim(unsigned short mode)
 {
     void *e;
     int from = 0;
@@ -621,9 +616,19 @@ void dmgr_res_result_anim(short mode)
         return;
     }
     switch (mode) {
-    case 3:
-        from = 0x46;
-        to = 0x4A;
+    case 1:
+        from = 0;
+        switch (dmgr_res->result_ehf) {
+        case 2:
+            to = 0x31;
+            break;
+        case 3:
+            to = 0x1B;
+            break;
+        case 4:
+            to = 0x14;
+            break;
+        }
         dmgr_res->result_on = 1;
         break;
     case 2:
@@ -631,19 +636,9 @@ void dmgr_res_result_anim(short mode)
         from = 0x32;
         dmgr_res->result_on = 1;
         break;
-    case 1:
-        from = 0;
-        switch (dmgr_res->result_ehf) {
-        case 4:
-            to = 0x14;
-            break;
-        case 3:
-            to = 0x1B;
-            break;
-        case 2:
-            to = 0x31;
-            break;
-        }
+    case 3:
+        from = 0x46;
+        to = 0x4A;
         dmgr_res->result_on = 1;
         break;
     default:
@@ -653,7 +648,6 @@ void dmgr_res_result_anim(short mode)
     }
     ehf_set_anim(e, from, to + 1);
 }
-#endif
 
 int dmgr_res_result_done(void)
 {
@@ -676,18 +670,29 @@ int dmgr_res_result_done(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
-short dmgr_res_series(void)
+#ifdef NON_MATCHING /* lógica conferida com o asm. 68 palavras: o original tem corpo próprio para o case 0 (move v0,zero; b) antes do case 2 e o return 1 do case 2 sai com nop no atraso; o mwcc junta os retornos 0 no fim */
+unsigned short dmgr_res_series(void)
 {
     int n;
     int sum;
     int i;
 
     if (((DuelResults *)game_state2_get())->mode == 8) {
-        n = ((DuelResults *)game_state2_get())->n_duels;
-        return ((DuelResults *)game_state2_get())->duels[n - 1];
+        return ((DuelResults *)game_state2_get())->duels[((DuelResults *)game_state2_get())->n_duels - 1];
     }
     switch (((DuelResults *)game_state2_get())->n_duels) {
+    case 0:
+        break;
+    case 1:
+        return 0;
+    case 2:
+        if (((DuelResults *)game_state2_get())->duels[0] == 1 && ((DuelResults *)game_state2_get())->duels[1] == 1) {
+            return 1;
+        }
+        if (((DuelResults *)game_state2_get())->duels[0] == 2 && ((DuelResults *)game_state2_get())->duels[1] == 2) {
+            return 2;
+        }
+        return 0;
     case 3:
         sum = 0;
         for (i = 0; i < 3; i++) {
@@ -704,18 +709,6 @@ short dmgr_res_series(void)
             return 2;
         }
         return 3;
-    case 2:
-        if (((DuelResults *)game_state2_get())->duels[0] == 1 && ((DuelResults *)game_state2_get())->duels[1] == 1) {
-            return 1;
-        }
-        if (((DuelResults *)game_state2_get())->duels[0] == 2 && ((DuelResults *)game_state2_get())->duels[1] == 2) {
-            return 2;
-        }
-        return 0;
-    case 1:
-        return 0;
-    case 0:
-        return 0;
     }
     return 0;
 }
@@ -867,12 +860,11 @@ void dmgr_res_measure(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
-void dmgr_res_menu_open(short kind)
+void dmgr_res_menu_open(unsigned short kind)
 {
     DmgrRes *r = dmgr_res;
     MenuWidget *w = &r->menu;
-    MenuItemDef *d = &r->menu.def;
+    MenuItemDef *d = &w->def;
 
     memset(w, 0, sizeof *w);
     d->visible = 1;
@@ -888,43 +880,42 @@ void dmgr_res_menu_open(short kind)
     d->font_size = 0xC;
     d->text_color = 0xFF000000;
     switch (kind) {
-    case 3:
-        d->text = table_get_entry(dmgr_res_file(7), 0x104);
-        r->menu.buttons = 1;
-        r->menu.initial = 1;
-        r->menu.cancel_resets = 1;
+    case 1:
+        w->buttons = 3;
+        w->cancel_blocked = 1;
+        switch (((DmgrGameHdr *)game_state_get())->rematch) {
+        case 1:
+            d->text = table_get_entry(dmgr_res_file(7), 0x101);
+            w->button = 2;
+            break;
+        case 2:
+            d->text = table_get_entry(dmgr_res_file(7), 0x102);
+            w->button = 3;
+            break;
+        }
         break;
     case 2:
         d->text = table_get_entry(dmgr_res_file(7), 0x103);
         d->pad_b = 8;
         break;
-    case 1:
-        r->menu.buttons = 3;
-        r->menu.cancel_blocked = 1;
-        switch (((DmgrGameHdr *)game_state_get())->rematch) {
-        case 2:
-            d->text = table_get_entry(dmgr_res_file(7), 0x102);
-            r->menu.button = 3;
-            break;
-        case 1:
-            d->text = table_get_entry(dmgr_res_file(7), 0x101);
-            r->menu.button = 2;
-            break;
-        }
+    case 3:
+        d->text = table_get_entry(dmgr_res_file(7), 0x104);
+        w->buttons = 1;
+        w->initial = 1;
+        w->cancel_resets = 1;
         break;
     }
     d->open_anim = 2;
     d->close_anim = 2;
-    r->menu.heap = dmgr_res->heap;
-    r->menu.no_cancel = 1;
+    w->heap = dmgr_res->heap;
+    w->no_cancel = 1;
     menu_open(w);
     d->x = (0x1E0 - d->w) / 2;
     d->y = (0x110 - d->h) / 2;
     dmgr_res->menu_kind = kind;
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
+#ifdef NON_MATCHING /* lógica conferida com o asm. 19 palavras: o original guarda o endereço do registro (sp+16) em s0 e grava por ele; o mwcc dobra o endereço em sp+16 a cada uso */
 void dmgr_res_send(unsigned char a, unsigned char b)
 {
     unsigned char rec[0x100];
@@ -937,28 +928,30 @@ void dmgr_res_send(unsigned char a, unsigned char b)
 }
 #endif
 
+typedef struct DmgrLang6 { char c[6]; } DmgrLang6;
+
 char dmgr_res_lang[8] = "jegfis";
 char dmgr_res_path[28] = "duel/result/result_%c.ehp";
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 void *dmgr_res_load(void)
 {
     char name[0x100];
+    DmgrLang6 lang;
     int size;
 
-    if (dmgr_res->pack == 0) {
-        if (!dmgr_res->loading) {
-            dmgr_res->loading = 1;
-            sprintf(name, dmgr_res_path, dmgr_res_lang[cfg_get_language()]);
-            size = ehfile_get_size(3, name);
-            dmgr_res->pack = heap_alloc(dmgr_res->heap, size);
-            ehfile_read_async_alias(3, name, dmgr_res->pack, size, dmgr_res_load_done, dmgr_res->pack);
-        }
-        return 0;
+    if (dmgr_res->pack != 0) {
+        return dmgr_res->pack;
     }
-    return dmgr_res->pack;
+    if (!dmgr_res->loading) {
+        lang = *(DmgrLang6 *)dmgr_res_lang;
+        dmgr_res->loading = 1;
+        sprintf(name, dmgr_res_path, lang.c[cfg_get_language()]);
+        size = ehfile_get_size(3, name);
+        dmgr_res->pack = heap_alloc(dmgr_res->heap, size);
+        ehfile_read_async_alias(3, name, dmgr_res->pack, size, dmgr_res_load_done, dmgr_res->pack);
+    }
+    return 0;
 }
-#endif
 
 int dmgr_res_load_done(void *pack, int r)
 {
@@ -1176,7 +1169,7 @@ unsigned int *dmgr_res_draw_footer(unsigned int *list)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
+#ifdef NON_MATCHING /* bate com -DNON_MATCHING; fica em asm só pela jtbl_0881A124, que vem depois das de dmgr_result_update e dmgr_res_draw_footer, em asm */
 unsigned int *dmgr_res_draw_page(unsigned int *list)
 {
     int x;
@@ -1191,15 +1184,15 @@ unsigned int *dmgr_res_draw_page(unsigned int *list)
         list = dmgr_res_pages[dmgr_res->tab](list, 0);
         break;
     case 4:
-        x = dmgr_res->timer * 0x1E0 >> 4;
+        x = dmgr_res->timer * 0x1E0 / 16;
         switch (dmgr_res->slide) {
-        case 1:
-            list = dmgr_res_pages[dmgr_res->prev_tab](list, -x);
-            list = dmgr_res_pages[dmgr_res->tab](list, 0x1E0 - x);
-            break;
         case 0:
             list = dmgr_res_pages[dmgr_res->tab](list, x - 0x1E0);
             list = dmgr_res_pages[dmgr_res->prev_tab](list, x);
+            break;
+        case 1:
+            list = dmgr_res_pages[dmgr_res->prev_tab](list, -x);
+            list = dmgr_res_pages[dmgr_res->tab](list, 0x1E0 - x);
             break;
         }
         break;
@@ -1745,42 +1738,46 @@ unsigned int *dmgr_res_page_frame(unsigned int *list, int x, int u, int v)
 #endif
 
 unsigned short dmgr_res_head_text[3] = { 0xF3, 0xF4, 0xF5 };
+typedef struct DmgrBob { unsigned short v[4]; } DmgrBob;
+
 short dmgr_res_bob2[4] = { 0, 1, 2, 1 };
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_page_header(unsigned int *list, int x, int page)
 {
     DmgrResTab *t = &dmgr_res->tabs[page + 1];
-    int tx;
+    int x2 = x + 0x11;
     int tw;
+    int tx;
+    void *s;
 
     font_set_size(0xE, 0xE);
     font_text_set(list);
     font_set_color(0xFFFFFFFF);
-    tw = (0x1E0 - (x + 0x1A)) * 0x40;
-    tx = (x + 0x1A) * 0x40;
-    font_draw_text(tx, 0xAC0, tw, table_get_entry(dmgr_res_file(7), 2));
+
+    s = table_get_entry(dmgr_res_file(7), 2);
+    tw = (0x1E0 - (x2 + 9)) * 0x40;
+    tx = (x2 + 9) * 0x40;
+    font_draw_text(tx, 0xAC0, tw, s);
     font_draw_text(tx, 0x3940, tw, table_get_entry(dmgr_res_file(7), dmgr_res_head_text[page]));
     font_set_color(0xFF00FFFF);
     font_set_size(0xB, 0xB);
-    font_draw_text((x + 0x1AF) * 0x40, 0x39C0, (0x1E0 - (x + 0x1AF)) * 0x40, dmgr_res_pt);
+    font_draw_text((x2 + 0x19E) * 0x40, 0x39C0, (0x1E0 - (x2 + 0x19E)) * 0x40, dmgr_res_pt);
     list = font_text_clear();
     font_set_size(0xC, 0xD);
     font_set_color(0xFFFFFFFF);
-    list = dmgr_res_draw_number(list, (short)(x + 0x1AF), 0xE5, dmgr_res->total[page], 9, 5, 0);
-    list = dmgr_res_draw_scrollbar(list, x + 0x1C5, 0x45, 0x8E, t->scroll, 10, t->count);
+    list = dmgr_res_draw_number(list, (short)(x2 + 0x19E), 0xE5, dmgr_res->total[page], 9, 5, 0);
+    list = dmgr_res_draw_scrollbar(list, x2 + 0x1B4, 0x45, 0x8E, t->scroll, 10, t->count);
     if (x == 0) {
-        short *bob = dmgr_res_bob2;
+        DmgrBob bob = *(DmgrBob *)dmgr_res_bob2;
 
         list = dl_ambient_color(list, 0xFFFFFFFF);
         list = dl_set_tex_filter(list, 0, 0);
         list = draw_set_offsets(list, 0xF, 0x17, 0xF, 0x17);
-        list = draw_sprite(list, bob[*(unsigned int *)gfx_get_state() >> 2 & 2] + 1, 0x84, 0, 0x90, 0x18, 0, 0);
-        list = draw_sprite(list, 0x1D2 - bob[*(unsigned int *)gfx_get_state() >> 2 & 2], 0x84, 0, 0x9F, 0x18, 0, 0);
+        list = draw_sprite(list, (unsigned short)(bob.v[*(unsigned int *)gfx_get_state() >> 2 & 2] + 1), 0x84, 0, 0x90, 0x18, 0, 0);
+        list = draw_sprite(list, (unsigned short)(0x1D2 - bob.v[*(unsigned int *)gfx_get_state() >> 2 & 2]), 0x84, 0, 0x9F, 0x18, 0, 0);
     }
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_draw_box(unsigned int *list, int x, int y, int w, int h, int u, int v)
@@ -1816,9 +1813,10 @@ unsigned int *dmgr_res_draw_box(unsigned int *list, int x, int y, int w, int h, 
 unsigned short dmgr_res_digit[2] = { '0', 0 };
 
 #ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
-unsigned int *dmgr_res_draw_number(unsigned int *list, unsigned short x, short y, int n, unsigned short step,
+unsigned int *dmgr_res_draw_number(unsigned int *list, short x0, short y, int n, unsigned short step,
                                    unsigned short digits, int pad)
 {
+    unsigned short x = x0;   /* callers pass a short, the body works on it unsigned */
     unsigned short ch[2];
     int neg = n < 0;
     int i;
