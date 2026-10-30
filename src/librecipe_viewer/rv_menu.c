@@ -1,6 +1,7 @@
 // @range 0x08809274-0x0880A248
 // @rodata 0x0880E528-0x0880E544
-// @asm 0x08809624-0x08809FE8
+// @asm 0x08809624-0x0880979C
+// @asm 0x08809C64-0x08809FE8
 // @data 0x0880E8BC-0x0880E8D4
 /* Recipe grid helpers (cards per row, entry under the cursor, the reveal animation), the menus
    (delete / rename / save / load confirmations, the saved-deck options) and the on-screen
@@ -28,7 +29,7 @@ typedef struct RvOskData {     /* SceUtilityOskData */
 typedef struct RvOsk {         /* rvosk 0x0880E904 (.bss), 0x1B0 bytes */
     unsigned char state;       /* +0x00 0 idle, 1 fade in, 2 open, 3 fade out, 4 done */
     unsigned char pad1[3];
-    struct {                   /* +0x04 SceUtilityOskParams */
+    struct RvOskParams {       /* +0x04 SceUtilityOskParams */
         int size;
         int language;
         int button_swap;
@@ -49,6 +50,8 @@ typedef struct RvOsk {         /* rvosk 0x0880E904 (.bss), 0x1B0 bytes */
     unsigned short *target;    /* +0x1A8 */
     void (*done)(unsigned short *text, int r); /* +0x1AC */
 } RvOsk;
+
+typedef struct RvOskParams RvOskParams;
 
 typedef struct RvMenuItem {    /* a row of the saved-deck options menu, 6 bytes */
     unsigned short gim;        /* resource id of the button sprite */
@@ -228,78 +231,86 @@ void rv_apply_select(void)
 
 unsigned short rv_osk_lang[6] = { 0, 1, 4, 2, 5, 3 };   /* SceUtility language by cfg_get_language() */
 
-#ifdef NON_MATCHING /* mesma sequência de stores dos parâmetros do SceUtilityOsk em outra ordem e registradores */
 /* starts the on-screen keyboard on `text` ('$' are doubled in the game's strings) */
 int rv_osk_open(unsigned short *text, unsigned short *desc, int maxlen, void (*done)(unsigned short *, int))
 {
-    unsigned short *out = rvosk.intext;
+    unsigned short *in = rvosk.intext;
     int lang = cfg_get_language();
     int dollar = 0;
     unsigned int i;
     unsigned short *s;
+    unsigned short *out;
+    RvOskParams *p;
+    RvOskData *d;
     int r;
 
-    if (lang < 0 || lang > 5)
+    if (lang < 0 || lang >= 6)
         lang = 1;
     memset(&rvosk, 0, sizeof(rvosk));
     sysvar_set_a90(1);
-    s = text;
     rvosk.target = text;
     rvosk.done = done;
-    for (i = 0; i < wcslen(text) && (int)i < 23; i++) {
+    for (i = 0, s = text, out = in; i < wcslen(text) && (int)i < 23; s++, i++) {
         unsigned short c = *s;
+
         if (c == '$') {
             if (dollar) {
                 dollar = 0;
-            } else {
-                dollar = 1;
-                *out++ = '$';
+                continue;
             }
-        } else {
-            *out++ = c;
-            if (c == 0)
-                break;
+            dollar = 1;
         }
-        s++;
+        *out++ = c;
+        if (c == 0)
+            break;
     }
-    rvosk.params.size = 0x40;
-    rvosk.params.language = rv_osk_lang[lang];
-    rvosk.params.button_swap = region_pick_value(0) != 0x2000;
-    rvosk.params.graphics_thread = 0x11;
-    rvosk.params.access_thread = 0x13;
-    rvosk.params.font_thread = 0x12;
-    rvosk.params.sound_thread = 0x10;
-    rvosk.params.reserved[0] = 0;
-    rvosk.params.reserved[1] = 0;
-    rvosk.params.data = &rvosk.data;
-    rvosk.params.datacount = 1;
-    rvosk.data.unk00 = lang == 0;
-    rvosk.data.lines = 1;
-    rvosk.data.unk24 = 1;
-    rvosk.data.outtext = rvosk.outtext;
-    rvosk.data.intext = rvosk.intext;
-    rvosk.data.unk04 = 0;
-    rvosk.data.language = 0;
-    rvosk.data.unk12 = 0;
-    rvosk.data.inputtype = 0;
-    rvosk.data.result = 0;
-    rvosk.data.outtextlimit = 0;
-    rvosk.data.desc = desc;
-    rvosk.data.outtextlength = maxlen;
-    r = sceUtilityOskInitStart(&rvosk.params);
+    p = &rvosk.params;
+    p->size = 0x40;
+    p->language = rv_osk_lang[lang];
+    d = &rvosk.data;
+    if (region_pick_value(0) == 0x2000)
+        p->button_swap = 0;
+    else
+        p->button_swap = 1;
+    p->graphics_thread = 0x11;
+    p->access_thread = 0x13;
+    p->font_thread = 0x12;
+    p->sound_thread = 0x10;
+    p->reserved[0] = 0;
+    p->reserved[1] = 0;
+    p->data = d;
+    p->datacount = 1;
+    if (lang == 0)
+        d->unk00 = 1;
+    else
+        d->unk00 = 0;
+    d->lines = 1;
+    d->unk24 = 1;
+    d->outtext = rvosk.outtext;
+    d->desc = desc;
+    d->intext = in;
+    d->outtextlength = maxlen;
+    d->unk04 = 0;
+    d->language = 0;
+    d->unk12 = 0;
+    d->inputtype = 0;
+    d->result = 0;
+    d->outtextlimit = 0;
+    r = sceUtilityOskInitStart(p);
     if (r == 0) {
         fade_start_in(2, 0xA0000000, 8);
         rvosk.state = 1;
     }
     return r;
 }
-#endif
 
-#ifdef NON_MATCHING /* laço de cópia do texto e testes de estado saem com outros desvios */
 /* runs the keyboard on display list layer `layer`; 1 when it is closed */
 int rv_osk_update(int layer)
 {
-    if (rvosk.state == 3 || rvosk.state == 2 || rvosk.state == 1) {
+    switch (rvosk.state) {
+    case 1:
+    case 2:
+    case 3: {
         void *dl = dl_select_layer(layer, 0);
         if (fade_apply(&dl)) {
             if (rvosk.state == 1)
@@ -308,33 +319,38 @@ int rv_osk_update(int layer)
                 rvosk.state = 4;
         }
         dl_set_list(dl);
+        break;
+    }
     }
     sceGuSync(0, 0);
-    if (rvosk.state == 4) {
+    switch (rvosk.state) {
+    case 0:
         sysvar_set_a90(0);
         return 1;
-    }
-    if (rvosk.state == 3)
-        return 0;
-    if (rvosk.state == 2 || rvosk.state == 1) {
-        int st = sceUtilityOskGetStatus();
-        if (st != 4 && (st == 3 || (st == 2 && sceUtilityOskUpdate(1) != 0))) {
+    case 1:
+    case 2:
+        switch (sceUtilityOskGetStatus()) {
+        case 0:
+            break;
+        case 1:
+            break;
+        case 2:
+            if (sceUtilityOskUpdate(2) == 0)
+                break;
+        case 3: {
             int r = sceUtilityOskShutdownStart();
             if (rvosk.params.result == 0) {
+                unsigned int i;
                 int k = 0;
-                unsigned int i = 0;
-                if (wcslen(rvosk.outtext)) {
-                    unsigned short *s = rvosk.outtext;
-                    unsigned short c = *s;
-                    while (c) {
-                        if (c == '$')
-                            rvosk.target[k++] = '$';
+                unsigned short c;
+
+                for (i = 0; i < wcslen(rvosk.outtext); i++) {
+                    c = rvosk.outtext[i];
+                    if (c == 0)
+                        break;
+                    if (c == '$')
                         rvosk.target[k++] = c;
-                        i++;
-                        if (i >= wcslen(rvosk.outtext))
-                            break;
-                        c = *++s;
-                    }
+                    rvosk.target[k++] = c;
                 }
                 rvosk.target[k] = 0;
             }
@@ -342,14 +358,20 @@ int rv_osk_update(int layer)
                 rvosk.done(rvosk.outtext, r);
             fade_start(2, 0xA0000000, 8);
             rvosk.state = 3;
+            break;
         }
-    } else if (rvosk.state == 0) {
+        case 4:
+            break;
+        }
+        break;
+    case 3:
+        break;
+    case 4:
         sysvar_set_a90(0);
         return 1;
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* forma igual; temporários do bloco comum de inicialização (a0/v1) diferem */
 /* confirmation or options menu: 1 delete, 2 overwrite, 3 saved, 4 rename, 5 options, 6 load */

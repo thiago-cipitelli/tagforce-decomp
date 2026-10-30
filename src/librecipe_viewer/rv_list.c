@@ -1,7 +1,5 @@
 // @range 0x08807A44-0x08809274
-// @asm 0x08807A44-0x08808490
-// @asm 0x08808650-0x08808854
-// @asm 0x08808988-0x08808BBC
+// @asm 0x08808274-0x08808490
 // @asm 0x08808C30-0x08809274
 /* Logic of the lists and of the shown recipe: loading the extra data lists, input of the list
    state (tabs, cursor with fast scrolling, open/menu), of the recipe grid, the card info state,
@@ -38,7 +36,6 @@ int rv_card_cmp(const void *a, const void *b);
 void rv_build_list(RecipeData *d, RvRecipe *r);
 void rv_fill_grid(RvCards *c, RecipeData *d);
 
-#ifdef NON_MATCHING /* o original testa os passos com beql e os retornos caem em outro lugar; forma do switch não reproduzida */
 /* state 0: lists found in the extra data */
 void rv_load_lists(void)
 {
@@ -48,37 +45,34 @@ void rv_load_lists(void)
     case 0:
         if (extdata_scan(1, &rv.n_ext))
             rv.step++;
-        return;
+        break;
     case 1:
-        if (rv.n_ext) {
+        if (rv.n_ext == 0) {
+            rv.step = 4;
+        } else {
             if (rv.ext == 0)
                 rv.ext = heap_alloc(rv.heap, 0x20800);
             memset(rv.ext, 0, 0x20800);
             rv.step++;
-        } else {
-            rv.step = 4;
         }
-        return;
+        break;
     case 2:
         if (extdata_load(rv.ext, &rv.n_ext))
             rv.step++;
-        return;
+        break;
     case 3:
         for (i = 0; i < rv.n_ext; i++) {
             rv.ext_info[i].index = i;
             rv_build_list(&rv.ext[i].recipe, &rv.ext_info[i]);
         }
+        rv.step++;
     case 4:
+        rv.state = 1;
+        rv.step = 0;
         break;
-    default:
-        return;
     }
-    rv.step = 0;
-    rv.state = 1;
 }
-#endif
 
-#ifdef NON_MATCHING /* cadeia longa de testes de botões; a ordem dos blocos e os $s diferem */
 /* list state: cancel, accept, tabs, cursor */
 void rv_input_list(void)
 {
@@ -89,13 +83,15 @@ void rv_input_list(void)
 
     rv_scroll_pad(&rv.scroll);
     if (rv.held & pad->b.down) {
+        int rate = 4;
+
         rv.held = pad->b.down & 0x50;
         if (rv.hold_time < 120)
             rv.hold_time++;
         {
-            int rate = 4 - rv.hold_time / 30;
+            rate -= rv.hold_time / 30;
             if (rate > 0)
-                pad_set_repeat(pad_get_repeat() >> 16, rate);
+                pad_set_repeat((unsigned short)(pad_get_repeat() >> 16), rate);
         }
     } else {
         if (rv.held) {
@@ -114,43 +110,42 @@ void rv_input_list(void)
         if (rv.mode == 0)
             bgm_cmd(600);
     } else if (trig & region_pick_value(0)) {
-        int i = p->top + p->cursor;
         switch (rv.mode) {
-        case 1:
-            if (((SaveRec *)sysstate_rec_get(i))->used == 0) {
-                rv.state = 5;
-                se_play(0x6213);
-            } else {
-                rv_menu_open(2);
-                se_play(0x621A);
+        case 0:
+            if (rv.tab == 0 && ((SaveRec *)sysstate_rec_get(p->top + p->cursor))->used) {
+                rv_menu_open(5);
+                se_play(0x6216);
             }
             break;
         case 2:
             switch (rv.tab) {
-            case 2:
-                if (i < rv.n_ext) {
-                    rv_menu_open(6);
+            case 0:
+                if (((SaveRec *)sysstate_rec_get(p->top + p->cursor))->used) {
+                    rv_menu_open(1);
                     se_play(0x621A);
                 }
                 break;
             case 1:
-                if (i < rv.n_recipes) {
-                    rv_menu_open(6);
+                if (p->top + p->cursor < rv.n_recipes) {
+                    rv_menu_open(1);
                     se_play(0x621A);
                 }
                 break;
-            case 0:
-                if (i < 50 && ((SaveRec *)sysstate_rec_get(i))->used) {
+            case 2:
+                if (p->top + p->cursor < rv.n_ext) {
                     rv_menu_open(1);
                     se_play(0x621A);
                 }
                 break;
             }
             break;
-        case 0:
-            if (rv.tab == 0 && ((SaveRec *)sysstate_rec_get(i))->used) {
-                rv_menu_open(5);
-                se_play(0x6216);
+        case 1:
+            if (((SaveRec *)sysstate_rec_get(p->top + p->cursor))->used) {
+                rv_menu_open(2);
+                se_play(0x621A);
+            } else {
+                rv.state = 5;
+                se_play(0x6213);
             }
             break;
         }
@@ -178,33 +173,26 @@ void rv_input_list(void)
         rv.state = 4;
         se_play(0x6212);
     } else if (pad->b.rep & 0x10) {
-        if (p->cursor != 0) {
+        if ((int)p->cursor > 0) {
             p->cursor--;
             changed = 1;
-        } else if (p->top != 0) {
+        } else if ((int)p->top > 0) {
             p->top--;
             changed = 1;
         } else if (trig & 0x10) {
             int total = 0;
-            int few;
             switch (rv.tab) {
-            case 2:
-                total = rv.n_ext;
-                few = total < 8;
+            case 0:
+                total = 50;
                 break;
             case 1:
                 total = rv.n_recipes;
-                few = total < 8;
                 break;
-            case 0:
-                total = 50;
-                few = total < 8;
-                break;
-            default:
-                few = 1;
+            case 2:
+                total = rv.n_ext;
                 break;
             }
-            if (few) {
+            if (total < 8) {
                 p->top = 0;
                 p->cursor = 7;
             } else {
@@ -216,14 +204,14 @@ void rv_input_list(void)
     } else if (pad->b.rep & 0x40) {
         int total = 0;
         switch (rv.tab) {
-        case 2:
-            total = rv.n_ext;
+        case 0:
+            total = 50;
             break;
         case 1:
             total = rv.n_recipes;
             break;
-        case 0:
-            total = 50;
+        case 2:
+            total = rv.n_ext;
             break;
         }
         if (p->cursor < 7) {
@@ -239,15 +227,16 @@ void rv_input_list(void)
         }
     }
     if (changed) {
+        RvGrid *g = &rv.grid;
+
         rv_select();
         rv.shown = 0;
-        rv.grid.row = 0;
-        rv.grid.col = 0;
+        g->row = 0;
+        g->col = 0;
         se_play(0x6212);
     }
     rv_grid_select();
 }
-#endif
 
 #ifdef NON_MATCHING /* forma próxima; desvios e registradores dos testes do d-pad diferem */
 /* recipe state: cursor in the grid, card info, back */
@@ -330,27 +319,28 @@ void rv_info_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* forma próxima; ordem dos passos e registradores diferem */
 /* menu state: the frame blinks, then the deck is reloaded and the confirmation opens */
 void rv_input_menu(void)
 {
+    RvGrid *g;
+
     switch (rv.step) {
     case 0:
-        if (rv.blink < 17) {
-            rv.blink++;
-            if (rv.blink & 2)
+        if (rv.blink++ > 16) {
+            rv.blink = 0;
+            rv.step++;
+            rv.no_frame = 0;
+        } else {
+            if (rv.blink >> 1 & 1)
                 rv.no_frame = 0;
             else
                 rv.no_frame = 1;
-        } else {
-            rv.blink = 0;
-            rv.step = 1;
-            rv.no_frame = 0;
         }
         break;
     case 1:
         if (rv.on_delete) {
-            int i = rv.pos[rv.tab].top + rv.pos[rv.tab].cursor;
+            RvPos *p = &rv.pos[rv.tab];
+            int i = p->top + p->cursor;
             SaveRec *s;
             RvRecipe *r;
 
@@ -363,10 +353,11 @@ void rv_input_menu(void)
                 rv_build_list(&s->recipe, r);
             }
         }
+        g = &rv.grid;
         rv_select();
         rv.shown = 0;
-        rv.grid.row = 0;
-        rv.grid.col = 0;
+        g->row = 0;
+        g->col = 0;
         rv.step++;
         break;
     case 2:
@@ -377,7 +368,6 @@ void rv_input_menu(void)
         break;
     }
 }
-#endif
 
 /* title animation of the mode */
 void rv_set_title_anim(void)
@@ -433,52 +423,56 @@ int rv_grid_cols(int rows, int n, int min)
     return (n + rows - 1) / rows;
 }
 
-#ifdef NON_MATCHING /* o switch por aba e o laço de contagem de tipos saem com outros registradores */
 /* loads the recipe under the list cursor into the grid and counts the types */
 void rv_select(void)
 {
     RvPos *p = &rv.pos[rv.tab];
     unsigned short i = p->top + p->cursor;
+    RvGrid *g = &rv.grid;
     int ok = 0;
     RecipeData rd;
 
     memset(rv.n_type, 0, sizeof(rv.n_type));
     switch (rv.tab) {
-    case 2:
-        if (i < rv.n_ext) {
-            rv_fill_grid(&rv.grid.c, &rv.ext[i].recipe);
-            ok = 1;
+    case 0:
+        if (i < 50) {
+            SaveRec *s = sysstate_rec_get(i);
+            if (s->used) {
+                rv_fill_grid(&g->c, &s->recipe);
+                ok = 1;
+            }
         }
         break;
     case 1:
         if (i < rv.n_recipes) {
             recipe_load(rv.recipes[i].index, &rd);
-            rv_fill_grid(&rv.grid.c, &rd);
+            rv_fill_grid(&g->c, &rd);
             ok = 1;
         }
         break;
-    case 0:
-        if (i < 50) {
-            SaveRec *s = sysstate_rec_get(i);
-            if (s->used) {
-                rv_fill_grid(&rv.grid.c, &s->recipe);
-                ok = 1;
-            }
+    case 2:
+        if (i < rv.n_ext) {
+            rv_fill_grid(&g->c, &rv.ext[i].recipe);
+            ok = 1;
         }
         break;
     }
-    if (ok) {
-        int k;
-        for (k = 0; k < rv.grid.c.n_main; k++)
-            rv.n_type[rv_kind_icon(card_get_attribute_icon(rv.grid.c.main[k].id))]++;
-        rv.n_type[3] = rv.grid.c.n_side;
+    if (!ok) {
+        memset(&g->c, 0, sizeof(rv.grid.c));
     } else {
-        memset(&rv.grid.c, 0, sizeof(rv.grid.c));
+        RvCards *c = &g->c;
+        int k;
+        int t;
+        for (k = 0; k < c->n_main; k++) {
+            t = (unsigned short)rv_kind_icon(card_get_attribute_icon(c->main[k].id));
+            if (t >= 0)
+                rv.n_type[t]++;
+        }
+        rv.n_type[3] = c->n_side;
     }
-    rv.grid.main_cols = rv_grid_cols(4, rv.grid.c.n_main, 7);
-    rv.grid.side_cols = rv_grid_cols(2, rv.grid.c.n_side, 7);
+    g->main_cols = rv_grid_cols(4, g->c.n_main, 7);
+    g->side_cols = rv_grid_cols(2, g->c.n_side, 7);
 }
-#endif
 
 /* by attribute icon, then by the database sort key */
 int rv_card_cmp(const void *a, const void *b)
