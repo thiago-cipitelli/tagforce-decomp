@@ -37,7 +37,7 @@ void *fld_digits(void *list, char *s, int x, int y, int z, int u, int v, int w, 
 }
 #endif
 
-void fld_day_icon(void *list, int n, int x, int y, int z)
+void *fld_day_icon(void *list, int n, int x, int y, int z)
 {
     int u;
     int v;
@@ -58,14 +58,14 @@ void fld_day_icon(void *list, int n, int x, int y, int z)
         n -= 4;
         break;
     }
-    fld_digit(1.0f, list, x, y, z, u, v, 64, 16, n);
+    return fld_digit(1.0f, list, x, y, z, u, v, 64, 16, n);
 }
 
-void fld_clock_hands(void *list, int x, int y, int z, int h, int m)
+void *fld_clock_hands(void *list, int x, int y, int z, int h, int m)
 {
     float a = 360.0f * (m / 60.0f);
 
     list = fld_clock_hand((3.1415927f * a) / 180.0f, list, x, y, z, 0xF8, 0x20, 3, 0x27);
-    fld_clock_hand((3.1415927f * (360.0f * (h / 12.0f) + a / 12.0f)) / 180.0f, list, x, y, z, 0xFC,
-                   0x20, 3, 0x27);
+    return fld_clock_hand((3.1415927f * (360.0f * (h / 12.0f) + a / 12.0f)) / 180.0f, list, x, y, z, 0xFC,
+                          0x20, 3, 0x27);
 }
