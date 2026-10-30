@@ -55,8 +55,6 @@ segments:
       - [0x7258, c, sc_input]
       - [0x73BC, asm, sc_input_asm_0880B35C]
       - [0x75D4, c, sc_input]
-      - [0x77B4, asm, sc_input_asm_0880B754]
-      - [0x7A70, c, sc_input]
       - [0x7CD0, asm, sc_input_asm_0880BC70]
       - [0x7EF8, c, sc_input]
       - [0x7EF8, asm, sc_input_asm_0880BE98]
