@@ -87,12 +87,12 @@ void *dt_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
 void *dt_draw_sort_icon(void *list, unsigned short sort, int x, int y);
 void *dt_draw_dir_icon(void *list, unsigned short dir, int x, int y);
 void *dt_draw_filter_icon(void *list, unsigned short filter, int x, int y);
-void *dt_draw_sort_menu(void *list);
-void *dt_draw_action_menu(void *list);
-void *dt_draw_search(void *list);
-void *dt_draw_confirm(void *list);
-void *dt_draw_result(void *list);
-void *dt_draw_popup(void *list);
+void *dt_flight_draw(void *list);
+void *dt_action_draw(void *list);
+void *dt_sort_menu_draw(void *list);
+void *dt_fmenu_draw(void *list);
+void *dt_draw_word(void *list);
+void *dt_popup_draw(void *list);
 
 void *dt_draw_info(void *list, DtCursor *c);
 void *dt_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned short type);
@@ -390,7 +390,7 @@ void dt_editor_draw(void)
     }
 }
 
-#ifdef NON_MATCHING
+#ifdef NON_MATCHING /* chamadas por estado corrigidas pela tabela de saltos (1 dt_flight_draw, 2 dt_action_draw, 3 dt_sort_menu_draw, 4 dt_fmenu_draw, 5 dt_draw_word); o resto ainda difere (772 contra 744 bytes) */
 /* focus frame and help window (help position away from the cursor), then the state's popup */
 void *dt_draw_overlay(void *list)
 {
@@ -432,19 +432,19 @@ void *dt_draw_overlay(void *list)
     }
     switch (dts.state) {
     case 1:
-        list = dt_draw_sort_menu(list);
+        list = dt_flight_draw(list);
         break;
     case 2:
-        list = dt_draw_action_menu(list);
+        list = dt_action_draw(list);
         break;
     case 3:
-        list = dt_draw_search(list);
+        list = dt_sort_menu_draw(list);
         break;
     case 4:
-        list = dt_draw_confirm(list);
+        list = dt_fmenu_draw(list);
         break;
     case 5:
-        list = dt_draw_result(list);
+        list = dt_draw_word(list);
         break;
     case 6:
         list = dt_draw_help(list, hx, hy, 0, 0xF001, dt_eres_get(0x8013), dt_eres_get(0x8033));
@@ -455,7 +455,7 @@ void *dt_draw_overlay(void *list)
         break;
     }
     if (dtv.popup != 0)
-        list = dt_draw_popup(list);
+        list = dt_popup_draw(list);
     return list;
 }
 #endif
