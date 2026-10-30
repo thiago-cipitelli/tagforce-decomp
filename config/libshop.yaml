@@ -44,8 +44,6 @@ segments:
       - [0x5420, c, shop_msgwin]
       - [0x5434, asm, shop_msgwin_asm_088093D4]
       - [0x54BC, c, shop_msgwin]
-      - [0x5560, asm, shop_msgwin_asm_08809500]
-      - [0x5674, c, shop_msgwin]
       - [0x5D8C, c, shop_points]
       - [0x69C0, c, shop_packs]
       - [0x6AE8, asm, shop_packs_asm_0880AA88]

@@ -1,7 +1,6 @@
 // @range 0x08808B44-0x08809D2C
 // @asm 0x088090B8-0x088093C0
 // @asm 0x088093D4-0x0880945C
-// @asm 0x08809500-0x08809614
 // @rodata 0x0881C15C-0x0881C178
 /* Message window of the shop: a menu item that slides in and out, the text typed a few pixels per
    frame on up to three lines (speed from the options, held button to hurry), pages and the blinking
@@ -328,7 +327,6 @@ int shop_msgwin_moving(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* mesmas gravações em outra ordem: o escalonador do original intercala as leituras de style/x/w/font_size de outro jeito */
 void shop_msgwin_setup(void)
 {
     MenuItemDef *d = &shop_msg.def;
@@ -338,27 +336,26 @@ void shop_msgwin_setup(void)
     d->visible = 1;
     d->auto_title = 1;
     d->font_flag4 = 1;
+    d->style = shop_msg.style;
     d->style2 = 2;
     d->pad_t = 2;
-    d->style = shop_msg.style;
     d->show_title = 0;
-    d->y = 0xD2;
     d->x = shop_msg.x;
+    d->y = 0xD2;
     d->text = 0;
     d->title = 0;
+    d->w = shop_msg.w;
     d->h = 0x3C;
     d->color = -1;
     d->title_color = -1;
-    d->w = shop_msg.w;
+    d->font_size = shop_msg.font_size;
     d->text_color = 0xFF000000;
     d->pad_l = 4;
-    d->font_size = shop_msg.font_size;
     d->title_font_size = shop_msg.font_size;
     d->pad_r = 0x14;
     menu_add_item(&shop_msg.menu, d);
     shop_msgwin_reset(shop_msg.x, shop_msg.w, shop_msg.font_size, shop_msg.input, shop_msg.style);
 }
-#endif
 
 void shop_msg_blink(void)
 {
