@@ -1,14 +1,9 @@
 // @range 0x08810BF4-0x088119C8
 // @asm 0x08810BF4-0x08810E74
-// @asm 0x08810E74-0x08810EFC
-// @asm 0x08810EFC-0x08810F84
 // @asm 0x08810F84-0x08811130
 // @asm 0x08811130-0x088112C0
-// @asm 0x088112C0-0x08811410
 // @asm 0x088115CC-0x08811730
 // @asm 0x08811730-0x088118C0
-// @asm 0x08811900-0x08811964
-// @asm 0x08811964-0x088119C8
 // @data 0x0881B424-0x0881B454
 /* Sorting a pane's visible order by one of the nine keys (stable, "no value" last), the key value
    of a card, the "new"-mark filter, the incremental text search and its word history, and the
@@ -47,8 +42,8 @@ int sc_filter_level(unsigned short id, unsigned int mask);
 int sc_filter_atk(unsigned short id, unsigned int mask);
 int sc_filter_def(unsigned short id, unsigned int mask);
 int sc_sort_key_value(ScEnt *e, unsigned short sort);
-static int sc_cmp_up(const void *pa, const void *pb);
-static int sc_cmp_down(const void *pa, const void *pb);
+int sc_cmp_up(const void *pa, const void *pb);
+int sc_cmp_down(const void *pa, const void *pb);
 
 #ifdef NON_MATCHING /* o original tem o laço de cópia desenrolado com outra alocação */
 /* sorts the visible order of l by key sort, dir 0 up, 1 down */
@@ -77,8 +72,7 @@ void sc_list_sort(ScList *l, int sort, unsigned short dir)
 }
 #endif
 
-#ifdef NON_MATCHING /* retornos em blocos próprios com b e o valor no atraso */
-static int sc_cmp_up(const void *pa, const void *pb)
+int sc_cmp_up(const void *pa, const void *pb)
 {
     const ScKey *a = pa;
     const ScKey *b = pb;
@@ -86,112 +80,116 @@ static int sc_cmp_up(const void *pa, const void *pb)
     if (a->value == b->value) {
         if (a->pos < b->pos)
             return -1;
-        else if (b->pos < a->pos)
-            return 1;
-        else
-            return 0;
-    } else if (a->value == -2)
-        return 1;
-    else if (b->value == -2)
-        return -1;
-    else if (a->value < b->value)
-        return -1;
-    else if (b->value < a->value)
-        return 1;
-    else
-        return 0;
-}
-#endif
-
-#ifdef NON_MATCHING /* idem sc_cmp_up */
-static int sc_cmp_down(const void *pa, const void *pb)
-{
-    const ScKey *a = pa;
-    const ScKey *b = pb;
-
-    if (a->value == b->value) {
         if (b->pos < a->pos)
-            return -1;
-        if (a->pos < b->pos)
             return 1;
-        return 0;
+    } else {
+        if (a->value == -2)
+            return 1;
+        if (b->value == -2)
+            return -1;
+        if (a->value < b->value)
+            return -1;
+        if (b->value < a->value)
+            return 1;
     }
-    if (a->value == -2)
-        return 1;
-    if (b->value == -2)
-        return -1;
-    if (a->value < b->value)
-        return 1;
-    if (b->value < a->value)
-        return -1;
     return 0;
 }
-#endif
+
+int sc_cmp_down(const void *pa, const void *pb)
+{
+    const ScKey *a = pa;
+    const ScKey *b = pb;
+
+    if (a->value == b->value) {
+        if (a->pos > b->pos)
+            return -1;
+        if (a->pos < b->pos)
+            return 1;
+    } else {
+        if (a->value == -2)
+            return 1;
+        if (b->value == -2)
+            return -1;
+        if (a->value < b->value)
+            return 1;
+        if (b->value < a->value)
+            return -1;
+    }
+    return 0;
+}
 
 unsigned char sc_spell_order[8] = { 9, 9, 2, 1, 4, 0, 3, 0 };
 unsigned char sc_trap_order[8] = { 0x13, 0x0A, 0x13, 0x13, 0x0B, 0x13, 0x13, 0 };
 
-#ifdef NON_MATCHING /* cadeia de testes da chave em outra ordem */
+#ifdef NON_MATCHING /* lógica conferida com o asm; 61 palavras: o original devolve -2 do case 7 direto (bnel) e o
+                       case 8 e o default interno caem num li -2 comum, que o mwcc não reproduz */
 /* value of key sort for a card (smaller sorts first), -2 none */
 int sc_sort_key_value(ScEnt *e, unsigned short sort)
 {
     int a;
 
     switch (sort) {
-    case 9:
-        return card_get_limit(e->id);
-    case 2:
-        return card_get_attribute_icon(e->id);
     case 1:
         return card_get_sort(e->id);
+    case 2:
+        return card_get_attribute_icon(e->id);
+    case 9:
+        return card_get_limit(e->id);
     }
-    a = card_get_attribute_icon(e->id);
-    if (a == 8) {
-        if (sort == 8)
-            return sc_trap_order[card_get_prop5_hi(e->id)];
-    } else if (a == 7) {
+    switch (card_get_attribute_icon(e->id)) {
+    case 7:
         if (sort == 8)
             return sc_spell_order[card_get_prop5_hi(e->id)];
         return -2;
-    } else {
+    case 8:
+        if (sort == 8)
+            return sc_trap_order[card_get_prop5_hi(e->id)];
+        return -2;
+    default:
         switch (sort) {
-        case 7:
-            return card_get_kind(e->id);
-        case 6:
-            return card_get_type(e->id);
-        case 5:
-            a = card_get_def_q(e->id);
-            if (a == 0xFFFF)
-                return 0x10000;
-            return 0xFFFF - a;
+        case 3:
+            return 0xFFFF - card_get_level(e->id);
         case 4:
             a = card_get_atk_q(e->id);
             if (a == 0xFFFF)
                 return 0x10000;
             return 0xFFFF - a;
-        case 3:
-            return 0xFFFF - card_get_level(e->id);
+        case 5:
+            a = card_get_def_q(e->id);
+            if (a == 0xFFFF)
+                return 0x10000;
+            return 0xFFFF - a;
+        case 6:
+            return card_get_type(e->id);
+        case 7:
+            return card_get_kind(e->id);
         }
+        return -2;
     }
-    return -2;
 }
 #endif
 
-#ifdef NON_MATCHING /* cadeia de testes da chave em outra ordem */
+#ifdef NON_MATCHING /* lógica conferida com o asm; 50 palavras: o original tem um "b fim" próprio em cada caso
+                       (sem encadear os desvios ao epílogo); com return por caso piora para 92 */
 /* the value shown for key sort (-1 = "?", -2 none) */
 int sc_sort_value(ScEnt *e, unsigned short sort)
 {
     int v;
 
-    if (sort == 9) {
-        v = card_get_limit(e->id);
-    } else if (sort == 2) {
-        v = card_get_attribute_icon(e->id);
-    } else if (sort == 1) {
+    switch (sort) {
+    case 1:
         v = card_get_sort_position(e->id);
-    } else {
+        break;
+    case 2:
         v = card_get_attribute_icon(e->id);
-        if (v == 8 || v == 7) {
+        break;
+    case 9:
+        v = card_get_limit(e->id);
+        break;
+    default:
+        switch (card_get_attribute_icon(e->id)) {
+        case 7:
+        case 8:
             if (sort == 8) {
                 v = card_get_prop5_hi(e->id);
                 if (v == 0)
@@ -199,46 +197,65 @@ int sc_sort_value(ScEnt *e, unsigned short sort)
             } else {
                 v = -2;
             }
-        } else if (sort == 7) {
-            v = card_get_kind(e->id);
-        } else if (sort == 6) {
-            v = card_get_type(e->id);
-        } else if (sort == 5) {
-            v = card_get_def_q(e->id);
-            if (v == 0xFFFF)
-                v = -1;
-        } else if (sort == 4) {
-            v = card_get_atk_q(e->id);
-            if (v == 0xFFFF)
-                v = -1;
-        } else if (sort == 3) {
-            v = card_get_level(e->id);
-        } else {
-            v = -2;
+            break;
+        default:
+            switch (sort) {
+            case 3:
+                v = card_get_level(e->id);
+                break;
+            case 4:
+                v = card_get_atk_q(e->id);
+                if (v == 0xFFFF)
+                    v = -1;
+                break;
+            case 5:
+                v = card_get_def_q(e->id);
+                if (v == 0xFFFF)
+                    v = -1;
+                break;
+            case 6:
+                v = card_get_type(e->id);
+                break;
+            case 7:
+                v = card_get_kind(e->id);
+                break;
+            default:
+                v = -2;
+                break;
+            }
+            break;
         }
+        break;
     }
     return v;
 }
 #endif
 
-#ifdef NON_MATCHING /* laço e testes do modo da marca com outra alocação */
 /* clears the filter of l (keeping only the marked cards of the owned list when the mark mode
    asks for it), re-sorted by key 1 */
 unsigned short sc_list_filter_reset(ScList *l)
 {
     int only = 0;
-    unsigned int want = 0;
+    int want = 0;
     int none = -1;
     int m;
     int i;
-    unsigned short n;
+    int n;
 
-    if (sc.kind == 2 || sc.kind == 1)
+    switch (sc.kind) {
+    case 1:
+    case 2:
         none = 0;
+        break;
+    }
     if (l->tab == none) {
         m = cfg_get_byte0_hi2();
-        only = m == 2 || m == 1;
-        want = m == 2;
+        if (m == 1)
+            only = 1;
+        if (m == 2) {
+            only = 1;
+            want = only;
+        }
     }
     n = 0;
     for (i = 0; i < l->n; i++) {
@@ -250,7 +267,6 @@ unsigned short sc_list_filter_reset(ScList *l)
     sc_list_sort(l, 1, 0);
     return l->count;
 }
-#endif
 
 /* the incremental search over the visible order (16 entries a frame) */
 void sc_search_start(ScList *l, unsigned short *word)
@@ -358,32 +374,20 @@ int sc_filter_kind(unsigned short id, unsigned int mask)
     return (mask & 1 << sc_kind_icon(card_get_attribute_icon(id))) != 0;
 }
 
-#ifdef NON_MATCHING /* retornos 0/1 em blocos próprios no original */
 int sc_filter_type(unsigned short id, unsigned int mask)
 {
-    int r;
-
-    if (card_is_monster(id) == 0)
-        r = 0;
-    else if ((mask & 1 << card_get_type(id)) == 0)
-        r = 0;
-    else
-        r = 1;
-    return r;
+    if (card_is_monster(id)) {
+        if (mask & 1 << card_get_type(id))
+            return 1;
+    }
+    return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* idem sc_filter_type */
 int sc_filter_race(unsigned short id, unsigned int mask)
 {
-    int r;
-
-    if (card_is_monster(id) == 0)
-        r = 0;
-    else if ((mask & 1 << card_get_kind(id)) == 0)
-        r = 0;
-    else
-        r = 1;
-    return r;
+    if (card_is_monster(id)) {
+        if (mask & 1 << card_get_kind(id))
+            return 1;
+    }
+    return 0;
 }
-#endif
