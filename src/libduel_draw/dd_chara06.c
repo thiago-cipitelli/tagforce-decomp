@@ -240,7 +240,7 @@ void dd_c6b_term(void *s, int a, int b)
 }
 
 /* Export (libduel_mgr): starts reading the movie of (card, kind) into dd_movie_buf. */
-void func_0885563C(int card, int kind)
+void libduel_draw_0885563C(int card, int kind)
 {
     char *name = dd_movie_find(card, kind);
 
@@ -249,7 +249,7 @@ void func_0885563C(int card, int kind)
 }
 
 /* Export (libduel_mgr): plays the movie of (card, kind) full screen; -1 when the card has none. */
-int func_08855688(int card, int kind, unsigned int flags)
+int libduel_draw_08855688(int card, int kind, unsigned int flags)
 {
     char *name;
     char path[256];

@@ -34,7 +34,7 @@ void func_08813974(DdCharSlot *s);
 void func_088282E4(int chr, int variant, void *setup);
 void func_08813554(DdCharSlot *s, void *setup);
 void func_08813684(DdCharSlot *s);
-void func_08856288(void);
+void dd_lp_close(void);
 void func_08813AB8(DdCharSlot *s, int arg);
 void func_0886529C(DdCharSlot *s);
 void func_088652BC(DdCharSlot *s, int a, int b);
@@ -216,7 +216,7 @@ int dd_chara_redraw(int arg)
 
     if (m->cur == 0)
         return 1;
-    func_08856288();
+    dd_lp_close();
     dd_ryusen_set_layer(0x2000B);
     dd_ryusen_set_chara(m->cur->chr, m->cur->variant);
     dd_ryusen_set_alpha(0xFF, 1);
@@ -250,7 +250,7 @@ void dd_chara_reset(void)
 
     if (m->cur != 0) {
         dd_chara_redraw(-1);
-        func_08856288();
+        dd_lp_close();
         snd_channel_update(m->cur->index);
     }
 }
