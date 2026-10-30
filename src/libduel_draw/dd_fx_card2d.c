@@ -2,7 +2,7 @@
 /* 2D effects on a card shown on screen (layer 6): a pulsing aura of 16 growing copies of the card,
    and a static noise flash over it; 24 frames. */
 #define DD_FX
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdScrPos {
     int x, y, z;

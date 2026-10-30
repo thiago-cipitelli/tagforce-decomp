@@ -3,7 +3,7 @@
 /* Camera and matrix helpers of the duel effects: perspective camera on a layer, viewport and
    offset, VRAM addresses of the frame buffers, billboard and model-view-projection matrices from
    the GE stacks, the duel camera or the field camera, and save/restore of the four stacks. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 void mtx_set_mode(int mode);
 void mtx_push(void);

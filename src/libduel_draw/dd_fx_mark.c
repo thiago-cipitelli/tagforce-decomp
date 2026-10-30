@@ -3,7 +3,7 @@
 /* Effect: a pulsing icon (one of 8 in spel_mark01.gim, kind 6 in red) lying at a point of the
    field, for a number of frames or until the task gets flag 1 (dur -1). */
 #define DD_FX
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdFxMark {              /* 0x94 */
     int id;                            /* +0x00 own task handle */

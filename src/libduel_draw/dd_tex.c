@@ -2,7 +2,7 @@
 // @data 0x08876278-0x088764F0
 /* Textures of the duel effects: a GIM of an effect pack by index, the frame buffer used as a
    texture (whole, a rectangle, or a copy of the screen in VRAM) and a card rendered into VRAM. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 void *func_08804A88(int id);           /* effect pack of a card id */
 void *func_088045C0(int id);

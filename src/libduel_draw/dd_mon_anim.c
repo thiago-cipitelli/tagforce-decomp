@@ -5,7 +5,7 @@
    hooks, the pick of an animation from the voice set of the character, the bone transform of the
    tracked bones, the partner voice line and the LP/ATK panels shown at fixed frames of the
    attack, damage and destruction animations. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdMat4 {
     float m[16];

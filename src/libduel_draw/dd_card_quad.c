@@ -2,7 +2,7 @@
 // @data 0x08876A68-0x08876A74
 /* A card lying on the field drawn as a textured quad (62x88 in the XZ plane) with the card image
    rendered into VRAM, a texture scale that grows with t and a given alpha. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdCardVert {            /* float texture + float position */
     float u, v;

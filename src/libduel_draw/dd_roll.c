@@ -2,7 +2,7 @@
 // @asm 0x08832808-0x08832B54
 /* Rolling digits (LP counter style): a 19x22 digit sprite partly scrolled in or out, and a number
    that rolls from one value to another digit by digit, preceded by a sign sprite. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
 unsigned int *draw_sprite(unsigned int *list, int x, int y, int z, int u, int v, int flip_uv, int flip_xy);

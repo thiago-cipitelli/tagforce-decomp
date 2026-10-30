@@ -4,7 +4,7 @@
 /* Effect: a card laid on the field (summon) with 16 light pillars turning around it, sparks
    flying out, a coloured ring on the floor and, for the dark kind, music notes rising around it;
    24 frames. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdTexVert {             /* float texture + float position (0x183) */
     float u, v;

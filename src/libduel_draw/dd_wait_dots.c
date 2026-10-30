@@ -2,7 +2,7 @@
 /* Row of waiting dots in a duel window: the item callbacks that draw one dot per pending step
    (lit for the steps done, grey for the rest) and close the window a few frames after the count
    reaches zero. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdWaitDots {
     int total;                         /* dots drawn (pending count when the window opened) */

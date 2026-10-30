@@ -1,7 +1,7 @@
 // @range 0x088264DC-0x08826A64
 /* GE render state of the duel effect layers: the default state of a layer and the helpers that
    switch texturing, depth writes and blending on or off in a display list. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 unsigned int *dd_rstate_reset(int layer)
 {

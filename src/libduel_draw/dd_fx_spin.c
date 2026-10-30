@@ -3,7 +3,7 @@
 /* Effect: a pulsing disc (k02_256b.gim or, mirrored, k02_256y.gim) lying on the field and
    turning slowly, for a number of frames or until the task gets flag 1 (dur -1). */
 #define DD_FX
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdFxSpin {              /* 0x90 */
     int id;                            /* +0x00 own task handle */

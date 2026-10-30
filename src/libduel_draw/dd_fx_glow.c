@@ -2,7 +2,7 @@
 /* Effect on a card shown on screen: a white glow growing behind it (60 frames) with grey rings
    spreading out during the first 32 frames; fades out in 8 frames once the task gets flag 1. */
 #define DD_FX
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdScrPos {
     int x, y, z;

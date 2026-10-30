@@ -8,7 +8,7 @@
 /* Grid picker of the duel: a window listing the entries first..last in a grid; the player marks
    between min and max of them (the marked ones get a frame) and confirms with an OK button
    window below the grid. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef unsigned int *(*DdPickItemFn)(unsigned int *list, int x, int y, int index);
 typedef unsigned int *(*DdPickMarkFn)(unsigned int *list, int x, int y, int w, int h);

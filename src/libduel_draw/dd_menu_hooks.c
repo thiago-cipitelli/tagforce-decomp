@@ -1,6 +1,6 @@
 // @range 0x0882BF00-0x0882BF84
 /* Hooks of the duel menu layer: start, frame, a no-op and the cleanup of the open pickers. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 void func_08820F28(void);
 void func_08866EA0(void);

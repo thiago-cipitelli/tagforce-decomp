@@ -3,7 +3,7 @@
 /* Effect: a pink orb flying from one point to another in an arc, leaving bursts of fading
    sparks behind it; 24 frames. */
 #define DD_FX
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdOrbTrail {            /* 0x54 */
     unsigned int flags;                /* bit 0: alive */

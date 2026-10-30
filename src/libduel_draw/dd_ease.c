@@ -3,7 +3,7 @@
 /* Small helpers of the effect scripts: easing curves of a frame counter (linear, sine, cosine,
    their complements and their "last n frames" variants), a random direction, a clamped step,
    a random percentage, model animation helpers and positions read from the duel scene. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdRandSeed {            /* BOOT rand3_seeds entry, 12 bytes */
     unsigned int lcg;                  /* x * 0x41C64E6D + 0x3039 */

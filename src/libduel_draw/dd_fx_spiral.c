@@ -3,7 +3,7 @@
 /* Effect: a card fading out while sparks spiral up from it and a glowing cylinder of light turns
    around it; 32 frames. */
 #define DD_FX
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdSpiralSpark {         /* 0x24 */
     int age;

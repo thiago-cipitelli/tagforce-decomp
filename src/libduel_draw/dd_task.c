@@ -2,7 +2,7 @@
 /* Task table of the duel effects: 254 slots, each with a state (1/2 running, 3 killed, 4 freed
    next frame), an update callback, a terminate callback and a zeroed work buffer from the duel
    heap. Handles are slot << 24 | serial. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 extern DdTaskMgr dd_task_mgr;
 

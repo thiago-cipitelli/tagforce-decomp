@@ -3,7 +3,7 @@
 // @data 0x08876A8C-0x08876A9C
 /* Effect: a card on the field shattering into 48 triangles (front and back faces) that fly out
    and spin while the whole falls, with a flash and 16 sparks; 24 frames. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdTexVert {             /* float texture + float position (0x183) */
     float u, v;

@@ -4,7 +4,7 @@
 /* Effect on a card shown on screen: the card rises from lying flat to facing the camera (16
    frames) and stays until the task gets flag 1, then fades out in 8 frames. */
 #define DD_FX
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdVec4 {
     float x, y, z, w;

@@ -4,7 +4,7 @@
 /* Window frames drawn along a polyline (the field zone highlights): for each segment an edge
    sprite and, at each turn, a corner sprite taken from window01.gim with one of 8 colour styles;
    plus a single stretched sprite between two points. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdWPiece {              /* texel rectangle of window01.gim */
     unsigned short u, v, w, h;

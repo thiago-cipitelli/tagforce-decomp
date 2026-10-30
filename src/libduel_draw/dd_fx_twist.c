@@ -3,7 +3,7 @@
 /* Effect: a card mesh (17x25 grid) twisted into a vortex that turns faster towards the middle,
    with a flash under it and sparks drawn in towards the centre; 32 frames. */
 #define DD_FX
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdTwistSpark {          /* 0x24 */
     int age;

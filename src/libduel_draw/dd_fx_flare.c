@@ -1,7 +1,7 @@
 // @range 0x0882C214-0x0882C7A0
 /* Effect: a card laid on the field fading in under 24 light rays turning around it (sprite fans
    of PT88_R.gim in four rings), 16 frames. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdFxFlare {             /* 0xB8 */
     int frame;                         /* +0x00 */

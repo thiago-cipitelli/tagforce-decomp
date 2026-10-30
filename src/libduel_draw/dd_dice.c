@@ -5,7 +5,7 @@
 /* Coin and die windows: the coin or die model rendered into a 128x128 VRAM texture with two
    rotating lights and drawn as a sprite; the window where the player picks die faces (one or
    more, with their dice shown above) and the OK button window below it. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdVec4 {
     float x, y, z, w;

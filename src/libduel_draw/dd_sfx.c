@@ -4,7 +4,7 @@
 /* Sound cues of the effect scripts: play a sound effect (or stop/fade the music) once when the
    frame counter reaches a given frame, tracked by a bit of a flags word; a random hit sound and
    the speed tables of the duel animation setting. */
-#include "libduel_draw.h"
+#include "dd_d3.h"
 
 typedef struct DdRandSeed {            /* BOOT rand3_seeds entry, 12 bytes */
     unsigned int lcg;
