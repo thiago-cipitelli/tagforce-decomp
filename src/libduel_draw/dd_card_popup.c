@@ -32,7 +32,7 @@ int hl_allowed(void);
 void *func_0881DBC8(int id);
 void func_0881D858(int card);
 void dv_08836028(void);
-void func_0886A1FC(void);
+void opt_open(void);
 void hl_open(void);
 void *func_0880B7B8(int side, int zone, int index);
 void func_0880A8E0(DdVec4A *pos, DdVec4A *rot, short loc);
@@ -135,7 +135,7 @@ void popup_select(void)
             dv_08836028();
             break;
         case 2:
-            func_0886A1FC();
+            opt_open();
             break;
         case 3:
             hl_open();
