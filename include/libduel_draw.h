@@ -150,6 +150,61 @@ typedef struct DdCutin {               /* 0x9C at 0x08C546D0 */
     DdCutinDesc next;                  /* +0x58 */
 } DdCutin;
 
+typedef union DdEvArg {                /* a packed argument of a duel event */
+    int i;
+    short s;
+    struct {
+        unsigned char lo, hi;
+    } b;
+    struct {
+        unsigned short lo, hi;
+    } h;
+} DdEvArg;
+
+typedef struct DdEvSlot {
+    int a, b, c;
+} DdEvSlot;
+
+typedef struct DdEvState {             /* 0x2C at 0x08C5476C */
+    DdEvSlot slot[2];
+    int player;                        /* +0x18 */
+    int rival;                         /* +0x1C */
+    int unk20[2];
+    int unk28;                         /* +0x28 */
+} DdEvState;
+
+typedef struct DdCard {                /* a card object of the field (other ranges own it) */
+    char unk0[0x80];
+    unsigned short id;                 /* +0x80 card id */
+    short unk82[3];
+    int uid;                           /* +0x88 instance */
+    unsigned char unk8c;
+    signed char b0 : 4;                /* +0x8D */
+    signed char b4 : 1;
+    signed char b5 : 1;
+} DdCard;
+
+typedef struct DdFlip {                /* argument of the flip cut-in's end callback */
+    DdLoc loc;
+    int value;
+} DdFlip;
+
+/* cross-file calls of this range */
+void dd_cursor_set(int player, int zone, int idx, int save);
+void dd_cursor_restore(void);
+void dd_cursor_get(DdLoc *out);
+void dd_cursor_first_target(void);
+void dd_cutin_play(DdCutinDesc *d);
+void dd_ev_reset(int player);
+void dd_ev_slot_set(int i, int a, int b, int c);
+void dd_ev_8817670(int v);
+unsigned short *dlg_get_text(int id);
+unsigned short region_pick_value(int flag);
+unsigned int cfg_get_flag(int which);
+int card_get_atk(int id);
+int card_get_def(int id);
+int card_is_attribute9(int id);
+
 /* ---- end 0x088143A4-0x08825DDC ---- */
 
 #endif
