@@ -46,7 +46,7 @@ extern DdPick dd_pick;
 
 void *dd_alloc(int size);
 void dd_free(void *p);
-void *func_0881CA74(void);             /* duel heap */
+void *dd_heap_get(void);             /* duel heap */
 PadState *dd_pad(void);
 int func_08825764(void);               /* the picker has the input */
 unsigned short region_pick_value(int flag);
@@ -342,7 +342,7 @@ void dd_pick_confirm_open(int x, int y, int w, int h)
         d->w = w;
         d->h = h;
         d->color = 0xFFFFFFFF;
-        m->heap = func_0881CA74();
+        m->heap = dd_heap_get();
         m->no_input = 1;
         m->keep_open = 1;
         m->no_cancel = 1;

@@ -50,7 +50,7 @@ void dd_bigcard_update(float dt, DdTask *t, int *arg);
 void dd_bigcard_leave(DdTask *t, void *arg);
 int dd_fx_cardaura_start(int card, int *xy, int a, int b);
 int dd_fx_noise_start(int *xy, int a, int b);
-int func_08819A70(void);
+int dd_voice_active(void);
 int dd_cobjs_idle(void);
 void func_08820938(DdTask *t, void *arg);
 void dd_info_select(int uid);
@@ -96,7 +96,7 @@ void dd_popup_now(int player, int card, int flag, int text)
 #ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_popup_wait(float dt, DdTask *t, DdCardPopup *p)
 {
-    if (func_08819A70() == 0 && dd_cobjs_idle() != 0) {
+    if (dd_voice_active() == 0 && dd_cobjs_idle() != 0) {
         dd_popup(p->player, 0x10, p->card, 0, p->text);
         dd_task_remove_cur();
         return;
@@ -111,7 +111,7 @@ void dd_popup(int player, int zone, int card, int flag, int text)
     DdCardPopup *p;
     DdTask t;
 
-    if (func_08819A70() == 0 && dd_cobjs_idle() != 0) {
+    if (dd_voice_active() == 0 && dd_cobjs_idle() != 0) {
         dd_popup_now(player, card, flag, text);
         req_flag_set(flag);
         if (zone == 0x10)

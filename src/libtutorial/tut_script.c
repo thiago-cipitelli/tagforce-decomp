@@ -48,7 +48,7 @@ typedef struct TutDeckSetup {    /* card lists of the field set-up, 0x108 bytes 
     unsigned short extra[31];    /* +0xCA */
 } TutDeckSetup;
 
-typedef struct TutDuelSetup {    /* argument of libduel_draw_08805D2C, 0x40 bytes */
+typedef struct TutDuelSetup {    /* argument of dd_api_set_param, 0x40 bytes */
     int mode;                    /* +0x00 2 */
     int unk04;
     int partner;                 /* +0x08 */
@@ -125,18 +125,18 @@ void duel_w624_set(int v);
 void duel_host_cb_set(void (*cb)(void));
 void duel_host_args_get(int *out);
 void duel_start_puzzle(char *text);
-void libduel_draw_08805D2C(TutDuelSetup *s);
-void libduel_draw_08805EE4(void);
-int libduel_draw_08805F88(void);
-void libduel_draw_08806030(void);
-void libduel_draw_08806278(int on);
-void libduel_draw_08806284(int (*cb)(int, int, int, int));
-void libduel_draw_0880628C(void);
-void libduel_draw_088062DC(int (*cb)(unsigned short));
-void libduel_draw_08806360(TutZoneRef *a, TutZoneRef *b);
-void libduel_draw_088063F0(void);
-void libduel_draw_0880642C(int on);
-void libduel_draw_088176A0(int kind, int a, int b, int c);
+void dd_api_set_param(TutDuelSetup *s);
+void dd_api_load_start(void);
+int dd_api_load_ready(void);
+void dd_api_view_start(void);
+void dd_api_set_de9c(int on);
+void dd_api_df40(int (*cb)(int, int, int, int));
+void dd_api_refresh_turn(void);
+void dd_api_212b8(int (*cb)(unsigned short));
+void dd_api_view_locs(TutZoneRef *a, TutZoneRef *b);
+void dd_api_show_turn_phase(void);
+void dd_api_cobjs_sync_set(int on);
+void dd_event_dispatch(int kind, int a, int b, int c);
 void gfx_overlay_enable(int on);
 void gamestate_load(const void *src);
 unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
@@ -218,7 +218,7 @@ void tut_watch_card(int code)
     TutZoneRef b;
 
     if (code >= 100 && code <= 1000) {
-        libduel_draw_08806360(&a, &b);
+        dd_api_view_locs(&a, &b);
         tut_watch = 0;
         switch (code) {
         case 100:
@@ -408,7 +408,7 @@ int tut_action_filter(int player, int zone, int index, int kind)
             want = tut_act_arg;
             hit = 0;
             if (want >= 100 && want <= 1000) {
-                libduel_draw_08806360(&a, &b);
+                dd_api_view_locs(&a, &b);
                 if (want == 101 && b.player == player && b.zone == zone && b.index == index)
                     hit = 1;
             } else if (want == 0 || want == card) {
@@ -543,7 +543,7 @@ void tut_event_hook(void)
     }
     if (held == 0) {
         if (ev.kind == 0x14 && tut_reset_pending == 1) {
-            libduel_draw_0880628C();
+            dd_api_refresh_turn();
             tut_reset_pending = 0;
         }
         tut_host();
@@ -809,15 +809,15 @@ void tut_duel_start(void (*start)(void), void (*host)(void), int lesson)
     setup.unk38 = 1;
     setup.unk34 = 0;
     setup.partner = tutbox.faces[0].chara;
-    libduel_draw_08805D2C(&setup);
-    libduel_draw_08805EE4();
-    while (!libduel_draw_08805F88())
+    dd_api_set_param(&setup);
+    dd_api_load_start();
+    while (!dd_api_load_ready())
         sys_frame_wait();
-    libduel_draw_08806284(tut_action_filter);
-    libduel_draw_088062DC(tut_card_filter);
-    libduel_draw_08806278(1);
-    libduel_draw_0880642C(1);
-    libduel_draw_08806030();
+    dd_api_df40(tut_action_filter);
+    dd_api_212b8(tut_card_filter);
+    dd_api_set_de9c(1);
+    dd_api_cobjs_sync_set(1);
+    dd_api_view_start();
     gfx_overlay_enable(0);
     duel_host_cb_set(tut_event_hook);
     start();
@@ -945,7 +945,7 @@ void tut_script_init(int lesson, void (*start)(void), void (*host)(void))
 
 void tut_duel_draw_term(void)
 {
-    libduel_draw_08805E90();
+    dd_api_view_end();
 }
 
 void tut_script_update(void)
@@ -984,12 +984,12 @@ int tut_script_done(void)
 
 void tut_duel_pause(void)
 {
-    libduel_draw_08806278(0);
+    dd_api_set_de9c(0);
 }
 
 void tut_duel_resume(void)
 {
-    libduel_draw_08806278(1);
+    dd_api_set_de9c(1);
 }
 
 /* the player may act until the action kind (with argument arg) is done */
@@ -1073,7 +1073,7 @@ void tut_replay_event(void)
 {
     TutArgs *e = (TutArgs *)(char *)&tut_ev_saved;
 
-    libduel_draw_088176A0(e->kind, e->arg[0], e->arg[1], e->arg[2]);
+    dd_event_dispatch(e->kind, e->arg[0], e->arg[1], e->arg[2]);
 }
 
 void tut_expect_event(int kind, int arg)
@@ -1099,15 +1099,15 @@ void tut_field_reset(int file, int turn)
     char *text;
 
     tut_hold_events(1);
-    libduel_draw_08806278(1);
-    libduel_draw_0880642C(1);
+    dd_api_set_de9c(1);
+    dd_api_cobjs_sync_set(1);
     text = tut_field_reset_file(file);
     tut_reset_pending = 1;
     duel_start_puzzle(text);
     tut_duel_set_turn(turn);
     duel_player_type_set(0, 0);
     duel_player_type_set(1, 3);
-    libduel_draw_088063F0();
+    dd_api_show_turn_phase();
     tut_set_state(4);
     tut_set_lock(1);
 }

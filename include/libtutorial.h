@@ -78,8 +78,8 @@ void *ehp_find(void *pack, const char *name, int *size);
 unsigned short *table_get_entry(void *t, unsigned int i);
 
 /* libduel_draw / libduel_eng */
-int libduel_draw_088062E4(void);
-void libduel_draw_08805E90(void);
+int dd_api_menu_state58(void);
+void dd_api_view_end(void);
 
 /* tut_main.c */
 void tut_update(void);

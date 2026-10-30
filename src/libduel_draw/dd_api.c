@@ -22,7 +22,7 @@ void dd_lpp_phase_state(int side, int phase);
 void dd_cursor_set(int side, int a, int b, int c);
 void dd_heap_set(int a, int b);
 void dd_heap_clear(void);
-void *func_0881CA74(void);
+void *dd_heap_get(void);
 void dd_mode_init(void);
 void dd_mode_term(void);
 void dd_mode_set(int on);
@@ -63,11 +63,11 @@ int module_start(int argc, void *argp)
 
 /* export: creates the scene heap (base, size), the EFS and display list setup, the model
    allocator; sorts the resource tables and reads the view parameters */
-void func_08805C34(int base, int size)
+void dd_api_init(int base, int size)
 {
     sceKernelChangeCurrentThreadAttr(0, 0x4000);
     dd_heap_set(base, size);
-    efs_set_heap(func_0881CA74());
+    efs_set_heap(dd_heap_get());
     dl_set_list(view_init(dl_select_layer(0, 0)));
     model_set_allocator((void *(*)(unsigned int))dd_alloc, (void (*)(void *))dd_free);
     dd_res_sort();
@@ -77,8 +77,8 @@ void func_08805C34(int base, int size)
     dd_menu_hook_start();
 }
 
-/* export: tears down what func_08805C34 set up */
-void func_08805CE4(void)
+/* export: tears down what dd_api_init set up */
+void dd_api_term(void)
 {
     dd_menu_hook_frame();
     dd_chara_term();
@@ -89,7 +89,7 @@ void func_08805CE4(void)
 }
 
 /* export: takes the duel parameters (characters, variants, decks copied into the scene) */
-void func_08805D2C(DdDuelParam *p)
+void dd_api_set_param(DdDuelParam *p)
 {
     DdScene *sc = &dd_scene;
     int i;
@@ -119,7 +119,7 @@ void func_08805D2C(DdDuelParam *p)
 }
 
 /* export: ends the duel view */
-void func_08805E90(void)
+void dd_api_view_end(void)
 {
     zone_views_term();
     dd_mode_term();
@@ -132,7 +132,7 @@ void func_08805E90(void)
 }
 
 /* export: starts loading the packs, the cut-ins and the card images of the decks */
-void func_08805EE4(void)
+void dd_api_load_start(void)
 {
     DdDuelParam *p = &dd_scene.p;
     int i;
@@ -148,8 +148,8 @@ void func_08805EE4(void)
     }
 }
 
-/* export: 1 when everything started by func_08805EE4 is loaded */
-int func_08805F88(void)
+/* export: 1 when everything started by dd_api_load_start is loaded */
+int dd_api_load_ready(void)
 {
     if (dd_pack_get(0x80001) == 0)
         return 0;
@@ -164,7 +164,7 @@ int func_08805F88(void)
 }
 
 /* export: duel disks of both players and the player who starts */
-void func_0880600C(int *disk, int first)
+void dd_api_set_disks(int *disk, int first)
 {
     dd_scene.disk[0] = disk[0];
     dd_scene.disk[1] = disk[1];
@@ -172,7 +172,7 @@ void func_0880600C(int *disk, int first)
 }
 
 /* export: starts the duel view (field, LP, phase, characters) */
-int func_08806030(void)
+int dd_api_view_start(void)
 {
     DdScene *sc = &dd_scene;
     int i;
@@ -201,38 +201,38 @@ int func_08806030(void)
 }
 
 /* export: stops the duel view */
-int func_0880618C(void)
+int dd_api_view_stop(void)
 {
     dd_scene.active = 0;
     return 1;
 }
 
 /* export */
-void func_0880619C(void)
+void dd_api_free_cutins(void)
 {
     dd_chara_term();
     dd_cutin_free();
 }
 
 /* export: nothing */
-void func_088061C0(void)
+void dd_api_nop1(void)
 {
 }
 
 /* export: per-frame update of the duel view */
-void func_088061C8(void)
+void dd_api_update(void)
 {
     if (dd_scene.active)
         dd_view_draw();
 }
 
 /* export: nothing */
-void func_088061F4(void)
+void dd_api_nop2(void)
 {
 }
 
 /* export: draws the duel view; returns the scene result */
-int func_088061FC(void)
+int dd_api_draw(void)
 {
     dd_pad_get();
     dd_mode_update();
@@ -240,25 +240,25 @@ int func_088061FC(void)
 }
 
 /* export: forward with the screen side of `player` */
-void func_08806228(int player, int a, int b, int c)
+void dd_api_fwd_ae68(int player, int a, int b, int c)
 {
     sel_start(dv_player_to_side(player), a, b, c);
 }
 
 /* export */
-void func_08806278(int off)
+void dd_api_set_de9c(int off)
 {
     dd_input_set(!off);
 }
 
 /* export */
-void func_08806284(void)
+void dd_api_df40(void)
 {
     dd_act_set_filter();
 }
 
 /* export: refreshes the turn and phase panels */
-void func_0880628C(void)
+void dd_api_refresh_turn(void)
 {
     int side = dv_turn_side();
     int phase = dv_phase();
@@ -269,13 +269,13 @@ void func_0880628C(void)
 }
 
 /* export */
-void func_088062DC(void)
+void dd_api_212b8(void)
 {
     func_088212B8();
 }
 
 /* export: 1 in the states 5 and 8 of the duel menu */
-int func_088062E4(void)
+int dd_api_menu_state58(void)
 {
     int st;
 
@@ -285,13 +285,13 @@ int func_088062E4(void)
 }
 
 /* export: forward with the screen side of `player` */
-void func_0880631C(int player, int a, int b)
+void dd_api_fwd_153e4(int player, int a, int b)
 {
     dd_cursor_set(dv_player_to_side(player), a, b, 0);
 }
 
 /* export: the two highlighted card locations, with the player bit converted from screen side */
-void func_08806360(DdLoc *a, DdLoc *b)
+void dd_api_view_locs(DdLoc *a, DdLoc *b)
 {
     dd_view_locs_get(a, b);
     if (a)
@@ -301,20 +301,20 @@ void func_08806360(DdLoc *a, DdLoc *b)
 }
 
 /* export */
-void func_088063E8(void)
+void dd_api_info_select_uid(void)
 {
     dd_info_select_uid();
 }
 
 /* export: shows the turn player and the phase */
-void func_088063F0(void)
+void dd_api_show_turn_phase(void)
 {
     dd_lpp_turn_set(dv_turn_side(), 1);
     dd_lpp_phase_set(dv_phase(), 1);
 }
 
 /* export */
-void func_0880642C(void)
+void dd_api_cobjs_sync_set(void)
 {
     dd_cobjs_sync_set();
 }

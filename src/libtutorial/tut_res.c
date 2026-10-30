@@ -10,7 +10,7 @@ extern int tut_load_done;        /* 0x08810210 */
 extern void *tut_msgs;           /* 0x08810218 message table of the lesson */
 extern void *tut_heap;           /* 0x0881021C the duel's heap (libduel_draw) */
 
-void *libduel_draw_0881CA74(void);
+void *dd_heap_get(void);
 unsigned short tut_watch_get(void);
 unsigned short *sysstate_get_name(void);
 int card_get_atk_q(int id);
@@ -273,7 +273,7 @@ void tut_text_expand(unsigned short *src, unsigned short *dst, int n)
 
 void tut_heap_init(void)
 {
-    tut_heap = libduel_draw_0881CA74();
+    tut_heap = dd_heap_get();
 }
 
 void tut_heap_term(void)

@@ -109,7 +109,7 @@ unsigned short *dd_text(int id);
 unsigned int *dd_pad(void);
 void *dd_alloc(int size);
 void dd_free(void *p);
-void *func_0881CA74(void);
+void *dd_heap_get(void);
 void *dd_gim_get(int id);
 void dd_info_select(int uid);
 void dd_mode_push(int id);
@@ -228,7 +228,7 @@ void dd_sel_open(DdSelDesc *d)
     w->title = s->title;
     w->title_font_size = 0xC;
     w->style = 0;
-    s->list.heap = func_0881CA74();
+    s->list.heap = dd_heap_get();
     s->list.no_input = 0;
     s->list.no_cancel = 1;
     s->list.cancel_blocked = 0;

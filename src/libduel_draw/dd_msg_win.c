@@ -518,7 +518,7 @@ void func_08825B9C(int param_1)
   *(undefined4 *)(param_1 + 0xb4) = 0x3f800000;
   *(undefined4 *)(param_1 + 0xb8) = 0x3f800000;
   *(undefined4 *)(param_1 + 0xbc) = 0;
-  uVar1 = func_0881CA74();
+  uVar1 = dd_heap_get();
   *(undefined4 *)(param_1 + 0xc4) = uVar1;
   *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xfe;
   *(byte *)(param_1 + 200) = *(byte *)(param_1 + 200) & 0xfd | 2;

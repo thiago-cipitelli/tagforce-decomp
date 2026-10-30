@@ -86,7 +86,7 @@ unsigned int *dl_ambient_color(unsigned int *list, unsigned int color);
 unsigned int *dl_set_tex_filter(unsigned int *list, int min, int mag);
 unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
 unsigned int *draw_sprite(unsigned int *list, int x, int y, int z, int u, int v, int flip_uv, int flip_xy);
-void *libduel_draw_0881CA74(void);
+void *dd_heap_get(void);
 
 /* this module */
 void dmgr_res_free(void);
@@ -163,7 +163,7 @@ unsigned short dmgr_res_div[4] = { 0, 5, 6, 8 };
 #ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 void dmgr_result_init(void)
 {
-    void *heap = libduel_draw_0881CA74();
+    void *heap = dd_heap_get();
     DmgrResTab *t;
     DmgrResItem *it;
     SaveExtra *ex;

@@ -60,7 +60,7 @@ void *dd_model_get(int id);
 void *dd_pack_get(int id);
 unsigned int dv_08835AEC(int player, int zone, int idx);
 int dd_scene_flags(int a, int b);
-int func_088062E4(void);
+int dd_api_menu_state58(void);
 
 extern DdMarkMgr dd_mark;
 
@@ -454,7 +454,7 @@ void dd_arrow_update(DdObj *o, DdArrow *a)
     int v;
     int lit;
 
-    if (a->head == 0 && a->done == 0 && dd_scene_flags(8, -1) == 0 && func_088062E4() == 0)
+    if (a->head == 0 && a->done == 0 && dd_scene_flags(8, -1) == 0 && dd_api_menu_state58() == 0)
         se_play(0x6242);
     if (a->head >= 63) {
         a->head = 0;

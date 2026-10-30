@@ -1047,7 +1047,7 @@ int dd_ev_73(int player, int a)
 
 /* export: commentary on/off (the exports that follow are in dd_voice.c) */
 #ifdef NON_MATCHING /* teste do segundo caso sai com bnez + b em vez de beqz */
-void func_088199C8(int on)
+void dd_voice_enable(int on)
 {
     if (on != 0 && dd_scene_flags(8, -1) != 0)
         return;

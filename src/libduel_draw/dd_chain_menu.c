@@ -31,7 +31,7 @@ void func_0882308C(undefined4 param_1)
   undefined4 uVar1;
   byte local_4 [4];
   if (D_08C587FC == 0) {
-    uVar1 = func_0881CA74();
+    uVar1 = dd_heap_get();
     menu_init(&D_08C58538,uVar1);
     D_08C587FC = 6;
     D_08C58808 = func_08823650;

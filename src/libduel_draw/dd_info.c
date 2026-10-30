@@ -26,7 +26,7 @@ void *cardlist_draw_at(void *list, int x, int y, DdInfoView *v);
 void *cardlist_draw_pair_at(void *list, int x, int y, DdInfoView *a, DdInfoView *b);
 
 /* other ranges of libduel_draw */
-void *func_088046E4(void);
+void *dd_cards_cip_h(void);
 int dd_08806BC4(void);
 int dv_list_id(int uid);
 void *dv_chain(void);
@@ -69,7 +69,7 @@ void dd_info_init(void)
     cfg.kind_gim = dd_gim_get(0x40018);
     cfg.cil_gim = dd_gim_get(0x40001);
     cfg.icon_gim = dd_gim_get(0x4001E);
-    cfg.cip = func_088046E4();
+    cfg.cip = dd_cards_cip_h();
     dd_info.frame_buf = cfg.frame_view = dd_alloc(ehf_get_u32_1c(cfg.frame_ehf));
     cardlist_init(&cfg);
     dd_info_select(-1);

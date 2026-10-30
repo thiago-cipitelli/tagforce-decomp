@@ -27,20 +27,20 @@ void duel_0884CE44(void);
 void duel_0884CEBC(unsigned int p);
 
 /* libduel_draw */
-void libduel_draw_08805C34(void *heap_big, void *heap);
-void libduel_draw_08805CE4(void);
-void libduel_draw_08805D2C(void *setup);
-void libduel_draw_08805E90(void);
-void libduel_draw_08805EE4(void);
-int libduel_draw_08805F88(void);
-void libduel_draw_0880600C(int *slots, int side);
-void libduel_draw_08806030(void);
-void libduel_draw_0880619C(void);
-void libduel_draw_088061C0(void);
-void libduel_draw_088061C8(void);
-void libduel_draw_088061F4(float t);
-int libduel_draw_088061FC(void);
-void libduel_draw_088176A0(int cmd, int a, int b, int c);
+void dd_api_init(void *heap_big, void *heap);
+void dd_api_term(void);
+void dd_api_set_param(void *setup);
+void dd_api_view_end(void);
+void dd_api_load_start(void);
+int dd_api_load_ready(void);
+void dd_api_set_disks(int *slots, int side);
+void dd_api_view_start(void);
+void dd_api_free_cutins(void);
+void dd_api_nop1(void);
+void dd_api_update(void);
+void dd_api_nop2(float t);
+int dd_api_draw(void);
+void dd_event_dispatch(int cmd, int a, int b, int c);
 
 /* libdeck_swap, libtutorial */
 void libdeck_swap_08806654(void);
@@ -288,11 +288,11 @@ int dmgr_main(void)
                 }
                 }
             }
-            libduel_draw_088061FC();
+            dd_api_draw();
             break;
         case 6:
             netsync_set_mode(0);
-            libduel_draw_08805E90();
+            dd_api_view_end();
             if (duel_finish() != 0) {
                 dmgr_result_init();
                 dmgr.state = 7;
@@ -338,7 +338,7 @@ int dmgr_main(void)
             dmgr_load_draw();
             while (!dmgr.draw_loaded) {
                 if (modmgr_none_loading() != 0) {
-                    libduel_draw_08805C34(dmgr.heap_big, dmgr.heap);
+                    dd_api_init(dmgr.heap_big, dmgr.heap);
                     dmgr.draw_loaded = 1;
                 }
                 sys_frame_wait();
@@ -403,7 +403,7 @@ int dmgr_exit(void)
         modmgr_update(8);
     }
     if (dmgr.draw_loaded) {
-        libduel_draw_08805CE4();
+        dd_api_term();
         modmgr_update(9);
     }
     if (sysvar_get_a98() != 0) {
@@ -436,9 +436,9 @@ int dmgr_draw(void)
     case 1:
         dmgr.answered = duel_0884D874();
         req_flags_clear();
-        libduel_draw_088061C0();
-        libduel_draw_088061C8();
-        libduel_draw_088061F4(1.0f / 30.0f);
+        dd_api_nop1();
+        dd_api_update();
+        dd_api_nop2(1.0f / 30.0f);
         dmgr_events_draw();
         dmgr_answer_time_update();
         break;
@@ -447,9 +447,9 @@ int dmgr_draw(void)
             tut_frame();
             duel_0884D874();
             req_flags_clear();
-            libduel_draw_088061C0();
-            libduel_draw_088061C8();
-            libduel_draw_088061F4(1.0f / 30.0f);
+            dd_api_nop1();
+            dd_api_update();
+            dd_api_nop2(1.0f / 30.0f);
             dmgr_events_draw();
         }
         break;
@@ -609,7 +609,7 @@ int dmgr_load_modules(void)
         if (dmgr.draw_loaded) {
             dmgr.load_step++;
         } else if (modmgr_none_loading() != 0) {
-            libduel_draw_08805C34(dmgr.heap_big, dmgr.heap);
+            dd_api_init(dmgr.heap_big, dmgr.heap);
             dmgr.draw_loaded = 1;
         } else {
             dmgr.busy = 1;
@@ -690,12 +690,12 @@ int dmgr_load_modules(void)
             }
             break;
         }
-        libduel_draw_08805D2C(&setup);
-        libduel_draw_08805EE4();
+        dd_api_set_param(&setup);
+        dd_api_load_start();
         dmgr.load_step++;
         break;
     case 7:
-        if (libduel_draw_08805F88() != 0) {
+        if (dd_api_load_ready() != 0) {
             return 1;
         }
         break;
@@ -714,7 +714,7 @@ void dmgr_deck_swap(void)
             local_record_set0(5);
         }
         gfx_overlay_enable(1);
-        libduel_draw_0880619C();
+        dd_api_free_cutins();
         modmgr_load_by_id(10);
         dmgr.sub++;
         break;
@@ -772,7 +772,7 @@ void dmgr_tutorial(void)
     case 1:
         done = 0;
         if (tut_get_lock() == 0) {
-            done = libduel_draw_088061FC();
+            done = dd_api_draw();
         }
         if (done | tut_is_finished()) {
             dmgr.sub++;
@@ -920,8 +920,8 @@ void dmgr_start_duel(void)
             break;
         }
     }
-    libduel_draw_0880600C(order, gs->side);
-    libduel_draw_08806030();
+    dd_api_set_disks(order, gs->side);
+    dd_api_view_start();
     switch (gs->partner_mode) {
     case 1:
         for (i = 0; i < 2; i++) {
@@ -948,8 +948,8 @@ void dmgr_start_duel(void)
     }
     duel_lp_set(0, dmgr_start_lp());
     duel_lp_set(1, dmgr_start_lp());
-    libduel_draw_088176A0(13, 0, dmgr_start_lp(), 0);
-    libduel_draw_088176A0(13, 1, dmgr_start_lp(), 0);
+    dd_event_dispatch(13, 0, dmgr_start_lp(), 0);
+    dd_event_dispatch(13, 1, dmgr_start_lp(), 0);
     dmgr_event_reset();
     req_flags_clear();
     dmgr.answered = 0;
@@ -966,7 +966,7 @@ void dmgr_host_cb(void)
     duel_host_args_get(args);
     dmgr_event_dispatch();
     if (args[0] != 1) {
-        libduel_draw_088176A0(args[0], args[1], args[2], args[3]);
+        dd_event_dispatch(args[0], args[1], args[2], args[3]);
     }
 }
 

@@ -45,17 +45,17 @@ void duel_player_type_set(int p, int t);
 void duel_host_args_get(int *out);
 
 /* libduel_draw */
-int libduel_draw_08819A70(void);
-void libduel_draw_088199C8(int on);
-void libduel_draw_08819AC4(int slot, int kind);
-void libduel_draw_08819BFC(int a, int b);
-void libduel_draw_08819BC4(int card);
-void libduel_draw_08819BCC(int a);
-int libduel_draw_08819A7C(void);
-void libduel_draw_0885563C(int a, int b);
-int libduel_draw_08855688(int a, int b, int c);
-void libduel_draw_08806228(int p, int a, int b, void (*cb)(void));
-void libduel_draw_088176A0(int cmd, int a, int b, int c);
+int dd_voice_active(void);
+void dd_voice_enable(int on);
+void dd_voice_state(int slot, int kind);
+void dd_voice_play(int a, int b);
+void dd_voice_set(int card);
+void dd_state_se_play(int a);
+int dd_voice_idle(void);
+void dd_movie_preload(int a, int b);
+int dd_movie_show(int a, int b, int c);
+void dd_api_fwd_ae68(int p, int a, int b, void (*cb)(void));
+void dd_event_dispatch(int cmd, int a, int b, int c);
 void tut_command(int a, unsigned short b, unsigned short c, unsigned short d);
 
 /* BOOT */
@@ -432,8 +432,8 @@ int dmgr_is_npc(int chr)
 
 void dmgr_cutin_show(int on)
 {
-    if (on != libduel_draw_08819A70()) {
-        libduel_draw_088199C8(on);
+    if (on != dd_voice_active()) {
+        dd_voice_enable(on);
     }
 }
 
@@ -458,7 +458,7 @@ void dmgr_ev_start(int *args)
     q->opening = 0;
     if (dmgr_cutins_off() != 0) {
         dmgr_cutin_show(0);
-        libduel_draw_088176A0(args[0], args[1], args[2], args[3]);
+        dd_event_dispatch(args[0], args[1], args[2], args[3]);
         if (gs->kind == 2) {
             return;
         }
@@ -496,8 +496,8 @@ void dmgr_ev_start(int *args)
             if (order[i] >= 0) {
                 if (shown == 0) {
                     dmgr_cutin_show(1);
-                    libduel_draw_08819AC4(order[i], 1);
-                    libduel_draw_08819BFC(0, 0);
+                    dd_voice_state(order[i], 1);
+                    dd_voice_play(0, 0);
                     shown++;
                 } else {
                     memset(&ev, 0, sizeof ev);
@@ -704,8 +704,8 @@ void dmgr_ev_04(int *args)
             break;
         case 3:
             dmgr_cutin_show(1);
-            libduel_draw_08819AC4(k, 2);
-            libduel_draw_08819BFC(0x1B, 0);
+            dd_voice_state(k, 2);
+            dd_voice_play(0x1B, 0);
             memset(&ev, 0, sizeof ev);
             ev.type = 2;
             dmgr_event_push(&ev);
@@ -762,16 +762,16 @@ void dmgr_ev_turn(int *args)
         dmgr.unk28 = 1;
         switch (k) {
         case 0:
-            libduel_draw_08806228(p, 2, 0, dmgr_tag_swap_done);
+            dd_api_fwd_ae68(p, 2, 0, dmgr_tag_swap_done);
             break;
         case 1:
-            libduel_draw_08806228(p, 3, 1, dmgr_tag_swap_done);
+            dd_api_fwd_ae68(p, 3, 1, dmgr_tag_swap_done);
             break;
         case 2:
-            libduel_draw_08806228(p, 0, 2, dmgr_tag_swap_done);
+            dd_api_fwd_ae68(p, 0, 2, dmgr_tag_swap_done);
             break;
         case 3:
-            libduel_draw_08806228(p, 1, 3, dmgr_tag_swap_done);
+            dd_api_fwd_ae68(p, 1, 3, dmgr_tag_swap_done);
             break;
         }
         memset(&ev, 0, sizeof ev);
@@ -844,8 +844,8 @@ void dmgr_ev_attack(int *args)
                 fl = 0;
             }
             dmgr_cutin_show(1);
-            libduel_draw_08819AC4(k, kind);
-            libduel_draw_08819BC4(id);
+            dd_voice_state(k, kind);
+            dd_voice_set(id);
             if (args[3] >= 5) {
                 pose = 0x11;
             } else {
@@ -855,12 +855,12 @@ void dmgr_ev_attack(int *args)
             if (duel_lp_get(args[2]) <= st[7]) {
                 fl |= 0x80;
             }
-            libduel_draw_08819BFC(pose, fl);
+            dd_voice_play(pose, fl);
             memset(&ev, 0, sizeof ev);
             ev.type = 2;
             dmgr_event_push(&ev);
             if (dmgr_cutin_card(0, s->type, id) != 0) {
-                libduel_draw_0885563C(args[2], 1);
+                dd_movie_preload(args[2], 1);
                 memset(&ev, 0, sizeof ev);
                 ev.type = 9;
                 ev.b = 1;
@@ -1047,9 +1047,9 @@ void dmgr_ev_activate(int *args)
         kind = 6;
     }
     dmgr_cutin_show(1);
-    libduel_draw_08819AC4(k, kind);
-    libduel_draw_08819BC4(args[2]);
-    libduel_draw_08819BFC(7, fl | dmgr_attack_flags(q->act_player));
+    dd_voice_state(k, kind);
+    dd_voice_set(args[2]);
+    dd_voice_play(7, fl | dmgr_attack_flags(q->act_player));
     memset(&ev, 0, sizeof ev);
     ev.type = 2;
     dmgr_event_push(&ev);
@@ -1176,14 +1176,14 @@ void dmgr_ev_40(int *args)
         }
     }
     dmgr_cutin_show(1);
-    libduel_draw_08819AC4(k, kind);
-    libduel_draw_08819BC4(args[2]);
-    libduel_draw_08819BFC(pose, fl);
+    dd_voice_state(k, kind);
+    dd_voice_set(args[2]);
+    dd_voice_play(pose, fl);
     memset(&ev, 0, sizeof ev);
     ev.type = 2;
     dmgr_event_push(&ev);
     if (dmgr_cutin_card(0, s->type, args[2]) != 0) {
-        libduel_draw_0885563C(args[2], 0);
+        dd_movie_preload(args[2], 0);
         memset(&ev, 0, sizeof ev);
         ev.type = 9;
         ev.a = args[2];
@@ -1258,9 +1258,9 @@ void dmgr_ev_summon(int *args)
         break;
     }
     dmgr_cutin_show(1);
-    libduel_draw_08819AC4(k, kind);
-    libduel_draw_08819BC4(args[2]);
-    libduel_draw_08819BFC(pose, fl | dmgr_attack_flags(args[1]));
+    dd_voice_state(k, kind);
+    dd_voice_set(args[2]);
+    dd_voice_play(pose, fl | dmgr_attack_flags(args[1]));
     memset(&ev, 0, sizeof ev);
     ev.type = 2;
     dmgr_event_push(&ev);
@@ -1300,8 +1300,8 @@ void dmgr_ev_44(int *args)
                 pose = 6;
             }
             dmgr_cutin_show(1);
-            libduel_draw_08819AC4(k, kind);
-            libduel_draw_08819BFC(pose, 0);
+            dd_voice_state(k, kind);
+            dd_voice_play(pose, 0);
             memset(&ev, 0, sizeof ev);
             ev.type = 2;
             dmgr_event_push(&ev);
@@ -1344,9 +1344,9 @@ void dmgr_ev_47(int *args)
                 kind = 0x14;
             }
             dmgr_cutin_show(1);
-            libduel_draw_08819AC4(k, kind);
-            libduel_draw_08819BC4(args[2]);
-            libduel_draw_08819BFC(pose, fl | dmgr_attack_flags(args[1]));
+            dd_voice_state(k, kind);
+            dd_voice_set(args[2]);
+            dd_voice_play(pose, fl | dmgr_attack_flags(args[1]));
             memset(&ev, 0, sizeof ev);
             ev.type = 2;
             dmgr_event_push(&ev);
@@ -1367,8 +1367,8 @@ void dmgr_ev_48(void)
         k = duel_tag_slot(duel_turn_player_get());
         if (dmgr_is_npc(dmgr_slot(gs, k)->type) != 0) {
             dmgr_cutin_show(1);
-            libduel_draw_08819AC4(k, 0xC);
-            libduel_draw_08819BFC(0x12, 0);
+            dd_voice_state(k, 0xC);
+            dd_voice_play(0x12, 0);
             memset(&ev, 0, sizeof ev);
             ev.type = 2;
             dmgr_event_push(&ev);
@@ -1421,11 +1421,11 @@ void dmgr_ev_damage(int *args)
     }
     switch (args[3]) {
     case 1:
-        libduel_draw_08819BCC(dmgr_attr_single());
+        dd_state_se_play(dmgr_attr_single());
         kind = 0xD;
         break;
     case 0:
-        libduel_draw_08819BCC(q->attr_cutin);
+        dd_state_se_play(q->attr_cutin);
         kind = 0xD;
         break;
     case 2:
@@ -1445,9 +1445,9 @@ void dmgr_ev_damage(int *args)
         bub = 0x16;
     }
     dmgr_cutin_show(1);
-    libduel_draw_08819AC4(k, kind);
+    dd_voice_state(k, kind);
     if (bub != 0) {
-        libduel_draw_08819BFC(bub, 0);
+        dd_voice_play(bub, 0);
     }
     memset(&ev, 0, sizeof ev);
     ev.type = 2;
@@ -1595,10 +1595,10 @@ void dmgr_events_draw(void)
         switch (ev.type) {
         case 1:
             dmgr_cutin_show(1);
-            libduel_draw_08819AC4(ev.a, ev.b);
+            dd_voice_state(ev.a, ev.b);
             break;
         case 2:
-            wait = libduel_draw_08819A7C();
+            wait = dd_voice_idle();
             break;
         case 3:
             if (ev.a != 0) {
@@ -1639,7 +1639,7 @@ void dmgr_events_draw(void)
         case 9:
             if (dmgr.fade != 2) {
                 stat_event_record(ev.a, ev.b == 1);
-                r = libduel_draw_08855688(ev.a, ev.b, 2);
+                r = dd_movie_show(ev.a, ev.b, 2);
                 if (scene_stack_peek_arg(6) == 13 && r > 0 && gs->kind == 5) {
                     bgm_cmd(800);
                     dmgr.fade = 5;
@@ -1648,7 +1648,7 @@ void dmgr_events_draw(void)
             break;
         case 10:
             dmgr_cutin_show(0);
-            libduel_draw_088176A0(ev.a, ev.b, ev.c, ev.d);
+            dd_event_dispatch(ev.a, ev.b, ev.c, ev.d);
             break;
         case 11:
             if (snd_is_muted() == 0) {
@@ -1682,7 +1682,7 @@ void dmgr_events_draw(void)
             }
             break;
         case 15:
-            libduel_draw_08819BFC(ev.a, ev.b);
+            dd_voice_play(ev.a, ev.b);
             break;
         case 16:
             bgm_fade_out(ev.a, ev.b);

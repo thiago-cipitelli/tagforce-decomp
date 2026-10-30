@@ -181,7 +181,7 @@ void dd_ev_8817670(int v)
 
 /* export: runs duel event `id` with its packed arguments; 1 when there is no handler */
 #ifdef NON_MATCHING /* o flag de ordenação era static do arquivo (.bss própria): o lui sai antes do último sw do prólogo */
-int func_088176A0(int id, DdEvArg a, DdEvArg b, DdEvArg c)
+int dd_event_dispatch(int id, DdEvArg a, DdEvArg b, DdEvArg c)
 {
     DdEvCmd *found = 0;
     DdEvCmd *e;

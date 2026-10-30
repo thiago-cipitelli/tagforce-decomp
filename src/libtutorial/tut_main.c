@@ -33,7 +33,7 @@ void tut_update(void)
         tut.show_windows = 0;
     else
         tut.show_windows = 1;
-    if ((pad->b.trig & 8) && libduel_draw_088062E4() == 0) {
+    if ((pad->b.trig & 8) && dd_api_menu_state58() == 0) {
         tut_pause_open();
         return;
     }
@@ -127,7 +127,7 @@ void tut_frame(void)
 
     tut_script_update();
     tut_update();
-    if (libduel_draw_088062E4() == 0) {
+    if (dd_api_menu_state58() == 0) {
         tut_sprites_draw();
         if (tut.show_windows)
             tut_windows_draw();

@@ -6,16 +6,16 @@
 #include "dd_d1.h"
 
 /* other ranges of libduel_draw */
-void func_08805C34(int base, int size);
-void func_08805CE4(void);
-void func_08805D2C(DdDuelParam *p);
-void func_08805EE4(void);
-int func_08805F88(void);
-int func_08806030(void);
-int func_0880618C(void);
-void func_088061C0(void);
-void func_088061C8(void);
-int func_088061FC(void);
+void dd_api_init(int base, int size);
+void dd_api_term(void);
+void dd_api_set_param(DdDuelParam *p);
+void dd_api_load_start(void);
+int dd_api_load_ready(void);
+int dd_api_view_start(void);
+int dd_api_view_stop(void);
+void dd_api_nop1(void);
+void dd_api_update(void);
+int dd_api_draw(void);
 void dd_view_draw3d(void);
 void dd_view_update(float dt);
 
@@ -116,23 +116,23 @@ void dd_test_main(void)
     sceKernelAllocateFpl(fpl_main, &mem_main, 0);
     sceKernelAllocateFpl(fpl_movie, &mem_movie, 0);
     heap = heap_create(mem_main, 0x900000);
-    func_08805C34((int)heap, (int)heap_create(mem_movie, 0x200000));
-    func_08805D2C(&p);
-    func_08805EE4();
-    while (!func_08805F88())
+    dd_api_init((int)heap, (int)heap_create(mem_movie, 0x200000));
+    dd_api_set_param(&p);
+    dd_api_load_start();
+    while (!dd_api_load_ready())
         sys_frame_wait();
     duel_player_type_set(0, 0);
     duel_player_type_set(1, 1);
     gfx_overlay_enable(0);
-    func_08806030();
+    dd_api_view_start();
     sys_state_set_callbacks(0, (int (*)(void))dd_test_update, 0);
     do {
         sys_frame_wait();
-        func_088061FC();
+        dd_api_draw();
     } while (!(pad_get()->b.trig & 1));
     sys_state_set_callbacks(0, 0, 0);
-    func_0880618C();
-    func_08805CE4();
+    dd_api_view_stop();
+    dd_api_term();
     sceKernelDeleteFpl(fpl_movie);
     sceKernelDeleteFpl(fpl_main);
     scene_pop_to(3, 0);
@@ -153,8 +153,8 @@ void dd_test_exit(void)
 /* per-frame callback of the standalone test */
 void dd_test_update(void)
 {
-    func_088061C0();
-    func_088061C8();
+    dd_api_nop1();
+    dd_api_update();
 }
 
 /* loads and starts libduel_eng.prx (standalone test) */

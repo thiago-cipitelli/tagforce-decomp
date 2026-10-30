@@ -69,7 +69,7 @@ typedef struct DmgrQueue {             /* dmgr +0x58, ring of 16 events */
     DmgrEvent ev[16];
 } DmgrQueue;
 
-typedef struct DmgrDrawSetup {         /* passed to libduel_draw_08805D2C, 0x40 */
+typedef struct DmgrDrawSetup {         /* passed to dd_api_set_param, 0x40 */
     int n;
     int type[4];                       /* +0x04 PlayerSlot.type */
     int type2[4];                      /* +0x14 */

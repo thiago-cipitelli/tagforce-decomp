@@ -13,7 +13,7 @@ void dd_mode_push(int mode);
 void dd_mode_set_flag(int mode);
 void *dd_mode_draw_one(void *dl, int mode);
 void dd_mode_pop(void);
-void *func_0881CA74(void);
+void *dd_heap_get(void);
 void *dd_gim_get(int id);
 void *dd_bin_get(int id);
 int dd_view_x14_get(void);
@@ -127,7 +127,7 @@ void hl_update(void)
         if (fade_is_done()) {
             hl_state = 1;
             dd_scene_flags(0x87, 0);
-            heap = func_0881CA74();
+            heap = dd_heap_get();
             gim = dd_gim_get(0x40020);
             texts = dd_bin_get(cfg_get_language() + 0x80017);
             hscene_init(hl_category, heap, gim, texts, dd_bin_get(cfg_get_language() + 0x8001E));

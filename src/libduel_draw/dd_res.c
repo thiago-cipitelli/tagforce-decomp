@@ -391,7 +391,7 @@ void *dd_pack_get(int id)
 }
 
 /* export: large card images (CIP) */
-void *func_088046E4(void)
+void *dd_cards_cip_h(void)
 {
     return dd_cards.cip_h;
 }

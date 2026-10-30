@@ -28,7 +28,7 @@ void tut_set_allow(int on);
 void tut_set_answer(unsigned short v);
 void tut_set_nowait(int on);
 void tut_watch_card(int code);
-void libduel_draw_0880631C(int player, int a, int b);
+void dd_api_fwd_153e4(int player, int a, int b);
 void duel_player_type_set(int player, int type);
 
 /* windows 0..5 are the talk windows (0..2 player side, 3..5 opponent side); sub picks one */
@@ -189,7 +189,7 @@ void tut_cmd_lock(int player, unsigned char sub, unsigned short on, unsigned sho
 
 void tut_cmd_duel_draw(int player, unsigned char sub, unsigned short a, unsigned short b)
 {
-    libduel_draw_0880631C(player, sub + a, b);
+    dd_api_fwd_153e4(player, sub + a, b);
 }
 
 /* rectangle (x0, y0)-(x1, y1); bits 9..11 of a are the ninth bit of y0, x1, y1 */

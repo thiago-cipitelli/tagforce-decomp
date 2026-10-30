@@ -162,7 +162,7 @@ void func_08825778(void);
 void func_08825588(void);
 void *dd_gim_get(int id);
 void *dd_bin_get(int id);
-void libduel_draw_08855688(int card, int a, int b);
+void dd_movie_show(int card, int a, int b);
 void *table_get_entry(void *pack, int i);
 int fade_is_done(void);
 void fade_start(int type, unsigned int color, int frames);
@@ -227,7 +227,7 @@ int dd_free(void *p)
 /* export: the scene heap (in asm: an unnamed export cannot sit between C functions of a file
    split by @asm, tools/fix_ld.py lists the C functions by their names) */
 #ifdef NON_MATCHING
-void *func_0881CA74(void)
+void *dd_heap_get(void)
 {
     return dd_heap_main;
 }
@@ -757,7 +757,7 @@ unsigned int *dd_m10_draw(unsigned int *list)
     int layer = dl_get_layer();
 
     dl_set_list(list);
-    libduel_draw_08855688(card, 0, 3);
+    dd_movie_show(card, 0, 3);
     dd_mode_pop();
     return dl_select_layer(layer, 0);
 }

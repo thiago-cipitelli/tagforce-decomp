@@ -16,19 +16,19 @@ void dd_chara_set_voice(int v);
 void dd_chara_redraw(int state);
 void dd_chara_anim(int v, int a);
 void func_0883B620(int id);
-void func_08819BFC(int v, int a);
+void dd_voice_play(int v, int a);
 
 /* sound per duel state 0..9 (others: 7) */
-int dd_state_se[11] = { 8, 0, 1, 5, 4, 3, 2, 8, 6, 7, 8 };
+int dd_state_se_tab[11] = { 8, 0, 1, 5, 4, 3, 2, 8, 6, 7, 8 };
 
 /* export: commentary active */
-int func_08819A70(void)
+int dd_voice_active(void)
 {
     return dd_scene_flags(8, -1);
 }
 
 /* export: commentary idle */
-int func_08819A7C(void)
+int dd_voice_idle(void)
 {
     if (dd_scene_flags(8, -1) == 0)
         return 0;
@@ -36,12 +36,12 @@ int func_08819A7C(void)
 }
 
 /* export */
-void func_08819ABC(void)
+void dd_voice_nop(void)
 {
 }
 
 /* export: the commentary line of a duel state */
-void func_08819AC4(int a, int state)
+void dd_voice_state(int a, int state)
 {
     int v;
 
@@ -109,25 +109,25 @@ void func_08819AC4(int a, int state)
         break;
     }
     if (v >= 0)
-        func_08819BFC(v, 0);
+        dd_voice_play(v, 0);
 }
 
 /* export */
-void func_08819BC4(int v)
+void dd_voice_set(int v)
 {
     dd_chara_set_voice(v);
 }
 
 /* export: sound of duel state n */
-void func_08819BCC(int n)
+void dd_state_se_play(int n)
 {
     if (n < 0 || n > 9)
         n = 7;
-    func_0883B620(dd_state_se[n]);
+    func_0883B620(dd_state_se_tab[n]);
 }
 
 /* export: plays commentary line v */
-void func_08819BFC(int v, int a)
+void dd_voice_play(int v, int a)
 {
     dd_chara_anim(v, a);
 }

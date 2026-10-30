@@ -12,8 +12,8 @@ extern short ds_popup_timer;           /* 0x0881A96C frames the time-out popup w
 int sceKernelChangeCurrentThreadAttr(unsigned int clear, unsigned int set);
 int cfg_get_language(void);
 int sysvar_get_a98(void);
-void *libduel_draw_0881CA74(void);
-void *libduel_draw_088046E4(void);
+void *dd_heap_get(void);
+void *dd_cards_cip_h(void);
 int menu_update(MenuWidget *w);
 void menu_open(MenuWidget *w);
 void menu_reset(MenuWidget *w);
@@ -39,8 +39,8 @@ void libdeck_swap_088157E8(RecipeData *deck, int n_partners, unsigned short *par
 {
     memset(&ds, 0, sizeof(ds));
     memset(&dsv, 0, sizeof(dsv));
-    ds.heap = libduel_draw_0881CA74();
-    ds.cip = libduel_draw_088046E4();
+    ds.heap = dd_heap_get();
+    ds.cip = dd_cards_cip_h();
     ds.deck = deck;
     ds.n_partners = n_partners;
     ds.partners = partners;
