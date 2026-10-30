@@ -4,6 +4,9 @@
 #define LIBDUEL_DRAW_H
 
 #include "ehsys.h"
+#include "font.h"
+#include "menu.h"
+#include "card_db.h"
 #include "libc.h"
 
 /* ---- 0x08857100-0x0886B25C ---- */
