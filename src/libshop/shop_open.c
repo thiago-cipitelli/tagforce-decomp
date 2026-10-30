@@ -67,6 +67,7 @@ void shop_open_add(void);
 int shop_items_grow(int n);
 void shop_item_refresh(ShopItem *it);
 void shop_open_draw_bg(void);
+void shop_open_setup(void);
 void shop_open_draw_pack(ShopOpenPack *p);
 void shop_open_draw_card(ShopOpenCard *c);
 
@@ -91,7 +92,7 @@ void shop_open_start(void)
     fade_start(1, 0xFF000000, 16);
 }
 
-#ifdef NON_MATCHING /* máquina de passos longa com templates Vec4 copiados pela pilha; alocação diferente */
+#ifdef NON_MATCHING /* 344 palavras: máquina de passos longa com templates Vec4 copiados pela pilha; alocação diferente. Chamadas conferidas com o asm (passo 0 chama shop_open_setup) */
 /* the opening, step by step; 1 once START (skip) was pressed or all packs are open */
 int shop_result_input(void)
 {
@@ -110,18 +111,14 @@ int shop_result_input(void)
     switch (shop_open->step) {
     case 0:
         shop_open_next();
-        shop_open_draw_bg();
+        shop_open_setup();
         shop_open->step++;
         shop_open->timer = 0;
         se_play(0x6268);
         return 0;
     case 1:
         shop_open->timer += speed;
-        if (shop_open->timer < 24) {
-            Vec4 a = shop_open_v0, b = shop_open_v1, c = shop_open_v2;
-            shop_open_fly(shop_open->timer / 24.0f, &shop_open->pack.pos, &c, &b, &a);
-            shop_open->pack.rot = shop_open->timer * 12.566371f / 24.0f;
-        } else {
+        if (shop_open->timer >= 24) {
             Vec4 e = shop_open_v3;
             vec4_copy(&shop_open->pack.pos, &e);
             o = shop_open;
@@ -135,6 +132,10 @@ int shop_result_input(void)
             shop_open->timer = 0;
             shop_open->step = 2;
             se_play(0x6269);
+        } else {
+            Vec4 a = shop_open_v0, b = shop_open_v1, c = shop_open_v2;
+            shop_open_fly(shop_open->timer / 24.0f, &shop_open->pack.pos, &c, &b, &a);
+            shop_open->pack.rot = shop_open->timer * 12.566371f / 24.0f;
         }
         break;
     case 2:
@@ -161,14 +162,7 @@ int shop_result_input(void)
         break;
     case 5:
         shop_open->timer += speed;
-        if (shop_open->timer < 12) {
-            Vec4 d;
-            Vec4 a = shop_open_v4, b = shop_open_v5, c;
-            vec4_sub(&d, &b, &a);
-            vec4_scale(&d, &d, shop_open->timer / 12.0f);
-            c = shop_open_v6;
-            vec3_add_w(&shop_open->pack.pos, &c, &d);
-        } else {
+        if (shop_open->timer >= 12) {
             if (shop_open->opened >= shop.bought[shop_open->pack.kind]) {
                 k = shop_open_next_kind(shop_open->pack.kind);
                 if (k < 0)
@@ -179,6 +173,13 @@ int shop_result_input(void)
             }
             shop_open->step = 0;
             shop_open->timer = 0;
+        } else {
+            Vec4 d;
+            Vec4 a = shop_open_v4, b = shop_open_v5, c;
+            vec4_sub(&d, &b, &a);
+            vec4_scale(&d, &d, shop_open->timer / 12.0f);
+            c = shop_open_v6;
+            vec3_add_w(&shop_open->pack.pos, &c, &d);
         }
         break;
     }
