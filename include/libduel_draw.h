@@ -184,4 +184,79 @@ void mtx_translate(ScePspFVector3 *v);
 void mtx_mult(ScePspFMatrix4 *m);
 void mtx_scale3(ScePspFVector3 *v);
 
+/* the charge trail: three ribbons following a point of the card model, a glow at its head and, for
+   the second variant, sparks and a ring that refracts the screen (task data, 0x7F70 bytes) */
+typedef struct DdCVtx {                /* COLOR8888 | VERTEX_32BITF */
+    unsigned int color;
+    float x, y, z;
+} DdCVtx;
+
+typedef struct DdTCVtx {               /* TEXTURE_32BITF | COLOR8888 | VERTEX_32BITF */
+    float u, v;
+    unsigned int color;
+    float x, y, z;
+} DdTCVtx;
+
+typedef struct DdTrailSpark {          /* 0xE8 */
+    int flags;                         /* bit 0: alive */
+    int t;
+    struct {
+        int frame;                     /* 0-3: d->sq[frame] */
+        ScePspFVector3 pos;
+        ScePspFVector3 vel;
+    } p[8];
+} DdTrailSpark;
+
+typedef struct DdTrailFx {
+    int grow;                          /* +0x0000 frames until the trail is drawn */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    int frame;                         /* +0x0010 parity picks the vertex buffer */
+    DdFxSlot *slot;                    /* +0x0014 */
+    int variant;                       /* +0x0018 1: with sparks and ring (dd_fx13_start_b) */
+    unsigned int se_done;              /* +0x001C bits of func_08827F68 */
+    int se_a;                          /* +0x0020 */
+    int se_b;                          /* +0x0024 */
+    int se_at;                         /* +0x0028 */
+    int r, g, b, a;                    /* +0x002C ribbon color */
+    int npts;                          /* +0x003C points in the history (<= 32) */
+    int nsteps;                        /* +0x0040 ribbon steps built (<= 48) */
+    DdCVtx strip[3][48][3];            /* +0x0044 edge, center, edge */
+    DdCVtx strip_buf[2][3][48][3];     /* +0x1B44 */
+    unsigned char idx[96];             /* +0x5144 strip indices: 3i, 3i+1 */
+    int pad51a4[3];
+    ScePspFVector4 blade[3][2];        /* +0x51B0 the edges of the three ribbons */
+    ScePspFVector4 pts[32];            /* +0x5210 history of the head position */
+    ScePspFVector4 coef[32];           /* +0x5410 spline coefficients */
+    ScePspFVector4 curve[32][8];       /* +0x5610 spline points, 8 per segment */
+    int r2, g2, b2, a2;                /* +0x6610 glow color */
+    DdTCVtx glow[6];                   /* +0x6620 fan */
+    int spark_next;                    /* +0x66B0 */
+    DdRingVtx sq[4][2];                /* +0x66B4 the 4 spark frames */
+    DdTrailSpark spark[16];            /* +0x6754 */
+    DdTCVtx fan[34];                   /* +0x75D4 the ring (screen-textured fan) */
+    DdTCVtx fan_buf[2][34];            /* +0x7904 */
+    int pad7f64[3];
+} DdTrailFx;
+
+void func_08827738(void);                                   /* 3D begin (duel camera matrices) */
+void func_08827668(void);                                   /* 3D end */
+void func_08827F14(int node, ScePspFVector3 *out);          /* position of a node of the scene */
+void func_08827ED4(int node, ScePspFVector3 *out);
+void func_08827258(ScePspFMatrix4 *m);                      /* billboard matrix of the duel camera */
+void func_08827408(ScePspFMatrix4 *m);                      /* view x projection */
+int func_08827F68(int se, int t, int at, unsigned int *done, unsigned int bit); /* sound once at `at` */
+void func_08827BA4(float len, ScePspFVector3 *out);         /* random vector of length `len` */
+void func_088272BC(float x, float y, float z);              /* mtx_scale3 of (x, y, z) */
+void *func_08826C80(void *list);                            /* binds a copy of the frame buffer */
+
+/* BOOT */
+ScePspFVector4 *vec4_set(ScePspFVector4 *out, float x, float y, float z, float w);
+ScePspFVector4 *vec4_scale(ScePspFVector4 *out, const ScePspFVector4 *v, float s);
+ScePspFVector4 *vec4_add(ScePspFVector4 *out, const ScePspFVector4 *a, const ScePspFVector4 *b);
+ScePspFVector4 *mat4_transform_vec4(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v);
+int spline_init(ScePspFVector4 *coef, ScePspFVector4 *p, int n);
+void spline_eval(float t, ScePspFVector4 *out, ScePspFVector4 *p, ScePspFVector4 *coef, int n);
+
 #endif
