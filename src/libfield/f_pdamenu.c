@@ -1,5 +1,4 @@
 // @range 0x08824028-0x08825F7C
-// @asm 0x08824028-0x0882405C
 // @asm 0x088249EC-0x08825218
 // @data 0x0883D530-0x0883D630
 /* Pages of the PDA (field_pda, the menu opened on the map): the options page, the save prompt, the
@@ -69,20 +68,12 @@ unsigned char field_pda_opt_max[16] = { 1, 2, 15, 15, 15, 3, 1, 1, 1 };
 short field_pda_wday[8] = { 0, -3, -5, -1 };
 short field_pda_mdays[4] = { 31, 30, 31, 31 };
 
-#ifdef NON_MATCHING /* os desvios saem com o 0 no delay slot (move v0,zero; b; nop) em outra ordem */
 unsigned char fpda_opt_max(int i)
 {
-    unsigned char v;
-
-    if (i < 0)
+    if (i < 0 || i >= 9)
         return 0;
-    if (i >= 9)
-        v = 0;
-    else
-        v = field_pda_opt_max[i];
-    return v;
+    return field_pda_opt_max[i];
 }
-#endif
 
 /* options page: up/down choose, left/right change, the sound volumes apply at once */
 void fpda_options_update(void)

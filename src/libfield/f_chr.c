@@ -242,9 +242,9 @@ int fld_in_range(int x)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original copia cada modelo Vec3 para um temporário na pilha antes de d; o mwcc propaga a cópia */
+#ifdef NON_MATCHING /* lógica conferida. 10 palavras: mov.s $f12 depois dos ponteiros nas chamadas de vec3_scale e fld_chr_corners (ordem do protótipo) e a ordem das duas divisões por 0.5 */
 /* clips the motion vel of a character of radius r at pos against blocked cells */
-void fld_chr_collide(float r, Vec3 *out, Vec3 *vel, Vec3 *pos)
+void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r)
 {
     FieldMap *m = fld_map_get();
     Vec3 v = *vel;
@@ -262,22 +262,22 @@ void fld_chr_collide(float r, Vec3 *out, Vec3 *vel, Vec3 *pos)
         switch (i) {
         case 0: {
             Vec3 t = { 0.0f, 0.0f, 1.0f };
-            d = t;
+            d = *(Vec3 *)&t;
             break;
         }
         case 1: {
             Vec3 t = { 0.0f, 0.0f, -1.0f };
-            d = t;
+            d = *(Vec3 *)&t;
             break;
         }
         case 2: {
             Vec3 t = { 1.0f, 0.0f, 0.0f };
-            d = t;
+            d = *(Vec3 *)&t;
             break;
         }
         case 3: {
             Vec3 t = { -1.0f, 0.0f, 0.0f };
-            d = t;
+            d = *(Vec3 *)&t;
             break;
         }
         }
@@ -292,20 +292,16 @@ void fld_chr_collide(float r, Vec3 *out, Vec3 *vel, Vec3 *pos)
                 || x >= m->w || z >= m->h) {
                 switch (i) {
                 case 0:
-                    if (v.z >= 0.0f)
-                        v.z = 0.0f;
+                    v.z = v.z < 0.0f ? v.z : 0.0f;
                     break;
                 case 1:
-                    if (v.z <= 0.0f)
-                        v.z = 0.0f;
+                    v.z = v.z > 0.0f ? v.z : 0.0f;
                     break;
                 case 2:
-                    if (v.x >= 0.0f)
-                        v.x = 0.0f;
+                    v.x = v.x < 0.0f ? v.x : 0.0f;
                     break;
                 case 3:
-                    if (v.x <= 0.0f)
-                        v.x = 0.0f;
+                    v.x = v.x > 0.0f ? v.x : 0.0f;
                     break;
                 }
             }

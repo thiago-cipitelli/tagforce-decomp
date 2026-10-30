@@ -159,7 +159,7 @@ void fface_set(FieldFace *f, int blink, int talk, int anim)
     }
 }
 
-#ifdef NON_MATCHING /* the original copies f into $s1 only after loading the two fields */
+#ifdef NON_MATCHING /* lógica conferida. 5 palavras: o original copia f para $s1 só depois de ler os dois campos (no delay do beqz); return antecipado, locais e switch não mudam */
 void fface_free(FieldFace *f)
 {
     void *heap;

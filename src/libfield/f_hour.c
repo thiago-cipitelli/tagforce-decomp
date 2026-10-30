@@ -289,7 +289,7 @@ void fclk_free(void)
     }
 }
 
-#ifdef NON_MATCHING /* fclk_list_item: the original keeps &field_hour_menu in $s0 across the calls; fclk_time_draw: the stack argument of fld_draw_cell is stored one instruction earlier */
+#ifdef NON_MATCHING /* fclk_list_item (lógica conferida, 50 palavras): o original materializa &field_hour_menu em $s0 no início e o mantém nas chamadas; fclk_time_draw: o argumento de pilha de fld_draw_cell é guardado uma instrução antes */
 void *fclk_list_item(void *list, unsigned int i, int x, int y)
 {
     FieldHourMenu *c = &field_hour_menu;

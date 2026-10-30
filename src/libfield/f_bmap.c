@@ -1167,14 +1167,18 @@ void *fbm_draw_pic(void *list)
     return fld_draw_cell1(list, 0x173, 0xB6, p->x, p->y, 0x66, 0x53);
 }
 
-#ifdef NON_MATCHING /* register allocation: the original spills field_bm to the stack and keeps the list in $s1 */
+#ifdef NON_MATCHING /* lógica conferida. ~155 palavras (808 B contra 820): o original guarda field_bm na pilha, tem as cópias mortas "li s4,18" e "b; nop" (padrão do case) e outra alocação de registradores */
 void *fbm_draw_marks(void *list)
 {
     int j;
     int n;
     float off;
+    float hs;
+    float base;
     int x;
     int half;
+    int dx;
+    int dy;
     unsigned int i;
     unsigned int k;
     FieldBm *m = &field_bm;
@@ -1197,25 +1201,30 @@ void *fbm_draw_marks(void *list)
         }
         if (n == 0)
             continue;
-        if (n >= 1 && n <= 3) {
+        if (n > 0 && n < 4) {
+            off = 0.5f * (float)((n - 1) * size);
             for (k = 0, x = 0; (int)k < 7; k++) {
                 if (m->marks[i] & (1 << k)) {
-                    list = fbm_icon(list, k, p->x + (int)((x - 4) - 0.5f * (float)((n - 1) * size)), p->y + 8,
-                                    size, size);
+                    list = fbm_icon(list, k, p->x + (int)((float)(x - 4) - off), p->y + 8, size, size);
                     x += size - 1;
+                    j++;
                 }
             }
         } else {
             half = (int)ceilf_vfpu(0.5f * n);
             off = 0.5f * (float)((half - 1) * size);
+            hs = 0.5f * (float)size;
+            base = -4.0f - off;
             for (k = 0, x = 0; (int)k < 7; k++) {
                 if (m->marks[i] & (1 << k)) {
-                    if (j < half)
-                        list = fbm_icon(list, k, p->x + (int)((x - 4) - off), p->y + 8, size, size);
-                    else
-                        list = fbm_icon(list, k,
-                                        p->x + (int)((-4.0f - off) + (0.5f * size + (float)((size - 1) * (j - half)))),
-                                        p->y + (size + 6), size, size);
+                    if (j < half) {
+                        dx = (int)((float)(x - 4) - off);
+                        dy = 8;
+                    } else {
+                        dx = (int)(base + (hs + (float)((size - 1) * (j - half))));
+                        dy = size + 6;
+                    }
+                    list = fbm_icon(list, k, p->x + dx, p->y + dy, size, size);
                     x += size - 1;
                     j++;
                 }
