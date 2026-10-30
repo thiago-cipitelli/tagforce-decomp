@@ -92,7 +92,6 @@ void *dk_draw_shade(void *list, unsigned short side, unsigned short tab, int sho
 
 #ifdef NON_MATCHING /* switch com tamanhos indefinidos e campos por índice; alocação diferente (como sc_draw_detail) */
 unsigned int font_sample_glyph_size(void);
-unsigned short card_top_get_letter(int v);
 int font_measure_text(unsigned short *text);
 void font_text_set(void *list);
 void *font_text_clear(void);

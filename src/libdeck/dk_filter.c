@@ -1,14 +1,9 @@
 // @range 0x08817D18-0x088192C8
 // @data 0x0882313C-0x08823178
+// @rodata 0x0882266C-0x08822688
 // @asm 0x08817FF8-0x0881815C
 // @asm 0x0881815C-0x088182EC
-// @asm 0x088184D0-0x08818630
 // @asm 0x08818894-0x08818B44
-// @asm 0x08818B44-0x08818BFC
-// @asm 0x08818BFC-0x08818E7C
-// @asm 0x08818E7C-0x08818F04
-// @asm 0x08818F04-0x08818F8C
-// @asm 0x08818F8C-0x08819138
 // @asm 0x08819138-0x088192C8
 /* Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
    with its word history, the filters (kind, type, race, level ranges, spell/trap kinds, limit,
@@ -127,8 +122,8 @@ unsigned short dk_search_step(DkList *l)
 }
 
 
-#ifdef NON_MATCHING /* laços do histórico com outra alocação ($s trocados) */
-* the matches become the visible order; the word goes on top of the history */
+#ifdef NON_MATCHING /* 16 palavras: len, ponteiro do histórico e k em $s em rodízio (original s2/s0/s1); ordens de declaração e de instrução testadas */
+/* the matches become the visible order; the word goes on top of the history */
 void dk_search_finish(DkList *l)
 {
     int len;
@@ -142,8 +137,8 @@ void dk_search_finish(DkList *l)
         dk_search.out = 0;
     }
     l->filter = 8;
-    k = 7;
     len = wcslen(dk_search.word);
+    k = 7;
     for (i = 0; i < 8; i++) {
         if (DK_WORDS[i][0] == 0) {
             k = i;
@@ -166,8 +161,8 @@ DkFilterFn dk_filters[9] = {
 };
 
 
-#ifdef NON_MATCHING /* laço com a tabela de filtros; alocação diferente */
-* keeps the entries passing filter f (arg its parameter); returns the count */
+#ifdef NON_MATCHING /* 22 palavras: o original carrega e->id e calcula e (em a1) antes do teste do filtro, com ok = 1 no atraso do beqz; o ternário chega mais perto que if/else */
+/* keeps the entries passing filter f (arg its parameter); returns the count */
 int dk_list_filter(DkList *l, unsigned short f, unsigned int *arg)
 {
     unsigned short *tmp = heap_alloc(dk_heap, l->count << 1);
@@ -176,23 +171,16 @@ int dk_list_filter(DkList *l, unsigned short f, unsigned int *arg)
     unsigned short k;
     DkEnt *e;
     int ok;
-    unsigned short *p;
 
     if (tmp == 0)
         return l->count;
     n = 0;
-    p = tmp;
     for (i = 0; i < l->count; i++) {
         k = l->order[i];
         e = &l->ents[k];
-        ok = 1;
-        if (dk_filters[f] != 0)
-            ok = dk_filters[f](e->id, *arg);
-        else if (f == 7)
-            ok = dk_filter_attr(e, arg);
+        ok = dk_filters[f] != 0 ? dk_filters[f](e->id, *arg) : f == 7 ? dk_filter_attr(e, arg) : 1;
         if (ok) {
-            *p++ = k;
-            n++;
+            tmp[n++] = k;
         }
     }
     memcpy(l->order, tmp, n << 1);
@@ -247,13 +235,10 @@ int dk_filter_level(unsigned short id, unsigned int mask)
 }
 
 
-#ifdef NON_MATCHING /* o default da tabela de saltos interna sai com beqz+nop no original */
-* spell and trap kinds */
+/* spell and trap kinds */
 int dk_filter_spelltrap(unsigned short id, unsigned int mask)
 {
     switch (card_get_attribute_icon(id)) {
-    default:
-        return 0;
     case 7:
         switch (card_get_prop5_hi(id)) {
         case 0:
@@ -301,7 +286,6 @@ int dk_filter_spelltrap(unsigned short id, unsigned int mask)
     }
     return 0;
 }
-#endif
 
 int dk_filter_limit(unsigned short id, unsigned int mask)
 {
@@ -355,8 +339,8 @@ int dk_text_match(unsigned short id, unsigned short *word)
 }
 
 
-#ifdef NON_MATCHING /* ordem de um bne no laço de busca */
-* Horspool search of word (n chars) in text */
+#ifdef NON_MATCHING /* 2 palavras: o original põe "j = n - 1" (move t2,a3) no atraso do bne do primeiro caractere; nenhuma ordem das três atribuições reproduz */
+/* Horspool search of word (n chars) in text */
 unsigned short *dk_find_text(unsigned short *text, unsigned short *word, int n)
 {
     int i;
@@ -410,121 +394,105 @@ unsigned short *dk_find_text(unsigned short *text, unsigned short *word, int n)
 #endif
 
 
-#ifdef NON_MATCHING /* teste do caractere e máscaras u16 com outra alocação */
-* upper case, full-width ASCII to half width, katakana to hiragana */
+/* upper case, full-width ASCII to half width, katakana to hiragana */
 void dk_fold_text(unsigned short *dst, unsigned short *src)
 {
-    unsigned short c = *src++;
+    unsigned short c;
 
-    while (c != 0) {
+    while ((c = *src++) != 0) {
         if (c >= 0xFF01 && c < 0xFF5E)
             c += 0x120;
         if (c >= 0x30A1 && c <= 0x30F4)
-            c += (unsigned short)(0x3041 - 0x30A1);
+            c += 0xFFA0;
         else
             c = towupper(c);
-        *dst = c;
-        dst++;
-        c = *src++;
+        *dst++ = c;
     }
     *dst = 0;
 }
-#endif
 
 
-#ifdef NON_MATCHING /* contador e ponteiro em $s trocados */
-* sorts the visible order of l by key sort, dir 0 up, 1 down */
+/* sorts the visible order of l by key sort, dir 0 up, 1 down */
 void dk_list_sort(DkList *l, int sort, unsigned short dir)
 {
+    unsigned short n;
+    DkKey *k;
     int i;
-    unsigned int n = l->count;
-    DkKey *k = heap_alloc(dk_heap, n << 3);
-    DkKey *p;
-    unsigned short idx;
+    unsigned short id;
 
-    for (i = 0, p = k; i < (int)n; i++, p++) {
-        idx = l->order[i];
-        p->idx = idx;
-        p->pos = i;
-        p->value = dk_sort_key_value(&l->ents[idx], sort);
+    n = l->count;
+    k = heap_alloc(dk_heap, n << 3);
+    for (i = 0; i < n; i++) {
+        id = l->order[i];
+        k[i].idx = id;
+        k[i].pos = i;
+        k[i].value = dk_sort_key_value(&l->ents[id], sort);
     }
     if (dir == 0)
-        qsort(k, n, 8, dk_cmp_up);
+        qsort(k, (int)n, sizeof(DkKey), dk_cmp_up);
     else if (dir == 1)
-        qsort(k, n, 8, dk_cmp_down);
-    for (i = 0; i < (int)n; i++)
+        qsort(k, (int)n, sizeof(DkKey), dk_cmp_down);
+    for (i = 0; i < n; i++)
         l->order[i] = k[i].idx;
     if (k != 0)
         heap_set_level(dk_heap, k);
     l->sort = sort;
     l->dir = dir;
 }
-#endif
 
 
-#ifdef NON_MATCHING /* retornos em blocos próprios com b e o valor no atraso */
-nt dk_cmp_up(const void *pa, const void *pb)
+int dk_cmp_up(const void *pa, const void *pb)
 {
     const DkKey *a = pa;
     const DkKey *b = pb;
-    int r;
 
     if (a->value == b->value) {
         if (a->pos < b->pos)
-            r = -1;
-        else if (b->pos < a->pos)
-            r = 1;
-        else
-            r = 0;
-    } else if (a->value == -2)
-        r = 1;
-    else if (b->value == -2)
-        r = -1;
-    else if (a->value < b->value)
-        r = -1;
-    else if (b->value < a->value)
-        r = 1;
-    else
-        r = 0;
-    return r;
+            return -1;
+        if (b->pos < a->pos)
+            return 1;
+    } else {
+        if (a->value == -2)
+            return 1;
+        if (b->value == -2)
+            return -1;
+        if (a->value < b->value)
+            return -1;
+        if (b->value < a->value)
+            return 1;
+    }
+    return 0;
 }
-#endif
 
 
-#ifdef NON_MATCHING /* idem dk_cmp_up */
-nt dk_cmp_down(const void *pa, const void *pb)
+int dk_cmp_down(const void *pa, const void *pb)
 {
     const DkKey *a = pa;
     const DkKey *b = pb;
-    int r;
 
     if (a->value == b->value) {
-        if (b->pos < a->pos)
-            r = -1;
-        else if (a->pos < b->pos)
-            r = 1;
-        else
-            r = 0;
-    } else if (a->value == -2)
-        r = 1;
-    else if (b->value == -2)
-        r = -1;
-    else if (a->value < b->value)
-        r = 1;
-    else if (b->value < a->value)
-        r = -1;
-    else
-        r = 0;
-    return r;
+        if (a->pos > b->pos)
+            return -1;
+        if (a->pos < b->pos)
+            return 1;
+    } else {
+        if (a->value == -2)
+            return 1;
+        if (b->value == -2)
+            return -1;
+        if (a->value < b->value)
+            return 1;
+        if (b->value < a->value)
+            return -1;
+    }
+    return 0;
 }
-#endif
 
 unsigned char dk_spell_order[8] = { 9, 9, 2, 1, 4, 0, 3, 0 };
 unsigned char dk_trap_order[8] = { 0x13, 0x0A, 0x13, 0x13, 0x0B, 0x13, 0x13, 0 };
 
 
-#ifdef NON_MATCHING /* cadeia de testes da chave em outra ordem */
-* value of key sort for a card (smaller sorts first), -2 none */
+/* value of key sort for a card (smaller sorts first), -2 none */
 int dk_sort_key_value(DkEnt *e, int key)
 {
     unsigned short sort = key;
@@ -534,80 +502,99 @@ int dk_sort_key_value(DkEnt *e, int key)
     case 1:
         return card_get_sort(e->id);
     case 2:
-        return card_get_attribute_icon(e->id);
+        v = card_get_attribute_icon(e->id);
+        break;
     case 9:
-        return card_get_limit(e->id);
-    }
-    switch (card_get_attribute_icon(e->id)) {
-    case 7:
-        if (sort == 8)
-            return dk_spell_order[card_get_prop5_hi(e->id)];
-        return -2;
-    case 8:
-        if (sort == 8)
-            return dk_trap_order[card_get_prop5_hi(e->id)];
+        v = card_get_limit(e->id);
         break;
     default:
-        switch (sort) {
-        case 3:
-            return 0xFFFF - card_get_level(e->id);
-        case 4:
-            v = card_get_atk_q(e->id);
-            return v == 0xFFFF ? 0x10000 : 0xFFFF - v;
-        case 5:
-            v = card_get_def_q(e->id);
-            return v == 0xFFFF ? 0x10000 : 0xFFFF - v;
-        case 6:
-            return card_get_type(e->id);
+        switch (card_get_attribute_icon(e->id)) {
         case 7:
-            return card_get_kind(e->id);
+            if (sort == 8)
+                return dk_spell_order[card_get_prop5_hi(e->id)];
+            break;
+        case 8:
+            if (sort != 8)
+                break;
+            return dk_trap_order[card_get_prop5_hi(e->id)];
+        default:
+            switch (sort) {
+            case 3:
+                return 0xFFFF - card_get_level(e->id);
+            case 4:
+                v = card_get_atk_q(e->id);
+                if (v == 0xFFFF)
+                    return 0x10000;
+                return 0xFFFF - v;
+            case 5:
+                v = card_get_def_q(e->id);
+                if (v == 0xFFFF)
+                    return 0x10000;
+                return 0xFFFF - v;
+            case 6:
+                return card_get_type(e->id);
+            case 7:
+                return card_get_kind(e->id);
+            }
+            break;
         }
+        v = -2;
         break;
     }
-    return -2;
+    return v;
 }
-#endif
 
 
-#ifdef NON_MATCHING /* cadeia de testes da chave em outra ordem */
-* the value shown for key sort (-1 = "?", -2 none) */
+#ifdef NON_MATCHING /* 16 palavras: o "default: v = -2" do switch(sort) interno vai para o atraso do b; no original fica no fim (b+nop), alvo comum com o "sort != 8" dos ícones 7/8. goto, retornos e default sem corpo não reproduzem */
+/* the value shown for key sort (-1 = "?", -2 none) */
 int dk_sort_value(DkEnt *e, unsigned short sort)
 {
     int v;
 
-    if (sort == 9) {
+    switch (sort) {
+    case 1:
+        return card_get_sort_position(e->id);
+    case 2:
+        v = card_get_attribute_icon(e->id);
+        break;
+    case 9:
         v = card_get_limit(e->id);
-    } else if (sort == 2) {
-        v = card_get_attribute_icon(e->id);
-    } else if (sort == 1) {
-        v = card_get_sort_position(e->id);
-    } else {
-        v = card_get_attribute_icon(e->id);
-        if (v == 8 || v == 7) {
-            if (sort == 8) {
-                v = card_get_prop5_hi(e->id);
-                if (v == 0)
-                    v = 7;
-            } else {
+        break;
+    default:
+        switch (card_get_attribute_icon(e->id)) {
+        case 7:
+        case 8:
+            if (sort != 8)
+                return -2;
+            v = card_get_prop5_hi(e->id);
+            v = v == 0 ? 7 : v;
+            break;
+        default:
+            switch (sort) {
+            case 3:
+                v = card_get_level(e->id);
+                break;
+            case 4:
+                v = card_get_atk_q(e->id);
+                v = v == 0xFFFF ? -1 : v;
+                break;
+            case 5:
+                v = card_get_def_q(e->id);
+                v = v == 0xFFFF ? -1 : v;
+                break;
+            case 6:
+                v = card_get_type(e->id);
+                break;
+            case 7:
+                v = card_get_kind(e->id);
+                break;
+            default:
                 v = -2;
+                break;
             }
-        } else if (sort == 7) {
-            v = card_get_kind(e->id);
-        } else if (sort == 6) {
-            v = card_get_type(e->id);
-        } else if (sort == 5) {
-            v = card_get_def_q(e->id);
-            if (v == 0xFFFF)
-                v = -1;
-        } else if (sort == 4) {
-            v = card_get_atk_q(e->id);
-            if (v == 0xFFFF)
-                v = -1;
-        } else if (sort == 3) {
-            v = card_get_level(e->id);
-        } else {
-            v = -2;
+            break;
         }
+        break;
     }
     return v;
 }
