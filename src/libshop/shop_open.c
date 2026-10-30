@@ -56,7 +56,7 @@ void shop_pack_open(int pack, unsigned short *out);
 int font_draw_wtext(int x, int y, int w, unsigned short *text);
 void *sceGeEdramGetAddr(void);
 void shop_open_layout(void);
-void shop_open_fly(float t, Vec4 *out, Vec4 *a, Vec4 *b, Vec4 *c);
+void shop_open_fly(Vec4 *out, Vec4 *a, Vec4 *b, Vec4 *c, float t);
 int shop_open_cards_done(short speed);
 int shop_card_tex_hook();
 int shop_card_glow(int a, Mat4 *m, int rarity, int speed, void *vram);
@@ -134,7 +134,7 @@ int shop_result_input(void)
             se_play(0x6269);
         } else {
             Vec4 a = shop_open_v0, b = shop_open_v1, c = shop_open_v2;
-            shop_open_fly(shop_open->timer / 24.0f, &shop_open->pack.pos, &c, &b, &a);
+            shop_open_fly(&shop_open->pack.pos, &c, &b, &a, shop_open->timer / 24.0f);
             shop_open->pack.rot = shop_open->timer * 12.566371f / 24.0f;
         }
         break;

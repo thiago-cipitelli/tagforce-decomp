@@ -82,7 +82,7 @@ segments:
       - [0xEA34, asm, shop_open_asm_088129D4]
       - [0xECC0, c, shop_anim]
       - [0xEDC4, asm, shop_anim_asm_08812D64]
-      - [0xF2A0, c, shop_anim]
+      - [0xEFD8, c, shop_anim]
       - [0xF460, asm, shop_anim_asm_08813400]
       - [0xF7A8, c, shop_anim]
       - [0xF868, c, shop_detail]
