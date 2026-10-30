@@ -20,7 +20,7 @@ void dd_view_draw3d(void);
 void dd_view_update(float dt);
 
 void dd_lp_get();
-int func_0881351C(void);
+int dd_chr_term(void);
 void func_0881CA40(void);
 int func_0881CB84(void);
 void *func_0881CCF8(void *list);
@@ -143,7 +143,7 @@ void dd_eng_unload(void);
 /* scene exit */
 void dd_test_exit(void)
 {
-    func_0881351C();
+    dd_chr_term();
     dd_res_term();
     efs_term();
     func_0881CA40();
