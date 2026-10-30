@@ -40,20 +40,6 @@ typedef struct DdHookObj {             /* model object the hooks receive */
     float speed;                       /* +0x5C */
 } DdHookObj;
 
-typedef struct DdTexMat {              /* material of a hooked texture */
-    const char *name;                  /* +0x00 */
-    int unk4;
-    short unk8;
-    signed char func, comp;            /* +0x0A */
-    unsigned int env;                  /* +0x0C */
-    signed char wrap_u, wrap_v;        /* +0x10 */
-    float u, v, su, sv;                /* +0x14 */
-} DdTexMat;
-
-typedef struct DdVec4 {
-    float v[4];
-} DdVec4;
-
 typedef struct DdMtx {                 /* 4x4 matrix as 16 float members (copied member by member) */
     float xx, xy, xz, xw, yx, yy, yz, yw, zx, zy, zz, zw, wx, wy, wz, ww;
 } __attribute__((aligned(16))) DdMtx;

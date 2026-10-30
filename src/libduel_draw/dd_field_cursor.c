@@ -7,7 +7,6 @@
 #include "libduel_draw.h"
 
 extern DdCursor dd_cursor;             /* 0x08C54640 */
-extern int dd_cursor_locked;           /* 0x08C54678 */
 
 /* grid[row][col] of field locations */
 DdLoc dd_cursor_grid[7][7] = {
@@ -49,7 +48,7 @@ void dd_cursor_move(int key)
     int idx;
     DdLoc l;
 
-    if (dd_cursor_locked)
+    if (dd_cursor.locked)
         return;
     zone = cur.zone;
     c->dirty = 1;
@@ -255,7 +254,7 @@ void dd_cursor_get(DdLoc *out)
 
 void dd_cursor_lock(int on)
 {
-    dd_cursor_locked = on;
+    dd_cursor.locked = on;
 }
 
 void dd_cursor_nop(void)
