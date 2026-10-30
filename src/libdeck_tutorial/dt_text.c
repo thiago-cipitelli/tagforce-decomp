@@ -1,10 +1,8 @@
 // @range 0x0881C0E8-0x0881D318
 // @data 0x08821090-0x088210AC
-// @asm 0x0881C18C-0x0881C2E8
 // @asm 0x0881C65C-0x0881C964
 // @asm 0x0881C990-0x0881CA18
 // @asm 0x0881CA78-0x0881CAAC
-// @asm 0x0881CAEC-0x0881CC00
 // @asm 0x0881CC3C-0x0881CDB4
 // @asm 0x0881CDB4-0x0881CEEC
 // @asm 0x0881CEEC-0x0881D030
@@ -103,8 +101,6 @@ void dt_text_init(void *heap, int x, int w, int size, int wait, int style)
     dt_text_build();
 }
 
-#ifdef NON_MATCHING
-/* acessos absolutos ao dt_tb com um lui por campo e a ordem das gravações das posições float não saem iguais */
 void dt_text_reset(int x, int w, int size, int wait, int style)
 {
     DtText *t = &dt_tb;
@@ -122,13 +118,13 @@ void dt_text_reset(int x, int w, int size, int wait, int style)
     dt_tb.page_full = 0;
     dt_tb.next_pos = 0;
     dt_tb.flag8000 = 0;
-    dt_tb.pos2[0] = x;
+    dt_tb.from[0] = x;
     dt_tb.from[1] = 300.0f;
+    dt_tb.to[0] = x;
     dt_tb.to[1] = 210.0f;
+    dt_tb.pos2[0] = x;
     dt_tb.pos2[1] = 300.0f;
     dt_tb.def.x = x;
-    dt_tb.from[0] = dt_tb.pos2[0];
-    dt_tb.to[0] = dt_tb.pos2[0];
     if (region_get() == 0) {
         t->lines = 2;
         t->flag8000 = 1;
@@ -141,7 +137,6 @@ void dt_text_reset(int x, int w, int size, int wait, int style)
     dt_text_relayout();
     t->state = 0;
 }
-#endif
 
 /* frees the window items and clears the box */
 void dt_text_term(void)
@@ -396,8 +391,6 @@ void dt_text_place(int x, int y, int w)
     dt_tb.def.w = w;
 }
 
-#ifdef NON_MATCHING
-/* ordem das gravações nos campos do MenuItemDef e registradores */
 void dt_text_build(void)
 {
     MenuItemDef *d = &dt_tb.def;
@@ -407,27 +400,26 @@ void dt_text_build(void)
     d->visible = 1;
     d->auto_title = 1;
     d->font_flag4 = 1;
+    d->style = dt_tb.style;
     d->style2 = 2;
     d->pad_t = 2;
-    d->style = dt_tb.style;
     d->show_title = 0;
-    d->y = 0xD2;
     d->x = dt_tb.x;
+    d->y = 0xD2;
+    d->w = dt_tb.w;
     d->text = 0;
     d->title = 0;
     d->h = 0x3C;
     d->color = 0xFFFFFFFF;
     d->title_color = 0xFFFFFFFF;
-    d->w = dt_tb.w;
+    d->font_size = dt_tb.size;
     d->text_color = 0xFF000000;
     d->pad_l = 4;
-    d->font_size = dt_tb.size;
     d->title_font_size = dt_tb.size;
     d->pad_r = 0x14;
     menu_add_item(&dt_tb.menu, d);
     dt_text_reset(dt_tb.x, dt_tb.w, dt_tb.size, dt_tb.wait, dt_tb.style);
 }
-#endif
 
 void dt_text_blink(void)
 {
