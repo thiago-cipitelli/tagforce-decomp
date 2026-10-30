@@ -3,7 +3,7 @@
 // @data 0x08876B54-0x08876B9C
 /* The spirit orbs: up to five flames that appear in a row over a dimmed field, bob, and shed sparks;
    the last one joins when the others have faded in (task of 0x219C bytes). */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 int dd_orbs_update(int phase, DdOrbFx *d);
 

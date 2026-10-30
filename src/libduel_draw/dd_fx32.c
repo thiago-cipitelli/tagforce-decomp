@@ -12,7 +12,7 @@
 /* Effects 32-37 and 52-53: nine styles of full-screen burst picked by dd_fx_table.arg0 (style 0-8),
    each a task with its own particles, drawn through a stencil mask of the field except for effect 33,
    and the shared helpers (timings, depth state, the mask). */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 /* BOOT */
 void *dl_clear_depth(void *list, unsigned int z);

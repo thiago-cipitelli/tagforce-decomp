@@ -3,7 +3,7 @@
 // @data 0x08876BF0-0x08876C40
 /* Effects 42-50, 63-64, 71-77 and 82: a ring of 16 glowing petals turning under a node of the card
    model, with sparks that rise and stretch along the view (task of 0x710 bytes). */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 int dd_halo_update(int phase, DdHaloFx *d);
 
@@ -122,7 +122,7 @@ int dd_halo_update(int phase, DdHaloFx *d)
             flip = 0;
         }
         d->placed = 1;
-        func_0884DAF8(&d->m, 0x27);
+        dd_chara_bone_mtx(&d->m, 0x27);
         if (flip) {
             node = dd_halo_down;
             mat4_copy(&tmp, &d->m);
@@ -256,7 +256,7 @@ int dd_halo_update(int phase, DdHaloFx *d)
         mtx_push();
         mtx_identity();
         axis = dd_halo_axis;
-        vec4_copy(&up, func_0884DB2C());
+        vec4_copy(&up, dd_chara_pos());
         for (i = 0; i < 12; i++) {
             sp = &d->spark[i];
             if (!(sp->flags & 1))

@@ -3,7 +3,7 @@
 /* Visual effects attached to a card model: four slots (dd_fx_table), the dispatcher that maps an effect
    id (13-376) to the task that draws it, and the two extra slots (+0xB0, +0xB4) for the special
    summon effects. */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 void *model_hook(void *m, int which, void *v);
 void snd_cmd_fef9(void);
@@ -18,17 +18,17 @@ int dd_fx42_start(DdFxSlot *s, int a, int b);               /* 42-50, 63-64, 71-
 int dd_fx78_arg(DdFxOwner *o);
 int dd_fx78_start(DdFxSlot *s, int arg, int a, int b);      /* 78-81 */
 int dd_fx83_start(DdFxSlot *s, int arg, int a, int b);      /* 83-90, 118-128 */
-int func_088477E8(DdFxSlot *s, int a, int b);               /* 24-26, 100-101, 113-114 */
-int func_08847D80(DdFxSlot *s, int a, int b);               /* 102-106 */
-int func_08848B40(DdFxSlot *s, int a, int b);               /* 247-281 */
-int func_08849060(DdFxSlot *s, int a, int b);               /* 204-376 */
-int func_0884929C(DdFxSlot *s, int a, int b);
-int func_0884A86C(DdFxSlot *s, int a, int b);
-int func_0884D394(DdFxSlot *s, int a, int b);
-void func_0884D488(int a, int b);
-void func_0884D4A8(void);                                   /* model hook of the kind 28 effects */
+int dd_fx_nsea_start(DdFxSlot *s, int a, int b);               /* 24-26, 100-101, 113-114 */
+int dd_fx_lines_start(DdFxSlot *s, int a, int b);               /* 102-106 */
+int dd_fx_flare_start(DdFxSlot *s, int a, int b);               /* 247-281 */
+int dd_fx_hit_se_start(DdFxSlot *s, int a, int b);               /* 204-376 */
+int dd_fx_glow_start(DdFxSlot *s, int a, int b);
+int dd_fx_eyes_start(DdFxSlot *s, int a, int b);
+int dd_fx_aura_start(DdFxSlot *s, int a, int b);
+void dd_fx_fade_set(int a, int b);
+void dd_fx_fade_cb(void);                                   /* model hook of the kind 28 effects */
 void func_08813FB4(DdFxOwner *o, int v);                    /* sets o->+0x158 */
-void func_0884E0C0(int level, int flag);                    /* dims the field behind the effect */
+void dd_ryusen_set_alpha(int level, int flag);                    /* dims the field behind the effect */
 
 void dd_fx_init(void)
 {
@@ -126,13 +126,13 @@ void dd_fx_start(DdFxOwner *o, int id)
         case 24: case 25: case 26: case 100: case 101: case 113: case 114:
             s = dd_fx_alloc(type, sub, id, o);
             if (s != 0)
-                s->task = func_088477E8(s, 0, 0);
+                s->task = dd_fx_nsea_start(s, 0, 0);
             break;
         case 102: case 103: case 104: case 105: case 106:
             if (t->enable8 == 1) {
                 s = dd_fx_alloc(type, sub, id, o);
                 if (s != 0)
-                    s->task = func_08847D80(s, 0, 0);
+                    s->task = dd_fx_lines_start(s, 0, 0);
             } else {
                 ok = 0;
                 dim = 0;
@@ -147,7 +147,7 @@ void dd_fx_start(DdFxOwner *o, int id)
             if (type == 12)
                 level = 0;
             if (s != 0)
-                s->task = func_08848B40(s, 0, 0);
+                s->task = dd_fx_flare_start(s, 0, 0);
             break;
         case 252: case 278: case 282: case 283: case 284: case 286: case 287: case 288: case 289: case 332:
             func_08813FB4(o, 0);
@@ -170,7 +170,7 @@ void dd_fx_start(DdFxOwner *o, int id)
             s = dd_fx_alloc(type, sub, id, o);
             dim = 0;
             if (s != 0)
-                s->task = func_08849060(s, 0, 0);
+                s->task = dd_fx_hit_se_start(s, 0, 0);
             break;
         default:
             ok = 0;
@@ -189,9 +189,9 @@ void dd_fx_start(DdFxOwner *o, int id)
             dim = 1;
     }
     if (dim == 1)
-        func_0884E0C0(level, 1);
+        dd_ryusen_set_alpha(level, 1);
     else
-        func_0884E0C0(255, 1);
+        dd_ryusen_set_alpha(255, 1);
 }
 
 void dd_fx_stop(DdFxOwner *o)
@@ -229,7 +229,7 @@ void dd_fx2_start(DdFxOwner *o, int id)
             if (id == 250) {
                 s = dd_fx_alloc(type, sub, id, o);
                 if (s != 0)
-                    s->task = func_0884A86C(s, 0, 0);
+                    s->task = dd_fx_eyes_start(s, 0, 0);
             } else {
                 ok = 0;
             }
@@ -238,7 +238,7 @@ void dd_fx2_start(DdFxOwner *o, int id)
             if (sub == 0) {
                 s = dd_fx_alloc(type, sub, id, o);
                 if (s != 0)
-                    s->task = func_0884929C(s, 0, 0);
+                    s->task = dd_fx_glow_start(s, 0, 0);
             } else {
                 ok = 0;
             }
@@ -285,7 +285,7 @@ void dd_fx3_start(DdFxOwner *o, int id)
     } else {
         s = dd_fx_alloc(type, sub, id, o);
         if (s != 0)
-            s->task = func_0884D394(s, 0, 0);
+            s->task = dd_fx_aura_start(s, 0, 0);
     }
     if (ok == 1 && (s == 0 || s->task == -1))
         ok = 0;
@@ -295,16 +295,16 @@ void dd_fx3_start(DdFxOwner *o, int id)
     case 28:
         switch (id) {
         case 100:
-            func_0884D488(71, 15);
-            model_hook(o->model, 1, func_0884D4A8);
+            dd_fx_fade_set(71, 15);
+            model_hook(o->model, 1, dd_fx_fade_cb);
             break;
         case 101:
-            func_0884D488(61, 15);
-            model_hook(o->model, 1, func_0884D4A8);
+            dd_fx_fade_set(61, 15);
+            model_hook(o->model, 1, dd_fx_fade_cb);
             break;
         case 113: case 114:
-            func_0884D488(1, 15);
-            model_hook(o->model, 1, func_0884D4A8);
+            dd_fx_fade_set(1, 15);
+            model_hook(o->model, 1, dd_fx_fade_cb);
             break;
         default:
             model_hook(o->model, 1, 0);

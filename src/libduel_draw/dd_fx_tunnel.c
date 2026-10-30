@@ -2,7 +2,7 @@
 // @asm 0x0883AC7C-0x0883B62C
 /* The tunnel of effects 27-31, 38-41 and 54: a disc of 33 textured rings that scrolls toward the
    center, with light streaks bursting at random angles (task of 0x67CC bytes). */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 int dd_tunnel_update(int phase, DdTunnelFx *d);
 

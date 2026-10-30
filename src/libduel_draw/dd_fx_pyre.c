@@ -4,7 +4,7 @@
 /* Effects 83-90 and 118-128: a ring of 16 petals turning under a node of the card model, sparks
    rising from it and, in the red variant (dd_fx_table.arg4 != 0), flame flares bursting outward
    (task of 0x11E0 bytes). */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 int dd_pyre_update(int phase, DdPyreFx *d);
 
@@ -143,7 +143,7 @@ int dd_pyre_update(int phase, DdPyreFx *d)
     if (d->grow == 0 && d->placed == 0) {
         flip = !(s->id == 90 || s->id == 84);
         d->placed = 1;
-        func_0884DAF8(&d->m, 0x27);
+        dd_chara_bone_mtx(&d->m, 0x27);
         if (flip) {
             node = dd_pyre_down;
             mat4_copy(&tmp, &d->m);
@@ -346,7 +346,7 @@ int dd_pyre_update(int phase, DdPyreFx *d)
             mtx_push();
             mtx_identity();
             axis = dd_pyre_axis;
-            vec4_copy(&up, func_0884DB2C());
+            vec4_copy(&up, dd_chara_pos());
             mat4_identity(&tilt);
             mat4_mul_rot_x(&tilt, &tilt, 1.3962634f);
             for (i = 0; i < 8; i++) {

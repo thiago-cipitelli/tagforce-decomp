@@ -5,7 +5,7 @@
 /* The charge trail of effects 13-23: three ribbons that follow a point of the scene along a spline
    of its last 32 positions, a glow at the head and, in the second variant (owners of kind 19),
    sparks and a ring that refracts the screen behind it (task of 0x7F70 bytes). */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 int dd_trail_update(int phase, DdTrailFx *d);
 

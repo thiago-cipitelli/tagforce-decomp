@@ -5,7 +5,7 @@
 /* Effects 78-81: a burst of light on the card model, fixed where the model's node was when it starts:
    a glow, petals, a ring and motes thrown outward; kinds 13-18 and 40 get the purple variant with
    flame tongues swirling around it. */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 int dd_burst_start(DdFxSlot *s, int a, int b);
 int dd_burst2_start(DdFxSlot *s, int a, int b);

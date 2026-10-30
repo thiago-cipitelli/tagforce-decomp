@@ -4,7 +4,7 @@
 // @data 0x08876BD0-0x08876BF0
 /* Effects 51 and 55-62: at a node of the card model, a ring that refracts the screen behind it (16
    growing copies) and a glowing flat diamond (task of 0xAB4 bytes). */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 int dd_ripple_update(int phase, DdRippleFx *d);
 
@@ -113,7 +113,7 @@ int dd_ripple_update(int phase, DdRippleFx *d)
     in = func_088279A4(d->t, 8);
     out = 1.0f - func_088279A4(d->t - (d->end - 16), 16);
     func_08827258(&bill);
-    func_0884DAF8(&node, d->node);
+    dd_chara_bone_mtx(&node, d->node);
     /* the large models: move the node a little toward the camera */
     type = s->type;
     if ((type >= 47 && type <= 101) || (type >= 137 && type < 152)) {

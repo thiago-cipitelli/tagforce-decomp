@@ -4,7 +4,7 @@
 /* The ring of flames: up to 20 flames placed on a tilted circle in 3D, each shedding sprite sparks;
    the full ring (count 20) lights one flame every 16 frames, plays a sound and ends in a white flash
    (task of 0x4944 bytes). */
-#include "libduel_draw.h"
+#include "dd_fx.h"
 
 int dd_ring_update(int phase, DdRingFx *d);
 
