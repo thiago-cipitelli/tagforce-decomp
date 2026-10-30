@@ -1,241 +1,253 @@
 // @range 0x0882308C-0x08823674
-// @asm 0x0882308C-0x08823310
-// @asm 0x08823328-0x08823650
-/* Window listing the actions of the card under the cursor (menu with a cursor listener) and its exports for the duel manager.
-   Functions under NON_MATCHING stay in asm; their C is the Ghidra pseudocode cleaned of the address
-   names (Ghidra types: undefined4 = int-sized, code = function pointer), kept for the port. */
+// @asm 0x08823344-0x088235C4
+/* Text panel shown beside the field (used by the field browser and the event commands): a single menu
+   window that slides to the side opposite to the cursor (cursor listener), closes when its condition
+   says so, and exports for the duel manager. */
 #include "dd_field_ui.h"
 
-#ifdef NON_MATCHING
-typedef unsigned char undefined;
-typedef unsigned char undefined1;
-typedef unsigned short undefined2;
-typedef unsigned int undefined4;
-typedef unsigned char byte;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef void (*code)();
-#endif
+typedef struct DdChainWin {            /* 0x08C58538, 0x2D8 */
+    Menu menu;                         /* +0x000 */
+    MenuItemDef def;                   /* +0x04C */
+    unsigned short text[256];          /* +0x0C4 */
+    int state;                         /* +0x2C4 0 idle, 1-4 open (3/4: upper, 1/2: lower half), 5 closing, 6 opening */
+    int x;                             /* +0x2C8 */
+    int y;                             /* +0x2CC */
+    int (*cond)(void);                 /* +0x2D0 nonzero: the panel may stay open */
+    void *(*draw)(void *dl, Menu *m, MenuItemDef *d); /* +0x2D4 extra drawing over the window */
+} DdChainWin;
+
+extern DdChainWin dd_chain_win;
 
 int dv_08832D08();
-extern int D_08C58584;
-extern int D_08C5880C;
-int *func_08823310(void);
-void func_0882331C(int v);
+void *dd_heap_get(void);
+void dd_cursor_listen(DdCursorCb cb);
+void dd_cursor_unlisten(DdCursorCb cb);
+MenuItemDef *func_08823310(void);
+void func_0882331C(void *(*draw)(void *dl, Menu *m, MenuItemDef *d));
+void func_08823344(void);
+void func_088235C4(DdLoc loc, int card);
 int func_08823650(void);
 
-#ifdef NON_MATCHING
-// 0882308c size=424
-void func_0882308C(undefined4 param_1)
+/* opens the panel with a copy of text */
+void func_0882308C(const unsigned short *text)
 {
-  undefined4 uVar1;
-  byte local_4 [4];
-  if (D_08C587FC == 0) {
-    uVar1 = dd_heap_get();
-    menu_init(&D_08C58538,uVar1);
-    D_08C587FC = 6;
-    D_08C58808 = func_08823650;
-    D_08C58800 = 0;
-    D_08C58804 = 0;
-    D_08C5880C = 0;
-    memcpy(&D_08C585FC,param_1,0x200);
-    memset(&D_08C58584,0,0x78);
-    D_08C58584 = 1;
-    D_08C58598 = 1;
-    D_08C585C0 = 1;
-    D_08C585E4 = 1;
-    D_08C585E8 = 1;
-    D_08C585A8 = 0xffffffff;
-    D_08C5859C = 0x109;
-    D_08C585BC = &D_08C585FC;
-    D_08C585C8 = 10;
-    D_08C585CA = 10;
-    D_08C585CC = 8;
-    D_08C585CE = 8;
-    D_08C585D0 = 0xc;
-    D_08C585D4 = 0xff202020;
-    D_08C585EC = 0x3f800000;
-    D_08C585F0 = 0x3f800000;
-    D_08C585F4 = 6;
-    D_08C58588 = 0;
-    D_08C5858C = 0;
-    D_08C5858D = 0;
-    D_08C5858E = 0;
-    D_08C58590 = 0;
-    D_08C58592 = 0;
-    D_08C58594 = 0;
-    D_08C585A4 = 0;
-    D_08C585A6 = 0;
-    D_08C585AC = 0;
-    D_08C585B0 = 0;
-    D_08C585B4 = 0;
-    D_08C585B8 = 0;
-    D_08C585BA = 0;
-    D_08C585D8 = 0;
-    D_08C585DC = 0;
-    D_08C585E0 = 0;
-    menu_add_item(&D_08C58538,&D_08C58584);
-    menu_item_open(&D_08C58538,&D_08C58584);
-    dd_cursor_get(local_4);
-    if ((local_4[0] & 1) == 0) {
-      D_08C587FC = 3;
-    }
-    else {
-      D_08C587FC = 2;
-    }
-    dd_cursor_listen(func_088235C4);
-    se_play(0x621a);
-  }
-  return;
-}
-#endif
+    DdChainWin *w = &dd_chain_win;
+    MenuItemDef *d = &dd_chain_win.def;
+    DdLoc cur;
 
-#ifdef NON_MATCHING
-// 08823234 size=172
+    if (w->state == 0) {
+        menu_init(&w->menu, dd_heap_get());
+        w->state = 6;
+        w->cond = func_08823650;
+        w->x = 0;
+        w->y = 0;
+        w->draw = 0;
+        memcpy(w->text, text, sizeof(w->text));
+        memset(d, 0, sizeof(MenuItemDef));
+        d->visible = 1;
+        d->auto_size = 1;
+        d->font_flag4 = 1;
+        d->open_anim = 1;
+        d->close_anim = 1;
+        d->color = 0xFFFFFFFF;
+        d->max_w = 265;
+        d->text = w->text;
+        d->pad_l = 10;
+        d->pad_r = 10;
+        d->pad_t = 8;
+        d->pad_b = 8;
+        d->font_size = 12;
+        d->text_color = 0xFF202020;
+        d->scale_x = 1.0f;
+        d->scale_y = 1.0f;
+        d->anchor = 6;
+        d->gim = 0;
+        d->style = 0;
+        d->style2 = 0;
+        d->tab = 0;
+        d->x = 0;
+        d->y = 0;
+        d->z = 0;
+        d->w = 0;
+        d->h = 0;
+        d->tab_x = 0;
+        d->show_title = 0;
+        d->auto_title = 0;
+        d->title_w = 0;
+        d->title_h = 0;
+        d->title = 0;
+        d->title_font_size = 0;
+        d->title_color = 0;
+        menu_add_item(&w->menu, d);
+        menu_item_open(&w->menu, d);
+        dd_cursor_get(&cur);
+        if (!cur.player)
+            w->state = 3;
+        else
+            w->state = 2;
+        dd_cursor_listen(func_088235C4);
+        se_play(0x621A);
+    }
+}
+
+/* per frame: update and draw on layer 8 */
 void func_08823234(void)
 {
-  int iVar1;
-  undefined4 local_4;
-  if (D_08C587FC == 6) {
-    iVar1 = menu_item_state(&D_08C58538,&D_08C58584);
-    if (iVar1 == 4) {
-      return;
-    }
-  }
-  else if (D_08C587FC == 0) {
-    return;
-  }
-  func_08823344();
-  local_4 = dl_select_layer(8,0);
-  menu_layout(&local_4,&D_08C58538);
-  if (D_08C5880C != (code *)0x0) {
-    local_4 = (*D_08C5880C)(local_4,&D_08C58538,&D_08C58584);
-  }
-  dl_set_list(local_4);
-  return;
-}
-#endif
+    DdChainWin *w = &dd_chain_win;
+    void *dl;
 
-#ifdef NON_MATCHING
+    switch (w->state) {
+    case 0:
+        return;
+    case 6:
+        if (menu_item_state(&w->menu, &w->def) == 4)
+            return;
+        break;
+    }
+    func_08823344();
+    dl = dl_select_layer(8, 0);
+    menu_layout(&dl, &w->menu);
+    if (w->draw)
+        dl = w->draw(dl, &w->menu, &w->def);
+    dl_set_list(dl);
+}
+
+/* closed (or still opening) */
 int func_088232E0(void)
 {
     int r;
 
-    if (D_08C587FC == 6)
+    switch (dd_chain_win.state) {
+    case 0:
+    case 6:
         r = 1;
-    else if (D_08C587FC == 0)
-        r = 1;
-    else
+        break;
+    default:
         r = 0;
+        break;
+    }
     return r;
 }
-#endif
 
-int *func_08823310(void)
+/* the window, for the caller to edit */
+MenuItemDef *func_08823310(void)
 {
-    return &D_08C58584;
+    return &dd_chain_win.def;
 }
 
-void func_0882331C(int v)
+/* sets the extra drawing */
+void func_0882331C(void *(*draw)(void *dl, Menu *m, MenuItemDef *d))
 {
-    D_08C5880C = v;
+    dd_chain_win.draw = draw;
 }
 
-#ifdef NON_MATCHING
+/* sets the stay-open condition (0: the default one) */
 void func_08823328(int (*f)(void))
 {
+    DdChainWin *w = &dd_chain_win;
+
     if (f == 0)
         f = func_08823650;
-    D_08C58808 = (int)f;
+    w->cond = f;
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08823344 size=640
+#ifdef NON_MATCHING /* estados em switch; o 132 que o original mantém em $s0 (sem dobrar) não reproduzido */
+/* state machine: placement by half of the screen, open/close from the condition */
 void func_08823344(void)
 {
-  int iVar1;
-  iVar1 = menu_item_state(&D_08C58538,&D_08C58584);
-  if (iVar1 == 4) {
-    if (D_08C587FC == 5) {
-      D_08C587FC = 6;
+    DdChainWin *w = &dd_chain_win;
+    int top = 132;
+
+    if (menu_item_state(&w->menu, &w->def) == 4) {
+        switch (w->state) {
+        case 1:
+            w->state = 3;
+            break;
+        case 4:
+            w->state = 2;
+            break;
+        case 5:
+            w->state = 6;
+            break;
+        }
     }
-    else if (D_08C587FC == 4) {
-      D_08C587FC = 2;
+    switch (w->state) {
+    case 1:
+    case 2:
+        w->y = 202 - w->def.h / 2;
+        break;
+    case 3:
+    case 4:
+        w->y = top / 2 - w->def.h / 2;
+        break;
     }
-    else if (D_08C587FC == 1) {
-      D_08C587FC = 3;
+    w->def.y = w->y;
+    w->x = 314.0f - (float)(w->def.w / 2);
+    w->def.x = w->x;
+    if (menu_item_state(&w->menu, &w->def) == 4) {
+        switch (w->state) {
+        case 2:
+        case 3:
+            menu_item_open(&w->menu, &w->def);
+            break;
+        }
     }
-  }
-  if ((D_08C587FC == 4) || (D_08C587FC == 3)) {
-    iVar1 = (int)D_08C585A6;
-    if (iVar1 < 0) {
-      iVar1 = iVar1 + 1;
+    if (w->cond && w->cond()) {
+        switch (w->state) {
+        case 0:
+        case 5:
+            break;
+        case 6:
+            if (menu_item_state(&w->menu, &w->def) == 4) {
+                menu_free_items(&w->menu);
+                dd_cursor_unlisten(func_088235C4);
+                w->state = 0;
+            }
+            break;
+        default:
+            if (menu_item_is_open(&w->menu, &w->def)) {
+                menu_item_close(&w->menu, &w->def);
+                w->state = 5;
+            }
+            break;
+        }
+    } else {
+        switch (w->state) {
+        case 1:
+        case 4:
+            if (menu_item_is_open(&w->menu, &w->def))
+                menu_item_close(&w->menu, &w->def);
+            break;
+        }
     }
-    D_08C58804 = 0x42 - (iVar1 >> 1);
-  }
-  else if ((D_08C587FC == 2) || (D_08C587FC == 1)) {
-    iVar1 = (int)D_08C585A6;
-    if (iVar1 < 0) {
-      iVar1 = iVar1 + 1;
-    }
-    D_08C58804 = 0xca - (iVar1 >> 1);
-  }
-  iVar1 = (int)D_08C585A4;
-  if (iVar1 < 0) {
-    iVar1 = iVar1 + 1;
-  }
-  D_08C58592 = (undefined2)D_08C58804;
-  D_08C58800 = (int)(314.0 - (float)(iVar1 >> 1));
-  D_08C58590 = (undefined2)D_08C58800;
-  iVar1 = menu_item_state(&D_08C58538,&D_08C58584);
-  if ((iVar1 == 4) && ((D_08C587FC == 3 || (D_08C587FC == 2)))) {
-    menu_item_open(&D_08C58538,&D_08C58584);
-  }
-  if ((D_08C58808 == (code *)0x0) || (iVar1 = (*D_08C58808)(), iVar1 == 0)) {
-    if (((D_08C587FC == 4) || (D_08C587FC == 1)) &&
-       (iVar1 = menu_item_is_open(&D_08C58538,&D_08C58584), iVar1 != 0)) {
-      menu_item_close(&D_08C58538,&D_08C58584);
-    }
-  }
-  else if (D_08C587FC == 6) {
-    iVar1 = menu_item_state(&D_08C58538,&D_08C58584);
-    if (iVar1 == 4) {
-      menu_free_items(&D_08C58538);
-      dd_cursor_unlisten(func_088235C4);
-      D_08C587FC = 0;
-    }
-  }
-  else if (((D_08C587FC != 5) && (D_08C587FC != 0)) &&
-          (iVar1 = menu_item_is_open(&D_08C58538,&D_08C58584), iVar1 != 0)) {
-    menu_item_close(&D_08C58538,&D_08C58584);
-    D_08C587FC = 5;
-  }
-  return;
 }
 #endif
 
-#ifdef NON_MATCHING
-// 088235c4 size=140
-void func_088235C4(byte param_1)
+/* cursor listener: the panel moves to the half of the screen away from the cursor's player */
+void func_088235C4(DdLoc loc, int card)
 {
-  if ((param_1 & 1) == 0) {
-    if (D_08C587FC == 4) {
-      D_08C587FC = 3;
+    DdChainWin *w = &dd_chain_win;
+
+    if (!loc.player) {
+        switch (w->state) {
+        case 2:
+            w->state = 1;
+            break;
+        case 4:
+            w->state = 3;
+            break;
+        }
+    } else {
+        switch (w->state) {
+        case 1:
+            w->state = 2;
+            break;
+        case 3:
+            w->state = 4;
+            break;
+        }
     }
-    else if (D_08C587FC == 2) {
-      D_08C587FC = 1;
-    }
-  }
-  else if (D_08C587FC == 3) {
-    D_08C587FC = 4;
-  }
-  else if (D_08C587FC == 1) {
-    D_08C587FC = 2;
-  }
-  return;
 }
-#endif
 
 int func_08823650(void)
 {
