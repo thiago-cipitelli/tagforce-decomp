@@ -26,7 +26,16 @@ segments:
     bss_size: 0x3DEA10
     subalign: null
     subsegments:
-      - [0x60, asm, text]
+      - [0x60, asm, text_0]
+      - [0x21E3C, c, dd_wait_dots]
+      - [0x22104, c, dd_task]
+      - [0x2253C, c, dd_rstate]
+      - [0x22AC4, c, dd_tex]
+      - [0x22E90, c, dd_cam]
+      - [0x23A04, c, dd_ease]
+      - [0x23C04, asm, dd_ease_asm_08827BA4]
+      - [0x23DC4, c, dd_ease]
+      - [0x23FC8, asm, text_1]
       - [0x672BC, asm, sceStub_text]
       - [0x69E1C, bin, lib_ent_top]
       - [0x69E20, bin, lib_ent]
@@ -38,7 +47,10 @@ segments:
       - [0x69EAC, bin, rodata_sceResident]
       - [0x6A00C, bin, rodata_sceNid]
       - [0x6B5BC, bin, rodata_sceVstub]
-      - [0x6BDEC, data, data]
+      - [0x6BDEC, data, data_0]
+      - [0x722D8, .data, dd_tex]
+      - [0x72550, .data, dd_cam]
+      - [0x72568, data, data_1]
       - { start: 0x79070, type: bss, vram: 0x887D010, name: bss }
   - [0x79070]
 
