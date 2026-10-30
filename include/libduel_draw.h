@@ -316,7 +316,7 @@ typedef struct DdCobjs {                /* card objects, 0x08C3D940, 0x16B20 */
     int pad16b14[3];
 } DdCobjs;
 
-typedef struct DdLp {                  /* LP and phase panel, 0x08C54460, 0x3C */
+typedef struct DdLpp {                  /* LP and phase panel, 0x08C54460, 0x3C */
     unsigned int frame;                /* +0x00 30 per second */
     int lp[2];                         /* +0x04 shown */
     int lp_to[2];                      /* +0x0C */
@@ -327,7 +327,7 @@ typedef struct DdLp {                  /* LP and phase panel, 0x08C54460, 0x3C *
     int turn;                          /* +0x30 */
     int phase_state;                   /* +0x34 animation state of the phase panel */
     int phase;                         /* +0x38 */
-} DdLp;
+} DdLpp;
 
 typedef struct DdUv {                  /* 2D sprite of a sheet */
     unsigned short u, v, w, h;

@@ -15,10 +15,10 @@ void dd_cobjs_add_deck(int i, RecipeData *deck);
 void dd_cobjs_map(int side, int v);
 void dd_cobjs_rebuild(void);
 void dd_cobjs_sync_set();
-void dd_lp_set(int side, int lp, int a);
-void dd_lp_turn_set(int side, int a);
-void dd_lp_phase_set(int phase, int a);
-void dd_lp_phase_state(int side, int phase);
+void dd_lpp_set(int side, int lp, int a);
+void dd_lpp_turn_set(int side, int a);
+void dd_lpp_phase_set(int phase, int a);
+void dd_lpp_phase_state(int side, int phase);
 void func_088153E4(int side, int a, int b, int c);
 void func_0881CA2C(int a, int b);
 void func_0881CA40(void);
@@ -187,10 +187,10 @@ int func_08806030(void)
         dd_cobjs_add_deck(i, sc->p.deck[i]);
     dd_cobjs_map(0, sc->disk[func_0886675C(0)]);
     dd_cobjs_map(1, sc->disk[func_0886675C(1)]);
-    dd_lp_set(0, 8000, 1);
-    dd_lp_set(1, 8000, 1);
-    dd_lp_turn_set(func_08866744(sc->first), 1);
-    dd_lp_phase_set(7, 1);
+    dd_lpp_set(0, 8000, 1);
+    dd_lpp_set(1, 8000, 1);
+    dd_lpp_turn_set(func_08866744(sc->first), 1);
+    dd_lpp_phase_set(7, 1);
     func_0881CAC8(1);
     for (i = 0; i < sc->p.n; i++) {
         func_0884D868(i, sc->p.chr[i], sc->p.sub[i]);
@@ -264,8 +264,8 @@ void func_0880628C(void)
     int phase = func_088667AC();
 
     dd_cobjs_rebuild();
-    dd_lp_phase_state(side, phase);
-    dd_lp_phase_state(side, phase);
+    dd_lpp_phase_state(side, phase);
+    dd_lpp_phase_state(side, phase);
 }
 
 /* export */
@@ -309,8 +309,8 @@ void func_088063E8(void)
 /* export: shows the turn player and the phase */
 void func_088063F0(void)
 {
-    dd_lp_turn_set(func_0886677C(), 1);
-    dd_lp_phase_set(func_088667AC(), 1);
+    dd_lpp_turn_set(func_0886677C(), 1);
+    dd_lpp_phase_set(func_088667AC(), 1);
 }
 
 /* export */

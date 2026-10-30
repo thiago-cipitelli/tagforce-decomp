@@ -55,21 +55,21 @@ typedef struct DdInt2 {
     int v[2];
 } DdInt2;
 
-DdInt6 dd_lp_series_x = { { 0x9F, 0xAA, 0xB5, 0x1B8, 0x1C3, 0x1CE } };
-DdInt2 dd_lp_x = { { 0xA6, 0x1B4 } };
+DdInt6 dd_lpp_series_x = { { 0x9F, 0xAA, 0xB5, 0x1B8, 0x1C3, 0x1CE } };
+DdInt2 dd_lpp_x = { { 0xA6, 0x1B4 } };
 
-void *dd_lp_frame(void *list);
-void *dd_lp_counters(void *list);
-void *dd_lp_turn(void *list, int x, int y);
-void *dd_lp_count(void *list, int x, int y, int n, int active);
-void dd_lp_count_tick(float dt);
-void dd_lp_turn_tick(float dt);
-void dd_lp_phase_tick(float dt);
+void *dd_lpp_frame(void *list);
+void *dd_lpp_counters(void *list);
+void *dd_lpp_turn(void *list, int x, int y);
+void *dd_lpp_count(void *list, int x, int y, int n, int active);
+void dd_lpp_count_tick(float dt);
+void dd_lpp_turn_tick(float dt);
+void dd_lpp_phase_tick(float dt);
 
 #ifdef NON_MATCHING /* função grande de desenho; forma não reproduzida */
 #ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* draws the whole panel on layer 6 */
-void dd_lp_draw(void)
+void dd_lpp_draw(void)
 {
     int opts[24];
     DdInt6 sx;
@@ -88,7 +88,7 @@ void dd_lp_draw(void)
     opts[0] = *gfx_get_state();
     list = dl_select_layer(6, 0);
     list = gfx_begin_2d(list);
-    list = dd_lp_frame(list);
+    list = dd_lpp_frame(list);
     list = func_08816FF8(list);
     list = gfx_end_2d(list);
     dl_set_list(list);
@@ -111,13 +111,13 @@ void dd_lp_draw(void)
     gim = dd_gim_get(0x40006);
     if (gim)
         list = gim_set_texture(list, gim);
-    list = dd_lp_counters(list);
-    list = dd_lp_turn(list, 0x12E, 8);
-    list = dd_lp_count(list, 0xBF, 0xF, func_08866970(0), dd_input_player() == 0);
-    list = dd_lp_count(list, 0x186, 0xF, func_08866970(1), dd_input_player());
+    list = dd_lpp_counters(list);
+    list = dd_lpp_turn(list, 0x12E, 8);
+    list = dd_lpp_count(list, 0xBF, 0xF, func_08866970(0), dd_input_player() == 0);
+    list = dd_lpp_count(list, 0x186, 0xF, func_08866970(1), dd_input_player());
     list = dl_ambient_color(list, 0xFFFFFFFF);
     if (dd_game_flag119() == 0) {
-        sx = dd_lp_series_x;
+        sx = dd_lpp_series_x;
         for (p = 0; p < 2; p++) {
             for (n = 0; n < 3; n++) {
                 r = dd_series_result(p, n);
@@ -167,7 +167,7 @@ void dd_lp_draw(void)
 #endif
 
 /* the phase panel (ehf 0x20003) */
-void *dd_lp_phase_draw(void *list)
+void *dd_lpp_phase_draw(void *list)
 {
     int opts[24];
     void *e;
@@ -181,55 +181,55 @@ void *dd_lp_phase_draw(void *list)
     return gfx_end_2d(list);
 }
 
-void dd_lp_update(float dt)
+void dd_lpp_update(float dt)
 {
     func_088172BC();
-    dd_lp_count_tick(dt);
-    dd_lp_turn_tick(dt);
-    dd_lp_phase_tick(dt);
-    dd_lp.frame = (unsigned int)((float)dd_lp.frame + dt * 30.0f);
+    dd_lpp_count_tick(dt);
+    dd_lpp_turn_tick(dt);
+    dd_lpp_phase_tick(dt);
+    dd_lpp.frame = (unsigned int)((float)dd_lpp.frame + dt * 30.0f);
 }
 
 /* LP of player p (now: no count) */
-void dd_lp_set(int p, int lp, int now)
+void dd_lpp_set(int p, int lp, int now)
 {
-    DdLp *l = &dd_lp;
+    DdLpp *l = &dd_lpp;
 
-    dd_lp.lp_to[p] = lp;
+    dd_lpp.lp_to[p] = lp;
     if (now)
         l->lp[p] = lp;
 }
 
-int dd_lp_get(int p)
+int dd_lpp_get(int p)
 {
-    return dd_lp.lp_to[p];
+    return dd_lpp.lp_to[p];
 }
 
-void dd_lp_add(int p, int d)
+void dd_lpp_add(int p, int d)
 {
-    DdLp *l = &dd_lp;
+    DdLpp *l = &dd_lpp;
 
-    if ((dd_lp.lp_to[p] += d) < 0)
+    if ((dd_lpp.lp_to[p] += d) < 0)
         l->lp_to[p] = 0;
 }
 
 /* turn of side `side` (now: no animation) */
-void dd_lp_turn_set(int side, int now)
+void dd_lpp_turn_set(int side, int now)
 {
-    DdLp *l = &dd_lp;
+    DdLpp *l = &dd_lpp;
 
-    dd_lp.turn = side;
-    dd_lp.phase = 7;
+    dd_lpp.turn = side;
+    dd_lpp.phase = 7;
     if (now)
         l->turn_shown = side;
 }
 
-void dd_lp_phase_set(int phase, int now)
+void dd_lpp_phase_set(int phase, int now)
 {
-    DdLp *l = &dd_lp;
+    DdLpp *l = &dd_lpp;
     void *e;
 
-    dd_lp.phase = phase;
+    dd_lpp.phase = phase;
     if (now) {
         l->phase_state = 0x1A;
         e = dd_ehf_get(0x20003);
@@ -239,9 +239,9 @@ void dd_lp_phase_set(int phase, int now)
 }
 
 /* phase animation state of `phase` for side `side` */
-void dd_lp_phase_state(int side, int phase)
+void dd_lpp_phase_state(int side, int phase)
 {
-    DdLp *l = &dd_lp;
+    DdLpp *l = &dd_lpp;
 
     switch (phase) {
     default:
@@ -271,7 +271,7 @@ void dd_lp_phase_state(int side, int phase)
 }
 
 /* number n (0..99999) right-aligned at x+32, digits of the LP font */
-void *dd_lp_digits(void *list, int x, int y, int n)
+void *dd_lpp_digits(void *list, int x, int y, int n)
 {
     int dx;
 
@@ -292,7 +292,7 @@ void *dd_lp_digits(void *list, int x, int y, int n)
 
 #ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* card count of a deck (blinking under 31) with its icon */
-void *dd_lp_count(void *list, int x, int y, int n, int active)
+void *dd_lpp_count(void *list, int x, int y, int n, int active)
 {
     int dx;
     int first;
@@ -328,7 +328,7 @@ void *dd_lp_count(void *list, int x, int y, int n, int active)
 #endif
 
 /* turn number centred at x */
-void *dd_lp_turn(void *list, int x, int y)
+void *dd_lpp_turn(void *list, int x, int y)
 {
     int n = dd_08806BA4();
     int dx;
@@ -358,10 +358,10 @@ void *dd_lp_turn(void *list, int x, int y)
 
 #ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* the LP of both players */
-void *dd_lp_counters(void *list)
+void *dd_lpp_counters(void *list)
 {
-    DdInt2 x = dd_lp_x;
-    DdLp *l = &dd_lp;
+    DdInt2 x = dd_lpp_x;
+    DdLpp *l = &dd_lpp;
     int p;
     int *px;
 
@@ -371,16 +371,16 @@ void *dd_lp_counters(void *list)
     list = dd_sprite_at(list, 0x1AD, 1, &dd_uv[0x55]);
     for (p = 0, px = x.v; p < 2; p++, px++) {
         list = dl_ambient_color(list, 0xFF00FFFF);
-        list = dd_lp_digits(list, *px, 1, l->lp[p]);
+        list = dd_lpp_digits(list, *px, 1, l->lp[p]);
     }
     return list;
 }
 #endif
 
 /* LP counting to their new value in 60 frames */
-void dd_lp_count_tick(float dt)
+void dd_lpp_count_tick(float dt)
 {
-    DdLp *l = &dd_lp;
+    DdLpp *l = &dd_lpp;
     int p;
     int f;
 
@@ -403,7 +403,7 @@ void dd_lp_count_tick(float dt)
 }
 
 /* the panel frame (ehf 0x20002), grey in a tag duel */
-void *dd_lp_frame(void *list)
+void *dd_lpp_frame(void *list)
 {
     int opts[24];
     void *e = dd_ehf_get(0x20002);
@@ -422,39 +422,39 @@ void *dd_lp_frame(void *list)
 
 #ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* turn switch animation of the panel frame */
-void dd_lp_turn_tick(float dt)
+void dd_lpp_turn_tick(float dt)
 {
     void *e = dd_ehf_get(0x20002);
     unsigned int f;
 
     if (e == 0)
         return;
-    if (dd_lp.turn_shown == -1) {
+    if (dd_lpp.turn_shown == -1) {
         if (ehf_get_frame_count(e) > 0x80) {
-            dd_lp.turn_shown = dd_lp.turn;
-            if (dd_lp.turn == 0)
+            dd_lpp.turn_shown = dd_lpp.turn;
+            if (dd_lpp.turn == 0)
                 ehf_set_frame_alias(e, 0);
             else
                 ehf_set_frame_alias(e, 0x82);
         }
-    } else if ((dd_lp.turn_shown == 1 || dd_lp.turn_shown == 0) && dd_lp.turn_shown != dd_lp.turn) {
-        dd_lp.turn_shown = -1;
+    } else if ((dd_lpp.turn_shown == 1 || dd_lpp.turn_shown == 0) && dd_lpp.turn_shown != dd_lpp.turn) {
+        dd_lpp.turn_shown = -1;
         ehf_set_frame_alias(e, 0x79);
     }
     f = ehf_get_frame_count(e);
-    if (dd_lp.turn_shown == -1) {
+    if (dd_lpp.turn_shown == -1) {
         if (f > 0x80)
             ehf_set_frame_alias(e, 0x79);
-    } else if (dd_lp.turn_shown == 1) {
+    } else if (dd_lpp.turn_shown == 1) {
         if (f > 0xF9)
             ehf_set_frame_alias(e, 0x82);
-    } else if (dd_lp.turn_shown == 0 && f > 0x77) {
+    } else if (dd_lpp.turn_shown == 0 && f > 0x77) {
         ehf_set_frame_alias(e, 0);
     }
 }
 #endif
 
-int dd_lp_phase_of[27] = {
+int dd_lpp_phase_of[27] = {
     7, 0, 7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 7, 7, 0, 7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 7, 7,
 };
 
@@ -463,7 +463,7 @@ typedef struct DdRange {
     int end;
 } DdRange;
 
-DdRange dd_lp_phase_frames[27] = {
+DdRange dd_lpp_phase_frames[27] = {
     { 0x00, 0x11 }, { 0x12, 0x31 }, { 0x32, 0x36 }, { 0x36, 0x55 }, { 0x56, 0x5A }, { 0x5A, 0x79 },
     { 0x7A, 0x7E }, { 0x7E, 0x9D }, { 0x9E, 0xA2 }, { 0xA2, 0xC1 }, { 0xC2, 0xC6 }, { 0xC6, 0xE5 },
     { 0xE6, 0x107 }, { 0x108, 0x119 }, { 0x11A, 0x139 }, { 0x13A, 0x13E }, { 0x13E, 0x15D },
@@ -474,7 +474,7 @@ DdRange dd_lp_phase_frames[27] = {
 #ifdef NON_MATCHING /* switch com tabela e testes repetidos; forma não reproduzida */
 #ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* state machine of the phase panel: plays each phase in turn up to the current one */
-void dd_lp_phase_tick(float dt)
+void dd_lpp_phase_tick(float dt)
 {
     void *e = dd_ehf_get(0x20003);
     int f;
@@ -483,8 +483,8 @@ void dd_lp_phase_tick(float dt)
     if (e == 0)
         return;
     f = ehf_get_frame_count(e);
-    if (dd_lp.phase_state < 0x1B) {
-        switch (dd_lp.phase_state) {
+    if (dd_lpp.phase_state < 0x1B) {
+        switch (dd_lpp.phase_state) {
         case 1:
         case 3:
         case 5:
@@ -497,56 +497,56 @@ void dd_lp_phase_tick(float dt)
         case 20:
         case 22:
         case 24:
-            if (dd_lp.phase != dd_lp_phase_of[dd_lp.phase_state] ||
-                ((dd_lp.turn != 0 || dd_lp.phase_state > 12) && (dd_lp.turn != 1 || dd_lp.phase_state < 13))) {
-                dd_lp.phase_state++;
-                ehf_set_frame_alias(e, dd_lp_phase_frames[dd_lp.phase_state].start);
+            if (dd_lpp.phase != dd_lpp_phase_of[dd_lpp.phase_state] ||
+                ((dd_lpp.turn != 0 || dd_lpp.phase_state > 12) && (dd_lpp.turn != 1 || dd_lpp.phase_state < 13))) {
+                dd_lpp.phase_state++;
+                ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].start);
             }
             break;
         case 12:
-            if (f >= dd_lp_phase_frames[dd_lp.phase_state].end) {
-                if (dd_lp.phase == 7) {
-                    ehf_set_frame_alias(e, dd_lp_phase_frames[dd_lp.phase_state].end - 1);
+            if (f >= dd_lpp_phase_frames[dd_lpp.phase_state].end) {
+                if (dd_lpp.phase == 7) {
+                    ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].end - 1);
                 } else {
-                    dd_lp.phase_state = 13;
-                    ehf_set_frame_alias(e, dd_lp_phase_frames[13].start);
+                    dd_lpp.phase_state = 13;
+                    ehf_set_frame_alias(e, dd_lpp_phase_frames[13].start);
                 }
             }
             break;
         case 25:
-            if (f >= dd_lp_phase_frames[dd_lp.phase_state].end) {
-                if (dd_lp.phase == 7) {
-                    ehf_set_frame_alias(e, dd_lp_phase_frames[dd_lp.phase_state].end - 1);
+            if (f >= dd_lpp_phase_frames[dd_lpp.phase_state].end) {
+                if (dd_lpp.phase == 7) {
+                    ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].end - 1);
                 } else {
-                    dd_lp.phase_state = 0;
-                    ehf_set_frame_alias(e, dd_lp_phase_frames[0].start);
+                    dd_lpp.phase_state = 0;
+                    ehf_set_frame_alias(e, dd_lpp_phase_frames[0].start);
                 }
             }
             break;
         case 26:
-            if (dd_lp.phase != dd_lp_phase_of[dd_lp.phase_state]) {
-                dd_lp.phase_state = func_0886677C() == 0 ? 0 : 13;
-                ehf_set_frame_alias(e, dd_lp_phase_frames[dd_lp.phase_state].start);
+            if (dd_lpp.phase != dd_lpp_phase_of[dd_lpp.phase_state]) {
+                dd_lpp.phase_state = func_0886677C() == 0 ? 0 : 13;
+                ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].start);
             }
             break;
         default:
-            if (f >= dd_lp_phase_frames[dd_lp.phase_state].end) {
-                s = dd_lp.phase_state + 1;
-                if (dd_lp.phase != dd_lp_phase_of[s] || (dd_lp.turn == 0 && s > 12) ||
-                    (dd_lp.turn == 1 && s < 13))
-                    s = dd_lp.phase_state + 2;
-                dd_lp.phase_state = s;
-                ehf_set_frame_alias(e, dd_lp_phase_frames[dd_lp.phase_state].start);
+            if (f >= dd_lpp_phase_frames[dd_lpp.phase_state].end) {
+                s = dd_lpp.phase_state + 1;
+                if (dd_lpp.phase != dd_lpp_phase_of[s] || (dd_lpp.turn == 0 && s > 12) ||
+                    (dd_lpp.turn == 1 && s < 13))
+                    s = dd_lpp.phase_state + 2;
+                dd_lpp.phase_state = s;
+                ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].start);
             }
             break;
         }
     }
     f = ehf_get_frame_count(e);
-    s = dd_lp.phase_state;
+    s = dd_lpp.phase_state;
     if ((s == 26 || s == 24 || s == 22 || s == 20 || s == 18 || s == 16 || s == 14 || s == 11 ||
          s == 9 || s == 7 || s == 5 || s == 3 || s == 1) &&
-        f >= dd_lp_phase_frames[s].end)
-        ehf_set_frame_alias(e, dd_lp_phase_frames[s].start);
+        f >= dd_lpp_phase_frames[s].end)
+        ehf_set_frame_alias(e, dd_lpp_phase_frames[s].start);
 }
 #endif
 #endif

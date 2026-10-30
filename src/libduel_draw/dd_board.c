@@ -58,7 +58,7 @@ float func_0886B08C(int player);
 int dd_cobj_counter_shown(DdCobj *o, DdPos at);
 void *dd_counter_draw(void *list, DdPos at, DdXyzw *pos);
 void dd_counter_sel(DdXyzw *pos, int n);
-void *dd_lp_phase_draw(void *list);
+void *dd_lpp_phase_draw(void *list);
 void func_0881554C(DdLoc *cur);
 void *func_08815E74(void *list, DdLoc at, int on);
 
@@ -127,7 +127,7 @@ void dd_board_overlay(void)
 {
     void *list = dl_viewport(dl_select_layer(3, 0), 0x800, 0x800, 480, 272);
 
-    list = dd_lp_phase_draw(list);
+    list = dd_lpp_phase_draw(list);
     list = dl_viewport(list, 0x84A, 0x7FC, 0x3C0, 0x220);
     list = dl_enable(list, 1);
     list = dl_ambient_light(list, 0xFFFFFFFF);

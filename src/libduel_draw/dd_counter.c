@@ -225,11 +225,11 @@ void *dd_sprite_at(void *list, int x, int y, unsigned short *uv)
     return draw_sprite(draw_set_offsets(list, uv[2], uv[3], uv[2], uv[3]), x, y, 0, uv[0], uv[1], 0, 0);
 }
 
-void dd_lp_clear(void)
+void dd_lpp_clear(void)
 {
-    memset(&dd_lp, 0, sizeof(DdLp));
+    memset(&dd_lpp, 0, sizeof(DdLpp));
 }
 
-void dd_lp_free(void)
+void dd_lpp_free(void)
 {
 }
