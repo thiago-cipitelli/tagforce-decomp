@@ -1,11 +1,11 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-28 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-30 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 54,2% | 71,6% | 8019 / 11039 |
+| total | 59,3% | 82,9% | 9252 / 11039 |
 | BOOT | 63,0% | 79,9% | 1815 / 2208 |
 | libduel_eng | 61,7% | 81,2% | 2987 / 3429 |
 | libhtml_view | 100% | 100% | 16 / 16 |
@@ -28,7 +28,7 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-28 (
 | libtutorial | 93,2% | 99,7% | 204 / 207 |
 | libfield | 56,9% | 73,4% | 551 / 652 |
 | libstory | 85,5% | 98,5% | 643 / 676 |
-| libduel_draw | 0% | 0% | 0 / 1609 |
+| libduel_draw | 35,6% | 80,3% | 1233 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -56,7 +56,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 
 **libfield**, **libstory**: todo o `.text` em C (restam 91 e 33 funções em asm).
 
-**libduel_draw**: nada em C ainda (0x08804000 em diante, 1609 funções, 412 KB).
+**libduel_draw**: todo o `.text` em C (restam 267 funções em asm; o C sob NON_MATCHING de 6 arquivos — dd_action_menu, dd_chain_menu, dd_field_events, dd_field_marks, dd_msg_win, dd_prompt_win — ainda é pseudocódigo que não compila, e dd_debug_menu.c não tem C das duas funções grandes).
 
 **BOOT**: nenhum trecho sem C. Todo o `.text` está em arquivos `.c`; o que falta são as funções em `@asm` (C sob `NON_MATCHING`). Na parte do SDK compilada com GCC (libgu, newlib, libgcc, libvfpu, libccc, libfpu, libdeflt, libsas/libwave) as funções são `asm` do mwcc com C portável sob `#else`; ficam em `@asm` as que carregam dados por `lui`/`%lo`, que o assembler embutido não aceita (ver `docs/build.md`).
 
@@ -713,4 +713,135 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`s_mod.c`](../src/libstory/s_mod.c) | 0x08817500-0x088177C4 | 8 | 0 | módulos de sub-tela (12 slots, carga via ehfile_request_module + sceKernelStartModule, descarga, gancho por quadro) |
 | [`s_bu.c`](../src/libstory/s_bu.c) | 0x088177C4-0x08817930 | 4 | 0 | retratos (bust-up) pedidos ao campo (carga pelo comando 12, descarga pelo 13) |
 | [`s_snd.c`](../src/libstory/s_snd.c) | 0x08817930-0x08817E64 | 16 | 0 | música e sons (bgm da sala por dia/noite/duelo, tocar/parar/esperar, efeito de variação de pontos) |
+
+
+## libduel_draw (125 arquivos, 1229 funções batendo, 267 em asm)
+
+| Arquivo | Faixa | Batendo | Asm | Conteúdo |
+|---|---|---|---|---|
+| [`dd_res.c`](../src/libduel_draw/dd_res.c) | 0x08804000-0x08804788 | 11 | 0 | tabelas de recursos: packs EHP por região/idioma, modelos, texturas, EHF, tabelas de strings |
+| [`dd_cache.c`](../src/libduel_draw/dd_cache.c) | 0x08804788-0x08805BF4 | 23 | 3 | cache de imagens de cartas (CIP m/h), fundos duel/bg/fmagicNNNN.ehp, cut-ins com rostos/vozes, busca binária |
+| [`dd_api.c`](../src/libduel_draw/dd_api.c) | 0x08805BF4-0x08806434 | 26 | 0 | module_start e API da libduel_mgr (25 exports dd_api_*) |
+| [`dd_scene.c`](../src/libduel_draw/dd_scene.c) | 0x08806434-0x08807064 | 31 | 0 | flags da cena, cena de teste standalone (carrega libduel_eng.prx), desenho por camada, estado da vista, consultas do game state |
+| [`dd_view.c`](../src/libduel_draw/dd_view.c) | 0x08807064-0x0880720C | 5 | 0 | init/free/draw/update da vista |
+| [`dd_field.c`](../src/libduel_draw/dd_field.c) | 0x0880720C-0x08807CD4 | 14 | 0 | fundo 3D com dois slots e troca por magia de campo |
+| [`dd_fieldcam.c`](../src/libduel_draw/dd_fieldcam.c) | 0x08807CD4-0x08808D10 | 7 | 1 | câmera, neblina e luzes do campo (trilhas ou padrão), efeitos de magia de campo |
+| [`dd_info.c`](../src/libduel_draw/dd_info.c) | 0x08808D10-0x08809B1C | 14 | 2 | painel de informação da carta (um ou dois, deslizante, valores no campo) |
+| [`dd_cobj.c`](../src/libduel_draw/dd_cobj.c) | 0x08809B1C-0x0880A8E0 | 5 | 6 | objetos 3D das cartas: listas, decks, movimento entre posições |
+| [`dd_slot.c`](../src/libduel_draw/dd_slot.c) | 0x0880A8E0-0x0880C48C | 2 | 5 | posição/rotação de cada zona, buscas nas listas, reconstrução a partir do motor |
+| [`dd_cobj2.c`](../src/libduel_draw/dd_cobj2.c) | 0x0880C48C-0x0880D31C | 15 | 10 | estados/ligações dos objetos, altura de pilha, contadores, pilha de destaques |
+| [`dd_hand.c`](../src/libduel_draw/dd_hand.c) | 0x0880D31C-0x0880E45C | 0 | 3 | init do pool e layout das duas mãos |
+| [`dd_board.c`](../src/libduel_draw/dd_board.c) | 0x0880E45C-0x0880FCFC | 8 | 6 | desenho do campo, pilhas com contagem, cartas com textura |
+| [`dd_cmove.c`](../src/libduel_draw/dd_cmove.c) | 0x0880FCFC-0x08810758 | 8 | 2 | listas, alocador, movimento com arco e som, lista por zona, duração por opção de velocidade |
+| [`dd_counter.c`](../src/libduel_draw/dd_counter.c) | 0x08810758-0x08811718 | 3 | 4 | ATK/DEF animados, marcador de seleção |
+| [`dd_lp.c`](../src/libduel_draw/dd_lp.c) | 0x08811718-0x0881299C | 0 | 0 | painel de LP e fase (contagem, turno, cartas do deck, série, animação das fases) |
+| [`dd_face.c`](../src/libduel_draw/dd_face.c) | 0x0881299C-0x0881351C | 0 | 6 | retratos dos duelistas, botão do pad, tabela de sprites |
+| [`dd_chr.c`](../src/libduel_draw/dd_chr.c) | 0x0881351C-0x088143A4 | 15 | 10 | personagens do duelo: modelo do pack do cut-in, animações TGMT gzip, voz, ossos, máscara das partes |
+| [`dd_disc_hook.c`](../src/libduel_draw/dd_disc_hook.c) | 0x088143A4-0x08814DFC | 16 | 3 | ganchos dos modelos do disco e do campo (textura da carta na VRAM, material de duel_disc_02, callback por osso, tabelas de ossos e poses) |
+| [`dd_field_cursor.c`](../src/libduel_draw/dd_field_cursor.c) | 0x08814DFC-0x08815678 | 7 | 0 | cursor do campo: posição empacotada jogador/zona/índice, grade 7x7, movimento pelo direcional, salvar/restaurar |
+| [`dd_cursor_model.c`](../src/libduel_draw/dd_cursor_model.c) | 0x08815678-0x08816FD0 | 18 | 0 | cursor 3D: pose seguindo a carta, modelo field_cursor00/01/02, seta e ícones das ações, primeiro alvo e ciclo entre alvos |
+| [`dd_cutin.c`](../src/libduel_draw/dd_cutin.c) | 0x08816FD0-0x088175E4 | 7 | 0 | tocador de cut-in EHF em tela cheia (fila de um pedido, legenda, laço, velocidade da configuração) |
+| [`dd_event.c`](../src/libduel_draw/dd_event.c) | 0x088175E4-0x0881794C | 4 | 1 | despacho dos eventos de duelo (tabela ordenada de 72 comandos e o formato dos argumentos) |
+| [`dd_event_cmd.c`](../src/libduel_draw/dd_event_cmd.c) | 0x0881794C-0x08819A70 | 53 | 12 | tratadores dos eventos 1..73 (banners, ataque, virada, movimentos, mensagens, escolhas) |
+| [`dd_voice.c`](../src/libduel_draw/dd_voice.c) | 0x08819A70-0x08819C04 | 7 | 0 | exports do comentário e dos sons por estado do duelo |
+| [`dd_card_select.c`](../src/libduel_draw/dd_card_select.c) | 0x08819C04-0x0881CA2C | 15 | 28 | janela da lista de cartas dos prompts (escolha de N, ordenação, filtro, opções) |
+| [`dd_scene_mode.c`](../src/libduel_draw/dd_scene_mode.c) | 0x0881CA2C-0x0881DF94 | 42 | 14 | pilha de modos de entrada da cena (campo, lista, janela, números, ficha da carta), heaps, textos, pad de replay, câmera de animação |
+| [`dd_task_list.c`](../src/libduel_draw/dd_task_list.c) | 0x0881DF94-0x0881EBA0 | 9 | 10 | lista de tarefas de apresentação, faixa de nome da carta invocada/baixada, carta grande |
+| [`dd_card_fx.c`](../src/libduel_draw/dd_card_fx.c) | 0x0881EBA0-0x0881F0A8 | 3 | 6 | popups de carta/texto que esperam câmera e comentário, brilho das cartas |
+| [`dd_card_fx2.c`](../src/libduel_draw/dd_card_fx2.c) | 0x0881F0A8-0x08820138 | 16 | 12 | feixes de invocação, marcas de alvo, contadores de dano e ATK/DEF, destruição, trava do cursor |
+| [`dd_field_events.c`](../src/libduel_draw/dd_field_events.c) | 0x08820138-0x08820F88 | 9 | 0 | efeitos de campo dirigidos por eventos (LP, embaralhar, tarefas de espera, ângulos); C sob NON_MATCHING ainda é pseudocódigo |
+| [`dd_action_menu.c`](../src/libduel_draw/dd_action_menu.c) | 0x08820F88-0x08822B0C | 6 | 0 | janela de ação sobre a posição, janelas de mensagem 0-2 e seus ganchos; C sob NON_MATCHING ainda é pseudocódigo |
+| [`dd_field_marks.c`](../src/libduel_draw/dd_field_marks.c) | 0x08822B0C-0x0882308C | 1 | 0 | marcadores sobre as posições do campo; C sob NON_MATCHING ainda é pseudocódigo |
+| [`dd_chain_menu.c`](../src/libduel_draw/dd_chain_menu.c) | 0x0882308C-0x08823674 | 3 | 0 | janela das ações da carta sob o cursor; C sob NON_MATCHING ainda é pseudocódigo |
+| [`dd_prompt_win.c`](../src/libduel_draw/dd_prompt_win.c) | 0x08823674-0x08825088 | 5 | 0 | janelas de prompt das mensagens 3-10; C sob NON_MATCHING ainda é pseudocódigo |
+| [`dd_msg_win.c`](../src/libduel_draw/dd_msg_win.c) | 0x08825088-0x08825DDC | 15 | 0 | janela de mensagem compartilhada, textos formatados, buffers; C sob NON_MATCHING ainda é pseudocódigo |
+| [`dd_wait_dots.c`](../src/libduel_draw/dd_wait_dots.c) | 0x08825DDC-0x088260A4 | 3 | 0 | pontos de espera de uma janela do duelo |
+| [`dd_task.c`](../src/libduel_draw/dd_task.c) | 0x088260A4-0x088264DC | 12 | 0 | tabela de 254 tarefas dos efeitos (criar, matar, liberar, flags) |
+| [`dd_rstate.c`](../src/libduel_draw/dd_rstate.c) | 0x088264DC-0x08826A64 | 7 | 0 | estado GE padrão das camadas e liga/desliga de textura, profundidade e blend |
+| [`dd_tex.c`](../src/libduel_draw/dd_tex.c) | 0x08826A64-0x08826E30 | 5 | 0 | GIM de pacote por índice, frame buffer como textura, carta renderizada na VRAM |
+| [`dd_cam.c`](../src/libduel_draw/dd_cam.c) | 0x08826E30-0x088279A4 | 27 | 0 | câmera, viewport, billboard, MVP, salvar/restaurar pilhas de matrizes |
+| [`dd_ease.c`](../src/libduel_draw/dd_ease.c) | 0x088279A4-0x08827F68 | 16 | 1 | curvas de easing, direção aleatória, passo limitado, helpers de modelo |
+| [`dd_sfx.c`](../src/libduel_draw/dd_sfx.c) | 0x08827F68-0x088282E4 | 3 | 5 | SE/BGM disparados num quadro com bit de flags, SE aleatório, tabelas de velocidade |
+| [`dd_mon_anim.c`](../src/libduel_draw/dd_mon_anim.c) | 0x088282E4-0x08828DD0 | 10 | 1 | callbacks do modelo de monstro (animação pela voz, ossos, falas, painéis LP/ATK) |
+| [`dd_wline.c`](../src/libduel_draw/dd_wline.c) | 0x08828DD0-0x088299C8 | 13 | 1 | moldura de window01.gim ao longo de polilinha, 8 estilos |
+| [`dd_pick.c`](../src/libduel_draw/dd_pick.c) | 0x088299C8-0x0882A94C | 9 | 6 | seletor em grade (min..max marcados) com janela OK |
+| [`dd_dice.c`](../src/libduel_draw/dd_dice.c) | 0x0882A94C-0x0882BF00 | 7 | 4 | moeda/dado renderizados em textura VRAM, janela de faces do dado |
+| [`dd_menu_hooks.c`](../src/libduel_draw/dd_menu_hooks.c) | 0x0882BF00-0x0882BF84 | 4 | 0 | ganchos da camada de menus |
+| [`dd_card_quad.c`](../src/libduel_draw/dd_card_quad.c) | 0x0882BF84-0x0882C214 | 3 | 0 | carta deitada como quad texturizado |
+| [`dd_fx_rays.c`](../src/libduel_draw/dd_fx_rays.c) | 0x0882C214-0x0882C7A0 | 3 | 0 | carta com 24 raios girando |
+| [`dd_fx_summon.c`](../src/libduel_draw/dd_fx_summon.c) | 0x0882C7A0-0x0882D994 | 4 | 1 | invocação: pilares, faíscas, anel, notas |
+| [`dd_fx_shatter.c`](../src/libduel_draw/dd_fx_shatter.c) | 0x0882D994-0x0882ED38 | 2 | 1 | carta partindo em 48 triângulos |
+| [`dd_fx_spiral.c`](../src/libduel_draw/dd_fx_spiral.c) | 0x0882ED38-0x0882F728 | 2 | 1 | carta sumindo, faíscas em espiral, cilindro de luz |
+| [`dd_fx_twist.c`](../src/libduel_draw/dd_fx_twist.c) | 0x0882F728-0x08830468 | 2 | 1 | malha da carta torcida em vórtice |
+| [`dd_fx_card2d.c`](../src/libduel_draw/dd_fx_card2d.c) | 0x08830468-0x08830AAC | 4 | 0 | aura e ruído sobre carta na tela |
+| [`dd_fx_orb.c`](../src/libduel_draw/dd_fx_orb.c) | 0x08830AAC-0x08831290 | 1 | 1 | orbe em arco com rastro |
+| [`dd_fx_flipup.c`](../src/libduel_draw/dd_fx_flipup.c) | 0x08831290-0x08831788 | 2 | 1 | carta na tela levantando até ficar de frente |
+| [`dd_fx_ringglow.c`](../src/libduel_draw/dd_fx_ringglow.c) | 0x08831788-0x08831C58 | 3 | 0 | brilho com anéis atrás de carta na tela |
+| [`dd_fx_mark.c`](../src/libduel_draw/dd_fx_mark.c) | 0x08831C58-0x08832138 | 2 | 1 | ícone pulsante no campo |
+| [`dd_fx_spin.c`](../src/libduel_draw/dd_fx_spin.c) | 0x08832138-0x0883264C | 2 | 1 | disco pulsante girando no campo |
+| [`dd_roll.c`](../src/libduel_draw/dd_roll.c) | 0x0883264C-0x08832B54 | 1 | 1 | dígitos rolantes / número rolando |
+| [`dd_fx_counter.c`](../src/libduel_draw/dd_fx_counter.c) | 0x08832B54-0x08833340 | 2 | 1 | balão de contador com ponteiro |
+| [`dd_fx_tally.c`](../src/libduel_draw/dd_fx_tally.c) | 0x08833340-0x088338C8 | 2 | 1 | ícone de contador caindo |
+| [`dd_fx_lpicon.c`](../src/libduel_draw/dd_fx_lpicon.c) | 0x088338C8-0x08834418 | 2 | 2 | ícones de contador pulsando/piscando |
+| [`dd_fx_lpjump.c`](../src/libduel_draw/dd_fx_lpjump.c) | 0x08834418-0x08834AA0 | 3 | 1 | número de dano/ganho com dígitos saltando |
+| [`dd_fx_toss.c`](../src/libduel_draw/dd_fx_toss.c) | 0x08834AA0-0x08835364 | 4 | 2 | animações de lançar moeda e dado |
+| [`dd_fx_coinfly.c`](../src/libduel_draw/dd_fx_coinfly.c) | 0x08835364-0x088357B0 | 1 | 1 | moeda voando, girando e encolhendo |
+| [`dd_fx_fusion.c`](../src/libduel_draw/dd_fx_fusion.c) | 0x088357B0-0x08837098 | 1 | 1 | redemoinho de fusão (malha polar sobre VRAM) |
+| [`dd_fx_orbs.c`](../src/libduel_draw/dd_fx_orbs.c) | 0x08837098-0x08838068 | 1 | 2 | orbes de espírito: até 5 chamas em fila com auréola e faíscas |
+| [`dd_fx_ring.c`](../src/libduel_draw/dd_fx_ring.c) | 0x08838068-0x08838CDC | 2 | 1 | anel de 20 chamas em 3D com faíscas, som e clarão final |
+| [`dd_fx_slot.c`](../src/libduel_draw/dd_fx_slot.c) | 0x08838CDC-0x088395D4 | 11 | 0 | tabela de 4 slots de efeito, despachante dos efeitos 13-376 (dd_fx_start) e slots +0xB0/+0xB4 |
+| [`dd_fx_trail.c`](../src/libduel_draw/dd_fx_trail.c) | 0x088395D4-0x0883AB6C | 3 | 1 | rastro dos efeitos 13-23: fitas em spline, brilho, faíscas e anel que refrata a tela |
+| [`dd_fx_tunnel.c`](../src/libduel_draw/dd_fx_tunnel.c) | 0x0883AB6C-0x0883B62C | 2 | 1 | túnel dos efeitos 27-31/38-41/54: disco de anéis rolando e raios |
+| [`dd_fx32.c`](../src/libduel_draw/dd_fx32.c) | 0x0883B62C-0x08842824 | 15 | 9 | efeitos 32-37/52-53: 9 estilos, máscara de stencil do campo, auxiliares |
+| [`dd_fx_ripple.c`](../src/libduel_draw/dd_fx_ripple.c) | 0x08842824-0x08843248 | 2 | 1 | efeitos 51/55-62: anel que refrata a tela e losango luminoso num nó do modelo |
+| [`dd_fx_halo.c`](../src/libduel_draw/dd_fx_halo.c) | 0x08843248-0x08844024 | 2 | 1 | efeitos 42-50/63-64/71-77/82: anel de 16 pétalas sob um nó e faíscas |
+| [`dd_fx_burst.c`](../src/libduel_draw/dd_fx_burst.c) | 0x08844024-0x08846348 | 4 | 3 | efeitos 78-81: explosão de luz (brilho, pétalas, anel, partículas) |
+| [`dd_fx_pyre.c`](../src/libduel_draw/dd_fx_pyre.c) | 0x08846348-0x0884774C | 3 | 1 | efeitos 83-90/118-128: pétalas, faíscas e labaredas |
+| [`dd_fx_nsea.c`](../src/libduel_draw/dd_fx_nsea.c) | 0x0884774C-0x08847D0C | 3 | 0 | efeito nsea, moldura brilhante no osso 39 (efeitos 24-26, 100, 101, 113, 114) |
+| [`dd_fx_lines.c`](../src/libduel_draw/dd_fx_lines.c) | 0x08847D0C-0x08848B40 | 3 | 1 | linhas de velocidade em túnel 33x33, faíscas e lens flares (efeitos 102-106) |
+| [`dd_fx_flare.c`](../src/libduel_draw/dd_fx_flare.c) | 0x08848B40-0x08849060 | 2 | 0 | lens flares amarela/azul no osso 38 com sons (efeitos 247-281) |
+| [`dd_fx_glow.c`](../src/libduel_draw/dd_fx_glow.c) | 0x08849060-0x0884A86C | 4 | 2 | efeito só de som do golpe (204-376) e brilho laranja projetado nos ossos (efeito 18) |
+| [`dd_fx_eyes.c`](../src/libduel_draw/dd_fx_eyes.c) | 0x0884A86C-0x0884AE24 | 1 | 1 | clarão branco na tela e flares magenta nos olhos |
+| [`dd_fx_aura.c`](../src/libduel_draw/dd_fx_aura.c) | 0x0884AE24-0x0884BA1C | 0 | 2 | auréola no osso 38 e círculo mágico de 24 lâminas |
+| [`dd_fx_times.c`](../src/libduel_draw/dd_fx_times.c) | 0x0884BA1C-0x0884BDB0 | 2 | 0 | tabelas de início/golpe/duração por id de efeito |
+| [`dd_fx_cardse.c`](../src/libduel_draw/dd_fx_cardse.c) | 0x0884BDB0-0x0884D488 | 3 | 0 | tabela de sons dos efeitos e tarefa aura |
+| [`dd_fx_fade.c`](../src/libduel_draw/dd_fx_fade.c) | 0x0884D488-0x0884D65C | 2 | 0 | fade-in do personagem (callback da camada 11) |
+| [`dd_chara.c`](../src/libduel_draw/dd_chara.c) | 0x0884D65C-0x0884DF2C | 27 | 0 | 4 slots de personagem, callback de setup por personagem, _kao-ptrs.txt |
+| [`dd_ryusen.c`](../src/libduel_draw/dd_ryusen.c) | 0x0884DF2C-0x0884E0F4 | 4 | 0 | linhas ryusen01.ehf atrás do personagem |
+| [`dd_arrow.c`](../src/libduel_draw/dd_arrow.c) | 0x0884E0F4-0x0884F3D0 | 20 | 2 | marcador do cursor sobre a zona e seta de ataque (curva de Hermite, billboard) |
+| [`dd_fx_swirl.c`](../src/libduel_draw/dd_fx_swirl.c) | 0x0884F3D0-0x0884FD60 | 4 | 1 | transições de tela (redemoinho 31x21 ou fade para o preto) |
+| [`dd_fx_note.c`](../src/libduel_draw/dd_fx_note.c) | 0x0884FD60-0x0885036C | 1 | 1 | notas musicais junto ao osso 4 |
+| [`dd_fx_splash.c`](../src/libduel_draw/dd_fx_splash.c) | 0x0885036C-0x088513A4 | 1 | 1 | respingos de água num laço de 420 quadros |
+| [`dd_fx_rock.c`](../src/libduel_draw/dd_fx_rock.c) | 0x088513A4-0x088522F0 | 1 | 2 | redemoinho com pedras e anéis de spray |
+| [`dd_fx_bolt.c`](../src/libduel_draw/dd_fx_bolt.c) | 0x088522F0-0x08853674 | 1 | 1 | raios com clarões e anéis no chão |
+| [`dd_fx_beam.c`](../src/libduel_draw/dd_fx_beam.c) | 0x08853674-0x088546C4 | 1 | 1 | feixe de luz de 12 camadas |
+| [`dd_fx_bubble.c`](../src/libduel_draw/dd_fx_bubble.c) | 0x088546C4-0x08854C44 | 1 | 1 | faíscas subindo dos pés |
+| [`dd_fx_petal.c`](../src/libduel_draw/dd_fx_petal.c) | 0x08854C44-0x0885538C | 1 | 1 | 128 pétalas caindo |
+| [`dd_chara06.c`](../src/libduel_draw/dd_chara06.c) | 0x0885538C-0x08855B10 | 17 | 2 | personagem 6 (2 variantes) e filmes movie/*_summon|attack.pmf (dd_movie_preload/show) |
+| [`dd_lp_panel.c`](../src/libduel_draw/dd_lp_panel.c) | 0x08855B10-0x08857100 | 5 | 7 | painel de LP (texturas por região, contagem, exibição, câmera 2D, brilho da borda em 9 cores) |
+| [`dd_lp_digits.c`](../src/libduel_draw/dd_lp_digits.c) | 0x08857100-0x08858224 | 5 | 7 | objeto de contagem dos LP: tambores 3D/dígitos 2D, barras, rolagem dos dígitos |
+| [`dd_lp_show.c`](../src/libduel_draw/dd_lp_show.c) | 0x08858224-0x088587EC | 5 | 2 | objeto que mostra os LP dos dois jogadores |
+| [`dd_caption_box.c`](../src/libduel_draw/dd_caption_box.c) | 0x088587EC-0x088589FC | 5 | 0 | caixa de legenda (entrada de tabela num quadro escuro) |
+| [`dd_debug_menu.c`](../src/libduel_draw/dd_debug_menu.c) | 0x088589FC-0x08859CC0 | 2 | 2 | menu de teste de depuração (inalcançável no jogo; funções grandes só em asm, sem C) |
+| [`dd_zone_cmd.c`](../src/libduel_draw/dd_zone_cmd.c) | 0x08859CC0-0x08859F18 | 7 | 1 | comando de zona ao motor, matrizes de vista, confirmação |
+| [`dd_chr_models.c`](../src/libduel_draw/dd_chr_models.c) | 0x08859F18-0x0885F76C | 210 | 0 | handlers dos modelos de 30 personagens (mapa slot->osso, pose de repouso); busca de ossos em asm por usar static local (.bss) |
+| [`dd_field_browse.c`](../src/libduel_draw/dd_field_browse.c) | 0x0885F76C-0x0885F980 | 11 | 0 | modo de navegação do campo |
+| [`dd_chr_models2.c`](../src/libduel_draw/dd_chr_models2.c) | 0x0885F980-0x08861238 | 21 | 0 | modelo genérico (switch por tipo/subtipo do charmap) e personagens 38, 19 |
+| [`dd_help_window.c`](../src/libduel_draw/dd_help_window.c) | 0x08861238-0x088621A0 | 21 | 4 | janela de ajuda e widget de lista com rolagem |
+| [`dd_help_index.c`](../src/libduel_draw/dd_help_index.c) | 0x088621A0-0x08862A60 | 16 | 0 | índice da ajuda |
+| [`dd_ui_sprites.c`](../src/libduel_draw/dd_ui_sprites.c) | 0x08862A60-0x08862DCC | 3 | 1 | sprites e moldura nine-patch |
+| [`dd_help_text.c`](../src/libduel_draw/dd_help_text.c) | 0x08862DCC-0x088632F4 | 8 | 1 | página de texto da ajuda com figura e rolagem |
+| [`dd_ui_panels.c`](../src/libduel_draw/dd_ui_panels.c) | 0x088632F4-0x08863998 | 9 | 1 | painéis com pulso/piscar e barra de rolagem |
+| [`dd_help_scene.c`](../src/libduel_draw/dd_help_scene.c) | 0x08863998-0x088649D4 | 14 | 5 | tela de ajuda duelo/deck (window01.gim, help/*.gim, guia de botões) |
+| [`dd_list_input.c`](../src/libduel_draw/dd_list_input.c) | 0x088649D4-0x08864B80 | 6 | 0 | entrada do widget de lista |
+| [`dd_help_launch.c`](../src/libduel_draw/dd_help_launch.c) | 0x08864B80-0x08865060 | 9 | 0 | abertura da ajuda a partir do duelo |
+| [`dd_chr_voice.c`](../src/libduel_draw/dd_chr_voice.c) | 0x08865060-0x08866074 | 9 | 2 | falas dos personagens por evento |
+| [`dd_card_declare.c`](../src/libduel_draw/dd_card_declare.c) | 0x08866074-0x088666D8 | 8 | 1 | lista para declarar nome de carta |
+| [`dd_duel_view.c`](../src/libduel_draw/dd_duel_view.c) | 0x088666D8-0x08866EC8 | 75 | 1 | lado da tela <-> jogador e wrappers do libduel_eng |
+| [`dd_card_popup.c`](../src/libduel_draw/dd_card_popup.c) | 0x08866EC8-0x088676D8 | 6 | 1 | menu de ações de carta do campo |
+| [`dd_chr_models3.c`](../src/libduel_draw/dd_chr_models3.c) | 0x088676D8-0x08867EE0 | 21 | 0 | modelos dos personagens 15, 40 e 1000 |
+| [`dd_chr_icon.c`](../src/libduel_draw/dd_chr_icon.c) | 0x08867EE0-0x088682AC | 0 | 1 | retrato do duelista em escala |
+| [`dd_duel_options.c`](../src/libduel_draw/dd_duel_options.c) | 0x088682AC-0x0886A3F4 | 13 | 7 | janela de opções (cfg, volumes, option_msg_*.bin) |
+| [`dd_pad_guide.c`](../src/libduel_draw/dd_pad_guide.c) | 0x0886A3F4-0x0886AE68 | 3 | 4 | guia do direcional do cursor do campo |
+| [`dd_select_anim.c`](../src/libduel_draw/dd_select_anim.c) | 0x0886AE68-0x0886B25C | 8 | 0 | animação de seleção de zona |
 
