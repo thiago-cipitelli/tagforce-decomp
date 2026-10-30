@@ -1456,17 +1456,19 @@ void mat4_rotate_z(float *m, int angle)
     mat4_mul(m, m, r);
 }
 
-#ifdef NON_MATCHING /* float scheduling */
+#ifdef NON_MATCHING /* agrupamento dos produtos corrigido (resultado idêntico bit a bit); 60 palavras: escalonamento dos floats (o original usa f20-f22) */
 float mat4_det(float *m)
 {
     float m4 = m[4], m5 = m[5], m6 = m[6], m7 = m[7];
     float m8 = m[8], m9 = m[9], m10 = m[10], m11 = m[11];
     float m12 = m[12], m13 = m[13], m14 = m[14], m15 = m[15];
 
-    return m[0] * (m14 * m7 * m9 + m15 * m5 * m10 + m13 * m6 * m11 - m13 * m7 * m10 - m15 * m6 * m9 - m14 * m5 * m11)
-         - m[1] * (m14 * m7 * m8 + m15 * m4 * m10 + m12 * m6 * m11 - m12 * m7 * m10 - m15 * m6 * m8 - m14 * m4 * m11)
-         + m[2] * (m13 * m7 * m8 + m15 * m4 * m9 + m12 * m5 * m11 - m12 * m7 * m9 - m15 * m5 * m8 - m13 * m4 * m11)
-         - m[3] * (m13 * m6 * m8 + m14 * m4 * m9 + m12 * m5 * m10 - m12 * m6 * m9 - m14 * m5 * m8 - m13 * m4 * m10);
+    /* cofactor expansion along row 0; every triple product is (pair) * third, the pairs shared
+       between the cofactors, in the order of the original (float rounding depends on it) */
+    return m[0] * (m5 * m10 * m15 + m6 * m11 * m13 + m7 * m9 * m14 - m7 * m10 * m13 - m6 * m9 * m15 - m5 * m11 * m14)
+         - m[1] * (m4 * m10 * m15 + m6 * m11 * m12 + m7 * m8 * m14 - m7 * m10 * m12 - m6 * m8 * m15 - m4 * m11 * m14)
+         + m[2] * (m4 * m9 * m15 + m5 * m11 * m12 + m7 * m8 * m13 - m7 * m9 * m12 - m5 * m8 * m15 - m4 * m11 * m13)
+         - m[3] * (m4 * m9 * m14 + m5 * m10 * m12 + m6 * m8 * m13 - m6 * m9 * m12 - m5 * m8 * m14 - m4 * m10 * m13);
 }
 #endif
 

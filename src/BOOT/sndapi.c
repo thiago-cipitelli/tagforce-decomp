@@ -465,27 +465,28 @@ void snd_channel_update(int slot)
     *act = 0;
 }
 
-#ifdef NON_MATCHING /* s-register allocation of the slot pointers */
+#ifdef NON_MATCHING /* fluxo igual ao original; 24 palavras: só a numeração dos s-registradores (original: q s0, base s1, active s2, slot s3, i s4) */
 /* Per frame: starts the queued voice of each slot, advances the queue when it ends. */
 void snd_channels_update(void)
 {
-    SndChannel *c;
-    int slot, i;
+    SndChannelSlot *q;
+    int slot;
+    int i;
 
     for (slot = 0; slot < 4; slot++) {
-        c = &snd_channel_tab.ch[slot];
         if (snd_channel_tab.active[slot] == 0)
             continue;
-        if (c->q[0].state == 0) {
-            se_play(c->q[0].se_id);
-            c->q[0].state = 1;
-        } else if (bgm_get_status(c->q[0].se_id) == 0) {
-            if (c->q[0].delay == 0) {
-                for (i = 1; i < 8; i++)
-                    memcpy(&c->q[i - 1], &c->q[i], 0x10);
-                snd_channel_tab.active[slot]--;
+        q = snd_channel_tab.ch[slot].q;
+        if (q->state == 0) {
+            se_play(q->se_id);
+            q->state = 1;
+        } else if (bgm_get_status(q->se_id) == 0) {
+            if (q->delay != 0) {
+                q->delay--;
             } else {
-                c->q[0].delay--;
+                for (i = 1; i < 8; i++, q++)
+                    memcpy(&snd_channel_tab.ch[slot].q[i - 1], q + 1, 0x10);
+                snd_channel_tab.active[slot]--;
             }
         }
     }
