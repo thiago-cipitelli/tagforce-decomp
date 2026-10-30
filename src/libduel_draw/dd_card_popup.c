@@ -28,12 +28,12 @@ void func_08825B7C(int v);
 int func_08825A14(void);
 int dv_08835924(void);
 int func_08806D04(void);
-int func_08864F58(void);
+int hl_allowed(void);
 void *func_0881DBC8(int id);
 void func_0881D858(int card);
 void dv_08836028(void);
 void func_0886A1FC(void);
-void func_08864B80(void);
+void hl_open(void);
 void *func_0880B7B8(int side, int zone, int index);
 void func_0880A8E0(DdVec4A *pos, DdVec4A *rot, short loc);
 void *func_088044B0(int id);
@@ -78,7 +78,7 @@ void popup_build(void)
         p->items[n] = 2;
         n++;
     }
-    if (func_08864F58() != 0) {
+    if (hl_allowed() != 0) {
         p->items[n] = 3;
         n++;
     }
@@ -138,7 +138,7 @@ void popup_select(void)
             func_0886A1FC();
             break;
         case 3:
-            func_08864B80();
+            hl_open();
             break;
         }
     }
