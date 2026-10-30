@@ -97,6 +97,11 @@ dd_fx_note_start = 0x0884FD60; // type:func matched src/libduel_draw/dd_fx_note.
 dd_fx_note_update = 0x0884FDB8; // type:func asm (@asm in src/libduel_draw/dd_fx_note.c, C under NON_MATCHING)
 dd_fx_splash_start = 0x0885036C; // type:func matched src/libduel_draw/dd_fx_splash.c
 dd_fx_splash_update = 0x088503C4; // type:func asm (@asm in src/libduel_draw/dd_fx_splash.c, C under NON_MATCHING)
+dd_fx_rock_start = 0x088517DC; // type:func matched src/libduel_draw/dd_fx_rock.c
+dd_fx_rock_spray = 0x088513A4; // type:func asm (@asm in src/libduel_draw/dd_fx_rock.c, C under NON_MATCHING)
+dd_fx_rock_update = 0x08851834; // type:func asm (@asm in src/libduel_draw/dd_fx_rock.c, C under NON_MATCHING)
+dd_fx_bolt_start = 0x088522F0; // type:func matched src/libduel_draw/dd_fx_bolt.c
+dd_fx_bolt_update = 0x08852348; // type:func asm (@asm in src/libduel_draw/dd_fx_bolt.c, C under NON_MATCHING)
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 duel_mode_bit = 0x0886B25C; // type:func import:libduel_eng nid:AA91D845
 duel_turn_player_get = 0x0886B264; // type:func import:libduel_eng nid:D476C5C3
