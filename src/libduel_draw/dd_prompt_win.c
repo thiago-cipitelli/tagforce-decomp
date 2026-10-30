@@ -1,728 +1,578 @@
 // @range 0x08823674-0x08825088
-// @asm 0x08823674-0x08823808
-// @asm 0x0882382C-0x08823D84
-// @asm 0x08823D8C-0x08823FF4
-// @asm 0x0882401C-0x08824D18
-// @asm 0x08824D7C-0x08825088
-/* Prompt windows of the message kinds 3-10: card choice strips, attribute/type/number pickers, coin and dice choices, with their draw and menu hooks.
-   Functions under NON_MATCHING stay in asm; their C is the Ghidra pseudocode cleaned of the address
-   names (Ghidra types: undefined4 = int-sized, code = function pointer), kept for the port. */
+// @data 0x08876208-0x08876228
+/* Choice windows opened in the message window (dd_msg_win): the list of the duel's choices
+   (dv_list2, tabs with "n/m" labels and the text of the entry under the cursor), the attribute and
+   type pickers (dd_pick grids), heads/tails and the number choice. Their answers go to the duel
+   through dv_w624_set. */
 #include "dd_field_ui.h"
 
-#ifdef NON_MATCHING
-typedef unsigned char undefined;
-typedef unsigned char undefined1;
-typedef unsigned short undefined2;
-typedef unsigned int undefined4;
-typedef unsigned char byte;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef void (*code)();
-#endif
+typedef struct DdChoice {              /* entry of the duel's choice list */
+    unsigned short text : 13;          /* dialog text id */
+    unsigned short b13 : 1;
+    unsigned short on : 1;             /* can be chosen */
+    unsigned short b15 : 1;
+    unsigned short pad;
+} DdChoice;
 
-int func_08824D7C();
-int func_08825A14();
-int dd_pick_mask();
+typedef struct DdChoices {             /* dv_list2() */
+    int pad[3];
+    int n;                             /* +0x0C */
+    DdChoice e[1];                     /* +0x10 */
+} DdChoices;
+
+typedef unsigned int *(*DdPickItemFn)(unsigned int *list, int x, int y, int index);
+typedef unsigned int *(*DdPickMarkFn)(unsigned int *list, int x, int y, int w, int h);
+
+typedef struct DdPickCfg {             /* dd_pick.c, 0x2C */
+    int first;
+    int last;
+    int cols;
+    unsigned short *title;
+    unsigned short *(*name)(int index);
+    DdPickItemFn draw_item;
+    DdPickMarkFn draw_mark;
+    int cell_w;
+    int cell_h;
+    int min_pick;
+    int max_pick;
+} DdPickCfg;
+
+extern int dd_prompt_none;             /* 0x08C58810 no entry of the list can be chosen */
+extern MenuWidget *dd_prompt_list;     /* 0x08C58814 */
+extern int dd_attr_mask;               /* 0x08C58818 attributes offered (bit per attribute) */
+extern MenuWidget *dd_attr_pick;       /* 0x08C5881C */
+extern MenuWidget *dd_type_pick;       /* 0x08C58820 */
+extern unsigned int dd_type_mask;      /* 0x08C58824 types offered */
+extern MenuWidget *dd_coin_w;          /* 0x08C58828 */
+
 int dv_w624_set();
-extern int D_08C5881C;
-extern int D_08C58828;
+DdChoices *dv_list2(void);
+unsigned short *dd_text(int id);
+void *dd_gim_get(int id);
+int dd_input_on(void);
+unsigned int *dd_pad(void);
+void dd_mode_push(int m);
+void dd_mode_set_flag(int f);
+unsigned int *dd_wline_draw(unsigned int *list, int style, int n, float *pts, int closed);
+unsigned int *dd_coin_tex(float scale, unsigned int *list, int x, int y, int w, int h, int back);
+void dd_pick_init(DdPickCfg *cfg);
+void dd_pick_setup(MenuWidget *w);
+void dd_pick_update(MenuWidget *w);
+unsigned int dd_pick_mask();
+int dd_pick_width(MenuWidget *w);
+int dd_pick_height(MenuWidget *w);
+unsigned int *dd_pick_draw();
+void dd_pick_open_confirm(void);
+unsigned short *dlg_table_sel(int i);
+unsigned short *card_db_table_sel(int i);
+unsigned char *syspack_get(void);
+void *ehp_find(void *pack, const char *name, int *size);
+unsigned int *dl_scissor(unsigned int *list, int x, int y, int w, int h);
+unsigned int *dl_set_tex_filter(unsigned int *list, int min, int mag);
+int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max_glyphs);
+int wsprintf(unsigned short *out, const unsigned short *fmt, ...);
+void func_08825824(unsigned short *title, unsigned short *text, int kind, void (*setup)(MenuWidget *w, int open));
+int func_08825728(void);
+void func_088259D8(void);
+void func_088259FC(void (*fn)(void));
+void func_08825A08(int (*fn)(void));
+int func_08825A14(void);
+void func_08825A70(int v);
+void func_08823724(MenuWidget *w, int open);
 void func_08823808(void);
+void func_0882382C(unsigned int *dl, unsigned short i, int x, int y);
 void *func_08823D84(void *list);
+int func_08823D8C(void);
+void func_08823F44(MenuWidget *w, int open);
 void func_08823FF4(void);
+int func_0882401C(void);
+unsigned int *func_0882404C(unsigned int *dl, int x, int y);
+unsigned int *func_08824374(unsigned int *dl, int x, int y, int idx);
+unsigned int *func_08824484(unsigned int *dl, int x, int y);
+void func_0882464C(MenuWidget *w, int open);
+void func_088246FC(void);
+int func_08824764(void);
+unsigned int *func_08824794(unsigned int *dl, int x, int y);
+unsigned int *func_08824ABC(unsigned int *dl, int x, int y, int idx);
+unsigned int *func_08824C08(unsigned int *dl, int x, int y);
 void func_08824D18(MenuWidget *w, int open);
 void func_08824D58(void);
+void func_08824D7C(unsigned int *dl, int x, int y);
+void func_08824FF0(MenuWidget *w, int open);
+void func_0882504C(void);
+void func_088250E8(void *dl, int x, int y, int w, int h);
 
-#ifdef NON_MATCHING
-// 08823674 size=176
-void func_08823674(undefined4 param_1)
+/* choice among the duel's list (dv_list2); nothing to choose answers 0 at once */
+void func_08823674(unsigned short *text)
 {
-  undefined4 uVar1;
-  D_08C58810 = 0;
-  uVar1 = dd_text(0x1c);
-  func_08825824(uVar1,param_1,0x30,func_08823724);
-  if ((D_08C58814 == 0) || (D_08C58810 != 0)) {
-    func_088259D8();
-    duel_088FEE30(0);
-  }
-  else {
-    dd_mode_push(4);
-    dd_mode_set_flag(0x31);
-    func_088259FC(func_08823808);
-    func_08825A08(func_08823D8C);
-    se_play(0x621a);
-  }
-  return;
+    dd_prompt_none = 0;
+    func_08825824(dd_text(28), text, 0x30, func_08823724);
+    if (dd_prompt_list == 0 || dd_prompt_none != 0) {
+        func_088259D8();
+        dv_w624_set(0);
+    } else {
+        dd_mode_push(4);
+        dd_mode_set_flag(0x31);
+        func_088259FC(func_08823808);
+        func_08825A08(func_08823D8C);
+        se_play(0x621A);
+    }
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08823724 size=228
-void func_08823724(int param_1,int param_2)
+/* window setup: one tab per entry, the entries that can't be chosen disabled */
+void func_08823724(MenuWidget *w, int open)
 {
-  int iVar1;
-  int iVar2;
-  uint uVar3;
-  int iVar4;
-  uint uVar5;
-  if (param_2 != 0) {
-    iVar1 = duel_088FEE68();
-    uVar5 = 0;
-    iVar4 = 0;
-    iVar2 = duel_088FEE68();
-    iVar2 = *(int *)(iVar2 + 0xc);
-    uVar3 = 0;
-    if (0 < iVar2) {
-      do {
-        if ((int)((uint)*(byte *)(iVar1 + 0x11) << 0x19) < 0) {
-          iVar4 = iVar4 + 1;
+    DdChoices *c;
+    unsigned int off;
+    int n_on;
+    int n;
+    int i;
+
+    if (open) {
+        c = dv_list2();
+        off = 0;
+        n_on = 0;
+        n = dv_list2()->n;
+        for (i = 0; i < n; i++) {
+            if (!c->e[i].on)
+                off |= 1 << i;
+            else
+                n_on++;
         }
-        else {
-          uVar5 = uVar5 | 1 << (uVar3 & 0x1f);
-        }
-        uVar3 = uVar3 + 1;
-        iVar1 = iVar1 + 4;
-      } while ((int)uVar3 < iVar2);
+        w->def.pad_b = 80;
+        w->count = n;
+        w->rows = n;
+        w->disabled = off;
+        w->item_w = 70;
+        w->item_h = 18;
+        w->draw_item = (MenuDrawItemFn)func_0882382C;
+        w->draw_cursor = (MenuDrawCursorFn)func_08823D84;
+        dd_prompt_list = w;
+        if (n_on == 0)
+            dd_prompt_none = 1;
     }
-    *(undefined2 *)(param_1 + 0x96) = 0x50;
-    *(short *)(param_1 + 0xcc) = (short)iVar2;
-    *(char *)(param_1 + 0xce) = (char)iVar2;
-    *(uint *)(param_1 + 0xdc) = uVar5;
-    *(undefined2 *)(param_1 + 0xf0) = 0x46;
-    *(undefined2 *)(param_1 + 0xf2) = 0x12;
-    *(code **)(param_1 + 0xfc) = func_0882382C;
-    *(undefined1 **)(param_1 + 0x10c) = &func_08823D84;
-    D_08C58814 = param_1;
-    if (iVar4 == 0) {
-      D_08C58810 = 1;
-    }
-  }
-  return;
 }
-#endif
 
 void func_08823808(void)
 {
     dv_w624_set(func_08825A14());
 }
 
-#ifdef NON_MATCHING
-// 0882382c size=1368
-void func_0882382C(undefined4 param_1,uint param_2,int param_3,int param_4)
+/* tab i of the list (lit under the cursor, "i/n" label); tab 0 also draws the box with the text of
+   the entry under the cursor */
+void func_0882382C(unsigned int *dl, unsigned short i, int x, int y)
 {
-  ushort uVar1;
-  undefined4 uVar2;
-  int iVar3;
-  undefined4 uVar4;
-  int iVar5;
-  int iVar6;
-  int iVar7;
-  int iVar8;
-  undefined1 auStack_e0 [128];
-  float local_60;
-  float local_5c;
-  float local_54;
-  float local_50;
-  float local_48;
-  float local_44;
-  float local_3c;
-  float local_38;
-  iVar5 = D_08C58814;
-  param_2 = param_2 & 0xffff;
-  iVar8 = 0;
-  if (param_2 == 0) {
-    iVar6 = (uint)*(ushort *)(D_08C58814 + 0xf0) * (uint)*(ushort *)(D_08C58814 + 0xcc) + -9;
-    iVar7 = ((((int)*(short *)(D_08C58814 + 0x5a) + (int)*(short *)(D_08C58814 + 0x6e)) -
-             (int)*(short *)(D_08C58814 + 0x94)) + -0x1d) - (param_4 + 3);
-    local_60 = (float)(param_3 + 4);
-    local_5c = (float)(param_4 + 0x16);
-    local_54 = local_60 + (float)iVar6;
-    local_44 = local_5c + (float)iVar7;
-    local_50 = local_5c;
-    local_48 = local_54;
-    local_3c = local_60;
-    local_38 = local_44;
-    uVar2 = dl_set_color(param_1,0xffffffff);
-    uVar2 = dd_wline_draw(uVar2,0,4,&local_60,1);
-    font_text_set(uVar2);
-    font_set_size(0xc,0xc);
-    iVar3 = duel_088FEE68();
-    iVar3 = iVar3 + (*(byte *)(D_08C58814 + 0xd2) & 0x1f) * 4;
-    uVar2 = dlg_get_text(*(ushort *)(iVar3 + 0x10) & 0x1fff);
-    if ((int)((uint)*(byte *)(iVar3 + 0x11) << 0x19) < 0) {
-      font_set_color(0xff000000);
-    }
-    else {
-      font_set_color(0xff666666);
-    }
-    font_draw_wtext_ex((int)local_60 << 6,(int)local_5c << 6,iVar6 * 0x40,iVar7 * 0x40,uVar2,0xffffffff)
-    ;
-    param_1 = font_text_clear();
-  }
-  iVar3 = dd_gim_get(0x4001a);
-  if (iVar3 != 0) {
-    param_1 = gim_set_texture(param_1,iVar3);
-  }
-  if ((D_08C58814 == 0) || ((*(byte *)(D_08C58814 + 0xd2) & 0x1f) != param_2)) {
-    uVar2 = dl_set_color(param_1,0xff808080);
-    iVar8 = 2;
-    uVar2 = draw_set_offsets(uVar2,8,0x12,8,0x12);
-    if (param_2 == 0) {
-      uVar2 = draw_sprite(uVar2,param_3,param_4 + 3,0,8,0,0,0);
-      uVar1 = *(ushort *)(iVar5 + 0xcc);
-    }
-    else {
-      uVar2 = draw_sprite(uVar2,param_3,param_4 + 3,0,0x18,0,0,0);
-      uVar1 = *(ushort *)(iVar5 + 0xcc);
-    }
-    if (param_2 == uVar1 - 1) {
-      uVar2 = draw_sprite(uVar2,param_3 + (uint)*(ushort *)(iVar5 + 0xf0) + -8,param_4 + 3,0,0x38,0,
-                          0,0);
-      uVar1 = *(ushort *)(iVar5 + 0xf0);
-    }
-    else {
-      uVar2 = draw_sprite(uVar2,param_3 + (uint)*(ushort *)(iVar5 + 0xf0) + -8,param_4 + 3,0,0x28,0,
-                          0,0);
-      uVar1 = *(ushort *)(iVar5 + 0xf0);
-    }
-    uVar2 = draw_set_offsets(uVar2,1,0x12,uVar1 - 0x10,0x12);
-    uVar2 = draw_sprite(uVar2,param_3 + 8,param_4 + 3,0,0xc,0,0,0);
-  }
-  else {
-    uVar2 = dl_set_color(param_1,0xffffffff);
-    uVar2 = draw_set_offsets(uVar2,8,0x12,8,0x12);
-    if (param_2 == 0) {
-      uVar2 = draw_sprite(uVar2,param_3,param_4 + 3,0,0,0,0,0);
-      uVar1 = *(ushort *)(iVar5 + 0xcc);
-    }
-    else {
-      uVar2 = draw_sprite(uVar2,param_3,param_4 + 3,0,0x10,0,0,0);
-      uVar1 = *(ushort *)(iVar5 + 0xcc);
-    }
-    if (param_2 == uVar1 - 1) {
-      uVar2 = draw_sprite(uVar2,param_3 + (uint)*(ushort *)(iVar5 + 0xf0) + -8,param_4 + 3,0,0x30,0,
-                          0,0);
-      uVar1 = *(ushort *)(iVar5 + 0xf0);
-    }
-    else {
-      uVar2 = draw_sprite(uVar2,param_3 + (uint)*(ushort *)(iVar5 + 0xf0) + -8,param_4 + 3,0,0x20,0,
-                          0,0);
-      uVar1 = *(ushort *)(iVar5 + 0xf0);
-    }
-    uVar2 = draw_set_offsets(uVar2,1,0x12,uVar1 - 0x10,0x12);
-    uVar2 = draw_sprite(uVar2,param_3 + 8,param_4 + 3,0,4,0,0,0);
-  }
-  uVar4 = dd_text(0x1b);
-  wsprintf(auStack_e0,uVar4,param_2 + 1);
-  font_set_size(0xc,0xc);
-  iVar3 = font_measure_text(auStack_e0);
-  iVar6 = font_line_height();
-  iVar7 = iVar6 >> 7;
-  if (iVar6 >> 6 < 0) {
-    iVar7 = (iVar6 >> 6) + 1 >> 1;
-  }
-  iVar8 = iVar8 + (9 - iVar7);
-  iVar6 = param_4 + 3 + iVar8;
-  iVar5 = (uint)*(ushort *)(iVar5 + 0xf0) - (iVar3 >> 6);
-  if (iVar5 < 0) {
-    iVar5 = iVar5 + 1;
-  }
-  param_3 = param_3 + (iVar5 >> 1);
-  uVar2 = dl_scissor(uVar2,param_3,iVar6,(iVar3 >> 6) + 1,0xf - iVar8);
-  uVar2 = dl_enable(uVar2,2);
-  font_set_color(0xff00354a);
-  font_text_set(uVar2);
-  font_draw_text(param_3 * 0x40,iVar6 * 0x40,(0x1e0 - param_3) * 0x40,auStack_e0);
-  uVar2 = font_text_clear();
-  dl_disable(uVar2,2);
-  return;
-}
-#endif
+    MenuWidget *w = dd_prompt_list;
+    float pts[8][3];
+    unsigned short label[64];
+    unsigned short *text;
+    DdChoices *c;
+    int k;
+    int frame = 0;
+    int tw, th;
+    int lh, oy, tx, ty;
+    void *gim;
 
+    if (i == 0) {
+        tw = w->item_w * w->count - 9;
+        th = w->def.y + w->def.h - w->def.pad_t - 29 - (y + 3);
+        pts[0][0] = x + 4;
+        pts[0][1] = y + 22;
+        pts[1][0] = pts[0][0] + tw;
+        pts[1][1] = pts[0][1];
+        pts[2][0] = pts[1][0];
+        pts[2][1] = pts[0][1] + th;
+        pts[3][0] = pts[0][0];
+        pts[3][1] = pts[2][1];
+        dl = dl_ambient_color(dl, 0xFFFFFFFF);
+        dl = dd_wline_draw(dl, 0, 4, &pts[0][0], 1);
+        font_text_set(dl);
+        font_set_size(12, 12);
+        c = dv_list2();
+        k = dd_prompt_list->cursor;
+        text = dlg_get_text(c->e[k].text);
+        if (c->e[k].on)
+            font_set_color(0xFF000000);
+        else
+            font_set_color(0xFF666666);
+        font_draw_wtext_ex((int)pts[0][0] << 6, (int)pts[0][1] << 6, tw << 6, th << 6, text, -1);
+        dl = font_text_clear();
+    }
+    gim = dd_gim_get(0x4001A);
+    if (gim)
+        dl = gim_set_texture(dl, gim);
+    if (dd_prompt_list == 0 || dd_prompt_list->cursor != i) {
+        dl = dl_ambient_color(dl, 0xFF808080);
+        frame = 2;
+        dl = draw_set_offsets(dl, 8, 18, 8, 18);
+        if (i == 0)
+            dl = draw_sprite(dl, x, y + 3, 0, 8, 0, 0, 0);
+        else
+            dl = draw_sprite(dl, x, y + 3, 0, 24, 0, 0, 0);
+        if (i == w->count - 1)
+            dl = draw_sprite(dl, x + w->item_w - 8, y + 3, 0, 56, 0, 0, 0);
+        else
+            dl = draw_sprite(dl, x + w->item_w - 8, y + 3, 0, 40, 0, 0, 0);
+        dl = draw_set_offsets(dl, 1, 18, w->item_w - 16, 18);
+        dl = draw_sprite(dl, x + 8, y + 3, 0, 12, 0, 0, 0);
+    } else {
+        dl = dl_ambient_color(dl, 0xFFFFFFFF);
+        dl = draw_set_offsets(dl, 8, 18, 8, 18);
+        if (i == 0)
+            dl = draw_sprite(dl, x, y + 3, 0, 0, 0, 0, 0);
+        else
+            dl = draw_sprite(dl, x, y + 3, 0, 16, 0, 0, 0);
+        if (i == w->count - 1)
+            dl = draw_sprite(dl, x + w->item_w - 8, y + 3, 0, 48, 0, 0, 0);
+        else
+            dl = draw_sprite(dl, x + w->item_w - 8, y + 3, 0, 32, 0, 0, 0);
+        dl = draw_set_offsets(dl, 1, 18, w->item_w - 16, 18);
+        dl = draw_sprite(dl, x + 8, y + 3, 0, 4, 0, 0, 0);
+    }
+    wsprintf(label, dd_text(27), i + 1);
+    font_set_size(12, 12);
+    tw = font_measure_text(label) >> 6;
+    lh = (font_line_height() >> 6) / 2;
+    oy = frame + (9 - lh);
+    ty = y + 3 + oy;
+    tx = x + (w->item_w - tw) / 2;
+    dl = dl_scissor(dl, tx, ty, tw + 1, 15 - oy);
+    dl = dl_enable(dl, 2);
+    font_set_color(0xFF00354A);
+    font_text_set(dl);
+    font_draw_text(tx << 6, ty << 6, (480 - tx) << 6, label);
+    dl_disable(font_text_clear(), 2);
+}
+
+/* no cursor drawing */
 void *func_08823D84(void *list)
 {
     return list;
 }
 
-#ifdef NON_MATCHING
-// 08823d8c size=168
-bool func_08823D8C(void)
+/* window update: L/R also move the cursor */
+int func_08823D8C(void)
 {
-  char cVar1;
-  int iVar2;
-  undefined4 uVar3;
-  int iVar4;
-  iVar4 = D_08C58814;
-  iVar2 = dd_input_on();
-  if (iVar2 == 0) {
-    cVar1 = *(char *)(iVar4 + 0xe9);
-  }
-  else {
-    uVar3 = menu_update(iVar4);
-    func_08825A70(uVar3);
-    cVar1 = *(char *)(iVar4 + 0xe9);
-  }
-  if (cVar1 == '\x03') {
-    iVar2 = dd_pad();
-    if ((*(uint *)(iVar2 + 4) & 0x100) == 0) {
-      if ((*(uint *)(iVar2 + 4) & 0x200) != 0) {
-        menu_cursor_next(iVar4);
-        se_play(0x6212);
-      }
-    }
-    else {
-      menu_cursor_prev(iVar4);
-      se_play(0x6212);
-    }
-  }
-  iVar4 = func_08825728();
-  return iVar4 == 0;
-}
-#endif
+    MenuWidget *w = dd_prompt_list;
+    unsigned int *pad;
 
-#ifdef NON_MATCHING
-// 08823e34 size=272
-void func_08823E34(undefined4 param_1,undefined4 param_2,undefined4 param_3)
-{
-  undefined4 uVar1;
-  undefined4 local_2c;
-  undefined4 local_28;
-  undefined4 local_24;
-  undefined4 local_20;
-  code *local_1c;
-  code *local_18;
-  code *local_14;
-  undefined4 local_10;
-  undefined4 local_c;
-  undefined4 local_8;
-  undefined4 local_4;
-  uVar1 = dd_text(0x1c);
-  D_08C58818 = param_3;
-  memset(&local_2c,0,0x2c);
-  local_2c = 1;
-  local_28 = 7;
-  local_24 = 6;
-  local_20 = dd_text(0x1f);
-  local_1c = dlg_table_sel;
-  local_18 = func_08824374;
-  local_14 = func_08824484;
-  local_10 = 0x19;
-  local_c = 0x19;
-  local_8 = param_2;
-  local_4 = param_2;
-  dd_pick_init(&local_2c);
-  func_08825824(uVar1,param_1,0x30,func_08823F44);
-  dd_mode_push(4);
-  dd_mode_set_flag(0x31);
-  func_08825A08(func_0882401C);
-  func_088259FC(func_08823FF4);
-  se_play(0x621a);
-  return;
+    if (dd_input_on())
+        func_08825A70(menu_update(w));
+    if (w->state == 3) {
+        pad = dd_pad();
+        if (pad[1] & 0x100) {
+            menu_cursor_prev(w);
+            se_play(0x6212);
+        } else if (pad[1] & 0x200) {
+            menu_cursor_next(w);
+            se_play(0x6212);
+        }
+    }
+    return !func_08825728();
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08823f44 size=176
-void func_08823F44(int param_1,int param_2)
+/* attribute picker: n attributes among those of mask */
+void func_08823E34(unsigned short *text, int n, int mask)
 {
-  byte bVar1;
-  short sVar2;
-  short sVar3;
-  short sVar4;
-  if (param_2 == 0) {
-    dd_pick_open_confirm();
-  }
-  else {
-    D_08C5881C = param_1;
-    dd_pick_setup();
-    *(code **)(param_1 + 0x100) = func_0882404C;
-    *(int *)(param_1 + 0xdc) = ~(D_08C58818 >> 1);
-    *(undefined4 *)(param_1 + 0x60) = 0;
-    sVar2 = *(short *)(param_1 + 0x90);
-    sVar3 = *(short *)(param_1 + 0x92);
-    sVar4 = dd_pick_width(param_1);
-    *(short *)(param_1 + 0x6c) = sVar2 + sVar3 + sVar4 + 0x5c;
-    sVar2 = *(short *)(param_1 + 0x94);
-    sVar3 = *(short *)(param_1 + 0x96);
-    bVar1 = *(byte *)(param_1 + 0x98);
-    sVar4 = dd_pick_height(param_1);
-    *(ushort *)(param_1 + 0x6e) = (ushort)bVar1 + sVar2 + sVar3 + sVar4 + 0x2a;
-  }
-  return;
+    unsigned short *title = dd_text(28);
+    DdPickCfg cfg;
+
+    dd_attr_mask = mask;
+    memset(&cfg, 0, sizeof(DdPickCfg));
+    cfg.first = 1;
+    cfg.last = 7;
+    cfg.cols = 6;
+    cfg.title = dd_text(31);
+    cfg.name = dlg_table_sel;
+    cfg.draw_item = func_08824374;
+    cfg.draw_mark = (DdPickMarkFn)func_08824484;
+    cfg.cell_w = 25;
+    cfg.cell_h = 25;
+    cfg.min_pick = n;
+    cfg.max_pick = n;
+    dd_pick_init(&cfg);
+    func_08825824(title, text, 0x30, func_08823F44);
+    dd_mode_push(4);
+    dd_mode_set_flag(0x31);
+    func_08825A08(func_0882401C);
+    func_088259FC(func_08823FF4);
+    se_play(0x621A);
 }
-#endif
+
+/* window setup of the attribute picker: sized to the grid */
+void func_08823F44(MenuWidget *w, int open)
+{
+    if (open) {
+        dd_attr_pick = w;
+        dd_pick_setup(w);
+        w->draw_all = (MenuDrawRectFn)func_0882404C;
+        w->disabled = ~(dd_attr_mask >> 1);
+        w->def.auto_size = 0;
+        w->def.w = w->def.pad_l + w->def.pad_r + dd_pick_width(w) + 92;
+        w->def.h = w->def.font_size + (w->def.pad_t + w->def.pad_b) + dd_pick_height(w) + 42;
+    } else {
+        dd_pick_open_confirm();
+    }
+}
 
 void func_08823FF4(void)
 {
-    dv_w624_set(dd_pick_mask(D_08C5881C));
+    dv_w624_set(dd_pick_mask(dd_attr_pick));
 }
 
-#ifdef NON_MATCHING
 int func_0882401C(void)
 {
-    dd_pick_update(D_08C5881C);
-    return func_08825728() == 0;
+    dd_pick_update(dd_attr_pick);
+    return !func_08825728();
 }
-#endif
 
-#ifdef NON_MATCHING
-// 0882404c size=808
-void func_0882404C(undefined4 param_1,int param_2,int param_3)
+/* content of the attribute picker: frame, title icon and text, then the grid */
+unsigned int *func_0882404C(unsigned int *dl, int x, int y)
 {
-  float *pfVar1;
-  int iVar2;
-  int iVar3;
-  undefined4 uVar4;
-  float *pfVar5;
-  float *pfVar6;
-  float fVar7;
-  float fVar8;
-  float local_48;
-  float local_44;
-  float local_3c;
-  float local_38;
-  float local_30;
-  float local_2c;
-  float local_24;
-  float local_20;
-  float local_18;
-  float local_14;
-  float local_c;
-  float local_8;
-  iVar2 = dd_pick_width(D_08C5881C);
-  iVar3 = dd_pick_height(D_08C5881C);
-  pfVar5 = (float *)0x48;
-  pfVar6 = &local_48;
-  pfVar1 = pfVar6;
-  while (pfVar1 != (float *)0x0) {
-    *(undefined1 *)pfVar6 = 0;
-    pfVar6 = (float *)((int)pfVar6 + 1);
-    pfVar5 = (float *)((int)pfVar5 + -1);
-    pfVar1 = pfVar5;
-  }
-  local_48 = (float)(param_2 + 0x1c);
-  local_44 = (float)(param_3 + 7);
-  local_3c = (float)(param_2 + 0x2d + iVar2);
-  local_2c = (float)(param_3 + 0x1a + iVar3);
-  local_24 = (float)(param_2 + 0x2d);
-  local_14 = (float)(param_3 + 0x18);
-  local_38 = local_44;
-  local_30 = local_3c;
-  local_20 = local_2c;
-  local_18 = local_24;
-  local_c = local_48;
-  local_8 = local_14;
-  uVar4 = syspack_get();
-  iVar2 = ehp_find(uVar4,s_window01_gim_08876208,0);
-  if (iVar2 != 0) {
-    uVar4 = dl_enable(param_1,9);
-    param_1 = gim_set_texture(uVar4,iVar2);
-  }
-  fVar8 = local_3c - local_48;
-  fVar7 = local_8 - local_44;
-  uVar4 = dl_set_color(param_1,0xffffffff);
-  uVar4 = draw_set_offsets(uVar4,1,1,(int)(fVar8 + 2.0),(int)(fVar7 + 1.0));
-  uVar4 = draw_sprite(uVar4,(int)(local_48 - 1.0),(int)(local_44 - 1.0),0,0x36,0x65,0,0);
-  uVar4 = dd_wline_draw(uVar4,0,6,&local_48,1);
-  iVar2 = dd_gim_get(0x40005);
-  if (iVar2 != 0) {
-    uVar4 = gim_set_texture(uVar4,iVar2);
-  }
-  uVar4 = draw_set_offsets(uVar4,0x11,0x11,0x11,0x11);
-  uVar4 = draw_sprite(uVar4,(int)local_48,(int)local_44,0,0x55,0x20,0,0);
-  iVar2 = dd_text(0x1d);
-  if (iVar2 != 0) {
-    font_set_size(0xc,0xc);
-    font_set_color(0xff202020);
-    font_text_set(uVar4);
-    iVar3 = (int)(local_48 + 17.0 + 3.0);
-    font_draw_text(iVar3 << 6,(int)(local_44 + 2.0) << 6,(0x1e0 - iVar3) * 0x40,iVar2);
-    uVar4 = font_text_clear();
-  }
-  dd_pick_draw(uVar4,D_08C5881C,param_2 + 0x2d,param_3 + 0x18,0xffffffff,0xffffffff);
-  return;
-}
-#endif
+    static char window_gim[] = "window01.gim";
+    int pw = dd_pick_width(dd_attr_pick);
+    int ph = dd_pick_height(dd_attr_pick);
+    float pts[6][3] = { 0 };
+    void *gim;
+    unsigned short *text;
+    int w, h;
 
-#ifdef NON_MATCHING
-// 08824374 size=272
-void func_08824374(undefined4 param_1,undefined4 param_2,undefined4 param_3,uint param_4)
+    pts[0][0] = x + 28;
+    pts[0][1] = y + 7;
+    pts[1][0] = x + 45 + pw;
+    pts[1][1] = y + 7;
+    pts[2][0] = x + 45 + pw;
+    pts[2][1] = y + 26 + ph;
+    pts[3][0] = x + 45;
+    pts[3][1] = y + 26 + ph;
+    pts[4][0] = x + 45;
+    pts[4][1] = y + 24;
+    pts[5][0] = x + 28;
+    pts[5][1] = y + 24;
+    gim = ehp_find(syspack_get(), window_gim, 0);
+    if (gim) {
+        dl = dl_enable(dl, 9);
+        dl = gim_set_texture(dl, gim);
+    }
+    w = 2.0f + (pts[1][0] - pts[0][0]);
+    h = 1.0f + (pts[5][1] - pts[0][1]);
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = draw_set_offsets(dl, 1, 1, w, h);
+    dl = draw_sprite(dl, pts[0][0] - 1.0f, pts[0][1] - 1.0f, 0, 54, 101, 0, 0);
+    dl = dd_wline_draw(dl, 0, 6, &pts[0][0], 1);
+    gim = dd_gim_get(0x40005);
+    if (gim)
+        dl = gim_set_texture(dl, gim);
+    dl = draw_set_offsets(dl, 17, 17, 17, 17);
+    dl = draw_sprite(dl, pts[0][0], pts[0][1], 0, 85, 32, 0, 0);
+    text = dd_text(29);
+    if (text) {
+        font_set_size(12, 12);
+        font_set_color(0xFF202020);
+        font_text_set(dl);
+        font_draw_text((int)(3.0f + (17.0f + pts[0][0])) << 6, (int)(2.0f + pts[0][1]) << 6,
+                       (480 - (int)(3.0f + (17.0f + pts[0][0]))) << 6, text);
+        dl = font_text_clear();
+    }
+    return dd_pick_draw(dl, dd_attr_pick, x + 45, y + 24, -1, -1);
+}
+
+/* attribute icon idx, dimmed when not offered */
+unsigned int *func_08824374(unsigned int *dl, int x, int y, int idx)
 {
-  int iVar1;
-  undefined4 uVar2;
-  iVar1 = dd_gim_get(0x40004);
-  if (iVar1 != 0) {
-    uVar2 = dl_enable(param_1,9);
-    param_1 = gim_set_texture(uVar2,iVar1);
-  }
-  if ((1 << (param_4 & 0x1f) & D_08C58818) == 0) {
-    uVar2 = dl_set_color(param_1,0x80808080);
-  }
-  else {
-    uVar2 = dl_set_color(param_1,0xffffffff);
-  }
-  uVar2 = draw_set_offsets(uVar2,0x11,0x11,0x11,0x11);
-  draw_sprite(uVar2,param_2,param_3,0,(param_4 - 1) * 0x11,0x44,0,0);
-  return;
-}
-#endif
+    int u = (idx - 1) * 17;
+    void *gim = dd_gim_get(0x40004);
 
-#ifdef NON_MATCHING
-// 08824484 size=192
-void func_08824484(undefined4 param_1,undefined4 param_2,undefined4 param_3)
+    if (gim) {
+        dl = dl_enable(dl, 9);
+        dl = gim_set_texture(dl, gim);
+    }
+    if ((1 << idx) & dd_attr_mask)
+        dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    else
+        dl = dl_ambient_color(dl, 0x80808080);
+    dl = draw_set_offsets(dl, 17, 17, 17, 17);
+    return draw_sprite(dl, x, y, 0, u, 68, 0, 0);
+}
+
+/* mark of a picked entry */
+unsigned int *func_08824484(unsigned int *dl, int x, int y)
 {
-  int iVar1;
-  undefined4 uVar2;
-  iVar1 = dd_gim_get(0x40005);
-  if (iVar1 != 0) {
-    uVar2 = dl_enable(param_1,9);
-    param_1 = gim_set_texture(uVar2,iVar1);
-  }
-  uVar2 = dl_set_color(param_1,0xffffffff);
-  uVar2 = draw_set_offsets(uVar2,0x19,0x18,0x19,0x18);
-  draw_sprite(uVar2,param_2,param_3,0,0x1c,0x5d,0,0);
-  return;
-}
-#endif
+    void *gim = dd_gim_get(0x40005);
 
-#ifdef NON_MATCHING
-// 08824544 size=264
-void func_08824544(undefined4 param_1,undefined4 param_2)
+    if (gim) {
+        dl = dl_enable(dl, 9);
+        dl = gim_set_texture(dl, gim);
+    }
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = draw_set_offsets(dl, 25, 24, 25, 24);
+    return draw_sprite(dl, x, y, 0, 28, 93, 0, 0);
+}
+
+/* monster type picker: one type among those of mask */
+void func_08824544(unsigned short *text, unsigned int mask)
 {
-  undefined4 uVar1;
-  undefined4 local_2c;
-  undefined4 local_28;
-  undefined4 local_24;
-  undefined4 local_20;
-  code *local_1c;
-  code *local_18;
-  code *local_14;
-  undefined4 local_10;
-  undefined4 local_c;
-  undefined4 local_8;
-  undefined4 local_4;
-  uVar1 = dd_text(0x1c);
-  memset(&local_2c,0,0x2c);
-  local_2c = 1;
-  local_28 = 0x15;
-  local_24 = 5;
-  local_20 = dd_text(0x1f);
-  local_1c = card_db_table_sel;
-  local_18 = func_08824ABC;
-  local_14 = func_08824C08;
-  local_10 = 0x19;
-  local_c = 0x19;
-  local_8 = 1;
-  local_4 = 1;
-  dd_pick_init(&local_2c);
-  D_08C58824 = param_2;
-  func_08825824(uVar1,param_1,0x30,func_0882464C);
-  dd_mode_push(4);
-  dd_mode_set_flag(0x31);
-  func_08825A08(func_08824764);
-  func_088259FC(func_088246FC);
-  se_play(0x621a);
-  return;
-}
-#endif
+    unsigned short *title = dd_text(28);
+    DdPickCfg cfg;
 
-#ifdef NON_MATCHING
-// 0882464c size=176
-void func_0882464C(int param_1,int param_2)
+    memset(&cfg, 0, sizeof(DdPickCfg));
+    cfg.first = 1;
+    cfg.last = 21;
+    cfg.cols = 5;
+    cfg.title = dd_text(31);
+    cfg.name = card_db_table_sel;
+    cfg.draw_item = func_08824ABC;
+    cfg.draw_mark = (DdPickMarkFn)func_08824C08;
+    cfg.cell_w = 25;
+    cfg.cell_h = 25;
+    cfg.min_pick = 1;
+    cfg.max_pick = 1;
+    dd_pick_init(&cfg);
+    dd_type_mask = mask;
+    func_08825824(title, text, 0x30, func_0882464C);
+    dd_mode_push(4);
+    dd_mode_set_flag(0x31);
+    func_08825A08(func_08824764);
+    func_088259FC(func_088246FC);
+    se_play(0x621A);
+}
+
+/* window setup of the type picker */
+void func_0882464C(MenuWidget *w, int open)
 {
-  byte bVar1;
-  short sVar2;
-  short sVar3;
-  short sVar4;
-  if (param_2 == 0) {
-    dd_pick_open_confirm();
-  }
-  else {
-    D_08C58820 = param_1;
-    dd_pick_setup();
-    *(code **)(param_1 + 0x100) = func_08824794;
-    *(uint *)(param_1 + 0xdc) = ~(D_08C58824 >> 1);
-    *(undefined4 *)(param_1 + 0x60) = 0;
-    sVar2 = *(short *)(param_1 + 0x90);
-    sVar3 = *(short *)(param_1 + 0x92);
-    sVar4 = dd_pick_width(param_1);
-    *(short *)(param_1 + 0x6c) = sVar2 + sVar3 + sVar4 + 0x5c;
-    sVar2 = *(short *)(param_1 + 0x94);
-    sVar3 = *(short *)(param_1 + 0x96);
-    bVar1 = *(byte *)(param_1 + 0x98);
-    sVar4 = dd_pick_height(param_1);
-    *(ushort *)(param_1 + 0x6e) = (ushort)bVar1 + sVar2 + sVar3 + sVar4 + 0x2a;
-  }
-  return;
+    if (open) {
+        dd_type_pick = w;
+        dd_pick_setup(w);
+        w->draw_all = (MenuDrawRectFn)func_08824794;
+        w->disabled = ~(dd_type_mask >> 1);
+        w->def.auto_size = 0;
+        w->def.w = w->def.pad_l + w->def.pad_r + dd_pick_width(w) + 92;
+        w->def.h = w->def.font_size + (w->def.pad_t + w->def.pad_b) + dd_pick_height(w) + 42;
+    } else {
+        dd_pick_open_confirm();
+    }
 }
-#endif
 
-#ifdef NON_MATCHING
-// 088246fc size=104
+/* answer: the picked type (lowest bit 1-20 of the mask) */
 void func_088246FC(void)
 {
-  uint uVar1;
-  uint uVar2;
-  uint uVar3;
-  uint uVar4;
-  uVar1 = dd_pick_mask(D_08C58820);
-  uVar3 = 1;
-  uVar2 = 2;
-  while ((uVar4 = uVar3, (uVar1 & uVar2) == 0 && (uVar3 = uVar3 + 1, uVar4 = 0, (int)uVar3 < 0x15)))
-  {
-    uVar2 = 1 << (uVar3 & 0x1f);
-  }
-  duel_088FEE30(uVar4);
-  return;
-}
-#endif
+    int r = 0;
+    unsigned int m = dd_pick_mask(dd_type_pick);
+    int i;
 
-#ifdef NON_MATCHING
+    for (i = 1; i <= 20; i++) {
+        if (m & (1 << i)) {
+            r = i;
+            break;
+        }
+    }
+    dv_w624_set(r);
+}
+
 int func_08824764(void)
 {
-    dd_pick_update(D_08C58820);
-    return func_08825728() == 0;
+    dd_pick_update(dd_type_pick);
+    return !func_08825728();
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08824794 size=808
-void func_08824794(undefined4 param_1,int param_2,int param_3)
+/* content of the type picker */
+unsigned int *func_08824794(unsigned int *dl, int x, int y)
 {
-  float *pfVar1;
-  int iVar2;
-  int iVar3;
-  undefined4 uVar4;
-  float *pfVar5;
-  float *pfVar6;
-  float fVar7;
-  float fVar8;
-  float local_48;
-  float local_44;
-  float local_3c;
-  float local_38;
-  float local_30;
-  float local_2c;
-  float local_24;
-  float local_20;
-  float local_18;
-  float local_14;
-  float local_c;
-  float local_8;
-  iVar2 = dd_pick_width(D_08C58820);
-  iVar3 = dd_pick_height(D_08C58820);
-  pfVar5 = (float *)0x48;
-  pfVar6 = &local_48;
-  pfVar1 = pfVar6;
-  while (pfVar1 != (float *)0x0) {
-    *(undefined1 *)pfVar6 = 0;
-    pfVar6 = (float *)((int)pfVar6 + 1);
-    pfVar5 = (float *)((int)pfVar5 + -1);
-    pfVar1 = pfVar5;
-  }
-  local_48 = (float)(param_2 + 0x1c);
-  local_44 = (float)(param_3 + 7);
-  local_3c = (float)(param_2 + 0x2d + iVar2);
-  local_2c = (float)(param_3 + 0x1a + iVar3);
-  local_24 = (float)(param_2 + 0x2d);
-  local_14 = (float)(param_3 + 0x18);
-  local_38 = local_44;
-  local_30 = local_3c;
-  local_20 = local_2c;
-  local_18 = local_24;
-  local_c = local_48;
-  local_8 = local_14;
-  uVar4 = syspack_get();
-  iVar2 = ehp_find(uVar4,s_window01_gim_08876218,0);
-  if (iVar2 != 0) {
-    uVar4 = dl_enable(param_1,9);
-    param_1 = gim_set_texture(uVar4,iVar2);
-  }
-  fVar8 = local_3c - local_48;
-  fVar7 = local_8 - local_44;
-  uVar4 = dl_set_color(param_1,0xffffffff);
-  uVar4 = draw_set_offsets(uVar4,1,1,(int)(fVar8 + 2.0),(int)(fVar7 + 1.0));
-  uVar4 = draw_sprite(uVar4,(int)(local_48 - 1.0),(int)(local_44 - 1.0),0,0x36,0x65,0,0);
-  uVar4 = dd_wline_draw(uVar4,0,6,&local_48,1);
-  iVar2 = dd_gim_get(0x40005);
-  if (iVar2 != 0) {
-    uVar4 = gim_set_texture(uVar4,iVar2);
-  }
-  uVar4 = draw_set_offsets(uVar4,0x11,0x11,0x11,0x11);
-  uVar4 = draw_sprite(uVar4,(int)local_48,(int)local_44,0,0x66,0x20,0,0);
-  iVar2 = dd_text(0x1e);
-  if (iVar2 != 0) {
-    font_set_size(0xc,0xc);
-    font_set_color(0xff202020);
-    font_text_set(uVar4);
-    iVar3 = (int)(local_48 + 17.0 + 3.0);
-    font_draw_text(iVar3 << 6,(int)(local_44 + 2.0) << 6,(0x1e0 - iVar3) * 0x40,iVar2);
-    uVar4 = font_text_clear();
-  }
-  dd_pick_draw(uVar4,D_08C58820,param_2 + 0x2d,param_3 + 0x18,0xffffffff,0xffffffff);
-  return;
-}
-#endif
+    static char window_gim[] = "window01.gim";
+    int pw = dd_pick_width(dd_type_pick);
+    int ph = dd_pick_height(dd_type_pick);
+    float pts[6][3] = { 0 };
+    void *gim;
+    unsigned short *text;
+    int w, h;
 
-#ifdef NON_MATCHING
-// 08824abc size=332
-void func_08824ABC(undefined4 param_1,undefined4 param_2,undefined4 param_3,uint param_4)
-{
-  int iVar1;
-  undefined4 uVar2;
-  iVar1 = dd_gim_get(0x40004);
-  if (iVar1 != 0) {
-    uVar2 = dl_enable(param_1,9);
-    param_1 = gim_set_texture(uVar2,iVar1);
-  }
-  if ((1 << (param_4 & 0x1f) & D_08C58824) == 0) {
-    uVar2 = dl_set_color(param_1,0x80808080);
-  }
-  else {
-    uVar2 = dl_set_color(param_1,0xffffffff);
-  }
-  uVar2 = draw_set_offsets(uVar2,0x11,0x11,0x11,0x11);
-  draw_sprite(uVar2,param_2,param_3,0,((int)(param_4 - 1) % 7) * 0x11,
-              ((int)(param_4 - 1) / 7) * 0x11,0,0);
-  return;
+    pts[0][0] = x + 28;
+    pts[0][1] = y + 7;
+    pts[1][0] = x + 45 + pw;
+    pts[1][1] = y + 7;
+    pts[2][0] = x + 45 + pw;
+    pts[2][1] = y + 26 + ph;
+    pts[3][0] = x + 45;
+    pts[3][1] = y + 26 + ph;
+    pts[4][0] = x + 45;
+    pts[4][1] = y + 24;
+    pts[5][0] = x + 28;
+    pts[5][1] = y + 24;
+    gim = ehp_find(syspack_get(), window_gim, 0);
+    if (gim) {
+        dl = dl_enable(dl, 9);
+        dl = gim_set_texture(dl, gim);
+    }
+    w = 2.0f + (pts[1][0] - pts[0][0]);
+    h = 1.0f + (pts[5][1] - pts[0][1]);
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = draw_set_offsets(dl, 1, 1, w, h);
+    dl = draw_sprite(dl, pts[0][0] - 1.0f, pts[0][1] - 1.0f, 0, 54, 101, 0, 0);
+    dl = dd_wline_draw(dl, 0, 6, &pts[0][0], 1);
+    gim = dd_gim_get(0x40005);
+    if (gim)
+        dl = gim_set_texture(dl, gim);
+    dl = draw_set_offsets(dl, 17, 17, 17, 17);
+    dl = draw_sprite(dl, pts[0][0], pts[0][1], 0, 102, 32, 0, 0);
+    text = dd_text(30);
+    if (text) {
+        font_set_size(12, 12);
+        font_set_color(0xFF202020);
+        font_text_set(dl);
+        font_draw_text((int)(3.0f + (17.0f + pts[0][0])) << 6, (int)(2.0f + pts[0][1]) << 6,
+                       (480 - (int)(3.0f + (17.0f + pts[0][0]))) << 6, text);
+        dl = font_text_clear();
+    }
+    return dd_pick_draw(dl, dd_type_pick, x + 45, y + 24, -1, -1);
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08824c08 size=192
-void func_08824C08(undefined4 param_1,undefined4 param_2,undefined4 param_3)
+/* type icon idx (7 per row), dimmed when not offered */
+unsigned int *func_08824ABC(unsigned int *dl, int x, int y, int idx)
 {
-  int iVar1;
-  undefined4 uVar2;
-  iVar1 = dd_gim_get(0x40005);
-  if (iVar1 != 0) {
-    uVar2 = dl_enable(param_1,9);
-    param_1 = gim_set_texture(uVar2,iVar1);
-  }
-  uVar2 = dl_set_color(param_1,0xffffffff);
-  uVar2 = draw_set_offsets(uVar2,0x19,0x18,0x19,0x18);
-  draw_sprite(uVar2,param_2,param_3,0,0x1c,0x5d,0,0);
-  return;
-}
-#endif
+    int u = (idx - 1) % 7 * 17;
+    int v = (idx - 1) / 7 * 17;
+    void *gim = dd_gim_get(0x40004);
 
-#ifdef NON_MATCHING
-// 08824cc8 size=80
-void func_08824CC8(undefined4 param_1)
-{
-  func_08825824(0,param_1,0x30,&func_08824D18);
-  dd_mode_push(4);
-  dd_mode_set_flag(0x31);
-  func_088259FC(func_08824D58);
-  se_play(0x621a);
-  return;
+    if (gim) {
+        dl = dl_enable(dl, 9);
+        dl = gim_set_texture(dl, gim);
+    }
+    if ((1 << idx) & dd_type_mask)
+        dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    else
+        dl = dl_ambient_color(dl, 0x80808080);
+    dl = draw_set_offsets(dl, 17, 17, 17, 17);
+    return draw_sprite(dl, x, y, 0, u, v, 0, 0);
 }
-#endif
+
+unsigned int *func_08824C08(unsigned int *dl, int x, int y)
+{
+    void *gim = dd_gim_get(0x40005);
+
+    if (gim) {
+        dl = dl_enable(dl, 9);
+        dl = gim_set_texture(dl, gim);
+    }
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = draw_set_offsets(dl, 25, 24, 25, 24);
+    return draw_sprite(dl, x, y, 0, 28, 93, 0, 0);
+}
+
+/* heads or tails */
+void func_08824CC8(unsigned short *text)
+{
+    func_08825824(0, text, 0x30, func_08824D18);
+    dd_mode_push(4);
+    dd_mode_set_flag(0x31);
+    func_088259FC(func_08824D58);
+    se_play(0x621A);
+}
 
 void func_08824D18(MenuWidget *w, int open)
 {
     if (open == 0)
         return;
-    D_08C58828 = (int)w;
+    dd_coin_w = w;
     w->count = 2;
     w->rows = 2;
     w->item_w = 0x64;
@@ -735,95 +585,72 @@ void func_08824D58(void)
     dv_w624_set(func_08825A14());
 }
 
-#ifdef NON_MATCHING
-// 08824d7c size=448
-void func_08824D7C(undefined4 param_1,int param_2,int param_3)
+/* the coin (face by the cursor) between two arrows, its caption below */
+void func_08824D7C(unsigned int *dl, int x, int y)
 {
-  bool bVar1;
-  int iVar2;
-  undefined4 uVar3;
-  int iVar4;
-  int iVar5;
-  undefined4 uVar6;
-  iVar5 = D_08C58828;
-  iVar2 = ((int)*(short *)(D_08C58828 + 0x6c) - (int)*(short *)(D_08C58828 + 0x90)) -
-          (int)*(short *)(D_08C58828 + 0x92);
-  iVar4 = iVar2 + -0x6d;
-  if (iVar4 < 0) {
-    iVar4 = iVar2 + -0x6c;
-  }
-  param_2 = param_2 + (iVar4 >> 1);
-  bVar1 = (ushort)(*(short *)(D_08C58828 + 0xd0) + (*(byte *)(D_08C58828 + 0xd2) & 0x1f)) == 0;
-  if (bVar1) {
-    uVar6 = 0x1a;
-  }
-  else {
-    uVar6 = 0x19;
-  }
-  uVar3 = menu_draw_cursor(param_1,D_08C58828,param_2 + 4,param_3 + 4,0x5c,0x5c);
-  uVar3 = dl_set_color(uVar3,0xffffffff);
-  uVar3 = dl_set_tex_filter(uVar3,0,1);
-  uVar3 = dd_coin_tex(0x3fc00000,uVar3,param_2,param_3,100,100,!bVar1);
-  uVar3 = dl_disable(uVar3,1);
-  uVar3 = gim_set_texture(uVar3,*(undefined4 *)(iVar5 + 0xe4));
-  uVar3 = menu_draw_arrow(uVar3,param_2,param_3 + 0x30,2);
-  uVar3 = menu_draw_arrow(uVar3,param_2 + 100,param_3 + 0x30,3);
-  font_text_set(uVar3);
-  font_set_size(0xc,0xc);
-  uVar6 = dd_text(uVar6);
-  iVar4 = font_measure_text(uVar6);
-  font_set_color(0xff000000);
-  iVar5 = iVar4 >> 7;
-  if (iVar4 >> 6 < 0) {
-    iVar5 = (iVar4 >> 6) + 1 >> 1;
-  }
-  param_2 = param_2 + (0x32 - iVar5);
-  font_draw_text(param_2 * 0x40,(param_3 + 100) * 0x40,(0x1e0 - param_2) * 0x40,uVar6);
-  uVar6 = font_text_clear();
-  dl_enable(uVar6,1);
-  return;
-}
-#endif
+    MenuWidget *w = dd_coin_w;
+    int msg, back, tw;
+    unsigned short *text;
 
-#ifdef NON_MATCHING
-// 08824f3c size=180
-void func_08824F3C(undefined4 param_1,undefined4 param_2,undefined4 param_3,undefined4 param_4,
-                 undefined4 param_5)
+    x += (w->def.w - w->def.pad_l - w->def.pad_r - 109) / 2;
+    if (!(unsigned short)(w->scroll + w->cursor)) {
+        back = 0;
+        msg = 26;
+    } else {
+        back = 1;
+        msg = 25;
+    }
+    dl = menu_draw_cursor(dl, w, x + 4, y + 4, 92, 92);
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    dl = dl_set_tex_filter(dl, 0, 1);
+    dl = dd_coin_tex(1.5f, dl, x, y, 100, 100, back);
+    dl = dl_disable(dl, 1);
+    dl = gim_set_texture(dl, w->icon_gim);
+    dl = menu_draw_arrow(dl, x, y + 48, 2);
+    dl = menu_draw_arrow(dl, x + 100, y + 48, 3);
+    font_text_set(dl);
+    font_set_size(12, 12);
+    text = dd_text(msg);
+    tw = font_measure_text(text) >> 6;
+    font_set_color(0xFF000000);
+    x += 50 - tw / 2;
+    font_draw_text(x << 6, (y + 100) << 6, (480 - x) << 6, text);
+    dl_enable(font_text_clear(), 1);
+}
+
+/* number choice: min..max by step, shown with dialog format fmt */
+void func_08824F3C(unsigned short *text, int min, int max, int step, int fmt)
 {
-  undefined4 uVar1;
-  uVar1 = dd_text(0x1c);
-  D_08C58A2C = param_2;
-  D_08C58A30 = param_3;
-  D_08C58A34 = param_4;
-  D_08C58A38 = param_5;
-  func_08825824(uVar1,param_1,0x20,&func_08824FF0);
-  dd_mode_push(4);
-  dd_mode_set_flag(0x31);
-  func_088259FC(func_0882504C);
-  se_play(0x621a);
-  return;
-}
-#endif
+    unsigned short *title = dd_text(28);
 
-#ifdef NON_MATCHING
+    dd_num_prompt.max = max;
+    dd_num_prompt.min = min;
+    dd_num_prompt.step = step;
+    dd_num_prompt.fmt = fmt;
+    func_08825824(title, text, 0x20, func_08824FF0);
+    dd_mode_push(4);
+    dd_mode_set_flag(0x31);
+    func_088259FC(func_0882504C);
+    se_play(0x621A);
+}
+
 void func_08824FF0(MenuWidget *w, int open)
 {
-    int *st = (int *)&D_08C58A2C;
+    DdNumPrompt *p = &dd_num_prompt;
 
-    if (open == 0)
-        return;
-    st[4] = (int)w;
-    w->count = (st[1] - st[0]) / st[2] + 1;
-    w->rows = 1;
-    w->item_w = 0xC8;
-    w->item_h = 0x28;
-    w->draw_all = (MenuDrawRectFn)func_088250E8;
+    if (open) {
+        p->w = w;
+        w->count = (p->max - p->min) / p->step + 1;
+        w->rows = 1;
+        w->item_w = 200;
+        w->item_h = 40;
+        w->draw_all = (MenuDrawRectFn)func_088250E8;
+    }
 }
-#endif
 
-#ifdef NON_MATCHING
 void func_0882504C(void)
 {
-    dv_w624_set(D_08C58A2C + func_08825A14() * D_08C58A34);
+    int i = func_08825A14();
+
+    dv_w624_set(dd_num_prompt.min + i * dd_num_prompt.step);
 }
-#endif
