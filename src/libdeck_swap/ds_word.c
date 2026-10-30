@@ -160,7 +160,7 @@ void ds_input_result(void)
                 se_play(0x6213);
                 ds_word->step = 2;
             } else if (ds_word->focus == 0) {
-                if (ds_osk_open(ds_word->word, table_get_entry(res_get(0x8033), 0x19), 0x10, ds_osk_done) == 0) {
+                if (ds_osk_open(ds_word->word, table_get_entry(res_get(0x8033), 0x19), 0x10, ds_word_input_done) == 0) {
                     dsv.busy = 1;
                     se_play(0x6213);
                 }

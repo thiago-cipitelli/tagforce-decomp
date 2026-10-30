@@ -1,5 +1,5 @@
 // @range 0x08806F0C-0x08807828
-// @asm 0x088071E0-0x08807828
+// @asm 0x08807318-0x08807828
 /* The icon wrappers (type, attribute, kind, limit, pack), a button icon with its label, the pane
    shade and the detail window shown with Square (same source as libdeck_swap ds_info.c). */
 #include "libdeck_swap.h"
@@ -66,24 +66,23 @@ void *ds_draw_button(void *list, DsButton *b, int x, int y, unsigned int color)
     return ds_draw_icon_text(list, &t, x, y);
 }
 
-#ifdef NON_MATCHING /* campos do painel por índice; alocação diferente */
 /* darkens pane side and tab button tab */
 void *ds_draw_shade(void *list, unsigned short side, unsigned short tab)
 {
+    DsLayout *lay = &dsv.pane[side].lay;
     unsigned int pos = ds_tab_pos(tab);
 
     list = dl_disable(list, 9);
     list = dl_tex_func(list, 4, 0);
     list = dl_ambient_color(list, 0x80000000);
-    list = draw_set_offsets(list, 0, 0, dsv.pane[side].lay.w, dsv.pane[side].lay.h);
-    list = draw_sprite(list, dsv.pane[side].lay.x, dsv.pane[side].lay.y, 0, 0, 0, 0, 0);
-    list = draw_set_offsets(list, 0, 0, pos >> 16, 0xF);
-    list = draw_sprite(list, dsv.pane[side].lay.x + (pos & 0xFFFF), 0x17, 0, 0, 0, 0, 0);
+    list = draw_set_offsets(list, 0, 0, lay->w, lay->h);
+    list = draw_sprite(list, lay->x, lay->y, 0, 0, 0, 0, 0);
+    list = draw_set_offsets(list, 0, 0, (pos >> 16) & 0xFFFF, 0xF);
+    list = draw_sprite(list, lay->x + (pos & 0xFFFF), 0x17, 0, 0, 0, 0, 0);
     list = dl_enable(list, 9);
     list = dl_tex_func(list, 0, 1);
     return dl_ambient_color(list, 0xFFFFFFFF);
 }
-#endif
 
 #ifdef NON_MATCHING /* switch com tamanhos indefinidos e campos por índice; alocação diferente */
 /* the value of the sort key of the cursor's card, in a bubble beside the scroll bar */

@@ -144,7 +144,7 @@ int ds_sort_key_value(DsEnt *e, unsigned short sort)
     return v;
 }
 
-#ifdef NON_MATCHING /* o original mantém os desvios até o fim de cada caso (b para outro b) e repete o lhu do id; a mesma função da libshop também não bateu */
+#ifdef NON_MATCHING /* 16 palavras: o "default: v = -2" do switch(sort) interno vai para o atraso do b; no original fica no fim (b+nop); como dk_sort_value */
 /* the value shown for key sort (-1 = "?", -2 none) */
 int ds_sort_value(DsEnt *e, unsigned short sort)
 {
@@ -163,35 +163,36 @@ int ds_sort_value(DsEnt *e, unsigned short sort)
         switch (card_get_attribute_icon(e->id)) {
         case 7:
         case 8:
-            if (sort == 8) {
-                v = card_get_prop5_hi(e->id);
-                if (v == 0)
-                    v = 7;
-                return v;
-            }
-            return -2;
+            if (sort != 8)
+                return -2;
+            v = card_get_prop5_hi(e->id);
+            v = v == 0 ? 7 : v;
+            break;
         default:
             switch (sort) {
             case 3:
-                return card_get_level(e->id);
+                v = card_get_level(e->id);
+                break;
             case 4:
                 v = card_get_atk_q(e->id);
-                if (v == 0xFFFF)
-                    v = -1;
-                return v;
+                v = v == 0xFFFF ? -1 : v;
+                break;
             case 5:
                 v = card_get_def_q(e->id);
-                if (v == 0xFFFF)
-                    v = -1;
-                return v;
+                v = v == 0xFFFF ? -1 : v;
+                break;
             case 6:
-                return card_get_type(e->id);
+                v = card_get_type(e->id);
+                break;
             case 7:
-                return card_get_kind(e->id);
+                v = card_get_kind(e->id);
+                break;
+            default:
+                v = -2;
+                break;
             }
             break;
         }
-        v = -2;
         break;
     }
     return v;

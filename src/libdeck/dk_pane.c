@@ -1,5 +1,4 @@
 // @range 0x0880BD30-0x0880C728
-// @asm 0x0880BE18-0x0880BEA0
 // @asm 0x0880BFB8-0x0880C270
 // @asm 0x0880C2D4-0x0880C5F8
 // @data 0x08822BE4-0x08822BF4
@@ -71,18 +70,13 @@ unsigned short dk_cur_index(unsigned short side)
     return r;
 }
 
-#ifdef NON_MATCHING /* o original calcula o ponteiro do painel antes da chamada e o guarda em s0; aqui o cálculo desce para depois do jal */
 DkEnt *dk_cur_entry(unsigned short side)
 {
-    DkPane *const p = &dkv.pane[side];
+    DkPane *p = &dkv.pane[side];
     unsigned short i = dk_cur_index(side);
-    DkList *l = p->list;
 
-    if (i >= l->count)
-        return 0;
-    return &l->ents[l->order[i]];
+    return i >= p->list->count ? 0 : &p->list->ents[p->list->order[i]];
 }
-#endif
 
 /* the cursor moved to another card: reset the timer, measure its text */
 void dk_info_update(void)
