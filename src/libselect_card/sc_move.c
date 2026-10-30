@@ -3,11 +3,9 @@
 // @asm 0x08815408-0x088158DC
 // @asm 0x088158DC-0x08815CD0
 // @asm 0x08815CD0-0x08815E48
-// @asm 0x08815E78-0x08815F04
 // @asm 0x08815F04-0x08816468
 // @asm 0x088164A0-0x08816550
 // @asm 0x08816550-0x08816874
-// @asm 0x08816874-0x08816938
 // @asm 0x08816938-0x08816CD8
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
@@ -84,7 +82,7 @@ void sc_flight_land(void);
 void sc_flight_step(void);
 void sc_flight_free(void);
 int sc_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll);
-unsigned short sc_dst_pos(unsigned short tab, unsigned short id);
+int sc_dst_pos(int tab, unsigned short id);
 
 #ifdef NON_MATCHING /* laço da cópia com '$' dobrado e alocação diferentes */
 /* per frame while the keyboard runs: fades, utility status; 1 when closed */
@@ -320,18 +318,17 @@ void sc_flight_take(void)
     sc_list_remove(&sc.list[sc_flight->src], sc_flight->idx);
 }
 
-#ifdef NON_MATCHING /* o original indexa sc.list pelo campo de 16 bits com a base calculada antes */
 void sc_flight_land(void)
 {
-    unsigned int bits = *(unsigned short *)((char *)sc_flight + 6);
+    ScFlight *f = sc_flight;
+    ScList *l = &sc.list[f->dst];
     ScEnt e;
 
-    memcpy(&e, &sc_flight->ent, 6);
+    memcpy(&e, &f->ent, 6);
     e.count = 1;
     e.marked = 1;
-    sc_list_add(&sc.list[(bits & 0x3FF) >> 7], &e);
+    sc_list_add(l, &e);
 }
-#endif
 
 #ifdef NON_MATCHING /* contas em float com outra alocação de $f */
 /* the flight: path through a control point, 10 frames of quadratic curve, landing */
@@ -509,39 +506,38 @@ int sc_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll)
 }
 #endif
 
-#ifdef NON_MATCHING /* cadeia de testes do tipo com outra ordem */
 /* position the card id lands at in list tab */
-unsigned short sc_dst_pos(unsigned short tab, unsigned short id)
+int sc_dst_pos(int tab, unsigned short id)
 {
+    ScList *l = &sc.list[tab];
     int sep = 1;
     int i;
-    unsigned int k;
+    int k;
 
     switch (sc.kind) {
-    case 2:
+    case 0:
         if (tab == 0)
             sep = 0;
         break;
     case 1:
         sep = 0;
         break;
-    case 0:
+    case 2:
         if (tab == 0)
             sep = 0;
         break;
     }
     if (!sep) {
-        i = sc_list_find(&sc.list[tab], id);
+        i = sc_list_find(l, id);
         if (i >= 0) {
-            for (k = 0; k < sc.list[tab].count; k++) {
-                if (i == sc.list[tab].order[k])
+            for (k = 0; k < l->count; k++) {
+                if (i == l->order[k])
                     return k;
             }
         }
     }
-    return sc.list[tab].count;
+    return l->count;
 }
-#endif
 
 /* messages of popup 2 */
 unsigned short sc_popup_msgs[6] = { 0, 0x22, 0x23, 0x84, 0x29, 0 };

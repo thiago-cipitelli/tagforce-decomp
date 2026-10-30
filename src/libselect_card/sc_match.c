@@ -1,8 +1,7 @@
 // @range 0x088119C8-0x088121D0
-// @asm 0x08811AA4-0x08811C04
 // @asm 0x08811C3C-0x08811D28
 // @asm 0x08811E68-0x08812118
-// @asm 0x08812118-0x088121D0
+// @rodata 0x0881A9D4-0x0881A9F0
 // @data 0x0881B458-0x0881B460
 /* The remaining card filters (level ranges, spell/trap kinds, limit, genre/new/alternate picture)
    and the text search: a Boyer-Moore-Horspool scan over the normalised card name and text. */
@@ -38,30 +37,11 @@ int sc_filter_level(unsigned short id, unsigned int mask)
     return 0;
 }
 
-#ifdef NON_MATCHING /* cadeias de testes dos tipos com outra ordem */
 /* spell and trap kinds */
 int sc_filter_atk(unsigned short id, unsigned int mask)
 {
-    int a = card_get_attribute_icon(id);
-
-    if (a == 8) {
-        switch (card_get_prop5_hi(id)) {
-        case 4:
-            if (mask & 0x100)
-                return 1;
-            break;
-        case 1:
-            if (mask & 0x80)
-                return 1;
-            break;
-        case 0:
-            if (mask & 0x200)
-                return 1;
-            break;
-        }
-    } else {
-        if (a != 7)
-            return 0;
+    switch (card_get_attribute_icon(id)) {
+    case 7:
         switch (card_get_prop5_hi(id)) {
         case 0:
             if (mask & 0x40)
@@ -88,10 +68,26 @@ int sc_filter_atk(unsigned short id, unsigned int mask)
                 return 1;
             break;
         }
+        break;
+    case 8:
+        switch (card_get_prop5_hi(id)) {
+        case 0:
+            if (mask & 0x200)
+                return 1;
+            break;
+        case 1:
+            if (mask & 0x80)
+                return 1;
+            break;
+        case 4:
+            if (mask & 0x100)
+                return 1;
+            break;
+        }
+        break;
     }
     return 0;
 }
-#endif
 
 int sc_filter_def(unsigned short id, unsigned int mask)
 {
@@ -194,22 +190,19 @@ unsigned short *sc_find_text(unsigned short *text, unsigned short *word, int n)
 }
 #endif
 
-#ifdef NON_MATCHING /* teste do caractere no topo do laço com cópia do ponteiro */
 /* upper case, full-width ASCII to half width, katakana to hiragana */
 void sc_fold_text(unsigned short *dst, unsigned short *src)
 {
     unsigned short c;
 
-    for (c = *src; c != 0; c = *src) {
-        src++;
-        if (c > 0xFF00 && c < 0xFF5E)
+    while ((c = *src++) != 0) {
+        if (c >= 0xFF01 && c < 0xFF5E)
             c += 0x120;
-        if (c < 0x30A1 || c > 0x30F4)
-            *dst = towupper(c);
+        if (c >= 0x30A1 && c < 0x30F5)
+            c += 0xFFA0; /* katakana to hiragana: - 0x60 */
         else
-            *dst = c - 0x60;
-        dst++;
+            c = towupper(c);
+        *dst++ = c;
     }
     *dst = 0;
 }
-#endif
