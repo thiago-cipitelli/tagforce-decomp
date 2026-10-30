@@ -2,12 +2,8 @@
 // @asm 0x0880AD2C-0x0880B120
 // @asm 0x0880B120-0x0880B1F8
 // @asm 0x0880B35C-0x0880B574
-// @asm 0x0880B754-0x0880BA10
 // @asm 0x0880BC70-0x0880BE98
 // @asm 0x0880BE98-0x0880C05C
-// @asm 0x0880C05C-0x0880C168
-// @asm 0x0880C168-0x0880C24C
-// @asm 0x0880C24C-0x0880C380
 // @asm 0x0880C380-0x0880C690
 // @asm 0x0880C690-0x0880C7D4
 // @asm 0x0880C7D4-0x0880C940
@@ -43,7 +39,7 @@ void sc_select_tab(unsigned short side, unsigned short tab, int how);
 ScEnt *sc_cur_entry(unsigned short side);
 void sc_info_update(void);
 void sc_layout_scroll(int grid, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
-unsigned short sc_cur_index(void);
+unsigned short sc_cur_index(unsigned short side);
 int sc_sort_value(ScEnt *e, unsigned int sort);
 void sc_input_sort_menu(void);
 void sc_input_action_menu(void);
@@ -60,8 +56,8 @@ void sc_input_move(void);
 void sc_input_main(void);
 void sc_input_help(void);
 void sc_input_help_b(void);
-void sc_cursor_grid(unsigned short side, PadState *pad);
-void sc_cursor_list(unsigned short side, PadState *pad);
+void sc_cursor_grid(int side, PadState *pad);
+void sc_cursor_list(int side, PadState *pad);
 void sc_cursor_switch();
 void sc_page(int up);
 void sc_jump(int up);
@@ -70,6 +66,7 @@ void sc_scroll_update(void);
 void sc_focus_update(void);
 void sc_window_anim(void);
 int sc_mode_for(unsigned short panes, int narrow, unsigned short mode_a, unsigned short mode_b);
+void sc_set_mode(unsigned short mode);
 
 ScLayout sc_layouts[5] = {
     { 148, 38, 331, 233, 3, 3, 7, 318, 30, 8, 8, 11, 28, 6, 34 },
@@ -113,7 +110,8 @@ ScTab sc_tabs_trade[6][6] __attribute__((aligned(16))) = {
 #undef T2
 };
 
-#ifdef NON_MATCHING /* o original usa a base scv mais o lado para os campos do painel e a alocação dos s difere */
+#ifdef NON_MATCHING /* lógica conferida com o asm; 176 palavras: o original reaproveita os registradores
+                       salvos de mode/m para o contador e a base do laço (permutar declarações não resolve) */
 /* switches the pane layout (sc_modes row), keeping each list's scroll position */
 void sc_set_mode(unsigned short mode)
 {
@@ -122,31 +120,35 @@ void sc_set_mode(unsigned short mode)
     unsigned short tab_a = scv.pane[0].list->tab;
     int i;
     ScPane *p;
-    ScList *l;
-    unsigned short grid;
+    int keep;
     unsigned short view;
+    unsigned short cols;
 
-    if (scv.mode < 2)
-        sc_set_panes(0);
-    else
+    if (scv.mode > 1)
         sc_set_panes(2);
-    scv.pane[0].list_mode = m->list_a;
-    memcpy(&scv.pane[0].lay, &sc_layouts[m->lay_a], 0x1E);
+    else
+        sc_set_panes(0);
+    p = &scv.pane[0];
+    p->list_mode = m->list_a;
+    memcpy(&p->lay, &sc_layouts[m->lay_a], 0x1E);
+    p = &scv.pane[1];
     if (m->list_b >= 0)
-        scv.pane[1].list_mode = m->list_b;
+        p->list_mode = m->list_b;
     if (m->lay_b >= 0)
-        memcpy(&scv.pane[1].lay, &sc_layouts[m->lay_b], 0x1E);
+        memcpy(&p->lay, &sc_layouts[m->lay_b], 0x1E);
     scv.mode = mode;
     for (i = 0; i < 2; i++) {
         p = &scv.pane[i];
+        keep = 0;
         p->top = p->list->u18;
         p->cx = p->list->u1c_lo;
         p->cy = p->list->u1c_hi;
-        grid = p->list_mode == 0 ? p->lay.cols : 1;
-        l = p->list;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        sc_layout_scroll(l->u1d_lo == grid, l->u1a, ((p->list_mode == 0 ? p->lay.cols : 1) & 0xFF) | (view & 0xFF) << 8,
-                         l->count, &p->top, &p->cx, &p->cy);
+        if (p->list->u1d_lo == (p->list_mode ? 1 : p->lay.cols))
+            keep = 1;
+        view = (p->list_mode == 0) ? p->lay.grid_rows : p->lay.rows;
+        cols = p->list_mode ? 1 : p->lay.cols;
+        sc_layout_scroll(keep, p->list->u1a, (cols & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx,
+                         &p->cy);
         if (scv.mode < 2)
             break;
     }
@@ -162,14 +164,16 @@ void sc_set_mode(unsigned short mode)
     }
     for (i = 0; i < 2; i++) {
         p = &scv.pane[i];
+        keep = 0;
         p->top = p->list->u18;
         p->cx = p->list->u1c_lo;
         p->cy = p->list->u1c_hi;
-        grid = p->list_mode == 0 ? p->lay.cols : 1;
-        l = p->list;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        sc_layout_scroll(l->u1d_lo == grid, l->u1a, ((p->list_mode == 0 ? p->lay.cols : 1) & 0xFF) | (view & 0xFF) << 8,
-                         l->count, &p->top, &p->cx, &p->cy);
+        if (p->list->u1d_lo == (p->list_mode ? 1 : p->lay.cols))
+            keep = 1;
+        view = (p->list_mode == 0) ? p->lay.grid_rows : p->lay.rows;
+        cols = p->list_mode ? 1 : p->lay.cols;
+        sc_layout_scroll(keep, p->list->u1a, (cols & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx,
+                         &p->cy);
         if (scv.mode < 2)
             break;
     }
@@ -382,67 +386,65 @@ void sc_update_input(void)
     }
 }
 
-#ifdef NON_MATCHING /* o lado é lido para um u8 local e o painel por base; desvios e alocação diferentes */
 /* state 1: cursor, Square/Triangle hold the help windows, Circle/Cross/Start/Select actions */
 void sc_input_main(void)
 {
     PadState *pad = pad_get();
+    unsigned char side = scv.side;
+    ScPane *p = &scv.pane[side];
     unsigned int trig;
-    short tab;
-    unsigned int side;
+    unsigned short tab;
     int mode;
-    unsigned char a;
-    unsigned char b;
+    unsigned short a;
+    unsigned short b;
+    unsigned short n;
+    int m;
 
-    if ((pad->b.rep & 0xF0) != 0) {
-        if (scv.pane[scv.side].list_mode == 0)
-            sc_cursor_grid(scv.side, pad);
+    if (pad->b.rep & 0xF0) {
+        if (p->list_mode == 0)
+            sc_cursor_grid(side, pad);
         else
-            sc_cursor_list(scv.side, pad);
-        return;
-    }
-    if (pad->b.down & 0x100) {
+            sc_cursor_list(side, pad);
+    } else if (pad->b.down & 0x100) {
         sc.state = 7;
         sc_input_help();
-        return;
-    }
-    if (pad->b.down & 0x200) {
+    } else if (pad->b.down & 0x200) {
         sc.state = 8;
         sc_input_help_b();
-        return;
-    }
-    sc.state = 1;
-    trig = pad->b.trig;
-    if (trig & region_pick_value(1)) {
-        sc_popup_open(3, 0);
-        se_play(0x621A);
-    } else if (trig & region_pick_value(0)) {
-        if (sc_cancel_request())
-            se_play(0x6213);
-    } else if (trig & 0x1000) {
-        sc_action_open(sc_cur_entry(scv.side));
-        se_play(0x6216);
-    } else if (trig & 0x8000) {
-        side = scv.side;
-        tab = scv.pane[side].list->tab;
-        sc_select_tab(side, tab, 1);
-        if (tab != scv.pane[scv.side].list->tab)
-            se_play(0x621B);
-    } else if (trig & 1) {
-        a = scv.pane[0].list_mode;
-        b = scv.pane[1].list_mode;
-        if (scv.side == 0)
-            a = (a + 1) & 1;
-        else
-            b = (b + 1) & 1;
-        mode = sc_mode_for(scv.mode < 2 ? 1 : 2, scv.mode < 4, a, b);
-        if (mode >= 0) {
-            sc_set_mode(mode);
-            se_play(0x6213);
+    } else {
+        sc.state = 1;
+        trig = pad->b.trig;
+        if (trig & region_pick_value(1)) {
+            sc_popup_open(3, 0);
+            se_play(0x621A);
+        } else if (trig & region_pick_value(0)) {
+            if (sc_cancel_request())
+                se_play(0x6213);
+        } else if (trig & 0x1000) {
+            sc_action_open(sc_cur_entry(scv.side));
+            se_play(0x6216);
+        } else if (trig & 0x8000) {
+            tab = scv.pane[(unsigned char)scv.side].list->tab;
+            sc_select_tab((unsigned char)scv.side, tab, 1);
+            if (tab != scv.pane[scv.side].list->tab)
+                se_play(0x621B);
+        } else if (trig & 1) {
+            m = scv.mode;
+            n = m > 1 ? 2 : 1;
+            a = scv.pane[0].list_mode;
+            b = scv.pane[1].list_mode;
+            if (scv.side == 0)
+                a = (a + 1) & 1;
+            else
+                b = (b + 1) & 1;
+            mode = sc_mode_for(n, m < 4, a, b);
+            if (mode >= 0) {
+                sc_set_mode(mode);
+                se_play(0x6213);
+            }
         }
     }
 }
-#endif
 
 /* state 7 (Square held): sort order */
 void sc_input_help(void)
@@ -506,319 +508,322 @@ void sc_input_help_b(void)
     }
 }
 
-#ifdef NON_MATCHING /* campos do painel por índice no original; registradores e ordem dos testes diferem */
+#ifdef NON_MATCHING /* lógica conferida com o asm (side int: o original repassa a0 sem andi); 46 palavras: o
+                       original lê os campos pela base scv antes do ponteiro; blezl/bnezl dos limites */
 /* grid cursor: d-pad moves, wraps to the other pane at the left/right edges, scrolls by rows */
-void sc_cursor_grid(unsigned short side, PadState *pad)
+void sc_cursor_grid(int side, PadState *pad)
 {
-    unsigned int cols = scv.pane[side].lay.cols;
-    unsigned int cx = scv.pane[side].cx;
-    unsigned int cy = scv.pane[side].cy;
-    int top = (scv.pane[side].top + cols - 1) / cols;
-    unsigned int rows = scv.pane[side].lay.grid_rows;
+    ScPane *p = &scv.pane[(unsigned short)side];
+    int cols = p->lay.cols;
+    int top = (p->top + cols - 1) / cols;
+    int cx = p->cx;
+    int cy = p->cy;
+    int rows = p->lay.grid_rows;
     unsigned int rep = pad->b.rep;
-    int total = (scv.pane[side].list->count + cols - 1) / cols;
-    unsigned int dy;
-    unsigned int dx;
-    unsigned short ocy;
-    unsigned short otop;
-    unsigned int ntop;
+    int total = (p->list->count + cols - 1) / cols;
+    int dy = 0;
+    int changed = 0;
+    int dx = 0;
+    int ny;
 
-    dy = (rep & 0x40) != 0;
+    if (rep & 0x40)
+        dy++;
     if (rep & 0x10)
         dy--;
-    dx = (rep & 0x20) != 0;
+    if (rep & 0x20)
+        dx++;
     if (rep & 0x80)
         dx--;
     dx = cx + dx;
-    if ((int)dx < 0) {
-        sc_cursor_switch(side, rows, 1, cy);
+    if (dx < 0) {
+        sc_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
-    } else if ((int)dx < (int)cols) {
-        if (top + cy == 0 && (pad->b.trig & 0x10)) {
-            if (total < (int)rows)
-                top = 0;
-            else
-                top = total - rows;
-            dy = rows - 1;
-        } else if ((int)(top + cy) < total - 1 || cy != rows - 1 || !(pad->b.trig & 0x40)) {
-            dy = cy + dy;
-            if ((int)dy < 0) {
-                top += dy;
-                if (top < 1)
-                    top = 0;
-                dy = 0;
-            } else if ((int)rows <= (int)dy) {
-                if ((int)rows < total) {
-                    if ((int)(top + dy) < total)
-                        top += dy - (rows - 1);
-                    else
-                        top = total - rows;
-                    dy = rows - 1;
-                } else {
-                    dy = rows - 1;
-                }
-            }
-        } else {
-            dy = 0;
-            top = 0;
-        }
-        if (cx != dx)
-            scv.pane[side].cx = dx;
-        ocy = scv.pane[side].cy;
-        if (ocy != dy)
-            scv.pane[side].cy = dy;
-        ntop = top * cols;
-        otop = scv.pane[side].top;
-        if (otop != ntop)
-            scv.pane[side].top = ntop;
-        if (otop != ntop || ocy != dy || cx != dx)
-            se_play(0x6212);
-    } else {
-        sc_cursor_switch(side, rows, 0, cy);
-        se_play(0x6212);
+        return;
     }
-}
-#endif
-
-#ifdef NON_MATCHING /* idem sc_cursor_grid */
-/* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
-void sc_cursor_list(unsigned short side, PadState *pad)
-{
-    unsigned int cy = scv.pane[side].cy;
-    unsigned int rows = scv.pane[side].lay.rows;
-    unsigned int rep = pad->b.rep;
-    unsigned int top = scv.pane[side].top;
-    unsigned int total = scv.pane[side].list->count;
-    unsigned int dy;
-    unsigned short otop;
-
-    if (rep & 0x80) {
-        sc_cursor_switch(side, rows, 1, cy);
+    if (dx >= cols) {
+        sc_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
         se_play(0x6212);
-    } else if (rep & 0x20) {
-        sc_cursor_switch(side, rows, 0, cy);
-        se_play(0x6212);
+        return;
+    }
+    if (top + cy == 0 && (pad->b.trig & 0x10)) {
+        top = total >= rows ? total - rows : 0;
+        ny = rows - 1;
+    } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
+        ny = 0;
+        top = 0;
     } else {
-        dy = (rep & 0x40) != 0;
-        if (rep & 0x10)
-            dy--;
-        if (top + cy == 0 && (pad->b.trig & 0x10)) {
-            if (total < rows)
-                top = 0;
-            else
-                top = total - rows;
-            dy = rows - 1;
-        } else if ((int)(top + cy) < (int)(total - 1) || cy != rows - 1 || !(pad->b.trig & 0x40)) {
-            dy = cy + dy;
-            if ((int)dy < 0) {
-                top += dy;
-                if ((int)top < 1)
-                    top = 0;
-                dy = 0;
-            } else if ((int)rows <= (int)dy) {
-                if (total < rows)
-                    top = 0;
-                else if ((int)(top + dy) < (int)total)
-                    top += dy - (rows - 1);
+        ny = cy + dy;
+        if (ny < 0) {
+            top += ny;
+            top = top <= 0 ? 0 : top;
+            ny = 0;
+        } else if (ny >= rows) {
+            if (rows < total) {
+                if (total > top + ny)
+                    top += ny - (rows - 1);
                 else
                     top = total - rows;
-                dy = rows - 1;
             }
-        } else {
-            dy = 0;
-            top = 0;
+            ny = rows - 1;
         }
-        if (cy != dy)
-            scv.pane[side].cy = dy;
-        otop = scv.pane[side].top;
-        if (otop != top)
-            scv.pane[side].top = top;
-        if (otop != top || cy != dy)
-            se_play(0x6212);
     }
+    if (cx != dx) {
+        p->cx = dx;
+        changed = 1;
+    }
+    if (p->cy != ny) {
+        p->cy = ny;
+        changed = 1;
+    }
+    top *= cols;
+    if (p->top != top) {
+        p->top = top;
+        changed = 1;
+    }
+    if (changed)
+        se_play(0x6212);
 }
 #endif
 
-#ifdef NON_MATCHING /* definição K&R chamada com 4 argumentos; alocação diferente */
-/* moves the cursor to the other pane (dir 1 = enter from the right), keeping its height */
-void sc_cursor_switch(from, rows, dir, cy, to)
-short from;
-unsigned short rows;
-short dir;
-unsigned short cy;
-unsigned int to;
+#ifdef NON_MATCHING /* lógica conferida com o asm; 17 palavras: "if (top <= 0) top = 0" sai blezl para a
+                       instrução seguinte no original, e "top + ny < total" usa slt com bnezl (o mwcc dá at) */
+/* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
+void sc_cursor_list(int side, PadState *pad)
 {
-    short cx = 0;
-    unsigned int t;
-    unsigned int n;
+    ScPane *p = &scv.pane[(unsigned short)side];
+    int cy = p->cy;
+    int rows = p->lay.rows;
+    unsigned int rep = pad->b.rep;
+    int top = p->top;
+    int total = p->list->count;
+    int changed = 0;
+    int d;
+    int ny;
 
-    if (from == 1) {
-        to = 0;
-        t = to;
-    } else if (from == 0) {
-        if (scv.mode < 2)
-            to = 0;
-        else
-            to = 1;
-        t = to;
-    } else {
-        t = to & 0xFFFF;
+    if (rep & 0x80) {
+        sc_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
+        se_play(0x6212);
+        return;
     }
-    if (scv.pane[t].list_mode == 0) {
-        if (dir == 1) {
-            cx = scv.pane[t].lay.cols - 1;
-            n = scv.pane[t].lay.grid_rows;
-        } else {
-            n = scv.pane[t].lay.grid_rows;
-        }
+    if (rep & 0x20) {
+        sc_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
+        se_play(0x6212);
+        return;
+    }
+    d = 0;
+    if (rep & 0x40)
+        d++;
+    if (rep & 0x10)
+        d--;
+    if (top + cy == 0 && (pad->b.trig & 0x10)) {
+        top = total >= rows ? total - rows : 0;
+        ny = rows - 1;
+    } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
+        ny = 0;
+        top = 0;
     } else {
-        n = scv.pane[t].lay.rows;
+        ny = cy + d;
+        if (ny < 0) {
+            top += ny;
+            top = top <= 0 ? 0 : top;
+            ny = 0;
+        } else if (ny >= rows) {
+            if (total < rows)
+                top = 0;
+            else if (top + ny < total)
+                top += ny - (rows - 1);
+            else
+                top = total - rows;
+            ny = rows - 1;
+        }
+    }
+    if (cy != ny) {
+        p->cy = ny;
+        changed = 1;
+    }
+    if (p->top != top) {
+        p->top = top;
+        changed = 1;
+    }
+    if (changed)
+        se_play(0x6212);
+}
+#endif
+
+/* moves the cursor to the other pane (dir 1 = enter from the right), keeping its height; K&R because
+   some callers pass only 4 arguments (to is then whatever is in t0) */
+void sc_cursor_switch(from, rows, dir, cy, to)
+unsigned short from;
+unsigned short rows;
+unsigned short dir;
+unsigned short cy;
+unsigned short to;
+{
+    unsigned short cx = 0;
+    ScPane *p;
+    unsigned short n;
+
+    switch (from) {
+    case 0:
+        if (scv.mode > 1)
+            to = 1;
+        else
+            to = 0;
+        break;
+    case 1:
+        to = 0;
+        break;
+    }
+    p = &scv.pane[to];
+    if (p->list_mode == 0) {
+        if (dir == 1)
+            cx = p->lay.cols - 1;
+        n = p->lay.grid_rows;
+    } else {
+        n = p->lay.rows;
     }
     if (n != rows) {
-        cy = (int)((rows >> 1) + cy * n) / (int)rows;
-        if (n <= cy)
+        cy = (int)(((unsigned int)rows >> 1) + cy * n) / (int)rows;
+        if (cy >= n)
             cy = n - 1;
     }
     scv.side = to;
-    scv.pane[t].cx = cx;
-    scv.pane[t].cy = cy;
+    p->cx = cx;
+    p->cy = cy;
 }
-#endif
 
-#ifdef NON_MATCHING /* registradores e ordem dos testes diferem */
 /* L/R: a page up or down */
 void sc_page(int up)
 {
-    unsigned int side = scv.side;
-    unsigned int total = scv.pane[side].list->count;
-    unsigned short cols;
-    unsigned int top;
-    unsigned int view;
-    int n;
+    ScPane *p = &scv.pane[scv.side];
+    int total = p->list->count;
+    int cols;
+    int top;
+    int view;
 
-    if (scv.pane[side].list_mode == 0) {
-        cols = scv.pane[side].lay.cols;
-        top = (scv.pane[side].top + cols - 1) / cols;
+    if (p->list_mode == 0) {
+        cols = p->lay.cols;
+        top = (p->top + cols - 1) / cols;
         total = (total + cols - 1) / cols;
-        view = scv.pane[side].lay.grid_rows;
+        view = p->lay.grid_rows;
     } else {
-        view = scv.pane[side].lay.rows;
-        top = scv.pane[side].top;
+        view = p->lay.rows;
+        top = p->top;
         cols = 1;
     }
-    if ((int)view < (int)total) {
-        if (up == 0) {
-            n = top + view;
-            if ((int)(total - view) < (int)(top + view))
-                n = total - view;
-        } else if ((int)top < (int)view) {
-            n = 0;
-        } else {
-            n = top - view;
-        }
-        if (scv.pane[side].list_mode == 0)
-            scv.pane[side].top = n * cols;
-        else
-            scv.pane[side].top = n;
-    } else {
-        scv.pane[side].top = 0;
+    if (total <= view) {
+        p->top = 0;
+        return;
     }
+    if (up != 0) {
+        if (top < view)
+            top = 0;
+        else
+            top -= view;
+    } else {
+        top += view;
+        if (total - view < top)
+            top = total - view;
+    }
+    if (p->list_mode == 0)
+        p->top = top * cols;
+    else
+        p->top = top;
 }
-#endif
 
-#ifdef NON_MATCHING /* registradores e ordem dos testes diferem */
 /* jumps to the next/previous group of the sort key */
 void sc_jump(int up)
 {
-    unsigned int side = scv.side;
-    unsigned int total = scv.pane[side].list->count;
+    ScPane *p = &scv.pane[scv.side];
+    int total = p->list->count;
     int i;
-    unsigned int cols;
+    int cols;
     int last;
     int row;
-    unsigned short n;
 
-    if (total == 0 || (i = sc_find_group(up)) < 0)
+    if (total == 0)
         return;
-    if (scv.pane[side].list_mode == 0) {
-        cols = scv.pane[side].lay.cols;
-        last = (int)(total + cols - 1) / (int)cols - scv.pane[side].lay.grid_rows;
-        row = i / (int)cols;
-        if (last < i / (int)cols)
+    i = sc_find_group(up);
+    if (i < 0)
+        return;
+    if (p->list_mode == 0) {
+        cols = p->lay.cols;
+        last = p->lay.grid_rows;
+        row = i / cols;
+        last = (total + cols - 1) / cols - last;
+        if (last < row)
             row = last;
         if (row < 0)
-            n = 0;
-        else
-            n = row * scv.pane[side].lay.cols;
-        scv.pane[side].top = n;
-        scv.pane[side].cx = i % (int)cols;
-        scv.pane[side].cy = (int)(i - scv.pane[side].top) / (int)cols;
+            row = 0;
+        p->top = row * cols;
+        p->cx = i % cols;
+        p->cy = (i - p->top) / cols;
+    } else if (i < p->lay.rows) {
+        p->top = 0;
+        p->cy = i;
     } else {
-        n = i;
-        if (i < scv.pane[side].lay.rows) {
-            scv.pane[side].top = 0;
-            scv.pane[side].cy = n;
+        last = total - p->lay.rows;
+        if (last < i) {
+            p->top = last;
+            p->cy = i - p->top;
         } else {
-            last = total - scv.pane[side].lay.rows;
-            if (last < i) {
-                scv.pane[side].top = last;
-                scv.pane[side].cy = n - scv.pane[side].top;
-            } else {
-                scv.pane[side].top = n;
-                scv.pane[side].cy = 0;
-            }
+            p->top = i;
+            p->cy = 0;
         }
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* laços de busca com o ternário de entrada; alocação diferente */
+#ifdef NON_MATCHING /* lógica conferida com o asm (o rascunho chamava sc_cur_index sem o lado); 114 palavras:
+                       up e i trocam de registrador salvo e o teste da chave sai fora do laço */
+/* sort value of a card, ATK/DEF grouped by hundreds */
+static inline int sc_group_value(ScEnt *e, unsigned short sort)
+{
+    int v = sc_sort_value(e, sort);
+
+    if ((unsigned int)(sort - 4) < 2 && v > 0)
+        v /= 100;
+    return v;
+}
+
 /* index of the first card of the next (up = 0) or previous sort group from the cursor, -1 none */
 int sc_find_group(int up)
 {
-    ScList *l = scv.pane[scv.side].list;
-    unsigned int i = sc_cur_index();
-    unsigned int n = l->count;
-    unsigned int sort = l->sort;
+    unsigned char side = scv.side;
+    ScList *l = scv.pane[side].list;
+    unsigned short i = sc_cur_index(side);
+    int n = l->count;
+    int sort = l->sort;
     ScEnt *e;
     int v;
-    int w;
+    int k;
 
     e = SC_ENT(l, i);
-    if (e == 0) {
-        i = n - 1;
-    } else if (up == 0) {
-        v = sc_sort_value(e, sort);
-        if (sort - 4 < 2 && v > 0)
-            v /= 100;
-        for (i++; (int)i < (int)n; i++) {
-            w = sc_sort_value((int)i < (int)l->count ? &l->ents[l->order[i]] : 0, sort);
-            if (sort - 4 < 2 && w > 0)
-                w /= 100;
-            if (w != v)
-                break;
-        }
-        if (!((int)i < (int)n))
-            i = -1;
-    } else if (i == 0) {
-        i = -1;
-    } else {
-        v = sc_sort_value((int)(i - 1) < (int)n ? &l->ents[l->order[i - 1]] : 0, sort);
-        if (sort - 4 < 2 && v > 0)
-            v /= 100;
-        for (i -= 2; (int)i >= 0; i--) {
-            w = sc_sort_value((int)i < (int)l->count ? &l->ents[l->order[i]] : 0, sort);
-            if (sort - 4 < 2 && w > 0)
-                w /= 100;
-            if (w != v) {
-                i++;
+    if (e == 0)
+        return n - 1;
+    if (up != 0) {
+        if (i <= 0)
+            return -1;
+        k = i - 1;
+        v = sc_group_value(SC_ENT(l, k), sort);
+        for (k--; k >= 0; k--) {
+            if (sc_group_value(SC_ENT(l, k), sort) != v) {
+                k++;
                 break;
             }
         }
-        if ((int)i < 0)
-            i = 0;
+        if (k >= 0)
+            return k;
+        k = 0;
+    } else {
+        v = sc_group_value(e, sort);
+        for (k = i + 1; k < n; k++) {
+            if (sc_group_value(SC_ENT(l, k), sort) != v)
+                break;
+        }
+        if (!(k < n))
+            return -1;
     }
-    return i;
+    return k;
 }
 #endif
 
@@ -859,36 +864,31 @@ void sc_scroll_update(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original indexa o painel pela base scv; o mwcc atual cria o ponteiro */
+#ifdef NON_MATCHING /* lógica conferida com o asm; 65 palavras: o original faz todas as leituras do
+                       layout antes das gravações em sc.focus; o mwcc intercala */
 /* the focus frame follows the cursor */
 void sc_focus_update(void)
 {
-    unsigned int side = scv.side;
+    unsigned char side = scv.side;
     ScPane *p = &scv.pane[side];
-    short cy;
+    ScRect *f = &sc.focus;
+    ScLayout *ly = &p->lay;
 
     if (p->list_mode == 0) {
-        sc.focus.x = p->lay.x + p->lay.grid_x + p->cx * p->lay.cell_w;
-        sc.focus.w = 0x17;
-        sc.focus.y = p->lay.y + p->lay.grid_y + p->cy * p->lay.cell_h;
-        sc.focus.h = 0x1F;
-        return;
-    }
-    if (side == 1) {
-        cy = scv.pane[1].cy;
-        if (scv.mode < 4) {
-            sc.focus.x = scv.pane[1].lay.x + scv.pane[1].lay.row_x;
-            sc.focus.y = scv.pane[1].lay.y + scv.pane[1].lay.row_y + scv.pane[1].cy * scv.pane[1].lay.row_h;
-            sc.focus.w = scv.pane[1].lay.row_w - 1;
-            sc.focus.h = scv.pane[1].lay.row_h - 1;
-            return;
-        }
+        f->w = 0x17;
+        f->x = ly->x + ly->grid_x + p->cx * (unsigned short)ly->cell_w;
+        f->y = ly->y + ly->grid_y + p->cy * (unsigned short)ly->cell_h;
+        f->h = 0x1F;
+    } else if (side == 1 && scv.mode < 4) {
+        f->x = ly->x + ly->row_x;
+        f->w = (unsigned short)ly->row_w - 1;
+        f->y = ly->y + ly->row_y + p->cy * (unsigned short)ly->row_h;
+        f->h = (unsigned short)ly->row_h - 1;
     } else {
-        cy = p->cy;
+        f->x = ly->x + ly->row_x + 1;
+        f->w = (unsigned short)ly->row_w - 3;
+        f->y = ly->y + ly->row_y + 1 + p->cy * (unsigned short)ly->row_h;
+        f->h = (unsigned short)ly->row_h - 1;
     }
-    sc.focus.x = p->lay.x + p->lay.row_x + 1;
-    sc.focus.w = p->lay.row_w - 3;
-    sc.focus.y = p->lay.y + p->lay.row_y + 1 + cy * p->lay.row_h;
-    sc.focus.h = p->lay.row_h - 1;
 }
 #endif

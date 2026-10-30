@@ -3,11 +3,9 @@
 // @asm 0x08815408-0x088158DC
 // @asm 0x088158DC-0x08815CD0
 // @asm 0x08815CD0-0x08815E48
-// @asm 0x08815E78-0x08815F04
 // @asm 0x08815F04-0x08816468
 // @asm 0x088164A0-0x08816550
 // @asm 0x08816550-0x08816874
-// @asm 0x08816874-0x08816938
 // @asm 0x08816938-0x08816CD8
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
@@ -17,7 +15,8 @@
 #include "menu.h"
 
 typedef struct ScOsk {                 /* see sc_word.c */
-    int state;
+    unsigned char state;               /* +0x00 0 idle, 1 opening, 2 running, 3 closing, 4 closed */
+    unsigned char pad01[3];
     unsigned int base[12];
     int datacount;
     unsigned int *data;
@@ -84,21 +83,24 @@ void sc_flight_land(void);
 void sc_flight_step(void);
 void sc_flight_free(void);
 int sc_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll);
-unsigned short sc_dst_pos(unsigned short tab, unsigned short id);
+int sc_dst_pos(int tab, unsigned short id);
 
-#ifdef NON_MATCHING /* laço da cópia com '$' dobrado e alocação diferentes */
+#ifdef NON_MATCHING /* lógica conferida com o asm (sceUtilityOskUpdate(2), não 1; state é u8); 65 palavras:
+                       laço da cópia com '$' dobrado e alocação diferentes */
 /* per frame while the keyboard runs: fades, utility status; 1 when closed */
 int sc_popup_done(int layer)
 {
     void *list;
-    unsigned short *d;
     unsigned int i;
     int n;
-    unsigned short c;
-    int r;
+    int c;
     unsigned short *p;
+    int r;
 
-    if (sc_osk.state == 3 || sc_osk.state == 2 || sc_osk.state == 1) {
+    switch (sc_osk.state) {
+    case 1:
+    case 2:
+    case 3:
         list = dl_select_layer(layer, 0);
         if (fade_apply(&list)) {
             if (sc_osk.state == 1)
@@ -107,40 +109,50 @@ int sc_popup_done(int layer)
                 sc_osk.state = 4;
         }
         dl_set_list(list);
+        break;
     }
     sceGuSync(0, 0);
-    if (sc_osk.state == 4) {
+    switch (sc_osk.state) {
+    case 0:
         sysvar_set_a90(0);
         return 1;
-    }
-    if (sc_osk.state == 3)
-        return 0;
-    if (sc_osk.state == 2 || sc_osk.state == 1) {
-        r = sceUtilityOskGetStatus();
-        if (r != 4 && (r == 3 || (r == 2 && sceUtilityOskUpdate(1) != 0))) {
+    case 1:
+    case 2:
+        switch (sceUtilityOskGetStatus()) {
+        case 0:
+        case 1:
+            break;
+        case 2:
+            if (sceUtilityOskUpdate(2) == 0)
+                break;
+        case 3:
             r = sceUtilityOskShutdownStart();
             if (sc_osk.base[7] == 0) {
-                d = sc_osk.target;
                 n = 0;
                 i = 0;
                 if (wcslen(sc_osk.out) != 0) {
-                    for (p = sc_osk.out, c = *p; c != 0; c = *++p) {
+                    for (p = sc_osk.out; (c = *p) != 0; p++) {
                         if (c == '$')
-                            d[n++] = '$';
-                        d[n++] = c;
-                        i++;
-                        if (i >= (unsigned int)wcslen(sc_osk.out))
+                            sc_osk.target[n++] = c;
+                        sc_osk.target[n++] = c;
+                        if (++i >= wcslen(sc_osk.out))
                             break;
                     }
                 }
-                d[n] = 0;
+                sc_osk.target[n] = 0;
             }
             if (sc_osk.done != 0)
                 sc_osk.done(sc_osk.out, r);
             fade_start(2, 0xA0000000, 8);
             sc_osk.state = 3;
+            break;
+        case 4:
+            break;
         }
-    } else if (sc_osk.state == 0) {
+        break;
+    case 3:
+        return 0;
+    case 4:
         sysvar_set_a90(0);
         return 1;
     }
@@ -148,7 +160,8 @@ int sc_popup_done(int layer)
 }
 #endif
 
-#ifdef NON_MATCHING /* bitfields do voo gravados em outra ordem */
+#ifdef NON_MATCHING /* lógica conferida com o asm (229 palavras): o original grava os nibbles de mv.b[0] um a um
+                       e relê sc_flight a cada campo; bitfields do voo em outra ordem */
 /* Circle: moves the cursor's card to the other list (if the kind allows it) */
 int sc_cancel_request(void)
 {
@@ -217,7 +230,8 @@ int sc_cancel_request(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* laços de busca e bitfields com outra alocação */
+#ifdef NON_MATCHING /* lógica conferida com o asm (faltava o teste morto de idx < 0 com sc_flight_free);
+                       laços de busca e bitfields com outra alocação */
 /* Triangle: undoes the last move */
 int sc_input_move(void)
 {
@@ -270,6 +284,10 @@ int sc_input_move(void)
                 break;
             }
         }
+        if ((int)f->idx < 0) {  /* never: idx is a u16, but the original keeps the test */
+            sc_flight_free();
+            return 0;
+        }
     }
     for (i = 0; i < l->count; i++) {
         if (f->idx == l->order[i])
@@ -286,30 +304,34 @@ int sc_input_move(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* testes do passo e releituras de sc_flight diferentes */
+#ifdef NON_MATCHING /* lógica conferida com o asm; 41 palavras: o original testa 3, 2, 1 (ordem inversa) sem
+                       teste do 0; só com um "case 0" o mwcc inverte a ordem, mas emite o teste dele */
 /* state 2 */
 void sc_input_sort_menu(void)
 {
     ScFlight *f = sc_flight;
 
     switch (f->step) {
-    case 3:
-        sc_flight_free();
-        sc.state = 1;
-        break;
-    case 2:
-        sc_flight_step();
-        break;
     case 1:
         if (++f->timer >= f->frames) {
-            if (sc_slot_pos(sc_flight->to, sc_flight->dside, sc_flight->dst, sc_dst_pos(sc_flight->dst, sc_flight->ent.id), 1)) {
+            f = sc_flight;
+            if (sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 1)) {
                 sc_flight->phase = 0;
-                sc_flight->x = (int)sc_flight->from[0];
-                sc_flight->y = (int)sc_flight->from[1];
+                sc_flight->x = sc_flight->from[0];
+                sc_flight->y = sc_flight->from[1];
                 sc_flight->step = 2;
             }
             sc_flight->timer = 0;
         }
+        break;
+    case 2:
+        sc_flight_step();
+        break;
+    case 3:
+        sc_flight_free();
+        sc.state = 1;
+        break;
+    case 0:
         break;
     }
 }
@@ -320,18 +342,17 @@ void sc_flight_take(void)
     sc_list_remove(&sc.list[sc_flight->src], sc_flight->idx);
 }
 
-#ifdef NON_MATCHING /* o original indexa sc.list pelo campo de 16 bits com a base calculada antes */
 void sc_flight_land(void)
 {
-    unsigned int bits = *(unsigned short *)((char *)sc_flight + 6);
+    ScFlight *f = sc_flight;
+    ScList *l = &sc.list[f->dst];
     ScEnt e;
 
-    memcpy(&e, &sc_flight->ent, 6);
+    memcpy(&e, &f->ent, 6);
     e.count = 1;
     e.marked = 1;
-    sc_list_add(&sc.list[(bits & 0x3FF) >> 7], &e);
+    sc_list_add(l, &e);
 }
-#endif
 
 #ifdef NON_MATCHING /* contas em float com outra alocação de $f */
 /* the flight: path through a control point, 10 frames of quadratic curve, landing */
@@ -509,39 +530,38 @@ int sc_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll)
 }
 #endif
 
-#ifdef NON_MATCHING /* cadeia de testes do tipo com outra ordem */
 /* position the card id lands at in list tab */
-unsigned short sc_dst_pos(unsigned short tab, unsigned short id)
+int sc_dst_pos(int tab, unsigned short id)
 {
+    ScList *l = &sc.list[tab];
     int sep = 1;
     int i;
-    unsigned int k;
+    int k;
 
     switch (sc.kind) {
-    case 2:
+    case 0:
         if (tab == 0)
             sep = 0;
         break;
     case 1:
         sep = 0;
         break;
-    case 0:
+    case 2:
         if (tab == 0)
             sep = 0;
         break;
     }
     if (!sep) {
-        i = sc_list_find(&sc.list[tab], id);
+        i = sc_list_find(l, id);
         if (i >= 0) {
-            for (k = 0; k < sc.list[tab].count; k++) {
-                if (i == sc.list[tab].order[k])
+            for (k = 0; k < l->count; k++) {
+                if (i == l->order[k])
                     return k;
             }
         }
     }
-    return sc.list[tab].count;
+    return l->count;
 }
-#endif
 
 /* messages of popup 2 */
 unsigned short sc_popup_msgs[6] = { 0, 0x22, 0x23, 0x84, 0x29, 0 };
