@@ -64,7 +64,13 @@ segments:
       - [0x4D894, asm, dd_fx_rock_asm_08851834]
       - [0x4E350, c, dd_fx_bolt]
       - [0x4E3A8, asm, dd_fx_bolt_asm_08852348]
-      - [0x4F6D4, asm, text_1]
+      - [0x4F6D4, c, dd_fx_beam]
+      - [0x4F72C, asm, dd_fx_beam_asm_088536CC]
+      - [0x50724, c, dd_fx_bubble]
+      - [0x5077C, asm, dd_fx_bubble_asm_0885471C]
+      - [0x50CA4, c, dd_fx_petal]
+      - [0x50D38, asm, dd_fx_petal_asm_08854CD8]
+      - [0x513EC, asm, text_1]
       - [0x672BC, asm, sceStub_text]
       - [0x69E1C, bin, lib_ent_top]
       - [0x69E20, bin, lib_ent]
@@ -85,6 +91,8 @@ segments:
       - [0x72D88, data, data_2]
       - [0x72D90, .data, dd_arrow]
       - [0x72E00, data, data_3]
+      - [0x72E80, .data, dd_fx_petal]
+      - [0x72E8C, data, data_4]
       - { start: 0x79070, type: bss, vram: 0x887D010, name: bss }
   - [0x79070]
 
