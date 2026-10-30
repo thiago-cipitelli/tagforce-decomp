@@ -31,7 +31,9 @@ def build():
         if not src or not os.path.exists(src):
             continue
         if src not in sdk:
-            sdk[src] = "__MWERKS__" in open(src, errors="replace").read()
+            t = open(src, errors="replace").read()  # GCC SDK: mwcc asm functions, or one @asm over the whole @range
+            r = re.search(r"^// @range (\S+)", t, re.M)
+            sdk[src] = "__MWERKS__" in t or bool(r and re.search(r"^// @asm " + re.escape(r.group(1)) + "$", t, re.M))
         if sdk[src]:
             continue
         mod = src.split("/")[1]

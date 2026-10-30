@@ -4,8 +4,15 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-10-30 (ByteMatch): 60,4% do código batendo, 86,9% fuzzy, 9353/11039 funções.
-Fila: 1436 funções em `docs/matching_queue.tsv` (fora o SDK do BOOT e as de `docs/matching_skip.tsv`).
+Estado em 2026-10-30, após a rodada paralela nas funções com fuzzy < 80% (ByteMatch): 62,6% do código batendo,
+89,3% fuzzy, 9511/11039 funções. Fila: 1208 funções em `docs/matching_queue.tsv` (318 abaixo de 80%), fora o SDK
+do BOOT (inclusive arquivos com um só `@asm` cobrindo o `@range` inteiro) e as de `docs/matching_skip.tsv`.
+A Tarefa 0 (drafts que não compilavam) está concluída.
+
+**Funções sem C nenhum (fuzzy 0% na fila):** 47 funções, ~66 KB, escondidas dentro da faixa `@asm` de um vizinho
+(libfield 29, libduel_eng 8 — `duel_088C4864`, `duel_088C5510`, `duel_act_0887E140` —, libshop `shop_glow_super`/
+`shop_glow_ultra`, e outras). Escrever o C delas a partir do asm vem antes do matching (o port precisa dele) e
+costuma bater na primeira ou segunda forma. Linhas `func_XXXXXXXX` na fila são candidatas.
 
 ## Protocolo de sessão (janela de tokens pequena)
 
@@ -48,6 +55,11 @@ MODULE=$M tools/raw_asm.sh 0xLO 0xHI            # o asm original (a verdade), qu
      (`MODULE=<m> python3 tools/sym_update.py arquivo` com `0xADDR nome type:func matched src/<m>/<f>.c`);
    - `python3 tools/check_file.py <m> src/<m>/<f>.c` deve dar OK para a função.
    - tire a função da fila: `sed -i "/\t$F\t/d" docs/matching_queue.tsv` (vai no mesmo commit).
+   Antes de promover: compile sem `-DNON_MATCHING` também (o `asm_try.sh` não vê protótipos que só existem sob
+   `NON_MATCHING`), e mantenha as funções em ordem de endereço no arquivo. Uma função cuja jump table vem depois das
+   de uma função ainda em asm do mesmo `.c` não pode ser promovida mesmo com 0 palavras.
+   Verificação barata de lógica: compare a sequência de alvos `jal` do original com as relocações `R_MIPS_26` do
+   objeto `-DNON_MATCHING` (achou chamadas trocadas e funções inexistentes em vários drafts).
 4. Se não bater em 4 reescritas: atualize o comentário do `NON_MATCHING` (pt-BR, o que ainda difere, quantas
    palavras) e siga. Isso poupa a próxima sessão.
 
@@ -84,6 +96,14 @@ Os casos mais comuns nesta etapa:
 | campo carregado depois da aritmética do índice | `(T *)((char *)base + i * sizeof(T))` |
 | `sltu v0,zero,v0` logo após `jal` | `int on = f() != 0; if (on)` |
 | faixas de `case` em árvore de `slti` | `case A ... B:` (o mwcc aceita) |
+| cópia de tabela para a pilha (laço `lb/lh` ou `lwc1/swc1`) | `T loc = *(T *)tabela_global;` ou local inicializado `short pos[4] = {...}` (o template fica no `@data`) |
+| `sll/ext` relendo o valor recém-gravado | atribuição encadeada `m->a = m->b = 0;` |
+| `ext x,16,16` / `srl` em vez de `sra` | `(pos >> 16) & 0xFFFF` / `(unsigned int)u16 >> 1` |
+| parâmetro passado adiante sem `andi`, mas mascarado no índice | parâmetro `int` (ou K&R), índice `[(unsigned short)p]` |
+| base em `&campo - 4` (`addiu s,base,16`, campos em `+4`) | struct de visão começando naquele campo |
+| `mflo; bgezl; addiu +1` depois de `div` | está no fonte: `q = a / b; if (q < 0) q++;` |
+| locais declarados dentro do laço em posições de pilha erradas | subir para o escopo da função, na ordem da pilha |
+| argumento de chamada vindo de um registrador com uma constante de comparação | o argumento real **é** essa constante (bug de lógica comum nos drafts) |
 
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
@@ -130,6 +150,8 @@ asm antes de mexer na forma.
 
 Se mais de uma sessão trabalhar ao mesmo tempo, cada uma num **módulo diferente** e numa worktree própria
 (`git worktree add ../tf-wt/<x> -b agent-<x>`; ligar `build/elf`, `build/decomp`, `tools/ext`, `.venv`, `extracted`
-por symlink e copiar o resto de `build/`). Merge: `symbols/<m>.txt` em conflito se resolve por endereço
+por symlink e copiar o resto de `build/`; scripts auxiliares numa subpasta própria do scratchpad). Os agentes não
+editam `docs/matching_queue.tsv`/`docs/matching_skip.tsv` (o coordenador regenera depois do merge). Um `check-all`
+que falha só num módulo alheio costuma ser split velho copiado: `rm -rf build/asm/<m> build/src/<m>`. Merge: `symbols/<m>.txt` em conflito se resolve por endereço
 (`build/tmp/resolve_status.py`, que descarta linhas `alias`: confira-as depois), `config/<m>.yaml` se regenera
 (`python3 tools/splat_config.py <m> > config/<m>.yaml`), e `make MODULE=<m> verify` antes de commitar o merge.
