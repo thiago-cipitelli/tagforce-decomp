@@ -8,7 +8,7 @@
    setup that fills a ChrVt with the character's callbacks, the init/event/update/motion overrides
    (most only forward to the base model), the map from bone slot to bone id and the rest pose of
    the bones (table sorted by id on first use and searched with bsearch). */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 int chr15_pairs[7] = { 40, 34 }; /* 0x0887C9D4 */
 ChrBone chr15_bones[5] = { /* 0x0887C9F0 */

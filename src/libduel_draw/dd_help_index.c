@@ -2,7 +2,7 @@
 /* Duel help index: a second list window (entries first..last of a table pack) whose items are
    either a heading (marker entry 3 at the start of the text) or a bulleted line (entry 4 as
    bullet), with a frame that follows the list and a scrollbar. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 typedef struct HelpIndex {             /* 0x08C5B56C, 0x118 */
     int state;                         /* 0x000 */

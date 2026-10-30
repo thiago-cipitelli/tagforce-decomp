@@ -2,7 +2,7 @@
 // @rodata 0x0887288C-0x088728A4
 /* Help screen launched from the duel: checks it is allowed, fades out the duel, runs the help
    scene (duel or deck help by the current phase) on its own draw layer and fades back. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 extern int hl_prev_mode;               /* 0x08C5B968 draw mode before the help */
 extern int hl_state;                   /* 0x08C5B96C 0 fade out, 1 help, 2 fade back */

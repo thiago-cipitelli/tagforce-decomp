@@ -3,7 +3,7 @@
 /* Duel engine seen from the screen: side 0 is the player at the bottom of the screen, side 1 the
    one at the top. The two tables translate between sides and engine players, and the wrappers
    call libduel_eng with the side translated to the player (most are tail calls). */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 #include "duel.h"
 #include "allegrex.h"
 

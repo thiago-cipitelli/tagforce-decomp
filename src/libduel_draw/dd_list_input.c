@@ -1,7 +1,7 @@
 // @range 0x088649D4-0x08864B80
 /* Input of the scrolling list widget: cancel/accept buttons (swapped by region) set the result,
    up/down move the cursor with wrap-around. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 void listw_input_reset(DdList *l)
 {

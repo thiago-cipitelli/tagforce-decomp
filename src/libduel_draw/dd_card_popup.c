@@ -4,7 +4,7 @@
 /* Action menu of a card on the field: lists the actions that apply (card detail, two engine
    commands, the field browse), places the window next to the card projected to the screen, and
    runs the chosen action. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 typedef struct PopupItem {             /* icon and caption of an action */
     int f0;

@@ -3,7 +3,7 @@
 /* "Declare a card name" list of the duel: every card that can be declared (all of them, the
    non-token ones, or only monsters, by effect kind 75..77), sorted by name, in a 10-row menu;
    left/right jump to the previous/next initial, R + up/down move nine rows. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 typedef struct DeclareList {           /* 0x26CC, heap */
     int ids[2480];

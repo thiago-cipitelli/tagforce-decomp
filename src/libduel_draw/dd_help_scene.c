@@ -9,7 +9,7 @@
 /* Duel help screen (window01.gim): category list, index and text page with its picture, loaded
    from help/<image>.gim on demand; duel help (categories 0..12) and deck help (13..23) differ
    only by their tables. Plus the button guide at the bottom. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 typedef struct HelpRange {             /* index entries of a category */
     unsigned short first;

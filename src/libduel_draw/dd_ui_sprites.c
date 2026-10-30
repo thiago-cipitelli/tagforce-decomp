@@ -2,7 +2,7 @@
 // @asm 0x08862B9C-0x08862DCC
 /* Sprite helpers of the duel windows: a filled rectangle, a (scaled) sprite from the bound
    texture and a nine-patch frame built from corner, edge and center pieces. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 void *ui_sprite_scaled(void *dl, int x, int y, int u, int v, int tw, int th, int w, int h);
 

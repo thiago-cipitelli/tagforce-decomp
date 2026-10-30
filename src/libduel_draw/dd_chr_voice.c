@@ -4,7 +4,7 @@
 /* Voice lines of the duel characters: for a model event (summon, attack, damage, ...) picks the
    clips of each step (named characters through their cast table, the generic ones by card kind),
    then plays the clips of a step when the animation reaches its trigger. Tables in .data (asm). */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 typedef struct VoiceStep {
     int trigger;                       /* animation trigger that starts the step */

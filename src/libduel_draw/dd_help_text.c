@@ -2,7 +2,7 @@
 // @asm 0x08862F38-0x088630E0
 /* Duel help page: a framed text (wrapped) with an optional picture below it, scrolled with the
    analog stick, with a scrollbar. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 typedef struct HelpText {              /* 0x08C5B684, 0xEC */
     void *heap;                        /* 0x00 */

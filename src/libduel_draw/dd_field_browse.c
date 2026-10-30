@@ -2,7 +2,7 @@
 /* Field browse mode of the duel scene: opens the panel (0x0881DBC8 entry 48), moves the field
    cursor with the d-pad until confirm/square, then waits for the panel to close and plays the
    closing sound. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 typedef struct DdPad {                 /* 0x0881DE50 */
     int f0;

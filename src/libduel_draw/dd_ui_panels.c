@@ -2,7 +2,7 @@
 // @asm 0x0886346C-0x08863734
 /* Panels and scrollbar of the duel windows: a nine-patch panel (pulsing or flashing variants for
    the cursor) and the vertical scrollbar with its track, thumb and blinking arrows. */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 #include "allegrex.h"
 
 void *ui_sprite(void *dl, int x, int y, int u, int v, int w, int h);

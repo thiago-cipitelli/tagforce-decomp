@@ -6,7 +6,7 @@
 /* Duel help window: a framed list of help pages (text entries first..last of a table pack),
    opened with an animation, moved with the d-pad, closed by confirm/cancel; plus the scrolling
    list widget it is built on (layout of the items, scrolling to the cursor, drawing). */
-#include "libduel_draw.h"
+#include "dd_duelui.h"
 
 typedef struct HelpWin {               /* 0x08C5B44C, 0x120 */
     int state;                         /* 0x000 0 idle, 1 open, 2 opening, 3 active, 4 blink, 5 close, 6 closing, 7 closed */
