@@ -642,4 +642,38 @@ typedef struct DdBurst2Fx {            /* variant 1, 0x18EC bytes */
 /* BOOT */
 ScePspFMatrix3 *mat3_rot_z(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle);
 
+/* effects 83-90 and 118-128: a ring of petals and rising sparks under a node of the card model, and
+   for the red variant also flame flares bursting around it (task data, 0x11E0 bytes) */
+typedef struct DdFlare {               /* 0x28 */
+    int flags;                         /* bit 0: alive */
+    int t;
+    int frame[4];                      /* 0-11: d->flare_v[frame] */
+    float ang[4];
+} DdFlare;
+
+typedef struct DdPyreFx {
+    int red;                           /* +0x000 dd_fx_table.arg4: 0 blue, else red with flares */
+    int grow;                          /* +0x004 */
+    int grow_end;                      /* +0x008 */
+    int t;                             /* +0x00C */
+    int end;                           /* +0x010 */
+    int frame;                         /* +0x014 */
+    DdFxSlot *slot;                    /* +0x018 */
+    int placed;                        /* +0x01C */
+    ScePspFMatrix4 m;                  /* +0x020 */
+    unsigned int se_done;              /* +0x060 */
+    DdTCVtx petal[4];                  /* +0x064 */
+    int spark_next;                    /* +0x0C4 */
+    DdRingVtx spark_v[8][2];           /* +0x0C8 */
+    int pad208[2];
+    DdHaloSpark spark[32];             /* +0x210 */
+    int flare_next;                    /* +0xC10 */
+    DdTCVtx flare_v[12][4];            /* +0xC14 6 frames and their mirrors */
+    DdFlare flare[8];                  /* +0x1094 */
+    int pad11d4[3];
+} DdPyreFx;
+
+/* BOOT */
+ScePspFMatrix4 *mat4_mul_rot_y(ScePspFMatrix4 *out, ScePspFMatrix4 *m, float a);
+
 #endif
