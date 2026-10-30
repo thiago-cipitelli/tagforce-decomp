@@ -533,4 +533,113 @@ ScePspFVector4 *mat4_transform_xyz(ScePspFVector4 *out, const ScePspFMatrix4 *m,
 void mat4_translate(ScePspFMatrix4 *out, ScePspFMatrix4 *m, ScePspFVector4 *v);
 void mtx_load(ScePspFMatrix4 *m);
 
+/* effects 42-50, 63-64, 71-77 and 82: a ring of 16 glowing petals turning under a node of the card
+   model and sparks rising from it (task data, 0x710 bytes) */
+typedef struct DdHaloSpark {           /* 0x50 */
+    int flags;                         /* bit 0: alive */
+    int t;
+    int frame[3];
+    int pad14[3];
+    ScePspFVector4 pos[3];
+} DdHaloSpark;
+
+typedef struct DdHaloFx {
+    int grow;                          /* +0x000 */
+    int grow_end;                      /* +0x004 */
+    int t;                             /* +0x008 */
+    int end;                           /* +0x00C */
+    int frame;                         /* +0x010 */
+    DdFxSlot *slot;                    /* +0x014 */
+    int placed;                        /* +0x018 */
+    int pad1c;
+    ScePspFMatrix4 m;                  /* +0x020 frame of the halo, fixed on the first frame */
+    unsigned int se_done;              /* +0x060 */
+    DdTCVtx petal[4];                  /* +0x064 */
+    int spark_next;                    /* +0x0C4 */
+    DdRingVtx spark_v[8][4];           /* +0x0C8 */
+    int pad348[2];
+    DdHaloSpark spark[12];             /* +0x350 */
+} DdHaloFx;
+
+void func_0882745C(float fov, float aspect, float znear, float zfar); /* replaces the projection */
+void func_08827548(void);                                   /* restores the projection */
+ScePspFVector4 *func_0884DB2C(void);                        /* camera up vector */
+
+/* BOOT */
+ScePspFMatrix4 *mat4_copy(ScePspFMatrix4 *out, const ScePspFMatrix4 *m);
+ScePspFMatrix4 *mat4_identity(ScePspFMatrix4 *out);
+ScePspFMatrix4 *mat4_mul_rot_x(ScePspFMatrix4 *out, ScePspFMatrix4 *m, float a);
+ScePspFMatrix4 *mat4_mul(ScePspFMatrix4 *out, ScePspFMatrix4 *a, ScePspFMatrix4 *b);
+ScePspFVector4 *vec4_copy(ScePspFVector4 *out, const ScePspFVector4 *v);
+ScePspFVector4 *vec3_cross(ScePspFVector4 *out, const ScePspFVector4 *a, const ScePspFVector4 *b);
+ScePspFVector4 *vec3_normalize2(ScePspFVector4 *out, const ScePspFVector4 *v);
+void mtx_rotate_x(float a);
+void mtx_rotate_y(float a);
+
+/* effects 78-81: a glowing burst on the card model; variant 0 (blue) for the other kinds, variant 1
+   (purple, with a flame swirl) for kinds 13-18 and 40 */
+typedef struct DdBurstMote {           /* 0x10 */
+    int frame;
+    ScePspFVector3 pos;
+} DdBurstMote;
+
+typedef struct DdBurstPetal {          /* 0x0C */
+    int frame;
+    float tilt;
+    float ang;
+} DdBurstPetal;
+
+typedef struct DdBurstFx {             /* variant 0, 0x166C bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    DdFxSlot *slot;                    /* +0x0010 */
+    int placed;                        /* +0x0014 */
+    ScePspFVector3 pos;                /* +0x0018 */
+    unsigned int se_done;              /* +0x0024 */
+    DdTCVtx glow[6];                   /* +0x0028 */
+    DdBurstPetal petal[16];            /* +0x00B8 */
+    DdRingVtx petal_v[8][4];           /* +0x0178 */
+    DdCVtx ring[65][3];                /* +0x03F8 outer, middle, inner */
+    unsigned char idx_a[130];          /* +0x1028 */
+    unsigned char idx_b[130];          /* +0x10AA */
+    DdBurstMote mote[64];              /* +0x112C */
+    DdRingVtx mote_v[8][2];            /* +0x152C */
+} DdBurstFx;
+
+typedef struct DdSwirl {               /* 0x10 */
+    float u, v;
+    float tilt;
+    float ang;
+} DdSwirl;
+
+typedef struct DdBurst2Fx {            /* variant 1, 0x18EC bytes */
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    int frame;                         /* +0x0010 */
+    DdFxSlot *slot;                    /* +0x0014 */
+    int placed;                        /* +0x0018 */
+    ScePspFVector3 pos;                /* +0x001C */
+    ScePspFVector3 scale;              /* +0x0028 */
+    unsigned int se_done;              /* +0x0034 */
+    int se;                            /* +0x0038 */
+    DdTCVtx glow[6];                   /* +0x003C */
+    DdSwirl swirl[16];                 /* +0x00CC */
+    DdTCVtx flame[17][3];              /* +0x01CC a curved flame tongue: edge, center, edge */
+    unsigned char flame_idx[34];       /* +0x0694 */
+    short pad6b6;
+    DdCVtx ring[65][3];                /* +0x06B8 */
+    unsigned char idx_a[130];          /* +0x12E8 */
+    unsigned char idx_b[130];          /* +0x136A */
+    DdBurstMote mote[32];              /* +0x13EC */
+    DdTCVtx mote_v[8][2];              /* +0x15EC */
+    DdTCVtx mote_v2[8][2];             /* +0x176C */
+} DdBurst2Fx;
+
+/* BOOT */
+ScePspFMatrix3 *mat3_rot_z(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle);
+
 #endif

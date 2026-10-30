@@ -56,7 +56,9 @@ segments:
       - [0x3E308, asm, dd_fx32_asm_088422A8]
       - [0x3E884, c, dd_fx_ripple]
       - [0x3E98C, asm, dd_fx_ripple_asm_0884292C]
-      - [0x3F2A8, asm, text_1]
+      - [0x3F2A8, c, dd_fx_halo]
+      - [0x3F450, asm, dd_fx_halo_asm_088433F0]
+      - [0x40084, asm, text_1]
       - [0x672BC, asm, sceStub_text]
       - [0x69E1C, bin, lib_ent_top]
       - [0x69E20, bin, lib_ent]
@@ -79,7 +81,8 @@ segments:
       - [0x72BFC, .data, dd_fx_ring]
       - [0x72C14, .data, dd_fx_trail]
       - [0x72C30, .data, dd_fx_ripple]
-      - [0x72C50, data, data_3]
+      - [0x72C50, .data, dd_fx_halo]
+      - [0x72CA0, data, data_3]
       - { start: 0x79070, type: bss, vram: 0x887D010, name: bss }
   - [0x79070]
 
