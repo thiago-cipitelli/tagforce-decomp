@@ -1,6 +1,6 @@
 // @range 0x08805874-0x08807A44
 // @asm 0x08805874-0x08805D40
-// @asm 0x08805F6C-0x08806604
+// @asm 0x08805F6C-0x088064F8
 // @asm 0x08806F08-0x08806FC0
 // @asm 0x088075E4-0x0880776C
 // @data 0x0880E88C-0x0880E8BC
@@ -303,23 +303,22 @@ void *(*rv_row_draw[3])(void *dl, int i, int x, int y) = {
     rv_draw_deck_row, rv_draw_recipe_row, rv_draw_ext_row,
 };
 
-#ifdef NON_MATCHING /* o original guarda o ponteiro da posição e a função da aba em outros $s; nenhuma variante testada bate */
+typedef struct RvRowDraw { void *(*f[3])(void *dl, int i, int x, int y); } RvRowDraw;
+
 /* the 8 visible rows of the current tab and its scrollbar */
 void *rv_draw_lists(void *dl)
 {
-    void *(*draw[3])(void *dl, int i, int x, int y);
     RvPos *p = &((RecipeViewer *)(char *)&rv)->pos[rv.tab];
+    RvRowDraw draw = *(RvRowDraw *)rv_row_draw;
     void *(*f)(void *dl, int i, int x, int y);
     int i;
     int y;
-    int total = 0;
+    int total;
 
-    draw[0] = rv_row_draw[0];
-    draw[1] = rv_row_draw[1];
-    draw[2] = rv_row_draw[2];
-    f = draw[rv.tab];
+    f = draw.f[rv.tab];
     for (i = 0, y = 36; i < 8; i++, y += 29)
         dl = f(dl, p->top + i, 151, y);
+    total = 0;
     switch (rv.tab) {
     case 0:
         total = 50;
@@ -333,7 +332,6 @@ void *rv_draw_lists(void *dl)
     }
     return rv_draw_scrollbar(dl, 284, 45, 214, p->top, 8, total);
 }
-#endif
 
 /* row of a saved deck: frame, name and date (or "- NO DATA -"), complete-deck mark */
 void *rv_draw_deck_row(void *dl, int i, int x, int y)
