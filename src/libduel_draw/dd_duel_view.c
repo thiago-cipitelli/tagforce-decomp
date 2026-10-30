@@ -9,7 +9,6 @@
 
 extern int dv_side_player[2];        /* 0x08C5B978 side -> engine player */
 extern int dv_player_side[2];        /* 0x08C5B980 engine player -> side */
-extern char dv_state[0x24];          /* 0x08C5B988 */
 
 unsigned int duel_mode_bit(int i);
 unsigned int duel_turn_player_get(void);
@@ -481,12 +480,12 @@ int dv_unk2c(int side)
     return duel_unk2c(P(side));
 }
 
-void dv_state_init(void)
+void popup_init(void)
 {
-    memset(dv_state, 0, sizeof(dv_state));
+    memset(&popup, 0, sizeof(popup));
 }
 
-void dv_state_term(void)
+void popup_term(void)
 {
-    memset(dv_state, 0, sizeof(dv_state));
+    memset(&popup, 0, sizeof(popup));
 }
