@@ -258,7 +258,7 @@ int chr37_init(void *self, void *a, void *b);
 int chr37_event(void *self, int ev, void *a, void *b);
 int chr37_update(void *self, void *a, void *b, void *c, void *d);
 int chr37_bone_id(void *self, int i);
-int chr37_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr37_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr37_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr37_setup(ChrVt *vt)
@@ -327,7 +327,7 @@ int chr37_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr37_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr37_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3C0 */
     ChrBone *e;
@@ -341,7 +341,7 @@ int chr37_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr37_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -358,7 +358,7 @@ int chr32_init(void *self, void *a, void *b);
 int chr32_event(void *self, int ev, void *a, void *b);
 int chr32_update(void *self, void *a, void *b, void *c, void *d);
 int chr32_bone_id(void *self, int i);
-int chr32_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr32_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr32_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr32_setup(ChrVt *vt)
@@ -427,7 +427,7 @@ int chr32_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr32_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr32_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3C4 */
     ChrBone *e;
@@ -441,7 +441,7 @@ int chr32_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr32_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -458,7 +458,7 @@ int chr_kind3_init(void *self, void *a, void *b);
 int chr_kind3_event(void *self, int ev, void *a, void *b);
 int chr_kind3_update(void *self, void *a, void *b, void *c, void *d);
 int chr_kind3_bone_id(void *self, int i);
-int chr_kind3_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr_kind3_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr_kind3_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr_kind3_setup(ChrVt *vt)
@@ -674,7 +674,7 @@ int chr_kind3_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr_kind3_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr_kind3_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3C8 */
     ChrBone *e;
@@ -688,7 +688,7 @@ int chr_kind3_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr_kind3_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -705,7 +705,7 @@ int chr10_init(void *self, void *a, void *b);
 int chr10_event(void *self, int ev, void *a, void *b);
 int chr10_update(void *self, void *a, void *b, void *c, void *d);
 int chr10_bone_id(void *self, int i);
-int chr10_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr10_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr10_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr10_setup(ChrVt *vt)
@@ -774,7 +774,7 @@ int chr10_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr10_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr10_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3CC */
     ChrBone *e;
@@ -788,7 +788,7 @@ int chr10_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr10_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -805,7 +805,7 @@ int chr11_init(void *self, void *a, void *b);
 int chr11_event(void *self, int ev, void *a, void *b);
 int chr11_update(void *self, void *a, void *b, void *c, void *d);
 int chr11_bone_id(void *self, int i);
-int chr11_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr11_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr11_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr11_setup(ChrVt *vt)
@@ -874,7 +874,7 @@ int chr11_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr11_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr11_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3D0 */
     ChrBone *e;
@@ -888,7 +888,7 @@ int chr11_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr11_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -905,7 +905,7 @@ int chr4_init(void *self, void *a, void *b);
 int chr4_event(void *self, int ev, void *a, void *b);
 int chr4_update(void *self, void *a, void *b, void *c, void *d);
 int chr4_bone_id(void *self, int i);
-int chr4_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr4_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr4_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr4_setup(ChrVt *vt)
@@ -974,7 +974,7 @@ int chr4_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr4_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr4_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3D4 */
     ChrBone *e;
@@ -988,7 +988,7 @@ int chr4_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr4_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1005,7 +1005,7 @@ int chr21_init(void *self, void *a, void *b);
 int chr21_event(void *self, int ev, void *a, void *b);
 int chr21_update(void *self, void *a, void *b, void *c, void *d);
 int chr21_bone_id(void *self, int i);
-int chr21_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr21_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr21_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr21_setup(ChrVt *vt)
@@ -1074,7 +1074,7 @@ int chr21_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr21_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr21_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3D8 */
     ChrBone *e;
@@ -1088,7 +1088,7 @@ int chr21_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr21_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1105,7 +1105,7 @@ int chr18_alt_init(void *self, void *a, void *b);
 int chr18_alt_event(void *self, int ev, void *a, void *b);
 int chr18_alt_update(void *self, void *a, void *b, void *c, void *d);
 int chr18_alt_bone_id(void *self, int i);
-int chr18_alt_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr18_alt_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr18_alt_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr18_alt_setup(ChrVt *vt)
@@ -1160,7 +1160,7 @@ int chr18_alt_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr18_alt_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr18_alt_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3DC */
     ChrBone *e;
@@ -1174,7 +1174,7 @@ int chr18_alt_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr18_alt_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1191,7 +1191,7 @@ int chr18_init(void *self, void *a, void *b);
 int chr18_event(void *self, int ev, void *a, void *b);
 int chr18_update(void *self, void *a, void *b, void *c, void *d);
 int chr18_bone_id(void *self, int i);
-int chr18_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr18_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr18_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr18_setup(ChrVt *vt)
@@ -1263,7 +1263,7 @@ int chr18_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr18_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr18_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3E0 */
     ChrBone *e;
@@ -1277,7 +1277,7 @@ int chr18_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr18_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1294,7 +1294,7 @@ int chr12_init(void *self, void *a, void *b);
 int chr12_event(void *self, int ev, void *a, void *b);
 int chr12_update(void *self, void *a, void *b, void *c, void *d);
 int chr12_bone_id(void *self, int i);
-int chr12_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr12_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr12_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr12_setup(ChrVt *vt)
@@ -1364,7 +1364,7 @@ int chr12_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr12_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr12_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3E4 */
     ChrBone *e;
@@ -1378,7 +1378,7 @@ int chr12_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr12_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1395,7 +1395,7 @@ int chr9_init(void *self, void *a, void *b);
 int chr9_event(void *self, int ev, void *a, void *b);
 int chr9_update(void *self, void *a, void *b, void *c, void *d);
 int chr9_bone_id(void *self, int i);
-int chr9_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr9_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr9_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr9_setup(ChrVt *vt)
@@ -1466,7 +1466,7 @@ int chr9_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr9_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr9_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3E8 */
     ChrBone *e;
@@ -1480,7 +1480,7 @@ int chr9_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr9_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1497,7 +1497,7 @@ int chr26_init(void *self, void *a, void *b);
 int chr26_event(void *self, int ev, void *a, void *b);
 int chr26_update(void *self, void *a, void *b, void *c, void *d);
 int chr26_bone_id(void *self, int i);
-int chr26_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr26_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr26_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr26_setup(ChrVt *vt)
@@ -1566,7 +1566,7 @@ int chr26_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr26_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr26_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3EC */
     ChrBone *e;
@@ -1580,7 +1580,7 @@ int chr26_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr26_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1597,7 +1597,7 @@ int chr25_init(void *self, void *a, void *b);
 int chr25_event(void *self, int ev, void *a, void *b);
 int chr25_update(void *self, void *a, void *b, void *c, void *d);
 int chr25_bone_id(void *self, int i);
-int chr25_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr25_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr25_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr25_setup(ChrVt *vt)
@@ -1666,7 +1666,7 @@ int chr25_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr25_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr25_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3F0 */
     ChrBone *e;
@@ -1680,7 +1680,7 @@ int chr25_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr25_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1697,7 +1697,7 @@ int chr7_init(void *self, void *a, void *b);
 int chr7_event(void *self, int ev, void *a, void *b);
 int chr7_update(void *self, void *a, void *b, void *c, void *d);
 int chr7_bone_id(void *self, int i);
-int chr7_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr7_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr7_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr7_setup(ChrVt *vt)
@@ -1766,7 +1766,7 @@ int chr7_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr7_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr7_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3F4 */
     ChrBone *e;
@@ -1780,7 +1780,7 @@ int chr7_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr7_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1797,7 +1797,7 @@ int chr20_init(void *self, void *a, void *b);
 int chr20_event(void *self, int ev, void *a, void *b);
 int chr20_update(void *self, void *a, void *b, void *c, void *d);
 int chr20_bone_id(void *self, int i);
-int chr20_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr20_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr20_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr20_setup(ChrVt *vt)
@@ -1865,7 +1865,7 @@ int chr20_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr20_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr20_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3F8 */
     ChrBone *e;
@@ -1879,7 +1879,7 @@ int chr20_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr20_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1896,7 +1896,7 @@ int chr22_init(void *self, void *a, void *b);
 int chr22_event(void *self, int ev, void *a, void *b);
 int chr22_update(void *self, void *a, void *b, void *c, void *d);
 int chr22_bone_id(void *self, int i);
-int chr22_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr22_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr22_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr22_setup(ChrVt *vt)
@@ -1965,7 +1965,7 @@ int chr22_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr22_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr22_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3FC */
     ChrBone *e;
@@ -1979,7 +1979,7 @@ int chr22_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr22_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -1996,7 +1996,7 @@ int chr28_init(void *self, void *a, void *b);
 int chr28_event(void *self, int ev, void *a, void *b);
 int chr28_update(void *self, void *a, void *b, void *c, void *d);
 int chr28_bone_id(void *self, int i);
-int chr28_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr28_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr28_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr28_setup(ChrVt *vt)
@@ -2057,7 +2057,7 @@ int chr28_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr28_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr28_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B400 */
     ChrBone *e;
@@ -2071,7 +2071,7 @@ int chr28_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr28_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2088,7 +2088,7 @@ int chr24_init(void *self, void *a, void *b);
 int chr24_event(void *self, int ev, void *a, void *b);
 int chr24_update(void *self, void *a, void *b, void *c, void *d);
 int chr24_bone_id(void *self, int i);
-int chr24_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr24_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr24_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr24_setup(ChrVt *vt)
@@ -2157,7 +2157,7 @@ int chr24_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr24_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr24_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B404 */
     ChrBone *e;
@@ -2171,7 +2171,7 @@ int chr24_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr24_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2188,7 +2188,7 @@ int chr8_init(void *self, void *a, void *b);
 int chr8_event(void *self, int ev, void *a, void *b);
 int chr8_update(void *self, void *a, void *b, void *c, void *d);
 int chr8_bone_id(void *self, int i);
-int chr8_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr8_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr8_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr8_setup(ChrVt *vt)
@@ -2257,7 +2257,7 @@ int chr8_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr8_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr8_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B408 */
     ChrBone *e;
@@ -2271,7 +2271,7 @@ int chr8_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr8_bones, 6, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2288,7 +2288,7 @@ int chr23_init(void *self, void *a, void *b);
 int chr23_event(void *self, int ev, void *a, void *b);
 int chr23_update(void *self, void *a, void *b, void *c, void *d);
 int chr23_bone_id(void *self, int i);
-int chr23_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr23_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr23_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr23_setup(ChrVt *vt)
@@ -2344,7 +2344,7 @@ int chr23_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr23_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr23_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B40C */
     ChrBone *e;
@@ -2358,7 +2358,7 @@ int chr23_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr23_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2375,7 +2375,7 @@ int chr30_init(void *self, void *a, void *b);
 int chr30_event(void *self, int ev, void *a, void *b);
 int chr30_update(void *self, void *a, void *b, void *c, void *d);
 int chr30_bone_id(void *self, int i);
-int chr30_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr30_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr30_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr30_setup(ChrVt *vt)
@@ -2444,7 +2444,7 @@ int chr30_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr30_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr30_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B410 */
     ChrBone *e;
@@ -2458,7 +2458,7 @@ int chr30_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr30_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2475,7 +2475,7 @@ int chr3_init(void *self, void *a, void *b);
 int chr3_event(void *self, int ev, void *a, void *b);
 int chr3_update(void *self, void *a, void *b, void *c, void *d);
 int chr3_bone_id(void *self, int i);
-int chr3_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr3_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr3_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr3_setup(ChrVt *vt)
@@ -2544,7 +2544,7 @@ int chr3_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr3_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr3_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B414 */
     ChrBone *e;
@@ -2558,7 +2558,7 @@ int chr3_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr3_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2575,7 +2575,7 @@ int chr33_init(void *self, void *a, void *b);
 int chr33_event(void *self, int ev, void *a, void *b);
 int chr33_update(void *self, void *a, void *b, void *c, void *d);
 int chr33_bone_id(void *self, int i);
-int chr33_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr33_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr33_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr33_setup(ChrVt *vt)
@@ -2644,7 +2644,7 @@ int chr33_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr33_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr33_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B418 */
     ChrBone *e;
@@ -2658,7 +2658,7 @@ int chr33_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr33_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2675,7 +2675,7 @@ int chr13_init(void *self, void *a, void *b);
 int chr13_event(void *self, int ev, void *a, void *b);
 int chr13_update(void *self, void *a, void *b, void *c, void *d);
 int chr13_bone_id(void *self, int i);
-int chr13_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr13_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr13_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr13_setup(ChrVt *vt)
@@ -2744,7 +2744,7 @@ int chr13_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr13_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr13_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B41C */
     ChrBone *e;
@@ -2758,7 +2758,7 @@ int chr13_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr13_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2775,7 +2775,7 @@ int chr16_init(void *self, void *a, void *b);
 int chr16_event(void *self, int ev, void *a, void *b);
 int chr16_update(void *self, void *a, void *b, void *c, void *d);
 int chr16_bone_id(void *self, int i);
-int chr16_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr16_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr16_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr16_setup(ChrVt *vt)
@@ -2851,7 +2851,7 @@ int chr16_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr16_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr16_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B420 */
     ChrBone *e;
@@ -2865,7 +2865,7 @@ int chr16_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr16_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2882,7 +2882,7 @@ int chr31_init(void *self, void *a, void *b);
 int chr31_event(void *self, int ev, void *a, void *b);
 int chr31_update(void *self, void *a, void *b, void *c, void *d);
 int chr31_bone_id(void *self, int i);
-int chr31_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr31_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr31_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr31_setup(ChrVt *vt)
@@ -2951,7 +2951,7 @@ int chr31_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr31_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr31_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B424 */
     ChrBone *e;
@@ -2965,7 +2965,7 @@ int chr31_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr31_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -2982,7 +2982,7 @@ int chr14_init(void *self, void *a, void *b);
 int chr14_event(void *self, int ev, void *a, void *b);
 int chr14_update(void *self, void *a, void *b, void *c, void *d);
 int chr14_bone_id(void *self, int i);
-int chr14_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr14_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr14_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr14_setup(ChrVt *vt)
@@ -3050,7 +3050,7 @@ int chr14_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr14_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr14_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B428 */
     ChrBone *e;
@@ -3064,7 +3064,7 @@ int chr14_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr14_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -3081,7 +3081,7 @@ int chr17_init(void *self, void *a, void *b);
 int chr17_event(void *self, int ev, void *a, void *b);
 int chr17_update(void *self, void *a, void *b, void *c, void *d);
 int chr17_bone_id(void *self, int i);
-int chr17_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr17_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr17_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr17_setup(ChrVt *vt)
@@ -3150,7 +3150,7 @@ int chr17_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr17_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr17_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B42C */
     ChrBone *e;
@@ -3164,7 +3164,7 @@ int chr17_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr17_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -3181,7 +3181,7 @@ int chr36_init(void *self, void *a, void *b);
 int chr36_event(void *self, int ev, void *a, void *b);
 int chr36_update(void *self, void *a, void *b, void *c, void *d);
 int chr36_bone_id(void *self, int i);
-int chr36_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr36_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr36_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr36_setup(ChrVt *vt)
@@ -3250,7 +3250,7 @@ int chr36_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr36_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr36_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B430 */
     ChrBone *e;
@@ -3264,7 +3264,7 @@ int chr36_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr36_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;
@@ -3281,7 +3281,7 @@ int chr27_init(void *self, void *a, void *b);
 int chr27_event(void *self, int ev, void *a, void *b);
 int chr27_update(void *self, void *a, void *b, void *c, void *d);
 int chr27_bone_id(void *self, int i);
-int chr27_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id);
+int chr27_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
 int chr27_motion(void *self, void *a, void *b, void *c, int d);
 
 void chr27_setup(ChrVt *vt)
@@ -3350,7 +3350,7 @@ int chr27_bone_id(void *self, int i)
 }
 
 #ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
-int chr27_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
+int chr27_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B434 */
     ChrBone *e;
@@ -3364,7 +3364,7 @@ int chr27_bone_rest(void *self, DdVec4 *pos, DdVec4 *rot, int id)
     e = bsearch(&key, chr27_bones, 5, sizeof(ChrBone), func_0881DF4C);
     if (e == 0)
         return 0;
-    *pos = *(DdVec4 *)&e->px;
+    *pos = *(ChrVec4 *)&e->px;
     pos->w = 1.0f;
     *rot = e->rot;
     return 1;

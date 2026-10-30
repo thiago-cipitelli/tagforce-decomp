@@ -162,7 +162,7 @@ void popup_place(MenuWidget *w, int side, int zone, int index)
         return;
     e = func_0880B7B8(side, zone, index);
     if (e == 0 || zone != 0xB) {
-        DdLoc loc = { 0 };
+        PopupLoc loc = { 0 };
 
         loc.side = side;
         loc.zone = zone;
@@ -211,7 +211,7 @@ void popup_place(MenuWidget *w, int side, int zone, int index);
 
 void *popup_track(void *dl)
 {
-    DdLoc loc;
+    PopupLoc loc;
 
     popup.arg.get_loc(&loc);
     popup_place(popup.menu, loc.side, loc.zone, loc.index);

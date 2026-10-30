@@ -4,9 +4,9 @@
 #define LIBDUEL_DRAW_H
 
 /* ---- 0x08857100-0x0886B25C ---- */
-typedef struct DdVec4 {
+typedef struct ChrVec4 {
     float x, y, z, w;
-} DdVec4;
+} ChrVec4;
 
 typedef struct DdVec4A {               /* stack vector, 16-aligned (VFPU) */
     float x, y, z, w;
@@ -19,7 +19,7 @@ typedef struct DdMat4 {
 typedef struct ChrBone {               /* rest pose of one bone of a character model, 0x20 */
     int id;
     float px, py, pz;
-    DdVec4 rot;                        /* quaternion */
+    ChrVec4 rot;                        /* quaternion */
 } ChrBone;
 
 typedef struct ChrVt {                 /* callbacks of a character model (0x0884DC84 picks the setup) */
@@ -29,7 +29,7 @@ typedef struct ChrVt {                 /* callbacks of a character model (0x0884
     int (*update)(void *self, void *a, void *b, void *c, void *d);   /* 0x1C */
     void *f20;
     int (*bone_id)(void *self, int i);                              /* 0x24 slot -> bone id */
-    int (*bone_rest)(void *self, DdVec4 *pos, DdVec4 *rot, int id); /* 0x28 */
+    int (*bone_rest)(void *self, ChrVec4 *pos, ChrVec4 *rot, int id); /* 0x28 */
     int (*motion)(void *self, void *a, void *b, void *c, int d);     /* 0x2C */
     int *pairs;                                                     /* 0x30 (bone, x) pairs, 0-terminated */
 } ChrVt;
@@ -58,15 +58,15 @@ typedef struct DdCharPos {             /* BOOT charmap_lookup2 output */
     unsigned char d;
 } DdCharPos;
 
-typedef struct DdLoc {                 /* card location on the field (u16) */
+typedef struct PopupLoc {                 /* card location on the field (u16) */
     unsigned short side : 1;
     unsigned short zone : 5;
     unsigned short index : 10;
-} DdLoc;
+} PopupLoc;
 
 typedef struct DdPopupArg {
     int card;
-    void (*get_loc)(DdLoc *loc);
+    void (*get_loc)(PopupLoc *loc);
 } DdPopupArg;
 
 typedef struct DdPopup {               /* 0x08C5B988, 0x24: the action menu of a field card */
