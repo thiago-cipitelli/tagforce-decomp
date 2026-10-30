@@ -3609,6 +3609,12 @@ duel_b_08914A2E = 0x08914A2E; // type:data
 duel_b_08914A2F = 0x08914A2F; // type:data the attacked card was face down [?]
 duel_w_0891961C = 0x0891961C; // type:data inferred
 duel_req_queue_step = 0x08919664; // type:data inferred step of the queue of commands
+duel_msg_poll = 0x088F7418; // type:func asm (@asm in src/libduel_eng/msg.c, C under NON_MATCHING) reads and applies one command from the other console
+duel_msg_buf = 0x08914040; // type:data
+duel_net_end = 0x089195F0; // type:data
+duel_w_089147D4 = 0x089147D4; // type:data
+duel_w_089149E0 = 0x089149E0; // type:data
+duel_w_089149E4 = 0x089149E4; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08901BA0; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x08901BA8; // type:func import:libehsys nid:4BDEB2A8
