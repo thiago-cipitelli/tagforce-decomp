@@ -15,6 +15,11 @@ void fld_req_cancel_all(void);                 /* 0x0880C7D4 */
 void fld_load_cancel_chr(void);
 void fld_load_cancel_bg(void);
 void fld_load_cancel_all(void);
+void fld_gim_free(int name);
+void fld_req_pop(void);
+void fld_waiters_call(FieldWaitQ *w, void *file);
+int fld_req_read_gim(FieldResEnt *e);
+int fld_req_read_pool(FieldPoolDesc *d, void **buf, int i);
 
 extern unsigned char field_heap_mem[];         /* 0x088510A0 */
 extern unsigned char field_cip_mem[];          /* 0x08849EA0 */
@@ -59,6 +64,85 @@ void fld_res_cancel(void)
     fld_load_cancel_all();
     fld_req_cancel_all();
 }
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. ~125 palavras: o original testa busy com bnezl direto para o epílogo e o switch de r->kind dentro do descarte tem as cópias mortas "move a0; b; nop" (padrão do case) */
+/* runs the request at the head of the queue when no read is in flight: step 0 starts the read,
+   step 1 publishes the file (buf -> data), unloads it again if it was discarded meanwhile, calls the
+   requester and the queued waiters and pops the request */
+void fld_res_update(void)
+{
+    FieldReq *r = field_res.q.head;
+    FieldReqQ *q = &field_res.q;
+    FieldWaitQ wg;
+    FieldWaitQ wp;
+    FieldResEnt *e;
+    FieldPoolEnt *f;
+    int k;
+
+    if (r == 0 || q->busy != 0)
+        return;
+    switch (r->kind) {
+    case 0:
+        switch (r->step) {
+        case 0:
+            fld_req_read_gim(r->ent);
+            break;
+        case 1:
+            e = r->ent;
+            wg = e->waiters;
+            e->data = e->buf;
+            if (e->discard != 0)
+                fld_gim_free((int)e->name);
+            r->cb(&e->data, r->arg);
+            if (wg.head != 0)
+                fld_waiters_call(&wg, &e->data);
+            fld_req_pop();
+            break;
+        }
+        break;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+        switch (r->step) {
+        case 0:
+            fld_req_read_pool(r->ent, &((FieldPoolEnt *)r->ent2)->buf, ((FieldPoolEnt *)r->ent2)->x1c);
+            break;
+        case 1:
+            f = r->ent2;
+            wp = *(FieldWaitQ *)f->waiters;
+            f->data = f->buf;
+            if (f->discard != 0) {
+                k = 0;
+                switch (r->kind) {
+                case 1:
+                    break;
+                case 2:
+                    k = 1;
+                    break;
+                case 3:
+                    k = 2;
+                    break;
+                case 4:
+                    k = 3;
+                    break;
+                case 5:
+                    k = 4;
+                    break;
+                }
+                fld_unload(k, f->name);
+            }
+            r->cb(&f->data, r->arg);
+            if (wp.head != 0)
+                fld_waiters_call(&wp, &f->data);
+            fld_req_pop();
+            break;
+        }
+        break;
+    }
+}
+#endif
 
 void *fld_alloc(unsigned int size)
 {
