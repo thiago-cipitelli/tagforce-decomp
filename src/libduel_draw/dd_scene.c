@@ -19,7 +19,7 @@ int func_088061FC(void);
 void dd_view_draw3d(void);
 void dd_view_update(float dt);
 
-void func_08811D48();
+void dd_lp_get();
 int func_0881351C(void);
 void func_0881CA40(void);
 int func_0881CB84(void);
@@ -288,7 +288,7 @@ int dd_input_player(void)
 
 void dd_08806B5C(void)
 {
-    func_08811D48();
+    dd_lp_get();
 }
 
 /* character slot `i` of the game state */

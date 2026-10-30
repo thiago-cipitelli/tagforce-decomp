@@ -316,4 +316,77 @@ typedef struct DdCobjs {                /* card objects, 0x08C3D940, 0x16B20 */
     int pad16b14[3];
 } DdCobjs;
 
+typedef struct DdLp {                  /* LP and phase panel, 0x08C54460, 0x3C */
+    unsigned int frame;                /* +0x00 30 per second */
+    int lp[2];                         /* +0x04 shown */
+    int lp_to[2];                      /* +0x0C */
+    int lp_from[2];                    /* +0x14 */
+    int lp_dest[2];                    /* +0x1C */
+    unsigned int lp_t0[2];             /* +0x24 frame the count started */
+    int turn_shown;                    /* +0x2C -1 while switching */
+    int turn;                          /* +0x30 */
+    int phase_state;                   /* +0x34 animation state of the phase panel */
+    int phase;                         /* +0x38 */
+} DdLp;
+
+typedef struct DdUv {                  /* 2D sprite of a sheet */
+    unsigned short u, v, w, h;
+} DdUv;
+
+typedef struct DdChr DdChr;            /* duel character model (same object as DdCharSlot of 0x0884774C) */
+struct DdChr {                         /* 0x180, the first 13 words come from the caller */
+    int chr;                           /* charmap character */
+    int sub;                           /* +0x04 variant */
+    void *disc;                        /* +0x08 duel_disc.gim */
+    void *voice_tbl;                   /* +0x0C chr_voiceidchgtbl.bin */
+    void *words;                       /* +0x10 chr_wordstbl_<l>.bin */
+    int (*on_start)(DdChr *c, int index, int arg);              /* +0x14 */
+    int (*on_stop)(DdChr *c, int index, int a, int b);          /* +0x18 */
+    int (*on_tick)(DdChr *c, int index, int frame, int anim_frame, int arg); /* +0x1C */
+    int (*map_anim)(DdChr *c, int anim);                         /* +0x20 */
+    int (*map_bone)(DdChr *c, int bone);                         /* +0x24 */
+    void (*get_pos)(DdChr *c, DdXyzw *pos, DdXyzw *rot);         /* +0x28 */
+    int x2c;
+    struct DdChrBone *bones;           /* +0x30 attach points, 0-terminated */
+    int x34;
+    struct Model *model;               /* +0x38 */
+    void **anims;                      /* +0x3C TGMT per animation (alletc-ptrs.txt) */
+    int anim;                          /* +0x40 */
+    void *tmt;                         /* +0x44 */
+    int index;                         /* +0x48 */
+    float time;                        /* +0x4C */
+    void *buf;                         /* +0x50 decompressed animation */
+    void *voice;                       /* +0x54 voice track */
+    void *vbuf;                        /* +0x58 */
+    float vtime;                       /* +0x5C */
+    int pad60[24];
+    DdMtx proj;                        /* +0xC0 */
+    DdMtx view;                        /* +0x100 */
+    DdXyzw dir;                        /* +0x140 */
+    int x150;
+    int disc_on;                       /* +0x154 */
+    int x158;
+    int x15c;
+    int x160;
+    int done;                          /* +0x164 animation looped/ended this frame */
+    int x168;
+    int x16c;
+    unsigned int mask;                 /* +0x170 parts shown */
+    unsigned int mask_sel;             /* +0x174 parts forced */
+    unsigned int mask_val;             /* +0x178 */
+    int pad17c;
+};
+
+typedef struct DdChrMgr {              /* 0x08C544A0, 400 */
+    int hdr[4];
+    DdChr chr;
+} DdChrMgr;
+
+typedef struct DdModelUpd {            /* BOOT model_update argument with a bone callback */
+    float dt;
+    void *cb;
+    int chr;
+    void *c;
+} DdModelUpd;
+
 #endif

@@ -126,4 +126,7 @@ void dd_cutin_free(void);
 void dd_cutin_load(void);
 int dd_cutin_ready(void);
 
+extern DdLp dd_lp;
+void *draw_set_offsets();
+
 #endif

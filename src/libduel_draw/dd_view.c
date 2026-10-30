@@ -16,10 +16,10 @@ void dd_cobjs_setup(void);
 void dd_cobjs_clear(void);
 void dd_cobjs_draw(void);
 void dd_cobjs_update(float dt);
-void func_088116FC(void);
-void func_08811710(void);
-void func_08811718(void);
-void func_08811C60(float dt);
+void dd_lp_clear(void);
+void dd_lp_free(void);
+void dd_lp_draw(void);
+void dd_lp_update(float dt);
 void func_08814DFC(void);
 void func_08816FD0(void);
 void func_08816FE4(void);
@@ -37,7 +37,7 @@ void dd_view_init(void)
     func_08814DFC();
     dd_cobjs_setup();
     func_08816FD0();
-    func_088116FC();
+    dd_lp_clear();
 }
 
 void dd_view_free(void)
@@ -46,7 +46,7 @@ void dd_view_free(void)
     dd_info_term();
     dd_cobjs_clear();
     func_08816FE4();
-    func_08811710();
+    dd_lp_free();
 }
 
 /* clears layer 0 and draws the field, the cards and the effects */
@@ -58,7 +58,7 @@ void dd_view_draw3d(void)
     if (dd_scene_flags(2, -1))
         dd_cobjs_draw();
     if (dd_scene_flags(4, -1))
-        func_08811718();
+        dd_lp_draw();
     if (dd_scene_flags(4, -1))
         dd_info_draw();
 }
@@ -68,6 +68,6 @@ void dd_view_update(float dt)
     if (dd_scene_flags(1, -1))
         dd_field_update(dt);
     dd_cobjs_update(dt);
-    func_08811C60(dt);
+    dd_lp_update(dt);
     dd_info_update(dt);
 }

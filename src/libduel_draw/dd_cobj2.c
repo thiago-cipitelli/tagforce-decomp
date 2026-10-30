@@ -15,7 +15,7 @@ void req_flag_set(int i);
 void func_0881E3B8(DdCobj *o);
 void func_0881E610(DdCobj *o);
 void func_0881E7EC(DdCobj *o);
-void func_088115CC(int player, int zone);
+void dd_counter_reset(int player, int zone);
 int func_088667BC(int uid);
 int func_088668B4(int player, int zone);
 int func_0886675C(int side);
@@ -307,7 +307,7 @@ void dd_cobjs_counters(void)
 
     for (p = 0; p < 2; p++)
         for (z = 0; z < 5; z++)
-            func_088115CC(p, z);
+            dd_counter_reset(p, z);
 }
 #endif
 

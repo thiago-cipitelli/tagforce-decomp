@@ -18,11 +18,11 @@ void dd_board_cards(void);
 void dd_board_marks(void);
 void dd_hand_layout0(int a, int b);
 void dd_hand_layout1(int a, int b);
-void func_08811210(float dt);
+void dd_counter_tick(float dt);
 void func_08815670(void);
 void func_08815678(void);
 void func_088157A0(void);
-void func_088115CC(int player);
+void dd_counter_reset(int player);
 void func_0881E3B8(DdCobj *o);
 void func_0881FAF8(DdCobj *o);
 int func_0882092C(void);
@@ -151,7 +151,7 @@ void dd_cobjs_update(float dt)
             }
         }
     }
-    func_08811210(dt);
+    dd_counter_tick(dt);
 }
 #endif
 
@@ -240,7 +240,7 @@ done:
     o->a2 = 0;
     func_088157A0();
     if (func_088667AC() == 3 && kind != 6 && from.zone < 5)
-        func_088115CC(from.player);
+        dd_counter_reset(from.player);
 }
 
 /* turns the card `zone` of player p face up/down in place */

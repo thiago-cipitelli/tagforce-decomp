@@ -56,9 +56,9 @@ int func_08866BF0(int player, int zone, int index);
 int func_0886B07C(void);
 float func_0886B08C(int player);
 int dd_cobj_counter_shown(DdCobj *o, DdPos at);
-void *func_08810758(void *list, DdPos at, DdXyzw *pos);
-void func_08811310(DdXyzw *pos, int n);
-void *func_08811BE0(void *list);
+void *dd_counter_draw(void *list, DdPos at, DdXyzw *pos);
+void dd_counter_sel(DdXyzw *pos, int n);
+void *dd_lp_phase_draw(void *list);
 void func_0881554C(DdLoc *cur);
 void *func_08815E74(void *list, DdLoc at, int on);
 
@@ -127,7 +127,7 @@ void dd_board_overlay(void)
 {
     void *list = dl_viewport(dl_select_layer(3, 0), 0x800, 0x800, 480, 272);
 
-    list = func_08811BE0(list);
+    list = dd_lp_phase_draw(list);
     list = dl_viewport(list, 0x84A, 0x7FC, 0x3C0, 0x220);
     list = dl_enable(list, 1);
     list = dl_ambient_light(list, 0xFFFFFFFF);
@@ -215,7 +215,7 @@ void dd_board_piles(void)
             if (dd_scene_flags(0x80, -1) && n > 0)
                 dd_board_pile_count(n);
             if (b->sel[p][zone] > 0)
-                func_08811310(&pos, n);
+                dd_counter_sel(&pos, n);
         }
     }
     mtx_pop();
@@ -364,7 +364,7 @@ int dd_board_card_draw(DdCobj *o, int p, int zone, int i)
         dl_set_list(list);
     }
     if (dd_cobjs.sel[p][zone] > 0)
-        func_08811310(&o->pos, 0);
+        dd_counter_sel(&o->pos, 0);
     return hilite;
 }
 
@@ -397,7 +397,7 @@ void dd_board_marks(void)
             head = dd_zone_list(at.player, at.zone);
             o = head->next;
             if (o != head && dd_cobj_counter_shown(o, at))
-                list = func_08810758(list, at, &o->pos1);
+                list = dd_counter_draw(list, at, &o->pos1);
         }
     }
     list = dl_enable(list, 1);
