@@ -1,375 +1,315 @@
 // @range 0x08820138-0x08820F88
-// @asm 0x08820138-0x088202A0
-// @asm 0x088202E4-0x08820594
-// @asm 0x0882059C-0x08820770
-// @asm 0x088207A8-0x08820808
-// @asm 0x08820840-0x0882092C
-// @asm 0x08820988-0x08820F28
-/* Field effects driven by events: LP change bars, deck shuffle, coin/dice, chain counters, wait-for-condition tasks, card angles from a matrix, the summon/move placement of cards and the action window opener.
-   Functions under NON_MATCHING stay in asm; their C is the Ghidra pseudocode cleaned of the address
-   names (Ghidra types: undefined4 = int-sized, code = function pointer), kept for the port. */
+// @asm 0x08820CC0-0x08820D40
+// @data 0x088760D0-0x08876100
+/* Field effects driven by duel events: the LP change number, the deck shuffle (coins flying to the
+   deck), coin toss and die roll, fusion, the orbs, the ring and ring glow, the wait-for-condition
+   task, rotation angles from a matrix/quaternion (card marks and glows follow the cards) and the
+   opening of the action window. */
 #include "dd_field_ui.h"
 
-#ifdef NON_MATCHING
-typedef unsigned char undefined;
-typedef unsigned char undefined1;
-typedef unsigned short undefined2;
-typedef unsigned int undefined4;
-typedef unsigned char byte;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef void (*code)();
-#endif
+typedef struct DdTask DdTask;
+struct DdTask {                        /* 0x1C */
+    DdTask *next;
+    DdTask *prev;
+    void (*draw)(DdTask *t, void *arg);
+    void (*update)(float dt, DdTask *t, void *arg);
+    void (*leave)(DdTask *t, void *arg);
+    float time;                        /* +0x14 */
+    void *arg;                         /* +0x18 */
+};
 
-int dd_cobjs_en_set();
-int func_08820E34();
-int dd_fx_ringglow_done();
-int dd_ring_done();
+typedef struct DdTasksTail {           /* the end of DdTasks (0x08C57A10, dd_task.c) */
+    char pad[0x8A0];
+    int coin_busy;                     /* +0x8A0 the shuffle coins are flying */
+} DdTasksTail;
+
+typedef struct DdScrPos {
+    int x, y, z;
+} DdScrPos;
+
+typedef struct DdWait {                /* argument of the wait-for-condition task */
+    int flag;                          /* request flag raised while waiting */
+    int (*cond)(void);
+    int want;                          /* wait until (cond() != 0) == (want != 0) */
+    int pad;
+} DdWait;
+
+extern DdTasksTail dd_tasks;
+extern const int dd_glow_kind;
 extern int D_08C582B0;
 extern int D_08C582B4;
 extern int D_08C582B8;
+
+void *dd_alloc(int n);
+int dd_free(void *p);
+DdTask *dd_task_add(DdTask *t);
+int dd_task_remove_cur(void);
+void dd_task_remove(DdTask *t);
+int dd_task_pause(int h);
+DdTask *dd_flag_task(int flag);
+void dd_flag_task_done(DdTask *t);
+void dd_task_free_pair(int *p);
+int dd_cobjs_busy(void);
+int dd_cobjs_idle(void);
+void dd_cobjs_en_set(int i, int on);
+int dd_zone_count(int player, int zone);
+float dd_speed_get(void);
+unsigned short *dd_text(int id);
+void dd_info_disable(int off);
+void dd_mode_push(int m);
+void dd_mode_set_card(int card);
+void dd_mode_set_flag(int f);
+int region_get(void);
+int dd_fx_lpjump_start_move(DdScrPos *pos, int value, unsigned int r, unsigned int g, unsigned int b, unsigned int a, DdScrPos *to, void (*term)(int *), void *arg);
+int dd_fx_coinfly_start(int side, int height, void (*term)(int *), void *arg);
+int dd_fx_coin_start(int count, int *result, void (*term)(DdTask *), void *arg);
+int dd_fx_die_start(int count, int *result, int kind, void (*term)(DdTask *), void *arg);
+int dd_fx_fusion_start(int n, int *cards, int result, void (*term)(DdTask *), void *arg);
+int dd_orbs_start(int count, int flag, void (*term)(DdTask *), void *arg);
+int dd_ring_start(int count, int a, int b);
+int dd_ring_done(int task);
+int dd_fx_ringglow_start(DdScrPos *pos, void *term, void *arg);
+int dd_fx_ringglow_done(int id);
+int dd_fx_spin_move(int id, float *pos, float *rot, float s);
+void dd_slot_xform(float *pos, float *rot, short at);
+float asinf_vfpu(float x);
+float atan2f_vfpu(float y, float x);
+float fmaxf_vfpu(float a, float b);
+float fminf_vfpu(float a, float b);
+float *mat4_identity(float *out);
+float *mat4_translate(float *out, float *m, float *v);
+float *quat_mul(float *out, float *a, float *b);
 void func_088202A0(int *p);
-void func_08820594(int *t, int arg);
-void func_08820770(void *t, int h);
-void func_08820808(void *t, int h);
+void func_088202E4(float dt, DdTask *t, void *arg);
+void func_08820344(int player);
+void func_08820524(float dt, DdTask *t, DdWait *w);
+void func_08820594(DdTask *t, void *arg);
+void func_08820770(float dt, DdTask *t, int h);
+void func_08820808(float dt, DdTask *t, int h);
+void func_08820840(float dt, DdTask *t, int h);
 int func_0882092C(void);
-void func_08820938(int *t, int arg);
+void func_08820938(DdTask *t, void *arg);
 void func_08820980(DdCard *c);
+void func_08820A8C(float *out, float *q, int back);
+void func_08820E34(int on);
 void func_08820F28(void);
 void func_08820F58(void);
+int func_088226C0(unsigned short *text, int a1, int a2);
+void func_088257E4(short x, short y);
+int *func_08825818(void);
+int func_08825A14(void);
+void func_08825B88(int on);
 
-#ifdef NON_MATCHING
-// 08820138 size=360
-void func_08820138(int param_1,int param_2)
+/* LP change number jumping from the player's LP panel (red: damage, green: recovery) */
+void func_08820138(int player, int delta)
 {
-  undefined4 uVar1;
-  undefined4 *puVar2;
-  undefined4 uVar3;
-  undefined4 uVar4;
-  undefined4 uVar5;
-  undefined4 local_30 [4];
-  undefined4 local_20;
-  undefined4 local_1c;
-  undefined4 local_18 [4];
-  undefined4 local_8;
-  undefined4 local_4;
-  local_18[0] = D_088760D0;
-  local_18[1] = D_088760D4;
-  local_18[2] = D_088760D8;
-  local_18[3] = D_088760DC;
-  local_8 = D_088760E0;
-  local_4 = D_088760E4;
-  local_30[0] = D_088760E8;
-  local_30[1] = D_088760EC;
-  local_30[2] = D_088760F0;
-  local_30[3] = D_088760F4;
-  local_20 = D_088760F8;
-  local_1c = D_088760FC;
-  if (param_2 < 0) {
-    uVar5 = 0xff;
-    uVar4 = 0x3c;
-    uVar3 = 0x3c;
-  }
-  else {
-    uVar5 = 0;
-    uVar4 = 0xef;
-    uVar3 = 0xbb;
-  }
-  uVar1 = dd_flag_task(0xe);
-  puVar2 = (undefined4 *)dd_alloc(0xc);
-  *puVar2 = uVar1;
-  puVar2[1] = param_1;
-  puVar2[2] = param_2;
-  dd_fx_lpjump_start_move(local_18 + param_1 * 3,param_2,uVar5,uVar4,uVar3,0xff,local_30 + param_1 * 3,
-               dd_task_free_pair,puVar2);
-  return;
-}
-#endif
+    DdScrPos from[2] = { { 314, 210, 0 }, { 314, 80, 0 } };
+    DdScrPos to[2] = { { 190, 6, 0 }, { 460, 6, 0 } };
+    unsigned int r, g, b, a;
+    DdTask *t;
+    int *arg;
 
+    if (delta < 0) {
+        r = 255;
+        g = 60;
+        b = 60;
+        a = 255;
+    } else {
+        r = 0;
+        g = 239;
+        b = 187;
+        a = 255;
+    }
+    t = dd_flag_task(14);
+    arg = dd_alloc(12);
+    arg[0] = (int)t;
+    arg[1] = player;
+    arg[2] = delta;
+    dd_fx_lpjump_start_move(&from[player], delta, r, g, b, a, &to[player], dd_task_free_pair, arg);
+}
+
+/* end of the shuffle coins */
 void func_088202A0(int *p)
 {
     dd_cobjs_en_set(p[1], 1);
-    dd_task_remove(p[0]);
+    dd_task_remove((DdTask *)p[0]);
     dd_free(p);
     func_08820E34(0);
 }
 
-#ifdef NON_MATCHING
-// 088202e4 size=96
-void func_088202E4(int param_1)
+/* waits until the field cards are idle to start the shuffle */
+void func_088202E4(float dt, DdTask *t, void *arg)
 {
-  int iVar1;
-  undefined4 uVar2;
-  uVar2 = *(undefined4 *)(param_1 + 0x18);
-  iVar1 = dd_cobjs_busy();
-  if ((iVar1 == 0) && (iVar1 = dd_cobjs_idle(), iVar1 != 0)) {
-    func_08820344(uVar2);
-    dd_task_remove_cur();
-  }
-  else {
-    req_flag_set(0x13);
-  }
-  return;
-}
-#endif
+    int player = (int)t->arg;
 
-#ifdef NON_MATCHING
-// 08820344 size=236
-void func_08820344(int param_1)
+    if (dd_cobjs_busy() != 0 || dd_cobjs_idle() == 0) {
+        req_flag_set(0x13);
+    } else {
+        func_08820344(player);
+        dd_task_remove_cur();
+    }
+}
+
+/* deck shuffle: coins fly over the deck (or a task waits for the cards to stop) */
+void func_08820344(int player)
 {
-  int iVar1;
-  undefined4 *puVar2;
-  undefined4 uVar3;
-  undefined4 uVar4;
-  undefined1 auStack_1c [12];
-  code *local_10;
-  int local_4;
-  iVar1 = dd_cobjs_busy();
-  if ((iVar1 == 0) && (iVar1 = dd_cobjs_idle(), iVar1 != 0)) {
-    puVar2 = (undefined4 *)dd_alloc(8);
-    uVar3 = dd_zone_count(param_1,0xd);
-    uVar4 = dd_flag_task(0x13);
-    dd_cobjs_en_set(param_1,0);
-    *puVar2 = uVar4;
-    puVar2[1] = param_1;
-    dd_fx_coinfly_start(param_1 == 0,uVar3,func_088202A0,puVar2);
-    func_08820E34(1);
-  }
-  else {
-    memset(auStack_1c,0,0x1c);
-    local_10 = func_088202E4;
-    local_4 = param_1;
-    dd_task_add(auStack_1c);
-    req_flag_set(0x13);
-  }
-  return;
-}
-#endif
+    DdTask t;
+    int n;
+    int *arg;
+    DdTask *flag;
 
-#ifdef NON_MATCHING
-// 08820430 size=140
-void func_08820430(undefined4 param_1,undefined4 param_2,undefined4 param_3,uint param_4)
+    if (dd_cobjs_busy() == 0 && dd_cobjs_idle() != 0) {
+        arg = dd_alloc(8);
+        n = dd_zone_count(player, 13);
+        flag = dd_flag_task(0x13);
+        dd_cobjs_en_set(player, 0);
+        arg[0] = (int)flag;
+        arg[1] = player;
+        dd_fx_coinfly_start(player == 0, n, func_088202A0, arg);
+        func_08820E34(1);
+    } else {
+        memset(&t, 0, sizeof(DdTask));
+        t.update = func_088202E4;
+        t.arg = (void *)player;
+        dd_task_add(&t);
+        req_flag_set(0x13);
+    }
+}
+
+/* coin toss: bit i of bits set = coin i shows tails */
+void func_08820430(int a0, int count, int a2, unsigned int bits)
 {
-  uint *puVar1;
-  uint *puVar2;
-  undefined4 uVar3;
-  uint *puVar4;
-  uint local_c;
-  uint local_8;
-  uint local_4;
-  puVar2 = (uint *)0xc;
-  puVar4 = &local_c;
-  puVar1 = puVar4;
-  while (puVar1 != (uint *)0x0) {
-    *(undefined1 *)puVar4 = 0;
-    puVar4 = (uint *)((int)puVar4 + 1);
-    puVar2 = (uint *)((int)puVar2 + -1);
-    puVar1 = puVar2;
-  }
-  local_c = (param_4 & 1) != 0 ^ 1;
-  local_8 = (param_4 & 2) != 0 ^ 1;
-  local_4 = (param_4 & 4) != 0 ^ 1;
-  uVar3 = dd_flag_task(0x37);
-  dd_fx_coin_start(param_2,&local_c,&dd_flag_task_done,uVar3);
-  return;
-}
-#endif
+    int res[3] = { 0 };
 
-#ifdef NON_MATCHING
-// 088204bc size=104
-void func_088204BC(int param_1,undefined4 param_2)
+    res[0] = !(bits & 1);
+    res[1] = !(bits & 2);
+    res[2] = !(bits & 4);
+    dd_fx_coin_start(count, res, dd_flag_task_done, dd_flag_task(0x37));
+}
+
+/* die roll */
+void func_088204BC(int player, int value)
 {
-  undefined4 *puVar1;
-  undefined4 *puVar2;
-  undefined4 uVar3;
-  undefined4 *puVar4;
-  undefined4 local_8 [2];
-  puVar2 = (undefined4 *)0x8;
-  puVar4 = local_8;
-  puVar1 = puVar4;
-  while (puVar1 != (undefined4 *)0x0) {
-    *(undefined1 *)puVar4 = 0;
-    puVar4 = (undefined4 *)((int)puVar4 + 1);
-    puVar2 = (undefined4 *)((int)puVar2 + -1);
-    puVar1 = puVar2;
-  }
-  local_8[0] = param_2;
-  uVar3 = dd_flag_task(0x38);
-  dd_fx_die_start(1,local_8,param_1 == 0,&dd_flag_task_done,uVar3);
-  return;
-}
-#endif
+    int res[2] = { 0 };
 
-#ifdef NON_MATCHING
-// 08820524 size=112
-void func_08820524(undefined4 param_1,undefined4 *param_2)
+    res[0] = value;
+    dd_fx_die_start(1, res, !player, dd_flag_task_done, dd_flag_task(0x38));
+}
+
+/* wait task: ends when the condition reaches the wanted value */
+void func_08820524(float dt, DdTask *t, DdWait *w)
 {
-  int iVar1;
-  req_flag_set(*param_2);
-  if (param_2[2] == 0) {
-    iVar1 = param_2[2];
-  }
-  else {
-    iVar1 = (*(code *)param_2[1])();
-    if (iVar1 != 0) goto D_0882057C;
-    iVar1 = param_2[2];
-  }
-  if (iVar1 != 0) {
-    return;
-  }
-  iVar1 = (*(code *)param_2[1])();
-  if (iVar1 != 0) {
-    return;
-  }
-D_0882057C:
-  dd_task_remove_cur();
-  return;
+    req_flag_set(w->flag);
+    if ((w->want != 0 && w->cond() != 0) || (w->want == 0 && w->cond() == 0))
+        dd_task_remove_cur();
 }
-#endif
 
-void func_08820594(int *t, int arg)
+void func_08820594(DdTask *t, void *arg)
 {
     func_08820938(t, arg);
 }
 
-#ifdef NON_MATCHING
-// 0882059c size=220
-void func_0882059C(undefined4 param_1,code *param_2,int param_3)
+/* raises flag until cond() becomes want (nothing if it already is) */
+void func_0882059C(int flag, int (*cond)(void), int want)
 {
-  int iVar1;
-  undefined4 *puVar2;
-  undefined1 auStack_1c [12];
-  code *local_10;
-  undefined1 *local_c;
-  undefined4 *local_4;
-  if (((param_3 == 0) || (iVar1 = (*param_2)(), iVar1 == 0)) &&
-     ((param_3 != 0 || (iVar1 = (*param_2)(), iVar1 != 0)))) {
-    req_flag_set(param_1);
-    puVar2 = (undefined4 *)dd_alloc(0x10);
-    memset(puVar2,0,0x10);
-    *puVar2 = param_1;
-    puVar2[1] = param_2;
-    puVar2[2] = param_3;
-    memset(auStack_1c,0,0x1c);
-    local_10 = func_08820524;
-    local_c = &func_08820594;
-    local_4 = puVar2;
-    dd_task_add(auStack_1c);
-  }
-  return;
-}
-#endif
+    DdTask t;
+    DdWait *w;
 
-#ifdef NON_MATCHING
-// 08820678 size=92
-void func_08820678(undefined4 param_1,undefined4 param_2,undefined4 param_3)
-{
-  undefined4 uVar1;
-  uVar1 = dd_flag_task(0x35);
-  dd_fx_fusion_start(param_3,param_2,param_1,&dd_flag_task_done,uVar1);
-  return;
+    if ((want != 0 && cond() != 0) || (want == 0 && cond() == 0))
+        return;
+    req_flag_set(flag);
+    w = dd_alloc(sizeof(DdWait));
+    memset(w, 0, sizeof(DdWait));
+    w->flag = flag;
+    w->cond = cond;
+    w->want = want;
+    memset(&t, 0, sizeof(DdTask));
+    t.update = (void (*)(float, DdTask *, void *))func_08820524;
+    t.leave = func_08820594;
+    t.arg = w;
+    dd_task_add(&t);
 }
-#endif
 
-#ifdef NON_MATCHING
-// 088206d4 size=156
-void func_088206D4(int param_1,int param_2)
+/* fusion effect */
+void func_08820678(int result, int *cards, int n)
 {
-  int iVar1;
-  undefined4 uVar2;
-  if (param_2 == 0) {
-    uVar2 = dd_flag_task(0x3b);
-    iVar1 = region_get();
-    dd_orbs_start(param_1 + 1,iVar1 == 0,&dd_flag_task_done,uVar2);
-  }
-  else {
-    iVar1 = sysvar_get_a98();
-    if (((iVar1 == 0) && (iVar1 = cfg_get_flag(0), iVar1 != 0)) && (param_1 == 4)) {
-      dd_mode_set_card(0x1468);
-      dd_mode_push(0xb);
+    dd_fx_fusion_start(n, cards, result, dd_flag_task_done, dd_flag_task(0x35));
+}
+
+/* the orbs (mode 0), or the tutorial card shown on the fourth one */
+void func_088206D4(int n, int mode)
+{
+    DdTask *t;
+
+    if (mode != 0) {
+        if (sysvar_get_a98() == 0 && cfg_get_flag(0) != 0 && n == 4) {
+            dd_mode_set_card(0x1468);
+            dd_mode_push(11);
+        }
+    } else {
+        t = dd_flag_task(0x3B);
+        dd_orbs_start(n + 1, region_get() == 0, dd_flag_task_done, t);
     }
-  }
-  return;
 }
-#endif
 
-void func_08820770(void *t, int h)
+void func_08820770(float dt, DdTask *t, int h)
 {
     if (dd_ring_done(h) != 0)
         dd_task_remove_cur();
     req_flag_set(0x3C);
 }
 
-#ifdef NON_MATCHING
-// 088207a8 size=96
+/* the ring, with a task raising flag 0x3C until it ends */
 void func_088207A8(void)
 {
-  undefined4 uVar1;
-  undefined1 auStack_1c [8];
-  undefined4 local_14;
-  code *local_10;
-  undefined4 local_c;
-  undefined4 local_4;
-  uVar1 = dd_ring_start(0x14,0,0);
-  memset(auStack_1c,0,0x1c);
-  local_10 = func_08820770;
-  local_14 = 0;
-  local_c = 0;
-  local_4 = uVar1;
-  dd_task_add(auStack_1c);
-  return;
-}
-#endif
+    DdTask t;
+    int h;
 
-void func_08820808(void *t, int h)
+    h = dd_ring_start(20, 0, 0);
+    memset(&t, 0, sizeof(DdTask));
+    t.update = (void (*)(float, DdTask *, void *))func_08820770;
+    t.arg = (void *)h;
+    t.draw = 0;
+    t.leave = 0;
+    dd_task_add(&t);
+}
+
+void func_08820808(float dt, DdTask *t, int h)
 {
     if (dd_fx_ringglow_done(h) != 0)
         dd_task_remove_cur();
     req_flag_set(0x39);
 }
 
-#ifdef NON_MATCHING
-// 08820840 size=112
-void func_08820840(int param_1,undefined4 param_2)
+/* the ring glow lasts one second (game speed), then waits for its end */
+void func_08820840(float dt, DdTask *t, int h)
 {
-  float fVar1;
-  fVar1 = (float)dd_speed_get();
-  if (1.0 / fVar1 <= *(float *)(param_1 + 0x14)) {
-    dd_task_pause(param_2);
-    *(code **)(param_1 + 0xc) = func_08820808;
-  }
-  req_flag_set(0x39);
-  return;
+    if (t->time >= 1.0f / dd_speed_get()) {
+        dd_task_pause(h);
+        t->update = (void (*)(float, DdTask *, void *))func_08820808;
+    }
+    req_flag_set(0x39);
 }
-#endif
 
-#ifdef NON_MATCHING
-// 088208b0 size=124
+/* ring glow at the centre of the screen */
 void func_088208B0(void)
 {
-  undefined4 uVar1;
-  undefined4 local_28;
-  undefined4 local_24;
-  undefined4 local_20;
-  undefined1 auStack_1c [8];
-  undefined4 local_14;
-  code *local_10;
-  undefined4 local_c;
-  undefined4 local_4;
-  local_28 = 0x13a;
-  local_24 = 0x84;
-  local_20 = 0;
-  uVar1 = dd_fx_ringglow_start(&local_28,0,0);
-  memset(auStack_1c,0,0x1c);
-  local_10 = func_08820840;
-  local_14 = 0;
-  local_c = 0;
-  local_4 = uVar1;
-  dd_task_add(auStack_1c);
-  req_flag_set(0x39);
-  return;
+    DdTask t;
+    DdScrPos pos;
+    int h;
+
+    pos.x = 314;
+    pos.y = 132;
+    pos.z = 0;
+    h = dd_fx_ringglow_start(&pos, 0, 0);
+    memset(&t, 0, sizeof(DdTask));
+    t.update = (void (*)(float, DdTask *, void *))func_08820840;
+    t.arg = (void *)h;
+    t.draw = 0;
+    t.leave = 0;
+    dd_task_add(&t);
+    req_flag_set(0x39);
 }
-#endif
 
 int func_0882092C(void)
 {
@@ -377,12 +317,12 @@ int func_0882092C(void)
 }
 
 /* default task leave: frees the task argument */
-void func_08820938(int *t, int arg)
+void func_08820938(DdTask *t, void *arg)
 {
     if (arg != 0) {
         dd_free(arg);
-        if (arg == t[6])
-            t[6] = 0;
+        if (arg == t->arg)
+            t->arg = 0;
     }
 }
 
@@ -391,200 +331,147 @@ void func_08820980(DdCard *c)
     c->fx = 0;
 }
 
-#ifdef NON_MATCHING
-// 08820988 size=260
-void func_08820988(undefined4 *param_1,undefined4 *param_2)
+/* euler angles (x, y, z, 0) of a rotation matrix; near +-90 degrees of pitch the yaw goes to z */
+void func_08820988(float *out, float *m)
 {
-  undefined4 uVar1;
-  float fVar2;
-  uVar1 = fmaxf_vfpu(param_2[2],0xbf800000);
-  fVar2 = (float)fminf_vfpu(uVar1,0x3f800000);
-  fVar2 = (float)asinf_vfpu(-fVar2);
-  param_1[1] = fVar2;
-  if ((fVar2 < 1.5393804) || (1.6022123 < fVar2)) {
-    if (-1.6022123 <= fVar2) {
-      if (fVar2 <= -1.5393804) {
-        *param_1 = 0;
-        goto D_08820A3C;
-      }
-      uVar1 = param_2[6];
+    float s;
+
+    s = asinf_vfpu(-fminf_vfpu(fmaxf_vfpu(m[2], -1.0f), 1.0f));
+    out[1] = s;
+    if ((s >= 1.5393804f && s <= 1.6022123f) || (s >= -1.6022123f && s <= -1.5393804f)) {
+        out[0] = 0.0f;
+        out[2] = -atan2f_vfpu(m[4], m[5]);
+    } else {
+        out[0] = atan2f_vfpu(m[6], m[10]);
+        out[2] = atan2f_vfpu(m[1], m[0]);
     }
-    else {
-      uVar1 = param_2[6];
+    out[3] = 0.0f;
+}
+
+/* euler angles (x, y, z) of a quaternion (x, y, z, w); back is unused */
+void func_08820A8C(float *out, float *q, int back)
+{
+    float x2 = q[0] + q[0];
+    float y2 = q[1] + q[1];
+    float z2 = q[2] + q[2];
+    float y = q[1];
+    float s, a;
+    float xy, zz, xx, wz, yz, yy, wx;
+
+    s = -(q[0] * z2 - q[3] * y2);
+    if (s >= 1.0f)
+        s = 1.0f;
+    else if (s <= -1.0f)
+        s = -1.0f;
+    if (s == 0.0f || s == -0.0f) {
+        if (y == 1.0f || y == -1.0f)
+            a = 3.1415927f;
+        else
+            a = 0.0f;
+    } else {
+        a = asinf_vfpu(s);
     }
-    uVar1 = atan2f_vfpu(uVar1,param_2[10]);
-    *param_1 = uVar1;
-    uVar1 = atan2f_vfpu(param_2[1],*param_2);
-    param_1[2] = uVar1;
-  }
-  else {
-    *param_1 = 0;
-D_08820A3C:
-    fVar2 = (float)atan2f_vfpu(param_2[4],param_2[5]);
-    param_1[2] = -fVar2;
-  }
-  param_1[3] = 0;
-  return;
+    out[1] = a;
+    zz = q[2] * z2;
+    xx = q[0] * x2;
+    xy = q[0] * y2;
+    wz = q[3] * z2;
+    if (a < 1.5707964f) {
+        if (a > -1.5707964f) {
+            yz = q[1] * z2;
+            yy = q[1] * y2;
+            wx = q[3] * x2;
+            if (xy + wz == 0.0f)
+                wz = 1.1754944e-38f;
+            out[0] = atan2f_vfpu(yz + wx, 1.0f - (xx + yy));
+            out[2] = atan2f_vfpu(xy + wz, 1.0f - (yy + zz));
+        } else {
+            out[0] = -atan2f_vfpu(xy - wz, 1.0f - (xx + zz));
+            out[2] = 0.0f;
+        }
+    } else {
+        out[0] = atan2f_vfpu(xy - wz, 1.0f - (xx + zz));
+        out[2] = 0.0f;
+    }
+}
+
+#ifdef NON_MATCHING /* quadro de pilha 16 bytes maior no original (80) que o gerado (64) */
+/* position and rotation of a field slot, the rotation turned 180 degrees around z */
+void func_08820CC0(float *pos, float *rot, int at)
+{
+    FxVec4 tmp_pos;
+    FxVec4 tmp_rot;
+
+    if (pos == 0)
+        pos = &tmp_pos.x;
+    if (rot == 0)
+        rot = &tmp_rot.x;
+    dd_slot_xform(pos, rot, at);
+    {
+        FxVec4 flip = { 0.0f, 0.0f, 1.0f, 0.0f };
+
+        quat_mul(rot, rot, &flip.x);
+    }
 }
 #endif
 
-#ifdef NON_MATCHING
-// 08820a8c size=564
-void func_08820A8C(float *param_1,float *param_2)
+/* moves the glow and the target mark of a card object with it */
+int func_08820D40(DdCobj *o)
 {
-  float fVar1;
-  float fVar2;
-  float fVar3;
-  float fVar4;
-  float fVar5;
-  float fVar6;
-  float fVar7;
-  float fVar8;
-  fVar1 = *param_2;
-  fVar2 = param_2[1];
-  fVar7 = fVar1 + fVar1;
-  fVar5 = param_2[2] + param_2[2];
-  fVar8 = fVar2 + fVar2;
-  fVar1 = -(fVar1 * fVar5 - param_2[3] * fVar8);
-  if (1.0 <= fVar1) {
-    fVar1 = 1.0;
-  }
-  else if (fVar1 <= -1.0) {
-    fVar1 = -1.0;
-  }
-  if ((fVar1 == 0.0) || (fVar1 == -0.0)) {
-    if ((fVar2 == 1.0) || (fVar2 == -1.0)) {
-      fVar1 = 3.1415927;
-    }
-    else {
-      fVar1 = 0.0;
-    }
-  }
-  else {
-    fVar1 = (float)asinf_vfpu();
-  }
-  param_1[1] = fVar1;
-  fVar3 = param_2[2] * fVar5;
-  fVar2 = *param_2 * fVar7;
-  fVar6 = *param_2 * fVar8;
-  fVar4 = param_2[3] * fVar5;
-  if (fVar1 < 1.5707964) {
-    if (-1.5707964 < fVar1) {
-      fVar8 = param_2[1] * fVar8;
-      if (fVar6 + fVar4 == 0.0) {
-        fVar4 = 1.1754944e-38;
-      }
-      fVar1 = (float)atan2f_vfpu(param_2[1] * fVar5 + param_2[3] * fVar7,1.0 - (fVar2 + fVar8));
-      *param_1 = fVar1;
-      fVar1 = (float)atan2f_vfpu(fVar6 + fVar4,1.0 - (fVar8 + fVar3));
-      param_1[2] = fVar1;
-    }
-    else {
-      fVar1 = (float)atan2f_vfpu(fVar6 - fVar4,1.0 - (fVar2 + fVar3));
-      *param_1 = -fVar1;
-      param_1[2] = 0.0;
-    }
-  }
-  else {
-    fVar1 = (float)atan2f_vfpu(fVar6 - fVar4,1.0 - (fVar2 + fVar3));
-    *param_1 = fVar1;
-    param_1[2] = 0.0;
-  }
-  return;
-}
-#endif
+    float m[16];
+    float r[16];
+    float e[4];
 
-#ifdef NON_MATCHING
-// 08820cc0 size=128
-void func_08820CC0(undefined1 *param_1,undefined1 *param_2,short param_3)
-{
-  undefined4 local_30;
-  undefined4 local_2c;
-  undefined4 local_28;
-  undefined4 local_24;
-  undefined1 auStack_20 [16];
-  undefined1 auStack_10 [16];
-  if (param_1 == (undefined1 *)0x0) {
-    param_1 = auStack_10;
-  }
-  if (param_2 == (undefined1 *)0x0) {
-    param_2 = auStack_20;
-  }
-  dd_slot_xform(param_1,param_2,(int)param_3);
-  local_30 = D_08876100;
-  local_2c = D_08876104;
-  local_28 = D_08876108;
-  local_24 = D_0887610C;
-  quat_mul(param_2,param_2,&local_30);
-  return;
+    if (o->x94 == -1 && o->x90 == -1)
+        return 0;
+    mat4_identity(m);
+    quat_to_mat4(r, &o->rot.x);
+    mat4_mul(m, r, m);
+    mat4_translate(m, m, &o->pos.x);
+    func_08820A8C(e, &o->rot.x, o->pos.z < 0.0f);
+    if (o->x94 != -1)
+        dd_fx_spin_move(o->x94, &o->pos.x, e, (float)dd_glow_kind);
+    if (o->x90 != -1)
+        dd_fx_spin_move(o->x90, &o->pos.x, e, (float)dd_glow_kind);
+    return 0;
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08820d40 size=244
-undefined4 func_08820D40(int param_1)
-{
-  int iVar1;
-  undefined1 auStack_90 [16];
-  undefined1 auStack_80 [64];
-  undefined1 auStack_40 [64];
-  if ((*(int *)(param_1 + 0x94) != -1) || (*(int *)(param_1 + 0x90) != -1)) {
-    mat4_identity(auStack_40);
-    quat_to_mat4(auStack_80,param_1 + 0x40);
-    mat4_mul(auStack_40,auStack_80,auStack_40);
-    mat4_translate(auStack_40,auStack_40,param_1 + 0x10);
-    func_08820A8C(auStack_90,param_1 + 0x40,*(float *)(param_1 + 0x18) < 0.0);
-    if (*(int *)(param_1 + 0x94) == -1) {
-      iVar1 = *(int *)(param_1 + 0x90);
-    }
-    else {
-      dd_fx_spin_move((float)dd_glow_kind,*(int *)(param_1 + 0x94),param_1 + 0x10,auStack_90);
-      iVar1 = *(int *)(param_1 + 0x90);
-    }
-    if (iVar1 != -1) {
-      dd_fx_spin_move((float)dd_glow_kind,iVar1,param_1 + 0x10,auStack_90);
-    }
-  }
-  return 0;
-}
-#endif
-
-#ifdef NON_MATCHING
+/* the shuffle coins are flying */
 void func_08820E34(int on)
 {
-    D_08C582B0 = on != 0;
-}
-#endif
+    DdTasksTail *t = &dd_tasks;
 
-#ifdef NON_MATCHING
-// 08820e58 size=80
+    if (on)
+        t->coin_busy = 1;
+    else
+        t->coin_busy = 0;
+}
+
+/* "choose an action" message window, the card info panel hidden */
 void func_08820E58(void)
 {
-  undefined4 uVar1;
-  uVar1 = dd_text(0x37);
-  func_088226C0(uVar1,1,0);
-  func_08825B88(0);
-  func_088257E4(0,100);
-  func_08825818();
-  dd_info_disable(1);
-  return;
+    func_088226C0(dd_text(0x37), 1, 0);
+    func_08825B88(0);
+    func_088257E4(0, 100);
+    func_08825818();
+    dd_info_disable(1);
 }
-#endif
 
-#ifdef NON_MATCHING
-// 08820ea8 size=128
-void func_08820EA8(int param_1,undefined4 param_2)
+/* closes it; with a card, its detail mode when the answer was 1 or 2 */
+void func_08820EA8(int card, int flag)
 {
-  int iVar1;
-  dd_info_disable(0);
-  if ((0 < param_1) && ((iVar1 = func_08825A14(), iVar1 == 2 || (iVar1 == 1)))) {
-    dd_mode_set_card(param_1);
-    dd_mode_push(5);
-    dd_mode_set_flag(param_2);
-  }
-  return;
+    dd_info_disable(0);
+    if (card > 0) {
+        switch (func_08825A14()) {
+        case 1:
+        case 2:
+            dd_mode_set_card(card);
+            dd_mode_push(5);
+            dd_mode_set_flag(flag);
+            break;
+        }
+    }
 }
-#endif
 
 void func_08820F28(void)
 {
