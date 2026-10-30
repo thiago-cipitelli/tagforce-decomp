@@ -16,4 +16,4 @@ F=$(echo "$L" | grep -o 'src/[A-Za-z0-9_/]*\.c' | head -1)
 [ -n "$F" ] || F=$(grep -l "^[a-zA-Z].*[ *]$1(" src/$M/*.c | head -1)
 [ -n "$F" ] || { echo "asm_try.sh: no source file for $1" >&2; exit 1; }
 python3 tools/mwcc_check.py "$F" "$1" "$M" "$A" --flags "-O4,p -sdatathreshold 0 -i include -DNON_MATCHING" 2>&1 |
-    awk '/orig [0-9a-f]+ +new [0-9a-f]+/ { if ($3 != $5 && $0 !~ /reloc/) print; next } { print }'
+    awk '/^!!/ { print; next } /orig [0-9a-f]+ +new [0-9a-f]+/ { if ($3 != $5 && $0 !~ /reloc/) print; next } { print }'
