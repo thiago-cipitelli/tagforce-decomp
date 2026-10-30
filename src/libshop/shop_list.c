@@ -467,7 +467,7 @@ unsigned int *shop_list_cursor(unsigned int *list)
 }
 #endif
 
-#ifdef NON_MATCHING /* switch duplo com tabelas de saltos; o original mantém o tamanho da bolha em s0/s4 sem inicializar no caso 0 */
+#ifdef NON_MATCHING /* 293 palavras; lógica conferida com o asm (as duas tabelas de saltos e todas as chamadas). Como no original, w/h ficam sem inicializar no caso 0 */
 /* the bubble next to the scroll bar with the sort key of the line under the cursor */
 unsigned int *shop_list_key_bubble(unsigned int *list)
 {
@@ -499,9 +499,9 @@ unsigned int *shop_list_key_bubble(unsigned int *list)
         break;
     case 5:
         font_set_size(14, 14);
-        fw = font_measure_text(L"W");
-        w = (fw >> 6) + 13;
-        h = (fw >> 6) + 11;
+        fw = (font_sample_glyph_size() >> 16 & 0xFFFF) >> 6;
+        w = fw + 13;
+        h = fw + 11;
         break;
     case 6:
     case 10:
