@@ -71,7 +71,6 @@ dd_cutin_speed_tab = 0x08875AC4; // type:data
 dd_ev_reset = 0x088175E4; // type:func matched src/libduel_draw/dd_event.c
 dd_ev_slot_set = 0x08817630; // type:func matched src/libduel_draw/dd_event.c
 dd_ev_8817670 = 0x08817670; // type:func matched src/libduel_draw/dd_event.c
-func_088176A0 = 0x088176A0; // type:func asm (@asm in src/libduel_draw/dd_event.c, C under NON_MATCHING)
 dd_ev_cmp = 0x0881793C; // type:func matched src/libduel_draw/dd_event.c
 dd_ev_state = 0x08C5476C; // type:data
 dd_ev_table = 0x08875AD4; // type:data size:0x360
@@ -143,6 +142,7 @@ dd_ev_attack = 0x08C5479C; // type:data
 dd_ev_flip_cutin = 0x08C547AC; // type:data
 dd_ev_player = 0x08C547B0; // type:data
 dd_ev_sorted = 0x08C54798; // type:data
+dd_state_se = 0x08875E34; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 duel_mode_bit = 0x0886B25C; // type:func import:libduel_eng nid:AA91D845
 duel_turn_player_get = 0x0886B264; // type:func import:libduel_eng nid:D476C5C3

@@ -1,4 +1,4 @@
-// @range 0x0881794C-0x088199C8
+// @range 0x0881794C-0x08819A70
 // @asm 0x08817C2C-0x08817D88
 // @asm 0x08817EF4-0x08817F08
 // @asm 0x08817F08-0x088182C8
@@ -10,6 +10,7 @@
 // @asm 0x08819430-0x08819684
 // @asm 0x0881972C-0x088197C8
 // @asm 0x08819920-0x08819968
+// @asm 0x088199C8-0x08819A70
 /* The duel-event handlers 1..73 of the dispatcher table (dd_event.c): cut-ins (duel start/end,
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
    and prompts. The player numbers of the engine are turned into screen sides by func_08866744. */
@@ -109,6 +110,9 @@ int func_0884D98C();
 int func_0884E150();
 int func_0884E18C();
 int func_0884E1E8();
+int func_0881CC60();
+int func_0884DA8C();
+int func_0884DA98();
 int func_088660A8();
 int func_08866744();
 int func_08866774();
@@ -1040,3 +1044,23 @@ int dd_ev_73(int player, int a)
     func_0884D98C(func_08809DF0(func_08866744(player)), func_08806B5C(func_08866744(player)), a);
     return 1;
 }
+
+/* export: commentary on/off (the exports that follow are in dd_voice.c) */
+#ifdef NON_MATCHING /* teste do segundo caso sai com bnez + b em vez de beqz */
+void func_088199C8(int on)
+{
+    if (on != 0 && func_08806434(8, -1) != 0)
+        return;
+    if (on == 0 && func_08806434(8, -1) == 0)
+        return;
+    if (on != 0) {
+        func_0884DA8C();
+        func_08806434(8, 1);
+        func_0881CB90(6);
+    } else {
+        func_0881CC60();
+        func_08806434(8, 0);
+        func_0884DA98();
+    }
+}
+#endif
