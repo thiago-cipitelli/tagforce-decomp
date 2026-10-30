@@ -1,5 +1,4 @@
 // @range 0x08817AA4-0x08818724
-// @asm 0x0881855C-0x088186E8
 // @rodata 0x08838B04-0x08838B7C
 // @data 0x0883C888-0x0883C88C
 /* The money counter of the field HUD (field_money): the coin icon and the amount sliding in, the
@@ -284,7 +283,6 @@ void *fmoney_sprite(void *list, int x, int y, int z, int u, int v, int w, int h,
     return draw_sprite(list, x, y, z, u, v, 0, 0);
 }
 
-#ifdef NON_MATCHING /* the digit sprite fields hoisted out of the loop load in another order (w, h, u, v) */
 void *fmoney_number(void *list, char *s, int x, int y, int z, int gap, float scale, int big)
 {
     int last = strlen(s) - 1;
@@ -296,10 +294,10 @@ void *fmoney_number(void *list, char *s, int x, int y, int z, int gap, float sca
         d = s[i] - '0';
         switch (big) {
         case 0:
-            u = fmoney_digit.u + fmoney_digit.w * d;
-            h = fmoney_digit.h;
-            v = fmoney_digit.v;
             w = fmoney_digit.w;
+            h = fmoney_digit.h;
+            u = fmoney_digit.u + fmoney_digit.w * d;
+            v = fmoney_digit.v;
             break;
         case 1:
             u = fmoney_big[d].u;
@@ -312,7 +310,6 @@ void *fmoney_number(void *list, char *s, int x, int y, int z, int gap, float sca
     }
     return list;
 }
-#endif
 
 int fmoney_ndigits(int n)
 {

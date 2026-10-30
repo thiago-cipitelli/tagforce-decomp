@@ -1,0 +1,10 @@
+# Funções que não batem por limitação conhecida (docs/matching.md, "Não-corrigíveis"). Uma por linha:
+# função<TAB>módulo<TAB>motivo. tools/asm_queue.py tira estas da fila; acrescente as que você confirmar.
+duelrecord_draw	libduelrecord	cópia morta do primeiro destino depois de um b (if/else, goto, pragmas, build 121 testados)
+tlist_draw	libtutoriallist	cópia morta depois de b
+conv_draw	libconv_machine	cópia morta depois de b
+cardalbum_draw	libcardalbum	cópia morta depois de b
+limitlist_draw	liblimitlist	cópia morta depois de b (switch de um caso e || antes de return testados)
+st_chr_dn_find	libstory	o original lê locais da pilha não inicializados
+debug_menu_draw	libduel_draw	menu de depuração inalcançável, sem C
+debug_menu_update	libduel_draw	menu de depuração inalcançável, sem C
