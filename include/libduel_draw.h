@@ -505,4 +505,32 @@ typedef struct DdFx32S8 {              /* style 8, 0xB084 bytes */
     float tex_u, tex_v;                /* +0xB07C */
 } DdFx32S8;
 
+/* effects 51 and 55-62: a ring that refracts the screen and a glowing diamond at a node of the card
+   model (task data, 0xAB4 bytes) */
+typedef struct DdRippleFx {
+    int grow;                          /* +0x000 */
+    int grow_end;                      /* +0x004 */
+    int t;                             /* +0x008 */
+    int end;                           /* +0x00C */
+    int frame;                         /* +0x010 */
+    DdFxSlot *slot;                    /* +0x014 */
+    int node;                          /* +0x018 0x25, 0x2A for effect 62 of kind 8 */
+    unsigned int se_done;              /* +0x01C */
+    float ring_scale;                  /* +0x020 */
+    DdTCVtx fan[34];                   /* +0x024 */
+    DdTCVtx fan_buf[2][34];            /* +0x354 */
+    float dia_scale;                   /* +0x9B4 */
+    DdCVtx dia[5][3];                  /* +0x9B8 outer, middle, inner rings of the diamond */
+    unsigned char dia_idx[10];         /* +0xAA8 */
+} DdRippleFx;
+
+void func_0884DAF8(ScePspFMatrix4 *out, int node);            /* matrix of a node of the scene */
+void func_08827598(ScePspFMatrix4 *out, ScePspFMatrix4 *m);   /* rotation part of m */
+void func_08827300(float x, float y, float z);              /* mtx_translate of (x, y, z) */
+
+/* BOOT */
+ScePspFVector4 *mat4_transform_xyz(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v);
+void mat4_translate(ScePspFMatrix4 *out, ScePspFMatrix4 *m, ScePspFVector4 *v);
+void mtx_load(ScePspFMatrix4 *m);
+
 #endif
