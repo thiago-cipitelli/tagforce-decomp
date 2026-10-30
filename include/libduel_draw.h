@@ -259,4 +259,33 @@ ScePspFVector4 *mat4_transform_vec4(ScePspFVector4 *out, const ScePspFMatrix4 *m
 int spline_init(ScePspFVector4 *coef, ScePspFVector4 *p, int n);
 void spline_eval(float t, ScePspFVector4 *out, ScePspFVector4 *p, ScePspFVector4 *coef, int n);
 
+/* the tunnel of effects 27-31, 38-41 and 54: a textured disc of 33 rings scrolling toward the center
+   and light streaks bursting around it (task data, 0x67CC bytes) */
+typedef struct DdStreak {              /* 0x18 */
+    int t;
+    int flags;                         /* bit 0: alive */
+    float ang[4];
+} DdStreak;
+
+typedef struct DdTunnelFx {
+    int grow;                          /* +0x0000 */
+    int grow_end;                      /* +0x0004 */
+    int t;                             /* +0x0008 */
+    int end;                           /* +0x000C */
+    int frame;                         /* +0x0010 texture scroll */
+    DdFxSlot *slot;                    /* +0x0014 */
+    unsigned int se_done;              /* +0x0018 */
+    DdTCVtx grid[33][33];              /* +0x001C ring i, spoke j */
+    unsigned char idx[66];             /* +0x6634 strip of two rings: j, j + 33 */
+    int streak_next;                   /* +0x6678 */
+    DdTCVtx streak_quad[6];            /* +0x667C */
+    DdStreak streak[8];                /* +0x670C */
+} DdTunnelFx;
+
+void func_08826E30(int layer, int cx, int cy);              /* 3D begin with the screen center */
+
+/* BOOT */
+void *dl_tex_offset(float u, float v, void *list);
+void mtx_rotate_z(float a);
+
 #endif

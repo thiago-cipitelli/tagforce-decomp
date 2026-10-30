@@ -16,7 +16,7 @@ dd_fx_table = 0x08C5AB74; // type:data
 jtbl_088701F4 = 0x088701F4; // type:data
 dd_fx13_start = 0x0883966C; // type:func matched src/libduel_draw/dd_fx_trail.c
 dd_fx13_start_b = 0x088396C8; // type:func matched src/libduel_draw/dd_fx_trail.c
-dd_fx27_start = 0x0883AC24; // type:func
+dd_fx27_start = 0x0883AC24; // type:func matched src/libduel_draw/dd_fx_tunnel.c
 dd_fx32_start = 0x0883B62C; // type:func
 dd_fx51_start = 0x088428D4; // type:func
 dd_fx42_start = 0x08843398; // type:func
@@ -37,6 +37,8 @@ dd_trail_update = 0x0883970C; // type:func asm (@asm in src/libduel_draw/dd_fx_t
 dd_trail_zero = 0x08876BB4; // type:data size:0xC
 dd_trail_w = 0x08876BC0; // type:data size:0x10
 jtbl_088707A4 = 0x088707A4; // type:data
+dd_tunnel_kind = 0x0883AB6C; // type:func matched src/libduel_draw/dd_fx_tunnel.c
+dd_tunnel_update = 0x0883AC7C; // type:func asm (@asm in src/libduel_draw/dd_fx_tunnel.c, C under NON_MATCHING)
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 duel_mode_bit = 0x0886B25C; // type:func import:libduel_eng nid:AA91D845
 duel_turn_player_get = 0x0886B264; // type:func import:libduel_eng nid:D476C5C3
