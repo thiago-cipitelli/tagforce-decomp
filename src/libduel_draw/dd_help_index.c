@@ -21,11 +21,11 @@ typedef struct HelpIndex {             /* 0x08C5B56C, 0x118 */
 extern HelpIndex help_index;
 
 unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
-void *func_08862B9C(void *dl, int x, int y, int u, int v, int cw, int ch, int w, int h, int sx, int sy);
-void *func_08862A60(void *dl, int x, int y, int w, int h, unsigned int color);
-void *func_088632F4(void *dl, void *gim, int x, int y, int w, int h, unsigned int color);
-void *func_088633DC(void *dl, void *gim, int x, int y, int w, int h, unsigned int color, int t);
-void *func_0886346C(void *dl, void *gim, int x, int y, int h, int total, int scroll, int len, int on);
+void *ui_nine_patch(void *dl, int x, int y, int u, int v, int cw, int ch, int w, int h, int sx, int sy);
+void *ui_rect(void *dl, int x, int y, int w, int h, unsigned int color);
+void *ui_panel(void *dl, void *gim, int x, int y, int w, int h, unsigned int color);
+void *ui_panel_pulse(void *dl, void *gim, int x, int y, int w, int h, unsigned int color, int t);
+void *ui_scrollbar(void *dl, void *gim, int x, int y, int h, int total, int scroll, int len, int on);
 
 void hidx_reset(int first, int last);
 void *hidx_draw_bg(void *dl, int x, int y, int w, int h);
@@ -161,9 +161,9 @@ void *hidx_draw_item_bg(void *dl, int i, int x, int y, int w, int h)
         dl = dl_set_tex_filter(dl, 0, 0);
         dl = dl_enable(dl, 9);
         dl = gim_set_texture(dl, hi->parts_gim);
-        dl = func_08862B9C(dl, x, y + 1, 0, 0x70, 11, 11, w, h - 1, 1, 1);
+        dl = ui_nine_patch(dl, x, y + 1, 0, 0x70, 11, 11, w, h - 1, 1, 1);
     }
-    return func_08862A60(dl, x, y + h - 1, w, 1, 0xFF879FA5);
+    return ui_rect(dl, x, y + h - 1, w, 1, 0xFF879FA5);
 }
 
 void *hidx_draw_cursor(void *dl, int x, int y, int w, int h)
@@ -171,8 +171,8 @@ void *hidx_draw_cursor(void *dl, int x, int y, int w, int h)
     HelpIndex *hi = &help_index;
 
     if (help_index.list.active)
-        return func_088633DC(dl, hi->parts_gim, x, y + 1, w, h - 1, 0, *gfx_get_state());
-    return func_088632F4(dl, hi->parts_gim, x, y, w, h - 1, 0);
+        return ui_panel_pulse(dl, hi->parts_gim, x, y + 1, w, h - 1, 0, *gfx_get_state());
+    return ui_panel(dl, hi->parts_gim, x, y, w, h - 1, 0);
 }
 
 void *hidx_scrollbar(void *dl, int x, int y, int h, int total, int scroll)
@@ -184,7 +184,7 @@ void *hidx_scrollbar(void *dl, int x, int y, int h, int total, int scroll)
     d->x = x;
     d->y = y;
     menu_layout(&dl, &help_index.menu);
-    dl = func_0886346C(dl, help_index.frame_gim, x + 2, y + 6, h - 11, total, scroll, h - 3, help_index.list.active);
+    dl = ui_scrollbar(dl, help_index.frame_gim, x + 2, y + 6, h - 11, total, scroll, h - 3, help_index.list.active);
     return dl;
 }
 

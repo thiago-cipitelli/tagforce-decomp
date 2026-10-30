@@ -26,13 +26,13 @@ typedef struct HelpWin {               /* 0x08C5B44C, 0x120 */
 
 extern HelpWin help_win;
 
-void *func_08862B00(void *dl, int x, int y, int u, int v, int tw, int th);
-void *func_08862B9C(void *dl, int x, int y, int u, int v, int cw, int ch, int w, int h, int sx, int sy);
-void *func_08862A60(void *dl, int x, int y, int w, int h, unsigned int color);
-void *func_088632F4(void *dl, void *gim, int x, int y, int w, int h, unsigned int color);
-void *func_088633DC(void *dl, void *gim, int x, int y, int w, int h, unsigned int color, int t);
-void *func_08863438(void *dl, void *gim, int x, int y, int w, int h, unsigned int color, int t);
-void *func_0886346C(void *dl, void *gim, int x, int y, int h, int total, int scroll, int len, int on);
+void *ui_sprite(void *dl, int x, int y, int u, int v, int tw, int th);
+void *ui_nine_patch(void *dl, int x, int y, int u, int v, int cw, int ch, int w, int h, int sx, int sy);
+void *ui_rect(void *dl, int x, int y, int w, int h, unsigned int color);
+void *ui_panel(void *dl, void *gim, int x, int y, int w, int h, unsigned int color);
+void *ui_panel_pulse(void *dl, void *gim, int x, int y, int w, int h, unsigned int color, int t);
+void *ui_panel_flash(void *dl, void *gim, int x, int y, int w, int h, unsigned int color, int t);
+void *ui_scrollbar(void *dl, void *gim, int x, int y, int h, int total, int scroll, int len, int on);
 
 void help_reset(int first, int last, int initial);
 void *help_draw_bg(void *dl, int x, int y, int w, int h);
@@ -169,7 +169,7 @@ void *help_draw(void *dl)
     dl = dl_ambient_color(dl, 0xFFFFFFFF);
     dl = dl_enable(dl, 9);
     dl = gim_set_texture(dl, help_win.frame_gim);
-    dl = func_08862B9C(dl, 75, 4, 22, 10, 5, 5, 401, 24, 2, 2);
+    dl = ui_nine_patch(dl, 75, 4, 22, 10, 5, 5, 401, 24, 2, 2);
     help_font_white();
     font_text_set(dl);
     text = table_get_entry(help_win.texts, l->cursor + help_win.first);
@@ -240,7 +240,7 @@ void *help_draw_item(void *dl, int i, int x, int y, int w, int h)
     dl = dl_ambient_color(dl, 0xFFFFFFFF);
     dl = dl_enable(dl, 9);
     dl = gim_set_texture(dl, hw->frame_gim);
-    dl = func_08862B00(dl, x + 3, y + (region_get() == 0 ? 6 : 0), 42, 0, 16, 16);
+    dl = ui_sprite(dl, x + 3, y + (region_get() == 0 ? 6 : 0), 42, 0, 16, 16);
     help_font_black();
     font_text_set(dl);
     text = table_get_entry(hw->texts, i + hw->first);
@@ -253,7 +253,7 @@ void *help_draw_item_bg(void *dl, int i, int x, int y, int w, int h)
     HelpWin *hw = &help_win;
 
     IF_HIDDEN_RETURN(dl);
-    return func_088632F4(dl, hw->parts_gim, x, y + 1, w, h - 2, 0xFFA1F9FF);
+    return ui_panel(dl, hw->parts_gim, x, y + 1, w, h - 2, 0xFFA1F9FF);
 }
 
 void *help_draw_cursor(void *dl, int x, int y, int w, int h)
@@ -263,11 +263,11 @@ void *help_draw_cursor(void *dl, int x, int y, int w, int h)
 
     IF_HIDDEN_RETURN(dl);
     if (hw->state == 4)
-        dl = func_08863438(dl, hw->parts_gim, x, y, w, h, 0, *gfx_get_state());
+        dl = ui_panel_flash(dl, hw->parts_gim, x, y, w, h, 0, *gfx_get_state());
     else if (l->active)
-        dl = func_088633DC(dl, hw->parts_gim, x, y, w, h, 0, *gfx_get_state());
+        dl = ui_panel_pulse(dl, hw->parts_gim, x, y, w, h, 0, *gfx_get_state());
     else
-        dl = func_088632F4(dl, hw->parts_gim, x, y, w, h, 0);
+        dl = ui_panel(dl, hw->parts_gim, x, y, w, h, 0);
     return dl;
 }
 
@@ -276,8 +276,8 @@ void *help_scrollbar(void *dl, int x, int y, int h, int total, int scroll)
     HelpWin *hw = &help_win;
 
     IF_HIDDEN_RETURN(dl);
-    dl = func_08862A60(dl, x, y + 3, 1, 202, 0xFF479FC1);
-    return func_0886346C(dl, hw->frame_gim, x, y + 3, h - 6, total, scroll, h - 9, 1);
+    dl = ui_rect(dl, x, y + 3, 1, 202, 0xFF479FC1);
+    return ui_scrollbar(dl, hw->frame_gim, x, y + 3, h - 6, total, scroll, h - 9, 1);
 }
 
 int help_item_h(int i, int w)
