@@ -28,7 +28,13 @@ segments:
     subsegments:
       - [0x60, asm, text_0]
       - [0x496BC, c, dd_chara]
-      - [0x49F8C, asm, text_1]
+      - [0x49F8C, c, dd_ryusen]
+      - [0x4A154, c, dd_arrow]
+      - [0x4A248, asm, dd_arrow_asm_0884E1E8]
+      - [0x4A47C, c, dd_arrow]
+      - [0x4A47C, asm, dd_arrow_asm_0884E41C]
+      - [0x4A4CC, c, dd_arrow]
+      - [0x4B430, asm, text_1]
       - [0x672BC, asm, sceStub_text]
       - [0x69E1C, bin, lib_ent_top]
       - [0x69E20, bin, lib_ent]
@@ -44,7 +50,10 @@ segments:
       - [0x6CBF0, .data, dd_chara__rodata]
       - [0x6CC94, data, data_1]
       - [0x72D60, .data, dd_chara]
-      - [0x72D74, data, data_2]
+      - [0x72D74, .data, dd_ryusen]
+      - [0x72D88, data, data_2]
+      - [0x72D90, .data, dd_arrow]
+      - [0x72E00, data, data_3]
       - { start: 0x79070, type: bss, vram: 0x887D010, name: bss }
   - [0x79070]
 

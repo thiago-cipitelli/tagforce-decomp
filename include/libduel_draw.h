@@ -11,11 +11,11 @@ typedef struct FxVec3 {
 
 typedef struct FxVec4 {
     float x, y, z, w;
-} FxVec4;
+} __attribute__((aligned(16))) FxVec4;
 
 typedef struct FxMat4 {
     float m[16];
-} FxMat4;
+} __attribute__((aligned(16))) FxMat4;
 
 typedef struct FxVtx {                 /* GU_TEXTURE_32BITF | GU_COLOR_8888 | GU_VERTEX_32BITF */
     float u, v;
@@ -138,5 +138,31 @@ typedef struct DdMarkMgr {             /* 0x08C5B23C */
     short arrow_from;                  /* +0x08 locations the arrow joins */
     short arrow_to;                    /* +0x0A */
 } DdMarkMgr;
+
+typedef struct FxVtxT {                /* GU_TEXTURE_32BITF | GU_VERTEX_32BITF */
+    float u, v;
+    float x, y, z;
+} FxVtxT;
+
+typedef struct FxVtxC {                /* GU_COLOR_8888 | GU_VERTEX_32BITF */
+    unsigned int color;
+    float x, y, z;
+} FxVtxC;
+
+typedef struct DdFxArg {               /* request of a card effect (libduel_mgr) */
+    int pad00;
+    int run;                           /* +0x04 1 while the effect advances */
+    int pad08[2];
+    int id;                            /* +0x10 effect id */
+} DdFxArg;
+
+typedef struct DdFxHead {              /* common start of the work of an effect task */
+    int wait;                          /* +0x00 frames waited before starting */
+    int delay;                         /* +0x04 */
+    int t;                             /* +0x08 frame of the effect */
+    int len;                           /* +0x0C */
+    int frame;                         /* +0x10 frames drawn */
+    DdFxArg *arg;                      /* +0x14 */
+} DdFxHead;
 
 #endif
