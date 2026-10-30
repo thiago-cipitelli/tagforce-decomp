@@ -146,7 +146,8 @@ int sc_popup_done(int layer)
 }
 #endif
 
-#ifdef NON_MATCHING /* bitfields do voo gravados em outra ordem */
+#ifdef NON_MATCHING /* lógica conferida com o asm (229 palavras): o original grava os nibbles de mv.b[0] um a um
+                       e relê sc_flight a cada campo; bitfields do voo em outra ordem */
 /* Circle: moves the cursor's card to the other list (if the kind allows it) */
 int sc_cancel_request(void)
 {
@@ -284,30 +285,34 @@ int sc_input_move(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* testes do passo e releituras de sc_flight diferentes */
+#ifdef NON_MATCHING /* lógica conferida com o asm; 41 palavras: o original testa 3, 2, 1 (ordem inversa) sem
+                       teste do 0; só com um "case 0" o mwcc inverte a ordem, mas emite o teste dele */
 /* state 2 */
 void sc_input_sort_menu(void)
 {
     ScFlight *f = sc_flight;
 
     switch (f->step) {
-    case 3:
-        sc_flight_free();
-        sc.state = 1;
-        break;
-    case 2:
-        sc_flight_step();
-        break;
     case 1:
         if (++f->timer >= f->frames) {
-            if (sc_slot_pos(sc_flight->to, sc_flight->dside, sc_flight->dst, sc_dst_pos(sc_flight->dst, sc_flight->ent.id), 1)) {
+            f = sc_flight;
+            if (sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 1)) {
                 sc_flight->phase = 0;
-                sc_flight->x = (int)sc_flight->from[0];
-                sc_flight->y = (int)sc_flight->from[1];
+                sc_flight->x = sc_flight->from[0];
+                sc_flight->y = sc_flight->from[1];
                 sc_flight->step = 2;
             }
             sc_flight->timer = 0;
         }
+        break;
+    case 2:
+        sc_flight_step();
+        break;
+    case 3:
+        sc_flight_free();
+        sc.state = 1;
+        break;
+    case 0:
         break;
     }
 }

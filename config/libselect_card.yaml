@@ -70,8 +70,6 @@ segments:
       - [0x95AC, c, sc_info]
       - [0x95AC, asm, sc_info_asm_0880D54C]
       - [0x9988, c, sc_info]
-      - [0x9C5C, asm, sc_info_asm_0880DBFC]
-      - [0x9D94, c, sc_info]
       - [0x9D94, asm, sc_info_asm_0880DD34]
       - [0xA2A4, c, sc_info]
       - [0xA2A4, asm, sc_info_asm_0880E244]
