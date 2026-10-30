@@ -1,7 +1,7 @@
 // @range 0x0880D23C-0x0880DFFC
+// @rodata 0x08819CA0-0x08819CBC
 // @asm 0x0880D3F8-0x0880D6EC
-// @asm 0x0880D8D0-0x0880DA30
-// @asm 0x0880DC94-0x0880DFFC
+// @asm 0x0880DC94-0x0880DF44
 // @data 0x0881A1F8-0x0881A224
 /* The incremental text search of a pane and its word history, the card filters (kind, type, race,
    level ranges, spell/trap kinds, limit, genre/new/alternate picture) and the text match: a
@@ -72,7 +72,7 @@ unsigned short ds_search_step(DsList *l)
     return ds_search.pos * 1000 / ds_search.total;
 }
 
-#ifdef NON_MATCHING /* laços do histórico com outra alocação */
+#ifdef NON_MATCHING /* 16 palavras: len, ponteiro do histórico e k em $s em rodízio (original s2/s0/s1), como dk_search_finish */
 /* the matches become the visible order; the word goes on top of the history */
 void ds_search_finish(DsList *l)
 {
@@ -88,13 +88,18 @@ void ds_search_finish(DsList *l)
     }
     l->filter = 8;
     len = wcslen(ds_search.word);
+    k = 7;
     for (i = 0; i < 8; i++) {
-        k = i;
-        if (ds.words[i][0] == 0)
+        if (ds.words[i][0] == 0) {
+            k = i;
             break;
-        if (len == wcslen(ds.words[i]) && wcscmp(ds.words[i], ds_search.word) == 0)
-            break;
-        k = 7;
+        }
+        if (len == wcslen(ds.words[i])) {
+            if (wcscmp(ds.words[i], ds_search.word) == 0) {
+                k = i;
+                break;
+            }
+        }
     }
     for (; k > 0; k--)
         wcscpy(ds.words[k], ds.words[k - 1]);
@@ -107,32 +112,26 @@ DsFilterFn ds_filters[9] = {
     (DsFilterFn)ds_filter_level, (DsFilterFn)ds_filter_atk, (DsFilterFn)ds_filter_def, 0,
 };
 
-#ifdef NON_MATCHING /* laço com a tabela de filtros; alocação diferente */
+#ifdef NON_MATCHING /* 24 palavras: o original carrega e->id e calcula e (em a1) antes do teste do filtro, com ok = 1 no atraso do beqz; como dk_list_filter */
 /* keeps the entries passing filter f (arg its parameter); returns the count */
 unsigned short ds_list_filter(DsList *l, unsigned short f, unsigned int *arg)
 {
     unsigned short *tmp = heap_alloc(ds.heap, l->count << 1);
-    unsigned short n;
+    int n;
     int i;
     unsigned short k;
     DsEnt *e;
     int ok;
-    unsigned short *p;
 
     if (tmp == 0)
         return l->count;
     n = 0;
-    for (i = 0, p = tmp; i < l->count; i++) {
+    for (i = 0; i < l->count; i++) {
         k = l->order[i];
         e = &l->ents[k];
-        ok = 1;
-        if (ds_filters[f] != 0)
-            ok = ds_filters[f](e->id, *arg);
-        else if (f == 7)
-            ok = ds_filter_attr(e, arg);
+        ok = ds_filters[f] != 0 ? ds_filters[f](e->id, *arg) : f == 7 ? ds_filter_attr(e, arg) : 1;
         if (ok) {
-            *p++ = k;
-            n++;
+            tmp[n++] = k;
         }
     }
     memcpy(l->order, tmp, n << 1);
@@ -188,30 +187,11 @@ int ds_filter_level(unsigned short id, unsigned int mask)
     return 0;
 }
 
-#ifdef NON_MATCHING /* cadeias de testes dos tipos com outra ordem */
 /* spell and trap kinds */
 int ds_filter_atk(unsigned short id, unsigned int mask)
 {
-    int a = card_get_attribute_icon(id);
-
-    if (a == 8) {
-        switch (card_get_prop5_hi(id)) {
-        case 4:
-            if (mask & 0x100)
-                return 1;
-            break;
-        case 1:
-            if (mask & 0x80)
-                return 1;
-            break;
-        case 0:
-            if (mask & 0x200)
-                return 1;
-            break;
-        }
-    } else {
-        if (a != 7)
-            return 0;
+    switch (card_get_attribute_icon(id)) {
+    case 7:
         switch (card_get_prop5_hi(id)) {
         case 0:
             if (mask & 0x40)
@@ -238,10 +218,26 @@ int ds_filter_atk(unsigned short id, unsigned int mask)
                 return 1;
             break;
         }
+        break;
+    case 8:
+        switch (card_get_prop5_hi(id)) {
+        case 0:
+            if (mask & 0x200)
+                return 1;
+            break;
+        case 1:
+            if (mask & 0x80)
+                return 1;
+            break;
+        case 4:
+            if (mask & 0x100)
+                return 1;
+            break;
+        }
+        break;
     }
     return 0;
 }
-#endif
 
 int ds_filter_def(unsigned short id, unsigned int mask)
 {
@@ -295,31 +291,37 @@ int ds_text_match(unsigned short id, unsigned short *word)
     return ds_find_text(txt, w, n) != 0;
 }
 
-#ifdef NON_MATCHING /* laço da tabela de saltos desenrolado no original com outra alocação */
+#ifdef NON_MATCHING /* 2 palavras: o original põe "j = n - 1" (move t2,a3) no atraso do bne do primeiro caractere; como dk_find_text */
 /* Horspool search of word (n chars) in text */
 unsigned short *ds_find_text(unsigned short *text, unsigned short *word, int n)
 {
-    unsigned char *skip = heap_alloc(ds.heap, 0x10000);
     int i;
     int len;
     int j;
     int k;
     unsigned short *t;
     unsigned short *w;
-    int d;
+
+    unsigned char *skip = heap_alloc(ds.heap, 0x10000);
 
     if (skip == 0)
         return 0;
     memset(skip, n, 0x10000);
     for (i = 0; i < n - 1; i++)
         skip[word[i]] = n - i - 1;
-    for (len = 0, t = text; *t != 0; t++)
-        len++;
+    len = 0;
+    if (*text != 0) {
+        t = text;
+        do {
+            t++;
+            len++;
+        } while (*t != 0);
+    }
     for (k = n - 1; k < len; ) {
         t = &text[k];
-        w = &word[n - 1];
         j = n - 1;
-        if (*t == word[n - 1]) {
+        w = &word[j];
+        if (*t == *w) {
             do {
                 if (j == 0) {
                     if (skip != 0)
@@ -332,10 +334,10 @@ unsigned short *ds_find_text(unsigned short *text, unsigned short *word, int n)
                 j--;
             } while (*t == *w);
         }
-        d = skip[text[k]];
-        if (d <= n - j)
-            d = n - j;
-        k += d;
+        if (skip[text[k]] > n - j)
+            k += skip[text[k]];
+        else
+            k += n - j;
     }
     if (skip != 0)
         heap_set_level(ds.heap, skip);
@@ -343,22 +345,19 @@ unsigned short *ds_find_text(unsigned short *text, unsigned short *word, int n)
 }
 #endif
 
-#ifdef NON_MATCHING /* teste do caractere no topo do laço com cópia do ponteiro */
 /* upper case, full-width ASCII to half width, katakana to hiragana */
 void ds_fold_text(unsigned short *dst, unsigned short *src)
 {
     unsigned short c;
 
-    for (c = *src; c != 0; c = *src) {
-        src++;
-        if (c > 0xFF00 && c < 0xFF5E)
+    while ((c = *src++) != 0) {
+        if (c >= 0xFF01 && c < 0xFF5E)
             c += 0x120;
-        if (c < 0x30A1 || c > 0x30F4)
-            *dst = towupper(c);
+        if (c >= 0x30A1 && c <= 0x30F4)
+            c += 0xFFA0;
         else
-            *dst = c - 0x60;
-        dst++;
+            c = towupper(c);
+        *dst++ = c;
     }
     *dst = 0;
 }
-#endif

@@ -48,6 +48,8 @@ segments:
       - [0x5244, c, dk_move]
       - [0x537C, c, dk_input]
       - [0x5A2C, asm, dk_input_asm_088099CC]
+      - [0x5E18, c, dk_input]
+      - [0x6000, asm, dk_input_asm_08809FA0]
       - [0x66F4, c, dk_mode]
       - [0x6F94, asm, dk_mode_asm_0880AF34]
       - [0x73DC, c, dk_mode]

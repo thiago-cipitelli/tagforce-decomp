@@ -1,5 +1,6 @@
 // @range 0x0880931C-0x0880A694
-// @asm 0x088099CC-0x0880A694
+// @asm 0x088099CC-0x08809DB8
+// @asm 0x08809FA0-0x0880A694
 // @rodata 0x08822534-0x08822554
 /* Input of the list screen: dispatch by scene state, the main keys (Circle move, Cross quick move or
    info, Triangle action menu, Square switch tab, Select pane layout, L/R pages and sort groups with
@@ -353,132 +354,126 @@ void dk_cursor_list(unsigned short side, PadBits *pad)
     }
 }
 
- /* definição K&R chamada com 4 argumentos; alocação diferente */
-/* moves the cursor to the other pane (dir 1 = enter from the right), keeping its height */
-void dk_cursor_switch(from, rows, dir, cy, to)
-short from;
-unsigned short rows;
-short dir;
-unsigned short cy;
-unsigned int to;
-{
-    short cx = 0;
-    unsigned int t;
-    unsigned int n;
+#endif
 
-    if (from == 1) {
-        to = 0;
-        t = to;
-    } else if (from == 0) {
-        if (dkv.mode < 2)
-            to = 0;
-        else
+/* moves the cursor to the other pane (dir 1 = enter from the right), keeping its height; K&R so the
+   4-argument calls compile: "to" is a dead stack/register value unless from is 0 or 1 (as in the original) */
+void dk_cursor_switch(from, rows, dir, cy, to)
+unsigned short from;
+unsigned short rows;
+unsigned short dir;
+unsigned short cy;
+unsigned short to;
+{
+    unsigned short cx = 0;
+    unsigned short n;
+    DkPane *p;
+
+    switch (from) {
+    case 0:
+        if (dkv.mode > 1)
             to = 1;
-        t = to;
-    } else {
-        t = to & 0xFFFF;
+        else
+            to = 0;
+        break;
+    case 1:
+        to = 0;
+        break;
     }
-    if (dkv.pane[t].list_mode == 0) {
-        if (dir == 1) {
-            cx = dkv.pane[t].lay.cols - 1;
-            n = dkv.pane[t].lay.grid_rows;
-        } else {
-            n = dkv.pane[t].lay.grid_rows;
-        }
-    } else {
-        n = dkv.pane[t].lay.rows;
-    }
+    p = &dkv.pane[to];
+    if (p->list_mode == 0) {
+        if (dir == 1)
+            cx = p->lay.cols - 1;
+        n = p->lay.grid_rows;
+    } else
+        n = p->lay.rows;
     if (n != rows) {
-        cy = (int)((rows >> 1) + cy * n) / (int)rows;
-        if (n <= cy)
+        cy = (int)(((unsigned int)rows >> 1) + cy * n) / (int)rows;
+        if (cy >= n)
             cy = n - 1;
     }
     dkv.side = to;
-    dkv.pane[t].cx = cx;
-    dkv.pane[t].cy = cy;
+    p->cx = cx;
+    p->cy = cy;
 }
 
- /* registradores e ordem dos testes diferem */
 /* L/R: a page up or down */
 void dk_page(int up)
 {
-    unsigned int side = dkv.side;
-    unsigned int total = dkv.pane[side].list->count;
-    unsigned short cols;
-    unsigned int top;
-    unsigned int view;
-    int n;
+    DkPane *p = &dkv.pane[dkv.side];
+    int total = p->list->count;
+    int cols;
+    int top;
+    int view;
 
-    if (dkv.pane[side].list_mode == 0) {
-        cols = dkv.pane[side].lay.cols;
-        top = (dkv.pane[side].top + cols - 1) / cols;
+    if (p->list_mode == 0) {
+        cols = p->lay.cols;
+        top = p->top / cols;
         total = (total + cols - 1) / cols;
-        view = dkv.pane[side].lay.grid_rows;
+        view = p->lay.grid_rows;
     } else {
-        view = dkv.pane[side].lay.rows;
-        top = dkv.pane[side].top;
+        view = p->lay.rows;
+        top = p->top;
         cols = 1;
     }
-    if ((int)view < (int)total) {
-        if (up == 0) {
-            n = top + view;
-            if ((int)(total - view) < (int)(top + view))
-                n = total - view;
-        } else if ((int)top < (int)view) {
-            n = 0;
-        } else {
-            n = top - view;
-        }
-        if (dkv.pane[side].list_mode == 0)
-            dkv.pane[side].top = n * cols;
-        else
-            dkv.pane[side].top = n;
+    if (total <= view) {
+        p->top = 0;
     } else {
-        dkv.pane[side].top = 0;
+        if (up) {
+            if (top < view)
+                top = 0;
+            else
+                top -= view;
+        } else {
+            top += view;
+            if (total - view < top)
+                top = total - view;
+        }
+        if (p->list_mode == 0)
+            p->top = top * cols;
+        else
+            p->top = top;
     }
 }
 
- /* registradores e ordem dos testes diferem */
+#ifdef NON_MATCHING /* 6 palavras: grid_rows e (total + cols - 1) / cols em a0/v1 trocados; ordens das declarações e das instruções testadas */
 /* jumps to the next/previous group of the sort key */
 void dk_jump(int up)
 {
-    unsigned int side = dkv.side;
-    unsigned int total = dkv.pane[side].list->count;
+    DkPane *p = &dkv.pane[dkv.side];
+    int total = p->list->count;
     int i;
-    unsigned int cols;
+    int cols;
     int last;
     int row;
-    unsigned short n;
 
-    if (total == 0 || (i = dk_find_group(up)) < 0)
+    if (total == 0)
         return;
-    if (dkv.pane[side].list_mode == 0) {
-        cols = dkv.pane[side].lay.cols;
-        last = (int)(total + cols - 1) / (int)cols - dkv.pane[side].lay.grid_rows;
-        row = i / (int)cols;
-        if (last < i / (int)cols)
+    i = dk_find_group(up);
+    if (i < 0)
+        return;
+    if (p->list_mode == 0) {
+        cols = p->lay.cols;
+        row = i / cols;
+        last = (total + cols - 1) / cols - p->lay.grid_rows;
+        if (last < row)
             row = last;
         if (row < 0)
-            n = 0;
-        else
-            n = row * dkv.pane[side].lay.cols;
-        dkv.pane[side].top = n;
-        dkv.pane[side].cx = i % (int)cols;
-        dkv.pane[side].cy = (int)(i - dkv.pane[side].top) / (int)cols;
+            row = 0;
+        p->top = row * cols;
+        p->cx = i % cols;
+        p->cy = (i - p->top) / cols;
+    } else if (i < p->lay.rows) {
+        p->top = 0;
+        p->cy = i;
     } else {
-        n = i;
-        if (i < dkv.pane[side].lay.rows) {
-            dkv.pane[side].top = 0;
-            dkv.pane[side].cy = n;
+        last = total - p->lay.rows;
+        if (last < i) {
+            p->top = last;
+            p->cy = i - p->top;
         } else {
-            last = total - dkv.pane[side].lay.rows;
-            if (last < i) {
-                dkv.pane[side].top = last;
-                dkv.pane[side].cy = n - dkv.pane[side].top;
-            } else {
-                dkv.pane[side].top = n;
-                dkv.pane[side].cy = 0;
-            }
+            p->top = i;
+            p->cy = 0;
         }
     }
 }
