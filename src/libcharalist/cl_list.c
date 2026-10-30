@@ -810,7 +810,8 @@ void cl_profile_measure(ClEntry *e)
     cl.scroll = 0;
 }
 
-#ifdef NON_MATCHING /* não testado para matching */
+#ifdef NON_MATCHING /* lógica conferida com o asm; 133 palavras: o original guarda k e o ponteiro da tabela
+                       na pilha e n em s8; switch do id na ordem do original */
 /* voice test list: the voice-test entries whose sound differs in this duelist's voice table */
 void cl_voices_build(ClEntry *e, int alt)
 {
@@ -822,31 +823,30 @@ void cl_voices_build(ClEntry *e, int alt)
     short *v;
     int i;
     short a, b, c, d;
+    unsigned short la;
 
     if (e->simple)
         return;
     id = e->id;
     var = e->u.info->cur;
     switch (id) {
-    case 0x1F:
-    case 0xE:
-    case 0xB:
-        var = 0;
-        break;
-    case 0x10:
-        var = 0;
-        break;
-    case 0xD:
-        if (alt)
-            id = 0x29;
+    case 0x12:
+        if (var == 2)
+            var = 1;
         break;
     case 0xC:
         if (alt)
             id = 0x2C;
         break;
-    case 0x12:
-        if (var == 2)
-            var = 1;
+    case 0xD:
+        if (alt)
+            id = 0x29;
+        break;
+    case 0xB:
+    case 0xE:
+    case 0x10:
+    case 0x1F:
+        var = 0;
         break;
     }
     tbl = cl_voicetbl_get(id, var);
@@ -865,7 +865,9 @@ void cl_voices_build(ClEntry *e, int alt)
                 continue;
             if (b == d)
                 break;
-            if (b != -1 && d != -1 && partner_table_lookup(1, 0, b, tbl) == partner_table_lookup(1, 0, d, tbl))
+            if (b == -1 || d == -1)
+                continue;
+            if (partner_table_lookup(1, 0, b, tbl) == partner_table_lookup(1, 0, d, tbl))
                 break;
         }
         if (i == n)
