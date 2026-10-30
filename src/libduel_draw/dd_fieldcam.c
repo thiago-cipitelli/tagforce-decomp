@@ -7,10 +7,10 @@
 #include "dd_d1.h"
 
 float keyframe_eval(void *track, float t);
-void anim_eval_track(DdVec4 *out, void *tms, void *tr, float t);
-void quat_to_mat4(DdMat *out, DdVec4 *q);
-DdVec4 *mat4_transform_xyz(DdVec4 *out, DdMat *m, DdVec4 *v);
-DdVec4 *vec3_add_w(DdVec4 *out, DdVec4 *a, DdVec4 *b);
+void anim_eval_track(DdXyzw *out, void *tms, void *tr, float t);
+void quat_to_mat4(DdMtx *out, DdXyzw *q);
+DdXyzw *mat4_transform_xyz(DdXyzw *out, DdMtx *m, DdXyzw *v);
+DdXyzw *vec3_add_w(DdXyzw *out, DdXyzw *a, DdXyzw *b);
 float atanf(float x);
 float cosf_vfpu(float x);
 unsigned int dd_track_rgb(void *tracks, int k, float t);
@@ -38,15 +38,15 @@ typedef struct DdTms {                 /* camera file of a background (TGMT layo
     DdTrack *rtracks;                  /* +0x10 */
 } DdTms;
 
-DdVec4 dd_axis_y = { 0.0f, 1.0f, 0.0f, 0.0f };
-DdVec4 dd_axis_nz = { 0.0f, 0.0f, -1.0f, 0.0f };
-DdVec4 dd_axis_z = { 0.0f, 0.0f, 1.0f, 0.0f };
+DdXyzw dd_axis_y = { 0.0f, 1.0f, 0.0f, 0.0f };
+DdXyzw dd_axis_nz = { 0.0f, 0.0f, -1.0f, 0.0f };
+DdXyzw dd_axis_z = { 0.0f, 0.0f, 1.0f, 0.0f };
 
 #define TRACK(n) (&tms->tracks[n])
 
 #ifdef NON_MATCHING /* forma igual; tms e o índice da luz trocam de $s e o original usa i*8 como indução para os canais */
 /* camera of the field at time t from the background tracks */
-void dd_cam_from_tms(DdCam *cam, DdTms *tms, float t)
+void dd_fcam_from_tms(DdCam *cam, DdTms *tms, float t)
 {
     float focal = keyframe_eval(TRACK(0), t);
     float film = keyframe_eval(TRACK(1), t);
@@ -54,12 +54,12 @@ void dd_cam_from_tms(DdCam *cam, DdTms *tms, float t)
     float far = keyframe_eval(TRACK(3), t);
     float near = n < 1.0f ? 1.0f : n;
     DdLight l;
-    DdVec4 pos;
-    DdVec4 q;
-    DdMat mat;
-    DdVec4 dir;
-    DdVec4 up;
-    DdVec4 at;
+    DdXyzw pos;
+    DdXyzw q;
+    DdMtx mat;
+    DdXyzw dir;
+    DdXyzw up;
+    DdXyzw at;
     unsigned short *bone;
     DdTrack *tr;
     int fog;
@@ -112,14 +112,14 @@ void dd_cam_from_tms(DdCam *cam, DdTms *tms, float t)
         mat4_transform_xyz(&dir, &mat, &dd_axis_z);
         switch (l.type) {
         case 0:
-            l.pos = *(DdVec3 *)&dir;
+            l.pos = *(DdXyz *)&dir;
             break;
         case 1:
-            l.pos = *(DdVec3 *)&pos;
+            l.pos = *(DdXyz *)&pos;
             break;
         case 2:
-            l.dir = *(DdVec3 *)&dir;
-            l.pos = *(DdVec3 *)&pos;
+            l.dir = *(DdXyz *)&dir;
+            l.pos = *(DdXyz *)&pos;
             l.spot_exp = keyframe_eval(TRACK(k + 15), t);
             l.spot_cutoff = cosf_vfpu(keyframe_eval(TRACK(k + 14), t) / 2.0f);
             break;
@@ -130,36 +130,36 @@ void dd_cam_from_tms(DdCam *cam, DdTms *tms, float t)
 
 #endif
 
-#define VEC3(x, y, z) (*(DdVec4 *)&(DdVec3){ x, y, z })
+#define VEC3(x, y, z) (*(DdXyzw *)&(DdXyz){ x, y, z })
 
-unsigned int dd_rgb_from_vec(DdVec3 *v);
+unsigned int dd_rgb_from_vec(DdXyz *v);
 
 /* default light of the field */
 #define DD_LIGHT_DEFAULT(l, on_next)                                                   \
     (l)->type = 0;                                                                      \
-    (l)->ambient = dd_rgb_from_vec(&(DdVec3){ 0 });                                    \
-    (l)->diffuse = dd_rgb_from_vec(&(DdVec3){ 1.0f, 1.0f, 1.0f });                     \
-    (l)->specular = dd_rgb_from_vec(&(DdVec3){ 0 });                                   \
+    (l)->ambient = dd_rgb_from_vec(&(DdXyz){ 0 });                                    \
+    (l)->diffuse = dd_rgb_from_vec(&(DdXyz){ 1.0f, 1.0f, 1.0f });                     \
+    (l)->specular = dd_rgb_from_vec(&(DdXyz){ 0 });                                   \
     (l)->atten[0] = 0.5f;                                                               \
     (l)->atten[1] = 0.0f;                                                               \
     (l)->atten[2] = 0.0f;                                                               \
     switch ((l)->type) {                                                                \
     case 0:                                                                             \
-        (l)->pos = (DdVec3){ 0.0f, 0.0f, 1.0f };                                        \
+        (l)->pos = (DdXyz){ 0.0f, 0.0f, 1.0f };                                        \
         break;                                                                          \
     case 1:                                                                             \
-        (l)->pos = (DdVec3){ 0 };                                                       \
+        (l)->pos = (DdXyz){ 0 };                                                       \
         break;                                                                          \
     case 2:                                                                             \
-        (l)->dir = (DdVec3){ 0.0f, 0.0f, 1.0f };                                        \
-        (l)->pos = (DdVec3){ 0 };                                                       \
+        (l)->dir = (DdXyz){ 0.0f, 0.0f, 1.0f };                                        \
+        (l)->pos = (DdXyz){ 0 };                                                       \
         (l)->spot_exp = 0.0f;                                                           \
         (l)->spot_cutoff = 0.3f;                                                        \
         break;                                                                          \
     }
 
 /* default camera: fixed view, white fog off, one directional light */
-void dd_cam_default(DdCam *cam)
+void dd_fcam_default(DdCam *cam)
 {
     DdLight *l;
 
@@ -172,8 +172,8 @@ void dd_cam_default(DdCam *cam)
     cam->fog = 0;
     cam->fog_near = 100.0f;
     cam->fog_far = 200.0f;
-    cam->fog_color = dd_rgb_from_vec(&(DdVec3){ 1.0f, 1.0f, 1.0f });
-    cam->ambient = dd_rgb_from_vec(&(DdVec3){ 0.3f, 0.3f, 0.3f });
+    cam->fog_color = dd_rgb_from_vec(&(DdXyz){ 1.0f, 1.0f, 1.0f });
+    cam->ambient = dd_rgb_from_vec(&(DdXyz){ 0.3f, 0.3f, 0.3f });
     cam->ambient |= 0xFF000000;
     l = &cam->light[0];
     cam->light_on[0] = 1;
@@ -190,7 +190,7 @@ void dd_cam_default(DdCam *cam)
 }
 
 /* colour 0x00BBGGRR from a vector of three 0..1 floats */
-unsigned int dd_rgb_from_vec(DdVec3 *v)
+unsigned int dd_rgb_from_vec(DdXyz *v)
 {
     unsigned int c = (unsigned int)(255.0f * v->x);
 

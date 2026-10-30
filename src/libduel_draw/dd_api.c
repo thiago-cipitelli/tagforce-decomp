@@ -13,8 +13,8 @@ void dd_info_select_uid();
 void dd_cobjs_setup(void);
 void dd_cobjs_add_deck(int i, RecipeData *deck);
 void dd_cobjs_map(int side, int v);
-void func_0880BEB0(void);
-void func_0880CDCC();
+void dd_cobjs_rebuild(void);
+void dd_cobjs_sync_set();
 void func_08811D18(int side, int lp, int a);
 void func_08811D98(int side, int a);
 void func_08811DC4(int phase, int a);
@@ -263,7 +263,7 @@ void func_0880628C(void)
     int side = func_0886677C();
     int phase = func_088667AC();
 
-    func_0880BEB0();
+    dd_cobjs_rebuild();
     func_08811E14(side, phase);
     func_08811E14(side, phase);
 }
@@ -316,5 +316,5 @@ void func_088063F0(void)
 /* export */
 void func_0880642C(void)
 {
-    func_0880CDCC();
+    dd_cobjs_sync_set();
 }

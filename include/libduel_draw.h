@@ -120,34 +120,34 @@ typedef struct DdView {                /* 0x08C3D238, 0x20 */
     int idle[2];                       /* +0x18 frames each player held the input */
 } DdView;
 
-typedef struct DdVec3 {
+typedef struct DdXyz {
     float x, y, z;
-} DdVec3;
+} DdXyz;
 
-typedef struct DdVec4 {
+typedef struct DdXyzw {
     float x, y, z, w;
-} __attribute__((aligned(16))) DdVec4;
+} __attribute__((aligned(16))) DdXyzw;
 
-typedef struct DdMat {
+typedef struct DdMtx {
     float m[16];
-} __attribute__((aligned(16))) DdMat;
+} __attribute__((aligned(16))) DdMtx;
 
 typedef struct DdLight {               /* BOOT Light, 0x3C */
     int type;                          /* 0 directional, 1 point, 2 spot */
     unsigned int ambient;              /* +0x04 */
     unsigned int diffuse;              /* +0x08 */
     unsigned int specular;             /* +0x0C */
-    DdVec3 pos;                        /* +0x10 */
-    DdVec3 dir;                        /* +0x1C */
+    DdXyz pos;                        /* +0x10 */
+    DdXyz dir;                        /* +0x1C */
     float spot_exp;                    /* +0x28 */
     float spot_cutoff;                 /* +0x2C */
     float atten[3];                    /* +0x30 */
 } DdLight;
 
 typedef struct DdCam {                 /* camera, fog and lights of the field, 0x150 */
-    DdVec4 eye;                        /* +0x00 */
-    DdVec4 up;                         /* +0x10 */
-    DdVec4 at;                         /* +0x20 */
+    DdXyzw eye;                        /* +0x00 */
+    DdXyzw up;                         /* +0x10 */
+    DdXyzw at;                         /* +0x20 */
     float fov;                         /* +0x30 */
     float near;                        /* +0x34 */
     float far;                         /* +0x38 */
@@ -183,12 +183,12 @@ typedef struct DdField {               /* 0x08C3D260, 0x220 */
     int loaded;                        /* +0x1B0 set by the load transition callback */
     int cleared;                       /* +0x1B4 set by the show transition callback */
     int pad1b8[2];
-    DdMat view;                        /* +0x1C0 */
+    DdMtx view;                        /* +0x1C0 */
     float fov;                         /* +0x200 */
     float aspect;
     float near;
     float far;
-    DdVec4 dir;                        /* +0x210 */
+    DdXyzw dir;                        /* +0x210 */
 } DdField;
 
 typedef struct DdCardStats {           /* BOOT CardStats, 0x3C */
@@ -242,12 +242,12 @@ typedef struct DdCobj {                 /* 3D card on the field, 0xB0 (list node
     struct DdCobj *next;                /* +0x04 */
     int x08;
     int x0c;
-    DdVec4 pos;                        /* +0x10 */
-    DdVec4 pos0;                       /* +0x20 move start */
-    DdVec4 pos1;                       /* +0x30 move end */
-    DdVec4 rot;                        /* +0x40 */
-    DdVec4 rot0;                       /* +0x50 */
-    DdVec4 rot1;                       /* +0x60 */
+    DdXyzw pos;                        /* +0x10 */
+    DdXyzw pos0;                       /* +0x20 move start */
+    DdXyzw pos1;                       /* +0x30 move end */
+    DdXyzw rot;                        /* +0x40 */
+    DdXyzw rot0;                       /* +0x50 */
+    DdXyzw rot1;                       /* +0x60 */
     float t;                           /* +0x70 */
     float dur;                         /* +0x74 */
     DdPos dest;                        /* +0x78 pending move */
@@ -285,8 +285,21 @@ typedef struct DdCobj {                 /* 3D card on the field, 0xB0 (list node
     char pad8f;
     int x90;
     int x94;
-    int pad98[6];
+    int busy;                          /* +0x98 */
+    int link[4];                       /* +0x9C attached effects */
+    int padac;
 } DdCobj;
+
+typedef struct DdZoneAnim {            /* counter animation of a monster zone, 0x20 */
+    int a;
+    int b;
+    int a0;
+    int a1;
+    int b0;
+    int b1;
+    float t;
+    float dur;
+} DdZoneAnim;
 
 typedef struct DdCobjs {                /* card objects, 0x08C3D940, 0x16B20 */
     DdCobj obj[460];
@@ -294,10 +307,13 @@ typedef struct DdCobjs {                /* card objects, 0x08C3D940, 0x16B20 */
     DdCobj zone[4][16];                 /* +0x13CF0 list heads by player and zone */
     int x168f0;
     int map[2];                        /* +0x168F4 screen side -> player of the decks */
-    int x168fc;
-    int x16900;
-    int x16904;
-    int pad16908[(0x16B20 - 0x16908) / 4];
+    int sync;                          /* +0x168FC lists follow the engine */
+    int en[2];                         /* +0x16900 */
+    DdZoneAnim za[2][5];               /* +0x16908 */
+    int sel[2][17];                    /* +0x16A48 */
+    DdLoc stack[32];                   /* +0x16AD0 */
+    int nstack;                        /* +0x16B10 */
+    int pad16b14[3];
 } DdCobjs;
 
 #endif

@@ -10,8 +10,8 @@ void mtx_identity(void);
 void mtx_perspective(float fovy, float aspect, float near, float far);
 void mtx_push(void);
 void mtx_pop(void);
-void mtx_get34(DdMat *m);
-void mtx_get_view_dir(DdVec4 *out);
+void mtx_get34(DdMtx *m);
+void mtx_get_view_dir(DdXyzw *out);
 void camera_set(void *pos, void *target, void *up);
 void camera_load_view(void);
 unsigned int *dl_viewport(unsigned int *list, int cx, int cy, int w, int h);
@@ -33,8 +33,8 @@ void req_flag_set(int i);
 float keyframe_eval(void *track, float t);
 
 /* other ranges of libduel_draw */
-void dd_cam_from_tms(DdCam *cam, void *tms, float t);
-void dd_cam_default(DdCam *cam);
+void dd_fcam_from_tms(DdCam *cam, void *tms, float t);
+void dd_fcam_default(DdCam *cam);
 void dd_field_on_clear(void);
 void dd_field_on_load(void);
 void dd_field_fx_start(DdFieldSlot *s, int id);
@@ -82,7 +82,7 @@ void dd_field_draw(void)
     mtx_identity();
     mtx_perspective(0.38397199f, 480.0f / 272.0f, 0.1f, 10.0f);
     mtx_set_mode(1);
-    camera_set(&(DdVec3){ 0.0f, 0.3f, 0.5f }, &(DdVec3){ 0 }, &(DdVec3){ 0.0f, 1.0f, 0.0f });
+    camera_set(&(DdXyz){ 0.0f, 0.3f, 0.5f }, &(DdXyz){ 0 }, &(DdXyz){ 0.0f, 1.0f, 0.0f });
     camera_load_view();
     list = dl_viewport(list, 0x800, 0x800, 480, 272);
     list = lighting_disable(list);
@@ -204,7 +204,7 @@ int dd_field_cur_id(void)
     return dd_field.slot[dd_field.cur].id;
 }
 
-void dd_field_view_get(DdMat *m)
+void dd_field_view_get(DdMtx *m)
 {
     DdField *f = &dd_field;
 
@@ -226,7 +226,7 @@ void dd_field_proj_get(float *fov, float *aspect, float *near, float *far)
         *far = f->far;
 }
 
-void dd_field_dir_get(DdVec4 *out)
+void dd_field_dir_get(DdXyzw *out)
 {
     DdField *f = &dd_field;
 
@@ -302,9 +302,9 @@ void *dd_field_camera(void *list, void *tms, int mode, float t)
     DdCam *c;
 
     if (tms == 0 || mode != 0)
-        dd_cam_default(cam);
+        dd_fcam_default(cam);
     else
-        dd_cam_from_tms(cam, tms, t);
+        dd_fcam_from_tms(cam, tms, t);
     mtx_set_mode(0);
     mtx_identity();
     mtx_perspective(cam->fov, 480.0f / 272.0f, cam->near, cam->far);

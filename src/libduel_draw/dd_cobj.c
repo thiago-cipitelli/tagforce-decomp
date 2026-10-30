@@ -16,8 +16,8 @@ void func_0880E6C4(void);
 void func_0880E788(void);
 void func_0880EB70(void);
 void func_0880F4D4(void);
-void func_0880D6B8(int a, int b);
-void func_0880DD9C(int a, int b);
+void dd_hand_layout0(int a, int b);
+void dd_hand_layout1(int a, int b);
 void func_08811210(float dt);
 void func_08815670(void);
 void func_08815678(void);
@@ -121,8 +121,8 @@ void dd_cobjs_draw(void)
     func_0880E65C();
     func_0880E6C4();
     func_0880E788();
-    func_0880D6B8(dd_cobjs.x168f0, 0);
-    func_0880DD9C(dd_cobjs.x168f0, 0);
+    dd_hand_layout0(dd_cobjs.x168f0, 0);
+    dd_hand_layout1(dd_cobjs.x168f0, 0);
     dd_cobjs.x168f0 = 0;
     func_0880EB70();
     if (func_088667AC() == 3 && !func_0882092C())
@@ -163,8 +163,8 @@ void dd_cobj_goto(DdPos from, DdPos to, int uid, int kind)
 {
     DdCobj *o;
     DdCobj *head;
-    DdVec4 pos;
-    DdVec4 rot;
+    DdXyzw pos;
+    DdXyzw rot;
 
     func_088667BC(uid);
     switch (to.zone) {
@@ -249,8 +249,8 @@ void dd_cobj_flip(int p, int zone)
     DdCobj *o = dd_cobj_find(p, zone, func_08866BF0(p, zone, 0));
     DdPos at;
     DdPos to;
-    DdVec4 pos;
-    DdVec4 rot;
+    DdXyzw pos;
+    DdXyzw rot;
 
     if (o == 0)
         return;
@@ -281,8 +281,8 @@ void dd_cobj_to_top(int p, int zone, int uid)
     DdCobj *o = dd_cobj_at(p, zone, n - 1);
     DdPos at;
     DdPos to;
-    DdVec4 pos;
-    DdVec4 rot;
+    DdXyzw pos;
+    DdXyzw rot;
 
     if (o == 0)
         return;
