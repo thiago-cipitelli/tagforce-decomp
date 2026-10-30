@@ -44,7 +44,7 @@ int duel_08824D34(void);
 int duel_0884E1D8(void);
 int duel_088535C0(void);
 void duel_0883447C(void);
-int duel_088F7418(void);
+int duel_msg_poll(void);
 int duel_088D557C(void);
 int duel_08827544(void);
 int duel_card_used_e66ac(unsigned int id);
@@ -279,7 +279,7 @@ int duel_0884D874(void)
         }
         return 1;
     }
-    if (duel_w_089195EC != 0 && duel_088F7418() == 0) {
+    if (duel_w_089195EC != 0 && duel_msg_poll() == 0) {
         return 1;
     }
     if (duel_088D557C() != 0) {

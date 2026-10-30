@@ -1,6 +1,6 @@
 // @range 0x088D13CC-0x088D1DF4
 // @asm 0x088D16C4-0x088D184C
-/* Applying an effect to a set of zones: duel_act_apply (0x088D1094, kept in asm) takes the card
+/* Applying an effect to a set of zones: duel_act_apply (0x088D1094, in leave_field.c) takes the card
    acting, a mask of zones (bit player * 16 + zone), the kind of effect and flags, and returns the
    zones it affected; the wrappers below test one zone or build the acting card. */
 #include "duel.h"
