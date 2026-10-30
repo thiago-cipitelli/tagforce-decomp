@@ -8,7 +8,7 @@ extern DdTaskMgr dd_task_mgr;
 
 void *func_0881CA54(int size);         /* duel heap alloc */
 void func_0881CA64(void *p);           /* duel heap free */
-void func_0882BF84(void);
+void dd_card_quad_init(void);
 void func_08838CDC(void);
 void dd_rstate_reset_all(void);
 
@@ -17,7 +17,7 @@ void dd_task_free(DdTask *t);
 void dd_task_init(void)
 {
     memset(&dd_task_mgr, 0, sizeof(dd_task_mgr));
-    func_0882BF84();
+    dd_card_quad_init();
     func_08838CDC();
 }
 
