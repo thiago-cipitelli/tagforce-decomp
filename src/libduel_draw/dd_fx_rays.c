@@ -37,11 +37,11 @@ float dd_ease_cos(int t, int n, int k);
 int dd_anim_step(void);
 int dd_cue_se(int id, int now, int at, unsigned int *flags, unsigned int bit);
 
-int dd_fx_flare_update(int state, DdFxFlare *fx);
+int dd_fx_rays_update(int state, DdFxFlare *fx);
 
-int dd_fx_flare_start(float ry, int card, float *pos, DdTaskTermFn term, void *arg)
+int dd_fx_rays_start(float ry, int card, float *pos, DdTaskTermFn term, void *arg)
 {
-    int id = dd_task_create((DdTaskUpdateFn)dd_fx_flare_update, term, arg, sizeof(DdFxFlare));
+    int id = dd_task_create((DdTaskUpdateFn)dd_fx_rays_update, term, arg, sizeof(DdFxFlare));
     DdFxFlare *fx;
 
     if (id != -1) {
@@ -54,16 +54,16 @@ int dd_fx_flare_start(float ry, int card, float *pos, DdTaskTermFn term, void *a
     return id;
 }
 
-int dd_fx_flare_start_t(float ry, float t, int card, float *pos, DdTaskTermFn term, void *arg)
+int dd_fx_rays_start_t(float ry, float t, int card, float *pos, DdTaskTermFn term, void *arg)
 {
-    int id = dd_fx_flare_start(ry, card, pos, term, arg);
+    int id = dd_fx_rays_start(ry, card, pos, term, arg);
 
     if (id != -1)
         ((DdFxFlare *)dd_task_mem(id))->t = t;
     return id;
 }
 
-int dd_fx_flare_update(int state, DdFxFlare *fx)
+int dd_fx_rays_update(int state, DdFxFlare *fx)
 {
     int step = dd_anim_step();
     unsigned int *list;

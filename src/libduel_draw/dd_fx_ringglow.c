@@ -20,9 +20,9 @@ typedef struct DdFxGlow {              /* 0x20 */
 unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
 unsigned int *draw_sprite(unsigned int *list, int x, int y, int z, int u, int v, int flip_uv, int flip_xy);
 
-int dd_fx_glow_update(int state, DdFxGlow *fx);
+int dd_fx_ringglow_update(int state, DdFxGlow *fx);
 
-int dd_fx_glow_done(int id)
+int dd_fx_ringglow_done(int id)
 {
     DdFxGlow *fx = dd_task_mem(id);
 
@@ -31,9 +31,9 @@ int dd_fx_glow_done(int id)
     return fx->in >= 60;
 }
 
-int dd_fx_glow_start(DdScrPos *pos, DdTaskTermFn term, void *arg)
+int dd_fx_ringglow_start(DdScrPos *pos, DdTaskTermFn term, void *arg)
 {
-    int id = dd_task_create((DdTaskUpdateFn)dd_fx_glow_update, term, arg, sizeof(DdFxGlow));
+    int id = dd_task_create((DdTaskUpdateFn)dd_fx_ringglow_update, term, arg, sizeof(DdFxGlow));
     DdFxGlow *fx;
 
     if (id != -1) {
@@ -44,7 +44,7 @@ int dd_fx_glow_start(DdScrPos *pos, DdTaskTermFn term, void *arg)
     return id;
 }
 
-int dd_fx_glow_update(int state, DdFxGlow *fx)
+int dd_fx_ringglow_update(int state, DdFxGlow *fx)
 {
     int step = dd_anim_step();
     float in = dd_ease_sin(fx->in, 8, 1);

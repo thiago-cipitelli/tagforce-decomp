@@ -24,12 +24,12 @@ typedef struct DdFxNoise {             /* 0x14 */
 unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
 unsigned int *draw_sprite(unsigned int *list, int x, int y, int z, int u, int v, int flip_uv, int flip_xy);
 
-int dd_fx_aura_update(int state, DdFxAura *fx);
+int dd_fx_cardaura_update(int state, DdFxAura *fx);
 int dd_fx_noise_update(int state, DdFxNoise *fx);
 
-int dd_fx_aura_start(int card, DdScrPos *pos, DdTaskTermFn term, void *arg)
+int dd_fx_cardaura_start(int card, DdScrPos *pos, DdTaskTermFn term, void *arg)
 {
-    int id = dd_task_create((DdTaskUpdateFn)dd_fx_aura_update, term, arg, sizeof(DdFxAura));
+    int id = dd_task_create((DdTaskUpdateFn)dd_fx_cardaura_update, term, arg, sizeof(DdFxAura));
     DdFxAura *fx;
 
     if (id != -1) {
@@ -40,7 +40,7 @@ int dd_fx_aura_start(int card, DdScrPos *pos, DdTaskTermFn term, void *arg)
     return id;
 }
 
-int dd_fx_aura_update(int state, DdFxAura *fx)
+int dd_fx_cardaura_update(int state, DdFxAura *fx)
 {
     int step = dd_anim_step();
     unsigned int *list;
