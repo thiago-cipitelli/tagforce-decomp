@@ -75,7 +75,7 @@ void func_08820F88(undefined4 *param_1)
       else {
         func_08825824(0,0,0x20,func_0882136C);
         dd_mode_push(4);
-        iVar6 = func_08806D04();
+        iVar6 = dd_is_tag_duel();
         if (iVar6 == 0) {
           dd_mode_set_flag(0x31);
         }
@@ -100,9 +100,9 @@ void func_08820F88(undefined4 *param_1)
           sVar1 = dv_n_grave(uVar4 & 1);
           local_4[0] = local_4[0] & 0x3f | (sVar1 + -1) * 0x40;
         }
-        iVar6 = func_0880B7B8((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
+        iVar6 = dd_cobj_at((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
         if (iVar6 != 0) {
-          iVar2 = func_08806E58((int)(short)local_4[0]);
+          iVar2 = dd_loc_visible((int)(short)local_4[0]);
           if (iVar2 == 0) {
             if (-1 < (int)*(char *)(iVar6 + 0x8d) << 0x1a) {
               return;
@@ -112,7 +112,7 @@ void func_08820F88(undefined4 *param_1)
           else {
             uVar5 = *(undefined4 *)(iVar6 + 0x88);
           }
-          func_088091C8(uVar5);
+          dd_info_select_uid(uVar5);
         }
       }
     }
@@ -139,7 +139,7 @@ void func_088212B8(int v)
 void func_088212C4(undefined4 param_1,undefined4 param_2,undefined4 param_3,int param_4)
 {
   undefined4 uVar1;
-  uVar1 = func_088044B0(0x40005);
+  uVar1 = dd_gim_get(0x40005);
   uVar1 = gim_set_texture(param_1,uVar1);
   uVar1 = draw_set_offsets(uVar1,0xd,0xd,0xd,0xd);
   draw_sprite(uVar1,param_2,param_3,0,*(undefined4 *)(&D_08876110 + param_4 * 0x10),
@@ -263,9 +263,9 @@ void func_088215A0(void)
   ushort local_4 [2];
   if (D_08C58344 != 0) {
     (*D_08C582B8)(local_4);
-    iVar2 = func_0880B7B8((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
+    iVar2 = dd_cobj_at((byte)local_4[0] & 1,((byte)local_4[0] & 0x3f) >> 1,local_4[0] >> 6);
     if ((iVar2 == 0) || (((byte)local_4[0] & 0x3f) >> 1 != 0xb)) {
-      func_0880A8E0(&local_20,&local_40,(int)(short)local_4[0]);
+      dd_slot_xform(&local_20,&local_40,(int)(short)local_4[0]);
     }
     else {
       local_20 = *(undefined4 *)(iVar2 + 0x10);
@@ -430,7 +430,7 @@ uint func_08821A3C(ushort param_1)
   else {
     iVar2 = dv_slot_uid(uVar5,uVar6);
   }
-  if ((0 < iVar2) && (iVar3 = func_08806E58((int)(short)param_1), iVar3 != 0)) {
+  if ((0 < iVar2) && (iVar3 = dd_loc_visible((int)(short)param_1), iVar3 != 0)) {
     uVar1 = uVar1 | 0x2000;
     uVar4 = duel_088FEA90(iVar2);
     dd_mode_set_card(uVar4);
@@ -595,7 +595,7 @@ undefined4 func_08821FA8(undefined4 param_1,uint param_2,int param_3,int param_4
   uVar5 = D_08C58354 & 1 << (param_2 & 0x1f);
   uVar1 = dl_set_color(param_1,0xffffffff);
   uVar1 = dl_set_tex_filter(uVar1,0,1);
-  iVar2 = func_088044B0(0x40025);
+  iVar2 = dd_gim_get(0x40025);
   if (iVar2 != 0) {
     uVar1 = gim_set_texture(uVar1,iVar2);
   }
@@ -716,7 +716,7 @@ void func_0882228C(undefined4 param_1)
   if (0 < iVar1) {
     do {
       uVar3 = duel_088FEA90(puVar8[1]);
-      uVar2 = func_088046F0(uVar2,uVar3);
+      uVar2 = dd_card_texture(uVar2,uVar3);
       uVar2 = draw_set_offsets(uVar2,0x40,0x40,0x14,0x1e);
       uVar2 = draw_sprite(uVar2,(int)((float)iVar6 + ((float)iVar7 - (float)iVar4 / 2.0) * 22.0 +
                                      1.0),iVar5 + -0x28,0,0,0,0,0);
@@ -917,7 +917,7 @@ undefined4 func_08822914(undefined4 param_1,short param_2,int param_3,int param_
   if ((param_2 != 0) && (D_08C583B0 == 0)) {
     uVar2 = 0;
   }
-  uVar2 = func_088046F0(uVar3,uVar2);
+  uVar2 = dd_card_texture(uVar3,uVar2);
   uVar7 = draw_set_offsets(uVar2,0x40,0x40,uVar7,uVar8);
   uVar7 = draw_sprite(uVar7,param_3 + iVar6,param_4 + 0xc + iVar5,0,0,0,0,param_2 != 0);
   uVar1 = font_get_flags();

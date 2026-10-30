@@ -26,7 +26,7 @@ float dd_ease_lin(int t, int len);
 float dd_ease_lin_inv(int t, int len);
 void dd_mtx_push_field(void);
 void dd_mtx_pop_all(void);
-void *func_088078C4(void);
+void *dd_field_model(void);
 void dd_rand_dir(float len, FxVec3 *out);
 int dd_task_create(void *update, void *a, void *b, int size);
 void *dd_task_mem(int task);
@@ -89,7 +89,7 @@ int dd_fx_note_update(int phase, DdFxNote *w)
     int i;
 
     dd_mtx_push_field();
-    model_get_bone(func_088078C4(), &m, 4);
+    model_get_bone(dd_field_model(), &m, 4);
     vec3_set(&pos, m.m[12], m.m[13], m.m[14]);
     if (phase == 1) {
         for (i = 0; i < 8; i++) {

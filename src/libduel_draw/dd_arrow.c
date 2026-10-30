@@ -52,14 +52,14 @@ DdObj *dd_task_add(DdObj *desc);
 void dd_task_remove_cur(void);
 void dd_task_remove(DdObj *o);
 void dd_cursor_unlisten(void (*fn)(short, int));
-void func_0880A8E0(void *pos, void *rot, short at);
-float func_08807034(void);
+void dd_slot_xform(void *pos, void *rot, short at);
+float dd_speed_get(void);
 void dd_cursor_get(short *loc);
-void *func_088044B0(int id);
-void *func_08804268(int id);
-void *func_088045C0(int id);
+void *dd_gim_get(int id);
+void *dd_model_get(int id);
+void *dd_pack_get(int id);
 unsigned int dv_08835AEC(int player, int zone, int idx);
-int func_08806434(int a, int b);
+int dd_scene_flags(int a, int b);
 int func_088062E4(void);
 
 extern DdMarkMgr dd_mark;
@@ -152,11 +152,11 @@ void dd_mark_move(int player, int zone, int to_player, int to_zone)
     m->to.zone = to_zone;
     p.f14 = 0;
     p.f15 = 0;
-    func_0880A8E0(&m->dest, rot, *(short *)&p);
+    dd_slot_xform(&m->dest, rot, *(short *)&p);
     m->dest.y = -2.0f;
     o->update = (DdObjFn)dd_mark_glide;
     o->time = 0.0f;
-    m->dur = 0.5f / func_08807034();
+    m->dur = 0.5f / dd_speed_get();
     m->from = m->pos;
     req_flag_set(11);
 }
@@ -206,7 +206,7 @@ void dd_mark_reset(void)
     p.idx = 0;
     p.f14 = 0;
     p.f15 = 0;
-    func_0880A8E0(m, &m->rot, *(short *)&p);
+    dd_slot_xform(m, &m->rot, *(short *)&p);
     m->pos.y += 30.0f;
     m->moving = 0;
     o->draw = (DdObjFn)dd_mark_draw;
@@ -226,7 +226,7 @@ void dd_mark_draw(DdObj *o, DdMarker *m)
     FxMat4 mtx;
 
     list = dl_select_layer(4, 0);
-    tex = func_088044B0(0x40005);
+    tex = dd_gim_get(0x40005);
     if (tex != 0)
         list = gim_set_texture(list, tex);
     quat_to_mat4(&mtx, &m->rot);
@@ -235,7 +235,7 @@ void dd_mark_draw(DdObj *o, DdMarker *m)
     mtx_identity();
     mtx_translate(&m->pos);
     mtx_mult(&mtx);
-    model = func_08804268(0x1001C);
+    model = dd_model_get(0x1001C);
     if (model != 0) {
         layer = dl_get_layer();
         dl_set_list(dl_disable(list, 1));
@@ -303,7 +303,7 @@ void dd_mark_aim(DdLoc loc, int unused, int hl)
     p.idx = 0;
     p.f14 = 0;
     p.f15 = 0;
-    func_0880A8E0(&pos, &tmp, *(short *)&p);
+    dd_slot_xform(&pos, &tmp, *(short *)&p);
     dx = pos.x - m->pos.x;
     dz = pos.z - m->pos.z;
     if (dx == 0.0f && dz == 0.0f) {
@@ -351,7 +351,7 @@ void dd_arrow_new(FxVec3 *from, FxVec3 *to, unsigned int color)
 
     a = dd_alloc(sizeof(DdArrow));
     memset(a, 0, sizeof(DdArrow));
-    pack = func_088045C0(0x80001);
+    pack = dd_pack_get(0x80001);
     a->tex_ptcl = ehp_find(pack, "perticle_for_arrow.gim", 0);
     a->tex_head = ehp_find(pack, "arrow_head.gim", 0);
     a->alive = 1;
@@ -454,7 +454,7 @@ void dd_arrow_update(DdObj *o, DdArrow *a)
     int v;
     int lit;
 
-    if (a->head == 0 && a->done == 0 && func_08806434(8, -1) == 0 && func_088062E4() == 0)
+    if (a->head == 0 && a->done == 0 && dd_scene_flags(8, -1) == 0 && func_088062E4() == 0)
         se_play(0x6242);
     if (a->head >= 63) {
         a->head = 0;

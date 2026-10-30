@@ -14,12 +14,12 @@ void dd_mode_set_flag(int mode);
 void *dd_mode_draw_one(void *dl, int mode);
 void dd_mode_pop(void);
 void *func_0881CA74(void);
-void *func_088044B0(int id);
-void *func_08804538(int id);
-int func_08806C6C(void);
-int func_08806D04(void);
+void *dd_gim_get(int id);
+void *dd_bin_get(int id);
+int dd_view_x14_get(void);
+int dd_is_tag_duel(void);
 int dd_cutin_looping(void);
-void func_08806434(int id, int on);
+void dd_scene_flags(int id, int on);
 int dv_phase(void);
 int dv_08835924(void);
 void sys_frame_wait(void);
@@ -74,7 +74,7 @@ void hl_start(void)
         cat = 8;
         break;
     }
-    if (dv_08835924() == 5 || dv_08835924() == 4 || (hl_prev_mode == 4 && func_08806C6C() == 2))
+    if (dv_08835924() == 5 || dv_08835924() == 4 || (hl_prev_mode == 4 && dd_view_x14_get() == 2))
         cat = 9;
     hl_category = cat;
     hl_state = 0;
@@ -126,11 +126,11 @@ void hl_update(void)
     case 0:
         if (fade_is_done()) {
             hl_state = 1;
-            func_08806434(0x87, 0);
+            dd_scene_flags(0x87, 0);
             heap = func_0881CA74();
-            gim = func_088044B0(0x40020);
-            texts = func_08804538(cfg_get_language() + 0x80017);
-            hscene_init(hl_category, heap, gim, texts, func_08804538(cfg_get_language() + 0x8001E));
+            gim = dd_gim_get(0x40020);
+            texts = dd_bin_get(cfg_get_language() + 0x80017);
+            hscene_init(hl_category, heap, gim, texts, dd_bin_get(cfg_get_language() + 0x8001E));
         }
         break;
     case 2:
@@ -172,7 +172,7 @@ int hl_allowed(void)
     }
     if (sysvar_get_a98() != 0)
         return 0;
-    if (func_08806D04() != 0)
+    if (dd_is_tag_duel() != 0)
         return 0;
     if (dd_cutin_looping() != 0)
         return 0;
@@ -182,6 +182,6 @@ int hl_allowed(void)
 void hl_close(void)
 {
     hl_state = 2;
-    func_08806434(0x87, 1);
+    dd_scene_flags(0x87, 1);
     fade_start(1, 0xFF000000, 16);
 }

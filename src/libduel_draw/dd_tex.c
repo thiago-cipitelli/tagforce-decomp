@@ -4,9 +4,9 @@
    texture (whole, a rectangle, or a copy of the screen in VRAM) and a card rendered into VRAM. */
 #include "dd_d3.h"
 
-void *func_08804A88(int id);           /* effect pack of a card id */
-void *func_088045C0(int id);
-unsigned int *func_088046F0(unsigned int *list, int id);
+void *dd_bg_get(int id);           /* effect pack of a card id */
+void *dd_pack_get(int id);
+unsigned int *dd_card_texture(unsigned int *list, int id);
 unsigned char *syspack_get(void);
 void *ehp_find(void *pack, const char *name, int *size);
 void *gim_set_texture(void *list, void *gim);
@@ -37,22 +37,22 @@ unsigned int *dd_tex_pack(unsigned int *list, int i)
         pack = syspack_get();
         break;
     case 25:
-        pack = func_08804A88(4934);
+        pack = dd_bg_get(4934);
         break;
     case 27:
-        pack = func_08804A88(4937);
+        pack = dd_bg_get(4937);
         break;
     case 29:
-        pack = func_08804A88(5791);
+        pack = dd_bg_get(5791);
         break;
     case 31:
-        pack = func_08804A88(4899);
+        pack = dd_bg_get(4899);
         break;
     case 32:
-        pack = func_08804A88(4933);
+        pack = dd_bg_get(4933);
         break;
     default:
-        pack = func_088045C0(0x80001);
+        pack = dd_pack_get(0x80001);
         break;
     }
     return gim_set_texture(list, ehp_find(pack, dd_tex_names[i], 0));
@@ -96,7 +96,7 @@ unsigned int *dd_tex_card(unsigned int *list, int id, int mode)
     void *tex;
 
     if (mode == 1)
-        return func_088046F0(list, id);
+        return dd_card_texture(list, id);
     tex = dd_vram_addr(0x160000);
     list = dl_tex_flush(list);
     list = gfx_set_draw_target(list, 0x160000, 0xFFFFFFFF, 128, 256, 3);

@@ -22,7 +22,7 @@ float dd_ease_lin_inv(int t, int len);
 float dd_ease_sin(int t, int len, int n);
 float dd_ease_cos_inv(int t, int len, int n);
 int dd_anim_step(void);
-int func_08806434(int a, int b);
+int dd_scene_flags(int a, int b);
 int dd_cue_se(int se, int t, int at, unsigned int *flags, unsigned int bit);
 int dd_task_create(void *update, void *a, void *b, int size);
 void *dd_task_mem(int task);
@@ -104,7 +104,7 @@ int dd_fx_swirl_update(int phase, DdFxSwirl *w)
         k = dd_ease_sin(w->t, 16, 1);
     else
         k = dd_ease_cos_inv(w->t, 16, 1);
-    if (func_08806434(8, -1) == 0)
+    if (dd_scene_flags(8, -1) == 0)
         dd_cue_se(0x6248, w->t, 0, &w->se, 1);
     if (phase == 1) {
         for (i = 0; i < 21; i++) {

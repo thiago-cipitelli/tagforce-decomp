@@ -19,7 +19,7 @@ DdLoc dd_cursor_grid[7][7] = {
     { { 0, 11, 0 }, { 0, 11, 1 }, { 0, 11, 2 }, { 0, 11, 3 }, { 0, 11, 4 }, { 0, 11, 5 }, { 0, 11, 6 } },
 };
 
-int func_0880B770(int player, int zone);
+int dd_zone_count(int player, int zone);
 int dd_cursor_nearest_slot(int player, DdCursor *c);
 int dd_cursor_nearest_hand(int player, DdCursor *c);
 int dv_n_grave(int player);
@@ -78,10 +78,10 @@ void dd_cursor_move(int key)
         }
         se_play(0x6212);
         if (cur.idx == 0 && step < 0)
-            c->cur.idx = func_0880B770(c->cur.player, 0xB);
+            c->cur.idx = dd_zone_count(c->cur.player, 0xB);
         c->cur.idx = c->cur.idx + (unsigned short)step;
         idx = c->cur.idx;
-        if (idx >= func_0880B770(c->cur.player, 0xB))
+        if (idx >= dd_zone_count(c->cur.player, 0xB))
             c->cur.idx = 0;
         dd_cursor_set(c->cur.player, 0xB, c->cur.idx, 0);
         return;
@@ -137,17 +137,17 @@ void dd_cursor_move(int key)
         c->row += dr;
     } else if (l.zone == 0xB) {
         idx = l.player;
-        if (func_0880B770(idx, 0xB) > 0) {
+        if (dd_zone_count(idx, 0xB) > 0) {
             if (zone == 0xD) {
                 if (cur.player == 0) {
                     if (key == 0x20)
                         idx = 0;
                     else
-                        idx = func_0880B770(idx, 0xB) - 1;
+                        idx = dd_zone_count(idx, 0xB) - 1;
                 } else if (key == 0x80) {
                     idx = 0;
                 } else {
-                    idx = func_0880B770(idx, 0xB) - 1;
+                    idx = dd_zone_count(idx, 0xB) - 1;
                 }
             } else {
                 idx = dd_cursor_nearest_hand(c->cur.player, c);

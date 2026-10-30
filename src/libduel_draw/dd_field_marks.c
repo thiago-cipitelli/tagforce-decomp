@@ -109,7 +109,7 @@ void func_08822C2C(void)
     while( true ) {
       uVar4 = (uint)(byte)puVar8[iVar2];
       iVar2 = 0;
-      if (((uVar4 != 0) && (iVar1 = func_0880B7B8(uVar6,uVar5,0), iVar1 != 0)) &&
+      if (((uVar4 != 0) && (iVar1 = dd_cobj_at(uVar6,uVar5,0), iVar1 != 0)) &&
          (*(float *)(iVar1 + 0x70) < *(float *)(iVar1 + 0x74))) {
         uVar4 = 0;
       }
@@ -204,28 +204,28 @@ void func_08822E30(ushort param_1,ushort param_2,undefined1 param_3,int param_4)
   case 7:
     uVar7 = 6;
   }
-  func_0880A8E0(auStack_20,auStack_30,(int)(short)local_4[0]);
+  dd_slot_xform(auStack_20,auStack_30,(int)(short)local_4[0]);
   uVar6 = (uint)(byte)local_4[0];
   local_1c = local_1c + 0.01;
   uVar5 = (uVar6 & 0x3f) >> 1;
   if (uVar5 == 0xc) {
     uVar3 = dv_n_18(uVar6 & 1);
-    fVar8 = (float)func_0880CC04(uVar3);
+    fVar8 = (float)dd_stack_y(uVar3);
     local_1c = local_1c + fVar8;
   }
   else if (uVar5 == 0xf) {
     uVar3 = dv_n_f(uVar6 & 1);
-    fVar8 = (float)func_0880CC04(uVar3);
+    fVar8 = (float)dd_stack_y(uVar3);
     local_1c = local_1c + fVar8;
   }
   else if (uVar5 == 0xd) {
     uVar3 = dv_n_d(uVar6 & 1);
-    fVar8 = (float)func_0880CC04(uVar3);
+    fVar8 = (float)dd_stack_y(uVar3);
     local_1c = local_1c + fVar8;
   }
   else if (uVar5 == 0xe) {
     uVar3 = dv_n_grave(uVar6 & 1);
-    fVar8 = (float)func_0880CC04(uVar3);
+    fVar8 = (float)dd_stack_y(uVar3);
     local_1c = local_1c + fVar8;
   }
   func_08820A8C(auStack_40,auStack_30,local_18 < 0.0);

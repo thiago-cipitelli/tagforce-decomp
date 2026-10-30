@@ -12,14 +12,14 @@ typedef struct DdCamera {              /* BOOT camera, 0xC0 */
     unsigned char rest[0x90];
 } DdCamera;
 
-typedef struct DdLight {               /* BOOT light, 0x3C */
+typedef struct DdDiceLight {               /* BOOT light, 0x3C */
     int type;
     unsigned int ambient, diffuse, specular;
     float pos[3];
     float dir[3];
     float spot[2];
     float att[3];
-} DdLight;
+} DdDiceLight;
 
 typedef struct DdModelDraw {           /* BOOT model_draw options, 0x34 */
     int layer[2];
@@ -71,11 +71,11 @@ float *vec3_normalize(float *out, float *v);
 unsigned int *lighting_enable(unsigned int *list);
 unsigned int *lighting_disable(unsigned int *list);
 unsigned int *light_set_ambient(unsigned int *list, unsigned int color);
-unsigned int *light_set(unsigned int *list, int n, DdLight *l);
+unsigned int *light_set(unsigned int *list, int n, DdDiceLight *l);
 unsigned int *light_enable(unsigned int *list, int n);
 void model_update(void *m, float *dt);
 void model_draw(void *m, DdModelDraw *c);
-void *func_08804268(int id);           /* model of the duel resources */
+void *dd_model_get(int id);           /* model of the duel resources */
 void *sceGeEdramGetAddr(void);
 void *gim_set_texture(void *list, void *gim);
 unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
@@ -105,7 +105,7 @@ static unsigned int *dd_dice_scene_begin(unsigned int *list, float scale, DdCame
     FxVec4 eye = { 0.0f, 0.0f, -1.0f, 0.0f };
     FxVec4 at = { 0 };
     FxVec4 up = { 0.0f, 1.0f, 0.0f, 0.0f };
-    DdLight l0, l1;
+    DdDiceLight l0, l1;
     float t;
 
     list = gfx_set_draw_target(list, 0x160000, 0xFFFFFFFF, 128, 128, 3);
@@ -171,7 +171,7 @@ static unsigned int *dd_dice_scene_end(unsigned int *list, int model_id, DdCamer
     md.layer[1] = md.layer[0];
     md.front = 1;
     dl_set_list(list);
-    model = func_08804268(model_id);
+    model = dd_model_get(model_id);
     if (model != 0) {
         model_update(model, 0);
         model_draw(model, &md);

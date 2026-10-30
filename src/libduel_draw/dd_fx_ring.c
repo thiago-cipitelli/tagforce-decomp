@@ -81,7 +81,7 @@ int dd_ring_update(int phase, DdRingFx *d)
     dd_mtx_billboard_view(&bill);
     if (d->count == 20) {
         if (!(d->flags & 1) && d->t >= 360) {
-            func_0880773C(0x169C);
+            dd_field_set(0x169C);
             d->flags |= 1;
         }
         if (!(d->flags & 2) && d->t >= 510)

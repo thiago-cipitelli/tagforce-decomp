@@ -51,13 +51,13 @@ void dd_bigcard_leave(DdTask *t, void *arg);
 int dd_fx_cardaura_start(int card, int *xy, int a, int b);
 int dd_fx_noise_start(int *xy, int a, int b);
 int func_08819A70(void);
-int func_0880CC64(void);
+int dd_cobjs_idle(void);
 void func_08820938(DdTask *t, void *arg);
-void func_08809184(int uid);
+void dd_info_select(int uid);
 void func_08820A8C(void *out, void *pos, int back);
 int dd_fx_spin_start(float k, int a, float *pos, void *b, int c, int d, int e);
-void func_0880CDD8(DdCard *c, void (*cb)(void));
-void func_0880CE10(DdCard *c, void (*cb)(void));
+void dd_cobj_link_add(DdCard *c, void (*cb)(void));
+void dd_cobj_link_del(DdCard *c, void (*cb)(void));
 void func_08820D40(void);
 void dd_task_pause(int h);
 void dd_task_kill(int h);
@@ -96,7 +96,7 @@ void dd_popup_now(int player, int card, int flag, int text)
 #ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_popup_wait(float dt, DdTask *t, DdCardPopup *p)
 {
-    if (func_08819A70() == 0 && func_0880CC64() != 0) {
+    if (func_08819A70() == 0 && dd_cobjs_idle() != 0) {
         dd_popup(p->player, 0x10, p->card, 0, p->text);
         dd_task_remove_cur();
         return;
@@ -111,11 +111,11 @@ void dd_popup(int player, int zone, int card, int flag, int text)
     DdCardPopup *p;
     DdTask t;
 
-    if (func_08819A70() == 0 && func_0880CC64() != 0) {
+    if (func_08819A70() == 0 && dd_cobjs_idle() != 0) {
         dd_popup_now(player, card, flag, text);
         req_flag_set(flag);
         if (zone == 0x10)
-            func_08809184(card);
+            dd_info_select(card);
         else
             dd_cursor_set(player, zone, 0, 1);
         return;
@@ -155,7 +155,7 @@ void dd_glow_on(DdCard *c)
             break;
         }
     }
-    func_0880CDD8(c, func_08820D40);
+    dd_cobj_link_add(c, func_08820D40);
 }
 #endif
 
@@ -174,7 +174,7 @@ void dd_glow_off(DdCard *c)
             break;
         }
     }
-    func_0880CE10(c, func_08820D40);
+    dd_cobj_link_del(c, func_08820D40);
 }
 #endif
 
@@ -191,7 +191,7 @@ void dd_glow_all_off(void)
             dd_task_pause(c->glow);
             c->glow = -1;
             s->glow[i] = 0;
-            func_0880CE10(c, func_08820D40);
+            dd_cobj_link_del(c, func_08820D40);
         }
     }
 }

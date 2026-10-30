@@ -1,0 +1,73 @@
+// @range 0x08807064-0x0880720C
+/* The duel view as a whole: init and free of its parts (field, cursor, cards, LP panel...), the
+   3D pass of each frame and the per-frame update, gated by the scene flags. */
+#include "dd_d1.h"
+
+/* other ranges of libduel_draw */
+void dd_field_init(void);
+void dd_field_free(void);
+void dd_field_draw(void);
+void dd_field_update(float dt);
+void dd_info_init(void);
+void dd_info_term(void);
+void dd_info_draw(void);
+void dd_info_update(float dt);
+void dd_cobjs_setup(void);
+void dd_cobjs_clear(void);
+void dd_cobjs_draw(void);
+void dd_cobjs_update(float dt);
+void dd_lpp_clear(void);
+void dd_lpp_free(void);
+void dd_lpp_draw(void);
+void dd_lpp_update(float dt);
+void dd_cursor_init(void);
+void dd_cutin_init(void);
+void dd_cutin_term(void);
+
+/* reads the view parameters (debug build only; does nothing here) */
+int dd_param_load(int a, const char *path)
+{
+    return 0;
+}
+
+void dd_view_init(void)
+{
+    dd_field_init();
+    dd_info_init();
+    dd_cursor_init();
+    dd_cobjs_setup();
+    dd_cutin_init();
+    dd_lpp_clear();
+}
+
+void dd_view_free(void)
+{
+    dd_field_free();
+    dd_info_term();
+    dd_cobjs_clear();
+    dd_cutin_term();
+    dd_lpp_free();
+}
+
+/* clears layer 0 and draws the field, the cards and the effects */
+void dd_view_draw3d(void)
+{
+    dl_set_list(dl_clear(dl_clear_stencil(dl_clear_depth(dl_clear_color(dl_select_layer(0, 0), 0), 0), 0), 0x17));
+    if (dd_scene_flags(1, -1))
+        dd_field_draw();
+    if (dd_scene_flags(2, -1))
+        dd_cobjs_draw();
+    if (dd_scene_flags(4, -1))
+        dd_lpp_draw();
+    if (dd_scene_flags(4, -1))
+        dd_info_draw();
+}
+
+void dd_view_update(float dt)
+{
+    if (dd_scene_flags(1, -1))
+        dd_field_update(dt);
+    dd_cobjs_update(dt);
+    dd_lpp_update(dt);
+    dd_info_update(dt);
+}

@@ -52,7 +52,7 @@ void *mat3_rot_z(float *out, float *m, float angle);
 void *mat3_mul(float *out, float *a, float *b);
 FxVec3 *mat3_transform_vec3(FxVec3 *out, float *m, FxVec3 *v);
 
-void *func_088045C0(int id);
+void *dd_pack_get(int id);
 void *dd_alloc(int size);
 DdObj *dd_task_add(DdObj *desc);
 void dd_task_remove(DdObj *o);
@@ -124,13 +124,13 @@ void dd_lp_load(void)
 
     memset(m, 0, sizeof(*m));
     if (region_get() == 0) {
-        pack = func_088045C0(0x80001);
+        pack = dd_pack_get(0x80001);
         m->pnl01 = ehp_find(pack, "lp_pnl01_j.gim", 0);
         m->pnl02 = ehp_find(pack, "lp_pnl02_j.gim", 0);
         m->nmb01 = ehp_find(pack, "lp_pnl_nmb01_j.gim", 0);
         m->nmb02 = ehp_find(pack, "lp_pnl_nmb02_j.gim", 0);
     } else {
-        pack = func_088045C0(0x80001);
+        pack = dd_pack_get(0x80001);
         tmf = ehp_find(pack, "pnl_a00.tmf", 0);
         m->pnl_a01 = ehp_find(pack, "lp_pnl_a01.gim", 0);
         m->nmb01_a = ehp_find(pack, "lp_pnl_nmb01_a.gim", 0);

@@ -27,16 +27,16 @@ void func_088259E4(void *(*cb)(void *dl));
 void func_08825B7C(int v);
 int func_08825A14(void);
 int dv_08835924(void);
-int func_08806D04(void);
+int dd_is_tag_duel(void);
 int hl_allowed(void);
 void *dd_text(int id);
 void dd_mode_set_card(int card);
 void dv_08836028(void);
 void opt_open(void);
 void hl_open(void);
-void *func_0880B7B8(int side, int zone, int index);
-void func_0880A8E0(DdVec4A *pos, DdVec4A *rot, short loc);
-void *func_088044B0(int id);
+void *dd_cobj_at(int side, int zone, int index);
+void dd_slot_xform(DdVec4A *pos, DdVec4A *rot, short loc);
+void *dd_gim_get(int id);
 
 void popup_build(void);
 void popup_menu_setup(MenuWidget *w, int init);
@@ -74,7 +74,7 @@ void popup_build(void)
         p->items[n] = 1;
         n++;
     }
-    if (func_08806D04() == 0) {
+    if (dd_is_tag_duel() == 0) {
         p->items[n] = 2;
         n++;
     }
@@ -160,14 +160,14 @@ void popup_place(MenuWidget *w, int side, int zone, int index)
 
     if (w == 0)
         return;
-    e = func_0880B7B8(side, zone, index);
+    e = dd_cobj_at(side, zone, index);
     if (e == 0 || zone != 0xB) {
         PopupLoc loc = { 0 };
 
         loc.side = side;
         loc.zone = zone;
         loc.index = index;
-        func_0880A8E0(&pos, &rot, *(short *)&loc);
+        dd_slot_xform(&pos, &rot, *(short *)&loc);
     } else {
         pos = *(DdVec4A *)(e + 0x10);
         rot = *(DdVec4A *)(e + 0x40);
@@ -226,7 +226,7 @@ void *popup_draw_item(void *dl, int index, int x, int y)
 
     dl = dl_ambient_color(dl, 0xFFFFFFFF);
     dl = dl_set_tex_filter(dl, 0, 1);
-    dl = gim_set_texture(dl, func_088044B0(0x40005));
+    dl = gim_set_texture(dl, dd_gim_get(0x40005));
     dl = draw_set_offsets(dl, 13, 13, 13, 13);
     dl = draw_sprite(dl, x, y + 1, 0, it->u, it->v, 0, 0);
     font_set_size(12, 12);

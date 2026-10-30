@@ -12,7 +12,7 @@ void *ehf_draw(void *list, void *ehf, DdEhfOpts *o);
 void *gfx_end_2d(void *list);
 void *dl_clear_stencil(void *list, unsigned int s);
 void *dl_clear(void *list, unsigned int flags);
-void *func_0880507C(unsigned int chr, int variant);
+void *dd_cutin_get(unsigned int chr, int variant);
 
 extern DdRyusen dd_ryusen;
 
@@ -25,7 +25,7 @@ void *dd_ryusen_draw(void *list)
     void *pack;
     DdEhfOpts o;
 
-    if (r->chr != 0 && (pack = func_0880507C(r->chr, r->variant)) != 0)
+    if (r->chr != 0 && (pack = dd_cutin_get(r->chr, r->variant)) != 0)
         ehf = ehp_find(pack, dd_ryusen_name, 0);
     if (ehf == 0)
         return list;

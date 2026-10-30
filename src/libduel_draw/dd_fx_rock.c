@@ -36,7 +36,7 @@ void dd_mtx_billboard_field(FxMat4 *out);
 void dd_translate3(float x, float y, float z);
 void dd_scale3(float x, float y, float z);
 void dd_mat3_rot_x(float a, float *out, float *m);
-void func_08807890(FxVec4 *up);
+void dd_field_dir_get(FxVec4 *up);
 int dd_task_create(void *update, void *a, void *b, int size);
 void *dd_task_mem(int task);
 void *dd_depth_enable(void *list, int on, int mask);
@@ -209,7 +209,7 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
                 w->cell[i][j * 2 + 1].z = 0.0f;
             }
         }
-        func_08807890(&up);
+        dd_field_dir_get(&up);
         vec3_normalize2(&y, &dir);
         vec3_cross(&x, &y, &up);
         vec3_normalize2(&x, &x);

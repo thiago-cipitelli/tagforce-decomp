@@ -95,7 +95,7 @@ void dd_mode_set_flag(int mode);
 void *dd_mode_draw_one(void *dl, int mode);
 void dd_mode_pop(void);
 void *func_0881CA74(void);
-void *func_088045C0(int id);
+void *dd_pack_get(int id);
 PadState *dd_pad(void);
 
 void opt_read(OptValues *v);
@@ -729,7 +729,7 @@ void opt_start(void)
 {
     opt_state = 1;
     fade_start_in(1, 0xFF000000, 16);
-    opt_init(func_0881CA74(), func_088045C0(0x80001), 1);
+    opt_init(func_0881CA74(), dd_pack_get(0x80001), 1);
 }
 
 void opt_term(void)

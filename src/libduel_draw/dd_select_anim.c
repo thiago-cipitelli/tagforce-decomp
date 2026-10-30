@@ -21,8 +21,8 @@ int dd_mode_get(void);
 void dd_mode_push(int mode);
 void dd_mode_set_flag(int mode);
 void dd_mode_pop(void);
-void func_08809CFC(int side, int zone);
-void func_0880BB70(int side, int on);
+void dd_cobjs_map(int side, int zone);
+void dd_zone_rebuild(int side, int on);
 void req_flag_set(int i);
 unsigned int cfg_get_bits_1_3_4(void);
 int dv_side_to_player(int side);
@@ -73,8 +73,8 @@ void sel_update(void)
         if (t >= SEL_HALF()) {
             s->state = 2;
             s->t = 0;
-            func_08809CFC(s->side, s->zone);
-            func_0880BB70(s->side, 1);
+            dd_cobjs_map(s->side, s->zone);
+            dd_zone_rebuild(s->side, 1);
         }
         break;
     case 2:

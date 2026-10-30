@@ -16,9 +16,9 @@ extern DdMat4 zone_views[3];           /* 0x08C5B300 */
 int dv_side_to_player(int side);
 int dv_slot_uid(int side, int z);
 void dv_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
-void *func_0880B7B8(int side, int zone, int index);
-void func_0880C758(short arg, int value, int uid);
-void func_0880C748(void *card, int value, int uid);
+void *dd_cobj_at(int side, int zone, int index);
+void dd_cobj_spawn(short arg, int value, int uid);
+void dd_cobj_set_card(void *card, int value, int uid);
 unsigned int *dd_pad(void);
 void dd_chara_busy_set(void);
 int mtx_get_mode(void);
@@ -34,14 +34,14 @@ void zone_cmd(PopupLoc loc, ZoneArg arg, int value)
 
     dv_cmd((dv_side_to_player(side) ? 0x8000 : 0) | 0x44, zone | (index & 0xFF) << 8, value,
            arg.huge * 10 + arg.big);
-    card = func_0880B7B8(side, zone, index);
+    card = dd_cobj_at(side, zone, index);
     if (card == 0) {
-        func_0880C758(*(short *)&arg, value, dv_slot_uid(side, zone));
-        card = func_0880B7B8(side, zone, index);
+        dd_cobj_spawn(*(short *)&arg, value, dv_slot_uid(side, zone));
+        card = dd_cobj_at(side, zone, index);
         if (card == 0)
             return;
     }
-    func_0880C748(card, value, *(unsigned short *)(card + 0x88));
+    dd_cobj_set_card(card, value, *(unsigned short *)(card + 0x88));
 }
 #else
 void zone_cmd(PopupLoc loc, ZoneArg arg, int value);

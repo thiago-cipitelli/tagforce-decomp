@@ -23,7 +23,7 @@ unsigned short guide_title[2] = { 0xFF0B, 0 };
 void *dd_text(int id);
 void *dl_select_layer(int layer, unsigned int *size);
 int dl_set_list(void *list);
-void *func_088044B0(int id);
+void *dd_gim_get(int id);
 unsigned int font_measure_wtext2(int w, int h, unsigned short *text);
 int int_abs(int x);
 int cfg_get_language(void);
@@ -69,7 +69,7 @@ void guide_draw(void)
     }
     dl = dl_select_layer(8, 0);
     dl = dl_disable(dl, 1);
-    gim = func_088044B0(0x40026);
+    gim = dd_gim_get(0x40026);
     hw = tw / 2;
     if (gim != 0) {
         *(int *)title = *(int *)guide_title;
@@ -132,7 +132,7 @@ void guide_size(int *w, int *h, GuideCaption *c);
 
 void *guide_pad_picture(void *dl, int x, int y, int which)
 {
-    void *gim = func_088044B0(0x40026);
+    void *gim = dd_gim_get(0x40026);
 
     if (gim != 0) {
         dl = gim_set_texture(dl, gim);

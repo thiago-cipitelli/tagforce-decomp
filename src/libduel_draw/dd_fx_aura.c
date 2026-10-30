@@ -29,7 +29,7 @@ void dd_mtx_push_cam(void);
 void dd_mtx_pop_all(void);
 void dd_mtx_strip(FxMat4 *out, FxMat4 *m);
 int dd_cue_se(int se, int t, int at, unsigned int *flags, unsigned int bit);
-int func_08813FC4(int who, int ev);
+int dd_chr_part_hidden(int who, int ev);
 void *dd_depth_enable(void *list, int on, int mask);
 void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
 void *dd_tex_pack(void *list, int tex);
@@ -171,11 +171,11 @@ int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
     if (w->started == 0) {
         go = 0;
         if (w->bone == 41) {
-            if (func_08813FC4(((int *)arg)[5], 8) == 1)
+            if (dd_chr_part_hidden(((int *)arg)[5], 8) == 1)
                 go = 1;
-        } else if (func_08813FC4(((int *)arg)[5], 9) == 1) {
+        } else if (dd_chr_part_hidden(((int *)arg)[5], 9) == 1) {
             go = 1;
-        } else if (func_08813FC4(((int *)arg)[5], 10) == 1) {
+        } else if (dd_chr_part_hidden(((int *)arg)[5], 10) == 1) {
             go = 1;
         }
         phase = 1;

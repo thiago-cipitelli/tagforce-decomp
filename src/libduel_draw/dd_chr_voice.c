@@ -38,7 +38,7 @@ extern VoiceCast voice_cast_default;   /* 0x0887C954 */
 extern VoiceEvent voice_event_default; /* 0x0887C970 */
 
 int dd_chara_busy(void);
-int func_088069B0(void);
+int dd_view_tag_get(void);
 int snd_channel_get_u32(int slot);
 int partner_snd_channel(int slot, int se, int delay);
 void snd_cmd_fef8_arg(int arg);
@@ -205,7 +205,7 @@ void voice_pick_cast(ChrModel *m, int ev, unsigned int flags)
             switch (card_get_prop5_hi(m->card_id)) {
             case 0:
                 *p = RND(4) + 0x17A;
-                if (func_088069B0() == 0) {
+                if (dd_view_tag_get() == 0) {
                     if (m->card_id == 0x12EC)
                         p[1] = 0x199;
                     else if (m->card_id == 0x12CC)
@@ -336,7 +336,7 @@ void voice_pick_generic(ChrModel *m, int ev, unsigned int flags)
             switch (card_get_prop5_hi(m->card_id)) {
             case 0:
                 *p = 0xF;
-                if (func_088069B0() == 0) {
+                if (dd_view_tag_get() == 0) {
                     if (m->card_id == 0x12EC)
                         p[1] = 0x1B;
                     else if (m->card_id == 0x12CC)

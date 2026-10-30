@@ -9,7 +9,7 @@
 extern DdEvState dd_ev_state;          /* 0x08C5476C */
 extern int dd_ev_sorted;               /* 0x08C54798 */
 
-int func_08806434(int a, int b);
+int dd_scene_flags(int a, int b);
 
 /* the handlers (dd_event_cmd.c); the argument shapes are in the table */
 int dd_ev_01();
@@ -175,7 +175,7 @@ void dd_ev_slot_set(int i, int a, int b, int c)
 void dd_ev_8817670(int v)
 {
     dd_ev_state.unk28 = v;
-    func_08806434(0x10, 1);
+    dd_scene_flags(0x10, 1);
     req_flag_set(0xC);
 }
 

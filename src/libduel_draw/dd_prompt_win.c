@@ -158,7 +158,7 @@ void func_0882382C(undefined4 param_1,uint param_2,int param_3,int param_4)
     ;
     param_1 = font_text_clear();
   }
-  iVar3 = func_088044B0(0x4001a);
+  iVar3 = dd_gim_get(0x4001a);
   if (iVar3 != 0) {
     param_1 = gim_set_texture(param_1,iVar3);
   }
@@ -423,7 +423,7 @@ void func_0882404C(undefined4 param_1,int param_2,int param_3)
   uVar4 = draw_set_offsets(uVar4,1,1,(int)(fVar8 + 2.0),(int)(fVar7 + 1.0));
   uVar4 = draw_sprite(uVar4,(int)(local_48 - 1.0),(int)(local_44 - 1.0),0,0x36,0x65,0,0);
   uVar4 = dd_wline_draw(uVar4,0,6,&local_48,1);
-  iVar2 = func_088044B0(0x40005);
+  iVar2 = dd_gim_get(0x40005);
   if (iVar2 != 0) {
     uVar4 = gim_set_texture(uVar4,iVar2);
   }
@@ -449,7 +449,7 @@ void func_08824374(undefined4 param_1,undefined4 param_2,undefined4 param_3,uint
 {
   int iVar1;
   undefined4 uVar2;
-  iVar1 = func_088044B0(0x40004);
+  iVar1 = dd_gim_get(0x40004);
   if (iVar1 != 0) {
     uVar2 = dl_enable(param_1,9);
     param_1 = gim_set_texture(uVar2,iVar1);
@@ -472,7 +472,7 @@ void func_08824484(undefined4 param_1,undefined4 param_2,undefined4 param_3)
 {
   int iVar1;
   undefined4 uVar2;
-  iVar1 = func_088044B0(0x40005);
+  iVar1 = dd_gim_get(0x40005);
   if (iVar1 != 0) {
     uVar2 = dl_enable(param_1,9);
     param_1 = gim_set_texture(uVar2,iVar1);
@@ -643,7 +643,7 @@ void func_08824794(undefined4 param_1,int param_2,int param_3)
   uVar4 = draw_set_offsets(uVar4,1,1,(int)(fVar8 + 2.0),(int)(fVar7 + 1.0));
   uVar4 = draw_sprite(uVar4,(int)(local_48 - 1.0),(int)(local_44 - 1.0),0,0x36,0x65,0,0);
   uVar4 = dd_wline_draw(uVar4,0,6,&local_48,1);
-  iVar2 = func_088044B0(0x40005);
+  iVar2 = dd_gim_get(0x40005);
   if (iVar2 != 0) {
     uVar4 = gim_set_texture(uVar4,iVar2);
   }
@@ -669,7 +669,7 @@ void func_08824ABC(undefined4 param_1,undefined4 param_2,undefined4 param_3,uint
 {
   int iVar1;
   undefined4 uVar2;
-  iVar1 = func_088044B0(0x40004);
+  iVar1 = dd_gim_get(0x40004);
   if (iVar1 != 0) {
     uVar2 = dl_enable(param_1,9);
     param_1 = gim_set_texture(uVar2,iVar1);
@@ -693,7 +693,7 @@ void func_08824C08(undefined4 param_1,undefined4 param_2,undefined4 param_3)
 {
   int iVar1;
   undefined4 uVar2;
-  iVar1 = func_088044B0(0x40005);
+  iVar1 = dd_gim_get(0x40005);
   if (iVar1 != 0) {
     uVar2 = dl_enable(param_1,9);
     param_1 = gim_set_texture(uVar2,iVar1);

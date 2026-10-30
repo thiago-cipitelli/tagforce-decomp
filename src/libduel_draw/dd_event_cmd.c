@@ -21,42 +21,42 @@ extern int dd_ev_flip_cutin;           /* 0x08C547AC the next flip plays the cut
 extern int dd_ev_player;               /* 0x08C547B0 */
 
 /* other files and ranges (unprototyped: some are called with fewer arguments) */
-void *func_088043E4();
-int func_088069C8();
-int func_08806B5C();
-int func_08806C78();
-int func_08806D04();
-int func_08806D58();
-int func_08806E58();
-int func_08807018();
-int func_0880773C();
-int func_08809184();
-int func_088091C8();
-int func_08809340();
-int func_08809474();
-int func_08809DF0();
-int func_08809FA0();
-int func_0880A47C();
-int func_0880A6B0();
-void *func_0880B7B8();
-void *func_0880B834();
-int func_0880B890();
-int func_0880C640();
-int func_0880C690();
-int func_0880C6EC();
-int func_0880C748();
-int func_0880C758();
-int func_0880C91C();
-int func_0880CA28();
-int func_0880CA60();
-int func_0880CE60();
-int func_0880CEC4();
+void *dd_ehf_get();
+int dd_game_flag119();
+int dd_08806B5C();
+int dd_view_x14_set();
+int dd_is_tag_duel();
+int dd_view_locs_set();
+int dd_loc_visible();
+int dd_view_x10_set();
+int dd_field_set();
+int dd_info_select();
+int dd_info_select_uid();
+int dd_info_show_uid();
+int dd_info_hide();
+int dd_cobjs_map_get();
+int dd_cobj_goto();
+int dd_cobj_flip();
+int dd_cobj_to_top();
+void *dd_cobj_at();
+void *dd_cobj_find();
+int dd_zone_sync();
+int dd_cobj_end_a2();
+int dd_cobj_end_a3();
+int dd_cobj_end_a4();
+int dd_cobj_set_card();
+int dd_cobj_spawn();
+int dd_cobj_remove();
+int dd_cobj_hide();
+int dd_cobj_extra_up();
+int dd_cobjs_counters();
+int dd_zone_anim_update();
 int func_0880D028();
-int func_0880D16C();
-int func_0880D21C();
-int func_08811D18();
-int func_08811D98();
-int func_08811DC4();
+int dd_hl_push();
+int dd_hl_pop();
+int dd_lpp_set();
+int dd_lpp_turn_set();
+int dd_lpp_phase_set();
 int dd_ev_36();
 int dd_sel_open_engine();
 void *dd_alloc();
@@ -133,7 +133,7 @@ int dd_ev_01(void)
     DdCutinDesc d;
 
     memset(&d, 0, sizeof(d));
-    d.ehf = func_088043E4(0x20004);
+    d.ehf = dd_ehf_get(0x20004);
     d.end = -1;
     d.flag = 1;
     d.always = 1;
@@ -164,7 +164,7 @@ int dd_ev_02(int kind)
         break;
     }
     memset(&d, 0, sizeof(d));
-    d.ehf = func_088043E4(id);
+    d.ehf = dd_ehf_get(id);
     d.end = -1;
     d.loop_from = 0x32;
     d.loop_to = 0x46;
@@ -182,14 +182,14 @@ int dd_ev_02(int kind)
             k = dv_unk2c(1);
             if (k == 0xB)
                 k = 9;
-            else if (k == 8 && func_088069C8() != 0)
+            else if (k == 8 && dd_game_flag119() != 0)
                 k = 1;
             d.text = k + 0x4F;
         } else {
             k = dv_unk2c(0);
             if (k == 0xB)
                 k = 9;
-            else if (k == 8 && func_088069C8() != 0)
+            else if (k == 8 && dd_game_flag119() != 0)
                 k = 1;
             d.text = k + 0x43;
         }
@@ -207,7 +207,7 @@ int dd_ev_03(void)
         void (*get)(DdLoc *out);
     } arg;
 
-    func_08807018(1);
+    dd_view_x10_set(1);
     if (dv_phase() == 0) {
         found = 0;
         if (dv_08835AEC(0, 0xD, 0) & 0x1000) {
@@ -240,10 +240,10 @@ int dd_ev_04(int player, int phase)
 {
     DdCutinDesc d;
 
-    func_08811D98(dv_player_to_side(player), 0);
-    func_08811DC4(phase, 0);
+    dd_lpp_turn_set(dv_player_to_side(player), 0);
+    dd_lpp_phase_set(phase, 0);
     memset(&d, 0, sizeof(d));
-    d.ehf = func_088043E4(0x20009);
+    d.ehf = dd_ehf_get(0x20009);
     d.flag = 4;
     d.done = 0;
     d.done_arg = 0;
@@ -280,8 +280,8 @@ int dd_ev_04(int player, int phase)
     }
     dd_cutin_play(&d);
     if (phase == 3)
-        func_0880CE60(0);
-    func_08809474(0);
+        dd_cobjs_counters(0);
+    dd_info_hide(0);
     dd_mark_hide();
     func_088259D8();
     return 1;
@@ -293,9 +293,9 @@ int dd_ev_05(int player)
 {
     DdCutinDesc d;
 
-    func_08811D98(dv_player_to_side(player), 0);
+    dd_lpp_turn_set(dv_player_to_side(player), 0);
     memset(&d, 0, sizeof(d));
-    d.ehf = func_088043E4(0x20008);
+    d.ehf = dd_ehf_get(0x20008);
     d.flag = 5;
     d.se = 0x6230;
     d.done = 0;
@@ -320,7 +320,7 @@ int dd_ev_05(int player)
 
 int dd_ev_06(void)
 {
-    func_0880773C();
+    dd_field_set();
     return 1;
 }
 
@@ -342,7 +342,7 @@ int dd_ev_09(int player)
     dd_ev_player = player;
     dd_ev_reset(dv_player_to_side(player));
     dd_mark_hide();
-    func_08809474(0);
+    dd_info_hide(0);
     return 1;
 }
 
@@ -378,8 +378,8 @@ int dd_ev_11(int zone, int tplayer, int tzone)
     t.zone = tzone;
     a.player = dv_player_to_side(me);
     a.zone = zone;
-    func_08806D58(a, t);
-    card = func_0880B7B8(dv_player_to_side(me), zone, 0);
+    dd_view_locs_set(a, t);
+    card = dd_cobj_at(dv_player_to_side(me), zone, 0);
     atk = card_get_atk(card->id);
     def = card_get_def(card->id);
     aid = card->uid;
@@ -388,7 +388,7 @@ int dd_ev_11(int zone, int tplayer, int tzone)
         if (tzone >= 5) {
             dd_ev_slot_set(dv_player_to_side(tplayer), -1, 0, 0);
         } else {
-            card = func_0880B7B8(dv_player_to_side(tplayer), tzone, 0);
+            card = dd_cobj_at(dv_player_to_side(tplayer), tzone, 0);
             atk = card_get_atk(card->id);
             def = card_get_def(card->id);
             tid = card->uid;
@@ -405,7 +405,7 @@ int dd_ev_11(int zone, int tplayer, int tzone)
         dd_ev_attack[2] = dv_player_to_side(tplayer);
         dd_ev_attack[3] = tzone;
         memset(&d, 0, sizeof(d));
-        d.ehf = func_088043E4(0x2000D);
+        d.ehf = dd_ehf_get(0x2000D);
         d.end = -1;
         d.done = (void (*)(int))dd_ev_attack_done;
         d.done_arg = (int)dd_ev_attack;
@@ -419,11 +419,11 @@ int dd_ev_11(int zone, int tplayer, int tzone)
         dd_cutin_play(&d);
         req_flag_set(0xB);
     }
-    func_08809340(1 - dv_player_to_side(me), aid, 0);
+    dd_info_show_uid(1 - dv_player_to_side(me), aid, 0);
     l.player = dv_player_to_side(tplayer);
     l.zone = tzone;
-    if (tid >= 0 && func_08806E58(l) != 0)
-        func_088091C8(tid);
+    if (tid >= 0 && dd_loc_visible(l) != 0)
+        dd_info_select_uid(tid);
     return 1;
 }
 #endif
@@ -431,7 +431,7 @@ int dd_ev_11(int zone, int tplayer, int tzone)
 /* 12: battle damage step */
 int dd_ev_12(void)
 {
-    func_0880CEC4(1);
+    dd_zone_anim_update(1);
     func_0882059C(0xC, func_0880D028, 0);
     dd_ev_8817670(0x46);
     dd_mark_hide();
@@ -440,7 +440,7 @@ int dd_ev_12(void)
 
 int dd_ev_13(int player, int a)
 {
-    func_08811D18(dv_player_to_side(player), a, 0);
+    dd_lpp_set(dv_player_to_side(player), a, 0);
     return 1;
 }
 
@@ -469,15 +469,15 @@ int dd_ev_17(int player, int a)
     int idx;
 
     idx = dv_hand_uid(dv_player_to_side(player), a);
-    card = func_0880B834(dv_player_to_side(player), 0xB, idx);
-    func_0880CA28(card);
-    func_088091C8(card->uid);
+    card = dd_cobj_find(dv_player_to_side(player), 0xB, idx);
+    dd_cobj_hide(card);
+    dd_info_select_uid(card->uid);
     return 1;
 }
 
 int dd_ev_18(int player, int a)
 {
-    func_0880CA60(dv_player_to_side(player), a);
+    dd_cobj_extra_up(dv_player_to_side(player), a);
     return 1;
 }
 
@@ -489,19 +489,19 @@ int dd_ev_19(int player)
 
 int dd_ev_20(int player, int a)
 {
-    func_0880B890(dv_player_to_side(player), a);
+    dd_zone_sync(dv_player_to_side(player), a);
     return 1;
 }
 
 int dd_ev_21(int player, int a)
 {
-    func_0880A47C(dv_player_to_side(player), a);
+    dd_cobj_flip(dv_player_to_side(player), a);
     return 1;
 }
 
 int dd_ev_22(int player, int a, int b)
 {
-    func_0880A6B0(dv_player_to_side(player), a, b);
+    dd_cobj_to_top(dv_player_to_side(player), a, b);
     return 1;
 }
 
@@ -513,9 +513,9 @@ int dd_ev_23(int player, int zone, int idx, int show)
     dd_cursor_set(dv_player_to_side(player), zone, idx, 1);
     dd_lock_cursor();
     if (show != 0) {
-        card = func_0880B7B8(dv_player_to_side(player), zone, idx);
+        card = dd_cobj_at(dv_player_to_side(player), zone, idx);
         if (card != 0)
-            func_088091C8(card->uid);
+            dd_info_select_uid(card->uid);
     }
     return 1;
 }
@@ -530,9 +530,9 @@ int dd_ev_24(int uid, int arg, DdLoc2 from, DdLoc2 to)
     to.player = dv_player_to_side(to.player);
     id = dv_list_id(uid);
     if (card_is_attribute9(id) == 0 || (unsigned int)(to.zone - 0xE) > 2)
-        func_08809FA0(to, from, uid, arg);
+        dd_cobj_goto(to, from, uid, arg);
     else
-        func_0880C91C(from, id, uid & 0xFFFF);
+        dd_cobj_remove(from, id, uid & 0xFFFF);
     return 1;
 }
 #endif
@@ -544,17 +544,17 @@ int dd_ev_25(int a, DdLoc2 p, DdLoc2 q)
 
     p.player = dv_player_to_side(p.player);
     q.player = dv_player_to_side(q.player);
-    u1 = ((DdCard *)func_0880B7B8(p.player, p.zone, 0))->uid;
-    u2 = ((DdCard *)func_0880B7B8(q.player, q.zone, 0))->uid;
-    func_08809FA0(q, p, u1, 0);
-    func_08809FA0(p, q, u2, 0);
+    u1 = ((DdCard *)dd_cobj_at(p.player, p.zone, 0))->uid;
+    u2 = ((DdCard *)dd_cobj_at(q.player, q.zone, 0))->uid;
+    dd_cobj_goto(q, p, u1, 0);
+    dd_cobj_goto(p, q, u2, 0);
     return 1;
 }
 
 int dd_ev_26(DdLoc2 p)
 {
     p.player = dv_player_to_side(p.player);
-    func_08809FA0(p, p, -1, 0);
+    dd_cobj_goto(p, p, -1, 0);
     return 1;
 }
 
@@ -563,27 +563,27 @@ int dd_ev_27(DdLoc2 p, int a, unsigned short b)
     DdCard *card;
 
     p.player = dv_player_to_side(p.player);
-    card = func_0880B7B8(p.player, p.zone, p.idx);
+    card = dd_cobj_at(p.player, p.zone, p.idx);
     if (card != 0)
-        func_0880C748(card, a, b);
+        dd_cobj_set_card(card, a, b);
     else
-        func_0880C758(p, a, b);
+        dd_cobj_spawn(p, a, b);
     return 1;
 }
 
 int dd_ev_28(int player, int zone)
 {
-    DdCard *card = func_0880B7B8(dv_player_to_side(player), zone, 0);
+    DdCard *card = dd_cobj_at(dv_player_to_side(player), zone, 0);
 
     if (card == 0)
         return 1;
-    func_0880C640(card);
+    dd_cobj_end_a2(card);
     return 1;
 }
 
 int dd_ev_29(int player, int zone, int a, int idx)
 {
-    DdCard *card = func_0880B834(dv_player_to_side(player), zone, idx);
+    DdCard *card = dd_cobj_find(dv_player_to_side(player), zone, idx);
 
     if (card == 0)
         return 1;
@@ -593,7 +593,7 @@ int dd_ev_29(int player, int zone, int a, int idx)
 
 int dd_ev_30(int player, int zone)
 {
-    DdCard *card = func_0880B7B8(dv_player_to_side(player), zone, 0);
+    DdCard *card = dd_cobj_at(dv_player_to_side(player), zone, 0);
 
     if (card == 0)
         return 1;
@@ -632,7 +632,7 @@ int dd_ev_35(int player, int zone, int a, int b)
     if (zone == 0x10)
         card = 0;
     else
-        card = func_0880B7B8(dv_player_to_side(player), zone, 0);
+        card = dd_cobj_at(dv_player_to_side(player), zone, 0);
     dd_counter(card, a, b);
     return 1;
 }
@@ -642,7 +642,7 @@ int dd_ev_36(void)
 {
     if (dv_phase() != 3)
         return 1;
-    func_0880CEC4(0);
+    dd_zone_anim_update(0);
     func_0882059C(0, func_0880D028, 0);
     if (dv_mode_bit(1) == 0)
         dd_mark_hide();
@@ -654,7 +654,7 @@ int dd_ev_36(void)
 #ifdef NON_MATCHING /* cadeia de testes */
 int dd_ev_37(int player, int zone, int a, int card_id)
 {
-    DdCard *card = func_0880B7B8(dv_player_to_side(player), zone, 0);
+    DdCard *card = dd_cobj_at(dv_player_to_side(player), zone, 0);
 
     if (card == 0)
         return 1;
@@ -676,7 +676,7 @@ int dd_ev_37(int player, int zone, int a, int card_id)
 
 int dd_ev_38(int player, int zone, int a)
 {
-    DdCard *card = func_0880B7B8(dv_player_to_side(player), zone, 0);
+    DdCard *card = dd_cobj_at(dv_player_to_side(player), zone, 0);
 
     if (card == 0)
         return 1;
@@ -692,7 +692,7 @@ int dd_ev_39(int player, int a)
 
 int dd_ev_40(int player, int zone, int idx)
 {
-    DdCard *card = func_0880B834(dv_player_to_side(player), zone, idx);
+    DdCard *card = dd_cobj_find(dv_player_to_side(player), zone, idx);
 
     if (card == 0)
         return 1;
@@ -708,7 +708,7 @@ int dd_ev_41(void)
 
 int dd_ev_42(int player, int zone, int idx)
 {
-    DdCard *card = func_0880B834(dv_player_to_side(player), zone, idx);
+    DdCard *card = dd_cobj_find(dv_player_to_side(player), zone, idx);
 
     if (card == 0)
         return 1;
@@ -720,7 +720,7 @@ int dd_ev_42(int player, int zone, int idx)
 
 int dd_ev_43(int player, int zone, int idx)
 {
-    DdCard *card = func_0880B834(dv_player_to_side(player), zone, idx);
+    DdCard *card = dd_cobj_find(dv_player_to_side(player), zone, idx);
 
     if (card == 0)
         return 1;
@@ -736,7 +736,7 @@ int dd_ev_44(void)
 
 int dd_ev_45(int player, int zone, int idx)
 {
-    DdCard *card = func_0880B834(dv_player_to_side(player), zone, idx);
+    DdCard *card = dd_cobj_find(dv_player_to_side(player), zone, idx);
 
     if (card == 0)
         return 1;
@@ -749,7 +749,7 @@ int dd_ev_45(int player, int zone, int idx)
 int dd_ev_46(int player, int zone, int idx)
 {
     dd_ev_flip_cutin = 1;
-    func_0880D16C(dv_player_to_side(player), zone, idx);
+    dd_hl_push(dv_player_to_side(player), zone, idx);
     return 1;
 }
 
@@ -760,7 +760,7 @@ void dd_ev_flip_done(DdFlip *f)
 
     if (f->value > 0)
         dd_popup(l.player, l.zone, f->value, 0x2F, 0);
-    func_0880D21C(l.player, l.zone, l.idx);
+    dd_hl_pop(l.player, l.zone, l.idx);
     dd_free(f);
 }
 
@@ -783,7 +783,7 @@ int dd_ev_47(int player, int zone, int idx)
         f->loc.idx = idx;
         f->value = v;
         memset(&d, 0, sizeof(d));
-        d.ehf = func_088043E4(0x2000C);
+        d.ehf = dd_ehf_get(0x2000C);
         d.end = -1;
         d.done = (void (*)(int))dd_ev_flip_done;
         d.flag = 0x2F;
@@ -795,7 +795,7 @@ int dd_ev_47(int player, int zone, int idx)
     } else {
         if (v != 0 && !(((unsigned char *)h)[4] & 2) && !(((unsigned char *)h)[4] & 4))
             dd_popup(dv_player_to_side(player), zone, v, 0x2F, 0);
-        func_0880D21C(dv_player_to_side(player), zone, idx);
+        dd_hl_pop(dv_player_to_side(player), zone, idx);
     }
     return 1;
 }
@@ -822,7 +822,7 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
         msg = (void *)text;
         id = -1;
     }
-    func_08806C78(kind);
+    dd_view_x14_set(kind);
     switch (kind) {
     case 0:
         func_088226C0(msg, 0, 0);
@@ -833,7 +833,7 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
         else
             flag = 0;
         if ((int)arg > 0)
-            func_088091C8(arg);
+            dd_info_select_uid(arg);
         func_088226C0(msg, 1, flag);
         break;
     case 2:
@@ -846,7 +846,7 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
         case 0:
             if ((*dd_pad() & (region_pick_value(0) & 0xFFFF)) == 0)
                 goto done;
-            if (func_08806D04() != 0)
+            if (dd_is_tag_duel() != 0)
                 goto done;
             break;
         default:
@@ -868,7 +868,7 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
         break;
     case 7:
         func_08822838(msg, arg & 0xFFFF, arg >> 16);
-        func_088091C8(arg & 0xFFFF);
+        dd_info_select_uid(arg & 0xFFFF);
         break;
     case 8:
         func_08824CC8(msg);
@@ -941,21 +941,21 @@ int dd_ev_50(int player, int kind)
 
 int dd_ev_51(int player, int zone)
 {
-    DdCard *card = func_0880B7B8(dv_player_to_side(player), zone, 0);
+    DdCard *card = dd_cobj_at(dv_player_to_side(player), zone, 0);
 
     if (card == 0)
         return 1;
-    func_0880C690(card);
+    dd_cobj_end_a3(card);
     return 1;
 }
 
 int dd_ev_52(DdLoc2 p)
 {
-    DdCard *card = func_0880B7B8(dv_player_to_side(p.player), p.zone, 0);
+    DdCard *card = dd_cobj_at(dv_player_to_side(p.player), p.zone, 0);
 
     if (card == 0)
         return 1;
-    func_0880C6EC(card);
+    dd_cobj_end_a4(card);
     return 1;
 }
 
@@ -979,7 +979,7 @@ int dd_ev_53(int player, int uid, int n)
 
 int dd_ev_54(void)
 {
-    func_08809184();
+    dd_info_select();
     return 1;
 }
 
@@ -1041,7 +1041,7 @@ int dd_ev_61(int kind)
 
 int dd_ev_73(int player, int a)
 {
-    dd_chara_set_anim_range(func_08809DF0(dv_player_to_side(player)), func_08806B5C(dv_player_to_side(player)), a);
+    dd_chara_set_anim_range(dd_cobjs_map_get(dv_player_to_side(player)), dd_08806B5C(dv_player_to_side(player)), a);
     return 1;
 }
 
@@ -1049,17 +1049,17 @@ int dd_ev_73(int player, int a)
 #ifdef NON_MATCHING /* teste do segundo caso sai com bnez + b em vez de beqz */
 void func_088199C8(int on)
 {
-    if (on != 0 && func_08806434(8, -1) != 0)
+    if (on != 0 && dd_scene_flags(8, -1) != 0)
         return;
-    if (on == 0 && func_08806434(8, -1) == 0)
+    if (on == 0 && dd_scene_flags(8, -1) == 0)
         return;
     if (on != 0) {
         dd_chara_busy_clear();
-        func_08806434(8, 1);
+        dd_scene_flags(8, 1);
         dd_mode_push(6);
     } else {
         dd_mode_pop();
-        func_08806434(8, 0);
+        dd_scene_flags(8, 0);
         dd_chara_reset();
     }
 }

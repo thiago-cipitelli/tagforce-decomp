@@ -31,7 +31,7 @@ typedef struct DdFxCoinFly {           /* 0x90 */
 FxVec4 *vec4_copy(FxVec4 *out, FxVec4 *v);
 FxVec4 *vec4_set(FxVec4 *out, float x, float y, float z, float w);
 FxVec4 *vec3_lerp_w(FxVec4 *out, FxVec4 *a, FxVec4 *b, float t);
-void *func_08804268(int id);
+void *dd_model_get(int id);
 void model_update(void *m, float *a);
 void model_draw(void *m, DdFlyDraw *c);
 float dd_anim_speed(void);
@@ -89,7 +89,7 @@ int dd_fx_coinfly_update(int state, DdFxCoinFly *fx)
         fx->anim[1] = 0.0f;
         fx->anim[2] = 0.0f;
         fx->anim[3] = 0.0f;
-        fx->model = func_08804268(0x10020);
+        fx->model = dd_model_get(0x10020);
         dd_model_rewind(fx->model);
     }
     switch (fx->phase) {

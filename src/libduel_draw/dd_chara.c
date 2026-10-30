@@ -26,25 +26,25 @@ void caption_init(void);
 void voice_tables_init(void);
 void voice_tables_term(void);
 void caption_term(void);
-void func_08813840(DdCharSlot *s, int all);
-void *func_088138B8(void *list, DdCharSlot *s);
+void dd_chr_free(DdCharSlot *s, int all);
+void *dd_chr_draw(void *list, DdCharSlot *s);
 void dd_mtx_save(void);
-void func_088138F8(DdCharSlot *s);
-void func_08813974(DdCharSlot *s);
+void dd_chr_tick(DdCharSlot *s);
+void dd_chr_update(DdCharSlot *s);
 void dd_mon_cb_init(int chr, int variant, void *setup);
-void func_08813554(DdCharSlot *s, void *setup);
-void func_08813684(DdCharSlot *s);
+void dd_chr_init(DdCharSlot *s, void *setup);
+void dd_chr_load(DdCharSlot *s);
 void dd_lp_close(void);
-void func_08813AB8(DdCharSlot *s, int arg);
+void dd_chr_anim_set(DdCharSlot *s, int arg);
 void voice_reset(DdCharSlot *s);
 void voice_start(DdCharSlot *s, int a, int b);
-int func_08813F1C(DdCharSlot *s);
-void func_08813D48(DdCharSlot *s, void *out, int bone);
-void func_08813D8C(DdCharSlot *s, void *out, int bone);
+int dd_chr_anim_done(DdCharSlot *s);
+void dd_chr_bone_mtx(DdCharSlot *s, void *out, int bone);
+void dd_chr_attach_mtx(DdCharSlot *s, void *out, int bone);
 void voice_stop(DdCharSlot *s);
-void func_08813FB4(DdCharSlot *s, int arg);
-int func_08813FBC(DdCharSlot *s);
-void *func_0880507C(unsigned int chr, int variant);
+void dd_chr_flag_set(DdCharSlot *s, int arg);
+int dd_chr_flag_get(DdCharSlot *s);
+void *dd_cutin_get(unsigned int chr, int variant);
 void *dd_ryusen_draw(void *list);
 void dd_ryusen_set_layer(int layer);
 void dd_ryusen_set_chara(unsigned int chr, int variant);
@@ -116,7 +116,7 @@ void dd_chara_term(void)
     voice_tables_term();
     caption_term();
     for (i = 0, p = m; i < 4; i++, p = (DdCharMgr *)((char *)p + sizeof(DdCharSlot)))
-        func_08813840(p->slot, 1);
+        dd_chr_free(p->slot, 1);
     memset(m, 0, sizeof(*m));
     m->cur_idx = -1;
 }
@@ -138,7 +138,7 @@ void dd_chara_draw(void)
     mtx_push();
     mtx_set_mode(2);
     mtx_push();
-    list = func_088138B8(list, dd_chara_mgr.cur);
+    list = dd_chr_draw(list, dd_chara_mgr.cur);
     mtx_get_proj(&fovy, &aspect, &near, &far);
     far = 10000.0f;
     mtx_set_mode(0);
@@ -158,12 +158,12 @@ void dd_chara_draw(void)
 
 void dd_chara_update(void)
 {
-    func_088138F8(dd_chara_mgr.cur);
+    dd_chr_tick(dd_chara_mgr.cur);
 }
 
 int dd_chara_update2(void)
 {
-    func_08813974(dd_chara_mgr.cur);
+    dd_chr_update(dd_chara_mgr.cur);
     return 0;
 }
 
@@ -178,8 +178,8 @@ void dd_chara_load(int i, int chr, int variant)
     dd_mon_cb_init(chr, variant, setup);
     if (fn != 0)
         fn(setup);
-    func_08813554(s, setup);
-    func_08813684(s);
+    dd_chr_init(s, setup);
+    dd_chr_load(s);
     s->index = i;
 }
 
@@ -220,7 +220,7 @@ int dd_chara_redraw(int arg)
     dd_ryusen_set_layer(0x2000B);
     dd_ryusen_set_chara(m->cur->chr, m->cur->variant);
     dd_ryusen_set_alpha(0xFF, 1);
-    func_08813AB8(m->cur, arg);
+    dd_chr_anim_set(m->cur, arg);
     voice_reset(m->cur);
     return 1;
 }
@@ -236,7 +236,7 @@ int dd_chara_ready(void)
 
     if (m->busy != 0)
         return 1;
-    return func_08813F1C(m->cur);
+    return dd_chr_anim_done(m->cur);
 }
 
 void dd_chara_busy_clear(void)
@@ -257,12 +257,12 @@ void dd_chara_reset(void)
 
 void dd_chara_bone_pos(void *out, int bone)
 {
-    func_08813D48(dd_chara_mgr.cur, out, bone);
+    dd_chr_bone_mtx(dd_chara_mgr.cur, out, bone);
 }
 
 void dd_chara_bone_mtx(void *out, int bone)
 {
-    func_08813D8C(dd_chara_mgr.cur, out, bone);
+    dd_chr_attach_mtx(dd_chara_mgr.cur, out, bone);
 }
 
 float *dd_chara_view(void)
@@ -293,12 +293,12 @@ int dd_chara_busy(void)
 
 void dd_chara_set_08813FB4(int arg)
 {
-    func_08813FB4(dd_chara_mgr.cur, arg);
+    dd_chr_flag_set(dd_chara_mgr.cur, arg);
 }
 
 int dd_chara_get_08813FBC(void)
 {
-    return func_08813FBC(dd_chara_mgr.cur);
+    return dd_chr_flag_get(dd_chara_mgr.cur);
 }
 
 /* Face entry of slot `i`: from _kao-ptrs.txt in the character's pack, by variant for the two
@@ -310,7 +310,7 @@ int dd_chara_kao(int i)
     void *pack;
     int *t;
 
-    pack = func_0880507C(chr, variant);
+    pack = dd_cutin_get(chr, variant);
     if (pack == 0)
         return 0;
     t = ehp_find(pack, dd_kao_ptrs_name, 0);

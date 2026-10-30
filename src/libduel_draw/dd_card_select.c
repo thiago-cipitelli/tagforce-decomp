@@ -110,13 +110,13 @@ unsigned int *dd_pad(void);
 void *dd_alloc(int size);
 void dd_free(void *p);
 void *func_0881CA74(void);
-void *func_088044B0(int id);
-void func_08809184(int uid);
+void *dd_gim_get(int id);
+void dd_info_select(int uid);
 void dd_mode_push(int id);
 void dd_mode_set_flag(int id);
 void dd_mode_set_sel_cb(void (*cb)(void));
 void dd_mode_set_card(int id);
-int func_08806D04(void);
+int dd_is_tag_duel(void);
 int hl_allowed(void);
 void hl_open(void);
 void opt_open(void);
@@ -124,7 +124,7 @@ void func_08825B9C(MenuWidget *w);
 unsigned int *dd_wline_draw(unsigned int *list, int a, int n, float *v, int b);
 unsigned int *dd_wline_sprite(unsigned int *list, int a, float *p, float *q);
 unsigned int *func_088212C4(unsigned int *list, int x, int y, int icon);
-unsigned int *func_088046F0(unsigned int *list, int uid);
+unsigned int *dd_card_texture(unsigned int *list, int uid);
 int dv_0884C824(void);
 unsigned short *dv_0884C7EC(int i);
 int dv_0884C8E4(int id);
@@ -473,7 +473,7 @@ void *dd_sel_draw_item(void *dl, int i, int x, int y)
     r[7] = (float)(y + 0x93);
     r[10] = r[7];
     list = dd_wline_draw(list, 0, 4, r, 1);
-    gim = func_088044B0(0x40005);
+    gim = dd_gim_get(0x40005);
     if (gim != 0)
         list = gim_set_texture(list, gim);
     list = draw_set_offsets(dl_ambient_color(list, 0xFFFFFFFF), 0x25, 0xF, 0x25, 0xF);
@@ -485,7 +485,7 @@ void *dd_sel_draw_item(void *dl, int i, int x, int y)
         list = dd_sel_draw_icon(list, x + 8, y + 0x19, icons[0]);
         list = dd_sel_draw_icon(list, x + 0x18, y + 0x19, icons[1]);
     }
-    list = func_088046F0(list, uid);
+    list = dd_card_texture(list, uid);
     list = draw_set_offsets(list, 0x40, 0x40, 0x20, 0x2E);
     list = draw_sprite(list, x + 8, y + 0x2D, 0, 0, 0, 0, 0);
     k = -1;
@@ -496,7 +496,7 @@ void *dd_sel_draw_item(void *dl, int i, int x, int y)
         }
     }
     if (k >= 0) {
-        gim = func_088044B0(0x40005);
+        gim = dd_gim_get(0x40005);
         if (gim != 0)
             list = gim_set_texture(list, gim);
         list = dl_tex_func(list, 0, 1);
@@ -527,7 +527,7 @@ void *dd_sel_draw_item(void *dl, int i, int x, int y)
         case 1:
         case 2:
         case 3:
-            gim = func_088044B0(0x40006);
+            gim = dd_gim_get(0x40006);
             if (gim != 0)
                 list = gim_set_texture(list, gim);
             list = draw_set_offsets(dl_ambient_color(list, 0xFFFFFFFF), 8, 8, 8, 8);
@@ -585,7 +585,7 @@ void *dd_sel_draw_after(void *dl, int x0, int y0, int w0, int h0)
     font_draw_text((x + 8) << 6, (y + 2) << 6, 0x3C40, t);
     list = font_text_clear();
     px = font_get_cursor_x() >> 6;
-    gim = func_088044B0(0x40005);
+    gim = dd_gim_get(0x40005);
     if (gim != 0)
         list = gim_set_texture(list, gim);
     list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -597,7 +597,7 @@ void *dd_sel_draw_after(void *dl, int x0, int y0, int w0, int h0)
         font_draw_text((px + 0x35) << 6, (y + 2) << 6, (0x1E0 - (px + 0x35)) << 6, t);
         list = font_text_clear();
         px = font_get_cursor_x();
-        gim = func_088044B0(0x40006);
+        gim = dd_gim_get(0x40006);
         if (gim != 0)
             list = gim_set_texture(list, gim);
         list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -612,7 +612,7 @@ void *dd_sel_draw_after(void *dl, int x0, int y0, int w0, int h0)
         pos = s->list.scroll * bw / n;
         size = s->list.rows * bw / n;
     }
-    gim = func_088044B0(0x40004);
+    gim = dd_gim_get(0x40004);
     if (gim != 0)
         list = gim_set_texture(list, gim);
     list = card_draw_glow(list, x + 9, y + 0x9E, 1, gfx_get_state()[1], pos > 0);
@@ -643,7 +643,7 @@ void dd_sel_show(int i)
 
     if (uid < 1)
         uid = -1;
-    func_08809184(uid);
+    dd_info_select(uid);
 }
 
 #ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
@@ -757,7 +757,7 @@ int dd_sel_icons_of(int *out, int attr)
 
 unsigned int *dd_sel_draw_icon(unsigned int *list, int x, int y, int icon)
 {
-    void *gim = func_088044B0(0x40005);
+    void *gim = dd_gim_get(0x40005);
 
     if (gim != 0)
         list = gim_set_texture(list, gim);
@@ -844,7 +844,7 @@ void *dd_sel_sub_draw(void *list)
 void *dd_sel_sort_draw_item(void *dl, int i, int x, int y)
 {
     unsigned int *list = dl_ambient_color(dl, 0xFFFFFFFF);
-    void *gim = func_088044B0(0x40005);
+    void *gim = dd_gim_get(0x40005);
     float r[12] = { 0 };
     int k;
 
@@ -864,7 +864,7 @@ void *dd_sel_sort_draw_item(void *dl, int i, int x, int y)
     list = dl_ambient_color(list, 0xFF808080);
     list = dd_wline_sprite(list, 0, &r[0], &r[6]);
     list = dd_wline_draw(list, 0, 4, r, 1);
-    gim = func_088044B0(0x40005);
+    gim = dd_gim_get(0x40005);
     if (gim != 0)
         list = gim_set_texture(list, gim);
     list = dd_sel_draw_dir(list, (int)r[0], (int)r[1], dd_sel.dir == 0);
@@ -876,7 +876,7 @@ void *dd_sel_sort_draw_item(void *dl, int i, int x, int y)
     list = dd_wline_sprite(list, 0, &r[0], &r[6]);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dd_wline_draw(list, 0, 4, r, 1);
-    gim = func_088044B0(0x40005);
+    gim = dd_gim_get(0x40005);
     if (gim != 0)
         list = gim_set_texture(list, gim);
     return dd_sel_draw_dir(list, (int)r[0], (int)r[1], dd_sel.dir);
@@ -1125,7 +1125,7 @@ void *dd_sel_opts_draw_item(void *dl, int i, int x, int y)
     unsigned short *t;
 
     list = dl_set_tex_filter(list, 0, 1);
-    list = gim_set_texture(list, func_088044B0(0x40005));
+    list = gim_set_texture(list, dd_gim_get(0x40005));
     list = draw_set_offsets(list, 0xD, 0xD, 0xD, 0xD);
     list = draw_sprite(list, x, y + 1, 0, o->u, o->v, 0, 0);
     font_set_size(0xC, 0xC);
@@ -1155,7 +1155,7 @@ void dd_sel_build_opts(void)
     s->opts[n] = 1;
     s->opts[n + 1] = 2;
     n += 2;
-    if (func_08806D04() == 0)
+    if (dd_is_tag_duel() == 0)
         s->opts[n++] = 3;
     if (hl_allowed() != 0)
         s->opts[n++] = 4;
@@ -1266,7 +1266,7 @@ void *dd_sel_sub_draw3(void *list)
 void *dd_sel_filter_draw_item(void *dl, int i, int x, int y)
 {
     unsigned int *list = dl_ambient_color(dl, 0xFFFFFFFF);
-    void *gim = func_088044B0(0x40006);
+    void *gim = dd_gim_get(0x40006);
 
     if (gim != 0)
         list = gim_set_texture(list, gim);

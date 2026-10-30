@@ -139,7 +139,7 @@ void func_088252C0(void)
     iVar1 = 0;
     do {
       iVar3 = dv_can_attack_any(uVar2,iVar1,1);
-      if ((((iVar3 != 0) && (iVar3 = func_0880B7B8(uVar2,iVar1,0), iVar3 != 0)) &&
+      if ((((iVar3 != 0) && (iVar3 = dd_cobj_at(uVar2,iVar1,0), iVar3 != 0)) &&
           (*(float *)(iVar3 + 0x74) <= *(float *)(iVar3 + 0x70))) &&
          (iVar3 = dd_mark_is_at(uVar2,iVar1), iVar3 == 0)) {
         func_08825394(uVar2,iVar1);
@@ -164,7 +164,7 @@ void func_08825394(byte param_1,byte param_2)
   float local_1c;
   ushort local_4;
   local_4 = (ushort)(byte)(param_1 & 1 | (param_2 & 0x1f) << 1);
-  func_0880A8E0(auStack_20,auStack_30,local_4);
+  dd_slot_xform(auStack_20,auStack_30,local_4);
   quat_to_mat4(auStack_70,auStack_30);
   puVar1 = (uint *)gfx_get_state();
   fVar3 = (float)sinf_vfpu((float)*puVar1 / 10.0);
@@ -187,7 +187,7 @@ void func_08825394(byte param_1,byte param_2)
 void func_088254FC(undefined4 param_1)
 {
   undefined4 uVar1;
-  uVar1 = func_088044B0(0x40006);
+  uVar1 = dd_gim_get(0x40006);
   uVar1 = gim_set_texture(param_1,uVar1);
   uVar1 = dl_enable(uVar1,4);
   uVar1 = dl_blend_func(uVar1,0,2,3,0,0);

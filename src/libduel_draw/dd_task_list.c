@@ -66,7 +66,7 @@ void dd_task_update(void);
 void efs_update(void);
 void mtx_clear_dirty(void);
 int dd_fx_flipup_risen(int h);
-int func_08806C84(int id);
+int dd_08806C84(int id);
 int func_08825728(void);
 void dd_task_pause(int h);
 void func_08820EA8(int a, int b);
@@ -74,7 +74,7 @@ void func_08820E58(int a);
 int dd_task_alive(int h);
 void func_08820938(DdTask *t, void *arg);
 void func_08820A8C(void *out, void *pos, int back);
-int func_0880D0B4(int player, int zone);
+int dd_count_scale(int player, int zone);
 int dd_fx_rays_start_t(int id, void *pos, void *cb, void *arg, float a, float b);
 void func_08820980(void);
 int dd_fx_flipup_start(int id, int *xy, int a, int b);
@@ -83,7 +83,7 @@ int dv_slot_pos(int player, int zone);
 void func_08820CC0(void *a, void *b, DdLoc l);
 int dd_fx_summon_start_t(int a, int b, int c, void *d, void *cb, void *arg);
 int dd_fx_summon_start_dark_t(int a, int b, int c, void *d, void *cb, void *arg);
-void func_088091C8(int uid);
+void dd_info_select_uid(int uid);
 unsigned int *dl_set_tex_filter(unsigned int *list, int min, int mag);
 void dd_task_remove(DdTask *t);
 DdTask *dd_task_add(DdTask *t);
@@ -263,7 +263,7 @@ void dd_card_fx_start(DdCard *c)
         id = -1;
     func_08820A8C(out, (char *)c + 0x40, pos[2] < 0.0f);
     c->fx = dd_fx_rays_start_t(id, pos, func_08820980, c, ((float *)out)[1],
-                          (float)func_0880D0B4(c->loc.player, c->loc.zone));
+                          (float)dd_count_scale(c->loc.player, c->loc.zone));
 }
 #endif
 
@@ -285,7 +285,7 @@ void dd_banner_update(float dt, DdTask *t, void *arg)
     case 2:
         if (t->time - b->t0 < 0.5f)
             break;
-        if (func_08806C84(b->player) == 0) {
+        if (dd_08806C84(b->player) == 0) {
             b->done = 1;
             b->id = -1;
         }
@@ -358,9 +358,9 @@ void dd_banner_summon(DdCard *c)
     l.b15 = dv_slot_pos(player, zone);
     func_08820CC0(a, pos, *(DdLoc *)&l);
     func_08820A8C(out, pos, ((float *)a)[2] < 0.0f);
-    b->handle = dd_fx_summon_start_t(((int *)out)[1], func_0880D0B4(c->loc.player, c->loc.zone), b->id, a,
+    b->handle = dd_fx_summon_start_t(((int *)out)[1], dd_count_scale(c->loc.player, c->loc.zone), b->id, a,
                               dd_banner_open, b);
-    func_088091C8(c->uid);
+    dd_info_select_uid(c->uid);
     req_flag_set(0x33);
     req_flag_set(0);
 }
@@ -404,9 +404,9 @@ void dd_banner_set(DdCard *c)
         id = -1;
     func_08820CC0(a, pos, *(DdLoc *)&l);
     func_08820A8C(out, pos, ((float *)a)[2] < 0.0f);
-    b->handle = dd_fx_summon_start_dark_t(((int *)out)[1], func_0880D0B4(c->loc.player, c->loc.zone), id, a,
+    b->handle = dd_fx_summon_start_dark_t(((int *)out)[1], dd_count_scale(c->loc.player, c->loc.zone), id, a,
                               dd_banner_open, b);
-    func_088091C8(c->uid);
+    dd_info_select_uid(c->uid);
     req_flag_set(0);
 }
 #endif
@@ -441,7 +441,7 @@ void dd_bigcard_update(float dt, DdTask *t, int *arg)
         req_flag_set(arg[3]);
         return;
     }
-    if (arg[4] == 0 && func_08806C84(arg[0]) == 0) {
+    if (arg[4] == 0 && dd_08806C84(arg[0]) == 0) {
         arg[4] = 1;
         arg[1] = -1;
     }

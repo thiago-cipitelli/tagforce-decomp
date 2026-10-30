@@ -38,8 +38,8 @@ void dd_fx_set_param(DdMon *m, int anim, int c, int frame, int flag);
 void voice_event(DdMon *m, int anim, int c, int frame, int flag);
 void caption_enable(int on);
 void caption_set(int voice, int id);
-void func_08806434(int a, int b);
-int func_08814118(DdModel *model, int bone);
+void dd_scene_flags(int a, int b);
+int dd_chr_cb_bone(DdModel *model, int bone);
 void dd_lp_count(int x, int y, int a, int b);
 void dd_lp_show(int x, int y, int atk, int def);
 int dd_lp_busy(void);
@@ -102,7 +102,7 @@ int dd_mon_on_event(int a, int anim, int c, int d)
     switch (anim) {
     case 52 ... 54:
         fade_start(1, 0xFFFFFFFF, 16);
-        func_08806434(32, 1);
+        dd_scene_flags(32, 1);
         break;
     }
     return 0;
@@ -125,7 +125,7 @@ void dd_mon_bone(DdModel *model, DdMat4 *out, DdMat4 *in, int bone, float t)
     unsigned int i;
 
     for (i = 0; i < 9; i++) {
-        if (bone == func_08814118(model, dd_mon_bones[i])) {
+        if (bone == dd_chr_cb_bone(model, dd_mon_bones[i])) {
             dd_mon_bone_xform(model, out, in, i, t);
             return;
         }
@@ -338,7 +338,7 @@ void dd_mon_panels(DdMon *m, int anim, int c, int frame, int flag)
             m->hold = 1;
             m->faded = 1;
             fade_start_in(1, 0xFFFFFFFF, 60);
-            func_08806434(32, 1);
+            dd_scene_flags(32, 1);
         } else {
             m->hold = 1;
         }

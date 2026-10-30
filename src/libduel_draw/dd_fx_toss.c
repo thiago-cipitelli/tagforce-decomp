@@ -37,8 +37,8 @@ float *mat4_mul(float *out, float *a, float *b);
 float *mat4_mul_rot_x(float *out, float *m, float a);
 float *mat4_mul_rot_y(float *out, float *m, float a);
 float *mat4_mul_rot_z(float *out, float *m, float a);
-void *func_08804268(int id);           /* model of the duel resources */
-void *func_08804538(int id);
+void *dd_model_get(int id);           /* model of the duel resources */
+void *dd_bin_get(int id);
 int model_anim_play(void *m, int n, unsigned int flags);
 void model_update(void *m, DdTossAnim *a);
 void model_draw(void *m, DdTossDraw *c);
@@ -98,9 +98,9 @@ int dd_fx_coin_update(int state, DdFxToss *fx)
         fx->anim.bone = dd_fx_coin_bone;
         fx->anim.face = 0;
         fx->anim.pad = 0;
-        fx->model = func_08804268(0x1001D);
+        fx->model = dd_model_get(0x1001D);
         dd_model_rewind(fx->model);
-        fx->shadow = func_08804538(0x80014);
+        fx->shadow = dd_bin_get(0x80014);
     }
     last = fx->count - 1;
     if (fx->cur <= last)
@@ -207,9 +207,9 @@ int dd_fx_die_update(int state, DdFxToss *fx)
             model = 0x1001F;
             shadow = 0x80016;
         }
-        fx->model = func_08804268(model);
+        fx->model = dd_model_get(model);
         dd_model_rewind(fx->model);
-        fx->shadow = func_08804538(shadow);
+        fx->shadow = dd_bin_get(shadow);
     }
     last = fx->count - 1;
     if (fx->cur <= last)

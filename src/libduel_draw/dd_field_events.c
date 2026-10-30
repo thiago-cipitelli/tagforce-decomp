@@ -21,7 +21,7 @@ typedef unsigned int uint;
 typedef void (*code)();
 #endif
 
-int func_0880CE48();
+int dd_cobjs_en_set();
 int func_08820E34();
 int dd_fx_ringglow_done();
 int dd_ring_done();
@@ -88,7 +88,7 @@ void func_08820138(int param_1,int param_2)
 
 void func_088202A0(int *p)
 {
-    func_0880CE48(p[1], 1);
+    dd_cobjs_en_set(p[1], 1);
     dd_task_remove(p[0]);
     dd_free(p);
     func_08820E34(0);
@@ -101,8 +101,8 @@ void func_088202E4(int param_1)
   int iVar1;
   undefined4 uVar2;
   uVar2 = *(undefined4 *)(param_1 + 0x18);
-  iVar1 = func_0880CB44();
-  if ((iVar1 == 0) && (iVar1 = func_0880CC64(), iVar1 != 0)) {
+  iVar1 = dd_cobjs_busy();
+  if ((iVar1 == 0) && (iVar1 = dd_cobjs_idle(), iVar1 != 0)) {
     func_08820344(uVar2);
     dd_task_remove_cur();
   }
@@ -124,12 +124,12 @@ void func_08820344(int param_1)
   undefined1 auStack_1c [12];
   code *local_10;
   int local_4;
-  iVar1 = func_0880CB44();
-  if ((iVar1 == 0) && (iVar1 = func_0880CC64(), iVar1 != 0)) {
+  iVar1 = dd_cobjs_busy();
+  if ((iVar1 == 0) && (iVar1 = dd_cobjs_idle(), iVar1 != 0)) {
     puVar2 = (undefined4 *)dd_alloc(8);
-    uVar3 = func_0880B770(param_1,0xd);
+    uVar3 = dd_zone_count(param_1,0xd);
     uVar4 = dd_flag_task(0x13);
-    func_0880CE48(param_1,0);
+    dd_cobjs_en_set(param_1,0);
     *puVar2 = uVar4;
     puVar2[1] = param_1;
     dd_fx_coinfly_start(param_1 == 0,uVar3,func_088202A0,puVar2);
@@ -333,7 +333,7 @@ void func_08820808(void *t, int h)
 void func_08820840(int param_1,undefined4 param_2)
 {
   float fVar1;
-  fVar1 = (float)func_08807034();
+  fVar1 = (float)dd_speed_get();
   if (1.0 / fVar1 <= *(float *)(param_1 + 0x14)) {
     dd_task_pause(param_2);
     *(code **)(param_1 + 0xc) = func_08820808;
@@ -510,7 +510,7 @@ void func_08820CC0(undefined1 *param_1,undefined1 *param_2,short param_3)
   if (param_2 == (undefined1 *)0x0) {
     param_2 = auStack_20;
   }
-  func_0880A8E0(param_1,param_2,(int)param_3);
+  dd_slot_xform(param_1,param_2,(int)param_3);
   local_30 = D_08876100;
   local_2c = D_08876104;
   local_28 = D_08876108;
@@ -566,7 +566,7 @@ void func_08820E58(void)
   func_08825B88(0);
   func_088257E4(0,100);
   func_08825818();
-  func_08809508(1);
+  dd_info_disable(1);
   return;
 }
 #endif
@@ -576,7 +576,7 @@ void func_08820E58(void)
 void func_08820EA8(int param_1,undefined4 param_2)
 {
   int iVar1;
-  func_08809508(0);
+  dd_info_disable(0);
   if ((0 < param_1) && ((iVar1 = func_08825A14(), iVar1 == 2 || (iVar1 == 1)))) {
     dd_mode_set_card(param_1);
     dd_mode_push(5);

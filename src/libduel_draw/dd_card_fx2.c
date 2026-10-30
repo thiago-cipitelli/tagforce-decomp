@@ -66,18 +66,18 @@ void dd_cursor_lock(int on);
 int dv_zone_faceup(int player, int zone, int idx);
 float *quat_mul(float *out, float *a, float *b);
 void func_08820A8C(void *out, void *q, int back);
-float func_0880D0B4(int player, int zone);
+float dd_count_scale(int player, int zone);
 int dd_fx_spiral_start_ex(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
 int dd_fx_spin_start(float k, int a, float *pos, void *b, int c, int d, int e);
-void func_0880CDD8(DdCard *c, void (*cb)(void));
-void func_0880CE10(DdCard *c, void (*cb)(void));
+void dd_cobj_link_add(DdCard *c, void (*cb)(void));
+void dd_cobj_link_del(DdCard *c, void (*cb)(void));
 void func_08820D40(void);
 void dd_task_pause(int h);
-int func_0880CB44(void);
-int func_0880CC64(void);
-int func_0880CD38(void);
-void func_0880C9BC(int a);
-void func_0880C48C(int a, int b);
+int dd_cobjs_busy(void);
+int dd_cobjs_idle(void);
+int dd_cobjs_free(void);
+void dd_cobj_sync_extra(int a);
+void dd_cobj_gather(int a, int b);
 void func_08820938(DdTask *t, void *arg);
 void func_08820988(float *out, float *m);
 void dd_fx_shatter_start_t(int id, float *pos, float *dir, int a, int b, float s, float zone_kind);
@@ -99,7 +99,7 @@ int dv_list_id(int uid);
 void dd_ring_start(int value, void (*done)(DdTask *), DdTask *t);
 int dv_player_side_bit(int uid);
 int dv_hand_uid(int a, int b);
-void func_08811D60(int a, int b);
+void dd_lpp_add(int a, int b);
 
 void dd_beam(DdCard *c, DdBeamFn fn);
 void dd_beam_set(DdCard *c, int player, int zone, DdBeamFn fn);
@@ -157,7 +157,7 @@ void dd_beam(DdCard *c, DdBeamFn fn)
         quat_mul(rot, (float *)((char *)c + 0x40), up);
     }
     func_08820A8C(dir, rot, ((float *)c)[6] < 0.0f);
-    *h = fn(1.0f, func_0880D0B4(c->loc.player, c->loc.zone), known == 0 ? -1 : c->id,
+    *h = fn(1.0f, dd_count_scale(c->loc.player, c->loc.zone), known == 0 ? -1 : c->id,
             (float *)((char *)c + 0x10), dir, dd_effect_detach, task);
     req_flag_set(0x2A);
 }
@@ -188,7 +188,7 @@ void dd_beam_set(DdCard *c, int player, int zone, DdBeamFn fn)
         quat_mul(rot, (float *)((char *)c + 0x40), up);
     }
     func_08820A8C(dir, rot, ((float *)c)[6] < 0.0f);
-    *h = fn(1.0f, func_0880D0B4(c->loc.player, c->loc.zone),
+    *h = fn(1.0f, dd_count_scale(c->loc.player, c->loc.zone),
             dv_zone_faceup(player, zone, zone < 0xB ? 0 : c->loc.idx) == 0 ? -1 : c->id,
             (float *)((char *)c + 0x10), dir, dd_effect_detach, task);
     req_flag_set(0x2D);
@@ -245,7 +245,7 @@ void dd_mark_on(DdCard *c)
             break;
         }
     }
-    func_0880CDD8(c, func_08820D40);
+    dd_cobj_link_add(c, func_08820D40);
 }
 #endif
 
@@ -272,7 +272,7 @@ void dd_mark_off(DdCard *c)
                 break;
             }
         }
-        func_0880CE10(c, func_08820D40);
+        dd_cobj_link_del(c, func_08820D40);
     }
 }
 #endif
@@ -290,7 +290,7 @@ void dd_mark_all_off(void)
             dd_task_pause(c->mark);
             c->mark = -1;
             s->glow[i] = 0;
-            func_0880CE10(c, func_08820D40);
+            dd_cobj_link_del(c, func_08820D40);
         }
     }
 }
@@ -301,8 +301,8 @@ void dd_destroy_wait(float dt, DdTask *t, void *arg)
 {
     int a = (int)t->arg;
 
-    if (func_0880CB44() == 0 && func_0880CC64() != 0) {
-        func_0880C9BC(a);
+    if (dd_cobjs_busy() == 0 && dd_cobjs_idle() != 0) {
+        dd_cobj_sync_extra(a);
         dd_task_remove_cur();
     } else {
         req_flag_set(0x10);
@@ -315,8 +315,8 @@ void dd_destroy(int a)
 {
     DdTask t;
 
-    if (func_0880CB44() == 0 && func_0880CC64() != 0) {
-        func_0880C9BC(a);
+    if (dd_cobjs_busy() == 0 && dd_cobjs_idle() != 0) {
+        dd_cobj_sync_extra(a);
     } else {
         memset(&t, 0, sizeof(t));
         t.update = dd_destroy_wait;
@@ -329,8 +329,8 @@ void dd_destroy(int a)
 void dd_move_wait(float dt, DdTask *t, void *arg)
 {
     req_flag_set(0x27);
-    if (func_0880CB44() == 0 && func_0880CC64() != 0 && func_0880CD38() != 0) {
-        func_0880C48C(((int *)t->arg)[0], ((int *)t->arg)[1]);
+    if (dd_cobjs_busy() == 0 && dd_cobjs_idle() != 0 && dd_cobjs_free() != 0) {
+        dd_cobj_gather(((int *)t->arg)[0], ((int *)t->arg)[1]);
         dd_task_remove_cur();
     }
 }
@@ -341,8 +341,8 @@ void dd_move(int a, int b)
     DdTask t;
 
     req_flag_set(0x27);
-    if (func_0880CB44() == 0 && func_0880CC64() != 0 && func_0880CD38() != 0) {
-        func_0880C48C(a, b);
+    if (dd_cobjs_busy() == 0 && dd_cobjs_idle() != 0 && dd_cobjs_free() != 0) {
+        dd_cobj_gather(a, b);
         return;
     }
     p = dd_alloc(8);
@@ -369,7 +369,7 @@ void dd_flip(DdCard *c)
     }
     quat_to_mat4(m, (float *)((char *)c + 0x40));
     func_08820988(dir, m);
-    dd_fx_shatter_start_t(c->id, (float *)((char *)c + 0x10), dir, 0, 0, 1.0f, func_0880D0B4(c->loc.player, c->loc.zone));
+    dd_fx_shatter_start_t(c->id, (float *)((char *)c + 0x10), dir, 0, 0, 1.0f, dd_count_scale(c->loc.player, c->loc.zone));
 }
 
 void dd_flip_now(DdCard *c)
@@ -379,7 +379,7 @@ void dd_flip_now(DdCard *c)
 
     quat_to_mat4(m, (float *)((char *)c + 0x40));
     func_08820988(dir, m);
-    dd_fx_shatter_start_t(c->id, (float *)((char *)c + 0x10), dir, 0, 0, 1.0f, func_0880D0B4(c->loc.player, c->loc.zone));
+    dd_fx_shatter_start_t(c->id, (float *)((char *)c + 0x10), dir, 0, 0, 1.0f, dd_count_scale(c->loc.player, c->loc.zone));
 }
 
 void dd_shake_done(DdCard *c)
@@ -598,6 +598,6 @@ void dd_lock_cursor(void)
 void dd_task_free_pair(int *p)
 {
     dd_task_remove((DdTask *)p[0]);
-    func_08811D60(p[1], p[2]);
+    dd_lpp_add(p[1], p[2]);
     dd_free(p);
 }

@@ -1,11 +1,11 @@
 // @range 0x08819A70-0x08819C04
 // @data 0x08875E34-0x08875E60
 // @rodata 0x088700F8-0x0887015C
-/* Exports for the duel manager (the first one, 0x088199C8, is at the end of dd_event_cmd.c) around the commentary voice (status 8 of func_08806434) and the
+/* Exports for the duel manager (the first one, 0x088199C8, is at the end of dd_event_cmd.c) around the commentary voice (status 8 of dd_scene_flags) and the
    duel-state sounds: toggle, query, per-state voice and a clamped sound table. */
 #include "dd_field_ui.h"
 
-int func_08806434(int a, int b);
+int dd_scene_flags(int a, int b);
 void dd_mode_push(int id);
 void dd_mode_pop(void);
 void dd_chara_busy_clear(void);
@@ -24,13 +24,13 @@ int dd_state_se[11] = { 8, 0, 1, 5, 4, 3, 2, 8, 6, 7, 8 };
 /* export: commentary active */
 int func_08819A70(void)
 {
-    return func_08806434(8, -1);
+    return dd_scene_flags(8, -1);
 }
 
 /* export: commentary idle */
 int func_08819A7C(void)
 {
-    if (func_08806434(8, -1) == 0)
+    if (dd_scene_flags(8, -1) == 0)
         return 0;
     return !dd_chara_ready();
 }

@@ -17,13 +17,13 @@
 
 extern DdCursor dd_cursor;             /* 0x08C54640 */
 
-typedef struct DdUv {                  /* sprite cell of the cursor arrow */
+typedef struct DdCurUv {                  /* sprite cell of the cursor arrow */
     int u, v;                          /* normal */
     int u2, v2;                        /* raised (hand row) */
-} DdUv;
+} DdCurUv;
 
 /* arrow sprite cell per (player * 16 + zone) */
-DdUv dd_cursor_uv[32] = {
+DdCurUv dd_cursor_uv[32] = {
     { 64, 96, 0, 96 },
     { 64, 96, 0, 96 },
     { 64, 96, 0, 96 },
@@ -65,12 +65,12 @@ int dd_cursor_zone_order[2][16] = {
     { 15, 10, 0, 1, 2, 3, 4, 14, 12, 5, 6, 7, 8, 9, 13, 11 },
 };
 
-int func_0880B770(int player, int zone);
-void *func_0880B7B8(int player, int zone, int idx);
-void func_0880A8E0(float *pos, float *rot, DdLoc2 loc);
-int func_0880702C(void);
-int func_08806E58(DdLoc loc);
-void func_088091C8(int id);
+int dd_zone_count(int player, int zone);
+void *dd_cobj_at(int player, int zone, int idx);
+void dd_slot_xform(float *pos, float *rot, DdLoc2 loc);
+int dd_0880702C(void);
+int dd_loc_visible(DdLoc loc);
+void dd_info_select_uid(int id);
 int dv_zone_card_uid(int player, int zone, int idx);
 int dv_player_side_bit(int h);
 int dv_must_answer(int a);
@@ -78,10 +78,10 @@ int dv_08835924(void);
 int dv_n_hand(int player);
 unsigned int dv_08835AEC(int player, int zone, int idx);
 int dv_zone_count(int player, int zone);
-void *func_08804268(int id);
-void *func_088044B0(int id);
-int func_08806BC4(void);
-float func_0880CC04(int n);
+void *dd_model_get(int id);
+void *dd_gim_get(int id);
+int dd_08806BC4(void);
+float dd_stack_y(int n);
 unsigned int *func_088212C4(unsigned int *list, int x, int y, int icon);
 int dv_n_grave(int player);
 int dv_n_f(int player);
@@ -111,7 +111,7 @@ void dd_cursor_draw(void)
         c->lit = 0;
     else
         c->lit = 1;
-    if (func_08806E58(c->cur) != 0) {
+    if (dd_loc_visible(c->cur) != 0) {
         h = dv_zone_card_uid(c->cur.player, c->cur.zone, c->cur.idx);
         if (h > 0) {
             if (dv_player_side_bit(h) != 0)
@@ -150,13 +150,13 @@ void dd_cursor_update(void)
     DdLoc t = { 0 };
 
     if (dd_cursor.cur.zone == 0xB) {
-        n = func_0880B770(c->cur.player, 0xB);
+        n = dd_zone_count(c->cur.player, 0xB);
         if (n == 0) {
             dd_cursor_set(c->cur.player, dd_cursor_nearest_slot(c->cur.player, c), 0, 0);
         } else {
             if (c->cur.idx >= n)
                 c->cur.idx = n - 1;
-            card = func_0880B7B8(c->cur.player, c->cur.zone, c->cur.idx);
+            card = dd_cobj_at(c->cur.player, c->cur.zone, c->cur.idx);
             if (card != 0) {
                 *(DdVec4 *)pos = *(DdVec4 *)(card + 4);
                 *(DdVec4 *)rot = *(DdVec4 *)(card + 16);
@@ -169,7 +169,7 @@ void dd_cursor_update(void)
         l.idx = c->cur.idx;
         l.b14 = 0;
         l.b15 = 0;
-        func_0880A8E0(pos, rot, l);
+        dd_slot_xform(pos, rot, l);
         pos[1] = 0.0f;
     }
     *(DdVec4 *)c->pos = *(DdVec4 *)pos;
@@ -196,18 +196,18 @@ void dd_cursor_update(void)
     }
     if (idx < 0)
         idx = 0;
-    card = func_0880B7B8(player, zone, idx);
+    card = dd_cobj_at(player, zone, idx);
     if (card != 0) {
-        if (func_0880702C() == 0) {
+        if (dd_0880702C() == 0) {
             t.player = player;
             t.zone = zone;
             t.idx = idx;
-            if (func_08806E58(t) == 0 && !((char *)card)[0x8D] >> 5 & 1) {
-                func_088091C8(0);
+            if (dd_loc_visible(t) == 0 && !((char *)card)[0x8D] >> 5 & 1) {
+                dd_info_select_uid(0);
                 goto notify;
             }
         }
-        func_088091C8(card[0x88 / 4]);
+        dd_info_select_uid(card[0x88 / 4]);
         arg = card[0x88 / 4];
     }
 notify:
@@ -340,7 +340,7 @@ unsigned int *dd_cursor_draw_model(unsigned int *list, DdLoc loc, int locked)
     }
     if (locked != 0)
         id += 8;
-    mdl = func_08804268(id);
+    mdl = dd_model_get(id);
     memset(draw, 0, sizeof(draw));
     draw[0] = dl_get_layer();
     draw[1] = draw[0];
@@ -399,7 +399,7 @@ int dd_cursor_nearest_slot(int player, DdCursor *c)
     k = 0;
     for (i = 0; i < 5; i++) {
         l.zone = i + 5;
-        func_0880A8E0(pos, rot, l);
+        dd_slot_xform(pos, rot, l);
         d = vec4_distance_xyz(pos, c->pos);
         if (d < best) {
             best = d;
@@ -423,9 +423,9 @@ int dd_cursor_nearest_hand(int player, DdCursor *c)
 
     best = 1e16f;
     k = -1;
-    n = func_0880B770(player, 0xB);
+    n = dd_zone_count(player, 0xB);
     for (i = 0; i < n; i++) {
-        card = func_0880B7B8(player, 0xB, i);
+        card = dd_cobj_at(player, 0xB, i);
         if (card != 0) {
             d = vec4_distance_xyz((float *)(card + 4), c->pos);
             if (d < best) {
@@ -460,7 +460,7 @@ int dd_cursor_tex_locked(unsigned int **plist, int *mdl, int mesh, int part)
         return 0;
     if (strcmp("field_cursor02.iff", m->name) != 0)
         return 0;
-    gim = func_088044B0((gfx_get_state()[0] >> 2) % 3 + 0x40021);
+    gim = dd_gim_get((gfx_get_state()[0] >> 2) % 3 + 0x40021);
     if (gim == 0)
         return 0;
     list = dl_enable(*plist, 9);
@@ -492,7 +492,7 @@ int dd_cursor_tex_normal(unsigned int **plist, int *mdl, int mesh, int part)
         id = 0x40028;
     else
         return 0;
-    gim = func_088044B0(id);
+    gim = dd_gim_get(id);
     if (gim == 0)
         return 0;
     list = dl_enable(*plist, 9);
@@ -512,14 +512,14 @@ unsigned int *dd_cursor_draw_normal(unsigned int *list)
     int layer;
 
     list = dd_cursor_draw_model(list, dd_cursor.cur, 0);
-    if (func_08806BC4() == 0) {
+    if (dd_08806BC4() == 0) {
         if (c->cur.player == 0 && c->cur.zone == 0xD)
             raised = 1;
         else
             raised = 0;
         list = dd_cursor_draw_arrow(list, c->cur, raised, 3);
     }
-    if (func_08806BC4() == 0) {
+    if (dd_08806BC4() == 0) {
         layer = dl_get_layer();
         dl_set_list(list);
         list = dd_cursor_draw_icons(dl_select_layer(5, 0), c->cur);
@@ -553,7 +553,7 @@ unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, in
     float sx, sy;
     int zone;
     int k;
-    DdUv *uv;
+    DdCurUv *uv;
     int dx, dy, du;
     void *gim;
 
@@ -563,7 +563,7 @@ unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, in
     if (zone == 0xF || zone == 0xC || zone == 0xE || zone == 0xD) {
         float ofs[3] = { 0 };
 
-        ofs[1] = func_0880CC04(func_0880B770(loc.player, zone));
+        ofs[1] = dd_stack_y(dd_zone_count(loc.player, zone));
         mtx_translate(ofs);
     }
     mtx_set_mode(2);
@@ -591,13 +591,13 @@ unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, in
     if (raised != 0) {
         dx = -0x10;
         dy = -0x20;
-        uv = (DdUv *)&uv->u2;
+        uv = (DdCurUv *)&uv->u2;
     }
     if ((1 << blink_bit) & gfx_get_state()[0])
         du = 0x20;
     list = dl_depth_mask(list, 0);
     list = dl_alpha_test(dl_enable(list, 0), 6, 0, 0xFF);
-    gim = func_088044B0(0x4001D);
+    gim = dd_gim_get(0x4001D);
     if (gim != 0)
         list = gim_set_texture(list, gim);
     list = draw_set_offsets(list, 0x20, 0x20, 0x20, 0x20);

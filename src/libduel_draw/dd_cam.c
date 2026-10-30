@@ -33,8 +33,8 @@ void *sceGeEdramGetAddr(void);
 unsigned int *gfx_get_state(void);
 float *dd_chara_view(void);            /* duel camera projection */
 float *dd_chara_proj(void);            /* duel camera view */
-void func_08807808(float *m);          /* field camera view */
-void func_08807844(float *fovy, float *aspect, float *near, float *far);
+void dd_field_view_get(float *m);          /* field camera view */
+void dd_field_proj_get(float *fovy, float *aspect, float *near, float *far);
 
 extern float dd_proj_saved[4];         /* projection replaced by dd_proj_set */
 extern float dd_mtx_saved[4][16];      /* projection, view, texture, model (dd_mtx_save) */
@@ -143,7 +143,7 @@ void dd_mtx_billboard_field(float *out)
 {
     float m[16];
 
-    func_08807808(m);
+    dd_field_view_get(m);
     dd_mtx_billboard(out, m);
 }
 
@@ -325,11 +325,11 @@ void dd_mtx_push_field(void)
     mtx_set_mode(0);
     mtx_push();
     mtx_identity();
-    func_08807844(&fovy, &aspect, &near, &far);
+    dd_field_proj_get(&fovy, &aspect, &near, &far);
     mtx_perspective(fovy, aspect, near, far);
     mtx_set_mode(1);
     mtx_push();
-    func_08807808(view);
+    dd_field_view_get(view);
     mtx_load(view);
     mtx_set_mode(3);
     mtx_push();

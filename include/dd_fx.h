@@ -165,7 +165,7 @@ void dd_cam_begin(float fov, float aspect, float znear, float zfar, int layer, i
 void dd_cam_end(int layer);                               /* 3D camera end */
 void dd_mtx_billboard_view(ScePspFMatrix4 *m);                      /* billboard matrix of the camera */
 float dd_ease_cos(int t, int n, int k);                   /* ease in */
-int func_0880773C(int se);                                  /* plays a sound effect */
+int dd_field_set(int se);                                  /* plays a sound effect */
 
 /* BOOT */
 ScePspFMatrix3 *mat3_identity(ScePspFMatrix3 *out);

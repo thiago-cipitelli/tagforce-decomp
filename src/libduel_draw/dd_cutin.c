@@ -10,7 +10,7 @@ extern DdCutin dd_cutin;               /* 0x08C546D0 */
 /* frames advanced per update by the animation-speed setting */
 int dd_cutin_speed_tab[4] = { 1, 1, 2, 2 };
 
-int func_08806434(int a, int b);
+int dd_scene_flags(int a, int b);
 unsigned short *dd_text(int id);
 int *dd_pad(void);
 int dd_cutin_speed(void);
@@ -152,7 +152,7 @@ void dd_cutin_play(DdCutinDesc *d)
     c->active = 1;
     ehf_set_anim(d->ehf, d->start, d->end);
     ehf_set_frame_alias(d->ehf, d->start);
-    if (d->se != 0 && func_08806434(8, -1) == 0)
+    if (d->se != 0 && dd_scene_flags(8, -1) == 0)
         se_play(d->se);
 }
 

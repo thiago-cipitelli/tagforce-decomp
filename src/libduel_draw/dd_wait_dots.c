@@ -16,7 +16,7 @@ void func_0882331C(void *draw);
 void func_08823328(int (*done)(void));
 MenuItemDef *func_08823310(void);
 int dv_088B2094(void);               /* pending count (libduel_eng duel_088B2094) */
-void *func_088044B0(int id);
+void *dd_gim_get(int id);
 void *gim_set_texture(void *list, void *gim);
 unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
 unsigned int *draw_sprite(unsigned int *list, int x, int y, int z, int u, int v, int flip_uv, int flip_xy);
@@ -55,7 +55,7 @@ unsigned int *dd_wait_dots_draw(unsigned int *list, Menu *m, MenuItemDef *d)
     y = d->y + d->h - d->pad_b;
     x += (d->w - d->pad_l - d->pad_r - w->total * 20) / 2;
     y += (d->pad_b - d->pad_t - 17) / 2;
-    gim = func_088044B0(0x40005);
+    gim = dd_gim_get(0x40005);
     if (gim == 0)
         return list;
     list = gim_set_texture(list, gim);

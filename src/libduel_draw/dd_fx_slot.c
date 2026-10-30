@@ -27,7 +27,7 @@ int dd_fx_eyes_start(DdFxSlot *s, int a, int b);
 int dd_fx_aura_start(DdFxSlot *s, int a, int b);
 void dd_fx_fade_set(int a, int b);
 void dd_fx_fade_cb(void);                                   /* model hook of the kind 28 effects */
-void func_08813FB4(DdFxOwner *o, int v);                    /* sets o->+0x158 */
+void dd_chr_flag_set(DdFxOwner *o, int v);                    /* sets o->+0x158 */
 void dd_ryusen_set_alpha(int level, int flag);                    /* dims the field behind the effect */
 
 void dd_fx_init(void)
@@ -143,14 +143,14 @@ void dd_fx_start(DdFxOwner *o, int id)
         case 269: case 270: case 271: case 272: case 273: case 274: case 276: case 277: case 279: case 280:
         case 281:
             s = dd_fx_alloc(type, sub, id, o);
-            func_08813FB4(o, 0);
+            dd_chr_flag_set(o, 0);
             if (type == 12)
                 level = 0;
             if (s != 0)
                 s->task = dd_fx_flare_start(s, 0, 0);
             break;
         case 252: case 278: case 282: case 283: case 284: case 286: case 287: case 288: case 289: case 332:
-            func_08813FB4(o, 0);
+            dd_chr_flag_set(o, 0);
             ok = 0;
             dim = 0;
             break;

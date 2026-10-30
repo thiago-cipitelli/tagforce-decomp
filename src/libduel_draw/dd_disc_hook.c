@@ -40,9 +40,9 @@ typedef struct DdHookObj {             /* model object the hooks receive */
     float speed;                       /* +0x5C */
 } DdHookObj;
 
-typedef struct DdMtx {                 /* 4x4 matrix as 16 float members (copied member by member) */
+typedef struct DdHookMtx {                 /* 4x4 matrix as 16 float members (copied member by member) */
     float xx, xy, xz, xw, yx, yy, yz, yw, zx, zy, zz, zw, wx, wy, wz, ww;
-} __attribute__((aligned(16))) DdMtx;
+} __attribute__((aligned(16))) DdHookMtx;
 
 typedef struct DdPose {                /* camera/light pose table entry (bsearch by id) */
     int id;
@@ -114,7 +114,7 @@ int dd_disc_tex_hook(unsigned int **plist, int *mdl, int mesh, int part, int *ar
 /* bone hook: forwards the bone matrix (or identity) to the object's callback */
 void dd_hook_bone(int bone, void *arg, int *ctx)
 {
-    DdMtx ident = {
+    DdHookMtx ident = {
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
         0.0f, 0.0f, 1.0f, 0.0f,
