@@ -176,8 +176,6 @@ segments:
       - [0x13570, asm, f_talk_asm_08817510]
       - [0x137D0, c, f_talk]
       - [0x13B04, c, f_money]
-      - [0x145BC, asm, f_money_asm_0881855C]
-      - [0x14748, c, f_money]
       - [0x14784, c, f_cam]
       - [0x1505C, c, f_bmap]
       - [0x15484, asm, f_bmap_asm_08819424]
