@@ -180,13 +180,17 @@ typedef struct DdCard {                /* a card object of the field (other rang
     DdLoc2 loc2;                       /* +0x84 bit 14: face up */
     short unk86;
     int uid;                           /* +0x88 instance */
-    unsigned char unk8c;
+    signed char unk8c_0 : 6;           /* +0x8C */
+    signed char moving2 : 1;
+    signed char moving : 1;
     signed char b0 : 4;                /* +0x8D */
     signed char b4 : 1;
     signed char b5 : 1;
+    signed char b6 : 1;
+    signed char flip_pending : 1;
     char unk8e[2];
     int glow;                          /* +0x90 glow effect, -1 none */
-    int unk94;
+    int mark;                          /* +0x94 target mark, -1 none */
     int fx;                            /* +0x98 */
 } DdCard;
 

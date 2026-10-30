@@ -70,19 +70,19 @@ int dd_popup();
 int dd_glow_on();
 int dd_glow_off();
 int dd_glow_all_off();
-int func_0881F454();
-int func_0881F460();
-int func_0881F46C();
-int func_0881F60C();
-int func_0881F704();
-int func_0881F7EC();
-int func_0881F8D8();
-int func_0881F9B4();
-int func_0881FA68();
-int func_0881FB28();
-int func_0881FDB4();
-int func_0881FEC0();
-int func_088200A8();
+int dd_beam_summon();
+int dd_beam_set2();
+int dd_mark_on();
+int dd_mark_off();
+int dd_mark_all_off();
+int dd_destroy();
+int dd_move();
+int dd_flip();
+int dd_flip_now();
+int dd_stat_counter();
+int dd_counter();
+int dd_num_counter();
+int dd_lock_cursor();
 int func_08820138();
 int func_08820344();
 int func_08820430();
@@ -458,7 +458,7 @@ int dd_ev_15(void)
 
 int dd_ev_16(int player)
 {
-    func_0881F7EC(func_08866744(player));
+    dd_destroy(func_08866744(player));
     return 1;
 }
 
@@ -511,7 +511,7 @@ int dd_ev_23(int player, int zone, int idx, int show)
     DdCard *card;
 
     dd_cursor_set(func_08866744(player), zone, idx, 1);
-    func_088200A8();
+    dd_lock_cursor();
     if (show != 0) {
         card = func_0880B7B8(func_08866744(player), zone, idx);
         if (card != 0)
@@ -587,7 +587,7 @@ int dd_ev_29(int player, int zone, int a, int idx)
 
     if (card == 0)
         return 1;
-    func_0881F9B4(card);
+    dd_flip(card);
     return 1;
 }
 
@@ -597,7 +597,7 @@ int dd_ev_30(int player, int zone)
 
     if (card == 0)
         return 1;
-    func_0881FA68(card);
+    dd_flip_now(card);
     return 1;
 }
 
@@ -633,7 +633,7 @@ int dd_ev_35(int player, int zone, int a, int b)
         card = 0;
     else
         card = func_0880B7B8(func_08866744(player), zone, 0);
-    func_0881FDB4(card, a, b);
+    dd_counter(card, a, b);
     return 1;
 }
 
@@ -659,17 +659,17 @@ int dd_ev_37(int player, int zone, int a, int card_id)
     if (card == 0)
         return 1;
     if (card_id == 0x1A90)
-        func_0881FEC0(card, a, 0);
+        dd_num_counter(card, a, 0);
     else if (card_id == 0x1513)
-        func_0881FEC0(card, a, 2);
+        dd_num_counter(card, a, 2);
     else if (card_id == 0x1439)
-        func_0881FEC0(card, a, 1);
+        dd_num_counter(card, a, 1);
     else if (card_id == 1)
-        func_0881FB28(card, a, 0);
+        dd_stat_counter(card, a, 0);
     else if (card_id == 0)
-        func_0881FB28(card, a, 1);
+        dd_stat_counter(card, a, 1);
     else
-        func_0881FB28(card, a, 0);
+        dd_stat_counter(card, a, 0);
     return 1;
 }
 #endif
@@ -680,13 +680,13 @@ int dd_ev_38(int player, int zone, int a)
 
     if (card == 0)
         return 1;
-    func_0881FEC0(card, -(a != 3), 3);
+    dd_num_counter(card, -(a != 3), 3);
     return 1;
 }
 
 int dd_ev_39(int player, int a)
 {
-    func_0881F8D8(func_08866744(player), a);
+    dd_move(func_08866744(player), a);
     return 1;
 }
 
@@ -713,7 +713,7 @@ int dd_ev_42(int player, int zone, int idx)
     if (card == 0)
         return 1;
     dd_glow_off(card);
-    func_0881F454(card);
+    dd_beam_summon(card);
     card->b4 = 1;
     return 1;
 }
@@ -724,13 +724,13 @@ int dd_ev_43(int player, int zone, int idx)
 
     if (card == 0)
         return 1;
-    func_0881F46C(card);
+    dd_mark_on(card);
     return 1;
 }
 
 int dd_ev_44(void)
 {
-    func_0881F704();
+    dd_mark_all_off();
     return 1;
 }
 
@@ -740,8 +740,8 @@ int dd_ev_45(int player, int zone, int idx)
 
     if (card == 0)
         return 1;
-    func_0881F60C(card);
-    func_0881F460(card, func_08866744(player), zone);
+    dd_mark_off(card);
+    dd_beam_set2(card, func_08866744(player), zone);
     card->b4 = 1;
     return 1;
 }
