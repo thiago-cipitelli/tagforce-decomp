@@ -90,7 +90,7 @@ void *dk_draw_shade(void *list, unsigned short side, unsigned short tab, int sho
     return dl_ambient_color(list, 0xFFFFFFFF);
 }
 
-#ifdef NON_MATCHING /* switch com tamanhos indefinidos e campos por índice; alocação diferente (como sc_draw_detail) */
+#ifdef NON_MATCHING /* lógica conferida com o asm (tabelas de saltos, chamadas, constantes); forma ainda longe: 275 palavras (ponteiro do painel ajuda; sort, sz e a ordem das contas de x/y diferem), como sc_draw_detail */
 unsigned int font_sample_glyph_size(void);
 int font_measure_text(unsigned short *text);
 void font_text_set(void *list);
@@ -104,9 +104,9 @@ void *dk_draw_stat(void *list, unsigned int st, int pos, unsigned short size, un
 /* the value of the sort key of the cursor's card, in a bubble beside the scroll bar */
 void *dk_draw_detail(void *list)
 {
-    unsigned int side = dkv.side;
-    DkList *l = dkv.pane[side].list;
-    unsigned short i = dk_cur_index(side);
+    DkPane *p = &dkv.pane[dkv.side];
+    DkList *l = p->list;
+    unsigned short i = dk_cur_index(dkv.side);
     DkEnt *e = DK_ENT(l, i);
     unsigned char sort = l->sort;
     unsigned int v;
@@ -147,13 +147,13 @@ void *dk_draw_detail(void *list)
         h = 0x1B;
         break;
     }
-    cols = dkv.pane[side].lay.cols;
+    cols = p->lay.cols;
     rows = (int)(l->count + cols - 1) / (int)cols;
-    x = dkv.pane[side].lay.x + dkv.pane[side].lay.w - 10 - w;
+    x = p->lay.x + p->lay.w - 10 - w;
     if (rows == 0)
-        y = dkv.pane[side].lay.y + 12 + (dkv.pane[side].lay.h - 0x2B - h) / 2;
+        y = p->lay.y + 12 + (p->lay.h - 0x2B - h) / 2;
     else
-        y = dkv.pane[side].lay.y + 12 + (dkv.pane[side].lay.h - 0x2B) * (i / cols) / rows - h / 2;
+        y = p->lay.y + 12 + (p->lay.h - 0x2B) * (i / cols) / rows - h / 2;
     list = dk_draw_box(list, x, y, w, h, dk_res_get(0x8013));
     if (v == 0xFFFFFFFE)
         return list;

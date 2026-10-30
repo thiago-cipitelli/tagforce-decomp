@@ -44,7 +44,7 @@ segments:
       - [0x2BC8, c, ds_draw]
       - [0x2BC8, asm, ds_draw_asm_08806B68]
       - [0x2F6C, c, ds_icons]
-      - [0x3240, asm, ds_icons_asm_088071E0]
+      - [0x3378, asm, ds_icons_asm_08807318]
       - [0x3888, c, ds_bg]
       - [0x3C48, asm, ds_bg_asm_08807BE8]
       - [0x4158, c, ds_bg]
