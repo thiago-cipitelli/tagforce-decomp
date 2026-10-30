@@ -32,7 +32,7 @@
    list of card rows (picture, name, attribute, ATK/DEF, level), picks with min/max, a sort window
    (key and direction), a filter window by card kind and an options window (card info, sort,
    filter, ...). */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 typedef struct DdSelDesc {             /* what the caller passes to dd_sel_open */
     int n;

@@ -8,7 +8,7 @@
 // @rodata 0x088701B4-0x088701B8
 /* Card picture/text popups queued as tasks (wait until the commentary and the camera are free)
    and the glow effect attached to the field cards (up to 512 at a time). */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 typedef struct DdTask DdTask;
 struct DdTask {

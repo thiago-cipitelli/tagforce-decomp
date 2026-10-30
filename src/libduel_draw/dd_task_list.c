@@ -12,7 +12,7 @@
 /* The list of running presentation tasks of the scene (draw/update/leave callbacks with a timer,
    removable from inside their own callbacks) and two of its users: the summon/set name banner of
    a card and the card picture shown big. */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 typedef struct DdTask DdTask;
 struct DdTask {                        /* 0x1C */

@@ -4,7 +4,7 @@
 /* The duel-event command dispatcher (export 0x088176A0, called by libduel_mgr and friends): the
    commands 1..73 the duel manager sends to the duel scene (cut-ins, card moves, effects, panels)
    are looked up in a sorted table that also says how to unpack the three packed arguments. */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 extern DdEvState dd_ev_state;          /* 0x08C5476C */
 extern int dd_ev_sorted;               /* 0x08C54798 */

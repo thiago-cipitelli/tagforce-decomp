@@ -4,7 +4,7 @@
 /* The field cursor: a packed location (player, zone, index) over a 7x7 grid of the field zones
    (hand row, monster/spell rows, deck, grave, ...), moved with the d-pad; zone 11 (the hand) walks
    its cards by index. */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 extern DdCursor dd_cursor;             /* 0x08C54640 */
 

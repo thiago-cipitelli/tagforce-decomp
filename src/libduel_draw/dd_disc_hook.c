@@ -7,7 +7,7 @@
 /* Model hooks of the duel-disc and field models: the card texture rendered into VRAM for the disc
    slots ("4006.iff"/"0000.iff"), the material of "duel_disc_02.iff", the per-bone animation callback
    and two hook tables (bone remap + camera/light pose lookup). */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 typedef struct DdAnimBone {
     unsigned short mtx;                /* matrix index, 0xFFFF: none */

@@ -17,7 +17,7 @@
 /* The duel scene's input modes: a stack of modes (1 field, 2 card list, 3 yes/no, 4 numbers,
    5 card info, 6.. other sub-screens), each with enter/draw/update/leave; the scene heaps, the
    message pack, the replay pad and the camera taken from an animation. */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 typedef struct DdModeDef {
     int id;

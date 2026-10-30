@@ -3,7 +3,7 @@
 // @rodata 0x088700F8-0x0887015C
 /* Exports for the duel manager (the first one, 0x088199C8, is at the end of dd_event_cmd.c) around the commentary voice (status 8 of func_08806434) and the
    duel-state sounds: toggle, query, per-state voice and a clamped sound table. */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 int func_08806434(int a, int b);
 void dd_mode_push(int id);

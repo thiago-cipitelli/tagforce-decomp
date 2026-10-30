@@ -13,7 +13,7 @@
    (field_cursor00/01/02.iff, lit when the location can act), the arrow sprite and the icons of
    the actions available on the location; also the jump to the first selectable card and the
    cycling through selectable locations. */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 extern DdCursor dd_cursor;             /* 0x08C54640 */
 

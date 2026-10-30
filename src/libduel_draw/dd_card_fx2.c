@@ -15,7 +15,7 @@
 /* Effects played on field cards: summon/set beams, the target marks of graves and decks (shared by
    all their cards), damage/recovery and ATK/DEF change counters, destruction and the short lock of
    the cursor after a move. */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 typedef struct DdTask DdTask;
 struct DdTask {

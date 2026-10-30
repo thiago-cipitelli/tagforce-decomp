@@ -3,7 +3,7 @@
 /* The full-screen EHF cut-in player: one animation plays (with an optional caption and the end
    callback), a second request waits in the queue; the speed follows the configured animation
    setting and the loop part repeats until the player skips. */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 extern DdCutin dd_cutin;               /* 0x08C546D0 */
 

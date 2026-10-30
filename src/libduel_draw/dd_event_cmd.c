@@ -14,7 +14,7 @@
 /* The duel-event handlers 1..73 of the dispatcher table (dd_event.c): cut-ins (duel start/end,
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
    and prompts. The player numbers of the engine are turned into screen sides by func_08866744. */
-#include "libduel_draw.h"
+#include "dd_field_ui.h"
 
 extern int dd_ev_attack[4];            /* 0x08C5479C attacker side, zone, target side, zone */
 extern int dd_ev_flip_cutin;           /* 0x08C547AC the next flip plays the cut-in */
