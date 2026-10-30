@@ -414,6 +414,7 @@ void *tcfg_arrows(void *list, TCfg *c, short x, short y, int pos, int max)
     return list;
 }
 
+/* 58 palavras: o original copia s[k] para uma struct na pilha (lwc1 de s[0], lh de s[1]) e o mwcc a escalariza; lógica conferida com o asm */
 /* the check mark under ON (kind 1) or OFF */
 void *tcfg_check(void *list, TCfg *c, int kind, int on, short x, short y)
 {

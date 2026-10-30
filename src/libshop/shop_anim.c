@@ -1,5 +1,5 @@
 // @range 0x08812C60-0x08813808
-// @asm 0x08812D64-0x08813240
+// @asm 0x08812D64-0x08812F78
 // @asm 0x08813400-0x08813748
 // @data 0x08820410-0x08820480
 /* Animation of the opened pack: its model placed and the card pictures requested, the cards moving
@@ -33,7 +33,7 @@ void *cardlist_draw_quad(void *list, int x, int y);
 unsigned int *card_draw(void *list, int x, int y, unsigned int id);
 void *sceGeEdramGetAddr(void);
 
-Vec4 *shop_open_fly(float t, Vec4 *out, Vec4 *a, Vec4 *b, Vec4 *c);
+Vec4 *shop_open_fly(Vec4 *out, Vec4 *a, Vec4 *b, Vec4 *c, float t);
 void shop_open_card_move(ShopOpenCard *c, int i);
 
 Vec4 shop_pack_start = { 0.0f, -20.0f, -70.0f, 1.0f };
@@ -108,6 +108,7 @@ int shop_open_cards_done(short speed)
     }
     return shop_open->cards[n - 1].state == 5;
 }
+#endif
 
 /* position and rotation of a card for its step */
 void shop_open_card_move(ShopOpenCard *c, int i)
@@ -124,17 +125,16 @@ void shop_open_card_move(ShopOpenCard *c, int i)
     else
         t = (float)c->timer / (float)len;
     switch (c->state) {
-    case 4:
-        mat4_mul_rot_y(&c->rot, &shop_open->card_face, t * 6.2831855f);
-        vec4_copy(&a, &shop_open->card_show);
-        vec4_copy(&b, &shop_open->card_out);
-        ctrl = &shop_open->card_ctrl3;
-        break;
-    case 3:
-        mat4_copy(&c->rot, &shop_open->card_face);
-        vec4_copy(&a, &shop_open->card_show);
+    case 0:
+        mat4_copy(&c->rot, &shop_open->card_rot);
+        vec4_copy(&a, &shop_open->card_from);
         vec4_copy(&b, &a);
         t = 0.0f;
+        break;
+    case 1:
+        mat4_copy(&c->rot, &shop_open->card_rot);
+        vec4_copy(&a, &shop_open->card_from);
+        vec4_copy(&b, &shop_open->card_up);
         break;
     case 2:
         mat4_mul_rot_y(&c->rot, &shop_open->card_face, t * 6.2831855f);
@@ -142,16 +142,17 @@ void shop_open_card_move(ShopOpenCard *c, int i)
         vec4_copy(&b, &shop_open->card_show);
         ctrl = &shop_open->card_ctrl2;
         break;
-    case 1:
-        mat4_copy(&c->rot, &shop_open->card_rot);
-        vec4_copy(&a, &shop_open->card_from);
-        vec4_copy(&b, &shop_open->card_up);
-        break;
-    case 0:
-        mat4_copy(&c->rot, &shop_open->card_rot);
-        vec4_copy(&a, &shop_open->card_from);
+    case 3:
+        mat4_copy(&c->rot, &shop_open->card_face);
+        vec4_copy(&a, &shop_open->card_show);
         vec4_copy(&b, &a);
         t = 0.0f;
+        break;
+    case 4:
+        mat4_mul_rot_y(&c->rot, &shop_open->card_face, t * 6.2831855f);
+        vec4_copy(&a, &shop_open->card_show);
+        vec4_copy(&b, &shop_open->card_out);
+        ctrl = &shop_open->card_ctrl3;
         break;
     default:
         return;
@@ -161,10 +162,9 @@ void shop_open_card_move(ShopOpenCard *c, int i)
         vec4_scale(&d, &d, t);
         vec3_add_w(&c->pos, &a, &d);
     } else {
-        shop_open_fly(t, &c->pos, &a, &b, ctrl);
+        shop_open_fly(&c->pos, &a, &b, ctrl, t);
     }
 }
-#endif
 
 /* texture hook of the card model: renders the card (back or picture) into VRAM and uses it */
 int shop_card_tex_hook(unsigned int **plist, int a1, int which)
@@ -252,7 +252,7 @@ void shop_open_layout(void)
 #endif
 
 /* quadratic bezier a -> b with control point c */
-Vec4 *shop_open_fly(float t, Vec4 *out, Vec4 *a, Vec4 *b, Vec4 *c)
+Vec4 *shop_open_fly(Vec4 *out, Vec4 *a, Vec4 *b, Vec4 *c, float t)
 {
     float u = 1.0f - t;
     Vec4 s, p, q, r;
