@@ -1,6 +1,4 @@
 // @range 0x08813CF4-0x08815168
-// @asm 0x08813CF4-0x088141A4
-// @asm 0x088141A4-0x08814430
 // @asm 0x088144FC-0x088146E0
 // @asm 0x088146E0-0x08814828
 // @asm 0x088148D0-0x08814C14
@@ -26,7 +24,8 @@ typedef struct ScWordWin {             /* sc_word 0x0881B9A0, 0x54 bytes */
 } ScWordWin;
 
 typedef struct ScOsk {                 /* sc_osk 0x0881B9A4, 0x1B0 bytes */
-    int state;                         /* 0 idle, 1 fade in, 2 running, 3 fade out, 4 done */
+    unsigned char state;               /* 0 idle, 1 fade in, 2 running, 3 fade out, 4 done */
+    unsigned char pad01[3];
     unsigned int base[12];             /* +0x04 SceUtilityOskParams base */
     int datacount;                     /* +0x34 */
     unsigned int *data;                /* +0x38 */
@@ -62,79 +61,30 @@ void sc_osk_done(unsigned short *text, int r);
 void *sc_draw_hist_item(void *list, unsigned short i, int x, int y);
 void *sc_draw_word_bar(void *list, int x, int y);
 
-#ifdef NON_MATCHING /* máquina de passos; alocação e ordem dos testes diferentes */
 /* state 6 */
 void sc_input_result(void)
 {
-    MenuWidget *hist = sc_word->hist;
     MenuWidget *m = sc_word->menu;
+    MenuWidget *hist = sc_word->hist;
     PadState *pad = pad_get();
-    unsigned char c;
+    int c;
     int r;
 
     switch (sc_word->step) {
-    case 4:
-        sc_word_search();
-        break;
-    case 3:
-        menu_update(m);
-        if (m->state == 6) {
-            if (!m->cancelled) {
-                menu_reset(m);
-                if (hist != 0)
-                    menu_reset(hist);
-                sc_word->menu = 0;
-                sc_word->hist = 0;
-                sc_word->step = 4;
-                sc_word->sstep = 0;
-            } else {
-                sc_word_free();
-                sc.state = 1;
-            }
-        }
-        break;
-    case 2:
-        menu_update(sc_word->menu);
-        if (sc_word->menu->state != 4) {
-            menu_finish(m);
-            sc_word->step = 3;
-        }
-        break;
-    case 1:
-        c = hist->cursor;
-        r = menu_update(sc_word->hist);
-        if (r < 0) {
-            if (r == -2) {
-                sc_word->step = 0;
-            } else {
-                if (c != 0)
-                    return;
-                if (!(pad->b.rep & 0x10))
-                    return;
-                sc_word->step = 0;
-                se_play(0x6212);
-            }
-        } else {
-            wcscpy(sc_word->word, sc.words[r]);
-            sc_word->step = 0;
-            sc_word->focus = 2;
-        }
-        hist->accepted = 0;
-        hist->cancelled = 0;
-        hist->no_cancel = 0;
-        hist->cursor = hist->count;
-        break;
     case 0:
         if (pad->b.trig & region_pick_value(0)) {
-            if (sc_word->focus == 2) {
-                menu_set_cursor(sc_word->menu, 0);
-                se_play(0x6213);
-                sc_word->step = 2;
-            } else if (sc_word->focus == 0) {
+            switch (sc_word->focus) {
+            case 0:
                 if (sc_osk_open(sc_word->word, table_get_entry(res_get(0x8033), 0x19), 0x10, sc_osk_done) == 0) {
                     scv.busy = 1;
                     se_play(0x6213);
                 }
+                break;
+            case 2:
+                menu_set_cursor(sc_word->menu, 0);
+                se_play(0x6213);
+                sc_word->step = 2;
+                break;
             }
         } else if (pad->b.trig & region_pick_value(1)) {
             m->cancelled = 1;
@@ -158,70 +108,111 @@ void sc_input_result(void)
             }
         }
         break;
+    case 1:
+        c = hist->cursor;
+        r = menu_update(sc_word->hist);
+        if (r >= 0) {
+            wcscpy(sc_word->word, sc.words[r]);
+            sc_word->step = 0;
+            sc_word->focus = 2;
+        } else if (r == -2) {
+            sc_word->step = 0;
+        } else {
+            if (c != 0)
+                return;
+            if (!(pad->b.rep & 0x10))
+                return;
+            sc_word->step = 0;
+            se_play(0x6212);
+        }
+        hist->cancelled = hist->accepted = 0;
+        hist->no_cancel = 0;
+        hist->cursor = hist->count;
+        break;
+    case 2:
+        menu_update(sc_word->menu);
+        if (sc_word->menu->state != 4) {
+            menu_finish(m);
+            sc_word->step = 3;
+        }
+        break;
+    case 3:
+        menu_update(m);
+        if (m->state == 6) {
+            if (m->cancelled) {
+                sc_word_free();
+                sc.state = 1;
+            } else {
+                menu_reset(m);
+                if (hist != 0)
+                    menu_reset(hist);
+                sc_word->menu = 0;
+                sc_word->hist = 0;
+                sc_word->step = 4;
+                sc_word->sstep = 0;
+            }
+        }
+        break;
+    case 4:
+        sc_word_search();
+        break;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* passos da busca com outra ordem */
 /* the search itself, a few entries a frame */
 void sc_word_search(void)
 {
-    unsigned int side = scv.side;
-    ScList *l = scv.pane[side].list;
+    ScPane *p = &scv.pane[scv.side];
+    ScList *l = p->list;
     unsigned short view;
-    unsigned short grid;
+    unsigned short cols;
 
     switch (sc_word->sstep) {
     case 0:
         if (sc_word->word[0] == 0) {
             l->filter = 8;
             sc_word->sstep = 10;
-        } else if (l->count != 0) {
+        } else if (l->count <= 0) {
+            sc_search_start(l, sc_word->word);
+            sc_search_finish(l);
+            sc_word->sstep = 10;
+        } else {
             sc_word->progress = 0;
             sc_search_start(l, sc_word->word);
             sc_word_bar_open();
             sc_word->sstep++;
-        } else {
-            sc_search_start(l, sc_word->word);
-            sc_search_finish(l);
-            sc_word->sstep = 10;
         }
-        return;
+        break;
     case 1:
         menu_update(sc_word->bar);
         if (sc_word->bar->state == 3)
             sc_word->sstep++;
-        return;
+        break;
     case 2:
         sc_word->progress = sc_search_step(l);
         if (sc_word->progress >= 1000)
             sc_word->sstep++;
-        return;
+        break;
     case 3:
         sc_search_finish(l);
-        view = scv.pane[side].list_mode == 0 ? scv.pane[side].lay.grid_rows : scv.pane[side].lay.rows;
-        grid = scv.pane[side].list_mode == 0 ? scv.pane[side].lay.cols : 1;
-        sc_layout_scroll(0, 0, (grid & 0xFF) | view << 8, scv.pane[side].list->count, &scv.pane[side].top,
-                         &scv.pane[side].cx, &scv.pane[side].cy);
+        view = (p->list_mode == 0) ? p->lay.grid_rows : p->lay.rows;
+        cols = (p->list_mode == 0) ? p->lay.cols : 1;
+        sc_layout_scroll(0, 0, (cols & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
         menu_finish(sc_word->bar);
         sc_word->sstep++;
-        return;
+        break;
     case 4:
         menu_update(sc_word->bar);
         if (sc_word->bar->state != 6)
-            return;
-        break;
+            break;
     case 10:
+        sc_word_free();
+        sc_popup_open(4, l->count);
+        se_play(0x621A);
+        sc.state = 1;
         break;
-    default:
-        return;
     }
-    sc_word_free();
-    sc_popup_open(4, l->count);
-    se_play(0x621A);
-    sc.state = 1;
 }
-#endif
 
 void sc_word_free(void)
 {
@@ -440,7 +431,8 @@ void sc_osk_done(unsigned short *text, int r)
 /* OSK language of each game language */
 unsigned short sc_osk_lang[6] = { 0, 1, 4, 2, 5, 3 };
 
-#ifdef NON_MATCHING /* gravações dos parâmetros do teclado em outra ordem */
+#ifdef NON_MATCHING /* lógica conferida com o asm; 63 palavras: o original grava os campos 0/1 (região, idioma)
+                       com desvios, o mwcc gera sltu/sltiu; ordem das gravações dos parâmetros */
 /* starts the system on-screen keyboard on target ('$' doubled), len characters at most */
 int sc_osk_open(unsigned short *target, unsigned short *desc, int len, void (*done)(unsigned short *, int))
 {
@@ -449,16 +441,19 @@ int sc_osk_open(unsigned short *target, unsigned short *desc, int len, void (*do
     int dollar = 0;
     unsigned int i;
     unsigned short *s;
+    unsigned short *d;
     unsigned short c;
+    unsigned int *b;
+    unsigned int *o;
     int r;
 
-    if (lang < 0 || lang > 5)
+    if (lang < 0 || lang >= 6)
         lang = 1;
     memset(&sc_osk, 0, 0x1B0);
     sysvar_set_a90(1);
     sc_osk.target = target;
     sc_osk.done = done;
-    for (i = 0, s = target; i < (unsigned int)wcslen(target) && (int)i < 0x17; i++, s++) {
+    for (i = 0, s = target, d = in; i < wcslen(target) && (int)i < 0x17; i++, s++) {
         c = *s;
         if (c == '$') {
             if (dollar) {
@@ -466,38 +461,38 @@ int sc_osk_open(unsigned short *target, unsigned short *desc, int len, void (*do
                 continue;
             }
             dollar = 1;
-            *in++ = '$';
-        } else {
-            *in++ = c;
-            if (c == 0)
-                break;
         }
+        *d++ = c;
+        if (c == 0)
+            break;
     }
-    sc_osk.base[0] = 0x40;
-    sc_osk.base[1] = sc_osk_lang[lang];
-    sc_osk.base[2] = region_pick_value(0) != 0x2000;
-    sc_osk.base[3] = 0x11;
-    sc_osk.base[4] = 0x13;
-    sc_osk.base[5] = 0x12;
-    sc_osk.base[6] = 0x10;
-    sc_osk.base[8] = 0;
-    sc_osk.base[9] = 0;
-    sc_osk.data = sc_osk.odata;
+    b = sc_osk.base;
+    b[0] = 0x40;
+    b[1] = sc_osk_lang[lang];
+    o = sc_osk.odata;
+    b[2] = (unsigned short)region_pick_value(0) != 0x2000 ? 1 : 0;
+    b[3] = 0x11;
+    b[4] = 0x13;
+    b[5] = 0x12;
+    b[6] = 0x10;
+    b[8] = 0;
+    b[9] = 0;
+    sc_osk.data = o;
     sc_osk.datacount = 1;
-    sc_osk.odata[0] = lang == 0;
-    sc_osk.odata[5] = 1;
-    sc_osk.odata[6] = 1;
-    sc_osk.odata[10] = (unsigned int)sc_osk.out;
-    sc_osk.odata[8] = (unsigned int)sc_osk.in;
-    sc_osk.odata[1] = 0;
-    sc_osk.odata[2] = 0;
-    sc_osk.odata[3] = 0;
-    sc_osk.odata[4] = 0;
-    sc_osk.odata[11] = 0;
-    sc_osk.odata[12] = 0;
-    sc_osk.odata[7] = (unsigned int)desc;
-    sc_osk.odata[9] = len;
-    r = sceUtilityOskInitStart(&sc_osk.base);
+    o[0] = lang == 0 ? 1 : 0;
+    o[5] = 1;
+    o[6] = 1;
+    o[10] = (unsigned int)sc_osk.out;
+    o[7] = (unsigned int)desc;
+    o[8] = (unsigned int)in;
+    o[9] = len;
+    o[1] = 0;
+    o[2] = 0;
+    o[3] = 0;
+    o[4] = 0;
+    o[11] = 0;
+    o[12] = 0;
+    r = sceUtilityOskInitStart(sc_osk.base);
     if (r == 0) {
         fade_start_in(2, 0xA0000000, 8);
         sc_osk.state = 1;
