@@ -9,7 +9,7 @@
 void dd_param_load(int a, const char *path);
 void dd_view_init(void);
 void dd_view_free(void);
-void func_088091C8();
+void dd_info_select_uid();
 void func_08809B1C(void);
 void func_08809B40(int i, RecipeData *deck);
 void func_08809CFC(int side, int v);
@@ -303,7 +303,7 @@ void func_08806360(DdLoc *a, DdLoc *b)
 /* export */
 void func_088063E8(void)
 {
-    func_088091C8();
+    dd_info_select_uid();
 }
 
 /* export: shows the turn player and the phase */

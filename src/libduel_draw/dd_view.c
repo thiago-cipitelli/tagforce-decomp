@@ -8,10 +8,10 @@ void dd_field_init(void);
 void dd_field_free(void);
 void dd_field_draw(void);
 void dd_field_update(float dt);
-void func_08808D10(void);
-void func_08808DEC(void);
-void func_08808E30(void);
-void func_08808EE4(float dt);
+void dd_info_init(void);
+void dd_info_term(void);
+void dd_info_draw(void);
+void dd_info_update(float dt);
 void func_08809B1C(void);
 void func_08809CE4(void);
 void func_08809E4C(void);
@@ -33,7 +33,7 @@ int dd_param_load(int a, const char *path)
 void dd_view_init(void)
 {
     dd_field_init();
-    func_08808D10();
+    dd_info_init();
     func_08814DFC();
     func_08809B1C();
     func_08816FD0();
@@ -43,7 +43,7 @@ void dd_view_init(void)
 void dd_view_free(void)
 {
     dd_field_free();
-    func_08808DEC();
+    dd_info_term();
     func_08809CE4();
     func_08816FE4();
     func_08811710();
@@ -60,7 +60,7 @@ void dd_view_draw3d(void)
     if (dd_scene_flags(4, -1))
         func_08811718();
     if (dd_scene_flags(4, -1))
-        func_08808E30();
+        dd_info_draw();
 }
 
 void dd_view_update(float dt)
@@ -69,5 +69,5 @@ void dd_view_update(float dt)
         dd_field_update(dt);
     func_08809EF0(dt);
     func_08811C60(dt);
-    func_08808EE4(dt);
+    dd_info_update(dt);
 }

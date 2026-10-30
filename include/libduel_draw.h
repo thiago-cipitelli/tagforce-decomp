@@ -187,19 +187,19 @@ typedef struct DdVec3 {
 
 typedef struct DdVec4 {
     float x, y, z, w;
-} DdVec4;
+} __attribute__((aligned(16))) DdVec4;
 
 typedef struct DdMat {
     float m[16];
-} DdMat;
+} __attribute__((aligned(16))) DdMat;
 
 typedef struct DdLight {               /* BOOT Light, 0x3C */
     int type;                          /* 0 directional, 1 point, 2 spot */
     unsigned int ambient;              /* +0x04 */
     unsigned int diffuse;              /* +0x08 */
     unsigned int specular;             /* +0x0C */
-    float pos[3];                      /* +0x10 */
-    float dir[3];                      /* +0x1C */
+    DdVec3 pos;                        /* +0x10 */
+    DdVec3 dir;                        /* +0x1C */
     float spot_exp;                    /* +0x28 */
     float spot_cutoff;                 /* +0x2C */
     float atten[3];                    /* +0x30 */
@@ -252,6 +252,53 @@ typedef struct DdField {               /* 0x08C3D260, 0x220 */
     DdVec4 dir;                        /* +0x210 */
 } DdField;
 
+typedef struct DdCardStats {           /* BOOT CardStats, 0x3C */
+    int attr;                          /* card_get_attribute: 0xD/0xE spell/trap */
+    int attr_icon;
+    int atk;                           /* -1 = "?" */
+    int def;
+    int type;
+    int kind;
+    int level;
+    int prop5;
+    int extra[6];                      /* +0x20 */
+    int mask;                          /* +0x38 */
+} DdCardStats;
+
+typedef struct DdInfoView {            /* BOOT CardView plus the card shown, 0x124 */
+    int id;                            /* +0x000 -1 none */
+    int variant;
+    int vram;
+    DdCardStats cur;                   /* +0x00C */
+    DdCardStats cmp;                   /* +0x048 values on the field */
+    int show_mask;                     /* +0x084 */
+    unsigned int desc_scroll;          /* +0x088 */
+    unsigned int desc_max;             /* +0x08C */
+    int shown_id;                      /* +0x090 */
+    int shown_variant;
+    int fade;
+    DdCardStats shown;                 /* +0x09C */
+    DdCardStats shown_cmp;             /* +0x0D8 */
+    int shown_mask;                    /* +0x114 */
+    unsigned short uid;                /* +0x118 card instance on the field, 0 none */
+    int card;                          /* +0x11C card id */
+    int on;                            /* +0x120 */
+} DdInfoView;
+
+typedef struct DdInfo {                /* card info panel(s), 0x08C3D480, 0x4B0 */
+    DdInfoView view[2];
+    DdInfoView save[2];                /* +0x248 */
+    int pinned;                        /* +0x490 opened by the player */
+    int peek;                          /* +0x494 opened while browsing the field */
+    int off;                           /* +0x498 disabled */
+    void *frame_buf;                   /* +0x49C */
+    int state;                         /* +0x4A0 0 closed .. 5 */
+    int target;                        /* +0x4A4 0 single, 3 pair */
+    float timer;                       /* +0x4A8 */
+    int x;                             /* +0x4AC slide offset */
+} DdInfo;
+
+extern DdInfo dd_info;
 extern DdField dd_field;
 extern DdScene dd_scene;
 extern DdView dd_view;
