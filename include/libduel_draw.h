@@ -42,8 +42,17 @@ typedef struct ChrVt {                 /* callbacks of a character model (0x0884
 
 typedef struct ChrModel {              /* character model instance (partial) */
     int chr_id;                        /* 0x00 */
-    int f4;                            /* 0x04 */
-    char pad8[0x16C];
+    int f4;                            /* 0x04 costume */
+    char pad8[0x2C];
+    int snd;                           /* 0x34 sound channel */
+    char pad38[0x28];
+    int voices[4][4];                  /* 0x60 voice clips per step, -1 = none */
+    int voice_step;                    /* 0xA0 */
+    int voice_a4;                      /* 0xA4 */
+    int voice_playing;                 /* 0xA8 */
+    char padAC[0xA4];
+    int card_id;                       /* 0x150 card the event is about */
+    char pad154[0x20];
     unsigned int flags;                /* 0x174 */
     unsigned int f178;                 /* 0x178 */
 } ChrModel;
