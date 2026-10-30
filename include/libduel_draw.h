@@ -37,6 +37,40 @@ unsigned int *dl_blend_func(unsigned int *list, int op, int src, int dst, unsign
 
 #define DD_TASK_MAX 254
 
+typedef struct DdMon {                 /* monster model instance played by the duel scene */
+    int chara;                         /* +0x000 character of the voice set (< 41: story) */
+    int x04;                           /* +0x004 variant of the voice set */
+    int x08;
+    int x0c;                           /* +0x00C partner table of the voice lines */
+    int voice;                         /* +0x010 */
+    unsigned char pad14[0x20];
+    int chan;                          /* +0x034 sound channel */
+    void *model;                       /* +0x038 */
+    int *anim_ok;                      /* +0x03C nonzero for each animation id the model has */
+    unsigned char pad40[0x110];
+    int card;                          /* +0x150 card id shown in the ATK/DEF panel */
+    int pad154[2];
+    int lp_from;                       /* +0x15C LP panel values */
+    int lp_to;                         /* +0x160 */
+    int pad164;
+    int hold;                          /* +0x168 keep the last frame */
+    int faded;                         /* +0x16C fade of the destruction started */
+} DdMon;
+
+typedef struct DdMonCb {               /* callbacks of a monster model (0x34) */
+    int a;                             /* +0x00 */
+    int b;                             /* +0x04 */
+    int pad08[3];
+    int (*on_start)(int a, int b, int c);              /* +0x14 */
+    int (*on_event)(int a, int anim, int c, int d);    /* +0x18 */
+    int pad1c;
+    int (*pick_anim)(DdMon *m, int anim);              /* +0x20 */
+    int (*cb24)(void);                                 /* +0x24 */
+    int (*cb28)(void);                                 /* +0x28 */
+    void *bone;                                        /* +0x2C bone transform (dd_mon_bone) */
+    int pad30;
+} DdMonCb;
+
 void *dd_fb_addr(int back);            /* VRAM address of the front (0) or back (1) frame buffer */
 void *dd_vram_addr(int offset);
 
