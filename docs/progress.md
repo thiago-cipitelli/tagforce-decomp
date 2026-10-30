@@ -5,7 +5,7 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-30 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 59,3% | 82,9% | 9252 / 11039 |
+| total | 59,8% | 83,6% | 9329 / 11039 |
 | BOOT | 63,0% | 79,9% | 1815 / 2208 |
 | libduel_eng | 61,7% | 81,2% | 2987 / 3429 |
 | libhtml_view | 100% | 100% | 16 / 16 |
@@ -28,7 +28,7 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-30 (
 | libtutorial | 93,2% | 99,7% | 204 / 207 |
 | libfield | 56,9% | 73,4% | 551 / 652 |
 | libstory | 85,5% | 98,5% | 643 / 676 |
-| libduel_draw | 35,6% | 80,3% | 1233 / 1609 |
+| libduel_draw | 39,2% | 85,4% | 1310 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -56,7 +56,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 
 **libfield**, **libstory**: todo o `.text` em C (restam 91 e 33 funções em asm).
 
-**libduel_draw**: todo o `.text` em C (restam 267 funções em asm; o C sob NON_MATCHING de 6 arquivos — dd_action_menu, dd_chain_menu, dd_field_events, dd_field_marks, dd_msg_win, dd_prompt_win — ainda é pseudocódigo que não compila, e dd_debug_menu.c não tem C das duas funções grandes).
+**libduel_draw**: todo o `.text` em C (restam 284 funções em asm; dd_debug_menu.c não tem C das duas funções grandes, menu de depuração inalcançável).
 
 **BOOT**: nenhum trecho sem C. Todo o `.text` está em arquivos `.c`; o que falta são as funções em `@asm` (C sob `NON_MATCHING`). Na parte do SDK compilada com GCC (libgu, newlib, libgcc, libvfpu, libccc, libfpu, libdeflt, libsas/libwave) as funções são `asm` do mwcc com C portável sob `#else`; ficam em `@asm` as que carregam dados por `lui`/`%lo`, que o assembler embutido não aceita (ver `docs/build.md`).
 
@@ -715,7 +715,7 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`s_snd.c`](../src/libstory/s_snd.c) | 0x08817930-0x08817E64 | 16 | 0 | música e sons (bgm da sala por dia/noite/duelo, tocar/parar/esperar, efeito de variação de pontos) |
 
 
-## libduel_draw (125 arquivos, 1229 funções batendo, 267 em asm)
+## libduel_draw (125 arquivos, 1306 funções batendo, 284 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -749,12 +749,12 @@ Saída de `MODULE=<m> python3 tools/list_funcs.py --gaps` (início-fim, funçõe
 | [`dd_task_list.c`](../src/libduel_draw/dd_task_list.c) | 0x0881DF94-0x0881EBA0 | 9 | 10 | lista de tarefas de apresentação, faixa de nome da carta invocada/baixada, carta grande |
 | [`dd_card_fx.c`](../src/libduel_draw/dd_card_fx.c) | 0x0881EBA0-0x0881F0A8 | 3 | 6 | popups de carta/texto que esperam câmera e comentário, brilho das cartas |
 | [`dd_card_fx2.c`](../src/libduel_draw/dd_card_fx2.c) | 0x0881F0A8-0x08820138 | 16 | 12 | feixes de invocação, marcas de alvo, contadores de dano e ATK/DEF, destruição, trava do cursor |
-| [`dd_field_events.c`](../src/libduel_draw/dd_field_events.c) | 0x08820138-0x08820F88 | 9 | 0 | efeitos de campo dirigidos por eventos (LP, embaralhar, tarefas de espera, ângulos); C sob NON_MATCHING ainda é pseudocódigo |
-| [`dd_action_menu.c`](../src/libduel_draw/dd_action_menu.c) | 0x08820F88-0x08822B0C | 6 | 0 | janela de ação sobre a posição, janelas de mensagem 0-2 e seus ganchos; C sob NON_MATCHING ainda é pseudocódigo |
-| [`dd_field_marks.c`](../src/libduel_draw/dd_field_marks.c) | 0x08822B0C-0x0882308C | 1 | 0 | marcadores sobre as posições do campo; C sob NON_MATCHING ainda é pseudocódigo |
-| [`dd_chain_menu.c`](../src/libduel_draw/dd_chain_menu.c) | 0x0882308C-0x08823674 | 3 | 0 | janela das ações da carta sob o cursor; C sob NON_MATCHING ainda é pseudocódigo |
-| [`dd_prompt_win.c`](../src/libduel_draw/dd_prompt_win.c) | 0x08823674-0x08825088 | 5 | 0 | janelas de prompt das mensagens 3-10; C sob NON_MATCHING ainda é pseudocódigo |
-| [`dd_msg_win.c`](../src/libduel_draw/dd_msg_win.c) | 0x08825088-0x08825DDC | 15 | 0 | janela de mensagem compartilhada, textos formatados, buffers; C sob NON_MATCHING ainda é pseudocódigo |
+| [`dd_field_events.c`](../src/libduel_draw/dd_field_events.c) | 0x08820138-0x08820F88 | 27 | 1 | efeitos de campo dirigidos por eventos (LP, embaralhar, tarefas de espera, ângulos) |
+| [`dd_action_menu.c`](../src/libduel_draw/dd_action_menu.c) | 0x08820F88-0x08822B0C | 22 | 10 | janela de ação sobre a posição, janelas de mensagem 0-2 e seus ganchos |
+| [`dd_field_marks.c`](../src/libduel_draw/dd_field_marks.c) | 0x08822B0C-0x0882308C | 2 | 3 | marcadores sobre as posições do campo |
+| [`dd_chain_menu.c`](../src/libduel_draw/dd_chain_menu.c) | 0x0882308C-0x08823674 | 8 | 1 | janela das ações da carta sob o cursor |
+| [`dd_prompt_win.c`](../src/libduel_draw/dd_prompt_win.c) | 0x08823674-0x08825088 | 27 | 0 | janelas de prompt das mensagens 3-10 |
+| [`dd_msg_win.c`](../src/libduel_draw/dd_msg_win.c) | 0x08825088-0x08825DDC | 30 | 2 | janela de mensagem compartilhada, textos formatados, buffers |
 | [`dd_wait_dots.c`](../src/libduel_draw/dd_wait_dots.c) | 0x08825DDC-0x088260A4 | 3 | 0 | pontos de espera de uma janela do duelo |
 | [`dd_task.c`](../src/libduel_draw/dd_task.c) | 0x088260A4-0x088264DC | 12 | 0 | tabela de 254 tarefas dos efeitos (criar, matar, liberar, flags) |
 | [`dd_rstate.c`](../src/libduel_draw/dd_rstate.c) | 0x088264DC-0x08826A64 | 7 | 0 | estado GE padrão das camadas e liga/desliga de textura, profundidade e blend |
