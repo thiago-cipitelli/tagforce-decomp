@@ -90,6 +90,134 @@ void fld_bg_update(void)
     fld_bg_model_update(b->id);
 }
 
+void *dl_clear_depth(void *list, int z);
+void *dl_clear(void *list, int flags);
+void *dl_alpha_test(void *list, int func, int ref, int mask);
+void *dl_blend_func(void *list, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+void *dl_set_tex_filter(void *list, int min, int mag);
+void mtx_translate(Vec4 *v);
+void *model_hook(void *m, int which, void *v);
+void *fcam_apply(void *list);
+void *fmrk_begin(void *list);
+void *fmrk_volume(void *list, Vec4 *pos);
+void *fmrk_fill(void *list);
+void fld_bg_model_draw(int id);
+void fld_bg_draw_objs(void);
+void fld_bg_draw_models(void);
+void fld_bg_draw_shadow(void);
+void *fld_bg_draw_sky(void *list);
+void fld_bg_draw_to_tex(void);
+void fld_bg_draw_from_tex(void);
+int fld_bg_stencil_hook(void **list, void *m, int a, int b, int phase);
+void fld_pos_set(Vec3 *p, int cx, int cz);
+int fld_bg_id(void);
+
+typedef struct FieldVec3w { Vec3 v; int w; } FieldVec3w;  /* the w of the mark is copied as a word (lw/sw) */
+extern Vec3 field_mark_pos;                    /* 0x0883A4A0 the mark of room 3 */
+extern Vec4 field_mark_w[2];                   /* 0x0883A4B0 w of the mark volumes */
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 26 palavras: os dois Vec4 das marcas (t, montado com p e o w do template, e a cópia v passada a fmrk_volume) saem em posições de pilha trocadas; ordem das declarações e Vec4 por cast não resolvem */
+/* draws the room: the render state of layers 1 and 2, the objects, area models, shadow and sky
+   under the light offset, and during an area change (fade 1) the previous area through the stencil
+   texture; then the marks of the marked cells (room 3: one fixed spot) */
+void fld_bg_draw(void)
+{
+    FieldBg *b = &field_bg_state;
+    Vec3 l = field_bg_state.light;
+    void *list;
+    void *hook;
+    int i;
+    ModelDrawOpts o;
+    Vec3 p;
+    Vec3 q;
+    FieldVec3w t0;
+    Vec4 v0;
+    FieldVec3w t1;
+    Vec4 v1;
+
+    if (field_bg_state.file != 0 && *b->file != 0) {
+        list = dl_select_layer(1, 0);
+        list = dl_clear_depth(list, 0);
+        list = dl_clear(list, 2);
+        list = dl_enable(list, 3);
+        list = dl_enable(list, 1);
+        list = dl_blend_func(list, 0, 2, 3, 0, 0);
+        list = dl_enable(list, 4);
+        list = dl_alpha_test(list, 6, 0, 0xFF);
+        list = dl_enable(list, 0);
+        list = dl_set_tex_filter(list, 1, 1);
+        list = dl_stencil_op(list, 1, 2, 0xFF);
+        list = dl_stencil_func(list, 0, 0, 2);
+        dl_set_list(list);
+        list = dl_select_layer(2, 0);
+        list = dl_enable(list, 1);
+        list = dl_blend_func(list, 0, 2, 3, 0, 0);
+        list = dl_enable(list, 4);
+        list = dl_alpha_test(list, 6, 0, 0xFF);
+        list = dl_enable(list, 0);
+        list = dl_stencil_op(list, 1, 0, 0xFF);
+        dl_set_list(list);
+        memset(&o, 0, sizeof(o));
+        o.a = 1;
+        o.b = 2;
+        mtx_set_mode(2);
+        mtx_push();
+        mtx_identity();
+        vec3_scale(&l, &l, -1.0f);
+        mtx_translate((Vec4 *)&l);
+        switch (b->fade) {
+        case 0:
+            fld_bg_draw_objs();
+            fld_bg_draw_models();
+            fld_bg_draw_shadow();
+            list = dl_select_layer(1, 0);
+            list = fld_bg_draw_sky(list);
+            dl_set_list(list);
+            break;
+        case 1:
+            fld_bg_draw_objs();
+            fld_bg_draw_models();
+            fld_bg_draw_shadow();
+            list = dl_select_layer(1, 0);
+            list = fld_bg_draw_sky(list);
+            dl_set_list(list);
+            fld_bg_draw_to_tex();
+            o.a = 1;
+            o.b = 1;
+            hook = model_hook(b->model[b->prev_area], 1, fld_bg_stencil_hook);
+            model_draw(b->model[b->prev_area], &o);
+            model_hook(b->model[b->prev_area], 1, hook);
+            fld_bg_draw_from_tex();
+            break;
+        }
+        mtx_set_mode(2);
+        mtx_pop();
+        list = dl_select_layer(1, 0);
+        list = fcam_apply(list);
+        list = fmrk_begin(list);
+        if (fld_bg_id() == 3) {
+            p = field_mark_pos;
+            fld_map_height(&p, p.x, p.z);
+            t0.v = p;
+            t0.w = *(int *)&field_mark_w[0].w;
+            v0 = *(Vec4 *)&t0;
+            list = fmrk_volume(list, &v0);
+        } else {
+            for (i = 0; i < b->n_cells; i++) {
+                fld_pos_set(&q, b->cells[i].x, b->cells[i].z);
+                t1.v = q;
+                t1.w = *(int *)&field_mark_w[1].w;
+                v1 = *(Vec4 *)&t1;
+                list = fmrk_volume(list, &v1);
+            }
+        }
+        list = fmrk_fill(list);
+        dl_set_list(list);
+        fld_bg_model_draw(b->id);
+    }
+}
+#endif
+
 int fld_bg_area_is(int cx, int cz)
 {
     FieldBg *b = &field_bg_state;
