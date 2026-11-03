@@ -4,7 +4,6 @@
 // @asm 0x08813AA8-0x08813D34
 // @asm 0x088141C4-0x08814404
 // @asm 0x08814514-0x088147E0
-// @asm 0x08814930-0x08814B5C
 /* HUD parts sliding in and out: day and date, the moving icon (waits, then flies scaling down),
    the panel and the message box; their drawings are still in asm. */
 #include "libfield.h"
@@ -230,6 +229,44 @@ void fld_hud_panel_update(void)
         }
         break;
     }
+}
+
+extern const FieldHudCell field_panel_cells[3];  /* 0x088389E0 the two plates and the digits */
+extern const int field_panel_pos[3][2];         /* 0x08838A04 */
+
+/* the panel of the HUD: plate 0, plate 1 and the count of st->w[8] unless hidden (phase) or zero */
+void *fld_hud_panel_draw(void *list)
+{
+    FieldHud *h = &field_hud;
+    FieldHudSlide *s = &field_hud.panel;
+    FieldStory *st = fld_story_get();
+    int i;
+    const FieldHudCell *c;
+    const int *p;
+    char buf[256];
+
+    if (s->state == 0)
+        return list;
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = dl_set_tex_filter(list, 0, 0);
+    for (i = 0, c = field_panel_cells, p = field_panel_pos[0]; i < 2; i++, c++, p += 2) {
+        if (i == 1) {
+            if (h->phase != 0)
+                continue;
+            if (st->w[8] != 0 && *(int *)st->w[8] <= 0)
+                continue;
+        }
+        list = gim_set_texture(list, (&h->gim0)[c->gim]);
+        list = fld_draw_cell1(list, s->pos.x + (float)p[0], s->pos.y + (float)p[1], c->u, c->v, c->w, c->h);
+    }
+    if (h->phase == 0 && st->w[8] != 0 && *(int *)st->w[8] > 0) {
+        sprintf(buf, str_d, *(int *)st->w[8]);
+        list = gim_set_texture(list, (&h->gim0)[field_panel_cells[2].gim]);
+        list = fld_digits(list, buf, s->pos.x + (float)field_panel_pos[2][0], s->pos.y + (float)field_panel_pos[2][1],
+                          0, field_panel_cells[2].u, field_panel_cells[2].v, field_panel_cells[2].w,
+                          field_panel_cells[2].h, -1, 1.0f);
+    }
+    return list;
 }
 
 void fld_hud_box_free(void)

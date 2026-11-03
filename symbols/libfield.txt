@@ -311,7 +311,7 @@ fld_hud_move_draw = 0x08814514; // type:func asm (@asm in src/libfield/f_hud3.c)
 fld_hud_panel_free = 0x088147E0; // type:func matched src/libfield/f_hud3.c
 fld_hud_panel_open = 0x088147E8; // type:func matched src/libfield/f_hud3.c
 fld_hud_panel_update = 0x088147F8; // type:func matched src/libfield/f_hud3.c
-fld_hud_panel_draw = 0x08814930; // type:func asm (@asm in src/libfield/f_hud3.c)
+fld_hud_panel_draw = 0x08814930; // type:func matched src/libfield/f_hud3.c
 fld_hud_box_free = 0x08814B5C; // type:func matched src/libfield/f_hud3.c
 fld_hud_box_init = 0x08814B64; // type:func matched src/libfield/f_hud3.c
 fld_hud_box_update = 0x08814C3C; // type:func matched src/libfield/f_hud3.c
@@ -834,6 +834,8 @@ fld_sctab_update = 0x08811BE0; // type:func matched src/libfield/f_hud.c
 fld_hud_clock_face = 0x08813914; // type:func matched src/libfield/f_hud3.c
 field_day_pos = 0x08838984; // type:data
 field_day_digits = 0x088389B4; // type:data
+field_panel_cells = 0x088389E0; // type:data
+field_panel_pos = 0x08838A04; // type:data
 str_d = 0x0883C7F4; // type:data
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x0882BE80; // type:func import:libehsys nid:00D1378F
