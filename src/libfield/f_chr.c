@@ -1,6 +1,5 @@
 // @range 0x08805220-0x08805DF4
 // @asm 0x08805664-0x08805708
-// @asm 0x088058F8-0x08805930
 // @asm 0x08805930-0x08805CBC
 /* SD characters of the map: setup (model or sprite by chara kind), per-frame animation counters,
    shadow/draw registration, the eight walking directions and the collision of a moving character
@@ -230,17 +229,14 @@ int fld_dir_nearest(Vec3 *v)
     return r;
 }
 
-#ifdef NON_MATCHING /* o original tem um bloco morto "li v0,1; b" e o teste x < 450 em bnezl */
 int fld_in_range(int x)
 {
-    if (x >= 100) {
-        if (x >= 450)
-            return 0;
+    switch (x) {
+    case 100 ... 449:
         return 1;
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* lógica conferida. 6 palavras: o original divide q.x por 0.5 antes de ler q.z (inline, ponteiro e cast (int) não mudam; fld_hud_event, que bate, lê os dois antes) */
 /* clips the motion vel of a character of radius r at pos against blocked cells */

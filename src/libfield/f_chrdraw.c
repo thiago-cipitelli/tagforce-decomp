@@ -6,7 +6,6 @@
 // @asm 0x08806390-0x08806A14
 // @asm 0x08806AF0-0x08806CE0
 // @asm 0x08806CE0-0x08806DF0
-// @asm 0x08806DF0-0x08806E6C
 // @asm 0x08806E6C-0x08806ED4
 /* Drawing of the SD characters: the 3D model, the sprite sheets (sd_*_sla.gim) as billboards under
    an orthographic projection, the flat sprite; the vertex quad of a sprite cell and the kind of
@@ -80,28 +79,28 @@ void fld_sprite_quad(float x, float y, FieldVtx *q, int tw, int th, int u, int v
 }
 #endif
 
-#ifdef NON_MATCHING /* o original mantém blocos mortos "li; b; nop" depois da cadeia de testes */
 /* 0 model, 1 sprite sheet, 2 flat sprite */
 int fld_chr_kind(int id)
 {
     int r = 0;
 
-    if (id < 1000 || id >= 1013) {
-        if (id < 100 || id >= 450) {
-            if (id == 0x3A) {
-                r = 2;
-            } else if (id > 0 && id < 0x34) {
-                r = 0;
-            }
-        } else {
-            r = 1;
-        }
+    switch (id) {
+    case 1 ... 0x33:
+        r = 0;
+        break;
+    case 0x3A:
+        r = 2;
+        break;
+    case 100 ... 449:
+        r = 1;
+        break;
+    case 1000 ... 1012:
+        break;
     }
     return r;
 }
-#endif
 
-#ifdef NON_MATCHING /* o original mantém blocos mortos "li; b; nop" depois dos testes do switch */
+#ifdef NON_MATCHING /* 6 palavras: o original testa 3, 2, 1 (o r = 3 do case 2 reaproveita o li v0,3 do teste do case 3); aqui o teste de 1 vem antes do de 2. Melhor das 24 ordens de case e das variantes com default: case 1: e return */
 int fld_chr_tex(int id)
 {
     CharmapPos p;
@@ -109,17 +108,15 @@ int fld_chr_tex(int id)
 
     if (charmap_lookup2(id, &p) != 0) {
         switch (p.b) {
-        case 1:
-            r = 2;
-            break;
         case 2:
             r = 3;
             break;
+        default:
+        case 1:
+            r = 2;
+            break;
         case 3:
             r = 4;
-            break;
-        default:
-            r = 2;
             break;
         }
     } else {

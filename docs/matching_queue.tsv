@@ -1010,7 +1010,6 @@ fuzzy	size	module	function	address	file
 64.7	388	libduel_eng	duel_08809DA8	0x08809DA8	src/libduel_eng/ai_util.c
 64.5	220	libduel_eng	duel_088170EC	0x088170EC	src/libduel_eng/ai_08815E90.c
 64.3	2076	libduel_eng	duel_send_card	0x088D0878	src/libduel_eng/leave_field.c
-63.7	124	libfield	fld_chr_kind	0x08806DF0	src/libfield/f_chrdraw.c
 63.6	88	libduel_eng	duel_0888B9A8	0x0888B9A8	src/libduel_eng/effects_z.c
 63.6	136	BOOT	scene_reset_to	0x08853C94	src/BOOT/cip.c
 63.4	1216	libduel_eng	duel_08883324	0x08883324	src/libduel_eng/effects_s.c
@@ -1086,7 +1085,6 @@ fuzzy	size	module	function	address	file
 45.1	1108	libtitle	tcfg_row	0x0880E0B4	src/libtitle/t_cfgdraw.c
 44.8	1108	libduel_draw	opt_row	0x08869790	src/libduel_draw/dd_duel_options.c
 44.6	164	BOOT	snd_output	0x08852708	src/BOOT/movie.c
-42.9	56	libfield	fld_in_range	0x088058F8	src/libfield/f_chr.c
 41.6	3168	libduel_draw	opt_draw	0x08868B30	src/libduel_draw/dd_duel_options.c
 41.0	704	libdeck_swap	ds_slot_pos	0x0880CED8	src/libdeck_swap/ds_move.c
 40.3	688	libtitle	title_screen_label	0x0880A5FC	src/libtitle/t_res.c
