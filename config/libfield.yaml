@@ -97,8 +97,6 @@ segments:
       - [0xC874, c, f_scene]
       - [0xC874, asm, f_scene_asm_08810814]
       - [0xCFA4, c, f_scene]
-      - [0xCFA4, asm, f_scene_asm_08810F44]
-      - [0xD190, c, f_scene]
       - [0xD548, asm, f_scene_asm_088114E8]
       - [0xD87C, c, f_scene]
       - [0xD87C, asm, f_scene_asm_0881181C]

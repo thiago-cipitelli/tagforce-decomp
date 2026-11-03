@@ -1,6 +1,5 @@
 // @range 0x08810814-0x08811BE0
 // @asm 0x08810814-0x08810F44
-// @asm 0x08810F44-0x08811130
 // @asm 0x088114E8-0x0881181C
 // @asm 0x0881181C-0x08811B1C
 /* Scene commands of the field scripts: the story parameters of the scene, placing the player,
@@ -19,6 +18,79 @@ void fget_load(void);
 void fld_scene_gim_loaded(int *file, void *arg);
 
 extern unsigned char field_story_ext[0x10];    /* 0x08FD5748 */
+
+void fld_player_draw(void);
+void fpt_draw(void);
+void fld_hud_draw(void);
+void fget_draw(void);
+void fld_sctab_draw(void);
+void *fdlg_draw_buttons(void *list, unsigned int mask);
+void *fld_dlg_draw(void *list);
+void *fbag_draw(void *list);
+void *fld_dl_clear(void *list, int z, unsigned int color);
+void fcal_draw(void);
+void *fclk_draw(void *list);
+void fegg_draw(void);
+void *fcho_draw(void *list);
+
+/* draws the characters and the HUD, then the menu of the scene mode (x88), and the calendar over it */
+void fld_scene_draw(void)
+{
+    FieldScene *const s = &field_scene;
+    void *list;
+
+    fld_player_draw();
+    fpt_draw();
+    fld_hud_draw();
+    fget_draw();
+    fld_sctab_draw();
+    switch (field_scene.x88) {
+    case 1:
+        if (pad_get()->b.down & 0x200) {
+            list = dl_select_layer(4, 0);
+            list = fdlg_draw_buttons(list, s->padac[2]);
+            dl_set_list(list);
+        }
+        break;
+    case 3:
+        list = dl_select_layer(3, 0);
+        list = fld_dlg_draw(list);
+        dl_set_list(list);
+        break;
+    case 8:
+        list = dl_select_layer(3, 0);
+        list = fbag_draw(list);
+        dl_set_list(list);
+        break;
+    case 12:
+        if (s->xa8 == 0) {
+            list = dl_select_layer(3, 0);
+            list = fld_dl_clear(list, 0xFFFF, 0x80000000);
+            dl_set_list(list);
+            fcal_draw();
+            break;
+        }
+    case 18:
+        list = dl_select_layer(3, 0);
+        list = fclk_draw(list);
+        dl_set_list(list);
+        break;
+    case 22:
+        fegg_draw();
+        break;
+    case 20:
+        list = dl_select_layer(3, 0);
+        list = fcho_draw(list);
+        dl_set_list(list);
+        break;
+    }
+    if (s->xa8 != 0) {
+        list = dl_select_layer(3, 0);
+        list = fld_dl_clear(list, 0xFFFF, 0x80000000);
+        dl_set_list(list);
+        fcal_draw();
+    }
+}
 
 FieldStory *fld_story_get(void)
 {
