@@ -1134,7 +1134,6 @@ fuzzy	size	module	function	address	file
 0.0	560	libfield	fld_chr_model_quads	0x08805FD0	src/libfield/f_chrdraw.c
 0.0	652	libfield	fld_hud_clock_hands	0x08813AA8	src/libfield/f_hud3.c
 0.0	684	libfield	func_08808B8C	0x08808B8C	src/libfield/f_bgdraw.c
-0.0	716	libfield	fld_hud_move_draw	0x08814514	src/libfield/f_hud3.c
 0.0	736	libfield	func_08809700	0x08809700	src/libfield/f_bgdraw.c
 0.0	736	libfield	fld_hud_clock_draw_a	0x08813308	src/libfield/f_hud3.c
 0.0	768	libfield	func_0881181C	0x0881181C	src/libfield/f_scene.c

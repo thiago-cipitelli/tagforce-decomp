@@ -2,7 +2,6 @@
 // @asm 0x08813308-0x088135E8
 // @asm 0x088135E8-0x08813914
 // @asm 0x08813AA8-0x08813D34
-// @asm 0x08814514-0x088147E0
 /* HUD parts sliding in and out: day and date, the moving icon (waits, then flies scaling down),
    the panel and the message box; their drawings are still in asm. */
 #include "libfield.h"
@@ -229,7 +228,6 @@ extern const unsigned char field_move_digits[10][2]; /* 0x088389C0 big digit cel
 extern const FieldHudCell field_move_minus;     /* 0x088389D4 */
 void *fld_digit(float scale, void *list, int x, int y, int z, int u, int v, int w, int h, int frame);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 1 palavra: mul.s f0,s,38 no original, f0,38,s aqui (mesmo padrão de fld_bg_door_update; ordem dos operandos, 38/38.0f/(float)38 não mudam) */
 /* the step count of the HUD (move.arg, scaled by move.s): its plate, a minus when negative and the
    big digits */
 void *fld_hud_move_draw(void *list)
@@ -263,8 +261,10 @@ void *fld_hud_move_draw(void *list)
         }
         for (i = strlen(buf) - 1; i >= 0; i--) {
             int d = buf[i] - '0';
+            float k = 38.0f;
+            int dx = (int)(m->s * k);
 
-            list = fld_digit(m->s, list, m->pos.x + (float)((int)(38.0f * m->s) * i),
+            list = fld_digit(m->s, list, m->pos.x + (float)(dx * i),
                              m->pos.y - 0.5f * (48.0f * m->s), 0, field_move_digits[d][0], field_move_digits[d][1],
                              40, 48, 0);
         }
@@ -272,7 +272,6 @@ void *fld_hud_move_draw(void *list)
     }
     return list;
 }
-#endif
 
 void fld_hud_panel_free(void)
 {

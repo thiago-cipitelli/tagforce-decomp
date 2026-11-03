@@ -93,6 +93,7 @@ Os casos mais comuns nesta etapa:
 | `andi 0xFFFF`/`0xFF` a mais ou a menos | tipo do parâmetro (`unsigned short`/`char`); cast `(int)` num bitfield de 1 bit; protótipo ausente no original (`int f();`) |
 | `seh` a mais | `(short)(int)expr` |
 | ordem dos `mtc1`/`a0` numa chamada | ordem dos parâmetros no protótipo (int antes de float, ou ao contrário) |
+| `mul.s fd, var, const` (constante no segundo operando) | o mwcc põe a constante literal sempre em `fs`; com ela num local (`float k = 38.0f; x * k`) sai na ordem do original (`fld_hud_move_draw`); um `mult` inteiro com o resultado trocado se resolve com o produto parcial num `int` local |
 | cópia de struct pela pilha que o mwcc propaga | bloco com `T tmp = {...}; x = *(T *)&tmp;` |
 | local `Mat4`/array acima dos outros na pilha | `__attribute__((aligned(16)))` **na variável**, não no typedef |
 | laço com teste no topo e `b` de volta | `for (;;) { if (!c) break; ... }` (o `while` é rotacionado) |
