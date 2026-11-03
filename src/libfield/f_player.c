@@ -60,7 +60,7 @@ void fld_player_setup(float x, float z, int dir)
                   (int)fld_player_loaded_b, 0);
     field_player.c.pos.x = x;
     field_player.c.pos.z = z;
-    fld_map_height(x, z, &field_player.c.pos);
+    fld_map_height(&field_player.c.pos, x, z);
     field_player.active = 1;
     fld_player_update();
 }

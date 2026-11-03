@@ -398,7 +398,8 @@ typedef struct FieldScTab {            /* 0x08FD1B2C, 0x280 */
 } FieldScTab;
 
 typedef struct FieldMap {              /* fld_map_get() */
-    int pad00;
+    unsigned short n_vert;             /* +0x00 height grid: vertices (Vec3, at fld_map_cells()) */
+    unsigned short vw;                 /* +0x02 vertices per row */
     unsigned short pad04;
     unsigned short n;                  /* +0x06 cells (w * h) */
     unsigned short w;                  /* +0x08 cells */
@@ -970,7 +971,7 @@ int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir
                   int arg8c, int a, int b, int fx);
 void fld_chr_get_pos(Vec3 *out, FieldChr *c);
 void fld_chr_corners(Vec3 *p, float r, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d);
-void fld_map_height(float x, float z, Vec3 *p);
+void fld_map_height(Vec3 *p, float x, float z);
 void fld_pos_to_cell(float x, float z, int *cx, int *cz);
 int fld_map_attr(int x, int z);
 FieldMap *fld_map_get(void);

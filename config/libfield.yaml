@@ -52,8 +52,6 @@ segments:
       - [0x38A4, c, f_map]
       - [0x38A4, asm, f_map_asm_08807844]
       - [0x3C3C, c, f_map]
-      - [0x3C3C, asm, f_map_asm_08807BDC]
-      - [0x3F40, c, f_map]
       - [0x3FB0, asm, f_map_asm_08807F50]
       - [0x4010, c, f_map]
       - [0x4274, c, f_bgdraw]
