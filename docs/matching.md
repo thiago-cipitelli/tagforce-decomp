@@ -4,15 +4,16 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-10-30, após a rodada paralela nas funções com fuzzy < 80% (ByteMatch): 62,6% do código batendo,
-89,3% fuzzy, 9511/11039 funções. Fila: 1208 funções em `docs/matching_queue.tsv` (318 abaixo de 80%), fora o SDK
-do BOOT (inclusive arquivos com um só `@asm` cobrindo o `@range` inteiro) e as de `docs/matching_skip.tsv`.
+Estado em 2026-11-03 (ByteMatch): 63,0% do código batendo, 89,8% fuzzy, 9544/11039 funções. Fila: 1157 funções em
+`docs/matching_queue.tsv` (291 abaixo de 80%), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo o
+`@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
 A Tarefa 0 (drafts que não compilavam) está concluída.
 
-**Funções sem C nenhum (fuzzy 0% na fila):** 47 funções, ~66 KB, escondidas dentro da faixa `@asm` de um vizinho
-(libfield 29, libduel_eng 8 — `duel_088C4864`, `duel_088C5510`, `duel_act_0887E140` —, libshop `shop_glow_super`/
-`shop_glow_ultra`, e outras). Escrever o C delas a partir do asm vem antes do matching (o port precisa dele) e
-costuma bater na primeira ou segunda forma. Linhas `func_XXXXXXXX` na fila são candidatas.
+**Funções sem C nenhum (fuzzy 0% na fila):** 26 funções, ~53 KB, escondidas dentro da faixa `@asm` de um vizinho
+(libfield 8 — `fld_clock_hand`, `fld_npc_update`, `fld_bg_draw`, `fld_bg_loaded`, `func_08806390`, `fld_scene_update`,
+`fld_hud_draw_all`, `fld_chr_index` —, libduel_eng 8 — `duel_088C4864`, `duel_088C5510`, `duel_act_0887E140` —,
+libshop `shop_glow_super`/`shop_glow_ultra`, e outras). Escrever o C delas a partir do asm vem antes do matching (o port
+precisa dele) e costuma bater na primeira ou segunda forma. Linhas `func_XXXXXXXX` na fila são candidatas.
 
 ## Protocolo de sessão (janela de tokens pequena)
 
