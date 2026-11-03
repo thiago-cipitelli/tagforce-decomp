@@ -167,7 +167,7 @@ void fpt_loaded_b(int *file, FieldChr *c)
 }
 
 /* the first walkable cell around the player, starting behind it */
-#ifdef NON_MATCHING /* the two divisions of the cell index are scheduled around the li of ok in another order */
+#ifdef NON_MATCHING /* 10 palavras: o original divide p.x por 0.5 (lido em $f0, quociente em $f1) antes de ler p.z; aqui as duas leituras saem antes (mesmo padrão de fld_chr_collide, fld_player_update, fpt_update; float local, cast, inline e ordem com ok não mudam) */
 void fpt_place(void)
 {
     FieldChr *c = &field_partner.c;

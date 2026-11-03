@@ -6,7 +6,6 @@
 // @asm 0x088092E0-0x088094B4
 // @asm 0x088094B4-0x08809630
 // @asm 0x08809700-0x088099E0
-// @asm 0x08809A10-0x08809B40
 /* Room loading and drawing: the models of each area and their stencil shadows, the placed objects,
    the camera of the room, the mesh mask by area and the hook that hides the door meshes ("_DD."). */
 #include "libfield.h"
@@ -178,12 +177,11 @@ void fld_bg_model_free(int id)
 {
 }
 
-#ifdef NON_MATCHING /* forma igual; registradores s0-s3 trocados */
 /* hides (phase 0) and shows again (phase 1) the door meshes */
 int fld_bg_hook(void **list, void *m, int a, int b, int phase)
 {
-    char **name = *(char ***)(*(int *)((char *)m + 0xC) + a * 0xA4 + b * 0x20 + 0x1C);
     int hit = 0;
+    char **name = *(char ***)(*(int *)((char *)m + 0xC) + a * 0xA4 + b * 0x20 + 0x1C);
 
     if (name != 0 && (int)strlen(*name) >= 7) {
         if (strstr(*name, str_DD) || strstr(*name, str_Dd) || strstr(*name, str_dD) || strstr(*name, str_dd))
@@ -201,7 +199,6 @@ int fld_bg_hook(void **list, void *m, int a, int b, int phase)
     }
     return 0;
 }
-#endif
 
 /* sound of the door being opened (open = 1) or closed */
 void fld_bg_door_se(int open, int side)

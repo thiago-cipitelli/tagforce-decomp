@@ -1,4 +1,5 @@
 // @range 0x08805DF4-0x08806FC4
+// @rodata 0x08834E14-0x08834E3C
 // @asm 0x08805DF4-0x08805FD0
 // @asm 0x08805FD0-0x08806200
 // @asm 0x08806200-0x08806390
@@ -7,7 +8,6 @@
 // @asm 0x08806CE0-0x08806DF0
 // @asm 0x08806DF0-0x08806E6C
 // @asm 0x08806E6C-0x08806ED4
-// @asm 0x08806F24-0x08806FC4
 /* Drawing of the SD characters: the 3D model, the sprite sheets (sd_*_sla.gim) as billboards under
    an orthographic projection, the flat sprite; the vertex quad of a sprite cell and the kind of
    drawing each chara id uses. The large draw callbacks are still in asm. */
@@ -155,7 +155,6 @@ int fld_chr_size(int id)
     return r;
 }
 
-#ifdef NON_MATCHING /* casos do switch sem preencher o delay slot no original (blocos mortos) */
 int fld_chr_group(int id)
 {
     CharmapPos p;
@@ -163,6 +162,7 @@ int fld_chr_group(int id)
 
     if (charmap_lookup2(id, &p) != 0) {
         switch (p.a) {
+        default:
         case 0:
             r = 0;
             break;
@@ -193,13 +193,9 @@ int fld_chr_group(int id)
         case 9:
             r = 9;
             break;
-        default:
-            r = 0;
-            break;
         }
     } else {
         r = 0;
     }
     return r;
 }
-#endif

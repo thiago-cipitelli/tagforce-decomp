@@ -2,7 +2,6 @@
 // @asm 0x08807844-0x08807BDC
 // @asm 0x08807BDC-0x08807EE0
 // @asm 0x08807F50-0x08807FB0
-// @asm 0x08807FB0-0x08808160
 /* Cell map of the room: walkable cells (with the doors of the dormitory and the stage closed by
    story flags), height of a point on the ground triangles, cell <-> position, marked cells, the
    door cells leading to another room and the cells of the special hall. */
@@ -38,7 +37,6 @@ int fld_cell_marked(int cx, int cz)
 }
 #endif
 
-#ifdef NON_MATCHING /* o default do original salta direto ao epílogo e os testes de 0x24 saem em outra forma */
 /* room a door cell leads to, -1 if none */
 int fld_cell_door(int cx, int cz)
 {
@@ -67,18 +65,12 @@ int fld_cell_door(int cx, int cz)
             r = 0x15;
         break;
     case 0x24:
-        if (cx == 9 && cz == 0)
+        if ((cx == 9 && cz == 0) || (cx == 10 && cz == 0))
             r = 0x27;
-        else if (cx == 10 && cz == 0)
-            r = 0x27;
-        break;
-    default:
-        r = -1;
         break;
     }
     return r;
 }
-#endif
 
 int fld_cell_special(int cx, int cz)
 {

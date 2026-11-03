@@ -343,7 +343,7 @@ void fld_player_move(void)
     c->vel = v;
 }
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 9 palavras: o original carrega a constante 0.25 antes da conversão de padac[0] */
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 9 palavras: o original lê padac[0] antes de carregar 0.5 (com "/ 2.0f" a ordem bate, então é a multiplicação; ordem dos operandos, cast e parênteses não mudam) */
 /* walks the player toward the centre of its target cell (x at +0xAC, z at +0xB0) by steps of 0.1;
    busy drops to 0 once it is within 0.1 */
 void fld_player_seek(void)

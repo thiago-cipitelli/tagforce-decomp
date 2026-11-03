@@ -301,7 +301,6 @@ fuzzy	size	module	function	address	file
 96.0	624	libduel_draw	dd_pick_draw	0x08829BBC	src/libduel_draw/dd_pick.c
 96.0	640	libduel_eng	duel_088ABE60	0x088ABE60	src/libduel_eng/effects_088A8B94.c
 96.0	228	libshop	shop_shelf_icons	0x0880CA8C	src/libshop/shop_shelf.c
-95.9	432	libfield	fld_cell_door	0x08807FB0	src/libfield/f_map.c
 95.9	420	libduel_draw	help_update	0x08861494	src/libduel_draw/dd_help_window.c
 95.8	312	libdeck	dk_draw_rows	0x0880F284	src/libdeck/dk_cards.c
 95.8	312	libdeck	dk_draw_rows_small	0x0880FB34	src/libdeck/dk_cards.c
@@ -442,7 +441,6 @@ fuzzy	size	module	function	address	file
 93.4	344	libduel_eng	duel_088C39F0	0x088C39F0	src/libduel_eng/duel_checks.c
 93.3	120	libduel_draw	dd_text	0x0881DBC8	src/libduel_draw/dd_scene_mode.c
 93.3	992	libstory	stext_names	0x08815058	src/libstory/s_talk.c
-93.3	304	libfield	fld_bg_hook	0x08809A10	src/libfield/f_bgdraw.c
 93.3	184	libduel_mgr	dmgr_res_text_fit	0x08815328	src/libduel_mgr/dmgr_result.c
 93.2	392	libduel_draw	dd_chr_anim_set	0x08813AB8	src/libduel_draw/dd_chr.c
 93.2	100	libduel_eng	duel_list_find_id	0x088E6314	src/libduel_eng/card_find.c
@@ -522,7 +520,6 @@ fuzzy	size	module	function	address	file
 91.5	400	libdeck_tutorial	dt_list_filter	0x088139EC	src/libdeck_tutorial/dt_filter.c
 91.4	784	libselect_card	sc_find_group	0x0880C380	src/libselect_card/sc_input.c
 91.4	3132	libduel_eng	duel_0883A2BC	0x0883A2BC	src/libduel_eng/ai_08839360.c
-91.4	56	libfield	fld_npc_get_c0	0x0880A860	src/libfield/f_npc.c
 91.4	532	libduel_draw	dd_fx_coin_update	0x08834C34	src/libduel_draw/dd_fx_toss.c
 91.4	1228	librecipe_viewer	recipe_viewer_draw	0x08805874	src/librecipe_viewer/rv_screen.c
 91.4	592	libduel_eng	duel_08815BD0	0x08815BD0	src/libduel_eng/ai_cond6.c
@@ -542,7 +539,6 @@ fuzzy	size	module	function	address	file
 91.1	3432	libduel_draw	dd_fx_lines_update	0x08847DD8	src/libduel_draw/dd_fx_lines.c
 91.1	208	libduel_draw	hguide_init	0x0886452C	src/libduel_draw/dd_help_scene.c
 91.0	660	libselect_card	sc_input_filter	0x088121D0	src/libselect_card/sc_fmenu.c
-91.0	160	libfield	fld_chr_group	0x08806F24	src/libfield/f_chrdraw.c
 91.0	900	librecipe_viewer	rv_menu_open	0x08809C64	src/librecipe_viewer/rv_menu.c
 91.0	724	BOOT	card_draw_stats	0x08857DD8	src/BOOT/cardlist.c
 90.9	296	libduel_eng	duel_088D1DF4	0x088D1DF4	src/libduel_eng/battle_088D1DF4.c

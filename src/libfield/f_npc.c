@@ -1,7 +1,6 @@
 // @range 0x08809C40-0x0880AC74
 // @asm 0x08809D20-0x0880A104
 // @asm 0x0880A2FC-0x0880A58C
-// @asm 0x0880A860-0x0880A898
 // @asm 0x0880AA4C-0x0880AB48
 /* NPCs of the room (32 walking on paths) and the extra characters (80): reset, drawing, the ones
    near the player, the NPC in front of the player, the commands that place them, turn them to the
@@ -284,7 +283,6 @@ void fld_npc_get_d0(int id, int *a, int *b)
     }
 }
 
-#ifdef NON_MATCHING /* o teste r == -1 sai bne/nop no original e bnel aqui */
 int fld_npc_get_c0(int id)
 {
     FieldNpc *n = fld_npc_find(id);
@@ -293,13 +291,12 @@ int fld_npc_get_c0(int id)
     if (n) {
         r = n->xc0;
         if (r == -1)
-            r = 0;
+            return 0;
     } else {
         r = -1;
     }
     return r;
 }
-#endif
 
 void fld_npc_turn_to(int id, FieldNpc *p)
 {
