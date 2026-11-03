@@ -3,7 +3,6 @@
 // @asm 0x08819644-0x08819740
 // @asm 0x088197B0-0x0881A078
 // @asm 0x0881B268-0x0881B608
-// @asm 0x0881B7B8-0x0881B8C0
 // @rodata 0x08838B90-0x0883904C
 // @data 0x0883C8B0-0x0883C9C8
 /* The campus map (field_bm, bm_*.ehp): the island with its 14 places, the cursor moving between them
@@ -1285,29 +1284,28 @@ void *fbm_draw_arrows(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* the stack frame has 8 more bytes under the ehf options */
+/* EhfOpts com 0x68 bytes no quadro, só 0x60 zerados (como card_draw_ehf_frame) */
 void *fbm_draw_cursor(void *list)
 {
     Vec2 b;
     Vec2 a;
     Vec2 p;
-    EhfOpts o;
+    struct { EhfOpts e; int pad[2]; } o;
 
-    memset(&o, 0, sizeof(o));
-    o.time = *gfx_get_state();
-    o.flags |= 0x10000;
+    memset(&o, 0, sizeof(o.e));
+    o.e.time = *gfx_get_state();
+    o.e.flags |= 0x10000;
     b.x = fbm_pos[field_bm.cur].x;
     b.y = fbm_pos[field_bm.cur].y;
     a.x = fbm_pos[field_bm.prev].x;
     a.y = fbm_pos[field_bm.prev].y;
     vec2_lerp(&p, &a, &b, field_bm.move_t);
-    o.x = p.x;
-    o.y = p.y;
+    o.e.x = p.x;
+    o.e.y = p.y;
     list = gfx_begin_2d(list);
-    list = ehf_draw(list, field_bm.arrow[1], &o);
+    list = ehf_draw(list, field_bm.arrow[1], &o.e);
     return gfx_end_2d(list);
 }
-#endif
 
 void fbm_fade(int out, unsigned int color, int len, int layer)
 {

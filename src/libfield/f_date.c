@@ -72,7 +72,7 @@ void fdate_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* os registros $f0/$f1 do centro do texto saem trocados (240 - largura * 0,5) */
+#ifdef NON_MATCHING /* 6 palavras: $f0/$f1 de largura e 0,5 trocados no centro do texto (0.5f * w, / 2.0f e float local não mudam) */
 void fdate_draw(void)
 {
     FieldDate *d = &field_date;

@@ -289,7 +289,7 @@ void fclk_free(void)
     }
 }
 
-#ifdef NON_MATCHING /* fclk_list_item (lógica conferida, 50 palavras): o original materializa &field_hour_menu em $s0 no início e o mantém nas chamadas; fclk_time_draw: o argumento de pilha de fld_draw_cell é guardado uma instrução antes */
+#ifdef NON_MATCHING /* fclk_list_item (lógica conferida, 50 palavras): o original materializa &field_hour_menu em $s0 no início e o mantém nas chamadas; fclk_time_draw (4 palavras): na primeira fld_draw_cell o original lê p[6].x antes de p[6].y (ordem/associação dos operandos não muda) */
 void *fclk_list_item(void *list, unsigned int i, int x, int y)
 {
     FieldHourMenu *c = &field_hour_menu;

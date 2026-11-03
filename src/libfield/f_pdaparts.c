@@ -225,7 +225,7 @@ void *pda_draw_scrollbar(void *list, int x, int y, int h, int pos, int shown, in
 void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int sel);
 
 /* a mail of the list: frame, sender face, unread and important marks, header */
-#ifdef NON_MATCHING /* registrador do índice da face (t0 no original, t1 aqui); faltam 13 palavras */
+#ifdef NON_MATCHING /* 13 palavras: o índice da face fica em t1 (o original usa t0, que vira o argumento u); ordem das decls, 0x1C8 + ..., variável separada para o 199 e laço com ponteiro não resolvem */
 void *pda_draw_mail_item(void *list, int x, int y, FieldPdaMail *m, int sel)
 {
     int i;
