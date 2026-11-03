@@ -101,6 +101,7 @@ Os casos mais comuns nesta etapa:
 | `sltu v0,zero,v0` logo após `jal` | `int on = f() != 0; if (on)` |
 | faixas de `case` em árvore de `slti` | `case A ... B:` (o mwcc aceita) |
 | blocos mortos `li; b; nop` depois de uma cadeia de testes `slti`/`beql` | é um `switch` com faixas: os testes saem na ordem inversa dos `case`, os corpos ficam como blocos mortos na ordem do fonte (`fld_chr_kind`, `fld_in_range`: `switch (x) { case 100 ... 449: return 1; } return 0;`) |
+| corpos de `case` mortos que o mwcc remove (`li a1,K; b; nop` depois dos `beql`) | todo `case` atribui um **local** (`int n = id; switch (id) { case A: n = X; break; … case B: n = id; break; }`), não o parâmetro; um `case` que só faz `break` precisa de `n = id;` explícito (`duel_088B52F0`); com valores iguais à constante do teste, `switch` em vez de cadeia de `if` (`op_deck_select`: ordem dos `case` por busca) |
 | cópia de tabela para a pilha (laço `lb/lh` ou `lwc1/swc1`) | `T loc = *(T *)tabela_global;` ou local inicializado `short pos[4] = {...}` (o template fica no `@data`) |
 | `sll/ext` relendo o valor recém-gravado | atribuição encadeada `m->a = m->b = 0;` |
 | `ext x,16,16` / `srl` em vez de `sra` | `(pos >> 16) & 0xFFFF` / `(unsigned int)u16 >> 1` |

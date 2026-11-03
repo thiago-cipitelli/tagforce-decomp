@@ -1,6 +1,5 @@
 // @range 0x08808E68-0x0880B3E4
 // @asm 0x088097F4-0x088098DC
-// @asm 0x0880A13C-0x0880A248
 // @asm 0x0880AEF4-0x0880B048
 // @data 0x0881C0E0-0x0881C16C
 /* Script instructions 0xC3A0..0xC3F5 (inventory, money, flags, field commands, duel setup, sound,
@@ -517,37 +516,44 @@ void op_lesson_duel(void)
     st_lesson_set_b(CMD.c);
 }
 
-#ifdef NON_MATCHING /* as constantes das comparações viram o modo; nenhuma ordem de case/if reproduz os blocos mortos */
 void op_deck_select(void)
 {
     StoryVm *const vm = &story_vm;
     int deck;
     int mode;
-    int m;
 
     if (CMD.a == 0)
         deck = st_id_to_item(st_pl_x14_get());
     else
         deck = st_id_to_rec(vm->script[vm->pc].a);
-    m = story_mode_get();
-    if (m == 3)
-        mode = 3;
-    else if (m == 2)
-        mode = 2;
-    else if (m == 1)
+    switch (story_mode_get()) {
+    case 1:
         mode = 1;
-    else
+        break;
+    case 2:
+        mode = 2;
+        break;
+    default:
         mode = 0;
+        break;
+    case 3:
+        mode = 3;
+        break;
+    }
     deck_slot_set_level(deck, mode);
-    m = story_mode_get();
-    if (m == 3)
-        vm->var[1] = 3;
-    else if (m == 2)
-        vm->var[1] = 2;
-    else
+    switch (story_mode_get()) {
+    case 1:
+    default:
         vm->var[1] = 1;
+        break;
+    case 2:
+        vm->var[1] = 2;
+        break;
+    case 3:
+        vm->var[1] = 3;
+        break;
+    }
 }
-#endif
 
 void op_chapter(void)
 {

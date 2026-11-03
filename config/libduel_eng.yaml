@@ -608,8 +608,6 @@ segments:
       - [0xB05C0, c, effects_088B4560]
       - [0xB0DB4, asm, effects_088B4560_asm_088B4D54]
       - [0xB0EC4, c, effects_088B4560]
-      - [0xB1350, asm, effects_088B4560_asm_088B52F0]
-      - [0xB1478, c, effects_088B4560]
       - [0xB2A64, asm, effects_088B4560_asm_088B6A04]
       - [0xB2C58, c, effects_088B4560]
       - [0xB3DF4, c, effects_088B7D94]

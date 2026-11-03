@@ -1,6 +1,5 @@
 // @range 0x088B4560-0x088B7D94
 // @asm 0x088B4D54-0x088B4E64
-// @asm 0x088B52F0-0x088B5418
 // @asm 0x088B6A04-0x088B6BF8
 /* Card effect handlers: candidate lists for duel_088BFC64 (player, zone, index). */
 #include "duel.h"
@@ -252,42 +251,42 @@ void duel_088B5214(unsigned int p)
     }
 }
 
-#ifdef NON_MATCHING /* o original mantém os corpos dos case como blocos mortos (li; b; nop) depois da cadeia de beql; o mwcc atual os remove */
 /* Card i of the hand if it has the name that card id asks for. */
 void duel_088B52F0(unsigned int p, int id, int i)
 {
     int c = duel.players[p & 1].hand[i].id;
+    int n = id;
 
     switch (id) {
     case 0x1476:
-        id = 0x1121;
+        n = 0x1121;
         break;
     case 0x15D0:
-        id = 0x15D1;
+        n = 0x15D1;
         break;
     case 0x15D4:
-        id = 0x15D5;
+        n = 0x15D5;
         break;
     case 0x165B:
-        id = 0x1645;
+        n = 0x1645;
         break;
     case 0x16FD:
+        n = id;
         break;
     case 0x17DD:
-        id = 0xFF8;
+        n = 0xFF8;
         break;
     case 0x1821:
-        id = 0x1820;
+        n = 0x1820;
         break;
     case 0x189A:
-        id = 0xFA7;
+        n = 0xFA7;
         break;
     }
-    if (card_same_name(c, id)) {
+    if (card_same_name(c, n)) {
         duel_088BFC64(p, 0xB, i);
     }
 }
-#endif
 
 void duel_088B5418(unsigned int p)
 {

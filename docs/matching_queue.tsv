@@ -814,7 +814,6 @@ fuzzy	size	module	function	address	file
 82.3	232	libstory	story_date_in_range	0x0880BF94	src/libstory/s_cal.c
 82.2	712	libduel_draw	func_088215A0	0x088215A0	src/libduel_draw/dd_action_menu.c
 82.1	960	libduel_draw	dd_ev_11	0x08817F08	src/libduel_draw/dd_event_cmd.c
-82.1	268	libstory	op_deck_select	0x0880A13C	src/libstory/s_vmops.c
 82.1	772	libshop	shop_list_find_group	0x088079A8	src/libshop/shop_state.c
 82.1	48	libduel_draw	dd_shake	0x0881FAF8	src/libduel_draw/dd_card_fx2.c
 82.1	1204	libduel_eng	duel_req_move_card	0x088D7604	src/libduel_eng/req_effect.c
@@ -913,7 +912,6 @@ fuzzy	size	module	function	address	file
 75.7	444	libduel_draw	dd_beam	0x0881F0A8	src/libduel_draw/dd_card_fx2.c
 75.7	684	libduel_draw	dd_ev_49	0x08819184	src/libduel_draw/dd_event_cmd.c
 75.6	508	libtitle	tpt_flip	0x0881FD30	src/libtitle/t_partner.c
-75.6	296	libduel_eng	duel_088B52F0	0x088B52F0	src/libduel_eng/effects_088B4560.c
 75.6	204	libduel_eng	duel_hand_add	0x088F1514	src/libduel_eng/hand.c
 75.5	1012	libdeck_swap	ds_set_mode	0x08805E58	src/libdeck_swap/ds_mode.c
 75.5	152	libduel_eng	duel_08887618	0x08887618	src/libduel_eng/effects_x.c

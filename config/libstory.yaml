@@ -70,8 +70,6 @@ segments:
       - [0x4EC8, c, s_vmops]
       - [0x5854, asm, s_vmops_asm_088097F4]
       - [0x593C, c, s_vmops]
-      - [0x619C, asm, s_vmops_asm_0880A13C]
-      - [0x62A8, c, s_vmops]
       - [0x6F54, asm, s_vmops_asm_0880AEF4]
       - [0x70A8, c, s_vmops]
       - [0x7444, c, s_cal]
