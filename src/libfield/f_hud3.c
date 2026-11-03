@@ -1,5 +1,4 @@
 // @range 0x08813308-0x08814D94
-// @asm 0x08813308-0x088135E8
 // @asm 0x088135E8-0x08813914
 /* HUD parts sliding in and out: day and date, the moving icon (waits, then flies scaling down),
    the panel and the message box; their drawings are still in asm. */
@@ -22,6 +21,56 @@ void *dl_set_tex_filter(void *list, int min, int mag);
 void *fld_draw_cell1(void *list, int x, int y, int u, int v, int w, int h);
 void *fld_clock_hands(void *list, int x, int y, int z, int h, int m);
 void *fld_day_icon(void *list, int n, int x, int y, int z);
+
+typedef struct FieldHudCell {           /* sprite of a HUD part, 0xC */
+    short u, v, w, h;
+    int gim;                           /* index in field_hud.gim0.. */
+} FieldHudCell;
+
+void *fld_hud_clock_face(void *list, int dx1, int dx2, int dx3);
+extern const char str_d[];
+void *fld_digits(void *list, char *s, int x, int y, int z, int u, int v, int w, int h, int gap,
+                 float scale);
+extern const FieldHudCell field_clock_cells[3];  /* 0x08838948 the two plates and the digits */
+extern const int field_clock_pos[3][2];         /* 0x0883896C */
+
+/* clock of the HUD, layout A: the face, then (unless blinking off, blink_kind 1) the two plates and
+   st->w[0] and st->w[1] in digits */
+void *fld_hud_clock_draw_a(void *list)
+{
+    FieldHud *h = &field_hud;
+    FieldHudSlide *s = &field_hud.clock;
+    FieldStory *st = fld_story_get();
+    int i;
+    const FieldHudCell *c;
+    const int *p;
+    char buf[256];
+
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = dl_set_tex_filter(list, 0, 0);
+    list = fld_hud_clock_face(list, 5, 30, 38);
+    if (field_hud.blink_kind != 1 || h->blink_on == 0 || h->blink == 0) {
+        for (i = 0, c = field_clock_cells, p = field_clock_pos[0]; i < 2; i++, c++, p += 2) {
+            list = gim_set_texture(list, (&h->gim0)[c->gim]);
+            list = fld_draw_cell1(list, s->pos.x + (float)p[0], s->pos.y + (float)p[1], c->u, c->v, c->w, c->h);
+        }
+        if (st->w[0] != 0) {
+            sprintf(buf, str_d, *(int *)st->w[0]);
+            list = gim_set_texture(list, (&h->gim0)[field_clock_cells[2].gim]);
+            list = fld_digits(list, buf, s->pos.x + (float)field_clock_pos[2][0],
+                              s->pos.y + (float)field_clock_pos[2][1], 0, field_clock_cells[2].u,
+                              field_clock_cells[2].v, field_clock_cells[2].w, field_clock_cells[2].h, -4, 1.0f);
+        }
+        if (st->w[1] != 0) {
+            sprintf(buf, str_d, *(int *)st->w[1]);
+            list = gim_set_texture(list, (&h->gim0)[field_clock_cells[2].gim]);
+            list = fld_digits(list, buf, s->pos.x + (float)field_clock_pos[2][0] + 38.0f,
+                              s->pos.y + (float)field_clock_pos[2][1], 0, field_clock_cells[2].u,
+                              field_clock_cells[2].v, field_clock_cells[2].w, field_clock_cells[2].h, -4, 1.0f);
+        }
+    }
+    return list;
+}
 
 /* the clock face of the HUD slid to field_hud.clock.pos: the two plates, then the weekday icon unless
    it blinks off (blink_kind 2) */
@@ -133,11 +182,6 @@ void fld_hud_day_update(void)
         break;
     }
 }
-
-typedef struct FieldHudCell {           /* sprite of a HUD part, 0xC */
-    short u, v, w, h;
-    int gim;                           /* index in field_hud.gim0.. */
-} FieldHudCell;
 
 typedef struct FieldHudDayPos {         /* weekday plate by language, 8 */
     signed char x, y;
