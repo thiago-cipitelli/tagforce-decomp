@@ -83,6 +83,7 @@ Os casos mais comuns nesta etapa:
 |---|---|
 | `beq x,K → corpo; b senão` num teste único | `switch (x) { case K: ...; break; default: ...; }` (não `if`) |
 | testes de um `switch` | ordem dos testes = inversa da ordem dos `case`; corpos na ordem do fonte; `case A: default:` dá o `li` morto |
+| corpo do `default` que recarrega as constantes dos testes (`li v1,3` em vez de reusar o `a1` do `beq`) | `case 0: default:` em vez de só `default:` (`fld_bg_doors_update`) |
 | cadeia de `if` longa | era um `switch`; o primeiro teste de cada grupo vira `beql` |
 | `$s` trocados entre duas variáveis | ordem das **instruções** (não das declarações) decide; reutilizar uma variável antiga para um valor novo; separar uma variável usada em dois ramos |
 | campos carregados para fora do laço em posições de pilha trocadas | ordem das atribuições no primeiro uso (`perm_stmts.py`) |
