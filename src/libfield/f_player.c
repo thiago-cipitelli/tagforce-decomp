@@ -69,7 +69,7 @@ int fld_player_loaded(void)
 {
     FieldChr *c = &field_player.c;
 
-    if (c->pad08[0] && c->pad08[1])
+    if (c->tex[0] && c->tex[1])
         return 1;
     return 0;
 }
@@ -140,14 +140,14 @@ void fld_player_loaded_a(int *file, FieldChr *c)
 {
     field_player.file_a = file;
     if (file)
-        c->pad08[0] = *file;
+        c->tex[0] = *file;
 }
 
 void fld_player_loaded_b(int *file, FieldChr *c)
 {
     field_player.file_b = file;
     if (file)
-        c->pad08[1] = *file;
+        c->tex[1] = *file;
 }
 
 /* the direction pad (diagonals first) or else the stick: sets the direction, the walking flag and the

@@ -127,7 +127,7 @@ typedef struct Vec3 {
 typedef struct FieldChr {              /* SD character on the map */
     int kind;                          /* +0x00 1 = the player */
     int id;                            /* +0x04 chara id */
-    int pad08[2];                      /* +0x08 */
+    int tex[2];                        /* +0x08 the two loaded sprite sheets (files) */
     int type;                          /* +0x10 */
     Vec3 pos;                          /* +0x14 */
     int anim;                          /* +0x20 0 idle, 1 walk */
@@ -794,6 +794,9 @@ typedef struct FieldCalEvent {         /* event of the calendar, 0xC (sorted by 
 
 
 
+extern unsigned short field_chr_flat_cells[6][2]; /* 0x08834D9C flat sprite cell (u, v) by frame */
+extern Vec4 field_chr_flat_ofs;            /* 0x0883A160 offset of the flat sprite, turned with the camera */
+extern int field_chr_cells[4][7][2];       /* 0x08834B34 sheet cell (u, v) by facing pair: idle, 6 walk frames */
 extern FieldBg field_bg_state;             /* 0x08844980 */
 extern unsigned int field_bg_sky[][3];     /* 0x08838014 top, middle and bottom colour */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */

@@ -413,7 +413,7 @@ void fld_npc_loaded_a(int *file, FieldNpc *n)
 {
     n->m.file = file;
     if (file) {
-        n->m.c.pad08[0] = *file;
+        n->m.c.tex[0] = *file;
         fld_npc_check_loaded(n);
     }
 }
@@ -421,7 +421,7 @@ void fld_npc_loaded_a(int *file, FieldNpc *n)
 void fld_npc_loaded_b(int *file, FieldNpc *n)
 {
     if (file) {
-        n->m.c.pad08[1] = *file;
+        n->m.c.tex[1] = *file;
         fld_npc_check_loaded(n);
     }
 }
@@ -432,12 +432,12 @@ void fld_npc_check_loaded(FieldNpc *n)
     FieldNpc *t;
 
     if (fld_in_range(n->m.c.id)) {
-        if (n->m.c.pad08[0] && n->m.c.pad08[1]) {
+        if (n->m.c.tex[0] && n->m.c.tex[1]) {
             n->m.active = 1;
             n->m.loaded = 0;
             b->pending--;
         }
-    } else if (n->m.c.pad08[0]) {
+    } else if (n->m.c.tex[0]) {
         n->m.active = 1;
         n->m.loaded = 0;
         b->pending--;

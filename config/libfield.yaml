@@ -42,8 +42,6 @@ segments:
       - [0x23F0, c, f_chrdraw]
       - [0x23F0, asm, f_chrdraw_asm_08806390]
       - [0x2A74, c, f_chrdraw]
-      - [0x2B50, asm, f_chrdraw_asm_08806AF0]
-      - [0x2D40, c, f_chrdraw]
       - [0x2D40, asm, f_chrdraw_asm_08806CE0]
       - [0x2E50, c, f_chrdraw]
       - [0x2ECC, asm, f_chrdraw_asm_08806E6C]

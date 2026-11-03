@@ -43,7 +43,7 @@ int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir
 {
     c->kind = kind;
     c->id = id;
-    memset(c->pad08, 0, 8);
+    memset(c->tex, 0, 8);
     c->type = type;
     c->dir = dir;
     c->visible = visible;
@@ -80,8 +80,8 @@ void fld_chr_free_all(void)
 
 void fld_chr_reset(FieldChr *c)
 {
-    c->pad08[0] = 0;
-    c->pad08[1] = 0;
+    c->tex[0] = 0;
+    c->tex[1] = 0;
 }
 
 void fld_chr_update(FieldChr *c)

@@ -4,13 +4,221 @@
 // @asm 0x08805FD0-0x08806200
 // @asm 0x08806200-0x08806390
 // @asm 0x08806390-0x08806A14
-// @asm 0x08806AF0-0x08806CE0
 // @asm 0x08806CE0-0x08806DF0
 // @asm 0x08806E6C-0x08806ED4
 /* Drawing of the SD characters: the 3D model, the sprite sheets (sd_*_sla.gim) as billboards under
    an orthographic projection, the flat sprite; the vertex quad of a sprite cell and the kind of
    drawing each chara id uses. The large draw callbacks are still in asm. */
 #include "libfield.h"
+
+void fld_chr_model_quads(int which, FieldVtx *q, int dir, int anim, int frame);
+void func_08806390(int which, FieldVtx *q, FieldChr *c);
+void *gim_set_texture_sub(void *list, void *gim, int a, int b, int c, int frame);
+void *fld_fx_draw(void *list, void *fx);
+void fld_ortho_begin(void);
+void fld_ortho_end(void);
+FieldCamera *camera_get(void);
+void mat4_transform_vec4(Vec4 *out, Mat4 *m, Vec4 *v);
+void fld_sprite_quad(float x, FieldVtx *q, int tw, int th, int u, int v, int w, int h, float y,
+                     unsigned int color);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 4 palavras: nas duas chamadas de fld_chr_model_quads o original lê c->anim antes de c->dir (protótipo K&R e unsigned não mudam) */
+/* character drawn as a model of two quads (sheet by facing: even dir tex[1], odd tex[0]) at its
+   matrix, the second one moved by the light offset of field_chr_glb; then its effect */
+void *fld_chr_draw_model(void *list, FieldChr *c)
+{
+    FieldChrGlb *g = &field_chr_glb;
+    int tex = 0;
+    FieldVtx *q;
+    Mat4 m __attribute__((aligned(16)));
+    Mat4 t __attribute__((aligned(16)));
+
+    switch (c->dir) {
+    case 1:
+    case 3:
+    case 5:
+    case 7:
+        tex = c->tex[0];
+        break;
+    case 0:
+    case 2:
+    case 4:
+    case 6:
+        tex = c->tex[1];
+        break;
+    }
+    if (tex == 0)
+        return list;
+    list = gim_set_texture_frame(list, (void *)tex, 0);
+    list = dl_enable(list, 1);
+    mtx_set_mode(2);
+    mtx_push();
+    mtx_identity();
+    q = dl_alloc_inline(&list, sizeof(FieldVtx) * 4);
+    fld_chr_model_quads(1, q, c->dir, c->anim, c->frame);
+    mtx_load((Mat4 *)c->shadow);
+    list = draw_array(list, 4, 0x19F, 4, 0, q);
+    q = dl_alloc_inline(&list, sizeof(FieldVtx) * 4);
+    fld_chr_model_quads(0, q, c->dir, c->anim, c->frame);
+    m = *(Mat4 *)c->shadow;
+    mat4_identity(&t);
+    mat4_translate(&t, &t, (Vec4 *)&g->light);
+    mat4_mul(&m, &t, (Mat4 *)c->shadow);
+    mtx_load(&m);
+    list = draw_array(list, 4, 0x19F, 4, 0, q);
+    mtx_pop();
+    if (c->fx != 0)
+        list = fld_fx_draw(list, (void *)c->fx);
+    return list;
+}
+#endif
+
+#ifdef NON_MATCHING /* bate (0 palavras), mas a tabela de saltos (0x08834DD4) fica entre a de fld_chr_draw_model e a de func_08806390, ainda em asm; promover junto com elas */
+/* the two quads of a character model (which 1 upper, 0 lower half) with the sheet cell of its facing
+   pair: the idle cell, or the walk cell of frame % 6 */
+void fld_chr_model_quads(int which, FieldVtx *q, int dir, int anim, int frame)
+{
+    int pair;
+    int *e;
+    int u;
+    int v;
+    float u1;
+    float u0;
+    float v0;
+    float v1;
+
+    switch (dir) {
+    case 0:
+    case 1:
+        pair = 0;
+        break;
+    case 2:
+    case 3:
+        pair = 1;
+        break;
+    case 4:
+    case 5:
+        pair = 2;
+        break;
+    case 6:
+    case 7:
+        pair = 3;
+        break;
+    }
+    switch (anim) {
+    case 0:
+        e = field_chr_cells[pair][0];
+        break;
+    case 1:
+        e = field_chr_cells[pair][frame % 6] + 2;
+        break;
+    }
+    if (which != 0) {
+        u = e[0];
+        v = e[1];
+        u1 = (u + 51) / 512.0f;
+        q[0].u = u1;
+        v0 = v / 256.0f;
+        q[0].v = v0;
+        q[0].x = 0.402421862f;
+        q[0].y = 1.42945313f;
+        u0 = u / 512.0f;
+        q[1].u = u0;
+        q[1].v = v0;
+        q[1].x = -0.3984375f;
+        q[1].y = 1.42945313f;
+        q[2].u = u1;
+        v1 = (v + 61) / 256.0f;
+        q[2].v = v1;
+        q[2].x = 0.402421862f;
+        q[2].y = 0.261875033f;
+        q[3].u = u0;
+        q[3].v = v1;
+        q[3].x = -0.3984375f;
+        q[3].y = 0.261875033f;
+    } else {
+        u = e[0];
+        u1 = (u + 51) / 512.0f;
+        v = e[1];
+        q[0].u = u1;
+        v0 = (v + 61) / 256.0f;
+        q[0].v = v0;
+        q[0].x = 0.402421862f;
+        q[0].y = 0.261875033f;
+        u0 = u / 512.0f;
+        q[1].u = u0;
+        q[1].v = v0;
+        q[1].x = -0.3984375f;
+        q[1].y = 0.261875033f;
+        q[2].u = u1;
+        v1 = (v + 84) / 256.0f;
+        q[2].v = v1;
+        q[2].x = 0.402421862f;
+        q[2].y = -0.17835936f;
+        q[3].u = u0;
+        q[3].v = v1;
+        q[3].x = -0.3984375f;
+        q[3].y = -0.17835936f;
+    }
+    q[3].color = 0xFFFFFFFF;
+    q[2].color = 0xFFFFFFFF;
+    q[1].color = 0xFFFFFFFF;
+    q[0].color = 0xFFFFFFFF;
+    q[3].z = 0.0f;
+    q[2].z = 0.0f;
+    q[1].z = 0.0f;
+    q[0].z = 0.0f;
+}
+#endif
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 2 palavras: o teste do case 2 sai beq/nop para o corpo do default no original, beql com cópia aqui (ordens dos case e default fundido testados) */
+/* character drawn from its two sprite sheets: tex[1] first, then tex[0] over it, each a billboard
+   quad under the orthographic projection; frames from the charmap entry; then its effect */
+void *fld_chr_draw_sprite(void *list, FieldChr *c)
+{
+    CharmapPos p;
+    FieldVtx *q;
+    int frame;
+    int pframe;
+
+    if (charmap_lookup2(c->id, &p) != 0) {
+        switch (p.b) {
+        case 2:
+            frame = 0;
+            break;
+        case 3:
+            frame = 0;
+            break;
+        default:
+            frame = 0;
+            break;
+        case 1:
+            frame = 1;
+            break;
+        }
+        pframe = p.c;
+    } else {
+        frame = 0;
+        pframe = 0;
+    }
+    list = dl_enable(list, 1);
+    q = dl_alloc_inline(&list, sizeof(FieldVtx) * 4);
+    func_08806390(1, q, c);
+    fld_ortho_begin();
+    list = gim_set_texture_sub(list, (void *)c->tex[1], 0, 0, 0, frame);
+    list = draw_array(list, 4, 0x19F, 4, 0, q);
+    fld_ortho_end();
+    q = dl_alloc_inline(&list, sizeof(FieldVtx) * 4);
+    func_08806390(0, q, c);
+    fld_ortho_begin();
+    list = gim_set_texture_sub(list, (void *)c->tex[0], 0, 0, 0, pframe);
+    list = draw_array(list, 4, 0x19F, 4, 0, q);
+    fld_ortho_end();
+    if (c->fx != 0)
+        list = fld_fx_draw(list, (void *)c->fx);
+    return list;
+}
+#endif
 
 void fld_ortho_begin(void)
 {
@@ -36,9 +244,56 @@ void fld_ortho_end(void)
     mtx_pop();
 }
 
+/* flat sprite (frame % 6 of tex[0]) at the character matrix, raised by 1.078 and moved by
+   field_chr_flat_ofs turned with the camera rotation */
+void *fld_chr_draw_flat(void *list, FieldChr *c)
+{
+    int f = c->frame % 6;
+    FieldVtx *q = dl_alloc_inline(&list, sizeof(FieldVtx) * 4);
+    Mat4 m __attribute__((aligned(16)));
+    Mat4 t __attribute__((aligned(16)));
+    Vec4 p;
+    Mat4 rot __attribute__((aligned(16)));
+
+    fld_sprite_quad(0.0f, q, 512, 512, field_chr_flat_cells[f][0], field_chr_flat_cells[f][1], 256, 170,
+                    0.0f, 0xFFFFFFFF);
+    mtx_set_mode(2);
+    mtx_push();
+    mtx_identity();
+    {
+        char *d = (char *)&p;
+        int n = 16;
+
+        if (d)
+            do {
+                *d++ = 0;
+            } while (--n);
+    }
+    rot = *(Mat4 *)camera_get()->rot;
+    p.y = 1.078125f;
+    mat4_identity(&t);
+    mat4_translate(&t, &t, &p);
+    mat4_mul(&m, &t, (Mat4 *)c->shadow);
+    {
+        Vec4 tmp = field_chr_flat_ofs;
+
+        rot.m[12] = 0.0f;
+        rot.m[13] = 0.0f;
+        rot.m[14] = 0.0f;
+        p = *(Vec4 *)&tmp;
+    }
+    mat4_transform_vec4(&p, &rot, &p);
+    mat4_translate(&m, &m, &p);
+    mtx_load(&m);
+    list = gim_set_texture(list, (void *)c->tex[0]);
+    list = draw_array(list, 4, 0x19F, 4, 0, q);
+    mtx_pop();
+    return list;
+}
+
 #ifdef NON_MATCHING /* conversões e divisões em outra ordem (escalonamento de ponto flutuante) */
 /* quad of the sprite cell (u, v, w, h) of a tw x th sheet centered on x and standing on y */
-void fld_sprite_quad(float x, float y, FieldVtx *q, int tw, int th, int u, int v, int w, int h,
+void fld_sprite_quad(float x, FieldVtx *q, int tw, int th, int u, int v, int w, int h, float y,
                      unsigned int color)
 {
     float sw = w / 64.0f;

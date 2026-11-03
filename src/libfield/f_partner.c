@@ -140,7 +140,7 @@ int fpt_ready(void)
 {
     FieldChr *c = &field_partner.c;
 
-    if (c->pad08[0] && c->pad08[1])
+    if (c->tex[0] && c->tex[1])
         return 1;
     return 0;
 }
@@ -156,14 +156,14 @@ void fpt_loaded_a(int *file, FieldChr *c)
 {
     field_partner.file_a = file;
     if (file)
-        c->pad08[0] = *file;
+        c->tex[0] = *file;
 }
 
 void fpt_loaded_b(int *file, FieldChr *c)
 {
     field_partner.file_b = file;
     if (file)
-        c->pad08[1] = *file;
+        c->tex[1] = *file;
 }
 
 /* the first walkable cell around the player, starting behind it */
