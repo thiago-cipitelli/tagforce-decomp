@@ -1,7 +1,6 @@
 // @range 0x08808214-0x08809C40
 // @asm 0x08808214-0x08808770
 // @asm 0x08808874-0x08808B8C
-// @asm 0x08808B8C-0x08808E38
 // @asm 0x08808E38-0x08809034
 // @asm 0x088092E0-0x088094B4
 // @asm 0x08809700-0x088099E0
@@ -152,6 +151,102 @@ void fld_bg_draw_shadow(void)
             model_draw(b->model2[b->area], &o);
         }
     }
+}
+
+void vec3_lerp(Vec3 *out, Vec3 *a, Vec3 *b, float t);
+
+/* sliding door: opens/closes like fld_bg_door_update but slides by 1.5 along the axis info[9] turned
+   with its rotation, from its position relative to field_bg_state.light */
+void fld_bg_slide_update(FieldObj *o)
+{
+    Vec3 v;
+    Vec3 a;
+    Vec3 dir;
+    Vec4 d;
+    Mat4 m __attribute__((aligned(16)));
+    Vec4 p;
+    Vec4 r;
+    float z;
+    float y;
+    float x;
+    float t;
+
+    {
+        char *q = (char *)&v;
+        int n = 12;
+
+        if (q)
+            do {
+                *q++ = 0;
+            } while (--n);
+    }
+    {
+        char *q = (char *)&a;
+        int n = 12;
+
+        if (q)
+            do {
+                *q++ = 0;
+            } while (--n);
+    }
+    {
+        char *q = (char *)&d;
+        int n = 16;
+
+        if (q)
+            do {
+                *q++ = 0;
+            } while (--n);
+    }
+    d.x = ((float *)o->info)[9];
+    r.x = 3.1415927f * ((float *)o->info)[6] / 180.0f;
+    r.y = 3.1415927f * ((float *)o->info)[7] / 180.0f;
+    r.z = 3.1415927f * ((float *)o->info)[8] / 180.0f;
+    r.w = 0.0f;
+    mat4_identity(&m);
+    mat4_rotate_xyz(&m, &m, &r);
+    mat4_transform_vec4(&d, &m, &d);
+    dir.x = d.x;
+    dir.y = d.y;
+    dir.z = d.z;
+    vec3_scale(&dir, &dir, 1.5f);
+    x = ((float *)o->info)[3] + -1.0f * field_bg_state.light.x;
+    y = ((float *)o->info)[4] + -1.0f * field_bg_state.light.y;
+    z = ((float *)o->info)[5] + -1.0f * field_bg_state.light.z;
+    switch (o->mode) {
+    case 0:
+        break;
+    case 2:
+        break;
+    case 1:
+        if (o->open >= 1.0f) {
+            o->mode = 0;
+        } else {
+            t = o->open + (0.1f + 0.1f * o->open);
+            o->open = t;
+            if (t > 1.0f)
+                o->open = 1.0f;
+        }
+        break;
+    case 3:
+        if (o->open <= 0.0f) {
+            o->mode = 2;
+        } else {
+            t = o->open - (0.1f + 0.1f * o->open);
+            o->open = t;
+            if (t < 0.0f)
+                o->open = 0.0f;
+        }
+        break;
+    }
+    vec3_lerp(&v, &a, &dir, o->open);
+    p.x = x + v.x;
+    p.y = y + v.y;
+    p.z = z + v.z;
+    p.w = 0.0f;
+    mat4_identity(&o->mtx);
+    mat4_mul(&o->mtx, &o->mtx, &m);
+    mat4_translate(&o->mtx, &o->mtx, &p);
 }
 
 #ifdef NON_MATCHING /* C novo, conferido com o asm. 1 palavra: o original faz mul.s f20,open,turn (operandos trocados; turn * open, *=, temporário e ordem das declarações não mudam) */
