@@ -361,6 +361,115 @@ void fld_scene_input(int *cmd, int *arg)
 }
 #endif
 
+void fld_player_set_lock(int lock);
+void fld_player_update(void);
+void fpt_update(void);
+int fld_sctab_state(void);
+void fld_npc_get_d0(int id, int *a, int *b);
+int charmap_lookup(int ch, int *kind_out);
+unsigned short sysstate2_rec_get_u16(int which, int i);
+int deck_slot_get_u16_0(int id);
+void fld_hud_box_open(unsigned short *title, int a, int b, int c, int d, int e);
+void fld_hud_box_close(void);
+int fld_hud_flash(void);
+int fld_hud_move_done(void);
+void fld_hud_update(void);
+void fget_update(void);
+int fget_done(void);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 14 palavras: o original monta a máscara de botões em tempo de execução (move 0; ori 1; ori 2; ori 4) e o mwcc dobra para li 7/li 15 (tipos menores e bitfields não reproduzem) */
+/* per frame: the player and the partner, the info box of the character in front (its record and
+   deck, nothing for the shop keepers and the like), the HUD and the get window; then the buttons
+   allowed in the button bar (8 only while ctx->x14 is clear) */
+void fld_scene_frame(void)
+{
+    FieldScene *s = &field_scene;
+    FieldCtx *ctx = fld_ctx_get();
+    int kind;
+    int title;
+    int b;
+    int r;
+    int w0;
+    int w1;
+    int w2;
+    int deck;
+    unsigned int mask;
+
+    if (field_scene.x88 != 1)
+        fld_player_set_lock(0);
+    fld_player_update();
+    fpt_update();
+    if (s->saving != 0 && s->pad8c[0] != -1 && fld_sctab_state() != 2 && s->x88 != 8 && s->x88 != 14 &&
+        s->x88 != 16 && s->x88 != 18) {
+        kind = 0;
+        title = 0;
+        b = 0;
+        fld_npc_get_d0(s->pad8c[0], &title, &b);
+        r = charmap_lookup(s->pad8c[0], &kind);
+        switch (s->pad8c[0]) {
+        case 20:
+        case 23:
+        case 29:
+        case 34:
+        case 39:
+        case 143:
+        case 144:
+        case 145:
+        case 146:
+        case 147:
+        case 148:
+        case 149:
+        case 150:
+        case 151:
+            b = 0;
+            w0 = -1;
+            w1 = w0;
+            w2 = w0;
+            deck = w0;
+            break;
+        default:
+            if (r < 0 || kind != 0) {
+                w0 = sysstate2_rec_get_u16(0, s->pad8c[0]);
+                w1 = sysstate2_rec_get_u16(1, s->pad8c[0]);
+                w2 = sysstate2_rec_get_u16(2, s->pad8c[0]);
+                deck = deck_slot_get_u16_0(s->pad8c[0]);
+            } else {
+                b = 0;
+                w0 = -1;
+                w1 = w0;
+                w2 = w0;
+                deck = w0;
+            }
+            break;
+        }
+        fld_hud_box_open((unsigned short *)title, b, w0, w1, w2, deck);
+    } else {
+        fld_hud_box_close();
+    }
+    if (s->x10 != 0 && fld_hud_flash() == 0)
+        s->x10 = 0;
+    if (s->x14 != 0 && fld_hud_move_done() != 0)
+        s->x14 = 0;
+    fld_hud_update();
+    fget_update();
+    if (fget_done())
+        s->x1c = 0;
+    if (s->x88 == 1)
+        ctx->pad04 = 1;
+    else
+        ctx->pad04 = 0;
+    mask = 0;
+    mask |= 1;
+    mask |= 2;
+    mask |= 4;
+    s->padac[2] = mask;
+    if (ctx->x14 == 0) {
+        mask |= 8;
+        s->padac[2] = mask;
+    }
+}
+#endif
+
 void fld_scene_gim_loaded(int *file, void *arg)
 {
     FieldScene *s = &field_scene;
