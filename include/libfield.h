@@ -148,6 +148,13 @@ typedef struct FieldVtx {              /* GU vertex: texture, color, position */
     float x, y, z;
 } FieldVtx;
 
+typedef struct FieldTexVtx {           /* GU vertex 0x80011E: 16-bit uv, colour, 16-bit 2D position */
+    short u, v;
+    unsigned int color;
+    short x, y, z;
+    short pad;
+} FieldTexVtx;
+
 typedef struct CharmapPos {            /* BOOT charmap_lookup2 */
     unsigned char a;
     unsigned char b;

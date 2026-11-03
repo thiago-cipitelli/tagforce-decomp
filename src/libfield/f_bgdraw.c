@@ -500,13 +500,6 @@ int fld_bg_stencil_hook(void **list, void *m, int a, int b, int phase)
     return 0;
 }
 
-typedef struct FieldTexVtx {           /* GU vertex 0x80011E: 16-bit uv, colour, 16-bit 2D position */
-    short u, v;
-    unsigned int color;
-    short x, y, z;
-    short pad;
-} FieldTexVtx;
-
 void *dl_tex_mode(void *list, int psm, int maxmips, int a2, int swizzle);
 void *sceGeEdramGetAddr(void);
 void *dl_tex_image(void *list, int mip, int w, int h, int tbw, void *addr);
