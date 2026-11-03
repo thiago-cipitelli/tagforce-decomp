@@ -12,7 +12,7 @@
 #include "libfield.h"
 
 void fld_chr_model_quads(int which, FieldVtx *q, int dir, int anim, int frame);
-void func_08806390(int which, FieldVtx *q, FieldChr *c);
+void fld_chr_sprite_quad(int which, FieldVtx *q, FieldChr *c);
 void *gim_set_texture_sub(void *list, void *gim, int a, int b, int c, int frame);
 void *fld_fx_draw(void *list, void *fx);
 void fld_ortho_begin(void);
@@ -73,7 +73,7 @@ void *fld_chr_draw_model(void *list, FieldChr *c)
 }
 #endif
 
-#ifdef NON_MATCHING /* bate (0 palavras), mas a tabela de saltos (0x08834DD4) fica entre a de fld_chr_draw_model e a de func_08806390, ainda em asm; promover junto com elas */
+#ifdef NON_MATCHING /* bate (0 palavras), mas a tabela de saltos (0x08834DD4) fica entre a de fld_chr_draw_model e a de fld_chr_sprite_quad, ainda em asm; promover junto com elas */
 /* the two quads of a character model (which 1 upper, 0 lower half) with the sheet cell of its facing
    pair: the idle cell, or the walk cell of frame % 6 */
 void fld_chr_model_quads(int which, FieldVtx *q, int dir, int anim, int frame)
@@ -203,13 +203,13 @@ void *fld_chr_draw_sprite(void *list, FieldChr *c)
     }
     list = dl_enable(list, 1);
     q = dl_alloc_inline(&list, sizeof(FieldVtx) * 4);
-    func_08806390(1, q, c);
+    fld_chr_sprite_quad(1, q, c);
     fld_ortho_begin();
     list = gim_set_texture_sub(list, (void *)c->tex[1], 0, 0, 0, frame);
     list = draw_array(list, 4, 0x19F, 4, 0, q);
     fld_ortho_end();
     q = dl_alloc_inline(&list, sizeof(FieldVtx) * 4);
-    func_08806390(0, q, c);
+    fld_chr_sprite_quad(0, q, c);
     fld_ortho_begin();
     list = gim_set_texture_sub(list, (void *)c->tex[0], 0, 0, 0, pframe);
     list = draw_array(list, 4, 0x19F, 4, 0, q);
@@ -217,6 +217,197 @@ void *fld_chr_draw_sprite(void *list, FieldChr *c)
     if (c->fx != 0)
         list = fld_fx_draw(list, (void *)c->fx);
     return list;
+}
+#endif
+
+extern int field_chr_sprite_cells[5][7][2];     /* 0x08834C14 sheet cell (u, v) by facing: idle, 6 walk frames */
+extern signed char field_chr_sprite_dy[][5][7]; /* 0x08834D30 vertical offset by size, facing and frame */
+int fld_chr_group(int id);
+int fld_chr_size(int id);
+void mtx_get34(Mat4 *m);
+void mat4_scale(Mat4 *out, Mat4 *m, float s);
+void mat4_transform_vec4(Vec4 *out, Mat4 *m, Vec4 *v);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm (mesma sequência de chamadas; parte inteira igual). 121 palavras, todas no cálculo dos vértices: o original carrega todas as constantes float em registradores antes das contas; a tabela de saltos fica entre as de fld_chr_model_quads e fld_chr_group */
+/* the quad of a sprite character (which 1 the body sheet, 0 the head sheet) at the screen position
+   of its matrix: the cell by facing (five columns, mirrored for the left facings) and frame */
+void fld_chr_sprite_quad(int which, FieldVtx *q, FieldChr *c)
+{
+    int id = c->id;
+    int dir = c->dir;
+    int frame = c->frame;
+    int anim = c->anim;
+    int col;
+    int u;
+    int v;
+    int flip;
+    int dy;
+    int g;
+    signed char *d;
+    float t;
+    Vec4 b;
+    Vec4 a;
+    Mat4 proj __attribute__((aligned(16)));
+    Mat4 view __attribute__((aligned(16)));
+    Mat4 model __attribute__((aligned(16)));
+    Mat4 m __attribute__((aligned(16)));
+    float u1;
+    float u0;
+    float v0;
+    float v1;
+
+    camera_get();
+    switch (dir) {
+    case 1:
+        col = 0;
+        flip = 0;
+        break;
+    case 0:
+        col = 2;
+        flip = 0;
+        break;
+    case 3:
+        col = 1;
+        flip = 0;
+        break;
+    case 2:
+        col = 3;
+        flip = 0;
+        break;
+    case 5:
+        col = 1;
+        flip = col;
+        break;
+    case 4:
+        col = 4;
+        flip = 0;
+        break;
+    case 7:
+        col = 0;
+        flip = 1;
+        break;
+    case 6:
+        col = 3;
+        flip = 1;
+        break;
+    }
+    switch (which) {
+    case 0:
+        g = fld_chr_group(id);
+        u = col * 51 + (g >= 5) * 255;
+        v = g % 5 * 50;
+        d = field_chr_sprite_dy[fld_chr_size(id)][col];
+        switch (anim) {
+        case 0:
+            dy = d[0];
+            break;
+        case 1:
+            dy = d[frame % 6 + 1];
+            break;
+        }
+        break;
+    case 1:
+    case 2:
+        switch (anim) {
+        case 0:
+            u = field_chr_sprite_cells[col][0][0];
+            v = field_chr_sprite_cells[col][0][1];
+            break;
+        case 1:
+            u = field_chr_sprite_cells[col][frame % 6 + 1][0];
+            v = field_chr_sprite_cells[col][frame % 6 + 1][1];
+            break;
+        }
+        break;
+    }
+    mtx_set_mode(0);
+    mtx_get34(&proj);
+    mtx_set_mode(1);
+    mtx_get34(&view);
+    mtx_set_mode(2);
+    mtx_get34(&model);
+    mat4_scale(&proj, &proj, 64.0f);
+    mat4_identity(&m);
+    mat4_mul(&m, &m, &view);
+    mat4_mul(&m, &m, (Mat4 *)c->shadow);
+    mat4_mul(&m, &m, &proj);
+    a.w = 1.0f;
+    a.x = 0.0f;
+    a.y = 0.0f;
+    a.z = 0.0f;
+    mat4_transform_vec4(&a, &m, &a);
+    b.y = 1.25f;
+    b.w = 1.0f;
+    b.x = 0.0f;
+    b.z = 0.0f;
+    mat4_transform_vec4(&b, &m, &b);
+    switch (which) {
+    case 0:
+        t = dy;
+        u1 = (u + 51) / 512.0f;
+        q[0].u = u1;
+        v0 = v / 256.0f;
+        q[0].v = v0;
+        u0 = u / 512.0f;
+        q[0].x = a.x + 26.0f;
+        v1 = (v + 50) / 256.0f;
+        q[0].y = a.y + 80.0f - 12.0f + t;
+        q[0].z = b.z + 5.0f + 1.0f;
+        q[1].u = u0;
+        q[1].v = v0;
+        q[1].x = a.x - 25.0f;
+        q[1].y = a.y + 80.0f - 12.0f + t;
+        q[1].z = b.z + 5.0f + 1.0f;
+        q[2].u = u1;
+        q[2].v = v1;
+        q[2].x = a.x + 26.0f;
+        q[2].y = a.y + 80.0f - 50.0f - 12.0f + t;
+        q[2].z = b.z + (a.z - b.z) * 0.625f + 5.0f + 1.0f;
+        q[3].u = u0;
+        q[3].v = v1;
+        q[3].x = a.x - 25.0f;
+        q[3].y = a.y + 80.0f - 50.0f - 12.0f + t;
+        q[3].z = b.z + (a.z - b.z) * 0.625f + 5.0f + 1.0f;
+        break;
+    case 1:
+        u1 = (u + 51) / 512.0f;
+        q[0].u = u1;
+        v0 = v / 256.0f;
+        q[0].v = v0;
+        u0 = u / 512.0f;
+        q[0].x = a.x + 26.0f;
+        v1 = (v + 64) / 256.0f;
+        q[0].y = a.y + 64.0f - 12.0f;
+        q[0].z = b.z + (a.z - b.z) * 0.2f + 5.0f;
+        q[1].u = u0;
+        q[1].v = v0;
+        q[1].x = a.x - 25.0f;
+        q[1].y = a.y + 64.0f - 12.0f;
+        q[1].z = b.z + (a.z - b.z) * 0.2f + 5.0f;
+        q[2].u = u1;
+        q[2].v = v1;
+        q[2].x = a.x + 26.0f;
+        q[2].y = a.y - 12.0f;
+        q[2].z = a.z + 5.0f;
+        q[3].u = u0;
+        q[3].v = v1;
+        q[3].x = a.x - 25.0f;
+        q[3].y = a.y - 12.0f;
+        q[3].z = a.z + 5.0f;
+        break;
+    }
+    q[3].color = 0xFFFFFFFF;
+    q[2].color = 0xFFFFFFFF;
+    q[1].color = 0xFFFFFFFF;
+    q[0].color = 0xFFFFFFFF;
+    if (flip) {
+        t = q[0].u;
+        q[0].u = q[1].u;
+        q[1].u = t;
+        t = q[2].u;
+        q[2].u = q[3].u;
+        q[3].u = t;
+    }
 }
 #endif
 

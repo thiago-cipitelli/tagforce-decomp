@@ -1143,7 +1143,7 @@ fuzzy	size	module	function	address	file
 0.0	1412	libdeck	dk_flight_put_step	0x088083D4	src/libdeck/dk_move.c
 0.0	1472	libdeck_tutorial	dt_flight_put_step	0x0880F128	src/libdeck_tutorial/dt_move.c
 0.0	1576	libduel_eng	duel_0881956C	0x0881956C	src/libduel_eng/ai_08815E90.c
-0.0	1668	libfield	func_08806390	0x08806390	src/libfield/f_chrdraw.c
+0.0	1668	libfield	fld_chr_sprite_quad	0x08806390	src/libfield/f_chrdraw.c
 0.0	1840	libfield	fld_scene_update	0x08810814	src/libfield/f_scene.c
 0.0	2400	libduel_eng	duel_088C5510	0x088C5510	src/libduel_eng/duel_draws.c
 0.0	2544	BOOT	wsprintf	0x08842724	src/BOOT/wfmt.c
