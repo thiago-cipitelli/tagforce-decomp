@@ -5,7 +5,7 @@
 int fld_day_part(void);
 void *fld_hud_clock_draw_a(void *list);
 void *fld_hud_clock_draw_b(void *list);
-void *fld_hud_clock_hands(void *list);
+void *fld_hud_clock_time(void *list);
 void *fld_hud_clock_mark(void *list);
 
 extern Vec2 field_name_from;                   /* 0x0883C7CC */
@@ -105,6 +105,6 @@ void *fld_hud_clock_draw(void *list)
     if (h->blink_kind != 3 || !h->blink_on || !h->blink)
         list = fld_hud_clock_mark(list);
     if (h->blink_kind != 4 || !h->blink_on || !h->blink)
-        list = fld_hud_clock_hands(list);
+        list = fld_hud_clock_time(list);
     return list;
 }

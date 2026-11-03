@@ -1,7 +1,6 @@
 // @range 0x08813308-0x08814D94
 // @asm 0x08813308-0x088135E8
 // @asm 0x088135E8-0x08813914
-// @asm 0x08813AA8-0x08813D34
 /* HUD parts sliding in and out: day and date, the moving icon (waits, then flies scaling down),
    the panel and the message box; their drawings are still in asm. */
 #include "libfield.h"
@@ -40,6 +39,53 @@ void *fld_hud_clock_face(void *list, int dx1, int dx2, int dx3)
             list = gim_set_texture(list, h->gim1);
             list = fld_day_icon(list, *(int *)st->w[2], s->pos.x + (float)dx3, s->pos.y + 22.0f, 0);
         }
+    }
+    return list;
+}
+
+void *fld_digit(float scale, void *list, int x, int y, int z, int u, int v, int w, int h, int frame);
+extern const char str_02d[];                   /* 0x0883C828 "%02d" */
+extern const char str_d[];
+void *fld_digits(void *list, char *s, int x, int y, int z, int u, int v, int w, int h, int gap,
+                 float scale);
+
+/* the digital time of the HUD clock: the colon, AM/PM (hour >= 12), the hour % 12 and the minutes */
+void *fld_hud_clock_time(void *list)
+{
+    FieldHud *h = &field_hud;
+    FieldHudSlide *s = &field_hud.clock;
+    FieldStory *st = fld_story_get();
+    int cx;
+    int ax;
+    int hx;
+    char buf[256];
+
+    switch (region_get()) {
+    case 1:
+    default:
+        cx = 66;
+        ax = 95;
+        hx = 54;
+        break;
+    case 0:
+        cx = 90;
+        ax = 44;
+        hx = 78;
+        break;
+    }
+    list = gim_set_texture(list, h->gim0);
+    list = fld_draw_cell1(list, s->pos.x + (float)cx, 40.0f + s->pos.y, 81, 0, 6, 16);
+    if (st->w[3] != 0)
+        list = fld_digit(1.0f, list, s->pos.x + (float)ax, 40.0f + s->pos.y, 0, 27, 0, 27, 16,
+                         *(int *)st->w[3] >= 12);
+    if (st->w[3] != 0) {
+        sprintf(buf, str_d, *(int *)st->w[3] % 12);
+        list = fld_digits(list, buf, s->pos.x + (float)hx, 40.0f + s->pos.y, 0, 87, 0, 12, 16, -1, 1.0f);
+    }
+    if (st->w[4] != 0) {
+        sprintf(buf, str_02d, *(int *)st->w[4]);
+        list = fld_digits(list, buf, 30.0f + (s->pos.x + (float)hx), 40.0f + s->pos.y, 0, 87, 0, 12, 16, -1,
+                          1.0f);
     }
     return list;
 }

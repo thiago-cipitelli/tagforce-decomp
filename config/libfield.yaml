@@ -109,8 +109,6 @@ segments:
       - [0xF648, c, f_hud3]
       - [0xF648, asm, f_hud3_asm_088135E8]
       - [0xF974, c, f_hud3]
-      - [0xFB08, asm, f_hud3_asm_08813AA8]
-      - [0xFD94, c, f_hud3]
       - [0x10DF4, c, f_digits]
       - [0x10DF4, asm, f_digits_asm_08814D94]
       - [0x1191C, c, f_digits]
