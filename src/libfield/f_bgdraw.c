@@ -20,6 +20,7 @@ void *dl_clear(void *list, int flags);
 FieldStory *fld_story_get(void);
 int fld_bg_index(int id);
 int fld_time_index(int t);
+void fld_bg_mask_area(void *m, int area);
 void fld_bg_door_se(int open, int side);
 void *dl_draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
 
@@ -27,6 +28,165 @@ extern const char str_DD[];                    /* "_DD." */
 extern const char str_Dd[];                    /* "_Dd." */
 extern const char str_dD[];                    /* "_dD." */
 extern const char str_dd[];                    /* "_dd." */
+
+typedef struct FieldBgAnim {            /* tma/tmt file of the room, by name */
+    char name[32];
+    void *data;
+} FieldBgAnim;
+
+typedef struct FieldDoorInfo {          /* placed object (door) of a room, 0x2C: FieldObj.info */
+    char *name;                         /* +0x00 its .tms */
+    int side;                           /* +0x04 1 hinged, 0 sliding */
+    int area;                           /* +0x08 */
+    float x, y, z;                      /* +0x0C */
+    float rx, ry, rz;                   /* +0x18 degrees */
+    float turn;                         /* +0x24 turns when open / slide axis */
+    int kind;                           /* +0x28 */
+} FieldDoorInfo;
+
+extern char *field_bg_models[][2];             /* 0x0883A340 the two area models of each room */
+extern FieldDoorInfo field_bg_doors[][10];     /* 0x08834E3C */
+void *ehp_get_name_by_index(void *pack, int i, char *name);
+char *fld_after_dot(char *s);
+void *model_load(void *data, void **anims);
+void *ehp_find(void *pack, const char *name, int flags);
+void model_set_tgma(void *m, void *a);
+void model_anim_set(void *m, void *data);
+int model_anim_play(void *m, int n, unsigned int flags);
+void fld_obj_init(FieldObj *o);
+void fld_bg_set_hook(int id);
+int fld_bg_index(int id);
+int fld_time_index(int t);
+void fld_bg_mask_area(void *m, int area);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm (mesma sequência de chamadas). ~139 palavras: tamanho 1396 contra 1372 e outros slots de spill para i, pa, pt e os ponteiros das portas (ordem das declarações não muda) */
+/* the room pack is loaded: its area models (and their _mask stencil models), the doors with the
+   placed objects that use them, the tma/tmt animations and the height map (made relative to its
+   first vertex, which becomes the light offset); then the meshes of the time of day */
+void fld_bg_loaded(int *file)
+{
+    FieldBg *b = &field_bg_state;
+    FieldStory *st = fld_story_get();
+    int ntma = 0;
+    int ntmt = 0;
+    void *pack;
+    int nmodels;
+    int ndoors;
+    FieldBgAnim *pa;
+    FieldBgAnim *pt;
+    int nobj;
+    int i;
+    int j;
+    int k;
+    void *data;
+    char *ext;
+    char *p;
+    FieldDoorInfo *e;
+    Vec3 *v;
+    FieldBgAnim tmas[2];
+    FieldBgAnim tmts[2];
+    char name[64];
+    char mask[32];
+    char tma[32];
+    char tmt[32];
+    Vec3 l;
+
+    field_bg_state.file = file;
+    if (file == 0)
+        return;
+    pack = (void *)*file;
+    nmodels = 0;
+    ndoors = 0;
+    pa = tmas;
+    pt = tmts;
+    nobj = 0;
+    for (i = 0;; i++) {
+        data = ehp_get_name_by_index(pack, i, name);
+        if (data == 0)
+            break;
+        ext = fld_after_dot(name);
+        if (strcmp(ext, "tms") == 0) {
+            if (strstr(name, "door") != 0) {
+                b->door[ndoors] = model_load(data, 0);
+                for (j = 0; j < 10; j++) {
+                    e = &field_bg_doors[fld_bg_index(b->id)][j];
+                    if (e->name != 0 && strcmp(e->name, name) == 0) {
+                        fld_obj_init(&b->obj[nobj]);
+                        b->obj[nobj].info = (int *)e;
+                        b->obj[nobj].model = b->door[ndoors];
+                        nobj++;
+                    }
+                }
+                ndoors++;
+            } else {
+                for (k = 0; k < 2; k++) {
+                    p = field_bg_models[fld_bg_index(b->id)][k];
+                    if (p != 0 && strcmp(name, p) == 0) {
+                        b->model[k] = model_load(data, 0);
+                        nmodels++;
+                        strcpy(mask, name);
+                        p = strstr(mask, ".tms");
+                        if (p != 0) {
+                            strcpy(p, "_mask.tms");
+                            data = ehp_find(pack, mask, 0);
+                            if (data != 0)
+                                b->model2[k] = model_load(data, 0);
+                        }
+                        break;
+                    }
+                }
+            }
+        } else if (strcmp(ext, "tma") == 0) {
+            strcpy(pa->name, name);
+            ntma++;
+            pa->data = data;
+            pa++;
+        } else if (strcmp(ext, "tmt") == 0) {
+            strcpy(pt->name, name);
+            ntmt++;
+            pt->data = data;
+            pt++;
+        } else if (strcmp(ext, "hmp") == 0) {
+            b->map = data;
+        }
+    }
+    b->n_objs = nobj;
+    b->n_doors = ndoors;
+    b->n_models = nmodels;
+    for (k = 0; k < b->n_models; k++) {
+        p = field_bg_models[fld_bg_index(b->id)][k];
+        strcpy(tma, p);
+        strcpy(fld_after_dot(tma), "tma");
+        strcpy(tmt, p);
+        strcpy(fld_after_dot(tmt), "tmt");
+        for (j = 0; j < ntma; j++) {
+            if (strcmp(tma, tmas[j].name) == 0) {
+                model_set_tgma(b->model[k], tmas[j].data);
+                break;
+            }
+        }
+        for (j = 0; j < ntmt; j++) {
+            if (strcmp(tmt, tmts[j].name) == 0) {
+                model_anim_set(b->model[k], tmts[j].data);
+                model_anim_play(b->model[k], 0, 2);
+                break;
+            }
+        }
+    }
+    v = (Vec3 *)((char *)b->map + ((int *)b->map)[3]);
+    l = v[0];
+    b->light = l;
+    for (i = 0; i < b->map->n_vert; i++)
+        vec3_sub(&v[i], &v[i], &l);
+    if (st != 0) {
+        k = fld_time_index(*(int *)st->w[3]);
+        for (i = 0; i < b->n_models; i++)
+            fld_bg_mask_area(b->model[i], k);
+    }
+    fld_bg_set_hook(b->id);
+    b->loading = 0;
+}
+#endif
 
 /* shows meshes 0..4, 5..9 or 10..14 only for the area */
 void fld_bg_mask_area(void *m, int area)
@@ -564,7 +724,7 @@ void fld_bg_draw_from_tex(void)
     dl_set_list(list);
 }
 
-void fld_bg_set_hook(void)
+void fld_bg_set_hook(int id)
 {
     model_hook(field_bg_state.model[0], 1, fld_bg_hook);
 }
