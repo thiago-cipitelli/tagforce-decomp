@@ -1,5 +1,4 @@
 // @range 0x08815FD8-0x08817218
-// @asm 0x088168B0-0x08816938
 // @asm 0x088169EC-0x08816B00
 // @rodata 0x08838AE0-0x08838AFC
 /* The message window of the field (field_msg; libtitle's tmsg is a trimmed copy): a system menu frame
@@ -266,11 +265,10 @@ void fmsg_set_input(int on)
     field_msg.input = on;
 }
 
-#ifdef NON_MATCHING /* the original keeps &field_msg in $s0 across the calls; mwcc rebuilds the address */
 void fmsg_set_text(unsigned short *text, int title)
 {
     MenuItemDef *const d = &field_msg.def;
-    FieldMsg *const m = &field_msg;
+    FieldMsg *m;
 
     d->show_title = title != 0;
     field_msg.all = 0;
@@ -279,13 +277,12 @@ void fmsg_set_text(unsigned short *text, int title)
     field_msg.typed = 0;
     field_msg.page = 0;
     d->title = (unsigned short *)title;
-    field_msg.text = text;
+    (m = &field_msg)->text = text;
     fmsg_layout();
     fmsg_paginate();
     if (m->state == 0)
         fmsg_open();
 }
-#endif
 
 void fmsg_open(void)
 {

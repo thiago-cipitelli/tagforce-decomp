@@ -88,6 +88,7 @@ Os casos mais comuns nesta etapa:
 | campos carregados para fora do laço em posições de pilha trocadas | ordem das atribuições no primeiro uso (`perm_stmts.py`) |
 | valor calculado antes da chamada no original | atribua o temporário depois da chamada, em vez de inicializar na declaração |
 | global recarregado por `lui` vs base em `$s` | `T *const p = &g;` declarado primeiro; ou primeiro acesso pelo global e o resto por `p` |
+| base `lui`+`addiu` num `$s` só a partir de um store, os stores anteriores absolutos | `T *p;` sem inicializar e `(p = &g)->campo = v;` no primeiro store pela base (`fbm_cmd_open`, `fmsg_set_text`); `p = &g; p->campo = v;` em duas linhas não serve |
 | `slti at` vs `slti v0` | `a > b`/`a <= b` dão `$at`; `b < a`/`a >= b` dão temporário; `x < 0` → `bgez`, `x <= -1` → `slti at` |
 | `andi 0xFFFF`/`0xFF` a mais ou a menos | tipo do parâmetro (`unsigned short`/`char`); cast `(int)` num bitfield de 1 bit; protótipo ausente no original (`int f();`) |
 | `seh` a mais | `(short)(int)expr` |

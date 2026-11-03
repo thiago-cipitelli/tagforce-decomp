@@ -189,6 +189,7 @@ A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type
 
 - **Retorno antecipado com valor** (`net_host`): `if (net_get_state() != 0xB) return 0; … return 1;` gera o `beql v0,K → corpo` com `b` + `move v0,zero` do original; `if (st == 0xB) { …; return 1; } return 0;` põe o corpo em linha. Em funções `void`, o `return;` antecipado não reproduz o mesmo leiaute (`net_toggle_pick` ficou em asm).
 - **Laços com ponteiro e índice** (`net_main.c`): a ordem das declarações escolhe os registradores `s` e a ordem no inicializador do `for` escolhe a ordem das instruções (`for (i = 0, p = net_peers; …)` gera `lui s0` / `move s1,zero` / `addiu s0`). Permutar as declarações (`tools/perm_decls.py`) até bater é mais rápido que raciocinar sobre o alocador.
+- **Base de global mantida num `$s` a partir de um ponto** (`fbm_cmd_open`, `fmsg_set_text`, libfield): o original faz os primeiros stores no global por `lui` e só então materializa `&g` num `$s` (no delay slot de uma chamada) para os acessos seguintes. `T *p;` sem inicializador e `(p = &g)->campo = v;` no primeiro acesso pela base reproduzem; `T *const p = &g` e `p = &g;` como statement próprio são propagados como constante.
 - **Funções-ponte de 8 bytes** (`j alvo; nop`): exports como `net_set_state` e `net_get_param_export` são `return alvo(args);` sem prólogo.
 
 - **`abs` é intrínseco** (`cardlist.c`): o mwccpsp expande `abs(x)` em linha; o original chama a função de 0x0880A5B4, renomeada `int_abs` em `symbols/BOOT.txt` para que a chamada saia como `jal`.

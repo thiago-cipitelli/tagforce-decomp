@@ -23,14 +23,16 @@ void fld_pos_to_cell(float x, float z, int *cx, int *cz)
     *cz = z / 0.5f;
 }
 
-#ifdef NON_MATCHING /* alocação: o original guarda n_cells em a3 e recalcula cells + i*4 a cada volta */
+#ifdef NON_MATCHING /* 8 palavras: o original mantém o deslocamento i*4 numa variável de indução (t0) ao lado de i; com o índice com sizeof o mwcc refaz o sll a cada volta, com i*4 com sinal reduz a ponteiros (20 palavras) */
 int fld_cell_marked(int cx, int cz)
 {
     FieldBg *b = &field_bg_state;
     int i;
 
     for (i = 0; i < field_bg_state.n_cells; i++) {
-        if (cx == b->cells[i].x && cz == b->cells[i].z)
+        FieldCell *c = (FieldCell *)((char *)b->cells + i * sizeof(FieldCell));
+
+        if (cx == c->x && cz == c->z)
             return 1;
     }
     return 0;

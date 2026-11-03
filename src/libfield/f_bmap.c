@@ -1,5 +1,4 @@
 // @range 0x08818FFC-0x0881BA90
-// @asm 0x08819644-0x08819740
 // @asm 0x088197B0-0x0881A078
 // @asm 0x0881B268-0x0881B608
 // @rodata 0x08838B90-0x0883904C
@@ -315,13 +314,12 @@ int fbm_ready(void)
     return field_bm.pack != 0;
 }
 
-#ifdef NON_MATCHING /* the base of field_bm is kept in $s0 from the start though only the last call uses it */
 void fbm_cmd_open(void)
 {
-    FieldBm *m = &field_bm;
+    FieldBm *m;
     MenuItemDef *d;
 
-    field_bm.active = 1;
+    (m = &field_bm)->active = 1;
     memset(field_bm.res, 0, 8);
     field_bm.state = 1;
     menu_init(&field_bm.menu, fld_heap_get());
@@ -344,7 +342,6 @@ void fbm_cmd_open(void)
     d->pad_r = 2;
     menu_add_item(&m->menu, d);
 }
-#endif
 
 int fbm_cmd_done(int *out)
 {

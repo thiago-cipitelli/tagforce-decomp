@@ -1,7 +1,6 @@
 // @range 0x08813308-0x08814D94
 // @asm 0x08813308-0x088135E8
 // @asm 0x088135E8-0x08813914
-// @asm 0x08813914-0x08813AA8
 // @asm 0x08813AA8-0x08813D34
 // @asm 0x088141C4-0x08814404
 // @asm 0x08814514-0x088147E0
@@ -27,7 +26,6 @@ void *fld_draw_cell1(void *list, int x, int y, int u, int v, int w, int h);
 void *fld_clock_hands(void *list, int x, int y, int z, int h, int m);
 void *fld_day_icon(void *list, int n, int x, int y, int z);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 43 palavras: o teste de blink_kind sai bnel/beqz sem likely no original e a lista volta em v0 sem cópia (aqui com return explícito) */
 /* the clock face of the HUD slid to field_hud.clock.pos: the two plates, then the weekday icon unless
    it blinks off (blink_kind 2) */
 void *fld_hud_clock_face(void *list, int dx1, int dx2, int dx3)
@@ -39,15 +37,14 @@ void *fld_hud_clock_face(void *list, int dx1, int dx2, int dx3)
     list = gim_set_texture(list, field_hud.gim0);
     list = fld_draw_cell1(list, s->pos.x + (float)dx1, s->pos.y, 0, 0x58, 0xC0, 0x16);
     list = fld_draw_cell1(list, s->pos.x + (float)dx2, s->pos.y + 21.0f, 0x1C, 0x6E, 0xA4, 0x12);
-    if (field_hud.blink_kind == 2 && h->blink_on != 0 && h->blink != 0)
-        return list;
-    if (st->w[2] != 0) {
-        list = gim_set_texture(list, h->gim1);
-        list = fld_day_icon(list, *(int *)st->w[2], s->pos.x + (float)dx3, s->pos.y + 22.0f, 0);
+    if (field_hud.blink_kind != 2 || h->blink_on == 0 || h->blink == 0) {
+        if (st->w[2] != 0) {
+            list = gim_set_texture(list, h->gim1);
+            list = fld_day_icon(list, *(int *)st->w[2], s->pos.x + (float)dx3, s->pos.y + 22.0f, 0);
+        }
     }
     return list;
 }
-#endif
 
 /* the hands of the small clock of the HUD at the hour and minute of the story */
 void *fld_hud_clock_mark(void *list)

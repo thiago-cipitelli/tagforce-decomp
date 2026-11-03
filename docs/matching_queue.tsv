@@ -649,7 +649,6 @@ fuzzy	size	module	function	address	file
 88.5	2584	libfield	pda_draw_status	0x0881FFEC	src/libfield/f_pdapage.c
 88.4	572	libduel_eng	duel_0882EA4C	0x0882EA4C	src/libduel_eng/ai_0882D398.c
 88.4	112	libshop	shop_pack_msg	0x0880AA88	src/libshop/shop_packs.c
-88.3	404	libfield	fld_hud_clock_face	0x08813914	src/libfield/f_hud3.c
 88.3	144	libduel_eng	duel_088710D8	0x088710D8	src/libduel_eng/act_cond2.c
 88.3	420	libduel_eng	duel_0888B118	0x0888B118	src/libduel_eng/effects_y.c
 88.3	360	libduel_draw	dd_sel_build_opts	0x0881C3A8	src/libduel_draw/dd_card_select.c
@@ -750,7 +749,6 @@ fuzzy	size	module	function	address	file
 85.2	492	libduel_draw	dd_sel_sort	0x0881BACC	src/libduel_draw/dd_card_select.c
 85.2	1652	libfield	pda_draw_calendar	0x088216B0	src/libfield/f_pdapage.c
 85.2	1460	libshop	shop_list_row	0x0880DFE4	src/libshop/shop_list.c
-85.0	252	libfield	fbm_cmd_open	0x08819644	src/libfield/f_bmap.c
 84.9	760	libduel_draw	dd_face_panel	0x0881299C	src/libduel_draw/dd_face.c
 84.9	420	libduel_eng	duel_088157AC	0x088157AC	src/libduel_eng/ai_cond6.c
 84.8	640	libdeck_tutorial	dt_select_tab	0x08816EBC	src/libdeck_tutorial/dt_pane.c
@@ -805,7 +803,6 @@ fuzzy	size	module	function	address	file
 82.8	1516	libduel_eng	duel_req_send	0x088DA5EC	src/libduel_eng/req_step.c
 82.8	1548	libduel_eng	duel_req_088D43F8	0x088D43F8	src/libduel_eng/req_088D28F8.c
 82.8	136	libdeck_tutorial	dt_text_set	0x0881C990	src/libdeck_tutorial/dt_text.c
-82.8	136	libfield	fmsg_set_text	0x088168B0	src/libfield/f_msg.c
 82.8	136	libshop	shop_msg_set	0x088093D4	src/libshop/shop_msgwin.c
 82.8	136	libtitle	tmsg_set_text	0x0880C340	src/libtitle/t_msg.c
 82.7	532	libshop	shop_open_cards_done	0x08812D64	src/libshop/shop_anim.c
