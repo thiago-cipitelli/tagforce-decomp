@@ -690,10 +690,6 @@ fuzzy	size	module	function	address	file
 87.0	768	libfield	fcal_draw_tabs	0x0881FCEC	src/libfield/f_cal.c
 86.9	412	libduel_eng	duel_08810944	0x08810944	src/libduel_eng/ai_cond4.c
 86.9	176	libduel_draw	dd_card_fx_start	0x0881E3B8	src/libduel_draw/dd_task_list.c
-86.9	244	libdeck	dk_draw_genre_value	0x08812E84	src/libdeck/dk_fmenu.c
-86.9	244	libdeck_swap	ds_draw_genre_value	0x08810980	src/libdeck_swap/ds_fmenu.c
-86.9	244	libdeck_tutorial	dt_draw_genre_value	0x088131C4	src/libdeck_tutorial/dt_fmenu.c
-86.9	244	libselect_card	sc_draw_genre_value	0x08813778	src/libselect_card/sc_fmenu.c
 86.8	364	libduel_mgr	dmgr_res_draw_number	0x08814C60	src/libduel_mgr/dmgr_result.c
 86.8	480	libduel_eng	duel_08814744	0x08814744	src/libduel_eng/ai_cond5.c
 86.8	1012	libselect_card	sc_set_mode	0x0880AD2C	src/libselect_card/sc_input.c

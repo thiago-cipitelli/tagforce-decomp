@@ -84,8 +84,6 @@ segments:
       - [0xBF18, c, ds_fmenu]
       - [0xC30C, asm, ds_fmenu_asm_088102AC]
       - [0xC7EC, c, ds_fmenu]
-      - [0xC9E0, asm, ds_fmenu_asm_08810980]
-      - [0xCAD4, c, ds_fmenu]
       - [0xCDC4, c, ds_action]
       - [0xE570, c, ds_anim]
       - [0xE8E0, c, ds_parts]

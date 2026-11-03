@@ -1,7 +1,6 @@
 // @range 0x08811BB8-0x088135A8
 // @asm 0x08811FEC-0x088126D0
 // @asm 0x08812AF0-0x08812FD0
-// @asm 0x088131C4-0x088132B8
 // @rodata 0x08821030-0x08821050
 // @data 0x08821F74-0x08822024
 /* The filter menu (the code of libdeck dk_sortmenu.c second half and dk_fmenu.c): the kinds list and
@@ -514,7 +513,6 @@ void *dt_draw_spell_value(void *list, unsigned short x, unsigned short y, unsign
     return list;
 }
 
-#ifdef NON_MATCHING /* o original tem blocos mortos depois do desvio */
 void *dt_draw_genre_value(void *list, unsigned short x, unsigned short y, unsigned short v)
 {
     void *gim = dt_eres_get(0x800C);
@@ -526,11 +524,10 @@ void *dt_draw_genre_value(void *list, unsigned short x, unsigned short y, unsign
         list = dl_set_tex_filter(list, 0, 0);
         list = gim_set_texture(list, gim);
         list = draw_set_offsets(list, 16, 16, 16, 16);
-        return draw_sprite(list, x, y, 0, (v & 7) << 4, (v >> 3 & 0xFFF) << 4, 0, 0);
+        return draw_sprite(list, x, y, 0, (unsigned short)(v % 8 * 16), (unsigned short)(v / 8 * 16), 0, 0);
     }
     return list;
 }
-#endif
 
 /* icon of filter kind `filter` (0 none) */
 void *dt_draw_filter_icon(void *list, int filter, int x, int y)

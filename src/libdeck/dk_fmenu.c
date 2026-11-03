@@ -1,6 +1,5 @@
 // @range 0x08812510-0x08813268
 // @asm 0x088127B0-0x08812C90
-// @asm 0x08812E84-0x08812F78
 // @data 0x08822F94-0x0882300C
 // @rodata 0x08822628-0x08822648
 /* Filter menu, second half: the values window of a filter kind (grid of icons, picked values
@@ -213,7 +212,6 @@ void *dk_draw_spell_value(void *list, unsigned short x, unsigned short y, unsign
     return list;
 }
 
-#ifdef NON_MATCHING /* o original tem blocos mortos depois do desvio */
 void *dk_draw_genre_value(void *list, unsigned short x, unsigned short y, unsigned short v)
 {
     void *gim = dk_res_get(0x800C);
@@ -225,11 +223,10 @@ void *dk_draw_genre_value(void *list, unsigned short x, unsigned short y, unsign
         list = dl_set_tex_filter(list, 0, 0);
         list = gim_set_texture(list, gim);
         list = draw_set_offsets(list, 16, 16, 16, 16);
-        return draw_sprite(list, x, y, 0, (v & 7) << 4, (v >> 3 & 0xFFF) << 4, 0, 0);
+        return draw_sprite(list, x, y, 0, (unsigned short)(v % 8 * 16), (unsigned short)(v / 8 * 16), 0, 0);
     }
     return list;
 }
-#endif
 
 /* icon of filter kind `filter` (0 none) */
 void *dk_draw_filter_icon(void *list, int filter, int x, int y)

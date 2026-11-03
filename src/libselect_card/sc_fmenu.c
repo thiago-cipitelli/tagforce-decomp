@@ -4,7 +4,6 @@
 // @asm 0x088125E4-0x08812CB0
 // @asm 0x08812E04-0x088130A4
 // @asm 0x088130A4-0x08813584
-// @asm 0x08813778-0x0881386C
 // @asm 0x08813A20-0x08813B5C
 // @asm 0x08813B5C-0x08813CF4
 // @data 0x0881B460-0x0881B510
@@ -516,7 +515,6 @@ void *sc_draw_spell_value(void *list, unsigned short x, unsigned short y, unsign
     return list;
 }
 
-#ifdef NON_MATCHING /* o original tem blocos mortos depois do desvio */
 void *sc_draw_genre_value(void *list, unsigned short x, unsigned short y, unsigned short v)
 {
     void *gim = res_get(0x800C);
@@ -528,11 +526,10 @@ void *sc_draw_genre_value(void *list, unsigned short x, unsigned short y, unsign
         list = dl_set_tex_filter(list, 0, 0);
         list = gim_set_texture(list, gim);
         list = draw_set_offsets(list, 16, 16, 16, 16);
-        return draw_sprite(list, x, y, 0, (v & 7) << 4, (v >> 3 & 0xFFF) << 4, 0, 0);
+        return draw_sprite(list, x, y, 0, (unsigned short)(v % 8 * 16), (unsigned short)(v / 8 * 16), 0, 0);
     }
     return list;
 }
-#endif
 
 
 void *sc_draw_filter_icon(void *list, int filter, int x, int y)

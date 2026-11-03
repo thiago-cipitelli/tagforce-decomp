@@ -85,8 +85,6 @@ segments:
       - [0xE570, c, dk_fmenu]
       - [0xE810, asm, dk_fmenu_asm_088127B0]
       - [0xECF0, c, dk_fmenu]
-      - [0xEEE4, asm, dk_fmenu_asm_08812E84]
-      - [0xEFD8, c, dk_fmenu]
       - [0xF2C8, c, dk_action]
       - [0xFB68, asm, dk_action_asm_08813B08]
       - [0xFC84, c, dk_action]

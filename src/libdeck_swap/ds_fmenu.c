@@ -1,7 +1,6 @@
 // @range 0x0880F3E0-0x08810D64
 // @asm 0x0880F7EC-0x0880FEB8
 // @asm 0x088102AC-0x0881078C
-// @asm 0x08810980-0x08810A74
 // @rodata 0x08819CBC-0x08819CDC
 // @data 0x0881A224-0x0881A2D4
 /* The filter menu (state 5): a list of the seven filter kinds and a grid of the values of the
@@ -510,7 +509,6 @@ void *ds_draw_spell_value(void *list, unsigned short x, unsigned short y, unsign
     return list;
 }
 
-#ifdef NON_MATCHING /* o original tem blocos mortos depois do desvio */
 void *ds_draw_genre_value(void *list, unsigned short x, unsigned short y, unsigned short v)
 {
     void *gim = res_get(0x800C);
@@ -522,11 +520,10 @@ void *ds_draw_genre_value(void *list, unsigned short x, unsigned short y, unsign
         list = dl_set_tex_filter(list, 0, 0);
         list = gim_set_texture(list, gim);
         list = draw_set_offsets(list, 16, 16, 16, 16);
-        return draw_sprite(list, x, y, 0, (v & 7) << 4, (v >> 3 & 0xFFF) << 4, 0, 0);
+        return draw_sprite(list, x, y, 0, (unsigned short)(v % 8 * 16), (unsigned short)(v / 8 * 16), 0, 0);
     }
     return list;
 }
-#endif
 
 void *ds_draw_filter_icon(void *list, int filter, int x, int y)
 {

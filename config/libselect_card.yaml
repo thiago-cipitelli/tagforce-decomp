@@ -119,8 +119,6 @@ segments:
       - [0xF104, c, sc_fmenu]
       - [0xF104, asm, sc_fmenu_asm_088130A4]
       - [0xF5E4, c, sc_fmenu]
-      - [0xF7D8, asm, sc_fmenu_asm_08813778]
-      - [0xF8CC, c, sc_fmenu]
       - [0xFA80, asm, sc_fmenu_asm_08813A20]
       - [0xFBBC, c, sc_fmenu]
       - [0xFBBC, asm, sc_fmenu_asm_08813B5C]

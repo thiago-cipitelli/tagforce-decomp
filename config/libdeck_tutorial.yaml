@@ -86,8 +86,6 @@ segments:
       - [0xE730, c, dt_fmenu]
       - [0xEB50, asm, dt_fmenu_asm_08812AF0]
       - [0xF030, c, dt_fmenu]
-      - [0xF224, asm, dt_fmenu_asm_088131C4]
-      - [0xF318, c, dt_fmenu]
       - [0xF608, c, dt_filter]
       - [0xF8E8, asm, dt_filter_asm_08813888]
       - [0xFA4C, c, dt_filter]
