@@ -431,8 +431,8 @@ typedef struct FieldObj {              /* placed object of the room, 0x60 */
     void *model;                       /* +0x04 */
     int pad08[2];
     Mat4 mtx;                          /* +0x10 */
-    int mode;                          /* +0x50 */
-    int x54;
+    int mode;                          /* +0x50 door: 0 open, 1 opening, 2 closed, 3 closing */
+    float open;                        /* +0x54 door: 0 closed .. 1 open */
     int pad58[2];
 } FieldObj;
 
@@ -494,8 +494,14 @@ typedef struct FieldItemCmd {          /* item of the place command, 0xC */
 
 typedef struct FieldLight {            /* 0x08838044[bg][3] */
     int light;
-    int pad;
+    int sky;                           /* row of field_bg_sky */
 } FieldLight;
+
+typedef struct FieldSkyVtx {           /* GU vertex: color, 16-bit position */
+    unsigned int color;
+    short x, y, z;
+    short pad;
+} FieldSkyVtx;
 
 typedef struct FieldMsgLine {          /* a line of FieldMsg, 0x18 */
     int x, y;                          /* +0x00 */
@@ -789,6 +795,7 @@ typedef struct FieldCalEvent {         /* event of the calendar, 0xC (sorted by 
 
 
 extern FieldBg field_bg_state;             /* 0x08844980 */
+extern unsigned int field_bg_sky[][3];     /* 0x08838014 top, middle and bottom colour */
 extern FieldLight field_bg_lights[][3];    /* 0x08838044 */
 extern int field_hall_cells[14][2];        /* 0x088382FC */
 extern FieldChrGlb field_chr_glb;
@@ -914,6 +921,7 @@ void *gim_set_texture_frame(void *list, void *g, int frame);
 void *dl_alloc_inline(void **list, int size);
 void *draw_array(void *list, int prim, int vtype, int count, void *indices, void *verts);
 Mat4 *mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v);
+void mat4_rotate_xyz(Mat4 *out, Mat4 *m, Vec4 *v);
 
 void bgm_set_volume(int a, int b, int t);
 
