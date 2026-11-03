@@ -1,5 +1,4 @@
 // @range 0x08813308-0x08814D94
-// @asm 0x088135E8-0x08813914
 /* HUD parts sliding in and out: day and date, the moving icon (waits, then flies scaling down),
    the panel and the message box; their drawings are still in asm. */
 #include "libfield.h"
@@ -67,6 +66,65 @@ void *fld_hud_clock_draw_a(void *list)
             list = fld_digits(list, buf, s->pos.x + (float)field_clock_pos[2][0] + 38.0f,
                               s->pos.y + (float)field_clock_pos[2][1], 0, field_clock_cells[2].u,
                               field_clock_cells[2].v, field_clock_cells[2].w, field_clock_cells[2].h, -4, 1.0f);
+        }
+    }
+    return list;
+}
+
+typedef struct FieldMonthW { int w[4]; } FieldMonthW;
+typedef struct FieldMonthUv { int uv[4][2]; } FieldMonthUv;
+extern const FieldMonthW field_month_w;         /* 0x0883C7F8 width of the month names */
+extern const FieldMonthUv field_month_uv;       /* 0x0883C808 */
+extern const FieldHudCell field_day_suffix[4];  /* 0x08838A7C st, nd, rd, th */
+
+/* clock of the HUD, layout B: the face, then (unless blinking off) the month name (st->w[0], 5..8)
+   and the day st->w[1] with its ordinal suffix */
+void *fld_hud_clock_draw_b(void *list)
+{
+    char buf[256];
+    FieldHud *h = &field_hud;
+    FieldHudSlide *s = &field_hud.clock;
+    FieldStory *st = fld_story_get();
+    int m = *(int *)st->w[0] - 5;
+    FieldMonthW w = field_month_w;
+    FieldMonthUv uv = field_month_uv;
+    const FieldHudCell *c;
+    int d;
+
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = dl_set_tex_filter(list, 0, 0);
+    list = fld_hud_clock_face(list, -20, 18, 24);
+    if (field_hud.blink_kind != 1 || h->blink_on == 0 || h->blink == 0) {
+        list = gim_set_texture(list, h->gim1);
+        if (st->w[0] != 0)
+            list = fld_draw_cell1(list, 31.0f + s->pos.x, 3.0f + s->pos.y, uv.uv[m][0], uv.uv[m][1], w.w[m], 16);
+        if (st->w[1] != 0) {
+            sprintf(buf, str_d, *(int *)st->w[1]);
+            list = fld_digits(list, buf, s->pos.x - 3.0f, 3.0f + s->pos.y - 1.0f, 0, 0, 32, 16, 16, -4, 1.0f);
+            switch (d = *(int *)st->w[1]) {
+            case 11:
+            case 12:
+            case 13:
+                c = &field_day_suffix[3];
+                break;
+            default:
+                switch (d % 10) {
+                case 1:
+                    c = &field_day_suffix[0];
+                    break;
+                case 2:
+                    c = &field_day_suffix[1];
+                    break;
+                case 3:
+                    c = &field_day_suffix[2];
+                    break;
+                default:
+                    c = &field_day_suffix[3];
+                    break;
+                }
+                break;
+            }
+            list = fld_draw_cell1(list, 11.0f + s->pos.x, 3.0f + s->pos.y, c->u, c->v, c->w, c->h);
         }
     }
     return list;

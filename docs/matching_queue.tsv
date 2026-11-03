@@ -1138,7 +1138,6 @@ fuzzy	size	module	function	address	file
 0.0	772	libfield	fld_map_height	0x08807BDC	src/libfield/f_map.c
 0.0	780	libduel_eng	duel_08881160	0x08881160	src/libduel_eng/effects_p.c
 0.0	792	libfield	fld_bg_cam_update	0x08808874	src/libfield/f_bgdraw.c
-0.0	812	libfield	fld_hud_clock_draw_b	0x088135E8	src/libfield/f_hud3.c
 0.0	820	libfield	func_088114E8	0x088114E8	src/libfield/f_scene.c
 0.0	920	libfield	fld_map_walkable	0x08807844	src/libfield/f_map.c
 0.0	948	libfield	fld_clock_hand	0x08815C24	src/libfield/f_digits.c
