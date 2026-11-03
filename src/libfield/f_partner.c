@@ -37,7 +37,7 @@ void fpt_reset(void)
     fld_chr_reset(&field_partner.c);
 }
 
-#ifdef NON_MATCHING /* lógica conferida (fpt_up/fpt_down são os modelos locais up/down). 26 palavras: mov.s $f12 depois dos ponteiros em vec3_scale (speed variável) e ordem das cópias de c->vel e das divisões por 0.5 */
+#ifdef NON_MATCHING /* lógica conferida (fpt_up/fpt_down são os modelos locais up/down). 20 palavras: ordem das cópias de c->vel e das divisões por 0.5 */
 void fpt_update(void)
 {
     FieldPartner *p = &field_partner;
@@ -66,10 +66,10 @@ void fpt_update(void)
     d.y = 0.0f;
     if (fld_vec3_len(&e) < 1.0f) {
         vec3_normalize(&d, &d);
-        vec3_scale(speed, &d, &d);
+        vec3_scale(&d, &d, speed);
         fld_chr_collide(&d, &d, &c->pos, speed, 0);
         vec3_normalize(&d, &d);
-        vec3_scale(speed, &d, &d);
+        vec3_scale(&d, &d, speed);
         {
             Vec3 tmp = { 0.0f, 1.0f, 0.0f };
             up = *(Vec3 *)&tmp;
@@ -94,13 +94,13 @@ void fpt_update(void)
             else
                 vec3_zero(&t);
             vec3_dot(&t, &d);
-            vec3_scale(speed, &t, &t);
+            vec3_scale(&t, &t, speed);
             d = t;
         }
     }
     if (fld_vec3_len(&e) >= 0.5f) {
         vec3_normalize(&d, &d);
-        vec3_scale(speed, &d, &d);
+        vec3_scale(&d, &d, speed);
         c->vel = d;
         fld_cell_mark(c->pos.x / 0.5f, c->pos.z / 0.5f, 0);
         vec3_add(&c->pos, &c->pos, &c->vel);
@@ -185,7 +185,7 @@ void fpt_place(void)
         p = pl->pos;
         fld_dir_vec(&t, dir);
         v = t;
-        vec3_scale(0.5f, &v, &v);
+        vec3_scale(&v, &v, 0.5f);
         vec3_add(&p, &p, &v);
         x = p.x / 0.5f;
         z = p.z / 0.5f;

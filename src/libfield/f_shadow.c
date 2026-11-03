@@ -298,7 +298,7 @@ void fld_shadow_set(Vec3 *pos, void *shadow)
         d->h = map->h;
     }
     fld_map_height(pos->x, pos->z, pos);
-    vec3_scale(0.3f, &cam, (Vec3 *)&camera_get()->m[12]);
+    vec3_scale(&cam, (Vec3 *)&camera_get()->m[12], 0.3f);
     mat4_identity(&rot);
     mat4_mul_rot_y(&rot, &rot, 0.7853982f);
     mat4_identity(&m);

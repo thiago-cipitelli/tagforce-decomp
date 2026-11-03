@@ -206,7 +206,7 @@ int fld_sys_draw(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original carrega o primeiro flag antes de salvar ra (escalonamento do prólogo) */
+#ifdef NON_MATCHING /* o original põe o sw ra no delay slot do primeiro bnez (switch, !flag, if/else vazio e local ret não mudam) */
 int fld_sys_term(void)
 {
     if (field_term0 == 0) {

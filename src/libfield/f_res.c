@@ -65,7 +65,7 @@ void fld_res_cancel(void)
     fld_req_cancel_all();
 }
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. ~125 palavras: o original testa busy com bnezl direto para o epílogo e o switch de r->kind dentro do descarte tem as cópias mortas "move a0; b; nop" (padrão do case) */
+#ifdef NON_MATCHING /* C novo, conferido com o asm. Com "r == 0 || busy" (125 palavras) só o teste de busy difere (beqzl + b em vez de bnezl direto para o epílogo, 8 bytes); com dois return separados o teste bate mas o mwcc tira as cópias mortas "move a0; b; nop" dos case (484 B contra 536) */
 /* runs the request at the head of the queue when no read is in flight: step 0 starts the read,
    step 1 publishes the file (buf -> data), unloads it again if it was discarded meanwhile, calls the
    requester and the queued waiters and pops the request */

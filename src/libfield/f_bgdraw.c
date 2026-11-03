@@ -3,7 +3,6 @@
 // @asm 0x08808874-0x08808B8C
 // @asm 0x08808B8C-0x08808E38
 // @asm 0x08808E38-0x08809034
-// @asm 0x088090E8-0x088091DC
 // @asm 0x088092E0-0x088094B4
 // @asm 0x088094B4-0x08809630
 // @asm 0x08809700-0x088099E0
@@ -92,20 +91,19 @@ void fld_bg_draw_models(void)
     }
 }
 
-#ifdef NON_MATCHING /* quadro com 12 bytes a mais entre a matriz e as opções, e n_objs lido absoluto no original */
 void fld_bg_draw_objs(void)
 {
     FieldBg *b = &field_bg_state;
     ModelDrawOpts o;
-    Mat4 m;
-    Mat4 t;
+    Mat4 m __attribute__((aligned(16)));
+    Mat4 t __attribute__((aligned(16)));
     int i;
     FieldObj *p;
 
     memset(&o, 0, sizeof(o));
     o.a = 1;
     o.b = 2;
-    for (i = 0; i < field_bg_state.n_objs; i++) {
+    for (i = 0; i < b->n_objs; i++) {
         p = &b->obj[i];
         if (b->area == -1 || p->info[2] == b->area) {
             mat4_identity(&t);
@@ -119,7 +117,6 @@ void fld_bg_draw_objs(void)
         }
     }
 }
-#endif
 
 void fld_bg_draw_shadow(void)
 {

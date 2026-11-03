@@ -1,6 +1,7 @@
 fuzzy	size	module	function	address	file
 100.0	1812	libduel_eng	duel_act_e50ec	0x088E50EC	src/libduel_eng/effect_live.c
 99.9	780	BOOT	cardinfo_update	0x08859E98	src/BOOT/cardinfo.c
+99.9	1320	libfield	fpda_reader_update	0x088249EC	src/libfield/f_pdamenu.c
 99.9	620	libduel_eng	duel_0883078C	0x0883078C	src/libduel_eng/ai_0882FF4C.c
 99.9	552	libduel_eng	duel_088A3CB4	0x088A3CB4	src/libduel_eng/effects_088A3430.c
 99.9	536	BOOT	netsync_transfer	0x0886E988	src/BOOT/netsync.c
@@ -10,14 +11,11 @@ fuzzy	size	module	function	address	file
 99.9	372	BOOT	efs_find	0x08829880	src/BOOT/efs.c
 99.9	2016	libduel_eng	duel_088A83B4	0x088A83B4	src/libduel_eng/effects_088A67D8.c
 99.9	424	BOOT	card_panel_draw	0x088554E8	src/BOOT/cardlist.c
-99.9	656	BOOT	gamestate_load	0x08840A78	src/BOOT/cfg.c
 99.9	324	libduel_eng	duel_08868910	0x08868910	src/libduel_eng/effects_08867F54.c
 99.9	320	BOOT	netsync_exchange_queued	0x0886E40C	src/BOOT/netsync.c
 99.9	284	BOOT	snd_group_cmd	0x08860C88	src/BOOT/snd_play.c
-99.8	400	libshop	shop_pts_draw_fly	0x0880A524	src/libshop/shop_points.c
 99.8	340	libshop	shop_open_draw_pack	0x088129D4	src/libshop/shop_open.c
 99.8	24	libdeck_swap	ds_dst_pos	0x0880D198	src/libdeck_swap/ds_move.c
-99.8	1320	libfield	fpda_reader_update	0x088249EC	src/libfield/f_pdamenu.c
 99.8	236	libselect_card	sc_filter_attr	0x08811C3C	src/libselect_card/sc_match.c
 99.8	1624	libduel_eng	duel_088B1854	0x088B1854	src/libduel_eng/effects_088B153C.c
 99.8	1180	libtitle	tdl_deck_input	0x08825720	src/libtitle/t_deckpick.c
@@ -122,7 +120,6 @@ fuzzy	size	module	function	address	file
 98.9	1112	BOOT	mat4_inverse	0x08832FC8	src/BOOT/ehf.c
 98.9	736	libduel_eng	duel_req_activate	0x088DB240	src/libduel_eng/req_step.c
 98.9	352	libduel_eng	duel_088905D0	0x088905D0	src/libduel_eng/effects_zd.c
-98.9	192	libduel_draw	dd_cursor_nearest_hand	0x08816180	src/libduel_draw/dd_cursor_model.c
 98.8	276	libduel_eng	duel_0882AAA0	0x0882AAA0	src/libduel_eng/ai_0882A23C.c
 98.8	240	libduel_eng	duel_wfmt_d	0x088FF30C	src/libduel_eng/duel_text.c
 98.8	804	libduel_draw	popup_place	0x0886722C	src/libduel_draw/dd_card_popup.c
@@ -196,7 +193,6 @@ fuzzy	size	module	function	address	file
 97.7	460	libduel_eng	duel_088C07FC	0x088C07FC	src/libduel_eng/effects_088C004C.c
 97.7	380	libduel_draw	func_08821DBC	0x08821DBC	src/libduel_draw/dd_action_menu.c
 97.7	924	libduel_eng	duel_0886D828	0x0886D828	src/libduel_eng/act_cond.c
-97.6	516	libduel_draw	dd_cursor_next_target	0x08816DCC	src/libduel_draw/dd_cursor_model.c
 97.6	2216	libduel_eng	duel_088A6F00	0x088A6F00	src/libduel_eng/effects_088A67D8.c
 97.6	1100	libdeck_tutorial	dt_draw_highlight	0x088047F4	src/libdeck_tutorial/dt_main.c
 97.6	932	libduel_eng	duel_08887B34	0x08887B34	src/libduel_eng/effects_x.c
@@ -205,7 +201,6 @@ fuzzy	size	module	function	address	file
 97.5	488	BOOT	dl_enable	0x0883A4E4	src/BOOT/dl.c
 97.5	1008	libdeck	dk_deck_load	0x08805900	src/libdeck/dk_lists.c
 97.5	420	libduel_eng	duel_0888BF08	0x0888BF08	src/libduel_eng/effects_z.c
-97.5	772	libfield	fpda_reader_open	0x08824F14	src/libfield/f_pdamenu.c
 97.5	104	libduel_draw	lpc_digits_set	0x08857C60	src/libduel_draw/dd_lp_digits.c
 97.5	192	libdeck	dk_bg_anim	0x0880B75C	src/libdeck/dk_mode.c
 97.5	792	BOOT	menu_layout	0x08843600	src/BOOT/menu.c
@@ -245,7 +240,6 @@ fuzzy	size	module	function	address	file
 97.1	572	libtitle	tpanel_init	0x088108A0	src/libtitle/t_panel.c
 97.1	380	libdeck_tutorial	dt_press_update	0x0881A8D4	src/libdeck_tutorial/dt_lesson.c
 97.0	908	libfield	fld_chr_collide	0x08805930	src/libfield/f_chr.c
-97.0	284	libduel_draw	dd_cursor_nearest_slot	0x08816064	src/libduel_draw/dd_cursor_model.c
 97.0	1820	libduel_eng	duel_act_e3920	0x088E3920	src/libduel_eng/effect_live.c
 97.0	664	libduel_eng	duel_count_tributes	0x088EA784	src/libduel_eng/tribute.c
 96.9	892	libduel_mgr	dmgr_ev_start	0x08806678	src/libduel_mgr/dmgr_event.c
@@ -256,7 +250,6 @@ fuzzy	size	module	function	address	file
 96.8	464	libduel_eng	duel_088AE378	0x088AE378	src/libduel_eng/effects_088A8B94.c
 96.8	2460	libduel_eng	duel_08827DA4	0x08827DA4	src/libduel_eng/ai_08827DA4.c
 96.8	1816	libduel_eng	duel_records_update	0x088FF8C4	src/libduel_eng/duel_result.c
-96.8	528	libfield	fbm_setup	0x08819424	src/libfield/f_bmap.c
 96.8	148	libduel_draw	dd_tasks_update	0x0881E214	src/libduel_draw/dd_task_list.c
 96.7	556	libstory	st_mail_view_list	0x088134BC	src/libstory/s_mail.c
 96.7	564	libduel_eng	duel_eff_fde68	0x088FDE68	src/libduel_eng/effects_o.c
@@ -295,7 +288,6 @@ fuzzy	size	module	function	address	file
 96.3	836	libselect_card	sc_draw_word_win	0x088148D0	src/libselect_card/sc_word.c
 96.3	284	libduel_eng	duel_088BFB48	0x088BFB48	src/libduel_eng/effects_088BC9E0.c
 96.3	1640	libduel_mgr	dmgr_res_draw_series	0x08813C0C	src/libduel_mgr/dmgr_result.c
-96.2	244	libfield	fld_bg_draw_objs	0x088090E8	src/libfield/f_bgdraw.c
 96.2	212	BOOT	snd_curve_volume	0x08861F88	src/BOOT/snd_obj.c
 96.2	408	libselect_card	sc_input_mark	0x08813B5C	src/libselect_card/sc_fmenu.c
 96.2	360	libduel_draw	dd_sel_filter	0x0881C510	src/libduel_draw/dd_card_select.c
@@ -369,7 +361,6 @@ fuzzy	size	module	function	address	file
 95.1	192	libduel_eng	duel_req_088D5D2C	0x088D5D2C	src/libduel_eng/req_088D28F8.c
 95.1	220	libdeck_tutorial	dt_text_font_begin	0x0881D0E8	src/libdeck_tutorial/dt_text.c
 95.1	328	libselect_card	sc_word_bar_open	0x088146E0	src/libselect_card/sc_word.c
-95.1	372	libduel_draw	dd_cursor_first_target	0x08815BC8	src/libduel_draw/dd_cursor_model.c
 95.1	768	libduel_eng	duel_08816A74	0x08816A74	src/libduel_eng/ai_08815E90.c
 95.0	400	libduel_draw	dd_chr_attach_mtx	0x08813D8C	src/libduel_draw/dd_chr.c
 95.0	1612	liblimitlist	ll_draw_row	0x08806DC0	src/liblimitlist/ll_screen.c
@@ -525,7 +516,6 @@ fuzzy	size	module	function	address	file
 91.7	408	libfield	fbag_item1_draw	0x0881E83C	src/libfield/f_bag.c
 91.7	212	BOOT	snd_fx_setup	0x088614D0	src/BOOT/snd_core.c
 91.6	512	libduel_eng	duel_eff_fa288	0x088FA288	src/libduel_eng/effects_f.c
-91.5	144	BOOT	day_calc	0x0883ED7C	src/BOOT/save.c
 91.5	476	libduel_eng	duel_req_088D5DEC	0x088D5DEC	src/libduel_eng/req_088D28F8.c
 91.5	424	BOOT	extdata_verify	0x0886DC80	src/BOOT/extdata.c
 91.5	1340	libduel_draw	dd_fcam_from_tms	0x08807CD4	src/libduel_draw/dd_fieldcam.c
@@ -542,7 +532,6 @@ fuzzy	size	module	function	address	file
 91.3	712	libdeck	dk_help_scrollbar	0x0881D3EC	src/libdeck/dk_help_ui.c
 91.3	92	libduel_draw	func_08825A14	0x08825A14	src/libduel_draw/dd_msg_win.c
 91.3	436	libselect_card	sc_layout_scroll	0x0880D0F8	src/libselect_card/sc_state.c
-91.2	312	libduel_draw	dd_cursor_cycle	0x08815D3C	src/libduel_draw/dd_cursor_model.c
 91.2	632	libcharalist	cl_costume_anim	0x08809914	src/libcharalist/cl_list.c
 91.2	1356	libtitle	tdl_deck_item	0x08825D7C	src/libtitle/t_deckpick.c
 91.1	176	libduel_draw	dd_cobjs_busy	0x0880CB44	src/libduel_draw/dd_cobj2.c
@@ -705,7 +694,6 @@ fuzzy	size	module	function	address	file
 87.0	436	libdeck_tutorial	dt_layout_scroll	0x088171A0	src/libdeck_tutorial/dt_pane.c
 87.0	768	libfield	fcal_draw_tabs	0x0881FCEC	src/libfield/f_cal.c
 86.9	412	libduel_eng	duel_08810944	0x08810944	src/libduel_eng/ai_cond4.c
-86.9	1064	libduel_draw	dd_cursor_update	0x088157A0	src/libduel_draw/dd_cursor_model.c
 86.9	176	libduel_draw	dd_card_fx_start	0x0881E3B8	src/libduel_draw/dd_task_list.c
 86.9	244	libdeck	dk_draw_genre_value	0x08812E84	src/libdeck/dk_fmenu.c
 86.9	244	libdeck_swap	ds_draw_genre_value	0x08810980	src/libdeck_swap/ds_fmenu.c
@@ -799,7 +787,6 @@ fuzzy	size	module	function	address	file
 83.6	212	libduel_mgr	dmgr_res_draw_result	0x08811BC4	src/libduel_mgr/dmgr_result.c
 83.6	172	libduel_eng	duel_088172F0	0x088172F0	src/libduel_eng/ai_08815E90.c
 83.6	236	libduel_draw	dd_ev_24	0x088185C0	src/libduel_draw/dd_event_cmd.c
-83.5	776	libduel_draw	dd_cursor_draw_arrow	0x0881665C	src/libduel_draw/dd_cursor_model.c
 83.4	276	libtitle	tfd_regulation_select	0x08817F98	src/libtitle/t_fdvscpu.c
 83.4	164	libduel_eng	duel_ai_0881D0D8	0x0881D0D8	src/libduel_eng/ai_cond0.c
 83.3	792	libduel_mgr	dmgr_pt_sprite	0x0880EF5C	src/libduel_mgr/dmgr_partner.c
@@ -904,7 +891,6 @@ fuzzy	size	module	function	address	file
 78.5	568	libduel_draw	func_08822E30	0x08822E30	src/libduel_draw/dd_field_marks.c
 78.5	868	libduel_eng	duel_req_change_pos	0x088D8354	src/libduel_eng/req_effect.c
 78.5	1508	BOOT	model_outline_begin	0x0882D208	src/BOOT/toon.c
-78.5	884	libduel_draw	dd_cursor_draw_icons	0x08816964	src/libduel_draw/dd_cursor_model.c
 78.5	104	libstory	st_pl_points	0x088067EC	src/libstory/s_player.c
 78.4	372	libduel_draw	dd_lpp_count	0x08811F88	src/libduel_draw/dd_lp.c
 78.3	300	libduel_eng	duel_ai_0881C3B0	0x0881C3B0	src/libduel_eng/ai_cond1.c
@@ -926,7 +912,6 @@ fuzzy	size	module	function	address	file
 77.1	716	libduel_draw	dd_face	0x08812C94	src/libduel_draw/dd_face.c
 77.0	812	BOOT	cardlist_draw_at	0x08854A68	src/BOOT/cardlist.c
 76.9	3188	libduel_draw	dd_fx32_s2_update	0x0883DA2C	src/libduel_draw/dd_fx32.c
-76.6	1452	libduel_draw	dd_cursor_move	0x08814E38	src/libduel_draw/dd_field_cursor.c
 76.4	1200	libduel_eng	duel_req_swap_zones	0x088D7EA4	src/libduel_eng/req_effect.c
 76.4	96	libduel_mgr	dmgr_res_send	0x088116F4	src/libduel_mgr/dmgr_result.c
 76.4	796	BOOT	font_init	0x08845AC0	src/BOOT/font.c
@@ -1077,7 +1062,6 @@ fuzzy	size	module	function	address	file
 55.2	368	libduel_draw	func_08821A3C	0x08821A3C	src/libduel_draw/dd_action_menu.c
 55.2	2392	libcharalist	cl_detail_update	0x08808844	src/libcharalist/cl_list.c
 55.2	1012	libselect_card	sc_input_move	0x088158DC	src/libselect_card/sc_move.c
-55.1	616	BOOT	stat_event_record	0x0883E13C	src/BOOT/main.c
 55.0	32	libstory	st_mail_find	0x08813874	src/libstory/s_mail.c
 54.6	928	libselect_card	sc_popup_open	0x08816938	src/libselect_card/sc_move.c
 54.1	108	libduel_eng	duel_log_push	0x088FEF00	src/libduel_eng/duel_api.c

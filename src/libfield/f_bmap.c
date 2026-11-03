@@ -1,5 +1,4 @@
 // @range 0x08818FFC-0x0881BA90
-// @asm 0x08819424-0x08819634
 // @asm 0x08819644-0x08819740
 // @asm 0x088197B0-0x0881A078
 // @asm 0x0881B268-0x0881B608
@@ -257,7 +256,6 @@ void fbm_draw(void)
         msd_update_dialog();
 }
 
-#ifdef NON_MATCHING /* mwcc stores the first two counters absolutely, the original through the base register */
 void fbm_setup(FieldBmCmd *c)
 {
     FieldBm *m = &field_bm;
@@ -271,19 +269,16 @@ void fbm_setup(FieldBmCmd *c)
 
     fbm_place_of(c->home, &place, &sub);
     memcpy(&m->cmd, c, sizeof(*c));
+    m->cur = place;
     m->prev = place;
     m->home = place;
-    m->cur = place;
     m->state = 0;
     m->alt = c->alt;
     fbm_mark_people((FieldList *)c);
+    for (k = 0; k < 5; k++)
+        any[k] = 0;
     m->n_people = 0;
-    any[1] = 0;
     m->blocked = 0;
-    any[2] = 0;
-    any[4] = 0;
-    any[3] = 0;
-    any[0] = 0;
     for (i = 0; i < c->n_people; i++) {
         int pl;
         int sb;
@@ -314,7 +309,6 @@ void fbm_setup(FieldBmCmd *c)
         break;
     }
 }
-#endif
 
 int fbm_ready(void)
 {

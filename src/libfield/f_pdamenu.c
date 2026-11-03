@@ -1,5 +1,5 @@
 // @range 0x08824028-0x08825F7C
-// @asm 0x088249EC-0x08825218
+// @asm 0x088249EC-0x08824F14
 // @data 0x0883D530-0x0883D630
 /* Pages of the PDA (field_pda, the menu opened on the map): the options page, the save prompt, the
    event log with its scrolling voiced reader, the calendar, the files of the PDA pack and the 3D cover
@@ -391,7 +391,6 @@ void fpda_reader_update(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* o mwcc junta o -0x40 e o -1 de (total - 0x40 + lh - 1); com 1U a ordem das divisoes muda */
 /* loads the lines of the chosen event and lays them out */
 void fpda_reader_open(void)
 {
@@ -444,14 +443,14 @@ void fpda_reader_open(void)
         field_pda->max = 0;
     else
         field_pda->max = total - 0x1540;
-    field_pda->frames = (0x2780 / field_pda->speed) * ((total - 0x40 + (field_pda->lh - 1)) / field_pda->lh);
+    total -= 0x40;
+    field_pda->frames = (0x2780 / field_pda->speed) * ((total + field_pda->lh - 1) / field_pda->lh);
     field_pda->frame = 0;
     field_pda->read_x = 0;
     field_pda->read_y = 0;
     field_pda->timer = 0;
     field_pda->sub = 0;
 }
-#endif
 
 /* calendar: L/R change the month, the d-pad moves the day across the months */
 void fpda_calendar_update(void)

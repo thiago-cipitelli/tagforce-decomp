@@ -850,7 +850,7 @@ void *gfx_end_2d(void *list);
 void *dl_select_layer(int layer, unsigned int *size_out);
 void dl_set_list(void *list);
 
-Vec3 *vec3_scale(float s, Vec3 *out, Vec3 *a);
+Vec3 *vec3_scale(Vec3 *out, Vec3 *a, float s);
 Vec3 *vec3_normalize(Vec3 *out, Vec3 *a);
 void vec3_add(Vec3 *out, Vec3 *a, Vec3 *b);
 Vec3 *vec3_sub(Vec3 *out, Vec3 *a, Vec3 *b);
@@ -958,7 +958,7 @@ void *fld_gim_get(int i);
 int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir, int visible,
                   int arg8c, int a, int b, int fx);
 void fld_chr_get_pos(Vec3 *out, FieldChr *c);
-void fld_chr_corners(float r, Vec3 *p, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d);
+void fld_chr_corners(Vec3 *p, float r, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d);
 void fld_map_height(float x, float z, Vec3 *p);
 void fld_pos_to_cell(float x, float z, int *cx, int *cz);
 int fld_map_attr(int x, int z);

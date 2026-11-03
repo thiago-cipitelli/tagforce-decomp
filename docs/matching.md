@@ -58,6 +58,9 @@ MODULE=$M tools/raw_asm.sh 0xLO 0xHI            # o asm original (a verdade), qu
    Antes de promover: compile sem `-DNON_MATCHING` também (o `asm_try.sh` não vê protótipos que só existem sob
    `NON_MATCHING`), e mantenha as funções em ordem de endereço no arquivo. Uma função cuja jump table vem depois das
    de uma função ainda em asm do mesmo `.c` não pode ser promovida mesmo com 0 palavras.
+   `asm_try.sh` e `check_file.py` mascaram os operandos relocados: stores em campos do mesmo global em ordem
+   trocada (`sw a0,%lo(g+0x0C)` contra `%lo(g+0x08)`) dão 0 palavras e só o `make check` acusa (`fbm_setup`,
+   2026-11-03). Rode `make MODULE=<m> check` depois de promover.
    Verificação barata de lógica: compare a sequência de alvos `jal` do original com as relocações `R_MIPS_26` do
    objeto `-DNON_MATCHING` (achou chamadas trocadas e funções inexistentes em vários drafts).
 4. Se não bater em 4 reescritas: atualize o comentário do `NON_MATCHING` (pt-BR, o que ainda difere, quantas

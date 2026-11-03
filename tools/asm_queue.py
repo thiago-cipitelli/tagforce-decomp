@@ -24,8 +24,13 @@ def addresses(module):
     return {n: a for n, a in re.findall(r"^(\w+) = (0x[0-9A-Fa-f]+);", t, re.M)}
 
 
+def matched(module):  # in C and byte-identical after linking; objdiff can still differ on a relocation's symbol
+    t = open(f"symbols/{module}.txt").read()
+    return set(re.findall(r"^(\w+) = 0x[0-9A-Fa-f]+; // type:func matched ", t, re.M))
+
+
 def build():
-    rep, skip, sdk, addr, rows = json.load(open(REPORT)), skipped(), {}, {}, []
+    rep, skip, sdk, addr, done, rows = json.load(open(REPORT)), skipped(), {}, {}, {}, []
     for u in rep["units"]:
         src = (u.get("metadata") or {}).get("source_path")
         if not src or not os.path.exists(src):
@@ -38,10 +43,10 @@ def build():
             continue
         mod = src.split("/")[1]
         if mod not in addr:
-            addr[mod] = addresses(mod)
+            addr[mod], done[mod] = addresses(mod), matched(mod)
         for f in u.get("functions", []):
             fz = f.get("fuzzy_match_percent", 0)
-            if fz < 100 and f["name"] not in skip:
+            if fz < 100 and f["name"] not in skip and f["name"] not in done[mod]:
                 m = re.fullmatch(r"func_([0-9A-F]{8})", f["name"])  # unnamed: the address is in the name
                 a = addr[mod].get(f["name"]) or (m and "0x" + m.group(1)) or "?"
                 rows.append((fz, int(f["size"]), mod, f["name"], a, src))

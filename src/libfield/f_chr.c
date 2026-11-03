@@ -23,7 +23,7 @@ float fld_vec3_len(Vec3 *v);                    /* 0x0880D140 */
 FieldMap *fld_map_get(void);                   /* 0x088077E0 */
 int fld_map_walkable(int x, int z, int flag);  /* 0x08807844 */
 int fld_map_attr(int x, int z);                /* 0x0881CDBC */
-void fld_chr_corners(float r, Vec3 *p, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d);
+void fld_chr_corners(Vec3 *p, float r, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d);
 void fld_dir_vec(Vec3 *out, int i);
 void fld_load_cancel_chr(void);                /* 0x0880C5C4 */
 
@@ -112,7 +112,7 @@ void fld_chr_update(FieldChr *c)
         break;
     }
     fld_shadow_set(&c->pos, c->shadow);
-    vec3_scale(0.2f, &l, fld_light_dir());
+    vec3_scale(&l, fld_light_dir(), 0.2f);
     g->light_w = 0;
     g->light = l;
     if (c->fx)
@@ -242,7 +242,7 @@ int fld_in_range(int x)
 }
 #endif
 
-#ifdef NON_MATCHING /* lógica conferida. 10 palavras: mov.s $f12 depois dos ponteiros nas chamadas de vec3_scale e fld_chr_corners (ordem do protótipo) e a ordem das duas divisões por 0.5 */
+#ifdef NON_MATCHING /* lógica conferida. 6 palavras: o original divide q.x por 0.5 antes de ler q.z (inline, ponteiro e cast (int) não mudam; fld_hud_event, que bate, lê os dois antes) */
 /* clips the motion vel of a character of radius r at pos against blocked cells */
 void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r)
 {
@@ -282,8 +282,8 @@ void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r)
         }
         }
         vec3_normalize(&d, &d);
-        vec3_scale(r, &d, &d);
-        fld_chr_corners(r, &p, &c[0], &c[1], &c[2], &c[3]);
+        vec3_scale(&d, &d, r);
+        fld_chr_corners(&p, r, &c[0], &c[1], &c[2], &c[3]);
         for (j = 0, e = c; j < 4; j++, e++) {
             vec3_add(&q, e, &d);
             x = q.x / 0.5f;
@@ -312,7 +312,7 @@ void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r)
 #endif
 
 /* the four corners of the square of side 1 - 2r (minus a margin) around p */
-void fld_chr_corners(float r, Vec3 *p, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d)
+void fld_chr_corners(Vec3 *p, float r, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d)
 {
     Vec3 t;
     float s = (0.5f - r) - 0.001f;

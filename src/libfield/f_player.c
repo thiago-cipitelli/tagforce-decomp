@@ -127,7 +127,7 @@ void fld_player_mark_cells(int v)
     Vec3 *p;
 
     if (fld_map_get()) {
-        fld_chr_corners(0.1f, &c->pos, &q[0], &q[1], &q[2], &q[3]);
+        fld_chr_corners(&c->pos, 0.1f, &q[0], &q[1], &q[2], &q[3]);
         for (i = 0, p = q; i < 4; i++, p++) {
             fld_pos_to_cell(p->x, p->z, &cx, &cz);
             if (fld_map_attr(cx, cz) != 3)
@@ -298,10 +298,10 @@ void fld_player_move(void)
     if (pad_get()->b.down & mask)
         flag = 1;
     vec3_normalize(&v, &c->vel);
-    vec3_scale(0.1f, &v, &v);
+    vec3_scale(&v, &v, 0.1f);
     fld_chr_collide(&v, &v, &c->pos, 0.1f, flag);
     vec3_normalize(&v, &v);
-    vec3_scale(0.1f, &v, &v);
+    vec3_scale(&v, &v, 0.1f);
     if (c->anim == 1 && fld_vec3_len(&v) > 0.0f)
         c->dir = fld_dir_nearest(&v);
     {
@@ -313,7 +313,7 @@ void fld_player_move(void)
         down = *(Vec3 *)&tmp;
     }
     vec3_normalize(&v, &v);
-    vec3_scale(0.1f, &v, &v);
+    vec3_scale(&v, &v, 0.1f);
     fld_npc_near(near, &n, (FieldNpc *)c, 0.45f);
     for (i = 0; i < n; i++) {
         vec3_sub(&to, &near[i]->m.c.pos, &c->pos);
@@ -334,7 +334,7 @@ void fld_player_move(void)
         else
             vec3_zero(&t);
         vec3_dot(&t, &v);
-        vec3_scale(0.1f, &t, &t);
+        vec3_scale(&t, &t, 0.1f);
         vec3_add(&q, &c->pos, &t);
         fld_chr_collide(&v, &t, &q, 0.1f, flag);
     }
@@ -373,7 +373,7 @@ void fld_player_seek(void)
     } else {
         v = d;
         vec3_normalize(&v, &v);
-        vec3_scale(0.1f, &v, &v);
+        vec3_scale(&v, &v, 0.1f);
     }
     c->vel = v;
     c->anim = 1;
