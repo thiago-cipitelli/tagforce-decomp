@@ -1136,7 +1136,6 @@ fuzzy	size	module	function	address	file
 0.0	372	libduel_eng	duel_req_088D5FC8	0x088D5FC8	src/libduel_eng/req_088D28F8.c
 0.0	780	libduel_eng	duel_08881160	0x08881160	src/libduel_eng/effects_p.c
 0.0	960	libduel_eng	duel_0887FD20	0x0887FD20	src/libduel_eng/effects_p.c
-0.0	996	libfield	fld_npc_update	0x08809D20	src/libfield/f_npc.c
 0.0	1144	libfield	fld_bg_draw	0x088071E8	src/libfield/f_bg.c
 0.0	1372	libfield	fld_bg_loaded	0x08808214	src/libfield/f_bgdraw.c
 0.0	1380	libselect_card	sc_flight_step	0x08815F04	src/libselect_card/sc_move.c

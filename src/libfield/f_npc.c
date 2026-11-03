@@ -1,5 +1,4 @@
 // @range 0x08809C40-0x0880AC74
-// @asm 0x08809D20-0x0880A104
 // @asm 0x0880A2FC-0x0880A58C
 // @asm 0x0880AA4C-0x0880AB48
 /* NPCs of the room (32 walking on paths) and the extra characters (80): reset, drawing, the ones
@@ -43,6 +42,132 @@ void fld_npc_free(void)
         m = &b->mob[i];
         if (b->mob[i].active)
             fld_chr_reset(&m->c);
+    }
+}
+
+int fld_cell_free(int x, int z);
+void fld_cell_mark(int x, int z, int v);
+void fld_pos_set(Vec3 *p, int cx, int cz);
+void fld_pos_to_cell(float x, float z, int *cx, int *cz);
+void fld_chr_update(FieldChr *c);
+int fld_map_walkable(int x, int z, int flag);
+int fld_cell_marked(int cx, int cz);
+void vec3_lerp(Vec3 *out, Vec3 *a, Vec3 *b, float t);
+
+/* the NPCs wander: when idle (anim 0) and the field runs (ctx->pad04), after waiting xa8 frames they
+   pick a random neighbour cell within xa4 of their home (x9c, xa0) that is free, walkable and not
+   marked (10 tries), then walk to it (anim 1, xbc 0..1 by 0.1); their cells are marked busy (the
+   NPC 0x3A, big, a 5 x 7 block); then the extra characters */
+void fld_npc_update(void)
+{
+    FieldNpcs *b = &field_npcs;
+    FieldCtx *ctx = fld_ctx_get();
+    int i;
+    FieldNpc *npc;
+    int n;
+    int dx;
+    int dz;
+    Vec3 from;
+    Vec3 to;
+    float t;
+
+    for (i = 0; i < 32; i++) {
+        npc = &b->npc[i];
+        if (npc->m.c.visible == 0)
+            continue;
+        if (npc->m.active == 0)
+            continue;
+        if (npc->xa4 > 0) {
+            switch (npc->m.c.anim) {
+            case 0:
+                if (ctx->pad04 != 0) {
+                    if (npc->xa8 <= 0) {
+                        n = 0;
+                        for (;;) {
+                            npc->xb4 = npc->xac;
+                            npc->xb8 = npc->xb0;
+                            switch ((int)(rand() & 0xFFFF) % 4) {
+                            case 0:
+                                npc->xb8 = npc->xb0 + 1;
+                                npc->m.c.dir = 1;
+                                break;
+                            case 1:
+                                npc->xb4 = npc->xac - 1;
+                                npc->m.c.dir = 3;
+                                break;
+                            case 2:
+                                npc->xb8 = npc->xb0 - 1;
+                                npc->m.c.dir = 5;
+                                break;
+                            case 3:
+                                npc->xb4 = npc->xac + 1;
+                                npc->m.c.dir = 7;
+                                break;
+                            }
+                            if (n >= 10)
+                                break;
+                            n++;
+                            if (fabsf_vfpu(npc->m.x9c - npc->xb4) > npc->xa4)
+                                continue;
+                            if (fabsf_vfpu(npc->xa0 - npc->xb8) > npc->xa4)
+                                continue;
+                            if (fld_cell_free(npc->xb4, npc->xb8) == 0)
+                                continue;
+                            if (fld_map_walkable(npc->xb4, npc->xb8, 0) == 0)
+                                continue;
+                            if (fld_cell_marked(npc->xb4, npc->xb8) != 0)
+                                continue;
+                            break;
+                        }
+                        if (n < 10) {
+                            npc->m.c.anim = 1;
+                            npc->xbc = 0;
+                        } else {
+                            npc->m.c.anim = 0;
+                            npc->xa8 = (int)(rand() & 0xFFFF) % 120 + 90;
+                        }
+                    } else {
+                        npc->xa8--;
+                    }
+                }
+                break;
+            case 1:
+                if (npc->turned == 0) {
+                    fld_pos_set(&from, npc->xac, npc->xb0);
+                    fld_pos_set(&to, npc->xb4, npc->xb8);
+                    vec3_lerp(&npc->m.c.pos, &from, &to, *(float *)&npc->xbc);
+                    if (*(float *)&npc->xbc < 1.0f) {
+                        float k = 0.1f;
+
+                        t = *(float *)&npc->xbc + k;
+                        *(float *)&npc->xbc = t;
+                        if (t > 1.0f)
+                            *(float *)&npc->xbc = 1.0f;
+                        fld_cell_mark(npc->xb4, npc->xb8, 3);
+                    } else {
+                        npc->m.c.anim = 0;
+                        npc->xa8 = (int)(rand() & 0xFFFF) % 120 + 90;
+                        fld_cell_mark(npc->xac, npc->xb0, 0);
+                        fld_pos_to_cell(npc->m.c.pos.x, npc->m.c.pos.z, &npc->xac, &npc->xb0);
+                    }
+                }
+                break;
+            }
+        }
+        fld_cell_mark(npc->xac, npc->xb0, 3);
+        if (npc->m.c.id == 0x3A) {
+            for (dx = -3; dx <= 1; dx++) {
+                for (dz = -4; dz <= 2; dz++)
+                    fld_cell_mark(npc->xac + dx, npc->xb0 + dz, 5);
+            }
+        }
+        fld_chr_update(&npc->m.c);
+    }
+    for (i = 0; i < 80; i++) {
+        FieldMob *e = &b->mob[i];
+
+        if (e->c.visible != 0 && e->active != 0)
+            fld_chr_update(&e->c);
     }
 }
 
