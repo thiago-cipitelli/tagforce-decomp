@@ -9,6 +9,85 @@
 void fld_map_height(Vec3 *p, float x, float z);
 int fld_bg_id(void);
 
+unsigned char *fld_map_attrs(void);
+FieldStory *fld_story_get(void);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 5 palavras: o último teste (i < n_vert) sai beqz/nop para um bloco próprio "r = 0" no original; aqui beqzl com o 0 no atraso (árvore de if/else achada por busca das 2^7 formas) */
+/* 1 when the cell can be walked on: the stairs of the hostel are shut (always for flag 0, from the
+   22nd for flag 1, which leaves (13, 12) open) and the doors of room 2 while ctx->x14; then the
+   attribute of the cell */
+int fld_map_walkable(int cx, int cz, int flag)
+{
+    FieldMap *m = fld_map_get();
+    FieldStory *st = fld_story_get();
+    FieldCtx *ctx = fld_ctx_get();
+    unsigned char *a;
+    int i;
+    int r;
+
+    if (flag != 0) {
+        if (*(int *)st->w[3] >= 22) {
+            switch (fld_bg_id()) {
+            case 12:
+            case 37:
+                if ((cx == 15 && cz == 24) || (cx == 15 && cz == 20) || (cx == 15 && cz == 16) ||
+                    (cx == 15 && cz == 12) || (cx == 13 && cz == 24) || (cx == 13 && cz == 20) ||
+                    (cx == 13 && cz == 16))
+                    return 0;
+                break;
+            }
+        }
+    } else {
+        switch (fld_bg_id()) {
+        case 12:
+        case 37:
+            if ((cx == 15 && cz == 24) || (cx == 15 && cz == 20) || (cx == 15 && cz == 16) ||
+                (cx == 15 && cz == 12) || (cx == 13 && cz == 24) || (cx == 13 && cz == 20) ||
+                (cx == 13 && cz == 16) || (cx == 13 && cz == 12))
+                return 0;
+            break;
+        }
+    }
+    switch (fld_bg_id()) {
+    case 2:
+        if (ctx->x14 != 0) {
+            if ((cx == 1 && cz == 3) || (cx == 1 && cz == 4) || (cx == 10 && cz == 1) || (cx == 11 && cz == 1) ||
+                (cx == 21 && cz == 1) || (cx == 22 && cz == 1))
+                return 0;
+        }
+        break;
+    }
+    if (m != 0) {
+        a = fld_map_attrs();
+        if (cx < 0) {
+            r = 0;
+        } else {
+            if (cx >= m->w) {
+                r = 0;
+            } else {
+                if (cz < 0) {
+                    r = 0;
+                } else {
+                    if (cz >= m->h) {
+                        r = 0;
+                    } else {
+                        i = cx + cz * m->w;
+                        if (i >= 0) {
+                            r = i < m->n_vert ? a[i] : 0;
+                        } else {
+                            r = 0;
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        r = 0;
+    }
+    return r;
+}
+#endif
+
 Vec3 *fld_map_cells(void);
 int fld_bg_id(void);
 void vec3_cross_nw(Vec3 *out, Vec3 *a, Vec3 *b);
