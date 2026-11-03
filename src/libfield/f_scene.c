@@ -236,6 +236,131 @@ int fld_cmd_x1c_done(void)
     return !field_scene.x1c;
 }
 
+int fdlg_button(PadState *pad, unsigned int mask);
+int fld_bg_event(int bg, int x, int z);
+void fld_player_stop(void);
+int fld_story_flag(int id, int arg);
+int fld_cell_marked(int cx, int cz);
+int fld_cell_door(int cx, int cz);
+int fld_item_take_a(int cx, int cz, int take);
+int fld_item_take_b(int cx, int cz, int take);
+unsigned short region_pick_value(int flag);
+int fld_bg_id(void);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 2 palavras: a constante 0.5 das divisões sai em v0 no original, v1 aqui */
+/* input of the field: the menu buttons (with the button bar held), talking/examining the cell,
+   opening the menu or the map, then the scene events of the cell the player stands on (marked cell,
+   door, items); *cmd/*arg get the scene command to run */
+void fld_scene_input(int *cmd, int *arg)
+{
+    FieldScene *s = &field_scene;
+    PadState *pad = pad_get();
+    FieldChr *pl = fld_player_get();
+    int cx = pl->pos.x / 0.5f;
+    int cz = pl->pos.z / 0.5f;
+    unsigned int trig;
+    int k;
+
+    if (!(pad->b.down & 0x200)) {
+        if (pad->b.trig & 0x1000) {
+            if (s->pad8c[0] != -1) {
+                *cmd = 23;
+                *arg = 2;
+            } else {
+                switch (fld_bg_event(fld_bg_id(), cx, cz)) {
+                case 0:
+                    break;
+                case 1:
+                    *cmd = 17;
+                    break;
+                case 2:
+                    *cmd = 19;
+                    break;
+                case 3:
+                    *cmd = 23;
+                    *arg = 13;
+                    break;
+                case 4:
+                    *cmd = 23;
+                    *arg = 14;
+                    break;
+                }
+            }
+        }
+        trig = pad->b.trig;
+        if (trig & region_pick_value(0)) {
+            *cmd = 5;
+            fld_player_stop();
+            fld_story_flag(0x6216, 0);
+        } else if (trig & 0x8000) {
+            *cmd = 11;
+            fld_player_stop();
+        }
+    } else {
+        switch (fdlg_button(pad, s->padac[2])) {
+        case -1:
+            break;
+        case 0:
+            if (s->pad8c[0] != -1) {
+                *cmd = 23;
+                *arg = 2;
+            }
+            break;
+        case 1:
+            if (s->pad8c[0] != -1) {
+                *cmd = 23;
+                *arg = 5;
+            }
+            break;
+        case 2:
+            *cmd = 7;
+            break;
+        case 3:
+            *cmd = 2;
+            break;
+        }
+    }
+    if (fld_cell_marked(cx, cz)) {
+        *cmd = 23;
+        *arg = 0;
+    } else {
+        s->padac[0] = cx;
+        s->padac[1] = cz;
+    }
+    k = fld_cell_door(cx, cz);
+    if (k != -1) {
+        switch (fld_bg_id()) {
+        case 12:
+        case 37:
+            s->save[4] = k;
+            *cmd = 23;
+            *arg = 21;
+            break;
+        case 36:
+            *cmd = 23;
+            *arg = 22;
+            break;
+        }
+    }
+    k = fld_item_take_a(cx, cz, 1);
+    if (k > 0) {
+        s->pad8c[1] = k;
+        s->pad8c[2] = cx;
+        s->pad8c[3] = cz;
+        *cmd = 13;
+        fld_player_stop();
+    }
+    k = fld_item_take_b(cx, cz, 1);
+    if (k > 0) {
+        s->pad8c[4] = k;
+        s->pad8c[5] = cx;
+        s->pad8c[6] = cz;
+        *cmd = 15;
+        fld_player_stop();
+    }
+}
+#endif
+
 void fld_scene_gim_loaded(int *file, void *arg)
 {
     FieldScene *s = &field_scene;
