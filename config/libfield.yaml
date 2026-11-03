@@ -65,8 +65,6 @@ segments:
       - [0x5094, c, f_bgdraw]
       - [0x5340, asm, f_bgdraw_asm_088092E0]
       - [0x5514, c, f_bgdraw]
-      - [0x5760, asm, f_bgdraw_asm_08809700]
-      - [0x5A40, c, f_bgdraw]
       - [0x5CA0, c, f_npc]
       - [0x5D80, asm, f_npc_asm_08809D20]
       - [0x6164, c, f_npc]

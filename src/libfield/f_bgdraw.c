@@ -3,7 +3,6 @@
 // @asm 0x08808874-0x08808B8C
 // @asm 0x08808E38-0x08809034
 // @asm 0x088092E0-0x088094B4
-// @asm 0x08809700-0x088099E0
 /* Room loading and drawing: the models of each area and their stencil shadows, the placed objects,
    the camera of the room, the mesh mask by area and the hook that hides the door meshes ("_DD."). */
 #include "libfield.h"
@@ -405,6 +404,77 @@ int fld_bg_stencil_hook(void **list, void *m, int a, int b, int phase)
         break;
     }
     return 0;
+}
+
+typedef struct FieldTexVtx {           /* GU vertex 0x80011E: 16-bit uv, colour, 16-bit 2D position */
+    short u, v;
+    unsigned int color;
+    short x, y, z;
+    short pad;
+} FieldTexVtx;
+
+void *dl_tex_mode(void *list, int psm, int maxmips, int a2, int swizzle);
+void *sceGeEdramGetAddr(void);
+void *dl_tex_image(void *list, int mip, int w, int h, int tbw, void *addr);
+void *dl_tex_func(void *list, int func, int rgba);
+void *dl_tex_wrap(void *list, int u, int v);
+void *dl_tex_offset(void *list, float u, float v);
+void *dl_tex_scale(void *list, float u, float v);
+void *dl_set_tex_filter(void *list, int min, int mag);
+void *dl_blend_func(void *list, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
+
+/* lays the 256x256 texture drawn by fld_bg_draw_to_tex over the screen in four strips, through the
+   stencil, faded by field_bg_state.fade_t */
+void fld_bg_draw_from_tex(void)
+{
+    void *list = dl_select_layer(1, 0);
+    unsigned int color;
+    FieldTexVtx *v;
+    int i;
+    int a;
+    int b;
+
+    list = dl_enable(list, 3);
+    list = dl_stencil_op(list, 2, 1, 0xFF);
+    list = dl_stencil_func(list, 0, 0, 0);
+    list = dl_tex_flush(list);
+    list = dl_enable(list, 9);
+    list = dl_tex_mode(list, 3, 0, 0, 0);
+    list = dl_tex_image(list, 0, 0x100, 0x100, 0x100, (char *)sceGeEdramGetAddr() + 0x164000);
+    list = dl_tex_func(list, 0, 0);
+    list = dl_tex_wrap(list, 0, 0);
+    list = dl_tex_offset(list, 0.0f, 0.0f);
+    list = dl_tex_scale(list, 1.0f, 1.0f);
+    list = dl_set_tex_filter(list, 1, 1);
+    list = dl_blend_func(list, 0, 2, 3, 0, 0);
+    list = dl_enable(list, 4);
+    list = dl_disable(list, 1);
+    color = (unsigned int)(255.0f - 8.5f * (float)field_bg_state.fade_t) << 24 | 0xFFFFFF;
+    v = dl_alloc_inline(&list, sizeof(FieldTexVtx) * 8);
+    for (i = 0, a = 0, b = 1; i < 4; a += 2, b += 2, i++) {
+        FieldTexVtx *p = (FieldTexVtx *)((char *)v + a * sizeof(FieldTexVtx));
+        FieldTexVtx *q;
+
+        p->u = i * 64;
+        p->v = 0;
+        p->color = color;
+        p->x = i * 120;
+        p->y = 0;
+        p->z = 0;
+        q = (FieldTexVtx *)((char *)v + b * sizeof(FieldTexVtx));
+        q->u = (i + 1) * 64;
+        q->v = 256;
+        q->color = color;
+        q->x = (i + 1) * 120;
+        q->y = 272;
+        q->z = 0;
+    }
+    mtx_set_mode(2);
+    mtx_push();
+    mtx_identity();
+    list = dl_draw_array(list, 6, 0x80011E, 8, 0, v);
+    mtx_pop();
+    dl_set_list(list);
 }
 
 void fld_bg_set_hook(void)
