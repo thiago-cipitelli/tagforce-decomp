@@ -2,11 +2,11 @@
 // @asm 0x08813308-0x088135E8
 // @asm 0x088135E8-0x08813914
 // @asm 0x08813AA8-0x08813D34
-// @asm 0x088141C4-0x08814404
 // @asm 0x08814514-0x088147E0
 /* HUD parts sliding in and out: day and date, the moving icon (waits, then flies scaling down),
    the panel and the message box; their drawings are still in asm. */
 #include "libfield.h"
+#include "allegrex.h"
 
 extern Vec2 field_day_from;                    /* 0x0883C830 */
 extern Vec2 field_day_to;                      /* 0x0883C838 */
@@ -160,6 +160,41 @@ void fld_hud_date_update(void)
     case 2:
         break;
     }
+}
+
+/* the counter of the HUD (st->w[15]() clamped to 0..999): its plate, the digits and the label,
+   all right-aligned on the number */
+void *fld_hud_date_draw(void *list)
+{
+    FieldHud *h = &field_hud;
+    FieldHudSlide *s = &field_hud.date;
+    FieldStory *st = fld_story_get();
+    void *gim = fld_gim_get(2);
+    int n = ((int (*)(void))st->w[15])();
+    int w;
+    int x;
+    unsigned short *text;
+    char buf[8];
+
+    if (s->state == 0)
+        return list;
+    sprintf(buf, str_d, ALLEGREX_MIN(ALLEGREX_MAX(n, 0), 999));
+    w = strlen(buf) * 10;
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = dl_set_tex_filter(list, 0, 0);
+    list = gim_set_texture(list, h->gim0);
+    list = fld_draw_cell1(list, s->pos.x - (float)w, -14.0f + s->pos.y, 0x7E, 0x20, 0x11, 0x1D);
+    list = gim_set_texture(list, gim);
+    if (st != 0 && st->w[15] != 0)
+        list = fld_digits(list, buf, 18.0f + s->pos.x, -1.0f + s->pos.y, 0, 0x57, 0, 0xC, 0x10, -2, 1.0f);
+    font_text_set(list);
+    font_set_size(15, 15);
+    font_set_flag4(1);
+    font_set_color(0xFFFFFFFF);
+    text = table_get_entry(fld_gim_get(5), 0x18);
+    x = 15.0f + s->pos.x - (float)w;
+    font_draw_text(x << 6, (int)s->pos.y << 6, (480 - x) << 6, text);
+    return font_text_clear();
 }
 
 void fld_hud_move_update(void)
