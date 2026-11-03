@@ -1,6 +1,5 @@
 // @range 0x08808214-0x08809C40
 // @asm 0x08808214-0x08808770
-// @asm 0x08808874-0x08808B8C
 // @asm 0x08808E38-0x08809034
 // @asm 0x088092E0-0x088094B4
 /* Room loading and drawing: the models of each area and their stencil shadows, the placed objects,
@@ -148,6 +147,101 @@ void fld_bg_draw_shadow(void)
                 model_draw(b->model2[i], &o);
         } else {
             model_draw(b->model2[b->area], &o);
+        }
+    }
+}
+
+int fld_bg_id(void);
+void fld_bg_slide_update(FieldObj *o);
+void fld_bg_door_update(FieldObj *o);
+
+/* doors of the room: each opens when the player comes within 0.75 of it (unless the room or the
+   story keeps it shut) and closes when it moves away; then the hinged (info[1] 1) or sliding (0)
+   animation */
+void fld_bg_doors_update(void)
+{
+    FieldBg *b = &field_bg_state;
+    FieldChr *pl = fld_player_get();
+    FieldStory *st = fld_story_get();
+    FieldCtx *ctx = fld_ctx_get();
+    int i;
+    FieldObj *o;
+    int near;
+    int ok;
+    Vec3 p;
+    Vec3 d;
+
+    if (pl == 0)
+        return;
+    if (ctx->pad10 == 0)
+        return;
+    for (i = 0; i < b->n_objs; i++) {
+        o = &b->obj[i];
+        p.x = ((float *)o->info)[3] + -1.0f * b->light.x;
+        p.y = ((float *)o->info)[4] + -1.0f * b->light.y;
+        p.z = ((float *)o->info)[5] + -1.0f * b->light.z;
+        ok = 1;
+        vec3_sub(&d, &pl->pos, &p);
+        near = fld_vec3_len(&d) <= 0.75f;
+        switch (fld_bg_id()) {
+        case 2:
+            if (ctx->x14 != 0)
+                ok = 0;
+            break;
+        case 12:
+        case 37:
+            if (*(int *)st->w[3] >= 22) {
+                switch (o->info[10]) {
+                case 13:
+                case 14:
+                case 15:
+                case 16:
+                case 17:
+                case 18:
+                case 19:
+                case 38:
+                    ok = 0;
+                    break;
+                }
+            }
+            break;
+        }
+        switch (o->mode) {
+        case 0:
+        default:
+            if (!near) {
+                o->mode = 3;
+                if (o->info[1] == 0)
+                    fld_bg_door_se(1, o->info[1]);
+            }
+            break;
+        case 1:
+            if (!near) {
+                o->mode = 3;
+                if (o->info[1] == 0)
+                    fld_bg_door_se(1, o->info[1]);
+            }
+            break;
+        case 2:
+            if (near && ok) {
+                o->mode = 1;
+                fld_bg_door_se(0, o->info[1]);
+            }
+            break;
+        case 3:
+            if (near && ok) {
+                o->mode = 1;
+                fld_bg_door_se(0, o->info[1]);
+            }
+            break;
+        }
+        switch (o->info[1]) {
+        case 0:
+            fld_bg_slide_update(o);
+            break;
+        case 1:
+            fld_bg_door_update(o);
+            break;
         }
     }
 }

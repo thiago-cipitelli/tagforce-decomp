@@ -10,7 +10,7 @@ void fld_bg_model_update(int id);              /* 0x088099F8 */
 FieldChr *fld_player_get(void);                /* 0x0880B170 */
 void fld_pos_to_cell(float x, float z, int *cx, int *cz); /* 0x08807F24 */
 int fld_area_at(int cx, int cz);               /* 0x08808804 */
-void fld_bg_cam_update(void);                  /* 0x08808874 */
+void fld_bg_doors_update(void);                  /* 0x08808874 */
 void fld_load_bg(int id, void (*cb)(), int arg); /* 0x0880C56C */
 void fld_bg_loaded();                          /* 0x08808214 */
 void *fld_story_get(void);                     /* 0x08811130 */
@@ -80,7 +80,7 @@ void fld_bg_update(void)
             b->area = a;
         }
     }
-    fld_bg_cam_update();
+    fld_bg_doors_update();
     if (b->fade == 1) {
         if (b->fade_t < 30)
             b->fade_t++;
