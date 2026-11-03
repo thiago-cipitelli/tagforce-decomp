@@ -225,6 +225,55 @@ void fld_hud_move_update(void)
     }
 }
 
+extern const unsigned char field_move_digits[10][2]; /* 0x088389C0 big digit cells (u, v), 40 x 48 */
+extern const FieldHudCell field_move_minus;     /* 0x088389D4 */
+void *fld_digit(float scale, void *list, int x, int y, int z, int u, int v, int w, int h, int frame);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 1 palavra: mul.s f0,s,38 no original, f0,38,s aqui (mesmo padrão de fld_bg_door_update; ordem dos operandos, 38/38.0f/(float)38 não mudam) */
+/* the step count of the HUD (move.arg, scaled by move.s): its plate, a minus when negative and the
+   big digits */
+void *fld_hud_move_draw(void *list)
+{
+    FieldHud *h = &field_hud;
+    FieldHudMove *m = &field_hud.move;
+    void *gim = fld_gim_get(2);
+    float off;
+    int i;
+    char buf[8];
+
+    switch (m->on) {
+    case 1:
+    case 2:
+        list = dl_set_tex_filter(list, 0, 0);
+        list = gim_set_texture(list, h->gim0);
+        if (m->arg < 0)
+            off = (float)(field_move_minus.w - 2) * m->s;
+        else
+            off = 0.0f;
+        list = draw_set_offsets(list, 17, 29, 17, 29);
+        list = draw_sprite(list, -10.0f + (m->pos.x - 8.5f) - (float)(int)off, m->pos.y - 14.5f, 0, 126, 32, 0, 0);
+        list = gim_set_texture(list, gim);
+        if (m->arg < 0) {
+            sprintf(buf, str_d, -m->arg);
+            list = fld_digit(m->s, list, m->pos.x - (float)(field_move_minus.w - 2) * m->s,
+                             m->pos.y - 0.5f * ((float)field_move_minus.h * m->s), 0, field_move_minus.u,
+                             field_move_minus.v, field_move_minus.w, field_move_minus.h, 0);
+        } else {
+            sprintf(buf, str_d, m->arg);
+        }
+        for (i = strlen(buf) - 1; i >= 0; i--) {
+            int d = buf[i] - '0';
+
+            list = fld_digit(m->s, list, m->pos.x + (float)((int)(38.0f * m->s) * i),
+                             m->pos.y - 0.5f * (48.0f * m->s), 0, field_move_digits[d][0], field_move_digits[d][1],
+                             40, 48, 0);
+        }
+        return list;
+    }
+    return list;
+}
+#endif
+
 void fld_hud_panel_free(void)
 {
 }
