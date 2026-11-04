@@ -6,7 +6,6 @@
 // @asm 0x08815F04-0x08816468
 // @asm 0x088164A0-0x08816550
 // @asm 0x08816550-0x08816874
-// @asm 0x08816938-0x08816CD8
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
    entry is taken out, flown along a curve from its slot to the slot it lands in and added to the
@@ -569,68 +568,74 @@ int sc_dst_pos(int tab, unsigned short id)
 /* messages of popup 2 */
 unsigned short sc_popup_msgs[6] = { 0, 0x22, 0x23, 0x84, 0x29, 0 };
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* opens popup id: 4 search/filter result (arg = count), 3 quit confirmation, 2 message arg */
 void sc_popup_open(int id, int arg)
 {
+    MenuWidget *m = &sc_popup;
+    MenuItemDef *d = &sc_popup.def;
     unsigned char buttons = 1;
 
-    memset(&sc_popup, 0, 0x120);
+    memset(m, 0, 0x120);
     memset(sc_popup_text, 0, 0x800);
-    if (id == 4) {
-        if (arg == 0)
-            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x89));
-        else
-            wsprintf(sc_popup_text, table_get_entry(res_get(0x8033), 0x81), arg);
-        sc_popup.initial = 1;
-        sc_popup.def.max_h = 0x50;
-        sc_popup.cancel_resets = 1;
-    } else if (id == 3) {
+    switch ((unsigned short)id) {
+    case 2:
+        wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), sc_popup_msgs[(unsigned short)arg]));
+        m->cancel_blocked = 1;
+        break;
+    case 3:
         switch (sc.kind) {
-        case 2:
-            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x99));
+        case 0:
+            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x97));
             break;
         case 1:
-            if (sc.list[1].total < 10)
+            if ((unsigned int)sc.list[1].total < 10)
                 wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x9A));
             else
                 wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x98));
             break;
-        case 0:
-            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x97));
+        case 2:
+            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x99));
             break;
         }
-        sc_popup.initial = 4;
-        sc_popup.cancel_resets = 1;
+        m->initial = 4;
         buttons = 2;
-    } else if (id == 2) {
-        wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), sc_popup_msgs[arg]));
-        sc_popup.cancel_blocked = 1;
+        m->cancel_resets = 1;
+        break;
+    case 4:
+        if ((unsigned short)arg <= 0)
+            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x89));
+        else
+            wsprintf(sc_popup_text, table_get_entry(res_get(0x8033), 0x81), (unsigned short)arg);
+        d->auto_size = 1;
+        m->initial = 1;
+        d->max_h = 0x50;
+        m->cancel_resets = 1;
+        break;
     }
-    sc_popup.def.visible = 1;
-    sc_popup.def.auto_size = 1;
-    sc_popup.def.font_flag4 = 1;
-    sc_popup.def.max_w = 0xF0;
-    sc_popup.def.color = 0xFFFFFFFF;
-    sc_popup.def.pad_l = 10;
-    sc_popup.def.pad_r = 10;
-    sc_popup.def.pad_t = 8;
-    sc_popup.def.font_size = 0xC;
-    sc_popup.def.text_color = 0xFF000000;
-    sc_popup.def.text = sc_popup_text;
-    sc_popup.def.open_anim = 2;
-    sc_popup.def.close_anim = 2;
-    sc_popup.heap = sc.heap;
-    sc_popup.no_cancel = 1;
-    sc_popup.buttons = buttons;
-    sc_popup.def.style = 0;
-    sc_popup.def.pad_b = 0;
-    menu_open(&sc_popup);
-    sc_popup.def.x = (0x1E0 - sc_popup.def.w) / 2;
-    sc_popup.def.y = (0x110 - sc_popup.def.h) / 2;
+    d->visible = 1;
+    d->auto_size = 1;
+    d->font_flag4 = 1;
+    d->max_w = 0xF0;
+    d->color = 0xFFFFFFFF;
+    d->pad_l = 10;
+    d->pad_r = 10;
+    d->pad_t = 8;
+    d->font_size = 0xC;
+    d->text_color = 0xFF000000;
+    d->text = sc_popup_text;
+    d->open_anim = 2;
+    d->close_anim = 2;
+    m->heap = sc.heap;
+    m->no_cancel = 1;
+    m->buttons = buttons;
+    d->style = 0;
+    d->pad_b = 0;
+    menu_open(m);
+    d->x = (0x1E0 - d->w) / 2;
+    d->y = (0x110 - d->h) / 2;
     scv.popup = id;
 }
-#endif
+
 
 /* the popup's input; Yes on the quit confirmation saves and leaves */
 void sc_popup_update(void)

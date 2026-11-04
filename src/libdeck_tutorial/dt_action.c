@@ -1,5 +1,4 @@
 // @range 0x08814D44-0x08816C34
-// @asm 0x08815494-0x088155B0
 // @data 0x088221E4-0x0882225C
 /* (The code of libdeck dk_action.c.) The card action menu and its sub-menus: info, favourite mark, sort/filter/search submenu, deck
    operations (rename, clear, reset, ...), pane layout picker (2x4 grid of layouts), "new" mark
@@ -227,7 +226,6 @@ void dt_action_step0(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original grava o estado no atraso de cada desvio para o retorno comum (lui içado); mesma lógica */
 /* step 10: wait for the close, then run the chosen action */
 int dt_action_close(void)
 {
@@ -244,16 +242,20 @@ int dt_action_close(void)
         l = dtv.pane[dtv.side].list;
         dt_list_filter_reset(l);
         dt_list_sort(l, l->sort, l->dir);
+        dts.state = 0;
         break;
     case 6:
-        if (dt_flight_undo())
-            return 0;
+        if (dt_flight_undo() == 0) {
+            dts.state = 0;
+            break;
+        }
+        return 0;
+    default:
+        dts.state = 0;
         break;
     }
-    dts.state = 0;
     return 0;
 }
-#endif
 
 /* a sub-menu window beside the action menu */
 int dt_sub_open(unsigned short title, unsigned short text, unsigned short count, MenuDrawItemFn draw)

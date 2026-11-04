@@ -1,5 +1,4 @@
 // @range 0x0880E64C-0x0880FFCC
-// @asm 0x0880E95C-0x0880EA84
 // @data 0x0881B378-0x0881B3DC
 /* The card action menu and its sub-menus: favourite mark, card info, sort/filter submenu, clear
    or reset the list, pane layout picker (2x4 grid of layouts), "new" mark picker, the items drawn
@@ -111,7 +110,6 @@ void sc_action_step0(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original duplica a gravação do estado depois do mover (bloco esvaziado pelo desvio likely) */
 /* step 10: wait for the close, then run the chosen action */
 int sc_action_close(void)
 {
@@ -128,16 +126,20 @@ int sc_action_close(void)
         l = scv.pane[scv.side].list;
         sc_list_filter_reset(l);
         sc_list_sort(l, l->sort, l->dir);
+        sc.state = 1;
         break;
     case 6:
-        if (sc_input_move())
-            return 0;
+        if (sc_input_move() == 0) {
+            sc.state = 1;
+            break;
+        }
+        return 0;
+    default:
+        sc.state = 1;
         break;
     }
-    sc.state = 1;
     return 0;
 }
-#endif
 
 /* a sub-menu window beside the action menu */
 int sc_sub_open(unsigned short title, unsigned short text, unsigned short count, MenuDrawItemFn draw)

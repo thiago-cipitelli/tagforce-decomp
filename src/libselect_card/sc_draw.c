@@ -1,5 +1,5 @@
 // @range 0x08807630-0x08808040
-// @asm 0x08807858-0x08807B44
+// @rodata 0x0881A93C-0x0881A960
 /* Frame drawing: the export called once per frame (clear, background, panes, popups, fade), the
    popup layer over the panes (focus frame, help window, the popup of each state), and the background:
    bg.ehf, the window of the kind, the row lines of the panes and the title. */
@@ -75,14 +75,12 @@ void libselect_card_08807630(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original calcula a base de scv.pane[lado] uma vez e a reaproveita nos dois blocos; o mwcc atual a recalcula */
 /* focus frame and help window (help position away from the cursor), then the state's popup */
 void *sc_draw_overlay(void *list)
 {
     ScRect *f = &sc.focus;
     int hx;
     int hy;
-    void *gim;
 
     switch (sc.state) {
     case 7:
@@ -102,10 +100,13 @@ void *sc_draw_overlay(void *list)
                 hy = 0x70;
             }
         } else {
-            if (scv.pane[scv.side].list_mode == 1)
+            /* the view shifted by side panes: pane[0] is the cursor's pane */
+            ScView *v = (ScView *)((char *)&scv + scv.side * sizeof(ScPane));
+
+            if (v->pane[0].list_mode == 1)
                 hx = 0xD0;
-            else if (f->x + f->w > scv.pane[scv.side].lay.x + scv.pane[scv.side].lay.w / 2)
-                hx = scv.pane[scv.side].lay.x + 2;
+            else if (f->x + f->w > v->pane[0].lay.x + v->pane[0].lay.w / 2)
+                hx = v->pane[0].lay.x + 2;
             else
                 hx = 0xD0;
             if (f->y + f->h / 2 > 0x88)
@@ -114,11 +115,11 @@ void *sc_draw_overlay(void *list)
                 hy = 0xA2;
         }
     case 1:
-        gim = res_get(0x8006);
-        list = sc_draw_frame(list, f->x, f->y, f->w, f->h, gim, gfx_get_state()[0]);
+        list = sc_draw_frame(list, f->x, f->y, f->w, f->h, res_get(0x8006), *(int *)gfx_get_state());
     }
     switch (sc.state) {
     case 0:
+        break;
     case 1:
         break;
     case 2:
@@ -148,7 +149,6 @@ void *sc_draw_overlay(void *list)
         list = sc_draw_popup(list);
     return list;
 }
-#endif
 
 void *sc_draw_bg(void *list)
 {

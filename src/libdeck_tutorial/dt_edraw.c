@@ -1,14 +1,13 @@
 // @range 0x08805BE4-0x08808C6C
+// @rodata 0x08820F58-0x08820F78
 // @asm 0x08805BE4-0x08805FC0
 // @asm 0x088063E0-0x088068F0
-// @asm 0x08806A6C-0x08806D54
 // @asm 0x088071CC-0x0880779C
 // @asm 0x08807A5C-0x08807B58
 // @asm 0x08807DB8-0x08807EC0
 // @asm 0x08807F60-0x08808098
 // @asm 0x088082AC-0x088087EC
 // @asm 0x088087EC-0x08808924
-// @asm 0x08808924-0x08808C6C
 // @data 0x08821E34-0x08821E70
 /* Drawing of the deck editor (the libdeck screen the lesson runs on): the card info strip, the icon
    wrappers, the pane shade, the sort value bubble, the frame export (clear, background, panes, focus
@@ -389,47 +388,51 @@ void dt_editor_draw(void)
     }
 }
 
-#ifdef NON_MATCHING /* chamadas por estado corrigidas pela tabela de saltos (1 dt_flight_draw, 2 dt_action_draw, 3 dt_sort_menu_draw, 4 dt_fmenu_draw, 5 dt_draw_word); o resto ainda difere (772 contra 744 bytes) */
 /* focus frame and help window (help position away from the cursor), then the state's popup */
 void *dt_draw_overlay(void *list)
 {
     DtRect *f = &dts.focus;
     int hx;
     int hy;
-    void *gim;
 
     switch (dts.state) {
     case 6:
     case 7:
-        if (dtv.mode < 2) {
-            if (dtv.pane[dtv.side].list_mode == 1)
-                hx = 0xD0;
-            else if (dtv.pane[dtv.side].lay.x + dtv.pane[dtv.side].lay.w / 2 < f->x + f->w)
-                hx = dtv.pane[dtv.side].lay.x + 2;
-            else
-                hx = 0xD0;
-            if (f->y + f->h / 2 < 0x89)
-                hy = 0xA2;
-            else
-                hy = 0x36;
-        } else if (dtv.mode < 4) {
-            hx = dtv.pane[0].lay.x + 2;
-            if (f->y + f->h / 2 < 0x89)
-                hy = 0xA2;
-            else
-                hy = 0x36;
+        if (dtv.mode > 1) {
+            if (dtv.mode < 4) {
+                hx = dtv.pane[0].lay.x + 2;
+                if (f->y + f->h / 2 > 136)
+                    hy = 54;
+                else
+                    hy = 162;
+            } else {
+                if (dtv.side == 0)
+                    hx = 254;
+                else
+                    hx = 14;
+                hy = 112;
+            }
         } else {
-            if (dtv.side == 0)
-                hx = 0xFE;
+            /* the view shifted by side panes: pane[0] is the cursor's pane */
+            DtView *v = (DtView *)((char *)&dtv + dtv.side * sizeof(DtPane));
+
+            if (v->pane[0].list_mode == 1)
+                hx = 208;
+            else if (f->x + f->w > v->pane[0].lay.x + v->pane[0].lay.w / 2)
+                hx = v->pane[0].lay.x + 2;
             else
-                hx = 0x0E;
-            hy = 0x70;
+                hx = 208;
+            if (f->y + f->h / 2 > 136)
+                hy = 54;
+            else
+                hy = 162;
         }
     case 0:
-        gim = dt_eres_get(0x8006);
-        list = dt_draw_frame(list, f->x, f->y, f->w, f->h, gim, gfx_get_state()[0]);
+        list = dt_draw_frame(list, f->x, f->y, f->w, f->h, dt_eres_get(0x8006), *(int *)gfx_get_state());
     }
     switch (dts.state) {
+    case 0:
+        break;
     case 1:
         list = dt_flight_draw(list);
         break;
@@ -457,7 +460,7 @@ void *dt_draw_overlay(void *list)
         list = dt_popup_draw(list);
     return list;
 }
-#endif
+
 
 void *dt_draw_bg(void *list)
 {
@@ -1022,12 +1025,11 @@ void *dt_draw_rows_small(void *list, DtPane *p)
 }
 #endif
 
-#ifdef NON_MATCHING
 void *dt_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, DtEnt *e, int blink)
 {
     unsigned short attr = card_get_attribute_icon(e->id);
-    int atk;
-    int def;
+    unsigned short atk;
+    unsigned short def;
     unsigned short level;
     unsigned short tx;
 
@@ -1056,12 +1058,11 @@ void *dt_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned
         def = card_get_def_q(e->id);
         level = card_get_level(e->id);
         tx = x + 25;
-        list = dt_draw_stat(list, atk << 16 | 2, tx | (y + 13) << 16, 0xA09, 0xFF000000, dt_eres_get(0x8009));
-        list = dt_draw_stat(list, def << 16 | 3, tx | (y + 23) << 16, 0xA09, 0xFF000000, dt_eres_get(0x8009));
-        list = dt_draw_level(list, (unsigned short)(x + 69) | (y + 20) << 16, level, 0xFF000000, dt_eres_get(0x8009));
+        list = dt_draw_stat(list, atk << 16 | 2, PT(tx, y + 13), 0xA09, 0xFF000000, dt_eres_get(0x8009));
+        list = dt_draw_stat(list, def << 16 | 3, PT(tx, y + 23), 0xA09, 0xFF000000, dt_eres_get(0x8009));
+        list = dt_draw_level(list, PT(x + 69, y + 20), level, 0xFF000000, dt_eres_get(0x8009));
     }
     if (inv_get_flag7(e->id))
-        list = dt_draw_flag_icon(list, (unsigned short)(x + 78) | (y + 13) << 16, 2, dt_eres_get(0x800A));
+        list = dt_draw_flag_icon(list, PT(x + 78, y + 13), 2, dt_eres_get(0x800A));
     return list;
 }
-#endif

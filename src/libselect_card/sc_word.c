@@ -1,5 +1,4 @@
 // @range 0x08813CF4-0x08815168
-// @asm 0x088144FC-0x088146E0
 // @asm 0x08814F40-0x08815168
 // @data 0x0881B510-0x0881B51C
 /* The word search (state 6): a window with the word, the last words used and an OK button; the
@@ -229,14 +228,14 @@ void sc_word_free(void)
     sc_word = 0;
 }
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* the history list under the word (when there are words) */
 int sc_word_reset(void)
 {
     int n = 0;
     int i;
     MenuWidget *m;
-    short y;
+    int y;
+    MenuItemDef *def;
 
     for (i = 0; i < 8; i++) {
         if (sc.words[i][0] == 0)
@@ -252,20 +251,21 @@ int sc_word_reset(void)
         if (m == 0)
             return 0;
     }
+    def = &m->def;
     memset(m, 0, 0x120);
-    m->def.visible = 1;
-    m->def.style = 0;
+    def->visible = 1;
+    def->style = 0;
     y = menu_cursor_y(&sc_word->menu->menu, &sc_word->menu->def);
-    m->def.x = sc_word->menu->def.x + 6;
-    m->def.y = y + 0xF;
-    m->def.auto_size = 1;
-    m->def.anchor = -1;
-    m->def.pad_l = 1;
-    m->def.pad_t = 3;
-    m->def.pad_r = 1;
-    m->def.pad_b = 1;
-    m->def.open_anim = 1;
-    m->def.close_anim = 1;
+    def->x = sc_word->menu->def.x + 6;
+    def->y = y + 0xF;
+    def->auto_size = 1;
+    def->color = 0xFFFFFFFF;
+    def->pad_l = 1;
+    def->pad_t = 3;
+    def->pad_r = 1;
+    def->pad_b = 1;
+    def->open_anim = 1;
+    def->close_anim = 1;
     m->heap = sc.heap;
     m->no_cancel = 1;
     m->no_wrap = 1;
@@ -279,7 +279,6 @@ int sc_word_reset(void)
     menu_open(m);
     return 1;
 }
-#endif
 
 /* the progress bar window */
 void sc_word_bar_open(void)
