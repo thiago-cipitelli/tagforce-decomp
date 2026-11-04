@@ -1,12 +1,116 @@
 // @range 0x08814D94-0x08815FD8
-// @asm 0x08814D94-0x088158BC
 // @asm 0x08815984-0x08815AA8
 // @rodata 0x08838AC4-0x08838AE0
 /* Sprite digits and strings of digits of the HUD, the icons of the day parts and the hands of the
    clock (rotated quads, still in asm). */
 #include "libfield.h"
+#include "allegrex.h"
 
 void *fld_clock_hand(float angle, void *list, int x, int y, int z, int u, int v, int w, int h);
+
+extern const FieldHudCell field_hudbox_cells[2];   /* 0x08838A1C the plate and the per-unit bar */
+extern const int field_hudbox_pos[9][2];           /* 0x08838A34 plate, bar, text, then (number, label) x 3 */
+extern const int field_hudbox_icons[3][2];         /* 0x08838AAC */
+void *fld_draw_cell1(void *list, int x, int y, int u, int v, int w, int h);
+
+/* the counter n (clamped to 0..999) as three digits from the right, starting dx right of (px, py) */
+#define FLD_HUD_COUNT(n, px, py, dx)                                                          \
+    if ((n) >= 0) {                                                                            \
+        int c = ALLEGREX_MIN(ALLEGREX_MAX((n), 0), 999);                                       \
+        int x0 = (px);                                                                         \
+        int y0 = (py);                                                                         \
+                                                                                               \
+        for (i = 0; i < 3; i++) {                                                              \
+            buf[1] = 0;                                                                        \
+            buf[0] = c % 10 + '0';                                                             \
+            c /= 10;                                                                           \
+            font_text_set(list);                                                               \
+            x = s->pos.x + (float)x0 + (float)((2 - i) * 12) dx;                                \
+            font_draw_text(x << 6, (int)(s->pos.y + (float)y0) << 6, (480 - x) << 6, buf);     \
+            list = font_text_clear();                                                          \
+        }                                                                                      \
+    }
+
+#define FLD_HUD_LABEL(n, k, e)                                                                 \
+    if ((n) >= 0) {                                                                            \
+        font_text_set(list);                                                                   \
+        text = table_get_entry(fld_gim_get(5), e);                                             \
+        font_draw_text((int)(s->pos.x + (float)field_hudbox_pos[k][0]) << 6,                    \
+                       (int)(s->pos.y + (float)field_hudbox_pos[k][1]) << 6,                    \
+                       (480 - (int)(s->pos.x + (float)field_hudbox_pos[k][0])) << 6, text);     \
+        list = font_text_clear();                                                              \
+    }
+
+/* the info box of the HUD (field_hud.boxw): its text, the three counters p[1..3] (with labels in the
+   Japanese layout, icons otherwise), the plate and the bar of p[4] units */
+void *fld_hud_draw_all(void *list)
+{
+    FieldHud *h = &field_hud;
+    int *p = field_hud.p;
+    FieldHudName *s = &field_hud.boxw;
+    int i;
+    int x;
+    unsigned short *text;
+    const FieldHudCell *c;
+    const int (*q)[2];
+    int n;
+    unsigned short buf[256];
+
+    fld_story_get();
+    if (s->state == 0)
+        return list;
+    font_set_size(15, 15);
+    font_set_flag4(1);
+    font_set_color(0xFF000000);
+    if (p[0] != 0) {
+        font_text_set(list);
+        font_draw_wtext((int)(s->pos.x + (float)field_hudbox_pos[2][0]) << 6,
+                        (int)(s->pos.y + (float)field_hudbox_pos[2][1]) << 6, 0x2580, (unsigned short *)p[0]);
+        list = font_text_clear();
+    }
+    if (region_get() == 0) {
+        FLD_HUD_COUNT(p[1], field_hudbox_pos[3][0], field_hudbox_pos[3][1], )
+        FLD_HUD_COUNT(p[2], field_hudbox_pos[5][0], field_hudbox_pos[5][1], )
+        FLD_HUD_COUNT(p[3], field_hudbox_pos[7][0], field_hudbox_pos[7][1], )
+        FLD_HUD_LABEL(p[1], 4, 15)
+        FLD_HUD_LABEL(p[2], 6, 16)
+        FLD_HUD_LABEL(p[3], 8, 17)
+    } else {
+        FLD_HUD_COUNT(p[1], field_hudbox_pos[3][0], field_hudbox_pos[3][1], + 15.0f)
+        FLD_HUD_COUNT(p[2], field_hudbox_pos[5][0], field_hudbox_pos[5][1], + 15.0f)
+        FLD_HUD_COUNT(p[3], field_hudbox_pos[7][0], field_hudbox_pos[7][1], + 15.0f)
+        list = gim_set_texture(list, h->gim19);
+        list = dl_ambient_color(list, 0xFFFFFFFF);
+        list = dl_set_tex_filter(list, 0, 0);
+        if (p[1] >= 0)
+            list = fld_draw_cell1(list, s->pos.x + (float)field_hudbox_pos[3][0], s->pos.y + (float)field_hudbox_pos[3][1] + 1.0f,
+                                  field_hudbox_icons[0][0], field_hudbox_icons[0][1], 13, 13);
+        if (p[2] >= 0)
+            list = fld_draw_cell1(list, s->pos.x + (float)field_hudbox_pos[5][0], s->pos.y + (float)field_hudbox_pos[5][1] + 1.0f,
+                                  field_hudbox_icons[1][0], field_hudbox_icons[1][1], 13, 13);
+        if (p[3] >= 0)
+            list = fld_draw_cell1(list, s->pos.x + (float)field_hudbox_pos[7][0], s->pos.y + (float)field_hudbox_pos[7][1] + 1.0f,
+                                  field_hudbox_icons[2][0], field_hudbox_icons[2][1], 13, 13);
+    }
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = dl_set_tex_filter(list, 0, 0);
+    c = field_hudbox_cells;
+    q = field_hudbox_pos;
+    if (p[0] != 0) {
+        list = gim_set_texture(list, *(void **)((char *)h + c[0].gim * 4 + 4)); /* (&h->gim0)[gim] */
+        list = fld_draw_cell1(list, s->pos.x + (float)q[0][0], s->pos.y + (float)q[0][1],
+                              c[0].u, c[0].v, c[0].w,
+                              c[0].h);
+    }
+    n = p[4];
+    if (n > 0) {
+        list = gim_set_texture(list, (&h->gim0)[field_hudbox_cells[1].gim]);
+        list = fld_draw_cell1(list, s->pos.x + (float)field_hudbox_pos[1][0], s->pos.y + (float)field_hudbox_pos[1][1],
+                              field_hudbox_cells[1].u, field_hudbox_cells[1].v, n * field_hudbox_cells[1].w,
+                              field_hudbox_cells[1].h);
+    }
+    return list;
+}
 
 void fld_hud_draw_free(void)
 {

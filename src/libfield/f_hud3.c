@@ -21,11 +21,6 @@ void *fld_draw_cell1(void *list, int x, int y, int u, int v, int w, int h);
 void *fld_clock_hands(void *list, int x, int y, int z, int h, int m);
 void *fld_day_icon(void *list, int n, int x, int y, int z);
 
-typedef struct FieldHudCell {           /* sprite of a HUD part, 0xC */
-    short u, v, w, h;
-    int gim;                           /* index in field_hud.gim0.. */
-} FieldHudCell;
-
 void *fld_hud_clock_face(void *list, int dx1, int dx2, int dx3);
 extern const char str_d[];
 void *fld_digits(void *list, char *s, int x, int y, int z, int u, int v, int w, int h, int gap,

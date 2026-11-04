@@ -94,8 +94,6 @@ segments:
       - [0xF01C, c, f_hud2]
       - [0xF368, c, f_hud3]
       - [0x10DF4, c, f_digits]
-      - [0x10DF4, asm, f_digits_asm_08814D94]
-      - [0x1191C, c, f_digits]
       - [0x119E4, asm, f_digits_asm_08815984]
       - [0x11B08, c, f_digits]
       - [0x12038, c, f_msg]

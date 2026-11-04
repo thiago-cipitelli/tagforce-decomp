@@ -1147,7 +1147,6 @@ fuzzy	size	module	function	address	file
 0.0	1840	libfield	fld_scene_update	0x08810814	src/libfield/f_scene.c
 0.0	2400	libduel_eng	duel_088C5510	0x088C5510	src/libduel_eng/duel_draws.c
 0.0	2544	BOOT	wsprintf	0x08842724	src/BOOT/wfmt.c
-0.0	2856	libfield	fld_hud_draw_all	0x08814D94	src/libfield/f_digits.c
 0.0	3008	libduel_eng	duel_088C4864	0x088C4864	src/libduel_eng/duel_draws.c
 0.0	3268	libduel_eng	duel_leave_mark	0x088CEEE0	src/libduel_eng/leave_field.c
 0.0	4140	libshop	shop_glow_ultra	0x08816DA8	src/libshop/shop_glow.c

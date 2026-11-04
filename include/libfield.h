@@ -148,6 +148,11 @@ typedef struct FieldVtx {              /* GU vertex: texture, color, position */
     float x, y, z;
 } FieldVtx;
 
+typedef struct FieldHudCell {           /* sprite of a HUD part, 0xC */
+    short u, v, w, h;
+    int gim;                           /* index in field_hud.gim0.. */
+} FieldHudCell;
+
 typedef struct FieldTexVtx {           /* GU vertex 0x80011E: 16-bit uv, colour, 16-bit 2D position */
     short u, v;
     unsigned int color;
