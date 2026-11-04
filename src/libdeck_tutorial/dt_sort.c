@@ -247,7 +247,7 @@ void *dt_draw_dir_item(void *list, int i, int x, int y)
     return dt_draw_ibutton(list, &dt_dir_icons[i], x, y + 1, 0);
 }
 
-#ifdef NON_MATCHING /* 7 palavras: base, h e a soma em a3/a2/a1 no original e a1/a3/a2 aqui (como sc/dk/ds_sort_menu_place); ordem das declarações e das instruções, sem temporários e com a soma separada não resolvem */
+#ifdef NON_MATCHING /* 4 palavras: com y separado (y = h >> 1; y += cursor * h) só base e y trocam a1/a3 no original; ordem das declarações e das atribuições não resolve */
 /* keeps the direction menu beside the key under the cursor */
 void dt_sort_menu_place(void)
 {
@@ -255,8 +255,11 @@ void dt_sort_menu_place(void)
     MenuWidget *d = dt_sort_menu->dirs;
     int base = dt_sort_menu->base_y;
     unsigned int h = k->item_h;
+    unsigned int y;
 
-    d->def.y = base + ((h >> 1) + k->cursor * h) - d->def.h / 2;
+    y = h >> 1;
+    y += k->cursor * h;
+    d->def.y = base + y - d->def.h / 2;
 }
 #endif
 

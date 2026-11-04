@@ -1,7 +1,6 @@
 // @range 0x088135A8-0x08814460
 // @asm 0x08813888-0x088139EC
 // @asm 0x088139EC-0x08813B7C
-// @asm 0x088140F8-0x088143A8
 // @rodata 0x08821050-0x0882106C
 // @data 0x08822024-0x08822050
 /* (The code of libdeck dk_filter.c, first half; the lesson has no "new" filter.) Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
@@ -349,7 +348,6 @@ int dt_text_match(unsigned short id, unsigned short *word)
 }
 
 
-#ifdef NON_MATCHING /* 2 palavras: move t2,a3 (j) no delay do bne em vez de antes dele; while/for(;;) e ordem das atribuições não resolvem */
 /* Horspool search of word (n chars) in text */
 unsigned short *dt_find_text(unsigned short *text, unsigned short *word, int n)
 {
@@ -378,8 +376,8 @@ unsigned short *dt_find_text(unsigned short *text, unsigned short *word, int n)
     for (k = n - 1; k < len; ) {
         t = &text[k];
         j = n - 1;
-        w = &word[j];
-        if (*t == *w) {
+        if (*t == word[j]) {
+            w = &word[j];
             do {
                 if (j == 0) {
                     if (skip != 0)
@@ -401,7 +399,6 @@ unsigned short *dt_find_text(unsigned short *text, unsigned short *word, int n)
         heap_set_level(dts.heap, skip);
     return 0;
 }
-#endif
 
 
 /* upper case, full-width ASCII to half width, katakana to hiragana */

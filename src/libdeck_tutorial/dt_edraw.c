@@ -4,7 +4,6 @@
 // @asm 0x088063E0-0x088068F0
 // @asm 0x088071CC-0x0880779C
 // @asm 0x08807A5C-0x08807B58
-// @asm 0x08807DB8-0x08807EC0
 // @asm 0x08807F60-0x08808098
 // @asm 0x088082AC-0x088087EC
 // @asm 0x088087EC-0x08808924
@@ -796,7 +795,6 @@ void *dt_draw_type_bar(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING
 /* one segment of the bar: a 3-texel strip of icon05.gim row 0x7A + kind, rotated by dir */
 void *dt_draw_type_seg(void *list, int x, int y, int len, int dir, int kind)
 {
@@ -816,12 +814,12 @@ void *dt_draw_type_seg(void *list, int x, int y, int len, int dir, int kind)
         len = 3;
         break;
     default:
+        w = 3;
         break;
     }
     list = draw_set_offsets(list, 3, 1, w, len);
     return draw_sprite(list, x, y, 0, 0, kind + 0x7A, 0, dir);
 }
-#endif
 
 void *dt_draw_panes(void *list)
 {

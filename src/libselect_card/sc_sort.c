@@ -1,12 +1,11 @@
 // @range 0x0880FFCC-0x08810BF4
-// @asm 0x0880FFCC-0x08810440
-// @asm 0x08810440-0x08810868
 // @asm 0x088109CC-0x08810A20
 // @data 0x0881B3DC-0x0881B424
 /* The sort menu (state 4): a list of the nine sort keys and a small up/down menu beside it; the
    pane is re-sorted live while the cursor moves, and restored on cancel. Sort/direction icons. */
 #include "libselect_card.h"
 #include "menu.h"
+void sc_list_sort(ScList *l, unsigned short sort, unsigned short dir);
 
 typedef struct ScButton {
     unsigned short res;
@@ -15,10 +14,10 @@ typedef struct ScButton {
 } ScButton;
 
 typedef struct ScSortMenu {            /* sc_sort_menu 0x0881B988, 0x18 bytes */
-    unsigned char step;                /* +0x00 0 open, 1 closing */
-    unsigned char focus : 2;           /* +0x01 0 key list, 1 direction */
-    unsigned char pad01 : 6;
-    unsigned short pad02;
+    unsigned short step;               /* +0x00 0 open, 1 closing */
+    unsigned char focus : 2;           /* +0x02 0 key list, 1 direction */
+    unsigned char pad02 : 6;
+    unsigned char pad03;
     unsigned short *order;             /* +0x04 order before the menu */
     unsigned char sort : 6;            /* +0x08 sort before the menu */
     unsigned char dir : 2;
@@ -37,11 +36,11 @@ void sc_sort_menu_free(void);
 void *sc_draw_sort_item(void *list, int i, int x, int y);
 void *sc_draw_dir_item(void *list, int i, int x, int y);
 
-#ifdef NON_MATCHING /* gravações dos campos dos dois menus em outra ordem */
 /* opens the sort menu on the pane with the cursor */
 void sc_input_sort(void)
 {
     ScList *l = scv.pane[scv.side].list;
+    MenuItemDef *d;
     MenuWidget *m;
     int a;
     int b;
@@ -53,25 +52,26 @@ void sc_input_sort(void)
     sc_sort_menu->keys = heap_alloc(sc.heap, 0x120);
     m = sc_sort_menu->keys;
     if (m != 0) {
+        d = &m->def;
         memset(m, 0, 0x120);
-        m->def.visible = 1;
-        m->def.style = 0;
-        m->def.y = 0x3A;
-        m->def.pad_t = 2;
-        m->def.pad_b = 2;
-        m->def.pad_l = 2;
-        m->def.pad_r = 2;
-        m->def.auto_size = 1;
-        m->def.color = 0xFFFFFFFF;
-        m->def.open_anim = 2;
-        m->def.close_anim = 2;
-        m->def.show_title = 1;
-        m->def.auto_title = 1;
-        m->def.font_flag4 = 1;
-        m->def.style2 = 2;
-        m->def.title = table_get_entry(res_get(0x8033), 0x55);
-        m->def.title_font_size = 0xC;
-        m->def.title_color = 0xFFFFFFFF;
+        d->visible = 1;
+        d->style = 0;
+        d->y = 0x3A;
+        d->pad_t = 2;
+        d->pad_b = 2;
+        d->pad_l = 2;
+        d->pad_r = 2;
+        d->auto_size = 1;
+        d->color = 0xFFFFFFFF;
+        d->open_anim = 2;
+        d->close_anim = 2;
+        d->show_title = 1;
+        d->auto_title = 1;
+        d->font_flag4 = 1;
+        d->style2 = 2;
+        d->title = table_get_entry(res_get(0x8033), 0x55);
+        d->title_font_size = 0xC;
+        d->title_color = 0xFFFFFFFF;
         m->heap = sc.heap;
         m->keep_open = 1;
         m->no_cancel = 1;
@@ -81,24 +81,25 @@ void sc_input_sort(void)
         m->item_h = 0x12;
         m->draw_item = (MenuDrawItemFn)sc_draw_sort_item;
         menu_open(m);
-        m->def.x = (0x1E0 - m->def.w) / 2;
-        sc_sort_menu->base_y = menu_cursor_y(&m->menu, &m->def) + 1;
+        d->x = (0x1E0 - d->w) / 2;
+        sc_sort_menu->base_y = menu_cursor_y(&m->menu, d) + 1;
     }
     sc_sort_menu->dirs = heap_alloc(sc.heap, 0x120);
     m = sc_sort_menu->dirs;
     if (m != 0) {
+        d = &m->def;
         memset(m, 0, 0x120);
-        m->def.visible = 1;
-        m->def.style = 0;
-        m->def.x = sc_sort_menu->keys->def.x + sc_sort_menu->keys->def.w - 4;
-        m->def.pad_t = 2;
-        m->def.pad_b = 2;
-        m->def.pad_l = 2;
-        m->def.pad_r = 2;
-        m->def.auto_size = 1;
-        m->def.color = 0xFFFFFFFF;
-        m->def.open_anim = 1;
-        m->def.close_anim = 1;
+        d->visible = 1;
+        d->style = 0;
+        d->x = sc_sort_menu->keys->def.x + sc_sort_menu->keys->def.w - 4;
+        d->pad_t = 2;
+        d->pad_b = 2;
+        d->pad_l = 2;
+        d->pad_r = 2;
+        d->auto_size = 1;
+        d->color = 0xFFFFFFFF;
+        d->open_anim = 1;
+        d->close_anim = 1;
         m->heap = sc.heap;
         m->keep_open = 1;
         m->style = 2;
@@ -106,8 +107,7 @@ void sc_input_sort(void)
         font_set_size(12, 12);
         a = font_measure_text(table_get_entry(res_get(0x8033), 0x14));
         b = font_measure_text(table_get_entry(res_get(0x8033), 0x15));
-        if (a <= b)
-            a = b;
+        a = a > b ? a : b;
         m->item_w = (a >> 6) + 0x19;
         m->item_h = 0x12;
         m->draw_item = (MenuDrawItemFn)sc_draw_dir_item;
@@ -124,71 +124,74 @@ void sc_input_sort(void)
     sc.state = 4;
     scv.lock = 1;
 }
-#endif
 
-#ifdef NON_MATCHING /* alocação e ordem dos testes diferentes */
+
 /* state 4 */
 void sc_input_search(void)
 {
     PadState *pad = pad_get();
     ScList *l = scv.pane[scv.side].list;
-    unsigned char k0 = sc_sort_menu->keys->cursor;
-    unsigned char d0 = sc_sort_menu->dirs->cursor;
+    unsigned int k0 = sc_sort_menu->keys->cursor;
+    unsigned int d0 = sc_sort_menu->dirs->cursor;
     int r;
 
-    if (sc_sort_menu->step == 1) {
-        menu_update(sc_sort_menu->keys);
-        menu_update(sc_sort_menu->dirs);
-        if (sc_sort_menu->keys->state != 6)
-            return;
-        sc_sort_menu_free();
-        scv.lock = 0;
-        sc.state = 1;
-        return;
-    }
-    if (sc_sort_menu->step != 0)
-        return;
-    sc_sort_menu_place();
-    if (sc_sort_menu->focus == 1) {
-        r = menu_update(sc_sort_menu->dirs);
-        if (pad->b.trig & 0x80) {
-            sc_sort_menu->dirs->no_cancel = 0;
-            sc_sort_menu->keys->no_cancel = 1;
-            sc_sort_menu->focus = 0;
-            se_play(0x6212);
+    switch (sc_sort_menu->step) {
+    case 0:
+        sc_sort_menu_place();
+        switch (sc_sort_menu->focus) {
+        case 0:
+            r = menu_update(sc_sort_menu->keys);
+            if (pad->b.trig & 0x20) {
+                sc_sort_menu->keys->no_cancel = 0;
+                sc_sort_menu->dirs->no_cancel = 1;
+                sc_sort_menu->focus = 1;
+                se_play(0x6212);
+            }
+            if (pad->b.trig & 0x300) {
+                sc_sort_menu->dirs->cursor = (sc_sort_menu->dirs->cursor + 1) & 1;
+                se_play(0x6212);
+            }
+            break;
+        case 1:
+            r = menu_update(sc_sort_menu->dirs);
+            if (pad->b.trig & 0x80) {
+                sc_sort_menu->dirs->no_cancel = 0;
+                sc_sort_menu->keys->no_cancel = 1;
+                sc_sort_menu->focus = 0;
+                se_play(0x6212);
+            }
+            break;
         }
-    } else if (sc_sort_menu->focus == 0) {
-        r = menu_update(sc_sort_menu->keys);
-        if (pad->b.trig & 0x20) {
-            sc_sort_menu->keys->no_cancel = 0;
-            sc_sort_menu->dirs->no_cancel = 1;
-            sc_sort_menu->focus = 1;
-            se_play(0x6212);
-        }
-        if (pad->b.trig & 0x300) {
-            sc_sort_menu->dirs->cursor = (sc_sort_menu->dirs->cursor + 1) & 1;
-            se_play(0x6212);
-        }
-    }
-    if (k0 != sc_sort_menu->keys->cursor || d0 != sc_sort_menu->dirs->cursor) {
-        memcpy(l->order, sc_sort_menu->order, l->count << 1);
-        sc_list_sort(l, sc_sort_menu->keys->cursor + 1, sc_sort_menu->dirs->cursor);
-    }
-    if (r != -1) {
-        menu_finish(sc_sort_menu->keys);
-        menu_finish(sc_sort_menu->dirs);
-        sc_sort_menu->step = 1;
-        if (r == -2) {
-            memcpy(l->order, sc_sort_menu->order, l->count << 1);
-            l->sort = sc_sort_menu->sort;
-            l->dir = sc_sort_menu->dir;
-        } else {
+        if (k0 != sc_sort_menu->keys->cursor || d0 != sc_sort_menu->dirs->cursor) {
             memcpy(l->order, sc_sort_menu->order, l->count << 1);
             sc_list_sort(l, sc_sort_menu->keys->cursor + 1, sc_sort_menu->dirs->cursor);
         }
+        if (r != -1) {
+            menu_finish(sc_sort_menu->keys);
+            menu_finish(sc_sort_menu->dirs);
+            sc_sort_menu->step = 1;
+            if (r == -2) {
+                memcpy(l->order, sc_sort_menu->order, l->count << 1);
+                l->sort = sc_sort_menu->sort;
+                l->dir = sc_sort_menu->dir;
+            } else {
+                memcpy(l->order, sc_sort_menu->order, l->count << 1);
+                sc_list_sort(l, sc_sort_menu->keys->cursor + 1, sc_sort_menu->dirs->cursor);
+            }
+        }
+        break;
+    case 1:
+        menu_update(sc_sort_menu->keys);
+        menu_update(sc_sort_menu->dirs);
+        if (sc_sort_menu->keys->state == 6) {
+            sc_sort_menu_free();
+            scv.lock = 0;
+            sc.state = 1;
+        }
+        break;
     }
 }
-#endif
+
 
 void sc_sort_menu_free(void)
 {
@@ -231,7 +234,7 @@ void *sc_draw_dir_item(void *list, int i, int x, int y)
     return sc_draw_button(list, &sc_dir_icons[i], x, y + 1, 0);
 }
 
-#ifdef NON_MATCHING /* temporários a1/a2/a3 trocados */
+#ifdef NON_MATCHING /* 4 palavras: com y separado (y = h >> 1; y += cursor * h) só base e y trocam a1/a3 no original; ordem das declarações e das atribuições não resolve */
 /* keeps the direction menu beside the key under the cursor */
 void sc_sort_menu_place(void)
 {
@@ -239,8 +242,11 @@ void sc_sort_menu_place(void)
     MenuWidget *d = sc_sort_menu->dirs;
     int base = sc_sort_menu->base_y;
     unsigned int h = k->item_h;
+    unsigned int y;
 
-    d->def.y = base + ((h >> 1) + k->cursor * h) - d->def.h / 2;
+    y = h >> 1;
+    y += k->cursor * h;
+    d->def.y = base + y - d->def.h / 2;
 }
 #endif
 

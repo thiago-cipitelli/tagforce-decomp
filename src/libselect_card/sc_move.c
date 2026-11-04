@@ -4,7 +4,6 @@
 // @asm 0x088158DC-0x08815CD0
 // @asm 0x08815CD0-0x08815E48
 // @asm 0x08815F04-0x08816468
-// @asm 0x088164A0-0x08816550
 // @asm 0x08816550-0x08816874
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
@@ -304,7 +303,8 @@ int sc_input_move(void)
 #endif
 
 #ifdef NON_MATCHING /* lógica conferida com o asm; 41 palavras: o original testa 3, 2, 1 (ordem inversa) sem
-                       teste do 0; só com um "case 0" o mwcc inverte a ordem, mas emite o teste dele */
+                       teste do 0; só com um "case 0" o mwcc inverte a ordem, mas emite o teste dele. Depois da
+                       chamada o original lê dside/dst por f+6 guardado em $s0 (como sc_flight_step) */
 /* state 2 */
 void sc_input_sort_menu(void)
 {
@@ -453,18 +453,17 @@ void sc_flight_free(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original lê os campos de f depois dos recursos */
 void *sc_draw_sort_menu(void *list)
 {
     ScFlight *f = sc_flight;
 
-    if (f->step != 2)
-        return list;
-    else
+    switch (f->step) {
+    case 2:
         list = sc_draw_card_pict(list, f->x - 11, f->y - 15, 0, 0xFFFFFFFF, &f->ent, res_get(0x8001), res_get(0x8002), res_get(0x8032));
+        break;
+    }
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* registradores herdados de testes anteriores (v1) no original */
 /* screen position of position pos of list tab shown in pane side; scroll the pane towards it when
