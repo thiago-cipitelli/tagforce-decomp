@@ -1,5 +1,5 @@
 // @range 0x08827C44-0x08827FE4
-// @asm 0x08827D10-0x08827F20
+// @rodata 0x088399B4-0x088399E4
 // @data 0x0883D67C-0x0883D690
 /* Clock of the map (field_hour_menu): chooses the time to wait until, in quarters of an hour, with two
    windows and a confirmation dialog. The rest of the unit follows at 0x08827FE4. */
@@ -40,7 +40,6 @@ void fclk_open(void)
     fld_story_flag(0x6216, 0);
 }
 
-#ifdef NON_MATCHING /* a forma bate, mas a tabela de saltos (0x088399B4) fica no meio do .rodata das funções seguintes da unidade (0x08827FE4-); fica em asm até a unidade inteira estar em C */
 /* returns -1 while open, then 2 or 3 (the choice confirmed) */
 int fclk_update(void)
 {
@@ -53,7 +52,7 @@ int fclk_update(void)
         break;
     case 1:
         fclk_list_update();
-        return -1;
+        break;
     case 2:
         fclk_time_open();
         c->state = 3;
@@ -119,7 +118,6 @@ int fclk_update(void)
     }
     return -1;
 }
-#endif
 
 void fclk_draw(void *list)
 {

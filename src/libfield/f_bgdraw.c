@@ -1,6 +1,5 @@
 // @range 0x08808214-0x08809C40
 // @asm 0x08808214-0x08808770
-// @asm 0x08808E38-0x08809034
 // @asm 0x088092E0-0x088094B4
 /* Room loading and drawing: the models of each area and their stencil shadows, the placed objects,
    the camera of the room, the mesh mask by area and the hook that hides the door meshes ("_DD."). */
@@ -502,7 +501,6 @@ void fld_bg_slide_update(FieldObj *o)
     mat4_translate(&o->mtx, &o->mtx, &p);
 }
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 1 palavra: o original faz mul.s f20,open,turn (operandos trocados; turn * open, *=, temporário e ordem das declarações não mudam) */
 /* door of the room: opens/closes by 0.1 + 10% a frame, turned around y by info[9] turns when open,
    then placed at its position relative to field_bg_state.light */
 void fld_bg_door_update(FieldObj *o)
@@ -510,6 +508,7 @@ void fld_bg_door_update(FieldObj *o)
     FieldBg *b = &field_bg_state;
     float turn = 6.2831855f * ((float *)o->info)[9];
     float t;
+    float ang;
     Vec4 p;
     Vec4 r;
 
@@ -540,10 +539,10 @@ void fld_bg_door_update(FieldObj *o)
         }
         break;
     }
-    turn = turn * o->open;
+    ang = o->open * turn;
     mat4_identity(&o->mtx);
     r.x = 3.1415927f * ((float *)o->info)[6] / 180.0f;
-    r.y = 3.1415927f * ((float *)o->info)[7] / 180.0f + turn;
+    r.y = 3.1415927f * ((float *)o->info)[7] / 180.0f + ang;
     r.z = 3.1415927f * ((float *)o->info)[8] / 180.0f;
     r.w = 0.0f;
     mat4_rotate_xyz(&o->mtx, &o->mtx, &r);
@@ -553,7 +552,6 @@ void fld_bg_door_update(FieldObj *o)
     p.w = 0.0f;
     mat4_translate(&o->mtx, &o->mtx, &p);
 }
-#endif
 
 #ifdef NON_MATCHING /* C novo, conferido com o asm. 26 palavras: o original carrega o 136 e o 272 junto do uso e põe as cores em v0/a0 (aqui as constantes sobem para o início) */
 /* sky gradient behind the room: top, middle and bottom colour of the area at this time of day */

@@ -26,7 +26,6 @@
 // @asm 0x08814C60-0x08814DCC
 // @asm 0x08814DCC-0x08815050
 // @asm 0x08815050-0x08815328
-// @asm 0x08815328-0x088153E0
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
    summary), the money paid out, the series score of a match and the continue / net wait dialogs. */
 #include "libduel_mgr.h"
@@ -57,7 +56,7 @@ void font_set_flag8(int on);
 void font_set_size(unsigned char w, unsigned char h);
 int font_line_height(void);
 int font_wtext_lines(int w, void *text);
-int font_print(void *text);
+int font_measure_text(void *text);
 unsigned char font_measure_wtext(int w, void *text);
 void font_set_line_extra(int n);
 void font_text_set(void *list);
@@ -1143,13 +1142,13 @@ unsigned int *dmgr_res_draw_footer(unsigned int *list)
         font_draw_wtext(0x400, 0x4040, ((0x1E0 - w) / 2 - 0x10) * 0x40, left);
     }
     if (mid != 0) {
-        tw = (font_print(mid) >> 6) + 1;
+        tw = (font_measure_text(mid) >> 6) + 1;
         font_draw_wtext((0xF0 - tw / 2) * 0x40, 0x4040, w << 6, mid);
     }
     if (right != 0) {
         w = ((0x1E0 - w) / 2 - 0x10) * 0x40;
         font_set_size(font_measure_wtext(w, right), 0xE);
-        font_draw_wtext((0x1D0 - ((font_print(right) >> 6) + 1)) * 0x40, 0x4040, w, right);
+        font_draw_wtext((0x1D0 - ((font_measure_text(right) >> 6) + 1)) * 0x40, 0x4040, w, right);
         font_set_size(0xE, 0xE);
     }
     list = font_text_clear();
@@ -1935,16 +1934,16 @@ unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, i
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 void dmgr_res_text_fit(int x, int y, int w, int sw, int sh, void *text)
 {
-    font_set_size(sw, sh);
-    font_set_size(font_measure_wtext(w << 6, text), sh);
-    w -= (font_print(text) >> 6) + 1;
+    unsigned char h = sh;
+
+    font_set_size(sw, h);
+    font_set_size((int)font_measure_wtext(w << 6, text), h);
+    w -= (font_measure_text(text) >> 6) + 1;
     x += w / 2;
     font_draw_text(x * 0x40, y << 6, (0x1E0 - x) * 0x40, text);
 }
-#endif
 
 unsigned int *dmgr_res_series_name(unsigned int *list, int x, int y, int partner, void *name)
 {

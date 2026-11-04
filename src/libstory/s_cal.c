@@ -701,13 +701,18 @@ void scal_calc_days_left(ScalDate *d)
         d->days_left = 0;
 }
 
-#ifdef NON_MATCHING /* o original sai do laço por blocos `b fim` separados; nenhuma forma do laço os reproduz */
+#ifdef NON_MATCHING /* 12 palavras: o original testa `bne dia; nop; b fim; nop` e `bnez; nop; b fim; nop` (blocos `b fim` próprios);
+   break, return, || e ifs separados dão `beq fim` direto */
 int scal_period_a(ScalDate *d)
 {
     int i = 0;
     ScalPeriod *p = scal_periods;
 
-    while (d->month != p->month || (d->day != p->day && p->day != 0)) {
+    for (;;) {
+        if (d->month == p->month) {
+            if (d->day == p->day || p->day == 0)
+                break;
+        }
         p++;
         i++;
     }
@@ -721,7 +726,11 @@ int scal_period_b(ScalDate *d)
     int i = 0;
     ScalPeriod *p = scal_periods;
 
-    while (d->month != p->month || (d->day != p->day && p->day != 0)) {
+    for (;;) {
+        if (d->month == p->month) {
+            if (d->day == p->day || p->day == 0)
+                break;
+        }
         p++;
         i++;
     }

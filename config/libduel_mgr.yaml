@@ -119,8 +119,6 @@ segments:
       - [0x110B0, c, dmgr_result]
       - [0x110B0, asm, dmgr_result_asm_08815050]
       - [0x11388, c, dmgr_result]
-      - [0x11388, asm, dmgr_result_asm_08815328]
-      - [0x11440, c, dmgr_result]
       - [0x118E8, asm, sceStub_text]
       - [0x145C8, bin, lib_ent_top]
       - [0x145CC, bin, lib_ent]
