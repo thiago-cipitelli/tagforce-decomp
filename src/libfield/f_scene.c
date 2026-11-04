@@ -33,6 +33,298 @@ void *fclk_draw(void *list);
 void fegg_draw(void);
 void *fcho_draw(void *list);
 
+void fld_voice_play(int n);
+int fld_npc_facing_id(FieldNpc *p);
+int fld_npc_get_c0(int id);
+void fld_npc_turn_to(int id, FieldNpc *p);
+void fld_npc_turn_back(void);
+void fld_player_lock(void);
+int fld_player_loaded(void);
+int fld_player_idle(void);
+void fld_scene_input(int *cmd, int *arg);
+void fld_scene_frame(void);
+void fld_sctab_update(int *cmd, int *arg, int *picked);
+void fld_sctab_open(void);
+void fld_hud_show(void);
+int fld_hud_hidden(void);
+int fmsg_done(void);
+MenuItemDef *fmsg_def(void);
+void fmsg_set_input(int on);
+void fmsg_set_text(unsigned short *text, int title);
+void fmsg_close(void);
+int fpt_ready(void);
+void fbag_init(void);
+int fbag_update(int *picked);
+int fcal_update(void);
+void fget_item_open(int item);
+void fget_item_close(int *flag);
+void fget_card_close(int *flag);
+void fclk_open(void);
+int fclk_update(void);
+void fclk_get(int *hour, int *minute);
+void fegg_init(int rare, int kind);
+int fegg_update(void);
+void fcho_open(void);
+int fcho_update(void);
+void fld_dlg_open(unsigned short *text, int buttons, int button);
+int fld_dlg_update(void);
+
+#ifdef NON_MATCHING /* C novo, conferido com o asm (mesmo tamanho). 161 palavras, quase todas deslocamento de duas diferenças: no case 5 o original não põe o move a0 no atraso do jal de fld_voice_play, e no case 5 do calendário recarrega o 23 que aqui é reaproveitado */
+/* per frame: the NPC in front of the player, then the scene mode (x88): 0 lock and turn back,
+   1 input, 2/3 the question box, 5/6 talking (sctab), 7/8 the bag, 9/10 a message, 11/12 the
+   calendar, 13..16 the get windows, 17/18 the clock, 19/20 the choice list, 23 leave for the
+   scene command (bg); while no scene runs, the egg (21/22); then fld_scene_frame */
+void fld_scene_update(void)
+{
+    FieldScene *s = &field_scene;
+    int *mode;
+    int *arg;
+    FieldChr *pl;
+    MenuItemDef *d;
+    int r;
+
+    fld_ctx_get();
+    mode = &field_scene.x88;
+    pl = fld_player_get();
+    field_scene.pad8c[0] = fld_npc_facing_id((FieldNpc *)pl);
+    if (field_scene.saving != 0) {
+        arg = &s->bg;
+        switch (*mode) {
+        case 0:
+            fld_player_lock();
+            fld_npc_turn_back();
+            *mode = 1;
+            break;
+        case 1:
+            fld_scene_input(mode, arg);
+            break;
+        case 2:
+            fld_dlg_open(table_get_entry(fld_gim_get(5), 0x66), 3, 2);
+            *mode = 3;
+            break;
+        case 3:
+            switch (fld_dlg_update()) {
+            case -2:
+            case 3:
+                *mode = 0;
+                break;
+            case 2:
+                *mode = 23;
+                *arg = 1;
+                break;
+            }
+            break;
+        case 4:
+            if (fld_player_idle() != 0)
+                *mode = 0;
+            break;
+        case 5:
+            fld_sctab_open();
+            r = fld_npc_get_c0(s->pad8c[0]);
+            if (r != 0 && r != -1)
+                fld_voice_play(r);
+            *mode = 6;
+            break;
+        case 6:
+            fld_sctab_update(mode, arg, &s->save[1]);
+            if (*mode == 0)
+                fld_voice_play(-1);
+            break;
+        case 7:
+            fbag_init();
+            *mode = 8;
+            break;
+        case 8:
+            switch (fbag_update(&s->save[1])) {
+            case 1:
+                *mode = 0;
+                break;
+            case 2:
+                *arg = 3;
+                *mode = 23;
+                break;
+            case 3:
+                *mode = 23;
+                *arg = 4;
+                break;
+            }
+            break;
+        case 9:
+            d = fmsg_def();
+            fmsg_set_input(1);
+            d->pad_l = 4;
+            d->pad_t = 2;
+            switch (*arg) {
+            case 2:
+                fmsg_set_text(table_get_entry(fld_gim_get(5), 12), 0);
+                break;
+            case 3:
+                fmsg_set_text(table_get_entry(fld_gim_get(5), 13), 0);
+                break;
+            case 4:
+                fmsg_set_text(table_get_entry(fld_gim_get(5), 13), 0);
+                break;
+            case 5:
+                fmsg_set_text(table_get_entry(fld_gim_get(5), 14), 0);
+                break;
+            }
+            *mode = 10;
+            break;
+        case 10:
+            if (fmsg_done() != 0) {
+                fmsg_close();
+                *mode = 0;
+            }
+            break;
+        case 11:
+            fcal_open(fld_heap_get(), *s->file, 0);
+            fld_hud_hide();
+            *mode = 12;
+            break;
+        case 12:
+            s->xa8 = 0;
+            if (fld_hud_hidden() != 0) {
+                switch (fcal_update()) {
+                case 1:
+                    fld_hud_show();
+                    *mode = 0;
+                    break;
+                case 3:
+                    *mode = 23;
+                    *arg = 8;
+                    s->xa8 = 1;
+                    break;
+                case 4:
+                    *mode = 23;
+                    *arg = 9;
+                    s->xa8 = 1;
+                    break;
+                case 5:
+                    *mode = 23;
+                    *arg = 20;
+                    break;
+                }
+            }
+            break;
+        case 13:
+            fget_item_open(s->pad8c[1]);
+            ((void (*)(int, int, int, int, int))s->story.w[10])(0, s->pad8c[1], 1, s->pad8c[2], s->pad8c[3]);
+            *mode = 14;
+            break;
+        case 14:
+            fget_item_close(mode);
+            break;
+        case 15:
+            fget_card_open(s->pad8c[4], 1, 1);
+            ((void (*)(int, int, int, int, int))s->story.w[10])(1, s->pad8c[4], 1, s->pad8c[5], s->pad8c[6]);
+            *mode = 16;
+            break;
+        case 16:
+            fget_card_close(mode);
+            break;
+        case 17:
+            fclk_open();
+            *mode = 18;
+            break;
+        case 18:
+            r = fclk_update();
+            if (r == 0) {
+                *mode = 0;
+            } else if (r != -1) {
+                *mode = 23;
+                switch (r) {
+                case 1:
+                    *arg = 10;
+                    break;
+                case 2:
+                    *arg = 11;
+                    break;
+                case 3:
+                    *arg = 12;
+                    break;
+                }
+                fclk_get(&s->save[2], &s->save[3]);
+            }
+            break;
+        case 19:
+            fcho_open();
+            *mode = 20;
+            break;
+        case 20:
+            r = fcho_update();
+            if (r == 0) {
+                *mode = 0;
+            } else if (r != -1) {
+                *mode = 23;
+                switch (r) {
+                case 1:
+                default:
+                    *arg = 15;
+                    break;
+                case 2:
+                    *arg = 16;
+                    break;
+                case 3:
+                    *arg = 17;
+                    break;
+                case 4:
+                    *arg = 18;
+                    break;
+                case 5:
+                    *arg = 19;
+                    break;
+                }
+            }
+            break;
+        case 23:
+            switch (*arg) {
+            case 2:
+            case 5:
+            case 3:
+            case 4:
+                fld_npc_turn_to(s->save[0], (FieldNpc *)pl);
+                s->saving = 0;
+                break;
+            default:
+                s->saving = 0;
+                break;
+            }
+            break;
+        }
+        if (*mode == 23 && s->saving == 1 && (s->save[0] = s->pad8c[0]) == -1) {
+            switch (*arg) {
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+                *mode = 9;
+                break;
+            }
+        }
+    } else if (s->x18 != 0) {
+        switch (*mode) {
+        case 21:
+            fegg_init(s->x38, s->x3c);
+            *mode = 22;
+            break;
+        case 22:
+            r = fegg_update();
+            if (r != -1) {
+                ((void (*)(int, int))s->story.w[11])(r, 1);
+                s->x40 = r;
+                s->x18 = 0;
+            }
+            break;
+        }
+    }
+    fld_scene_frame();
+    if (fld_player_loaded() != 0)
+        s->x04 = 0;
+    if (fpt_ready() != 0)
+        s->x08 = 0;
+}
+#endif
+
 /* draws the characters and the HUD, then the menu of the scene mode (x88), and the calendar over it */
 void fld_scene_draw(void)
 {
