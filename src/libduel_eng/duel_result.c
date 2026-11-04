@@ -176,7 +176,7 @@ int duel_save_once_120(int i)
 }
 
 #ifdef NON_MATCHING /* same steps; the original keeps the duel results in $s0 and the save records in $s5, and gives the
-                        record pointer $s1 */
+                        record pointer $s1 (~108 palavras); caso 9: duel_stat_get(1) uma vez só (o MAX chamava duas) */
 #define REC_MAX(e)                                                             \
     v = (e);                                                                   \
     if (*best < v) {                                                           \
@@ -224,8 +224,14 @@ void duel_records_update(void)
             int a = duel_stat_get(3);
             int b = duel_stat_get(5);
 
-            b = MAX(b, a);
-            REC_MAX(MAX(b, duel_stat_get(1)));
+            if (a < b) {
+                a = b;
+            }
+            b = duel_stat_get(1);
+            if (a < b) {
+                a = b;
+            }
+            REC_MAX(a);
         }
         case 10:
             REC_MAX(duel_stat_get(0xF) + duel_stat_get(0xE));
