@@ -2,14 +2,9 @@
 // @asm 0x0881F0A8-0x0881F264
 // @asm 0x0881F264-0x0881F454
 // @asm 0x0881F46C-0x0881F60C
-// @asm 0x0881F60C-0x0881F704
 // @asm 0x0881F704-0x0881F78C
-// @asm 0x0881F78C-0x0881F7EC
 // @asm 0x0881FAF8-0x0881FB28
-// @asm 0x0881FB28-0x0881FBD4
-// @asm 0x0881FC48-0x0881FD30
 // @asm 0x0881FDB4-0x0881FEC0
-// @asm 0x0881FEC0-0x0881FFB8
 // @data 0x088760B0-0x088760D0
 /* Effects played on field cards: summon/set beams, the target marks of graves and decks (shared by
    all their cards), damage/recovery and ATK/DEF change counters, destruction and the short lock of
@@ -248,33 +243,41 @@ void dd_mark_on(DdCard *c)
 }
 #endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_mark_off(DdCard *c)
 {
-    int zone = c->loc.zone;
-    int n;
+    DdTasks *tk = &dd_tasks;
+    unsigned char zone = c->loc.zone;
+    int *m = 0;
+    int pile;
     int i;
 
     if ((unsigned int)(zone - 0xE) < 2) {
-        n = dd_tasks.pile_mark[zone][1] - 1;
-        dd_tasks.pile_mark[zone][1] = n;
-        if (n == 0) {
-            dd_task_pause(dd_tasks.pile_mark[zone][0]);
-            dd_tasks.pile_mark[zone][0] = -1;
+        m = tk->pile_mark[zone];
+        pile = 1;
+    } else {
+        pile = 0;
+    }
+    if (pile) {
+        m[1]--;
+        if (m[1] == 0) {
+            dd_task_pause(m[0]);
+            m[0] = -1;
         }
     } else if (c->mark != -1) {
+        DdTasks *t;
+
         dd_task_pause(c->mark);
         c->mark = -1;
+        t = &dd_tasks;
         for (i = 0; i < 512; i++) {
-            if (c == dd_tasks.glow[i]) {
-                dd_tasks.glow[i] = 0;
+            if (c == t->glow[i]) {
+                t->glow[i] = 0;
                 break;
             }
         }
         dd_cobj_link_del(c, func_08820D40);
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_mark_all_off(void)
@@ -295,19 +298,17 @@ void dd_mark_all_off(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_destroy_wait(float dt, DdTask *t, void *arg)
 {
     int a = (int)t->arg;
 
-    if (dd_cobjs_busy() == 0 && dd_cobjs_idle() != 0) {
+    if (dd_cobjs_busy() != 0 || dd_cobjs_idle() == 0) {
+        req_flag_set(0x10);
+    } else {
         dd_cobj_sync_extra(a);
         dd_task_remove_cur();
-    } else {
-        req_flag_set(0x10);
     }
 }
-#endif
 
 /* destruction of the cards of a zone, once the camera is free */
 void dd_destroy(int a)
@@ -395,23 +396,22 @@ void dd_shake(DdCard *c)
 #endif
 
 /* ATK/DEF change counter over a card (atk 0: DEF) */
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_stat_counter(DdCard *c, int delta, int def)
 {
     int to;
+    int kind;
 
-    if (def == 0)
-        to = dv_slot_link_1a0c(c->loc.player, c->loc.zone);
-    else
+    if (def != 0) {
+        kind = 0;
         to = dv_slot_e68a0(c->loc.player, c->loc.zone);
-    delta = to - delta;
-    if (delta < 1)
-        delta = 0;
-    if (to < 1)
-        to = 0;
-    dd_fx_tally_start(def == 0, (float *)((char *)c + 0x10), delta, to, dd_flag_task_done, dd_flag_task(0x25));
+    } else {
+        kind = 1;
+        to = dv_slot_link_1a0c(c->loc.player, c->loc.zone);
+    }
+    delta = ALLEGREX_MAX(0, to - delta);
+    to = ALLEGREX_MAX(0, to);
+    dd_fx_tally_start(kind, (float *)((char *)c + 0x10), delta, to, dd_flag_task_done, dd_flag_task(0x25));
 }
-#endif
 
 void dd_counter_flag(float dt, DdTask *t, DdCounter *c)
 {
@@ -426,18 +426,12 @@ void dd_counter_done(DdCounter *c)
 }
 
 /* damage counter */
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_damage_counter(float *pos, int value, int uid)
 {
-    int from = value - 1;
-    int to = value;
-    DdCounter *c;
     DdTask t;
-
-    if (from < 1)
-        from = 0;
-    if (to < 1)
-        to = 0;
+    DdCounter *c;
+    int to = ALLEGREX_MAX(0, value);
+    int from = ALLEGREX_MAX(0, value - 1);
     c = dd_alloc(sizeof(DdCounter));
     memset(c, 0, sizeof(DdCounter));
     c->value = value;
@@ -452,7 +446,6 @@ void dd_damage_counter(float *pos, int value, int uid)
     req_flag_set(c->flag);
     dd_fx_counter_start(pos, from, to, dd_counter_done, c);
 }
-#endif
 
 /* waits for the card popup to close before the counter */
 void dd_counter_wait(float dt, DdTask *t, void *arg)
@@ -508,39 +501,40 @@ void dd_counter(DdCard *card, int value, int uid)
 #endif
 
 /* stat counters of the other kinds (0 ATK, 1 level, 2 ..., 3 counters) */
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_num_counter(DdCard *c, int delta, int kind)
 {
-    int flag = 0x25;
-    DdLpFn get;
     DdNumFn show;
+    DdLpFn get;
     int to;
+    int flag = 0x25;
 
-    if (kind == 3) {
+    switch (kind) {
+    default:
+        return;
+    case 0:
+        get = dv_slot_counter_1a90;
+        show = dd_fx_tally_start_fixed;
+        break;
+    case 1:
+        get = dv_slot_counter_1439;
+        show = dd_fx_throb_start;
+        break;
+    case 2:
+        get = dv_slot_counter_1513;
+        show = dd_fx_blink_start;
+        break;
+    case 3:
         get = dv_slot_min_1130;
         show = dd_fx_counter_start2;
         flag = 0x26;
-    } else if (kind == 2) {
-        get = dv_slot_counter_1513;
-        show = dd_fx_blink_start;
-    } else if (kind == 1) {
-        get = dv_slot_counter_1439;
-        show = dd_fx_throb_start;
-    } else if (kind == 0) {
-        get = dv_slot_counter_1a90;
-        show = dd_fx_tally_start_fixed;
-    } else {
-        return;
+        break;
     }
     to = get(c->loc.player, c->loc.zone);
     delta = to - delta;
-    if (delta < 1)
-        delta = 0;
-    if (to < 1)
-        to = 0;
+    delta = ALLEGREX_MAX(0, delta);
+    to = ALLEGREX_MAX(0, to);
     show((float *)((char *)c + 0x10), delta, to, dd_flag_task_done, dd_flag_task(flag));
 }
-#endif
 
 void dd_flag_task_update(float dt, DdTask *t, int *flag)
 {

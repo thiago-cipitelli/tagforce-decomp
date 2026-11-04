@@ -2,7 +2,6 @@
 // @asm 0x08857100-0x08857280
 // @asm 0x0885731C-0x08857614
 // @asm 0x08857614-0x08857960
-// @asm 0x08857960-0x08857A40
 // @asm 0x08857A40-0x08857C60
 // @asm 0x08857C60-0x08857CC8
 // @asm 0x08857DC0-0x0885809C
@@ -12,6 +11,7 @@
    rolling digits (3D drums in Japan, 2D sprites and a damage bar elsewhere), counts the LP from
    one value to the other and rolls each digit to its new value. */
 #include "dd_duelui.h"
+#include "allegrex.h"
 
 typedef struct LpDigit {               /* a rolling digit, 0x10 */
     int rolling;                       /* +0x00 */
@@ -191,27 +191,23 @@ void *lpc_drum(void *dl, LpDigit *d, int i)
 }
 
 /* 2D panel: background, damage effect (ehf frame by the LP left), two bars and the heart */
+typedef struct { int v[3][2]; } LpHeartUv;
+
 void *lpc_panel_2d(void *dl, DdLpCount *c)
 {
-    int uv[3][2];
+    LpHeartUv uv = *(LpHeartUv *)lp_heart_uv;
     char opts[0x60];
-    int cur = c->cur;
-    int max = c->speed;
     unsigned int frame;
     int w;
+    float k = 1.0f - (float)ALLEGREX_MIN(ALLEGREX_MAX(c->cur, 0), c->speed) / (float)c->speed;
 
-    memcpy(uv, lp_heart_uv, sizeof(uv));
-    if (cur < 0)
-        cur = 0;
-    if (max < cur)
-        cur = max;
     dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
     dl = dl_set_tex_filter(dl, 0, 0);
     dl = gim_set_texture(dl, dd_lp.pnl_a01);
     dl = draw_set_offsets(dl, 184, 122, 184, 122);
     dl = draw_sprite(dl, c->sx, c->sy, 0, 0, 0, 0, 0);
     memset(opts, 0, sizeof(opts));
-    frame = (1.0f - (float)cur / (float)max) * 99.0f;
+    frame = k * 99.0f;
     ehf_seek(dd_lp.ehf, frame);
     dl = gfx_begin_2d(dl);
     dl = ehf_draw(dl, dd_lp.ehf, opts);
@@ -228,36 +224,32 @@ void *lpc_panel_2d(void *dl, DdLpCount *c)
     dl = draw_sprite(dl, c->sx + (int)(100.0f - (float)w * 0.5f), c->sy + 22, 0, 184, 219, 0, 0);
     frame = (*gfx_get_state() >> 1) % 3;
     dl = draw_set_offsets(dl, 65, 16, 65, 16);
-    return draw_sprite(dl, c->sx + 63, c->sy + 87, 0, uv[frame][0], uv[frame][1], 0, 0);
+    return draw_sprite(dl, c->sx + 63, c->sy + 87, 0, uv.v[frame][0], uv.v[frame][1], 0, 0);
 }
 #else
 void *lpc_drum(void *dl, LpDigit *d, int i);
 void *lpc_panel_2d(void *dl, DdLpCount *c);
 #endif
 
-#ifdef NON_MATCHING /* alocação de registradores/forma difere; não insistido */
 void *lpc_digit_2d(void *dl, DdLpCount *c, int i)
 {
     int w, n, d;
+    const int *uv;
 
-    if (c->wide == 0) {
-        w = 18;
-        n = 4;
-    } else {
+    if (c->wide != 0) {
         w = 13;
         n = 5;
+    } else {
+        w = 18;
+        n = 4;
     }
-    d = c->digits[i].next;
-    if (d != -1) {
-        dl = draw_set_offsets(dl, 18, 37, w, 37);
-        dl = draw_sprite(dl, c->sx + 62 + w * (n - 1 - i), c->sy + 38, 0, lp_digit2d_uv[d][0], lp_digit2d_uv[d][1],
-                         0, 0);
-    }
-    return dl;
+    d = ((int *)c)[i * 4 + 12]; /* c->digits[i].next, indexed from c as in the original */
+    if (d == -1)
+        return dl;
+    uv = lp_digit2d_uv[d];
+    dl = draw_set_offsets(dl, 18, 37, w, 37);
+    return draw_sprite(dl, c->sx + 62 + w * (n - 1 - i), c->sy + 38, 0, uv[0], uv[1], 0, 0);
 }
-#else
-void *lpc_digit_2d(void *dl, DdLpCount *c, int i);
-#endif
 
 #ifdef NON_MATCHING /* alocação de registradores/forma difere; não insistido */
 void lpc_update(void *o, DdLpCount *c)
