@@ -4,6 +4,7 @@
 /* Window rendering for the menu layer: open/close animation state machine, 9-slice frame built
    from window01.gim pieces into the layer-4 display list, title bar and text. */
 #include "psp.h"
+#include "allegrex.h"
 #include "libc.h"
 #include "ehsys.h"
 #include "game.h"
@@ -52,7 +53,10 @@ extern short wside_w;                  /* 0x088EE8C0 */
 extern short wside_h;                  /* 0x088EE8C2 */
 
 #ifdef NON_MATCHING
-/* As três funções abaixo têm a estrutura do original, mas o mwcc aloca registradores e pilha de
+/* menu_item_build: switch (st) com case 0 caindo em 2/4, switch da animação (1, 2) e do contador
+   (0..4), larguras com ALLEGREX_MAX e os ceilf com argumentos calculados antes (sequência de jal igual
+   ao original, 2424 B contra 2412 B; 567 palavras: o original guarda um float em f20 e salva s0-s7).
+   As três funções abaixo têm a estrutura do original, mas o mwcc aloca registradores e pilha de
    outro jeito (menu_item_build/menu_item_build_frame: 2,4 KB cada; menu_item_build_text: o
    original dá s0 a dl, s1 a d e s3 a m, aqui invertidos, com qualquer ordem de declaração ou
    parâmetro void *). Ficam em asm; este C é para o
@@ -62,219 +66,239 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
 {
     MenuItemDef *d = it->def;
     int st = it->state;
-    int c;
     int f4, f8;
     int cw, ch, mw, mh;
     unsigned int sz;
-    short v;
     int tw, th;
+    float fw, fh;
 
-    if (st == 3) {
-        if (d->close_anim == 2) {
-            c = it->counter;
-            if (c == 4) {
-                it->state = 4;
-            } else if (c == 3) {
-                d->visible = 0;
-                d->y = it->saved_y;
-                d->show_title = it->saved_show_title;
-                d->text = it->saved_text;
-                d->title = it->saved_title;
-            } else if (c == 2) {
-                it->saved_y = d->y;
-                d->y = (short)(int)((float)d->y + (float)d->h * 0.25f);
-                d->anchor = 0;
-                d->scale_y = 0.5f;
-                it->saved_show_title = d->show_title;
-                d->show_title = 0;
-                it->ghost = 1;
-                it->x2 = d->x;
-                it->y2 = (short)(int)((float)it->saved_y + (float)d->h * 0.125f);
-                it->scale_x2 = 1.0f;
-                it->scale_y2 = 0.75f;
-                it->color2 = color_lerp(0.5f, d->color & 0xFFFFFF, d->color);
-            } else if (c == 1) {
-                it->saved_text = d->text;
-                it->saved_title = d->title;
-                d->text = 0;
-                d->title = 0;
-                d->text_color = it->saved_text_color;
-                d->title_color = it->saved_title_color;
-            } else if (c == 0) {
-                it->saved_text_color = d->text_color;
-                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
-                it->saved_title_color = d->title_color;
-                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
-            }
-            it->counter++;
-        } else if (d->close_anim == 1) {
-            c = it->counter;
-            if (c == 4) {
-                it->state = 4;
-            } else if (c == 3) {
-                d->visible = 0;
-                d->show_title = it->saved_show_title;
-                d->text = it->saved_text;
-                d->title = it->saved_title;
-            } else if (c == 2) {
-                d->anchor = 0;
-                d->scale_y = 0.5f;
-                it->saved_show_title = d->show_title;
-                d->show_title = 0;
-                it->ghost = 1;
-                it->x2 = d->x;
-                it->y2 = d->y;
-                it->scale_x2 = 1.0f;
-                it->scale_y2 = 0.75f;
-                it->color2 = color_lerp(0.5f, d->color & 0xFFFFFF, d->color);
-            } else if (c == 1) {
-                it->saved_text = d->text;
-                it->saved_title = d->title;
-                d->text = 0;
-                d->title = 0;
-                d->text_color = it->saved_text_color;
-                d->title_color = it->saved_title_color;
-            } else if (c == 0) {
-                it->saved_text_color = d->text_color;
-                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
-                it->saved_title_color = d->title_color;
-                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
-            }
-            it->counter++;
-        } else {
-            it->counter++;
-        }
-    } else if (st == 1) {
-        if (d->open_anim == 2) {
-            c = it->counter;
-            if (c == 4) {
-                it->state = 2;
-            } else if (c == 3) {
-                d->text_color = it->saved_text_color;
-                d->title_color = it->saved_title_color;
-            } else if (c == 2) {
-                d->text = it->saved_text;
-                d->title = it->saved_title;
-                it->saved_text_color = d->text_color;
-                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
-                it->saved_title_color = d->title_color;
-                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
-            } else if (c == 1) {
-                d->y = it->saved_y;
-                d->scale_y = 1.0f;
-                d->show_title = it->saved_show_title;
-                it->ghost = 0;
-            } else if (c == 0) {
-                d->visible = 1;
-                it->saved_y = d->y;
-                d->y = (short)(int)((float)d->y + (float)d->h * 0.25f);
-                d->anchor = 0;
-                d->scale_y = 0.5f;
-                it->saved_show_title = d->show_title;
-                d->show_title = 0;
-                it->ghost = 1;
-                it->x2 = d->x;
-                it->y2 = (short)(int)((float)it->saved_y + (float)d->h * 0.125f);
-                it->scale_x2 = 1.0f;
-                it->scale_y2 = 0.75f;
-                it->color2 = color_lerp(0.5f, d->color & 0xFFFFFF, d->color);
-                it->saved_text = d->text;
-                it->saved_title = d->title;
-                d->text = 0;
-                d->title = 0;
-            }
-            it->counter++;
-        } else if (d->open_anim == 1) {
-            c = it->counter;
-            if (c == 4) {
-                it->state = 2;
-            } else if (c == 3) {
-                d->text_color = it->saved_text_color;
-                d->title_color = it->saved_title_color;
-            } else if (c == 2) {
-                d->text = it->saved_text;
-                d->title = it->saved_title;
-                it->saved_text_color = d->text_color;
-                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
-                it->saved_title_color = d->title_color;
-                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
-            } else if (c == 1) {
-                d->scale_y = 1.0f;
-                d->show_title = it->saved_show_title;
-                it->ghost = 0;
-            } else if (c == 0) {
-                d->visible = 1;
-                d->anchor = 0;
-                d->scale_y = 0.5f;
-                it->saved_show_title = d->show_title;
-                d->show_title = 0;
-                it->ghost = 1;
-                it->scale_x2 = 1.0f;
-                it->x2 = d->x;
-                it->y2 = d->y;
-                it->scale_y2 = 0.75f;
-                it->color2 = color_lerp(0.5f, d->color & 0xFFFFFF, d->color);
-                it->saved_text = d->text;
-                it->saved_title = d->title;
-                d->text = 0;
-                d->title = 0;
-            }
-            it->counter++;
-        } else {
-            it->counter++;
-        }
-    } else {
-        if (st == 4 || st == 2 || st == 0) {
-            if (st == 0) {
-                if (d->scale_x == 0.0f)
-                    d->scale_x = 1.0f;
-                if (d->scale_y == 0.0f)
-                    d->scale_y = 1.0f;
-                d->visible = d->open_anim == 0;
-                it->state = 2;
-            }
-            if (mem_differs(it->def, &it->cur, sizeof(MenuItemDef))) {
-                if (d->auto_size != 0) {
-                    if (d->text != 0) {
-                        mw = d->pad_r + 2 + d->pad_l + MENU_PAD_X + MENU_PAD_W;
-                        mh = d->pad_b + 2 + d->pad_t + MENU_PAD_Y + MENU_PAD_H;
-                        f4 = font_get_flag4();
-                        f8 = font_get_flag8000();
-                        font_set_size(d->font_size, d->font_size);
-                        font_set_flag4(d->font_flag4);
-                        font_set_flag8000(d->font_flag8000);
-                        cw = (d->max_w == 0 ? 480 : d->max_w) - mw;
-                        ch = (d->max_h == 0 ? 272 : d->max_h) - mh;
-                        sz = font_measure_wtext2(cw << 6, ch << 6, d->text);
-                        d->w = (short)(int)((float)mw + ceilf_vfpu((float)(sz >> 16) / 64.0f));
-                        d->h = (short)(int)((float)mh + ceilf_vfpu((float)(sz & 0xFFFF) / 64.0f));
-                        font_set_flag4(f4);
-                        font_set_flag8000(f8);
-                    }
-                    v = d->w;
-                    if (v < d->min_w)
-                        v = d->min_w;
-                    d->w = v;
-                    v = d->h;
-                    if (v < d->min_h)
-                        v = d->min_h;
-                    d->h = v;
-                }
-                if (d->auto_title != 0 && d->title != 0) {
+    switch (st) {
+    case 0:
+        if (d->scale_x == 0.0f)
+            d->scale_x = 1.0f;
+        if (d->scale_y == 0.0f)
+            d->scale_y = 1.0f;
+        d->visible = d->open_anim == 0;
+        it->state = 2;
+        /* fall through */
+    case 2:
+    case 4:
+        if (mem_differs(it->def, &it->cur, sizeof(MenuItemDef))) {
+            if (d->auto_size != 0) {
+                if (d->text != 0) {
+                    mw = d->pad_r + 2 + d->pad_l + MENU_PAD_X + MENU_PAD_W;
+                    mh = d->pad_b + 2 + d->pad_t + MENU_PAD_Y + MENU_PAD_H;
                     f4 = font_get_flag4();
                     f8 = font_get_flag8000();
-                    font_set_size(d->title_font_size, d->title_font_size);
+                    font_set_size(d->font_size, d->font_size);
                     font_set_flag4(d->font_flag4);
-                    font_set_flag8000(0);
-                    tw = font_measure_text(d->title);
-                    th = font_line_height();
-                    d->title_w = (short)(int)((float)wtitle[2].w + (float)wtitle[1].w + ceilf_vfpu((float)tw / 64.0f + 1.0f) + 4.0f);
-                    d->title_h = (short)(int)((float)wtitle[0].h + ceilf_vfpu((float)th / 64.0f + 1.0f) + -1.0f);
+                    font_set_flag8000(d->font_flag8000);
+                    cw = d->max_w == 0 ? 480 - mw : d->max_w - mw;
+                    ch = d->max_h == 0 ? 272 - mh : d->max_h - mh;
+                    sz = font_measure_wtext2(cw << 6, ch << 6, d->text);
+                    fw = (float)(int)((sz >> 16) & 0xFFFF) / 64.0f;
+                    fh = (float)(int)(sz & 0xFFFF) / 64.0f;
+                    d->w = (short)(int)((float)mw + ceilf_vfpu(fw));
+                    d->h = (short)(int)((float)mh + ceilf_vfpu(fh));
                     font_set_flag4(f4);
                     font_set_flag8000(f8);
                 }
+                d->w = ALLEGREX_MAX(d->w, d->min_w);
+                d->h = ALLEGREX_MAX(d->h, d->min_h);
+            }
+            if (d->auto_title != 0 && d->title != 0) {
+                f4 = font_get_flag4();
+                f8 = font_get_flag8000();
+                font_set_size(d->title_font_size, d->title_font_size);
+                font_set_flag4(d->font_flag4);
+                font_set_flag8000(0);
+                tw = font_measure_text(d->title);
+                fw = 1.0f + (float)tw / 64.0f;
+                th = font_line_height();
+                fh = 1.0f + (float)th / 64.0f;
+                d->title_w = (short)(int)((float)wtitle[2].w + ((float)wtitle[1].w + (4.0f + ceilf_vfpu(fw))));
+                d->title_h = (short)(int)(-1.0f + ((float)wtitle[0].h + ceilf_vfpu(fh)));
+                font_set_flag4(f4);
+                font_set_flag8000(f8);
             }
         }
+        break;
+    case 1:
+        switch (d->open_anim) {
+        case 1:
+            switch (it->counter) {
+            case 0:
+                d->visible = 1;
+                d->anchor = 0;
+                d->scale_y = 0.5f;
+                it->saved_show_title = d->show_title;
+                d->show_title = 0;
+                it->ghost = 1;
+                it->scale_x2 = 1.0f;
+                it->x2 = d->x;
+                it->y2 = d->y;
+                it->scale_y2 = 0.75f;
+                it->color2 = color_lerp(0.5f, d->color & 0xFFFFFF, d->color);
+                it->saved_text = d->text;
+                it->saved_title = d->title;
+                d->text = 0;
+                d->title = 0;
+                break;
+            case 1:
+                d->scale_y = 1.0f;
+                d->show_title = it->saved_show_title;
+                it->ghost = 0;
+                break;
+            case 2:
+                d->text = it->saved_text;
+                d->title = it->saved_title;
+                it->saved_text_color = d->text_color;
+                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
+                it->saved_title_color = d->title_color;
+                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
+                break;
+            case 3:
+                d->text_color = it->saved_text_color;
+                d->title_color = it->saved_title_color;
+                break;
+            case 4:
+                it->state = 2;
+                break;
+            }
+            break;
+        case 2:
+            switch (it->counter) {
+            case 0:
+                d->visible = 1;
+                it->saved_y = d->y;
+                d->y = (short)(int)((float)d->y + (float)d->h * 0.25f);
+                d->anchor = 0;
+                d->scale_y = 0.5f;
+                it->saved_show_title = d->show_title;
+                d->show_title = 0;
+                it->ghost = 1;
+                it->x2 = d->x;
+                it->y2 = (short)(int)((float)it->saved_y + (float)d->h * 0.125f);
+                it->scale_x2 = 1.0f;
+                it->scale_y2 = 0.75f;
+                it->color2 = color_lerp(0.5f, d->color & 0xFFFFFF, d->color);
+                it->saved_text = d->text;
+                it->saved_title = d->title;
+                d->text = 0;
+                d->title = 0;
+                break;
+            case 1:
+                d->y = it->saved_y;
+                d->scale_y = 1.0f;
+                d->show_title = it->saved_show_title;
+                it->ghost = 0;
+                break;
+            case 2:
+                d->text = it->saved_text;
+                d->title = it->saved_title;
+                it->saved_text_color = d->text_color;
+                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
+                it->saved_title_color = d->title_color;
+                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
+                break;
+            case 3:
+                d->text_color = it->saved_text_color;
+                d->title_color = it->saved_title_color;
+                break;
+            case 4:
+                it->state = 2;
+                break;
+            }
+            break;
+        }
+        it->counter++;
+        break;
+    case 3:
+        switch (d->close_anim) {
+        case 1:
+            switch (it->counter) {
+            case 0:
+                it->saved_text_color = d->text_color;
+                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
+                it->saved_title_color = d->title_color;
+                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
+                break;
+            case 1:
+                it->saved_text = d->text;
+                it->saved_title = d->title;
+                d->text = 0;
+                d->title = 0;
+                d->text_color = it->saved_text_color;
+                d->title_color = it->saved_title_color;
+                break;
+            case 2:
+                d->anchor = 0;
+                d->scale_y = 0.5f;
+                it->saved_show_title = d->show_title;
+                d->show_title = 0;
+                it->ghost = 1;
+                it->x2 = d->x;
+                it->y2 = d->y;
+                it->scale_x2 = 1.0f;
+                it->scale_y2 = 0.75f;
+                it->color2 = color_lerp(0.5f, d->color & 0xFFFFFF, d->color);
+                break;
+            case 3:
+                d->visible = 0;
+                d->show_title = it->saved_show_title;
+                d->text = it->saved_text;
+                d->title = it->saved_title;
+                break;
+            case 4:
+                it->state = 4;
+                break;
+            }
+            break;
+        case 2:
+            switch (it->counter) {
+            case 0:
+                it->saved_text_color = d->text_color;
+                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
+                it->saved_title_color = d->title_color;
+                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
+                break;
+            case 1:
+                it->saved_text = d->text;
+                it->saved_title = d->title;
+                d->text = 0;
+                d->title = 0;
+                d->text_color = it->saved_text_color;
+                d->title_color = it->saved_title_color;
+                break;
+            case 2:
+                it->saved_y = d->y;
+                d->y = (short)(int)((float)d->y + (float)d->h * 0.25f);
+                d->anchor = 0;
+                d->scale_y = 0.5f;
+                it->saved_show_title = d->show_title;
+                d->show_title = 0;
+                it->ghost = 1;
+                it->x2 = d->x;
+                it->y2 = (short)(int)((float)it->saved_y + (float)d->h * 0.125f);
+                it->scale_x2 = 1.0f;
+                it->scale_y2 = 0.75f;
+                it->color2 = color_lerp(0.5f, d->color & 0xFFFFFF, d->color);
+                break;
+            case 3:
+                d->visible = 0;
+                d->y = it->saved_y;
+                d->show_title = it->saved_show_title;
+                d->text = it->saved_text;
+                d->title = it->saved_title;
+                break;
+            case 4:
+                it->state = 4;
+                break;
+            }
+            break;
+        }
+        it->counter++;
+        break;
     }
     menu_item_build_frame(*dl, it, m, 0);
     if (it->ghost != 0)

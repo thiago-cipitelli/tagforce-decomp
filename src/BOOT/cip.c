@@ -2,7 +2,6 @@
 // @data 0x088EF28C-0x088EF468
 // @rodata 0x088B4960-0x088B499C
 // @asm 0x08853C94-0x08853D1C
-// @asm 0x0885478C-0x0885488C
 /* Scene stack (push/pop/reset of gmodule scenes by id, with the transition record the scene reads
    on start) and the CIP/CPM card image reader: slot ring filled by ehfile_read_async callbacks,
    either on demand (cip_read_card/cip_get_image) or sequentially 10 slots at a time (prefetch). */
@@ -22,7 +21,7 @@ int cip_read_cb(void *handle, int n);
 int cip_header_ready(Cip *c, int n);
 int cip_load_next(Cip *c);
 unsigned char *cip_alloc_slot(Cip *c);
-CipEntry *cip_table(Cip *c);                 /* not static: cip_prefetch_cb's asm references it */
+static CipEntry *cip_table(Cip *c);
 int cip_load_cb(Cip *c, int n);
 void cip_prefetch(Cip *c, int idx);
 int cip_prefetch_cb(void *handle, int n);
@@ -352,7 +351,7 @@ unsigned char *cip_alloc_slot(Cip *c)
     return buf;
 }
 
-CipEntry *cip_table(Cip *c)
+static CipEntry *cip_table(Cip *c)
 {
     return (CipEntry *)((unsigned char *)&c->hdr + c->hdr.table_off);
 }
@@ -389,13 +388,12 @@ void cip_prefetch(Cip *c, int idx)
                       c->hdr.chunks * 0x5000, (EhfileCallback)cip_prefetch_cb, c);
 }
 
-#ifdef NON_MATCHING /* with cip_table static (mwcc then keeps t-registers across the call; impossible while this asm references it) the frame matches and only buf/chunk swap a2/a3 */
 int cip_prefetch_cb(void *handle, int n)
 {
     Cip *c = (Cip *)handle;
     CipEntry *e;
-    unsigned char *buf;
-    unsigned int chunk, base;
+    unsigned char *chunk;              /* a chunk number; pointer-typed so mwcc allocates it like the original */
+    unsigned int buf, base;
     int nread, slot, i;
     unsigned int chunks;
 
@@ -408,11 +406,11 @@ int cip_prefetch_cb(void *handle, int n)
         for (i = 0; i < nread; i++) {
             chunks = c->hdr.chunks;
             slot = c->prefetch_idx + i;
-            buf = c->slots + slot * (chunks << 11);
-            chunk = base + chunks * slot;
+            buf = (unsigned int)(c->slots + slot * (chunks << 11));
+            chunk = (unsigned char *)(base + chunks * slot);
             for (e = cip_table(c); e->chunk != 0xFFFFFFFF; e++) {
-                if ((e->chunk & 0x7FFFFFFF) == chunk) {
-                    e->data = (unsigned int)buf;
+                if ((e->chunk & 0x7FFFFFFF) == (unsigned int)chunk) {
+                    e->data = buf;
                     break;
                 }
             }
@@ -426,7 +424,6 @@ int cip_prefetch_cb(void *handle, int n)
     return 1;
 }
 
-#endif
 
 static int cip_is_cpm(Cip *c)
 {

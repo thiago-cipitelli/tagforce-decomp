@@ -2,7 +2,6 @@
 // @data 0x088F04AC-0x088F078C
 // @rodata 0x088EAFE0-0x088EB030
 // @asm 0x08865BC4-0x08865CB0
-// @asm 0x08865B20-0x08865B50
 /* Game-side sound glue: heap and loader callbacks handed to the sound library (0x0885C688..0x08865260,
    still asm), the BGM/SE API exported to the gmodules (thin wrappers), character voice tables,
    per-player voice channels, movie_play with the configured volume, and the save-data path helpers
@@ -440,16 +439,14 @@ int partner_snd_channel(int slot, int se, int delay)
 }
 
 /* Sound id at the head of the slot's queue, 0 when empty. */
-#ifdef NON_MATCHING /* the original schedules the table address after the index shift */
 int snd_channel_get_u32(int slot)
 {
-    SndChannelTab *const t = &snd_channel_tab;
+    int *act = &snd_channel_tab.active[slot];
 
-    if (t->active[slot] != 0)
-        return t->ch[slot].q[0].se_id;
+    if (*act != 0)
+        return *(int *)((char *)&snd_channel_tab + (slot << 7) + 20);  /* ch[slot].q[0].se_id */
     return 0;
 }
-#endif
 
 /* Stops the slot's current voice. */
 void snd_channel_update(int slot)

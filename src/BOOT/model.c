@@ -1,5 +1,4 @@
 // @range 0x0882C428-0x0882D208
-// @asm 0x0882D160-0x0882D1B4
 // @data 0x088ED7D0-0x088ED820
 /* Models: a TGMS geometry with its bone matrices (local and skinned), the TGMT animations it
    plays (with cross-fade from the previous one), a material animation (TGMA), private copies of
@@ -509,32 +508,26 @@ int model_set_buf_size(Model *m, int size)
     return 1;
 }
 
-#ifdef NON_MATCHING /* cópias mortas após beqzl/beql (o lw do corpo repetido depois do slot), mesmo caso de cardinfo_draw */
 /* Texture (0) or draw (1) hook; v != -1 sets it. Returns the previous one. */
 void *model_hook(Model *m, int which, void *v)
 {
     void *old;
 
     switch (which) {
+    default:
+        return 0;
     case 0:
         old = m->hooks.tex;
-        if (v != (void *)-1) {
+        if (v != (void *)-1)
             m->hooks.tex = v;
-        }
-        break;
+        return old;
     case 1:
         old = m->hooks.draw;
-        if (v != (void *)-1) {
+        if (v != (void *)-1)
             m->hooks.draw = v;
-        }
-        break;
-    default:
-        old = 0;
-        break;
+        return old;
     }
-    return old;
 }
-#endif
 
 void model_mtx_dirty(void)
 {
