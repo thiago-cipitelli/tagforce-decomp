@@ -742,7 +742,7 @@ segments:
       - [0xDF980, asm, effect_live_asm_088E3920]
       - [0xE009C, c, effect_live]
       - [0xE1860, c, card_place]
-      - [0xE1C48, asm, card_place_asm_088E5BE8]
+      - [0xE1C9C, asm, card_place_asm_088E5C3C]
       - [0xE1FE4, c, card_find]
       - [0xE2374, asm, card_find_asm_088E6314]
       - [0xE23D8, c, card_find]

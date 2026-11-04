@@ -1,5 +1,5 @@
 // @range 0x088E5800-0x088E5F84
-// @asm 0x088E5BE8-0x088E5F84
+// @asm 0x088E5C3C-0x088E5F84
 /* Small card rules (targets of an activation, kinds), card references (copy, swap, compare), the
    next uid of a player, and placing a card in a monster or spell/trap zone. */
 #include "duel.h"
@@ -140,19 +140,20 @@ int duel_card_same(DuelCard *a, DuelCard *b)
     return *(int *)a == *(int *)b;
 }
 
-#ifdef NON_MATCHING /* 8 palavras: forma certa (base &duel+4 e +8), só registradores: o original põe p & 1 em v1 e o valor antigo em v0 */
-/* Next uid counter of player p, wrapping past 0xFF. */
-void duel_uid_next(unsigned int p)
+/* Next uid counter of player p, wrapping past 0xFF; returns the value before the increment. */
+int duel_uid_next(unsigned int p)
 {
     int *n;
+    int old;
 
     n = (int *)((char *)&duel.players[0].unk4 + (p & 1) * sizeof(duel.players[0]));
-    *n = *n + 1;
-    if ((unsigned int)*n >= 0x100) {
+    old = *n;
+    *n = old + 1;
+    if ((unsigned int)(old + 1) >= 0x100) {
         *n = *(int *)((char *)&duel.players[0].unk8 + (p & 1) * sizeof(duel.players[0])) + 2;
     }
+    return old;
 }
-#endif
 
 #ifdef NON_MATCHING /* the original stores the activation counter before the zone fields */
 /* Put card c in monster zone z of player p with position pos and face. */
