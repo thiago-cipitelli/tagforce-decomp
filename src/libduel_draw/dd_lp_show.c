@@ -1,5 +1,4 @@
 // @range 0x08858224-0x088587EC
-// @asm 0x088583D8-0x08858614
 // @asm 0x08858614-0x088586F0
 // @rodata 0x08870DF0-0x08870E90
 /* LP display object of the duel (continues dd_lp_panel.c): the panel with the LP of both
@@ -81,67 +80,75 @@ void *lps_back(void *dl, DdLpShow *s)
     return draw_sprite(dl, s->sx + 15, s->sy + 48, 0, 85, 17, 0, 0);
 }
 
-#ifdef NON_MATCHING /* alocação de registradores difere; não insistido */
 /* the five characters of one player (top: player 0) */
 void *lps_digits(void *dl, DdLpShow *s, int top)
 {
-    int x0, w0, w1, n0, n1, gw, gh, dy0, dy1, sp0, sp1, i;
+    int i;
+    int gw;
     void *gim;
+    int n1;
+    int gh;
+    int w0;
+    int w1;
+    int dy1;
+    DdLpMgr *lp = &dd_lp;
+    int x0;
+    int n0;
+    int dy0;
+    int sp0;
+    int sp1;
 
     if (region_get() == 0) {
         w0 = 17;
         gh = 24;
-        gim = dd_lp.nmb02;
-        n0 = 5;
+        gim = lp->nmb02;
         w1 = 17;
         gw = 17;
         x0 = 25;
         dy1 = 24;
         dy0 = 65;
+        n0 = 5;
         sp0 = 0;
         sp1 = 0;
         n1 = 5;
     } else {
         gw = 20;
         gh = 27;
-        gim = dd_lp.nmb01_a;
+        gim = lp->nmb01_a;
         dy1 = 22;
         dy0 = 72;
         sp0 = 3;
         sp1 = 3;
         x0 = 69;
-        if (s->wide[0] == 0) {
-            w0 = 20;
-            n0 = 4;
-        } else {
+        if (s->wide[0] != 0) {
             w0 = 17;
             n0 = 5;
-        }
-        if (s->wide[1] == 0) {
-            w1 = 20;
-            n1 = 4;
         } else {
+            w0 = 20;
+            n0 = 4;
+        }
+        if (s->wide[1] != 0) {
             w1 = 17;
             n1 = 5;
+        } else {
+            w1 = 20;
+            n1 = 4;
         }
     }
     dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
     dl = dl_set_tex_filter(dl, 1, 1);
     dl = gim_set_texture(dl, gim);
     for (i = 0; i < 5; i++) {
-        if (top == 0) {
-            dl = draw_set_offsets(dl, gw, gh, w1, gh);
-            dl = lps_glyph(dl, s->sx + x0 + (w1 - sp1) * (n1 - 1 - i), s->sy + dy0, s->text[1][i]);
-        } else {
+        if (top != 0) {
             dl = draw_set_offsets(dl, gw, gh, w0, gh);
             dl = lps_glyph(dl, s->sx + x0 + (w0 - sp0) * (n0 - 1 - i), s->sy + dy1, s->text[0][i]);
+        } else {
+            dl = draw_set_offsets(dl, gw, gh, w1, gh);
+            dl = lps_glyph(dl, s->sx + x0 + (w1 - sp1) * (n1 - 1 - i), s->sy + dy0, s->text[1][i]);
         }
     }
     return dl;
 }
-#else
-void *lps_digits(void *dl, DdLpShow *s, int top);
-#endif
 
 #ifdef NON_MATCHING /* só o teste de '?' sai beql em vez de beq */
 void *lps_glyph(void *dl, int x, int y, char c)
