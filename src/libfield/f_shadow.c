@@ -374,8 +374,8 @@ void fld_draw_flush(void)
     dl_set_list(list);
 }
 
-#ifdef NON_MATCHING /* the original divides x before loading z (every form tried loads both first); its prologue copies scale after volume, as if scale were the third parameter */
-int fld_draw_add(float scale, void *shadow, int volume, int area, void *fn, void *arg)
+#ifdef NON_MATCHING /* 5 palavras: o original divide x antes de carregar z (todas as formas testadas, inclusive inline, carregam os dois antes); scale é o 3º parâmetro (o prólogo copia scale depois de volume) */
+int fld_draw_add(void *shadow, int volume, float scale, int area, void *fn, void *arg)
 {
     FieldDraw *d = &field_draw;
     FieldDrawEnt *e;

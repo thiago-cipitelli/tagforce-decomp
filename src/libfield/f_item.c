@@ -98,12 +98,12 @@ void fld_items_draw(void)
         for (i = 0; i < 8; i++) {
             it = &b->a[i];
             if (b->a[i].active)
-                fld_draw_add(1.0f, &it->mtx, 0, 1, fld_item_draw_a, it);
+                fld_draw_add(&it->mtx, 0, 1.0f, 1, fld_item_draw_a, it);
         }
         for (i = 0; i < 8; i++) {
             it = &b->b[i];
             if (b->b[i].active)
-                fld_draw_add(1.0f, &it->mtx, 0, 1, fld_item_draw_b, it);
+                fld_draw_add(&it->mtx, 0, 1.0f, 1, fld_item_draw_b, it);
         }
     }
 }

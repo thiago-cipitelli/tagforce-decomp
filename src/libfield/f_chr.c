@@ -134,13 +134,13 @@ void fld_chr_draw(FieldChr *c)
         }
         switch (fld_chr_kind(c->id)) {
         case 0:
-            fld_draw_add(1.0f, c->shadow, 1, alpha, fld_chr_draw_model, c);
+            fld_draw_add(c->shadow, 1, 1.0f, alpha, fld_chr_draw_model, c);
             break;
         case 1:
-            fld_draw_add(1.0f, c->shadow, 1, alpha, fld_chr_draw_sprite, c);
+            fld_draw_add(c->shadow, 1, 1.0f, alpha, fld_chr_draw_sprite, c);
             break;
         case 2:
-            fld_draw_add(0.0f, c->shadow, 0, alpha, fld_chr_draw_flat, c);
+            fld_draw_add(c->shadow, 0, 0.0f, alpha, fld_chr_draw_flat, c);
             break;
         }
     }

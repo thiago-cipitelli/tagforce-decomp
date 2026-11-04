@@ -976,7 +976,7 @@ void fld_player_setup(float x, float z, int dir);
 int fld_story_flag(int id, int mode);
 void fld_shadow_set(Vec3 *pos, void *shadow);
 void fld_cell_mark(int cx, int cz, int v);
-int fld_draw_add(float scale, void *shadow, int volume, int area, void *fn, void *arg);
+int fld_draw_add(void *shadow, int volume, float scale, int area, void *fn, void *arg);
 void fld_load_gim(int name, void (*cb)(int *file, void *arg), void *arg);
 void *fld_gim_get(int i);
 int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir, int visible,
