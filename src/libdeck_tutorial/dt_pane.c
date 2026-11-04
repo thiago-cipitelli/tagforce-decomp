@@ -1,7 +1,7 @@
 // @range 0x08816C34-0x088175FC
 // @asm 0x08816D1C-0x08816DA4
 // @asm 0x08816EBC-0x0881713C
-// @asm 0x088171A0-0x088174C4
+// @asm 0x088171A0-0x08817354
 // @data 0x0882225C-0x0882226C
 /* (The code of libdeck dk_pane.c.) Panes: the card list sprites, the cursor's index and entry, the cursor card's info text, switching
    the list shown in a pane (each list keeps its own scroll), the list names, scroll clamping, saving
@@ -267,6 +267,8 @@ keep_top:
     }
 }
 
+#endif
+
 /* stores the scroll of the pane(s) into their lists: which 0 = first, 1 = second, 2 = both
    (o escalonador intercala as leituras e gravações de outro jeito, como sc_set_panes) */
 void dt_save_panes(unsigned short which)
@@ -277,9 +279,7 @@ void dt_save_panes(unsigned short which)
 
     if (which != 1) {
         p = &dtv.pane[0];
-        n = 1;
-        if (p->list_mode == 0)
-            n = p->lay.cols;
+        n = p->list_mode == 0 ? p->lay.cols : 1;
         v = p->cx + (p->top + p->cy * n);
         p->list->u18 = p->top;
         p->list->u1c_lo = p->cx;
@@ -289,9 +289,7 @@ void dt_save_panes(unsigned short which)
     }
     if (which != 0) {
         p = &dtv.pane[1];
-        n = p->lay.cols;
-        if (p->list_mode)
-            n = 1;
+        n = p->list_mode == 0 ? p->lay.cols : 1;
         v = p->cx + (p->top + p->cy * n);
         p->list->u18 = p->top;
         p->list->u1c_lo = p->cx;
@@ -300,7 +298,6 @@ void dt_save_panes(unsigned short which)
         p->list->u1d_lo = n;
     }
 }
-#endif
 
 /* undo history: last 8 moves */
 void dt_hist_push(DtMove *m)

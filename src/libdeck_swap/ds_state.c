@@ -1,5 +1,5 @@
 // @range 0x08804608-0x08804E2C
-// @asm 0x08804814-0x08804CFC
+// @asm 0x08804814-0x08804B8C
 /* Cursor index and entry, the cursor card's info text (measured to scroll it), tab switching with
    the saved scroll of each list, scroll clamping, saving the panes' scroll into their lists, and
    the undo history of moves (same source as libselect_card sc_state.c). */
@@ -177,7 +177,6 @@ keep_top:
 }
 #endif
 
-#ifdef NON_MATCHING /* o escalonador intercala as leituras e gravações de outro jeito */
 /* stores the scroll of the pane(s) into their lists: which 0 = first, 1 = second, 2 = both */
 void ds_set_panes(unsigned short which)
 {
@@ -187,9 +186,7 @@ void ds_set_panes(unsigned short which)
 
     if (which != 1) {
         p = &dsv.pane[0];
-        n = 1;
-        if (p->list_mode == 0)
-            n = p->lay.cols;
+        n = p->list_mode == 0 ? p->lay.cols : 1;
         v = p->cx + (p->top + p->cy * n);
         p->list->u18 = p->top;
         p->list->u1c_lo = p->cx;
@@ -199,9 +196,7 @@ void ds_set_panes(unsigned short which)
     }
     if (which != 0) {
         p = &dsv.pane[1];
-        n = p->lay.cols;
-        if (p->list_mode)
-            n = 1;
+        n = p->list_mode == 0 ? p->lay.cols : 1;
         v = p->cx + (p->top + p->cy * n);
         p->list->u18 = p->top;
         p->list->u1c_lo = p->cx;
@@ -210,7 +205,6 @@ void ds_set_panes(unsigned short which)
         p->list->u1d_lo = n;
     }
 }
-#endif
 
 /* undo history: last 8 moves */
 void ds_hist_push(DsMove *m)
