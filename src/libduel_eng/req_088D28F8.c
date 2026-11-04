@@ -16,7 +16,6 @@
 // @asm 0x088D5BA0-0x088D5D2C
 // @asm 0x088D5D2C-0x088D5DEC
 // @asm 0x088D5DEC-0x088D5FC8
-// @asm 0x088D5FC8-0x088D613C
 // @asm 0x088D6168-0x088D624C
 /* Requests carried out one step per frame (duel_req, duel_req_step): revealing and flipping a card,
    showing a card of a list, sorting the zones, ... */
@@ -1504,40 +1503,46 @@ void duel_req_088D5DEC(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem dos loads dos campos do pedido e alocação de registradores não reproduzidas */
 /* The monster at (p, arg) has attacked (loc != 0) or its attack was cancelled. */
 void duel_req_088D5FC8(void)
 {
-    unsigned int z = duel_req.req.arg;
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
-    short done = *(short *)&duel_req.req.loc;
-    short end = duel_req.req.w;
-    int id = field_get_card(p, z);
+    int p;
+    int z;
+    unsigned int done;
+    unsigned int end;
+    int card;
+    unsigned int id;
 
-    if (done == 0) {
-        duel.players[p].field[z].flags &= ~0x400000;
-    } else {
+    id = duel_req.req.id;
+    p = (id & 0x8000) != 0;
+    z = duel_req.req.arg;
+    done = *(unsigned short *)&duel_req.req.loc;
+    end = duel_req.req.w;
+    card = field_get_card(p, z);
+
+    if (done != 0) {
         duel_mark_attacked(p, z);
-        switch (id) {
-        case 0xFF8:
-            if (duel_slot_has_effect(p, 0xB, 0xFF8) == 0) {
-                duel_slot_effect_add(p, 0xB, 1, 0xFF8, 0);
-            }
-            break;
+        switch (card) {
         case 0xFA6:
         case 0xFA7:
-            if (duel_slot_has_effect(p, 0xB, id) == 0) {
+            if (duel_slot_has_effect(p, 0xB, card) == 0) {
                 duel_slot_effect_add(p, 0xB, 1, 0xFA7, 0);
+            }
+            break;
+        case 0xFF8:
+            if (duel_slot_has_effect(p, 0xB, card) == 0) {
+                duel_slot_effect_add(p, 0xB, 1, card, 0);
             }
             break;
         }
         if (end != 0) {
             duel_effects_end_turn();
         }
+    } else {
+        duel.players[p & 1].field[z].flags &= ~0x400000;
     }
     duel_busy_0891523C = 0;
 }
-#endif
 
 void duel_req_088D613C(void)
 {
