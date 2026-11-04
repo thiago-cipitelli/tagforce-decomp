@@ -470,7 +470,7 @@ int duel_08814684(DuelAct *a, DuelAct *b)
     if (b->n_targets != 0) {
         for (i = 0; i < b->n_targets; i++) {
             t = duel_act_target(b, i);
-            z = (t & 0xFFFF) >> 8 & 0xFF;
+            z = ((unsigned short)t >> 8) & 0xFF;
             return (t & 0xFF) == a->player && z == a->zone;
         }
         return 0;

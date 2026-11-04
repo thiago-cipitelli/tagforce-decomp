@@ -39,13 +39,13 @@ int duel_088D4CD8();
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_0884356C(void);
 int duel_0884DFB0(void);
-int duel_088321B4(void);
-int duel_08824D34(void);
+int duel_ev_run(void);
+int duel_ai_atk_update(void);
 int duel_0884E1D8(void);
 int duel_088535C0(void);
 void duel_0883447C(void);
 int duel_msg_poll(void);
-int duel_088D557C(void);
+int duel_req_088D557C(void);
 int duel_08827544(void);
 int duel_card_used_e66ac(unsigned int id);
 unsigned int card_get_type(int id);
@@ -250,10 +250,10 @@ int duel_0884D72C(void)
                 r = duel_0884DFB0();
             }
             if (r == 0) {
-                r = duel_088321B4();
+                r = duel_ev_run();
             }
             if (r == 0) {
-                r = duel_08824D34();
+                r = duel_ai_atk_update();
             }
             if (r == 0) {
                 r = duel_0884E1D8();
@@ -296,7 +296,7 @@ int duel_0884D874(void)
     if (duel_w_089195EC != 0 && duel_msg_poll() == 0) {
         return 1;
     }
-    if (duel_088D557C() != 0) {
+    if (duel_req_088D557C() != 0) {
         return 0;
     }
     if (duel_end_steps2[duel_w_089195F8]() != 0) {

@@ -382,7 +382,7 @@ segments:
       - [0x6CAF4, asm, act_cond2_asm_08870A94]
       - [0x6CBAC, c, act_cond2]
       - [0x6CCB4, asm, act_cond2_asm_08870C54]
-      - [0x6CF58, c, act_cond2]
+      - [0x6CEF4, c, act_cond2]
       - [0x6D068, asm, act_cond2_asm_08871008]
       - [0x6D1C8, c, act_cond2]
       - [0x6D21C, asm, act_cond2_asm_088711BC]

@@ -3,7 +3,7 @@
 // @asm 0x0886F4CC-0x0886F65C
 // @asm 0x08871008-0x08871168
 // @asm 0x088711BC-0x0887132C
-// @asm 0x08870C54-0x08870EF8
+// @asm 0x08870C54-0x08870E94
 // @asm 0x08870848-0x088708E4
 // @asm 0x08870968-0x08870A38
 // @asm 0x08870A94-0x08870B4C
@@ -926,7 +926,6 @@ int duel_08870DC4(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* branch layout and registers differ */
 int duel_08870E94(DuelAct *a)
 {
     if (a->kind != 0x23) {
@@ -936,7 +935,6 @@ int duel_08870E94(DuelAct *a)
     }
     return 1;
 }
-#endif
 
 int duel_08870EF8(DuelAct *a, int b)
 {
@@ -1803,9 +1801,11 @@ int duel_08873150(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* case order and registers differ */
+#ifdef NON_MATCHING /* forma do original (b != 0 primeiro, case 0x1F/0x20 juntos); 29 palavras: o original calcula &a->src no delay slot do beq do case 0x21, aqui sobe para o prólogo (dentro do case o mwcc dobra o ponteiro) */
 int duel_088731C0(DuelAct *a, DuelAct *b)
 {
+    DuelSrc *s = &a->src;
+
     if (b != 0) {
         if (card_is_in_group_147e(b->id) == 0) {
             return 2;
@@ -1815,14 +1815,11 @@ int duel_088731C0(DuelAct *a, DuelAct *b)
         case 0x1F:
         case 0x20:
             return 0;
-        case 0x21: {
-            DuelSrc *s = &a->src;
-
+        case 0x21:
             if (duel.players[s->player & 1].field[s->zone].card.id == 0) {
                 return 0;
             }
             return 2;
-        }
         }
     }
     if (a->b3_4 == 3) {

@@ -157,43 +157,53 @@ void duel_088C8E88(int q, int sz)
     }
 }
 
-#ifdef NON_MATCHING /* register allocation and branch layout not reproduced */
+#ifdef NON_MATCHING /* corrigido 2026-11-04: duel_088C8B3C recebe a entrada atual (o rascunho passava a seguinte); 10 palavras: $s de next e sz trocados (s4/s2) */
 void duel_088C8F04(unsigned int p, int z)
 {
     unsigned int e = duel.players[p & 1].field[z].effects;
 
     while (e != 0) {
-        DuelEffect *ef = &duel_effects[e];
-        unsigned int k;
+        DuelEffect *ef = &duel.effects[e];
+        unsigned int sz = ef->src >> 8 & 0xFF;
+        unsigned int sp = ef->src & 0xFF;
+        unsigned int next = ef->next;
+        unsigned int k = ef->kind & 0xF;
         int v;
 
-        e = ef->next;
-        k = ef->kind & 0xF;
-        if (k == 7 || k == 6 || k == 10) {
-            unsigned int sp = ef->src & 0xFF;
-            unsigned int sz = ef->src >> 8;
-            unsigned int q = ef->src & 1;
-
-            if (duel.players[q].field[sz].card.id != 0 && duel.players[q].field[sz].faceup != 0 &&
-                !(duel.players[q].field[sz].flags >> 5 & 1)) {
-                int id = field_get_card(sp, sz);
-
-                v = sp;
-                if (id == 0x18C2 || id == 0x18C1 || id == 0x18C0 || id == 0x18BF) {
-                    v = -1;
+        switch (k) {
+        case 10:
+        case 6:
+        case 7:
+            if (duel.players[sp & 1].field[sz].card.id != 0 && duel.players[sp & 1].field[sz].faceup != 0 &&
+                !(duel.players[sp & 1].field[sz].flags >> 5 & 1)) {
+                v = -1;
+                switch (field_get_card(sp, sz)) {
+                case 0x1322:
+                case 0x1466:
+                case 0x169A:
+                case 0x1877:
+                case 0x1A9C:
+                    v = sp;
+                    break;
+                case 0x13EA:
+                    v = duel.players[sp & 1].field[sz].link;
+                    break;
+                case 0x18BF:
+                case 0x18C0:
+                case 0x18C1:
+                case 0x18C2:
                     if (duel_field_attr_is(p, z, card_get_kind(field_get_card(sp, sz))) != 0) {
                         v = ef->arg & 1;
                     }
-                } else if (id == 0x13EA) {
-                    v = duel.players[q].field[sz].link;
-                } else if (id != 0x1A9C && id != 0x1877 && id != 0x169A && id != 0x1466 && id != 0x1322) {
-                    v = -1;
+                    break;
                 }
                 if (v >= 0) {
                     duel_088C8B3C(p, z, e, 5, v);
                 }
             }
+            break;
         }
+        e = next;
     }
 }
 #endif

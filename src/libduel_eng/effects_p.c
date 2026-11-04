@@ -754,7 +754,7 @@ int duel_0887F8E4(DuelAct *a)
         }
         break;
     case 0x17D6:
-        n = duel_slot_has_effect(p, 11) + 1;
+        n = duel_slot_has_effect(p, 11, 0x17D6) + 1;
         break;
     case 0x1888:
         n = duel_grave_count_id(p, 0x1888) + 1;
@@ -1146,32 +1146,34 @@ int duel_0888095C(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* registers differ */
+#ifdef NON_MATCHING /* lógica conferida; 8 palavras: no ramo faceup o original sai com beqzl direto para o fim e o retorno depois de duel_088D14B8 fica com move v0,zero; b; nop */
 int duel_08880B00(DuelAct *a)
 {
     unsigned int t;
 
     if (duel_088A9008(a, 0, &t) != 0) {
         unsigned int p = t & 0xFF;
-        unsigned int z = (t & 0xFFFF) >> 8;
-        DuelSlot *sl = &duel.players[t & 1].field[z];
-        int id = sl->card.id;
+        unsigned int z = ((unsigned short)t >> 8) & 0xFF;
+        int id = duel.players[p & 1].field[z].card.id;
+        int r;
 
         if (id != 0) {
-            if (sl->faceup == 0) {
-                int r;
-
+            if (duel.players[p & 1].field[z].faceup != 0) {
+                if (duel_0884E440(a, p, z) == 0) {
+                    return 0;
+                }
+                duel_088D14B8(a, p, z);
+            } else {
                 duel_088C96EC(p, z, 1);
                 duel_088C4508(p, id);
                 duel_088C7B90(0x1E);
-                sl->faceup = 1;
+                duel.players[p & 1].field[z].faceup = 1;
                 r = duel_0884E440(a, p, z);
-                sl->faceup = 0;
-                if (r == 0 || duel_088D14B8(a, p, z) == 0) {
-                    duel_088C96EC(p, z, 0);
+                duel.players[p & 1].field[z].faceup = 0;
+                if (r != 0 && duel_088D14B8(a, p, z) != 0) {
+                    return 0;
                 }
-            } else if (duel_0884E440(a, p, z) != 0) {
-                duel_088D14B8(a, p, z);
+                duel_088C96EC(p, z, 0);
             }
         }
     }
