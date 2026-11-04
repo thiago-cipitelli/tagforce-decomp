@@ -1,5 +1,4 @@
 // @range 0x088DEB2C-0x088DFFC0
-// @asm 0x088DFAC8-0x088DFC10
 // @asm 0x088DFE9C-0x088DFFC0
 /* Rule checks for a player: cards that forbid drawing, summoning or activating, cards that can be
    used from the hand, locks on both players, who must answer now. */
@@ -314,7 +313,6 @@ int duel_phase_ok2(unsigned int p)
     return duel_can_set(p);
 }
 
-#ifdef NON_MATCHING /* the field branch returns 0 straight to the epilogue in the original */
 /* Card id of player p can be used (field: from the field, not only the hand). */
 int duel_card_dfac8(unsigned int p, int id, int field)
 {
@@ -324,13 +322,10 @@ int duel_card_dfac8(unsigned int p, int id, int field)
         return 0;
     }
     if (card_attribute_icon_in_2_3(id) != 0) {
-        if (field == 0) {
-            return 0;
+        if (field != 0 && card_is_attribute6(id) != 0 && duel_has_st_12be(p) != 0) {
+            return 1;
         }
-        if (card_is_attribute6(id) == 0 || duel_has_st_12be(p) == 0) {
-            return 0;
-        }
-        return 1;
+        return 0;
     }
     switch (id) {
     case 0x158B:
@@ -352,7 +347,6 @@ int duel_card_dfac8(unsigned int p, int id, int field)
     }
     return 1;
 }
-#endif
 
 /* Locks on both players: 1 nobody may, 2 no monsters, 4 not player 0, 8 not player 1. */
 unsigned int duel_dfc10(void)

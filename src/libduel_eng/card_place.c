@@ -140,15 +140,16 @@ int duel_card_same(DuelCard *a, DuelCard *b)
     return *(int *)a == *(int *)b;
 }
 
-#ifdef NON_MATCHING /* the original folds the field offset into the base address of each access */
+#ifdef NON_MATCHING /* 8 palavras: forma certa (base &duel+4 e +8), só registradores: o original põe p & 1 em v1 e o valor antigo em v0 */
 /* Next uid counter of player p, wrapping past 0xFF. */
 void duel_uid_next(unsigned int p)
 {
-    int *n = &duel.players[p & 1].unk4;
+    int *n;
 
-    (*n)++;
-    if ((unsigned int)*n > 0xFF) {
-        *n = duel.players[p & 1].unk8 + 2;
+    n = (int *)((char *)&duel.players[0].unk4 + (p & 1) * sizeof(duel.players[0]));
+    *n = *n + 1;
+    if ((unsigned int)*n >= 0x100) {
+        *n = *(int *)((char *)&duel.players[0].unk8 + (p & 1) * sizeof(duel.players[0])) + 2;
     }
 }
 #endif

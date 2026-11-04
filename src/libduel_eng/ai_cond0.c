@@ -1,6 +1,5 @@
 // @range 0x0881D0D8-0x0881E0A0
 // @asm 0x0881D17C-0x0881D318
-// @asm 0x0881DEA0-0x0881DF94
 /* Conditions the computer player checks before activating a card (continued in ai_cond.c). */
 #include "duel.h"
 #include "card_db.h"
@@ -334,7 +333,6 @@ int duel_ai_0881DE54(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original keeps the final atk + x < lp as bnez/li 0/b with v0 = 1 left from 1 - p; mwcc folds it */
 int duel_ai_0881DEA0(DuelAct *a)
 {
     if (duel.players[a->player & 1].lp > 4000) {
@@ -345,11 +343,12 @@ int duel_ai_0881DEA0(DuelAct *a)
         unsigned int p = a->player;
         int atk = card_get_atk(id);
         int x = duel_0880A8AC(p, p);
-        if (duel.players[(1 - a->player) & 1].lp <= atk + x) { return 1; } return 0;
+        if (atk + x >= duel.players[(1 - a->player) & 1].lp) {
+            return 1;
+        }
     }
     return 0;
 }
-#endif
 
 int duel_ai_0881DF94(DuelAct *a)
 {

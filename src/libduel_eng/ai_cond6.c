@@ -1,7 +1,6 @@
 // @range 0x08814EC8-0x08815E90
 // @asm 0x08815548-0x088157AC
 // @asm 0x088157AC-0x08815950
-// @asm 0x088159C8-0x08815AF8
 // @asm 0x08815BD0-0x08815E20
 /* The computer player's choice of a card to activate: the tables of cards with their conditions. */
 #include "duel.h"
@@ -278,18 +277,17 @@ int duel_08815950(DuelAct *a, unsigned int p, int atk, int def, int z)
     return duel_08815548(p, m & ~(1 << (z + p * 16)), atk, def);
 }
 
-#ifdef NON_MATCHING /* registradores */
 int duel_088159C8(unsigned int p, unsigned int mask, int (*fn)(unsigned int p, int z))
 {
-    int z[11];
     int n = 0;
     int i;
-    int k;
+    int z[11];
     int t;
-    int v;
-    int c;
     int best;
+    int k;
     int m;
+    int c;
+    int v;
     unsigned int b;
 
     for (i = 0, b = p << 4; i <= 10; i++, b++) {
@@ -315,7 +313,6 @@ int duel_088159C8(unsigned int p, unsigned int mask, int (*fn)(unsigned int p, i
     }
     return best;
 }
-#endif
 
 int duel_08815AF8(unsigned int p, int (*f)(unsigned int p, int zone, int i), int (*g)(unsigned int p, int i))
 {

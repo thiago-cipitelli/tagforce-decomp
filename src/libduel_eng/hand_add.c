@@ -48,7 +48,7 @@ int duel_088CAF24(DuelAct *a, unsigned int p, DuelCard *c)
             ev.uid = uid;
             duel_088C77EC(p, uid);
             if (card_is_in_group_1a5c(id)) {
-                for (z = 0; z < 5; z++) {
+                for (z = 0; z <= 4; z++) {
                     if (duel_slot_e8170(p, z, 0x1A50)) {
                         duel_0884F30C((p << 31 & 0x80000000) | 0x34200000 | ((unsigned int)z << 16 & 0x1F0000) | 0x1A50,
                                       CARD_UID(duel.players[p & 1].field[z].card), ev);

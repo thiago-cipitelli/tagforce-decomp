@@ -168,7 +168,7 @@ int duel_0881089C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a zona do índice passa por um byte; registradores */
+#ifdef NON_MATCHING /* duel_act_can_target recebe (a, jogador, zona & 0xFF) (faltavam os 2 argumentos); ~40 palavras: o original lê o jogador duas vezes (srl para o argumento, ext para o índice) no fim */
 int duel_08810944(DuelAct *a)
 {
     unsigned int k;
@@ -182,7 +182,7 @@ int duel_08810944(DuelAct *a)
             s = &duel_chain.srcs[k];
             if (a->player != s->s_player
                 && duel.players[s->s_player & 1].field[s->s_zone].faceup != 0
-                && duel_act_can_target(a) != 0
+                && duel_act_can_target(a, s->s_player, (unsigned char)s->s_zone) != 0
                 && duel_field_atk(s->s_player, s->s_zone) <= 2000
                 && duel_d_count_name(s->s_player, duel.players[s->s_player].field[s->s_zone].card.id) != 0) {
                 return 1;
