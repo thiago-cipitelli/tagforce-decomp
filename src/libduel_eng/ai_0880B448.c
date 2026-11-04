@@ -775,24 +775,34 @@ int duel_0880D924(unsigned int p, int z, int careful, DuelAtkGuess *g, int force
     return r;
 }
 
-#ifdef NON_MATCHING /* o original faz a ordenação inline com o cálculo da prioridade dentro do laço; mantida em asm */
+#ifdef NON_MATCHING /* lógica conferida com o asm (2026-11-04): chave inline, prio com ++/--/-=, dois buffers DuelAtkGuess. 141 palavras: posições de pilha dos valores guardados no laço de ordenação (atk em 56(sp) no original, mode em 88(sp)) e o break do laço 0x19C2 em linha */
 /* Order of p's attackers: low priority and low ATK first. */
-static unsigned int duel_attacker_key(unsigned int p, int z)
+static inline unsigned int duel_attacker_key(unsigned int p, int z)
 {
-    unsigned int atk = duel_w_08913CF4.st[p][z].atk;
+    int atk = duel_w_08913CF4.st[p][z].atk;
     int prio = 10;
     int i;
 
     if (!(duel.players[p & 1].field[z].flags >> 5 & 1)) {
         switch (field_get_card(p, z)) {
-        case 0x18A4:
-        case 0x11CD:
-        case 0x128F:
-        case 0x12A0:
-            prio = 11;
+        case 0x1505:
+        case 0x1644:
+        case 0x1958:
+        case 0x186C:
+        case 0x19C1:
+        case 0x1A4E:
+            prio -= 3;
             break;
-        case 0x147D:
-            prio = 9;
+        case 0x13B1: case 0x16CB: case 0x17E3: case 0x1826: case 0x1861: case 0x19D4: case 0x14D5:
+        case 0x19F8: case 0x1A93: case 0x1529: case 0x17D2: case 0x17D3: case 0x17D7: case 0x17D8:
+        case 0x17DA: case 0x147A: case 0x1520: case 0x158F: case 0x1592: case 0x15DC: case 0x164D:
+        case 0x1641: case 0x16C5: case 0x1704: case 0x170B: case 0x172A: case 0x172B: case 0x174A:
+        case 0x174B: case 0x1791: case 0x1792: case 0x17C7: case 0x17C8: case 0x18AE: case 0x18C8:
+        case 0x193B: case 0x1943: case 0x194F: case 0x1987: case 0x19A4: case 0x19D3: case 0x1A23:
+        case 0x1A95:
+            if (duel_count_monsters(1 - p) != 0) {
+                prio -= 2;
+            }
             break;
         case 0x1524:
         case 0x15E0:
@@ -805,33 +815,23 @@ static unsigned int duel_attacker_key(unsigned int p, int z)
         case 0x19C2:
             for (i = 0; i < 5; i++) {
                 if (duel.players[(1 - p) & 1].field[i].card.id != 0 && duel_0880C15C(p, z, i) != 0) {
-                    prio = 9;
+                    prio--;
                     break;
                 }
             }
             break;
-        case 0x13B1: case 0x16CB: case 0x17E3: case 0x1826: case 0x1861: case 0x19D4: case 0x14D5:
-        case 0x19F8: case 0x1A93: case 0x1529: case 0x17D2: case 0x17D3: case 0x17D7: case 0x17D8:
-        case 0x17DA: case 0x147A: case 0x1520: case 0x158F: case 0x1592: case 0x15DC: case 0x164D:
-        case 0x1641: case 0x16C5: case 0x1704: case 0x170B: case 0x172A: case 0x172B: case 0x174A:
-        case 0x174B: case 0x1791: case 0x1792: case 0x17C7: case 0x17C8: case 0x18AE: case 0x18C8:
-        case 0x193B: case 0x1943: case 0x194F: case 0x1987: case 0x19A4: case 0x19D3: case 0x1A23:
-        case 0x1A95:
-            if (duel_count_monsters(1 - p) != 0) {
-                prio = 8;
-            }
+        case 0x147D:
+            prio--;
             break;
-        case 0x1A4E:
-        case 0x1505:
-        case 0x1644:
-        case 0x1958:
-        case 0x186C:
-        case 0x19C1:
-            prio = 7;
+        case 0x11CD:
+        case 0x128F:
+        case 0x12A0:
+        case 0x18A4:
+            prio++;
             break;
         }
     }
-    return (atk & 0xFFFF) | prio << 16;
+    return *(unsigned short *)&atk | (prio & 0xFFFF) << 16;
 }
 
 /* Pick the computer's next attack into duel_w_08913EF0; mode < 0 skips monsters that attack twice. */
@@ -846,6 +846,7 @@ int duel_0880DC1C(unsigned int p, int mode)
     int t;
     unsigned int key;
     unsigned int min;
+    DuelAtkGuess g2;
     DuelAtkGuess g;
 
     duel_w_08913EF0.direct = 0;
@@ -863,12 +864,12 @@ int duel_0880DC1C(unsigned int p, int mode)
             }
             if (SLOT_ACTIVE(&duel.players[p & 1].field[z])) {
                 switch (field_get_card(p, z)) {
-                case 0x1A4E:
-                case 0x19C1:
-                case 0x186C:
-                case 0x1958:
-                case 0x1644:
                 case 0x1505:
+                case 0x1644:
+                case 0x1958:
+                case 0x186C:
+                case 0x19C1:
+                case 0x1A4E:
                     continue;
                 }
             }
@@ -893,15 +894,15 @@ int duel_0880DC1C(unsigned int p, int mode)
         list[k] = t;
     }
     for (i = 0; i < n; i++) {
-        if (duel_0880D924(p, list[i], 1, &g, 0) != 0) {
+        if (!(duel_0880D924(p, list[i], 1, &g, 0) != 0) == 0) {
             duel_memcpy(&duel_w_08913EF0, &g, sizeof(g));
             return 1;
         }
     }
     if (mode > 0) {
         for (i = n - 1; i >= 0; i--) {
-            if (duel_0880D924(p, list[i], 1, &g, 1) != 0) {
-                duel_memcpy(&duel_w_08913EF0, &g, sizeof(g));
+            if (!(duel_0880D924(p, list[i], 1, &g2, 1) != 0) == 0) {
+                duel_memcpy(&duel_w_08913EF0, &g2, sizeof(g2));
                 return 1;
             }
         }

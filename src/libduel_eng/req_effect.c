@@ -67,7 +67,7 @@ void duel_slot_effects_free_keep(DuelSlot *s);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 void duel_effects_move_src(unsigned short from, unsigned short to);
-void *memcpy(void *dst, const void *src, unsigned int n);
+void duel_memcpy(void *dst, void *src, int n);
 void duel_slot_effects_reset(unsigned int p, unsigned int z);
 
 #ifdef NON_MATCHING /* draft */
@@ -307,7 +307,7 @@ void duel_req_move_zone(void)
             to.b15 = 0;
         }
         dst = &duel.players[b & 1].field[bz];
-        memcpy(dst, &duel.players[a & 1].field[az], sizeof(DuelSlot));
+        duel_memcpy(dst, &duel.players[a & 1].field[az], sizeof(DuelSlot));
         duel_card_copy(&dst->card, &duel_card_tmp);
         duel_bzero(&duel.players[a & 1].field[az], sizeof(DuelSlot));
         duel.zone_off &= ~(1 << (az + ap * 16));
@@ -352,10 +352,10 @@ void duel_req_swap_zones(void)
             return;
         }
         sb = &duel.players[b & 1].field[bz];
-        memcpy(&tmp, sb, sizeof(DuelSlot));
+        duel_memcpy(&tmp, sb, sizeof(DuelSlot));
         sa = &duel.players[a & 1].field[az];
-        memcpy(sb, sa, sizeof(DuelSlot));
-        memcpy(sa, &tmp, sizeof(DuelSlot));
+        duel_memcpy(sb, sa, sizeof(DuelSlot));
+        duel_memcpy(sa, &tmp, sizeof(DuelSlot));
         fa = (a & 0xFF) | az << 8;
         duel.players[a & 1].field[az].flags &= ~0x200000;
         duel.players[b & 1].field[bz].flags &= ~0x200000;

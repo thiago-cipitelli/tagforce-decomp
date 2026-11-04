@@ -3,7 +3,7 @@
 // @asm 0x0886F4CC-0x0886F65C
 // @asm 0x08871008-0x08871168
 // @asm 0x088711BC-0x0887132C
-// @asm 0x08870C54-0x08870EF8
+// @asm 0x08870C54-0x08870E94
 // @asm 0x08870848-0x088708E4
 // @asm 0x08870968-0x08870A38
 // @asm 0x08870A94-0x08870B4C
@@ -11,7 +11,7 @@
 // @asm 0x088719DC-0x08871A68
 // @asm 0x08871674-0x088717B4
 // @asm 0x088703E0-0x088704BC
-// @asm 0x088705DC-0x088706CC
+// @asm 0x088705DC-0x0887068C
 // @asm 0x088731C0-0x088732B4
 // @asm 0x08873B8C-0x08873C84
 // @asm 0x088746D0-0x0887477C
@@ -19,8 +19,6 @@
 // @asm 0x08876AEC-0x08876CF0
 // @asm 0x088770C0-0x088771D4
 // @asm 0x08878FA4-0x08879194
-// @asm 0x08879D5C-0x08879E20
-// @asm 0x08879EA8-0x08879F60
 // @asm 0x0887AD38-0x0887AE84
 // @asm 0x0887B9D4-0x0887BC28
 // @asm 0x0887C93C-0x0887CAE8
@@ -310,10 +308,10 @@ int duel_0886F59C(DuelAct *a, int b)
     if (duel_0886CE38(a, b) == 0) {
         return 0;
     }
-    if (!(duel.players[a->player & 1].flags >> 25 & 1)) {
-        return 0;
+    if (duel.players[a->player & 1].flags >> 25 & 1) {
+        return duel_slot_has_effect(a->player, 11, a->id) != 0;
     }
-    return duel_slot_has_effect(a->player, 11, a->id) != 0;
+    return 0;
 }
 #endif
 
@@ -710,12 +708,10 @@ int duel_088705DC(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* branch layout and registers differ */
 int duel_0887068C(DuelAct *a)
 {
-    return duel.players[a->player & 1].lp <= 1 ? 1 : 2;
+    return duel.players[a->player & 1].lp > 1 ? 2 : 1;
 }
-#endif
 
 int duel_088706CC(DuelAct *a)
 {
@@ -926,18 +922,15 @@ int duel_08870DC4(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* branch layout and registers differ */
 int duel_08870E94(DuelAct *a)
 {
-    if (a->kind == 0x23) {
-        return 1;
+    if (a->kind != 0x23) {
+        if (duel_hand_can_discard(a->player, 1, a->uid, 1, 0) == 0) {
+            return 0;
+        }
     }
-    if (duel_hand_can_discard(a->player, 1, a->uid, 1, 0) != 0) {
-        return 1;
-    }
-    return 0;
+    return 1;
 }
-#endif
 
 int duel_08870EF8(DuelAct *a, int b)
 {
@@ -1804,28 +1797,31 @@ int duel_08873150(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* case order and registers differ */
+#ifdef NON_MATCHING /* forma do original (b != 0 primeiro, case 0x1F/0x20 juntos); 29 palavras: o original calcula &a->src no delay slot do beq do case 0x21, aqui sobe para o prólogo (dentro do case o mwcc dobra o ponteiro) */
 int duel_088731C0(DuelAct *a, DuelAct *b)
 {
-    if (b == 0) {
-        unsigned int k = a->kind;
+    DuelSrc *s = &a->src;
 
-        if (k == 0x21) {
-            if (duel.players[a->src.player].field[a->src.zone].card.id == 0) {
+    if (b != 0) {
+        if (card_is_in_group_147e(b->id) == 0) {
+            return 2;
+        }
+    } else {
+        switch (a->kind) {
+        case 0x1F:
+        case 0x20:
+            return 0;
+        case 0x21:
+            if (duel.players[s->player & 1].field[s->zone].card.id == 0) {
                 return 0;
             }
             return 2;
         }
-        if (k == 0x20) {
-            return 0;
-        }
-        if (k == 0x1F) {
-            return 0;
-        }
-    } else if (card_is_in_group_147e(b->id) == 0) {
-        return 2;
     }
-    return a->b3_4 != 3;
+    if (a->b3_4 == 3) {
+        return 0;
+    }
+    return 1;
 }
 #endif
 
@@ -4475,11 +4471,10 @@ int duel_08879C60(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* instruction order differs */
 int duel_08879D5C(DuelAct *a)
 {
     unsigned int z = a->zone;
-    unsigned int p = a->player;
+    unsigned char p = a->player;
 
     if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
         return 0;
@@ -4492,7 +4487,6 @@ int duel_08879D5C(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_08879E20(DuelAct *a)
 {
@@ -4505,21 +4499,18 @@ int duel_08879E20(DuelAct *a)
     return !duel_slot_effect_with(a->player, 11, 0x16BE, a->uid);
 }
 
-#ifdef NON_MATCHING /* instruction order differs */
 int duel_08879EA8(DuelAct *a)
 {
     unsigned int z = a->zone;
-    unsigned int p = a->player;
 
-    if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
+    if (a->uid != CARD_UID(duel.players[a->player & 1].field[z].card)) {
         return 0;
     }
-    if (duel.players[p & 1].field[z].faceup == 0) {
+    if (duel.players[a->player & 1].field[z].faceup == 0) {
         return 0;
     }
-    return duel_0886CD1C(a, p) != 0;
+    return duel_0886CD1C(a, a->player) != 0;
 }
-#endif
 
 int duel_08879F60(DuelAct *a, int b)
 {

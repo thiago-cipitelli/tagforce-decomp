@@ -220,7 +220,7 @@ int duel_088D2760(DuelAct *a, int i)
             if (a->player != q) {
                 opp |= 1;
             }
-            duel_cmd(0x40, (z & 0x1F) << 1 | (q & 1) | 0xFFC0, (o & 1) | 0x5A, opp);
+            duel_cmd(0x40, (q & 1) | (z & 0x1F) << 1 | 0xFFC0, (o & 1) | 0x5A, opp);
         }
         duel_088CFBA4(&s->card, q, z, opp);
         return 1;

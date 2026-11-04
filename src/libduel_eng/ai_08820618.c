@@ -1419,7 +1419,7 @@ extern struct {
     unsigned char b1 : 1;
 } duel_msg_state;                      /* 0x08914340 */
 
-int duel_0882F6BC(void);
+int duel_summon_run(void);
 unsigned int duel_field_type(unsigned int p, int z);
 void duel_088C05B0(int id);
 int duel_slot_immune(unsigned int p, int z, int opp);
@@ -1452,7 +1452,7 @@ int duel_ai_atk_update(void)
     int lv;
 
     if (a->f0) {
-        if (duel_0882F6BC() == 0) {
+        if (duel_summon_run() == 0) {
             return 1;
         }
         a->f0 = 0;
