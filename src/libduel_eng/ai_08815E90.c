@@ -3,7 +3,6 @@
 // @asm 0x0881616C-0x088163E4
 // @asm 0x0881657C-0x08816A74
 // @asm 0x08816A74-0x08816D74
-// @asm 0x08816D74-0x08816EA4
 // @asm 0x088170EC-0x088171C8
 // @asm 0x088172F0-0x0881739C
 // @asm 0x08817598-0x08818C34
@@ -409,7 +408,6 @@ int duel_08816A74(unsigned int p, int (*fn)(), int a, int keep)
 }
 #endif
 
-#ifdef NON_MATCHING /* os contadores dos dois laços aninhados (s2/s4) saem trocados */
 /* Use the effect of a on a random zone of p or else of the opponent that accepts it. */
 int duel_08816D74(DuelAct *a, unsigned int p)
 {
@@ -428,19 +426,18 @@ int duel_08816D74(DuelAct *a, unsigned int p)
         z[i] = z[j];
         z[j] = t;
     }
-    for (k = 0; k < 2; k++) {
-        for (j = 0; j <= 10; j++) {
-            if (!duel_0884E3E4(a, p, z[j])) {
+    for (i = 0; i < 2; i++) {
+        for (k = 0; k <= 10; k++) {
+            if (!duel_0884E3E4(a, p, z[k])) {
                 continue;
             }
-            duel_088A8D40(a, p, z[j]);
+            duel_088A8D40(a, p, z[k]);
             return 1;
         }
         p ^= 1;
     }
     return 0;
 }
-#endif
 
 /* How much the computer wants to keep the card at (p, z): 3 a face-up 0x118A, 2 attribute 9, 1 listed. */
 int duel_08816EA4(unsigned int p, int z)
