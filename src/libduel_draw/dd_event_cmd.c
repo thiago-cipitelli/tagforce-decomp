@@ -9,7 +9,6 @@
 // @asm 0x08819184-0x08819430
 // @asm 0x08819430-0x08819684
 // @asm 0x0881972C-0x088197C8
-// @asm 0x08819920-0x08819968
 // @asm 0x088199C8-0x08819A70
 /* The duel-event handlers 1..73 of the dispatcher table (dd_event.c): cut-ins (duel start/end,
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
@@ -1023,12 +1022,11 @@ int dd_ev_60(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* ordem dos testes do switch */
 int dd_ev_61(int kind)
 {
     switch (kind) {
     case 0:
-        func_0882059C(0x3D, dd_mode_cancel);
+        func_0882059C(0x3D, dd_mode_cancel, 1);
         break;
     case 1:
         break;
@@ -1037,7 +1035,6 @@ int dd_ev_61(int kind)
     }
     return 1;
 }
-#endif
 
 int dd_ev_73(int player, int a)
 {

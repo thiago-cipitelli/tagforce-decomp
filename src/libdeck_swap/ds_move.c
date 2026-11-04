@@ -2,7 +2,6 @@
 // @asm 0x0880BE1C-0x0880C7C0
 // @asm 0x0880C87C-0x0880CDF0
 // @asm 0x0880CE28-0x0880D198
-// @asm 0x0880D198-0x0880D1B0
 /* Moving a card between the main and the extra deck (Circle, undo with Triangle): the entry is
    taken out, flown along a curve from its slot to the slot it lands in and added to the other list;
    the position of a slot on screen, and the filter reset of a list (same source as libselect_card
@@ -387,13 +386,14 @@ int ds_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original soma o deslocamento do campo no lhu; o mwcc atual o dobra no addiu da base */
 /* position the card lands at in list tab: the end of its visible order */
 unsigned short ds_dst_pos(int tab, unsigned short id)
 {
-    return ds.list[tab].count;
+    DsState *d = &ds;
+    DsList *l = &d->list[tab];
+
+    return l->count;
 }
-#endif
 
 
 /* clears the filter of l, re-sorted by key 1 */

@@ -126,8 +126,6 @@ segments:
       - [0x189C4, c, dt_text]
       - [0x189F0, asm, dt_text_asm_0881C990]
       - [0x18A78, c, dt_text]
-      - [0x18AD8, asm, dt_text_asm_0881CA78]
-      - [0x18B0C, c, dt_text]
       - [0x18C9C, asm, dt_text_asm_0881CC3C]
       - [0x18E14, c, dt_text]
       - [0x18E14, asm, dt_text_asm_0881CDB4]

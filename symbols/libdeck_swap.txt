@@ -253,7 +253,7 @@ ds_flight_step = 0x0880C87C; // type:func asm (@asm in src/libdeck_swap/ds_move.
 ds_flight_free = 0x0880CDF0; // type:func matched src/libdeck_swap/ds_move.c
 ds_draw_sort_menu = 0x0880CE28; // type:func asm (@asm in src/libdeck_swap/ds_move.c, C under NON_MATCHING)
 ds_slot_pos = 0x0880CED8; // type:func asm (@asm in src/libdeck_swap/ds_move.c, C under NON_MATCHING)
-ds_dst_pos = 0x0880D198; // type:func asm (@asm in src/libdeck_swap/ds_move.c, C under NON_MATCHING)
+ds_dst_pos = 0x0880D198; // type:func matched src/libdeck_swap/ds_move.c
 ds_list_filter_reset = 0x0880D1B0; // type:func matched src/libdeck_swap/ds_move.c
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08815ED4; // type:func import:libehsys nid:00D1378F

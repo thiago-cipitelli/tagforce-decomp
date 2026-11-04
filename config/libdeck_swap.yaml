@@ -69,8 +69,6 @@ segments:
       - [0x8E50, c, ds_move]
       - [0x8E88, asm, ds_move_asm_0880CE28]
       - [0x91F8, c, ds_move]
-      - [0x91F8, asm, ds_move_asm_0880D198]
-      - [0x9210, c, ds_move]
       - [0x929C, c, ds_filter]
       - [0x9458, asm, ds_filter_asm_0880D3F8]
       - [0x974C, c, ds_filter]

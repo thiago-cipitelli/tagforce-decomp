@@ -2,9 +2,6 @@
 // @asm 0x0880CFA4-0x0880D360
 // @asm 0x0880D360-0x0880D590
 // @asm 0x0880D590-0x0880D78C
-// @asm 0x0880D924-0x0880D9B0
-// @asm 0x0880D9B0-0x0880D9E8
-// @asm 0x0880D9E8-0x0880DA20
 // @asm 0x0880E2AC-0x0880E3A8
 // @asm 0x0880EF5C-0x0880F274
 // @asm 0x0880F51C-0x0880F8E8
@@ -637,50 +634,44 @@ void dmgr_pt_load(int i, int mode, int from, int to)
     dmgr_pt_anim(i, mode, from, to);
 }
 
-#ifdef NON_MATCHING /* o original reaproveita a0 para o índice multiplicado; o mwcc usa outro temporário */
 void dmgr_pt_anim(int i, int mode, int from, int to)
 {
-    void *e = dmgr_pt->ehf[i];
+    void **slot = &dmgr_pt->ehf[i];
 
-    if (e != 0) {
+    if (*slot != 0) {
         switch (mode) {
         case 0:
-            ehf_set_anim(e, from, from + 1);
+            ehf_set_anim(*slot, from, from + 1);
             break;
         case 1:
-            ehf_set_anim(e, from, to + 1);
+            ehf_set_anim(*slot, from, to + 1);
             break;
         case 2:
-            ehf_set_anim(e, from, to + 1);
+            ehf_set_anim(*slot, from, to + 1);
             break;
         }
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* só os temporários do índice trocam */
 int dmgr_pt_frame(int i)
 {
-    void *e = dmgr_pt->ehf[i];
+    void **slot = &dmgr_pt->ehf[i];
 
-    if (e != 0) {
-        return ehf_get_frame_count(e);
+    if (*slot != 0) {
+        return ehf_get_frame_count(*slot);
     }
     return -1;
 }
-#endif
 
-#ifdef NON_MATCHING /* só os temporários do índice trocam */
 int dmgr_pt_set_pos(int i, int a, int b)
 {
-    void *e = dmgr_pt->ehf[i];
+    void **slot = &dmgr_pt->ehf[i];
 
-    if (e != 0) {
-        return ehf_set_pos(e, a, b);
+    if (*slot != 0) {
+        return ehf_set_pos(*slot, a, b);
     }
     return 0;
 }
-#endif
 
 unsigned int *dmgr_pt_draw_ehf(unsigned int *list, int i)
 {

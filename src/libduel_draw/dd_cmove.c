@@ -1,7 +1,6 @@
 // @range 0x0880FCFC-0x08810758
 // @data 0x08874F70-0x08874F80
 // @asm 0x0880FEF0-0x08810598
-// @asm 0x088106F4-0x08810758
 /* Card objects: the list primitives, the pool allocator, the start of a move (with the card
    slide sound) and the per-frame move with its arc, the end-of-move callbacks, the zone list
    lookup and the move duration of the animation speed option. */
@@ -238,16 +237,14 @@ float dd_move_time(void)
     return dd_speed_moves[cfg_get_bits_1_3_4()];
 }
 
-#ifdef NON_MATCHING /* máquina de estados grande / registrador do slti */
 /* 1 when the monster at `at` shows its counter (main phase, face up) */
 int dd_cobj_counter_shown(DdCobj *o, DdPos at)
 {
     int zone = at.zone;
 
-    if (zone < 0 || !(zone < 5))
+    if (zone < 0 || zone > 4)
         return 0;
     if (at.f14 == 0)
         return 0;
     return dv_phase() == 3;
 }
-#endif

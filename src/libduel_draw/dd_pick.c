@@ -1,6 +1,6 @@
 // @range 0x088299C8-0x0882A94C
 // @asm 0x08829BBC-0x08829E2C
-// @asm 0x0882A1EC-0x0882A294
+// @asm 0x0882A1EC-0x0882A22C
 // @asm 0x0882A594-0x0882A6A4
 // @asm 0x0882A6E8-0x0882A83C
 // @asm 0x0882A880-0x0882A94C
@@ -263,24 +263,24 @@ int dd_pick_width(MenuWidget *w)
 }
 #endif
 
-#ifdef NON_MATCHING /* alocação de registradores (forma igual) */
 int dd_pick_height(MenuWidget *w)
 {
     DdPick *p = &dd_pick;
     int v;
     int n;
+    int rows;
 
     if (p->h_cache > 0)
         return p->h_cache;
     v = 0;
     v += 20;
     n = p->cfg.last - p->cfg.first;
-    v += p->cfg.cell_h * ((n + p->cfg.cols - 1) / p->cfg.cols) + 1;
+    rows = (n + p->cfg.cols - 1) / p->cfg.cols;
+    v += rows * p->cfg.cell_h + 1;
     v += 21;
     p->h_cache = v;
     return v;
 }
-#endif
 
 unsigned int dd_pick_mask(void)
 {

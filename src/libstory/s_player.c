@@ -1,5 +1,4 @@
 // @range 0x088062FC-0x08806A18
-// @asm 0x08806480-0x0880650C
 // @asm 0x088067EC-0x08806854
 // @asm 0x08806928-0x088069B0
 /* Story player state (save data): room and position, the current event ids, the point counters,
@@ -112,24 +111,23 @@ int st_pl_item_has(int i)
     return st_pl->items[i] != 0;
 }
 
-#ifdef NON_MATCHING /* os dois addu saem com os operandos trocados (base + i*4, *p + n) */
 void st_pl_item_add(int i, int n, int y, int z)
 {
     StoryPlayer *pl = st_pl;
     int *p;
+    int m;
 
     if (i <= 0 || i >= 21)
         return;
     if (n <= 0 || n > 99)
         return;
-    p = &pl->items[i];
-    n += *p;
-    if (n < 100) {
-        *p = n;
+    p = (int *)((char *)pl->items + i * 4);
+    m = *p + n;
+    if (m < 100) {
+        *p = m;
         sev_done_set(sev_find(i, y, z), 1);
     }
 }
-#endif
 
 void st_pl_x18_set(int v)
 {

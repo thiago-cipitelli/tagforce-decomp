@@ -2,7 +2,6 @@
 // @data 0x08821090-0x088210AC
 // @asm 0x0881C65C-0x0881C964
 // @asm 0x0881C990-0x0881CA18
-// @asm 0x0881CA78-0x0881CAAC
 // @asm 0x0881CC3C-0x0881CDB4
 // @asm 0x0881CDB4-0x0881CEEC
 // @asm 0x0881CEEC-0x0881D030
@@ -360,7 +359,6 @@ int dt_text_typing(void)
     return t->state == 2;
 }
 
-#ifdef NON_MATCHING
 /* o case 1 do original salta para um bloco li v0,1 próprio (1 palavra) */
 int dt_text_anim_busy(void)
 {
@@ -371,15 +369,12 @@ int dt_text_anim_busy(void)
         r = 0;
         break;
     case 1:
-        r = 1;
-        break;
     case 3:
         r = 1;
         break;
     }
     return r;
 }
-#endif
 
 /* slide target: x, y and width of the box */
 void dt_text_place(int x, int y, int w)

@@ -1,5 +1,4 @@
 // @range 0x08819F94-0x0881C118
-// @asm 0x0881AF78-0x0881B020
 // @asm 0x0881A118-0x0881A1E4
 // @asm 0x0881A3EC-0x0881A554
 // @asm 0x0881A7C0-0x0881A960
@@ -430,20 +429,16 @@ int duel_ai_0881AF2C(DuelAct *a, int b)
     return (int)duel_08807434(a->player, 0) >= 0;
 }
 
-#ifdef NON_MATCHING /* operand order of two of the additions differs */
 int duel_ai_0881AF78(DuelAct *a)
 {
-    int n = duel_count_name(a->player, 0x1102);
+    int n = duel_count_name(a->player, 0x1102) + duel_count_name(a->player, 0x134A) + duel_count_name(a->player, 0x1400)
+        + duel_count_name(a->player, 0x187C);
 
-    n += duel_count_name(a->player, 0x134A);
-    n = duel_count_name(a->player, 0x1400) + n;
-    n = duel_count_name(a->player, 0x187C) + n;
     if (!(n - (a->zone < 11) > 0)) {
         return duel_08809F2C(a->player) < 0;
     }
     return 0;
 }
-#endif
 
 int duel_ai_0881B020(DuelAct *a, int b)
 {
