@@ -1,5 +1,4 @@
 // @range 0x0880FDF4-0x08810370
-// @asm 0x0880FE50-0x0880FEEC
 // @asm 0x0880FFAC-0x08810098
 // @asm 0x08810098-0x08810120
 // @asm 0x08810120-0x088101B0
@@ -36,12 +35,20 @@ int duel_0880FDF4(DuelAct *a)
     }
 }
 
-#ifdef NON_MATCHING /* registradores/ordem de desvios */
+/* A monster of a's player (from those duel_088171C8 accepts) whose base ATK reaches the opponent's LP. */
 int duel_0880FE50(DuelAct *a)
 {
+    int z = duel_088159C8(a->player, duel_0884E4A0(a), duel_088171C8);
 
+    if (z >= 0) {
+        int atk = duel_field_base_atk(a->player, z);
+
+        if (duel.players[(1 - a->player) & 1].lp <= atk) {
+            return 1;
+        }
+    }
+    return 0;
 }
-#endif
 
 int duel_0880FEEC(DuelAct *a)
 {

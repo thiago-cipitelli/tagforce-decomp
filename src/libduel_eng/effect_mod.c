@@ -1,5 +1,4 @@
 // @range 0x088DFFC0-0x088E0890
-// @asm 0x088DFFF8-0x088E0890
 /* Effect list changes: allocate and free entries (unlinking them from every list), add to a zone or
    to a card of the list, remove by source, kind or card. Index 11 of a player's zones is the
    player's own list (DuelPlayer.effects). */
@@ -18,7 +17,7 @@ void duel_bzero(void *p, int n);
 
 #define EFF(i) ((DuelEffectBits *)&duel.effects[i])
 
-int duel_effect_alloc(void)
+static int duel_effect_alloc(void)
 {
     int i = 1;
 
@@ -28,17 +27,16 @@ int duel_effect_alloc(void)
     return i;
 }
 
-#ifdef NON_MATCHING /* first draft; loop rotation and registers still differ */
 /* Free entry i and unlink it from every list. */
 void duel_effect_free(unsigned int i)
 {
-    unsigned short next = EFF(i)->next;
+    unsigned short next = duel_effects[i].next;
     unsigned int p;
     int k;
 
     duel_bzero(&duel.effects[i], 8);
     for (p = 0; (int)p < 2; p++) {
-        for (k = 0; k < 12; k++) {
+        for (k = 0; k <= 11; k++) {
             if (i == duel.players[p & 1].field[k].effects) {
                 duel.players[p & 1].field[k].effects = next;
             }
@@ -48,79 +46,74 @@ void duel_effect_free(unsigned int i)
         }
     }
     for (k = 1; k < 0x200; k++) {
-        if (duel_cards[k].effects == i) {
-            duel_cards[k].effects = next;
+        if (*(unsigned short *)((char *)&duel + 0x1F6E + k * 4) == i) {  /* duel.list[k] as DuelListCard */
+            *(unsigned short *)((char *)&duel + 0x1F6E + k * 4) = next;
         }
     }
     for (k = 1; k < 0x200; k++) {
-        if (EFF(k)->next == i) {
-            EFF(k)->next = next;
+        if (duel.effects[k].next == i) {
+            duel.effects[k].next = next;
         }
     }
 }
 
 /* Remove the effects (kind above 5) placed by the card in zone z of player p from every zone. */
-void duel_effects_clear_src(unsigned short p, short z)
+void duel_effects_clear_src(unsigned short p, int z)
 {
     unsigned int q;
     int k;
 
     for (q = 0; (int)q < 2; q++) {
-        for (k = 0; k < 12; k++) {
+        for (k = 0; k <= 11; k++) {
             unsigned int e = duel.players[q & 1].field[k].effects;
 
             while (e != 0) {
-                unsigned int i = e;
-                DuelEffectBits *ef = EFF(i);
+                DuelEffectBits *ef = EFF(e);
+                unsigned int next = ef->next;
 
-                e = ef->next;
-                if (ef->kind > 5 && ef->src == (unsigned short)((p & 0xFF) | z << 8)) {
-                    duel_effect_free(i);
+                if (ef->kind >= 6 && ef->src == (unsigned short)((p & 0xFF) | (z & 0xFF) << 8)) {
+                    duel_effect_free(e);
                 }
+                e = next;
             }
         }
     }
 }
 
 /* Append an effect to the list of zone z of player p. */
-void duel_slot_effect_add(unsigned int p, int z, unsigned char kind, unsigned short src, unsigned short arg)
+void duel_slot_effect_add(unsigned int p, int z, int kind, unsigned short src, unsigned short arg)
 {
     int i = duel_effect_alloc();
+    DuelEffectBits *ef = EFF(i);
     unsigned short *link = &duel.players[p & 1].field[z].effects;
 
     while (*link != 0) {
         link = &EFF(*link)->next;
     }
     *link = i;
-    EFF(i)->kind = kind;
-    EFF(i)->kind_hi = kind >> 4;
-    EFF(i)->src = src;
-    EFF(i)->arg = arg;
-    EFF(i)->next = 0;
+    ef->kind = kind & 0xF;
+    ef->kind_hi = (kind & 0xF0) >> 4;
+    ef->src = src;
+    ef->arg = arg;
+    ef->next = 0;
 }
 
 /* Append an effect to the list of the card with uid. */
-void duel_list_effect_add(int uid, unsigned char kind, unsigned short src, unsigned short arg)
+void duel_list_effect_add(int uid, int kind, unsigned short src, unsigned short arg)
 {
     int i = duel_effect_alloc();
-    unsigned int e = duel_cards[uid].effects;
+    DuelEffectBits *ef = EFF(i);
+    unsigned short *link = (unsigned short *)&duel.list[uid] + 1;
 
-    if (e == 0) {
-        duel_cards[uid].effects = i;
-    } else {
-        unsigned int last;
-
-        do {
-            last = e;
-            e = EFF(e)->next;
-        } while (e != 0);
-        EFF(last)->next = i;
+    while (*link != 0) {
+        link = &EFF(*link)->next;
     }
-    EFF(i)->kind = kind;
-    EFF(i)->kind_hi = kind >> 4;
-    EFF(i)->src = src;
-    EFF(i)->arg = arg;
-    EFF(i)->next = 0;
+    *link = i;
+    ef->kind = kind & 0xF;
+    ef->kind_hi = (kind & 0xF0) >> 4;
+    ef->src = src;
+    ef->arg = arg;
+    ef->next = 0;
 }
 
 void duel_slot_effects_free(DuelSlot *s)
@@ -128,59 +121,59 @@ void duel_slot_effects_free(DuelSlot *s)
     unsigned int e = s->effects;
 
     while (e != 0) {
-        unsigned int i = e;
+        unsigned int next = EFF(e)->next;
 
-        e = EFF(i)->next;
-        duel_effect_free(i);
+        duel_effect_free(e);
+        e = next;
     }
 }
 
 /* Free the entries above kind 5 with source src (only the first unless all). */
-void duel_effects_free_src(unsigned int e, short src, int all)
+void duel_effects_free_src(unsigned int e, unsigned short src, int all)
 {
     while (e != 0) {
-        unsigned int i = e;
-        DuelEffectBits *ef = EFF(i);
+        DuelEffectBits *ef = EFF(e);
+        unsigned int next = ef->next;
 
-        e = ef->next;
         if (ef->kind >= 6 && ef->src == src) {
-            duel_effect_free(i);
+            duel_effect_free(e);
             if (all == 0) {
                 return;
             }
         }
+        e = next;
     }
 }
 
-void duel_effects_free_card(unsigned int e, short id, int all)
+void duel_effects_free_card(unsigned int e, unsigned short id, int all)
 {
     while (e != 0) {
-        unsigned int i = e;
-        DuelEffectBits *ef = EFF(i);
+        DuelEffectBits *ef = EFF(e);
+        unsigned int next = ef->next;
 
-        e = ef->next;
         if (ef->kind <= 5 && ef->src == id) {
-            duel_effect_free(i);
+            duel_effect_free(e);
             if (all == 0) {
                 return;
             }
         }
+        e = next;
     }
 }
 
-void duel_effects_free_kind(unsigned int e, short id, unsigned int kind, int all)
+void duel_effects_free_kind(unsigned int e, unsigned short id, unsigned int kind, int all)
 {
     while (e != 0) {
-        unsigned int i = e;
-        DuelEffectBits *ef = EFF(i);
+        DuelEffectBits *ef = EFF(e);
+        unsigned int next = ef->next;
 
-        e = ef->next;
         if (ef->kind == kind && ef->src == id) {
-            duel_effect_free(i);
+            duel_effect_free(e);
             if (all == 0) {
                 return;
             }
         }
+        e = next;
     }
 }
 
@@ -190,13 +183,13 @@ void duel_slot_effects_free_keep(DuelSlot *s)
     unsigned int e = s->effects;
 
     while (e != 0) {
-        unsigned int i = e;
-        DuelEffectBits *ef = EFF(i);
+        DuelEffectBits *ef = EFF(e);
+        unsigned int next = ef->next;
 
-        e = ef->next;
         if (ef->kind > 5 || ef->src != 0x164F) {
-            duel_effect_free(i);
+            duel_effect_free(e);
         }
+        e = next;
     }
 }
 
@@ -210,29 +203,26 @@ void duel_effects_drop_card(DuelCard *c)
     unsigned int e;
 
     for (p = 0; (int)p < 2; p++) {
-        for (z = 5; z < 11; z++) {
-            DuelSlot *s = &duel.players[p & 1].field[z];
-
-            if (s->card.id == 0x1368 && SLOT_ACTIVE(s)) {
-                e = s->effects;
+        for (z = 5; z <= 10; z++) {
+            if (duel.players[p & 1].field[z].card.id == 0x1368 && SLOT_ACTIVE(&duel.players[p & 1].field[z])) {
+                e = duel.players[p & 1].field[z].effects;
                 while (e != 0) {
-                    unsigned int i = e;
-                    DuelEffectBits *ef = EFF(i);
+                    DuelEffectBits *ef = EFF(e);
+                    unsigned int next = ef->next;
 
-                    e = ef->next;
                     if (ef->kind == 3 && ef->src == 0x1368 && ef->arg == uid) {
-                        duel_effect_free(i);
+                        duel_effect_free(e);
                     }
+                    e = next;
                 }
             }
         }
     }
-    e = duel.players[c->owner].effects;
+    e = duel.players[c->owner & 1].effects;
     while (e != 0) {
-        unsigned int i = e;
-        DuelEffectBits *ef = EFF(i);
+        DuelEffectBits *ef = EFF(e);
+        unsigned int next = ef->next;
 
-        e = ef->next;
         if (ef->kind < 6 && ef->arg == CARD_UID(*c)) {
             switch (ef->src) {
             case 0x13A6:
@@ -250,10 +240,10 @@ void duel_effects_drop_card(DuelCard *c)
             case 0x1A62:
             case 0x1A64:
             case 0x1A9F:
-                duel_effect_free(i);
+                duel_effect_free(e);
                 break;
             }
         }
+        e = next;
     }
 }
-#endif

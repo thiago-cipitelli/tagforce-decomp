@@ -929,13 +929,12 @@ int duel_08870DC4(DuelAct *a)
 #ifdef NON_MATCHING /* branch layout and registers differ */
 int duel_08870E94(DuelAct *a)
 {
-    if (a->kind == 0x23) {
-        return 1;
+    if (a->kind != 0x23) {
+        if (duel_hand_can_discard(a->player, 1, a->uid, 1, 0) == 0) {
+            return 0;
+        }
     }
-    if (duel_hand_can_discard(a->player, 1, a->uid, 1, 0) != 0) {
-        return 1;
-    }
-    return 0;
+    return 1;
 }
 #endif
 
@@ -1807,25 +1806,29 @@ int duel_08873150(void)
 #ifdef NON_MATCHING /* case order and registers differ */
 int duel_088731C0(DuelAct *a, DuelAct *b)
 {
-    if (b == 0) {
-        unsigned int k = a->kind;
+    if (b != 0) {
+        if (card_is_in_group_147e(b->id) == 0) {
+            return 2;
+        }
+    } else {
+        switch (a->kind) {
+        case 0x1F:
+        case 0x20:
+            return 0;
+        case 0x21: {
+            DuelSrc *s = &a->src;
 
-        if (k == 0x21) {
-            if (duel.players[a->src.player].field[a->src.zone].card.id == 0) {
+            if (duel.players[s->player & 1].field[s->zone].card.id == 0) {
                 return 0;
             }
             return 2;
         }
-        if (k == 0x20) {
-            return 0;
         }
-        if (k == 0x1F) {
-            return 0;
-        }
-    } else if (card_is_in_group_147e(b->id) == 0) {
-        return 2;
     }
-    return a->b3_4 != 3;
+    if (a->b3_4 == 3) {
+        return 0;
+    }
+    return 1;
 }
 #endif
 

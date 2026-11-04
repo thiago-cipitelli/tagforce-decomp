@@ -8,7 +8,6 @@
 // @asm 0x088172F0-0x0881739C
 // @asm 0x08817598-0x08818C34
 // @asm 0x08818C34-0x088194D0
-// @asm 0x0881956C-0x08819B94
 // @asm 0x08819B94-0x08819F94
 /* Computer player: picking one of its cards (zone mask bit player * 16 + zone) to send away. */
 #include "duel.h"
@@ -1232,7 +1231,6 @@ unsigned int duel_088194D0(int (*fn)(unsigned int q, int z, int i))
     return mask;
 }
 
-#ifdef NON_MATCHING /* ordem dos case e alocação de registradores não reproduzidas */
 /* The computer chooses a card (hand slots first for some ids) for the effect fn of card id. */
 void duel_0881956C(unsigned int p, int id, int (*fn)(unsigned int q, int z, int i))
 {
@@ -1247,38 +1245,60 @@ void duel_0881956C(unsigned int p, int id, int (*fn)(unsigned int q, int z, int 
     duel_ai_player = p;
     mask = duel_088194D0(fn);
     switch (id) {
-    case 0x198D:
-        for (i = 0; i < duel.players[p & 1].n_hand; i++) {
-            c = duel.players[p & 1].hand[i].id;
-            if (duel_08806730(p, 1, c) == 0 && card_get_limit(c) > 2 && duel_0880AA04(c, 0) == 0) {
-                duel_08835F34(p, 0xB, i, 0xB);
-                return;
-            }
-        }
-        duel_08836028();
-        return;
-    case 0x1889:
-    case 0x1678:
-        z = duel_08815BD0(p, fn, 1, 1);
-        if (z >= 0) {
-            duel_08835F34(p, 0xB, z, 0xB);
-            return;
-        }
-        break;
-    case 0x18D9:
-    case 0x15E8:
-        z = duel_08815AF8(p, fn, duel_08817550);
-        if (z >= 0) {
-            duel_08835F34(p, 0xB, z, 0xB);
-            return;
-        }
-        break;
-    case 0x1764:
-    case 0x16DF:
-    case 0x1578:
+    case 1:
         z = duel_0881616C(1 - p, mask, 0);
         if (z >= 0) {
             duel_08835F34(1 - p, z, 0, 0xB);
+            return;
+        }
+        z = duel_0881657C(p, mask, 0);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 2:
+    case 0x132B:
+    case 0x16D3:
+    case 0x1888:
+    case 0x15DC:
+        z = duel_08816A74(p, fn, 1, 0);
+        if (z >= 0) {
+            duel_08835F34(p, 0xB, z, 0xB);
+            return;
+        }
+        break;
+    case 3:
+        z = duel_08816A74(p, fn, 0, 0);
+        if (z >= 0) {
+            duel_08835F34(p, 0xB, z, 0xB);
+            return;
+        }
+        break;
+    case 0x139C:
+        z = duel_088159C8(p, mask, duel_088170EC);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x1544:
+    case 0x15F3:
+        z = duel_0881616C(1 - p, mask, 1);
+        if (z >= 0) {
+            duel_08835F34(1 - p, z, 0, 0xB);
+            return;
+        }
+        z = duel_088163E4(p, mask);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
+            return;
+        }
+        break;
+    case 0x142A:
+        z = duel_088159C8(p, mask, duel_08816EA4);
+        if (z >= 0) {
+            duel_08835F34(p, z, 0, 0xB);
             return;
         }
         z = duel_088163E4(p, mask);
@@ -1299,74 +1319,52 @@ void duel_0881956C(unsigned int p, int id, int (*fn)(unsigned int q, int z, int 
             return;
         }
         break;
-    case 0x142A:
-        z = duel_088159C8(p, mask, duel_08816EA4);
-        if (z >= 0) {
-            duel_08835F34(p, z, 0, 0xB);
-            return;
-        }
-        z = duel_088163E4(p, mask);
-        if (z >= 0) {
-            duel_08835F34(p, z, 0, 0xB);
-            return;
-        }
-        break;
-    case 0x15F3:
-    case 0x1544:
-        z = duel_0881616C(1 - p, mask, 1);
-        if (z >= 0) {
-            duel_08835F34(1 - p, z, 0, 0xB);
-            return;
-        }
-        z = duel_088163E4(p, mask);
-        if (z >= 0) {
-            duel_08835F34(p, z, 0, 0xB);
-            return;
-        }
-        break;
-    case 0x139C:
-        z = duel_088159C8(p, mask, duel_088170EC);
-        if (z >= 0) {
-            duel_08835F34(p, z, 0, 0xB);
-            return;
-        }
-        break;
-    case 3:
-        z = duel_08816A74(p, fn, 0, 0);
-        if (z >= 0) {
-            duel_08835F34(p, 0xB, z, 0xB);
-            return;
-        }
-        break;
-    case 0x15DC:
-    case 0x1888:
-    case 0x16D3:
-    case 0x132B:
-    case 2:
-        z = duel_08816A74(p, fn, 1, 0);
-        if (z >= 0) {
-            duel_08835F34(p, 0xB, z, 0xB);
-            return;
-        }
-        break;
-    case 1:
+    case 0x1578:
+    case 0x16DF:
+    case 0x1764:
         z = duel_0881616C(1 - p, mask, 0);
         if (z >= 0) {
             duel_08835F34(1 - p, z, 0, 0xB);
             return;
         }
-        z = duel_0881657C(p, mask, 0);
+        z = duel_088163E4(p, mask);
         if (z >= 0) {
             duel_08835F34(p, z, 0, 0xB);
             return;
         }
         break;
+    case 0x15E8:
+    case 0x18D9:
+        z = duel_08815AF8(p, fn, duel_08817550);
+        if (z >= 0) {
+            duel_08835F34(p, 0xB, z, 0xB);
+            return;
+        }
+        break;
+    case 0x1678:
+    case 0x1889:
+        z = duel_08815BD0(p, fn, 1, 1);
+        if (z >= 0) {
+            duel_08835F34(p, 0xB, z, 0xB);
+            return;
+        }
+        break;
+    case 0x198D:
+        for (z = 0; z < duel.players[p & 1].n_hand; z++) {
+            c = duel.players[p & 1].hand[z].id;
+            if (duel_08806730(p, 1, c) == 0 && card_get_limit(c) >= 3 && duel_0880AA04(c, 0) == 0) {
+                duel_08835F34(p, 0xB, z, 0xB);
+                return;
+            }
+        }
+        duel_08836028();
+        return;
     }
     /* any hand card of the opponent, then of p, that fn accepts (count of p's hand, as the original) */
     for (k = 0; k < 2; k++) {
-        q = p ^ (k != 0) ^ 1;
+        q = p ^ !(k != 0);
         for (i = 0; i < duel.players[p & 1].n_hand; i++) {
-            if (fn(q, 0xB, i) != 0) {
+            if (!(fn(q, 0xB, i) != 0) == 0) { /* o original materializa o booleano (sltu; xori) */
                 duel_08835F34(q, 0xB, i, 0xB);
                 return;
             }
@@ -1382,7 +1380,6 @@ void duel_0881956C(unsigned int p, int id, int (*fn)(unsigned int q, int z, int 
         }
     }
 }
-#endif
 
 
 #ifdef NON_MATCHING /* o original repete inline o cálculo da posição em três laços; a função auxiliar não reproduz */

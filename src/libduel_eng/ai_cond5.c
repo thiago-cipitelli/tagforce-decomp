@@ -457,22 +457,28 @@ int duel_08814618(DuelAct *a, DuelAct *b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* ordem dos desvios e registradores */
+#ifdef NON_MATCHING /* lógica conferida: o laço sobre os alvos sai na primeira volta (o original dobra i = 0). 20 palavras: ext do byte da zona, andi do n_targets no teste do laço e o teste final < 4 que o original mantém em desvio (aqui vira sltiu/xori) */
 int duel_08814684(DuelAct *a, DuelAct *b)
 {
     unsigned int t;
+    unsigned int z;
+    int i;
 
     if (b == 0) {
         return 0;
     }
-    if (b->n_targets == 0) {
-        return (int)duel_act_e3920(b) >= 4;
+    if (b->n_targets != 0) {
+        for (i = 0; i < b->n_targets; i++) {
+            t = duel_act_target(b, i);
+            z = (t & 0xFFFF) >> 8 & 0xFF;
+            return (t & 0xFF) == a->player && z == a->zone;
+        }
+        return 0;
     }
-    t = duel_act_target(b, 0);
-    if ((t & 0xFF) == a->player) {
-        return (t & 0xFFFF) >> 8 == a->zone;
+    if ((int)duel_act_e3920(b) < 4) {
+        return 0;
     }
-    return 0;
+    return 1;
 }
 #endif
 
