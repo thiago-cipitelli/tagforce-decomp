@@ -74,49 +74,56 @@ void ds_info_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* campos do painel por índice; alocação diferente */
+#ifdef NON_MATCHING /* 8 palavras: o original passa keep sem a extensão (move a0,s1); com short keep a extensão
+   some mas o bit list_mode e o u1a trocam de registrador. Lógica conferida com o asm (n = 3/2/1 pelo lado, +2 no lado 1) */
 /* shows tab (how 0 = previous, 1 = next, else tab itself) in pane side, keeping each list's scroll */
-void ds_select_tab(unsigned short side, unsigned short tab, short how)
+void ds_select_tab(unsigned short side, unsigned short tab, unsigned short how)
 {
-    unsigned int n = 1;
+    unsigned short n = 3;
+    int i;
     DsPane *p;
     DsList *l;
-    unsigned short grid;
-    short view;
+    unsigned short keep;
+    unsigned short view;
+    unsigned short cols;
 
-    if (dsv.mode < 2) {
-        switch (ds.kind) {
+    if (dsv.mode > 1) {
+        switch (side) {
         case 0:
             n = 2;
             break;
         case 1:
-            n = 2;
-            break;
-        case 2:
-            n = 2;
+            n = 1;
             break;
         }
     }
-    if (how == 1)
-        n = (tab + 1) % n;
-    else if (how == 0)
-        n = (int)(tab + n - 1) % (int)n;
-    else
-        n = tab;
+    switch (how) {
+    default:
+        i = tab;
+        break;
+    case 0:
+        i = (tab + n - 1) % n;
+        break;
+    case 1:
+        i = (tab + 1) % n;
+        break;
+    }
+    keep = 1;
     p = &dsv.pane[side];
     if (side == 1)
-        n++;
-    if (p->list->tab != ds.list[n].tab) {
+        i += 2;
+    l = &ds.list[i];
+    if (p->list->tab != l->tab) {
         ds_set_panes(side);
-        p->list = &ds.list[n];
-        p->top = ds.list[n].u18;
+        p->list = l; p->top = p->list->u18;
         p->cx = p->list->u1c_lo;
         p->cy = p->list->u1c_hi;
-        grid = p->list_mode == 0 ? p->lay.cols : 1;
-        l = p->list;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        ds_layout_scroll(l->u1d_lo == grid, l->u1a, ((p->list_mode == 0 ? p->lay.cols : 1) & 0xFF) | view << 8, l->count,
-                         &p->top, &p->cx, &p->cy);
+        if (p->list->u1d_lo != ((p->list_mode == 0) ? p->lay.cols : 1))
+            keep = 0;
+        view = (p->list_mode == 0) ? p->lay.grid_rows : p->lay.rows;
+        cols = (p->list_mode == 0) ? p->lay.cols : 1;
+        ds_layout_scroll(keep, p->list->u1a, (cols & 0xFF) | (view & 0xFF) << 8,
+                         p->list->count, &p->top, &p->cx, &p->cy);
         ds_window_anim();
     }
 }

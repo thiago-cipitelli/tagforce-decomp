@@ -1,6 +1,6 @@
 // @range 0x08809804-0x0880AB28
 // @asm 0x08809E58-0x0880A244
-// @asm 0x0880A434-0x0880AB28
+// @asm 0x0880A9BC-0x0880AB28
 // @rodata 0x08819C7C-0x08819CA0
 /* The per-frame input dispatch and the input of the main state: cursor moves in the grid and in
    the list, the help states while Square/Triangle are held (pages, sort groups, marks, the sort and
@@ -39,6 +39,11 @@ void ds_jump(int up);
 int ds_find_group(int up);
 void ds_scroll_update(void);
 void ds_focus_update(void);
+unsigned short ds_cur_index(unsigned short side);
+int ds_sort_value(DsEnt *e, unsigned short sort);
+
+/* entry at visible position i of list l (0 past the end) */
+#define DS_ENT(l, i) ((i) >= (l)->count ? 0 : &(l)->ents[(l)->order[i]])
 
 /* per frame, after the animations: input of the current state, unless a popup or the busy flag */
 void ds_update_input(void)
@@ -425,7 +430,6 @@ void ds_page(int up)
     }
 }
 
-#ifdef NON_MATCHING /* 6 palavras: grid_rows e (total + cols - 1) / cols em a0/v1 trocados; como dk_jump */
 /* jumps to the next/previous group of the sort key */
 void ds_jump(int up)
 {
@@ -433,8 +437,8 @@ void ds_jump(int up)
     int total = p->list->count;
     int i;
     int cols;
-    int last;
     int row;
+    int last;
 
     if (total == 0)
         return;
@@ -443,8 +447,9 @@ void ds_jump(int up)
         return;
     if (p->list_mode == 0) {
         cols = p->lay.cols;
+        last = p->lay.grid_rows;
         row = i / cols;
-        last = (total + cols - 1) / cols - p->lay.grid_rows;
+        last = (total + cols - 1) / cols - last;
         if (last < row)
             row = last;
         if (row < 0)
@@ -466,125 +471,128 @@ void ds_jump(int up)
         }
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* laços de busca com o ternário de entrada; alocação diferente */
 /* index of the first card of the next (up = 0) or previous sort group from the cursor, -1 none */
 int ds_find_group(int up)
 {
+    int k;
     DsList *l = dsv.pane[dsv.side].list;
-    unsigned int i = ds_cur_index();
-    unsigned int n = l->count;
-    unsigned int sort = l->sort;
-    DsEnt *e;
+    int i = (unsigned short)ds_cur_index(dsv.side);
+    unsigned short sort = l->sort;
+    int n = l->count;
+    DsEnt *e = i >= n ? 0 : &l->ents[l->order[i]];
     int v;
     int w;
+    int j;
 
-    e = DS_ENT(l, i);
-    if (e == 0) {
-        i = n - 1;
-    } else if (up == 0) {
-        v = ds_sort_value(e, sort);
-        if (sort - 4 < 2 && v > 0)
+    if (e == 0)
+        return n - 1;
+    if (up) {
+        if (i <= 0)
+            return -1;
+        j = i - 1;
+        v = ds_sort_value(j >= n ? 0 : &l->ents[l->order[j]], sort);
+        if ((sort == 4 || sort == 5) && v > 0)
             v /= 100;
-        for (i++; (int)i < (int)n; i++) {
-            w = ds_sort_value((int)i < (int)l->count ? &l->ents[l->order[i]] : 0, sort);
-            if (sort - 4 < 2 && w > 0)
+        for (k = j - 1; k >= 0; k--) {
+            w = ds_sort_value(DS_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
+                w /= 100;
+            if (w != v) {
+                k++;
+                break;
+            }
+        }
+        if (k < 0)
+            k = 0;
+    } else {
+        v = ds_sort_value(e, sort);
+        if ((sort == 4 || sort == 5) && v > 0)
+            v /= 100;
+        for (k = i + 1; k < n; k++) {
+            w = ds_sort_value(DS_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
                 w /= 100;
             if (w != v)
                 break;
         }
-        if (!((int)i < (int)n))
-            i = -1;
-    } else if (i == 0) {
-        i = -1;
-    } else {
-        v = ds_sort_value((int)(i - 1) < (int)n ? &l->ents[l->order[i - 1]] : 0, sort);
-        if (sort - 4 < 2 && v > 0)
-            v /= 100;
-        for (i -= 2; (int)i >= 0; i--) {
-            w = ds_sort_value((int)i < (int)l->count ? &l->ents[l->order[i]] : 0, sort);
-            if (sort - 4 < 2 && w > 0)
-                w /= 100;
-            if (w != v) {
-                i++;
-                break;
-            }
-        }
-        if ((int)i < 0)
-            i = 0;
+        if (k >= n)
+            return -1;
     }
-    return i;
+    return k;
 }
-#endif
 
-#ifdef NON_MATCHING /* o original guarda max e max + 0x76C0 em registradores */
 /* analog scrolling of the card info text (one pane) or of the wide view */
 void ds_scroll_update(void)
 {
     PadState *pad = pad_get();
     int moved;
-    int d;
+    int max;
+    int lim;
+    int v;
 
     if (dsv.mode < 4) {
         ds_scroll_analog(&dsv.cursor.scroll);
-    } else if (dsv.scroll_max > 0) {
-        moved = 0;
-        if (pad->b.analog_x > 0x9E) {
-            d = (pad->b.analog_x - 0x9E) * 4;
-            if (dsv.scroll_max < dsv.scroll_pos) {
-                dsv.scroll_pos += d;
-            } else {
-                dsv.scroll_pos += d;
-                if (dsv.scroll_max < dsv.scroll_pos)
-                    dsv.scroll_pos = dsv.scroll_max;
+    } else {
+        max = dsv.scroll_max;
+        if (max > 0) {
+            moved = 0;
+            lim = max + 0x76C0;
+            if (pad->b.analog_x > 0x9E) {
+                v = (pad->b.analog_x - 0x9E) * 4;
+                if (max < dsv.scroll_pos) {
+                    dsv.scroll_pos += v;
+                } else {
+                    if (max < dsv.scroll_pos + v)
+                        dsv.scroll_pos = max;
+                    else
+                        dsv.scroll_pos += v;
+                }
+                moved = 1;
             }
-            moved = 1;
+            if (pad->b.analog_x < 0x62) {
+                v = dsv.scroll_pos + (pad->b.analog_x - 0x62) * 4;
+                if (v < 0)
+                    dsv.scroll_pos = 0;
+                else
+                    dsv.scroll_pos = v;
+                moved = 1;
+            }
+            if (!moved && dsv.cursor.timer >= 0x36)
+                dsv.scroll_pos += 0x40;
+            if (dsv.scroll_pos >= lim)
+                dsv.scroll_pos -= lim;
         }
-        if (pad->b.analog_x < 0x62) {
-            dsv.scroll_pos += (pad->b.analog_x - 0x62) * 4;
-            if (dsv.scroll_pos < 0)
-                dsv.scroll_pos = 0;
-            moved = 1;
-        }
-        if (!moved && dsv.cursor.timer > 0x35)
-            dsv.scroll_pos += 0x40;
-        if (dsv.scroll_pos >= dsv.scroll_max + 0x76C0)
-            dsv.scroll_pos -= dsv.scroll_max + 0x76C0;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* o original indexa o painel pela base dsv; o mwcc atual cria o ponteiro */
+#ifdef NON_MATCHING
+/* NON_MATCHING, 20 palavras: lógica conferida com o asm; no ramo da grade o original soma x + grid_x antes do
+   mult e grava w = 23 antes de x (perm_stmts não achou ordem) */
 /* the focus frame follows the cursor */
 void ds_focus_update(void)
 {
-    unsigned int side = dsv.side;
-    DsPane *p = &dsv.pane[side];
-    short cy;
+    DsView *v = &dsv;
+    unsigned char side = v->side;
+    DsPane *p = &v->pane[side];
+    DsLayout *lay = &p->lay;
+    DsRect *f = &ds.focus;
 
     if (p->list_mode == 0) {
-        ds.focus.x = p->lay.x + p->lay.grid_x + p->cx * p->lay.cell_w;
-        ds.focus.w = 0x17;
-        ds.focus.y = p->lay.y + p->lay.grid_y + p->cy * p->lay.cell_h;
-        ds.focus.h = 0x1F;
-        return;
-    }
-    if (side == 1) {
-        cy = dsv.pane[1].cy;
-        if (dsv.mode < 4) {
-            ds.focus.x = dsv.pane[1].lay.x + dsv.pane[1].lay.row_x;
-            ds.focus.y = dsv.pane[1].lay.y + dsv.pane[1].lay.row_y + dsv.pane[1].cy * dsv.pane[1].lay.row_h;
-            ds.focus.w = dsv.pane[1].lay.row_w - 1;
-            ds.focus.h = dsv.pane[1].lay.row_h - 1;
-            return;
-        }
+        f->w = 0x17;
+        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
+        f->h = 0x1F;
+    } else if (side == 1 && dsv.mode < 4) {
+        f->x = lay->x + lay->row_x;
+        f->y = lay->y + lay->row_y + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 1;
+        f->h = (unsigned short)lay->row_h - 1;
     } else {
-        cy = p->cy;
+        f->x = lay->x + lay->row_x + 1;
+        f->y = lay->y + lay->row_y + 1 + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 3;
+        f->h = (unsigned short)lay->row_h - 1;
     }
-    ds.focus.x = p->lay.x + p->lay.row_x + 1;
-    ds.focus.w = p->lay.row_w - 3;
-    ds.focus.y = p->lay.y + p->lay.row_y + 1 + cy * p->lay.row_h;
-    ds.focus.h = p->lay.row_h - 1;
 }
 #endif

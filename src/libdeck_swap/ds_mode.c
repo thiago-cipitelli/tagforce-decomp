@@ -1,7 +1,5 @@
 // @range 0x08805E58-0x08806654
 // @asm 0x08805E58-0x08806324
-// @asm 0x088064F8-0x08806534
-// @asm 0x0880658C-0x08806654
 // @data 0x0881A014-0x0881A170
 /* Pane layouts (one or two panes, grid or list each) and the tab positions of the three lists;
    the window and stream animations that follow the layout and the deck size (same source as
@@ -219,21 +217,22 @@ unsigned short ds_tab_rect(unsigned short i, unsigned short sel, DsRect *r)
     return e->lx + e->lw - ((unsigned int)(unsigned short)(e->lw - e->digits * 8) >> 1) - 1;
 }
 
-#ifdef NON_MATCHING /* o original soma 39 a partir de um registrador no retorno antecipado; o mwcc atual dobra a constante */
 /* window animation of the pane with tab i */
 int ds_tab_anim(int tab)
 {
     int r = 0x27;
 
     if (dsv.mode < 2)
-        return r + tab;
-    if (dsv.mode >= 4)
-        r += 5;
-    else
-        r += 3;
-    return r + tab;
+        r += tab;
+    else {
+        if (dsv.mode >= 4)
+            r += 5;
+        else
+            r += 3;
+        r += tab;
+    }
+    return r;
 }
-#endif
 
 
 
@@ -254,7 +253,6 @@ unsigned short ds_stream_anims[3][3][2] __attribute__((aligned(4))) = {
     { { 0x104, 0x105 }, { 0xA0, 0xD2 }, { 0xD2, 0x104 } },
 };
 
-#ifdef NON_MATCHING /* registradores de total/tamanho e do modo trocados (a0/v1 contra a1/a0) */
 void ds_stream_anim(void)
 {
     int total = ds.list[0].total;
@@ -264,7 +262,7 @@ void ds_stream_anim(void)
     void *e;
     unsigned short *a;
 
-    if (dsv.mode >= 2) {
+    if (dsv.mode > 1) {
         if (dsv.mode < 4)
             col = 1;
         else
@@ -280,5 +278,4 @@ void ds_stream_anim(void)
         ehf_set_anim(e, a[0], a[1]);
     }
 }
-#endif
 
