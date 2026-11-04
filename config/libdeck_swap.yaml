@@ -29,7 +29,7 @@ segments:
       - [0x60, c, ds_res]
       - [0x668, c, ds_state]
       - [0x874, asm, ds_state_asm_08804814]
-      - [0xD5C, c, ds_state]
+      - [0xBEC, c, ds_state]
       - [0xE8C, c, ds_lists]
       - [0x15CC, asm, ds_lists_asm_0880556C]
       - [0x1728, c, ds_lists]

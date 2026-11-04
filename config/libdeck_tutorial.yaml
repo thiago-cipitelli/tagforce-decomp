@@ -109,7 +109,7 @@ segments:
       - [0x12F1C, asm, dt_pane_asm_08816EBC]
       - [0x1319C, c, dt_pane]
       - [0x13200, asm, dt_pane_asm_088171A0]
-      - [0x13524, c, dt_pane]
+      - [0x133B4, c, dt_pane]
       - [0x1365C, c, dt_eres]
       - [0x13BD8, c, dt_sort]
       - [0x14600, asm, dt_sort_asm_088185A0]
