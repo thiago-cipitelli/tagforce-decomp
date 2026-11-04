@@ -74,7 +74,7 @@ int dd_fx_sparkle_start(int arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* laço de criação com saída para o desenho no meio; C equivalente */
+#ifdef NON_MATCHING /* 16 palavras: só registradores $s dos dois laços (i, j e o ponteiro do par trocados entre s2, s3 e s4); ordem das declarações não muda */
 int dd_fx_sparkle_update(int phase, DdFxSparkle *w)
 {
     FxMat4 cam;
@@ -87,20 +87,29 @@ int dd_fx_sparkle_update(int phase, DdFxSparkle *w)
     int n;
     int i;
     int j;
+    float h;
+    float q;
+    float hv;
 
     dd_mtx_push_field();
     dd_mtx_billboard_field(&cam);
     if (phase == 1) {
+        h = 0.15f;
+        q = 0.25f;
+        hv = 0.5f;
         for (i = 0; i < 8; i++) {
-            w->cell[i][0].u = (float)(i % 4) * 0.25f;
-            w->cell[i][0].v = (float)(i / 4) * 0.5f;
-            w->cell[i][0].x = -0.15f;
-            w->cell[i][0].y = 0.15f;
+            float u = (float)(i % 4) * q;
+            float v = (float)(i / 4) * hv;
+
+            w->cell[i][0].u = u;
+            w->cell[i][0].v = v;
+            w->cell[i][0].x = -h;
+            w->cell[i][0].y = h;
             w->cell[i][0].z = 0.0f;
-            w->cell[i][1].u = (float)(i % 4) * 0.25f + 0.25f;
-            w->cell[i][1].v = (float)(i / 4) * 0.5f + 0.5f;
-            w->cell[i][1].x = 0.15f;
-            w->cell[i][1].y = -0.15f;
+            w->cell[i][1].u = u + q;
+            w->cell[i][1].v = v + hv;
+            w->cell[i][1].x = h;
+            w->cell[i][1].y = -h;
             w->cell[i][1].z = 0.0f;
         }
     }
@@ -135,7 +144,7 @@ int dd_fx_sparkle_update(int phase, DdFxSparkle *w)
     dd_translate3(0.02f, 1.13f, 0.0f);
     for (i = 0; i < 32; i++) {
         p = &w->pair[i];
-        if (p->flags & 1) {
+        if (!(p->flags & 1) != 1) {
             list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(p->t, 4) * 255.0f *
                                                          dd_ease_cos(p->t - 16, 16, 1)) << 24 | 0xFFFFFF);
             for (j = 0; j < 2; j++) {

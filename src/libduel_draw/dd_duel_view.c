@@ -1,5 +1,4 @@
 // @range 0x088666D8-0x08866EC8
-// @asm 0x08866A34-0x08866A88
 /* Duel engine seen from the screen: side 0 is the player at the bottom of the screen, side 1 the
    one at the top. The two tables translate between sides and engine players, and the wrappers
    call libduel_eng with the side translated to the player (most are tail calls). */
@@ -278,7 +277,6 @@ void dv_field_stats(int side, int z, DuelStats *st)
 }
 
 /* location of a card: low byte the side, high byte the zone (-1 when not on the field) */
-#ifdef NON_MATCHING /* o original calcula o índice e a zona em outra ordem (ext depois do lbu) */
 int dv_field_locate(int uid)
 {
     int r = duel_field_locate(uid);
@@ -287,11 +285,11 @@ int dv_field_locate(int uid)
     if (r < 0)
         return r;
     w = r;
-    return (unsigned short)(dv_player_side[r & 0xFF] & 0xFF | ALLEGREX_EXT(w, 8, 8) << 8);
+    {
+        int s = dv_player_side[w & 0xFF] & 0xFF;
+        return (unsigned short)(s | ALLEGREX_EXT(w, 8, 8) << 8);
+    }
 }
-#else
-int dv_field_locate(int uid);
-#endif
 
 int dv_hand_find_uid(int side, int uid)
 {

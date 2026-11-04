@@ -1,10 +1,7 @@
 // @range 0x0881DF94-0x0881EBA0
 // @asm 0x0881E214-0x0881E2A8
-// @asm 0x0881E344-0x0881E3B8
-// @asm 0x0881E3B8-0x0881E468
 // @asm 0x0881E610-0x0881E7EC
 // @asm 0x0881E7EC-0x0881E9F0
-// @asm 0x0881EAAC-0x0881EBA0
 /* The list of running presentation tasks of the scene (draw/update/leave callbacks with a timer,
    removable from inside their own callbacks) and two of its users: the summon/set name banner of
    a card and the card picture shown big. */
@@ -70,18 +67,18 @@ void func_08820E58(int a);
 int dd_task_alive(int h);
 void func_08820938(DdTask *t, void *arg);
 void func_08820A8C(void *out, void *pos, int back);
-int dd_count_scale(int player, int zone);
+float dd_count_scale(int player, int zone);
 int dd_fx_rays_start_t(int id, void *pos, void *cb, void *arg, float a, float b);
 void func_08820980(void);
 int dd_fx_flipup_start(int id, int *xy, int a, int b);
 int dv_list_id(int uid);
 int dv_slot_pos(int player, int zone);
 void func_08820CC0(void *a, void *b, DdLoc l);
-int dd_fx_summon_start_t(int a, int b, int c, void *d, void *cb, void *arg);
-int dd_fx_summon_start_dark_t(int a, int b, int c, void *d, void *cb, void *arg);
+int dd_fx_summon_start_t(float ry, float t, int card, void *pos, void *cb, void *arg);
+int dd_fx_summon_start_dark_t(float ry, float t, int card, void *pos, void *cb, void *arg);
 void dd_info_select_uid(int uid);
 unsigned int *dl_set_tex_filter(unsigned int *list, int min, int mag);
-void dd_task_remove(DdTask *t);
+int dd_task_remove(DdTask *t);
 DdTask *dd_task_add(DdTask *t);
 
 void dd_menu3_update(void)
@@ -217,8 +214,7 @@ int dd_task_remove_cur(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
-void dd_task_remove(DdTask *t)
+int dd_task_remove(DdTask *t)
 {
     if (t != 0 && t->prev != 0) {
         t->next->prev = t->prev;
@@ -229,26 +225,25 @@ void dd_task_remove(DdTask *t)
             t->leave(t, t->arg);
         dd_free(t);
     }
+    return 0;
 }
-#endif
 
 /* the effect of a card on the field */
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
 void dd_card_fx_start(DdCard *c)
 {
     float *pos = (float *)((char *)c + 0x10);
+    float *rot = (float *)((char *)c + 0x40);
     int id;
-    char out[8];
+    float out[4];
 
     if (c->loc2.b14)
         id = c->id;
     else
         id = -1;
-    func_08820A8C(out, (char *)c + 0x40, pos[2] < 0.0f);
-    c->fx = dd_fx_rays_start_t(id, pos, func_08820980, c, ((float *)out)[1],
-                          (float)dd_count_scale(c->loc.player, c->loc.zone));
+    func_08820A8C(out, rot, pos[2] < 0.0f);
+    c->fx = dd_fx_rays_start_t(id, pos, func_08820980, c, out[1],
+                          dd_count_scale(c->loc.player, c->loc.zone));
 }
-#endif
 
 void dd_banner_draw(DdTask *t, void *arg)
 {
@@ -308,19 +303,20 @@ void dd_banner_open(DdBanner *b)
 }
 
 /* name banner of a summoned card */
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
+#ifdef NON_MATCHING /* 2 palavras (a0 e mov.s f13 trocados): bate se dd_fx_summon_start*_t for declarado (int card, float ry, float t, ...), ordem com que as definições em dd_fx_summon.c também batem; trocar nos dois arquivos juntos */
 void dd_banner_summon(DdCard *c)
 {
-    int uid = c->uid;
+    DdBanner *b;
     int player = c->loc2.player;
     int zone = c->loc2.zone;
-    DdBanner *b = dd_alloc(sizeof(DdBanner));
+    int uid = c->uid;
     DdTask t;
     DdLoc2 l;
+    float a[4];
     float pos[4];
-    char a[8];
-    char out[16];
+    float out[4];
 
+    b = dd_alloc(sizeof(DdBanner));
     memset(b, 0, sizeof(DdBanner));
     b->id = dv_list_id(uid);
     b->player = player;
@@ -337,8 +333,8 @@ void dd_banner_summon(DdCard *c)
     b->state = 0;
     l.b15 = dv_slot_pos(player, zone);
     func_08820CC0(a, pos, *(DdLoc *)&l);
-    func_08820A8C(out, pos, ((float *)a)[2] < 0.0f);
-    b->handle = dd_fx_summon_start_t(((int *)out)[1], dd_count_scale(c->loc.player, c->loc.zone), b->id, a,
+    func_08820A8C(out, pos, a[2] < 0.0f);
+    b->handle = dd_fx_summon_start_t(out[1], dd_count_scale(c->loc.player, c->loc.zone), b->id, a,
                               dd_banner_open, b);
     dd_info_select_uid(c->uid);
     req_flag_set(0x33);
@@ -347,21 +343,22 @@ void dd_banner_summon(DdCard *c)
 #endif
 
 /* name banner of a set card (face down: no name) */
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
+#ifdef NON_MATCHING /* 2 palavras (a0 e mov.s f13 trocados): bate se dd_fx_summon_start*_t for declarado (int card, float ry, float t, ...), ordem com que as definições em dd_fx_summon.c também batem; trocar nos dois arquivos juntos */
 void dd_banner_set(DdCard *c)
 {
-    int up = c->loc2.b14;
-    int uid = c->uid;
+    DdBanner *b;
     int player = c->loc2.player;
     int zone = c->loc2.zone;
-    DdBanner *b = dd_alloc(sizeof(DdBanner));
+    int up = c->loc2.b14;
+    int uid = c->uid;
     DdTask t;
     DdLoc2 l;
+    float a[4];
     float pos[4];
-    char a[8];
-    char out[16];
+    float out[4];
     int id;
 
+    b = dd_alloc(sizeof(DdBanner));
     memset(b, 0, sizeof(DdBanner));
     b->id = dv_list_id(uid);
     b->id = dv_list_id(uid);
@@ -383,8 +380,8 @@ void dd_banner_set(DdCard *c)
     else
         id = -1;
     func_08820CC0(a, pos, *(DdLoc *)&l);
-    func_08820A8C(out, pos, ((float *)a)[2] < 0.0f);
-    b->handle = dd_fx_summon_start_dark_t(((int *)out)[1], dd_count_scale(c->loc.player, c->loc.zone), id, a,
+    func_08820A8C(out, pos, a[2] < 0.0f);
+    b->handle = dd_fx_summon_start_dark_t(out[1], dd_count_scale(c->loc.player, c->loc.zone), id, a,
                               dd_banner_open, b);
     dd_info_select_uid(c->uid);
     req_flag_set(0);
@@ -412,29 +409,22 @@ void dd_bigcard_leave(DdTask *t, void *arg)
     func_08820938(t, arg);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; ordem dos blocos e alocação diferentes */
 void dd_bigcard_update(float dt, DdTask *t, int *arg)
 {
-    if (t->time <= 1.25f)
-        return;
-    if (arg[2] != 0 && dd_task_alive(arg[2]) != 0) {
-        req_flag_set(arg[3]);
-        return;
-    }
-    if (arg[4] == 0 && dd_08806C84(arg[0]) == 0) {
-        arg[4] = 1;
-        arg[1] = -1;
-    }
-    if (arg[4] != 0) {
-        if (func_08825728() == 0) {
+    if (t->time > 1.25f && (arg[2] == 0 || dd_task_alive(arg[2]) == 0)) {
+        if (arg[4] == 0 && dd_08806C84(arg[0]) == 0) {
+            arg[4] = 1;
+            arg[1] = -1;
+        }
+        if (arg[4] != 0 && func_08825728() == 0) {
             dd_task_remove_cur();
             func_08820EA8(arg[1], arg[3]);
             return;
         }
-    } else if (func_08825728() == 0 && dd_mode_can_x() != 0) {
-        arg[4] = 1;
-        func_08820E58(arg[1]);
+        if (func_08825728() == 0 && dd_mode_can_x() != 0) {
+            arg[4] = 1;
+            func_08820E58(arg[1]);
+        }
     }
     req_flag_set(arg[3]);
 }
-#endif

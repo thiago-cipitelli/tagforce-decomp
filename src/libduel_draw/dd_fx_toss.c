@@ -1,6 +1,4 @@
 // @range 0x08834AA0-0x08835364
-// @asm 0x08834C34-0x08834E48
-// @asm 0x088350B8-0x08835364
 /* Coin toss and die roll animations on layer 6: the coin or die model plays its throw animation
    once per result (up to two), the model turned so the result faces up near the end, with the
    throw and landing sounds. */
@@ -82,12 +80,12 @@ int dd_fx_coin_start(int count, int *result, DdTaskTermFn term, void *arg)
     return id;
 }
 
-#ifdef NON_MATCHING /* ordem dos testes do índice e do reinício da animação */
 int dd_fx_coin_update(int state, DdFxToss *fx)
 {
     float speed = dd_anim_speed();
     int last;
     int restart;
+    int *res;
 
     dd_mtx_push_identity();
     dd_set_offset(6, 0x6C6, 0x77C);
@@ -102,12 +100,11 @@ int dd_fx_coin_update(int state, DdFxToss *fx)
         dd_model_rewind(fx->model);
         fx->shadow = dd_bin_get(0x80014);
     }
-    last = fx->count - 1;
-    if (fx->cur <= last)
-        last = fx->cur;
-    if (fx->result[last] < 0) {
-        fx->cur = fx->count;
-    } else if (fx->result[last] < 2) {
+    last = fx->cur;
+    if (fx->count - 1 < last)
+        last = fx->count - 1;
+    res = (int *)(last * 4 + (char *)fx->result);
+    if (*res >= 0 && *res < 2) {
         dd_layer_draw_f(6, (int)fx->shadow, fx->frame);
         dd_clear_stencil(6, 0);
         model_draw(fx->model, &fx->draw);
@@ -120,18 +117,17 @@ int dd_fx_coin_update(int state, DdFxToss *fx)
             fx->frame = 0.0f;
             restart = 1;
         }
-        if (restart) {
+        if (restart == 1) {
             fx->anim.face = 0;
             model_anim_play(fx->model, 0, 0);
         }
         if (fx->frame > 54.0f)
-            fx->anim.face = fx->result[last];
+            fx->anim.face = *res;
         else
             fx->anim.face = 0;
         model_update(fx->model, &fx->anim);
-    } else {
+    } else
         fx->cur = fx->count;
-    }
     dd_mtx_pop_all();
     dd_set_offset(6, 0x710, 0x778);
     dd_rstate_reset(4);
@@ -139,7 +135,6 @@ int dd_fx_coin_update(int state, DdFxToss *fx)
         return 2;
     return 4;
 }
-#endif
 
 void dd_fx_die_bone(void *m, float *mtx, DdTossAnim *a)
 {
@@ -183,13 +178,13 @@ int dd_fx_die_start(int count, int *result, int kind, DdTaskTermFn term, void *a
     return id;
 }
 
-#ifdef NON_MATCHING /* ordem dos testes do índice e do reinício da animação */
 int dd_fx_die_update(int state, DdFxToss *fx)
 {
     float speed = dd_anim_speed();
     int last;
     int restart;
     int model, shadow;
+    int *res;
 
     dd_mtx_push_identity();
     dd_set_offset(6, 0x6C6, 0x77C);
@@ -211,12 +206,11 @@ int dd_fx_die_update(int state, DdFxToss *fx)
         dd_model_rewind(fx->model);
         fx->shadow = dd_bin_get(shadow);
     }
-    last = fx->count - 1;
-    if (fx->cur <= last)
-        last = fx->cur;
-    if (fx->result[last] < 1) {
-        fx->cur = fx->count;
-    } else if (fx->result[last] < 7) {
+    last = fx->cur;
+    if (fx->count - 1 < last)
+        last = fx->count - 1;
+    res = (int *)(last * 4 + (char *)fx->result);
+    if (*res >= 1 && *res < 7) {
         dd_layer_draw_f(6, (int)fx->shadow, fx->frame);
         dd_clear_stencil(6, 0);
         model_draw(fx->model, &fx->draw);
@@ -234,18 +228,17 @@ int dd_fx_die_update(int state, DdFxToss *fx)
             fx->se = 0;
             restart = 1;
         }
-        if (restart) {
+        if (restart == 1) {
             fx->anim.face = 1;
             model_anim_play(fx->model, 0, 0);
         }
         if (fx->frame > 25.0f)
-            fx->anim.face = fx->result[last];
+            fx->anim.face = *res;
         else
             fx->anim.face = 1;
         model_update(fx->model, &fx->anim);
-    } else {
+    } else
         fx->cur = fx->count;
-    }
     dd_mtx_pop_all();
     dd_set_offset(6, 0x710, 0x778);
     dd_rstate_reset(4);
@@ -253,4 +246,3 @@ int dd_fx_die_update(int state, DdFxToss *fx)
         return 2;
     return 4;
 }
-#endif

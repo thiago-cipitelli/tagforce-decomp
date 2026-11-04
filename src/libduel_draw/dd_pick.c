@@ -1,8 +1,5 @@
 // @range 0x088299C8-0x0882A94C
 // @asm 0x08829BBC-0x08829E2C
-// @asm 0x0882A1EC-0x0882A22C
-// @asm 0x0882A594-0x0882A6A4
-// @asm 0x0882A6E8-0x0882A83C
 // @asm 0x0882A880-0x0882A94C
 // @data 0x088769E0-0x088769F0
 /* Grid picker of the duel: a window listing the entries first..last in a grid; the player marks
@@ -248,20 +245,16 @@ void dd_pick_update(MenuWidget *w)
     }
 }
 
-#ifdef NON_MATCHING /* alocação de registradores (forma igual) */
 int dd_pick_width(MenuWidget *w)
 {
     DdPick *p = &dd_pick;
-    int v;
 
     if (p->w_cache > 0)
         return p->w_cache;
-    v = 0;
-    v += p->cfg.cell_w * p->cfg.cols;
-    p->w_cache = v;
-    return v;
+    p->w_cache = 0;
+    p->w_cache += p->cfg.cell_w * p->cfg.cols;
+    return p->w_cache;
 }
-#endif
 
 int dd_pick_height(MenuWidget *w)
 {
@@ -325,14 +318,13 @@ unsigned int *dd_pick_draw_title(unsigned int *list, int x, int y, int w, int h,
     return list;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores (forma igual) */
 void dd_pick_confirm_open(int x, int y, int w, int h)
 {
     MenuWidget *m;
     MenuItemDef *d;
 
-    dd_pick.confirm = dd_alloc(sizeof(MenuWidget));
-    if ((m = dd_pick.confirm) != 0) {
+    if ((dd_pick.confirm = dd_alloc(sizeof(MenuWidget))) != 0) {
+        m = dd_pick.confirm;
         d = &m->def;
         memset(m, 0, sizeof(MenuWidget));
         d->visible = 1;
@@ -351,7 +343,6 @@ void dd_pick_confirm_open(int x, int y, int w, int h)
         menu_open(m);
     }
 }
-#endif
 
 void dd_pick_confirm_free(void)
 {
@@ -364,17 +355,16 @@ void dd_pick_confirm_free(void)
     }
 }
 
-#ifdef NON_MATCHING /* alocação de registradores (forma igual) */
 unsigned int *dd_pick_confirm_draw(unsigned int *list, int x, int y, int w, int h)
 {
+    DdPick *p = &dd_pick;
+    unsigned short *text = dd_pick.title;
     MenuWidget *c = dd_pick.confirm;
     int bw = c->def.w - 9;
     int bh = c->def.h - 9;
-    DdPick *p = &dd_pick;
-    unsigned short *text = dd_pick.title;
 
     if (dd_pick.cur_y == 9)
-        list = menu_draw_cursor(list, p->confirm, x - 1, y - 2, bw + 2, bh + 2);
+        list = menu_draw_cursor(list, c, x - 1, y - 2, bw + 2, bh + 2);
     font_set_size(12, 12);
     font_text_set(list);
     if (p->n_picked >= p->cfg.min_pick)
@@ -384,9 +374,8 @@ unsigned int *dd_pick_confirm_draw(unsigned int *list, int x, int y, int w, int 
     x += (bw - (font_measure_text(text) >> 6)) / 2;
     y += (bh - (font_line_height() >> 6)) / 2;
     font_draw_text(x << 6, y << 6, (480 - x) << 6, text);
-    font_text_clear();
+    return font_text_clear();
 }
-#endif
 
 int dd_pick_has(int index)
 {

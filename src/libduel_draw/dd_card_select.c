@@ -1,16 +1,8 @@
 // @range 0x08819C04-0x0881CA2C
-// @asm 0x08819C30-0x08819F2C
-// @asm 0x08819F2C-0x0881A020
-// @asm 0x0881A0AC-0x0881A458
 // @asm 0x0881A504-0x0881ABD8
 // @asm 0x0881ABD8-0x0881AFC0
-// @asm 0x0881BACC-0x0881BCB8
-// @asm 0x0881BCB8-0x0881BE90
 // @asm 0x0881BE90-0x0881BF1C
 // @asm 0x0881BF1C-0x0881BFA8
-// @asm 0x0881C3A8-0x0881C510
-// @asm 0x0881C510-0x0881C678
-// @asm 0x0881C91C-0x0881C9A0
 // @data 0x08875E60-0x08875F84
 /* The card list window of prompts (choose N cards out of a list: deck search, graveyard, ...):
    list of card rows (picture, name, attribute, ATK/DEF, level), picks with min/max, a sort window
@@ -167,7 +159,6 @@ void dd_sel_reset(void)
     menu_reset(&dd_sel.sub);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_open(DdSelDesc *d)
 {
     DdSel *s = &dd_sel;
@@ -220,15 +211,15 @@ void dd_sel_open(DdSelDesc *d)
     s->list.cancel_blocked = 0;
     s->list.keep_open = 1;
     s->list.f0_4 = 0;
+    s->list.cancel_resets = 0;
     s->list.center = 1;
     s->list.style = 3;
     s->list.rows = 5;
     s->list.item_w = 0x31;
     s->list.item_h = 0x98;
     s->list.draw_item = (MenuDrawItemFn)dd_sel_draw_item;
-    s->list.draw_before = (MenuDrawRectFn)dd_sel_draw_after;
     s->list.count = s->n;
-    s->list.cancel_resets = 0;
+    s->list.draw_before = (MenuDrawRectFn)dd_sel_draw_after;
     s->list.accept_blocked = 1;
     s->list.item_y = 0x14;
     menu_open(&s->list);
@@ -238,21 +229,17 @@ void dd_sel_open(DdSelDesc *d)
     s->list.cursor_h = 0x93 - s->list.item_y;
     se_play(0x621A);
 }
-#endif
 
 /* opens the list with the engine's candidates; pick between min and max */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_open_engine(int max, int min, unsigned short *title, int reverse)
 {
-    DdSelDesc d;
     int ids[512];
+    DdSelDesc d;
     int n, i;
 
     n = dv_0884C824();
-    if (max > n)
-        max = n;
-    if (min > n)
-        min = n;
+    max = ALLEGREX_MIN(max, n);
+    min = ALLEGREX_MIN(min, n);
     for (i = 0; i < n; i++)
         ids[i] = *dv_0884C7EC(i) & 0x1FFF;
     memset(&d, 0, sizeof(d));
@@ -261,13 +248,13 @@ void dd_sel_open_engine(int max, int min, unsigned short *title, int reverse)
     d.n = n;
     d.reverse = reverse;
     d.title = title;
+
     dd_sel_open(&d);
     dd_mode_push(2);
     dd_mode_set_sel_cb(dd_sel_done_cb);
     dd_mode_set_flag(0x31);
     dd_sel_set_minmax(min, max);
 }
-#endif
 
 void *dd_sel_sub_draw(void *list);
 void *dd_sel_sub_draw2(void *list);
@@ -297,7 +284,6 @@ void dd_sel_show(int i);
 void dd_sel_toggle(int i);
 void dd_sel_unpick(int i);
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_update(void)
 {
     DdSel *s = &dd_sel;
@@ -320,7 +306,7 @@ void dd_sel_update(void)
             dd_sel_open_opts();
             s->mode = 2;
         } else if (s->done == 0) {
-            if (s->list.count != 0)
+            if (s->list.count > 0)
                 menu_update(&s->list);
             i = s->list.scroll + s->list.cursor;
             if (s->last != i) {
@@ -336,24 +322,24 @@ void dd_sel_update(void)
                 s->list.no_cancel = 0;
                 se_play(0x6212);
             }
-        } else if ((pad[3] & 0x10) && s->list.count != 0) {
+        } else if ((pad[3] & 0x10) && s->list.count > 0) {
             s->list.no_cancel = 1;
             s->done = 0;
             se_play(0x6212);
         } else if (s->min == 0 && s->max == 0) {
             if (pad[1] & (ok | cancel))
                 dd_sel_unpick(-1);
-        } else if (dd_sel_can_accept() == 0) {
-            if (pad[1] & (ok | cancel))
-                se_play(0x6215);
-        } else if (pad[1] & ok) {
-            se_play(0x6213);
-            menu_finish(&s->list);
-        } else if (pad[1] & cancel) {
-            dd_sel_unpick(-1);
-            s->list.no_cancel = 1;
-            s->done = 0;
-        }
+        } else if (dd_sel_can_accept() != 0) {
+            if (pad[1] & ok) {
+                se_play(0x6213);
+                menu_finish(&s->list);
+            } else if (pad[1] & cancel) {
+                dd_sel_unpick(-1);
+                s->list.no_cancel = 1;
+                s->done = 0;
+            }
+        } else if (pad[1] & (ok | cancel))
+            se_play(0x6215);
         break;
     case 1:
         if (dd_sel_sort_update() != 0)
@@ -361,16 +347,16 @@ void dd_sel_update(void)
         break;
     case 2:
         switch (dd_sel_opts_update()) {
-        case 3:
-            dd_sel_open_filter();
-            s->mode = 3;
+        case 1:
+            s->mode = 0;
             break;
         case 2:
             dd_sel_open_sort();
             s->mode = 1;
             break;
-        case 1:
-            s->mode = 0;
+        case 3:
+            dd_sel_open_filter();
+            s->mode = 3;
             break;
         }
         break;
@@ -386,7 +372,6 @@ void dd_sel_update(void)
         break;
     }
 }
-#endif
 
 int dd_sel_busy(void)
 {
@@ -889,22 +874,22 @@ typedef struct DdSelKey {
 } DdSelKey;
 
 /* sorts the entries by key (ties by index) */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_sort(int *list, int n, int key, int dir)
 {
+    DdSel *s = &dd_sel;
     DdSelKey *k;
-    DdSelKey *p;
     int i;
 
     if (n == 0)
         return;
     k = dd_alloc(n << 3);
-    for (i = 0, p = k; i < n; i++, p++) {
-        p->id = list[i];
-        p->idx = i;
-        p->key = dd_sel_key_of(list[i], dd_sel.ids[list[i]], key);
+    for (i = 0; i < n; i++) {
+        int id = list[i];
+        k[i].id = id;
+        k[i].idx = i;
+        k[i].key = dd_sel_key_of(id, s->ids[id], key);
     }
-    if (dir == 0)
+    if (dir != 0)
         qsort(k, n, 8, dd_sel_cmp_down);
     else
         qsort(k, n, 8, dd_sel_cmp_up);
@@ -913,11 +898,9 @@ void dd_sel_sort(int *list, int n, int key, int dir)
     if (k != 0)
         dd_free(k);
 }
-#endif
 
 /* sort value of a card for a key (0 list order, 1 sort, 2 kind, 3 level, 4 ATK, 5 DEF, 6 type,
    7 attribute, 8 spell/trap kind, 9 limit) */
-#ifdef NON_MATCHING /* lógica conferida (tabelas de magia/armadilha estavam trocadas); o case 0 sai com beql e desloca o resto: 93 palavras */
 int dd_sel_key_of(int i, int id, int key)
 {
     DdSel *s = &dd_sel;
@@ -925,9 +908,7 @@ int dd_sel_key_of(int i, int id, int key)
 
     switch (key) {
     case 0:
-        if (s->reverse == 0)
-            return i;
-        return 0x200 - i;
+        return s->reverse ? 0x200 - i : i;
     case 1:
         return card_get_sort(id);
     case 2:
@@ -937,27 +918,31 @@ int dd_sel_key_of(int i, int id, int key)
     }
     switch (card_get_attribute_icon(id)) {
     case 7:
-        if (key == 8)
-            return dd_sel_trap_order[card_get_prop5_hi(id)];
-        break;
+        if (key != 8)
+            break;
+        return dd_sel_trap_order[card_get_prop5_hi(id)];
     case 8:
-        if (key == 8)
-            return dd_sel_spell_order[card_get_prop5_hi(id)];
-        break;
+        if (key != 8)
+            break;
+        return dd_sel_spell_order[card_get_prop5_hi(id)];
     default:
         switch (key) {
         case 3:
             return 0xFFFF - card_get_level(id);
         case 4:
             a = card_get_atk(id);
-            if (a != 0xFFFF)
-                return 0xFFFF - a;
-            return 0x10000;
+            if (a == 0xFFFF)
+                a = 0x10000;
+            else
+                a = 0xFFFF - a;
+            return a;
         case 5:
             a = card_get_def(id);
-            if (a != 0xFFFF)
-                return 0xFFFF - a;
-            return 0x10000;
+            if (a == 0xFFFF)
+                a = 0x10000;
+            else
+                a = 0xFFFF - a;
+            return a;
         case 6:
             return card_get_type(id);
         case 7:
@@ -966,7 +951,6 @@ int dd_sel_key_of(int i, int id, int key)
     }
     return 0xFFFF7FFF;
 }
-#endif
 
 #ifdef NON_MATCHING /* só o fim difere: o original faz beqz/nop; b; li; move no último teste (11 palavras) */
 int dd_sel_cmp_down(const void *pa, const void *pb)
@@ -1130,47 +1114,41 @@ void *dd_sel_opts_draw_item(void *dl, int i, int x, int y)
 }
 
 /* entries of the options window: card info (when the card is known), sort, filter, ... */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void dd_sel_build_opts(void)
 {
     DdSel *s = &dd_sel;
     int n = 0;
-    int id, i, w;
+    int id, w;
 
-    if (s->done == 0) {
+    if (dd_sel.done == 0) {
         id = s->order[s->list.scroll + s->list.cursor];
         dv_0884C8E4(id);
-        if (duel_0884C830(id) >= 1) {
-            s->opts[0] = 0;
-            n = 1;
+        if (!(duel_0884C830(id) > 0) == 0) {
+            s->opts[n] = 0;
+            n++;
         }
     }
-    s->opts[n] = 1;
-    s->opts[n + 1] = 2;
-    n += 2;
+    s->opts[n++] = 1;
+    s->opts[n++] = 2;
     if (dd_is_tag_duel() == 0)
         s->opts[n++] = 3;
     if (hl_allowed() != 0)
         s->opts[n++] = 4;
-    s->opts_w = 0;
     s->n_opts = n;
+    s->opts_w = 0;
     font_set_size(0xC, 0xC);
-    for (i = 0; i < s->n_opts; i++) {
-        w = font_measure_text(dd_text(dd_sel_opts[s->opts[i]].text)) >> 6;
-        if (w <= s->opts_w)
-            w = s->opts_w;
-        s->opts_w = w;
+    for (n = 0; n < s->n_opts; n++) {
+        w = font_measure_text(dd_text(dd_sel_opts[s->opts[n]].text)) >> 6;
+        if (w > s->opts_w)
+            s->opts_w = w;
     }
 }
-#endif
 
 /* entries passing filter (0 all, else the attribute icon of dd_sel_filter_icon) */
-#ifdef NON_MATCHING /* lógica conferida; só registradores $s trocados (n, want, i, p): 22 palavras */
 int dd_sel_filter(int *out, int n, int filter)
 {
     DdSel *s = &dd_sel;
     int want, k, i;
-    int *p;
 
     if (filter == 0) {
         for (i = 0; i < n; i++)
@@ -1179,16 +1157,15 @@ int dd_sel_filter(int *out, int n, int filter)
     }
     want = dd_sel_filter_icon[filter];
     k = 0;
-    p = out;
     for (i = 0; i < n; i++) {
-        if (card_get_attribute_icon(s->ids[i]) == want) {
-            *p++ = i;
+        int a = card_get_attribute_icon(s->ids[i]);
+        if (a == want) {
+            out[k] = i;
             k++;
         }
     }
     return k;
 }
-#endif
 
 
 void dd_sel_open_filter(void)
@@ -1261,17 +1238,16 @@ void *dd_sel_sub_draw3(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void *dd_sel_filter_draw_item(void *dl, int i, int x, int y)
 {
-    unsigned int *list = dl_ambient_color(dl, 0xFFFFFFFF);
-    void *gim = dd_gim_get(0x40006);
+    void *gim;
 
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    gim = dd_gim_get(0x40006);
     if (gim != 0)
-        list = gim_set_texture(list, gim);
-    return dd_sel_draw_filter_icon(list, x, y, (unsigned short)i);
+        dl = gim_set_texture(dl, gim);
+    return dd_sel_draw_filter_icon(dl, x, y, (unsigned short)i);
 }
-#endif
 
 unsigned int *dd_sel_draw_filter_icon(unsigned int *list, int x, int y, int f)
 {

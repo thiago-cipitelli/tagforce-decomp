@@ -1,5 +1,4 @@
 // @range 0x08833340-0x088338C8
-// @asm 0x08833448-0x088338C8
 // @data 0x08876AE0-0x08876AF0
 /* Counter icon over a card on the field: a 38x30 icon (or a fixed one) dropping in, then a number
    rolling from one value to the next, held for 16 frames and fading out. */
@@ -61,10 +60,6 @@ int dd_fx_tally_start_fixed(float *pos, int from, int to, DdTaskTermFn term, voi
     return id;
 }
 
-/* template of the local vector of dd_fx_tally_update (kept in asm) */
-FxVec4 dd_fx_tally_v4 = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-#ifdef NON_MATCHING /* alocação de registradores (lista e deslocamento trocados entre s2 e s3) */
 int dd_fx_tally_update(int state, DdFxTally *fx)
 {
     int step = dd_anim_step();
@@ -73,6 +68,7 @@ int dd_fx_tally_update(int state, DdFxTally *fx)
     FxVec4 v = { 0.0f, 0.0f, 0.0f, 1.0f };
     float mvp[16];
     unsigned int *list;
+    unsigned int *l2;
     int dy;
     int x, y;
 
@@ -110,14 +106,14 @@ int dd_fx_tally_update(int state, DdFxTally *fx)
         fx->num_x = 19;
         fx->num_y = -7;
     }
-    list = dl_select_layer(4, 0);
+    l2 = dl_select_layer(4, 0);
     if (fx->from == fx->to)
         dy = 0;
     else if (fx->from < fx->to)
         dy = dd_ease_sin_inv(fx->in, 8, 1) * -64.0f;
     else
         dy = dd_ease_cos_inv(fx->out, 8, 1) * -64.0f;
-    list = draw_set_offsets(list, fx->w, fx->h, fx->w, fx->h);
+    list = draw_set_offsets(l2, fx->w, fx->h, fx->w, fx->h);
     list = draw_sprite(list, fx->x, fx->y + dy, 0, fx->u, fx->v, 0, 0);
     dl_set_list(list);
     dd_roll_number((float)fx->roll / 4.0f, x + fx->num_x, y + fx->num_y, fx->from, fx->to);
@@ -138,4 +134,3 @@ int dd_fx_tally_update(int state, DdFxTally *fx)
         return 2;
     return 4;
 }
-#endif

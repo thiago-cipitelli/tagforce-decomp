@@ -1,8 +1,6 @@
 // @range 0x0886A3F4-0x0886AE68
 // @asm 0x0886A3F4-0x0886A794
-// @asm 0x0886A7F8-0x0886A8FC
 // @asm 0x0886A9D8-0x0886AB2C
-// @asm 0x0886ABB8-0x0886AE68
 // @data 0x0887CF74-0x0887CFF8
 /* Field cursor guide: two d-pad pictures (texture 0x40026) with the caption of each direction
    around them, in a frame with a title; sized from the captions. */
@@ -110,25 +108,26 @@ void guide_text_size(int *w, int *h, GuideCaption *c)
 }
 
 /* width: left and right captions with their offsets; height: top and bottom ones */
-#ifdef NON_MATCHING /* alocação de registradores difere; não insistido */
 void guide_size(int *w, int *h, GuideCaption *c)
 {
     int tw, th;
+    GuideCaption *p;
 
     *w = 0;
-    guide_text_size(&tw, &th, &c[2]);
-    *w += tw + int_abs(c[2].dx);
-    guide_text_size(&tw, &th, &c[3]);
-    *w += tw + int_abs(c[3].dx);
+    p = &c[2];
+    guide_text_size(&tw, &th, p);
+    *w += tw + int_abs(p->dx);
+    p = &c[3];
+    guide_text_size(&tw, &th, p);
+    *w += tw + int_abs(p->dx);
     *h = 0;
-    guide_text_size(&tw, &th, &c[0]);
-    *h += th + int_abs(c[0].dy);
-    guide_text_size(&tw, &th, &c[1]);
-    *h += th + int_abs(c[1].dy);
+    p = c;
+    guide_text_size(&tw, &th, p);
+    *h += th + int_abs(p->dy);
+    p = &c[1];
+    guide_text_size(&tw, &th, p);
+    *h += th + int_abs(p->dy);
 }
-#else
-void guide_size(int *w, int *h, GuideCaption *c);
-#endif
 
 void *guide_pad_picture(void *dl, int x, int y, int which)
 {
@@ -187,10 +186,10 @@ void *guide_pad(void *dl, int x, int y, int which, GuideCaption *c)
 }
 
 /* frame of w x h from the 9 pieces of the texture */
-#ifdef NON_MATCHING /* alocação de registradores difere; não insistido */
 void *guide_frame(void *dl, int x, int y, int w, int h, void *gim)
 {
-    int x2, y2;
+    int y2;
+    int x2;
 
     if (gim == 0)
         return dl;
@@ -218,6 +217,3 @@ void *guide_frame(void *dl, int x, int y, int w, int h, void *gim)
     dl = draw_set_offsets(dl, 1, 1, w - 9, h - 9);
     return draw_sprite(dl, x + 4, y + 4, 0, 4, 58, 0, 0);
 }
-#else
-void *guide_frame(void *dl, int x, int y, int w, int h, void *gim);
-#endif

@@ -76,7 +76,7 @@ DdHookAnim *dd_hook_anim(DdHookObj *o)
 }
 
 /* texture hook: the disc's card slots get the card picture rendered at VRAM+0x160000 */
-#ifdef NON_MATCHING /* o teste de x158 sai por bnez em vez de bnezl direto ao epílogo */
+#ifdef NON_MATCHING /* 2 palavras: o teste de x158 sai por bnez em vez de bnezl direto ao epílogo (forma do || com return já tentada) */
 int dd_disc_tex_hook(unsigned int **plist, int *mdl, int mesh, int part, int *arg)
 {
     DdTexMat *m = *(DdTexMat **)(mdl[3] + mesh * 0xA4 + part * 0x20 + 0x1C);
@@ -103,7 +103,7 @@ int dd_disc_tex_hook(unsigned int **plist, int *mdl, int mesh, int part, int *ar
     list = dl_tex_flush(list);
     list = dl_tex_func(list, 0, 0);
     list = dl_tex_mode(list, 3, 0, 0, 0);
-    list = dl_tex_image(list, 0, 0x80, 0x100, 0x80, (void *)((int)sceGeEdramGetAddr() + 0x160000));
+    list = dl_tex_image(list, 0, 0x80, 0x100, 0x80, (void *)((char *)sceGeEdramGetAddr() + 0x160000));
     list = dl_tex_offset(0.0f, 0.6015625f, list);
     list = dl_tex_scale(0.84375f, -0.6015625f, list);
     *plist = dl_tex_wrap(list, 0, 0);

@@ -1,7 +1,4 @@
 // @range 0x0881EBA0-0x0881F0A8
-// @asm 0x0881EBA0-0x0881ECA0
-// @asm 0x0881EE28-0x0881EF2C
-// @asm 0x0881EF2C-0x0881EFB4
 // @asm 0x0881EFB4-0x0881F03C
 // @rodata 0x088701B4-0x088701B8
 /* Card picture/text popups queued as tasks (wait until the commentary and the camera are free)
@@ -62,12 +59,11 @@ void dd_task_kill(int h);
 void dd_popup(int player, int zone, int card, int flag, int text);
 
 /* shows a card picture (or a text) now */
-#ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_popup_now(int player, int card, int flag, int text)
 {
     DdCardPopup *p = dd_alloc(sizeof(DdCardPopup));
-    int xy[3];
     DdTask t;
+    int xy[3];
 
     memset(p, 0, sizeof(DdCardPopup));
     p->player = player;
@@ -77,10 +73,10 @@ void dd_popup_now(int player, int card, int flag, int text)
     xy[0] = 0x13A;
     xy[2] = 0;
     xy[1] = 0x7A;
-    if (text == 0)
-        p->handle = dd_fx_cardaura_start(p->card, xy, 0, 0);
-    else
+    if (text != 0)
         p->handle = dd_fx_noise_start(xy, 0, 0);
+    else
+        p->handle = dd_fx_cardaura_start(p->card, xy, 0, 0);
     memset(&t, 0, sizeof(t));
     t.draw = (void (*)(DdTask *, void *))dd_bigcard_draw;
     t.update = (void (*)(float, DdTask *, void *))dd_bigcard_update;
@@ -88,7 +84,6 @@ void dd_popup_now(int player, int card, int flag, int text)
     t.arg = p;
     dd_task_add(&t);
 }
-#endif
 
 /* waiting popup: starts when the commentary is off and the camera idle */
 void dd_popup_wait(float dt, DdTask *t, DdCardPopup *p)
@@ -129,11 +124,11 @@ void dd_popup(int player, int zone, int card, int flag, int text)
 }
 
 /* starts the glow of a card */
-#ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_glow_on(DdCard *c)
 {
-    float pos[4];
     char dir[16];
+    float pos[4];
+    DdTasks *s;
     int i;
 
     if (c->glow != -1)
@@ -142,35 +137,35 @@ void dd_glow_on(DdCard *c)
     *(DdVec4 *)pos = *(DdVec4 *)((char *)c + 0x10);
     if (c->loc.zone != 0xB)
         pos[1] += 0.2f;
-    c->glow = dd_fx_spin_start((float)dd_glow_kind, 1, pos, dir, -1, 0, 0);
+    c->glow = dd_fx_spin_start((float)*(int *)&dd_glow_kind, 1, pos, dir, -1, 0, 0);  /* const do arquivo: o original o lê da memória */
+    s = &dd_tasks;
     for (i = 0; i < 512; i++) {
-        if (dd_tasks.glow[i] == 0) {
-            dd_tasks.glow[i] = c;
+        if (s->glow[i] == 0) {
+            s->glow[i] = c;
             break;
         }
     }
     dd_cobj_link_add(c, func_08820D40);
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_glow_off(DdCard *c)
 {
+    DdTasks *s;
     int i;
 
     if (c->glow == -1)
         return;
     dd_task_pause(c->glow);
     c->glow = -1;
+    s = &dd_tasks;
     for (i = 0; i < 512; i++) {
-        if (c == dd_tasks.glow[i]) {
-            dd_tasks.glow[i] = 0;
+        if (c == s->glow[i]) {
+            s->glow[i] = 0;
             break;
         }
     }
     dd_cobj_link_del(c, func_08820D40);
 }
-#endif
 
 #ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
 void dd_glow_all_off(void)
