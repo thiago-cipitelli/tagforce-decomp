@@ -2,10 +2,8 @@
 // @asm 0x088121D0-0x08812464
 // @asm 0x08812464-0x088125E4
 // @asm 0x088125E4-0x08812CB0
-// @asm 0x08812E04-0x088130A4
 // @asm 0x088130A4-0x08813584
-// @asm 0x08813A20-0x08813B5C
-// @asm 0x08813B5C-0x08813CF4
+// @rodata 0x0881A9F0-0x0881AA10
 // @data 0x0881B460-0x0881B510
 /* The filter menu (state 5): a list of the seven filter kinds and a grid of the values of the
    chosen one (toggled with Circle, page by page), then the filter applied to the pane; the value
@@ -59,7 +57,6 @@ void *sc_draw_pack_icon(void *list, unsigned short x, unsigned short y, unsigned
 void sc_layout_scroll(short keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned short sc_list_filter(ScList *l, unsigned short f, unsigned int *arg);
 void sc_popup_open(int id, int arg);
-void *menu_draw_item(void *list, MenuWidget *m, int x, int y, int which, int lit);
 void sc_fmenu_free(void);
 void sc_fmenu_values(void);
 void sc_fmenu_open_values(unsigned short f);
@@ -349,13 +346,14 @@ void *sc_draw_fmenu_kind(void *list, int i, int x, int y)
     return sc_draw_button(list, &sc_filter_icons[i + 1], x, y + 1, 0);
 }
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* the values window of filter f */
 void sc_fmenu_open_values(unsigned short f)
 {
+    ScFilterDef *d = &sc_filter_defs[f];
     int x = (0x1E0 - sc_fmenu->kinds->def.w) / 2;
     MenuWidget *m = sc_fmenu->vals;
     int n;
+    MenuItemDef *def;
 
     if (m == 0) {
         sc_fmenu->vals = heap_alloc(sc.heap, 0x120);
@@ -363,21 +361,22 @@ void sc_fmenu_open_values(unsigned short f)
         if (m == 0)
             return;
     }
-    n = sc_filter_defs[f].last - sc_filter_defs[f].first + 1;
+    def = &m->def;
+    n = d->last - d->first + 1;
     memset(m, 0, 0x120);
-    m->def.visible = 1;
-    m->def.style = 0;
-    m->def.x = x + 0x6D;
-    m->def.y = sc_fmenu->kinds->def.y + 4 + f * 0x12;
-    m->def.w = 0x8A;
-    m->def.h = (sc_filter_defs[f].last - sc_filter_defs[f].first + 5) / 5 * 0x19 + 0x35;
-    m->def.anchor = -1;
-    m->def.pad_l = 2;
-    m->def.pad_t = 0x12;
-    m->def.pad_r = 2;
-    m->def.pad_b = 2;
-    m->def.open_anim = 1;
-    m->def.close_anim = 1;
+    def->visible = 1;
+    def->style = 0;
+    def->x = x + 0x6D;
+    def->y = sc_fmenu->kinds->def.y + 4 + f * 0x12;
+    def->w = 0x8A;
+    def->h = (n + 4) / 5 * 0x19 + 0x35;
+    def->color = 0xFFFFFFFF;
+    def->pad_l = 2;
+    def->pad_t = 0x12;
+    def->pad_r = 2;
+    def->pad_b = 2;
+    def->open_anim = 1;
+    def->close_anim = 1;
     m->heap = sc.heap;
     m->no_input = 1;
     m->no_cancel = 1;
@@ -385,28 +384,35 @@ void sc_fmenu_open_values(unsigned short f)
     m->item_h = 0x19;
     m->count = 5;
     m->draw_all = (MenuDrawRectFn)sc_draw_fmenu_values;
-    if (f == 7) {
-        m->def.w = 0xB7;
-        m->def.h = 0xCB;
-        m->def.pad_l += 10;
-        m->def.pad_r += 10;
-        m->def.y = sc_fmenu->kinds->def.y - 0x16;
-        m->count = 6;
-    } else if (f == 5) {
-        m->def.w = 0xA3;
-        m->count = 6;
-    } else if (f == 3) {
-        m->def.w = 0xA3;
-        m->def.h = 0x4E;
-        m->count = 6;
-    } else if (f == 1) {
+    switch (f) {
+    case 1:
         m->count = 4;
-    } else if (n < 5) {
-        m->count = n;
+        break;
+    case 3:
+        def->w = 0xA3;
+        def->h = 0x4E;
+        m->count = 6;
+        break;
+    case 5:
+        def->w = 0xA3;
+        m->count = 6;
+        break;
+    case 7:
+        def->w = 0xB7;
+        def->h = 0xCB;
+        def->pad_l += 10;
+        def->pad_r += 10;
+        def->y = sc_fmenu->kinds->def.y - 0x16;
+        m->count = 6;
+        break;
+    default:
+        if (n < 5)
+            m->count = n;
+        break;
     }
     menu_open(m);
 }
-#endif
+
 
 #ifdef NON_MATCHING /* alocação diferente */
 /* the values grid: title strip with the label of the value under the cursor, the values with a
@@ -470,7 +476,7 @@ void *sc_draw_fmenu_values(void *list, int x, int y, int w, int h)
     label = table_get_entry(res_get(0x8033), 0x17);
     tx = x + (w - 0x3C) / 2;
     ty = y + h - 0x18;
-    list = menu_draw_item(list, m, tx, ty, 0, sc_fmenu->page == 0xF);
+    list = menu_draw_button(list, m, tx, ty, 0, sc_fmenu->page == 0xF);
     font_set_size(12, 12);
     font_text_set(list);
     font_set_color(0xFF000000);
@@ -570,36 +576,45 @@ void *sc_draw_check(void *list, unsigned short x, unsigned short y)
 unsigned short sc_limit_labels[10] = { 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x0 };
 unsigned short sc_spell_labels[14] = { 0x35, 0x36, 0x37, 0x38, 0x0, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x40, 0x41 };
 
-#ifdef NON_MATCHING /* tabela de saltos com default primeiro; corpos em outra ordem */
 /* label of value v of filter f */
 unsigned short *sc_filter_label(unsigned short f, unsigned short v)
 {
-    switch (f) {
-    default:
-        return 0;
-    case 1:
-        return table_get_entry(res_get(0x8033), sc_limit_labels[v]);
-    case 2:
-        return card_db_table_sel(v);
-    case 3:
-        return dlg_table_sel(v);
-    case 4:
-        return table_get_entry(res_get(0x8033), sc_limit_labels[v + 6]);
-    case 5:
-        return table_get_entry(res_get(0x8033), sc_spell_labels[v + 4]);
-    case 6:
-        return table_get_entry(res_get(0x8033), sc_spell_labels[v]);
-    case 7:
-        return dlg_get_text_bounded(v);
-    }
-}
-#endif
+    unsigned short *s;
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
+    switch (f) {
+    case 1:
+        s = table_get_entry(res_get(0x8033), sc_limit_labels[v]);
+        break;
+    case 2:
+        s = card_db_table_sel(v);
+        break;
+    case 3:
+        s = dlg_table_sel(v);
+        break;
+    case 4:
+        s = table_get_entry(res_get(0x8033), sc_limit_labels[v + 6]);
+        break;
+    case 5:
+        s = table_get_entry(res_get(0x8033), sc_spell_labels[v + 4]);
+        break;
+    case 6:
+        s = table_get_entry(res_get(0x8033), sc_spell_labels[v]);
+        break;
+    case 7:
+        s = dlg_get_text_bounded(v);
+        break;
+    default:
+        s = 0;
+        break;
+    }
+    return s;
+}
+
 /* opens the word search window */
 void sc_input_mark(void)
 {
     MenuWidget *m;
+    MenuItemDef *def;
 
     sc_word = heap_alloc(sc.heap, 0x54);
     if (sc_word == 0)
@@ -609,31 +624,32 @@ void sc_input_mark(void)
     m = sc_word->menu;
     if (m == 0)
         return;
+    def = &m->def;
     memset(m, 0, 0x120);
-    m->def.visible = 1;
-    m->def.style = 0;
-    m->def.x = 0x5E;
-    m->def.y = 0x48;
-    m->def.w = 0x124;
-    m->def.h = 0x30;
-    m->def.anchor = -1;
-    m->def.pad_l = 2;
-    m->def.pad_t = 2;
-    m->def.pad_r = 2;
-    m->def.pad_b = 2;
-    m->def.font_flag4 = 1;
-    m->def.font_flag8000 = 1;
-    m->def.show_title = 1;
-    m->def.style2 = 2;
-    m->def.title = table_get_entry(res_get(0x8033), 0x12);
-    m->def.title_font_size = 0xC;
-    m->def.title_color = 0xFFFFFFFF;
-    m->def.text = table_get_entry(res_get(0x8033), 0x42);
-    m->def.show_title = 1;
-    m->def.font_size = 0xC;
-    m->def.text_color = 0xFF000000;
-    m->def.open_anim = 1;
-    m->def.close_anim = 1;
+    def->visible = 1;
+    def->style = 0;
+    def->x = 0x5E;
+    def->y = 0x48;
+    def->w = 0x124;
+    def->h = 0x30;
+    def->color = 0xFFFFFFFF;
+    def->pad_l = 2;
+    def->pad_t = 2;
+    def->pad_r = 2;
+    def->pad_b = 2;
+    def->show_title = 1;
+    def->auto_title = 1;
+    def->font_flag4 = 1;
+    def->style2 = 2;
+    def->title = table_get_entry(res_get(0x8033), 0x12);
+    def->title_font_size = 0xC;
+    def->title_color = 0xFFFFFFFF;
+    def->text = table_get_entry(res_get(0x8033), 0x42);
+    def->font_flag4 = 1;
+    def->font_size = 0xC;
+    def->text_color = 0xFF000000;
+    def->open_anim = 1;
+    def->close_anim = 1;
     m->heap = sc.heap;
     m->no_input = 1;
     m->draw_all = (MenuDrawRectFn)sc_draw_word_win;
@@ -641,4 +657,3 @@ void sc_input_mark(void)
     sc_word_reset();
     sc.state = 6;
 }
-#endif

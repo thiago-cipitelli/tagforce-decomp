@@ -27,7 +27,6 @@ typedef struct DtWordsView {           /* the same words seen from the dt_deck b
 
 extern DtWordWin *dt_word;
 
-void *menu_draw_item(void *list, MenuWidget *m, int x, int y, int which, int lit);
 unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
 void *dt_draw_shade(void *list, unsigned short side, unsigned short tab, int show_tab);
 void dt_layout_scroll(int keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);

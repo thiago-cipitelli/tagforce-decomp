@@ -4,9 +4,7 @@
 // @asm 0x088158DC-0x08815CD0
 // @asm 0x08815CD0-0x08815E48
 // @asm 0x08815F04-0x08816468
-// @asm 0x088164A0-0x08816550
 // @asm 0x08816550-0x08816874
-// @asm 0x08816938-0x08816CD8
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
    entry is taken out, flown along a curve from its slot to the slot it lands in and added to the
@@ -73,7 +71,7 @@ int sc_list_remove(ScList *l, int i);
 void sc_list_add(ScList *l, ScEnt *src);
 void sc_lists_save(void);
 void sc_select_tab(unsigned short side, unsigned short tab, short how);
-void sc_layout_scroll(short keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
+void sc_layout_scroll(int keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned int sc_tab_pos(unsigned short i);
 void sc_hist_push(ScMove *m);
 void sc_popup_open(int id, int arg);
@@ -305,7 +303,8 @@ int sc_input_move(void)
 #endif
 
 #ifdef NON_MATCHING /* lógica conferida com o asm; 41 palavras: o original testa 3, 2, 1 (ordem inversa) sem
-                       teste do 0; só com um "case 0" o mwcc inverte a ordem, mas emite o teste dele */
+                       teste do 0; só com um "case 0" o mwcc inverte a ordem, mas emite o teste dele. Depois da
+                       chamada o original lê dside/dst por f+6 guardado em $s0 (como sc_flight_step) */
 /* state 2 */
 void sc_input_sort_menu(void)
 {
@@ -354,90 +353,93 @@ void sc_flight_land(void)
     sc_list_add(l, &e);
 }
 
-#ifdef NON_MATCHING /* contas em float com outra alocação de $f */
+/* point at t of the quadratic curve a, m, b of a flight */
+static inline float sc_bez(float t, float a, float m, float b)
+{
+    float u = 1.0f - t;
+    float k = 2.0f * t * u;
+    u = u * u;
+    t = t * t;
+    return t * b + (u * a + k * m);
+}
+
+#ifdef NON_MATCHING /* lógica conferida com o asm (sc_select_tab recebe dtab, não dst); o original guarda f+6 em $s1 e lê
+   dside/dst por ele (o mwcc lê por $s0 e não usa $s1: tudo desloca uma palavra, 335); curva como dt_bez */
 /* the flight: path through a control point, 10 frames of quadratic curve, landing */
 void sc_flight_step(void)
 {
     ScFlight *f = sc_flight;
-    int i;
-    int keep;
+    ScPane *p;
     float t;
-    float u;
-    float k;
-    float y0;
-    float y1;
-    float x0;
+    int pos;
+    unsigned short keep;
+    unsigned short view;
+    unsigned short grid;
+    unsigned short grid2;
 
     switch (f->phase) {
-    case 2:
-        if (scv.mode < 2 && f->dst != f->dtab)
-            sc_select_tab(f->dside, f->dst, 2);
-        sc_flight_land();
-        i = scv.pane[0].cx + scv.pane[0].top + scv.pane[0].cy * (scv.pane[0].list_mode ? 1 : scv.pane[0].lay.cols);
-        keep = 1;
-        if (i > 0 && i >= scv.pane[0].list->count) {
-            i = scv.pane[0].list->count - 1;
-            keep = 0;
+    case 0:
+        sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 0);
+        if (sc_flight->from[1] - 10.0f <= sc_flight->to[1] && sc_flight->from[1] + 10.0f >= sc_flight->to[1]) {
+            if (sc_flight->from[1] <= 136.0f)
+                sc_flight->mid[1] = sc_flight->from[1] + 68.0f;
+            else
+                sc_flight->mid[1] = 24.0f;
+            sc_flight->mid[0] = sc_flight->from[0] + (sc_flight->to[0] - sc_flight->from[0]) / 2.0f;
+        } else if (sc_flight->from[0] - 10.0f <= sc_flight->to[0] && sc_flight->from[0] + 10.0f >= sc_flight->to[0]) {
+            if (sc_flight->from[0] <= 240.0f)
+                sc_flight->mid[0] = sc_flight->from[0] + 120.0f;
+            else
+                sc_flight->mid[0] = sc_flight->from[0] - 120.0f;
+            sc_flight->mid[1] = sc_flight->from[1] + (sc_flight->to[1] - sc_flight->from[1]) / 2.0f;
+        } else if (sc_flight->from[1] < sc_flight->to[1]) {
+            sc_flight->mid[1] = sc_flight->from[1];
+            sc_flight->mid[0] = sc_flight->to[0];
+        } else {
+            sc_flight->mid[1] = sc_flight->to[1];
+            sc_flight->mid[0] = sc_flight->from[0];
         }
-        sc_layout_scroll(keep, i, ((scv.pane[0].list_mode ? 1 : scv.pane[0].lay.cols) & 0xFF) |
-                         (scv.pane[0].list_mode ? scv.pane[0].lay.rows : scv.pane[0].lay.grid_rows) << 8,
-                         scv.pane[0].list->count, &scv.pane[0].top, &scv.pane[0].cx, &scv.pane[0].cy);
-        if (scv.mode > 1) {
-            i = scv.pane[1].cx + scv.pane[1].top + scv.pane[1].cy * (scv.pane[1].list_mode ? 1 : scv.pane[1].lay.cols);
-            keep = 1;
-            if (i > 0 && i >= scv.pane[1].list->count) {
-                i = scv.pane[1].list->count - 1;
-                keep = 0;
-            }
-            sc_layout_scroll(keep, i, ((scv.pane[1].list_mode ? 1 : scv.pane[1].lay.cols) & 0xFF) |
-                             (scv.pane[1].list_mode ? scv.pane[1].lay.rows : scv.pane[1].lay.grid_rows) << 8,
-                             scv.pane[1].list->count, &scv.pane[1].top, &scv.pane[1].cx, &scv.pane[1].cy);
-        }
-        f->step = 3;
-        f->phase = 0;
-        f->timer = 0;
+        sc_flight->timer = 0;
+        sc_flight->phase++;
         break;
     case 1:
         if (f->timer++ < 10) {
-            t = f->timer / 10.0f;
-            u = 1.0f - t;
-            k = t * 2.0f * u;
-            f->x = (int)(t * t * f->to[0] + u * u * f->from[0] + k * f->mid[0]);
-            f->y = (int)(t * t * f->to[1] + u * u * f->from[1] + k * f->mid[1]);
+            t = (unsigned int)sc_flight->timer / 10.0f;
+            sc_flight->x = sc_bez(t, sc_flight->from[0], sc_flight->mid[0], sc_flight->to[0]);
+            sc_flight->y = sc_bez(t, sc_flight->from[1], sc_flight->mid[1], sc_flight->to[1]);
         } else {
-            f->phase++;
+            sc_flight->phase++;
         }
         break;
-    case 0:
-        sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 0);
-        y0 = f->from[1];
-        y1 = f->to[1];
-        if (y1 < y0 - 10.0f || y0 + 10.0f < y1) {
-            x0 = f->from[0];
-            if (f->to[0] < x0 - 10.0f || x0 + 10.0f < f->to[0]) {
-                if (y0 < y1) {
-                    f->mid[1] = y0;
-                    f->mid[0] = f->to[0];
-                } else {
-                    f->mid[1] = y1;
-                    f->mid[0] = f->from[0];
-                }
-            } else {
-                if (x0 <= 240.0f)
-                    f->mid[0] = x0 + 120.0f;
-                else
-                    f->mid[0] = x0 - 120.0f;
-                f->mid[1] = f->from[1] + (f->to[1] - f->from[1]) / 2.0f;
-            }
-        } else {
-            if (y0 <= 136.0f)
-                f->mid[1] = y0 + 68.0f;
-            else
-                f->mid[1] = 24.0f;
-            f->mid[0] = f->from[0] + (f->to[0] - f->from[0]) / 2.0f;
+    case 2:
+        if (scv.mode < 2 && f->dst != f->dtab)
+            sc_select_tab(f->dside, f->dtab, 2);
+        sc_flight_land();
+        p = &scv.pane[0];
+        pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
+        keep = 1;
+        if (pos > 0 && pos >= p->list->count) {
+            pos = p->list->count - 1;
+            keep = 0;
         }
-        f->timer = 0;
-        f->phase++;
+        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+        grid = p->list_mode == 0 ? p->lay.cols : 1;
+        sc_layout_scroll(keep, pos, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+        if (scv.mode > 1) {
+            p = &scv.pane[1];
+            pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
+            keep = 1;
+            if (pos > 0 && pos >= p->list->count) {
+                pos = p->list->count - 1;
+                keep = 0;
+            }
+            view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+            grid2 = p->list_mode == 0 ? p->lay.cols : 1;
+            sc_layout_scroll(keep, pos, (grid2 & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+        }
+        sc_flight->step = 3;
+        sc_flight->phase = 0;
+        sc_flight->timer = 0;
         break;
     }
 }
@@ -451,18 +453,17 @@ void sc_flight_free(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original lê os campos de f depois dos recursos */
 void *sc_draw_sort_menu(void *list)
 {
     ScFlight *f = sc_flight;
 
-    if (f->step != 2)
-        return list;
-    else
+    switch (f->step) {
+    case 2:
         list = sc_draw_card_pict(list, f->x - 11, f->y - 15, 0, 0xFFFFFFFF, &f->ent, res_get(0x8001), res_get(0x8002), res_get(0x8032));
+        break;
+    }
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* registradores herdados de testes anteriores (v1) no original */
 /* screen position of position pos of list tab shown in pane side; scroll the pane towards it when
@@ -566,68 +567,74 @@ int sc_dst_pos(int tab, unsigned short id)
 /* messages of popup 2 */
 unsigned short sc_popup_msgs[6] = { 0, 0x22, 0x23, 0x84, 0x29, 0 };
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* opens popup id: 4 search/filter result (arg = count), 3 quit confirmation, 2 message arg */
 void sc_popup_open(int id, int arg)
 {
+    MenuWidget *m = &sc_popup;
+    MenuItemDef *d = &sc_popup.def;
     unsigned char buttons = 1;
 
-    memset(&sc_popup, 0, 0x120);
+    memset(m, 0, 0x120);
     memset(sc_popup_text, 0, 0x800);
-    if (id == 4) {
-        if (arg == 0)
-            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x89));
-        else
-            wsprintf(sc_popup_text, table_get_entry(res_get(0x8033), 0x81), arg);
-        sc_popup.initial = 1;
-        sc_popup.def.max_h = 0x50;
-        sc_popup.cancel_resets = 1;
-    } else if (id == 3) {
+    switch ((unsigned short)id) {
+    case 2:
+        wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), sc_popup_msgs[(unsigned short)arg]));
+        m->cancel_blocked = 1;
+        break;
+    case 3:
         switch (sc.kind) {
-        case 2:
-            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x99));
+        case 0:
+            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x97));
             break;
         case 1:
-            if (sc.list[1].total < 10)
+            if ((unsigned int)sc.list[1].total < 10)
                 wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x9A));
             else
                 wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x98));
             break;
-        case 0:
-            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x97));
+        case 2:
+            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x99));
             break;
         }
-        sc_popup.initial = 4;
-        sc_popup.cancel_resets = 1;
+        m->initial = 4;
         buttons = 2;
-    } else if (id == 2) {
-        wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), sc_popup_msgs[arg]));
-        sc_popup.cancel_blocked = 1;
+        m->cancel_resets = 1;
+        break;
+    case 4:
+        if ((unsigned short)arg <= 0)
+            wcscpy(sc_popup_text, table_get_entry(res_get(0x8033), 0x89));
+        else
+            wsprintf(sc_popup_text, table_get_entry(res_get(0x8033), 0x81), (unsigned short)arg);
+        d->auto_size = 1;
+        m->initial = 1;
+        d->max_h = 0x50;
+        m->cancel_resets = 1;
+        break;
     }
-    sc_popup.def.visible = 1;
-    sc_popup.def.auto_size = 1;
-    sc_popup.def.font_flag4 = 1;
-    sc_popup.def.max_w = 0xF0;
-    sc_popup.def.color = 0xFFFFFFFF;
-    sc_popup.def.pad_l = 10;
-    sc_popup.def.pad_r = 10;
-    sc_popup.def.pad_t = 8;
-    sc_popup.def.font_size = 0xC;
-    sc_popup.def.text_color = 0xFF000000;
-    sc_popup.def.text = sc_popup_text;
-    sc_popup.def.open_anim = 2;
-    sc_popup.def.close_anim = 2;
-    sc_popup.heap = sc.heap;
-    sc_popup.no_cancel = 1;
-    sc_popup.buttons = buttons;
-    sc_popup.def.style = 0;
-    sc_popup.def.pad_b = 0;
-    menu_open(&sc_popup);
-    sc_popup.def.x = (0x1E0 - sc_popup.def.w) / 2;
-    sc_popup.def.y = (0x110 - sc_popup.def.h) / 2;
+    d->visible = 1;
+    d->auto_size = 1;
+    d->font_flag4 = 1;
+    d->max_w = 0xF0;
+    d->color = 0xFFFFFFFF;
+    d->pad_l = 10;
+    d->pad_r = 10;
+    d->pad_t = 8;
+    d->font_size = 0xC;
+    d->text_color = 0xFF000000;
+    d->text = sc_popup_text;
+    d->open_anim = 2;
+    d->close_anim = 2;
+    m->heap = sc.heap;
+    m->no_cancel = 1;
+    m->buttons = buttons;
+    d->style = 0;
+    d->pad_b = 0;
+    menu_open(m);
+    d->x = (0x1E0 - d->w) / 2;
+    d->y = (0x110 - d->h) / 2;
     scv.popup = id;
 }
-#endif
+
 
 /* the popup's input; Yes on the quit confirmation saves and leaves */
 void sc_popup_update(void)
