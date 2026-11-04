@@ -1,6 +1,5 @@
 // @range 0x08835650-0x08835F48
 // @asm 0x088357C0-0x08835CAC
-// @asm 0x08835DF4-0x08835EB0
 /* GIM textures: block search in the GIM tree, texture setup (format, image of a frame, CLUT of
    the palette block), sprite-sheet cells, and binding a texture from outside a display list. A
    GIM loaded in VRAM records the address and the frame there in place of the "PSP" signature. */
@@ -244,11 +243,11 @@ void *gim_set_image(void *list, Gim *g, int frame)
     return dl_tex_image(list, 0, img->width, img->height, ~mask & img->width + mask, (char *)img + off);
 }
 
-#ifdef NON_MATCHING /* the parameters land in the $s registers in reverse order in the original */
 /* `nth` block with `id` among the siblings from `b` (depth first). */
-GimBlock *gim_block_find(GimBlock *b, GimBlock *end, unsigned int id, int nth)
+GimBlock *gim_block_find(GimBlock *blk, GimBlock *end, unsigned int id, int nth)
 {
     GimBlock *r;
+    GimBlock *b = blk;
 
     for (;;) {
         if (b->id == id) {
@@ -258,7 +257,7 @@ GimBlock *gim_block_find(GimBlock *b, GimBlock *end, unsigned int id, int nth)
             nth--;
         }
         if (b->child < b->size) {
-            r = gim_block_find((GimBlock *)((char *)b + *(int *)((char *)b + 8)), end, id, nth);
+            r = gim_block_find((GimBlock *)((char *)b + ((volatile GimBlock *)b)->child), end, id, nth);  /* reloaded */
             if (r != 0) {
                 return r;
             }
@@ -270,7 +269,6 @@ GimBlock *gim_block_find(GimBlock *b, GimBlock *end, unsigned int id, int nth)
     }
     return 0;
 }
-#endif
 
 /* Data of the image (4) or palette (5) block. */
 void *gim_find_block(Gim *g, int id)

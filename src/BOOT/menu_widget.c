@@ -307,6 +307,9 @@ void menu_draw(void **dl, MenuWidget *w)
     }
 }
 
+/* NON_MATCHING: switch (state) na ordem do original (2, 5 -> 6 -> 3 com fall-through, 4, default);
+   1748 B contra 1572 B: a entrada (cancelar/aceitar/cursor) ainda tem blocos em outra ordem e
+   cópias recarregadas (415 palavras). */
 /* Advances the widget one frame. Returns -3 when idle, -2 when cancelled, the selected list index
    or button when accepted, -1 otherwise. */
 int menu_update(MenuWidget *w)
@@ -319,6 +322,35 @@ int menu_update(MenuWidget *w)
     if (pad == 0)
         pad = pad_get();
     switch (w->state) {
+    case 2:
+        if (menu_item_is_open(&w->menu, &w->def) != 0)
+            w->state = 3;
+        return -1;
+    case 5:
+        if (menu_item_is_open(&w->menu, &w->def) == 0)
+            return -1;
+        w->state = 6;
+        /* fall through */
+    case 6:
+        if (w->cancelled)
+            return -2;
+        if (w->style != 0)
+            return w->scroll + w->cursor;
+        if (w->buttons != 0)
+            return w->button;
+        /* fall through */
+    case 3:
+        if (w->cancelled)
+            return -2;
+        if (w->accepted) {
+            if (w->style != 0)
+                return w->scroll + w->cursor;
+            if (w->buttons != 0)
+                return w->button;
+        } else if (w->no_input) {
+            return -1;
+        }
+        break;
     case 4:
         if (w->blink++ > 8) {
             w->blink = 0;
@@ -335,39 +367,8 @@ int menu_update(MenuWidget *w)
             menu_finish(w);
         }
         return -1;
-    case 3:
-        break;
-    case 6:
-        break;
-    case 5:
-        if (menu_item_is_open(&w->menu, &w->def) == 0)
-            return -1;
-        w->state = 6;
-        break;
-    case 2:
-        if (menu_item_is_open(&w->menu, &w->def) != 0)
-            w->state = 3;
-        return -1;
     default:
         return -3;
-    }
-    if (w->state == 6 || w->state == 5) {
-        if (w->cancelled)
-            return -2;
-        if (w->style != 0)
-            return w->scroll + w->cursor;
-        if (w->buttons != 0)
-            return w->button;
-    }
-    if (w->cancelled)
-        return -2;
-    if (w->accepted) {
-        if (w->style != 0)
-            return w->scroll + w->cursor;
-        if (w->buttons != 0)
-            return w->button;
-    } else if (w->no_input) {
-        return -1;
     }
     pressed = pad->b.dir_rep;
     accept = region_pick_value(0);

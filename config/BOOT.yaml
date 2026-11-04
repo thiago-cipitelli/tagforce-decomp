@@ -236,8 +236,6 @@ segments:
       - [0x316B0, c, gim]
       - [0x31820, asm, gim_asm_088357C0]
       - [0x31D0C, c, gim]
-      - [0x31E54, asm, gim_asm_08835DF4]
-      - [0x31F10, c, gim]
       - [0x31FA8, c, vram]
       - [0x32218, asm, vram_asm_088361B8]
       - [0x32348, c, mtx]
