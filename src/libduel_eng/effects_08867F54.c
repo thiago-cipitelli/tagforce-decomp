@@ -1,5 +1,4 @@
 // @range 0x08867F54-0x08869190
-// @asm 0x08868910-0x08868A54
 // @asm 0x08868F80-0x08869190
 // @data 0x08911760-0x08911770
 /* Card effect handlers (DuelAct *a): step machines on duel_w_08914904 (draws, checks by card id). */
@@ -323,7 +322,6 @@ int duel_0886877C(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original carrega duel_w_08919654 antes de duel_w_0891964C para a chamada final; nenhuma grafia inverteu a ordem */
 int duel_08868910(DuelAct *a)
 {
     int k;
@@ -347,8 +345,8 @@ int duel_08868910(DuelAct *a)
         return 0;
     case 2:
         if (duel_08835AC0() != 0) {
-            k = duel_w_08919654;
-            duel_088CAE34(duel_w_0891964C, k);
+            /* duel_w_0891964C/50/54 are one array in the original: [2] is duel_w_08919654 */
+            duel_088CAE34(duel_w_0891964C, (&duel_w_0891964C)[2]);
             return 1;
         }
         duel_w_08914904--;
@@ -356,7 +354,6 @@ int duel_08868910(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 /* w[0] = number of monster zones of type 0x11 after the effect. */
 int duel_08868A54(DuelAct *a, int b)

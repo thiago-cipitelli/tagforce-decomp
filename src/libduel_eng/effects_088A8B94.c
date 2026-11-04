@@ -3,7 +3,7 @@
 // @asm 0x088A9174-0x088A92E0
 // @asm 0x088ABE60-0x088AC0E0
 // @asm 0x088AC6A0-0x088AC82C
-// @asm 0x088AD8BC-0x088ADC34
+// @asm 0x088ADA84-0x088ADC34
 // @asm 0x088ADF28-0x088ADFC0
 // @asm 0x088AE378-0x088AE548
 /* Target list of a DuelAct (w[0..4], then duel_chain.uids from w[5]) and effect handlers. */
@@ -1985,7 +1985,6 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st);
 void duel_088C4564(unsigned int p, int n);
 void duel_08832B40(unsigned int p, int a, int b);
 
-#ifdef NON_MATCHING /* ordem do andi 0xff do alvo antes do ext */
 int duel_088AD8BC(DuelAct *a)
 {
     DuelStats st;
@@ -2009,9 +2008,8 @@ int duel_088AD8BC(DuelAct *a)
         }
         return 0;
     case 10:
-        t = duel_act_target(a, 0);
-        z = (unsigned short)t >> 8 & 0xFF;
-        duel_field_stats(t & 0xFF, z, &st);
+        t = (unsigned short)duel_act_target(a, 0);
+        duel_field_stats(t & 0xFF, t >> 8 & 0xFF, &st);
         v = st.atk > st.def ? st.atk : st.def;
         q = a->player;
         v = v < duel.players[q & 1].lp - 1 ? v : duel.players[q & 1].lp - 1;
@@ -2031,7 +2029,6 @@ int duel_088AD8BC(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088DFE24(unsigned int p, unsigned int q);
 void duel_088329D0();

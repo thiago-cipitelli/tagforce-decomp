@@ -1,7 +1,6 @@
 // @range 0x088E2964-0x088E5800
 // @data 0x08911D40-0x08911D88
 // @asm 0x088E3920-0x088E403C
-// @asm 0x088E50EC-0x088E5800
 /* Which effect entries still apply: an entry placed by a card counts while the card stays on the
    field and is not negated; bit count; card lists by zone kind. */
 #include "duel.h"
@@ -990,7 +989,7 @@ int duel_card_e4fd0(int id)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the target is masked to 0xFF before 0xFFFF in the original */
+/* duel_act_target returns int here (u16 masked by the caller): the target is masked to 0xFF before 0xFFFF. */
 /* Which sides the cards activation a sends to the graveyard belong to (bit 0: its player, bit 1: the
    opponent), or a fixed answer by card. */
 int duel_act_e50ec(DuelAct *a)
@@ -999,10 +998,11 @@ int duel_act_e50ec(DuelAct *a)
     int i;
 
     for (i = 0; i < a->n_targets; i++) {
-        unsigned short t = duel_act_target(a, i);
+        extern int duel_act_target(DuelAct *, int);
+        int t = duel_act_target(a, i);
         unsigned int tp = t & 0xFF;
 
-        if ((t >> 8 & 0xFF) == 0xE) {
+        if (((unsigned short)t >> 8 & 0xFF) == 0xE) {
             r |= (a->player != tp) + 1;
         }
     }
@@ -1151,4 +1151,3 @@ int duel_act_e50ec(DuelAct *a)
     }
     return r;
 }
-#endif

@@ -1,5 +1,4 @@
 // @range 0x08865F2C-0x08867F54
-// @asm 0x08866608-0x088667B4
 // @asm 0x088674DC-0x08867704
 // @data 0x089116FC-0x08911760
 /* Card effect handlers (DuelAct *a): step machines on duel_w_08914904 that ask the player (or the
@@ -255,7 +254,6 @@ int duel_0886655C(DuelAct *a, int b)
     return r;
 }
 
-#ifdef NON_MATCHING /* o retorno 1 do passo 1 passa por um bloco de salto (b; lw ra) antes do caso 2 que nenhuma ordem de case/default reproduziu */
 int duel_08866608(DuelAct *a)
 {
     unsigned int p;
@@ -278,19 +276,17 @@ int duel_08866608(DuelAct *a)
     case 1:
         if (duel_w_08919624 != 0) {
             duel_088D1CF4(a, a->player, a->zone);
-            break;
+        } else {
+            duel_08832950(1 - a->player, 0x10D6);
+            duel_w_08914904++;
+            return 0;
         }
-        duel_08832950(1 - a->player, 0x10D6);
-        duel_w_08914904++;
-        return 0;
-    default:
         return 1;
     case 2:
         return -1;
     }
     return 1;
 }
-#endif
 
 int duel_088667B4(DuelAct *a)
 {

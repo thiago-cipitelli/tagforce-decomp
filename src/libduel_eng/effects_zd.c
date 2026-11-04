@@ -161,13 +161,13 @@ int duel_088904A8(DuelAct *a)
 #ifdef NON_MATCHING /* alocação dos $s no laço; ramo do id 0x1835 */
 int duel_088905D0(DuelAct *a)
 {
-    unsigned int loc;
-    unsigned int p;
+    int i;
+    unsigned int mask;
+    int b;
     unsigned int z;
     int atk;
-    unsigned int mask;
-    int i;
-    int b;
+    unsigned int loc;
+    unsigned int p;
 
     if (a->kind != 0x23) {
         duel_088C77D4(a->player, a->id, 1, 0);
