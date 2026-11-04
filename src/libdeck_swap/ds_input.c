@@ -1,6 +1,6 @@
 // @range 0x08809804-0x0880AB28
 // @asm 0x08809E58-0x0880A244
-// @asm 0x0880A878-0x0880AB28
+// @asm 0x0880A9BC-0x0880AB28
 // @rodata 0x08819C7C-0x08819CA0
 /* The per-frame input dispatch and the input of the main state: cursor moves in the grid and in
    the list, the help states while Square/Triangle are held (pages, sort groups, marks, the sort and
@@ -522,73 +522,77 @@ int ds_find_group(int up)
     return k;
 }
 
-#ifdef NON_MATCHING /* o original guarda max e max + 0x76C0 em registradores */
 /* analog scrolling of the card info text (one pane) or of the wide view */
 void ds_scroll_update(void)
 {
     PadState *pad = pad_get();
     int moved;
-    int d;
+    int max;
+    int lim;
+    int v;
 
     if (dsv.mode < 4) {
         ds_scroll_analog(&dsv.cursor.scroll);
-    } else if (dsv.scroll_max > 0) {
-        moved = 0;
-        if (pad->b.analog_x > 0x9E) {
-            d = (pad->b.analog_x - 0x9E) * 4;
-            if (dsv.scroll_max < dsv.scroll_pos) {
-                dsv.scroll_pos += d;
-            } else {
-                dsv.scroll_pos += d;
-                if (dsv.scroll_max < dsv.scroll_pos)
-                    dsv.scroll_pos = dsv.scroll_max;
+    } else {
+        max = dsv.scroll_max;
+        if (max > 0) {
+            moved = 0;
+            lim = max + 0x76C0;
+            if (pad->b.analog_x > 0x9E) {
+                v = (pad->b.analog_x - 0x9E) * 4;
+                if (max < dsv.scroll_pos) {
+                    dsv.scroll_pos += v;
+                } else {
+                    if (max < dsv.scroll_pos + v)
+                        dsv.scroll_pos = max;
+                    else
+                        dsv.scroll_pos += v;
+                }
+                moved = 1;
             }
-            moved = 1;
+            if (pad->b.analog_x < 0x62) {
+                v = dsv.scroll_pos + (pad->b.analog_x - 0x62) * 4;
+                if (v < 0)
+                    dsv.scroll_pos = 0;
+                else
+                    dsv.scroll_pos = v;
+                moved = 1;
+            }
+            if (!moved && dsv.cursor.timer >= 0x36)
+                dsv.scroll_pos += 0x40;
+            if (dsv.scroll_pos >= lim)
+                dsv.scroll_pos -= lim;
         }
-        if (pad->b.analog_x < 0x62) {
-            dsv.scroll_pos += (pad->b.analog_x - 0x62) * 4;
-            if (dsv.scroll_pos < 0)
-                dsv.scroll_pos = 0;
-            moved = 1;
-        }
-        if (!moved && dsv.cursor.timer > 0x35)
-            dsv.scroll_pos += 0x40;
-        if (dsv.scroll_pos >= dsv.scroll_max + 0x76C0)
-            dsv.scroll_pos -= dsv.scroll_max + 0x76C0;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* o original indexa o painel pela base dsv; o mwcc atual cria o ponteiro */
+#ifdef NON_MATCHING
+/* NON_MATCHING, 20 palavras: lógica conferida com o asm; no ramo da grade o original soma x + grid_x antes do
+   mult e grava w = 23 antes de x (perm_stmts não achou ordem) */
 /* the focus frame follows the cursor */
 void ds_focus_update(void)
 {
-    unsigned int side = dsv.side;
-    DsPane *p = &dsv.pane[side];
-    short cy;
+    DsView *v = &dsv;
+    unsigned char side = v->side;
+    DsPane *p = &v->pane[side];
+    DsLayout *lay = &p->lay;
+    DsRect *f = &ds.focus;
 
     if (p->list_mode == 0) {
-        ds.focus.x = p->lay.x + p->lay.grid_x + p->cx * p->lay.cell_w;
-        ds.focus.w = 0x17;
-        ds.focus.y = p->lay.y + p->lay.grid_y + p->cy * p->lay.cell_h;
-        ds.focus.h = 0x1F;
-        return;
-    }
-    if (side == 1) {
-        cy = dsv.pane[1].cy;
-        if (dsv.mode < 4) {
-            ds.focus.x = dsv.pane[1].lay.x + dsv.pane[1].lay.row_x;
-            ds.focus.y = dsv.pane[1].lay.y + dsv.pane[1].lay.row_y + dsv.pane[1].cy * dsv.pane[1].lay.row_h;
-            ds.focus.w = dsv.pane[1].lay.row_w - 1;
-            ds.focus.h = dsv.pane[1].lay.row_h - 1;
-            return;
-        }
+        f->w = 0x17;
+        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
+        f->h = 0x1F;
+    } else if (side == 1 && dsv.mode < 4) {
+        f->x = lay->x + lay->row_x;
+        f->y = lay->y + lay->row_y + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 1;
+        f->h = (unsigned short)lay->row_h - 1;
     } else {
-        cy = p->cy;
+        f->x = lay->x + lay->row_x + 1;
+        f->y = lay->y + lay->row_y + 1 + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 3;
+        f->h = (unsigned short)lay->row_h - 1;
     }
-    ds.focus.x = p->lay.x + p->lay.row_x + 1;
-    ds.focus.w = p->lay.row_w - 3;
-    ds.focus.y = p->lay.y + p->lay.row_y + 1 + cy * p->lay.row_h;
-    ds.focus.h = p->lay.row_h - 1;
 }
 #endif

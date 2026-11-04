@@ -1,6 +1,6 @@
 // @range 0x0880931C-0x0880A694
 // @asm 0x088099CC-0x08809DB8
-// @asm 0x0880A3E4-0x0880A694
+// @asm 0x0880A528-0x0880A694
 // @rodata 0x08822534-0x08822554
 /* Input of the list screen: dispatch by scene state, the main keys (Circle move, Cross quick move or
    info, Triangle action menu, Square switch tab, Select pane layout, L/R pages and sort groups with
@@ -530,71 +530,76 @@ int dk_find_group(int up)
 }
 
  /* o original guarda max e max + 0x76C0 em registradores */
-#ifdef NON_MATCHING
-/* analog scrolling of the card info text (one pane) or of the wide view */
 void dk_scroll_update(void)
 {
-    PadBits *pad = &pad_get()->b;
+    PadState *pad = pad_get();
     int moved;
-    int d;
+    int max;
+    int lim;
+    int v;
 
     if (dkv.mode < 4) {
         dk_scroll_analog(&dkv.cursor.scroll);
-    } else if (dkv.scroll_max > 0) {
-        moved = 0;
-        if (pad->analog_x > 0x9E) {
-            d = (pad->analog_x - 0x9E) * 4;
-            if (dkv.scroll_max < dkv.scroll_pos) {
-                dkv.scroll_pos += d;
-            } else {
-                dkv.scroll_pos += d;
-                if (dkv.scroll_max < dkv.scroll_pos)
-                    dkv.scroll_pos = dkv.scroll_max;
+    } else {
+        max = dkv.scroll_max;
+        if (max > 0) {
+            moved = 0;
+            lim = max + 0x76C0;
+            if (pad->b.analog_x > 0x9E) {
+                v = (pad->b.analog_x - 0x9E) * 4;
+                if (max < dkv.scroll_pos) {
+                    dkv.scroll_pos += v;
+                } else {
+                    if (max < dkv.scroll_pos + v)
+                        dkv.scroll_pos = max;
+                    else
+                        dkv.scroll_pos += v;
+                }
+                moved = 1;
             }
-            moved = 1;
+            if (pad->b.analog_x < 0x62) {
+                v = dkv.scroll_pos + (pad->b.analog_x - 0x62) * 4;
+                if (v < 0)
+                    dkv.scroll_pos = 0;
+                else
+                    dkv.scroll_pos = v;
+                moved = 1;
+            }
+            if (!moved && dkv.cursor.timer >= 0x36)
+                dkv.scroll_pos += 0x40;
+            if (dkv.scroll_pos >= lim)
+                dkv.scroll_pos -= lim;
         }
-        if (pad->analog_x < 0x62) {
-            dkv.scroll_pos += (pad->analog_x - 0x62) * 4;
-            if (dkv.scroll_pos < 0)
-                dkv.scroll_pos = 0;
-            moved = 1;
-        }
-        if (!moved && dkv.cursor.timer > 0x35)
-            dkv.scroll_pos += 0x40;
-        if (dkv.scroll_pos >= dkv.scroll_max + 0x76C0)
-            dkv.scroll_pos -= dkv.scroll_max + 0x76C0;
     }
 }
 
+#ifdef NON_MATCHING
+/* NON_MATCHING, 20 palavras: lógica conferida com o asm; no ramo da grade o original soma x + grid_x antes do
+   mult e grava w = 23 antes de x (perm_stmts não achou ordem) */
 /* the focus frame follows the cursor */
 void dk_focus_update(void)
 {
-    unsigned int side = dkv.side;
-    DkPane *p = &dkv.pane[side];
-    short cy;
+    DkView *v = &dkv;
+    unsigned char side = v->side;
+    DkPane *p = &v->pane[side];
+    DkLayout *lay = &p->lay;
+    DkRect *f = &dk_focus;
 
     if (p->list_mode == 0) {
-        dk_focus.x = p->lay.x + p->lay.grid_x + p->cx * p->lay.cell_w;
-        dk_focus.w = 0x17;
-        dk_focus.y = p->lay.y + p->lay.grid_y + p->cy * p->lay.cell_h;
-        dk_focus.h = 0x1F;
-        return;
-    }
-    if (side == 1) {
-        cy = dkv.pane[1].cy;
-        if (dkv.mode < 4) {
-            dk_focus.x = dkv.pane[1].lay.x + dkv.pane[1].lay.row_x;
-            dk_focus.y = dkv.pane[1].lay.y + dkv.pane[1].lay.row_y + dkv.pane[1].cy * dkv.pane[1].lay.row_h;
-            dk_focus.w = dkv.pane[1].lay.row_w - 1;
-            dk_focus.h = dkv.pane[1].lay.row_h - 1;
-            return;
-        }
+        f->w = 0x17;
+        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
+        f->h = 0x1F;
+    } else if (side == 1 && dkv.mode < 4) {
+        f->x = lay->x + lay->row_x;
+        f->y = lay->y + lay->row_y + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 1;
+        f->h = (unsigned short)lay->row_h - 1;
     } else {
-        cy = p->cy;
+        f->x = lay->x + lay->row_x + 1;
+        f->y = lay->y + lay->row_y + 1 + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 3;
+        f->h = (unsigned short)lay->row_h - 1;
     }
-    dk_focus.x = p->lay.x + p->lay.row_x + 1;
-    dk_focus.w = p->lay.row_w - 3;
-    dk_focus.y = p->lay.y + p->lay.row_y + 1 + cy * p->lay.row_h;
-    dk_focus.h = p->lay.row_h - 1;
 }
 #endif

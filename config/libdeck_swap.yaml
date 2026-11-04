@@ -53,7 +53,7 @@ segments:
       - [0x5864, c, ds_input]
       - [0x5EB8, asm, ds_input_asm_08809E58]
       - [0x62A4, c, ds_input]
-      - [0x68D8, asm, ds_input_asm_0880A878]
+      - [0x6A1C, asm, ds_input_asm_0880A9BC]
       - [0x6B88, c, ds_sortmenu]
       - [0x7588, asm, ds_sortmenu_asm_0880B528]
       - [0x75DC, c, ds_sortmenu]
