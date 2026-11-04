@@ -1,5 +1,4 @@
 // @range 0x08839A8C-0x08839F50
-// @asm 0x08839AC8-0x08839CFC
 // @rodata 0x08875390-0x0887539C
 /* Controller: one sample per frame (the previous one is reused when reading fails), edge and
    auto-repeat masks per button, the stick folded into d-pad bits with its own repeat, repeat
@@ -36,24 +35,24 @@ int pad_init(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* the original keeps the new state in a stack struct copied with lwc1/swc1; mwcc 3.0.1 keeps it in registers */
 int pad_update(void)
 {
-    PadCtrl ctrl;
+    PadState *s = &pad_state;
     PadBits p;
+    PadCtrl ctrl;
 
     if (sceCtrlPeekBufferPositive(&ctrl, 1) <= 0) {
-        ctrl = pad_state.last;
+        ctrl = s->last;
     }
-    if (pad_state.ignore_hold != 0 && (ctrl.buttons & 0x20000)) {
+    if (s->ignore_hold != 0 && (ctrl.buttons & 0x20000)) {
         ctrl.ly = 0x80;
         ctrl.lx = 0x80;
     }
     p.analog_x = ctrl.lx;
     p.analog_y = ctrl.ly;
-    p.release = ~ctrl.buttons & pad_state.b.down;
-    p.trig = ctrl.buttons & ~pad_state.b.down;
     p.down = ctrl.buttons;
+    p.release = ~ctrl.buttons & s->b.down;
+    p.trig = ctrl.buttons & ~s->b.down;
     p.rep = p.trig | pad_repeat(p.down);
     p.dir = p.down;
     if (p.analog_x < 0x21) {
@@ -66,32 +65,29 @@ int pad_update(void)
     } else if (p.analog_y >= 0xDF) {
         p.dir |= 0x40;
     }
-    p.dir_trig = p.dir & ~pad_state.b.dir;
-    p.dir_release = ~p.dir & pad_state.b.dir;
+    p.dir_trig = p.dir & ~s->b.dir;
+    p.dir_release = ~p.dir & s->b.dir;
     if (p.dir == 0) {
         p.dir_rep = 0;
-        pad_state.dir_count = 0;
-    } else if (pad_state.dir_count == 0) {
+        s->dir_count = 0;
+    } else if (s->dir_count == 0) {
         p.dir_rep = p.dir;
-        pad_state.dir_count = 1;
-    } else if (p.dir != pad_state.b.dir) {
+        s->dir_count = 1;
+    } else if (p.dir != s->b.dir) {
         p.dir_rep = p.dir;
-        pad_state.dir_count = 1;
+        s->dir_count = 1;
     } else {
-        if (pad_state.dir_count < 0xF) {
-            p.dir_rep = 0;
-        } else if ((pad_state.dir_count & 3) == 0) {
+        if (s->dir_count >= 0xF && (s->dir_count & 3) == 0) {
             p.dir_rep = p.dir;
         } else {
             p.dir_rep = 0;
         }
-        pad_state.dir_count++;
+        s->dir_count++;
     }
-    pad_state.b = p;
-    pad_state.last = ctrl;
+    s->b = p;
+    s->last = ctrl;
     return 1;
 }
-#endif
 
 PadState *pad_get(void)
 {

@@ -127,39 +127,52 @@ int wfmt_float_digits(float f, unsigned short *buf, int prec)
 }
 
 #ifdef NON_MATCHING
-/* Structure matches the original (register-agnostic diff); mwcc allocates $fp and the stack
-   differently (frame 0x100 vs 0x120). Kept in asm until the declaration order is found. */
-int wsprintf(unsigned short *out, const unsigned short *fmt, ...)
+/* Forma igual ao original (buf[64], switch nas flags e na conversão, fmt copiado num local, `if (sign)`):
+   os $s e o quadro (0x100) batem; faltam ~276 palavras só de temporários: o original nunca usa a2/a3
+   como temporários (o contador dos laços de preenchimento fica em t0, pad em v0, sign em t1), o mwcc
+   usa a2/a3 primeiro. Ordem de declarações não muda isso (hill-climb). */
+int wsprintf(unsigned short *out, const unsigned short *format, ...)
 {
-    unsigned short buf[84];
-    int width = 0;
-    int prec = 0;
+    unsigned short buf[64];
+    int width;
+    int prec;
     va_list ap;
-    int n = 0;
-    int len = 0;
-    unsigned short flag = 0;
-    int zero_pad = 0;
-    int kind;
-    unsigned short c;
-    int j, k;
-    int pad;
-    unsigned short sign;
-    unsigned short *s;
-    float f;
     int v;
+    const unsigned short *fmt;
+    int kind;
+    unsigned short *s;
+    unsigned short sign;
+    unsigned short c;
+    int n;
+    int pad;
+    int zero_pad;
+    int len;
+    unsigned short flag;
+    int j;
+    int k;
 
-    va_start(ap, fmt);
-    while (*fmt != 0) {
-        c = *fmt;
+    width = 0;
+    prec = 0;
+    n = 0;
+    len = 0;
+    flag = 0;
+    zero_pad = 0;
+    va_start(ap, format);
+    fmt = format;
+    while ((c = *fmt) != 0) {
         if (c != '%') {
             out[n++] = c;
         } else {
-            fmt++;
-            c = *fmt;
             kind = 0;
-            if (c == '#' || c == ' ' || c == '+' || c == '-') {
-                flag = c;
+            fmt++;
+            switch (*fmt) {
+            case '-':
+            case '+':
+            case ' ':
+            case '#':
+                flag = *fmt;
                 fmt++;
+                break;
             }
             if (*fmt == '0') {
                 fmt++;
@@ -179,10 +192,39 @@ int wsprintf(unsigned short *out, const unsigned short *fmt, ...)
             } else {
                 fmt += wfmt_parse_int(fmt, &prec);
             }
-            c = *fmt;
-            if (c == '%') {
-                out[n++] = c;
-            } else if (c == 's') {
+            switch (*fmt) {
+            case 'd':
+                v = va_arg(ap, int);
+                kind = 1;
+                if (v < 0)
+                    kind |= 2;
+                len = wfmt_int_digits(buf, v, prec);
+                break;
+            case 'x':
+            case 'X':
+                kind = 1;
+                len = wfmt_hex_digits(buf, va_arg(ap, int), prec, *fmt - 0x17);
+                if (flag == '#') {
+                    out[n] = '0';
+                    out[n + 1] = *fmt;
+                    n += 2;
+                }
+                break;
+            case 'f':
+                {
+                    float f;
+                    ap += (((unsigned int)ap & 7) ? 4 : 0) + 8;
+                    f = (float)*(double *)(ap - 8);
+                    kind = 1;
+                    if (f < 0.0f)
+                        kind |= 2;
+                    len = wfmt_float_digits(f, buf, prec == 0 ? 6 : prec);
+                }
+                break;
+            case 'c':
+                out[n++] = *(unsigned short *)((ap += 4) - 4);
+                break;
+            case 's':
                 s = va_arg(ap, unsigned short *);
                 len = wcslen(s);
                 if (prec > 0 && prec < len)
@@ -192,39 +234,17 @@ int wsprintf(unsigned short *out, const unsigned short *fmt, ...)
                         out[n++] = ' ';
                 }
                 for (k = 0; k < len; k++)
-                    out[n++] = s[k];
+                    out[n++] = *s++;
                 if (flag == '-') {
                     while (k < width) {
                         out[n++] = ' ';
                         k++;
                     }
                 }
-            } else if (c == 'c') {
-                out[n++] = va_arg(ap, int);
-            } else if (c == 'f') {
-                f = (float)va_arg(ap, double);
-                kind = 1;
-                if (f < 0.0f)
-                    kind |= 2;
-                k = prec;
-                if (k == 0)
-                    k = 6;
-                len = wfmt_float_digits(f, buf, k);
-            } else if (c == 'X' || c == 'x') {
-                v = va_arg(ap, int);
-                kind = 1;
-                len = wfmt_hex_digits(buf, v, prec, c - 0x17);
-                if (flag == '#') {
-                    out[n] = '0';
-                    out[n + 1] = *fmt;
-                    n += 2;
-                }
-            } else if (c == 'd') {
-                v = va_arg(ap, int);
-                kind = 1;
-                if (v < 0)
-                    kind |= 2;
-                len = wfmt_int_digits(buf, v, prec);
+                break;
+            case '%':
+                out[n++] = *fmt;
+                break;
             }
             if (kind != 0) {
                 sign = 0;
@@ -232,10 +252,10 @@ int wsprintf(unsigned short *out, const unsigned short *fmt, ...)
                 if ((kind >> 1) & 1)
                     sign = '-';
                 else if (flag == '+')
-                    sign = flag;
+                    sign = '+';
                 else if (flag == ' ')
-                    sign = flag;
-                if (sign != 0)
+                    sign = ' ';
+                if (sign)
                     pad--;
                 if (flag != '-' && !zero_pad) {
                     for (j = 0; j < pad; j++)
