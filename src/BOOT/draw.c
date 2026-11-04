@@ -139,30 +139,44 @@ void *draw_0883ABC0(void *list, int a, int b, int c, int d, int e, int f, int g)
     return dl_draw_spline(mtx_flush(list), a, b, c, d, e, f, g);
 }
 
-#ifdef NON_MATCHING /* float-heavy, kept in asm */
+#ifdef NON_MATCHING /* reescrito do asm com os flags do original (bit 8 = passou em todos os planos;
+   o resto é calculado e descartado): mesmo tamanho, 125 palavras de agendamento de float (o original
+   calcula c[2]*c[2] uma vez e r2 antes de z; kx só depois dos dois primeiros planos) */
 /* 1 when the sphere is inside the view frustum of the current projection and view matrices. */
 int draw_sphere_visible(DrawSphere *s)
 {
-    float proj[16];
-    float view[16];
+    float c[10];
     float pv[18];
     float v[4];
-    float c[10] = { 1.0f, 1.0f };
+    float view[16];
+    float proj[16];
+    unsigned int flags;
+    char *p;
+    int n;
     float cot;
     float r2;
     float z;
-    float d;
+    float ky, kx;
+    float d, q;
 
+    flags = 0;
+    p = (char *)c;
+    n = sizeof(c);
+    if (p)
+        do {
+            *p++ = 0;
+        } while (--n);
+    c[0] = 1.0f;
+    c[1] = 1.0f;
     c[3] = 480.0f;
     c[4] = 272.0f;
     cot = ehsys_0881D1C4(s->fovy / 2.0f);
     c[5] = s->near;
-    c[2] = c[4] / cot * 0.5f;
+    c[2] = 0.5f * (c[4] / cot);
     c[6] = s->far;
-    c[9] = c[2] * c[2];
-    c[7] = c[9] + 4186116.0f;
-    c[8] = c[3] * c[3] / 4.0f + c[9];
-    c[9] = c[4] * c[4] / 4.0f + c[9];
+    c[7] = 4186116.0f + c[2] * c[2];
+    c[8] = c[3] * c[3] / 4.0f + c[2] * c[2];
+    c[9] = c[4] * c[4] / 4.0f + c[2] * c[2];
     mtx_set_mode(1);
     mtx_get34(proj);
     mtx_set_mode(2);
@@ -170,33 +184,118 @@ int draw_sphere_visible(DrawSphere *s)
     mat4_mul(pv, proj, view);
     mat4_transform_vec4(v, pv, s->pos);
     v[2] *= -1.0f;
-    if (v[2] + s->radius < c[5] || v[2] - s->radius > c[6]) {
-        return 0;
-    }
-    r2 = s->radius * s->radius;
-    z = v[2] * 2046.0f;
-    c[1] = c[1] * c[2] * v[1];
-    d = z - c[1];
-    if (d < 0.0f && d * d / c[7] >= r2) return 0;
-    d = z + c[1];
-    if (d < 0.0f && d * d / c[7] >= r2) return 0;
-    c[2] = c[2] * v[0];
-    d = z - c[2];
-    if (d < 0.0f && d * d / c[7] >= r2) return 0;
-    d = z + c[2];
-    if (d < 0.0f && d * d / c[7] >= r2) return 0;
-    z = v[2] * c[4] * 0.5f;
-    d = z - c[1];
-    if (d < 0.0f && d * d / c[9] >= r2) return 0;
-    d = z + c[1];
-    if (d < 0.0f && d * d / c[9] >= r2) return 0;
-    z = v[2] * c[3] * 0.5f;
-    d = z - c[2];
-    if (d < 0.0f && d * d / c[8] >= r2) return 0;
-    d = z + c[2];
-    if (d < 0.0f && d * d / c[8] >= r2) return 0;
-    return 1;
+    do {
+        if (c[5] > v[2] + s->radius) {
+            flags = 1;
+            break;
+        }
+        if (c[5] > v[2] - s->radius)
+            flags |= 3;
+        if (c[6] < v[2] - s->radius) {
+            flags = 1;
+            break;
+        }
+        if (c[6] < v[2] + s->radius)
+            flags |= 1;
+        r2 = s->radius * s->radius;
+        z = 2046.0f * v[2];
+        ky = c[1] * (c[2] * v[1]);
+        kx = c[2] * v[0];
+        d = z - ky;
+        q = d * d / c[7];
+        if (d < 0.0f) {
+            if (q >= r2) {
+                flags = 1;
+                break;
+            }
+            flags |= 5;
+        } else if (q <= r2) {
+            flags |= 5;
+        }
+        d = z + ky;
+        q = d * d / c[7];
+        if (d < 0.0f) {
+            if (q >= r2) {
+                flags = 1;
+                break;
+            }
+            flags |= 5;
+        } else if (q <= r2) {
+            flags |= 5;
+        }
+        d = z - kx;
+        q = d * d / c[7];
+        if (d < 0.0f) {
+            if (q >= r2) {
+                flags = 1;
+                break;
+            }
+            flags |= 5;
+        } else if (q <= r2) {
+            flags |= 5;
+        }
+        d = z + kx;
+        q = d * d / c[7];
+        if (d < 0.0f) {
+            if (q >= r2) {
+                flags = 1;
+                break;
+            }
+            flags |= 5;
+        } else if (q <= r2) {
+            flags |= 5;
+        }
+        z = 0.5f * (v[2] * c[4]);
+        d = z - ky;
+        q = d * d / c[9];
+        if (d < 0.0f) {
+            if (q >= r2) {
+                flags |= 4;
+                break;
+            }
+            flags |= 4;
+        } else if (q <= r2) {
+            flags |= 4;
+        }
+        d = z + ky;
+        q = d * d / c[9];
+        if (d < 0.0f) {
+            if (q >= r2) {
+                flags |= 4;
+                break;
+            }
+            flags |= 4;
+        } else if (q <= r2) {
+            flags |= 4;
+        }
+        z = 0.5f * (v[2] * c[3]);
+        d = z - kx;
+        q = d * d / c[8];
+        if (d < 0.0f) {
+            if (q >= r2) {
+                flags |= 4;
+                break;
+            }
+            flags |= 4;
+        } else if (q <= r2) {
+            flags |= 4;
+        }
+        d = z + kx;
+        q = d * d / c[8];
+        if (d < 0.0f) {
+            if (q >= r2) {
+                flags |= 4;
+                break;
+            }
+            flags |= 4;
+        } else if (q <= r2) {
+            flags |= 4;
+        }
+        flags |= 8;
+    } while (0);
+    return (flags & 8) != 0;
 }
+
 #endif
 
 void mtx_mark_cur_dirty(void)

@@ -421,7 +421,8 @@ unsigned short *font_ruby_skip(FontCtx *f, FontLayout *st, unsigned short *p)
     st->ruby_xmax = st->xmax;
     return p;
 }
-#ifdef NON_MATCHING
+#ifdef NON_MATCHING /* switch com os case na ordem 1,3,4,5,2 (sequência de jal igual ao original); falta o quadro: o original
+   guarda size_y na pilha (sp+60, quadro 0x40) e copia f para s6 antes do laço; 273 palavras */
 
 /* Draws the commands of the current line: shadow pass (flag 4) then the main pass; ruby glyphs
    come from rubi_font00.gim. Resets the command count. */
@@ -441,14 +442,15 @@ void font_layout_end(FontCtx *f, FontLayout *st)
         in_ruby = 0;
         f->dl = dl_ambient_color(f->dl, st->color2);
         for (i = 0, c = f->cmds; i < f->ncmds; i++, c++) {
-            if (c->kind == 2) {
-                f->size_x = c->a;
-                f->size_y = c->b;
-            } else if (c->kind == 5) {
-                in_ruby = 0;
-            } else if (c->kind == 4) {
-                in_ruby = 1;
-            } else if (c->kind == 3) {
+            switch ((unsigned short)c->kind) {
+            case 1:
+                if (!in_ruby) {
+                    font_glyph_vertices(verts + n * 16, c->a, c->b + 0x40, c->c);
+                    font_glyph_vertices(verts + (n + 1) * 16, c->a + 0x40, c->b + 0x40, c->c);
+                    n += 2;
+                }
+                break;
+            case 3:
                 if (!in_ruby) {
                     if (n > 0) {
                         verts = font_flush_quads(&f->dl, verts, n);
@@ -456,10 +458,17 @@ void font_layout_end(FontCtx *f, FontLayout *st)
                     }
                     f->dl = dl_ambient_color(f->dl, c->b);
                 }
-            } else if (c->kind == 1 && !in_ruby) {
-                font_glyph_vertices(verts + n * 16, c->a, c->b + 0x40, c->c);
-                font_glyph_vertices(verts + (n + 1) * 16, c->a + 0x40, c->b + 0x40, c->c);
-                n += 2;
+                break;
+            case 4:
+                in_ruby = 1;
+                break;
+            case 5:
+                in_ruby = 0;
+                break;
+            case 2:
+                f->size_x = c->a;
+                f->size_y = c->b;
+                break;
             }
         }
     }
@@ -473,14 +482,24 @@ void font_layout_end(FontCtx *f, FontLayout *st)
     in_ruby = 0;
     f->dl = dl_ambient_color(f->dl, color);
     for (i = 0, c = f->cmds; i < f->ncmds; i++, c++) {
-        if (c->kind == 2) {
-            f->size_x = c->a;
-            f->size_y = c->b;
-        } else if (c->kind == 5) {
-            in_ruby = 0;
-            f->dl = font_dl_glyph_header(f->dl, color);
-            verts = font_flush_quads(&f->dl, 0, 0);
-        } else if (c->kind == 4) {
+        switch ((unsigned short)c->kind) {
+        case 1:
+            if (in_ruby) {
+                font_rubi_quad(c->a, c->b, c->c);
+            } else {
+                font_glyph_vertices(verts + n * 16, c->a, c->b, c->c);
+                n++;
+            }
+            break;
+        case 3:
+            if (n > 0) {
+                verts = font_flush_quads(&f->dl, verts, n);
+                n = 0;
+            }
+            f->dl = dl_ambient_color(f->dl, c->a);
+            color = c->a;
+            break;
+        case 4:
             in_ruby = 1;
             if (n > 0) {
                 verts = font_flush_quads(&f->dl, verts, n);
@@ -491,20 +510,16 @@ void font_layout_end(FontCtx *f, FontLayout *st)
             f->dl = dl_push1(f->dl, 0x13000000);
             f->dl = gim_set_texture(f->dl, f->rubi_gim);
             f->dl = dl_set_tex_filter(f->dl, 0, 0);
-        } else if (c->kind == 3) {
-            if (n > 0) {
-                verts = font_flush_quads(&f->dl, verts, n);
-                n = 0;
-            }
-            f->dl = dl_ambient_color(f->dl, c->a);
-            color = c->a;
-        } else if (c->kind == 1) {
-            if (in_ruby) {
-                font_rubi_quad(c->a, c->b, c->c);
-            } else {
-                font_glyph_vertices(verts + n * 16, c->a, c->b, c->c);
-                n++;
-            }
+            break;
+        case 5:
+            in_ruby = 0;
+            f->dl = font_dl_glyph_header(f->dl, color);
+            verts = font_flush_quads(&f->dl, 0, 0);
+            break;
+        case 2:
+            f->size_x = c->a;
+            f->size_y = c->b;
+            break;
         }
     }
     if (n > 0)
