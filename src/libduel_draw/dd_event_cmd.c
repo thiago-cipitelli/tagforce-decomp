@@ -351,10 +351,11 @@ int dd_ev_10(void)
 }
 
 /* end of the attack cut-in: the attack animation itself */
-#ifdef NON_MATCHING /* ordem dos lw dos argumentos */
-int dd_ev_attack_done(int *a)
+#ifdef NON_MATCHING /* o mwcc copia a0 para v0 (move v0,a0) e carrega a[0] por último; o original carrega
+                       a[2], a[1], a[3], a[0] direto de a0 sem cópia: 6 palavras, formas testadas: locais, struct, K&R */
+void dd_ev_attack_done(int *a)
 {
-    return dd_mark_move(a[0], a[1], a[2], a[3]);
+    dd_mark_move(a[0], a[1], a[2], a[3]);
 }
 #endif
 

@@ -26,7 +26,7 @@ void *dl_blend_func(void *list, int op, int src, int dst, unsigned int srcfix, u
 void *dl_enable(void *list, int state);
 void *dl_disable(void *list, int state);
 void *dl_tex_func(void *list, int func, int comp);
-void *dl_set_color(void *list, unsigned int color);
+void *dl_ambient_color(void *list, unsigned int color);
 void *dl_tex_offset(float u, float v, void *list);
 void *dl_clear_depth(void *list, unsigned int z);
 void *dl_clear(void *list, unsigned int flags);
@@ -366,7 +366,7 @@ void dd_lp_begin_2d(void *list, int x, int y)
     list = dl_tex_func(list, 0, 1);
     list = dl_disable(list, 0);
     list = dl_disable(list, 1);
-    list = dl_set_color(list, 0xFFFFFFFF);
+    list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_disable(list, 10);
     list = dl_enable(list, 5);
     list = dl_tex_offset(0.0f, 0.0f, list);

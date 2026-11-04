@@ -37,6 +37,7 @@ unsigned int *dl_ambient_light(unsigned int *list, unsigned int color);
 void *dl_ambient_color(void *list, unsigned int color);
 void *dl_set_tex_filter(void *list, int min, int mag);
 void *dl_tex_func(void *list, int func, int comp);
+void *dl_depth_func(void *list, int func);
 unsigned int *dl_tex_wrap(unsigned int *list, int u, int v);
 unsigned int *dl_tex_offset(unsigned int *list, float u, float v);
 unsigned int *dl_tex_scale(unsigned int *list, float u, float v);
@@ -272,19 +273,25 @@ void dd_board_cards(void)
                     }
                 }
                 list = dl_enable(dl_select_layer(4, 0), 1);
-                list = dl_tex_func(list, at.zone == 11 ? 1 : 7, 0);
+                if (at.zone == 11)
+                    list = dl_depth_func(list, 1);
+                else
+                    list = dl_depth_func(list, 7);
                 dl_set_list(list);
                 if (dd_board_card_draw(o, p, at.zone, i))
                     drawn[p] |= 1 << at.zone;
-                dl_set_list(dl_tex_func(dl_select_layer(4, 0), 7, 0));
+                list = dl_select_layer(4, 0);
+                dl_depth_func(list, 7);
+                dl_set_list(list);
             }
             if (cur_o) {
                 dd_cursor_get(&cur);
-                list = dl_tex_func(dl_enable(dl_select_layer(4, 0), 1), 1, 0);
-                dl_set_list(list);
+                dl_set_list(dl_depth_func(dl_enable(dl_select_layer(4, 0), 1), 1));
                 if (dd_board_card_draw(cur_o, p, 11, cur.idx))
                     drawn[p] |= 0x800;
-                dl_set_list(dl_tex_func(dl_select_layer(4, 0), 7, 0));
+                list = dl_select_layer(4, 0);
+                dl_depth_func(list, 7);
+                dl_set_list(list);
             }
         }
     }

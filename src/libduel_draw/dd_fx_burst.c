@@ -233,8 +233,12 @@ int dd_burst_update(int phase, DdBurstFx *d)
         sc = dd_ease_sin(d->t, d->end, 1) * 0.3f + 0.7f;
         dd_scale3(sc, sc, 0.0f);
         list = dl_ambient_light(list, (unsigned int)(out * 255.0f) << 24 | 0xFFFFFF);
-        list = draw_array(list, 4, 0x99C, 130, d->idx_a, d->ring);
-        list = draw_array(list, 4, 0x99C, 130, d->idx_b, d->ring);
+        {
+            int k;
+
+            for (k = 0; k < 2; k++)  /* idx_a, then idx_b right after it */
+                list = draw_array(list, 4, 0x99C, 130, d->idx_a + k * 130, d->ring);
+        }
         mtx_pop();
         dl_set_list(list);
     }
@@ -520,8 +524,12 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
         sc = dd_ease_lin(d->t, d->end) * 0.7f + 0.3f;
         dd_scale3(sc, sc, 0.0f);
         list = dl_ambient_light(list, (unsigned int)(out * 255.0f) << 24 | 0xFFFFFF);
-        list = draw_array(list, 4, 0x99C, 130, d->idx_a, d->ring);
-        list = draw_array(list, 4, 0x99C, 130, d->idx_b, d->ring);
+        {
+            int k;
+
+            for (k = 0; k < 2; k++)  /* idx_a, then idx_b right after it */
+                list = draw_array(list, 4, 0x99C, 130, d->idx_a + k * 130, d->ring);
+        }
         mtx_pop();
         dl_set_list(list);
     }
