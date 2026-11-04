@@ -1,6 +1,5 @@
 // @range 0x088192C8-0x0881A69C
 // @asm 0x08819460-0x088198FC
-// @asm 0x088198FC-0x08819B84
 /* The word search (scene state 5): a window with the word, the last words used and an OK button;
    the word is typed with the name input (system keyboard); the search runs incrementally with a
    progress bar and the matches become the pane's list. */
@@ -196,12 +195,13 @@ void dk_word_update(PadState *pad)
 }
 #endif
 
-#ifdef NON_MATCHING /* passos da busca com outra ordem de blocos */
 /* the search itself, 16 entries a frame */
 void dk_word_search(void)
 {
     DkPane *p = &dkv.pane[dkv.side];
     DkList *l = p->list;
+    unsigned short view;
+    unsigned short grid;
 
     switch (dk_word->sstep) {
     case 0:
@@ -218,40 +218,37 @@ void dk_word_search(void)
             dk_word_bar_open();
             dk_word->sstep++;
         }
-        return;
+        break;
     case 1:
         menu_update(dk_word->bar);
         if (dk_word->bar->state == 3)
             dk_word->sstep++;
-        return;
+        break;
     case 2:
         dk_word->progress = dk_search_step(l);
         if (dk_word->progress >= 1000)
             dk_word->sstep++;
-        return;
+        break;
     case 3:
         dk_search_finish(l);
-        dk_layout_scroll(0, 0, (p->list_mode == 0 ? p->lay.cols : 1) & 0xFF | (p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows) << 8,
-                         p->list->count, &p->top, &p->cx, &p->cy);
+        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+        grid = p->list_mode == 0 ? p->lay.cols : 1;
+        dk_layout_scroll(0, 0, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
         menu_finish(dk_word->bar);
         dk_word->sstep++;
-        return;
+        break;
     case 4:
         menu_update(dk_word->bar);
         if (dk_word->bar->state != 6)
-            return;
-        break;
+            break;
     case 10:
+        dk_word_free();
+        dk_popup_open(6, l->count);
+        se_play(0x621A);
+        dk_state = 0;
         break;
-    default:
-        return;
     }
-    dk_word_free();
-    dk_popup_open(6, l->count);
-    se_play(0x621A);
-    dk_state = 0;
 }
-#endif
 
 void dk_word_free(void)
 {

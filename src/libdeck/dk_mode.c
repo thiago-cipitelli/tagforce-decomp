@@ -1,7 +1,6 @@
 // @range 0x0880A694-0x0880B874
 // @asm 0x0880AF34-0x0880B37C
 // @asm 0x0880B37C-0x0880B454
-// @asm 0x0880B75C-0x0880B81C
 // @rodata 0x08822554-0x08822574
 // @data 0x08822A24-0x08822BE4
 /* Deck check before saving (sizes, forbidden/limited cards), the message popup (deck errors, card
@@ -465,7 +464,6 @@ unsigned short dk_tab_rect(unsigned short i, unsigned short sel, DkRect *r)
     return e->lx + e->lw - ((unsigned int)(unsigned short)(e->lw - e->digits * 8) >> 1) - 1;
 }
 
-#ifdef NON_MATCHING /* o último teste sai como bnezl com a soma no delay slot; o original tem bnez + nop */
 /* frame of bg.ehf for the tabs shown */
 int dk_bg_anim(int a, int b)
 {
@@ -485,13 +483,10 @@ int dk_bg_anim(int a, int b)
         r += a * 5;
         if (partner_count_get() > 0)
             r += 2;
-        if (b >= 3)
-            b -= 3;
-        r += b;
+        r += b >= 3 ? b - 3 : b;
     }
     return r;
 }
-#endif
 
 void dk_bg_anim_update(void)
 {

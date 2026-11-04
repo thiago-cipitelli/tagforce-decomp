@@ -1,6 +1,6 @@
 // @range 0x0880931C-0x0880A694
 // @asm 0x088099CC-0x08809DB8
-// @asm 0x08809FA0-0x0880A694
+// @asm 0x0880A3E4-0x0880A694
 // @rodata 0x08822534-0x08822554
 /* Input of the list screen: dispatch by scene state, the main keys (Circle move, Cross quick move or
    info, Triangle action menu, Square switch tab, Select pane layout, L/R pages and sort groups with
@@ -436,7 +436,6 @@ void dk_page(int up)
     }
 }
 
-#ifdef NON_MATCHING /* 6 palavras: grid_rows e (total + cols - 1) / cols em a0/v1 trocados; ordens das declarações e das instruções testadas */
 /* jumps to the next/previous group of the sort key */
 void dk_jump(int up)
 {
@@ -444,8 +443,8 @@ void dk_jump(int up)
     int total = p->list->count;
     int i;
     int cols;
-    int last;
     int row;
+    int last;
 
     if (total == 0)
         return;
@@ -454,8 +453,9 @@ void dk_jump(int up)
         return;
     if (p->list_mode == 0) {
         cols = p->lay.cols;
+        last = p->lay.grid_rows;
         row = i / cols;
-        last = (total + cols - 1) / cols - p->lay.grid_rows;
+        last = (total + cols - 1) / cols - last;
         if (last < row)
             row = last;
         if (row < 0)
@@ -482,52 +482,55 @@ void dk_jump(int up)
 /* index of the first card of the next (up = 0) or previous sort group from the cursor, -1 none */
 int dk_find_group(int up)
 {
+    int k;
     DkList *l = dkv.pane[dkv.side].list;
-    unsigned int i = dk_cur_index(dkv.side);
-    unsigned int n = l->count;
-    unsigned int sort = l->sort;
-    DkEnt *e;
+    int i = (unsigned short)dk_cur_index(dkv.side);
+    unsigned short sort = l->sort;
+    int n = l->count;
+    DkEnt *e = i >= n ? 0 : &l->ents[l->order[i]];
     int v;
     int w;
+    int j;
 
-    e = DK_ENT(l, i);
-    if (e == 0) {
-        i = n - 1;
-    } else if (up == 0) {
-        v = dk_sort_value(e, sort);
-        if (sort - 4 < 2 && v > 0)
+    if (e == 0)
+        return n - 1;
+    if (up) {
+        if (i <= 0)
+            return -1;
+        j = i - 1;
+        v = dk_sort_value(j >= n ? 0 : &l->ents[l->order[j]], sort);
+        if ((sort == 4 || sort == 5) && v > 0)
             v /= 100;
-        for (i++; (int)i < (int)n; i++) {
-            w = dk_sort_value((int)i < (int)l->count ? &l->ents[l->order[i]] : 0, sort);
-            if (sort - 4 < 2 && w > 0)
+        for (k = j - 1; k >= 0; k--) {
+            w = dk_sort_value(DK_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
+                w /= 100;
+            if (w != v) {
+                k++;
+                break;
+            }
+        }
+        if (k < 0)
+            k = 0;
+    } else {
+        v = dk_sort_value(e, sort);
+        if ((sort == 4 || sort == 5) && v > 0)
+            v /= 100;
+        for (k = i + 1; k < n; k++) {
+            w = dk_sort_value(DK_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
                 w /= 100;
             if (w != v)
                 break;
         }
-        if (!((int)i < (int)n))
-            i = -1;
-    } else if (i == 0) {
-        i = -1;
-    } else {
-        v = dk_sort_value((int)(i - 1) < (int)n ? &l->ents[l->order[i - 1]] : 0, sort);
-        if (sort - 4 < 2 && v > 0)
-            v /= 100;
-        for (i -= 2; (int)i >= 0; i--) {
-            w = dk_sort_value((int)i < (int)l->count ? &l->ents[l->order[i]] : 0, sort);
-            if (sort - 4 < 2 && w > 0)
-                w /= 100;
-            if (w != v) {
-                i++;
-                break;
-            }
-        }
-        if ((int)i < 0)
-            i = 0;
+        if (k >= n)
+            return -1;
     }
-    return i;
+    return k;
 }
 
  /* o original guarda max e max + 0x76C0 em registradores */
+#ifdef NON_MATCHING
 /* analog scrolling of the card info text (one pane) or of the wide view */
 void dk_scroll_update(void)
 {

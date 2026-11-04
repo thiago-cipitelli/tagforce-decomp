@@ -1,12 +1,7 @@
 // @range 0x088060B0-0x0880931C
-// @asm 0x088060B0-0x08806C18
 // @asm 0x08806C18-0x08807100
-// @asm 0x08807100-0x08807804
-// @asm 0x08807BEC-0x08807F78
-// @asm 0x08807F78-0x088083D4
-// @asm 0x088083D4-0x08808958
 // @asm 0x08808EE4-0x088091E4
-// @rodata 0x08822510-0x08822534
+// @rodata 0x088224E0-0x08822534
 /* Moving a card between the lists (Circle in the deck editor, undo with Triangle): the destination
    window offering the lists the card can go to (main, side, extra, trunk) with the full ones greyed
    out, the card flown along a curve from its slot to the slot it lands in, the result checks of the
@@ -63,7 +58,7 @@ unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
 unsigned short dk_deck_count_forbidden(void);
 void dk_hist_push(DkHist *h);
 int dk_hist_pop(DkHist *h);
-void dk_layout_scroll(int keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
+void dk_layout_scroll(int keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned int dk_tab_pos(unsigned short tab);
 void *dk_draw_shade(void *list, unsigned short side, unsigned short tab, int lit);
 void *dk_draw_card_pict(void *list, int x, int y, int z, unsigned int color, DkEnt *e, void *gim, void *gim_alt, void *alt);
@@ -94,7 +89,6 @@ void dk_flight_text(void);
         return r;                               \
     } while (0)
 
-#ifdef NON_MATCHING /* forma igual; a soma das cópias e o limite (int lim/n) ficam em $s diferentes (um $s a mais) */
 /* Circle on a card: opens the destination window (0), or returns why it cannot move (2 nothing to
    move to, 4 three copies already, 5 forbidden cards, 6/7 limited / semi-limited, 8 no memory) */
 int dk_flight_open(void)
@@ -168,7 +162,8 @@ int dk_flight_open(void)
         lim = (unsigned short)card_get_limit(e->id);
         n = (unsigned short)dk_list_count_id(&dk_lists[1], e->id, 0);
         n = (unsigned short)(n + dk_list_count_id(&dk_lists[0], e->id, 0));
-        if ((unsigned short)(n + dk_list_count_id(&dk_lists[2], e->id, 0)) >= (unsigned short)lim) {
+        n = (unsigned short)(n + dk_list_count_id(&dk_lists[2], e->id, 0));
+        if (n >= (unsigned short)lim) {
             switch ((unsigned short)lim) {
             case 0:
                 lim = sysflag_test(0) != 0;
@@ -235,7 +230,6 @@ int dk_flight_open(void)
     dk_flight->step = 1;
     return 0;
 }
-#endif
 
 /* pane showing list tab in the two-pane layouts: the deck lists left, the trunk right */
 static inline int dk_tab_side(int tab)
@@ -245,15 +239,17 @@ static inline int dk_tab_side(int tab)
     return 1;
 }
 
-#ifdef NON_MATCHING /* o original calcula o lado (src >= 3) com desvio; o mwcc dobra em slti/xori, e os temporários mudam */
+#ifdef NON_MATCHING /* 61 palavras: o lado sai do original como beqzl + li 1 no atraso (aqui beqz); found/k ficam em
+   a0/a3 no original (aqui trocados); ordem das declarações já permutada. Gêmea de ds_input_move */
 /* Triangle: takes the last move back (the card flies from where it landed to its old list) */
 int dk_flight_undo(void)
 {
     DkHist h;
-    int found;
     DkList *l;
     int i;
     int k;
+    int found;
+    int side;
 
     if (dk_hist_pop(&h) == 0)
         return 0;
@@ -269,7 +265,10 @@ int dk_flight_undo(void)
             dk_flight->src = 4;
         if (dk_flight->dst[0] == 2)
             dk_flight->dst[0] = 4;
-        dk_flight->side = dk_tab_side(dk_flight->src);
+        side = 1;
+        if (dk_flight->src < 3)
+            side = 0;
+        dk_flight->side = side;
         dk_flight->dside = (dk_flight->side + 1) & 1;
     } else {
         dk_flight->side = 0;
@@ -325,7 +324,6 @@ int dk_flight_undo(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* mesma alocação do limite/soma de dk_flight_open */
 /* moves the card under the cursor straight to its first destination (no window); 0 when it cannot */
 int dk_flight_quick(void)
 {
@@ -365,9 +363,10 @@ int dk_flight_quick(void)
                 DK_FLIGHT_FAIL(0);
             DK_FLIGHT_ADD(1);
         } else {
-            if ((unsigned int)dk_lists[0].total > 0x54)
+            if ((unsigned int)dk_lists[0].total < 0x55)
+                DK_FLIGHT_ADD(0);
+            else
                 DK_FLIGHT_FAIL(0);
-            DK_FLIGHT_ADD(0);
         }
         n = (unsigned short)dk_list_count_id(&dk_lists[1], e->id, 1);
         n = (unsigned short)(n + dk_list_count_id(&dk_lists[0], e->id, 1));
@@ -376,7 +375,8 @@ int dk_flight_quick(void)
         lim = (unsigned short)card_get_limit(e->id);
         n = (unsigned short)dk_list_count_id(&dk_lists[1], e->id, 0);
         n = (unsigned short)(n + dk_list_count_id(&dk_lists[0], e->id, 0));
-        if ((unsigned short)(n + dk_list_count_id(&dk_lists[2], e->id, 0)) >= (unsigned short)lim && (unsigned short)lim < 3)
+        n = (unsigned short)(n + dk_list_count_id(&dk_lists[2], e->id, 0));
+        if (n >= (unsigned short)lim && (unsigned short)lim < 3)
             DK_FLIGHT_FAIL(0);
         break;
     case 4:
@@ -401,7 +401,6 @@ int dk_flight_quick(void)
     dk_flight_take();
     return 1;
 }
-#endif
 
 /* per frame while a card moves; 1 when the move is over */
 int dk_flight_update(PadBits *pad)
@@ -470,13 +469,12 @@ int dk_flight_update(PadBits *pad)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original mascara sel com andi 0xff e soma page*rows antes de top; nenhuma grafia testada reproduziu */
 /* the destination window: Left/Right pick the list (the destination pane follows), Up/Down scroll
    that pane by a page, Circle flies the card there (unless that list is full), Cross cancels */
 void dk_flight_window_input(PadBits *pad)
 {
     DkHist h;
-    int sel = (unsigned char)dk_flight->sel;
+    int sel = (unsigned char)(int)dk_flight->sel;
     DkPane *p;
     unsigned short page;
     unsigned short rows;
@@ -501,7 +499,7 @@ void dk_flight_window_input(PadBits *pad)
                 p->top = top - page;
             else
                 p->top = 0;
-        } else if ((pad->rep & 0x40) && (int)(page * rows) + top < p->list->count) {
+        } else if ((pad->rep & 0x40) && (int)(page * rows) - -top < p->list->count /* - -: ordem do addu */) {
             p->top = top + page;
         }
     }
@@ -525,58 +523,59 @@ void dk_flight_window_input(PadBits *pad)
         se_play(0x6214);
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* comparações float e ordem dos blocos da trajetória diferentes */
 /* flight from the slot to the window (phase 0 path, 1 move, 2 open the window) */
 void dk_flight_take_step(void)
 {
+    DkFlight *f = dk_flight;
     float t;
     float u;
     float k;
+    float uu;
+    float tt;
 
-    switch (dk_flight->phase) {
+    switch (f->phase) {
     case 0:
-        dk_slot_pos(dk_flight->from, dk_flight->side, dk_flight->src, dk_flight->pos, 0);
+        dk_slot_pos(f->from, f->side, f->src, f->pos, 0);
         dk_flight->to[0] = dk_flight->x + 0x10;
         dk_flight->to[1] = dk_flight->y + 0x13;
         dk_flight->cur[0] = dk_flight->from[0];
         dk_flight->cur[1] = dk_flight->from[1];
-        if (dk_flight->to[1] < dk_flight->from[1] - 10.0f || dk_flight->from[1] + 10.0f < dk_flight->to[1]) {
-            if (dk_flight->from[0] - 10.0f <= dk_flight->to[0] && dk_flight->to[0] <= dk_flight->from[0] + 10.0f) {
-                if (dk_flight->from[0] <= 240.0f)
-                    dk_flight->mid[0] = dk_flight->from[0] + 120.0f;
-                else
-                    dk_flight->mid[0] = dk_flight->from[0] - 120.0f;
-                dk_flight->mid[1] = dk_flight->from[1] + (dk_flight->to[1] - dk_flight->from[1]) / 2.0f;
-            } else {
-                dk_flight->mid[0] = dk_flight->from[0];
-                dk_flight->mid[1] = 0.0f;
-            }
-        } else {
+        if (dk_flight->from[1] - 10.0f <= dk_flight->to[1] && dk_flight->from[1] + 10.0f >= dk_flight->to[1]) {
             dk_flight->mid[0] = dk_flight->from[0] + (dk_flight->to[0] - dk_flight->from[0]) / 2.0f;
             dk_flight->mid[1] = 24.0f;
+        } else if (dk_flight->from[0] - 10.0f <= dk_flight->to[0] && dk_flight->from[0] + 10.0f >= dk_flight->to[0]) {
+            if (dk_flight->from[0] <= 240.0f)
+                dk_flight->mid[0] = dk_flight->from[0] + 120.0f;
+            else
+                dk_flight->mid[0] = dk_flight->from[0] - 120.0f;
+            dk_flight->mid[1] = dk_flight->from[1] + (dk_flight->to[1] - dk_flight->from[1]) / 2.0f;
+        } else {
+            dk_flight->mid[0] = dk_flight->from[0];
+            dk_flight->mid[1] = 0.0f;
         }
         dk_flight_take();
         dk_flight->phase++;
         dk_flight->timer = 0;
         break;
     case 1:
-        if (++dk_flight->timer > 10) {
+        if (++f->timer <= 10) {
+            t = dk_flight->timer / 10.0f;
+            u = 1.0f - t;
+            uu = u * u;
+            k = 2.0f * t * u;
+            tt = t * t;
+            dk_flight->cur[0] = tt * dk_flight->to[0] + (uu * dk_flight->from[0] + k * dk_flight->mid[0]);
+            dk_flight->cur[1] = tt * dk_flight->to[1] + (uu * dk_flight->from[1] + k * dk_flight->mid[1]);
+            if (dk_flight->timer == 5)
+                dk_flight->shown = 1;
+        } else {
             dk_flight->phase++;
-            break;
         }
-        t = dk_flight->timer / 10.0f;
-        u = 1.0f - t;
-        k = t * 2.0f * u;
-        dk_flight->cur[0] = t * t * dk_flight->to[0] + u * u * dk_flight->from[0] + k * dk_flight->mid[0];
-        dk_flight->cur[1] = t * t * dk_flight->to[1] + u * u * dk_flight->from[1] + k * dk_flight->mid[1];
-        if (dk_flight->timer == 5)
-            dk_flight->shown = 1;
         break;
     case 2:
-        if (dk_flight->dtab != dk_flight->dst[dk_flight->sel])
-            dk_select_tab(dk_flight->dside, dk_flight->dst[dk_flight->sel], 2);
+        if (f->dtab != f->dst[f->sel])
+            dk_select_tab(f->dside, f->dst[f->sel], 2);
         dk_flight->from[0] = dk_flight->x + 0x10;
         dk_flight->from[1] = dk_flight->y + 0x13;
         dk_flight->step = 2;
@@ -586,9 +585,27 @@ void dk_flight_take_step(void)
         break;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* comparações float e ordem dos blocos da trajetória diferentes */
+/* the view argument of dk_layout_scroll: columns in the low byte, visible rows in the high one */
+static inline unsigned short dk_lay_pack(unsigned char cols, unsigned char rows)
+{
+    return cols | rows << 8;
+}
+
+/* keeps the cursor of pane p inside its list after a move (last entry when it fell off the end) */
+#define DK_PANE_REFIT(p)                                                                                   \
+    do {                                                                                                   \
+        pos = (p)->cx + ((p)->top + (p)->cy * ((p)->list_mode == 0 ? (p)->lay.cols : 1));                  \
+        keep = 1;                                                                                          \
+        if (pos > 0 && pos >= (p)->list->count) {                                                          \
+            pos = (p)->list->count - 1;                                                                    \
+            keep = 0;                                                                                      \
+        }                                                                                                  \
+        view = (p)->list_mode == 0 ? (p)->lay.grid_rows : (p)->lay.rows;                                   \
+        dk_layout_scroll(keep, pos, dk_lay_pack((p)->list_mode == 0 ? (p)->lay.cols : 1, view), \
+                         (p)->list->count, &(p)->top, &(p)->cx, &(p)->cy);                                 \
+    } while (0)
+
 /* flight from the window (or the slot) to the slot it lands in (phase 0 path, 1 move, 2 land) */
 void dk_flight_put_step(void)
 {
@@ -596,82 +613,68 @@ void dk_flight_put_step(void)
     float t;
     float u;
     float k;
+    float uu;
+    float tt;
+    DkPane *p;
     int pos;
-    int keep;
+    unsigned short keep;
     unsigned short view;
 
-    switch (dk_flight->phase) {
-    case 2:
-        if (dkv.mode < 2 && dk_flight->dst[dk_flight->sel] != dk_flight->dtab)
-            dk_select_tab(dk_flight->dside, dk_flight->dtab, 2);
-        dk_flight_put();
-        dk_attr_count_update();
-        pos = dkv.pane[0].cx + dkv.pane[0].top + dkv.pane[0].cy * (dkv.pane[0].list_mode == 0 ? dkv.pane[0].lay.cols : 1);
-        keep = 1;
-        if (pos > 0 && pos >= dkv.pane[0].list->count) {
-            pos = dkv.pane[0].list->count - 1;
-            keep = 0;
-        }
-        view = dkv.pane[0].list_mode == 0 ? dkv.pane[0].lay.grid_rows : dkv.pane[0].lay.rows;
-        dk_layout_scroll(keep, pos, (dkv.pane[0].list_mode == 0 ? dkv.pane[0].lay.cols : 1) & 0xFF | view << 8, dkv.pane[0].list->count, &dkv.pane[0].top, &dkv.pane[0].cx, &dkv.pane[0].cy);
-        if (dkv.mode > 1) {
-            pos = dkv.pane[1].cx + dkv.pane[1].top + dkv.pane[1].cy * (dkv.pane[1].list_mode == 0 ? dkv.pane[1].lay.cols : 1);
-            keep = 1;
-            if (pos > 0 && pos >= dkv.pane[1].list->count) {
-                pos = dkv.pane[1].list->count - 1;
-                keep = 0;
-            }
-            view = dkv.pane[1].list_mode == 0 ? dkv.pane[1].lay.grid_rows : dkv.pane[1].lay.rows;
-            dk_layout_scroll(keep, pos, (dkv.pane[1].list_mode == 0 ? dkv.pane[1].lay.cols : 1) & 0xFF | view << 8, dkv.pane[1].list->count, &dkv.pane[1].top, &dkv.pane[1].cx, &dkv.pane[1].cy);
-        }
-        dk_flight->step = 8;
-        dk_flight->phase = 0;
-        dk_flight->timer = 0;
-        return;
-    case 1:
-        if (dk_flight->timer++ < 10) {
-            t = dk_flight->timer / 10.0f;
-            u = 1.0f - t;
-            k = t * 2.0f * u;
-            dk_flight->cur[0] = t * t * dk_flight->to[0] + u * u * dk_flight->from[0] + k * dk_flight->mid[0];
-            dk_flight->cur[1] = t * t * dk_flight->to[1] + u * u * dk_flight->from[1] + k * dk_flight->mid[1];
-        } else {
-            dk_flight->phase++;
-        }
-        return;
+    switch (f->phase) {
     case 0:
-        break;
-    default:
-        return;
-    }
-    dk_slot_pos(f->to, f->dside, f->dst[f->sel], dk_dst_pos(f->dst[f->sel], f->ent.id), 0);
-    if (dk_flight->to[1] < dk_flight->from[1] - 10.0f || dk_flight->from[1] + 10.0f < dk_flight->to[1]) {
-        if (dk_flight->to[0] < dk_flight->from[0] - 10.0f || dk_flight->from[0] + 10.0f < dk_flight->to[0]) {
-            if (dk_flight->from[1] < dk_flight->to[1]) {
-                dk_flight->mid[1] = dk_flight->from[1];
-                dk_flight->mid[0] = dk_flight->to[0];
-            } else {
-                dk_flight->mid[1] = dk_flight->to[1];
-                dk_flight->mid[0] = dk_flight->from[0];
-            }
-        } else {
+        dk_slot_pos(f->to, f->dside, f->dst[f->sel], dk_dst_pos(f->dst[f->sel], f->ent.id), 0);
+        if (dk_flight->from[1] - 10.0f <= dk_flight->to[1] && dk_flight->from[1] + 10.0f >= dk_flight->to[1]) {
+            if (dk_flight->from[1] <= 136.0f)
+                dk_flight->mid[1] = dk_flight->from[1] + 68.0f;
+            else
+                dk_flight->mid[1] = 24.0f;
+            dk_flight->mid[0] = dk_flight->from[0] + (dk_flight->to[0] - dk_flight->from[0]) / 2.0f;
+        } else if (dk_flight->from[0] - 10.0f <= dk_flight->to[0] && dk_flight->from[0] + 10.0f >= dk_flight->to[0]) {
             if (dk_flight->from[0] <= 240.0f)
                 dk_flight->mid[0] = dk_flight->from[0] + 120.0f;
             else
                 dk_flight->mid[0] = dk_flight->from[0] - 120.0f;
             dk_flight->mid[1] = dk_flight->from[1] + (dk_flight->to[1] - dk_flight->from[1]) / 2.0f;
+        } else if (dk_flight->from[1] < dk_flight->to[1]) {
+            dk_flight->mid[1] = dk_flight->from[1];
+            dk_flight->mid[0] = dk_flight->to[0];
+        } else {
+            dk_flight->mid[1] = dk_flight->to[1];
+            dk_flight->mid[0] = dk_flight->from[0];
         }
-    } else {
-        if (dk_flight->from[1] <= 136.0f)
-            dk_flight->mid[1] = dk_flight->from[1] + 68.0f;
-        else
-            dk_flight->mid[1] = 24.0f;
-        dk_flight->mid[0] = dk_flight->from[0] + (dk_flight->to[0] - dk_flight->from[0]) / 2.0f;
+        dk_flight->timer = 0;
+        dk_flight->phase++;
+        break;
+    case 1:
+        if (f->timer++ < 10) {
+            t = dk_flight->timer / 10.0f;
+            u = 1.0f - t;
+            uu = u * u;
+            k = 2.0f * t * u;
+            tt = t * t;
+            dk_flight->cur[0] = tt * dk_flight->to[0] + (uu * dk_flight->from[0] + k * dk_flight->mid[0]);
+            dk_flight->cur[1] = tt * dk_flight->to[1] + (uu * dk_flight->from[1] + k * dk_flight->mid[1]);
+        } else {
+            dk_flight->phase++;
+        }
+        break;
+    case 2:
+        if (dkv.mode < 2 && f->dst[f->sel] != f->dtab)
+            dk_select_tab(f->dside, f->dtab, 2);
+        dk_flight_put();
+        dk_attr_count_update();
+        p = &dkv.pane[0];
+        DK_PANE_REFIT(p);
+        if (dkv.mode > 1) {
+            p = &dkv.pane[1];
+            DK_PANE_REFIT(p);
+        }
+        dk_flight->step = 8;
+        dk_flight->phase = 0;
+        dk_flight->timer = 0;
+        break;
     }
-    dk_flight->timer = 0;
-    dk_flight->phase++;
 }
-#endif
 
 void dk_flight_free(void)
 {
@@ -795,7 +798,8 @@ unsigned int dk_flight_window_state(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores temporários da conta da grade (o original mantém scroll em t0) */
+#ifdef NON_MATCHING /* 18 palavras: o original carrega a constante 1 do segundo switch em t1 (aqui t0) e por isso
+   o y da lista vai para t0; e grid_x/cell_w em v1/v0 trocados. Gêmea de ds_slot_pos */
 /* screen position of entry pos of list tab in pane side (card center, +11/+15); when the entry is
    scrolled out and scroll is set, scrolls the pane one step toward it and returns 0; tabs not shown
    in the pane give the position of their tab */
@@ -865,8 +869,8 @@ int dk_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
     }
     switch (mode) {
     case 0:
-        cols = lay->cols;
         d = pos - p->top;
+        cols = lay->cols;
         out[0] = (int)(lay->x + lay->grid_x + (d % cols) * (unsigned short)lay->cell_w);
         out[1] = (int)(lay->y + lay->grid_y + (d / cols) * (unsigned short)lay->cell_h);
         break;

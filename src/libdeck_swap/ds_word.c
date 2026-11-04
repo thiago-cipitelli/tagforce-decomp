@@ -1,5 +1,4 @@
 // @range 0x0880DFFC-0x0880F3E0
-// @asm 0x0880E194-0x0880E8D0
 /* The word search (state 6): a window with the word, the last words used and an OK button; the
    word is typed in the system on-screen keyboard; the search runs incrementally with a progress
    bar and the matches become the pane's list (same source as libselect_card sc_word.c and libdeck
@@ -91,79 +90,30 @@ void ds_word_open(void)
     ds.state = 6;
 }
 
-#ifdef NON_MATCHING /* máquina de passos; alocação e ordem dos testes diferentes */
 /* state 6 */
 void ds_input_result(void)
 {
-    MenuWidget *hist = ds_word->hist;
     MenuWidget *m = ds_word->menu;
+    MenuWidget *hist = ds_word->hist;
     PadState *pad = pad_get();
-    unsigned char c;
+    int c;
     int r;
 
     switch (ds_word->step) {
-    case 4:
-        ds_word_search();
-        break;
-    case 3:
-        menu_update(m);
-        if (m->state == 6) {
-            if (!m->cancelled) {
-                menu_reset(m);
-                if (hist != 0)
-                    menu_reset(hist);
-                ds_word->menu = 0;
-                ds_word->hist = 0;
-                ds_word->step = 4;
-                ds_word->sstep = 0;
-            } else {
-                ds_word_free();
-                ds.state = 1;
-            }
-        }
-        break;
-    case 2:
-        menu_update(ds_word->menu);
-        if (ds_word->menu->state != 4) {
-            menu_finish(m);
-            ds_word->step = 3;
-        }
-        break;
-    case 1:
-        c = hist->cursor;
-        r = menu_update(ds_word->hist);
-        if (r < 0) {
-            if (r == -2) {
-                ds_word->step = 0;
-            } else {
-                if (c != 0)
-                    return;
-                if (!(pad->b.rep & 0x10))
-                    return;
-                ds_word->step = 0;
-                se_play(0x6212);
-            }
-        } else {
-            wcscpy(ds_word->word, ds.words[r]);
-            ds_word->step = 0;
-            ds_word->focus = 2;
-        }
-        hist->accepted = 0;
-        hist->cancelled = 0;
-        hist->no_cancel = 0;
-        hist->cursor = hist->count;
-        break;
     case 0:
         if (pad->b.trig & region_pick_value(0)) {
-            if (ds_word->focus == 2) {
-                menu_set_cursor(ds_word->menu, 0);
-                se_play(0x6213);
-                ds_word->step = 2;
-            } else if (ds_word->focus == 0) {
+            switch (ds_word->focus) {
+            case 0:
                 if (ds_osk_open(ds_word->word, table_get_entry(res_get(0x8033), 0x19), 0x10, ds_word_input_done) == 0) {
                     dsv.busy = 1;
                     se_play(0x6213);
                 }
+                break;
+            case 2:
+                menu_set_cursor(ds_word->menu, 0);
+                se_play(0x6213);
+                ds_word->step = 2;
+                break;
             }
         } else if (pad->b.trig & region_pick_value(1)) {
             m->cancelled = 1;
@@ -187,16 +137,62 @@ void ds_input_result(void)
             }
         }
         break;
+    case 1:
+        c = hist->cursor;
+        r = menu_update(ds_word->hist);
+        if (r >= 0) {
+            wcscpy(ds_word->word, ds.words[r]);
+            ds_word->step = 0;
+            ds_word->focus = 2;
+        } else if (r == -2) {
+            ds_word->step = 0;
+        } else {
+            if (c != 0)
+                return;
+            if (!(pad->b.rep & 0x10))
+                return;
+            ds_word->step = 0;
+            se_play(0x6212);
+        }
+        hist->cancelled = hist->accepted = 0;
+        hist->no_cancel = 0;
+        hist->cursor = hist->count;
+        break;
+    case 2:
+        menu_update(ds_word->menu);
+        if (ds_word->menu->state != 4) {
+            menu_finish(m);
+            ds_word->step = 3;
+        }
+        break;
+    case 3:
+        menu_update(m);
+        if (m->state == 6) {
+            if (m->cancelled) {
+                ds_word_free();
+                ds.state = 1;
+            } else {
+                menu_reset(m);
+                if (hist != 0)
+                    menu_reset(hist);
+                ds_word->menu = 0;
+                ds_word->hist = 0;
+                ds_word->step = 4;
+                ds_word->sstep = 0;
+            }
+        }
+        break;
+    case 4:
+        ds_word_search();
+        break;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* passos da busca com outra ordem */
 /* the search itself, a few entries a frame */
 void ds_word_search(void)
 {
-    unsigned int side = dsv.side;
-    DsList *l = dsv.pane[side].list;
+    DsPane *p = &dsv.pane[dsv.side];
+    DsList *l = p->list;
     unsigned short view;
     unsigned short grid;
 
@@ -205,52 +201,47 @@ void ds_word_search(void)
         if (ds_word->word[0] == 0) {
             l->filter = 8;
             ds_word->sstep = 10;
-        } else if (l->count != 0) {
+        } else if (l->count <= 0) {
+            ds_search_start(l, ds_word->word);
+            ds_search_finish(l);
+            ds_word->sstep = 10;
+        } else {
             ds_word->progress = 0;
             ds_search_start(l, ds_word->word);
             ds_word_bar_open();
             ds_word->sstep++;
-        } else {
-            ds_search_start(l, ds_word->word);
-            ds_search_finish(l);
-            ds_word->sstep = 10;
         }
-        return;
+        break;
     case 1:
         menu_update(ds_word->bar);
         if (ds_word->bar->state == 3)
             ds_word->sstep++;
-        return;
+        break;
     case 2:
         ds_word->progress = ds_search_step(l);
         if (ds_word->progress >= 1000)
             ds_word->sstep++;
-        return;
+        break;
     case 3:
         ds_search_finish(l);
-        view = dsv.pane[side].list_mode == 0 ? dsv.pane[side].lay.grid_rows : dsv.pane[side].lay.rows;
-        grid = dsv.pane[side].list_mode == 0 ? dsv.pane[side].lay.cols : 1;
-        ds_layout_scroll(0, 0, (grid & 0xFF) | view << 8, dsv.pane[side].list->count, &dsv.pane[side].top,
-                         &dsv.pane[side].cx, &dsv.pane[side].cy);
+        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+        grid = p->list_mode == 0 ? p->lay.cols : 1;
+        ds_layout_scroll(0, 0, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
         menu_finish(ds_word->bar);
         ds_word->sstep++;
-        return;
+        break;
     case 4:
         menu_update(ds_word->bar);
         if (ds_word->bar->state != 6)
-            return;
-        break;
+            break;
     case 10:
+        ds_word_free();
+        ds_popup_open(4, l->count);
+        se_play(0x621A);
+        ds.state = 1;
         break;
-    default:
-        return;
     }
-    ds_word_free();
-    ds_popup_open(4, l->count);
-    se_play(0x621A);
-    ds.state = 1;
 }
-#endif
 
 void ds_word_free(void)
 {
