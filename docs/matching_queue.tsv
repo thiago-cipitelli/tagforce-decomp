@@ -1150,4 +1150,3 @@ fuzzy	size	module	function	address	file
 0.0	3268	libduel_eng	duel_leave_mark	0x088CEEE0	src/libduel_eng/leave_field.c
 0.0	4140	libshop	shop_glow_ultra	0x08816DA8	src/libshop/shop_glow.c
 0.0	4620	libshop	shop_glow_super	0x08815B9C	src/libshop/shop_glow.c
-0.0	5608	libduel_eng	duel_act_0887E140	0x0887E140	src/libduel_eng/effects_p.c

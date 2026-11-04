@@ -1,6 +1,5 @@
 // @range 0x0887DB24-0x0888146C
 // @asm 0x0887DC94-0x0887DDB0
-// @asm 0x0887E140-0x0887F728
 // @asm 0x0887F8E4-0x0887FCA8
 // @asm 0x0887FD20-0x088800E0
 // @asm 0x08880204-0x08880624
@@ -58,6 +57,21 @@ int duel_pick_monster_zone();
 void duel_0881956C(unsigned int p, unsigned short id, int (*fn)(int id));
 void duel_08835978(int (*fn)(int id));
 void duel_0884AD18(int msg);
+extern int duel_atk_zone;
+int card_is_in_group_1a6f(int id);
+int card_is_attribute9(int id);
+int card_is_monster(int id);
+int card_get_def(int id);
+int card_get_atk(int id);
+int card_get_level(int id);
+int duel_count_grave_type(unsigned int p, unsigned int type);
+int duel_count_field_all(unsigned int p);
+int duel_count_monsters_fn(unsigned int p, int (*fn)(int id));
+int duel_count_monsters(unsigned int p);
+int duel_count_attr(unsigned int p, int attr);
+int duel_count_type(unsigned int p, unsigned int type);
+int duel_slot_effect_sum(unsigned int p, int z, unsigned int id);
+unsigned short duel_slot_e1854(unsigned int p, int z);
 void duel_0884ACD8(unsigned int p, int msg);
 void duel_wfmt_s(char *dst, char *fmt, unsigned short *arg);
 unsigned short *card_db_table_sel(int i);
@@ -235,8 +249,405 @@ int duel_0887DF94(DuelAct *a)
     return 0;
 }
 
-/* duel_act_0887E140 (0x0887E140, 5.6 KB, kept in asm): LP change that the effect of a's card
-   makes for each player, by card id, into d[2]. */
+/* LP change that the effect of a's card makes for each player, by card id, into d[2] */
+void duel_act_0887E140(DuelAct *a, int d[2])
+{
+    unsigned int me = a->player ^ a->opp;
+    unsigned int k = a->w[0] & 1;
+    unsigned short src;
+    int t;
+    unsigned int q;
+    int n;
+
+    d[1] = 0;
+    d[0] = 0;
+    switch (a->id) {
+        case 0x10F8:
+            d[k] = 200;
+            break;
+        case 0x10F9:
+            d[k] = 500;
+            break;
+        case 0x10FA:
+            d[k] = 600;
+            break;
+        case 0x10FB:
+            d[k] = 800;
+            break;
+        case 0x10FC:
+            d[k] = 1000;
+            break;
+        case 0x12E8:
+            d[k] = 400;
+            break;
+        case 0x1459:
+            d[me] = 200;
+            break;
+        case 0x104C:
+        case 0x142C:
+            d[me] = 500;
+            break;
+        case 0x17A5:
+            d[me] = 700;
+            break;
+        case 0x1454:
+            d[me] = 800;
+            break;
+        case 0x12A2:
+        case 0x1450:
+        case 0x1451:
+        case 0x1455:
+        case 0x1467:
+        case 0x17A4:
+            d[me] = 1000;
+            break;
+        case 0x14F3:
+        case 0x1793:
+            d[me] = 2000;
+            break;
+        case 0x151B:
+            d[me] = 4000;
+            break;
+        case 0x137A:
+            d[me] = (duel_count_monsters(0) + duel_count_monsters(1)) * 300;
+            break;
+        case 0x1757:
+            d[me] = duel_count_monsters(me) * 400;
+            break;
+        case 0x19CD:
+            d[me] = duel_count_monsters(me) * 800;
+            break;
+        case 0x16DA:
+            d[me] = a->idx * 500;
+            break;
+        case 0x1A14:
+            d[me] = duel_count_monsters_fn(me, card_is_in_group_1a6f) * 1000;
+            break;
+        case 0x1370:
+            t = duel_slot_e1854(a->player, a->zone);
+            if ((t & 0xFFFF) != 0xFFFF) {
+                d[me] = (duel_field_atk(t & 0xFF, (unsigned short)t >> 8 & 0xFF) + 1) >> 1;
+            }
+            break;
+        case 0x1877:
+            d[1 - me] = 500;
+            break;
+        case 0x1322:
+        case 0x137B:
+        case 0x16F5:
+            d[1 - me] = 1000;
+            break;
+        case 0x141F:
+            d[me] = 1000;
+            d[1 - me] = 1000;
+            break;
+        case 0x14E6:
+            d[me] = a->w[0] * 1000;
+            break;
+        case 0x15E7:
+            switch (a->w[2]) {
+            case 1:
+                d[me] = 1200;
+                break;
+            case 2:
+                d[1 - me] = -800;
+                break;
+            }
+            break;
+        case 0x16A0:
+            if (!card_is_attribute9(a->w[1]) && card_is_monster(a->w[1])) {
+                d[me] = card_get_atk(a->w[1]);
+            }
+            break;
+        case 0x175A:
+            d[me] = a->w[2];
+            break;
+        case 0x14ED:
+        case 0x1506:
+            d[me] = a->h[0];
+            break;
+        case 0x1AA2:
+            d[me] = a->w[0] * 400;
+            break;
+        case 0x1101:
+            d[1 - me] = -1000;
+            d[me] = -500;
+            break;
+        case 0xFFF:
+        case 0x1855:
+        case 0x1929:
+            d[1 - me] = -a->w[0];
+            break;
+        case 0x10B0:
+            d[1 - me] = duel_count_field_all(1 - me) * -500;
+            break;
+        case 0x191D:
+            d[1 - me] = duel_count_monsters(1 - me) * -300;
+            break;
+        case 0x19CE:
+            d[1 - me] = duel_count_monsters(1 - me) * -600;
+            break;
+        case 0x1574:
+        case 0x18B6:
+        case 0x1A51:
+            d[1 - me] = -300;
+            break;
+        case 0x1627:
+            d[1 - me] = -400;
+            break;
+        case 0x10DD:
+        case 0x11A6:
+        case 0x1355:
+        case 0x13A8:
+        case 0x1435:
+        case 0x14B2:
+        case 0x1520:
+        case 0x1525:
+        case 0x1565:
+        case 0x1586:
+        case 0x1756:
+        case 0x1762:
+        case 0x17E1:
+        case 0x187B:
+        case 0x18B7:
+        case 0x1A69:
+            d[1 - me] = -500;
+            break;
+        case 0x1637:
+            d[1 - me] = -600;
+            break;
+        case 0x158C:
+            d[1 - me] = -700;
+            break;
+        case 0x14E0:
+        case 0x1702:
+        case 0x144E:
+        case 0x144F:
+        case 0x179B:
+            d[1 - me] = -800;
+            break;
+        case 0x1190:
+        case 0x11BC:
+        case 0x1460:
+        case 0x16FA:
+        case 0x19A4:
+        case 0x19F0:
+        case 0x1AA0:
+            d[1 - me] = -1000;
+            break;
+        case 0x144B:
+            d[1 - me] = -1200;
+            break;
+        case 0x190A:
+            d[1 - me] = -1500;
+            break;
+        case 0x10FD:
+            d[k] = -200;
+            break;
+        case 0x10FE:
+            d[k] = -500;
+            break;
+        case 0x10FF:
+            d[k] = -600;
+            break;
+        case 0x1100:
+            d[k] = -800;
+            break;
+        case 0x13F0:
+        case 0x13F3:
+            q = duel_slot_e1854(a->player, a->zone) & 0xFF;
+            d[q] = -500;
+            break;
+        case 0x11CF:
+            d[me] = -300;
+            break;
+        case 0x1578:
+            d[me] = -1000;
+            break;
+        case 0x118A:
+            d[me] = -2000;
+            break;
+        case 0x169A:
+            d[me] = -800;
+            break;
+        case 0x11C9:
+            d[1 - me] = 3000;
+            break;
+        case 0x12E9:
+            d[k] = -300;
+            break;
+        case 0x1301:
+            d[1 - me] = duel_count_monsters(1 - me) * -500;
+            break;
+        case 0x1307:
+            d[k] = (int)duel.players[k & 1].n_hand * -200;
+            break;
+        case 0x161D:
+            d[1 - me] = (int)duel.players[1 - me & 1].n_hand * -400;
+            break;
+        case 0x1421:
+            if (a->w[0] != 0) {
+                d[1 - me] = -500;
+            }
+            break;
+        case 0x18DA:
+            d[1 - me] = -a->w[0];
+            break;
+        case 0x159B:
+            d[1 - me] = a->w[0] * -300;
+            break;
+        case 0x15EE:
+            d[1 - me] = a->w[1] * -1000;
+            break;
+        case 0x15F4:
+            q = 1 - me;
+            d[q] = (duel.players[q & 1].n_hand + duel_count_field(q)) * -200;
+            break;
+        case 0x129A:
+            d[1 - me] = -duel_field_atk(duel_special.player[0], duel_atk_zone);
+            break;
+        case 0x1641:
+        case 0x18C8:
+        case 0x18D1:
+        case 0x193B:
+        case 0x1943:
+        case 0x19D3:
+            d[1 - me] = -card_get_atk(duel.list[a->src.uid].id);
+            break;
+        case 0x170B:
+        case 0x1987:
+        case 0x19E0:
+            d[me] = card_get_atk(duel.list[a->src.uid].id);
+            break;
+        case 0x1A23:
+            d[me] = card_get_def(duel.list[a->src.uid].id);
+            break;
+        case 0x17C7:
+            d[1 - me] = -card_get_atk(duel.list[a->src.uid].id) / 2;
+            break;
+        case 0x17C8:
+            d[1 - me] = -card_get_def(duel.list[a->src.uid].id) / 2;
+            break;
+        case 0x18D0:
+            d[1 - me] = -card_get_def(duel.list[a->src.uid].id);
+            break;
+        case 0x174A:
+        case 0x174B:
+            d[1 - me] = card_get_level(duel.list[a->src.uid].id) * -500;
+            break;
+        case 0x1792:
+            d[me] = card_get_level(duel.list[a->src.uid].id) * 300;
+            break;
+        case 0x16C5:
+            d[1 - me] = -1500;
+            break;
+        case 0x16CC:
+            d[1 - me] = -700;
+            break;
+        case 0x16DC:
+            d[1 - me] = -3000;
+            break;
+        case 0x16FE:
+            d[a->idx & 0xFFFF] = (a->idx >> 16 & 0xFFFF) * -400;
+            break;
+        case 0x1794:
+            d[1 - me] = -2000;
+            break;
+        case 0x1804:
+            d[k] = duel.players[k & 1].n_grave * -100;
+            break;
+        case 0x188B:
+            d[k] = duel.players[k & 1].n_f * -300;
+            break;
+        case 0x1761:
+            d[1 - me] = -500;
+            d[me] = 500;
+            break;
+        case 0x163F:
+            d[me] = a->b3_4 == 1 ? 1000 : -2000;
+            break;
+        case 0x173F:
+            q = 1 - me;
+            n = duel.players[me & 1].lp - duel.players[q & 1].lp;
+            d[q] = -(n < 0 ? 0 : n);
+            break;
+        case 0x1767:
+            d[1 - me] = duel_count_attr(me, 1) * -600;
+            break;
+        case 0x1770:
+            d[duel_special.player[0]] = -1000;
+            break;
+        case 0x18D7:
+        case 0x174E:
+            d[a->y.y16_2] = -1000;
+            break;
+        case 0x1802:
+            t = duel_slot_effect_sum(a->player, a->zone, a->id);
+            d[0] = (t & 0xFF) * -500;
+            d[1] = ((unsigned short)t >> 8 & 0xFF) * -500;
+            break;
+        case 0x1869:
+            d[1 - me] = -1000;
+            if (a->kind == 0x16) {
+                d[me] = -1000;
+            }
+            break;
+        case 0x1914:
+            d[a->b15_1] = -card_get_atk(a->id);
+            break;
+        case 0x1950:
+            d[1 - me] = -800;
+            d[me] = -800;
+            break;
+        case 0x192C:
+            d[1 - me] = duel_count_grave_type(me, 0x16) * -200;
+            break;
+        case 0x194A:
+            if (duel_special.recs[0].b[0] == me) {
+                d[1 - me] -= duel_special.recs[0].w0;
+            }
+            if (duel_special.recs[1].b[0] == me) {
+                d[1 - me] -= duel_special.recs[1].w0;
+            }
+            break;
+        case 0x1984:
+            d[1 - me] = duel_count_type(me, 0x12) * -200;
+            break;
+        case 0x19CF:
+            d[1 - me] = (unsigned int)duel.players[1 - me & 1].n_18 * -100;
+            break;
+        case 0x1A40:
+            n = duel_count_field_all(0) * 500 - 1000;
+            d[0] = n;
+            if (n > 0) {
+                n = 0;
+            }
+            d[0] = n;
+            n = duel_count_field_all(1) * 500 - 1000;
+            d[1] = n;
+            if (n > 0) {
+                n = 0;
+            }
+            d[1] = n;
+            break;
+        case 0x1AAD:
+            if (a->b3_4 == 2) {
+                d[1 - me] = -1000;
+            } else if (a->kind == 5) {
+                d[me] = -800;
+            } else {
+                d[1 - me] = -300;
+            }
+            break;
+        case 0x1B2D:
+            if (a->b3_4 == 2) {
+                d[1 - me] = -2000;
+            } else {
+                d[1 - me] = -500;
+            }
+            break;
+    }
+}
 
 int duel_0887F728(DuelAct *a)
 {
