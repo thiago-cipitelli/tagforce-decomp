@@ -1,7 +1,8 @@
 // @range 0x0880E45C-0x0880FCFC
 // @rodata 0x0886FE64-0x0886FE80
 // @data 0x08874EA0-0x08874F70
-// @asm 0x0880E788-0x0880FAC4
+// @asm 0x0880E788-0x0880F4D4
+// @asm 0x0880F6C8-0x0880FAC4
 /* Drawing of the field and of the card objects: the layer setup, the field sheet model, the
    deck/extra/graveyard piles (a pile model with the top card on it and the count), every card
    object with its picture (models with texture hooks), the counters of the monster zones. */
@@ -374,6 +375,7 @@ int dd_board_card_draw(DdCobj *o, int p, int zone, int i)
         dd_counter_sel(&o->pos, 0);
     return hilite;
 }
+#endif
 
 /* overlays of the cards on the field (attack/defense position markers...) */
 void dd_board_marks(void)
@@ -395,8 +397,8 @@ void dd_board_marks(void)
     if (gim)
         list = gim_set_texture(list, gim);
     for (p = 0; p < 2; p++) {
-        for (z = 0; z < 5; z++) {
-            at.player = p;
+        at.player = p;
+        for (z = 0; z <= 4; z++) {
             at.zone = z;
             at.idx = 0;
             at.f14 = dv_zone_faceup(p, z, 0);
@@ -411,6 +413,7 @@ void dd_board_marks(void)
     dl_set_list(list);
 }
 
+#ifdef NON_MATCHING /* funções grandes de desenho; forma não reproduzida */
 /* the pile model with n cards and the top card */
 void dd_board_pile(float scale, DdXyzw *pos, DdXyzw *rot, int n, int card)
 {

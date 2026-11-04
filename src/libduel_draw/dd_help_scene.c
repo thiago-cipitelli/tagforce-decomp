@@ -1,7 +1,6 @@
 // @range 0x08863998-0x088649D4
 // @asm 0x08863998-0x08863C1C
 // @asm 0x08863C1C-0x08863F74
-// @asm 0x0886452C-0x088645FC
 // @asm 0x088645FC-0x0886492C
 // @data 0x08878EA0-0x0887965C
 // @rodata 0x088727B4-0x08872874
@@ -525,7 +524,6 @@ int hscene_index_from_cat(int category)
     return category - help_scene.cat_base;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores/ordem dos testes difere; não insistido */
 void hguide_init(void *heap, void *frame_gim, void *pack)
 {
     MenuItemDef *d;
@@ -534,8 +532,8 @@ void hguide_init(void *heap, void *frame_gim, void *pack)
     help_guide.heap = heap;
     help_guide.frame_gim = frame_gim;
     help_guide.pack = pack;
-    menu_init(&help_guide.menu, heap);
     d = &help_guide.def;
+    menu_init(&help_guide.menu, heap);
     memset(d, 0, sizeof(*d));
     d->visible = 1;
     d->x = 5;
@@ -546,9 +544,6 @@ void hguide_init(void *heap, void *frame_gim, void *pack)
     d->style = 0;
     menu_add_item(&help_guide.menu, d);
 }
-#else
-void hguide_init(void *heap, void *frame_gim, void *pack);
-#endif
 
 #define GUIDE_Y(base) (((region_get() == 0 ? 0 : 5) + (base)) << 6)
 
