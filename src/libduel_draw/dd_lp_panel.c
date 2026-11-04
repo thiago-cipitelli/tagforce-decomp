@@ -1,5 +1,5 @@
 // @range 0x08855B10-0x08857100
-// @asm 0x08855B10-0x08855C50
+// @data 0x08877730-0x088777B4
 // @asm 0x08855E90-0x08856278
 // @asm 0x088562C4-0x0885650C
 // @asm 0x088565F8-0x088566EC
@@ -115,7 +115,6 @@ extern DdLpMgr dd_lp;
 
 unsigned int dd_lp_shine(int i, unsigned int frame);
 
-#ifdef NON_MATCHING /* o original guarda o tmf num $s antes das outras buscas; ordem dos registradores diferente */
 void dd_lp_load(void)
 {
     DdLpMgr *m = &dd_lp;
@@ -124,11 +123,12 @@ void dd_lp_load(void)
 
     memset(m, 0, sizeof(*m));
     if (region_get() == 0) {
-        pack = dd_pack_get(0x80001);
-        m->pnl01 = ehp_find(pack, "lp_pnl01_j.gim", 0);
-        m->pnl02 = ehp_find(pack, "lp_pnl02_j.gim", 0);
-        m->nmb01 = ehp_find(pack, "lp_pnl_nmb01_j.gim", 0);
-        m->nmb02 = ehp_find(pack, "lp_pnl_nmb02_j.gim", 0);
+        void *p1 = dd_pack_get(0x80001);
+
+        m->pnl01 = ehp_find(p1, "lp_pnl01_j.gim", 0);
+        m->pnl02 = ehp_find(p1, "lp_pnl02_j.gim", 0);
+        m->nmb01 = ehp_find(p1, "lp_pnl_nmb01_j.gim", 0);
+        m->nmb02 = ehp_find(p1, "lp_pnl_nmb02_j.gim", 0);
     } else {
         pack = dd_pack_get(0x80001);
         tmf = ehp_find(pack, "pnl_a00.tmf", 0);
@@ -138,7 +138,6 @@ void dd_lp_load(void)
         ehf_tex_or_flags(m->ehf, tmf);
     }
 }
-#endif
 
 void dd_lp_unload(void)
 {

@@ -3,7 +3,6 @@
 // @asm 0x0885731C-0x08857614
 // @asm 0x08857614-0x08857960
 // @asm 0x08857A40-0x08857C60
-// @asm 0x08857C60-0x08857CC8
 // @asm 0x08857DC0-0x0885809C
 // @rodata 0x08870D3C-0x08870DF0
 // @data 0x08877850-0x08877878
@@ -302,19 +301,13 @@ void lpc_update(void *o, DdLpCount *c)
 void lpc_update(void *o, DdLpCount *c);
 #endif
 
-#ifdef NON_MATCHING /* alocação de registradores/forma difere; não insistido */
 void lpc_digits_set(LpDigit *d, int value)
 {
     int i;
 
-    for (i = 0; i < 5; i++) {
-        lpc_digit_start(d, lpc_digit_of(value, i, i != 0), 0);
-        d++;
-    }
+    for (i = 0; i < 5; i++)
+        lpc_digit_start(&d[i], lpc_digit_of(value, i, i != 0), 0);
 }
-#else
-void lpc_digits_set(LpDigit *d, int value);
-#endif
 
 void lpc_digit_start(LpDigit *d, int next, int roll)
 {

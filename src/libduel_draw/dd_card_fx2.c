@@ -4,7 +4,6 @@
 // @asm 0x0881F46C-0x0881F60C
 // @asm 0x0881F704-0x0881F78C
 // @asm 0x0881FAF8-0x0881FB28
-// @asm 0x0881FDB4-0x0881FEC0
 // @data 0x088760B0-0x088760D0
 /* Effects played on field cards: summon/set beams, the target marks of graves and decks (shared by
    all their cards), damage/recovery and ATK/DEF change counters, destruction and the short lock of
@@ -471,13 +470,12 @@ void dd_counter_wait(float dt, DdTask *t, void *arg)
     }
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_counter(DdCard *card, int value, int uid)
 {
     DdCounter *c;
     DdTask t;
     DdTask *popup;
-    float pos[4];
+    float pos[4] __attribute__((aligned(16)));
 
     if (card != 0) {
         *(DdVec4 *)pos = *(DdVec4 *)((char *)card + 0x10);
@@ -493,12 +491,11 @@ void dd_counter(DdCard *card, int value, int uid)
     c->flag = 0x23;
     memset(&t, 0, sizeof(t));
     t.leave = func_08820938;
-    t.update = dd_counter_wait;
+    t.draw = (void (*)(DdTask *, void *))dd_counter_wait;
     t.arg = c;
     dd_task_add(&t);
     req_flag_set(0x23);
 }
-#endif
 
 /* stat counters of the other kinds (0 ATK, 1 level, 2 ..., 3 counters) */
 void dd_num_counter(DdCard *c, int delta, int kind)
