@@ -1,5 +1,4 @@
 // @range 0x08824DA8-0x0882647C
-// @asm 0x08825720-0x08825BBC
 // @asm 0x08825D7C-0x088262C8
 // @data 0x0883022C-0x08830230
 /* Deck choice of the duel setups (state 12 and the ad hoc lobby): the lists of the own deck and the
@@ -297,7 +296,6 @@ void tpad_accel(int on)
     }
 }
 
-#ifdef NON_MATCHING /* the se_play(0x6215) of an empty list branches to the shared return -1 with a nop delay slot */
 int tdl_deck_input(int type, int *dk, int *deck)
 {
     Title *t = &title;
@@ -408,9 +406,9 @@ int tdl_deck_input(int type, int *dk, int *deck)
                 return t->arg;
             }
             se_play(0x6215);
-            return -1;
+        } else {
+            se_play(0x6215);
         }
-        se_play(0x6215);
     } else if (trig & region_pick_value(1)) {
         tpad_accel(0);
         se_play(0x6214);
@@ -418,7 +416,6 @@ int tdl_deck_input(int type, int *dk, int *deck)
     }
     return -1;
 }
-#endif
 
 void *tdl_deck_draw(void *list)
 {

@@ -1,5 +1,4 @@
 // @range 0x0880C0F0-0x0880C998
-// @asm 0x0880C340-0x0880C3C8
 /* The message window of the title (tmsg): a system menu frame with up to three lines of text laid out
    by the font layer, the line positions and the text pagination. */
 #include "libtitle.h"
@@ -81,11 +80,10 @@ void tmsg_set_size(int size)
     d->title_font_size = size;
 }
 
-#ifdef NON_MATCHING /* o original guarda &tmsg em $s0 antes das chamadas; o mwcc dobra o endereço */
 void tmsg_set_text(unsigned short *text, int b)
 {
     MenuItemDef *const d = &tmsg.def;
-    TMsgWin *const m = &tmsg;
+    TMsgWin *m;
 
     d->show_title = b != 0;
     tmsg.u148 = 0;
@@ -94,13 +92,12 @@ void tmsg_set_text(unsigned short *text, int b)
     tmsg.u154 = 0;
     tmsg.u144 = 0;
     d->title = (unsigned short *)b;
-    tmsg.text = text;
+    (m = &tmsg)->text = text;
     tmsg_layout();
     tmsg_paginate();
     if (m->done == 0)
         tmsg_mark_done();
 }
-#endif
 
 void tmsg_mark_done(void)
 {

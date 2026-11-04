@@ -1,6 +1,5 @@
 // @range 0x08808B44-0x08809D2C
 // @asm 0x088090B8-0x088093C0
-// @asm 0x088093D4-0x0880945C
 // @rodata 0x0881C15C-0x0881C178
 /* Message window of the shop: a menu item that slides in and out, the text typed a few pixels per
    frame on up to three lines (speed from the options, held button to hurry), pages and the blinking
@@ -270,12 +269,11 @@ void shop_msgwin_set_size(int size)
     d->title_font_size = size;
 }
 
-#ifdef NON_MATCHING /* o original guarda &shop_msg em s0 antes das chamadas e relê o estado por ele; o mwcc rematerializa o endereço */
 /* shows `text` (UCS-2) from its start; `title` nonzero shows the title bar */
 void shop_msg_set(unsigned short *text, int title)
 {
     MenuItemDef *d = &shop_msg.def;
-    ShopMsgWin *const m = &shop_msg;
+    ShopMsgWin *m;
 
     d->show_title = title != 0;
     shop_msg.done = 0;
@@ -284,13 +282,12 @@ void shop_msg_set(unsigned short *text, int title)
     shop_msg.shown = 0;
     shop_msg.page = 0;
     d->title = (unsigned short *)title;
-    shop_msg.text = text;
+    (m = &shop_msg)->text = text;
     shop_msg_layout();
     shop_msg_measure();
     if (m->state == 0)
         shop_msgwin_open();
 }
-#endif
 
 void shop_msgwin_open(void)
 {
