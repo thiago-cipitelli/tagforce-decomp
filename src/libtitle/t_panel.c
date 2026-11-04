@@ -76,7 +76,7 @@ void ttab_init(TTab *t)
     t->draw = 0;
 }
 
-#ifdef NON_MATCHING /* cópia de p->n para o divisor sai com andi no original; registradores trocados */
+#ifdef NON_MATCHING /* 2 palavras: o original põe o li s0,1 do ternário no delay slot do beqz e o move s3 (t) antes; o mwcc inverte */
 void tpanel_init(TPanel *p, void *heap)
 {
     TTab *t;
@@ -92,11 +92,9 @@ void tpanel_init(TPanel *p, void *heap)
     p->h = 218;
     p->cur = 0;
     p->n = 2;
-    t = p->tab;
     b = &p->box;
-    n = 1;
-    if (p->n != 0)
-        n = p->n;
+    t = p->tab;
+    n = p->n ? p->n : 1;
     for (i = 0; i < 4; i++, t++) {
         ttab_init(t);
         if (i == 0) {

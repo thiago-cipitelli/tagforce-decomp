@@ -1,8 +1,6 @@
 // @range 0x088117B8-0x08812C60
 // @asm 0x0881189C-0x088121E0
-// @asm 0x08812450-0x08812550
 // @asm 0x0881259C-0x08812754
-// @asm 0x088129D4-0x08812C60
 /* Opening the bought packs one after the other: the pack model flies in and turns, it bursts, the
    cards fly out and turn over one by one (names drawn under them, gold for the rare ones), and the
    cards are added to the bought list (copies of the same card are counted) before the list opens. */
@@ -41,6 +39,7 @@ void model_draw(Model *m, ModelDrawOpts *o);
 void model_hook(Model *m, int which, void *fn);
 Mat4 *mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v);
 Mat4 *mat4_mul_rot_y(Mat4 *out, Mat4 *m, float a);
+Mat4 *mat4_mul_rot_x(Mat4 *out, Mat4 *m, float a);
 void mat4_mul(Mat4 *r, Mat4 *a, Mat4 *b);
 void vec4_copy(Vec4 *out, Vec4 *v);
 void vec4_sub(Vec4 *out, Vec4 *a, Vec4 *b);
@@ -300,21 +299,19 @@ void shop_result_update(void)
     shop.state = 9;
 }
 
-#ifdef NON_MATCHING /* mesma forma; o contador, o deslocamento da carta e o ponteiro dos ids ficam em s4/s3/s2 no original */
 /* opens one pack of the current kind */
 void shop_open_next(void)
 {
     unsigned short ids[10];
-    unsigned short *p;
     int i;
 
     shop_pack_open(shop_open->pack.kind, ids);
     shop_open->n_cards = shop_pack_n_cards(shop_open->pack.kind);
-    for (i = 0, p = ids; i < shop_open->n_cards; i++, p++) {
+    for (i = 0; i < shop_open->n_cards; i++) {
         ShopOpenCard *c = &shop_open->cards[i];
         unsigned short *r = &c->id;
-        r[0] = *p;
-        r[1] = shop_ui_sort_key(*p, shop_str_get(0xC003));
+        r[0] = ids[i];
+        r[1] = shop_ui_sort_key(ids[i], shop_str_get(0xC003));
         r[2] = shop_open->pack.kind;
         r[3] = 1;
         c->state = 0;
@@ -322,7 +319,6 @@ void shop_open_next(void)
     shop_open->opened++;
     shop_open_add();
 }
-#endif
 
 /* next kind with packs bought after `kind`, -1 if none */
 int shop_open_next_kind(int kind)
@@ -428,14 +424,13 @@ void shop_open_draw_bg(void)
     model_draw(m, &o);
 }
 
-#ifdef NON_MATCHING /* matriz e vetores na pilha em outra ordem */
 /* the pack turning in front of the camera; it bursts once its animation reaches frame 40 */
 void shop_open_draw_pack(ShopOpenPack *p)
 {
-    Vec4 v;
-    Mat4 m;
-    float dt[4];
+    Mat4 m __attribute__((aligned(16)));
+    Vec4 v __attribute__((aligned(16)));
     ModelDrawOpts o;
+    float dt[4];
     Model *mdl;
 
     memset(&o, 0, sizeof(o));
@@ -451,7 +446,7 @@ void shop_open_draw_pack(ShopOpenPack *p)
     v.x = 0.0f;
     v.z = 0.0f;
     mat4_translate(&m, &m, &v);
-    mat4_mul_rot_y(&m, &m, p->rot);
+    mat4_mul_rot_x(&m, &m, p->rot);
     v.y *= -1.0f;
     mat4_translate(&m, &m, &v);
     vec4_copy(&v, &p->pos);
@@ -468,8 +463,8 @@ void shop_open_draw_pack(ShopOpenPack *p)
 /* one card: model with the card picture as texture, and its glow once shown */
 void shop_open_draw_card(ShopOpenCard *c)
 {
-    Vec4 v;
-    Mat4 m;
+    Mat4 m __attribute__((aligned(16)));
+    Vec4 v __attribute__((aligned(16)));
     ModelDrawOpts o;
     Model *mdl;
 
@@ -488,11 +483,10 @@ void shop_open_draw_card(ShopOpenCard *c)
     model_update(mdl, 0);
     model_draw(mdl, &o);
     if (c->state == 3 && card_get_prop6_hi(c->id) != 0) {
-        if (shop_card_glow(c->timer, &m, card_get_prop6_hi(c->id), shop_open->speed,
+        if (shop_card_glow(c->timer, &m, (unsigned short)card_get_prop6_hi(c->id), shop_open->speed,
                            (char *)sceGeEdramGetAddr() + 0x160000)) {
             c->state++;
             c->timer = 0;
         }
     }
 }
-#endif

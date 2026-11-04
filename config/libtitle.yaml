@@ -32,8 +32,6 @@ segments:
       - [0x2314, c, t_state]
       - [0x2F50, c, t_update]
       - [0x3CF8, c, t_gfx]
-      - [0x3DE0, asm, t_gfx_asm_08807D80]
-      - [0x3EA4, c, t_gfx]
       - [0x4DA8, c, t_tmenu]
       - [0x4F60, asm, t_tmenu_asm_08808F00]
       - [0x553C, c, t_tmenu]
