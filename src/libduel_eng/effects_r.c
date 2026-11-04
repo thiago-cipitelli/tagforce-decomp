@@ -74,7 +74,7 @@ int duel_088C5510(unsigned int p, int n, int f);
 void duel_088CC178(unsigned int p, int z, unsigned int v);
 int duel_slot_ef098(unsigned int p, int z, int id);
 void duel_088CA270(unsigned int p, unsigned short a, unsigned short b);
-void duel_088C8B70();
+void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t);
 void duel_088C77EC(unsigned int p, int uid);
 int card_is_monster(int id);
 int card_get_atk(int id);
@@ -643,7 +643,7 @@ int duel_0888293C(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* registradores e ordem dos blocos */
+#ifdef NON_MATCHING /* faltava o 3º argumento (loc) de duel_088C8B70; registradores e ordem dos blocos */
 int duel_08882B04(DuelAct *a)
 {
     unsigned int loc;
@@ -678,7 +678,7 @@ int duel_08882B04(DuelAct *a)
             z = (unsigned short)loc >> 8 & 0xFF;
             if (a->uid == CARD_UID(duel.players[p].field[y].card) && duel.players[loc & 1].field[z].card.id != 0
                 && duel.players[loc & 1].field[z].faceup != 0 && p == (loc & 0xFF)) {
-                duel_088C8B70(p, p | y << 8);
+                duel_088C8B70(p, p | y << 8, loc);
                 return 0x7E;
             }
         }

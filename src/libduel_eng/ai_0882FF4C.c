@@ -1,7 +1,5 @@
 // @range 0x0882FF4C-0x08830E94
 // @asm 0x08830030-0x088302BC
-// @asm 0x0883078C-0x088309F8
-// @asm 0x08830CDC-0x08830DC0
 /* Questions asked during an event (duel_event.c): the step machines (duel_ev_unk) that let the
    player of the event (duel_w_08919670) pick zones or answer, and their zone filters. The handlers
    take (player, card id, argument) = (duel_w_08919670, duel_ev_data[0], duel_ev_data[1]); the
@@ -42,7 +40,7 @@ int duel_08809B50(unsigned int p, unsigned short id, unsigned short a);
 DuelCard *duel_0884C7CC(void);
 void duel_0884C588(unsigned int p, int a, int id, int b);
 int duel_0880B448(unsigned int p, int id);
-int duel_0880BD00(void);
+unsigned int duel_0880BD00(unsigned int p, int id, int x); /* x is unsigned short in the definition; passed unmasked here */
 int duel_0884AF34(int a, int b);
 int duel_0884AF48(int a, int b, int c);
 int duel_088302BC(unsigned int p, int z, int i);
@@ -284,7 +282,6 @@ int duel_08830728(unsigned int p, int z, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* os registradores a1/a2 das cargas de duel_w_08919650/54 saem trocados */
 /* Pick a zone with the filter of the card (the filter is put in the third argument). */
 int duel_0883078C(unsigned int p, int id, int (*fn)())
 {
@@ -337,8 +334,9 @@ int duel_0883078C(unsigned int p, int id, int (*fn)())
         return 0;
     case 1:
         if (duel_08835AC0() != 0) {
-            duel_w_0891968C = (unsigned char)duel_w_0891964C | (unsigned char)(duel_w_08919650 + duel_w_08919654) << 8;
-            duel_h_0891968E[0] = duel_zone_card_uid(duel_w_0891964C, duel_w_08919650, duel_w_08919654);
+            /* duel_w_0891964C/50/54 are one array in the original: [1] is duel_w_08919650 */
+            duel_w_0891968C = (unsigned char)duel_w_0891964C | (unsigned char)((&duel_w_0891964C)[1] + duel_w_08919654) << 8;
+            duel_h_0891968E[0] = duel_zone_card_uid(duel_w_0891964C, (&duel_w_0891964C)[1], duel_w_08919654);
             duel_ev_unk++;
             return 0;
         }
@@ -348,7 +346,6 @@ int duel_0883078C(unsigned int p, int id, int (*fn)())
     return 1;
 }
 
-#endif
 
 /* Pick a card of the hand (by the computer: duel_08809B50); 0x1365, 0x1990, 0x1488, 0x133B show a
    message first. */
@@ -418,19 +415,18 @@ int duel_08830B7C(unsigned int p, int id)
     return 1;
 }
 
-#ifdef NON_MATCHING /* o original guarda os bytes do argumento em t0/t1 e o laço da resposta tem outra forma */
 /* Pick a number between the bytes of the argument; the answer is also given as its lowest bit. */
 int duel_08830CDC(unsigned int p, int id, int arg)
 {
-    int hi = (unsigned char)((arg & 0xFFFF) >> 8);
     int lo = arg & 0xFF;
     unsigned int r;
+    int hi = (unsigned char)((arg & 0xFFFF) >> 8);
     int k;
 
     switch (duel_ev_unk) {
     case 0:
         if (duel_player_type[p] == 1) {
-            duel_w_08919624 = duel_0880BD00();
+            duel_w_08919624 = duel_0880BD00(p, id, arg);
         } else {
             duel_0884AF48(0xF2, lo, hi);
         }
@@ -439,14 +435,8 @@ int duel_08830CDC(unsigned int p, int id, int arg)
     case 1:
         r = duel_w_08919624;
         k = 1;
-        if (!(r & 2) != 0) {
+        while (!(r & 1 << k)) {
             k++;
-            for (;;) {
-                if (!(r & 1 << k) == 0) {
-                    break;
-                }
-                k++;
-            }
         }
         duel_w_0891968C = r;
         duel_h_0891968E[0] = k;
@@ -455,7 +445,6 @@ int duel_08830CDC(unsigned int p, int id, int arg)
     return 1;
 }
 
-#endif
 
 /* Shows the deck of the opponent (0xF9, then duel_0884C588 kind 2). */
 int duel_08830DC0(unsigned int p)
