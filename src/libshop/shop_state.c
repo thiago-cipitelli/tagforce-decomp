@@ -1,7 +1,6 @@
 // @range 0x08805AB4-0x08807CAC
 // @asm 0x088061F8-0x08806634
 // @asm 0x08806CC4-0x088074FC
-// @asm 0x08807810-0x08807914
 // @asm 0x088079A8-0x08807CAC
 // @rodata 0x0881C0E8-0x0881C124
 // @data 0x0881C900-0x0881C970
@@ -682,19 +681,17 @@ void shop_list_page(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original carrega n_items antes de top/cursor e testa o índice mascarado e o inteiro em registradores diferentes */
 /* marks/unmarks the card under the cursor */
 void shop_list_mark(void)
 {
     PadState *pad = pad_get();
     unsigned int b = pad->b.trig;
-    unsigned int i;
+    int i;
     unsigned short id;
 
     if (b & region_pick_value(1)) {
-        i = (unsigned short)(shop.top + shop.cursor);
-        if (i < shop.n_items) {
-            id = i < shop.n_items ? shop.items[shop.order[i]].id : 0;
+        if ((unsigned short)(i = shop.top + shop.cursor) < shop.n_items) {
+            id = shop_item_id_at(i);
             if (inv_get_flag7(id))
                 inv_set_flag7(id, 0);
             else
@@ -706,7 +703,6 @@ void shop_list_mark(void)
         se_play(0x6216);
     }
 }
-#endif
 
 void shop_list_jump(int back)
 {

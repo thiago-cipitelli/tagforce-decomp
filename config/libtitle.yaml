@@ -57,7 +57,7 @@ segments:
       - [0xC738, c, t_panel]
       - [0xC900, asm, t_panel_asm_088108A0]
       - [0xCB3C, c, t_panel]
-      - [0xCD3C, asm, t_panel_asm_08810CDC]
+      - [0xD09C, asm, t_panel_asm_0881103C]
       - [0xD6B8, c, t_panel]
       - [0xDAEC, asm, t_panel_asm_08811A8C]
       - [0xE01C, c, t_panel]

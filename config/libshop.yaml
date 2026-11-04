@@ -35,8 +35,6 @@ segments:
       - [0x2694, c, shop_state]
       - [0x2D24, asm, shop_state_asm_08806CC4]
       - [0x355C, c, shop_state]
-      - [0x3870, asm, shop_state_asm_08807810]
-      - [0x3974, c, shop_state]
       - [0x3A08, asm, shop_state_asm_088079A8]
       - [0x3D0C, c, shop_clerk]
       - [0x4BA4, c, shop_msgwin]
