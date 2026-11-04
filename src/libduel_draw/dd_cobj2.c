@@ -1,6 +1,6 @@
 // @range 0x0880C48C-0x0880D31C
 // @asm 0x0880C48C-0x0880C640
-// @asm 0x0880C758-0x0880C9BC
+// @asm 0x0880C91C-0x0880C9BC
 // @asm 0x0880CB44-0x0880CBF4
 // @asm 0x0880CC64-0x0880CD38
 // @asm 0x0880CE60-0x0880D028
@@ -95,13 +95,12 @@ void dd_cobj_set_card(DdCobj *o, unsigned short card, unsigned short uid)
     o->card = card;
 }
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
 /* new card object at `at` (token...) */
 void dd_cobj_spawn(DdPos at, unsigned short card, unsigned short uid)
 {
     DdCobj *o = dd_cobj_alloc();
-    DdXyzw rot;
     DdXyzw pos;
+    DdXyzw rot;
 
     if (o == 0)
         return;
@@ -122,7 +121,6 @@ void dd_cobj_spawn(DdPos at, unsigned short card, unsigned short uid)
     o->dur = 0.0f;
     dd_list_add_tail(o, dd_zone_list(at.player, at.zone));
 }
-#endif
 
 #ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
 /* gives the object at `at` back to the free list */

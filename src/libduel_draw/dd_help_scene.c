@@ -1,8 +1,6 @@
 // @range 0x08863998-0x088649D4
 // @asm 0x08863998-0x08863C1C
 // @asm 0x08863C1C-0x08863F74
-// @asm 0x088640B4-0x08864154
-// @asm 0x0886452C-0x088645FC
 // @asm 0x088645FC-0x0886492C
 // @data 0x08878EA0-0x0887965C
 // @rodata 0x088727B4-0x08872874
@@ -391,26 +389,27 @@ int hscene_term(void)
 }
 
 /* 3 quit (START, or cancel on the index), 1 open the category window (square) */
-#ifdef NON_MATCHING /* alocação de registradores/ordem dos testes difere; não insistido */
 int hscene_input(void)
 {
+    HelpScene *s = &help_scene;
     int r = 0;
     PadState *pad = pad_get();
     unsigned int trig = pad->b.trig;
 
     if (trig & 8)
         r = 3;
-    if (help_scene.focus == 1) {
-        if (trig & region_pick_value(0))
+    switch (s->focus) {
+    case 0:
+        break;
+    case 1:
+        if (trig & (unsigned short)region_pick_value(1))
             r = 3;
         else if (trig & 0x1000)
             r = 1;
+        break;
     }
     return r;
 }
-#else
-int hscene_input(void);
-#endif
 
 void hscene_load_index(int category, int reset)
 {
@@ -525,7 +524,6 @@ int hscene_index_from_cat(int category)
     return category - help_scene.cat_base;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores/ordem dos testes difere; não insistido */
 void hguide_init(void *heap, void *frame_gim, void *pack)
 {
     MenuItemDef *d;
@@ -534,8 +532,8 @@ void hguide_init(void *heap, void *frame_gim, void *pack)
     help_guide.heap = heap;
     help_guide.frame_gim = frame_gim;
     help_guide.pack = pack;
-    menu_init(&help_guide.menu, heap);
     d = &help_guide.def;
+    menu_init(&help_guide.menu, heap);
     memset(d, 0, sizeof(*d));
     d->visible = 1;
     d->x = 5;
@@ -546,9 +544,6 @@ void hguide_init(void *heap, void *frame_gim, void *pack)
     d->style = 0;
     menu_add_item(&help_guide.menu, d);
 }
-#else
-void hguide_init(void *heap, void *frame_gim, void *pack);
-#endif
 
 #define GUIDE_Y(base) (((region_get() == 0 ? 0 : 5) + (base)) << 6)
 

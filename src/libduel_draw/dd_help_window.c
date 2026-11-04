@@ -1,7 +1,6 @@
 // @range 0x08861238-0x088621A0
-// @asm 0x08861494-0x08861638
+// @rodata 0x08872794-0x088727B4
 // @asm 0x088617A8-0x088617E4
-// @asm 0x08861DD0-0x08861F24
 // @asm 0x08861F24-0x08862180
 /* Duel help window: a framed list of help pages (text entries first..last of a table pack),
    opened with an animation, moved with the d-pad, closed by confirm/cancel; plus the scrolling
@@ -103,7 +102,6 @@ void help_reset(int first, int last, int initial)
     menu_add_item(&help_win.menu, d);
 }
 
-#ifdef NON_MATCHING /* só alocação de registradores difere */
 void help_update(void)
 {
     HelpWin *w = &help_win;
@@ -131,13 +129,13 @@ void help_update(void)
         case 0:
             break;
         case 1:
-            w->state = 4;
             l->active = 1;
+            w->state = 4;
             break;
         case 2:
             l->active = 1;
-            w->state = 5;
             l->cursor = w->initial;
+            w->state = 5;
             break;
         }
         break;
@@ -156,9 +154,6 @@ void help_update(void)
         break;
     }
 }
-#else
-void help_update(void);
-#endif
 
 void *help_draw(void *dl)
 {
@@ -324,7 +319,6 @@ void list_reset(DdList *l)
 }
 
 /* input, then scrolls so the cursor item is inside the window and sums the item heights */
-#ifdef NON_MATCHING /* só alocação de registradores difere */
 void list_layout(DdList *l)
 {
     int w = l->w - l->pad_l - l->pad_r;
@@ -336,8 +330,8 @@ void list_layout(DdList *l)
     for (i = 0; i < l->cursor; i++)
         above += l->item_h(i, w);
     cur = above + l->item_h(l->cursor, w);
-    top = l->y + l->pad_t;
     end = l->pad_t + (l->scroll + (l->y + above));
+    top = l->y + l->pad_t;
     if (end < top)
         l->scroll += (short)(top - end);
     end = l->pad_t + (l->scroll + (l->y + cur));
@@ -348,9 +342,6 @@ void list_layout(DdList *l)
     for (i = 0; i < l->count; i++)
         l->total += l->item_h(i, w);
 }
-#else
-void list_layout(DdList *l);
-#endif
 
 #ifdef NON_MATCHING /* só alocação de registradores difere */
 void *list_draw(void *dl, DdList *l)

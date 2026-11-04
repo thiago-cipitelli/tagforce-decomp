@@ -1,7 +1,8 @@
 // @range 0x0880E45C-0x0880FCFC
 // @rodata 0x0886FE64-0x0886FE80
 // @data 0x08874EA0-0x08874F70
-// @asm 0x0880E788-0x0880FAC4
+// @asm 0x0880E788-0x0880F4D4
+// @asm 0x0880F6C8-0x0880FAC4
 /* Drawing of the field and of the card objects: the layer setup, the field sheet model, the
    deck/extra/graveyard piles (a pile model with the top card on it and the count), every card
    object with its picture (models with texture hooks), the counters of the monster zones. */
@@ -37,6 +38,7 @@ unsigned int *dl_ambient_light(unsigned int *list, unsigned int color);
 void *dl_ambient_color(void *list, unsigned int color);
 void *dl_set_tex_filter(void *list, int min, int mag);
 void *dl_tex_func(void *list, int func, int comp);
+void *dl_depth_func(void *list, int func);
 unsigned int *dl_tex_wrap(unsigned int *list, int u, int v);
 unsigned int *dl_tex_offset(unsigned int *list, float u, float v);
 unsigned int *dl_tex_scale(unsigned int *list, float u, float v);
@@ -272,19 +274,25 @@ void dd_board_cards(void)
                     }
                 }
                 list = dl_enable(dl_select_layer(4, 0), 1);
-                list = dl_tex_func(list, at.zone == 11 ? 1 : 7, 0);
+                if (at.zone == 11)
+                    list = dl_depth_func(list, 1);
+                else
+                    list = dl_depth_func(list, 7);
                 dl_set_list(list);
                 if (dd_board_card_draw(o, p, at.zone, i))
                     drawn[p] |= 1 << at.zone;
-                dl_set_list(dl_tex_func(dl_select_layer(4, 0), 7, 0));
+                list = dl_select_layer(4, 0);
+                dl_depth_func(list, 7);
+                dl_set_list(list);
             }
             if (cur_o) {
                 dd_cursor_get(&cur);
-                list = dl_tex_func(dl_enable(dl_select_layer(4, 0), 1), 1, 0);
-                dl_set_list(list);
+                dl_set_list(dl_depth_func(dl_enable(dl_select_layer(4, 0), 1), 1));
                 if (dd_board_card_draw(cur_o, p, 11, cur.idx))
                     drawn[p] |= 0x800;
-                dl_set_list(dl_tex_func(dl_select_layer(4, 0), 7, 0));
+                list = dl_select_layer(4, 0);
+                dl_depth_func(list, 7);
+                dl_set_list(list);
             }
         }
     }
@@ -367,6 +375,7 @@ int dd_board_card_draw(DdCobj *o, int p, int zone, int i)
         dd_counter_sel(&o->pos, 0);
     return hilite;
 }
+#endif
 
 /* overlays of the cards on the field (attack/defense position markers...) */
 void dd_board_marks(void)
@@ -388,8 +397,8 @@ void dd_board_marks(void)
     if (gim)
         list = gim_set_texture(list, gim);
     for (p = 0; p < 2; p++) {
-        for (z = 0; z < 5; z++) {
-            at.player = p;
+        at.player = p;
+        for (z = 0; z <= 4; z++) {
             at.zone = z;
             at.idx = 0;
             at.f14 = dv_zone_faceup(p, z, 0);
@@ -404,6 +413,7 @@ void dd_board_marks(void)
     dl_set_list(list);
 }
 
+#ifdef NON_MATCHING /* funções grandes de desenho; forma não reproduzida */
 /* the pile model with n cards and the top card */
 void dd_board_pile(float scale, DdXyzw *pos, DdXyzw *rot, int n, int card)
 {

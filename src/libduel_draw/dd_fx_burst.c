@@ -1,5 +1,4 @@
 // @range 0x08844024-0x08846348
-// @asm 0x08844024-0x088440A8
 // @asm 0x088441E4-0x08845110
 // @asm 0x08845168-0x08846348
 /* Effects 78-81: a burst of light on the card model, fixed where the model's node was when it starts:
@@ -11,7 +10,6 @@ int dd_burst_start(DdFxSlot *s, int a, int b);
 int dd_burst2_start(DdFxSlot *s, int a, int b);
 
 /* variant passed to dd_fx78_start: 1 for kinds 13-18 and 40 */
-#ifdef NON_MATCHING /* o teste do 17 sai com beql em vez de beq (cópia do corpo de 18) */
 int dd_fx78_arg(DdFxOwner *o)
 {
     int type;
@@ -20,10 +18,7 @@ int dd_fx78_arg(DdFxOwner *o)
 
     dd_pair_get(o, &type, &sub);
     switch (type) {
-    case 40: case 13: case 14: case 15: case 16: case 17:
-        r = 1;
-        break;
-    case 18:
+    case 40: case 13: case 14: case 15: case 16: case 17: case 18:
         r = 1;
         break;
     default:
@@ -32,7 +27,6 @@ int dd_fx78_arg(DdFxOwner *o)
     }
     return r;
 }
-#endif
 
 int dd_fx78_start(DdFxSlot *s, int variant, int a, int b)
 {
@@ -233,8 +227,12 @@ int dd_burst_update(int phase, DdBurstFx *d)
         sc = dd_ease_sin(d->t, d->end, 1) * 0.3f + 0.7f;
         dd_scale3(sc, sc, 0.0f);
         list = dl_ambient_light(list, (unsigned int)(out * 255.0f) << 24 | 0xFFFFFF);
-        list = draw_array(list, 4, 0x99C, 130, d->idx_a, d->ring);
-        list = draw_array(list, 4, 0x99C, 130, d->idx_b, d->ring);
+        {
+            int k;
+
+            for (k = 0; k < 2; k++)  /* idx_a, then idx_b right after it */
+                list = draw_array(list, 4, 0x99C, 130, d->idx_a + k * 130, d->ring);
+        }
         mtx_pop();
         dl_set_list(list);
     }
@@ -520,8 +518,12 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
         sc = dd_ease_lin(d->t, d->end) * 0.7f + 0.3f;
         dd_scale3(sc, sc, 0.0f);
         list = dl_ambient_light(list, (unsigned int)(out * 255.0f) << 24 | 0xFFFFFF);
-        list = draw_array(list, 4, 0x99C, 130, d->idx_a, d->ring);
-        list = draw_array(list, 4, 0x99C, 130, d->idx_b, d->ring);
+        {
+            int k;
+
+            for (k = 0; k < 2; k++)  /* idx_a, then idx_b right after it */
+                list = draw_array(list, 4, 0x99C, 130, d->idx_a + k * 130, d->ring);
+        }
         mtx_pop();
         dl_set_list(list);
     }

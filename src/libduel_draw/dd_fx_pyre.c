@@ -247,8 +247,14 @@ int dd_pyre_update(int phase, DdPyreFx *d)
         list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
         list = dd_depth_enable(list, 0, 1);
         list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
-        list = dd_tex_pack(list, d->red == 0 ? 16 : 13);
-        list = dl_color(list, d->red == 0 ? 0x808CD2FF : 0xB28282FF);
+        if (d->red == 0)
+            list = dd_tex_pack(list, 16);
+        else
+            list = dd_tex_pack(list, 13);
+        if (d->red == 0)
+            list = dl_color(list, 0x808CD2FF);
+        else
+            list = dl_color(list, 0xB28282FF);
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();

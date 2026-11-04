@@ -293,12 +293,15 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
         mat3_from_euler(m3, m3, fx->rot);
         for (i = 0; i < 16; i++) {
             DdShatterSpark *sp = &fx->spark[i];
+            float sa, ca;
 
             a = (float)i * 6.2831855f / 16.0f;
             sp->uv = DD_RAND(r) % 4;
-            vec3_set(p, sinf(a) * 30.0f, 0.0f, cosf(a) * 30.0f);
+            sa = sinf(a);
+            ca = cosf(a);
+            vec3_set(p, sa * 30.0f, 0.0f, ca * 30.0f);
             mat3_transform_vec3(sp->base, m3, p);
-            vec3_set(p, sinf(a) * 40.0f, 0.0f, cosf(a) * 40.0f);
+            vec3_set(p, sa * 40.0f, 0.0f, ca * 40.0f);
             dd_rand_vec(r, d, 35.0f);
             vec3_add(p, p, d);
             mat3_transform_vec3(sp->dir, m3, p);

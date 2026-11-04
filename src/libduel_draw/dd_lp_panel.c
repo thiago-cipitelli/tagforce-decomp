@@ -1,6 +1,5 @@
 // @range 0x08855B10-0x08857100
-// @asm 0x08855B10-0x08855C50
-// @asm 0x08855C64-0x08855E90
+// @data 0x08877730-0x088777B4
 // @asm 0x08855E90-0x08856278
 // @asm 0x088562C4-0x0885650C
 // @asm 0x088565F8-0x088566EC
@@ -11,6 +10,7 @@
    showing the two LP (with "*" padding or "?" for hidden values), the 2D camera it is drawn
    with, and the shine of its border cycling through 9 colours. */
 #include "libduel_draw.h"
+#include "allegrex.h"
 
 void *memset(void *, int, unsigned int);
 int region_get(void);
@@ -26,7 +26,7 @@ void *dl_blend_func(void *list, int op, int src, int dst, unsigned int srcfix, u
 void *dl_enable(void *list, int state);
 void *dl_disable(void *list, int state);
 void *dl_tex_func(void *list, int func, int comp);
-void *dl_set_color(void *list, unsigned int color);
+void *dl_ambient_color(void *list, unsigned int color);
 void *dl_tex_offset(float u, float v, void *list);
 void *dl_clear_depth(void *list, unsigned int z);
 void *dl_clear(void *list, unsigned int flags);
@@ -115,7 +115,6 @@ extern DdLpMgr dd_lp;
 
 unsigned int dd_lp_shine(int i, unsigned int frame);
 
-#ifdef NON_MATCHING /* o original guarda o tmf num $s antes das outras buscas; ordem dos registradores diferente */
 void dd_lp_load(void)
 {
     DdLpMgr *m = &dd_lp;
@@ -124,11 +123,12 @@ void dd_lp_load(void)
 
     memset(m, 0, sizeof(*m));
     if (region_get() == 0) {
-        pack = dd_pack_get(0x80001);
-        m->pnl01 = ehp_find(pack, "lp_pnl01_j.gim", 0);
-        m->pnl02 = ehp_find(pack, "lp_pnl02_j.gim", 0);
-        m->nmb01 = ehp_find(pack, "lp_pnl_nmb01_j.gim", 0);
-        m->nmb02 = ehp_find(pack, "lp_pnl_nmb02_j.gim", 0);
+        void *p1 = dd_pack_get(0x80001);
+
+        m->pnl01 = ehp_find(p1, "lp_pnl01_j.gim", 0);
+        m->pnl02 = ehp_find(p1, "lp_pnl02_j.gim", 0);
+        m->nmb01 = ehp_find(p1, "lp_pnl_nmb01_j.gim", 0);
+        m->nmb02 = ehp_find(p1, "lp_pnl_nmb02_j.gim", 0);
     } else {
         pack = dd_pack_get(0x80001);
         tmf = ehp_find(pack, "pnl_a00.tmf", 0);
@@ -138,30 +138,23 @@ void dd_lp_load(void)
         ehf_tex_or_flags(m->ehf, tmf);
     }
 }
-#endif
 
 void dd_lp_unload(void)
 {
     memset(&dd_lp, 0, sizeof(dd_lp));
 }
 
-#ifdef NON_MATCHING /* contagem de dígitos e conversões float com outra alocação */
 /* Counts the LP shown at (x, y) from `from` to `to`. */
 void dd_lp_count(int x, int y, int from, int to)
 {
+    DdLpMgr *const m = &dd_lp;
     DdLpCount *c;
     DdObj desc;
     int na;
     int nb;
 
-    if (from < 0)
-        from = 0;
-    if (from > 99999)
-        from = 99999;
-    if (to < 0)
-        to = 0;
-    if (to > 99999)
-        to = 99999;
+    from = ALLEGREX_MIN(ALLEGREX_MAX(from, 0), 99999);
+    to = ALLEGREX_MIN(ALLEGREX_MAX(to, 0), 99999);
     c = dd_alloc(sizeof(DdLpCount));
     c->x = x;
     c->y = y;
@@ -175,8 +168,6 @@ void dd_lp_count(int x, int y, int from, int to)
         c->sx = (float)x - 64.0f;
         c->sy = (float)y - 48.0f;
     } else {
-        na = 0;
-        nb = 0;
         c->sx = (float)x - 92.0f;
         c->sy = (float)y - 61.0f;
         c->speed = 8000;
@@ -184,14 +175,16 @@ void dd_lp_count(int x, int y, int from, int to)
         c->alpha = 1.0f;
         c->d1 = 0.01f;
         c->d2 = 0.02f;
+        na = 0;
+        nb = 0;
         for (; to > 0; to /= 10)
             na++;
         for (; from > 0; from /= 10)
             nb++;
-        if (na < 5 && nb < 5)
-            c->wide = 0;
-        else
+        if (na >= 5 || nb >= 5)
             c->wide = 1;
+        else
+            c->wide = 0;
     }
     lpc_digits_set(c->digits, c->from);
     memset(&desc, 0, sizeof(desc));
@@ -199,14 +192,15 @@ void dd_lp_count(int x, int y, int from, int to)
     desc.update = lpc_update;
     desc.free = lpc_free;
     desc.data = c;
-    dd_lp.obj = dd_task_add(&desc);
+    m->obj = dd_task_add(&desc);
 }
-#endif
 
-#ifdef NON_MATCHING /* dois laços de dígitos com region_get por iteração; alocação diferente */
+#ifdef NON_MATCHING /* ALLEGREX_MIN/MAX e m = &dd_lp aplicados (200 palavras): o original mantém lp0/lp1 em $s e
+                       guarda y e m na pilha; o mwcc guarda o lp limitado */
 /* Shows the two LP at (x, y); a negative value shows -value "?" digits. */
 void dd_lp_show(int x, int y, int lp0, int lp1)
 {
+    DdLpMgr *const m = &dd_lp;
     int n0 = 0;
     int n1 = 0;
     DdLpShow *s;
@@ -233,21 +227,15 @@ void dd_lp_show(int x, int y, int lp0, int lp1)
         }
         s->lp[0] = lp0;
     } else {
-        if (lp0 < 0)
-            lp0 = 0;
-        if (lp0 > 99999)
-            lp0 = 99999;
+        lp0 = ALLEGREX_MIN(ALLEGREX_MAX(lp0, 0), 99999);
         for (i = 0, v = lp0; i < 5; i++) {
             show = 0;
             if (region_get() == 0) {
-                if (v > 0)
+                if (v > 0 || i == 0)
                     show = 1;
-                else if (i == 0)
+            } else {
+                if (v > 0 || i < 4)
                     show = 1;
-            } else if (v > 0) {
-                show = 1;
-            } else if (i < 4) {
-                show = 1;
             }
             if (show) {
                 n0++;
@@ -272,21 +260,15 @@ void dd_lp_show(int x, int y, int lp0, int lp1)
         }
         s->lp[1] = lp1;
     } else {
-        if (lp1 < 0)
-            lp1 = 0;
-        if (lp1 > 99999)
-            lp1 = 99999;
+        lp1 = ALLEGREX_MIN(ALLEGREX_MAX(lp1, 0), 99999);
         for (i = 0, v = lp1; i < 5; i++) {
             show = 0;
             if (region_get() == 0) {
-                if (v > 0)
+                if (v > 0 || i == 0)
                     show = 1;
-                else if (i == 0)
+            } else {
+                if (v > 0 || i < 4)
                     show = 1;
-            } else if (v > 0) {
-                show = 1;
-            } else if (i < 4) {
-                show = 1;
             }
             if (show) {
                 n1++;
@@ -304,21 +286,21 @@ void dd_lp_show(int x, int y, int lp0, int lp1)
     } else {
         s->sx = (float)x - 92.0f;
         s->sy = (float)y - 61.0f;
-        if (n0 < 5)
-            s->wide[0] = 0;
-        else
+        if (n0 >= 5)
             s->wide[0] = 1;
-        if (n1 < 5)
-            s->wide[1] = 0;
         else
+            s->wide[0] = 0;
+        if (n1 >= 5)
             s->wide[1] = 1;
+        else
+            s->wide[1] = 0;
     }
     memset(&desc, 0, sizeof(desc));
     desc.draw = lps_draw;
     desc.update = lps_update;
     desc.free = lps_free;
     desc.data = s;
-    dd_lp.obj = dd_task_add(&desc);
+    m->obj = dd_task_add(&desc);
     se_play(0x622C);
 }
 #endif
@@ -338,14 +320,11 @@ void dd_lp_close(void)
     }
 }
 
-#ifdef NON_MATCHING /* cópia dos modelos de vetor da câmera intercalada de outro modo */
+#ifdef NON_MATCHING /* 10 palavras: o original copia up primeiro para a posição mais baixa da pilha (up 16, target
+                       32, eye 48); nenhuma ordem/aninhamento de declarações reproduz; mais um move a0,v0 */
 /* Sets up a 2D-like perspective (camera at z = 10) with the origin at (x, y). */
 void dd_lp_begin_2d(void *list, int x, int y)
 {
-    FxVec4 up = { 0.0f, 1.0f, 0.0f, 0.0f };
-    FxVec4 target = { 0.0f, 0.0f, 0.0f, 1.0f };
-    FxVec4 eye = { 0.0f, 0.0f, 10.0f, 1.0f };
-
     mtx_set_mode(0);
     mtx_push();
     mtx_set_mode(1);
@@ -356,17 +335,23 @@ void dd_lp_begin_2d(void *list, int x, int y)
     list = dl_depth_range(list, 0xFFFF, 0);
     mtx_set_mode(0);
     mtx_identity();
-    mtx_perspective(0.383972436f, 1.76470589f, 5.0f, 400.0f);
+    mtx_perspective(0.38397247f, 1.76470589f, 5.0f, 400.0f);
     mtx_set_mode(1);
     mtx_identity();
-    camera_set(&eye, &target, &up);
+    {
+        FxVec4 eye = { 0.0f, 0.0f, 10.0f, 1.0f };
+        FxVec4 target = { 0.0f, 0.0f, 0.0f, 1.0f };
+        FxVec4 up = { 0.0f, 1.0f, 0.0f, 0.0f };
+
+        camera_set(&eye, &target, &up);
+    }
     camera_load_view();
     list = dl_blend_func(list, 0, 2, 3, 0, 0);
     list = dl_enable(list, 4);
     list = dl_tex_func(list, 0, 1);
     list = dl_disable(list, 0);
     list = dl_disable(list, 1);
-    list = dl_set_color(list, 0xFFFFFFFF);
+    list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_disable(list, 10);
     list = dl_enable(list, 5);
     list = dl_tex_offset(0.0f, 0.0f, list);
@@ -415,10 +400,11 @@ void dd_lp_quad(FxVtx2DT *v, int x, int y, int z, int u, int tv, int w, int h,
     v[3].color = color;
 }
 
-#ifdef NON_MATCHING /* ordem das contas de ponto flutuante diferente */
+#ifdef NON_MATCHING /* ordem das contas de ponto flutuante diferente (43 palavras); o 13º argumento é a cor
+                       (int em t3), não float: corrigido em 2026-11-04 */
 /* Fills a textured quad (4 vertices, u v z x y z) centred on (x, y) from a texel rectangle. */
-void dd_lp_rect(float x, float y, float z, float w, float h, float *v, int tx, int ty, int tw, int th,
-                int texw, int texh, float vz)
+void dd_lp_rect(float x, float y, float z, float w, float h, DdFxVert *v, int tx, int ty, int tw, int th,
+                int texw, int texh, unsigned int color)
 {
     float fw = (float)texw;
     float fh = (float)texh;
@@ -429,36 +415,36 @@ void dd_lp_rect(float x, float y, float z, float w, float h, float *v, int tx, i
     float x1;
     float y1;
 
-    v[0] = u1;
+    v[0].u = u1;
     v0 = (float)ty / fh - 0.5f / fh;
-    v[1] = v0;
+    v[0].v = v0;
     v1 = (float)(ty + th) / fh - 0.5f / fh;
     x1 = x + w * 0.5f;
-    v[3] = x1;
+    v[0].x = x1;
     y1 = y + h * 0.5f;
-    v[4] = y1;
-    v[5] = z;
-    v[2] = vz;
-    v[6] = u0;
+    v[0].y = y1;
+    v[0].z = z;
+    v[0].color = color;
+    v[1].u = u0;
     x = x + w * -0.5f;
-    v[7] = v0;
-    v[9] = x;
-    v[10] = y1;
-    v[11] = z;
-    v[8] = vz;
-    v[12] = u1;
-    v[13] = v1;
+    v[1].v = v0;
+    v[1].x = x;
+    v[1].y = y1;
+    v[1].z = z;
+    v[1].color = color;
+    v[2].u = u1;
+    v[2].v = v1;
     y = y + h * -0.5f;
-    v[15] = x1;
-    v[16] = y;
-    v[17] = z;
-    v[14] = vz;
-    v[18] = u0;
-    v[19] = v1;
-    v[21] = x;
-    v[22] = y;
-    v[23] = z;
-    v[20] = vz;
+    v[2].x = x1;
+    v[2].y = y;
+    v[2].z = z;
+    v[2].color = color;
+    v[3].u = u0;
+    v[3].v = v1;
+    v[3].x = x;
+    v[3].y = y;
+    v[3].z = z;
+    v[3].color = color;
 }
 #endif
 

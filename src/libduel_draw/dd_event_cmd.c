@@ -3,11 +3,9 @@
 // @asm 0x08817EF4-0x08817F08
 // @asm 0x08817F08-0x088182C8
 // @asm 0x08818AC4-0x08818B2C
-// @asm 0x08818B2C-0x08818C34
 // @asm 0x08818FB0-0x0881917C
 // @asm 0x08819184-0x08819430
 // @asm 0x08819430-0x08819684
-// @asm 0x0881972C-0x088197C8
 // @asm 0x088199C8-0x08819A70
 /* The duel-event handlers 1..73 of the dispatcher table (dd_event.c): cut-ins (duel start/end,
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
@@ -351,10 +349,11 @@ int dd_ev_10(void)
 }
 
 /* end of the attack cut-in: the attack animation itself */
-#ifdef NON_MATCHING /* ordem dos lw dos argumentos */
-int dd_ev_attack_done(int *a)
+#ifdef NON_MATCHING /* o mwcc copia a0 para v0 (move v0,a0) e carrega a[0] por último; o original carrega
+                       a[2], a[1], a[3], a[0] direto de a0 sem cópia: 6 palavras, formas testadas: locais, struct, K&R */
+void dd_ev_attack_done(int *a)
 {
-    return dd_mark_move(a[0], a[1], a[2], a[3]);
+    dd_mark_move(a[0], a[1], a[2], a[3]);
 }
 #endif
 
@@ -649,28 +648,34 @@ int dd_ev_36(void)
 #endif
 
 /* 37: a card's stats change (some cards have their own animation) */
-#ifdef NON_MATCHING /* cadeia de testes */
 int dd_ev_37(int player, int zone, int a, int card_id)
 {
     DdCard *card = dd_cobj_at(dv_player_to_side(player), zone, 0);
 
     if (card == 0)
         return 1;
-    if (card_id == 0x1A90)
-        dd_num_counter(card, a, 0);
-    else if (card_id == 0x1513)
-        dd_num_counter(card, a, 2);
-    else if (card_id == 0x1439)
-        dd_num_counter(card, a, 1);
-    else if (card_id == 1)
+    switch (card_id) {
+    default:
         dd_stat_counter(card, a, 0);
-    else if (card_id == 0)
+        break;
+    case 0:
         dd_stat_counter(card, a, 1);
-    else
+        break;
+    case 1:
         dd_stat_counter(card, a, 0);
+        break;
+    case 0x1439:
+        dd_num_counter(card, a, 1);
+        break;
+    case 0x1513:
+        dd_num_counter(card, a, 2);
+        break;
+    case 0x1A90:
+        dd_num_counter(card, a, 0);
+        break;
+    }
     return 1;
 }
-#endif
 
 int dd_ev_38(int player, int zone, int a)
 {
@@ -958,22 +963,18 @@ int dd_ev_52(DdLoc2 p)
 }
 
 /* 53: a list of cards to show (n entries from the engine) */
-#ifdef NON_MATCHING /* alocação do laço */
 int dd_ev_53(int player, int uid, int n)
 {
     int *list;
     int i;
-    int *p;
 
     list = dd_alloc(n << 2);
-    p = list;
     for (i = 0; i < n; i++)
-        *p++ = dv_0884C830(i);
+        list[i] = dv_0884C830(i);
     func_08820678(dv_list_id(uid), list, n);
     dd_free(list);
     return 1;
 }
-#endif
 
 int dd_ev_54(void)
 {

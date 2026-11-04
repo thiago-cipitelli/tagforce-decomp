@@ -288,20 +288,23 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
         }
         for (i = 0; i < 17; i++) {
             DdColVert *rv = fx->ring[i];
+            float sa, ca;
 
             a = (float)i * 6.2831855f / 16.0f;
+            sa = sinf(a);
+            ca = cosf(a);
             rv[0].color = c0;
-            rv[0].x = sinf(a) * 44.333336f;
+            rv[0].x = sa * 44.333336f;
             rv[0].y = 0.0f;
-            rv[0].z = cosf(a) * 44.333336f;
+            rv[0].z = ca * 44.333336f;
             rv[1].color = c1;
-            rv[1].x = sinf(a) * 29.333334f;
+            rv[1].x = sa * 29.333334f;
             rv[1].y = 0.0f;
-            rv[1].z = cosf(a) * 29.333334f;
+            rv[1].z = ca * 29.333334f;
             rv[2].color = c0;
-            rv[2].x = sinf(a) * 9.333334f;
+            rv[2].x = sa * 9.333334f;
             rv[2].y = 0.0f;
-            rv[2].z = cosf(a) * 9.333334f;
+            rv[2].z = ca * 9.333334f;
         }
         fx->ring_idx[0] = 0;
         fx->ring_idx[1] = 1;

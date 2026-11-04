@@ -1,10 +1,10 @@
 // @range 0x0881351C-0x088143A4
 // @data 0x0887541C-0x088755B8
-// @asm 0x08813554-0x08813840
+// @asm 0x08813554-0x08813684
 // @asm 0x08813AB8-0x08813C40
 // @asm 0x08813CF4-0x08813D48
 // @asm 0x08813D8C-0x08813F1C
-// @asm 0x088141A4-0x088143A4
+// @asm 0x088142A0-0x088143A4
 /* Duel characters (partner/rival model from the cut-in pack): setup and free, the model with its
    animations (gzip'd TGMT), the voice track, the per-frame animation and draw, bone matrices for
    attaching effects, and the visibility mask of the model parts from the animation tracks. */
@@ -127,7 +127,6 @@ void dd_chr_init(DdChr *c, DdChr *desc)
 }
 #endif
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* loads the model; the duel academy students take their face texture from the pack */
 void dd_chr_load(DdChr *c)
 {
@@ -151,10 +150,9 @@ void dd_chr_load(DdChr *c)
     c->model = model_load(tms, anims);
     c->anims = etc;
     c->index = -1;
-    dd_chr_anim_set(c, 0);
+    dd_chr_anim_set(c, -1);
     c->disc = ehp_find(pack, dd_chr_s_disc, 0);
 }
-#endif
 
 /* frees the model and the decompression buffers */
 void dd_chr_free(DdChr *c, int all)
@@ -468,7 +466,6 @@ void dd_chr_begin(DdChr *c)
     mtx_set_mode(2);
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* draws the model on the current layer */
 void *dd_chr_model_draw(void *list, DdChr *c)
 {
@@ -478,15 +475,16 @@ void *dd_chr_model_draw(void *list, DdChr *c)
 
     if (m == 0)
         return list;
-    list = dl_clear(dl_clear_stencil(list, 0), 0x14);
+    list = dl_clear_stencil(list, 0);
+    list = dl_clear(list, 0x14);
     list = dl_enable(list, 1);
     layer = dl_get_layer();
     dl_set_list(list);
     dd_chr_mask(c, m);
     memset(params, 0, sizeof(params));
-    params[11] = c->chr;
     params[0] = layer;
     params[1] = layer;
+    params[11] = c->chr;
     params[12] = (int)c;
     model_hook(m, 0, dd_disc_tex_hook);
     mtx_set_mode(2);
@@ -494,7 +492,6 @@ void *dd_chr_model_draw(void *list, DdChr *c)
     model_draw(m, params);
     return dl_select_layer(layer, 0);
 }
-#endif
 
 #ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* parts of the model shown at this frame (tracks 10..41 of the animation; forced bits) */

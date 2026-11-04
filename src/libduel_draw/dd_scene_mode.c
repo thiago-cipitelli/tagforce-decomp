@@ -133,7 +133,7 @@ void func_088257B8(void);
 int browse_active(void);
 void browse_close(void);
 int hl_running(void);
-void func_08864F50(void);
+void hl_close_alias(void);
 int opt_is_open(void);
 void opt_close(void);
 int dd_sel_active(void);
@@ -367,7 +367,7 @@ int dd_mode_cancel(void)
         break;
     case 8:
         if (hl_running() != 0)
-            func_08864F50();
+            hl_close_alias();
         break;
     case 9:
         if (opt_is_open() != 0)
