@@ -1,7 +1,7 @@
 // @range 0x0880D298-0x0880EF74
 // @asm 0x0880D3E0-0x0880D828
 // @asm 0x0880DFE4-0x0880E598
-// @asm 0x0880E860-0x0880EF74
+// @asm 0x0880E8E0-0x0880EF74
 // @data 0x088202B4-0x088202E4
 /* 3D part of the shelf (the pack model over the counter, the shelf of the chosen kind with its
    packs and the one flying to the counter), and the list of the cards that came out: five rows with
@@ -308,6 +308,10 @@ unsigned int *shop_list_rows(unsigned int *list)
 }
 
 /* counters of a row: copies that came out, copies owned (red over 99) */
+typedef struct ShopRowCounters {
+    UiCounter c[3];
+} ShopRowCounters;
+
 UiCounter shop_row_counters[3] = {
     { 0, { 0 }, 0, 0 }, { 5, { 0 }, 0xFF000000, 0 }, { 6, { 0 }, 0xFF000000, 0 },
 };
@@ -375,7 +379,7 @@ unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
     } else {
         list = shop_ui_draw_icon_b(list, PT(0xC4, ty), type, shop_res_get(0x2023));
     }
-    memcpy(c, shop_row_counters, sizeof(c));
+    *(ShopRowCounters *)c = *(ShopRowCounters *)shop_row_counters;
     c[0].value = it->partners;
     c[2].value = it->owned;
     total = shop_items_count(it->id);
@@ -457,15 +461,16 @@ unsigned int *shop_draw_rarity(unsigned int *list, int x, int y, int rarity)
     return draw_sprite(list, x, y, 0, k * 0x18, 0x61, 0, 0);
 }
 
-#ifdef NON_MATCHING /* o original carrega o 26 da linha antes de chamar shop_res_get; registradores diferentes */
 unsigned int *shop_list_cursor(unsigned int *list)
 {
-    int y = 0x1A + shop.cursor * 0x2D;
-    void *gim = shop_res_get(0x2022);
+    int y;
+    void *gim;
 
+    y = 0x1A;
+    y += shop.cursor * 0x2D;
+    gim = shop_res_get(0x2022);
     return shop_ui_draw_frame(list, 0x97, y, 0x13E, 0x2D, gim, gfx_get_state()->frame);
 }
-#endif
 
 #ifdef NON_MATCHING /* 293 palavras; lógica conferida com o asm (as duas tabelas de saltos e todas as chamadas). Como no original, w/h ficam sem inicializar no caso 0 */
 /* the bubble next to the scroll bar with the sort key of the line under the cursor */

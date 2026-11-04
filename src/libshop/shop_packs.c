@@ -1,5 +1,4 @@
 // @range 0x0880A960-0x0880C238
-// @asm 0x0880AA88-0x0880AAF8
 // @asm 0x0880AD08-0x0880B5FC
 // @asm 0x0880B638-0x0880C238
 /* The 48 pack kinds: which are on sale (unlocked by story progress, days, decks and collection),
@@ -72,20 +71,18 @@ unsigned short *shop_pack_name(unsigned short pack)
 
 /* the clerk's line about pack `pack` (two clerks) */
 
-#ifdef NON_MATCHING /* mesma forma; o original calcula pack * 3 em a0 e a base em a1, o mwcc troca os registradores */
 unsigned short *shop_pack_msg(unsigned short pack, unsigned short alt)
 {
     int *t = (int *)shop_str_get(0xC002);
-    int i = pack * 3;
-    char *base = (char *)t + t[0];
     int *e = t + 1;
+    char *base = (char *)t + t[0];
+    int i = pack * 3;
 
     i++;
     if (alt == 1)
         i++;
     return (unsigned short *)(base + e[i]);
 }
-#endif
 
 int shop_pack_can_buy(unsigned short pack)
 {

@@ -1,5 +1,4 @@
 // @range 0x08807C98-0x08808D48
-// @asm 0x08807D80-0x08807E44
 // @data 0x0882E3E8-0x0882E404
 // @rodata 0x0882ABEC-0x0882AC40
 /* Title resources and drawing helpers: the logo screens, the per-language title_menu_X.ehp packs
@@ -44,23 +43,25 @@ unsigned short *title_msg(int id)
     return table_get_entry(ehp_find(title_pack(), title_res_name(0), 0), id);
 }
 
-#ifdef NON_MATCHING /* &title e &title.duel trocam de $s (s2/s3) */
 /* text id of message table `file`; 117/118 take the name of the card of the free duel */
 unsigned short *title_text(int id, int file)
 {
-    TDuelCfg *const d = &title.duel;
     Title *const t = &title;
+    TDuelCfg *const d = &title.duel;
     void *tab = ehp_find(title_pack(), title_res_name(file), 0);
 
     switch (id) {
     case 117:
     case 118:
-        wsprintf(t->msg_buf, table_get_entry(tab, id), card_get_name(d->card));
+        {
+            unsigned short *f = table_get_entry(tab, id);
+            unsigned short *n = card_get_name(d->card);
+            wsprintf(t->msg_buf, f, n);
+        }
         return t->msg_buf;
     }
     return table_get_entry(tab, id);
 }
-#endif
 
 /* loads the title_menu_X.ehp of the current language (mode 1: frees the previous one first) */
 void title_lang_load(int mode)

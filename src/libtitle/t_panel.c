@@ -1,6 +1,6 @@
 // @range 0x088106D8-0x08813088
 // @asm 0x088108A0-0x08810ADC
-// @asm 0x08810CDC-0x08811658
+// @asm 0x0881103C-0x08811658
 // @asm 0x08811A8C-0x08811FBC
 // @asm 0x08812200-0x08812674
 // @asm 0x08812910-0x08812AB8
@@ -76,7 +76,7 @@ void ttab_init(TTab *t)
     t->draw = 0;
 }
 
-#ifdef NON_MATCHING /* cópia de p->n para o divisor sai com andi no original; registradores trocados */
+#ifdef NON_MATCHING /* 2 palavras: o original põe o li s0,1 do ternário no delay slot do beqz e o move s3 (t) antes; o mwcc inverte */
 void tpanel_init(TPanel *p, void *heap)
 {
     TTab *t;
@@ -92,11 +92,9 @@ void tpanel_init(TPanel *p, void *heap)
     p->h = 218;
     p->cur = 0;
     p->n = 2;
-    t = p->tab;
     b = &p->box;
-    n = 1;
-    if (p->n != 0)
-        n = p->n;
+    t = p->tab;
+    n = p->n ? p->n : 1;
     for (i = 0; i < 4; i++, t++) {
         ttab_init(t);
         if (i == 0) {
@@ -182,7 +180,6 @@ void tpanel_list_init(TPanel *p, void *heap)
     twin_open(w);
 }
 
-#ifdef NON_MATCHING /* ordem de avaliação dos argumentos dos laços de células (registradores a1/a2) */
 /* box frame, the cells, the text, the scrollbar, the cell callbacks and the cursor */
 void *tbox_draw(void *list, TBox *b)
 {
@@ -207,9 +204,11 @@ void *tbox_draw(void *list, TBox *b)
     if (!b->no_cells) {
         cw = b->iw;
         ch = b->ih;
-        for (i = 0; i < b->n; i++)
-            list = tframe_box(list, b->color, (short)(b->ix + (b->iw + 3) * (i / rows)),
-                              (short)(b->iy + (b->ih + 1) * (i % rows)), cw, ch, 0, 3, 0);
+        for (i = 0; i < b->n; i++) {
+            sx = b->ix + (b->iw + 3) * (i / rows);
+            sy = b->iy + (b->ih + 1) * (i % rows);
+            list = tframe_box(list, b->color, sx, sy, cw, ch, 0, 3, 0);
+        }
     }
     if (b->text)
         list = title_text_draw(list, b->ix, b->iy, b->iw, b->ih, b->text, 4);
@@ -223,24 +222,25 @@ void *tbox_draw(void *list, TBox *b)
     if (b->draw) {
         cw = b->iw;
         ch = b->ih;
-        for (i = 0; i < b->n; i++)
-            list = b->draw(list, (unsigned short)i, (short)(b->ix + (b->iw + 3) * (i / rows)),
-                           (short)(b->iy + (b->ih + 1) * (i % rows)), cw, ch);
+        for (i = 0; i < b->n; i++) {
+            sx = b->ix + (b->iw + 3) * (i / rows);
+            sy = b->iy + (b->ih + 1) * (i % rows);
+            list = b->draw(list, (unsigned short)i, sx, sy, cw, ch);
+        }
     }
     if (!b->no_cursor)
         list = tframe_cursor(list, b->color, (short)(b->ix + (b->iw + 3) * (sel / rows)),
                              (short)(b->iy + (b->ih + 1) * (sel % rows)), b->iw, b->ih);
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* tamanho certo; registradores e seh da largura de cada peça diferem */
 /* one tab: three pieces, coloured by the selection, then its label callback */
 void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
 {
     TSpr16 s;
-    int show = 1;
     int k = 16;
+    int show = 1;
     int j;
 
     switch (a) {

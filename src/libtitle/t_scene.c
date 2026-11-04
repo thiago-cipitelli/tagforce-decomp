@@ -1,5 +1,4 @@
 // @range 0x08809DC4-0x0880A41C
-// @asm 0x08809E24-0x0880A074
 // @data 0x0882E414-0x0882E44C
 /* Leaving the title for the duel scene: the GameState setups of the random duel, the lessons, the
    free duel (players and decks chosen in the setup screen) and the deck tutorials. */
@@ -21,11 +20,14 @@ unsigned short title_scene_push(int scene, int arg)
     return scene;
 }
 
-/* templates of the random duel's local tables (the function stays in asm) */
+typedef struct TRand7 {         /* a 7-entry table copied whole to the stack */
+    int v[7];
+} TRand7;
+
+/* templates of the random duel's local tables */
 int title_rand_chars[7] = { 2, 3, 4, 5, 6, 7, 8 };
 int title_rand_decks[7] = { 1, 7, 13, 19, 25, 31, 37 };
 
-#ifdef NON_MATCHING /* os ponteiros dos dois vetores trocam de $s nos laços */
 /* random duel: two random characters with their decks */
 void title_random_duel_start(void)
 {
@@ -43,44 +45,44 @@ void title_random_duel_start(void)
     gs->mode = rand_next();
     gs->side = (unsigned char)((int)rand_next() % 2);
     {
-    int chars[7];
-    int decks[7];
-
-    memcpy(chars, title_rand_chars, sizeof(chars));
-    memcpy(decks, title_rand_decks, sizeof(decks));
+    TRand7 chars = *(TRand7 *)title_rand_chars;
+    TRand7 decks = *(TRand7 *)title_rand_decks;
 
     if ((int)rand_next() % 2)
         gs->bgm_set = 1;
     else
         gs->bgm_set = 3;
     for (i = 0; i < 7; i++) {
-        c = chars[i];
-        d = decks[i];
+        c = chars.v[i];
+        d = decks.v[i];
         j = (int)rand_next() % 6;
         if (i <= j)
             j++;
         if (j >= 7)
             j = 6;
-        decks[i] = decks[j];
-        chars[i] = chars[j];
-        chars[j] = c;
-        decks[j] = d;
+        chars.v[i] = chars.v[j];
+        decks.v[i] = decks.v[j];
+        chars.v[j] = c;
+        decks.v[j] = d;
     }
-    for (i = 0; i < 2; i++) {
-        PlayerSlot *p;
+    {
+        int k;
 
-        gs->slot[i].type = chars[i];
-        gs->slot[i].type2 = 0;
-        p = &gs->slot[i];
-        if (p->type == 6)
-            p->type2 = 1;
-        p->deck_id = decks[i];
+        for (k = 0; k < 2; k++) {
+            PlayerSlot *p;
+
+            p = &gs->slot[k];
+            gs->slot[k].type = chars.v[k];
+            gs->slot[k].type2 = 0;
+            if (p->type == 6)
+                p->type2 = 1;
+            p->deck_id = decks.v[k];
+        }
     }
     }
     gamestate_load(gs);
     title_scene_push(6, 0);
 }
-#endif
 
 /* lesson duel (the lesson id is title.step) */
 void title_lesson_start(void)

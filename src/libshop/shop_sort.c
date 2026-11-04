@@ -1,5 +1,4 @@
 // @range 0x08813FF4-0x08814BE8
-// @asm 0x088149A0-0x088149F4
 // @data 0x08820494-0x088204F4
 /* The sort dialog of the bought list: a window with the nine sort keys and, next to the cursor, a
    small window with the direction; the list is reordered live and restored on cancel. */
@@ -243,16 +242,16 @@ unsigned int *shop_sort_dir_item(unsigned int *list, int i, int x, int y)
     return shop_draw_box(list, &shop_sort_dirs[i], x, y + 1);
 }
 
-#ifdef NON_MATCHING /* mesma conta; o original troca os registradores de y e da altura da linha */
 /* the direction window follows the key cursor */
 void shop_sort_layout(void)
 {
     MenuWidget *m = shop_sort->menu;
     MenuWidget *s = shop_sort->sub;
+    int y = shop_sort->y;
 
-    s->def.y = shop_sort->y + (m->item_h / 2 + m->cursor * m->item_h) - s->def.h / 2;
+    y += m->item_h / 2 + m->cursor * m->item_h;
+    s->def.y = y - s->def.h / 2;
 }
-#endif
 
 unsigned int *shop_draw_sort_tab(unsigned int *list, int i, int x, int y)
 {

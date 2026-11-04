@@ -1,6 +1,6 @@
 // @range 0x088162CC-0x08818A88
 // @rodata 0x0882AFD8-0x0882B118
-// @asm 0x08817F98-0x08818480
+// @asm 0x08817F98-0x088180AC
 /* Free duel: drawing dispatch, the vs CPU screens, the cursor and regulation sub-screens. */
 #include "libtitle.h"
 
@@ -959,7 +959,6 @@ int tfd_regulation_select(int i, int unused1, int unused2, int lim)
 }
 #endif
 
-#ifdef NON_MATCHING /* o se_play(0x6215) do original desvia para o bloco comum do return -1 (b; nop); o mwcc devolve -1 ali mesmo (b epílogo; li -1) */
 /* the player grid of the regulation screen (2 columns) and the duel start button below it */
 int tfd_regulation_input(void)
 {
@@ -1043,9 +1042,7 @@ int tfd_regulation_input(void)
             if (title.duel.list.deck[b->pos].kind != 0) {
                 se_play(0x6214);
                 tfd_evt_handler(6, b->pos);
-                return -1;
-            }
-            if (title.duel.list.deck[b->pos].on == 0) {
+            } else if (title.duel.list.deck[b->pos].on == 0) {
                 se_play(0x6215);
             } else {
                 se_play(0x6213);
@@ -1065,7 +1062,6 @@ int tfd_regulation_input(void)
     }
     return -1;
 }
-#endif
 
 void *tfd_regulation_draw(void *list)
 {

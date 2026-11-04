@@ -1,7 +1,6 @@
 // @range 0x08805AB4-0x08807CAC
-// @asm 0x08805F40-0x08806634
+// @asm 0x088061F8-0x08806634
 // @asm 0x08806CC4-0x088074FC
-// @asm 0x08807810-0x08807914
 // @asm 0x088079A8-0x08807CAC
 // @rodata 0x0881C0E8-0x0881C124
 // @data 0x0881C900-0x0881C970
@@ -61,7 +60,7 @@ void shop_card_detail(ShopItem *it);
 void shop_sort_open(void);
 void shop_dialog_open(int what, int arg);
 void shop_dialog_update(void);
-void shop_info_input(int *sel);
+void shop_ui_scroll_analog(UiScroll *s);
 void shop_tabs_hide(void);
 void shop_points_add(int delta, int x, int y);
 void shop_packs_refresh(void);
@@ -210,9 +209,12 @@ void shop_main_update(void)
 }
 
 /* up up down down left right left right square circle */
+typedef struct ShopCodeSeq {
+    unsigned int v[11];
+} ShopCodeSeq;
+
 unsigned int shop_code_seq[11] = { 0x10, 0x10, 0x40, 0x40, 0x80, 0x20, 0x80, 0x20, 0x4000, 0x2000, 0 };
 
-#ifdef NON_MATCHING /* o primeiro break do switch vai direto ao epílogo com o move v0,zero no atraso; o original salta para o bloco comum do return 0 */
 /* input of the current state; 1 once the shop can be left */
 int shop_main_input(void)
 {
@@ -220,11 +222,10 @@ int shop_main_input(void)
 
     if (shop.state < 7) {
         if (pad->b.trig) {
-            unsigned int code[11];
-            memcpy(code, shop_code_seq, sizeof(code));
-            if (pad->b.trig & code[shop.code_pos]) {
+            ShopCodeSeq code = *(ShopCodeSeq *)shop_code_seq;
+            if (pad->b.trig & code.v[shop.code_pos]) {
                 shop.code_pos++;
-                if (code[shop.code_pos] == 0) {
+                if (code.v[shop.code_pos] == 0) {
                     shop.code_done = 1;
                     shop_packs_refresh();
                     se_play(0x621A);
@@ -235,7 +236,7 @@ int shop_main_input(void)
             }
         }
     } else if (shop.state >= 9 && shop.state < 15) {
-        shop_info_input(&shop.sel_id);
+        shop_ui_scroll_analog((UiScroll *)&shop.sel_id);
     }
     if (shop.hud) {
         shop_dialog_update();
@@ -244,8 +245,6 @@ int shop_main_input(void)
     if (shop.info)
         return 0;
     switch (shop.state) {
-    default:
-        return 0;
     case 1:
         shop_shelf_input();
         break;
@@ -275,7 +274,6 @@ int shop_main_input(void)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* o original testa o resultado de shop_pack_can_buy com 1 e depois 2 (beql) e põe os corpos na mesma ordem, com um bloco de junção; nem switch nem if/else reproduzem */
 /* on the shelf: choose the pack kind, buy, leave */
@@ -683,19 +681,17 @@ void shop_list_page(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original carrega n_items antes de top/cursor e testa o índice mascarado e o inteiro em registradores diferentes */
 /* marks/unmarks the card under the cursor */
 void shop_list_mark(void)
 {
     PadState *pad = pad_get();
     unsigned int b = pad->b.trig;
-    unsigned int i;
+    int i;
     unsigned short id;
 
     if (b & region_pick_value(1)) {
-        i = (unsigned short)(shop.top + shop.cursor);
-        if (i < shop.n_items) {
-            id = i < shop.n_items ? shop.items[shop.order[i]].id : 0;
+        if ((unsigned short)(i = shop.top + shop.cursor) < shop.n_items) {
+            id = shop_item_id_at(i);
             if (inv_get_flag7(id))
                 inv_set_flag7(id, 0);
             else
@@ -707,7 +703,6 @@ void shop_list_mark(void)
         se_play(0x6216);
     }
 }
-#endif
 
 void shop_list_jump(int back)
 {
