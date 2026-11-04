@@ -1,7 +1,6 @@
 // @range 0x0880AD2C-0x0880C940
 // @asm 0x0880AD2C-0x0880B120
 // @asm 0x0880B120-0x0880B1F8
-// @asm 0x0880B35C-0x0880B574
 // @asm 0x0880BC70-0x0880BE98
 // @asm 0x0880BE98-0x0880C05C
 // @asm 0x0880C380-0x0880C690
@@ -260,7 +259,6 @@ unsigned int sc_tab_pos(unsigned short i)
     return e->x | e->w << 16;
 }
 
-#ifdef NON_MATCHING /* o original lê a largura antes das gravações de y/h; o escalonador atual as intercala */
 /* frame of tab button i (the selected one taller) and the x of its count */
 unsigned short sc_tab_rect(unsigned short i, unsigned short sel, ScRect *r)
 {
@@ -300,9 +298,9 @@ unsigned short sc_tab_rect(unsigned short i, unsigned short sel, ScRect *r)
         r->h = 0xD;
     } else {
         x = r->x;
-        r->y = 0x1B;
         ux = x;
         end = ux + r->w;
+        r->y = 0x1B;
         r->h = 0xB;
         r->x = x;
         if (end <= ux)
@@ -312,7 +310,6 @@ unsigned short sc_tab_rect(unsigned short i, unsigned short sel, ScRect *r)
     }
     return e->lx + e->lw - ((unsigned int)(unsigned short)(e->lw - e->digits * 8) >> 1) - 1;
 }
-#endif
 
 /* window animation of the pane with tab i */
 static int sc_tab_anim(int tab)

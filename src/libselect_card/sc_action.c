@@ -1,9 +1,5 @@
 // @range 0x0880E64C-0x0880FFCC
 // @asm 0x0880E95C-0x0880EA84
-// @asm 0x0880EA84-0x0880EC54
-// @asm 0x0880EC54-0x0880ECD4
-// @asm 0x0880F678-0x0880F808
-// @asm 0x0880FA68-0x0880FB4C
 // @data 0x0881B378-0x0881B3DC
 /* The card action menu and its sub-menus: favourite mark, card info, sort/filter submenu, clear
    or reset the list, pane layout picker (2x4 grid of layouts), "new" mark picker, the items drawn
@@ -36,7 +32,7 @@ int sc_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned sho
 void sc_set_mode_u(int mode);
 void sc_set_mode(unsigned short mode);
 void sc_action_free(void);
-int sc_sub_open(short title, short text, unsigned short count, MenuDrawItemFn draw);
+int sc_sub_open(unsigned short title, unsigned short text, unsigned short count, MenuDrawItemFn draw);
 void sc_action_menu_sub(void);
 void sc_action_clear_open(void);
 void sc_action_layout_open(void);
@@ -143,42 +139,43 @@ int sc_action_close(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* a sub-menu window beside the action menu */
-int sc_sub_open(short title, short text, unsigned short count, MenuDrawItemFn draw)
+int sc_sub_open(unsigned short title, unsigned short text, unsigned short count, MenuDrawItemFn draw)
 {
     MenuWidget *m;
+    MenuItemDef *def;
 
     if (sc_action->sub == 0)
         sc_action->sub = heap_alloc(sc.heap, 0x120);
     m = sc_action->sub;
     if (m == 0)
         return 0;
+    def = &m->def;
     memset(m, 0, 0x120);
-    m->def.visible = 1;
-    m->def.style = 0;
-    m->def.x = sc_action->menu->def.x + 0x28;
-    m->def.y = 0x7C;
-    m->def.auto_size = 1;
-    m->def.color = 0xFFFFFFFF;
+    def->visible = 1;
+    def->style = 0;
+    def->x = sc_action->menu->def.x + 0x28;
+    def->y = 0x7C;
+    def->auto_size = 1;
+    def->color = 0xFFFFFFFF;
     if (text != 0)
-        m->def.text = table_get_entry(res_get(0x8033), text);
-    m->def.font_size = 0xC;
-    m->def.text_color = 0xFF000000;
-    m->def.font_flag4 = 1;
-    m->def.pad_l = 2;
-    m->def.pad_t = 2;
-    m->def.pad_r = 2;
-    m->def.pad_b = 2;
-    m->def.show_title = 1;
-    m->def.auto_title = 1;
+        def->text = table_get_entry(res_get(0x8033), text);
+    def->font_size = 0xC;
+    def->text_color = 0xFF000000;
+    def->font_flag4 = 1;
+    def->pad_l = 2;
+    def->pad_t = 2;
+    def->pad_r = 2;
+    def->pad_b = 2;
+    def->show_title = 1;
+    def->auto_title = 1;
     if (title != 0)
-        m->def.title = table_get_entry(res_get(0x8033), title);
-    m->def.style2 = 2;
-    m->def.title_font_size = 0xC;
-    m->def.title_color = 0xFFFFFFFF;
-    m->def.open_anim = 2;
-    m->def.close_anim = 2;
+        def->title = table_get_entry(res_get(0x8033), title);
+    def->style2 = 2;
+    def->title_font_size = 0xC;
+    def->title_color = 0xFFFFFFFF;
+    def->open_anim = 2;
+    def->close_anim = 2;
     m->heap = sc.heap;
     m->no_cancel = 1;
     m->style = 2;
@@ -188,22 +185,19 @@ int sc_sub_open(short title, short text, unsigned short count, MenuDrawItemFn dr
     m->draw_item = draw;
     return 1;
 }
-#endif
 
-#ifdef NON_MATCHING /* a contagem u16 vai para outro registrador */
 /* the sort / filter / information submenu */
 void sc_action_menu_sub(void)
 {
     unsigned short n = 4;
 
-    if (sc.kind == 0)
-        n--;
-    if (sc_sub_open(0x18, 0, n, (MenuDrawItemFn)sc_draw_sub_item)) {
+    if (!sc.kind)
+        n -= 1;
+    if (sc_sub_open(0x18, 0, n & 0xFFFF, (MenuDrawItemFn)sc_draw_sub_item)) {
         sc_action->sub->keep_open = 1;
         menu_open(sc_action->sub);
     }
 }
-#endif
 
 /* step 1 */
 void sc_action_step1(void)
@@ -410,11 +404,11 @@ void sc_action_step4(void)
     }
 }
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* yes/no window for the mark */
 void sc_action_confirm_open(void)
 {
     MenuWidget *m;
+    MenuItemDef *def;
     int x;
 
     if (sc_action->sub == 0)
@@ -422,34 +416,34 @@ void sc_action_confirm_open(void)
     m = sc_action->sub;
     if (m == 0)
         return;
+    def = &m->def;
     memset(m, 0, 0x120);
-    m->def.visible = 1;
-    m->def.style = 0;
-    m->def.max_w = 0xF0;
-    m->def.auto_size = 1;
-    m->def.color = 0xFFFFFFFF;
-    m->def.font_flag4 = 1;
-    m->def.pad_l = 10;
-    m->def.pad_t = 8;
-    m->def.pad_r = 10;
-    m->def.pad_b = 0;
-    m->def.font_size = 0xC;
-    m->def.text_color = 0xFF000000;
-    m->def.text = table_get_entry(res_get(0x8033), 0x53);
-    m->def.open_anim = 2;
-    m->def.close_anim = 2;
+    def->visible = 1;
+    def->style = 0;
+    def->max_w = 0xF0;
+    def->auto_size = 1;
+    def->color = 0xFFFFFFFF;
+    def->font_flag4 = 1;
+    def->pad_l = 10;
+    def->pad_t = 8;
+    def->pad_r = 10;
+    def->pad_b = 0;
+    def->font_size = 0xC;
+    def->text_color = 0xFF000000;
+    def->text = table_get_entry(res_get(0x8033), 0x53);
+    def->open_anim = 2;
+    def->close_anim = 2;
     m->heap = sc.heap;
     m->no_cancel = 1;
     m->buttons = 3;
     m->initial = 3;
     m->cancel_resets = 1;
     menu_open(m);
-    x = 0x1E0 - m->def.w;
-    m->def.x = x / 2;
-    x = 0x110 - m->def.h;
-    m->def.y = x / 2;
+    x = 0x1E0 - def->w;
+    def->x = x / 2;
+    x = 0x110 - def->h;
+    def->y = x / 2;
 }
-#endif
 
 /* step 5: yes stores the mark and drops the lists' marks */
 void sc_action_step5(void)
@@ -512,7 +506,6 @@ void sc_action_step5(void)
     }
 }
 
-#ifdef NON_MATCHING /* laço de vértices com outra alocação */
 /* a two-tone rule under a menu item */
 void *sc_draw_rule(void *list, ScLineVtx *v, int x, int y, int w)
 {
@@ -520,7 +513,7 @@ void *sc_draw_rule(void *list, ScLineVtx *v, int x, int y, int w)
     ScLineVtx *p;
 
     for (i = 0, p = v; i < 4; i++, p++) {
-        p->x = x + w * (short)(i % 2);
+        p->x = x + w * (i % 2);
         p->z = 0;
         if (i < 2) {
             p->y = y;
@@ -535,7 +528,6 @@ void *sc_draw_rule(void *list, ScLineVtx *v, int x, int y, int w)
     list = dl_draw_array(list, 1, 0x80011C, 2, 0, v + 2);
     return dl_enable(list, 9);
 }
-#endif
 
 /* the items of the action menu: card picture on top, then the buttons with rules */
 void *sc_action_draw_items(void *list, int x, int y, int w, int h)

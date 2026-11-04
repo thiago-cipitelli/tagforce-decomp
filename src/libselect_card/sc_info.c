@@ -1,7 +1,6 @@
 // @range 0x0880D54C-0x0880E64C
 // @asm 0x0880D54C-0x0880D928
 // @asm 0x0880DD34-0x0880E244
-// @asm 0x0880E244-0x0880E51C
 /* The card info strip under the panes (name, icons, level, ATK/DEF, scrolling description), the
    icon wrappers, a button icon with its label, the pane shade, the sort value bubble next to the
    cursor, and the card action menu (opened with Circle). */
@@ -276,14 +275,13 @@ void *sc_draw_detail(void *list)
 }
 #endif
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* opens the card action menu on e (or the reduced one on an empty slot) */
 void sc_action_open(ScEnt *e)
 {
-    unsigned short count = 7;
-    short extra = 8;
+    int n = 7;
+    int dy = 8;
     MenuWidget *m;
-    int x;
+    MenuItemDef *def;
 
     sc_action = heap_alloc(sc.heap, 0x18);
     if (sc_action == 0)
@@ -291,57 +289,60 @@ void sc_action_open(ScEnt *e)
     memset(sc_action, 0, 0x18);
     sc_action->ent = e;
     if (e == 0) {
-        count = 5;
-        extra = 4;
+        n -= 2;
+        dy -= 4;
         sc_action->no_ent = 1;
     }
     sc_action->menu = heap_alloc(sc.heap, 0x120);
     m = sc_action->menu;
     if (m == 0)
         return;
+    def = &m->def;
     memset(m, 0, 0x120);
-    m->def.visible = 1;
-    m->def.style = 0;
-    m->def.y = 0x3A;
-    m->def.color = 0xFFFFFFFF;
-    m->def.auto_size = 1;
-    m->def.show_title = 1;
-    m->def.max_w = 2;
-    m->def.min_w = 2;
-    m->def.max_h = 2;
-    m->def.min_h = 2;
-    m->def.font_flag4 = 1;
-    m->def.font_flag8000 = 1;
-    if (sc.kind == 0)
-        m->def.title = table_get_entry(res_get(0x8033), 0x8F);
-    else
-        m->def.title = table_get_entry(res_get(0x8033), 0x90);
-    m->def.style2 = 2;
-    m->def.title_font_size = 0xC;
-    m->def.title_color = 0xFFFFFFFF;
-    m->def.open_anim = 2;
-    m->def.close_anim = 2;
+    def->visible = 1;
+    def->style = 0;
+    def->y = 0x3A;
+    def->color = 0xFFFFFFFF;
+    def->auto_size = 1;
+    def->font_flag4 = 1;
+    def->pad_l = 2;
+    def->pad_t = 2;
+    def->pad_r = 2;
+    def->pad_b = 2;
+    def->show_title = 1;
+    def->auto_title = 1;
+    switch (sc.kind) {
+    case 0:
+        def->title = table_get_entry(res_get(0x8033), 0x8F);
+        break;
+    default:
+        def->title = table_get_entry(res_get(0x8033), 0x90);
+        break;
+    }
+    def->style2 = 2;
+    def->title_font_size = 0xC;
+    def->title_color = 0xFFFFFFFF;
+    def->open_anim = 2;
+    def->close_anim = 2;
     m->heap = sc.heap;
     m->no_cancel = 1;
     m->keep_open = 1;
     m->style = 2;
-    m->count = count;
+    m->count = n;
     m->item_w = 0xD4;
     m->item_h = 0x13;
     m->draw_all = sc_action_draw_items;
-    if (sc.nhist == 0)
+    if (sc.nhist <= 0)
         m->disabled |= 0x40;
     if (scv.pane[scv.side].list->filter == 0)
         m->disabled |= 0x20;
     menu_open(m);
-    if (m->def.w < 0xD4)
-        m->def.w = 0xD4;
-    m->def.h += extra;
-    x = 0x1E0 - m->def.w;
-    m->def.x = x / 2;
+    if (def->w < 0xD4)
+        def->w = 0xD4;
+    def->h += (short)dy;
+    def->x = (0x1E0 - def->w) / 2;
     sc.state = 3;
 }
-#endif
 
 /* state 3 */
 int sc_input_action_menu(void)

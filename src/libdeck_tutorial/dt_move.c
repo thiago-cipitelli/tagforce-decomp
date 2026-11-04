@@ -74,7 +74,7 @@ unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
 unsigned short dt_deck_count_forbidden(void);
 void dt_hist_push(DtHist *h);
 int dt_hist_pop(DtHist *h);
-void dt_layout_scroll(int keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
+void dt_layout_scroll(int keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned int dt_tab_pos(unsigned short tab);
 void *dt_draw_shade(void *list, unsigned short side, unsigned short tab, int lit);
 void *dt_draw_card_pict(void *list, int x, int y, int z, unsigned int color, DtEnt *e, void *gim, void *gim_alt, void *alt);
@@ -540,13 +540,21 @@ void dt_flight_window_input(PadBits *pad)
 }
 #endif
 
-#ifdef NON_MATCHING /* comparações float e ordem dos blocos da trajetória diferentes */
+/* point at t of the quadratic curve a, m, b of a flight */
+static inline float dt_bez(float t, float a, float m, float b)
+{
+    float u = 1.0f - t;
+    float k = 2.0f * t * u;
+    u = u * u;
+    t = t * t;
+    return t * b + (u * a + k * m);
+}
+
+#ifdef NON_MATCHING /* 9 palavras, só na curva da fase 1 (dt_bez): t fica em $f4 e 2*t em $f3 (original: $f6 e $f4) */
 /* flight from the slot to the window (phase 0 path, 1 move, 2 open the window) */
 void dt_flight_take_step(void)
 {
     float t;
-    float u;
-    float k;
 
     switch (dt_flight->phase) {
     case 0:
@@ -555,37 +563,33 @@ void dt_flight_take_step(void)
         dt_flight->to[1] = dt_flight->y + 0x13;
         dt_flight->cur[0] = dt_flight->from[0];
         dt_flight->cur[1] = dt_flight->from[1];
-        if (dt_flight->to[1] < dt_flight->from[1] - 10.0f || dt_flight->from[1] + 10.0f < dt_flight->to[1]) {
-            if (dt_flight->from[0] - 10.0f <= dt_flight->to[0] && dt_flight->to[0] <= dt_flight->from[0] + 10.0f) {
-                if (dt_flight->from[0] <= 240.0f)
-                    dt_flight->mid[0] = dt_flight->from[0] + 120.0f;
-                else
-                    dt_flight->mid[0] = dt_flight->from[0] - 120.0f;
-                dt_flight->mid[1] = dt_flight->from[1] + (dt_flight->to[1] - dt_flight->from[1]) / 2.0f;
-            } else {
-                dt_flight->mid[0] = dt_flight->from[0];
-                dt_flight->mid[1] = 0.0f;
-            }
-        } else {
+        if (dt_flight->from[1] - 10.0f <= dt_flight->to[1] && dt_flight->from[1] + 10.0f >= dt_flight->to[1]) {
             dt_flight->mid[0] = dt_flight->from[0] + (dt_flight->to[0] - dt_flight->from[0]) / 2.0f;
             dt_flight->mid[1] = 24.0f;
+        } else if (dt_flight->from[0] - 10.0f <= dt_flight->to[0] && dt_flight->from[0] + 10.0f >= dt_flight->to[0]) {
+            if (dt_flight->from[0] <= 240.0f)
+                dt_flight->mid[0] = dt_flight->from[0] + 120.0f;
+            else
+                dt_flight->mid[0] = dt_flight->from[0] - 120.0f;
+            dt_flight->mid[1] = dt_flight->from[1] + (dt_flight->to[1] - dt_flight->from[1]) / 2.0f;
+        } else {
+            dt_flight->mid[0] = dt_flight->from[0];
+            dt_flight->mid[1] = 0.0f;
         }
         dt_flight_take();
         dt_flight->phase++;
         dt_flight->timer = 0;
         break;
     case 1:
-        if (++dt_flight->timer > 10) {
+        if (++dt_flight->timer <= 10) {
+            t = (unsigned int)dt_flight->timer / 10.0f;
+            dt_flight->cur[0] = dt_bez(t, dt_flight->from[0], dt_flight->mid[0], dt_flight->to[0]);
+            dt_flight->cur[1] = dt_bez(t, dt_flight->from[1], dt_flight->mid[1], dt_flight->to[1]);
+            if (dt_flight->timer == 5)
+                dt_flight->shown = 1;
+        } else {
             dt_flight->phase++;
-            break;
         }
-        t = dt_flight->timer / 10.0f;
-        u = 1.0f - t;
-        k = t * 2.0f * u;
-        dt_flight->cur[0] = t * t * dt_flight->to[0] + u * u * dt_flight->from[0] + k * dt_flight->mid[0];
-        dt_flight->cur[1] = t * t * dt_flight->to[1] + u * u * dt_flight->from[1] + k * dt_flight->mid[1];
-        if (dt_flight->timer == 5)
-            dt_flight->shown = 1;
         break;
     case 2:
         if (dt_flight->dtab != dt_flight->dst[dt_flight->sel])
@@ -601,90 +605,87 @@ void dt_flight_take_step(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* comparações float e ordem dos blocos da trajetória diferentes */
+#ifdef NON_MATCHING /* palavras restantes só na curva da fase 1 (dt_bez): t fica em $f4 e 2*t em $f3 (original: $f6 e $f4); nenhuma grafia testada reproduziu */
 /* flight from the window (or the slot) to the slot it lands in (phase 0 path, 1 move, 2 land) */
 void dt_flight_put_step(void)
 {
     DtFlight *f = dt_flight;
+    DtPane *p;
     float t;
-    float u;
-    float k;
     int pos;
-    int keep;
+    unsigned short keep;
     unsigned short view;
+    unsigned short grid;
+    unsigned short grid2;
 
-    switch (dt_flight->phase) {
-    case 2:
-        if (dtv.mode < 2 && dt_flight->dst[dt_flight->sel] != dt_flight->dtab)
-            dt_select_tab(dt_flight->dside, dt_flight->dtab, 2);
-        dt_flight_put();
-        dt_attr_count_update();
-        pos = dtv.pane[0].cx + dtv.pane[0].top + dtv.pane[0].cy * (dtv.pane[0].list_mode == 0 ? dtv.pane[0].lay.cols : 1);
-        keep = 1;
-        if (pos > 0 && pos >= dtv.pane[0].list->count) {
-            pos = dtv.pane[0].list->count - 1;
-            keep = 0;
-        }
-        view = dtv.pane[0].list_mode == 0 ? dtv.pane[0].lay.grid_rows : dtv.pane[0].lay.rows;
-        dt_layout_scroll(keep, pos, (dtv.pane[0].list_mode == 0 ? dtv.pane[0].lay.cols : 1) & 0xFF | view << 8, dtv.pane[0].list->count, &dtv.pane[0].top, &dtv.pane[0].cx, &dtv.pane[0].cy);
-        if (dtv.mode > 1) {
-            pos = dtv.pane[1].cx + dtv.pane[1].top + dtv.pane[1].cy * (dtv.pane[1].list_mode == 0 ? dtv.pane[1].lay.cols : 1);
-            keep = 1;
-            if (pos > 0 && pos >= dtv.pane[1].list->count) {
-                pos = dtv.pane[1].list->count - 1;
-                keep = 0;
-            }
-            view = dtv.pane[1].list_mode == 0 ? dtv.pane[1].lay.grid_rows : dtv.pane[1].lay.rows;
-            dt_layout_scroll(keep, pos, (dtv.pane[1].list_mode == 0 ? dtv.pane[1].lay.cols : 1) & 0xFF | view << 8, dtv.pane[1].list->count, &dtv.pane[1].top, &dtv.pane[1].cx, &dtv.pane[1].cy);
-        }
-        dt_flight->step = 8;
-        dt_flight->phase = 0;
-        dt_flight->timer = 0;
-        return;
-    case 1:
-        if (dt_flight->timer++ < 10) {
-            t = dt_flight->timer / 10.0f;
-            u = 1.0f - t;
-            k = t * 2.0f * u;
-            dt_flight->cur[0] = t * t * dt_flight->to[0] + u * u * dt_flight->from[0] + k * dt_flight->mid[0];
-            dt_flight->cur[1] = t * t * dt_flight->to[1] + u * u * dt_flight->from[1] + k * dt_flight->mid[1];
-        } else {
-            dt_flight->phase++;
-        }
-        return;
+    switch (f->phase) {
     case 0:
-        break;
-    default:
-        return;
-    }
-    dt_slot_pos(f->to, f->dside, f->dst[f->sel], dt_dst_pos(f->dst[f->sel], f->ent.id), 0);
-    if (dt_flight->to[1] < dt_flight->from[1] - 10.0f || dt_flight->from[1] + 10.0f < dt_flight->to[1]) {
-        if (dt_flight->to[0] < dt_flight->from[0] - 10.0f || dt_flight->from[0] + 10.0f < dt_flight->to[0]) {
-            if (dt_flight->from[1] < dt_flight->to[1]) {
-                dt_flight->mid[1] = dt_flight->from[1];
-                dt_flight->mid[0] = dt_flight->to[0];
-            } else {
-                dt_flight->mid[1] = dt_flight->to[1];
-                dt_flight->mid[0] = dt_flight->from[0];
-            }
-        } else {
+        dt_slot_pos(f->to, f->dside, f->dst[f->sel], dt_dst_pos(f->dst[f->sel], f->ent.id), 0);
+        if (dt_flight->from[1] - 10.0f <= dt_flight->to[1] && dt_flight->from[1] + 10.0f >= dt_flight->to[1]) {
+            if (dt_flight->from[1] <= 136.0f)
+                dt_flight->mid[1] = dt_flight->from[1] + 68.0f;
+            else
+                dt_flight->mid[1] = 24.0f;
+            dt_flight->mid[0] = dt_flight->from[0] + (dt_flight->to[0] - dt_flight->from[0]) / 2.0f;
+        } else if (dt_flight->from[0] - 10.0f <= dt_flight->to[0] && dt_flight->from[0] + 10.0f >= dt_flight->to[0]) {
             if (dt_flight->from[0] <= 240.0f)
                 dt_flight->mid[0] = dt_flight->from[0] + 120.0f;
             else
                 dt_flight->mid[0] = dt_flight->from[0] - 120.0f;
             dt_flight->mid[1] = dt_flight->from[1] + (dt_flight->to[1] - dt_flight->from[1]) / 2.0f;
+        } else if (dt_flight->from[1] < dt_flight->to[1]) {
+            dt_flight->mid[1] = dt_flight->from[1];
+            dt_flight->mid[0] = dt_flight->to[0];
+        } else {
+            dt_flight->mid[1] = dt_flight->to[1];
+            dt_flight->mid[0] = dt_flight->from[0];
         }
-    } else {
-        if (dt_flight->from[1] <= 136.0f)
-            dt_flight->mid[1] = dt_flight->from[1] + 68.0f;
-        else
-            dt_flight->mid[1] = 24.0f;
-        dt_flight->mid[0] = dt_flight->from[0] + (dt_flight->to[0] - dt_flight->from[0]) / 2.0f;
+        dt_flight->timer = 0;
+        dt_flight->phase++;
+        break;
+    case 1:
+        if (f->timer++ < 10) {
+            t = (unsigned int)dt_flight->timer / 10.0f;
+            dt_flight->cur[0] = dt_bez(t, dt_flight->from[0], dt_flight->mid[0], dt_flight->to[0]);
+            dt_flight->cur[1] = dt_bez(t, dt_flight->from[1], dt_flight->mid[1], dt_flight->to[1]);
+        } else {
+            dt_flight->phase++;
+        }
+        break;
+    case 2:
+        if (dtv.mode < 2 && f->dst[f->sel] != f->dtab)
+            dt_select_tab(f->dside, f->dtab, 2);
+        dt_flight_put();
+        dt_attr_count_update();
+        p = &dtv.pane[0];
+        pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
+        keep = 1;
+        if (pos > 0 && pos >= p->list->count) {
+            pos = p->list->count - 1;
+            keep = 0;
+        }
+        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+        grid = p->list_mode == 0 ? p->lay.cols : 1;
+        dt_layout_scroll(keep, pos, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+        if (dtv.mode > 1) {
+            p = &dtv.pane[1];
+            pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
+            keep = 1;
+            if (pos > 0 && pos >= p->list->count) {
+                pos = p->list->count - 1;
+                keep = 0;
+            }
+            view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+            grid2 = p->list_mode == 0 ? p->lay.cols : 1;
+            dt_layout_scroll(keep, pos, (grid2 & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+        }
+        dt_flight->step = 8;
+        dt_flight->phase = 0;
+        dt_flight->timer = 0;
+        if (dt.step == 10 && dt.goal == 4)   /* lesson: a card was put */
+            dt.done++;
+        break;
     }
-    dt_flight->timer = 0;
-    dt_flight->phase++;
-    if (dt.step == 10 && dt.goal == 4)   /* lesson: a card was put */
-        dt.done++;
 }
 #endif
 

@@ -1,8 +1,8 @@
 // @range 0x088135A8-0x08814460
 // @asm 0x08813888-0x088139EC
 // @asm 0x088139EC-0x08813B7C
-// @asm 0x08813D60-0x08813EC0
 // @asm 0x088140F8-0x088143A8
+// @rodata 0x08821050-0x0882106C
 // @data 0x08822024-0x08822050
 /* (The code of libdeck dk_filter.c, first half; the lesson has no "new" filter.) Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
    with its word history, the filters (kind, type, race, level ranges, spell/trap kinds, limit,
@@ -246,13 +246,10 @@ int dt_filter_level(unsigned short id, unsigned int mask)
 }
 
 
-#ifdef NON_MATCHING /* 2 palavras: o default da tabela de saltos interna sai com beqz+nop para o move v0,zero no original (o mwcc usa beqzl para o epílogo); default explícito, case 1 vazio e default no fim do switch externo não resolvem */
 /* spell and trap kinds */
 int dt_filter_spelltrap(unsigned short id, unsigned int mask)
 {
     switch (card_get_attribute_icon(id)) {
-    default:
-        return 0;
     case 7:
         switch (card_get_prop5_hi(id)) {
         case 0:
@@ -300,7 +297,7 @@ int dt_filter_spelltrap(unsigned short id, unsigned int mask)
     }
     return 0;
 }
-#endif
+
 
 int dt_filter_limit(unsigned short id, unsigned int mask)
 {

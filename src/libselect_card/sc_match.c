@@ -1,5 +1,4 @@
 // @range 0x088119C8-0x088121D0
-// @asm 0x08811C3C-0x08811D28
 // @asm 0x08811E68-0x08812118
 // @rodata 0x0881A9D4-0x0881A9F0
 // @data 0x0881B458-0x0881B460
@@ -94,7 +93,6 @@ int sc_filter_def(unsigned short id, unsigned int mask)
     return (mask & 1 << card_get_limit(id)) != 0;
 }
 
-#ifdef NON_MATCHING /* a contagem é comparada com blez depois da máscara u16; o mwcc atual usa beqz */
 /* genre bits, the "new" cards and the cards with an alternate picture */
 int sc_filter_attr(ScEnt *e, unsigned int *arg)
 {
@@ -107,11 +105,10 @@ int sc_filter_attr(ScEnt *e, unsigned int *arg)
     card_get_genre(e->id, g);
     if (g[0] & (arg[0] & 0xFFFF))
         return 1;
-    if ((arg[0] >> 16 & 0xFFFF) & g[1])
+    if (g[1] & (unsigned short)(arg[0] >> 16))
         return 1;
     return (g[2] & (unsigned short)arg[1]) != 0;
 }
-#endif
 
 /* word found in the card's name or text (with and without ruby) */
 int sc_text_match(unsigned short id, unsigned short *word)

@@ -4,8 +4,8 @@
 // @asm 0x088125E4-0x08812CB0
 // @asm 0x08812E04-0x088130A4
 // @asm 0x088130A4-0x08813584
-// @asm 0x08813A20-0x08813B5C
 // @asm 0x08813B5C-0x08813CF4
+// @rodata 0x0881A9F0-0x0881AA10
 // @data 0x0881B460-0x0881B510
 /* The filter menu (state 5): a list of the seven filter kinds and a grid of the values of the
    chosen one (toggled with Circle, page by page), then the filter applied to the pane; the value
@@ -59,7 +59,6 @@ void *sc_draw_pack_icon(void *list, unsigned short x, unsigned short y, unsigned
 void sc_layout_scroll(short keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned short sc_list_filter(ScList *l, unsigned short f, unsigned int *arg);
 void sc_popup_open(int id, int arg);
-void *menu_draw_item(void *list, MenuWidget *m, int x, int y, int which, int lit);
 void sc_fmenu_free(void);
 void sc_fmenu_values(void);
 void sc_fmenu_open_values(unsigned short f);
@@ -470,7 +469,7 @@ void *sc_draw_fmenu_values(void *list, int x, int y, int w, int h)
     label = table_get_entry(res_get(0x8033), 0x17);
     tx = x + (w - 0x3C) / 2;
     ty = y + h - 0x18;
-    list = menu_draw_item(list, m, tx, ty, 0, sc_fmenu->page == 0xF);
+    list = menu_draw_button(list, m, tx, ty, 0, sc_fmenu->page == 0xF);
     font_set_size(12, 12);
     font_text_set(list);
     font_set_color(0xFF000000);
@@ -570,30 +569,39 @@ void *sc_draw_check(void *list, unsigned short x, unsigned short y)
 unsigned short sc_limit_labels[10] = { 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x0 };
 unsigned short sc_spell_labels[14] = { 0x35, 0x36, 0x37, 0x38, 0x0, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x40, 0x41 };
 
-#ifdef NON_MATCHING /* tabela de saltos com default primeiro; corpos em outra ordem */
 /* label of value v of filter f */
 unsigned short *sc_filter_label(unsigned short f, unsigned short v)
 {
+    unsigned short *s;
+
     switch (f) {
-    default:
-        return 0;
     case 1:
-        return table_get_entry(res_get(0x8033), sc_limit_labels[v]);
+        s = table_get_entry(res_get(0x8033), sc_limit_labels[v]);
+        break;
     case 2:
-        return card_db_table_sel(v);
+        s = card_db_table_sel(v);
+        break;
     case 3:
-        return dlg_table_sel(v);
+        s = dlg_table_sel(v);
+        break;
     case 4:
-        return table_get_entry(res_get(0x8033), sc_limit_labels[v + 6]);
+        s = table_get_entry(res_get(0x8033), sc_limit_labels[v + 6]);
+        break;
     case 5:
-        return table_get_entry(res_get(0x8033), sc_spell_labels[v + 4]);
+        s = table_get_entry(res_get(0x8033), sc_spell_labels[v + 4]);
+        break;
     case 6:
-        return table_get_entry(res_get(0x8033), sc_spell_labels[v]);
+        s = table_get_entry(res_get(0x8033), sc_spell_labels[v]);
+        break;
     case 7:
-        return dlg_get_text_bounded(v);
+        s = dlg_get_text_bounded(v);
+        break;
+    default:
+        s = 0;
+        break;
     }
+    return s;
 }
-#endif
 
 #ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* opens the word search window */

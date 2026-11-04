@@ -1,5 +1,4 @@
 // @range 0x08816C34-0x088175FC
-// @asm 0x08816D1C-0x08816DA4
 // @asm 0x08816EBC-0x0881713C
 // @asm 0x088171A0-0x08817354
 // @data 0x0882225C-0x0882226C
@@ -71,18 +70,14 @@ unsigned short dt_cur_index(unsigned short side)
     return r;
 }
 
-#ifdef NON_MATCHING /* o original calcula o ponteiro do painel antes da chamada e o guarda em s0; aqui o cálculo desce para depois do jal */
 DtEnt *dt_cur_entry(unsigned short side)
 {
-    DtPane *const p = &dtv.pane[side];
+    DtPane *p = &dtv.pane[side];
     unsigned short i = dt_cur_index(side);
-    DtList *l = p->list;
 
-    if (i >= l->count)
-        return 0;
-    return &l->ents[l->order[i]];
+    return i >= p->list->count ? 0 : &p->list->ents[p->list->order[i]];
 }
-#endif
+
 
 /* the cursor moved to another card: reset the timer, measure its text */
 void dt_info_update(void)

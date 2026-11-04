@@ -3,7 +3,6 @@
 // @asm 0x088063E0-0x088068F0
 // @asm 0x08806A6C-0x08806D54
 // @asm 0x088071CC-0x0880779C
-// @asm 0x0880779C-0x08807994
 // @asm 0x08807A5C-0x08807B58
 // @asm 0x08807DB8-0x08807EC0
 // @asm 0x08807F60-0x08808098
@@ -671,7 +670,6 @@ void *dt_draw_headers(void *list)
 
 unsigned short dt_count_digits[6] = { 2, 2, 2, 6, 2, 1 };   /* digits of the copy count of each tab */
 
-#ifdef NON_MATCHING /* 24 palavras: a ordem entre a carga de lay.x e a máscara do retorno de dt_tab_rect, e a posição do sh de r.x */
 /* the total of copies on the tab buttons of each pane (tab 4 is hidden in one-pane modes) */
 void *dt_draw_counts(void *list)
 {
@@ -679,40 +677,36 @@ void *dt_draw_counts(void *list)
     unsigned short sel = p->list->tab;
     int i;
     unsigned short x;
-    short lx;
     DtRect r;
+    extern void *dt_draw_count(void *list, unsigned short x, DtRect *r, unsigned short ndig, int value);
 
     if (dtv.mode < 2) {
         for (i = 0; i < 5; i++) {
             if (i == 4)
                 continue;
             x = dt_tab_rect(i, sel, &r);
-            lx = p->lay.x;
-            x += (unsigned short)lx;
-            r.x += lx;
+            x += p->lay.x;
+            r.x += p->lay.x;
             list = dt_draw_count(list, x, &r, dt_count_digits[i], dts.list[i].total);
         }
     } else {
         for (i = 0; i < 3; i++) {
             x = dt_tab_rect(i, sel, &r);
-            lx = p->lay.x;
-            x += (unsigned short)lx;
-            r.x += lx;
+            x += p->lay.x;
+            r.x += p->lay.x;
             list = dt_draw_count(list, x, &r, dt_count_digits[i], dts.list[i].total);
         }
         p = &dtv.pane[1];
         sel = p->list->tab;
         for (; i < 5; i++) {
             x = dt_tab_rect(i, sel, &r);
-            lx = p->lay.x;
-            x += (unsigned short)lx;
-            r.x += lx;
+            x += p->lay.x;
+            r.x += p->lay.x;
             list = dt_draw_count(list, x, &r, dt_count_digits[i], dts.list[i].total);
         }
     }
     return list;
 }
-#endif
 
 void *dt_draw_count(list, x, r, ndig, value)
 void *list;

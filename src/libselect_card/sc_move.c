@@ -73,7 +73,7 @@ int sc_list_remove(ScList *l, int i);
 void sc_list_add(ScList *l, ScEnt *src);
 void sc_lists_save(void);
 void sc_select_tab(unsigned short side, unsigned short tab, short how);
-void sc_layout_scroll(short keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
+void sc_layout_scroll(int keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned int sc_tab_pos(unsigned short i);
 void sc_hist_push(ScMove *m);
 void sc_popup_open(int id, int arg);
@@ -354,90 +354,93 @@ void sc_flight_land(void)
     sc_list_add(l, &e);
 }
 
-#ifdef NON_MATCHING /* contas em float com outra alocação de $f */
+/* point at t of the quadratic curve a, m, b of a flight */
+static inline float sc_bez(float t, float a, float m, float b)
+{
+    float u = 1.0f - t;
+    float k = 2.0f * t * u;
+    u = u * u;
+    t = t * t;
+    return t * b + (u * a + k * m);
+}
+
+#ifdef NON_MATCHING /* lógica conferida com o asm (sc_select_tab recebe dtab, não dst); o original guarda f+6 em $s1 e lê
+   dside/dst por ele (o mwcc lê por $s0 e não usa $s1: tudo desloca uma palavra, 335); curva como dt_bez */
 /* the flight: path through a control point, 10 frames of quadratic curve, landing */
 void sc_flight_step(void)
 {
     ScFlight *f = sc_flight;
-    int i;
-    int keep;
+    ScPane *p;
     float t;
-    float u;
-    float k;
-    float y0;
-    float y1;
-    float x0;
+    int pos;
+    unsigned short keep;
+    unsigned short view;
+    unsigned short grid;
+    unsigned short grid2;
 
     switch (f->phase) {
-    case 2:
-        if (scv.mode < 2 && f->dst != f->dtab)
-            sc_select_tab(f->dside, f->dst, 2);
-        sc_flight_land();
-        i = scv.pane[0].cx + scv.pane[0].top + scv.pane[0].cy * (scv.pane[0].list_mode ? 1 : scv.pane[0].lay.cols);
-        keep = 1;
-        if (i > 0 && i >= scv.pane[0].list->count) {
-            i = scv.pane[0].list->count - 1;
-            keep = 0;
+    case 0:
+        sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 0);
+        if (sc_flight->from[1] - 10.0f <= sc_flight->to[1] && sc_flight->from[1] + 10.0f >= sc_flight->to[1]) {
+            if (sc_flight->from[1] <= 136.0f)
+                sc_flight->mid[1] = sc_flight->from[1] + 68.0f;
+            else
+                sc_flight->mid[1] = 24.0f;
+            sc_flight->mid[0] = sc_flight->from[0] + (sc_flight->to[0] - sc_flight->from[0]) / 2.0f;
+        } else if (sc_flight->from[0] - 10.0f <= sc_flight->to[0] && sc_flight->from[0] + 10.0f >= sc_flight->to[0]) {
+            if (sc_flight->from[0] <= 240.0f)
+                sc_flight->mid[0] = sc_flight->from[0] + 120.0f;
+            else
+                sc_flight->mid[0] = sc_flight->from[0] - 120.0f;
+            sc_flight->mid[1] = sc_flight->from[1] + (sc_flight->to[1] - sc_flight->from[1]) / 2.0f;
+        } else if (sc_flight->from[1] < sc_flight->to[1]) {
+            sc_flight->mid[1] = sc_flight->from[1];
+            sc_flight->mid[0] = sc_flight->to[0];
+        } else {
+            sc_flight->mid[1] = sc_flight->to[1];
+            sc_flight->mid[0] = sc_flight->from[0];
         }
-        sc_layout_scroll(keep, i, ((scv.pane[0].list_mode ? 1 : scv.pane[0].lay.cols) & 0xFF) |
-                         (scv.pane[0].list_mode ? scv.pane[0].lay.rows : scv.pane[0].lay.grid_rows) << 8,
-                         scv.pane[0].list->count, &scv.pane[0].top, &scv.pane[0].cx, &scv.pane[0].cy);
-        if (scv.mode > 1) {
-            i = scv.pane[1].cx + scv.pane[1].top + scv.pane[1].cy * (scv.pane[1].list_mode ? 1 : scv.pane[1].lay.cols);
-            keep = 1;
-            if (i > 0 && i >= scv.pane[1].list->count) {
-                i = scv.pane[1].list->count - 1;
-                keep = 0;
-            }
-            sc_layout_scroll(keep, i, ((scv.pane[1].list_mode ? 1 : scv.pane[1].lay.cols) & 0xFF) |
-                             (scv.pane[1].list_mode ? scv.pane[1].lay.rows : scv.pane[1].lay.grid_rows) << 8,
-                             scv.pane[1].list->count, &scv.pane[1].top, &scv.pane[1].cx, &scv.pane[1].cy);
-        }
-        f->step = 3;
-        f->phase = 0;
-        f->timer = 0;
+        sc_flight->timer = 0;
+        sc_flight->phase++;
         break;
     case 1:
         if (f->timer++ < 10) {
-            t = f->timer / 10.0f;
-            u = 1.0f - t;
-            k = t * 2.0f * u;
-            f->x = (int)(t * t * f->to[0] + u * u * f->from[0] + k * f->mid[0]);
-            f->y = (int)(t * t * f->to[1] + u * u * f->from[1] + k * f->mid[1]);
+            t = (unsigned int)sc_flight->timer / 10.0f;
+            sc_flight->x = sc_bez(t, sc_flight->from[0], sc_flight->mid[0], sc_flight->to[0]);
+            sc_flight->y = sc_bez(t, sc_flight->from[1], sc_flight->mid[1], sc_flight->to[1]);
         } else {
-            f->phase++;
+            sc_flight->phase++;
         }
         break;
-    case 0:
-        sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 0);
-        y0 = f->from[1];
-        y1 = f->to[1];
-        if (y1 < y0 - 10.0f || y0 + 10.0f < y1) {
-            x0 = f->from[0];
-            if (f->to[0] < x0 - 10.0f || x0 + 10.0f < f->to[0]) {
-                if (y0 < y1) {
-                    f->mid[1] = y0;
-                    f->mid[0] = f->to[0];
-                } else {
-                    f->mid[1] = y1;
-                    f->mid[0] = f->from[0];
-                }
-            } else {
-                if (x0 <= 240.0f)
-                    f->mid[0] = x0 + 120.0f;
-                else
-                    f->mid[0] = x0 - 120.0f;
-                f->mid[1] = f->from[1] + (f->to[1] - f->from[1]) / 2.0f;
-            }
-        } else {
-            if (y0 <= 136.0f)
-                f->mid[1] = y0 + 68.0f;
-            else
-                f->mid[1] = 24.0f;
-            f->mid[0] = f->from[0] + (f->to[0] - f->from[0]) / 2.0f;
+    case 2:
+        if (scv.mode < 2 && f->dst != f->dtab)
+            sc_select_tab(f->dside, f->dtab, 2);
+        sc_flight_land();
+        p = &scv.pane[0];
+        pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
+        keep = 1;
+        if (pos > 0 && pos >= p->list->count) {
+            pos = p->list->count - 1;
+            keep = 0;
         }
-        f->timer = 0;
-        f->phase++;
+        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+        grid = p->list_mode == 0 ? p->lay.cols : 1;
+        sc_layout_scroll(keep, pos, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+        if (scv.mode > 1) {
+            p = &scv.pane[1];
+            pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
+            keep = 1;
+            if (pos > 0 && pos >= p->list->count) {
+                pos = p->list->count - 1;
+                keep = 0;
+            }
+            view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+            grid2 = p->list_mode == 0 ? p->lay.cols : 1;
+            sc_layout_scroll(keep, pos, (grid2 & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+        }
+        sc_flight->step = 3;
+        sc_flight->phase = 0;
+        sc_flight->timer = 0;
         break;
     }
 }

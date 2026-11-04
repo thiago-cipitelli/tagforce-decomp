@@ -1,7 +1,5 @@
 // @range 0x08813CF4-0x08815168
 // @asm 0x088144FC-0x088146E0
-// @asm 0x088146E0-0x08814828
-// @asm 0x088148D0-0x08814C14
 // @asm 0x08814F40-0x08815168
 // @data 0x0881B510-0x0881B51C
 /* The word search (state 6): a window with the word, the last words used and an OK button; the
@@ -46,7 +44,6 @@ int sceUtilityOskInitStart(void *params);
 int wcslen(const unsigned short *s);
 unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
 void *sc_draw_shade(void *list, unsigned short side, unsigned short tab);
-void *menu_draw_item(void *list, MenuWidget *m, int x, int y, int which, int lit);
 void sc_layout_scroll(short keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 void sc_search_start(ScList *l, unsigned short *word);
 unsigned short sc_search_step(ScList *l);
@@ -284,10 +281,10 @@ int sc_word_reset(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* the progress bar window */
 void sc_word_bar_open(void)
 {
+    MenuItemDef *def;
     MenuWidget *m = sc_word->bar;
 
     if (m == 0) {
@@ -296,21 +293,22 @@ void sc_word_bar_open(void)
         if (m == 0)
             return;
     }
+    def = &m->def;
     memset(m, 0, 0x120);
-    m->def.visible = 1;
-    m->def.style = 2;
-    m->def.x = 0x8A;
-    m->def.y = 0x70;
-    m->def.w = 0xCC;
-    m->def.h = 0x30;
-    m->def.anchor = -1;
-    m->def.pad_l = 0xF;
-    m->def.pad_t = 4;
-    m->def.font_size = 0xC;
-    m->def.text_color = 0xFFFFFFFF;
-    m->def.text = table_get_entry(res_get(0x8033), 0x45);
-    m->def.open_anim = 2;
-    m->def.close_anim = 2;
+    def->visible = 1;
+    def->style = 2;
+    def->x = 0x8A;
+    def->y = 0x70;
+    def->w = 0xCC;
+    def->h = 0x30;
+    def->color = 0xFFFFFFFF;
+    def->pad_l = 0xF;
+    def->pad_t = 4;
+    def->font_size = 0xC;
+    def->text_color = 0xFFFFFFFF;
+    def->text = table_get_entry(res_get(0x8033), 0x45);
+    def->open_anim = 2;
+    def->close_anim = 2;
     m->heap = sc.heap;
     m->no_input = 1;
     m->no_cancel = 1;
@@ -318,7 +316,6 @@ void sc_word_bar_open(void)
     m->draw_all = (MenuDrawRectFn)sc_draw_word_bar;
     menu_open(m);
 }
-#endif
 
 void *sc_draw_result(void *list)
 {
@@ -335,7 +332,6 @@ void *sc_draw_result(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* o original relê o menu da estrutura e guarda x + 0xD6 em s0; quase igual */
 /* the word window contents: history, word field (blinking when focused), OK button */
 void *sc_draw_word_win(void *list, int x, int y)
 {
@@ -348,7 +344,7 @@ void *sc_draw_word_win(void *list, int x, int y)
     if (sc_word->hist != 0) {
         menu_draw(&list, sc_word->hist);
         if (sc_word->focus != 2 && (gfx_get_state()[0] >> 3 & 1))
-            v = 0x11;
+            v += 0x11;
     }
     gim = res_get(0x8006);
     if (gim == 0)
@@ -363,7 +359,7 @@ void *sc_draw_word_win(void *list, int x, int y)
     list = draw_set_offsets(list, 4, 0x11, 0xB5, 0x11);
     list = draw_sprite(list, x + 4, y + 4, 0, 0xE4, v, 0, 0);
     if (sc_word->step == 0 && sc_word->focus == 0)
-        list = menu_draw_cursor(list, m, x + 2, y + 6, 0xB7, 0xD);
+        list = menu_draw_cursor(list, sc_word->menu, x + 2, y + 6, 0xB7, 0xD);
     if (sc_word->word[0] != 0) {
         font_text_set(list);
         font_set_size(12, 12);
@@ -372,15 +368,16 @@ void *sc_draw_word_win(void *list, int x, int y)
         list = font_text_clear();
     }
     label = table_get_entry(res_get(0x8033), 0x17);
-    list = menu_draw_item(list, m, x + 0xD6, y, 0, sc_word->focus == 2);
+    tx = x + 0xD6;
+    list = menu_draw_button(list, m, tx, y, 0, sc_word->focus == 2);
     font_set_size(12, 12);
     font_text_set(list);
     font_set_color(0xFF000000);
-    tx = x + 0xD6 + (0x3C - (font_measure_text(label) >> 6)) / 2;
+    tx += (0x3C - (font_measure_text(label) >> 6)) / 2;
     font_draw_text(tx << 6, (y + (0x18 - (font_line_height() >> 6)) / 2) << 6, (480 - tx) << 6, label);
-    return font_text_clear();
+    list = font_text_clear();
+    return list;
 }
-#endif
 
 void *sc_draw_hist_item(void *list, unsigned short i, int x, int y)
 {

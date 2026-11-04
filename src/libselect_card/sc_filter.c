@@ -1,6 +1,4 @@
 // @range 0x08810BF4-0x088119C8
-// @asm 0x08810BF4-0x08810E74
-// @asm 0x08810F84-0x08811130
 // @asm 0x08811130-0x088112C0
 // @asm 0x088115CC-0x08811730
 // @asm 0x08811730-0x088118C0
@@ -41,36 +39,38 @@ int sc_filter_race(unsigned short id, unsigned int mask);
 int sc_filter_level(unsigned short id, unsigned int mask);
 int sc_filter_atk(unsigned short id, unsigned int mask);
 int sc_filter_def(unsigned short id, unsigned int mask);
-int sc_sort_key_value(ScEnt *e, unsigned short sort);
+int sc_sort_key_value(ScEnt *e, int key);
 int sc_cmp_up(const void *pa, const void *pb);
 int sc_cmp_down(const void *pa, const void *pb);
 
-#ifdef NON_MATCHING /* o original tem o laço de cópia desenrolado com outra alocação */
 /* sorts the visible order of l by key sort, dir 0 up, 1 down */
 void sc_list_sort(ScList *l, int sort, unsigned short dir)
 {
-    unsigned int n = l->count;
-    ScKey *k = heap_alloc(sc.heap, n << 3);
+    unsigned short n;
+    ScKey *k;
     int i;
-    ScKey *p;
+    unsigned short id;
 
-    for (i = 0, p = k; i < (int)n; i++, p++) {
-        p->idx = l->order[i];
-        p->pos = i;
-        p->value = sc_sort_key_value(&l->ents[p->idx], sort);
+    n = l->count;
+    k = heap_alloc(sc.heap, n << 3);
+    for (i = 0; i < n; i++) {
+        id = l->order[i];
+        k[i].idx = id;
+        k[i].pos = i;
+        k[i].value = sc_sort_key_value(&l->ents[id], sort);
     }
     if (dir == 0)
-        qsort(k, n, 8, sc_cmp_up);
+        qsort(k, (int)n, sizeof(ScKey), sc_cmp_up);
     else if (dir == 1)
-        qsort(k, n, 8, sc_cmp_down);
-    for (i = 0; i < (int)n; i++)
+        qsort(k, (int)n, sizeof(ScKey), sc_cmp_down);
+    for (i = 0; i < n; i++)
         l->order[i] = k[i].idx;
     if (k != 0)
         heap_set_level(sc.heap, k);
     l->sort = sort;
     l->dir = dir;
 }
-#endif
+
 
 int sc_cmp_up(const void *pa, const void *pb)
 {
@@ -121,53 +121,58 @@ int sc_cmp_down(const void *pa, const void *pb)
 unsigned char sc_spell_order[8] = { 9, 9, 2, 1, 4, 0, 3, 0 };
 unsigned char sc_trap_order[8] = { 0x13, 0x0A, 0x13, 0x13, 0x0B, 0x13, 0x13, 0 };
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 61 palavras: o original devolve -2 do case 7 direto (bnel) e o
-                       case 8 e o default interno caem num li -2 comum, que o mwcc não reproduz */
 /* value of key sort for a card (smaller sorts first), -2 none */
-int sc_sort_key_value(ScEnt *e, unsigned short sort)
+int sc_sort_key_value(ScEnt *e, int key)
 {
-    int a;
+    unsigned short sort = key;
+    int v;
 
     switch (sort) {
     case 1:
         return card_get_sort(e->id);
     case 2:
-        return card_get_attribute_icon(e->id);
+        v = card_get_attribute_icon(e->id);
+        break;
     case 9:
-        return card_get_limit(e->id);
-    }
-    switch (card_get_attribute_icon(e->id)) {
-    case 7:
-        if (sort == 8)
-            return sc_spell_order[card_get_prop5_hi(e->id)];
-        return -2;
-    case 8:
-        if (sort == 8)
-            return sc_trap_order[card_get_prop5_hi(e->id)];
-        return -2;
+        v = card_get_limit(e->id);
+        break;
     default:
-        switch (sort) {
-        case 3:
-            return 0xFFFF - card_get_level(e->id);
-        case 4:
-            a = card_get_atk_q(e->id);
-            if (a == 0xFFFF)
-                return 0x10000;
-            return 0xFFFF - a;
-        case 5:
-            a = card_get_def_q(e->id);
-            if (a == 0xFFFF)
-                return 0x10000;
-            return 0xFFFF - a;
-        case 6:
-            return card_get_type(e->id);
+        switch (card_get_attribute_icon(e->id)) {
         case 7:
-            return card_get_kind(e->id);
+            if (sort == 8)
+                return sc_spell_order[card_get_prop5_hi(e->id)];
+            break;
+        case 8:
+            if (sort != 8)
+                break;
+            return sc_trap_order[card_get_prop5_hi(e->id)];
+        default:
+            switch (sort) {
+            case 3:
+                return 0xFFFF - card_get_level(e->id);
+            case 4:
+                v = card_get_atk_q(e->id);
+                if (v == 0xFFFF)
+                    return 0x10000;
+                return 0xFFFF - v;
+            case 5:
+                v = card_get_def_q(e->id);
+                if (v == 0xFFFF)
+                    return 0x10000;
+                return 0xFFFF - v;
+            case 6:
+                return card_get_type(e->id);
+            case 7:
+                return card_get_kind(e->id);
+            }
+            break;
         }
-        return -2;
+        v = -2;
+        break;
     }
+    return v;
 }
-#endif
+
 
 #ifdef NON_MATCHING /* lógica conferida com o asm; 50 palavras: o original tem um "b fim" próprio em cada caso
                        (sem encadear os desvios ao epílogo); com return por caso piora para 92 */
