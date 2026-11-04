@@ -5,7 +5,6 @@
 // @asm 0x0880A2B8-0x0880ADA8
 // @asm 0x0880ADA8-0x0880B58C
 // @asm 0x0880BC54-0x0880BEA4
-// @asm 0x0880C2C8-0x0880C4EC
 // @data 0x0881A6F8-0x0881A774
 // @rodata 0x08819F6C-0x08819FC4
 /* Start menu of a duel: rock-paper-scissors (janken) for the first turn, local or over ad hoc,
@@ -1279,7 +1278,6 @@ unsigned int *dmgr_jk_draw_cards(unsigned int *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* só os temporários da largura e da altura trocam de registrador */
 unsigned int *dmgr_jk_draw_card(unsigned int *list, unsigned short side, DmgrJkCard *c)
 {
     float f;
@@ -1288,6 +1286,8 @@ unsigned int *dmgr_jk_draw_card(unsigned int *list, unsigned short side, DmgrJkC
     int sw;
     int w;
     int h;
+    int x;
+    int y;
 
     if (!c->on) {
         return list;
@@ -1314,12 +1314,11 @@ unsigned int *dmgr_jk_draw_card(unsigned int *list, unsigned short side, DmgrJkC
     }
     w = (int)((float)sw * f);
     h = c->cur.w * 0x74 / 100;
-    w = c->cur.x - w / 2;
-    h = c->cur.y - h / 2;
-    list = draw_set_offsets(list, 0x50, 0x74);
-    return draw_sprite(list, w, h, 0, u, v, 0, 0);
+    x = c->cur.x - w / 2;
+    y = c->cur.y - h / 2;
+    list = draw_set_offsets(list, 0x50, 0x74, w, h);
+    return draw_sprite(list, x, y, 0, u, v, 0, 0);
 }
-#endif
 
 unsigned int *dmgr_jk_draw_results(unsigned int *list)
 {

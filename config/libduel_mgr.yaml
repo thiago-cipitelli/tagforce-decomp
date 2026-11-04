@@ -51,8 +51,6 @@ segments:
       - [0x75EC, c, dmgr_janken]
       - [0x7CB4, asm, dmgr_janken_asm_0880BC54]
       - [0x7F04, c, dmgr_janken]
-      - [0x8328, asm, dmgr_janken_asm_0880C2C8]
-      - [0x854C, c, dmgr_janken]
       - [0x8948, c, dmgr_partner]
       - [0x9004, asm, dmgr_partner_asm_0880CFA4]
       - [0x93C0, c, dmgr_partner]
