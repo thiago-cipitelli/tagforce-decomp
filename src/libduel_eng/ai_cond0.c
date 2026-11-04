@@ -1,5 +1,4 @@
 // @range 0x0881D0D8-0x0881E0A0
-// @asm 0x0881D0D8-0x0881D17C
 // @asm 0x0881D17C-0x0881D318
 // @asm 0x0881DEA0-0x0881DF94
 /* Conditions the computer player checks before activating a card (continued in ai_cond.c). */
@@ -46,7 +45,6 @@ extern struct DuelDlgHead {
     int unk0;
 } duel_dlg_cards;
 
-#ifdef NON_MATCHING /* the original keeps the constant 1 in a3 for both calls and loads the MAX operands in the other order */
 int duel_ai_0881D0D8(DuelAct *a)
 {
     int a0;
@@ -54,17 +52,16 @@ int duel_ai_0881D0D8(DuelAct *a)
     int b0;
     int b1;
 
-    duel_08809FC4(1 - a->player, &a0, &a1);
+    duel_08809FC4(1 - a->player, &a0, &a1, 1);
     duel_08809FC4(a->player, &b0, &b1, 1);
-    if (MAX(a1, a0) < b0) {
+    if (b0 > MAX(a0, a1)) {
         return 0;
     }
-    if (MAX(a1, a0) < b1) {
+    if (b1 > MAX(a0, a1)) {
         return 1;
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* the original swaps the registers of the card id and the hand offset */
 int duel_ai_0881D17C(DuelAct *a)

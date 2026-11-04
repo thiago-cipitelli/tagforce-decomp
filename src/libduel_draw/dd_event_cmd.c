@@ -1,8 +1,7 @@
 // @range 0x0881794C-0x08819A70
-// @asm 0x08817C2C-0x08817D88
+// @rodata 0x088700A8-0x088700C0
 // @asm 0x08817EF4-0x08817F08
 // @asm 0x08817F08-0x088182C8
-// @asm 0x088185C0-0x088186AC
 // @asm 0x08818AC4-0x08818B2C
 // @asm 0x08818B2C-0x08818C34
 // @asm 0x08818FB0-0x0881917C
@@ -48,7 +47,7 @@ int dd_cobj_spawn();
 int dd_cobj_remove();
 int dd_cobj_hide();
 int dd_cobj_extra_up();
-int dd_cobjs_counters();
+void dd_cobjs_counters(void);
 int dd_zone_anim_update();
 int dd_zone_anim_busy();
 int dd_hl_push();
@@ -234,7 +233,6 @@ int dd_ev_03(void)
 }
 
 /* 4: phase banner */
-#ifdef NON_MATCHING /* cópia morta no delay slot do jr da tabela */
 int dd_ev_04(int player, int phase)
 {
     DdCutinDesc d;
@@ -278,14 +276,16 @@ int dd_ev_04(int player, int phase)
         break;
     }
     dd_cutin_play(&d);
-    if (phase == 3)
-        dd_cobjs_counters(0);
+    switch (phase) {
+    case 3:
+        dd_cobjs_counters();
+        break;
+    }
     dd_info_hide(0);
     dd_mark_hide();
     func_088259D8();
     return 1;
 }
-#endif
 
 /* 5: turn change banner */
 int dd_ev_05(int player)
@@ -520,7 +520,6 @@ int dd_ev_23(int player, int zone, int idx, int show)
 }
 
 /* 24: a card moves between two locations */
-#ifdef NON_MATCHING /* bitfields dos DdLoc2 por valor */
 int dd_ev_24(int uid, int arg, DdLoc2 from, DdLoc2 to)
 {
     int id;
@@ -528,13 +527,13 @@ int dd_ev_24(int uid, int arg, DdLoc2 from, DdLoc2 to)
     from.player = dv_player_to_side(from.player);
     to.player = dv_player_to_side(to.player);
     id = dv_list_id(uid);
-    if (card_is_attribute9(id) == 0 || (unsigned int)(to.zone - 0xE) > 2)
-        dd_cobj_goto(to, from, uid, arg);
-    else
+    if (card_is_attribute9(id) != 0 && (unsigned int)(to.zone - 0xE) <= 2) {
         dd_cobj_remove(from, id, uid & 0xFFFF);
+        return 1;
+    }
+    dd_cobj_goto(to, from, uid, arg);
     return 1;
 }
-#endif
 
 /* 25: two cards swap */
 int dd_ev_25(int a, DdLoc2 p, DdLoc2 q)

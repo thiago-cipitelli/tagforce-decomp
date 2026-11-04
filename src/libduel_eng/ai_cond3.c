@@ -100,8 +100,8 @@ int duel_08810120(DuelAct *a)
 
     if (duel_turn_player == 1 - a->player) {
         if (duel_phase == 0) {
-            r = 0;
-            if (duel_08809F2C() < 1) {
+            r = !(duel_08809F2C(a->player) > 0);
+            if (r) {
                 r = duel_count_monsters_pos(1 - a->player, 1, 1) != 0;
             }
             return r;

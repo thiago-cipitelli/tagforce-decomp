@@ -1,10 +1,8 @@
 fuzzy	size	module	function	address	file
 100.0	1812	libduel_eng	duel_act_e50ec	0x088E50EC	src/libduel_eng/effect_live.c
 100.0	820	libfield	fld_scene_input	0x088114E8	src/libfield/f_scene.c
-99.9	780	BOOT	cardinfo_update	0x08859E98	src/BOOT/cardinfo.c
 99.9	1320	libfield	fpda_reader_update	0x088249EC	src/libfield/f_pdamenu.c
 99.9	620	libduel_eng	duel_0883078C	0x0883078C	src/libduel_eng/ai_0882FF4C.c
-99.9	552	libduel_eng	duel_088A3CB4	0x088A3CB4	src/libduel_eng/effects_088A3430.c
 99.9	536	BOOT	netsync_transfer	0x0886E988	src/BOOT/netsync.c
 99.9	508	libfield	fld_bg_door_update	0x08808E38	src/libfield/f_bgdraw.c
 99.9	268	libduel_draw	dd_counter	0x0881FDB4	src/libduel_draw/dd_card_fx2.c
@@ -22,7 +20,6 @@ fuzzy	size	module	function	address	file
 99.8	1624	libduel_eng	duel_088B1854	0x088B1854	src/libduel_eng/effects_088B153C.c
 99.8	476	libfield	fld_chr_draw_model	0x08805DF4	src/libfield/f_chrdraw.c
 99.8	1180	libtitle	tdl_deck_input	0x08825720	src/libtitle/t_deckpick.c
-99.8	976	libduel_eng	duel_088A7C88	0x088A7C88	src/libduel_eng/effects_088A67D8.c
 99.8	452	libduel_draw	dd_cobj_spawn	0x0880C758	src/libduel_draw/dd_cobj2.c
 99.8	708	libduel_mgr	dmgr_res_draw_box	0x0881499C	src/libduel_mgr/dmgr_result.c
 99.8	592	liblimitlist	ll_move_grid	0x088081C8	src/liblimitlist/ll_list.c
@@ -377,7 +374,6 @@ fuzzy	size	module	function	address	file
 94.7	156	libduel_eng	duel_0888C10C	0x0888C10C	src/libduel_eng/effects_z.c
 94.7	688	libselect_card	sc_find_text	0x08811E68	src/libselect_card/sc_match.c
 94.7	1208	libstory	st_fld_setup_items	0x0880D9A0	src/libstory/s_story.c
-94.7	348	libduel_draw	dd_ev_04	0x08817C2C	src/libduel_draw/dd_event_cmd.c
 94.7	672	libduel_eng	duel_088977BC	0x088977BC	src/libduel_eng/effects_088966D8.c
 94.7	192	BOOT	snd_group_release_all	0x08861CA0	src/BOOT/snd_obj.c
 94.6	2224	libduel_eng	duel_088C6BC8	0x088C6BC8	src/libduel_eng/duel_draws.c
@@ -777,9 +773,7 @@ fuzzy	size	module	function	address	file
 83.6	776	libdeck_tutorial	dt_text_draw	0x0881C65C	src/libdeck_tutorial/dt_text.c
 83.6	212	libduel_mgr	dmgr_res_draw_result	0x08811BC4	src/libduel_mgr/dmgr_result.c
 83.6	172	libduel_eng	duel_088172F0	0x088172F0	src/libduel_eng/ai_08815E90.c
-83.6	236	libduel_draw	dd_ev_24	0x088185C0	src/libduel_draw/dd_event_cmd.c
 83.4	276	libtitle	tfd_regulation_select	0x08817F98	src/libtitle/t_fdvscpu.c
-83.4	164	libduel_eng	duel_ai_0881D0D8	0x0881D0D8	src/libduel_eng/ai_cond0.c
 83.3	792	libduel_mgr	dmgr_pt_sprite	0x0880EF5C	src/libduel_mgr/dmgr_partner.c
 83.3	904	libduel_eng	duel_0880E690	0x0880E690	src/libduel_eng/ai_0880B448.c
 83.2	4576	libduel_eng	duel_08811BDC	0x08811BDC	src/libduel_eng/ai_08811BDC.c

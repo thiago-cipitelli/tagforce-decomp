@@ -90,7 +90,7 @@ int duel_08884118(DuelAct *a)
     if (duel.players[p & 1].field[z].faceup == 0) {
         return 0;
     }
-    duel_088C77D4(1 - p, a->id, 5);
+    duel_088C77D4(1 - p, a->id, 5, a->uid);
     duel_088D1A44(a, a->player, a->zone);
     duel_088C78E0(1 - a->player);
     return 0;

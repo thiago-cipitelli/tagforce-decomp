@@ -320,7 +320,7 @@ int duel_088859A8(DuelAct *a, DuelAct *b)
         }
         p = a->player;
         s = duel_pick_monster_zone(p);
-        duel_088C87A8(q, z, a->id, 1);
+        duel_088C87A8(q, z, a->id, 1, p | (s & 0xFF) << 8);
         duel_088CA184(t, p | (s & 0xFF) << 8);
         if (duel_can_attack(duel_special.player[0], duel_special.zone[0], 0) == 0) {
             return 0;

@@ -217,7 +217,7 @@ int duel_ai_0881A3EC(DuelAct *a)
         if (v < duel.players[(1 - a->player) & 1].lp && v < 0x960) {
             return 0;
         }
-        if (duel_08809F2C() > 0) {
+        if (duel_08809F2C(a->player) > 0) {
             return 1;
         }
     }

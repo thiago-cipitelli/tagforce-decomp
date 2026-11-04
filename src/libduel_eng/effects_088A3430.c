@@ -1,5 +1,4 @@
 // @range 0x088A3430-0x088A49F8
-// @asm 0x088A3CB4-0x088A3EDC
 // @asm 0x088A3EDC-0x088A4180
 /* Card effect handlers (DuelAct *a), after effects_088A1904.c. */
 #include "duel.h"
@@ -254,12 +253,11 @@ int duel_088A3C2C(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* operandos do addu do 4º argumento do case 0x7D invertidos */
-int duel_088A3CB4(DuelAct *a)
+int duel_088A3CB4(DuelAct *a, int b)
 {
     switch (duel_step) {
     case 0x80:
-        if (duel_0884E398(a) == 0) {
+        if (duel_0884E398(a, b) == 0) {
             return 0;
         }
         if (duel_player_type[a->player] == 1) {
@@ -283,13 +281,14 @@ int duel_088A3CB4(DuelAct *a)
         if (duel_w_0891968C == 1) {
             duel_088CAE24(a->player, &duel.players[a->player & 1].hand[duel_w_089148FC], 0);
         } else {
-            duel_088C77D4(0, a->id, 1, (duel_w_0891968C << 12) + CARD_UID(duel.players[a->player & 1].hand[duel_w_089148FC]));
+            int u = CARD_UID(duel.players[a->player & 1].hand[duel_w_089148FC]);
+
+            duel_088C77D4(0, a->id, 1, u + (duel_w_0891968C << 12));
         }
         return 0;
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* endereço de a->w[i] calculado antes da máscara e o fim do case 0x7D com outro bloco de retorno */
 int duel_088A3EDC(DuelAct *a)

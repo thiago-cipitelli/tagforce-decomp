@@ -1,6 +1,6 @@
 // @range 0x08859DF0-0x0885C688
 // @data 0x088F00E4-0x088F0114
-// @asm 0x08859E98-0x0885ADD0
+// @asm 0x0885A1A4-0x0885ADD0
 // @asm 0x0885AFB0-0x0885B498
 // @asm 0x0885BE3C-0x0885C000
 /* Card detail viewer: full-screen panel with the card picture, name, description / genre list /
@@ -65,7 +65,7 @@ unsigned int *gfx_get_state(void);
 void *ehp_find(void *pack, const char *name, int flags);
 unsigned char *syspack_get(void);
 int ceil_to_int(float f);
-unsigned short region_pick_value();
+unsigned short region_pick_value(int flag);
 void se_play(int id);
 unsigned short *sysmsg_get(int i);
 int inv_get_bit3(unsigned short id);
@@ -119,7 +119,6 @@ int cardinfo_open(unsigned short card_id, void *window_gim, void *bg_gim)
     return 1;
 }
 
-#ifdef NON_MATCHING /* cardinfo_update: two scratch registers differ (constant 1 in a0, state++ in v1); cardinfo_draw: the original keeps the duplicated instruction after every likely branch to an else block (8 dead copies) where this compile moves it */
 /* Input and fades; returns 1 once the viewer has closed. */
 int cardinfo_update(void)
 {
@@ -139,7 +138,7 @@ int cardinfo_update(void)
         return 0;
     }
     {
-        if (pad->b.trig & region_pick_value()) {
+        if (pad->b.trig & region_pick_value(1)) {
             fade_start_in(1, 0xFF000000, 16);
             cardinfo_view_state = 3;
             se_play(0x6214);
@@ -200,6 +199,7 @@ int cardinfo_update(void)
     return 0;
 }
 
+#ifdef NON_MATCHING /* the original keeps the duplicated instruction after every likely branch to an else block (8 dead copies) where this compile moves it */
 void cardinfo_draw(void)
 {
     void *list;

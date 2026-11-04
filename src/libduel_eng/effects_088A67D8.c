@@ -1,6 +1,5 @@
 // @range 0x088A67D8-0x088A8B94
 // @asm 0x088A6F00-0x088A77A8
-// @asm 0x088A7C88-0x088A8058
 // @asm 0x088A83B4-0x088A8B94
 /* Card effect handlers after effects_088A6464.c. */
 #include "duel.h"
@@ -531,7 +530,6 @@ int duel_088A79F0(unsigned int p, int id)
     return 0;
 }
 
-#ifdef NON_MATCHING /* após o laço 0x7C: duel_w_08919624 em $a1 e duel_w_089149F8 em $a0 (original: $a0/$v1) */
 int duel_088A7C88(DuelAct *a, int b)
 {
     unsigned short buf[256];
@@ -590,7 +588,7 @@ int duel_088A7C88(DuelAct *a, int b)
         if (duel_w_089149E8 == 0x1A4E) {
             if (duel_w_089149F8 == 2 && duel_w_089149F8 - duel_w_08919624 < 2) {
                 duel_w_08914A04 = 7;
-                if (duel_088BFFD8(p, a->id)) {
+                if (duel_088BFFD8(p, a->id, duel_w_089149E8)) {
                     return 0x7D;
                 }
             }
@@ -602,7 +600,6 @@ int duel_088A7C88(DuelAct *a, int b)
         return duel_088A6F00(a, b);
     }
 }
-#endif
 
 int duel_088A8058(unsigned int p, int zone, int i)
 {
@@ -760,7 +757,7 @@ int duel_088A83B4(DuelAct *a, int b)
             if (duel_w_089149E8 == 0x1A4E) {
                 if (duel_w_089149F8 == 2 && duel_w_089149F8 - duel_w_08919624 < 2) {
                     duel_w_08914A04 = 7;
-                    if (duel_088BFFD8(p, a->id)) {
+                    if (duel_088BFFD8(p, a->id, duel_w_089149E8)) {
                         return 0x7C;
                     }
                 }

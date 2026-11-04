@@ -9,6 +9,10 @@ funções em `docs/matching_queue.tsv` (283 abaixo de 80%), fora o SDK do BOOT (
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
 A Tarefa 0 (drafts que não compilavam) está concluída. **libfield não tem mais função sem C** (76,2% código, 98,4% fuzzy).
 
+**Atenção ao promover um `switch` denso:** a tabela de salto passa a sair da `.rodata` do objeto e a original
+continua no asm de dados, o que desloca o módulo inteiro (`check_file` não vê; só o `make check` do módulo). Declarar
+`// @rodata A-B` com o endereço da tabela (o `lui/addiu` antes do `jr`), como em `dd_event_cmd.c` (`dd_ev_04`).
+
 **Todo `.text` com C (2026-11-04):** das 18 linhas com fuzzy 0% da fila, só 5 não tinham C (`duel_088C4864`,
 `duel_088C5510`, `duel_act_0887E140`, `shop_glow_super`, `shop_glow_ultra`); agora todas têm, e `duel_088C5510`,
 `duel_act_0887E140` e os três `*_save_panes`/`ds_set_panes` batem. As outras 13 têm C e o objdiff só não dá fuzzy
@@ -118,6 +122,11 @@ Os casos mais comuns nesta etapa:
 | `blez; sw; move zero; sw` / `bgez; nop; move zero; negu` | `if (n > 0) n = 0;` com local; `-(n < 0 ? 0 : n)` |
 | `x * -K` em shifts contra `mult` | shifts = multiplicação com sinal: `(int)` no campo `unsigned`; `mult` = campo realmente `unsigned` |
 | `n = cond ? 1 : x` com o `1` vindo de um registrador de comparação anterior | `n = cond == 0 ? x : 1` |
+| chamada com menos argumentos que a definição (protótipo K&R `f();`) | ver no original o registrador do argumento logo antes do `jal`: se for carregado (muitas vezes no teste anterior: `li a0,1` de um `switch`, a global comparada em `a2`), o argumento existe (`dd_ev_61`, `cardinfo_update`, `duel_088A7C88`, `duel_ai_0881D0D8`); se não for, o original também chama com menos |
+| função de 1 parâmetro cujo callee recebe `a1` sem que ninguém o carregue | a função tem 2 parâmetros e repassa o segundo (`duel_088A3CB4(a, b)`) |
+| `lhu x,OFF(base)` com o deslocamento do campo fora da relocação | ponteiro para o elemento: `DsList *l = &d->list[tab]; return l->count;` |
+| `v0` já vale a constante do teste, mas o original salta para um `li v0,K` próprio | agrupar os `case` com o mesmo corpo (`case 1: case 3:`) |
+| `return` comum depois do `if/else` vira `li v0,1` em cada ramo | um `return 1;` em cada ramo |
 
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
