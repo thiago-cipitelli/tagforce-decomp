@@ -4,8 +4,9 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-11-04 (ByteMatch): 63,9% do código batendo, 91,1% fuzzy, 9570/11039 funções. Fila: 1131
-funções em `docs/matching_queue.tsv` (274 abaixo de 80%), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
+Estado em 2026-11-04, após a rodada 3 (9 agentes em paralelo; ByteMatch): 66,2% do código batendo, 92,2% fuzzy,
+9721/11039 funções. Fila: 980 funções em `docs/matching_queue.tsv` (215 abaixo de 80%, nenhuma em 0%: toda função tem
+C que compila), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
 A Tarefa 0 (drafts que não compilavam) está concluída. **libfield não tem mais função sem C** (76,2% código, 98,4% fuzzy).
 
@@ -115,6 +116,12 @@ Os casos mais comuns nesta etapa:
 | base em `&campo - 4` (`addiu s,base,16`, campos em `+4`) | struct de visão começando naquele campo |
 | `mflo; bgezl; addiu +1` depois de `div` | está no fonte: `q = a / b; if (q < 0) q++;` |
 | locais declarados dentro do laço em posições de pilha erradas | subir para o escopo da função, na ordem da pilha |
+| `static` no helper do mesmo arquivo | o mwcc mantém registradores `$t`/`$a` vivos através do `jal` (`move t0,a0` no delay slot) |
+| corpo do `default` logo depois dos testes | `default:` como primeiro rótulo do `switch` |
+| `b L; nop` para um `return K` comum | os caminhos caem no `return` comum em vez de ter o seu próprio |
+| ponteiro de global carregado só depois de uma chamada | atribua `s = &g;` logo antes do uso, não na declaração |
+| campo relido depois de uma comparação | `((volatile T *)p)->campo` |
+| `MAX(x, f())` num draft | o original chama `f()` uma vez só: bug de lógica, não forma |
 | argumento de chamada vindo de um registrador com uma constante de comparação | o argumento real **é** essa constante (bug de lógica comum nos drafts) |
 | `switch` linear (`li; beq(l)` em cadeia): testes na ordem **inversa** dos `case`, corpos na ordem da fonte | escrever os rótulos na ordem inversa dos testes; alvos a 4 bytes um do outro são o mesmo corpo (o `beql` copia a 1ª instrução) |
 | bitfields de um evento relidos da pilha depois de cada chamada | o endereço escapa: passar `*(unsigned int *)&ev` (protótipo com `unsigned int`) |

@@ -1,34 +1,34 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-10-30 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-04 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 62,6% | 89,3% | 9511 / 11039 |
-| BOOT | 63,2% | 80,2% | 1818 / 2208 |
-| libduel_eng | 64,3% | 92,0% | 3022 / 3429 |
+| total | 66,2% | 92,2% | 9721 / 11039 |
+| BOOT | 63,7% | 81,7% | 1824 / 2208 |
+| libduel_eng | 66,5% | 94,0% | 3060 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
 | libpassword | 100,0% | 100,0% | 33 / 33 |
 | libtutoriallist | 89,5% | 99,8% | 25 / 26 |
 | libduelrecord | 92,2% | 99,9% | 26 / 27 |
-| libduel_mgr | 51,5% | 96,1% | 112 / 158 |
-| libselect_card | 50,4% | 88,7% | 149 / 207 |
+| libduel_mgr | 53,1% | 96,1% | 118 / 158 |
+| libselect_card | 66,1% | 92,7% | 172 / 207 |
 | libcardalbum | 97,2% | 100,0% | 67 / 68 |
 | libcharalist | 60,2% | 91,0% | 41 / 50 |
 | libconv_machine | 94,7% | 99,1% | 46 / 47 |
 | liblimitlist | 85,4% | 99,3% | 58 / 62 |
 | librecipe_viewer | 73,6% | 97,9% | 58 / 69 |
-| libdeck | 68,0% | 94,4% | 284 / 328 |
-| libdeck_swap | 63,6% | 87,2% | 163 / 204 |
-| libdeck_tutorial | 64,5% | 93,6% | 240 / 293 |
-| libshop | 57,1% | 83,9% | 188 / 223 |
-| libtitle | 77,6% | 95,6% | 393 / 434 |
+| libdeck | 78,1% | 97,4% | 296 / 328 |
+| libdeck_swap | 73,4% | 94,6% | 177 / 204 |
+| libdeck_tutorial | 68,8% | 96,2% | 251 / 293 |
+| libshop | 59,9% | 94,5% | 197 / 223 |
+| libtitle | 80,4% | 95,7% | 399 / 434 |
 | libtutorial | 93,2% | 99,7% | 204 / 207 |
-| libfield | 61,7% | 79,8% | 566 / 652 |
-| libstory | 85,5% | 98,5% | 643 / 676 |
-| libduel_draw | 41,1% | 86,4% | 1346 / 1609 |
+| libfield | 76,8% | 98,5% | 599 / 652 |
+| libstory | 86,0% | 98,6% | 645 / 676 |
+| libduel_draw | 44,9% | 87,4% | 1396 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
