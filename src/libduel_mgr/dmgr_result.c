@@ -2,7 +2,6 @@
 // @data 0x0881B9B0-0x0881BC88
 // @asm 0x0880F9C0-0x0880FEAC
 // @asm 0x0880FEAC-0x08810750
-// @asm 0x0881093C-0x088109EC
 // @asm 0x08810C2C-0x08810DCC
 // @asm 0x08810DCC-0x088111DC
 // @asm 0x088111DC-0x08811270
@@ -550,7 +549,6 @@ void dmgr_res_free(void)
     dmgr_res = 0;
 }
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 void dmgr_res_bg_anim(unsigned short mode)
 {
     void *e = dmgr_res_file(1);
@@ -559,17 +557,17 @@ void dmgr_res_bg_anim(unsigned short mode)
 
     if (e != 0) {
         switch (mode) {
-        case 3:
-            from = 0x60;
-            to = 0x65;
+        case 1:
+            from = 0;
+            to = 0x10;
             break;
         case 2:
             from = 0x10;
             to = 0x60;
             break;
-        case 1:
-            from = 0;
-            to = 0x10;
+        case 3:
+            from = 0x60;
+            to = 0x65;
             break;
         default:
             to = 0;
@@ -581,7 +579,6 @@ void dmgr_res_bg_anim(unsigned short mode)
         dmgr_res->bg = mode;
     }
 }
-#endif
 
 int dmgr_res_bg_done(void)
 {

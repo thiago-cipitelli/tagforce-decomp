@@ -71,8 +71,6 @@ segments:
       - [0xBF0C, c, dmgr_result]
       - [0xBF0C, asm, dmgr_result_asm_0880FEAC]
       - [0xC7B0, c, dmgr_result]
-      - [0xC99C, asm, dmgr_result_asm_0881093C]
-      - [0xCA4C, c, dmgr_result]
       - [0xCC8C, asm, dmgr_result_asm_08810C2C]
       - [0xCE2C, c, dmgr_result]
       - [0xCE2C, asm, dmgr_result_asm_08810DCC]

@@ -70,6 +70,7 @@ static int fbm_sub_width(void);
 void *fbm_sub_item(void *list, unsigned short i, int x, int y);
 void *fbm_draw_map(void *list);
 void *fbm_draw_pic(void *list);
+float ceilf_vfpu(float x);
 void *fbm_draw_marks(void *list);
 void *fbm_icon(void *list, int i, int x, int y, int w, int h);
 void *fbm_draw_arrows(void *list);

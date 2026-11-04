@@ -53,7 +53,7 @@ int scal_daynum_cal(ScalDate *d);
 void st_pl_x2c_inc(void);
 void st_pl_x2c_dec(void);
 unsigned short *st_text_at(int i, int *index, unsigned short *base);
-unsigned short *st_wcs_expand(unsigned short *dst, unsigned short *src, int n);
+unsigned short *stext_expand(unsigned short *dst, unsigned short *src, int n);
 unsigned short *st_mail_find(int id);
 int *st_mail_index(void);
 unsigned short *st_mail_base(void);
@@ -199,7 +199,7 @@ StMailAttach *st_mail_open(int id)
         a->id = p[0];
         a->x02 = 0;
         k = p[4];
-        st_wcs_expand(text, st_text_at(k, st_mail_index(), st_mail_base()), 0x40);
+        stext_expand(text, st_text_at(k, st_mail_index(), st_mail_base()), 0x40);
         a->text = text;
         a++;
         text += 0x40;

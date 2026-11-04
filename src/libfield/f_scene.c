@@ -660,7 +660,7 @@ int fld_sctab_state(void);
 void fld_npc_get_d0(int id, int *a, int *b);
 int charmap_lookup(int ch, int *kind_out);
 unsigned short sysstate2_rec_get_u16(int which, int i);
-int deck_slot_get_u16_0(int id);
+int deck_slot_get_level(int id);
 void fld_hud_box_open(unsigned short *title, int a, int b, int c, int d, int e);
 void fld_hud_box_close(void);
 int fld_hud_flash(void);
@@ -724,7 +724,7 @@ void fld_scene_frame(void)
                 w0 = sysstate2_rec_get_u16(0, s->pad8c[0]);
                 w1 = sysstate2_rec_get_u16(1, s->pad8c[0]);
                 w2 = sysstate2_rec_get_u16(2, s->pad8c[0]);
-                deck = deck_slot_get_u16_0(s->pad8c[0]);
+                deck = deck_slot_get_level(s->pad8c[0]);
             } else {
                 b = 0;
                 w0 = -1;
