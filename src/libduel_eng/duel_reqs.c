@@ -208,21 +208,29 @@ void duel_088C8F04(unsigned int p, int z)
 }
 #endif
 
-#ifdef NON_MATCHING /* register allocation and branch layout not reproduced */
+#ifdef NON_MATCHING /* 6 palavras: só os registradores de zona*20 e do mflo trocados (a1/a2) no case 6; forma (switch com case 6 caindo nos 10-13) conferida */
 void duel_088C914C(unsigned int p, int z)
 {
     unsigned int e = duel.players[p & 1].field[z].effects;
 
     while (e != 0) {
-        DuelEffect *ef = &duel_effects[e];
-        unsigned int k;
+        DuelEffect *ef = &duel.effects[e];
+        unsigned int s;
 
         e = ef->next;
-        k = ef->kind & 0xF;
-        if (k == 0xD || k == 0xC || k == 0xB || k == 10 ||
-            (k == 6 && duel.players[ef->src & 1].field[ef->src >> 8].card.id == 0x19ED)) {
-            duel_088C88B8(p, z, ef->src, 0);
-            duel_088D1438(ef->src & 0xFF, ef->src >> 8, 0, 0);
+        switch (ef->kind & 0xF) {
+        case 6:
+            s = ef->src >> 8 & 0xFF;
+            if (duel.players[(unsigned char)ef->src & 1].field[s].card.id != 0x19ED) {
+                break;
+            }
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+            s = ef->src;
+            duel_088C88B8(p, z, s, 0);
+            duel_088D1438(s & 0xFF, (unsigned short)s >> 8 & 0xFF, 0, 0);
         }
     }
 }

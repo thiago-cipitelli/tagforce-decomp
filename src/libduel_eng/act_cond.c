@@ -741,29 +741,26 @@ int duel_0886E53C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the phase tests and the hand loop are laid out differently */
+#ifdef NON_MATCHING /* 18 palavras: no laço da mão o original calcula o argumento p (andi 0xff) antes do índice p & 1, e no laço da cadeia k/ponteiro trocam a0/a1 */
 /* Paying 500 LP to activate is allowed when another card in the hand could be used now and the chain
    does not already hold all of them. */
 int duel_0886E590(DuelAct *a)
 {
-    unsigned int p = a->player;
+    unsigned char p = a->player;
     int ok;
-    int n;
     unsigned int i;
+    int n;
     int k;
 
     if (duel_turn_player == p) {
-        ok = 1;
-        if (duel_phase != 2 && duel_phase != 4) {
-            ok = 0;
-        }
+        ok = duel_phase == 2 || duel_phase == 4;
     } else {
         ok = duel_phase == 3;
     }
-    if (ok && duel.players[p].lp > 500) {
+    if (ok && duel.players[p & 1].lp > 500) {
         n = 0;
-        for (i = 0; i < duel.players[p].n_hand; i++) {
-            if (duel_08827D98(p, CARD_UID(duel.players[p].hand[i]))) {
+        for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+            if (duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i]))) {
                 n++;
             }
             p = a->player;
