@@ -1,7 +1,5 @@
 // @range 0x0881DF94-0x0881EBA0
 // @asm 0x0881E214-0x0881E2A8
-// @asm 0x0881E610-0x0881E7EC
-// @asm 0x0881E7EC-0x0881E9F0
 /* The list of running presentation tasks of the scene (draw/update/leave callbacks with a timer,
    removable from inside their own callbacks) and two of its users: the summon/set name banner of
    a card and the card picture shown big. */
@@ -74,8 +72,8 @@ int dd_fx_flipup_start(int id, int *xy, int a, int b);
 int dv_list_id(int uid);
 int dv_slot_pos(int player, int zone);
 void func_08820CC0(void *a, void *b, DdLoc l);
-int dd_fx_summon_start_t(float ry, float t, int card, void *pos, void *cb, void *arg);
-int dd_fx_summon_start_dark_t(float ry, float t, int card, void *pos, void *cb, void *arg);
+int dd_fx_summon_start_t(int card, float ry, float t, void *pos, void *cb, void *arg);
+int dd_fx_summon_start_dark_t(int card, float ry, float t, void *pos, void *cb, void *arg);
 void dd_info_select_uid(int uid);
 unsigned int *dl_set_tex_filter(unsigned int *list, int min, int mag);
 int dd_task_remove(DdTask *t);
@@ -303,7 +301,6 @@ void dd_banner_open(DdBanner *b)
 }
 
 /* name banner of a summoned card */
-#ifdef NON_MATCHING /* 2 palavras (a0 e mov.s f13 trocados): bate se dd_fx_summon_start*_t for declarado (int card, float ry, float t, ...), ordem com que as definições em dd_fx_summon.c também batem; trocar nos dois arquivos juntos */
 void dd_banner_summon(DdCard *c)
 {
     DdBanner *b;
@@ -334,16 +331,14 @@ void dd_banner_summon(DdCard *c)
     l.b15 = dv_slot_pos(player, zone);
     func_08820CC0(a, pos, *(DdLoc *)&l);
     func_08820A8C(out, pos, a[2] < 0.0f);
-    b->handle = dd_fx_summon_start_t(out[1], dd_count_scale(c->loc.player, c->loc.zone), b->id, a,
+    b->handle = dd_fx_summon_start_t(b->id, out[1], dd_count_scale(c->loc.player, c->loc.zone), a,
                               dd_banner_open, b);
     dd_info_select_uid(c->uid);
     req_flag_set(0x33);
     req_flag_set(0);
 }
-#endif
 
 /* name banner of a set card (face down: no name) */
-#ifdef NON_MATCHING /* 2 palavras (a0 e mov.s f13 trocados): bate se dd_fx_summon_start*_t for declarado (int card, float ry, float t, ...), ordem com que as definições em dd_fx_summon.c também batem; trocar nos dois arquivos juntos */
 void dd_banner_set(DdCard *c)
 {
     DdBanner *b;
@@ -381,12 +376,11 @@ void dd_banner_set(DdCard *c)
         id = -1;
     func_08820CC0(a, pos, *(DdLoc *)&l);
     func_08820A8C(out, pos, a[2] < 0.0f);
-    b->handle = dd_fx_summon_start_dark_t(out[1], dd_count_scale(c->loc.player, c->loc.zone), id, a,
+    b->handle = dd_fx_summon_start_dark_t(id, out[1], dd_count_scale(c->loc.player, c->loc.zone), a,
                               dd_banner_open, b);
     dd_info_select_uid(c->uid);
     req_flag_set(0);
 }
-#endif
 
 /* the card picture over the field (task draw) */
 void dd_bigcard_draw(DdTask *t, int *arg)

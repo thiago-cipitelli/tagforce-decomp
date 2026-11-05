@@ -1,10 +1,6 @@
 // @range 0x0881CA2C-0x0881DF94
+// @rodata 0x08870180-0x088701B4
 // @asm 0x0881CA74-0x0881CA80
-// @asm 0x0881CAC8-0x0881CB84
-// @asm 0x0881CCF8-0x0881CD80
-// @asm 0x0881CD80-0x0881CDD4
-// @asm 0x0881CDD4-0x0881CEDC
-// @asm 0x0881CEDC-0x0881CFF8
 // @asm 0x0881D1B0-0x0881D658
 // @asm 0x0881DBC8-0x0881DC40
 // @asm 0x0881DC40-0x0881DE48
@@ -149,7 +145,7 @@ int dv_zone_card_id(int player, int zone, int idx);
 int dd_loc_visible(DdLoc l);
 void popup_open(void *arg);
 void func_08820F88(void *arg);
-void duel_08836028(void);
+void dv_08836028(void);
 void browse_mode_set7(void);
 void func_08825580(void);
 unsigned int *func_088255E8(unsigned int *list);
@@ -253,20 +249,19 @@ void dd_mode_term(void)
 }
 
 /* replaces the current mode */
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 void dd_mode_set(int m)
 {
     DdModeStack *s = &dd_mode;
+    DdModeDef *t = dd_modes;
 
     if (dd_modes[dd_mode.mode].leave != 0)
-        dd_modes[s->mode].leave();
+        t[s->mode].leave();
     s->flag = -1;
     s->entering = 1;
     s->mode = m;
-    if (dd_modes[m].enter != 0)
-        dd_modes[m].enter();
+    if (t[m].enter != 0)
+        t[m].enter();
 }
-#endif
 
 int dd_mode_get(void)
 {
@@ -299,52 +294,46 @@ void dd_mode_pop(void)
     *(DdModeEnt *)s = s->stack[s->depth];
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 unsigned int *dd_mode_draw(unsigned int *list)
 {
     DdModeStack *s = &dd_mode;
+    DdModeDef *t = dd_modes;
 
-    if (dd_mode.entering == 0 && dd_modes[s->mode].draw != 0)
-        list = dd_modes[s->mode].draw(list);
+    if (dd_mode.entering == 0 && t[s->mode].draw != 0)
+        list = t[s->mode].draw(list);
     if (s->flag >= 0)
         req_flag_set(s->flag);
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 unsigned int *dd_mode_draw_one(unsigned int *list, int m)
 {
+    DdModeDef *t = dd_modes;
+
     if (dd_modes[m].draw != 0)
-        list = dd_modes[m].draw(list);
+        list = t[m].draw(list);
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 void dd_mode_update(void)
 {
     DdModeStack *s = &dd_mode;
-    unsigned int *pad = (unsigned int *)pad_get();
-    int y = pad[5];
+    DdModeDef *t = dd_modes;
+    int *pad = (int *)pad_get();
 
-    if (y >= 0x9F) {
-        dd_info_scroll((y - 0x9E) * 4);
-        y = pad[5];
-    }
-    if (y < 0x62)
-        dd_info_scroll((y - 0x62) * 4);
+    if (pad[5] > 0x9E)
+        dd_info_scroll((pad[5] - 0x9E) * 4);
+    if (pad[5] < 0x62)
+        dd_info_scroll((pad[5] - 0x62) * 4);
     if (dd_is_tag_duel() == 0 && (pad[1] & 8) && hl_open() != 0)
         se_play(0x6217);
-    if (s->entering == 0 && dd_modes[s->mode].update != 0)
-        dd_modes[s->mode].update();
+    if (s->entering == 0 && t[s->mode].update != 0)
+        t[s->mode].update();
     if (s->entering != 0 && dd_mode_busy() != 0)
         s->entering = 0;
 }
-#endif
 
 /* closes the open window of the current mode (export used on interruptions) */
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 int dd_mode_cancel(void)
 {
     switch (dd_mode_get()) {
@@ -376,10 +365,15 @@ int dd_mode_cancel(void)
     case 12:
         dd_mode_pop();
         break;
+    case 0:
+    case 1:
+    case 6:
+    case 10:
+    case 11:
+        break;
     }
     return dd_mode_get() == 1;
 }
-#endif
 
 int dd_mode_can_x(void)
 {
@@ -540,7 +534,7 @@ void dd_m1_update(void)
         popup_open(&arg);
         s->cancel_armed = 0;
     } else if ((pad[2] & (region_pick_value(1) & 0xFFFF)) && s->cancel_armed != 0) {
-        duel_08836028();
+        dv_08836028();
         s->cancel_armed = 0;
     }
 }

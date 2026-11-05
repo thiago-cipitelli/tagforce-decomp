@@ -22,7 +22,7 @@ void dd_counter_tick(float dt);
 void dd_cursor_nop(void);
 void dd_cursor_draw(void);
 void dd_cursor_update(void);
-void dd_counter_reset(int player);
+void dd_counter_reset(int p, int z);
 void dd_card_fx_start(DdCobj *o);
 void dd_shake(DdCobj *o);
 int func_0882092C(void);
@@ -30,7 +30,7 @@ int dv_phase(void);
 int dv_list_id(int uid);
 int dv_zone_faceup(int player, int zone, int index);
 int dv_zone_card_uid(int player, int zone, int index);
-float dd_card_drop_y(int n);
+float dd_stack_y(int n);
 void req_flag_set(int i);
 void dd_cursor_init(void);
 
@@ -81,17 +81,18 @@ void dd_cobjs_clear(void)
 /* deck of player `deck` shown on screen side `side` */
 void dd_cobjs_map(int side, int deck)
 {
+    DdCobjs *b = &dd_cobjs;
     DdCobj *head;
     DdCobj *o;
 
     dd_cobjs.map[side] = deck;
-    head = &dd_cobjs.zone[deck][13];
+    head = &b->zone[deck][13];
     for (o = head->next; o != head; o = o->next)
         o->home.player = side;
-    head = &dd_cobjs.zone[deck][12];
+    head = &b->zone[deck][12];
     for (o = head->next; o != head; o = o->next)
         o->home.player = side;
-    head = &dd_cobjs.zone[deck][11];
+    head = &b->zone[deck][11];
     for (o = head->next; o != head; o = o->next)
         o->home.player = side;
 }
@@ -132,7 +133,7 @@ void dd_cobjs_draw(void)
     dd_board_end();
 }
 
-#ifdef NON_MATCHING /* o laço de zonas mantém o teste no topo a cada volta do laço externo */
+#ifdef NON_MATCHING /* 16 palavras: o laço de zonas mantém o teste no topo a cada volta do externo, mas o externo (p) não é rotacionado no original; z = 0 no incremento do externo dá o teste no topo e rotaciona o externo */
 /* advances every card object */
 void dd_cobjs_update(float dt)
 {
@@ -143,8 +144,10 @@ void dd_cobjs_update(float dt)
     DdCobj *next;
 
     dd_cursor_nop();
-    for (p = 0; p < 2; p++) {
-        for (z = 0; z < 16; z++) {
+    p = 0;
+    z = 0;
+    for (; p < 2; p++, z = 0) {
+        for (; z < 16; z++) {
             head = dd_zone_list(p, z);
             for (o = head->next; o != head; o = next) {
                 next = o->next;
@@ -241,7 +244,7 @@ done:
     o->a2 = 0;
     dd_cursor_update();
     if (dv_phase() == 3 && kind != 6 && from.zone < 5)
-        dd_counter_reset(from.player);
+        dd_counter_reset(from.player, from.zone);
 }
 
 /* turns the card `zone` of player p face up/down in place */
@@ -280,6 +283,7 @@ void dd_cobj_to_top(int p, int zone, int uid)
 {
     int n = dd_zone_count(p, zone);
     DdCobj *o = dd_cobj_at(p, zone, n - 1);
+    DdCobj *head;
     DdPos at;
     DdPos to;
     DdXyzw pos;
@@ -291,9 +295,10 @@ void dd_cobj_to_top(int p, int zone, int uid)
         dd_card_fx_start(o);
         return;
     }
-    for (; o != o->next && o->uid != uid; o = o->prev)
+    head = o->next;
+    for (; o != head && o->uid != uid; o = o->prev)
         ;
-    if (o == o->next)
+    if (o == head)
         return;
     dd_list_unlink(o, dd_zone_list(p, zone));
     dd_list_add_tail(o, dd_zone_list(p, zone));
@@ -306,7 +311,7 @@ void dd_cobj_to_top(int p, int zone, int uid)
     to.zone = zone;
     to.idx = n;
     dd_slot_xform(&pos, &rot, to);
-    pos.y += dd_card_drop_y(1);
+    pos.y += dd_stack_y(1);
     o->pos.y = 0.0f;
     dd_cobj_move(dd_move_time(), o, &pos, &rot, 1);
     o->b1 = 1;

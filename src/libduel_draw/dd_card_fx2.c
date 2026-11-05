@@ -3,7 +3,6 @@
 // @asm 0x0881F264-0x0881F454
 // @asm 0x0881F46C-0x0881F60C
 // @asm 0x0881F704-0x0881F78C
-// @asm 0x0881FAF8-0x0881FB28
 // @data 0x088760B0-0x088760D0
 /* Effects played on field cards: summon/set beams, the target marks of graves and decks (shared by
    all their cards), damage/recovery and ATK/DEF change counters, destruction and the short lock of
@@ -75,7 +74,7 @@ void func_08820938(DdTask *t, void *arg);
 void func_08820988(float *out, float *m);
 void dd_fx_shatter_start_t(int id, float *pos, float *dir, int a, int b, float s, float zone_kind);
 int dd_fx_twist_start_t(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
-void dd_fx_orb_start(void *a, void *b, void (*cb)(DdCard *c));
+void dd_fx_orb_start(void *a, void *b, void (*cb)(DdCard *c), void *arg);
 int dv_slot_link_1a0c(int player, int zone);
 int dv_slot_e68a0(int player, int zone);
 int dv_slot_min_1130(int player, int zone);
@@ -386,13 +385,11 @@ void dd_shake_done(DdCard *c)
     c->b4 = 0;
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_shake(DdCard *c)
 {
     c->b4 = 1;
-    dd_fx_orb_start((char *)c + 0x20, (char *)c + 0x30, dd_shake_done);
+    dd_fx_orb_start((char *)c + 0x20, (char *)c + 0x30, dd_shake_done, c);
 }
-#endif
 
 /* ATK/DEF change counter over a card (atk 0: DEF) */
 void dd_stat_counter(DdCard *c, int delta, int def)

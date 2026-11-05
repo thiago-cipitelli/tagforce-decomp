@@ -26,11 +26,11 @@ void font_text_set(void *list);
 void *font_text_clear(void);
 void dv_field_stats(int player, int zone, int *out);
 
-#ifdef NON_MATCHING /* conversões float->unsigned por canal de cor; forma não reproduzida */
+#ifdef NON_MATCHING /* o original tem a cor como struct de 4 bytes (bitfields unsigned de 8 bits: cópias byte a byte, conversão float->unsigned por canal) e val[] copiado por um temporário zerado; forma não reproduzida */
 extern DdXyzw dd_counter_off;          /* 0x08874F80 */
-extern unsigned int dd_counter_col[4]; /* 0x08874F90 atk, def colours (defense position, attack position) */
+extern unsigned int dd_counter_col[4]; /* 0x08874F90 atk, def colours (f15 set: [0], [1]; clear: [3], [2]) */
 
-static unsigned int dd_dim(unsigned int c, float r, float g, float b)
+inline static unsigned int dd_dim(unsigned int c, float r, float g, float b)
 {
     return (c & 0xFF000000) | (unsigned int)((float)(c >> 16 & 0xFF) * b) << 16 |
            (unsigned int)((float)(c >> 8 & 0xFF) * g) << 8 | (unsigned int)((float)(c & 0xFF) * r);
@@ -79,8 +79,8 @@ void *dd_counter_draw(void *list, DdPos at, DdXyzw *pos)
         col[0] = dd_counter_col[0];
         col[1] = dd_counter_col[1];
     } else {
-        col[0] = dd_counter_col[2];
-        col[1] = dd_counter_col[3];
+        col[0] = dd_counter_col[3];
+        col[1] = dd_counter_col[2];
     }
     if (za->a < za->a1) {
         col[0] = dd_dim(col[0], 0.5f, 0.5f, 1.0f);
@@ -207,15 +207,15 @@ void dd_counter_reset(int p, int z)
     DdZoneAnim *za;
     int st[11];
 
-    if (z >= 0 && z < 5) {
-        za = &b->za[p][z];
-        memset(za, 0, sizeof(DdZoneAnim));
-        dv_field_stats(p, z, st);
-        za->a = st[5];
-        za->b = st[6];
-        za->a0 = za->a1 = za->a;
-        za->b0 = za->b1 = za->b;
-    }
+    if (z < 0 || z > 4)
+        return;
+    za = &b->za[p][z];
+    memset(za, 0, sizeof(DdZoneAnim));
+    dv_field_stats(p, z, st);
+    za->a = st[5];
+    za->b = st[6];
+    za->a0 = za->a1 = za->a;
+    za->b0 = za->b1 = za->b;
 }
 #endif
 
