@@ -412,7 +412,6 @@ void *cardlist_draw(void *list, CardView *v)
 #ifdef NON_MATCHING /* register allocation of the vertex pointers differs */
 void *cardlist_draw_at(void *list, int x, int y, CardView *v)
 {
-    unsigned short empty[1] = { 0 };
     void *tex;
     unsigned short *name;
     unsigned short *desc;
@@ -421,8 +420,18 @@ void *cardlist_draw_at(void *list, int x, int y, CardView *v)
     CardStats *cs;
     int mask;
     int id;
+    CardList *c = &cardlist;
 
-    if (cardlist_ready() && list != 0 && v != 0) {
+    if (!cardlist_ready()) {
+        return list;
+    }
+    if (list == 0) {
+        return list;
+    }
+    if (v == 0) {
+        return list;
+    }
+    {
         list = dl_enable(list, 9);
         list = dl_enable(list, 4);
         list = dl_tex_func(list, 0, 1);
@@ -448,6 +457,8 @@ void *cardlist_draw_at(void *list, int x, int y, CardView *v)
         cs = &v->cmp;
         line = card_type_line(id, mask, s, cs);
         if (id == -1 || tex == 0) {
+            unsigned short empty[1] = { 0 };
+
             list = card_draw_ehf_frame(list, x, y + 0x9D, -1, 0);
             list = card_draw_desc_box(list, x + 1, y + 0xAE, 0x87, 0x61, 0, empty, empty, empty, &v->desc_max);
             list = cardlist_draw_scrollbar(list, x + 0x8A, y + 0xB8, 0x4D, 0, 0x4B);
@@ -456,7 +467,7 @@ void *cardlist_draw_at(void *list, int x, int y, CardView *v)
             list = card_draw_stats(list, x, y + 0x9D, mask, s, cs, v->fade);
             list = card_draw_icons_col(list, x + 0x73, y + 0x9B, mask, s, cs);
             list = card_draw_desc_box(list, x + 1, y + 0xAE, 0x87, 0x61, v->desc_scroll, name, line, desc, &v->desc_max);
-            list = card_draw_desc_arrows(list, x + 0x8A, y + 0xB0, 0x5D, 0x61, v, cardlist.arrows);
+            list = card_draw_desc_arrows(list, x + 0x8A, y + 0xB0, 0x5D, 0x61, v, c->arrows);
         }
     }
     return list;

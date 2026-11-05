@@ -1,5 +1,4 @@
 // @range 0x08835650-0x08835F48
-// @asm 0x088357C0-0x08835CAC
 /* GIM textures: block search in the GIM tree, texture setup (format, image of a frame, CLUT of
    the palette block), sprite-sheet cells, and binding a texture from outside a display list. A
    GIM loaded in VRAM records the address and the frame there in place of the "PSP" signature. */
@@ -108,7 +107,6 @@ void gim_bind_frame(Gim *g, int frame)
     sceGuStart(2, buf, size);
 }
 
-#ifdef NON_MATCHING /* register allocation and scheduling of the frame/CLUT selection differ */
 /* Texture mode and image of `frame` of the GIM's image, then its CLUT when it has a palette. */
 void *gim_set_texture_frame(void *list, Gim *g, int frame)
 {
@@ -134,32 +132,38 @@ void *gim_set_texture_frame(void *list, Gim *g, int frame)
     } else {
         list = dl_tex_image(list, 0, img->width, img->height, ~mask & img->width + mask, (char *)img + off);
     }
-    if (pal == 0) {
-        return list;
-    }
-    clut = (GimImage *)((char *)pal + pal->data);
-    if (clut->format == 3) {
-        if (img->format == 5) {
-            n = 0x20;
-        } else if (img->format == 4) {
-            n = 2;
+    if (pal != 0) {
+        clut = (GimImage *)((char *)pal + pal->data);
+        if (clut->format == 3) {
+            switch (img->format) {
+            case 4:
+                n = 2;
+                break;
+            case 5:
+                n = 0x20;
+                break;
+            }
+        } else {
+            switch (img->format) {
+            case 4:
+                n = 1;
+                break;
+            case 5:
+                n = 0x10;
+                break;
+            }
         }
-    } else if (img->format == 5) {
-        n = 0x10;
-    } else if (img->format == 4) {
-        n = 1;
+        if (clut->type == 3) {
+            off = ((int *)((char *)clut + clut->offsets))[frame % clut->frames];
+        } else {
+            off = *(int *)((char *)clut + clut->offsets);
+        }
+        list = dl_clut_mode(list, clut->format, 0, 0xFF, 0);
+        list = dl_clut_load(list, n, (char *)clut + off);
     }
-    if (clut->type == 3) {
-        off = ((int *)((char *)clut + clut->offsets))[frame % clut->frames];
-    } else {
-        off = *(int *)((char *)clut + clut->offsets);
-    }
-    list = dl_clut_mode(list, clut->format, 0, 0xFF, 0);
-    return dl_clut_load(list, n, (char *)clut + off);
+    return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* same as gim_set_texture_frame */
 /* Same with a cell of a sprite sheet: image cell `cell` of `frame`, palette cell `pcell` of
    palette frame `pframe` (cells clamped to the sheet). */
 void *gim_set_texture_sub(void *list, Gim *g, int frame, int cell, int pframe, int pcell)
@@ -191,35 +195,42 @@ void *gim_set_texture_sub(void *list, Gim *g, int frame, int cell, int pframe, i
     } else {
         list = dl_tex_image(list, 0, img->width, img->height, ~mask & img->width + mask, (char *)img + off);
     }
-    if (pal == 0) {
-        return list;
-    }
-    clut = (GimImage *)((char *)pal + pal->data);
-    if (clut->format == 3) {
-        if (img->format == 5) {
-            n = 0x20;
-        } else if (img->format == 4) {
-            n = 2;
+    if (pal != 0) {
+        clut = (GimImage *)((char *)pal + pal->data);
+        if (clut->format == 3) {
+            switch (img->format) {
+            case 4:
+                n = 2;
+                break;
+            case 5:
+                n = 0x20;
+                break;
+            }
+        } else {
+            switch (img->format) {
+            case 4:
+                n = 1;
+                break;
+            case 5:
+                n = 0x10;
+                break;
+            }
         }
-    } else if (img->format == 5) {
-        n = 0x10;
-    } else if (img->format == 4) {
-        n = 1;
-    }
-    if (clut->type == 3) {
-        if (pcell < 0) {
-            pcell = 0;
-        } else if (pcell >= clut->cells) {
-            pcell = clut->cells - 1;
+        if (clut->type == 3) {
+            if (pcell < 0) {
+                pcell = 0;
+            } else if (pcell >= clut->cells) {
+                pcell = clut->cells - 1;
+            }
+            off = ((int *)((char *)clut + clut->offsets))[pcell + clut->cells * (pframe % clut->frames)];
+        } else {
+            off = *(int *)((char *)clut + clut->offsets);
         }
-        off = ((int *)((char *)clut + clut->offsets))[pcell + clut->cells * (pframe % clut->frames)];
-    } else {
-        off = *(int *)((char *)clut + clut->offsets);
+        list = dl_clut_mode(list, clut->format, 0, 0xFF, 0);
+        list = dl_clut_load(list, n, (char *)clut + off);
     }
-    list = dl_clut_mode(list, clut->format, 0, 0xFF, 0);
-    return dl_clut_load(list, n, (char *)clut + off);
+    return list;
 }
-#endif
 
 /* Image only, no CLUT. */
 void *gim_set_image(void *list, Gim *g, int frame)

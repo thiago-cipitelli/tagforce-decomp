@@ -153,7 +153,8 @@ unsigned short *sysstate_get_name(void)
 
 #ifdef NON_MATCHING
 /* Progress needed to finish `day`: 7 on day 1, then each day 1/7 longer than the previous.
-   The original is this loop unrolled by 8; prologue branch shapes never matched, kept in asm. */
+   The original is this loop unrolled by 8. 1 palavra: o original entra no switch por bnezl (li a3,1 no
+   atraso, cópia do destino) e o mwcc gera bnez com o mesmo atraso; if/goto/else não mudam. */
 int day_threshold(int day)
 {
     int i = 1;
@@ -161,11 +162,13 @@ int day_threshold(int day)
 
     if (day > 99)
         return 0;
-    if (day == 1)
-        return 7;
-    if (day == 0)
+    switch (day) {
+    case 0:
         return 0;
-    step = total = 7;
+    case 1:
+        return 7;
+    }
+    total = step = 7;
     for (; i < day; i++) {
         step += step / 7;
         total += step;
