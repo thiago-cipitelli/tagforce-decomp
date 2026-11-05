@@ -2,7 +2,6 @@
 // @data 0x0887541C-0x088755B8
 // @asm 0x08813554-0x08813684
 // @asm 0x08813AB8-0x08813C40
-// @asm 0x08813CF4-0x08813D48
 // @asm 0x08813D8C-0x08813F1C
 // @asm 0x088142A0-0x088143A4
 /* Duel characters (partner/rival model from the cut-in pack): setup and free, the model with its
@@ -296,7 +295,18 @@ void dd_chr_voice_load(DdChr *c)
     c->vtime = 0.0f;
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
+typedef struct DdAnimClip {             /* current clip of a BOOT model */
+    char pad[0x30];
+    int last;
+} DdAnimClip;
+
+typedef struct DdAnimView {             /* fields of the opaque BOOT Model read here */
+    char pad[0x14];
+    DdAnimClip *cur;
+    char pad2[0x24];
+    unsigned int flags;
+} DdAnimView;
+
 /* last frame of the current animation */
 int dd_chr_anim_len(DdChr *c)
 {
@@ -307,9 +317,12 @@ int dd_chr_anim_len(DdChr *c)
     m = dd_hook_anim(c);
     if (m == 0)
         return 0;
-    return -((*(unsigned int *)((char *)m + 0x3C) & 2) != 0) + *(int *)(*(int *)((char *)m + 0x14) + 0x30);
+    {
+        DdAnimClip *cl = ((DdAnimView *)m)->cur;
+
+        return cl->last - ((((DdAnimView *)m)->flags & 2) ? 1 : 0);
+    }
 }
-#endif
 
 void dd_chr_bone_mtx(DdChr *c, DdMtx *out, int bone)
 {

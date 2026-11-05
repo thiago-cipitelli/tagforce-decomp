@@ -1,6 +1,5 @@
 // @range 0x0880C48C-0x0880D31C
 // @asm 0x0880C48C-0x0880C640
-// @asm 0x0880C91C-0x0880C9BC
 // @asm 0x0880CB44-0x0880CBF4
 // @asm 0x0880CC64-0x0880CD38
 // @asm 0x0880CE60-0x0880D028
@@ -122,21 +121,17 @@ void dd_cobj_spawn(DdPos at, unsigned short card, unsigned short uid)
     dd_list_add_tail(o, dd_zone_list(at.player, at.zone));
 }
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
 /* gives the object at `at` back to the free list */
 void dd_cobj_remove(DdPos at)
 {
     DdCobjs *b = &dd_cobjs;
-    int player = at.player;
-    int zone = at.zone;
-    DdCobj *o = dd_cobj_at(player, zone, at.idx);
+    DdCobj *o = dd_cobj_at(at.player, at.zone, at.idx);
 
     if (o == 0)
         return;
-    dd_list_unlink(o, dd_zone_list(player, zone));
+    dd_list_unlink(o, dd_zone_list(at.player, at.zone));
     dd_list_add_tail(o, &b->free);
 }
-#endif
 
 /* resyncs the extra deck of player p */
 void dd_cobj_sync_extra(int p)

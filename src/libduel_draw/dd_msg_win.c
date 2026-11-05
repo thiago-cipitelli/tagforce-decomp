@@ -1,6 +1,5 @@
 // @range 0x08825088-0x08825DDC
 // @asm 0x088250E8-0x088252B0
-// @asm 0x08825A14-0x08825A70
 /* The message window (one MenuWidget, dd_msg_win, shared by the duel's questions and choices:
    open/update/draw/close, heap copies of its texts, hooks), the number choice drawn in it, and the
    bouncing marks over the monsters that can still attack. */
@@ -323,11 +322,11 @@ void func_08825A08(int (*fn)(void))
     dd_msg_win.update = fn;
 }
 
-#ifdef NON_MATCHING /* o original tem um "b; move v0,zero" morto a mais, não reproduzido */
 /* the answer: with buttons only 1-3 count */
 int func_08825A14(void)
 {
     DdMsgWin *m = &dd_msg_win;
+    int r;
 
     if (dd_msg_win.w.buttons) {
         switch (m->result) {
@@ -336,11 +335,12 @@ int func_08825A14(void)
         case 3:
             return m->result;
         }
-        return 0;
+        r = 0;
+    } else {
+        return m->result;
     }
-    return m->result;
+    return r;
 }
-#endif
 
 void func_08825A70(int v)
 {
