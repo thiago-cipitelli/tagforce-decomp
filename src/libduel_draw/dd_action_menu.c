@@ -146,9 +146,9 @@ void func_08820F88(DdLocSrc *src)
     int i;
 
     src->get(&loc);
+    dd_act_menu.src = *src;
     dd_act_menu.n = 0;
     dd_act_menu.text_w = 0;
-    dd_act_menu.src = *src;
     dd_act_menu.w = 0;
     dd_act_menu.card = dv_zone_card_id(loc.player, loc.zone, loc.idx);
     func_088212B0();
@@ -178,15 +178,21 @@ void func_08820F88(DdLocSrc *src)
     func_08825A08(func_08821BAC);
     func_08825B7C(1);
     se_play(0x6216);
-    if (loc.zone == 12)
-        loc.idx = 0;
-    else if (loc.zone == 13)
-        loc.idx = 0;
-    else if (loc.zone == 15)
-        loc.idx = dv_n_f(loc.player) - 1;
-    else if (loc.zone == 14)
+    switch (loc.zone) {
+    case 14:
         loc.idx = dv_n_grave(loc.player) - 1;
-    if ((short)loc.idx < 0)
+        break;
+    case 15:
+        loc.idx = dv_n_f(loc.player) - 1;
+        break;
+    case 13:
+        loc.idx = 0;
+        break;
+    case 12:
+        loc.idx = 0;
+        break;
+    }
+    if ((int)loc.idx < 0)
         loc.idx = 0;
     o = dd_cobj_at(loc.player, loc.zone, loc.idx);
     if (o != 0 && (dd_loc_visible(loc) || o->b5))

@@ -1,7 +1,4 @@
 // @range 0x0881F0A8-0x08820138
-// @asm 0x0881F0A8-0x0881F264
-// @asm 0x0881F264-0x0881F454
-// @asm 0x0881F46C-0x0881F60C
 // @asm 0x0881F704-0x0881F78C
 // @data 0x088760B0-0x088760D0
 /* Effects played on field cards: summon/set beams, the target marks of graves and decks (shared by
@@ -34,7 +31,7 @@ typedef struct DdCounter {             /* 0x10 */
     int flag;                          /* +0x0C */
 } DdCounter;
 
-typedef int (*DdBeamFn)(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
+typedef int (*DdBeamFn)(int id, float *pos, float s, float zone_kind, void *dir, void (*done)(DdTask *), DdTask *t);
 typedef int (*DdLpFn)(int player, int zone);
 typedef void (*DdNumFn)(float *pos, int from, int to, void (*done)(DdTask *), DdTask *t);
 
@@ -59,7 +56,7 @@ int dv_zone_faceup(int player, int zone, int idx);
 float *quat_mul(float *out, float *a, float *b);
 void func_08820A8C(void *out, void *q, int back);
 float dd_count_scale(int player, int zone);
-int dd_fx_spiral_start_ex(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
+int dd_fx_spiral_start_ex(int id, float *pos, float s, float zone_kind, void *dir, void (*done)(DdTask *), DdTask *t);
 int dd_fx_spin_start(float k, int a, float *pos, void *b, int c, int d, int e);
 void dd_cobj_link_add(DdCard *c, void (*cb)(void));
 void dd_cobj_link_del(DdCard *c, void (*cb)(void));
@@ -73,7 +70,7 @@ void dd_cobj_gather(int a, int b);
 void func_08820938(DdTask *t, void *arg);
 void func_08820988(float *out, float *m);
 void dd_fx_shatter_start_t(int id, float *pos, float *dir, int a, int b, float s, float zone_kind);
-int dd_fx_twist_start_t(float s, float zone_kind, int id, float *pos, void *dir, void (*done)(DdTask *), DdTask *t);
+int dd_fx_twist_start_t(int id, float *pos, float s, float zone_kind, void *dir, void (*done)(DdTask *), DdTask *t);
 void dd_fx_orb_start(void *a, void *b, void (*cb)(DdCard *c), void *arg);
 int dv_slot_link_1a0c(int player, int zone);
 int dv_slot_e68a0(int player, int zone);
@@ -123,15 +120,14 @@ void dd_lock_cursor(void);
 void dd_task_free_pair(int *p);
 
 /* summon beam of a card (fn: the effect starter) */
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_beam(DdCard *c, DdBeamFn fn)
 {
     int *h = dd_alloc(4);
     DdTask t;
     DdTask *task;
-    float rot[4];
-    float up[4];
-    char dir[16];
+    char dir[16] __attribute__((aligned(16)));
+    float rot[4] __attribute__((aligned(16)));
+    float up[4] __attribute__((aligned(16)));
     int known;
 
     memset(h, 0, 4);
@@ -141,30 +137,31 @@ void dd_beam(DdCard *c, DdBeamFn fn)
     t.draw = 0;
     t.arg = h;
     task = dd_task_add(&t);
-    known = dv_zone_faceup(c->loc.player, c->loc.zone, c->loc.zone < 0xB ? 0 : c->loc.idx);
-    if (known == 0) {
-        *(DdVec4 *)rot = *(DdVec4 *)((char *)c + 0x40);
-    } else {
-        *(DdVec4 *)up = dd_beam_up;
+    known = dv_zone_faceup(c->loc.player, c->loc.zone, c->loc.zone < 0xB ? 0 : ((DdLoc *)&c->loc)->idx);
+    if (known != 0) {
+        up[0] = ((float *)&dd_beam_up)[0];
+        up[1] = ((float *)&dd_beam_up)[1];
+        up[2] = ((float *)&dd_beam_up)[2];
+        up[3] = ((float *)&dd_beam_up)[3];
         quat_mul(rot, (float *)((char *)c + 0x40), up);
+    } else {
+        *(DdVec4 *)rot = *(DdVec4 *)((char *)c + 0x40);
     }
     func_08820A8C(dir, rot, ((float *)c)[6] < 0.0f);
-    *h = fn(1.0f, dd_count_scale(c->loc.player, c->loc.zone), known == 0 ? -1 : c->id,
-            (float *)((char *)c + 0x10), dir, dd_effect_detach, task);
+    *h = fn(known != 0 ? c->id : -1, (float *)((char *)c + 0x10), 1.0f,
+            dd_count_scale(c->loc.player, c->loc.zone), dir, dd_effect_detach, task);
     req_flag_set(0x2A);
 }
-#endif
 
 /* set beam: the face shown is the one of the destination */
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_beam_set(DdCard *c, int player, int zone, DdBeamFn fn)
 {
     int *h = dd_alloc(4);
     DdTask t;
     DdTask *task;
-    float rot[4];
-    float up[4];
-    char dir[16];
+    char dir[16] __attribute__((aligned(16)));
+    float rot[4] __attribute__((aligned(16)));
+    float up[4] __attribute__((aligned(16)));
 
     memset(h, 0, 4);
     memset(&t, 0, sizeof(t));
@@ -173,19 +170,21 @@ void dd_beam_set(DdCard *c, int player, int zone, DdBeamFn fn)
     t.draw = 0;
     t.arg = h;
     task = dd_task_add(&t);
-    if (dv_zone_faceup(c->loc.player, c->loc.zone, c->loc.zone < 0xB ? 0 : c->loc.idx) == 0) {
-        *(DdVec4 *)rot = *(DdVec4 *)((char *)c + 0x40);
-    } else {
-        *(DdVec4 *)up = dd_beam_up2;
+    if (dv_zone_faceup(c->loc.player, c->loc.zone, c->loc.zone < 0xB ? 0 : ((DdLoc *)&c->loc)->idx) != 0) {
+        up[0] = ((float *)&dd_beam_up2)[0];
+        up[1] = ((float *)&dd_beam_up2)[1];
+        up[2] = ((float *)&dd_beam_up2)[2];
+        up[3] = ((float *)&dd_beam_up2)[3];
         quat_mul(rot, (float *)((char *)c + 0x40), up);
+    } else {
+        *(DdVec4 *)rot = *(DdVec4 *)((char *)c + 0x40);
     }
     func_08820A8C(dir, rot, ((float *)c)[6] < 0.0f);
-    *h = fn(1.0f, dd_count_scale(c->loc.player, c->loc.zone),
-            dv_zone_faceup(player, zone, zone < 0xB ? 0 : c->loc.idx) == 0 ? -1 : c->id,
-            (float *)((char *)c + 0x10), dir, dd_effect_detach, task);
+    *h = fn(dv_zone_faceup(player, zone, zone < 0xB ? 0 : ((DdLoc *)&c->loc)->idx) != 0 ? c->id : -1,
+            (float *)((char *)c + 0x10), 1.0f, dd_count_scale(c->loc.player, c->loc.zone), dir,
+            dd_effect_detach, task);
     req_flag_set(0x2D);
 }
-#endif
 
 void dd_beam_summon(DdCard *c)
 {
@@ -198,23 +197,28 @@ void dd_beam_set2(DdCard *c, int player, int zone)
 }
 
 /* target mark of a card; graves and decks share one mark per zone */
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
 void dd_mark_on(DdCard *c)
 {
-    int *pile = 0;
-    int zone;
+    DdTasks *s = &dd_tasks;
     int pile_zone;
-    float pos[4];
+    unsigned char zone;
+    int *pile = 0;
     char dir[16];
+    float pos[4];
     int h;
     int i;
+    DdTasks *g;
 
     if (c->mark != -1)
         return;
     zone = c->loc.zone;
-    pile_zone = (unsigned int)(zone - 0xE) < 2;
+    if ((unsigned int)(zone - 0xE) < 2) {
+        pile = s->pile_mark[zone];
+        pile_zone = 1;
+    } else {
+        pile_zone = 0;
+    }
     if (pile_zone) {
-        pile = dd_tasks.pile_mark[zone];
         if (pile[0] != -1) {
             pile[1]++;
             return;
@@ -230,16 +234,16 @@ void dd_mark_on(DdCard *c)
         pile[1] = 1;
         return;
     }
+    g = &dd_tasks;
     c->mark = h;
     for (i = 0; i < 512; i++) {
-        if (dd_tasks.glow[i] == 0) {
-            dd_tasks.glow[i] = c;
+        if (g->glow[i] == 0) {
+            g->glow[i] = c;
             break;
         }
     }
     dd_cobj_link_add(c, func_08820D40);
 }
-#endif
 
 void dd_mark_off(DdCard *c)
 {

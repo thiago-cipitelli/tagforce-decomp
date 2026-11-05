@@ -1,6 +1,5 @@
 // @range 0x088299C8-0x0882A94C
 // @asm 0x08829BBC-0x08829E2C
-// @asm 0x0882A880-0x0882A94C
 // @data 0x088769E0-0x088769F0
 /* Grid picker of the duel: a window listing the entries first..last in a grid; the player marks
    between min and max of them (the marked ones get a frame) and confirms with an OK button
@@ -67,7 +66,7 @@ unsigned int *dd_pick_confirm_draw(unsigned int *list, int x, int y, int w, int 
 unsigned int *dd_pick_draw_title(unsigned int *list, int x, int y, int w, int h, int index);
 int dd_pick_width(MenuWidget *w);
 int dd_pick_height(MenuWidget *w);
-int dd_pick_has(int index);
+static int dd_pick_has(int index);
 void dd_pick_toggle(int index, int add);
 
 void dd_pick_term(void)
@@ -377,7 +376,7 @@ unsigned int *dd_pick_confirm_draw(unsigned int *list, int x, int y, int w, int 
     return font_text_clear();
 }
 
-int dd_pick_has(int index)
+static int dd_pick_has(int index)
 {
     DdPick *p = &dd_pick;
     int i;
@@ -389,7 +388,6 @@ int dd_pick_has(int index)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original chama dd_pick_has como função static (a0/a3 vivos no jal); dd_pick_has deixou de ser static porque dd_pick_draw em asm a chama */
 void dd_pick_toggle(int index, int add)
 {
     DdPick *p = &dd_pick;
@@ -410,4 +408,3 @@ void dd_pick_toggle(int index, int add)
         p->n_picked--;
     }
 }
-#endif
