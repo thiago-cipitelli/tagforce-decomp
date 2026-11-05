@@ -570,17 +570,17 @@ DtShape dt_shapes[22] = {
 
 
 #ifdef NON_MATCHING
-/* forma igual; alocação dos $s (forma, ponteiro do painel, flag) diferente */
+/* 121 palavras (ordem das iniciações por perm_stmts, teste do modo invertido no caso 1): y e s trocam $s0/$s4 e o original recarrega &dt_shapes[k] por lui em cada caso */
 /* darken the screen except the highlighted area (the card panes for kinds 0..3, fixed shapes for
    the others); the hole's border blinks */
 void *dt_draw_highlight(void *list, unsigned short kind)
 {
     DtLayout *pane = 0;
+    int y = 0;
     DtVert *v = 0;
     int fixed = 0;
-    int h = 0;
     int w = 0;
-    int y = 0;
+    int h = 0;
     int x = 0;
     DtShape *s;
     unsigned int size;
@@ -599,10 +599,10 @@ void *dt_draw_highlight(void *list, unsigned short kind)
         fixed = 1;
         break;
     case 1:
-        if (dtv.mode < 2)
-            pane = &dtv.pane[0].lay;
-        else
+        if (dtv.mode > 1)
             pane = &dtv.pane[1].lay;
+        else
+            pane = &dtv.pane[0].lay;
         size = dt_tab_pos(3);
         x = pane->x + (size & 0xFFFF);
         w = size >> 16 & 0xFFFF;
