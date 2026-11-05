@@ -141,8 +141,6 @@ segments:
       - [0x2B380, asm, ai_0882EE74_asm_0882F320]
       - [0x2B71C, c, ai_0882EE74]
       - [0x2BFAC, c, ai_0882FF4C]
-      - [0x2C090, asm, ai_0882FF4C_asm_08830030]
-      - [0x2C31C, c, ai_0882FF4C]
       - [0x2CEF4, c, ai_08830E94]
       - [0x2CEF4, asm, ai_08830E94_asm_08830E94]
       - [0x2D3CC, c, ai_08830E94]

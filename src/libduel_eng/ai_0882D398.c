@@ -384,7 +384,7 @@ int duel_0882E0A8(unsigned int p, int z, int i)
 
 #endif
 
-#ifdef NON_MATCHING /* o original relê a contagem (duel_w_089149F0) a cada volta do laço que zera duel_chain.ids; nenhuma declaração reproduziu */
+#ifdef NON_MATCHING /* 23 palavras: o original relê os campos de duel_chain (contagem, índice, uids_head) depois de cada store no anel; as leituras voláteis reproduzem quase tudo, falta a releitura de uids_head depois do sh da troca no caso 3 */
 /* Summon that sends the materials named by the card (two or three fixed ids) from the field. */
 int duel_0882E1B8(void)
 {
@@ -464,13 +464,13 @@ int duel_0882E1B8(void)
             z = duel_w_08919650 + duel_w_08919654;
             id = field_get_card(p, z);
             uid = CARD_UID(duel.players[p & 1].field[z].card);
-            for (k = 0; k < duel_w_089149F0; k++) {
+            for (k = 0; k < *(volatile int *)&duel_w_089149F0; k++) {
                 if (duel_chain.ids[k] == id) {
                     duel_chain.ids[k] = 0;
                 }
             }
             duel_w_089147E8[(duel_w_089147E4 + duel_w_089149F8) & 0x7F] = uid;
-            if (++duel_w_089149F8 < duel_w_089149F0) {
+            if (++*(volatile unsigned int *)&duel_w_089149F8 < *(volatile int *)&duel_w_089149F0) {
                 duel_summon.step--;
             } else {
                 duel_summon.step++;
@@ -489,7 +489,7 @@ int duel_0882E1B8(void)
                         loc = loc2;
                         t = duel_chain.uids[(duel_w_089147E4 + k) & 0x7F];
                         duel_chain.uids[(duel_w_089147E4 + k) & 0x7F] = duel_chain.uids[(duel_w_089147E4 + j) & 0x7F];
-                        duel_chain.uids[(duel_w_089147E4 + j) & 0x7F] = t;
+                        duel_chain.uids[(*(volatile unsigned int *)&duel_w_089147E4 + j) & 0x7F] = t;
                     }
                 }
             }
