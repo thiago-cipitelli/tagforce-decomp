@@ -1,7 +1,6 @@
 // @range 0x08855B10-0x08857100
-// @data 0x08877730-0x088777B4
+// @data 0x08877730-0x088777F0
 // @asm 0x08855E90-0x08856278
-// @asm 0x088562C4-0x0885650C
 // @asm 0x088565F8-0x088566EC
 // @asm 0x088566EC-0x08856DC0
 // @asm 0x08856DC0-0x08857100
@@ -27,7 +26,7 @@ void *dl_enable(void *list, int state);
 void *dl_disable(void *list, int state);
 void *dl_tex_func(void *list, int func, int comp);
 void *dl_ambient_color(void *list, unsigned int color);
-void *dl_tex_offset(float u, float v, void *list);
+void *dl_tex_offset(void *list, float u, float v);
 void *dl_clear_depth(void *list, unsigned int z);
 void *dl_clear(void *list, unsigned int flags);
 void *dl_shade_model(void *list, int mode);
@@ -321,8 +320,10 @@ void dd_lp_close(void)
     }
 }
 
-#ifdef NON_MATCHING /* 10 palavras: o original copia up primeiro para a posição mais baixa da pilha (up 16, target
-                       32, eye 48); nenhuma ordem/aninhamento de declarações reproduz; mais um move a0,v0 */
+FxVec4 dd_lp_cam_eye = { 0.0f, 0.0f, 10.0f, 1.0f };     /* 0x088777C0 camera of the 2D panel */
+FxVec4 dd_lp_cam_target = { 0.0f, 0.0f, 0.0f, 1.0f };
+FxVec4 dd_lp_cam_up = { 0.0f, 1.0f, 0.0f, 0.0f };
+
 /* Sets up a 2D-like perspective (camera at z = 10) with the origin at (x, y). */
 void dd_lp_begin_2d(void *list, int x, int y)
 {
@@ -340,9 +341,13 @@ void dd_lp_begin_2d(void *list, int x, int y)
     mtx_set_mode(1);
     mtx_identity();
     {
-        FxVec4 eye = { 0.0f, 0.0f, 10.0f, 1.0f };
-        FxVec4 target = { 0.0f, 0.0f, 0.0f, 1.0f };
-        FxVec4 up = { 0.0f, 1.0f, 0.0f, 0.0f };
+        FxVec4 eye;
+        FxVec4 target;
+        FxVec4 up;
+
+        up = dd_lp_cam_up;
+        target = dd_lp_cam_target;
+        eye = dd_lp_cam_eye;
 
         camera_set(&eye, &target, &up);
     }
@@ -355,10 +360,9 @@ void dd_lp_begin_2d(void *list, int x, int y)
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_disable(list, 10);
     list = dl_enable(list, 5);
-    list = dl_tex_offset(0.0f, 0.0f, list);
+    list = dl_tex_offset(list, 0.0f, 0.0f);
     dl_enable(list, 9);
 }
-#endif
 
 void *dd_lp_end_2d(void *list)
 {
