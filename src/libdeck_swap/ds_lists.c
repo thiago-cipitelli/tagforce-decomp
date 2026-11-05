@@ -1,5 +1,4 @@
 // @range 0x08804E2C-0x08805E58
-// @asm 0x0880556C-0x088056C8
 // @data 0x0881A000-0x0881A014
 /* The three card lists of the swap screen (main deck, side deck, extra deck), built from the deck
    the duel manager passed, the partners' cards flagged fixed; entries added and removed one copy at
@@ -131,7 +130,6 @@ unsigned int ds_list_count_id(DsList *l, unsigned short id)
     return free | fixed << 16;
 }
 
-#ifdef NON_MATCHING /* forma igual; o mwcc troca os registradores s0/s1 do índice do memcpy e do deslocamento i * 6 (como sc_list_remove) */
 /* takes one copy of entry i out of l (the whole entry when it was the last one) */
 int ds_list_remove(DsList *l, int i)
 {
@@ -140,7 +138,6 @@ int ds_list_remove(DsList *l, int i)
     int count;
     int found;
     unsigned short *o;
-    int j;
 
     if (i < 0 || i >= l->n)
         return 0;
@@ -164,13 +161,12 @@ int ds_list_remove(DsList *l, int i)
         if (found)
             l->count = count;
         l->n--;
-        for (j = i; j < l->n; j++)
-            memcpy(&l->ents[j], &l->ents[j + 1], 6);
+        for (k = i; k < l->n; k++)
+            memcpy(&l->ents[k], &l->ents[k + 1], 6);
     }
     ds_list_total(l);
     return 1;
 }
-#endif
 
 
 void ds_list_add(DsList *l, DsEnt *src)

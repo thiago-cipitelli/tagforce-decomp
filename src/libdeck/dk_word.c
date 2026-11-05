@@ -1,5 +1,4 @@
 // @range 0x088192C8-0x0881A69C
-// @asm 0x08819460-0x088198FC
 /* The word search (scene state 5): a window with the word, the last words used and an OK button;
    the word is typed with the name input (system keyboard); the search runs incrementally with a
    progress bar and the matches become the pane's list. */
@@ -19,8 +18,6 @@ typedef struct DkWordWin {             /* dk_word 0x095D2730, 0x54 bytes */
     MenuWidget *bar;                   /* +0x50 */
 } DkWordWin;
 
-/* the search word history: 8 words of 32 characters */
-#define DK_WORDS ((unsigned short (*)[32])dk_profile)
 typedef struct DkWordsView {           /* the same words seen from the dk_deck block (+0x116) */
     unsigned char pad[0x116];
     unsigned short words[8][32];
@@ -93,25 +90,27 @@ void dk_word_open(void)
     dk_state = 5;
 }
 
-#ifdef NON_MATCHING /* máquina de passos; testes e alocação diferentes */
 /* scene state 5 */
 void dk_word_update(PadState *pad)
 {
     MenuWidget *m = dk_word->menu;
     MenuWidget *hist = dk_word->hist;
-    unsigned char c;
+    int c;
     int r;
 
     switch (dk_word->step) {
     case 0:
         if (pad->b.trig & region_pick_value(0)) {
-            if (dk_word->focus == 2) {
+            switch (dk_word->focus) {
+            case 0:
+                dk_name_input_open(dk_word->word, table_get_entry(dk_res_get(0x8033), 0x19), dk_word_input_done);
+                se_play(0x6213);
+                break;
+            case 2:
                 menu_set_cursor(m, 0);
                 se_play(0x6213);
                 dk_word->step = 2;
-            } else if (dk_word->focus == 0) {
-                dk_name_input_open(dk_word->word, table_get_entry(dk_res_get(0x8033), 0x19), dk_word_input_done);
-                se_play(0x6213);
+                break;
             }
         } else if (pad->b.trig & region_pick_value(1)) {
             m->cancelled = 1;
@@ -140,21 +139,19 @@ void dk_word_update(PadState *pad)
     case 1:
         c = hist->cursor;
         r = menu_update(hist);
-        if (r < 0) {
-            if (r == -2) {
-                dk_word->step = 0;
-            } else {
-                if (c != 0)
-                    return;
-                if (!(pad->b.rep & 0x10))
-                    return;
-                dk_word->step = 0;
-                se_play(0x6212);
-            }
-        } else {
-            wcscpy(dk_word->word, DK_WORDS[r]);
+        if (r >= 0) {
+            wcscpy(dk_word->word, ((DkWordsView *)&dk_deck)->words[r]);
             dk_word->step = 0;
             dk_word->focus = 2;
+        } else if (r == -2) {
+            dk_word->step = 0;
+        } else {
+            if (c != 0)
+                return;
+            if (!(pad->b.rep & 0x10))
+                return;
+            dk_word->step = 0;
+            se_play(0x6212);
         }
         hist->cancelled = hist->accepted = 0;
         hist->no_cancel = 0;
@@ -174,7 +171,10 @@ void dk_word_update(PadState *pad)
         if (hist != 0)
             menu_update(hist);
         if (m->state == 6) {
-            if (!m->cancelled) {
+            if (m->cancelled) {
+                dk_word_free();
+                dk_state = 0;
+            } else {
                 menu_reset(m);
                 if (hist != 0)
                     menu_reset(hist);
@@ -182,9 +182,6 @@ void dk_word_update(PadState *pad)
                 dk_word->hist = 0;
                 dk_word->step = 4;
                 dk_word->sstep = 0;
-            } else {
-                dk_word_free();
-                dk_state = 0;
             }
         }
         break;
@@ -193,7 +190,6 @@ void dk_word_update(PadState *pad)
         break;
     }
 }
-#endif
 
 /* the search itself, 16 entries a frame */
 void dk_word_search(void)

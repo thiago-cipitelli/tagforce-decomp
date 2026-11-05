@@ -1,5 +1,5 @@
 // @range 0x08804608-0x08804E2C
-// @asm 0x08804814-0x08804B8C
+// @asm 0x088049D8-0x08804B8C
 /* Cursor index and entry, the cursor card's info text (measured to scroll it), tab switching with
    the saved scroll of each list, scroll clamping, saving the panes' scroll into their lists, and
    the undo history of moves (same source as libselect_card sc_state.c). */
@@ -11,7 +11,7 @@ unsigned short ds_cur_index(unsigned short side);
 DsEnt *ds_cur_entry(unsigned short side);
 void ds_info_update(void);
 void ds_set_panes(unsigned short which);
-void ds_layout_scroll(short keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
+void ds_layout_scroll(unsigned short keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 
 /* index of the cursor's entry in the visible order of pane side */
 unsigned short ds_cur_index(unsigned short side)
@@ -74,8 +74,6 @@ void ds_info_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* 8 palavras: o original passa keep sem a extensão (move a0,s1); com short keep a extensão
-   some mas o bit list_mode e o u1a trocam de registrador. Lógica conferida com o asm (n = 3/2/1 pelo lado, +2 no lado 1) */
 /* shows tab (how 0 = previous, 1 = next, else tab itself) in pane side, keeping each list's scroll */
 void ds_select_tab(unsigned short side, unsigned short tab, unsigned short how)
 {
@@ -127,12 +125,11 @@ void ds_select_tab(unsigned short side, unsigned short tab, unsigned short how)
         ds_window_anim();
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* aritmética u16 em registradores diferentes */
 /* clamps a pane's scroll (top, cx, cy) to total entries in a view of view & 0xFF columns and
    view >> 8 rows; keep puts the cursor back on the entry it was on */
-void ds_layout_scroll(short keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy)
+void ds_layout_scroll(unsigned short keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy)
 {
     unsigned int cols = view & 0xFF;
     unsigned int rows = view >> 8;

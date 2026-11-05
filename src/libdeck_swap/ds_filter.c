@@ -1,7 +1,6 @@
 // @range 0x0880D23C-0x0880DFFC
 // @rodata 0x08819CA0-0x08819CBC
 // @asm 0x0880D3F8-0x0880D6EC
-// @asm 0x0880DC94-0x0880DF44
 // @data 0x0881A1F8-0x0881A224
 /* The incremental text search of a pane and its word history, the card filters (kind, type, race,
    level ranges, spell/trap kinds, limit, genre/new/alternate picture) and the text match: a
@@ -291,7 +290,6 @@ int ds_text_match(unsigned short id, unsigned short *word)
     return ds_find_text(txt, w, n) != 0;
 }
 
-#ifdef NON_MATCHING /* 2 palavras: o original põe "j = n - 1" (move t2,a3) no atraso do bne do primeiro caractere; como dk_find_text */
 /* Horspool search of word (n chars) in text */
 unsigned short *ds_find_text(unsigned short *text, unsigned short *word, int n)
 {
@@ -320,8 +318,8 @@ unsigned short *ds_find_text(unsigned short *text, unsigned short *word, int n)
     for (k = n - 1; k < len; ) {
         t = &text[k];
         j = n - 1;
-        w = &word[j];
-        if (*t == *w) {
+        if (*t == word[j]) {
+            w = &word[j];
             do {
                 if (j == 0) {
                     if (skip != 0)
@@ -343,7 +341,6 @@ unsigned short *ds_find_text(unsigned short *text, unsigned short *word, int n)
         heap_set_level(ds.heap, skip);
     return 0;
 }
-#endif
 
 /* upper case, full-width ASCII to half width, katakana to hiragana */
 void ds_fold_text(unsigned short *dst, unsigned short *src)

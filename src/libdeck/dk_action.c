@@ -1,5 +1,4 @@
 // @range 0x08813268-0x08815280
-// @asm 0x08813B08-0x08813C24
 // @data 0x0882300C-0x08823084
 /* The card action menu and its sub-menus: info, favourite mark, sort/filter/search submenu, deck
    operations (rename, clear, reset, ...), pane layout picker (2x4 grid of layouts), "new" mark
@@ -256,7 +255,6 @@ void dk_action_step0(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original grava o estado no atraso de cada desvio para o retorno comum (lui içado); mesma lógica */
 /* step 10: wait for the close, then run the chosen action */
 int dk_action_close(void)
 {
@@ -273,16 +271,20 @@ int dk_action_close(void)
         l = dkv.pane[dkv.side].list;
         dk_list_filter_reset(l);
         dk_list_sort(l, l->sort, l->dir);
+        dk_state = 0;
         break;
     case 6:
-        if (dk_flight_undo())
-            return 0;
+        if (dk_flight_undo() == 0) {
+            dk_state = 0;
+            break;
+        }
+        return 0;
+    default:
+        dk_state = 0;
         break;
     }
-    dk_state = 0;
     return 0;
 }
-#endif
 
 /* a sub-menu window beside the action menu */
 int dk_sub_open(unsigned short title, unsigned short text, unsigned short count, MenuDrawItemFn draw)

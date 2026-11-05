@@ -1,5 +1,4 @@
 // @range 0x08804000-0x088060B0
-// @asm 0x08804C9C-0x08804ED4
 // @asm 0x08805900-0x08805CF0
 // @data 0x08822A00-0x08822A24
 /* The card lists of the editor: the deck being built (main, side, extra), the owned cards (trunk) and
@@ -299,7 +298,6 @@ unsigned short dk_deck_count_forbidden(void)
 /* the list shown alongside l: the extra deck and its copy in tab 4 */
 #define DK_LIST_TWIN(l) ((l)->tab == 4 ? &dk_lists[2] : (l)->tab == 2 ? &dk_lists[4] : 0)
 
-#ifdef NON_MATCHING /* forma igual; o mwcc troca os registradores s0/s1 do índice do memcpy e do deslocamento i * 6 (como sc_list_remove) */
 /* takes one copy of entry i out of l (the whole entry when it was the last one) */
 int dk_list_remove(DkList *l, int i)
 {
@@ -307,7 +305,6 @@ int dk_list_remove(DkList *l, int i)
     int k;
     int count;
     int found;
-    int j;
 
     unsigned short *o;
     DkList *p;
@@ -334,8 +331,8 @@ int dk_list_remove(DkList *l, int i)
         if (found)
             l->count = count;
         l->n--;
-        for (j = i; j < l->n; j++)
-            memcpy(&l->ents[j], &l->ents[j + 1], 6);
+        for (k = i; k < l->n; k++)
+            memcpy(&l->ents[k], &l->ents[k + 1], 6);
         p = 0;
         switch (l->tab) {
         case 2:
@@ -368,7 +365,6 @@ int dk_list_remove(DkList *l, int i)
     dk_list_total(l);
     return 1;
 }
-#endif
 
 /* adds the copies of src to l at visible position pos (-1: the end); the trunk merges copies */
 void dk_list_add(DkList *l, DkEnt *src, int pos)

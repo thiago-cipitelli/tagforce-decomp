@@ -3,7 +3,6 @@
 // @rodata 0x0882266C-0x08822688
 // @asm 0x08817FF8-0x0881815C
 // @asm 0x0881815C-0x088182EC
-// @asm 0x08818894-0x08818B44
 // @asm 0x08819138-0x088192C8
 /* Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
    with its word history, the filters (kind, type, race, level ranges, spell/trap kinds, limit,
@@ -339,7 +338,6 @@ int dk_text_match(unsigned short id, unsigned short *word)
 }
 
 
-#ifdef NON_MATCHING /* 2 palavras: o original põe "j = n - 1" (move t2,a3) no atraso do bne do primeiro caractere; nenhuma ordem das três atribuições reproduz */
 /* Horspool search of word (n chars) in text */
 unsigned short *dk_find_text(unsigned short *text, unsigned short *word, int n)
 {
@@ -368,8 +366,8 @@ unsigned short *dk_find_text(unsigned short *text, unsigned short *word, int n)
     for (k = n - 1; k < len; ) {
         t = &text[k];
         j = n - 1;
-        w = &word[j];
-        if (*t == *w) {
+        if (*t == word[j]) {
+            w = &word[j];
             do {
                 if (j == 0) {
                     if (skip != 0)
@@ -391,7 +389,6 @@ unsigned short *dk_find_text(unsigned short *text, unsigned short *word, int n)
         heap_set_level(dk_heap, skip);
     return 0;
 }
-#endif
 
 
 /* upper case, full-width ASCII to half width, katakana to hiragana */

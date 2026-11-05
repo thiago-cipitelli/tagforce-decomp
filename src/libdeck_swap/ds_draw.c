@@ -1,5 +1,5 @@
 // @range 0x08806654-0x08806F0C
-// @asm 0x0880687C-0x08806B68
+// @rodata 0x08819C08-0x08819C2C
 // @asm 0x08806B68-0x08806F0C
 /* Frame drawing: the export called once per frame (clear, background, info strip, panes, popups,
    fade), the popup layer over the panes (focus frame, help window, the popup of each state) and the
@@ -71,14 +71,12 @@ void libdeck_swap_08806654(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original calcula a base de dsv.pane[lado] uma vez e a reaproveita nos dois blocos; o mwcc atual a recalcula */
 /* focus frame and help window (help position away from the cursor), then the state's popup */
 void *ds_draw_overlay(void *list)
 {
     DsRect *f = &ds.focus;
     int hx;
     int hy;
-    void *gim;
 
     switch (ds.state) {
     case 7:
@@ -98,10 +96,13 @@ void *ds_draw_overlay(void *list)
                 hy = 0x70;
             }
         } else {
-            if (dsv.pane[dsv.side].list_mode == 1)
+            /* the view shifted by side panes: pane[0] is the cursor's pane */
+            DsView *v = (DsView *)((char *)&dsv + dsv.side * sizeof(DsPane));
+
+            if (v->pane[0].list_mode == 1)
                 hx = 0xD0;
-            else if (f->x + f->w > dsv.pane[dsv.side].lay.x + dsv.pane[dsv.side].lay.w / 2)
-                hx = dsv.pane[dsv.side].lay.x + 2;
+            else if (f->x + f->w > v->pane[0].lay.x + v->pane[0].lay.w / 2)
+                hx = v->pane[0].lay.x + 2;
             else
                 hx = 0xD0;
             if (f->y + f->h / 2 > 0x88)
@@ -110,11 +111,11 @@ void *ds_draw_overlay(void *list)
                 hy = 0xA2;
         }
     case 1:
-        gim = res_get(0x8006);
-        list = ds_draw_frame(list, f->x, f->y, f->w, f->h, gim, gfx_get_state()[0]);
+        list = ds_draw_frame(list, f->x, f->y, f->w, f->h, res_get(0x8006), *(int *)gfx_get_state());
     }
     switch (ds.state) {
     case 0:
+        break;
     case 1:
         break;
     case 2:
@@ -144,7 +145,6 @@ void *ds_draw_overlay(void *list)
         list = ds_popup_draw(list);
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* lista do parâmetro e do resultado em s trocados; atk/def mascarados no original (como sc_draw_info) */
 /* the strip under the panes: the card list's own strip in one-pane modes, else name, icons, level,
