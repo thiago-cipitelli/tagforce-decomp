@@ -11,9 +11,7 @@
 // @asm 0x08876AEC-0x08876CF0
 // @asm 0x088770C0-0x088771D4
 // @asm 0x0887AD38-0x0887AE84
-// @asm 0x0887B9D4-0x0887BC28
 // @asm 0x0887C93C-0x0887CAE8
-// @asm 0x0887CFB4-0x0887D0EC
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
 
@@ -5166,14 +5164,14 @@ int duel_0887B95C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registers and branch layout differ */
 int duel_0887B9D4(DuelAct *a, int b)
 {
     unsigned int k;
     int n;
     unsigned int p;
-    unsigned int z;
+    int z;
     int id;
+    DuelSrc *s;
 
     if (duel_count_monsters_pos(1 - a->player, 1, 0) == 0) {
         return 0;
@@ -5190,37 +5188,37 @@ int duel_0887B9D4(DuelAct *a, int b)
     if (n != 1) {
         return 0;
     }
-    if (a->kind != 8) {
-        return 0;
+    if (a->kind == 8) {
+        s = &a->src;
+        p = s->player;
+        z = s->zone;
+        id = field_get_card(p, z);
+        if (p != a->player) {
+            return 0;
+        }
+        if (!((struct DuelActY *)s)->y15_7) {
+            return 0;
+        }
+        if (duel.players[p & 1].field[z].faceup == 0) {
+            return 0;
+        }
+        if (s->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
+            return 0;
+        }
+        if (card_is_attribute9(id) != 0) {
+            return 0;
+        }
+        if (duel_field_atk(p, z) > 1500) {
+            return 0;
+        }
+        a->w[1] = id;
+        if (duel.players[a->player & 1].n_d == 0 && duel_088BFFD8(a->player, a->id, duel_088AA224(a)) == 0) {
+            return 0;
+        }
+            return 1;
     }
-    p = a->src.player;
-    z = a->src.zone;
-    id = field_get_card(p, z);
-    if (p != a->player) {
-        return 0;
-    }
-    if (!a->y.y15_7) {
-        return 0;
-    }
-    if (duel.players[p].field[z].faceup == 0) {
-        return 0;
-    }
-    if (a->src.uid != CARD_UID(duel.players[p].field[z].card)) {
-        return 0;
-    }
-    if (card_is_attribute9(id) != 0) {
-        return 0;
-    }
-    if (duel_field_atk(p, z) > 1500) {
-        return 0;
-    }
-    a->w[1] = id;
-    if (duel.players[a->player & 1].n_d == 0 && duel_088BFFD8(a->player, a->id, duel_088AA224(a)) == 0) {
-        return 0;
-    }
-    return 1;
+    return 0;
 }
-#endif
 
 int duel_0887BC28(DuelAct *a, DuelAct *b)
 {
@@ -5540,33 +5538,32 @@ int duel_0887C82C(DuelAct *a, int b)
     return duel_0886CE38(a, b);
 }
 
-#ifdef NON_MATCHING /* loop registers differ */
+#ifdef NON_MATCHING /* 2026-11-05: forma dos returns como no original; falta o teste do nível (o original salta com beqzl para a chamada de card_get_level e deixa um b para o fim do laço), o ponteiro de srcs[k] para s_b17 e os $s de k e best */
 int duel_0887C93C(DuelAct *a)
 {
     int best = 0;
     unsigned int k;
 
-    if (a->kind == 0x1B) {
-        if (duel.players[a->player & 1].n_d == 0) {
-            return 0;
-        }
-        for (k = 0; k < duel_chain.n_kinds; k++) {
-            if (duel_chain.kinds[k] == 0x1B) {
-                int id = duel.list[duel_chain.srcs[k].s_uid].id;
+    if (a->kind != 0x1B) {
+        return 0;
+    }
+    if (duel.players[a->player & 1].n_d == 0) {
+        return 0;
+    }
+    for (k = 0; k < duel_chain.n_kinds; k++) {
+        if (duel_chain.kinds[k] == 0x1B) {
+            int id = duel.list[duel_chain.srcs[k].s_uid].id;
 
-                if (duel_chain.srcs[k].s_player == a->player && duel_chain.srcs[k].s_b17 &&
-                    card_is_in_group_1a6f(id) != 0 && card_get_level(id) >= best) {
-                    best = card_get_level(id);
-                }
+            if (duel_chain.srcs[k].s_player == a->player && duel_chain.srcs[k].s_b17 &&
+                card_is_in_group_1a6f(id) != 0 && best <= card_get_level(id)) {
+                best = card_get_level(id);
             }
         }
-        if (best == 0) {
-            return 0;
-        }
+    }
+    if (best != 0) {
         if (best == card_get_level(duel.list[a->src.uid].id)) {
             return 1;
         }
-        return 0;
     }
     return 0;
 }
@@ -5702,32 +5699,31 @@ int duel_0887CF9C(DuelAct *a)
     return duel_slot_has_effect2(a->player, a->zone, a->id);
 }
 
-#ifdef NON_MATCHING /* loop layout differs */
 int duel_0887CFB4(DuelAct *a)
 {
     unsigned int q = a->player ^ a->opp;
     DuelPlayer *pl;
+    unsigned int i;
     int k;
     int thr;
-    unsigned int i;
 
     if (duel.players[q & 1].flags >> 17 & 1) {
         return 0;
     }
     pl = &duel.players[q & 1];
-    for (k = 1, thr = 1000; k < 4; k++, thr += 1000) {
-        if (!(thr < pl->lp)) {
-            return 0;
-        }
-        for (i = 0; i < pl->n_hand; i++) {
-            if (!(!duel_08827DA4(q, CARD_UID(pl->hand[i]), 1, k))) {
-                return 1;
+    for (k = 1, thr = 1000; k <= 3; k++, thr += 1000) {
+        if (pl->lp > thr) {
+            for (i = 0; i < duel.players[q & 1].n_hand; i++) {
+                if (!(!duel_08827DA4(q, CARD_UID(pl->hand[i]), 1, k))) {
+                    return 1;
+                }
             }
+        } else {
+            return 0;
         }
     }
     return 0;
 }
-#endif
 
 int duel_0887D0EC(DuelAct *a, int b)
 {
