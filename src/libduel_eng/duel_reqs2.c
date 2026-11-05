@@ -1,5 +1,4 @@
 // @range 0x088C936C-0x088CA4E8
-// @asm 0x088C9E88-0x088C9F58
 // @asm 0x088CA184-0x088CA270
 /* More commands to the presentation: a card is flipped or changes position (0x35), moves between
    zones (0x3D, 0x3E), goes from the hand or the graveyard to the field (0x3F). */
@@ -216,8 +215,6 @@ void duel_088C9D24(DuelAct *a, unsigned int p, int z)
     }
 }
 
-#ifdef NON_MATCHING /* 14 palavras: o original refaz `andi 0xFFFF` de s antes do `ext` do 2º argumento e calcula o 3º
-                       antes do 1º; s unsigned int/short, locais e casts não reproduzem */
 void duel_088C9E88(int loc, int t)
 {
     unsigned int p = loc & 0xFF;
@@ -227,15 +224,14 @@ void duel_088C9E88(int loc, int t)
     if (p != (t & 0xFF) && duel.players[p & 1].field[z].faceup != 0) {
         switch (field_get_card(p, z)) {
         case 0x14AC:
-            s = duel_slot_e1854(p, z);
-            if ((unsigned short)s != 0xFFFF) {
+            s = (unsigned short)duel_slot_e1854(p, z);
+            if (s != 0xFFFF) {
                 duel_088C88B8(s & 0xFF, (unsigned short)s >> 8 & 0xFF, (unsigned short)((p & 0xFF) | (z & 0xFF) << 8), 1);
             }
             break;
         }
     }
 }
-#endif
 
 void duel_088C9F58(int loc, int t)
 {

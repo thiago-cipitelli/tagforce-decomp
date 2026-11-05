@@ -108,7 +108,7 @@ unsigned int duel_0884C8CC(int i)
     return duel_w_0891524C.where[i].b.zone;
 }
 
-#ifdef NON_MATCHING /* argument order of the card uid and register allocation not reproduced */
+#ifdef NON_MATCHING /* lógica conferida com o asm (2026-11-05; faltava o else que limpa 0x1000, switch da posição e das marcas); 688 B contra 680: aqui o dono passado a duel_grave_find_uid/duel_f_find_uid ganha andi 0xFF e é lido antes de uid_hi */
 unsigned int duel_0884C8E4(int i)
 {
     DuelCard *c = &duel_w_0891524C.c[i];
@@ -147,12 +147,12 @@ unsigned int duel_0884C8E4(int i)
                                                 duel_f_find_uid(c->owner, CARD_UID(*c))) == 0) {
             f |= 0x80;
         }
-        switch (*(unsigned int *)c >> 15 & 3) {
-        case 2:
-            f |= 0x100;
-            break;
+        switch (((struct { unsigned int a : 15; unsigned int pos : 2; } *)c)->pos) {
         case 1:
             f |= 0x200;
+            break;
+        case 2:
+            f |= 0x100;
             break;
         }
     }
@@ -162,13 +162,16 @@ unsigned int duel_0884C8E4(int i)
     if (z == 0xF) {
         unsigned int t = duel_card_locate(CARD_UID(*c));
 
-        if ((t & 0xFFFF) >> 8 == 0xF) {
-            unsigned char m = duel.players[t & 1].marks[t >> 16];
+        if ((unsigned char)((t & 0xFFFF) >> 8) == 0xF) {
+            unsigned char m = duel.players[(unsigned char)t & 1].marks[t >> 16 & 0xFFFF];
 
-            if (m == 0x80) {
-                f = (f & 0x3F) | 0x800;
-            } else if (m == 0x40) {
+            switch (m) {
+            case 0x40:
                 f |= 0x400;
+                break;
+            case 0x80:
+                f = (f & 0x3F) | 0x800;
+                break;
             }
         }
     }
@@ -177,6 +180,8 @@ unsigned int duel_0884C8E4(int i)
     }
     if (c->owner == (duel_view_player ^ 1)) {
         f |= 0x1000;
+    } else {
+        f &= ~0x1000;
     }
     return f;
 }

@@ -4,7 +4,6 @@
 // @asm 0x08871B14-0x08871BFC
 // @asm 0x088719DC-0x08871A68
 // @asm 0x08871674-0x088717B4
-// @asm 0x088705DC-0x0887068C
 // @asm 0x088731C0-0x088732B4
 // @asm 0x08873B8C-0x08873C84
 // @asm 0x088746D0-0x0887477C
@@ -677,25 +676,23 @@ int duel_08870534(DuelAct *a)
     return !duel_act_immune(a, duel_special.player[0], duel_special.zone[0]);
 }
 
-#ifdef NON_MATCHING /* branch layout and registers differ */
 int duel_088705DC(DuelAct *a)
 {
     unsigned int sp = a->src.player;
-    unsigned int sz;
+    unsigned char sz;
 
     if (sp == a->player) {
         return 0;
     }
     sz = a->src.zone;
-    if (duel.players[sp].field[sz].card.id == 0) {
+    if (duel.players[sp & 1].field[sz].card.id == 0) {
         return 0;
     }
-    if (duel.players[sp].field[sz].faceup == 0) {
+    if (duel.players[sp & 1].field[sz].faceup == 0) {
         return 0;
     }
     return duel_field_def(sp, sz) < 2001;
 }
-#endif
 
 int duel_0887068C(DuelAct *a)
 {
@@ -3128,13 +3125,12 @@ int duel_0887665C(DuelAct *a)
     return duel_count_field(a->player) < 6;
 }
 
-#ifdef NON_MATCHING /* case tests differ */
+#ifdef NON_MATCHING /* 12 palavras: os testes 0xC/0xB dos dois switch saem com beq+nop no original (aqui beql com o li v0,1); contadores dos laços em outros $s */
 int duel_088766B0(DuelAct *a)
 {
     int i;
     unsigned int j;
-    unsigned int p;
-    int t;
+    unsigned char p;
 
     if (duel_phase_ok2(a->player) == 0) {
         return 0;
@@ -3142,29 +3138,30 @@ int duel_088766B0(DuelAct *a)
     if ((int)duel_grave_find_uid(a->player, a->uid) < 0) {
         return 0;
     }
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i <= 4; i++) {
         if (duel_slot_efb84(a->player, i) == 0) {
             return 0;
         }
-        t = (short)duel_field_type(a->player, i);
-        if (t == 0x10) {
+        switch ((unsigned short)duel_field_type(a->player, i)) {
+        case 0xB:
+        case 0xC:
             return 1;
-        }
-        if (t == 0xC || t == 0xB) {
+        case 0x10:
             return 1;
         }
     }
     for (j = 0; j < duel.players[(p = a->player) & 1].n_hand; j++) {
         DuelCard *c = &duel.players[p & 1].hand[j];
+        int id = c->id;
 
         if (duel_088DFCC8(CARD_UID(*c)) == 0) {
             return 0;
         }
-        t = card_get_type(c->id);
-        if (t == 0x10) {
+        switch (card_get_type(id)) {
+        case 0xB:
+        case 0xC:
             return 1;
-        }
-        if (t == 0xC || t == 0xB) {
+        case 0x10:
             return 1;
         }
     }
