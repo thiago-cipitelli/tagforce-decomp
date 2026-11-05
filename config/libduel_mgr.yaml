@@ -27,8 +27,6 @@ segments:
     subalign: null
     subsegments:
       - [0x60, c, dmgr_main]
-      - [0x1724, asm, dmgr_main_asm_088056C4]
-      - [0x17F4, c, dmgr_main]
       - [0x2058, c, dmgr_event]
       - [0x21F0, asm, dmgr_event_asm_08806190]
       - [0x2278, c, dmgr_event]

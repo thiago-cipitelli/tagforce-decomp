@@ -966,17 +966,17 @@ unsigned int *dmgr_res_draw_bg(unsigned int *list)
     return gfx_end_2d(list);
 }
 
-#ifdef NON_MATCHING /* 20 palavras: com os return antecipados o fluxo é o do original, mas o teste f < 6 sai beqzl/b em vez de bnezl direto ao epílogo (f < 6, 6 > f, !(f >= 6), switch não mudam) e v/u trocam de $s */
+#ifdef NON_MATCHING /* 8 palavras (declarações f, i, v, u, x por busca): o teste f < 6 sai beqzl/b em vez de bnezl direto ao epílogo (f < 6, 6 > f, !(f >= 6), switch não mudam; com o corpo em if (f >= 6) o bnezl sai certo, mas list deixa de voltar em v0) */
 unsigned int *dmgr_res_draw_bar(unsigned int *list)
 {
     int opts[0x18];
     int edge = 0;
     void *e;
     int f;
-    int v;
     int i;
-    int x;
+    int v;
     int u;
+    int x;
 
     e = dmgr_res_file(1);
     if (e == 0) {

@@ -1,5 +1,4 @@
 // @range 0x08824028-0x08825F7C
-// @asm 0x088249EC-0x08824F14
 // @data 0x0883D530-0x0883D630
 /* Pages of the PDA (field_pda, the menu opened on the map): the options page, the save prompt, the
    event log with its scrolling voiced reader, the calendar, the files of the PDA pack and the 3D cover
@@ -290,13 +289,11 @@ void fpda_events_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* 4 palavras: a0/a1 trocados entre read_y - lim e &pos na rolagem (decls, int pos, temporario e && nao mudam) */
 /* event reader: the text scrolls with the voice (sub 0 wait, 1 playing, 2 free scroll) */
 void fpda_reader_update(void)
 {
     int quit = 0;
     int lim;
-    unsigned int pos;
     PadState *pad;
     int step;
 
@@ -321,9 +318,11 @@ void fpda_reader_update(void)
             lim = 0x1500 - field_pda->lh;
             field_pda->read_x = 0;
             field_pda->read_y += field_pda->lh;
-            if (lim < field_pda->read_y && (pos = field_pda->pos + (field_pda->read_y - lim)) < field_pda->max) {
-                field_pda->pos = pos;
-                field_pda->read_y = lim;
+            if (lim < field_pda->read_y) {
+                if (field_pda->pos + (field_pda->read_y - lim) < field_pda->max) {
+                    field_pda->pos += field_pda->read_y - lim;
+                    field_pda->read_y = lim;
+                }
             }
             if (field_pda->line_end[field_pda->line] <= field_pda->pos + field_pda->read_y) {
                 field_pda->line++;
@@ -389,7 +388,6 @@ void fpda_reader_update(void)
         se_play(0x6214);
     }
 }
-#endif
 
 /* loads the lines of the chosen event and lays them out */
 void fpda_reader_open(void)

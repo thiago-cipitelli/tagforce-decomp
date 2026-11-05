@@ -158,7 +158,7 @@ void dmgr_menu_init(void *pack, void *heap)
     }
 }
 
-#ifdef NON_MATCHING /* o mwcc reordena os acessos a dmgr_jk e os blocos dos estados; forma geral igual */
+#ifdef NON_MATCHING /* 194 palavras (325 antes do mode = c ? 9 : 8): o mwcc reordena os acessos a dmgr_jk e os blocos dos estados; forma geral igual */
 int dmgr_menu_update(void)
 {
     PlayerSlot *s;
@@ -174,10 +174,7 @@ int dmgr_menu_update(void)
     case 1:
         if (fade_is_done() != 0) {
             if (dmgr_jk->first == 2) {
-                mode = 8;
-                if (((DmgrGameHdr *)game_state_get())->partner_mode == 2) {
-                    mode = 9;
-                }
+                mode = ((DmgrGameHdr *)game_state_get())->partner_mode == 2 ? 9 : 8;
                 dmgr_partner_init(dmgr_jk->heap, dmgr_jk->pack, mode);
                 dmgr_jk->state = 11;
             } else {

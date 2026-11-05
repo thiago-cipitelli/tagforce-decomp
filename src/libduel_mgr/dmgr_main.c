@@ -1,5 +1,4 @@
 // @range 0x08804000-0x08805FF8
-// @asm 0x088056C4-0x08805794
 // @data 0x0881A14C-0x0881A1D4
 // @rodata 0x08819D20-0x08819D90
 /* Scene 6 (duel): module entry, the scene thread (load libduel_draw and the codecs, deck swap,
@@ -822,7 +821,6 @@ void dmgr_answer_time_reset(void)
     t[0] = n;
 }
 
-#ifdef NON_MATCHING /* o original testa o modo antes de zerar o contador do segundo laço (bne + nop); o mwcc põe o zero no atraso de um bnel */
 void dmgr_voices_load(void)
 {
     DmgrGameHdr *gs = (DmgrGameHdr *)game_state_get();
@@ -839,10 +837,7 @@ void dmgr_voices_load(void)
             s->voice_obj = 0;
         }
     }
-    n = 2;
-    if (gs->partner_mode == 2) {
-        n = 4;
-    }
+    n = gs->partner_mode == 2 ? 4 : 2;
     for (j = 0; j < n; j++) {
         PlayerSlot *s = &gs->slot[j];
         if (s->type < 2) {
@@ -855,7 +850,6 @@ void dmgr_voices_load(void)
         }
     }
 }
-#endif
 
 void dmgr_start_duel(void)
 {
