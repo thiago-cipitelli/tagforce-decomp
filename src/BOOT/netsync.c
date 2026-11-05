@@ -1,5 +1,5 @@
 // @range 0x0886E0A4-0x0886ED2C
-// @asm 0x0886E33C-0x0886E54C
+// @asm 0x0886E33C-0x0886E40C
 // @asm 0x0886E988-0x0886EBA0
 /* Ad hoc state exchange over one PDP port (0x315): every player owns a 0x100-byte record;
    the local record is sent to the other PSP and the received one copied into peer_records.
@@ -48,7 +48,7 @@ int memcmp2(const void *a, const void *b, int n);
 int sceNetGetLocalEtherAddr(unsigned char *mac);
 int sceNetAdhocPdpCreate(unsigned char *mac, unsigned short port, unsigned int bufsize, int unk);
 int sceNetAdhocPdpDelete(int id, int unk);
-int sceNetAdhocPdpSend(int id, unsigned char *mac, unsigned short port, void *data, unsigned int len, unsigned int timeout, int nonblock);
+int sceNetAdhocPdpSend(int id, unsigned char *mac, unsigned short port, void *data, int len, unsigned int timeout, int nonblock);
 int sceNetAdhocPdpRecv(int id, unsigned char *mac, unsigned short *port, void *data, int *len, unsigned int timeout, int nonblock);
 
 void netsync_init(void);
@@ -125,7 +125,7 @@ int netsync_exchange(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* queue_pop: lógica conferida; só a alocação difere (o original põe head em a3 e reaproveita a1 para head+1): 11 palavras. exchange_queued loads the pdp id and the size in the other order */
+#ifdef NON_MATCHING /* queue_pop: lógica conferida; só a alocação difere (o original põe head em a3 e reaproveita a1 para head+1): 11 palavras.*/
 /* Moves the oldest queued packet into the local record after 5 frames. */
 void netsync_queue_pop(void)
 {
@@ -148,6 +148,8 @@ void netsync_queue_pop(void)
         netsync_send_size = size + 4;
     }
 }
+
+#endif
 
 int netsync_exchange_queued(void)
 {
@@ -175,7 +177,6 @@ int netsync_exchange_queued(void)
     }
     return 0;
 }
-#endif
 
 void netsync_set_mode(int mode)
 {

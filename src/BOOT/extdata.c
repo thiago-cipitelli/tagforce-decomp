@@ -358,8 +358,8 @@ int extdata_load_recipe(char *name, int size, ExtRecipe *out)
     return 1;
 }
 
-#ifdef NON_MATCHING /* load_list: the original computes count << 1 before the 0xA28 test; verify: sum and index
-                       registers swapped in the header loop, magic compared through an indexed address */
+#ifdef NON_MATCHING /* load_list: the original computes count << 1 before the 0xA28 test; verify (17 palavras; eram 88 com o
+                       índice (unsigned)k e o if final com return 1): só a soma e o índice trocados nos laços 2 e 3 */
 int extdata_load_list(char *name, int size, ExtList *out)
 {
     unsigned char *buf;
@@ -417,7 +417,7 @@ int extdata_verify(int kind, unsigned short *buf, unsigned int size)
         return 0;
     }
     for (k = 0; k < 4; k++) {
-        if (ygtf_magic[k] != ((signed char *)buf)[k]) {
+        if (ygtf_magic[k] != ((signed char *)buf)[(unsigned)k]) {
             return 0;
         }
     }
@@ -468,7 +468,10 @@ int extdata_verify(int kind, unsigned short *buf, unsigned int size)
             p++;
         } while (i < n);
     }
-    return sum == (unsigned short)RD16(p);
+    if (sum != (unsigned short)RD16(p)) {
+        return 0;
+    }
+    return 1;
 }
 #endif
 

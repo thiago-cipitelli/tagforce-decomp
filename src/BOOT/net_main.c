@@ -1,7 +1,6 @@
 // @range 0x08868DC8-0x0886A6EC
 // @data 0x088F07AC-0x088F0908
 // @rodata 0x088EB050-0x088EB068
-// @asm 0x08868DC8-0x08868E40
 /* Ad hoc front end: the state-entry hook, the peer and scan lists shown by the lobby screens,
    the per-frame driver called from main (pad/UMD watchdogs, link watchdog), the functions the
    gmodules call, the netconf / message dialogs and the net module loading. */
@@ -117,7 +116,6 @@ int net_get_state(void);
 int netconf_update(void);
 int net_dialog_update(void);
 
-#ifdef NON_MATCHING /* the original walks the list with the test at the top and a jump back */
 /* Sound side: wakes on the event flag and walks the idle list under the sound semaphore. */
 void snd_idle_thread(void)
 {
@@ -131,14 +129,15 @@ void snd_idle_thread(void)
         p = 0;
         for (;;) {
             p = snd_list_next(&snd_idle_list, p);
-            if (p == 0) {
-                break;
+            switch ((int)p) {
+            case 0:
+                goto out;
             }
         }
+    out:
         sceKernelSignalSema(snd_sema, 1);
     }
 }
-#endif
 
 void net_state_enter(int s)
 {
