@@ -4,9 +4,7 @@
 // @asm 0x0880FEAC-0x08810750
 // @asm 0x08810C2C-0x08810DCC
 // @asm 0x08810DCC-0x088111DC
-// @asm 0x088111DC-0x08811270
 // @asm 0x08811270-0x08811460
-// @asm 0x088116F4-0x08811754
 // @asm 0x088119B4-0x08811BC4
 // @asm 0x08811BC4-0x08811C98
 // @asm 0x08811C98-0x08812124
@@ -21,8 +19,6 @@
 // @asm 0x088139B4-0x08813C0C
 // @asm 0x08813C0C-0x08814274
 // @asm 0x08814274-0x088146E8
-// @asm 0x0881499C-0x08814C60
-// @asm 0x08814C60-0x08814DCC
 // @asm 0x08814DCC-0x08815050
 // @asm 0x08815050-0x08815328
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
@@ -814,20 +810,18 @@ void dmgr_res_input(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 void dmgr_res_slide(void)
 {
     if (dmgr_res_bg_done() != 0) {
         dmgr_res_bg_anim(0);
     }
-    if (dmgr_res->timer++ > 0xF) {
+    if (dmgr_res->timer++ >= 0x10) {
         dmgr_res_bg_anim(1);
         dmgr_res->bar = dmgr_res->tab;
         dmgr_res->state = 2;
         dmgr_res->timer = 0;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 void dmgr_res_measure(void)
@@ -911,18 +905,17 @@ void dmgr_res_menu_open(unsigned short kind)
     dmgr_res->menu_kind = kind;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm. 19 palavras: o original guarda o endereço do registro (sp+16) em s0 e grava por ele; o mwcc dobra o endereço em sp+16 a cada uso */
 void dmgr_res_send(unsigned char a, unsigned char b)
 {
     unsigned char rec[0x100];
+    unsigned char *const p = rec;
 
-    memset(rec, 0, sizeof rec);
-    rec[0] = 8;
-    rec[1] = a;
-    rec[2] = b;
-    local_record_set(rec);
+    memset(p, 0, 0x100);
+    p[0] = 8;
+    p[1] = a;
+    p[2] = b;
+    local_record_set(p);
 }
-#endif
 
 typedef struct DmgrLang6 { char c[6]; } DmgrLang6;
 
@@ -1775,14 +1768,14 @@ unsigned int *dmgr_res_page_header(unsigned int *list, int x, int page)
     return list;
 }
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_draw_box(unsigned int *list, int x, int y, int w, int h, int u, int v)
 {
-    int r;
     int b;
+    int r;
+
 
     if (h == 0xE) {
-        list = draw_set_offsets(list, 2, 0xE, 2, 0xE);
+        list = draw_set_offsets(list, 1, 0xE, 1, 0xE);
         list = draw_sprite(list, x, y, 0, u, v, 0, 0);
         list = draw_sprite(list, x + w - 1, y, 0, u + 2, v, 0, 0);
         list = draw_set_offsets(list, 1, 0xE, w - 2, 0xE);
@@ -1804,28 +1797,27 @@ unsigned int *dmgr_res_draw_box(unsigned int *list, int x, int y, int w, int h, 
     list = draw_set_offsets(list, 1, 1, w - 4, h - 4);
     return draw_sprite(list, x + 2, y + 2, 0, u + 1, v + 1, 0, 0);
 }
-#endif
 
 unsigned short dmgr_res_digit[2] = { '0', 0 };
+typedef struct DmgrResDigit { unsigned short c[2]; } DmgrResDigit;
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_draw_number(unsigned int *list, short x0, short y, int n, unsigned short step,
                                    unsigned short digits, int pad)
 {
     unsigned short x = x0;   /* callers pass a short, the body works on it unsigned */
-    unsigned short ch[2];
-    int neg = n < 0;
+    DmgrResDigit ch = *(DmgrResDigit *)dmgr_res_digit;
+    int neg = 0;
     int i;
 
-    memcpy(ch, dmgr_res_digit, sizeof ch);
-    if (neg) {
+    if (n < 0) {
         n = -n;
+        neg = 1;
     }
     font_text_set(list);
     for (i = digits - 1; i >= 0; i--) {
         x -= step;
-        ch[0] = n % 10 + '0';
-        font_draw_text(x << 6, y << 6, (0x1E0 - x) * 0x40, ch);
+        ch.c[0] = n % 10 + '0';
+        font_draw_text(x << 6, y << 6, (0x1E0 - x) * 0x40, ch.c);
         n /= 10;
         if (pad == 0 && n == 0) {
             break;
@@ -1833,12 +1825,11 @@ unsigned int *dmgr_res_draw_number(unsigned int *list, short x0, short y, int n,
     }
     if (neg) {
         x -= (unsigned short)(step + 2);
-        ch[0] = 0xFF0D;
-        font_draw_text(x << 6, y << 6, (0x1E0 - x) * 0x40, ch);
+        ch.c[0] = 0xFF0D;
+        font_draw_text(x << 6, y << 6, (0x1E0 - x) * 0x40, ch.c);
     }
     return font_text_clear();
 }
-#endif
 
 #ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, unsigned int period, int blink,

@@ -220,18 +220,15 @@ StMailAttach *st_mail_open(int id)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original materializa &st_mail_tbl (lui/addiu) antes do lw; o mwcc sempre dobra o deslocamento */
+#ifdef NON_MATCHING /* 6 palavras: o original materializa &st_mail_tbl (lui/addiu) antes do lw 0; o mwcc sempre dobra o %lo (const, cast char*, volatile, register, inline não mudam); o laço já bate */
 /* record of a mail in MailESM (assumed present) */
 unsigned short *st_mail_find(int id)
 {
-    unsigned short *p = ((StMailTables *)(char *)&st_mail_tbl)->esm;
-
-next:
-    if (*p != id) {
+    unsigned short *p = *(unsigned short **)((char *)&st_mail_tbl + id * 0);
+    for (;;) {
+        if (*p == id) return p;
         p += 5;
-        goto next;
     }
-    return p;
 }
 #endif
 
