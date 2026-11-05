@@ -3,8 +3,6 @@
 // @asm 0x0880B120-0x0880B1F8
 // @asm 0x0880BC70-0x0880BE98
 // @asm 0x0880BE98-0x0880C05C
-// @asm 0x0880C380-0x0880C690
-// @asm 0x0880C690-0x0880C7D4
 // @asm 0x0880C7D4-0x0880C940
 // @rodata 0x0881A960-0x0881A984
 // @data 0x0881AE58-0x0881B378
@@ -39,7 +37,7 @@ ScEnt *sc_cur_entry(unsigned short side);
 void sc_info_update(void);
 void sc_layout_scroll(int grid, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned short sc_cur_index(unsigned short side);
-int sc_sort_value(ScEnt *e, unsigned int sort);
+int sc_sort_value(ScEnt *e, unsigned short sort);
 void sc_input_sort_menu(void);
 void sc_input_action_menu(void);
 void sc_input_search(void);
@@ -182,7 +180,7 @@ void sc_set_mode(unsigned short mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original não encadeia os saltos para o fim (cada grupo termina num b para o epílogo) */
+#ifdef NON_MATCHING /* 14 palavras (forma de dk_mode_for): só o último grupo (b == 0 ? 6 : -1) difere; o original faz bnez; b fim; li 6; li -1 sem desvio provável, nenhuma grafia testada (ternário, switch, return) reproduziu */
 /* sc_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int sc_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)
 {
@@ -191,28 +189,21 @@ int sc_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned sho
     if (panes == 1) {
         if (a == 1)
             r = 0;
-        else if (a == 0)
-            r = 1;
         else
-            r = -1;
-    } else if (narrow != 0) {
+            r = a == 0 ? 1 : -1;
+    } else if (narrow) {
         if (a == 0) {
             if (b == 1)
                 r = 3;
-            else if (b == 0)
-                r = 2;
             else
-                r = -1;
-        } else {
+                r = b == 0 ? 2 : -1;
+        } else
             r = -1;
-        }
     } else if (a == 0) {
         if (b == 1)
             r = 7;
-        else if (b == 0)
-            r = 5;
         else
-            r = -1;
+            r = b == 0 ? 5 : -1;
     } else if (a == 1) {
         if (b == 1)
             r = 4;
@@ -220,9 +211,8 @@ int sc_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned sho
             r = 6;
         else
             r = -1;
-    } else {
+    } else
         r = -1;
-    }
     return r;
 }
 #endif
@@ -505,24 +495,26 @@ void sc_input_help_b(void)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (side int: o original repassa a0 sem andi); 46 palavras: o
-                       original lê os campos pela base scv antes do ponteiro; blezl/bnezl dos limites */
+#ifdef NON_MATCHING /* 16 palavras (forma de dt_cursor_grid, asm idêntico): cols/cx trocam de registrador temporário (ordem das cargas: original cols, top, cx, cy; perm_stmts das iniciações deu no máximo esta) e o blezl do "if (top <= 0) top = 0" de dt_cursor_list */
 /* grid cursor: d-pad moves, wraps to the other pane at the left/right edges, scrolls by rows */
 void sc_cursor_grid(int side, PadState *pad)
 {
     ScPane *p = &scv.pane[(unsigned short)side];
     int cols = p->lay.cols;
-    int top = (p->top + cols - 1) / cols;
-    int cx = p->cx;
     int cy = p->cy;
+    int cx = p->cx;
+    int top = (p->top + cols - 1) / cols;
     int rows = p->lay.grid_rows;
     unsigned int rep = pad->b.rep;
     int total = (p->list->count + cols - 1) / cols;
-    int dy = 0;
+    int dx;
+    int dy;
     int changed = 0;
-    int dx = 0;
+    int nx;
     int ny;
 
+    dy = 0;
+    dx = 0;
     if (rep & 0x40)
         dy++;
     if (rep & 0x10)
@@ -531,59 +523,60 @@ void sc_cursor_grid(int side, PadState *pad)
         dx++;
     if (rep & 0x80)
         dx--;
-    dx = cx + dx;
-    if (dx < 0) {
+    nx = cx + dx;
+    if (nx < 0) {
         sc_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
-        return;
-    }
-    if (dx >= cols) {
+    } else if (nx >= cols) {
         sc_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
         se_play(0x6212);
-        return;
-    }
-    if (top + cy == 0 && (pad->b.trig & 0x10)) {
-        top = total >= rows ? total - rows : 0;
-        ny = rows - 1;
-    } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
-        ny = 0;
-        top = 0;
     } else {
-        ny = cy + dy;
-        if (ny < 0) {
-            top += ny;
-            top = top <= 0 ? 0 : top;
-            ny = 0;
-        } else if (ny >= rows) {
-            if (rows < total) {
-                if (total > top + ny)
-                    top += ny - (rows - 1);
-                else
-                    top = total - rows;
-            }
+        if (top + cy == 0 && (pad->b.trig & 0x10)) {
+            if (total >= rows)
+                top = total - rows;
+            else
+                top = 0;
             ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top += ny;
+                ny = 0;
+                if (top <= 0)
+                    top = 0;
+            } else if (ny >= rows) {
+                if (rows < total) {
+                    if (top + ny >= total)
+                        top = total - rows;
+                    else
+                        top += ny - (rows - 1);
+                }
+                ny = rows - 1;
+            }
         }
+        if (cx != nx) {
+            p->cx = nx;
+            changed = 1;
+        }
+        if (p->cy != ny) {
+            p->cy = ny;
+            changed = 1;
+        }
+        if (p->top != top * cols) {
+            p->top = top * cols;
+            changed = 1;
+        }
+        if (changed)
+            se_play(0x6212);
     }
-    if (cx != dx) {
-        p->cx = dx;
-        changed = 1;
-    }
-    if (p->cy != ny) {
-        p->cy = ny;
-        changed = 1;
-    }
-    top *= cols;
-    if (p->top != top) {
-        p->top = top;
-        changed = 1;
-    }
-    if (changed)
-        se_play(0x6212);
 }
 #endif
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 17 palavras: "if (top <= 0) top = 0" sai blezl para a
-                       instrução seguinte no original, e "top + ny < total" usa slt com bnezl (o mwcc dá at) */
+#ifdef NON_MATCHING /* forma de dt_cursor_list (asm idêntico), 3 palavras: "if (top <= 0) top = 0" sai blezl para a
+                       instrução seguinte e "b; ny = 0" no original; aqui bgtz direto para o fim */
 /* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
 void sc_cursor_list(int side, PadState *pad)
 {
@@ -594,56 +587,58 @@ void sc_cursor_list(int side, PadState *pad)
     int top = p->top;
     int total = p->list->count;
     int changed = 0;
-    int d;
+    int dy;
     int ny;
 
     if (rep & 0x80) {
         sc_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
-        return;
-    }
-    if (rep & 0x20) {
+    } else if (rep & 0x20) {
         sc_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
         se_play(0x6212);
-        return;
-    }
-    d = 0;
-    if (rep & 0x40)
-        d++;
-    if (rep & 0x10)
-        d--;
-    if (top + cy == 0 && (pad->b.trig & 0x10)) {
-        top = total >= rows ? total - rows : 0;
-        ny = rows - 1;
-    } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
-        ny = 0;
-        top = 0;
     } else {
-        ny = cy + d;
-        if (ny < 0) {
-            top += ny;
-            top = top <= 0 ? 0 : top;
-            ny = 0;
-        } else if (ny >= rows) {
-            if (total < rows)
-                top = 0;
-            else if (top + ny < total)
-                top += ny - (rows - 1);
-            else
+        dy = 0;
+        if (rep & 0x40)
+            dy++;
+        if (rep & 0x10)
+            dy--;
+        if (top + cy == 0 && (pad->b.trig & 0x10)) {
+            if (total >= rows)
                 top = total - rows;
+            else
+                top = 0;
             ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top += ny;
+                ny = 0;
+                if (top <= 0)
+                    top = 0;
+            } else if (ny >= rows) {
+                if (total < rows)
+                    top = 0;
+                else if (top + ny >= total)
+                    top = total - rows;
+                else
+                    top += ny - (rows - 1);
+                ny = rows - 1;
+            }
         }
+        if (cy != ny) {
+            p->cy = ny;
+            changed = 1;
+        }
+        if (p->top != top) {
+            p->top = top;
+            changed = 1;
+        }
+        if (changed)
+            se_play(0x6212);
     }
-    if (cy != ny) {
-        p->cy = ny;
-        changed = 1;
-    }
-    if (p->top != top) {
-        p->top = top;
-        changed = 1;
-    }
-    if (changed)
-        se_play(0x6212);
 }
 #endif
 
@@ -770,122 +765,126 @@ void sc_jump(int up)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (o rascunho chamava sc_cur_index sem o lado); 114 palavras:
-                       up e i trocam de registrador salvo e o teste da chave sai fora do laço */
-/* sort value of a card, ATK/DEF grouped by hundreds */
-static inline int sc_group_value(ScEnt *e, unsigned short sort)
-{
-    int v = sc_sort_value(e, sort);
-
-    if ((unsigned int)(sort - 4) < 2 && v > 0)
-        v /= 100;
-    return v;
-}
-
 /* index of the first card of the next (up = 0) or previous sort group from the cursor, -1 none */
 int sc_find_group(int up)
 {
-    unsigned char side = scv.side;
-    ScList *l = scv.pane[side].list;
-    unsigned short i = sc_cur_index(side);
-    int n = l->count;
-    int sort = l->sort;
-    ScEnt *e;
-    int v;
     int k;
+    ScList *l = scv.pane[scv.side].list;
+    int i = (unsigned short)sc_cur_index(scv.side);
+    unsigned short sort = l->sort;
+    int n = l->count;
+    ScEnt *e = i >= n ? 0 : &l->ents[l->order[i]];
+    int v;
+    int w;
+    int j;
 
-    e = SC_ENT(l, i);
     if (e == 0)
         return n - 1;
-    if (up != 0) {
+    if (up) {
         if (i <= 0)
             return -1;
-        k = i - 1;
-        v = sc_group_value(SC_ENT(l, k), sort);
-        for (k--; k >= 0; k--) {
-            if (sc_group_value(SC_ENT(l, k), sort) != v) {
+        j = i - 1;
+        v = sc_sort_value(j >= n ? 0 : &l->ents[l->order[j]], sort);
+        if ((sort == 4 || sort == 5) && v > 0)
+            v /= 100;
+        for (k = j - 1; k >= 0; k--) {
+            w = sc_sort_value(SC_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
+                w /= 100;
+            if (w != v) {
                 k++;
                 break;
             }
         }
-        if (k >= 0)
-            return k;
-        k = 0;
+        if (k < 0)
+            k = 0;
     } else {
-        v = sc_group_value(e, sort);
+        v = sc_sort_value(e, sort);
+        if ((sort == 4 || sort == 5) && v > 0)
+            v /= 100;
         for (k = i + 1; k < n; k++) {
-            if (sc_group_value(SC_ENT(l, k), sort) != v)
+            w = sc_sort_value(SC_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
+                w /= 100;
+            if (w != v)
                 break;
         }
-        if (!(k < n))
+        if (k >= n)
             return -1;
     }
     return k;
 }
-#endif
 
-#ifdef NON_MATCHING /* o original guarda max e max + 0x76C0 em registradores */
 /* analog scrolling of the card info text (one pane) or of the wide view */
 void sc_scroll_update(void)
 {
     PadState *pad = pad_get();
     int moved;
-    int d;
+    int max;
+    int lim;
+    int v;
 
     if (scv.mode < 4) {
         sc_scroll_analog(&scv.cursor.scroll);
-    } else if (scv.scroll_max > 0) {
-        moved = 0;
-        if (pad->b.analog_x > 0x9E) {
-            d = (pad->b.analog_x - 0x9E) * 4;
-            if (scv.scroll_max < scv.scroll_pos) {
-                scv.scroll_pos += d;
-            } else {
-                scv.scroll_pos += d;
-                if (scv.scroll_max < scv.scroll_pos)
-                    scv.scroll_pos = scv.scroll_max;
+    } else {
+        max = scv.scroll_max;
+        if (max > 0) {
+            moved = 0;
+            lim = max + 0x76C0;
+            if (pad->b.analog_x > 0x9E) {
+                v = (pad->b.analog_x - 0x9E) * 4;
+                if (max < scv.scroll_pos) {
+                    scv.scroll_pos += v;
+                } else {
+                    if (max < scv.scroll_pos + v)
+                        scv.scroll_pos = max;
+                    else
+                        scv.scroll_pos += v;
+                }
+                moved = 1;
             }
-            moved = 1;
+            if (pad->b.analog_x < 0x62) {
+                v = scv.scroll_pos + (pad->b.analog_x - 0x62) * 4;
+                if (v < 0)
+                    scv.scroll_pos = 0;
+                else
+                    scv.scroll_pos = v;
+                moved = 1;
+            }
+            if (!moved && scv.cursor.timer >= 0x36)
+                scv.scroll_pos += 0x40;
+            if (scv.scroll_pos >= lim)
+                scv.scroll_pos -= lim;
         }
-        if (pad->b.analog_x < 0x62) {
-            scv.scroll_pos += (pad->b.analog_x - 0x62) * 4;
-            if (scv.scroll_pos < 0)
-                scv.scroll_pos = 0;
-            moved = 1;
-        }
-        if (!moved && scv.cursor.timer > 0x35)
-            scv.scroll_pos += 0x40;
-        if (scv.scroll_pos >= scv.scroll_max + 0x76C0)
-            scv.scroll_pos -= scv.scroll_max + 0x76C0;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* lógica conferida com o asm; 65 palavras: o original faz todas as leituras do
                        layout antes das gravações em sc.focus; o mwcc intercala */
 /* the focus frame follows the cursor */
 void sc_focus_update(void)
 {
-    unsigned char side = scv.side;
-    ScPane *p = &scv.pane[side];
+    ScView *v = &scv;
+    unsigned char side = v->side;
+    ScPane *p = &v->pane[side];
+    ScLayout *lay = &p->lay;
     ScRect *f = &sc.focus;
-    ScLayout *ly = &p->lay;
 
     if (p->list_mode == 0) {
         f->w = 0x17;
-        f->x = ly->x + ly->grid_x + p->cx * (unsigned short)ly->cell_w;
-        f->y = ly->y + ly->grid_y + p->cy * (unsigned short)ly->cell_h;
+        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
         f->h = 0x1F;
     } else if (side == 1 && scv.mode < 4) {
-        f->x = ly->x + ly->row_x;
-        f->w = (unsigned short)ly->row_w - 1;
-        f->y = ly->y + ly->row_y + p->cy * (unsigned short)ly->row_h;
-        f->h = (unsigned short)ly->row_h - 1;
+        f->x = lay->x + lay->row_x;
+        f->y = lay->y + lay->row_y + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 1;
+        f->h = (unsigned short)lay->row_h - 1;
     } else {
-        f->x = ly->x + ly->row_x + 1;
-        f->w = (unsigned short)ly->row_w - 3;
-        f->y = ly->y + ly->row_y + 1 + p->cy * (unsigned short)ly->row_h;
-        f->h = (unsigned short)ly->row_h - 1;
+        f->x = lay->x + lay->row_x + 1;
+        f->y = lay->y + lay->row_y + 1 + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 3;
+        f->h = (unsigned short)lay->row_h - 1;
     }
 }
 #endif

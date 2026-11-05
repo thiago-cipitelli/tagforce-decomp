@@ -1,7 +1,7 @@
 // @range 0x08808040-0x088099CC
 // @asm 0x08808040-0x08808694
 // @asm 0x08808694-0x088088B4
-// @asm 0x08808A1C-0x08808D88
+// @asm 0x08808A1C-0x08808B30
 // @asm 0x08808D88-0x08809638
 // @data 0x0881AE28-0x0881AE58
 /* The two card panes: header icons (sort, direction, filter and its count, the "new" mark), the
@@ -148,7 +148,7 @@ void *sc_draw_headers(void *list)
 /* digits of the copy count on each tab */
 unsigned short sc_count_digits[3][2] = { { 4, 1 }, { 6, 2 }, { 6, 1 } };
 
-#ifdef NON_MATCHING /* o original mantém o 2 do teste de sc.kind num registrador s como limite dos laços */
+#ifdef NON_MATCHING /* 95 palavras: o original mantém o 2 do teste de sc.kind num registrador s como limite dos laços (n = 2 em cada case e x += lay.x como em ds_draw_counts aproximam); ordem das cargas do segundo laço difere */
 /* the total of copies on the tab buttons of each pane */
 void *sc_draw_counts(void *list)
 {
@@ -163,12 +163,15 @@ void *sc_draw_counts(void *list)
     switch (sc.kind) {
     case 0:
         d = sc_count_digits[0];
+        n = 2;
         break;
     case 1:
         d = sc_count_digits[1];
+        n = 2;
         break;
     case 2:
         d = sc_count_digits[2];
+        n = 2;
         break;
     default:
         return list;
@@ -176,20 +179,23 @@ void *sc_draw_counts(void *list)
     if (scv.mode < 2) {
         for (i = 0; i < n; i++) {
             x = sc_tab_rect(i, sel, &r);
+            x += p->lay.x;
             r.x += p->lay.x;
-            list = sc_draw_count(list, x + p->lay.x, &r, d[i], sc.list[i].total);
+            list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         }
     } else {
         i = 0;
         x = sc_tab_rect(i, sel, &r);
+        x += p->lay.x;
         r.x += p->lay.x;
-        list = sc_draw_count(list, x + p->lay.x, &r, d[i], sc.list[i].total);
+        list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         p = &scv.pane[1];
         sel = p->list->tab;
         for (i++; i < n; i++) {
             x = sc_tab_rect(i, sel, &r);
+            x += p->lay.x;
             r.x += p->lay.x;
-            list = sc_draw_count(list, x + p->lay.x, &r, d[i], sc.list[i].total);
+            list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         }
     }
     return list;
@@ -257,49 +263,45 @@ void *sc_draw_rows(void *list, ScPane *p)
 }
 #endif
 
-#ifdef NON_MATCHING /* contadores de linha/coluna em pilha e registradores diferentes */
 /* grid mode: card pictures with their marks */
 void *sc_draw_grid(void *list, ScPane *p)
 {
     ScList *l = p->list;
     ScLayout *lay = &p->lay;
-    short y = p->lay.y + p->lay.grid_y;
-    unsigned short idx = p->top;
-    int row = 0;
-    int col;
+    unsigned short y;
+    int row;
     unsigned short x;
     ScEnt *e;
+    unsigned short idx;
+    int col;
     unsigned int color;
     unsigned short rank;
-    unsigned char r;
 
-    if (p->lay.grid_rows == 0)
-        return list;
-    do {
+    y = lay->y + lay->grid_y;
+    idx = p->top;
+    for (row = 0; row < lay->grid_rows; row++) {
         if (idx >= l->count)
-            return list;
+            break;
         x = lay->x + lay->grid_x;
         for (col = 0; col < lay->cols; col++) {
             e = SC_ENT(l, idx);
             color = 0xFFFFFFFF;
             rank = 0;
-            if (sc.kind == 0 && (r = e->rank) != 4) {
-                rank = r;
+            if (sc.kind == 0 && e->rank != 4) {
                 color = 0xA0FFFFFF;
+                rank = e->rank;
             }
             list = sc_draw_card_pict(list, x, y, 1, color, e, res_get(0x8001), res_get(0x8002), res_get(0x8032));
             list = sc_draw_card_marks(list, x, y, e, 1, inv_get_state(e->id == 1), 0, rank, res_get(0x8009), res_get(0x800A));
+            x += (unsigned short)lay->cell_w;
             idx++;
-            x += lay->cell_w;
             if (idx >= l->count)
                 break;
         }
-        row++;
-        y += lay->cell_h;
-    } while (row < lay->grid_rows);
+        y += (unsigned short)lay->cell_h;
+    }
     return list;
 }
-#endif
 
 /* the three counters of a row (template of sc_draw_row's local) */
 ScCounter sc_row_counters[3] = { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF000000, 0 }, { 4, { 0 }, 0xFF000000, 0 } };

@@ -1,6 +1,4 @@
 // @range 0x088121D0-0x08813CF4
-// @asm 0x088121D0-0x08812464
-// @asm 0x08812464-0x088125E4
 // @asm 0x088125E4-0x08812CB0
 // @asm 0x088130A4-0x08813584
 // @rodata 0x0881A9F0-0x0881AA10
@@ -70,12 +68,12 @@ void sc_word_reset(void);
 /* filter kind icons and labels */
 ScButton sc_filter_icons[9] = { { 0x8000, 0x00, 0x00, 0x00 }, { 0x8008, 0x44, 0x20, 0x07 }, { 0x8008, 0x66, 0x20, 0x0B }, { 0x8008, 0x55, 0x20, 0x0C }, { 0x8008, 0x33, 0x20, 0x08 }, { 0x800B, 0x00, 0x33, 0x2A }, { 0x8008, 0x11, 0x31, 0x10 }, { 0x800B, 0x44, 0x22, 0x2B }, { 0x8008, 0x66, 0x31, 0x12 } };
 
-#ifdef NON_MATCHING /* gravações dos campos do menu em outra ordem */
 /* opens the filter menu (kinds list) */
 void sc_input_filter(void)
 {
     ScList *l = scv.pane[scv.side].list;
     MenuWidget *m;
+    MenuItemDef *d;
     int id;
     int f;
 
@@ -86,25 +84,26 @@ void sc_input_filter(void)
     sc_fmenu->kinds = heap_alloc(sc.heap, 0x120);
     m = sc_fmenu->kinds;
     if (m != 0) {
+        d = &m->def;
         memset(m, 0, 0x120);
-        m->def.visible = 1;
-        m->def.style = 0;
-        m->def.y = 0x3A;
-        m->def.pad_t = 2;
-        m->def.pad_b = 2;
-        m->def.pad_l = 2;
-        m->def.pad_r = 2;
-        m->def.auto_size = 1;
-        m->def.color = 0xFFFFFFFF;
-        m->def.open_anim = 2;
-        m->def.close_anim = 2;
-        m->def.show_title = 1;
-        m->def.auto_title = 1;
-        m->def.font_flag4 = 1;
-        m->def.style2 = 2;
-        m->def.title = table_get_entry(res_get(0x8033), 0x56);
-        m->def.title_font_size = 0xC;
-        m->def.title_color = 0xFFFFFFFF;
+        d->visible = 1;
+        d->style = 0;
+        d->y = 0x3A;
+        d->pad_t = 2;
+        d->pad_b = 2;
+        d->pad_l = 2;
+        d->pad_r = 2;
+        d->auto_size = 1;
+        d->color = 0xFFFFFFFF;
+        d->open_anim = 2;
+        d->close_anim = 2;
+        d->show_title = 1;
+        d->auto_title = 1;
+        d->font_flag4 = 1;
+        d->style2 = 2;
+        d->title = table_get_entry(res_get(0x8033), 0x56);
+        d->title_font_size = 0xC;
+        d->title_color = 0xFFFFFFFF;
         m->heap = sc.heap;
         m->keep_open = 1;
         m->no_cancel = 1;
@@ -114,7 +113,7 @@ void sc_input_filter(void)
         m->item_h = 0x12;
         m->draw_item = (MenuDrawItemFn)sc_draw_fmenu_kind;
         menu_open(m);
-        m->def.x = (0x1E0 - m->def.w) / 2;
+        d->x = (0x1E0 - d->w) / 2;
     }
     for (id = 0xFA7; id < 0x1B2E; id++) {
         if (card_get_flag31(id) && inv_get_bit3(id)) {
@@ -123,16 +122,15 @@ void sc_input_filter(void)
         }
     }
     f = l->filter - 1;
-    if (f < 0)
-        f = 0;
-    else if (f > 6)
+    if (f >= 0) {
+        if (f >= 7)
+            f = 0;
+    } else
         f = 0;
     sc_fmenu->kinds->cursor = f;
     sc.state = 5;
 }
-#endif
 
-#ifdef NON_MATCHING /* testes do passo e zeramentos com outra ordem */
 /* state 5 */
 void sc_input_confirm(void)
 {
@@ -151,8 +149,7 @@ void sc_input_confirm(void)
             sc_fmenu->kinds->no_cancel = 0;
             sc_fmenu_open_values(r + 1);
             se_play(0x6216);
-            sc_fmenu->page = 0;
-            sc_fmenu->col = 0;
+            sc_fmenu->col = sc_fmenu->page = 0;
             sc_fmenu->mask[0] = 0;
             sc_fmenu->mask[1] = 0;
             sc_fmenu->sub = 0;
@@ -170,7 +167,6 @@ void sc_input_confirm(void)
         break;
     }
 }
-#endif
 
 void *sc_draw_flag_value(void *list, unsigned short x, unsigned short y, unsigned short v);
 void *sc_draw_spell_value(void *list, unsigned short x, unsigned short y, unsigned short v);
@@ -194,7 +190,8 @@ void sc_fmenu_values(void)
     MenuWidget *m = sc_fmenu->vals;
     PadState *pad = pad_get();
     unsigned int f = sc_fmenu->kinds->cursor + 1;
-    unsigned int side;
+    ScFilterDef *def = &sc_filter_defs[f];
+    ScPane *p;
     ScList *l;
     int n;
     unsigned int cols;
@@ -205,52 +202,13 @@ void sc_fmenu_values(void)
     unsigned short grid;
 
     switch (sc_fmenu->sub) {
-    case 3:
-        menu_update(m);
-        if (m->state == 6) {
-            menu_reset(m);
-            sc_fmenu->vals = 0;
-            sc_fmenu->kinds->accepted = 0;
-            sc_fmenu->kinds->cancelled = 0;
-            sc_fmenu->kinds->no_cancel = 1;
-            sc_fmenu->step = 0;
-        }
-        break;
-    case 2:
-        menu_update(m);
-        if (m->state == 6) {
-            side = scv.side;
-            l = scv.pane[side].list;
-            if (l->count == 0) {
-                l->filter = f;
-            } else {
-                sc_list_filter(l, f, sc_fmenu->mask);
-                view = scv.pane[side].list_mode == 0 ? scv.pane[side].lay.grid_rows : scv.pane[side].lay.rows;
-                grid = scv.pane[side].list_mode == 0 ? scv.pane[side].lay.cols : 1;
-                sc_layout_scroll(0, 0, (grid & 0xFF) | view << 8, scv.pane[side].list->count, &scv.pane[side].top,
-                                 &scv.pane[side].cx, &scv.pane[side].cy);
-            }
-            sc_fmenu_free();
-            sc_popup_open(4, l->count);
-            se_play(0x621A);
-            sc.state = 1;
-        }
-        break;
-    case 1:
-        menu_update(sc_fmenu->vals);
-        if (sc_fmenu->vals->state != 4) {
-            menu_finish(m);
-            menu_finish(sc_fmenu->kinds);
-            sc_fmenu->sub = 2;
-        }
-        break;
     case 0:
         if (pad->b.trig & region_pick_value(0)) {
             if (sc_fmenu->page == 0xF) {
                 menu_set_cursor(sc_fmenu->vals, 0);
                 sc_fmenu->sub = 1;
             } else {
-                v = sc_filter_defs[f].first + sc_fmenu->col + sc_fmenu->page * m->count;
+                v = def->first + sc_fmenu->col + sc_fmenu->page * m->count;
                 sc_fmenu->mask[(int)v >> 5] ^= 1 << (v & 0x1F);
             }
             se_play(0x6213);
@@ -263,7 +221,7 @@ void sc_fmenu_values(void)
             se_play(0x6214);
             break;
         }
-        n = sc_filter_defs[f].last - sc_filter_defs[f].first + 1;
+        n = def->last - def->first + 1;
         if (!sc_fmenu->alt && f == 7)
             n--;
         cols = m->count;
@@ -310,6 +268,44 @@ void sc_fmenu_values(void)
                 se_play(0x6212);
         }
         break;
+    case 1:
+        menu_update(sc_fmenu->vals);
+        if (sc_fmenu->vals->state != 4) {
+            menu_finish(m);
+            menu_finish(sc_fmenu->kinds);
+            sc_fmenu->sub = 2;
+        }
+        break;
+    case 2:
+        menu_update(m);
+        if (m->state == 6) {
+            p = &scv.pane[scv.side];
+            l = p->list;
+            if (l->count == 0) {
+                l->filter = f;
+            } else {
+                sc_list_filter(l, f, sc_fmenu->mask);
+                view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+                grid = p->list_mode == 0 ? p->lay.cols : 1;
+                sc_layout_scroll(0, 0, (grid & 0xFF) | view << 8, p->list->count, &p->top, &p->cx, &p->cy);
+            }
+            sc_fmenu_free();
+            sc_popup_open(4, l->count);
+            se_play(0x621A);
+            sc.state = 1;
+        }
+        break;
+    case 3:
+        menu_update(m);
+        if (m->state == 6) {
+            menu_reset(m);
+            sc_fmenu->vals = 0;
+            sc_fmenu->kinds->cancelled = sc_fmenu->kinds->accepted = 0;
+            sc_fmenu->kinds->no_cancel = 1;
+            sc_fmenu->step = 0;
+        }
+        break;
+
     }
 }
 #endif

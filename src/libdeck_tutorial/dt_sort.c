@@ -1,5 +1,4 @@
 // @range 0x08817B78-0x08818E94
-// @asm 0x088185A0-0x088185F4
 // @asm 0x08818D04-0x08818E94
 // @data 0x08822520-0x08822578
 /* The sort menu (the code of libdeck dk_sortmenu.c, first half: a list of the sort keys and a small
@@ -247,21 +246,17 @@ void *dt_draw_dir_item(void *list, int i, int x, int y)
     return dt_draw_ibutton(list, &dt_dir_icons[i], x, y + 1, 0);
 }
 
-#ifdef NON_MATCHING /* 4 palavras: com y separado (y = h >> 1; y += cursor * h) só base e y trocam a1/a3 no original; ordem das declarações e das atribuições não resolve */
 /* keeps the direction menu beside the key under the cursor */
 void dt_sort_menu_place(void)
 {
     MenuWidget *k = dt_sort_menu->keys;
     MenuWidget *d = dt_sort_menu->dirs;
-    int base = dt_sort_menu->base_y;
+    int y = dt_sort_menu->base_y;
     unsigned int h = k->item_h;
-    unsigned int y;
 
-    y = h >> 1;
-    y += k->cursor * h;
-    d->def.y = base + y - d->def.h / 2;
+    y += (h >> 1) + k->cursor * h;
+    d->def.y = y - d->def.h / 2;
 }
-#endif
 
 void *dt_draw_sort_icon(void *list, int sort, int x, int y)
 {
@@ -458,8 +453,7 @@ int dt_sort_value(DtEnt *e, unsigned short sort)
 
     switch (sort) {
     case 1:
-        v = card_get_sort_position(e->id);
-        break;
+        return card_get_sort_position(e->id);
     case 2:
         v = card_get_attribute_icon(e->id);
         break;
@@ -470,13 +464,10 @@ int dt_sort_value(DtEnt *e, unsigned short sort)
         switch (card_get_attribute_icon(e->id)) {
         case 7:
         case 8:
-            if (sort == 8) {
-                v = card_get_prop5_hi(e->id);
-                if (v == 0)
-                    v = 7;
-            } else {
-                v = -2;
-            }
+            if (sort != 8)
+                return -2;
+            v = card_get_prop5_hi(e->id);
+            v = v == 0 ? 7 : v;
             break;
         default:
             switch (sort) {
@@ -485,13 +476,11 @@ int dt_sort_value(DtEnt *e, unsigned short sort)
                 break;
             case 4:
                 v = card_get_atk_q(e->id);
-                if (v == 0xFFFF)
-                    v = -1;
+                v = v == 0xFFFF ? -1 : v;
                 break;
             case 5:
                 v = card_get_def_q(e->id);
-                if (v == 0xFFFF)
-                    v = -1;
+                v = v == 0xFFFF ? -1 : v;
                 break;
             case 6:
                 v = card_get_type(e->id);

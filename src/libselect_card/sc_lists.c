@@ -1,5 +1,4 @@
 // @range 0x088099CC-0x0880AD2C
-// @asm 0x0880A39C-0x0880A528
 /* The card lists of the two panes: built from the caller's ids, the owned cards (trade or
    conversion counts), the rental cards and the partner's rental list; entries added and removed
    one copy at a time, totals, and the result written back (caller's list, sysstate, flags). */
@@ -286,7 +285,6 @@ unsigned short sc_list_count_id(ScList *l, unsigned short id, int same_name)
     return c;
 }
 
-#ifdef NON_MATCHING /* forma igual; o mwcc troca os registradores s0/s1 do índice do memcpy e do deslocamento i * 6 */
 /* takes one copy of entry i out of l (the whole entry when it was the last one) */
 int sc_list_remove(ScList *l, int i)
 {
@@ -295,7 +293,6 @@ int sc_list_remove(ScList *l, int i)
     int count;
     int found;
     unsigned short *o;
-    int j;
 
     switch (sc.kind) {
     case 0:
@@ -325,13 +322,12 @@ int sc_list_remove(ScList *l, int i)
         if (found)
             l->count = count;
         l->n--;
-        for (j = i; j < l->n; j++)
-            memcpy(&l->ents[j], &l->ents[j + 1], 6);
+        for (k = i; k < l->n; k++)
+            memcpy(&l->ents[k], &l->ents[k + 1], 6);
     }
     sc_list_total(l);
     return 1;
 }
-#endif
 
 /* adds the copies of src to l: merged into the same card unless the kind keeps them apart */
 void sc_list_add(ScList *l, ScEnt *src)

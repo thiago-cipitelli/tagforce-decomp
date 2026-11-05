@@ -1,5 +1,4 @@
 // @range 0x0880B704-0x0880CDC8
-// @asm 0x0880C2B0-0x0880C4E8
 // @data 0x08821F28-0x08821F4C
 /* The card lists of the editor (the code of libdeck dk_lists.c): the deck being built (main, side,
    extra), the owned cards (trunk) and the cards rented to the partner, allocated from the editor heap
@@ -272,7 +271,6 @@ unsigned short dt_deck_count_forbidden(void)
 /* the list shown alongside l: the extra deck and its copy in tab 4 */
 #define DK_LIST_TWIN(l) ((l)->tab == 4 ? &dts.list[2] : (l)->tab == 2 ? &dts.list[4] : 0)
 
-#ifdef NON_MATCHING /* forma igual; o mwcc troca os registradores s0/s1 do índice do memcpy e do deslocamento i * 6 (como sc_list_remove) */
 /* takes one copy of entry i out of l (the whole entry when it was the last one) */
 int dt_list_remove(DtList *l, int i)
 {
@@ -280,7 +278,6 @@ int dt_list_remove(DtList *l, int i)
     int k;
     int count;
     int found;
-    int j;
 
     unsigned short *o;
     DtList *p;
@@ -307,8 +304,8 @@ int dt_list_remove(DtList *l, int i)
         if (found)
             l->count = count;
         l->n--;
-        for (j = i; j < l->n; j++)
-            memcpy(&l->ents[j], &l->ents[j + 1], 6);
+        for (k = i; k < l->n; k++)
+            memcpy(&l->ents[k], &l->ents[k + 1], 6);
         p = 0;
         switch (l->tab) {
         case 2:
@@ -341,7 +338,6 @@ int dt_list_remove(DtList *l, int i)
     dt_list_total(l);
     return 1;
 }
-#endif
 
 /* adds the copies of src to l at visible position pos (-1: the end); the trunk merges copies */
 void dt_list_add(DtList *l, DtEnt *src, int pos)

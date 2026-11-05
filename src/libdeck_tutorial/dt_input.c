@@ -1,6 +1,6 @@
 // @range 0x088100AC-0x08811BB8
 // @asm 0x088106B4-0x08810AA0
-// @asm 0x088110CC-0x0881137C
+// @asm 0x08811210-0x0881137C
 // @rodata 0x08820FF0-0x08821030
 // @data 0x08821F4C-0x08821F74
 /* Input of the editor (the code of libdeck dk_input.c and the popup of dk_mode.c): dispatch by
@@ -235,15 +235,15 @@ void dt_input_shoulder_r(PadBits *pad)
     }
 }
 
-#ifdef NON_MATCHING /* 28 palavras: alocação dos temporários do cálculo inicial (base do painel em v1 no original, cx/cy/top em outra ordem) e o blezl do "if (top <= 0) top = 0" (o mwcc dá bgtz para o fim); mesma lógica de dt_cursor_list */
+#ifdef NON_MATCHING /* 16 palavras: cols/cx trocam de registrador temporário (ordem das cargas: original cols, top, cx, cy; perm_stmts das iniciações deu no máximo esta) e o blezl do "if (top <= 0) top = 0" de dt_cursor_list */
 /* grid cursor: d-pad moves, wraps to the other pane at the left/right edges, scrolls by rows */
 void dt_cursor_grid(int side, PadBits *pad)
 {
     DtPane *p = &dtv.pane[(unsigned short)side];
     int cols = p->lay.cols;
-    int top = (p->top + cols - 1) / cols;
     int cy = p->cy;
     int cx = p->cx;
+    int top = (p->top + cols - 1) / cols;
     int rows = p->lay.grid_rows;
     unsigned int rep = pad->rep;
     int total = (p->list->count + cols - 1) / cols;
@@ -555,66 +555,74 @@ int dt_find_group(int up)
     return k;
 }
 
-#ifdef NON_MATCHING /* 59 palavras: o original guarda max e max + 0x76C0 em registradores */
 /* analog scrolling of the card info text (one pane) or of the wide view */
 void dt_scroll_update(void)
 {
-    PadBits *pad = &pad_get()->b;
+    PadState *pad = pad_get();
     int moved;
-    int d;
+    int max;
+    int lim;
+    int v;
 
     if (dtv.mode < 4) {
         dt_scroll_analog(&dtv.cursor.scroll);
-    } else if (dtv.scroll_max > 0) {
-        moved = 0;
-        if (pad->analog_x > 0x9E) {
-            d = (pad->analog_x - 0x9E) * 4;
-            if (dtv.scroll_max < dtv.scroll_pos) {
-                dtv.scroll_pos += d;
-            } else {
-                dtv.scroll_pos += d;
-                if (dtv.scroll_max < dtv.scroll_pos)
-                    dtv.scroll_pos = dtv.scroll_max;
+    } else {
+        max = dtv.scroll_max;
+        if (max > 0) {
+            moved = 0;
+            lim = max + 0x76C0;
+            if (pad->b.analog_x > 0x9E) {
+                v = (pad->b.analog_x - 0x9E) * 4;
+                if (max < dtv.scroll_pos) {
+                    dtv.scroll_pos += v;
+                } else {
+                    if (max < dtv.scroll_pos + v)
+                        dtv.scroll_pos = max;
+                    else
+                        dtv.scroll_pos += v;
+                }
+                moved = 1;
             }
-            moved = 1;
+            if (pad->b.analog_x < 0x62) {
+                v = dtv.scroll_pos + (pad->b.analog_x - 0x62) * 4;
+                if (v < 0)
+                    dtv.scroll_pos = 0;
+                else
+                    dtv.scroll_pos = v;
+                moved = 1;
+            }
+            if (!moved && dtv.cursor.timer >= 0x36)
+                dtv.scroll_pos += 0x40;
+            if (dtv.scroll_pos >= lim)
+                dtv.scroll_pos -= lim;
         }
-        if (pad->analog_x < 0x62) {
-            dtv.scroll_pos += (pad->analog_x - 0x62) * 4;
-            if (dtv.scroll_pos < 0)
-                dtv.scroll_pos = 0;
-            moved = 1;
-        }
-        if (!moved && dtv.cursor.timer > 0x35)
-            dtv.scroll_pos += 0x40;
-        if (dtv.scroll_pos >= dtv.scroll_max + 0x76C0)
-            dtv.scroll_pos -= dtv.scroll_max + 0x76C0;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* 56 palavras: a ordem das cargas no ramo da grade (x, grid_x, cx... no original) e a alocação; tentadas a ordem dos stores, a multiplicação comutada e o ponteiro do layout por dtv */
 /* the focus frame follows the cursor */
 void dt_focus_update(void)
 {
-    unsigned char side = dtv.side;
-    DtPane *p = &dtv.pane[side];
+    DtView *v = &dtv;
+    unsigned char side = v->side;
+    DtPane *p = &v->pane[side];
     DtLayout *lay = &p->lay;
     DtRect *f = &dts.focus;
 
     if (p->list_mode == 0) {
-        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
         f->w = 0x17;
+        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
         f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
         f->h = 0x1F;
     } else if (side == 1 && dtv.mode < 4) {
         f->x = lay->x + lay->row_x;
-        f->w = (unsigned short)lay->row_w - 1;
         f->y = lay->y + lay->row_y + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 1;
         f->h = (unsigned short)lay->row_h - 1;
     } else {
         f->x = lay->x + lay->row_x + 1;
-        f->w = (unsigned short)lay->row_w - 3;
         f->y = lay->y + lay->row_y + 1 + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 3;
         f->h = (unsigned short)lay->row_h - 1;
     }
 }

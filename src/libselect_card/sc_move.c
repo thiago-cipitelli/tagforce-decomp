@@ -1,9 +1,6 @@
 // @range 0x08815168-0x08816DD4
-// @asm 0x08815168-0x08815408
 // @asm 0x08815408-0x088158DC
 // @asm 0x088158DC-0x08815CD0
-// @asm 0x08815CD0-0x08815E48
-// @asm 0x08815F04-0x08816468
 // @asm 0x08816550-0x08816874
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
@@ -12,20 +9,64 @@
 #include "libselect_card.h"
 #include "menu.h"
 
-typedef struct ScOsk {                 /* see sc_word.c */
-    unsigned char state;               /* +0x00 0 idle, 1 opening, 2 running, 3 closing, 4 closed */
-    unsigned char pad01[3];
-    unsigned int base[12];
+typedef struct ScOskData {             /* SceUtilityOskData */
+    int unk00;
+    int unk04;
+    int language;
+    int unk12;
+    int inputtype;
+    int lines;
+    int unk24;
+    unsigned short *desc;
+    unsigned short *intext;
+    int outtextlength;
+    unsigned short *outtext;
+    int result;
+    int outtextlimit;
+} ScOskData;
+
+typedef struct ScOskParams {           /* SceUtilityOskParams */
+    int size;
+    int language;
+    int button_swap;
+    int graphics_thread;
+    int access_thread;
+    int font_thread;
+    int sound_thread;
+    int result;
+    int reserved[4];
     int datacount;
-    unsigned int *data;
-    int pstate;
-    int unk40;
-    unsigned int odata[13];
-    unsigned short in[0x18];
-    unsigned short out[0x80];
-    unsigned short *target;
-    void (*done)(unsigned short *text, int r);
+    ScOskData *data;
+    int state;
+    int unk60;
+} ScOskParams;
+
+typedef struct ScOsk {                 /* sc_osk 0x0881B9A4, 0x1B0 bytes */
+    unsigned char state;               /* +0x00 0 idle, 1 fade in, 2 open, 3 fade out, 4 done */
+    unsigned char pad1[3];
+    ScOskParams params;                /* +0x04 */
+    ScOskData data;                    /* +0x44 */
+    unsigned short intext[24];         /* +0x78 */
+    unsigned short outtext[128];       /* +0xA8 */
+    unsigned short *target;            /* +0x1A8 */
+    void (*done)(unsigned short *text, int r); /* +0x1AC */
 } ScOsk;
+
+typedef struct ScSel {
+    unsigned short side : 2;           /* source pane */
+    unsigned short src : 3;            /* source list */
+    unsigned short dside : 2;          /* destination pane */
+    unsigned short dst : 3;            /* destination list */
+    unsigned short pad : 6;
+} ScSel;
+
+typedef struct ScHist {                /* undo record (sc_hist_push), 10 bytes */
+    unsigned char src : 4;             /* source list */
+    unsigned char dst : 4;             /* destination list */
+    unsigned char pad01;
+    ScEnt ent;                         /* +0x02 */
+    unsigned short pos;                /* +0x08 position in the destination order */
+} ScHist;
 
 typedef struct ScFlight {              /* sc_flight 0x0881BB54, 0x34 bytes, heap allocated */
     unsigned char step : 4;            /* 0 start, 1 scroll wait, 2 flying, 3 done */
@@ -33,11 +74,7 @@ typedef struct ScFlight {              /* sc_flight 0x0881BB54, 0x34 bytes, heap
     unsigned char timer;               /* +0x01 */
     unsigned short idx;                /* +0x02 entry index in the source list */
     unsigned short pos;                /* +0x04 position in its visible order */
-    unsigned short side : 2;           /* +0x06 source pane */
-    unsigned short src : 3;            /*       source list */
-    unsigned short dside : 2;          /*       destination pane */
-    unsigned short dst : 3;            /*       destination list */
-    unsigned short pad06 : 6;
+    ScSel sel;                         /* +0x06 */
     unsigned short dtab;               /* +0x08 tab shown in the destination pane */
     unsigned short pad0a[2];
     ScEnt ent;                         /* +0x0E card being moved */
@@ -77,37 +114,48 @@ void sc_hist_push(ScMove *m);
 void sc_popup_open(int id, int arg);
 int sc_hist_pop(ScMove *m);
 void sc_flight_take(void);
+
+static inline unsigned short sc_lay_pack(unsigned char cols, unsigned char rows)
+{
+    return cols | rows << 8;
+}
+
+/* keeps the cursor of pane p inside its list after a move (last entry when it fell off the end) */
+#define SC_PANE_REFIT(p)                                                                                   \
+    do {                                                                                                   \
+        pos = (p)->cx + ((p)->top + (p)->cy * ((p)->list_mode == 0 ? (p)->lay.cols : 1));                  \
+        keep = 1;                                                                                          \
+        if (pos > 0 && pos >= (p)->list->count) {                                                          \
+            pos = (p)->list->count - 1;                                                                    \
+            keep = 0;                                                                                      \
+        }                                                                                                  \
+        view = (p)->list_mode == 0 ? (p)->lay.grid_rows : (p)->lay.rows;                                   \
+        sc_layout_scroll(keep, pos, sc_lay_pack((p)->list_mode == 0 ? (p)->lay.cols : 1, view),            \
+                         (p)->list->count, &(p)->top, &(p)->cx, &(p)->cy);                                 \
+    } while (0)
+
 void sc_flight_land(void);
 void sc_flight_step(void);
 void sc_flight_free(void);
-int sc_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll);
+int sc_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll);
 int sc_dst_pos(int tab, unsigned short id);
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (sceUtilityOskUpdate(2), não 1; state é u8); 65 palavras:
-                       laço da cópia com '$' dobrado e alocação diferentes */
 /* per frame while the keyboard runs: fades, utility status; 1 when closed */
 int sc_popup_done(int layer)
 {
-    void *list;
-    unsigned int i;
-    int n;
-    int c;
-    unsigned short *p;
-    int r;
-
     switch (sc_osk.state) {
     case 1:
     case 2:
-    case 3:
-        list = dl_select_layer(layer, 0);
-        if (fade_apply(&list)) {
+    case 3: {
+        void *dl = dl_select_layer(layer, 0);
+        if (fade_apply(&dl)) {
             if (sc_osk.state == 1)
                 sc_osk.state = 2;
             if (sc_osk.state == 3)
                 sc_osk.state = 4;
         }
-        dl_set_list(list);
-        break;
+        dl_set_list(dl);
+    }
     }
     sceGuSync(0, 0);
     switch (sc_osk.state) {
@@ -118,45 +166,52 @@ int sc_popup_done(int layer)
     case 2:
         switch (sceUtilityOskGetStatus()) {
         case 0:
+            break;
         case 1:
             break;
         case 2:
             if (sceUtilityOskUpdate(2) == 0)
                 break;
-        case 3:
-            r = sceUtilityOskShutdownStart();
-            if (sc_osk.base[7] == 0) {
-                n = 0;
+        case 3: {
+            int r = sceUtilityOskShutdownStart();
+            if (sc_osk.params.result == 0) {
+                unsigned int i;
+                int k;
+                k = 0;
                 i = 0;
-                if (wcslen(sc_osk.out) != 0) {
-                    for (p = sc_osk.out; (c = *p) != 0; p++) {
+                if (wcslen(sc_osk.outtext)) {
+                    for (;;) {
+                        unsigned short c = sc_osk.outtext[i];
+                        if (c == 0)
+                            break;
                         if (c == '$')
-                            sc_osk.target[n++] = c;
-                        sc_osk.target[n++] = c;
-                        if (++i >= wcslen(sc_osk.out))
+                            sc_osk.target[k++] = c;
+                        sc_osk.target[k++] = c;
+                        i++;
+                        if (i >= wcslen(sc_osk.outtext))
                             break;
                     }
                 }
-                sc_osk.target[n] = 0;
+                sc_osk.target[k] = 0;
             }
-            if (sc_osk.done != 0)
-                sc_osk.done(sc_osk.out, r);
+            if (sc_osk.done)
+                sc_osk.done(sc_osk.outtext, r);
             fade_start(2, 0xA0000000, 8);
             sc_osk.state = 3;
             break;
+        }
         case 4:
             break;
         }
         break;
     case 3:
-        return 0;
+        break;
     case 4:
         sysvar_set_a90(0);
         return 1;
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* lógica conferida com o asm (229 palavras): o original grava os nibbles de mv.b[0] um a um
                        e relê sc_flight a cada campo; bitfields do voo em outra ordem */
@@ -199,25 +254,25 @@ int sc_cancel_request(void)
     sc_flight = heap_alloc(sc.heap, 0x34);
     memset(sc_flight, 0, 0x34);
     f = sc_flight;
-    f->side = scv.side;
-    f->src = tab;
+    f->sel.side = scv.side;
+    f->sel.src = tab;
     f->pos = sc_cur_index(scv.side);
     f->idx = sc.list[tab].order[f->pos];
     if (scv.mode < 2)
-        f->dside = f->side;
+        f->sel.dside = f->sel.side;
     else
-        f->dside = (f->side + 1) & 1;
-    f->dst = to;
+        f->sel.dside = (f->sel.side + 1) & 1;
+    f->sel.dst = to;
     f->dtab = scv.pane[to].list->tab;
     memcpy(&f->ent, e, 6);
-    mv.b[0] = f->src | f->dst << 4;
-    *(unsigned short *)&mv.b[8] = sc_dst_pos(f->dst, f->ent.id);
+    mv.b[0] = f->sel.src | f->sel.dst << 4;
+    *(unsigned short *)&mv.b[8] = sc_dst_pos(f->sel.dst, f->ent.id);
     memcpy(&mv.b[2], &f->ent, 6);
     sc_hist_push(&mv);
     sc.state = 2;
     f->phase = 0;
-    sc_slot_pos(f->from, f->side, f->src, f->pos, 0);
-    if (sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 1) == 0)
+    sc_slot_pos(f->from, f->sel.side, f->sel.src, f->pos, 0);
+    if (sc_slot_pos(f->to, f->sel.dside, f->sel.dst, sc_dst_pos(f->sel.dst, f->ent.id), 1) == 0)
         f->step = 1;
     else
         f->step = 2;
@@ -233,88 +288,97 @@ int sc_cancel_request(void)
 /* Triangle: undoes the last move */
 int sc_input_move(void)
 {
-    ScMove mv;
-    ScFlight *f;
-    unsigned int src;
-    int changed;
-    ScEnt *e;
-    int i;
+    ScHist h;
     ScList *l;
+    int i;
+    int k;
+    int found;
+    int side;
 
-    if (sc_hist_pop(&mv) == 0)
+    if (sc_hist_pop((ScMove *)&h) == 0)
         return 0;
     sc_flight = heap_alloc(sc.heap, 0x34);
     if (sc_flight == 0)
         return 0;
-    f = sc_flight;
-    memset(f, 0, 0x34);
-    f->src = (mv.b[0] & 0x7F) >> 4;
-    f->idx = *(unsigned short *)&mv.b[8];
-    if (scv.mode < 2) {
-        f->side = 0;
-        f->dside = 0;
+    memset(sc_flight, 0, 0x34);
+    sc_flight->sel.src = h.dst;
+    sc_flight->idx = h.pos;
+    if (scv.mode > 1) {
+        switch (h.dst) {
+        case 0:
+            side = 0;
+            break;
+        default:
+            side = 1;
+            break;
+        }
+        sc_flight->sel.side = side;
+        sc_flight->sel.dside = (sc_flight->sel.side + 1) & 1;
     } else {
-        f->side = mv.b[0] >> 4 != 0;
-        f->dside = (f->side + 1) & 1;
+        sc_flight->sel.side = 0;
+        sc_flight->sel.dside = 0;
     }
-    f->dst = mv.b[0] & 7;
-    f->dtab = scv.pane[f->dside].list->tab;
-    memcpy(&f->ent, &mv.b[2], 6);
+    sc_flight->sel.dst = h.src;
+    sc_flight->dtab = scv.pane[sc_flight->sel.dside].list->tab;
+    memcpy(&sc_flight->ent, &h.ent, 6);
     sc.state = 2;
-    f->step = 2;
-    f->phase = 0;
-    src = f->src;
-    l = &sc.list[src];
-    changed = 0;
-    if (f->idx < l->n) {
-        e = &l->ents[f->idx];
-        if (e->id != f->ent.id || e->fixed != f->ent.fixed)
-            changed = 1;
+    sc_flight->step = 2;
+    sc_flight->phase = 0;
+    l = &sc.list[sc_flight->sel.src];
+    k = -1;
+    found = 0;
+    if (sc_flight->idx >= l->n) {
+        found = 1;
     } else {
-        changed = 1;
+        ScEnt *e = &l->ents[sc_flight->idx];
+
+        if (e->id != h.ent.id)
+            found = 1;
+        else if (e->fixed != h.ent.fixed)
+            found = 1;
     }
-    if (changed) {
-        f->idx = 0xFFFF;
+    if (found) {
+        sc_flight->idx = 0xFFFF;
         for (i = l->n - 1; i >= 0; i--) {
-            e = &l->ents[i];
-            if (e->id == f->ent.id && e->fixed == f->ent.fixed) {
-                f->idx = i;
+            ScEnt *e = &l->ents[i];
+
+            if (e->id == h.ent.id && e->fixed == h.ent.fixed) {
+                sc_flight->idx = i;
                 break;
             }
         }
-        if ((int)f->idx < 0) {  /* never: idx is a u16, but the original keeps the test */
+        if (sc_flight->idx < 0) {
             sc_flight_free();
             return 0;
         }
     }
     for (i = 0; i < l->count; i++) {
-        if (f->idx == l->order[i])
+        if (sc_flight->idx == l->order[i]) {
+            k = i;
             break;
+        }
     }
-    if (i >= l->count)
-        i = -1;
-    f->pos = i;
-    sc_slot_pos(f->from, f->side, f->src, i, 0);
-    f->x = (int)f->from[0];
-    f->y = (int)f->from[1];
+    sc_flight->pos = k;
+    sc_slot_pos(sc_flight->from, sc_flight->sel.side, sc_flight->sel.src, sc_flight->pos, 0);
+    sc_flight->x = sc_flight->from[0];
+    sc_flight->y = sc_flight->from[1];
     sc_flight_take();
     return 1;
 }
 #endif
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 41 palavras: o original testa 3, 2, 1 (ordem inversa) sem
-                       teste do 0; só com um "case 0" o mwcc inverte a ordem, mas emite o teste dele. Depois da
-                       chamada o original lê dside/dst por f+6 guardado em $s0 (como sc_flight_step) */
 /* state 2 */
 void sc_input_sort_menu(void)
 {
     ScFlight *f = sc_flight;
+    ScSel *s;
 
     switch (f->step) {
     case 1:
         if (++f->timer >= f->frames) {
             f = sc_flight;
-            if (sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 1)) {
+            s = &f->sel;
+            if (sc_slot_pos(f->to, s->dside, s->dst, sc_dst_pos(s->dst, f->ent.id), 1)) {
                 sc_flight->phase = 0;
                 sc_flight->x = sc_flight->from[0];
                 sc_flight->y = sc_flight->from[1];
@@ -330,21 +394,18 @@ void sc_input_sort_menu(void)
         sc_flight_free();
         sc.state = 1;
         break;
-    case 0:
-        break;
     }
 }
-#endif
 
 void sc_flight_take(void)
 {
-    sc_list_remove(&sc.list[sc_flight->src], sc_flight->idx);
+    sc_list_remove(&sc.list[sc_flight->sel.src], sc_flight->idx);
 }
 
 void sc_flight_land(void)
 {
     ScFlight *f = sc_flight;
-    ScList *l = &sc.list[f->dst];
+    ScList *l = &sc.list[f->sel.dst];
     ScEnt e;
 
     memcpy(&e, &f->ent, 6);
@@ -363,23 +424,25 @@ static inline float sc_bez(float t, float a, float m, float b)
     return t * b + (u * a + k * m);
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (sc_select_tab recebe dtab, não dst); o original guarda f+6 em $s1 e lê
-   dside/dst por ele (o mwcc lê por $s0 e não usa $s1: tudo desloca uma palavra, 335); curva como dt_bez */
 /* the flight: path through a control point, 10 frames of quadratic curve, landing */
 void sc_flight_step(void)
 {
     ScFlight *f = sc_flight;
-    ScPane *p;
     float t;
+    float u;
+    float k;
+    float uu;
+    float tt;
+    ScPane *p;
+    ScSel *s;
     int pos;
     unsigned short keep;
     unsigned short view;
-    unsigned short grid;
-    unsigned short grid2;
 
     switch (f->phase) {
     case 0:
-        sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 0);
+        s = &f->sel;
+        sc_slot_pos(f->to, s->dside, s->dst, sc_dst_pos(s->dst, f->ent.id), 0);
         if (sc_flight->from[1] - 10.0f <= sc_flight->to[1] && sc_flight->from[1] + 10.0f >= sc_flight->to[1]) {
             if (sc_flight->from[1] <= 136.0f)
                 sc_flight->mid[1] = sc_flight->from[1] + 68.0f;
@@ -404,38 +467,26 @@ void sc_flight_step(void)
         break;
     case 1:
         if (f->timer++ < 10) {
-            t = (unsigned int)sc_flight->timer / 10.0f;
-            sc_flight->x = sc_bez(t, sc_flight->from[0], sc_flight->mid[0], sc_flight->to[0]);
-            sc_flight->y = sc_bez(t, sc_flight->from[1], sc_flight->mid[1], sc_flight->to[1]);
+            t = sc_flight->timer / 10.0f;
+            u = 1.0f - t;
+            uu = u * u;
+            k = 2.0f * t * u;
+            tt = t * t;
+            sc_flight->x = tt * sc_flight->to[0] + (uu * sc_flight->from[0] + k * sc_flight->mid[0]);
+            sc_flight->y = tt * sc_flight->to[1] + (uu * sc_flight->from[1] + k * sc_flight->mid[1]);
         } else {
             sc_flight->phase++;
         }
         break;
     case 2:
-        if (scv.mode < 2 && f->dst != f->dtab)
-            sc_select_tab(f->dside, f->dtab, 2);
+        if (scv.mode < 2 && (s = &f->sel, s->dst != f->dtab))
+            sc_select_tab(s->dside, f->dtab, 2);
         sc_flight_land();
         p = &scv.pane[0];
-        pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
-        keep = 1;
-        if (pos > 0 && pos >= p->list->count) {
-            pos = p->list->count - 1;
-            keep = 0;
-        }
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        grid = p->list_mode == 0 ? p->lay.cols : 1;
-        sc_layout_scroll(keep, pos, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+        SC_PANE_REFIT(p);
         if (scv.mode > 1) {
             p = &scv.pane[1];
-            pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
-            keep = 1;
-            if (pos > 0 && pos >= p->list->count) {
-                pos = p->list->count - 1;
-                keep = 0;
-            }
-            view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-            grid2 = p->list_mode == 0 ? p->lay.cols : 1;
-            sc_layout_scroll(keep, pos, (grid2 & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+            SC_PANE_REFIT(p);
         }
         sc_flight->step = 3;
         sc_flight->phase = 0;
@@ -443,7 +494,6 @@ void sc_flight_step(void)
         break;
     }
 }
-#endif
 
 void sc_flight_free(void)
 {
@@ -465,68 +515,101 @@ void *sc_draw_sort_menu(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* registradores herdados de testes anteriores (v1) no original */
+#ifdef NON_MATCHING /* forma de dk_slot_pos (o rascunho dava frames = step: são 6 na grade e 1 na lista; tab u32); 8 palavras: v0/v1 trocados no resto da coluna da grade, como em dk_slot_pos */
 /* screen position of position pos of list tab shown in pane side; scroll the pane towards it when
    asked (returns 0 then) */
-int sc_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll)
+int sc_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
 {
     ScPane *p = &scv.pane[side];
-    int other = p->list->tab != tab;
-    unsigned int view;
+    ScLayout *lay = &p->lay;
+    int off = 0;
+    unsigned int mode;
+    int count;
     int step;
-    unsigned int t;
+    int frames;
+    unsigned short top;
+    unsigned int tp;
+    unsigned short len;
+    unsigned short x;
+    int d;
+    int cols;
 
-    if (p->list_mode == 1) {
-        view = p->lay.rows;
+    if (scv.pane[side].list->tab != tab)
+        off = 1;
+    mode = p->list_mode;
+    switch (mode) {
+    case 0:
+        step = lay->cols;
+        count = step * lay->grid_rows;
+        frames = 6;
+        break;
+    case 1:
+        count = lay->rows;
         step = 1;
-    } else {
-        view = p->lay.cols * p->lay.grid_rows;
-        step = p->lay.cols;
+        frames = 1;
+        break;
     }
     if (scroll) {
         switch (sc.kind) {
-        case 2:
-        case 1:
         case 0:
+            if (tab == 0)
+                scroll = 0;
+            break;
+        case 1:
+            if (tab == 0)
+                scroll = 0;
+            break;
+        case 2:
             if (tab == 0)
                 scroll = 0;
             break;
         }
     }
-    if (!other) {
-        if (pos < p->top) {
-            if (scroll) {
-                p->top -= step;
-                sc_flight->frames = step;
+    if (!off) {
+        top = p->top;
+        if (pos < top) {
+            if (scroll == 0) {
+                off = 1;
+            } else {
+                p->top = top - (unsigned short)step;
+                sc_flight->frames = frames;
                 return 0;
             }
-            other = 1;
-        } else if (pos >= (int)(p->top + view)) {
-            if (scroll) {
-                p->top += step;
-                sc_flight->frames = step;
+        } else if (top + count <= pos) {
+            if (scroll == 0) {
+                off = 1;
+            } else {
+                p->top = top + (unsigned short)step;
+                sc_flight->frames = frames;
                 return 0;
             }
-            other = 1;
         }
     }
-    if (other) {
-        t = sc_tab_pos(tab);
-        out[0] = (float)(int)((t >> 17) + p->lay.x + (t & 0xFFFF));
+    if (off) {
+        tp = sc_tab_pos(tab);
+        len = tp >> 16;
+        x = tp;
+        out[0] = (int)((unsigned int)len / 2 + (lay->x + x));
         out[1] = 32.0f;
         return 1;
     }
-    if (p->list_mode == 1) {
-        out[0] = (float)(p->lay.x + p->lay.row_x);
-        out[1] = (float)(int)(p->lay.y + p->lay.row_y + p->lay.row_h * (pos - p->top));
+    switch (mode) {
+    case 0:
+        d = pos - p->top;
+        cols = lay->cols;
+        out[0] = (int)(lay->x + lay->grid_x + (d % cols) * (unsigned short)lay->cell_w);
+        out[1] = (int)(lay->y + lay->grid_y + (d / cols) * (unsigned short)lay->cell_h);
+        break;
+    case 1:
+        out[0] = lay->x + lay->row_x;
+        cols = lay->y + lay->row_y;
+        out[1] = (int)(cols + (unsigned short)lay->row_h * (pos - p->top));
         if (scv.mode < 4 && side == 1)
-            out[1] = out[1] + 1.0f;
-    } else {
-        out[0] = (float)(int)(p->lay.x + p->lay.grid_x + (pos - p->top) % (int)p->lay.cols * p->lay.cell_w);
-        out[1] = (float)(int)(p->lay.y + p->lay.grid_y + (pos - p->top) / (int)p->lay.cols * p->lay.cell_h);
+            out[1] += 1.0f;
+        break;
     }
-    out[0] = out[0] + 11.0f;
-    out[1] = out[1] + 15.0f;
+    out[0] += 11.0f;
+    out[1] += 15.0f;
     return 1;
 }
 #endif

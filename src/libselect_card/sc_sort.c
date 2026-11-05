@@ -1,5 +1,4 @@
 // @range 0x0880FFCC-0x08810BF4
-// @asm 0x088109CC-0x08810A20
 // @data 0x0881B3DC-0x0881B424
 /* The sort menu (state 4): a list of the nine sort keys and a small up/down menu beside it; the
    pane is re-sorted live while the cursor moves, and restored on cancel. Sort/direction icons. */
@@ -234,21 +233,17 @@ void *sc_draw_dir_item(void *list, int i, int x, int y)
     return sc_draw_button(list, &sc_dir_icons[i], x, y + 1, 0);
 }
 
-#ifdef NON_MATCHING /* 4 palavras: com y separado (y = h >> 1; y += cursor * h) só base e y trocam a1/a3 no original; ordem das declarações e das atribuições não resolve */
 /* keeps the direction menu beside the key under the cursor */
 void sc_sort_menu_place(void)
 {
     MenuWidget *k = sc_sort_menu->keys;
     MenuWidget *d = sc_sort_menu->dirs;
-    int base = sc_sort_menu->base_y;
+    int y = sc_sort_menu->base_y;
     unsigned int h = k->item_h;
-    unsigned int y;
 
-    y = h >> 1;
-    y += k->cursor * h;
-    d->def.y = base + y - d->def.h / 2;
+    y += (h >> 1) + k->cursor * h;
+    d->def.y = y - d->def.h / 2;
 }
-#endif
 
 void *sc_draw_sort_icon(void *list, int sort, int x, int y)
 {

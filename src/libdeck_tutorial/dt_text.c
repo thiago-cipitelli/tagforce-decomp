@@ -1,11 +1,6 @@
 // @range 0x0881C0E8-0x0881D318
 // @data 0x08821090-0x088210AC
 // @asm 0x0881C65C-0x0881C964
-// @asm 0x0881C990-0x0881CA18
-// @asm 0x0881CC3C-0x0881CDB4
-// @asm 0x0881CDB4-0x0881CEEC
-// @asm 0x0881CEEC-0x0881D030
-// @asm 0x0881D0E8-0x0881D1C4
 /* (The code of libtutorial tut_text.c, with a teardown and without the done/wait/close helpers.) Text box of the talk windows: a menu window that slides in and out, the message typed line by
    line at the speed of the game options (or skipped with a button), pages of two or three lines
    and the blinking "next" icon while the box waits for the player. */
@@ -234,7 +229,6 @@ int dt_text_update(void)
 /* teste da região (região 0 e 1 com corpos separados) e alocação dos $s no laço das linhas */
 void dt_text_draw(void **list)
 {
-    int r;
     DtText *t = &dt_tb;
     MenuItemDef *d = &dt_tb.def;
     unsigned short flags;
@@ -254,32 +248,32 @@ void dt_text_draw(void **list)
         flags = dt_text_font_begin();
         for (i = 0; i <= t->cur; i++) {
             l = &t->line[i];
-            r = region_get();
-            if (r == 1) {
-                y = l->y;
-                g = 1;
-                h = l->h + 1;
-            } else if (r == 0) {
-                y = l->y;
-                g = 1;
-                h = l->h + 1;
-            } else {
+            switch (region_get()) {
+            default:
                 g = 3;
                 y = l->y - 2;
                 h = l->h + 4;
+                break;
+            case 0:
+            case 1:
+                y = l->y;
+                g = 1;
+                h = l->h + 1;
+                break;
             }
             if (l->w > 0) {
                 if (y < 0x110) {
-                    if (y + h >= 0x110)
-                        h = 0x110 - y;
+                    h = (y + h < 0x110) ? h : 0x110 - y;
                     *list = dl_scissor(*list, l->x, y, l->w + 1, h);
                     *list = dl_enable(*list, 2);
                 }
                 if (y < 0x110) {
-                    off = (int)((float)t->page * ((float)t->lines * ((float)font_line_height() / 64.0f + (float)g)));
-                    menu_item_rect(&t->menu, d, &x0, &y0, &w0, &h0);
+                    float fh = (float)font_line_height() / 64.0f;
+
+                    off = -(int)((float)t->page * ((float)t->lines * (fh + (float)g)));
+                    menu_item_rect(&t->menu, &t->def, &x0, &y0, &w0, &h0);
                     font_text_set(*list);
-                    font_draw_wtext_ex(x0 << 6, (y0 - off) << 6, w0 << 6, 0x4400, t->text, -1);
+                    font_draw_wtext_ex(x0 << 6, (y0 + off) << 6, w0 << 6, 0x4400, t->text, -1);
                     *list = font_text_clear();
                 }
                 *list = dl_disable(*list, 2);
@@ -318,12 +312,11 @@ void dt_text_set_size(int size)
 }
 
 /* name (the speaker) goes in the title bar */
-#ifdef NON_MATCHING
-/* o original guarda &dt_tb em $s0 antes das chamadas; o mwcc dobra o ponteiro em lui + deslocamento */
 void dt_text_set(unsigned short *text, unsigned short *name)
 {
     MenuItemDef *d = &dt_tb.def;
-    DtText *t;
+    /* both arms equal: keeps &dt_tb in $s0 across the calls (a plain pointer is folded) */
+    DtText *t = name ? &dt_tb : &dt_tb;
 
     d->show_title = name != 0;
     dt_tb.finished = 0;
@@ -333,13 +326,11 @@ void dt_text_set(unsigned short *text, unsigned short *name)
     dt_tb.page = 0;
     d->title = name;
     dt_tb.text = text;
-    t = (DtText *)(char *)&dt_tb;
     dt_text_layout();
     dt_text_paginate();
     if (t->state == 0)
         dt_text_open();
 }
-#endif
 
 void dt_text_open(void)
 {
@@ -425,8 +416,6 @@ void dt_text_blink(void)
 }
 
 /* type more of the current line; at its end go to the next line, the next page or stop */
-#ifdef NON_MATCHING
-/* base da linha corrente e ordem dos testes do fim de linha/página */
 void dt_text_advance(void)
 {
     DtText *t = &dt_tb;
@@ -447,10 +436,10 @@ void dt_text_advance(void)
     font_get_flag8000();
     flags = dt_text_font_begin();
     w = (font_measure_text(t->text + l->start) >> 6) + 1;
-    if (w >= t->text_w)
-        w = t->text_w;
+    w = (w < t->text_w) ? w : t->text_w;
     dt_text_font_end(flags);
-    l->w += dt_text_speeds[t->speed];
+    n = dt_text_speeds[t->speed];
+    l->w += n;
     if (l->w < w)
         return;
     l->w = w;
@@ -468,13 +457,9 @@ void dt_text_advance(void)
         t->cur++;
     }
 }
-#endif
 
-#ifdef NON_MATCHING
-/* teste da região (região 0 e 1 com corpos separados) e alocação dos $s do laço */
 void dt_text_layout(void)
 {
-    int r;
     DtText *t = &dt_tb;
     MenuItemDef *d = &dt_tb.def;
     unsigned short flags = dt_text_font_begin();
@@ -482,61 +467,62 @@ void dt_text_layout(void)
     int x, y, w, h;
     int lh;
     int i;
-    DtLine *l;
-    int dy;
-    int gap;
 
-    r = region_get();
-    g = (r == 1 || r == 0) ? 1 : 3;
+    switch (region_get()) {
+    case 0:
+    case 1:
+        g = 1;
+        break;
+    default:
+        g = 3;
+    }
     t->cur = 0;
     t->pos = 0;
     menu_item_rect(&t->menu, d, &x, &y, &w, &h);
     t->text_w = w;
     lh = font_line_height() >> 6;
-    for (i = 0, l = t->line, dy = 0, gap = 0; i < t->lines; i++, l++, dy += lh, gap += g) {
-        l->x = x;
-        l->y = y + dy;
-        l->w = 0;
-        l->h = lh;
-        l->start = 0;
+    for (i = 0; i < t->lines; i++) {
+        t->line[i].x = x;
+        t->line[i].y = y + i * lh;
+        t->line[i].w = 0;
+        t->line[i].h = lh;
+        t->line[i].start = 0;
         if (region_get() != 0)
-            l->y += gap;
+            t->line[i].y += i * g;
     }
     dt_text_font_end(flags);
 }
-#endif
 
-#ifdef NON_MATCHING
-/* teste da região (região 0 e 1 com corpos separados) e alocação dos $s do laço */
 void dt_text_relayout(void)
 {
-    int r;
     DtText *t = &dt_tb;
     MenuItemDef *d = &dt_tb.def;
     unsigned short flags = dt_text_font_begin();
-    int g;
-    int x, y, w, h;
     int lh;
+    int x, y, w, h;
     int i;
-    DtLine *l;
-    int dy;
-    int gap;
+    int g;
 
-    r = region_get();
-    g = (r == 1 || r == 0) ? 1 : 3;
+    switch (region_get()) {
+    case 0:
+    case 1:
+        g = 1;
+        break;
+    default:
+        g = 3;
+    }
     t->def.x = (int)t->pos2[0];
     t->def.y = (int)t->pos2[1];
     menu_item_rect(&t->menu, d, &x, &y, &w, &h);
     lh = (font_line_height() >> 6) + 1;
-    for (i = 0, l = t->line, dy = 0, gap = 0; i < t->lines; i++, l++, dy += lh, gap += g) {
-        l->x = x;
-        l->y = y + dy;
+    for (i = 0; i < t->lines; i++) {
+        t->line[i].x = x;
+        t->line[i].y = y + i * lh;
         if (region_get() != 0)
-            l->y += gap;
+            t->line[i].y += i * g;
     }
     dt_text_font_end(flags);
 }
-#endif
 
 /* frame-th w x h cell of a strip */
 void dt_text_icon(void **list, int x, int y, int z, int u, int v, int w, int h, int frame)
@@ -546,21 +532,22 @@ void dt_text_icon(void **list, int x, int y, int z, int u, int v, int w, int h, 
 }
 
 /* font state of the box; returns the previous flags for dt_text_font_end */
-#ifdef NON_MATCHING
-/* forma igual, $s0/$s2 trocados entre o MenuItemDef e o espaçamento */
 unsigned short dt_text_font_begin(void)
 {
-    DtText *t;
-    MenuItemDef *d;
+    DtText *t = &dt_tb;
+    MenuItemDef *d = &dt_tb.def;
     unsigned short flags;
     int g;
-    int r;
 
-    t = &dt_tb;
-    d = &dt_tb.def;
     flags = font_get_flags();
-    r = region_get();
-    g = (r == 1 || r == 0) ? 1 : 3;
+    switch (region_get()) {
+    case 0:
+    case 1:
+        g = 1;
+        break;
+    default:
+        g = 3;
+    }
     if (region_get() == 0) {
         font_set_flag1(1);
         font_set_flag8000(t->flag8000);
@@ -575,7 +562,6 @@ unsigned short dt_text_font_begin(void)
     font_set_line_extra(g << 6);
     return flags;
 }
-#endif
 
 void dt_text_font_end(unsigned short flags)
 {
