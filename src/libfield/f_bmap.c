@@ -463,10 +463,10 @@ void fbm_input(void)
         }
         if (v.x == 0.0f && v.y == 0.0f)
             return;
-        memset(cone, 0, sizeof(cone));
+        { int n = 12; unsigned char *d = (unsigned char *)cone; if (d) do { *d++ = 0; } while (--n); }
         cone[0] = cosf_vfpu(0.7853982f);
         cone[1] = cosf_vfpu(1.0471976f);
-        cone[2] = cosf_vfpu(1.3089969f);
+        cone[2] = cosf_vfpu(1.308997f);
         here.x = fbm_pos[m->cur].x;
         here.y = fbm_pos[m->cur].y;
         for (j = 0; j < 3; j++) {

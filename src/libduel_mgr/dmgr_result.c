@@ -301,7 +301,7 @@ int dmgr_result_update(void)
             if (ret != -1) {
                 r->menu_done = 0;
                 dmgr_res->menu_kind = 0;
-                dmgr_res->loading = 0;
+                dmgr_res->net = 0;
                 menu_reset(&dmgr_res->menu);
                 return 0;
             }

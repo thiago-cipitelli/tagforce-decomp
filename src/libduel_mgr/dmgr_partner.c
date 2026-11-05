@@ -2,7 +2,6 @@
 // @asm 0x0880CFA4-0x0880D360
 // @asm 0x0880D360-0x0880D590
 // @asm 0x0880D590-0x0880D78C
-// @asm 0x0880E2AC-0x0880E3A8
 // @asm 0x0880EF5C-0x0880F274
 // @data 0x0881A774-0x0881B9B0
 // @rodata 0x08819FF8-0x0881A068
@@ -54,7 +53,7 @@ int fade_apply(unsigned int **list);
 void se_play(int id);
 void *recipe_get_name(int id);
 SaveRec *sysstate_rec_get(int i);
-void *chara_get_name(int i);
+void *chara_get_name(int set, int id);
 void deck_name_copy_out(void *dst);
 int charmap_lookup(unsigned short c, int a);
 int charmap_lookup2(int c, unsigned char *out);
@@ -870,7 +869,6 @@ unsigned int *dmgr_pt_draw_names(unsigned int *list, int mode)
     return list;
 }
 
-#ifdef NON_MATCHING /* 3 palavras: com o corpo em "if (e->kind > 0) { ... }" e o ramo small != 0 primeiro só falta o registrador do segundo e->kind (a1 no original, v1 aqui; switch, local e ifs invertidos não mudam) */
 unsigned int *dmgr_pt_draw_name(unsigned int *list, DmgrPtEnt *e, int x, int y, int w, int small)
 {
     void *name = 0;
@@ -890,13 +888,12 @@ unsigned int *dmgr_pt_draw_name(unsigned int *list, DmgrPtEnt *e, int x, int y, 
                 name = e->name;
             }
         } else {
-            name = chara_get_name(0);
+            name = chara_get_name(0, e->kind);
         }
         list = dmgr_text_draw(list, x, y, w, name, 2);
     }
     return list;
 }
-#endif
 
 short dmgr_pt_deck_pos2[4] = { 0x6E, 0xCE, 0xDF, 0x6D };
 short dmgr_pt_deck_spr2[2] = { 3, 2 };
