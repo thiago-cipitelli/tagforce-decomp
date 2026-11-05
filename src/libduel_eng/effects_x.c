@@ -3,7 +3,6 @@
 // @asm 0x08887618-0x088876B0
 // @asm 0x08887B34-0x08887ED8
 // @asm 0x08888ED0-0x08889914
-// @asm 0x08889B30-0x08889BE4
 /* Card effect handlers (DuelAct *a), after effects_w.c. */
 #include "duel.h"
 
@@ -103,7 +102,7 @@ int card_attribute_icon_in_2_3(int id);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void duel_088CB95C(unsigned int p, int z, int uid);
 void duel_088C77EC(unsigned int p, int uid);
-void duel_088C1B88(void);
+void duel_088C1B88(unsigned int p, int z);
 
 #ifdef NON_MATCHING /* registradores */
 int duel_08887618(DuelAct *a, DuelAct *b)
@@ -958,16 +957,19 @@ int duel_08889914(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* zona com andi 0xFF */
 int duel_08889B30(DuelAct *a)
 {
+    unsigned int p;
+    unsigned char z;
+
     if (a->b4_2) {
         return 0;
     }
-    if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
+    z = a->zone;
+    p = a->player;
+    if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
         return 0;
     }
-    duel_088C1B88();
+    duel_088C1B88(p, z);
     return 0;
 }
-#endif

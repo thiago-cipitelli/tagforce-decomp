@@ -1,5 +1,5 @@
 // @range 0x0888E5D4-0x0888F420
-// @asm 0x0888E5D4-0x0888E8F8
+// @asm 0x0888E5D4-0x0888E6F4
 // @asm 0x0888EB8C-0x0888EF1C
 /* Card effect handlers (DuelAct *a), after effects_za.c. */
 #include "duel.h"
@@ -21,7 +21,7 @@ int duel_0884E690(DuelAct *a, int (*fn)(int id));
 int duel_088537B0(int id);
 void duel_088359E8(unsigned int p, int id, int (*fn)(int id));
 int duel_08835AC0(void);
-void duel_088CB914(void);
+void duel_088CB914(unsigned int p, int a);
 int duel_0887DE04(DuelAct *a, int b);
 int duel_field_atk(unsigned int p, int z);
 int duel_0886CE90(DuelAct *a, int b);
@@ -77,6 +77,7 @@ int duel_0888E5D4(DuelAct *a)
     duel_088C77D4(a->player, a->player | a->zone << 8, 6, 0);
     return 0;
 }
+#endif
 
 int duel_0888E6F4(DuelAct *a)
 {
@@ -110,8 +111,13 @@ int duel_0888E6F4(DuelAct *a)
         return 0x7D;
     case 0x7D:
         if (duel_08835AC0() != 0) {
-            a->w[duel_w_0891964C] |= 1 << (duel_w_08919650 + duel_w_08919654);
-            duel_088CB914();
+            {
+                unsigned int i = duel_w_0891964C;
+                int k = duel_w_08919650 + duel_w_08919654;
+
+                a->w[i] |= 1 << k;
+                duel_088CB914(i, k);
+            }
             return --duel_w_089148FC != 0 ? 0x7E : 0x7C;
         }
         return 0x7E;
@@ -121,7 +127,6 @@ int duel_0888E6F4(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888E8F8(DuelAct *a, int b)
 {
