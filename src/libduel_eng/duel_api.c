@@ -1,6 +1,5 @@
 // @range 0x088FE638-0x088FF0DC
 // @asm 0x088FE724-0x088FE810
-// @asm 0x088FEF00-0x088FEF6C
 /* Exported accessors of the duel state (library libduel_eng, imported by NID by libduel_draw),
    duel input log and the host callback. */
 #include "duel.h"
@@ -76,7 +75,8 @@ int duel_player_protected(unsigned int p)
     return r | duel_slot_has_effect(p, 0xB, 0x1548);
 }
 
-#ifdef NON_MATCHING /* the two tables are local arrays copied from templates at 0x08913530 kept in the asm */
+#ifdef NON_MATCHING /* tabelas locais copiadas dos templates em 0x08913530 (no asm); 11 palavras: o original carrega
+                      o resultado em s0 (side) e faz move v0,s0 na junção; aqui sai direto em v0 */
 /* Player slot (0-3) acting for side `side` in the current turn of a tag duel. */
 int duel_tag_slot(int side)
 {
@@ -87,10 +87,12 @@ int duel_tag_slot(int side)
     if (g->partner_mode == 1) {
         return side;
     }
-    if (duel_setup_10_get() != 0) {
-        return t1[side][duel_turn_get() & 3];
+    if (duel_setup_10_get() == 0) {
+        side = (&t0[0][duel_turn_get() & 3])[side * 4];
+    } else {
+        side = (&t1[0][duel_turn_get() & 3])[side * 4];
     }
-    return t0[side][duel_turn_get() & 3];
+    return side;
 }
 #endif
 
@@ -394,18 +396,18 @@ int duel_unk2c(unsigned int p)
     return duel.players[p & 1].unk20[3];
 }
 
-#ifdef NON_MATCHING /* o original lê duel_log_buf antes de gravar duel_log_n (n em a3); o mwcc adia a leitura para
-                      depois do store em todas as formas testadas (local n, e[n++], base em local, cast); 13 palavras */
 void duel_log_push(DuelLogEnt *v)
 {
     if (duel_log_mode == 1 && duel_log_n < 0x7FF) {
-        DuelLogEnt *e = &duel_log_buf->e[duel_log_n];
+        int n = duel_log_n;
+        DuelLog *b = *(DuelLog *volatile *)&duel_log_buf; /* lido antes do store de duel_log_n */
+        DuelLogEnt *e;
 
-        duel_log_n++;
+        duel_log_n = n + 1;
+        e = (DuelLogEnt *)((char *)b->e + (n << 3));
         *e = *v;
     }
 }
-#endif
 
 DuelLogEnt *duel_log_cur(void)
 {

@@ -1,5 +1,4 @@
 // @range 0x08864DF0-0x08865F2C
-// @asm 0x08864FD4-0x088650B8
 // @asm 0x08865658-0x088657D8
 // @asm 0x08865838-0x08865A48
 // @asm 0x08865ABC-0x08865C10
@@ -116,34 +115,31 @@ int duel_08864F38(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* register allocation of the zone mask differs */
 int duel_08864FD4(DuelAct *a)
 {
-    if (a->kind == 0x23) {
-        return 1;
-    }
-    switch (duel_w_08914904) {
-    case 0: {
-        int s = a->player * 16;
+    if (a->kind != 0x23) {
+        switch (duel_w_08914904) {
+        case 0: {
+            int s = a->player * 16;
 
-        duel_088D1D64(a, 0xFFFF << s ^ 1 << (a->zone + s));
-        duel_w_08914904++;
-        return 0;
-    }
-    case 1: {
-        unsigned int p = a->player;
-
-        if (duel.players[p & 1].n_hand == 0) {
-            duel_w_08914904 = 2;
+            duel_088D1D64(a, 0xFFFF << s ^ 1 << (a->zone + s));
+            duel_w_08914904++;
             return 0;
         }
-        duel_088CAE34(p, 0);
-        return 0;
-    }
+        case 1: {
+            unsigned int p = a->player;
+
+            if (duel.players[p & 1].n_hand != 0) {
+                duel_088CAE34(p, 0);
+                return 0;
+            }
+            duel_w_08914904++;
+            return 0;
+        }
+        }
     }
     return 1;
 }
-#endif
 
 int duel_088650B8(DuelAct *a, int b)
 {
@@ -294,7 +290,8 @@ void duel_0886560C(DuelAct *a, int b)
     duel_08868038(a, b);
 }
 
-#ifdef NON_MATCHING /* delay slot filling of the player type test differs */
+#ifdef NON_MATCHING /* 7 palavras: no case 11 o original põe p em s1 e i em s0 (o registrador de a); o mwcc
+                      troca, em qualquer ordem de declarações e de atribuições */
 int duel_08865658(DuelAct *a, int b)
 {
     int r;
@@ -304,38 +301,32 @@ int duel_08865658(DuelAct *a, int b)
         r = duel_088619FC(a, b);
         if (r == 1) {
             duel_w_08914904 = 10;
-            r = 0;
+            return 0;
         }
-        break;
-    case 10: {
-        unsigned int p;
-
+        return r;
+    case 10:
         duel_0884ACD8(a->player, 0x4C);
-        p = a->player;
-        if (duel_player_type[p] != 1) {
-            duel_08835978(duel_0887FCA8);
+        if (duel_player_type[a->player] == 1) {
+            duel_0881956C(a->player, 2, duel_0887FCA8);
         } else {
-            duel_0881956C(p, 2, duel_0887FCA8);
+            duel_08835978(duel_0887FCA8);
         }
         duel_w_08914904++;
-        r = 0;
-        break;
-    }
+        return 0;
     case 11:
         if (duel_08835AC0() != 0) {
-            unsigned int p = duel_w_0891964C;
-            int i = duel_w_08919654;
+            unsigned int p;
+            int i;
 
+            p = duel_w_0891964C;
+            i = duel_w_08919654;
             duel_088C77EC(p, CARD_UID(duel.players[p & 1].hand[i]));
             duel_088CA384(p, i, 0);
-            r = 1;
-        } else {
-            duel_w_08914904--;
-            r = 0;
+            return 1;
         }
-        break;
+        duel_w_08914904--;
+        return 0;
     }
-    return r;
 }
 #endif
 
@@ -404,7 +395,8 @@ int duel_08865A78(DuelAct *a, int b)
     return -1;
 }
 
-#ifdef NON_MATCHING /* branch layout and register allocation not reproduced */
+#ifdef NON_MATCHING /* 6 palavras: o original testa 0xC (nos dois switch) e z != 0xB com beq/bne + nop, o mwcc
+                      gera beql/bnel copiando a 1ª instrução do destino; resto igual */
 unsigned int duel_08865ABC(unsigned int p, int z, int i)
 {
     int t;
@@ -416,24 +408,27 @@ unsigned int duel_08865ABC(unsigned int p, int z, int i)
         if (duel_slot_efb84(p, z + i) == 0) {
             return 0;
         }
-        t = (short)duel_field_type(p, z + i);
-        if (t == 0x10) {
+        switch ((unsigned short)duel_field_type(p, z + i)) {
+        case 0xB:
+        case 0xC:
+            t = 0x800;
+            break;
+        case 0x10:
             return 0x800;
+        default:
+            return 0;
         }
-        if (t == 0xC || t == 0xB) {
-            return 0x800;
-        }
-        return 0;
+        return t;
     }
     if (z == 0xB) {
         if (duel_088DFCC8(CARD_UID(duel.players[p & 1].hand[i])) == 0) {
             return 0;
         }
-        t = card_get_type(duel.players[p & 1].hand[i].id);
-        if (t == 0x10) {
+        switch (card_get_type(duel.players[p & 1].hand[i].id)) {
+        case 0xB:
+        case 0xC:
             return 0x800;
-        }
-        if (t == 0xC || t == 0xB) {
+        case 0x10:
             return 0x800;
         }
     }

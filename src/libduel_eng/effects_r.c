@@ -2,7 +2,6 @@
 // @asm 0x088823E0-0x088824E4
 // @asm 0x0888293C-0x08882B04
 // @asm 0x08882B04-0x08882D9C
-// @asm 0x08882D9C-0x08883114
 /* Card effect handlers (DuelAct *a), after effects_p.c. */
 #include "duel.h"
 
@@ -627,16 +626,16 @@ int duel_0888293C(DuelAct *a)
         return 0;
     }
     if (duel_088A9008(a, 0, &loc) != 0) {
-        p = a->player;
+        qz = (unsigned short)loc >> 8 & 0xFF;
         q = loc & 0xFF;
         z = a->zone;
-        qz = (unsigned short)loc >> 8 & 0xFF;
+        p = a->player;
         if (p != q && duel_slot_ef098(p, z, a->id) != 0 && duel_slot_ef098(q, qz, a->id) != 0) {
             duel_088C89BC(p, z, a->id, 1);
             duel_088C89BC(q, qz, a->id, 1);
             duel_088C87A8(p, z, a->id, 5, q);
             duel_088C87A8(q, qz, a->id, 5, p);
-            duel_088CA270(p, p | z << 8, q | qz << 8);
+            duel_088CA270(p, (unsigned char)p | (unsigned char)z << 8, (unsigned char)q | (unsigned char)qz << 8);
         }
     }
     return 0;
@@ -692,7 +691,6 @@ int duel_08882B04(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* registradores e ordem dos blocos */
 int duel_08882D9C(DuelAct *a)
 {
     unsigned int q = 1 - a->player;
@@ -710,10 +708,13 @@ int duel_08882D9C(DuelAct *a)
                     duel_088C96EC(q, z, 1);
                     duel_088C4508(q, id);
                     duel_088C7B90(0x1E);
-                    if (a->id == 0x188C) {
-                        ok = card_get_atk_q(id) <= 1500;
-                    } else if (a->id == 0x123B) {
+                    switch (a->id) {
+                    case 0x123B:
                         ok = card_get_atk(id) >= 1500;
+                        break;
+                    case 0x188C:
+                        ok = card_get_atk_q(id) <= 1500;
+                        break;
                     }
                     if (ok) {
                         duel_088D147C(a, q, z);
@@ -722,10 +723,13 @@ int duel_08882D9C(DuelAct *a)
                     }
                 } else {
                     ok = 0;
-                    if (a->id == 0x188C) {
-                        ok = duel_field_atk(q, z) <= 1500;
-                    } else if (a->id == 0x123B) {
+                    switch (a->id) {
+                    case 0x123B:
                         ok = duel_field_atk(q, z) >= 1500;
+                        break;
+                    case 0x188C:
+                        ok = duel_field_atk(q, z) <= 1500;
+                        break;
                     }
                     if (ok) {
                         duel_088D147C(a, q, z);
@@ -742,10 +746,13 @@ int duel_08882D9C(DuelAct *a)
             duel_088C77EC(q, CARD_UID(duel.players[q & 1].hand[duel_w_089148FC]));
             if (card_is_monster(id) != 0) {
                 ok = 0;
-                if (a->id == 0x188C) {
-                    ok = card_get_atk_q(id) <= 1500;
-                } else if (a->id == 0x123B) {
+                switch (a->id) {
+                case 0x123B:
                     ok = card_get_atk(id) >= 1500;
+                    break;
+                case 0x188C:
+                    ok = card_get_atk_q(id) <= 1500;
+                    break;
                 }
                 if (ok) {
                     duel_088C7478(q, duel_w_089148FC, duel_field_card_deb2c(q, 0xB, duel_w_089148FC), 1);
@@ -757,9 +764,8 @@ int duel_08882D9C(DuelAct *a)
         }
         return 0x7E;
     case 0x7E:
-        duel_088C77D4(q, a->id, (((duel_turn_player == a->player) + 4) & 0xF) << 4 | 1, 0);
+        duel_088C77D4(q, a->id, (unsigned char)((duel_turn_player == a->player) + 4) << 4 | 1, 0);
         return 0;
     }
     return 0;
 }
-#endif

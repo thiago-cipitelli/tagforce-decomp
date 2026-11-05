@@ -1,5 +1,4 @@
 // @range 0x0882A23C-0x0882AFA4
-// @asm 0x0882A23C-0x0882A550
 // @asm 0x0882A680-0x0882A838
 // @asm 0x0882AAA0-0x0882ABB4
 // @data 0x08907940-0x0890794C
@@ -31,15 +30,17 @@ int card_is_in_group_1a6x(int id);
 /* monsters asked one after the other by 0x1288 (duel_0882A23C) */
 int duel_ritual_ids[3] = { 0x1288, 0x129B, 0x12B8 };
 
-#ifdef NON_MATCHING /* desvios do fim com atrasos vazios (b fim; nop) que nenhuma forma do fonte reproduziu */
 /* Zone filter (0x800 = can be picked): the monsters of the ritual of 0x1288, one per step. */
 int duel_0882A23C(unsigned int p, int z, int i)
 {
-    int id = duel_ritual_ids[duel_summon.n];
-    int blocked = 0;
+    int id;
+    int blocked;
     int zz;
     int k;
     int j;
+
+    blocked = 0;
+    id = duel_ritual_ids[duel_summon.n];
 
     if (duel_count_free_monster_zones(duel_summon.player) == 0) {
         blocked = 1;
@@ -52,7 +53,7 @@ int duel_0882A23C(unsigned int p, int z, int i)
             }
         }
         for (k = duel_summon.n + 1; k < 3; k++) {
-            for (j = 0; j < 5; j++) {
+            for (j = 0; j <= 4; j++) {
                 if (duel_ritual_ids[k] == field_get_card(duel_summon.player, j)
                     && duel_tributable(duel_summon.player, duel_summon.player, j)
                     && duel_zone_usable(duel_summon.player, j)) {
@@ -73,26 +74,18 @@ int duel_0882A23C(unsigned int p, int z, int i)
         if (id != field_get_card(p, zz)) {
             return 0;
         }
-        if (!blocked) {
-            return 0x800;
-        }
-        if (p != duel_summon.player) {
-            return 0;
-        }
-        if (duel_zone_usable(p, zz) == 0) {
+        if (blocked && (p != duel_summon.player || duel_zone_usable(p, zz) == 0)) {
             return 0;
         }
         return 0x800;
     }
-    if (blocked) {
-        return 0;
-    }
-    if (p == duel_summon.player && z == 0xB && id == duel.players[p & 1].hand[i].id) {
-        return 0x800;
+    if (!blocked) {
+        if (p == duel_summon.player && z == 0xB) {
+            return id != duel.players[p & 1].hand[i].id ? 0 : 0x800;
+        }
     }
     return 0;
 }
-#endif
 
 /* Zone filter: own monsters of the attribute (or type) the card being summoned asks for. */
 int duel_0882A550(unsigned int p, int z, int i)

@@ -1,7 +1,5 @@
 // @range 0x0880FDF4-0x08810370
 // @asm 0x0880FFAC-0x08810098
-// @asm 0x08810098-0x08810120
-// @asm 0x08810120-0x088101B0
 // @asm 0x088102DC-0x08810370
 /* More conditions of the computer player (after the ones in ai_util.c). */
 #include "duel.h"
@@ -72,10 +70,10 @@ int duel_0880FF3C(DuelAct *a)
 #ifdef NON_MATCHING /* registradores/ordem de desvios */
 int duel_0880FFAC(DuelAct *a)
 {
-    int k = 0;
     int z;
+    int k = 0;
 
-    for (z = 0; z < 5; z++) {
+    for (z = 0; z <= 4; z++) {
         unsigned int q = 1 - a->player;
         unsigned int id = duel.players[q & 1].field[z].card.id;
 
@@ -90,17 +88,21 @@ int duel_0880FFAC(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* registradores/ordem de desvios */
 int duel_08810098(DuelAct *a)
 {
+    unsigned short *ip = (unsigned short *)&a->idx;
+    int r;
+
     if (duel_08807AB4(a->player) >= 2) {
         return 1;
     }
-    return duel.players[a->player & 1].lp < 0x3E9 || *(unsigned short *)&a->idx > 0x5DB;
+    r = duel.players[a->player & 1].lp < 0x3E9;
+    if (!r) {
+        r = *ip >= 0x5DC;
+    }
+    return r;
 }
-#endif
 
-#ifdef NON_MATCHING /* registradores/ordem de desvios */
 int duel_08810120(DuelAct *a)
 {
     int r;
@@ -113,11 +115,9 @@ int duel_08810120(DuelAct *a)
             }
             return r;
         }
-        return 0;
     }
     return 0;
 }
-#endif
 
 int duel_088101B0(DuelAct *a, int b)
 {
