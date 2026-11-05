@@ -63,7 +63,7 @@ int dd_api_menu_state58(void);
 
 extern DdMarkMgr dd_mark;
 
-void dd_mark_create();
+void dd_mark_create(int player, int zone);
 void dd_mark_reset(void);
 void dd_mark_draw(DdObj *o, DdMarker *m);
 void dd_mark_free(DdObj *o, DdMarker *m);
@@ -97,10 +97,10 @@ void dd_mark_term(void)
     memset(k, 0, sizeof(*k));
 }
 
-void dd_mark_show(void)
+void dd_mark_show(int player, int zone)
 {
     if (dd_mark.marker == 0)
-        dd_mark_create();
+        dd_mark_create(player, zone);
     else
         dd_mark_reset();
 }
@@ -132,7 +132,7 @@ void dd_mark_move(int player, int zone, int to_player, int to_zone)
     if (k->marker != 0)
         dd_mark_reset();
     else
-        dd_mark_show();
+        dd_mark_show(player, zone);
     o = k->marker;
     m = o->data;
     if (to_zone >= 5)

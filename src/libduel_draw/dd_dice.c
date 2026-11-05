@@ -1,6 +1,6 @@
 // @range 0x0882A94C-0x0882BF00
 // @asm 0x0882A94C-0x0882B724
-// @asm 0x0882B974-0x0882BDDC
+// @asm 0x0882BBAC-0x0882BDDC
 // @data 0x088769F0-0x08876A68
 /* Coin and die windows: the coin or die model rendered into a 128x128 VRAM texture with two
    rotating lights and drawn as a sprite; the window where the player picks die faces (one or
@@ -41,6 +41,10 @@ typedef struct DdDice {                /* 0x08C5A9D8, 0x14C */
 } DdDice;
 
 extern DdDice dd_dice;
+
+typedef struct DdVec3f {
+    float x, y, z;
+} DdVec3f;
 
 unsigned int *gfx_set_draw_target(unsigned int *list, int base, unsigned int fbp, int w, int h, int psm);
 unsigned int *gfx_set_default_target(unsigned int *list);
@@ -97,16 +101,16 @@ unsigned int dd_coin_tex_tmpl[16] = {
     0x00000000, 0x00000000, 0xBF800000, 0x00000000, 0x00000000, 0xBF800000, 0x00000000, 0x00000000,
 };
 
-#ifdef NON_MATCHING /* função grande de render para textura; o modelo dos vetores locais fica em dd_coin_tex_tmpl */
-/* the scene around the coin/die model: ortho camera, two lights turning with the frame counter */
-inline static unsigned int *dd_dice_scene_begin(unsigned int *list, float scale, DdCamera *saved)
+#ifdef NON_MATCHING /* 33 palavras: o vetor de escala (s) fica no topo da pilha no original, mas é preenchido depois do mtx_ortho (bloco, inline e declaração no topo testados); e o mul.s dos ângulos sai com a constante em ft */
+unsigned int *dd_coin_tex(float scale, unsigned int *list, int x, int y, int w, int h, int back)
 {
-    float s[3] = { scale, scale, scale };
-    FxVec4 eye = { 0.0f, 0.0f, -1.0f, 0.0f };
-    FxVec4 at = { 0 };
-    FxVec4 up = { 0.0f, 1.0f, 0.0f, 0.0f };
-    DdDiceLight l0, l1;
-    float t;
+    DdCamera saved;
+    DdDiceLight l1;
+    DdDiceLight l0;
+    DdModelDraw md;
+    void *model;
+    float k;
+
 
     list = gfx_set_draw_target(list, 0x160000, 0xFFFFFFFF, 128, 128, 3);
     list = dl_offset(list, 0x7C0, 0x7C0);
@@ -120,35 +124,39 @@ inline static unsigned int *dd_dice_scene_begin(unsigned int *list, float scale,
     mtx_push();
     mtx_identity();
     mtx_ortho(-64.0f, 64.0f, -64.0f, 64.0f, -100.0f, 100.0f);
-    mtx_scale3(s);
-    *saved = *camera_get();
-    camera_set(&eye, &at, &up);
+    {
+        DdVec3f s = { scale, scale, scale };
+        mtx_scale3(&s.x);
+    }
+    {
+        FxVec4 eye = { 0.0f, 0.0f, -1.0f, 0.0f };
+        FxVec4 at = { 0 };
+        FxVec4 up = { 0.0f, 1.0f, 0.0f, 0.0f };
+        saved = *camera_get();
+        camera_set(&eye, &at, &up);
+    }
     mtx_set_mode(1);
     camera_load_view();
-    t = (float)*gfx_get_state() / 20.0f;
-    memset(&l0, 0, sizeof(l0));
+    scale = (float)*gfx_get_state() / 20.0f;     /* now the light angle */
     l0.ambient = 0xFF000000;
     l0.specular = 0xFF000000;
     l0.diffuse = 0xFF808080;
+    l0.type = 0;           /* directional: the other fields stay as they are */
     {
-        float d[3] = { cosf_vfpu(t), sinf_vfpu(t), -1.0f };
-        l0.dir[0] = d[0];
-        l0.dir[1] = d[1];
-        l0.dir[2] = d[2];
+        DdVec3f d = { cosf_vfpu(scale), sinf_vfpu(scale), -1.0f };
+        *(DdVec3f *)l0.pos = d;
     }
-    vec3_normalize(l0.dir, l0.dir);
-    t *= 1.25f;
-    memset(&l1, 0, sizeof(l1));
+    vec3_normalize(l0.pos, l0.pos);
+    scale *= 1.25f;
     l1.ambient = 0xFF000000;
     l1.specular = 0xFF000000;
     l1.diffuse = 0xFF808080;
+    l1.type = 0;           /* directional: the other fields stay as they are */
     {
-        float d[3] = { cosf_vfpu(t), sinf_vfpu(t), -1.0f };
-        l1.dir[0] = d[0];
-        l1.dir[1] = d[1];
-        l1.dir[2] = d[2];
+        DdVec3f d = { cosf_vfpu(scale), sinf_vfpu(scale), -1.0f };
+        *(DdVec3f *)l1.pos = d;
     }
-    vec3_normalize(l1.dir, l1.dir);
+    vec3_normalize(l1.pos, l1.pos);
     list = lighting_enable(list);
     list = light_set_ambient(list, 0xFF101010);
     list = light_set(list, 0, &l0);
@@ -158,26 +166,25 @@ inline static unsigned int *dd_dice_scene_begin(unsigned int *list, float scale,
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    return list;
-}
+    if (back)
+        mtx_rotate_y(3.1415927f);
+    k = 0.15707964f;
+    mtx_rotate_y(cosf_vfpu((float)*gfx_get_state() / 30.0f) * k);
+    mtx_rotate_x(sinf_vfpu((float)*gfx_get_state() / 30.0f) * k);
 
-inline static unsigned int *dd_dice_scene_end(unsigned int *list, int model_id, DdCamera *saved, int x, int y, int w, int h)
-{
-    DdModelDraw md;
-    void *model;
 
     memset(&md, 0, sizeof(md));
     md.layer[0] = dl_get_layer();
     md.layer[1] = md.layer[0];
     md.front = 1;
     dl_set_list(list);
-    model = dd_model_get(model_id);
+    model = dd_model_get(0x10021);
     if (model != 0) {
         model_update(model, 0);
         model_draw(model, &md);
     }
     list = dl_select_layer(md.layer[0], 0);
-    camera_set(&saved->pos, &saved->target, &saved->up);
+    camera_set(&saved.pos, &saved.target, &saved.up);
     list = lighting_disable(list);
     mtx_set_mode(2);
     mtx_pop();
@@ -202,21 +209,6 @@ inline static unsigned int *dd_dice_scene_end(unsigned int *list, int model_id, 
     list = draw_sprite(list, x, y, 0, (128 - w) / 2, (128 - h) / 2, 0, 0);
     return dl_enable(list, 1);
 }
-
-unsigned int *dd_coin_tex(float scale, unsigned int *list, int x, int y, int w, int h, int back)
-{
-    DdCamera saved;
-    float t;
-
-    list = dd_dice_scene_begin(list, scale, &saved);
-    if (back)
-        mtx_rotate_y(3.1415927f);
-    t = (float)*gfx_get_state() / 30.0f;
-    mtx_rotate_y(cosf_vfpu(t) * 0.15707964f);
-    t = (float)*gfx_get_state() / 30.0f;
-    mtx_rotate_x(sinf_vfpu(t) * 0.15707964f);
-    return dd_dice_scene_end(list, 0x10021, &saved, x, y, w, h);
-}
 #endif
 
 unsigned int dd_die_tex_tmpl[14] = {
@@ -224,17 +216,74 @@ unsigned int dd_die_tex_tmpl[14] = {
     0x00000000, 0x00000000, 0xBF800000, 0x00000000, 0x00000000, 0xBF800000,
 };
 
-#ifdef NON_MATCHING /* função grande de render para textura; o modelo dos vetores locais fica em dd_die_tex_tmpl */
+#ifdef NON_MATCHING /* 34 palavras: o vetor de escala (s) fica no topo da pilha no original, mas é preenchido depois do mtx_ortho (bloco, inline e declaração no topo testados); e o mul.s dos ângulos sai com a constante em ft */
 unsigned int *dd_die_tex(float scale, unsigned int *list, int x, int y, int w, int h, int face)
 {
     DdCamera saved;
-    float t;
+    DdDiceLight l1;
+    DdDiceLight l0;
+    DdModelDraw md;
+    void *model;
+    float k;
 
-    list = dd_dice_scene_begin(list, scale, &saved);
-    t = (float)*gfx_get_state() / 30.0f;
-    mtx_rotate_y(cosf_vfpu(t) * 0.15707964f);
-    t = (float)*gfx_get_state() / 30.0f;
-    mtx_rotate_x(sinf_vfpu(t) * 0.15707964f);
+
+    list = gfx_set_draw_target(list, 0x160000, 0xFFFFFFFF, 128, 128, 3);
+    list = dl_offset(list, 0x7C0, 0x7C0);
+    list = dl_viewport(list, 0x800, 0x800, 128, 128);
+    list = dl_enable(list, 1);
+    list = dl_clear_color(list, 0x6000);
+    list = dl_clear_stencil(list, 0);
+    list = dl_clear_depth(list, 0);
+    list = dl_clear(list, 0x17);
+    mtx_set_mode(0);
+    mtx_push();
+    mtx_identity();
+    mtx_ortho(-64.0f, 64.0f, -64.0f, 64.0f, -100.0f, 100.0f);
+    {
+        DdVec3f s = { scale, scale, scale };
+        mtx_scale3(&s.x);
+    }
+    {
+        FxVec4 eye = { 0.0f, 0.0f, -1.0f, 0.0f };
+        FxVec4 at = { 0 };
+        FxVec4 up = { 0.0f, 1.0f, 0.0f, 0.0f };
+        saved = *camera_get();
+        camera_set(&eye, &at, &up);
+    }
+    mtx_set_mode(1);
+    camera_load_view();
+    scale = (float)*gfx_get_state() / 20.0f;     /* now the light angle */
+    l0.ambient = 0xFF000000;
+    l0.specular = 0xFF000000;
+    l0.diffuse = 0xFF808080;
+    l0.type = 0;           /* directional: the other fields stay as they are */
+    {
+        DdVec3f d = { cosf_vfpu(scale), sinf_vfpu(scale), -1.0f };
+        *(DdVec3f *)l0.pos = d;
+    }
+    vec3_normalize(l0.pos, l0.pos);
+    scale *= 1.25f;
+    l1.ambient = 0xFF000000;
+    l1.specular = 0xFF000000;
+    l1.diffuse = 0xFF808080;
+    l1.type = 0;           /* directional: the other fields stay as they are */
+    {
+        DdVec3f d = { cosf_vfpu(scale), sinf_vfpu(scale), -1.0f };
+        *(DdVec3f *)l1.pos = d;
+    }
+    vec3_normalize(l1.pos, l1.pos);
+    list = lighting_enable(list);
+    list = light_set_ambient(list, 0xFF101010);
+    list = light_set(list, 0, &l0);
+    list = light_set(list, 1, &l1);
+    list = light_enable(list, 0);
+    list = light_enable(list, 1);
+    mtx_set_mode(2);
+    mtx_push();
+    mtx_identity();
+    k = 0.15707964f;
+    mtx_rotate_y(cosf_vfpu((float)*gfx_get_state() / 30.0f) * k);
+    mtx_rotate_x(sinf_vfpu((float)*gfx_get_state() / 30.0f) * k);
     switch (face) {             /* turn the face up */
     case 0:
     case 5:
@@ -256,7 +305,42 @@ unsigned int *dd_die_tex(float scale, unsigned int *list, int x, int y, int w, i
         mtx_rotate_y(1.5707964f);
         break;
     }
-    return dd_dice_scene_end(list, 0x10026, &saved, x, y, w, h);
+
+    memset(&md, 0, sizeof(md));
+    md.layer[0] = dl_get_layer();
+    md.layer[1] = md.layer[0];
+    md.front = 1;
+    dl_set_list(list);
+    model = dd_model_get(0x10026);
+    if (model != 0) {
+        model_update(model, 0);
+        model_draw(model, &md);
+    }
+    list = dl_select_layer(md.layer[0], 0);
+    camera_set(&saved.pos, &saved.target, &saved.up);
+    list = lighting_disable(list);
+    mtx_set_mode(2);
+    mtx_pop();
+    mtx_set_mode(0);
+    mtx_pop();
+    list = gfx_set_default_target(list);
+    list = dl_offset(list, 0x710, 0x778);
+    list = dl_viewport(list, 0x800, 0x800, 480, 272);
+    list = dl_enable(list, 9);
+    list = dl_tex_mode(list, 3, 0, 0, 0);
+    list = dl_tex_image(list, 0, 128, 128, 128, (unsigned char *)sceGeEdramGetAddr() + 0x160000);
+    list = dl_tex_func(list, 3, 1);
+    list = dl_tex_wrap(list, 0, 0);
+    list = dl_tex_offset(list, 0.0f, 0.0f);
+    list = dl_tex_scale(list, 1.0f, 1.0f);
+    list = dl_set_tex_filter(list, 0, 0);
+    list = dl_enable(list, 4);
+    list = dl_blend_func(list, 0, 2, 3, 0, 0);
+    list = dl_disable(list, 1);
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    list = draw_set_offsets(list, w, h, w, h);
+    list = draw_sprite(list, x, y, 0, (128 - w) / 2, (128 - h) / 2, 0, 0);
+    return dl_enable(list, 1);
 }
 #endif
 
@@ -313,7 +397,6 @@ void dd_dice_mask(void)
     dv_w624_set(m);
 }
 
-#ifdef NON_MATCHING /* alocação de registradores e um bloco de junção a mais (forma igual) */
 int dd_dice_update(void)
 {
     MenuWidget *w = dd_dice.menu;
@@ -323,16 +406,14 @@ int dd_dice_update(void)
     switch (dd_dice.state) {
     case 0:
         r = menu_update(w);
-        if (r >= 0) {
-            if (d->n_picked < d->max) {
-                d->picked[d->n_picked] = r + 1;
-                d->n_picked++;
-                w->disabled |= 1 << r;
-                w->cancelled = w->accepted = 0;
-                if (d->n_picked >= d->max) {
-                    dd_dice_ok_open();
-                    d->state = 1;
-                }
+        if (r >= 0 && d->n_picked < d->max) {
+            d->picked[d->n_picked] = r + 1;
+            d->n_picked++;
+            w->disabled |= 1 << r;
+            w->cancelled = w->accepted = 0;
+            if (d->n_picked >= d->max) {
+                dd_dice_ok_open();
+                d->state = 1;
             }
         } else if (r == -2) {
             if (d->n_picked > 0) {
@@ -361,7 +442,6 @@ int dd_dice_update(void)
     }
     return !func_08825728();
 }
-#endif
 
 #ifdef NON_MATCHING /* alocação de registradores e um bloco de junção a mais (forma igual) */
 unsigned int *dd_dice_draw(unsigned int *list, int x, int y)

@@ -176,26 +176,26 @@ char help_window_gim[] = "window01.gim";
 char help_path_fmt[] = "%s/%s";
 char help_dir[] = "help";
 
-#ifdef NON_MATCHING /* alocação de registradores/ordem dos testes difere; não insistido */
+#ifdef NON_MATCHING /* 101 palavras: stores iniciais pelo global e d depois do menu_init já batem; o original grava first = 1 no início do ramo duel e com o v1 da comparação no ramo deck (o mwcc junta os dois) */
 void hscene_init(int category, void *heap, void *frame_gim, void *texts, void *pack)
 {
     HelpScene *s = &help_scene;
-    MenuItemDef *d = &help_scene.def;
+    MenuItemDef *d;
 
-    memset(&help_scene, 0, sizeof(help_scene));
-    s->category = category;
-    s->heap = heap;
-    s->frame_gim = frame_gim;
-    s->parts_gim = ehp_find(syspack_get(), help_window_gim, 0);
-    s->state = 0;
-    s->focus = 1;
-    s->cat_cursor = 0;
-    s->idx_cursor = 0;
-    s->image_req = -2;
-    s->image_want = -2;
-    s->image_loading = -2;
-    s->texts = texts;
-    s->pack = pack;
+    memset(s, 0, sizeof(help_scene));
+    help_scene.category = category;
+    help_scene.heap = heap;
+    help_scene.frame_gim = frame_gim;
+    help_scene.parts_gim = ehp_find(syspack_get(), help_window_gim, 0);
+    help_scene.texts = texts;
+    help_scene.pack = pack;
+    help_scene.state = 0;
+    help_scene.focus = 1;
+    help_scene.cat_cursor = 0;
+    help_scene.idx_cursor = 0;
+    help_scene.image_req = -2;
+    help_scene.image_want = -2;
+    help_scene.image_loading = -2;
     if (hscene_is_deck(category) == 1) {
         s->last = 13;
         s->cat_base = 13;
@@ -219,6 +219,7 @@ void hscene_init(int category, void *heap, void *frame_gim, void *texts, void *p
     }
     s->first = 1;
     menu_init(&s->menu, heap);
+    d = &s->def;
     memset(d, 0, sizeof(*d));
     d->visible = 1;
     d->w = 480;

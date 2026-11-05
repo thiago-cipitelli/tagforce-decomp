@@ -50,42 +50,59 @@ int dd_fx_spin_move(int id, float *pos, float *rot, float s)
     return 1;
 }
 
-#ifdef NON_MATCHING /* mesma forma de dd_fx_mark_update */
+#ifdef NON_MATCHING /* 1 palavra: no produto com in o original põe o in em ft (mul.s f0,f0,f21); todas as associações testadas saem com ele em fs */
 int dd_fx_spin_update(int state, DdFxSpin *fx)
 {
     float in = (float)fx->in / 4.0f;
     float fo = 1.0f - (float)fx->out / 8.0f;
     unsigned int *list;
-    float u0, u1;
 
     if (state == 1) {
+        float h = 48.0f;
+
         if (fx->side == 0) {
-            u0 = 1.0f;
-            u1 = 0.0f;
+            fx->quad[0].u = 1.0f;
+            fx->quad[0].v = 0.0f;
+            fx->quad[0].x = -h;
+            fx->quad[0].y = 0.0f;
+            fx->quad[0].z = -h;
+            fx->quad[1].u = 1.0f;
+            fx->quad[1].v = 1.0f;
+            fx->quad[1].x = -h;
+            fx->quad[1].y = 0.0f;
+            fx->quad[1].z = h;
+            fx->quad[2].u = 0.0f;
+            fx->quad[2].v = 0.0f;
+            fx->quad[2].x = h;
+            fx->quad[2].y = 0.0f;
+            fx->quad[2].z = -h;
+            fx->quad[3].u = 0.0f;
+            fx->quad[3].v = 1.0f;
+            fx->quad[3].x = h;
+            fx->quad[3].y = 0.0f;
+            fx->quad[3].z = h;
         } else {
-            u0 = 0.0f;
-            u1 = 1.0f;
+            fx->quad[0].u = 0.0f;
+            fx->quad[0].v = 0.0f;
+            fx->quad[0].x = -h;
+            fx->quad[0].y = 0.0f;
+            fx->quad[0].z = -h;
+            fx->quad[1].u = 0.0f;
+            fx->quad[1].v = 1.0f;
+            fx->quad[1].x = -h;
+            fx->quad[1].y = 0.0f;
+            fx->quad[1].z = h;
+            fx->quad[2].u = 1.0f;
+            fx->quad[2].v = 0.0f;
+            fx->quad[2].x = h;
+            fx->quad[2].y = 0.0f;
+            fx->quad[2].z = -h;
+            fx->quad[3].u = 1.0f;
+            fx->quad[3].v = 1.0f;
+            fx->quad[3].x = h;
+            fx->quad[3].y = 0.0f;
+            fx->quad[3].z = h;
         }
-        fx->quad[0].u = u0;
-        fx->quad[0].v = 0.0f;
-        fx->quad[0].x = -48.0f;
-        fx->quad[0].y = 0.0f;
-        fx->quad[0].z = -48.0f;
-        fx->quad[1].u = u0;
-        fx->quad[1].v = 1.0f;
-        fx->quad[1].x = -48.0f;
-        fx->quad[1].y = 0.0f;
-        fx->quad[1].z = 48.0f;
-        fx->quad[2].u = u1;
-        fx->quad[2].v = 0.0f;
-        fx->quad[2].x = 48.0f;
-        fx->quad[2].y = 0.0f;
-        fx->quad[2].z = -48.0f;
-        fx->quad[3].u = u1;
-        fx->quad[3].v = 1.0f;
-        fx->quad[3].x = 48.0f;
-        fx->quad[3].y = 0.0f;
-        fx->quad[3].z = 48.0f;
     }
     list = dl_select_layer(4, 0);
     list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
@@ -103,8 +120,8 @@ int dd_fx_spin_update(int state, DdFxSpin *fx)
     mtx_rotate_zyx(fx->rot);
     mtx_scale3(fx->scale);
     mtx_rotate_y((float)fx->count * -0.017453292f);
-    list = dl_ambient_light(list, ((unsigned int)(fo * (cosf((float)(fx->pulse % 32) * 6.2831855f / 32.0f) * 0.3f + 0.7f)
-                                                  * 255.0f * in) << 24) | 0xFFFFFF);
+    list = dl_ambient_light(list, ((unsigned int)(fo * ((cosf((float)(fx->pulse % 32) * 6.2831855f / 32.0f) * 0.3f + 0.7f)
+                                                        * 255.0f * in)) << 24) | 0xFFFFFF);
     list = draw_array(list, 4, 0x183, 4, 0, fx->quad);
     mtx_pop();
     dl_set_list(list);

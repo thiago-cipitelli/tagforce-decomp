@@ -176,10 +176,10 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
             c0 = 0x6464FF;
             c1 = 0xFF6464FF;
         }
-        dd_fx_set_vert(&fx->pillar[0], 0.0f, 0.0f, c0, -49.6f, 200.0f, -44.0f);
-        dd_fx_set_vert(&fx->pillar[1], 0.0f, 0.5f, c1, -49.6f, 0.0f, 0.0f);
-        dd_fx_set_vert(&fx->pillar[2], 1.0f, 0.0f, c0, 49.6f, 200.0f, -44.0f);
-        dd_fx_set_vert(&fx->pillar[3], 1.0f, 0.5f, c1, 49.6f, 0.0f, 0.0f);
+        dd_fx_set_vert(&fx->pillar[0], 0.0f, 0.0f, c0, -49.600002f, 200.0f, -44.0f);
+        dd_fx_set_vert(&fx->pillar[1], 0.0f, 0.5f, c1, -49.600002f, 0.0f, 0.0f);
+        dd_fx_set_vert(&fx->pillar[2], 1.0f, 0.0f, c0, 49.600002f, 200.0f, -44.0f);
+        dd_fx_set_vert(&fx->pillar[3], 1.0f, 0.5f, c1, 49.600002f, 0.0f, 0.0f);
     }
     grow = (float)fx->frame * 0.03f + 1.0f;
     fade = dd_ease_cos(fx->frame, 24, 1);
@@ -403,7 +403,7 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
                     mtx_push();
                     mtx_rotate_y(n->ang);
                     mtx_translate(ofs);
-                    mtx_rotate_x(1.3962634f);
+                    mtx_rotate_x(1.3962635f);
                     mtx_scale3(s);
                     list = draw_array(list, 4, 0x19F, 4, 0, fx->note_quad[n->kind]);
                     mtx_pop();

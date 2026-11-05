@@ -1,5 +1,5 @@
 // @range 0x0880A8E0-0x0880C48C
-// @asm 0x0880A8E0-0x0880B770
+// @data 0x08874BB0-0x08874E10
 // @asm 0x0880B834-0x0880C48C
 /* Where a card sits on the field: position and rotation of each zone (by player, face up, defense
    position, stack height), the lookups in the zone lists and the rebuild of the lists from the
@@ -28,40 +28,69 @@ int dv_slot_pos(int player, int zone);
 int dv_zone_faceup(int player, int zone, int index);
 int dv_list_id(int uid);
 
-#ifdef NON_MATCHING /* tabela local de 32 posições copiada do modelo e lida por cadeia de testes */
-extern DdXyzw dd_slot_tab[32];         /* 0x08874BB0 by player * 16 + zone */
-extern DdXyzw dd_quat_id;              /* 0x08874DB0 */
-extern DdXyzw dd_quat_id2;             /* 0x08874DC0 */
-extern DdXyzw dd_quat_id3;             /* 0x08874DD0 */
-extern DdXyzw dd_quat_flip;            /* 0x08874DE0 180 degrees about z: face down */
-extern DdXyzw dd_quat_def;             /* 0x08874DF0 90 degrees about y: defense position */
-extern DdXyzw dd_quat_opp;             /* 0x08874E00 180 degrees about y: opponent side */
-
-/* position and rotation of a card at `at` */
+/* position and rotation of a card at `at`; zones 16-31 fall back to slot 0 of player 0 */
 void dd_slot_xform(DdXyzw *pos, DdXyzw *rot, DdPos at)
 {
     int zone = at.zone;
+    int player = at.player;
     DdXyzw qf;
     DdXyzw qd;
+    DdXyzw r;
 
-    *pos = dd_slot_tab[at.player * 16 + zone];
-    if (zone == 13) {
-        if (at.idx == 0)
-            pos->y += dd_stack_y(dd_zone_count(at.player, zone));
-    } else if (zone == 15 || zone == 14) {
-        pos->y += dd_stack_y(at.idx);
+    switch ((player << 5) | zone) {
+    default: { DdXyzw t = { -210.0f, 0.0f, 85.0f, 1.0f }; *pos = t; } break;
+    case 1: { DdXyzw t = { -105.0f, 0.0f, 85.0f, 1.0f }; *pos = t; } break;
+    case 2: { DdXyzw t = { 0.0f, 0.0f, 85.0f, 1.0f }; *pos = t; } break;
+    case 3: { DdXyzw t = { 105.0f, 0.0f, 85.0f, 1.0f }; *pos = t; } break;
+    case 4: { DdXyzw t = { 210.0f, 0.0f, 85.0f, 1.0f }; *pos = t; } break;
+    case 5: { DdXyzw t = { -210.0f, 0.0f, 190.0f, 1.0f }; *pos = t; } break;
+    case 6: { DdXyzw t = { -105.0f, 0.0f, 190.0f, 1.0f }; *pos = t; } break;
+    case 7: { DdXyzw t = { 0.0f, 0.0f, 190.0f, 1.0f }; *pos = t; } break;
+    case 8: { DdXyzw t = { 105.0f, 0.0f, 190.0f, 1.0f }; *pos = t; } break;
+    case 9: { DdXyzw t = { 210.0f, 0.0f, 190.0f, 1.0f }; *pos = t; } break;
+    case 10: { DdXyzw t = { -315.0f, 0.0f, 135.0f, 1.0f }; *pos = t; } break;
+    case 11: { DdXyzw t = { 0.0f, 200.0f, 440.0f, 1.0f }; *pos = t; } break;
+    case 12: { DdXyzw t = { -315.0f, 0.0f, 240.0f, 1.0f }; *pos = t; } break;
+    case 13: { DdXyzw t = { 315.0f, 0.0f, 240.0f, 1.0f }; *pos = t; } break;
+    case 14: { DdXyzw t = { 315.0f, 0.0f, 135.0f, 1.0f }; *pos = t; } break;
+    case 15: { DdXyzw t = { 315.0f, 0.0f, 30.0f, 1.0f }; *pos = t; } break;
+    case 32: { DdXyzw t = { 210.0f, 0.0f, -85.0f, 1.0f }; *pos = t; } break;
+    case 33: { DdXyzw t = { 105.0f, 0.0f, -85.0f, 1.0f }; *pos = t; } break;
+    case 34: { DdXyzw t = { 0.0f, 0.0f, -85.0f, 1.0f }; *pos = t; } break;
+    case 35: { DdXyzw t = { -105.0f, 0.0f, -85.0f, 1.0f }; *pos = t; } break;
+    case 36: { DdXyzw t = { -210.0f, 0.0f, -85.0f, 1.0f }; *pos = t; } break;
+    case 37: { DdXyzw t = { 210.0f, 0.0f, -190.0f, 1.0f }; *pos = t; } break;
+    case 38: { DdXyzw t = { 105.0f, 0.0f, -190.0f, 1.0f }; *pos = t; } break;
+    case 39: { DdXyzw t = { 0.0f, 0.0f, -190.0f, 1.0f }; *pos = t; } break;
+    case 40: { DdXyzw t = { -105.0f, 0.0f, -190.0f, 1.0f }; *pos = t; } break;
+    case 41: { DdXyzw t = { -210.0f, 0.0f, -190.0f, 1.0f }; *pos = t; } break;
+    case 42: { DdXyzw t = { 315.0f, 0.0f, -135.0f, 1.0f }; *pos = t; } break;
+    case 43: { DdXyzw t = { 0.0f, 50.0f, -300.0f, 1.0f }; *pos = t; } break;
+    case 44: { DdXyzw t = { 315.0f, 0.0f, -240.0f, 1.0f }; *pos = t; } break;
+    case 45: { DdXyzw t = { -315.0f, 0.0f, -240.0f, 1.0f }; *pos = t; } break;
+    case 46: { DdXyzw t = { -315.0f, 0.0f, -135.0f, 1.0f }; *pos = t; } break;
+    case 47: { DdXyzw t = { -315.0f, 0.0f, -30.0f, 1.0f }; *pos = t; } break;
     }
-    qf = dd_quat_id;
-    qd = dd_quat_id2;
-    if (at.f14)
-        qf = dd_quat_flip;
-    if (at.f15)
-        qd = dd_quat_def;
-    *rot = at.player ? dd_quat_opp : dd_quat_id3;
+    switch (zone) {
+    case 14:
+    case 15:
+        pos->y += dd_stack_y(at.idx);
+        break;
+    case 13:
+        if (at.idx == 0)
+            pos->y += dd_stack_y(dd_zone_count(player, zone) - at.idx);
+        break;
+    }
+    { DdXyzw t = { 0.0f, 0.0f, 0.0f, 1.0f }; qf = *(DdXyzw *)&t; }
+    { DdXyzw t = { 0.0f, 0.0f, 0.0f, 1.0f }; qd = *(DdXyzw *)&t; }
+    { DdXyzw t = { 0.0f, 0.0f, 0.0f, 1.0f }; r = *(DdXyzw *)&t; }
+    if (at.f14) { DdXyzw t = { 0.0f, 0.0f, 1.0f, 0.0f }; qf = *(DdXyzw *)&t; }
+    if (at.f15) { DdXyzw t = { 0.0f, 0.707107f, 0.0f, 0.707107f }; qd = *(DdXyzw *)&t; }
+    if (at.player) { DdXyzw t = { 0.0f, 1.0f, 0.0f, 0.0f }; r = *(DdXyzw *)&t; }
+    *rot = r;
     quat_mul(rot, rot, &qd);
     quat_mul(rot, rot, &qf);
 }
-#endif
 
 /* number of card objects in a zone */
 int dd_zone_count(int player, int zone)

@@ -117,14 +117,14 @@ void func_08822C2C(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* DdLoc local montado com lhu/sh no original (o C gera lbu/sb) */
+#ifdef NON_MATCHING /* 42 palavras: forma certa (switch de kind com tabela, switch de zona); o original grava player/zone de at por halfword (lhu/sh), o mwcc por byte */
 /* starts the mark of a zone; the piles are marked over their top card */
 int func_08822E30(int player, int zone, unsigned char kind, int layer)
 {
-    float rot2[4];
-    float rot[4];
-    float pos[4];
     DdLoc at = { 0 };
+    float rot2[4];
+    float pos[4];
+    float rot[4];
     int fx;
 
     at.player = player;
@@ -140,14 +140,20 @@ int func_08822E30(int player, int zone, unsigned char kind, int layer)
     }
     dd_slot_xform(pos, rot, at);
     pos[1] += 0.01f;
-    if (at.zone == 12)
-        pos[1] += dd_stack_y(dv_n_18(at.player));
-    else if (at.zone == 15)
-        pos[1] += dd_stack_y(dv_n_f(at.player));
-    else if (at.zone == 13)
-        pos[1] += dd_stack_y(dv_n_d(at.player));
-    else if (at.zone == 14)
+    switch (at.zone) {
+    case 14:
         pos[1] += dd_stack_y(dv_n_grave(at.player));
+        break;
+    case 13:
+        pos[1] += dd_stack_y(dv_n_d(at.player));
+        break;
+    case 15:
+        pos[1] += dd_stack_y(dv_n_f(at.player));
+        break;
+    case 12:
+        pos[1] += dd_stack_y(dv_n_18(at.player));
+        break;
+    }
     func_08820A8C(rot2, rot, pos[2] < 0.0f);
     if (layer == 0)
         return dd_fx_mark_start(1.0f, fx, pos, rot2, -1, 0, 0);
