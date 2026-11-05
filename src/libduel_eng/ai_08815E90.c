@@ -684,10 +684,10 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
         break;
     case 0x14D3:
     case 0x1538:
-        if (b != 0 && b->n_targets == 1 && ((unsigned short)duel_act_target(b, 0) >> 8) < 11) {
+        if (b != 0 && b->n_targets == 1 && ((unsigned short)duel_act_target(b, 0) >> 8 & 0xFF) < 11) {
             t = duel_act_target(b, 0);
-            if (IN_MASK(t & 0xFF, (unsigned short)t >> 8)) {
-                TARGET(t & 0xFF, (unsigned short)t >> 8);
+            if (IN_MASK(t & 0xFF, (unsigned short)t >> 8 & 0xFF)) {
+                TARGET(t & 0xFF, (unsigned short)t >> 8 & 0xFF);
             }
         }
         if (a->kind - 0x12 < 2 && duel_special.player[0] == 1 - a->player &&
@@ -708,10 +708,10 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
         }
         break;
     case 0x184B:
-        if (b != 0 && b->n_targets == 1 && ((unsigned short)duel_act_target(b, 0) >> 8) < 11) {
+        if (b != 0 && b->n_targets == 1 && ((unsigned short)duel_act_target(b, 0) >> 8 & 0xFF) < 11) {
             t = duel_act_target(b, 0);
-            if (IN_MASK(t & 0xFF, (unsigned short)t >> 8)) {
-                TARGET(t & 0xFF, (unsigned short)t >> 8);
+            if (IN_MASK(t & 0xFF, (unsigned short)t >> 8 & 0xFF)) {
+                TARGET(t & 0xFF, (unsigned short)t >> 8 & 0xFF);
             }
         }
         return duel_08816D74(a, a->player);
@@ -746,8 +746,8 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
         if (b != 0 && b->player != p) {
             for (i = 0; i < b->n_targets; i++) {
                 t = duel_act_target(b, i);
-                if ((t & 0xFF) == a->player && ((unsigned short)t >> 8) < 5 && IN_MASK(t & 0xFF, (unsigned short)t >> 8)) {
-                    TARGET(t & 0xFF, (unsigned short)t >> 8);
+                if ((t & 0xFF) == a->player && ((unsigned short)t >> 8 & 0xFF) < 5 && IN_MASK(t & 0xFF, (unsigned short)t >> 8 & 0xFF)) {
+                    TARGET(t & 0xFF, (unsigned short)t >> 8 & 0xFF);
                 }
             }
         }

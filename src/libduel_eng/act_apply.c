@@ -83,13 +83,14 @@ int duel_088D1684(DuelAct *a, unsigned int p, int z, int flags)
     return (m & duel_act_apply(a, m, 0xF, flags)) != 0;
 }
 
-#ifdef NON_MATCHING /* loop registers differ */
-int duel_088D16C4(DuelAct *a, unsigned int p, int z)
+#ifdef NON_MATCHING /* faltava o 4º argumento (flags repassado a duel_act_apply); o original calcula antes do laço
+                        os endereços dos bytes do uid da carta (&slot+49, +50); ~60 palavras */
+int duel_088D16C4(DuelAct *a, unsigned int p, int z, int f)
 {
     unsigned int m = 1 << (z + p * 16);
     unsigned int e;
 
-    if ((m & duel_act_apply(a, m, 0xF)) == 0) {
+    if ((m & duel_act_apply(a, m, 0xF, f)) == 0) {
         return 0;
     }
     e = duel.players[p & 1].field[z].effects;
@@ -97,10 +98,10 @@ int duel_088D16C4(DuelAct *a, unsigned int p, int z)
         return 1;
     }
     do {
-        DuelEffect *ef = &duel_effects[e];
+        DuelEffectBits *ef = (DuelEffectBits *)&duel_effects[e];
 
         e = ef->next;
-        if ((ef->kind & 0xF) < 6) {
+        if (ef->kind < 6) {
             switch (ef->src) {
             case 0x17D2:
             case 0x17D5:
@@ -108,8 +109,7 @@ int duel_088D16C4(DuelAct *a, unsigned int p, int z)
             case 0x1A1F:
             case 0x1A20:
             case 0x1A21:
-                duel_088C77D4(p, ef->src, (ef->kind & 0xF) | (ef->kind & 0xF0),
-                              CARD_UID(duel.players[p & 1].field[z].card));
+                duel_088C77D4(p, ef->src, ef->kind | ef->kind_hi << 4, CARD_UID(duel.players[p & 1].field[z].card));
                 break;
             }
         }

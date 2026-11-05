@@ -308,7 +308,7 @@ void duel_088CA384(unsigned int p, int i, int f)
 {
     DuelCard *c = duel_field_card_deb2c(p, 11, i);
 
-    duel_cmd(0x3F, CARD_UID(*c) << 6 | (p & 1) | 0x16, !(f != 0) << 6 | c->owner | 0x1A, 0);
+    duel_cmd(0x3F, ((p & 1) | 0x16) | (CARD_UID(*c) & 0x3FF) << 6, !f << 6 | (c->owner | 0x1A), 0);
     duel_088AFD5C(0x24, 0);
 }
 #endif
