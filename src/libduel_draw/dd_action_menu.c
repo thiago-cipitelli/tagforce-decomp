@@ -1,5 +1,4 @@
 // @range 0x08820F88-0x08822B0C
-// @asm 0x08820F88-0x088212B0
 // @asm 0x08821460-0x088215A0
 // @asm 0x088215A0-0x08821868
 // @asm 0x08821A3C-0x08821BAC
@@ -134,7 +133,6 @@ void func_088228B8(MenuWidget *w, int open);
 void func_088228F0(void);
 unsigned int *func_08822914(unsigned int *dl, unsigned short i, int x, int y);
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 /* opens the action window of the location given by src; a single plain action (or the hook) acts
    at once */
 void func_08820F88(DdLocSrc *src)
@@ -198,7 +196,6 @@ void func_08820F88(DdLocSrc *src)
     if (o != 0 && (dd_loc_visible(loc) || o->b5))
         dd_info_select_uid(o->uid);
 }
-#endif
 
 void func_088212B0(void)
 {

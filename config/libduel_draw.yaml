@@ -170,8 +170,6 @@ segments:
       - [0x1CD20, asm, dd_field_events_asm_08820CC0]
       - [0x1CDA0, c, dd_field_events]
       - [0x1CFE8, c, dd_action_menu]
-      - [0x1CFE8, asm, dd_action_menu_asm_08820F88]
-      - [0x1D310, c, dd_action_menu]
       - [0x1D4C0, asm, dd_action_menu_asm_08821460]
       - [0x1D600, c, dd_action_menu]
       - [0x1D600, asm, dd_action_menu_asm_088215A0]
