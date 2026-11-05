@@ -1,5 +1,4 @@
 // @range 0x088E6998-0x088E7518
-// @asm 0x088E6CF8-0x088E6D5C
 /* Card of a zone as seen by the rules (copy cards take the copied id), and the deck (zone D) and
    zone C piles: push, shuffle, find, remove, draw, counts. */
 #include "duel.h"
@@ -91,13 +90,11 @@ void duel_d_push(unsigned int p, DuelCard *c)
     duel.players[p & 1].n_d++;
 }
 
-#ifdef NON_MATCHING /* the original loads the count before computing the player base */
 void duel_c_push(unsigned int p, DuelCard *c)
 {
-    duel_card_copy(&duel.players[p & 1].zone_c[duel.players[p & 1].n_18], c);
+    duel_card_copy(&duel.players[p & 1].zone_c[(unsigned int)duel.players[p & 1].n_18], c);
     duel.players[p & 1].n_18++;
 }
-#endif
 
 void duel_d_shuffle(unsigned int p)
 {

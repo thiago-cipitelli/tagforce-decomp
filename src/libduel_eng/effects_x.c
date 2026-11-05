@@ -2,7 +2,6 @@
 // @data 0x089117DC-0x08911828
 // @asm 0x08887618-0x088876B0
 // @asm 0x08887B34-0x08887ED8
-// @asm 0x088887C0-0x088888F8
 // @asm 0x08888ED0-0x08889914
 // @asm 0x08889B30-0x08889BE4
 /* Card effect handlers (DuelAct *a), after effects_w.c. */
@@ -546,7 +545,6 @@ int duel_088886E4(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* b; nop para o return 10 comum */
 int duel_088887C0(DuelAct *a)
 {
     if (a->b4_2) {
@@ -567,8 +565,6 @@ int duel_088887C0(DuelAct *a)
         if (duel_h_0891968E != 0) {
             if (duel.players[a->player & 1].n_hand < 5) {
                 duel_088C5E70(a->player, 5 - duel.players[a->player & 1].n_hand);
-            } else {
-                return 10;
             }
         } else {
             duel_088C77D4(a->player, a->id, 0x21, 0);
@@ -577,7 +573,6 @@ int duel_088887C0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088888F8(DuelAct *a)
 {

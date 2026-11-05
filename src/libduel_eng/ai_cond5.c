@@ -1,10 +1,5 @@
 // @range 0x088137BC-0x08814EC8
 // @asm 0x08813A6C-0x08813BFC
-// @asm 0x088140DC-0x08814248
-// @asm 0x08814248-0x08814384
-// @asm 0x08814384-0x08814548
-// @asm 0x08814684-0x08814744
-// @asm 0x08814744-0x08814924
 /* Conditions of the computer player against a card being activated (b, may be null). */
 #include "duel.h"
 
@@ -129,7 +124,7 @@ int duel_08813A40(DuelAct *a, DuelAct *b)
     return b->player != a->player;
 }
 
-#ifdef NON_MATCHING /* desvios do switch */
+#ifdef NON_MATCHING /* 36 palavras: no teste b->n_targets != 1 o original faz bnel -> fim com li v0,1 no atraso; o mwcc sabe que v0 já vale 1 e inverte (beql, 1 instrução a menos) */
 int duel_08813A6C(DuelAct *a, DuelAct *b)
 {
     unsigned int t;
@@ -167,9 +162,8 @@ int duel_08813A6C(DuelAct *a, DuelAct *b)
     case 6:
         n = duel_0884E440(b, a->player, a->zone);
         return duel_0884E948(b, a->player) - n > 0;
-    default:
-        return 1;
     }
+    return 1;
 }
 #endif
 
@@ -313,38 +307,30 @@ int duel_08813FF8(DuelAct *a, DuelAct *b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* ordem dos desvios e registradores */
 int duel_088140DC(DuelAct *a, DuelAct *b)
 {
-    unsigned int p;
-    unsigned int z;
+    int z;
 
     if (b == 0) {
         return 0;
     }
-    p = b->player;
-    if (p != a->player) {
-        return 0;
+    if (b->player == a->player && (z = (unsigned char)(int)b->zone) >= 5 && z < 10 &&
+        b->uid == CARD_UID(duel.players[b->player & 1].field[z].card) && card_is_monster(b->id) == 0 &&
+        card_get_prop5_hi(b->id) != 3 && card_get_prop5_hi(b->id) != 4) {
+        switch (b->id) {
+        case 0x1102:
+        case 0x1231:
+        case 0x1238:
+        case 0x1400:
+        case 0x1514:
+        case 0x159C:
+            return 0;
+        }
+        return 1;
     }
-    z = b->zone;
-    if (z < 5 || z > 9 || b->uid != CARD_UID(duel.players[p].field[z].card)
-        || card_is_monster(b->id) != 0 || card_get_prop5_hi(b->id) == 3 || card_get_prop5_hi(b->id) == 4) {
-        return 0;
-    }
-    switch (b->id) {
-    case 0x1102:
-    case 0x1231:
-    case 0x1238:
-    case 0x1400:
-    case 0x1514:
-    case 0x159C:
-        return 0;
-    }
-    return 1;
+    return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem dos desvios e registradores */
 int duel_08814248(DuelAct *a, DuelAct *b)
 {
     unsigned int t;
@@ -367,9 +353,9 @@ int duel_08814248(DuelAct *a, DuelAct *b)
         p = t & 0xFF;
         z = (unsigned short)t >> 8 & 0xFF;
         if (duel_0884E3E4(a, p, z) != 0) {
-            fu = &duel.players[p & 1].field[z].faceup;
-            ps = &duel.players[p & 1].field[z].pos;
+            fu = (unsigned short *)((char *)&duel.players[0].field[0].faceup + (p & 1) * sizeof(DuelPlayer) + z * sizeof(DuelSlot));
             f = *fu;
+            ps = (unsigned short *)((char *)&duel.players[0].field[0].pos + (p & 1) * sizeof(DuelPlayer) + z * sizeof(DuelSlot));
             pos = *ps;
             *fu = 0;
             *ps = 1;
@@ -383,36 +369,38 @@ int duel_08814248(DuelAct *a, DuelAct *b)
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem dos desvios e registradores */
 int duel_08814384(DuelAct *a, DuelAct *b)
 {
     unsigned int t;
-    unsigned int z;
-    unsigned int p;
+    int z;
     unsigned short s;
 
-    if (b != 0 && b->player != a->player && b->n_targets == 1 && (duel_act_target(b, 0) & 0xFFFF) >> 8 < 0xB) {
+    if (b == 0) {
+        return 0;
+    }
+    if (b->player == a->player) {
+        return 0;
+    }
+    if (b->n_targets == 1 && 0xB > (int)((duel_act_target(b, 0) & 0xFFFF) >> 8 & 0xFF)) {
         t = duel_act_target(b, 0);
-        z = (t & 0xFFFF) >> 8;
-        p = a->player;
-        if ((t & 0xFF) != p) {
+        z = (unsigned char)((unsigned short)t >> 8);
+        if ((t & 0xFF) != a->player) {
             return 0;
         }
-        s = duel_slot_src_attr8(p, z, 0);
+        s = duel_slot_src_attr8(a->player, z, 0);
         if (s != 0xFFFF && (s & 0xFF) == a->player) {
-            z = s >> 8;
+            z = (unsigned char)((s & 0xFFFF) >> 8);
         }
         if (card_is_attribute8(duel.players[a->player & 1].field[z].card.id) != 0) {
-            if (z < 5) {
-                a->w[2] = 1;
-                if (duel_pick_st_zone(a->player) >= 0 && duel_0884E3E4(a, a->player, z) != 0) {
+            if (z >= 5) {
+                a->w[2] = 2;
+                if (duel_0886CE38(a, b) != 0 && duel_0884E3E4(a, a->player, z) != 0) {
                     return 1;
                 }
             } else {
-                a->w[2] = 2;
-                if (duel_0886CE38(a, b) != 0 && duel_0884E3E4(a, a->player, z) != 0) {
+                a->w[2] = 1;
+                if (duel_pick_st_zone(a->player) >= 0 && duel_0884E3E4(a, a->player, z) != 0) {
                     return 1;
                 }
             }
@@ -420,7 +408,6 @@ int duel_08814384(DuelAct *a, DuelAct *b)
     }
     return 0;
 }
-#endif
 
 int duel_08814548(DuelAct *a, DuelAct *b)
 {
@@ -457,7 +444,6 @@ int duel_08814618(DuelAct *a, DuelAct *b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* lógica conferida: o laço sobre os alvos sai na primeira volta (o original dobra i = 0). 20 palavras: ext do byte da zona, andi do n_targets no teste do laço e o teste final < 4 que o original mantém em desvio (aqui vira sltiu/xori) */
 int duel_08814684(DuelAct *a, DuelAct *b)
 {
     unsigned int t;
@@ -468,21 +454,17 @@ int duel_08814684(DuelAct *a, DuelAct *b)
         return 0;
     }
     if (b->n_targets != 0) {
-        for (i = 0; i < b->n_targets; i++) {
+        for (i = 0; i < (unsigned char)(int)b->n_targets; i++) {
             t = duel_act_target(b, i);
-            z = ((unsigned short)t >> 8) & 0xFF;
+            z = (unsigned char)((t & 0xFFFF) >> 8);
             return (t & 0xFF) == a->player && z == a->zone;
         }
-        return 0;
+    } else if ((int)duel_act_e3920(b) >= 4) {
+        return 1;
     }
-    if ((int)duel_act_e3920(b) < 4) {
-        return 0;
-    }
-    return 1;
+    return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* desvios das condições */
 int duel_08814744(DuelAct *a, DuelAct *b)
 {
     if (b == 0) {
@@ -499,31 +481,27 @@ int duel_08814744(DuelAct *a, DuelAct *b)
             return 1;
         }
     }
-    if (b->zone > 10) {
+    if ((int)b->zone > 10) {
         return 0;
     }
     switch (card_get_prop5_hi(b->id)) {
     case 2:
     case 3:
-        if (b->id != 0x1322) {
-            return 1;
-        }
-        if (duel_phase == 1) {
+        if (b->id == 0x1322 && duel_phase == 1) {
             return 0;
         }
         return 1;
     case 4:
-        if (card_get_limit(duel.players[b->player].field[b->zone].card.id) < 3) {
+        if (3 > card_get_limit(duel.players[b->player & 1].field[b->zone].card.id)) {
             return 1;
         }
-        if (duel_0880AA04(duel.players[b->player].field[b->zone].card.id, 1) != 0) {
+        if (duel_0880AA04(duel.players[b->player & 1].field[b->zone].card.id, 1) != 0) {
             return 1;
         }
-        return 0;
+        break;
     }
     return 0;
 }
-#endif
 
 int duel_08814924(DuelAct *a, DuelAct *b)
 {
