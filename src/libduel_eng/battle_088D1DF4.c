@@ -193,7 +193,7 @@ int duel_088D2468(int i)
 }
 #endif
 
-#ifdef NON_MATCHING /* só a ordem de (q & 1) e (z & 0x1F) << 1 no argumento do comando 0x40 difere */
+#ifdef NON_MATCHING /* 2 palavras: o original faz andi q,1 antes do sll de (z & 0x1F); (z, q) no or já bate */
 /* The card that fought (i) is banished/moved away by a's effect. */
 int duel_088D2760(DuelAct *a, int i)
 {
@@ -220,7 +220,7 @@ int duel_088D2760(DuelAct *a, int i)
             if (a->player != q) {
                 opp |= 1;
             }
-            duel_cmd(0x40, (q & 1) | (z & 0x1F) << 1 | 0xFFC0, (o & 1) | 0x5A, opp);
+            duel_cmd(0x40, ((z & 0x1F) << 1 | (q & 1)) | 0xFFC0, (o & 1) | 0x5A, opp);
         }
         duel_088CFBA4(&s->card, q, z, opp);
         return 1;

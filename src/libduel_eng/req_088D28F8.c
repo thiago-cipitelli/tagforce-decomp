@@ -1,7 +1,5 @@
 // @range 0x088D28F8-0x088D6DE8
 // @data 0x08911B8C-0x08911D2C
-// @asm 0x088D28F8-0x088D2C14
-// @asm 0x088D2C9C-0x088D2D40
 // @asm 0x088D2D40-0x088D2FD8
 // @asm 0x088D31F0-0x088D36C8
 // @asm 0x088D3744-0x088D392C
@@ -11,7 +9,6 @@
 // @asm 0x088D5830-0x088D5BA0
 // @asm 0x088D63FC-0x088D6708
 // @asm 0x088D6708-0x088D6DE8
-// @asm 0x088D416C-0x088D42C8
 // @asm 0x088D42C8-0x088D43F8
 // @asm 0x088D5BA0-0x088D5D2C
 // @asm 0x088D5D2C-0x088D5DEC
@@ -245,14 +242,13 @@ extern unsigned int duel_w_08917DB8;
 /* commands for the presentation, queued after the request itself */
 #define DUEL_CMDQ (duel_req.q)
 
-#ifdef NON_MATCHING /* lógica conferida; 15 palavras: $s de p, z e v (o original carrega id e arg antes do teste do jogador) */
 /* Reveal the card at (p, arg) (loc: bit 0 known, bit 2 flipped face up; w: low byte, high byte). */
 void duel_req_088D28F8(void)
 {
-    unsigned int p;
     unsigned int z;
     unsigned int flags;
     unsigned int v;
+    unsigned int p;
     unsigned int w;
     unsigned int a;
     unsigned int b;
@@ -319,7 +315,6 @@ void duel_req_088D28F8(void)
     duel_host_call(0x24, 0, 0, 0);
     duel_busy_0891523C = 0;
 }
-#endif
 
 void duel_req_088D2C14(void)
 {
@@ -330,20 +325,25 @@ void duel_req_088D2C14(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* p e arg trocam s1/s2 */
 /* Copy the card with uid w into entry loc of the pick list. */
 void duel_req_088D2C9C(void)
 {
-    int p = (duel_req.req.id & 0x8000) != 0;
-    unsigned int arg = duel_req.req.arg;
-    unsigned int loc = *(unsigned short *)&duel_req.req.loc;
-    unsigned int w = duel_req.req.w;
+    unsigned int arg;
+    int p;
+    unsigned int loc;
+    unsigned int w;
+    unsigned int id;
+
+    id = duel_req.req.id;
+    p = (id & 0x8000) != 0;
+    arg = duel_req.req.arg;
+    loc = *(unsigned short *)&duel_req.req.loc;
+    w = duel_req.req.w;
 
     duel_w_0891524C.c[loc] = *duel_card_by_uid(w);
     duel_host_call(0x2B, p, arg, (unsigned short)w | (unsigned short)loc << 16);
     duel_busy_0891523C = 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* a montagem do DuelCard temporário e a alocação dos campos do pedido não reproduzidas */
 /* Show the card with uid w (taken from zone arg) as entry loc of the pick list. */
@@ -679,33 +679,39 @@ void duel_req_088D3E5C(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem dos loads dos campos do pedido e dos stores não reproduzida */
 /* Put loc (at most the current minimum) 0x1130 counters on the card at (p, arg). */
 void duel_req_088D416C(void)
 {
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
-    unsigned int z = duel_req.req.arg;
-    unsigned int n = duel_slot_min_1130(p, z);
+    int z;
+    unsigned int n;
+    int p;
+    unsigned int id;
 
-    if (n == 0 || (int)*(unsigned short *)&duel_req.req.loc < (int)n) {
-        n = *(unsigned short *)&duel_req.req.loc;
-    }
+    id = duel_req.req.id;
+    p = (id & 0x8000) != 0;
+    z = duel_req.req.arg;
+    n = duel_slot_min_1130(p, z);
+    n = (n == 0 || (int)n > (int)*(unsigned short *)&duel_req.req.loc) ? *(unsigned short *)&duel_req.req.loc : n;
     if (duel.players[p & 1].field[z].card.id == 0) {
         duel_busy_0891523C = 0;
-    } else if (duel_req_step == 1) {
-        if (duel_req_flag(0x26) == 0) {
-            duel_busy_0891523C = 0;
-        }
-    } else if (duel_req_step == 0) {
+        return;
+    }
+    switch (duel_req_step) {
+    case 0:
         duel_effects_free_card(duel.players[p & 1].field[z].effects, 0x1130, 1);
         duel_slot_effect_add(p, z, 3, 0x1130, n);
         duel_host_call(0x26, p, z, n);
         duel_req_step++;
+        break;
+    case 1:
+        if (duel_req_flag(0x26) == 0) {
+            duel_busy_0891523C = 0;
+        }
+        break;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem dos loads dos campos do pedido e dos stores não reproduzida */
+#ifdef NON_MATCHING /* 31 palavras: duel_w_089195E4 recebe um valor só (1 ou 2) no fim, como no original; falta a ordem dos stores (lp antes do 2º mult, unk20 antes de duel_w_08917DC4) */
 /* Player p loses the duel (arg: reason, 0xB without a message). */
 void duel_req_088D42C8(void)
 {
@@ -722,13 +728,15 @@ void duel_req_088D42C8(void)
         break;
     case 1:
         if (reason == 0xB || duel_req_flag(0x30) == 0) {
-            duel_w_089195E4 = 1;
+            int v = 1;
+
             duel.players[p & 1].lp = 0;
             duel.players[(1 - p) & 1].unk20[3] = reason;
-            duel_w_08917DC4 = 1;
+            duel_w_08917DC4 = v;
             if (p == duel_view_player) {
-                duel_w_089195E4 = 2;
+                v = 2;
             }
+            duel_w_089195E4 = v;
             duel_busy_0891523C = 0;
         }
         break;
@@ -1445,17 +1453,20 @@ void duel_req_088D5BA0(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem dos loads dos campos do pedido e alocação de registradores não reproduzidas */
+#ifdef NON_MATCHING /* 5 palavras: lo e hi trocam s2/s3 (o original calcula lo antes do sra); o resto bate */
 void duel_req_088D5D2C(void)
 {
-    int hi;
     unsigned int lo;
-    unsigned int loc = *(unsigned short *)&duel_req.req.loc;
-    unsigned int arg = duel_req.req.arg;
-    unsigned int w = duel_req.req.w;
+    int hi;
+    unsigned int arg;
+    unsigned int loc;
+    unsigned int w;
 
-    lo = w & 0xFF;
+    arg = duel_req.req.arg;
+    loc = *(unsigned short *)&duel_req.req.loc;
+    w = duel_req.req.w;
     hi = (int)w >> 8;
+    lo = w & 0xFF;
 
     if (duel_req_step == 0) {
         duel_088480D0(0);
