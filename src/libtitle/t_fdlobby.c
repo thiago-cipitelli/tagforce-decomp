@@ -94,7 +94,7 @@ int tfd_load_selectcard(void *arg, int id);
     (b)->text = 0;             \
     (b)->draw = 0
 
-#ifdef NON_MATCHING /* os contadores x+0x22 e o ponteiro do deck trocam $s0/$s1 */
+#ifdef NON_MATCHING /* 7 palavras: os contadores x+0x22 e o ponteiro do deck trocam $s0/$s1 (original: s3=x+8, s2=x+10, s1=x+0x22, s0=deck). Tentado: ponteiro TFdDeck explícito, x numa variável, continue, ordem das declarações */
 /* names of the players of the ad hoc list */
 void *tfd_adhoc_pass_init(void *list, int mode)
 {
@@ -800,7 +800,7 @@ void *tfd_config_draw_label(void *list)
     return tbox_small(list, id, 9, 0x67, 0x135, 0x10);
 }
 
-#ifdef NON_MATCHING /* o original calcula y + 0x10 antes de mover x */
+#ifdef NON_MATCHING /* 8 palavras: o original calcula y + 0x10 antes de mover x. Tentado: y += 0x10, local yy, list = ...; return list, (short) */
 void *tfd_main_text(void *list, int i, int x, int y, int w, int h)
 {
     return title_msg_font(list, x, y + 0x10, 0x12C, 0xC, 0x22, 0, 0xF, 0xF, 0xFF404040);

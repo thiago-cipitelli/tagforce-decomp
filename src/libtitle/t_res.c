@@ -1,5 +1,5 @@
 // @range 0x0880A41C-0x0880AFA0
-// @asm 0x0880A5FC-0x0880A8AC
+// @rodata 0x0882AC60-0x0882ACA0
 /* Title helpers: the EHF background layers (load, animate, draw), the label of the current screen,
    starting and stopping the sub-screen modules, sound reset, menu availability checks, texts of the
    message tables drawn with alignment, and the story start with the chosen character. */
@@ -67,8 +67,6 @@ void *title_ehf_draw(void *list, int i)
     return list;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: o teste state == 17 sai como beql com a cópia de layer = 13 (o original salta
-   para o corpo do grupo); tentado: rótulos noutra ordem, default, goto. A tabela de saltos precisa de @rodata ao promover */
 /* the name plate of the current screen, shown while the menu layer (13) is in place */
 void *title_screen_label(void *list)
 {
@@ -90,8 +88,6 @@ void *title_screen_label(void *list)
     case 6:
     case 13:
     case 17:
-        layer = 13;
-        break;
     case 19:
         layer = 13;
         break;
@@ -181,14 +177,14 @@ void *title_screen_label(void *list)
     if (layer != 17) {
         f = title_ehf_frame(layer);
         h = -1;
-        color = 0xFFFFFFFF;
         show = 0;
+        color = 0xFFFFFFFF;
         if (f == 6 || f == end) {
             show = 1;
             h = 10;
             color = 0x80FFFFFF;
             y += 5;
-        } else if (f >= 7 && f < end) {
+        } else if (f > 6 && f < end) {
             show = 1;
         }
         if (show)
@@ -196,7 +192,6 @@ void *title_screen_label(void *list)
     }
     return list;
 }
-#endif
 
 /* load callback of the sub-screen modules: starts the module */
 int title_module_start(void *arg, int id)

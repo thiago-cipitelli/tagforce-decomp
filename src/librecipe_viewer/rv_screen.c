@@ -1,7 +1,6 @@
 // @range 0x08805874-0x08807A44
 // @asm 0x08805874-0x08805D40
 // @asm 0x08805F6C-0x088064F8
-// @asm 0x08806F08-0x08806FC0
 // @asm 0x088075E4-0x0880776C
 // @data 0x0880E88C-0x0880E8BC
 /* The screen: background and title animations, the per-type counters, the recipe grid (main deck,
@@ -474,25 +473,22 @@ void *rv_draw_ext_row(void *dl, int i, int x, int y)
     return dl;
 }
 
-#ifdef NON_MATCHING /* só a alocação de $s difere (y, contador e ponteiro) */
 /* number of cards of each type */
 void *rv_draw_type_counts(void *dl)
 {
     int i;
-    int y;
     int x;
     int n;
 
-    for (i = 0, y = 9; i < 6; y += 19, i++) {
+    for (i = 0; i < 6; i++) {
         n = rv.n_type[i];
         x = 122;
         if (n < 10)
             x -= 3;
-        dl = rv_draw_digits(dl, (unsigned short)x | (unsigned short)y << 16, 0, n, 2, 0xFFFFFFFF, rvres_get(0x8009));
+        dl = rv_draw_digits(dl, (unsigned short)x | (unsigned short)(9 + i * 19) << 16, 0, n, 2, 0xFFFFFFFF, rvres_get(0x8009));
     }
     return dl;
 }
-#endif
 
 /* stacked bar of the types (111 pixels) */
 void *rv_draw_type_bars(void *dl)
@@ -574,7 +570,7 @@ void *rv_draw_grid_card(void *dl, int x, int y, RvEntry *e)
     return dl;
 }
 
-#ifdef NON_MATCHING /* o original mascara x num registrador novo e reaproveita o do parâmetro para x0 */
+#ifdef NON_MATCHING /* 9 palavras: o original mascara x num registrador novo e reaproveita o do parâmetro para x0, e x1 reaproveita o de x. Tentado: x0 antes de y0, x numa local int, x1 por atribuição a ela */
 /* the four pulsing corners of the grid cursor */
 void *rv_draw_grid_cursor(void *dl, unsigned short x, unsigned short y)
 {

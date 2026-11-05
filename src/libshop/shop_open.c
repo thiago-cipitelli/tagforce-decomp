@@ -1,6 +1,7 @@
 // @range 0x088117B8-0x08812C60
 // @asm 0x0881189C-0x088121E0
 // @asm 0x0881259C-0x08812754
+// @data 0x088203A0-0x08820410
 /* Opening the bought packs one after the other: the pack model flies in and turns, it bursts, the
    cards fly out and turn over one by one (names drawn under them, gold for the rare ones), and the
    cards are added to the bought list (copies of the same card are counted) before the list opens. */
@@ -22,8 +23,14 @@ typedef struct CardListCfg {    /* BOOT cardlist_init argument, 0x24 */
     int pad20;
 } CardListCfg;
 
-extern Vec4 shop_open_v0, shop_open_v1, shop_open_v2, shop_open_v3;
-extern Vec4 shop_open_v4, shop_open_v5, shop_open_v6;
+/* positions of the flying pack (templates of shop_result_input, copied to the stack) */
+Vec4 shop_open_v3 = { -9.0f, -1.0f, -5.0f, 1.0f };      /* resting place after the fly-in */
+Vec4 shop_open_v2 = { 0.0f, -20.0f, -70.0f, 1.0f };     /* fly-in: start */
+Vec4 shop_open_v1 = { -9.0f, -1.0f, -5.0f, 1.0f };      /* fly-in: control point */
+Vec4 shop_open_v0 = { -12.0f, 20.0f, -20.0f, 1.0f };    /* fly-in: end */
+Vec4 shop_open_v5 = { -8.0f, -20.0f, 0.0f, 1.0f };      /* leaving: target */
+Vec4 shop_open_v4 = { -9.0f, -1.0f, -5.0f, 1.0f };      /* leaving: origin */
+Vec4 shop_open_v6 = { -9.0f, -1.0f, -5.0f, 1.0f };      /* leaving: base the offset is added to */
 
 void cardlist_init(CardListCfg *cfg);
 void *malloc(unsigned int n);
