@@ -1,5 +1,4 @@
 // @range 0x0880AB28-0x0880B750
-// @asm 0x0880B528-0x0880B57C
 // @data 0x0881A1A0-0x0881A1E8
 /* The sort menu (state 4): a list of the nine sort keys and a small up/down menu beside it; the
    pane is re-sorted live while the cursor moves, and restored on cancel. Sort/direction icons
@@ -233,18 +232,17 @@ void *ds_draw_dir_item(void *list, int i, int x, int y)
     return ds_draw_button(list, &ds_dir_icons[i], x, y + 1, 0);
 }
 
-#ifdef NON_MATCHING /* temporários a1/a2/a3 trocados */
 /* keeps the direction menu beside the key under the cursor */
 void ds_sort_menu_place(void)
 {
     MenuWidget *k = ds_sort_menu->keys;
     MenuWidget *d = ds_sort_menu->dirs;
-    int base = ds_sort_menu->base_y;
+    int y = ds_sort_menu->base_y;
     unsigned int h = k->item_h;
 
-    d->def.y = base + ((h >> 1) + k->cursor * h) - d->def.h / 2;
+    y += (h >> 1) + k->cursor * h;
+    d->def.y = y - d->def.h / 2;
 }
-#endif
 
 void *ds_draw_sort_icon(void *list, int sort, int x, int y)
 {

@@ -1,5 +1,4 @@
 // @range 0x0881D918-0x0881E870
-// @asm 0x0881D918-0x0881DB9C
 // @rodata 0x088226C0-0x08822A00
 // @data 0x08823184-0x08823940
 /* Help viewer (deck editor and duel rules): the topic list, the pages of the topic and the page
@@ -131,9 +130,8 @@ char *dk_help_deck_images[80] = {
     "help_deckimg_071.gim", 0, 0, "help_deckimg_074.gim", 0, 0, 0, 0, 0, 0,
 };
 
-char dk_help_window_gim[] = "window01.gim";   /* literal of dk_help_init, kept here for the asm */
+char dk_help_window_gim[] = "window01.gim";   /* literal of dk_help_init */
 
-#ifdef NON_MATCHING /* no ramo da ajuda de duelo o original carrega o 1 de topics_first de novo; o nosso reaproveita o registrador da comparação */
 /* builds the help screen on `topic` */
 void dk_help_init(int topic, void *heap, void *gim, void *strtbl, void *strtbl_ui)
 {
@@ -155,6 +153,7 @@ void dk_help_init(int topic, void *heap, void *gim, void *strtbl, void *strtbl_u
     h->image_want = -2;
     h->image_read = -2;
     switch (dk_help_is_deck(topic)) {
+    case 0:
     default:
             h->topics_first = 1;
             h->topics_last = 15;
@@ -199,7 +198,6 @@ void dk_help_init(int topic, void *heap, void *gim, void *strtbl, void *strtbl_u
     dk_help_pages_set_active(0);
     fade_start(1, 0xFF000000, 16);
 }
-#endif
 
 /* opens the help on the page of help id `id` */
 void dk_help_open(int id, void *heap, void *gim, void *strtbl, void *strtbl_ui)

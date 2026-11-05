@@ -364,8 +364,8 @@ void *ds_draw_sort_menu(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* 18 palavras: o original carrega a constante 1 do segundo switch em t1 (aqui t0) e por isso
-   o y da lista vai para t0; e grid_x/cell_w em v1/v0 trocados. Gêmea de dk_slot_pos */
+#ifdef NON_MATCHING /* 8 palavras: grid_x/cell_w e o resto da divisão em v1/v0 trocados no caso 0
+   (y + row_y num local resolveu o caso 1). Gêmea de dk_slot_pos */
 /* screen position of position pos of list tab shown in pane side (card center, +11/+15); when the
    entry is scrolled out and scroll is set, scrolls the pane one step toward it and returns 0; tabs
    not shown in the pane give the position of their tab */
@@ -437,7 +437,8 @@ int ds_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
         break;
     case 1:
         out[0] = lay->x + lay->row_x;
-        out[1] = (int)(lay->y + lay->row_y + (unsigned short)lay->row_h * (pos - p->top));
+        cols = lay->y + lay->row_y;
+        out[1] = (int)(cols + (unsigned short)lay->row_h * (pos - p->top));
         if (dsv.mode < 4 && side == 1)
             out[1] += 1.0f;
         break;

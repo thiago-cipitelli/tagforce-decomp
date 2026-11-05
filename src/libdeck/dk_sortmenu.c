@@ -1,5 +1,4 @@
 // @range 0x08810CD0-0x08812510
-// @asm 0x088116CC-0x08811720
 // @asm 0x08811CFC-0x088123B8
 // @data 0x08822F14-0x08822F94
 /* The sort menu (a list of the sort keys and a small up/down menu beside it; the pane is re-sorted
@@ -244,18 +243,17 @@ void *dk_draw_dir_item(void *list, int i, int x, int y)
     return dk_draw_button(list, &dk_dir_icons[i], x, y + 1, 0);
 }
 
-#ifdef NON_MATCHING /* temporários a1/a2/a3 trocados (como sc_sort_menu_place) */
 /* keeps the direction menu beside the key under the cursor */
 void dk_sort_menu_place(void)
 {
     MenuWidget *k = dk_sort_menu->keys;
     MenuWidget *d = dk_sort_menu->dirs;
-    int base = dk_sort_menu->base_y;
+    int y = dk_sort_menu->base_y;
     unsigned int h = k->item_h;
 
-    d->def.y = base + ((h >> 1) + k->cursor * h) - d->def.h / 2;
+    y += (h >> 1) + k->cursor * h;
+    d->def.y = y - d->def.h / 2;
 }
-#endif
 
 void *dk_draw_sort_icon(void *list, int sort, int x, int y)
 {
