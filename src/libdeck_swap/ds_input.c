@@ -291,17 +291,18 @@ void ds_cursor_grid(unsigned short side, PadState *pad)
 }
 #endif
 
-#ifdef NON_MATCHING /* idem ds_cursor_grid */
+#ifdef NON_MATCHING /* 97 palavras: pane por ponteiro e flag de mudança como no original (lógica conferida com o asm); restam as máscaras u16 de cy/rows e a polaridade de alguns testes */
 /* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
 void ds_cursor_list(unsigned short side, PadState *pad)
 {
-    unsigned int cy = dsv.pane[side].cy;
-    unsigned int rows = dsv.pane[side].lay.rows;
+    DsPane *p = &dsv.pane[side];
+    unsigned short cy = p->cy;
+    unsigned short rows = p->lay.rows;
     unsigned int rep = pad->b.rep;
-    unsigned int top = dsv.pane[side].top;
-    unsigned int total = dsv.pane[side].list->count;
-    unsigned int dy;
-    unsigned short otop;
+    int top = p->top;
+    int total = p->list->count;
+    int dy;
+    int changed = 0;
 
     if (rep & 0x80) {
         ds_cursor_switch(side, rows, 1, cy);
@@ -310,7 +311,9 @@ void ds_cursor_list(unsigned short side, PadState *pad)
         ds_cursor_switch(side, rows, 0, cy);
         se_play(0x6212);
     } else {
-        dy = (rep & 0x40) != 0;
+        dy = 0;
+        if (rep & 0x40)
+            dy++;
         if (rep & 0x10)
             dy--;
         if (top + cy == 0 && (pad->b.trig & 0x10)) {
@@ -319,17 +322,17 @@ void ds_cursor_list(unsigned short side, PadState *pad)
             else
                 top = total - rows;
             dy = rows - 1;
-        } else if ((int)(top + cy) < (int)(total - 1) || cy != rows - 1 || !(pad->b.trig & 0x40)) {
+        } else if ((top + cy) < (total - 1) || cy != rows - 1 || !(pad->b.trig & 0x40)) {
             dy = cy + dy;
-            if ((int)dy < 0) {
+            if (dy < 0) {
                 top += dy;
-                if ((int)top < 1)
+                if (top <= 0)
                     top = 0;
                 dy = 0;
-            } else if ((int)rows <= (int)dy) {
+            } else if (dy >= rows) {
                 if (total < rows)
                     top = 0;
-                else if ((int)(top + dy) < (int)total)
+                else if ((top + dy) < total)
                     top += dy - (rows - 1);
                 else
                     top = total - rows;
@@ -339,12 +342,15 @@ void ds_cursor_list(unsigned short side, PadState *pad)
             dy = 0;
             top = 0;
         }
-        if (cy != dy)
-            dsv.pane[side].cy = dy;
-        otop = dsv.pane[side].top;
-        if (otop != top)
-            dsv.pane[side].top = top;
-        if (otop != top || cy != dy)
+        if (cy != dy) {
+            p->cy = dy;
+            changed = 1;
+        }
+        if (p->top != top) {
+            p->top = top;
+            changed = 1;
+        }
+        if (changed)
             se_play(0x6212);
     }
 }

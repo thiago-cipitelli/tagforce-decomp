@@ -126,56 +126,57 @@ void ds_select_tab(unsigned short side, unsigned short tab, unsigned short how)
     }
 }
 
-#ifdef NON_MATCHING /* aritmética u16 em registradores diferentes */
+#ifdef NON_MATCHING /* 85 palavras, a forma de dk_layout_scroll (asm idêntico): cópias mortas depois de b e rows com sra no lugar de ext */
 /* clamps a pane's scroll (top, cx, cy) to total entries in a view of view & 0xFF columns and
    view >> 8 rows; keep puts the cursor back on the entry it was on */
-void ds_layout_scroll(unsigned short keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy)
+void ds_layout_scroll(unsigned short keep, int cur, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy)
 {
-    unsigned int cols = view & 0xFF;
-    unsigned int rows = view >> 8;
+    int cols = view & 0xFF;
+    int rows = view >> 8;
+    unsigned short area = cols * rows;
     unsigned short otop = *top;
-    unsigned int t = otop;
-    unsigned int cur = (unsigned short)(*cx + t + *cy * cols);
+    unsigned short at = *cx + (otop + *cy * cols);
     int i;
-    short r;
+    unsigned short r;
 
-    if (cols == 0)
+    if (cols <= 0)
         return;
     if (total < 2) {
         *top = 0;
-        if (keep != 0)
+        if ((unsigned short)keep != 0)
             return;
         *cy = 0;
         *cx = 0;
         return;
     }
-    if (cols * rows < total) {
-        if ((int)(t + cols * rows - cols) < (int)total)
+    if (area < total) {
+        if (otop + area - cols < total)
             goto keep_top;
-        *top = cols * ((short)((int)(total + cols - 1) / (int)cols) - (unsigned char)(view >> 8));
+        *top = cols * ((total + cols - 1) / cols - rows);
     } else {
         *top = 0;
     }
 keep_top:
-    if (t != *top)
-        *cy += (short)(otop - *top) / (int)cols;
-    if (total <= cur)
-        cur = (unsigned short)(total - 1);
-    i = count;
-    if (keep == 1) {
-        i = cur;
+    if (otop != *top)
+        *cy += (short)((short)otop - (short)*top) / cols;
+    if (total <= at)
+        at = total - 1;
+    i = cur;
+    if ((unsigned short)keep == 1) {
         if (*cx < cols && *cy < rows)
             i = -1;
+        else
+            i = at;
     }
-    if (i >= (int)total)
+    if (i >= total)
         i = total - 1;
     if (i >= 0) {
-        r = i / (int)cols;
-        if ((unsigned short)(i / (int)cols) < rows)
+        r = i / cols;
+        if (r < rows)
             *top = 0;
         else
-            *top = cols * (r - ((unsigned char)(view >> 8) - 1));
-        *cx = i % (int)cols;
+            *top = cols * (r - (rows - 1));
+        *cx = i % cols;
         *cy = r - *top / cols;
     }
 }

@@ -296,17 +296,18 @@ void dk_cursor_grid(unsigned short side, PadBits *pad)
     }
 }
 
- /* idem dk_cursor_grid */
+/* 97 palavras: pane por ponteiro e flag de mudança como no original (lógica conferida com o asm); restam as máscaras u16 de cy/rows e a polaridade de alguns testes */
 /* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
 void dk_cursor_list(unsigned short side, PadBits *pad)
 {
-    unsigned int cy = dkv.pane[side].cy;
-    unsigned int rows = dkv.pane[side].lay.rows;
+    DkPane *p = &dkv.pane[side];
+    unsigned short cy = p->cy;
+    unsigned short rows = p->lay.rows;
     unsigned int rep = pad->rep;
-    unsigned int top = dkv.pane[side].top;
-    unsigned int total = dkv.pane[side].list->count;
-    unsigned int dy;
-    unsigned short otop;
+    int top = p->top;
+    int total = p->list->count;
+    int dy;
+    int changed = 0;
 
     if (rep & 0x80) {
         dk_cursor_switch(side, rows, 1, cy);
@@ -315,7 +316,9 @@ void dk_cursor_list(unsigned short side, PadBits *pad)
         dk_cursor_switch(side, rows, 0, cy);
         se_play(0x6212);
     } else {
-        dy = (rep & 0x40) != 0;
+        dy = 0;
+        if (rep & 0x40)
+            dy++;
         if (rep & 0x10)
             dy--;
         if (top + cy == 0 && (pad->trig & 0x10)) {
@@ -324,17 +327,17 @@ void dk_cursor_list(unsigned short side, PadBits *pad)
             else
                 top = total - rows;
             dy = rows - 1;
-        } else if ((int)(top + cy) < (int)(total - 1) || cy != rows - 1 || !(pad->trig & 0x40)) {
+        } else if ((top + cy) < (total - 1) || cy != rows - 1 || !(pad->trig & 0x40)) {
             dy = cy + dy;
-            if ((int)dy < 0) {
+            if (dy < 0) {
                 top += dy;
-                if ((int)top < 1)
+                if (top <= 0)
                     top = 0;
                 dy = 0;
-            } else if ((int)rows <= (int)dy) {
+            } else if (dy >= rows) {
                 if (total < rows)
                     top = 0;
-                else if ((int)(top + dy) < (int)total)
+                else if ((top + dy) < total)
                     top += dy - (rows - 1);
                 else
                     top = total - rows;
@@ -344,15 +347,19 @@ void dk_cursor_list(unsigned short side, PadBits *pad)
             dy = 0;
             top = 0;
         }
-        if (cy != dy)
-            dkv.pane[side].cy = dy;
-        otop = dkv.pane[side].top;
-        if (otop != top)
-            dkv.pane[side].top = top;
-        if (otop != top || cy != dy)
+        if (cy != dy) {
+            p->cy = dy;
+            changed = 1;
+        }
+        if (p->top != top) {
+            p->top = top;
+            changed = 1;
+        }
+        if (changed)
             se_play(0x6212);
     }
 }
+
 
 #endif
 
