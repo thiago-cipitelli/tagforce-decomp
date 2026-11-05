@@ -1,5 +1,4 @@
 // @range 0x08815168-0x08816DD4
-// @asm 0x08815168-0x08815408
 // @asm 0x08815408-0x088158DC
 // @asm 0x088158DC-0x08815CD0
 // @asm 0x08816550-0x08816874
@@ -10,19 +9,47 @@
 #include "libselect_card.h"
 #include "menu.h"
 
-typedef struct ScOsk {                 /* see sc_word.c */
-    unsigned char state;               /* +0x00 0 idle, 1 opening, 2 running, 3 closing, 4 closed */
-    unsigned char pad01[3];
-    unsigned int base[12];
+typedef struct ScOskData {             /* SceUtilityOskData */
+    int unk00;
+    int unk04;
+    int language;
+    int unk12;
+    int inputtype;
+    int lines;
+    int unk24;
+    unsigned short *desc;
+    unsigned short *intext;
+    int outtextlength;
+    unsigned short *outtext;
+    int result;
+    int outtextlimit;
+} ScOskData;
+
+typedef struct ScOskParams {           /* SceUtilityOskParams */
+    int size;
+    int language;
+    int button_swap;
+    int graphics_thread;
+    int access_thread;
+    int font_thread;
+    int sound_thread;
+    int result;
+    int reserved[4];
     int datacount;
-    unsigned int *data;
-    int pstate;
-    int unk40;
-    unsigned int odata[13];
-    unsigned short in[0x18];
-    unsigned short out[0x80];
-    unsigned short *target;
-    void (*done)(unsigned short *text, int r);
+    ScOskData *data;
+    int state;
+    int unk60;
+} ScOskParams;
+
+typedef struct ScOsk {                 /* sc_osk 0x0881B9A4, 0x1B0 bytes */
+    unsigned char state;               /* +0x00 0 idle, 1 fade in, 2 open, 3 fade out, 4 done */
+    unsigned char pad1[3];
+    ScOskParams params;                /* +0x04 */
+    ScOskData data;                    /* +0x44 */
+    unsigned short intext[24];         /* +0x78 */
+    unsigned short outtext[128];       /* +0xA8 */
+    unsigned short *target;            /* +0x1A8 */
+    void (*done)(unsigned short *text, int r); /* +0x1AC */
 } ScOsk;
 
 typedef struct ScSel {
@@ -105,31 +132,22 @@ void sc_flight_free(void);
 int sc_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll);
 int sc_dst_pos(int tab, unsigned short id);
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (sceUtilityOskUpdate(2), não 1; state é u8); 65 palavras:
-                       laço da cópia com '$' dobrado e alocação diferentes */
 /* per frame while the keyboard runs: fades, utility status; 1 when closed */
 int sc_popup_done(int layer)
 {
-    void *list;
-    unsigned int i;
-    int n;
-    int c;
-    unsigned short *p;
-    int r;
-
     switch (sc_osk.state) {
     case 1:
     case 2:
-    case 3:
-        list = dl_select_layer(layer, 0);
-        if (fade_apply(&list)) {
+    case 3: {
+        void *dl = dl_select_layer(layer, 0);
+        if (fade_apply(&dl)) {
             if (sc_osk.state == 1)
                 sc_osk.state = 2;
             if (sc_osk.state == 3)
                 sc_osk.state = 4;
         }
-        dl_set_list(list);
-        break;
+        dl_set_list(dl);
+    }
     }
     sceGuSync(0, 0);
     switch (sc_osk.state) {
@@ -140,45 +158,52 @@ int sc_popup_done(int layer)
     case 2:
         switch (sceUtilityOskGetStatus()) {
         case 0:
+            break;
         case 1:
             break;
         case 2:
             if (sceUtilityOskUpdate(2) == 0)
                 break;
-        case 3:
-            r = sceUtilityOskShutdownStart();
-            if (sc_osk.base[7] == 0) {
-                n = 0;
+        case 3: {
+            int r = sceUtilityOskShutdownStart();
+            if (sc_osk.params.result == 0) {
+                unsigned int i;
+                int k;
+                k = 0;
                 i = 0;
-                if (wcslen(sc_osk.out) != 0) {
-                    for (p = sc_osk.out; (c = *p) != 0; p++) {
+                if (wcslen(sc_osk.outtext)) {
+                    for (;;) {
+                        unsigned short c = sc_osk.outtext[i];
+                        if (c == 0)
+                            break;
                         if (c == '$')
-                            sc_osk.target[n++] = c;
-                        sc_osk.target[n++] = c;
-                        if (++i >= wcslen(sc_osk.out))
+                            sc_osk.target[k++] = c;
+                        sc_osk.target[k++] = c;
+                        i++;
+                        if (i >= wcslen(sc_osk.outtext))
                             break;
                     }
                 }
-                sc_osk.target[n] = 0;
+                sc_osk.target[k] = 0;
             }
-            if (sc_osk.done != 0)
-                sc_osk.done(sc_osk.out, r);
+            if (sc_osk.done)
+                sc_osk.done(sc_osk.outtext, r);
             fade_start(2, 0xA0000000, 8);
             sc_osk.state = 3;
             break;
+        }
         case 4:
             break;
         }
         break;
     case 3:
-        return 0;
+        break;
     case 4:
         sysvar_set_a90(0);
         return 1;
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* lógica conferida com o asm (229 palavras): o original grava os nibbles de mv.b[0] um a um
                        e relê sc_flight a cada campo; bitfields do voo em outra ordem */

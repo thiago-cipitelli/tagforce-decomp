@@ -1,10 +1,7 @@
 // @range 0x0880CDC8-0x088100AC
-// @asm 0x0880CDC8-0x0880D96C
 // @asm 0x0880D96C-0x0880DE54
-// @asm 0x0880DE54-0x0880E558
-// @asm 0x0880E940-0x0880ECCC
 // @asm 0x0880FC74-0x0880FF74
-// @rodata 0x08820FCC-0x08820FF0
+// @rodata 0x08820F9C-0x08820FF0
 /* Moving a card between the lists (Circle in the deck editor, undo with Triangle): the destination
    window offering the lists the card can go to (main, side, extra, trunk) with the full ones greyed
    out, the card flown along a curve from its slot to the slot it lands in, the result checks of the
@@ -103,7 +100,6 @@ void dt_flight_text(void);
         return r;                               \
     } while (0)
 
-#ifdef NON_MATCHING /* cópia de dk_flight_open (libdeck, mesma alocação de $s diferente) mais o contador da lição no fim */
 /* Circle on a card: opens the destination window (0), or returns why it cannot move (2 nothing to
    move to, 4 three copies already, 5 forbidden cards, 6/7 limited / semi-limited, 8 no memory) */
 int dt_flight_open(void)
@@ -177,7 +173,8 @@ int dt_flight_open(void)
         lim = (unsigned short)card_get_limit(e->id);
         n = (unsigned short)dt_list_count_id(&dts.list[1], e->id, 0);
         n = (unsigned short)(n + dt_list_count_id(&dts.list[0], e->id, 0));
-        if ((unsigned short)(n + dt_list_count_id(&dts.list[2], e->id, 0)) >= (unsigned short)lim) {
+        n = (unsigned short)(n + dt_list_count_id(&dts.list[2], e->id, 0));
+        if (n >= (unsigned short)lim) {
             switch ((unsigned short)lim) {
             case 0:
                 lim = sysflag_test(0) != 0;
@@ -246,7 +243,6 @@ int dt_flight_open(void)
         dt.done++;
     return 0;
 }
-#endif
 
 /* pane showing list tab in the two-pane layouts: the deck lists left, the trunk right */
 static inline int dt_tab_side(int tab)
@@ -261,10 +257,11 @@ static inline int dt_tab_side(int tab)
 int dt_flight_undo(void)
 {
     DtHist h;
-    int found;
     DtList *l;
     int i;
     int k;
+    int found;
+    int side;
 
     if (dt_hist_pop(&h) == 0)
         return 0;
@@ -280,7 +277,10 @@ int dt_flight_undo(void)
             dt_flight->src = 4;
         if (dt_flight->dst[0] == 2)
             dt_flight->dst[0] = 4;
-        dt_flight->side = dt_tab_side(dt_flight->src);
+        side = 1;
+        if (dt_flight->src < 3)
+            side = 0;
+        dt_flight->side = side;
         dt_flight->dside = (dt_flight->side + 1) & 1;
     } else {
         dt_flight->side = 0;
@@ -336,7 +336,6 @@ int dt_flight_undo(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* mesma alocação do limite/soma de dt_flight_open */
 /* moves the card under the cursor straight to its first destination (no window); 0 when it cannot */
 int dt_flight_quick(void)
 {
@@ -376,9 +375,10 @@ int dt_flight_quick(void)
                 DK_FLIGHT_FAIL(0);
             DK_FLIGHT_ADD(1);
         } else {
-            if ((unsigned int)dts.list[0].total > 0x54)
+            if ((unsigned int)dts.list[0].total < 0x55)
+                DK_FLIGHT_ADD(0);
+            else
                 DK_FLIGHT_FAIL(0);
-            DK_FLIGHT_ADD(0);
         }
         n = (unsigned short)dt_list_count_id(&dts.list[1], e->id, 1);
         n = (unsigned short)(n + dt_list_count_id(&dts.list[0], e->id, 1));
@@ -387,7 +387,8 @@ int dt_flight_quick(void)
         lim = (unsigned short)card_get_limit(e->id);
         n = (unsigned short)dt_list_count_id(&dts.list[1], e->id, 0);
         n = (unsigned short)(n + dt_list_count_id(&dts.list[0], e->id, 0));
-        if ((unsigned short)(n + dt_list_count_id(&dts.list[2], e->id, 0)) >= (unsigned short)lim && (unsigned short)lim < 3)
+        n = (unsigned short)(n + dt_list_count_id(&dts.list[2], e->id, 0));
+        if (n >= (unsigned short)lim && (unsigned short)lim < 3)
             DK_FLIGHT_FAIL(0);
         break;
     case 4:
@@ -412,7 +413,6 @@ int dt_flight_quick(void)
     dt_flight_take();
     return 1;
 }
-#endif
 
 /* per frame while a card moves; 1 when the move is over */
 int dt_flight_update(PadBits *pad)
@@ -481,13 +481,12 @@ int dt_flight_update(PadBits *pad)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original mascara sel com andi 0xff e soma page*rows antes de top; nenhuma grafia testada reproduziu */
 /* the destination window: Left/Right pick the list (the destination pane follows), Up/Down scroll
    that pane by a page, Circle flies the card there (unless that list is full), Cross cancels */
 void dt_flight_window_input(PadBits *pad)
 {
     DtHist h;
-    int sel = (unsigned char)dt_flight->sel;
+    int sel = (unsigned char)(int)dt_flight->sel;
     DtPane *p;
     unsigned short page;
     unsigned short rows;
@@ -512,7 +511,7 @@ void dt_flight_window_input(PadBits *pad)
                 p->top = top - page;
             else
                 p->top = 0;
-        } else if ((pad->rep & 0x40) && (int)(page * rows) + top < p->list->count) {
+        } else if ((pad->rep & 0x40) && (int)(page * rows) - -top < p->list->count /* - -: ordem do addu */) {
             p->top = top + page;
         }
     }
@@ -536,7 +535,6 @@ void dt_flight_window_input(PadBits *pad)
         se_play(0x6214);
     }
 }
-#endif
 
 /* flight from the slot to the window (phase 0 path, 1 move, 2 open the window) */
 void dt_flight_take_step(void)
