@@ -89,7 +89,7 @@ static void dd_fv(DdFxVert *v, float u, float tv, unsigned int c, float x, float
     v->z = 0.0f;
 }
 
-static void dd_flash_init(DdFxVert *f, float r)
+inline static void dd_flash_init(DdFxVert *f, float r)
 {
     dd_fv(&f[0], 0.5f, 0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
     dd_fv(&f[1], 0.0f, 0.0f, 0xFFFFFF, -r, r);
