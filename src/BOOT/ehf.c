@@ -1,6 +1,4 @@
 // @range 0x0882FC3C-0x08833420
-// @asm 0x0882FD74-0x0882FFE4
-// @asm 0x08830E4C-0x088310BC
 // @asm 0x08831594-0x0883297C
 // @asm 0x08832E68-0x08833420
 // @data 0x088ED960-0x088ED9A8
@@ -282,7 +280,6 @@ EhfInst *ehf_resolve(EhfFile *f)
     return e;
 }
 
-#ifdef NON_MATCHING /* o original só move o parâmetro e ($a1) para $s1 depois do merge do if (e==0); aqui o mwcc copia $s1=$a1 cedo, antes do teste; hd antes de mv já alinha os registradores do load (v0/v1), restam 9 palavras */
 /* Sets up `e` (or the instance embedded in `f`) for a w x h display; negative sizes take the
    movie bounds. */
 EhfInst *ehf_inst_init(float w, float h, EhfFile *f, EhfInst *e)
@@ -290,9 +287,7 @@ EhfInst *ehf_inst_init(float w, float h, EhfFile *f, EhfInst *e)
     EhfHdr *hd = &f->h;
     EhfMovie *mv = (EhfMovie *)((char *)f + hd->movie);
 
-    if (e == 0) {
-        e = (EhfInst *)((char *)f + hd->inst);
-    }
+    e = e == 0 ? (EhfInst *)((char *)f + hd->inst) : e;
     memset(e, 0, 0x50);
     if (w < 0.0f || h < 0.0f) {
         e->w = (mv->xmax - mv->xmin) / 20;
@@ -307,9 +302,7 @@ EhfInst *ehf_inst_init(float w, float h, EhfFile *f, EhfInst *e)
     ehf_inst_reset(e, f, 0);
     return e;
 }
-#endif
 
-#ifdef NON_MATCHING /* the resolved instance stays in $v0 before the copy to $s3 in the original */
 int ehf_set_frame(EhfInst *e, unsigned int frame)
 {
     EhfInst *i;
@@ -320,7 +313,11 @@ int ehf_set_frame(EhfInst *e, unsigned int frame)
     if (e == 0) {
         return 0;
     }
-    i = EHF_INST(e);
+    if (*(int *)e == EHF_MAGIC) {
+        i = ehf_resolve((EhfFile *)e);
+    } else {
+        i = e;
+    }
     root = &i->root;
     if ((int)frame < i->root.frame) {
         ehf_inst_reset(i, i->file, 0);
@@ -336,7 +333,6 @@ int ehf_set_frame(EhfInst *e, unsigned int frame)
     i->limit = limit;
     return 1;
 }
-#endif
 
 int ehf_set_anim(EhfInst *e, int target, int limit)
 {
@@ -747,32 +743,33 @@ void ehf_nop(EhfInst *e, EhfClip *c)
 {
 }
 
-#ifdef NON_MATCHING /* float scheduling */
 /* A sprite marked as camera (chr[6]) holding a shape: replaces `out` with the view that maps the
    camera rectangle onto the instance. */
 int ehf_camera(EhfInst *e, float *out)
 {
     float cam[16];
-    float m2[16];
     float m1[16];
+    float m2[16];
     float inv[16];
     EhfColor cx;
     EhfClip *c;
     EhfClip *head;
     int *shape;
     float s;
+    float r;
     EhfMovie *mv;
+    EhfClip *root = &e->root;
 
-    head = e->root.child;
+    head = root->child;
+    c = head;
     if (head == 0) {
         return 1;
     }
-    c = head;
     do {
         if (c->chr[0] == 3 && c->chr[6] != 0 && c->child != 0 && c->child->child != 0) {
             shape = c->child->child->chr;
             if (shape[0] == 0) {
-                ehf_track_eval(m1, &cx, 0, c->track, c->start, e->root.frame);
+                ehf_track_eval(m1, &cx, 0, c->track, c->start, root->frame);
                 ehf_track_eval(m2, &cx, 0, c->child->track, c->child->start, c->frame);
                 mat4_mul(m1, m1, m2);
                 mat4_inverse(inv, m1);
@@ -780,8 +777,9 @@ int ehf_camera(EhfInst *e, float *out)
                 mat4_translate2(out, e->x, e->y);
                 mat4_translate2(out, -(float)e->w * 0.5f, -(float)e->h * 0.5f);
                 mv = e->movie;
-                s = (float)shape[3] * 2048.0f;
-                mat4_scale2(out, (float)e->w / s, (float)(mv->xmax - mv->xmin) / (float)(mv->ymax - mv->ymin) * (float)e->h / s);
+                s = ((float *)shape)[3] * 2048.0f;
+                r = (float)(mv->xmax - mv->xmin) / (float)(mv->ymax - mv->ymin);
+                mat4_scale2(out, (float)e->w / s, r * (float)e->h / s);
                 mat4_mul(out, out, inv);
                 return 1;
             }
@@ -791,7 +789,6 @@ int ehf_camera(EhfInst *e, float *out)
     (void)cam;
     return 1;
 }
-#endif
 
 /* Combines the clip's color transform `cx` with the parent's `p` into `cx`. */
 #define EHF_DIV256(x) ((x) / 256)

@@ -1,5 +1,4 @@
 // @range 0x0882923C-0x0882AD90
-// @asm 0x08829880-0x088299F4
 // @asm 0x08829B10-0x08829C00
 // @asm 0x08829C20-0x08829F60
 // @asm 0x0882A538-0x0882A99C
@@ -317,7 +316,6 @@ int efs_send(void *h, int phase, int a, int b)
     return 1;
 }
 
-#ifdef NON_MATCHING /* addu com a ordem dos operandos trocada (tab+offset vs offset+tab) ao indexar tab[mid-1]; tentativas: EfsCmd**p=tab+(mid-1), EfsCmd*e=tab[mid-1] reaproveitado, EfsCmd**q=tab+mid com q[-1], int k=mid-1 separado -- todas pioraram para 24-71 palavras */
 /* Root `name` in the loaded files (binary search in each file's sorted table). */
 int efs_find(EfsRef *out, char *name)
 {
@@ -334,12 +332,12 @@ int efs_find(EfsRef *out, char *name)
             int mid;
 
             for (mid = hi / 2; lo < mid; mid = (lo + hi) / 2) {
-                int c = strcmp(str + (tab[mid - 1]->h.id & 0xFFFFFF), name);
+                int c = strcmp(str + ((*(EfsCmd **)((char *)(tab - 1) + mid * 4))->h.id & 0xFFFFFF), name);
 
                 if (c == 0) {
                     out->pack = efs.packs[i];
                     out->file = efs.files[i];
-                    out->cmd = tab[mid - 1];
+                    out->cmd = (*(EfsCmd **)((char *)(tab - 1) + mid * 4));
                     return 1;
                 }
                 if (c < 0) {
@@ -353,7 +351,6 @@ int efs_find(EfsRef *out, char *name)
     memset(out, 0, 0xC);
     return 0;
 }
-#endif
 
 /* Calls fn(name, arg) for every root of the loaded files. */
 void efs_foreach(void (*fn)(char *name, void *arg), void *arg)

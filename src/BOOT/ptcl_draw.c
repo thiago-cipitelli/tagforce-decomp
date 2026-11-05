@@ -1,5 +1,4 @@
 // @range 0x08828590-0x0882923C
-// @asm 0x08829184-0x0882923C
 // @data 0x088ED474-0x088ED4D0
 /* EHF particles, part 4: drawing the current pool as camera-facing quads (two triangles of a
    strip per particle, uv rectangle and size from the sprite state), particle colors (constant
@@ -343,20 +342,21 @@ void ehf_sprite_vertex(EhfSpriteVtx *v, Vec2 *uv, Vec4 *pos, unsigned int color)
     v->z = pos->z;
 }
 
-#ifdef NON_MATCHING /* the name argument goes through $v1 before the ehp_find call in the original */
 /* 0x101: texture (name resolved to the GIM at load, none: the default), frame, function and wrap. */
 int ehf_cmd_tex(void *inst, EhfNodeX *node, EhfCmd *cmd, int phase)
 {
     void **a = cmd->a.p;
 
+    void *tex;
+    unsigned int *list;
+
     switch (phase) {
     case 0:
-        a[0] = ehp_find(node->ctx->ehp, a[0], 0);
+        tex = a[0];
+        a[0] = ehp_find(node->ctx->ehp, tex, 0);
         return 0;
     case 5: {
-        void *tex = a[0];
-        unsigned int *list;
-
+        tex = a[0];
         if (tex == 0) {
             tex = ehf_default_gim;
         }
@@ -370,4 +370,3 @@ int ehf_cmd_tex(void *inst, EhfNodeX *node, EhfCmd *cmd, int phase)
     }
     return 0;
 }
-#endif
