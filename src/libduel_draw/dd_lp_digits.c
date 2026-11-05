@@ -3,7 +3,6 @@
 // @asm 0x0885731C-0x08857614
 // @asm 0x08857614-0x08857960
 // @asm 0x08857A40-0x08857C60
-// @asm 0x08857DC0-0x0885809C
 // @rodata 0x08870D3C-0x08870DF0
 // @data 0x08877850-0x08877878
 /* LP counting object of the duel (continues dd_lp_panel.c): draws the panel with the five
@@ -332,7 +331,6 @@ int lpc_digit_of(int value, int i, int blank)
     return d;
 }
 
-#ifdef NON_MATCHING /* laço de OR desenrolado pelo compilador; não tentado a fundo */
 void lpc_digit_update(DdLpCount *c, int i)
 {
     LpDigit *d = &c->digits[i];
@@ -342,19 +340,22 @@ void lpc_digit_update(DdLpCount *c, int i)
     for (k = i + 1; k < 5; k++)
         above |= c->digits[k].rolling;
     if (d->rolling == 0) {
-        blank = d->next == 0 && above == 0;
+        if (d->cur != 0 || above != 0)
+            blank = 0;
+        else
+            blank = 1;
         if (i == 0)
             blank = 0;
         n = lpc_digit_of(c->cur, i, blank);
-        if (n != 0 || d->next != -1) {
-            if (n != d->next) {
+        if (n != 0 || d->cur != -1) {
+            if (n != d->cur) {
                 d->rolling = 1;
-                d->cur = n;
+                d->next = n;
             }
         }
         if (d->rolling == 0 && above != 0) {
             d->rolling = 1;
-            d->cur = (rand() & 0xFFFF) % 10;
+            d->next = (int)(rand() & 0xFFFF) % 10;
         }
     }
     if (d->rolling != 0) {
@@ -363,15 +364,16 @@ void lpc_digit_update(DdLpCount *c, int i)
         else
             d->t = 1.0f;
         if (d->t >= 1.0f) {
-            if (d->cur == 0 && above == 0) {
+            if (d->next == 0 && above == 0) {
                 lpc_digit_start(d, lpc_digit_of(c->cur, i, 1), 0);
                 return;
             }
             n = lpc_digit_of(c->cur, i, 0);
-            lpc_digit_start(d, d->cur, n != d->cur);
+            lpc_digit_start(d, d->next, n != d->next);
         }
     }
 }
+#ifdef NON_MATCHING
 #else
 void lpc_digit_update(DdLpCount *c, int i);
 #endif

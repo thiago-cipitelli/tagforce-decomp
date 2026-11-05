@@ -1,8 +1,5 @@
 // @range 0x08820F88-0x08822B0C
-// @asm 0x08821460-0x088215A0
 // @asm 0x088215A0-0x08821868
-// @asm 0x08821A3C-0x08821BAC
-// @asm 0x08821DBC-0x08821F38
 // @asm 0x0882228C-0x08822520
 // @asm 0x08822520-0x088226C0
 // @asm 0x08822914-0x08822B0C
@@ -246,7 +243,6 @@ void func_0882136C(MenuWidget *w, int open)
     }
 }
 
-#ifdef NON_MATCHING /* 8 palavras: só o 2º laço (k em s1 e o ponteiro de m->act em s0, trocados); 1º laço já bate */
 /* the actions allowed at the location and the widest of their names */
 void func_08821460(void)
 {
@@ -254,11 +250,10 @@ void func_08821460(void)
     unsigned int i;
     DdActIcon *row;
     DdLoc loc;
-    unsigned int bits;
+    int bits;                          /* then the index of the second loop */
     int n;
     int maxw;
     int w;
-    int k;
 
     dd_act_menu.src.get(&loc);
     bits = func_08821A3C(loc);
@@ -274,8 +269,8 @@ void func_08821460(void)
             n++;
         }
     }
-    for (k = 0; k < n; k++) {
-        w = font_measure_text(func_08821C90(dd_act_tab[m->act[k]].text)) >> 6;
+    for (bits = 0; bits < n; bits++) {
+        w = font_measure_text(func_08821C90(dd_act_tab[m->act[bits]].text)) >> 6;
         if (maxw < w)
             maxw = w;
     }
@@ -284,7 +279,6 @@ void func_08821460(void)
     if (n > 32)
         m->n = 32;
 }
-#endif
 
 #ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 /* places the window above the card on screen, its tab pointing at the card */
@@ -390,16 +384,16 @@ void func_08821954(unsigned int *dl, unsigned short i, int x, int y)
     font_text_clear();
 }
 
-#ifdef NON_MATCHING /* 14 palavras: forma (switch) certa; idx e bits trocam de $s (s1/s3) e o prólogo agenda o sh do loc antes; perm_stmts das declarações sem sucesso */
 /* allowed actions of a location; a visible card also becomes the detail card */
 unsigned int func_08821A3C(DdLoc loc)
 {
-    int idx = loc.idx;
+    unsigned int bits;
     int zone = loc.zone;
+    int idx = loc.idx;
     int player = loc.player;
-    unsigned int bits = dv_08835AEC(player, zone, idx);
     int uid;
 
+    bits = dv_08835AEC(player, zone, idx);
     switch (zone) {
     case 11:
         uid = dv_hand_uid(player, idx);
@@ -426,7 +420,6 @@ unsigned int func_08821A3C(DdLoc loc)
     }
     return bits;
 }
-#endif
 
 /* window update; R jumps to the attack row (when attacking is allowed) */
 int func_08821BAC(void)
@@ -481,7 +474,6 @@ void func_08821D20(unsigned short *text, unsigned int mask)
     se_play(0x6216);
 }
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 void func_08821DBC(MenuWidget *w, int open)
 {
     DdPosSel *p = &dd_pos_sel;
@@ -510,18 +502,18 @@ void func_08821DBC(MenuWidget *w, int open)
         p->w = w;
     } else {
         font_set_size(w->def.font_size, w->def.font_size);
-        tw = 0;
         for (i = 0; i < 5; i++) {
             t = dd_text(i + 14);
             if (t)
                 font_measure_text(t);  /* the width is not kept (tw stays 0) */
         }
-        if (w->def.w < tw + (w->def.pad_l + w->def.pad_r + 8))
-            w->def.w = tw + (w->def.pad_l + w->def.pad_r + 8);
+        tw = 0;
+        tw += w->def.pad_l + w->def.pad_r + 8;
+        if (w->def.w < tw)
+            w->def.w = tw;
         func_08821F38(w, 0, w->scroll + w->cursor);
     }
 }
-#endif
 
 /* cursor hook: the name of the position as the window text */
 void func_08821F38(MenuWidget *w, int old, int i)

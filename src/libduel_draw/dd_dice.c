@@ -1,6 +1,6 @@
 // @range 0x0882A94C-0x0882BF00
 // @asm 0x0882A94C-0x0882B724
-// @asm 0x0882B974-0x0882BDDC
+// @asm 0x0882BBAC-0x0882BDDC
 // @data 0x088769F0-0x08876A68
 /* Coin and die windows: the coin or die model rendered into a 128x128 VRAM texture with two
    rotating lights and drawn as a sprite; the window where the player picks die faces (one or
@@ -397,7 +397,6 @@ void dd_dice_mask(void)
     dv_w624_set(m);
 }
 
-#ifdef NON_MATCHING /* alocação de registradores e um bloco de junção a mais (forma igual) */
 int dd_dice_update(void)
 {
     MenuWidget *w = dd_dice.menu;
@@ -407,16 +406,14 @@ int dd_dice_update(void)
     switch (dd_dice.state) {
     case 0:
         r = menu_update(w);
-        if (r >= 0) {
-            if (d->n_picked < d->max) {
-                d->picked[d->n_picked] = r + 1;
-                d->n_picked++;
-                w->disabled |= 1 << r;
-                w->cancelled = w->accepted = 0;
-                if (d->n_picked >= d->max) {
-                    dd_dice_ok_open();
-                    d->state = 1;
-                }
+        if (r >= 0 && d->n_picked < d->max) {
+            d->picked[d->n_picked] = r + 1;
+            d->n_picked++;
+            w->disabled |= 1 << r;
+            w->cancelled = w->accepted = 0;
+            if (d->n_picked >= d->max) {
+                dd_dice_ok_open();
+                d->state = 1;
             }
         } else if (r == -2) {
             if (d->n_picked > 0) {
@@ -445,7 +442,6 @@ int dd_dice_update(void)
     }
     return !func_08825728();
 }
-#endif
 
 #ifdef NON_MATCHING /* alocação de registradores e um bloco de junção a mais (forma igual) */
 unsigned int *dd_dice_draw(unsigned int *list, int x, int y)
