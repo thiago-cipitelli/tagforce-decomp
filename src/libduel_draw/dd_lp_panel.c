@@ -325,7 +325,7 @@ FxVec4 dd_lp_cam_target = { 0.0f, 0.0f, 0.0f, 1.0f };
 FxVec4 dd_lp_cam_up = { 0.0f, 1.0f, 0.0f, 0.0f };
 
 /* Sets up a 2D-like perspective (camera at z = 10) with the origin at (x, y). */
-void dd_lp_begin_2d(void *list, int x, int y)
+void *dd_lp_begin_2d(void *list, int x, int y)
 {
     mtx_set_mode(0);
     mtx_push();
@@ -361,7 +361,7 @@ void dd_lp_begin_2d(void *list, int x, int y)
     list = dl_disable(list, 10);
     list = dl_enable(list, 5);
     list = dl_tex_offset(list, 0.0f, 0.0f);
-    dl_enable(list, 9);
+    return dl_enable(list, 9);   /* the callers draw on with the list it returns */
 }
 
 void *dd_lp_end_2d(void *list)
@@ -456,7 +456,7 @@ void dd_lp_rect(float x, float y, float z, float w, float h, DdFxVert *v, int tx
 /* Draws the Japanese LP panel frame at (x, y): three shining bands, the border masked through
    the stencil with a rotating light, and the front plate. */
 #ifdef NON_MATCHING /* função de 1,7 KB com três listas de vértices; escalonamento diferente */
-void dd_lp_frame(void *list, int x, int y)
+void *dd_lp_frame(void *list, int x, int y)
 {
     unsigned int frame = *gfx_get_state();
     unsigned int c[3] = { 0 };
@@ -539,7 +539,7 @@ void dd_lp_frame(void *list, int x, int y)
     dd_lp_quad(v, x, y, 0, 0, 0, 128, 96, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
     list = gim_set_texture(list, dd_lp.pnl02);
-    draw_array(list, 4, 0x80011E, 4, 0, v);
+    return list = draw_array(list, 4, 0x80011E, 4, 0, v);   /* the callers go on with this list */
 }
 #endif
 

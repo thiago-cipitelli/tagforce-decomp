@@ -83,7 +83,7 @@ DdWPiece dd_wline_pieces[8][11] = {
 
 char dd_wline_gim_name[] = "window01.gim";
 
-#ifdef NON_MATCHING /* alocação de registradores e ordem dos índices do laço (forma igual) */
+#ifdef NON_MATCHING /* 179 palavras: tamanho n * 2 * sizeof * 2 como no original; registradores e posições de pilha diferem */
 /* direction of a segment: 1 right, 2 down, 3 left, 4 up */
 unsigned int *dd_wline_draw(unsigned int *list, int style, int n, float *pts, int closed)
 {
@@ -100,7 +100,7 @@ unsigned int *dd_wline_draw(unsigned int *list, int style, int n, float *pts, in
     void *gim;
 
     dd_wline_style = style;
-    edges = dl_alloc_inline(&list, n * 20 * 2);
+    edges = dl_alloc_inline(&list, n * 2 * sizeof(DdWVert) * 2);
     corners = edges + n * 2;
     ep = edges;
     cp = corners;

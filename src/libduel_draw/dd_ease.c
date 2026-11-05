@@ -93,15 +93,22 @@ float dd_ease_cos_out(int t, int n, int end, int k)
     return dd_ease_cos(t - (end - n), n, k);
 }
 
-#ifdef NON_MATCHING /* agendamento: o original divide o 2º sorteio logo e reaproveita a constante 32767 num registrador */
+#ifdef NON_MATCHING /* 107 palavras: sorteios na ordem do original (z, y, x; sinal antes do tamanho); registradores e escalonamento diferem */
 void dd_rand_dir(float *out, float len)
 {
     DdRandSeed *r = &rand3_seeds[rand3_slot];
     float v[3];
+    int sz = DD_RAND(r);
+    int mz = DD_RAND(r);
+    int sy = DD_RAND(r);
+    int my = DD_RAND(r);
+    int sx = DD_RAND(r);
+    int mx = DD_RAND(r);
+    float k = 32767.0f;
 
-    vec3_set(v, DD_RAND(r) / 32767.0f * (DD_RAND(r) % 2 * 2 - 1),
-             DD_RAND(r) / 32767.0f * (DD_RAND(r) % 2 * 2 - 1),
-             DD_RAND(r) / 32767.0f * (DD_RAND(r) % 2 * 2 - 1));
+    /* the six draws in the original order (z, y, x; the sign before the size): the order of evaluation
+       of the arguments is not portable */
+    vec3_set(v, mx / k * (sx % 2 * 2 - 1), my / k * (sy % 2 * 2 - 1), mz / k * (sz % 2 * 2 - 1));
     vec3_normalize(v, v);
     vec3_scale(v, v, len);
     vec3_copy(out, v);

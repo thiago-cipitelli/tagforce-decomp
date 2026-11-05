@@ -1,5 +1,4 @@
 // @range 0x08862DCC-0x088632F4
-// @asm 0x08862F38-0x088630E0
 /* Duel help page: a framed text (wrapped) with an optional picture below it, scrolled with the
    analog stick, with a scrollbar. */
 #include "dd_duelui.h"
@@ -68,12 +67,12 @@ void htext_update(void)
 {
 }
 
-#ifdef NON_MATCHING /* o mwcc propaga a cópia de help_text.text e relê depois da chamada */
-void htext_draw(void *dl)
+void *htext_draw(void *dl)
 {
     HelpText *h = &help_text;
     unsigned short *text;
     int scroll;
+    int lh;
 
     menu_layout(&dl, &help_text.menu);
     dl = ui_scrollbar(dl, help_text.frame_gim, 463, 38, 194, help_text.scroll, help_text.total_h, 195, 1);
@@ -84,7 +83,8 @@ void htext_draw(void *dl)
     font_text_set(dl);
     text = help_text.text;
     scroll = help_text.scroll;
-    font_draw_wtext_ex(0x3340, (scroll + 37) << 6, 0x4080, (195 - scroll + font_line_height()) << 6, text, -1);
+    lh = 195 - scroll + font_line_height();
+    font_draw_wtext_ex(0x3340, (scroll + 37) << 6, 0x4080, lh << 6, text, -1);
     dl = font_text_clear();
     if (h->image != 0) {
         dl = dl_ambient_color(dl, 0xFFFFFFFF);
@@ -92,11 +92,8 @@ void htext_draw(void *dl)
         dl = gim_set_texture(dl, h->image);
         dl = ui_sprite(dl, 205, h->scroll + 47 + h->text_h, 0, 0, h->image_w, h->image_h);
     }
-    dl = dl_disable(dl, 2);
+    return dl = dl_disable(dl, 2);
 }
-#else
-void htext_draw(void *dl);
-#endif
 
 void htext_term(void)
 {

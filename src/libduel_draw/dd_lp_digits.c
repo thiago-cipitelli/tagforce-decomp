@@ -2,7 +2,6 @@
 // @asm 0x08857100-0x08857280
 // @asm 0x0885731C-0x08857614
 // @asm 0x08857614-0x08857960
-// @asm 0x08857A40-0x08857C60
 // @rodata 0x08870D3C-0x08870DF0
 // @data 0x08877850-0x08877878
 /* LP counting object of the duel (continues dd_lp_panel.c): draws the panel with the five
@@ -138,7 +137,7 @@ void *lpc_back(void *dl, DdLpCount *c)
     return draw_sprite(dl, c->sx + 15, c->sy + 10, 0, 0, 68, 0, 0);
 }
 
-#ifdef NON_MATCHING /* desenho 3D do tambor (matrizes); não tentado a fundo */
+#ifdef NON_MATCHING /* 17 palavras: o original carrega c->cur antes de c->speed e converte speed primeiro; opts fica 8 bytes mais baixo na pilha */
 /* drum of digit i: the current face, and the next one turned by t half a turn */
 void *lpc_drum(void *dl, LpDigit *d, int i)
 {
@@ -197,8 +196,10 @@ void *lpc_panel_2d(void *dl, DdLpCount *c)
     char opts[0x60];
     unsigned int frame;
     int w;
-    float k = 1.0f - (float)ALLEGREX_MIN(ALLEGREX_MAX(c->cur, 0), c->speed) / (float)c->speed;
+    float k;
 
+    k = (float)c->speed;
+    k = 1.0f - (float)ALLEGREX_MIN(ALLEGREX_MAX(c->cur, 0), c->speed) / k;
     dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
     dl = dl_set_tex_filter(dl, 0, 0);
     dl = gim_set_texture(dl, dd_lp.pnl_a01);
@@ -221,8 +222,12 @@ void *lpc_panel_2d(void *dl, DdLpCount *c)
     dl = draw_set_offsets(dl, 56, 8, w, 8);
     dl = draw_sprite(dl, c->sx + (int)(100.0f - (float)w * 0.5f), c->sy + 22, 0, 184, 219, 0, 0);
     frame = (*gfx_get_state() >> 1) % 3;
-    dl = draw_set_offsets(dl, 65, 16, 65, 16);
-    return draw_sprite(dl, c->sx + 63, c->sy + 87, 0, uv.v[frame][0], uv.v[frame][1], 0, 0);
+    {
+        int *f = uv.v[frame];
+
+        dl = draw_set_offsets(dl, 65, 16, 65, 16);
+        return draw_sprite(dl, c->sx + 63, c->sy + 87, 0, f[0], f[1], 0, 0);
+    }
 }
 #else
 void *lpc_drum(void *dl, LpDigit *d, int i);
@@ -249,12 +254,14 @@ void *lpc_digit_2d(void *dl, DdLpCount *c, int i)
     return draw_sprite(dl, c->sx + 62 + w * (n - 1 - i), c->sy + 38, 0, uv[0], uv[1], 0, 0);
 }
 
-#ifdef NON_MATCHING /* alocação de registradores/forma difere; não insistido */
 void lpc_update(void *o, DdLpCount *c)
 {
     int i;
+    unsigned int n;
 
     switch (c->active) {
+    case 0:
+        break;
     case 1:
         if (++c->wait >= 10) {
             c->wait = 0;
@@ -266,8 +273,11 @@ void lpc_update(void *o, DdLpCount *c)
         if (c->t < 36) {
             c->cur = (float)c->from + (float)c->t / 35.0f * ((float)c->to - (float)c->from);
             c->t++;
-        } else if (c->digits[0].rolling == 0 && c->digits[1].rolling == 0 && c->digits[2].rolling == 0 &&
-                   c->digits[3].rolling == 0 && c->digits[4].rolling == 0) {
+        } else {
+            for (i = 0, n = 0; i < 5; i++)
+                n |= c->digits[i].rolling;
+            if (n != 0)
+                goto roll;
             lpc_digits_set(c->digits, c->to);
             c->active = 3;
             bgm_stop(0x622D);
@@ -276,11 +286,12 @@ void lpc_update(void *o, DdLpCount *c)
             else
                 se_play(0x622E);
         }
+    roll:
         for (i = 0; i < 5; i++)
             lpc_digit_update(c, i);
         break;
     case 3:
-        if (++c->wait > 44)
+        if (++c->wait >= 45)
             c->active = 0;
         break;
     }
@@ -296,6 +307,7 @@ void lpc_update(void *o, DdLpCount *c)
     if (c->active == 0)
         dd_task_remove_cur();
 }
+#ifdef NON_MATCHING
 #else
 void lpc_update(void *o, DdLpCount *c);
 #endif
