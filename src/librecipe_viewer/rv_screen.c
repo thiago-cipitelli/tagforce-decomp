@@ -570,7 +570,7 @@ void *rv_draw_grid_card(void *dl, int x, int y, RvEntry *e)
     return dl;
 }
 
-#ifdef NON_MATCHING /* o original mascara x num registrador novo e reaproveita o do parâmetro para x0 */
+#ifdef NON_MATCHING /* 9 palavras: o original mascara x num registrador novo e reaproveita o do parâmetro para x0, e x1 reaproveita o de x. Tentado: x0 antes de y0, x numa local int, x1 por atribuição a ela */
 /* the four pulsing corners of the grid cursor */
 void *rv_draw_grid_cursor(void *dl, unsigned short x, unsigned short y)
 {

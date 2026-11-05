@@ -568,7 +568,7 @@ void tdl_rules_anim(void)
     }
 }
 
-#ifdef NON_MATCHING /* the n-- after the side tab count is a beqzl with the decrement in the delay slot */
+#ifdef NON_MATCHING /* 31 palavras: o n-- depois da contagem das abas sai no original como beqzl para a instrução seguinte com o decremento no atraso. Tentado (2026-11-05): n >= 3, 2 < n, ternário, if vazio/else, goto, switch com faixa, n = k - 1 */
 void *tdl_rules_draw(void *list)
 {
     Title *t = &title;
