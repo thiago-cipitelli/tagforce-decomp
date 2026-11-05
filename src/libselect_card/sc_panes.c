@@ -148,7 +148,7 @@ void *sc_draw_headers(void *list)
 /* digits of the copy count on each tab */
 unsigned short sc_count_digits[3][2] = { { 4, 1 }, { 6, 2 }, { 6, 1 } };
 
-#ifdef NON_MATCHING /* o original mantém o 2 do teste de sc.kind num registrador s como limite dos laços */
+#ifdef NON_MATCHING /* 95 palavras: o original mantém o 2 do teste de sc.kind num registrador s como limite dos laços (n = 2 em cada case e x += lay.x como em ds_draw_counts aproximam); ordem das cargas do segundo laço difere */
 /* the total of copies on the tab buttons of each pane */
 void *sc_draw_counts(void *list)
 {
@@ -163,12 +163,15 @@ void *sc_draw_counts(void *list)
     switch (sc.kind) {
     case 0:
         d = sc_count_digits[0];
+        n = 2;
         break;
     case 1:
         d = sc_count_digits[1];
+        n = 2;
         break;
     case 2:
         d = sc_count_digits[2];
+        n = 2;
         break;
     default:
         return list;
@@ -176,20 +179,23 @@ void *sc_draw_counts(void *list)
     if (scv.mode < 2) {
         for (i = 0; i < n; i++) {
             x = sc_tab_rect(i, sel, &r);
+            x += p->lay.x;
             r.x += p->lay.x;
-            list = sc_draw_count(list, x + p->lay.x, &r, d[i], sc.list[i].total);
+            list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         }
     } else {
         i = 0;
         x = sc_tab_rect(i, sel, &r);
+        x += p->lay.x;
         r.x += p->lay.x;
-        list = sc_draw_count(list, x + p->lay.x, &r, d[i], sc.list[i].total);
+        list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         p = &scv.pane[1];
         sel = p->list->tab;
         for (i++; i < n; i++) {
             x = sc_tab_rect(i, sel, &r);
+            x += p->lay.x;
             r.x += p->lay.x;
-            list = sc_draw_count(list, x + p->lay.x, &r, d[i], sc.list[i].total);
+            list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         }
     }
     return list;
