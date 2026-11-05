@@ -4,8 +4,8 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-11-05, após a rodada 4 (10 agentes em paralelo; ByteMatch): 68,4% do código batendo, 93,0% fuzzy,
-9859/11039 funções. Fila: 841 funções em `docs/matching_queue.tsv` (155 abaixo de 80%, nenhuma em 0%: toda função tem
+Estado em 2026-11-05, após a rodada 5 (4 agentes no libduel_eng; ByteMatch): 69,3% do código batendo, 93,2% fuzzy,
+9912/11039 funções (libduel_eng 70,6%/95,3%). Fila: 788 funções em `docs/matching_queue.tsv` (125 abaixo de 80%, nenhuma em 0%: toda função tem
 C que compila), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
 A Tarefa 0 (drafts que não compilavam) está concluída. **libfield não tem mais função sem C** (76,2% código, 98,4% fuzzy).
@@ -73,7 +73,7 @@ MODULE=$M tools/raw_asm.sh 0xLO 0xHI            # o asm original (a verdade), qu
    Contagem de constantes original × draft acusa campo ou global errado. Pendência para o port: em código que já
    bate há protótipos locais com número de argumentos diferente da definição (`dd_mode_de48`, `dd_lp_load`,
    `func_08820E58`, `dd_field_camera0`, `dd_fx_start`/`dd_fx_stop`/`dd_fx3_*`, `dd_mon_on_*`, `duel_slot_ef098`,
-   `duel_field_card_deb2c`): o PSP tolera, o PC não; conferir cada um contra o asm antes do port.
+   `duel_field_card_deb2c`, `duel_place_monster` com `pos` int no chamador e `unsigned short` na definição): o PSP tolera, o PC não; conferir cada um contra o asm antes do port.
 4. Se não bater em 4 reescritas: atualize o comentário do `NON_MATCHING` (pt-BR, o que ainda difere, quantas
    palavras) e siga. Isso poupa a próxima sessão.
 
@@ -133,6 +133,10 @@ Os casos mais comuns nesta etapa:
 | tabela de funções chamada por índice | `T *t = tabela;` testando pelo global e chamando por `t[x].f()` |
 | laço que não é rotacionado (`beqzl saída; ...; b topo`) | `switch ((int)p) { case 0: goto out; }` como teste de saída |
 | funções gêmeas entre módulos (dk_/ds_/dt_/sc_, tut_text_*/dt_text_*) | mesmo tamanho e asm igual a menos de endereços: porte a forma que já bate, com protótipos e tipos auxiliares |
+| `$s` dos campos de requisição (p, arg, loc, w) trocados | ordem das declarações e `int`×`unsigned`: busca exaustiva de permutações (até 6 declarações) resolveu a maioria das `duel_req_*` |
+| `DuelCard`/`DuelActX` de 4 bytes zerado na pilha (laço de bytes) | `{ int n = 4; unsigned char *d = (unsigned char *)&x; if (d) do { *d++ = 0; } while (--n); }`; `= {0}` não reproduz |
+| campo de largura diferente da struct compartilhada | struct de visão local com o bitfield na largura que o original lê (`DuelListCard.placed` de 2 bits) |
+| if/else-if em `a->id` com testes na ordem inversa | era `switch` linear |
 | argumento de chamada vindo de um registrador com uma constante de comparação | o argumento real **é** essa constante (bug de lógica comum nos drafts) |
 | `switch` linear (`li; beq(l)` em cadeia): testes na ordem **inversa** dos `case`, corpos na ordem da fonte | escrever os rótulos na ordem inversa dos testes; alvos a 4 bytes um do outro são o mesmo corpo (o `beql` copia a 1ª instrução) |
 | bitfields de um evento relidos da pilha depois de cada chamada | o endereço escapa: passar `*(unsigned int *)&ev` (protótipo com `unsigned int`) |
