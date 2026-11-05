@@ -750,8 +750,6 @@ segments:
       - [0xF5084, c, effects_c]
       - [0xF549C, asm, effects_c_asm_088F943C]
       - [0xF56C8, c, effects_d]
-      - [0xF5938, asm, effects_d_asm_088F98D8]
-      - [0xF5B5C, c, effects_d]
       - [0xF5C60, c, effects_e]
       - [0xF5C60, asm, effects_e_asm_088F9C00]
       - [0xF5F30, c, effects_e]

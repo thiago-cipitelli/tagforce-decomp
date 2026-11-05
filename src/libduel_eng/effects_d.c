@@ -1,5 +1,4 @@
 // @range 0x088F9668-0x088F9C00
-// @asm 0x088F98D8-0x088F9AFC
 /* Card effect handlers (continued). */
 #include "duel.h"
 
@@ -19,7 +18,7 @@ void duel_0884AF88(int msg);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
 int duel_08885F68(DuelAct *a, int b);
 int duel_08894A84(DuelAct *a, int b);
-void duel_08832960(unsigned int p, unsigned short id);
+void duel_08832960(unsigned int p, int a, int b);
 void duel_088CC178(unsigned int p, int z, unsigned short a);
 void duel_08832988(unsigned int p, unsigned short id, unsigned short n, int a);
 int duel_088998D8(DuelAct *a, int b);
@@ -79,7 +78,6 @@ int duel_eff_f980c(DuelAct *a, int b)
     return duel_08885F68(a, b);
 }
 
-#ifdef NON_MATCHING /* same steps; register allocation of the 0x7E loop and the count argument differ */
 int duel_eff_f98d8(DuelAct *a, int b)
 {
     if (a->kind == 20) {
@@ -87,20 +85,21 @@ int duel_eff_f98d8(DuelAct *a, int b)
     }
     switch (duel_step) {
     case 0x80: {
-        unsigned char z = a->zone;
-        unsigned int p = a->player;
+        if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
+            return 0;
+        }
+        if (duel.players[a->player & 1].field[a->zone].faceup == 0) {
+            return 0;
+        }
+        a->w[0] = duel_grave_count_id(a->player, a->id);
+        {
+            int n = ((volatile DuelAct *)a)->w[0];
 
-        if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
-            return 0;
+            if (n == 0) {
+                return 0;
+            }
+            duel_08832988(a->player, a->id, n, 0xFF);
         }
-        if (duel.players[p & 1].field[z].faceup == 0) {
-            return 0;
-        }
-        a->w[0] = duel_grave_count_id(p, a->id);
-        if (a->w[0] == 0) {
-            return 0;
-        }
-        duel_08832988(a->player, a->id, a->w[0], 0xFF);
         return 0x7F;
     }
     case 0x7F:
@@ -112,7 +111,7 @@ int duel_eff_f98d8(DuelAct *a, int b)
             unsigned int p = a->player;
 
             if (1 << duel_w_089148FC & duel.players[p & 1].field[a->zone].link) {
-                duel_08832960(1 - p, a->id);
+                duel_08832960(1 - p, a->id, duel_w_089148FC);
                 duel_w_089148FC++;
                 return 0x7E;
             }
@@ -122,7 +121,6 @@ int duel_eff_f98d8(DuelAct *a, int b)
     }
     return 0;
 }
-#endif
 
 int duel_eff_f9afc(DuelAct *a, int b)
 {
