@@ -177,14 +177,15 @@ DsFilterDef ds_filter_defs[9] = {
     { 0, 35, (DsValueDraw)ds_draw_genre_value },
 };
 
-#ifdef NON_MATCHING /* máquina de passos grande; alocação e blocos diferentes */
+#ifdef NON_MATCHING /* ~310 palavras: casos já na ordem do original (0, 1, 2, 3), def = &ds_filter_defs[f] e pane por ponteiro como no asm; falta a alocação dos temporários (bit da máscara calculado antes do índice no original, old do page/col relidos com andi 0xffff) */
 /* the values window of filter kind (cursor of the kinds list) + 1 */
 void ds_fmenu_values(void)
 {
     MenuWidget *m = ds_fmenu->vals;
     PadState *pad = pad_get();
     unsigned int f = ds_fmenu->kinds->cursor + 1;
-    unsigned int side;
+    DsFilterDef *def = &ds_filter_defs[f];
+    DsPane *p;
     DsList *l;
     int n;
     unsigned int cols;
@@ -195,52 +196,13 @@ void ds_fmenu_values(void)
     unsigned short grid;
 
     switch (ds_fmenu->sub) {
-    case 3:
-        menu_update(m);
-        if (m->state == 6) {
-            menu_reset(m);
-            ds_fmenu->vals = 0;
-            ds_fmenu->kinds->accepted = 0;
-            ds_fmenu->kinds->cancelled = 0;
-            ds_fmenu->kinds->no_cancel = 1;
-            ds_fmenu->step = 0;
-        }
-        break;
-    case 2:
-        menu_update(m);
-        if (m->state == 6) {
-            side = dsv.side;
-            l = dsv.pane[side].list;
-            if (l->count == 0) {
-                l->filter = f;
-            } else {
-                ds_list_filter(l, f, ds_fmenu->mask);
-                view = dsv.pane[side].list_mode == 0 ? dsv.pane[side].lay.grid_rows : dsv.pane[side].lay.rows;
-                grid = dsv.pane[side].list_mode == 0 ? dsv.pane[side].lay.cols : 1;
-                ds_layout_scroll(0, 0, (grid & 0xFF) | view << 8, dsv.pane[side].list->count, &dsv.pane[side].top,
-                                 &dsv.pane[side].cx, &dsv.pane[side].cy);
-            }
-            ds_fmenu_free();
-            ds_popup_open(4, l->count);
-            se_play(0x621A);
-            ds.state = 1;
-        }
-        break;
-    case 1:
-        menu_update(ds_fmenu->vals);
-        if (ds_fmenu->vals->state != 4) {
-            menu_finish(m);
-            menu_finish(ds_fmenu->kinds);
-            ds_fmenu->sub = 2;
-        }
-        break;
     case 0:
         if (pad->b.trig & region_pick_value(0)) {
             if (ds_fmenu->page == 0xF) {
                 menu_set_cursor(ds_fmenu->vals, 0);
                 ds_fmenu->sub = 1;
             } else {
-                v = ds_filter_defs[f].first + ds_fmenu->col + ds_fmenu->page * m->count;
+                v = def->first + ds_fmenu->col + ds_fmenu->page * m->count;
                 ds_fmenu->mask[(int)v >> 5] ^= 1 << (v & 0x1F);
             }
             se_play(0x6213);
@@ -253,7 +215,7 @@ void ds_fmenu_values(void)
             se_play(0x6214);
             break;
         }
-        n = ds_filter_defs[f].last - ds_filter_defs[f].first + 1;
+        n = def->last - def->first + 1;
         if (!ds_fmenu->alt && f == 7)
             n--;
         cols = m->count;
@@ -300,6 +262,44 @@ void ds_fmenu_values(void)
                 se_play(0x6212);
         }
         break;
+    case 1:
+        menu_update(ds_fmenu->vals);
+        if (ds_fmenu->vals->state != 4) {
+            menu_finish(m);
+            menu_finish(ds_fmenu->kinds);
+            ds_fmenu->sub = 2;
+        }
+        break;
+    case 2:
+        menu_update(m);
+        if (m->state == 6) {
+            p = &dsv.pane[dsv.side];
+            l = p->list;
+            if (l->count == 0) {
+                l->filter = f;
+            } else {
+                ds_list_filter(l, f, ds_fmenu->mask);
+                view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+                grid = p->list_mode == 0 ? p->lay.cols : 1;
+                ds_layout_scroll(0, 0, (grid & 0xFF) | view << 8, p->list->count, &p->top, &p->cx, &p->cy);
+            }
+            ds_fmenu_free();
+            ds_popup_open(4, l->count);
+            se_play(0x621A);
+            ds.state = 1;
+        }
+        break;
+    case 3:
+        menu_update(m);
+        if (m->state == 6) {
+            menu_reset(m);
+            ds_fmenu->vals = 0;
+            ds_fmenu->kinds->cancelled = ds_fmenu->kinds->accepted = 0;
+            ds_fmenu->kinds->no_cancel = 1;
+            ds_fmenu->step = 0;
+        }
+        break;
+
     }
 }
 #endif

@@ -84,13 +84,13 @@ void *ds_draw_shade(void *list, unsigned short side, unsigned short tab)
     return dl_ambient_color(list, 0xFFFFFFFF);
 }
 
-#ifdef NON_MATCHING /* switch com tamanhos indefinidos e campos por índice; alocação diferente */
+#ifdef NON_MATCHING /* ~275 palavras, a mesma forma de dk_draw_detail (o asm das duas é idêntico fora os endereços) */
 /* the value of the sort key of the cursor's card, in a bubble beside the scroll bar */
 void *ds_draw_detail(void *list)
 {
-    unsigned int side = dsv.side;
-    DsList *l = dsv.pane[side].list;
-    unsigned short i = ds_cur_index(side);
+    DsPane *p = &dsv.pane[dsv.side];
+    DsList *l = p->list;
+    unsigned short i = ds_cur_index(dsv.side);
     DsEnt *e = DS_ENT(l, i);
     unsigned char sort = l->sort;
     unsigned int v;
@@ -100,15 +100,22 @@ void *ds_draw_detail(void *list)
     int rows;
     int x;
     int y;
-    int half;
     unsigned int sz;
-    unsigned short letter[2];
     int lw;
 
     if (e == 0)
         return list;
     v = ds_sort_value(e, sort);
     switch (sort) {
+    case 3:
+        w = 0x27;
+        h = 0x14;
+        break;
+    case 4:
+    case 5:
+        w = 0x30;
+        h = 0x13;
+        break;
     case 1:
         font_set_size(14, 14);
         sz = font_sample_glyph_size();
@@ -123,25 +130,14 @@ void *ds_draw_detail(void *list)
         w = 0x1B;
         h = 0x1B;
         break;
-    case 3:
-        w = 0x27;
-        h = 0x14;
-        break;
-    case 4:
-    case 5:
-        w = 0x30;
-        h = 0x13;
-        break;
     }
-    cols = dsv.pane[side].lay.cols;
+    cols = p->lay.cols;
     rows = (int)(l->count + cols - 1) / (int)cols;
-    x = dsv.pane[side].lay.x + dsv.pane[side].lay.w - 10 - w;
-    if (rows == 0) {
-        y = dsv.pane[side].lay.y + 12 + (dsv.pane[side].lay.h - 0x2B - h) / 2;
-    } else {
-        half = h / 2;
-        y = dsv.pane[side].lay.y + 12 + (dsv.pane[side].lay.h - 0x2B) * (i / cols) / rows - half;
-    }
+    x = p->lay.x + p->lay.w - 10 - w;
+    if (rows == 0)
+        y = p->lay.y + 12 + (p->lay.h - 0x2B - h) / 2;
+    else
+        y = p->lay.y + 12 + (p->lay.h - 0x2B) * (i / cols) / rows - h / 2;
     list = ds_draw_box(list, x, y, w, h, res_get(0x8013));
     if (v == 0xFFFFFFFE)
         return list;
@@ -163,6 +159,9 @@ void *ds_draw_detail(void *list)
     case 2:
         list = ds_draw_limit_icon(list, x + 5, y + 5, ds_kind_icon(v));
         break;
+    case 9:
+        list = ds_draw_pack_icon(list, x + 5, y + 5, v);
+        break;
     case 3:
         list = ds_draw_level(list, PT(x + 5, y + 4), v, 0xFFFFFFFF, res_get(0x8009));
         break;
@@ -180,17 +179,14 @@ void *ds_draw_detail(void *list)
             v = 0xFFFF;
         list = ds_draw_stat(list, v << 16 | 3, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, res_get(0x8009));
         break;
+    case 8:
+        list = ds_draw_attr_icon(list, x + 5, y + 5, v);
+        break;
     case 6:
         list = ds_draw_type_icon(list, x + 5, y + 5, v);
         break;
     case 7:
         list = ds_draw_kind_icon(list, x + 5, y + 5, v);
-        break;
-    case 8:
-        list = ds_draw_attr_icon(list, x + 5, y + 5, v);
-        break;
-    case 9:
-        list = ds_draw_pack_icon(list, x + 5, y + 5, v);
         break;
     }
     return list;

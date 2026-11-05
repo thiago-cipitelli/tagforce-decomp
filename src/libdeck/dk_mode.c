@@ -342,7 +342,7 @@ void dk_set_mode(unsigned short mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* 32 palavras: o original faz "a != 0 -> -1" com bnezl e o -1 no atraso, saltando para um b comum; as nossas formas (if, retornos, switch) invertem o teste; parâmetros unsigned short */
+#ifdef NON_MATCHING /* 14 palavras: só o último grupo (b == 1 -> 4, b == 0 -> 6, senão -1): o original testa com bnez sem preencher o atraso e deixa o -1 no fim; aqui sai bnezl com o -1 no atraso. Os outros grupos batem com o ternário b == 0 ? x : -1 e o else r = -1 depois do bloco */
 /* dk_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int dk_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)
 {
@@ -351,34 +351,33 @@ int dk_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned sho
     if (panes == 1) {
         if (a == 1)
             r = 0;
-        else if (a != 0)
-            r = -1;
-    } else if (narrow) {
-        if (a != 0)
-            r = -1;
-        else if (b == 1)
-            r = 3;
-        else if (b != 0)
-            r = -1;
         else
-            r = 2;
+            r = a == 0 ? 1 : -1;
+    } else if (narrow) {
+        if (a == 0) {
+            if (b == 1)
+                r = 3;
+            else
+                r = b == 0 ? 2 : -1;
+        } else
+            r = -1;
     } else if (a == 0) {
         if (b == 1)
             r = 7;
-        else if (b != 0)
-            r = -1;
         else
-            r = 5;
-    } else if (a != 1)
-        r = -1;
-    else if (b == 1)
-        r = 4;
-    else if (b == 0)
-        r = 6;
-    else
+            r = b == 0 ? 5 : -1;
+    } else if (a == 1) {
+        if (b == 1)
+            r = 4;
+        else if (b == 0)
+            r = 6;
+        else
+            r = -1;
+    } else
         r = -1;
     return r;
 }
+
 #endif
 
 /* tab buttons of the three layouts (one pane, two panes, two wide panes) */
