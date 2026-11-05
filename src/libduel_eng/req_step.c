@@ -121,19 +121,19 @@ unsigned short duel_zone_pos(unsigned int p, int z, int i);
 int card_is_attribute9(int id);
 int card_get_level(int id);
 
-#ifdef NON_MATCHING /* draft */
+#ifdef NON_MATCHING /* 23 palavras (era 334): casos 0-2 com return (b para o epílogo sem preencher o delay slot),
+                      teste redundante to_zone == 0xE dentro do bloco z < 5 (está no original), uid (unsigned short);
+                      falta só a rotação dos $s de p, z e t (s2/s4/s0 no original) */
 /* Move the card with uid w from zone arg of player p to pile loc (0xD deck, 0xE graveyard, 0xF banished
    zone), counting what goes to the graveyard. */
 void duel_req_send(void)
 {
-    unsigned int w = duel_req.w;
-    unsigned int z = duel_req.arg;
     unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int w = duel_req.w;
+    unsigned int t = (unsigned short)(duel_card_locate(w) >> 16);
     unsigned int to_zone = *(unsigned short *)&duel_req.loc;
-    unsigned int t = duel_card_locate(duel_req.w);
+    unsigned int z = duel_req.arg;
     DuelCard *c;
-    unsigned int i;
-    int not_deck;
     DuelLoc from;
     DuelLoc to;
 
@@ -142,25 +142,25 @@ void duel_req_send(void)
         if (duel_req_flag(0x2A) == 0) {
             duel_req_step++;
         }
-        break;
+        return;
     case 1:
         duel_host_call(0x2A, p, z, w);
-        duel_req_count = 0;
         duel_req_step++;
-        break;
+        duel_req_count = 0;
+        return;
     case 2:
         if (duel_req_flag(0x2A) == 0) {
             duel_req_step++;
         }
-        break;
+        return;
     case 3:
-        c = duel_field_card_deb2c(p, z, t >> 16);
+        c = duel_field_card_deb2c(p, z, t);
         c->b20 = 0;
         c->b17 = 0;
         c->b19 = 0;
         c->b18 = 0;
         if (to_zone == 0xE && card_is_attribute9(c->id) == 0) {
-            if (z < 5 && card_is_monster(c->id)) {
+            if ((int)z < 5 && to_zone == 0xE && card_is_monster(c->id)) {
                 if (p == c->owner) {
                     duel.players[p & 1].flags |= 0x2000000;
                 }
@@ -184,21 +184,19 @@ void duel_req_send(void)
             duel_0884DB38(0x1E, 1);
         }
         duel_card_copy(&duel_card_tmp, c);
-        i = t >> 16 & 0xFF;
         from.player = p;
         from.zone = z;
-        from.idx = i;
-        from.b15 = duel_zone_pos(from.player, from.zone, i);
+        from.idx = t;
+        from.b15 = duel_zone_pos(from.player, from.zone, from.idx);
         from.b14 = duel_zone_faceup(from.player, from.zone, from.idx);
-        not_deck = to_zone != 0xD;
         to.player = duel_card_tmp.owner;
         to.zone = to_zone;
-        to.idx = not_deck;
+        to.idx = to_zone != 0xD;
         duel_card_take(from.player, from.zone, from.idx);
-        duel_card_put(to.player, to.zone, to_zone != 0xF && not_deck, &duel_card_tmp);
-        to.b15 = duel_zone_pos(to.player, to.zone, not_deck);
+        duel_card_put(to.player, to.zone, to_zone == 0xF ? 0 : to.idx, &duel_card_tmp);
+        to.b15 = duel_zone_pos(to.player, to.zone, to.idx);
         to.b14 = duel_zone_faceup(to.player, to.zone, to.idx);
-        duel_host_call(0x18, CARD_UID(duel_card_tmp) | 0x80000, *(unsigned short *)&from, *(unsigned short *)&to);
+        duel_host_call(0x18, (unsigned short)CARD_UID(duel_card_tmp) | 0x80000, *(unsigned short *)&from, *(unsigned short *)&to);
         duel_req_step++;
         break;
     default:

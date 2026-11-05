@@ -57,12 +57,18 @@ void duel_0884AD40(char *fmt, int uid)
     duel_host_call(0x31, 1, (int)buf, uid);
 }
 
-#ifdef NON_MATCHING /* unrolled loop scheduled differently */
+#ifdef NON_MATCHING /* ids num array local (os sw na pilha); 4 palavras: o original materializa o n = 0 (move v0,zero) depois do primeiro sltu, o mwcc o põe antes do laço desenrolado */
 void duel_0884ADAC(int msg, int a, int b, int c, int d, unsigned int f)
 {
-    int *id = &a;
-    int n = 0;
+    int id[4];
+    int n;
     int i;
+
+    id[0] = a;
+    id[1] = b;
+    id[2] = c;
+    id[3] = d;
+    n = 0;
 
     for (i = 0; i < 4; i++) {
         duel_dlg_cards.c[i].id = id[i];
