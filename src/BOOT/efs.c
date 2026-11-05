@@ -1,6 +1,6 @@
 // @range 0x0882923C-0x0882AD90
 // @asm 0x08829B10-0x08829C00
-// @asm 0x08829C20-0x08829F60
+// @asm 0x08829C20-0x08829DB4
 // @asm 0x0882A538-0x0882A99C
 // @data 0x088ED758-0x088ED770
 /* EFS effects: .efs files hold trees of commands (the EHF command handlers) under named roots.
@@ -482,7 +482,6 @@ int efs_cmd_inst(EfsInst *inst, EfsNode *node, EfsCmd *cmd, int phase)
 }
 #endif
 
-#ifdef NON_MATCHING /* case 2 stores the instance from a separate block */
 /* 2: runs the commands of the existing instance of the root named by arg0. */
 int efs_cmd_ref(EfsInst **p, EfsNode *node, EfsCmd *cmd, int phase)
 {
@@ -503,12 +502,10 @@ int efs_cmd_ref(EfsInst **p, EfsNode *node, EfsCmd *cmd, int phase)
     case 2: {
         EfsCmd *root = cmd->a.p[0];
 
-        if (root == 0) {
+        if (root == 0 || root->next == 0) {
             return 4;
         }
-        if (root->next != 0) {
-            *p = (EfsInst *)root->next;
-        }
+        *p = (EfsInst *)root->next;
         return 4;
     }
     case 4:
@@ -531,7 +528,6 @@ int efs_cmd_ref(EfsInst **p, EfsNode *node, EfsCmd *cmd, int phase)
         return 0;
     }
 }
-#endif
 
 /* 3: ends the instance at frame arg0 (< 0: at once). */
 int efs_cmd_end(void *mem, EfsNode *node, EfsCmd *cmd, int phase)

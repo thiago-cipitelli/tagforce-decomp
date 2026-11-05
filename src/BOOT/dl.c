@@ -1,6 +1,7 @@
 // @range 0x08839F50-0x0883CEB0
 // @asm 0x0883A4E4-0x0883A6CC
-// @asm 0x0883B2A0-0x0883B684
+// @asm 0x0883B2A0-0x0883B480
+// @asm 0x0883B584-0x0883B684
 // @asm 0x0883BF38-0x0883C040
 // @asm 0x0883CBE8-0x0883CDB4
 // @data 0x088EE050-0x088EE0A4
@@ -697,7 +698,6 @@ unsigned int *dl_set_matrix(unsigned int *list, int type, float *m)
 }
 #endif
 
-#ifdef NON_MATCHING /* register allocation of the float conversions differs */
 /* Depth range (sceGuDepthRange): viewport Z scale/center and the min/max Z clamp. */
 unsigned int *dl_depth_range(unsigned int *list, int near, int far)
 {
@@ -711,16 +711,15 @@ unsigned int *dl_depth_range(unsigned int *list, int near, int far)
     half = sum / 2;
     center = half;
     scale = far - (half + sum % 2);
+    cmd[0] = (FBITS(scale) & 0xFFFFFF) | 0x44000000;
     cmd[1] = (FBITS(center) & 0xFFFFFF) | 0x47000000;
     cmd[2] = ADDR(0xD6000000, ALLEGREX_MIN(near, far));
-    cmd[0] = (FBITS(scale) & 0xFFFFFF) | 0x44000000;
     cmd[3] = ADDR(0xD7000000, ALLEGREX_MAX(near, far));
     list = dl_push(list, cmd, 4);
     sys_conf.near_z = near;
     sys_conf.far_z = far;
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* register allocation of the float conversions differs */
 /* Same range with the center moved by `bias`. */
@@ -1296,7 +1295,7 @@ unsigned int *dl_clear_depth(unsigned int *list, unsigned int z)
     return list;
 }
 
-#ifdef NON_MATCHING /* loop strength reduction and register allocation differ */
+#ifdef NON_MATCHING /* 11 palavras (eram 68): cmd[nv*3+k] em vez de p, ++i no store, cmd[2] antes do stêncil e contador próprio no zeramento acertaram a forma; resta a numeração dos registradores do laço de 8 faixas (i/x/v em t2/t3/t5 no original) */
 /* Clears with sprites in clear mode (sceGuClear): one full-screen sprite, or 8 strips of 64
    pixels with the fast flag (0x10). */
 unsigned int *dl_clear(unsigned int *list, unsigned int flags)
@@ -1309,11 +1308,12 @@ unsigned int *dl_clear(unsigned int *list, unsigned int flags)
     unsigned int col;
     unsigned int st;
     unsigned int a;
-    int x;
     int i;
+    int x;
+    int j;
 
-    for (i = 0; i < 64; i++) {
-        cmd[i] = 0;
+    for (j = 0; j < 64; j++) {
+        cmd[j] = 0;
     }
     if (flags & 0x10) {
         nv = 0x10;
@@ -1329,29 +1329,27 @@ unsigned int *dl_clear(unsigned int *list, unsigned int flags)
         for (i = 0; i < 8; ) {
             v[2] = col;
             v[3] = x;
-            i++;
             v[4] = st;
             v[5] = col;
-            v[6] = i << 6 | 0x01100000;
+            v[6] = ++i << 6 | 0x01100000;
             v[7] = st;
             v += 6;
             x += 0x40;
         }
     } else {
+        cmd[2] = c->clear_depth << 24 | c->clear_color & 0xFFFFFF;
         cmd[4] = (unsigned short)c->clear_stencil;
         cmd[7] = cmd[4];
-        cmd[2] = c->clear_depth << 24 | c->clear_color & 0xFFFFFF;
         cmd[3] = 0;
         cmd[5] = cmd[2];
         cmd[6] = 0x011001E0;
     }
-    p = cmd + nv * 3;
-    p[2] = (flags & 7) << 8 | 0xD3000001;
-    p[3] = 0x1280011C;
-    p[4] = (unsigned int)(list + 2) >> 8 & 0xFF0000 | 0x10000000;
-    p[5] = (unsigned int)(list + 2) & 0xFFFFFF | 0x01000000;
-    p[6] = nv | 0x04060000;
-    p[7] = 0xD3000000;
+    cmd[nv * 3 + 2] = (flags & 7) << 8 | 0xD3000001;
+    cmd[nv * 3 + 3] = 0x1280011C;
+    cmd[nv * 3 + 4] = (unsigned int)(list + 2) >> 8 & 0xFF0000 | 0x10000000;
+    cmd[nv * 3 + 5] = (unsigned int)(list + 2) & 0xFFFFFF | 0x01000000;
+    cmd[nv * 3 + 6] = nv | 0x04060000;
+    cmd[nv * 3 + 7] = 0xD3000000;
     return dl_push(list, cmd, nv * 3 + 8);
 }
 #endif
