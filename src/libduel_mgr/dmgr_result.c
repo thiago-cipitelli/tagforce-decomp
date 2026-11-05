@@ -11,17 +11,12 @@
 // @asm 0x08812124-0x088122B4
 // @asm 0x088122B4-0x08812A98
 // @asm 0x08812A98-0x08812D74
-// @asm 0x08812D74-0x08812F2C
-// @asm 0x08812F2C-0x088131A8
-// @asm 0x088131A8-0x088133B8
-// @asm 0x088133B8-0x088137FC
-// @asm 0x088137FC-0x088139B4
-// @asm 0x088139B4-0x08813C0C
 // @asm 0x08813C0C-0x08814274
 // @asm 0x08814274-0x088146E8
 // @asm 0x08815050-0x08815328
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
    summary), the money paid out, the series score of a match and the continue / net wait dialogs. */
+#include "allegrex.h"
 #include "libduel_mgr.h"
 
 /* BOOT */
@@ -1298,7 +1293,7 @@ unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
 
 unsigned short dmgr_res_page_text[4] = { 4, 5, 6, 7 };
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
+#ifdef NON_MATCHING /* 98 palavras: com os return antecipados (page < 0, page >= 4) o fluxo é o do original; faltam as cópias mortas depois de b (move a0 no alvo dos bnezl) */
 unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
 {
     void *g;
@@ -1320,7 +1315,14 @@ unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
     list = draw_sprite(list, x + 0x157, y, 0, 0x1C, 0, 0, 0);
     list = draw_set_offsets(list, 1, 0x10, 0x47, 0x10);
     list = draw_sprite(list, x + 0x110, y, 0, 0x1B, 0, 0, 0);
-    if (page >= 0 && page < 4) {
+    if (page < 0) {
+        return list;
+    }
+    if (page >= 4) {
+        return list;
+    }
+
+    {
         font_text_set(list);
         font_set_size(0xE, 0xE);
         font_set_color(0xFF000000);
@@ -1341,21 +1343,11 @@ unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
 /* the scrolling list of a page between x + 0x17 and the right edge (written out in each page) */
 #define DMGR_RES_PAGE_LIST(list, x, t, row)                                                                \
     do {                                                                                                  \
-        int l_ = (x) + 0x17;                                                                              \
-        int w_;                                                                                           \
-        int i_;                                                                                           \
+        int l_ = ALLEGREX_MIN(ALLEGREX_MAX((x) + 0x17, 0), 0x1E0);                                        \
+        int w_ = ALLEGREX_MIN(ALLEGREX_MAX(0x1AA, 0), 0x1E0 - l_);                                        \
         int n_;                                                                                           \
+        int i_;                                                                                           \
         int k_;                                                                                           \
-        if (l_ < 0) {                                                                                     \
-            l_ = 0;                                                                                       \
-        }                                                                                                 \
-        if (l_ > 0x1E0) {                                                                                 \
-            l_ = 0x1E0;                                                                                   \
-        }                                                                                                 \
-        w_ = 0x1AA;                                                                                       \
-        if (0x1E0 - l_ < 0x1AA) {                                                                         \
-            w_ = 0x1E0 - l_;                                                                              \
-        }                                                                                                 \
         if (l_ > 0 && l_ < 0x1E0) {                                                                       \
             list = dl_scissor(list, l_, 0x3D, w_, 0xA0);                                                  \
             list = dl_enable(list, 2);                                                                    \
@@ -1374,29 +1366,29 @@ unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
         }                                                                                                 \
     } while (0)
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_page_bonus(unsigned int *list, int x)
 {
-    DmgrResTab *t = &dmgr_res->tabs[1];
+    DmgrResTab *t;
+    int bx = x + 0x11;
 
+    t = &dmgr_res->tabs[1];
     list = dmgr_res_page_frame(list, x, 0x48, 0);
-    list = dmgr_res_draw_box(list, x + 0x1A, 0x2B, 0x177, 0xE, 0x50, 3);
-    list = dmgr_res_draw_box(list, x + 0x194, 0x2B, 0x2D, 0xE, 0x65, 0);
+    list = dmgr_res_draw_box(list, bx + 9, 0x2B, 0x177, 0xE, 0x50, 3);
+    list = dmgr_res_draw_box(list, bx + 0x183, 0x2B, 0x2D, 0xE, 0x65, 0);
     font_set_size(0xE, 0xE);
     font_set_color(0xFF000000);
     font_text_set(list);
-    font_draw_text((x + 0x1A0) * 0x40, 0xB00, (0x1E0 - (x + 0x1A0)) * 0x40, dmgr_res_pt);
+    font_draw_text((bx + 0x18F) * 0x40, 0xB00, (0x1E0 - (bx + 0x18F)) * 0x40, dmgr_res_pt);
     list = font_text_clear();
     list = dmgr_res_page_header(list, x, 0);
-    DMGR_RES_PAGE_LIST(list, x, t, dmgr_res_bonus_row);
+    DMGR_RES_PAGE_LIST(list, bx - 0x11, t, dmgr_res_bonus_row);
+
     return dl_disable(list, 2);
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_bonus_row(unsigned int *list, int x, int y, int i)
 {
-    DmgrRes *r = dmgr_res;
+    DmgrResTab *t = &dmgr_res->tabs[1];
     void *g;
     int h;
     int id;
@@ -1412,12 +1404,15 @@ unsigned int *dmgr_res_bonus_row(unsigned int *list, int x, int y, int i)
     if (i < 0) {
         h = 0xE;
     } else {
-        h = r->tabs[1].lines[i] * 0x10 - 2;
+        h = t->lines[i] * 14 + (t->lines[i] - 1) * 2;
     }
-    id = r->tabs[1].ids[i];
+    id = t->ids[i];
     list = dmgr_res_draw_box(list, x, y, 0x17A, h, 0x5F, 0);
     list = dmgr_res_draw_box(list, x + 0x17C, y, 0x2E, h, 0x62, 0);
-    if (i >= 0) {
+    if (i < 0) {
+        return list;
+    }
+    {
         font_set_line_extra(0x40);
         font_set_size(0xE, 0xE);
         font_text_set(list);
@@ -1425,10 +1420,10 @@ unsigned int *dmgr_res_bonus_row(unsigned int *list, int x, int y, int i)
         font_draw_wtext_ex((x + 2) * 0x40, y << 6, 0x5D80, (h + 2) * 0x40,
                            table_get_entry(dmgr_res_file(7), ((DmgrResItem *)dmgr_res_bonus_text)[id].text),
                            0xFFFFFFFF);
-        y += h / 2;
+        y = y + h / 2 - 7;
         font_set_color(0xFF00FFFF);
         font_set_size(0xB, 0xB);
-        font_draw_text((x + 0x198) * 0x40, (y - 4) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
+        font_draw_text((x + 0x198) * 0x40, (y + 3) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
         list = font_text_clear();
         font_set_size(0xC, 0xD);
         font_set_color(0xFFFFFFFF);
@@ -1436,42 +1431,42 @@ unsigned int *dmgr_res_bonus_row(unsigned int *list, int x, int y, int i)
         if (n > 999) {
             n = 999;
         }
-        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y - 6), n, 9, 3, 0);
+        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y + 1)
+, n, 9, 3, 0);
         font_set_line_extra(0);
     }
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_page_records(unsigned int *list, int x)
 {
-    DmgrResTab *t = &dmgr_res->tabs[2];
+    DmgrResTab *t;
+    int bx = x + 0x11;
 
+    t = &dmgr_res->tabs[2];
     list = dmgr_res_page_frame(list, x, 0x24, 0);
-    list = dmgr_res_draw_box(list, x + 0x1A, 0x2B, 0x143, 0xE, 0x2C, 3);
-    list = dmgr_res_draw_box(list, x + 0x15F, 0x2B, 0x3A, 0xE, 0x3E, 0);
-    list = dmgr_res_draw_box(list, x + 0x19B, 0x2B, 0x26, 0xE, 0x41, 0);
+    list = dmgr_res_draw_box(list, bx + 9, 0x2B, 0x143, 0xE, 0x2C, 3);
+    list = dmgr_res_draw_box(list, bx + 0x14E, 0x2B, 0x3A, 0xE, 0x3E, 0);
+    list = dmgr_res_draw_box(list, bx + 0x18A, 0x2B, 0x26, 0xE, 0x41, 0);
     font_set_color(0xFFFFFFFF);
     font_text_set(list);
-    dmgr_res_text_fit(x + 0x160, 0x2B, 0x38, 0xE, 0xE, table_get_entry(dmgr_res_file(7), 0xF2));
+    dmgr_res_text_fit(bx + 0x14F, 0x2B, 0x38, 0xE, 0xE, table_get_entry(dmgr_res_file(7), 0xF2));
     font_set_size(0xE, 0xE);
     font_set_color(0xFF000000);
-    font_draw_text((x + 0x1A4) * 0x40, 0xB00, (0x1E0 - (x + 0x1A4)) * 0x40, dmgr_res_pt);
+    font_draw_text((bx + 0x193) * 0x40, 0xB00, (0x1E0 - (bx + 0x193)) * 0x40, dmgr_res_pt);
     list = font_text_clear();
     list = dmgr_res_page_header(list, x, 1);
-    DMGR_RES_PAGE_LIST(list, x, t, dmgr_res_record_row);
+    DMGR_RES_PAGE_LIST(list, bx - 0x11, t, dmgr_res_record_row);
+
     return dl_disable(list, 2);
 }
-#endif
 
 unsigned short dmgr_res_colon[2] = { ':', 0 };
+typedef struct DmgrResColon { unsigned short c[2]; } DmgrResColon;
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 unsigned int *dmgr_res_record_row(unsigned int *list, int x, int y, int i)
 {
-    DmgrRes *r = dmgr_res;
-    unsigned short *colon = dmgr_res_colon;
+    DmgrResTab *t = &dmgr_res->tabs[2];
     void *g;
     int h;
     int id;
@@ -1487,81 +1482,84 @@ unsigned int *dmgr_res_record_row(unsigned int *list, int x, int y, int i)
     if (i < 0) {
         h = 0xE;
     } else {
-        h = r->tabs[2].lines[i] * 0x10 - 2;
+        h = t->lines[i] * 14 + (t->lines[i] - 1) * 2;
     }
-    id = r->tabs[2].ids[i];
+    id = t->ids[i];
     list = dmgr_res_draw_box(list, x, y, 0x146, h, 0x3B, 0);
     list = dmgr_res_draw_box(list, x + 0x148, y, 0x3A, h, 0x3E, 0);
     list = draw_set_offsets(list, 0xC, 0xC, 0xC, 0xC);
     list = draw_sprite(list, x + 0x14A, y + 1, 0, 0x3B, 0x1D, 0, 0);
     list = dmgr_res_draw_box(list, x + 0x184, y, 0x26, h, 0x3E, 0);
-    if (i >= 0) {
-        font_set_line_extra(0x40);
-        font_set_size(0xE, 0xE);
+    if (i < 0) {
+        return list;
+    }
+    font_set_line_extra(0x40);
+    font_set_size(0xE, 0xE);
+    font_text_set(list);
+    font_set_color(0xFF000000);
+    font_draw_wtext_ex((x + 2) * 0x40, y << 6, 0x5080, (h + 2) * 0x40,
+                       table_get_entry(dmgr_res_file(7), ((DmgrResItem *)dmgr_res_rec_text)[id].text),
+                       0xFFFFFFFF);
+    y = y + h / 2 - 7;
+    font_set_color(0xFF00FFFF);
+    font_set_size(0xB, 0xB);
+    font_draw_text((x + 0x198) * 0x40, (y + 3) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
+    list = font_text_clear();
+    font_set_size(0xC, 0xD);
+    font_set_color(0xFFFFFFFF);
+    list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y + 1), 20, 9, 3, 0);
+    font_set_line_extra(0);
+    font_set_color(0xFFFFFFFF);
+    n = dmgr_res->rec->rec[id];
+    if (n > 999999999) {
+        n = 999999999;
+    }
+    if (id == 0x25) {
+        DmgrResColon colon = *(DmgrResColon *)dmgr_res_colon;
+
+        font_set_size(0xB, 0xD);
+        list = dmgr_res_draw_number(list, (short)(x + 0x180), (short)(y + 1), n % 60, 8, 2, 1);
         font_text_set(list);
-        font_set_color(0xFF000000);
-        font_draw_wtext_ex((x + 2) * 0x40, y << 6, 0x5080, (h + 2) * 0x40,
-                           table_get_entry(dmgr_res_file(7), ((DmgrResItem *)dmgr_res_rec_text)[id].text),
-                           0xFFFFFFFF);
-        y += h / 2;
-        font_set_color(0xFF00FFFF);
-        font_set_size(0xB, 0xB);
-        font_draw_text((x + 0x198) * 0x40, (y - 4) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
+        font_draw_text((x + 0x16B) * 0x40, y * 0x40, (0x1E0 - (x + 0x16B)) * 0x40, colon.c);
         list = font_text_clear();
-        font_set_size(0xC, 0xD);
-        font_set_color(0xFFFFFFFF);
-        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y - 6), 20, 9, 3, 0);
-        font_set_line_extra(0);
-        font_set_color(0xFFFFFFFF);
-        n = dmgr_res->rec->rec[id];
-        if (n > 999999999) {
-            n = 999999999;
-        }
-        if (id == 0x25) {
-            font_set_size(0xB, 0xD);
-            list = dmgr_res_draw_number(list, (short)(x + 0x180), (short)(y - 6), n % 60, 8, 2, 1);
-            font_text_set(list);
-            font_draw_text((x + 0x16B) * 0x40, (y - 7) * 0x40, (0x1E0 - (x + 0x16B)) * 0x40, colon);
-            list = font_text_clear();
-            list = dmgr_res_draw_number(list, (short)(x + 0x168), (short)(y - 6), n / 60, 8, 2, 0);
-        } else if (n < 100000) {
-            font_set_size(0xB, 0xD);
-            list = dmgr_res_draw_number(list, (short)(x + 0x180), (short)(y - 6), n, 8, 5, 0);
-        } else {
-            font_set_size(6, 0xD);
-            list = dmgr_res_draw_number(list, (short)(x + 0x182), (short)(y - 6), n, 5, 9, 0);
-        }
+        list = dmgr_res_draw_number(list, (short)(x + 0x168), (short)(y + 1), n / 60, 8, 2, 0);
+    } else if (n > 99999) {
+
+        font_set_size(6, 0xD);
+        list = dmgr_res_draw_number(list, (short)(x + 0x182), (short)(y + 1), n, 5, 9, 0);
+    } else {
+        font_set_size(0xB, 0xD);
+        list = dmgr_res_draw_number(list, (short)(x + 0x180), (short)(y + 1), n, 8, 5, 0);
     }
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_page_titles(unsigned int *list, int x)
 {
-    DmgrResTab *t = &dmgr_res->tabs[3];
+    DmgrResTab *t;
+    int bx = x + 0x11;
 
+    t = &dmgr_res->tabs[3];
     list = dmgr_res_page_frame(list, x, 0x6C, 0);
-    list = dmgr_res_draw_box(list, x + 0x1A, 0x2B, 0x17F, 0xE, 0x74, 3);
-    list = dmgr_res_draw_box(list, x + 0x19B, 0x2B, 0x26, 0xE, 0x89, 0);
+    list = dmgr_res_draw_box(list, bx + 9, 0x2B, 0x17F, 0xE, 0x74, 3);
+    list = dmgr_res_draw_box(list, bx + 0x18A, 0x2B, 0x26, 0xE, 0x89, 0);
     font_set_size(0xE, 0xE);
     font_set_color(0xFF000000);
     font_text_set(list);
-    font_draw_text((x + 0x1A4) * 0x40, 0xB00, (0x1E0 - (x + 0x1A4)) * 0x40, dmgr_res_pt);
+    font_draw_text((bx + 0x193) * 0x40, 0xB00, (0x1E0 - (bx + 0x193)) * 0x40, dmgr_res_pt);
     list = font_text_clear();
     list = dmgr_res_page_header(list, x, 2);
-    DMGR_RES_PAGE_LIST(list, x, t, dmgr_res_title_row);
+    DMGR_RES_PAGE_LIST(list, bx - 0x11, t, dmgr_res_title_row);
+
     return dl_disable(list, 2);
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_title_row(unsigned int *list, int x, int y, int i)
 {
-    DmgrRes *r = dmgr_res;
+    DmgrResTab *t = &dmgr_res->tabs[3];
     void *g;
     int h;
-    unsigned short id;
+    int id;
 
     g = dmgr_res_file(5);
     if (g == 0) {
@@ -1573,32 +1571,36 @@ unsigned int *dmgr_res_title_row(unsigned int *list, int x, int y, int i)
     if (i < 0) {
         h = 0xE;
     } else {
-        h = r->tabs[3].lines[i] * 0x10 - 2;
+        h = t->lines[i] * 14 + (t->lines[i] - 1) * 2;
     }
-    id = r->tabs[3].ids[i];
+    id = t->ids[i];
     list = dmgr_res_draw_box(list, x, y, 0x182, h, 0x83, 0);
     list = dmgr_res_draw_box(list, x + 0x184, y, 0x26, h, 0x86, 0);
-    if (i >= 0) {
+    if (i < 0) {
+        return list;
+    }
+    {
         font_set_line_extra(0x40);
+
         font_set_size(0xE, 0xE);
         font_text_set(list);
         font_set_color(0xFF000000);
         font_draw_wtext_ex((x + 2) * 0x40, y << 6, 0x5F80, (h + 2) * 0x40,
                            table_get_entry(dmgr_res_file(7), ((DmgrResItem *)dmgr_res_title_text)[id].text),
                            0xFFFFFFFF);
-        y += h / 2;
+        y = y + h / 2 - 7;
         font_set_color(0xFF00FFFF);
         font_set_size(0xB, 0xB);
-        font_draw_text((x + 0x198) * 0x40, (y - 4) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
+        font_draw_text((x + 0x198) * 0x40, (y + 3) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
         list = font_text_clear();
         font_set_size(0xC, 0xD);
         font_set_color(0xFFFFFFFF);
-        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y - 6), 30, 9, 2, 0);
+        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y + 1)
+, 30, 9, 2, 0);
         font_set_line_extra(0);
     }
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 unsigned int *dmgr_res_draw_series(unsigned int *list)
