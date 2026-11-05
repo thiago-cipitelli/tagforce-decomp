@@ -65,7 +65,7 @@ void fld_res_cancel(void)
     fld_req_cancel_all();
 }
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. Com "r == 0 || busy" (125 palavras) só o teste de busy difere (beqzl + b em vez de bnezl direto para o epílogo, 8 bytes); com dois return separados o teste bate mas o mwcc tira as cópias mortas "move a0; b; nop" dos case (484 B contra 536) */
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 96 palavras: com o corpo em "if (r != 0 && q->busy == 0) {" o teste de busy sai bnezl para o epílogo como no original; falta &field_res.q materializado em a0 (const, cast char *, atribuição no teste não mudam) e as cópias mortas depois de b dos case internos */
 /* runs the request at the head of the queue when no read is in flight: step 0 starts the read,
    step 1 publishes the file (buf -> data), unloads it again if it was discarded meanwhile, calls the
    requester and the queued waiters and pops the request */
@@ -79,8 +79,7 @@ void fld_res_update(void)
     FieldPoolEnt *f;
     int k;
 
-    if (r == 0 || q->busy != 0)
-        return;
+    if (r != 0 && q->busy == 0) {
     switch (r->kind) {
     case 0:
         switch (r->step) {
@@ -140,6 +139,7 @@ void fld_res_update(void)
             break;
         }
         break;
+    }
     }
 }
 #endif

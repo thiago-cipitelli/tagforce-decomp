@@ -871,31 +871,31 @@ unsigned int *dmgr_pt_draw_names(unsigned int *list, int mode)
     return list;
 }
 
-#ifdef NON_MATCHING /* o teste do tipo do original cai no epílogo comum por outro caminho */
+#ifdef NON_MATCHING /* 3 palavras: com o corpo em "if (e->kind > 0) { ... }" e o ramo small != 0 primeiro só falta o registrador do segundo e->kind (a1 no original, v1 aqui; switch, local e ifs invertidos não mudam) */
 unsigned int *dmgr_pt_draw_name(unsigned int *list, DmgrPtEnt *e, int x, int y, int w, int small)
 {
     void *name = 0;
 
-    if (e->kind <= 0) {
-        return list;
-    }
-    if (small == 0) {
-        font_set_size(0xE, 0xE);
-        font_set_color(0xFF000000);
-        font_set_flag4(1);
-    } else {
-        font_set_size(0xC, 0xC);
-        font_set_color(0xFFFFFFFF);
-        font_set_flag4(1);
-    }
-    if (e->kind == 1) {
-        if (e->name != 0) {
-            name = e->name;
+    if (e->kind > 0) {
+        if (small == 0) {
+            font_set_size(0xE, 0xE);
+            font_set_color(0xFF000000);
+            font_set_flag4(1);
+        } else {
+            font_set_size(0xC, 0xC);
+            font_set_color(0xFFFFFFFF);
+            font_set_flag4(1);
         }
-    } else {
-        name = chara_get_name(0);
+        if (e->kind == 1) {
+            if (e->name != 0) {
+                name = e->name;
+            }
+        } else {
+            name = chara_get_name(0);
+        }
+        list = dmgr_text_draw(list, x, y, w, name, 2);
     }
-    return dmgr_text_draw(list, x, y, w, name, 2);
+    return list;
 }
 #endif
 
