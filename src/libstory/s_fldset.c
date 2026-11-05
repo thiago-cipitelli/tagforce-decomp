@@ -1,6 +1,5 @@
 // @range 0x0880DE58-0x0880EC38
 // @asm 0x0880DE58-0x0880E634
-// @asm 0x0880E850-0x0880EB1C
 // @data 0x0881D330-0x0881D608
 /* Field setup commands of the story (second half): the characters standing in the current room (with
    the scripted walks of the cafeteria/classroom regulars and the crowd of the special days), the
@@ -465,7 +464,6 @@ void st_fld_night(void)
         sys_frame_wait();
 }
 
-#ifdef NON_MATCHING /* só o primeiro laço de busca troca v1/a0 (índice e ponteiro) */
 /* room links: where each character can be met and the doors open today (fld command 2) */
 void st_fld_links(void)
 {
@@ -496,9 +494,10 @@ void st_fld_links(void)
     arg.doors = doors;
     arg.ndoors = 0;
     if (scal_flag2_get(1) == 0) {
-        for (i = 0; i < 20; i++) {
-            if (doors[i] == 0) {
-                doors[i] = 0x20;
+        int j;
+        for (j = 0; j < 20; j++) {
+            if (doors[j] == 0) {
+                doors[j] = 0x20;
                 arg.ndoors++;
                 break;
             }
@@ -542,8 +541,6 @@ void st_fld_links(void)
     while (!fld_cmd_poll(2, &res))
         sys_frame_wait();
 }
-
-#endif
 
 /* starts the fade-in of the field (fld command 0x1F), with the pending event when on */
 void st_fld_fade_in(int on)

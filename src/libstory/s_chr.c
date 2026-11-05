@@ -1,6 +1,5 @@
 // @range 0x08804270-0x088062FC
 // @asm 0x088044EC-0x08804570
-// @asm 0x08804728-0x088047E0
 // @asm 0x088048C8-0x08804908
 // @asm 0x08805694-0x08805708
 // @asm 0x08805708-0x088057EC
@@ -228,7 +227,6 @@ int st_chr_x52(int i)
     return ST_CHR_SAVE(i)->x52;
 }
 
-#ifdef NON_MATCHING /* o contador sai em a0 e a cópia em s1; nenhuma ordem de declarações reproduz */
 int st_chr_pick(int i)
 {
     StoryChrSave *s = ST_CHR_SAVE(i);
@@ -237,13 +235,16 @@ int st_chr_pick(int i)
     int r;
 
     if (s->state & 4) {
+        StoryChrSave *t;
         k = 0;
+        t = s;
         do {
-            if (s->pick_a[k] == 0)
+            if (t->pick_a[0] == 0)
                 break;
-            k++;
-            n = k;
-        } while (k < 6);
+            n = k + 1;
+            t = (StoryChrSave *)((char *)t + 2);
+            k = n;
+        } while (n < 6);
         r = (int)rand_next() % n;
         s->pick = r;
         k = s->pick_a[r];
@@ -252,7 +253,6 @@ int st_chr_pick(int i)
     }
     return s->pick_b[s->pick];
 }
-#endif
 
 int st_chr_x30(int i)
 {

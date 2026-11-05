@@ -1,5 +1,4 @@
 // @range 0x08816890-0x088171F4
-// @asm 0x08816FC4-0x08817034
 // @data 0x0881D15C-0x0881D194
 /* Story requests and character lookups: the getters of the character records that pick the field
    or the alternate (school vacation) version of each value, the start of a character event script
@@ -309,13 +308,13 @@ void st_event_start(int kind, int chr, int ev)
 }
 
 /* story mode 1..4; any other value goes back to mode 1 */
-#ifdef NON_MATCHING /* o original não reaproveita o 1 do último teste do switch como argumento de sysflag_apply (li a0,1) */
 int story_mode_set(int m)
 {
     StReq *s = &st_req;
     int r;
 
     switch (m) {
+    case 0:
     default:
         sysflag_apply(1, 0);
         m = 1;
@@ -331,7 +330,6 @@ int story_mode_set(int m)
     s->mode = m;
     return r;
 }
-#endif
 
 int story_mode_get(void)
 {

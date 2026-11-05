@@ -27,8 +27,6 @@ segments:
     subalign: null
     subsegments:
       - [0x60, c, dmgr_main]
-      - [0x1724, asm, dmgr_main_asm_088056C4]
-      - [0x17F4, c, dmgr_main]
       - [0x2058, c, dmgr_event]
       - [0x21F0, asm, dmgr_event_asm_08806190]
       - [0x2278, c, dmgr_event]
@@ -58,8 +56,6 @@ segments:
       - [0x95F0, c, dmgr_partner]
       - [0x95F0, asm, dmgr_partner_asm_0880D590]
       - [0x97EC, c, dmgr_partner]
-      - [0xA30C, asm, dmgr_partner_asm_0880E2AC]
-      - [0xA408, c, dmgr_partner]
       - [0xAFBC, asm, dmgr_partner_asm_0880EF5C]
       - [0xB2D4, c, dmgr_partner]
       - [0xBA20, c, dmgr_result]
