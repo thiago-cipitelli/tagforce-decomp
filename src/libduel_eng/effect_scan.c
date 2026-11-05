@@ -1,7 +1,7 @@
 // @range 0x088E0890-0x088E1FE0
 // @asm 0x088E0C30-0x088E0E8C
 // @asm 0x088E1390-0x088E1574
-// @asm 0x088E1D00-0x088E1FE0
+// @asm 0x088E1D00-0x088E1E40
 /* Effect list upkeep and scans by source: drop expiring entries at the end of a turn, reset a zone,
    move the entries of a source to another zone, count and find the entries placed on a zone by
    a given card (kinds 6-11 point back to their source zone). */
@@ -585,11 +585,13 @@ unsigned short duel_slot_src_attr8(unsigned int p, int z, int active)
     }
     return 0xFFFF;
 }
+#endif
 
 /* The card in zone z of p can act on (x, y): not while it is bound by a kind 12 or 13 entry. */
 int duel_slot_can_act(unsigned int p, unsigned int z, int x, int y)
 {
     unsigned int src = duel_slot_e1854(p, z);
+    unsigned int lo;
     DuelAct a = { 0 };
 
     a.id = field_get_card(p, z);
@@ -597,14 +599,12 @@ int duel_slot_can_act(unsigned int p, unsigned int z, int x, int y)
     a.zone = z;
     a.b3_4 = 0;
     a.uid = CARD_UID(duel.players[p & 1].field[z].card);
-    if ((src & 0xFFFF) != 0xFFFF) {
-        switch (duel_st_affects(src & 0xFF, (src & 0xFFFF) >> 8 & 0xFF, p, z)) {
-        case 13:
-            return 0;
+    if ((lo = src & 0xFFFF) != 0xFFFF) {
+        switch (duel_st_affects(src & 0xFF, lo >> 8 & 0xFF, p, z)) {
         case 12:
+        case 13:
             return 0;
         }
     }
     return duel_act_check_08853CE8(&a, x, y) == 1;
 }
-#endif

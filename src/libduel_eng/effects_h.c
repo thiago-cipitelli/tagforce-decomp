@@ -1,5 +1,4 @@
 // @range 0x088FAEFC-0x088FB5E4
-// @asm 0x088FAEFC-0x088FB168
 /* Card effect handlers (continued). */
 #include "duel.h"
 #include "card_db.h"
@@ -25,7 +24,6 @@ unsigned int duel_0884E538(DuelAct *a, int (*fn)());
 int duel_08855908();
 void duel_088D13CC(DuelAct *a, unsigned int mask);
 
-#ifdef NON_MATCHING /* close; the operand order of uid * 8 + controller * 4 and the last return differ */
 int duel_eff_faefc(DuelAct *a)
 {
     if (a->b3_4 == 3) {
@@ -55,17 +53,17 @@ int duel_eff_faefc(DuelAct *a)
                 if (card_is_attribute9(duel.players[q & 1].field[qz].card.id) == 0) {
                     int pos = duel.players[q & 1].field[qz].pos;
                     int up = duel.players[q & 1].field[qz].faceup;
+                    int c = duel_field_controller(q, qz, 1);
 
-                    duel_088C77D4(a->player, a->id, 0x41, up + (pos * 2 + (uid * 8 + duel_field_controller(q, qz, 1) * 4)));
+                    duel_088C77D4(a->player, a->id, 0x41, up + (pos * 2 + (uid * 8 + c * 4)));
                     duel_088C77D4(a->player, a->id, 2, 0);
-                    return 0;
                 }
             }
         }
+        return 0;
     }
     return 0;
 }
-#endif
 
 int duel_zone_faceup(unsigned int p, int z, int a);
 void duel_088C7880(unsigned int p);

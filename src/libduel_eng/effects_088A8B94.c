@@ -5,7 +5,6 @@
 // @asm 0x088AC6A0-0x088AC82C
 // @asm 0x088ADA84-0x088ADC34
 // @asm 0x088ADF28-0x088ADFC0
-// @asm 0x088AE378-0x088AE548
 /* Target list of a DuelAct (w[0..4], then duel_chain.uids from w[5]) and effect handlers. */
 #include "duel.h"
 
@@ -2245,7 +2244,6 @@ int duel_act_immune(DuelAct *a, unsigned int p, int z);
 void duel_088D1AC8(unsigned int p, int z);
 void duel_088C44E4(unsigned int p, int id);
 
-#ifdef NON_MATCHING /* o retorno 1 padrão do switch externo e o do interno são blocos separados no original */
 int duel_088AE378(DuelAct *a, int b)
 {
     char buf[512];
@@ -2253,8 +2251,6 @@ int duel_088AE378(DuelAct *a, int b)
     int r;
 
     switch (a->w[2]) {
-    default:
-        return 1;
     case 1:
     case 3:
         switch (duel_w_08914908) {
@@ -2290,7 +2286,6 @@ int duel_088AE378(DuelAct *a, int b)
     }
     return 1;
 }
-#endif
 
 int duel_088AE548(DuelAct *a)
 {
