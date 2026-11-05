@@ -1,5 +1,6 @@
 // @range 0x08900C94-0x08901BA0
-// @asm 0x08900CD4-0x08901AC8
+// @asm 0x08901730-0x08901AC8
+// @data 0x08912260-0x08912438
 /* End of a duel: results of the series, the 118 titles, records and bonuses; the character table. */
 #include "card_db.h"
 #include "libc.h"
@@ -40,7 +41,7 @@ void duel_records_update(void);
 void duel_bonus_calc(void);
 int sysflag_test(int bit);
 void sysstate2_get_triplet(int which, int *out);
-int inv_collection_permille(void);
+unsigned short inv_collection_permille(void);
 int charmap_lookup(int id, int *out);
 short scene_stack_peek_arg(int i);
 int sysvar_get_a98(void);
@@ -61,7 +62,6 @@ int duel_char_known(int id)
     return n > 0;
 }
 
-#ifdef NON_MATCHING /* same checks; the original keeps the stats pointer in $s0, has an empty case 117 and assigns other registers */
 /* Check the 118 titles not yet earned (save +0x120) and earn the ones whose condition holds. */
 void duel_titles_check(void)
 {
@@ -74,18 +74,18 @@ void duel_titles_check(void)
     int k;
     unsigned int v;
     int t[3];
-    DeckStats *s = &duel_deck_stats_cur;
+    DeckStats *s;
 
     game_state2_get();
     rec = (unsigned char *)sysstate2_get_ptr_51c();
     g = (unsigned char *)game_state_get();
-    p = (unsigned short *)s;
+    s = &duel_deck_stats_cur;
     save = (unsigned char *)sysstate_get();
     if (sysflag_test(7) == 0) {
         return;
     }
     slot = duel_w_0891A19C * 0x188;
-    for (i = 0; i < 0x76; i++, p++) {
+    for (i = 0, p = (unsigned short *)s; i < 0x76; i++, p++) {
         if (rec[i + 0x120] != 0) {
             continue;
         }
@@ -96,8 +96,9 @@ void duel_titles_check(void)
             v = t[0] >= 100;
             break;
         case 1:
+            k = 2;
             v = 1;
-            for (k = 2; k < 0x98; k++) {
+            for (; k < 0x98; k++) {
                 if (duel_char_known(k) && (sysstate2_get_triplet(k, t), t[0] < 10)) {
                     v = 0;
                     break;
@@ -105,7 +106,7 @@ void duel_titles_check(void)
             }
             break;
         case 2:
-            if (duel_stat_get(0x34) > 9) {
+            if (duel_stat_get(0x34) >= 10) {
                 v = 1;
             }
             break;
@@ -217,7 +218,7 @@ void duel_titles_check(void)
             break;
         case 37:
             if (duel_setup.unk228 != 10) {
-                v = duel_turn_player != duel_view_player;
+                v = (int)duel_turn_player != duel_view_player;
             }
             break;
         case 38:
@@ -230,10 +231,7 @@ void duel_titles_check(void)
             v = duel_setup.unk228 == 7;
             break;
         case 41:
-            v = 0;
-            if (g[0x119] == 2) {
-                v = duel_setup.unk228 == 8;
-            }
+            v = g[0x119] == 2 && duel_setup.unk228 == 8;
             break;
         case 42:
             v = duel_setup.unk228 == 5;
@@ -287,7 +285,7 @@ void duel_titles_check(void)
             v = (s->flags & 0x40) == 0;
             break;
         case 59:
-            v = (s->levels & 0x1F) >> 1 == 0;
+            v = (s->levels >> 1 & 0xF) == 0;
             break;
         case 60:
             v = (s->levels >> 1 & 0xFF0) == 0;
@@ -296,7 +294,7 @@ void duel_titles_check(void)
             v = (s->levels >> 1 & 0xFFE) == 0;
             break;
         case 62:
-            v = (s->levels & 0x1FFF) >> 1 == 0xFFF;
+            v = (s->levels >> 1 & 0xFFF) == 0xFFF;
             break;
         case 63:
             v = s->atk_min >= 1500;
@@ -383,8 +381,9 @@ void duel_titles_check(void)
             v = duel_stat_get(0x15) == 0;
             break;
         case 107:
+            k = 2;
             v = 1;
-            for (k = 2; k < 0x98; k++) {
+            for (; k < 0x98; k++) {
                 if (duel_char_known(k)) {
                     sysstate2_get_triplet(k, t);
                     if (deck_slot_get(k)->count == 0) {
@@ -401,8 +400,9 @@ void duel_titles_check(void)
             v = sysflag_test(1);
             break;
         case 110:
+            k = 2;
             v = 1;
-            for (k = 2; k < 9; k++) {
+            for (; k < 9; k++) {
                 if (deck_slot_get_level(k) != 3) {
                     v = 0;
                     break;
@@ -410,8 +410,9 @@ void duel_titles_check(void)
             }
             break;
         case 111:
+            k = 2;
             v = 1;
-            for (k = 2; k < 0x98; k++) {
+            for (; k < 0x98; k++) {
                 if (duel_char_known(k) && deck_slot_get_level(k) != 3) {
                     v = 0;
                     break;
@@ -428,8 +429,9 @@ void duel_titles_check(void)
             v = inv_collection_permille() >= 1000;
             break;
         case 115:
+            k = 0;
             v = 1;
-            for (k = 0; k < 0x30; k++) {
+            for (; k < 0x30; k++) {
                 if (save[k + 0x3E38] == 0) {
                     v = 0;
                     break;
@@ -438,8 +440,9 @@ void duel_titles_check(void)
             break;
         case 116:
             if (sysflag_test(7)) {
+                k = 0;
                 v = 1;
-                for (k = 0; k < 0x2C; k++) {
+                for (; k < 0x2C; k++) {
                     if (save[k + 0x3DF8] == 0) {
                         v = 0;
                         break;
@@ -447,13 +450,14 @@ void duel_titles_check(void)
                 }
             }
             break;
+        case 117:
+            break;
         }
         if (v != 0) {
             duel_save_once_120(i);
         }
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* same steps; the original keeps the game state in $s5 and the results in $s1 */
 /* Called when the duel is over: fill the results, then the titles, records and bonuses of the

@@ -214,7 +214,7 @@ int duel_eff_f8b34(DuelAct *a)
         a->w[3] = field_get_card(duel.unk3830 & 0xFF, (unsigned char)((duel.unk3830 & 0xFFFF) >> 8));
         return 0x7E;
     case 0x7E:
-        if (duel_phase_ok2() && duel_count_free_monster_zones(a->player) && duel_088A9008(a, 0, 0)) {
+        if (duel_phase_ok2(a->player) && duel_count_free_monster_zones(a->player) && duel_088A9008(a, 0, 0)) {
             unsigned short t = duel_act_target(a, 0);
             unsigned int q = t & 0xFF;
             unsigned int z = (unsigned char)(t >> 8);
