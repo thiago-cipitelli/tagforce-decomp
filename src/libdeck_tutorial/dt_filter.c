@@ -166,7 +166,7 @@ DtFilterFn dt_filters[9] = {
 
 #ifdef NON_MATCHING /* 65 palavras, 1 instrução a menos: o original guarda e no a1 (move a0,a1 para dt_filter_attr) e lê e->id antes do teste do filtro nulo */
 /* keeps the entries passing filter f (arg its parameter); returns the count */
-int dt_list_filter(DtList *l, unsigned short f, unsigned int *arg)
+unsigned short dt_list_filter(DtList *l, unsigned short f, unsigned int *arg)
 {
     unsigned short *tmp = heap_alloc(dts.heap, l->count << 1);
     int n;
@@ -174,23 +174,16 @@ int dt_list_filter(DtList *l, unsigned short f, unsigned int *arg)
     unsigned short k;
     DtEnt *e;
     int ok;
-    unsigned short *p;
 
     if (tmp == 0)
         return l->count;
     n = 0;
-    p = tmp;
     for (i = 0; i < l->count; i++) {
         k = l->order[i];
         e = &l->ents[k];
-        ok = 1;
-        if (dt_filters[f] != 0)
-            ok = dt_filters[f](e->id, *arg);
-        else if (f == 7)
-            ok = dt_filter_attr(e, arg);
+        ok = dt_filters[f] != 0 ? dt_filters[f](e->id, *arg) : f == 7 ? dt_filter_attr(e, arg) : 1;
         if (ok) {
-            *p++ = k;
-            n++;
+            tmp[n++] = k;
         }
     }
     memcpy(l->order, tmp, n << 1);

@@ -603,25 +603,26 @@ void dt_scroll_update(void)
 /* the focus frame follows the cursor */
 void dt_focus_update(void)
 {
-    unsigned char side = dtv.side;
-    DtPane *p = &dtv.pane[side];
+    DtView *v = &dtv;
+    unsigned char side = v->side;
+    DtPane *p = &v->pane[side];
     DtLayout *lay = &p->lay;
     DtRect *f = &dts.focus;
 
     if (p->list_mode == 0) {
-        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
         f->w = 0x17;
+        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
         f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
         f->h = 0x1F;
     } else if (side == 1 && dtv.mode < 4) {
         f->x = lay->x + lay->row_x;
-        f->w = (unsigned short)lay->row_w - 1;
         f->y = lay->y + lay->row_y + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 1;
         f->h = (unsigned short)lay->row_h - 1;
     } else {
         f->x = lay->x + lay->row_x + 1;
-        f->w = (unsigned short)lay->row_w - 3;
         f->y = lay->y + lay->row_y + 1 + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 3;
         f->h = (unsigned short)lay->row_h - 1;
     }
 }

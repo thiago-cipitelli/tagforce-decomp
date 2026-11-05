@@ -180,7 +180,7 @@ void sc_set_mode(unsigned short mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original não encadeia os saltos para o fim (cada grupo termina num b para o epílogo) */
+#ifdef NON_MATCHING /* 14 palavras (forma de dk_mode_for): só o último grupo (b == 0 ? 6 : -1) difere; o original faz bnez; b fim; li 6; li -1 sem desvio provável, nenhuma grafia testada (ternário, switch, return) reproduziu */
 /* sc_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int sc_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)
 {
@@ -189,28 +189,21 @@ int sc_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned sho
     if (panes == 1) {
         if (a == 1)
             r = 0;
-        else if (a == 0)
-            r = 1;
         else
-            r = -1;
-    } else if (narrow != 0) {
+            r = a == 0 ? 1 : -1;
+    } else if (narrow) {
         if (a == 0) {
             if (b == 1)
                 r = 3;
-            else if (b == 0)
-                r = 2;
             else
-                r = -1;
-        } else {
+                r = b == 0 ? 2 : -1;
+        } else
             r = -1;
-        }
     } else if (a == 0) {
         if (b == 1)
             r = 7;
-        else if (b == 0)
-            r = 5;
         else
-            r = -1;
+            r = b == 0 ? 5 : -1;
     } else if (a == 1) {
         if (b == 1)
             r = 4;
@@ -218,9 +211,8 @@ int sc_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned sho
             r = 6;
         else
             r = -1;
-    } else {
+    } else
         r = -1;
-    }
     return r;
 }
 #endif
@@ -580,8 +572,8 @@ void sc_cursor_grid(int side, PadState *pad)
 }
 #endif
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 17 palavras: "if (top <= 0) top = 0" sai blezl para a
-                       instrução seguinte no original, e "top + ny < total" usa slt com bnezl (o mwcc dá at) */
+#ifdef NON_MATCHING /* forma de dt_cursor_list (asm idêntico), 3 palavras: "if (top <= 0) top = 0" sai blezl para a
+                       instrução seguinte e "b; ny = 0" no original; aqui bgtz direto para o fim */
 /* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
 void sc_cursor_list(int side, PadState *pad)
 {
@@ -592,56 +584,58 @@ void sc_cursor_list(int side, PadState *pad)
     int top = p->top;
     int total = p->list->count;
     int changed = 0;
-    int d;
+    int dy;
     int ny;
 
     if (rep & 0x80) {
         sc_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
-        return;
-    }
-    if (rep & 0x20) {
+    } else if (rep & 0x20) {
         sc_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
         se_play(0x6212);
-        return;
-    }
-    d = 0;
-    if (rep & 0x40)
-        d++;
-    if (rep & 0x10)
-        d--;
-    if (top + cy == 0 && (pad->b.trig & 0x10)) {
-        top = total >= rows ? total - rows : 0;
-        ny = rows - 1;
-    } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
-        ny = 0;
-        top = 0;
     } else {
-        ny = cy + d;
-        if (ny < 0) {
-            top += ny;
-            top = top <= 0 ? 0 : top;
-            ny = 0;
-        } else if (ny >= rows) {
-            if (total < rows)
-                top = 0;
-            else if (top + ny < total)
-                top += ny - (rows - 1);
-            else
+        dy = 0;
+        if (rep & 0x40)
+            dy++;
+        if (rep & 0x10)
+            dy--;
+        if (top + cy == 0 && (pad->b.trig & 0x10)) {
+            if (total >= rows)
                 top = total - rows;
+            else
+                top = 0;
             ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top += ny;
+                ny = 0;
+                if (top <= 0)
+                    top = 0;
+            } else if (ny >= rows) {
+                if (total < rows)
+                    top = 0;
+                else if (top + ny >= total)
+                    top = total - rows;
+                else
+                    top += ny - (rows - 1);
+                ny = rows - 1;
+            }
         }
+        if (cy != ny) {
+            p->cy = ny;
+            changed = 1;
+        }
+        if (p->top != top) {
+            p->top = top;
+            changed = 1;
+        }
+        if (changed)
+            se_play(0x6212);
     }
-    if (cy != ny) {
-        p->cy = ny;
-        changed = 1;
-    }
-    if (p->top != top) {
-        p->top = top;
-        changed = 1;
-    }
-    if (changed)
-        se_play(0x6212);
 }
 #endif
 
@@ -867,26 +861,27 @@ void sc_scroll_update(void)
 /* the focus frame follows the cursor */
 void sc_focus_update(void)
 {
-    unsigned char side = scv.side;
-    ScPane *p = &scv.pane[side];
+    ScView *v = &scv;
+    unsigned char side = v->side;
+    ScPane *p = &v->pane[side];
+    ScLayout *lay = &p->lay;
     ScRect *f = &sc.focus;
-    ScLayout *ly = &p->lay;
 
     if (p->list_mode == 0) {
         f->w = 0x17;
-        f->x = ly->x + ly->grid_x + p->cx * (unsigned short)ly->cell_w;
-        f->y = ly->y + ly->grid_y + p->cy * (unsigned short)ly->cell_h;
+        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
         f->h = 0x1F;
     } else if (side == 1 && scv.mode < 4) {
-        f->x = ly->x + ly->row_x;
-        f->w = (unsigned short)ly->row_w - 1;
-        f->y = ly->y + ly->row_y + p->cy * (unsigned short)ly->row_h;
-        f->h = (unsigned short)ly->row_h - 1;
+        f->x = lay->x + lay->row_x;
+        f->y = lay->y + lay->row_y + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 1;
+        f->h = (unsigned short)lay->row_h - 1;
     } else {
-        f->x = ly->x + ly->row_x + 1;
-        f->w = (unsigned short)ly->row_w - 3;
-        f->y = ly->y + ly->row_y + 1 + p->cy * (unsigned short)ly->row_h;
-        f->h = (unsigned short)ly->row_h - 1;
+        f->x = lay->x + lay->row_x + 1;
+        f->y = lay->y + lay->row_y + 1 + p->cy * (unsigned short)lay->row_h;
+        f->w = (unsigned short)lay->row_w - 3;
+        f->h = (unsigned short)lay->row_h - 1;
     }
 }
 #endif

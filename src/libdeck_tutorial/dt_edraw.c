@@ -118,7 +118,7 @@ void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
 void *dt_draw_rows_small(void *list, DtPane *p);
 void *dt_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, DtEnt *e, int blink);
 
-#ifdef NON_MATCHING
+#ifdef NON_MATCHING /* 3 palavras: list fica em $s1 no original (aqui divide $s0 com r); ordem das declarações não resolve */
 /* the strip under the panes: the card list's own strip in the deck modes, else name, icons, level,
    ATK/DEF and the description scrolling sideways */
 void *dt_draw_info(void *list, DtCursor *c)
@@ -133,10 +133,9 @@ void *dt_draw_info(void *list, DtCursor *c)
         r = cardlist_build(list, &dtv.cursor.scroll);
         if (c->id == 0)
             return r;
-        if (inv_get_flag7(c->id) == 0)
-            return r;
-        return dt_draw_flag_icon(r, PT(0x7B, 0x87), 2, dt_eres_get(0x800A));
-    }
+        if (inv_get_flag7(c->id))
+            r = dt_draw_flag_icon(r, PT(0x7B, 0x87), 2, dt_eres_get(0x800A));
+    } else {
     if (c->id == 0)
         return list;
     r = dt_draw_kind_icon(list, 0x146, 0x100, card_get_kind(c->id));
@@ -144,8 +143,8 @@ void *dt_draw_info(void *list, DtCursor *c)
         r = dt_draw_type_icon(r, 0x158, 0x100, card_get_type(c->id));
         level = card_get_level(c->id);
         r = dt_draw_level(r, PT(0x16B, 0x103), level, 0xFFFFFFFF, dt_eres_get(0x8009));
-        r = dt_draw_stat(r, card_get_atk_q(c->id) << 16 | 2, PT(0x187, 0x102), 0xC0A, 0xFFFFFFFF, dt_eres_get(0x8009));
-        r = dt_draw_stat(r, card_get_def_q(c->id) << 16 | 3, PT(0x1B3, 0x102), 0xC0A, 0xFFFFFFFF, dt_eres_get(0x8009));
+        r = dt_draw_stat(r, (unsigned short)card_get_atk_q(c->id) << 16 | 2, PT(0x187, 0x102), 0xC0A, 0xFFFFFFFF, dt_eres_get(0x8009));
+        r = dt_draw_stat(r, (unsigned short)card_get_def_q(c->id) << 16 | 3, PT(0x1B3, 0x102), 0xC0A, 0xFFFFFFFF, dt_eres_get(0x8009));
     } else if (card_get_prop5_hi(c->id) != 0) {
         r = dt_draw_attr_icon(r, 0x158, 0x100, card_get_prop5_hi(c->id));
     }
@@ -160,8 +159,8 @@ void *dt_draw_info(void *list, DtCursor *c)
     if (cfg_get_language() != 0)
         font_set_flag4000(0);
     font_set_color(0xFF00FF00);
-    x = font_get_cursor_x() + 0x40;
-    font_draw_wtext(x, 0x3CC0, 0x6B00 - x, card_info_fill(c->id));
+    x2 = font_get_cursor_x() + 0x40;
+    font_draw_wtext(x2, 0x3CC0, 0x6B00 - x2, card_info_fill(c->id));
     r = font_text_clear();
     r = dl_scissor(r, 6, 0x100, 0x13D, 0x110);
     r = dl_enable(r, 2);
@@ -180,7 +179,9 @@ void *dt_draw_info(void *list, DtCursor *c)
     if (cfg_get_language() != 0)
         font_set_flag8(1);
     r = font_text_clear();
-    return dl_disable(r, 2);
+    r = dl_disable(r, 2);
+    }
+    return r;
 }
 #endif
 
@@ -249,9 +250,9 @@ void *dt_draw_shade(void *list, unsigned short side, unsigned short tab, int wit
 /* the value of the sort key of the cursor's card, in a bubble beside the scroll bar */
 void *dt_draw_detail(void *list)
 {
-    unsigned int side = dtv.side;
-    DtList *l = dtv.pane[side].list;
-    unsigned short i = dt_cur_index(side);
+    DtPane *p = &dtv.pane[dtv.side];
+    DtList *l = p->list;
+    unsigned short i = dt_cur_index(dtv.side);
     DtEnt *e = SC_ENT(l, i);
     unsigned char sort = l->sort;
     unsigned int v;
@@ -261,7 +262,6 @@ void *dt_draw_detail(void *list)
     int rows;
     int x;
     int y;
-    int half;
     unsigned int sz;
     int lw;
 
@@ -269,6 +269,15 @@ void *dt_draw_detail(void *list)
         return list;
     v = dt_sort_value(e, sort);
     switch (sort) {
+    case 3:
+        w = 0x27;
+        h = 0x14;
+        break;
+    case 4:
+    case 5:
+        w = 0x30;
+        h = 0x13;
+        break;
     case 1:
         font_set_size(14, 14);
         sz = font_sample_glyph_size();
@@ -283,25 +292,14 @@ void *dt_draw_detail(void *list)
         w = 0x1B;
         h = 0x1B;
         break;
-    case 3:
-        w = 0x27;
-        h = 0x14;
-        break;
-    case 4:
-    case 5:
-        w = 0x30;
-        h = 0x13;
-        break;
     }
-    cols = dtv.pane[side].lay.cols;
+    cols = p->lay.cols;
     rows = (int)(l->count + cols - 1) / (int)cols;
-    x = dtv.pane[side].lay.x + dtv.pane[side].lay.w - 10 - w;
-    if (rows == 0) {
-        y = dtv.pane[side].lay.y + 12 + (dtv.pane[side].lay.h - 0x2B - h) / 2;
-    } else {
-        half = h / 2;
-        y = dtv.pane[side].lay.y + 12 + (dtv.pane[side].lay.h - 0x2B) * (i / cols) / rows - half;
-    }
+    x = p->lay.x + p->lay.w - 10 - w;
+    if (rows == 0)
+        y = p->lay.y + 12 + (p->lay.h - 0x2B - h) / 2;
+    else
+        y = p->lay.y + 12 + (p->lay.h - 0x2B) * (i / cols) / rows - h / 2;
     list = dt_draw_box(list, x, y, w, h, dt_eres_get(0x8013));
     if (v == 0xFFFFFFFE)
         return list;
@@ -323,6 +321,9 @@ void *dt_draw_detail(void *list)
     case 2:
         list = dt_draw_limit_icon(list, x + 5, y + 5, dt_kind_icon(v));
         break;
+    case 9:
+        list = dt_draw_pack_icon(list, x + 5, y + 5, v);
+        break;
     case 3:
         list = dt_draw_level(list, PT(x + 5, y + 4), v, 0xFFFFFFFF, dt_eres_get(0x8009));
         break;
@@ -340,17 +341,14 @@ void *dt_draw_detail(void *list)
             v = 0xFFFF;
         list = dt_draw_stat(list, v << 16 | 3, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, dt_eres_get(0x8009));
         break;
+    case 8:
+        list = dt_draw_attr_icon(list, x + 5, y + 5, v);
+        break;
     case 6:
         list = dt_draw_type_icon(list, x + 5, y + 5, v);
         break;
     case 7:
         list = dt_draw_kind_icon(list, x + 5, y + 5, v);
-        break;
-    case 8:
-        list = dt_draw_attr_icon(list, x + 5, y + 5, v);
-        break;
-    case 9:
-        list = dt_draw_pack_icon(list, x + 5, y + 5, v);
         break;
     }
     return list;

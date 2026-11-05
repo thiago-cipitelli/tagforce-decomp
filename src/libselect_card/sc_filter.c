@@ -183,8 +183,7 @@ int sc_sort_value(ScEnt *e, unsigned short sort)
 
     switch (sort) {
     case 1:
-        v = card_get_sort_position(e->id);
-        break;
+        return card_get_sort_position(e->id);
     case 2:
         v = card_get_attribute_icon(e->id);
         break;
@@ -195,13 +194,10 @@ int sc_sort_value(ScEnt *e, unsigned short sort)
         switch (card_get_attribute_icon(e->id)) {
         case 7:
         case 8:
-            if (sort == 8) {
-                v = card_get_prop5_hi(e->id);
-                if (v == 0)
-                    v = 7;
-            } else {
-                v = -2;
-            }
+            if (sort != 8)
+                return -2;
+            v = card_get_prop5_hi(e->id);
+            v = v == 0 ? 7 : v;
             break;
         default:
             switch (sort) {
@@ -210,13 +206,11 @@ int sc_sort_value(ScEnt *e, unsigned short sort)
                 break;
             case 4:
                 v = card_get_atk_q(e->id);
-                if (v == 0xFFFF)
-                    v = -1;
+                v = v == 0xFFFF ? -1 : v;
                 break;
             case 5:
                 v = card_get_def_q(e->id);
-                if (v == 0xFFFF)
-                    v = -1;
+                v = v == 0xFFFF ? -1 : v;
                 break;
             case 6:
                 v = card_get_type(e->id);
@@ -304,11 +298,18 @@ unsigned short sc_search_step(ScList *l)
 
 #ifdef NON_MATCHING /* laços do histórico com outra alocação */
 /* the matches become the visible order; the word goes on top of the history */
+/* the search word history seen from the start of sc (words at +0x4C), as the loop walks it */
+typedef struct ScWordsView {
+    unsigned char pad[0x4C];
+    unsigned short words[8][32];
+} ScWordsView;
+
 void sc_search_finish(ScList *l)
 {
-    int len;
     int i;
+    ScWordsView *v;
     int k;
+    int len;
 
     if (sc_search.out != 0) {
         memcpy(l->order, sc_search.out, sc_search.n << 1);
@@ -318,13 +319,16 @@ void sc_search_finish(ScList *l)
     }
     l->filter = 8;
     len = wcslen(sc_search.word);
-    for (i = 0; i < 8; i++) {
-        k = i;
-        if (sc.words[i][0] == 0)
+    k = 7;
+    for (i = 0, v = (ScWordsView *)&sc; i < 8; i++, v = (ScWordsView *)((char *)v + 64)) {
+        if (v->words[0][0] == 0) {
+            k = i;
             break;
-        if (len == wcslen(sc.words[i]) && wcscmp(sc.words[i], sc_search.word) == 0)
+        }
+        if (len == wcslen(v->words[0]) && wcscmp(v->words[0], sc_search.word) == 0) {
+            k = i;
             break;
-        k = 7;
+        }
     }
     for (; k > 0; k--)
         wcscpy(sc.words[k], sc.words[k - 1]);
@@ -342,27 +346,21 @@ ScFilterFn sc_filters[8] = {
 unsigned short sc_list_filter(ScList *l, unsigned short f, unsigned int *arg)
 {
     unsigned short *tmp = heap_alloc(sc.heap, l->count << 1);
-    unsigned short n;
+    int n;
     int i;
     unsigned short k;
     ScEnt *e;
     int ok;
-    unsigned short *p;
 
     if (tmp == 0)
         return l->count;
     n = 0;
-    for (i = 0, p = tmp; i < l->count; i++) {
+    for (i = 0; i < l->count; i++) {
         k = l->order[i];
         e = &l->ents[k];
-        ok = 1;
-        if (sc_filters[f] != 0)
-            ok = sc_filters[f](e->id, *arg);
-        else if (f == 7)
-            ok = sc_filter_attr(e, arg);
+        ok = sc_filters[f] != 0 ? sc_filters[f](e->id, *arg) : f == 7 ? sc_filter_attr(e, arg) : 1;
         if (ok) {
-            *p++ = k;
-            n++;
+            tmp[n++] = k;
         }
     }
     memcpy(l->order, tmp, n << 1);
