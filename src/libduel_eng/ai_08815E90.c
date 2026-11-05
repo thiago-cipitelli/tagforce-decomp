@@ -3,7 +3,6 @@
 // @asm 0x0881616C-0x088163E4
 // @asm 0x0881657C-0x08816A74
 // @asm 0x08816A74-0x08816D74
-// @asm 0x088170EC-0x088171C8
 // @asm 0x088172F0-0x0881739C
 // @asm 0x08817598-0x08818C34
 // @asm 0x08818C34-0x088194D0
@@ -480,25 +479,25 @@ int duel_08817078(unsigned int p, int z)
     return (int)card_get_level(id) > 4 || card_attribute_icon_in_2_3(id) != 0;
 }
 
-#ifdef NON_MATCHING /* a ordem da soma (id != 0x139C) + v + 1 e o recálculo do endereço do campo não reproduzidos */
 /* Score of the monster at (p, z) as target of the attacking monster. */
 int duel_088170EC(unsigned int p, int z)
 {
     int atk = duel_field_atk(duel_special.player[0], duel_atk_zone);
     int v;
+    int ne;
     DuelStats st;
 
     duel_0880546C(p, z, &st);
     if (duel.players[p & 1].field[z].pos != 0) {
         v = st.def + 1 - atk;
+        ne = duel.players[p & 1].field[z].card.id != 0x139C;
         if (v > 0) {
             v = 0;
         }
-        return v + 1 + (duel.players[p & 1].field[z].card.id != 0x139C);
+        return ne + (v + 1);
     }
     return (st.atk - atk) * 2;
 }
-#endif
 
 int duel_088171C8(unsigned int p, int z)
 {
