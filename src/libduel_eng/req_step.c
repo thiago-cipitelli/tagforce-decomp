@@ -1,9 +1,7 @@
 // @range 0x088DA5EC-0x088DEB2C
 // @asm 0x088DA5EC-0x088DB520
-// @asm 0x088DBD4C-0x088DC1A0
 // @asm 0x088DC4E0-0x088DCA4C
 // @asm 0x088DD038-0x088DD1A4
-// @asm 0x088DD660-0x088DD708
 // @asm 0x088DD88C-0x088DD98C
 // @asm 0x088DE360-0x088DEAF8
 /* Steps of the requests the engine carries out one per frame (duel_req, duel_req_step): input log, messages,
@@ -326,7 +324,7 @@ void duel_req_banish(void)
 int duel_zone_card_id(unsigned int p, int z, int i);
 void duel_zone_f_to_top(unsigned int p, unsigned short uid);
 
-#ifdef NON_MATCHING /* the two halves of the location are computed in the other order */
+#ifdef NON_MATCHING /* 2 palavras: em (i << 6) | (z << 1 | p & 1) o original calcula p & 1 antes do sll de z (registradores trocados); ordens de operandos, * 2 e casts não resolvem */
 /* Activation of card loc from zone arg (uid w): bring it to the top of its pile, announce it,
    point at it. */
 void duel_req_activate(void)
@@ -370,7 +368,7 @@ void duel_req_activate(void)
             if (i < 0 || (z < 11 && duel_zone_card_id(p, z, i) == 0)) {
                 duel_host_call(0x20, (unsigned short)((p & 1) | 0x20), id, w);
             } else {
-                duel_host_call(0x20, (unsigned short)((i & 0xFF) << 6 | ((z & 0x1F) << 1 | (p & 1))), id, w);
+                duel_host_call(0x20, (unsigned short)((i & 0xFF) << 6 | (((z & 0x1F) << 1) | (p & 1))), id, w);
             }
             duel_req_step++;
         }
@@ -576,43 +574,63 @@ void duel_grave_add(DuelCard *c);
 void duel_c_push(unsigned int p, DuelCard *c);
 int duel_0884CD88(unsigned int p, int z);
 
-#ifdef NON_MATCHING /* draft */
 /* Put card id loc at place arg (zone | index << 8) of player p, creating a new instance when the
    place is empty (w: position, tens digit face down). */
 void duel_req_set_card(void)
 {
-    unsigned int id = *(unsigned short *)&duel_req.loc;
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    unsigned int i = duel_req.arg >> 8;
-    unsigned int z = (duel_req.arg & 0xFF) + i;
-    DuelLoc at;
-    DuelCard c;
+    int z;
+    unsigned int id;
+    int i;
     int cur;
     int uid;
+    unsigned int p;
+    int t;
+    int w;
+    DuelLoc at;
+    DuelCard c;
 
-    if (z < 11) {
+    p = (duel_req.id & 0x8000) != 0;
+    z = duel_req.arg & 0xFF;
+    i = (unsigned short)duel_req.arg >> 8 & 0xFF;
+    id = *(unsigned short *)&duel_req.loc;
+    t = z + i;
+    w = duel_req.w;
+
+    if (t < 11) {
+        z = t;
         i = 0;
-    } else {
-        z = duel_req.arg & 0xFF;
     }
     at.player = p;
     at.zone = z;
     at.idx = i;
-    at.b14 = duel_req.w % 10;
-    at.b15 = duel_req.w / 10;
-    if (z < 12) {
-        cur = duel_zone_card_id(p, z, i);
-    } else {
+    at.b14 = w % 10;
+    at.b15 = w / 10;
+    if (z >= 12) {
         cur = duel_0884CD88(p, z);
+    } else {
+        cur = duel_zone_card_id(p, z, i);
     }
-    if (cur == 0) {
-        *(int *)&c = 0;
+    if (cur != 0) {
+        duel_field_card_deb2c(p, z, i)->id = id;
+        uid = CARD_UID(*duel_field_card_deb2c(p, z, i));
+        duel.list[uid].id = id;
+    } else {
+        {
+            char *d = (char *)&c;
+            int n = 4;
+
+            if (d) {
+                do {
+                    *d++ = 0;
+                } while (--n);
+            }
+        }
         c.id = id;
         c.owner = p;
         c.b14 = card_attribute_icon_in_2_3(id);
         c.uid_hi = duel_uid_next(p);
         uid = CARD_UID(c);
-        duel_cards[uid].id = id;
+        duel.list[uid].id = id;
         if (z < 5) {
             duel_place_monster(p, z, &c, at.b15, at.b14);
             duel.players[p & 1].field[z].flags &= ~0x200000;
@@ -622,29 +640,24 @@ void duel_req_set_card(void)
         } else {
             c.b14 = 0;
             switch (z) {
-            case 0xF:
-                duel_zone_f_add(&c, 0);
-                break;
-            case 0xE:
-                duel_grave_add(&c);
+            case 0xC:
+                duel_c_push(p, &c);
                 break;
             case 0xD:
                 duel_d_push_top(p, &c);
                 break;
-            case 0xC:
-                duel_c_push(p, &c);
+            case 0xE:
+                duel_grave_add(&c);
+                break;
+            case 0xF:
+                duel_zone_f_add(&c, 0);
                 break;
             }
         }
-    } else {
-        duel_field_card_deb2c(p, z, i)->id = id;
-        uid = CARD_UID(*duel_field_card_deb2c(p, z, i));
-        duel_cards[uid].id = id;
     }
     duel_host_call(0x1B, *(unsigned short *)&at, id, uid);
     duel_busy_0891523C = 0;
 }
-#endif
 
 void duel_draw(unsigned int p);
 
@@ -1002,7 +1015,8 @@ void duel_req_wait_5(void)
     }
 }
 
-#ifdef NON_MATCHING /* the pointer and counter registers of the two graveyard loops are swapped */
+#ifdef NON_MATCHING /* 15 palavras: o original usa o ponteiro do jogador (t3) como ponteiro do laço da zona F e uma cópia
+                       (t2) no do cemitério; pl explícito, ordem dos contadores e contador único não reproduzem */
 /* End of turn: clear the high flags of every zone and of the mode, mark the graveyard and zone F
    cards as old, count down the timed effects. */
 void duel_req_end_turn(void)
@@ -1146,13 +1160,15 @@ void duel_req_host_37(void)
     }
 }
 
-#ifdef NON_MATCHING /* the registers of the player and of the location are swapped */
 void duel_req_host_38(void)
 {
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    unsigned int arg = duel_req.arg;
-    unsigned int loc = *(unsigned short *)&duel_req.loc;
+    unsigned int arg;
+    unsigned int loc;
+    unsigned int p;
 
+    p = (duel_req.id & 0x8000) != 0;
+    arg = duel_req.arg;
+    loc = *(unsigned short *)&duel_req.loc;
     if (duel_req_step == 0) {
         duel_0884CD24();
         duel_host_call(0x38, p, arg, loc);
@@ -1161,7 +1177,6 @@ void duel_req_host_38(void)
         duel_busy_0891523C = 0;
     }
 }
-#endif
 
 void duel_req_host_3a(void)
 {
@@ -1478,12 +1493,13 @@ void duel_req_hand_open(void)
     }
 }
 
-#ifdef NON_MATCHING /* draft: the s registers and the order of the bitfield stores of the two locations differ */
+#ifdef NON_MATCHING /* 57 palavras: falta a ordem/registradores dos stores dos bitfields de from e to (o original guarda
+                       from.b15 antes de ler to e calcula i << 6 em a0) */
 /* Steps of summoning a monster from the hand: ask, move it to its zone, effects, wait. */
 void duel_step_summon(void)
 {
     int zone;
-    int arg = duel_req.arg;
+    int arg;
     DuelLoc loc;
     unsigned int w;
     int uid;
@@ -1493,8 +1509,10 @@ void duel_step_summon(void)
     int def;
     int i;
     DuelLoc to;
-    unsigned int p = (duel_req.id & 0x8000) != 0;
+    unsigned int p;
 
+    p = (duel_req.id & 0x8000) != 0;
+    arg = duel_req.arg;
     *(short *)&loc = *(short *)&duel_req.loc;
     w = duel_req.w;
     uid = (int)w >> 1;
@@ -1561,8 +1579,7 @@ void duel_step_summon(void)
 /* Steps of setting a spell or trap from the hand. */
 void duel_step_set_st(void)
 {
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    int arg = duel_req.arg;
+    int arg;
     DuelLoc loc;
     unsigned int uid;
     int zone;
@@ -1570,7 +1587,10 @@ void duel_step_set_st(void)
     int i;
     DuelLoc from;
     DuelLoc to;
+    unsigned int p;
 
+    p = (duel_req.id & 0x8000) != 0;
+    arg = duel_req.arg;
     *(short *)&loc = *(short *)&duel_req.loc;
     uid = duel_req.w;
     zone = loc.zone;

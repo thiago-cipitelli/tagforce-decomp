@@ -1,5 +1,4 @@
 // @range 0x088DEB2C-0x088DFFC0
-// @asm 0x088DFE9C-0x088DFFC0
 /* Rule checks for a player: cards that forbid drawing, summoning or activating, cards that can be
    used from the hand, locks on both players, who must answer now. */
 #include "duel.h"
@@ -427,14 +426,10 @@ int duel_088DFE24(int p, unsigned int q)
     return r;
 }
 
-#ifdef NON_MATCHING /* the first flag test branches to the epilogue and its value is reused in the last test */
 /* Player p has to answer now (local player waiting for input, or the CPU's turn). */
 int duel_must_answer(int p)
 {
-    if (duel_busy_0891523C != 0) {
-        return 0;
-    }
-    if (duel_busy_08915238 != 0) {
+    if (duel_busy_0891523C != 0 || duel_busy_08915238 != 0) {
         return 0;
     }
     if (duel_player_type[p] == 1) {
@@ -443,6 +438,5 @@ int duel_must_answer(int p)
     if (p == duel_view_player) {
         return duel.unk37d4 != 0 || duel_req_flag(0x31) != 0 || duel_req_flag(0x32) != 0;
     }
-    return !(duel_msg_state & 1) && !duel_busy_0891523C && duel_msg_busy() != 0;
+    return !((duel_msg_state & 1) || duel_busy_0891523C) && duel_msg_busy() != 0;
 }
-#endif
