@@ -196,12 +196,12 @@ int duel_088A9008(DuelAct *a, int i, unsigned int *loc)
     return t->placed == ((DuelListCard *)&duel.list[uid])->placed;
 }
 
-#ifdef NON_MATCHING /* falta o andi 0xFFFF do uid (original: 364 bytes) */
+#ifdef NON_MATCHING /* 26 palavras (era 65): uid = t->uid & 0xFFFF (o andi do original) e j <= 10; faltam a1/a2 trocados entre t e uid */
 void duel_088A9174(DuelAct *a, int i)
 {
     DuelTarget *t;
     unsigned char z;
-    unsigned short uid;
+    unsigned int uid;
     int p;
     int j;
 
@@ -212,10 +212,10 @@ void duel_088A9174(DuelAct *a, int i)
     }
     z = t->zone;
     if (z < 11) {
-        uid = t->uid;
+        uid = t->uid & 0xFFFF;
         if (uid != CARD_UID(duel.players[t->player & 1].field[z].card)) {
             for (p = 0; p < 2; p++) {
-                for (j = 0; j < 11; j++) {
+                for (j = 0; j <= 10; j++) {
                     if (uid == CARD_UID(duel.players[p & 1].field[j].card)) {
                         t->player = p;
                         t->zone = j;

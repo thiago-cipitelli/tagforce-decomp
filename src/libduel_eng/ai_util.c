@@ -523,14 +523,14 @@ int duel_0880AD78(unsigned int p)
     return -1;
 }
 
-#ifdef NON_MATCHING /* forma e lógica conferidas; só a alocação difere: o original põe fn em s0, q em s3, a contagem/índice
-                      em s1 e o índice/contagem regressiva em s4 (perm das declarações: no mínimo 31 palavras) */
+#ifdef NON_MATCHING /* 15 palavras (era 31): contador do primeiro laço e resultado de duel_rand em variáveis próprias; falta trocar o s1/s2 de n (ponteiro de n_hand) e do contador/índice */
 int duel_0880ADF4(unsigned int p, int (*fn)(unsigned int p, int z, int i))
 {
-    unsigned int q;
     unsigned int *n;
     unsigned int i;
     unsigned int c;
+    int r;
+    unsigned int q;
 
     q = 1 - p;
     n = (unsigned int *)((char *)&duel.players[0].n_hand + (q & 1) * sizeof(DuelPlayer));
@@ -540,10 +540,10 @@ int duel_0880ADF4(unsigned int p, int (*fn)(unsigned int p, int z, int i))
             c++;
         }
     }
-    i = duel_rand(c);
+    r = duel_rand(c);
     for (c = 0; c < *n; c++) {
         if (fn(q, 11, c) != 0) {
-            if (i-- == 0) {
+            if (r-- == 0) {
                 return c;
             }
         }
