@@ -2,10 +2,6 @@
 // @asm 0x0881F744-0x0881FB00
 // @asm 0x0881FB00-0x0881FD30
 // @asm 0x0881FD30-0x0881FF2C
-// @asm 0x08820250-0x0882069C
-// @asm 0x0882069C-0x08820A4C
-// @asm 0x08820B48-0x08820EDC
-// @asm 0x08821198-0x08821340
 // @asm 0x088216FC-0x08821A14
 // @data 0x0882F398-0x08830140
 // @rodata 0x0882B40C-0x0882B47C
@@ -650,17 +646,16 @@ void *tpt_draw_ehf(void *list, int i)
     return list;
 }
 
-#ifndef NON_MATCHING /* the templates of tpt_draw_faces's local vectors, named for the asm */
+/* the templates of tpt_draw_faces's local vectors */
 short tpt_face_pos2[4] = { 0x25, 0x9E, 0x175, 0x3D };
 short tpt_face_spr2[2] = { 1, 0 };
 short tpt_face_pos10[4] = { 3, 0xC7, 0x197, 2 };
 short tpt_face_pos4[8] = { 0x11, 0xA8, 0x11, 0x47, 0x189, 0xA8, 0x189, 0x47 };
 short tpt_face_spr4[4] = { 1, 0, 1, 0 };
-#endif
 
-/* entry at b + 4: the original walks the entries from &tpt->net (tpt + 0x10) in steps of 16 and reads the
-   fields 4 bytes further, with a second pointer at b + 4 for the kind test */
-#define PT_E(b) (*(TPtEnt *)((b) + 4))
+typedef struct TPtS8 { short v[8]; } TPtS8;   /* position tables copied to the stack whole */
+typedef struct TPtS4 { short v[4]; } TPtS4;
+typedef struct TPtS2 { short v[2]; } TPtS2;
 
 typedef struct TPtHead {               /* TPartner from +0x10, the base the original uses */
     unsigned char net;
@@ -669,11 +664,10 @@ typedef struct TPtHead {               /* TPartner from +0x10, the base the orig
     TPtEnt ent[4];
 } TPtHead;
 
-#ifdef NON_MATCHING /* 11 palavras: no último laço (modos 2/4/6/7/9) o mwcc troca $s0/$s1 entre i e p */
 void *tpt_draw_faces(void *list, int mode)
 {
-    char *b = (char *)&tpt->net;
-    TPtEnt *ke;
+    TPtHead *pt = (TPtHead *)&tpt->net;
+    TPtEnt *e;
     int dy = 0;
     short x;
     int r;
@@ -683,12 +677,12 @@ void *tpt_draw_faces(void *list, int mode)
         dy = 10;
     }
     if (mode == 1 || mode == 5 || mode == 8) {
-        short pos[4] = { 0x25, 0x9E, 0x175, 0x3D };
-        short spr[2] = { 1, 0 };
-        short *p = pos;
-        short *k = spr;
+        TPtS4 pos = *(TPtS4 *)tpt_face_pos2;
+        TPtS2 spr = *(TPtS2 *)tpt_face_spr2;
+        short *p = pos.v;
+        short *k = spr.v;
 
-        for (i = 0, ke = (TPtEnt *)(b + 4); i < 2; i++, p += 2, k++, b += 16, ke++) {
+        for (i = 0, e = pt->ent; i < 2; p += 2, k++, i++, e++) {
             r = tpt_flip(mode, i);
             if (r != 0) {
                 x = r + p[0];
@@ -696,36 +690,34 @@ void *tpt_draw_faces(void *list, int mode)
                 x = p[0];
             }
             list = tpt_sprite_def(list, *k, x, (short)(dy + p[1]));
-            if (ke->kind > 0) {
-                list = tpt_draw_face(list, mode, PT_E(b).kind, PT_E(b).type2,
-                                     (short)(x + 3), (short)(dy + (p[1] + 3)));
+            if (e->kind > 0) {
+                list = tpt_draw_face(list, mode, pt->ent[i].kind, pt->ent[i].type2, (short)(x + 3), (short)(dy + (p[1] + 3)));
             }
         }
     } else if (mode == 10) {
-        short pos[4] = { 3, 0xC7, 0x197, 2 };
-        short *p = pos;
+        TPtS4 pos = *(TPtS4 *)tpt_face_pos10;
+        short *p = pos.v;
 
-        for (i = 0; i < 2; i++, b += 16, p += 2) {
-            ke = (TPtEnt *)(b + 4);
+        for (i = 0; i < 2; i++, p += 2) {
+            e = &pt->ent[i];
             r = tpt_flip(mode, i);
             if (r != 0) {
                 x = r + p[0];
             } else {
                 x = p[0];
             }
-            if (ke->kind > 0) {
-                list = tpt_draw_face(list, mode, PT_E(b).kind, PT_E(b).type2,
-                                     (short)(x + 3), (short)(p[1] + 3));
+            if (e->kind > 0) {
+                list = tpt_draw_face(list, mode, pt->ent[i].kind, pt->ent[i].type2, (short)(x + 3), (short)(p[1] + 3));
             }
         }
     } else {
-        short pos[8] = { 0x11, 0xA8, 0x11, 0x47, 0x189, 0xA8, 0x189, 0x47 };
-        short spr[4] = { 1, 0, 1, 0 };
+        TPtS8 pos = *(TPtS8 *)tpt_face_pos4;
+        TPtS4 spr = *(TPtS4 *)tpt_face_spr4;
         short *p;
-        short *k = spr;
+        short *k = spr.v;
 
         if (mode == 3) {
-            for (i = 0, ke = (TPtEnt *)(b + 4), p = pos; i < 4; i++, p += 2, k++, b += 16, ke++) {
+            for (i = 0, e = pt->ent, p = pos.v; i < 4; p += 2, k++, i++, e++) {
                 if (i % 2 == 0) {
                     r = tpt_flip(mode, i);
                     if (r != 0) {
@@ -734,44 +726,41 @@ void *tpt_draw_faces(void *list, int mode)
                         x = p[0];
                     }
                     list = tpt_sprite_def(list, *k, x, p[1]);
-                    if (ke->kind == 1) {
-                        list = tpt_draw_face(list, mode, PT_E(b).kind,
-                                             PT_E(b).type2, (short)(x + 3),
-                                             (short)(dy + (p[1] + 3)));
+                    if (e->kind == 1) {
+                        list = tpt_draw_face(list, mode, pt->ent[i].kind, pt->ent[i].type2, (short)(x + 3), (short)(dy + (p[1] + 3)));
                     }
                 }
             }
         } else {
-            for (i = 0, ke = (TPtEnt *)(b + 4), p = pos; i < 4; i++, p += 2, k++, b += 16, ke++) {
-                r = tpt_flip(mode, i);
+            short *q;
+            int j;
+
+            for (j = 0, e = pt->ent, q = pos.v; j < 4; q += 2, k++, j++, e++) {
+                r = tpt_flip(mode, j);
                 if (r != 0) {
-                    x = r + p[0];
+                    x = r + q[0];
                 } else {
-                    x = p[0];
+                    x = q[0];
                 }
-                list = tpt_sprite_def(list, *k, x, (short)(dy + p[1]));
-                if (ke->kind > 0) {
-                    list = tpt_draw_face(list, mode, PT_E(b).kind, PT_E(b).type2,
-                                         (short)(x + 3), (short)(dy + (p[1] + 3)));
+                list = tpt_sprite_def(list, *k, x, (short)(dy + q[1]));
+                if (e->kind > 0) {
+                    list = tpt_draw_face(list, mode, pt->ent[j].kind, pt->ent[j].type2, (short)(x + 3), (short)(dy + (q[1] + 3)));
                 }
             }
         }
     }
     return list;
 }
-#endif
 
-#ifndef NON_MATCHING /* the templates of tpt_draw_names's local vectors, named for the asm */
+/* the templates of tpt_draw_names's local vectors */
 short tpt_name_pos2[4] = { 0x6E, 0xB6, 0xEF, 0x55 };
 short tpt_name_pos10[4] = { 0x4C, 0xF7, 0x111, 2 };
 short tpt_name_pos4[8] = { 0x5A, 0xC0, 0x5A, 0x5F, 0x103, 0xC0, 0x103, 0x5F };
-#endif
 
-#ifdef NON_MATCHING /* 19 palavras: i/p/ke trocam de $s no laço do modo 10 e i/p no último laço */
 void *tpt_draw_names(void *list, int mode)
 {
-    char *b = (char *)&tpt->net;
-    TPtEnt *ke;
+    TPtHead *pt = (TPtHead *)&tpt->net;
+    TPtEnt *e;
     int x;
     int r;
     int i;
@@ -781,42 +770,44 @@ void *tpt_draw_names(void *list, int mode)
         dy = 10;
     }
     if (mode == 1 || mode == 5 || mode == 8) {
-        short pos[4] = { 0x6E, 0xB6, 0xEF, 0x55 };
-        short *p = pos;
+        TPtS4 pos = *(TPtS4 *)tpt_name_pos2;
+        short *p = pos.v;
 
-        for (i = 0, ke = (TPtEnt *)(b + 4); i < 2; i++, p += 2, b += 16, ke++) {
+        for (i = 0, e = pt->ent; i < 2; p += 2, i++, e++) {
             r = tpt_flip(mode, i);
             if (r != 0) {
                 x = r + p[0];
             } else {
                 x = p[0];
             }
-            list = tpt_sprite_def(list, 4, (short)x, (short)(dy + p[1]));
-            if (ke->kind > 0) {
-                list = tpt_draw_name(list, &PT_E(b), x + 0x12, dy + (p[1] + 5), 0x6D, 0);
+            list = tpt_sprite_def(list, 4, x, dy + p[1]);
+            if (e->kind > 0) {
+                list = tpt_draw_name(list, &pt->ent[i], x + 0x12, dy + (p[1] + 5), 0x6D, 0);
             }
         }
     } else if (mode == 10) {
-        short pos[4] = { 0x4C, 0xF7, 0x111, 2 };
-        short *p = pos;
+        TPtS4 pos = *(TPtS4 *)tpt_name_pos10;
+        short *p = pos.v;
+        TPtEnt *f;
+        int j;
 
-        for (i = 0, ke = (TPtEnt *)(b + 4); i < 2; i++, p += 2, b += 16, ke++) {
-            r = tpt_flip(mode, i);
+        for (j = 0, f = pt->ent; j < 2; p += 2, j++, f++) {
+            r = tpt_flip(mode, j);
             if (r != 0) {
                 x = r + p[0];
             } else {
                 x = p[0];
             }
-            if (ke->kind > 0) {
-                list = tpt_draw_name(list, &PT_E(b), x + 0x12, p[1] + 5, 0x6D, 0);
+            if (f->kind > 0) {
+                list = tpt_draw_name(list, &pt->ent[j], x + 0x12, p[1] + 5, 0x6D, 0);
             }
         }
     } else {
-        short pos[8] = { 0x5A, 0xC0, 0x5A, 0x5F, 0x103, 0xC0, 0x103, 0x5F };
+        TPtS8 pos = *(TPtS8 *)tpt_name_pos4;
         short *p;
 
         if (mode == 3) {
-            for (i = 0, ke = (TPtEnt *)(b + 4), p = pos; i < 4; i++, p += 2, b += 16, ke++) {
+            for (i = 0, e = pt->ent, p = pos.v; i < 4; p += 2, i++, e++) {
                 if (i % 2 == 0) {
                     r = tpt_flip(mode, i);
                     if (r != 0) {
@@ -824,30 +815,32 @@ void *tpt_draw_names(void *list, int mode)
                     } else {
                         x = p[0];
                     }
-                    list = tpt_sprite_def(list, 4, (short)x, (short)(dy + p[1]));
-                    if (ke->kind == 1) {
-                        list = tpt_draw_name(list, &PT_E(b), x + 0x12, dy + (p[1] + 5), 0x6D, 0);
+                    list = tpt_sprite_def(list, 4, x, dy + p[1]);
+                    if (e->kind == 1) {
+                        list = tpt_draw_name(list, &pt->ent[i], x + 0x12, dy + (p[1] + 5), 0x6D, 0);
                     }
                 }
             }
         } else {
-            for (i = 0, ke = (TPtEnt *)(b + 4), p = pos; i < 4; i++, p += 2, b += 16, ke++) {
-                r = tpt_flip(mode, i);
+            short *q;
+            int j;
+
+            for (j = 0, e = pt->ent, q = pos.v; j < 4; q += 2, j++, e++) {
+                r = tpt_flip(mode, j);
                 if (r != 0) {
-                    x = r + p[0];
+                    x = r + q[0];
                 } else {
-                    x = p[0];
+                    x = q[0];
                 }
-                list = tpt_sprite_def(list, 4, (short)x, (short)(dy + p[1]));
-                if (mode != 3 && ke->kind > 0) {
-                    list = tpt_draw_name(list, &PT_E(b), x + 0x12, dy + (p[1] + 5), 0x6D, 0);
+                list = tpt_sprite_def(list, 4, x, dy + q[1]);
+                if (mode != 3 && e->kind > 0) {
+                    list = tpt_draw_name(list, &pt->ent[j], x + 0x12, dy + (q[1] + 5), 0x6D, 0);
                 }
             }
         }
     }
     return list;
 }
-#endif
 
 void *tpt_draw_name(void *list, TPtEnt *e, int x, int y, int w, int small)
 {
@@ -875,52 +868,50 @@ void *tpt_draw_name(void *list, TPtEnt *e, int x, int y, int w, int small)
     return list;
 }
 
-#ifndef NON_MATCHING /* the templates of tpt_draw_decks's local vectors, named for the asm */
+/* the templates of tpt_draw_decks's local vectors */
 short tpt_deck_pos2[4] = { 0x6E, 0xCE, 0xDF, 0x6D };
 short tpt_deck_spr2[2] = { 3, 2 };
 short tpt_deck_pos4[8] = { 0x5A, 0xD8, 0x5A, 0x77, 0xF3, 0xD8, 0xF3, 0x77 };
 short tpt_deck_spr4[2] = { 3, 2 };
-#endif
 
-#ifdef NON_MATCHING /* 14 palavras: no último laço o mwcc troca $s0/$s1 entre i e p (como em tpt_draw_faces) */
 void *tpt_draw_decks(void *list, int mode)
 {
-    char *b = (char *)&tpt->net;
-    TPtEnt *ke;
+    TPtHead *pt = (TPtHead *)&tpt->net;
+    TPtEnt *e;
+    int dy = 0;
     int x;
     int r;
     int i;
-    int dy = 0;
 
     if ((unsigned int)(mode - 8) < 2) {
         dy = 10;
     }
     if (mode == 1 || mode == 5 || mode == 8) {
-        short pos[4] = { 0x6E, 0xCE, 0xDF, 0x6D };
-        short spr[2] = { 3, 2 };
-        short *p = pos;
-        short *k = spr;
+        TPtS4 pos = *(TPtS4 *)tpt_deck_pos2;
+        TPtS2 spr = *(TPtS2 *)tpt_deck_spr2;
+        short *p = pos.v;
+        short *k = spr.v;
 
-        for (i = 0, ke = (TPtEnt *)(b + 4); i < 2; i++, p += 2, k++, b += 16, ke++) {
+        for (i = 0, e = pt->ent; i < 2; p += 2, k++, i++, e++) {
             r = tpt_flip(mode, i);
             if (r != 0) {
                 x = r + p[0];
             } else {
                 x = p[0];
             }
-            list = tpt_sprite_def(list, *k, (short)x, (short)(dy + p[1]));
-            if (ke->kind > 0) {
-                list = tpt_draw_deck(list, i, &PT_E(b), x + 0x12, dy + (p[1] + 5), 0x7B);
+            list = tpt_sprite_def(list, *k, x, dy + p[1]);
+            if (e->kind > 0) {
+                list = tpt_draw_deck(list, i, &pt->ent[i], x + 0x12, dy + (p[1] + 5), 0x7B);
             }
         }
     } else if (mode != 10) {
-        short pos[8] = { 0x5A, 0xD8, 0x5A, 0x77, 0xF3, 0xD8, 0xF3, 0x77 };
-        short spr[2] = { 3, 2 };
+        TPtS8 pos = *(TPtS8 *)tpt_deck_pos4;
+        TPtS2 spr = *(TPtS2 *)tpt_deck_spr4;
         short *p;
         int m;
 
         if (mode == 3) {
-            for (i = 0, ke = (TPtEnt *)(b + 4), p = pos; i < 4; i++, p += 2, b += 16, ke++) {
+            for (i = 0, e = pt->ent, p = pos.v; i < 4; p += 2, i++, e++) {
                 m = i % 2;
                 if (m == 0) {
                     r = tpt_flip(mode, i);
@@ -929,30 +920,32 @@ void *tpt_draw_decks(void *list, int mode)
                     } else {
                         x = p[0];
                     }
-                    list = tpt_sprite_def(list, spr[m], (short)x, (short)(dy + p[1]));
-                    if ((mode != 3 && ke->kind > 0) || (mode == 3 && ke->kind == 1)) {
-                        list = tpt_draw_deck(list, i, &PT_E(b), x + 0x12, dy + (p[1] + 5), 0x7B);
+                    list = tpt_sprite_def(list, spr.v[m], x, dy + p[1]);
+                    if ((mode != 3 && e->kind > 0) || (mode == 3 && e->kind == 1)) {
+                        list = tpt_draw_deck(list, i, &pt->ent[i], x + 0x12, dy + (p[1] + 5), 0x7B);
                     }
                 }
             }
         } else {
-            for (i = 0, ke = (TPtEnt *)(b + 4), p = pos; i < 4; i++, p += 2, b += 16, ke++) {
-                r = tpt_flip(mode, i);
+            short *q;
+            int j;
+
+            for (j = 0, e = pt->ent, q = pos.v; j < 4; q += 2, j++, e++) {
+                r = tpt_flip(mode, j);
                 if (r != 0) {
-                    x = r + p[0];
+                    x = r + q[0];
                 } else {
-                    x = p[0];
+                    x = q[0];
                 }
-                list = tpt_sprite_def(list, spr[i % 2], (short)x, (short)(dy + p[1]));
-                if (mode != 3 && ke->kind > 0) {
-                    list = tpt_draw_deck(list, i, &PT_E(b), x + 0x12, dy + (p[1] + 5), 0x7B);
+                list = tpt_sprite_def(list, spr.v[j % 2], x, dy + q[1]);
+                if (mode != 3 && e->kind > 0) {
+                    list = tpt_draw_deck(list, j, &pt->ent[j], x + 0x12, dy + (q[1] + 5), 0x7B);
                 }
             }
         }
     }
     return list;
 }
-#endif
 
 void *tpt_draw_deck(void *list, int i, TPtEnt *e, int x, int y, int w)
 {
@@ -1024,18 +1017,19 @@ void *tpt_draw_deck(void *list, int i, TPtEnt *e, int x, int y, int w)
     return list;
 }
 
-#ifndef NON_MATCHING /* the templates of tpt_draw_frames's local vectors, named for the asm */
+/* the templates of tpt_draw_frames's local vectors */
 short tpt_frame_pos[8] = { 0x5A, 0xA8, 0x5A, 0x47, 0x138, 0xA8, 0x138, 0x47 };
 short tpt_frame_spr[4] = { 7, 5, 8, 6 };
-#endif
 
-#ifdef NON_MATCHING /* 15 palavras: no laço do modo 3 o mwcc roda $s2/$s3/$s4 entre i, p e k */
 void *tpt_draw_frames(void *list, int mode)
 {
-    short pos[8] = { 0x5A, 0xA8, 0x5A, 0x47, 0x138, 0xA8, 0x138, 0x47 };
-    short spr[4] = { 7, 5, 8, 6 };
+    TPtS8 pos = *(TPtS8 *)tpt_frame_pos;
+    TPtS4 spr = *(TPtS4 *)tpt_frame_spr;
     short *p;
-    short *k = spr;
+    short *k = spr.v;
+    int j;
+    short *q;
+    short *m;
     int r;
     int i;
 
@@ -1043,22 +1037,22 @@ void *tpt_draw_frames(void *list, int mode)
     case 2:
     case 4:
     case 6:
-        for (i = 0, p = pos, k = spr; i < 4; i++, p += 2, k++) {
-            r = tpt_flip(mode, i);
+        for (j = 0, q = pos.v, m = spr.v; j < 4; j++, q += 2, m++) {
+            r = tpt_flip(mode, j);
             if (r != 0) {
-                r = r + p[0];
+                r += q[0];
             } else {
-                r = p[0];
+                r = q[0];
             }
-            list = tpt_sprite_def(list, *k, r, p[1]);
+            list = tpt_sprite_def(list, *m, r, q[1]);
         }
         break;
     case 3:
-        for (i = 0, p = pos; i < 4; i++, p += 2, k++) {
+        for (i = 0, p = pos.v; i < 4; i++, p += 2, k++) {
             if (i % 2 == 0) {
                 r = tpt_flip(mode, i);
                 if (r != 0) {
-                    r = r + p[0];
+                    r += p[0];
                 } else {
                     r = p[0];
                 }
@@ -1069,7 +1063,6 @@ void *tpt_draw_frames(void *list, int mode)
     }
     return list;
 }
-#endif
 
 void *tpt_draw_face(void *list, int mode, unsigned short kind, unsigned short var, short x, short y)
 {
