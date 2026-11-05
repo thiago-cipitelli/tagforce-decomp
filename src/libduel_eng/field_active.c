@@ -81,78 +81,75 @@ int duel_spec_act_ok(DuelSpecAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* the original tests monsters first and gives the zone bit counter its own $s register */
+#ifdef NON_MATCHING /* 10 palavras: no laço dos monstros o contador de bits e o ponteiro do slot trocam $s3/$s4 (ordem
+                       de declaração/inicialização e ponteiro explícito não resolvem) */
 /* Active copies of card id of player p, zone skip excluded. */
 int duel_find_effect_card(unsigned int p, int id, int skip)
 {
     int n = 0;
     int i;
+    unsigned int b;
 
-    if (card_is_monster(id) == 0) {
-        if (card_get_prop5_hi(id) == 2) {
-            if (id == field_get_card(p, 10) && SLOT_ACTIVE(&duel.players[p & 1].field[10]) &&
-                !(duel.zone_off & 1 << (p * 16 + 10))) {
-                n = 1;
-            }
-        } else {
-            DuelPlayer *pl = &duel.players[p & 1];
-
-            for (i = 5; i < 10; i++) {
-                if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&pl->field[i]) &&
-                    !(duel.zone_off & 1 << (p * 16 + i))) {
-                    n++;
-                }
-            }
-        }
-    } else {
+    if (card_is_monster(id) != 0) {
         DuelPlayer *pl = &duel.players[p & 1];
 
-        for (i = 0; i < 5; i++) {
-            if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&pl->field[i]) &&
-                !(duel.zone_off & 1 << (p * 16 + i))) {
+        for (b = p << 4, i = 0; i <= 4; i++, b++) {
+            if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << b)) {
                 n++;
             }
         }
+    } else if (card_get_prop5_hi(id) != 2) {
+        DuelPlayer *pl = &duel.players[p & 1];
+
+        for (b = (p << 4) + 5, i = 5; i < 10; i++, b++) {
+            if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << b)) {
+                n++;
+            }
+        }
+    } else if (id == field_get_card(p, 10) && SLOT_ACTIVE(&duel.players[p & 1].field[10]) &&
+               !(duel.zone_off & 1 << ((p << 4) + 10))) {
+        n = 1;
     }
     return n;
 }
 #endif
 
-#ifdef NON_MATCHING /* same; zone bit counters and slot pointers in other registers */
+#ifdef NON_MATCHING /* 9 palavras: no laço das mágicas/armadilhas i e o ponteiro do slot trocam $s2/$s4; o resto bate */
 /* Active copies of card id on both fields. */
 int duel_count_active(int id)
 {
     int n = 0;
-    unsigned int p;
     int i;
+    unsigned int p;
+    unsigned int b;
 
-    if (card_is_monster(id) == 0) {
-        if (card_get_prop5_hi(id) == 2) {
-            for (p = 0; (int)p < 2; p++) {
-                if (id == field_get_card(p, 10) && SLOT_ACTIVE(&duel.players[p & 1].field[10]) &&
-                    !(duel.zone_off & 1 << (p * 16 + 10))) {
+    if (card_is_monster(id) != 0) {
+        for (p = 0, b = 0; (int)p < 2; p++, b += 16) {
+            DuelPlayer *pl = &duel.players[p & 1];
+
+            for (i = 0; i < 5; i++) {
+                if (id == field_get_card(p, i) && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << (i + b))) {
                     n++;
                 }
             }
-        } else {
-            for (p = 0; (int)p < 2; p++) {
-                DuelPlayer *pl = &duel.players[p & 1];
+        }
+    } else if (card_get_prop5_hi(id) != 2) {
+        unsigned int b; unsigned int p;
+        for (p = 0, b = 0; (int)p < 2; p++, b += 16) {
+            DuelPlayer *pl = &duel.players[p & 1];
 
-                for (i = 5; i < 10; i++) {
-                    if (id == field_get_card(p, i) && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << (i + p * 16))) {
-                        n++;
-                    }
+            for (i = 5; i < 10; i++) {
+                if (id == field_get_card(p, i) && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << (i + b))) {
+                    n++;
                 }
             }
         }
     } else {
-        for (p = 0; (int)p < 2; p++) {
-            DuelPlayer *pl = &duel.players[p & 1];
-
-            for (i = 0; i < 5; i++) {
-                if (id == field_get_card(p, i) && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << (i + p * 16))) {
-                    n++;
-                }
+        unsigned int b; unsigned int p;
+        for (p = 0, b = 10; (int)p < 2; p++, b += 16) {
+            if (id == field_get_card(p, 10) && SLOT_ACTIVE(&duel.players[p & 1].field[10]) &&
+                !(duel.zone_off & 1 << b)) {
+                n++;
             }
         }
     }
@@ -185,10 +182,10 @@ int duel_count_monster_active(unsigned int p, int id)
 {
     int i;
     int n = 0;
-    DuelPlayer *pl = &duel.players[p & 1];
     unsigned int b;
+    DuelPlayer *pl = &duel.players[p & 1];
 
-    for (i = 0, b = p << 4; i < 5; i++, b++) {
+    for (i = 0, b = p << 4; i < 5; b++, i++) {
         int c = field_get_card(p, i);
 
         if (c == id && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << b)) {

@@ -1,10 +1,6 @@
 // @range 0x088C936C-0x088CA4E8
-// @asm 0x088C9878-0x088C9D24
 // @asm 0x088C9E88-0x088C9F58
-// @asm 0x088C9F58-0x088CA184
 // @asm 0x088CA184-0x088CA270
-// @asm 0x088CA270-0x088CA384
-// @asm 0x088CA384-0x088CA428
 /* More commands to the presentation: a card is flipped or changes position (0x35), moves between
    zones (0x3D, 0x3E), goes from the hand or the graveyard to the field (0x3F). */
 #include "duel.h"
@@ -94,8 +90,6 @@ void duel_088C7E68(unsigned int p, int z, int a, int b);
 void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 
-#ifdef NON_MATCHING /* 96 palavras, mas só o teste cid == 0 difere: o original faz `beqzl s2` direto ao epílogo com v0 = 0, o
-                       mwcc faz `bnezl` + `b` (uma instrução a mais, o resto desloca); goto/||/switch/variável r não resolvem */
 /* monster of p in zone z changes to face up (x) or face down, by the card id (the opponent when opp); with y, a
    flip to face up of a monster whose special group reaches y triggers its flip effect */
 int duel_088C9878(unsigned int p, int z, int x, int y, int id, int opp)
@@ -108,80 +102,79 @@ int duel_088C9878(unsigned int p, int z, int x, int y, int id, int opp)
     if (z >= 5) {
         return 0;
     }
-    if (cid == 0) {
-        return 0;
-    }
-    up = duel.players[p & 1].field[z].faceup;
-    def = !duel.players[p & 1].field[z].pos;
-    ev.s_player = p;
-    ev.s_zone = z;
-    ev.s_b14 = def;
-    ev.s_b15 = up ^ x;
-    ev.s_uid = CARD_UID(duel.players[p & 1].field[z].card);
-    ev.s_b16 = opp;
-    ev.s_b17 = 0;
-    if (y) {
-        y = card_get_special_group(cid) >= y;
-    }
-    duel_cmd((p ? 0x8000 : 0) | 0x34, z, x, id == 0);
-    if (id == 0) {
-        duel_088C7E68(p, z, 0x15, 1);
-    }
-    if ((x == 0 && up != 0) || (x != 0 && up == 0)) {
-        if (!def) {
+    if (cid != 0) {
+        up = duel.players[p & 1].field[z].faceup;
+        def = !duel.players[p & 1].field[z].pos;
+        ev.s_player = p;
+        ev.s_zone = z;
+        ev.s_b14 = def;
+        ev.s_b15 = up ^ x;
+        ev.s_uid = CARD_UID(duel.players[p & 1].field[z].card);
+        ev.s_b16 = opp;
+        ev.s_b17 = 0;
+        if (y) {
+            y = card_get_special_group(cid) >= y;
+        }
+        duel_cmd((p ? 0x8000 : 0) | 0x34, z, x, !id);
+        if (id == 0) {
+            duel_088C7E68(p, z, 0x15, 1);
+        }
+        if ((x == 0 && up != 0) || (x != 0 && up == 0)) {
+            if (!def) {
+                switch (cid) {
+                case 0x1005:
+                    duel_0884F30C((cid & 0xFFFF) | ((p << 31 & 0x80000000) | 0x16200000 | (z << 16 & 0x1F0000)), ev.s_uid,
+                                  *(unsigned int *)&ev);
+                    break;
+                }
+            } else {
+                switch (cid) {
+                case 0x101E:
+                case 0x1048:
+                case 0x1197:
+                case 0x1868:
+                    duel_0884F30C((cid & 0xFFFF) | ((p << 31 & 0x80000000) | 0x16200000 | (z << 16 & 0x1F0000)), ev.s_uid,
+                                  *(unsigned int *)&ev);
+                    break;
+                }
+            }
+        }
+        if (y && x && up == 0 && card_get_special_group(cid) != 0) {
             switch (cid) {
-            case 0x1005:
-                duel_0884F30C((cid & 0xFFFF) | ((p << 31 & 0x80000000) | 0x16200000 | (z << 16 & 0x1F0000)), ev.s_uid,
-                              *(unsigned int *)&ev);
+            case 0x1174:
+            case 0x133B:
+                if (duel_count_active(0x148E) == 0) {
+                    duel_088C87A8(p, z, 0x1174, 2, 0);
+                }
                 break;
             }
+            duel.players[p & 1].field[z].faceup = 1;
+            duel_0884F30C((cid & 0xFFFF) | ((p << 31 & 0x80000000) | 0x16200000 | (z << 16 & 0x1F0000)), ev.s_uid,
+                          *(unsigned int *)&ev);
+            duel.players[p & 1].field[z].faceup = 0;
+        }
+        if (def) {
+            unsigned int e = duel.players[p & 1].field[z].effects;
+
+            while (e != 0) {
+                DuelEffect *ef = &duel.effects[e];
+
+                e = ef->next;
+                if ((ef->kind & 0xF) < 6 && ef->src == 0x1A0B) {
+                    duel_088C77D4(ef->arg, 0x1A0B, 1, 0);
+                }
+            }
+            duel_088C89BC(p, z, 0x1A0B, 1);
+        }
+        if (x != 0 && up != 0) {
+            duel_088AFD5C(9, *(unsigned int *)&ev);
         } else {
-            switch (cid) {
-            case 0x101E:
-            case 0x1048:
-            case 0x1197:
-            case 0x1868:
-                duel_0884F30C((cid & 0xFFFF) | ((p << 31 & 0x80000000) | 0x16200000 | (z << 16 & 0x1F0000)), ev.s_uid,
-                              *(unsigned int *)&ev);
-                break;
-            }
+            duel_088AFD5C(0xB, *(unsigned int *)&ev);
         }
+        return 1;
     }
-    if (y && x && up == 0 && card_get_special_group(cid) != 0) {
-        switch (cid) {
-        case 0x1174:
-        case 0x133B:
-            if (duel_count_active(0x148E) == 0) {
-                duel_088C87A8(p, z, 0x1174, 2, 0);
-            }
-            break;
-        }
-        duel.players[p & 1].field[z].faceup = 1;
-        duel_0884F30C((cid & 0xFFFF) | ((p << 31 & 0x80000000) | 0x16200000 | (z << 16 & 0x1F0000)), ev.s_uid,
-                      *(unsigned int *)&ev);
-        duel.players[p & 1].field[z].faceup = 0;
-    }
-    if (def) {
-        unsigned int e = duel.players[p & 1].field[z].effects;
-
-        while (e != 0) {
-            DuelEffect *ef = &duel.effects[e];
-
-            e = ef->next;
-            if ((ef->kind & 0xF) < 6 && ef->src == 0x1A0B) {
-                duel_088C77D4(ef->arg, 0x1A0B, 1, 0);
-            }
-        }
-        duel_088C89BC(p, z, 0x1A0B, 1);
-    }
-    if (x != 0 && up != 0) {
-        duel_088AFD5C(9, *(unsigned int *)&ev);
-    } else {
-        duel_088AFD5C(0xB, *(unsigned int *)&ev);
-    }
-    return 1;
+    return 0;
 }
-#endif
 
 void duel_088C96EC(unsigned int p, int z, int v)
 {
@@ -223,95 +216,113 @@ void duel_088C9D24(DuelAct *a, unsigned int p, int z)
     }
 }
 
-#ifdef NON_MATCHING /* branch layout and argument packing not reproduced */
+#ifdef NON_MATCHING /* 14 palavras: o original refaz `andi 0xFFFF` de s antes do `ext` do 2º argumento e calcula o 3º
+                       antes do 1º; s unsigned int/short, locais e casts não reproduzem */
 void duel_088C9E88(int loc, int t)
 {
     unsigned int p = loc & 0xFF;
     unsigned int z = (unsigned short)loc >> 8 & 0xFF;
-    unsigned short s;
+    unsigned int s;
 
     if (p != (t & 0xFF) && duel.players[p & 1].field[z].faceup != 0) {
-        if (field_get_card(p, z) == 0x14AC) {
+        switch (field_get_card(p, z)) {
+        case 0x14AC:
             s = duel_slot_e1854(p, z);
-            if (s != 0xFFFF) {
-                duel_088C88B8(s & 0xFF, s >> 8, (p & 0xFF) | (z & 0xFF) << 8, 1);
+            if ((unsigned short)s != 0xFFFF) {
+                duel_088C88B8(s & 0xFF, (unsigned short)s >> 8 & 0xFF, (unsigned short)((p & 0xFF) | (z & 0xFF) << 8), 1);
             }
+            break;
         }
     }
 }
 #endif
 
-#ifdef NON_MATCHING /* branch layout and argument packing not reproduced */
 void duel_088C9F58(int loc, int t)
 {
-    unsigned int z = (unsigned short)loc >> 8 & 0xFF;
     unsigned int p = loc & 0xFF;
-    unsigned int tz = (unsigned short)t >> 8 & 0xFF;
-    unsigned int q;
+    unsigned int z = (unsigned short)loc >> 8 & 0xFF;
+    unsigned int tp = t & 0xFF;
+    int tz = (unsigned short)t >> 8 & 0xFF;
+    unsigned int e;
 
-    if (p != (t & 0xFF)) {
-        q = loc & 1;
-        if (duel.players[q].field[z].faceup != 0) {
-            unsigned int e = duel.players[q].field[z].effects;
+    if (p != tp && duel.players[p & 1].field[z].faceup != 0) {
+        e = duel.players[p & 1].field[z].effects;
+        while (e != 0) {
+            DuelEffect *ef = &duel.effects[e];
+            unsigned short src = ef->src;
+            unsigned short sp = src & 0xFF;
+            unsigned short sz = src >> 8 & 0xFF;
 
-            while (e != 0) {
-                DuelEffect *ef = &duel.effects[e];
-                unsigned short src = ef->src;
-
-                e = ef->next;
-                if ((ef->kind & 0xF) == 10 && duel.players[src & 1].field[src >> 8].card.id == 0x149D) {
-                    duel_088CC1D0(src & 0xFF, src >> 8, 0);
+            e = ef->next;
+            switch (ef->kind & 0xF) {
+            case 10:
+                switch (duel.players[sp & 1].field[sz].card.id) {
+                case 0x149D:
+                    duel_088CC1D0(sp, sz, 0);
+                    break;
                 }
+                break;
             }
-            {
-                int id = field_get_card(p, z);
-
-                if ((id == 0x11C9 || id == 0x118A) && tz < 5 && duel.players[q].field[z].link == 0 &&
-                    duel_0884F30C(t << 31 | 0x200000 | (tz & 0x1F) << 16 | (field_get_card(p, z) & 0xFFFF),
-                                  CARD_UID(duel.players[q].field[z].card), 0) != 0) {
-                    duel_088CC178(t & 0xFF, tz, 1);
-                }
+        }
+        switch (field_get_card(p, z)) {
+        case 0x118A:
+        case 0x11C9:
+            if (tz < 5 && duel.players[p & 1].field[z].link == 0 &&
+                duel_0884F30C((tp << 31 & 0x80000000) | 0x200000 | (tz << 16 & 0x1F0000) | (field_get_card(p, z) & 0xFFFF),
+                              (unsigned short)CARD_UID(duel.players[p & 1].field[z].card), 0) != 0) {
+                duel_088CC178(tp, tz, 1);
             }
+            break;
         }
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* branch layout and argument packing not reproduced */
+#ifdef NON_MATCHING /* 5 palavras: o 1º teste é `beqz` (não `beqzl`) com `andi t2,s1,0xff` no delay slot; com pb em
+                       local, if aninhado ou retorno antecipado não sai */
 void duel_088CA184(int a, int b)
 {
-    if (duel.players[(a & 0xFF) & 1].field[(unsigned short)a >> 8 & 0xFF].card.id != 0 &&
-        duel.players[(b & 0xFF) & 1].field[(unsigned short)b >> 8 & 0xFF].card.id == 0) {
+    unsigned int zb = (unsigned short)b >> 8 & 0xFF;
+    unsigned int za = (unsigned short)a >> 8 & 0xFF;
+    unsigned int pa = a & 0xFF;
+
+    if (duel.players[pa & 1].field[za].card.id == 0) {
+        return;
+    }
+    if (duel.players[(b & 0xFF) & 1].field[zb].card.id == 0) {
         duel_088C9E88(a, b);
-        duel_cmd(((a & 0xFF) ? 0x8000 : 0) | 0x3D, a, b, 0);
+        {
+            extern void duel_cmd(unsigned short, int, int, int);
+            duel_cmd((pa ? 0x8000 : 0) | 0x3D, a, b, 0);
+        }
         duel_088C9F58(a, b);
     }
 }
 #endif
 
-#ifdef NON_MATCHING /* branch layout and argument packing not reproduced */
 void duel_088CA270(unsigned int p, int a, int b)
 {
-    if (duel.players[(a & 0xFF) & 1].field[(unsigned short)a >> 8 & 0xFF].card.id != 0 &&
-        duel.players[(b & 0xFF) & 1].field[(unsigned short)b >> 8 & 0xFF].card.id != 0) {
+    unsigned short ib = duel.players[(unsigned char)b & 1].field[(unsigned short)b >> 8 & 0xFF].card.id;
+
+    if ((int)duel.players[(unsigned char)a & 1].field[(unsigned short)a >> 8 & 0xFF].card.id > 0 && ib > 0) {
         duel_088C9E88(a, b);
         duel_088C9E88(b, a);
-        duel_cmd((p ? 0x8000 : 0) | 0x3E, a, b, 0);
+        {
+            extern void duel_cmd(unsigned short, int, int, int);
+            duel_cmd((p ? 0x8000 : 0) | 0x3E, a, b, 0);
+        }
         duel_088C9F58(a, b);
         duel_088C9F58(b, a);
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* branch layout and argument packing not reproduced */
 void duel_088CA384(unsigned int p, int i, int f)
 {
     DuelCard *c = duel_field_card_deb2c(p, 11, i);
+    unsigned int uid = CARD_UID(*c);
 
-    duel_cmd(0x3F, ((p & 1) | 0x16) | (CARD_UID(*c) & 0x3FF) << 6, !f << 6 | (c->owner | 0x1A), 0);
+    duel_cmd(0x3F, (uid & 0x3FF) << 6 | ((p & 1) | 0x16), !f << 6 | ((c->owner & 1) | 0x1A), 0);
     duel_088AFD5C(0x24, 0);
 }
-#endif
 
 int duel_088CA428(unsigned int p, unsigned int uid, int f)
 {
