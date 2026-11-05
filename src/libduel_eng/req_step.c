@@ -1579,8 +1579,7 @@ void duel_step_summon(void)
 /* Steps of setting a spell or trap from the hand. */
 void duel_step_set_st(void)
 {
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    int arg = duel_req.arg;
+    int arg;
     DuelLoc loc;
     unsigned int uid;
     int zone;
@@ -1588,7 +1587,10 @@ void duel_step_set_st(void)
     int i;
     DuelLoc from;
     DuelLoc to;
+    unsigned int p;
 
+    p = (duel_req.id & 0x8000) != 0;
+    arg = duel_req.arg;
     *(short *)&loc = *(short *)&duel_req.loc;
     uid = duel_req.w;
     zone = loc.zone;
