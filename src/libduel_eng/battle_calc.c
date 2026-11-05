@@ -137,7 +137,7 @@ static void duel_battle_card(DuelFighter *me, DuelFighter *foe, unsigned int mp,
         for (i = 0; i < 2; i++) {
             r = &DAMAGE[i];
             if (r->a[0] == mp && r->a[1] == me->zone && r->b[0] == 1 - mp) {
-                r->w0 = (r->w0 + 1) >> 1;
+                r->w0 = (unsigned int)(r->w0 + 1) >> 1;
             }
         }
         break;
@@ -387,21 +387,6 @@ static void duel_battle_keep(DuelFighter *me, unsigned int mp, int mz, unsigned 
     }
 }
 
-/* the monster `me` was destroyed by 0x18F1 unless 0xFB6 protects it */
-static void duel_battle_18f1(DuelFighter *me, unsigned int mp, int mz, int show)
-{
-    if (show) {
-        if (!duel_slot_has_effect(mp, mz, 0xFB6)) {
-            me->destroyed = 0;
-            duel_088C4448(mp, me->zone, me->uid);
-            duel_088C87A8(mp, mz, 0xFB6, 2, 0);
-            duel_088C87A8(mp, mz, 0x18F1, 4, 0);
-        }
-    } else if (duel_slot_has_effect(mp, mz, 0xFB6)) {
-        me->destroyed = 0;
-    }
-}
-
 void duel_088482F8(int show, int check)
 {
     unsigned int tp = duel_atk_tp;
@@ -626,7 +611,7 @@ void duel_088482F8(int show, int check)
                 continue;
             }
         }
-        if (duel_slot_e8170(r->b[0], 10, 0x1A0C) && duel.players[r->b[0] & 1].unk4 > 3) {
+        if (duel_slot_e8170(r->b[0], 10, 0x1A0C) && duel.players[r->b[0] & 1].field[10].link > 3) {
             r->w0 = 0;
             continue;
         }
@@ -656,7 +641,7 @@ void duel_088482F8(int show, int check)
                 break;
             case 0x1500:
             case 0x168D:
-                DAMAGE[0].w0 = (DAMAGE[0].w0 + 1) >> 1;
+                DAMAGE[0].w0 = (unsigned int)(DAMAGE[0].w0 + 1) >> 1;
                 break;
             }
         }
@@ -724,11 +709,31 @@ void duel_088482F8(int show, int check)
 
     /* 5. 0x18F1 survives its destruction once, unless 0xFB6 */
     if (duel_atk_direct == 0 && check == 0) {
+        /* the attacker survives (and gets the 0xFB6 marker) when it does not have it yet */
         if (A->destroyed && a_neg == 0 && A->id == 0x18F1) {
-            duel_battle_18f1(A, p, duel_atk_zone, show);
+            if (!duel_slot_has_effect(p, duel_atk_zone, 0xFB6)) {
+                A->destroyed = 0;
+                if (show) {
+                    duel_088C4448(p, A->zone, A->uid);
+                    duel_088C87A8(p, duel_atk_zone, 0xFB6, 2, 0);
+                    duel_088C87A8(p, duel_atk_zone, 0x18F1, 4, 0);
+                }
+            } else if (duel_slot_has_effect(p, duel_atk_zone, 0x18F1)) {
+                A->destroyed = 0;
+            }
         }
+        /* the target: same when show, else only the 0x18F1 effect still on it */
         if (D->destroyed && d_neg == 0 && D->id == 0x18F1) {
-            duel_battle_18f1(D, tp, duel_atk_tz, show);
+            if (show) {
+                if (!duel_slot_has_effect(tp, duel_atk_tz, 0xFB6)) {
+                    D->destroyed = 0;
+                    duel_088C4448(tp, D->zone, D->uid);
+                    duel_088C87A8(tp, duel_atk_tz, 0xFB6, 2, 0);
+                    duel_088C87A8(tp, duel_atk_tz, 0x18F1, 4, 0);
+                }
+            } else if (duel_slot_has_effect(tp, duel_atk_tz, 0x18F1)) {
+                D->destroyed = 0;
+            }
         }
     }
     if (show && p != tp && A->destroyed && D->destroyed) {

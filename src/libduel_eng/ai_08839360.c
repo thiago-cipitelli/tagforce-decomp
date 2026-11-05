@@ -396,8 +396,14 @@ int duel_0883A2BC(unsigned int p)
                 duel_088C87A8(tp, duel_atk_tz, 0x1512, 2, 0);
             }
         }
-        if (duel_atk_direct == 0 && o->id == 0x129A && o->unk8 == 0 && p != tp) {
-            duel_0884F30C(BATTLE_EV(o->id, tp, duel_atk_tz, 0x200000), CARD_UID(ATK_SLOT(tp, duel_atk_tz)->card), 0);
+        if (duel_atk_direct == 0) {
+            switch (o->id) {
+            case 0x129A:
+                if (o->unk8 == 0 && p != tp) {
+                    duel_0884F30C(BATTLE_EV(o->id, tp, duel_atk_tz, 0x200000), CARD_UID(ATK_SLOT(tp, duel_atk_tz)->card), 0);
+                }
+                break;
+            }
         }
         duel_w_08919610++;
         return 0;
@@ -646,8 +652,9 @@ int duel_0883B4A8(unsigned int p)
     unsigned int tp = duel_atk_tp;
     DuelSpecAct *a = &duel_special.act[p];
     DuelSpecAct *o = &duel_special.act[1 - p];
-    int r;
     unsigned int ev;
+    int r;
+    unsigned int xv;
     struct DuelActX x;
 
     if (duel_atk_direct != 0) {
@@ -753,9 +760,10 @@ int duel_0883B4A8(unsigned int p)
             x.s_b14 = o->unk8;
             x.s_b16 = 0;
             x.s_b17 = 0;
-            if (duel_0886B0E4(ev, x.s_uid, *(unsigned int *)&x) != 0) {
+            xv = *(unsigned int *)&x;
+            if (duel_0886B0E4(ev, x.s_uid, xv) != 0) {
                 duel_cmd((tp ? 0x8000 : 0) | 0x61, duel_special.unk24, 1, 0);
-                duel_0884F30C(ev, o->uid, *(unsigned int *)&x);
+                duel_0884F30C(ev, o->uid, xv);
             }
         }
         return 1;
@@ -1497,7 +1505,7 @@ int duel_0883E63C(unsigned int p)
                 case 0x1A61:
                     if (duel_slot_has_effect(q, z, 0x14D6) != 0 && ATK_SLOT(q, z)->pos == 0) {
                         duel_088C4448(q, z, CARD_UID(ATK_SLOT(q, z)->card));
-                        duel_088C9878(q, z, 0, 0, 0x1A61, 0);
+                        duel_088C9878(q, z, 0, 0, id, 0);
                     }
                     break;
                 }

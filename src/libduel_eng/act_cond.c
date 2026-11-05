@@ -64,9 +64,6 @@ int duel_088770C0(DuelAct *a, DuelAct *b);
 unsigned int duel_act_e3920(DuelAct *a);
 int duel_act_target_is_monster(DuelAct *a);
 
-extern unsigned int duel_chain2_n;     /* 0x08914920 */
-extern unsigned char duel_chain2_kind[]; /* 0x08914928 */
-extern struct { unsigned int s_uid : 9, s_player : 1, s_zone : 4, s_b14 : 1, s_b15 : 1, s_b16 : 1, s_b17 : 1, s_b18 : 1, s_zone2 : 4, s_b23 : 9; } duel_chain2_src[]; /* 0x08914948 */
 
 int duel_0886CB44(unsigned int p, int n, int uid, int monster, int all)
 {
@@ -560,9 +557,9 @@ int duel_0886DE70(DuelAct *a)
     if (a->kind != 0x16 || duel_phase_ok2(a->player) == 0) {
         return 0;
     }
-    for (i = 0; i < duel_chain2_n; i++) {
-        if (duel_chain2_kind[i] == 0x16 && duel_chain2_src[i].s_b16 && duel_chain2_src[i].s_b15 &&
-            duel_chain2_src[i].s_zone2 == 0xE) {
+    for (i = 0; i < duel_chain.n_kinds; i++) {
+        if (duel_chain.kinds[i] == 0x16 && duel_chain.srcs[i].s_b16 && duel_chain.srcs[i].s_b15 &&
+            duel_chain.srcs[i].s_zone2 == 0xE) {
             n++;
         }
     }

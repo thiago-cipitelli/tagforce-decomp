@@ -287,7 +287,6 @@ static void duel_link_resolved(DuelAct *a, DuelAct *prev)
     unsigned int q;
     int z;
     int id;
-    int k;
 
     if (a->zone < 11 && a->uid == CARD_UID(duel.players[a->player & 1].field[a->zone].card) && duel_0884FBB0(a)) {
         duel_088C7E68(a->player, a->zone, 2, 1);
@@ -367,14 +366,14 @@ static void duel_link_resolved(DuelAct *a, DuelAct *prev)
     if (card_get_prop5_hi(a->id) == 1 && prev != 0 && prev->player != a->player && prev->b4_1 &&
         !(duel_w_08917DB4 & 1) && duel_hand_count_name(a->player, 0x190A)) {
         q = a->player;
-        k = duel_hand_find_name(q, 0x190A);
-        duel_0884F30C(a->player << 31 | 0x50190A, CARD_UID(duel.players[q].hand[k]), prev->id);
+        duel_0884F30C(a->player << 31 | 0x50190A, CARD_UID(duel.players[q].hand[duel_hand_find_name(q, 0x190A)]),
+                      prev->id);
     }
     if (card_get_prop5_hi(a->id) == 1 && !a->b4_1 && !(duel_w_08917DB4 & 1) &&
         duel_hand_count_name(a->player, 0x1A28)) {
         q = a->player;
-        k = duel_hand_find_name(q, 0x190A); /* sic: the uid of 0x190A */
-        duel_0884F30C(a->player << 31 | 0x501A28, CARD_UID(duel.players[q].hand[k]), 0);
+        /* sic: the uid of 0x190A; the original calls duel_hand_find_name twice (CARD_UID on the indexed card) */
+        duel_0884F30C(a->player << 31 | 0x501A28, CARD_UID(duel.players[q].hand[duel_hand_find_name(q, 0x190A)]), 0);
     }
 }
 
