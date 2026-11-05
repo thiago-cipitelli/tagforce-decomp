@@ -141,7 +141,7 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
             cs = cosf(f);
             w->ripple_v[i][0].u = u; w->ripple_v[i][0].v = 0.0f; w->ripple_v[i][0].color = 0xFFFFFF;
             w->ripple_v[i][0].x = sn * 0.5f; w->ripple_v[i][0].y = 0.0f; w->ripple_v[i][0].z = cs * 0.5f;
-            w->ripple_v[i][1].u = u; w->ripple_v[i][1].v = 0.24f; w->ripple_v[i][1].color = 0x30FFFFFF;
+            w->ripple_v[i][1].u = u; w->ripple_v[i][1].v = 0.24000001f; w->ripple_v[i][1].color = 0x30FFFFFF;
             w->ripple_v[i][1].x = sn * 1.7f; w->ripple_v[i][1].y = 0.0f; w->ripple_v[i][1].z = cs * 1.7f;
             w->ripple_v[i][2].u = u; w->ripple_v[i][2].v = 0.3f; w->ripple_v[i][2].color = 0xFFFFFF;
             w->ripple_v[i][2].x = sn * 2.0f; w->ripple_v[i][2].y = 0.0f; w->ripple_v[i][2].z = cs * 2.0f;

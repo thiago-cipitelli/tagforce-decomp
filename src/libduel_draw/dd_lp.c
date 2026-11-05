@@ -2,7 +2,6 @@
 // @rodata 0x0886FE80-0x0886FF0C
 // @data 0x08874FA0-0x08875104
 // @asm 0x08811718-0x08811BE0
-// @asm 0x08812214-0x0881230C
 /* The LP and phase panel: the frame (ehf), the names of the duelists, the LP counters counting
    to their new value, turn and card counters, the results of a series of duels, the phase
    animation (states of the phase ehf) and the turn switch. */
@@ -351,28 +350,26 @@ void *dd_lpp_turn(void *list, int x, int y)
     return list;
 }
 
-#ifdef NON_MATCHING /* 8 palavras: só a alocação dos $s (orig: l=s0, px=s1, lp=s2, p=s3); ordem das declarações já permutada */
 /* the LP of both players */
 void *dd_lpp_counters(void *list)
 {
     DdInt2 x = dd_lpp_x;
-    DdLpp *l = &dd_lpp;
     int p;
+    int lp;
     int *px;
+    DdLpp *l = &dd_lpp;
 
     list = dd_sprite_at(list, 0x98, 1, &dd_uv[0x54]);
     list = dd_sprite_at(list, 0x9F, 1, &dd_uv[0x55]);
     list = dd_sprite_at(list, 0x1A6, 1, &dd_uv[0x54]);
     list = dd_sprite_at(list, 0x1AD, 1, &dd_uv[0x55]);
     for (p = 0, px = x.v; p < 2; p++, px++) {
-        int lp = l->lp[p];
-
+        lp = l->lp[p];
         list = dl_ambient_color(list, 0xFF00FFFF);
         list = dd_lpp_digits(list, *px, 1, lp);
     }
     return list;
 }
-#endif
 
 /* LP counting to their new value in 60 frames */
 void dd_lpp_count_tick(float dt)
