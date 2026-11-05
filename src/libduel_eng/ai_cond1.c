@@ -1,10 +1,5 @@
 // @range 0x0881C118-0x0881D0D8
-// @asm 0x0881C1AC-0x0881C2D0
-// @asm 0x0881C3B0-0x0881C4DC
-// @asm 0x0881C538-0x0881C6D4
-// @asm 0x0881C6D4-0x0881C850
 // @asm 0x0881C8F4-0x0881CA34
-// @asm 0x0881CFF4-0x0881D0D8
 /* Conditions the computer player checks before activating a card (continued in ai_cond0.c). */
 #include "duel.h"
 #include "card_db.h"
@@ -75,7 +70,6 @@ int duel_ai_0881C160(DuelAct *a)
     return duel_count_monsters(a->player) > 1;
 }
 
-#ifdef NON_MATCHING /* the original schedules a nop before the ATK test of the target */
 int duel_ai_0881C1AC(DuelAct *a, int b)
 {
     int z;
@@ -88,14 +82,19 @@ int duel_ai_0881C1AC(DuelAct *a, int b)
             duel_slot_ef098(1 - a->player, z, a->id) != 0) {
             int id = field_get_card(1 - a->player, z);
 
-            if (id != 0x13C3 && id != 0x1596 && duel_field_atk(1 - a->player, z) >= 1800) {
-                return 1;
+            switch (id) {
+            case 0x1596:
+            case 0x13C3:
+                break;
+            default:
+                if (duel_field_atk(1 - a->player, z) >= 1800) {
+                    return 1;
+                }
             }
         }
     }
     return 0;
 }
-#endif
 
 int duel_ai_0881C2D0(DuelAct *a, int b)
 {
@@ -121,34 +120,27 @@ int duel_ai_0881C324(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* control flow of the ATK and owner tests not reproduced */
 int duel_ai_0881C3B0(DuelAct *a)
 {
-    int y;
     int x;
+    int y;
     DuelCard *c;
     unsigned int id;
 
-    if (duel_08809B50(a->player, a->id, 0) < 0) {
-        return 0;
-    }
-    c = duel_0884C7CC();
-    id = c->id;
-    duel_08809FC4(1 - a->player, &x, &y, 0);
-    if (!(card_get_atk(id) > 0x6A4 && MAX(x, y) < card_get_atk(id))) {
-        if (card_get_attribute_icon(id) == 0 || card_get_special_group(id) != 0) {
-            return 0;
+    if (duel_08809B50(a->player, a->id, 0) >= 0) {
+        c = duel_0884C7CC();
+        id = c->id;
+        duel_08809FC4(1 - a->player, &x, &y, 0);
+        if (card_get_atk(id) > 1700 && card_get_atk(id) > MAX(x, y) ||
+            card_get_attribute_icon(id) != 0 && card_get_special_group(id) == 0) {
+            if (c->owner != a->player && duel_088070A8(id) != 0) {
+                return 0;
+            }
+            return 1;
         }
-    }
-    if (c->owner == a->player) {
-        return 1;
-    }
-    if (duel_088070A8(id) == 0) {
-        return 1;
     }
     return 0;
 }
-#endif
 
 int duel_ai_0881C4DC(DuelAct *a)
 {
@@ -158,59 +150,58 @@ int duel_ai_0881C4DC(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* control flow of the ATK/DEF choice not reproduced */
 int duel_ai_0881C538(DuelAct *a)
 {
-    int y;
     int x;
-    int v;
+    int y;
     unsigned int id;
+    int v;
 
     if (duel_08809B50(a->player, a->id, 0) >= 0 && duel_088086D4(a->id, duel_dlg_cards.unk0) == 0) {
         id = duel_0884C7CC()->id;
-        if (a->id == 0x1881 || a->id == 0x1536) {
-            v = MAX(card_get_def(id), card_get_atk(id));
-        } else if (a->id == 0x1880 || a->id == 0x14F7) {
+        switch (a->id) {
+        case 0x14F7:
+        case 0x1880:
             v = card_get_def(id);
-        } else {
+            break;
+        case 0x1536:
+        case 0x1881:
+            v = MAX(card_get_atk(id), card_get_def(id));
+            break;
+        default:
             v = card_get_atk(id);
+            break;
         }
         duel_08809FC4(1 - a->player, &x, &y, 0);
-        if (v > 0x6A4 && MAX(x, y) < v) {
-            return 1;
-        }
-        if (v > 1000 && card_get_attribute_icon(id) != 0 && card_get_special_group(id) == 0) {
+        if (v > 1700 && v > MAX(x, y) ||
+            v > 1000 && card_get_attribute_icon(id) != 0 && card_get_special_group(id) == 0) {
             return 1;
         }
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* control flow of the ATK/DEF maximum not reproduced */
 int duel_ai_0881C6D4(DuelAct *a)
 {
     int v = 0;
-    int y;
     int x;
+    int y;
     unsigned int id;
 
     if (duel_08809B50(1 - a->player, a->id, 0) >= 0) {
         id = duel_0884C7CC()->id;
-        v = MAX(card_get_def(id), card_get_atk(id));
+        v = MAX(card_get_atk(id), card_get_def(id));
     }
-    if (duel_08809B50(a->player, a->id, 0) < 0) {
-        return 0;
+    if (duel_08809B50(a->player, a->id, 0) >= 0) {
+        id = duel_0884C7CC()->id;
+        duel_08809FC4(1 - a->player, &x, &y, 0);
+        v = MAX(v, MAX(x, y));
+        if (card_get_atk(id) > 1700 && v <= card_get_def(id) || card_get_attribute_icon(id) == 1) {
+            return 1;
+        }
     }
-    id = duel_0884C7CC()->id;
-    duel_08809FC4(1 - a->player, &x, &y, 0);
-    v = MAX(MAX(x, y), v);
-    if (card_get_atk(id) < 0x6A5 || card_get_def(id) < v) {
-        return card_get_attribute_icon(id) == 1;
-    }
-    return 1;
+    return 0;
 }
-#endif
 
 int duel_ai_0881C850(DuelAct *a)
 {
@@ -365,7 +356,6 @@ int duel_ai_0881CE34(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original folds the faceup offset into the base address of duel */
 int duel_ai_0881CFF4(DuelAct *a)
 {
     int r;
@@ -377,8 +367,7 @@ int duel_ai_0881CFF4(DuelAct *a)
         return 0;
     }
     duel.players[a->player & 1].field[a->zone].faceup = 1;
-    r = duel_08809F2C(a->player) > 0;
+    r = duel_08809F2C(a->player);
     duel.players[a->player & 1].field[a->zone].faceup = 0;
-    return r;
+    return r > 0;
 }
-#endif

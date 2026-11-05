@@ -752,134 +752,32 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
 }
 #endif
 
-#ifdef NON_MATCHING /* 3 KB; escrita a partir do asm */
+#ifdef NON_MATCHING /* lógica e ordem dos jal conferidas com o asm (case invertidos, switch internos por id); ~790 palavras: o mwcc tira (q != p) + 2 dos laços (o original recalcula a cada chamada) e deixa destroy na pilha (original em s8) */
 /* After the card of slot s (zone z of player p) left: sends the cards that go with it (the same
    cases as duel_leave_mark), then the cards bound to it by effect entries. */
 void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
 {
     int id = duel_special_get_id(s);
     int destroy = (f & 2) != 0;
-    unsigned int n;
+    int keep = !((f & 8) != 0);
+    int b4 = (f & 4) != 0;
+    int b24 = (f & 0x1000000) != 0;
+    int n;
     unsigned int q;
     unsigned int v;
     unsigned int e;
     DuelEffect *ef;
-    DuelSlot *t;
     int i;
 
     switch (id) {
-    case 0x1A95:
-        for (n = 0; n < 2; n++) {
-            q = duel_turn_player ^ n;
-            for (i = 0; i < 11; i++) {
-                if ((duel_st_affects(q, i, p, z) || duel_slot_effect_with(q, i, 0x1A95, CARD_UID(s->card))) &&
-                    SLOT_AT(q, i)->card.id != 0 && duel_card_can_affect(q, i, 0x1A95, z, 0)) {
-                    duel_send_card(q, i, 0xE, (q != p) + 2, 0x1A95);
-                }
-            }
-        }
-        break;
-    case 0x1A7C:
-        if (z > 4 && SLOT_ACTIVE(SLOT_AT(p, z))) {
+    case 0x12BE:
+        if (keep && destroy) {
             for (n = 0; n < 2; n++) {
                 q = duel_turn_player ^ n;
                 for (i = 0; i < 5; i++) {
-                    if (duel_slot_effect_with(q, i, 0x1A7C, CARD_UID(SLOT_AT(p, z)->card))) {
-                        duel_send_card(q, i, 0xB, q != p, 0x1A7C);
-                    }
-                }
-            }
-        }
-        break;
-    case 0x1A2B:
-    case 0x1A2C:
-    case 0x1A2D:
-    case 0x1A2E:
-        if (s->faceup != 0) {
-            for (n = 0; n < 2; n++) {
-                q = duel_turn_player ^ n;
-                for (i = 0; i < 5; i++) {
-                    if (duel_slot_has_effect(q, i, id)) {
+                    if (SLOT_ACTIVE(SLOT_AT(q, i)) && card_is_attribute6(field_get_card(q, i))) {
                         duel_send_card(q, i, 0xE, (q != p) + 2, id);
                     }
-                }
-            }
-        }
-        break;
-    case 0x150E:
-        if (z > 4 && SLOT_ACTIVE(SLOT_AT(p, z))) {
-            for (n = 0; n < 2; n++) {
-                q = duel_turn_player ^ n;
-                for (i = 0; i < 5; i++) {
-                    t = SLOT_AT(q, i);
-                    if (t->faceup != 0 && card_is_attribute7(t->card.id)) {
-                        duel_send_card(q, i, 0xB, q != p, 0x150E);
-                    }
-                }
-            }
-        }
-        break;
-    case 0x17AD:
-    case 0x17AE:
-    case 0x17AF:
-        if (z > 4 && SLOT_AT(p, z)->faceup != 0 && duel_find_effect_card(p, 0x17AF, -1)) {
-            for (i = 5; i < 10; i++) {
-                t = SLOT_AT(p, i);
-                if (i != z && t->card.id != 0 && t->faceup != 0 &&
-                    (t->card.id == 0x17AE || t->card.id == 0x17AD || t->card.id == 0x17AF)) {
-                    duel_send_card(p, i, 0xE, 0, 0x17AF);
-                }
-            }
-        }
-        break;
-    case 0x1468:
-    case 0x1497:
-    case 0x1498:
-    case 0x1499:
-    case 0x149A:
-        if (z > 4 && SLOT_AT(p, z)->faceup != 0 && duel_find_effect_card(p, 0x1468, -1)) {
-            for (i = 5; i < 10; i++) {
-                t = SLOT_AT(p, i);
-                if (i != z && t->card.id != 0 && t->faceup != 0 &&
-                    (t->card.id == 0x149A || t->card.id == 0x1499 || t->card.id == 0x1498 ||
-                     t->card.id == 0x1497 || t->card.id == 0x1468)) {
-                    duel_send_card(p, i, 0xE, 2, 0x1468);
-                }
-            }
-        }
-        break;
-    case 0x1366:
-    case 0x1880:
-    case 0x1881:
-    case 0x19D7:
-        if (!destroy) {
-            break;
-        }
-        /* fall through */
-    case 0x12D3:
-    case 0x15E6:
-    case 0x1625:                       /* the monster it is attached to: banished or destroyed */
-        if (SLOT_AT(p, z)->card.id != 0 && SLOT_ACTIVE(SLOT_AT(p, z))) {
-            v = duel_slot_e1854(p, z);
-            if (v != 0xFFFF) {
-                q = v & 0xFF;
-                i = v >> 8;
-                if (SLOT_AT(v, i)->card.id != 0 && SLOT_AT(v, i)->faceup != 0) {
-                    if (id == 0x1881 || id == 0x1880 || id == 0x1625) {
-                        duel_send_card(q, i, 0xF, q != p, id);
-                    } else if (duel_card_can_affect(q, i, id, z, 1)) {
-                        duel_send_card(q, i, 0xE, (q != p) + 2, id);
-                    }
-                }
-            }
-        }
-        break;
-    case 0x17BF:                       /* banishes its 0x17C7/0x17C8 monsters */
-        if (SLOT_AT(p, z)->card.id != 0 && SLOT_ACTIVE(SLOT_AT(p, z))) {
-            for (i = 0; i < 5; i++) {
-                n = field_get_card(p, i);
-                if ((n == 0x17C8 || n == 0x17C7) && SLOT_AT(p, i)->faceup != 0) {
-                    duel_send_card(p, i, 0xF, 2, 0x17BF);
                 }
             }
         }
@@ -903,14 +801,143 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
             }
         }
         break;
-    case 0x12BE:
-        if (!(f & 8) && destroy) {
+    case 0x17BF:                       /* banishes its 0x17C7/0x17C8 monsters */
+        if (SLOT_AT(p, z)->card.id != 0 && SLOT_ACTIVE(SLOT_AT(p, z))) {
+            for (i = 0; i < 5; i++) {
+                switch (field_get_card(p, i)) {
+                case 0x17C7:
+                case 0x17C8:
+                    if (SLOT_AT(p, i)->faceup != 0) {
+                        duel_send_card(p, i, 0xF, 2, id);
+                    }
+                    break;
+                }
+            }
+        }
+        break;
+    case 0x1366:
+    case 0x1880:
+    case 0x1881:
+    case 0x19D7:
+        if (!destroy) {
+            break;
+        }
+        /* fall through */
+    case 0x12D3:
+    case 0x15E6:
+    case 0x1625:                       /* the monster it is attached to: banished or destroyed */
+        if (SLOT_AT(p, z)->card.id != 0 && SLOT_ACTIVE(SLOT_AT(p, z))) {
+            v = duel_slot_e1854(p, z);
+            if (v != 0xFFFF) {
+                q = v & 0xFF;
+                i = (v >> 8) & 0xFF;
+                if (SLOT_AT(q, i)->card.id != 0 && SLOT_AT(q, i)->faceup != 0) {
+                    switch (id) {
+                    case 0x1625:
+                    case 0x1880:
+                    case 0x1881:
+                        duel_send_card(q, i, 0xF, q != p, id);
+                        break;
+                    default:
+                        if (duel_card_can_affect(q, i, id, z, 1)) {
+                            duel_send_card(q, i, 0xE, (q != p) + 2, id);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        break;
+    case 0x1468:
+    case 0x1497:
+    case 0x1498:
+    case 0x1499:
+    case 0x149A:
+        if (z >= 5 && SLOT_AT(p, z)->faceup != 0 && duel_find_effect_card(p, 0x1468, -1)) {
+            for (i = 5; i < 10; i++) {
+                if (i == z) {
+                    continue;
+                }
+                if (SLOT_AT(p, i)->card.id != 0 && SLOT_AT(p, i)->faceup != 0) {
+                    switch (SLOT_AT(p, i)->card.id) {
+                    case 0x1468:
+                    case 0x1497:
+                    case 0x1498:
+                    case 0x1499:
+                    case 0x149A:
+                        duel_send_card(p, i, 0xE, 2, 0x1468);
+                        break;
+                    }
+                }
+            }
+        }
+        break;
+    case 0x17AF:
+    case 0x17AD:
+    case 0x17AE:
+        if (z >= 5 && SLOT_AT(p, z)->faceup != 0 && duel_find_effect_card(p, 0x17AF, -1)) {
+            for (i = 5; i < 10; i++) {
+                if (i == z) {
+                    continue;
+                }
+                if (SLOT_AT(p, i)->card.id != 0 && SLOT_AT(p, i)->faceup != 0) {
+                    switch (SLOT_AT(p, i)->card.id) {
+                    case 0x17AF:
+                    case 0x17AD:
+                    case 0x17AE:
+                        duel_send_card(p, i, 0xE, 0, 0x17AF);
+                        break;
+                    }
+                }
+            }
+        }
+        break;
+    case 0x150E:
+        if (z >= 5 && SLOT_ACTIVE(SLOT_AT(p, z))) {
             for (n = 0; n < 2; n++) {
                 q = duel_turn_player ^ n;
                 for (i = 0; i < 5; i++) {
-                    if (SLOT_ACTIVE(SLOT_AT(q, i)) && card_is_attribute6(field_get_card(q, i))) {
-                        duel_send_card(q, i, 0xE, (q != p) + 2, 0x12BE);
+                    if (SLOT_AT(q, i)->faceup != 0 && card_is_attribute7(SLOT_AT(q, i)->card.id)) {
+                        duel_send_card(q, i, 0xB, q != p, 0x150E);
                     }
+                }
+            }
+        }
+        break;
+    case 0x1A2B:
+    case 0x1A2C:
+    case 0x1A2D:
+    case 0x1A2E:
+        if (s->faceup != 0) {
+            for (n = 0; n < 2; n++) {
+                q = duel_turn_player ^ n;
+                for (i = 0; i < 5; i++) {
+                    if (duel_slot_has_effect(q, i, id)) {
+                        duel_send_card(q, i, 0xE, (q != p) + 2, id);
+                    }
+                }
+            }
+        }
+        break;
+    case 0x1A7C:
+        if (z >= 5 && SLOT_ACTIVE(SLOT_AT(p, z))) {
+            for (n = 0; n < 2; n++) {
+                q = duel_turn_player ^ n;
+                for (i = 0; i < 5; i++) {
+                    if (duel_slot_effect_with(q, i, id, CARD_UID(SLOT_AT(p, z)->card))) {
+                        duel_send_card(q, i, 0xB, q != p, id);
+                    }
+                }
+            }
+        }
+        break;
+    case 0x1A95:
+        for (n = 0; n < 2; n++) {
+            q = duel_turn_player ^ n;
+            for (i = 0; i < 11; i++) {
+                if ((duel_st_affects(q, i, p, z) || duel_slot_effect_with(q, i, id, CARD_UID(s->card))) &&
+                    SLOT_AT(q, i)->card.id != 0 && duel_card_can_affect(q, i, id, z, 0)) {
+                    duel_send_card(q, i, 0xE, (q != p) + 2, id);
                 }
             }
         }
@@ -919,9 +946,8 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
     for (e = s->effects; e != 0;) {
         ef = &duel_effects[e];
         e = ef->next;
-        if (duel_effect_live(ef, destroy, (f & 0x1000000) != 0)) {
-            duel_send_card(ef->src & 0xFF, ef->src >> 8, 0xE,
-                           (f & 0x400000) + destroy * 0x100000 + 2 + ((f & 4) != 0) * 0x200000, 0);
+        if (duel_effect_live(ef, destroy, b24)) {
+            duel_send_card(ef->src & 0xFF, ef->src >> 8, 0xE, (f & 0x400000) + destroy * 0x100000 + 2 + b4 * 0x200000, 0);
         }
     }
 }

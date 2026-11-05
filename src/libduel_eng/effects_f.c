@@ -1,6 +1,5 @@
 // @range 0x088FA288-0x088FA920
 // @asm 0x088FA288-0x088FA488
-// @asm 0x088FA6E4-0x088FA920
 /* Card effect handlers (continued). */
 #include "duel.h"
 #include "card_db.h"
@@ -19,14 +18,14 @@ int duel_088AA224(DuelAct *a);
 void duel_0884C588(unsigned int p, int a, unsigned short id, unsigned int b);
 int duel_088BFF78(unsigned int p, unsigned short id, int b);
 void duel_0884ACD8(unsigned int p, int msg);
-int duel_0887DB24(void);
+int duel_0887DB24(DuelAct *a);
 int duel_088C4604(DuelAct *a, unsigned int p, int n);
 void duel_088CAE24(unsigned int p, DuelCard *c, int a);
 int duel_088DFCC8(unsigned int uid);
 void duel_088C7CF0(void);
 void duel_088C7BA4(void);
 void duel_088C6508(unsigned int p, int id, int a, int b);
-void duel_088CBAA4(void);
+void duel_088CBAA4(unsigned int p, int z, int uid);
 void duel_088D1858(int x, unsigned int p, int z);
 void duel_088C9344(int x, unsigned int p, int z, int a);
 
@@ -35,7 +34,7 @@ int duel_eff_fa288(DuelAct *a)
 {
     switch (duel_step) {
     case 0x80:
-        if (duel_0887DB24() == 0) {
+        if (duel_0887DB24(a) == 0) {
             return 0;
         } else {
             unsigned int t = duel_act_target(a, 0);
@@ -125,32 +124,32 @@ int duel_eff_fa5c8(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original computes the zone before the player; uid = a->uid as third argument of duel_088CBAA4 */
 int duel_eff_fa6e4(int x, DuelAct *a)
 {
-    unsigned int z;
+    unsigned int p;
+    unsigned char z;
 
     a->b4_3 = a->b4_2 = a->b4_1 = 1;
-    z = a->zone & 0xFF;
-    if (a->uid == CARD_UID(duel.players[a->player & 1].field[z].card)) {
-        duel_088CBAA4();
+    z = a->zone;
+    p = a->player;
+    if (a->uid == CARD_UID(duel.players[p & 1].field[z].card)) {
+        duel_088CBAA4(p, z, a->uid);
         duel_088D1858(x, a->player, a->zone);
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* same as duel_eff_fa6e4 */
 int duel_eff_fa800(int x, DuelAct *a)
 {
-    unsigned int z;
+    unsigned int p;
+    unsigned char z;
 
     a->b4_3 = a->b4_2 = a->b4_1 = 1;
-    z = a->zone & 0xFF;
-    if (a->uid == CARD_UID(duel.players[a->player & 1].field[z].card)) {
-        duel_088CBAA4();
+    z = a->zone;
+    p = a->player;
+    if (a->uid == CARD_UID(duel.players[p & 1].field[z].card)) {
+        duel_088CBAA4(p, z, a->uid);
         duel_088C9344(x, a->player, a->zone, 0);
     }
     return 0;
 }
-#endif

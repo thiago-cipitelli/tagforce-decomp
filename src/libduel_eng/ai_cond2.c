@@ -1,9 +1,6 @@
 // @range 0x08819F94-0x0881C118
-// @asm 0x0881A118-0x0881A1E4
 // @asm 0x0881A3EC-0x0881A554
 // @asm 0x0881A7C0-0x0881A960
-// @asm 0x0881A960-0x0881AA48
-// @asm 0x0881B1E4-0x0881B2C0
 /* Conditions the computer player checks before activating a card (continued in ai_cond1.c). */
 #include "duel.h"
 #include "card_db.h"
@@ -116,7 +113,6 @@ int duel_ai_0881A10C(DuelAct *a)
     return duel_08807AB4(a->player);
 }
 
-#ifdef NON_MATCHING /* the original branches to the shared epilogue for the LP test; mwcc to the instruction after it */
 int duel_ai_0881A118(DuelAct *a)
 {
     int v[2];
@@ -134,12 +130,13 @@ int duel_ai_0881A118(DuelAct *a)
         return 0;
     }
     if (duel.players[q & 1].lp <= v[q]) {
-        return 1;
+        n = 1;
+    } else {
+        n = duel_hand_count_name(p, 0x159B);
+        n = !(n + duel_d_count_name(p, 0x159B));
     }
-    n = duel_hand_count_name(p, 0x159B);
-    return !(n + duel_d_count_name(p, 0x159B));
+    return n;
 }
-#endif
 
 int duel_ai_0881A1E4(DuelAct *a)
 {
@@ -194,7 +191,7 @@ int duel_ai_0881A2B4(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* branch order of the LP and count tests not reproduced */
+#ifdef NON_MATCHING /* 20 palavras: o original não recarrega a0 antes de duel_08809F2C (a0 ainda vale a->player do índice do LP); com a chamada sem argumento ficam 8 (a0/a1 trocados no 1 - player) */
 int duel_ai_0881A3EC(DuelAct *a)
 {
     int n = duel_count_field_all(1 - a->player);
@@ -203,23 +200,19 @@ int duel_ai_0881A3EC(DuelAct *a)
     if (n == 0) {
         return 0;
     }
-    if (duel_0880ACA0(a->player) < duel_0880ACA0(1 - a->player)) {
+    if (duel_0880ACA0(1 - a->player) > duel_0880ACA0(a->player)) {
         return 1;
     }
-    if (n >= 2 && duel_count_field_all(a->player) < n) {
+    if (n >= 2 && n > duel_count_field_all(a->player)) {
         return 1;
     }
-    if (duel_08836868(a->player) != 0) {
-        if (duel_count_active(0x140E) == 0 && duel_count_active(0x17A6) == 0) {
-            return 0;
-        }
-        v = duel_088054A8(a->player, -1, 0);
-        if (v < duel.players[(1 - a->player) & 1].lp && v < 0x960) {
-            return 0;
-        }
-        if (duel_08809F2C(a->player) > 0) {
-            return 1;
-        }
+    if (duel_08836868(a->player) == 0) {
+        return 0;
+    }
+    if ((duel_count_active(0x140E) != 0 || duel_count_active(0x17A6) != 0) &&
+        ((v = duel_088054A8(a->player, -1, 0)) >= duel.players[(1 - a->player) & 1].lp || v >= 0x960) &&
+        duel_08809F2C(a->player) > 0) {
+        return 1;
     }
     return 0;
 }
@@ -300,21 +293,19 @@ int duel_ai_0881A7C0(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* branch order of the grave and LP tests not reproduced */
 int duel_ai_0881A960(DuelAct *a)
 {
-    int r = 1;
     unsigned int p = a->player;
 
-    if (duel.players[(1 - p) & 1].n_grave < 5) {
-        if (duel_hand_count_name(p, 0x14F0) == 0 && duel_count_name(a->player, 0x14F0) == 0) {
-            return 0;
-        }
-        r = !(duel.players[a->player & 1].lp < 0x3E9 || duel.players[a->player & 1].n_grave < 0xF);
+    if (duel.players[(1 - p) & 1].n_grave >= 5) {
+        return 1;
     }
-    return r;
+    if ((duel_hand_count_name(p, 0x14F0) != 0 || duel_count_name(a->player, 0x14F0) != 0) &&
+        duel.players[a->player & 1].lp > 1000 && duel.players[a->player & 1].n_grave >= 0xF) {
+        return 1;
+    }
+    return 0;
 }
-#endif
 
 int duel_ai_0881AA48(DuelAct *a)
 {
@@ -476,29 +467,22 @@ int duel_ai_0881B188(DuelAct *a)
     return duel_hand_count_monsters(p) < 3;
 }
 
-#ifdef NON_MATCHING /* the original loads the opponent LP before the multiply; branch order differs */
 int duel_ai_0881B1E4(DuelAct *a)
 {
     int v;
-    int r;
 
     if (a->b3_4 == 0) {
         return 1;
     }
     v = duel_slot_value_1909(a->player, a->zone);
-    r = 1;
-    if (v * 1000 < duel.players[(1 - a->player) & 1].lp) {
-        if (duel_find_effect_card(a->player, a->id, -1) < 2) {
-            r = 0;
-        } else if (v < 2) {
-            r = 0;
-        } else {
-            r = 1;
-        }
+    if (duel.players[(1 - a->player) & 1].lp <= v * 1000) {
+        return 1;
     }
-    return r;
+    if (duel_find_effect_card(a->player, a->id, -1) > 1 && v >= 2) {
+        return 1;
+    }
+    return 0;
 }
-#endif
 
 int duel_ai_0881B2C0(DuelAct *a)
 {

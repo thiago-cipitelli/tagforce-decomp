@@ -1,11 +1,9 @@
 // @range 0x08820618-0x08827618
-// @asm 0x08820E08-0x08820F60
 // @asm 0x08821124-0x08821888
 // @asm 0x08822000-0x088230CC
-// @asm 0x088230CC-0x088239EC
 // @asm 0x088239EC-0x08824798
 // @asm 0x08824D34-0x08825B9C
-// @data 0x089078E8-0x08907908
+// @data 0x089078C0-0x08907908
 /* The computer player's choice of a card to activate (second part): the tables of cards checked
    on the field and in the hand, and the step machine that goes through them. */
 #include "duel.h"
@@ -231,7 +229,6 @@ int duel_08820D44(unsigned int p)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original não sabe que v0 já vale 1 no default (b fim; li v0,1) e grava o passo antes do li; o mwcc salta direto ao epílogo */
 int duel_ai_step_08820E08(void)
 {
     unsigned int p = duel_turn_player;
@@ -239,8 +236,6 @@ int duel_ai_step_08820E08(void)
     int r;
 
     switch (duel_ai_main_step) {
-    default:
-        return 1;
     case 0:
         for (i = 0; i < 0x3D; i++) {
             r = !duel_08820618(p, &duel_ai_field_cards[i]);
@@ -264,10 +259,9 @@ int duel_ai_step_08820E08(void)
             return 0;
         }
         duel_ai_main_step++;
-        return 1;
     }
+    return 1;
 }
-#endif
 
 int duel_08820F60(unsigned int p)
 {
@@ -994,12 +988,11 @@ int duel_field_level(unsigned int p, int z);
 void duel_088C448C(int p, int a);
 void duel_088D1438(unsigned int p, int z, int a, int b);
 void duel_088C7E68(unsigned int p, int z, int a, int b);
-int duel_0886B0E4(unsigned int a, unsigned short uid, int c);
+int duel_0886B0E4(unsigned int a, unsigned short uid, unsigned int c);
 
 #define DUEL_EV(p, z, f, id) ((p) << 31 & 0x80000000 | (f) | (unsigned int)(z) << 16 & 0x1F0000 | (id))
 
 /* Steps of a direct attack [?]: same machine as duel_ai_atk_08822000 with the damage step 0x20. */
-#ifdef NON_MATCHING /* 3 palavras: o original põe o move a2 (terceiro argumento de duel_0886B0E4) no atraso do jal */
 int duel_ai_atk_088230CC(void)
 {
     DuelAtkRec *const a = &duel_atk_rec;
@@ -1120,7 +1113,6 @@ int duel_ai_atk_088230CC(void)
         return 1;
     }
 }
-#endif
 
 extern unsigned int duel_w_089149F0;
 extern unsigned int duel_w_08914A00;

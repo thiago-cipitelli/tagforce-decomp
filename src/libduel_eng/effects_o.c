@@ -1,5 +1,4 @@
 // @range 0x088FDE68-0x088FE160
-// @asm 0x088FDE68-0x088FE09C
 /* Card effect handlers (continued). */
 #include "duel.h"
 
@@ -21,11 +20,10 @@ void duel_0884ACD8(unsigned int p, int msg);
 void duel_0884AD18(int msg);
 void duel_088359E8(unsigned int p, int id, int (*fn)(int id));
 int duel_08835AC0(void);
-void duel_088CB914(void);
+void duel_088CB914(unsigned int p, int a);
 void duel_088D1920(DuelAct *a, unsigned int mask);
 void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, int c);
 
-#ifdef NON_MATCHING /* 10 words: the original loads duel_w_0891964C before the shift operands in the 0x7D step */
 int duel_eff_fde68(DuelAct *a)
 {
     int r = 0x7C;
@@ -65,8 +63,13 @@ int duel_eff_fde68(DuelAct *a)
         return 0x7D;
     case 0x7D:
         if (duel_08835AC0() != 0) {
-            a->w[duel_w_0891964C] |= 1 << (duel_w_08919650 + duel_w_08919654);
-            duel_088CB914();
+            {
+                unsigned int i = duel_w_0891964C;
+                int k = duel_w_08919650 + duel_w_08919654;
+
+                a->w[i] |= 1 << k;
+                duel_088CB914(i, k);
+            }
             if (--duel_w_089148FC != 0) {
                 r = 0x7F;
             } else {
@@ -83,7 +86,6 @@ int duel_eff_fde68(DuelAct *a)
     }
     return r;
 }
-#endif
 
 int duel_eff_fe09c(DuelAct *a)
 {

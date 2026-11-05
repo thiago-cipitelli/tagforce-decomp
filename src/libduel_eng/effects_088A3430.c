@@ -1,5 +1,4 @@
 // @range 0x088A3430-0x088A49F8
-// @asm 0x088A3EDC-0x088A4180
 /* Card effect handlers (DuelAct *a), after effects_088A1904.c. */
 #include "duel.h"
 
@@ -50,7 +49,7 @@ void duel_wfmt_d(unsigned short *dst, int fmt, int n);
 int duel_0884E690(DuelAct *a, int (*fn)());
 int duel_088537B0(int id);
 void duel_088359E8(unsigned int p, int id, int (*fn)(int id));
-void duel_088CB914(void);
+void duel_088CB914(unsigned int p, int a);
 unsigned int duel_088D13CC(DuelAct *a, unsigned int mask);
 extern unsigned int duel_w_0891964C;
 extern int duel_w_08919650;
@@ -290,7 +289,6 @@ int duel_088A3CB4(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* endereço de a->w[i] calculado antes da máscara e o fim do case 0x7D com outro bloco de retorno */
 int duel_088A3EDC(DuelAct *a)
 {
     unsigned short buf[256];
@@ -345,25 +343,25 @@ int duel_088A3EDC(DuelAct *a)
         return 0x7D;
     case 0x7D:
         if (duel_08835AC0() != 0) {
-            w = &a->w[duel_w_0891964C];
-            *w |= 1 << (duel_w_08919650 + duel_w_08919654);
-            duel_088CB914();
+            {
+                unsigned int i = duel_w_0891964C;
+                int k = duel_w_08919650 + duel_w_08919654;
+
+                a->w[i] |= 1 << k;
+                duel_088CB914(i, k);
+            }
             return --duel_w_089148FC != 0 ? 0x7F : 0x7C;
         }
-        if (f) {
-            return 0x7F;
+        if (!f && n != duel_w_089148FC) {
+            return 0x7C;
         }
-        if (n == duel_w_089148FC) {
-            return 0x7F;
-        }
-        return 0x7C;
+        return 0x7F;
     case 0x7C:
         duel_088D13CC(a, a->w[0] | a->w[1] << 16);
         return 0;
     }
     return 0;
 }
-#endif
 
 int duel_088A4180(DuelAct *a)
 {

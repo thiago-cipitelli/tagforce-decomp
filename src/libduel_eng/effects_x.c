@@ -2,9 +2,7 @@
 // @data 0x089117DC-0x08911828
 // @asm 0x08887618-0x088876B0
 // @asm 0x08887B34-0x08887ED8
-// @asm 0x088887C0-0x088888F8
 // @asm 0x08888ED0-0x08889914
-// @asm 0x08889B30-0x08889BE4
 /* Card effect handlers (DuelAct *a), after effects_w.c. */
 #include "duel.h"
 
@@ -104,7 +102,7 @@ int card_attribute_icon_in_2_3(int id);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void duel_088CB95C(unsigned int p, int z, int uid);
 void duel_088C77EC(unsigned int p, int uid);
-void duel_088C1B88(void);
+void duel_088C1B88(unsigned int p, int z);
 
 #ifdef NON_MATCHING /* registradores */
 int duel_08887618(DuelAct *a, DuelAct *b)
@@ -546,7 +544,6 @@ int duel_088886E4(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* b; nop para o return 10 comum */
 int duel_088887C0(DuelAct *a)
 {
     if (a->b4_2) {
@@ -567,8 +564,6 @@ int duel_088887C0(DuelAct *a)
         if (duel_h_0891968E != 0) {
             if (duel.players[a->player & 1].n_hand < 5) {
                 duel_088C5E70(a->player, 5 - duel.players[a->player & 1].n_hand);
-            } else {
-                return 10;
             }
         } else {
             duel_088C77D4(a->player, a->id, 0x21, 0);
@@ -577,7 +572,6 @@ int duel_088887C0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088888F8(DuelAct *a)
 {
@@ -963,16 +957,19 @@ int duel_08889914(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* zona com andi 0xFF */
 int duel_08889B30(DuelAct *a)
 {
+    unsigned int p;
+    unsigned char z;
+
     if (a->b4_2) {
         return 0;
     }
-    if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
+    z = a->zone;
+    p = a->player;
+    if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
         return 0;
     }
-    duel_088C1B88();
+    duel_088C1B88(p, z);
     return 0;
 }
-#endif
