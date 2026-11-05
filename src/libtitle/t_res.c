@@ -67,10 +67,12 @@ void *title_ehf_draw(void *list, int i)
     return list;
 }
 
-#ifdef NON_MATCHING /* os testes do estado saem em outra ordem; a tabela de saltos fica no asm */
+#ifdef NON_MATCHING /* 6 palavras: o teste state == 17 sai como beql com a cópia de layer = 13 (o original salta
+   para o corpo do grupo); tentado: rótulos noutra ordem, default, goto. A tabela de saltos precisa de @rodata ao promover */
 /* the name plate of the current screen, shown while the menu layer (13) is in place */
 void *title_screen_label(void *list)
 {
+    Title *t = &title;
     int layer = 17;
     int u = 112;
     int y = 7;
@@ -82,24 +84,66 @@ void *title_screen_label(void *list)
     int h;
     unsigned int color;
 
-    if (title.state == 12) {
-        end = 54;
-        layer = 15;
-        idx = 118;
-    } else if (title.state == 14) {
+    switch (title.state) {
+    case 9:
+    case 8:
+    case 6:
+    case 13:
+    case 17:
+        layer = 13;
+        break;
+    case 19:
+        layer = 13;
+        break;
+    case 14:
         layer = 14;
         end = 54;
         idx = 118;
-    } else if (title.state == 19) {
-        layer = 13;
-    } else if (title.state == 17 || title.state == 13 || title.state == 6 || title.state == 8 ||
-               title.state == 9) {
-        layer = 13;
+        break;
+    case 12:
+        end = 54;
+        layer = 15;
+        idx = 118;
+        break;
     }
-    if (title.state == 14) {
+    switch (t->state) {
+    case 9:
+        v = 0;
+        break;
+    case 8:
+        v = 21;
+        break;
+    case 6:
+        v = 42;
+        break;
+    case 13:
+        v = 63;
+        break;
+    case 17:
+        v = 84;
+        break;
+    case 19:
+        v = 105;
+        break;
+    case 12:
+        y = 4;
+        u = 15;
+        switch (t->sub) {
+        case 2:
+            v = 168;
+            break;
+        case 3:
+            v = 189;
+            break;
+        case 4:
+            v = 210;
+            break;
+        }
+        break;
+    case 14:
         u = 15;
         y = 4;
-        switch (title.sub) {
+        switch (t->sub) {
         case 4:
             v = 0;
             break;
@@ -132,44 +176,24 @@ void *title_screen_label(void *list)
             v = 126;
             break;
         }
-    } else if (title.state == 12) {
-        y = 4;
-        u = 15;
-        if (title.sub == 4)
-            v = 210;
-        else if (title.sub == 3)
-            v = 189;
-        else if (title.sub == 2)
-            v = 168;
-    } else if (title.state == 19) {
-        v = 105;
-    } else if (title.state == 17) {
-        v = 84;
-    } else if (title.state == 13) {
-        v = 63;
-    } else if (title.state == 6) {
-        v = 42;
-    } else if (title.state == 8) {
-        v = 21;
-    } else if (title.state == 9) {
-        v = 0;
+        break;
     }
-    if (layer == 17)
-        return list;
-    f = title_ehf_frame(layer);
-    h = -1;
-    color = 0xFFFFFFFF;
-    show = 0;
-    if (f == 6 || f == end) {
-        show = 1;
-        h = 10;
-        color = 0x80FFFFFF;
-        y += 5;
-    } else if (f >= 7 && f < end) {
-        show = 1;
+    if (layer != 17) {
+        f = title_ehf_frame(layer);
+        h = -1;
+        color = 0xFFFFFFFF;
+        show = 0;
+        if (f == 6 || f == end) {
+            show = 1;
+            h = 10;
+            color = 0x80FFFFFF;
+            y += 5;
+        } else if (f >= 7 && f < end) {
+            show = 1;
+        }
+        if (show)
+            list = title_sprite_ex(list, 1, idx, u, y, -1, h, 0, v, -1, -1, color);
     }
-    if (show)
-        list = title_sprite_ex(list, 1, idx, u, y, -1, h, 0, v, -1, -1, color);
     return list;
 }
 #endif

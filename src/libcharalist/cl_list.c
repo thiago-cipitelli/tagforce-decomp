@@ -432,7 +432,7 @@ void cl_detail_update(void)
                 b = &cl_bgm[set];
                 if (cl.bgm != b->bgm) {
                     if (cl.bgm >= 0)
-                        bgm_cmd3(0);
+                        bgm_cmd3(cl.bgm);
                     bgm_fade(b->bgm);
                     cl.bgm = b->bgm;
                     cl.bgm_wait = 1;
@@ -728,7 +728,8 @@ unsigned short cl_entries_simple(ClEntry *out, ClPair *src, unsigned short n)
     return count;
 }
 
-#ifdef NON_MATCHING /* não testado para matching */
+#ifdef NON_MATCHING /* lógica conferida com o asm (bgm_cmd3 recebe cl.bgm); 50 palavras: $s0-$s3 em rotação
+   (o original põe e em $s3 e body em $s0); ordem das declarações não muda nada */
 /* next costume animation frame; Jaden and Chazz swap their theme with the costume */
 void cl_costume_anim(void)
 {
@@ -738,35 +739,39 @@ void cl_costume_anim(void)
     int f;
     int set;
     int alt;
+    int end;
+    int last;
     ClBgm *b;
 
     if (body == 0)
         return;
     n = ehf_get_frame_count(body);
+    last = ehf_get_data_ptr(body);
     f = n + 15 - (n + 15) % 15;
-    if (f >= ehf_get_data_ptr(body))
+    if (f >= last)
         f = 0;
-    ehf_set_anim(body, f, f + 1);
-    ehf_set_anim(cl_bustup_get(e, 1), f, f + 1);
+    end = f + 1;
+    ehf_set_anim(body, f, end);
+    ehf_set_anim(cl_bustup_get(e, 1), f, end);
     if (!e->u.info->voice)
         return;
     set = -1;
     alt = 0;
     switch (e->id) {
-    case 0xD:
-        if (e->u.info->bgm[0] == 0xD && f == 0x2D) {
-            set = 0x29;
-            alt = 1;
-        } else if (e->u.info->bgm[0] == 0x29 && f != 0x2D) {
-            set = 0xD;
-        }
-        break;
     case 0xC:
         if (e->u.info->bgm[0] == 0xC && f == 0x1E) {
             set = 0x2C;
             alt = 1;
         } else if (e->u.info->bgm[0] == 0x2C && f != 0x1E) {
             set = 0xC;
+        }
+        break;
+    case 0xD:
+        if (e->u.info->bgm[0] == 0xD && f == 0x2D) {
+            set = 0x29;
+            alt = 1;
+        } else if (e->u.info->bgm[0] == 0x29 && f != 0x2D) {
+            set = 0xD;
         }
         break;
     }
@@ -777,7 +782,7 @@ void cl_costume_anim(void)
     b = &cl_bgm[set];
     if (cl.bgm != b->bgm) {
         if (cl.bgm >= 0)
-            bgm_cmd3(0);
+            bgm_cmd3(cl.bgm);
         bgm_fade(b->bgm);
         cl.bgm = b->bgm;
         cl.bgm_wait = 1;
