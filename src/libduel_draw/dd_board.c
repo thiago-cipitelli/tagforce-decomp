@@ -153,9 +153,12 @@ void dd_board_card_face(float scale, unsigned short card);
 
 #ifdef NON_MATCHING /* funções grandes de desenho; forma não reproduzida */
 /* the piles (side deck, deck, graveyard, banished) of both players */
+typedef struct { int z[4]; } DdZones4;
+
 void dd_board_piles(void)
 {
     DdCobjs *b = &dd_cobjs;
+    DdZones4 zones = *(DdZones4 *)dd_board_piles_z;
     int p;
     unsigned int k;
     int zone;
@@ -168,13 +171,13 @@ void dd_board_piles(void)
     DdLoc at;
     DdXyzw pos;
     DdXyzw rot;
-    float side;
+    int hl;
 
     mtx_set_mode(2);
     mtx_push();
     for (p = 0; p < 2; p++) {
         for (k = 0; k < 4; k++) {
-            zone = dd_board_piles_z[k];
+            zone = zones.z[k];
             scale = 1.0f;
             card = 0;
             if (zone == 13 && b->en[p] == 0)
@@ -188,10 +191,11 @@ void dd_board_piles(void)
                     n++;
                 }
             }
-            if (zone == 15 || zone == 14) {
-                if (!dv_zone_faceup(p, zone, n - 1))
-                    card = 0;
-            } else if ((zone == 13 || zone == 12) && first != head) {
+            switch (zone) {
+            case 12:
+            case 13:
+                if (first == head)
+                    break;
                 card = first->card;
                 if (first->t < first->dur)
                     card = 0;
@@ -201,16 +205,34 @@ void dd_board_piles(void)
                     else if (first->uid != dv_zone_card_uid(p, zone, 0))
                         card = 0;
                 }
+                break;
+            case 14:
+            case 15:
+                if (!dv_zone_faceup(p, zone, n - 1))
+                    card = 0;
+                break;
             }
-            dd_board_hilite = dd_scene_flags(0x40, -1) && (dv_08835AEC(p, zone, 0) & ~2) != 0;
-            memset(&at, 0, sizeof(at));
+            /* the original only ever sets the flag here, never clears it */
+            hl = 0;
+            if (dd_scene_flags(0x40, -1) && (dv_08835AEC(p, zone, 0) & ~2) != 0) {
+                hl = 1;
+                dd_board_hilite = hl;
+            }
+            {
+                int c = 2;
+                unsigned char *d = (unsigned char *)&at;
+                if (d)
+                    do {
+                        *d++ = 0;
+                    } while (--c);
+            }
             at.player = p;
             at.zone = zone;
             dd_slot_xform(&pos, &rot, *(DdPos *)&at);
             pos.y = 0.0f;
-            if (zone - 12 < 2 && sel_active()) {
-                side = pos.x >= 0.0f ? 100.0f : -100.0f;
-                pos.x += side * sel_progress(p);
+            if ((unsigned int)(zone - 12) < 2 && sel_active()) {
+                scale = pos.x >= 0.0f ? 100.0f : -100.0f;
+                pos.x += scale * sel_progress(p);
                 scale = 1.0f - sel_progress(p);
             }
             dd_board_pile(scale, &pos, &rot, n, card);

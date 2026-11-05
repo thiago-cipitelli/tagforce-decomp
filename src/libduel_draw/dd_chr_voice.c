@@ -129,22 +129,26 @@ void voice_stop(ChrModel *m)
 
 #define RND(n) ((int)rand_next() % (n))
 
-#ifdef NON_MATCHING /* funções grandes (switch de 29 casos com sorteios); ficam em asm */
+#ifdef NON_MATCHING /* voice_pick_cast: 74 palavras, só $s trocados (n em s0 e p em s2 no original); ordens das
+                       declarações tentadas (perm_stmts, 720). */
 /* characters with a cast entry: clips by event, card kind, the character's own cards and the
    flags of the event (clip numbers relative to 0x152) */
 void voice_pick_cast(ChrModel *m, int ev, unsigned int flags)
 {
-    int own[4];
+    VoiceRange key;
     int clips[4][4];
-    int key;
+    int own[4];
     VoiceRange *r;
     VoiceCast *cast;
-    int n, i, k, pick;
+    int n;
+    int i;
+    int k;
+    int pick;
     int *p = clips[0];
 
     pick = -1;
-    memset(clips, 0xFF, sizeof(clips));
-    key = ev;
+    memset(p, 0xFF, sizeof(clips));
+    key.event = ev;
     r = bsearch(&key, voice_ranges, 29, sizeof(VoiceRange), dd_int_cmp);
     if (r == 0)
         return;
@@ -158,28 +162,30 @@ void voice_pick_cast(ChrModel *m, int ev, unsigned int flags)
         pick = own[RND(n)];
     switch (ev) {
     case 0: case 1: case 6: case 9: case 18: case 22: case 23: case 24: case 25: case 26: case 27: case 28:
-        clips[0][0] = r->first + RND(r->last - r->first + 1);
+        *p = r->first + RND(r->last - r->first + 1);
         break;
     case 2:
-        i = RND(4);
         if (flags & 1) {
-            clips[0][0] = i * 2 + 0x154;
-            clips[0][1] = i * 2 + 0x155;
+            k = RND(4) * 2 + 0x154;
+            p[0] = k;
+            p[1] = k + 1;
         } else if (flags & 2) {
-            clips[0][0] = i * 2 + 0x164;
-            clips[0][1] = i * 2 + 0x165;
+            k = RND(4) * 2 + 0x164;
+            p[0] = k;
+            p[1] = k + 1;
         } else {
-            clips[0][0] = i * 2 + 0x15C;
-            clips[0][1] = i * 2 + 0x15D;
+            k = RND(4) * 2 + 0x15C;
+            p[0] = k;
+            p[1] = k + 1;
         }
         break;
     case 3:
         if (flags & 1)
-            clips[0][0] = 0x16C;
+            *p = 0x16C;
         else if (flags & 2)
-            clips[0][0] = 0x16E;
+            *p = 0x16E;
         else
-            clips[0][0] = 0x16D;
+            *p = 0x16D;
         break;
     case 4: case 5: case 7:
         if (flags & 0x10) {
@@ -197,9 +203,9 @@ void voice_pick_cast(ChrModel *m, int ev, unsigned int flags)
             *p = 0x19C;
         } else if (card_get_attribute_icon(m->card_id) == 8) {
             switch (card_get_prop5_hi(m->card_id)) {
-            case 4: *p = RND(3) + 0x18D; break;
-            case 1: *p = RND(3) + 400; break;
             case 0: *p = RND(3) + 0x18A; break;
+            case 1: *p = RND(3) + 400; break;
+            case 4: *p = RND(3) + 0x18D; break;
             }
         } else if (card_get_attribute_icon(m->card_id) == 7) {
             switch (card_get_prop5_hi(m->card_id)) {
@@ -221,40 +227,54 @@ void voice_pick_cast(ChrModel *m, int ev, unsigned int flags)
         }
         break;
     case 8: case 10: case 11: case 12: case 13: case 14: case 15:
-        if (pick < 0) {
-            if (flags & 0x100)
-                clips[0][0] = RND(3) + 0x1A8;
-            else
-                clips[0][0] = RND(4) + 0x19D;
-            switch (ev) {
-            case 8:
-                if (!(flags & 0x200))
-                    clips[0][1] = RND(3) + 0x1A1;
-                break;
-            case 10: clips[0][1] = 0x1A4; break;
-            case 11: clips[0][1] = 0x1A5; break;
-            case 12: clips[0][1] = 0x1A6; break;
-            case 13: clips[0][1] = 0x1A7; break;
-            case 14: clips[0][1] = RND(3) + 0x1AB; break;
-            case 15: clips[0][1] = RND(3) + 0x1AE; break;
-            }
-        } else {
-            clips[0][0] = pick * 2 + 0x1B1;
-            clips[0][1] = pick * 2 + 0x1B2;
+        if (pick >= 0) {
+            k = pick * 2 + 0x1B1;
+            p[0] = k;
+            p[1] = k + 1;
+            break;
+        }
+        if (flags & 0x100)
+            *p++ = RND(3) + 0x1A8;
+        else
+            *p++ = RND(4) + 0x19D;
+        switch (ev) {
+        case 8:
+            if (!(flags & 0x200))
+                *p = RND(3) + 0x1A1;
+            break;
+        case 10: *p = 0x1A4; break;
+        case 11: *p = 0x1A5; break;
+        case 12: *p = 0x1A6; break;
+        case 13: *p = 0x1A7; break;
+        case 14: *p = RND(3) + 0x1AB; break;
+        case 15: *p = RND(3) + 0x1AE; break;
         }
         break;
     case 16:
-    case 17:
-        if (pick < 0) {
-            if (flags & 0x80)
-                clips[0][0] = RND(4) + 0x1C1;
-            else
-                clips[0][0] = RND(4) + 0x1BD;
-            clips[0][1] = RND(2) + (ev == 16 ? 0x1B9 : 0x1BB);
-        } else {
-            clips[0][0] = pick * 2 + 0x1C5;
-            clips[0][1] = pick * 2 + 0x1C6;
+        if (pick >= 0) {
+            k = pick * 2 + 0x1C5;
+            p[0] = k;
+            p[1] = k + 1;
+            break;
         }
+        if (flags & 0x80)
+            *p++ = RND(4) + 0x1C1;
+        else
+            *p++ = RND(4) + 0x1BD;
+        *p = RND(2) + 0x1B9;
+        break;
+    case 17:
+        if (pick >= 0) {
+            k = pick * 2 + 0x1C5;
+            p[0] = k;
+            p[1] = k + 1;
+            break;
+        }
+        if (flags & 0x80)
+            *p++ = RND(4) + 0x1C1;
+        else
+            *p++ = RND(4) + 0x1BD;
+        *p = RND(2) + 0x1BB;
         break;
     case 19:
         clips[0][0] = 0x1D2;
@@ -277,43 +297,49 @@ void voice_pick_cast(ChrModel *m, int ev, unsigned int flags)
             m->voices[k][i] = clips[k][i] - 0x152;
 }
 
+#else
+void voice_pick_cast(ChrModel *m, int ev, unsigned int flags);
+#endif
+
+#ifdef NON_MATCHING /* bate com -DNON_MATCHING (0 palavras), mas as tabelas de salto vêm depois das de
+                       voice_pick_cast, ainda em asm: promover junto com ela */
 /* characters of the charmap: the same events with fixed clip numbers */
 void voice_pick_generic(ChrModel *m, int ev, unsigned int flags)
 {
+    VoiceRange key;
     int clips[4][4];
-    int key;
     VoiceRange *r;
     int i, k;
     int *p = clips[0];
 
-    memset(clips, 0xFF, sizeof(clips));
-    key = ev;
+    memset(p, 0xFF, sizeof(clips));
+    key.event = ev;
     r = bsearch(&key, voice_ranges2, 29, sizeof(VoiceRange), dd_int_cmp);
     if (r == 0)
         return;
     switch (ev) {
     case 0: case 1: case 6: case 9: case 18: case 22: case 23: case 24: case 25: case 26: case 27: case 28:
-        clips[0][0] = r->first + RND(r->last - r->first + 1);
+        p[0] = r->first + RND(r->last - r->first + 1);
         break;
     case 2:
         if (flags & 1) {
-            clips[0][0] = 2;
-            clips[0][1] = 3;
+            p[0] = 2;
+            p[1] = 3;
         } else if (flags & 2) {
-            clips[0][0] = 6;
-            clips[0][1] = 7;
+            p[0] = 6;
+            p[1] = 7;
         } else {
-            clips[0][0] = 4;
-            clips[0][1] = 5;
+            p[0] = 4;
+            p[1] = 5;
         }
         break;
     case 3:
         if (flags & 1)
-            clips[0][0] = 8;
+            p[0] = 8;
         else if (flags & 2)
-            clips[0][0] = 10;
+            p[0] = 10;
         else
-            clips[0][0] = 9;
+            p[0] = 9;
         break;
     case 4: case 5: case 7:
         if (flags & 0x10)
@@ -328,9 +354,9 @@ void voice_pick_generic(ChrModel *m, int ev, unsigned int flags)
             *p = 0x1A;
         } else if (card_get_attribute_icon(m->card_id) == 8) {
             switch (card_get_prop5_hi(m->card_id)) {
-            case 4: *p = 0x17; break;
-            case 1: *p = 0x18; break;
             case 0: *p = 0x16; break;
+            case 1: *p = 0x18; break;
+            case 4: *p = 0x17; break;
             }
         } else if (card_get_attribute_icon(m->card_id) == 7) {
             switch (card_get_prop5_hi(m->card_id)) {
@@ -353,32 +379,38 @@ void voice_pick_generic(ChrModel *m, int ev, unsigned int flags)
         break;
     case 8: case 10: case 11: case 12: case 13: case 14: case 15:
         if (flags & 0x100)
-            clips[0][0] = 0x21;
+            *p++ = 0x21;
         else
-            clips[0][0] = 0x1E;
+            *p++ = 0x1E;
         switch (ev) {
         case 8:
             if (!(flags & 0x200))
-                clips[0][1] = 0x1F;
+                *p = 0x1F;
             break;
         case 10: case 11: case 12: case 13:
-            clips[0][1] = 0x20;
+            *p = 0x20;
             break;
         case 14:
-            clips[0][1] = 0x22;
+            *p = 0x22;
             break;
         case 15:
-            clips[0][1] = 0x23;
+            *p = 0x23;
             break;
         }
         break;
     case 16:
-        clips[0][0] = (flags & 0x80) ? 0x27 : 0x26;
-        clips[0][1] = 0x24;
+        if (flags & 0x80)
+            *p++ = 0x27;
+        else
+            *p++ = 0x26;
+        *p = 0x24;
         break;
     case 17:
-        clips[0][0] = (flags & 0x80) ? 0x27 : 0x26;
-        clips[0][1] = 0x25;
+        if (flags & 0x80)
+            *p++ = 0x27;
+        else
+            *p++ = 0x26;
+        *p = 0x25;
         break;
     case 19:
         clips[0][0] = 0x2B;
@@ -396,7 +428,6 @@ void voice_pick_generic(ChrModel *m, int ev, unsigned int flags)
             m->voices[k][i] = clips[k][i];
 }
 #else
-void voice_pick_cast(ChrModel *m, int ev, unsigned int flags);
 void voice_pick_generic(ChrModel *m, int ev, unsigned int flags);
 #endif
 
