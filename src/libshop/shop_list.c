@@ -1,8 +1,8 @@
 // @range 0x0880D298-0x0880EF74
 // @asm 0x0880D3E0-0x0880D828
 // @asm 0x0880DFE4-0x0880E598
-// @asm 0x0880E8E0-0x0880EF74
 // @data 0x088202B4-0x088202E4
+// @rodata 0x0881C1F0-0x0881C260
 /* 3D part of the shelf (the pack model over the counter, the shelf of the chosen kind with its
    packs and the one flying to the counter), and the list of the cards that came out: five rows with
    picture, marks, name, icons, ATK/DEF and counters, the cursor frame, the header and the bubble that
@@ -316,7 +316,7 @@ UiCounter shop_row_counters[3] = {
     { 0, { 0 }, 0, 0 }, { 5, { 0 }, 0xFF000000, 0 }, { 6, { 0 }, 0xFF000000, 0 },
 };
 
-#ifdef NON_MATCHING /* muitos valores da carta guardados em s e na pilha; alocação diferente */
+#ifdef NON_MATCHING /* 287 palavras: muitos valores da carta guardados em s e na pilha; alocação diferente. O original grava UiCounter.value com lhu/and 0xFF00/or/sh (campo de 8 bits num halfword; um bitfield unsigned short:8 sai como sb) e o 99 com sb. Corrigido em 2026-11-05: as cópias que saíram vão para c[1] (ícone 5), não c[0] */
 unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
 {
     UiEnt e;
@@ -380,7 +380,7 @@ unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
         list = shop_ui_draw_icon_b(list, PT(0xC4, ty), type, shop_res_get(0x2023));
     }
     *(ShopRowCounters *)c = *(ShopRowCounters *)shop_row_counters;
-    c[0].value = it->partners;
+    c[1].value = it->partners;
     c[2].value = it->owned;
     total = shop_items_count(it->id);
     owned = it->owned;
@@ -472,22 +472,24 @@ unsigned int *shop_list_cursor(unsigned int *list)
     return shop_ui_draw_frame(list, 0x97, y, 0x13E, 0x2D, gim, gfx_get_state()->frame);
 }
 
-#ifdef NON_MATCHING /* 293 palavras; lógica conferida com o asm (as duas tabelas de saltos e todas as chamadas). Como no original, w/h ficam sem inicializar no caso 0 */
-/* the bubble next to the scroll bar with the sort key of the line under the cursor */
+/* the bubble next to the scroll bar with the sort key of the line under the cursor (as in the original,
+   w/h stay uninitialised for sort 0) */
 unsigned int *shop_list_key_bubble(unsigned int *list)
 {
-    unsigned short sort = shop.sort;
-    unsigned int line = shop.top + shop.cursor;
-    unsigned int key;
-    int w, h;
-    int x, y;
-    int fw;
+    int line = shop.top + shop.cursor;
+    int s = shop.sort;
     unsigned char size;
     unsigned short ch[2];
+    unsigned int key;
+    int fw;
+    int x, y;
+    unsigned short sort;
+    int w, h;
 
     if (line >= shop.n_items)
         return list;
-    key = shop_item_key(shop_item_at(line), sort);
+    key = shop_item_key(shop_item_at(line), s);
+    sort = s;
     switch (sort) {
     case 1:
         w = 0x4E;
@@ -498,24 +500,6 @@ unsigned int *shop_list_key_bubble(unsigned int *list)
         w = 0x1A;
         h = 0x14;
         break;
-    case 3:
-        w = 0x1F;
-        h = 0x16;
-        break;
-    case 5:
-        font_set_size(14, 14);
-        fw = (font_sample_glyph_size() >> 16 & 0xFFFF) >> 6;
-        w = fw + 13;
-        h = fw + 11;
-        break;
-    case 6:
-    case 10:
-    case 11:
-    case 12:
-    case 13:
-        w = 0x1B;
-        h = 0x1B;
-        break;
     case 7:
         w = 0x27;
         h = 0x14;
@@ -524,6 +508,24 @@ unsigned int *shop_list_key_bubble(unsigned int *list)
     case 9:
         w = 0x30;
         h = 0x13;
+        break;
+    case 5:
+        font_set_size(14, 14);
+        fw = (font_sample_glyph_size() >> 16 & 0xFFFF) >> 6;
+        w = fw + 13;
+        h = fw + 11;
+        break;
+    case 3:
+        w = 0x1F;
+        h = 0x16;
+        break;
+    case 6:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+        w = 0x1B;
+        h = 0x1B;
         break;
     }
     x = 0x1D5 - w;
@@ -538,7 +540,11 @@ unsigned int *shop_list_key_bubble(unsigned int *list)
         font_text_set(list);
         font_set_size(12, 12);
         font_set_color(0xFFFFFFFF);
-        size = font_measure_wtext((w - 11) << 6, shop_pack_name(key));
+        {
+            unsigned short *name = shop_pack_name(key);
+
+            size = font_measure_wtext((w - 11) << 6, name);
+        }
         if (size < 8)
             size = 8;
         font_set_size(size, 12);
@@ -566,15 +572,25 @@ unsigned int *shop_list_key_bubble(unsigned int *list)
         font_text_set(list);
         font_set_size(14, 14);
         font_set_color(0xFFFFFFFF);
-        ch[0] = 0;
-        ch[1] = 0;
-        ch[0] = card_top_get_letter(key);
+        {
+            unsigned char *d = (unsigned char *)ch;
+            int n = 4;
+
+            if (d)
+                do {
+                    *d++ = 0;
+                } while (--n);
+        }
+        ch[0] = card_top_get_letter((unsigned short)key);
         fw = font_measure_text(ch);
         font_draw_text(((x + 4 + (w - 9) / 2) << 6) - fw / 2, (y + 4) << 6, w << 6, ch);
         list = font_text_clear();
         break;
     case 6:
         list = shop_ui_draw_icon_d(list, PT(x + 5, y + 5), shop_ui_kind_icon(key), shop_res_get(0x2026));
+        break;
+    case 13:
+        list = shop_ui_draw_icon_e(list, PT(x + 5, y + 5), key, shop_res_get(0x2026));
         break;
     case 7:
         list = shop_ui_draw_level(list, PT(x + 5, y + 4), key, 0xFFFFFFFF, shop_res_get(0x2025));
@@ -584,14 +600,17 @@ unsigned int *shop_list_key_bubble(unsigned int *list)
             key = (int)key / 100 * 100;
         else if (key == 0xFFFFFFFF)
             key = 0xFFFF;
-        list = shop_ui_draw_stat(list, key << 16 | 2, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, shop_res_get(0x2025));
+        list = shop_ui_draw_stat(list, (unsigned short)key << 16 | 2, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, shop_res_get(0x2025));
         break;
     case 9:
         if ((int)key > 0)
             key = (int)key / 100 * 100;
         else if (key == 0xFFFFFFFF)
             key = 0xFFFF;
-        list = shop_ui_draw_stat(list, key << 16 | 3, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, shop_res_get(0x2025));
+        list = shop_ui_draw_stat(list, (unsigned short)key << 16 | 3, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, shop_res_get(0x2025));
+        break;
+    case 12:
+        list = shop_ui_draw_icon_b(list, PT(x + 5, y + 5), key, shop_res_get(0x2023));
         break;
     case 10:
         list = shop_ui_draw_icon_a(list, PT(x + 5, y + 5), key, shop_res_get(0x2023));
@@ -599,13 +618,6 @@ unsigned int *shop_list_key_bubble(unsigned int *list)
     case 11:
         list = shop_ui_draw_icon_c(list, PT(x + 5, y + 5), key, shop_res_get(0x2023));
         break;
-    case 12:
-        list = shop_ui_draw_icon_b(list, PT(x + 5, y + 5), key, shop_res_get(0x2023));
-        break;
-    case 13:
-        list = shop_ui_draw_icon_e(list, PT(x + 5, y + 5), key, shop_res_get(0x2026));
-        break;
     }
     return list;
 }
-#endif
