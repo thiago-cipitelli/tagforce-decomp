@@ -1,5 +1,4 @@
 // @range 0x08886984-0x08887618
-// @asm 0x08886C04-0x08886CAC
 // @asm 0x08886E88-0x08887034
 /* Card effect handlers (DuelAct *a), after effects_v.c. */
 #include "duel.h"
@@ -96,16 +95,18 @@ int duel_08886B34(DuelAct *a, DuelAct *b)
     return duel_08886C04(a);
 }
 
-#ifdef NON_MATCHING /* registradores */
 int duel_08886C04(DuelAct *a)
 {
-    if (duel.players[a->x.s_player].field[a->x.s_zone].card.id != 0) {
-        duel_088CBAA4(a->x.s_player, a->x.s_zone, a->x.s_uid);
-        duel_088D15B4(a, a->x.s_player, a->x.s_zone);
+    struct DuelActX *x = &a->x;
+    unsigned char z = a->x.s_zone;
+    unsigned int p = a->x.s_player;
+
+    if (duel.players[p & 1].field[z].card.id != 0) {
+        duel_088CBAA4(p, z, x->s_uid);
+        duel_088D15B4(a, x->s_player, x->s_zone);
     }
     return 0;
 }
-#endif
 
 int duel_08886CAC(DuelAct *a)
 {
@@ -162,9 +163,9 @@ static int duel_08886E80(unsigned int p, int z)
 #ifdef NON_MATCHING /* registradores */
 int duel_08886E88(DuelAct *a)
 {
+    int z;
     int i;
     unsigned int q;
-    int z;
 
     switch (duel_step) {
     case 0x80:

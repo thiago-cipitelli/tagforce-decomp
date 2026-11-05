@@ -65,9 +65,9 @@ int duel_act_can_target(DuelAct *a, unsigned int p, int z)
 /* Card `a` may affect monster z of player p (arg: also the 0x150A protection). */
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg)
 {
-    int zone = a->zone;
     int not_mon = 1;
     int st = 0;
+    int zone = a->zone;
     unsigned int r;
 
     if (zone >= 5 && zone < 11) {
