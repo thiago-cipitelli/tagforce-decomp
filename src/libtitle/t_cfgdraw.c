@@ -1,5 +1,6 @@
 // @range 0x0880D454-0x0880EB20
-// @asm 0x0880D454-0x0880E934
+// @asm 0x0880D454-0x0880E0B4
+// @asm 0x0880E508-0x0880E828
 // @data 0x0882E44C-0x0882E7F0
 /* Drawing of the options screen (tcfg): the framed groups of rows, each row's label and its control
    (volume meter, left/right value with arrows, on/off check), and the option_msg_X.bin texts. */
@@ -9,10 +10,18 @@ typedef struct TCfgSpr {               /* u, v, w, h of a panel piece */
     short u, v, w, h;
 } TCfgSpr;
 
-void *tcfg_row(void *list, TCfg *c, int group, int row, char sel, int x, int y, int w);
-void *tcfg_meter(void *list, TCfg *c, int level, short x, short y);
-void *tcfg_arrows(void *list, TCfg *c, short x, short y, int pos, int max);
-void *tcfg_check(void *list, TCfg *c, int kind, int on, short x, short y);
+typedef struct TCfgSpr2 {              /* a pair of pieces, copied whole from a template */
+    TCfgSpr s[2];
+} TCfgSpr2;
+
+typedef struct TCfgSprA {              /* TCfgSpr copied as two words (lwc1/swc1) */
+    short u, v, w, h;
+} __attribute__((aligned(4))) TCfgSprA;
+
+void *tcfg_row(void *list, TCfg *c, int group, int row, unsigned char sel, int x, int y, int w);
+void *tcfg_meter(void *list, TCfg *c, unsigned char level, int x, int y);
+void *tcfg_arrows(void *list, TCfg *c, int x, int y, unsigned char pos, unsigned char max);
+void *tcfg_check(void *list, TCfg *c, unsigned char kind, unsigned char on, int x, int y);
 void *tcfg_gfx(void *list, void *gim);
 void *tcfg_text(void *list, int x, int y, int w, int id, int center);
 void *tcfg_label(void *list, int x, int y, int w, int id);
@@ -39,17 +48,27 @@ short tcfg_group_rows[4] = { 1, 1, 4, 5 };
 void *tcfg_draw(void *list)
 {
     TCfg *c = tcfg;
-    char gims[2][64];
-    char gims_alt[2][64];
-    TCfgSpr spr[27];
-    int style[4];
-    unsigned char tab[4];
-    short rows[4];
+    char gims[2][64] = { "m_menu_panel01.gim", "menu_opt01.gim" };
+    char gims_alt[2][64] = { "m_menu_panel02.gim", "menu_opt02.gim" };
+    TCfgSpr spr[27] = {
+        { 0, 0, 6, 24 }, { 6, 0, 1, 24 }, { 17, 0, 3, 24 },
+        { 0, 0, 6, 24 }, { 6, 0, 1, 24 }, { 17, 0, 3, 24 },
+        { 0, 10, 6, 1 }, { 6, 10, 1, 1 }, { 17, 10, 3, 1 },
+        { 0, 0, 4, 14 }, { 4, 0, 1, 14 }, { 31, 0, 1, 14 },
+        { 10, 12, 1, 1 }, { 48, 0, 8, 12 }, { 56, 0, 8, 12 },
+        { 32, 16, 6, 12 }, { 38, 16, 6, 12 }, { 32, 0, 4, 4 },
+        { 38, 0, 1, 4 }, { 40, 0, 5, 4 }, { 32, 6, 4, 1 },
+        { 38, 6, 1, 1 }, { 40, 6, 5, 1 }, { 32, 8, 4, 5 },
+        { 38, 8, 1, 5 }, { 40, 8, 5, 5 }, { 48, 12, 16, 14 },
+    };
+    int style[4] = { 8, 9, 10, 11 };
+    unsigned char tab[4] = { 0, 0, 0, 1 };
+    short rows[4] = { 1, 1, 4, 5 };
     short gy[4];
     short gx[4];
     short top[4];
     int first = 0;
-    int cur = c->step;
+    unsigned char cur = c->step;
     int found = 0;
     int g, i, k;
     short sel_row = 0;
@@ -58,12 +77,6 @@ void *tcfg_draw(void *list)
     short rx, ry, rw, rh;
     short x, y;
 
-    memcpy(gims, tcfg_gims, sizeof(gims));
-    memcpy(gims_alt, tcfg_gims_alt, sizeof(gims_alt));
-    memcpy(spr, tcfg_spr, sizeof(spr));
-    memcpy(style, tcfg_group_style, sizeof(style));
-    memcpy(tab, tcfg_group_tab, sizeof(tab));
-    memcpy(rows, tcfg_group_rows, sizeof(rows));
     cfg_get_language();
     if (c->mode == 1)
         first = 2;
@@ -235,22 +248,25 @@ TCfgSpr tcfg_meter_spr[2] = { { 32, 16, 6, 12 }, { 38, 16, 6, 12 } };
 TCfgSpr tcfg_arrow_spr[2] = { { 48, 0, 8, 12 }, { 56, 0, 8, 12 } };
 TCfgSpr tcfg_check_spr[2] = { { 0, 32, 32, 13 }, { 0, 48, 32, 13 } };
 
-#ifdef NON_MATCHING /* cópias de structs pelos modelos e registradores diferem */
 /* row `row` of group `group`: the label and its control */
-void *tcfg_row(void *list, TCfg *c, int group, int row, char sel, int x, int y, int w)
+void *tcfg_row(void *list, TCfg *c, int group, int row, unsigned char sel, int x, int y, int w)
 {
-    TCfgVals *v = &c->cur;
-    unsigned char level = 0;
-    int kind = 0;
-    int tx;
+    TCfgVals *v;
+    int kind;
+    unsigned int color;
     int ty;
     int id;
-    unsigned int color;
-    int sel2;
+    int tx;
+    unsigned char level;
+    unsigned char sel2;
     unsigned char on;
-    int max;
-    unsigned int val;
+    unsigned char max;
+    unsigned char val;
+    int cx;
 
+    v = &c->cur;
+    level = 0;
+    kind = 0;
     if (row == 0) {
         tx = x + 8;
         ty = y + 5;
@@ -258,75 +274,100 @@ void *tcfg_row(void *list, TCfg *c, int group, int row, char sel, int x, int y, 
         tx = x + 16;
         ty = y + 5 + row * 17;
     }
-    if (group == 3) {
-        w = 112;
-        if (row == 4)
-            id = 18;
-        else if (row == 3)
-            id = 11;
-        else if (row == 2)
-            id = 9;
-        else if (row == 1)
-            id = 8;
-        else {
-            id = 7;
-            w = 202;
-        }
-    } else if (group == 2) {
+    switch (group) {
+    case 0:
+        id = row + 1;
+        w = 120;
+        break;
+    case 1:
+        id = row + 2;
+        w = 120;
+        break;
+    case 2:
         id = row + 3;
         w = 202;
         if (cfg_get_language() != 0 && id > 3)
-            id = row + 4;
+            id++;
         if (id > 3)
             w = 75;
-    } else if (group == 1) {
-        id = row + 2;
-        w = 120;
-    } else if (group == 0) {
-        id = row + 1;
-        w = 120;
+        break;
+    case 3:
+        w = 112;
+        switch (row) {
+        default:
+            id = 7;
+            w = 202;
+            break;
+        case 1:
+            id = 8;
+            break;
+        case 2:
+            id = 9;
+            break;
+        case 3:
+            id = 11;
+            break;
+        case 4:
+            id = 18;
+            break;
+        }
+        break;
     }
-    if (sel == 0)
-        color = c->color;
-    else if (c->active == 0)
-        color = c->color;
-    else
+    if (sel && c->active)
         color = c->color2;
+    else
+        color = c->color;
     font_set_size(13, 13);
     font_set_color(color);
     font_set_flag4(1);
     list = tcfg_label(list, tx, ty, w, id);
-    if (group == 3) {
+    switch (group) {
+    case 0:
+        kind = 1;
+        break;
+    case 1:
+        kind = 2;
+        break;
+    case 2:
+        if (row != 0)
+            kind = 3;
+        break;
+    case 3:
         if (row == 1)
             kind = 2;
         else if (row > 1)
             kind = 1;
-    } else if (group == 2) {
-        if (row != 0)
-            kind = 3;
-    } else if (group == 1) {
-        kind = 2;
-    } else if (group == 0) {
-        kind = 1;
+        break;
     }
     font_set_flag4(1);
-    if (kind == 3) {
-        if (cfg_get_language() == 0) {
-            if (row == 3)
-                level = v->vol[2];
-            else if (row == 2)
-                level = v->vol[1];
-            else if (row == 1)
-                level = v->vol[0];
-        } else if (row == 2) {
-            level = v->vol[2];
-        } else if (row == 1) {
-            level = v->vol[1];
+    switch (kind) {
+    case 0:
+        break;
+    case 1:
+        cx = x + 137;
+        if (group == 0) {
+            sel2 = 1;
+            on = v->mode1;
         } else {
-            level = 0;
+            sel2 = 0;
+            switch (row) {
+            case 2:
+                on = v->flag0;
+                break;
+            case 3:
+                on = v->flag2;
+                break;
+            case 4:
+                on = v->flag3;
+                break;
+            }
         }
-        list = tcfg_meter(list, c, level, x + 94, ty);
-    } else if (kind == 2) {
+        list = tcfg_check(list, c, sel2, on, cx, ty);
+        cx = x + 136;
+        list = tcfg_text(list, cx, ty, 30, 12, 1);
+        list = tcfg_text(list, cx + 35, ty, 30, 13, 1);
+        break;
+    case 2:
         max = 3;
         if (group == 1) {
             max = 2;
@@ -336,107 +377,141 @@ void *tcfg_row(void *list, TCfg *c, int group, int row, char sel, int x, int y, 
             val = v->b134;
             id = val + 14;
         }
-        list = tcfg_text(list, x + 144, ty, 54, id, 1);
+        cx = x + 144;
+        list = tcfg_text(list, cx, ty, 54, id, 1);
         if (sel)
-            list = tcfg_arrows(list, c, x + 132, ty, val, max);
-    } else if (kind == 1) {
-        if (group == 0) {
-            sel2 = 1;
-            on = v->mode1;
+            list = tcfg_arrows(list, c, cx - 12, ty, val, max);
+        break;
+    case 3:
+        cx = x + 94;
+        if (cfg_get_language() != 0) {
+            switch (row) {
+            case 1:
+                level = v->vol[1];
+                break;
+            case 2:
+                level = v->vol[2];
+                break;
+            }
         } else {
-            sel2 = 0;
-            if (row == 4)
-                on = v->flag3;
-            else if (row == 3)
-                on = v->flag2;
-            else if (row == 2)
-                on = v->flag0;
+            switch (row) {
+            case 1:
+                level = v->vol[0];
+                break;
+            case 2:
+                level = v->vol[1];
+                break;
+            case 3:
+                level = v->vol[2];
+                break;
+            }
         }
-        list = tcfg_check(list, c, sel2, on, x + 137, ty);
-        list = tcfg_text(list, x + 136, ty, 30, 12, 1);
-        list = tcfg_text(list, x + 171, ty, 30, 13, 1);
+        list = tcfg_meter(list, c, level, cx, ty);
+        break;
     }
     return list;
 }
 
+#ifdef NON_MATCHING
+/* 14 palavras: a cópia off = s[1] sai com os lh/sh noutra ordem (u,v,w antes do sh no original); o resto bate.
+   Tentado: off campo a campo, inicializado na declaração, s como TCfgSpr2 */
 /* volume meter: 15 segments, `level` lit */
-void *tcfg_meter(void *list, TCfg *c, int level, short x, short y)
+void *tcfg_meter(void *list, TCfg *c, unsigned char level, int x, int y)
 {
     TCfgSpr s[2];
+    TCfgSprA cur;
     TCfgSpr off;
-    TCfgSpr cur;
+    short w;
+    short h;
+    short sx;
+    short sy;
     short i;
 
-    memcpy(s, tcfg_meter_spr, sizeof(s));
+    *(TCfgSpr2 *)s = *(TCfgSpr2 *)tcfg_meter_spr;
     off = s[1];
-    for (i = 0; i < 15; i++, x += 7) {
+    w = s[0].w;
+    h = s[0].h;
+    sy = y;
+    for (i = 0; i < 15; i++) {
+        sx = x + i * 7;
         if (i < (unsigned char)level)
-            cur = s[0];
+            cur = *(TCfgSprA *)&s[0];
         else
-            cur = off;
+            cur = *(TCfgSprA *)&off;
         list = tcfg_gfx(list, c->gim2);
-        list = draw_set_offsets(list, cur.w, cur.h, s[0].w, s[0].h);
-        list = draw_sprite(list, x, y, 0, cur.u, cur.v, 0, 0);
+        list = draw_set_offsets(list, cur.w, cur.h, w, h);
+        list = draw_sprite(list, sx, sy, 0, cur.u, cur.v, 0, 0);
     }
     return list;
 }
 
+/* 14 palavras: só a ordem dos lh/sh da cópia off = s[1] (como tcfg_meter) */
 /* the blinking left/right arrows of a value */
-void *tcfg_arrows(void *list, TCfg *c, short x, short y, int pos, int max)
+void *tcfg_arrows(void *list, TCfg *c, int x, int y, unsigned char pos, unsigned char max)
 {
     TCfgSpr s[2];
-    TCfgSpr *p;
-    short i;
+    TCfgSprA cur;
+    TCfgSpr off;
+    unsigned char a;
+    short w, h;
+    short sx, sy;
     int show;
-    int a;
+    short i;
 
-    memcpy(s, tcfg_arrow_spr, sizeof(s));
-
-    for (i = 0; i < 2; i++, x += 68) {
+    *(TCfgSpr2 *)s = *(TCfgSpr2 *)tcfg_arrow_spr;
+    off = s[1];
+    w = s[0].w;
+    h = s[0].h;
+    sy = y;
+    for (i = 0; i < 2; i++) {
         show = 1;
-        if (i == 0) {
-            p = &s[0];
-            if ((char)pos == 0)
+        sx = x + i * 68;
+        if (!i) {
+            cur = *(TCfgSprA *)&s[0];
+            if ((unsigned char)pos == 0)
                 show = 0;
         } else {
-            p = &s[1];
-            if ((char)pos == (char)max)
+            cur = *(TCfgSprA *)&off;
+            if ((unsigned char)pos == (unsigned char)max)
                 show = 0;
         }
         if (show) {
             a = c->blink % 16 / 8 ? 0xFF : 0;
             list = tcfg_gfx(list, c->gim2);
             list = dl_color(list, a << 24 | 0xFFFFFF);
-            list = draw_set_offsets(list, p->w, p->h, s[0].w, s[0].h);
-            list = draw_sprite(list, x, y, 0, p->u, p->v, 0, 0);
+            list = draw_set_offsets(list, cur.w, cur.h, w, h);
+            list = draw_sprite(list, sx, sy, 0, cur.u, cur.v, 0, 0);
         }
     }
     return list;
 }
 
-/* 58 palavras: o original copia s[k] para uma struct na pilha (lwc1 de s[0], lh de s[1]) e o mwcc a escalariza; lógica conferida com o asm */
+#endif
+
 /* the check mark under ON (kind 1) or OFF */
-void *tcfg_check(void *list, TCfg *c, int kind, int on, short x, short y)
+void *tcfg_check(void *list, TCfg *c, unsigned char kind, unsigned char on, int x, int y)
 {
     TCfgSpr s[2];
-    TCfgSpr *p;
-    short sx = x - 2;
-    void *gim;
+    TCfgSprA cur;
+    short w, h;
+    short sx;
+    short sy;
 
-    memcpy(s, tcfg_check_spr, sizeof(s));
-
-    if (kind == 0)
-        p = &s[1];
+    *(TCfgSpr2 *)s = *(TCfgSpr2 *)tcfg_check_spr;
+    sy = y;
+    w = s[0].w;
+    h = s[0].h;
+    sx = x - 2;
+    if (kind)
+        cur = *(TCfgSprA *)&s[0];
     else
-        p = &s[0];
-    if ((char)on == 0)
+        *(TCfgSpr *)&cur = s[1];
+    if ((unsigned char)on == 0)
         sx = x + 33;
-    gim = c->gim2;
-    list = tcfg_gfx(list, gim);
-    list = draw_set_offsets(list, p->w, p->h, s[0].w, s[0].h);
-    return draw_sprite(list, sx, y, 0, p->u, p->v, 0, 0);
+    list = tcfg_gfx(list, c->gim2);
+    list = draw_set_offsets(list, cur.w, cur.h, w, h);
+    return draw_sprite(list, sx, sy, 0, cur.u, cur.v, 0, 0);
 }
-#endif
 
 void *tcfg_gfx(void *list, void *gim)
 {
