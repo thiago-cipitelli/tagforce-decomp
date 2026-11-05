@@ -4,7 +4,6 @@
 // @asm 0x08887618-0x088876B0
 // @asm 0x08887B34-0x08887ED8
 // @asm 0x08888ED0-0x08889434
-// @asm 0x08889680-0x08889914
 /* Card effect handlers (DuelAct *a), after effects_w.c. */
 #include "duel.h"
 
@@ -877,7 +876,6 @@ int duel_08889434(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* constante 100 em v0 reaproveitada */
 int duel_08889680(DuelAct *a)
 {
     unsigned int t = duel_act_target(a, duel_w_089148FC);
@@ -895,47 +893,45 @@ int duel_08889680(DuelAct *a)
         duel_088C7BA4();
         return 0x7F;
     case 0x7F:
-        if (a->n7 <= duel_w_089148FC) {
-            return 0x7E;
-        }
-        if (duel_count_free_monster_zones(p) != 0 && (duel_w_08914900 >> p & 1)) {
-            i = duel_grave_find_uid(p, duel_act_target2(a, duel_w_089148FC));
-            if (i >= 0 && duel_grave_card_usable(p, p, i) != 0) {
-                c = &duel.players[p & 1].grave[i];
-                switch (a->id) {
-                case 0x133B:
-                    if (c->id == a->id) {
-                        if (duel_slot_counter(p, 0xB, a->id) >= 10) {
-                            break;
+        if (duel_w_089148FC < a->n7) {
+            if (duel_count_free_monster_zones(p) != 0 && (duel_w_08914900 >> p & 1)) {
+                i = duel_grave_find_uid(p, duel_act_target2(a, duel_w_089148FC));
+                if (i >= 0 && duel_grave_card_usable(p, p, i) != 0) {
+                    c = &duel.players[p & 1].grave[i];
+                    switch (a->id) {
+                    case 0x133B:
+                        if (c->id == a->id) {
+                            if (duel_slot_counter(p, 0xB, a->id) >= 10) {
+                                break;
+                            }
+                            duel_088C77D4(p, a->id, 1, 0);
                         }
-                        duel_088C77D4(p, a->id, 1, 0);
+                        duel_088263A8(p, c, card_attribute_icon_in_2_3(c->id) != 0, a->id << 16 | 0x20);
+                        break;
+                    case 0x1365:
+                        if (duel_no_1a1b(p) != 0) {
+                            duel_0882619C(p, c, 0, 1, a->id << 16 | 0x20);
+                        }
+                        break;
+                    case 0x1990:
+                        duel_0882619C(p, c, 1, 1, a->id << 16 | 0x20);
+                        break;
                     }
-                    duel_088263A8(p, c, card_attribute_icon_in_2_3(c->id) != 0, a->id << 16 | 0x20);
-                    break;
-                case 0x1365:
-                    if (duel_no_1a1b(p) != 0) {
-                        duel_0882619C(p, c, 0, 1, a->id << 16 | 0x20);
-                    }
-                    break;
-                case 0x1990:
-                    duel_0882619C(p, c, 1, 1, a->id << 16 | 0x20);
-                    break;
                 }
             }
         }
         return 0x7E;
     case 0x7E:
-        if (++duel_w_089148FC < 2) {
-            return 0x7F;
+        if (++duel_w_089148FC >= 2) {
+            return 100;
         }
-        return 100;
+        return 0x7F;
     case 100:
         duel_088C7CF0();
         return 0;
     }
     return 0;
 }
-#endif
 
 int duel_08889914(DuelAct *a)
 {

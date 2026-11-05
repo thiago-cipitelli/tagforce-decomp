@@ -1,7 +1,6 @@
 // @range 0x088BC9E0-0x088C004C
 // @asm 0x088BD4E0-0x088BD9A4
 // @asm 0x088BECC0-0x088BEDEC
-// @asm 0x088BFB48-0x088BFC64
 /* Card effect handlers: candidate lists for duel_088BFC64 (after effects_088BB8C0.c), and the list itself:
    duel_088BFC64 appends a card and its zone to duel_w_08915258 (at most 0x1FF), and duel_088BFF78 runs the list handler of an effect key from the sorted table at
    0x08912988 (binary search over 0x16D entries) and returns the count. */
@@ -790,7 +789,6 @@ void duel_088BFA9C(unsigned int p)
     }
 }
 
-#ifdef NON_MATCHING /* o original copia z para $s2 só na entrada do laço; o mwcc copia no início e testa o switch em $s1 */
 void duel_088BFB48(unsigned int p, int b, int z)
 {
     int n;
@@ -810,11 +808,15 @@ void duel_088BFB48(unsigned int p, int b, int z)
         n = duel.players[p & 1].n_d;
         break;
     }
-    for (i = 0; i < n; i++) {
-        duel_088BFC64(p, z, i);
+    i = 0;
+    if (n > 0) {
+        int zz = z;
+
+        do {
+            duel_088BFC64(p, zz, i);
+        } while (++i < n);
     }
 }
-#endif
 
 void duel_088BFC64(unsigned int p, int zone, unsigned int i)
 {
