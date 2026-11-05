@@ -2,8 +2,6 @@
 // @asm 0x08809DA8-0x08809F2C
 // @asm 0x0880A54C-0x0880A8AC
 // @asm 0x0880ADF4-0x0880AEF4
-// @asm 0x0880B17C-0x0880B30C
-// @asm 0x0880B30C-0x0880B448
 /* Helpers of the computer player: picking cards for a dialog, comparing the strongest monsters of
    both players. */
 #include "duel.h"
@@ -115,9 +113,12 @@ int duel_08809CA8(unsigned int p, int id, int a, int n)
     return i;
 }
 
-#ifdef NON_MATCHING /* the original keeps the card id in the register of the id parameter */
+#ifdef NON_MATCHING /* no default o original refaz o mult (p & 1) * 0xFAC depois de cada duel_rand; o mwcc guarda o
+                      produto em $s0 (um $s a mais em todo o corpo); testados local i, base por sizeof/0xFAC */
 int duel_08809DA8(unsigned int p, int id)
 {
+    int i;
+
     switch (id) {
     case 0x169D:
         id = duel.players[p & 1].zone_d[duel_rand(duel.players[p & 1].n_d)].id;
@@ -128,16 +129,18 @@ int duel_08809DA8(unsigned int p, int id)
     default:
         p = 1 - p;
         id = 0x161C;
-        if (duel_hand_revealed(p) == 0 || duel.players[p & 1].n_hand == 0) {
-            if (duel.players[p & 1].n_grave != 0) {
-                int i = duel_rand(duel.players[p & 1].n_grave);
+        if (duel_hand_revealed(p) != 0 && duel.players[p & 1].n_hand != 0) {
+            i = duel_rand(duel.players[p & 1].n_hand);
+            id = duel.players[p & 1].hand[i].id;
+        } else if (duel.players[p & 1].n_grave != 0) {
+            DuelCard *c;
 
-                if (card_attribute_icon_is3(duel.players[p & 1].grave[i].id) == 0) {
-                    id = duel.players[p & 1].grave[i].id;
-                }
+            i = duel_rand(duel.players[p & 1].n_grave);
+            c = &duel.players[p & 1].grave[i];
+
+            if (card_attribute_icon_is3(c->id) == 0) {
+                id = c->id;
             }
-        } else {
-            id = duel.players[p & 1].hand[duel_rand(duel.players[p & 1].n_hand)].id;
         }
         break;
     }
@@ -520,24 +523,28 @@ int duel_0880AD78(unsigned int p)
     return -1;
 }
 
-#ifdef NON_MATCHING /* the original keeps the pile size pointer with the field offset folded into the base */
+#ifdef NON_MATCHING /* forma e lógica conferidas; só a alocação difere: o original põe fn em s0, q em s3, a contagem/índice
+                      em s1 e o índice/contagem regressiva em s4 (perm das declarações: no mínimo 31 palavras) */
 int duel_0880ADF4(unsigned int p, int (*fn)(unsigned int p, int z, int i))
 {
-    unsigned int q = 1 - p;
-    unsigned int *n = &duel.players[q & 1].n_hand;
-    int c = 0;
+    unsigned int q;
+    unsigned int *n;
     unsigned int i;
+    unsigned int c;
 
+    q = 1 - p;
+    n = (unsigned int *)((char *)&duel.players[0].n_hand + (q & 1) * sizeof(DuelPlayer));
+    c = 0;
     for (i = 0; i < *n; i++) {
         if (fn(q, 11, i) != 0) {
             c++;
         }
     }
-    c = duel_rand(c);
-    for (i = 0; i < *n; i++) {
-        if (fn(q, 11, i) != 0) {
-            if (c-- == 0) {
-                return i;
+    i = duel_rand(c);
+    for (c = 0; c < *n; c++) {
+        if (fn(q, 11, c) != 0) {
+            if (i-- == 0) {
+                return c;
             }
         }
     }
@@ -610,57 +617,53 @@ int duel_0880B0FC(unsigned int p)
     return !duel_08806730(p, 1, duel.players[p & 1].hand[i].id);
 }
 
-#ifdef NON_MATCHING /* register allocation and branch layout not reproduced */
 int duel_0880B17C(unsigned int p, int i)
 {
+    unsigned int k;
     int a = 0;
     int b = 0;
+    unsigned int id;
 
-    if (duel_hand_revealed(p) == 0) {
-        unsigned int k;
+    if (duel_hand_revealed(p) != 0) {
+        int t = card_get_type(duel.players[p & 1].hand[i].id);
 
-        p = p & 1;
-        for (k = 0; k < duel.players[p].n_hand; k++) {
-            if (k < duel.players[p].n_hand + 1 >> 1) {
-                unsigned int id = duel.players[p].hand[k].id;
-
-                if (card_is_monster(id) != 0) {
-                    a++;
-                } else if (card_get_type(id) == 0x16) {
-                    b++;
-                }
-            } else if (duel_rand(2) == 0) {
-                b++;
-            } else {
-                a++;
-            }
+        if (t == 0x16) {
+            return 1;
         }
-        k = duel_rand(duel.players[p].n_hand);
-        return (a <= (int)k) + (a + b <= (int)k);
+        if (t == 0x17) {
+            return 2;
+        }
+        return 0;
     }
-    switch (card_get_type(duel.players[p & 1].hand[i].id)) {
-    case 0x16:
-        return 1;
-    case 0x17:
-        return 2;
+    p = p & 1;
+    for (k = 0; k < duel.players[p].n_hand; k++) {
+        if (k < duel.players[p].n_hand + 1 >> 1) {
+            if (card_is_monster(id = duel.players[p].hand[k].id) != 0) {
+                a++;
+            } else if (card_get_type(id) == 0x16) {
+                b++;
+            }
+        } else if (duel_rand(2) != 0) {
+            a++;
+        } else {
+            b++;
+        }
     }
-    return 0;
+    k = duel_rand(duel.players[p].n_hand);
+    return (a <= (int)k) + (a + b <= (int)k);
 }
-#endif
 
-#ifdef NON_MATCHING /* register allocation and branch layout not reproduced */
 int duel_0880B30C(unsigned int p)
 {
     unsigned int q = p & 1;
+    unsigned int i;
     int a = 0;
     int b = 0;
     int c = 0;
-    unsigned int i;
+    unsigned int id;
 
     for (i = 0; i < duel.players[q].n_grave; i++) {
-        unsigned int id = duel.players[q].grave[i].id;
-
-        if (card_is_monster(id) != 0) {
+        if (card_is_monster(id = duel.players[q].grave[i].id) != 0) {
             a++;
         } else if (card_get_type(id) == 0x16) {
             b++;
@@ -668,15 +671,11 @@ int duel_0880B30C(unsigned int p)
             c++;
         }
     }
-    if (a < b && c <= b && duel_d_count_type(p, 0x16) != 0) {
+    if (a < b && b >= c && duel_d_count_type(p, 0x16) != 0) {
         return 1;
     }
-    if (a < c) {
-        return 2;
-    }
-    if (duel_d_count_monsters(p) == 0) {
+    if (c > a || duel_d_count_monsters(p) == 0) {
         return 2;
     }
     return 0;
 }
-#endif

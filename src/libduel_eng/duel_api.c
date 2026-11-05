@@ -394,7 +394,8 @@ int duel_unk2c(unsigned int p)
     return duel.players[p & 1].unk20[3];
 }
 
-#ifdef NON_MATCHING /* the original keeps the count in a3 and loads the buffer pointer before storing it back */
+#ifdef NON_MATCHING /* o original lê duel_log_buf antes de gravar duel_log_n (n em a3); o mwcc adia a leitura para
+                      depois do store em todas as formas testadas (local n, e[n++], base em local, cast); 13 palavras */
 void duel_log_push(DuelLogEnt *v)
 {
     if (duel_log_mode == 1 && duel_log_n < 0x7FF) {

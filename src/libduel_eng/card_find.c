@@ -65,7 +65,8 @@ unsigned int duel_card_locate(int uid)
     return 0x1000;
 }
 
-#ifdef NON_MATCHING /* the original keeps the list index q + 2 * i in its own register */
+#ifdef NON_MATCHING /* o original mantém o índice q + 2i como variável de indução e refaz o sll a cada volta; o mwcc
+                      reduz para ponteiro ou i * 2 (testados j += 2, i * 2 + q); 24 palavras */
 /* Uid of a card id of player p (the list alternates players), checking p then the opponent. */
 int duel_list_find_id(unsigned int p, unsigned int id)
 {

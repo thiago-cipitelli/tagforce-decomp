@@ -1,8 +1,6 @@
 // @range 0x0881E0A0-0x08820618
 // @asm 0x0881E27C-0x0881E348
 // @asm 0x0881F58C-0x0881F644
-// @asm 0x088201F0-0x08820260
-// @asm 0x08820350-0x088203F4
 /* Conditions the computer player checks before activating a card (one per card). */
 #include "duel.h"
 #include "card_db.h"
@@ -117,7 +115,7 @@ int duel_ai_0881E254(DuelAct *a)
     return duel_hand_count_level(a->player, 5) > 0;
 }
 
-#ifdef NON_MATCHING /* the original tests atk < lp then atk <= 1000 with a dead `b` between; mwcc merges them */
+#ifdef NON_MATCHING /* cópia morta depois de `b` (bnezl; b; lw ra) nos testes atk < lp e atk <= 1000; não-corrigível conhecido. Lógica conferida */
 int duel_ai_0881E27C(DuelAct *a)
 {
     unsigned int m = duel_0884E4A0(a);
@@ -548,7 +546,7 @@ int duel_ai_0881F4D4(DuelAct *a)
     return r != 0;
 }
 
-#ifdef NON_MATCHING /* the original keeps p != zone owner as bnel/li 1/b/li 0; mwcc folds it into xor/sltu */
+#ifdef NON_MATCHING /* o original faz p != dono como bnel/li 1/b/li 0; o mwcc vira xor/sltu (testados if/else com r, return em cada ramo, ==, switch); ~10 palavras */
 int duel_ai_0881F58C(DuelAct *a)
 {
     int z = a->zone;
@@ -558,11 +556,9 @@ int duel_ai_0881F58C(DuelAct *a)
         unsigned int p = a->player;
 
         if (p != (duel_slot_e1854(p, z) & 0xFF)) {
-            r = 1;
-        } else {
-            r = 0;
+            return 1;
         }
-        return r;
+        return 0;
     }
     if (duel_w_08914920 != 0) {
         return 0;
@@ -858,15 +854,14 @@ int duel_ai_088201C0(DuelAct *a)
     return duel_slot_value_1909(a->player, a->zone) > 1;
 }
 
-#ifdef NON_MATCHING /* the original folds the field link offset into the base address of duel; mwcc adds it after the index */
 int duel_ai_088201F0(DuelAct *a)
 {
     unsigned int p = a->player;
-    DuelSlot *s = &duel.players[p & 1].field[a->zone];
+    DuelSlot *f = (DuelSlot *)((char *)&duel.players[0].field[0].link + (p & 1) * sizeof(DuelPlayer));
+    unsigned int *l = (unsigned int *)&f[a->zone];
 
-    return s->link <= (unsigned int)duel_0884E948(a, 1 - p);
+    return *l <= (unsigned int)duel_0884E948(a, 1 - p);
 }
-#endif
 
 int duel_ai_08820260(DuelAct *a)
 {
@@ -887,15 +882,12 @@ int duel_ai_08820260(DuelAct *a)
     return !(n < 3);
 }
 
-#ifdef NON_MATCHING /* the original addresses both n_hand fields from their own lui; mwcc shares the base of duel */
 int duel_ai_08820350(DuelAct *a)
 {
-    int n0 = duel_count_field(0);
-    int n1 = duel_count_field(1);
+    int n = duel_count_field(0) + duel_count_field(1) + duel.players[0].n_hand + duel.players[1].n_hand;
 
-    return duel.players[(1 - a->player) & 1].lp <= (duel.players[1].n_hand + duel.players[0].n_hand + n0 + n1) * 300;
+    return duel.players[(1 - a->player) & 1].lp <= n * 300;
 }
-#endif
 
 int duel_ai_088203F4(DuelAct *a, int b)
 {
