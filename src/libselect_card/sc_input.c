@@ -3,8 +3,6 @@
 // @asm 0x0880B120-0x0880B1F8
 // @asm 0x0880BC70-0x0880BE98
 // @asm 0x0880BE98-0x0880C05C
-// @asm 0x0880C380-0x0880C690
-// @asm 0x0880C690-0x0880C7D4
 // @asm 0x0880C7D4-0x0880C940
 // @rodata 0x0881A960-0x0881A984
 // @data 0x0881AE58-0x0881B378
@@ -39,7 +37,7 @@ ScEnt *sc_cur_entry(unsigned short side);
 void sc_info_update(void);
 void sc_layout_scroll(int grid, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned short sc_cur_index(unsigned short side);
-int sc_sort_value(ScEnt *e, unsigned int sort);
+int sc_sort_value(ScEnt *e, unsigned short sort);
 void sc_input_sort_menu(void);
 void sc_input_action_menu(void);
 void sc_input_search(void);
@@ -770,96 +768,99 @@ void sc_jump(int up)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (o rascunho chamava sc_cur_index sem o lado); 114 palavras:
-                       up e i trocam de registrador salvo e o teste da chave sai fora do laço */
-/* sort value of a card, ATK/DEF grouped by hundreds */
-static inline int sc_group_value(ScEnt *e, unsigned short sort)
-{
-    int v = sc_sort_value(e, sort);
-
-    if ((unsigned int)(sort - 4) < 2 && v > 0)
-        v /= 100;
-    return v;
-}
-
 /* index of the first card of the next (up = 0) or previous sort group from the cursor, -1 none */
 int sc_find_group(int up)
 {
-    unsigned char side = scv.side;
-    ScList *l = scv.pane[side].list;
-    unsigned short i = sc_cur_index(side);
-    int n = l->count;
-    int sort = l->sort;
-    ScEnt *e;
-    int v;
     int k;
+    ScList *l = scv.pane[scv.side].list;
+    int i = (unsigned short)sc_cur_index(scv.side);
+    unsigned short sort = l->sort;
+    int n = l->count;
+    ScEnt *e = i >= n ? 0 : &l->ents[l->order[i]];
+    int v;
+    int w;
+    int j;
 
-    e = SC_ENT(l, i);
     if (e == 0)
         return n - 1;
-    if (up != 0) {
+    if (up) {
         if (i <= 0)
             return -1;
-        k = i - 1;
-        v = sc_group_value(SC_ENT(l, k), sort);
-        for (k--; k >= 0; k--) {
-            if (sc_group_value(SC_ENT(l, k), sort) != v) {
+        j = i - 1;
+        v = sc_sort_value(j >= n ? 0 : &l->ents[l->order[j]], sort);
+        if ((sort == 4 || sort == 5) && v > 0)
+            v /= 100;
+        for (k = j - 1; k >= 0; k--) {
+            w = sc_sort_value(SC_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
+                w /= 100;
+            if (w != v) {
                 k++;
                 break;
             }
         }
-        if (k >= 0)
-            return k;
-        k = 0;
+        if (k < 0)
+            k = 0;
     } else {
-        v = sc_group_value(e, sort);
+        v = sc_sort_value(e, sort);
+        if ((sort == 4 || sort == 5) && v > 0)
+            v /= 100;
         for (k = i + 1; k < n; k++) {
-            if (sc_group_value(SC_ENT(l, k), sort) != v)
+            w = sc_sort_value(SC_ENT(l, k), sort);
+            if ((sort == 4 || sort == 5) && w > 0)
+                w /= 100;
+            if (w != v)
                 break;
         }
-        if (!(k < n))
+        if (k >= n)
             return -1;
     }
     return k;
 }
-#endif
 
-#ifdef NON_MATCHING /* o original guarda max e max + 0x76C0 em registradores */
 /* analog scrolling of the card info text (one pane) or of the wide view */
 void sc_scroll_update(void)
 {
     PadState *pad = pad_get();
     int moved;
-    int d;
+    int max;
+    int lim;
+    int v;
 
     if (scv.mode < 4) {
         sc_scroll_analog(&scv.cursor.scroll);
-    } else if (scv.scroll_max > 0) {
-        moved = 0;
-        if (pad->b.analog_x > 0x9E) {
-            d = (pad->b.analog_x - 0x9E) * 4;
-            if (scv.scroll_max < scv.scroll_pos) {
-                scv.scroll_pos += d;
-            } else {
-                scv.scroll_pos += d;
-                if (scv.scroll_max < scv.scroll_pos)
-                    scv.scroll_pos = scv.scroll_max;
+    } else {
+        max = scv.scroll_max;
+        if (max > 0) {
+            moved = 0;
+            lim = max + 0x76C0;
+            if (pad->b.analog_x > 0x9E) {
+                v = (pad->b.analog_x - 0x9E) * 4;
+                if (max < scv.scroll_pos) {
+                    scv.scroll_pos += v;
+                } else {
+                    if (max < scv.scroll_pos + v)
+                        scv.scroll_pos = max;
+                    else
+                        scv.scroll_pos += v;
+                }
+                moved = 1;
             }
-            moved = 1;
+            if (pad->b.analog_x < 0x62) {
+                v = scv.scroll_pos + (pad->b.analog_x - 0x62) * 4;
+                if (v < 0)
+                    scv.scroll_pos = 0;
+                else
+                    scv.scroll_pos = v;
+                moved = 1;
+            }
+            if (!moved && scv.cursor.timer >= 0x36)
+                scv.scroll_pos += 0x40;
+            if (scv.scroll_pos >= lim)
+                scv.scroll_pos -= lim;
         }
-        if (pad->b.analog_x < 0x62) {
-            scv.scroll_pos += (pad->b.analog_x - 0x62) * 4;
-            if (scv.scroll_pos < 0)
-                scv.scroll_pos = 0;
-            moved = 1;
-        }
-        if (!moved && scv.cursor.timer > 0x35)
-            scv.scroll_pos += 0x40;
-        if (scv.scroll_pos >= scv.scroll_max + 0x76C0)
-            scv.scroll_pos -= scv.scroll_max + 0x76C0;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* lógica conferida com o asm; 65 palavras: o original faz todas as leituras do
                        layout antes das gravações em sc.focus; o mwcc intercala */

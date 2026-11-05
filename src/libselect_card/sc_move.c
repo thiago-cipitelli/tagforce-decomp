@@ -2,8 +2,6 @@
 // @asm 0x08815168-0x08815408
 // @asm 0x08815408-0x088158DC
 // @asm 0x088158DC-0x08815CD0
-// @asm 0x08815CD0-0x08815E48
-// @asm 0x08815F04-0x08816468
 // @asm 0x08816550-0x08816874
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
@@ -27,17 +25,21 @@ typedef struct ScOsk {                 /* see sc_word.c */
     void (*done)(unsigned short *text, int r);
 } ScOsk;
 
+typedef struct ScSel {
+    unsigned short side : 2;           /* source pane */
+    unsigned short src : 3;            /* source list */
+    unsigned short dside : 2;          /* destination pane */
+    unsigned short dst : 3;            /* destination list */
+    unsigned short pad : 6;
+} ScSel;
+
 typedef struct ScFlight {              /* sc_flight 0x0881BB54, 0x34 bytes, heap allocated */
     unsigned char step : 4;            /* 0 start, 1 scroll wait, 2 flying, 3 done */
     unsigned char phase : 4;           /*   flying: 0 path, 1 move, 2 land */
     unsigned char timer;               /* +0x01 */
     unsigned short idx;                /* +0x02 entry index in the source list */
     unsigned short pos;                /* +0x04 position in its visible order */
-    unsigned short side : 2;           /* +0x06 source pane */
-    unsigned short src : 3;            /*       source list */
-    unsigned short dside : 2;          /*       destination pane */
-    unsigned short dst : 3;            /*       destination list */
-    unsigned short pad06 : 6;
+    ScSel sel;                         /* +0x06 */
     unsigned short dtab;               /* +0x08 tab shown in the destination pane */
     unsigned short pad0a[2];
     ScEnt ent;                         /* +0x0E card being moved */
@@ -77,6 +79,26 @@ void sc_hist_push(ScMove *m);
 void sc_popup_open(int id, int arg);
 int sc_hist_pop(ScMove *m);
 void sc_flight_take(void);
+
+static inline unsigned short sc_lay_pack(unsigned char cols, unsigned char rows)
+{
+    return cols | rows << 8;
+}
+
+/* keeps the cursor of pane p inside its list after a move (last entry when it fell off the end) */
+#define SC_PANE_REFIT(p)                                                                                   \
+    do {                                                                                                   \
+        pos = (p)->cx + ((p)->top + (p)->cy * ((p)->list_mode == 0 ? (p)->lay.cols : 1));                  \
+        keep = 1;                                                                                          \
+        if (pos > 0 && pos >= (p)->list->count) {                                                          \
+            pos = (p)->list->count - 1;                                                                    \
+            keep = 0;                                                                                      \
+        }                                                                                                  \
+        view = (p)->list_mode == 0 ? (p)->lay.grid_rows : (p)->lay.rows;                                   \
+        sc_layout_scroll(keep, pos, sc_lay_pack((p)->list_mode == 0 ? (p)->lay.cols : 1, view),            \
+                         (p)->list->count, &(p)->top, &(p)->cx, &(p)->cy);                                 \
+    } while (0)
+
 void sc_flight_land(void);
 void sc_flight_step(void);
 void sc_flight_free(void);
@@ -199,25 +221,25 @@ int sc_cancel_request(void)
     sc_flight = heap_alloc(sc.heap, 0x34);
     memset(sc_flight, 0, 0x34);
     f = sc_flight;
-    f->side = scv.side;
-    f->src = tab;
+    f->sel.side = scv.side;
+    f->sel.src = tab;
     f->pos = sc_cur_index(scv.side);
     f->idx = sc.list[tab].order[f->pos];
     if (scv.mode < 2)
-        f->dside = f->side;
+        f->sel.dside = f->sel.side;
     else
-        f->dside = (f->side + 1) & 1;
-    f->dst = to;
+        f->sel.dside = (f->sel.side + 1) & 1;
+    f->sel.dst = to;
     f->dtab = scv.pane[to].list->tab;
     memcpy(&f->ent, e, 6);
-    mv.b[0] = f->src | f->dst << 4;
-    *(unsigned short *)&mv.b[8] = sc_dst_pos(f->dst, f->ent.id);
+    mv.b[0] = f->sel.src | f->sel.dst << 4;
+    *(unsigned short *)&mv.b[8] = sc_dst_pos(f->sel.dst, f->ent.id);
     memcpy(&mv.b[2], &f->ent, 6);
     sc_hist_push(&mv);
     sc.state = 2;
     f->phase = 0;
-    sc_slot_pos(f->from, f->side, f->src, f->pos, 0);
-    if (sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 1) == 0)
+    sc_slot_pos(f->from, f->sel.side, f->sel.src, f->pos, 0);
+    if (sc_slot_pos(f->to, f->sel.dside, f->sel.dst, sc_dst_pos(f->sel.dst, f->ent.id), 1) == 0)
         f->step = 1;
     else
         f->step = 2;
@@ -248,22 +270,22 @@ int sc_input_move(void)
         return 0;
     f = sc_flight;
     memset(f, 0, 0x34);
-    f->src = (mv.b[0] & 0x7F) >> 4;
+    f->sel.src = (mv.b[0] & 0x7F) >> 4;
     f->idx = *(unsigned short *)&mv.b[8];
     if (scv.mode < 2) {
-        f->side = 0;
-        f->dside = 0;
+        f->sel.side = 0;
+        f->sel.dside = 0;
     } else {
-        f->side = mv.b[0] >> 4 != 0;
-        f->dside = (f->side + 1) & 1;
+        f->sel.side = mv.b[0] >> 4 != 0;
+        f->sel.dside = (f->sel.side + 1) & 1;
     }
-    f->dst = mv.b[0] & 7;
-    f->dtab = scv.pane[f->dside].list->tab;
+    f->sel.dst = mv.b[0] & 7;
+    f->dtab = scv.pane[f->sel.dside].list->tab;
     memcpy(&f->ent, &mv.b[2], 6);
     sc.state = 2;
     f->step = 2;
     f->phase = 0;
-    src = f->src;
+    src = f->sel.src;
     l = &sc.list[src];
     changed = 0;
     if (f->idx < l->n) {
@@ -294,7 +316,7 @@ int sc_input_move(void)
     if (i >= l->count)
         i = -1;
     f->pos = i;
-    sc_slot_pos(f->from, f->side, f->src, i, 0);
+    sc_slot_pos(f->from, f->sel.side, f->sel.src, i, 0);
     f->x = (int)f->from[0];
     f->y = (int)f->from[1];
     sc_flight_take();
@@ -302,19 +324,18 @@ int sc_input_move(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 41 palavras: o original testa 3, 2, 1 (ordem inversa) sem
-                       teste do 0; só com um "case 0" o mwcc inverte a ordem, mas emite o teste dele. Depois da
-                       chamada o original lê dside/dst por f+6 guardado em $s0 (como sc_flight_step) */
 /* state 2 */
 void sc_input_sort_menu(void)
 {
     ScFlight *f = sc_flight;
+    ScSel *s;
 
     switch (f->step) {
     case 1:
         if (++f->timer >= f->frames) {
             f = sc_flight;
-            if (sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 1)) {
+            s = &f->sel;
+            if (sc_slot_pos(f->to, s->dside, s->dst, sc_dst_pos(s->dst, f->ent.id), 1)) {
                 sc_flight->phase = 0;
                 sc_flight->x = sc_flight->from[0];
                 sc_flight->y = sc_flight->from[1];
@@ -330,21 +351,18 @@ void sc_input_sort_menu(void)
         sc_flight_free();
         sc.state = 1;
         break;
-    case 0:
-        break;
     }
 }
-#endif
 
 void sc_flight_take(void)
 {
-    sc_list_remove(&sc.list[sc_flight->src], sc_flight->idx);
+    sc_list_remove(&sc.list[sc_flight->sel.src], sc_flight->idx);
 }
 
 void sc_flight_land(void)
 {
     ScFlight *f = sc_flight;
-    ScList *l = &sc.list[f->dst];
+    ScList *l = &sc.list[f->sel.dst];
     ScEnt e;
 
     memcpy(&e, &f->ent, 6);
@@ -363,23 +381,25 @@ static inline float sc_bez(float t, float a, float m, float b)
     return t * b + (u * a + k * m);
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (sc_select_tab recebe dtab, não dst); o original guarda f+6 em $s1 e lê
-   dside/dst por ele (o mwcc lê por $s0 e não usa $s1: tudo desloca uma palavra, 335); curva como dt_bez */
 /* the flight: path through a control point, 10 frames of quadratic curve, landing */
 void sc_flight_step(void)
 {
     ScFlight *f = sc_flight;
-    ScPane *p;
     float t;
+    float u;
+    float k;
+    float uu;
+    float tt;
+    ScPane *p;
+    ScSel *s;
     int pos;
     unsigned short keep;
     unsigned short view;
-    unsigned short grid;
-    unsigned short grid2;
 
     switch (f->phase) {
     case 0:
-        sc_slot_pos(f->to, f->dside, f->dst, sc_dst_pos(f->dst, f->ent.id), 0);
+        s = &f->sel;
+        sc_slot_pos(f->to, s->dside, s->dst, sc_dst_pos(s->dst, f->ent.id), 0);
         if (sc_flight->from[1] - 10.0f <= sc_flight->to[1] && sc_flight->from[1] + 10.0f >= sc_flight->to[1]) {
             if (sc_flight->from[1] <= 136.0f)
                 sc_flight->mid[1] = sc_flight->from[1] + 68.0f;
@@ -404,38 +424,26 @@ void sc_flight_step(void)
         break;
     case 1:
         if (f->timer++ < 10) {
-            t = (unsigned int)sc_flight->timer / 10.0f;
-            sc_flight->x = sc_bez(t, sc_flight->from[0], sc_flight->mid[0], sc_flight->to[0]);
-            sc_flight->y = sc_bez(t, sc_flight->from[1], sc_flight->mid[1], sc_flight->to[1]);
+            t = sc_flight->timer / 10.0f;
+            u = 1.0f - t;
+            uu = u * u;
+            k = 2.0f * t * u;
+            tt = t * t;
+            sc_flight->x = tt * sc_flight->to[0] + (uu * sc_flight->from[0] + k * sc_flight->mid[0]);
+            sc_flight->y = tt * sc_flight->to[1] + (uu * sc_flight->from[1] + k * sc_flight->mid[1]);
         } else {
             sc_flight->phase++;
         }
         break;
     case 2:
-        if (scv.mode < 2 && f->dst != f->dtab)
-            sc_select_tab(f->dside, f->dtab, 2);
+        if (scv.mode < 2 && (s = &f->sel, s->dst != f->dtab))
+            sc_select_tab(s->dside, f->dtab, 2);
         sc_flight_land();
         p = &scv.pane[0];
-        pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
-        keep = 1;
-        if (pos > 0 && pos >= p->list->count) {
-            pos = p->list->count - 1;
-            keep = 0;
-        }
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        grid = p->list_mode == 0 ? p->lay.cols : 1;
-        sc_layout_scroll(keep, pos, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+        SC_PANE_REFIT(p);
         if (scv.mode > 1) {
             p = &scv.pane[1];
-            pos = p->cx + (p->top + p->cy * (p->list_mode == 0 ? p->lay.cols : 1));
-            keep = 1;
-            if (pos > 0 && pos >= p->list->count) {
-                pos = p->list->count - 1;
-                keep = 0;
-            }
-            view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-            grid2 = p->list_mode == 0 ? p->lay.cols : 1;
-            sc_layout_scroll(keep, pos, (grid2 & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
+            SC_PANE_REFIT(p);
         }
         sc_flight->step = 3;
         sc_flight->phase = 0;
@@ -443,7 +451,6 @@ void sc_flight_step(void)
         break;
     }
 }
-#endif
 
 void sc_flight_free(void)
 {

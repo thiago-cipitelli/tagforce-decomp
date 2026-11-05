@@ -1,5 +1,4 @@
 // @range 0x08813CF4-0x08815168
-// @asm 0x08814F40-0x08815168
 // @data 0x0881B510-0x0881B51C
 /* The word search (state 6): a window with the word, the last words used and an OK button; the
    word is typed in the system on-screen keyboard; the search runs incrementally with a progress
@@ -20,17 +19,45 @@ typedef struct ScWordWin {             /* sc_word 0x0881B9A0, 0x54 bytes */
     MenuWidget *bar;                   /* +0x50 */
 } ScWordWin;
 
+typedef struct ScOskData {             /* SceUtilityOskData */
+    int unk00;
+    int unk04;
+    int language;
+    int unk12;
+    int inputtype;
+    int lines;
+    int unk24;
+    unsigned short *desc;
+    unsigned short *intext;
+    int outtextlength;
+    unsigned short *outtext;
+    int result;
+    int outtextlimit;
+} ScOskData;
+
+typedef struct ScOskParams {           /* SceUtilityOskParams */
+    int size;
+    int language;
+    int button_swap;
+    int graphics_thread;
+    int access_thread;
+    int font_thread;
+    int sound_thread;
+    int result;
+    int reserved[4];
+    int datacount;
+    ScOskData *data;
+    int state;
+    int unk60;
+} ScOskParams;
+
 typedef struct ScOsk {                 /* sc_osk 0x0881B9A4, 0x1B0 bytes */
-    unsigned char state;               /* 0 idle, 1 fade in, 2 running, 3 fade out, 4 done */
-    unsigned char pad01[3];
-    unsigned int base[12];             /* +0x04 SceUtilityOskParams base */
-    int datacount;                     /* +0x34 */
-    unsigned int *data;                /* +0x38 */
-    int pstate;                        /* +0x3C */
-    int unk40;
-    unsigned int odata[13];            /* +0x44 SceUtilityOskData */
-    unsigned short in[0x18];           /* +0x78 */
-    unsigned short out[0x80];          /* +0xA8 */
+    unsigned char state;               /* +0x00 0 idle, 1 fade in, 2 open, 3 fade out, 4 done */
+    unsigned char pad1[3];
+    ScOskParams params;                /* +0x04 */
+    ScOskData data;                    /* +0x44 */
+    unsigned short intext[24];         /* +0x78 */
+    unsigned short outtext[128];       /* +0xA8 */
     unsigned short *target;            /* +0x1A8 */
     void (*done)(unsigned short *text, int r); /* +0x1AC */
 } ScOsk;
@@ -427,30 +454,27 @@ void sc_osk_done(unsigned short *text, int r)
 /* OSK language of each game language */
 unsigned short sc_osk_lang[6] = { 0, 1, 4, 2, 5, 3 };
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 63 palavras: o original grava os campos 0/1 (região, idioma)
-                       com desvios, o mwcc gera sltu/sltiu; ordem das gravações dos parâmetros */
 /* starts the system on-screen keyboard on target ('$' doubled), len characters at most */
-int sc_osk_open(unsigned short *target, unsigned short *desc, int len, void (*done)(unsigned short *, int))
+int sc_osk_open(unsigned short *text, unsigned short *desc, int maxlen, void (*done)(unsigned short *, int))
 {
-    unsigned short *in = sc_osk.in;
+    unsigned short *in = sc_osk.intext;
     int lang = cfg_get_language();
     int dollar = 0;
     unsigned int i;
     unsigned short *s;
-    unsigned short *d;
-    unsigned short c;
-    unsigned int *b;
-    unsigned int *o;
+    unsigned short *o;
+    ScOskParams *p;
+    ScOskData *d;
     int r;
 
     if (lang < 0 || lang >= 6)
         lang = 1;
-    memset(&sc_osk, 0, 0x1B0);
+    memset(&sc_osk, 0, sizeof(sc_osk));
     sysvar_set_a90(1);
-    sc_osk.target = target;
+    sc_osk.target = text;
     sc_osk.done = done;
-    for (i = 0, s = target, d = in; i < wcslen(target) && (int)i < 0x17; i++, s++) {
-        c = *s;
+    for (i = 0, s = text, o = in; i < wcslen(text) && (int)i < 23; s++, i++) {
+        unsigned short c = *s;
         if (c == '$') {
             if (dollar) {
                 dollar = 0;
@@ -458,41 +482,47 @@ int sc_osk_open(unsigned short *target, unsigned short *desc, int len, void (*do
             }
             dollar = 1;
         }
-        *d++ = c;
+        *o = c;
+        o++;
         if (c == 0)
             break;
     }
-    b = sc_osk.base;
-    b[0] = 0x40;
-    b[1] = sc_osk_lang[lang];
-    o = sc_osk.odata;
-    b[2] = (unsigned short)region_pick_value(0) != 0x2000 ? 1 : 0;
-    b[3] = 0x11;
-    b[4] = 0x13;
-    b[5] = 0x12;
-    b[6] = 0x10;
-    b[8] = 0;
-    b[9] = 0;
-    sc_osk.data = o;
-    sc_osk.datacount = 1;
-    o[0] = lang == 0 ? 1 : 0;
-    o[5] = 1;
-    o[6] = 1;
-    o[10] = (unsigned int)sc_osk.out;
-    o[7] = (unsigned int)desc;
-    o[8] = (unsigned int)in;
-    o[9] = len;
-    o[1] = 0;
-    o[2] = 0;
-    o[3] = 0;
-    o[4] = 0;
-    o[11] = 0;
-    o[12] = 0;
-    r = sceUtilityOskInitStart(sc_osk.base);
+    p = (ScOskParams *)(char *)&sc_osk.params;
+    p->size = 0x40;
+    p->language = sc_osk_lang[lang];
+    d = (ScOskData *)(char *)&sc_osk.data;
+    if (region_pick_value(0) == 0x2000)
+        p->button_swap = 0;
+    else
+        p->button_swap = 1;
+    p->graphics_thread = 0x11;
+    p->access_thread = 0x13;
+    p->font_thread = 0x12;
+    p->sound_thread = 0x10;
+    p->reserved[0] = 0;
+    p->reserved[1] = 0;
+    p->data = d;
+    p->datacount = 1;
+    if (lang == 0)
+        d->unk00 = 1;
+    else
+        d->unk00 = 0;
+    d->lines = 1;
+    d->unk24 = 1;
+    d->outtext = sc_osk.outtext;
+    d->desc = desc;
+    d->intext = in;
+    d->outtextlength = maxlen;
+    d->unk04 = 0;
+    d->language = 0;
+    d->unk12 = 0;
+    d->inputtype = 0;
+    d->result = 0;
+    d->outtextlimit = 0;
+    r = sceUtilityOskInitStart(p);
     if (r == 0) {
         fade_start_in(2, 0xA0000000, 8);
         sc_osk.state = 1;
     }
     return r;
 }
-#endif

@@ -3,8 +3,6 @@
 // @asm 0x0880D96C-0x0880DE54
 // @asm 0x0880DE54-0x0880E558
 // @asm 0x0880E940-0x0880ECCC
-// @asm 0x0880ECCC-0x0880F128
-// @asm 0x0880F128-0x0880F6E8
 // @asm 0x0880FC74-0x0880FF74
 // @rodata 0x08820FCC-0x08820FF0
 /* Moving a card between the lists (Circle in the deck editor, undo with Triangle): the destination
@@ -540,21 +538,14 @@ void dt_flight_window_input(PadBits *pad)
 }
 #endif
 
-/* point at t of the quadratic curve a, m, b of a flight */
-static inline float dt_bez(float t, float a, float m, float b)
-{
-    float u = 1.0f - t;
-    float k = 2.0f * t * u;
-    u = u * u;
-    t = t * t;
-    return t * b + (u * a + k * m);
-}
-
-#ifdef NON_MATCHING /* 9 palavras, só na curva da fase 1 (dt_bez): t fica em $f4 e 2*t em $f3 (original: $f6 e $f4) */
 /* flight from the slot to the window (phase 0 path, 1 move, 2 open the window) */
 void dt_flight_take_step(void)
 {
     float t;
+    float u;
+    float k;
+    float uu;
+    float tt;
 
     switch (dt_flight->phase) {
     case 0:
@@ -583,8 +574,12 @@ void dt_flight_take_step(void)
     case 1:
         if (++dt_flight->timer <= 10) {
             t = (unsigned int)dt_flight->timer / 10.0f;
-            dt_flight->cur[0] = dt_bez(t, dt_flight->from[0], dt_flight->mid[0], dt_flight->to[0]);
-            dt_flight->cur[1] = dt_bez(t, dt_flight->from[1], dt_flight->mid[1], dt_flight->to[1]);
+            u = 1.0f - t;
+            uu = u * u;
+            k = 2.0f * t * u;
+            tt = t * t;
+            dt_flight->cur[0] = tt * dt_flight->to[0] + (uu * dt_flight->from[0] + k * dt_flight->mid[0]);
+            dt_flight->cur[1] = tt * dt_flight->to[1] + (uu * dt_flight->from[1] + k * dt_flight->mid[1]);
             if (dt_flight->timer == 5)
                 dt_flight->shown = 1;
         } else {
@@ -603,15 +598,17 @@ void dt_flight_take_step(void)
         break;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* palavras restantes só na curva da fase 1 (dt_bez): t fica em $f4 e 2*t em $f3 (original: $f6 e $f4); nenhuma grafia testada reproduziu */
 /* flight from the window (or the slot) to the slot it lands in (phase 0 path, 1 move, 2 land) */
 void dt_flight_put_step(void)
 {
     DtFlight *f = dt_flight;
     DtPane *p;
     float t;
+    float u;
+    float k;
+    float uu;
+    float tt;
     int pos;
     unsigned short keep;
     unsigned short view;
@@ -646,8 +643,12 @@ void dt_flight_put_step(void)
     case 1:
         if (f->timer++ < 10) {
             t = (unsigned int)dt_flight->timer / 10.0f;
-            dt_flight->cur[0] = dt_bez(t, dt_flight->from[0], dt_flight->mid[0], dt_flight->to[0]);
-            dt_flight->cur[1] = dt_bez(t, dt_flight->from[1], dt_flight->mid[1], dt_flight->to[1]);
+            u = 1.0f - t;
+            uu = u * u;
+            k = 2.0f * t * u;
+            tt = t * t;
+            dt_flight->cur[0] = tt * dt_flight->to[0] + (uu * dt_flight->from[0] + k * dt_flight->mid[0]);
+            dt_flight->cur[1] = tt * dt_flight->to[1] + (uu * dt_flight->from[1] + k * dt_flight->mid[1]);
         } else {
             dt_flight->phase++;
         }
@@ -687,7 +688,6 @@ void dt_flight_put_step(void)
         break;
     }
 }
-#endif
 
 void dt_flight_free(void)
 {

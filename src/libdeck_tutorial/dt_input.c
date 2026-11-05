@@ -1,6 +1,6 @@
 // @range 0x088100AC-0x08811BB8
 // @asm 0x088106B4-0x08810AA0
-// @asm 0x088110CC-0x0881137C
+// @asm 0x08811210-0x0881137C
 // @rodata 0x08820FF0-0x08821030
 // @data 0x08821F4C-0x08821F74
 /* Input of the editor (the code of libdeck dk_input.c and the popup of dk_mode.c): dispatch by
@@ -555,42 +555,49 @@ int dt_find_group(int up)
     return k;
 }
 
-#ifdef NON_MATCHING /* 59 palavras: o original guarda max e max + 0x76C0 em registradores */
 /* analog scrolling of the card info text (one pane) or of the wide view */
 void dt_scroll_update(void)
 {
-    PadBits *pad = &pad_get()->b;
+    PadState *pad = pad_get();
     int moved;
-    int d;
+    int max;
+    int lim;
+    int v;
 
     if (dtv.mode < 4) {
         dt_scroll_analog(&dtv.cursor.scroll);
-    } else if (dtv.scroll_max > 0) {
-        moved = 0;
-        if (pad->analog_x > 0x9E) {
-            d = (pad->analog_x - 0x9E) * 4;
-            if (dtv.scroll_max < dtv.scroll_pos) {
-                dtv.scroll_pos += d;
-            } else {
-                dtv.scroll_pos += d;
-                if (dtv.scroll_max < dtv.scroll_pos)
-                    dtv.scroll_pos = dtv.scroll_max;
+    } else {
+        max = dtv.scroll_max;
+        if (max > 0) {
+            moved = 0;
+            lim = max + 0x76C0;
+            if (pad->b.analog_x > 0x9E) {
+                v = (pad->b.analog_x - 0x9E) * 4;
+                if (max < dtv.scroll_pos) {
+                    dtv.scroll_pos += v;
+                } else {
+                    if (max < dtv.scroll_pos + v)
+                        dtv.scroll_pos = max;
+                    else
+                        dtv.scroll_pos += v;
+                }
+                moved = 1;
             }
-            moved = 1;
+            if (pad->b.analog_x < 0x62) {
+                v = dtv.scroll_pos + (pad->b.analog_x - 0x62) * 4;
+                if (v < 0)
+                    dtv.scroll_pos = 0;
+                else
+                    dtv.scroll_pos = v;
+                moved = 1;
+            }
+            if (!moved && dtv.cursor.timer >= 0x36)
+                dtv.scroll_pos += 0x40;
+            if (dtv.scroll_pos >= lim)
+                dtv.scroll_pos -= lim;
         }
-        if (pad->analog_x < 0x62) {
-            dtv.scroll_pos += (pad->analog_x - 0x62) * 4;
-            if (dtv.scroll_pos < 0)
-                dtv.scroll_pos = 0;
-            moved = 1;
-        }
-        if (!moved && dtv.cursor.timer > 0x35)
-            dtv.scroll_pos += 0x40;
-        if (dtv.scroll_pos >= dtv.scroll_max + 0x76C0)
-            dtv.scroll_pos -= dtv.scroll_max + 0x76C0;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* 56 palavras: a ordem das cargas no ramo da grade (x, grid_x, cx... no original) e a alocação; tentadas a ordem dos stores, a multiplicação comutada e o ponteiro do layout por dtv */
 /* the focus frame follows the cursor */
