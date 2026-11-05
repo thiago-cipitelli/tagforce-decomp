@@ -24,7 +24,7 @@ typedef struct DdFxOrb {               /* 0x490 */
 } DdFxOrb;
 
 float *vec3_lerp(float *out, float *a, float *b, float t);
-void dd_rand_dir(float *out, float len);
+void dd_rand_dir(float len, float *out);
 
 int dd_fx_orb_update(int state, DdFxOrb *fx);
 
@@ -113,7 +113,7 @@ int dd_fx_orb_update(int state, DdFxOrb *fx)
         vec3_copy(t->pos, p);
         for (k = 0; k < 4; k++) {
             t->uv[k] = DD_RAND(r) % 8;
-            dd_rand_dir(t->dir[k], 30.0f);
+            dd_rand_dir(30.0f, t->dir[k]);
         }
         if (fx->next < 7)
             fx->next++;
