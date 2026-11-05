@@ -20,10 +20,10 @@ int movie_play(const char *path, unsigned int flags, int arg);
 void *sceGeEdramGetAddr(void);
 
 int dd_int_cmp(const void *a, const void *b);
-void dd_mon_on_start(void);
-void dd_mon_on_event(void);
-void dd_mon_on_frame(void *s, int a, int b);
-void dd_mon_bone(void *s, int a, int b);
+int dd_mon_on_start(int a, int b, int c);
+int dd_mon_on_event(int a, int anim, int c, int d);
+int dd_mon_on_frame(void *m, int anim, int c, int frame, int flag);
+void dd_mon_bone(void *model, void *out, void *in, int bone, float t);
 void *dd_alloc_sub(int size);
 void dd_free_sub(void *p);
 
@@ -33,13 +33,13 @@ typedef struct FxVec4u {               /* Vec4 without the 16-byte alignment */
 
 typedef struct DdCharSetup6 {          /* callbacks of the character setup (dd_mon_cb_init) */
     int pad00[5];
-    int (*load)(void);                 /* +0x14 */
-    int (*unload)(void);               /* +0x18 */
-    void (*anim)(void *s, int a, int b); /* +0x1C */
+    int (*load)(int a, int b, int c);  /* +0x14 */
+    int (*unload)(int a, int anim, int c, int d); /* +0x18 */
+    int (*anim)(void *s, int anim, int c, int frame, int flag); /* +0x1C */
     int pad20;
     int (*motion)(void *s, int motion); /* +0x24 */
     int (*camera)(void *s, FxVec4u *eye, FxVec4u *target, int id); /* +0x28 */
-    void (*term)(void *s, int a, int b); /* +0x2C */
+    void (*term)(void *s, void *out, void *in, int bone, float t); /* +0x2C */
 } DdCharSetup6;
 
 typedef struct DdCamKey {
@@ -63,18 +63,18 @@ extern char dd_movie_buf[0x40];
 extern int dd_movie_sorted;
 extern int dd_c6a_sorted;
 
-int dd_c6b_load(void);
-int dd_c6b_unload(void);
-void dd_c6b_anim(void *s, int a, int b);
+int dd_c6b_load(int a, int b, int c);
+int dd_c6b_unload(int a, int anim, int c, int d);
+int dd_c6b_anim(void *s, int anim, int c, int frame, int flag);
 int dd_c6b_motion(void *s, int motion);
 int dd_c6b_camera(void *s, FxVec4u *eye, FxVec4u *target, int id);
-void dd_c6b_term(void *s, int a, int b);
-int dd_c6a_load(void);
-int dd_c6a_unload(void);
-void dd_c6a_anim(void *s, int a, int b);
+void dd_c6b_term(void *s, void *out, void *in, int bone, float t);
+int dd_c6a_load(int a, int b, int c);
+int dd_c6a_unload(int a, int anim, int c, int d);
+int dd_c6a_anim(void *s, int anim, int c, int frame, int flag);
 int dd_c6a_motion(void *s, int motion);
 int dd_c6a_camera(void *s, FxVec4u *eye, FxVec4u *target, int id);
-void dd_c6a_term(void *s, int a, int b);
+void dd_c6a_term(void *s, void *out, void *in, int bone, float t);
 char *dd_movie_find(int card, int kind);
 int dd_movie_cmp(const void *a, const void *b);
 int dd_movie_loaded(void *arg, int r);
@@ -158,21 +158,21 @@ void dd_chara_setup_06b(DdCharSetup6 *s)
     s->term = dd_c6b_term;
 }
 
-int dd_c6b_load(void)
+int dd_c6b_load(int a, int b, int c)
 {
-    dd_mon_on_start();
+    dd_mon_on_start(a, b, c);
     return 0;
 }
 
-int dd_c6b_unload(void)
+int dd_c6b_unload(int a, int anim, int c, int d)
 {
-    dd_mon_on_event();
+    dd_mon_on_event(a, anim, c, d);
     return 0;
 }
 
-void dd_c6b_anim(void *s, int a, int b)
+int dd_c6b_anim(void *s, int anim, int c, int frame, int flag)
 {
-    dd_mon_on_frame(s, a, b);
+    return dd_mon_on_frame(s, anim, c, frame, flag);
 }
 
 int dd_c6b_motion(void *s, int motion)
@@ -234,9 +234,9 @@ int dd_c6b_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
 }
 #endif
 
-void dd_c6b_term(void *s, int a, int b)
+void dd_c6b_term(void *s, void *out, void *in, int bone, float t)
 {
-    dd_mon_bone(s, a, b);
+    dd_mon_bone(s, out, in, bone, t);
 }
 
 /* Export (libduel_mgr): starts reading the movie of (card, kind) into dd_movie_buf. */
@@ -321,21 +321,21 @@ void dd_chara_setup_06a(DdCharSetup6 *s)
     s->term = dd_c6a_term;
 }
 
-int dd_c6a_load(void)
+int dd_c6a_load(int a, int b, int c)
 {
-    dd_mon_on_start();
+    dd_mon_on_start(a, b, c);
     return 0;
 }
 
-int dd_c6a_unload(void)
+int dd_c6a_unload(int a, int anim, int c, int d)
 {
-    dd_mon_on_event();
+    dd_mon_on_event(a, anim, c, d);
     return 0;
 }
 
-void dd_c6a_anim(void *s, int a, int b)
+int dd_c6a_anim(void *s, int anim, int c, int frame, int flag)
 {
-    dd_mon_on_frame(s, a, b);
+    return dd_mon_on_frame(s, anim, c, frame, flag);
 }
 
 int dd_c6a_motion(void *s, int motion)
@@ -397,7 +397,7 @@ int dd_c6a_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
 }
 #endif
 
-void dd_c6a_term(void *s, int a, int b)
+void dd_c6a_term(void *s, void *out, void *in, int bone, float t)
 {
-    dd_mon_bone(s, a, b);
+    dd_mon_bone(s, out, in, bone, t);
 }

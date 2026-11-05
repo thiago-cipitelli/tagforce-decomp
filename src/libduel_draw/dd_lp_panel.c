@@ -115,7 +115,8 @@ extern DdLpMgr dd_lp;
 
 unsigned int dd_lp_shine(int i, unsigned int frame);
 
-void dd_lp_load(void)
+/* the argument (&key holding region_get(), from dd_tasks_init) is unused */
+void dd_lp_load(int *region)
 {
     DdLpMgr *m = &dd_lp;
     void *pack;
