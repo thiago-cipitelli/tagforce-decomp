@@ -1,5 +1,4 @@
 // @range 0x088062FC-0x08806A18
-// @asm 0x088067EC-0x08806854
 // @asm 0x08806928-0x088069B0
 /* Story player state (save data): room and position, the current event ids, the point counters,
    the counts of the 20 items and 50 cards held, and the bit set of cards ever obtained. */
@@ -273,12 +272,10 @@ int st_pl_points_get(void)
     return st_pl->points;
 }
 
-#ifdef NON_MATCHING /* o original testa 3, 2, 4, 1 e põe o corpo de 1 fora da linha; nenhuma forma de switch/if reproduz */
 int st_pl_points(void)
 {
     switch (story_mode_get()) {
     case 1:
-        return -1;
     case 4:
         return -1;
     case 2:
@@ -287,7 +284,6 @@ int st_pl_points(void)
     }
     return st_pl_points_get();
 }
-#endif
 
 void st_pl_points_add(int d)
 {

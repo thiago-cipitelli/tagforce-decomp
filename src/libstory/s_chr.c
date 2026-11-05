@@ -8,10 +8,8 @@
 // @asm 0x08805860-0x088058B0
 // @asm 0x088058B0-0x08805934
 // @asm 0x08805974-0x08805B68
-// @asm 0x08805B68-0x08805BD0
 // @asm 0x08805BD0-0x08805E24
 // @asm 0x08805E24-0x08806074
-// @asm 0x08806074-0x08806170
 /* Story characters (150): the script tables of each one (Scr<i>_G/Step/Deck/DH/DN/Sche/...), their
    saved state (level, affinity, flags, position, look, deck in use), the conditions of the tables
    (date, level, flags, weekday, daytime) and the daily update that picks look, place and deck. */
@@ -781,10 +779,12 @@ int st_chr_level_is(int i, unsigned int level)
     return level == s->level;
 }
 
-#ifdef NON_MATCHING /* o bloco final move v0,zero é alcançado por bnez/beqz sem likely no original; o mwcc preenche o delay slot */
+#ifdef NON_MATCHING /* 2 palavras: com "default: return 0;" como primeiro rótulo e os corpos na ordem do original só falta o primeiro desvio para o bloco final, que o mwcc faz likely (b??l com a cópia) e o original não; ordens dos case, formas break/return/goto não mudam */
 int st_cond_daytime(int c)
 {
     switch (c) {
+    default:
+        return 0;
     case 1:
         if (sdate_is_daytime())
             return 1;
@@ -795,8 +795,6 @@ int st_cond_daytime(int c)
         break;
     case 0:
         return 1;
-    default:
-        return 0;
     }
     return 0;
 }
@@ -837,10 +835,12 @@ int st_cond_partner_flag(int c, unsigned int bit, int mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* o bloco final move v0,zero é alcançado por bnez/beqz sem likely no original; o mwcc preenche o delay slot */
+#ifdef NON_MATCHING /* 2 palavras: com "default: return 0;" como primeiro rótulo e os corpos na ordem do original só falta o primeiro desvio para o bloco final, que o mwcc faz likely (b??l com a cópia) e o original não; ordens dos case, formas break/return/goto não mudam */
 int st_cond_weekday(int c, int n)
 {
     switch (c) {
+    default:
+        return 0;
     case 5:
         if (!sdate_weekday_flag(n))
             return 1;
@@ -851,14 +851,12 @@ int st_cond_weekday(int c, int n)
         break;
     case 0:
         return 1;
-    default:
-        return 0;
     }
     return 0;
 }
 #endif
 
-#ifdef NON_MATCHING /* o bloco final move v0,zero é alcançado por bltz sem likely no original; o mwcc preenche o delay slot */
+#ifdef NON_MATCHING /* 7 palavras: o original desvia com bltz sem likely para um bloco final move v0,zero próprio; aqui o desvio vira bltzl e o return 0 do default salta por um b extra (ordens dos case, default primeiro e break/return não mudam) */
 int st_cond_date(int c)
 {
     switch (c) {
@@ -866,19 +864,21 @@ int st_cond_date(int c)
         if (sdate_check(1) < 0)
             break;
         return 1;
-    case 0:
-        return 1;
     default:
         return 0;
+    case 0:
+        return 1;
     }
     return 0;
 }
 #endif
 
-#ifdef NON_MATCHING /* o bloco final é alcançado por bnez sem likely no original; o mwcc preenche o delay slot */
+#ifdef NON_MATCHING /* 2 palavras: com "default: return 0;" como primeiro rótulo e os corpos na ordem do original só falta o primeiro desvio para o bloco final, que o mwcc faz likely (b??l com a cópia) e o original não; ordens dos case, formas break/return/goto não mudam */
 int st_cond_day(int c)
 {
     switch (c) {
+    default:
+        return 1;
     case 5:
     case 6:
         if (!st_cond_weekday(c, 1))
@@ -889,8 +889,6 @@ int st_cond_day(int c)
             return 0;
         break;
     case 0:
-        return 1;
-    default:
         return 1;
     }
     return 1;
@@ -949,23 +947,21 @@ int st_chr_dn_find(int i, int mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* desvios sem likely para o bloco final move v0,zero (como os st_cond_*) */
 int st_chr_dn_pick(int i)
 {
     int id;
 
     if (sdate_weekday_flag(0)) {
         id = st_chr_dn_find(i, 2);
-        if (id == 0)
-            id = 0;
+        if (id != 0)
+            return id;
     } else {
         id = st_chr_dn_find(i, 3);
-        if (id == 0)
-            id = 0;
+        if (id != 0)
+            return id;
     }
-    return id;
+    return 0;
 }
-#endif
 
 /* daily update of a character: look id (mode 0 picks it again), look entry, place, deck */
 #ifdef NON_MATCHING /* laço de busca e cópia da entrada Sche com alocação de registradores diferente */
@@ -1104,26 +1100,25 @@ int st_chr_g_update(int i)
 #endif
 
 /* recipe of the first Deck entry that holds (date range, level, chr flag, story flag) */
-#ifdef NON_MATCHING /* o teste do fim da tabela no topo do laço sai bnezl/b em vez de beqzl direto para o epílogo */
 int st_chr_deck_find(int i)
 {
     unsigned short *t = ST_CHR(i)->deck;
-    unsigned short *p = t;
     int k = 0;
+    unsigned short *p = t;
 
     for (;;) {
         if (p[7] == 0)
-            return 0;
+            break;
         if (story_date_in_range(p[0], p[1], p[2], p[3])
-            && (p[4] == 0 || st_chr_level_is(i, p[4]))
-            && (p[5] == 0 || st_chr_flag_get(i, p[5]))
-            && (p[6] == 0 || story_flag_get(p[6])))
+            && (p[4] == 0 || st_chr_level_is(i, (unsigned short)(int)p[4]))
+            && (p[5] == 0 || st_chr_flag_get(i, (unsigned short)(int)p[5]))
+            && (p[6] == 0 || story_flag_get((unsigned short)(int)p[6])))
             return t[k * 8 + 7];
         p += 8;
         k++;
     }
+    return 0;
 }
-#endif
 
 void st_chr_deck_update(int i)
 {

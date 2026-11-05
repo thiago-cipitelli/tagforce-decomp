@@ -179,13 +179,19 @@ int fbag_update(int *picked)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original keeps a copy of the early return per state; every form tried merges them */
+#ifdef NON_MATCHING /* 54 palavras: o switch (state) com case 0/12 dá os testes do original (beq 12, beqzl 0); falta o corpo próprio "move v0,a0; b; nop" do case 12, um li v1,1 morto antes da escolha das abas e o "move a0,v0; sw a0" de cada list = f(list) (o original passa o valor por a0 antes de gravar na pilha) */
 void *fbag_draw(void *list)
 {
     FieldBag *b = &field_bag;
     FieldBagTab *tabs;
 
-    if (field_bag.state != 12 && field_bag.state != 0) {
+    switch (field_bag.state) {
+    case 0:
+        return list;
+    case 12:
+        return list;
+    }
+    {
         tabs = cfg_get_language() != 0 ? fbag_tabs_en : fbag_tabs_jp;
         menu_layout(&list, &b->menu);
         switch (b->tab) {

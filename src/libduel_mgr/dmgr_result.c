@@ -4,29 +4,16 @@
 // @asm 0x0880FEAC-0x08810750
 // @asm 0x08810C2C-0x08810DCC
 // @asm 0x08810DCC-0x088111DC
-// @asm 0x088111DC-0x08811270
-// @asm 0x08811270-0x08811460
-// @asm 0x088116F4-0x08811754
 // @asm 0x088119B4-0x08811BC4
-// @asm 0x08811BC4-0x08811C98
 // @asm 0x08811C98-0x08812124
 // @asm 0x08812124-0x088122B4
 // @asm 0x088122B4-0x08812A98
 // @asm 0x08812A98-0x08812D74
-// @asm 0x08812D74-0x08812F2C
-// @asm 0x08812F2C-0x088131A8
-// @asm 0x088131A8-0x088133B8
-// @asm 0x088133B8-0x088137FC
-// @asm 0x088137FC-0x088139B4
-// @asm 0x088139B4-0x08813C0C
 // @asm 0x08813C0C-0x08814274
-// @asm 0x08814274-0x088146E8
-// @asm 0x0881499C-0x08814C60
-// @asm 0x08814C60-0x08814DCC
-// @asm 0x08814DCC-0x08815050
 // @asm 0x08815050-0x08815328
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
    summary), the money paid out, the series score of a match and the continue / net wait dialogs. */
+#include "allegrex.h"
 #include "libduel_mgr.h"
 
 /* BOOT */
@@ -116,7 +103,7 @@ unsigned int *dmgr_res_page_header(unsigned int *list, int x, int page);
 unsigned int *dmgr_res_draw_box(unsigned int *list, int x, int y, int w, int h, int u, int v);
 unsigned int *dmgr_res_draw_number(unsigned int *list, short x, short y, int n, unsigned short step,
                                    unsigned short digits, int pad);
-unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, unsigned int period, int blink,
+unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, unsigned char down, unsigned int period, int blink,
                                   int on, unsigned int frame, void *gim);
 unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, int pos, int rows, int count);
 void dmgr_res_text_fit(int x, int y, int w, int sw, int sh, void *text);
@@ -814,47 +801,43 @@ void dmgr_res_input(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 void dmgr_res_slide(void)
 {
     if (dmgr_res_bg_done() != 0) {
         dmgr_res_bg_anim(0);
     }
-    if (dmgr_res->timer++ > 0xF) {
+    if (dmgr_res->timer++ >= 0x10) {
         dmgr_res_bg_anim(1);
         dmgr_res->bar = dmgr_res->tab;
         dmgr_res->state = 2;
         dmgr_res->timer = 0;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 void dmgr_res_measure(void)
 {
-    DmgrRes *r;
+    DmgrResTab *t;
     int lh;
     int i;
 
     font_set_size(0xE, 0xE);
     lh = font_line_height();
-    r = dmgr_res;
-    for (i = 0; i < r->tabs[1].count; i++) {
-        r->tabs[1].lines[i] = (font_wtext_lines(0x5D80, table_get_entry(dmgr_res_file(7),
-                                   ((DmgrResItem *)dmgr_res_bonus_text)[r->tabs[1].ids[i]].text)) + 0x40) / lh;
+    t = &dmgr_res->tabs[1];
+    for (i = 0; i < t->count; i++) {
+        t->lines[i] = (font_wtext_lines(0x5D80, table_get_entry(dmgr_res_file(7),
+                                   ((DmgrResItem *)dmgr_res_bonus_text)[t->ids[i]].text)) + 0x40) / lh;
     }
-    r = dmgr_res;
-    for (i = 0; i < r->tabs[2].count; i++) {
-        r->tabs[2].lines[i] = (font_wtext_lines(0x5080, table_get_entry(dmgr_res_file(7),
-                                   ((DmgrResItem *)dmgr_res_rec_text)[r->tabs[2].ids[i]].text)) + 0x40) / lh;
+    t = &dmgr_res->tabs[2];
+    for (i = 0; i < t->count; i++) {
+        t->lines[i] = (font_wtext_lines(0x5080, table_get_entry(dmgr_res_file(7),
+                                   ((DmgrResItem *)dmgr_res_rec_text)[t->ids[i]].text)) + 0x40) / lh;
     }
-    r = dmgr_res;
-    for (i = 0; i < r->tabs[3].count; i++) {
-        r->tabs[3].lines[i] = (font_wtext_lines(0x5F80, table_get_entry(dmgr_res_file(7),
-                                   ((DmgrResItem *)dmgr_res_title_text)[r->tabs[3].ids[i]].text)) + 0x40) / lh;
+    t = &dmgr_res->tabs[3];
+    for (i = 0; i < t->count; i++) {
+        t->lines[i] = (font_wtext_lines(0x5F80, table_get_entry(dmgr_res_file(7),
+                                   ((DmgrResItem *)dmgr_res_title_text)[t->ids[i]].text)) + 0x40) / lh;
     }
 }
-#endif
 
 void dmgr_res_menu_open(unsigned short kind)
 {
@@ -911,18 +894,17 @@ void dmgr_res_menu_open(unsigned short kind)
     dmgr_res->menu_kind = kind;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm. 19 palavras: o original guarda o endereço do registro (sp+16) em s0 e grava por ele; o mwcc dobra o endereço em sp+16 a cada uso */
 void dmgr_res_send(unsigned char a, unsigned char b)
 {
     unsigned char rec[0x100];
+    unsigned char *const p = rec;
 
-    memset(rec, 0, sizeof rec);
-    rec[0] = 8;
-    rec[1] = a;
-    rec[2] = b;
-    local_record_set(rec);
+    memset(p, 0, 0x100);
+    p[0] = 8;
+    p[1] = a;
+    p[2] = b;
+    local_record_set(p);
 }
-#endif
 
 typedef struct DmgrLang6 { char c[6]; } DmgrLang6;
 
@@ -984,7 +966,7 @@ unsigned int *dmgr_res_draw_bg(unsigned int *list)
     return gfx_end_2d(list);
 }
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
+#ifdef NON_MATCHING /* 20 palavras: com os return antecipados o fluxo é o do original, mas o teste f < 6 sai beqzl/b em vez de bnezl direto ao epílogo (f < 6, 6 > f, !(f >= 6), switch não mudam) e v/u trocam de $s */
 unsigned int *dmgr_res_draw_bar(unsigned int *list)
 {
     int opts[0x18];
@@ -1009,12 +991,21 @@ unsigned int *dmgr_res_draw_bar(unsigned int *list)
     list = dl_tex_func(list, 0, 1);
     list = dl_blend_func(list, 0, 2, 3, 0, 0);
     f = ehf_get_frame_count(e);
-    if (f > 5 && f < 0x62) {
-        if (f == 6 || f == 0x61) {
-            edge = 1;
-        }
-        e = dmgr_res_file(6);
-        if (e != 0) {
+    if (f < 6) {
+        return list;
+    }
+    if (f > 0x61) {
+        return list;
+    }
+    if (f == 6 || f == 0x61) {
+        edge = 1;
+    }
+    e = dmgr_res_file(6);
+    if (e == 0) {
+        return list;
+    }
+    {
+        {
             list = gim_set_texture(list, e);
             list = dl_set_tex_filter(list, 1, 1);
             if (edge) {
@@ -1035,13 +1026,19 @@ unsigned int *dmgr_res_draw_bar(unsigned int *list)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_draw_result(unsigned int *list)
 {
     int opts[0x18];
     void *e;
 
-    if (dmgr_res->result_ehf >= 0 && (e = dmgr_res_file(dmgr_res->result_ehf)) != 0) {
+    if (dmgr_res->result_ehf < 0) {
+        return list;
+    }
+    e = dmgr_res_file(dmgr_res->result_ehf);
+    if (e == 0) {
+        return list;
+    }
+    {
         memset(opts, 0, sizeof opts);
         opts[0] = *(int *)gfx_get_state();
         list = gfx_begin_2d(list);
@@ -1053,7 +1050,6 @@ unsigned int *dmgr_res_draw_result(unsigned int *list)
     }
     return list;
 }
-#endif
 
 unsigned int *(*dmgr_res_pages[4])(unsigned int *list, int x) = {
     dmgr_res_page_summary, dmgr_res_page_bonus, dmgr_res_page_records, dmgr_res_page_titles,
@@ -1204,11 +1200,13 @@ unsigned int *dmgr_res_draw_page(unsigned int *list)
 #endif
 
 short dmgr_res_bob[4] = { 0, 1, 2, 1 };
+typedef struct DmgrBob { unsigned short v[4]; } DmgrBob;
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
+#ifdef NON_MATCHING /* 64 palavras: com bob copiado do template (DmgrBob), os x das setas em (unsigned short) e dmgr_res num local no laço dos totais, a pilha e o fluxo batem; falta a alocação de $s (list/x/x + 0x3E em s1/s0/s5 no original, s0/s5/s0 aqui) */
 unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
 {
     void *g;
+    DmgrBob bob;
     int idx[4];
     int *p;
     int sum;
@@ -1256,20 +1254,23 @@ unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
     list = draw_set_offsets(list, 1, 1, 0x158, 0x49);
     list = draw_sprite(list, x + 0x44, 0x5F, 0, 0x19, 0x12, 0, 0);
     if (x == 0) {
-        short bob[4] = { 0, 1, 2, 1 };
+        bob = *(DmgrBob *)dmgr_res_bob;
 
         list = dl_ambient_color(list, 0xFFFFFFFF);
         list = dl_set_tex_filter(list, 0, 0);
         list = draw_set_offsets(list, 0xF, 0x17, 0xF, 0x17);
-        list = draw_sprite(list, bob[*(unsigned int *)gfx_get_state() >> 2 & 2] + 0x18, 0x7B, 0, 0x90, 0x18, 0, 0);
-        list = draw_sprite(list, 0x1BB - bob[*(unsigned int *)gfx_get_state() >> 2 & 2], 0x7B, 0, 0x9F, 0x18, 0, 0);
+        list = draw_sprite(list, (unsigned short)(bob.v[*(unsigned int *)gfx_get_state() >> 2 & 2] + 0x18), 0x7B, 0, 0x90, 0x18, 0, 0);
+        list = draw_sprite(list, (unsigned short)(0x1BB - bob.v[*(unsigned int *)gfx_get_state() >> 2 & 2]), 0x7B, 0, 0x9F, 0x18, 0, 0);
     }
     sum = 0;
     memset(idx, -1, sizeof idx);
-    for (i = 0, p = idx; i < 4; i++) {
-        if (dmgr_res->total[i] != 0) {
-            *p++ = i;
-            sum += dmgr_res->total[i];
+    {
+        DmgrRes *r = dmgr_res;
+        for (i = 0, p = idx; i < 4; i++) {
+            if (r->total[i] != 0) {
+                *p++ = i;
+                sum += r->total[i];
+            }
         }
     }
     for (i = 0, p = idx, y = 0x5F; i < 4; i++, p++, y += 0x13) {
@@ -1301,7 +1302,7 @@ unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
 
 unsigned short dmgr_res_page_text[4] = { 4, 5, 6, 7 };
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
+#ifdef NON_MATCHING /* 98 palavras: com os return antecipados (page < 0, page >= 4) o fluxo é o do original; faltam as cópias mortas depois de b (move a0 no alvo dos bnezl) */
 unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
 {
     void *g;
@@ -1323,7 +1324,14 @@ unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
     list = draw_sprite(list, x + 0x157, y, 0, 0x1C, 0, 0, 0);
     list = draw_set_offsets(list, 1, 0x10, 0x47, 0x10);
     list = draw_sprite(list, x + 0x110, y, 0, 0x1B, 0, 0, 0);
-    if (page >= 0 && page < 4) {
+    if (page < 0) {
+        return list;
+    }
+    if (page >= 4) {
+        return list;
+    }
+
+    {
         font_text_set(list);
         font_set_size(0xE, 0xE);
         font_set_color(0xFF000000);
@@ -1344,21 +1352,11 @@ unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
 /* the scrolling list of a page between x + 0x17 and the right edge (written out in each page) */
 #define DMGR_RES_PAGE_LIST(list, x, t, row)                                                                \
     do {                                                                                                  \
-        int l_ = (x) + 0x17;                                                                              \
-        int w_;                                                                                           \
-        int i_;                                                                                           \
+        int l_ = ALLEGREX_MIN(ALLEGREX_MAX((x) + 0x17, 0), 0x1E0);                                        \
+        int w_ = ALLEGREX_MIN(ALLEGREX_MAX(0x1AA, 0), 0x1E0 - l_);                                        \
         int n_;                                                                                           \
+        int i_;                                                                                           \
         int k_;                                                                                           \
-        if (l_ < 0) {                                                                                     \
-            l_ = 0;                                                                                       \
-        }                                                                                                 \
-        if (l_ > 0x1E0) {                                                                                 \
-            l_ = 0x1E0;                                                                                   \
-        }                                                                                                 \
-        w_ = 0x1AA;                                                                                       \
-        if (0x1E0 - l_ < 0x1AA) {                                                                         \
-            w_ = 0x1E0 - l_;                                                                              \
-        }                                                                                                 \
         if (l_ > 0 && l_ < 0x1E0) {                                                                       \
             list = dl_scissor(list, l_, 0x3D, w_, 0xA0);                                                  \
             list = dl_enable(list, 2);                                                                    \
@@ -1377,29 +1375,29 @@ unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
         }                                                                                                 \
     } while (0)
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_page_bonus(unsigned int *list, int x)
 {
-    DmgrResTab *t = &dmgr_res->tabs[1];
+    DmgrResTab *t;
+    int bx = x + 0x11;
 
+    t = &dmgr_res->tabs[1];
     list = dmgr_res_page_frame(list, x, 0x48, 0);
-    list = dmgr_res_draw_box(list, x + 0x1A, 0x2B, 0x177, 0xE, 0x50, 3);
-    list = dmgr_res_draw_box(list, x + 0x194, 0x2B, 0x2D, 0xE, 0x65, 0);
+    list = dmgr_res_draw_box(list, bx + 9, 0x2B, 0x177, 0xE, 0x50, 3);
+    list = dmgr_res_draw_box(list, bx + 0x183, 0x2B, 0x2D, 0xE, 0x65, 0);
     font_set_size(0xE, 0xE);
     font_set_color(0xFF000000);
     font_text_set(list);
-    font_draw_text((x + 0x1A0) * 0x40, 0xB00, (0x1E0 - (x + 0x1A0)) * 0x40, dmgr_res_pt);
+    font_draw_text((bx + 0x18F) * 0x40, 0xB00, (0x1E0 - (bx + 0x18F)) * 0x40, dmgr_res_pt);
     list = font_text_clear();
     list = dmgr_res_page_header(list, x, 0);
-    DMGR_RES_PAGE_LIST(list, x, t, dmgr_res_bonus_row);
+    DMGR_RES_PAGE_LIST(list, bx - 0x11, t, dmgr_res_bonus_row);
+
     return dl_disable(list, 2);
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_bonus_row(unsigned int *list, int x, int y, int i)
 {
-    DmgrRes *r = dmgr_res;
+    DmgrResTab *t = &dmgr_res->tabs[1];
     void *g;
     int h;
     int id;
@@ -1415,12 +1413,15 @@ unsigned int *dmgr_res_bonus_row(unsigned int *list, int x, int y, int i)
     if (i < 0) {
         h = 0xE;
     } else {
-        h = r->tabs[1].lines[i] * 0x10 - 2;
+        h = t->lines[i] * 14 + (t->lines[i] - 1) * 2;
     }
-    id = r->tabs[1].ids[i];
+    id = t->ids[i];
     list = dmgr_res_draw_box(list, x, y, 0x17A, h, 0x5F, 0);
     list = dmgr_res_draw_box(list, x + 0x17C, y, 0x2E, h, 0x62, 0);
-    if (i >= 0) {
+    if (i < 0) {
+        return list;
+    }
+    {
         font_set_line_extra(0x40);
         font_set_size(0xE, 0xE);
         font_text_set(list);
@@ -1428,10 +1429,10 @@ unsigned int *dmgr_res_bonus_row(unsigned int *list, int x, int y, int i)
         font_draw_wtext_ex((x + 2) * 0x40, y << 6, 0x5D80, (h + 2) * 0x40,
                            table_get_entry(dmgr_res_file(7), ((DmgrResItem *)dmgr_res_bonus_text)[id].text),
                            0xFFFFFFFF);
-        y += h / 2;
+        y = y + h / 2 - 7;
         font_set_color(0xFF00FFFF);
         font_set_size(0xB, 0xB);
-        font_draw_text((x + 0x198) * 0x40, (y - 4) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
+        font_draw_text((x + 0x198) * 0x40, (y + 3) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
         list = font_text_clear();
         font_set_size(0xC, 0xD);
         font_set_color(0xFFFFFFFF);
@@ -1439,42 +1440,42 @@ unsigned int *dmgr_res_bonus_row(unsigned int *list, int x, int y, int i)
         if (n > 999) {
             n = 999;
         }
-        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y - 6), n, 9, 3, 0);
+        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y + 1)
+, n, 9, 3, 0);
         font_set_line_extra(0);
     }
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_page_records(unsigned int *list, int x)
 {
-    DmgrResTab *t = &dmgr_res->tabs[2];
+    DmgrResTab *t;
+    int bx = x + 0x11;
 
+    t = &dmgr_res->tabs[2];
     list = dmgr_res_page_frame(list, x, 0x24, 0);
-    list = dmgr_res_draw_box(list, x + 0x1A, 0x2B, 0x143, 0xE, 0x2C, 3);
-    list = dmgr_res_draw_box(list, x + 0x15F, 0x2B, 0x3A, 0xE, 0x3E, 0);
-    list = dmgr_res_draw_box(list, x + 0x19B, 0x2B, 0x26, 0xE, 0x41, 0);
+    list = dmgr_res_draw_box(list, bx + 9, 0x2B, 0x143, 0xE, 0x2C, 3);
+    list = dmgr_res_draw_box(list, bx + 0x14E, 0x2B, 0x3A, 0xE, 0x3E, 0);
+    list = dmgr_res_draw_box(list, bx + 0x18A, 0x2B, 0x26, 0xE, 0x41, 0);
     font_set_color(0xFFFFFFFF);
     font_text_set(list);
-    dmgr_res_text_fit(x + 0x160, 0x2B, 0x38, 0xE, 0xE, table_get_entry(dmgr_res_file(7), 0xF2));
+    dmgr_res_text_fit(bx + 0x14F, 0x2B, 0x38, 0xE, 0xE, table_get_entry(dmgr_res_file(7), 0xF2));
     font_set_size(0xE, 0xE);
     font_set_color(0xFF000000);
-    font_draw_text((x + 0x1A4) * 0x40, 0xB00, (0x1E0 - (x + 0x1A4)) * 0x40, dmgr_res_pt);
+    font_draw_text((bx + 0x193) * 0x40, 0xB00, (0x1E0 - (bx + 0x193)) * 0x40, dmgr_res_pt);
     list = font_text_clear();
     list = dmgr_res_page_header(list, x, 1);
-    DMGR_RES_PAGE_LIST(list, x, t, dmgr_res_record_row);
+    DMGR_RES_PAGE_LIST(list, bx - 0x11, t, dmgr_res_record_row);
+
     return dl_disable(list, 2);
 }
-#endif
 
 unsigned short dmgr_res_colon[2] = { ':', 0 };
+typedef struct DmgrResColon { unsigned short c[2]; } DmgrResColon;
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 unsigned int *dmgr_res_record_row(unsigned int *list, int x, int y, int i)
 {
-    DmgrRes *r = dmgr_res;
-    unsigned short *colon = dmgr_res_colon;
+    DmgrResTab *t = &dmgr_res->tabs[2];
     void *g;
     int h;
     int id;
@@ -1490,81 +1491,84 @@ unsigned int *dmgr_res_record_row(unsigned int *list, int x, int y, int i)
     if (i < 0) {
         h = 0xE;
     } else {
-        h = r->tabs[2].lines[i] * 0x10 - 2;
+        h = t->lines[i] * 14 + (t->lines[i] - 1) * 2;
     }
-    id = r->tabs[2].ids[i];
+    id = t->ids[i];
     list = dmgr_res_draw_box(list, x, y, 0x146, h, 0x3B, 0);
     list = dmgr_res_draw_box(list, x + 0x148, y, 0x3A, h, 0x3E, 0);
     list = draw_set_offsets(list, 0xC, 0xC, 0xC, 0xC);
     list = draw_sprite(list, x + 0x14A, y + 1, 0, 0x3B, 0x1D, 0, 0);
     list = dmgr_res_draw_box(list, x + 0x184, y, 0x26, h, 0x3E, 0);
-    if (i >= 0) {
-        font_set_line_extra(0x40);
-        font_set_size(0xE, 0xE);
+    if (i < 0) {
+        return list;
+    }
+    font_set_line_extra(0x40);
+    font_set_size(0xE, 0xE);
+    font_text_set(list);
+    font_set_color(0xFF000000);
+    font_draw_wtext_ex((x + 2) * 0x40, y << 6, 0x5080, (h + 2) * 0x40,
+                       table_get_entry(dmgr_res_file(7), ((DmgrResItem *)dmgr_res_rec_text)[id].text),
+                       0xFFFFFFFF);
+    y = y + h / 2 - 7;
+    font_set_color(0xFF00FFFF);
+    font_set_size(0xB, 0xB);
+    font_draw_text((x + 0x198) * 0x40, (y + 3) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
+    list = font_text_clear();
+    font_set_size(0xC, 0xD);
+    font_set_color(0xFFFFFFFF);
+    list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y + 1), 20, 9, 3, 0);
+    font_set_line_extra(0);
+    font_set_color(0xFFFFFFFF);
+    n = dmgr_res->rec->rec[id];
+    if (n > 999999999) {
+        n = 999999999;
+    }
+    if (id == 0x25) {
+        DmgrResColon colon = *(DmgrResColon *)dmgr_res_colon;
+
+        font_set_size(0xB, 0xD);
+        list = dmgr_res_draw_number(list, (short)(x + 0x180), (short)(y + 1), n % 60, 8, 2, 1);
         font_text_set(list);
-        font_set_color(0xFF000000);
-        font_draw_wtext_ex((x + 2) * 0x40, y << 6, 0x5080, (h + 2) * 0x40,
-                           table_get_entry(dmgr_res_file(7), ((DmgrResItem *)dmgr_res_rec_text)[id].text),
-                           0xFFFFFFFF);
-        y += h / 2;
-        font_set_color(0xFF00FFFF);
-        font_set_size(0xB, 0xB);
-        font_draw_text((x + 0x198) * 0x40, (y - 4) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
+        font_draw_text((x + 0x16B) * 0x40, y * 0x40, (0x1E0 - (x + 0x16B)) * 0x40, colon.c);
         list = font_text_clear();
-        font_set_size(0xC, 0xD);
-        font_set_color(0xFFFFFFFF);
-        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y - 6), 20, 9, 3, 0);
-        font_set_line_extra(0);
-        font_set_color(0xFFFFFFFF);
-        n = dmgr_res->rec->rec[id];
-        if (n > 999999999) {
-            n = 999999999;
-        }
-        if (id == 0x25) {
-            font_set_size(0xB, 0xD);
-            list = dmgr_res_draw_number(list, (short)(x + 0x180), (short)(y - 6), n % 60, 8, 2, 1);
-            font_text_set(list);
-            font_draw_text((x + 0x16B) * 0x40, (y - 7) * 0x40, (0x1E0 - (x + 0x16B)) * 0x40, colon);
-            list = font_text_clear();
-            list = dmgr_res_draw_number(list, (short)(x + 0x168), (short)(y - 6), n / 60, 8, 2, 0);
-        } else if (n < 100000) {
-            font_set_size(0xB, 0xD);
-            list = dmgr_res_draw_number(list, (short)(x + 0x180), (short)(y - 6), n, 8, 5, 0);
-        } else {
-            font_set_size(6, 0xD);
-            list = dmgr_res_draw_number(list, (short)(x + 0x182), (short)(y - 6), n, 5, 9, 0);
-        }
+        list = dmgr_res_draw_number(list, (short)(x + 0x168), (short)(y + 1), n / 60, 8, 2, 0);
+    } else if (n > 99999) {
+
+        font_set_size(6, 0xD);
+        list = dmgr_res_draw_number(list, (short)(x + 0x182), (short)(y + 1), n, 5, 9, 0);
+    } else {
+        font_set_size(0xB, 0xD);
+        list = dmgr_res_draw_number(list, (short)(x + 0x180), (short)(y + 1), n, 8, 5, 0);
     }
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_page_titles(unsigned int *list, int x)
 {
-    DmgrResTab *t = &dmgr_res->tabs[3];
+    DmgrResTab *t;
+    int bx = x + 0x11;
 
+    t = &dmgr_res->tabs[3];
     list = dmgr_res_page_frame(list, x, 0x6C, 0);
-    list = dmgr_res_draw_box(list, x + 0x1A, 0x2B, 0x17F, 0xE, 0x74, 3);
-    list = dmgr_res_draw_box(list, x + 0x19B, 0x2B, 0x26, 0xE, 0x89, 0);
+    list = dmgr_res_draw_box(list, bx + 9, 0x2B, 0x17F, 0xE, 0x74, 3);
+    list = dmgr_res_draw_box(list, bx + 0x18A, 0x2B, 0x26, 0xE, 0x89, 0);
     font_set_size(0xE, 0xE);
     font_set_color(0xFF000000);
     font_text_set(list);
-    font_draw_text((x + 0x1A4) * 0x40, 0xB00, (0x1E0 - (x + 0x1A4)) * 0x40, dmgr_res_pt);
+    font_draw_text((bx + 0x193) * 0x40, 0xB00, (0x1E0 - (bx + 0x193)) * 0x40, dmgr_res_pt);
     list = font_text_clear();
     list = dmgr_res_page_header(list, x, 2);
-    DMGR_RES_PAGE_LIST(list, x, t, dmgr_res_title_row);
+    DMGR_RES_PAGE_LIST(list, bx - 0x11, t, dmgr_res_title_row);
+
     return dl_disable(list, 2);
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_title_row(unsigned int *list, int x, int y, int i)
 {
-    DmgrRes *r = dmgr_res;
+    DmgrResTab *t = &dmgr_res->tabs[3];
     void *g;
     int h;
-    unsigned short id;
+    int id;
 
     g = dmgr_res_file(5);
     if (g == 0) {
@@ -1576,41 +1580,46 @@ unsigned int *dmgr_res_title_row(unsigned int *list, int x, int y, int i)
     if (i < 0) {
         h = 0xE;
     } else {
-        h = r->tabs[3].lines[i] * 0x10 - 2;
+        h = t->lines[i] * 14 + (t->lines[i] - 1) * 2;
     }
-    id = r->tabs[3].ids[i];
+    id = t->ids[i];
     list = dmgr_res_draw_box(list, x, y, 0x182, h, 0x83, 0);
     list = dmgr_res_draw_box(list, x + 0x184, y, 0x26, h, 0x86, 0);
-    if (i >= 0) {
+    if (i < 0) {
+        return list;
+    }
+    {
         font_set_line_extra(0x40);
+
         font_set_size(0xE, 0xE);
         font_text_set(list);
         font_set_color(0xFF000000);
         font_draw_wtext_ex((x + 2) * 0x40, y << 6, 0x5F80, (h + 2) * 0x40,
                            table_get_entry(dmgr_res_file(7), ((DmgrResItem *)dmgr_res_title_text)[id].text),
                            0xFFFFFFFF);
-        y += h / 2;
+        y = y + h / 2 - 7;
         font_set_color(0xFF00FFFF);
         font_set_size(0xB, 0xB);
-        font_draw_text((x + 0x198) * 0x40, (y - 4) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
+        font_draw_text((x + 0x198) * 0x40, (y + 3) * 0x40, (0x1E0 - (x + 0x198)) * 0x40, dmgr_res_pt);
         list = font_text_clear();
         font_set_size(0xC, 0xD);
         font_set_color(0xFFFFFFFF);
-        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y - 6), 30, 9, 2, 0);
+        list = dmgr_res_draw_number(list, (short)(x + 0x198), (short)(y + 1)
+, 30, 9, 2, 0);
         font_set_line_extra(0);
     }
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
+#ifdef NON_MATCHING /* 130 palavras: r/mine são unsigned short (lhu, andi do 2); o original testa r == 2 com beq e põe mine = r no atraso (switch, ordens dos case e das declarações não mudam) e aloca i/x/i*2 em s4/s1/s2 */
 unsigned int *dmgr_res_draw_series(unsigned int *list)
 {
     void *g;
     int side = 0;
     unsigned int other;
-    short r;
-    short mine;
+    unsigned short r;
+    unsigned short mine;
+
     int i;
     int x;
 
@@ -1684,7 +1693,6 @@ unsigned int *dmgr_res_draw_series(unsigned int *list)
 }
 #endif
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 unsigned int *dmgr_res_page_frame(unsigned int *list, int x, int u, int v)
 {
     void *g;
@@ -1701,40 +1709,38 @@ unsigned int *dmgr_res_page_frame(unsigned int *list, int x, int u, int v)
     list = draw_set_offsets(list, 9, 0x14, 9, 0x14);
     list = draw_sprite(list, l, 0x28, 0, u, v, 0, 0);
     list = draw_set_offsets(list, 0xD, 0x14, 0xD, 0x14);
-    list = draw_sprite(list, x + 0x1C3, 0x28, 0, u + 10, v, 0, 0);
+    list = draw_sprite(list, l + 0x1B2, 0x28, 0, u + 10, v, 0, 0);
     list = draw_set_offsets(list, 1, 0x14, 0x1AB, 0x14);
-    list = draw_sprite(list, x + 0x1A, 0x28, 0, u + 0xB, v, 0, 0);
+    list = draw_sprite(list, l + 0x9, 0x28, 0, u + 0xB, v, 0, 0);
     list = draw_set_offsets(list, 7, 0x1A, 7, 0x1A);
     list = draw_sprite(list, l, 0xDD, 0, u, v + 0x15, 0, 0);
     list = draw_set_offsets(list, 0xE, 0x1A, 0xE, 0x1A);
-    list = draw_sprite(list, x + 0x1C2, 0xDD, 0, u + 9, v + 0x15, 0, 0);
+    list = draw_sprite(list, l + 0x1B1, 0xDD, 0, u + 9, v + 0x15, 0, 0);
     list = draw_set_offsets(list, 1, 0x1A, 0x1AA, 0x1A);
-    list = draw_sprite(list, x + 0x18, 0xDD, 0, u + 7, v + 0x15, 0, 0);
+    list = draw_sprite(list, l + 0x7, 0xDD, 0, u + 7, v + 0x15, 0, 0);
     list = draw_set_offsets(list, 7, 1, 7, 0xA1);
     list = draw_sprite(list, l, 0x3C, 0, u, v + 0x14, 0, 0);
     list = draw_set_offsets(list, 0xD, 1, 0xD, 0xA1);
-    list = draw_sprite(list, x + 0x1C3, 0x3C, 0, u + 10, v + 0x14, 0, 0);
+    list = draw_sprite(list, l + 0x1B2, 0x3C, 0, u + 10, v + 0x14, 0, 0);
     list = draw_set_offsets(list, 2, 2, 2, 2);
-    list = draw_sprite(list, x + 0x15, 0x3B, 0, u + 0x17, v + 0x11, 0, 0);
-    list = draw_sprite(list, x + 0x15, 0xDB, 0, u + 0x17, v + 0x1B, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0x3B, 0, u + 8, v + 0x1E, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0x3B, 0, u + 0x21, v + 0x11, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0xDB, 0, u + 8, v + 0x1E, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0xDB, 0, u + 0x21, v + 0x1B, 0, 0);
+    list = draw_sprite(list, l + 0x4, 0x3B, 0, u + 0x17, v + 0x11, 0, 0);
+    list = draw_sprite(list, l + 0x4, 0xDB, 0, u + 0x17, v + 0x1B, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0x3B, 0, u + 8, v + 0x1E, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0x3B, 0, u + 0x21, v + 0x11, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0xDB, 0, u + 8, v + 0x1E, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0xDB, 0, u + 0x21, v + 0x1B, 0, 0);
     list = draw_set_offsets(list, 1, 2, 0x1AA, 2);
-    list = draw_sprite(list, x + 0x17, 0x3B, 0, u + 0x19, v + 0x11, 0, 0);
-    list = draw_sprite(list, x + 0x17, 0xDB, 0, u + 0x19, v + 0x11, 0, 0);
+    list = draw_sprite(list, l + 0x6, 0x3B, 0, u + 0x19, v + 0x11, 0, 0);
+    list = draw_sprite(list, l + 0x6, 0xDB, 0, u + 0x19, v + 0x11, 0, 0);
     list = draw_set_offsets(list, 2, 1, 2, 0x9E);
-    list = draw_sprite(list, x + 0x15, 0x3D, 0, u + 0x17, v + 0x13, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0x3D, 0, u + 0x17, v + 0x13, 0, 0);
+    list = draw_sprite(list, l + 0x4, 0x3D, 0, u + 0x17, v + 0x13, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0x3D, 0, u + 0x17, v + 0x13, 0, 0);
     list = draw_set_offsets(list, 1, 1, 0x1AA, 0x9E);
-    list = draw_sprite(list, x + 0x17, 0x3D, 0, u + 0x19, v + 0x13, 0, 0);
-    return dmgr_res_draw_box(list, x + 0x18A, 0xE4, 0x37, 0xE, u + 0x1A, v);
+    list = draw_sprite(list, l + 0x6, 0x3D, 0, u + 0x19, v + 0x13, 0, 0);
+    return dmgr_res_draw_box(list, l + 0x179, 0xE4, 0x37, 0xE, u + 0x1A, v);
 }
-#endif
 
 unsigned short dmgr_res_head_text[3] = { 0xF3, 0xF4, 0xF5 };
-typedef struct DmgrBob { unsigned short v[4]; } DmgrBob;
 
 short dmgr_res_bob2[4] = { 0, 1, 2, 1 };
 
@@ -1775,14 +1781,14 @@ unsigned int *dmgr_res_page_header(unsigned int *list, int x, int page)
     return list;
 }
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_draw_box(unsigned int *list, int x, int y, int w, int h, int u, int v)
 {
-    int r;
     int b;
+    int r;
+
 
     if (h == 0xE) {
-        list = draw_set_offsets(list, 2, 0xE, 2, 0xE);
+        list = draw_set_offsets(list, 1, 0xE, 1, 0xE);
         list = draw_sprite(list, x, y, 0, u, v, 0, 0);
         list = draw_sprite(list, x + w - 1, y, 0, u + 2, v, 0, 0);
         list = draw_set_offsets(list, 1, 0xE, w - 2, 0xE);
@@ -1804,28 +1810,27 @@ unsigned int *dmgr_res_draw_box(unsigned int *list, int x, int y, int w, int h, 
     list = draw_set_offsets(list, 1, 1, w - 4, h - 4);
     return draw_sprite(list, x + 2, y + 2, 0, u + 1, v + 1, 0, 0);
 }
-#endif
 
 unsigned short dmgr_res_digit[2] = { '0', 0 };
+typedef struct DmgrResDigit { unsigned short c[2]; } DmgrResDigit;
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_draw_number(unsigned int *list, short x0, short y, int n, unsigned short step,
                                    unsigned short digits, int pad)
 {
     unsigned short x = x0;   /* callers pass a short, the body works on it unsigned */
-    unsigned short ch[2];
-    int neg = n < 0;
+    DmgrResDigit ch = *(DmgrResDigit *)dmgr_res_digit;
+    int neg = 0;
     int i;
 
-    memcpy(ch, dmgr_res_digit, sizeof ch);
-    if (neg) {
+    if (n < 0) {
         n = -n;
+        neg = 1;
     }
     font_text_set(list);
     for (i = digits - 1; i >= 0; i--) {
         x -= step;
-        ch[0] = n % 10 + '0';
-        font_draw_text(x << 6, y << 6, (0x1E0 - x) * 0x40, ch);
+        ch.c[0] = n % 10 + '0';
+        font_draw_text(x << 6, y << 6, (0x1E0 - x) * 0x40, ch.c);
         n /= 10;
         if (pad == 0 && n == 0) {
             break;
@@ -1833,15 +1838,13 @@ unsigned int *dmgr_res_draw_number(unsigned int *list, short x0, short y, int n,
     }
     if (neg) {
         x -= (unsigned short)(step + 2);
-        ch[0] = 0xFF0D;
-        font_draw_text(x << 6, y << 6, (0x1E0 - x) * 0x40, ch);
+        ch.c[0] = 0xFF0D;
+        font_draw_text(x << 6, y << 6, (0x1E0 - x) * 0x40, ch.c);
     }
     return font_text_clear();
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
-unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, unsigned int period, int blink,
+unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, unsigned char down, unsigned int period, int blink,
                                   int on, unsigned int frame, void *gim)
 {
     unsigned int half = period >> 1;
@@ -1860,7 +1863,10 @@ unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, u
         list = draw_set_offsets(list, 8, 8, 8, 8);
         list = draw_sprite(list, x, y, 0, 0xEE, v + 0x30, 0, 0);
     }
-    if (blink != 0) {
+    if (blink == 0) {
+        return list;
+    }
+    {
         frame %= period;
         if (frame < half) {
             a = (float)frame / (float)half;
@@ -1879,9 +1885,8 @@ unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, u
     }
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
+#ifdef NON_MATCHING /* 102 palavras: com os clamps em ALLEGREX_MAX/MIN e o ramo rows >= count primeiro o fluxo é o do original; falta a alocação dos $s (list/x/y/h em s7/s5/s4/s3 no original; ordem das declarações não muda) */
 unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, int pos, int rows, int count)
 {
     int track = h - 2;
@@ -1893,21 +1898,12 @@ unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, i
     if (g == 0) {
         return list;
     }
-    if (rows < count) {
-        len = rows * track / count;
-        if (len < 10) {
-            len = 10;
-        }
-        at = pos * (track - len) / (count - rows);
-        if (at < 0) {
-            at = 0;
-        }
-        if (at > track - len) {
-            at = track - len;
-        }
-    } else {
+    if (count <= rows) {
         at = 0;
         len = track;
+    } else {
+        len = ALLEGREX_MAX(rows * track / count, 10);
+        at = ALLEGREX_MIN(ALLEGREX_MAX(pos * (track - len) / (count - rows), 0), track - len);
     }
     list = dl_set_tex_filter(list, 0, 0);
     list = dl_ambient_color(list, 0xFFFFFFFF);
