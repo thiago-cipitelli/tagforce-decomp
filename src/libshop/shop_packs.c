@@ -1,6 +1,5 @@
 // @range 0x0880A960-0x0880C238
 // @asm 0x0880AD08-0x0880B5FC
-// @asm 0x0880B638-0x0880C238
 /* The 48 pack kinds: which are on sale (unlocked by story progress, days, decks and collection),
    their prices and messages, the completion of each, and the opening of a pack: the rarity of the
    best card is drawn from a 20-slot cycle saved per pack (14 rare, 4 super, 2 ultra), the other cards
@@ -280,20 +279,27 @@ int shop_card_in(unsigned short id, unsigned short *list, unsigned short n)
     return 0;
 }
 
-#ifdef NON_MATCHING /* função longa de flags: o original guarda o maior nível de deck em s7 e os testes em ordem própria */
+typedef struct ShopDeckFlags {         /* deck_cur_get_u16_0 (DeckFlags of libtitle.h) */
+    unsigned short b0 : 1;
+    unsigned short kind : 3;
+    unsigned short chara : 8;
+    unsigned short rest : 4;
+} ShopDeckFlags;
+
 /* unlocks the pack kinds whose condition is met */
 void shop_packs_unlock(void)
 {
-    short deck;
+    ShopDeckFlags deck;
     int best;
+    int k;
     int i;
 
     if (sysflag_get2(6) != 2 || sysflag_get2(7) != 2 || sysflag_get2(8) != 2) {
         unsigned short own = 0, all = 0;
-        for (i = 3; i < 6; i++) {
-            ShopCardList *l = shop_pack_defs[i].lists;
-            int k, j;
-            for (k = 0; k < 4; k++, l++) {
+        for (i = 3; i <= 5; i++) {
+            int j;
+            ShopCardList *l;
+            for (k = 0, l = shop_pack_defs[i].lists; k < 4; k++, l++) {
                 unsigned short *id = l->ids;
                 int n = l->n;
                 if (id) {
@@ -311,22 +317,54 @@ void shop_packs_unlock(void)
             sysflag_set2(8, 2);
         }
     }
-    deck_cur_get_u16_0(&deck);
-    for (i = 0; i < 6; i++) {
-        if ((deck & 0xF) >> 1 == 1 && shop.arg == i + 1)
-            sysflag_set2(9 + i, 2);
-        else
-            sysflag_set2(9 + i, 1);
-    }
-    for (i = 0; i < 9; i++) {
-        if (day_next() >= 5 + i * 5)
-            sysflag_set2(0x10 + i, 2);
-    }
+    deck_cur_get_u16_0((short *)&deck);
+    if (deck.kind == 1 && shop.arg == 1)
+        sysflag_set2(9, 2);
+    else
+        sysflag_set2(9, 1);
+    if (deck.kind == 1 && shop.arg == 2)
+        sysflag_set2(10, 2);
+    else
+        sysflag_set2(10, 1);
+    if (deck.kind == 1 && shop.arg == 3)
+        sysflag_set2(11, 2);
+    else
+        sysflag_set2(11, 1);
+    if (deck.kind == 1 && shop.arg == 4)
+        sysflag_set2(12, 2);
+    else
+        sysflag_set2(12, 1);
+    if (deck.kind == 1 && shop.arg == 5)
+        sysflag_set2(13, 2);
+    else
+        sysflag_set2(13, 1);
+    if (deck.kind == 1 && shop.arg == 6)
+        sysflag_set2(14, 2);
+    else
+        sysflag_set2(14, 1);
+    if (day_next() >= 5)
+        sysflag_set2(16, 2);
+    if (day_next() >= 10)
+        sysflag_set2(17, 2);
+    if (day_next() >= 15)
+        sysflag_set2(18, 2);
+    if (day_next() >= 20)
+        sysflag_set2(19, 2);
+    if (day_next() >= 25)
+        sysflag_set2(20, 2);
+    if (day_next() >= 30)
+        sysflag_set2(21, 2);
+    if (day_next() >= 35)
+        sysflag_set2(22, 2);
+    if (day_next() >= 40)
+        sysflag_set2(23, 2);
+    if (day_next() >= 45)
+        sysflag_set2(24, 2);
     if (day_next() >= 50)
         sysflag_set2(0x1C, 2);
     if (sysflag_get2(0x1A) != 2) {
         unsigned char *x = sysstate2_get_ptr_51c();
-        unsigned short all = 0, got = 0;
+        unsigned short got = 0, all = 0;
         for (i = 0; i < 40; i++) {
             if (shop_tab_a[i].on & 1) {
                 all++;
@@ -336,48 +374,94 @@ void shop_packs_unlock(void)
         for (i = 0; i < 83; i++) {
             if (shop_tab_b[i].on & 1) {
                 all++;
-                if (x[0xCC + i])
+                if (x[0xCC + i] > 0)
                     got++;
             }
         }
         for (i = 0; i < 118; i++) {
             if (shop_tab_c[i].on & 1) {
                 all++;
-                if (x[0x120 + i])
+                if (x[0x120 + i] > 0)
                     got++;
             }
         }
         if (got >= all * 50 / 100)
             sysflag_set2(0x1A, 2);
     }
-    if ((deck & 0xF) >> 1 == 1) {
+    if (deck.kind == 1) {
         best = 0;
-        for (i = 2; i < 9; i++) {
+        for (i = 2; i <= 8; i++) {
             if (deck_slot_get_value(i) > best)
                 best = deck_slot_get_value(i);
         }
     }
-    for (i = 0; i < 7; i++) {
-        if (sysflag_get2(0x1F + i))
-            sysflag_set2(0x1F + i, 1);
-        if ((deck & 0xF) >> 1 == 1) {
-            if (best == deck_slot_get_value(2 + i) && best > 0)
-                sysflag_set2(0x1F + i, 2);
-        } else if ((deck & 0xFFF) >> 4 == 2 + i) {
-            sysflag_set2(0x1F + i, 2);
-        }
+    if (sysflag_get2(31))
+        sysflag_set2(31, 1);
+    if (deck.kind == 1) {
+        if (best == deck_slot_get_value(2) && best > 0)
+            sysflag_set2(31, 2);
+    } else if (deck.chara == 2) {
+        sysflag_set2(31, 2);
+    }
+    if (sysflag_get2(32))
+        sysflag_set2(32, 1);
+    if (deck.kind == 1) {
+        if (best == deck_slot_get_value(3) && best > 0)
+            sysflag_set2(32, 2);
+    } else if (deck.chara == 3) {
+        sysflag_set2(32, 2);
+    }
+    if (sysflag_get2(33))
+        sysflag_set2(33, 1);
+    if (deck.kind == 1) {
+        if (best == deck_slot_get_value(4) && best > 0)
+            sysflag_set2(33, 2);
+    } else if (deck.chara == 4) {
+        sysflag_set2(33, 2);
+    }
+    if (sysflag_get2(34))
+        sysflag_set2(34, 1);
+    if (deck.kind == 1) {
+        if (best == deck_slot_get_value(5) && best > 0)
+            sysflag_set2(34, 2);
+    } else if (deck.chara == 5) {
+        sysflag_set2(34, 2);
+    }
+    if (sysflag_get2(35))
+        sysflag_set2(35, 1);
+    if (deck.kind == 1) {
+        if (best == deck_slot_get_value(6) && best > 0)
+            sysflag_set2(35, 2);
+    } else if (deck.chara == 6) {
+        sysflag_set2(35, 2);
+    }
+    if (sysflag_get2(36))
+        sysflag_set2(36, 1);
+    if (deck.kind == 1) {
+        if (best == deck_slot_get_value(7) && best > 0)
+            sysflag_set2(36, 2);
+    } else if (deck.chara == 7) {
+        sysflag_set2(36, 2);
+    }
+    if (sysflag_get2(37))
+        sysflag_set2(37, 1);
+    if (deck.kind == 1) {
+        if (best == deck_slot_get_value(8) && best > 0)
+            sysflag_set2(37, 2);
+    } else if (deck.chara == 8) {
+        sysflag_set2(37, 2);
     }
     if (sysflag_get2(0x26))
         sysflag_set2(0x26, 1);
-    if ((deck & 0xF) >> 1 > 1 && value_to_tier((deck & 0xFFF) >> 4) == 2)
+    if (deck.kind > 1 && value_to_tier(deck.chara) == 2)
         sysflag_set2(0x26, 2);
     if (sysflag_get2(0x27))
         sysflag_set2(0x27, 1);
-    if ((deck & 0xF) >> 1 > 1 && value_to_tier((deck & 0xFFF) >> 4) == 3)
+    if (deck.kind > 1 && value_to_tier(deck.chara) == 3)
         sysflag_set2(0x27, 2);
     if (sysflag_get2(0x28))
         sysflag_set2(0x28, 1);
-    if (((deck & 0xF) >> 1) - 2 < 2u)
+    if (deck.kind - 2 < 2u)
         sysflag_set2(0x28, 2);
     if (sysflag_get2(0x2B)) {
         sysflag_set2(0x2B, 1);
@@ -396,4 +480,3 @@ void shop_packs_unlock(void)
     if (inv_collection_permille() >= 900)
         sysflag_set2(0x2F, 2);
 }
-#endif
