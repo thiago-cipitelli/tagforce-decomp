@@ -1,5 +1,4 @@
 // @range 0x08883114-0x08884118
-// @asm 0x08883324-0x088837E4
 /* Card effect handlers (DuelAct *a), after effects_r.c. */
 #include "duel.h"
 
@@ -98,55 +97,28 @@ int duel_088832F8(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores e desvios */
 int duel_08883324(DuelAct *a, DuelAct *b)
 {
     unsigned int loc;
     unsigned int q;
     unsigned int z;
-    unsigned int id;
+    unsigned short id;
+    int c;
     int i;
 
-    if (a->b4_2 || b == 0) {
+    if (a->b4_2) {
+        return 0;
+    }
+    if (b == 0) {
         return 0;
     }
     if (b->player == a->player) {
         return 0;
     }
-    if (a->uid != CARD_UID(duel.players[a->player].field[a->zone].card)) {
+    if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
         return 0;
     }
     switch (b->id) {
-    case 0x1246:
-    case 0x131B:
-    case 0x131C:
-    case 0x1321:
-        for (z = 5; z < 11; z++) {
-            id = duel.players[a->player & 1].field[z].card.id;
-            if (id != 0 && card_get_type(id) == 0x17 && duel.players[a->player & 1].field[z].faceup == 0) {
-                duel_088C96EC(a->player, z, 1);
-                duel_088C4508(a->player, id);
-                duel_088C7B90(0x1E);
-                duel_088C96EC(a->player, z, 0);
-            }
-        }
-        b->b4_4 = 1;
-        break;
-    case 0x11F0:
-        for (i = 0; i < 2; i++) {
-            duel_088A9008(b, i, &loc);
-            q = loc & 0xFF;
-            z = (unsigned short)loc >> 8 & 0xFF;
-            id = duel.players[loc & 1].field[z].card.id;
-            if (id != 0 && card_get_type(id) == 0x17 && duel.players[loc & 1].field[z].faceup == 0) {
-                duel_088C96EC(q, z, 1);
-                duel_088C4508(a->player, id);
-                duel_088C7B90(0x1E);
-                duel_088C96EC(q, z, 0);
-            }
-        }
-        b->b4_4 = 1;
-        break;
     case 0xFFA:
     case 0x1086:
     case 0x12E6:
@@ -159,24 +131,66 @@ int duel_08883324(DuelAct *a, DuelAct *b)
         duel_088A9008(b, 0, &loc);
         q = loc & 0xFF;
         z = (unsigned short)loc >> 8 & 0xFF;
-        id = duel.players[loc & 1].field[z].card.id;
-        if (id != 0 && (q != a->player || z != a->zone)) {
-            if (card_get_type(id) == 0x17) {
-                if (duel.players[loc & 1].field[z].faceup == 0) {
+        c = duel.players[q & 1].field[z].card.id;
+        if (c == 0) {
+            return 0;
+        }
+        if (q == a->player && z == a->zone) {
+            return 0;
+        }
+        id = c;
+        if (card_get_type(id) == 0x17) {
+            if (duel.players[q & 1].field[z].faceup == 0) {
+                duel_088C96EC(q, z, 1);
+                duel_088C4508(a->player, id);
+                duel_088C7B90(0x1E);
+                duel_088C96EC(q, z, 0);
+            }
+            duel_088D147C(a, a->player, a->zone);
+        }
+        b->b4_4 = 1;
+        return 0;
+    case 0x11F0:
+        for (i = 0; i < 2; i++) {
+            duel_088A9008(b, i, &loc);
+            q = loc & 0xFF;
+            z = (unsigned short)loc >> 8 & 0xFF;
+            c = duel.players[q & 1].field[z].card.id;
+            if (c != 0) {
+                id = c;
+                /* o original testa faceup duas vezes (bnez repetido) */
+                if (card_get_type(id) == 0x17 && duel.players[q & 1].field[z].faceup == 0 &&
+                    duel.players[q & 1].field[z].faceup == 0) {
                     duel_088C96EC(q, z, 1);
                     duel_088C4508(a->player, id);
                     duel_088C7B90(0x1E);
                     duel_088C96EC(q, z, 0);
                 }
-                duel_088D147C(a, a->player, a->zone);
             }
-            b->b4_4 = 1;
         }
-        break;
+        b->b4_4 = 1;
+        return 0;
+    case 0x131C:
+    case 0x1246:
+    case 0x131B:
+    case 0x1321:
+        for (i = 5; i <= 10; i++) {
+            c = duel.players[a->player & 1].field[i].card.id;
+            if (c != 0) {
+                id = c;
+                if (card_get_type(id) == 0x17 && duel.players[a->player & 1].field[i].faceup == 0) {
+                    duel_088C96EC(a->player, i, 1);
+                    duel_088C4508(a->player, id);
+                    duel_088C7B90(0x1E);
+                    duel_088C96EC(a->player, i, 0);
+                }
+            }
+        }
+        b->b4_4 = 1;
+        return 0;
     }
     return 0;
 }
-#endif
 
 int duel_088837E4(DuelAct *a)
 {
