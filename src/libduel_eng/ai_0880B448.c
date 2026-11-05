@@ -4,7 +4,6 @@
 // @asm 0x0880DC1C-0x0880E388
 // @asm 0x0880E690-0x0880EA18
 // @asm 0x0880EC5C-0x0880EFAC
-// @asm 0x0880F1D0-0x0880F278
 // @asm 0x0880F3B4-0x0880F8C4
 /* Computer player: values it declares for cards that ask for a monster type, an attribute or a
    number. */
@@ -1176,7 +1175,6 @@ void duel_0880EFAC(unsigned int p, int id, int n, unsigned short *list, DuelStat
     duel_0880E3CC(buf, p);
 }
 
-#ifdef NON_MATCHING /* só o primeiro teste r == -1 difere: o original usa bne com nop, o mwcc gera bnel com o lw ra no atraso */
 /* Position for the summon of card id with the n tributes in list: 1 attack, 0 defense. */
 int duel_0880F1D0(unsigned int p, int id, int set, int n, unsigned short *list, int tribute)
 {
@@ -1187,15 +1185,13 @@ int duel_0880F1D0(unsigned int p, int id, int set, int n, unsigned short *list, 
     r = duel_08805DA4(p, id, set, tribute);
     if (r == -1) {
         duel_0880EFAC(p, id, n, list, &st);
-        r = duel_088055A0(p, st.atk, st.def);
-        switch (r) {
+        switch (r = duel_088055A0(p, st.atk, st.def)) {
         case -1:
-            r = !(st.atk > st.def);
+            return !(st.atk > st.def);
         }
     }
     return r;
 }
-#endif
 
 /* Cards the computer summons as soon as it can. */
 int duel_0880F278(unsigned int p, int id)

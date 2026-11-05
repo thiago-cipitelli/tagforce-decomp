@@ -1,5 +1,4 @@
 // @range 0x088CA4E8-0x088CAF24
-// @asm 0x088CAB04-0x088CAB5C
 /* Cards leaving the hand: to the graveyard, the D zone or the field, with the command to the
    presentation (0x33) and the event of the move. */
 #include "duel.h"
@@ -143,16 +142,12 @@ void duel_088CA4E8(unsigned int p, DuelCard *c, int a, int z, int b, int d)
     }
 }
 
-#ifdef NON_MATCHING /* the original computes x != 0 in the delay slot of the index test */
 void duel_088CAB04(unsigned int p, int i, int x)
 {
     if (i >= 0) {
-        int f = x != 0;
-
-        duel_088CA4E8(p, duel_field_card_deb2c(p, 11, i), f, 0xE, 1, 0);
+        duel_088CA4E8(p, duel_field_card_deb2c(p, 11, i), x ? 1 : 0, 0xE, 1, 0);
     }
 }
-#endif
 
 void duel_088CAB5C(unsigned int p, int i)
 {

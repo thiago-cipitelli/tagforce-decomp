@@ -556,12 +556,12 @@ void duel_req_effect_add(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* the player test is scheduled after the loads of the other fields */
+#ifdef NON_MATCHING /* 4 palavras: o original carrega duel_req.id antes de arg (v1/v0 trocados); nenhuma ordem de locais/forma testada reproduz */
 void duel_req_effect_set(void)
 {
+    unsigned int id = duel_req.id;
     unsigned int arg = duel_req.arg;
-
-    duel_effect_set((duel_req.id & 0x8000) != 0, arg & 0xFF, arg >> 8 & 0xFF, *(unsigned short *)&duel_req.loc, duel_req.w);
+    duel_effect_set((id & 0x8000) != 0, arg & 0xFF, arg >> 8 & 0xFF, *(unsigned short *)&duel_req.loc, duel_req.w);
     duel_host_call(0x24, 0, 0, 0);
     duel_busy_0891523C = 0;
 }
@@ -588,7 +588,7 @@ void duel_req_effect_free(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* the original stores the activation counter before the zone field */
+#ifdef NON_MATCHING /* 4 palavras: o original grava duel_order_ctr antes do sh no slot; ++, temporário e cast não mudam a ordem */
 /* Give zone arg its activation order. */
 void duel_req_order(void)
 {
