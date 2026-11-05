@@ -3,7 +3,6 @@
 // @asm 0x0881103C-0x08811658
 // @asm 0x08811A8C-0x08811FBC
 // @asm 0x08812200-0x08812674
-// @asm 0x08812910-0x08812AB8
 /* The title's panel widgets: a framed box of cells with a scrollbar (TBox), tabs (TTab), the tabbed
    window combining them with a system list (TPanel), the nine-piece frames drawn from title_sprites2,
    the blinking cursor frame, and preset boxes and help windows used by the duel setup screens. */
@@ -828,7 +827,6 @@ void *tbox_corner(void *list, TBoxDrawFn draw)
     return tbox_draw(list, b);
 }
 
-#ifdef NON_MATCHING /* andi extra na releitura de title.duel.anim e ordem do pulso */
 /* the title bar of the setup screens, pulsing with title.duel.anim */
 void *tbox_header(void *list, TBoxDrawFn draw)
 {
@@ -859,24 +857,19 @@ void *tbox_header(void *list, TBoxDrawFn draw)
     b->state = 0;
     b->pos = 0;
     b->cursor = 0;
-    if (title.duel.anim != 0) {
-        short d, d2;
-
-        k = title.duel.anim / 5 % 4;
+    if ((a = title.duel.anim) != 0) {
+        k = a / 5 % 4;
         if (k >= 3)
             k = 1;
-        d = k;
-        d2 = k * 2;
-        b->x -= d;
-        b->y -= d;
-        b->w += d2;
-        b->h += d2;
+        b->x -= (short)k;
+        b->y -= (short)k;
+        b->w += (short)(k * 2);
+        b->h += (short)(k * 2);
     }
     b->text = 0;
     b->draw = draw;
     return tbox_draw(list, b);
 }
-#endif
 
 /* the help line at the bottom (higher in state 14) */
 void twin_help_init(MenuWidget *w, int state, int id, int file)
