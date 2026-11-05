@@ -19,7 +19,6 @@
 // @asm 0x088139B4-0x08813C0C
 // @asm 0x08813C0C-0x08814274
 // @asm 0x08814274-0x088146E8
-// @asm 0x08814DCC-0x08815050
 // @asm 0x08815050-0x08815328
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
    summary), the money paid out, the series score of a match and the continue / net wait dialogs. */
@@ -112,7 +111,7 @@ unsigned int *dmgr_res_page_header(unsigned int *list, int x, int page);
 unsigned int *dmgr_res_draw_box(unsigned int *list, int x, int y, int w, int h, int u, int v);
 unsigned int *dmgr_res_draw_number(unsigned int *list, short x, short y, int n, unsigned short step,
                                    unsigned short digits, int pad);
-unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, unsigned int period, int blink,
+unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, unsigned char down, unsigned int period, int blink,
                                   int on, unsigned int frame, void *gim);
 unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, int pos, int rows, int count);
 void dmgr_res_text_fit(int x, int y, int w, int sw, int sh, void *text);
@@ -1197,11 +1196,13 @@ unsigned int *dmgr_res_draw_page(unsigned int *list)
 #endif
 
 short dmgr_res_bob[4] = { 0, 1, 2, 1 };
+typedef struct DmgrBob { unsigned short v[4]; } DmgrBob;
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
+#ifdef NON_MATCHING /* 64 palavras: com bob copiado do template (DmgrBob), os x das setas em (unsigned short) e dmgr_res num local no laço dos totais, a pilha e o fluxo batem; falta a alocação de $s (list/x/x + 0x3E em s1/s0/s5 no original, s0/s5/s0 aqui) */
 unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
 {
     void *g;
+    DmgrBob bob;
     int idx[4];
     int *p;
     int sum;
@@ -1249,20 +1250,23 @@ unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
     list = draw_set_offsets(list, 1, 1, 0x158, 0x49);
     list = draw_sprite(list, x + 0x44, 0x5F, 0, 0x19, 0x12, 0, 0);
     if (x == 0) {
-        short bob[4] = { 0, 1, 2, 1 };
+        bob = *(DmgrBob *)dmgr_res_bob;
 
         list = dl_ambient_color(list, 0xFFFFFFFF);
         list = dl_set_tex_filter(list, 0, 0);
         list = draw_set_offsets(list, 0xF, 0x17, 0xF, 0x17);
-        list = draw_sprite(list, bob[*(unsigned int *)gfx_get_state() >> 2 & 2] + 0x18, 0x7B, 0, 0x90, 0x18, 0, 0);
-        list = draw_sprite(list, 0x1BB - bob[*(unsigned int *)gfx_get_state() >> 2 & 2], 0x7B, 0, 0x9F, 0x18, 0, 0);
+        list = draw_sprite(list, (unsigned short)(bob.v[*(unsigned int *)gfx_get_state() >> 2 & 2] + 0x18), 0x7B, 0, 0x90, 0x18, 0, 0);
+        list = draw_sprite(list, (unsigned short)(0x1BB - bob.v[*(unsigned int *)gfx_get_state() >> 2 & 2]), 0x7B, 0, 0x9F, 0x18, 0, 0);
     }
     sum = 0;
     memset(idx, -1, sizeof idx);
-    for (i = 0, p = idx; i < 4; i++) {
-        if (dmgr_res->total[i] != 0) {
-            *p++ = i;
-            sum += dmgr_res->total[i];
+    {
+        DmgrRes *r = dmgr_res;
+        for (i = 0, p = idx; i < 4; i++) {
+            if (r->total[i] != 0) {
+                *p++ = i;
+                sum += r->total[i];
+            }
         }
     }
     for (i = 0, p = idx, y = 0x5F; i < 4; i++, p++, y += 0x13) {
@@ -1727,7 +1731,6 @@ unsigned int *dmgr_res_page_frame(unsigned int *list, int x, int u, int v)
 #endif
 
 unsigned short dmgr_res_head_text[3] = { 0xF3, 0xF4, 0xF5 };
-typedef struct DmgrBob { unsigned short v[4]; } DmgrBob;
 
 short dmgr_res_bob2[4] = { 0, 1, 2, 1 };
 
@@ -1831,8 +1834,7 @@ unsigned int *dmgr_res_draw_number(unsigned int *list, short x0, short y, int n,
     return font_text_clear();
 }
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
-unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, unsigned int period, int blink,
+unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, unsigned char down, unsigned int period, int blink,
                                   int on, unsigned int frame, void *gim)
 {
     unsigned int half = period >> 1;
@@ -1851,7 +1853,10 @@ unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, u
         list = draw_set_offsets(list, 8, 8, 8, 8);
         list = draw_sprite(list, x, y, 0, 0xEE, v + 0x30, 0, 0);
     }
-    if (blink != 0) {
+    if (blink == 0) {
+        return list;
+    }
+    {
         frame %= period;
         if (frame < half) {
             a = (float)frame / (float)half;
@@ -1870,7 +1875,6 @@ unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, char down, u
     }
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, int pos, int rows, int count)

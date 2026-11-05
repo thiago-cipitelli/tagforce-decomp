@@ -10,7 +10,6 @@
 // @asm 0x08805974-0x08805B68
 // @asm 0x08805BD0-0x08805E24
 // @asm 0x08805E24-0x08806074
-// @asm 0x08806074-0x08806170
 /* Story characters (150): the script tables of each one (Scr<i>_G/Step/Deck/DH/DN/Sche/...), their
    saved state (level, affinity, flags, position, look, deck in use), the conditions of the tables
    (date, level, flags, weekday, daytime) and the daily update that picks look, place and deck. */
@@ -1101,26 +1100,25 @@ int st_chr_g_update(int i)
 #endif
 
 /* recipe of the first Deck entry that holds (date range, level, chr flag, story flag) */
-#ifdef NON_MATCHING /* o teste do fim da tabela no topo do laço sai bnezl/b em vez de beqzl direto para o epílogo */
 int st_chr_deck_find(int i)
 {
     unsigned short *t = ST_CHR(i)->deck;
-    unsigned short *p = t;
     int k = 0;
+    unsigned short *p = t;
 
     for (;;) {
         if (p[7] == 0)
-            return 0;
+            break;
         if (story_date_in_range(p[0], p[1], p[2], p[3])
-            && (p[4] == 0 || st_chr_level_is(i, p[4]))
-            && (p[5] == 0 || st_chr_flag_get(i, p[5]))
-            && (p[6] == 0 || story_flag_get(p[6])))
+            && (p[4] == 0 || st_chr_level_is(i, (unsigned short)(int)p[4]))
+            && (p[5] == 0 || st_chr_flag_get(i, (unsigned short)(int)p[5]))
+            && (p[6] == 0 || story_flag_get((unsigned short)(int)p[6])))
             return t[k * 8 + 7];
         p += 8;
         k++;
     }
+    return 0;
 }
-#endif
 
 void st_chr_deck_update(int i)
 {

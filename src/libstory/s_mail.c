@@ -176,7 +176,7 @@ StMailView *st_mail_view_list(int *count)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original endereça cada campo do terminador com lui/addiu próprio e guarda id em s6; alocação de $s diferente */
+#ifdef NON_MATCHING /* 7 palavras: com o retorno de st_remap_812334 em (unsigned short) só p e k trocam de registrador (s3/s5); ordens das declarações e do k = p[4] não mudam */
 /* attachments of a mail (ended by a zeroed entry); marks the mail read */
 StMailAttach *st_mail_open(int id)
 {
@@ -195,7 +195,7 @@ StMailAttach *st_mail_open(int id)
             st_mail_attach[i].text = 0;
             break;
         }
-        a->kind = st_remap_812334(p[2]);
+        a->kind = (unsigned short)st_remap_812334(p[2]);
         a->id = p[0];
         a->x02 = 0;
         k = p[4];

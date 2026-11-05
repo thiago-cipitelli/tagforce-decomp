@@ -4,7 +4,6 @@
 // @asm 0x0880D590-0x0880D78C
 // @asm 0x0880E2AC-0x0880E3A8
 // @asm 0x0880EF5C-0x0880F274
-// @asm 0x0880F51C-0x0880F8E8
 // @data 0x0881A774-0x0881B9B0
 // @rodata 0x08819FF8-0x0881A068
 /* Partner / versus panel of the start menu: who plays with and against whom (faces, names, decks),
@@ -1333,61 +1332,63 @@ unsigned int *dmgr_text_sjis(unsigned int *list, int x, int y, int w, void *text
     return font_text_clear();
 }
 
-#ifdef NON_MATCHING /* cadeia de testes do personagem e alocação dos temporários de escala diferentes */
 unsigned int *dmgr_pt_draw_chr(unsigned int *list, unsigned short kind, int x, int y, int scale, void *face,
                                void *body)
 {
     unsigned char m[4];
     int whole = 0;
-    int u;
     int v;
+    int u;
     int c;
     int sw;
 
-    if (face == 0) {
+    if (face == 0 || body == 0) {
         return list;
     }
-    if (body == 0) {
-        return list;
-    }
-    c = charmap_lookup(kind, 0);
+
+    c = charmap_lookup((unsigned short)(int)kind, 0);
     u = 0;
     v = 0;
     switch (c) {
     case 1000:
         u = 0x54;
+        whole = 1;
         break;
     case 0x3EF:
         v = 0x33;
         u = 0x54;
+        whole = 1;
         break;
     case 0x3F0:
         v = 0x66;
         u = 0x54;
+        whole = 1;
         break;
     case 0x3F1:
         v = 0x99;
         u = 0x54;
+        whole = 1;
         break;
     case 0x3F2:
         v = 0xCC;
         u = 0x54;
+        whole = 1;
         break;
     case 0x3F3:
         u = 0xA8;
+        whole = 1;
         break;
     case 0x3F4:
         v = 0x33;
         u = 0xA8;
+        whole = 1;
         break;
     default:
         if (charmap_lookup2(c, m) == 0) {
             return list;
         }
-        goto draw;
+        break;
     }
-    whole = 1;
-draw:
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 1, 1);
     if (whole) {
@@ -1403,7 +1404,6 @@ draw:
     list = draw_set_offsets(list, 0x33, 0x32, sw, scale * 0x32 / 100);
     return draw_sprite(list, x, y, 0, m[0] % 5 * 0x33, m[0] / 5 * 0x32, 0, 0);
 }
-#endif
 
 DmgrChr *dmgr_chr_find(unsigned short id)
 {
