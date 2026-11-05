@@ -4,8 +4,9 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-11-05, após a rodada 5 (4 agentes no libduel_eng; ByteMatch): 69,3% do código batendo, 93,2% fuzzy,
-9912/11039 funções (libduel_eng 70,6%/95,3%). Fila: 788 funções em `docs/matching_queue.tsv` (125 abaixo de 80%, nenhuma em 0%: toda função tem
+Estado em 2026-11-05, após a rodada 6 (9 agentes; ByteMatch): 71,2% do código batendo, 93,8% fuzzy,
+10000/11039 funções (libduel_eng 73,4%/95,9%, libduel_draw 49,3%/90,3%). Fila: 699 funções em
+`docs/matching_queue.tsv` (102 abaixo de 80%, nenhuma em 0%: toda função tem
 C que compila), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
 A Tarefa 0 (drafts que não compilavam) está concluída. **libfield não tem mais função sem C** (76,2% código, 98,4% fuzzy).
@@ -70,10 +71,15 @@ MODULE=$M tools/raw_asm.sh 0xLO 0xHI            # o asm original (a verdade), qu
    objeto `-DNON_MATCHING` (achou chamadas trocadas e funções inexistentes em vários drafts).
    Draft com helpers `static` que o original expande inline: compile uma cópia com `static inline` e `-inline all`
    para comparar instrução por instrução (assim apareceram os bugs das cartas 0x18F1 e 0x1A0C em `battle_calc.c`).
-   Contagem de constantes original × draft acusa campo ou global errado. Pendência para o port: em código que já
+   Contagem de constantes original × draft acusa campo ou global errado; compare também as constantes float
+   (`lui/ori`: achou -400 por -800 e constantes erradas por 1 bit) e definições `void` cujo retorno os chamadores usam.
+   `check_file` mascara relocações: depois de promover, só o `make check` vê dois globais carregados em ordem trocada. Pendência para o port: em código que já
    bate há protótipos locais com número de argumentos diferente da definição (`dd_mode_de48`, `dd_lp_load`,
    `func_08820E58`, `dd_field_camera0`, `dd_fx_start`/`dd_fx_stop`/`dd_fx3_*`, `dd_mon_on_*`, `duel_slot_ef098`,
-   `duel_field_card_deb2c`, `duel_place_monster` com `pos` int no chamador e `unsigned short` na definição): o PSP tolera, o PC não; conferir cada um contra o asm antes do port.
+   `duel_field_card_deb2c`, `duel_place_monster` com `pos` int no chamador e `unsigned short` na definição, `dl_tex_offset` com
+   `(list, u, v)` nos gmodules e `(u, v, list)` no BOOT, `dk_list_find` redeclarado em bloco com u16 em `dk_deck_load`,
+   `*_list_filter` declarados `void` em dt_fmenu/dt_sort/dk_sortmenu, `func_08820E58`/`dd_fx_start`/`dd_fx_stop` com
+   argumentos a mais nos chamadores, `dd_popup_now` que deveria devolver `DdTask *`): o PSP tolera, o PC não; conferir cada um contra o asm antes do port.
 4. Se não bater em 4 reescritas: atualize o comentário do `NON_MATCHING` (pt-BR, o que ainda difere, quantas
    palavras) e siga. Isso poupa a próxima sessão.
 
@@ -137,6 +143,12 @@ Os casos mais comuns nesta etapa:
 | `DuelCard`/`DuelActX` de 4 bytes zerado na pilha (laço de bytes) | `{ int n = 4; unsigned char *d = (unsigned char *)&x; if (d) do { *d++ = 0; } while (--n); }`; `= {0}` não reproduz |
 | campo de largura diferente da struct compartilhada | struct de visão local com o bitfield na largura que o original lê (`DuelListCard.placed` de 2 bits) |
 | if/else-if em `a->id` com testes na ordem inversa | era `switch` linear |
+| global relido depois de um store nele (sem encaminhamento) | declare como array `extern T g[]` e use `g[0]`, ou `*(volatile T *)&g` |
+| `n = 2; if (c) n = 4;` puxa o próximo comando para o delay slot de um `bnel` | ternário `n = c ? 4 : 2;` |
+| `li x,-1; addiu s,x,1` antes de um laço contado | `i = -1; while (++i < n)` |
+| troca Fisher–Yates com `$s` rodados | temporário próprio da troca (`k = z[i]; z[i] = z[j]; z[j] = k;`), não o `t` do laço |
+| switch inteiro preenchendo uma struct (um slot de pilha por case) | `{ T t = {...}; *p = t; }` em cada case |
+| permutar comandos rápido | `perm_decls.py --alts` com `{DECLS}` no lugar dos comandos: 720 ordens num TU em segundos |
 | argumento de chamada vindo de um registrador com uma constante de comparação | o argumento real **é** essa constante (bug de lógica comum nos drafts) |
 | `switch` linear (`li; beq(l)` em cadeia): testes na ordem **inversa** dos `case`, corpos na ordem da fonte | escrever os rótulos na ordem inversa dos testes; alvos a 4 bytes um do outro são o mesmo corpo (o `beql` copia a 1ª instrução) |
 | bitfields de um evento relidos da pilha depois de cada chamada | o endereço escapa: passar `*(unsigned int *)&ev` (protótipo com `unsigned int`) |
