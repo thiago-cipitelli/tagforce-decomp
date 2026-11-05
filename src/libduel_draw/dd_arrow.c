@@ -1,6 +1,5 @@
 // @range 0x0884E0F4-0x0884F3D0
 // @asm 0x0884E1E8-0x0884E41C
-// @asm 0x0884E41C-0x0884E46C
 // @data 0x08876D30-0x08876DA0
 /* Card cursor marker and attack arrow (dd_mark): a model standing on the zone under the cursor,
    turned towards the zone it points at and gliding between zones, and an arrow of 60 particles
@@ -162,7 +161,6 @@ void dd_mark_move(int player, int zone, int to_player, int to_zone)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original mantém o `beql zone → li 1` sem dobrar em sltiu; as formas testadas dobram */
 int dd_mark_is_at(int player, int zone)
 {
     DdMarkMgr *k = &dd_mark;
@@ -173,12 +171,13 @@ int dd_mark_is_at(int player, int zone)
     m = k->marker->data;
     if (m->at.player == player) {
         if (m->at.zone == zone)
-            return 1;
+            goto at;
         return 0;
     }
     return 0;
+at:
+    return 1;
 }
-#endif
 
 void dd_mark_create(int player, int zone)
 {

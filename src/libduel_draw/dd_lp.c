@@ -1,10 +1,8 @@
 // @range 0x08811718-0x0881299C
-// @rodata 0x0886FE80-0x0886FEA0
+// @rodata 0x0886FE80-0x0886FF0C
 // @data 0x08874FA0-0x08875104
 // @asm 0x08811718-0x08811BE0
-// @asm 0x08811F88-0x088120FC
 // @asm 0x08812214-0x0881230C
-// @asm 0x088124A4-0x0881299C
 /* The LP and phase panel: the frame (ehf), the names of the duelists, the LP counters counting
    to their new value, turn and card counters, the results of a series of duels, the phase
    animation (states of the phase ehf) and the turn switch. */
@@ -290,42 +288,39 @@ void *dd_lpp_digits(void *list, int x, int y, int n)
     return list;
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* card count of a deck (blinking under 31) with its icon */
 void *dd_lpp_count(void *list, int x, int y, int n, int active)
 {
+    int v = n;
     int dx;
     int first;
     int d;
 
-    if (n >= 0) {
-        if (n > 999)
-            n = 999;
-        if (active == 0) {
-            list = dl_ambient_color(list, 0x80FFFFFF);
-        } else if (n < 31) {
-            if (*gfx_get_state() >> 3 & 1)
-                list = dl_ambient_color(list, 0xFF00FFFF);
-            else
-                list = dl_ambient_color(list, 0xFF000000);
-        } else {
-            list = dl_ambient_color(list, 0xFFFFFFFF);
-        }
-        list = dd_sprite_at(list, x, y, &dd_uv[0x5D - 0x2D]);
-        dx = x + 0x29;
-        first = 1;
-        do {
-            d = n % 10;
-            if (first || d != 0 || n != 0)
-                list = dd_sprite_at(list, dx, y, &dd_uv[d + 0x2D]);
-            first = 0;
-            n /= 10;
-            dx -= 8;
-        } while (n > 0 && dx >= x);
-    }
+    if (n < 0)
+        return list;
+    if (n > 999)
+        v = 999;
+    if (active == 0)
+        list = dl_ambient_color(list, 0x80FFFFFF);
+    else if (v > 30)
+        list = dl_ambient_color(list, 0xFFFFFFFF);
+    else if (*gfx_get_state() >> 3 & 1)
+        list = dl_ambient_color(list, 0xFF00FFFF);
+    else
+        list = dl_ambient_color(list, 0xFF000000);
+    list = dd_sprite_at(list, x, y, &dd_uv[0x37]);
+    dx = x + 0x29;
+    first = 1;
+    do {
+        d = v % 10;
+        if (first || d != 0 || v != 0)
+            list = dd_sprite_at(list, dx, y, &dd_uv[d + 0x2D]);
+        first = 0;
+        v /= 10;
+        dx -= 8;
+    } while (v > 0 && dx >= x);
     return list;
 }
-#endif
 
 /* turn number centred at x */
 void *dd_lpp_turn(void *list, int x, int y)
@@ -356,7 +351,7 @@ void *dd_lpp_turn(void *list, int x, int y)
     return list;
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
+#ifdef NON_MATCHING /* 8 palavras: só a alocação dos $s (orig: l=s0, px=s1, lp=s2, p=s3); ordem das declarações já permutada */
 /* the LP of both players */
 void *dd_lpp_counters(void *list)
 {
@@ -370,8 +365,10 @@ void *dd_lpp_counters(void *list)
     list = dd_sprite_at(list, 0x1A6, 1, &dd_uv[0x54]);
     list = dd_sprite_at(list, 0x1AD, 1, &dd_uv[0x55]);
     for (p = 0, px = x.v; p < 2; p++, px++) {
+        int lp = l->lp[p];
+
         list = dl_ambient_color(list, 0xFF00FFFF);
-        list = dd_lpp_digits(list, *px, 1, l->lp[p]);
+        list = dd_lpp_digits(list, *px, 1, lp);
     }
     return list;
 }
@@ -420,39 +417,48 @@ void *dd_lpp_frame(void *list)
     return ehf_draw(list, e, opts);
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* turn switch animation of the panel frame */
 void dd_lpp_turn_tick(float dt)
 {
+    DdLpp *l = &dd_lpp;
     void *e = dd_ehf_get(0x20002);
-    unsigned int f;
+    int f;
 
     if (e == 0)
         return;
-    if (dd_lpp.turn_shown == -1) {
-        if (ehf_get_frame_count(e) > 0x80) {
-            dd_lpp.turn_shown = dd_lpp.turn;
-            if (dd_lpp.turn == 0)
+    switch (l->turn_shown) {
+    case 0:
+    case 1:
+        if (l->turn_shown != l->turn) {
+            l->turn_shown = -1;
+            ehf_set_frame_alias(e, 0x79);
+        }
+        break;
+    case -1:
+        if ((int)ehf_get_frame_count(e) > 0x80) {
+            if ((l->turn_shown = l->turn) == 0)
                 ehf_set_frame_alias(e, 0);
             else
                 ehf_set_frame_alias(e, 0x82);
         }
-    } else if ((dd_lpp.turn_shown == 1 || dd_lpp.turn_shown == 0) && dd_lpp.turn_shown != dd_lpp.turn) {
-        dd_lpp.turn_shown = -1;
-        ehf_set_frame_alias(e, 0x79);
+        break;
     }
     f = ehf_get_frame_count(e);
-    if (dd_lpp.turn_shown == -1) {
-        if (f > 0x80)
-            ehf_set_frame_alias(e, 0x79);
-    } else if (dd_lpp.turn_shown == 1) {
+    switch (l->turn_shown) {
+    case 0:
+        if (f > 0x77)
+            ehf_set_frame_alias(e, 0);
+        break;
+    case 1:
         if (f > 0xF9)
             ehf_set_frame_alias(e, 0x82);
-    } else if (dd_lpp.turn_shown == 0 && f > 0x77) {
-        ehf_set_frame_alias(e, 0);
+        break;
+    case -1:
+        if (f > 0x80)
+            ehf_set_frame_alias(e, 0x79);
+        break;
     }
 }
-#endif
 
 int dd_lpp_phase_of[27] = {
     7, 0, 7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 7, 7, 0, 7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 7, 7,
@@ -471,82 +477,71 @@ DdRange dd_lpp_phase_frames[27] = {
     { 0x1AA, 0x1C9 }, { 0x1CA, 0x1CE }, { 0x1CE, 0x1ED }, { 0x1EE, 0x20F }, { 0x20E, 0x20F },
 };
 
-#ifdef NON_MATCHING /* switch com tabela e testes repetidos; forma não reproduzida */
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* state machine of the phase panel: plays each phase in turn up to the current one */
 void dd_lpp_phase_tick(float dt)
 {
+    DdLpp *l = &dd_lpp;
     void *e = dd_ehf_get(0x20003);
     int f;
-    int s;
 
     if (e == 0)
         return;
     f = ehf_get_frame_count(e);
-    if (dd_lpp.phase_state < 0x1B) {
-        switch (dd_lpp.phase_state) {
-        case 1:
-        case 3:
-        case 5:
-        case 7:
-        case 9:
-        case 11:
-        case 14:
-        case 16:
-        case 18:
-        case 20:
-        case 22:
-        case 24:
-            if (dd_lpp.phase != dd_lpp_phase_of[dd_lpp.phase_state] ||
-                ((dd_lpp.turn != 0 || dd_lpp.phase_state > 12) && (dd_lpp.turn != 1 || dd_lpp.phase_state < 13))) {
-                dd_lpp.phase_state++;
-                ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].start);
-            }
-            break;
-        case 12:
-            if (f >= dd_lpp_phase_frames[dd_lpp.phase_state].end) {
-                if (dd_lpp.phase == 7) {
-                    ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].end - 1);
-                } else {
-                    dd_lpp.phase_state = 13;
-                    ehf_set_frame_alias(e, dd_lpp_phase_frames[13].start);
-                }
-            }
-            break;
-        case 25:
-            if (f >= dd_lpp_phase_frames[dd_lpp.phase_state].end) {
-                if (dd_lpp.phase == 7) {
-                    ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].end - 1);
-                } else {
-                    dd_lpp.phase_state = 0;
-                    ehf_set_frame_alias(e, dd_lpp_phase_frames[0].start);
-                }
-            }
-            break;
-        case 26:
-            if (dd_lpp.phase != dd_lpp_phase_of[dd_lpp.phase_state]) {
-                dd_lpp.phase_state = dv_turn_side() == 0 ? 0 : 13;
-                ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].start);
-            }
-            break;
-        default:
-            if (f >= dd_lpp_phase_frames[dd_lpp.phase_state].end) {
-                s = dd_lpp.phase_state + 1;
-                if (dd_lpp.phase != dd_lpp_phase_of[s] || (dd_lpp.turn == 0 && s > 12) ||
-                    (dd_lpp.turn == 1 && s < 13))
-                    s = dd_lpp.phase_state + 2;
-                dd_lpp.phase_state = s;
-                ehf_set_frame_alias(e, dd_lpp_phase_frames[dd_lpp.phase_state].start);
-            }
-            break;
+    switch (l->phase_state) {
+    case 0: case 2: case 4: case 6: case 8: case 10:
+    case 13: case 15: case 17: case 19: case 21: case 23:
+        if (f >= dd_lpp_phase_frames[l->phase_state].end) {
+            l->phase_state++;
+            if (l->phase != dd_lpp_phase_of[l->phase_state] || (l->turn == 0 && l->phase_state >= 13) ||
+                (l->turn == 1 && l->phase_state < 13))
+                l->phase_state++;
+            ehf_set_frame_alias(e, dd_lpp_phase_frames[l->phase_state].start);
         }
+        break;
+    case 12:
+        if (f >= dd_lpp_phase_frames[l->phase_state].end) {
+            if (l->phase == 7) {
+                ehf_set_frame_alias(e, dd_lpp_phase_frames[l->phase_state].end - 1);
+            } else {
+                l->phase_state = 13;
+                ehf_set_frame_alias(e, dd_lpp_phase_frames[13].start);
+            }
+        }
+        break;
+    case 25:
+        if (f >= dd_lpp_phase_frames[l->phase_state].end) {
+            if (l->phase == 7) {
+                ehf_set_frame_alias(e, dd_lpp_phase_frames[l->phase_state].end - 1);
+            } else {
+                l->phase_state = 0;
+                ehf_set_frame_alias(e, dd_lpp_phase_frames[0].start);
+            }
+        }
+        break;
+    case 1: case 3: case 5: case 7: case 9: case 11:
+    case 14: case 16: case 18: case 20: case 22: case 24:
+        if (l->phase != dd_lpp_phase_of[l->phase_state] ||
+            ((l->turn != 0 || l->phase_state >= 13) && (l->turn != 1 || l->phase_state < 13))) {
+            l->phase_state++;
+            ehf_set_frame_alias(e, dd_lpp_phase_frames[l->phase_state].start);
+        }
+        break;
+    case 26:
+        if (l->phase != dd_lpp_phase_of[l->phase_state]) {
+            if (dv_turn_side() == 0)
+                l->phase_state = 0;
+            else
+                l->phase_state = 13;
+            ehf_set_frame_alias(e, dd_lpp_phase_frames[l->phase_state].start);
+        }
+        break;
     }
     f = ehf_get_frame_count(e);
-    s = dd_lpp.phase_state;
-    if ((s == 26 || s == 24 || s == 22 || s == 20 || s == 18 || s == 16 || s == 14 || s == 11 ||
-         s == 9 || s == 7 || s == 5 || s == 3 || s == 1) &&
-        f >= dd_lpp_phase_frames[s].end)
-        ehf_set_frame_alias(e, dd_lpp_phase_frames[s].start);
+    switch (l->phase_state) {
+    case 1: case 3: case 5: case 7: case 9: case 11:
+    case 14: case 16: case 18: case 20: case 22: case 24: case 26:
+        if (f >= dd_lpp_phase_frames[l->phase_state].end)
+            ehf_set_frame_alias(e, dd_lpp_phase_frames[l->phase_state].start);
+        break;
+    }
 }
-#endif
-#endif

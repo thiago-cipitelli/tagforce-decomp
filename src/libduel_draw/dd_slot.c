@@ -98,7 +98,7 @@ DdCobj *dd_cobj_at(int player, int zone, int index)
     return o;
 }
 
-#ifdef NON_MATCHING /* o primeiro teste e o laço saem com o likely trocado */
+#ifdef NON_MATCHING /* 4 palavras: o primeiro teste e o laço saem com o likely trocado (do/while, while com break, for com e sem retorno antecipado testados) */
 /* card object of card `uid` in a zone */
 DdCobj *dd_cobj_find(int player, int zone, int uid)
 {

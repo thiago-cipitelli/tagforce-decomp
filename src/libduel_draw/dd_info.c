@@ -246,7 +246,7 @@ void dd_info_show_uid(int which, int uid, int keep)
     in->target = 3;
 }
 
-#ifdef NON_MATCHING /* o teste de pinned sai como bnez + b com atrasos vazios no original; nenhuma forma testada reproduziu */
+#ifdef NON_MATCHING /* 6 palavras: o 2º teste (peek == 0 e pinned == 0) sai no original como bnezl a0; lw; bnez; b <epílogo> */
 /* closes the pair opened by the player (peek == 0) or by browsing (peek != 0) */
 void dd_info_hide(int peek)
 {
@@ -254,8 +254,7 @@ void dd_info_hide(int peek)
 
     if (peek && !in->peek)
         return;
-    if (!peek && !in->pinned)
-        return;
+    if (peek ? 1 : in->pinned != 0) {
     in->view[0].on = 0;
     in->view[1].on = 0;
     if (peek == 0) {
@@ -267,6 +266,7 @@ void dd_info_hide(int peek)
     }
     if (!dd_info_dual())
         in->target = 0;
+    }
 }
 #endif
 
