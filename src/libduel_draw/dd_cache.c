@@ -1,7 +1,6 @@
 // @range 0x08804788-0x08805BF4
 // @rodata 0x0886FD90-0x0886FE34
 // @data 0x08874410-0x08874A2C
-// @asm 0x08804BBC-0x08804C44
 // @asm 0x088051B4-0x0880529C
 /* Data loaded for the duel: the card image cache (CIP, medium and large), the field backgrounds
    (duel/bg/fmagicNNNN.ehp) and the character cut-ins with their faces and voices; the binary
@@ -133,16 +132,15 @@ void *dd_bg_get(int id)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o lui/addiu de dd_bg sai depois do sw ra; nenhuma forma testada reproduziu o agendamento */
 /* releases background `id` (later, if its read is still running) */
 void dd_bg_release(int id)
 {
-    DdBg *bg = &dd_bg;
     DdBgSlot *b;
     int i;
     DdBgSlot *p;
 
-    for (i = 0, p = bg->slot; i < 2; i++, p++) {
+    p = dd_bg.slot;
+    for (i = 0; i < 2; i++, p++) {
         b = p;
         if (p->used && p->id == id)
             break;
@@ -154,7 +152,6 @@ void dd_bg_release(int id)
     else
         memset(b, 0, sizeof(DdBgSlot));
 }
-#endif
 
 /* the four words of filelist-ptrs.txt in background `id` (0 and all zero while not loaded) */
 int dd_bg_filelist(int id, int *a, int *b, int *c, int *d)

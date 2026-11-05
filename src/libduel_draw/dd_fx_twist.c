@@ -53,7 +53,7 @@ int dd_fx_twist_start(float s, int card, float *pos, float *rot, DdTaskTermFn te
     return id;
 }
 
-int dd_fx_twist_start_t(float s, float t, int card, float *pos, float *rot, DdTaskTermFn term, void *arg)
+int dd_fx_twist_start_t(int card, float *pos, float s, float t, float *rot, DdTaskTermFn term, void *arg)
 {
     int id = dd_fx_twist_start(s, card, pos, rot, term, arg);
 

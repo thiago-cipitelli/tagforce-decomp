@@ -99,7 +99,7 @@ unsigned int dd_coin_tex_tmpl[16] = {
 
 #ifdef NON_MATCHING /* função grande de render para textura; o modelo dos vetores locais fica em dd_coin_tex_tmpl */
 /* the scene around the coin/die model: ortho camera, two lights turning with the frame counter */
-static unsigned int *dd_dice_scene_begin(unsigned int *list, float scale, DdCamera *saved)
+inline static unsigned int *dd_dice_scene_begin(unsigned int *list, float scale, DdCamera *saved)
 {
     float s[3] = { scale, scale, scale };
     FxVec4 eye = { 0.0f, 0.0f, -1.0f, 0.0f };
@@ -161,7 +161,7 @@ static unsigned int *dd_dice_scene_begin(unsigned int *list, float scale, DdCame
     return list;
 }
 
-static unsigned int *dd_dice_scene_end(unsigned int *list, int model_id, DdCamera *saved, int x, int y, int w, int h)
+inline static unsigned int *dd_dice_scene_end(unsigned int *list, int model_id, DdCamera *saved, int x, int y, int w, int h)
 {
     DdModelDraw md;
     void *model;

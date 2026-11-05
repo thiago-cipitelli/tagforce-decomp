@@ -46,7 +46,7 @@ int dd_fx_spiral_start(float ry, int card, float *pos, DdTaskTermFn term, void *
     return id;
 }
 
-int dd_fx_spiral_start_ex(float s, float t, int card, float *pos, float *rot, DdTaskTermFn term, void *arg)
+int dd_fx_spiral_start_ex(int card, float *pos, float s, float t, float *rot, DdTaskTermFn term, void *arg)
 {
     int id = dd_fx_spiral_start(0.0f, card, pos, term, arg);
     DdFxSpiral *fx;

@@ -117,7 +117,7 @@ int dd_fx_summon_start_dark(float ry, int card, float *pos, DdTaskTermFn term, v
     return id;
 }
 
-int dd_fx_summon_start_t(float ry, float t, int card, float *pos, DdTaskTermFn term, void *arg)
+int dd_fx_summon_start_t(int card, float ry, float t, float *pos, DdTaskTermFn term, void *arg)
 {
     int id = dd_fx_summon_start(ry, card, pos, term, arg);
 
@@ -126,7 +126,7 @@ int dd_fx_summon_start_t(float ry, float t, int card, float *pos, DdTaskTermFn t
     return id;
 }
 
-int dd_fx_summon_start_dark_t(float ry, float t, int card, float *pos, DdTaskTermFn term, void *arg)
+int dd_fx_summon_start_dark_t(int card, float ry, float t, float *pos, DdTaskTermFn term, void *arg)
 {
     int id = dd_fx_summon_start_dark(ry, card, pos, term, arg);
 
@@ -142,7 +142,7 @@ unsigned int dd_fx_summon_tmpl2[2] = { 0x00000000, 0x00000000 };
 unsigned int dd_fx_summon_tmpl3[1] = { 0x3F800000 };
 
 #ifdef NON_MATCHING /* função grande (4 KB); o modelo dos vetores locais fica em dd_fx_summon_tmpl */
-static void dd_fx_set_vert(DdFxVert *v, float u, float tv, unsigned int color, float x, float y, float z)
+inline static void dd_fx_set_vert(DdFxVert *v, float u, float tv, unsigned int color, float x, float y, float z)
 {
     v->u = u;
     v->v = tv;

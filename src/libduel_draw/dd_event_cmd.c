@@ -2,10 +2,8 @@
 // @rodata 0x088700A8-0x088700C0
 // @asm 0x08817EF4-0x08817F08
 // @asm 0x08817F08-0x088182C8
-// @asm 0x08818AC4-0x08818B2C
 // @asm 0x08818FB0-0x0881917C
 // @asm 0x08819184-0x08819430
-// @asm 0x08819430-0x08819684
 // @asm 0x088199C8-0x08819A70
 /* The duel-event handlers 1..73 of the dispatcher table (dd_event.c): cut-ins (duel start/end,
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
@@ -634,18 +632,18 @@ int dd_ev_35(int player, int zone, int a, int b)
     return 1;
 }
 
-#ifdef NON_MATCHING /* salto de retorno antecipado */
 int dd_ev_36(void)
 {
-    if (dv_phase() != 3)
-        return 1;
-    dd_zone_anim_update(0);
-    func_0882059C(0, dd_zone_anim_busy, 0);
-    if (dv_mode_bit(1) == 0)
-        dd_mark_hide();
+    switch (dv_phase()) {
+    case 3:
+        dd_zone_anim_update(0);
+        func_0882059C(0, dd_zone_anim_busy, 0);
+        if (dv_mode_bit(1) == 0)
+            dd_mark_hide();
+        break;
+    }
     return 1;
 }
-#endif
 
 /* 37: a card's stats change (some cards have their own animation) */
 int dd_ev_37(int player, int zone, int a, int card_id)
@@ -767,17 +765,31 @@ void dd_ev_flip_done(DdFlip *f)
     dd_free(f);
 }
 
+typedef struct DdChainLink { /* chain link of the engine (dv_chain() + 0x300), 0x18 */
+    unsigned short value;
+    unsigned short x02;
+    unsigned char b0 : 1;
+    unsigned char negated : 1;
+    unsigned char b2 : 1;
+    unsigned char pad : 5;
+    unsigned char x05[0x13];
+} DdChainLink;
+
 /* 47: a face-down card is flipped (cut-in when requested by event 46) */
-#ifdef NON_MATCHING /* bitfields e alocação */
+#ifdef NON_MATCHING /* 12 palavras: o original materializa h = eng + 0x300 + (n - 1) * 0x18 num registrador antes do lhu; aqui o 0x300 vai no deslocamento do lhu (formas com ponteiro intermediário/índice local testadas) */
 int dd_ev_47(int player, int zone, int idx)
 {
     char *eng = dv_chain();
-    unsigned short *h = (unsigned short *)(eng + 0x300 + (*(int *)(eng + 0x480) - 1) * 0x18);
-    int v = *h;
+    DdChainLink *h = (DdChainLink *)(eng + 0x300) + (*(int *)(eng + 0x480) - 1);
+    int v = h->value;
     DdFlip *f;
     DdCutinDesc d;
 
-    if (dd_ev_flip_cutin != 0) {
+    if (dd_ev_flip_cutin == 0) {
+        if (v > 0 && !h->negated && !h->b2)
+            dd_popup(dv_player_to_side(player), zone, v, 0x2F, 0);
+        dd_hl_pop(dv_player_to_side(player), zone, idx);
+    } else {
         dd_ev_flip_cutin = 0;
         f = dd_alloc(8);
         memset(f, 0, 8);
@@ -795,10 +807,6 @@ int dd_ev_47(int player, int zone, int idx)
         d.start = 0;
         d.done_arg = (int)f;
         dd_cutin_play(&d);
-    } else {
-        if (v != 0 && !(((unsigned char *)h)[4] & 2) && !(((unsigned char *)h)[4] & 4))
-            dd_popup(dv_player_to_side(player), zone, v, 0x2F, 0);
-        dd_hl_pop(dv_player_to_side(player), zone, idx);
     }
     return 1;
 }
@@ -900,47 +908,65 @@ done:
 #endif
 
 /* 50: prompts (choice of zone, yes/no, ...) */
-#ifdef NON_MATCHING /* cadeia de faixas */
 int dd_ev_50(int player, int kind)
 {
-    int ok, zone;
+    int zone, ok;
     void *msg;
 
-    if (kind == 0x4A) {
-        dd_sel_open_engine(1, 1, 0, 0);
-    } else if (kind == 0x4D || kind == 0x4C || kind == 0x4B) {
-        declare_open(kind);
-    } else if (kind >= 0x28 && kind <= 0x47) {
-        dd_sel_open_engine(kind - 0x27, 1, 0, 0);
-    } else if (kind == 0x27) {
-    } else if (kind == 0x48) {
-        dd_sel_open_engine(dv_0884C824(), 0, 0, 0);
-    } else if (kind >= 7 && kind <= 0x26) {
-        dd_sel_open_engine(kind - 6, kind - 6, 0, 0);
-    } else if (kind == 6) {
-        dd_sel_open_engine(1, 1, 0, 0);
-    } else if (kind == 5 || kind == 4 || kind == 3 || kind == 2 || kind == 1) {
+    switch (kind) {
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
         zone = 0;
         ok = 0;
-        if (kind == 4) {
-            ok = 1;
-            zone = 0xF;
-        } else if (kind == 3) {
+        switch (kind) {
+        case 1:
+            zone = 0xC;
+            break;
+        case 2:
+            zone = 0xD;
+            break;
+        case 3:
             ok = 1;
             zone = 0xE;
-        } else if (kind == 2) {
-            zone = 0xD;
-        } else if (kind == 1) {
-            zone = 0xC;
+            break;
+        case 4:
+            ok = 1;
+            zone = 0xF;
+            break;
         }
         msg = dlg_get_text((kind - 1) * 2 + dv_player_to_side(player) + 0x246);
         if (kind != 5)
             dd_cursor_set(dv_player_to_side(player), zone, 0, 1);
         dd_sel_open_engine(0, 0, msg, ok);
+        break;
+    case 6:
+        dd_sel_open_engine(1, 1, 0, 0);
+        break;
+    case 7 ... 38:
+        dd_sel_open_engine(kind - 6, kind - 6, 0, 0);
+        break;
+    case 0x48:
+        dd_sel_open_engine(dv_0884C824(), 0, 0, 0);
+        break;
+    case 0x27:
+        break;
+    case 0x28 ... 0x47:
+        dd_sel_open_engine(kind - 0x27, 1, 0, 0);
+        break;
+    case 0x4B:
+    case 0x4C:
+    case 0x4D:
+        declare_open(kind);
+        break;
+    case 0x4A:
+        dd_sel_open_engine(1, 1, 0, 0);
+        break;
     }
     return 1;
 }
-#endif
 
 int dd_ev_51(int player, int zone)
 {

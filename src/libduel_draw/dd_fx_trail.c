@@ -105,6 +105,7 @@ int dd_trail_update(int phase, DdTrailFx *d)
     int i;
     int j;
     int n;
+    int m;
 
     dd_mtx_push_saved();
     if (phase == 1) {
@@ -214,10 +215,10 @@ int dd_trail_update(int phase, DdTrailFx *d)
                 k = 1.0f - d->nsteps / 47.0f;
                 alpha = (unsigned int)d->a * (k * 0.5f + 0.5f);
                 for (n = 0; n < 3; n++) {
-                    vec4_scale(&edge[0], &bl[n][0], k);
-                    vec4_add(&edge[0], &edge[0], &d->curve[i][j]);
-                    vec4_scale(&edge[1], &bl[n][1], k);
-                    vec4_add(&edge[1], &edge[1], &d->curve[i][j]);
+                    for (m = 0; m < 2; m++) {
+                        vec4_scale(&edge[m], &bl[n][m], k);
+                        vec4_add(&edge[m], &edge[m], &d->curve[i][j]);
+                    }
                     v = d->strip[n][d->nsteps];
                     v[0].color = rgb;
                     v[0].x = edge[0].x;

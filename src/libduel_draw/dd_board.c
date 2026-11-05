@@ -59,7 +59,7 @@ int sel_active(void);
 float sel_progress(int player);
 int dd_cobj_counter_shown(DdCobj *o, DdPos at);
 void *dd_counter_draw(void *list, DdPos at, DdXyzw *pos);
-void dd_counter_sel(DdXyzw *pos, int n);
+void dd_counter_sel(DdXyzw *pos, int stack, int n);
 void *dd_lpp_phase_draw(void *list);
 void dd_cursor_get(DdLoc *cur);
 void *dd_cursor_draw_model(void *list, DdLoc at, int on);
@@ -217,7 +217,7 @@ void dd_board_piles(void)
             if (dd_scene_flags(0x80, -1) && n > 0)
                 dd_board_pile_count(n);
             if (b->sel[p][zone] > 0)
-                dd_counter_sel(&pos, n);
+                dd_counter_sel(&pos, n, b->sel[p][zone]);
         }
     }
     mtx_pop();
@@ -372,7 +372,7 @@ int dd_board_card_draw(DdCobj *o, int p, int zone, int i)
         dl_set_list(list);
     }
     if (dd_cobjs.sel[p][zone] > 0)
-        dd_counter_sel(&o->pos, 0);
+        dd_counter_sel(&o->pos, 0, dd_cobjs.sel[p][zone]);
     return hilite;
 }
 #endif

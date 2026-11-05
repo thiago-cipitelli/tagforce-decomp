@@ -1,11 +1,8 @@
 // @range 0x08820F88-0x08822B0C
-// @asm 0x08820F88-0x088212B0
 // @asm 0x08821460-0x088215A0
 // @asm 0x088215A0-0x08821868
-// @asm 0x08821954-0x08821A3C
 // @asm 0x08821A3C-0x08821BAC
 // @asm 0x08821DBC-0x08821F38
-// @asm 0x08821FA8-0x0882214C
 // @asm 0x0882228C-0x08822520
 // @asm 0x08822520-0x088226C0
 // @asm 0x08822914-0x08822B0C
@@ -136,7 +133,6 @@ void func_088228B8(MenuWidget *w, int open);
 void func_088228F0(void);
 unsigned int *func_08822914(unsigned int *dl, unsigned short i, int x, int y);
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 /* opens the action window of the location given by src; a single plain action (or the hook) acts
    at once */
 void func_08820F88(DdLocSrc *src)
@@ -148,9 +144,9 @@ void func_08820F88(DdLocSrc *src)
     int i;
 
     src->get(&loc);
+    dd_act_menu.src = *src;
     dd_act_menu.n = 0;
     dd_act_menu.text_w = 0;
-    dd_act_menu.src = *src;
     dd_act_menu.w = 0;
     dd_act_menu.card = dv_zone_card_id(loc.player, loc.zone, loc.idx);
     func_088212B0();
@@ -180,21 +176,26 @@ void func_08820F88(DdLocSrc *src)
     func_08825A08(func_08821BAC);
     func_08825B7C(1);
     se_play(0x6216);
-    if (loc.zone == 12)
-        loc.idx = 0;
-    else if (loc.zone == 13)
-        loc.idx = 0;
-    else if (loc.zone == 15)
-        loc.idx = dv_n_f(loc.player) - 1;
-    else if (loc.zone == 14)
+    switch (loc.zone) {
+    case 14:
         loc.idx = dv_n_grave(loc.player) - 1;
-    if ((short)loc.idx < 0)
+        break;
+    case 15:
+        loc.idx = dv_n_f(loc.player) - 1;
+        break;
+    case 13:
+        loc.idx = 0;
+        break;
+    case 12:
+        loc.idx = 0;
+        break;
+    }
+    if ((int)loc.idx < 0)
         loc.idx = 0;
     o = dd_cobj_at(loc.player, loc.zone, loc.idx);
     if (o != 0 && (dd_loc_visible(loc) || o->b5))
         dd_info_select_uid(o->uid);
 }
-#endif
 
 void func_088212B0(void)
 {
@@ -245,15 +246,15 @@ void func_0882136C(MenuWidget *w, int open)
     }
 }
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+#ifdef NON_MATCHING /* 8 palavras: só o 2º laço (k em s1 e o ponteiro de m->act em s0, trocados); 1º laço já bate */
 /* the actions allowed at the location and the widest of their names */
 void func_08821460(void)
 {
     DdActMenu *m = &dd_act_menu;
+    unsigned int i;
     DdActIcon *row;
     DdLoc loc;
     unsigned int bits;
-    unsigned int i;
     int n;
     int maxw;
     int w;
@@ -265,8 +266,9 @@ void func_08821460(void)
     n = 0;
     maxw = 0;
     font_set_size(12, 12);
+    i = 0;
     row = dd_act_tab;
-    for (i = 0; i < 15 && n <= 32; i++, row++) {
+    for (; i < 15 && n <= 32; row++, i++) {
         if (bits & (1 << row->act)) {
             m->act[n] = i;
             n++;
@@ -370,11 +372,10 @@ void *func_0882192C(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 /* row i: icon and name */
 void func_08821954(unsigned int *dl, unsigned short i, int x, int y)
 {
-    int *a = &dd_act_menu.act[i];
+    int *a = (int *)((char *)dd_act_menu.act + i * 4);
     DdActIcon *row = &dd_act_tab[*a];
     unsigned short *text;
 
@@ -388,9 +389,8 @@ void func_08821954(unsigned int *dl, unsigned short i, int x, int y)
     font_draw_text((x + 15) << 6, (y + 1) << 6, (480 - (x + 15)) << 6, text);
     font_text_clear();
 }
-#endif
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+#ifdef NON_MATCHING /* 14 palavras: forma (switch) certa; idx e bits trocam de $s (s1/s3) e o prólogo agenda o sh do loc antes; perm_stmts das declarações sem sucesso */
 /* allowed actions of a location; a visible card also becomes the detail card */
 unsigned int func_08821A3C(DdLoc loc)
 {
@@ -400,20 +400,25 @@ unsigned int func_08821A3C(DdLoc loc)
     unsigned int bits = dv_08835AEC(player, zone, idx);
     int uid;
 
-    if (zone == 12) {
-        uid = dv_zone_c_uid(player, 0);
-        loc.idx = 0;
-    } else if (zone == 13) {
+    switch (zone) {
+    case 11:
+        uid = dv_hand_uid(player, idx);
+        break;
+    case 14:
+    case 15:
+        uid = 0;
+        break;
+    case 13:
         uid = dv_zone_d_uid(player, 0);
         loc.idx = 0;
-    } else if (zone == 15) {
-        uid = 0;
-    } else if (zone == 14) {
-        uid = 0;
-    } else if (zone == 11) {
-        uid = dv_hand_uid(player, idx);
-    } else {
+        break;
+    case 12:
+        uid = dv_zone_c_uid(player, 0);
+        loc.idx = 0;
+        break;
+    default:
         uid = dv_slot_uid(player, zone);
+        break;
     }
     if (uid > 0 && dd_loc_visible(loc)) {
         bits |= 0x2000;
@@ -538,29 +543,33 @@ void *func_08821FA0(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 /* position icon i (dimmed when not offered); the arrow over the initial one blinks */
 unsigned int *func_08821FA8(unsigned int *dl, unsigned short i, int x, int y)
 {
-    unsigned int on = dd_pos_sel.mask & (1 << i);
+    DdPosSel *p = &dd_pos_sel;
     void *gim;
     int v;
     int blink;
+    int sx = x + 10;
+    int sy = y + 4;
+    int u;
+    unsigned int on = p->mask & (1 << i);
 
     dl = dl_ambient_color(dl, 0xFFFFFFFF);
     dl = dl_set_tex_filter(dl, 0, 1);
     gim = dd_gim_get(0x40025);
     if (gim)
         dl = gim_set_texture(dl, gim);
+    u = i * 20;
     if (on)
         v = 0;
     else
         v = 32;
     dl = draw_set_offsets(dl, 20, 32, 20, 32);
-    dl = draw_sprite(dl, x + 10, y + 4, 0, i * 20, v, 0, 0);
+    dl = draw_sprite(dl, sx, sy, 0, u, v, 0, 0);
     if (i > 0) {
-        if (i - 1 == dd_pos_sel.w->initial)
-            blink = *(unsigned int *)gfx_get_state() / 15 >> 3 & 1;
+        if (i - 1 == p->w->initial)
+            blink = *(unsigned int *)gfx_get_state() / 15 & 1;
         else
             blink = 1;
         dl = draw_set_offsets(dl, 7, 11, 7, 11);
@@ -568,7 +577,6 @@ unsigned int *func_08821FA8(unsigned int *dl, unsigned short i, int x, int y)
     }
     return dl;
 }
-#endif
 
 /* chain confirmation (yes/no) showing the cards involved */
 void func_0882214C(unsigned short *text)

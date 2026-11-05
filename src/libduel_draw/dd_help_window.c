@@ -195,16 +195,23 @@ int help_cursor(void)
 }
 
 /* 0 open, 1 closed by cancel, 2 closed by accept */
-#ifdef NON_MATCHING /* só alocação de registradores difere */
+#ifdef NON_MATCHING /* 4 palavras: falta o segundo li v0,1 morto depois do teste de result == 2 (variantes com case 1:/default:, if/else e returns testadas) */
 int help_result(void)
 {
     DdList *l = &help_win.list;
+    int r = 0;
 
-    if (help_win.state != 7)
-        return 0;
-    if (l->result == 2)
-        return 2;
-    return 1;
+    if (help_win.state == 7) {
+        switch (l->result) {
+        case 2:
+            r = 2;
+            break;
+        default:
+            r = 1;
+            break;
+        }
+    }
+    return r;
 }
 #else
 int help_result(void);
