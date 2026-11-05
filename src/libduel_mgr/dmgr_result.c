@@ -4,15 +4,12 @@
 // @asm 0x0880FEAC-0x08810750
 // @asm 0x08810C2C-0x08810DCC
 // @asm 0x08810DCC-0x088111DC
-// @asm 0x08811270-0x08811460
 // @asm 0x088119B4-0x08811BC4
-// @asm 0x08811BC4-0x08811C98
 // @asm 0x08811C98-0x08812124
 // @asm 0x08812124-0x088122B4
 // @asm 0x088122B4-0x08812A98
 // @asm 0x08812A98-0x08812D74
 // @asm 0x08813C0C-0x08814274
-// @asm 0x08814274-0x088146E8
 // @asm 0x08815050-0x08815328
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
    summary), the money paid out, the series score of a match and the continue / net wait dialogs. */
@@ -817,32 +814,30 @@ void dmgr_res_slide(void)
     }
 }
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 void dmgr_res_measure(void)
 {
-    DmgrRes *r;
+    DmgrResTab *t;
     int lh;
     int i;
 
     font_set_size(0xE, 0xE);
     lh = font_line_height();
-    r = dmgr_res;
-    for (i = 0; i < r->tabs[1].count; i++) {
-        r->tabs[1].lines[i] = (font_wtext_lines(0x5D80, table_get_entry(dmgr_res_file(7),
-                                   ((DmgrResItem *)dmgr_res_bonus_text)[r->tabs[1].ids[i]].text)) + 0x40) / lh;
+    t = &dmgr_res->tabs[1];
+    for (i = 0; i < t->count; i++) {
+        t->lines[i] = (font_wtext_lines(0x5D80, table_get_entry(dmgr_res_file(7),
+                                   ((DmgrResItem *)dmgr_res_bonus_text)[t->ids[i]].text)) + 0x40) / lh;
     }
-    r = dmgr_res;
-    for (i = 0; i < r->tabs[2].count; i++) {
-        r->tabs[2].lines[i] = (font_wtext_lines(0x5080, table_get_entry(dmgr_res_file(7),
-                                   ((DmgrResItem *)dmgr_res_rec_text)[r->tabs[2].ids[i]].text)) + 0x40) / lh;
+    t = &dmgr_res->tabs[2];
+    for (i = 0; i < t->count; i++) {
+        t->lines[i] = (font_wtext_lines(0x5080, table_get_entry(dmgr_res_file(7),
+                                   ((DmgrResItem *)dmgr_res_rec_text)[t->ids[i]].text)) + 0x40) / lh;
     }
-    r = dmgr_res;
-    for (i = 0; i < r->tabs[3].count; i++) {
-        r->tabs[3].lines[i] = (font_wtext_lines(0x5F80, table_get_entry(dmgr_res_file(7),
-                                   ((DmgrResItem *)dmgr_res_title_text)[r->tabs[3].ids[i]].text)) + 0x40) / lh;
+    t = &dmgr_res->tabs[3];
+    for (i = 0; i < t->count; i++) {
+        t->lines[i] = (font_wtext_lines(0x5F80, table_get_entry(dmgr_res_file(7),
+                                   ((DmgrResItem *)dmgr_res_title_text)[t->ids[i]].text)) + 0x40) / lh;
     }
 }
-#endif
 
 void dmgr_res_menu_open(unsigned short kind)
 {
@@ -971,7 +966,7 @@ unsigned int *dmgr_res_draw_bg(unsigned int *list)
     return gfx_end_2d(list);
 }
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
+#ifdef NON_MATCHING /* 20 palavras: com os return antecipados o fluxo é o do original, mas o teste f < 6 sai beqzl/b em vez de bnezl direto ao epílogo (f < 6, 6 > f, !(f >= 6), switch não mudam) e v/u trocam de $s */
 unsigned int *dmgr_res_draw_bar(unsigned int *list)
 {
     int opts[0x18];
@@ -996,12 +991,21 @@ unsigned int *dmgr_res_draw_bar(unsigned int *list)
     list = dl_tex_func(list, 0, 1);
     list = dl_blend_func(list, 0, 2, 3, 0, 0);
     f = ehf_get_frame_count(e);
-    if (f > 5 && f < 0x62) {
-        if (f == 6 || f == 0x61) {
-            edge = 1;
-        }
-        e = dmgr_res_file(6);
-        if (e != 0) {
+    if (f < 6) {
+        return list;
+    }
+    if (f > 0x61) {
+        return list;
+    }
+    if (f == 6 || f == 0x61) {
+        edge = 1;
+    }
+    e = dmgr_res_file(6);
+    if (e == 0) {
+        return list;
+    }
+    {
+        {
             list = gim_set_texture(list, e);
             list = dl_set_tex_filter(list, 1, 1);
             if (edge) {
@@ -1022,13 +1026,19 @@ unsigned int *dmgr_res_draw_bar(unsigned int *list)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem das instruções e registradores diferentes do original */
 unsigned int *dmgr_res_draw_result(unsigned int *list)
 {
     int opts[0x18];
     void *e;
 
-    if (dmgr_res->result_ehf >= 0 && (e = dmgr_res_file(dmgr_res->result_ehf)) != 0) {
+    if (dmgr_res->result_ehf < 0) {
+        return list;
+    }
+    e = dmgr_res_file(dmgr_res->result_ehf);
+    if (e == 0) {
+        return list;
+    }
+    {
         memset(opts, 0, sizeof opts);
         opts[0] = *(int *)gfx_get_state();
         list = gfx_begin_2d(list);
@@ -1040,7 +1050,6 @@ unsigned int *dmgr_res_draw_result(unsigned int *list)
     }
     return list;
 }
-#endif
 
 unsigned int *(*dmgr_res_pages[4])(unsigned int *list, int x) = {
     dmgr_res_page_summary, dmgr_res_page_bonus, dmgr_res_page_records, dmgr_res_page_titles,
@@ -1602,14 +1611,15 @@ unsigned int *dmgr_res_title_row(unsigned int *list, int x, int y, int i)
     return list;
 }
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
+#ifdef NON_MATCHING /* 130 palavras: r/mine são unsigned short (lhu, andi do 2); o original testa r == 2 com beq e põe mine = r no atraso (switch, ordens dos case e das declarações não mudam) e aloca i/x/i*2 em s4/s1/s2 */
 unsigned int *dmgr_res_draw_series(unsigned int *list)
 {
     void *g;
     int side = 0;
     unsigned int other;
-    short r;
-    short mine;
+    unsigned short r;
+    unsigned short mine;
+
     int i;
     int x;
 
@@ -1683,7 +1693,6 @@ unsigned int *dmgr_res_draw_series(unsigned int *list)
 }
 #endif
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 unsigned int *dmgr_res_page_frame(unsigned int *list, int x, int u, int v)
 {
     void *g;
@@ -1700,37 +1709,36 @@ unsigned int *dmgr_res_page_frame(unsigned int *list, int x, int u, int v)
     list = draw_set_offsets(list, 9, 0x14, 9, 0x14);
     list = draw_sprite(list, l, 0x28, 0, u, v, 0, 0);
     list = draw_set_offsets(list, 0xD, 0x14, 0xD, 0x14);
-    list = draw_sprite(list, x + 0x1C3, 0x28, 0, u + 10, v, 0, 0);
+    list = draw_sprite(list, l + 0x1B2, 0x28, 0, u + 10, v, 0, 0);
     list = draw_set_offsets(list, 1, 0x14, 0x1AB, 0x14);
-    list = draw_sprite(list, x + 0x1A, 0x28, 0, u + 0xB, v, 0, 0);
+    list = draw_sprite(list, l + 0x9, 0x28, 0, u + 0xB, v, 0, 0);
     list = draw_set_offsets(list, 7, 0x1A, 7, 0x1A);
     list = draw_sprite(list, l, 0xDD, 0, u, v + 0x15, 0, 0);
     list = draw_set_offsets(list, 0xE, 0x1A, 0xE, 0x1A);
-    list = draw_sprite(list, x + 0x1C2, 0xDD, 0, u + 9, v + 0x15, 0, 0);
+    list = draw_sprite(list, l + 0x1B1, 0xDD, 0, u + 9, v + 0x15, 0, 0);
     list = draw_set_offsets(list, 1, 0x1A, 0x1AA, 0x1A);
-    list = draw_sprite(list, x + 0x18, 0xDD, 0, u + 7, v + 0x15, 0, 0);
+    list = draw_sprite(list, l + 0x7, 0xDD, 0, u + 7, v + 0x15, 0, 0);
     list = draw_set_offsets(list, 7, 1, 7, 0xA1);
     list = draw_sprite(list, l, 0x3C, 0, u, v + 0x14, 0, 0);
     list = draw_set_offsets(list, 0xD, 1, 0xD, 0xA1);
-    list = draw_sprite(list, x + 0x1C3, 0x3C, 0, u + 10, v + 0x14, 0, 0);
+    list = draw_sprite(list, l + 0x1B2, 0x3C, 0, u + 10, v + 0x14, 0, 0);
     list = draw_set_offsets(list, 2, 2, 2, 2);
-    list = draw_sprite(list, x + 0x15, 0x3B, 0, u + 0x17, v + 0x11, 0, 0);
-    list = draw_sprite(list, x + 0x15, 0xDB, 0, u + 0x17, v + 0x1B, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0x3B, 0, u + 8, v + 0x1E, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0x3B, 0, u + 0x21, v + 0x11, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0xDB, 0, u + 8, v + 0x1E, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0xDB, 0, u + 0x21, v + 0x1B, 0, 0);
+    list = draw_sprite(list, l + 0x4, 0x3B, 0, u + 0x17, v + 0x11, 0, 0);
+    list = draw_sprite(list, l + 0x4, 0xDB, 0, u + 0x17, v + 0x1B, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0x3B, 0, u + 8, v + 0x1E, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0x3B, 0, u + 0x21, v + 0x11, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0xDB, 0, u + 8, v + 0x1E, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0xDB, 0, u + 0x21, v + 0x1B, 0, 0);
     list = draw_set_offsets(list, 1, 2, 0x1AA, 2);
-    list = draw_sprite(list, x + 0x17, 0x3B, 0, u + 0x19, v + 0x11, 0, 0);
-    list = draw_sprite(list, x + 0x17, 0xDB, 0, u + 0x19, v + 0x11, 0, 0);
+    list = draw_sprite(list, l + 0x6, 0x3B, 0, u + 0x19, v + 0x11, 0, 0);
+    list = draw_sprite(list, l + 0x6, 0xDB, 0, u + 0x19, v + 0x11, 0, 0);
     list = draw_set_offsets(list, 2, 1, 2, 0x9E);
-    list = draw_sprite(list, x + 0x15, 0x3D, 0, u + 0x17, v + 0x13, 0, 0);
-    list = draw_sprite(list, x + 0x1C1, 0x3D, 0, u + 0x17, v + 0x13, 0, 0);
+    list = draw_sprite(list, l + 0x4, 0x3D, 0, u + 0x17, v + 0x13, 0, 0);
+    list = draw_sprite(list, l + 0x1B0, 0x3D, 0, u + 0x17, v + 0x13, 0, 0);
     list = draw_set_offsets(list, 1, 1, 0x1AA, 0x9E);
-    list = draw_sprite(list, x + 0x17, 0x3D, 0, u + 0x19, v + 0x13, 0, 0);
-    return dmgr_res_draw_box(list, x + 0x18A, 0xE4, 0x37, 0xE, u + 0x1A, v);
+    list = draw_sprite(list, l + 0x6, 0x3D, 0, u + 0x19, v + 0x13, 0, 0);
+    return dmgr_res_draw_box(list, l + 0x179, 0xE4, 0x37, 0xE, u + 0x1A, v);
 }
-#endif
 
 unsigned short dmgr_res_head_text[3] = { 0xF3, 0xF4, 0xF5 };
 
@@ -1878,7 +1886,7 @@ unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, unsigned cha
     return list;
 }
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
+#ifdef NON_MATCHING /* 102 palavras: com os clamps em ALLEGREX_MAX/MIN e o ramo rows >= count primeiro o fluxo é o do original; falta a alocação dos $s (list/x/y/h em s7/s5/s4/s3 no original; ordem das declarações não muda) */
 unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, int pos, int rows, int count)
 {
     int track = h - 2;
@@ -1890,21 +1898,12 @@ unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, i
     if (g == 0) {
         return list;
     }
-    if (rows < count) {
-        len = rows * track / count;
-        if (len < 10) {
-            len = 10;
-        }
-        at = pos * (track - len) / (count - rows);
-        if (at < 0) {
-            at = 0;
-        }
-        if (at > track - len) {
-            at = track - len;
-        }
-    } else {
+    if (count <= rows) {
         at = 0;
         len = track;
+    } else {
+        len = ALLEGREX_MAX(rows * track / count, 10);
+        at = ALLEGREX_MIN(ALLEGREX_MAX(pos * (track - len) / (count - rows), 0), track - len);
     }
     list = dl_set_tex_filter(list, 0, 0);
     list = dl_ambient_color(list, 0xFFFFFFFF);
