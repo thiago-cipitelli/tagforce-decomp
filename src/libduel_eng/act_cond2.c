@@ -1,6 +1,5 @@
 // @range 0x0886F23C-0x0887DB24
 // @asm 0x0886F4CC-0x0886F65C
-// @asm 0x088711BC-0x0887132C
 // @asm 0x08870DC4-0x08870E94
 // @asm 0x08870848-0x088708E4
 // @asm 0x08871B14-0x08871BFC
@@ -13,7 +12,6 @@
 // @asm 0x088766B0-0x088768A8
 // @asm 0x08876AEC-0x08876CF0
 // @asm 0x088770C0-0x088771D4
-// @asm 0x08878FA4-0x08879194
 // @asm 0x0887AD38-0x0887AE84
 // @asm 0x0887B9D4-0x0887BC28
 // @asm 0x0887C93C-0x0887CAE8
@@ -1000,7 +998,6 @@ int duel_08871168(DuelAct *a)
     return !(duel.players[a->player & 1].flags >> 20 & 1);
 }
 
-#ifdef NON_MATCHING /* branch layout and registers differ */
 int duel_088711BC(DuelAct *a, DuelAct *b)
 {
     int z;
@@ -1008,18 +1005,15 @@ int duel_088711BC(DuelAct *a, DuelAct *b)
 
     if (b != 0 && duel_act_target_is_monster(b)) {
         if (a->player != (b->player ^ b->opp) && card_is_monster(b->id) == 0 &&
-            a->player == (unsigned char)duel_act_target(b, 0) && (duel_act_target(b, 0) & 0xFFFF) >> 8 < 5) {
-            for (z = 0; z <= 4; z++) {
+            a->player == (unsigned char)duel_act_target(b, 0) && (int)((duel_act_target(b, 0) & 0xFFFF) >> 8 & 0xFF) < 5) {
+            for (z = 0; z < 5; z++) {
                 if (duel_act_can_target(a, a->player, z) && duel_0886F89C(b, a->player, z)) {
                     return 2;
                 }
             }
         }
     }
-    if (a->kind != 0x12) {
-        return 0;
-    }
-    if (duel_special.unk8 == 0) {
+    if (a->kind == 0x12 && duel_special.unk8 == 0) {
         p = a->player;
         if (duel_special.player[0] != p && duel_special.player[1] == p) {
             return 1;
@@ -1027,7 +1021,6 @@ int duel_088711BC(DuelAct *a, DuelAct *b)
     }
     return 0;
 }
-#endif
 
 int duel_0887132C(DuelAct *a)
 {
@@ -4134,7 +4127,6 @@ int duel_08878F60(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* branch layout differs */
 int duel_08878FA4(DuelAct *a)
 {
     unsigned int p;
@@ -4163,18 +4155,13 @@ int duel_08878FA4(DuelAct *a)
     if (duel.players[q & 1].n_hand != 0) {
         return 1;
     }
-    if ((unsigned int)duel.players[p & 1].n_d < 2) {
-        return 0;
+    if ((unsigned int)duel.players[p & 1].n_d >= 2) {
+        if (duel_phase == 0 || duel_find_effect_card(q, 0x178B, -1) == 0) {
+            return 1;
+        }
     }
-    if (duel_phase == 0) {
-        return 1;
-    }
-    if (duel_find_effect_card(q, 0x178B, -1) != 0) {
-        return 0;
-    }
-    return 1;
+    return 0;
 }
-#endif
 
 int duel_08879194(DuelAct *a, DuelAct *b)
 {
