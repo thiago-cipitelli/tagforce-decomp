@@ -1,5 +1,4 @@
 // @range 0x08861E7C-0x08862E24
-// @asm 0x08862208-0x088622B8
 // @asm 0x0886268C-0x08862E24
 /* The computer player: handlers of the cards it activates. */
 #include "duel.h"
@@ -140,14 +139,13 @@ int duel_08862168(DuelAct *a)
     return -1;
 }
 
-#ifdef NON_MATCHING /* o original calcula o bit da segunda zona antes do primeiro e mantém o 0 inicial da máscara num registrador; o mwcc agenda de outro jeito (176 bytes contra 168) */
 int duel_08862208(DuelAct *a)
 {
     unsigned int t = duel_slot_e1854(a->player, a->zone);
-    unsigned int p = a->player;
     unsigned int z = (unsigned short)t >> 8 & 0xFF;
     unsigned int q = t & 0xFF;
     unsigned int m = 0;
+    unsigned int p = a->player;
 
     m |= 1 << (a->zone + p * 16);
     m |= 1 << (z + q * 16);
@@ -155,7 +153,6 @@ int duel_08862208(DuelAct *a)
     a->w[0] = field_get_card(q, z);
     return 1;
 }
-#endif
 
 int duel_088622B8(DuelAct *a, int b)
 {

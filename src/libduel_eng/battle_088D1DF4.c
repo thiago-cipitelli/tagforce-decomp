@@ -1,7 +1,6 @@
 // @range 0x088D1DF4-0x088D28F8
 // @asm 0x088D1DF4-0x088D1F1C
 // @asm 0x088D1F1C-0x088D2288
-// @asm 0x088D2468-0x088D2760
 // @asm 0x088D2760-0x088D28F8
 /* Results of a battle: destroying or moving the cards that fought (duel_special.slot[i]: 0 attacker,
    1 target) and the commands to the presentation. */
@@ -36,7 +35,7 @@ void duel_088D1DF4(DuelCard *c, struct DuelActX x)
     unsigned int f;
 
     if (c->id != 0) {
-        if (z < 5) {
+        if (5 > z) {
             duel_cmd((p ? 0x8000 : 0) | 0x32, z, to, opp != 0);
             duel_088CC8EC(x, c, 0, 0);
             duel_088AFD5C(0x16, x);
@@ -53,7 +52,21 @@ void duel_088D1DF4(DuelCard *c, struct DuelActX x)
 }
 #endif
 
-#ifdef NON_MATCHING /* montagem do evento (struct DuelActX) campo a campo e cálculo de grave não reproduzidos */
+struct DuelActX1 {                     /* struct DuelActX with bit 23 as a 1-bit field */
+    unsigned int s_uid : 9;
+    unsigned int s_player : 1;
+    unsigned int s_zone : 4;
+    unsigned int s_b14 : 1;
+    unsigned int s_b15 : 1;
+    unsigned int s_b16 : 1;
+    unsigned int s_b17 : 1;
+    unsigned int s_b18 : 1;
+    unsigned int s_zone2 : 4;
+    unsigned int s_b23 : 1;
+    unsigned int s_b24 : 8;
+};
+
+#ifdef NON_MATCHING /* 8 palavras: lógica conferida; o original antecipa a carga de a->player para o delay slot antes de card_is_attribute9 e troca a0/v0 no laço de zeragem de x */
 /* The card that fought (i) is destroyed by a's effect. */
 int duel_088D1F1C(DuelAct *a, int i)
 {
@@ -65,6 +78,7 @@ int duel_088D1F1C(DuelAct *a, int i)
     int grave;
     unsigned int f;
     int opp;
+    struct DuelActX1 x;
 
     BATTLE_PZ(i, q, z);
     s = &duel_special.slot[i];
@@ -74,11 +88,19 @@ int duel_088D1F1C(DuelAct *a, int i)
         return 0;
     }
     if (id != 0) {
-        struct DuelActX x = {0};
-
         f = 2;
-        grave = !(duel_088DFCC8(uid) == 0 || card_is_attribute9(id) != 0);
+        grave = !((duel_088DFCC8(uid) != 0 ^ 1) || card_is_attribute9(id) != 0);
         opp = a->player != q;
+        {
+            int n = 4;
+            unsigned char *d = (unsigned char *)&x;
+
+            if (d) {
+                do {
+                    *d++ = 0;
+                } while (--n);
+            }
+        }
         if (id == 0x16F8 && duel_spec_act_ok(&duel_special.act[duel_special.player[0] ^ i]) != 0) {
             grave = 0;
         }
@@ -88,17 +110,17 @@ int duel_088D1F1C(DuelAct *a, int i)
         x.s_b14 = s->pos;
         x.s_b17 = s->faceup;
         x.s_b18 = q ^ opp;
-        x.s_b16 = 0;
+        x.s_b15 = 1;
         x.s_b23 = 0;
         x.s_zone2 = grave ? 0xE : 0xF;
-        x.s_b15 = 1;
         if (opp) {
-            f = 3;
+            f |= 1;
         }
-        duel_cmd((q ? 0x8000 : 0) | 0x31, (z & 0xFF) | 0xFF00, opp << 8 | x.s_zone2, uid & 0x1FF);
-        duel_088CC8EC(x, &s->card, 0, 0);
+        duel_cmd((q ? 0x8000 : 0) | 0x31, (z & 0xFF) | 0xFF00, (unsigned char)((opp & 0xF) | (x.s_b23 & 0xF) << 4) << 8 | x.s_zone2,
+                 x.s_uid);
+        duel_088CC8EC(*(struct DuelActX *)&x, &s->card, 0, 0);
         if (card_is_attribute9(id) == 0) {
-            duel_088AFD5C(0x1B, x);
+            duel_088AFD5C(0x1B, *(struct DuelActX *)&x);
         }
         if (grave) {
             f |= 0x1000000;
@@ -147,51 +169,60 @@ int duel_088D2288(DuelAct *a, int i, unsigned int f)
     return 0;
 }
 
-#ifdef NON_MATCHING /* montagem do evento (struct DuelActX) campo a campo; não reproduzida */
 /* The card that fought (i) is destroyed by the battle. */
 int duel_088D2468(int i)
 {
     unsigned int q;
     int z;
-    DuelSlot *s = &duel_special.slot[i];
+    DuelSlot *s;
     int id;
     int uid;
-    int grave;
     unsigned int f;
-    struct DuelActX x;
+    int grave;
+    struct DuelActX1 x;
 
     BATTLE_PZ(i, q, z);
+    s = &duel_special.slot[i];
     id = duel_special_get_id(s);
     uid = CARD_UID(s->card);
-    if (id == 0) {
-        return 0;
+    if (id != 0) {
+        f = 0;
+        grave = !((duel_088DFCC8(uid) != 0 ^ 1) || card_is_attribute9(id) != 0);
+        {
+            unsigned char *d = (unsigned char *)&x;
+            int n = 4;
+
+            if (d) {
+                do {
+                    *d++ = 0;
+                } while (--n);
+            }
+        }
+        if (id == 0x16F8 && duel_spec_act_ok(&duel_special.act[duel_special.player[0] ^ i]) != 0) {
+            grave = 0;
+        }
+        x.s_uid = uid;
+        x.s_player = q;
+        x.s_zone = z;
+        x.s_b14 = s->pos;
+        x.s_b17 = s->faceup;
+        x.s_b18 = q;
+        x.s_b15 = 1;
+        x.s_b23 = 0;
+        x.s_zone2 = grave ? 0xE : 0xF;
+        duel_cmd((q ? 0x8000 : 0) | 0x46, z, x.s_zone2, x.s_uid);
+        duel_088CC8EC(*(struct DuelActX *)&x, &s->card, 0, 0);
+        if (card_is_attribute9(id) == 0) {
+            duel_088AFD5C(0x1B, *(struct DuelActX *)&x);
+        }
+        if (grave) {
+            f |= 0x1000000;
+        }
+        duel_088CFBA4(&s->card, q, z, f);
+        return 1;
     }
-    f = 0;
-    grave = duel_088DFCC8(uid) != 0 && card_is_attribute9(id) == 0;
-    *(unsigned int *)&x = 0;
-    if (id == 0x16F8) {
-        grave = duel_spec_act_ok(&duel_special.act[duel_special.player[0] ^ i]) == 0 && grave;
-    }
-    x.s_uid = uid;
-    x.s_player = q;
-    x.s_zone = z;
-    x.s_b14 = s->pos & 1;
-    x.s_b17 = s->faceup & 1;
-    x.s_b18 = q;
-    x.s_b15 = 1;
-    x.s_zone2 = grave ? 0xE : 0xF;
-    duel_cmd((q ? 0x8000 : 0) | 0x46, z, x.s_zone2, uid & 0x1FF);
-    duel_088CC8EC(x, &s->card, 0, 0);
-    if (card_is_attribute9(id) == 0) {
-        duel_088AFD5C(0x1B, x);
-    }
-    if (grave) {
-        f = 0x1000000;
-    }
-    duel_088CFBA4(&s->card, q, z, f);
-    return 1;
+    return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* 2 palavras: o original faz andi q,1 antes do sll de (z & 0x1F); (z, q) no or já bate */
 /* The card that fought (i) is banished/moved away by a's effect. */

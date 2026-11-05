@@ -162,9 +162,9 @@ static int duel_08886E80(unsigned int p, int z)
 #ifdef NON_MATCHING /* registradores */
 int duel_08886E88(DuelAct *a)
 {
+    int z;
     int i;
     unsigned int q;
-    int z;
 
     switch (duel_step) {
     case 0x80:

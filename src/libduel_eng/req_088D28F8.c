@@ -2,7 +2,6 @@
 // @data 0x08911B8C-0x08911D2C
 // @asm 0x088D31F0-0x088D36C8
 // @asm 0x088D42C8-0x088D43F8
-// @asm 0x088D5D2C-0x088D5DEC
 // @asm 0x088D6168-0x088D624C
 /* Requests carried out one step per frame (duel_req, duel_req_step): revealing and flipping a card,
    showing a card of a list, sorting the zones, ... */
@@ -1516,10 +1515,9 @@ void duel_req_088D5BA0(void)
     }
 }
 
-#ifdef NON_MATCHING /* 5 palavras: lo e hi trocam s2/s3 (o original calcula lo antes do sra); o resto bate */
 void duel_req_088D5D2C(void)
 {
-    unsigned int lo;
+    int lo;
     int hi;
     unsigned int arg;
     unsigned int loc;
@@ -1528,20 +1526,19 @@ void duel_req_088D5D2C(void)
     arg = duel_req.req.arg;
     loc = *(unsigned short *)&duel_req.req.loc;
     w = duel_req.req.w;
-    hi = (int)w >> 8;
     lo = w & 0xFF;
+    hi = (int)w >> 8;
 
     if (duel_req_step == 0) {
         duel_088480D0(0);
         duel_0884ACD0(0);
-        duel_host_call(0xC, arg, loc, (unsigned short)((hi & 0xFF) << 8 | (lo & 0xFF)));
+        duel_host_call(0xC, arg, loc, (unsigned short)((lo & 0xFF) | (hi & 0xFF) << 8));
         duel_req_step++;
     }
     if (duel_req_flag(0xC) == 0) {
         duel_busy_0891523C = 0;
     }
 }
-#endif
 
 /* End of the battle phase of p: clear the attack flags and let the monsters with 0x1A79 attack again. */
 void duel_req_088D5DEC(void)
