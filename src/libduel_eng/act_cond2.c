@@ -6,9 +6,7 @@
 // @asm 0x08871674-0x088717B4
 // @asm 0x088731C0-0x088732B4
 // @asm 0x08873B8C-0x08873C84
-// @asm 0x088746D0-0x0887477C
 // @asm 0x088766B0-0x088768A8
-// @asm 0x08876AEC-0x08876CF0
 // @asm 0x088770C0-0x088771D4
 // @asm 0x0887AD38-0x0887AE84
 // @asm 0x0887C93C-0x0887CAE8
@@ -2310,7 +2308,6 @@ int duel_088745A8(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* branch layout differs */
 int duel_088746D0(DuelAct *a)
 {
     int uid;
@@ -2322,15 +2319,13 @@ int duel_088746D0(DuelAct *a)
     if (((duel_card_locate(uid) & 0xFFFF) >> 8 & 0xFF) == 0xF) {
         if (uid == a->uid) {
             if (a->id != duel.list[uid].id) {
-            return 0;
-        }
-        return 1;
+                return 0;
+            }
         }
         return 1;
     }
     return 0;
 }
-#endif
 
 int duel_0887477C(DuelAct *a, int b)
 {
@@ -3224,31 +3219,31 @@ int duel_08876AA0(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* loop and save/restore layout differ */
 int duel_08876AEC(DuelAct *a, DuelAct *b)
 {
     int p;
     int z;
     unsigned short save;
 
-    if (b != 0 && duel_act_target_flag9(b) != 0 && 1 - a->player == (b->player ^ b->opp) &&
-        card_get_type(b->id) == 0x16 && b->b3_4 == 0) {
-        save = duel.players[a->player].field[a->zone].faceup;
-        duel.players[a->player].field[a->zone].faceup = 1;
+    if (b == 0) {
+        return 0;
+    }
+    if (duel_act_target_flag9(b) != 0 && 1 - a->player == (b->player ^ b->opp) && card_get_type(b->id) == 0x16 && b->b3_4 == 0) {
+        save = duel.players[a->player & 1].field[a->zone].faceup;
+        duel.players[a->player & 1].field[a->zone].faceup = 1;
         for (p = 0; p < 2; p++) {
             for (z = 0; z <= 10; z++) {
                 if ((z >= 5 || duel_field_flag9(p, z) != 0) && duel_act_can_target(a, p, z) != 0 &&
                     duel_0886F89C(b, p, z) != 0) {
-                    duel.players[a->player].field[a->zone].faceup = save;
+                    duel.players[a->player & 1].field[a->zone].faceup = save;
                     return 1;
                 }
             }
         }
-        duel.players[a->player].field[a->zone].faceup = save;
+        duel.players[a->player & 1].field[a->zone].faceup = save;
     }
     return 0;
 }
-#endif
 
 int duel_08876CF0(DuelAct *a, int b)
 {
