@@ -272,7 +272,7 @@ int snd_obj_alloc(unsigned int id, int pan, int max, unsigned short flags)
 }
 #endif
 
-#ifdef NON_MATCHING /* same shape; the voice slot, sample and tone pointers rotate through $s0/$s2/$s3; 47 words */
+#ifdef NON_MATCHING /* mesma forma; o original guarda o ponteiro da amostra (e depois pitch) em $s0, onde estava id, e o tom em $s3: 43 palavras; a ordem das declarações não muda isso */
 /* Starts the SAS voices of `o` (kinds 1-2, one per bit of the voice mask) or its Atrac stream
    (kinds 3-4). Returns 1, -1 on bad data, 0 when no Atrac id is free. */
 int snd_obj_begin(SndObj *o)
@@ -424,7 +424,7 @@ int snd_obj_begin(SndObj *o)
             if (s->u.st.loop < 0) {
                 s->u.st.loop = 0;
             }
-            if (s->u.st.loop2 < s->pos) {
+            if (s->pos > s->u.st.loop2) {
                 s->pos = s->decoded = s->u.st.loop;
             }
         } else {

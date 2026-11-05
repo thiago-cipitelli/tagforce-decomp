@@ -347,7 +347,6 @@ segments:
       - [0x599A8, asm, snd_out_asm_0885D948]
       - [0x59CA8, c, snd_out]
       - [0x59EF0, c, snd_bank]
-      - [0x5A584, asm, snd_bank_asm_0885E524]
       - [0x5A694, c, snd_engine]
       - [0x5ABF4, asm, snd_engine_asm_0885EB94]
       - [0x5AC8C, c, snd_engine]

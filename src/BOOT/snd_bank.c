@@ -1,5 +1,4 @@
 // @range 0x0885DE90-0x0885E634
-// @asm 0x0885E524-0x0885E634
 /* Sound library, bank side: the "SHDS" header of psp_snddat.bin (sound entries, groups, offsets and
    base ids), per-voice filter state, the 16-slot handle cache and the intrusive doubly linked lists
    used for active sound objects. */
@@ -133,7 +132,6 @@ int snd_group_of(unsigned int id)
     }
     return -1;
 }
-
 
 int snd_group_data_of(unsigned int id)
 {
@@ -374,7 +372,6 @@ void snd_callbacks_default(SndCallbacks *cb)
     cb->unk10 = 0;
 }
 
-#ifdef NON_MATCHING /* table pointer arithmetic order */
 /* Validates the "SHDS" header (version 0x2x), resolves its tables and clears the groups. */
 int snd_bank_init(SndBank *b)
 {
@@ -384,18 +381,17 @@ int snd_bank_init(SndBank *b)
 
     if (b->magic != 0x53444853)
         return 0;
-    if ((b->version & 0xFFF0) != 0x20)
+    if ((b->version & ~0xF) != 0x20)
         return 0;
     snd_n_groups = b->n_groups_a + b->n_groups_b;
-    p = b->data;
     snd_n_entries = snd_n_groups + b->n_entries_extra;
-    b->entries = (SndEntry *)p;
-    p += snd_n_entries * 8;
-    b->groups = (SndGroup *)p;
-    b->offsets = (unsigned int *)(p + snd_n_groups * 0x10);
-    b->base_ids = (unsigned short *)(p + snd_n_groups * 0x10 + snd_n_groups * 4);
+    b->entries = (SndEntry *)(p = b->data);
+    b->groups = (SndGroup *)(p = p + snd_n_entries * 8);
+    b->offsets = (unsigned int *)(p = p + snd_n_groups * 0x10);
+    b->base_ids = (unsigned short *)(p + snd_n_groups * 4);
     snd_bank = b;
-    for (i = 0; i < snd_n_groups; i++) {
+    i = -1;
+    while (++i < snd_n_groups) {
         g = snd_group_get(i);
         if (g != 0) {
             g->unk4 = 0;
@@ -405,4 +401,4 @@ int snd_bank_init(SndBank *b)
     }
     return 1;
 }
-#endif
+

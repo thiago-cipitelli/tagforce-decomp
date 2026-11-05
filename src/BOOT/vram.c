@@ -148,7 +148,7 @@ void gim_check(Gim *g)
     gim_walk(root, g, (GimBlock *)((char *)root + g->root.size));
 }
 
-#ifdef NON_MATCHING /* the original keeps a dead copy of the first load of the 0xFF case and reloads the child/size fields for the call */
+#ifdef NON_MATCHING /* idêntico a menos da cópia morta (lw v0,12(s0)) do destino do case 0xFF depois do b: 1 palavra a menos, o resto deslocado (não-corrigível) */
 /* Visits every block; the file info block (0xFF) holds three aligned strings. */
 int gim_walk(GimBlock *start, Gim *g, GimBlock *end)
 {
@@ -176,7 +176,7 @@ int gim_walk(GimBlock *start, Gim *g, GimBlock *end)
             break;
         }
         if (b->child < b->size) {
-            gim_walk((GimBlock *)((char *)b + b->child), g, (GimBlock *)((char *)b + b->size));
+            gim_walk((GimBlock *)((char *)b + ((volatile GimBlock *)b)->child), g, (GimBlock *)((char *)b + ((volatile GimBlock *)b)->size));
         }
         b = (GimBlock *)((char *)b + b->size);
     } while (!(b >= end));

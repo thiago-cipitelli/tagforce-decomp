@@ -27,7 +27,7 @@ void *dl_tex_func(void *list, int func, int rgba);
 void *dl_tex_wrap(void *list, int u, int v);
 void *dl_ambient_color(void *list, unsigned int color);
 void *dl_set_tex_filter(void *list, int min, int mag);
-void *gim_set_texture();              /* (list, gim): called with one argument in the original when the item has its own */
+void *gim_set_texture(void *list, void *gim);
 void font_set_size(int w, int h);
 int font_get_flag4(void);
 int font_get_flag8000(void);
@@ -331,7 +331,7 @@ void menu_item_build_text(void **dl, MenuItem *it, Menu *m)
     *dl = dl_ambient_color(*dl, 0xFFFFFFFF);
     *dl = dl_set_tex_filter(*dl, 0, 0);
     if (d->gim != 0)
-        *dl = gim_set_texture(*dl);
+        *dl = gim_set_texture(*dl, d->gim);
     else
         *dl = gim_set_texture(*dl, m->window_gim);
     if (it->ghost != 0)
