@@ -1,5 +1,4 @@
 // @range 0x088BC9E0-0x088C004C
-// @asm 0x088BD150-0x088BD348
 // @asm 0x088BD4E0-0x088BD9A4
 // @asm 0x088BECC0-0x088BEDEC
 // @asm 0x088BFB48-0x088BFC64
@@ -201,7 +200,6 @@ void duel_088BD148(unsigned int p, int b, unsigned int i)
     duel_088BFC64(p, 0xB, i);
 }
 
-#ifdef NON_MATCHING /* o original testa duel_count_active(0x159D) com um beqz para a instrução seguinte; sem o teste no fonte o mwcc não emite o desvio */
 void duel_088BD150(unsigned int p, int b, int k)
 {
     unsigned int i;
@@ -211,8 +209,7 @@ void duel_088BD150(unsigned int p, int b, int k)
             duel_088BFC64(p, 0xD, i);
         }
     }
-    duel_count_active(0x159D); /* the original tests the result but branches to the next instruction either way */
-    if (duel_find_effect_card(p, 0x158B, -1)) {
+    if (!duel_count_active(0x159D) || duel_find_effect_card(p, 0x158B, -1)) {
         for (i = 0; i < duel.players[p & 1].n_grave; i++) {
             if (card_same_name(duel.players[p & 1].grave[i].id, k) && duel_grave_card_usable(p, p, i)) {
                 duel_088BFC64(p, 0xE, i);
@@ -225,7 +222,6 @@ void duel_088BD150(unsigned int p, int b, int k)
         }
     }
 }
-#endif
 
 void duel_088BD348(unsigned int p)
 {

@@ -186,7 +186,7 @@ int duel_0886371C(DuelAct *a, unsigned int p, int z)
     return duel.players[p & 1].field[z].card.id != 0;
 }
 
-#ifdef NON_MATCHING /* o default do primeiro switch sai no original como b fim; li 1 logo depois dos testes; o mwcc sabe que v0 já vale 1 e salta para um b fim depois do case 2 */
+#ifdef NON_MATCHING /* 21 palavras: com default como primeiro rótulo o corpo sai logo depois dos testes, mas o mwcc sabe que v0 já vale 1 e salta direto ao epílogo (o original repete li v0,1); o return 1 final também sai sem o b próprio */
 int duel_08863780(DuelAct *a, int b)
 {
     int has = duel_slot_has_effect(a->player, 11, 0x14A0);
@@ -204,6 +204,8 @@ int duel_08863780(DuelAct *a, int b)
     }
     if (has != 0) {
         switch (duel_w_08914904) {
+        default:
+            return 1;
         case 0:
             duel_088C44E4(a->player, 0x14A0);
             duel_0884ACD8(a->player, 0x50);
@@ -227,8 +229,6 @@ int duel_08863780(DuelAct *a, int b)
                 return 1;
             }
             return 0;
-        default:
-            return 1;
         }
     }
     switch (duel_w_08914904) {
