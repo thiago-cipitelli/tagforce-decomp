@@ -1,7 +1,7 @@
 // @range 0x0886F23C-0x0887DB24
 // @asm 0x0886F4CC-0x0886F65C
 // @asm 0x088711BC-0x0887132C
-// @asm 0x08870C54-0x08870E94
+// @asm 0x08870DC4-0x08870E94
 // @asm 0x08870848-0x088708E4
 // @asm 0x08871B14-0x08871BFC
 // @asm 0x088719DC-0x08871A68
@@ -850,8 +850,6 @@ int duel_08870C40(DuelAct *a)
     return duel_phase == 2;
 }
 
-#ifdef NON_MATCHING /* lógica conferida; o original lê a->player em a0 e guarda p em a1 (andi 0xff no laço); o mwcc
-                      usa v1/a0 (unsigned char p dá 73); 19 palavras */
 /* Two or more spells in the hand besides a and a usable monster among them. */
 int duel_08870C54(DuelAct *a, int b)
 {
@@ -864,8 +862,8 @@ int duel_08870C54(DuelAct *a, int b)
     if (duel_0886CE38(a, b) == 0) {
         return 0;
     }
-    p = a->player;
-    for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+    for (i = 0; i < duel.players[a->player & 1].n_hand; i++) {
+        p = a->player;
         if (a->uid != CARD_UID(duel.players[(unsigned char)p & 1].hand[i])) {
             id = duel.players[(unsigned char)p & 1].hand[i].id;
             if (card_is_monster(id) != 0) {
@@ -876,14 +874,12 @@ int duel_08870C54(DuelAct *a, int b)
                 spells++;
             }
         }
-        p = a->player;
     }
     if (usable == 0) {
         return 0;
     }
     return spells > 1;
 }
-#endif
 
 #ifdef NON_MATCHING /* falta 1 desvio: o original deixa o 1º beqz (id == 0) sem likely (beqz; nop), o mwcc faz beqzl
                       com o move v0,zero; testados ||, switch com o teste no case, & no 1º par; 2 palavras */
@@ -1238,14 +1234,18 @@ int duel_08871ADC(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* branch layout and registers differ */
+#ifdef NON_MATCHING /* 15 palavras: o original testa os dois resultados finais com bnezl/bnez para li v0,1 e
+                      "b fim; move v0,zero"; if/return 1/return 0 o mwcc reduz a sltu, switch dá beqzl */
 int duel_08871B14(DuelAct *a, int b)
 {
     unsigned int p;
 
     if (a->b3_4 != 2) {
         p = a->player;
-        if (duel_tributable(p ^ a->opp, p, a->zone) != 0) {
+        switch (duel_tributable(p ^ a->opp, p, a->zone)) {
+        case 0:
+            break;
+        default:
             return 1;
         }
         return 0;
@@ -1262,10 +1262,12 @@ int duel_08871B14(DuelAct *a, int b)
     if (duel_slot_has_effect(a->player, 11, a->id) == 0) {
         return 0;
     }
-    if (duel_088BFFD8(a->player, a->id, 0) != 0) {
+    switch (duel_088BFFD8(a->player, a->id, 0)) {
+    case 0:
+        return 0;
+    default:
         return 1;
     }
-    return 0;
 }
 #endif
 

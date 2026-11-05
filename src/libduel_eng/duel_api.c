@@ -75,7 +75,8 @@ int duel_player_protected(unsigned int p)
     return r | duel_slot_has_effect(p, 0xB, 0x1548);
 }
 
-#ifdef NON_MATCHING /* the two tables are local arrays copied from templates at 0x08913530 kept in the asm */
+#ifdef NON_MATCHING /* tabelas locais copiadas dos templates em 0x08913530 (no asm); 11 palavras: o original carrega
+                      o resultado em s0 (side) e faz move v0,s0 na junção; aqui sai direto em v0 */
 /* Player slot (0-3) acting for side `side` in the current turn of a tag duel. */
 int duel_tag_slot(int side)
 {
@@ -86,10 +87,12 @@ int duel_tag_slot(int side)
     if (g->partner_mode == 1) {
         return side;
     }
-    if (duel_setup_10_get() != 0) {
-        return t1[side][duel_turn_get() & 3];
+    if (duel_setup_10_get() == 0) {
+        side = (&t0[0][duel_turn_get() & 3])[side * 4];
+    } else {
+        side = (&t1[0][duel_turn_get() & 3])[side * 4];
     }
-    return t0[side][duel_turn_get() & 3];
+    return side;
 }
 #endif
 

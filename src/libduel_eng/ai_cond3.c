@@ -70,10 +70,10 @@ int duel_0880FF3C(DuelAct *a)
 #ifdef NON_MATCHING /* registradores/ordem de desvios */
 int duel_0880FFAC(DuelAct *a)
 {
-    int k = 0;
     int z;
+    int k = 0;
 
-    for (z = 0; z < 5; z++) {
+    for (z = 0; z <= 4; z++) {
         unsigned int q = 1 - a->player;
         unsigned int id = duel.players[q & 1].field[z].card.id;
 
