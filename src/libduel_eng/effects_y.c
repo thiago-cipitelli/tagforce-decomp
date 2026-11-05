@@ -383,16 +383,17 @@ int duel_0888A88C(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* $s1/$s2 trocados no laço das zonas */
+#ifdef NON_MATCHING /* só registradores: b e o ponteiro do slot trocados (s1/s2) no case 0x7D; perm das declarações
+                      não resolve; 7 palavras */
 int duel_0888A938(DuelAct *a)
 {
     unsigned short buf[256];
     unsigned int k;
-    int i;
     int z;
     unsigned int mask;
     unsigned int q;
     int b;
+    int i;
 
     if (a->b4_2) {
         return 0;

@@ -117,20 +117,26 @@ int duel_zone_f_card_usable(unsigned int p, unsigned int q, int i)
     return 1;
 }
 
-#ifdef NON_MATCHING /* same code; mwcc schedules the multiply and the n_hand pointer later */
+#ifdef NON_MATCHING /* desvios e chamadas já como no original; só o agendamento do mult/endereços no prólogo difere
+                      (o original emite o mult antes dos sw); 17 palavras */
 /* Puts card c in the hand of player p (attribute-icon 3 cards go to the field instead). */
 void duel_hand_add(unsigned int p, DuelCard *c)
 {
-    DuelCard *dst = &duel.players[p & 1].hand[duel.players[p & 1].n_hand];
+    unsigned int *n = (unsigned int *)((char *)&duel.players[0].n_hand + (p & 1) * sizeof(DuelPlayer));
+    DuelCard *dst = &duel.players[p & 1].hand[*n];
     int id = c->id;
 
-    if (id != 0 && card_is_attribute9((unsigned short)id) == 0) {
-        if (card_get_attribute_icon(c->id) == 3) {
-            duel_c_push(c->owner, c);
-        } else {
-            duel_card_copy(dst, c);
-            duel.players[p & 1].n_hand++;
-        }
+    if (id == 0) {
+        return;
+    }
+    if (card_is_attribute9((unsigned short)id) != 0) {
+        return;
+    }
+    if (card_get_attribute_icon(c->id) == 3) {
+        duel_c_push(c->owner, c);
+    } else {
+        duel_card_copy(dst, c);
+        (*n)++;
     }
 }
 #endif

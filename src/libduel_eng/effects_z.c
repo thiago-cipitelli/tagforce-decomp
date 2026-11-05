@@ -54,7 +54,9 @@ int duel_0888B904(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores ($t0 vs $v1, ordem das cargas) */
+#ifdef NON_MATCHING /* duel_0888B9A8: só a ordem das cargas (o original lê a->id, duel_turn_player e depois a->player;
+                      testados local q/t, sem q, 1 + (...), flag num local; 8 palavras). duel_0888BA00: família
+                      zona-antes-do-jogador (z * 20 antes do mult) e a->uid lido antes do índice; 22 palavras */
 
 int duel_0888B9A8(DuelAct *a)
 {

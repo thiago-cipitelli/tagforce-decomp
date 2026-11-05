@@ -1,6 +1,4 @@
 // @range 0x088C2F80-0x088C4448
-// @asm 0x088C321C-0x088C3348
-// @asm 0x088C39F0-0x088C3B48
 // @data 0x08913518-0x08913528
 /* State checks run between the steps of the duel: continuous cards whose condition ended are
    destroyed or lose their effect. */
@@ -113,7 +111,6 @@ int duel_088C30D4(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* register allocation and bitfield extraction not reproduced */
 void duel_088C321C(unsigned int p)
 {
     unsigned int q = 1 - p;
@@ -121,17 +118,18 @@ void duel_088C321C(unsigned int p)
 
     for (z = 5; z < 10; z++) {
         if (duel_slot_e8170(q, z, 0x159B) != 0) {
-            if (duel.players[q & 1].field[z].flags >> 4 & 1) {
-                duel_088CC1A0(q, z, 1);
-            } else if (duel_0884F30C(q << 31 | 0x200000 | (z & 0x1F) << 16 | 0x159B,
-                                     CARD_UID(duel.players[q & 1].field[z].card), 0) != 0) {
-                duel_088C7E68(q, z, 4, 1);
+            if ((duel.players[q & 1].field[z].flags >> 4 & 1) == 0) {
+                if (duel_0884F30C((q << 31 & 0x80000000) | 0x200000 | ((unsigned int)z << 16 & 0x1F0000) | 0x159B,
+                                  CARD_UID(duel.players[q & 1].field[z].card), 0) != 0) {
+                    duel_088C7E68(q, z, 4, 1);
+                    duel_088CC1A0(q, z, 1);
+                }
+            } else {
                 duel_088CC1A0(q, z, 1);
             }
         }
     }
 }
-#endif
 
 int duel_088C3348(void)
 {
@@ -280,19 +278,19 @@ int duel_088C3804(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* register allocation and bitfield extraction not reproduced */
 int duel_088C39F0(void)
 {
-    unsigned int i;
+    unsigned int q;
     int z;
+    unsigned int i;
 
     for (i = 0; (int)i < 2; i++) {
-        unsigned int q = duel_turn_player ^ i;
+        q = duel_turn_player ^ i;
 
         for (z = 0; z < 5; z++) {
             if (field_get_card(q, z) == 0x18B2 && duel.players[q & 1].field[z].faceup != 0 &&
                 duel.players[q & 1].field[z].link != 0) {
-                duel_0884F30C(q << 31 | 0x200000 | (z & 0x1F) << 16 | 0x18B2,
+                duel_0884F30C((q << 31 & 0x80000000) | 0x200000 | ((unsigned int)z << 16 & 0x1F0000) | 0x18B2,
                               CARD_UID(duel.players[q & 1].field[z].card), duel.players[q & 1].field[z].link);
                 duel_088CC178(q, z, 0);
                 return 1;
@@ -301,7 +299,6 @@ int duel_088C39F0(void)
     }
     return 0;
 }
-#endif
 
 int duel_088C3B48(void)
 {
