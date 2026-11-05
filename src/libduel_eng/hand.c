@@ -117,13 +117,13 @@ int duel_zone_f_card_usable(unsigned int p, unsigned int q, int i)
     return 1;
 }
 
-#ifdef NON_MATCHING /* desvios e chamadas já como no original; só o agendamento do mult/endereços no prólogo difere
-                      (o original emite o mult antes dos sw); 17 palavras */
+#ifdef NON_MATCHING /* 3 palavras: o original soma duel + p * sizeof(DuelPlayer) e depois n * 4 (+288); esta forma soma
+                      na ordem inversa; as formas que invertem a soma perdem o mult antes dos sw (17 palavras) */
 /* Puts card c in the hand of player p (attribute-icon 3 cards go to the field instead). */
 void duel_hand_add(unsigned int p, DuelCard *c)
 {
     unsigned int *n = (unsigned int *)((char *)&duel.players[0].n_hand + (p & 1) * sizeof(DuelPlayer));
-    DuelCard *dst = &duel.players[p & 1].hand[*n];
+    DuelCard *dst = (DuelCard *)((char *)&duel.players[0].hand[*n] + (p & 1) * sizeof(DuelPlayer));
     int id = c->id;
 
     if (id == 0) {

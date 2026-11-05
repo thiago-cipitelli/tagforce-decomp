@@ -436,16 +436,16 @@ unsigned int duel_08865ABC(unsigned int p, int z, int i)
 }
 #endif
 
-#ifdef NON_MATCHING /* branch layout and register allocation not reproduced */
+#ifdef NON_MATCHING /* 51 palavras (era 91): case 3 com o corpo dentro de if (duel_08835AC0() != 0); falta o registrador do valor do switch (v1 no original, carregado antes do move s0,a0) e o b/nop do default */
 int duel_08865C10(DuelAct *a)
 {
     switch (duel_w_08914904) {
     case 0:
         if (duel_player_type[a->player] == 1) {
-            if (duel_card_check_9148(a->player, a->id) == 0) {
-                duel_w_08919624 = 1;
-            } else {
+            if (duel_card_check_9148(a->player, a->id) != 0) {
                 duel_w_08919624 = 0;
+            } else {
+                duel_w_08919624 = 1;
             }
         } else {
             duel_0884AD40(0xFA, a->uid);
@@ -453,11 +453,11 @@ int duel_08865C10(DuelAct *a)
         duel_w_08914904++;
         return 0;
     case 1:
-        if (duel_w_08919624 == 0) {
-            return -1;
+        if (duel_w_08919624 != 0) {
+            duel_w_08914904++;
+            return 0;
         }
-        duel_w_08914904 = 2;
-        return 0;
+        return -1;
     case 2:
         duel_0884ACD8(a->player, 0x3A);
         if (duel_player_type[a->player] == 1) {
@@ -468,18 +468,18 @@ int duel_08865C10(DuelAct *a)
         duel_w_08914904++;
         return 0;
     case 3:
-        if (duel_08835AC0() == 0) {
-            duel_w_08914904--;
-            return 0;
+        if (duel_08835AC0() != 0) {
+            if (duel_w_08919650 == 0xB) {
+                duel_088CAE24(duel_w_0891964C, &duel.players[duel_w_0891964C & 1].hand[duel_w_08919654], 0);
+            } else {
+                duel_088D1CF4(a, duel_w_0891964C, duel_w_08919650 + duel_w_08919654);
+            }
+            return 1;
         }
-        if (duel_w_08919650 == 0xB) {
-            duel_088CAE24(duel_w_0891964C, &duel.players[duel_w_0891964C & 1].hand[duel_w_08919654], 0);
-        } else {
-            duel_088D1CF4(a, duel_w_0891964C, duel_w_08919650 + duel_w_08919654);
-        }
-        return 1;
+        duel_w_08914904--;
+        return 0;
     }
-    return 1;
+    /* no return in the original: the default case returns the v0 = 1 left by the switch tests (port: return 1) */
 }
 #endif
 

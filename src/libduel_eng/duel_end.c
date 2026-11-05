@@ -1,7 +1,5 @@
 // @range 0x0884D050-0x0884E228
 // @asm 0x0884D72C-0x0884D874
-// @asm 0x0884DBAC-0x0884DD94
-// @asm 0x0884DD94-0x0884DF2C
 // @asm 0x0884E02C-0x0884E1D8
 /* End of the duel: the reason each player wins or loses (LP, deck out, Exodia and the other
    special victories), the end-of-duel presentation, replaying the input log. */
@@ -354,7 +352,6 @@ void duel_0884DB7C(void)
     }
 }
 
-#ifdef NON_MATCHING /* branch layout of the end checks not reproduced */
 void duel_0884DBAC(DuelAct *a, int i)
 {
     int f;
@@ -375,48 +372,51 @@ void duel_0884DBAC(DuelAct *a, int i)
         if (i >= 1 && a[-1].player != a->player) {
             f = 1;
         } else {
-            if (a->id == 0x12C4) {
+            switch (a->id) {
+            case 0x12C4:
                 f = duel_turn_player != a->player;
+                break;
             }
-            if (a->kind == 0x21 || a->kind == 0x20 || a->kind == 0x1F) {
+            switch (a->kind) {
+            case 0x1F:
+            case 0x20:
+            case 0x21:
                 f = a->y.y15_1 != a->player;
+                break;
             }
         }
         if (f) {
             duel_0884DB38(0x22, 1);
         }
-        return;
+    } else if (card_get_type(a->id) == 0x16) {
+        duel_0884DA24(0x39, 1);
+        if (a->b3_4 != 0) {
+            return;
+        }
+        duel_0884DB38(0x1F, 1);
+        if (duel_turn_player != (duel_view_player ^ 1)) {
+            return;
+        }
+        if (card_get_prop5_hi(a->id) != 5) {
+            return;
+        }
+        duel_0884DB38(0x20, 1);
     }
-    if (card_get_type(a->id) != 0x16) {
-        return;
-    }
-    duel_0884DA24(0x39, 1);
-    if (a->b3_4 != 0) {
-        return;
-    }
-    duel_0884DB38(0x1F, 1);
-    if (duel_turn_player != (duel_view_player ^ 1)) {
-        return;
-    }
-    if (card_get_prop5_hi(a->id) != 5) {
-        return;
-    }
-    duel_0884DB38(0x20, 1);
 }
-#endif
 
-#ifdef NON_MATCHING /* register allocation of the two loops not reproduced */
 void duel_0884DD94(void)
 {
     int ids[5];
     int n = 0;
     int k = 0;
     int z;
-    int *pp = ids;
+    int *pp;
+    int id;
+    int j;
+    int c;
 
-    for (z = 0; z <= 4; z++) {
-        int id = field_get_card(duel_view_player, z);
-
+    for (z = 0, pp = ids; z <= 4; z++) {
+        id = field_get_card(duel_view_player, z);
         if (id != 0) {
             *pp++ = id;
             n++;
@@ -427,19 +427,15 @@ void duel_0884DD94(void)
         }
     }
     if (n >= 3) {
-        int i;
-
-        for (i = 0; i <= n - 3; i++) {
-            if (card_is_attribute9(ids[i]) == 0) {
-                int j;
-                int c = 0;
-
-                for (j = i + 1; j < n; j++) {
-                    if (card_same_name(ids[i], ids[j]) != 0) {
+        for (z = 0; z <= n - 3; z++) {
+            if (card_is_attribute9(ids[z]) == 0) {
+                c = 0;
+                for (j = z + 1; j < n; j++) {
+                    if (card_same_name(ids[z], ids[j]) != 0) {
                         c++;
                     }
                 }
-                if (c > 1) {
+                if (c >= 2) {
                     duel_0884DA24(0x3B, 1);
                 }
             }
@@ -452,7 +448,6 @@ void duel_0884DD94(void)
         duel_0884DA24(0x3D, 1);
     }
 }
-#endif
 
 int duel_0884DF2C(int (*fn)(unsigned int p, int z, int a))
 {

@@ -3,8 +3,6 @@
 // @asm 0x0880C60C-0x0880D288
 // @asm 0x0880DC1C-0x0880E388
 // @asm 0x0880E690-0x0880EA18
-// @asm 0x0880EC5C-0x0880EFAC
-// @asm 0x0880F3B4-0x0880F8C4
 /* Computer player: values it declares for cards that ask for a monster type, an attribute or a
    number. */
 #include "duel.h"
@@ -65,6 +63,8 @@ typedef struct DuelAiView {            /* 0x08913CF4 */
     unsigned int player;               /* player the computer is choosing for (duel_w_08913CF4) */
     int unk4[5];
     DuelStats st[2][5];                /* +0x18 monsters as the computer sees them */
+    int unk1d0[6];                     /* duel_w_08913EC4..duel_w_08913ED8, used as separate globals */
+    int dmg[5];                        /* +0x1E8 = duel_w_08913EDC: per attacker, damage + 1 of its planned attack */
 } DuelAiView;
 
 extern DuelAiView duel_w_08913CF4;
@@ -994,40 +994,42 @@ static inline void duel_ai_view_refresh(void)
     }
 }
 
-#ifdef NON_MATCHING /* laços de 5 zonas desenrolados pelo compilador e acessos a duel_w_08913EF0 pela base; não reproduzido */
+#ifdef NON_MATCHING /* 53 palavras (era 161): dmg é membro de duel_w_08913CF4 (+0x1E8), corpo dentro de if (duel_08836868(p) != 0); falta: o original relê duel_w_08913EF0.dmg_opp depois do store em dmg[z] (aqui reaproveitado) e os $s do laço de refresh inline (q em s2, base em s5) */
 /* Simulate all the attacks the computer would make this turn; returns the total damage dealt. */
 int duel_0880E690(unsigned int p)
 {
     int total = 0;
     int z;
+    DuelPlayer *me;
+    DuelPlayer *op;
 
     duel_w_08913EC8 = 0;
     duel_w_08913ECC = 0;
     for (z = 0; z < 5; z++) {
         duel.players[p & 1].field[z].flags &= ~0x400000;
         duel.players[p & 1].field[z].flags &= ~0x800000;
-        duel_w_08913EDC[z] = 0;
+        duel_w_08913CF4.dmg[z] = 0;
     }
-    if (duel_08836868(p) == 0) {
-        return 0;
-    }
-    duel_ai_view_refresh();
-    if (duel_0880DC1C(p, -1) != 0) {
-        do {
-            z = duel_w_08913EF0.z;
-            duel.players[p & 1].field[z].flags |= 1 << (duel.players[p & 1].field[z].flags >> 22 & 1 ? 23 : 22);
-            if (duel_w_08913EF0.lost != 0) {
-                duel.players[p & 1].field[z].card.id = 0;
-                duel_w_08913EC8++;
-            }
-            if (duel_w_08913EF0.won != 0) {
-                duel.players[(1 - p) & 1].field[duel_w_08913EF0.tz].card.id = 0;
-                duel_w_08913ECC++;
-            }
-            duel_w_08913EDC[z] = duel_w_08913EF0.dmg_opp + 1;
-            total += duel_w_08913EF0.dmg_opp;
-            duel_ai_view_refresh();
-        } while (duel_0880DC1C(p, -1) != 0);
+    if (duel_08836868(p) != 0) {
+        duel_ai_view_refresh();
+        if (duel_0880DC1C(p, -1) != 0) {
+            me = &duel.players[p & 1];
+            op = &duel.players[(1 - p) & 1];
+            do {
+                me->field[duel_w_08913EF0.z].flags |= 1 << (me->field[duel_w_08913EF0.z].flags >> 22 & 1 ? 23 : 22);
+                if (duel_w_08913EF0.lost != 0) {
+                    me->field[duel_w_08913EF0.z].card.id = 0;
+                    duel_w_08913EC8++;
+                }
+                if (duel_w_08913EF0.won != 0) {
+                    op->field[duel_w_08913EF0.tz].card.id = 0;
+                    duel_w_08913ECC++;
+                }
+                duel_w_08913CF4.dmg[duel_w_08913EF0.z] = duel_w_08913EF0.dmg_opp + 1;
+                total += duel_w_08913EF0.dmg_opp;
+                duel_ai_view_refresh();
+            } while (duel_0880DC1C(p, -1) != 0);
+        }
     }
     return total;
 }
@@ -1062,18 +1064,16 @@ int duel_0880EB64(unsigned int p, int z, int force)
     return duel_0880D924(p, z, 1, &duel_w_08913EF0, force);
 }
 
-#ifdef NON_MATCHING /* função grande com a simulação de cada invocação; mantida em asm */
 /* Hand index of the monster whose tribute summon (no tributes if notrib) lets the computer deal most damage. */
 int duel_0880EC5C(unsigned int p, int notrib)
 {
     int best = -1;
     int base = duel_0880EA18(p);
-    int best_ecc = duel_w_08913ECC;
+    unsigned int best_ecc = duel_w_08913ECC;
     unsigned int i;
-    int id;
-    int uid;
-    int n;
     int k;
+    int id;
+    int n;
     int ok;
     int z;
     int v;
@@ -1081,18 +1081,17 @@ int duel_0880EC5C(unsigned int p, int notrib)
     unsigned int r;
     int better;
     unsigned short trib[4];
-    DuelSlot buf[10];
     DuelStats st;
+    DuelSlot buf[10];
 
     for (i = 0; i < duel.players[p & 1].n_hand; i++) {
         id = duel.players[p & 1].hand[i].id;
-        uid = CARD_UID(duel.players[p & 1].hand[i]);
-        if (!(duel_08827D98(p, uid) & 0x10) || duel_08806730(p, 2, id) != 0 || duel_08805DA4(p, id, 0, 0) == 1) {
+        if (!(duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i])) & 0x10) || duel_08806730(p, 2, id) != 0 || duel_08805DA4(p, id, 0, 0) == 1) {
             continue;
         }
-        n = duel_088078AC(p, uid, 0);
+        n = duel_088078AC(p, CARD_UID(duel.players[p & 1].hand[i]), 0);
         ok = 1;
-        if (notrib == (n == 0)) {
+        if (notrib == ((n != 0) ^ 1)) {
             continue;
         }
         for (k = 0; k < n; k++) {
@@ -1110,6 +1109,7 @@ int duel_0880EC5C(unsigned int p, int notrib)
         if (!ok) {
             continue;
         }
+        better = 0;
         duel_0880E388(buf, p);
         duel_0880E414(p);
         z = duel_0880E4F0(p, id, 0, n, trib);
@@ -1119,10 +1119,12 @@ int duel_0880EC5C(unsigned int p, int notrib)
         v = duel_0880E690(p);
         duel_w_08913ED0 = duel_count_monsters(p);
         duel_w_08913ED4 = duel_count_monsters(1 - p);
-        f = duel.players[p & 1].field[z].flags;
+        f = duel.players[p & 1].field[z].flags >> 22 & 1;
         duel_0880E3CC(buf, p);
-        if (z >= 0 && st.atk >= 900 && f >> 22 & 1) {
-            better = base < v;
+        if (z >= 0 && st.atk >= 900 && f) {
+            if (base < v) {
+                better = 1;
+            }
             if (v == base && best_ecc < duel_w_08913ECC && duel_w_08913ED0 != 0) {
                 better = 1;
             }
@@ -1135,7 +1137,6 @@ int duel_0880EC5C(unsigned int p, int notrib)
     }
     return best;
 }
-#endif
 
 /* Stats card id would have after its tribute summon with the n tributes in list (or from the database). */
 void duel_0880EFAC(unsigned int p, int id, int n, unsigned short *list, DuelStats *st)
@@ -1220,20 +1221,17 @@ int duel_0880F278(unsigned int p, int id)
     return 0;
 }
 
-#ifdef NON_MATCHING /* função grande (escolha da invocação com oferendas); mantida em asm */
 /* Hand index of the monster the computer summons (pos: 1 attack, 0 defense), or -1. */
 int duel_0880F3B4(unsigned int p, int *pos)
 {
     int best = -1;
-    int trib = duel_08807434(p, 1);
+    int trib = duel_08807434(p, 1) != -1;
+    int i;                             /* also receives the unused defense of the opponent */
     int oatk;
-    int odef;
     int matk;
     int mdef;
     int mmax;
-    unsigned int i;
     int id;
-    int uid;
     unsigned int f;
     int n;
     int k;
@@ -1245,20 +1243,19 @@ int duel_0880F3B4(unsigned int p, int *pos)
     unsigned short buf[4];
     DuelStats st;
 
-    duel_08809FC4(1 - p, &oatk, &odef, 0);
+    duel_08809FC4(1 - p, &oatk, &i, 0);
     duel_08809FC4(p, &matk, &mdef, 0);
     mmax = MAX(matk, mdef);
     for (i = 0; i < duel.players[p & 1].n_hand; i++) {
         id = duel.players[p & 1].hand[i].id;
-        uid = CARD_UID(duel.players[p & 1].hand[i]);
         if (card_is_monster(id) == 0 || duel_08806730(p, 2, id) != 0) {
             continue;
         }
-        f = duel_08827D98(p, uid);
+        f = duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i]));
         if (f == 0) {
             continue;
         }
-        n = duel_088078AC(p, uid, 1);
+        n = duel_088078AC(p, CARD_UID(duel.players[p & 1].hand[i]), 1);
         ok = 1;
         for (k = 0; k < n; k++) {
             r = duel_0880750C(p, id, 0, k, buf);
@@ -1280,56 +1277,61 @@ int duel_0880F3B4(unsigned int p, int *pos)
         if (r == -1) {
             r = duel_088055A0(p, st.atk, st.def);
             if (r == -1) {
-                r = !(st.atk > st.def);
+                r = st.atk <= st.def;
             }
         }
-        a = r == 0;
-        if ((f == 0x10 && !a) || (f == 0x40 && a)) {
+        a = (r != 0) ^ 1;
+        if (f == 0x10 && !a) {
+            continue;
+        }
+        if (f == 0x40 && a) {
             continue;
         }
         atk = MAX(st.atk, st.def);
-        if (trib != -1 && n != 0) {
-            *pos = !a;
+        if (trib && n != 0) {
             best = i;
+            *pos = !a;
         }
         if (oatk < atk) {
-            *pos = !a;
             best = i;
+            *pos = !a;
         }
         if (duel_0880F278(p, id) != 0) {
-            *pos = !a;
             best = i;
+            *pos = !a;
         }
         if (mmax < atk) {
-            *pos = !a;
             best = i;
+            *pos = !a;
         }
         if (n == 0) {
-            *pos = !a;
             best = i;
+            *pos = !a;
         }
     }
-    if (best < 0) {
-        if (duel_count_free_monster_zones(p) == 0) {
-            return -1;
-        }
+    if (best > -1) {
+        return best;
+    }
+    if (duel_count_free_monster_zones(p) != 0) {
         v = duel_088154D8(p) != 0 ? 1 : 2;
         for (i = 0; i < duel.players[p & 1].n_hand; i++) {
             id = duel.players[p & 1].hand[i].id;
-            uid = CARD_UID(duel.players[p & 1].hand[i]);
-            if (card_is_monster(id) != 0 && duel_list_card_level(p, uid) < 5 && duel_08806730(p, v, id) == 0) {
-                f = duel_08827D98(p, uid);
+            if (card_is_monster(id) != 0 && duel_list_card_level(p, CARD_UID(duel.players[p & 1].hand[i])) < 5 &&
+                duel_08806730(p, v, id) == 0) {
+                f = duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i]));
                 if (f != 0) {
-                    *pos = (f & 0x40) != 0;
+                    if (f & 0x40) {
+                        *pos = 1;
+                    } else {
+                        *pos = 0;
+                    }
                     return i;
                 }
             }
         }
-        best = -1;
     }
-    return best;
+    return -1;
 }
-#endif
 
 /* Conditions of the computer player for activating cards (DuelAct of the card). */
 int duel_0880F8C4(DuelAct *a)
