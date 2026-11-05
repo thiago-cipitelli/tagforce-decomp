@@ -1,8 +1,10 @@
 // @range 0x08887618-0x08889BE4
 // @data 0x089117DC-0x08911828
+// @rodata 0x08911828-0x08911844
 // @asm 0x08887618-0x088876B0
 // @asm 0x08887B34-0x08887ED8
-// @asm 0x08888ED0-0x08889914
+// @asm 0x08888ED0-0x08889434
+// @asm 0x08889680-0x08889914
 /* Card effect handlers (DuelAct *a), after effects_w.c. */
 #include "duel.h"
 
@@ -810,7 +812,6 @@ int duel_08888ED0(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem dos argumentos de duel_088C67F0 */
 int duel_08889434(DuelAct *a)
 {
     unsigned int loc;
@@ -853,10 +854,12 @@ int duel_08889434(DuelAct *a)
         }
         return 0;
     case 0x7F:
-        duel_088C67F0(a->player, a->w[1], 1, 0);
+        id = a->w[1];
+        duel_088C67F0(a->player, id, 1, 0);
         return 0x7E;
     case 0x7E:
-        duel_088C67F0(1 - a->player, a->w[1], 1, 1);
+        id = a->w[1];
+        duel_088C67F0(1 - a->player, id, 1, 1);
         return 0x7D;
     case 0x7D:
         duel_088328FC(a->player);
@@ -873,7 +876,6 @@ int duel_08889434(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* constante 100 em v0 reaproveitada */
 int duel_08889680(DuelAct *a)
