@@ -1,7 +1,4 @@
 // @range 0x08814EC8-0x08815E90
-// @asm 0x08815548-0x088157AC
-// @asm 0x088157AC-0x08815950
-// @asm 0x08815BD0-0x08815E20
 /* The computer player's choice of a card to activate: the tables of cards with their conditions. */
 #include "duel.h"
 
@@ -155,21 +152,20 @@ int duel_088154D8(unsigned int p)
     return duel.players[p & 1].lp <= m - n;
 }
 
-#ifdef NON_MATCHING /* registradores */
 int duel_08815548(unsigned int p, unsigned int mask, int atk, int def)
 {
-    int z[11];
-    DuelStats st;
-    int n = 0;
     int i;
-    int k;
-    int t;
-    int v;
-    int c;
-    int zi;
     int m = -1;
     int best = -1;
+    int n = 0;
+    int zi;
+    int v;
+    int k;
+    int t;
+    int c;
     unsigned int b;
+    int z[11];
+    DuelStats st;
 
     for (i = 0, b = p << 4; i <= 4; i++, b++) {
         if (mask & (1 << b)) {
@@ -212,40 +208,40 @@ int duel_08815548(unsigned int p, unsigned int mask, int atk, int def)
             }
             if (c) {
                 best = zi;
-                if (atk > 0 && m < v) {
-                    m = v;
+                if (atk > 0) {
+                    m = m < v ? v : m;
                 }
-                if (atk < 0 && v < m) {
-                    m = v;
+                if (atk < 0) {
+                    m = v < m ? v : m;
                 }
-                if (def > 0 && m < v) {
-                    m = v;
+                if (def > 0) {
+                    m = m < v ? v : m;
                 }
-                if (def < 0 && v < m) {
-                    m = v;
+                if (def < 0) {
+                    m = v < m ? v : m;
                 }
             }
         }
     }
     return best;
 }
-#endif
 
-#ifdef NON_MATCHING /* registradores */
 int duel_088157AC(unsigned int p, unsigned int mask, unsigned int pos)
 {
-    DuelStats st;
-    int z[11];
-    int n = 0;
     int i;
-    int k;
-    int t;
-    int v;
     int m = -1;
     int best = -1;
+    int n = 0;
+    int zi;
+    int v;
+    int k;
+    int t;
+    unsigned int b;
+    int z[11];
+    DuelStats st;
 
-    for (i = 0; i < 5; i++) {
-        if (mask & (1 << (p * 16 + i))) {
+    for (i = 0, b = p << 4; i <= 4; i++, b++) {
+        if (mask & (1 << b)) {
             z[n++] = i;
         }
     }
@@ -256,18 +252,18 @@ int duel_088157AC(unsigned int p, unsigned int mask, unsigned int pos)
         z[k] = t;
     }
     for (i = 0; i < n; i++) {
-        if ((int)pos < 0 || pos == duel.players[p & 1].field[z[i]].pos) {
-            duel_0880546C(p, z[i], &st);
-            v = duel.players[p & 1].field[z[i]].pos == 0 ? st.atk : st.def;
+        zi = z[i];
+        if ((int)pos < 0 || pos == duel.players[p & 1].field[zi].pos) {
+            duel_0880546C(p, zi, &st);
+            v = duel.players[p & 1].field[zi].pos != 0 ? st.def : st.atk;
             if (m < 0 || m < v) {
+                best = zi;
                 m = v;
-                best = z[i];
             }
         }
     }
     return best;
 }
-#endif
 
 int duel_08815950(DuelAct *a, unsigned int p, int atk, int def, int z)
 {
@@ -333,13 +329,12 @@ int duel_08815AF8(unsigned int p, int (*f)(unsigned int p, int zone, int i), int
     return best;
 }
 
-#ifdef NON_MATCHING /* registradores */
 int duel_08815BD0(unsigned int p, int (*f)(unsigned int p, int zone, int i), int atk, int def)
 {
-    unsigned int i;
-    unsigned int id;
     int v;
     int m = -1;
+    unsigned int i;
+    unsigned int id;
     int best = -1;
     int c;
 
@@ -372,26 +367,25 @@ int duel_08815BD0(unsigned int p, int (*f)(unsigned int p, int zone, int i), int
                     c = 1;
                 }
                 if (c) {
-                    if (atk > 0 && m < v) {
-                        m = v;
-                    }
-                    if (atk < 0 && v < m) {
-                        m = v;
-                    }
-                    if (def > 0 && m < v) {
-                        m = v;
-                    }
-                    if (def < 0 && v < m) {
-                        m = v;
-                    }
                     best = i;
+                    if (atk > 0) {
+                        m = m < v ? v : m;
+                    }
+                    if (atk < 0) {
+                        m = v < m ? v : m;
+                    }
+                    if (def > 0) {
+                        m = m < v ? v : m;
+                    }
+                    if (def < 0) {
+                        m = v < m ? v : m;
+                    }
                 }
             }
         }
     }
     return best;
 }
-#endif
 
 int duel_08815E20(unsigned int p, unsigned int mask)
 {

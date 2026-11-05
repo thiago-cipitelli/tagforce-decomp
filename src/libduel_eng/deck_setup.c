@@ -133,7 +133,7 @@ void duel_deck_build_uids(unsigned int p, DuelDecks *d)
 }
 #endif
 
-#ifdef NON_MATCHING /* same steps; the original schedules the count loads and stores differently */
+#ifdef NON_MATCHING /* 2026-11-05: contagens lidas na ordem hand, d, c e owner = uid & 1, uid_hi = uid >> 1 como no original; falta o ponteiro u (o original soma sp+24 e +6 em dois passos) e a alocação dos temporários */
 /* Swap the hand, deck and zone C of player p with the ones saved in the block. */
 void duel_piles_swap(unsigned int p, DuelDecks *d)
 {
@@ -143,8 +143,8 @@ void duel_piles_swap(unsigned int p, DuelDecks *d)
     unsigned short *u = t.uid;
     unsigned int i;
 
-    t.n_d = duel.players[q].n_d;
     t.n_hand = duel.players[q].n_hand;
+    t.n_d = duel.players[q].n_d;
     t.n_c = duel.players[q].n_18;
     for (i = 0; i < duel.players[q].n_hand; i++) {
         *u++ = CARD_UID(duel.players[q].hand[i]);
@@ -164,22 +164,22 @@ void duel_piles_swap(unsigned int p, DuelDecks *d)
         unsigned int uid = *u++;
 
         duel.players[q].hand[i].id = duel.list[uid].id;
-        duel.players[q].hand[i].owner = uid;
-        duel.players[q].hand[i].uid_hi = (uid & 0x1FF) >> 1;
+        duel.players[q].hand[i].owner = uid & 1;
+        duel.players[q].hand[i].uid_hi = uid >> 1;
     }
     for (i = 0; i < (unsigned int)duel.players[q].n_d; i++) {
         unsigned int uid = *u++;
 
         duel.players[q].zone_d[i].id = duel.list[uid].id;
-        duel.players[q].zone_d[i].owner = uid;
-        duel.players[q].zone_d[i].uid_hi = (uid & 0x1FF) >> 1;
+        duel.players[q].zone_d[i].owner = uid & 1;
+        duel.players[q].zone_d[i].uid_hi = uid >> 1;
     }
     for (i = 0; i < (unsigned int)duel.players[q].n_18; i++) {
         unsigned int uid = *u++;
 
         duel.players[q].zone_c[i].id = duel.list[uid].id;
-        duel.players[q].zone_c[i].owner = uid;
-        duel.players[q].zone_c[i].uid_hi = (uid & 0x1FF) >> 1;
+        duel.players[q].zone_c[i].owner = uid & 1;
+        duel.players[q].zone_c[i].uid_hi = uid >> 1;
     }
     memcpy(s, &t, 0x1B8);
 }

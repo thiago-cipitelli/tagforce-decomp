@@ -1,6 +1,6 @@
 // @range 0x088CC8EC-0x088D13CC
 // @asm 0x088CC8EC-0x088CEBA8
-// @asm 0x088CEEE0-0x088D13CC
+// @asm 0x088CEEE0-0x088D0878
 /* Cards leaving the field: the triggers of a card that left (duel_088CC8EC), which zones an action can
    reach (duel_act_hits_mask), marking the zones that leave together (duel_leave_mark), sending one
    card to another pile with its host message (duel_send_card), the cards that follow it
@@ -53,7 +53,7 @@ void duel_088C05B0(int id);
 void duel_088C4448(unsigned int p, int a, unsigned int uid);
 int duel_088C4730(unsigned int p, int n, int f, int id);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
-int duel_send_card(unsigned int p, int z, int dest, unsigned int f, int cause);
+int duel_send_card(unsigned int p, int z, int dest, int f, int cause);
 void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp);
 void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f);
 
@@ -953,12 +953,26 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
 }
 #endif
 
-#ifdef NON_MATCHING /* 2 KB; escrita a partir do asm */
+/* struct DuelActX with bit 23 as a 1-bit field (bytes 0x14-0x17 of a DuelAct) */
+struct DuelActX1 {
+    unsigned int s_uid : 9;
+    unsigned int s_player : 1;
+    unsigned int s_zone : 4;
+    unsigned int s_b14 : 1;
+    unsigned int s_b15 : 1;
+    unsigned int s_b16 : 1;
+    unsigned int s_b17 : 1;
+    unsigned int s_b18 : 1;
+    unsigned int s_zone2 : 4;
+    unsigned int s_b23 : 1;
+    unsigned int s_b24 : 8;
+};
+
 /* Sends the card in zone z of player p to pile dest (0xB hand, 0xC extra deck, 0xD deck, 0xE graveyard,
    0xF banished; < 11 another zone) because of card cause. f: bit 0 by the opponent, 1 destroyed,
    3 not by battle, 12, 18 and 23 host message variants, 16 skip the immunity checks. Returns 1 if
    the card moved. */
-int duel_send_card(unsigned int p, int z, int dest, unsigned int f, int cause)
+int duel_send_card(unsigned int p, int z, int dest, int f, int cause)
 {
     DuelSlot *s = SLOT_AT(p, z);
     int id = s->card.id;
@@ -968,123 +982,129 @@ int duel_send_card(unsigned int p, int z, int dest, unsigned int f, int cause)
     int keep;
     int to_grave;
     int destroyed;
-    unsigned int q;
+    int q;
     unsigned int n;
     unsigned int v;
-    struct DuelActX x;
+    struct DuelActX1 x;
 
     if (!(f & 0x10000)) {
         if (card_get_type(cause) == 0x16) {
-            if (duel_slot_immune(p, z, (f & 1) != 0)) {
+            if (duel_slot_immune(p, z, (f & 1) > 0)) {
                 return 0;
             }
-        } else if (card_get_type(cause) == 0x17 && duel_slot_ref_immune(p, z, (f & 1) != 0)) {
+        } else if (card_get_type(cause) == 0x17 && duel_slot_ref_immune(p, z, (f & 1) > 0)) {
             return 0;
         }
     }
     if (z < 5 && (f & 2) && duel_slot_affected(p, z, 0x1825)) {   /* its substitute goes instead */
         v = duel_slot_src_attr8(p, z, 1);
-        duel_send_card(v & 0xFF, v >> 8, 0xE, 2, 0);
+        duel_send_card(v & 0xFF, (unsigned char)(v >> 8), 0xE, 2, 0);
         return 0;
     }
-    if (z > 4 && (f & 2) && cause != 0 && duel_slot_has_effect(p, z, 0x1513)) {
+    if (z >= 5 && (f & 2) && cause != 0 && duel_slot_has_effect(p, z, 0x1513)) {
         return 0;
     }
-    if (dest != 0xE && dest != 0xF && (s->flags & 4) && cause != 0x19E1 && cause != 0x14FB) {
+    if (dest != 0xE && dest != 0xF && (SLOT_AT(p, z)->flags >> 2 & 1) && cause != 0x19E1 && cause != 0x14FB) {
         return 0;
     }
-    if (id == 0) {
-        return 0;
-    }
-    bit = 1 << (z + p * 16);
-    if (duel.zone_off & bit) {
-        return 0;
-    }
-    opp = (f & 1) != 0;
-    uid = CARD_UID(s->card);
-    keep = (f & 8) == 0;
-    to_grave = dest == 0xE ? card_is_attribute9(id) == 0 : 0;
-    destroyed = (f & 2) != 0;
-    *(unsigned int *)&x = 0;
-    if (dest == 0xE) {                 /* rules that banish instead (duel.unk1f60 from duel_dfc10) */
-        if (duel.unk1f60 & 1) {
-            dest = 0xF;
-        }
-        if ((duel.unk1f60 & 2) && card_is_monster(id)) {
-            dest = 0xF;
-        }
-        if ((duel.unk1f60 & 4) && (uid & 1) == 0) {
-            dest = 0xF;
-        }
-        if ((duel.unk1f60 & 8) && (uid & 1) == 1) {
-            dest = 0xF;
-        }
-        if (dest == 0xF) {
-            to_grave = 0;
-        }
-    }
-    if (keep && dest > 10 && duel_slot_e8170(p, z, 0x16F8)) {
-        dest = 0xF;
-        to_grave = 0;
-    }
-    if (card_get_prop5_hi(cause) == 6 && duel_count_active(0x19DA)) {
-        dest = 0xD;
-        to_grave = 0;
-    }
-    x.s_uid = uid;
-    x.s_player = p;
-    x.s_zone = z;
-    x.s_b14 = s->pos;
-    x.s_b15 = destroyed;
-    x.s_b17 = s->faceup;
-    x.s_b18 = p ^ opp;
-    x.s_zone2 = dest;
-    x.s_b23 = !keep;
-    duel.zone_off |= bit;
-    if (f & 0x1000) {
-        duel_cmd((p == 0 ? 0 : 0x8000) | 0x46, z, dest, x.s_uid);
-    } else if (destroyed) {
-        duel_cmd((p == 0 ? 0 : 0x8000) | 0x31, z, (dest & 0xFF) | (opp | !keep << 4) << 8, x.s_uid);
-    } else if (dest < 11) {
-        duel_cmd((p == 0 ? 0 : 0x8000) | 0x3D, (p & 0xFF) | (z & 0xFF) << 8,
-                 (dest & 0xFF) << 8 | ((p ^ ((f & 0x40000) != 0)) & 0xFF), 0);
-    } else if (card_is_attribute9(id)) {
-        duel_cmd((p == 0 ? 0 : 0x8000) | 0x31, z, 0x10, x.s_uid);
-    } else if (dest == 0xF) {
-        duel_cmd((p == 0 ? 0 : 0x8000) | 0x33, z & 0xFF, f, x.s_uid);
-    } else {                           /* to its owner's hand, extra deck, deck or graveyard */
-        q = ((f & 0x40000) != 0) ^ s->card.owner;
-        switch (dest) {
-        case 0xE:
-            n = 1;
-            break;
-        case 0xD:
-            n = (f & 0x800000) != 0;
-            break;
-        case 0xC:
-            n = 1;
-            break;
-        case 0xB:
-            n = duel.players[q].n_hand;
-            break;
-        default:
-            n = 0;
-            break;
-        }
-        duel_cmd(0x40, (p & 1) | (z & 0x1F) << 1, (n & 0x3FF) << 6 | q | (dest & 0x1F) << 1, f);
-    }
-    if (dest > 10) {
-        duel_088CC8EC(x, s, cause, f | (cause != 0 ? 0x80000 : 0));
-        if (card_is_attribute9(id) == 0) {
-            duel_088AFD5C(0x1B, x);
-        }
-    }
-    duel_088CFBA4(s, p, z, f | (to_grave ? 0x1400000 : 0));
-    return 1;
-}
-#endif
+    if (id != 0) {
+        bit = 1 << (z + p * 16);
+        if (!(duel.zone_off & bit)) {
+            uid = CARD_UID(SLOT_AT(p, z)->card);
+            opp = (f & 1) != 0;
+            keep = !(f & 8);
+            to_grave = dest == 0xE;
+            if (to_grave) {
+                to_grave = !card_is_attribute9(id);
+            }
+            destroyed = (f & 2) != 0;
+            {
+                unsigned char *d = (unsigned char *)&x;
+                int n4 = 4;
 
-#ifdef NON_MATCHING /* forma igual; o original guarda o contador externo na pilha (alocação diferente) */
+                if (d) do {
+                    *d++ = 0;
+                } while (--n4);
+            }
+            if (dest == 0xE) {                 /* rules that banish instead (duel.unk1f60 from duel_dfc10) */
+                if (duel.unk1f60 & 1) {
+                    dest = 0xF;
+                }
+                if ((duel.unk1f60 & 2) && card_is_monster(id)) {
+                    dest = 0xF;
+                }
+                if ((duel.unk1f60 & 4) && (uid & 1) == 0) {
+                    dest = 0xF;
+                }
+                if ((duel.unk1f60 & 8) && (uid & 1) == 1) {
+                    dest = 0xF;
+                }
+                if (dest == 0xF) {
+                    to_grave = 0;
+                }
+            }
+            if (keep && dest > 10 && duel_slot_e8170(p, z, 0x16F8)) {
+                dest = 0xF;
+                to_grave = 0;
+            }
+            if (card_get_prop5_hi(cause) == 6 && duel_count_active(0x19DA)) {
+                dest = 0xD;
+                to_grave = 0;
+            }
+            x.s_uid = uid;
+            x.s_player = p;
+            x.s_zone = z;
+            x.s_b14 = SLOT_AT(p, z)->pos;
+            x.s_b17 = SLOT_AT(p, z)->faceup;
+            x.s_b18 = p ^ opp;
+            x.s_b15 = destroyed;
+            x.s_b23 = !keep;
+            x.s_zone2 = dest;
+            duel.zone_off |= bit;
+            if (f & 0x1000) {
+                duel_cmd((p ? 0x8000 : 0) | 0x46, z, dest, x.s_uid);
+            } else if (destroyed) {
+                duel_cmd((p ? 0x8000 : 0) | 0x31, z, (dest & 0xFF) | ((opp & 0xF | (x.s_b23 & 0xF) << 4) & 0xFF) << 8, x.s_uid);
+            } else if (dest < 11) {
+                v = (f & 0x40000) > 0;
+                duel_cmd((p ? 0x8000 : 0) | 0x3D, (unsigned char)p | (unsigned char)z << 8,
+                         (dest & 0xFF) << 8 | ((p ^ v) & 0xFF), 0);
+            } else if (card_is_attribute9(id)) {
+                duel_cmd((p ? 0x8000 : 0) | 0x31, z, 0x10, x.s_uid);
+            } else if (dest == 0xF) {
+                duel_cmd((p ? 0x8000 : 0) | 0x33, z & 0xFF, f, x.s_uid);
+            } else {                           /* to its owner's hand, extra deck, deck or graveyard */
+                q = ((f & 0x40000) > 0) ^ SLOT_AT(p, z)->card.owner;
+                n = 0;
+                switch (dest) {
+                case 0xB:
+                    n = duel.players[q & 1].n_hand;
+                    break;
+                case 0xC:
+                    n = 1;
+                    break;
+                case 0xD:
+                    n = (f & 0x800000) != 0;
+                    break;
+                case 0xE:
+                    n = 1;
+                    break;
+                }
+                duel_cmd(0x40, (p & 1) | (z & 0x1F) << 1, (q & 1) | (dest & 0x1F) << 1 | (n & 0x3FF) << 6, f);
+            }
+            if (dest > 10) {
+                duel_088CC8EC(*(struct DuelActX *)&x, s, cause, f | (cause != 0 ? 0x80000 : 0));
+                if (card_is_attribute9(id) == 0) {
+                    duel_088AFD5C(0x1B, *(struct DuelActX *)&x);
+                }
+            }
+            duel_088CFBA4(s, p, z, f | (to_grave ? 0x1400000 : 0));
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /* Applies action a (kind: pile the cards go to, flags) to the zones of mask: marks them and the cards
    that leave with them, then sends each one, turn player first. Returns the zones affected. */
 unsigned int duel_act_apply(DuelAct *a, unsigned int mask, int kind, unsigned int flags)
@@ -1093,22 +1113,24 @@ unsigned int duel_act_apply(DuelAct *a, unsigned int mask, int kind, unsigned in
     unsigned int hit = duel_act_hits_mask(a, mask, kind, (flags & 2) != 0);
     unsigned int kept = 0;
     unsigned int bit;
-    unsigned int p;
+    int p;
     int n;
+    int i;
+    int j;
     int dest;
     int z;
 
     if (flags & 2) {                   /* destroyed: substitutes and 0x1513 keep their card */
         for (n = 0; n < 2; n++) {
             p = duel_turn_player ^ n;
-            for (z = 0; z < 5; z++) {
+            for (z = 0; z <= 4; z++) {
                 bit = 1 << (z + p * 16);
                 if ((hit & bit) && duel_slot_affected(p, z, 0x1825)) {
                     kept |= bit;
                 }
             }
             if (a->id != 0) {
-                for (z = 5; z < 11; z++) {
+                for (z = 5; z <= 10; z++) {
                     bit = 1 << (z + p * 16);
                     if ((hit & bit) && duel_slot_has_effect(p, z, 0x1513)) {
                         kept |= bit;
@@ -1117,9 +1139,9 @@ unsigned int duel_act_apply(DuelAct *a, unsigned int mask, int kind, unsigned in
             }
         }
     }
-    for (n = 0; n < 2; n++) {
-        p = duel_turn_player ^ n;
-        for (z = 0; z < 11; z++) {
+    for (i = 0; i < 2; i++) {
+        p = duel_turn_player ^ i;
+        for (z = 0; z <= 10; z++) {
             if (hit & 1 << (z + p * 16)) {
                 duel_leave_mark(p, z, flags, a->id, p != a->player);
             }
@@ -1130,19 +1152,12 @@ unsigned int duel_act_apply(DuelAct *a, unsigned int mask, int kind, unsigned in
         duel.unk1f60 = duel_dfc10();
         duel_088C7BA4();
         duel.zone_off = old | (hit ^ kept);
-        for (n = 0; n < 2; n++) {
-            p = duel_turn_player ^ n;
-            for (z = 0; z < 11; z++) {
+        for (j = 0; j < 2; j++) {
+            p = duel_turn_player ^ j;
+            for (z = 0; z <= 10; z++) {
                 bit = 1 << (z + p * 16);
                 if (hit & bit) {
-                    dest = kind;
-                    if (card_attribute_icon_is3(SLOT_AT(p, z)->card.id)) {   /* extra deck monsters */
-                        if (kind == 0xB) {
-                            dest = 0xC;
-                        } else if (kind == 0xD) {
-                            dest = 0xC;
-                        }
-                    }
+                    dest = card_attribute_icon_is3(SLOT_AT(p, z)->card.id) && (kind == 0xB || kind == 0xD) ? 0xC : kind;
                     duel.zone_off &= ~bit;
                     duel_send_card(p, z, dest, flags + (p != (a->player ^ a->opp)) + 0x10000, a->id);
                 }
@@ -1152,4 +1167,3 @@ unsigned int duel_act_apply(DuelAct *a, unsigned int mask, int kind, unsigned in
     }
     return duel.zone_off ^ old;
 }
-#endif

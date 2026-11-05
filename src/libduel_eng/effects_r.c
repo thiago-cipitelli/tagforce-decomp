@@ -610,14 +610,14 @@ int duel_0888286C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores e ordem dos blocos */
+#ifdef NON_MATCHING /* 10 palavras: z e qz trocam s0/s2 e a ordem do and/sll do último argumento de duel_088CA270 */
 int duel_0888293C(DuelAct *a)
 {
     unsigned int loc;
     unsigned int p;
-    unsigned int q;
     unsigned int z;
     unsigned int qz;
+    unsigned int q;
 
     if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
         return 0;
@@ -626,10 +626,10 @@ int duel_0888293C(DuelAct *a)
         return 0;
     }
     if (duel_088A9008(a, 0, &loc) != 0) {
-        qz = (unsigned short)loc >> 8 & 0xFF;
-        q = loc & 0xFF;
-        z = a->zone;
         p = a->player;
+        z = a->zone;
+        q = loc & 0xFF;
+        qz = (unsigned short)loc >> 8 & 0xFF;
         if (p != q && duel_slot_ef098(p, z, a->id) != 0 && duel_slot_ef098(q, qz, a->id) != 0) {
             duel_088C89BC(p, z, a->id, 1);
             duel_088C89BC(q, qz, a->id, 1);

@@ -763,7 +763,7 @@ void duel_req_088D416C(void)
     }
 }
 
-#ifdef NON_MATCHING /* 31 palavras: duel_w_089195E4 recebe um valor só (1 ou 2) no fim, como no original; falta a ordem dos stores (lp antes do 2º mult, unk20 antes de duel_w_08917DC4) */
+#ifdef NON_MATCHING /* 20 palavras: com duel_w_08917DC4 = v = 1 só falta a ordem dos stores: o original grava unk20 do oponente antes de duel_w_08917DC4; aqui ele vai para o delay slot do bne */
 /* Player p loses the duel (arg: reason, 0xB without a message). */
 void duel_req_088D42C8(void)
 {
@@ -780,11 +780,11 @@ void duel_req_088D42C8(void)
         break;
     case 1:
         if (reason == 0xB || duel_req_flag(0x30) == 0) {
-            int v = 1;
+            int v;
 
             duel.players[p & 1].lp = 0;
             duel.players[(1 - p) & 1].unk20[3] = reason;
-            duel_w_08917DC4 = v;
+            duel_w_08917DC4 = v = 1;
             if (p == duel_view_player) {
                 v = 2;
             }

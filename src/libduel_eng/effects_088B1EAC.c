@@ -1,5 +1,4 @@
 // @range 0x088B1EAC-0x088B2D0C
-// @asm 0x088B20A0-0x088B23AC
 /* Ritual summon checks (after duel_088B1854): level sums, the ritual table and the ritual summon step machine. */
 #include "duel.h"
 
@@ -95,14 +94,13 @@ int duel_088B2094(void)
     return duel_w_089148FC;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores (a/i trocados entre $s0 e $s1) */
 int duel_088B20A0(DuelAct *a, int i)
 {
     DuelRitual *r;
     unsigned int q;
     unsigned int m;
     int z;
-    unsigned int k;
+    int k;
 
     if (duel_088B153C(a->id, i) == 0) {
         return 0;
@@ -129,8 +127,8 @@ int duel_088B20A0(DuelAct *a, int i)
     case 0x19D9:
         m = r->monster;
         for (q = 0; (int)q < 2; q++) {
-            for (z = 0; z < 5; z++) {
-                if (duel.players[q & 1].field[z].card.id != 0 && duel_088B1854(a, q, 0, z) != 0) {
+            for (k = 0; k < 5; k++) {
+                if (duel.players[q & 1].field[k].card.id != 0 && duel_088B1854(a, q, 0, k) != 0) {
                     return 1;
                 }
             }
@@ -146,11 +144,12 @@ int duel_088B20A0(DuelAct *a, int i)
                 }
             }
         }
-        return 0;
+        break;
+    default:
+        return duel_rituals[i].level <= duel_088B167C(a->player, r->monster) + duel_088B1774(a->player);
     }
-    return duel_rituals[i].level <= duel_088B167C(a->player, r->monster) + duel_088B1774(a->player);
+    return 0;
 }
-#endif
 
 int duel_088B23AC(DuelAct *a, int b)
 {
@@ -170,7 +169,6 @@ int duel_088B23AC(DuelAct *a, int b)
     }
     return 0;
 }
-
 
 /* ritual summon (a->w[0]: ritual table entry, w[1]: tributes picked, w[2]: owners of the tributes,
    duel_w_089148FC: level still to pay, duel_w_08914900: lowest level paid) */

@@ -1,5 +1,4 @@
 // @range 0x088FE160-0x088FE638
-// @asm 0x088FE160-0x088FE32C
 /* Online duel: duel messages exchanged through the ad hoc records of BOOT's netsync, and accessors
    of the duel state for the other modules. */
 #include "duel.h"
@@ -45,13 +44,12 @@ void duel_memcpy(void *dst, void *src, int n);
 int duel_cmd();
 int duel_088D4CD8();
 
-#ifdef NON_MATCHING /* the original gives `found` and `i` the other $s registers and fills the delay slots of the last two returns differently */
 int duel_net_poll(void)
 {
     int n;
-    int found;
     int sel;
     int i;
+    int found;
     int cnt;
 
     game_state_get();
@@ -93,14 +91,12 @@ int duel_net_poll(void)
         if (n - 1 == cnt) {
             goto clear;
         }
-        return -1;
     }
     return -1;
 clear:
     memset(duel_net_done, 0, 4);
     return sel;
 }
-#endif
 
 int duel_net_sysvar(void)
 {
