@@ -55,10 +55,11 @@ extern int dd_pose_a_sorted;               /* 0x08C54634 */
 extern int dd_pose_b_sorted;               /* 0x08C54638 */
 
 int voice_is_playing(void);
-int dd_mon_on_start(void);
-int dd_mon_on_event(void);
-int dd_mon_on_frame(void *o, int a);
-int dd_mon_bone(void *o, int a);
+/* model callbacks of dd_mon_anim.c; the hooks forward their argument registers unchanged */
+int dd_mon_on_start(void *o, int id, int c);
+int dd_mon_on_event(void *o, int anim, int c, int d);
+int dd_mon_on_frame(void *o, int anim, int c, int frame, int flag);
+void dd_mon_bone(void *model, void *out, void *in, int bone, float t);
 int dd_int_cmp(const void *a, const void *b);
 void dd_cursor_set(int a, int b, int c, int d);
 unsigned int *dd_disc_material(unsigned int *list, DdTexMat *m, void *gim);
@@ -187,9 +188,9 @@ DdPose dd_pose_a[5] = {
     { 41, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } },
 };
 
-int dd_hooka_init(void *o);
-int dd_hooka_term(void *o);
-int dd_hooka_bone_cb(void *o, int a);
+int dd_hooka_init(void *o, int id, int c);
+int dd_hooka_term(void *o, int anim, int c, int d);
+int dd_hooka_bone_cb(void *o, int anim, int c, int frame, int flag);
 int dd_hooka_bone_map(void *o, int bone);
 int dd_hooka_pose(void *o, float *pos, float *rot, int id);
 
@@ -203,22 +204,22 @@ void dd_hooka_install(void **h)
     h[0x28 / 4] = dd_hooka_pose;
 }
 
-int dd_hooka_init(void *o)
+int dd_hooka_init(void *o, int id, int c)
 {
-    dd_mon_on_start();
+    dd_mon_on_start(o, id, c);
     return 0;
 }
 
-int dd_hooka_term(void *o)
+int dd_hooka_term(void *o, int anim, int c, int d)
 {
-    dd_mon_on_event();
+    dd_mon_on_event(o, anim, c, d);
     return 0;
 }
 
 
-int dd_hooka_bone_cb(void *o, int a)
+int dd_hooka_bone_cb(void *o, int anim, int c, int frame, int flag)
 {
-    return dd_mon_on_frame(o, a);
+    return dd_mon_on_frame(o, anim, c, frame, flag);
 }
 
 /* model bone -> skeleton bone */
@@ -288,12 +289,12 @@ DdPose dd_pose_b[5] = {
     { 41, { -0.16259804f, 1.6453018f, -110.260826f }, { -0.00013507096f, 0.0012709805f, -0.0011623177f, 0.9999985f } },
 };
 
-int dd_hookb_init(void *o);
-int dd_hookb_term(void *o);
-int dd_hookb_bone_cb(void *o, int a);
+int dd_hookb_init(void *o, int id, int c);
+int dd_hookb_term(void *o, int anim, int c, int d);
+int dd_hookb_bone_cb(void *o, int anim, int c, int frame, int flag);
 int dd_hookb_bone_map(void *o, int bone);
 int dd_hookb_pose(void *o, float *pos, float *rot, int id);
-int dd_hookb_2c(void *o, int a);
+void dd_hookb_2c(void *o, void *out, void *in, int bone, float t);
 
 /* hook table of the second field model */
 void dd_hookb_install(void **h)
@@ -306,22 +307,22 @@ void dd_hookb_install(void **h)
     h[0x2C / 4] = dd_hookb_2c;
 }
 
-int dd_hookb_init(void *o)
+int dd_hookb_init(void *o, int id, int c)
 {
-    dd_mon_on_start();
+    dd_mon_on_start(o, id, c);
     return 0;
 }
 
-int dd_hookb_term(void *o)
+int dd_hookb_term(void *o, int anim, int c, int d)
 {
-    dd_mon_on_event();
+    dd_mon_on_event(o, anim, c, d);
     return 0;
 }
 
 
-int dd_hookb_bone_cb(void *o, int a)
+int dd_hookb_bone_cb(void *o, int anim, int c, int frame, int flag)
 {
-    return dd_mon_on_frame(o, a);
+    return dd_mon_on_frame(o, anim, c, frame, flag);
 }
 
 /* model bone -> skeleton bone */
@@ -384,7 +385,7 @@ int dd_hookb_pose(void *o, float *pos, float *rot, int id)
 }
 #endif
 
-int dd_hookb_2c(void *o, int a)
+void dd_hookb_2c(void *o, void *out, void *in, int bone, float t)
 {
-    return dd_mon_bone(o, a);
+    dd_mon_bone(o, out, in, bone, t);
 }

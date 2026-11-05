@@ -395,13 +395,22 @@ float dd_count_scale(int k, int v)
     return r;
 }
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
+#ifdef NON_MATCHING /* 25 palavras: o original lê e grava os bitfields do DdLoc local por lhu/sh (meia palavra),
+                       o mwcc por lbu/sb (família de acesso a bitfield de halfword) */
 /* pushes location (p, zone) on the highlight stack with value v */
 void dd_hl_push(int p, unsigned int zone, int v)
 {
-    DdLoc l = { 0 };
+    DdLoc l;
 
     dd_cobjs.sel[p][zone] = v;
+    {
+        int n = 2;
+        unsigned char *d = (unsigned char *)&l;
+        if (d)
+            do {
+                *d++ = 0;
+            } while (--n);
+    }
     l.player = p;
     l.zone = zone;
     dd_cobjs.stack[dd_cobjs.nstack] = l;
@@ -409,22 +418,31 @@ void dd_hl_push(int p, unsigned int zone, int v)
 }
 #endif
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
+#ifdef NON_MATCHING /* 7 palavras: só registradores (original: nstack-1 em t0 e o ponteiro do laço de zerar em a3;
+                       aqui trocados); ordens das declarações e do decremento tentadas */
 /* pops it again; the location keeps the depth of its previous entry */
 void dd_hl_pop(unsigned int p, unsigned int zone)
 {
     DdCobjs *b = &dd_cobjs;
-    DdLoc l = { 0 };
+    DdLoc s;
     int i;
-    DdLoc *s;
+    DdLoc l;
 
-    dd_cobjs.nstack--;
+    b->nstack--;
+    {
+        unsigned char *d = (unsigned char *)&l;
+        int n = 2;
+        if (d)
+            do {
+                *d++ = 0;
+            } while (--n);
+    }
     dd_cobjs.stack[dd_cobjs.nstack] = l;
     dd_cobjs.sel[p][zone] = 0;
     for (i = dd_cobjs.nstack - 1; i >= 0; i--) {
-        s = &b->stack[i];
-        if (s->player == p && s->zone == zone) {
-            dd_cobjs.sel[p][zone] = i + 1;
+        s = b->stack[i];
+        if (s.player == p && s.zone == zone) {
+            b->sel[p][zone] = i + 1;
             return;
         }
     }

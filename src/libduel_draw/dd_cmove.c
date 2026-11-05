@@ -154,12 +154,8 @@ void dd_cobj_tick(DdCobj *o, float dt)
     t = o->t;
 run:
     o->t = t + dt;
-    if (o->b6 || (o->t >= o->dur * 0.5f && !o->a0 && cfg_get_bits_1_3_4() > 1)) {
-        if (o->c1)
-            req_flag_set(0);
-    } else {
+    if ((!o->b6 && (o->t < o->dur * 0.5f || o->a0 || cfg_get_bits_1_3_4() < 2)) || o->c1)
         req_flag_set(0);
-    }
     if (o->b7)
         req_flag_set(0x1D);
     if (o->a3)

@@ -5,7 +5,6 @@
 // @asm 0x08869BE4-0x08869D34
 // @asm 0x08869D34-0x08869F04
 // @asm 0x08869F04-0x0886A010
-// @asm 0x0886A0C4-0x0886A1F4
 // @data 0x0887CBD0-0x0887CF74
 /* Duel options window (m_menu_panel / menu_opt textures, option_msg_<lang>.bin captions): four
    groups of rows (auto-advance, speed, volumes, display mode, flags), edited with the d-pad;
@@ -744,30 +743,29 @@ void *opt_tex(void *dl, void *gim)
 }
 
 /* caption msg of option_msg_<language>.bin; center: centered in w when narrower */
-#ifdef NON_MATCHING /* cópia de modelos locais e alocação diferem; não insistido */
+typedef struct { char s[6][0x40]; } OptNames;
+
 void *opt_text(void *dl, int x, int y, int w, int msg, int center)
 {
     Options *o = options;
-    char names[6][0x40];
+    OptNames names = *(OptNames *)opt_msg_files;
     unsigned short *text;
     int tw;
 
-    memcpy(names, opt_msg_files, sizeof(names));
-    text = table_get_entry(ehp_find(o->pack, names[cfg_get_language()], 0), msg);
+    text = table_get_entry(ehp_find(o->pack, names.s[cfg_get_language()], 0), msg);
     if (center != 0) {
         tw = font_measure_text(text) >> 6;
         if (tw < w) {
-            x += (w - tw) / 2;
+            int d = w - tw;
+
             w = tw;
+            x += d / 2;
         }
     }
     font_text_set(dl);
     font_draw_wtext(x << 6, y << 6, (w + 2) << 6, text);
     return font_text_clear();
 }
-#else
-void *opt_text(void *dl, int x, int y, int w, int msg, int center);
-#endif
 
 void *opt_text_left(void *dl, int x, int y, int w, int msg)
 {

@@ -29,11 +29,18 @@ typedef struct DdModel {
     DdTgmt *anim;                      /* +0x54 */
 } DdModel;
 
-void dd_fx3_start(void);
-void dd_fx_start(int a, int b, int c);
-void dd_fx3_stop(void);
-void dd_fx_stop(int a, int anim, int c, int d);
-void dd_fx3_set_param(void);
+/* defined in dd_fx_slot.c with (owner, id) / (owner) / (owner, a, b, c, v); the original passes every
+   callback argument to dd_fx_start/dd_fx_stop, which ignore the extra ones */
+#ifdef __MWERKS__
+void dd_fx3_start();                   /* called with a0/a1 still holding the callback's o and id */
+void dd_fx3_stop();
+#else
+void dd_fx3_start(int o, int id);
+void dd_fx3_stop(int o);
+#endif
+void dd_fx_start(int o, int id, int c);
+void dd_fx_stop(int o, int anim, int c, int d);
+void dd_fx3_set_param(DdMon *o, int anim, int c, int frame, int flag);
 void dd_fx_set_param(DdMon *m, int anim, int c, int frame, int flag);
 void voice_event(DdMon *m, int anim, int c, int frame, int flag);
 void caption_enable(int on);
@@ -89,7 +96,11 @@ void dd_mon_cb_init(int a, int b, DdMonCb *cb)
 
 int dd_mon_on_start(int a, int b, int c)
 {
+#ifdef __MWERKS__
     dd_fx3_start();
+#else
+    dd_fx3_start(a, b);
+#endif
     dd_fx_start(a, b, c);
     caption_enable(0);
     return 0;
@@ -97,7 +108,11 @@ int dd_mon_on_start(int a, int b, int c)
 
 int dd_mon_on_event(int a, int anim, int c, int d)
 {
+#ifdef __MWERKS__
     dd_fx3_stop();
+#else
+    dd_fx3_stop(a);
+#endif
     dd_fx_stop(a, anim, c, d);
     switch (anim) {
     case 52 ... 54:
@@ -110,7 +125,7 @@ int dd_mon_on_event(int a, int anim, int c, int d)
 
 int dd_mon_on_frame(DdMon *m, int anim, int c, int frame, int flag)
 {
-    dd_fx3_set_param();
+    dd_fx3_set_param(m, anim, c, frame, flag);
     dd_fx_set_param(m, anim, c, frame, flag);
     voice_event(m, anim, c, frame, flag);
     dd_mon_voice(m, anim, c, frame, flag);

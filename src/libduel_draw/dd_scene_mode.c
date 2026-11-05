@@ -183,7 +183,7 @@ void camera_set(float *pos, float *target, float *up);
 void camera_load_view(void);
 void dd_view_x10_set(int a);
 void dv_08835F34(int player, int zone, int idx, int act);
-void dd_field_camera0(void);
+unsigned int *dd_field_camera0(unsigned int *list, void *tms, float t);
 int dd_mode_get(void);
 void dd_mode_pop(void);
 int dd_mode_busy(void);
@@ -801,9 +801,9 @@ int dd_camera_from_anim(void *a, float t)
 }
 #endif
 
-void dd_mode_de48(void)
+unsigned int *dd_mode_de48(unsigned int *list, void *tms, float t)
 {
-    dd_field_camera0();
+    return dd_field_camera0(list, tms, t);
 }
 
 /* the pad, or an empty one while the input is off (replays) */
