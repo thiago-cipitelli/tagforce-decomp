@@ -1,8 +1,6 @@
 // @range 0x088D28F8-0x088D6DE8
 // @data 0x08911B8C-0x08911D2C
 // @asm 0x088D31F0-0x088D36C8
-// @asm 0x088D392C-0x088D3E5C
-// @asm 0x088D43F8-0x088D4A04
 // @asm 0x088D63FC-0x088D6708
 // @asm 0x088D6708-0x088D6DE8
 // @asm 0x088D42C8-0x088D43F8
@@ -339,6 +337,12 @@ void duel_req_088D2C9C(void)
     duel_busy_0891523C = 0;
 }
 
+typedef struct DuelLocU {              /* DuelLoc carrying a card uid in the index bits */
+    unsigned short player : 1;
+    unsigned short zone : 5;
+    unsigned short uid : 10;
+} DuelLocU;
+
 typedef struct DuelCardF15 {           /* DuelCard with b15 and b16 as one 2-bit field */
     unsigned int lo : 15;
     unsigned int f15 : 2;
@@ -461,23 +465,30 @@ void duel_req_088D3144(void)
     }
 }
 
-#ifdef NON_MATCHING /* laços com o desenrolamento do compilador e cópias por duel_memcpy; mantida em asm */
+#ifdef NON_MATCHING /* 6 palavras: no primeiro laço de duel_effects_move_src o contador e o ponteiro de from trocam s2/s3; lógica conferida com o asm */
 /* Shuffle p's monsters among the zones of the mask w (the seed is arg | loc << 16). */
 void duel_req_088D31F0(void)
 {
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
-    unsigned int mask = duel_req.req.w;
-    int to[5];
-    int from[5];
-    DuelSlot tmp[5];
-    int n = 0;
+    unsigned int seed;
+    int n;
+    unsigned int p;
     int z;
     int i;
     int j;
+    unsigned short mask;
+    int from[5];
+    int to[5];
+    DuelSlot tmp[5];
     int t;
+
+    p = (duel_req.req.id & 0x8000) != 0;
+    seed = duel_req.req.arg;
+    seed |= *(unsigned short *)&duel_req.req.loc << 16;
+    mask = duel_req.req.w;
 
     switch (duel_req_step) {
     case 0:
+        n = 0;
         for (z = 0; z < 5; z++) {
             if ((int)mask >> z & 1) {
                 to[n] = z;
@@ -487,38 +498,37 @@ void duel_req_088D31F0(void)
         }
         if (n < 2) {
             duel_busy_0891523C = 0;
-            return;
+            break;
         }
-        duel_089195C8 = duel_req.req.arg | *(unsigned short *)&duel_req.req.loc << 16;
-        for (i = n - 1; i > 0; i--) {
-            j = duel_rand(i + 1);
-            t = to[i];
-            to[i] = to[j];
+        duel_089195C8 = seed;
+        for (z = n - 1; z > 0; z--) {
+            j = duel_rand(z + 1);
+            t = to[z];
+            to[z] = to[j];
             to[j] = t;
         }
         for (i = 0; i < n; i++) {
-            duel_effects_move_src(p | from[i] << 8, (p + 2) | from[i] << 8);
+            duel_effects_move_src((unsigned char)p | (unsigned char)from[i] << 8, (unsigned char)(p + 2) | (unsigned char)from[i] << 8);
         }
         for (i = 0; i < n; i++) {
-            duel_memcpy(&tmp[from[i]], &duel.players[p].field[from[i]], sizeof(DuelSlot));
+            duel_memcpy(&tmp[from[i]], &duel.players[p & 1].field[from[i]], sizeof(DuelSlot));
         }
         for (i = 0; i < n; i++) {
-            duel_memcpy(&duel.players[p].field[to[i]], &tmp[from[i]], sizeof(DuelSlot));
+            duel_memcpy(&duel.players[p & 1].field[to[i]], &tmp[from[i]], sizeof(DuelSlot));
         }
         for (i = 0; i < n; i++) {
-            duel_effects_move_src((p + 2) | from[i] << 8, p | to[i] << 8);
+            duel_effects_move_src((unsigned char)(p + 2) | (unsigned char)from[i] << 8, (unsigned char)p | (unsigned char)to[i] << 8);
         }
         for (i = 0; i < n; i++) {
-            duel.players[p].field[to[i]].flags &= ~0x80;
+            duel.players[p & 1].field[to[i]].flags &= ~0x80;
         }
         duel_host_call(0x27, p, mask, 0);
         duel_req_step++;
         break;
     case 1:
-        if (duel_req_flag(0x27) != 0) {
-            return;
+        if (duel_req_flag(0x27) == 0) {
+            duel_busy_0891523C = 0;
         }
-        duel_busy_0891523C = 0;
         break;
     }
 }
@@ -575,22 +585,31 @@ void duel_req_088D3744(void)
     }
 }
 
-#ifdef NON_MATCHING /* montagem dos DuelLoc de origem e destino; mantida em asm */
 /* Move the card with uid loc to the monster zone (arg: player | zone << 8; w: face | pos << 8). */
 void duel_req_088D392C(void)
 {
-    unsigned int arg = duel_req.req.arg;
-    unsigned int uid = *(unsigned short *)&duel_req.req.loc;
-    unsigned int p = arg & 0xFF;
-    unsigned int z = arg >> 8;
-    unsigned int w = duel_req.req.w;
-    unsigned int pos = w >> 8;
+    unsigned int p;
+    unsigned int z;
+    unsigned int uid;
+    unsigned int face;
+    unsigned int pos;
     unsigned int at;
     unsigned int zone;
     unsigned int i;
+    unsigned int arg;
+    unsigned int w;
+    int fz;
     DuelCard *c;
     DuelLoc from;
     DuelLoc to;
+
+    arg = duel_req.req.arg;
+    uid = *(unsigned short *)&duel_req.req.loc;
+    p = arg & 0xFF;
+    z = arg >> 8 & 0xFF;
+    w = duel_req.req.w;
+    face = w & 0xFF;
+    pos = w >> 8 & 0xFF;
 
     switch (duel_req_step) {
     case 0:
@@ -598,9 +617,10 @@ void duel_req_088D392C(void)
             break;
         }
         at = duel_card_locate(uid);
-        zone = (at & 0xFFFF) >> 8;
+        zone = (unsigned short)at >> 8 & 0xFF;
         duel_req_count = zone;
-        c = duel_field_card_deb2c(at & 0xFF, zone, at >> 16);
+        i = at >> 16 & 0xFFFF;
+        c = duel_field_card_deb2c(at & 0xFF, zone, i);
         c->b19 = 0;
         c->b17 = 0;
         c->b20 = 0;
@@ -609,25 +629,24 @@ void duel_req_088D392C(void)
         if (p == duel_view_player && zone == 0xE) {
             duel_0884DB38(0x1B, 1);
         }
-        i = at >> 16 & 0xFF;
-        *(unsigned short *)&from = 0;
-        from.player = at & 1;
+        from.player = at;
         from.zone = zone;
         from.idx = i;
-        from.b15 = duel_zone_pos(from.player, from.zone, i);
+        from.b15 = duel_zone_pos(from.player, from.zone, from.idx);
         from.b14 = duel_zone_faceup(from.player, from.zone, from.idx);
-        *(unsigned short *)&to = 0;
-        to.player = arg & 1;
+        to.player = p;
         to.zone = z;
+        to.idx = 0;
         to.b15 = pos;
-        to.b14 = w;
-        if (from.zone < 11) {
-            duel.list[uid].b14 = duel.list[uid].b14 - 1;
+        to.b14 = face;
+        fz = from.zone;
+        if (fz < 11) {
+            ((DuelListCard *)&duel.list[uid])->placed--;
         }
-        duel_card_take(from.player, from.zone, from.idx);
-        duel_card_put(to.player, to.zone, (w & 0xFF) | pos << 8, &duel_card_tmp);
+        duel_card_take(from.player, fz, from.idx);
+        duel_card_put(to.player, to.zone, (unsigned short)((unsigned char)face | (unsigned char)pos << 8), &duel_card_tmp);
         duel_088DF554(p, z, 1, 1);
-        duel_host_call(0x18, CARD_UID(duel_card_tmp) | 0x20000, *(unsigned short *)&from, *(unsigned short *)&to);
+        duel_host_call(0x18, (unsigned short)CARD_UID(duel_card_tmp) | 0x20000, *(unsigned short *)&from, *(unsigned short *)&to);
         duel_088DF554(p, z, 7, 1);
         duel_req_step++;
         break;
@@ -638,8 +657,8 @@ void duel_req_088D392C(void)
         if (duel_req_count == 0xB && duel_slot_has_effect(p, 0xB, 0x15C7) != 0) {
             duel_slot_effect_add(p, z, 1, 0x15C7, duel_slot_counter(p, 0xB, 0x15C7));
         }
-        duel_host_call(0x34, (pos & 1) << 15 | (w & 1) << 14 | (arg & 1) | (z & 0x1F) << 1,
-                       CARD_UID(duel.players[arg & 1].field[z].card), 0);
+        duel_host_call(0x34, (unsigned short)((pos & 1) << 15 | ((face & 1) << 14 | ((p & 1) | (z & 0x1F) << 1))),
+                       CARD_UID(duel.players[p & 1].field[z].card), 0);
         duel_req_step++;
         break;
     case 2:
@@ -649,7 +668,6 @@ void duel_req_088D392C(void)
         break;
     }
 }
-#endif
 
 /* Put a new token (card id loc) in p's monster zone (arg >> 8: up | pos << 1 | zone << 4). */
 void duel_req_088D3E5C(void)
@@ -781,43 +799,55 @@ void duel_req_088D42C8(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* passos de pedido com muitos registros de estatística; mantida em asm */
-/* Change the LP of p by arg (gain when gain != 0, else loss; loc: 0 battle, 1 effect, 2 cost;
-   w: card causing it), with the statistics of the duel record. */
 void duel_req_088D43F8(int gain)
 {
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
-    int d = gain == 0 ? -(int)duel_req.req.arg : duel_req.req.arg;
-    unsigned int how = *(unsigned short *)&duel_req.req.loc;
-    unsigned int id = duel_req.req.w;
+    unsigned int how;
+    unsigned int id;
+    unsigned int p;
+    int d;
     int lp;
-    int n;
+
+    p = (duel_req.req.id & 0x8000) != 0;
+    if (gain != 0) {
+        d = duel_req.req.arg;
+    } else {
+        d = -(int)duel_req.req.arg;
+    }
+    how = *(unsigned short *)&duel_req.req.loc;
+    id = duel_req.req.w;
 
     switch (duel_req_step) {
     case 0:
-        duel_host_call(0xE, p, d, (how & 0xFF) << 8 | 1);
+        duel_host_call(0xE, p, d, (unsigned short)((how & 0xFF) << 8 | 1));
         if (p == (duel_view_player ^ 1) && d < 0) {
-            n = -d;
             if (how == 1) {
-                duel_0884DAF0(3, n);
-                duel_0884DB38(4, n);
-                duel_0884DB38(10, n);
+                duel_0884DAF0(3, -d);
+                duel_0884DB38(4, -d);
+                duel_0884DB38(10, -d);
                 duel_0884DAF0(9, duel_stat_get(10));
                 if (duel_atk_direct != 0) {
-                    duel_0884DB38(7, n);
+                    duel_0884DB38(7, -d);
                     if (card_is_attribute6(id) != 0) {
-                        duel_0884DB38(0xB, n);
+                        duel_0884DB38(0xB, -d);
                     }
                 }
                 if (duel_turn_player == (duel_view_player ^ 1)) {
-                    duel_0884DAF0(5, n);
-                    duel_0884DB38(6, n);
+                    duel_0884DAF0(5, -d);
+                    duel_0884DB38(6, -d);
                 }
-                if (duel.players[p].lp > 0 && duel.players[p].lp <= n) {
+                if (duel.players[p & 1].lp > 0 && duel.players[p & 1].lp <= -d) {
                     if (p == (duel_view_player ^ 1)) {
-                        duel_0884DA24(8, n);
+                        duel_0884DA24(8, -d);
                     }
                     switch (id) {
+                    case 0xFBE:
+                        duel_0884DA24(0x3F, 1);
+                        break;
+                    case 0x1386:
+                    case 4999:
+                    case 5000:
+                        duel_0884DA24(0x3E, 1);
+                        break;
                     case 0x16EC:
                     case 0x1725:
                     case 0x1729:
@@ -829,26 +859,18 @@ void duel_req_088D43F8(int gain)
                             duel.players[(1 - p) & 1].unk20[2] = id;
                         }
                         break;
-                    case 0x1386:
-                    case 4999:
-                    case 5000:
-                        duel_0884DA24(0x3E, 1);
-                        break;
-                    case 0xFBE:
-                        duel_0884DA24(0x3F, 1);
-                        break;
                     }
                 }
             } else if (how == 0) {
-                duel_0884DAF0(1, n);
-                duel_0884DB38(2, n);
-                duel_0884DB38(10, n);
+                duel_0884DAF0(1, -d);
+                duel_0884DB38(2, -d);
+                duel_0884DB38(10, -d);
                 duel_0884DAF0(9, duel_stat_get(10));
-                if (duel.players[p].lp > 0 && duel.players[p].lp <= n && p == (duel_view_player ^ 1)) {
-                    duel_0884DA24(8, n);
+                if (duel.players[p & 1].lp > 0 && duel.players[p & 1].lp <= -d && p == (duel_view_player ^ 1)) {
+                    duel_0884DA24(8, -d);
                 }
             }
-            duel_0884DA24(0x37, -d == duel.players[p].lp);
+            duel_0884DA24(0x37, -d == duel.players[p & 1].lp);
         }
         if (p == duel_view_player && d < 0) {
             duel_0884DA24(0x36, 1);
@@ -861,8 +883,8 @@ void duel_req_088D43F8(int gain)
     case 1:
         if (duel_req_flag(0xE) == 0) {
             duel_host_call(0x49, p, d, how);
-            duel_req_count = 0;
             duel_req_step++;
+            duel_req_count = 0;
         }
         break;
     case 2:
@@ -871,19 +893,17 @@ void duel_req_088D43F8(int gain)
         }
         break;
     case 3:
-        duel_host_call(0xE, p, d, (how & 0xFF) << 8);
+        duel_host_call(0xE, p, d, (unsigned short)((how & 0xFF) << 8));
         duel_req_step++;
         break;
     case 4:
         if (duel_req_flag(0xE) == 0) {
             if (d < 0) {
-                lp = duel.players[p].lp + d;
-                if (lp < 0) {
-                    lp = 0;
-                }
-                duel.players[p].lp = lp;
-            } else if (duel.players[p].lp != 0) {
-                duel.players[p].lp += d;
+                lp = duel.players[p & 1].lp;
+                lp += d;
+                duel.players[p & 1].lp = lp < 0 ? 0 : lp;
+            } else if (duel.players[p & 1].lp != 0) {
+                duel.players[p & 1].lp = duel.players[p & 1].lp + d;
             }
             if (how == 2 && p == duel_turn_player) {
                 duel_slot_effect_add(p, 0xB, 0x21, 0x14C0, -d);
@@ -896,6 +916,10 @@ void duel_req_088D43F8(int gain)
         break;
     }
 }
+
+#ifdef NON_MATCHING /* passos de pedido com muitos registros de estatística; mantida em asm */
+/* Change the LP of p by arg (gain when gain != 0, else loss; loc: 0 battle, 1 effect, 2 cost;
+   w: card causing it), with the statistics of the duel record. */
 #endif
 
 void duel_req_088D43F8(int gain);
@@ -1720,29 +1744,43 @@ void duel_req_088D63FC(void)
 /* Move a card (arg: from as DuelLoc with uid in the index bits; loc: destination; w: flags). */
 void duel_req_088D6708(void)
 {
-    unsigned int uid = duel_req.req.arg >> 6;
-    unsigned int fp = duel_req.req.arg & 1;
-    unsigned int fz = (duel_req.req.arg & 0x3F) >> 1;
-    unsigned int at = duel_card_locate(uid);
-    unsigned int w = duel_req.req.w;
-    unsigned int fi = at >> 16;
-    unsigned int ti = *(unsigned short *)&duel_req.req.loc >> 6;
-    unsigned int tz = (*(unsigned short *)&duel_req.req.loc & 0x3F) >> 1;
-    unsigned int tp = *(unsigned short *)&duel_req.req.loc & 1;
-    unsigned int put;
-    DuelCard *c;
+    DuelLocU src;
+    DuelLocU dst;
     DuelLoc from;
     DuelLoc to;
+    unsigned int uid;
+    unsigned int fp;
+    unsigned int fz;
+    unsigned int at;
+    unsigned int fi;
+    unsigned int w;
+    unsigned int ti;
+    unsigned int tz;
+    unsigned int tp;
+    unsigned int put;
+    DuelCard *c;
+
+    *(short *)&src = *(short *)&duel_req.req.arg;
+    uid = src.uid;
+    fp = src.player;
+    fz = src.zone;
+    at = duel_card_locate(uid);
+    fi = at >> 16 & 0xFFFF;
+    *(short *)&dst = *(short *)&duel_req.req.loc;
+    w = duel_req.req.w;
+    ti = dst.uid;
+    tz = dst.zone;
+    tp = dst.player;
 
     switch (duel_req_step) {
     case 0:
-        if (fz == 0xE && duel.players[fp].n_grave - 1 != (unsigned int)duel_grave_find_uid(fp, uid)) {
+        if (fz == 0xE && duel.players[fp & 1].n_grave - 1 != duel_grave_find_uid(fp, uid)) {
             duel_grave_to_top(fp, uid);
-            duel_host_call(0x16, fp, 0xE, uid);
+            duel_host_call(0x16, fp, fz, uid);
         }
-        if (fz == 0xF && duel.players[fp].n_f - 1 != duel_f_find_uid(fp, uid)) {
+        if (fz == 0xF && duel.players[fp & 1].n_f - 1 != duel_f_find_uid(fp, uid)) {
             duel_zone_f_to_top(fp, uid);
-            duel_host_call(0x16, fp, 0xF, uid);
+            duel_host_call(0x16, fp, fz, uid);
         }
         duel_req_step++;
         break;
@@ -1750,24 +1788,27 @@ void duel_req_088D6708(void)
         if (duel_req_flag(0x16) != 0) {
             break;
         }
-        if ((at & 0xFF) != fp || (at & 0xFFFF) >> 8 != fz) {
+        if ((at & 0xFF) != fp || ((at & 0xFFFF) >> 8 & 0xFF) != fz) {
             duel_busy_0891523C = 0;
             break;
         }
         c = duel_field_card_deb2c(fp, fz, fi);
-        c->b18 = (w & 1) != 0;
+        at = w & 1;
+        c->b18 = at != 0;
         c->b19 = 0;
         c->b17 = 0;
         c->b20 = 0;
         if (fz == 0xB) {
-            c->b15 = (w & 0x10) != 0;
-            c->b16 = (w & 0x20) != 0;
+            ((DuelCardF15 *)c)->f15 = (w & 0x10) != 0 | ((w & 0x20) != 0) << 1;
         }
-        if (tz == 0xC || tz == 0xD || tz == 0xB) {
+        switch (tz) {
+        case 0xB:
+        case 0xD:
+        case 0xC:
             c->b14 = 0;
-            c->b15 = 0;
-            c->b16 = 0;
+            ((DuelCardF15 *)c)->f15 = 0;
             c->b21 = 0;
+            break;
         }
         if (tz == 0xE && fz != 0xF) {
             duel_add_counters(0, 0x1361, 1 << (c->owner << 3));
@@ -1778,9 +1819,9 @@ void duel_req_088D6708(void)
         }
         duel_card_copy(&duel_card_tmp, c);
         if (tz == 0xB) {
-            ti = duel.players[tp].n_hand;
+            ti = duel.players[tp & 1].n_hand;
         }
-        if (fp == (duel_view_player ^ 1) && (w & 1)) {
+        if (fp == (duel_view_player ^ 1) && at != 0) {
             if (tz == 0xF) {
                 duel_0884DB38(0x26, 1);
                 if (card_is_monster(duel_card_tmp.id) != 0 && !(w & 0x80)) {
@@ -1791,29 +1832,23 @@ void duel_req_088D6708(void)
                 duel_0884DB38(0x28, 1);
             }
         }
-        *(unsigned short *)&from = 0;
         from.player = fp;
         from.zone = fz;
         from.idx = fi;
-        from.b15 = duel_zone_pos(from.player, from.zone, fi & 0xFF);
+        from.b15 = duel_zone_pos(from.player, from.zone, from.idx);
         from.b14 = duel_zone_faceup(from.player, from.zone, from.idx);
-        ti &= 0xFF;
-        *(unsigned short *)&to = 0;
         to.player = tp;
         to.zone = tz;
         to.idx = ti;
         duel_card_take(from.player, from.zone, fi);
-        put = ti;
-        if (tz == 0xF) {
-            put = 0;
-        }
+        put = tz == 0xF ? 0 : to.idx;
         if (w & 0x80) {
             put = 0x80;
         }
         duel_card_put(to.player, to.zone, put, &duel_card_tmp);
-        to.b15 = duel_zone_pos(to.player, to.zone, ti);
+        to.b15 = duel_zone_pos(to.player, to.zone, to.idx);
         to.b14 = duel_zone_faceup(to.player, to.zone, to.idx);
-        duel_host_call(0x18, CARD_UID(duel_card_tmp), *(unsigned short *)&from, *(unsigned short *)&to);
+        duel_host_call(0x18, (unsigned short)CARD_UID(duel_card_tmp), *(unsigned short *)&from, *(unsigned short *)&to);
         duel_req_step++;
         break;
     case 2:
