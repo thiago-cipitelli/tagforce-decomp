@@ -287,7 +287,7 @@ void *dk_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned
     return list;
 }
 
-#ifdef NON_MATCHING /* lista do parâmetro e do resultado em s trocados (como sc_draw_info) */
+#ifdef NON_MATCHING /* forma de dt/sc_draw_info (asm idêntico), 3 palavras: list fica em $s1 no original (aqui divide $s0 com r) */
 /* the strip under the panes: the card list's own strip in one-pane modes, else name, icons, level,
    ATK/DEF and the description scrolling sideways */
 void *dk_draw_info(void *list, DkCursor *c)
@@ -304,8 +304,7 @@ void *dk_draw_info(void *list, DkCursor *c)
             return r;
         if (inv_get_flag7(c->id))
             r = dk_draw_flag_icon(r, PT(0x7B, 0x87), 2, dk_res_get(0x800A));
-        return r;
-    }
+    } else {
     if (c->id == 0)
         return list;
     r = dk_draw_kind_icon(list, 0x146, 0x100, card_get_kind(c->id));
@@ -329,8 +328,8 @@ void *dk_draw_info(void *list, DkCursor *c)
     if (cfg_get_language() != 0)
         font_set_flag4000(0);
     font_set_color(0xFF00FF00);
-    x = font_get_cursor_x() + 0x40;
-    font_draw_wtext(x, 0x3CC0, 0x6B00 - x, card_info_fill(c->id));
+    x2 = font_get_cursor_x() + 0x40;
+    font_draw_wtext(x2, 0x3CC0, 0x6B00 - x2, card_info_fill(c->id));
     r = font_text_clear();
     r = dl_scissor(r, 6, 0x100, 0x13D, 0x110);
     r = dl_enable(r, 2);
@@ -349,6 +348,8 @@ void *dk_draw_info(void *list, DkCursor *c)
     if (cfg_get_language() != 0)
         font_set_flag8(1);
     r = font_text_clear();
-    return dl_disable(r, 2);
+    r = dl_disable(r, 2);
+    }
+    return r;
 }
 #endif

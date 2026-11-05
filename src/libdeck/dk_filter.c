@@ -2,7 +2,6 @@
 // @data 0x0882313C-0x08823178
 // @rodata 0x0882266C-0x08822688
 // @asm 0x08817FF8-0x0881815C
-// @asm 0x0881815C-0x088182EC
 // @asm 0x08819138-0x088192C8
 /* Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
    with its word history, the filters (kind, type, race, level ranges, spell/trap kinds, limit,
@@ -160,7 +159,6 @@ DkFilterFn dk_filters[9] = {
 };
 
 
-#ifdef NON_MATCHING /* 22 palavras: o original carrega e->id e calcula e (em a1) antes do teste do filtro, com ok = 1 no atraso do beqz; o ternário chega mais perto que if/else */
 /* keeps the entries passing filter f (arg its parameter); returns the count */
 int dk_list_filter(DkList *l, unsigned short f, unsigned int *arg)
 {
@@ -170,6 +168,7 @@ int dk_list_filter(DkList *l, unsigned short f, unsigned int *arg)
     unsigned short k;
     DkEnt *e;
     int ok;
+    unsigned short id;
 
     if (tmp == 0)
         return l->count;
@@ -177,7 +176,12 @@ int dk_list_filter(DkList *l, unsigned short f, unsigned int *arg)
     for (i = 0; i < l->count; i++) {
         k = l->order[i];
         e = &l->ents[k];
-        ok = dk_filters[f] != 0 ? dk_filters[f](e->id, *arg) : f == 7 ? dk_filter_attr(e, arg) : 1;
+        id = e->id;
+        ok = 1;
+        if (dk_filters[f] != 0)
+            ok = dk_filters[f](id, *arg);
+        else if (f == 7)
+            ok = dk_filter_attr(e, arg);
         if (ok) {
             tmp[n++] = k;
         }
@@ -189,7 +193,6 @@ int dk_list_filter(DkList *l, unsigned short f, unsigned int *arg)
         heap_set_level(dk_heap, tmp);
     return n;
 }
-#endif
 
 int dk_filter_kind(unsigned short id, unsigned int mask)
 {

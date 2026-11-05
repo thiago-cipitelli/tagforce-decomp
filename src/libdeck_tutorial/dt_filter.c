@@ -1,6 +1,5 @@
 // @range 0x088135A8-0x08814460
 // @asm 0x08813888-0x088139EC
-// @asm 0x088139EC-0x08813B7C
 // @rodata 0x08821050-0x0882106C
 // @data 0x08822024-0x08822050
 /* (The code of libdeck dk_filter.c, first half; the lesson has no "new" filter.) Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
@@ -164,9 +163,8 @@ DtFilterFn dt_filters[9] = {
 };
 
 
-#ifdef NON_MATCHING /* 65 palavras, 1 instrução a menos: o original guarda e no a1 (move a0,a1 para dt_filter_attr) e lê e->id antes do teste do filtro nulo */
 /* keeps the entries passing filter f (arg its parameter); returns the count */
-unsigned short dt_list_filter(DtList *l, unsigned short f, unsigned int *arg)
+int dt_list_filter(DtList *l, unsigned short f, unsigned int *arg)
 {
     unsigned short *tmp = heap_alloc(dts.heap, l->count << 1);
     int n;
@@ -174,6 +172,7 @@ unsigned short dt_list_filter(DtList *l, unsigned short f, unsigned int *arg)
     unsigned short k;
     DtEnt *e;
     int ok;
+    unsigned short id;
 
     if (tmp == 0)
         return l->count;
@@ -181,7 +180,12 @@ unsigned short dt_list_filter(DtList *l, unsigned short f, unsigned int *arg)
     for (i = 0; i < l->count; i++) {
         k = l->order[i];
         e = &l->ents[k];
-        ok = dt_filters[f] != 0 ? dt_filters[f](e->id, *arg) : f == 7 ? dt_filter_attr(e, arg) : 1;
+        id = e->id;
+        ok = 1;
+        if (dt_filters[f] != 0)
+            ok = dt_filters[f](id, *arg);
+        else if (f == 7)
+            ok = dt_filter_attr(e, arg);
         if (ok) {
             tmp[n++] = k;
         }
@@ -193,7 +197,6 @@ unsigned short dt_list_filter(DtList *l, unsigned short f, unsigned int *arg)
         heap_set_level(dts.heap, tmp);
     return n;
 }
-#endif
 
 int dt_filter_kind(unsigned short id, unsigned int mask)
 {

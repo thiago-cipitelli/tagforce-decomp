@@ -1,5 +1,4 @@
 // @range 0x08809804-0x0880AB28
-// @asm 0x08809E58-0x0880A244
 // @asm 0x0880A9BC-0x0880AB28
 // @rodata 0x08819C7C-0x08819CA0
 /* The per-frame input dispatch and the input of the main state: cursor moves in the grid and in
@@ -31,8 +30,8 @@ int ds_input_move(void);
 void ds_input_main(void);
 void ds_input_help(void);
 void ds_input_help_b(void);
-void ds_cursor_grid(unsigned short side, PadState *pad);
-void ds_cursor_list(unsigned short side, PadState *pad);
+void ds_cursor_grid(int side, PadState *pad);
+void ds_cursor_list(int side, PadState *pad);
 void ds_cursor_switch();
 void ds_page(int up);
 void ds_jump(int up);
@@ -217,98 +216,108 @@ void ds_input_help_b(void)
     }
 }
 
-#ifdef NON_MATCHING /* campos do painel por índice no original; registradores e ordem dos testes diferem */
 /* grid cursor: d-pad moves, wraps to the other pane at the left/right edges, scrolls by rows */
-void ds_cursor_grid(unsigned short side, PadState *pad)
+void ds_cursor_grid(int side, PadState *pad)
 {
-    unsigned int cols = dsv.pane[side].lay.cols;
-    unsigned int cx = dsv.pane[side].cx;
-    unsigned int cy = dsv.pane[side].cy;
-    int top = (dsv.pane[side].top + cols - 1) / cols;
-    unsigned int rows = dsv.pane[side].lay.grid_rows;
-    unsigned int rep = pad->b.rep;
-    int total = (dsv.pane[side].list->count + cols - 1) / cols;
-    unsigned int dy;
-    unsigned int dx;
-    unsigned short ocy;
-    unsigned short otop;
-    unsigned int ntop;
+    DsPane *p = &dsv.pane[(unsigned short)side];
+    int cols;
+    int cy;
+    int cx;
+    int top;
+    int rows;
+    unsigned int rep;
+    int total;
+    int dx;
+    int dy;
+    int changed = 0;
+    int nx;
+    int ny;
 
-    dy = (rep & 0x40) != 0;
+    cx = p->cx;
+    cy = p->cy;
+    cols = p->lay.cols;
+    top = (p->top + cols - 1) / cols;
+    rows = p->lay.grid_rows;
+    rep = pad->b.rep;
+    total = (p->list->count + cols - 1) / cols;
+
+    dy = 0;
+    dx = 0;
+    if (rep & 0x40)
+        dy++;
     if (rep & 0x10)
         dy--;
-    dx = (rep & 0x20) != 0;
+    if (rep & 0x20)
+        dx++;
     if (rep & 0x80)
         dx--;
-    dx = cx + dx;
-    if ((int)dx < 0) {
-        ds_cursor_switch(side, rows, 1, cy);
+    nx = cx + dx;
+    if (nx < 0) {
+        ds_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
-    } else if ((int)dx < (int)cols) {
-        if (top + cy == 0 && (pad->b.trig & 0x10)) {
-            if (total < (int)rows)
-                top = 0;
-            else
-                top = total - rows;
-            dy = rows - 1;
-        } else if ((int)(top + cy) < total - 1 || cy != rows - 1 || !(pad->b.trig & 0x40)) {
-            dy = cy + dy;
-            if ((int)dy < 0) {
-                top += dy;
-                if (top < 1)
-                    top = 0;
-                dy = 0;
-            } else if ((int)rows <= (int)dy) {
-                if ((int)rows < total) {
-                    if ((int)(top + dy) < total)
-                        top += dy - (rows - 1);
-                    else
-                        top = total - rows;
-                    dy = rows - 1;
-                } else {
-                    dy = rows - 1;
-                }
-            }
-        } else {
-            dy = 0;
-            top = 0;
-        }
-        if (cx != dx)
-            dsv.pane[side].cx = dx;
-        ocy = dsv.pane[side].cy;
-        if (ocy != dy)
-            dsv.pane[side].cy = dy;
-        ntop = top * cols;
-        otop = dsv.pane[side].top;
-        if (otop != ntop)
-            dsv.pane[side].top = ntop;
-        if (otop != ntop || ocy != dy || cx != dx)
-            se_play(0x6212);
+    } else if (nx >= cols) {
+        ds_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
+        se_play(0x6212);
     } else {
-        ds_cursor_switch(side, rows, 0, cy);
-        se_play(0x6212);
+        if (top + cy == 0 && (pad->b.trig & 0x10)) {
+            if (total >= rows)
+                top = total - rows;
+            else
+                top = 0;
+            ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top = (top + ny > 0) ? top + ny : 0;
+                ny = 0;
+            } else if (ny >= rows) {
+                if (rows < total) {
+                    if (top + ny >= total)
+                        top = total - rows;
+                    else
+                        top += ny - (rows - 1);
+                }
+                ny = rows - 1;
+            }
+        }
+        if (cx != nx) {
+            p->cx = nx;
+            changed = 1;
+        }
+        if (p->cy != ny) {
+            p->cy = ny;
+            changed = 1;
+        }
+        if (p->top != top * cols) {
+            p->top = top * cols;
+            changed = 1;
+        }
+        if (changed)
+            se_play(0x6212);
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* 97 palavras: pane por ponteiro e flag de mudança como no original (lógica conferida com o asm); restam as máscaras u16 de cy/rows e a polaridade de alguns testes */
 /* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
-void ds_cursor_list(unsigned short side, PadState *pad)
+void ds_cursor_list(int side, PadState *pad)
 {
-    DsPane *p = &dsv.pane[side];
-    unsigned short cy = p->cy;
-    unsigned short rows = p->lay.rows;
+    DsPane *p = &dsv.pane[(unsigned short)side];
+    int cy = p->cy;
+    int rows = p->lay.rows;
     unsigned int rep = pad->b.rep;
     int top = p->top;
     int total = p->list->count;
-    int dy;
     int changed = 0;
+    int dy;
+    int ny;
 
     if (rep & 0x80) {
-        ds_cursor_switch(side, rows, 1, cy);
+        ds_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
     } else if (rep & 0x20) {
-        ds_cursor_switch(side, rows, 0, cy);
+        ds_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
         se_play(0x6212);
     } else {
         dy = 0;
@@ -317,33 +326,31 @@ void ds_cursor_list(unsigned short side, PadState *pad)
         if (rep & 0x10)
             dy--;
         if (top + cy == 0 && (pad->b.trig & 0x10)) {
-            if (total < rows)
-                top = 0;
-            else
+            if (total >= rows)
                 top = total - rows;
-            dy = rows - 1;
-        } else if ((top + cy) < (total - 1) || cy != rows - 1 || !(pad->b.trig & 0x40)) {
-            dy = cy + dy;
-            if (dy < 0) {
-                top += dy;
-                if (top <= 0)
-                    top = 0;
-                dy = 0;
-            } else if (dy >= rows) {
+            else
+                top = 0;
+            ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top = (top + ny > 0) ? top + ny : 0;
+                ny = 0;
+            } else if (ny >= rows) {
                 if (total < rows)
                     top = 0;
-                else if ((top + dy) < total)
-                    top += dy - (rows - 1);
-                else
+                else if (top + ny >= total)
                     top = total - rows;
-                dy = rows - 1;
+                else
+                    top += ny - (rows - 1);
+                ny = rows - 1;
             }
-        } else {
-            dy = 0;
-            top = 0;
         }
-        if (cy != dy) {
-            p->cy = dy;
+        if (cy != ny) {
+            p->cy = ny;
             changed = 1;
         }
         if (p->top != top) {
@@ -354,7 +361,6 @@ void ds_cursor_list(unsigned short side, PadState *pad)
             se_play(0x6212);
     }
 }
-#endif
 
 /* moves the cursor to the other pane (dir 1 = enter from the right), keeping its height; K&R so the
    4-argument calls compile: "to" is a dead stack/register value unless from is 0 or 1 (as in the original) */

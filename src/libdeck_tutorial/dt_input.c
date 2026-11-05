@@ -1,5 +1,4 @@
 // @range 0x088100AC-0x08811BB8
-// @asm 0x088106B4-0x08810AA0
 // @asm 0x08811210-0x0881137C
 // @rodata 0x08820FF0-0x08821030
 // @data 0x08821F4C-0x08821F74
@@ -235,23 +234,30 @@ void dt_input_shoulder_r(PadBits *pad)
     }
 }
 
-#ifdef NON_MATCHING /* 16 palavras: cols/cx trocam de registrador temporário (ordem das cargas: original cols, top, cx, cy; perm_stmts das iniciações deu no máximo esta) e o blezl do "if (top <= 0) top = 0" de dt_cursor_list */
 /* grid cursor: d-pad moves, wraps to the other pane at the left/right edges, scrolls by rows */
 void dt_cursor_grid(int side, PadBits *pad)
 {
     DtPane *p = &dtv.pane[(unsigned short)side];
-    int cols = p->lay.cols;
-    int cy = p->cy;
-    int cx = p->cx;
-    int top = (p->top + cols - 1) / cols;
-    int rows = p->lay.grid_rows;
-    unsigned int rep = pad->rep;
-    int total = (p->list->count + cols - 1) / cols;
+    int cols;
+    int cy;
+    int cx;
+    int top;
+    int rows;
+    unsigned int rep;
+    int total;
     int dx;
     int dy;
     int changed = 0;
     int nx;
     int ny;
+
+    cx = p->cx;
+    cy = p->cy;
+    cols = p->lay.cols;
+    top = (p->top + cols - 1) / cols;
+    rows = p->lay.grid_rows;
+    rep = pad->rep;
+    total = (p->list->count + cols - 1) / cols;
 
     dy = 0;
     dx = 0;
@@ -283,10 +289,8 @@ void dt_cursor_grid(int side, PadBits *pad)
         } else {
             ny = cy + dy;
             if (ny < 0) {
-                top += ny;
+                top = (top + ny > 0) ? top + ny : 0;
                 ny = 0;
-                if (top <= 0)
-                    top = 0;
             } else if (ny >= rows) {
                 if (rows < total) {
                     if (top + ny >= total)
@@ -313,9 +317,7 @@ void dt_cursor_grid(int side, PadBits *pad)
             se_play(0x6212);
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* 3 palavras: "top += ny; if (top <= 0) top = 0; ny = 0;" sai no original como blezl para a instrução seguinte e "b; ny = 0"; aqui bgtz direto para o fim (ny = 0 antes do teste é a forma mais próxima) */
 /* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
 void dt_cursor_list(int side, PadBits *pad)
 {
@@ -353,10 +355,8 @@ void dt_cursor_list(int side, PadBits *pad)
         } else {
             ny = cy + dy;
             if (ny < 0) {
-                top += ny;
+                top = (top + ny > 0) ? top + ny : 0;
                 ny = 0;
-                if (top <= 0)
-                    top = 0;
             } else if (ny >= rows) {
                 if (total < rows)
                     top = 0;
@@ -379,7 +379,6 @@ void dt_cursor_list(int side, PadBits *pad)
             se_play(0x6212);
     }
 }
-#endif
 
 /* moves the cursor to the other pane (dir 1 = enter from the right), keeping its height; the callers
    pass 4 arguments, so to is whatever the fifth register holds (used only when from is neither 0 nor 1,

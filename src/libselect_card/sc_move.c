@@ -1,7 +1,6 @@
 // @range 0x08815168-0x08816DD4
 // @asm 0x08815408-0x088158DC
 // @asm 0x088158DC-0x08815CD0
-// @asm 0x08816550-0x08816874
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
    entry is taken out, flown along a curve from its slot to the slot it lands in and added to the
@@ -283,8 +282,7 @@ int sc_cancel_request(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (faltava o teste morto de idx < 0 com sc_flight_free);
-                       laços de busca e bitfields com outra alocação */
+#ifdef NON_MATCHING /* 3 palavras: só o lado (switch em h.dst), que o original calcula com bnezl + li 1 no atraso e move zero (aqui beqzl); o slot_pos recebe k (não o pos u16 relido) */
 /* Triangle: undoes the last move */
 int sc_input_move(void)
 {
@@ -325,8 +323,8 @@ int sc_input_move(void)
     sc_flight->step = 2;
     sc_flight->phase = 0;
     l = &sc.list[sc_flight->sel.src];
-    k = -1;
     found = 0;
+    k = -1;
     if (sc_flight->idx >= l->n) {
         found = 1;
     } else {
@@ -359,7 +357,7 @@ int sc_input_move(void)
         }
     }
     sc_flight->pos = k;
-    sc_slot_pos(sc_flight->from, sc_flight->sel.side, sc_flight->sel.src, sc_flight->pos, 0);
+    sc_slot_pos(sc_flight->from, sc_flight->sel.side, sc_flight->sel.src, k, 0);
     sc_flight->x = sc_flight->from[0];
     sc_flight->y = sc_flight->from[1];
     sc_flight_take();
@@ -515,7 +513,6 @@ void *sc_draw_sort_menu(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* forma de dk_slot_pos (o rascunho dava frames = step: são 6 na grade e 1 na lista; tab u32); 8 palavras: v0/v1 trocados no resto da coluna da grade, como em dk_slot_pos */
 /* screen position of position pos of list tab shown in pane side; scroll the pane towards it when
    asked (returns 0 then) */
 int sc_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
@@ -597,8 +594,12 @@ int sc_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
     case 0:
         d = pos - p->top;
         cols = lay->cols;
-        out[0] = (int)(lay->x + lay->grid_x + (d % cols) * (unsigned short)lay->cell_w);
-        out[1] = (int)(lay->y + lay->grid_y + (d / cols) * (unsigned short)lay->cell_h);
+        {
+            int m = d % cols;
+            out[0] = (int)(lay->x + lay->grid_x + m * (unsigned short)lay->cell_w);
+            m = d / cols;
+            out[1] = (int)(lay->y + lay->grid_y + m * (unsigned short)lay->cell_h);
+        }
         break;
     case 1:
         out[0] = lay->x + lay->row_x;
@@ -612,7 +613,6 @@ int sc_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
     out[1] += 15.0f;
     return 1;
 }
-#endif
 
 /* position the card id lands at in list tab */
 int sc_dst_pos(int tab, unsigned short id)

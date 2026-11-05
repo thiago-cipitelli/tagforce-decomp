@@ -1,6 +1,5 @@
 // @range 0x0880CDC8-0x088100AC
 // @asm 0x0880D96C-0x0880DE54
-// @asm 0x0880FC74-0x0880FF74
 // @rodata 0x08820F9C-0x08820FF0
 /* Moving a card between the lists (Circle in the deck editor, undo with Triangle): the destination
    window offering the lists the card can go to (main, side, extra, trunk) with the full ones greyed
@@ -252,7 +251,7 @@ static inline int dt_tab_side(int tab)
     return 1;
 }
 
-#ifdef NON_MATCHING /* o original calcula o lado (src >= 3) com desvio; o mwcc dobra em slti/xori, e os temporários mudam */
+#ifdef NON_MATCHING /* 5 palavras: só o lado (src >= 3), que o original calcula com beqzl + li 1 no atraso e move zero (aqui beqz e outro temporário); o slot_pos recebe k (não o pos u16 relido) */
 /* Triangle: takes the last move back (the card flies from where it landed to its old list) */
 int dt_flight_undo(void)
 {
@@ -296,8 +295,8 @@ int dt_flight_undo(void)
     dt_flight->step = 7;
     dt_flight->phase = 0;
     l = &dts.list[dt_flight->src];
-    k = -1;
     found = 0;
+    k = -1;
     if (dt_flight->idx >= l->n) {
         found = 1;
     } else {
@@ -328,7 +327,7 @@ int dt_flight_undo(void)
         }
     }
     dt_flight->pos = k;
-    dt_slot_pos(dt_flight->from, dt_flight->side, dt_flight->src, dt_flight->pos, 0);
+    dt_slot_pos(dt_flight->from, dt_flight->side, dt_flight->src, k, 0);
     dt_flight->cur[0] = dt_flight->from[0];
     dt_flight->cur[1] = dt_flight->from[1];
     dt_flight_take();
@@ -809,7 +808,6 @@ unsigned int dt_flight_window_state(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores temporários da conta da grade (o original mantém scroll em t0) */
 /* screen position of entry pos of list tab in pane side (card center, +11/+15); when the entry is
    scrolled out and scroll is set, scrolls the pane one step toward it and returns 0; tabs not shown
    in the pane give the position of their tab */
@@ -879,14 +877,19 @@ int dt_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
     }
     switch (mode) {
     case 0:
-        cols = lay->cols;
         d = pos - p->top;
-        out[0] = (int)(lay->x + lay->grid_x + (d % cols) * (unsigned short)lay->cell_w);
-        out[1] = (int)(lay->y + lay->grid_y + (d / cols) * (unsigned short)lay->cell_h);
+        cols = lay->cols;
+        {
+            int m = d % cols;
+            out[0] = (int)(lay->x + lay->grid_x + m * (unsigned short)lay->cell_w);
+            m = d / cols;
+            out[1] = (int)(lay->y + lay->grid_y + m * (unsigned short)lay->cell_h);
+        }
         break;
     case 1:
         out[0] = lay->x + lay->row_x;
-        out[1] = (int)(lay->y + lay->row_y + (unsigned short)lay->row_h * (pos - p->top));
+        cols = lay->y + lay->row_y;
+        out[1] = (int)(cols + (unsigned short)lay->row_h * (pos - p->top));
         if (dtv.mode < 4 && side == 1)
             out[1] += 1.0f;
         break;
@@ -895,7 +898,6 @@ int dt_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
     out[1] += 15.0f;
     return 1;
 }
-#endif
 
 /* position the card will take in the visible order of list tab (the trunk merges copies) */
 int dt_dst_pos(int tab, int id)

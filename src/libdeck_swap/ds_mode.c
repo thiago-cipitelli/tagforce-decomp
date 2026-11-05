@@ -1,5 +1,5 @@
 // @range 0x08805E58-0x08806654
-// @asm 0x08805E58-0x08806324
+// @asm 0x08805E58-0x0880624C
 // @data 0x0881A014-0x0881A170
 /* Pane layouts (one or two panes, grid or list each) and the tab positions of the three lists;
    the window and stream animations that follow the layout and the deck size (same source as
@@ -53,64 +53,72 @@ DsMode ds_modes[8] = {
     { 0, 3, 1, 4 },
 };
 
-#ifdef NON_MATCHING /* o original usa a base dsv mais o lado para os campos do painel e a alocação dos s difere */
+#ifdef NON_MATCHING /* forma de dk_set_mode; corrigido: o original troca o painel 1 para a aba tab_a - 2 quando tab_a >= 2 (o rascunho usava != 0 e - 1). 56 palavras: temporários dos dois laços de releitura dos painéis */
 /* switches the pane layout (ds_modes row), keeping each list's scroll position */
 void ds_set_mode(unsigned short mode)
 {
-    DsMode *m = &ds_modes[mode];
-    unsigned short tab_b = dsv.pane[1].list->tab;
-    unsigned short tab_a = dsv.pane[0].list->tab;
+    DsMode *md = &ds_modes[mode];
+    int tab_a = dsv.pane[0].list->tab;
+    int tab_b = dsv.pane[1].list->tab;
     int i;
     DsPane *p;
-    DsList *l;
-    unsigned short grid;
+    int grid;
     unsigned short view;
+    int keep;
 
-    if (dsv.mode < 2)
-        ds_set_panes(0);
-    else
+    if (dsv.mode > 1)
         ds_set_panes(2);
-    dsv.pane[0].list_mode = m->list_a;
-    memcpy(&dsv.pane[0].lay, &ds_layouts[m->lay_a], 0x1E);
-    if (m->list_b >= 0)
-        dsv.pane[1].list_mode = m->list_b;
-    if (m->lay_b >= 0)
-        memcpy(&dsv.pane[1].lay, &ds_layouts[m->lay_b], 0x1E);
+    else
+        ds_set_panes(0);
+    p = &dsv.pane[0];
+    p->list_mode = md->list_a;
+    memcpy(&p->lay, &ds_layouts[md->lay_a], 0x1E);
+    p = &dsv.pane[1];
+    if (md->list_b >= 0)
+        p->list_mode = md->list_b;
+    if (md->lay_b >= 0)
+        memcpy(&p->lay, &ds_layouts[md->lay_b], 0x1E);
     dsv.mode = mode;
     for (i = 0; i < 2; i++) {
+        keep = 0;
+        dsv.pane[i].top = dsv.pane[i].list->u18;
+        dsv.pane[i].cx = dsv.pane[i].list->u1c_lo;
+        dsv.pane[i].cy = dsv.pane[i].list->u1c_hi;
         p = &dsv.pane[i];
-        p->top = p->list->u18;
-        p->cx = p->list->u1c_lo;
-        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
-        l = p->list;
+        if (p->list->u1d_lo == grid)
+            keep = 1;
         view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        ds_layout_scroll(l->u1d_lo == grid, l->u1a, ((p->list_mode == 0 ? p->lay.cols : 1) & 0xFF) | (view & 0xFF) << 8,
-                         l->count, &p->top, &p->cx, &p->cy);
-        if (dsv.mode < 2)
+        ds_layout_scroll(keep, p->list->u1a,
+                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         p->list->count, &p->top, &p->cx, &p->cy);
+        if (dsv.mode <= 1)
             break;
     }
-    if (dsv.mode < 2) {
+    if (dsv.mode <= 1) {
         if (dsv.side != 0) {
             dsv.side = 0;
             ds_select_tab(0, tab_b, 2);
         }
-    } else if (tab_a != 0) {
-        ds_select_tab(1, tab_a - 1, 2);
+    } else if (tab_a >= 2) {
+        ds_select_tab(1, tab_a - 2, 2);
         dsv.side = 1;
         ds_select_tab(0, 0, 2);
     }
     for (i = 0; i < 2; i++) {
+        keep = 0;
+        dsv.pane[i].top = dsv.pane[i].list->u18;
+        dsv.pane[i].cx = dsv.pane[i].list->u1c_lo;
+        dsv.pane[i].cy = dsv.pane[i].list->u1c_hi;
         p = &dsv.pane[i];
-        p->top = p->list->u18;
-        p->cx = p->list->u1c_lo;
-        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
-        l = p->list;
+        if (p->list->u1d_lo == grid)
+            keep = 1;
         view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        ds_layout_scroll(l->u1d_lo == grid, l->u1a, ((p->list_mode == 0 ? p->lay.cols : 1) & 0xFF) | (view & 0xFF) << 8,
-                         l->count, &p->top, &p->cx, &p->cy);
-        if (dsv.mode < 2)
+        ds_layout_scroll(keep, p->list->u1a,
+                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         p->list->count, &p->top, &p->cx, &p->cy);
+        if (dsv.mode <= 1)
             break;
     }
     ds_window_anim();
@@ -119,7 +127,6 @@ void ds_set_mode(unsigned short mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* 14 palavras: só o último grupo (b == 1 -> 4, b == 0 -> 6, senão -1): o original testa com bnez sem preencher o atraso e deixa o -1 no fim; aqui sai bnezl com o -1 no atraso. Os outros grupos batem com o ternário b == 0 ? x : -1 e o else r = -1 depois do bloco */
 /* ds_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int ds_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)
 {
@@ -149,12 +156,12 @@ int ds_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned sho
         else if (b == 0)
             r = 6;
         else
-            r = -1;
+            goto none;
     } else
+none:
         r = -1;
     return r;
 }
-#endif
 
 /* tab buttons of the three layouts (one pane, two panes, two wide panes) */
 DsTab ds_tabs[3][3] __attribute__((aligned(16))) = {

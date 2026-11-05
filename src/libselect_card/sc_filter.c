@@ -1,7 +1,6 @@
 // @range 0x08810BF4-0x088119C8
 // @asm 0x08811130-0x088112C0
 // @asm 0x088115CC-0x08811730
-// @asm 0x08811730-0x088118C0
 // @data 0x0881B424-0x0881B454
 /* Sorting a pane's visible order by one of the nine keys (stable, "no value" last), the key value
    of a card, the "new"-mark filter, the incremental text search and its word history, and the
@@ -341,9 +340,8 @@ ScFilterFn sc_filters[8] = {
     (ScFilterFn)sc_filter_level, (ScFilterFn)sc_filter_atk, (ScFilterFn)sc_filter_def, 0,
 };
 
-#ifdef NON_MATCHING /* laço com a tabela de filtros; alocação diferente */
 /* keeps the entries passing filter f (arg its parameter); returns the count */
-unsigned short sc_list_filter(ScList *l, unsigned short f, unsigned int *arg)
+int sc_list_filter(ScList *l, unsigned short f, unsigned int *arg)
 {
     unsigned short *tmp = heap_alloc(sc.heap, l->count << 1);
     int n;
@@ -351,6 +349,7 @@ unsigned short sc_list_filter(ScList *l, unsigned short f, unsigned int *arg)
     unsigned short k;
     ScEnt *e;
     int ok;
+    unsigned short id;
 
     if (tmp == 0)
         return l->count;
@@ -358,7 +357,12 @@ unsigned short sc_list_filter(ScList *l, unsigned short f, unsigned int *arg)
     for (i = 0; i < l->count; i++) {
         k = l->order[i];
         e = &l->ents[k];
-        ok = sc_filters[f] != 0 ? sc_filters[f](e->id, *arg) : f == 7 ? sc_filter_attr(e, arg) : 1;
+        id = e->id;
+        ok = 1;
+        if (sc_filters[f] != 0)
+            ok = sc_filters[f](id, *arg);
+        else if (f == 7)
+            ok = sc_filter_attr(e, arg);
         if (ok) {
             tmp[n++] = k;
         }
@@ -370,7 +374,6 @@ unsigned short sc_list_filter(ScList *l, unsigned short f, unsigned int *arg)
         heap_set_level(sc.heap, tmp);
     return n;
 }
-#endif
 
 int sc_filter_kind(unsigned short id, unsigned int mask)
 {
