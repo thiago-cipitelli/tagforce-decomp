@@ -31,7 +31,9 @@ int card_is_in_group_1a6x(int id);
 /* monsters asked one after the other by 0x1288 (duel_0882A23C) */
 int duel_ritual_ids[3] = { 0x1288, 0x129B, 0x12B8 };
 
-#ifdef NON_MATCHING /* desvios do fim com atrasos vazios (b fim; nop) que nenhuma forma do fonte reproduziu */
+#ifdef NON_MATCHING /* lógica conferida (jal e testes); faltam o fim (li v0 antes de "b fim; nop" no zone_usable e
+                      no hand[i].id: nem if/else com r, nem ?:, nem return direto reproduzem) e a ordem do prólogo
+                      (lbu n em a0, player antes do lw de ids[n], move s4,zero no atraso do jal); ~50 palavras */
 /* Zone filter (0x800 = can be picked): the monsters of the ritual of 0x1288, one per step. */
 int duel_0882A23C(unsigned int p, int z, int i)
 {
@@ -40,6 +42,7 @@ int duel_0882A23C(unsigned int p, int z, int i)
     int zz;
     int k;
     int j;
+    int r;
 
     if (duel_count_free_monster_zones(duel_summon.player) == 0) {
         blocked = 1;
@@ -52,7 +55,7 @@ int duel_0882A23C(unsigned int p, int z, int i)
             }
         }
         for (k = duel_summon.n + 1; k < 3; k++) {
-            for (j = 0; j < 5; j++) {
+            for (j = 0; j <= 4; j++) {
                 if (duel_ritual_ids[k] == field_get_card(duel_summon.player, j)
                     && duel_tributable(duel_summon.player, duel_summon.player, j)
                     && duel_zone_usable(duel_summon.player, j)) {
@@ -73,24 +76,30 @@ int duel_0882A23C(unsigned int p, int z, int i)
         if (id != field_get_card(p, zz)) {
             return 0;
         }
-        if (!blocked) {
+        if (blocked) {
+            if (p == duel_summon.player) {
+                if (duel_zone_usable(p, zz) == 0) {
+                    r = 0;
+                } else {
+                    r = 0x800;
+                }
+            } else {
+                return 0;
+            }
+        } else {
             return 0x800;
         }
-        if (p != duel_summon.player) {
+    } else {
+        if (blocked) {
             return 0;
         }
-        if (duel_zone_usable(p, zz) == 0) {
-            return 0;
+        if (p == duel_summon.player && z == 0xB) {
+            r = id == duel.players[p & 1].hand[i].id ? 0x800 : 0;
+        } else {
+            r = 0;
         }
-        return 0x800;
     }
-    if (blocked) {
-        return 0;
-    }
-    if (p == duel_summon.player && z == 0xB && id == duel.players[p & 1].hand[i].id) {
-        return 0x800;
-    }
-    return 0;
+    return r;
 }
 #endif
 

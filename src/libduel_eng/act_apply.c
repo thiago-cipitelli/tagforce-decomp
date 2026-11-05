@@ -1,5 +1,4 @@
 // @range 0x088D13CC-0x088D1DF4
-// @asm 0x088D16C4-0x088D184C
 /* Applying an effect to a set of zones: duel_act_apply (0x088D1094, in leave_field.c) takes the card
    acting, a mask of zones (bit player * 16 + zone), the kind of effect and flags, and returns the
    zones it affected; the wrappers below test one zone or build the acting card. */
@@ -83,40 +82,36 @@ int duel_088D1684(DuelAct *a, unsigned int p, int z, int flags)
     return (m & duel_act_apply(a, m, 0xF, flags)) != 0;
 }
 
-#ifdef NON_MATCHING /* faltava o 4º argumento (flags repassado a duel_act_apply); o original calcula antes do laço
-                        os endereços dos bytes do uid da carta (&slot+49, +50); ~60 palavras */
 int duel_088D16C4(DuelAct *a, unsigned int p, int z, int f)
 {
     unsigned int m = 1 << (z + p * 16);
     unsigned int e;
+    int k;
 
-    if ((m & duel_act_apply(a, m, 0xF, f)) == 0) {
-        return 0;
-    }
-    e = duel.players[p & 1].field[z].effects;
-    if (e == 0) {
-        return 1;
-    }
-    do {
-        DuelEffectBits *ef = (DuelEffectBits *)&duel_effects[e];
+    if ((m & duel_act_apply(a, m, 0xF, f)) != 0) {
+        e = duel.players[p & 1].field[z].effects;
+        while (e != 0) {
+            DuelEffectBits *ef = (DuelEffectBits *)&duel.effects[e];
 
-        e = ef->next;
-        if (ef->kind < 6) {
-            switch (ef->src) {
-            case 0x17D2:
-            case 0x17D5:
-            case 0x1814:
-            case 0x1A1F:
-            case 0x1A20:
-            case 0x1A21:
-                duel_088C77D4(p, ef->src, ef->kind | ef->kind_hi << 4, CARD_UID(duel.players[p & 1].field[z].card));
-                break;
+            e = ef->next;
+            k = ef->kind;
+            if (k < 6) {
+                switch (ef->src) {
+                case 0x17D2:
+                case 0x17D5:
+                case 0x1814:
+                case 0x1A1F:
+                case 0x1A20:
+                case 0x1A21:
+                    duel_088C77D4(p, ef->src, (unsigned short)(k & 0xF | (ef->kind_hi & 0xF) << 4), CARD_UID(duel.players[p & 1].field[z].card));
+                    break;
+                }
             }
         }
-    } while (e != 0);
-    return 1;
+        return 1;
+    }
+    return 0;
 }
-#endif
 
 void duel_088D184C(DuelAct *a, unsigned int mask, int flags)
 {

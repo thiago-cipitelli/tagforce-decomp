@@ -1,6 +1,5 @@
 // @range 0x088FE638-0x088FF0DC
 // @asm 0x088FE724-0x088FE810
-// @asm 0x088FEF00-0x088FEF6C
 /* Exported accessors of the duel state (library libduel_eng, imported by NID by libduel_draw),
    duel input log and the host callback. */
 #include "duel.h"
@@ -394,18 +393,18 @@ int duel_unk2c(unsigned int p)
     return duel.players[p & 1].unk20[3];
 }
 
-#ifdef NON_MATCHING /* o original lê duel_log_buf antes de gravar duel_log_n (n em a3); o mwcc adia a leitura para
-                      depois do store em todas as formas testadas (local n, e[n++], base em local, cast); 13 palavras */
 void duel_log_push(DuelLogEnt *v)
 {
     if (duel_log_mode == 1 && duel_log_n < 0x7FF) {
-        DuelLogEnt *e = &duel_log_buf->e[duel_log_n];
+        int n = duel_log_n;
+        DuelLog *b = *(DuelLog *volatile *)&duel_log_buf; /* lido antes do store de duel_log_n */
+        DuelLogEnt *e;
 
-        duel_log_n++;
+        duel_log_n = n + 1;
+        e = (DuelLogEnt *)((char *)b->e + (n << 3));
         *e = *v;
     }
 }
-#endif
 
 DuelLogEnt *duel_log_cur(void)
 {

@@ -5,7 +5,6 @@
 // @asm 0x088711BC-0x0887132C
 // @asm 0x08870C54-0x08870E94
 // @asm 0x08870848-0x088708E4
-// @asm 0x08870968-0x08870A38
 // @asm 0x08870A94-0x08870B4C
 // @asm 0x08871B14-0x08871BFC
 // @asm 0x088719DC-0x08871A68
@@ -788,8 +787,6 @@ int duel_088708E4(DuelAct *a, int b)
     return (int)duel_grave_find_uid(a->player, a->uid) >= 0;
 }
 
-#ifdef NON_MATCHING /* lógica conferida; o original sai por beql (zone[0]) para o return 1 e testa zone[1] com
-                      bne/li 1/b/move 0; o mwcc inverte o 1º e faz xor/sltiu no 2º (if separados ou aninhados); 22 palavras */
 int duel_08870968(DuelAct *a)
 {
     unsigned int p;
@@ -801,18 +798,12 @@ int duel_08870968(DuelAct *a)
         return 0;
     }
     p = a->player;
-    if (duel_special.player[0] == p && duel_special.zone[0] == a->zone) {
+    if ((duel_special.player[0] == p && duel_special.zone[0] == a->zone) ||
+        (duel_special.player[1] == p && duel_special.zone[1] == a->zone)) {
         return 1;
     }
-    if (duel_special.player[1] != p) {
-        return 0;
-    }
-    if (duel_special.zone[1] != a->zone) {
-        return 0;
-    }
-    return 1;
+    return 0;
 }
-#endif
 
 int duel_08870A38(DuelAct *a)
 {
@@ -1151,20 +1142,25 @@ int duel_0887153C(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* branch layout and registers differ */
+#ifdef NON_MATCHING /* forma e fluxo batem; só p (s0 no original) e i*4 (s1) trocados de registrador, em todas as
+                      ordens de declaração e de i = 0 / p = a->player testadas; 9 palavras */
 /* Every other card in the hand belongs to a's player. */
 int duel_08871674(DuelAct *a)
 {
-    unsigned int p;
     unsigned int i;
+    unsigned int p;
 
     if (duel_count_monsters(a->player) == 0) {
         return 0;
     }
+    i = 0;
     p = a->player;
-    for (i = 0; i < duel.players[p].n_hand; i++) {
+    for (; i < duel.players[(int)p & 1].n_hand; i++) {
+        if (a->uid == CARD_UID(duel.players[a->player & 1].hand[i])) {
+            continue;
+        }
         p = a->player;
-        if (a->uid != CARD_UID(duel.players[p].hand[i]) && p != duel_field_card_deb2c(p, 0xB, i)->owner) {
+        if (p != duel_field_card_deb2c(p, 0xB, i)->owner) {
             return 0;
         }
     }
