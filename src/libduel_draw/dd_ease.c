@@ -94,7 +94,7 @@ float dd_ease_cos_out(int t, int n, int end, int k)
 }
 
 #ifdef NON_MATCHING /* 107 palavras: sorteios na ordem do original (z, y, x; sinal antes do tamanho); registradores e escalonamento diferem */
-void dd_rand_dir(float *out, float len)
+void dd_rand_dir(float len, float *out)
 {
     DdRandSeed *r = &rand3_seeds[rand3_slot];
     float v[3];

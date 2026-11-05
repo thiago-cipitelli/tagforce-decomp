@@ -111,11 +111,11 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
     if (phase == 1) {
         v = d->streak_quad;
         v[0].u = 0.0f;  v[0].v = 0.0f;  v[0].color = 0xFFFFFF;   v[0].x = -50.0f;  v[0].y = -200.0f; v[0].z = 0.0f;
-        v[1].u = 0.0f;  v[1].v = 0.2f;  v[1].color = 0xFFFFFF;   v[1].x = -100.0f; v[1].y = -400.0f; v[1].z = 0.0f;
+        v[1].u = 0.0f;  v[1].v = 0.2f;  v[1].color = 0xFFFFFF;   v[1].x = -100.0f; v[1].y = -800.0f; v[1].z = 0.0f;
         v[2].u = 0.1f;  v[2].v = 0.0f;  v[2].color = 0xFFFFFF;   v[2].x = 0.0f;    v[2].y = -200.0f; v[2].z = 0.0f;
-        v[3].u = 0.1f;  v[3].v = 0.2f;  v[3].color = 0xFFFFFFFF; v[3].x = 0.0f;    v[3].y = -400.0f; v[3].z = 0.0f;
+        v[3].u = 0.1f;  v[3].v = 0.2f;  v[3].color = 0xFFFFFFFF; v[3].x = 0.0f;    v[3].y = -800.0f; v[3].z = 0.0f;
         v[4].u = 0.2f;  v[4].v = 0.0f;  v[4].color = 0xFFFFFF;   v[4].x = 50.0f;   v[4].y = -200.0f; v[4].z = 0.0f;
-        v[5].u = 0.2f;  v[5].v = 0.2f;  v[5].color = 0xFFFFFF;   v[5].x = 100.0f;  v[5].y = -400.0f; v[5].z = 0.0f;
+        v[5].u = 0.2f;  v[5].v = 0.2f;  v[5].color = 0xFFFFFF;   v[5].x = 100.0f;  v[5].y = -800.0f; v[5].z = 0.0f;
     }
     if (d->grow == d->grow_end) {
         st = &d->streak[d->streak_next];

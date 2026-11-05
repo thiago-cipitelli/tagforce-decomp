@@ -334,8 +334,6 @@ segments:
       - [0x52E20, c, dd_lp_panel]
       - [0x52E20, asm, dd_lp_panel_asm_08856DC0]
       - [0x53160, c, dd_lp_digits]
-      - [0x53160, asm, dd_lp_digits_asm_08857100]
-      - [0x532E0, c, dd_lp_digits]
       - [0x5337C, asm, dd_lp_digits_asm_0885731C]
       - [0x53674, c, dd_lp_digits]
       - [0x53674, asm, dd_lp_digits_asm_08857614]

@@ -1,5 +1,4 @@
 // @range 0x08857100-0x08858224
-// @asm 0x08857100-0x08857280
 // @asm 0x0885731C-0x08857614
 // @asm 0x08857614-0x08857960
 // @rodata 0x08870D3C-0x08870DF0
@@ -95,9 +94,9 @@ int lpc_digit_of(int value, int i, int blank);
 void lpc_digit_update(DdLpCount *c, int i);
 void lpc_pulse(DdLpCount *c);
 
-#ifdef NON_MATCHING /* alocação de registradores/forma difere; não insistido */
 void lpc_draw(void *o, DdLpCount *c)
 {
+    DdLpMgr *m = &dd_lp;
     void *dl = dl_select_layer(8, 0);
     int i;
 
@@ -108,7 +107,7 @@ void lpc_draw(void *o, DdLpCount *c)
         dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
         dl = dl_enable(dl, 4);
         dl = dl_set_tex_filter(dl, 1, 1);
-        dl = gim_set_texture(dl, dd_lp.nmb01);
+        dl = gim_set_texture(dl, m->nmb01);
         for (i = 0; i < 5; i++)
             dl = lpc_drum(dl, &c->digits[i], i);
         dl = dd_lp_end_2d(dl);
@@ -117,13 +116,14 @@ void lpc_draw(void *o, DdLpCount *c)
         dl = lpc_panel_2d(dl, c);
         dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
         dl = dl_set_tex_filter(dl, 1, 1);
-        dl = gim_set_texture(dl, dd_lp.nmb01_a);
+        dl = gim_set_texture(dl, m->nmb01_a);
         for (i = 0; i < 5; i++)
             dl = lpc_digit_2d(dl, c, i);
         dl = dd_lp_end_2d(dl);
     }
     dl_set_list(dl);
 }
+#ifdef NON_MATCHING
 #else
 void lpc_draw(void *o, DdLpCount *c);
 #endif
