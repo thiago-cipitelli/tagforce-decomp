@@ -33,7 +33,7 @@ void mtx_set_mode(int mode);
 void mtx_get34(float *m);
 void mat4_mul(float *out, float *a, float *b);
 void mat4_transform_vec4(float *out, float *m, float *v);
-float ehsys_0881D1C4(float x);
+float tanf_vfpu(float x);
 
 void draw_array_now(int prim, int vtype, int count, void *indices, void *verts)
 {
@@ -170,7 +170,7 @@ int draw_sphere_visible(DrawSphere *s)
     c[1] = 1.0f;
     c[3] = 480.0f;
     c[4] = 272.0f;
-    cot = ehsys_0881D1C4(s->fovy / 2.0f);
+    cot = tanf_vfpu(s->fovy / 2.0f);
     c[5] = s->near;
     c[2] = 0.5f * (c[4] / cot);
     c[6] = s->far;

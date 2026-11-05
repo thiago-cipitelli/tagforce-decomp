@@ -187,8 +187,6 @@ segments:
       - [0x1FC30, c, ehf_cmd2]
       - [0x200A0, c, ehf_cmd3]
       - [0x20444, c, ehf_cmd4]
-      - [0x20444, asm, ehf_cmd4_asm_088243E4]
-      - [0x2062C, c, ehf_cmd4]
       - [0x210F4, asm, ehf_cmd4_asm_08825094]
       - [0x2134C, c, ehf_cmd4]
       - [0x2145C, c, ehf_prim]

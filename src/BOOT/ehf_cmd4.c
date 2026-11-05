@@ -1,5 +1,4 @@
 // @range 0x088243E4-0x088253FC
-// @asm 0x088243E4-0x088245CC
 // @asm 0x08825094-0x088252EC
 // @data 0x088ED284-0x088ED380
 /* EHF command handlers, part 4: an axis billboard turned towards a fixed up vector, points carried
@@ -48,19 +47,23 @@ Vec4 *vec3_sub_w(Vec4 *out, Vec4 *a, Vec4 *b);
 Vec4 *vec3_scale_w(Vec4 *out, Vec4 *a, float s);
 void vec4_lerp(float t, Vec4 *out, Vec4 *a, Vec4 *b);
 
-#ifdef NON_MATCHING /* same matrix initializer as ehf_billboard_axis */
 /* 0x10013: billboard at `pos` whose y axis is `dir`, its z axis facing the up vector. */
 int ehf_cmd_billboard_up(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
 {
-    Vec4 x;
-    Vec4 y;
-    Vec4 z;
     Vec4 pos;
+    Vec4 y;
     Vec4 dir;
+    Vec4 x;
     Mat4 cur;
+    Vec4 z;
     void *out[2] = { &pos, &dir };
-    char fmt[3] = "II";
+    char fmt[3];
 
+    {
+        typedef struct { char c[3]; } F3;
+
+        *(F3 *)fmt = *(F3 *)ehf_fmt_ii2;
+    }
     if (phase != 5) {
         return 0;
     }
@@ -68,13 +71,34 @@ int ehf_cmd_billboard_up(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     mtx_get34(&cur);
     mat4_transform_vec4(&pos, &cur, &pos);
     vec3_normalize2(&dir, &dir);
-    z = ehf_up;
-    vec3_cross(&x, &dir, &z);
+    {
+        Vec4 *u = &z;
+
+        *u = ehf_up;
+        vec3_cross(&x, &dir, u);
+    }
     vec3_normalize2(&x, &x);
     vec3_cross(&y, &x, &dir);
     vec3_normalize2(&y, &y);
     {
-        Mat4 m = { x.x, x.y, x.z, 0.0f, y.x, y.y, y.z, 0.0f, dir.x, dir.y, dir.z, 0.0f, pos.x, pos.y, pos.z, 1.0f };
+        Mat4 m;
+
+        m.m[0] = x.x;
+        m.m[1] = x.y;
+        m.m[2] = x.z;
+        m.m[3] = ehf_billboard_basis2.m[3];
+        m.m[4] = y.x;
+        m.m[5] = y.y;
+        m.m[6] = y.z;
+        m.m[7] = ehf_billboard_basis2.m[7];
+        m.m[8] = dir.x;
+        m.m[9] = dir.y;
+        m.m[10] = dir.z;
+        m.m[11] = ehf_billboard_basis2.m[11];
+        m.m[12] = pos.x;
+        m.m[13] = pos.y;
+        m.m[14] = pos.z;
+        m.m[15] = ehf_billboard_basis2.m[15];
 
         cur = m;
     }
@@ -82,7 +106,6 @@ int ehf_cmd_billboard_up(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     mtx_load(&cur);
     return 2;
 }
-#endif
 
 /* 0x10300: moves the points arg0 and arg1 by bone arg3 of the model arg2. */
 int ehf_cmd_bone_points(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
