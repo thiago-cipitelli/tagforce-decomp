@@ -1,6 +1,5 @@
 // @range 0x088060B0-0x0880931C
 // @asm 0x08806C18-0x08807100
-// @asm 0x08808EE4-0x088091E4
 // @rodata 0x088224E0-0x08822534
 /* Moving a card between the lists (Circle in the deck editor, undo with Triangle): the destination
    window offering the lists the card can go to (main, side, extra, trunk) with the full ones greyed
@@ -239,8 +238,7 @@ static inline int dk_tab_side(int tab)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 61 palavras: o lado sai do original como beqzl + li 1 no atraso (aqui beqz); found/k ficam em
-   a0/a3 no original (aqui trocados); ordem das declarações já permutada. Gêmea de ds_input_move */
+#ifdef NON_MATCHING /* 5 palavras: só o lado (src >= 3), que o original calcula com beqzl + li 1 no atraso e move zero (aqui beqz e outro temporário); o slot_pos recebe k (não o pos u16 relido) */
 /* Triangle: takes the last move back (the card flies from where it landed to its old list) */
 int dk_flight_undo(void)
 {
@@ -284,8 +282,8 @@ int dk_flight_undo(void)
     dk_flight->step = 7;
     dk_flight->phase = 0;
     l = &dk_lists[dk_flight->src];
-    k = -1;
     found = 0;
+    k = -1;
     if (dk_flight->idx >= l->n) {
         found = 1;
     } else {
@@ -316,7 +314,7 @@ int dk_flight_undo(void)
         }
     }
     dk_flight->pos = k;
-    dk_slot_pos(dk_flight->from, dk_flight->side, dk_flight->src, dk_flight->pos, 0);
+    dk_slot_pos(dk_flight->from, dk_flight->side, dk_flight->src, k, 0);
     dk_flight->cur[0] = dk_flight->from[0];
     dk_flight->cur[1] = dk_flight->from[1];
     dk_flight_take();
@@ -798,8 +796,6 @@ unsigned int dk_flight_window_state(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 8 palavras: grid_x/cell_w e o resto da divisão em v1/v0 trocados no caso 0
-   (y + row_y num local resolveu o caso 1). Gêmea de ds_slot_pos */
 /* screen position of entry pos of list tab in pane side (card center, +11/+15); when the entry is
    scrolled out and scroll is set, scrolls the pane one step toward it and returns 0; tabs not shown
    in the pane give the position of their tab */
@@ -871,8 +867,12 @@ int dk_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
     case 0:
         d = pos - p->top;
         cols = lay->cols;
-        out[0] = (int)(lay->x + lay->grid_x + (d % cols) * (unsigned short)lay->cell_w);
-        out[1] = (int)(lay->y + lay->grid_y + (d / cols) * (unsigned short)lay->cell_h);
+        {
+            int m = d % cols;
+            out[0] = (int)(lay->x + lay->grid_x + m * (unsigned short)lay->cell_w);
+            m = d / cols;
+            out[1] = (int)(lay->y + lay->grid_y + m * (unsigned short)lay->cell_h);
+        }
         break;
     case 1:
         out[0] = lay->x + lay->row_x;
@@ -886,7 +886,6 @@ int dk_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
     out[1] += 15.0f;
     return 1;
 }
-#endif
 
 /* position the card will take in the visible order of list tab (the trunk merges copies) */
 int dk_dst_pos(int tab, int id)

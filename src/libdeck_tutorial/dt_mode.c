@@ -1,6 +1,5 @@
 // @range 0x08814460-0x08814D44
 // @asm 0x08814460-0x088148A8
-// @asm 0x088148A8-0x08814980
 // @data 0x08822050-0x088221E4
 /* Pane layout switching (the code of libdeck dk_mode.c, second half): layouts, modes, scroll kept per
    list, the tab buttons' positions and frames and the background animation. */
@@ -61,63 +60,77 @@ DtMode dt_modes[9] = {   /* one zero row more than libdeck */
     { 0, 0, 0, 0 },
 };
 
-#ifdef NON_MATCHING /* o original usa a base dtv mais o lado para os campos do painel e a alocação dos s difere (como sc_set_mode) */
+#ifdef NON_MATCHING /* forma de dk_set_mode (asm idêntico), 40 palavras: só o segundo laço de releitura dos painéis com outros temporários que o primeiro */
 /* switches the pane layout (dt_modes row), keeping each list's scroll position */
 void dt_set_mode(unsigned short mode)
 {
     DtMode *md = &dt_modes[mode];
-    unsigned short tab_b = dtv.pane[1].list->tab;
-    unsigned short tab_a = dtv.pane[0].list->tab;
+    int tab_a = dtv.pane[0].list->tab;
+    int tab_b = dtv.pane[1].list->tab;
     int i;
     DtPane *p;
-    DtList *l;
-    unsigned short grid;
+    int grid;
     unsigned short view;
     int tab;
+    int keep;
 
-    if (dtv.mode < 2)
-        dt_save_panes(0);
-    else
+    if (dtv.mode > 1)
         dt_save_panes(2);
-    dtv.pane[0].list_mode = md->list_a;
-    memcpy(&dtv.pane[0].lay, &dt_layouts[md->lay_a], 0x1E);
+    else
+        dt_save_panes(0);
+    p = &dtv.pane[0];
+    p->list_mode = md->list_a;
+    memcpy(&p->lay, &dt_layouts[md->lay_a], 0x1E);
+    p = &dtv.pane[1];
     if (md->list_b >= 0)
-        dtv.pane[1].list_mode = md->list_b;
+        p->list_mode = md->list_b;
     if (md->lay_b >= 0)
-        memcpy(&dtv.pane[1].lay, &dt_layouts[md->lay_b], 0x1E);
+        memcpy(&p->lay, &dt_layouts[md->lay_b], 0x1E);
     dtv.mode = mode;
     for (i = 0; i < 2; i++) {
+        keep = 0;
+        dtv.pane[i].top = dtv.pane[i].list->u18;
+        dtv.pane[i].cx = dtv.pane[i].list->u1c_lo;
+        dtv.pane[i].cy = dtv.pane[i].list->u1c_hi;
         p = &dtv.pane[i];
-        p->top = p->list->u18;
-        p->cx = p->list->u1c_lo;
-        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
-        l = p->list;
+        if (p->list->u1d_lo == grid)
+            keep = 1;
         view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        dt_layout_scroll(l->u1d_lo == grid, l->u1a, ((p->list_mode == 0 ? p->lay.cols : 1) & 0xFF) | view << 8,
-                         l->count, &p->top, &p->cx, &p->cy);
-        if (dtv.mode < 2)
+        dt_layout_scroll(keep, p->list->u1a,
+                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         p->list->count, &p->top, &p->cx, &p->cy);
+        if (dtv.mode <= 1)
             break;
     }
-    if (dtv.mode < 2) {
+    if (dtv.mode <= 1) {
         tab = -1;
         if (dtv.side != 0) {
             dtv.side = 0;
-            if (tab_b == 5)
-                tab = 5;
-            else if (tab_b == 4)
-                tab = 2;
-            else if (tab_b == 3)
+            switch (tab_b) {
+            case 3:
                 tab = 3;
+                break;
+            case 4:
+                tab = 2;
+                break;
+            case 5:
+                tab = 5;
+                break;
+            }
             if (tab >= 0)
                 dt_select_tab(0, tab, 2);
         }
-    } else if (tab_a > 2) {
+    } else if (tab_a >= 3) {
         tab = -1;
-        if (tab_a == 5)
-            tab = 5;
-        else if (tab_a == 3)
+        switch (tab_a) {
+        case 3:
             tab = 3;
+            break;
+        case 5:
+            tab = 5;
+            break;
+        }
         dt_select_tab(0, 0, 2);
         if (tab >= 0) {
             dt_select_tab(1, tab, 2);
@@ -125,16 +138,19 @@ void dt_set_mode(unsigned short mode)
         }
     }
     for (i = 0; i < 2; i++) {
+        keep = 0;
+        dtv.pane[i].top = dtv.pane[i].list->u18;
+        dtv.pane[i].cx = dtv.pane[i].list->u1c_lo;
+        dtv.pane[i].cy = dtv.pane[i].list->u1c_hi;
         p = &dtv.pane[i];
-        p->top = p->list->u18;
-        p->cx = p->list->u1c_lo;
-        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
-        l = p->list;
+        if (p->list->u1d_lo == grid)
+            keep = 1;
         view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        dt_layout_scroll(l->u1d_lo == grid, l->u1a, ((p->list_mode == 0 ? p->lay.cols : 1) & 0xFF) | view << 8,
-                         l->count, &p->top, &p->cx, &p->cy);
-        if (dtv.mode < 2)
+        dt_layout_scroll(keep, p->list->u1a,
+                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         p->list->count, &p->top, &p->cx, &p->cy);
+        if (dtv.mode <= 1)
             break;
     }
     dt_bg_anim_update();
@@ -143,7 +159,6 @@ void dt_set_mode(unsigned short mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* 14 palavras (forma de dk_mode_for): só o último grupo (b == 0 ? 6 : -1) difere; o original faz bnez; b fim; li 6; li -1 sem desvio provável, nenhuma grafia testada (ternário, switch, return) reproduziu */
 /* dt_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int dt_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)
 {
@@ -173,12 +188,12 @@ int dt_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned sho
         else if (b == 0)
             r = 6;
         else
-            r = -1;
+            goto none;
     } else
+none:
         r = -1;
     return r;
 }
-#endif
 
 /* tab buttons of the three layouts (one pane, two panes, two wide panes) */
 DtTab dt_tabs[3][6] = {

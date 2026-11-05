@@ -1,5 +1,4 @@
 // @range 0x0880931C-0x0880A694
-// @asm 0x088099CC-0x08809DB8
 // @asm 0x0880A528-0x0880A694
 // @rodata 0x08822534-0x08822554
 /* Input of the list screen: dispatch by scene state, the main keys (Circle move, Cross quick move or
@@ -31,8 +30,8 @@ void inv_set_flag7(unsigned short id, int on);
 void dk_input_lists(PadBits *pad);
 void dk_input_shoulder_l(PadBits *pad);
 void dk_input_shoulder_r(PadBits *pad);
-void dk_cursor_grid(unsigned short side, PadBits *pad);
-void dk_cursor_list(unsigned short side, PadBits *pad);
+void dk_cursor_grid(int side, PadBits *pad);
+void dk_cursor_list(int side, PadBits *pad);
 void dk_cursor_switch();
 void dk_page(int up);
 void dk_jump(int up);
@@ -223,97 +222,109 @@ void dk_input_shoulder_r(PadBits *pad)
     }
 }
 
-#ifdef NON_MATCHING /* cursores, páginas, grupos, rolagem e foco: mesmas funções que ficaram em asm na libselect_card (sc_input.c); registradores e ordem dos testes diferem */
 /* grid cursor: d-pad moves, wraps to the other pane at the left/right edges, scrolls by rows */
-void dk_cursor_grid(unsigned short side, PadBits *pad)
+void dk_cursor_grid(int side, PadBits *pad)
 {
-    unsigned int cols = dkv.pane[side].lay.cols;
-    unsigned int cx = dkv.pane[side].cx;
-    unsigned int cy = dkv.pane[side].cy;
-    int top = (dkv.pane[side].top + cols - 1) / cols;
-    unsigned int rows = dkv.pane[side].lay.grid_rows;
-    unsigned int rep = pad->rep;
-    int total = (dkv.pane[side].list->count + cols - 1) / cols;
-    unsigned int dy;
-    unsigned int dx;
-    unsigned short ocy;
-    unsigned short otop;
-    unsigned int ntop;
+    DkPane *p = &dkv.pane[(unsigned short)side];
+    int cols;
+    int cy;
+    int cx;
+    int top;
+    int rows;
+    unsigned int rep;
+    int total;
+    int dx;
+    int dy;
+    int changed = 0;
+    int nx;
+    int ny;
 
-    dy = (rep & 0x40) != 0;
+    cx = p->cx;
+    cy = p->cy;
+    cols = p->lay.cols;
+    top = (p->top + cols - 1) / cols;
+    rows = p->lay.grid_rows;
+    rep = pad->rep;
+    total = (p->list->count + cols - 1) / cols;
+
+    dy = 0;
+    dx = 0;
+    if (rep & 0x40)
+        dy++;
     if (rep & 0x10)
         dy--;
-    dx = (rep & 0x20) != 0;
+    if (rep & 0x20)
+        dx++;
     if (rep & 0x80)
         dx--;
-    dx = cx + dx;
-    if ((int)dx < 0) {
-        dk_cursor_switch(side, rows, 1, cy);
+    nx = cx + dx;
+    if (nx < 0) {
+        dk_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
-    } else if ((int)dx < (int)cols) {
-        if (top + cy == 0 && (pad->trig & 0x10)) {
-            if (total < (int)rows)
-                top = 0;
-            else
-                top = total - rows;
-            dy = rows - 1;
-        } else if ((int)(top + cy) < total - 1 || cy != rows - 1 || !(pad->trig & 0x40)) {
-            dy = cy + dy;
-            if ((int)dy < 0) {
-                top += dy;
-                if (top < 1)
-                    top = 0;
-                dy = 0;
-            } else if ((int)rows <= (int)dy) {
-                if ((int)rows < total) {
-                    if ((int)(top + dy) < total)
-                        top += dy - (rows - 1);
-                    else
-                        top = total - rows;
-                    dy = rows - 1;
-                } else {
-                    dy = rows - 1;
-                }
-            }
-        } else {
-            dy = 0;
-            top = 0;
-        }
-        if (cx != dx)
-            dkv.pane[side].cx = dx;
-        ocy = dkv.pane[side].cy;
-        if (ocy != dy)
-            dkv.pane[side].cy = dy;
-        ntop = top * cols;
-        otop = dkv.pane[side].top;
-        if (otop != ntop)
-            dkv.pane[side].top = ntop;
-        if (otop != ntop || ocy != dy || cx != dx)
-            se_play(0x6212);
+    } else if (nx >= cols) {
+        dk_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
+        se_play(0x6212);
     } else {
-        dk_cursor_switch(side, rows, 0, cy);
-        se_play(0x6212);
+        if (top + cy == 0 && (pad->trig & 0x10)) {
+            if (total >= rows)
+                top = total - rows;
+            else
+                top = 0;
+            ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top = (top + ny > 0) ? top + ny : 0;
+                ny = 0;
+            } else if (ny >= rows) {
+                if (rows < total) {
+                    if (top + ny >= total)
+                        top = total - rows;
+                    else
+                        top += ny - (rows - 1);
+                }
+                ny = rows - 1;
+            }
+        }
+        if (cx != nx) {
+            p->cx = nx;
+            changed = 1;
+        }
+        if (p->cy != ny) {
+            p->cy = ny;
+            changed = 1;
+        }
+        if (p->top != top * cols) {
+            p->top = top * cols;
+            changed = 1;
+        }
+        if (changed)
+            se_play(0x6212);
     }
 }
 
-/* 97 palavras: pane por ponteiro e flag de mudança como no original (lógica conferida com o asm); restam as máscaras u16 de cy/rows e a polaridade de alguns testes */
+/* 3 palavras (forma de sc/dt_cursor_list, asm idêntico): "if (top <= 0) top = 0" sai blezl e "b; ny = 0" no original */
 /* list cursor: d-pad up/down with wrap at the ends, left/right go to the other pane */
-void dk_cursor_list(unsigned short side, PadBits *pad)
+void dk_cursor_list(int side, PadBits *pad)
 {
-    DkPane *p = &dkv.pane[side];
-    unsigned short cy = p->cy;
-    unsigned short rows = p->lay.rows;
+    DkPane *p = &dkv.pane[(unsigned short)side];
+    int cy = p->cy;
+    int rows = p->lay.rows;
     unsigned int rep = pad->rep;
     int top = p->top;
     int total = p->list->count;
-    int dy;
     int changed = 0;
+    int dy;
+    int ny;
 
     if (rep & 0x80) {
-        dk_cursor_switch(side, rows, 1, cy);
+        dk_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
     } else if (rep & 0x20) {
-        dk_cursor_switch(side, rows, 0, cy);
+        dk_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
         se_play(0x6212);
     } else {
         dy = 0;
@@ -322,33 +333,31 @@ void dk_cursor_list(unsigned short side, PadBits *pad)
         if (rep & 0x10)
             dy--;
         if (top + cy == 0 && (pad->trig & 0x10)) {
-            if (total < rows)
-                top = 0;
-            else
+            if (total >= rows)
                 top = total - rows;
-            dy = rows - 1;
-        } else if ((top + cy) < (total - 1) || cy != rows - 1 || !(pad->trig & 0x40)) {
-            dy = cy + dy;
-            if (dy < 0) {
-                top += dy;
-                if (top <= 0)
-                    top = 0;
-                dy = 0;
-            } else if (dy >= rows) {
+            else
+                top = 0;
+            ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top = (top + ny > 0) ? top + ny : 0;
+                ny = 0;
+            } else if (ny >= rows) {
                 if (total < rows)
                     top = 0;
-                else if ((top + dy) < total)
-                    top += dy - (rows - 1);
-                else
+                else if (top + ny >= total)
                     top = total - rows;
-                dy = rows - 1;
+                else
+                    top += ny - (rows - 1);
+                ny = rows - 1;
             }
-        } else {
-            dy = 0;
-            top = 0;
         }
-        if (cy != dy) {
-            p->cy = dy;
+        if (cy != ny) {
+            p->cy = ny;
             changed = 1;
         }
         if (p->top != top) {
@@ -361,7 +370,6 @@ void dk_cursor_list(unsigned short side, PadBits *pad)
 }
 
 
-#endif
 
 /* moves the cursor to the other pane (dir 1 = enter from the right), keeping its height; K&R so the
    4-argument calls compile: "to" is a dead stack/register value unless from is 0 or 1 (as in the original) */

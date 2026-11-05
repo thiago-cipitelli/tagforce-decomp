@@ -617,7 +617,7 @@ void dk_deck_save(int slot)
     r->used = 1;
 }
 
-#ifdef NON_MATCHING /* forma igual; nos laços do extra e do side o mwcc troca os registradores do índice e do ponteiro dos ids (s1/s3) */
+#ifdef NON_MATCHING /* 12 palavras: dk_list_find redeclarado no bloco com id u16 (o original não remascara o id: 3 andi a menos); nos laços do extra e do side o mwcc troca os registradores do índice e do ponteiro dos ids (s1/s3), ordem das declarações dos blocos testada */
 /* one card of a loaded deck into dst: taken from the trunk, or else from the rented list (marked
    fixed) */
 static inline void dk_deck_take(DkList *dst, unsigned short id)
@@ -625,6 +625,7 @@ static inline void dk_deck_take(DkList *dst, unsigned short id)
     DkEnt e;
     DkList *l;
     int k;
+    extern int dk_list_find(DkList *, unsigned short);
 
     memset(&e, 0, 6);
     e.id = id;

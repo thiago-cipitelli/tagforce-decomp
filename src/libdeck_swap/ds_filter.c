@@ -1,6 +1,6 @@
 // @range 0x0880D23C-0x0880DFFC
 // @rodata 0x08819CA0-0x08819CBC
-// @asm 0x0880D3F8-0x0880D6EC
+// @asm 0x0880D3F8-0x0880D55C
 // @data 0x0881A1F8-0x0881A224
 /* The incremental text search of a pane and its word history, the card filters (kind, type, race,
    level ranges, spell/trap kinds, limit, genre/new/alternate picture) and the text match: a
@@ -111,9 +111,8 @@ DsFilterFn ds_filters[9] = {
     (DsFilterFn)ds_filter_level, (DsFilterFn)ds_filter_atk, (DsFilterFn)ds_filter_def, 0,
 };
 
-#ifdef NON_MATCHING /* 24 palavras: o original carrega e->id e calcula e (em a1) antes do teste do filtro, com ok = 1 no atraso do beqz; como dk_list_filter */
 /* keeps the entries passing filter f (arg its parameter); returns the count */
-unsigned short ds_list_filter(DsList *l, unsigned short f, unsigned int *arg)
+int ds_list_filter(DsList *l, unsigned short f, unsigned int *arg)
 {
     unsigned short *tmp = heap_alloc(ds.heap, l->count << 1);
     int n;
@@ -121,6 +120,7 @@ unsigned short ds_list_filter(DsList *l, unsigned short f, unsigned int *arg)
     unsigned short k;
     DsEnt *e;
     int ok;
+    unsigned short id;
 
     if (tmp == 0)
         return l->count;
@@ -128,7 +128,12 @@ unsigned short ds_list_filter(DsList *l, unsigned short f, unsigned int *arg)
     for (i = 0; i < l->count; i++) {
         k = l->order[i];
         e = &l->ents[k];
-        ok = ds_filters[f] != 0 ? ds_filters[f](e->id, *arg) : f == 7 ? ds_filter_attr(e, arg) : 1;
+        id = e->id;
+        ok = 1;
+        if (ds_filters[f] != 0)
+            ok = ds_filters[f](id, *arg);
+        else if (f == 7)
+            ok = ds_filter_attr(e, arg);
         if (ok) {
             tmp[n++] = k;
         }
@@ -140,7 +145,6 @@ unsigned short ds_list_filter(DsList *l, unsigned short f, unsigned int *arg)
         heap_set_level(ds.heap, tmp);
     return n;
 }
-#endif
 
 int ds_filter_kind(unsigned short id, unsigned int mask)
 {

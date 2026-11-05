@@ -1,6 +1,5 @@
 // @range 0x0880A694-0x0880B874
 // @asm 0x0880AF34-0x0880B37C
-// @asm 0x0880B37C-0x0880B454
 // @rodata 0x08822554-0x08822574
 // @data 0x08822A24-0x08822BE4
 /* Deck check before saving (sizes, forbidden/limited cards), the message popup (deck errors, card
@@ -260,63 +259,77 @@ DkMode dk_modes[8] = {
     { 0, 3, 1, 4 },
 };
 
-#ifdef NON_MATCHING /* o original usa a base dkv mais o lado para os campos do painel e a alocação dos s difere (como sc_set_mode) */
+#ifdef NON_MATCHING /* 40 palavras: tudo bate até o segundo laço de releitura dos painéis, que no original usa outros temporários (v1/a1/a2/t0 contra v0/v1/t0/a3) que o primeiro, idêntico no fonte; locais de bloco e ordem das declarações não mudam */
 /* switches the pane layout (dk_modes row), keeping each list's scroll position */
 void dk_set_mode(unsigned short mode)
 {
     DkMode *md = &dk_modes[mode];
-    unsigned short tab_b = dkv.pane[1].list->tab;
-    unsigned short tab_a = dkv.pane[0].list->tab;
+    int tab_a = dkv.pane[0].list->tab;
+    int tab_b = dkv.pane[1].list->tab;
     int i;
     DkPane *p;
-    DkList *l;
-    unsigned short grid;
+    int grid;
     unsigned short view;
     int tab;
+    int keep;
 
-    if (dkv.mode < 2)
-        dk_save_panes(0);
-    else
+    if (dkv.mode > 1)
         dk_save_panes(2);
-    dkv.pane[0].list_mode = md->list_a;
-    memcpy(&dkv.pane[0].lay, &dk_layouts[md->lay_a], 0x1E);
+    else
+        dk_save_panes(0);
+    p = &dkv.pane[0];
+    p->list_mode = md->list_a;
+    memcpy(&p->lay, &dk_layouts[md->lay_a], 0x1E);
+    p = &dkv.pane[1];
     if (md->list_b >= 0)
-        dkv.pane[1].list_mode = md->list_b;
+        p->list_mode = md->list_b;
     if (md->lay_b >= 0)
-        memcpy(&dkv.pane[1].lay, &dk_layouts[md->lay_b], 0x1E);
+        memcpy(&p->lay, &dk_layouts[md->lay_b], 0x1E);
     dkv.mode = mode;
     for (i = 0; i < 2; i++) {
+        keep = 0;
+        dkv.pane[i].top = dkv.pane[i].list->u18;
+        dkv.pane[i].cx = dkv.pane[i].list->u1c_lo;
+        dkv.pane[i].cy = dkv.pane[i].list->u1c_hi;
         p = &dkv.pane[i];
-        p->top = p->list->u18;
-        p->cx = p->list->u1c_lo;
-        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
-        l = p->list;
+        if (p->list->u1d_lo == grid)
+            keep = 1;
         view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        dk_layout_scroll(l->u1d_lo == grid, l->u1a, ((p->list_mode == 0 ? p->lay.cols : 1) & 0xFF) | view << 8,
-                         l->count, &p->top, &p->cx, &p->cy);
-        if (dkv.mode < 2)
+        dk_layout_scroll(keep, p->list->u1a,
+                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         p->list->count, &p->top, &p->cx, &p->cy);
+        if (dkv.mode <= 1)
             break;
     }
-    if (dkv.mode < 2) {
+    if (dkv.mode <= 1) {
         tab = -1;
         if (dkv.side != 0) {
             dkv.side = 0;
-            if (tab_b == 5)
-                tab = 5;
-            else if (tab_b == 4)
-                tab = 2;
-            else if (tab_b == 3)
+            switch (tab_b) {
+            case 3:
                 tab = 3;
+                break;
+            case 4:
+                tab = 2;
+                break;
+            case 5:
+                tab = 5;
+                break;
+            }
             if (tab >= 0)
                 dk_select_tab(0, tab, 2);
         }
-    } else if (tab_a > 2) {
+    } else if (tab_a >= 3) {
         tab = -1;
-        if (tab_a == 5)
-            tab = 5;
-        else if (tab_a == 3)
+        switch (tab_a) {
+        case 3:
             tab = 3;
+            break;
+        case 5:
+            tab = 5;
+            break;
+        }
         dk_select_tab(0, 0, 2);
         if (tab >= 0) {
             dk_select_tab(1, tab, 2);
@@ -324,16 +337,19 @@ void dk_set_mode(unsigned short mode)
         }
     }
     for (i = 0; i < 2; i++) {
+        keep = 0;
+        dkv.pane[i].top = dkv.pane[i].list->u18;
+        dkv.pane[i].cx = dkv.pane[i].list->u1c_lo;
+        dkv.pane[i].cy = dkv.pane[i].list->u1c_hi;
         p = &dkv.pane[i];
-        p->top = p->list->u18;
-        p->cx = p->list->u1c_lo;
-        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
-        l = p->list;
+        if (p->list->u1d_lo == grid)
+            keep = 1;
         view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
-        dk_layout_scroll(l->u1d_lo == grid, l->u1a, ((p->list_mode == 0 ? p->lay.cols : 1) & 0xFF) | view << 8,
-                         l->count, &p->top, &p->cx, &p->cy);
-        if (dkv.mode < 2)
+        dk_layout_scroll(keep, p->list->u1a,
+                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         p->list->count, &p->top, &p->cx, &p->cy);
+        if (dkv.mode <= 1)
             break;
     }
     dk_bg_anim_update();
@@ -342,7 +358,6 @@ void dk_set_mode(unsigned short mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* 14 palavras: só o último grupo (b == 1 -> 4, b == 0 -> 6, senão -1): o original testa com bnez sem preencher o atraso e deixa o -1 no fim; aqui sai bnezl com o -1 no atraso. Os outros grupos batem com o ternário b == 0 ? x : -1 e o else r = -1 depois do bloco */
 /* dk_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int dk_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)
 {
@@ -372,13 +387,13 @@ int dk_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned sho
         else if (b == 0)
             r = 6;
         else
-            r = -1;
+            goto none;
     } else
+none:
         r = -1;
     return r;
 }
 
-#endif
 
 /* tab buttons of the three layouts (one pane, two panes, two wide panes) */
 DkTab dk_tabs[3][6] = {

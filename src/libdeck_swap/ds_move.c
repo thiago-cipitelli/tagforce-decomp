@@ -1,6 +1,5 @@
 // @range 0x0880BE1C-0x0880D23C
 // @asm 0x0880C254-0x0880C648
-// @asm 0x0880CED8-0x0880D198
 /* Moving a card between the main and the extra deck (Circle, undo with Triangle): the entry is
    taken out, flown along a curve from its slot to the slot it lands in and added to the other list;
    the position of a slot on screen, and the filter reset of a list (same source as libselect_card
@@ -121,8 +120,7 @@ int ds_flight_open(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 71 palavras: o lado sai do original como bnezl + li 1 no atraso (aqui beqzl); found/k ficam em
-   a0/a3 no original (aqui trocados); ordem das declarações já permutada. Gêmea de dk_flight_undo */
+#ifdef NON_MATCHING /* 3 palavras: só o lado (switch em h.dst), que o original calcula com bnezl + li 1 no atraso e move zero (aqui beqzl); o slot_pos recebe k (não o pos u16 relido) */
 /* Triangle: undoes the last move */
 int ds_input_move(void)
 {
@@ -163,8 +161,8 @@ int ds_input_move(void)
     ds_flight->step = 2;
     ds_flight->phase = 0;
     l = &ds.list[ds_flight->sel.src];
-    k = -1;
     found = 0;
+    k = -1;
     if (ds_flight->idx >= l->n) {
         found = 1;
     } else {
@@ -197,7 +195,7 @@ int ds_input_move(void)
         }
     }
     ds_flight->pos = k;
-    ds_slot_pos(ds_flight->from, ds_flight->sel.side, ds_flight->sel.src, ds_flight->pos, 0);
+    ds_slot_pos(ds_flight->from, ds_flight->sel.side, ds_flight->sel.src, k, 0);
     ds_flight->x = ds_flight->from[0];
     ds_flight->y = ds_flight->from[1];
     ds_flight_take();
@@ -364,8 +362,6 @@ void *ds_draw_sort_menu(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* 8 palavras: grid_x/cell_w e o resto da divisão em v1/v0 trocados no caso 0
-   (y + row_y num local resolveu o caso 1). Gêmea de dk_slot_pos */
 /* screen position of position pos of list tab shown in pane side (card center, +11/+15); when the
    entry is scrolled out and scroll is set, scrolls the pane one step toward it and returns 0; tabs
    not shown in the pane give the position of their tab */
@@ -432,8 +428,12 @@ int ds_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
     case 0:
         d = pos - p->top;
         cols = lay->cols;
-        out[0] = (int)(lay->x + lay->grid_x + (d % cols) * (unsigned short)lay->cell_w);
-        out[1] = (int)(lay->y + lay->grid_y + (d / cols) * (unsigned short)lay->cell_h);
+        {
+            int m = d % cols;
+            out[0] = (int)(lay->x + lay->grid_x + m * (unsigned short)lay->cell_w);
+            m = d / cols;
+            out[1] = (int)(lay->y + lay->grid_y + m * (unsigned short)lay->cell_h);
+        }
         break;
     case 1:
         out[0] = lay->x + lay->row_x;
@@ -447,7 +447,6 @@ int ds_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
     out[1] += 15.0f;
     return 1;
 }
-#endif
 
 /* position the card lands at in list tab: the end of its visible order */
 int ds_dst_pos(int tab, unsigned short id)

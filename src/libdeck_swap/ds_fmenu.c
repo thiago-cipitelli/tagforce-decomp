@@ -46,9 +46,8 @@ void *ds_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned
 void *ds_draw_limit_icon(void *list, unsigned short x, unsigned short y, unsigned short n);
 void *ds_draw_pack_icon(void *list, unsigned short x, unsigned short y, unsigned short n);
 void ds_layout_scroll(short keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
-unsigned short ds_list_filter(DsList *l, unsigned short f, unsigned int *arg);
+int ds_list_filter(DsList *l, unsigned short f, unsigned int *arg);
 void ds_popup_open(int id, int arg);
-void *menu_draw_item(void *list, MenuWidget *m, int x, int y, int which, int lit);
 void ds_fmenu_free(void);
 void ds_fmenu_values(void);
 void ds_fmenu_open_values(unsigned short f);
@@ -464,7 +463,7 @@ void *ds_draw_fmenu_values(void *list, int x, int y, int w, int h)
     label = table_get_entry(res_get(0x8033), 0x17);
     tx = x + (w - 0x3C) / 2;
     ty = y + h - 0x18;
-    list = menu_draw_item(list, m, tx, ty, 0, ds_fmenu->page == 0xF);
+    list = menu_draw_button(list, m, tx, ty, 0, ds_fmenu->page == 0xF);
     font_set_size(12, 12);
     font_text_set(list);
     font_set_color(0xFF000000);

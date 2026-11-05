@@ -84,7 +84,7 @@ void *ds_draw_shade(void *list, unsigned short side, unsigned short tab)
     return dl_ambient_color(list, 0xFFFFFFFF);
 }
 
-#ifdef NON_MATCHING /* ~275 palavras, a mesma forma de dk_draw_detail (o asm das duas é idêntico fora os endereços) */
+#ifdef NON_MATCHING /* ~62 palavras: sort int, conta da bolha com h - 43, y + 12 e i / cols em locais, ch zerado por laço de bytes, (u16)v << 16; resta a escolha s1/s2 entre w e l/x (ordem das declarações não muda) e a ordem das cargas da conta */
 /* the value of the sort key of the cursor's card, in a bubble beside the scroll bar */
 void *ds_draw_detail(void *list)
 {
@@ -92,16 +92,18 @@ void *ds_draw_detail(void *list)
     DsList *l = p->list;
     unsigned short i = ds_cur_index(dsv.side);
     DsEnt *e = DS_ENT(l, i);
-    unsigned char sort = l->sort;
+    int sort = l->sort;
     unsigned int v;
     int w;
     int h;
-    unsigned int cols;
+    int cols;
     int rows;
     int x;
     int y;
     unsigned int sz;
     int lw;
+    int hh;
+    int r;
 
     if (e == 0)
         return list;
@@ -119,8 +121,9 @@ void *ds_draw_detail(void *list)
     case 1:
         font_set_size(14, 14);
         sz = font_sample_glyph_size();
-        w = (sz >> 22) + 13;
-        h = (sz >> 22) + 11;
+        sz = (sz >> 16 & 0xFFFF) >> 6;
+        w = sz + 13;
+        h = sz + 11;
         break;
     case 2:
     case 6:
@@ -131,13 +134,16 @@ void *ds_draw_detail(void *list)
         h = 0x1B;
         break;
     }
+    hh = p->lay.h - 0x2B;
     cols = p->lay.cols;
-    rows = (int)(l->count + cols - 1) / (int)cols;
+    rows = (l->count + cols - 1) / cols;
+    y = p->lay.y + 12;
+    r = i / cols;
     x = p->lay.x + p->lay.w - 10 - w;
     if (rows == 0)
-        y = p->lay.y + 12 + (p->lay.h - 0x2B - h) / 2;
+        y += (hh - h) / 2;
     else
-        y = p->lay.y + 12 + (p->lay.h - 0x2B) * (i / cols) / rows - h / 2;
+        y += hh * r / rows - h / 2;
     list = ds_draw_box(list, x, y, w, h, res_get(0x8013));
     if (v == 0xFFFFFFFE)
         return list;
@@ -145,11 +151,20 @@ void *ds_draw_detail(void *list)
     case 0:
         break;
     case 1: {
-        unsigned short ch[2] = { 0 };
+        unsigned short ch[2];
 
         font_text_set(list);
         font_set_size(14, 14);
         font_set_color(0xFFFFFFFF);
+        {
+            int n = 4;
+            unsigned char *d = (unsigned char *)ch;
+
+            if (d)
+                do {
+                    *d++ = 0;
+                } while (--n);
+        }
         ch[0] = card_top_get_letter(v);
         lw = font_measure_text(ch);
         font_draw_text((x + 4 + (w - 9) / 2) * 64 - lw / 2, (y + 4) * 64, w << 6, ch);
@@ -170,14 +185,14 @@ void *ds_draw_detail(void *list)
             v = (int)v / 100 * 100;
         else if (v == 0xFFFFFFFF)
             v = 0xFFFF;
-        list = ds_draw_stat(list, v << 16 | 2, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, res_get(0x8009));
+        list = ds_draw_stat(list, (unsigned short)v << 16 | 2, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, res_get(0x8009));
         break;
     case 5:
         if ((int)v > 0)
             v = (int)v / 100 * 100;
         else if (v == 0xFFFFFFFF)
             v = 0xFFFF;
-        list = ds_draw_stat(list, v << 16 | 3, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, res_get(0x8009));
+        list = ds_draw_stat(list, (unsigned short)v << 16 | 3, PT(x + 5, y + 4), 0xA09, 0xFFFFFFFF, res_get(0x8009));
         break;
     case 8:
         list = ds_draw_attr_icon(list, x + 5, y + 5, v);

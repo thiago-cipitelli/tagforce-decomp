@@ -53,7 +53,7 @@ void *sc_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned
 void *sc_draw_limit_icon(void *list, unsigned short x, unsigned short y, unsigned short n);
 void *sc_draw_pack_icon(void *list, unsigned short x, unsigned short y, unsigned short n);
 void sc_layout_scroll(short keep, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
-unsigned short sc_list_filter(ScList *l, unsigned short f, unsigned int *arg);
+int sc_list_filter(ScList *l, unsigned short f, unsigned int *arg);
 void sc_popup_open(int id, int arg);
 void sc_fmenu_free(void);
 void sc_fmenu_values(void);
