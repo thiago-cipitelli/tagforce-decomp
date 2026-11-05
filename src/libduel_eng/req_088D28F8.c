@@ -1,18 +1,12 @@
 // @range 0x088D28F8-0x088D6DE8
 // @data 0x08911B8C-0x08911D2C
-// @asm 0x088D2D40-0x088D2FD8
 // @asm 0x088D31F0-0x088D36C8
-// @asm 0x088D3744-0x088D392C
 // @asm 0x088D392C-0x088D3E5C
-// @asm 0x088D3E5C-0x088D416C
 // @asm 0x088D43F8-0x088D4A04
-// @asm 0x088D5830-0x088D5BA0
 // @asm 0x088D63FC-0x088D6708
 // @asm 0x088D6708-0x088D6DE8
 // @asm 0x088D42C8-0x088D43F8
-// @asm 0x088D5BA0-0x088D5D2C
 // @asm 0x088D5D2C-0x088D5DEC
-// @asm 0x088D5DEC-0x088D5FC8
 // @asm 0x088D6168-0x088D624C
 /* Requests carried out one step per frame (duel_req, duel_req_step): revealing and flipping a card,
    showing a card of a list, sorting the zones, ... */
@@ -92,7 +86,7 @@ void duel_card_put(unsigned int p, int zone, unsigned int arg, DuelCard *c);
 unsigned short duel_zone_pos(unsigned int p, int z, int i);
 int duel_zone_faceup(unsigned int p, int z, int i);
 unsigned short duel_uid_next(unsigned int p);
-void duel_place_monster(unsigned int p, int z, DuelCard *c, unsigned short pos, int up);
+void duel_place_monster(unsigned int p, int z, DuelCard *c, int pos, int up);
 unsigned int duel_slot_min_1130(unsigned int p, int z);
 void duel_effects_free_card();
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
@@ -345,15 +339,27 @@ void duel_req_088D2C9C(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* a montagem do DuelCard temporário e a alocação dos campos do pedido não reproduzidas */
+typedef struct DuelCardF15 {           /* DuelCard with b15 and b16 as one 2-bit field */
+    unsigned int lo : 15;
+    unsigned int f15 : 2;
+    unsigned int hi : 15;
+} DuelCardF15;
+
 /* Show the card with uid w (taken from zone arg) as entry loc of the pick list. */
 void duel_req_088D2D40(void)
 {
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
-    unsigned int kind = duel_req.req.arg;
-    unsigned int i = *(unsigned short *)&duel_req.req.loc;
-    unsigned int uid = duel_req.req.w;
+    unsigned int i;
+    unsigned int kind;
+    unsigned int uid;
+    unsigned int p;
+    unsigned int id;
     DuelCard *c;
+
+    id = duel_req.req.id;
+    p = (id & 0x8000) != 0;
+    kind = duel_req.req.arg;
+    i = *(unsigned short *)&duel_req.req.loc;
+    uid = duel_req.req.w;
 
     switch (duel_req_step) {
     case 0:
@@ -361,43 +367,48 @@ void duel_req_088D2D40(void)
         if (c != 0) {
             duel_w_0891524C.c[i] = *c;
         } else {
-            DuelCard t = {0};
+            DuelCard t;
+            {
+                unsigned char *d = (unsigned char *)&t;
+                int n = 4;
 
-            t.id = duel_cards[uid].id;
+                if (d) {
+                    do {
+                        *d++ = 0;
+                    } while (--n);
+                }
+            }
+            t.id = duel.list[uid].id;
             t.owner = uid & 1;
-            t.uid_hi = (uid & 0x1FF) >> 1;
+            t.uid_hi = uid >> 1;
             duel_w_0891524C.c[i] = t;
         }
         if (kind == 0x10) {
-            if (((duel_card_locate(uid) & 0xFFFF) >> 8) - 0xE < 2) {
-                c = duel_card_by_uid(uid);
-                c->b15 = 1;
-                c->b16 = 0;
+            if (((duel_card_locate(uid) & 0xFFFF) >> 8 & 0xFF) - 0xE < 2) {
+                ((DuelCardF15 *)duel_card_by_uid(uid))->f15 = 1;
             }
             duel_busy_0891523C = 0;
-            return;
+            break;
         }
         duel_req_step++;
         if (kind == 0xE && duel.players[p & 1].n_grave - 1 != duel_grave_find_uid(p, uid)) {
-            duel_grave_to_top(p, uid);
-            duel_host_call(0x16, p, 0xE, uid);
-            return;
+            duel_grave_to_top(p, (unsigned short)uid);
+            duel_host_call(0x16, p, kind, uid);
+            break;
         }
     case 1:
         if (duel_req_flag(0x16) == 0) {
-            duel_host_call(0x2D, p, kind, i << 16 | uid);
+            duel_host_call(0x2D, p, kind, (unsigned short)uid | (unsigned short)i << 16);
             duel_req_step++;
         }
-        return;
+        break;
     case 2:
-        if (duel_req_flag(0x2D) != 0) {
-            return;
+        if (duel_req_flag(0x2D) == 0) {
+            duel_busy_0891523C = 0;
         }
-        duel_busy_0891523C = 0;
-        return;
+        break;
     }
 }
-#endif
 
 /* Show the w cards of the list to player p (zone loc) and mark them. */
 void duel_req_088D2FD8(void)
@@ -528,22 +539,27 @@ void duel_req_088D36C8(void)
     }
 }
 
-#ifdef NON_MATCHING /* ordem dos loads dos campos do pedido e dos stores não reproduzida */
 /* Show the monster at (p, loc) changing position (w == 2: with its position and face) or being flipped. */
 void duel_req_088D3744(void)
 {
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
-    unsigned int z = *(unsigned short *)&duel_req.req.loc;
-    short kind = duel_req.req.w;
+    unsigned int z;
+    unsigned int p;
+    unsigned int kind;
+    unsigned int id;
+
+    id = duel_req.req.id;
+    p = (id & 0x8000) != 0;
+    z = *(unsigned short *)&duel_req.req.loc;
+    kind = duel_req.req.w;
 
     switch (duel_req_step) {
     case 0:
-        duel_req_step = 1;
+        duel_req_step++;
     case 1:
         if (duel_req_flag(-1) == 0) {
             if (kind == 2) {
-                duel_host_call(0x34, (duel.players[p & 1].field[z].pos & 1) << 15 | (duel.players[p & 1].field[z].faceup & 1) << 14 |
-                               p | (z & 0x1F) << 1,
+                duel_host_call(0x34, (unsigned short)((duel.players[p & 1].field[z].pos & 1) << 15 | ((duel.players[p & 1].field[z].faceup & 1) << 14 |
+                               ((p & 1) | (z & 0x1F) << 1))),
                                CARD_UID(duel.players[p & 1].field[z].card), 0);
             } else {
                 duel_host_call(0x33, p, z, CARD_UID(duel.players[p & 1].field[z].card));
@@ -558,7 +574,6 @@ void duel_req_088D3744(void)
         break;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* montagem dos DuelLoc de origem e destino; mantida em asm */
 /* Move the card with uid loc to the monster zone (arg: player | zone << 8; w: face | pos << 8). */
@@ -636,38 +651,61 @@ void duel_req_088D392C(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* montagem do DuelCard temporário; mantida em asm */
 /* Put a new token (card id loc) in p's monster zone (arg >> 8: up | pos << 1 | zone << 4). */
 void duel_req_088D3E5C(void)
 {
-    unsigned int id = *(unsigned short *)&duel_req.req.loc;
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
-    unsigned int b = duel_req.req.arg >> 8;
-    int z = (int)(b & 0xF0) >> 4;
-    int pos = (int)(b & 2) >> 1;
-    unsigned int up = b & 1;
+    unsigned int z;
+    unsigned int up;
+    int pos;
+    unsigned int id;
+    unsigned int p;
+    unsigned int b;
+    unsigned int rid;
     unsigned int owner;
     DuelCard c;
 
+    rid = duel_req.req.id;
+    p = (rid & 0x8000) != 0;
+    b = duel_req.req.arg >> 8 & 0xFF;
+    z = (int)(b & 0xF0) >> 4;
+    pos = (int)(b & 2) >> 1;
+    id = *(unsigned short *)&duel_req.req.loc;
+    up = b & 1;
+    owner = p;
+
     switch (duel_req_step) {
     case 0:
-        owner = p;
-        if (id == 0x1672 || id == 0x1671 || id == 0x1670) {
+        switch (id) {
+        case 0x1670:
+        case 0x1671:
+        case 0x1672:
             owner = 1 - p;
+            break;
         }
-        *(unsigned int *)&c = 0;
+        {
+            unsigned char *d = (unsigned char *)&c;
+            int n = 4;
+
+            if (d) {
+                do {
+                    *d++ = 0;
+                } while (--n);
+            }
+        }
         c.id = id;
         c.owner = owner;
         c.uid_hi = duel_uid_next(owner);
-        duel_cards[CARD_UID(c)].id = id;
+        duel.list[CARD_UID(c)].id = id;
         duel_place_monster(p, z, &c, pos, up);
-        duel.players[p].field[z].flags |= 0x200000;
-        duel.players[p].field[z].flags |= 0x200008;
-        duel_host_call(0x1B, pos << 15 | up << 14 | p | z << 1, id, CARD_UID(duel.players[p].field[z].card));
+        duel.players[p & 1].field[z].flags |= 0x200000;
+        duel.players[p & 1].field[z].flags |= 8;
+        duel_host_call(0x1B, (unsigned short)((pos & 1) << 15 | ((up & 1) << 14 | ((p & 1) | (z & 0x1F) << 1))), id,
+                       CARD_UID(duel.players[p & 1].field[z].card));
         duel_req_step++;
         break;
     case 1:
-        duel_host_call(0x34, pos << 15 | up << 14 | p | z << 1, CARD_UID(duel.players[p].field[z].card), 0);
+        duel_host_call(0x34, (unsigned short)((pos & 1) << 15 | ((up & 1) << 14 | ((p & 1) | (z & 0x1F) << 1))),
+                       CARD_UID(duel.players[p & 1].field[z].card), 0);
         duel_req_step++;
         break;
     case 2:
@@ -677,7 +715,6 @@ void duel_req_088D3E5C(void)
         break;
     }
 }
-#endif
 
 /* Put loc (at most the current minimum) 0x1130 counters on the card at (p, arg). */
 void duel_req_088D416C(void)
@@ -1362,36 +1399,39 @@ void duel_req_088D57E0(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* início de ataque com muitos campos de duel_special; mantida em asm */
 /* An attack begins: the monster at (p, arg) attacks zone loc of player w. */
 void duel_req_088D5830(void)
 {
-    unsigned int z = duel_req.req.arg;
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
-    unsigned int tz = *(unsigned short *)&duel_req.req.loc;
-    unsigned int tp = duel_req.req.w;
-    unsigned int q;
+    unsigned int p;
+    int z;
+    int tz;
+    unsigned int tp;
     int i;
+    unsigned int id;
 
+    id = duel_req.req.id;
+    p = (id & 0x8000) != 0;
+    z = duel_req.req.arg;
+    tz = *(unsigned short *)&duel_req.req.loc;
+    tp = duel_req.req.w;
     if (duel_req_step == 0) {
         duel_atk_direct = 0;
-        duel_special.uid = CARD_UID(duel.players[p & 1].field[z].card);
-        duel_special.unk24 = 0;
-        q = tp & 1;
         duel_special.player[0] = p;
         duel_atk_tp = tp;
         duel_atk_zone = z;
         duel_atk_tz = tz;
-        duel_special.act[1 - p].uid = CARD_UID(duel.players[q].field[tz].card);
+        duel_special.uid = CARD_UID(duel.players[p & 1].field[z].card);
+        duel_special.unk24 = 0;
+        duel_special.act[1 - p].uid = CARD_UID(duel.players[tp & 1].field[tz].card);
         duel_effects_free_card(duel.players[p & 1].effects, 0x1846, 1);
-        if (duel.players[q].field[tz].faceup == 0 && duel.players[q].field[tz].pos != 0) {
+        if (duel.players[tp & 1].field[tz].faceup == 0 && duel.players[tp & 1].field[tz].pos != 0) {
             if (duel_slot_count_src(p, z, 0x1846) != 0) {
                 duel_slot_effect_add(p, 0xB, 4, 0x1846, 0);
             }
             switch (field_get_card(p, z)) {
             case 0x1433:
                 if (SLOT_ACTIVE(&duel.players[p & 1].field[z]) &&
-                    card_get_special_group(duel.players[q].field[tz].card.id) == 1) {
+                    card_get_special_group(duel.players[tp & 1].field[tz].card.id) == 1) {
                     duel_slot_effect_add(tp, tz, 3, 0x1433, 0);
                 }
                 break;
@@ -1405,7 +1445,7 @@ void duel_req_088D5830(void)
                 break;
             }
         }
-        for (i = 0; i < 5; i++) {
+        for (i = 0; i <= 4; i++) {
             if (i != (int)z && field_get_card(p, i) == 0x1A79) {
                 duel.players[p & 1].field[i].link = 0;
             }
@@ -1419,27 +1459,29 @@ void duel_req_088D5830(void)
         duel_busy_0891523C = 0;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* ordem dos loads dos campos do pedido e alocação de registradores não reproduzidas */
 /* A direct attack begins: the monster at (p, arg) attacks the opponent. */
 void duel_req_088D5BA0(void)
 {
-    unsigned int z = duel_req.req.arg;
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
+    unsigned int p;
+    int z;
     int i;
+    unsigned int id;
 
+    id = duel_req.req.id;
+    p = (id & 0x8000) != 0;
+    z = duel_req.req.arg;
     if (duel_req_step == 0) {
         duel_atk_direct = 1;
-        duel_atk_tz = 5;
-        duel_special.uid = CARD_UID(duel.players[p].field[z].card);
-        duel_special.unk24 = 0;
         duel_special.player[0] = p;
         duel_atk_tp = 1 - p;
         duel_atk_zone = z;
-        for (i = 0; i < 5; i++) {
+        duel_atk_tz = 5;
+        duel_special.uid = CARD_UID(duel.players[p & 1].field[z].card);
+        duel_special.unk24 = 0;
+        for (i = 0; i <= 4; i++) {
             if (i != (int)z && field_get_card(p, i) == 0x1A79) {
-                duel.players[p].field[i].link = 0;
+                duel.players[p & 1].field[i].link = 0;
             }
         }
         duel_player_flag_set(p, 0x12, 1);
@@ -1451,7 +1493,6 @@ void duel_req_088D5BA0(void)
         duel_busy_0891523C = 0;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* 5 palavras: lo e hi trocam s2/s3 (o original calcula lo antes do sra); o resto bate */
 void duel_req_088D5D2C(void)
@@ -1480,7 +1521,6 @@ void duel_req_088D5D2C(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem dos loads dos campos do pedido e alocação de registradores não reproduzidas */
 /* End of the battle phase of p: clear the attack flags and let the monsters with 0x1A79 attack again. */
 void duel_req_088D5DEC(void)
 {
@@ -1488,42 +1528,39 @@ void duel_req_088D5DEC(void)
     int phase;
     unsigned int m;
     int z;
-    int id;
 
-    for (z = 0; z < 5; z++) {
-        duel.players[p].field[z].flags &= ~0x400000;
-        duel.players[p].field[z].flags &= ~0x800000;
-        id = field_get_card(p, z);
-        switch (id) {
+    for (z = 0; z <= 4; z++) {
+        duel.players[p & 1].field[z].flags &= ~0x400000;
+        duel.players[p & 1].field[z].flags &= ~0x800000;
+        switch (field_get_card(p, z)) {
         case 0x186C:
         case 0x18A6:
         case 0x19C1:
         case 0x1A4E:
-            duel_effects_free_card(duel.players[p].field[z].effects, field_get_card(p, z), 1);
+            duel_effects_free_card(duel.players[p & 1].field[z].effects, (unsigned short)field_get_card(p, z), 1);
             break;
         }
     }
-    phase = duel_phase;
     if (duel_count_monsters(1 - p) != 0) {
-        m = 0;
+        phase = duel_phase;
         duel_phase = 3;
-        for (z = 0; z < 5; z++) {
-            if (duel_slot_e8170(p, z, 0x1A79) != 0 && duel.players[p].field[z].pos == 0 &&
+        m = 0;
+        for (z = 0; z <= 4; z++) {
+            if (duel_slot_e8170(p, z, 0x1A79) != 0 && duel.players[p & 1].field[z].pos == 0 &&
                 duel_can_attack_any(p, z, 1) != 0) {
                 m |= 1 << z;
             }
         }
-        for (z = 0; z < 5; z++) {
+        for (z = 0; z <= 4; z++) {
             if (m & 1 << z) {
-                duel.players[p].field[z].link = 1;
+                duel.players[p & 1].field[z].link = 1;
             }
         }
+        duel_phase = phase;
     }
     duel_special.uid = 0;
     duel_busy_0891523C = 0;
-    duel_phase = phase;
 }
-#endif
 
 /* The monster at (p, arg) has attacked (loc != 0) or its attack was cancelled. */
 void duel_req_088D5FC8(void)
@@ -1635,38 +1672,43 @@ void duel_req_088D6348(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* montagem dos DuelLoc; mantida em asm */
+#ifdef NON_MATCHING /* 83 palavras: lógica conferida com o asm (sem zerar os DuelLoc, índice p & 1, ordem dos campos); falta a ordem dos stores dos bitfields de from/to */
 /* The monster at (p, arg) leaves the field to become the card that fought (loc: 0 attacker, 1 target). */
 void duel_req_088D63FC(void)
 {
-    unsigned int z = duel_req.req.arg;
-    unsigned int p = (duel_req.req.id & 0x8000) != 0;
-    unsigned int i = *(unsigned short *)&duel_req.req.loc;
+    unsigned int z;
+    unsigned int p;
+    unsigned int i;
+    unsigned int id;
     DuelLoc from;
     DuelLoc to;
 
+    id = duel_req.req.id;
+    z = duel_req.req.arg;
+    p = (id & 0x8000) != 0;
+    i = *(unsigned short *)&duel_req.req.loc;
+
     switch (duel_req_step) {
     case 0:
-        *(unsigned short *)&from = 0;
         from.player = p;
+        from.zone = 0;
         from.idx = z;
-        from.b15 = duel.players[p].field[z].pos;
-        from.b14 = duel.players[p].field[z].faceup;
-        *(unsigned short *)&to = 0;
         to.player = p;
+        from.b15 = duel.players[p & 1].field[z].pos;
+        from.b14 = duel.players[p & 1].field[z].faceup;
         to.zone = z;
-        to.idx = 0xFF;
-        to.b15 = duel.players[p].field[z].pos;
-        to.b14 = duel.players[p].field[z].faceup;
-        duel_host_call(0x18, CARD_UID(duel.players[p].field[z].card) | 0x60000, *(unsigned short *)&from,
+        to.idx = 0xFFFF;
+        to.b15 = from.b15;
+        to.b14 = from.b14;
+        duel_host_call(0x18, (unsigned short)CARD_UID(duel.players[p & 1].field[z].card) | 0x60000, *(unsigned short *)&from,
                        *(unsigned short *)&to);
         duel_req_step++;
         break;
     case 1:
         duel_effects_clear_src(p, z);
-        duel_memcpy(&duel_special.slot[i], &duel.players[p].field[z], sizeof(DuelSlot));
+        duel_memcpy(&duel_special.slot[i], &duel.players[p & 1].field[z], sizeof(DuelSlot));
         duel_special.slot[i].card.b21 = duel_special.act[duel_special.player[0] ^ i].unk34 > 0;
-        duel_bzero(&duel.players[p].field[z], sizeof(DuelSlot));
+        duel_bzero(&duel.players[p & 1].field[z], sizeof(DuelSlot));
         duel_w_08917DB8 &= ~(1 << (z + p * 16));
         duel_busy_0891523C = 0;
         break;
