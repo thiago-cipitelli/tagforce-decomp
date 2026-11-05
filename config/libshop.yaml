@@ -111,6 +111,7 @@ segments:
       - [0x1C314, .data, shop_list]
       - [0x1C344, .data, shop_parts]
       - [0x1C3FC, data, data_4]
+      - [0x1C400, .data, shop_open]
       - [0x1C470, .data, shop_anim]
       - [0x1C4E0, .data, shop_detail]
       - [0x1C4F4, .data, shop_sort]
