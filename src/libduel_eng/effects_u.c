@@ -1,5 +1,4 @@
 // @range 0x08884F18-0x08885B70
-// @asm 0x08884F18-0x0888519C
 // @asm 0x088859A8-0x08885B70
 /* Card effect handlers (DuelAct *a), after effects_t.c. */
 #include "duel.h"
@@ -53,12 +52,11 @@ void duel_088CA184(unsigned short loc, unsigned short to);
 int duel_can_attack(unsigned int p, int z, int arg);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 
-#ifdef NON_MATCHING /* ordem dos laços e registradores */
 int duel_08884F18(DuelAct *a)
 {
     unsigned int t = duel_act_target(a, 0);
     unsigned int p = t & 0xFF;
-    unsigned short id = a->w[2];
+    int id = a->w[2];
     int i;
 
     if (a->b4_2) {
@@ -70,20 +68,20 @@ int duel_08884F18(DuelAct *a)
             return 0;
         }
     case 0x7F:
-        for (i = duel.players[t & 1].n_hand - 1; i >= 0; i--) {
-            if (card_same_name(duel.players[t & 1].hand[i].id, id) != 0) {
+        for (i = duel.players[p & 1].n_hand - 1; i >= 0; i--) {
+            if (card_same_name(duel.players[p & 1].hand[i].id, id) != 0) {
                 duel_088C7478(p, i, duel_field_card_deb2c(p, 0xB, i), p != a->player);
             }
         }
         return 0x7E;
     case 0x7E:
-        for (i = duel.players[t & 1].n_d - 1; i >= 0; i--) {
-            if (card_same_name(duel.players[t & 1].zone_d[i].id, id) != 0) {
+        for (i = duel.players[p & 1].n_d - 1; i >= 0; i--) {
+            if (card_same_name(duel.players[p & 1].zone_d[i].id, id) != 0) {
                 duel_088C7490(p, i, p != a->player);
             }
         }
-        for (i = duel.players[t & 1].n_18 - 1; i >= 0; i--) {
-            if (card_same_name(duel.players[t & 1].zone_c[i].id, id) != 0) {
+        for (i = duel.players[p & 1].n_18 - 1; i >= 0; i--) {
+            if (card_same_name(duel.players[p & 1].zone_c[i].id, id) != 0) {
                 duel_088C74EC(p, i, p != a->player);
             }
         }
@@ -97,7 +95,6 @@ int duel_08884F18(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888519C(DuelAct *a)
 {
@@ -289,14 +286,14 @@ int duel_088857F8(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores */
+#ifdef NON_MATCHING /* 6 palavras: o original guarda loc como unsigned short (andi 0xffff em $s1) e calcula (unsigned char)p em t0 antes do or; o 5º argumento de duel_088C87A8 é só o jogador (o rascunho passava loc inteiro) */
 int duel_088859A8(DuelAct *a, DuelAct *b)
 {
     unsigned int t = duel_act_target(a, 0);
-    unsigned int z = (unsigned short)t >> 8 & 0xFF;
     unsigned int q = t & 0xFF;
+    unsigned int z = (unsigned short)t >> 8 & 0xFF;
     unsigned int p;
-    int s;
+    unsigned int loc;
 
     if (a->b4_2) {
         return 0;
@@ -319,13 +316,13 @@ int duel_088859A8(DuelAct *a, DuelAct *b)
             return 0;
         }
         p = a->player;
-        s = duel_pick_monster_zone(p);
-        duel_088C87A8(q, z, a->id, 1, p | (s & 0xFF) << 8);
-        duel_088CA184(t, p | (s & 0xFF) << 8);
+        loc = (unsigned char)p | (unsigned char)duel_pick_monster_zone(p) << 8;
+        duel_088C87A8(q, z, a->id, 1, (unsigned char)loc);
+        duel_088CA184(t, loc);
         if (duel_can_attack(duel_special.player[0], duel_special.zone[0], 0) == 0) {
             return 0;
         }
-        duel_cmd((a->player == 1 ? 0 : 0x8000) | 0x19, duel_special.zone[0], s & 0xFF, a->player);
+        duel_cmd((1 - a->player != 0 ? 0x8000 : 0) | 0x19, duel_special.zone[0], (unsigned short)loc >> 8 & 0xFF, a->player);
         return 0x7F;
     case 0x7F:
         duel_08832ADC(1);

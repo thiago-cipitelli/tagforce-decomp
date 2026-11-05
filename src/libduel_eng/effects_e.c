@@ -38,7 +38,7 @@ void duel_0884C588(unsigned int p, int a, unsigned short id, unsigned int b);
 int duel_088BFF78(unsigned int p, unsigned short id, int b);
 void duel_0884ACD8(unsigned int p, int msg);
 
-#ifdef NON_MATCHING /* register allocation of the mask update and the zone argument */
+#ifdef NON_MATCHING /* 18 palavras: o default do switch interno sai no original direto ao epílogo (b; move v0,zero) e o return 0 final fica no fim; aqui o mwcc junta os dois retornos 0 */
 int duel_eff_f9c00(DuelAct *a, int b)
 {
     unsigned int k = a->kind;
@@ -90,8 +90,8 @@ int duel_eff_f9c00(DuelAct *a, int b)
             if (++duel_w_089148FC < n) {
                 return 0x7F;
             }
-            duel_088CC178(a->player, a->zone, duel_w_08914900);
-            return 0;
+            duel_088CC178(a->player, a->zone, *(volatile int *)&duel_w_08914900);
+            break;
         }
         return 0;
     }

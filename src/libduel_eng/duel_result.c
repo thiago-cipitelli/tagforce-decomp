@@ -326,7 +326,7 @@ void duel_records_update(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* same steps; the original assigns the $s registers of the pointers and the index differently */
+#ifdef NON_MATCHING /* 36 palavras: só registradores (i em s0, k em s4, rec em s1 no original); testes como k >= N e o máximo do case 33 em k já batem */
 /* Bonuses of the duel (r->bonus[i]); a bonus counts only the first time it is earned (save +0xCC).
    With any new bonus, bonus 0x52 too, and the total is 30 per new bonus. */
 void duel_bonus_calc(void)
@@ -336,9 +336,9 @@ void duel_bonus_calc(void)
     unsigned char *rec = (unsigned char *)sysstate2_get_ptr_51c();
     unsigned char *g = (unsigned char *)game_state_get();
     int n = 0;
+    int k;
     int i;
     int *b;
-    int k;
 
     for (i = 0, b = cur; i < 0x53; i++, b++) {
         b[0x28] = 0;
@@ -450,13 +450,13 @@ void duel_bonus_calc(void)
             break;
         case 23:
             k = duel_stat_get(0x1F);
-            if (k > 9) {
+            if (k >= 10) {
                 b[0x28] = k * 2;
             }
             break;
         case 24:
             k = duel_stat_get(0x21);
-            if (k > 9) {
+            if (k >= 10) {
                 b[0x28] = k * 2;
             }
             break;
@@ -486,37 +486,42 @@ void duel_bonus_calc(void)
             break;
         case 31:
             k = duel_stat_get(0x25);
-            if (k > 2) {
+            if (k >= 3) {
                 b[0x28] = k * 2;
             }
             break;
         case 32:
             k = duel_stat_get(0);
-            if (k > 2999) {
+            if (k >= 3000) {
                 b[0x28] = k / 500;
             }
             break;
         case 33: {
-            int a = duel_stat_get(3);
-
-            k = duel_stat_get(5);
-            k = MAX(k, a);
-            a = duel_stat_get(1);
-            k = MAX(a, k);
-            if (k > 2999) {
+            k = duel_stat_get(3);
+            {
+                int a = duel_stat_get(5);
+                if (k < a) {
+                    k = a;
+                }
+                a = duel_stat_get(1);
+                if (k < a) {
+                    k = a;
+                }
+            }
+            if (k >= 3000) {
                 b[0x28] = k / 250;
             }
             break;
         }
         case 34:
             k = duel_stat_get(0x14);
-            if (k > 4999) {
+            if (k >= 5000) {
                 b[0x28] = k / 250;
             }
             break;
         case 35:
             k = duel_stat_get(5);
-            if (k > 1499) {
+            if (k >= 1500) {
                 b[0x28] = k / 50;
             }
             break;
@@ -537,55 +542,55 @@ void duel_bonus_calc(void)
             break;
         case 39:
             k = duel_stat_get(0xF);
-            if (k > 7) {
+            if (k >= 8) {
                 b[0x28] = k * 4;
             }
             break;
         case 40:
             k = duel_stat_get(0xD);
-            if (k > 7) {
+            if (k >= 8) {
                 b[0x28] = k * 4;
             }
             break;
         case 41:
             k = duel_stat_get(0x26);
-            if (k > 4) {
+            if (k >= 5) {
                 b[0x28] = k * 4;
             }
             break;
         case 42:
             k = duel_stat_get(0x28);
-            if (k > 4) {
+            if (k >= 5) {
                 b[0x28] = k * 4;
             }
             break;
         case 43:
             k = duel_stat_get(0x29);
-            if (k > 4) {
+            if (k >= 5) {
                 b[0x28] = k * 4;
             }
             break;
         case 44:
             k = duel_stat_get(0x2B);
-            if (k > 4) {
+            if (k >= 5) {
                 b[0x28] = k * 4;
             }
             break;
         case 45:
             k = duel_stat_get(0x34);
-            if (k > 2) {
+            if (k >= 3) {
                 b[0x28] = k * 4;
             }
             break;
         case 46:
             k = duel_stat_get(0x2E);
-            if (k > 4) {
+            if (k >= 5) {
                 b[0x28] = k * 4;
             }
             break;
         case 47:
             k = duel_stat_get(0x30);
-            if (k > 2) {
+            if (k >= 3) {
                 b[0x28] = k * 6;
             }
             break;

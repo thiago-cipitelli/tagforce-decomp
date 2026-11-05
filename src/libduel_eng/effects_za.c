@@ -99,7 +99,7 @@ int duel_088C4604(DuelAct *a, unsigned int p, int n);
 int duel_0884E9E8(DuelAct *a, int b);
 void duel_088328E8(unsigned int p, unsigned short id, int a);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
-int duel_slot_ef098(unsigned int p, int z, int id);
+int duel_slot_ef098(unsigned int p, int z, unsigned short id);
 void duel_088CA270(unsigned int p, unsigned short a, unsigned short b);
 int duel_088D14B8(DuelAct *a, unsigned int p, int z);
 void duel_088CA184(unsigned short loc, unsigned short to);
@@ -839,14 +839,12 @@ int duel_0888E0E4(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* queda de 0x80 em 0x7F (beqzl com v0=0) e registradores do caso 0x7C */
+#ifdef NON_MATCHING /* 13 palavras: no caso 0x7C o original calcula 1 - a->player por último (temporário em a0, depois dos globais); o 0x80 não cai no 0x7F (corrigido: return ? 0x7F : 0) */
 int duel_0888E1A4(DuelAct *a, int b)
 {
     switch (duel_step) {
     case 0x80:
-        if (duel_0884E9E8(a, b) != 0) {
-            return 0x7F;
-        }
+        return duel_0884E9E8(a, b) != 0 ? 0x7F : 0;
     case 0x7F:
         duel_088328E8(a->player, a->id, a->player);
         return 0x7E;

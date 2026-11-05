@@ -1,7 +1,6 @@
 // @range 0x08889BE4-0x0888B904
 // @asm 0x08889BE4-0x0888A020
 // @asm 0x0888A88C-0x0888AB18
-// @asm 0x0888B118-0x0888B2BC
 // @asm 0x0888B434-0x0888B5B8
 /* Card effect handlers (DuelAct *a), after effects_x.c. */
 #include "duel.h"
@@ -554,7 +553,6 @@ int duel_0888B078(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a->id fica num $s em vez de ser relido */
 int duel_0888B118(DuelAct *a)
 {
     int n;
@@ -593,7 +591,7 @@ int duel_0888B118(DuelAct *a)
         duel_088C7BA4();
         return 0x7F;
     case 0x7F:
-        duel_088263A8(a->player, duel_card_by_uid(duel_act_target2(a, duel_w_089148FC)), 1, a->id << 16);
+        duel_088263A8(a->player, duel_card_by_uid(duel_act_target2(a, duel_w_089148FC)), 1, ((volatile DuelAct *)a)->id << 16);
         return ++duel_w_089148FC < n ? 0x7F : 0x7E;
     case 0x7E:
         duel_088C7CF0();
@@ -601,7 +599,6 @@ int duel_0888B118(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888B2BC(DuelAct *a)
 {

@@ -313,21 +313,20 @@ int duel_08821094(unsigned int p)
     return 0;
 }
 
-#ifdef NON_MATCHING /* forma igual; o mwcc troca os registradores $s de p, do id e do ponteiro da tabela (s0/s1) */
+#ifdef NON_MATCHING /* 30 palavras: com z declarado por último p/e batem; falta a alocação de $s3-$s5 no laço das zonas (z, pl, q) */
 int duel_08821124(unsigned int p)
 {
     unsigned int i;
     DuelAiCard *e;
     int id;
-    int z;
     int q;
     DuelPlayer *pl;
-
     unsigned int *n;
     int r;
     int uid;
     int ok;
     int k;
+    int z;
 
     for (i = 0, e = duel_ai_monster_cards; i < 0x103; i++, e++) {
         r = !duel_08820618(p, e);

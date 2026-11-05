@@ -1,5 +1,4 @@
 // @range 0x0882FF4C-0x08830E94
-// @asm 0x08830030-0x088302BC
 /* Questions asked during an event (duel_event.c): the step machines (duel_ev_unk) that let the
    player of the event (duel_w_08919670) pick zones or answer, and their zone filters. The handlers
    take (player, card id, argument) = (duel_w_08919670, duel_ev_data[0], duel_ev_data[1]); the
@@ -77,7 +76,6 @@ int duel_0882FF4C(unsigned int p, int z, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original relê duel_w_0891964C/50/54 depois de marcar a zona; o mwcc reaproveita os registradores */
 /* Pick n (low byte of the argument) monsters to tribute, one per question. */
 int duel_08830030(unsigned int p, int id, int arg)
 {
@@ -112,7 +110,7 @@ int duel_08830030(unsigned int p, int id, int arg)
             if (n != 0) {
                 duel_host_call(0x28, q, z, CARD_UID(duel.players[q & 1].field[z].card));
             } else {
-                duel_w_0891968C = (unsigned char)duel_w_0891964C | (unsigned char)(duel_w_08919650 + duel_w_08919654) << 8;
+                duel_w_0891968C = (unsigned char)*(volatile unsigned int *)&duel_w_0891964C | (unsigned char)(*(volatile int *)&duel_w_08919650 + *(volatile int *)&duel_w_08919654) << 8;
                 return 1;
             }
             duel_ev_unk++;
@@ -133,8 +131,6 @@ int duel_08830030(unsigned int p, int id, int arg)
     }
     return 1;
 }
-
-#endif
 
 /* Zone filter: face-up monsters that the player of the turn may tribute. */
 int duel_088302BC(unsigned int p, int z, int i)
@@ -346,7 +342,6 @@ int duel_0883078C(unsigned int p, int id, int (*fn)())
     return 1;
 }
 
-
 /* Pick a card of the hand (by the computer: duel_08809B50); 0x1365, 0x1990, 0x1488, 0x133B show a
    message first. */
 int duel_088309F8(unsigned int p, int id, int arg)
@@ -444,7 +439,6 @@ int duel_08830CDC(unsigned int p, int id, int arg)
     }
     return 1;
 }
-
 
 /* Shows the deck of the opponent (0xF9, then duel_0884C588 kind 2). */
 int duel_08830DC0(unsigned int p)

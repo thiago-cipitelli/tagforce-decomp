@@ -1,5 +1,4 @@
 // @range 0x0888F420-0x08890094
-// @asm 0x0888F45C-0x0888F6B0
 // @asm 0x0888F82C-0x08890094
 /* Card effect handlers (DuelAct *a), after effects_zb.c. */
 #include "duel.h"
@@ -46,7 +45,6 @@ int duel_0888F420(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* li 0; b; nop no segundo teste de 0x80 */
 int duel_0888F45C(DuelAct *a)
 {
     if (a->b4_2) {
@@ -54,14 +52,11 @@ int duel_0888F45C(DuelAct *a)
     }
     switch (duel_step) {
     case 0x80:
-        if (duel.players[0].n_hand != 0) {
-            if (duel.players[1].n_hand == 0) {
-                return 0;
-            }
-            duel_08832880(a->player, a->id, 1);
-            return 0x7F;
+        if (duel.players[0].n_hand == 0 || duel.players[1].n_hand == 0) {
+            return 0;
         }
-        return 0;
+        duel_08832880(a->player, a->id, 1);
+        return 0x7F;
     case 0x7F:
         a->w[0] = CARD_UID(duel.players[1 - a->player & 1].hand[duel_w_0891968C]);
         duel_08832880(1 - a->player, a->id, 1);
@@ -78,7 +73,6 @@ int duel_0888F45C(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888F6B0(DuelAct *a)
 {

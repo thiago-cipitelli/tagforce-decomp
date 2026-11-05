@@ -847,7 +847,7 @@ void duel_req_088D9248(void)
     }
 }
 
-#ifdef NON_MATCHING /* forma igual; alocação diferente (o original usa $s8 para hi4) e, em 088D9DBC, a escolha do slot e o case 1 saem com outro arranjo de desvios */
+#ifdef NON_MATCHING /* forma igual (hi4 como andi 0xF0/ext); o original usa um $s a mais ($s8) e o quadro difere e, em 088D9DBC, a escolha do slot e o case 1 saem com outro arranjo de desvios */
 /* Request 0x31: send card i of zone arg (low byte; the high byte is the index, or the uid w is looked up
    in the hand, the extra deck or the deck) to zone loc (low byte; high byte: bits 0-3 position shown
    to the viewer, bits 4-7 keep the b14 bit). Deck and extra deck cards lose their state. */
@@ -881,7 +881,7 @@ void duel_req_088D9504(void)
     }
     hi = (unsigned short)to >> 8 & 0xFF;
     pos = hi & 0xF;
-    hi4 = hi >> 4;
+    hi4 = (unsigned char)((hi & 0xF0) >> 4);
     w = duel_req.w;
     switch (fz) {
     case 0xD:

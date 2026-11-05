@@ -1,6 +1,5 @@
 // @range 0x088B08B8-0x088B153C
 // @asm 0x088B0C88-0x088B1134
-// @asm 0x088B1134-0x088B153C
 // @data 0x08911AF0-0x08911B78
 /* Response window: "activate a card?" question asked to a player after an event (duel_chain.kinds[0])
    or a chain link, with the text of the event; the computer answers by itself (duel_08815288/duel_0881530C). */
@@ -336,6 +335,8 @@ int duel_088B0C88(void)
     return 1;
 }
 
+#endif
+
 /* window of the local player (duel_view_player) after an event or a chain link; 1: closed */
 int duel_088B1134(void)
 {
@@ -367,7 +368,7 @@ int duel_088B1134(void)
         duel_w_089149E0++;
     case 1:
     case 5: /* ask */
-        if (duel_w_089149E4) {
+        if (*(volatile int *)&duel_w_089149E4) {
             if (duel_088B06F0(a, p, 0) == 0) {
                 duel_wcscpy(buf, 0xCD);
                 duel_wcscat(buf, duel_wstr_nl2);
@@ -410,7 +411,7 @@ int duel_088B1134(void)
         if (duel_w_089149E4) {
             duel_08835944(5);
         } else {
-            duel_08835944();
+            duel_08835944(4);
         }
         duel_w_089149E0++;
         return 0;
@@ -438,4 +439,3 @@ int duel_088B1134(void)
     }
     return 1;
 }
-#endif

@@ -1,7 +1,6 @@
 // @range 0x08804000-0x088070A8
 // @asm 0x088042D4-0x088044C8
 // @asm 0x088044C8-0x08804828
-// @asm 0x08806730-0x088070A8
 /* Computer player: the main-phase steps that summon monsters from the hand. */
 #include "duel.h"
 #include "card_db.h"
@@ -1050,7 +1049,6 @@ int duel_088066D0(unsigned int p)
     return duel_count_active(0x132C) * 500 < duel.players[p & 1].lp;
 }
 
-#ifdef NON_MATCHING /* nos casos 0x11ED, 0xFCE e 0x185F o original materializa !f() (sltu/xori) antes do beqzl e guarda o resultado num registrador s; nenhuma forma testada reproduz */
 /* Is it worth summoning card id (n: tributes available) for the computer? */
 int duel_08806730(unsigned int p, int n, unsigned short id)
 {
@@ -1123,17 +1121,23 @@ int duel_08806730(unsigned int p, int n, unsigned short id)
         case 0x11ED:
             p = 1 - p;
             r = 0;
-            if (!duel_find_effect_card(p, 0x1102, -1) &&
+            {
+                int on = (duel_find_effect_card(p, 0x1102, -1) != 0) ^ 1;
+                if (on &&
                 duel_hand_count_name(p, 0x1102) + duel_grave_count_id(p, 0x1102) > 0) {
                 r = 1;
+            }
             }
             return r;
         case 0xFCE:
             p = 1 - p;
             r = 0;
-            if (!duel_find_effect_card(p, 0x10EF, -1) &&
-                duel_hand_count_name(p, 0x10EF) + duel_grave_count_id(p, 0x10EF) > 0) {
-                r = 1;
+            {
+                int on = (duel_find_effect_card(p, 0x10EF, -1) != 0) ^ 1;
+                if (on &&
+                    duel_hand_count_name(p, 0x10EF) + duel_grave_count_id(p, 0x10EF) > 0) {
+                    r = 1;
+                }
             }
             return r;
         case 0x1152:
@@ -1169,10 +1173,16 @@ int duel_08806730(unsigned int p, int n, unsigned short id)
         case 0x158B:
             return duel_count_name(p, id) > 0;
         case 0x185F:
-            p = 1 - p;
             r = 0;
-            if (!duel_count_monsters_state(p, 0, 1) && !duel_count_field_cards(p, 0, 1, 1)) {
-                r = 1;
+            p = 1 - p;
+            {
+                int on = (duel_count_monsters_state(p, 0, 1) != 0) ^ 1;
+                if (on) {
+                    on = (duel_count_field_cards(p, 0, 1, 1) != 0) ^ 1;
+                    if (on) {
+                        r = 1;
+                    }
+                }
             }
             return r;
         case 0x179A:
@@ -1225,4 +1235,4 @@ int duel_08806730(unsigned int p, int n, unsigned short id)
     }
     return 0;
 }
-#endif
+
