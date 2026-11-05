@@ -77,6 +77,7 @@ int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
    effect, then 0x5B and the hand refresh of both players */
 void duel_088C7954(void)
 {
+    unsigned int u;
     unsigned int j;
     int i;
 
@@ -85,7 +86,8 @@ void duel_088C7954(void)
 
         for (j = 0; j < duel.players[p].n_grave; j++) {
             if (card_get_attribute_icon(duel.players[p].grave[j].id) == 3) {
-                duel_cmd(0x3F, (CARD_UID(duel.players[p].grave[j]) & 0x3FF) << 6 | (p | 0x1C), p | 0x58, 0);
+                u = (CARD_UID(duel.players[p].grave[j]) & 0x3FF) << 6;
+                duel_cmd(0x3F, u | (p | 0x1C), p | 0x58, 0);
             }
         }
     }
@@ -96,7 +98,8 @@ void duel_088C7954(void)
         for (j = 0; j < duel.players[p].n_d; j++) {
             if (duel.players[p].zone_d[j].id == 0x12A1
                 && duel_slot_effect_with(q, 0xB, 0x12A1, CARD_UID(duel.players[p].zone_d[j]))) {
-                duel_cmd(0x3F, (CARD_UID(duel.players[p].zone_d[j]) & 0x3FF) << 6 | (p | 0x1A), ((1 - q) & 1) | 0x5A, 0);
+                u = (CARD_UID(duel.players[p].zone_d[j]) & 0x3FF) << 6;
+                duel_cmd(0x3F, u | (p | 0x1A), ((1 - q) & 1) | 0x5A, 0);
             }
         }
     }

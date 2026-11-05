@@ -328,9 +328,9 @@ int duel_088B0C88(void)
         if (duel_w_089149D0 == duel_turn_player) {
             duel_w_08914920 = 0;
             duel_w_089149D4 = 0;
-        } else {
-            duel_w_089149CC = 0;
+            return 1;
         }
+        duel_w_089149CC = 0;
         return 1;
     }
     return 1;
