@@ -725,15 +725,15 @@ int value;
     return dl_disable(list, 2);
 }
 
-#ifdef NON_MATCHING
+#ifdef NON_MATCHING /* 9 palavras: só a base do laço (&dts, induzida) e x2 trocam $s0/$s2; c/x/yy int e PT(x, yy) (perm_decls: melhor ordem i, x, c, x2, y, yy) */
 /* the number of cards of each type in the deck */
 void *dt_draw_type_counts(void *list)
 {
     int i;
+    int x;
+    int c;
+    int x2 = 0x18;
     int y = 0x17;
-    unsigned int x2 = 0x18;
-    unsigned short c;
-    unsigned int x;
     int yy;
 
     for (i = 0; i < 6; i++, y += 0x13, x2 += 0x15) {
@@ -742,12 +742,12 @@ void *dt_draw_type_counts(void *list)
             x = 0x7A;
             yy = y;
         } else {
-            yy = 3;
             x = x2;
+            yy = 3;
         }
         if (c < 10)
             x -= 3;
-        list = dt_draw_digits(list, x | yy << 16, 0, c, 2, 0xFFFFFFFF, dt_eres_get(0x8009));
+        list = dt_draw_digits(list, PT(x, yy), 0, c, 2, 0xFFFFFFFF, dt_eres_get(0x8009));
     }
     return list;
 }

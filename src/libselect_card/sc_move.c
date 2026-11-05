@@ -60,6 +60,14 @@ typedef struct ScSel {
     unsigned short pad : 6;
 } ScSel;
 
+typedef struct ScHist {                /* undo record (sc_hist_push), 10 bytes */
+    unsigned char src : 4;             /* source list */
+    unsigned char dst : 4;             /* destination list */
+    unsigned char pad01;
+    ScEnt ent;                         /* +0x02 */
+    unsigned short pos;                /* +0x08 position in the destination order */
+} ScHist;
+
 typedef struct ScFlight {              /* sc_flight 0x0881BB54, 0x34 bytes, heap allocated */
     unsigned char step : 4;            /* 0 start, 1 scroll wait, 2 flying, 3 done */
     unsigned char phase : 4;           /*   flying: 0 path, 1 move, 2 land */
@@ -280,70 +288,80 @@ int sc_cancel_request(void)
 /* Triangle: undoes the last move */
 int sc_input_move(void)
 {
-    ScMove mv;
-    ScFlight *f;
-    unsigned int src;
-    int changed;
-    ScEnt *e;
-    int i;
+    ScHist h;
     ScList *l;
+    int i;
+    int k;
+    int found;
+    int side;
 
-    if (sc_hist_pop(&mv) == 0)
+    if (sc_hist_pop((ScMove *)&h) == 0)
         return 0;
     sc_flight = heap_alloc(sc.heap, 0x34);
     if (sc_flight == 0)
         return 0;
-    f = sc_flight;
-    memset(f, 0, 0x34);
-    f->sel.src = (mv.b[0] & 0x7F) >> 4;
-    f->idx = *(unsigned short *)&mv.b[8];
-    if (scv.mode < 2) {
-        f->sel.side = 0;
-        f->sel.dside = 0;
+    memset(sc_flight, 0, 0x34);
+    sc_flight->sel.src = h.dst;
+    sc_flight->idx = h.pos;
+    if (scv.mode > 1) {
+        switch (h.dst) {
+        case 0:
+            side = 0;
+            break;
+        default:
+            side = 1;
+            break;
+        }
+        sc_flight->sel.side = side;
+        sc_flight->sel.dside = (sc_flight->sel.side + 1) & 1;
     } else {
-        f->sel.side = mv.b[0] >> 4 != 0;
-        f->sel.dside = (f->sel.side + 1) & 1;
+        sc_flight->sel.side = 0;
+        sc_flight->sel.dside = 0;
     }
-    f->sel.dst = mv.b[0] & 7;
-    f->dtab = scv.pane[f->sel.dside].list->tab;
-    memcpy(&f->ent, &mv.b[2], 6);
+    sc_flight->sel.dst = h.src;
+    sc_flight->dtab = scv.pane[sc_flight->sel.dside].list->tab;
+    memcpy(&sc_flight->ent, &h.ent, 6);
     sc.state = 2;
-    f->step = 2;
-    f->phase = 0;
-    src = f->sel.src;
-    l = &sc.list[src];
-    changed = 0;
-    if (f->idx < l->n) {
-        e = &l->ents[f->idx];
-        if (e->id != f->ent.id || e->fixed != f->ent.fixed)
-            changed = 1;
+    sc_flight->step = 2;
+    sc_flight->phase = 0;
+    l = &sc.list[sc_flight->sel.src];
+    k = -1;
+    found = 0;
+    if (sc_flight->idx >= l->n) {
+        found = 1;
     } else {
-        changed = 1;
+        ScEnt *e = &l->ents[sc_flight->idx];
+
+        if (e->id != h.ent.id)
+            found = 1;
+        else if (e->fixed != h.ent.fixed)
+            found = 1;
     }
-    if (changed) {
-        f->idx = 0xFFFF;
+    if (found) {
+        sc_flight->idx = 0xFFFF;
         for (i = l->n - 1; i >= 0; i--) {
-            e = &l->ents[i];
-            if (e->id == f->ent.id && e->fixed == f->ent.fixed) {
-                f->idx = i;
+            ScEnt *e = &l->ents[i];
+
+            if (e->id == h.ent.id && e->fixed == h.ent.fixed) {
+                sc_flight->idx = i;
                 break;
             }
         }
-        if ((int)f->idx < 0) {  /* never: idx is a u16, but the original keeps the test */
+        if (sc_flight->idx < 0) {
             sc_flight_free();
             return 0;
         }
     }
     for (i = 0; i < l->count; i++) {
-        if (f->idx == l->order[i])
+        if (sc_flight->idx == l->order[i]) {
+            k = i;
             break;
+        }
     }
-    if (i >= l->count)
-        i = -1;
-    f->pos = i;
-    sc_slot_pos(f->from, f->sel.side, f->sel.src, i, 0);
-    f->x = (int)f->from[0];
-    f->y = (int)f->from[1];
+    sc_flight->pos = k;
+    sc_slot_pos(sc_flight->from, sc_flight->sel.side, sc_flight->sel.src, sc_flight->pos, 0);
+    sc_flight->x = sc_flight->from[0];
+    sc_flight->y = sc_flight->from[1];
     sc_flight_take();
     return 1;
 }
