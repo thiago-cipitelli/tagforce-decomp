@@ -1,8 +1,6 @@
 // @range 0x088D28F8-0x088D6DE8
 // @data 0x08911B8C-0x08911D2C
 // @asm 0x088D31F0-0x088D36C8
-// @asm 0x088D63FC-0x088D6708
-// @asm 0x088D6708-0x088D6DE8
 // @asm 0x088D42C8-0x088D43F8
 // @asm 0x088D5D2C-0x088D5DEC
 // @asm 0x088D6168-0x088D624C
@@ -1696,7 +1694,6 @@ void duel_req_088D6348(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* 83 palavras: lógica conferida com o asm (sem zerar os DuelLoc, índice p & 1, ordem dos campos); falta a ordem dos stores dos bitfields de from/to */
 /* The monster at (p, arg) leaves the field to become the card that fought (loc: 0 attacker, 1 target). */
 void duel_req_088D63FC(void)
 {
@@ -1708,8 +1705,8 @@ void duel_req_088D63FC(void)
     DuelLoc to;
 
     id = duel_req.req.id;
-    z = duel_req.req.arg;
     p = (id & 0x8000) != 0;
+    z = duel_req.req.arg;
     i = *(unsigned short *)&duel_req.req.loc;
 
     switch (duel_req_step) {
@@ -1717,8 +1714,8 @@ void duel_req_088D63FC(void)
         from.player = p;
         from.zone = 0;
         from.idx = z;
-        to.player = p;
         from.b15 = duel.players[p & 1].field[z].pos;
+        to.player = p;
         from.b14 = duel.players[p & 1].field[z].faceup;
         to.zone = z;
         to.idx = 0xFFFF;
@@ -1738,24 +1735,22 @@ void duel_req_088D63FC(void)
         break;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* montagem dos DuelLoc e dos bits da carta; mantida em asm */
 /* Move a card (arg: from as DuelLoc with uid in the index bits; loc: destination; w: flags). */
 void duel_req_088D6708(void)
 {
+    unsigned int fp;
+    unsigned int fz;
+    unsigned int uid;
+    unsigned int at;
+    unsigned int tz;
+    unsigned int w;
     DuelLocU src;
     DuelLocU dst;
     DuelLoc from;
     DuelLoc to;
-    unsigned int uid;
-    unsigned int fp;
-    unsigned int fz;
-    unsigned int at;
     unsigned int fi;
-    unsigned int w;
     unsigned int ti;
-    unsigned int tz;
     unsigned int tp;
     unsigned int put;
     DuelCard *c;
@@ -1767,9 +1762,9 @@ void duel_req_088D6708(void)
     at = duel_card_locate(uid);
     fi = at >> 16 & 0xFFFF;
     *(short *)&dst = *(short *)&duel_req.req.loc;
-    w = duel_req.req.w;
     ti = dst.uid;
     tz = dst.zone;
+    w = duel_req.req.w;
     tp = dst.player;
 
     switch (duel_req_step) {
@@ -1788,7 +1783,7 @@ void duel_req_088D6708(void)
         if (duel_req_flag(0x16) != 0) {
             break;
         }
-        if ((at & 0xFF) != fp || ((at & 0xFFFF) >> 8 & 0xFF) != fz) {
+        if ((at & 0xFF) != fp || ((unsigned short)at >> 8 & 0xFF) != fz) {
             duel_busy_0891523C = 0;
             break;
         }
@@ -1858,4 +1853,4 @@ void duel_req_088D6708(void)
         break;
     }
 }
-#endif
+
