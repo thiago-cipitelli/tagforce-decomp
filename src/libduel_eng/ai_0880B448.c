@@ -446,7 +446,7 @@ int duel_0880C50C(unsigned int p, int skip, int check)
 }
 
 #ifdef NON_MATCHING /* 3 KB; o original salva duel_special membro a membro (parte com lwc1/swc1); mantida em asm */
-int duel_08846584();
+void duel_08846584(int mode, int view);
 int duel_088482F8(int a, int b);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_count_monsters_pos_is(unsigned int p, unsigned int pos);
@@ -484,7 +484,7 @@ void duel_0880C60C(unsigned int p, int z, int tz, int force, DuelAtkGuess *g)
     duel_special.player[1] = q;
     duel_special.zone[0] = z;
     duel_special.zone[1] = tz;
-    duel_08846584(0);
+    duel_08846584(0, 1);
     n = duel_find_effect_card(q, 0x1381, -1);
     for (; n != 0; n--) {
         duel_special.act[p].pad14[2] /= 2;

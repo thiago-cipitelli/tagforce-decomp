@@ -109,8 +109,6 @@ segments:
       - [0x16820, asm, ai_cond2_asm_0881A7C0]
       - [0x169C0, c, ai_cond2]
       - [0x18178, c, ai_cond1]
-      - [0x18954, asm, ai_cond1_asm_0881C8F4]
-      - [0x18A94, c, ai_cond1]
       - [0x19138, c, ai_cond0]
       - [0x191DC, asm, ai_cond0_asm_0881D17C]
       - [0x19378, c, ai_cond0]

@@ -1,5 +1,4 @@
 // @range 0x0881C118-0x0881D0D8
-// @asm 0x0881C8F4-0x0881CA34
 /* Conditions the computer player checks before activating a card (continued in ai_cond0.c). */
 #include "duel.h"
 #include "card_db.h"
@@ -221,25 +220,28 @@ int duel_ai_0881C894(DuelAct *a)
     return duel_088BFFD8(a->player, a->id, 0) > 0;
 }
 
-#ifdef NON_MATCHING /* copy of the action and table walk not reproduced */
 int duel_ai_0881C8F4(DuelAct *a)
 {
     DuelAct t = *a;
     DuelAiSummon *e;
 
-    if (duel.players[a->player & 1].lp > 2000) {
-        for (e = duel_ai_summons; e->id != 0x1379; e++) {
+    if (duel.players[a->player & 1].lp <= 2000) {
+        return 0;
+    }
+    if (duel_ai_summons[0].id != 0x1379) {
+        e = duel_ai_summons;
+        do {
             t.id = e->id;
             if (card_get_type(t.id) == 0x16 && duel_grave_count_id(1 - a->player, t.id) != 0 &&
                 e->cond(&t, 0) != 0 && duel_08869ACC(&t, 0) != 0) {
                 duel_w_08913D08 = t.id;
                 return 1;
             }
-        }
+            e++;
+        } while (e->id != 0x1379);
     }
     return 0;
 }
-#endif
 
 int duel_ai_0881CA34(DuelAct *a)
 {
