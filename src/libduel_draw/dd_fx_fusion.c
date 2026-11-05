@@ -79,7 +79,7 @@ FxVec4 dd_fx_fusion_v4 = { 0.0f, 0.0f, 0.0f, 1.0f };
 int dd_fx_fusion_stage_len[5] = { 8, 60, 60, 16, 8 };
 
 #ifdef NON_MATCHING /* função grande (5,8 KB) */
-static void dd_fv(DdFxVert *v, float u, float tv, unsigned int c, float x, float y)
+inline static void dd_fv(DdFxVert *v, float u, float tv, unsigned int c, float x, float y)
 {
     v->u = u;
     v->v = tv;
