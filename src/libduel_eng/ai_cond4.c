@@ -1,5 +1,4 @@
 // @range 0x08810370-0x08811BDC
-// @asm 0x08810944-0x08810AE0
 // @asm 0x08810D08-0x08810EFC
 // @asm 0x088119FC-0x08811B24
 /* Conditions of the computer player: LP against the strongest ATK, monsters on the field, the chain. */
@@ -168,7 +167,6 @@ int duel_0881089C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* duel_act_can_target recebe (a, jogador, zona & 0xFF) (faltavam os 2 argumentos); ~40 palavras: o original lê o jogador duas vezes (srl para o argumento, ext para o índice) no fim */
 int duel_08810944(DuelAct *a)
 {
     unsigned int k;
@@ -184,7 +182,7 @@ int duel_08810944(DuelAct *a)
                 && duel.players[s->s_player & 1].field[s->s_zone].faceup != 0
                 && duel_act_can_target(a, s->s_player, (unsigned char)s->s_zone) != 0
                 && duel_field_atk(s->s_player, s->s_zone) <= 2000
-                && duel_d_count_name(s->s_player, duel.players[s->s_player].field[s->s_zone].card.id) != 0) {
+                && duel_d_count_name(s->s_player, duel.players[(unsigned int)s->s_player & 1].field[s->s_zone].card.id) != 0) {
                 return 1;
             }
             break;
@@ -192,7 +190,6 @@ int duel_08810944(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_08810AE0(DuelAct *a)
 {
@@ -547,12 +544,12 @@ int duel_088119B0(DuelAct *a)
     return duel_count_monsters_state(1 - a->player, 1, 0) > 0;
 }
 
-#ifdef NON_MATCHING /* registradores */
+#ifdef NON_MATCHING /* 2 palavras: cópia morta do lw ra depois do b (lp do oponente <= m / 2: return 1), não-corrigível conhecido */
 int duel_088119FC(DuelAct *a)
 {
+    int p;
     int m = -1;
     unsigned int best;
-    int p;
     int z;
     int v;
     unsigned int q;
@@ -569,14 +566,14 @@ int duel_088119FC(DuelAct *a)
         }
     }
     q = a->player;
-    if (m / 2 < duel.players[q & 1].lp) {
-        q = 1 - q;
-        if (m / 2 < duel.players[q & 1].lp) {
-            return best == q;
-        }
+    if (duel.players[q & 1].lp <= m / 2) {
+        return 0;
+    }
+    q = 1 - q;
+    if (duel.players[q & 1].lp <= m / 2) {
         return 1;
     }
-    return 0;
+    return best == q;
 }
 #endif
 

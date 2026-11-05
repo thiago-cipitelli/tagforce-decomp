@@ -544,7 +544,7 @@ int duel_0886DE0C(DuelAct *a)
     return duel.players[a->player & 1].n_hand != 0;
 }
 
-#ifdef NON_MATCHING /* draft */
+#ifdef NON_MATCHING /* 107 palavras: falta o desvio bnel direto ao epílogo em n != 1, o ponteiro &srcs[i] em $a1 no laço e a ordem dos testes do fim (atributo 6 / ícone / 12BE); o C já lê a->src por ponteiro e decompõe t antes de duel_pick_monster_zone como o original */
 /* The only chain link that brings a monster back from the graveyard is this one, and its monster can
    come back. */
 int duel_0886DE70(DuelAct *a)
@@ -553,36 +553,47 @@ int duel_0886DE70(DuelAct *a)
     unsigned int i;
     unsigned int t;
     DuelCard *c;
+    DuelSrc *s;
+    unsigned int p;
+    unsigned int z;
+    unsigned int k;
 
-    if (a->kind != 0x16 || duel_phase_ok2(a->player) == 0) {
+    if (a->kind != 0x16) {
+        return 0;
+    }
+    if (duel_phase_ok2(a->player) == 0) {
         return 0;
     }
     for (i = 0; i < duel_chain.n_kinds; i++) {
-        if (duel_chain.kinds[i] == 0x16 && duel_chain.srcs[i].s_b16 && duel_chain.srcs[i].s_b15 &&
-            duel_chain.srcs[i].s_zone2 == 0xE) {
-            n++;
+        if (duel_chain.kinds[i] == 0x16 && duel_chain.srcs[i].s_b16) {
+            struct DuelActX *x = &duel_chain.srcs[i];
+            if (x->s_b15 && x->s_zone2 == 0xE) {
+                n++;
+            }
         }
     }
     if (n != 1) {
         return 0;
     }
-    if (!a->y.y16_0 || !a->y.y15_7 || a->x.s_zone2 != 0xE) {
-        return 0;
-    }
-    t = duel_card_locate(a->src.uid);
-    if (duel_pick_monster_zone(a->src.player) < 0) {
-        return 0;
-    }
-    if ((t & 0xFFFF) >> 8 != 0xE) {
-        return 0;
-    }
-    c = duel_field_card_deb2c(t & 0xFF, 0xE, t >> 16);
-    if (card_is_monster(c->id) && duel_grave_card_usable(a->player, t & 0xFF, t >> 16)) {
-        if (card_is_attribute6(c->id) == 0) {
-            return 1;
+    s = &a->src;
+    if (a->y.y16_0 && ((struct DuelActY *)s)->y15_7 && a->x.s_zone2 == 0xE) {
+        t = duel_card_locate(s->uid);
+        p = t & 0xFF;
+        z = (unsigned short)t >> 8 & 0xFF;
+        k = t >> 16 & 0xFFFF;
+        if (duel_pick_monster_zone(s->player) < 0) {
+            return 0;
         }
-        if (card_attribute_icon_in_2_3(c->id) == 0 || duel_has_st_12be(a->player)) {
-            return 1;
+        if (z == 0xE) {
+            c = duel_field_card_deb2c(p, z, k);
+            if (card_is_monster(c->id) && duel_grave_card_usable(a->player, p, k)) {
+                if (card_is_attribute6(c->id) == 0) {
+                    return 1;
+                }
+                if (card_attribute_icon_in_2_3(c->id) == 0 || duel_has_st_12be(a->player)) {
+                    return 1;
+                }
+            }
         }
     }
     return 0;

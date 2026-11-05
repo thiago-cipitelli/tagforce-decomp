@@ -1,6 +1,5 @@
 // @range 0x0889A75C-0x0889C150
 // @data 0x0891193C-0x08911974
-// @asm 0x0889C080-0x0889C150
 /* Card effect handlers (DuelAct *a), after effects_08898B10.c. */
 #include "duel.h"
 
@@ -657,14 +656,13 @@ int duel_0889BDC0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* extração do bit player de src (sll/srl/ext) diferente */
 int duel_0889C080(DuelAct *a)
 {
-    if (a->src.uid == CARD_UID(duel.players[a->src.player & 1].field[a->src.zone].card) &&
-        duel.players[a->src.player & 1].field[a->src.zone].faceup != 0 &&
-        duel.players[a->src.player & 1].field[a->src.zone].pos == 0) {
+    if (a->src.uid == CARD_UID(duel.players[(unsigned int)a->src.player & 1].field[a->src.zone].card) &&
+        duel.players[(unsigned int)a->src.player & 1].field[a->src.zone].faceup != 0 &&
+        duel.players[(unsigned int)a->src.player & 1].field[a->src.zone].pos == 0) {
         duel_088C97F0(a, a->src.player, a->src.zone, 0, 0);
     }
     return 0;
 }
-#endif
+
