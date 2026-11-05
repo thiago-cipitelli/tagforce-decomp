@@ -495,24 +495,26 @@ void sc_input_help_b(void)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (side int: o original repassa a0 sem andi); 46 palavras: o
-                       original lê os campos pela base scv antes do ponteiro; blezl/bnezl dos limites */
+#ifdef NON_MATCHING /* 16 palavras (forma de dt_cursor_grid, asm idêntico): cols/cx trocam de registrador temporário (ordem das cargas: original cols, top, cx, cy; perm_stmts das iniciações deu no máximo esta) e o blezl do "if (top <= 0) top = 0" de dt_cursor_list */
 /* grid cursor: d-pad moves, wraps to the other pane at the left/right edges, scrolls by rows */
 void sc_cursor_grid(int side, PadState *pad)
 {
     ScPane *p = &scv.pane[(unsigned short)side];
     int cols = p->lay.cols;
-    int top = (p->top + cols - 1) / cols;
-    int cx = p->cx;
     int cy = p->cy;
+    int cx = p->cx;
+    int top = (p->top + cols - 1) / cols;
     int rows = p->lay.grid_rows;
     unsigned int rep = pad->b.rep;
     int total = (p->list->count + cols - 1) / cols;
-    int dy = 0;
+    int dx;
+    int dy;
     int changed = 0;
-    int dx = 0;
+    int nx;
     int ny;
 
+    dy = 0;
+    dx = 0;
     if (rep & 0x40)
         dy++;
     if (rep & 0x10)
@@ -521,54 +523,55 @@ void sc_cursor_grid(int side, PadState *pad)
         dx++;
     if (rep & 0x80)
         dx--;
-    dx = cx + dx;
-    if (dx < 0) {
+    nx = cx + dx;
+    if (nx < 0) {
         sc_cursor_switch(side, (unsigned short)rows, 1, (unsigned short)cy);
         se_play(0x6212);
-        return;
-    }
-    if (dx >= cols) {
+    } else if (nx >= cols) {
         sc_cursor_switch(side, (unsigned short)rows, 0, (unsigned short)cy);
         se_play(0x6212);
-        return;
-    }
-    if (top + cy == 0 && (pad->b.trig & 0x10)) {
-        top = total >= rows ? total - rows : 0;
-        ny = rows - 1;
-    } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
-        ny = 0;
-        top = 0;
     } else {
-        ny = cy + dy;
-        if (ny < 0) {
-            top += ny;
-            top = top <= 0 ? 0 : top;
-            ny = 0;
-        } else if (ny >= rows) {
-            if (rows < total) {
-                if (total > top + ny)
-                    top += ny - (rows - 1);
-                else
-                    top = total - rows;
-            }
+        if (top + cy == 0 && (pad->b.trig & 0x10)) {
+            if (total >= rows)
+                top = total - rows;
+            else
+                top = 0;
             ny = rows - 1;
+        } else if (top + cy >= total - 1 && cy == rows - 1 && (pad->b.trig & 0x40)) {
+            ny = 0;
+            top = 0;
+        } else {
+            ny = cy + dy;
+            if (ny < 0) {
+                top += ny;
+                ny = 0;
+                if (top <= 0)
+                    top = 0;
+            } else if (ny >= rows) {
+                if (rows < total) {
+                    if (top + ny >= total)
+                        top = total - rows;
+                    else
+                        top += ny - (rows - 1);
+                }
+                ny = rows - 1;
+            }
         }
+        if (cx != nx) {
+            p->cx = nx;
+            changed = 1;
+        }
+        if (p->cy != ny) {
+            p->cy = ny;
+            changed = 1;
+        }
+        if (p->top != top * cols) {
+            p->top = top * cols;
+            changed = 1;
+        }
+        if (changed)
+            se_play(0x6212);
     }
-    if (cx != dx) {
-        p->cx = dx;
-        changed = 1;
-    }
-    if (p->cy != ny) {
-        p->cy = ny;
-        changed = 1;
-    }
-    top *= cols;
-    if (p->top != top) {
-        p->top = top;
-        changed = 1;
-    }
-    if (changed)
-        se_play(0x6212);
 }
 #endif
 

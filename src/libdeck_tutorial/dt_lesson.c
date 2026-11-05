@@ -255,22 +255,19 @@ void dt_editor_update(void)
         dt.pad.down |= dt.btn_one;
 }
 
-#ifdef NON_MATCHING /* mesma lógica; o original sai do caso padrão por um bloco próprio (b + lw ra) e o mwcc junta as saídas */
+#ifdef NON_MATCHING /* 2 palavras (forma com return em cada saída e "default: return 1"): o default do switch interno sai "b; nop" para o "return 0" no original; o mwcc enche o atraso com o move v0,zero e salta 4 bytes adiante (inner default: break/return 0 pioram) */
 /* step 9: the lesson presses the buttons itself (press 0) or the card's (press 1) */
 int dt_press_update(void)
 {
-    int r = 1;
     unsigned int m;
 
     switch (dt.press) {
     case 0:
         if (dt_press_step()) {
             dt.press_step = 0;
-            r = 1;
-        } else {
-            r = 0;
+            return 1;
         }
-        break;
+        return 0;
     case 1:
         switch (dt.press_step) {
         case 0:
@@ -302,12 +299,11 @@ int dt_press_update(void)
             }
             break;
         }
-        r = 0;
         break;
     default:
-        break;
+        return 1;
     }
-    return r;
+    return 0;
 }
 #endif
 
@@ -799,7 +795,10 @@ int dt_press_step(void)
 }
 
 /* the button hints */
-#ifdef NON_MATCHING /* cópias de struct de 6 bytes: a primeira membro a membro com inserção de bitfield, a segunda com lwc1/swc1; nenhuma grafia testada reproduziu */
+#ifdef NON_MATCHING /* cópias de struct de 6 bytes: a primeira membro a membro com inserção de bitfield, a última com lwc1/swc1.
+                       Testado: com u, v como "unsigned short : 8" em DtButton, a cópia por inicializador sai igual à do
+                       original (lhu + ext + RMW) mas todas as outras também (bloco aninhado, atribuição); a cópia em
+                       bloco só sai de um tipo sem bitfield com inicializador no topo, e *(T *)& dá lh/sh */
 void *dt_draw_hint2(void *list, int x, int y)
 {
     DtButton a = dt_hint_btns[0].b;

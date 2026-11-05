@@ -102,7 +102,7 @@ static inline unsigned short sc_lay_pack(unsigned char cols, unsigned char rows)
 void sc_flight_land(void);
 void sc_flight_step(void);
 void sc_flight_free(void);
-int sc_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll);
+int sc_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll);
 int sc_dst_pos(int tab, unsigned short id);
 
 #ifdef NON_MATCHING /* lógica conferida com o asm (sceUtilityOskUpdate(2), não 1; state é u8); 65 palavras:
@@ -472,68 +472,101 @@ void *sc_draw_sort_menu(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* registradores herdados de testes anteriores (v1) no original */
+#ifdef NON_MATCHING /* forma de dk_slot_pos (o rascunho dava frames = step: são 6 na grade e 1 na lista; tab u32); 8 palavras: v0/v1 trocados no resto da coluna da grade, como em dk_slot_pos */
 /* screen position of position pos of list tab shown in pane side; scroll the pane towards it when
    asked (returns 0 then) */
-int sc_slot_pos(float *out, int side, unsigned short tab, int pos, int scroll)
+int sc_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll)
 {
     ScPane *p = &scv.pane[side];
-    int other = p->list->tab != tab;
-    unsigned int view;
+    ScLayout *lay = &p->lay;
+    int off = 0;
+    unsigned int mode;
+    int count;
     int step;
-    unsigned int t;
+    int frames;
+    unsigned short top;
+    unsigned int tp;
+    unsigned short len;
+    unsigned short x;
+    int d;
+    int cols;
 
-    if (p->list_mode == 1) {
-        view = p->lay.rows;
+    if (scv.pane[side].list->tab != tab)
+        off = 1;
+    mode = p->list_mode;
+    switch (mode) {
+    case 0:
+        step = lay->cols;
+        count = step * lay->grid_rows;
+        frames = 6;
+        break;
+    case 1:
+        count = lay->rows;
         step = 1;
-    } else {
-        view = p->lay.cols * p->lay.grid_rows;
-        step = p->lay.cols;
+        frames = 1;
+        break;
     }
     if (scroll) {
         switch (sc.kind) {
-        case 2:
-        case 1:
         case 0:
+            if (tab == 0)
+                scroll = 0;
+            break;
+        case 1:
+            if (tab == 0)
+                scroll = 0;
+            break;
+        case 2:
             if (tab == 0)
                 scroll = 0;
             break;
         }
     }
-    if (!other) {
-        if (pos < p->top) {
-            if (scroll) {
-                p->top -= step;
-                sc_flight->frames = step;
+    if (!off) {
+        top = p->top;
+        if (pos < top) {
+            if (scroll == 0) {
+                off = 1;
+            } else {
+                p->top = top - (unsigned short)step;
+                sc_flight->frames = frames;
                 return 0;
             }
-            other = 1;
-        } else if (pos >= (int)(p->top + view)) {
-            if (scroll) {
-                p->top += step;
-                sc_flight->frames = step;
+        } else if (top + count <= pos) {
+            if (scroll == 0) {
+                off = 1;
+            } else {
+                p->top = top + (unsigned short)step;
+                sc_flight->frames = frames;
                 return 0;
             }
-            other = 1;
         }
     }
-    if (other) {
-        t = sc_tab_pos(tab);
-        out[0] = (float)(int)((t >> 17) + p->lay.x + (t & 0xFFFF));
+    if (off) {
+        tp = sc_tab_pos(tab);
+        len = tp >> 16;
+        x = tp;
+        out[0] = (int)((unsigned int)len / 2 + (lay->x + x));
         out[1] = 32.0f;
         return 1;
     }
-    if (p->list_mode == 1) {
-        out[0] = (float)(p->lay.x + p->lay.row_x);
-        out[1] = (float)(int)(p->lay.y + p->lay.row_y + p->lay.row_h * (pos - p->top));
+    switch (mode) {
+    case 0:
+        d = pos - p->top;
+        cols = lay->cols;
+        out[0] = (int)(lay->x + lay->grid_x + (d % cols) * (unsigned short)lay->cell_w);
+        out[1] = (int)(lay->y + lay->grid_y + (d / cols) * (unsigned short)lay->cell_h);
+        break;
+    case 1:
+        out[0] = lay->x + lay->row_x;
+        cols = lay->y + lay->row_y;
+        out[1] = (int)(cols + (unsigned short)lay->row_h * (pos - p->top));
         if (scv.mode < 4 && side == 1)
-            out[1] = out[1] + 1.0f;
-    } else {
-        out[0] = (float)(int)(p->lay.x + p->lay.grid_x + (pos - p->top) % (int)p->lay.cols * p->lay.cell_w);
-        out[1] = (float)(int)(p->lay.y + p->lay.grid_y + (pos - p->top) / (int)p->lay.cols * p->lay.cell_h);
+            out[1] += 1.0f;
+        break;
     }
-    out[0] = out[0] + 11.0f;
-    out[1] = out[1] + 15.0f;
+    out[0] += 11.0f;
+    out[1] += 15.0f;
     return 1;
 }
 #endif

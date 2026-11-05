@@ -235,15 +235,15 @@ void dt_input_shoulder_r(PadBits *pad)
     }
 }
 
-#ifdef NON_MATCHING /* 28 palavras: alocação dos temporários do cálculo inicial (base do painel em v1 no original, cx/cy/top em outra ordem) e o blezl do "if (top <= 0) top = 0" (o mwcc dá bgtz para o fim); mesma lógica de dt_cursor_list */
+#ifdef NON_MATCHING /* 16 palavras: cols/cx trocam de registrador temporário (ordem das cargas: original cols, top, cx, cy; perm_stmts das iniciações deu no máximo esta) e o blezl do "if (top <= 0) top = 0" de dt_cursor_list */
 /* grid cursor: d-pad moves, wraps to the other pane at the left/right edges, scrolls by rows */
 void dt_cursor_grid(int side, PadBits *pad)
 {
     DtPane *p = &dtv.pane[(unsigned short)side];
     int cols = p->lay.cols;
-    int top = (p->top + cols - 1) / cols;
     int cy = p->cy;
     int cx = p->cx;
+    int top = (p->top + cols - 1) / cols;
     int rows = p->lay.grid_rows;
     unsigned int rep = pad->rep;
     int total = (p->list->count + cols - 1) / cols;
