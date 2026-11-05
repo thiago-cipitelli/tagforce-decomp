@@ -345,8 +345,6 @@ segments:
       - [0x80178, asm, effects_t_asm_08884118]
       - [0x803FC, c, effects_t]
       - [0x80F78, c, effects_u]
-      - [0x80F78, asm, effects_u_asm_08884F18]
-      - [0x811FC, c, effects_u]
       - [0x81A08, asm, effects_u_asm_088859A8]
       - [0x81BD0, c, effects_v]
       - [0x8211C, asm, effects_v_asm_088860BC]
