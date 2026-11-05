@@ -395,7 +395,7 @@ void func_08820A8C(float *out, float *q, int back)
     }
 }
 
-#ifdef NON_MATCHING /* quadro de pilha 16 bytes maior no original (80) que o gerado (64) */
+#ifdef NON_MATCHING /* quadro de pilha 16 bytes maior no original (80) que o gerado (64); cópia de template por local e local extra testados */
 /* position and rotation of a field slot, the rotation turned 180 degrees around z */
 void func_08820CC0(float *pos, float *rot, int at)
 {

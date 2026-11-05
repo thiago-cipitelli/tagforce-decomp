@@ -170,7 +170,7 @@ int dd_cobj_busy(DdCobj *o)
     return 0;
 }
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
+#ifdef NON_MATCHING /* laço interno (z) com teste no topo não reproduzido, mesma família de dd_cobjs_counters */
 /* 1 while any card object has an action pending */
 int dd_cobjs_busy(void)
 {
@@ -293,7 +293,7 @@ void dd_cobjs_en_set(int i, int on)
     dd_cobjs.en[i] = on;
 }
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
+#ifdef NON_MATCHING /* laço interno com teste no topo (slti at/beqzl antes do corpo) não reproduzido: for, while, for(;;) com break, z=0 no incremento do externo testados */
 /* refreshes the counters of the monster zones */
 void dd_cobjs_counters(void)
 {

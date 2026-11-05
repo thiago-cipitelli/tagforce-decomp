@@ -167,7 +167,7 @@ void dd_glow_off(DdCard *c)
     dd_cobj_link_del(c, func_08820D40);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação e ordem dos blocos diferentes */
+#ifdef NON_MATCHING /* 10 palavras: só alocação (orig: base &dd_tasks em s1, c em s0, lui antes do sw s0); ordem das declarações e local no laço testados */
 void dd_glow_all_off(void)
 {
     DdTasks *s = &dd_tasks;

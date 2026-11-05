@@ -952,7 +952,7 @@ int dd_sel_key_of(int i, int id, int key)
     return 0xFFFF7FFF;
 }
 
-#ifdef NON_MATCHING /* só o fim difere: o original faz beqz/nop; b; li; move no último teste (11 palavras) */
+#ifdef NON_MATCHING /* 11 palavras: último teste sai como beqz/nop; b; li 1 com move v0,zero separado; returns diretos, goto, switch e r=0 inicial testados */
 int dd_sel_cmp_down(const void *pa, const void *pb)
 {
     const DdSelKey *a = pa;

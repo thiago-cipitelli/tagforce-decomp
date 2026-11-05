@@ -1,9 +1,7 @@
 // @range 0x0881351C-0x088143A4
 // @data 0x0887541C-0x088755B8
 // @asm 0x08813554-0x08813684
-// @asm 0x08813AB8-0x08813C40
 // @asm 0x08813D8C-0x08813F1C
-// @asm 0x088142A0-0x088143A4
 /* Duel characters (partner/rival model from the cut-in pack): setup and free, the model with its
    animations (gzip'd TGMT), the voice track, the per-frame animation and draw, bone matrices for
    attaching effects, and the visibility mask of the model parts from the animation tracks. */
@@ -99,7 +97,7 @@ typedef struct DdChrDesc {             /* the first 13 words of DdChr, copied fr
     int w[13];
 } DdChrDesc;
 
-#ifdef NON_MATCHING /* lógica conferida; o cálculo de voice (ramos com bgezl/bnel no original) e os registradores diferem: 51 palavras */
+#ifdef NON_MATCHING /* ~51 palavras: o original reusa o registrador de voice para pack e põe voice=1 por bgezl; if/else e ponteiro único testados */
 /* takes the description (13 words) and the voice and word tables of the cut-in pack */
 void dd_chr_init(DdChr *c, DdChr *desc)
 {
@@ -219,7 +217,6 @@ int dd_chr_update(DdChr *c, float dt)
     return 0;
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* plays animation `anim` (from the animation table, gzip'd TGMT decompressed) */
 void dd_chr_anim_set(DdChr *c, int anim)
 {
@@ -243,18 +240,14 @@ void dd_chr_anim_set(DdChr *c, int anim)
     if (i < 0)
         return;
     t = c->anims[i];
-    if (t == 0) {
-        c->tmt = 0;
-    } else {
-        if (is_gzip(t)) {
-            if (c->buf == 0)
-                c->buf = dd_alloc(0x10000);
-            gzip_decompress(c->buf, 0x10000, t, &size);
-            c->buf = tgm_relocate(c->buf);
-            t = c->buf;
-        }
-        c->tmt = t;
+    if (t != 0 && is_gzip(t)) {
+        if (c->buf == 0)
+            c->buf = dd_alloc(0x10000);
+        gzip_decompress(c->buf, 0x10000, t, &size);
+        c->buf = tgm_relocate(c->buf);
+        t = c->buf;
     }
+    c->tmt = t;
     c->index = i;
     c->anim = anim;
     c->time = 0.0f;
@@ -274,7 +267,6 @@ void dd_chr_anim_set(DdChr *c, int anim)
         c->disc_on = 0;
     dd_chr_anim_cb(c, i, 0);
 }
-#endif
 
 /* voice track of the character (voice01.vtmt.gz) */
 void dd_chr_voice_load(DdChr *c)
@@ -329,7 +321,7 @@ void dd_chr_bone_mtx(DdChr *c, DdMtx *out, int bone)
     model_get_bone(c->model, out, dd_chr_cb_bone(c, bone));
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
+#ifdef NON_MATCHING /* 90 palavras: o original copia id para a3 (move a3,a2) e usa a cópia depois do primeiro laço; um local k é propagado pelo mwcc */
 /* matrix of attach point `id` (bones below 0x24, the named points from the table above) */
 void dd_chr_attach_mtx(DdChr *c, DdMtx *out, int id)
 {
@@ -342,11 +334,11 @@ void dd_chr_attach_mtx(DdChr *c, DdMtx *out, int id)
     DdMtx r;
     DdMtx bm;
 
+    b = 0;
     if (id < 0x24) {
         dd_chr_bone_mtx(c, out, id);
         return;
     }
-    b = 0;
     if (c->bones) {
         for (e = c->bones; e->id != 0; e++) {
             if (e->id == id) {
@@ -506,28 +498,23 @@ void *dd_chr_model_draw(void *list, DdChr *c)
     return dl_select_layer(layer, 0);
 }
 
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* parts of the model shown at this frame (tracks 10..41 of the animation; forced bits) */
 void dd_chr_mask(DdChr *c, Model *m)
 {
     unsigned int mask = 0;
-    int fps = gfx_get_state()[1];
-    float t = c->time;
-    void *a = c->tmt;
-    unsigned int i;
+    float ft = c->time * (float)((int *)gfx_get_state())[1];
+    int **a = c->tmt;
+    int i;
 
     if (a == 0)
         return;
     for (i = 0; i < 32; i++) {
-        if (keyframe_eval((char *)((int *)a)[2] + (i + 10) * 8, t * (float)fps) == 0.0f)
+        if (!keyframe_eval((char *)a[2] + (i + 10) * 8, ft))
             mask |= 1 << i;
     }
-    if (!(mask & 0x200)) {
-        if (c->disc_on)
-            mask = (mask & ~0x400) | 0x200;
-    }
+    if (!(mask & 0x200) && c->disc_on)
+        mask = (mask | 0x200) & ~0x400;
     mask = (mask & ~c->mask_sel) | (c->mask_val & c->mask_sel);
     model_set_mask(m, mask);
     c->mask = mask;
 }
-#endif
