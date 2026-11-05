@@ -4829,7 +4829,7 @@ int duel_0887AC5C(DuelAct *a)
     return duel.players[duel_special.player[1] & 1].field[duel_special.zone[1]].pos != 0;
 }
 
-#ifdef NON_MATCHING /* branch layout differs */
+#ifdef NON_MATCHING /* 2 palavras: o original testa card.id == 0 com beqz+nop para o return 0 comum; aqui sai beqzl com o move v0,zero */
 int duel_0887AD38(DuelAct *a, int b)
 {
     DuelSrc *s = &a->src;
@@ -4846,9 +4846,9 @@ int duel_0887AD38(DuelAct *a, int b)
     default:
         return 0;
     }
-    if (duel.players[s->player].field[s->zone].card.id != 0) {
+    if (duel.players[s->player & 1].field[s->zone].card.id != 0) {
         type = card_get_type(duel.list[s->uid].id);
-        if (duel_count_type_skip(0, type, s->player ? -1 : s->zone) != 0) {
+        if (duel_count_type_skip(0, type, s->player == 0 ? s->zone : -1) != 0) {
             return 1;
         }
         if (duel_count_type_skip(1, type, s->player == 1 ? s->zone : -1) != 0) {
