@@ -1,5 +1,5 @@
 // @range 0x08810758-0x08811718
-// @asm 0x08810758-0x0881168C
+// @asm 0x08810758-0x088115CC
 /* ATK/DEF of the monsters drawn over the field (animated when they change, blue when they rise,
    red when they fall), the selection count marker over a card, and small helpers. */
 #include "dd_d1.h"
@@ -131,8 +131,9 @@ void dd_counter_tick(float dt)
     DdZoneAnim *za;
     float k;
 
+    z = 0;
     for (p = 0; p < 2; p++) {
-        for (z = 0; z < 5; z++) {
+        for (; z < 5; z++) {
             za = &b->za[p][z];
             if (za->t < za->dur) {
                 za->t += dt;
@@ -146,6 +147,7 @@ void dd_counter_tick(float dt)
                 }
             }
         }
+        z = 0;
     }
 }
 #endif
@@ -199,7 +201,6 @@ void dd_counter_sel(DdXyzw *pos, int stack, int n)
 }
 #endif
 
-#ifdef NON_MATCHING /* alocação/ordem não reproduzidas */
 /* takes the ATK/DEF of the monster at (p, z) from the engine without animation */
 void dd_counter_reset(int p, int z)
 {
@@ -217,7 +218,6 @@ void dd_counter_reset(int p, int z)
     za->a0 = za->a1 = za->a;
     za->b0 = za->b1 = za->b;
 }
-#endif
 
 /* sprite (u, v) of a 2D table entry at x, y */
 void *dd_sprite_at(void *list, int x, int y, unsigned short *uv)

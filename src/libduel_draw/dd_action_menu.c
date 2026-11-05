@@ -2,7 +2,6 @@
 // @asm 0x08820F88-0x088212B0
 // @asm 0x08821460-0x088215A0
 // @asm 0x088215A0-0x08821868
-// @asm 0x08821954-0x08821A3C
 // @asm 0x08821A3C-0x08821BAC
 // @asm 0x08821DBC-0x08821F38
 // @asm 0x0882228C-0x08822520
@@ -370,11 +369,10 @@ void *func_0882192C(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 /* row i: icon and name */
 void func_08821954(unsigned int *dl, unsigned short i, int x, int y)
 {
-    int *a = &dd_act_menu.act[i];
+    int *a = (int *)((char *)dd_act_menu.act + i * 4);
     DdActIcon *row = &dd_act_tab[*a];
     unsigned short *text;
 
@@ -388,7 +386,6 @@ void func_08821954(unsigned int *dl, unsigned short i, int x, int y)
     font_draw_text((x + 15) << 6, (y + 1) << 6, (480 - (x + 15)) << 6, text);
     font_text_clear();
 }
-#endif
 
 #ifdef NON_MATCHING /* 14 palavras: forma (switch) certa; idx e bits trocam de $s (s1/s3) e o prólogo agenda o sh do loc antes; perm_stmts das declarações sem sucesso */
 /* allowed actions of a location; a visible card also becomes the detail card */
