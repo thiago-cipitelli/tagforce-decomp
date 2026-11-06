@@ -798,7 +798,12 @@ int dt_press_step(void)
 #ifdef NON_MATCHING /* cópias de struct de 6 bytes: a primeira membro a membro com inserção de bitfield, a última com lwc1/swc1.
                        Testado: com u, v como "unsigned short : 8" em DtButton, a cópia por inicializador sai igual à do
                        original (lhu + ext + RMW) mas todas as outras também (bloco aninhado, atribuição); a cópia em
-                       bloco só sai de um tipo sem bitfield com inicializador no topo, e *(T *)& dá lh/sh */
+                       bloco só sai de um tipo sem bitfield com inicializador no topo, e *(T *)& dá lh/sh.
+                       2026-11-06: o mwcc 219 decompõe toda cópia de struct (opt_decomposeaggregates); com
+                       "#pragma opt_decomposeaggregates off" a cópia sai em bloco, mas a pragma vale para a função
+                       inteira, e a cópia em bloco da última só sai com lwc1 se a origem for um símbolo alinhado a 4
+                       (dt_hint_btns[1] fica em símbolo+8: lh). Cópia manual da primeira com máscaras + pragma: 29
+                       palavras. Família "decomposição parcial de cópias", ver docs/matching.md */
 void *dt_draw_hint2(void *list, int x, int y)
 {
     DtButton a = dt_hint_btns[0].b;

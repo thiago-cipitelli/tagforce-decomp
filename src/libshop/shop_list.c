@@ -307,20 +307,27 @@ unsigned int *shop_list_rows(unsigned int *list)
     return list;
 }
 
-/* counters of a row: copies that came out, copies owned (red over 99) */
-typedef struct ShopRowCounters {
-    UiCounter c[3];
-} ShopRowCounters;
-
+/* counters of a row: copies that came out, copies owned (red over 99); the template of the
+   initializer of c[] in shop_list_row (the asm reads it by this name) */
 UiCounter shop_row_counters[3] = {
     { 0, { 0 }, 0, 0 }, { 5, { 0 }, 0xFF000000, 0 }, { 6, { 0 }, 0xFF000000, 0 },
 };
 
-#ifdef NON_MATCHING /* 287 palavras: muitos valores da carta guardados em s e na pilha; alocação diferente. O original grava UiCounter.value com lhu/and 0xFF00/or/sh (campo de 8 bits num halfword; um bitfield unsigned short:8 sai como sb) e o 99 com sb. Corrigido em 2026-11-05: as cópias que saíram vão para c[1] (ícone 5), não c[0] */
+#ifdef NON_MATCHING /* 294 palavras: muitos valores da carta guardados em s e na pilha; alocação diferente. O trecho dos
+                       contadores já sai igual ao original: c[] é um inicializador com valores em tempo de execução
+                       (cópia do template, value gravado com lhu/and/or/sh, o 99 depois com sb); com ele o template
+                       sai anônimo no .data, e shop_row_counters fica só para o asm. Corrigido em 2026-11-05: as
+                       cópias que saíram vão para c[1] (ícone 5), não c[0] */
+typedef struct UiCounterB {      /* UiCounter with value as a bitfield of the halfword at +8 */
+    unsigned char icon;
+    unsigned char pad01[3];
+    unsigned int color;
+    unsigned short value : 8;
+} UiCounterB;
+
 unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
 {
     UiEnt e;
-    UiCounter c[3];
     unsigned short *name;
     unsigned short *pack;
     int attr, kind, type, level, atk, def, rarity;
@@ -379,17 +386,19 @@ unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
     } else {
         list = shop_ui_draw_icon_b(list, PT(0xC4, ty), type, shop_res_get(0x2023));
     }
-    *(ShopRowCounters *)c = *(ShopRowCounters *)shop_row_counters;
-    c[1].value = it->partners;
-    c[2].value = it->owned;
-    total = shop_items_count(it->id);
-    owned = it->owned;
-    if (owned + total > 99) {
-        c[2].color = 0xFF0000FF;
-        if (owned > 99)
-            c[2].value = 99;
+    {
+        UiCounterB c[3] = { { 0, { 0 }, 0, 0 }, { 5, { 0 }, 0xFF000000, it->partners },
+                            { 6, { 0 }, 0xFF000000, it->owned } };
+
+        total = shop_items_count(it->id);
+        owned = it->owned;
+        if (owned + total > 99) {
+            c[2].color = 0xFF0000FF;
+            if (owned > 99)
+                c[2].value = 99;
+        }
+        list = shop_ui_draw_counters(list, PT(0x173, ty), (UiCounter *)c, shop_res_get(0x2022), shop_res_get(0x2026));
     }
-    list = shop_ui_draw_counters(list, PT(0x173, ty), c, shop_res_get(0x2022), shop_res_get(0x2026));
     if ((name = shop_res_get(0x2002)) != 0) {
         list = gim_set_texture(list, name);
         list = dl_ambient_color(list, 0xFFFFFFFF);

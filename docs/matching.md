@@ -142,6 +142,7 @@ Os casos mais comuns nesta etapa:
 | `$s` dos campos de requisição (p, arg, loc, w) trocados | ordem das declarações e `int`×`unsigned`: busca exaustiva de permutações (até 6 declarações) resolveu a maioria das `duel_req_*` |
 | `DuelCard`/`DuelActX` de 4 bytes zerado na pilha (laço de bytes) | `{ int n = 4; unsigned char *d = (unsigned char *)&x; if (d) do { *d++ = 0; } while (--n); }`; `= {0}` não reproduz |
 | campo de largura diferente da struct compartilhada | struct de visão local com o bitfield na largura que o original lê (`DuelListCard.placed` de 2 bits) |
+| bitfield de local gravado com `lhu/and/or/sh` (o mwcc dá `lbu/sb`) | inicializador com valores `DdLoc l = { p, zone };` (seção "Bitfield de halfword" abaixo) |
 | if/else-if em `a->id` com testes na ordem inversa | era `switch` linear |
 | global relido depois de um store nele (sem encaminhamento) | declare como array `extern T g[]` e use `g[0]`, ou `*(volatile T *)&g` |
 | `n = 2; if (c) n = 4;` puxa o próximo comando para o delay slot de um `bnel` | ternário `n = c ? 4 : 2;` |
@@ -248,6 +249,35 @@ mwcc 219, que também explicam o original:
   desliga todos os likely da função, inclusive os de laço. Só serve para função sem nenhum likely no original;
   o build 121 se comporta igual a ele (e tem frame de pilha diferente). Os outros pragmas do backend
   (`peephole`, `debug_1..5`, `late_conditional_move`, `opt_*`, níveis `-O`) não mudam essa escolha.
+
+## Bitfield de halfword gravado com lhu/and/or/sh (inicializador com valores)
+
+O mwcc 219 estreita **toda** gravação ou leitura de bitfield que cabe num byte para `lbu`/`sb` (inclusive com
+`volatile`, `union` com u16, tipo base `int`/`short`/`char`/enum, `#pragma pack`/`options align`, e com qualquer
+uma das ~1900 pragmas do binário ligada ou desligada; até em `-O0`: é a geração do front-end). O build 121 nunca
+estreita, mas não serve no resto. Onde o original grava um local com `lhu; li -2/-63/…; and; or; sh` por campo,
+o fonte era um **inicializador agregado com valores de tempo de execução**: o mwcc zera o local (laço de bytes,
+se faltar campo), copia o template constante (se houver) e insere cada campo com RMW de meia palavra, sem
+estreitar, com os registradores do original.
+
+| No asm original | Fonte |
+|---|---|
+| laço `sb zero` de 2 bytes + RMW `lhu/sh` por campo (`player`, `zone`, …) | `DdLoc l = { p, zone };` (campos omitidos = 0) |
+| idem com um campo do meio zerado | `DdPos at = { p, zone, 0, o->b5 };` |
+| cópia `lwc1/swc1` de um template + RMW `lhu/and -256/or/sh` + `sb` de uma constante depois | `UiCounterB c[3] = { {0, {0}, 0, 0}, {5, {0}, 0xFF000000, it->partners}, … };` e `c[2].value = 99;` (a gravação avulsa estreita) |
+| RMW sem zerar antes (lê o local não inicializado) | inicializador com todos os campos |
+
+Bateram assim `popup_place`, `dd_hl_push`, `dd_hl_pop` (`DdLoc z = { 0 };`), `dd_cobj_flip` e
+`func_08822E30` (este também com `__attribute__((aligned(16)))` nos `float[4]`). Máscaras explícitas
+(`*(u16 *)&l = (*(u16 *)&l & -2) | (p & 1)`) também dão `lhu/sh`, mas o otimizador as trata como aritmética
+comum (CSE entre campos, outra coloração): não use. Família ainda em asm com esse padrão (RMW de `lhu` em local
+da pilha no original): `dd_cobj_goto`, `dd_cobj_to_top` (inicializador completo de `DdLoc` + campo de 2 bits
+gravado à parte), `dd_mark_move`, `dd_ev_11`, `dd_board_piles`, `dd_board_cards`, `dd_board_card_draw`,
+`debug_menu_update`, `shop_list_row` (o trecho dos contadores já bate) e várias `duel_req_*` de libduel_eng.
+
+**Cópias de struct (`dt_draw_hint2/3`)**: o mwcc 219 decompõe toda cópia de struct campo a campo (com RMW de
+`lhu` se o tipo tiver bitfields); o original decompõe as primeiras e copia a última em bloco (`lwc1` + `lh`).
+`#pragma opt_decomposeaggregates off` dá a cópia em bloco, mas para a função inteira. Não reproduzido.
 
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 

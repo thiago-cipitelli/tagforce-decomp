@@ -1,5 +1,4 @@
 // @range 0x08866EC8-0x088676D8
-// @asm 0x0886722C-0x08867550
 // @data 0x0887C994-0x0887C9D4
 /* Action menu of a card on the field: lists the actions that apply (card detail, two engine
    commands, the field browse), places the window next to the card projected to the screen, and
@@ -145,7 +144,6 @@ void popup_select(void)
 }
 
 /* places the window above the card (screen projection of its model position) */
-#ifdef NON_MATCHING /* o original grava os bitfields de loc com lhu/sh; o mwcc estreita para lbu/sb */
 void popup_place(MenuWidget *w, int side, int zone, int index)
 {
     DdVec4A pos;
@@ -162,11 +160,8 @@ void popup_place(MenuWidget *w, int side, int zone, int index)
         return;
     e = dd_cobj_at(side, zone, index);
     if (e == 0 || zone != 0xB) {
-        PopupLoc loc = { 0 };
+        PopupLoc loc = { side, zone, index };
 
-        loc.side = side;
-        loc.zone = zone;
-        loc.index = index;
         dd_slot_xform(&pos, &rot, *(short *)&loc);
     } else {
         pos = *(DdVec4A *)(e + 0x10);
@@ -205,9 +200,6 @@ void popup_place(MenuWidget *w, int side, int zone, int index)
     if (d->tab_x > d->w - 4)
         d->tab_x = d->w - 4;
 }
-#else
-void popup_place(MenuWidget *w, int side, int zone, int index);
-#endif
 
 void *popup_track(void *dl)
 {

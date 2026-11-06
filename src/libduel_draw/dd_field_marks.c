@@ -1,7 +1,7 @@
 // @range 0x08822B0C-0x0882308C
+// @rodata 0x088701B8-0x088701D8
 // @asm 0x08822B90-0x08822C2C
 // @asm 0x08822C2C-0x08822E30
-// @asm 0x08822E30-0x08823068
 /* Marks over the field zones (dd_fx_mark: selectable zones, unusable zones), refreshed from the cursor
    and from the duel's slot markers. */
 #include "dd_field_ui.h"
@@ -117,18 +117,15 @@ void func_08822C2C(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* 42 palavras: forma certa (switch de kind com tabela, switch de zona); o original grava player/zone de at por halfword (lhu/sh), o mwcc por byte */
 /* starts the mark of a zone; the piles are marked over their top card */
 int func_08822E30(int player, int zone, unsigned char kind, int layer)
 {
-    DdLoc at = { 0 };
-    float rot2[4];
-    float pos[4];
-    float rot[4];
+    DdLoc at = { player, zone };
+    float pos[4] __attribute__((aligned(16)));
+    float rot[4] __attribute__((aligned(16)));
+    float rot2[4] __attribute__((aligned(16)));
     int fx;
 
-    at.player = player;
-    at.zone = zone;
     switch (kind) {
     default: fx = 0; break;
     case 2: fx = 1; break;
@@ -159,7 +156,6 @@ int func_08822E30(int player, int zone, unsigned char kind, int layer)
         return dd_fx_mark_start(1.0f, fx, pos, rot2, -1, 0, 0);
     return dd_fx_mark_start_layer(1.0f, layer, fx, pos, rot2, -1, 0, 0);
 }
-#endif
 
 /* stops a mark */
 void func_08823068(int h)
