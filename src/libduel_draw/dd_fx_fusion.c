@@ -78,7 +78,9 @@ int dd_fx_fusion_start(int n, int *cards, int result, DdTaskTermFn term, void *a
 FxVec4 dd_fx_fusion_v4 = { 0.0f, 0.0f, 0.0f, 1.0f };
 int dd_fx_fusion_stage_len[5] = { 8, 60, 60, 16, 8 };
 
-#ifdef NON_MATCHING /* função grande (5,8 KB) */
+#ifdef NON_MATCHING /* função grande (5,8 KB): chamadas na ordem do original (jal batendo, 2026-11-06); falta a forma
+   da malha polar (pilha: mvp em sp+112, o FxVec4 copiado do template depois de rad/ang, v calculado antes de u) e
+   registradores; ~440 linhas de diferença de estrutura */
 inline static void dd_fv(DdFxVert *v, float u, float tv, unsigned int c, float x, float y)
 {
     v->u = u;
@@ -89,22 +91,23 @@ inline static void dd_fv(DdFxVert *v, float u, float tv, unsigned int c, float x
     v->z = 0.0f;
 }
 
-inline static void dd_flash_init(DdFxVert *f, float r)
+#define DD_RAND3(r) ((r) = &rand3_seeds[rand3_slot], (r)->lcg *= 0x41C64E6D, (r)->lcg += 0x3039, \
+                     (int)((r)->lcg >> 16 & 0x7FFF))
+
+inline static void dd_tv(DdTexVert *v, float u, float tv, float x, float y)
 {
-    dd_fv(&f[0], 0.5f, 0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
-    dd_fv(&f[1], 0.0f, 0.0f, 0xFFFFFF, -r, r);
-    dd_fv(&f[2], 1.0f, 0.0f, 0xFFFFFF, r, r);
-    dd_fv(&f[3], 1.0f, 1.0f, 0xFFFFFF, r, -r);
-    dd_fv(&f[4], 0.0f, 1.0f, 0xFFFFFF, -r, -r);
-    dd_fv(&f[5], 0.0f, 0.0f, 0xFFFFFF, -r, r);
+    v->u = u;
+    v->v = tv;
+    v->x = x;
+    v->y = y;
+    v->z = 0.0f;
 }
 
 int dd_fx_fusion_update(int state, DdFxFusion *fx)
 {
-    DdRandSeed *r = &rand3_seeds[rand3_slot];
+    DdRandSeed *r;
     int buf = fx->tick % 2;
     int step = dd_anim_step();
-    int len[5] = { 8, 60, 60, 16, 8 };
     float mvp[16], m3[9], p[3];
     unsigned int *list;
     unsigned int a;
@@ -117,8 +120,16 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
     dd_cue_se(0x6246, fx->frame, 0, &fx->se, 1);
 
     /* glow behind */
-    if (state == 1)
-        dd_flash_init(fx->flash, 500.0f);
+    if (state == 1) {
+        float w = 500.0f;
+
+        dd_fv(&fx->flash[0], 0.5f, 0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
+        dd_fv(&fx->flash[1], 1.0f, 0.0f, 0xFFFFFF, -w, w);
+        dd_fv(&fx->flash[2], 0.0f, 0.0f, 0xFFFFFF, w, w);
+        dd_fv(&fx->flash[3], 0.0f, 1.0f, 0xFFFFFF, w, -w);
+        dd_fv(&fx->flash[4], 1.0f, 1.0f, 0xFFFFFF, -w, -w);
+        dd_fv(&fx->flash[5], 1.0f, 0.0f, 0xFFFFFF, -w, w);
+    }
     if (fx->stage < 3) {
         list = dl_select_layer(6, 0);
         list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
@@ -193,11 +204,12 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
         rad = 0.0f;
     if (fx->stage < 2) {
         for (i = 0; i < fx->n_cards; i++) {
-            float an = ang + (float)i * -6.2831855f / (float)fx->n_cards;
+            float an = ang + -6.2831855f * (float)i / (float)fx->n_cards;
+            int x = 314.0f + rad * sinf(an) - 32.0f;
+            int y = 132.0f + rad * cosf(an) - 45.419353f;
 
             list = dd_tex_card(list, fx->cards[i], 1);
-            list = draw_sprite(list, (int)(rad * sinf(an) + 314.0f - 32.0f),
-                               (int)(rad * cosf(an) + 132.0f - 45.419353f), 0, 0, 0, 0, 0);
+            list = draw_sprite(list, x, y, 0, 0, 0, 0, 0);
         }
     } else {
         list = card_draw(list, 0x104, 0x37, fx->card);
@@ -206,30 +218,43 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
     list = gfx_set_default_target(list);
 
     /* the whirlpool */
-    list = dl_tex_flush(list);
-    list = dl_tex_mode(list, 3, 0, 0, 0);
-    list = dl_tex_image(list, 0, 512, 512, 512, dd_vram_addr(0x174000));
+    {
+        void *vram = dd_vram_addr(0x174000);
+
+        list = dl_tex_flush(list);
+        list = dl_tex_mode(list, 3, 0, 0, 0);
+        list = dl_tex_image(list, 0, 512, 512, 512, vram);
+    }
     list = dd_depth_enable(list, 0, 1);
     list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
     list = dd_tex_enable(list, 1, 1, 1, 4, 1, 1, 1);
-    if (fx->stage == 2)
-        k = dd_ease_sin_inv(fx->frame, 60, 1);
-    else if (fx->stage == 1)
+    switch (fx->stage) {
+    case 1:
         k = dd_ease_cos_inv(fx->frame, 60, 1);
-    else
+        break;
+    case 2:
+        k = dd_ease_sin_inv(fx->frame, 60, 1);
+        break;
+    default:
         k = 0.0f;
+        break;
+    }
     a = (unsigned int)(k * 255.0f);
     list = dl_color(list, a | a << 16 | 0xFF000000 | a << 8);
     for (i = 0; i < 33; i++) {
         rad = (float)i * 345.0f / 32.0f;
-        if (fx->stage == 2) {
-            twist = (float)(32 - i) * 0.17453294f / 32.0f * 60.0f;
-            twist += (18.849556f - twist) * dd_ease_sin(fx->frame, 60, 1);
-        } else if (fx->stage == 1) {
-            twist = ((float)(32 - i) * 0.17453294f / 32.0f + 0.13962634f) * (float)fx->frame
+        switch (fx->stage) {
+        case 1:
+            twist = (0.13962634f + 0.17453294f * (float)(32 - i) / 32.0f) * (float)fx->frame
                     * dd_ease_cos_inv(fx->frame, 60, 1);
-        } else {
+            break;
+        case 2:
+            twist = 60.0f * (0.17453294f * (float)(32 - i) / 32.0f);
+            twist += (18.849556f - twist) * dd_ease_sin(fx->frame, 60, 1);
+            break;
+        default:
             twist = 0.0f;
+            break;
         }
         for (j = 0; j < 33; j++) {
             DdTexVert *m = &fx->mesh[buf][i][j];
@@ -243,12 +268,17 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    if (fx->stage == 2)
+    switch (fx->stage) {
+    case 1:
+        sc = 0.3f + 0.7f * dd_ease_cos(fx->frame, 60, 3);
+        break;
+    case 2:
         sc = dd_ease_sin(fx->frame, 60, 3);
-    else if (fx->stage == 1)
-        sc = dd_ease_cos(fx->frame, 60, 3) * 0.7f + 0.3f;
-    else
+        break;
+    default:
         sc = 1.0f;
+        break;
+    }
     dd_scale3(sc, sc, 0.0f);
     for (i = 0; i < 32; i++)
         list = draw_array(list, 4, 0x983, 66, fx->idx, fx->mesh[buf][i]);
@@ -256,8 +286,16 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
     dl_set_list(list);
 
     /* the flash of stage 2 */
-    if (state == 1)
-        dd_flash_init(fx->flash2, 400.0f);
+    if (state == 1) {
+        float w = 400.0f;
+
+        dd_fv(&fx->flash2[0], 0.5f, 0.5f, 0xFFFFFFFF, 0.0f, 0.0f);
+        dd_fv(&fx->flash2[1], 1.0f, 0.0f, 0xFFFFFF, -w, -w);
+        dd_fv(&fx->flash2[2], 0.0f, 0.0f, 0xFFFFFF, w, -w);
+        dd_fv(&fx->flash2[3], 0.0f, 1.0f, 0xFFFFFF, w, w);
+        dd_fv(&fx->flash2[4], 1.0f, 1.0f, 0xFFFFFF, -w, w);
+        dd_fv(&fx->flash2[5], 1.0f, 0.0f, 0xFFFFFF, -w, -w);
+    }
     if (fx->stage == 2) {
         list = dl_select_layer(6, 0);
         list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
@@ -275,20 +313,15 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
 
     /* sparks drawn in */
     if (state == 1) {
-        for (i = 0; i < 8; i++) {
-            float u = (float)(i % 4) * 0.25f;
-            float tv = (float)(i / 4) * 0.5f;
+        float h = 30.0f;
+        float du = 0.25f, dv = 0.5f;
 
-            fx->spark_uv[i][0].u = u;
-            fx->spark_uv[i][0].v = tv;
-            fx->spark_uv[i][0].x = -30.0f;
-            fx->spark_uv[i][0].y = 30.0f;
-            fx->spark_uv[i][0].z = 0.0f;
-            fx->spark_uv[i][1].u = u + 0.25f;
-            fx->spark_uv[i][1].v = tv + 0.5f;
-            fx->spark_uv[i][1].x = 30.0f;
-            fx->spark_uv[i][1].y = -30.0f;
-            fx->spark_uv[i][1].z = 0.0f;
+        for (i = 0; i < 8; i++) {
+            float u = (float)(i % 4) * du;
+            float tv = (float)(i / 4) * dv;
+
+            dd_tv(&fx->spark_uv[i][0], u, tv, -h, h);
+            dd_tv(&fx->spark_uv[i][1], u + du, tv + dv, h, -h);
         }
     }
     if (fx->stage == 0 || (fx->stage == 1 && fx->frame < 44)) {
@@ -298,10 +331,10 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
             s->flags |= 1;
             s->age = 0;
             for (j = 0; j < 4; j++) {
-                float an = DD_RAND(r) / 32767.0f * 6.2831855f;
+                float an = 6.2831855f * (DD_RAND3(r) / 32767.0f);
 
-                s->p[j].uv = DD_RAND(r) % 8;
-                vec3_set(s->p[j].dir, sinf(an) * 400.0f, cosf(an) * 400.0f, 0.0f);
+                s->p[j].uv = DD_RAND3(r) % 8;
+                vec3_set(s->p[j].dir, 400.0f * sinf(an), 400.0f * cosf(an), 0.0f);
             }
             if (fx->next < 31)
                 fx->next++;
@@ -349,13 +382,18 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
     }
     dd_cam_end(6);
     fx->tick++;
-    if (fx->frame < len[fx->stage] - 1) {
-        fx->frame = dd_step_clamp(fx->frame, step, len[fx->stage]);
-    } else {
-        if (fx->stage > 3)
-            return 4;
-        fx->stage++;
-        fx->frame = 0;
+    {
+        int len[5] = { 8, 60, 60, 16, 8 };
+        int last = len[fx->stage] - 1;
+
+        if (fx->frame < last) {
+            fx->frame = dd_step_clamp(fx->frame, step, last);
+        } else {
+            if (fx->stage >= 4)
+                return 4;
+            fx->stage++;
+            fx->frame = 0;
+        }
     }
     return 2;
 }

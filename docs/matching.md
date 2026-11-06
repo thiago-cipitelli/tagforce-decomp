@@ -164,6 +164,15 @@ Os casos mais comuns nesta etapa:
 | `lui` de uma global em `.bss` **antes** do último `sw $s/ra` do prólogo (só o prólogo difere) | a global era `static` **da função** (só ela a usa): `static int sorted;` dentro da função e `// @bss A-B` no cabeçalho (ver abaixo); `static`/global de arquivo não reproduz |
 | `b fim; move v0,zero` e depois `beqz/bnez; nop` para o mesmo `move v0,zero` (o mwcc faz `b??l` + cópia no 1º) | `default: break;` (ou `goto` ao `return` comum) em vez de `default: return 0;`: a cópia vai para o `b` |
 | cópia morta do 1º comando do `else` depois do `b` do `then` | `else { if (...) {...} return r; } return r;` em vez de `else if` |
+| vértices com `lui K; sw` e `mtc1 K; neg.s` do mesmo valor (dd_fx_*) | raio num local: `float r = 75.0f; ... -r, r` (literal `-75.0f` e parâmetro de inline são dobrados) |
+| `lui/lw rand3_slot` repetido a cada sorteio | macro que reatribui `r = &rand3_seeds[rand3_slot]` em cada `DD_RAND` |
+| `andi; sltu; xori; beq x,1` no teste de um bit | `if (!(p->flags & 1) != 1) { ... }` |
+| contador e ponteiro de laço com `$s` trocados | um contador próprio por laço (o do laço interno declarado no bloco do externo); dois laços seguidos podem dividir o mesmo |
+| laço de bytes zerando um vetor local dentro de laço sem chamadas, sem ser içado | `float p[3] = { x, 0.0f, z };` (o idioma `do { *d++ = 0; }` é içado) |
+| ordem dos vetores na pilha | locais da função de cima para baixo na ordem da declaração, locais de bloco abaixo deles; `aligned(16)` manda o vetor para o fundo (`dd_fx_twist`) |
+| `mul.s` com a constante içada em `ft` (segundo operando) | constante num local (`float du = 0.25f; x * du`) |
+| `beqzl i; sw A` / `bnel i,n-1; sw B` / `sw A` | `if (i == 0 \|\| i == n - 1) A; else B;` |
+| `base + 8` num `$s` e campos a partir dele | ponteiro para uma sub-struct (`DdRingTex *q = &r->p`, `dd_fx_bolt`) |
 
 ## `static` em `.bss`: `// @bss 0xA-0xB`
 

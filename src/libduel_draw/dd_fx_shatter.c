@@ -117,15 +117,17 @@ int dd_fx_shatter_tint[3] = { 0, 0, 0 };
 #pragma explicit_zero_data reset
 int dd_fx_shatter_tint_a = 0xFF;
 
-#ifdef NON_MATCHING /* função grande (4,7 KB) */
-static void dd_rand_vec(DdRandSeed *r, float *out, float s)
+#ifdef NON_MATCHING /* função grande (4,7 KB): helpers inline, sequência de jal igual à do original (2026-11-06); falta a
+   forma: o original monta os vértices dos cacos a partir de meias-células (7.75, 7.3333) e deslocamentos
+   (2.5833, 2.4444) somados em tempo de execução, com -x por neg.s de locais; aqui as somas já vêm prontas */
+inline static void dd_rand_vec(DdRandSeed *r, float *out, float s)
 {
     vec3_set(out, DD_RAND(r) / 32767.0f * s * (DD_RAND(r) % 2 * 2 - 1),
              DD_RAND(r) / 32767.0f * s * (DD_RAND(r) % 2 * 2 - 1),
              DD_RAND(r) / 32767.0f * s * (DD_RAND(r) % 2 * 2 - 1));
 }
 
-static void dd_tv(DdTexVert *v, float u, float tv, float x, float z)
+inline static void dd_tv(DdTexVert *v, float u, float tv, float x, float z)
 {
     v->u = u;
     v->v = tv;
@@ -134,7 +136,7 @@ static void dd_tv(DdTexVert *v, float u, float tv, float x, float z)
     v->z = z;
 }
 
-static void dd_fv(DdFxVert *v, float u, float tv, unsigned int c, float x, float y)
+inline static void dd_fv(DdFxVert *v, float u, float tv, unsigned int c, float x, float y)
 {
     v->u = u;
     v->v = tv;
