@@ -273,22 +273,23 @@ int duel_08886250(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* testa duel.mode inteiro (lw/beqz, sem andi 1: corrigido); falta zona-antes-do-jogador no teste do
-                      uid, p como u8 no laço e o teste de duel_w_08919640 (beql 4/beq 6); ~180 palavras */
+#ifdef NON_MATCHING /* 25 palavras (era ~180): zona antes do jogador com a->player direto no índice e p atribuído
+                      depois; duel.mode & 1; p u8; teste != 4 && != 6. Faltam a coloração do 1º bloco e do fim do laço
+                      e um andi 0xff a mais em p antes de duel_0884ACD8(p, 0x27) */
 int duel_088862DC(DuelAct *a)
 {
-    unsigned int p;
+    unsigned char p;
     unsigned int i;
     int n;
 
     if (a->b4_2) {
         return 0;
     }
-    p = a->player;
-    if (a->uid != CARD_UID(duel.players[p & 1].field[a->zone].card)) {
+    if (a->uid != CARD_UID(duel.players[(unsigned int)a->player & 1].field[a->zone].card)) {
         return 0;
     }
-    if (duel.mode != 0) {
+    p = a->player;
+    if (duel.mode & 1) {
         return 0;
     }
     if (a->w[2] == 0) {
@@ -320,11 +321,11 @@ int duel_088862DC(DuelAct *a)
         if (duel_w_08919638 == 0) {
             return 0x80;
         }
-        if (duel_w_08919640 == 4 || duel_w_08919640 == 6) {
-            duel_0882AF5C(duel_w_08919640 == 4, 0, 0);
-            return 0x7D;
+        if (duel_w_08919640 != 4 && duel_w_08919640 != 6) {
+            return 0x7F;
         }
-        return 0x7F;
+        duel_0882AF5C(duel_w_08919640 == 4, 0, 0);
+        return 0x7D;
     case 0x7D:
         if (duel_w_08914A2A.b3) {
             return 0x7F;

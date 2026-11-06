@@ -1,5 +1,4 @@
 // @range 0x0886AAB4-0x0886CB44
-// @asm 0x0886B1F4-0x0886B4E8
 // @asm 0x0886B6B8-0x0886BCDC
 // @asm 0x0886BCDC-0x0886C2E0
 /* Card effect handlers and activation checks (DuelAct *a). */
@@ -165,7 +164,6 @@ int duel_0886B0E4(unsigned int w, int uid, int x)
     return duel_0886AAB4(&act, 0);
 }
 
-#ifdef NON_MATCHING /* só o primeiro teste da lista final de ids sai beql (com o li 1 no atraso) em vez de beq+nop; demais palavras iguais */
 /* Whether the card of a may be activated again (spells and traps that stay on the field). */
 int duel_0886B1F4(DuelAct *a)
 {
@@ -222,7 +220,7 @@ int duel_0886B1F4(DuelAct *a)
     case 4:
         break;
     default:
-        return 1;
+        goto one;
     }
     switch (a->id) {
     case 0x146F:
@@ -237,9 +235,9 @@ int duel_0886B1F4(DuelAct *a)
             return 0;
         }
     }
+one:
     return 1;
 }
-#endif
 
 /* Whether no pending chain entry of the same kind already comes from the card that caused a. */
 int duel_0886B4E8(DuelAct *a)
