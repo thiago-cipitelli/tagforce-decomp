@@ -114,6 +114,7 @@ Hoje em asm: `stat_event_record` (0x0883E13C, blocos mortos), `day_threshold` (0
 // @asm   0x0883E13C-0x0883E3A4   ← função dentro da faixa que fica em asm (opcional, repetível)
 // @data  0x08808830-0x08808840   ← vram do .data que este arquivo gera (literais); opcional, repetível
 // @rodata 0x08875598-0x08875600  ← vram das jump tables quando ficam longe dos literais (BOOT); opcional
+// @bss  0x08C5B3C0-0x08C5B438   ← vram do .bss que o objeto define (static de função etc.); opcional, repetível
 ```
 A função também recebe seu nome em `symbols/<m>.txt` (`nome = 0xADDR; // type:func matched src/<m>/arq.c`) para o asm restante referenciá-la.
 
@@ -555,6 +556,6 @@ void sceVfpuVector3Add(...) { /* equivalente em C para o port */ }
 
 ## Pendências
 
-- `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`); quando um arquivo definir os próprios globais será preciso cortar a faixa correspondente do `.bss` (um `@bss` no cabeçalho, como `@data`).
+- `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`), salvo nos arquivos com `// @bss`: `splat_config.py` divide o segmento `bss` em `bss_N` (asm) e um subsegmento `.bss` com o nome do arquivo, que o splat liga naquela posição (ver `docs/matching.md`, "`static` em `.bss`").
 - `include/` só tem o que o `ehfile` usa; crescer por subsistema.
 - BOOT: todo o `.text` em C. Faltam as ~400 funções em `@asm`; na parte do SDK compilada com GCC, quase todas porque carregam dados por `lui r` + `lw/lwc1 x(r)` (ver "Código GCC como funções `asm` do mwcc").

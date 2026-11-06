@@ -1,6 +1,6 @@
 // @range 0x0880FBB4-0x08810814
 // @asm 0x0880FBB4-0x0880FD04
-// @asm 0x0880FF00-0x08810008
+// @bss 0x08FD1A30-0x08FD1A44
 // @rodata 0x08838854-0x08838878
 /* The field system: init / per-frame update / draw / staged termination of all the subsystems, and
    the field commands run by the scripts (start and poll through the command table): context,
@@ -109,7 +109,6 @@ void famb_start(void);
 void famb_stop(void);
 void famb_update(void);
 
-extern int field_term0, field_term1, field_term2, field_term3, field_term4; /* 0x08FD1A30.. */
 extern unsigned int field_fade_colors[];       /* 0x0883884C */
 extern FieldScene field_scene;
 
@@ -206,9 +205,10 @@ int fld_sys_draw(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original põe o sw ra no delay slot do primeiro bnez (switch, !flag, if/else vazio e local ret não mudam) */
 int fld_sys_term(void)
 {
+    static int field_term0, field_term1, field_term2, field_term3, field_term4; /* 0x08FD1A30.. (@bss) */
+
     if (field_term0 == 0) {
         fld_sys_free_all();
         field_term0 = 1;
@@ -238,7 +238,6 @@ int fld_sys_term(void)
     field_term4 = 0;
     return 1;
 }
-#endif
 
 int fld_cmd_start(int kind, void *arg)
 {

@@ -310,8 +310,6 @@ segments:
       - [0x4DC04, c, movie]
       - [0x4DD70, asm, movie_asm_08851D10]
       - [0x4DFAC, c, movie]
-      - [0x4E0D0, asm, movie_asm_08852070]
-      - [0x4E1A4, c, movie]
       - [0x4E768, asm, movie_asm_08852708]
       - [0x4E80C, c, movie]
       - [0x4FA8C, c, cip]
@@ -487,6 +485,8 @@ segments:
       - [0xECBD4, .data, net_ctl]
       - [0xECCF4, .data, extdata]
       - [0xECD10, data, data_15]
-      - { start: 0xECD20, type: bss, vram: 0x88F0CC0, name: bss }
+      - { start: 0xECD20, type: bss, vram: 0x88F0CC0, name: bss_0 }
+      - { start: 0xECD20, type: .bss, vram: 0x8BE8ED4, name: movie }
+      - { start: 0xECD20, type: bss, vram: 0x8BE8EDC, name: bss_1 }
   - [0xECD20]
 

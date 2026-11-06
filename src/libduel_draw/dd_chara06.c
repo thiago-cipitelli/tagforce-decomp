@@ -1,6 +1,5 @@
 // @range 0x0885538C-0x08855B10
-// @asm 0x0885554C-0x08855634
-// @asm 0x08855A20-0x08855B08
+// @bss 0x08C5B248-0x08C5B294
 // @rodata 0x08870C34-0x08870D3C
 // @data 0x08876E30-0x08877730
 /* Character 6 of the duel (two variants): model callbacks (motion ids, camera positions by
@@ -58,10 +57,6 @@ typedef struct DdMovie {               /* 0x10, sorted by (card, kind) */
     int pad;
 } DdMovie;
 
-extern int dd_c6b_sorted;
-extern char dd_movie_buf[0x40];
-extern int dd_movie_sorted;
-extern int dd_c6a_sorted;
 
 int dd_c6b_load(int a, int b, int c);
 int dd_c6b_unload(int a, int anim, int c, int d);
@@ -213,11 +208,11 @@ int dd_c6b_motion(void *s, int motion)
     return 0;
 }
 
-#ifdef NON_MATCHING /* só o lui do flag de ordenação sai antes do sw s0 do prólogo no original; nenhuma forma testada reproduziu */
 int dd_c6b_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
 {
     DdCamKey key;
     DdCamEntry *e;
+    static int dd_c6b_sorted;
 
     if (dd_c6b_sorted == 0) {
         qsort(dd_c6b_cams, 5, sizeof(DdCamEntry), dd_int_cmp);
@@ -232,7 +227,6 @@ int dd_c6b_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
     *target = *(FxVec4u *)&e->v[3];
     return 1;
 }
-#endif
 
 void dd_c6b_term(void *s, void *out, void *in, int bone, float t)
 {
@@ -242,6 +236,7 @@ void dd_c6b_term(void *s, void *out, void *in, int bone, float t)
 /* Export (libduel_mgr): starts reading the movie of (card, kind) into dd_movie_buf. */
 void dd_movie_preload(int card, int kind)
 {
+    static char dd_movie_buf[0x40];
     char *name = dd_movie_find(card, kind);
 
     if (name != 0)
@@ -275,6 +270,7 @@ char *dd_movie_find(int card, int kind)
     DdMovie *t = dd_movies;
     DdMovie key;
     DdMovie *e;
+    static int dd_movie_sorted;
 
     if (region_get() != 0)
         card += 100000;
@@ -376,11 +372,11 @@ int dd_c6a_motion(void *s, int motion)
     return 0;
 }
 
-#ifdef NON_MATCHING /* só o lui do flag de ordenação sai antes do sw s0 do prólogo no original; nenhuma forma testada reproduziu */
 int dd_c6a_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
 {
     DdCamKey key;
     DdCamEntry *e;
+    static int dd_c6a_sorted;
 
     if (dd_c6a_sorted == 0) {
         qsort(dd_c6a_cams, 5, sizeof(DdCamEntry), dd_int_cmp);
@@ -395,7 +391,6 @@ int dd_c6a_camera(void *s, FxVec4u *eye, FxVec4u *target, int id)
     *target = *(FxVec4u *)&e->v[3];
     return 1;
 }
-#endif
 
 void dd_c6a_term(void *s, void *out, void *in, int bone, float t)
 {

@@ -1,8 +1,8 @@
 // @range 0x0885133C-0x08853A2C
 // @data 0x088EF098-0x088EF28C
+// @bss 0x08BE8ED4-0x08BE8EDC
 // @asm 0x088513E0-0x08851BA4
 // @asm 0x08851D10-0x08851F4C
-// @asm 0x08852070-0x08852144
 // @asm 0x08852708-0x088527AC
 /* PMF movie player (Sony PSMF sample code): movie_run() builds the sceMpeg ring buffer and decoder
    in the block set by movie_set_memory, starts the display/read/sound threads and runs the decode
@@ -26,7 +26,6 @@ int wave_rest_samples(int ch);
 
 /* threads and shared state (bss) */
 extern SceUID movie_disp_thread, movie_read_thread, movie_snd_thread;
-extern unsigned int pad_prev, pad_cur;
 extern MovieCtrl **movie_ctrl_ref;      /* &ctrl of the running movie_run, 0 when idle */
 extern unsigned int movie_flags;        /* 1 mute, 2 any key skips, 4 not skippable */
 extern unsigned int movie_mem_size, movie_mem_base;
@@ -445,11 +444,11 @@ int movie_read_header(void *mpeg, MovieFile *file, int *size, int *offset)
 
 /* 1 when the user skipped the movie (movie_result = 10). */
 
-#ifdef NON_MATCHING /* o original carrega pad_cur e grava pad_prev antes do `sw ra`, com o `li a1,1` no atraso do jal; o mwcc põe a gravação no atraso (só escalonamento, 6 palavras) */
 int movie_poll_input(void)
 {
     unsigned int pad[4];
     unsigned int pressed;
+    static unsigned int pad_prev, pad_cur; /* 0x08BE8ED4, 0x08BE8ED8 (@bss) */
 
     pad_prev = pad_cur;
     sceCtrlReadBufferPositive(pad, 1);
@@ -471,7 +470,6 @@ int movie_poll_input(void)
     }
     return 0;
 }
-#endif
 
 int msnd_init(MovieSnd *s, int bufsize, int nbufs, MovieCtrl *ctrl, unsigned int *mem, int mute)
 {

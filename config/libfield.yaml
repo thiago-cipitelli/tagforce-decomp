@@ -78,8 +78,6 @@ segments:
       - [0xBC14, c, f_sys]
       - [0xBC14, asm, f_sys_asm_0880FBB4]
       - [0xBD64, c, f_sys]
-      - [0xBF60, asm, f_sys_asm_0880FF00]
-      - [0xC068, c, f_sys]
       - [0xC874, c, f_scene]
       - [0xC874, asm, f_scene_asm_08810814]
       - [0xCFA4, c, f_scene]
@@ -222,6 +220,8 @@ segments:
       - [0x39738, .data, f_face]
       - [0x39C20, .data, f_mark]
       - [0x39D08, data, data_12]
-      - { start: 0x39D20, type: bss, vram: 0x883DCC0, name: bss }
+      - { start: 0x39D20, type: bss, vram: 0x883DCC0, name: bss_0 }
+      - { start: 0x39D20, type: .bss, vram: 0x8FD1A30, name: f_sys }
+      - { start: 0x39D20, type: bss, vram: 0x8FD1A44, name: bss_1 }
   - [0x39D20]
 

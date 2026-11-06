@@ -1,8 +1,8 @@
 // @range 0x0881CA2C-0x0881DF94
+// @bss 0x08C5745C-0x08C574E4
 // @rodata 0x08870180-0x088701B4
 // @asm 0x0881CA74-0x0881CA80
 // @asm 0x0881D1B0-0x0881D658
-// @asm 0x0881DBC8-0x0881DC40
 // @asm 0x0881DC40-0x0881DE48
 // @data 0x08875F84-0x088760B0
 /* The duel scene's input modes: a stack of modes (1 field, 2 card list, 3 yes/no, 4 numbers,
@@ -36,15 +36,16 @@ typedef struct DdModeStack {           /* 0x44 at 0x08C57468 */
     int phase;                         /* +0x40 mode 5: 0 fade out, 1 shown, 2 fade in */
 } DdModeStack;
 
-extern void *dd_heap_main;             /* 0x08C57460 */
-extern void *dd_heap_sub;              /* 0x08C5745C */
-extern int dd_hand_hint;               /* 0x08C57464 */
-extern DdModeStack dd_mode;            /* 0x08C57468 */
-extern void *dd_msg_pack;              /* 0x08C574AC */
-extern unsigned int dd_pad_none[10];   /* 0x08C574B0 */
-extern int (*dd_act_filter)(void);     /* 0x08C574D8 */
-extern int dd_no_input;                /* 0x08C574DC */
-extern int dd_msg_loaded;              /* 0x08C574E0 */
+/* .bss of this file (@bss): mwcc emits zero-initialized definitions and function statics where they
+   appear and the tentative definitions (no initializer) at the end of the object in reverse order */
+void *dd_heap_sub = 0;                 /* 0x08C5745C */
+void *dd_heap_main = 0;                /* 0x08C57460 */
+int dd_hand_hint = 0;                  /* 0x08C57464 */
+DdModeStack dd_mode = { 0 };           /* 0x08C57468; dd_text's static dd_msg_pack 0x08C574AC */
+int dd_msg_loaded;                     /* 0x08C574E0 */
+int dd_no_input;                       /* 0x08C574DC */
+int (*dd_act_filter)(void);            /* 0x08C574D8 */
+unsigned int dd_pad_none[10];          /* 0x08C574B0 */
 extern MenuWidget dd_menu3;            /* 0x08C574E4 */
 
 void dd_m1_enter(void);
@@ -745,16 +746,16 @@ unsigned int *dd_m10_draw(unsigned int *list)
 }
 
 /* a text of the scene's message pack (by language) */
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 unsigned short *dd_text(int id)
 {
+    static void *dd_msg_pack;
+
     if (dd_msg_pack == 0 || dd_msg_loaded == 0) {
         dd_msg_pack = dd_bin_get(cfg_get_language() + 0x8000D);
         dd_msg_loaded = 1;
     }
     return table_get_entry(dd_msg_pack, id);
 }
-#endif
 
 /* camera of an animation at time t (position, target, fov, near/far keyed) */
 #ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */

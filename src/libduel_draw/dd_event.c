@@ -1,13 +1,13 @@
 // @range 0x088175E4-0x0881794C
-// @asm 0x088176A0-0x0881793C
+// @bss 0x08C54798-0x08C5479C
 // @data 0x08875AD4-0x08875E34
+// @rodata 0x08870074-0x088700A8
 /* The duel-event command dispatcher (export 0x088176A0, called by libduel_mgr and friends): the
    commands 1..73 the duel manager sends to the duel scene (cut-ins, card moves, effects, panels)
    are looked up in a sorted table that also says how to unpack the three packed arguments. */
 #include "dd_field_ui.h"
 
 extern DdEvState dd_ev_state;          /* 0x08C5476C */
-extern int dd_ev_sorted;               /* 0x08C54798 */
 
 int dd_scene_flags(int a, int b);
 
@@ -180,7 +180,6 @@ void dd_ev_8817670(int v)
 }
 
 /* export: runs duel event `id` with its packed arguments; 1 when there is no handler */
-#ifdef NON_MATCHING /* o flag de ordenação era static do arquivo (.bss própria): o lui sai antes do último sw do prólogo */
 int dd_event_dispatch(int id, DdEvArg a, DdEvArg b, DdEvArg c)
 {
     DdEvCmd *found = 0;
@@ -189,6 +188,7 @@ int dd_event_dispatch(int id, DdEvArg a, DdEvArg b, DdEvArg c)
     int lo, hi, mid;
     int ret;
     DdEvCmd *tab;
+    static int dd_ev_sorted; /* 0x08C54798 (@bss) */
 
     if (dd_ev_sorted == 0) {
         qsort(dd_ev_table, 72, sizeof(DdEvCmd), dd_ev_cmp);
@@ -255,7 +255,6 @@ int dd_event_dispatch(int id, DdEvArg a, DdEvArg b, DdEvArg c)
     }
     return ret;
 }
-#endif
 
 int dd_ev_cmp(const void *a, const void *b)
 {

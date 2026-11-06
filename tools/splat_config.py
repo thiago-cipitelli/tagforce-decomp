@@ -20,7 +20,7 @@ kind = {".text": "asm", ".sceStub.text": "asm", ".data": "data", ".bss": "bss"}
 # C files declare the vram range they cover with a header line `// @range 0xSTART-0xEND`; the .text
 # segment is split around those ranges so the mwcc object lands exactly where the original code was.
 import glob, os, re
-ranges, dranges = [], []
+ranges, dranges, branges = [], [], []
 for cf in sorted(glob.glob(f"src/{m}/*.c")):
     src = open(cf).read()
     mm = re.search(r"//\s*@range\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src)
@@ -41,12 +41,26 @@ for cf in sorted(glob.glob(f"src/{m}/*.c")):
     # emitted as a `.data` subsegment named <file>__rodata and tools/fix_ld.py rewrites the linker line.
     for md in re.finditer(r"//\s*@rodata\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src):
         dranges.append((int(md.group(1), 16), int(md.group(2), 16), os.path.basename(cf)[:-2] + "__rodata"))
-ranges.sort(); dranges.sort()
+    # `// @bss 0xA-0xB`: the object's own .bss (file/function statics) placed at its original address;
+    # the bss is split around it like .data (tools/fix_ld.py drops the auto-listed `obj(.bss)` line)
+    for md in re.finditer(r"//\s*@bss\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src):
+        branges.append((int(md.group(1), 16), int(md.group(2), 16), os.path.basename(cf)[:-2]))
+ranges.sort(); dranges.sort(); branges.sort()
 subs = []
 for n, s in alloc:
     off, vram, size, typ = s[4], s[3], s[5], s[1]
     if typ == 8:  # NOBITS
-        subs.append(f"      - {{ start: 0x{off:X}, type: bss, vram: 0x{vram:X}, name: bss }}")
+        # sanity check: @bss ranges inside .bss, ascending, not overlapping
+        assert all(vram <= a < b <= vram + size for a, b, _ in branges), f"@bss outside .bss: {branges}"
+        assert all(x[1] <= y[0] for x, y in zip(branges, branges[1:])), f"@bss ranges overlap: {branges}"
+        cur, i = vram, 0
+        for a, b, cname in branges:
+            if a > cur:
+                subs.append(f"      - {{ start: 0x{off:X}, type: bss, vram: 0x{cur:X}, name: bss_{i} }}"); i += 1
+            subs.append(f"      - {{ start: 0x{off:X}, type: .bss, vram: 0x{a:X}, name: {cname} }}")
+            cur = b
+        if cur < vram + size:
+            subs.append(f"      - {{ start: 0x{off:X}, type: bss, vram: 0x{cur:X}, name: {'bss_%d' % i if branges else 'bss'} }}")
         continue
     t = kind.get(n, "bin")
     if n == ".text" and ranges:

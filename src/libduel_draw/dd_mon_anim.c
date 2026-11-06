@@ -1,5 +1,5 @@
 // @range 0x088282E4-0x08828DD0
-// @asm 0x088285D4-0x088288C0
+// @bss 0x08C5A880-0x08C5A884
 // @data 0x0887653C-0x08876710
 /* Callbacks of a monster model played by the duel scene: the callback table, the start/event
    hooks, the pick of an animation from the voice set of the character, the bone transform of the
@@ -69,7 +69,6 @@ DdMat4 *mat4_identity(DdMat4 *out);
 DdMat4 *mat4_mul(DdMat4 *out, DdMat4 *a, DdMat4 *b);
 float *vec3_scale_w(float *out, float *v, float s);
 
-extern DdAnimRange *dd_mon_anim_cur;
 
 int dd_mon_on_start(int a, int b, int c);
 int dd_mon_on_event(int a, int anim, int c, int d);
@@ -162,7 +161,6 @@ int dd_mon_voice_anims[6][4] = {
     { 0x11E, 0x175, 0x14A, 0xF3 }, { 0x11F, 0x176, 0x14B, 0xF4 }, { 0x120, 0x177, 0x14C, 0xF5 },
 };
 
-#ifdef NON_MATCHING /* agendamento: o original põe o sw de dd_mon_anim_cur no delay slot do jal, depois das cargas dos argumentos */
 int dd_mon_pick_anim(DdMon *m, int anim)
 {
     int list[64];
@@ -171,6 +169,7 @@ int dd_mon_pick_anim(DdMon *m, int anim)
     int v;
     int kind;
     int sub;
+    static DdAnimRange *dd_mon_anim_cur; /* 0x08C5A880 (@bss) */
 
     if (anim >= 0x1000) {
         anim -= 0x1000;
@@ -238,7 +237,6 @@ int dd_mon_pick_anim(DdMon *m, int anim)
     }
     return list[rand_next() % n];
 }
-#endif
 
 int dd_mon_cb_ret0(void)
 {

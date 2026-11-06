@@ -1,34 +1,5 @@
 // @range 0x08859F18-0x0885F76C
-// @asm 0x0885A0D8-0x0885A1C0
-// @asm 0x0885A388-0x0885A470
-// @asm 0x0885AB38-0x0885AC20
-// @asm 0x0885ADE8-0x0885AED0
-// @asm 0x0885B098-0x0885B180
-// @asm 0x0885B348-0x0885B430
-// @asm 0x0885B5F8-0x0885B6E0
-// @asm 0x0885B90C-0x0885B9F4
-// @asm 0x0885BC90-0x0885BD78
-// @asm 0x0885C008-0x0885C0F0
-// @asm 0x0885C2B0-0x0885C398
-// @asm 0x0885C560-0x0885C648
-// @asm 0x0885C810-0x0885C8F8
-// @asm 0x0885CAC0-0x0885CBA8
-// @asm 0x0885CD68-0x0885CE50
-// @asm 0x0885D018-0x0885D100
-// @asm 0x0885D32C-0x0885D414
-// @asm 0x0885D5DC-0x0885D6C4
-// @asm 0x0885D88C-0x0885D974
-// @asm 0x0885DBB0-0x0885DC98
-// @asm 0x0885DE60-0x0885DF48
-// @asm 0x0885E110-0x0885E1F8
-// @asm 0x0885E3C0-0x0885E4A8
-// @asm 0x0885E654-0x0885E73C
-// @asm 0x0885E914-0x0885E9FC
-// @asm 0x0885EBC4-0x0885ECAC
-// @asm 0x0885EE6C-0x0885EF54
-// @asm 0x0885F11C-0x0885F204
-// @asm 0x0885F3CC-0x0885F4B4
-// @asm 0x0885F67C-0x0885F764
+// @bss 0x08C5B3C0-0x08C5B438
 // @data 0x08877980-0x08878CC0
 // @rodata 0x08870EC8-0x08871ED0
 /* Per-character model handlers of the duel scene (the opponent's 3D model): each block is the
@@ -326,7 +297,6 @@ int chr37_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr37_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3C0 */
@@ -346,7 +316,6 @@ int chr37_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr37_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -426,7 +395,6 @@ int chr32_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr32_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3C4 */
@@ -446,7 +414,6 @@ int chr32_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr32_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -673,7 +640,6 @@ int chr_kind3_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr_kind3_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3C8 */
@@ -693,7 +659,6 @@ int chr_kind3_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr_kind3_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -773,7 +738,6 @@ int chr10_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr10_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3CC */
@@ -793,7 +757,6 @@ int chr10_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr10_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -873,7 +836,6 @@ int chr11_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr11_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3D0 */
@@ -893,7 +855,6 @@ int chr11_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr11_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -973,7 +934,6 @@ int chr4_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr4_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3D4 */
@@ -993,7 +953,6 @@ int chr4_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr4_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1073,7 +1032,6 @@ int chr21_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr21_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3D8 */
@@ -1093,7 +1051,6 @@ int chr21_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr21_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1159,7 +1116,6 @@ int chr18_alt_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr18_alt_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3DC */
@@ -1179,7 +1135,6 @@ int chr18_alt_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr18_alt_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1262,7 +1217,6 @@ int chr18_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr18_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3E0 */
@@ -1282,7 +1236,6 @@ int chr18_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr18_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1363,7 +1316,6 @@ int chr12_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr12_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3E4 */
@@ -1383,7 +1335,6 @@ int chr12_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr12_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1465,7 +1416,6 @@ int chr9_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr9_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3E8 */
@@ -1485,7 +1435,6 @@ int chr9_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr9_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1565,7 +1514,6 @@ int chr26_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr26_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3EC */
@@ -1585,7 +1533,6 @@ int chr26_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr26_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1665,7 +1612,6 @@ int chr25_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr25_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3F0 */
@@ -1685,7 +1631,6 @@ int chr25_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr25_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1765,7 +1710,6 @@ int chr7_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr7_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3F4 */
@@ -1785,7 +1729,6 @@ int chr7_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr7_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1864,7 +1807,6 @@ int chr20_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr20_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3F8 */
@@ -1884,7 +1826,6 @@ int chr20_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr20_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -1964,7 +1905,6 @@ int chr22_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr22_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B3FC */
@@ -1984,7 +1924,6 @@ int chr22_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr22_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2056,7 +1995,6 @@ int chr28_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr28_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B400 */
@@ -2076,7 +2014,6 @@ int chr28_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr28_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2156,7 +2093,6 @@ int chr24_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr24_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B404 */
@@ -2176,7 +2112,6 @@ int chr24_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr24_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2256,7 +2191,6 @@ int chr8_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr8_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B408 */
@@ -2276,7 +2210,6 @@ int chr8_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr8_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2343,7 +2276,6 @@ int chr23_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr23_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B40C */
@@ -2363,7 +2295,6 @@ int chr23_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr23_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2443,7 +2374,6 @@ int chr30_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr30_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B410 */
@@ -2463,7 +2393,6 @@ int chr30_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr30_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2543,7 +2472,6 @@ int chr3_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr3_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B414 */
@@ -2563,7 +2491,6 @@ int chr3_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr3_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2643,7 +2570,6 @@ int chr33_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr33_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B418 */
@@ -2663,7 +2589,6 @@ int chr33_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr33_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2743,7 +2668,6 @@ int chr13_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr13_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B41C */
@@ -2763,7 +2687,6 @@ int chr13_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr13_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2850,7 +2773,6 @@ int chr16_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr16_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B420 */
@@ -2870,7 +2792,6 @@ int chr16_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr16_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -2950,7 +2871,6 @@ int chr31_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr31_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B424 */
@@ -2970,7 +2890,6 @@ int chr31_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr31_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -3049,7 +2968,6 @@ int chr14_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr14_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B428 */
@@ -3069,7 +2987,6 @@ int chr14_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr14_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -3149,7 +3066,6 @@ int chr17_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr17_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B42C */
@@ -3169,7 +3085,6 @@ int chr17_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr17_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -3249,7 +3164,6 @@ int chr36_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr36_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B430 */
@@ -3269,7 +3183,6 @@ int chr36_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr36_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -3349,7 +3262,6 @@ int chr27_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr27_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B434 */
@@ -3369,7 +3281,6 @@ int chr27_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr27_motion(void *self, void *a, void *b, void *c, int d)
 {

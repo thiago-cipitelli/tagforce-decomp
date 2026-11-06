@@ -1,7 +1,5 @@
 // @range 0x0885F980-0x08861238
-// @asm 0x08860BE8-0x08860CD0
-// @asm 0x08860E98-0x08860F80
-// @asm 0x08861148-0x08861230
+// @bss 0x08C5B440-0x08C5B44C
 // @data 0x08878CC0-0x08878EA0
 // @rodata 0x08871ED0-0x08872794
 /* Per-character model handlers of the duel scene (the opponent's 3D model): each block is the
@@ -614,7 +612,6 @@ int chr_generic_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr_generic_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B440 */
@@ -634,7 +631,6 @@ int chr_generic_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr_generic_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -714,7 +710,6 @@ int chr38_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr38_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B444 */
@@ -734,7 +729,6 @@ int chr38_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr38_motion(void *self, void *a, void *b, void *c, int d)
 {
@@ -814,7 +808,6 @@ int chr19_bone_id(void *self, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* a flag static local (o original) vai para o .bss do objeto */
 int chr19_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
 {
     static int sorted; /* 0x08C5B448 */
@@ -834,7 +827,6 @@ int chr19_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     *rot = e->rot;
     return 1;
 }
-#endif
 
 int chr19_motion(void *self, void *a, void *b, void *c, int d)
 {

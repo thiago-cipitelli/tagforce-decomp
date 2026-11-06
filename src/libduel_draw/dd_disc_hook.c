@@ -1,7 +1,6 @@
 // @range 0x088143A4-0x08814DFC
 // @asm 0x088143D4-0x088145B0
-// @asm 0x08814A64-0x08814B4C
-// @asm 0x08814D0C-0x08814DF4
+// @bss 0x08C54634-0x08C5463C
 // @data 0x088755B8-0x08875770
 // @rodata 0x0886FF0C-0x08870014
 /* Model hooks of the duel-disc and field models: the card texture rendered into VRAM for the disc
@@ -51,8 +50,6 @@ typedef struct DdPose {                /* camera/light pose table entry (bsearch
 } DdPose;
 
 extern DdHookAnim *dd_hook_default_anim;   /* 0x08C54630 */
-extern int dd_pose_a_sorted;               /* 0x08C54634 */
-extern int dd_pose_b_sorted;               /* 0x08C54638 */
 
 int voice_is_playing(void);
 /* model callbacks of dd_mon_anim.c; the hooks forward their argument registers unchanged */
@@ -261,11 +258,11 @@ int dd_hooka_bone_map(void *o, int bone)
     }
 }
 
-#ifdef NON_MATCHING /* lui do flag agendado depois do sw s0 */
 int dd_hooka_pose(void *o, float *pos, float *rot, int id)
 {
     DdPose *e;
     int key;
+    static int dd_pose_a_sorted; /* 0x08C54634 (@bss) */
 
     if (dd_pose_a_sorted == 0) {
         qsort(dd_pose_a, 5, sizeof(DdPose), dd_int_cmp);
@@ -280,7 +277,7 @@ int dd_hooka_pose(void *o, float *pos, float *rot, int id)
     *(DdVec4 *)rot = *(DdVec4 *)e->rot;
     return 1;
 }
-#endif
+
 DdPose dd_pose_b[5] = {
     { 40, { -44.292492f, 2.2225974f, -11.174187f }, { -0.0011785935f, 0.062230006f, -0.0018646852f, 0.9980594f } },
     { 37, { -7.9361987f, -2.2903676f, -0.7556554f }, { 0.054560795f, -0.70503765f, -0.054566864f, -0.7049592f } },
@@ -364,11 +361,11 @@ int dd_hookb_bone_map(void *o, int bone)
     }
 }
 
-#ifdef NON_MATCHING /* lui do flag agendado depois do sw s0 */
 int dd_hookb_pose(void *o, float *pos, float *rot, int id)
 {
     DdPose *e;
     int key;
+    static int dd_pose_b_sorted; /* 0x08C54638 (@bss) */
 
     if (dd_pose_b_sorted == 0) {
         qsort(dd_pose_b, 5, sizeof(DdPose), dd_int_cmp);
@@ -383,7 +380,6 @@ int dd_hookb_pose(void *o, float *pos, float *rot, int id)
     *(DdVec4 *)rot = *(DdVec4 *)e->rot;
     return 1;
 }
-#endif
 
 void dd_hookb_2c(void *o, void *out, void *in, int bone, float t)
 {

@@ -161,6 +161,31 @@ Os casos mais comuns nesta etapa:
 | `lhu x,OFF(base)` com o deslocamento do campo fora da relocação | ponteiro para o elemento: `DsList *l = &d->list[tab]; return l->count;` |
 | `v0` já vale a constante do teste, mas o original salta para um `li v0,K` próprio | agrupar os `case` com o mesmo corpo (`case 1: case 3:`) |
 | `return` comum depois do `if/else` vira `li v0,1` em cada ramo | um `return 1;` em cada ramo |
+| `lui` de uma global em `.bss` **antes** do último `sw $s/ra` do prólogo (só o prólogo difere) | a global era `static` **da função** (só ela a usa): `static int sorted;` dentro da função e `// @bss A-B` no cabeçalho (ver abaixo); `static`/global de arquivo não reproduz |
+
+## `static` em `.bss`: `// @bss 0xA-0xB`
+
+Sinal: o original carrega o endereço (`lui`) de uma global de `.bss` antes de terminar de salvar os
+registradores no prólogo (`lui v0; sw ra; sw s0` contra `sw ra; sw s0; lui v0`). Só uma variável `static`
+**de função** produz isso no mwcc; global, `extern` e `static` de arquivo dão a ordem normal. Conferir que
+só aquela função usa a variável (`grep` em `src/` e `asm/`), declarar a variável dentro da função e pôr no
+cabeçalho do `.c` a faixa do `.bss` do objeto: `// @bss 0x08C5B3C0-0x08C5B438`. `splat_config.py` divide o
+`.bss` em volta dela (segmento `.bss` com o nome do arquivo) e o objeto do C ocupa aquele endereço.
+
+Ordem dos objetos no `.bss` de um `.c` (mwcc): `static` de função e definições com inicializador zero
+(`int x = 0;`, `T s = { 0 };`) saem no ponto em que aparecem no fonte; definições sem inicializador
+(`int x;`, `static` ou não) saem no **fim** do objeto, em ordem **inversa** à do fonte (`dd_scene_mode.c`:
+quatro `= 0` no topo, o `static` de `dd_text`, e quatro tentativas em ordem inversa). Um `static` de
+arquivo usado só por uma função pode virar `static` dessa função para cair na posição certa
+(`dd_movie_buf` em `dd_movie_preload`).
+
+Cuidados: a faixa `@bss` tem de cobrir exatamente o que o objeto define (o resto continua `extern`, definido
+pelo asm de `.bss`); uma função em `@asm` não pode referenciar um símbolo dentro da faixa (o asm deixa de
+defini-lo); todas as funções com `static` do arquivo saem do asm juntas (o C sob `NON_MATCHING` não emite
+o `static`, e o buraco desloca o resto do `.bss`); tirar do asm uma função com `switch` denso exige a
+`@rodata`/`@data` da tabela (`dd_event_dispatch`: `@rodata 0x08870074-0x088700A8`). Feito em
+`dd_chr_models*.c` (36 buscas de ossos), `dd_event.c`, `dd_chara06.c`, `dd_disc_hook.c`, `dd_scene_mode.c`,
+`dd_mon_anim.c`, `f_sys.c` (`fld_sys_term`, 5 flags) e `movie.c` (`movie_poll_input`, `pad_prev/pad_cur`).
 
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
@@ -168,9 +193,6 @@ Os casos mais comuns nesta etapa:
   o mwcc 219 remove em if/else, goto, inline, pragmas e no build 121. Só sobrevive dentro do corpo de um `case`
   e no último termo de `||` seguido de `return`. Tente essas duas formas **uma vez**; se não der, pule.
   É o padrão de ~2000 pontos do libduel_eng, o maior bloqueio aberto.
-- **`static` local** (flag em `.bss` do objeto): as ferramentas não têm `@bss`; um global de arquivo não
-  reproduz o agendamento. (As 29 buscas de ossos de `dd_chr_models.c` já batem com `-DNON_MATCHING`; ficam em
-  asm só por isso e não estão na fila.)
 - **Original lê local da pilha não inicializado**, ou **guarda um store morto** que o mwcc elimina.
 - **SDK do BOOT compilado com GCC** (arquivos com `asm` do mwcc sob `__MWERKS__`): trilha separada, fora da fila;
   ficam em `@asm` os que carregam dados por `lui`+`%lo` (ver `docs/build.md`, "Código GCC como funções asm").
