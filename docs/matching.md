@@ -162,6 +162,44 @@ Os casos mais comuns nesta etapa:
 | `v0` já vale a constante do teste, mas o original salta para um `li v0,K` próprio | agrupar os `case` com o mesmo corpo (`case 1: case 3:`) |
 | `return` comum depois do `if/else` vira `li v0,1` em cada ramo | um `return 1;` em cada ramo |
 
+## Funções grandes (rodada 7): forma por seção
+
+Para funções de 2 a 7 KB com centenas de palavras diferentes, a contagem do `asm_try.sh` não serve de guia (um
+deslocamento de uma instrução muda tudo depois). O que funcionou em `ai_08839360.c` e `ai_08815E90.c`:
+- **Diff estrutural**: desmontar original e compilado, trocar registradores por `R`, deslocamentos de memória por
+  `N`, imediatos de `lui`/`addiu` relocados e alvos de desvio por constantes, e comparar com `difflib`
+  (`SequenceMatcher(autojunk=False)`: o padrão descarta linhas repetidas e conta errado em funções grandes). Resolver
+  primeiro a estrutura (0 linhas), depois os registradores.
+- **Variantes num só TU**: o corpo da função com substituições `velho → novo` (várias por variante), um `f_N` por
+  variante, uma compilação, ranqueadas pelo diff estrutural e pelo de palavras. Dezenas de variantes por minuto.
+- **Permutação de declarações em lotes** de 40 funções por TU: com 720 cópias de uma função de 7 KB o `.o` passa de
+  20 MB e o `object_function` relê o arquivo a cada cópia (o `perm_decls.py` leva mais de 20 minutos).
+
+Idiomas novos (cada um resolveu pelo menos um trecho):
+- **Tipo do parâmetro no protótipo decide a ordem de carga dos argumentos**: passar um campo `int` a um parâmetro
+  `unsigned int` faz o mwcc carregar o campo antes do global do argumento anterior; com o protótipo igual à definição
+  (`duel_088C4448(..., int uid)`, `duel_slot_effect_with(..., int src)`, `duel_088D1438(..., int a, int b)`,
+  `duel_088C77D4(p, unsigned short id, int a, unsigned short b)`) a ordem bate. Um `andi 0xFFFF` a mais no argumento
+  também aponta o tipo do parâmetro (o 4º de `duel_088C87A8` recebe `(unsigned short)(...)`).
+- **Uma teia de outro `case` muda a cor das seguintes**: `ev`/`r` trocados (`s4`/`s5`) no `case 1` de
+  `duel_0883B4A8` se resolveram usando outra variável (`xv`) para o evento do `case 0`; em `duel_08839360`,
+  `int id; int r; int v;` declarados no bloco de cada seção.
+- **`(unsigned char)x | (unsigned char)g << 8`** em vez de `(x & 0xFF) | ...` inverte os temporários (`v0`/`v1`) do
+  `or`; `e * 4` em vez de `e << 2` e `(unsigned int)(i & 1) << 31` em vez de `(unsigned int)i << 31` mudam a ordem
+  de avaliação dos operandos de um `|` (a subárvore "mais pesada" sai primeiro).
+- **Global relido depois de um join**: o original recarrega `duel_atk_tp/tz` num `switch` alcançado por dois
+  caminhos; `*(volatile int *)&duel_special.unk24 = ...` no store intermediário impede o CSE (`duel_08839360`).
+- **`if (c == 10) {...}` com `beql`+`b` no original**: `switch (k = ef->kind & 0xF) { case 10: case 11: ... }`;
+  campo carregado antes do teste de `SLOT_ACTIVE` = `id = ...card.id;` antes do `if`; base `&duel.players[q]` com o
+  `+48` dentro das cargas = expressão direta `duel.players[sp & 1].field[sz]` (sem ponteiro `slot`).
+- **`!f()` em `if (!f()) continue;` materializa `sltu/xori/bnezl`**; `f() == 0` dá `beqz`. Ao contrário, dentro de um
+  `for` com `return`, `if ((mask & 1 << b) != 0)` evita o `sltu/xori` que `if (mask & 1 << b)` gerou.
+- **Contadores de laço trocados entre laços do mesmo `switch`**: trocar qual variável é o contador e qual é o bit
+  (`for (b = 0, z = p << 4; b < 5; b++, z++)`), usar outra variável livre (`q`) num dos laços, e a ordem dos
+  incrementos (`b++, z++`) decidem os `$s` de cada laço.
+- **Inline do original**: `act_x_init` virou macro com o laço de bytes (`ACT_X_INIT`); com o helper `static` o
+  código saía 556 bytes menor.
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
 - **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`):

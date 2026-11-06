@@ -1,7 +1,5 @@
 // @range 0x08839360-0x0883F0DC
-// @asm 0x08839360-0x0883A2BC
-// @asm 0x0883A2BC-0x0883AEF8
-// @asm 0x0883B4A8-0x0883BB00
+// @data 0x08907C3C-0x08907C68
 // @asm 0x0883BB00-0x0883D798
 // @asm 0x0883D798-0x0883E63C
 // @asm 0x0883E63C-0x0883F0DC
@@ -31,7 +29,7 @@ int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 void duel_088C44E4(unsigned int p, int id);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_effect_arg(unsigned int p, int z, int id);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
 int duel_slot_faceup_live(unsigned int p, int z);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
@@ -39,7 +37,7 @@ int duel_08837250(void);
 void duel_088C936C(unsigned int p, int a, int b, int id, int opp);
 void duel_088C4508(unsigned int p, int a);
 int duel_088480D0(unsigned int p);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
+void duel_088C4448(unsigned int p, int z, int uid);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_field_level(unsigned int p, int z);
@@ -53,14 +51,14 @@ void duel_088C7CF0(void);
 int duel_spec_act_ok(DuelSpecAct *s);
 void duel_088C4864(DuelSpecRec *r);
 int duel_088C4730(unsigned int p, int n, int f, int id);
-int duel_088D1438(unsigned int p, int z, unsigned int q, unsigned short id);
+int duel_088D1438(unsigned int p, int z, int a, int b);
 int duel_088D1F1C(DuelAct *a, int i);
 int duel_088C168C(void);
 int duel_088C30D4(void);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_0886B0E4(unsigned int a, unsigned short uid, int c);
 int duel_card_protected(int id, int uid);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int p, int z, int id, int src);
 int duel_slot_value_1909(unsigned int p, int z);
 void duel_088CC1D0(unsigned int p, int z, int a);
 int card_is_monster(int id);
@@ -93,7 +91,6 @@ unsigned int duel_088D13D8(unsigned int p, unsigned short id, unsigned int mask)
 /* event word of duel_0884F30C: card id, player bit 31, zone bits 16-20 */
 #define BATTLE_EV(id, p, z, k) ((unsigned short)(id) | (((p) << 31 & 0x80000000) | (k) | ((z) << 16 & 0x1F0000)))
 
-#ifdef NON_MATCHING /* forma próxima; diferem a ordem do cálculo de loc e a escolha de registradores */
 /* p: attacking player; returns 1 when the damage step is over */
 int duel_08839360(unsigned int p)
 {
@@ -101,13 +98,10 @@ int duel_08839360(unsigned int p)
     unsigned int loc;                  /* attacker | attacker zone << 8 | (target | target zone << 8) << 16 */
     int aid;                           /* attacker card */
     int tid;                           /* target card */
-    int id;
-    int r;
-    int v;
     unsigned int q;
 
-    loc = (unsigned short)((duel_special.player[0] & 0xFF) | (duel_atk_zone & 0xFF) << 8) |
-          (unsigned short)((tp & 0xFF) | (unsigned char)duel_atk_tz << 8) << 16;
+    loc = (unsigned short)((duel_special.player[0] & 0xFF) | (duel_atk_zone & 0xFF) << 8);
+    loc |= (unsigned short)((unsigned char)tp | (unsigned char)duel_atk_tz << 8) << 16;
     aid = field_get_card(duel_special.player[0], duel_atk_zone);
     tid = field_get_card(duel_atk_tp, duel_atk_tz);
     switch (duel_w_08919610) {
@@ -155,7 +149,7 @@ int duel_08839360(unsigned int p)
                     duel_088C87A8(p, duel_atk_zone, 0x1505, 1, !duel_atk_direct);
                 }
                 if (duel_atk_direct == 0) {
-                    duel_088C87A8(tp, duel_atk_tz, (p & 0xFF) | (unsigned char)duel_atk_zone << 8, 8, 0);
+                    duel_088C87A8(tp, duel_atk_tz, (unsigned char)p | (unsigned char)duel_atk_zone << 8, 8, 0);
                 }
                 break;
             }
@@ -198,7 +192,8 @@ int duel_08839360(unsigned int p)
             if (ATK_SLOT(duel_atk_tp, duel_atk_tz)->faceup == 0) {
                 duel_088C936C(duel_atk_tp, duel_atk_tz, 0, 0, 0);
                 duel_088C4508(duel_atk_tp, ATK_SLOT(duel_atk_tp, duel_atk_tz)->card.id);
-                duel_special.unk24 = ATK_SLOT(duel_atk_tp, duel_atk_tz)->card.id;
+                /* volatile: the original reloads duel_atk_tp/tz for the switch below */
+                *(volatile int *)&duel_special.unk24 = ATK_SLOT(duel_atk_tp, duel_atk_tz)->card.id;
             }
             switch (tid) {
             case 0x129C:
@@ -211,6 +206,9 @@ int duel_08839360(unsigned int p)
     case 3: /* damage calculation: cards of the attacker, then of the target */
         duel_088480D0(0);
         if (SLOT_ACTIVE(ATK_SLOT(p, duel_atk_zone))) {
+            int id;
+            int r;
+            int v;
             id = field_get_card(p, duel_atk_zone);
             r = -1;
             v = 0;
@@ -248,6 +246,9 @@ int duel_08839360(unsigned int p)
             }
         }
         if (duel_atk_direct == 0 && SLOT_ACTIVE(ATK_SLOT(tp, duel_atk_tz))) {
+            int id;
+            int r;
+            int v;
             id = field_get_card(tp, duel_atk_tz);
             r = -1;
             v = 0;
@@ -316,9 +317,7 @@ int duel_08839360(unsigned int p)
     }
     return 1;
 }
-#endif
 
-#ifdef NON_MATCHING /* switch por tabela (0x08907C3C); não comparado em detalhe */
 /* p: attacking player; act[p] is the attacker, act[1 - p] the target */
 int duel_0883A2BC(unsigned int p)
 {
@@ -326,10 +325,13 @@ int duel_0883A2BC(unsigned int p)
     DuelSpecAct *a = &duel_special.act[p];
     DuelSpecAct *o = &duel_special.act[1 - p];
     unsigned short v[2];
-    struct DuelActX x;
+    unsigned short dmg[2];
+    int e, f;
     int i;
-    int j;
     int k;
+    int j;
+    int id;
+    struct DuelActX x;
 
     switch (duel_w_08919610) {
     case 0: /* attacker cards that act before the damage */
@@ -338,25 +340,26 @@ int duel_0883A2BC(unsigned int p)
             return 0;
         }
         duel_088480D0(0);
-        switch (a->id) {
+        id = a->id;
+        switch (id) {
         case 0x1643:
         case 0x1983:
-            duel_088C87A8(p, duel_atk_zone, a->id, 2, 0);
+            duel_088C87A8(p, duel_atk_zone, id, 2, 0);
             break;
         case 0x1837:
         case 0x1913:
         case 0x1962:
         case 0x19BF:
-            duel_088C87A8(p, duel_atk_zone, a->id, 4, 0);
+            duel_088C87A8(p, duel_atk_zone, id, 4, 0);
             break;
         case 0x182C:
             if (duel_atk_direct == 0 && p != tp && SLOT_ACTIVE(ATK_SLOT(p, duel_atk_zone))) {
                 duel_088C4448(p, duel_atk_zone, a->uid);
-                duel_088C87A8(tp, duel_atk_tz, a->id, (unsigned char)((tp != duel_turn_player) + 2) << 4 | 2, 0);
+                duel_088C87A8(tp, duel_atk_tz, a->id, (unsigned short)((unsigned char)((tp != duel_turn_player) + 2) << 4 | 2), 0);
             }
             break;
         case 0x19C7:
-            duel_088C77D4(p, a->id, 4, a->uid);
+            duel_088C77D4(p, id, 4, a->uid);
             break;
         }
         if (duel_slot_has_effect(p, 0xB, 0x1512) != 0) {
@@ -385,7 +388,7 @@ int duel_0883A2BC(unsigned int p)
             case 0x182C:
                 if (p != tp && SLOT_ACTIVE(ATK_SLOT(tp, duel_atk_tz))) {
                     duel_088C4448(tp, duel_atk_tz, o->uid);
-                    duel_088C87A8(p, duel_atk_zone, o->id, (unsigned char)((p != duel_turn_player) + 2) << 4 | 2, 0);
+                    duel_088C87A8(p, duel_atk_zone, o->id, (unsigned short)((unsigned char)((p != duel_turn_player) + 2) << 4 | 2), 0);
                 }
                 break;
             case 0x19C7:
@@ -416,8 +419,8 @@ int duel_0883A2BC(unsigned int p)
         duel_cmd((duel_special.player[0] ? 0x8000 : 0) | 0x16, duel_special.act[0].id, duel_special.act[1].id, 0);
         duel_088480D0(2);
         if (duel_atk_w24 == 0) {
-            v[0] = a->pad14[2];
-            v[1] = o->unk8 != 0 ? o->pad14[3] : o->pad14[2];
+            v[0] = duel_special.act[p].pad14[2];
+            v[1] = duel_special.act[1 - p].unk8 != 0 ? duel_special.act[1 - p].pad14[3] : duel_special.act[1 - p].pad14[2];
             if (duel_atk_direct == 0) {
                 switch (a->id) {
                 case 0x13AA:
@@ -452,17 +455,19 @@ int duel_0883A2BC(unsigned int p)
         return 0;
     case 5: /* show the damage of each side */
         for (k = 0; k < 2; k++) {
-            v[k] = 0;
+            dmg[k] = 0;
             for (j = 0; j < 2; j++) {
                 if (duel_special.recs[j].b[0] == duel_special.act[k].unk0 &&
                     duel_special.recs[j].b[1] == duel_special.act[k].unk4 && duel_special.recs[j].w0 != 0) {
-                    v[k] = (unsigned int)duel_special.recs[j].w0 >= 0x10000 ? 0xFFFF : duel_special.recs[j].w0;
+                    dmg[k] = (unsigned int)duel_special.recs[j].w0 > 0xFFFF ? 0xFFFF : duel_special.recs[j].w0;
                 }
             }
         }
-        duel_cmd((duel_special.player[0] ? 0x8000 : 0) | 0x17, v[0], v[1],
-                 (unsigned char)((duel_special.act[0].unk8 & 1) | (duel_special.act[0].pad14[6] & 1) << 1 | (v[0] > 0) << 2) |
-                 (unsigned char)((duel_special.act[1].unk8 & 1) | (duel_special.act[1].pad14[6] & 1) << 1 | (v[1] > 0) << 2) << 8);
+        f = dmg[1] > 0;
+        e = dmg[0] > 0;
+        duel_cmd((duel_special.player[0] ? 0x8000 : 0) | 0x17, dmg[0], dmg[1],
+                 (unsigned char)((duel_special.act[0].unk8 & 1) | (duel_special.act[0].pad14[6] & 1) << 1 | e * 4) |
+                 (unsigned char)((duel_special.act[1].unk8 & 1) | (duel_special.act[1].pad14[6] & 1) << 1 | f * 4) << 8);
         duel_w_08919610++;
         return 0;
     case 6: /* destroyed cards */
@@ -478,19 +483,18 @@ int duel_0883A2BC(unsigned int p)
             }
             duel_cmd((duel_special.player[0] ? 0x8000 : 0) | 0x21, duel_atk_zone, 0, 0);
         }
-        if (duel_special.act[1 - duel_special.player[0]].pad14[6] == 0) {
-            return 1;
-        }
-        if (o->id == 0x1A95) {
-            for (i = 0; i < 2; i++) {
-                for (j = 0; j <= 10; j++) {
-                    if (duel_st_affects(i, j, duel_atk_tp, duel_atk_tz) != 0) {
-                        duel_088C87A8(i, j, o->id, 4, o->uid);
+        if (duel_special.act[1 - duel_special.player[0]].pad14[6] != 0) {
+            if (o->id == 0x1A95) {
+                for (i = 0; i < 2; i++) {
+                    for (j = 0; j <= 10; j++) {
+                        if (duel_st_affects(i, j, duel_atk_tp, duel_atk_tz) != 0) {
+                            duel_088C87A8(i, j, o->id, 4, o->uid);
+                        }
                     }
                 }
             }
+            duel_cmd((duel_atk_tp ? 0x8000 : 0) | 0x21, duel_atk_tz, 1, 0);
         }
-        duel_cmd((duel_atk_tp ? 0x8000 : 0) | 0x21, duel_atk_tz, 1, 0);
         return 1;
     case 10: /* the target flipped by the attack */
         if (duel_special.unk24 != 0 && card_get_special_group(duel_special.unk24) != 0) {
@@ -509,7 +513,6 @@ int duel_0883A2BC(unsigned int p)
     }
     return 1;
 }
-#endif
 
 typedef struct DuelDmgEv {             /* argument of the event 14 (battle damage) */
     unsigned short dmg;
@@ -645,7 +648,6 @@ int duel_0883AEF8(unsigned int p)
     return 1;
 }
 
-#ifdef NON_MATCHING /* não comparado em detalhe */
 /* p: attacking player; events of the cards that won or lost the battle */
 int duel_0883B4A8(unsigned int p)
 {
@@ -668,11 +670,11 @@ int duel_0883B4A8(unsigned int p)
         if (duel_088C30D4() != 0) {
             return 0;
         }
-        ev = BATTLE_EV(o->id, tp, duel_atk_tz, 0x2A200000);
+        xv = BATTLE_EV(o->id, tp, duel_atk_tz, 0x2A200000);
         switch (o->id) {
         case 6000:
             if (duel_special.unk24 != 0) {
-                duel_0884F30C(ev, o->uid, 0);
+                duel_0884F30C(xv, o->uid, 0);
             }
             break;
         }
@@ -770,23 +772,29 @@ int duel_0883B4A8(unsigned int p)
     }
     return 1;
 }
-#endif
 
-#ifdef NON_MATCHING /* 7 KB; não comparado em detalhe. act_x_init e o laço dos efeitos estão inline no original */
+#ifdef NON_MATCHING /* estrutura igual ao original (rodada 7); 27 palavras: ocard e aon/oon trocam de posição de pilha
+   (0x44/0x50, a ordem das declarações não muda) e a ordem dos operandos do | do BATTLE_EV dos laços de efeitos */
 /* destruction event word: uid, player, zone, kind 0xE (0xF: not by battle [?], 0xD: with 0x1797) */
-static void act_x_init(struct DuelActX *x, DuelSpecAct *s, unsigned int p, unsigned int q)
-{
-    *(unsigned int *)x = 0;
-    x->s_uid = s->uid;
-    x->s_b18 = q;
-    x->s_player = p;
-    x->s_zone = s->unk4;
-    x->s_b17 = 1;
-    x->s_b14 = s->unk8;
-    x->s_b15 = 1;
-    x->s_b16 = 1;
-    x->s_zone2 = 0xE;
-}
+#define ACT_X_INIT(x, s, p, q)                                  \
+    do {                                                        \
+        {                                                       \
+            unsigned char *d_ = (unsigned char *)&(x);          \
+            int n_ = 4;                                         \
+            if (d_) {                                           \
+                do { *d_++ = 0; } while (--n_);                 \
+            }                                                   \
+        }                                                       \
+        (x).s_uid = (s)->uid;                                   \
+        (x).s_b18 = (q);                                        \
+        (x).s_player = (p);                                     \
+        (x).s_zone = (s)->unk4;                                 \
+        (x).s_b17 = 1;                                          \
+        (x).s_b14 = (s)->unk8;                                  \
+        (x).s_b15 = 1;                                          \
+        (x).s_b16 = 1;                                          \
+        (x).s_zone2 = 0xE;                                      \
+    } while (0)
 
 /* p: attacking player; destruction of the monsters that lost the battle */
 int duel_0883BB00(unsigned int p)
@@ -797,14 +805,14 @@ int duel_0883BB00(unsigned int p)
     DuelCard *acard;                   /* the attacker (its copy when it left the field) */
     DuelCard *ocard;
     int adead;                         /* destroyed by the battle */
-    int odead;
-    int aon;                           /* still the same card face up on the field */
-    int oon;
     unsigned int both;                 /* players whose 0x1797 applies */
-    struct DuelActX ax;
-    struct DuelActX ox;
+    int oon;                           /* still the same card face up on the field */
+    int odead;
+    int aon;
     DuelAct x1;
+    struct DuelActX ax;
     DuelAct x2;
+    struct DuelActX ox;
     DuelSlot *slot;
     DuelEffect *ef;
     unsigned int e;
@@ -815,15 +823,20 @@ int duel_0883BB00(unsigned int p)
     int i;
     int z;
     unsigned int q;
+    int id;
 
-    acard = a->pad14[6] != 0 ? &duel_special.slot[0].card : &duel.players[p & 1].field[a->unk4].card;
+    if (a->pad14[6] != 0) {
+        acard = &duel_special.slot[0].card;
+    } else {
+        acard = &duel.players[p & 1].field[a->unk4].card;
+    }
     ocard = o->pad14[6] != 0 ? &duel_special.slot[1].card : &duel.players[tp & 1].field[o->unk4].card;
     adead = 0;
-    if (!a->pad14[7] && a->pad14[6] != 0 && duel_special.slot[0].card.id != 0) {
+    if ((!a->pad14[7] && a->pad14[6] != 0) != 0 && duel_special.slot[0].card.id != 0) {
         adead = 1;
     }
     odead = 0;
-    if (!o->pad14[7] && o->pad14[6] != 0 && duel_special.slot[1].card.id != 0) {
+    if ((!o->pad14[7] && o->pad14[6] != 0) != 0 && duel_special.slot[1].card.id != 0) {
         odead = 1;
     }
     aon = 0;
@@ -998,7 +1011,7 @@ int duel_0883BB00(unsigned int p)
                 duel_088D1438(p, a->unk4, 0, 0);
             }
         } else if (adead) {
-            act_x_init(&ax, a, p, tp);
+            ACT_X_INIT(ax, a, p, tp);
             if (card_is_attribute9(a->id) != 0 || (a->id == 0x16F8 && duel_spec_act_ok(a) != 0) ||
                 duel_088DFCC8(a->uid) == 0) {
                 ax.s_zone2 = 0xF;
@@ -1053,34 +1066,35 @@ int duel_0883BB00(unsigned int p)
                 for (e = duel.players[tp & 1].field[duel_atk_tz].effects; e != 0;) {
                     ef = &duel.effects[e];
                     e = ef->next;
-                    k = ef->kind & 0xF;
-                    if (k != 11 && k != 10) {
-                        continue;
-                    }
-                    sp = EFF_PLAYER(ef);
-                    sz = EFF_ZONE(ef);
-                    slot = &duel.players[sp & 1].field[sz];
-                    if (!SLOT_ACTIVE(slot)) {
-                        continue;
-                    }
-                    f = 0;
-                    switch (slot->card.id) {
-                    case 0x15D1:
-                        f = p != sp && !duel_slot_has_effect(sp, sz, 0x15B3);
+                    switch (k = ef->kind & 0xF) {
+                    case 10:
+                    case 11:
+                        sp = EFF_PLAYER(ef);
+                        sz = EFF_ZONE(ef);
+                        id = duel.players[sp & 1].field[sz].card.id;
+                        if (SLOT_ACTIVE(&duel.players[sp & 1].field[sz])) {
+                            slot = &duel.players[sp & 1].field[sz];
+                            f = 0;
+                            switch (id) {
+                            case 0x15D1:
+                                f = p != sp && !duel_slot_has_effect(sp, sz, 0x15B3);
+                                break;
+                            case 0x15D5:
+                                f = k == 11 && !duel_slot_has_effect(sp, sz, 0x15B3);
+                                break;
+                            case 0x18D0:
+                            case 0x1A69:
+                                f = p != sp && ax.s_zone2 == 14;
+                                break;
+                            case 0x197C:
+                                f = 1;
+                                break;
+                            }
+                            if (f) {
+                                duel_0884F30C(BATTLE_EV(slot->card.id, sp, sz, 0x2C200000), CARD_UID(duel.players[sp & 1].field[sz].card), *(unsigned int *)&ax);
+                            }
+                        }
                         break;
-                    case 0x15D5:
-                        f = k == 11 && !duel_slot_has_effect(sp, sz, 0x15B3);
-                        break;
-                    case 0x18D0:
-                    case 0x1A69:
-                        f = p != sp && ax.s_zone2 == 14;
-                        break;
-                    case 0x197C:
-                        f = 1;
-                        break;
-                    }
-                    if (f) {
-                        duel_0884F30C(BATTLE_EV(slot->card.id, sp, sz, 0x2C200000), CARD_UID(slot->card), *(unsigned int *)&ax);
                     }
                 }
             }
@@ -1094,7 +1108,7 @@ int duel_0883BB00(unsigned int p)
                 duel_088D1438(tp, o->unk4, 0, 0);
             }
         } else if (odead) {
-            act_x_init(&ox, o, tp, p);
+            ACT_X_INIT(ox, o, tp, p);
             if (card_is_attribute9(o->id) != 0 || (o->id == 0x16F8 && duel_spec_act_ok(o) != 0) ||
                 duel_088DFCC8(o->uid) == 0) {
                 ox.s_zone2 = 0xF;
@@ -1147,39 +1161,40 @@ int duel_0883BB00(unsigned int p)
                 for (e = duel.players[p & 1].field[duel_atk_zone].effects; e != 0;) {
                     ef = &duel.effects[e];
                     e = ef->next;
-                    k = ef->kind & 0xF;
-                    if (k != 11 && k != 10) {
-                        continue;
-                    }
-                    sp = EFF_PLAYER(ef);
-                    sz = EFF_ZONE(ef);
-                    slot = &duel.players[sp & 1].field[sz];
-                    if (!SLOT_ACTIVE(slot)) {
-                        continue;
-                    }
-                    f = 0;
-                    switch (slot->card.id) {
-                    case 0x15D1:
-                        f = tp != sp && !duel_slot_has_effect(sp, sz, 0x15B3);
-                        break;
-                    case 0x15D5:
-                        f = k == 11 && !duel_slot_has_effect(sp, sz, 0x15B3);
-                        break;
-                    case 0x18D0:
-                    case 0x1A69:
-                        f = tp != sp && ox.s_zone2 == 14;
-                        break;
-                    case 0x197C:
-                        f = 1;
-                        break;
-                    case 0x19D8:
-                        if (o->pad14[5] >= 5) {
-                            duel_088C87A8(sp, sz, slot->card.id, 1, 0);
+                    switch (k = ef->kind & 0xF) {
+                    case 10:
+                    case 11:
+                        sp = EFF_PLAYER(ef);
+                        sz = EFF_ZONE(ef);
+                        id = duel.players[sp & 1].field[sz].card.id;
+                        if (SLOT_ACTIVE(&duel.players[sp & 1].field[sz])) {
+                            slot = &duel.players[sp & 1].field[sz];
+                            f = 0;
+                            switch (id) {
+                            case 0x15D1:
+                                f = tp != sp && !duel_slot_has_effect(sp, sz, 0x15B3);
+                                break;
+                            case 0x15D5:
+                                f = k == 11 && !duel_slot_has_effect(sp, sz, 0x15B3);
+                                break;
+                            case 0x18D0:
+                            case 0x1A69:
+                                f = tp != sp && ox.s_zone2 == 14;
+                                break;
+                            case 0x197C:
+                                f = 1;
+                                break;
+                            case 0x19D8:
+                                if (o->pad14[5] >= 5) {
+                                    duel_088C87A8(sp, sz, id, 1, 0);
+                                }
+                                break;
+                            }
+                            if (f) {
+                                duel_0884F30C(BATTLE_EV(slot->card.id, sp, sz, 0x2C200000), CARD_UID(duel.players[sp & 1].field[sz].card), *(unsigned int *)&ox);
+                            }
                         }
                         break;
-                    }
-                    if (f) {
-                        duel_0884F30C(BATTLE_EV(slot->card.id, sp, sz, 0x2C200000), CARD_UID(slot->card), *(unsigned int *)&ox);
                     }
                 }
             }
@@ -1187,10 +1202,11 @@ int duel_0883BB00(unsigned int p)
         }
         /* spells/traps that leave with a destroyed monster */
         for (i = 0; i < 2; i++) {
+            int zb;
             q = duel_turn_player ^ i;
-            for (z = 5; z < 10; z++) {
-                if (duel.players[q & 1].field[z].card.id != 0 && duel_slot_has_effect(q, z, 0x15B3) != 0) {
-                    duel_088D1438(q, z, 0, duel.players[q & 1].field[z].card.id);
+            for (zb = 5; zb < 10; zb++) {
+                if (duel.players[q & 1].field[zb].card.id != 0 && duel_slot_has_effect(q, zb, 0x15B3) != 0) {
+                    duel_088D1438(q, zb, 0, duel.players[q & 1].field[zb].card.id);
                 }
             }
         }
@@ -1246,7 +1262,8 @@ int duel_0883BB00(unsigned int p)
 }
 #endif
 
-#ifdef NON_MATCHING /* não comparado em detalhe */
+#ifdef NON_MATCHING /* 1 palavra: no evento 0x143E o original faz sll de i (s0), aqui sai do andi de i & 1 reaproveitado
+   (sem o & 1 a ordem de avaliação do | inverte: 26 palavras) */
 /* p: attacking player; end of the damage step: cards that act after the battle */
 int duel_0883D798(unsigned int p)
 {
@@ -1314,7 +1331,7 @@ int duel_0883D798(unsigned int p)
         case 0x19A6:
             if (duel_atk_direct == 0 && oon && duel_slot_has_effect(tp, duel_atk_tz, a->id) != 0) {
                 duel_0884F30C(BATTLE_EV(a->id, p, duel_atk_zone, 0x200000), a->uid,
-                              (unsigned short)((tp & 0xFF) | (unsigned char)duel_atk_tz << 8));
+                              (unsigned short)((unsigned char)tp | (unsigned char)duel_atk_tz << 8));
             }
             break;
         case 0x1837:
@@ -1351,25 +1368,26 @@ int duel_0883D798(unsigned int p)
             for (e = ATK_SLOT(p, duel_atk_zone)->effects; e != 0;) {
                 ef = &duel.effects[e];
                 e = ef->next;
-                if ((ef->kind & 0xF) != 10) {
-                    continue;
-                }
-                sp = EFF_PLAYER(ef);
-                sz = EFF_ZONE(ef);
-                slot = &duel.players[sp & 1].field[sz];
-                if (!SLOT_ACTIVE(slot)) {
-                    continue;
-                }
-                switch (slot->card.id) {
-                case 0x1A9E:
-                    duel_0884F30C(BATTLE_EV(slot->card.id, sp, sz, 0x200000), CARD_UID(slot->card), 0);
-                    break;
-                case 0x143A: /* the attacker dealt battle damage */
-                    if (p == sp && duel_atk_direct == 0 && p != tp && oon && duel_slot_counter_1439(tp, duel_atk_tz) != 0 &&
-                        ((duel_special.recs[0].b[0] == p && duel_special.recs[0].w0 != 0) ||
-                         (duel_special.recs[1].b[0] == p && duel_special.recs[1].w0 != 0))) {
-                        duel_088C4448(sp, sz, CARD_UID(slot->card));
-                        duel_088C87A8(tp, duel_atk_tz, 0x143A, 5, p);
+                switch (ef->kind & 0xF) {
+                case 10:
+                    sp = EFF_PLAYER(ef);
+                    sz = EFF_ZONE(ef);
+                    
+                    z = duel.players[sp & 1].field[sz].card.id;
+                    if (SLOT_ACTIVE(&duel.players[sp & 1].field[sz])) {
+                        switch (z) {
+                        case 0x1A9E:
+                            duel_0884F30C(BATTLE_EV(z, sp, sz, 0x200000), CARD_UID(duel.players[sp & 1].field[sz].card), 0);
+                            break;
+                        case 0x143A: /* the attacker dealt battle damage */
+                            if (p == sp && duel_atk_direct == 0 && p != tp && oon && duel_slot_counter_1439(tp, duel_atk_tz) != 0 &&
+                                ((duel_special.recs[0].b[0] == p && duel_special.recs[0].w0 != 0) ||
+                                 (duel_special.recs[1].b[0] == p && duel_special.recs[1].w0 != 0))) {
+                                duel_088C4448(sp, sz, CARD_UID(duel.players[sp & 1].field[sz].card));
+                                duel_088C87A8(tp, duel_atk_tz, 0x143A, 5, p);
+                            }
+                            break;
+                        }
                     }
                     break;
                 }
@@ -1378,7 +1396,7 @@ int duel_0883D798(unsigned int p)
         /* 0x143E in a field spell zone */
         for (i = 0; i < 2; i++) {
             if (duel_slot_e8170(i, 10, 0x143E) != 0) {
-                duel_0884F30C(((unsigned int)i << 31 & 0x80000000) | ((i != duel_turn_player) << 24 & 0x1000000) | 0x2A143E,
+                duel_0884F30C(((unsigned int)(i & 1) << 31 & 0x80000000) | ((i != duel_turn_player) << 24 & 0x1000000) | 0x2A143E,
                               CARD_UID(duel.players[i & 1].field[10].card), 0);
             }
         }
@@ -1394,7 +1412,7 @@ int duel_0883D798(unsigned int p)
             case 0x19A6:
                 if (aon && duel_slot_has_effect(p, duel_atk_zone, o->id) != 0) {
                     duel_0884F30C(BATTLE_EV(o->id, tp, duel_atk_tz, 0x200000), o->uid,
-                                  (unsigned short)((p & 0xFF) | (unsigned char)duel_atk_zone << 8));
+                                  (unsigned short)((unsigned char)p | (unsigned char)duel_atk_zone << 8));
                 }
                 break;
             case 0x1837:
@@ -1449,21 +1467,22 @@ int duel_0883D798(unsigned int p)
 }
 #endif
 
-#ifdef NON_MATCHING /* switch por tabela (0x08907C68); não comparado em detalhe */
+#ifdef NON_MATCHING /* switch por tabela (0x08907C68): ao promover, estender o @data com a tabela.
+   7 palavras no case 8 (mask e o ponteiro do laço trocam s4/s5). Os casos 7 e 8 reaproveitam uid/ap/zz/arg
+   como contadores de propósito: é o que dá os registradores do original */
 /* p: attacking player; after the battle: flips, moved cards, then the end of the battle step */
 int duel_0883E63C(unsigned int p)
 {
+    int uid;
+    unsigned int ap;
+    int zz;
     unsigned int q;
+    int z;
+    int i;
     unsigned int mask;
     unsigned int bit;
     unsigned int loc;
     int arg;
-    int uid;
-    unsigned int ap;
-    int zz;
-    int id;
-    int i;
-    int z;
 
     switch (duel_w_08919610) {
     case 0:
@@ -1474,6 +1493,7 @@ int duel_0883E63C(unsigned int p)
         for (i = 0; i < 2; i++) {
             q = duel_turn_player ^ i;
             for (z = 0; z < 5; z++) {
+                int id;
                 if (!SLOT_ACTIVE(ATK_SLOT(q, z))) {
                     continue;
                 }
@@ -1540,10 +1560,11 @@ int duel_0883E63C(unsigned int p)
                 ap = arg & 1;
                 zz = duel_pick_st_zone(ap);
                 loc = duel_card_locate(uid);
-                if (zz >= 0 && (loc & 0xFFFF) >> 8 == 0xE) {
+                bit = loc & 0xFF;
+                if (zz >= 0 && ((unsigned short)loc >> 8 & 0xFF) == 0xE) {
                     duel_088C4448(q, z, CARD_UID(ATK_SLOT(q, z)->card));
-                    duel_088CB728(loc & 0xFF, 0xE, uid, ap, zz, 1, 0);
-                    duel_088C8B78(ap, (ap & 0xFF) | (zz & 0xFF) << 8, (q & 0xFF) | (z & 0xFF) << 8, 12);
+                    duel_088CB728(bit, 0xE, uid, ap, zz, 1, 0);
+                    duel_088C8B78(ap, (unsigned char)ap | (zz & 0xFF) << 8, (unsigned char)q | (z & 0xFF) << 8, 12);
                     duel_088C89BC(q, z, 0x12A6, 0);
                     return 0;
                 }
@@ -1552,13 +1573,13 @@ int duel_0883E63C(unsigned int p)
         duel_w_08919610++;
     case 4:
         for (i = 0; i < 2; i++) {
-            if (duel_slot_has_effect(i, 0xB, 0x1415) != 0) {
-                if (duel_0884F30C(((unsigned int)i << 31 & 0x80000000) | 0x501415, 0, 0) != 0) {
-                    return 0;
-                }
-                duel_088C89BC(i, 0xB, 0x1415, 0);
-                return 0;
+            if (!duel_slot_has_effect(i, 0xB, 0x1415)) {
+                continue;
             }
+            if (duel_0884F30C(((unsigned int)i << 31 & 0x80000000) | 0x501415, 0, 0) == 0) {
+                duel_088C89BC(i, 0xB, 0x1415, 0);
+            }
+            return 0;
         }
         duel_w_08919610++;
     case 5:
@@ -1586,13 +1607,13 @@ int duel_0883E63C(unsigned int p)
         return 0;
     case 7: /* 0x1362 on a non-monster card */
         mask = 0;
-        for (i = 0; i < 2; i++) {
-            q = duel_turn_player ^ i;
-            bit = q << 4;
-            for (z = 0; z < 5; z++, bit++) {
-                if (ATK_SLOT(q, z)->card.id != 0 && card_is_monster(ATK_SLOT(q, z)->card.id) == 0 &&
-                    duel_field_flag9(q, z) == 0 && duel_slot_has_effect(q, z, 0x1362) != 0) {
-                    mask |= 1 << bit;
+        for (uid = 0; uid < 2; uid++) {
+            ap = duel_turn_player ^ uid;
+            arg = ap << 4;
+            for (zz = 0; zz < 5; zz++, arg++) {
+                if (ATK_SLOT(ap, zz)->card.id != 0 && card_is_monster(ATK_SLOT(ap, zz)->card.id) == 0 &&
+                    duel_field_flag9(ap, zz) == 0 && duel_slot_has_effect(ap, zz, 0x1362) != 0) {
+                    mask |= 1 << arg;
                 }
             }
         }
@@ -1603,19 +1624,19 @@ int duel_0883E63C(unsigned int p)
         duel_w_08919610++;
     case 8:
         if (duel_slot_has_effect(p, 0xB, 0x1512) != 0) {
-            mask = 0;
-            for (i = 0; i < 2; i++) {
-                q = duel_turn_player ^ i;
-                bit = q << 4;
-                for (z = 0; z < 5; z++, bit++) {
-                    if (ATK_SLOT(q, z)->card.id != 0 && duel_slot_has_effect(q, z, 0x1512) != 0) {
-                        mask |= 1 << bit;
+            i = 0;
+            for (uid = 0; uid < 2; uid++) {
+                ap = duel_turn_player ^ uid;
+                arg = ap << 4;
+                for (zz = 0; zz < 5; zz++, arg++) {
+                    if (ATK_SLOT(ap, zz)->card.id != 0 && duel_slot_has_effect(ap, zz, 0x1512) != 0) {
+                        i |= 1 << arg;
                     }
                 }
             }
-            if (mask != 0) {
+            if (i != 0) {
                 duel_088C44E4(p, 0x1512);
-                duel_088D13D8(p, 0x1512, mask);
+                duel_088D13D8(p, 0x1512, i);
             }
         }
         duel_w_08919610++;

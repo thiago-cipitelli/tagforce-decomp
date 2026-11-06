@@ -441,7 +441,8 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
 }
 #endif
 
-#ifdef NON_MATCHING /* forma próxima; diferem os limites a 0 (bgez sem likely no original) e um bloco morto no caso 0x14BE */
+#ifdef NON_MATCHING /* forma próxima; o bloco morto do 0x14BE e os limites a 0 do ramo pos já batem (ternários);
+   diferem o resto do ramo de defesa (desvios likely e operandos de addu) e registradores */
 /* a: card that changes the ATK/DEF in the battle (kind 20): would it change the outcome? */
 int duel_08812DBC(DuelAct *a)
 {
@@ -508,8 +509,8 @@ int duel_08812DBC(DuelAct *a)
             if (duel_088070A8(duel.players[tp & 1].field[tz].card.id) != 0) {
                 return 0;
             }
-            if (duel.players[tp & 1].field[tz].pos != 0 && up < -799) {
-                up = -800;
+            if (duel.players[tp & 1].field[tz].pos != 0) {
+                up = up > -800 ? up : -800;
             }
             break;
         case 0x1882:
@@ -616,21 +617,11 @@ int duel_08812DBC(DuelAct *a)
                 av = duel_field_atk(q, az);
                 dv = pos ? duel_field_def(pl, tz) : duel_field_atk(pl, tz);
                 if (pos) {
-                    if (dup < 0) {
-                        dup = 0;
-                    }
-                    t = -up;
-                    if (t < 0) {
-                        t = 0;
-                    }
-                    t += dup;
+                    dup = dup < 0 ? 0 : dup;
+                    t = (-up < 0 ? 0 : -up) + dup;
                 } else {
-                    u = up >= 0 ? up : 0;
-                    t = -up;
-                    if (t < 0) {
-                        t = 0;
-                    }
-                    t += u;
+                    u = up < 0 ? 0 : up;
+                    t = (-up < 0 ? 0 : -up) + u;
                 }
                 t += dv;
                 if (t < av) {
