@@ -1,5 +1,4 @@
 // @range 0x0882ED38-0x0882F728
-// @asm 0x0882EE8C-0x0882F728
 /* Effect: a card fading out while sparks spiral up from it and a glowing cylinder of light turns
    around it; 32 frames. */
 #define DD_FX
@@ -60,16 +59,28 @@ int dd_fx_spiral_start_ex(int card, float *pos, float s, float t, float *rot, Dd
     return id;
 }
 
-#ifdef NON_MATCHING /* função grande (2,2 KB) */
+#define DD_RAND3(r) ((r) = &rand3_seeds[rand3_slot], (r)->lcg *= 0x41C64E6D, (r)->lcg += 0x3039, \
+                     (int)((r)->lcg >> 16 & 0x7FFF))
+
+inline static void dd_tv(DdTexVert *v, float u, float tv, float x, float y)
+{
+    v->u = u;
+    v->v = tv;
+    v->x = x;
+    v->y = y;
+    v->z = 0.0f;
+}
+
 int dd_fx_spiral_update(int state, DdFxSpiral *fx)
 {
-    DdRandSeed *r = &rand3_seeds[rand3_slot];
+    DdRandSeed *r;
     int step = dd_anim_step();
+    float m3[9], p[3], v[3];
     float bb[17];
-    float sc[3], p[3], m3[9];
     unsigned int *list;
     float fade, e, sz, a;
-    int i, j;
+    int i;
+    int n, k;
 
     dd_mtx_billboard_view(bb);
     fade = dd_ease_cos(fx->frame, 32, 1);
@@ -77,35 +88,32 @@ int dd_fx_spiral_update(int state, DdFxSpiral *fx)
     dd_card_quad_draw(fx->card, fx->pos, fx->rot, fx->scale,
                       (unsigned int)((1.0f - dd_ease_lin(fx->frame, 32)) * 255.0f), fx->t);
     if (state == 1) {
-        for (i = 0; i < 4; i++) {
-            float u = (float)(i % 2) * 0.5f;
-            float tv = (float)(i / 2) * 0.5f;
+        float s = 40.0f;
+        float h = 0.5f;
 
-            fx->spark_uv[i][0].u = u;
-            fx->spark_uv[i][0].v = tv;
-            fx->spark_uv[i][0].x = -40.0f;
-            fx->spark_uv[i][0].y = 40.0f;
-            fx->spark_uv[i][0].z = 0.0f;
-            fx->spark_uv[i][1].u = u + 0.5f;
-            fx->spark_uv[i][1].v = tv + 0.5f;
-            fx->spark_uv[i][1].x = 40.0f;
-            fx->spark_uv[i][1].y = -40.0f;
-            fx->spark_uv[i][1].z = 0.0f;
+        for (i = 0; i < 4; i++) {
+            float u = h * (float)(i % 2);
+            float tv = h * (float)(i / 2);
+
+            dd_tv(&fx->spark_uv[i][0], u, tv, -s, s);
+            dd_tv(&fx->spark_uv[i][1], u + h, tv + h, s, -s);
         }
     }
-    for (i = 0; i < step; i++) {
+    for (n = 0; n < step; n++) {
+        int j;
+
         for (j = 0; j < 4; j++) {
-            DdSpiralSpark *s = &fx->spark[fx->next];
+            DdSpiralSpark *sp = &fx->spark[fx->next];
             float sa, ca;
 
             a = (float)j * 6.2831855f / 4.0f + (float)fx->frame * 0.10471976f;
             sa = sinf(a);
             ca = cosf(a);
-            s->age = 0;
-            s->uv = DD_RAND(r) % 4;
-            s->flags |= 1;
-            vec3_set(s->base, sa * 5.0f, 0.0f, ca * 5.0f);
-            vec3_set(s->dir, sa * 60.0f, 100.0f, ca * 60.0f);
+            sp->age = 0;
+            sp->uv = DD_RAND3(r) % 4;
+            sp->flags |= 1;
+            vec3_set(sp->base, sa * 5.0f, 0.0f, ca * 5.0f);
+            vec3_set(sp->dir, sa * 60.0f, 100.0f, ca * 60.0f);
             if (fx->next < 127)
                 fx->next++;
             else
@@ -123,64 +131,78 @@ int dd_fx_spiral_update(int state, DdFxSpiral *fx)
     mtx_identity();
     mtx_translate(fx->pos);
     mtx_scale3(fx->scale);
-    for (i = 0; i < 128; i++) {
-        DdSpiralSpark *s = &fx->spark[i];
+    for (k = 0; k < 128; k++) {
+        DdSpiralSpark *sp = &fx->spark[k];
 
-        if (s->flags & 1) {
-            e = dd_ease_sin(s->age, 32, 1);
-            sz = e * 0.9f + 0.1f;
+        if (!(sp->flags & 1) != 1) {
+            unsigned int c;
+
+            e = dd_ease_sin(sp->age, 32, 1);
+            sz = 0.1f + 0.9f * e;
+            c = fade * ((1.0f - dd_ease_lin(sp->age, 32)) * 255.0f);
             {
-                float v[3] = { sz, sz, sz };
+                unsigned char *d = (unsigned char *)v;
+                int k = 12;
 
-                mat3_identity(m3);
-                mat3_from_euler(m3, m3, fx->rot);
-                vec3_scale(p, s->dir, e);
-                vec3_add(p, p, s->base);
-                mat3_transform_vec3(p, m3, p);
-                list = dl_ambient_light(list, ((unsigned int)(fade * (1.0f - dd_ease_lin(s->age, 32)) * 255.0f) << 24) | 0xFFFFFF);
-                mtx_push();
-                mtx_translate(p);
-                mtx_mult(bb);
-                mtx_scale3(v);
+                if (d)
+                    do {
+                        *d++ = 0;
+                    } while (--k);
             }
-            list = draw_array(list, 6, 0x183, 2, 0, fx->spark_uv[s->uv]);
+            v[0] = sz;
+            v[1] = sz;
+            v[2] = sz;
+            mat3_identity(m3);
+            mat3_from_euler(m3, m3, fx->rot);
+            vec3_scale(p, sp->dir, e);
+            vec3_add(p, p, sp->base);
+            mat3_transform_vec3(p, m3, p);
+            list = dl_ambient_light(list, (c << 24) | 0xFFFFFF);
+            mtx_push();
+            mtx_translate(p);
+            mtx_mult(bb);
+            mtx_scale3(v);
+            list = draw_array(list, 6, 0x183, 2, 0, fx->spark_uv[sp->uv]);
             mtx_pop();
-            s->age += step;
-            if (s->age > 31)
-                s->flags &= ~1;
+            sp->age += step;
+            if (sp->age >= 32)
+                sp->flags &= ~1;
         }
     }
     mtx_pop();
     dl_set_list(list);
     if (state == 1) {
-        for (i = 0; i < 17; i++) {
-            DdFxVert *v = fx->ring[i];
-            float sa, ca, u;
+        int k;
 
-            a = (float)i * 6.2831855f / 16.0f;
+        for (k = 0; k < 17; k++) {
+            float sa, ca, u, u1;
+            float m = 0.8f, l = 0.2f;
+
+            a = (float)k * 6.2831855f / 16.0f;
             sa = sinf(a);
             ca = cosf(a);
-            u = (float)i * 5.0f / 16.0f;
-            v[0].u = u;
-            v[0].v = 0.0f;
-            v[0].color = 0xAAFF;
-            v[0].x = sa * 60.0f;
-            v[0].y = 80.0f;
-            v[0].z = ca * 60.0f;
-            v[1].u = u * 0.2f + (u - 1.0f) * 0.8f;
-            v[1].v = 0.8f;
-            v[1].color = 0xFF00AAFF;
-            v[1].x = sa * 40.0f;
-            v[1].y = 16.0f;
-            v[1].z = ca * 40.0f;
-            v[2].u = u - 1.0f;
-            v[2].v = 1.0f;
-            v[2].color = 0xAAFF;
-            v[2].x = sa * 35.0f;
-            v[2].y = 0.0f;
-            v[2].z = ca * 35.0f;
-            fx->ring_idx[i * 2] = i * 3;
-            fx->ring_idx[i * 2 + 1] = i * 3 + 1;
+            u = (float)k * 5.0f / 16.0f;
+            u1 = u - 1.0f;
+            fx->ring[k][0].u = u;
+            fx->ring[k][0].v = 0.0f;
+            fx->ring[k][0].color = 0xAAFF;
+            fx->ring[k][0].x = sa * 60.0f;
+            fx->ring[k][0].y = 80.0f;
+            fx->ring[k][0].z = ca * 60.0f;
+            fx->ring[k][1].u = u * l + u1 * m;
+            fx->ring[k][1].v = m;
+            fx->ring[k][1].color = 0xFF00AAFF;
+            fx->ring[k][1].x = sa * 40.0f;
+            fx->ring[k][1].y = 16.0f;
+            fx->ring[k][1].z = ca * 40.0f;
+            fx->ring[k][2].u = u1;
+            fx->ring[k][2].v = 1.0f;
+            fx->ring[k][2].color = 0xAAFF;
+            fx->ring[k][2].x = sa * 35.0f;
+            fx->ring[k][2].y = 0.0f;
+            fx->ring[k][2].z = ca * 35.0f;
+            fx->ring_idx[k * 2] = k * 3;
+            fx->ring_idx[k * 2 + 1] = k * 3 + 1;
         }
     }
     list = dl_select_layer(4, 0);
@@ -195,7 +217,7 @@ int dd_fx_spiral_update(int state, DdFxSpiral *fx)
     mtx_rotate_zyx(fx->rot);
     mtx_scale3(fx->scale);
     mtx_rotate_y((float)fx->frame * 0.08726647f);
-    list = dl_ambient_light(list, ((unsigned int)(fade * dd_ease_lin(fx->frame, 8) * 255.0f) << 24) | 0xFFFFFF);
+    list = dl_ambient_light(list, ((unsigned int)(fade * (255.0f * dd_ease_lin(fx->frame, 8))) << 24) | 0xFFFFFF);
     list = draw_array(list, 4, 0x99F, 34, fx->ring_idx, &fx->ring[0][0]);
     list = draw_array(list, 4, 0x99F, 34, fx->ring_idx, &fx->ring[0][1]);
     mtx_pop();
@@ -205,4 +227,3 @@ int dd_fx_spiral_update(int state, DdFxSpiral *fx)
         return 2;
     return 4;
 }
-#endif
