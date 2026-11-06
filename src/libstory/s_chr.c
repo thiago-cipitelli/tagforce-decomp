@@ -1,11 +1,7 @@
 // @range 0x08804270-0x088062FC
 // @asm 0x088044EC-0x08804570
 // @asm 0x088048C8-0x08804908
-// @asm 0x08805694-0x08805708
 // @asm 0x08805708-0x088057EC
-// @asm 0x088057EC-0x08805860
-// @asm 0x08805860-0x088058B0
-// @asm 0x088058B0-0x08805934
 // @asm 0x08805974-0x08805B68
 // @asm 0x08805BD0-0x08805E24
 // @asm 0x08805E24-0x08806074
@@ -779,12 +775,11 @@ int st_chr_level_is(int i, unsigned int level)
     return level == s->level;
 }
 
-#ifdef NON_MATCHING /* 2 palavras: com "default: return 0;" como primeiro rótulo e os corpos na ordem do original só falta o primeiro desvio para o bloco final, que o mwcc faz likely (b??l com a cópia) e o original não; ordens dos case, formas break/return/goto não mudam */
 int st_cond_daytime(int c)
 {
     switch (c) {
     default:
-        return 0;
+        break;
     case 1:
         if (sdate_is_daytime())
             return 1;
@@ -798,7 +793,6 @@ int st_cond_daytime(int c)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* mesmo problema dos desvios sem likely para o bloco final */
 int st_cond_partner_flag(int c, unsigned int bit, int mode)
@@ -835,12 +829,11 @@ int st_cond_partner_flag(int c, unsigned int bit, int mode)
 }
 #endif
 
-#ifdef NON_MATCHING /* 2 palavras: com "default: return 0;" como primeiro rótulo e os corpos na ordem do original só falta o primeiro desvio para o bloco final, que o mwcc faz likely (b??l com a cópia) e o original não; ordens dos case, formas break/return/goto não mudam */
 int st_cond_weekday(int c, int n)
 {
     switch (c) {
     default:
-        return 0;
+        break;
     case 5:
         if (!sdate_weekday_flag(n))
             return 1;
@@ -854,31 +847,27 @@ int st_cond_weekday(int c, int n)
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* 7 palavras: o original desvia com bltz sem likely para um bloco final move v0,zero próprio; aqui o desvio vira bltzl e o return 0 do default salta por um b extra (ordens dos case, default primeiro e break/return não mudam) */
 int st_cond_date(int c)
 {
     switch (c) {
-    case 7:
-        if (sdate_check(1) < 0)
-            break;
-        return 1;
     default:
-        return 0;
+        break;
+    case 7:
+        if (sdate_check(1) >= 0)
+            return 1;
+        break;
     case 0:
         return 1;
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* 2 palavras: com "default: return 0;" como primeiro rótulo e os corpos na ordem do original só falta o primeiro desvio para o bloco final, que o mwcc faz likely (b??l com a cópia) e o original não; ordens dos case, formas break/return/goto não mudam */
 int st_cond_day(int c)
 {
     switch (c) {
     default:
-        return 1;
+        break;
     case 5:
     case 6:
         if (!st_cond_weekday(c, 1))
@@ -893,7 +882,6 @@ int st_cond_day(int c)
     }
     return 1;
 }
-#endif
 
 int st_cond_affinity(int i, unsigned int v)
 {
