@@ -1,6 +1,6 @@
 // @range 0x0884AE24-0x0884BA1C
+// @data 0x08876CF0-0x08876D00
 // @asm 0x0884AE24-0x0884B260
-// @asm 0x0884B260-0x0884BA1C
 /* Parts of the card effect "aura" (dd_fx_aura task): a pulsing yellow and blue halo around the
    character's bone 38 while it is the attacking monster, and a spell circle of 24 blades
    (lens_aP8A.gim) on bone 40/41 started by the animation events 8-10 of the character. */
@@ -30,6 +30,14 @@ void dd_mtx_pop_all(void);
 void dd_mtx_strip(FxMat4 *out, FxMat4 *m);
 int dd_cue_se(int se, int t, int at, unsigned int *flags, unsigned int bit);
 int dd_chr_part_hidden(int who, int ev);
+
+typedef struct DdFxArgC {             /* DdFxArg with the character slot */
+    int pad00;
+    int run;
+    int pad08[2];
+    int id;
+    int chr;                           /* +0x14 */
+} DdFxArgC;
 void *dd_depth_enable(void *list, int on, int mask);
 void *dd_blend_enable(void *list, int on, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
 void *dd_tex_pack(void *list, int tex);
@@ -131,7 +139,6 @@ int dd_fx_aura_halo(int phase, DdFxHalo *w, DdFxArg *arg)
 }
 #endif
 
-#ifdef NON_MATCHING /* função de 2 KB: escalonamento das cópias de vértices e das contas das lâminas diferente; C equivalente */
 int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
 {
     int run = arg->run;
@@ -140,11 +147,14 @@ int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
     float k;
     float ang;
     float d;
+    float r;
+    float z0;
+    float z1;
     unsigned int c;
-    FxVec4 up = { 0.0f, 1.0f, 0.0f, 1.0f };
     FxMat4 rot;
     FxVec3 p;
     int go;
+    DdFxArgC *ac = (DdFxArgC *)arg;
     int q;
     int i;
 
@@ -171,37 +181,41 @@ int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
     if (w->started == 0) {
         go = 0;
         if (w->bone == 41) {
-            if (dd_chr_part_hidden(((int *)arg)[5], 8) == 1)
+            if (dd_chr_part_hidden(ac->chr, 8) == 1)
                 go = 1;
-        } else if (dd_chr_part_hidden(((int *)arg)[5], 9) == 1) {
-            go = 1;
-        } else if (dd_chr_part_hidden(((int *)arg)[5], 10) == 1) {
+        } else if (dd_chr_part_hidden(ac->chr, 9) == 1 || dd_chr_part_hidden(ac->chr, 10) == 1) {
             go = 1;
         }
         phase = 1;
-        if (go != 1)
+        if (go == 1)
+            w->started = 1;
+        else
             return 2;
-        w->started = 1;
     }
     dd_cue_se(0x6227, w->t, 0, &w->se, 1);
     dd_mtx_push_cam();
     dd_chara_bone_mtx(&w->mtx, w->bone);
-    dd_mtx_strip(&rot, &w->mtx);
-    mat4_transform_vec4(&up, &rot, &up);
-    mat4_translate(&w->mtx, &w->mtx, &up);
+    {
+        FxVec4 up = { 0.0f, 1.0f, 0.0f, 1.0f };
+
+        dd_mtx_strip(&rot, &w->mtx);
+        mat4_transform_vec4(&up, &rot, &up);
+        mat4_translate(&w->mtx, &w->mtx, &up);
+    }
     in = dd_ease_lin(w->t, 4) * 0.5f + 0.5f;
     k = dd_ease_cos(w->t, 16, 1);
     if (phase == 1) {
+        r = 15.0f;
         w->ring[0].u = 0.5f; w->ring[0].v = 0.5f; w->ring[0].color = 0xFF00AAFF;
         w->ring[0].x = 0.0f; w->ring[0].y = 0.09555846f; w->ring[0].z = 0.0f;
         w->ring[1].u = 0.0f; w->ring[1].v = 0.0f; w->ring[1].color = 0xAAFF;
-        w->ring[1].x = -15.0f; w->ring[1].y = 0.09555846f; w->ring[1].z = 15.0f;
+        w->ring[1].x = -r; w->ring[1].y = 0.09555846f; w->ring[1].z = r;
         w->ring[2].u = 1.0f; w->ring[2].v = 0.0f; w->ring[2].color = 0xAAFF;
-        w->ring[2].x = 15.0f; w->ring[2].y = 0.09555846f; w->ring[2].z = 15.0f;
+        w->ring[2].x = r; w->ring[2].y = 0.09555846f; w->ring[2].z = r;
         w->ring[3].u = 1.0f; w->ring[3].v = 1.0f; w->ring[3].color = 0xAAFF;
-        w->ring[3].x = 15.0f; w->ring[3].y = 0.09555846f; w->ring[3].z = -15.0f;
+        w->ring[3].x = r; w->ring[3].y = 0.09555846f; w->ring[3].z = -r;
         w->ring[4].u = 0.0f; w->ring[4].v = 1.0f; w->ring[4].color = 0xAAFF;
-        w->ring[4].x = -15.0f; w->ring[4].y = 0.09555846f; w->ring[4].z = -15.0f;
+        w->ring[4].x = -r; w->ring[4].y = 0.09555846f; w->ring[4].z = -r;
         w->ring[5] = w->ring[1];
     }
     list = dl_select_layer(7, 0);
@@ -221,18 +235,21 @@ int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
     mtx_pop();
     dl_set_list(list);
     if (phase == 1) {
+        r = 6.0f;
+        z1 = 14.4000006f;
+        z0 = 3.6000001f;
         w->blade[0].u = 0.5f; w->blade[0].v = 0.5f; w->blade[0].color = 0xC800AAFF;
         w->blade[0].x = 0.0f; w->blade[0].y = 0.0f; w->blade[0].z = 0.0f;
         w->blade[1].u = 0.0f; w->blade[1].v = 0.0f; w->blade[1].color = 0xAAFF;
-        w->blade[1].x = -3.0f; w->blade[1].y = 0.0f; w->blade[1].z = -14.4f;
+        w->blade[1].x = -r; w->blade[1].y = 0.0f; w->blade[1].z = -z1;
         w->blade[2].u = 1.0f; w->blade[2].v = 0.0f; w->blade[2].color = 0xAAFF;
-        w->blade[2].x = 6.0f; w->blade[2].y = 0.0f; w->blade[2].z = -14.4f;
+        w->blade[2].x = r; w->blade[2].y = 0.0f; w->blade[2].z = -z1;
         w->blade[3].u = 1.0f; w->blade[3].v = 1.0f; w->blade[3].color = 0xAAFF;
-        w->blade[3].x = 6.0f; w->blade[3].y = 0.0f; w->blade[3].z = 3.6f;
+        w->blade[3].x = r; w->blade[3].y = 0.0f; w->blade[3].z = z0;
         w->blade[4].u = 0.0f; w->blade[4].v = 1.0f; w->blade[4].color = 0xAAFF;
-        w->blade[4].x = -3.0f; w->blade[4].y = 0.0f; w->blade[4].z = 3.6f;
+        w->blade[4].x = -r; w->blade[4].y = 0.0f; w->blade[4].z = z0;
         w->blade[5].u = 0.0f; w->blade[5].v = 0.0f; w->blade[5].color = 0xAAFF;
-        w->blade[5].x = -3.0f; w->blade[5].y = 0.0f; w->blade[5].z = -14.4f;
+        w->blade[5].x = -r; w->blade[5].y = 0.0f; w->blade[5].z = -z1;
     }
     list = dl_select_layer(7, 0);
     list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
@@ -264,4 +281,3 @@ int dd_fx_aura_circle(int phase, DdFxCircle *w, DdFxArg *arg)
         w->t++;
     return 2;
 }
-#endif

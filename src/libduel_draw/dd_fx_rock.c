@@ -1,6 +1,6 @@
 // @range 0x088513A4-0x088522F0
+// @data 0x08876DB8-0x08876E20
 // @asm 0x088513A4-0x088517DC
-// @asm 0x08851834-0x088522F0
 /* Character effect "whirlpool": a tilted swirl of water (nsea.gim/sen_07.gim scrolled), rocks
    (082rock.gim) falling into it and two rings of spray (PT88_R_a.gim) on both sides. */
 #include "libduel_draw.h"
@@ -54,11 +54,15 @@ extern RandSeed rand3_seeds[];
 #define RAND15() (rand3_seeds[rand3_slot].lcg *= 0x41C64E6D, rand3_seeds[rand3_slot].lcg += 0x3039, \
                   (int)(rand3_seeds[rand3_slot].lcg >> 16 & 0x7FFF))
 
+typedef struct DdPartP {
+    int cell;
+    FxVec3 dir;
+} DdPartP;
+
 typedef struct DdPart {                /* 0x18 */
     unsigned int flags;
     int t;
-    int cell;
-    FxVec3 dir;
+    DdPartP p;                         /* +0x08 */
 } DdPart;
 
 typedef struct DdFxRock {              /* 0x1680 */
@@ -112,8 +116,8 @@ void dd_fx_rock_spray(int phase, int side, DdFxRock *w, FxMat4 *cam)
         q->flags |= 1;
         q->t = n - 1 - i;
         ang = base + RAND15() / 32767.0f * 3.1415927f;
-        q->cell = RAND15() % 8;
-        vec3_set(&q->dir, cosf(ang) * 2.5f, 0.5f, sinf(ang) * 2.5f);
+        q->p.cell = RAND15() % 8;
+        vec3_set(&q->p.dir, cosf(ang) * 2.5f, 0.5f, sinf(ang) * 2.5f);
         if (c < 63)
             c++;
         else
@@ -135,11 +139,11 @@ void dd_fx_rock_spray(int phase, int side, DdFxRock *w, FxMat4 *cam)
             list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(p->t, 8) * 255.0f *
                                                          dd_ease_cos(p->t - 56, 8, 1)) << 24 | 0xFFFFFF);
             mtx_push();
-            vec3_set(&v, p->dir.x * s, p->dir.y * y, p->dir.z * s);
+            vec3_set(&v, p->p.dir.x * s, p->p.dir.y * y, p->p.dir.z * s);
             mat3_transform_vec3(&v, w->tilt, &v);
             mtx_translate(&v);
             mtx_mult(cam);
-            list = draw_array(list, 4, 0x19F, 6, 0, w->cell[p->cell]);
+            list = draw_array(list, 4, 0x19F, 6, 0, w->cell[p->p.cell]);
             mtx_pop();
             if (p->t < 63)
                 p->t++;
@@ -162,7 +166,6 @@ int dd_fx_rock_start(int arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 2,7 KB; C equivalente */
 int dd_fx_rock_update(int phase, DdFxRock *w)
 {
     FxMat4 cam;
@@ -173,42 +176,62 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
     float cs;
     float k;
     float ang;
+    float one;
+    DdPartP *pp;
+    float hw;
+    float cw;
+    float ch;
+    float cu;
+    float cv;
     unsigned int c;
-    FxVec3 v;
     int i;
     int j;
     int n;
+    int i3;
+    int j2;
+    int i2;
+    float fv;
 
     dd_mtx_push_field();
+    one = 1.0f;
     dd_mtx_billboard_field(&cam);
     if (phase == 1) {
+        {
         float rows[3] = { 0.0f, 0.6f, 1.0f };
-        FxVec4 dir = { 0.0f, 1.0f, 0.0f, 1.0f };
+
+        hw = 0.8f;
+        cw = 0.25f;
+        ch = 0.5f;
+        for (i = 0; i < 8; i++) {
+            cu = (float)(i % 4) * cw;
+            cv = (float)(i / 4) * ch;
+            for (j = 0; j < 3; j++) {
+                fv = cv * rows[j];
+                k = hw - rows[j] * 1.6f;
+                c = j < 2 ? 0xFF00141A : 0xFF1F569C;
+                w->cell[i][j * 2].u = cu;
+                w->cell[i][j * 2].v = fv;
+                w->cell[i][j * 2].color = c;
+                w->cell[i][j * 2].x = -hw;
+                w->cell[i][j * 2].y = k;
+                w->cell[i][j * 2].z = 0.0f;
+                w->cell[i][j * 2 + 1].u = cu + cw;
+                w->cell[i][j * 2 + 1].v = fv;
+                w->cell[i][j * 2 + 1].color = c;
+                w->cell[i][j * 2 + 1].x = hw;
+                w->cell[i][j * 2 + 1].y = k;
+                w->cell[i][j * 2 + 1].z = 0.0f;
+            }
+        }
+        }
+        {
         FxVec4 up;
+        FxVec4 dir = { 0.0f, 1.0f, 0.0f, 1.0f };
         FxVec4 x;
         FxVec4 y;
         FxVec4 z;
         FxVec3 m[3];
 
-        for (i = 0; i < 8; i++) {
-            for (j = 0; j < 3; j++) {
-                f = (float)(i / 4) * 0.5f * rows[j];
-                k = 0.8f - rows[j] * 1.6f;
-                c = j > 1 ? 0xFF1F569C : 0xFF00141A;
-                w->cell[i][j * 2].u = (float)(i % 4) * 0.25f;
-                w->cell[i][j * 2].v = f;
-                w->cell[i][j * 2].color = c;
-                w->cell[i][j * 2].x = -0.8f;
-                w->cell[i][j * 2].y = k;
-                w->cell[i][j * 2].z = 0.0f;
-                w->cell[i][j * 2 + 1].u = (float)(i % 4) * 0.25f + 0.25f;
-                w->cell[i][j * 2 + 1].v = f;
-                w->cell[i][j * 2 + 1].color = c;
-                w->cell[i][j * 2 + 1].x = 0.8f;
-                w->cell[i][j * 2 + 1].y = k;
-                w->cell[i][j * 2 + 1].z = 0.0f;
-            }
-        }
         dd_field_dir_get(&up);
         vec3_normalize2(&y, &dir);
         vec3_cross(&x, &y, &up);
@@ -223,19 +246,21 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
         vec4_set((FxVec4 *)&w->mtx.m[4], y.x, y.y, y.z, 0.0f);
         vec4_set((FxVec4 *)&w->mtx.m[8], z.x, z.y, z.z, 0.0f);
         vec4_set((FxVec4 *)&w->mtx.m[12], 0.0f, 1.5f, 0.0f, 1.0f);
+        }
     }
     dd_fx_rock_spray(phase, 0, w, &cam);
     if (phase == 1) {
-        for (i = 0; i < 17; i++) {
-            f = (float)i / 16.0f * 3.1415927f;
+        for (i2 = 0; i2 < 17; i2++) {
+            f = (float)i2 / 16.0f * 3.1415927f;
             sn = sinf(f);
             cs = cosf(f);
-            u = (float)i / 16.0f * 1.0f;
-            w->swirl[i][0].u = u; w->swirl[i][0].v = 0.0f;
-            w->swirl[i][0].color = (unsigned int)(fabsf_vfpu(sn) * 255.0f) << 24 | 0x778D3;
-            w->swirl[i][0].x = cs * 0.3f; w->swirl[i][0].y = 0.0f; w->swirl[i][0].z = sn * 0.3f;
-            w->swirl[i][1].u = u; w->swirl[i][1].v = 1.0f; w->swirl[i][1].color = 0x778D3;
-            w->swirl[i][1].x = cs * 0.4f; w->swirl[i][1].y = 1.2f; w->swirl[i][1].z = sn * 0.4f;
+            u = one * ((float)i2 / 16.0f);
+            c = (unsigned int)(fabsf_vfpu(sn) * 255.0f) << 24 | 0x778D3;
+            w->swirl[i2][0].u = u; w->swirl[i2][0].v = 0.0f;
+            w->swirl[i2][0].color = c;
+            w->swirl[i2][0].x = cs * 0.3f; w->swirl[i2][0].y = 0.0f; w->swirl[i2][0].z = sn * 0.3f;
+            w->swirl[i2][1].u = u; w->swirl[i2][1].v = 1.0f; w->swirl[i2][1].color = 0x778D3;
+            w->swirl[i2][1].x = cs * 0.4f; w->swirl[i2][1].y = 1.2f; w->swirl[i2][1].z = sn * 0.4f;
         }
     }
     list = dl_select_layer(1, 0);
@@ -264,15 +289,14 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
     dl_set_list(list);
     if (phase == 1) {
         float size[5] = { 0.05f, 0.05f, 0.05f, 0.025f, 0.025f };
-        float u0[5] = { 0.0f, 0.25f, 0.5f, 0.75f, 0.875f };
-        float u1[5] = { 0.25f, 0.5f, 0.75f, 0.875f, 1.0f };
+        float ue[6] = { 0.0f, 0.25f, 0.5f, 0.75f, 0.875f, 1.0f };
         float v1[5] = { 1.0f, 1.0f, 1.0f, 0.5f, 0.5f };
 
-        for (i = 0; i < 5; i++) {
-            w->rock_cell[i][0].u = u0[i]; w->rock_cell[i][0].v = 0.0f;
-            w->rock_cell[i][0].x = -size[i]; w->rock_cell[i][0].y = size[i]; w->rock_cell[i][0].z = 0.0f;
-            w->rock_cell[i][1].u = u1[i]; w->rock_cell[i][1].v = v1[i];
-            w->rock_cell[i][1].x = size[i]; w->rock_cell[i][1].y = -size[i]; w->rock_cell[i][1].z = 0.0f;
+        for (j2 = 0; j2 < 5; j2++) {
+            w->rock_cell[j2][0].u = ue[j2]; w->rock_cell[j2][0].v = 0.0f;
+            w->rock_cell[j2][0].x = -size[j2]; w->rock_cell[j2][0].y = size[j2]; w->rock_cell[j2][0].z = 0.0f;
+            w->rock_cell[j2][1].u = ue[j2 + 1]; w->rock_cell[j2][1].v = v1[j2];
+            w->rock_cell[j2][1].x = size[j2]; w->rock_cell[j2][1].y = -size[j2]; w->rock_cell[j2][1].z = 0.0f;
         }
     }
     if (w->frame % 4 == 0) {
@@ -283,8 +307,9 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
             r->flags |= 1;
             r->t = (n - 1 - i) * 4;
             ang = RAND15() / 32767.0f * 6.2831855f;
-            r->cell = RAND15() % 5;
-            vec3_set(&r->dir, cosf(ang) * 2.0f, -3.0f, sinf(ang) * 2.0f);
+            r->p.cell = RAND15() % 5;
+            pp = &r->p;
+            vec3_set(&pp->dir, cosf(ang) * 2.0f, -3.0f, sinf(ang) * 2.0f);
             if (w->rock_cur < 15)
                 w->rock_cur++;
             else
@@ -301,18 +326,20 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
     mtx_push();
     mtx_identity();
     dd_translate3(0.0f, 3.5f, 0.0f);
-    for (i = 0; i < 16; i++) {
-        DdPart *r = &w->rock[i];
+    for (i3 = 0; i3 < 16; i3++) {
+        DdPart *r = &w->rock[i3];
+        FxVec3 v;
 
-        if (r->flags & 1) {
+        if (!(r->flags & 1) != 1) {
             k = dd_ease_cos_inv(r->t, 64, 1);
             list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(r->t, 8) * 255.0f *
                                                          dd_ease_cos(r->t - 56, 8, 1)) << 24 | 0xFFFFFF);
+            pp = &r->p;
             mtx_push();
-            vec3_set(&v, r->dir.x, r->dir.y * k, r->dir.z);
+            vec3_set(&v, pp->dir.x, pp->dir.y * k, pp->dir.z);
             mtx_translate(&v);
             mtx_mult(&cam);
-            list = draw_array(list, 6, 0x183, 2, 0, w->rock_cell[r->cell]);
+            list = draw_array(list, 6, 0x183, 2, 0, w->rock_cell[pp->cell]);
             mtx_pop();
             if (r->t < 63)
                 r->t++;
@@ -327,4 +354,3 @@ int dd_fx_rock_update(int phase, DdFxRock *w)
     w->frame++;
     return 2;
 }
-#endif

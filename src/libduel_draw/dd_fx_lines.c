@@ -48,13 +48,15 @@ extern RandSeed rand3_seeds[];
 #define RAND15() (rand3_seeds[rand3_slot].lcg *= 0x41C64E6D, rand3_seeds[rand3_slot].lcg += 0x3039, \
                   (int)(rand3_seeds[rand3_slot].lcg >> 16 & 0x7FFF))
 
+typedef struct DdLinesPart {           /* 0x10 */
+    int cell;                          /* +0x00 cell of the texture */
+    FxVec3 dir;                        /* +0x04 */
+} DdLinesPart;
+
 typedef struct DdLinesSpark {          /* burst of 8 sparks, 0x88 */
     unsigned int flags;                /* bit 0 alive */
     int t;
-    struct {
-        int cell;                      /* +0x08 cell of the texture */
-        FxVec3 dir;                    /* +0x0C */
-    } p[8];
+    DdLinesPart p[8];                  /* +0x08 */
 } DdLinesSpark;
 
 typedef struct DdLinesFlare {          /* 0x10 */
@@ -113,7 +115,7 @@ int dd_fx_lines_start(DdFxArg *arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 3,4 KB: escalonamento dos laços de vértices e das partículas diferente (811 palavras); C equivalente */
+#ifdef NON_MATCHING /* 6 palavras: no laço interno do túnel (32 faixas) o contador e o ponteiro da faixa saem em s1/s3 trocados (variáveis separadas, do-while, ponteiro explícito testados) */
 int dd_fx_lines_update(int phase, DdFxLines *w)
 {
     DdFxArg *arg = w->h.arg;
@@ -123,23 +125,30 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
     float out;
     float fr;
     float rad;
+    float tv;
     float fc;
     float ang;
     float sn;
-    float cs;
     float dist;
-    float a;
     float s;
+    float r;
+    float k;
+    float cw;
+    float ch;
+    DdLinesPart *pj;
     unsigned int alpha;
+    unsigned int c;
     DdLinesSpark *sp;
     DdLinesFlare *f;
     FxVtx *v;
     FxVec3 p;
-    int r1;
-    int r2;
-    int r3;
     int i;
+    int i3;
+    int i2;
     int j;
+    int j2;
+    DdLinesSpark *sq;
+    int j3;
 
     dd_cam_default(7, 0xF0, 0x88);
     if (phase == 1)
@@ -149,21 +158,24 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
     dd_cue_se_at(0x6237, w->h.wait, w->h.delay, 16, &w->se, 1);
     dd_cue_bgm_fade(0x6237, w->h.t, w->h.len - 16, 16, &w->se, 2);
     if (phase == 1) {
+        k = -500.0f;
         for (i = 0; i < 33; i++) {
             fr = (float)i / 32.0f;
-            rad = fr * -500.0f + 800.0f;
+            rad = 800.0f + fr * k;
+            tv = fr * 0.2f;
             alpha = (1.0f - sinf(fr * 1.5707964f)) * 200.0f;
+            c = alpha << 24 | 0xFFB982;
             for (j = 0; j < 33; j++) {
                 fc = (float)j / 32.0f;
                 ang = fc * 6.2831855f;
                 sn = sinf(ang);
-                cs = cosf(ang);
+                ang = cosf(ang);
                 v = &w->ring[i][j];
                 v->u = fc * 6.0f;
-                v->v = fr * 0.2f;
-                v->color = alpha << 24 | 0xFFB982;
+                v->v = tv;
+                v->color = c;
                 v->x = rad * sn;
-                v->y = rad * cs;
+                v->y = rad * ang;
                 v->z = 0.0f;
             }
         }
@@ -194,31 +206,34 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
         dl_set_list(list);
     }
     if (phase == 1) {
-        for (i = 0; i < 8; i++) {
-            w->cell[i][0].u = (float)(i % 4) * 0.25f;
-            w->cell[i][0].v = (float)(i / 4) * 0.5f;
-            w->cell[i][0].x = -20.0f;
-            w->cell[i][0].y = 20.0f;
-            w->cell[i][0].z = 0.0f;
-            w->cell[i][1].u = (float)(i % 4) * 0.25f + 0.25f;
-            w->cell[i][1].v = (float)(i / 4) * 0.5f + 0.5f;
-            w->cell[i][1].x = 20.0f;
-            w->cell[i][1].y = -20.0f;
-            w->cell[i][1].z = 0.0f;
+        r = 20.0f;
+        cw = 0.25f;
+        ch = 0.5f;
+        for (i2 = 0; i2 < 8; i2++) {
+            fc = (float)(i2 % 4) * cw;
+            tv = (float)(i2 / 4) * ch;
+            w->cell[i2][0].u = fc;
+            w->cell[i2][0].v = tv;
+            w->cell[i2][0].x = -r;
+            w->cell[i2][0].y = r;
+            w->cell[i2][0].z = 0.0f;
+            w->cell[i2][1].u = fc + cw;
+            w->cell[i2][1].v = tv + ch;
+            w->cell[i2][1].x = r;
+            w->cell[i2][1].y = -r;
+            w->cell[i2][1].z = 0.0f;
         }
     }
     if (w->h.wait == w->h.delay) {
         sp = &w->spark[w->spark_cur];
         sp->flags |= 1;
         sp->t = 0;
-        for (j = 0; j < 8; j++) {
-            r1 = RAND15();
-            r2 = RAND15();
-            r3 = RAND15();
-            dist = r1 / 32767.0f * 300.0f + 100.0f;
-            ang = r2 / 32767.0f * 6.2831855f;
-            sp->p[j].cell = r3 % 8;
-            vec3_set(&sp->p[j].dir, dist * sinf(ang), dist * cosf(ang), 0.0f);
+        for (j2 = 0; j2 < 8; j2++) {
+            dist = RAND15() / 32767.0f * 300.0f + 100.0f;
+            ang = RAND15() / 32767.0f * 6.2831855f;
+            pj = &sp->p[j2];
+            pj->cell = RAND15() % 8;
+            vec3_set(&pj->dir, dist * sinf(ang), dist * cosf(ang), 0.0f);
         }
         if (w->spark_cur < 15)
             w->spark_cur++;
@@ -236,45 +251,48 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
         mtx_push();
         mtx_identity();
         for (i = 0; i < 16; i++) {
-            sp = &w->spark[i];
-            if (sp->flags & 1) {
-                a = out * in * sinf((float)sp->t * 3.1415927f / 16.0f) * 255.0f;
-                s = dd_ease_lin_inv(sp->t, 16);
-                list = dl_ambient_light(list, (unsigned int)a << 24 | 0xFFFFFF);
-                for (j = 0; j < 8; j++) {
-                    vec3_scale(&p, &sp->p[j].dir, s + 0.5f);
+            sq = &w->spark[i];
+            if (!(sq->flags & 1) != 1) {
+                c = (unsigned int)(out * (in * (sinf((float)sq->t * 3.1415927f / 16.0f) * 255.0f)));
+                s = dd_ease_lin_inv(sq->t, 16) + 0.5f;
+                list = dl_ambient_light(list, c << 24 | 0xFFFFFF);
+                for (j3 = 0; j3 < 8; j3++) {
+                    pj = &sq->p[j3];
+                    vec3_scale(&p, &pj->dir, s);
                     mtx_push();
                     mtx_translate(&p);
-                    list = draw_array(list, 6, 0x183, 2, 0, w->cell[sp->p[j].cell]);
+                    list = draw_array(list, 6, 0x183, 2, 0, w->cell[pj->cell]);
                     mtx_pop();
                 }
-                if (sp->t < 15)
-                    sp->t++;
+                if (sq->t < 15)
+                    sq->t++;
                 else
-                    sp->flags &= ~1;
+                    sq->flags &= ~1;
             }
         }
         mtx_pop();
         dl_set_list(list);
     }
     if (phase == 1) {
+        r = 200.0f;
+        c = 0xFFEBC8;
         w->flare_v[0].u = 0.5f; w->flare_v[0].v = 0.5f; w->flare_v[0].color = 0xFFFFEBC8;
         w->flare_v[0].x = 0.0f; w->flare_v[0].y = 0.0f; w->flare_v[0].z = 0.0f;
-        w->flare_v[1].u = 0.0f; w->flare_v[1].v = 0.0f; w->flare_v[1].color = 0xFFEBC8;
-        w->flare_v[1].x = -200.0f; w->flare_v[1].y = 200.0f; w->flare_v[1].z = 0.0f;
-        w->flare_v[2].u = 1.0f; w->flare_v[2].v = 0.0f; w->flare_v[2].color = 0xFFEBC8;
-        w->flare_v[2].x = 200.0f; w->flare_v[2].y = 200.0f; w->flare_v[2].z = 0.0f;
-        w->flare_v[3].u = 1.0f; w->flare_v[3].v = 1.0f; w->flare_v[3].color = 0xFFEBC8;
-        w->flare_v[3].x = 200.0f; w->flare_v[3].y = -200.0f; w->flare_v[3].z = 0.0f;
-        w->flare_v[4].u = 0.0f; w->flare_v[4].v = 1.0f; w->flare_v[4].color = 0xFFEBC8;
-        w->flare_v[4].x = -200.0f; w->flare_v[4].y = -200.0f; w->flare_v[4].z = 0.0f;
+        w->flare_v[1].u = 0.0f; w->flare_v[1].v = 0.0f; w->flare_v[1].color = c;
+        w->flare_v[1].x = -r; w->flare_v[1].y = r; w->flare_v[1].z = 0.0f;
+        w->flare_v[2].u = 1.0f; w->flare_v[2].v = 0.0f; w->flare_v[2].color = c;
+        w->flare_v[2].x = r; w->flare_v[2].y = r; w->flare_v[2].z = 0.0f;
+        w->flare_v[3].u = 1.0f; w->flare_v[3].v = 1.0f; w->flare_v[3].color = c;
+        w->flare_v[3].x = r; w->flare_v[3].y = -r; w->flare_v[3].z = 0.0f;
+        w->flare_v[4].u = 0.0f; w->flare_v[4].v = 1.0f; w->flare_v[4].color = c;
+        w->flare_v[4].x = -r; w->flare_v[4].y = -r; w->flare_v[4].z = 0.0f;
         w->flare_v[5] = w->flare_v[1];
     }
     if (w->h.wait == w->h.delay) {
         f = &w->flare[w->flare_cur];
         f->flags |= 1;
         f->t = 0;
-        f->scale = RAND15() / 32767.0f * 3.0f + 1.0f;
+        f->scale = 1.0f + RAND15() / 32767.0f * 3.0f;
         f->angle = RAND15() / 32767.0f * 6.2831855f;
         if (w->flare_cur < 7)
             w->flare_cur++;
@@ -290,12 +308,12 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
-        for (i = 0; i < 8; i++) {
-            f = &w->flare[i];
-            if (f->flags & 1) {
+        for (i3 = 0; i3 < 8; i3++) {
+            f = &w->flare[i3];
+            if (!(f->flags & 1) != 1) {
                 s = f->scale * (dd_ease_sin(f->t, 8, 1) * 0.8f + 0.2f);
-                a = out * in * dd_ease_cos(f->t, 8, 1) * 255.0f;
-                list = dl_ambient_light(list, (unsigned int)a << 24 | 0xFFFFFF);
+                c = (unsigned int)(out * (in * (dd_ease_cos(f->t, 8, 1) * 255.0f)));
+                list = dl_ambient_light(list, c << 24 | 0xFFFFFF);
                 mtx_push();
                 mtx_rotate_z(f->angle);
                 dd_scale3(s, s, 0.0f);

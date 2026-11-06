@@ -1,5 +1,4 @@
 // @range 0x0884F3D0-0x0884FD60
-// @asm 0x0884F468-0x0884FB88
 /* Screen transitions of the duel: a swirl that twists the captured screen (a 31x21 grid turned
    more towards the centre, sound 0x6248) or, for id 5788, a plain fade to/from black. */
 #include "libduel_draw.h"
@@ -79,7 +78,6 @@ int dd_fx_swirl_start(int out, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 1,8 KB: o original usa um registrador de float a menos e outra pilha; C equivalente */
 int dd_fx_swirl_update(int phase, DdFxSwirl *w)
 {
     int buf = w->frame % 2;
@@ -88,17 +86,19 @@ int dd_fx_swirl_update(int phase, DdFxSwirl *w)
     float k;
     float s;
     float y;
-    float y2;
     float x;
     float d;
-    float u;
     float a;
+    float cx;
+    float cy;
+    int tv;
     unsigned int alpha;
-    FxVec3 p;
     float m[9];
+    FxVec3 p;
     int i;
     int j;
-    int t;
+    int ii;
+    int jj;
 
     if (w->out == 0)
         k = dd_ease_sin(w->t, 16, 1);
@@ -106,18 +106,19 @@ int dd_fx_swirl_update(int phase, DdFxSwirl *w)
         k = dd_ease_cos_inv(w->t, 16, 1);
     if (dd_scene_flags(8, -1) == 0)
         dd_cue_se(0x6248, w->t, 0, &w->se, 1);
+    cx = 240.0f;
+    cy = 136.0f;
     if (phase == 1) {
         for (i = 0; i < 21; i++) {
             y = ((float)i / 20.0f * 2.0f + -1.0f) * 136.0f;
-            u = roundf_vfpu((float)i / 20.0f * 270.0f);
-            y2 = y * y;
+            tv = roundf_vfpu((float)i / 20.0f * 270.0f) + 1.0f;
             for (j = 0; j < 31; j++) {
                 x = ((float)j / 30.0f * 2.0f + -1.0f) * 240.0f;
                 w->grid[i][j].u = roundf_vfpu((float)j / 30.0f * 478.0f) + 1.0f;
-                w->grid[i][j].v = u + 1.0f;
-                d = x * x + y2;
-                w->grid[i][j].x = roundf_vfpu(x + 240.0f);
-                w->grid[i][j].y = roundf_vfpu(y + 136.0f);
+                w->grid[i][j].v = tv;
+                d = x * x + y * y;
+                w->grid[i][j].x = roundf_vfpu(x + cx);
+                w->grid[i][j].y = roundf_vfpu(y + cy);
                 w->grid[i][j].z = 0;
                 if (d > 76096.0f)
                     d = 76096.0f;
@@ -133,23 +134,24 @@ int dd_fx_swirl_update(int phase, DdFxSwirl *w)
     list = dd_depth_enable(list, 0, 0);
     list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
     list = dd_tex_fb_copy(list);
-    s = k;
-    if (w->out != 0)
+    if (w->out == 0)
+        s = k;
+    else
         s = 1.0f - k;
     s = s * 0.6f + 0.4f;
-    for (i = 0; i < 21; i++) {
-        y = ((float)i / 20.0f * 2.0f + -1.0f) * 136.0f * s;
-        for (j = 0; j < 31; j++) {
+    for (ii = 0; ii < 21; ii++) {
+        for (jj = 0; jj < 31; jj++) {
+            x = ((float)jj / 30.0f * 2.0f + -1.0f) * 240.0f * s;
             if (w->out == 0)
-                a = w->twist[i][j] * 24.0f + (6.2831855f - w->twist[i][j] * 24.0f) * k;
+                a = w->twist[ii][jj] * 24.0f + (6.2831855f - w->twist[ii][jj] * 24.0f) * k;
             else
-                a = w->twist[i][j] * 24.0f * k;
-            vec3_set(&p, ((float)j / 30.0f * 2.0f + -1.0f) * 240.0f * s, y, 0.0f);
+                a = w->twist[ii][jj] * 24.0f * k;
+            vec3_set(&p, x, ((float)ii / 20.0f * 2.0f + -1.0f) * 136.0f * s, 0.0f);
             mat3_identity(m);
             mat3_rot_z(m, m, a);
             mat3_transform_vec3(&p, m, &p);
-            w->grid[i][j].x = roundf_vfpu(p.x + 240.0f);
-            w->grid[i][j].y = roundf_vfpu(p.y + 136.0f);
+            w->grid[ii][jj].x = roundf_vfpu(p.x + cx);
+            w->grid[ii][jj].y = roundf_vfpu(p.y + cy);
         }
     }
     memcpy(w->buf[buf], w->grid, sizeof(w->grid));
@@ -167,13 +169,11 @@ int dd_fx_swirl_update(int phase, DdFxSwirl *w)
         list = draw_array(list, 4, 0x800902, 62, w->idx, w->buf[buf][i]);
     dl_set_list(list);
     w->frame++;
-    t = w->t;
-    w->t = t + step;
-    if (t + step < 16)
+    w->t += step;
+    if (w->t < 16)
         return 2;
     return 4;
 }
-#endif
 
 int dd_fx_black_start(int out, void *a, void *b)
 {

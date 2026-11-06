@@ -333,6 +333,28 @@ Idiomas novos (cada um resolveu pelo menos um trecho):
 - **Inline do original**: `act_x_init` virou macro com o laço de bytes (`ACT_X_INIT`); com o helper `static` o
   código saía 556 bytes menor.
 
+## Funções grandes de efeito (`dd_fx_*`, rodada 7)
+
+Seis das funções de 2-4 KB de efeitos do libduel_draw bateram com as mesmas regras (`dd_fx_swirl_update`,
+`dd_fx_beam_update`, `dd_fx_splash_update`, `dd_fx_rock_update`, `dd_fx_aura_circle`). Ordem que funcionou:
+1. **Fidelidade primeiro**: sequência de `jal` contra as relocações e multiconjunto de imediatos (`lui/ori`, offsets de
+   `lw/sw`) do original contra o compilado; achou `x = -6` escrito como `-3` e 14,4 = `0x41666667` (não `0x41666666`).
+2. **Constantes em locais**: `neg.s` de uma constante e o `sw` do mesmo valor como inteiro (`-r`/`r` nos vértices de um
+   quadrado), ou `mul.s`/`add.s` com a constante em `ft` (`cu + cw`, `x + cx`), são uma variável local (`float r = 20.0f;`).
+   A constante literal vai sempre para `fs`; a local segue a ordem do fonte. `x * 1.0f` só sobrevive com o 1 numa local.
+3. **Um contador por laço**: quando contador e ponteiro de indução trocam de `$s` só em alguns laços, cada laço tem o
+   seu `int` (o original não reaproveita `i`/`j`). Busca automática: renomear o contador de cada laço para um nome de um
+   conjunto e manter o que reduz as palavras (descida por coordenadas; achou 4 de 4 em `dd_fx_beam_update`). O mesmo
+   vale para `list` e para o ponteiro da partícula num laço de desenho.
+4. **Sub-struct onde o original guarda `base + 8`**: `addiu s0,p,8` usado para campos seguintes indica uma struct
+   interna (`{flags, t, {cell, dir}}`); o acesso passa por um ponteiro para ela.
+5. **Modelos locais** (`FxVec3 a = {...}`, tabelas de `float`) vão para `.data` (declare `// @data`); a posição da
+   cópia na pilha diz o bloco onde o local foi declarado (`{ FxVec4 up = {...}; ... }`). Entre modelos, um `FxVec4`
+   alinha em 16 (os 12 bytes zero em `0x08876DC4` são preenchimento).
+6. Outros: `sinf(x) * 0.0f * cosf(y)` (o mwcc dobra o seno mas mantém a chamada), laço de 1 iteração
+   (`for (j = 0; j < 1; j++) b = &w->beam[j];`) que iça `buf * 1224` para antes do teste, teste `!(f & 1) != 1`
+   (`sltu/xori/beq 1`), `x % 16` em vez de `& 0xF` (`bgez`+`beqzl`), `if (on == 1)` com o `li v0,1` no delay slot.
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
 - **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`) e
