@@ -161,6 +161,15 @@ Os casos mais comuns nesta etapa:
 | `lhu x,OFF(base)` com o deslocamento do campo fora da relocação | ponteiro para o elemento: `DsList *l = &d->list[tab]; return l->count;` |
 | `v0` já vale a constante do teste, mas o original salta para um `li v0,K` próprio | agrupar os `case` com o mesmo corpo (`case 1: case 3:`) |
 | `return` comum depois do `if/else` vira `li v0,1` em cada ramo | um `return 1;` em cada ramo |
+| vértices com `lui K; sw` e `mtc1 K; neg.s` do mesmo valor (dd_fx_*) | raio num local: `float r = 75.0f; ... -r, r` (literal `-75.0f` e parâmetro de inline são dobrados) |
+| `lui/lw rand3_slot` repetido a cada sorteio | macro que reatribui `r = &rand3_seeds[rand3_slot]` em cada `DD_RAND` |
+| `andi; sltu; xori; beq x,1` no teste de um bit | `if (!(p->flags & 1) != 1) { ... }` |
+| contador e ponteiro de laço com `$s` trocados | um contador próprio por laço (o do laço interno declarado no bloco do externo); dois laços seguidos podem dividir o mesmo |
+| laço de bytes zerando um vetor local dentro de laço sem chamadas, sem ser içado | `float p[3] = { x, 0.0f, z };` (o idioma `do { *d++ = 0; }` é içado) |
+| ordem dos vetores na pilha | locais da função de cima para baixo na ordem da declaração, locais de bloco abaixo deles; `aligned(16)` manda o vetor para o fundo (`dd_fx_twist`) |
+| `mul.s` com a constante içada em `ft` (segundo operando) | constante num local (`float du = 0.25f; x * du`) |
+| `beqzl i; sw A` / `bnel i,n-1; sw B` / `sw A` | `if (i == 0 \|\| i == n - 1) A; else B;` |
+| `base + 8` num `$s` e campos a partir dele | ponteiro para uma sub-struct (`DdRingTex *q = &r->p`, `dd_fx_bolt`) |
 
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 

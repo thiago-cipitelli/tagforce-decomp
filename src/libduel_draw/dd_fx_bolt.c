@@ -1,5 +1,4 @@
 // @range 0x088522F0-0x08853674
-// @asm 0x08852348-0x08853674
 /* Character effect "lightning": bolts (k02_256b.gim) striking at random places every 5-34
    frames, growing down from the sky with a flash (lens_aP8A.gim) at both ends, and glowing rings
    left on the ground. */
@@ -60,12 +59,16 @@ typedef struct DdBolt {                /* 0x9C8 */
     float u[4];                        /* +0x9B8 texture offsets of the 4 layers */
 } DdBolt;
 
-typedef struct DdBoltRing {            /* 0x1C */
-    unsigned int flags;
-    int t;
+typedef struct DdRingTex {             /* reached through a pointer to it */
     float u;
     float angle;
     FxVec3 pos;
+} DdRingTex;
+
+typedef struct DdBoltRing {            /* 0x1C */
+    unsigned int flags;
+    int t;
+    DdRingTex p;                       /* +0x08 */
 } DdBoltRing;
 
 typedef struct DdFxBolt {              /* 0x4A28 */
@@ -98,14 +101,15 @@ int dd_fx_bolt_start(int arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 4,9 KB; C equivalente */
-#define BOLT_FAN(q, c0, c, r) \
-    (q[0].u = 0.5f, q[0].v = 0.5f, q[0].color = c0, q[0].x = 0.0f, q[0].y = 0.0f, q[0].z = 0.0f, \
-     q[1].u = 0.0f, q[1].v = 0.0f, q[1].color = c, q[1].x = -(r), q[1].y = r, q[1].z = 0.0f, \
-     q[2].u = 1.0f, q[2].v = 0.0f, q[2].color = c, q[2].x = r, q[2].y = r, q[2].z = 0.0f, \
-     q[3].u = 1.0f, q[3].v = 1.0f, q[3].color = c, q[3].x = r, q[3].y = -(r), q[3].z = 0.0f, \
-     q[4].u = 0.0f, q[4].v = 1.0f, q[4].color = c, q[4].x = -(r), q[4].y = -(r), q[4].z = 0.0f, \
-     q[5] = q[1])
+inline static void dd_fan(FxVtx *q, unsigned int c0, unsigned int c, float r, float b)
+{
+    q[0].u = 0.5f; q[0].v = 0.5f; q[0].color = c0; q[0].x = 0.0f; q[0].y = 0.0f; q[0].z = 0.0f;
+    q[1].u = 0.0f; q[1].v = 0.0f; q[1].color = c; q[1].x = -r; q[1].y = r; q[1].z = 0.0f;
+    q[2].u = 1.0f; q[2].v = 0.0f; q[2].color = c; q[2].x = r; q[2].y = r; q[2].z = 0.0f;
+    q[3].u = 1.0f; q[3].v = 1.0f; q[3].color = c; q[3].x = r; q[3].y = b; q[3].z = 0.0f;
+    q[4].u = 0.0f; q[4].v = 1.0f; q[4].color = c; q[4].x = -r; q[4].y = b; q[4].z = 0.0f;
+    q[5] = q[1];
+}
 
 int dd_fx_bolt_update(int phase, DdFxBolt *w)
 {
@@ -114,6 +118,7 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
     void *list;
     DdBolt *b;
     DdBoltRing *r;
+    DdRingTex *q;
     unsigned int c;
     float ph;
     float freq;
@@ -123,10 +128,11 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
     float s;
     float d;
     float ang;
+    float h = 5.0f, wd = 0.8f;
     int n;
     int i;
     int j;
-    int k;
+    int iv, k, id, ir, ic;
 
     dd_mtx_push_field();
     dd_mtx_billboard_field(&cam);
@@ -136,14 +142,14 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
             w->idx[i * 2 + 1] = i * 3 + 1;
         }
         w->next = RAND15() % 30 + 5;
-        BOLT_FAN(w->flash_a, 0xFFFF6400, 0xFF6400, 2.0f);
-        BOLT_FAN(w->end_a, 0xFFFF6400, 0xFF6400, 5.0f);
-        w->end_a[3].y = -2.5f;
-        w->end_a[4].y = -2.5f;
-        BOLT_FAN(w->flash_b, 0xFFFFFFC8, 0xFFFFC8, 0.8f);
-        BOLT_FAN(w->end_b, 0xFFFFFFC8, 0xFFFFC8, 2.0f);
-        w->end_b[3].y = -1.0f;
-        w->end_b[4].y = -1.0f;
+        {
+            float r2 = 2.0f, r5 = 5.0f, r08 = 0.8f, hf = 0.5f;
+
+            dd_fan(w->flash_a, 0xFFFF6400, 0xFF6400, r2, -r2);
+            dd_fan(w->end_a, 0xFFFF6400, 0xFF6400, r5, -r5 * hf);
+            dd_fan(w->flash_b, 0xFFFFFFC8, 0xFFFFC8, r08, -r08);
+            dd_fan(w->end_b, 0xFFFFFFC8, 0xFFFFC8, r2, -r2 * hf);
+        }
     }
     if (w->wait < w->next) {
         w->wait++;
@@ -163,21 +169,21 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
         }
         for (k = 0; k < 4; k++)
             b->u[k] = RANDF();
-        ph = RANDF() * 6.2831855f;
-        freq = RANDF() * 6.2831855f + 1.5707964f;
-        for (i = 0; i < 17; i++) {
-            f = (float)i / 16.0f;
-            y = -5.0f * f;
-            x = sinf(ph + freq * f) * 0.5f * sinf(f * 1.5707964f);
-            b->v[0][i][0].u = f; b->v[0][i][0].v = 0.0f; b->v[0][i][0].color = 0xFFFFFF;
-            b->v[0][i][0].x = x + -0.8f; b->v[0][i][0].y = y; b->v[0][i][0].z = 0.0f;
-            b->v[0][i][1].u = f; b->v[0][i][1].v = 0.5f; b->v[0][i][1].color = 0xFFFFFFFF;
-            b->v[0][i][1].x = x; b->v[0][i][1].y = y; b->v[0][i][1].z = 0.0f;
-            b->v[0][i][2].u = f; b->v[0][i][2].v = 1.0f; b->v[0][i][2].color = 0xFFFFFF;
-            b->v[0][i][2].x = x + 0.8f; b->v[0][i][2].y = y; b->v[0][i][2].z = 0.0f;
-            b->v[1][i][0] = b->v[0][i][0];
-            b->v[1][i][1] = b->v[0][i][1];
-            b->v[1][i][2] = b->v[0][i][2];
+        ph = 6.2831855f * RANDF();
+        freq = 1.5707964f + 6.2831855f * RANDF();
+        for (iv = 0; iv < 17; iv++) {
+            f = (float)iv / 16.0f;
+            y = -h * f;
+            x = 0.5f * sinf(ph + freq * f) * sinf(1.5707964f * f);
+            b->v[0][iv][0].u = f; b->v[0][iv][0].v = 0.0f; b->v[0][iv][0].color = 0xFFFFFF;
+            b->v[0][iv][0].x = -wd + x; b->v[0][iv][0].y = y; b->v[0][iv][0].z = 0.0f;
+            b->v[0][iv][1].u = f; b->v[0][iv][1].v = 0.5f; b->v[0][iv][1].color = 0xFFFFFFFF;
+            b->v[0][iv][1].x = x; b->v[0][iv][1].y = y; b->v[0][iv][1].z = 0.0f;
+            b->v[0][iv][2].u = f; b->v[0][iv][2].v = 1.0f; b->v[0][iv][2].color = 0xFFFFFF;
+            b->v[0][iv][2].x = 0.8f + x; b->v[0][iv][2].y = y; b->v[0][iv][2].z = 0.0f;
+            b->v[1][iv][0] = b->v[0][iv][0];
+            b->v[1][iv][1] = b->v[0][iv][1];
+            b->v[1][iv][2] = b->v[0][iv][2];
         }
         vec3_set(&b->end, sinf(ph + freq) * 0.5f, -1.2f, 0.0f);
         w->wait = 0;
@@ -193,7 +199,7 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
     mtx_identity();
     for (j = 0; j < 7; j++) {
         b = &w->bolt[j];
-        if (!(b->flags & 1))
+        if (!(b->flags & 1) == 1)
             continue;
         s = b->scale * (dd_ease_sin(b->t, 32, 1) * 0.2f + 0.8f);
         c = (unsigned int)(dd_ease_cos(b->t - 8, 24, 1) * 255.0f);
@@ -212,21 +218,19 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
         list = dd_tex_pack(list, 27);
         c = c << 24 | 0xFFFFFF;
         list = dl_ambient_light(list, c);
-        for (i = 0; i < n; i++) {
-            if (i == 0)
-                b->v[buf][i][1].color = 0xFFFFFF;
-            else if (i == n - 1)
-                b->v[buf][i][1].color = 0xFFFFFF;
+        for (ic = 0; ic < n; ic++) {
+            if (ic == 0 || ic == n - 1)
+                b->v[buf][ic][1].color = 0xFFFFFF;
             else
-                b->v[buf][i][1].color = 0xFFFFFFFF;
+                b->v[buf][ic][1].color = 0xFFFFFFFF;
         }
         mtx_push();
         dd_translate3(0.0f, 3.7f, 0.0f);
         dd_scale3(s, 1.0f, 0.0f);
-        for (k = 0; k < 4; k++) {
-            list = dl_tex_offset(b->u[k], 0.0f, list);
-            for (i = 0; i < 2; i++)
-                list = draw_array(list, 4, 0x99F, n * 2, w->idx, &b->v[buf][0][i]);
+        for (ic = 0; ic < 4; ic++) {
+            list = dl_tex_offset(b->u[ic], 0.0f, list);
+            for (id = 0; id < 2; id++)
+                list = draw_array(list, 4, 0x99F, n * 2, w->idx, &b->v[buf][0][id]);
         }
         mtx_pop();
         list = dd_depth_enable(list, 0, 1);
@@ -258,27 +262,30 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
     mtx_pop();
     dl_set_list(list);
     if (phase == 1) {
+        float r2 = 2.0f;
+
         w->ring_v[0].u = 0.5f; w->ring_v[0].v = 0.5f; w->ring_v[0].color = 0x82FFFFFF;
         w->ring_v[0].x = 0.0f; w->ring_v[0].y = 0.0f; w->ring_v[0].z = 0.0f;
         w->ring_v[1].u = 0.0f; w->ring_v[1].v = 0.0f; w->ring_v[1].color = 0xFFFFFF;
-        w->ring_v[1].x = -2.0f; w->ring_v[1].y = 0.0f; w->ring_v[1].z = 2.0f;
+        w->ring_v[1].x = -r2; w->ring_v[1].y = 0.0f; w->ring_v[1].z = r2;
         w->ring_v[2].u = 1.0f; w->ring_v[2].v = 0.0f; w->ring_v[2].color = 0xFFFFFF;
-        w->ring_v[2].x = 2.0f; w->ring_v[2].y = 0.0f; w->ring_v[2].z = 2.0f;
+        w->ring_v[2].x = r2; w->ring_v[2].y = 0.0f; w->ring_v[2].z = r2;
         w->ring_v[3].u = 1.0f; w->ring_v[3].v = 1.0f; w->ring_v[3].color = 0xFFFFFF;
-        w->ring_v[3].x = 2.0f; w->ring_v[3].y = 0.0f; w->ring_v[3].z = -2.0f;
+        w->ring_v[3].x = r2; w->ring_v[3].y = 0.0f; w->ring_v[3].z = -r2;
         w->ring_v[4].u = 0.0f; w->ring_v[4].v = 1.0f; w->ring_v[4].color = 0xFFFFFF;
-        w->ring_v[4].x = -2.0f; w->ring_v[4].y = 0.0f; w->ring_v[4].z = -2.0f;
+        w->ring_v[4].x = -r2; w->ring_v[4].y = 0.0f; w->ring_v[4].z = -r2;
         w->ring_v[5] = w->ring_v[1];
     }
     if (w->frame % 3 == 0) {
         r = &w->ring[w->ring_cur];
         r->flags |= 1;
         r->t = 0;
-        r->u = RANDF();
-        r->angle = RANDF() * 6.2831855f;
+        q = &r->p;
+        q->u = RANDF();
+        q->angle = RANDF() * 6.2831855f;
         d = RANDF() * 8.0f + 3.0f;
         ang = RANDF() * 6.2831855f;
-        vec3_set(&r->pos, d * sinf(ang), 0.0f, d * cosf(ang));
+        vec3_set(&q->pos, d * sinf(ang), 0.0f, d * cosf(ang));
         if (w->ring_cur < 23)
             w->ring_cur++;
         else
@@ -294,16 +301,17 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
     mtx_identity();
     dd_translate3(0.0f, 3.7f, 0.0f);
     mtx_rotate_x(-0.13962634f);
-    for (i = 0; i < 24; i++) {
-        r = &w->ring[i];
-        if (r->flags & 1) {
+    for (ir = 0; ir < 24; ir++) {
+        r = &w->ring[ir];
+        if (!(r->flags & 1) != 1) {
             s = dd_ease_sin(r->t, 24, 1) * 0.1f + 0.9f;
             list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(r->t, 4) * 255.0f *
                                                          dd_ease_cos(r->t - 4, 20, 1)) << 24 | 0xFFFFFF);
-            list = dl_tex_offset(r->u, 0.0f, list);
+            q = &r->p;
+            list = dl_tex_offset(q->u, 0.0f, list);
             mtx_push();
-            mtx_translate(&r->pos);
-            mtx_rotate_y(r->angle);
+            mtx_translate(&q->pos);
+            mtx_rotate_y(q->angle);
             dd_scale3(s, 0.0f, s);
             list = draw_array(list, 5, 0x19F, 6, 0, w->ring_v);
             mtx_pop();
@@ -320,4 +328,3 @@ int dd_fx_bolt_update(int phase, DdFxBolt *w)
     w->frame++;
     return 2;
 }
-#endif

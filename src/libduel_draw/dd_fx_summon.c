@@ -141,7 +141,7 @@ unsigned int dd_fx_summon_tmpl2[2] = { 0x00000000, 0x00000000 };
 #pragma explicit_zero_data reset
 unsigned int dd_fx_summon_tmpl3[1] = { 0x3F800000 };
 
-#ifdef NON_MATCHING /* função grande (4 KB); o modelo dos vetores locais fica em dd_fx_summon_tmpl */
+#ifdef NON_MATCHING /* função grande (4 KB); o modelo dos vetores locais fica em dd_fx_summon_tmpl; jal e lógica conferidos com o original (2026-11-06); o original salva um registrador float a mais (f20-f24) */
 inline static void dd_fx_set_vert(DdFxVert *v, float u, float tv, unsigned int color, float x, float y, float z)
 {
     v->u = u;
@@ -152,9 +152,12 @@ inline static void dd_fx_set_vert(DdFxVert *v, float u, float tv, unsigned int c
     v->z = z;
 }
 
+#define DD_RAND3(r) ((r) = &rand3_seeds[rand3_slot], (r)->lcg *= 0x41C64E6D, (r)->lcg += 0x3039, \
+                     (int)((r)->lcg >> 16 & 0x7FFF))
+
 int dd_fx_summon_update(int state, DdFxSummon *fx)
 {
-    DdRandSeed *r = &rand3_seeds[rand3_slot];
+    DdRandSeed *r;
     int step = dd_anim_step();
     unsigned int *list;
     float bb[16];
@@ -176,10 +179,14 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
             c0 = 0x6464FF;
             c1 = 0xFF6464FF;
         }
-        dd_fx_set_vert(&fx->pillar[0], 0.0f, 0.0f, c0, -49.600002f, 200.0f, -44.0f);
-        dd_fx_set_vert(&fx->pillar[1], 0.0f, 0.5f, c1, -49.600002f, 0.0f, 0.0f);
-        dd_fx_set_vert(&fx->pillar[2], 1.0f, 0.0f, c0, 49.600002f, 200.0f, -44.0f);
-        dd_fx_set_vert(&fx->pillar[3], 1.0f, 0.5f, c1, 49.600002f, 0.0f, 0.0f);
+        {
+            float w = 49.600002f, d = 44.0f;
+
+            dd_fx_set_vert(&fx->pillar[0], 0.0f, 0.0f, c0, -w, 200.0f, -d);
+            dd_fx_set_vert(&fx->pillar[1], 0.0f, 0.5f, c1, -w, 0.0f, 0.0f);
+            dd_fx_set_vert(&fx->pillar[2], 1.0f, 0.0f, c0, w, 200.0f, -d);
+            dd_fx_set_vert(&fx->pillar[3], 1.0f, 0.5f, c1, w, 0.0f, 0.0f);
+        }
     }
     grow = (float)fx->frame * 0.03f + 1.0f;
     fade = dd_ease_cos(fx->frame, 24, 1);
@@ -207,33 +214,36 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
 
     /* sparks: a 4x2 sheet of 0.25x0.5 cells, 20x20 sprites */
     if (state == 1) {
+        float h = 10.0f;
+        float du = 0.25f, dv = 0.5f;
+
         for (i = 0; i < 8; i++) {
-            float u = (float)(i % 4) * 0.25f;
-            float tv = (float)(i / 4) * 0.5f;
+            float u = du * (float)(i % 4);
+            float tv = dv * (float)(i / 4);
 
             fx->spark_uv[i][0].u = u;
             fx->spark_uv[i][0].v = tv;
-            fx->spark_uv[i][0].x = -10.0f;
-            fx->spark_uv[i][0].y = -10.0f;
+            fx->spark_uv[i][0].x = -h;
+            fx->spark_uv[i][0].y = -h;
             fx->spark_uv[i][0].z = 0.0f;
-            fx->spark_uv[i][1].u = u + 0.25f;
-            fx->spark_uv[i][1].v = tv + 0.5f;
-            fx->spark_uv[i][1].x = 10.0f;
-            fx->spark_uv[i][1].y = 10.0f;
+            fx->spark_uv[i][1].u = u + du;
+            fx->spark_uv[i][1].v = tv + dv;
+            fx->spark_uv[i][1].x = h;
+            fx->spark_uv[i][1].y = h;
             fx->spark_uv[i][1].z = 0.0f;
         }
     }
     for (i = 0; i < step; i++) {
-        int base = DD_RAND(r);
+        float ofs = (float)(DD_RAND3(r) % 32) * 0.19634955f;
 
         for (j = 0; j < 2; j++) {
             DdFxSpark *s = &fx->spark[fx->next_spark];
 
             s->flags |= 1;
-            s->uv = DD_RAND(r) & 7;
+            s->uv = DD_RAND3(r) % 8;
             s->age = 0;
-            a = (float)j * 6.2831855f / 2.0f + (float)(base & 0x1F) * 0.19634955f;
-            rad = grow * (DD_RAND(r) / 32767.0f) * 29.333334f;
+            a = (float)j * 6.2831855f / 2.0f + ofs;
+            rad = grow * (29.333334f * (DD_RAND3(r) / 32767.0f));
             vec3_set(s->pos, rad * sinf(a), 0.0f, rad * cosf(a));
             if (fx->next_spark < 31)
                 fx->next_spark++;
@@ -372,9 +382,9 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
                 DdFxNote *n = &fx->note[fx->next_note];
 
                 n->flags |= 1;
-                n->kind = DD_RAND(r) % 6;
+                n->kind = DD_RAND3(r) % 6;
                 n->age = 0;
-                n->ang = DD_RAND(r) / 32767.0f * 6.2831855f;
+                n->ang = DD_RAND3(r) / 32767.0f * 6.2831855f;
                 if (fx->next_note < 31)
                     fx->next_note++;
                 else

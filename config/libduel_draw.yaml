@@ -308,7 +308,6 @@ segments:
       - [0x4D83C, c, dd_fx_rock]
       - [0x4D894, asm, dd_fx_rock_asm_08851834]
       - [0x4E350, c, dd_fx_bolt]
-      - [0x4E3A8, asm, dd_fx_bolt_asm_08852348]
       - [0x4F6D4, c, dd_fx_beam]
       - [0x4F72C, asm, dd_fx_beam_asm_088536CC]
       - [0x50724, c, dd_fx_bubble]

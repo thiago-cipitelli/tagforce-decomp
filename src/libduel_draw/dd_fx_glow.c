@@ -205,7 +205,7 @@ void *dd_fx_glow_sprite(void *list, FxVec3 *pos, int alpha, FxVec4 *rect, FxMat4
 }
 #endif
 
-#ifdef NON_MATCHING /* função de 5 KB com seis grupos de ossos; escalonamento e alocação de registradores diferentes (1159 palavras); C equivalente */
+#ifdef NON_MATCHING /* função de 5 KB com seis grupos de ossos; chamadas, conversões unsigned e constantes como no original (2026-11-06); falta escalonamento/registradores (~575 linhas de diferença de estrutura) */
 int dd_fx_glow_update(int phase, DdFxGlow *w)
 {
     DdFxArg *arg = w->arg;
@@ -242,16 +242,25 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
     mat4_copy(&view, dd_chara_view());
     mat4_mul(&vp, &view, &proj);
     if (phase == 1) {
-        vec4_set(&w->rect[0][0], -5.0f, 5.0f, 0.0f, 1.0f);
-        vec4_set(&w->rect[0][1], 5.0f, -5.0f, 0.0f, 1.0f);
-        vec4_set(&w->rect[1][0], -10.0f, 10.0f, 0.0f, 1.0f);
-        vec4_set(&w->rect[1][1], 10.0f, -10.0f, 0.0f, 1.0f);
-        vec4_set(&w->rect[2][0], -15.0f, 15.0f, 0.0f, 1.0f);
-        vec4_set(&w->rect[2][1], 15.0f, -15.0f, 0.0f, 1.0f);
-        vec4_set(&w->rect[3][0], -20.0f, 20.0f, 0.0f, 1.0f);
-        vec4_set(&w->rect[3][1], 20.0f, -20.0f, 0.0f, 1.0f);
-        vec4_set(&w->rect[4][0], -25.0f, 25.0f, 0.0f, 1.0f);
-        vec4_set(&w->rect[4][1], 25.0f, -25.0f, 0.0f, 1.0f);
+        {
+            float r;
+
+            r = 5.0f;
+            vec4_set(&w->rect[0][0], -r, r, 0.0f, 1.0f);
+            vec4_set(&w->rect[0][1], r, -r, 0.0f, 1.0f);
+            r = 10.0f;
+            vec4_set(&w->rect[1][0], -r, r, 0.0f, 1.0f);
+            vec4_set(&w->rect[1][1], r, -r, 0.0f, 1.0f);
+            r = 15.0f;
+            vec4_set(&w->rect[2][0], -r, r, 0.0f, 1.0f);
+            vec4_set(&w->rect[2][1], r, -r, 0.0f, 1.0f);
+            r = 20.0f;
+            vec4_set(&w->rect[3][0], -r, r, 0.0f, 1.0f);
+            vec4_set(&w->rect[3][1], r, -r, 0.0f, 1.0f);
+            r = 25.0f;
+            vec4_set(&w->rect[4][0], -r, r, 0.0f, 1.0f);
+            vec4_set(&w->rect[4][1], r, -r, 0.0f, 1.0f);
+        }
         for (i = 0; i < 4; i++)
             for (j = 0; j < 2; j++)
                 for (k = 0; k < 8; k++)
@@ -292,10 +301,10 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
                     else
                         rect = w->rect[1];
                     for (k = 0; k < 8; k++) {
+                        unsigned int a = (float)a150 * (0.8f + 0.2f * sinf(w->ph_limb[i][j][k] + rot));
+
                         vec3_lerp(&q, &limb[i][j], &limb[i][j + 1], (float)k / 8.0f);
-                        list = dd_fx_glow_sprite(list, &q,
-                                                 (float)a150 * (sinf(w->ph_limb[i][j][k] + rot) * 0.2f + 0.8f),
-                                                 rect, &cam, &vp);
+                        list = dd_fx_glow_sprite(list, &q, a, rect, &cam, &vp);
                     }
                 }
             }
@@ -309,9 +318,10 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
             vec3_lerp(&spine[0], &spine[0], &spine[1], 0.5f);
             vec3_lerp(&spine[2], &spine[2], &spine[3], 0.5f);
             for (i = 0; i < 8; i++) {
+                unsigned int a = (float)a150 * (0.8f + 0.2f * sinf(w->ph_spine[i] + rot));
+
                 vec3_lerp(&q, &spine[0], &spine[2], (float)i / 7.0f);
-                list = dd_fx_glow_sprite(list, &q, (float)a150 * (sinf(w->ph_spine[i] + rot) * 0.2f + 0.8f),
-                                         w->rect[4], &cam, &vp);
+                list = dd_fx_glow_sprite(list, &q, a, w->rect[4], &cam, &vp);
             }
         }
         {
@@ -320,9 +330,11 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
 
             for (i = 0; i < 2; i++)
                 dd_slot_pos(head_bones[i], &head[i]);
-            for (i = 0; i < 2; i++)
-                list = dd_fx_glow_sprite(list, &head[i], (float)a255 * (sinf(w->ph_head[i] + rot) * 0.2f + 0.8f),
-                                         w->rect[2], &cam, &vp);
+            for (i = 0; i < 2; i++) {
+                unsigned int a = (float)a255 * (0.8f + 0.2f * sinf(w->ph_head[i] + rot));
+
+                list = dd_fx_glow_sprite(list, &head[i], a, w->rect[2], &cam, &vp);
+            }
         }
         {
             int arm_bones[2][2] = { { 21, 20 }, { 23, 0 } };
@@ -338,9 +350,12 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
                         f = (float)(j + 1) * 0.1f / 2.0f + 1.0f;
                     else
                         f = (float)(j + 1) * 0.5f / 2.0f;
-                    vec3_lerp(&q, &arm[i][0], &arm[i][1], f);
-                    list = dd_fx_glow_sprite(list, &q, (float)a150 * (sinf(w->ph_arm[i][j] + rot) * 0.2f + 0.8f),
-                                             w->rect[0], &cam, &vp);
+                    {
+                        unsigned int a = (float)a150 * (0.8f + 0.2f * sinf(w->ph_arm[i][j] + rot));
+
+                        vec3_lerp(&q, &arm[i][0], &arm[i][1], f);
+                        list = dd_fx_glow_sprite(list, &q, a, w->rect[0], &cam, &vp);
+                    }
                 }
             }
         }
@@ -354,8 +369,11 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
             vec3_lerp(&core[1], &core[1], &core[2], 0.5f);
             vec3_lerp(&c, &core[1], &core[0], 1.1f);
             list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-            list = dd_fx_glow_sprite(list, &c, (float)a255 * 0.8f * (sinf(w->ph_core + rot) * 0.2f + 0.8f),
-                                     w->rect[3], &cam, &vp);
+            {
+                unsigned int a = (float)a255 * 0.8f * (0.8f + 0.2f * sinf(w->ph_core + rot));
+
+                list = dd_fx_glow_sprite(list, &c, a, w->rect[3], &cam, &vp);
+            }
         }
         mtx_pop();
         dl_set_list(list);
