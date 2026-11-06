@@ -8,3 +8,14 @@ limitlist_draw	liblimitlist	cópia morta depois de b (switch de um caso e || ant
 st_chr_dn_find	libstory	o original lê locais da pilha não inicializados
 debug_menu_draw	libduel_draw	menu de depuração inalcançável, sem C
 debug_menu_update	libduel_draw	menu de depuração inalcançável, sem C
+st_scr_find_es	libstory	cópia da cabeça de laço no desvio de volta (rodada 7: nenhuma forma no mwcc 219)
+st_pl_card_bit_set	libstory	cópia da cabeça de laço no desvio de volta (rodada 7)
+dd_cobj_find	libduel_draw	cópia da cabeça de laço no desvio de volta (bnel para cabeça+4; rodada 7)
+lps_glyph	libduel_draw	beq+nop vira likely; goto/if/return testados (rodada 7)
+fld_chr_draw_sprite	libfield	beq+nop vira likely; ordens de case e goto testadas (rodada 7)
+rv_scroll_add	librecipe_viewer	b; nop com o move agendado antes do b (rodada 7)
+dt_draw_hint2	libdeck_tutorial	cópia de struct decomposta só em parte (o mwcc 219 decompõe todas; rodada 7)
+dt_draw_hint3	libdeck_tutorial	cópia de struct decomposta só em parte (rodada 7)
+duel_0888B9A8	libduel_eng	ordem de carga dos argumentos só com atribuição dentro do argumento (UB; rodada 7)
+duel_0888BBE4	libduel_eng	ordem de carga dos argumentos só com atribuição dentro do argumento (UB; rodada 7)
+duel_08807C7C	libduel_eng	o original mantém o byte de a->player/zone em a2 através de um store a global; o mwcc recarrega (rodada 7)

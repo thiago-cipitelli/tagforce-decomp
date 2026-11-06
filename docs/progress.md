@@ -1,34 +1,34 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-05 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-06 (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 71,2% | 93,8% | 10000 / 11039 |
-| BOOT | 64,8% | 81,9% | 1837 / 2208 |
-| libduel_eng | 73,4% | 95,9% | 3193 / 3429 |
+| total | 73,5% | 94,6% | 10057 / 11039 |
+| BOOT | 65,0% | 81,9% | 1840 / 2208 |
+| libduel_eng | 75,4% | 96,9% | 3211 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
 | libpassword | 100,0% | 100,0% | 33 / 33 |
 | libtutoriallist | 89,5% | 99,8% | 25 / 26 |
 | libduelrecord | 92,2% | 99,9% | 26 / 27 |
 | libduel_mgr | 65,6% | 97,3% | 135 / 158 |
-| libselect_card | 77,2% | 97,0% | 188 / 207 |
+| libselect_card | 82,7% | 98,6% | 191 / 207 |
 | libcardalbum | 97,2% | 100,0% | 67 / 68 |
 | libcharalist | 60,2% | 91,2% | 41 / 50 |
 | libconv_machine | 94,7% | 99,1% | 46 / 47 |
 | liblimitlist | 85,4% | 99,3% | 58 / 62 |
 | librecipe_viewer | 74,3% | 97,9% | 59 / 69 |
-| libdeck | 83,5% | 98,7% | 307 / 328 |
-| libdeck_swap | 79,7% | 97,9% | 187 / 204 |
-| libdeck_tutorial | 81,4% | 97,6% | 269 / 293 |
-| libshop | 65,6% | 96,7% | 199 / 223 |
-| libtitle | 85,2% | 97,2% | 408 / 434 |
+| libdeck | 86,2% | 99,0% | 309 / 328 |
+| libdeck_swap | 83,8% | 98,6% | 189 / 204 |
+| libdeck_tutorial | 84,3% | 98,3% | 271 / 293 |
+| libshop | 65,6% | 96,8% | 199 / 223 |
+| libtitle | 85,2% | 98,0% | 408 / 434 |
 | libtutorial | 93,2% | 99,7% | 204 / 207 |
-| libfield | 77,6% | 98,5% | 600 / 652 |
-| libstory | 87,8% | 98,8% | 651 / 676 |
-| libduel_draw | 49,3% | 90,3% | 1438 / 1609 |
+| libfield | 77,8% | 98,5% | 601 / 652 |
+| libstory | 88,4% | 98,8% | 656 / 676 |
+| libduel_draw | 56,8% | 92,7% | 1459 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
