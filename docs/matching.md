@@ -325,3 +325,19 @@ editam `docs/matching_queue.tsv`/`docs/matching_skip.tsv` (o coordenador regener
 que falha só num módulo alheio costuma ser split velho copiado: `rm -rf build/asm/<m> build/src/<m>`. Merge: `symbols/<m>.txt` em conflito se resolve por endereço
 (`build/tmp/resolve_status.py`, que descarta linhas `alias`: confira-as depois), `config/<m>.yaml` se regenera
 (`python3 tools/splat_config.py <m> > config/<m>.yaml`), e `make MODULE=<m> verify` antes de commitar o merge.
+
+## Reescrita estrutural de funções grandes (rodada 7)
+
+Funções de vários KB com fuzzy baixo costumam ter a lógica certa e a forma errada. Roteiro que levou
+`duel_088087C0` (5 KB, 2,7%) a bater e `duel_088CC8EC` (8,9 KB, 57,8%) a 24 palavras:
+1. Alinhar por opcode antes de olhar registradores: `difflib.SequenceMatcher` sobre a coluna do mnemônico do
+   original e do objeto `-DNON_MATCHING` mostra só as regiões de forma diferente (script no scratchpad do agente).
+2. `switch` linear grande: extrair (valor, alvo) dos `li; beq/beql` (alvo do `beql` − 4 = mesmo corpo) e escrever
+   os `case` na ordem dos corpos, rótulos de cada grupo na ordem inversa dos testes. Um `beql` cujo alvo é o fim do
+   `switch` com a atribuição no delay é um `case` de uma linha (o corpo existe mais adiante).
+3. Código de `duel_0884F30C` montado com máscaras: `((unsigned int)p << 31 & 0x80000000) | (kind << 25 & 0x7E000000)
+   | flags | ((unsigned int)z << 16 & 0x1F0000) | (id & 0xFFFF)`. Sem o cast `unsigned`, o mwcc reduz a força do
+   shift da variável do laço (`addu s0,s0,0x80000000` por volta); com o cast, recalcula como o original.
+4. `slti at` no teste de um laço contado: `i <= 4` (não `i < 5`). Índice e ponteiro do laço trocados de `$s`:
+   variável do laço declarada no bloco (`{ int j; for (j = 0; ...) }`), não a da função.
+5. Dois `case` que usam `&&` com o mesmo corpo `trig = 1` e `beql ..., fim; li s3,1`: era `||` num só `if`.

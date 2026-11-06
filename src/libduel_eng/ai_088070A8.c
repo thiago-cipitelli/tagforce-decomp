@@ -1,6 +1,5 @@
 // @range 0x088070A8-0x08809B50
 // @asm 0x08807C7C-0x08808364
-// @asm 0x088087C0-0x08809B50
 /* Computer player: card lists and the search for tribute targets. */
 #include "duel.h"
 #include "card_db.h"
@@ -344,7 +343,10 @@ int duel_08807B38(int id, int a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original guarda o byte de a->player/a->zone em a1/a2 desde o início e o reaproveita nos case; p e a trocam s0/s1 */
+#ifdef NON_MATCHING /* 334 palavras (2026-11-06; 424/442 opcodes iguais): o original guarda o byte de a->player/a->zone
+   em a2 desde o início e o reaproveita nos case (a->zone extraído do registrador), apesar do store em duel_w_08913CF4 no
+   meio; o mwcc 219 recarrega o byte depois do store (sem o store, reaproveita: testado). Tipos int/char/short do global
+   não mudam. Fora isso p e a trocam s0/s1. Ordem dos case já é a da fonte. */
 /* Should the computer activate the card of a now? */
 int duel_08807C7C(DuelAct *a)
 {
@@ -588,13 +590,7 @@ int duel_088086D4(int id, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* função de 5 KB com cadeias de testes por id; mantida em asm, C funcional para o port */
 #define TRY(x) do { r = (x); if (r >= 0) return r; } while (0)
-
-static int duel_card_best_stat(int id)
-{
-    return card_get_def(id) < card_get_atk(id) ? card_get_atk(id) : card_get_def(id);
-}
 
 /* Entry of the pick list the computer chooses for the effect of card id, or -1. */
 int duel_088087C0(unsigned int p, int id)
@@ -604,204 +600,115 @@ int duel_088087C0(unsigned int p, int id)
     int i;
     int k;
     int v;
-    int best;
     int bestv;
+    int best;
     int ma;
     int md;
+    int found;
     DuelStats st;
 
     if (n == 0) {
         return -1;
     }
     if (duel_0880AEF4(p, 0xFBB) != 0) {
-        if (duel_0880AEF4(p, 0x1645) != 0 && (id == 0x1342 || id == 0x1315)) {
+        if (duel_0880AEF4(p, 0x1645) != 0) {
+            switch (id) {
+            case 0x1315:
+            case 0x1342:
+                TRY(duel_08808384(0xFB7));
+                TRY(duel_08808384(0xFB8));
+                TRY(duel_08808384(0xFB9));
+                TRY(duel_08808384(0xFBA));
+                TRY(duel_08808384(0xFBB));
+            }
+        }
+        switch (id) {
+        case 0xFD6:
+        case 0x11E4:
+        case 0x1359:
+        case 0x1796:
             TRY(duel_08808384(0xFB7));
             TRY(duel_08808384(0xFB8));
             TRY(duel_08808384(0xFB9));
             TRY(duel_08808384(0xFBA));
             TRY(duel_08808384(0xFBB));
-        }
-        if (id == 0x1342 || id == 0x1315) {
-            TRY(duel_08808628(p, 0xFD6));
-            TRY(duel_08808628(p, 0x11E4));
-            return duel_088084E0(0xFBB);
-        }
-        if (id == 0x1366 || id == 0x12EA || id == 0x137D || id == 0x133B) {
-            TRY(duel_08808628(p, 0xFD6));
-            TRY(duel_08808628(p, 0x11E4));
-        } else if (id == 0x132F) {
+            break;
+        case 0x132F:
             TRY(duel_08808384(0xFB8));
             TRY(duel_08808384(0xFB9));
             TRY(duel_08808384(0xFBA));
             return duel_088084E0(0xFBB);
-        } else if (id == 0x1796 || id == 0x1359 || id == 0x11E4 || id == 0xFD6) {
-            TRY(duel_08808384(0xFB7));
-            TRY(duel_08808384(0xFB8));
-            TRY(duel_08808384(0xFB9));
-            TRY(duel_08808384(0xFBA));
-            TRY(duel_08808384(0xFBB));
+        case 0x133B:
+        case 0x137D:
+        case 0x12EA:
+        case 0x1366:
+            TRY(duel_08808628(p, 0xFD6));
+            TRY(duel_08808628(p, 0x11E4));
+            break;
+        case 0x1315:
+        case 0x1342:
+            TRY(duel_08808628(p, 0xFD6));
+            TRY(duel_08808628(p, 0x11E4));
+            return duel_088084E0(0xFBB);
         }
     }
     switch (id) {
-    case 0x1A10:
-        if (duel.players[p & 1].n_hand + duel_count_field(p) < 2) {
-            TRY(duel_08808384(0x18F9));
+    case 0x137D:
+    case 0x12EA:
+    case 0x1366:
+        if (duel_turn_player == p && (unsigned int)duel_phase < 4 && duel_count_monsters(1 - p) == 0) {
+            TRY(duel_08808628(p, 5000));
         }
-        if (duel_grave_count_id_free(p, 0x197F) != 0) {
-            TRY(duel_08808384(0x194D));
-            TRY(duel_08808384(0x19FD));
-        }
-        for (i = 0; i < (int)duel_w_0891524C.n; i++) {
-            if (!duel_08808364(i) && duel_hand_count_name(p, duel_w_0891524C.c[i].id) == 0 &&
-                duel_count_name(p, duel_w_0891524C.c[i].id) == 0) {
+        break;
+    case 0x1365:
+        TRY(duel_08808628(p, 0x11D8));
+        TRY(duel_08808628(p, 0xFD6));
+        TRY(duel_08808628(p, 0x11E4));
+        TRY(duel_08808628(p, 0x1331));
+        break;
+    case 0x1845:
+        TRY(duel_08808628(p, 0x18F6));
+        break;
+    case 0x1379:
+    case 0x1515:
+        for (i = n - 1; i >= 0; i--) {
+            if (!duel_08808364(i) && duel_w_08913D08 == CARD_UID(duel_w_0891524C.c[i])) {
                 return i;
             }
         }
-        break;
-    case 0x1362:
-    case 0x14EE:
-    case 0x1522:
-    case 0x1531:
-    case 0x166B:
-    case 0x1746:
+    case 0x100C:
+    case 0x1152:
+    case 0x1638:
         for (i = 0; i < n; i++) {
-            if (!duel_08808364(i) && card_get_limit(duel_w_0891524C.c[i].id) > 2 &&
-                duel_0880AA04(duel_w_0891524C.c[i].id, 0) == 0) {
-                return i;
-            }
-        }
-        break;
-    case 0x1333:
-    case 0x1335:
-    case 0x133C:
-    case 0x133E:
-    case 0x133F:
-    case 0x1342:
-    case 0x152F:
-    case 0x17E5:
-    case 0x17E6:
-    case 0x18F4:
-    case 0x1939:
-        if (duel_turn_player != p) {
-            k = 0;
-            for (i = 0; i < 5; i++) {
-                if (duel_can_attack_any(1 - p, i, 1) != 0) {
-                    k++;
+            if (!duel_08808364(i)) {
+                if (duel_0880AA04(duel_w_0891524C.c[i].id, 0) != 0) {
+                    return i;
                 }
-            }
-            if (k == 0) {
-                if (duel_hand_count_name(p, 0xFF8) != 0) {
-                    TRY(duel_08808384(0x17DD));
-                }
-                TRY(duel_08808384(0x17D9));
-                TRY(duel_08808384(0x12AC));
-                TRY(duel_08808384(0x1439));
-                if (duel_0880AF74(p, 0x19BC) != 0 && duel_0880AF74(p, 0x1870) == 0) {
-                    TRY(duel_08808384(0x1870));
-                }
-                TRY(duel_08808384(0x19BC));
-                if (duel_hand_count_level(p, 7) != 0) {
-                    TRY(duel_08808384(0x17E8));
-                    TRY(duel_08808384(0x1873));
-                    TRY(duel_08808384(0x1874));
-                }
-            }
-        }
-        break;
-    case 0x18DA:
-        TRY(duel_08808384(0x152E));
-        break;
-    case 0x191F:
-        if (duel_0880AF74(p, 0x179C) == 0) {
-            TRY(duel_08808384(0x179C));
-        }
-        break;
-    case 0x1612:
-        if (duel_count_grave_type(p, 0x16) != 0) {
-            TRY(duel_08808384(0x1152));
-        }
-        break;
-    case 0x18CC:
-        if (duel_find_effect_card(p, 0x1357, -1) == 0) {
-            TRY(duel_08808384(0x18C3));
-        }
-        break;
-    case 0x1474:
-        TRY(duel_08808384(0xFB7));
-        TRY(duel_08808384(0xFB8));
-        TRY(duel_08808384(0xFB9));
-        TRY(duel_08808384(0xFBA));
-        if (duel_0880AEF4(p, 0x1645) != 0) {
-            TRY(duel_08808384(0xFBB));
-        }
-        TRY(duel_08808384(0xFBE));
-        TRY(duel_08808384(0x18C5));
-        break;
-    case 0x1562:
-        if (duel_0880AEF4(p, 0x12BE) == 0) {
-            TRY(duel_08808628(p, 0x1562));
-        } else if (duel_0880AF74(p, 0x12BE) == 0) {
-            TRY(duel_08808628(p, 0x12BE));
-        }
-        break;
-    case 0x1445:
-    case 0x159C:
-        TRY(duel_08808628(p, 0x1386));
-        TRY(duel_08808628(p, 0x1387));
-        TRY(duel_08808628(p, 0x1388));
-        TRY(duel_08808628(p, 0x16CB));
-        TRY(duel_08808628(p, 0x16E4));
-        TRY(duel_08808628(p, 0x169C));
-        TRY(duel_08808410(p));
-        break;
-    case 0x1590:
-        TRY(duel_08808628(p, 0x1468));
-        TRY(duel_08808628(p, 0x14F0));
-        break;
-    case 0x114A:
-        if (duel_0880AF74(p, 0x1409) != 0) {
-            TRY(duel_08808628(p, 0x18FC));
-            TRY(duel_08808628(p, 0x18FD));
-        } else if (duel_count_monsters(1 - p) != 0) {
-            TRY(duel_08808628(p, 0x18FC));
-        } else if (duel_count_monsters_pos_is(1 - p, 1) != 0) {
-            TRY(duel_08808628(p, 0x18FD));
-        }
-        break;
-    case 0x170C:
-        /* a field spell from the list when the hand has none */
-        for (i = 0; i < (int)duel.players[p & 1].n_hand; i++) {
-            if (card_get_prop5_hi(duel.players[p & 1].hand[i].id) == 6) {
-                break;
-            }
-        }
-        if (i >= (int)duel.players[p & 1].n_hand) {
-            for (i = 0; i < n; i++) {
-                if (card_get_prop5_hi(duel_w_0891524C.c[i].id) == 6) {
+                if (card_get_limit(duel_w_0891524C.c[i].id) < 3) {
                     return i;
                 }
             }
         }
         break;
-    case 0x132F:
-    case 0x13ED:
-        do {
-            i = duel_rand(n);
-        } while (duel_08808364(i) != 0);
-        return i;
-    case 0x10E4:
-        TRY(duel_08808384(0xFE5));
-        TRY(duel_08808384(0x1477));
-        break;
-    case 0x133B:
-        if (duel_count_active(0x135D) == 0) {
-            for (i = 0; i < n; i++) {
-                if (!duel_08808364(i) && duel_w_0891524C.c[i].id == 0x133B) {
-                    return i;
+    case 0x1466:
+    case 0x1483:
+    case 0x1484:
+    case 0x1485:
+    case 0x1486:
+    case 0x1487:
+    case 0x1490:
+        best = bestv = -1;
+        for (i = 0; i < n; i++) {
+            if (!duel_08808364(i)) {
+                k = duel_w_0891524C.c[i].id;
+                v = MAX(card_get_atk(k), card_get_def(k));
+                if (bestv < 0 || v < bestv) {
+                    bestv = v;
+                    best = i;
                 }
             }
         }
-        break;
+        return best;
     case 0x12F9:
         if (duel_0880AEF4(p, 0x16CA) != 0 || duel_0880AEF4(p, 0x19F5) != 0 ||
             duel_0880AEF4(p, 0x1712) != 0 || duel_0880AEF4(p, 0x17BE) != 0) {
@@ -823,95 +730,223 @@ int duel_088087C0(unsigned int p, int id)
             return -1;
         }
         break;
-    case 0x1466:
-    case 0x1483:
-    case 0x1484:
-    case 0x1485:
-    case 0x1486:
-    case 0x1487:
-    case 0x1490:
-        best = -1;
-        bestv = -1;
-        for (i = 0; i < n; i++) {
-            if (!duel_08808364(i)) {
-                v = duel_card_best_stat(duel_w_0891524C.c[i].id);
-                if (bestv < 0 || v < bestv) {
-                    best = i;
-                    bestv = v;
-                }
-            }
-        }
-        return best;
-    case 0x1515:
-    case 0x1379:
-        for (i = n - 1; i >= 0; i--) {
-            if (!duel_08808364(i) && duel_w_08913D08 == CARD_UID(duel_w_0891524C.c[i])) {
-                return i;
-            }
-        }
-    case 0x1638:
-    case 0x1152:
-    case 0x100C:
-        for (i = 0; i < n; i++) {
-            if (!duel_08808364(i)) {
-                if (duel_0880AA04(duel_w_0891524C.c[i].id, 0) != 0) {
-                    return i;
-                }
-                if (card_get_limit(duel_w_0891524C.c[i].id) < 3) {
+    case 0x133B:
+        if (duel_count_active(0x135D) == 0) {
+            for (i = 0; i < n; i++) {
+                if (!duel_08808364(i) && duel_w_0891524C.c[i].id == id) {
                     return i;
                 }
             }
         }
         break;
-    case 0x1845:
-        TRY(duel_08808628(p, 0x18F6));
+    case 0x10E4:
+        TRY(duel_08808384(0xFE5));
+        TRY(duel_08808384(0x1477));
         break;
-    case 0x1365:
-        TRY(duel_08808628(p, 0x11D8));
-        TRY(duel_08808628(p, 0xFD6));
-        TRY(duel_08808628(p, 0x11E4));
-        TRY(duel_08808628(p, 0x1331));
+    case 0x132F:
+    case 0x13ED:
+        do {
+            i = duel_rand(n);
+        } while (duel_08808364(i) != 0);
+        return i;
+    case 0x170C:
+        /* a field spell from the list when the hand has none */
+        found = 0;
+        for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+            if (card_get_prop5_hi(duel.players[p & 1].hand[i].id) == 6) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            for (i = 0; i < n; i++) {
+                if (card_get_prop5_hi(duel_w_0891524C.c[i].id) == 6) {
+                    return i;
+                }
+            }
+        }
         break;
-    case 0x1366:
-    case 0x12EA:
-    case 0x137D:
-        if (duel_turn_player == p && duel_phase <= 3 && duel_count_monsters(1 - p) == 0) {
-            TRY(duel_08808628(p, 5000));
+    case 0x114A:
+        if (duel_0880AF74(p, 0x1409) != 0) {
+            TRY(duel_08808628(p, 0x18FC));
+            TRY(duel_08808628(p, 0x18FD));
+        } else if (duel_count_monsters(1 - p) != 0) {
+            TRY(duel_08808628(p, 0x18FC));
+        } else if (duel_count_monsters_pos_is(1 - p, 1) != 0) {
+            TRY(duel_08808628(p, 0x18FD));
+        }
+        break;
+    case 0x1590:
+        TRY(duel_08808628(p, 0x1468));
+        TRY(duel_08808628(p, 0x14F0));
+        break;
+    case 0x159C:
+    case 0x1445:
+        TRY(duel_08808628(p, 0x1386));
+        TRY(duel_08808628(p, 0x1387));
+        TRY(duel_08808628(p, 0x1388));
+        TRY(duel_08808628(p, 0x16CB));
+        TRY(duel_08808628(p, 0x16E4));
+        TRY(duel_08808628(p, 0x169C));
+        TRY(duel_08808410(p));
+        break;
+    case 0x1562:
+        if (duel_0880AEF4(p, 0x12BE) != 0) {
+            if (duel_0880AF74(p, 0x12BE) == 0) {
+                TRY(duel_08808628(p, 0x12BE));
+            }
+        } else {
+            TRY(duel_08808628(p, 0x1562));
+        }
+        break;
+    case 0x1474:
+        TRY(duel_08808384(0xFB7));
+        TRY(duel_08808384(0xFB8));
+        TRY(duel_08808384(0xFB9));
+        TRY(duel_08808384(0xFBA));
+        if (duel_0880AEF4(p, 0x1645) != 0) {
+            TRY(duel_08808384(0xFBB));
+        }
+        TRY(duel_08808384(0xFBE));
+        TRY(duel_08808384(0x18C5));
+        break;
+    case 0x18CC:
+        if (duel_find_effect_card(p, 0x1357, -1) == 0) {
+            TRY(duel_08808384(0x18C3));
+        }
+        break;
+    case 0x1612:
+        if (duel_count_grave_type(p, 0x16) != 0) {
+            TRY(duel_08808384(0x1152));
+        }
+        break;
+    case 0x191F:
+        if (duel_0880AF74(p, 0x179C) == 0) {
+            TRY(duel_08808384(0x179C));
+        }
+        break;
+    case 0x18DA:
+        TRY(duel_08808384(0x152E));
+        break;
+    case 0x1333:
+    case 0x1335:
+    case 0x133C:
+    case 0x133E:
+    case 0x133F:
+    case 0x1342:
+    case 0x152F:
+    case 0x17E5:
+    case 0x17E6:
+    case 0x18F4:
+    case 0x1939:
+        if (duel_turn_player != p) {
+            int cnt = 0;
+            for (i = 0; i < 5; i++) {
+                if (duel_can_attack_any(1 - p, i, 1) != 0) {
+                    cnt++;
+                }
+            }
+            if (cnt == 0) {
+                if (duel_hand_count_name(p, 0xFF8) != 0) {
+                    TRY(duel_08808384(0x17DD));
+                }
+                TRY(duel_08808384(0x17D9));
+                TRY(duel_08808384(0x12AC));
+                TRY(duel_08808384(0x1439));
+                if (duel_0880AF74(p, 0x19BC) != 0 && duel_0880AF74(p, 0x1870) == 0) {
+                    TRY(duel_08808384(0x1870));
+                }
+                TRY(duel_08808384(0x19BC));
+                if (duel_hand_count_level(p, 7) != 0) {
+                    TRY(duel_08808384(0x17E8));
+                    TRY(duel_08808384(0x1873));
+                    TRY(duel_08808384(0x1874));
+                }
+            }
+        }
+        break;
+    case 0x1362:
+    case 0x14EE:
+    case 0x1522:
+    case 0x1531:
+    case 0x166B:
+    case 0x1746:
+        for (i = 0; i < n; i++) {
+            if (!duel_08808364(i)) {
+                v = duel_w_0891524C.c[i].id;
+                if (card_get_limit(v) >= 3 && duel_0880AA04(v, 0) == 0) {
+                    return i;
+                }
+            }
+        }
+        break;
+    case 0x1A10:
+        if (duel_count_field(p) + duel.players[p & 1].n_hand < 2) {
+            TRY(duel_08808384(0x18F9));
+        }
+        if (duel_grave_count_id_free(p, 0x197F) != 0) {
+            TRY(duel_08808384(0x194D));
+            TRY(duel_08808384(0x19FD));
+        }
+        for (i = 0; i < duel_w_0891524C.n; i++) {
+            if (!duel_08808364(i)) {
+                v = duel_w_0891524C.c[i].id;
+                if (duel_hand_count_name(p, v) == 0 && duel_count_name(p, v) == 0) {
+                    return i;
+                }
+            }
         }
         break;
     }
 
-    /* no monster left: any card the computer may still use */
+    /* is there a monster left in the list? */
+    found = 0;
     for (i = 0; i < n; i++) {
         if (!duel_08808364(i) && card_is_monster(duel_w_0891524C.c[i].id) != 0) {
+            found = 1;
             break;
         }
     }
-    if (i >= n) {
+    if (!found) {
+        /* none: any card the computer may still use */
         r = duel_08808410(p);
+        if (r >= 0) {
+            return r;
+        }
     } else {
-        /* the strongest monster that beats the best ATK or DEF of the opponent */
-        if (id != 0x15E6 && id != 0x1366 && id != 0x137D) {
-            best = -1;
-            bestv = 0;
+        best = -1;
+        md = 0;
+        bestv = 0;
+        k = 0;
+        switch (id) {
+        case 0x137D:
+        case 0x1366:
+        case 0x15E6:
+            k = 1;
+        }
+        if (!k) {
+            /* the strongest monster that beats the best ATK or DEF of the opponent */
             ma = 0;
-            md = 0;
             for (i = 0; i < 5; i++) {
                 duel_08805378(1 - p, i, &st);
-                ma = MAX(st.atk, ma);
-                md = MAX(st.def, md);
+                if (ma < st.atk) {
+                    ma = st.atk;
+                }
+                if (md < st.def) {
+                    md = st.def;
+                }
             }
             for (i = 0; i < n; i++) {
                 if (!duel_08808364(i) && !duel_088086D4(id, i)) {
-                    k = duel_w_0891524C.c[i].id;
-                    v = duel_card_best_stat(k);
-                    if (bestv < v && (ma <= card_get_atk(k) || md < card_get_atk(k) || ma <= card_get_def(k))) {
+                    int cid = duel_w_0891524C.c[i].id;
+                    v = MAX(card_get_atk(cid), card_get_def(cid));
+                    if (bestv < v && (card_get_atk(cid) >= ma || md < card_get_atk(cid) || ma <= card_get_def(cid))) {
                         bestv = v;
                         best = i;
                     }
                 }
             }
-            if (best >= 0) {
+            if (best > -1) {
                 return best;
             }
         }
@@ -921,10 +956,13 @@ int duel_088087C0(unsigned int p, int id)
         for (i = 0; i < n; i++) {
             if (!duel_08808364(i) && !duel_088086D4(id, i)) {
                 v = card_get_atk(duel_w_0891524C.c[i].id) * 4;
-                if (duel_w_0891524C.where[i].w == 0xE) {
-                    v += 1;
-                } else if (duel_w_0891524C.where[i].w == 0xD) {
+                switch (duel_w_0891524C.where[i].w) {
+                case 0xD:
                     v += 2;
+                    break;
+                case 0xE:
+                    v += 1;
+                    break;
                 }
                 if (bestv < v) {
                     bestv = v;
@@ -932,25 +970,27 @@ int duel_088087C0(unsigned int p, int id)
                 }
             }
         }
+        if (r > -1) {
+            return r;
+        }
     }
-    if (r < 0) {
-        k = 0;
-        for (i = 0; i < n; i++) {
-            if (!duel_08808364(i)) {
-                k++;
-            }
+    r = 0;
+    for (i = 0; i < n; i++) {
+        if (!duel_08808364(i)) {
+            r++;
         }
-        if (k == 0) {
-            return -1;
-        }
-        k = duel_rand(k);
-        for (r = 0; r < n; r++) {
-            if (!duel_08808364(r) && k-- == 0) {
-                return r;
+    }
+    if (r == 0) {
+        return -1;
+    }
+    i = duel_rand(r);
+    for (r = 0; r < n; r++) {
+        if (!duel_08808364(r)) {
+            if (i-- == 0) {
+                break;
             }
         }
     }
     return r;
 }
 #undef TRY
-#endif
