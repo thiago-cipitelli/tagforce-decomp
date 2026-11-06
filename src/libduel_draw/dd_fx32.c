@@ -148,7 +148,7 @@ int dd_fx32_s0_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 3,3 KB: alocação de registradores e laços desenrolados diferem */
+#ifdef NON_MATCHING /* 20 palavras: no laço das lâminas o ponteiro e o contador trocam s3/s4, e no lampejo em blocos 64x32 os contadores i/j e x saem em registradores trocados */
 int dd_fx32_s0_update(int phase, DdFx32S0 *d)
 {
     DdFxSlot *s = d->slot;
@@ -164,12 +164,30 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
     float ang;
     float z;
     float tv;
+    float hl;
+    float hw;
+    float cw;
+    float ch;
+    float cu;
+    float cv;
+    float f;
+    float sn;
+    float cs;
     int i;
     int j;
+    int jb;
     int x;
     int y;
     int w;
     int h;
+    int j3;
+    int i3;
+    int j2;
+    int i2;
+    DdFx32Motes * m_0;
+    DdFx32Blades * bl_0;
+    int j_0;
+    int y_0;
 
     dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
@@ -182,36 +200,44 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
 
     /* the blades: 8 frames of a 4 x 2 sheet stretched along z */
     if (phase == 1) {
+        hl = 800.0f;
+        hw = 20.0f;
+        cw = 0.25f;
+        ch = 0.5f;
         for (i = 0; i < 8; i++) {
+            cu = i % 4 * cw;
+            cv = i / 4 * ch;
             for (j = 0; j < 9; j++) {
-                v = d->blade_v[i][j];
-                z = j / 8.0f * 1600.0f + -800.0f;
-                tv = i / 4 * 0.5f + j / 8.0f * 0.5f;
-                v[0].u = i % 4 * 0.25f;
-                v[0].v = tv;
-                v[0].x = -20.0f;
-                v[0].y = 0.0f;
-                v[0].z = z;
-                v[1].u = i % 4 * 0.25f + 0.25f;
-                v[1].v = tv;
-                v[1].x = 20.0f;
-                v[1].y = 0.0f;
-                v[1].z = z;
+                f = j / 8.0f;
+                z = -hl + f * 1600.0f;
+                tv = cv + ch * f;
+                d->blade_v[i][j][0].u = cu;
+                d->blade_v[i][j][0].v = tv;
+                d->blade_v[i][j][0].x = -hw;
+                d->blade_v[i][j][0].y = 0.0f;
+                d->blade_v[i][j][0].z = z;
+                d->blade_v[i][j][1].u = cu + cw;
+                d->blade_v[i][j][1].v = tv;
+                d->blade_v[i][j][1].x = hw;
+                d->blade_v[i][j][1].y = 0.0f;
+                d->blade_v[i][j][1].z = z;
             }
         }
-        for (i = 0; i < 18; i++)
-            d->idx[i] = i;
+        for (i = 0; i < 9; i++) {
+            d->idx[i * 2] = i * 2;
+            d->idx[i * 2 + 1] = i * 2 + 1;
+        }
     }
     if (d->grow == d->grow_end) {
         bl = &d->blade[d->blade_next];
         bl->t = 0;
         bl->flags |= 1;
-        for (i = 0; i < 12; i++) {
+        for (i2 = 0; i2 < 12; i2++) {
             ang = DD_RAND(r) / 32767.0f * 6.2831855f;
-            bl->frame[i] = DD_RAND(r) % 8;
-            vec3_set(&bl->pos[i], sinf(ang) * 220.0f, cosf(ang) * 220.0f + 120.0f, 160.0f);
-            bl->speed[i] = (DD_RAND(r) / 32767.0f * 60.0f + 240.0f) * -1.0f;
-            bl->ang[i] = -ang;
+            bl->frame[i2] = DD_RAND(r) % 8;
+            vec3_set(&bl->pos[i2], sinf(ang) * 220.0f, cosf(ang) * 220.0f + 120.0f, 160.0f);
+            bl->speed[i2] = (DD_RAND(r) / 32767.0f * 60.0f + 240.0f) * -1.0f;
+            bl->ang[i2] = -ang;
         }
         if (d->blade_next < 23)
             d->blade_next++;
@@ -228,50 +254,56 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
     mtx_push();
     mtx_identity();
     for (i = 0; i < 24; i++) {
-        bl = &d->blade[i];
-        if (!(bl->flags & 1))
+        bl_0 = &d->blade[i];
+        if (!(bl_0->flags & 1) == 1)
             continue;
-        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(bl->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
-        for (j = 0; j < 12; j++) {
+        list = dl_ambient_light(list, (unsigned int)(out * (dd_ease_cos(bl_0->t, 24, 1) * 255.0f)) << 24 | 0xFFFFFF);
+        for (jb = 0; jb < 12; jb++) {
             mtx_push();
-            mtx_translate(&bl->pos[j]);
-            mtx_rotate_z(bl->ang[j]);
-            list = draw_array(list, 4, 0x983, 18, d->idx, d->blade_v[bl->frame[j]]);
+            mtx_translate(&bl_0->pos[jb]);
+            mtx_rotate_z(bl_0->ang[jb]);
+            list = draw_array(list, 4, 0x983, 18, d->idx, d->blade_v[bl_0->frame[jb]]);
             mtx_pop();
-            bl->pos[j].z += bl->speed[j];
+            bl_0->pos[jb].z += bl_0->speed[jb];
         }
-        if (bl->t < 23)
-            bl->t++;
+        if (bl_0->t < 23)
+            bl_0->t++;
         else
-            bl->flags &= ~1;
+            bl_0->flags &= ~1;
     }
     mtx_pop();
     dl_set_list(list);
 
     /* the motes: 4 frames of a 2 x 2 sheet */
     if (phase == 1) {
-        for (i = 0; i < 4; i++) {
-            d->mote_v[i][0].u = i % 2 * 0.5f;
-            d->mote_v[i][0].v = i / 2 * 0.5f;
-            d->mote_v[i][0].x = -80.0f;
-            d->mote_v[i][0].y = 80.0f;
-            d->mote_v[i][0].z = 0.0f;
-            d->mote_v[i][1].u = i % 2 * 0.5f + 0.5f;
-            d->mote_v[i][1].v = i / 2 * 0.5f + 0.5f;
-            d->mote_v[i][1].x = 80.0f;
-            d->mote_v[i][1].y = -80.0f;
-            d->mote_v[i][1].z = 0.0f;
+        hw = 80.0f;
+        ch = 0.5f;
+        for (j2 = 0; j2 < 4; j2++) {
+            cu = ch * (j2 % 2);
+            cv = ch * (j2 / 2);
+            d->mote_v[j2][0].u = cu;
+            d->mote_v[j2][0].v = cv;
+            d->mote_v[j2][0].x = -hw;
+            d->mote_v[j2][0].y = hw;
+            d->mote_v[j2][0].z = 0.0f;
+            d->mote_v[j2][1].u = cu + ch;
+            d->mote_v[j2][1].v = cv + ch;
+            d->mote_v[j2][1].x = hw;
+            d->mote_v[j2][1].y = -hw;
+            d->mote_v[j2][1].z = 0.0f;
         }
     }
     if (d->grow == d->grow_end) {
         m = &d->mote[d->mote_next];
         m->t = 0;
         m->flags |= 1;
-        for (i = 0; i < 4; i++) {
+        for (i3 = 0; i3 < 4; i3++) {
             ang = DD_RAND(r) / 32767.0f * 6.2831855f;
-            m->frame[i] = DD_RAND(r) % 4;
-            m->speed[i] = (DD_RAND(r) / 32767.0f * 60.0f + 120.0f) * -1.0f;
-            vec3_set(&m->pos[i], sinf(ang) * 220.0f, cosf(ang) * 220.0f + 120.0f,
+            sn = sinf(ang);
+            cs = cosf(ang);
+            m->frame[i3] = DD_RAND(r) % 4;
+            m->speed[i3] = (DD_RAND(r) / 32767.0f * 60.0f + 120.0f) * -1.0f;
+            vec3_set(&m->pos[i3], sn * 220.0f, cs * 220.0f + 120.0f,
                      DD_RAND(r) / 32767.0f * 20.0f + 160.0f);
         }
         if (d->mote_next < 23)
@@ -289,23 +321,23 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
     mtx_push();
     mtx_identity();
     for (i = 0; i < 24; i++) {
-        m = &d->mote[i];
-        if (!(m->flags & 1))
+        m_0 = &d->mote[i];
+        if (!(m_0->flags & 1) == 1)
             continue;
-        dd_ease_lin(m->t, 24);
-        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(m->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
-        for (j = 0; j < 4; j++) {
+        dd_ease_lin(m_0->t, 24);
+        list = dl_ambient_light(list, (unsigned int)(out * (dd_ease_cos(m_0->t, 24, 1) * 255.0f)) << 24 | 0xFFFFFF);
+        for (j_0 = 0; j_0 < 4; j_0++) {
             mtx_push();
-            mtx_translate(&m->pos[j]);
+            mtx_translate(&m_0->pos[j_0]);
             mtx_mult(&bill);
-            list = draw_array(list, 6, 0x183, 2, 0, d->mote_v[m->frame[j]]);
+            list = draw_array(list, 6, 0x183, 2, 0, d->mote_v[m_0->frame[j_0]]);
             mtx_pop();
-            m->pos[j].z += m->speed[j];
+            m_0->pos[j_0].z += m_0->speed[j_0];
         }
-        if (m->t < 23)
-            m->t++;
+        if (m_0->t < 23)
+            m_0->t++;
         else
-            m->flags &= ~1;
+            m_0->flags &= ~1;
     }
     mtx_pop();
     dl_set_list(list);
@@ -318,13 +350,13 @@ int dd_fx32_s0_update(int phase, DdFx32S0 *d)
         list = dd_depth_enable(list, 0, 0);
         list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
         list = dl_color(list, (unsigned int)(in * 200.0f * out) << 24 | 0xA0DCFF);
-        for (i = 0, y = 0; i < 9; i++, y += 32) {
-            h = i < 8 ? 32 : 272 - y;
+        for (i = 0, y_0 = 0; i < 9; i++, y_0 += 32) {
+            h = i < 8 ? 32 : 272 - y_0;
             for (j = 0, x = 0; j < 8; j++, x += 64) {
                 w = j < 7 ? 64 : 480 - x;
-                list = dd_tex_fb_rect(list, x, y, 64, 32);
+                list = dd_tex_fb_rect(list, x, y_0, 64, 32);
                 list = draw_set_offsets(list, w, h, w, h);
-                list = draw_sprite(list, x, y, 0, 0, 0, 0, 0);
+                list = draw_sprite(list, x, y_0, 0, 0, 0, 0, 0);
             }
         }
         dl_set_list(list);
@@ -620,7 +652,7 @@ int dd_fx32_s2_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 3,1 KB: alocação de registradores e laços desenrolados diferem */
+#ifdef NON_MATCHING /* 14 palavras: no laço de desenho das faíscas o ponteiro da faísca e o contador interno trocam s3/s4 (como em dd_fx32_s0_update) */
 int dd_fx32_s2_update(int phase, DdFx32S2 *d)
 {
     DdFxSlot *s = d->slot;
@@ -641,15 +673,28 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
     float tu;
     float tv;
     int sign;
+    float cw;
+    float ch;
+    float hw;
+    float tvv;
+    float sn;
+    float cs;
+    unsigned int c;
     int i;
     int j;
+    int jd;
+    int j3;
+    int i3;
+    int j2;
+    int i2;
+    DdFx32Spin * sp_0;
 
     dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
     if (phase == 1)
         dd_fx32_kind(s->id, &d->grow_end, &d->end);
     in = dd_ease_sin(d->t, 8, 1);
-    out = dd_ease_lin(d->t - (d->end - 8), 8);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 8), 8);
     dd_mtx_billboard_cam(&bill);
     dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
 
@@ -659,22 +704,23 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
         for (i = 0; i < 49; i++) {
             fr = i / 48.0f;
             z = fr * -6000.0f;
+            tvv = fr * 4.0f;
             alpha = (unsigned int)((1.0f - fr) * 255.0f);
+            c = alpha << 24 | 0xFFFFFF;
             for (j = 0; j < 33; j++) {
-                v = &d->tube[i][j];
                 ang = j / 32.0f * 6.2831855f;
-                v->u = j / 32.0f * 2.0f;
-                v->v = fr * 4.0f;
-                v->color = alpha << 24 | 0xFFFFFF;
-                v->x = sinf(ang) * 220.0f;
-                v->y = cosf(ang) * 220.0f;
-                v->z = z;
+                d->tube[i][j].u = j / 32.0f * 2.0f;
+                d->tube[i][j].v = tvv;
+                d->tube[i][j].color = c;
+                d->tube[i][j].x = sinf(ang) * 220.0f;
+                d->tube[i][j].y = cosf(ang) * 220.0f;
+                d->tube[i][j].z = z;
             }
         }
         for (i = 0; i < 48; i++) {
             for (j = 0; j < 33; j++) {
-                d->idx[i][j * 2] = i * 33 + j;
-                d->idx[i][j * 2 + 1] = i * 33 + j + 33;
+                d->idx[i][j * 2] = j + i * 33;
+                d->idx[i][j * 2 + 1] = j + (i + 1) * 33;
             }
         }
     }
@@ -689,9 +735,9 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
         mtx_identity();
         mtx_translate(&d->center);
         list = dl_tex_offset(d->tex_u, d->tex_v, list);
-        list = dl_ambient_light(list, (unsigned int)(in * 255.0f * (1.0f - out)) << 24 | 0xFFFFFF);
-        for (i = 0; i < 48; i++)
-            list = draw_array(list, 4, 0x119F, 66, d->idx[i], d->tube);
+        list = dl_ambient_light(list, (unsigned int)(in * 255.0f * out) << 24 | 0xFFFFFF);
+        for (i2 = 0; i2 < 48; i2++)
+            list = draw_array(list, 4, 0x119F, 66, d->idx[i2], d->tube);
         d->tex_u = d->tex_u + 0.05f;
         d->tex_v = d->tex_v - 0.2f;
         mtx_pop();
@@ -701,46 +747,49 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
 
     /* spinning sparks: 8 frames of a 4 x 2 sheet */
     if (phase == 1) {
-        for (i = 0; i < 8; i++) {
-            q = d->spin_v[i];
-            tu = i % 4 * 0.25f;
-            tv = i / 4 * 0.5f;
-            q[0].u = tu;
-            q[0].v = tv;
-            q[0].x = -18.0f;
-            q[0].y = 18.0f;
-            q[0].z = 0.0f;
-            q[1].u = tu;
-            q[1].v = tv + 0.5f;
-            q[1].x = -18.0f;
-            q[1].y = -18.0f;
-            q[1].z = 0.0f;
-            q[2].u = tu + 0.25f;
-            q[2].v = tv;
-            q[2].x = 18.0f;
-            q[2].y = 18.0f;
-            q[2].z = 0.0f;
-            q[3].u = tu + 0.25f;
-            q[3].v = tv + 0.5f;
-            q[3].x = 18.0f;
-            q[3].y = -18.0f;
-            q[3].z = 0.0f;
+        cw = 0.25f;
+        ch = 0.5f;
+        hw = 18.0f;
+        for (j2 = 0; j2 < 8; j2++) {
+            tu = cw * (j2 % 4);
+            tv = ch * (j2 / 4);
+            d->spin_v[j2][0].u = tu;
+            d->spin_v[j2][0].v = tv;
+            d->spin_v[j2][0].x = -hw;
+            d->spin_v[j2][0].y = hw;
+            d->spin_v[j2][0].z = 0.0f;
+            d->spin_v[j2][1].u = tu;
+            d->spin_v[j2][1].v = tv + ch;
+            d->spin_v[j2][1].x = -hw;
+            d->spin_v[j2][1].y = -hw;
+            d->spin_v[j2][1].z = 0.0f;
+            d->spin_v[j2][2].u = tu + cw;
+            d->spin_v[j2][2].v = tv;
+            d->spin_v[j2][2].x = hw;
+            d->spin_v[j2][2].y = hw;
+            d->spin_v[j2][2].z = 0.0f;
+            d->spin_v[j2][3].u = tu + cw;
+            d->spin_v[j2][3].v = tv + ch;
+            d->spin_v[j2][3].x = hw;
+            d->spin_v[j2][3].y = -hw;
+            d->spin_v[j2][3].z = 0.0f;
         }
     }
     if (d->grow == d->grow_end && d->t < d->end) {
         sp = &d->spin[d->spin_next];
         sp->t = 0;
         sp->flags |= 1;
-        for (i = 0; i < 8; i++) {
+        for (i3 = 0; i3 < 8; i3++) {
             ang = DD_RAND(r) / 32767.0f * 6.2831855f;
             rad = DD_RAND(r) / 32767.0f * 80.0f;
-            sp->frame[i] = DD_RAND(r) % 8;
-            sp->speed[i] = DD_RAND(r) / 32767.0f * 10.0f + 20.0f;
-            vec3_set(&sp->pos[i], rad * sinf(ang), rad * cosf(ang) + 120.0f,
+            sn = sinf(ang);
+            cs = cosf(ang);
+            sp->frame[i3] = DD_RAND(r) % 8;
+            sp->speed[i3] = DD_RAND(r) / 32767.0f * 10.0f + 20.0f;
+            vec3_set(&sp->pos[i3], rad * sn, rad * cs + 120.0f,
                      DD_RAND(r) / 32767.0f * 20.0f + 160.0f);
-            sp->ang[i] = 0.0f;
-            sign = (DD_RAND(r) & 1) * 2 - 1;
-            sp->spin[i] = DD_RAND(r) / 32767.0f * 0.34906587f * sign;
+            sp->ang[i3] = 0.0f;
+            sp->spin[i3] = (DD_RAND(r) % 2 * 2 - 1) * (DD_RAND(r) / 32767.0f * 0.34906587f);
         }
         if (d->spin_next < 23)
             d->spin_next++;
@@ -756,27 +805,27 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    for (i = 0; i < 24; i++) {
-        sp = &d->spin[i];
-        if (!(sp->flags & 1))
+    for (j3 = 0; j3 < 24; j3++) {
+        sp_0 = &d->spin[j3];
+        if (!(sp_0->flags & 1) == 1)
             continue;
-        dd_ease_lin(sp->t, 24);
-        list = dl_ambient_light(list, (unsigned int)((1.0f - out) * dd_ease_cos(sp->t, 24, 1) * 255.0f) << 24
+        dd_ease_lin(sp_0->t, 24);
+        list = dl_ambient_light(list, (unsigned int)(out * (dd_ease_cos(sp_0->t, 24, 1) * 255.0f)) << 24
                                           | 0xFFFFFF);
-        for (j = 0; j < 8; j++) {
+        for (jd = 0; jd < 8; jd++) {
             mtx_push();
-            mtx_translate(&sp->pos[j]);
+            mtx_translate(&sp_0->pos[jd]);
             mtx_mult(&bill);
-            mtx_rotate_z(sp->ang[j]);
-            list = draw_array(list, 4, 0x183, 4, 0, d->spin_v[sp->frame[j]]);
+            mtx_rotate_z(sp_0->ang[jd]);
+            list = draw_array(list, 4, 0x183, 4, 0, d->spin_v[sp_0->frame[jd]]);
             mtx_pop();
-            sp->pos[j].z -= sp->speed[j];
-            sp->ang[j] += sp->spin[j];
+            sp_0->pos[jd].z -= sp_0->speed[jd];
+            sp_0->ang[jd] += sp_0->spin[jd];
         }
-        if (sp->t < 23)
-            sp->t++;
+        if (sp_0->t < 23)
+            sp_0->t++;
         else
-            sp->flags &= ~1;
+            sp_0->flags &= ~1;
     }
     mtx_pop();
     dl_set_list(list);
@@ -1229,7 +1278,7 @@ int dd_fx32_s5_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 4,5 KB: alocação de registradores e laços desenrolados diferem */
+#ifdef NON_MATCHING /* 88 palavras: faísca/contador interno em s3/s4 trocados no desenho e registradores temporários do laço da grade 16x16 */
 int dd_fx32_s5_update(int phase, DdFx32S5 *d)
 {
     DdFxSlot *s = d->slot;
@@ -1250,9 +1299,21 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
     float rad;
     float tu;
     float tv;
-    int sign;
+    float cw;
+    float ch;
+    float hw;
+    float tvv;
+    float sn;
+    float cs;
+    unsigned int c;
     int i;
     int j;
+    int jd;
+    DdFx32Spin4 *sq;
+    int j3;
+    int i3;
+    int j2;
+    int i2;
 
     dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
@@ -1269,22 +1330,23 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
         for (i = 0; i < 49; i++) {
             fr = i / 48.0f;
             z = fr * -6000.0f;
+            tvv = fr * 5.0f;
             alpha = (unsigned int)((1.0f - fr) * 255.0f);
+            c = alpha << 24 | 0xFFFFFF;
             for (j = 0; j < 33; j++) {
-                v = &d->tube[i][j];
                 ang = j / 32.0f * 6.2831855f;
-                v->u = j / 32.0f * 3.0f;
-                v->v = fr * 5.0f;
-                v->color = alpha << 24 | 0xFFFFFF;
-                v->x = sinf(ang) * 220.0f;
-                v->y = cosf(ang) * 220.0f;
-                v->z = z;
+                d->tube[i][j].u = j / 32.0f * 3.0f;
+                d->tube[i][j].v = tvv;
+                d->tube[i][j].color = c;
+                d->tube[i][j].x = sinf(ang) * 220.0f;
+                d->tube[i][j].y = cosf(ang) * 220.0f;
+                d->tube[i][j].z = z;
             }
         }
         for (i = 0; i < 48; i++) {
             for (j = 0; j < 33; j++) {
-                d->idx[i][j * 2] = i * 33 + j;
-                d->idx[i][j * 2 + 1] = i * 33 + j + 33;
+                d->idx[i][j * 2] = j + i * 33;
+                d->idx[i][j * 2 + 1] = j + (i + 1) * 33;
             }
         }
     }
@@ -1300,8 +1362,8 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
         mtx_translate(&d->center);
         list = dl_tex_offset(d->tex_u, d->tex_v, list);
         list = dl_ambient_light(list, (unsigned int)(in * 255.0f * out) << 24 | 0xFFFFFF);
-        for (i = 0; i < 48; i++)
-            list = draw_array(list, 4, 0x119F, 66, d->idx[i], d->tube);
+        for (i2 = 0; i2 < 48; i2++)
+            list = draw_array(list, 4, 0x119F, 66, d->idx[i2], d->tube);
         d->tex_u = d->tex_u + 0.01f;
         d->tex_v = d->tex_v - 0.1f;
         mtx_pop();
@@ -1311,46 +1373,49 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
 
     /* spinning sparks */
     if (phase == 1) {
-        for (i = 0; i < 8; i++) {
-            q = d->spin_v[i];
-            tu = i % 4 * 0.25f;
-            tv = i / 4 * 0.5f;
-            q[0].u = tu;
-            q[0].v = tv;
-            q[0].x = -32.0f;
-            q[0].y = 32.0f;
-            q[0].z = 0.0f;
-            q[1].u = tu;
-            q[1].v = tv + 0.5f;
-            q[1].x = -32.0f;
-            q[1].y = -32.0f;
-            q[1].z = 0.0f;
-            q[2].u = tu + 0.25f;
-            q[2].v = tv;
-            q[2].x = 32.0f;
-            q[2].y = 32.0f;
-            q[2].z = 0.0f;
-            q[3].u = tu + 0.25f;
-            q[3].v = tv + 0.5f;
-            q[3].x = 32.0f;
-            q[3].y = -32.0f;
-            q[3].z = 0.0f;
+        cw = 0.25f;
+        ch = 0.5f;
+        hw = 32.0f;
+        for (j2 = 0; j2 < 8; j2++) {
+            tu = cw * (j2 % 4);
+            tv = ch * (j2 / 4);
+            d->spin_v[j2][0].u = tu;
+            d->spin_v[j2][0].v = tv;
+            d->spin_v[j2][0].x = -hw;
+            d->spin_v[j2][0].y = hw;
+            d->spin_v[j2][0].z = 0.0f;
+            d->spin_v[j2][1].u = tu;
+            d->spin_v[j2][1].v = tv + ch;
+            d->spin_v[j2][1].x = -hw;
+            d->spin_v[j2][1].y = -hw;
+            d->spin_v[j2][1].z = 0.0f;
+            d->spin_v[j2][2].u = tu + cw;
+            d->spin_v[j2][2].v = tv;
+            d->spin_v[j2][2].x = hw;
+            d->spin_v[j2][2].y = hw;
+            d->spin_v[j2][2].z = 0.0f;
+            d->spin_v[j2][3].u = tu + cw;
+            d->spin_v[j2][3].v = tv + ch;
+            d->spin_v[j2][3].x = hw;
+            d->spin_v[j2][3].y = -hw;
+            d->spin_v[j2][3].z = 0.0f;
         }
     }
     if (d->grow == d->grow_end) {
         sp = &d->spin[d->spin_next];
         sp->t = 0;
         sp->flags |= 1;
-        for (i = 0; i < 4; i++) {
+        for (i3 = 0; i3 < 4; i3++) {
             ang = DD_RAND(r) / 32767.0f * 6.2831855f;
             rad = DD_RAND(r) / 32767.0f * 80.0f;
-            sp->frame[i] = DD_RAND(r) % 8;
-            sp->speed[i] = DD_RAND(r) / 32767.0f * 10.0f + 20.0f;
-            vec3_set(&sp->pos[i], rad * sinf(ang), rad * cosf(ang) + 120.0f,
+            sn = sinf(ang);
+            cs = cosf(ang);
+            sp->frame[i3] = DD_RAND(r) % 8;
+            sp->speed[i3] = DD_RAND(r) / 32767.0f * 10.0f + 20.0f;
+            vec3_set(&sp->pos[i3], rad * sn, rad * cs + 120.0f,
                      DD_RAND(r) / 32767.0f * 20.0f + 160.0f);
-            sp->ang[i] = 0.0f;
-            sign = (DD_RAND(r) & 1) * 2 - 1;
-            sp->spin[i] = DD_RAND(r) / 32767.0f * 0.34906587f * sign;
+            sp->ang[i3] = 0.0f;
+            sp->spin[i3] = (DD_RAND(r) % 2 * 2 - 1) * (DD_RAND(r) / 32767.0f * 0.34906587f);
         }
         if (d->spin_next < 23)
             d->spin_next++;
@@ -1364,28 +1429,28 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    for (i = 0; i < 24; i++) {
-        sp = &d->spin[i];
-        if (!(sp->flags & 1))
+    for (j3 = 0; j3 < 24; j3++) {
+        sq = &d->spin[j3];
+        if (!(sq->flags & 1) == 1)
             continue;
-        dd_ease_lin(sp->t, 24);
-        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(sp->t, 24, 1) * 255.0f) << 24 | 0xFFFFFF);
+        dd_ease_lin(sq->t, 24);
+        list = dl_ambient_light(list, (unsigned int)(out * (dd_ease_cos(sq->t, 24, 1) * 255.0f)) << 24 | 0xFFFFFF);
         list = dd_blend_enable(list, 1, 0, 2, 10, 0, -1);
         list = dl_color(list, 0x80FFFFFF);
-        for (j = 0; j < 4; j++) {
+        for (jd = 0; jd < 4; jd++) {
             mtx_push();
-            mtx_translate(&sp->pos[j]);
+            mtx_translate(&sq->pos[jd]);
             mtx_mult(&bill);
-            mtx_rotate_z(sp->ang[j]);
-            list = draw_array(list, 4, 0x183, 4, 0, d->spin_v[sp->frame[j]]);
+            mtx_rotate_z(sq->ang[jd]);
+            list = draw_array(list, 4, 0x183, 4, 0, d->spin_v[sq->frame[jd]]);
             mtx_pop();
-            sp->pos[j].z -= sp->speed[j];
-            sp->ang[j] += sp->spin[j];
+            sq->pos[jd].z -= sq->speed[jd];
+            sq->ang[jd] += sq->spin[jd];
         }
-        if (sp->t < 23)
-            sp->t++;
+        if (sq->t < 23)
+            sq->t++;
         else
-            sp->flags &= ~1;
+            sq->flags &= ~1;
     }
     mtx_pop();
     dl_set_list(list);
@@ -1410,7 +1475,7 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
         for (i = 0; i < 16; i++) {
             for (j = 0; j < 16; j++) {
                 d->phase[i][j] = DD_RAND(r) / 32767.0f * 6.2831855f;
-                d->sign[i][j] = (DD_RAND(r) & 1) * 2 - 1;
+                d->sign[i][j] = DD_RAND(r) % 2 * 2 - 1;
             }
         }
     }
