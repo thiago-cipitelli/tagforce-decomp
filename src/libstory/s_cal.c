@@ -1,6 +1,5 @@
 // @range 0x0880B3E4-0x0880C728
 // @rodata 0x0881C16C-0x0881C29C
-// @asm 0x0880B65C-0x0880B6B4
 // @asm 0x0880BF94-0x0880C07C
 // @asm 0x0880C4C8-0x0880C598
 // @data 0x0881D1E0-0x0881D32C
@@ -157,7 +156,6 @@ int scal_period_now(void)
     return scal_period_b(scal_date);
 }
 
-#ifdef NON_MATCHING /* o original guarda uma cópia morta do `li v1,2` no alvo do bnel */
 /* before the 24th of month 2 */
 int sdate_is_daytime(void)
 {
@@ -167,13 +165,15 @@ int sdate_is_daytime(void)
     if (d->month == 1) {
         if (d->day >= 24)
             r = 0;
-    } else if (d->month == 2) {
-        if (d->day < 24)
-            r = 0;
+    } else {
+        if (d->month == 2) {
+            if (d->day < 24)
+                r = 0;
+        }
+        return r;
     }
     return r;
 }
-#endif
 
 /* from the 24th of month 2 on */
 int st_room_variant(void)

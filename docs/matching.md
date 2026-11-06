@@ -162,6 +162,8 @@ Os casos mais comuns nesta etapa:
 | `v0` já vale a constante do teste, mas o original salta para um `li v0,K` próprio | agrupar os `case` com o mesmo corpo (`case 1: case 3:`) |
 | `return` comum depois do `if/else` vira `li v0,1` em cada ramo | um `return 1;` em cada ramo |
 | `lui` de uma global em `.bss` **antes** do último `sw $s/ra` do prólogo (só o prólogo difere) | a global era `static` **da função** (só ela a usa): `static int sorted;` dentro da função e `// @bss A-B` no cabeçalho (ver abaixo); `static`/global de arquivo não reproduz |
+| `b fim; move v0,zero` e depois `beqz/bnez; nop` para o mesmo `move v0,zero` (o mwcc faz `b??l` + cópia no 1º) | `default: break;` (ou `goto` ao `return` comum) em vez de `default: return 0;`: a cópia vai para o `b` |
+| cópia morta do 1º comando do `else` depois do `b` do `then` | `else { if (...) {...} return r; } return r;` em vez de `else if` |
 
 ## `static` em `.bss`: `// @bss 0xA-0xB`
 
@@ -213,12 +215,36 @@ palavras), `duel_0888B9A8`/`duel_0888BBE4` (ordem de carga dos argumentos: `a->i
 `1 - a->player`; só uma atribuição dentro do argumento, `f(q, …, (t == (q = 1 - a->player)) …)`, bate, e isso é
 comportamento indefinido em C: não usar).
 
+## Desvios likely: quem recebe a cópia (pesquisa da rodada 7)
+
+O preenchimento de delay slot é do escalonador (`#pragma schedule off` some com todos). Regras observadas no
+mwcc 219, que também explicam o original:
+
+- **Uma cópia por destino.** A 1ª instrução de um bloco é copiada para o delay slot de **um só** desvio que
+  chega nele: o primeiro na ordem do código (um `b` incondicional conta). Os outros desvios para o mesmo bloco
+  ficam `bXX; nop`. Quando o original tem `b fim; move v0,zero` antes e os testes seguintes com `nop`, o `b` é
+  o salto do fonte para o `return` comum: `switch` com `default: break;` (e não `default: return 0;`) caindo
+  no `return 0` final, ou `goto` para o rótulo do `return` comum. Bateram assim `st_cond_daytime`,
+  `st_cond_weekday`, `st_cond_day`, `st_cond_date` (libstory) e, em teste, `duel_08870DC4`/`duel_0887AD38`
+  (`default: goto none;` + `none: return 0;`).
+- **Cópia (fica a original) × movida (some do destino).** A cópia morta depois do `b` aparece quando o bloco
+  destino do likely termina no seu próprio `return`: `if (a) {...} else { if (b) {...} return r; } return r;`
+  em vez de `else if` (`sdate_is_daytime`). Com `else if` ou `goto` para o fim, o mwcc move a instrução.
+  O `||` seguido de `return` (`if (a || b) return; ...`) também deixa a cópia.
+- **Cabeça de laço:** no original a cópia da 1ª instrução da cabeça é do desvio de volta do laço (`bnel` para
+  cabeça+4, `dd_cobj_find`) ou de ninguém (o de volta já tem o delay preenchido: `st_scr_find_es`,
+  `st_pl_card_bit_set`); o desvio de entrada fica `bnez; nop`. O 219 dá a cópia ao primeiro na ordem do código,
+  a entrada. Nenhuma forma (while/for/do/goto, laço antes da entrada no texto, `opt_*`) reproduziu: pule.
+- **`#pragma no_branch_likely on`** (não documentado; `#pragma no_branch_likely reset` depois da função)
+  desliga todos os likely da função, inclusive os de laço. Só serve para função sem nenhum likely no original;
+  o build 121 se comporta igual a ele (e tem frame de pilha diferente). Os outros pragmas do backend
+  (`peephole`, `debug_1..5`, `late_conditional_move`, `opt_*`, níveis `-O`) não mudam essa escolha.
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
-- **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`):
-  o mwcc 219 remove em if/else, goto, inline, pragmas e no build 121. Só sobrevive dentro do corpo de um `case`
-  e no último termo de `||` seguido de `return`. Tente essas duas formas **uma vez**; se não der, pule.
-  É o padrão de ~2000 pontos do libduel_eng, o maior bloqueio aberto.
+- **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`) e
+  **`bXX; nop` que o mwcc 219 faz likely**: em parte corrigíveis, ver "Desvios likely" acima. Sem forma: o
+  destino é a cabeça de um laço (`st_scr_find_es`, `st_pl_card_bit_set`). `tools/likely_family.py` lista os da fila.
 - **Original lê local da pilha não inicializado**, ou **guarda um store morto** que o mwcc elimina.
 - **SDK do BOOT compilado com GCC** (arquivos com `asm` do mwcc sob `__MWERKS__`): trilha separada, fora da fila;
   ficam em `@asm` os que carregam dados por `lui`+`%lo` (ver `docs/build.md`, "Código GCC como funções asm").
