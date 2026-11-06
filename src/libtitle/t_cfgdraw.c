@@ -44,10 +44,11 @@ int tcfg_group_style[4] = { 8, 9, 10, 11 };
 unsigned char tcfg_group_tab[4] = { 0, 0, 0, 1 };
 short tcfg_group_rows[4] = { 1, 1, 4, 5 };
 
-#ifdef NON_MATCHING /* função de 3 KB com laços de peças; alocação de registradores e pilha diferem (original 3168 B, este 2888 B: o original guarda mais locais na pilha, quadro de 704 B); lógica conferida com o asm em 2026-11-05 */
+#ifdef NON_MATCHING /* 3168 B como o original e mesma forma (283 palavras): x/y/rw/rh inicializados (os switch sem default os deixam vivos), índices sem sinal nos laços da aba e da caixa de ajuda (com índice afim o mwcc reduz o endereço a um ponteiro e deixa de içar spr[0].w etc. do laço dos grupos), switch (step) no fim; falta a alocação dos $s (x/rw/rh um registrador acima, cur em $s1 em vez de $s4) */
 void *tcfg_draw(void *list)
 {
     TCfg *c = tcfg;
+    int first = 0;
     char gims[2][64] = { "m_menu_panel01.gim", "menu_opt01.gim" };
     char gims_alt[2][64] = { "m_menu_panel02.gim", "menu_opt02.gim" };
     TCfgSpr spr[27] = {
@@ -62,20 +63,26 @@ void *tcfg_draw(void *list)
         { 38, 8, 1, 5 }, { 40, 8, 5, 5 }, { 48, 12, 16, 14 },
     };
     int style[4] = { 8, 9, 10, 11 };
+    /* piece being drawn (the switches below leave them as they were for an index none of their cases covers) */
+    short x = 131;
+    short y = 34;
+    short rw = 218;
+    short rh = 17;
+    short sel_group = 0;
     unsigned char tab[4] = { 0, 0, 0, 1 };
-    short rows[4] = { 1, 1, 4, 5 };
-    short gy[4];
-    short gx[4];
+    short n = 0;
     short top[4];
-    int first = 0;
+    short rows[4] = { 1, 1, 4, 5 };
     unsigned char cur = c->step;
     int found = 0;
+    short gx[4];
+    short gy[4];
     int g, i, k;
-    short sel_row = 0;
-    short sel_group = 0;
-    short n = 0;
-    short rx, ry, rw, rh;
-    short x, y;
+    short sel_row;
+    unsigned char sel;
+    short pieces;
+    short u, v;
+    short base_x, base_y, mw, mh;
 
     cfg_get_language();
     if (c->mode == 1)
@@ -98,17 +105,18 @@ void *tcfg_draw(void *list)
             sel_row = 0;
             if (cur == n)
                 break;
-            sel_row = 1;
+            sel_row++;
             n++;
         } else {
             sel_row = 1;
             for (k = 0; k < rows[g] - 1; k++) {
-                if (cur == n) {
-                    found = 1;
-                    break;
+                if (cur != n) {
+                    sel_row++;
+                    n++;
+                    continue;
                 }
-                sel_row++;
-                n++;
+                found = 1;
+                break;
             }
         }
         if (found)
@@ -126,146 +134,160 @@ void *tcfg_draw(void *list)
         if (cfg_get_language() != 0)
             gy[g] = g * 6 + top[g] * 17 + 42;
     }
-    for (g = first; g < 4; g++) {
-        int pieces = rows[g] == 1 ? 3 : 9;
+    for (; first < 4; first++) {
+        pieces = rows[first] == 1 ? 3 : 9;
 
         /* frame */
         for (i = 0; i < pieces; i++) {
-            TCfgSpr *s = &spr[i];
-
+            u = spr[i].u + style[first] % 6 * 20;
+            v = spr[i].v + style[first] / 6 * 24;
             list = tcfg_gfx(list, c->gim);
             switch (i % 3) {
-            case 2:
-                x = 349 - s->w;
-                rw = s->w;
+            case 0:
+                rw = spr[i].w;
+                x = spr[i].u + 131;
                 break;
             case 1:
-                x = s->u + 131;
                 rw = 218 - (spr[0].w + spr[2].w);
+                x = spr[i].u + 131;
                 break;
-            case 0:
-                rw = s->w;
-                x = s->u + 131;
+            case 2:
+                rw = spr[i].w;
+                x = 349 - rw;
                 break;
             }
             switch (i / 3) {
-            case 1:
-                rh = s->h;
-                y = gy[g] + (rows[g] - 1) * 17;
+            case 0:
+                y = gy[first];
+                rh = spr[i].h;
                 break;
             case 2:
-                y = gy[g] + 10;
-                rh = rows[g] * 17 - 10;
+                y = gy[first] + 10;
+                rh = rows[first] * 17 - 10;
                 break;
-            default:
-                y = gy[g];
-                rh = s->h;
+            case 1:
+                rh = spr[i].h;
+                y = gy[first] + (rows[first] - 1) * 17;
                 break;
             }
-            list = draw_set_offsets(list, s->w, s->h, rw, rh);
-            list = draw_sprite(list, x, y, 0, s->u + style[g] % 6 * 20, s->v + style[g] / 6 * 24, 0, 0);
+            list = draw_set_offsets(list, spr[i].w, spr[i].h, rw, rh);
+            list = draw_sprite(list, x, y, 0, u, v, 0, 0);
         }
         /* tab of the group title */
-        if (rows[g] > 1) {
+        if (rows[first] > 1) {
+            y = gy[first] + 4;
             for (i = 0; i < 3; i++) {
-                TCfgSpr *s = &spr[9 + i];
-
+                u = spr[(unsigned int)(9 + i)].u;
+                v = tab[first] * 16 + spr[(unsigned int)(9 + i)].v;
                 list = tcfg_gfx(list, c->gim2);
                 switch (i % 3) {
-                case 2:
-                    x = gx[g] + 213 - s->w;
-                    rw = s->w;
+                case 0:
+                    rw = spr[(unsigned int)(9 + i)].w;
+                    x = gx[first] + 4 + u;
                     break;
                 case 1:
-                    x = gx[g] + 4 + s->u;
                     rw = 209 - (spr[9].w + spr[11].w);
+                    x = gx[first] + 4 + u;
                     break;
-                default:
-                    rw = s->w;
-                    x = gx[g] + 4 + s->u;
+                case 2:
+                    rw = spr[(unsigned int)(9 + i)].w;
+                    x = gx[first] + 213 - rw;
                     break;
                 }
-                list = draw_set_offsets(list, s->w, s->h, rw, s->h);
-                list = draw_sprite(list, x, gy[g] + 4, 0, s->u, tab[g] * 16 + s->v, 0, 0);
+                rh = spr[(unsigned int)(9 + i)].h;
+                list = draw_set_offsets(list, spr[(unsigned int)(9 + i)].w, spr[(unsigned int)(9 + i)].h, rw, rh);
+                list = draw_sprite(list, x, y, 0, u, v, 0, 0);
             }
         }
         /* cursor bar */
-        if (c->active && g == sel_group) {
+        if (c->active && first == sel_group) {
+            x = gx[first] + 4;
+            y = gy[first] + 4 + sel_row * 17;
+            rw = 209;
+            rh = 14;
             list = tcfg_gfx(list, c->gim);
-            list = draw_set_offsets(list, spr[12].w, spr[12].h, 209, 14);
-            list = draw_sprite(list, gx[g] + 4, gy[g] + 4 + sel_row * 17, 0, spr[12].u, spr[12].v, 0, 0);
+            list = draw_set_offsets(list, spr[12].w, spr[12].h, rw, rh);
+            list = draw_sprite(list, x, y, 0, spr[12].u, spr[12].v, 0, 0);
         }
-        for (i = 0; i < rows[g]; i++)
-            list = tcfg_row(list, c, g, i, g == sel_group && i == sel_row, gx[g], gy[g], 218, rows[g] * 17);
+        for (i = 0; i < rows[first]; i++) {
+            if (first == sel_group && i == sel_row)
+                sel = 1;
+            else
+                sel = 0;
+            list = tcfg_row(list, c, first, i, sel, gx[first], gy[first], 218, rows[first] * 17);
+        }
     }
     /* help box at the bottom: 3x3 pieces; the stretched middle uses the pieces beside it in the template
        (s[-1], s[1]) for both axes, as the original does */
-    {
-        short base_x = spr[17].w + 8;
-        short base_y = spr[17].h + 246;
-        short mw = 0, mh = 0;
-        short bx, by, bw, bh;
-
-        for (i = 0; i < 9; i++) {
-            TCfgSpr *s = &spr[17 + i];
-            short u = s->u;
-            short v = s->v;
-
-            switch (i) {
-            case 0: case 3: case 6:
-                bw = s->w;
-                bx = 8;
-                break;
-            }
-            switch (i) {
-            case 1: case 4: case 7:
-                bx = base_x;
-                mw = 462 - s[-1].w - s[1].w;
-                if (mw < 0)
-                    mw = 0;
-                bw = mw;
-                break;
-            }
-            switch (i) {
-            case 2: case 5: case 8:
-                bw = s->w;
-                bx = base_x + mw;
-                break;
-            }
-            switch (i) {
-            case 0: case 1: case 2:
-                bh = s->h;
-                by = 246;
-                break;
-            }
-            switch (i) {
-            case 3: case 4: case 5:
-                by = base_y;
-                mh = 20 - s[-1].h - s[1].h;
-                if (mh < 0)
-                    mh = 0;
-                bh = mh;
-                break;
-            }
-            switch (i) {
-            case 6: case 7: case 8:
-                bh = s->h;
-                by = base_y + mh;
-                break;
-            }
-            list = tcfg_gfx(list, c->gim2);
-            list = draw_set_offsets(list, s->w, s->h, bw, bh);
-            list = draw_sprite(list, bx, by, 0, u, v, 0, 0);
+    base_x = spr[17].w + 8;
+    base_y = spr[17].h + 246;
+    mw = 0;
+    mh = 0;
+    for (i = 0; i < 9; i++) {
+        u = spr[(unsigned int)(17 + i)].u;
+        v = spr[(unsigned int)(17 + i)].v;
+        switch (i) {
+        case 0: case 3: case 6:
+            rw = spr[(unsigned int)(17 + i)].w;
+            x = 8;
+            break;
         }
+        switch (i) {
+        case 1: case 4: case 7:
+            x = base_x;
+            mw = 462 - spr[(unsigned int)(17 + i) - 1].w - spr[(unsigned int)(17 + i) + 1].w;
+            if (mw < 0)
+                mw = 0;
+            rw = mw;
+            break;
+        }
+        switch (i) {
+        case 2: case 5: case 8:
+            rw = spr[(unsigned int)(17 + i)].w;
+            x = base_x + mw;
+            break;
+        }
+        switch (i) {
+        case 0: case 1: case 2:
+            rh = spr[(unsigned int)(17 + i)].h;
+            y = 246;
+            break;
+        }
+        switch (i) {
+        case 3: case 4: case 5:
+            y = base_y;
+            mh = 20 - spr[(unsigned int)(17 + i) - 1].h - spr[(unsigned int)(17 + i) + 1].h;
+            if (mh < 0)
+                mh = 0;
+            rh = mh;
+            break;
+        }
+        switch (i) {
+        case 6: case 7: case 8:
+            rh = spr[(unsigned int)(17 + i)].h;
+            y = base_y + mh;
+            break;
+        }
+        list = tcfg_gfx(list, c->gim2);
+        list = draw_set_offsets(list, spr[(unsigned int)(17 + i)].w, spr[(unsigned int)(17 + i)].h, rw, rh);
+        list = draw_sprite(list, x, y, 0, u, v, 0, 0);
     }
+    u = spr[26].u;
+    v = spr[26].v;
+    rw = spr[26].w;
+    rh = spr[26].h;
     list = tcfg_gfx(list, c->gim2);
-    list = draw_set_offsets(list, spr[26].w, spr[26].h, spr[26].w, spr[26].h);
-    list = draw_sprite(list, 12, 250, 0, spr[26].u, spr[26].v, 0, 0);
+    list = draw_set_offsets(list, rw, rh, rw, rh);
+    list = draw_sprite(list, 12, 250, 0, u, v, 0, 0);
     k = c->step + 19;
-    if (c->step == 4)
-        k = 22;
-    else if (c->step == 3)
+    switch (c->step) {
+    case 3:
         k = 23;
+        break;
+    case 4:
+        k = 22;
+        break;
+    }
     font_set_size(13, 13);
     font_set_color(0xFF000000);
     font_set_flag4(1);

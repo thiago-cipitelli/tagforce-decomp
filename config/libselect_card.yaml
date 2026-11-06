@@ -67,8 +67,6 @@ segments:
       - [0xE230, c, sc_fmenu]
       - [0xFD54, c, sc_word]
       - [0x111C8, c, sc_move]
-      - [0x11468, asm, sc_move_asm_08815408]
-      - [0x1193C, c, sc_move]
       - [0x1193C, asm, sc_move_asm_088158DC]
       - [0x11D30, c, sc_move]
       - [0x12E34, asm, sceStub_text]

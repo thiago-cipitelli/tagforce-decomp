@@ -141,7 +141,7 @@ void ds_line(DsLineVtx *v, unsigned short x, unsigned short y, unsigned short w)
     v[3].color = 0x19000000;
 }
 
-#ifdef NON_MATCHING /* forma de sc_draw_headers sem a marca de novidade; o original guarda o id 0x8007 na pilha e a alocação dos s difere */
+#ifdef NON_MATCHING /* 258 palavras: forma de sc_draw_headers sem a marca de novidade (x/y/h da barra antes do estilo, res_get(id = 0x8007), tab >= 2); falta a alocação: o original guarda o id u16 na pilha */
 /* header of each pane: sort and direction icons, filter icon with the number of cards, "new"
    scroll bar */
 void *ds_draw_headers(void *list)
@@ -153,6 +153,7 @@ void *ds_draw_headers(void *list)
     int y;
     int show;
     int style;
+    int h;
     unsigned short id;
     unsigned short cols;
 
@@ -179,18 +180,22 @@ void *ds_draw_headers(void *list)
             list = ds_draw_digits(list, PT(x, y + 4), 0, l->count, 4, 0xFFFFFFFF, res_get(0x8009));
         }
     }
-    style = dsv.side != 0 ? 1 : 0;
-    if (l->tab > 1)
+    x = lay->x + lay->w - 10;
+    y = lay->y + 12;
+    h = lay->h - 41;
+    if (dsv.side == 0)
+        style = 0;
+    else
+        style = 1;
+    if (l->tab >= 2)
         style += 2;
     if (p->list_mode == 0) {
-        id = 0x8007;
         cols = lay->cols;
-        list = ds_draw_scrollbar(list, lay->x + lay->w - 10, lay->y + 12, lay->h - 41, p->top / cols, lay->grid_rows,
-                                 (l->count + cols - 1) / cols, style, res_get(id));
+        list = ds_draw_scrollbar(list, x, y, h, p->top / cols, lay->grid_rows,
+                                 (l->count + cols - 1) / cols, style, res_get(id = 0x8007));
     } else {
-        id = 0x8007;
-        list = ds_draw_scrollbar(list, lay->x + lay->w - 10, lay->y + 12, lay->h - 41, p->top, lay->rows, l->count, style,
-                                 res_get(id));
+        list = ds_draw_scrollbar(list, x, y, h, p->top, lay->rows, l->count, style,
+                                 res_get(id = 0x8007));
     }
     if (dsv.mode > 1) {
         p = &dsv.pane[1];
@@ -216,13 +221,16 @@ void *ds_draw_headers(void *list)
                 list = ds_draw_digits(list, PT(x, y + 4), 0, l->count, 4, 0xFFFFFFFF, res_get(0x8009));
             }
         }
+        x = lay->x + lay->w - 10;
+        y = lay->y + 12;
+        h = lay->h - 41;
         style = dsv.side == 1 ? 2 : 3;
         if (p->list_mode == 0) {
             cols = lay->cols;
-            list = ds_draw_scrollbar(list, lay->x + lay->w - 10, lay->y + 12, lay->h - 41, p->top / cols, lay->grid_rows,
+            list = ds_draw_scrollbar(list, x, y, h, p->top / cols, lay->grid_rows,
                                      (l->count + cols - 1) / cols, style, res_get(id));
         } else {
-            list = ds_draw_scrollbar(list, lay->x + lay->w - 10, lay->y + 12, lay->h - 41, p->top, lay->rows, l->count,
+            list = ds_draw_scrollbar(list, x, y, h, p->top, lay->rows, l->count,
                                      style, res_get(id));
         }
     }

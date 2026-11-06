@@ -142,7 +142,7 @@ DkRowCounters dk_row_counters = { { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xF
 /* a wide row: frame, picture, name, icons, level, ATK/DEF, then the counters */
 void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short w, DkEnt *e, int show)
 {
-    int full = 0;
+    int full;
     unsigned short attr;
     unsigned short tx;
     unsigned short type;
@@ -150,9 +150,9 @@ void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
     unsigned short atk;
     unsigned short def;
     unsigned short level;
-    unsigned short cx;
 
     attr = card_get_attribute_icon(e->id);
+    full = 0;
     list = dk_draw_row_frame(list, PT(x + 23, y), w, attr, dk_res_get(0x8006));
     list = dk_draw_card_pict(list, x, y, 1, 0xFFFFFFFF, e, dk_res_get(0x8001), dk_res_get(0x8002), dk_res_get(0x8032));
     tx = x + 29;
@@ -186,8 +186,8 @@ void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         list = dk_draw_stat(list, atk << 16, PT(tx + 73, y + 16), 0xC0A, 0xFF000000, dk_res_get(0x8009));
         list = dk_draw_stat(list, def << 16 | 1, PT(tx + 133, y + 16), 0xC0A, 0xFF000000, dk_res_get(0x8009));
     }
-    cx = tx + 193;
-    if (x + w < cx + 50) {
+    tx += 193;
+    if (x + w < tx + 50) {
         full = 1;
     } else {
         DkRowCounters c = dk_row_counters;
@@ -204,7 +204,7 @@ void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
                 c.c[1].color = 0xFF0080FF;
         }
         c.c[2].value = dk_list_count_id(&dk_lists[3], e->id, 0);
-        list = dk_draw_counters(list, PT(cx + 7, y + 14), c.c, dk_res_get(0x8006), dk_res_get(0x800A));
+        list = dk_draw_counters(list, PT(tx + 7, y + 14), c.c, dk_res_get(0x8006), dk_res_get(0x800A));
     }
     if (inv_get_flag7(e->id))
         list = dk_draw_flag_icon(list, PT(x + w - 24, y + 3), 2, dk_res_get(0x800A));

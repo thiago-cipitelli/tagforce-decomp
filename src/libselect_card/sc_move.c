@@ -1,5 +1,4 @@
 // @range 0x08815168-0x08816DD4
-// @asm 0x08815408-0x088158DC
 // @asm 0x088158DC-0x08815CD0
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
@@ -212,36 +211,23 @@ int sc_popup_done(int layer)
     return 0;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (229 palavras): o original grava os nibbles de mv.b[0] um a um
-                       e relê sc_flight a cada campo; bitfields do voo em outra ordem */
 /* Circle: moves the cursor's card to the other list (if the kind allows it) */
 int sc_cancel_request(void)
 {
-    unsigned int tab = scv.pane[scv.side].list->tab;
+    unsigned short tab = scv.pane[scv.side].list->tab;
     unsigned int to = (tab + 1) & 1;
     ScEnt *e = sc_cur_entry(scv.side);
-    ScMove mv;
+    ScList *l;
+    ScHist h;
     ScFlight *f;
+    ScSel *sel;
 
     if (e == 0)
         return 0;
+    l = &sc.list[(unsigned short)to];
     switch (sc.kind) {
-    case 2:
-        if (to == 1 && sc.list[1].n > 4) {
-            sc_popup_open(2, 3);
-            se_play(0x621A);
-            return 0;
-        }
-        break;
-    case 1:
-        if (to == 1 && sc.list[1].total > 0x62) {
-            sc_popup_open(2, 3);
-            se_play(0x621A);
-            return 0;
-        }
-        break;
     case 0:
-        if (to == 1 && sc.list[1].n > 2) {
+        if ((unsigned short)to == 1 && l->n >= 3) {
             sc_popup_open(2, 3);
             se_play(0x621A);
             return 0;
@@ -249,38 +235,53 @@ int sc_cancel_request(void)
         if (e->rank != 4)
             return 0;
         break;
+    case 1:
+        if ((unsigned short)to == 1 && (unsigned int)l->total >= 99) {
+            sc_popup_open(2, 3);
+            se_play(0x621A);
+            return 0;
+        }
+        break;
+    case 2:
+        if ((unsigned short)to == 1 && l->n >= 5) {
+            sc_popup_open(2, 3);
+            se_play(0x621A);
+            return 0;
+        }
+        break;
     }
     sc_flight = heap_alloc(sc.heap, 0x34);
     memset(sc_flight, 0, 0x34);
-    f = sc_flight;
-    f->sel.side = scv.side;
-    f->sel.src = tab;
-    f->pos = sc_cur_index(scv.side);
-    f->idx = sc.list[tab].order[f->pos];
-    if (scv.mode < 2)
-        f->sel.dside = f->sel.side;
+    sc_flight->sel.side = scv.side;
+    sc_flight->sel.src = tab;
+    sc_flight->pos = sc_cur_index(scv.side);
+    sc_flight->idx = sc.list[tab].order[sc_flight->pos];
+    if (scv.mode > 1)
+        sc_flight->sel.dside = (sc_flight->sel.side + 1) & 1;
     else
-        f->sel.dside = (f->sel.side + 1) & 1;
-    f->sel.dst = to;
-    f->dtab = scv.pane[to].list->tab;
-    memcpy(&f->ent, e, 6);
-    mv.b[0] = f->sel.src | f->sel.dst << 4;
-    *(unsigned short *)&mv.b[8] = sc_dst_pos(f->sel.dst, f->ent.id);
-    memcpy(&mv.b[2], &f->ent, 6);
-    sc_hist_push(&mv);
+        sc_flight->sel.dside = sc_flight->sel.side;
+    sc_flight->sel.dst = to;
+    sc_flight->dtab = scv.pane[(unsigned short)to].list->tab;
+    memcpy(&sc_flight->ent, e, 6);
+    h.src = sc_flight->sel.src;
+    h.dst = sc_flight->sel.dst;
+    h.pos = sc_dst_pos(h.dst, sc_flight->ent.id);
+    memcpy(&h.ent, &sc_flight->ent, 6);
+    sc_hist_push((ScMove *)&h);
     sc.state = 2;
-    f->phase = 0;
-    sc_slot_pos(f->from, f->sel.side, f->sel.src, f->pos, 0);
-    if (sc_slot_pos(f->to, f->sel.dside, f->sel.dst, sc_dst_pos(f->sel.dst, f->ent.id), 1) == 0)
-        f->step = 1;
+    sc_flight->phase = 0;
+    sc_slot_pos(sc_flight->from, sc_flight->sel.side, sc_flight->sel.src, sc_flight->pos, 0);
+    f = sc_flight;
+    sel = &f->sel;
+    if (sc_slot_pos(f->to, sel->dside, sel->dst, sc_dst_pos(f->sel.dst, f->ent.id), 1))
+        sc_flight->step = 2;
     else
-        f->step = 2;
-    f->x = (int)f->from[0];
-    f->y = (int)f->from[1];
+        sc_flight->step = 1;
+    sc_flight->x = sc_flight->from[0];
+    sc_flight->y = sc_flight->from[1];
     sc_flight_take();
     return 1;
 }
-#endif
 
 #ifdef NON_MATCHING /* 3 palavras: só o lado (switch em h.dst), que o original calcula com bnezl + li 1 no atraso e move zero (aqui beqzl); o slot_pos recebe k (não o pos u16 relido) */
 /* Triangle: undoes the last move */

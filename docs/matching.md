@@ -161,6 +161,10 @@ Os casos mais comuns nesta etapa:
 | `lhu x,OFF(base)` com o deslocamento do campo fora da relocação | ponteiro para o elemento: `DsList *l = &d->list[tab]; return l->count;` |
 | `v0` já vale a constante do teste, mas o original salta para um `li v0,K` próprio | agrupar os `case` com o mesmo corpo (`case 1: case 3:`) |
 | `return` comum depois do `if/else` vira `li v0,1` em cada ramo | um `return 1;` em cada ramo |
+| campos de um array local içados para a pilha antes de um laço externo (`lh` de `spr[0].w` no preheader), mas no draft calculados dentro do laço | outro laço do mesmo array com índice afim (`spr[17 + i]`) é reduzido a ponteiro pelo mwcc e mata o içamento na função inteira; o original indexa sem redução (`addiu; sll; addu sp` a cada volta): `spr[(unsigned int)(17 + i)]`, vizinhos como `spr[(unsigned int)(17 + i) - 1]` (`tcfg_draw`) |
+| locais `short` inicializados no topo (`li s3,131` etc.) que só são lidos depois de `switch` sem `default` | inicializar na declaração (`short x = 131;`): o caminho sem `case` mantém o valor vivo e muda a pressão de registradores (`tcfg_draw`) |
+| ordem dos operandos de um `mult` (`mult v1,t0` com o resto da divisão primeiro) | o fator num `int` local próprio: `{ int col = i % m->count; cx = x + col * m->item_w; }` (`*_draw_fmenu_values`) |
+| bitfield decrementado com `addiu x,255` | `f->page--;` (não `f->page = old - 1`) e o `old` u16 lido depois do primeiro teste (`*_fmenu_values`) |
 
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
