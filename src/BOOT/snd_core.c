@@ -1,6 +1,5 @@
 // @range 0x08860DA4-0x088615D0
 // @asm 0x088610E0-0x08861198
-// @asm 0x088614D0-0x088615A4
 /* Sound library, object side: SAS voice allocation mask, per-channel volumes (BGM/SE/voice),
    counters over the active object list, the level meter used for lip sync, and the SAS
    effect/output setup. */
@@ -346,7 +345,6 @@ int snd_sas_init(unsigned char a, unsigned char b)
     }
 }
 
-#ifdef NON_MATCHING /* likely vs plain branch on the set-type result */
 /* SAS effect (reverb) type 0..; -1 selects 4. Returns the previous type. */
 int snd_fx_setup(int type, int wet_l, int wet_r)
 {
@@ -364,15 +362,14 @@ int snd_fx_setup(int type, int wet_l, int wet_r)
     }
     r = snd_fx_set_type(type);
     if (r == 0) {
+        r = snd_fx_type;
         snd_fx_wet_l = wet_l * 0x1021 >> 7;
         snd_fx_wet_r = wet_r * 0x1021 >> 7;
-        r = snd_fx_type;
         snd_fx_type = type;
+        return r;
     }
     return r;
 }
-
-#endif
 
 /* Public handle of an object: index << 16 | id, with bit 29 set. */
 unsigned int snd_obj_handle(SndObj *o)

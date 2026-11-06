@@ -1,6 +1,5 @@
 // @range 0x0884EA38-0x08850A70
 // @rodata 0x088AEB84-0x088AEBB4
-// @asm 0x0884F2F8-0x0884F504
 /* Hard-coded card groups: membership tests on card ids (4000..6957), special classes and alternate
    ids used by the duel engine and menus. Every list is a switch; the original author appended a few
    ids at the end of some lists, so the case order is not always ascending (it determines the code). */
@@ -212,9 +211,7 @@ int card_is_in_group_1b2d(int id)
 }
 
 /* Alternate ids of a card (fusion material groups): writes up to 2 ids to out, returns the count.
-   Everything matches except the 0x1823 test: the original branches to the shared "return 0" block
-   with a plain beq while every source form tried merges it into a beql. */
-#ifdef NON_MATCHING
+   0x1823 and 0x1906 both break to the shared "return 0" (the delay-slot copy goes to the first branch). */
 int card_id_remap_1a6c(int id, int *out)
 {
     int tmp[2];
@@ -242,14 +239,13 @@ int card_id_remap_1a6c(int id, int *out)
     case 0x1823: break;
     case 0x185E: out[0] = 0x1822; out[1] = 0x18AF; return 2;
     case 0x18AF: out[0] = 0x185E; return 1;
-    case 0x1906: return 0;
+    case 0x1906: break;
     case 0x198C: out[0] = 0x17DB; return 1;
     case 0x1A6C: out[0] = 0x1A70; return 1;
     default: break;
     }
     return 0;
 }
-#endif
 
 /* 0 none, 1 or 2: hard-coded card lists (the last id of each list was appended out of order). */
 int card_get_special_group(int id)

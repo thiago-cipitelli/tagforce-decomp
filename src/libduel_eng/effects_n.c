@@ -129,13 +129,14 @@ int duel_eff_fda70(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original computes the zone before the player and keeps the player in v0 for the 0x7F step */
+#ifdef NON_MATCHING /* 26 palavras: ordem zona/jogador certa com ZSLOT no 1º uso (o 2º recalcula a base); falta a coloração
+                      (o original lê o byte em v1 e deixa o jogador em v0 até o passo 0x7F) */
 int duel_eff_fdaf8(DuelAct *a, int b)
 {
     unsigned char z = a->zone;
     unsigned int p = a->player;
 
-    if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
+    if (a->uid != CARD_UID(ZSLOT(p, z)->card)) {
         return 0;
     }
     if (duel.players[p & 1].field[z].faceup == 0) {

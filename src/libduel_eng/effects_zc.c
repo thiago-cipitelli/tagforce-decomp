@@ -1,5 +1,5 @@
 // @range 0x0888F420-0x08890094
-// @asm 0x0888F82C-0x08890094
+// @asm 0x0888F82C-0x0888FC28
 /* Card effect handlers (DuelAct *a), after effects_zb.c. */
 #include "duel.h"
 
@@ -193,7 +193,6 @@ int duel_0888F82C(DuelAct *a)
 }
 #endif
 
-#ifdef NON_MATCHING /* ordem zona/jogador do primeiro alvo e $s3/$s4 no caso 0x7F */
 int duel_0888FC28(DuelAct *a)
 {
     int y;
@@ -219,7 +218,8 @@ int duel_0888FC28(DuelAct *a)
             t = duel_act_target(a, 1);
             y = (unsigned short)t >> 8 & 0xFF;
             q = t & 0xFF;
-            if (duel.players[q & 1].field[y].faceup != 0) {
+            /* duel.players[q & 1].field[y].faceup: zone first, field offset folded into the base */
+            if (*(unsigned short *)(y * 20 + ((q & 1) * sizeof(DuelPlayer) + (unsigned int)&duel.players[0].field[0].faceup)) != 0) {
                 ok = 1;
             }
         }
@@ -243,6 +243,9 @@ int duel_0888FC28(DuelAct *a)
             return 0;
         }
         if (duel_088A9008(a, 1, 0) != 0) {
+            unsigned int p;
+            unsigned int z;
+
             t = duel_act_target(a, 1);
             p = t & 0xFF;
             z = (unsigned short)t >> 8 & 0xFF;
@@ -279,4 +282,3 @@ int duel_0888FC28(DuelAct *a)
     }
     return 0;
 }
-#endif

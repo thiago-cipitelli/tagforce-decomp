@@ -47,18 +47,16 @@ void duel_088C7CF0(void);
 void duel_088C7BA4(void);
 void duel_088C5E70(unsigned int p, int a);
 
-#ifdef NON_MATCHING /* 37 palavras: ordem player/zone no início, o sw de duel_w_08914900 adiantado no case 0x7F, e o return 0 do case 0x7E fundido com o do fim (o original tem b + move próprio) */
+#ifdef NON_MATCHING /* 34 palavras: início certo com z e p u8 locais do bloco; falta o sw de duel_w_08914900 adiantado no case 0x7F e o return 0 do case 0x7E fundido com o do fim (o original tem b + move próprio e o default com b; nop para um move v0,zero final; testados break, default: break/goto/return) */
 int duel_08884118(DuelAct *a)
 {
     int i;
-    int z;
-    unsigned int p;
-    unsigned short uid;
 
     if (a->b3_4 != 2) {
-        p = a->player;
-        z = a->zone;
-        uid = a->uid;
+        unsigned char z = a->zone;
+        unsigned char p = a->player;
+        unsigned short uid = a->uid;
+
         if (uid != CARD_UID(duel.players[p & 1].field[z].card)) {
             return 0;
         }

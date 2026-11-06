@@ -1,7 +1,6 @@
 // @range 0x08864DF0-0x08865F2C
 // @asm 0x08865658-0x088657D8
 // @asm 0x08865838-0x08865A48
-// @asm 0x08865ABC-0x08865C10
 // @asm 0x08865C10-0x08865E14
 /* Card effect handlers (descriptor callbacks of the card effect tables). */
 #include "duel.h"
@@ -395,12 +394,8 @@ int duel_08865A78(DuelAct *a, int b)
     return -1;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: o original testa 0xC (nos dois switch) e z != 0xB com beq/bne + nop, o mwcc
-                      gera beql/bnel copiando a 1ª instrução do destino; resto igual */
 unsigned int duel_08865ABC(unsigned int p, int z, int i)
 {
-    int t;
-
     if (p != duel_w_089147DC->player) {
         return 0;
     }
@@ -411,14 +406,11 @@ unsigned int duel_08865ABC(unsigned int p, int z, int i)
         switch ((unsigned short)duel_field_type(p, z + i)) {
         case 0xB:
         case 0xC:
-            t = 0x800;
-            break;
         case 0x10:
             return 0x800;
         default:
-            return 0;
+            goto none;
         }
-        return t;
     }
     if (z == 0xB) {
         if (duel_088DFCC8(CARD_UID(duel.players[p & 1].hand[i])) == 0) {
@@ -427,14 +419,13 @@ unsigned int duel_08865ABC(unsigned int p, int z, int i)
         switch (card_get_type(duel.players[p & 1].hand[i].id)) {
         case 0xB:
         case 0xC:
-            return 0x800;
         case 0x10:
             return 0x800;
         }
     }
+none:
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* 51 palavras (era 91): case 3 com o corpo dentro de if (duel_08835AC0() != 0); falta o registrador do valor do switch (v1 no original, carregado antes do move s0,a0) e o b/nop do default */
 int duel_08865C10(DuelAct *a)

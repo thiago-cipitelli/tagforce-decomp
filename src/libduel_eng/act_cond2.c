@@ -1,5 +1,4 @@
 // @range 0x0886F23C-0x0887DB24
-// @asm 0x08870DC4-0x08870E94
 // @asm 0x08871B14-0x08871BFC
 // @asm 0x088719DC-0x08871A68
 // @asm 0x08871674-0x088717B4
@@ -7,7 +6,6 @@
 // @asm 0x08873B8C-0x08873C84
 // @asm 0x088766B0-0x088768A8
 // @asm 0x088770C0-0x088771D4
-// @asm 0x0887AD38-0x0887AE84
 // @asm 0x0887C93C-0x0887CAE8
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
@@ -869,8 +867,6 @@ int duel_08870C54(DuelAct *a, int b)
     return spells > 1;
 }
 
-#ifdef NON_MATCHING /* falta 1 desvio: o original deixa o 1º beqz (id == 0) sem likely (beqz; nop), o mwcc faz beqzl
-                      com o move v0,zero; testados ||, switch com o teste no case, & no 1º par; 2 palavras */
 int duel_08870DC4(DuelAct *a)
 {
     unsigned int p = duel_special.player[0];
@@ -882,15 +878,15 @@ int duel_08870DC4(DuelAct *a)
     case 0x14:
         break;
     default:
-        return 0;
+        goto none;
     }
     if (duel.players[p & 1].field[z].card.id != 0 && duel.players[p & 1].field[z].faceup != 0 &&
         duel_act_can_target(a, p, z) != 0) {
         return 1;
     }
+none:
     return 0;
 }
-#endif
 
 int duel_08870E94(DuelAct *a)
 {
@@ -4818,7 +4814,6 @@ int duel_0887AC5C(DuelAct *a)
     return duel.players[duel_special.player[1] & 1].field[duel_special.zone[1]].pos != 0;
 }
 
-#ifdef NON_MATCHING /* 2 palavras: o original testa card.id == 0 com beqz+nop para o return 0 comum; aqui sai beqzl com o move v0,zero */
 int duel_0887AD38(DuelAct *a, int b)
 {
     DuelSrc *s = &a->src;
@@ -4833,7 +4828,7 @@ int duel_0887AD38(DuelAct *a, int b)
     case 0x21:
         break;
     default:
-        return 0;
+        goto none;
     }
     if (duel.players[s->player & 1].field[s->zone].card.id != 0) {
         type = card_get_type(duel.list[s->uid].id);
@@ -4844,9 +4839,9 @@ int duel_0887AD38(DuelAct *a, int b)
             return 1;
         }
     }
+none:
     return 0;
 }
-#endif
 
 int duel_0887AE84(DuelAct *a, int b)
 {

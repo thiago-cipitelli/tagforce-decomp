@@ -222,6 +222,13 @@ o `& 1`) também sai antes; o original tinha a zona primeiro por uma de duas for
    `a->src.player` direto na chamada. Bateu: `duel_08870848`, `duel_eff_fbac8` (este com `return 0;` depois do
    `switch` interno para o `b fim; move v0,zero`).
 
+3. **Deslocamento do campo dobrado na base** (`lui; addiu duel+0x38; addu p*4012; addu z*20; lhu 0(…)`): o
+   original soma a constante do campo ao endereço do símbolo. `*(unsigned short *)(y * 20 + ((q & 1) *
+   sizeof(DuelPlayer) + (unsigned int)&duel.players[0].field[0].faceup))` (`duel_0888FC28`, que também precisou
+   de `p`/`z` locais do bloco do `if` no passo 0x7F para os `$s`). `ZSLOT` dá a ordem certa mas o `lhu 56(…)`.
+   Bitfield do `DuelAct` com o jogador num local `unsigned char` (`duel_088862DC`, `duel_08884118`): locais
+   `z`/`p` u8 do bloco, ou `a->player` direto no índice e `p = a->player` só depois do teste.
+
 Inverso (`duel_slot_src_attr8`): ali o original tem o jogador primeiro; `(unsigned char)src & 1` e
 `(unsigned char)(src >> 8)` direto no índice puxam a zona para cima; locais `sz`/`sp` resolvem.
 Não resolvido: `duel_0888BA00` (o original lê `a->uid` antes do índice: um local `uid` é propagado de volta; 22
@@ -245,6 +252,11 @@ mwcc 219, que também explicam o original:
   destino do likely termina no seu próprio `return`: `if (a) {...} else { if (b) {...} return r; } return r;`
   em vez de `else if` (`sdate_is_daytime`). Com `else if` ou `goto` para o fim, o mwcc move a instrução.
   O `||` seguido de `return` (`if (a || b) return; ...`) também deixa a cópia.
+- **`case` separados que voltam a se juntar:** `duel_08865ABC` tinha `case 0xB: case 0xC: case 0x10: return
+  0x800;` (o `beql` do 0x10 leva a cópia, os de 0xB/0xC ficam `beq; nop`) e `default: goto none;` no 1º
+  `switch`; `card_id_remap_1a6c`, dois `case …: break;` para o mesmo `return 0`. `snd_fx_setup`: `return r`
+  dentro do `if` e `r = snd_fx_type` lido **antes** das gravações (o load sai depois de qualquer jeito, mas a
+  coloração muda).
 - **Cabeça de laço:** no original a cópia da 1ª instrução da cabeça é do desvio de volta do laço (`bnel` para
   cabeça+4, `dd_cobj_find`) ou de ninguém (o de volta já tem o delay preenchido: `st_scr_find_es`,
   `st_pl_card_bit_set`); o desvio de entrada fica `bnez; nop`. O 219 dá a cópia ao primeiro na ordem do código,
