@@ -40,13 +40,13 @@ int duel_088CC820();
 unsigned int duel_dfc10(void);
 void duel_0886BCDC(void);
 void duel_088CC594(unsigned int p, int z, int a, int id);
-int duel_0884F30C(unsigned int code, int uid, int arg);
+int duel_0884F30C(unsigned int code, unsigned short uid, unsigned int arg);
 void duel_088AFD5C(int kind, struct DuelActX x);
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);
 void duel_088C7E68(unsigned int p, unsigned int z, unsigned int bit, unsigned int on);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C02A4(int id, unsigned int v);
 void duel_088C050C(unsigned int p, int id);
 void duel_088C05B0(int id);
@@ -57,160 +57,131 @@ int duel_send_card(unsigned int p, int z, int dest, int f, int cause);
 void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp);
 void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f);
 
+/* struct DuelActX with bit 23 as a 1-bit field (bytes 0x14-0x17 of a DuelAct) */
+struct DuelActX1 {
+    unsigned int s_uid : 9;
+    unsigned int s_player : 1;
+    unsigned int s_zone : 4;
+    unsigned int s_b14 : 1;
+    unsigned int s_b15 : 1;
+    unsigned int s_b16 : 1;
+    unsigned int s_b17 : 1;
+    unsigned int s_b18 : 1;
+    unsigned int s_zone2 : 4;
+    unsigned int s_b23 : 1;
+    unsigned int s_b24 : 8;
+};
+
 #define SLOT_AT(p, z) (&duel.players[(p) & 1].field[z])
 
-/* code word of duel_0884F30C: card id, zone, flag 24, kind (0x16 special card, 0x1B field), player */
-#define TRIG(p, kind, id) ((unsigned int)(p) << 31 | (kind) << 25 | (id))
+/* code word of duel_0884F30C: card id, zone, flags 21-24, kind (0x16 special card, 0x1B field), player */
+#define TRIG_P(p) ((unsigned int)(p) << 31 & 0x80000000)
+#define TRIG_K(kind) ((kind) << 25 & 0x7E000000)
+#define TRIG_Z(z) ((unsigned int)(z) << 16 & 0x1F0000)
 
-#ifdef NON_MATCHING /* 8.8 KB; escrita a partir do asm, alocação e escalonamento não comparados */
+#ifdef NON_MATCHING /* 24 palavras (2026-11-06), todas no prólogo: o original grava cause (a2) em 112(sp) logo no
+   início e lê o byte 1 de x em a2, o id em a0 e o byte do dono em v1; aqui o mwcc lê o id antes e usa a0/v1 trocados.
+   Testadas todas as ordens das 6 atribuições de p..z (perm_stmts) e posições de owner/uid. O resto bate: switch na
+   ordem inversa dos testes, ok = !protegido zerado por 0x15FF, códigos de duel_0884F30C com máscaras (TRIG_*, com
+   cast unsigned para o mwcc não reduzir a força do shift no laço), laços de bloco com j próprio, i <= 4 (slti at). */
 /* A card left the field (x: where it was and where it went, s: its slot, cause: card that moved it,
    f: flags of the move): posts the triggers of the card itself and of the cards that watch it. */
-void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
+void duel_088CC8EC(struct DuelActX1 x, DuelSlot *s, int cause, unsigned int f)
 {
-    unsigned int owner = s->card.owner;
-    int uid = CARD_UID(s->card);
-    unsigned int p = x.s_player;      /* where it was */
-    unsigned int z = x.s_zone;
-    int destroyed = x.s_b15;
-    int id = s->card.id;
-    int by_effect = (f & 0x80000) != 0;
-    int by_opp = x.s_b18 != p;        /* sent by the opponent of its controller */
-    int keep = !(x.s_b23 & 1);
-    int to_grave = x.s_zone2 == 0xE;
-    int f100 = (f & 0x100000) != 0;
-    int f200 = (f & 0x200000) != 0;
-    int special = x.s_b16;            /* one of the cards held outside the zones */
-    int kind = special ? 0x16 : 0x1B;
+    int z;
+    int uid;
+    int to_grave;
+    int destroyed;
+    int by_opp;
+    int keep;
+    int special;
+    int kind;
     unsigned int type;
-    int trig = 0;                     /* 1: trigger with the destination, 3: with the zone */
-    int prot;
-    int guarded;
+    unsigned int owner;
+    unsigned int p;
+    int id;
+    int by_effect;
+    int f100;
+    int f200;
+    int f400;
+    int trig;
+    int ok;
     unsigned int v;
-    unsigned int q;
-    unsigned int i;
+    int q;
+    int i;
     unsigned int e;
     DuelEffect *ef;
     DuelCard *c;
     int n;
 
-    if (!special) {
-        type = (unsigned short)duel_field_type(p, z);
+    owner = s->card.owner;
+    uid = owner + (s->card.uid_hi << 1);
+    p = x.s_player;                   /* where it was */
+    id = s->card.id;
+    by_effect = (f & 0x80000) != 0;
+    by_opp = x.s_b18 != p;            /* sent by the opponent of its controller */
+    destroyed = x.s_b15;
+    z = x.s_zone;
+    keep = !x.s_b23;
+    to_grave = x.s_zone2 == 0xE;
+    special = x.s_b16;                /* one of the cards held outside the zones */
+    f100 = (f & 0x100000) != 0;
+    f200 = (f & 0x200000) != 0;
+    f400 = (f & 0x400000) != 0;
+    trig = 0;                         /* 1: trigger with the destination, 3: with the zone */
+    if (special) {
+        kind = 0x16;
     } else {
+        kind = 0x1B;
+    }
+    if (special) {
         type = duel_special.act[duel_special.act[1].uid == uid].pad14[4];
+    } else {
+        type = (unsigned short)duel_field_type(p, z);
     }
     switch (id) {
-    case 0x13A1:
-        if (s->faceup != 0 && x.s_zone2 == 0xD) {
-            duel_0884F30C(TRIG(owner, kind, 0x4D13A1), uid, *(int *)&x);
-        }
+    case 0xFD6: case 0x11E4: case 0x13E9: case 0x10D6: case 0x10DD: case 0x10DF: case 0x10E0: case 0x10E7:
+    case 0x1467: case 0x15B9: case 0x16CC: case 0x1796: case 0x17A5: case 0x1946:
+        trig = keep && to_grave;
         break;
-    case 0x1668:                       /* the values of its 0x1668 entries */
-        if (keep && destroyed && to_grave) {
-            v = 0;
-            for (e = s->effects; e != 0;) {
-                ef = &duel_effects[e];
-                e = ef->next;
-                if (ef->src == 0x1668) {
-                    v = v << 16 | ef->arg;
-                }
-            }
-            if (v != 0) {
-                duel_0884F30C(TRIG(owner, kind, 0x400000 | 0x1668) | x.s_zone2 << 16, uid, v);
-            }
-        }
+    case 0x12A4:
+        trig = keep && to_grave && owner == p;
         break;
-    case 0x164F:
-        if (keep && destroyed && to_grave) {
-            for (e = s->effects; e != 0;) {
-                ef = &duel_effects[e];
-                e = ef->next;
-                if (ef->src == 0x164F) {
-                    duel_0884F30C(TRIG(owner, kind, 0x400000 | 0x164F) | x.s_zone2 << 16, uid, ef->arg);
-                    break;
-                }
+    case 0x1A8E:
+        trig = keep && to_grave && !special;
+        break;
+    case 0x191A:
+        trig = s->faceup != 0 && keep && to_grave && (!special || duel_special.unk24 != id);
+        break;
+    case 0x1A90:
+        if (!special) {
+            break;
+        }
+        /* fall through */
+    case 0x1174:
+    case 0x133B:                       /* also when it carries 0x1174 (then flag bit 23 of x) */
+        if (keep && to_grave) {
+            if (special && duel_special.unk24 == id || (s->flags >> 4 & 1)) {
+                trig = 1;
+            } else if (duel_slot_has_effect(p, z, 0x1174)) {
+                x.s_b23 = 1;
+                trig = 1;
             }
         }
         break;
-    case 0x1AAD:
-    case 0x1B2D:
-        trig = destroyed && !special && by_opp && p == owner && to_grave;
+    case 0x13E3: case 0x1185: case 0x12A2: case 0x1309: case 0x1687: case 0x16F5: case 0x17C5:
+    case 0x19FE:
+        trig = to_grave;
         break;
-    case 0x1AA9:
-        trig = destroyed && cause == 0x1AA9;
+    case 0x165C:
+        trig = by_effect && destroyed && to_grave && duel_slot_e1854(p, z) != 0xFFFF && !(duel.mode & 1);
         break;
-    case 0x1A0C:
-        trig = destroyed && to_grave && (unsigned int)SLOT_AT(p, z)->link > 3;
+    case 0x14E9:
+    case 0x163F:
+        trig = destroyed && to_grave;
         break;
-    case 0x19B0:
-        trig = f100 && !f200 && (f & 0x400000) != 0;
-        break;
-    case 0x1842:
-        trig = f100 && to_grave;
-        break;
-    case 0x1841:
-        if (f200 && to_grave && p == owner && p == (duel_special_e1934(p, z) & 0xFF)) {
-            trig = 1;
-        }
-        break;
-    case 0x183D:
-        trig = s->faceup != 0 && keep;
-        break;
-    case 0x16FE:                       /* trigger carries its controller and its slot value */
-        trig = s->faceup != 0 && !special && destroyed;
-        if (trig) {
-            *(unsigned int *)&x = (p ^ by_opp) | (unsigned int)(unsigned short)SLOT_AT(p, z)->link << 16;
-        }
-        break;
-    case 0x1294:
-        trig = destroyed;
-        break;
-    case 0x1514:
-        if (by_effect && destroyed && (short)duel_slot_e1854(p, z) != -1 && !(duel.mode & 1) &&
-            !(SLOT_AT(p, z)->flags & 0x20)) {
-            trig = 3;
-        }
-        break;
-    case 0x150D:
-        if (by_effect && destroyed && (short)duel_slot_e1854(p, z) != -1 && !(SLOT_AT(p, z)->flags & 0x20)) {
-            trig = 3;
-        }
-        break;
-    case 0x18D7:
-        if (s->faceup == 0 && destroyed && !(SLOT_AT(p, z)->flags & 0x20)) {
-            trig = 3;
-        }
-        break;
-    case 0x1A7D:
-        trig = s->faceup == 0 && destroyed && to_grave && by_opp && card_is_monster(cause) == 0;
-        break;
-    case 0x1435:
-    case 0x1543:
-    case 0x1544:
-    case 0x1A5D:
-        trig = s->faceup == 0 && destroyed && to_grave;
-        break;
-    case 0x19D2:
-        trig = s->faceup == 0 && s->pos != 0 && destroyed && !special && to_grave;
-        break;
-    case 0x16F6:
-    case 0x1869:
-    case 0x18AA:
-    case 0x1951:
-        trig = keep && destroyed && to_grave;
-        break;
-    case 0x1914:
-        trig = destroyed && s->faceup != 0 && keep && (!special || duel_special.unk24 != 0x1914);
-        break;
-    case 0x174E:
-    case 0x1A07:
-        trig = special && destroyed && to_grave && duel_special.unk24 != id;
-        break;
-    case 0x13AD:
-    case 0x13B0:
-    case 0x13B4:
-    case 0x1612:
-    case 0x172F:
-        trig = special && destroyed;
+    case 0x1A8F:
+        trig = destroyed && to_grave && !special;
         break;
     case 0x1919:
     case 0x194A:
@@ -226,50 +197,120 @@ void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
     case 0x1950: case 0x196A: case 0x19C5: case 0x1A94:
         trig = special && destroyed && to_grave;
         break;
-    case 0x1A8F:
-        trig = destroyed && to_grave && !special;
+    case 0x13AD:
+    case 0x13B0:
+    case 0x13B4:
+    case 0x1612:
+    case 0x172F:
+        trig = special && destroyed;
         break;
-    case 0x14E9:
-    case 0x163F:
-        trig = destroyed && to_grave;
+    case 0x174E:
+    case 0x1A07:
+        trig = special && destroyed && to_grave && duel_special.unk24 != id;
         break;
-    case 0x165C:
-        trig = by_effect && destroyed && to_grave && (short)duel_slot_e1854(p, z) != -1 && !(duel.mode & 1);
+    case 0x1914:
+        trig = destroyed && s->faceup != 0 && keep && (!special || duel_special.unk24 != id);
         break;
-    case 0x1185: case 0x12A2: case 0x1309: case 0x13E3: case 0x1687: case 0x16F5: case 0x17C5:
-    case 0x19FE:
-        trig = to_grave;
+    case 0x16F6:
+    case 0x1869:
+    case 0x18AA:
+    case 0x1951:
+        trig = keep && destroyed && to_grave;
         break;
-    case 0x1A90:
-        if (!special) {
-            break;
+    case 0x19D2:
+        trig = !s->faceup && s->pos != 0 && destroyed && !special && to_grave;
+        break;
+    case 0x1435:
+    case 0x1543:
+    case 0x1544:
+    case 0x1A5D:
+        trig = !s->faceup && destroyed && to_grave;
+        break;
+    case 0x1A7D:
+        trig = !s->faceup && destroyed && to_grave && by_opp && !card_is_monster(cause);
+        break;
+    case 0x18D7:
+        if (s->faceup == 0 && destroyed && !(SLOT_AT(p, z)->flags >> 5 & 1)) {
+            trig = 3;
         }
-        /* fall through */
-    case 0x1174:
-    case 0x133B:                       /* also when it carries 0x1174 (then flag bit 23 of x) */
-        if (keep && to_grave) {
-            if (special && duel_special.unk24 == id) {
-                trig = 1;
-            } else if (s->flags & 0x10) {
-                trig = 1;
-            } else if (duel_slot_has_effect(p, z, 0x1174)) {
-                x.s_b23 |= 1;
-                trig = 1;
+        break;
+    case 0x150D:
+        if (by_effect && destroyed && duel_slot_e1854(p, z) != 0xFFFF && !(SLOT_AT(p, z)->flags >> 5 & 1)) {
+            trig = 3;
+        }
+        break;
+    case 0x1514:
+        if (by_effect && destroyed && duel_slot_e1854(p, z) != 0xFFFF && !(duel.mode & 1) &&
+            !(SLOT_AT(p, z)->flags >> 5 & 1)) {
+            trig = 3;
+        }
+        break;
+    case 0x1294:
+        trig = destroyed;
+        break;
+    case 0x16FE:                       /* trigger carries its controller and its slot value */
+        trig = s->faceup != 0 && !special && destroyed;
+        if (trig) {
+            unsigned int w = (unsigned short)(p ^ by_opp) | (unsigned int)(unsigned short)SLOT_AT(p, z)->link << 16;
+            x = *(struct DuelActX1 *)&w;
+        }
+        break;
+    case 0x183D:
+        trig = s->faceup != 0 && keep;
+        break;
+    case 0x1841:
+        if (f200 && to_grave && p == owner && p == (duel_special_e1934(p, z) & 0xFF)) {
+            trig = 1;
+        }
+        break;
+    case 0x1842:
+        trig = f100 && to_grave;
+        break;
+    case 0x19B0:
+        trig = f100 && !f200 && f400;
+        break;
+    case 0x1A0C:
+        trig = destroyed && to_grave && (unsigned int)SLOT_AT(p, z)->link > 3;
+        break;
+    case 0x1AA9:
+        trig = destroyed && cause == id;
+        break;
+    case 0x1AAD:
+    case 0x1B2D:
+        trig = destroyed && !special && by_opp && p == owner && to_grave;
+        break;
+    case 0x164F:
+        if (keep && destroyed && to_grave) {
+            for (e = s->effects; e != 0;) {
+                ef = &duel.effects[e];
+                e = ef->next;
+                if (ef->src == 0x164F) {
+                    duel_0884F30C(TRIG_P(owner) | TRIG_K(kind) | 0x400000 | TRIG_Z(x.s_zone2) | (id & 0xFFFF), uid, ef->arg);
+                    break;
+                }
             }
         }
         break;
-    case 0x191A:
-        trig = s->faceup != 0 && keep && to_grave && (!special || duel_special.unk24 != 0x191A);
+    case 0x1668:                       /* the values of its 0x1668 entries */
+        if (keep && destroyed && to_grave) {
+            v = 0;
+            for (e = s->effects; e != 0;) {
+                ef = &duel.effects[e];
+                e = ef->next;
+                if (ef->src == 0x1668) {
+                    v <<= 16;
+                    v |= ef->arg;
+                }
+            }
+            if (v != 0) {
+                duel_0884F30C(TRIG_P(owner) | TRIG_K(kind) | 0x400000 | TRIG_Z(x.s_zone2) | (id & 0xFFFF), uid, v);
+            }
+        }
         break;
-    case 0x1A8E:
-        trig = keep && to_grave && !special;
-        break;
-    case 0x12A4:
-        trig = keep && to_grave && owner == p;
-        break;
-    case 0xFD6: case 0x10D6: case 0x10DD: case 0x10DF: case 0x10E0: case 0x10E7: case 0x11E4:
-    case 0x13E9: case 0x1467: case 0x15B9: case 0x16CC: case 0x1796: case 0x17A5: case 0x1946:
-        trig = keep && to_grave;
+    case 0x13A1:
+        if (s->faceup != 0 && x.s_zone2 == 0xD) {
+            duel_0884F30C(TRIG_P(owner) | TRIG_K(kind) | 0x4D0000 | (id & 0xFFFF), uid, *(unsigned int *)&x);
+        }
         break;
     }
     if (duel_slot_has_effect(p, z, 0x19AE)) {
@@ -281,8 +322,8 @@ void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
         for (q = 0; q < 2; q++) {
             if (duel_slot_e8170(q, 10, 0x169F)) {
                 c = &SLOT_AT(q, 10)->card;
-                duel_0884F30C(q << 31 | kind << 25 | (owner != q) << 24 | 0x2A169F, CARD_UID(*c),
-                              *(int *)&x);
+                duel_0884F30C(TRIG_P(q) | TRIG_K(kind) | ((owner != q) << 24 & 0x1000000) | 0x2A169F, CARD_UID(*c),
+                              *(unsigned int *)&x);
             }
         }
     }
@@ -291,8 +332,8 @@ void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
             for (q = 0; q < 2; q++) {
                 if (duel_slot_e8170(q, 10, 0x187F)) {
                     c = &SLOT_AT(q, 10)->card;
-                    duel_0884F30C(q << 31 | kind << 25 | (owner != q) << 24 | 0x2A187F, CARD_UID(*c),
-                                  *(int *)&x);
+                    duel_0884F30C(TRIG_P(q) | TRIG_K(kind) | ((owner != q) << 24 & 0x1000000) | 0x2A187F, CARD_UID(*c),
+                                  *(unsigned int *)&x);
                 }
             }
         }
@@ -301,8 +342,8 @@ void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
             for (i = 5; i < 10; i++) {
                 if (duel_slot_e8170(q, i, 0x1971)) {
                     c = &SLOT_AT(q, i)->card;
-                    duel_0884F30C((i & 0x1F) << 16 | q << 31 | kind << 25 | 0x200000 | 0x1971,
-                                  CARD_UID(*c), *(int *)&x);
+                    duel_0884F30C(TRIG_P(q) | TRIG_K(kind) | 0x200000 | TRIG_Z(i) | 0x1971,
+                                  CARD_UID(*c), *(unsigned int *)&x);
                 }
             }
         }
@@ -311,42 +352,46 @@ void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
         duel_card_foreach_effect(s, duel_088CC820, &x);
     }
     if (special && to_grave && card_is_in_group_1a5c(id)) {
-        for (i = 0; i < 5; i++) {
-            if (duel_slot_e8170(p, i, 0x1A59)) {
-                c = &SLOT_AT(p, i)->card;
-                duel_0884F30C((i & 0x1F) << 16 | p << 31 | kind << 25 | 0x200000 | 0x1A59, CARD_UID(*c),
-                              *(int *)&x);
+        int j;
+
+        for (j = 0; j <= 4; j++) {
+            if (duel_slot_e8170(p, j, 0x1A59)) {
+                duel_0884F30C(TRIG_P(p) | TRIG_K(kind) | 0x200000 | TRIG_Z(j) | 0x1A59,
+                              CARD_UID(SLOT_AT(p, j)->card), *(unsigned int *)&x);
             }
         }
     }
     if (special && to_grave) {
-        for (i = 0; i < 5; i++) {
-            if (duel_slot_e8170(p, i, 0x1A58)) {
-                c = &SLOT_AT(p, i)->card;
-                duel_0884F30C((i & 0x1F) << 16 | p << 31 | kind << 25 | 0x200000 | 0x1A58, CARD_UID(*c),
-                              *(int *)&x);
+        int j;
+
+        for (j = 0; j <= 4; j++) {
+            if (duel_slot_e8170(p, j, 0x1A58)) {
+                duel_0884F30C(TRIG_P(p) | TRIG_K(kind) | 0x200000 | TRIG_Z(j) | 0x1A58,
+                              CARD_UID(SLOT_AT(p, j)->card), *(unsigned int *)&x);
             }
         }
     }
     if (id == 0x18AA && destroyed && (int)duel_d_find_name(p, 0x1445) >= 0) {
-        duel_0884F30C(p << 31 | kind << 25 | 0x501445, 0, *(int *)&x);
+        duel_0884F30C(TRIG_P(p) | TRIG_K(kind) | 0x501445, 0, *(unsigned int *)&x);
     }
     if (card_get_type(id) == 0xB && destroyed && to_grave) {   /* 0x18EC in graveyard and hand */
-        for (n = duel.players[p].n_grave - 1; n >= 0; n--) {
-            c = &duel.players[p].grave[n];
-            if (c->id == 0x18EC && !c->b21) {
-                duel_0884F30C(p << 31 | kind << 25 | 0x4E18EC, CARD_UID(*c), *(int *)&x);
+        int j;
+
+        for (j = duel.players[p & 1].n_grave - 1; j >= 0; j--) {
+            if (duel.players[p & 1].grave[j].id == 0x18EC && !duel.players[p & 1].grave[j].b21) {
+                duel_0884F30C(TRIG_P(p) | TRIG_K(kind) | 0x4E18EC, CARD_UID(duel.players[p & 1].grave[j]),
+                              *(unsigned int *)&x);
             }
         }
-        for (n = duel.players[p].n_hand - 1; n >= 0; n--) {
-            c = &duel.players[p].hand[n];
-            if (c->id == 0x18EC) {
-                duel_0884F30C(p << 31 | kind << 25 | 0x5018EC, CARD_UID(*c), *(int *)&x);
+        for (n = duel.players[p & 1].n_hand - 1; n >= 0; n--) {
+            if (duel.players[p & 1].hand[n].id == 0x18EC) {
+                duel_0884F30C(TRIG_P(p) | TRIG_K(kind) | 0x5018EC, CARD_UID(duel.players[p & 1].hand[n]),
+                              *(unsigned int *)&x);
             }
         }
     }
     if (card_get_type(id) == 9 && to_grave) {
-        for (n = 0; n < 5; n++) {
+        for (n = 0; n <= 4; n++) {
             if (duel_slot_e8170(owner, n, 0x1A8D)) {
                 duel_088C7E68(owner, n, 4, 1);
             }
@@ -354,73 +399,25 @@ void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
     }
 
     /* cards that leave a mark in the owner's list */
-    prot = duel_card_protected(id, uid) != 0;
-    guarded = duel_slot_effect_with(duel_turn_player, 0xB, 0x15FF, uid) != 0;
+    ok = !duel_card_protected(id, uid);
+    if (duel_slot_effect_with(duel_turn_player, 0xB, 0x15FF, uid)) {
+        ok = 0;
+    }
     switch (id) {
-    case 0x1A9F:
-        if (owner == p && z > 4 && s->faceup == 0 && by_opp && destroyed && !special && to_grave) {
-            duel_088C77D4(owner, 0x1A9F, 1, uid);
-        }
-        break;
-    case 0x1A64:
-        if (!guarded && !prot && special && destroyed && to_grave) {
-            duel_088C77D4(owner, 0x1A64, ((owner == duel_turn_player) + 1) * 0x10 | 1, uid);
-        }
-        break;
-    case 0x1A62:
-        if (!guarded && !prot && destroyed && to_grave) {
-            duel_088C77D4(owner, 0x1A62, ((owner == duel_turn_player) + 1) * 0x10 | 1, uid);
-        }
-        break;
-    case 0x19F7:
-    case 0x19F8:
-        if (!guarded && !prot && special && destroyed && to_grave) {
+    case 0x14A5:
+        if (ok && to_grave && !s->card.b21) {
+            duel_088C4448(owner, 0xE, uid);
             duel_088C77D4(owner, id, 1, uid);
         }
         break;
-    case 0x18BC:
-        if (!guarded && !prot && keep && x.s_zone2 == 0xF && s->faceup != 0 &&
-            (!special || duel_special.unk24 != 0x18BC)) {
-            duel_088C77D4(p, 0x18BC, 1, uid);
+    case 0x1571:
+        if (!ok) {
+            duel_088C77D4(owner, id, 5, uid);
         }
         break;
-    case 0x185C:
-        if (!guarded && !prot && z < 5 && !special && destroyed && to_grave) {
-            n = owner == duel_turn_player ? (duel_phase != 0) << 1 : 1;
-            duel_088C77D4(owner, 0x185C, n << 4 | 1, uid);
-        }
-        break;
-    case 0x17DE:
-        if (!guarded && !prot && keep && to_grave && card_get_type(cause) == 0x16 &&
-            card_get_prop5_hi(cause) == 4) {
-            n = owner == duel_turn_player ? (duel_phase != 0) << 1 : 1;
-            duel_088C77D4(owner, 0x17DE, n << 4 | 1, uid);
-        }
-        break;
-    case 0x156B:
-        if (s->faceup == 0) {
-            break;
-        }
-        /* fall through */
-    case 0x1522:
-        if (!guarded && !prot && p == owner && z < 5 && !special && destroyed && to_grave && by_opp) {
-            n = owner == duel_turn_player ? (duel_phase != 0) << 1 : 1;
-            duel_088C77D4(owner, id, n << 4 | 1, uid);
-        }
-        break;
-    case 0x1466:
-        if (!guarded && !prot && p == owner && z < 5 && destroyed && to_grave && by_opp) {
-            duel_088C77D4(p, 0x1466, 1, uid);
-        }
-        break;
-    case 0x13A6:
-        if (!guarded && !prot && keep && destroyed && to_grave && duel_list_has_effect(uid, s->card.id) == 0) {
-            duel_088C77D4(owner, s->card.id, 1, uid);
-        }
-        break;
-    case 0x16F9:
-        if (!guarded && !prot && to_grave) {
-            duel_088C77D4(owner, 0x16F9, 1, uid);
+    case 0x15BD:
+        if (special && destroyed) {
+            duel_088C4730(s->link, 500, 1, 0x1595);
         }
         break;
     case 0x1670:
@@ -430,33 +427,83 @@ void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
             duel_088C4730(p, 300, 0, 0x166A);
         }
         break;
-    case 0x15BD:
-        if (special && destroyed) {
-            duel_088C4730(s->link, 500, 1, 0x1595);
+    case 0x16F9:
+        if (ok && to_grave) {
+            duel_088C77D4(owner, id, 1, uid);
         }
         break;
-    case 0x1571:
-        if (guarded || prot) {
-            duel_088C77D4(owner, 0x1571, 5, uid);
+    case 0x13A6:
+        if (ok && keep && destroyed && to_grave && duel_list_has_effect(uid, s->card.id) == 0) {
+            duel_088C77D4(owner, s->card.id, 1, uid);
         }
         break;
-    case 0x14A5:
-        if (!guarded && !prot && to_grave && !s->card.b14) {
-            duel_088C4448(owner, 0xE, uid);
-            duel_088C77D4(owner, 0x14A5, 1, uid);
+    case 0x1466:
+        if (ok && p == owner && z < 5 && destroyed && to_grave && by_opp) {
+            duel_088C77D4(p, id, 1, uid);
+        }
+        break;
+    case 0x156B:
+        if (!s->faceup) {
+            break;
+        }
+        /* fall through */
+    case 0x1522:
+        if (ok && p == owner && z < 5 && !special && destroyed && to_grave && by_opp) {
+            n = owner == duel_turn_player ? (duel_phase != 0) << 1 : 1;
+            duel_088C77D4(owner, id, (n & 0xF) << 4 | 1, uid);
+        }
+        break;
+    case 0x17DE:
+        if (ok && keep && to_grave && card_get_type(cause) == 0x16 && card_get_prop5_hi(cause) == 4) {
+            n = owner == duel_turn_player ? (duel_phase != 0) << 1 : 1;
+            duel_088C77D4(owner, id, (n & 0xF) << 4 | 1, uid);
+        }
+        break;
+    case 0x185C:
+        if (ok && z < 5 && !special && destroyed && to_grave) {
+            n = owner == duel_turn_player ? (duel_phase != 0) << 1 : 1;
+            duel_088C77D4(owner, id, (n & 0xF) << 4 | 1, uid);
+        }
+        break;
+    case 0x18BC:
+        if (ok && keep && x.s_zone2 == 0xF && s->faceup && (!special || duel_special.unk24 != id)) {
+            duel_088C77D4(p, id, 1, uid);
+        }
+        break;
+    case 0x19F7:
+    case 0x19F8:
+        if (ok && special && destroyed && to_grave) {
+            duel_088C77D4(owner, id, 1, uid);
+        }
+        break;
+    case 0x1A62:
+        if (ok && destroyed && to_grave) {
+            duel_088C77D4(owner, id, (unsigned char)((owner == duel_turn_player) + 1) << 4 | 1, uid);
+        }
+        break;
+    case 0x1A64:
+        if (ok && special && destroyed && to_grave) {
+            duel_088C77D4(owner, id, (unsigned char)((owner == duel_turn_player) + 1) << 4 | 1, uid);
+        }
+        break;
+    case 0x1A9F:
+        if (owner == p && z >= 5 && !s->faceup && by_opp && destroyed && !special && to_grave) {
+            duel_088C77D4(owner, id, 1, uid);
         }
         break;
     }
 
     if (keep) {
         if (destroyed && type == 0x11 && duel_card_check_9148(p, 0x1782)) {
-            for (i = 5; i < 11; i++) {
+            for (i = 5; i <= 10; i++) {
                 if (duel_slot_e8170(p, i, 0x1843)) {
+                    int j;
+
                     duel_088C87A8(p, i, 0x1843, 2, 0);
-                    for (n = 0; n < 5; n++) {
-                        if (field_get_card(p, n) == 0x1782 && SLOT_AT(p, n)->faceup != 0 &&
-                            !(duel.zone_off & 1 << (n + p * 16))) {
-                            duel_088C87A8(p, n, p | (i & 0xFF) << 8, 8, 0);
+                    for (j = 0; j <= 4; j++) {
+                        if (field_get_card(p, j) == 0x1782 && SLOT_AT(p, j)->faceup != 0 &&
+                            !(duel.zone_off & 1 << (j + p * 16))) {
+                            duel_088C87A8(p, j, (p & 0xFF) | (i & 0xFF) << 8, 8, 0);
                         }
                     }
                 }
@@ -475,10 +522,10 @@ void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
         }
     }
     if (special && to_grave && card_is_in_group_1a6x(id)) {
-        for (i = 0; i < 5; i++) {
+        for (i = 0; i <= 4; i++) {
             if (i != z && duel_slot_e8170(p, i, 0x1A03)) {
                 n = owner == duel_turn_player ? 2 : 1;
-                duel_088C87A8(p, i, 0x1A03, n << 4 | 2, uid);
+                duel_088C87A8(p, i, 0x1A03, (n & 0xF) << 4 | 2, uid);
             }
         }
     }
@@ -489,10 +536,16 @@ void duel_088CC8EC(struct DuelActX x, DuelSlot *s, int cause, unsigned int f)
         }
         duel_088C02A4(0x18B2, 1 << (owner << 3));
     }
-    if (trig == 3) {
-        duel_0884F30C(id | z << 16 | p << 31 | kind << 25 | 0x200000, uid, *(int *)&x);
-    } else if (trig != 2 && trig == 1) {
-        duel_0884F30C(id | x.s_zone2 << 16 | owner << 31 | kind << 25 | 0x400000, uid, *(int *)&x);
+    switch (trig) {
+    case 1:
+        duel_0884F30C(TRIG_P(owner) | TRIG_K(kind) | 0x400000 | TRIG_Z(x.s_zone2) | (id & 0xFFFF), uid,
+                      *(unsigned int *)&x);
+        break;
+    case 2:
+        break;
+    case 3:
+        duel_0884F30C(TRIG_P(p) | TRIG_K(kind) | 0x200000 | TRIG_Z(z) | (id & 0xFFFF), uid, *(unsigned int *)&x);
+        break;
     }
 }
 #endif
@@ -953,21 +1006,6 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
 }
 #endif
 
-/* struct DuelActX with bit 23 as a 1-bit field (bytes 0x14-0x17 of a DuelAct) */
-struct DuelActX1 {
-    unsigned int s_uid : 9;
-    unsigned int s_player : 1;
-    unsigned int s_zone : 4;
-    unsigned int s_b14 : 1;
-    unsigned int s_b15 : 1;
-    unsigned int s_b16 : 1;
-    unsigned int s_b17 : 1;
-    unsigned int s_b18 : 1;
-    unsigned int s_zone2 : 4;
-    unsigned int s_b23 : 1;
-    unsigned int s_b24 : 8;
-};
-
 /* Sends the card in zone z of player p to pile dest (0xB hand, 0xC extra deck, 0xD deck, 0xE graveyard,
    0xF banished; < 11 another zone) because of card cause. f: bit 0 by the opponent, 1 destroyed,
    3 not by battle, 12, 18 and 23 host message variants, 16 skip the immunity checks. Returns 1 if
@@ -1093,7 +1131,7 @@ int duel_send_card(unsigned int p, int z, int dest, int f, int cause)
                 duel_cmd(0x40, (p & 1) | (z & 0x1F) << 1, (q & 1) | (dest & 0x1F) << 1 | (n & 0x3FF) << 6, f);
             }
             if (dest > 10) {
-                duel_088CC8EC(*(struct DuelActX *)&x, s, cause, f | (cause != 0 ? 0x80000 : 0));
+                duel_088CC8EC(x, s, cause, f | (cause != 0 ? 0x80000 : 0));
                 if (card_is_attribute9(id) == 0) {
                     duel_088AFD5C(0x1B, *(struct DuelActX *)&x);
                 }

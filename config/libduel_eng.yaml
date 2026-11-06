@@ -34,7 +34,6 @@ segments:
       - [0x3108, c, ai_088070A8]
       - [0x3CDC, asm, ai_088070A8_asm_08807C7C]
       - [0x43C4, c, ai_088070A8]
-      - [0x4820, asm, ai_088070A8_asm_088087C0]
       - [0x5BB0, c, ai_util]
       - [0x5E08, asm, ai_util_asm_08809DA8]
       - [0x5F8C, c, ai_util]
