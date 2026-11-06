@@ -1,7 +1,6 @@
 // @range 0x08887618-0x08889BE4
 // @data 0x089117DC-0x08911828
 // @rodata 0x08911828-0x08911844
-// @asm 0x08887618-0x088876B0
 // @asm 0x08887B34-0x08887ED8
 // @asm 0x08888ED0-0x08889434
 /* Card effect handlers (DuelAct *a), after effects_w.c. */
@@ -105,7 +104,6 @@ void duel_088CB95C(unsigned int p, int z, int uid);
 void duel_088C77EC(unsigned int p, int uid);
 void duel_088C1B88(unsigned int p, int z);
 
-#ifdef NON_MATCHING /* registradores */
 int duel_08887618(DuelAct *a, DuelAct *b)
 {
     unsigned int loc;
@@ -115,13 +113,12 @@ int duel_08887618(DuelAct *a, DuelAct *b)
     if (duel_088A9008(a, 0, &loc) != 0) {
         p = loc & 0xFF;
         z = (unsigned short)loc >> 8 & 0xFF;
-        if (duel.players[p & 1].field[z].card.id != 0) {
+        if (ZSLOT(p, z)->card.id != 0) {
             b->w[0] = a->w[0];
         }
     }
     return 0;
 }
-#endif
 
 int duel_088876B0(DuelAct *a)
 {

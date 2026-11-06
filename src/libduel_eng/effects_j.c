@@ -1,5 +1,4 @@
 // @range 0x088FBAC8-0x088FC114
-// @asm 0x088FBAC8-0x088FBCD4
 /* Card effect handlers (continued). */
 #include "duel.h"
 
@@ -22,8 +21,6 @@ int duel_0887F8E4(DuelAct *a, int b);
 int duel_08890730(DuelAct *a, int b);
 int duel_eff_fbed8(DuelAct *a, int b);
 
-#ifdef NON_MATCHING
-/* 5 words: the original computes the zone before the player in case 0x80 */
 int duel_eff_fbac8(DuelAct *a, int b)
 {
     switch (a->w[2]) {
@@ -36,11 +33,11 @@ int duel_eff_fbac8(DuelAct *a, int b)
         switch (duel_step) {
         case 0x80: {
             unsigned char z = a->zone;
-            unsigned int p = a->player;
-            if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
+
+            if (a->uid != CARD_UID(duel.players[(unsigned int)a->player & 1].field[z].card)) {
                 return 0;
             }
-            if (duel.players[p & 1].field[z].faceup == 0) {
+            if (duel.players[(unsigned int)a->player & 1].field[z].faceup == 0) {
                 return 0;
             }
             if (duel_count_free_monster_zones(a->player) == 0) {
@@ -63,10 +60,10 @@ int duel_eff_fbac8(DuelAct *a, int b)
             duel_088C87A8(a->player, a->zone, a->player | (duel_w_089148FC & 0xFF) << 8, 6, 0);
             break;
         }
+        return 0;
     }
     return 0;
 }
-#endif
 
 int duel_eff_fbcd4(DuelAct *a, int b)
 {

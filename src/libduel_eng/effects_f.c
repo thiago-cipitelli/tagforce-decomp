@@ -1,5 +1,4 @@
 // @range 0x088FA288-0x088FA920
-// @asm 0x088FA288-0x088FA488
 /* Card effect handlers (continued). */
 #include "duel.h"
 #include "card_db.h"
@@ -29,7 +28,6 @@ void duel_088CBAA4(unsigned int p, int z, int uid);
 void duel_088D1858(int x, unsigned int p, int z);
 void duel_088C9344(int x, unsigned int p, int z, int a);
 
-#ifdef NON_MATCHING /* the original computes the target zone before the player */
 int duel_eff_fa288(DuelAct *a)
 {
     switch (duel_step) {
@@ -41,7 +39,7 @@ int duel_eff_fa288(DuelAct *a)
             unsigned int z = (unsigned char)((t & 0xFFFF) >> 8);
             unsigned char q = t;
 
-            a->w[1] = duel.players[q & 1].field[z].card.id;
+            a->w[1] = ZSLOT(q, z)->card.id;
             if (card_attribute_icon_is3(a->w[1])) {
                 return 0;
             }
@@ -74,7 +72,6 @@ int duel_eff_fa288(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_eff_fa488(DuelAct *a)
 {

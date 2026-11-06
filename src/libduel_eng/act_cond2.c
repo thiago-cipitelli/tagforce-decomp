@@ -1,6 +1,5 @@
 // @range 0x0886F23C-0x0887DB24
 // @asm 0x08870DC4-0x08870E94
-// @asm 0x08870848-0x088708E4
 // @asm 0x08871B14-0x08871BFC
 // @asm 0x088719DC-0x08871A68
 // @asm 0x08871674-0x088717B4
@@ -740,21 +739,18 @@ int duel_088707BC(DuelAct *a)
     return *src != 0;
 }
 
-#ifdef NON_MATCHING /* só a família zona-antes-do-jogador: o original calcula z * 20 antes do mult do jogador; 11 palavras */
 int duel_08870848(DuelAct *a)
 {
     unsigned char z = a->src.zone;
-    unsigned int p = a->src.player;
 
-    if (duel.players[p & 1].field[z].card.id == 0) {
+    if (duel.players[(unsigned int)a->src.player & 1].field[z].card.id == 0) {
         return 0;
     }
-    if (duel.players[p & 1].field[z].faceup == 0) {
+    if (duel.players[(unsigned int)a->src.player & 1].field[z].faceup == 0) {
         return 0;
     }
-    return duel_field_atk(p, z) < 1401;
+    return duel_field_atk(a->src.player, z) < 1401;
 }
-#endif
 
 int duel_088708E4(DuelAct *a, int b)
 {

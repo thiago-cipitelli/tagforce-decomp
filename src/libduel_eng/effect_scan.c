@@ -1,7 +1,6 @@
 // @range 0x088E0890-0x088E1FE0
-// @asm 0x088E0C30-0x088E0E8C
-// @asm 0x088E1390-0x088E1574
-// @asm 0x088E1D00-0x088E1E40
+// @asm 0x088E0C30-0x088E0DD0
+// @asm 0x088E1390-0x088E14C0
 /* Effect list upkeep and scans by source: drop expiring entries at the end of a turn, reset a zone,
    move the entries of a source to another zone, count and find the entries placed on a zone by
    a given card (kinds 6-11 point back to their source zone). */
@@ -164,6 +163,7 @@ void duel_slot_effects_reset(unsigned int p, unsigned int z)
         duel.players[p & 1].field[z].flags &= ~0x10;
     }
 }
+#endif
 
 /* Set kind and arg of entry i; kind 0 empties it, a card kind on a zone entry keeps its card id. */
 void duel_effect_set(unsigned int p, int z, int i, int kind, unsigned short arg)
@@ -175,12 +175,14 @@ void duel_effect_set(unsigned int p, int z, int i, int kind, unsigned short arg)
         ef->kind_hi = 0;
         ef->src = 0;
     } else if (ef->kind >= 6 && kind < 6) {
-        ef->src = duel.players[(unsigned char)ef->src & 1].field[(unsigned char)(ef->src >> 8)].card.id;
+        unsigned int sz = ef->src >> 8 & 0xFF;
+        unsigned int sp = ef->src & 0xFF;
+
+        ef->src = ZSLOT(sp, sz)->card.id;
     }
     ef->kind = kind;
     ef->arg = arg;
 }
-#endif
 
 /* Entries placed from zone `from` now come from zone `to`. */
 void duel_effects_move_src(unsigned short from, unsigned short to)
@@ -331,6 +333,7 @@ int duel_slot_e1390(unsigned int p, int z, int id, unsigned int q)
     }
     return n;
 }
+#endif
 
 /* Entries of kind 10 and above on zone z of p whose source zone holds a card. */
 int duel_slot_count_14c0(unsigned int p, int z)
@@ -346,14 +349,13 @@ int duel_slot_count_14c0(unsigned int p, int z)
             unsigned int sz = ef->src >> 8 & 0xFF;
             unsigned int sp = ef->src & 0xFF;
 
-            if (duel.players[sp & 1].field[sz].card.id != 0) {
+            if (ZSLOT(sp, sz)->card.id != 0) {
                 n++;
             }
         }
     }
     return n;
 }
-#endif
 
 /* Zone sz of player q has an entry of kind 10 and above from zone z of p. */
 int duel_slot_has_src10(unsigned int p, unsigned int z, unsigned int q, int sz)
@@ -561,7 +563,6 @@ unsigned short duel_slot_src13(unsigned int p, int z)
     return 0xFFFF;
 }
 
-#ifdef NON_MATCHING /* the zone of the source is computed before its player; the two kind tests are laid out apart */
 /* Source of the first kind 10 or 11 entry whose card is of attribute 8 (an active one if active). */
 unsigned short duel_slot_src_attr8(unsigned int p, int z, int active)
 {
@@ -570,14 +571,18 @@ unsigned short duel_slot_src_attr8(unsigned int p, int z, int active)
     while (e != 0) {
         DuelEffect *ef = EFF(e);
         unsigned int src;
+        unsigned int sz;
+        unsigned int sp;
 
         e = ef->next;
         switch (ef->kind & 0xF) {
         case 10:
         case 11:
             src = ef->src;
-            if (card_is_attribute8(duel.players[(unsigned char)src & 1].field[(unsigned char)(src >> 8)].card.id) &&
-                (active == 0 || SLOT_ACTIVE(&duel.players[(unsigned char)src & 1].field[(unsigned char)(src >> 8)]))) {
+            sz = src >> 8 & 0xFF;
+            sp = src & 0xFF;
+            if (card_is_attribute8(duel.players[sp & 1].field[sz].card.id) &&
+                (active == 0 || SLOT_ACTIVE(&duel.players[sp & 1].field[sz]))) {
                 return src;
             }
             break;
@@ -585,7 +590,6 @@ unsigned short duel_slot_src_attr8(unsigned int p, int z, int active)
     }
     return 0xFFFF;
 }
-#endif
 
 /* The card in zone z of p can act on (x, y): not while it is bound by a kind 12 or 13 entry. */
 int duel_slot_can_act(unsigned int p, unsigned int z, int x, int y)
