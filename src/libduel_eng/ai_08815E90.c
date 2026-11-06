@@ -2,7 +2,6 @@
 // @asm 0x0881657C-0x08816A74
 // @asm 0x08816A74-0x08816D74
 // @asm 0x08817598-0x08818C34
-// @asm 0x08818C34-0x088194D0
 /* Computer player: picking one of its cards (zone mask bit player * 16 + zone) to send away. */
 #include "duel.h"
 #include "card_db.h"
@@ -1015,14 +1014,13 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
 #undef IN_MASK
 #endif
 
-#ifdef NON_MATCHING /* forma igual nos grupos de case; alocação de registradores (id, p, 1 - p e contadores) e os laços do primeiro grupo não reproduzidos */
 /* The computer chooses a card on the field for the effect fn of card id it is resolving. */
 void duel_08818C34(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p, int z))
 {
     unsigned int mask = duel_0884E538(duel_w_089147DC, fn);
     unsigned int q;
     int z;
-    unsigned int b;
+    int b;
 
     duel_w_08913CF4 = p;
     duel_ai_player = p;
@@ -1033,9 +1031,9 @@ void duel_08818C34(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p,
     case 0x1957:
         switch (id) {
         case 0x1927:
-            for (z = 0, b = p << 4; z < 5; z++, b++) {
+            for (z = 0, b = p << 4; z < 5; b++, z++) {
                 if ((mask & 1 << b) &&
-                    (duel.players[p & 1].field[z].flags >> 22 & 1) != (duel.players[p & 1].field[z].flags >> 23 & 1) &&
+                    (duel.players[p & 1].field[z].flags >> 22 & 1) + (duel.players[p & 1].field[z].flags >> 23 & 1) != 0 &&
                     (int)card_get_level(duel.players[p & 1].field[z].card.id) < 5) {
                     duel_08835F34(p, z, 0, 0xB);
                     return;
@@ -1043,24 +1041,24 @@ void duel_08818C34(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p,
             }
             break;
         case 0x140B:
-            for (z = 0, b = p << 4; z < 5; z++, b++) {
-                if ((mask & 1 << b) && duel_088BFFD8(p, id, duel_field_level(p, z)) != 0) {
-                    duel_08835F34(p, z, 0, 0xB);
+            for (b = 0, z = p << 4; b < 5; b++, z++) {
+                if ((mask & 1 << z) && duel_088BFFD8(p, id, duel_field_level(p, b)) != 0) {
+                    duel_08835F34(p, b, 0, 0xB);
                     return;
                 }
             }
             break;
         case 0x15A3:
-            for (z = 0, b = p << 4; z < 5; z++, b++) {
-                if ((mask & 1 << b) && card_attribute_icon_is3(duel.players[p & 1].field[z].card.id) == 0) {
-                    duel_08835F34(p, z, 0, 0xB);
+            for (b = 0, q = p << 4; b < 5; q++, b++) {
+                if ((mask & 1 << q) && card_attribute_icon_is3(duel.players[p & 1].field[b].card.id) == 0) {
+                    duel_08835F34(p, b, 0, 0xB);
                     return;
                 }
             }
             break;
         case 0x1957:
             for (z = 5, b = p * 16 + 5; z < 10; z++, b++) {
-                if (mask & 1 << b) {
+                if ((mask & 1 << b) != 0) {
                     duel_08835F34(p, z, 0, 0xB);
                     return;
                 }
@@ -1220,7 +1218,6 @@ void duel_08818C34(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p,
         }
     }
 }
-#endif
 
 /* Zones (bit q * 16 + z) of both players for which fn(q, z, 0) holds. */
 unsigned int duel_088194D0(int (*fn)(unsigned int q, int z, int i))
