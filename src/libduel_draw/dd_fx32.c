@@ -807,7 +807,7 @@ int dd_fx32_s3_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 2,1 KB: alocação de registradores e laços desenrolados diferem */
+#ifdef NON_MATCHING /* 27 palavras: ordem em que as constantes do laço de inicialização são içadas (-1/700, 0,5) e rotação f17-f19 no rastro; c/j do laço de desenho em s2/s3 trocados */
 int dd_fx32_s3_update(int phase, DdFx32S3 *d)
 {
     DdFxSlot *s = d->slot;
@@ -824,8 +824,17 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
     float k;
     float z;
     float ang;
+    float cw;
+    float ch;
+    float hw;
+    float hh;
+    float tv2;
     int i;
     int j;
+    int i3;
+    int j2;
+    int i2;
+    DdFx32Comets * c_0;
 
     dd_mtx_push_saved();
     dd_fx32_mask_begin(s->id);
@@ -836,72 +845,79 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
     dd_mtx_billboard_cam(&bill);
     dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
     if (phase == 1) {
+        cw = 0.25f;
+        ch = 0.5f;
+        hw = 30.0f;
+        hh = 80.0f;
         for (i = 0; i < 8; i++) {
-            tu = i % 4 * 0.25f;
-            tv = i / 4 * 0.5f;
+            tu = i % 4 * cw;
+            tv = i / 4 * ch;
             /* the head of the tail, opaque */
             for (j = 0; j < 2; j++) {
                 v = d->tail_v[i][j];
-                z = (j - 1.0f) * 700.0f * 0.2f;
+                z = (j + -1.0f) * 700.0f * 0.2f;
                 v[0].u = tu;
                 v[0].v = tv + j * 0.25f;
                 v[0].color = 0xFF9B9BFF;
-                v[0].x = -30.0f;
+                v[0].x = -hw;
                 v[0].y = 0.0f;
                 v[0].z = z;
-                v[1].u = tu + 0.25f;
+                v[1].u = tu + cw;
                 v[1].v = tv + j * 0.25f;
                 v[1].color = 0xFF9B9BFF;
-                v[1].x = 30.0f;
+                v[1].x = hw;
                 v[1].y = 0.0f;
                 v[1].z = z;
             }
             /* the rest fades out over 1400 units */
             for (j = 2; j < 9; j++) {
-                v = d->tail_v[i][j];
                 k = (j - 1) / 7.0f;
+                tv2 = tv + (k * 0.5f + 0.5f) * 0.5f;
+                z = k * 1400.0f;
                 color = (unsigned int)((1.0f - k) * 255.0f) << 24 | 0x9B9BFF;
-                v[0].u = tu;
-                v[0].v = tv + (k * 0.5f + 0.5f) * 0.5f;
-                v[0].color = color;
-                v[0].x = -30.0f;
-                v[0].y = 0.0f;
-                v[0].z = k * 1400.0f;
-                v[1].u = tu + 0.25f;
-                v[1].v = tv + (k * 0.5f + 0.5f) * 0.5f;
-                v[1].color = color;
-                v[1].x = 30.0f;
-                v[1].y = 0.0f;
-                v[1].z = k * 1400.0f;
+                d->tail_v[i][j][0].u = tu;
+                d->tail_v[i][j][0].v = tv2;
+                d->tail_v[i][j][0].color = color;
+                d->tail_v[i][j][0].x = -hw;
+                d->tail_v[i][j][0].y = 0.0f;
+                d->tail_v[i][j][0].z = z;
+                d->tail_v[i][j][1].u = tu + cw;
+                d->tail_v[i][j][1].v = tv2;
+                d->tail_v[i][j][1].color = color;
+                d->tail_v[i][j][1].x = hw;
+                d->tail_v[i][j][1].y = 0.0f;
+                d->tail_v[i][j][1].z = z;
             }
             v = d->head_v[i];
             v[0].u = tu;
             v[0].v = tv;
             v[0].color = 0xFF9B9BFF;
-            v[0].x = -80.0f;
-            v[0].y = 80.0f;
+            v[0].x = -hh;
+            v[0].y = hh;
             v[0].z = 0.0f;
-            v[1].u = tu + 0.25f;
-            v[1].v = tv + 0.5f;
+            v[1].u = tu + cw;
+            v[1].v = tv + ch;
             v[1].color = 0xFF9B9BFF;
-            v[1].x = 80.0f;
-            v[1].y = -80.0f;
+            v[1].x = hh;
+            v[1].y = -hh;
             v[1].z = 0.0f;
         }
-        for (i = 0; i < 18; i++)
-            d->idx[i] = i;
+        for (i = 0; i < 9; i++) {
+            d->idx[i * 2] = i * 2;
+            d->idx[i * 2 + 1] = i * 2 + 1;
+        }
     }
     if (d->grow == d->grow_end) {
         c = &d->comet[d->comet_next];
         c->t = 0;
         c->flags |= 1;
-        for (i = 0; i < 6; i++) {
+        for (i2 = 0; i2 < 6; i2++) {
             ang = DD_RAND(r) / 32767.0f * 6.2831855f;
-            c->frame[i] = DD_RAND(r) % 8;
-            vec3_set(&c->pos[i], sinf(ang) * 220.0f, cosf(ang) * 220.0f + 120.0f,
+            c->frame[i2] = DD_RAND(r) % 8;
+            vec3_set(&c->pos[i2], sinf(ang) * 220.0f, cosf(ang) * 220.0f + 120.0f,
                      DD_RAND(r) / 32767.0f * 160.0f + 20.0f);
-            c->speed[i] = (DD_RAND(r) / 32767.0f * 60.0f + 180.0f) * -1.0f;
-            c->ang[i] = -ang;
+            c->speed[i2] = (DD_RAND(r) / 32767.0f * 60.0f + 180.0f) * -1.0f;
+            c->ang[i2] = -ang;
         }
         if (d->comet_next < 31)
             d->comet_next++;
@@ -917,26 +933,26 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
     mtx_push();
     mtx_identity();
     for (i = 0; i < 32; i++) {
-        c = &d->comet[i];
-        if (!(c->flags & 1))
+        c_0 = &d->comet[i];
+        if (!(c_0->flags & 1) == 1)
             continue;
-        list = dl_ambient_light(list, (unsigned int)(out * dd_ease_cos(c->t, 32, 1) * 255.0f) << 24 | 0xFFFFFF);
-        for (j = 0; j < 6; j++) {
+        list = dl_ambient_light(list, (unsigned int)(out * (dd_ease_cos(c_0->t, 32, 1) * 255.0f)) << 24 | 0xFFFFFF);
+        for (j2 = 0; j2 < 6; j2++) {
             mtx_push();
-            mtx_translate(&c->pos[j]);
+            mtx_translate(&c_0->pos[j2]);
             mtx_push();
-            mtx_rotate_z(c->ang[j]);
-            list = draw_array(list, 4, 0x99F, 18, d->idx, d->tail_v[c->frame[j]]);
+            mtx_rotate_z(c_0->ang[j2]);
+            list = draw_array(list, 4, 0x99F, 18, d->idx, d->tail_v[c_0->frame[j2]]);
             mtx_pop();
             mtx_mult(&bill);
-            list = draw_array(list, 6, 0x19F, 2, 0, d->head_v[c->frame[j]]);
+            list = draw_array(list, 6, 0x19F, 2, 0, d->head_v[c_0->frame[j2]]);
             mtx_pop();
-            c->pos[j].z += c->speed[j];
+            c_0->pos[j2].z += c_0->speed[j2];
         }
-        if (c->t < 31)
-            c->t++;
+        if (c_0->t < 31)
+            c_0->t++;
         else
-            c->flags &= ~1;
+            c_0->flags &= ~1;
     }
     mtx_pop();
     dl_set_list(list);

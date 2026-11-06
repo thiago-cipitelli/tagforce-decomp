@@ -1,5 +1,5 @@
 // @range 0x0885036C-0x088513A4
-// @asm 0x088503C4-0x088513A4
+// @data 0x08876DA0-0x08876DB8
 /* Character effect "splash" (a 420-frame loop): during two windows of the loop, water hits two
    fixed points and spawns spreading ripples (sen_07.gim), rising spray rings (nsea.gim) and
    droplets thrown upwards (PT35.gim). */
@@ -95,7 +95,6 @@ int dd_fx_splash_start(int arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 4 KB com três sistemas de partículas; escalonamento diferente; C equivalente */
 int dd_fx_splash_update(int phase, DdFxSplash *w)
 {
     int on = 0;
@@ -114,24 +113,37 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
     float s;
     float k;
     float y;
+    float one;
+    float a;
+    float hr;
+    float cw;
+    float ch;
+    float cu;
+    float cv;
+    DdDropPart *pj;
     int i;
     int j;
+    int i3;
+    int j2;
+    int i2;
+    void *dlist;
+    int j3;
+    DdDrop *dd;
 
     dd_mtx_push_field();
+    one = 1.0f;
     dd_mtx_billboard_field(&cam);
-    if (w->frame >= 308) {
-        on = w->frame < 319;
-        if (on) {
-            FxVec3 a = { 0.392f, 0.803f, -2.536f };
+    if (w->frame >= 308 && w->frame < 319) {
+        FxVec3 a = { 0.392f, 0.803f, -2.536f };
 
-            pos = a;
-        }
+        on = 1;
+        pos = *(FxVec3 *)&a;
     }
-    if (w->frame > 345 && w->frame < 357) {
+    if (w->frame >= 346 && w->frame < 357) {
         FxVec3 b = { 1.359f, 0.803f, -1.61f };
 
         on = 1;
-        pos = b;
+        pos = *(FxVec3 *)&b;
     }
     if (phase == 1) {
         for (i = 0; i < 17; i++) {
@@ -149,11 +161,11 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
             w->ripple_idx[i * 2 + 1] = i * 3 + 1;
         }
     }
-    if (on) {
+    if (on == 1) {
         r = &w->ripple[w->ripple_cur];
         r->flags |= 1;
         r->t = 0;
-        r->life = (RAND15() & 0xF) + 32;
+        r->life = (RAND15() % 16) + 32;
         r->u = RAND15() / 32767.0f;
         r->v = RAND15() / 32767.0f;
         vec3_copy(&r->pos, &pos);
@@ -171,9 +183,9 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
     mtx_push();
     mtx_identity();
     dd_translate3(0.0f, 0.01f, 0.0f);
-    for (i = 0; i < 48; i++) {
-        r = &w->ripple[i];
-        if (r->flags & 1) {
+    for (j = 0; j < 48; j++) {
+        r = &w->ripple[j];
+        if (!(r->flags & 1) != 1) {
             list = dl_ambient_light(list, (unsigned int)(dd_ease_cos(r->t, r->life, 1) * 255.0f) << 24 | 0xFFFFFF);
             list = dl_tex_offset(r->u, r->v, list);
             mtx_push();
@@ -192,26 +204,26 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
     mtx_pop();
     dl_set_list(list);
     if (phase == 1) {
-        for (i = 0; i < 17; i++) {
-            f = (float)i / 16.0f * 6.2831855f;
-            u = (float)i / 16.0f * 1.0f;
+        for (i2 = 0; i2 < 17; i2++) {
+            f = (float)i2 / 16.0f * 6.2831855f;
+            u = one * ((float)i2 / 16.0f);
             sn = sinf(f);
             cs = cosf(f);
-            w->spray_v[i][0].u = u; w->spray_v[i][0].v = 0.0f; w->spray_v[i][0].color = 0xFFFFFF;
-            w->spray_v[i][0].x = sn * 0.3f; w->spray_v[i][0].y = 0.0f; w->spray_v[i][0].z = cs * 0.3f;
-            w->spray_v[i][1].u = u; w->spray_v[i][1].v = 0.5f; w->spray_v[i][1].color = 0x80FFFFFF;
-            w->spray_v[i][1].x = sn * 0.55f; w->spray_v[i][1].y = 0.4f; w->spray_v[i][1].z = cs * 0.55f;
-            w->spray_v[i][2].u = u; w->spray_v[i][2].v = 1.0f; w->spray_v[i][2].color = 0xFFFFFF;
-            w->spray_v[i][2].x = sn * 0.8f; w->spray_v[i][2].y = 0.8f; w->spray_v[i][2].z = cs * 0.8f;
-            w->spray_idx[i * 2] = i * 3;
-            w->spray_idx[i * 2 + 1] = i * 3 + 1;
+            w->spray_v[i2][0].u = u; w->spray_v[i2][0].v = 0.0f; w->spray_v[i2][0].color = 0xFFFFFF;
+            w->spray_v[i2][0].x = sn * 0.3f; w->spray_v[i2][0].y = 0.0f; w->spray_v[i2][0].z = cs * 0.3f;
+            w->spray_v[i2][1].u = u; w->spray_v[i2][1].v = 0.5f; w->spray_v[i2][1].color = 0x80FFFFFF;
+            w->spray_v[i2][1].x = sn * 0.55f; w->spray_v[i2][1].y = 0.4f; w->spray_v[i2][1].z = cs * 0.55f;
+            w->spray_v[i2][2].u = u; w->spray_v[i2][2].v = 1.0f; w->spray_v[i2][2].color = 0xFFFFFF;
+            w->spray_v[i2][2].x = sn * 0.8f; w->spray_v[i2][2].y = 0.8f; w->spray_v[i2][2].z = cs * 0.8f;
+            w->spray_idx[i2 * 2] = i2 * 3;
+            w->spray_idx[i2 * 2 + 1] = i2 * 3 + 1;
         }
     }
-    if (on) {
+    if (on == 1) {
         r = &w->spray[w->spray_cur];
         r->flags |= 1;
         r->t = 0;
-        r->life = (RAND15() & 0xF) + 16;
+        r->life = (RAND15() % 16) + 16;
         r->u = RAND15() / 32767.0f;
         r->v = RAND15() / 32767.0f;
         vec3_copy(&r->pos, &pos);
@@ -229,9 +241,9 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
     mtx_push();
     mtx_identity();
     dd_translate3(0.0f, -0.3f, 0.0f);
-    for (i = 0; i < 32; i++) {
-        r = &w->spray[i];
-        if (r->flags & 1) {
+    for (j2 = 0; j2 < 32; j2++) {
+        r = &w->spray[j2];
+        if (!(r->flags & 1) != 1) {
             list = dl_ambient_light(list, (unsigned int)(dd_ease_cos(r->t, r->life, 1) * 255.0f) << 24 | 0xFFFFFF);
             list = dl_tex_offset(r->u, r->v, list);
             mtx_push();
@@ -250,72 +262,80 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
     mtx_pop();
     dl_set_list(list);
     if (phase == 1) {
-        for (i = 0; i < 8; i++) {
-            w->cell[i][0].u = (float)(i % 4) * 0.25f;
-            w->cell[i][0].v = (float)(i / 4) * 0.5f;
-            w->cell[i][0].x = -0.4f;
-            w->cell[i][0].y = 0.4f;
-            w->cell[i][0].z = 0.0f;
-            w->cell[i][1].u = (float)(i % 4) * 0.25f + 0.25f;
-            w->cell[i][1].v = (float)(i / 4) * 0.5f + 0.5f;
-            w->cell[i][1].x = 0.4f;
-            w->cell[i][1].y = -0.4f;
-            w->cell[i][1].z = 0.0f;
+        hr = 0.4f;
+        cw = 0.25f;
+        ch = 0.5f;
+        for (i3 = 0; i3 < 8; i3++) {
+            cu = (float)(i3 % 4) * cw;
+            cv = (float)(i3 / 4) * ch;
+            w->cell[i3][0].u = cu;
+            w->cell[i3][0].v = cv;
+            w->cell[i3][0].x = -hr;
+            w->cell[i3][0].y = hr;
+            w->cell[i3][0].z = 0.0f;
+            w->cell[i3][1].u = cu + cw;
+            w->cell[i3][1].v = cv + ch;
+            w->cell[i3][1].x = hr;
+            w->cell[i3][1].y = -hr;
+            w->cell[i3][1].z = 0.0f;
         }
     }
-    if (on) {
+    if (on == 1) {
         d = &w->drop[w->drop_cur];
         d->flags |= 1;
         d->t = 0;
-        d->life = (RAND15() & 0xF) + 16;
+        d->life = (RAND15() % 16) + 16;
         for (j = 0; j < 4; j++) {
+            pj = &d->p[j];
             ang = RAND15() / 32767.0f * 6.2831855f;
             rad = RAND15() / 32767.0f * 0.15f + 0.15f;
-            d->p[j].cell = RAND15() % 8;
-            vec3_copy(&d->p[j].pos, &pos);
+            pj->cell = RAND15() % 8;
+            vec3_copy(&pj->pos, &pos);
             y = RAND15() / 32767.0f;
-            vec3_set(&d->p[j].dir, rad * sinf(ang), y * 1.5f + 0.5f, rad * cosf(ang));
+            vec3_set(&pj->dir, rad * sinf(ang), y * 1.5f + 0.5f, rad * cosf(ang));
         }
         if (w->drop_cur < 31)
             w->drop_cur++;
         else
             w->drop_cur = 0;
     }
-    list = dl_select_layer(1, 0);
-    list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
-    list = dd_depth_enable(list, 1, 1);
-    list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-    list = dd_tex_pack(list, 32);
-    list = dl_color(list, 0xFFFFFFFF);
+    dlist = dl_select_layer(1, 0);
+    dlist = dd_tex_enable(dlist, 1, 1, 1, 0, 0, 1, 1);
+    dlist = dd_depth_enable(dlist, 1, 1);
+    dlist = dd_blend_enable(dlist, 1, 0, 6, 10, 0, 0xFFFFFFFF);
+    dlist = dd_tex_pack(dlist, 32);
+    dlist = dl_color(dlist, 0xFFFFFFFF);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
     dd_translate3(0.0f, -0.3f, 0.0f);
     for (i = 0; i < 32; i++) {
-        d = &w->drop[i];
-        if (d->flags & 1) {
-            s = dd_ease_sin(d->t, d->life, 1);
-            k = sinf((float)d->t * 2.4434612f / (float)d->life);
+        dd = &w->drop[i];
+        if (!(dd->flags & 1) != 1) {
+            s = dd_ease_sin(dd->t, dd->life, 1);
+            a = dd_ease_cos(dd->t, dd->life, 1);
+            k = sinf((float)dd->t * 2.4434612f / (float)dd->life);
             f = s + 1.0f;
-            list = dl_ambient_light(list, (unsigned int)(dd_ease_cos(d->t, d->life, 1) * 255.0f) << 24 | 0xFFFFFF);
-            for (j = 0; j < 4; j++) {
-                vec3_set(&p, d->p[j].dir.x * f, d->p[j].dir.y * k, d->p[j].dir.z * f);
-                vec3_add(&p, &p, &d->p[j].pos);
+            dlist = dl_ambient_light(dlist, (unsigned int)(a * 255.0f) << 24 | 0xFFFFFF);
+            for (j3 = 0; j3 < 4; j3++) {
+                pj = &dd->p[j3];
+                vec3_set(&p, pj->dir.x * f, pj->dir.y * k, pj->dir.z * f);
+                vec3_add(&p, &p, &pj->pos);
                 mtx_push();
                 mtx_translate(&p);
                 mtx_mult(&cam);
                 dd_scale3(s, s, 0.0f);
-                list = draw_array(list, 6, 0x183, 2, 0, w->cell[d->p[j].cell]);
+                dlist = draw_array(dlist, 6, 0x183, 2, 0, w->cell[pj->cell]);
                 mtx_pop();
             }
-            if (d->t < d->life - 1)
-                d->t++;
+            if (dd->t < dd->life - 1)
+                dd->t++;
             else
-                d->flags &= ~1;
+                dd->flags &= ~1;
         }
     }
     mtx_pop();
-    dl_set_list(list);
+    dl_set_list(dlist);
     dd_mtx_pop_all();
     if (w->frame < 419)
         w->frame++;
@@ -323,4 +343,3 @@ int dd_fx_splash_update(int phase, DdFxSplash *w)
         w->frame = 0;
     return 2;
 }
-#endif
