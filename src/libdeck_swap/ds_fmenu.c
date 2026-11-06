@@ -1,6 +1,4 @@
 // @range 0x0880F3E0-0x08810D64
-// @asm 0x0880F7EC-0x0880FEB8
-// @asm 0x088102AC-0x0881078C
 // @rodata 0x08819CBC-0x08819CDC
 // @data 0x0881A224-0x0881A2D4
 /* The filter menu (state 5): a list of the seven filter kinds and a grid of the values of the
@@ -176,7 +174,6 @@ DsFilterDef ds_filter_defs[9] = {
     { 0, 35, (DsValueDraw)ds_draw_genre_value },
 };
 
-#ifdef NON_MATCHING /* ~310 palavras: casos já na ordem do original (0, 1, 2, 3), def = &ds_filter_defs[f] e pane por ponteiro como no asm; falta a alocação dos temporários (bit da máscara calculado antes do índice no original, old do page/col relidos com andi 0xffff) */
 /* the values window of filter kind (cursor of the kinds list) + 1 */
 void ds_fmenu_values(void)
 {
@@ -189,7 +186,7 @@ void ds_fmenu_values(void)
     int n;
     unsigned int cols;
     int rows;
-    unsigned int old;
+    unsigned short old;
     unsigned int v;
     unsigned short view;
     unsigned short grid;
@@ -201,7 +198,7 @@ void ds_fmenu_values(void)
                 menu_set_cursor(ds_fmenu->vals, 0);
                 ds_fmenu->sub = 1;
             } else {
-                v = def->first + ds_fmenu->col + ds_fmenu->page * m->count;
+                v = def->first + (ds_fmenu->col + ds_fmenu->page * m->count);
                 ds_fmenu->mask[(int)v >> 5] ^= 1 << (v & 0x1F);
             }
             se_play(0x6213);
@@ -220,27 +217,27 @@ void ds_fmenu_values(void)
         cols = m->count;
         rows = (int)(n + cols - 1) / (int)cols;
         if (pad->b.rep & 0x10) {
-            old = ds_fmenu->page;
-            if (old == 0) {
+            if (ds_fmenu->page == 0) {
                 ds_fmenu->page = 0xF;
                 se_play(0x6212);
             } else {
-                if (old == 0xF)
+                old = ds_fmenu->page;
+                if (ds_fmenu->page == 0xF)
                     ds_fmenu->page = rows - 1;
                 else
-                    ds_fmenu->page = old - 1;
+                    ds_fmenu->page--;
                 if ((int)(ds_fmenu->col + ds_fmenu->page * cols) >= n)
-                    ds_fmenu->page = ds_fmenu->page - 1;
+                    ds_fmenu->page--;
                 if (old != ds_fmenu->page)
                     se_play(0x6212);
             }
         }
         if (pad->b.rep & 0x40) {
             old = ds_fmenu->page;
-            if (old == 0xF)
+            if (ds_fmenu->page == 0xF)
                 ds_fmenu->page = 0;
             else
-                ds_fmenu->page = old + 1;
+                ds_fmenu->page++;
             if ((int)(ds_fmenu->col + ds_fmenu->page * cols) >= n)
                 ds_fmenu->page = 0xF;
             if (old != ds_fmenu->page)
@@ -254,7 +251,7 @@ void ds_fmenu_values(void)
         if (ds_fmenu->page != 0xF) {
             old = ds_fmenu->col;
             if (pad->b.rep & 0x80)
-                ds_fmenu->col = (int)(old + cols - 1) % (int)cols;
+                ds_fmenu->col = (int)(ds_fmenu->col + cols - 1) % (int)cols;
             if (pad->b.rep & 0x20)
                 ds_fmenu->col = (int)(ds_fmenu->col + 1) % (int)cols;
             if (old != ds_fmenu->col)
@@ -274,13 +271,13 @@ void ds_fmenu_values(void)
         if (m->state == 6) {
             p = &dsv.pane[dsv.side];
             l = p->list;
-            if (l->count == 0) {
+            if (l->count <= 0) {
                 l->filter = f;
             } else {
                 ds_list_filter(l, f, ds_fmenu->mask);
                 view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
                 grid = p->list_mode == 0 ? p->lay.cols : 1;
-                ds_layout_scroll(0, 0, (grid & 0xFF) | view << 8, p->list->count, &p->top, &p->cx, &p->cy);
+                ds_layout_scroll(0, 0, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
             }
             ds_fmenu_free();
             ds_popup_open(4, l->count);
@@ -301,7 +298,6 @@ void ds_fmenu_values(void)
 
     }
 }
-#endif
 
 void ds_fmenu_free(void)
 {
@@ -401,7 +397,6 @@ void ds_fmenu_open_values(unsigned short f)
     menu_open(m);
 }
 
-#ifdef NON_MATCHING /* alocação diferente */
 /* the values grid: title strip with the label of the value under the cursor, the values with a
    tick on the picked ones, and the OK button */
 void *ds_draw_fmenu_values(void *list, int x, int y, int w, int h)
@@ -409,24 +404,23 @@ void *ds_draw_fmenu_values(void *list, int x, int y, int w, int h)
     MenuWidget *m = ds_fmenu->vals;
     unsigned int f = ds_fmenu->kinds->cursor + 1;
     DsFilterDef *d = &ds_filter_defs[f];
-    int ox = (m->item_w - 0x11) / 2;
     int cur = ds_fmenu->col + ds_fmenu->page * m->count;
+    int n;
+    int ox = (m->item_w - 0x11) / 2;
     int oy = (m->item_h - 0x11) / 2;
-    int mw = m->def.w;
-    int bw = mw - 0xD;
     int bx = x;
+    int bw = m->def.w - 0xD;
     void *gim;
     unsigned short *label;
-    int n;
-    int i;
     unsigned int v;
     unsigned int cx;
     unsigned int cy;
+    int i;
     int tx;
     int ty;
 
     if (w < bw)
-        bx = x - (bw - w) / 2;
+        bx -= (bw - w) / 2;
     gim = res_get(0x8006);
     if (gim != 0) {
         list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -435,24 +429,31 @@ void *ds_draw_fmenu_values(void *list, int x, int y, int w, int h)
         list = draw_set_offsets(list, 4, 0x11, 4, 0x11);
         list = draw_sprite(list, bx, y - 0x12, 0, 0xE0, 0, 0, 0);
         list = draw_sprite(list, bx + bw - 4, y - 0x12, 0, 0xE0, 0, 1, 0);
-        list = draw_set_offsets(list, 4, 0x11, mw - 0x15, 0x11);
+        list = draw_set_offsets(list, 4, 0x11, bw - 8, 0x11);
         list = draw_sprite(list, bx + 4, y - 0x12, 0, 0xE4, 0, 0, 0);
     }
     if (ds_fmenu->page == 0xF)
         cur = -1;
-    if (cur >= 0 && (label = ds_filter_label(f, d->first + cur)) != 0) {
-        font_set_size(12, 12);
-        font_set_color(0xFFFFFFFF);
-        font_text_set(list);
-        font_draw_wtext((bx + 4) << 6, (y - 0xF) << 6, (mw - 0x15) << 6, label);
-        list = font_text_clear();
+    if (cur >= 0) {
+        label = ds_filter_label(f, d->first + cur);
+        if (label != 0) {
+            font_set_size(12, 12);
+            font_set_color(0xFFFFFFFF);
+            font_text_set(list);
+            font_draw_wtext((bx + 4) << 6, (y - 0xF) << 6, (bw - 8) << 6, label);
+            list = font_text_clear();
+        }
     }
     n = d->last - d->first + 1;
     if (!ds_fmenu->alt && f == 7)
-        n = d->last - d->first;
+        n--;
     for (i = 0; i < n; i++) {
         v = d->first + i;
-        cx = x + i % m->count * m->item_w;
+        {
+            int col = i % m->count; /* own int local: keeps the mult operands in the original's order */
+
+            cx = x + col * m->item_w;
+        }
         cy = y + m->item_h * (i / m->count);
         if (ds_fmenu->mask[(int)v >> 5] & 1 << (v & 0x1F))
             list = ds_draw_check(list, cx, cy);
@@ -471,7 +472,6 @@ void *ds_draw_fmenu_values(void *list, int x, int y, int w, int h)
     font_draw_text(tx << 6, (ty + (0x18 - (font_line_height() >> 6)) / 2) << 6, (480 - tx) << 6, label);
     return font_text_clear();
 }
-#endif
 
 void *ds_draw_flag_value(void *list, unsigned short x, unsigned short y, unsigned short v)
 {

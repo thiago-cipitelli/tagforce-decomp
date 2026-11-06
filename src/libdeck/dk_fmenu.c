@@ -1,5 +1,4 @@
 // @range 0x08812510-0x08813268
-// @asm 0x088127B0-0x08812C90
 // @data 0x08822F94-0x0882300C
 // @rodata 0x08822628-0x08822648
 /* Filter menu, second half: the values window of a filter kind (grid of icons, picked values
@@ -106,7 +105,6 @@ void dk_fmenu_open_values(unsigned short f)
     menu_open(m);
 }
 
-#ifdef NON_MATCHING /* x fica na pilha e cur em $s8 no original; alocação diferente */
 /* the values grid: title strip with the label of the value under the cursor, the values with a
    tick on the picked ones, and the OK button */
 void *dk_draw_fmenu_values(void *list, int x, int y, int w, int h)
@@ -115,22 +113,22 @@ void *dk_draw_fmenu_values(void *list, int x, int y, int w, int h)
     unsigned int f = dk_fmenu->kinds->cursor + 1;
     DkFilterDef *d = &dk_filter_defs[f];
     int cur = dk_fmenu->col + dk_fmenu->page * m->count;
+    int n;
     int ox = (m->item_w - 0x11) / 2;
     int oy = (m->item_h - 0x11) / 2;
     int bx = x;
     int bw = m->def.w - 0xD;
     void *gim;
     unsigned short *label;
-    int n;
-    int i;
     unsigned int v;
     unsigned int cx;
     unsigned int cy;
+    int i;
     int tx;
     int ty;
 
     if (w < bw)
-        bx = x - (bw - w) / 2;
+        bx -= (bw - w) / 2;
     gim = dk_res_get(0x8006);
     if (gim != 0) {
         list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -144,19 +142,26 @@ void *dk_draw_fmenu_values(void *list, int x, int y, int w, int h)
     }
     if (dk_fmenu->page == 0xF)
         cur = -1;
-    if (cur >= 0 && (label = dk_filter_label(f, d->first + cur)) != 0) {
-        font_set_size(12, 12);
-        font_set_color(0xFFFFFFFF);
-        font_text_set(list);
-        font_draw_wtext((bx + 4) << 6, (y - 0xF) << 6, (bw - 8) << 6, label);
-        list = font_text_clear();
+    if (cur >= 0) {
+        label = dk_filter_label(f, d->first + cur);
+        if (label != 0) {
+            font_set_size(12, 12);
+            font_set_color(0xFFFFFFFF);
+            font_text_set(list);
+            font_draw_wtext((bx + 4) << 6, (y - 0xF) << 6, (bw - 8) << 6, label);
+            list = font_text_clear();
+        }
     }
     n = d->last - d->first + 1;
     if (!dk_fmenu->alt && f == 7)
         n--;
     for (i = 0; i < n; i++) {
         v = d->first + i;
-        cx = x + i % m->count * m->item_w;
+        {
+            int col = i % m->count; /* own int local: keeps the mult operands in the original's order */
+
+            cx = x + col * m->item_w;
+        }
         cy = y + m->item_h * (i / m->count);
         if (dk_fmenu->mask[(int)v >> 5] & 1 << (v & 0x1F))
             list = dk_draw_check(list, cx, cy);
@@ -175,7 +180,6 @@ void *dk_draw_fmenu_values(void *list, int x, int y, int w, int h)
     font_draw_text(tx << 6, (ty + (0x18 - (font_line_height() >> 6)) / 2) << 6, (480 - tx) << 6, label);
     return font_text_clear();
 }
-#endif
 
 void *dk_draw_flag_value(void *list, unsigned short x, unsigned short y, unsigned short v)
 {

@@ -593,90 +593,104 @@ void dt_line(DtLineVtx *v, unsigned short x, unsigned short y, unsigned short w)
     v[3].color = 0x19000000;
 }
 
-#ifdef NON_MATCHING
+#ifdef NON_MATCHING /* asm idêntico ao de dk_draw_headers (mesma forma, 291 palavras lá): falta a alocação dos $s e o id u16 na pilha */
 /* header of each pane: sort and direction icons, filter icon with the number of cards, "new" mark of
    the owned list, scroll bar */
 void *dt_draw_headers(void *list)
 {
     DtPane *p;
     DtList *l;
+    DtLayout *lay;
     int x;
+    int fx;
+    int sx;
     int y;
+    int h;
     int show;
-    unsigned int mark;
+    int mark;
     int style;
+    unsigned short id;
     unsigned short cols;
 
     p = &dtv.pane[0];
     l = p->list;
-    x = p->lay.x;
-    y = p->lay.y + p->lay.h;
-    list = dt_draw_sort_icon(list, l->sort, x + 3, y - 18);
-    list = dt_draw_dir_icon(list, l->dir, x + 21, y - 18);
+    lay = &p->lay;
+    x = p->lay.x + 3;
+    y = p->lay.y + p->lay.h - 18;
+    list = dt_draw_sort_icon(list, l->sort, x, y);
+    list = dt_draw_dir_icon(list, l->dir, x + 18, y);
     if (l->filter != 0) {
         show = 1;
         if (dtv.popup == 6 && dtv.side == 0 && (gfx_get_state()[0] >> 2 & 1))
             show = 0;
         if (show) {
-            list = dt_draw_filter_icon(list, l->filter, x + 40, y - 18);
+            list = dt_draw_filter_icon(list, l->filter, x + 37, y);
+            x += 56;
             if (l->count < 10)
-                x += 38;
+                x -= 21;
             else if (l->count < 100)
-                x += 45;
+                x -= 14;
             else if (l->count < 1000)
-                x += 52;
-            else
-                x += 59;
-            list = dt_draw_digits(list, PT(x, y - 14), 0, l->count, 4, 0xFFFFFFFF, dt_eres_get(0x8009));
+                x -= 7;
+            list = dt_draw_digits(list, PT(x, y + 4), 0, l->count, 4, 0xFFFFFFFF, dt_eres_get(0x8009));
         }
     }
+    fx = lay->x + lay->w - 20;
     if (l->tab == 3 && (mark = cfg_get_byte0_hi2()) != 0)
-        list = dt_draw_flag_icon(list, PT(p->lay.x + p->lay.w - 20, y - 15), mark, dt_eres_get(0x800A));
-    style = dtv.side != 0;
-    if (l->tab > 2)
+        list = dt_draw_flag_icon(list, PT(fx, y + 3), mark, dt_eres_get(0x800A));
+    sx = lay->x + lay->w - 10;
+    y = lay->y + 12;
+    h = lay->h - 41;
+    if (dtv.side == 0)
+        style = 0;
+    else
+        style = 1;
+    if (l->tab >= 3)
         style += 2;
     if (p->list_mode == 0) {
-        cols = p->lay.cols;
-        list = dt_draw_scrollbar(list, p->lay.x + p->lay.w - 10, p->lay.y + 12, p->lay.h - 41, p->top / cols,
-                                 p->lay.grid_rows, (l->count + cols - 1) / cols, style, dt_eres_get(0x8007));
+        cols = lay->cols;
+        list = dt_draw_scrollbar(list, sx, y, h, p->top / cols, lay->grid_rows, (l->count + cols - 1) / cols, style,
+                                 dt_eres_get(id = 0x8007));
     } else {
-        list = dt_draw_scrollbar(list, p->lay.x + p->lay.w - 10, p->lay.y + 12, p->lay.h - 41, p->top,
-                                 p->lay.rows, l->count, style, dt_eres_get(0x8007));
+        list = dt_draw_scrollbar(list, sx, y, h, p->top, lay->rows, l->count, style, dt_eres_get(id = 0x8007));
     }
     if (dtv.mode > 1) {
         p = &dtv.pane[1];
         l = p->list;
-        x = p->lay.x;
-        y = p->lay.y + p->lay.h;
-        list = dt_draw_sort_icon(list, l->sort, x + 3, y - 18);
-        list = dt_draw_dir_icon(list, l->dir, x + 21, y - 18);
+        lay = &p->lay;
+        x = p->lay.x + 3;
+        y = p->lay.y + p->lay.h - 18;
+        list = dt_draw_sort_icon(list, l->sort, x, y);
+        list = dt_draw_dir_icon(list, l->dir, x + 18, y);
         if (l->filter != 0) {
             show = 1;
             if (dtv.popup == 6 && dtv.side == 1 && (gfx_get_state()[0] >> 2 & 1))
                 show = 0;
             if (show) {
-                list = dt_draw_filter_icon(list, l->filter, x + 40, y - 18);
+                list = dt_draw_filter_icon(list, l->filter, x + 37, y);
+                x += 56;
                 if (l->count < 10)
-                    x += 38;
+                    x -= 21;
                 else if (l->count < 100)
-                    x += 45;
+                    x -= 14;
                 else if (l->count < 1000)
-                    x += 52;
-                else
-                    x += 59;
-                list = dt_draw_digits(list, PT(x, y - 14), 0, l->count, 4, 0xFFFFFFFF, dt_eres_get(0x8009));
+                    x -= 7;
+                list = dt_draw_digits(list, PT(x, y + 4), 0, l->count, 4, 0xFFFFFFFF, dt_eres_get(0x8009));
             }
         }
+        fx = lay->x + lay->w - 20;
         if (l->tab == 3 && (mark = cfg_get_byte0_hi2()) != 0)
-            list = dt_draw_flag_icon(list, PT(p->lay.x + p->lay.w - 20, y - 15), mark, dt_eres_get(0x800A));
+            list = dt_draw_flag_icon(list, PT(fx, y + 3), mark, dt_eres_get(0x800A));
+        sx = lay->x + lay->w - 10;
+        y = lay->y + 12;
+        h = lay->h - 41;
         style = dtv.side == 1 ? 2 : 3;
         if (p->list_mode == 0) {
-            cols = p->lay.cols;
-            list = dt_draw_scrollbar(list, p->lay.x + p->lay.w - 10, p->lay.y + 12, p->lay.h - 41, p->top / cols,
-                                     p->lay.grid_rows, (l->count + cols - 1) / cols, style, dt_eres_get(0x8007));
+            cols = lay->cols;
+            list = dt_draw_scrollbar(list, sx, y, h, p->top / cols, lay->grid_rows, (l->count + cols - 1) / cols, style,
+                                     dt_eres_get(id));
         } else {
-            list = dt_draw_scrollbar(list, p->lay.x + p->lay.w - 10, p->lay.y + 12, p->lay.h - 41, p->top,
-                                     p->lay.rows, l->count, style, dt_eres_get(0x8007));
+            list = dt_draw_scrollbar(list, sx, y, h, p->top, lay->rows, l->count, style, dt_eres_get(id));
         }
     }
     return dt_draw_counts(list);

@@ -1,5 +1,4 @@
 // @range 0x08810CD0-0x08812510
-// @asm 0x08811CFC-0x088123B8
 // @data 0x08822F14-0x08822F94
 /* The sort menu (a list of the sort keys and a small up/down menu beside it; the pane is re-sorted
    live while the cursor moves and restored on cancel) and the filter menu's kinds list (open,
@@ -38,7 +37,7 @@ void *dk_draw_sort_item(void *list, int i, int x, int y);
 void *dk_draw_dir_item(void *list, int i, int x, int y);
 void *dk_draw_fmenu_kind(void *list, int i, int x, int y);
 void dk_fmenu_values(PadState *pad);
-void dk_list_filter(DkList *l, unsigned int f, unsigned int *mask);
+int dk_list_filter(DkList *l, unsigned short f, unsigned int *arg);
 void dk_layout_scroll(int keep, int cur, unsigned short view, unsigned short total,
                       unsigned short *top, unsigned short *cx, unsigned short *cy);
 void dk_popup_open(int kind, unsigned short n);
@@ -390,19 +389,18 @@ void dk_fmenu_update(PadState *pad)
     }
 }
 
-#ifdef NON_MATCHING /* máquina de passos grande; forma próxima, alocação e blocos diferentes (como sc_fmenu_values) */
 /* the values window of filter kind (cursor of the kinds list) + 1 */
 void dk_fmenu_values(PadState *pad)
 {
-    MenuWidget *m = dk_fmenu->vals;
     unsigned int f = dk_fmenu->kinds->cursor + 1;
     DkFilterDef *def = &dk_filter_defs[f];
-    unsigned int side;
+    DkPane *p;
     DkList *l;
     int n;
     unsigned int cols;
+    MenuWidget *m = dk_fmenu->vals;
     int rows;
-    unsigned int old;
+    unsigned short old;
     unsigned int v;
     unsigned short view;
     unsigned short grid;
@@ -414,7 +412,7 @@ void dk_fmenu_values(PadState *pad)
                 menu_set_cursor(dk_fmenu->vals, 0);
                 dk_fmenu->sub = 1;
             } else {
-                v = def->first + dk_fmenu->col + dk_fmenu->page * m->count;
+                v = def->first + (dk_fmenu->col + dk_fmenu->page * m->count);
                 dk_fmenu->mask[(int)v >> 5] ^= 1 << (v & 0x1F);
             }
             se_play(0x6213);
@@ -433,27 +431,27 @@ void dk_fmenu_values(PadState *pad)
         cols = m->count;
         rows = (int)(n + cols - 1) / (int)cols;
         if (pad->b.rep & 0x10) {
-            old = dk_fmenu->page;
-            if (old == 0) {
+            if (dk_fmenu->page == 0) {
                 dk_fmenu->page = 0xF;
                 se_play(0x6212);
             } else {
-                if (old == 0xF)
+                old = dk_fmenu->page;
+                if (dk_fmenu->page == 0xF)
                     dk_fmenu->page = rows - 1;
                 else
-                    dk_fmenu->page = old - 1;
+                    dk_fmenu->page--;
                 if ((int)(dk_fmenu->col + dk_fmenu->page * cols) >= n)
-                    dk_fmenu->page = dk_fmenu->page - 1;
+                    dk_fmenu->page--;
                 if (old != dk_fmenu->page)
                     se_play(0x6212);
             }
         }
         if (pad->b.rep & 0x40) {
             old = dk_fmenu->page;
-            if (old == 0xF)
+            if (dk_fmenu->page == 0xF)
                 dk_fmenu->page = 0;
             else
-                dk_fmenu->page = old + 1;
+                dk_fmenu->page++;
             if ((int)(dk_fmenu->col + dk_fmenu->page * cols) >= n)
                 dk_fmenu->page = 0xF;
             if (old != dk_fmenu->page)
@@ -467,7 +465,7 @@ void dk_fmenu_values(PadState *pad)
         if (dk_fmenu->page != 0xF) {
             old = dk_fmenu->col;
             if (pad->b.rep & 0x80)
-                dk_fmenu->col = (int)(old + cols - 1) % (int)cols;
+                dk_fmenu->col = (int)(dk_fmenu->col + cols - 1) % (int)cols;
             if (pad->b.rep & 0x20)
                 dk_fmenu->col = (int)(dk_fmenu->col + 1) % (int)cols;
             if (old != dk_fmenu->col)
@@ -485,16 +483,15 @@ void dk_fmenu_values(PadState *pad)
     case 2:
         menu_update(m);
         if (m->state == 6) {
-            side = dkv.side;
-            l = dkv.pane[side].list;
-            if (l->count == 0) {
+            p = &dkv.pane[dkv.side];
+            l = p->list;
+            if (l->count <= 0) {
                 l->filter = f;
             } else {
                 dk_list_filter(l, f, dk_fmenu->mask);
-                view = dkv.pane[side].list_mode == 0 ? dkv.pane[side].lay.grid_rows : dkv.pane[side].lay.rows;
-                grid = dkv.pane[side].list_mode == 0 ? dkv.pane[side].lay.cols : 1;
-                dk_layout_scroll(0, 0, (grid & 0xFF) | view << 8, dkv.pane[side].list->count, &dkv.pane[side].top,
-                                 &dkv.pane[side].cx, &dkv.pane[side].cy);
+                view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+                grid = p->list_mode == 0 ? p->lay.cols : 1;
+                dk_layout_scroll(0, 0, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
             }
             dk_fmenu_free();
             dk_popup_open(6, l->count);
@@ -507,15 +504,13 @@ void dk_fmenu_values(PadState *pad)
         if (m->state == 6) {
             menu_reset(m);
             dk_fmenu->vals = 0;
-            dk_fmenu->kinds->accepted = 0;
-            dk_fmenu->kinds->cancelled = 0;
+            dk_fmenu->kinds->cancelled = dk_fmenu->kinds->accepted = 0;
             dk_fmenu->kinds->no_cancel = 1;
             dk_fmenu->step = 0;
         }
         break;
     }
 }
-#endif
 
 void dk_fmenu_free(void)
 {

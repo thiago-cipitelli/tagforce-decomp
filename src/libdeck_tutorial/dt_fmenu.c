@@ -1,6 +1,4 @@
 // @range 0x08811BB8-0x088135A8
-// @asm 0x08811FEC-0x088126D0
-// @asm 0x08812AF0-0x08812FD0
 // @rodata 0x08821030-0x08821050
 // @data 0x08821F74-0x08822024
 /* The filter menu (the code of libdeck dk_sortmenu.c second half and dk_fmenu.c): the kinds list and
@@ -36,7 +34,7 @@ void *dt_draw_sort_item(void *list, int i, int x, int y);
 void *dt_draw_dir_item(void *list, int i, int x, int y);
 void *dt_draw_fmenu_kind(void *list, int i, int x, int y);
 void dt_fmenu_values(PadState *pad);
-void dt_list_filter(DtList *l, unsigned int f, unsigned int *mask);
+int dt_list_filter(DtList *l, unsigned short f, unsigned int *arg);
 void dt_layout_scroll(int keep, int cur, unsigned short view, unsigned short total,
                       unsigned short *top, unsigned short *cx, unsigned short *cy);
 void dt_popup_open(int kind, unsigned short n);
@@ -147,19 +145,18 @@ void dt_fmenu_update(PadState *pad)
     }
 }
 
-#ifdef NON_MATCHING /* máquina de passos grande (dk_fmenu_values com o teste da lição no OK); alocação e blocos diferentes, como sc_fmenu_values */
 /* the values window of filter kind (cursor of the kinds list) + 1 */
 void dt_fmenu_values(PadState *pad)
 {
-    MenuWidget *m = dt_fmenu->vals;
     unsigned int f = dt_fmenu->kinds->cursor + 1;
     DtFilterDef *def = &dt_filter_defs[f];
-    unsigned int side;
+    DtPane *p;
     DtList *l;
     int n;
     unsigned int cols;
+    MenuWidget *m = dt_fmenu->vals;
     int rows;
-    unsigned int old;
+    unsigned short old;
     unsigned int v;
     unsigned short view;
     unsigned short grid;
@@ -173,7 +170,7 @@ void dt_fmenu_values(PadState *pad)
                 menu_set_cursor(dt_fmenu->vals, 0);
                 dt_fmenu->sub = 1;
             } else {
-                v = def->first + dt_fmenu->col + dt_fmenu->page * m->count;
+                v = def->first + (dt_fmenu->col + dt_fmenu->page * m->count);
                 dt_fmenu->mask[(int)v >> 5] ^= 1 << (v & 0x1F);
             }
             se_play(0x6213);
@@ -192,27 +189,27 @@ void dt_fmenu_values(PadState *pad)
         cols = m->count;
         rows = (int)(n + cols - 1) / (int)cols;
         if (pad->b.rep & 0x10) {
-            old = dt_fmenu->page;
-            if (old == 0) {
+            if (dt_fmenu->page == 0) {
                 dt_fmenu->page = 0xF;
                 se_play(0x6212);
             } else {
-                if (old == 0xF)
+                old = dt_fmenu->page;
+                if (dt_fmenu->page == 0xF)
                     dt_fmenu->page = rows - 1;
                 else
-                    dt_fmenu->page = old - 1;
+                    dt_fmenu->page--;
                 if ((int)(dt_fmenu->col + dt_fmenu->page * cols) >= n)
-                    dt_fmenu->page = dt_fmenu->page - 1;
+                    dt_fmenu->page--;
                 if (old != dt_fmenu->page)
                     se_play(0x6212);
             }
         }
         if (pad->b.rep & 0x40) {
             old = dt_fmenu->page;
-            if (old == 0xF)
+            if (dt_fmenu->page == 0xF)
                 dt_fmenu->page = 0;
             else
-                dt_fmenu->page = old + 1;
+                dt_fmenu->page++;
             if ((int)(dt_fmenu->col + dt_fmenu->page * cols) >= n)
                 dt_fmenu->page = 0xF;
             if (old != dt_fmenu->page)
@@ -226,7 +223,7 @@ void dt_fmenu_values(PadState *pad)
         if (dt_fmenu->page != 0xF) {
             old = dt_fmenu->col;
             if (pad->b.rep & 0x80)
-                dt_fmenu->col = (int)(old + cols - 1) % (int)cols;
+                dt_fmenu->col = (int)(dt_fmenu->col + cols - 1) % (int)cols;
             if (pad->b.rep & 0x20)
                 dt_fmenu->col = (int)(dt_fmenu->col + 1) % (int)cols;
             if (old != dt_fmenu->col)
@@ -244,16 +241,15 @@ void dt_fmenu_values(PadState *pad)
     case 2:
         menu_update(m);
         if (m->state == 6) {
-            side = dtv.side;
-            l = dtv.pane[side].list;
-            if (l->count == 0) {
+            p = &dtv.pane[dtv.side];
+            l = p->list;
+            if (l->count <= 0) {
                 l->filter = f;
             } else {
                 dt_list_filter(l, f, dt_fmenu->mask);
-                view = dtv.pane[side].list_mode == 0 ? dtv.pane[side].lay.grid_rows : dtv.pane[side].lay.rows;
-                grid = dtv.pane[side].list_mode == 0 ? dtv.pane[side].lay.cols : 1;
-                dt_layout_scroll(0, 0, (grid & 0xFF) | view << 8, dtv.pane[side].list->count, &dtv.pane[side].top,
-                                 &dtv.pane[side].cx, &dtv.pane[side].cy);
+                view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
+                grid = p->list_mode == 0 ? p->lay.cols : 1;
+                dt_layout_scroll(0, 0, (grid & 0xFF) | (view & 0xFF) << 8, p->list->count, &p->top, &p->cx, &p->cy);
             }
             dt_fmenu_free();
             dt_popup_open(6, l->count);
@@ -266,15 +262,13 @@ void dt_fmenu_values(PadState *pad)
         if (m->state == 6) {
             menu_reset(m);
             dt_fmenu->vals = 0;
-            dt_fmenu->kinds->accepted = 0;
-            dt_fmenu->kinds->cancelled = 0;
+            dt_fmenu->kinds->cancelled = dt_fmenu->kinds->accepted = 0;
             dt_fmenu->kinds->no_cancel = 1;
             dt_fmenu->step = 0;
         }
         break;
     }
 }
-#endif
 
 void dt_fmenu_free(void)
 {
@@ -407,7 +401,6 @@ void dt_fmenu_open_values(unsigned short f)
     menu_open(m);
 }
 
-#ifdef NON_MATCHING /* x fica na pilha e cur em $s8 no original; alocação diferente */
 /* the values grid: title strip with the label of the value under the cursor, the values with a
    tick on the picked ones, and the OK button */
 void *dt_draw_fmenu_values(void *list, int x, int y, int w, int h)
@@ -416,22 +409,22 @@ void *dt_draw_fmenu_values(void *list, int x, int y, int w, int h)
     unsigned int f = dt_fmenu->kinds->cursor + 1;
     DtFilterDef *d = &dt_filter_defs[f];
     int cur = dt_fmenu->col + dt_fmenu->page * m->count;
+    int n;
     int ox = (m->item_w - 0x11) / 2;
     int oy = (m->item_h - 0x11) / 2;
     int bx = x;
     int bw = m->def.w - 0xD;
     void *gim;
     unsigned short *label;
-    int n;
-    int i;
     unsigned int v;
     unsigned int cx;
     unsigned int cy;
+    int i;
     int tx;
     int ty;
 
     if (w < bw)
-        bx = x - (bw - w) / 2;
+        bx -= (bw - w) / 2;
     gim = dt_eres_get(0x8006);
     if (gim != 0) {
         list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -445,19 +438,26 @@ void *dt_draw_fmenu_values(void *list, int x, int y, int w, int h)
     }
     if (dt_fmenu->page == 0xF)
         cur = -1;
-    if (cur >= 0 && (label = dt_filter_label(f, d->first + cur)) != 0) {
-        font_set_size(12, 12);
-        font_set_color(0xFFFFFFFF);
-        font_text_set(list);
-        font_draw_wtext((bx + 4) << 6, (y - 0xF) << 6, (bw - 8) << 6, label);
-        list = font_text_clear();
+    if (cur >= 0) {
+        label = dt_filter_label(f, d->first + cur);
+        if (label != 0) {
+            font_set_size(12, 12);
+            font_set_color(0xFFFFFFFF);
+            font_text_set(list);
+            font_draw_wtext((bx + 4) << 6, (y - 0xF) << 6, (bw - 8) << 6, label);
+            list = font_text_clear();
+        }
     }
     n = d->last - d->first + 1;
     if (!dt_fmenu->alt && f == 7)
         n--;
     for (i = 0; i < n; i++) {
         v = d->first + i;
-        cx = x + i % m->count * m->item_w;
+        {
+            int col = i % m->count; /* own int local: keeps the mult operands in the original's order */
+
+            cx = x + col * m->item_w;
+        }
         cy = y + m->item_h * (i / m->count);
         if (dt_fmenu->mask[(int)v >> 5] & 1 << (v & 0x1F))
             list = dt_draw_check(list, cx, cy);
@@ -476,7 +476,6 @@ void *dt_draw_fmenu_values(void *list, int x, int y, int w, int h)
     font_draw_text(tx << 6, (ty + (0x18 - (font_line_height() >> 6)) / 2) << 6, (480 - tx) << 6, label);
     return font_text_clear();
 }
-#endif
 
 void *dt_draw_flag_value(void *list, unsigned short x, unsigned short y, unsigned short v)
 {

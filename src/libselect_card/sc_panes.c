@@ -9,7 +9,7 @@
    rows (picture, name, kind/attribute icons, level, ATK/DEF and the rental counters). */
 #include "libselect_card.h"
 
-unsigned char cfg_get_byte0_hi2(void);
+int cfg_get_byte0_hi2(void);
 void font_set_flag4000(int on);
 void *sc_draw_sort_icon(void *list, int sort, int x, int y);
 void *sc_draw_dir_icon(void *list, int dir, int x, int y);
@@ -27,7 +27,7 @@ void *sc_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
 void *sc_draw_rows_small(void *list, ScPane *p);
 void *sc_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, ScEnt *e);
 
-#ifdef NON_MATCHING /* o original guarda o id do recurso (0x8007) num u16 na pilha e o relê no segundo painel; a alocação dos s difere */
+#ifdef NON_MATCHING /* 308 palavras: forma de dk_draw_headers (x/y/h da barra antes do estilo, res_get(id = 0x8007), marca int lida e testada em dois comandos); falta a alocação: o original guarda o id u16 na pilha e aqui o mwcc derrama outro valor */
 /* header of each pane: sort and direction icons, filter icon with the number of cards, "new"
    mark of the owned list, scroll bar */
 void *sc_draw_headers(void *list)
@@ -38,7 +38,8 @@ void *sc_draw_headers(void *list)
     int x;
     int y;
     int show;
-    unsigned char mark;
+    int mark;
+    int h;
     int style;
     unsigned short id;
     unsigned short cols;
@@ -78,20 +79,27 @@ void *sc_draw_headers(void *list)
             show = 1;
         break;
     }
-    if (show && (mark = cfg_get_byte0_hi2()) != 0)
-        list = sc_draw_flag_icon(list, PT(x, y + 3), mark, res_get(0x800A));
-    style = scv.side != 0 ? 1 : 0;
+    if (show) {
+        mark = cfg_get_byte0_hi2();
+        if (mark != 0)
+            list = sc_draw_flag_icon(list, PT(x, y + 3), mark, res_get(0x800A));
+    }
+    x = lay->x + lay->w - 10;
+    y = lay->y + 12;
+    h = lay->h - 41;
+    if (scv.side == 0)
+        style = 0;
+    else
+        style = 1;
     if (l->tab > 0)
         style += 2;
     if (p->list_mode == 0) {
-        id = 0x8007;
         cols = lay->cols;
-        list = sc_draw_scrollbar(list, lay->x + lay->w - 10, lay->y + 12, lay->h - 41, p->top / cols, lay->grid_rows,
-                                 (l->count + cols - 1) / cols, style, res_get(id));
+        list = sc_draw_scrollbar(list, x, y, h, p->top / cols, lay->grid_rows,
+                                 (l->count + cols - 1) / cols, style, res_get(id = 0x8007));
     } else {
-        id = 0x8007;
-        list = sc_draw_scrollbar(list, lay->x + lay->w - 10, lay->y + 12, lay->h - 41, p->top, lay->rows, l->count, style,
-                                 res_get(id));
+        list = sc_draw_scrollbar(list, x, y, h, p->top, lay->rows, l->count, style,
+                                 res_get(id = 0x8007));
     }
     if (scv.mode > 1) {
         p = &scv.pane[1];
@@ -129,15 +137,21 @@ void *sc_draw_headers(void *list)
                 show = 1;
             break;
         }
-        if (show && (mark = cfg_get_byte0_hi2()) != 0)
-            list = sc_draw_flag_icon(list, PT(x, y + 3), mark, res_get(0x800A));
+        if (show) {
+            mark = cfg_get_byte0_hi2();
+            if (mark != 0)
+                list = sc_draw_flag_icon(list, PT(x, y + 3), mark, res_get(0x800A));
+        }
+        x = lay->x + lay->w - 10;
+        y = lay->y + 12;
+        h = lay->h - 41;
         style = scv.side == 1 ? 2 : 3;
         if (p->list_mode == 0) {
             cols = lay->cols;
-            list = sc_draw_scrollbar(list, lay->x + lay->w - 10, lay->y + 12, lay->h - 41, p->top / cols, lay->grid_rows,
+            list = sc_draw_scrollbar(list, x, y, h, p->top / cols, lay->grid_rows,
                                      (l->count + cols - 1) / cols, style, res_get(id));
         } else {
-            list = sc_draw_scrollbar(list, lay->x + lay->w - 10, lay->y + 12, lay->h - 41, p->top, lay->rows, l->count,
+            list = sc_draw_scrollbar(list, x, y, h, p->top, lay->rows, l->count,
                                      style, res_get(id));
         }
     }
