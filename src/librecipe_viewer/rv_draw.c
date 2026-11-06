@@ -318,17 +318,18 @@ void *rv_draw_arrow(void *list, int x, int y, unsigned char kind, unsigned int p
     return draw_sprite(list, x, y, 0, 119, v + 60, 0, flip);
 }
 
-#ifdef NON_MATCHING /* o original deixa vazios os atrasos do `b` e do `beqz` e lê `max` antes de `pos`; rv_scroll_pad depende de rv_scroll_add ser static compilada antes (mantém o PadState em $v0 através da chamada) */
+#ifdef NON_MATCHING /* 11 palavras: o original faz `move v1,zero; b; nop` no max == 0 (o mwcc põe o move no atraso do b) e `beqz; nop` (não likely) no v > max: 4 B a menos; testados goto, && no if externo (9 palavras, layout pior); rv_scroll_pad depende de rv_scroll_add ser static compilada antes (mantém o PadState em $v0 através da chamada) */
 static void rv_scroll_add(RvScroll *s, int d)
 {
+    unsigned int pos = s->pos;
     unsigned int max = s->max;
     unsigned int v;
 
-    if (d >= 0 || s->pos >= (unsigned int)-d) {
+    if (d >= 0 || pos >= (unsigned int)-d) {
         if (max == 0)
             v = 0;
         else {
-            v = s->pos + d;
+            v = pos + d;
             if (v > max)
                 v = max;
         }
