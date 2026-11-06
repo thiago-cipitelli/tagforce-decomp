@@ -275,6 +275,11 @@ typedef struct DuelSummon {            /* 0x08914A14: summon being prepared (tri
 extern DuelSummon duel_summon;
 
 extern Duel duel;
+
+/* &duel.players[p & 1].field[z] with the zone term computed first (integer add, zone on the left): the
+   original extracts z and z*20 before the p*4012 multiply when p and z are used only for this address
+   (docs/matching.md, "Zona antes do jogador"). */
+#define ZSLOT(p, z) (((DuelPlayer *)((z) * sizeof(DuelSlot) + (unsigned int)&duel.players[(p) & 1]))->field)
 extern DuelChain duel_chain;
 extern DuelSpecial duel_special;       /* 0x08913F10 */
 extern DuelEffect duel_effects[];      /* 0x089185C8 */

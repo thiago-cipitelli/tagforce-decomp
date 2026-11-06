@@ -1,7 +1,6 @@
 // @range 0x088C134C-0x088C2F80
 // @asm 0x088C1B88-0x088C1D80
 // @asm 0x088C28A4-0x088C2A08
-// @asm 0x088C2BA0-0x088C2CA8
 /* Effects resolved at a phase change (after effects_088C004C.c): one handler per card id, each scanning
    both fields for the cards it affects. */
 #include "duel.h"
@@ -534,7 +533,6 @@ int duel_088C2A08(void)
     return r;
 }
 
-#ifdef NON_MATCHING /* o endereço da zona do alvo sai com os registradores e a ordem do cálculo trocados */
 int duel_088C2BA0(void)
 {
     unsigned int q;
@@ -550,10 +548,9 @@ int duel_088C2BA0(void)
             if (duel_slot_e8170(q, z, 0x14FC)) {
                 v = duel_slot_e1854(q, z);
                 if (v != 0xFFFF) {
-                    tz = v & 0xFFFF;
+                    tz = (unsigned int)(v & 0xFFFF) >> 8 & 0xFF;
                     tp = v & 0xFF;
-                    tz = tz >> 8 & 0xFF;
-                    if (duel.players[tp & 1].field[tz].card.id != 0 && duel.players[tp & 1].field[tz].faceup == 0) {
+                    if (ZSLOT(tp, tz)->card.id != 0 && ZSLOT(tp, tz)->faceup == 0) {
                         duel_088D1438(q, z, 0, 0);
                         return 1;
                     }
@@ -563,7 +560,6 @@ int duel_088C2BA0(void)
     }
     return 0;
 }
-#endif
 
 int duel_088C2CA8(void)
 {

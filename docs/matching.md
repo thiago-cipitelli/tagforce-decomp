@@ -187,6 +187,32 @@ o `static`, e o buraco desloca o resto do `.bss`); tirar do asm uma função com
 `dd_chr_models*.c` (36 buscas de ossos), `dd_event.c`, `dd_chara06.c`, `dd_disc_hook.c`, `dd_scene_mode.c`,
 `dd_mon_anim.c`, `f_sys.c` (`fld_sys_term`, 5 flags) e `movie.c` (`movie_poll_input`, `pad_prev/pad_cur`).
 
+### Zona antes do jogador (`duel.players[p & 1].field[z]`)
+
+Sintoma: o original extrai a zona (`ext …,8,8` ou `srl`) e/ou calcula `z * 20` (`sll; addu; sll`) antes do
+`andi p,1; mult p,4012`; o C comum sai com o jogador primeiro. Observado (rodada 7): na aritmética de ponteiro o mwcc
+põe a base `&duel + p * 4012` primeiro, e um jogador em local definido antes (ou bitfield que vira `ext` fundido com
+o `& 1`) também sai antes; o original tinha a zona primeiro por uma de duas formas:
+
+1. **Origem num `unsigned short` (`src`, `loc`, `t`): soma inteira com a zona à esquerda.** Macro `ZSLOT(p, z)` em
+   `duel.h`: `((DuelPlayer *)(z * sizeof(DuelSlot) + (unsigned int)&duel.players[p & 1]))->field`, com `sz`/`sp` em
+   locais `unsigned int` (`sz = src >> 8 & 0xFF; sp = src & 0xFF;`). Aritmética de ponteiro (`&…field[z]`,
+   `(char *)… + z * 20`) é recanonizada com a base primeiro e não serve. Com dois usos da mesma zona, `ZSLOT` nos dois
+   dá o endereço inteiro em CSE (bate em `duel_088C2BA0`); se o original recalcula base+jogador no 2º uso, não use.
+   Bateu: `duel_slot_count_14c0`, `duel_effect_set`, `duel_08887618`, `duel_eff_fa288`, `duel_088C2BA0` (este com
+   `tz = (unsigned int)(v & 0xFFFF) >> 8 & 0xFF;` numa só atribuição: duas atribuições a `tz` desfazem o efeito).
+2. **Jogador de bitfield do `DuelAct` (`a->player`, `a->src.player`): sem local para o jogador no endereço.**
+   `duel.players[(unsigned int)a->src.player & 1].field[z]` em cada uso (o cast evita um `andi 0xff` a mais) e
+   `a->src.player` direto na chamada. Bateu: `duel_08870848`, `duel_eff_fbac8` (este com `return 0;` depois do
+   `switch` interno para o `b fim; move v0,zero`).
+
+Inverso (`duel_slot_src_attr8`): ali o original tem o jogador primeiro; `(unsigned char)src & 1` e
+`(unsigned char)(src >> 8)` direto no índice puxam a zona para cima; locais `sz`/`sp` resolvem.
+Não resolvido: `duel_0888BA00` (o original lê `a->uid` antes do índice: um local `uid` é propagado de volta; 22
+palavras), `duel_0888B9A8`/`duel_0888BBE4` (ordem de carga dos argumentos: `a->id` e `duel_turn_player` antes de
+`1 - a->player`; só uma atribuição dentro do argumento, `f(q, …, (t == (q = 1 - a->player)) …)`, bate, e isso é
+comportamento indefinido em C: não usar).
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
 - **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`):
