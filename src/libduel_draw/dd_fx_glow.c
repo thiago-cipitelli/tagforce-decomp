@@ -1,5 +1,4 @@
 // @range 0x08849060-0x0884A86C
-// @asm 0x088492F4-0x088494D0
 // @asm 0x088494D0-0x0884A86C
 /* Card effects "hit sound" (effects 204-376: only the hit sounds and the character's reaction)
    and "body glow" (effect 18): orange glows (orang_light.gim) projected on the character's
@@ -169,7 +168,6 @@ int dd_fx_glow_start(DdFxArg *arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* só o fim difere: o original testa x[0] < x[1] com slt at/beqzl direto ao epílogo e y com bnezl; as formas testadas invertem um dos dois */
 /* Draws the glow sprite `rect` at `pos` in screen space (skipped when off screen). */
 void *dd_fx_glow_sprite(void *list, FxVec3 *pos, int alpha, FxVec4 *rect, FxMat4 *cam, FxMat4 *vp)
 {
@@ -196,16 +194,13 @@ void *dd_fx_glow_sprite(void *list, FxVec3 *pos, int alpha, FxVec4 *rect, FxMat4
         x[i] -= 0x710;
         y[i] -= 0x778;
     }
-    if (x[0] >= x[1])
-        return r;
-    if (y[0] >= y[1])
+    if (x[0] >= x[1] || y[0] >= y[1])
         return r;
     r = draw_set_offsets(r, 16, 16, x[1] - x[0], y[1] - y[0]);
     return draw_sprite(r, x[0], y[0], 0, 40, 8, 0, 0);
 }
-#endif
 
-#ifdef NON_MATCHING /* função de 5 KB com seis grupos de ossos; chamadas, conversões unsigned e constantes como no original (2026-11-06); falta escalonamento/registradores (~575 linhas de diferença de estrutura) */
+#ifdef NON_MATCHING /* 1 instrução (rodada 8; o resto é deslocamento): no fim, o original guarda &c num s1 antes do sinf (addiu s1,sp,404 no delay do bltz da conversão de a255) e passa s1 ao sprite; o mwcc rematerializa &c na chamada. Testados: ponteiro p2 = &c antes/depois de in, argumento em linha, bloco próprio, core[4]. O resto (q por bloco, matrizes cam/vp/proj/view, out com len >= 0, f depois de a, arm[i] + 12 por char *, pc = &c, contadores n0..n6) bate */
 int dd_fx_glow_update(int phase, DdFxGlow *w)
 {
     DdFxArg *arg = w->arg;
@@ -218,13 +213,19 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
     unsigned int a255;
     FxVec4 *rect;
     FxMat4 cam;
-    FxMat4 view;
-    FxMat4 proj;
     FxMat4 vp;
-    FxVec3 q;
+    FxMat4 proj;
+    FxMat4 view;
     int i;
     int j;
     int k;
+    int n0;
+    int n1;
+    int n2;
+    int n3;
+    int n4;
+    int n5;
+    int n6;
 
     dd_mtx_push_saved();
     if (phase == 1)
@@ -233,10 +234,10 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
         in = dd_ease_lin(w->t, 8);
     else
         in = 1.0f;
-    if (w->len < 0)
-        out = 1.0f;
-    else
+    if (w->len >= 0)
         out = 1.0f - dd_ease_lin(w->t - (w->len - 16), 16);
+    else
+        out = 1.0f;
     dd_mtx_billboard_cam(&cam);
     mat4_copy(&proj, dd_chara_proj());
     mat4_copy(&view, dd_chara_view());
@@ -262,9 +263,9 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
             vec4_set(&w->rect[4][1], r, -r, 0.0f, 1.0f);
         }
         for (i = 0; i < 4; i++)
-            for (j = 0; j < 2; j++)
+            for (n0 = 0; n0 < 2; n0++)
                 for (k = 0; k < 8; k++)
-                    w->ph_limb[i][j][k] = RAND_ANGLE();
+                    w->ph_limb[i][n0][k] = RAND_ANGLE();
         for (i = 0; i < 8; i++)
             w->ph_spine[i] = RAND_ANGLE();
         for (i = 0; i < 2; i++)
@@ -290,10 +291,11 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
         {
             int limb_bones[4][3] = { { 14, 15, 16 }, { 17, 18, 19 }, { 20, 21, 22 }, { 23, 24, 25 } };
             FxVec3 limb[4][3];
+            FxVec3 q;
 
-            for (i = 0; i < 4; i++)
+            for (n1 = 0; n1 < 4; n1++)
                 for (j = 0; j < 3; j++)
-                    dd_slot_pos(limb_bones[i][j], &limb[i][j]);
+                    dd_slot_pos(limb_bones[n1][j], &limb[n1][j]);
             for (i = 0; i < 4; i++) {
                 for (j = 0; j < 2; j++) {
                     if (i < 2)
@@ -312,9 +314,10 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
         {
             int spine_bones[4] = { 22, 25, 16, 19 };
             FxVec3 spine[4];
+            FxVec3 q;
 
-            for (i = 0; i < 4; i++)
-                dd_slot_pos(spine_bones[i], &spine[i]);
+            for (n2 = 0; n2 < 4; n2++)
+                dd_slot_pos(spine_bones[n2], &spine[n2]);
             vec3_lerp(&spine[0], &spine[0], &spine[1], 0.5f);
             vec3_lerp(&spine[2], &spine[2], &spine[3], 0.5f);
             for (i = 0; i < 8; i++) {
@@ -328,8 +331,8 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
             int head_bones[2] = { 22, 25 };
             FxVec3 head[2];
 
-            for (i = 0; i < 2; i++)
-                dd_slot_pos(head_bones[i], &head[i]);
+            for (n3 = 0; n3 < 2; n3++)
+                dd_slot_pos(head_bones[n3], &head[n3]);
             for (i = 0; i < 2; i++) {
                 unsigned int a = (float)a255 * (0.8f + 0.2f * sinf(w->ph_head[i] + rot));
 
@@ -339,21 +342,22 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
         {
             int arm_bones[2][2] = { { 21, 20 }, { 23, 0 } };
             FxVec3 arm[2][2];
+            FxVec3 q;
             float f;
 
-            for (i = 0; i < 2; i++)
-                for (j = 0; j < 2; j++)
-                    dd_slot_pos(arm_bones[i][j], &arm[i][j]);
+            for (n4 = 0; n4 < 2; n4++)
+                for (n5 = 0; n5 < 2; n5++)
+                    dd_slot_pos(arm_bones[n4][n5], &arm[n4][n5]);
             for (i = 0; i < 2; i++) {
                 for (j = 0; j < 2; j++) {
-                    if (i == 0)
-                        f = (float)(j + 1) * 0.1f / 2.0f + 1.0f;
-                    else
-                        f = (float)(j + 1) * 0.5f / 2.0f;
                     {
                         unsigned int a = (float)a150 * (0.8f + 0.2f * sinf(w->ph_arm[i][j] + rot));
 
-                        vec3_lerp(&q, &arm[i][0], &arm[i][1], f);
+                        if (i == 0)
+                            f = (float)(j + 1) * 0.1f / 2.0f + 1.0f;
+                        else
+                            f = (float)(j + 1) * 0.5f / 2.0f;
+                        vec3_lerp(&q, arm[i], (FxVec3 *)((char *)arm + i * 24 + 12), f);
                         list = dd_fx_glow_sprite(list, &q, a, w->rect[0], &cam, &vp);
                     }
                 }
@@ -361,42 +365,40 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
         }
         {
             int core_bones[3] = { 4, 22, 25 };
-            FxVec3 core[3];
             FxVec3 c;
+            FxVec3 core[3];
+            FxVec3 *pc = &c;
 
-            for (i = 0; i < 3; i++)
-                dd_slot_pos(core_bones[i], &core[i]);
+            for (n6 = 0; n6 < 3; n6++)
+                dd_slot_pos(core_bones[n6], &core[n6]);
             vec3_lerp(&core[1], &core[1], &core[2], 0.5f);
-            vec3_lerp(&c, &core[1], &core[0], 1.1f);
+            vec3_lerp(pc, &core[1], &core[0], 1.1f);
             list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-            {
-                unsigned int a = (float)a255 * 0.8f * (0.8f + 0.2f * sinf(w->ph_core + rot));
-
-                list = dd_fx_glow_sprite(list, &c, a, w->rect[3], &cam, &vp);
-            }
+            in = 0.8f * (float)a255;
+            list = dd_fx_glow_sprite(list, &c, (unsigned int)(in * (0.8f + 0.2f * sinf(w->ph_core + rot))), w->rect[3], &cam, &vp);
         }
         mtx_pop();
         dl_set_list(list);
     }
     dd_mtx_pop_all();
     w->frame++;
-    if (w->len < 0) {
+    if (w->len >= 0) {
         if (run == 1) {
             if (w->wait < w->delay)
                 w->wait++;
-            else if (w->t < 8)
+            else
                 w->t++;
         }
-        return 2;
+        if (w->t < w->len)
+            return 2;
+        return 4;
     }
     if (run == 1) {
         if (w->wait < w->delay)
             w->wait++;
-        else
+        else if (w->t < 8)
             w->t++;
     }
-    if (w->t < w->len)
-        return 2;
-    return 4;
+    return 2;
 }
 #endif

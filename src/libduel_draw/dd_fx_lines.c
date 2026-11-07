@@ -115,7 +115,7 @@ int dd_fx_lines_start(DdFxArg *arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: no laço interno do túnel (32 faixas) o contador e o ponteiro da faixa saem em s1/s3 trocados (variáveis separadas, do-while, ponteiro explícito testados) */
+#ifdef NON_MATCHING /* 6 palavras: no laço interno do túnel (32 faixas) o contador e o ponteiro da faixa saem em s1/s3 trocados; estrutura idêntica. Testados (rodada 8): variáveis separadas, do-while/while, ponteiro explícito, register, outro nome para cada contador (descida), mover cada declaração (só a posição atual dá 6) */
 int dd_fx_lines_update(int phase, DdFxLines *w)
 {
     DdFxArg *arg = w->h.arg;

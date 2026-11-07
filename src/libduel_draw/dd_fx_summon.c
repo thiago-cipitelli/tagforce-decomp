@@ -141,7 +141,7 @@ unsigned int dd_fx_summon_tmpl2[2] = { 0x00000000, 0x00000000 };
 #pragma explicit_zero_data reset
 unsigned int dd_fx_summon_tmpl3[1] = { 0x3F800000 };
 
-#ifdef NON_MATCHING /* função grande (4 KB); o modelo dos vetores locais fica em dd_fx_summon_tmpl; jal e lógica conferidos com o original (2026-11-06); o original salva um registrador float a mais (f20-f24) */
+#ifdef NON_MATCHING /* estrutura igual ao original (rodada 8: spin calculado entre alpha e a chamada, anel e notas indexados por fx, constantes hw/h em locais, case 0/1/2, !(flags & 1) != 1, age >= 16/8, e calculado antes do modelo s); faltam registradores: fx em s1 (original s2), step s3 (s4), list s5 (s0), ~290 palavras; mover declarações e renomear fx não resolveram */
 inline static void dd_fx_set_vert(DdFxVert *v, float u, float tv, unsigned int color, float x, float y, float z)
 {
     v->u = u;
@@ -160,12 +160,19 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
     DdRandSeed *r;
     int step = dd_anim_step();
     unsigned int *list;
-    float bb[16];
     float v[3];
-    float grow, fade, a, rad;
+    float bb[16];
+    float grow;
+    float fade;
+    float rad;
     unsigned int alpha;
-    unsigned int c0, c1;
-    int i, j, k;
+    unsigned int c0;
+    unsigned int c1;
+    int i;
+    int j;
+    int k;
+    float spin;
+    float a;
 
     dd_cue_se(0x622A, fx->frame, 0, &fx->se, 1);
     dd_card_quad_draw1(fx->card, fx->pos, fx->rot, (unsigned int)(dd_ease_lin(fx->frame, 24) * 255.0f), fx->t);
@@ -199,9 +206,11 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
     mtx_push();
     mtx_identity();
     mtx_translate(fx->pos);
-    list = dl_ambient_light(list, ((unsigned int)(fade * (dd_ease_lin(fx->frame, 4) * 0.9f + 0.1f) * 255.0f) << 24) | 0xFFFFFF);
+    alpha = (unsigned int)(fade * ((dd_ease_lin(fx->frame, 4) * 0.9f + 0.1f) * 255.0f)) << 24;
+    spin = (float)fx->frame * 0.02617994f;
+    list = dl_ambient_light(list, alpha | 0xFFFFFF);
     for (i = 0; i < 16; i++) {
-        a = (float)i * 6.2831855f / 16.0f + (float)fx->frame * 0.02617994f;
+        a = (float)i * 6.2831855f / 16.0f + spin;
         vec3_set(v, grow * -29.333334f * sinf(a), 0.0f, grow * -29.333334f * cosf(a));
         mtx_push();
         mtx_translate(v);
@@ -271,8 +280,8 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
     for (i = 0; i < 32; i++) {
         DdFxSpark *s = &fx->spark[i];
 
-        if (s->flags & 1) {
-            list = dl_ambient_light(list, ((unsigned int)(fade * dd_ease_cos(s->age, 16, 1) * 255.0f) << 24) | 0xFFFFFF);
+        if (!(s->flags & 1) != 1) {
+            list = dl_ambient_light(list, ((unsigned int)(fade * (dd_ease_cos(s->age, 16, 1) * 255.0f)) << 24) | 0xFFFFFF);
             mtx_push();
             s->pos[1] = (float)s->age * 15.0f;
             mtx_translate(s->pos);
@@ -280,7 +289,7 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
             list = draw_array(list, 6, 0x183, 2, 0, fx->spark_uv[s->uv]);
             mtx_pop();
             s->age += step;
-            if (s->age > 15)
+            if (s->age >= 16)
                 s->flags &= ~1;
         }
     }
@@ -297,24 +306,23 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
             c1 = 0xFF6464FF;
         }
         for (i = 0; i < 17; i++) {
-            DdColVert *rv = fx->ring[i];
             float sa, ca;
 
             a = (float)i * 6.2831855f / 16.0f;
             sa = sinf(a);
             ca = cosf(a);
-            rv[0].color = c0;
-            rv[0].x = sa * 44.333336f;
-            rv[0].y = 0.0f;
-            rv[0].z = ca * 44.333336f;
-            rv[1].color = c1;
-            rv[1].x = sa * 29.333334f;
-            rv[1].y = 0.0f;
-            rv[1].z = ca * 29.333334f;
-            rv[2].color = c0;
-            rv[2].x = sa * 9.333334f;
-            rv[2].y = 0.0f;
-            rv[2].z = ca * 9.333334f;
+            fx->ring[i][0].color = c0;
+            fx->ring[i][0].x = sa * 44.333336f;
+            fx->ring[i][0].y = 0.0f;
+            fx->ring[i][0].z = ca * 44.333336f;
+            fx->ring[i][1].color = c1;
+            fx->ring[i][1].x = sa * 29.333334f;
+            fx->ring[i][1].y = 0.0f;
+            fx->ring[i][1].z = ca * 29.333334f;
+            fx->ring[i][2].color = c0;
+            fx->ring[i][2].x = sa * 9.333334f;
+            fx->ring[i][2].y = 0.0f;
+            fx->ring[i][2].z = ca * 9.333334f;
         }
         fx->ring_idx[0] = 0;
         fx->ring_idx[1] = 1;
@@ -350,29 +358,30 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
     /* music notes of the dark kind */
     if (fx->kind == 1) {
         if (state == 1) {
+            float hw = 70.0f, h = 200.0f;
+
             for (i = 0; i < 6; i++) {
                 float u = (float)(i % 4) * 0.25f;
                 float tv = (float)(i / 4) * 0.25f + 0.5f;
-                DdFxVert *q = fx->note_quad[i];
 
                 switch (i / 2) {
-                case 2:
-                    dd_fx_set_vert(&q[0], u, tv, 0xFF0064, -70.0f, 0.0f, -200.0f);
-                    dd_fx_set_vert(&q[1], u, tv + 0.25f, 0xC8FF0064, -70.0f, 0.0f, 0.0f);
-                    dd_fx_set_vert(&q[2], u + 0.25f, tv, 0xFF0064, 70.0f, 0.0f, -200.0f);
-                    dd_fx_set_vert(&q[3], u + 0.25f, tv + 0.25f, 0xC8FF0064, 70.0f, 0.0f, 0.0f);
+                case 0:
+                    dd_fx_set_vert(&fx->note_quad[i][0], u, tv + 0.25f, 0xFF0064, -hw, 0.0f, -h);
+                    dd_fx_set_vert(&fx->note_quad[i][1], u, tv + 0.001953125f, 0xC8FF0064, -hw, 0.0f, 0.0f);
+                    dd_fx_set_vert(&fx->note_quad[i][2], u + 0.25f, tv + 0.25f, 0xFF0064, hw, 0.0f, -h);
+                    dd_fx_set_vert(&fx->note_quad[i][3], u + 0.25f, tv + 0.001953125f, 0xC8FF0064, hw, 0.0f, 0.0f);
                     break;
                 case 1:
-                    dd_fx_set_vert(&q[0], u + 0.25f, tv, 0xFF0064, -70.0f, 0.0f, -200.0f);
-                    dd_fx_set_vert(&q[1], u, tv, 0xC8FF0064, -70.0f, 0.0f, 0.0f);
-                    dd_fx_set_vert(&q[2], u + 0.25f, tv + 0.25f, 0xFF0064, 70.0f, 0.0f, -200.0f);
-                    dd_fx_set_vert(&q[3], u, tv + 0.25f, 0xC8FF0064, 70.0f, 0.0f, 0.0f);
+                    dd_fx_set_vert(&fx->note_quad[i][0], u + 0.25f, tv, 0xFF0064, -hw, 0.0f, -h);
+                    dd_fx_set_vert(&fx->note_quad[i][1], u, tv, 0xC8FF0064, -hw, 0.0f, 0.0f);
+                    dd_fx_set_vert(&fx->note_quad[i][2], u + 0.25f, tv + 0.25f, 0xFF0064, hw, 0.0f, -h);
+                    dd_fx_set_vert(&fx->note_quad[i][3], u, tv + 0.25f, 0xC8FF0064, hw, 0.0f, 0.0f);
                     break;
-                case 0:
-                    dd_fx_set_vert(&q[0], u, tv + 0.25f, 0xFF0064, -70.0f, 0.0f, -200.0f);
-                    dd_fx_set_vert(&q[1], u, tv + 0.001953125f, 0xC8FF0064, -70.0f, 0.0f, 0.0f);
-                    dd_fx_set_vert(&q[2], u + 0.25f, tv + 0.25f, 0xFF0064, 70.0f, 0.0f, -200.0f);
-                    dd_fx_set_vert(&q[3], u + 0.25f, tv + 0.001953125f, 0xC8FF0064, 70.0f, 0.0f, 0.0f);
+                case 2:
+                    dd_fx_set_vert(&fx->note_quad[i][0], u, tv, 0xFF0064, -hw, 0.0f, -h);
+                    dd_fx_set_vert(&fx->note_quad[i][1], u, tv + 0.25f, 0xC8FF0064, -hw, 0.0f, 0.0f);
+                    dd_fx_set_vert(&fx->note_quad[i][2], u + 0.25f, tv, 0xFF0064, hw, 0.0f, -h);
+                    dd_fx_set_vert(&fx->note_quad[i][3], u + 0.25f, tv + 0.25f, 0xC8FF0064, hw, 0.0f, 0.0f);
                     break;
                 }
             }
@@ -406,8 +415,9 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
             for (i = 0; i < 32; i++) {
                 DdFxNote *n = &fx->note[i];
 
-                if (n->flags & 1) {
-                    float s[3] = { dd_ease_sin(n->age, 8, 1), 0.0f, 1.0f };
+                if (!(n->flags & 1) != 1) {
+                    float e = dd_ease_sin(n->age, 8, 1);
+                    float s[3] = { e, 0.0f, 1.0f };
 
                     list = dl_ambient_light(list, alpha);
                     mtx_push();
@@ -418,7 +428,7 @@ int dd_fx_summon_update(int state, DdFxSummon *fx)
                     list = draw_array(list, 4, 0x19F, 4, 0, fx->note_quad[n->kind]);
                     mtx_pop();
                     n->age += step;
-                    if (n->age > 7)
+                    if (n->age >= 8)
                         n->flags &= ~1;
                 }
             }
