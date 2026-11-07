@@ -1,6 +1,4 @@
 // @range 0x08811BDC-0x088137BC
-// @asm 0x08811BDC-0x08812DBC
-// @asm 0x08812DBC-0x088137BC
 /* Conditions of the computer player: battle cards (quick effects activated during an attack). */
 #include "duel.h"
 
@@ -40,22 +38,20 @@ int duel_088070A8(int id);
 int duel_grave_count_monsters(unsigned int p);
 int duel_can_attack(unsigned int p, int z, int arg);
 
-#ifdef NON_MATCHING /* switch de 60 casos com a forma de cada caso próxima; diferem desvios (beql/bnel) e registradores */
 /* a: card the computer could activate during the battle (kinds 18/19), b: the card being resolved (may be null) */
 int duel_08811BDC(DuelAct *a, DuelAct *b)
 {
-    unsigned int ap;                   /* attacker */
-    int az;
-    unsigned int pl;                   /* player of a */
-    unsigned int tp;                   /* attacked player */
-    int tz;
     int direct;
     int atk;                           /* attacker ATK */
+    unsigned int pl;                   /* player of a */
+    int tz;
     int tv;                            /* target ATK or DEF (0 for a direct attack) */
+    unsigned int ap;                   /* attacker */
+    int az;
+    unsigned int tp;                   /* attacked player */
     unsigned int q;
     int id;
     int i;
-    unsigned int n;
 
     if ((unsigned int)(a->kind - 18) < 2) {
         ap = duel_special.player[0];
@@ -88,57 +84,53 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
         case 0x1575:
             return duel_count_field_all(1 - a->player) >= duel_count_field_all(a->player);
         case 0x171A:
-            if (ap != 1 - a->player) {
-                return 0;
-            }
-            id = duel.players[ap & 1].field[az].card.id;
-            if (card_get_level(id) >= 5) {
-                return 1;
-            }
-            if (card_attribute_icon_in_2_3(id) != 0) {
-                return 1;
-            }
-            if (direct && atk >= duel.players[pl & 1].lp) {
-                return 1;
+            if (ap == 1 - a->player) {
+                id = duel.players[ap & 1].field[az].card.id;
+                if (card_get_level(id) >= 5 || card_attribute_icon_in_2_3(id) != 0) {
+                    return 1;
+                }
+                if (direct && atk >= duel.players[pl & 1].lp) {
+                    return 1;
+                }
             }
             return 0;
         case 0x140A: /* another face-up ATK monster stronger than the attacker */
-            if (ap != 1 - pl) {
-                return 0;
-            }
-            if (!direct && atk >= tv) {
-                for (i = 0; i < 5; i++) {
-                    if (i != tz && duel.players[pl & 1].field[i].card.id != 0 && duel.players[pl & 1].field[i].pos == 0 &&
-                        atk < duel_field_atk(pl, i)) {
-                        return 1;
+            if (ap == 1 - pl) {
+                if (!direct && atk >= tv) {
+                    for (i = 0; i < 5; i++) {
+                        if (i != tz && duel.players[pl & 1].field[i].card.id != 0 && duel.players[pl & 1].field[i].pos == 0 &&
+                            atk < duel_field_atk(pl, i)) {
+                            return 1;
+                        }
                     }
                 }
             }
             return 0;
         case 0x1420:
-            if (ap != 1 - pl) {
-                return 0;
+            if (ap == 1 - pl) {
+                if (!direct && atk >= tv) {
+                    if (atk >= duel.players[pl & 1].lp) {
+                        return 0;
+                    }
+                    if (duel.players[tp & 1].field[tz].faceup == 0) {
+                        return 0;
+                    }
+                    if (card_get_special_group(duel.players[tp & 1].field[tz].card.id) != 0) {
+                        return 1;
+                    }
+                    return 0;
+                }
             }
-            if (direct || atk < tv) {
-                return 0;
-            }
-            if (atk >= duel.players[pl & 1].lp) {
-                return 0;
-            }
-            if (duel.players[tp & 1].field[tz].faceup == 0) {
-                return 0;
-            }
-            return card_get_special_group(duel.players[tp & 1].field[tz].card.id) != 0;
+            return 0;
         case 0x146B: /* another monster of the attacker weaker than the target */
             q = 1 - pl;
-            if (ap != q) {
-                return 0;
-            }
-            if (!direct && atk >= tv) {
-                for (i = 0; i < 5; i++) {
-                    if (i != az && duel.players[q & 1].field[i].card.id != 0 && duel.players[q & 1].field[i].faceup != 0 &&
-                        duel_field_atk(q, i) < tv) {
-                        return 1;
+            if (ap == q) {
+                if (!direct && atk >= tv) {
+                    for (i = 0; i < 5; i++) {
+                        if (i != az && duel.players[q & 1].field[i].card.id != 0 && duel.players[q & 1].field[i].faceup != 0 &&
+                            duel_field_atk(q, i) < tv) {
+                            return 1;
+                        }
                     }
                 }
             }
@@ -151,24 +143,24 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
         case 0x1AAC:
         case 0x1B2C:
             q = 1 - pl;
-            if (ap != q) {
-                return 0;
-            }
-            if (direct) {
-                if (atk >= duel.players[pl & 1].lp) {
+            if (ap == q) {
+                if (!direct) {
+                    if (atk >= tv) {
+                        return 1;
+                    }
+                } else {
+                    if (atk >= duel.players[pl & 1].lp) {
+                        return 1;
+                    }
+                    if (atk >= 1500) {
+                        return 1;
+                    }
+                    duel_count_monsters_pos(q, 1, 1);
                     return 1;
                 }
-                if (atk >= 1500) {
+                if (duel_088154D8(pl) != 0) {
                     return 1;
                 }
-                duel_count_monsters_pos(q, 1, 1);
-                return 1;
-            }
-            if (atk >= tv) {
-                return 1;
-            }
-            if (duel_088154D8(pl) != 0) {
-                return 1;
             }
             return 0;
         case 0x19EC:
@@ -185,16 +177,15 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
             }
         case 0x1907:
             q = 1 - pl;
-            if (ap != q) {
-                return 0;
+            if (ap == q) {
+                return duel_count_monsters_pos(q, 0, 1) >= 2;
             }
-            return duel_count_monsters_pos(q, 0, 1) >= 2;
+            return 0;
         case 0x13FE:
-            if (ap != 1 - pl) {
-                return 0;
-            }
-            if (card_attribute_icon_is3(duel.players[ap & 1].field[az].card.id) != 0) {
-                return 1;
+            if (ap == 1 - pl) {
+                if (card_attribute_icon_is3(duel.players[ap & 1].field[az].card.id) != 0) {
+                    return 1;
+                }
             }
             return 0;
         case 0x195F:
@@ -203,61 +194,57 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
             }
         case 0x12C4:
             q = 1 - pl;
-            if (ap != q) {
-                return 0;
-            }
-            if (direct) {
-                return 1;
-            }
-            if (atk >= tv) {
-                return 1;
-            }
-            if (b != 0 && b->player == q) {
-                return 1;
+            if (ap == q) {
+                if (direct) {
+                    return 1;
+                }
+                if (atk >= tv) {
+                    return 1;
+                }
+                if (b != 0 && b->player == q) {
+                    return 1;
+                }
             }
             return 0;
         case 0x1404:
             q = 1 - pl;
-            if (ap != q) {
-                return 0;
-            }
-            if (atk >= duel.players[q & 1].lp) {
-                return 1;
-            }
-            if (direct && atk >= duel.players[pl & 1].lp) {
-                return 1;
-            }
-            if (atk < duel_088054A8(q, az, 1)) {
-                return 0;
-            }
-            if (atk >= 1500) {
-                return 1;
-            }
-            if (!direct && atk >= tv) {
-                return 1;
+            if (ap == q) {
+                if (atk >= duel.players[q & 1].lp) {
+                    return 1;
+                }
+                if (direct && atk >= duel.players[pl & 1].lp) {
+                    return 1;
+                }
+                if (atk < duel_088054A8(q, az, 1)) {
+                    return 0;
+                }
+                if (atk >= 1500) {
+                    return 1;
+                }
+                if (!direct && atk >= tv) {
+                    return 1;
+                }
             }
             return 0;
         case 0x171E:
-            if (ap != 1 - pl) {
-                return 0;
-            }
-            if (direct) {
-                return 1;
-            }
-            if (tv < atk && duel.players[tp & 1].field[tz].pos == 0) {
-                return 1;
+            if (ap == 1 - pl) {
+                if (direct) {
+                    return 1;
+                }
+                if (tv < atk && duel.players[tp & 1].field[tz].pos == 0) {
+                    return 1;
+                }
             }
             return 0;
         case 0x1930: /* the battle damage would be lethal or large */
-            if (ap != 1 - pl) {
-                return 0;
-            }
-            if (!direct) {
-                if (atk - tv >= duel.players[(1 - pl) & 1].lp) {
-                    return 1;
-                }
-                if (atk - tv >= 1500) {
-                    return 1;
+            if (ap == 1 - pl) {
+                if (!direct) {
+                    if (atk - tv >= duel.players[(1 - pl) & 1].lp) {
+                        return 1;
+                    }
+                    if (atk - tv >= 1500) {
+                        return 1;
+                    }
                 }
             }
             return 0;
@@ -271,45 +258,43 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
         case 0x1243:
         case 0x1103:
             q = 1 - pl;
-            if (ap != q) {
-                return 0;
-            }
-            if (direct && atk >= duel.players[pl & 1].lp) {
-                return 1;
-            }
-            if (atk >= duel_088054A8(q, az, 1)) {
+            if (ap == q) {
+                if (direct && atk >= duel.players[pl & 1].lp) {
+                    return 1;
+                }
+                if (atk < duel_088054A8(q, az, 1)) {
+                    return 0;
+                }
                 return 1;
             }
             return 0;
         case 0x140E:
-            if (ap != 1 - pl) {
-                return 0;
+            if (ap == 1 - pl) {
+                return duel_field_level(ap, az) >= 4;
             }
-            return duel_field_level(ap, az) >= 4;
+            return 0;
         case 0x1766:
-            if (ap != 1 - pl) {
-                return 0;
+            if (ap == 1 - pl) {
+                return duel.players[pl & 1].lp > 3000 && duel_088054A8(1 - pl, -1, 0) <= 3000;
             }
-            return duel.players[pl & 1].lp > 3000 && duel_088054A8(1 - pl, -1, 0) <= 3000;
+            return 0;
         case 0x1538:
-            if (ap != 1 - pl) {
-                return 0;
-            }
-            if (direct && atk >= duel.players[pl & 1].lp) {
-                return 1;
+            if (ap == 1 - pl) {
+                if (direct && atk >= duel.players[pl & 1].lp) {
+                    return 1;
+                }
             }
             return 0;
         case 0x137D:
-            if (ap != 1 - pl) {
-                return 0;
-            }
-            if (direct && duel_count_monsters(a->player) == 0) {
-                if (atk >= duel.players[a->player & 1].lp) {
-                    return 1;
-                }
-                duel_08809B50(pl, a->id, 0);
-                if (atk <= card_get_atk(duel_0884C7CC()->id)) {
-                    return 1;
+            if (ap == 1 - pl) {
+                if (direct && duel_count_monsters(a->player) == 0) {
+                    if (duel.players[a->player & 1].lp <= atk) {
+                        return 1;
+                    }
+                    duel_08809B50(pl, a->id, 0);
+                    if (card_get_atk(duel_0884C7CC()->id) >= atk) {
+                        return 1;
+                    }
                 }
             }
             return 0;
@@ -320,37 +305,36 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
         case 0x17B7:
         case 0x16A4:
         case 0x1636:
-            if (!(ap == 1 - pl && direct)) {
-                return 0;
+            i = ap == 1 - pl && direct;
+            if (i) {
+                i = !duel_count_monsters(a->player);
             }
-            return !duel_count_monsters(a->player);
+            return i;
         case 0x1362:
-            if (ap != 1 - pl) {
-                return 0;
-            }
-            if (!direct) {
-                id = duel.players[tp & 1].field[tz].card.id;
-                if (duel_088BFFD8(pl, a->id, 0) < 2) {
-                    return 0;
-                }
-                if (card_get_special_group(id) != 0) {
-                    return duel.players[tp & 1].field[tz].faceup;
-                }
-                if (atk >= tv) {
-                    if (tv >= 1800) {
-                        return 1;
+            if (ap == 1 - pl) {
+                if (!direct) {
+                    id = duel.players[tp & 1].field[tz].card.id;
+                    if (duel_088BFFD8(pl, a->id, 0) < 2) {
+                        return 0;
                     }
-                    if (duel_count_name(pl, 0x12F3) != 0) {
-                        n = duel.players[a->player & 1].n_hand;
-                        for (i = 0; i < n; i++) {
-                            switch (duel.players[a->player & 1].hand[i].id) {
-                            case 0x1386:
-                            case 0x1387:
-                            case 0x1388:
-                            case 0x1905:
-                            case 0x13B5:
-                            case 0x154B:
-                                return 1;
+                    if (card_get_special_group(id) != 0) {
+                        return duel.players[tp & 1].field[tz].faceup;
+                    }
+                    if (atk >= tv) {
+                        if (tv >= 1800) {
+                            return 1;
+                        }
+                        if (duel_count_name(pl, 0x12F3) != 0) {
+                            for (i = 0; i < duel.players[a->player & 1].n_hand; i++) {
+                                switch (duel.players[a->player & 1].hand[i].id) {
+                                case 0x1386:
+                                case 0x1387:
+                                case 0x1388:
+                                case 0x1905:
+                                case 0x13B5:
+                                case 0x154B:
+                                    return 1;
+                                }
                             }
                         }
                     }
@@ -358,26 +342,27 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
             }
             return 0;
         case 0x1231:
-            if (ap != 1 - pl) {
-                return 0;
-            }
-            if (!direct && atk >= tv && duel_count_monsters_pos(pl, 1, 0) != 0) {
-                return 1;
+            if (ap == 1 - pl) {
+                if (!direct && atk >= tv && duel_count_monsters_pos(pl, 1, 0) != 0) {
+                    return 1;
+                }
             }
             return 0;
         case 0x1561:
         case 0x1852:
-            if (ap != 1 - pl) {
-                return 0;
-            }
-            if (!direct) {
-                if (atk >= duel.players[a->player & 1].lp) {
+            if (ap == 1 - pl) {
+                if (!direct) {
+                    if (duel.players[a->player & 1].lp <= atk) {
+                        return 0;
+                    }
+                    if (atk <= tv) {
+                        return 0;
+                    }
+                    if (duel_hand_count_level(a->player, 5) != 0) {
+                        return 1;
+                    }
                     return 0;
                 }
-                if (tv >= atk) {
-                    return 0;
-                }
-                return duel_hand_count_level(a->player, 5) != 0;
             }
             return 0;
         case 0x1669:
@@ -388,35 +373,37 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
             return duel_0880A17C(pl, q, -1, 1, 0) < duel_0880A0B4(pl);
         case 0x1980:
             if (!direct && ap == 1 - pl) {
-                if (duel_0884E3E4(a, tp, tv) != 0) {
-                    return atk >= 1900;
+                if (duel_0884E3E4(a, tp, tv) == 0) {
+                    return 0;
+                }
+                if (atk >= 1900) {
+                    return 1;
                 }
                 return 0;
             }
-            return 0;
+            break;
         case 0x17B3:
             q = 1 - pl;
-            if (ap != q) {
-                return 0;
+            if (ap == q) {
+                if (atk < tv) {
+                    return 0;
+                }
+                if (duel_count_monsters_pos(q, 1, 1) > 1) {
+                    return 1;
+                }
             }
-            if (atk < tv) {
-                return 0;
-            }
-            if (duel_count_monsters_pos(q, 1, 1) >= 2) {
-                return 1;
-            }
-            return 0;
+            break;
         case 0x19B5:
             if (!direct && ap == 1 - pl) {
                 if (field_get_card(tp, tz) != 0x18F6) {
                     return 0;
                 }
-                if (duel_088BFFD8(pl, a->id, 0) == 0) {
-                    return 0;
+                if (duel_088BFFD8(pl, a->id, 0) != 0) {
+                    return atk <= 2800 && atk >= tv;
                 }
-                return atk <= 2800 && atk >= tv;
+                return 0;
             }
-            return 0;
+            break;
         case 0x1A0E:
             if (ap == 1 - pl) {
                 if (!(duel.players[(1 - pl) & 1].flags >> 17 & 1)) {
@@ -426,23 +413,19 @@ int duel_08811BDC(DuelAct *a, DuelAct *b)
                     return 1;
                 }
             }
-            return 0;
+            break;
         case 0x14A6:
-            if (ap != 1 - pl) {
-                return 0;
+            if (ap == 1 - pl) {
+                if (atk - 500 <= tv) {
+                    return 1;
+                }
             }
-            if (tv < atk - 500) {
-                return 0;
-            }
-            return 1;
+            return 0;
         }
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* forma próxima; o bloco morto do 0x14BE e os limites a 0 do ramo pos já batem (ternários);
-   diferem o resto do ramo de defesa (desvios likely e operandos de addu) e registradores */
 /* a: card that changes the ATK/DEF in the battle (kind 20): would it change the outcome? */
 int duel_08812DBC(DuelAct *a)
 {
@@ -467,9 +450,9 @@ int duel_08812DBC(DuelAct *a)
     if (a->kind == 20) {
         ap = duel_special.player[0];
         up = 0;
-        pl = a->player;
         az = duel_special.zone[0];
         tp = duel_special.player[1];
+        pl = a->player;
         tz = duel_special.zone[1];
         direct = tz >= 5;
         dup = 0;
@@ -601,12 +584,11 @@ int duel_08812DBC(DuelAct *a)
                     return a->player == tp;
                 }
             }
-            if (pl != ap) {
-                return 0;
-            }
-            if (up != 0) {
-                if (up + duel_field_atk(ap, az) >= duel.players[(1 - pl) & 1].lp) {
-                    return 1;
+            if (pl == ap) {
+                if (up != 0) {
+                    if (up + duel_field_atk(ap, az) >= duel.players[(1 - pl) & 1].lp) {
+                        return 1;
+                    }
                 }
             }
         } else if (ap != tp && (up | dup) != 0) {
@@ -618,23 +600,26 @@ int duel_08812DBC(DuelAct *a)
                 dv = pos ? duel_field_def(pl, tz) : duel_field_atk(pl, tz);
                 if (pos) {
                     dup = dup < 0 ? 0 : dup;
-                    t = (-up < 0 ? 0 : -up) + dup;
+                    t = -up < 0 ? 0 : -up;
+                    t += dup;
                 } else {
                     u = up < 0 ? 0 : up;
-                    t = (-up < 0 ? 0 : -up) + u;
+                    t = -up < 0 ? 0 : -up;
+                    t += u;
                 }
-                t += dv;
-                if (t < av) {
-                    return 0;
-                }
-                if (dv < av) {
-                    return 1;
-                }
-                if (field_get_card(pl, tz) == 0x1292) {
-                    return 1;
-                }
-                if (t - av >= duel.players[q & 1].lp) {
-                    return 1;
+                n = dv + t;
+                if (av <= n) {
+                    t = n - av;
+                    if (dv < av) {
+                        return 1;
+                    }
+                    switch (field_get_card(pl, tz)) {
+                    case 0x1292:
+                        return 1;
+                    }
+                    if (t >= duel.players[q & 1].lp) {
+                        return 1;
+                    }
                 }
             } else {
                 /* the player attacks */
@@ -644,25 +629,28 @@ int duel_08812DBC(DuelAct *a)
                 dv = pos ? duel_field_def(q, tz) : duel_field_atk(q, tz);
                 if (pos) {
                     t = -dup;
+                    if (t < 0) {
+                        t = 0;
+                    }
+                    up = up < 0 ? 0 : up;
+                    u = up + t;
                 } else {
                     t = -up;
+                    if (t < 0) {
+                        t = 0;
+                    }
+                    up = up < 0 ? 0 : up;
+                    u = up + t;
                 }
-                if (t < 0) {
-                    t = 0;
-                }
-                if (up < 0) {
-                    up = 0;
-                }
-                t += up;
-                if (dv >= av && dv < av + t) {
+                if (av <= dv && dv < av + u) {
                     return 1;
                 }
-                if (pos == 0 && av - dv < duel.players[q & 1].lp && av + t - dv >= duel.players[q & 1].lp) {
+                if (pos == 0 && av - dv < duel.players[q & 1].lp && av + u - dv >= duel.players[q & 1].lp) {
                     return 1;
                 }
             }
+            return 0;
         }
     }
     return 0;
 }
-#endif

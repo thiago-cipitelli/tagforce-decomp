@@ -417,3 +417,25 @@ Funções de vários KB com fuzzy baixo costumam ter a lógica certa e a forma e
 4. `slti at` no teste de um laço contado: `i <= 4` (não `i < 5`). Índice e ponteiro do laço trocados de `$s`:
    variável do laço declarada no bloco (`{ int j; for (j = 0; ...) }`), não a da função.
 5. Dois `case` que usam `&&` com o mesmo corpo `trig = 1` e `beql ..., fim; li s3,1`: era `||` num só `if`.
+
+## `return 0` fora de linha e `if (x == y) { ... }` (rodada 8, `ai_08811BDC.c`)
+
+`duel_08811BDC` (4,5 KB, 60 casos) e `duel_08812DBC` bateram corrigindo a **forma dos retornos**, não registradores:
+- `bnel x,y,fim; move v0,zero` (likely direto ao epílogo com o `0` no delay) é um teste cujo `return 0` está **fora de
+  linha**: `if (ap == q) { ... } return 0;` (ou `break` até o `return 0` final), não `if (ap != q) return 0;` (este dá
+  `beq; nop; b fim; move v0,zero`). O corpo do `if` não termina com `return 0` próprio: as falhas internas caem no
+  `return 0` depois do `if` (`bnez; nop` para ele; só o primeiro desvio leva a cópia).
+- `beqz; nop` para o `move v0,zero` **final** da função = `break` do `switch` até o `return 0` comum.
+- Teste com o `return 1` como bloco morto depois de `b próximo` = `switch (f()) { case K: return 1; }` de um só caso.
+- `if (a || b) return 1;` quando o `beqzl` do primeiro teste copia o `li v0,1` do bloco do segundo.
+- `sltu`/`xori` do `return f() != 0` / `return x >= K` fora do delay slot do `b fim` (o mwcc junta o `return 0` vizinho no
+  mesmo `b`): escrever `if (f() != 0) return 1; return 0;` — o mwcc ainda gera o `sltu`, mas no delay slot.
+- `&&` materializado (`xor; sltiu; beqz; sltu`) e `beqz v0,fim` reaproveitando o 0: `i = a && b; if (i) i = !f(); return i;`.
+- `if (!c) {A} else {B}` quando o original põe o ramo `!c` primeiro e um trecho comum depois dos dois (`case 0x1316`).
+- **Ordem das declarações** voltou a decidir os `$s` numa função grande: 400 permutações aleatórias das 8 primeiras
+  (`direct, atk, pl, tz, tv, ap, az, tp`) levaram 142 palavras a 11; as últimas 11 eram `a >= b` × `b <= a` (`slt at`).
+- Contagem de constantes: `t = dv + t` com o resultado num `$` novo = variável nova (`n = dv + t; if (av <= n) t = n - av;`).
+
+`duel_ai_atk_update`: as flags (`f0/f6/f7`) e o `mode` são lidos pelo símbolo `duel_w_08914A2A` (`lbu 18986(v0)`), não
+pela base `a`; os códigos de evento são montados com máscaras (`(q << 31 & 0x80000000) | (kind << 25 & 0x7E000000)`, o
+id do slot `& 0xFFFF` em vez da constante comparada, `kind` em vez da constante 8/6 que o `if` garante).
