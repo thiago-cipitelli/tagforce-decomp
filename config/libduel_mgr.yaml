@@ -65,8 +65,6 @@ segments:
       - [0xEAF8, c, dmgr_result]
       - [0xEAF8, asm, dmgr_result_asm_08812A98]
       - [0xEDD4, c, dmgr_result]
-      - [0xFC6C, asm, dmgr_result_asm_08813C0C]
-      - [0x102D4, c, dmgr_result]
       - [0x110B0, asm, dmgr_result_asm_08815050]
       - [0x11388, c, dmgr_result]
       - [0x118E8, asm, sceStub_text]

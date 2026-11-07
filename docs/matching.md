@@ -417,3 +417,26 @@ Funções de vários KB com fuzzy baixo costumam ter a lógica certa e a forma e
 4. `slti at` no teste de um laço contado: `i <= 4` (não `i < 5`). Índice e ponteiro do laço trocados de `$s`:
    variável do laço declarada no bloco (`{ int j; for (j = 0; ...) }`), não a da função.
 5. Dois `case` que usam `&&` com o mesmo corpo `trig = 1` e `beql ..., fim; li s3,1`: era `||` num só `if`.
+
+## libduel_mgr (rodada 8): idiomas de `dmgr_janken.c`/`dmgr_result.c`
+
+- **`andi x,zero,1` / `andi x,v0,1` antes de gravar um bitfield de 1 bit**: o valor vinha de uma **variável local**
+  (`on = 1; dmgr_jk->bg_on = on; on = 0; dmgr_jk->partner_on = on;`), propagada depois do rebaixamento do bitfield; a
+  constante literal dá `li`. O registrador reaproveitado (`v0` do `li v0,1` de um teste do `switch`) também vem daí.
+  A ordem das gravações e das outras atribuições do `case` sai por `perm_stmts.py` (`dmgr_jk_bg_anim`).
+- **Endereço de origem calculado antes do teste** (`addu a1,netbuf,off` no atraso do `beqz`): o fonte guardava o ponteiro
+  num local antes do `if` (`unsigned char *src = netbuf + s->net_id * 0x180; if (s->type < 2) memcpy(..., src, ...)`).
+- **`x * -K` em `negu/sll/subu` sem redução de força num laço**: `-i * 45 - 0x14` (não `-0x14 - i * 45`, que vira indução).
+- **Posições `base + N` com N deslocado** (`addiu a1,s5,347` onde o draft tinha `x + 0x199`): o original somava a um
+  local `l = x + 0x3E` (`l + 0x15B`); reescrever todas as posições relativas a `l` (`dmgr_res_page_summary`).
+- **Chamado `static` mantém `$t` vivos através do `jal`**: valores do chamador em `t4`-`t7` depois de chamar uma função
+  do mesmo arquivo (variáveis de laço, resultado da 1ª chamada) só saem com o chamado `static` e definido antes. Se
+  outra função ainda em asm o chama, o `static` quebra o link: usar `#ifdef NON_MATCHING static #endif` até todas baterem
+  (`dmgr_jk_cards_move`; `dmgr_jk_reveal` bate assim, presa a `dmgr_jk_pick`).
+- **Cópias de struct que não matam o global, gravações de campo que matam**: o original relê `dmgr_jk` depois de
+  `p->to.x = K` mas não depois de `p->from = p->cur`; o fonte recalculava o ponteiro a cada grupo
+  (`a = &dmgr_jk->card[0][2]; a->from = a->cur; a->to = a->cur; if (...) a->to.x = 200;`).
+- **Vetor local inicializado** (`lui; lh` de cada elemento do modelo em `.data`, `sh` na pilha): `unsigned short div[4] =
+  { 0, 5, 6, 8 };` no bloco onde é copiado; o global do modelo fica só sem `NON_MATCHING` (`dmgr_result_init`).
+- **Índice em vez de ponteiro de laço**: `((DmgrResItem *)tab)[i].on` no lugar de `it++` muda a ordem dos incrementos
+  das induções; e `x` calculado no uso (`0xDC + i * 0x3B`) em vez de variável do `for` troca os `$s` (`dmgr_res_draw_series`).

@@ -8,7 +8,6 @@
 // @asm 0x08811C98-0x08812124
 // @asm 0x088122B4-0x08812A98
 // @asm 0x08812A98-0x08812D74
-// @asm 0x08813C0C-0x08814274
 // @asm 0x08815050-0x08815328
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
    summary), the money paid out, the series score of a match and the continue / net wait dialogs. */
@@ -138,21 +137,22 @@ char *dmgr_res_files[8] = {
 };
 unsigned short dmgr_res_pt[4] = { 'D', 'P', 0, 0 };
 
+#ifndef NON_MATCHING /* no original é o modelo do vetor local div de dmgr_result_init */
 unsigned short dmgr_res_div[4] = { 0, 5, 6, 8 };
+#endif
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
+#ifdef NON_MATCHING /* 22 palavras: com div[4] local (modelo em dmgr_res_div), o total somado num laço, switch dos parceiros e if (partners == 0) primeiro, o fluxo e a pilha batem; falta partners/total (s1/s2 no original, trocados aqui; ordem das declarações e do for não muda) */
 void dmgr_result_init(void)
 {
     void *heap = dd_heap_get();
     DmgrResTab *t;
     DmgrResItem *it;
     SaveExtra *ex;
-    unsigned short *div = dmgr_res_div;
     int partners;
     int total;
     int pay;
-    int n;
     int i;
+    int n;
     int k;
 
     dmgr_res = heap_alloc(heap, sizeof *dmgr_res);
@@ -170,26 +170,23 @@ void dmgr_result_init(void)
     dmgr_res->rec = (DmgrResRec *)((char *)game_state2_get() + 0x3C);
     t = &dmgr_res->tabs[1];
     n = 0;
-    it = (DmgrResItem *)dmgr_res_bonus_text;
-    for (i = 0, k = 0; i < 0x53; i++, it++) {
-        if (it->on && dmgr_res->rec->bonus[i] != 0) {
+    for (i = 0, k = 0; i < 0x53; i++) {
+        if (((DmgrResItem *)dmgr_res_bonus_text)[i].on && dmgr_res->rec->bonus[i] != 0) {
             n++;
             dmgr_res->total[0] += dmgr_res->rec->bonus[i];
             t->ids[k++] = i;
         }
     }
     t->count = n;
-    it = (DmgrResItem *)dmgr_res_rec_text;
-    for (i = 0; i < 0x28; i++, it++) {
-        if (it->on && dmgr_res->rec->rec[i] != 0) {
+    for (i = 0; i < 0x28; i++) {
+        if (((DmgrResItem *)dmgr_res_rec_text)[i].on && dmgr_res->rec->rec[i] != 0) {
             dmgr_res->total[1] += 20;
         }
     }
     t = &dmgr_res->tabs[3];
     n = 0;
-    it = (DmgrResItem *)dmgr_res_title_text;
-    for (i = 0, k = 0; i < 0x76; i++, it++) {
-        if (it->on && dmgr_res->rec->title[i] == 1) {
+    for (i = 0, k = 0; i < 0x76; i++) {
+        if (((DmgrResItem *)dmgr_res_title_text)[i].on && dmgr_res->rec->title[i] == 1) {
             n++;
             dmgr_res->total[2] += 30;
             t->ids[k++] = i;
@@ -199,14 +196,22 @@ void dmgr_result_init(void)
     partners = 0;
     for (i = 0; i < partner_count_get(); i++) {
         k = ((DmgrGameHdr *)game_state_get())->extra[i];
-        if (k == 3 || k == 1) {
+        switch (k) {
+        case 1:
+        case 3:
             partners++;
         }
     }
+    {
+    unsigned short div[4] = { 0, 5, 6, 8 };
     ex = sysstate2_get_ptr_51c();
-    total = dmgr_res->total[0] + dmgr_res->total[1] + dmgr_res->total[2] + dmgr_res->total[3];
-    pay = total;
-    if (partners != 0) {
+    total = 0;
+    for (i = 0; i < 4; i++) {
+        total += dmgr_res->total[i];
+    }
+    if (partners == 0) {
+        pay = total;
+    } else {
         pay = total * 4 / div[partners];
     }
     if (total < 0) {
@@ -215,8 +220,9 @@ void dmgr_result_init(void)
     if (*(int *)&ex->unk0[8] < pay) {
         total += 20;
         dmgr_res->total[1] += 20;
-        pay = total;
-        if (partners != 0) {
+        if (partners == 0) {
+            pay = total;
+        } else {
             pay = total * 4 / div[partners];
         }
         dmgr_res->rec->rec[2] = pay;
@@ -250,6 +256,7 @@ void dmgr_result_init(void)
         net_set_watch(0);
         dmgr_res_send(1, 0);
         dmgr_res->net = 1;
+    }
     }
 }
 #endif
@@ -1606,17 +1613,14 @@ unsigned int *dmgr_res_title_row(unsigned int *list, int x, int y, int i)
     return list;
 }
 
-#ifdef NON_MATCHING /* 130 palavras: r/mine são unsigned short (lhu, andi do 2); o original testa r == 2 com beq e põe mine = r no atraso (switch, ordens dos case e das declarações não mudam) e aloca i/x/i*2 em s4/s1/s2 */
 unsigned int *dmgr_res_draw_series(unsigned int *list)
 {
     void *g;
-    int side = 0;
+    unsigned short side = 0;
     unsigned int other;
-    unsigned short r;
     unsigned short mine;
-
     int i;
-    int x;
+    unsigned short r;
 
     g = dmgr_res_file(5);
     if (g == 0) {
@@ -1672,21 +1676,22 @@ unsigned int *dmgr_res_draw_series(unsigned int *list)
                                     ((DmgrGameHdr *)game_state_get())->slot[(side + 1) & 1].name);
         list = dmgr_res_series_name(list, 0x57, 0x98, 0, ((DmgrGameHdr *)game_state_get())->slot[side].name);
     }
-    for (i = 0, x = 0xDC; i < 3; i++, x += 0x3B) {
+    for (i = 0; i < 3; i++) {
         r = ((DuelResults *)game_state2_get())->duels[i];
-        if (r == 2) {
-            mine = 1;
-        } else if (r == 1) {
+        mine = r;
+        switch (r) {
+        case 1:
             mine = 2;
-        } else {
-            mine = r;
+            break;
+        case 2:
+            mine = 1;
+            break;
         }
-        list = dmgr_res_series_mark(list, x, 0x5F, mine);
-        list = dmgr_res_series_mark(list, x, 0x8E, r);
+        list = dmgr_res_series_mark(list, 0xDC + i * 0x3B, 0x5F, mine);
+        list = dmgr_res_series_mark(list, 0xDC + i * 0x3B, 0x8E, r);
     }
     return list;
 }
-#endif
 
 unsigned int *dmgr_res_page_frame(unsigned int *list, int x, int u, int v)
 {

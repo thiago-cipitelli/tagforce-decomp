@@ -66,6 +66,11 @@ void dmgr_jk_bg_anim(unsigned short mode);
 void dmgr_jk_title_anim(unsigned short mode);
 int dmgr_jk_anim_done(unsigned short i);
 void dmgr_jk_cards_reset(void);
+/* static no original: dmgr_jk_pick e dmgr_jk_reveal guardam valores em t4-t7 através da chamada (o mwcc só
+   usa o uso de registradores do chamado quando ele é static); fica global no build enquanto dmgr_jk_pick está em asm */
+#ifdef NON_MATCHING
+static
+#endif
 int dmgr_jk_cards_move(unsigned short n, unsigned short side);
 void dmgr_jk_cards_hover(void);
 void dmgr_jk_pick(void);
@@ -588,6 +593,9 @@ void dmgr_jk_cards_reset(void)
     }
 }
 
+#ifdef NON_MATCHING
+static
+#endif
 int dmgr_jk_cards_move(unsigned short n, unsigned short side)
 {
     DmgrJkCard *c;
@@ -640,7 +648,7 @@ void dmgr_jk_cards_hover(void)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm. 184 palavras: o original guarda as variáveis do laço final (n, n*2, n*78) em t4-t6 através da chamada a dmgr_jk_cards_move (o mwcc só faz isso com o chamado static: 177 palavras, mas dmgr_jk_reveal, em asm, também a chama); nas cópias do case 1 do laço final o original relê dmgr_jk em card[n][1] e card[n][2] (card[n][0] usa a base da troca) e grava cursor_on com uma variável que vale 0 (andi zero,1: cursor_on = n?) */
+#ifdef NON_MATCHING /* lógica conferida com o asm. 25 palavras (com dmgr_jk_cards_move static, ver o protótipo): no case 2 o original carrega peer[2] em v1 e o 1 em a2 (aqui v0/a1), como se peer continuasse vivo; nomes, ordem das declarações e forma do if não mudam. Bater esta libera dmgr_jk_reveal (0 palavras) e o static */
 void dmgr_jk_pick(void)
 {
     PadState *pad = pad_get();
@@ -823,32 +831,37 @@ void dmgr_jk_pick(void)
         switch (dmgr_jk->anim[n]) {
         case 1:
             a = &dmgr_jk->card[n][dmgr_jk->pick[n]];
-            b = &dmgr_jk->card[n][2];
             tmp = *a;
+            b = &dmgr_jk->card[n][2];
             *a = *b;
             *b = tmp;
-            b = dmgr_jk->card[n];
             if (n == 0) {
-                b[0].from = b[0].cur;
-                b[0].to.x = 0xF0;
-                b[0].to.y = 0xD2;
-                b[1].from = b[1].cur;
-                b[1].to.x = 0xF0;
-                b[1].to.y = 0xD2;
-                b[2].from = b[2].cur;
-                b[2].to.x = 0xF0;
-                b[2].to.y = 0xD2;
+                b = &dmgr_jk->card[n][0];
+                b->from = b->cur;
+                b->to.x = 0xF0;
+                b->to.y = 0xD2;
+                b = &dmgr_jk->card[n][1];
+                b->from = b->cur;
+                b->to.x = 0xF0;
+                b->to.y = 0xD2;
+                b = &dmgr_jk->card[n][2];
+                b->from = b->cur;
+                b->to.x = 0xF0;
+                b->to.y = 0xD2;
                 dmgr_jk->cursor_on = 0;
             } else {
-                b[0].from = b[0].cur;
-                b[0].to.x = 0xF0;
-                b[0].to.y = 0x40;
-                b[1].from = b[1].cur;
-                b[1].to.x = 0xF0;
-                b[1].to.y = 0x40;
-                b[2].from = b[2].cur;
-                b[2].to.x = 0xF0;
-                b[2].to.y = 0x40;
+                b = &dmgr_jk->card[n][0];
+                b->from = b->cur;
+                b->to.x = 0xF0;
+                b->to.y = 0x40;
+                b = &dmgr_jk->card[n][1];
+                b->from = b->cur;
+                b->to.x = 0xF0;
+                b->to.y = 0x40;
+                b = &dmgr_jk->card[n][2];
+                b->from = b->cur;
+                b->to.x = 0xF0;
+                b->to.y = 0x40;
             }
             dmgr_jk->anim[n]++;
             dmgr_jk->t[n] = 0;
@@ -864,30 +877,34 @@ void dmgr_jk_pick(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* função grande: o original relê dmgr_jk a cada cópia de retângulo */
+#ifdef NON_MATCHING /* 0 palavras com dmgr_jk_cards_move static (ponteiros a/b recalculados de dmgr_jk em cada grupo de cópias, if/else-if no case 3, sysvar != 0 primeiro no case 4); fica em asm até dmgr_jk_pick bater, porque o static quebra a chamada do asm */
 void dmgr_jk_reveal(void)
 {
-    DmgrJkCard *a = &dmgr_jk->card[0][2];
-    DmgrJkCard *b = &dmgr_jk->card[1][2];
+    DmgrJkCard *a;
+    DmgrJkCard *b;
     int i;
     int k;
 
     switch (dmgr_jk->sub) {
     case 0:
         if (dmgr_jk->result == 3) {
+            a = &dmgr_jk->card[0][2];
             a->from = a->cur;
             a->to = a->cur;
             a->to.x = -0x50;
+            b = &dmgr_jk->card[1][2];
             b->from = b->cur;
             b->to = b->cur;
             b->to.x = 0x230;
             dmgr_jk->sub = 4;
         } else {
+            a = &dmgr_jk->card[0][2];
             a->from = a->cur;
             a->to = a->cur;
             if (dmgr_jk->result == 1) {
                 a->to.x = 200;
             }
+            b = &dmgr_jk->card[1][2];
             b->from = b->cur;
             b->to = b->cur;
             if (dmgr_jk->result == 2) {
@@ -902,11 +919,13 @@ void dmgr_jk_reveal(void)
         i = dmgr_jk_cards_move(2, 0);
         k = dmgr_jk_cards_move(2, 1);
         if (i != 0 && k != 0) {
+            a = &dmgr_jk->card[0][2];
             a->from = a->cur;
             a->to = a->cur;
             if (dmgr_jk->result == 1) {
                 a->to.x = 0x8C;
             }
+            b = &dmgr_jk->card[1][2];
             b->from = b->cur;
             b->to = b->cur;
             if (dmgr_jk->result == 2) {
@@ -921,11 +940,13 @@ void dmgr_jk_reveal(void)
         i = dmgr_jk_cards_move(4, 0);
         k = dmgr_jk_cards_move(4, 1);
         if (i != 0 && k != 0) {
+            a = &dmgr_jk->card[0][2];
             a->from = a->cur;
             a->to = a->cur;
             if (dmgr_jk->result == 1) {
                 a->to.x = 0xD2;
             }
+            b = &dmgr_jk->card[1][2];
             b->from = b->cur;
             b->to = b->cur;
             if (dmgr_jk->result == 2) {
@@ -940,23 +961,24 @@ void dmgr_jk_reveal(void)
         i = dmgr_jk_cards_move(2, 0);
         k = dmgr_jk_cards_move(2, 1);
         if (i != 0 && k != 0) {
-            switch (dmgr_jk->result) {
-            case 1:
+            if (dmgr_jk->result == 1) {
+                a = &dmgr_jk->card[0][2];
                 a->from = a->cur;
                 a->to = a->cur;
                 a->to.x = 0xF0;
+                b = &dmgr_jk->card[1][2];
                 b->from = b->cur;
                 b->to = b->cur;
                 b->to.x = 0x230;
-                break;
-            case 2:
+            } else if (dmgr_jk->result == 2) {
+                b = &dmgr_jk->card[1][2];
                 b->from = b->cur;
                 b->to = b->cur;
                 b->to.x = 0xF0;
+                a = &dmgr_jk->card[0][2];
                 a->from = a->cur;
                 a->to = a->cur;
                 a->to.x = -0x50;
-                break;
             }
             se_play(0x628B);
             dmgr_jk->sub++;
@@ -970,11 +992,11 @@ void dmgr_jk_reveal(void)
         if (i != 0 && k != 0) {
             if (dmgr_jk->result == 3) {
                 dmgr_jk_cards_reset();
-                if (sysvar_get_a98() == 0) {
-                    dmgr_jk->state = 5;
-                } else {
+                if (sysvar_get_a98() != 0) {
                     dmgr_jk_send(3, 1, 0, 0, 0);
                     dmgr_jk->state = 3;
+                } else {
+                    dmgr_jk->state = 5;
                 }
                 dmgr_jk->result = 0;
                 dmgr_jk->sub = 0;
