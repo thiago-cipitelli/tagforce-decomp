@@ -355,6 +355,31 @@ Seis das funções de 2-4 KB de efeitos do libduel_draw bateram com as mesmas re
    (`for (j = 0; j < 1; j++) b = &w->beam[j];`) que iça `buf * 1224` para antes do teste, teste `!(f & 1) != 1`
    (`sltu/xori/beq 1`), `x % 16` em vez de `& 0xF` (`bgez`+`beqzl`), `if (on == 1)` com o `li v0,1` no delay slot.
 
+## Ordem de criação das variáveis decide os `$s` (pesquisa da rodada 8, `dd_fx32.c`)
+
+O "par trocado" de laço (`s3`/`s4` entre o ponteiro da partícula e o contador do laço interno, `dd_fx32_s0/s2/s3/s5`)
+não é ordem de instrução: é a ordem em que o mwcc cria os registradores virtuais. Regra observada:
+- locais da função são criados primeiro, na ordem da declaração; num conflito, o criado antes fica com o `$s` mais
+  alto (`s4` antes de `s3`); vale também para float (`float z; float tv;` trocou `f8`/`f9` em `dd_fx32_s6`);
+- local declarado num bloco é criado na entrada do bloco, depois dos da função: fica com o `$s` mais baixo;
+- ponteiros de indução da redução de força são criados por último (`s0`/`s1`/`s2`).
+
+Receita (bateu `dd_fx32_s0`, `s2`, `s4`, `s5`, `s6`, `s7`, `s8`):
+1. Contador do laço interno declarado no bloco do laço externo: `for (j3 ...) { int jd; sp = &d->spin[j3]; ... }`.
+2. Ponteiro do laço de desenho que é o mesmo do laço de criação (`b`, `bl`, `sp`): variável própria (`b_0`) declarada
+   depois das outras (ou logo depois de um `int` do fim da lista), e o contador interno no bloco.
+3. Um contador que tem de ficar *acima* dos outros: variável nova declarada **antes** de todas (`int col;` em
+   `dd_fx32_s0`, laço 64x32); o acumulador que tem de ficar abaixo, no bloco (`{ int x; ... }`).
+4. Valor de linha içado para fora do laço interno num `$s` (`trunc` de `i / 15.0f * 272.0f`): `int gy` calculado no
+   laço externo (`gy = i / 15.0f * 272.0f;` e `... = gy + roundf_vfpu(...)`), não `(int)(...)` dentro do interno.
+5. Busca automática: renomear o contador de cada `for` para uma variável nova declarada no topo da função, no fim das
+   declarações ou no início do bloco que contém o laço, e manter a que reduz as palavras (descida gulosa; script
+   `build/tmp/fx32/loops.py` da worktree `fx32`, não versionado). Achou 74 → 18 em `dd_fx32_s5`, 71 → 3 em `dd_fx32_s4` e 107 → 21 em `dd_fx32_s1`.
+6. O mesmo vale para float: um valor usado em dois laços diferentes (`rad` no tubo e nas faíscas de `dd_fx32_s1`) pega
+   `f20`/`f21` trocados; uma variável própria por uso (`float rd;`) desfaz a troca.
+Os 9 `dd_fx32_s*_update` são variações do mesmo molde (tubo, faíscas, grade): a forma que bate num serve de modelo
+para os outros (tubo de `s2` em `s1/s4/s5/s8`, grade de `s5` em `s4`, lâminas de `s0` em `s7`, `out = 1.0f - lin`).
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
 - **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`) e
