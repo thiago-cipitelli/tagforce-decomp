@@ -1,12 +1,11 @@
 // @range 0x0880F9C0-0x08815888
 // @data 0x0881B9B0-0x0881BC88
+// @rodata 0x0881A124-0x0881A14C
 // @asm 0x0880F9C0-0x0880FEAC
 // @asm 0x0880FEAC-0x08810750
-// @asm 0x08810C2C-0x08810DCC
 // @asm 0x08810DCC-0x088111DC
 // @asm 0x088119B4-0x08811BC4
 // @asm 0x08811C98-0x08812124
-// @asm 0x08812124-0x088122B4
 // @asm 0x088122B4-0x08812A98
 // @asm 0x08812A98-0x08812D74
 // @asm 0x08813C0C-0x08814274
@@ -653,7 +652,6 @@ int dmgr_res_result_done(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm. 68 palavras: o original tem corpo próprio para o case 0 (move v0,zero; b) antes do case 2 e o return 1 do case 2 sai com nop no atraso; o mwcc junta os retornos 0 no fim */
 unsigned short dmgr_res_series(void)
 {
     int n;
@@ -665,7 +663,6 @@ unsigned short dmgr_res_series(void)
     }
     switch (((DuelResults *)game_state2_get())->n_duels) {
     case 0:
-        break;
     case 1:
         return 0;
     case 2:
@@ -695,7 +692,6 @@ unsigned short dmgr_res_series(void)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 void dmgr_res_input(void)
@@ -1161,7 +1157,6 @@ unsigned int *dmgr_res_draw_footer(unsigned int *list)
 }
 #endif
 
-#ifdef NON_MATCHING /* bate com -DNON_MATCHING; fica em asm só pela jtbl_0881A124, que vem depois das de dmgr_result_update e dmgr_res_draw_footer, em asm */
 unsigned int *dmgr_res_draw_page(unsigned int *list)
 {
     int x;
@@ -1197,22 +1192,21 @@ unsigned int *dmgr_res_draw_page(unsigned int *list)
     }
     return list;
 }
-#endif
 
 short dmgr_res_bob[4] = { 0, 1, 2, 1 };
 typedef struct DmgrBob { unsigned short v[4]; } DmgrBob;
 
-#ifdef NON_MATCHING /* 64 palavras: com bob copiado do template (DmgrBob), os x das setas em (unsigned short) e dmgr_res num local no laço dos totais, a pilha e o fluxo batem; falta a alocação de $s (list/x/x + 0x3E em s1/s0/s5 no original, s0/s5/s0 aqui) */
+#ifdef NON_MATCHING /* 7 palavras: com as posições relativas a l = x + 0x3E (o original soma l + 347, não x + 0x199) e um q próprio no laço dos totais, só o par de temporários r/q sai trocado (a0/v1 no original, v1/a0 aqui; ordem das declarações, do for e do if não muda) */
 unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
 {
     void *g;
     DmgrBob bob;
     int idx[4];
-    int *p;
-    int sum;
     int i;
-    int y;
     int l;
+    int sum;
+    int *p;
+    int y;
 
     g = dmgr_res_file(5);
     if (g == 0) {
@@ -1224,35 +1218,35 @@ unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
     l = x + 0x3E;
     list = draw_set_offsets(list, 10, 0x14, 10, 0x14);
     list = draw_sprite(list, l, 0x4A, 0, 0, 0, 0, 0);
-    list = draw_sprite(list, x + 0x199, 0x4A, 0, 0xD, 0, 0, 0);
+    list = draw_sprite(list, l + 0x15b, 0x4A, 0, 0xD, 0, 0, 0);
     list = draw_set_offsets(list, 1, 0x14, 0x106, 0x14);
-    list = draw_sprite(list, x + 0x48, 0x4A, 0, 10, 0, 0, 0);
+    list = draw_sprite(list, l + 0xa, 0x4A, 0, 10, 0, 0, 0);
     list = draw_set_offsets(list, 3, 0x14, 3, 0x14);
-    list = draw_sprite(list, x + 0x14E, 0x4A, 0, 0xF, 0, 0, 0);
-    list = draw_sprite(list, x + 0x151, 0x4A, 0, 0x11, 0, 1, 0);
+    list = draw_sprite(list, l + 0x110, 0x4A, 0, 0xF, 0, 0, 0);
+    list = draw_sprite(list, l + 0x113, 0x4A, 0, 0x11, 0, 1, 0);
     list = draw_set_offsets(list, 1, 0x14, 0x45, 0x14);
-    list = draw_sprite(list, x + 0x154, 0x4A, 0, 10, 0, 0, 0);
+    list = draw_sprite(list, l + 0x116, 0x4A, 0, 10, 0, 0, 0);
     list = draw_set_offsets(list, 10, 0x1B, 10, 0x1B);
     list = draw_sprite(list, l, 0xA9, 0, 0, 0x14, 0, 0);
-    list = draw_sprite(list, x + 0x199, 0xA9, 0, 0xD, 0x14, 0, 0);
+    list = draw_sprite(list, l + 0x15b, 0xA9, 0, 0xD, 0x14, 0, 0);
     list = draw_set_offsets(list, 1, 0x1B, 0x151, 0x1B);
-    list = draw_sprite(list, x + 0x48, 0xA9, 0, 10, 0x14, 0, 0);
+    list = draw_sprite(list, l + 0xa, 0xA9, 0, 10, 0x14, 0, 0);
     list = draw_set_offsets(list, 6, 1, 6, 0x4B);
     list = draw_sprite(list, l, 0x5E, 0, 0, 0x14, 0, 0);
-    list = draw_sprite(list, x + 0x19D, 0x5E, 0, 0x11, 0x14, 0, 0);
+    list = draw_sprite(list, l + 0x15f, 0x5E, 0, 0x11, 0x14, 0, 0);
     list = draw_set_offsets(list, 2, 2, 2, 2);
-    list = draw_sprite(list, x + 0x42, 0x5D, 0, 0x17, 0x10, 0, 0);
-    list = draw_sprite(list, x + 0x19C, 0x5D, 0, 0x21, 0x10, 0, 0);
-    list = draw_sprite(list, x + 0x42, 0xA8, 0, 0x17, 0x1A, 0, 0);
-    list = draw_sprite(list, x + 0x19C, 0xA8, 0, 0x21, 0x1A, 0, 0);
+    list = draw_sprite(list, l + 4, 0x5D, 0, 0x17, 0x10, 0, 0);
+    list = draw_sprite(list, l + 0x15e, 0x5D, 0, 0x21, 0x10, 0, 0);
+    list = draw_sprite(list, l + 4, 0xA8, 0, 0x17, 0x1A, 0, 0);
+    list = draw_sprite(list, l + 0x15e, 0xA8, 0, 0x21, 0x1A, 0, 0);
     list = draw_set_offsets(list, 1, 2, 0x158, 2);
-    list = draw_sprite(list, x + 0x44, 0x5D, 0, 0x19, 0x10, 0, 0);
-    list = draw_sprite(list, x + 0x44, 0xA8, 0, 0x19, 0x10, 0, 0);
+    list = draw_sprite(list, l + 6, 0x5D, 0, 0x19, 0x10, 0, 0);
+    list = draw_sprite(list, l + 6, 0xA8, 0, 0x19, 0x10, 0, 0);
     list = draw_set_offsets(list, 2, 1, 2, 0x49);
-    list = draw_sprite(list, x + 0x42, 0x5F, 0, 0x17, 0x12, 0, 0);
-    list = draw_sprite(list, x + 0x19C, 0x5F, 0, 0x17, 0x12, 0, 0);
+    list = draw_sprite(list, l + 4, 0x5F, 0, 0x17, 0x12, 0, 0);
+    list = draw_sprite(list, l + 0x15e, 0x5F, 0, 0x17, 0x12, 0, 0);
     list = draw_set_offsets(list, 1, 1, 0x158, 0x49);
-    list = draw_sprite(list, x + 0x44, 0x5F, 0, 0x19, 0x12, 0, 0);
+    list = draw_sprite(list, l + 6, 0x5F, 0, 0x19, 0x12, 0, 0);
     if (x == 0) {
         bob = *(DmgrBob *)dmgr_res_bob;
 
@@ -1265,38 +1259,39 @@ unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
     sum = 0;
     memset(idx, -1, sizeof idx);
     {
+        int *q;
         DmgrRes *r = dmgr_res;
-        for (i = 0, p = idx; i < 4; i++) {
+        for (i = 0, q = idx; i < 4; i++) {
             if (r->total[i] != 0) {
-                *p++ = i;
+                *q++ = i;
                 sum += r->total[i];
             }
         }
     }
     for (i = 0, p = idx, y = 0x5F; i < 4; i++, p++, y += 0x13) {
-        list = dmgr_res_summary_row(list, x + 0x44, y, *p);
+        list = dmgr_res_summary_row(list, l + 6, y, *p);
     }
     list = gim_set_texture(list, g);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
     list = draw_set_offsets(list, 1, 0x10, 1, 0x10);
-    list = draw_sprite(list, x + 0x153, 0xB0, 0, 0x1A, 0, 0, 0);
-    list = draw_sprite(list, x + 0x19B, 0xB0, 0, 0x1C, 0, 0, 0);
+    list = draw_sprite(list, l + 0x115, 0xB0, 0, 0x1A, 0, 0, 0);
+    list = draw_sprite(list, l + 0x15d, 0xB0, 0, 0x1C, 0, 0, 0);
     list = draw_set_offsets(list, 1, 0x10, 0x47, 0x10);
-    list = draw_sprite(list, x + 0x154, 0xB0, 0, 0x1B, 0, 0, 0);
+    list = draw_sprite(list, l + 0x116, 0xB0, 0, 0x1B, 0, 0, 0);
     font_text_set(list);
     font_set_size(0xE, 0xE);
     font_set_color(0xFFFFFFFF);
-    font_draw_wtext((x + 0x47) * 0x40, 0x1340, 0x41C0, table_get_entry(dmgr_res_file(7), 2));
-    font_draw_wtext((x + 0x155) * 0x40, 0x1340, 0x11C0, table_get_entry(dmgr_res_file(7), 3));
-    font_draw_wtext((x + 0x44) * 0x40, 0x2C40, 0x41C0, table_get_entry(dmgr_res_file(7), 8));
+    font_draw_wtext((l + 9) * 0x40, 0x1340, 0x41C0, table_get_entry(dmgr_res_file(7), 2));
+    font_draw_wtext((l + 0x117) * 0x40, 0x1340, 0x11C0, table_get_entry(dmgr_res_file(7), 3));
+    font_draw_wtext((l + 6) * 0x40, 0x2C40, 0x41C0, table_get_entry(dmgr_res_file(7), 8));
     font_set_color(0xFF00FFFF);
     font_set_size(0xC, 0xC);
-    font_draw_text((x + 0x189) * 0x40, 0x2D00, (0x1E0 - (x + 0x189)) * 0x40, dmgr_res_pt);
+    font_draw_text((l + 0x14b) * 0x40, 0x2D00, (0x1E0 - (l + 0x14b)) * 0x40, dmgr_res_pt);
     list = font_text_clear();
     font_set_size(0xE, 0xF);
     font_set_color(0xFFFFFFFF);
-    return dmgr_res_draw_number(list, (short)(x + 0x188), 0xB1, sum, 10, 5, 0);
+    return dmgr_res_draw_number(list, (short)(l + 0x14a), 0xB1, sum, 10, 5, 0);
 }
 #endif
 

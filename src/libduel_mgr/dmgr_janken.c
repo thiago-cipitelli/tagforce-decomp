@@ -1,12 +1,8 @@
 // @range 0x08808A20-0x0880C8E8
-// @asm 0x08808DA0-0x088095D8
-// @asm 0x08809A04-0x08809BB4
-// @asm 0x08809E74-0x0880A054
 // @asm 0x0880A2B8-0x0880ADA8
 // @asm 0x0880ADA8-0x0880B58C
-// @asm 0x0880BC54-0x0880BEA4
 // @data 0x0881A6F8-0x0881A774
-// @rodata 0x08819F6C-0x08819FC4
+// @rodata 0x08819F34-0x08819FC4
 /* Start menu of a duel: rock-paper-scissors (janken) for the first turn, local or over ad hoc,
    then "go first / go second", the partner selection and the hand-over to the duel. */
 #include "libduel_mgr.h"
@@ -158,7 +154,6 @@ void dmgr_menu_init(void *pack, void *heap)
     }
 }
 
-#ifdef NON_MATCHING /* 194 palavras (325 antes do mode = c ? 9 : 8): o mwcc reordena os acessos a dmgr_jk e os blocos dos estados; forma geral igual */
 int dmgr_menu_update(void)
 {
     PlayerSlot *s;
@@ -174,7 +169,10 @@ int dmgr_menu_update(void)
     case 1:
         if (fade_is_done() != 0) {
             if (dmgr_jk->first == 2) {
-                mode = ((DmgrGameHdr *)game_state_get())->partner_mode == 2 ? 9 : 8;
+                mode = 8;
+                if (((DmgrGameHdr *)game_state_get())->partner_mode == 2) {
+                    mode = 9;
+                }
                 dmgr_partner_init(dmgr_jk->heap, dmgr_jk->pack, mode);
                 dmgr_jk->state = 11;
             } else {
@@ -225,8 +223,11 @@ int dmgr_menu_update(void)
             if (netsync_transfer() != 0) {
                 for (i = 0, off = 0; i < 4; i++, off += 0x188) {
                     s = (PlayerSlot *)((char *)game_state_get() + off + 0x120);
-                    if (s->type < 2) {
-                        memcpy(SLOT_RECIPE(s), dmgr_jk->netbuf + s->net_id * 0x180, 0x108);
+                    {
+                        unsigned char *src = dmgr_jk->netbuf + s->net_id * 0x180;
+                        if (s->type < 2) {
+                            memcpy(SLOT_RECIPE(s), src, 0x108);
+                        }
                     }
                 }
                 if (dmgr_jk->netbuf != 0) {
@@ -303,18 +304,18 @@ int dmgr_menu_update(void)
             bgm_cmd(600);
             dmgr_jk->state = 12;
         }
-        if (dmgr_jk->choice != 0) {
-            return 2;
+        if (dmgr_jk->choice == 0) {
+            return 1;
         }
-        return 1;
+        return 2;
     case 12:
         if (fade_is_done() != 0) {
             dmgr_jk->state = 13;
         }
-        if (dmgr_jk->choice != 0) {
-            return 2;
+        if (dmgr_jk->choice == 0) {
+            return 1;
         }
-        return 1;
+        return 2;
     case 13:
         dmgr_partner_free();
         dmgr_jk_free();
@@ -322,7 +323,6 @@ int dmgr_menu_update(void)
     }
     return 0;
 }
-#endif
 
 void dmgr_menu_draw(void)
 {
@@ -430,12 +430,12 @@ int dmgr_partner_sync(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* o original reaproveita o mesmo registrador para os dois bits gravados com 1 no caso 1 */
 void dmgr_jk_bg_anim(unsigned short mode)
 {
     void *e;
     int from = 0;
     int to = 0;
+    int on;
 
     e = dmgr_jk_file(2);
     if (e == 0) {
@@ -443,32 +443,37 @@ void dmgr_jk_bg_anim(unsigned short mode)
     }
     switch (mode) {
     case 0:
-        dmgr_jk->bg_on = 1;
+        on = 1;
+        dmgr_jk->bg_on = on;
         to = 0xC;
-        dmgr_jk->partner_on = 0;
+        on = 0;
+        dmgr_jk->partner_on = on;
         break;
     case 1:
-        dmgr_jk->bg_on = 1;
+        on = 1;
+        dmgr_jk->bg_on = on;
+        dmgr_jk->partner_on = on;
         from = 0xD;
         to = 0x27;
-        dmgr_jk->partner_on = 1;
         break;
     case 2:
-        dmgr_jk->bg_on = 1;
+        on = 1;
+        dmgr_jk->bg_on = on;
+        on = 0;
+        dmgr_jk->partner_on = on;
         from = 0x28;
         to = 0x2D;
-        dmgr_jk->partner_on = 0;
         break;
     case 3:
-        dmgr_jk->bg_on = 0;
+        on = 0;
+        dmgr_jk->bg_on = on;
+        dmgr_jk->partner_on = on;
         to = 0x2D;
         from = to;
-        dmgr_jk->partner_on = 0;
         break;
     }
     ehf_set_anim(e, from, to + 1);
 }
-#endif
 
 void dmgr_jk_title_anim(unsigned short mode)
 {
@@ -549,7 +554,6 @@ void *dmgr_jk_file(unsigned short i)
     return dmgr_jk->files[i];
 }
 
-#ifdef NON_MATCHING /* o original não reduz -45 * i no segundo laço e copia os retângulos com menos registradores */
 void dmgr_jk_cards_reset(void)
 {
     DmgrJkCard *c;
@@ -571,7 +575,7 @@ void dmgr_jk_cards_reset(void)
     dmgr_jk->pick[0] = 1;
     for (i = 0; i < 3; i++) {
         c = &dmgr_jk->card[1][i];
-        c->from.x = -0x14 - i * 45;
+        c->from.x = -i * 45 - 0x14;
         c->from.y = 0x40;
         c->from.w = 0x32;
         c->from.h = 0xB4;
@@ -583,7 +587,6 @@ void dmgr_jk_cards_reset(void)
         c->on = 1;
     }
 }
-#endif
 
 int dmgr_jk_cards_move(unsigned short n, unsigned short side)
 {
@@ -637,7 +640,7 @@ void dmgr_jk_cards_hover(void)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm. 185 palavras: o original guarda o resultado de dmgr_jk_cards_move e as variáveis do laço final em t4-t6 (o chamado não os usa); o mwcc usa s0-s2 e desloca o resto; anim[i] testado com bgtzl no case 3 */
+#ifdef NON_MATCHING /* lógica conferida com o asm. 184 palavras: o original guarda as variáveis do laço final (n, n*2, n*78) em t4-t6 através da chamada a dmgr_jk_cards_move (o mwcc só faz isso com o chamado static: 177 palavras, mas dmgr_jk_reveal, em asm, também a chama); nas cópias do case 1 do laço final o original relê dmgr_jk em card[n][1] e card[n][2] (card[n][0] usa a base da troca) e grava cursor_on com uma variável que vale 0 (andi zero,1: cursor_on = n?) */
 void dmgr_jk_pick(void)
 {
     PadState *pad = pad_get();
@@ -744,7 +747,7 @@ void dmgr_jk_pick(void)
                     peer = (signed char *)peer_get(k);
                     dmgr_jk->pick[j] = peer[4];
                 }
-                if (dmgr_jk->anim[i] == 0) {
+                if (dmgr_jk->anim[i] < 1) {
                     dmgr_jk->anim[i] = 1;
                 }
             }
@@ -1123,7 +1126,6 @@ input:
     }
 }
 
-#ifdef NON_MATCHING /* o caso 0 do original sai por "li v0,0; b fim; nop", que o mwcc funde no atraso */
 int dmgr_jk_done(void)
 {
     int mode;
@@ -1137,7 +1139,6 @@ int dmgr_jk_done(void)
             dmgr_jk_title_anim(dmgr_jk->choice + 4);
             dmgr_jk->timer = 0;
             dmgr_jk->sub++;
-            return 0;
         }
         return 0;
     case 1:
@@ -1154,8 +1155,8 @@ int dmgr_jk_done(void)
     case 2:
         if (dmgr_jk_anim_done(2) != 0) {
             dmgr_jk_bg_anim(3);
-            dmgr_jk->timer = 0;
             dmgr_jk->sub++;
+            dmgr_jk->timer = 0;
         }
         break;
     case 3:
@@ -1177,7 +1178,6 @@ int dmgr_jk_done(void)
     }
     return 2;
 }
-#endif
 
 void dmgr_jk_cpu_pick(void)
 {
