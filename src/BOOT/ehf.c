@@ -1,6 +1,5 @@
 // @range 0x0882FC3C-0x08833420
-// @asm 0x08831594-0x0883297C
-// @asm 0x08832E68-0x08833420
+// @asm 0x08831F5C-0x088325D0
 // @data 0x088ED960-0x088ED9A8
 /* EHF animation player (a Flash-like format: coordinates in twips, a timeline of place/remove
    commands, nested sprites, shapes and text). An instance holds a pool of 0x28-byte clips linked
@@ -9,6 +8,7 @@
    drawing shapes with stencil masking. */
 #include "psp.h"
 #include "libc.h"
+#include "allegrex.h"
 
 #define EHF_MAGIC 0x1A464845           /* "EHF\x1a" */
 /* A file or an instance: files resolve to their instance. */
@@ -203,7 +203,7 @@ void *dl_material(void *list, int mode, unsigned int color);
 EhfInst *ehf_resolve(EhfFile *f);
 int ehf_inst_reset(EhfInst *e, EhfFile *f, int keep);
 int ehf_clip_step(EhfInst *e, EhfClip *c);
-void ehf_track_eval(float *m, EhfColor *cx, int *ratio, EhfTrack *t, int start, int frame);
+static void ehf_track_eval(float *m, EhfColor *cx, int *ratio, EhfTrack *t, int start, int frame);
 void *ehf_draw_list(void *list, EhfInst *e, EhfClip *clip, float *mtx, EhfColor *color, EhfOpts *o);
 void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, float *mtx, EhfColor *color, EhfOpts *o);
 void *ehf_draw_text(void *list, EhfInst *e, EhfClip *c, unsigned int frame, float *mtx, EhfColor *color);
@@ -214,7 +214,7 @@ void ehf_clip_free(EhfClip *c);
 void mat4_scale2(float *m, float sx, float sy);
 void mat4_translate2(float *m, float x, float y);
 void mat4_rotate_z(float *m, int angle);
-float mat4_det(float *m);
+static float mat4_det(float *m);
 void mat4_inverse(float *out, float *m);
 int ehf_get_data_ptr(EhfFile *f);
 
@@ -896,20 +896,19 @@ void *ehf_draw_list(void *list, EhfInst *e, EhfClip *clip, float *mtx, EhfColor 
     return list;
 }
 
-#ifdef NON_MATCHING /* keyframe search layout and float scheduling differ */
 /* Base matrix and color of a track at `frame`, interpolated between the surrounding keys. */
-void ehf_track_eval(float *m, EhfColor *cx, int *ratio, EhfTrack *t, int start, int frame)
+static void ehf_track_eval(float *m, EhfColor *cx, int *ratio, EhfTrack *t, int start, int frame)
 {
     unsigned short f;
-    unsigned int size;
+    unsigned short size;
     unsigned char *lo;
     unsigned char *hi;
     unsigned char *k;
-    unsigned char *pa;
     unsigned char *pb;
+    unsigned char *kb;
     int n;
-    float w1;
     float w0;
+    float w1;
 
     m[0] = t->m[0];
     m[1] = t->m[1];
@@ -933,115 +932,116 @@ void ehf_track_eval(float *m, EhfColor *cx, int *ratio, EhfTrack *t, int start, 
         size = t->key_size;
         lo = t->keys;
         hi = lo + size * (t->nkeys - 1);
-        k = lo;
-        if (*(unsigned short *)lo < f && (k = hi, f < *(unsigned short *)hi)) {
-            n = hi - lo;
-            k = lo + size * ((n / (int)size) / 2);
-            while ((int)size < n) {
-                if (*(unsigned short *)k == f) {
-                    goto exact;
-                }
-                if (*(unsigned short *)k < f) {
-                    lo = k;
-                } else {
-                    hi = k;
-                }
-                n = hi - lo;
-                k = lo + size * ((n / (int)size) / 2);
-            }
-        } else {
+        if (!(*(unsigned short *)lo < f)) {
+            k = lo;
             goto exact;
         }
-        pa = k + 2;
-        pb = k + size + 2;
+        if (*(unsigned short *)hi <= f) {
+            k = hi;
+            goto exact;
+        }
+        n = hi - lo;
+        k = lo + size * ((n / (int)size) / 2);
+        while (n > (int)size) {
+            if (*(unsigned short *)k == f) {
+                goto exact;
+            }
+            if (*(unsigned short *)k < f) {
+                lo = k;
+            } else {
+                hi = k;
+            }
+            n = hi - lo;
+            k = lo + size * ((n / (int)size) / 2);
+        }
+        kb = k + size;
         w1 = ((float)f - (float)*(unsigned short *)k) /
-             ((float)*(unsigned short *)(k + size) - (float)*(unsigned short *)k);
+             ((float)*(unsigned short *)kb - (float)*(unsigned short *)k);
         w0 = 1.0f - w1;
+        k += 2;
+        pb = kb + 2;
         if (t->flags & 1) {
-            m[12] += w0 * (((short *)pa)[0] * t->pos_scale) + w1 * (((short *)pb)[0] * t->pos_scale);
-            m[13] += w0 * (((short *)pa)[1] * t->pos_scale) + w1 * (((short *)pb)[1] * t->pos_scale);
-            pa += 4;
+            m[12] += w0 * (((short *)k)[0] * t->pos_scale) + w1 * (((short *)pb)[0] * t->pos_scale);
+            m[13] += w0 * (((short *)k)[1] * t->pos_scale) + w1 * (((short *)pb)[1] * t->pos_scale);
+            k += 4;
             pb += 4;
         }
         if (t->flags & 2) {
-            m[0] += w0 * (((short *)pa)[0] * t->scale_scale) + w1 * (((short *)pb)[0] * t->scale_scale);
-            m[5] += w0 * (((short *)pa)[1] * t->scale_scale) + w1 * (((short *)pb)[1] * t->scale_scale);
-            pa += 4;
+            m[0] += w0 * (((short *)k)[0] * t->scale_scale) + w1 * (((short *)pb)[0] * t->scale_scale);
+            m[5] += w0 * (((short *)k)[1] * t->scale_scale) + w1 * (((short *)pb)[1] * t->scale_scale);
+            k += 4;
             pb += 4;
         }
         if (t->flags & 4) {
-            m[1] += w0 * (((short *)pa)[0] * t->rot_scale) + w1 * (((short *)pb)[0] * t->rot_scale);
-            m[4] += w0 * (((short *)pa)[1] * t->rot_scale) + w1 * (((short *)pb)[1] * t->rot_scale);
-            pa += 4;
+            m[1] += w0 * (((short *)k)[0] * t->rot_scale) + w1 * (((short *)pb)[0] * t->rot_scale);
+            m[4] += w0 * (((short *)k)[1] * t->rot_scale) + w1 * (((short *)pb)[1] * t->rot_scale);
+            k += 4;
             pb += 4;
         }
         if (t->flags & 8) {
-            cx->mul[0] = (signed char)pa[0] * 2.015748f * w0 + (signed char)pb[0] * 2.015748f * w1;
-            cx->mul[1] = (signed char)pa[1] * 2.015748f * w0 + (signed char)pb[1] * 2.015748f * w1;
-            cx->mul[2] = (signed char)pa[2] * 2.015748f * w0 + (signed char)pb[2] * 2.015748f * w1;
-            cx->mul[3] = (signed char)pa[3] * 2.015748f * w0 + (signed char)pb[3] * 2.015748f * w1;
-            pa += 4;
+            cx->mul[0] = (signed char)k[0] * 2.015748f * w0 + (signed char)pb[0] * 2.015748f * w1;
+            cx->mul[1] = (signed char)k[1] * 2.015748f * w0 + (signed char)pb[1] * 2.015748f * w1;
+            cx->mul[2] = (signed char)k[2] * 2.015748f * w0 + (signed char)pb[2] * 2.015748f * w1;
+            cx->mul[3] = (signed char)k[3] * 2.015748f * w0 + (signed char)pb[3] * 2.015748f * w1;
+            k += 4;
             pb += 4;
         }
         if (t->flags & 0x30) {
-            cx->add[0] = pa[0] * w0 + pb[0] * w1;
-            cx->add[1] = pa[1] * w0 + pb[1] * w1;
-            cx->add[2] = pa[2] * w0 + pb[2] * w1;
-            cx->add[3] = pa[3] * w0 + pb[3] * w1;
-            pa += 4;
+            cx->add[0] = k[0] * w0 + pb[0] * w1;
+            cx->add[1] = k[1] * w0 + pb[1] * w1;
+            cx->add[2] = k[2] * w0 + pb[2] * w1;
+            cx->add[3] = k[3] * w0 + pb[3] * w1;
+            k += 4;
             pb += 4;
         }
         if (t->flags & 0x40) {
             if (ratio != 0) {
-                *ratio = *(unsigned short *)pa * w0 + *(unsigned short *)pb * w1;
+                *ratio = *(unsigned short *)k * w0 + *(unsigned short *)pb * w1;
             }
         } else if (ratio != 0) {
             *ratio = -1;
         }
         return;
     exact:
-        pa = k + 2;
+        k += 2;
         if (t->flags & 1) {
-            m[12] += ((short *)pa)[0] * t->pos_scale;
-            m[13] += ((short *)pa)[1] * t->pos_scale;
-            pa += 4;
+            m[12] += ((short *)k)[0] * t->pos_scale;
+            m[13] += ((short *)k)[1] * t->pos_scale;
+            k += 4;
         }
         if (t->flags & 2) {
-            m[0] += ((short *)pa)[0] * t->scale_scale;
-            m[5] += ((short *)pa)[1] * t->scale_scale;
-            pa += 4;
+            m[0] += ((short *)k)[0] * t->scale_scale;
+            m[5] += ((short *)k)[1] * t->scale_scale;
+            k += 4;
         }
         if (t->flags & 4) {
-            m[1] += ((short *)pa)[0] * t->rot_scale;
-            m[4] += ((short *)pa)[1] * t->rot_scale;
-            pa += 4;
+            m[1] += ((short *)k)[0] * t->rot_scale;
+            m[4] += ((short *)k)[1] * t->rot_scale;
+            k += 4;
         }
         if (t->flags & 8) {
-            cx->mul[0] = (signed char)pa[0] * 0x100 / 0x7F;
-            cx->mul[1] = (signed char)pa[1] * 0x100 / 0x7F;
-            cx->mul[2] = (signed char)pa[2] * 0x100 / 0x7F;
-            cx->mul[3] = (signed char)pa[3] * 0x100 / 0x7F;
-            pa += 4;
+            cx->mul[0] = (signed char)k[0] * 0x100 / 0x7F;
+            cx->mul[1] = (signed char)k[1] * 0x100 / 0x7F;
+            cx->mul[2] = (signed char)k[2] * 0x100 / 0x7F;
+            cx->mul[3] = (signed char)k[3] * 0x100 / 0x7F;
+            k += 4;
         }
         if (t->flags & 0x30) {
-            cx->add[0] = pa[0];
-            cx->add[1] = pa[1];
-            cx->add[2] = pa[2];
-            cx->add[3] = pa[3];
-            pa += 4;
+            cx->add[0] = k[0];
+            cx->add[1] = k[1];
+            cx->add[2] = k[2];
+            cx->add[3] = k[3];
+            k += 4;
         }
         if (t->flags & 0x40) {
             if (ratio != 0) {
-                *ratio = *(unsigned short *)pa;
+                *ratio = *(unsigned short *)k;
             }
         } else if (ratio != 0) {
             *ratio = -1;
         }
     }
 }
-#endif
-
-#define CLAMP255(v) do { if ((v) < 0) (v) = 0; if ((v) > 0xFF) (v) = 0xFF; } while (0)
 
 typedef struct EhfMesh {               /* 0x18 per mesh of a shape */
     unsigned int color;                /* +0x00 RGB, alpha in the low byte of the next word */
@@ -1052,19 +1052,23 @@ typedef struct EhfMesh {               /* 0x18 per mesh of a shape */
     unsigned int prim;                 /* +0x14 prim << 16 | count */
 } EhfMesh;
 
-#ifdef NON_MATCHING /* the original keeps values in caller-saved registers across ehf_track_eval */
-/* A shape: color transform as ambient light, matrix, optional morph between two vertex sets,
-   then each mesh with its texture, material color and lights. */
+#ifdef NON_MATCHING /* com ehf_track_eval static (o original mantém &ratio em a2 através da chamada) e a forma
+   abaixo (cores em locais, clamps com max/min, testes de textura na ordem do original): 61-64 palavras.
+   Falta: (1) a pilha do original tem 4 bytes livres entre m e lpos (m em sp+96, cx em sp+64); com
+   `float m[17]` a pilha bate, mas nenhum tipo natural deu isso (aligned(8/16), união com double e
+   typedef alinhado mandam m para o fundo); (2) o escalonamento dos max/min dos clamps (o original
+   faz o max de r depois dos min de g/a/b) e a associação das somas das cores. */
 void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, float *mtx, EhfColor *p, EhfOpts *o)
 {
-    EhfColor cx;
-    float m[16];
-    float lpos[3];
-    float zero[3];
-    EhfEval ev;
     int ratio;
-    int *shape = c->chr;
+    EhfEval ev;
+    float zero[3];
+    float lpos[3];
+    float m[16];
+    EhfColor cx;
+    int *shape;
     int r, g, b, a;
+    int ar, ag, ab, aa;
     EhfMesh *mh;
     EhfMesh *end;
     unsigned int cur;
@@ -1073,15 +1077,16 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     float w;
 
     ratio = -1;
+    shape = c->chr;
     ehf_track_eval(m, &cx, &ratio, c->track, c->start, frame);
     if (o->flags & 0x80) {
         ev.m = m;
         ev.cx = &cx;
+        ev.ratio = &ratio;
+        ev.parent = mtx;
         ev.track = c->track;
         ev.start = c->start;
         ev.fn = ehf_track_eval;
-        ev.parent = mtx;
-        ev.ratio = &ratio;
         ev.frame = frame;
         if (o->eval_cb(c->depth, o->eval_arg, &ev) == 0) {
             ehf_track_eval(m, &cx, &ratio, c->track, c->start, frame);
@@ -1090,39 +1095,27 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     b = EHF_DIV256(cx.mul[2] * p->mul[2]);
     g = EHF_DIV256(cx.mul[1] * p->mul[1]);
     a = EHF_DIV256(cx.mul[3] * p->mul[3]);
-    cx.add[2] += EHF_DIV256(cx.mul[2] * p->add[2]);
-    cx.add[1] += EHF_DIV256(cx.mul[1] * p->add[1]);
-    cx.add[0] += EHF_DIV256(cx.mul[0] * p->add[0]);
-    cx.add[3] += EHF_DIV256(cx.mul[3] * p->add[3]);
+    ab = cx.add[2] + EHF_DIV256(cx.mul[2] * p->add[2]);
+    ag = cx.add[1] + EHF_DIV256(cx.mul[1] * p->add[1]);
+    ar = cx.add[0] + EHF_DIV256(cx.mul[0] * p->add[0]);
+    aa = cx.add[3] + EHF_DIV256(cx.mul[3] * p->add[3]);
     r = EHF_DIV256(cx.mul[0] * p->mul[0]);
-    if (a < 0) {
-        a = 0;
-    }
-    if (b < 0) {
-        b = 0;
-    }
-    if (g < 0) {
-        g = 0;
-    }
-    if (g > 0xFF) {
-        g = 0xFF;
-    }
-    if (a > 0xFF) {
-        a = 0xFF;
-    }
-    if (b > 0xFF) {
-        b = 0xFF;
-    }
-    if (r < 0) {
-        r = 0;
-    }
-    if (r > 0xFF) {
-        r = 0xFF;
-    }
+    a = ALLEGREX_MAX(a, 0);
+    b = ALLEGREX_MAX(b, 0);
+    g = ALLEGREX_MAX(g, 0);
+    g = ALLEGREX_MIN(g, 0xFF);
+    a = ALLEGREX_MIN(a, 0xFF);
+    b = ALLEGREX_MIN(b, 0xFF);
+    r = ALLEGREX_MAX(r, 0);
+    r = ALLEGREX_MIN(r, 0xFF);
     cx.mul[0] = r;
     cx.mul[1] = g;
     cx.mul[2] = b;
     cx.mul[3] = a;
+    cx.add[0] = ar;
+    cx.add[1] = ag;
+    cx.add[2] = ab;
+    cx.add[3] = aa;
     list = dl_ambient_light(list, r + g * 0x100 + a * 0x1000000 + b * 0x10000);
     mat4_translate2(m, ((float *)shape)[1], ((float *)shape)[2]);
     mat4_scale2(m, ((float *)shape)[3], ((float *)shape)[3]);
@@ -1142,34 +1135,36 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     mh = (EhfMesh *)((char *)shape + shape[4]);
     end = (EhfMesh *)((char *)mh + shape[5]);
     for (; mh < end; mh++) {
-        if (mh->tex == 0) {
+        if (mh->tex != 0) {
+            if (cur != (mh->tex & 0xFFFF)) {
+                list = dl_enable(list, 9);
+                cur = (unsigned short)mh->tex;
+                tex = (EhfTex *)((char *)e->file + e->hdr->tex + cur);
+                list = dl_tex_func(list, 0, 1);
+                if (o->tex_cb == 0) {
+                    list = gim_set_texture(list, tex->gim);
+                } else {
+                    list = o->tex_cb(list, o->tex_arg, tex, cur);
+                }
+                if ((o->flags & 0x100) || (tex->flags & 1)) {
+                    list = dl_blend_func(list, 0, 2, 10, 0xFFFFFFFF, 0xFFFFFFFF);
+                } else {
+                    list = dl_blend_func(list, 0, 2, 3, 0, 0);
+                }
+                if ((tex->flags & 0x10) || (o->flags & 0x400)) {
+                    list = dl_set_tex_filter(list, 1, 1);
+                } else {
+                    list = dl_set_tex_filter(list, 0, 0);
+                }
+            }
+        } else {
             cur = 0xFFFFFFFF;
             list = dl_disable(list, 9);
-        } else if (cur != (mh->tex & 0xFFFF)) {
-            list = dl_enable(list, 9);
-            cur = (unsigned short)mh->tex;
-            tex = (EhfTex *)((char *)e->file + e->hdr->tex + cur);
-            list = dl_tex_func(list, 0, 1);
-            if (o->tex_cb != 0) {
-                list = o->tex_cb(list, o->tex_arg, tex, cur);
-            } else {
-                list = gim_set_texture(list, tex->gim);
-            }
-            if (!(o->flags & 0x100) && !(tex->flags & 1)) {
-                list = dl_blend_func(list, 0, 2, 3, 0, 0);
-            } else {
-                list = dl_blend_func(list, 0, 2, 10, 0xFFFFFFFF, 0xFFFFFFFF);
-            }
-            if (!(tex->flags & 0x10) && !(o->flags & 0x400)) {
-                list = dl_set_tex_filter(list, 0, 0);
-            } else {
-                list = dl_set_tex_filter(list, 1, 1);
-            }
         }
-        CLAMP255(cx.add[2]);
-        CLAMP255(cx.add[0]);
-        CLAMP255(cx.add[1]);
-        CLAMP255(cx.add[3]);
+        cx.add[2] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[2], 0), 0xFF);
+        cx.add[0] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[0], 0), 0xFF);
+        cx.add[1] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[1], 0), 0xFF);
+        cx.add[3] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[3], 0), 0xFF);
         col = cx.add[0] + cx.add[1] * 0x100 + cx.add[3] * 0x1000000 + cx.add[2] * 0x10000;
         list = dl_material_colors(list, col, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
         list = dl_material(list, 1, (unsigned char)mh->alpha * 0x1000000 + (mh->color & 0xFFFFFF));
@@ -1187,7 +1182,7 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
         list = dl_light(list, 1, 0, 6, lpos);
         list = dl_enable(list, 0xB);
         list = dl_light_mode(list, 1);
-        list = dl_draw_array(list, (mh->prim & 0x7FFFF) >> 16, mh->vtype & 0xFFFFFF, mh->prim & 0xFFFF, 0,
+        list = dl_draw_array(list, (mh->prim >> 16) & 7, mh->vtype & 0xFFFFFF, mh->prim & 0xFFFF, 0,
                              (char *)shape + shape[6] + mh->verts);
     }
     return list;
@@ -1201,7 +1196,6 @@ typedef struct EhfGlyph {              /* 0x14 per glyph of a text */
     int chr;                           /* +0x10 offset of the glyph shape in the character blob */
 } EhfGlyph;
 
-#ifdef NON_MATCHING /* the original keeps the text character in $v0 across ehf_track_eval */
 /* A text: one glyph shape per character, placed by its own offset and scale. */
 void *ehf_draw_text(void *list, EhfInst *e, EhfClip *c, unsigned int frame, float *mtx, EhfColor *p)
 {
@@ -1256,6 +1250,22 @@ void *ehf_draw_text(void *list, EhfInst *e, EhfClip *c, unsigned int frame, floa
     mat4_mul(m, m, base);
     mat4_mul(m, mtx, m);
     for (; gl < end; gl++) {
+        g2[0] = m[0];
+        g2[1] = m[1];
+        g2[2] = m[2];
+        g2[3] = m[3];
+        g2[4] = m[4];
+        g2[5] = m[5];
+        g2[6] = m[6];
+        g2[7] = m[7];
+        g2[8] = m[8];
+        g2[9] = m[9];
+        g2[10] = m[10];
+        g2[11] = m[11];
+        g2[12] = m[12];
+        g2[13] = m[13];
+        g2[14] = m[14];
+        g2[15] = m[15];
         mat4_translate2(g2, gl->x, gl->y);
         mat4_scale2(g2, gl->scale, gl->scale);
         shape = (int *)((char *)e->file + e->hdr->chars + gl->chr);
@@ -1265,13 +1275,12 @@ void *ehf_draw_text(void *list, EhfInst *e, EhfClip *c, unsigned int frame, floa
         mh = (EhfMesh *)((char *)shape + 0x20);
         mend = (EhfMesh *)((char *)mh + shape[3]);
         for (; mh < mend; mh++) {
-            list = dl_draw_array(list, (mh->prim & 0x7FFFF) >> 16, mh->vtype & 0xFFFFFF, mh->prim & 0xFFFF, 0,
+            list = dl_draw_array(list, (mh->prim >> 16) & 7, mh->vtype & 0xFFFFFF, mh->prim & 0xFFFF, 0,
                                  (char *)shape + shape[4] + mh->verts);
         }
     }
     return list;
 }
-#endif
 
 /* Rewinds `e` to frame 0 of `f` and replays up to the target frame (`keep`: called from the
    timeline at the end of the movie). */
@@ -1453,23 +1462,14 @@ void mat4_rotate_z(float *m, int angle)
     mat4_mul(m, m, r);
 }
 
-#ifdef NON_MATCHING /* agrupamento dos produtos corrigido (resultado idêntico bit a bit); 60 palavras: escalonamento dos floats (o original usa f20-f22) */
-float mat4_det(float *m)
+static float mat4_det(float *m)
 {
-    float m4 = m[4], m5 = m[5], m6 = m[6], m7 = m[7];
-    float m8 = m[8], m9 = m[9], m10 = m[10], m11 = m[11];
-    float m12 = m[12], m13 = m[13], m14 = m[14], m15 = m[15];
-
-    /* cofactor expansion along row 0; every triple product is (pair) * third, the pairs shared
-       between the cofactors, in the order of the original (float rounding depends on it) */
-    return m[0] * (m5 * m10 * m15 + m6 * m11 * m13 + m7 * m9 * m14 - m7 * m10 * m13 - m6 * m9 * m15 - m5 * m11 * m14)
-         - m[1] * (m4 * m10 * m15 + m6 * m11 * m12 + m7 * m8 * m14 - m7 * m10 * m12 - m6 * m8 * m15 - m4 * m11 * m14)
-         + m[2] * (m4 * m9 * m15 + m5 * m11 * m12 + m7 * m8 * m13 - m7 * m9 * m12 - m5 * m8 * m15 - m4 * m11 * m13)
-         - m[3] * (m4 * m9 * m14 + m5 * m10 * m12 + m6 * m8 * m13 - m6 * m9 * m12 - m5 * m8 * m14 - m4 * m10 * m13);
+    return m[0] * (m[5] * m[10] * m[15] + m[6] * m[11] * m[13] + m[7] * m[9] * m[14] - m[7] * m[10] * m[13] - m[6] * m[9] * m[15] - m[5] * m[11] * m[14])
+         - m[1] * (m[4] * m[10] * m[15] + m[6] * m[11] * m[12] + m[7] * m[8] * m[14] - m[7] * m[10] * m[12] - m[6] * m[8] * m[15] - m[4] * m[11] * m[14])
+         + m[2] * (m[4] * m[9] * m[15] + m[5] * m[11] * m[12] + m[7] * m[8] * m[13] - m[7] * m[9] * m[12] - m[5] * m[8] * m[15] - m[4] * m[11] * m[13])
+         - m[3] * (m[4] * m[9] * m[14] + m[5] * m[10] * m[12] + m[6] * m[8] * m[13] - m[6] * m[9] * m[12] - m[5] * m[8] * m[14] - m[4] * m[10] * m[13]);
 }
-#endif
 
-#ifdef NON_MATCHING /* float scheduling */
 void mat4_inverse(float *out, float *m)
 {
     float m0 = m[0], m1 = m[1], m2 = m[2], m3 = m[3];
@@ -1508,4 +1508,3 @@ void mat4_inverse(float *out, float *m)
     out[11] = ndet * (m11 * n + (m3 * h - m7 * k));
     out[15] = det * (m10 * n + (m2 * h - m6 * k));
 }
-#endif
