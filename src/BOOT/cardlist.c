@@ -3,7 +3,6 @@
 // @rodata 0x088B499C-0x088B4B04
 // @asm 0x08854A68-0x08854D94
 // @asm 0x08854DA8-0x088552B0
-// @asm 0x088554E8-0x08855690
 // @asm 0x088569D4-0x08856C88
 // @asm 0x08856E08-0x08857148
 // @asm 0x08857DD8-0x088580AC
@@ -61,7 +60,7 @@ typedef struct CardView {              /* 0x118 */
     int desc_max;                      /* +0x08C */
     int shown_id;                      /* +0x090 */
     int shown_variant;                 /* +0x094 */
-    int fade;                          /* +0x098 cross-fade frame, 10 = done */
+    unsigned int fade;                 /* +0x098 cross-fade frame, 10 = done */
     CardStats shown;                   /* +0x09C */
     CardStats shown_cmp;               /* +0x0D8 */
     int shown_mask;                    /* +0x114 */
@@ -613,7 +612,6 @@ void card_draw(void *list, int x, int y, unsigned int id)
 }
 
 /* Exported: like cardlist_build but only the picture. */
-#ifdef NON_MATCHING /* o original lê pv->vram (t0) antes de pv->fade (t1) para a chamada de cardlist_draw_picture; aqui a ordem se inverte (2 palavras). Ordem dos locais, acesso por v./pv-> e ternário não mudam */
 void *card_panel_draw(void *list, int x, int y, CardPanel *p)
 {
     CardView v;
@@ -655,7 +653,6 @@ void *card_panel_draw(void *list, int x, int y, CardPanel *p)
     cardlist_view_to_panel(p, pv);
     return list;
 }
-#endif
 
 /* Grey placeholder when the picture is not available. */
 void *cardlist_draw_quad(void *list, int x, int y)
