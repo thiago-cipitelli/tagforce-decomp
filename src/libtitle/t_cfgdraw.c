@@ -1,6 +1,5 @@
 // @range 0x0880D454-0x0880EB20
 // @asm 0x0880D454-0x0880E0B4
-// @asm 0x0880E508-0x0880E828
 // @data 0x0882E44C-0x0882E7F0
 /* Drawing of the options screen (tcfg): the framed groups of rows, each row's label and its control
    (volume meter, left/right value with arrows, on/off check), and the option_msg_X.bin texts. */
@@ -44,9 +43,10 @@ int tcfg_group_style[4] = { 8, 9, 10, 11 };
 unsigned char tcfg_group_tab[4] = { 0, 0, 0, 1 };
 short tcfg_group_rows[4] = { 1, 1, 4, 5 };
 
-#ifdef NON_MATCHING /* 3168 B como o original e mesma forma (283 palavras): x/y/rw/rh inicializados (os switch sem default os deixam vivos), índices sem sinal nos laços da aba e da caixa de ajuda (com índice afim o mwcc reduz o endereço a um ponteiro e deixa de içar spr[0].w etc. do laço dos grupos), switch (step) no fim; falta a alocação dos $s (x/rw/rh um registrador acima, cur em $s1 em vez de $s4) */
+#ifdef NON_MATCHING /* 3168 B como o original e mesma forma (229 palavras; contador próprio `piece` no laço da moldura: 283 -> 229): x/y/rw/rh inicializados (os switch sem default os deixam vivos), índices sem sinal nos laços da aba e da caixa de ajuda (com índice afim o mwcc reduz o endereço a um ponteiro e deixa de içar spr[0].w etc. do laço dos grupos), switch (step) no fim; faltam: o original tem dois `li 1` içados (sel_row = 1 e found = 1 em registradores distintos; o mwcc 219 junta), found = 0 no delay slot do 1º cfg_get_language, a cópia de rows[] em pares lh/lh/sh/sh e spills dos campos de spr[] içados no laço da aba */
 void *tcfg_draw(void *list)
 {
+    int piece;
     TCfg *c = tcfg;
     int first = 0;
     char gims[2][64] = { "m_menu_panel01.gim", "menu_opt01.gim" };
@@ -138,39 +138,39 @@ void *tcfg_draw(void *list)
         pieces = rows[first] == 1 ? 3 : 9;
 
         /* frame */
-        for (i = 0; i < pieces; i++) {
-            u = spr[i].u + style[first] % 6 * 20;
-            v = spr[i].v + style[first] / 6 * 24;
+        for (piece = 0; piece < pieces; piece++) {
+            u = spr[piece].u + style[first] % 6 * 20;
+            v = spr[piece].v + style[first] / 6 * 24;
             list = tcfg_gfx(list, c->gim);
-            switch (i % 3) {
+            switch (piece % 3) {
             case 0:
-                rw = spr[i].w;
-                x = spr[i].u + 131;
+                rw = spr[piece].w;
+                x = spr[piece].u + 131;
                 break;
             case 1:
                 rw = 218 - (spr[0].w + spr[2].w);
-                x = spr[i].u + 131;
+                x = spr[piece].u + 131;
                 break;
             case 2:
-                rw = spr[i].w;
+                rw = spr[piece].w;
                 x = 349 - rw;
                 break;
             }
-            switch (i / 3) {
+            switch (piece / 3) {
             case 0:
                 y = gy[first];
-                rh = spr[i].h;
+                rh = spr[piece].h;
                 break;
             case 2:
                 y = gy[first] + 10;
                 rh = rows[first] * 17 - 10;
                 break;
             case 1:
-                rh = spr[i].h;
+                rh = spr[piece].h;
                 y = gy[first] + (rows[first] - 1) * 17;
                 break;
             }
-            list = draw_set_offsets(list, spr[i].w, spr[i].h, rw, rh);
+            list = draw_set_offsets(list, spr[piece].w, spr[piece].h, rw, rh);
             list = draw_sprite(list, x, y, 0, u, v, 0, 0);
         }
         /* tab of the group title */
@@ -297,7 +297,7 @@ void *tcfg_draw(void *list)
 }
 #endif
 
-/* templates of the row controls (the functions stay in asm) */
+/* templates of the row controls */
 TCfgSpr tcfg_meter_spr[2] = { { 32, 16, 6, 12 }, { 38, 16, 6, 12 } };
 TCfgSpr tcfg_arrow_spr[2] = { { 48, 0, 8, 12 }, { 56, 0, 8, 12 } };
 TCfgSpr tcfg_check_spr[2] = { { 0, 32, 32, 13 }, { 0, 48, 32, 13 } };
@@ -466,9 +466,6 @@ void *tcfg_row(void *list, TCfg *c, int group, int row, unsigned char sel, int x
     return list;
 }
 
-#ifdef NON_MATCHING
-/* 14 palavras: a cópia off = s[1] sai com os lh/sh noutra ordem (u,v,w antes do sh no original); o resto bate.
-   Tentado: off campo a campo, inicializado na declaração, s como TCfgSpr2 */
 /* volume meter: 15 segments, `level` lit */
 void *tcfg_meter(void *list, TCfg *c, unsigned char level, int x, int y)
 {
@@ -482,10 +479,10 @@ void *tcfg_meter(void *list, TCfg *c, unsigned char level, int x, int y)
     short i;
 
     *(TCfgSpr2 *)s = *(TCfgSpr2 *)tcfg_meter_spr;
-    off = s[1];
+    sy = y;
     w = s[0].w;
     h = s[0].h;
-    sy = y;
+    off = ((TCfgSpr2 *)s)->s[1];
     for (i = 0; i < 15; i++) {
         sx = x + i * 7;
         if (i < (unsigned char)level)
@@ -499,7 +496,6 @@ void *tcfg_meter(void *list, TCfg *c, unsigned char level, int x, int y)
     return list;
 }
 
-/* 14 palavras: só a ordem dos lh/sh da cópia off = s[1] (como tcfg_meter) */
 /* the blinking left/right arrows of a value */
 void *tcfg_arrows(void *list, TCfg *c, int x, int y, unsigned char pos, unsigned char max)
 {
@@ -513,10 +509,10 @@ void *tcfg_arrows(void *list, TCfg *c, int x, int y, unsigned char pos, unsigned
     short i;
 
     *(TCfgSpr2 *)s = *(TCfgSpr2 *)tcfg_arrow_spr;
-    off = s[1];
+    sy = y;
     w = s[0].w;
     h = s[0].h;
-    sy = y;
+    off = ((TCfgSpr2 *)s)->s[1];
     for (i = 0; i < 2; i++) {
         show = 1;
         sx = x + i * 68;
@@ -539,8 +535,6 @@ void *tcfg_arrows(void *list, TCfg *c, int x, int y, unsigned char pos, unsigned
     }
     return list;
 }
-
-#endif
 
 /* the check mark under ON (kind 1) or OFF */
 void *tcfg_check(void *list, TCfg *c, unsigned char kind, unsigned char on, int x, int y)
