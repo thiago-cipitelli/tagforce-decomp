@@ -367,6 +367,27 @@ Seis das funções de 2-4 KB de efeitos do libduel_draw bateram com as mesmas re
    (`for (j = 0; j < 1; j++) b = &w->beam[j];`) que iça `buf * 1224` para antes do teste, teste `!(f & 1) != 1`
    (`sltu/xori/beq 1`), `x % 16` em vez de `& 0xF` (`bgez`+`beqzl`), `if (on == 1)` com o `li v0,1` no delay slot.
 
+### Rodada 8 (`dd_fx_fusion_update` batendo, `dd_fx_glow_update` a 1 instrução)
+- **Diff estrutural com o tamanho real**: o `asm_try.sh` compara só `len(código compilado)` do original; com a função
+  menor que o original o diff não mostra o que falta. Compare até o símbolo seguinte de `symbols/` e normalize os
+  `%lo` relocados (`REL`) e os imports de variável do BOOT (`rand3_*`, que valem 0 no ELF).
+- **Ordem de avaliação entre chamadas**: um valor calculado no original entre duas chamadas (no delay do `jal`) ou
+  guardado num `$f20+` através de uma chamada é um comando separado no fonte: `alpha = ... << 24; spin = ...;
+  dl_ambient_light(list, alpha | 0xFFFFFF)`; `k = ang; mat3_identity(); mat3_rot_z(m3, m3, k)`; `in = 0.8f * a255;`
+  antes da expressão com `sinf` (reaproveitar uma variável da função; um local novo de uso único é propagado de volta).
+- **`fade * (x * 255.0f)` contra `fade * x * 255.0f`**: a ordem dos `mul.s` diz a associatividade; `a | (b | K | c)`
+  idem para `or`.
+- **Base do struct em vez de ponteiro do elemento**: `sw x,1232+k(s)` com `s` andando 48 = `fx->ring[i][k].campo`
+  direto (não `DdColVert *rv = fx->ring[i]`); o mesmo para `note_quad`, `mesh`. O inverso (`addiu s0,s2,8`) é ponteiro
+  para uma sub-struct com nome (`DdFusionPart *q = &s->p[j]`).
+- **Pilha**: um vetor local de uso só num bloco (`FxVec3 q`) fica com o bloco (cada bloco tem o seu `q`, embaixo dos
+  arrays do bloco); `__attribute__((aligned(16)))` na matriz `mvp` a manda para o fundo e libera o resto.
+- **`switch` com `default:` primeiro** para `if (s == 1) … else if (s == 0) … else …` com o corpo do `else` logo
+  depois dos testes; `case 0: if (n == 1) r = 0; else r = 75;` em vez do ternário quando o `b` final leva o `mtc1`.
+- **Contadores de laço: descida automática com nomes novos** (`n0..n7`, declarados no fim das declarações) resolveu
+  13 de 14 trocas de `$s` em `dd_fx_fusion_update` (101 → 0) e reduziu `dd_fx_glow_update`. Só nomes novos: renomear
+  para uma variável existente pode colidir com um laço externo ou com um uso depois do laço.
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
 - **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`) e

@@ -1,5 +1,4 @@
 // @range 0x088357B0-0x08837098
-// @asm 0x08835954-0x08837098
 // @data 0x08876B30-0x08876B54
 /* Fusion: the material cards circle around the centre of the screen and spin into a whirlpool
    (a 33x33 polar mesh textured with what was drawn into VRAM) that closes, flashes and opens on
@@ -7,13 +6,15 @@
 #define DD_FX
 #include "dd_d3.h"
 
+typedef struct DdFusionPart {          /* 0x10 */
+    int uv;
+    float dir[3];
+} DdFusionPart;
+
 typedef struct DdFusionSpark {         /* 0x48 */
     unsigned int flags;
     int age;
-    struct {
-        int uv;
-        float dir[3];
-    } p[4];
+    DdFusionPart p[4];
 } DdFusionSpark;
 
 typedef struct DdFxFusion {            /* 0xB5E8 + 4 * cards */
@@ -74,13 +75,6 @@ int dd_fx_fusion_start(int n, int *cards, int result, DdTaskTermFn term, void *a
     return id;
 }
 
-/* templates of the locals of dd_fx_fusion_update (kept in asm) */
-FxVec4 dd_fx_fusion_v4 = { 0.0f, 0.0f, 0.0f, 1.0f };
-int dd_fx_fusion_stage_len[5] = { 8, 60, 60, 16, 8 };
-
-#ifdef NON_MATCHING /* função grande (5,8 KB): chamadas na ordem do original (jal batendo, 2026-11-06); falta a forma
-   da malha polar (pilha: mvp em sp+112, o FxVec4 copiado do template depois de rad/ang, v calculado antes de u) e
-   registradores; ~440 linhas de diferença de estrutura */
 inline static void dd_fv(DdFxVert *v, float u, float tv, unsigned int c, float x, float y)
 {
     v->u = u;
@@ -108,11 +102,26 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
     DdRandSeed *r;
     int buf = fx->tick % 2;
     int step = dd_anim_step();
-    float mvp[16], m3[9], p[3];
+    float mvp[16] __attribute__((aligned(16)));
+    float m3[9], p[3];
     unsigned int *list;
     unsigned int a;
-    float in, out, k, rad, ang, twist, sc;
-    int i, j, n;
+    float in;
+    float out;
+    float k;
+    float rad;
+    float ang;
+    float sc;
+    int i;
+    int j;
+    int n;
+    int n0;
+    int n1;
+    int n2;
+    int n3;
+    int n4;
+    int n5;
+    int n6;
 
     dd_cam_default(6, 0x13A, 0x84);
     in = fx->stage == 0 ? dd_ease_lin(fx->frame, 8) : 1.0f;
@@ -158,18 +167,21 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
         for (i = 0; i < 33; i++) {
             rad = (float)i * 345.0f / 32.0f;
             for (j = 0; j < 33; j++) {
-                FxVec4 v = { 0.0f, 0.0f, 0.0f, 1.0f };
-                DdTexVert *m = &fx->mesh[0][i][j];
-
                 ang = (float)j * 6.2831855f / 32.0f;
-                v.x = rad * sinf(ang);
-                v.y = rad * cosf(ang);
-                mat4_transform_vec4(&v, mvp, &v);
-                m->u = (v.x * 240.0f / v.w + 2048.0f - 240.0f + 314.0f - 1808.0f) / 512.0f;
-                m->v = (v.y * -136.0f / v.w + 2048.0f - 136.0f + 132.0f - 1912.0f) / 512.0f;
-                m->x = 0.0f;
-                m->y = 0.0f;
-                m->z = 0.0f;
+                {
+                    FxVec4 v = { 0.0f, 0.0f, 0.0f, 1.0f };
+                    float sy;
+
+                    v.x = rad * sinf(ang);
+                    v.y = rad * cosf(ang);
+                    mat4_transform_vec4(&v, mvp, &v);
+                    sy = v.y * -136.0f / v.w + 2048.0f - 136.0f + 132.0f - 1912.0f;
+                    fx->mesh[0][i][j].u = (v.x * 240.0f / v.w + 2048.0f - 240.0f + 314.0f - 1808.0f) / 512.0f;
+                    fx->mesh[0][i][j].v = sy / 512.0f;
+                    fx->mesh[0][i][j].x = 0.0f;
+                    fx->mesh[0][i][j].y = 0.0f;
+                    fx->mesh[0][i][j].z = 0.0f;
+                }
             }
         }
         memcpy(fx->mesh[1], fx->mesh[0], sizeof(fx->mesh[0]));
@@ -196,12 +208,20 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
     list = dl_color(list, 0xFFFFFFFF);
     list = draw_set_offsets(list, 64, 64, 64, 90);
     ang = fx->n_cards < 3 ? 1.5707964f : 3.1415927f;
-    if (fx->stage == 1)
-        rad = fx->n_cards == 1 ? 0.0f : dd_ease_cos(fx->frame, 60, 1) * 75.0f;
-    else if (fx->stage == 0)
-        rad = fx->n_cards == 1 ? 0.0f : 75.0f;
-    else
+    switch (fx->stage) {
+    default:
         rad = 0.0f;
+        break;
+    case 0:
+        if (fx->n_cards == 1)
+            rad = 0.0f;
+        else
+            rad = 75.0f;
+        break;
+    case 1:
+        rad = fx->n_cards == 1 ? 0.0f : dd_ease_cos(fx->frame, 60, 1) * 75.0f;
+        break;
+    }
     if (fx->stage < 2) {
         for (i = 0; i < fx->n_cards; i++) {
             float an = ang + -6.2831855f * (float)i / (float)fx->n_cards;
@@ -240,26 +260,26 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
         break;
     }
     a = (unsigned int)(k * 255.0f);
-    list = dl_color(list, a | a << 16 | 0xFF000000 | a << 8);
-    for (i = 0; i < 33; i++) {
-        rad = (float)i * 345.0f / 32.0f;
+    list = dl_color(list, a | (a << 16 | 0xFF000000 | a << 8));
+    for (n0 = 0; n0 < 33; n0++) {
+        rad = (float)n0 * 345.0f / 32.0f;
         switch (fx->stage) {
         case 1:
-            twist = (0.13962634f + 0.17453294f * (float)(32 - i) / 32.0f) * (float)fx->frame
+            k = (0.13962634f + 0.17453294f * (float)(32 - n0) / 32.0f) * (float)fx->frame
                     * dd_ease_cos_inv(fx->frame, 60, 1);
             break;
         case 2:
-            twist = 60.0f * (0.17453294f * (float)(32 - i) / 32.0f);
-            twist += (18.849556f - twist) * dd_ease_sin(fx->frame, 60, 1);
+            k = 60.0f * (0.17453294f * (float)(32 - n0) / 32.0f);
+            k += (18.849556f - k) * dd_ease_sin(fx->frame, 60, 1);
             break;
         default:
-            twist = 0.0f;
+            k = 0.0f;
             break;
         }
-        for (j = 0; j < 33; j++) {
-            DdTexVert *m = &fx->mesh[buf][i][j];
+        for (n1 = 0; n1 < 33; n1++) {
+            DdTexVert *m = &fx->mesh[buf][n0][n1];
 
-            ang = (float)j * 6.2831855f / 32.0f + twist;
+            ang = (float)n1 * 6.2831855f / 32.0f + k;
             m->x = rad * sinf(ang);
             m->y = rad * cosf(ang);
         }
@@ -280,8 +300,8 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
         break;
     }
     dd_scale3(sc, sc, 0.0f);
-    for (i = 0; i < 32; i++)
-        list = draw_array(list, 4, 0x983, 66, fx->idx, fx->mesh[buf][i]);
+    for (n2 = 0; n2 < 32; n2++)
+        list = draw_array(list, 4, 0x983, 66, fx->idx, fx->mesh[buf][n2]);
     mtx_pop();
     dl_set_list(list);
 
@@ -316,25 +336,26 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
         float h = 30.0f;
         float du = 0.25f, dv = 0.5f;
 
-        for (i = 0; i < 8; i++) {
-            float u = (float)(i % 4) * du;
-            float tv = (float)(i / 4) * dv;
+        for (n3 = 0; n3 < 8; n3++) {
+            float u = (float)(n3 % 4) * du;
+            float tv = (float)(n3 / 4) * dv;
 
-            dd_tv(&fx->spark_uv[i][0], u, tv, -h, h);
-            dd_tv(&fx->spark_uv[i][1], u + du, tv + dv, h, -h);
+            dd_tv(&fx->spark_uv[n3][0], u, tv, -h, h);
+            dd_tv(&fx->spark_uv[n3][1], u + du, tv + dv, h, -h);
         }
     }
     if (fx->stage == 0 || (fx->stage == 1 && fx->frame < 44)) {
-        for (i = 0; i < step; i++) {
+        for (n = 0; n < step; n++) {
             DdFusionSpark *s = &fx->spark[fx->next];
 
             s->flags |= 1;
             s->age = 0;
-            for (j = 0; j < 4; j++) {
+            for (n6 = 0; n6 < 4; n6++) {
+                DdFusionPart *q = &s->p[n6];
                 float an = 6.2831855f * (DD_RAND3(r) / 32767.0f);
 
-                s->p[j].uv = DD_RAND3(r) % 8;
-                vec3_set(s->p[j].dir, 400.0f * sinf(an), 400.0f * cosf(an), 0.0f);
+                q->uv = DD_RAND3(r) % 8;
+                vec3_set(q->dir, 400.0f * sinf(an), 400.0f * cosf(an), 0.0f);
             }
             if (fx->next < 31)
                 fx->next++;
@@ -352,28 +373,30 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
-        if (fx->stage != 0)
-            in *= dd_ease_lin_inv(fx->frame - 44, 16);
-        for (i = 0; i < 32; i++) {
-            DdFusionSpark *s = &fx->spark[i];
+        in = fx->stage == 0 ? in : in * dd_ease_lin_inv(fx->frame - 44, 16);
+        for (n4 = 0; n4 < 32; n4++) {
+            DdFusionSpark *s = &fx->spark[n4];
 
-            if (s->flags & 1) {
+            if (!(s->flags & 1) != 1) {
                 float e = dd_ease_sin_inv(s->age, 32, 2);
 
-                k = in * dd_ease_sin(s->age, 8, 1);
+                a = (unsigned int)(in * (dd_ease_sin(s->age, 8, 1) * 255.0f));
+                k = (float)s->age * -0.08726647f;
                 mat3_identity(m3);
-                mat3_rot_z(m3, m3, (float)s->age * -0.08726647f);
-                list = dl_ambient_light(list, ((unsigned int)(k * 255.0f) << 24) | 0xFFFFFF);
-                for (j = 0; j < 4; j++) {
+                mat3_rot_z(m3, m3, k);
+                list = dl_ambient_light(list, (a << 24) | 0xFFFFFF);
+                for (n5 = 0; n5 < 4; n5++) {
+                    DdFusionPart *q = &s->p[n5];
+
                     mtx_push();
-                    vec3_scale(p, s->p[j].dir, e);
+                    vec3_scale(p, q->dir, e);
                     mat3_transform_vec3(p, m3, p);
                     mtx_translate(p);
-                    list = draw_array(list, 6, 0x183, 2, 0, fx->spark_uv[s->p[j].uv]);
+                    list = draw_array(list, 6, 0x183, 2, 0, fx->spark_uv[q->uv]);
                     mtx_pop();
                 }
                 s->age += step;
-                if (s->age > 31)
+                if (s->age >= 32)
                     s->flags &= ~1;
             }
         }
@@ -388,13 +411,12 @@ int dd_fx_fusion_update(int state, DdFxFusion *fx)
 
         if (fx->frame < last) {
             fx->frame = dd_step_clamp(fx->frame, step, last);
-        } else {
-            if (fx->stage >= 4)
-                return 4;
+        } else if (fx->stage < 4) {
             fx->stage++;
             fx->frame = 0;
+        } else {
+            return 4;
         }
     }
     return 2;
 }
-#endif
