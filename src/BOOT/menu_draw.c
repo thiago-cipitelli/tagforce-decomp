@@ -1,6 +1,6 @@
 // @range 0x08843D78-0x08845AC0
 // @rodata 0x088756F8-0x08875734
-// @asm 0x08843D78-0x088454DC
+// @asm 0x08844B44-0x088454DC
 /* Window rendering for the menu layer: open/close animation state machine, 9-slice frame built
    from window01.gim pieces into the layer-4 display list, title bar and text. */
 #include "psp.h"
@@ -52,15 +52,10 @@ extern short wside_v;                  /* 0x088EE8BE */
 extern short wside_w;                  /* 0x088EE8C0 */
 extern short wside_h;                  /* 0x088EE8C2 */
 
-#ifdef NON_MATCHING
-/* menu_item_build: switch (st) com case 0 caindo em 2/4, switch da animação (1, 2) e do contador
-   (0..4), larguras com ALLEGREX_MAX e os ceilf com argumentos calculados antes (sequência de jal igual
-   ao original, 2424 B contra 2412 B; 567 palavras: o original guarda um float em f20 e salva s0-s7).
-   As três funções abaixo têm a estrutura do original, mas o mwcc aloca registradores e pilha de
-   outro jeito (menu_item_build/menu_item_build_frame: 2,4 KB cada; menu_item_build_text: o
-   original dá s0 a dl, s1 a d e s3 a m, aqui invertidos, com qualquer ordem de declaração ou
-   parâmetro void *). Ficam em asm; este C é para o
-   port. As tabelas de saltos das versões em asm ficam em 0x088756D8..0x088756F8. */
+/* menu_item_build_frame fica em asm (pilha e registradores diferentes; a tabela de saltos dela fica em
+   0x088756D8..0x088756F8). O `dl` dela é o ponteiro para a lista (o void ** de menu_item_build), que ela
+   repassa a dl_alloc_inline; o rascunho antigo passava *dl. */
+
 /* State machine of one item; (re)builds its frame when the definition changed. */
 void menu_item_build(void **dl, MenuItem *it, Menu *m)
 {
@@ -71,14 +66,16 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
     unsigned int sz;
     int tw, th;
     float fw, fh;
+    unsigned int c;
 
     switch (st) {
     case 0:
-        if (d->scale_x == 0.0f)
-            d->scale_x = 1.0f;
-        if (d->scale_y == 0.0f)
-            d->scale_y = 1.0f;
-        d->visible = d->open_anim == 0;
+        d->scale_x = d->scale_x == 0.0f ? 1.0f : d->scale_x;
+        d->scale_y = d->scale_y == 0.0f ? 1.0f : d->scale_y;
+        if (d->open_anim == 0)
+            d->visible = 1;
+        else
+            d->visible = 0;
         it->state = 2;
         /* fall through */
     case 2:
@@ -86,15 +83,19 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
         if (mem_differs(it->def, &it->cur, sizeof(MenuItemDef))) {
             if (d->auto_size != 0) {
                 if (d->text != 0) {
-                    mw = d->pad_r + 2 + d->pad_l + MENU_PAD_X + MENU_PAD_W;
-                    mh = d->pad_b + 2 + d->pad_t + MENU_PAD_Y + MENU_PAD_H;
+                    mw = d->pad_r + 2 + d->pad_l;
+                    mw += MENU_PAD_X;
+                    mw += MENU_PAD_W;
+                    mh = d->pad_b + 2 + d->pad_t;
+                    mh += MENU_PAD_Y;
+                    mh += MENU_PAD_H;
                     f4 = font_get_flag4();
                     f8 = font_get_flag8000();
                     font_set_size(d->font_size, d->font_size);
                     font_set_flag4(d->font_flag4);
                     font_set_flag8000(d->font_flag8000);
-                    cw = d->max_w == 0 ? 480 - mw : d->max_w - mw;
-                    ch = d->max_h == 0 ? 272 - mh : d->max_h - mh;
+                    cw = d->max_w != 0 ? d->max_w - mw : 480 - mw;
+                    ch = d->max_h != 0 ? d->max_h - mh : 272 - mh;
                     sz = font_measure_wtext2(cw << 6, ch << 6, d->text);
                     fw = (float)(int)((sz >> 16) & 0xFFFF) / 64.0f;
                     fh = (float)(int)(sz & 0xFFFF) / 64.0f;
@@ -152,10 +153,12 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
             case 2:
                 d->text = it->saved_text;
                 d->title = it->saved_title;
-                it->saved_text_color = d->text_color;
-                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
-                it->saved_title_color = d->title_color;
-                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
+                c = d->text_color;
+                it->saved_text_color = c;
+                d->text_color = color_lerp(0.5f, c & 0xFFFFFF, c);
+                c = d->title_color;
+                it->saved_title_color = c;
+                d->title_color = color_lerp(0.5f, c & 0xFFFFFF, c);
                 break;
             case 3:
                 d->text_color = it->saved_text_color;
@@ -196,10 +199,12 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
             case 2:
                 d->text = it->saved_text;
                 d->title = it->saved_title;
-                it->saved_text_color = d->text_color;
-                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
-                it->saved_title_color = d->title_color;
-                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
+                c = d->text_color;
+                it->saved_text_color = c;
+                d->text_color = color_lerp(0.5f, c & 0xFFFFFF, c);
+                c = d->title_color;
+                it->saved_title_color = c;
+                d->title_color = color_lerp(0.5f, c & 0xFFFFFF, c);
                 break;
             case 3:
                 d->text_color = it->saved_text_color;
@@ -218,10 +223,12 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
         case 1:
             switch (it->counter) {
             case 0:
-                it->saved_text_color = d->text_color;
-                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
-                it->saved_title_color = d->title_color;
-                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
+                c = d->text_color;
+                it->saved_text_color = c;
+                d->text_color = color_lerp(0.5f, c & 0xFFFFFF, c);
+                c = d->title_color;
+                it->saved_title_color = c;
+                d->title_color = color_lerp(0.5f, c & 0xFFFFFF, c);
                 break;
             case 1:
                 it->saved_text = d->text;
@@ -257,10 +264,12 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
         case 2:
             switch (it->counter) {
             case 0:
-                it->saved_text_color = d->text_color;
-                d->text_color = color_lerp(0.5f, d->text_color & 0xFFFFFF, d->text_color);
-                it->saved_title_color = d->title_color;
-                d->title_color = color_lerp(0.5f, d->title_color & 0xFFFFFF, d->title_color);
+                c = d->text_color;
+                it->saved_text_color = c;
+                d->text_color = color_lerp(0.5f, c & 0xFFFFFF, c);
+                c = d->title_color;
+                it->saved_title_color = c;
+                d->title_color = color_lerp(0.5f, c & 0xFFFFFF, c);
                 break;
             case 1:
                 it->saved_text = d->text;
@@ -300,9 +309,9 @@ void menu_item_build(void **dl, MenuItem *it, Menu *m)
         it->counter++;
         break;
     }
-    menu_item_build_frame(*dl, it, m, 0);
+    menu_item_build_frame(dl, it, m, 0);
     if (it->ghost != 0)
-        menu_item_build_frame(*dl, it, m, 1);
+        menu_item_build_frame(dl, it, m, 1);
 }
 
 /* Emits the GE state, the frame sprites and the texts of one item into the display list. */
@@ -346,8 +355,8 @@ void menu_item_build_text(void **dl, MenuItem *it, Menu *m)
         font_set_flag4(d->font_flag4);
         font_set_flag8000(d->font_flag8000);
         font_set_color(d->text_color);
-        fx = (float)(MENU_PAD_X + 1) + tl[0] + (float)d->pad_l;
-        fy = (float)(MENU_PAD_Y + 1) + tl[1] + (float)d->pad_t;
+        fx = (float)(MENU_PAD_X + 1) + (tl[0] + (float)d->pad_l);
+        fy = (float)(MENU_PAD_Y + 1) + (tl[1] + (float)d->pad_t);
         ww = -2 - MENU_PAD_W - MENU_PAD_X - d->pad_r - d->pad_l;
         hh = -2 - MENU_PAD_H - MENU_PAD_Y - d->pad_b - d->pad_t;
         font_draw_wtext_ex((int)fx << 6, (int)fy << 6, (ww + d->w) * 64, (hh + d->h) * 64, d->text, 0xFFFFFFFF);
@@ -370,6 +379,7 @@ void menu_item_build_text(void **dl, MenuItem *it, Menu *m)
     *dl = font_text_clear();
 }
 
+#ifdef NON_MATCHING
 /* Builds the frame sprites (and the ghost copy when `ghost`) into inline display-list memory. */
 void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
 {

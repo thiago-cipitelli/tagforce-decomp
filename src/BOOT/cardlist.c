@@ -3,7 +3,6 @@
 // @rodata 0x088B499C-0x088B4B04
 // @asm 0x08854A68-0x08854D94
 // @asm 0x08854DA8-0x088552B0
-// @asm 0x088569D4-0x08856C88
 // @asm 0x08856E08-0x08857148
 // @asm 0x08857DD8-0x088580AC
 /* Card list / card panel drawing: the card picture (read through cip.c into VRAM and drawn with
@@ -408,17 +407,20 @@ void *cardlist_draw(void *list, CardView *v)
     return cardlist_draw_at(list, 0, 0, v);
 }
 
-#ifdef NON_MATCHING /* register allocation of the vertex pointers differs */
+#ifdef NON_MATCHING /* 20 palavras: s/cs/id do segundo bloco em $s rodados e posições de spill na pilha
+   (ordem das declarações: melhor de 400 permutações) */
 void *cardlist_draw_at(void *list, int x, int y, CardView *v)
 {
-    void *tex;
-    unsigned short *name;
+    CardStats *sh;
     unsigned short *desc;
-    unsigned short *line;
-    CardStats *s;
-    CardStats *cs;
-    int mask;
     int id;
+    CardStats *cs;
+    CardStats *s;
+    unsigned short *name;
+    int variant;
+    unsigned short *line;
+    int mask;
+    void *tex;
     CardList *c = &cardlist;
 
     if (!cardlist_ready()) {
@@ -439,15 +441,17 @@ void *cardlist_draw_at(void *list, int x, int y, CardView *v)
         list = dl_ambient_color(list, 0xFFFFFFFF);
         cardlist_view_update(v);
         id = v->shown_id;
+        variant = v->shown_variant;
         name = card_get_name(id);
         desc = card_get_desc(id);
-        line = card_type_line(id, v->shown_mask, &v->shown, &v->shown_cmp);
+        sh = &v->shown;
+        line = card_type_line(id, v->shown_mask, sh, &v->shown_cmp);
         if (id == -1) {
             tex = 0;
         } else {
-            tex = cardlist_get_picture(id, v->shown_variant);
+            tex = cardlist_get_picture(id, variant);
         }
-        list = cardlist_draw_picture(list, x + 5, y + 4, tex, v->vram, v->fade, name, line, desc, &v->shown);
+        list = cardlist_draw_picture(list, x + 5, y + 4, tex, v->vram, v->fade, name, line, desc, sh);
         id = v->id;
         name = card_get_name(id);
         desc = card_get_desc(id);
@@ -1164,7 +1168,6 @@ void *card_draw_ehf_frame(void *list, int x, int y, int attr, void *ehf)
 
 /* Text box: name (magenta), type line (green), description (white), clipped and scrolled by
    `scroll` (26.6); *max receives how far it can scroll. */
-#ifdef NON_MATCHING /* the original duplicates the `*max = 0` tails */
 void *card_draw_desc_box(void *list, int x, int y, int w, int h, int scroll, unsigned short *name, unsigned short *type_line, unsigned short *desc, int *max)
 {
     int tx = (x + 2) * 0x40;
@@ -1182,16 +1185,9 @@ void *card_draw_desc_box(void *list, int x, int y, int w, int h, int scroll, uns
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_scissor(list, x + 2, y + 3, w - 3, h - 6);
     list = dl_enable(list, 2);
-    if (name == 0) {
-        goto zero;
-    }
-    if (type_line == 0) {
+    if (name == 0 || type_line == 0 || desc == 0) {
         *max = 0;
-        goto done;
-    }
-    if (desc == 0) {
-        goto zero;
-    }
+    } else {
     flags = font_get_flags();
     font_text_set(list);
     font_set_flag4(0);
@@ -1221,13 +1217,9 @@ void *card_draw_desc_box(void *list, int x, int y, int w, int h, int scroll, uns
         *max = used - (h - 6) * 0x40;
     }
     font_set_flags(flags);
-    goto done;
-zero:
-    *max = 0;
-done:
+    }
     return dl_disable(font_text_clear(), 2);
 }
-#endif
 
 /* Vertical scroll bar: track of height h, thumb at pos with size. */
 void *cardlist_draw_scrollbar(void *list, int x, int y, int h, int pos, int size)
@@ -1600,7 +1592,8 @@ int cardlist_ready(void)
 
 /* Stats strip under the picture: spell/trap kind icon and scrolling name, or ATK/DEF (red or
    blue against the compared card), kind and type icons. Bits of `mask` pick cmp fields. */
-#ifdef NON_MATCHING /* register allocation differs throughout */
+#ifdef NON_MATCHING /* 72 palavras: o original dá os parâmetros a s1-s6 e attr a s0 (o sw s0 do prólogo vai
+   para o delay slot do primeiro jal); ordem das declarações não muda */
 void *card_draw_stats(void *list, int x, int y, unsigned int mask, CardStats *s, CardStats *cmp, int scroll)
 {
     unsigned short *name;
@@ -1637,11 +1630,12 @@ void *card_draw_stats(void *list, int x, int y, unsigned int mask, CardStats *s,
             x -= scroll;
             font_draw_text(x * 0x40, ty, (0x1E0 - x) * 0x40, name);
             if (scroll > 0) {
-                tw += x + 0x14;
+                tw = tw + x + 0x14;
                 font_draw_text(tw * 0x40, ty, (0x1E0 - tw) * 0x40, name);
             }
             list = dl_disable(font_text_clear(), 2);
         }
+        return list;
     } else {
         attr = (mask & 4) ? cmp->atk : s->atk;
         if (attr == s->atk) {

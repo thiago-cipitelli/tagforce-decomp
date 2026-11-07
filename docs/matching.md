@@ -417,3 +417,24 @@ Funções de vários KB com fuzzy baixo costumam ter a lógica certa e a forma e
 4. `slti at` no teste de um laço contado: `i <= 4` (não `i < 5`). Índice e ponteiro do laço trocados de `$s`:
    variável do laço declarada no bloco (`{ int j; for (j = 0; ...) }`), não a da função.
 5. Dois `case` que usam `&&` com o mesmo corpo `trig = 1` e `beql ..., fim; li s3,1`: era `||` num só `if`.
+
+## Idiomas da rodada 8 (BOOT: ehf.c, menu_draw.c, cardinfo.c, cardlist.c)
+
+| No asm original | Fonte |
+|---|---|
+| `andi a0,sX,0xFFFF` antes de **cada** chamada, sem registrador a mais para a cópia u16 | parâmetro `int` na função e protótipo do chamado com `unsigned short` (`cardinfo_draw_list_entry` → `cardinfo_get_text(unsigned short)`); um local u16 ou `(unsigned short)p` gasta um `$s` a mais |
+| `addu` com os operandos trocados numa soma de campos + globais | quebrar em `mw = a + 2 + b; mw += G1; mw += G2;` (o mwcc reassocia a expressão inteira, parênteses não mudam) |
+| ponteiro de busca reaproveitado como ponteiro dos dados no mesmo `$t` (`addiu t1,t1,2`) | reusar a variável: `k += 2;` em vez de `pa = k + 2` (`ehf_track_eval`) |
+| `b exact; move t1,t2` logo depois do teste | `if (!(*lo < f)) { k = lo; goto exact; }` (atribuição dentro do ramo, não antes) |
+| `slt at` num teste que o C deu com temporário | inverter a comparação (`*hi <= f` em vez de `!(f < *hi)`), regra do `$at` da tabela acima |
+| cópia de matriz `lwc1/swc1` em grupos de 3 dentro de um laço | 16 atribuições `g2[i] = m[i];` (struct com `float[16]` dá laço de `lw/sw`) |
+| `bc1f; nop; lui; mtc1; swc1` (gravação incondicional) | `d->s = d->s == 0.0f ? 1.0f : d->s;` (com `if` ou local sai `bc1fl` com cópia) |
+| campo lido uma vez, salvo e usado (`lw; sll; sw saved`) | local: `c = d->color; it->saved = c; d->color = lerp(c & 0xFFFFFF, c);` |
+| `beqzl x; li K` / `b; subu` / `subu` | `cw = x != 0 ? x - mw : K - mw;` |
+| `add.s` agrupado como `k + (a + b)` | escrever os parênteses: a soma de float não é associativa (bug de fidelidade em `menu_item_build_text`) |
+
+Também: helper `static` definido antes no mesmo `.c` (`mat4_det`, `ehf_track_eval`) faz o chamador manter
+`$a`/`$t` através do `jal` (ver `docs/build.md`); quando um asm ainda o chama, a linha em `symbols/` leva
+`type:func static`. Família não resolvida: cópia morta do destino nos `u32 → float` (`bltzl; srl` com o `srl`
+original mantido depois do `b`) em `cardlist_draw_arrow`: o mwcc 219 a remove nessa função, embora a mantenha em
+`ehf_track_eval`.

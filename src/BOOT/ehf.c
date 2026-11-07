@@ -8,6 +8,7 @@
    drawing shapes with stencil masking. */
 #include "psp.h"
 #include "libc.h"
+#include "allegrex.h"
 
 #define EHF_MAGIC 0x1A464845           /* "EHF\x1a" */
 /* A file or an instance: files resolve to their instance. */
@@ -1042,8 +1043,6 @@ static void ehf_track_eval(float *m, EhfColor *cx, int *ratio, EhfTrack *t, int 
     }
 }
 
-#define CLAMP255(v) do { if ((v) < 0) (v) = 0; if ((v) > 0xFF) (v) = 0xFF; } while (0)
-
 typedef struct EhfMesh {               /* 0x18 per mesh of a shape */
     unsigned int color;                /* +0x00 RGB, alpha in the low byte of the next word */
     unsigned int alpha;                /* +0x04 */
@@ -1053,19 +1052,23 @@ typedef struct EhfMesh {               /* 0x18 per mesh of a shape */
     unsigned int prim;                 /* +0x14 prim << 16 | count */
 } EhfMesh;
 
-#ifdef NON_MATCHING /* the original keeps values in caller-saved registers across ehf_track_eval */
-/* A shape: color transform as ambient light, matrix, optional morph between two vertex sets,
-   then each mesh with its texture, material color and lights. */
+#ifdef NON_MATCHING /* com ehf_track_eval static (o original mantém &ratio em a2 através da chamada) e a forma
+   abaixo (cores em locais, clamps com max/min, testes de textura na ordem do original): 61-64 palavras.
+   Falta: (1) a pilha do original tem 4 bytes livres entre m e lpos (m em sp+96, cx em sp+64); com
+   `float m[17]` a pilha bate, mas nenhum tipo natural deu isso (aligned(8/16), união com double e
+   typedef alinhado mandam m para o fundo); (2) o escalonamento dos max/min dos clamps (o original
+   faz o max de r depois dos min de g/a/b) e a associação das somas das cores. */
 void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, float *mtx, EhfColor *p, EhfOpts *o)
 {
-    EhfColor cx;
-    float m[16];
-    float lpos[3];
-    float zero[3];
-    EhfEval ev;
     int ratio;
-    int *shape = c->chr;
+    EhfEval ev;
+    float zero[3];
+    float lpos[3];
+    float m[16];
+    EhfColor cx;
+    int *shape;
     int r, g, b, a;
+    int ar, ag, ab, aa;
     EhfMesh *mh;
     EhfMesh *end;
     unsigned int cur;
@@ -1074,15 +1077,16 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     float w;
 
     ratio = -1;
+    shape = c->chr;
     ehf_track_eval(m, &cx, &ratio, c->track, c->start, frame);
     if (o->flags & 0x80) {
         ev.m = m;
         ev.cx = &cx;
+        ev.ratio = &ratio;
+        ev.parent = mtx;
         ev.track = c->track;
         ev.start = c->start;
         ev.fn = ehf_track_eval;
-        ev.parent = mtx;
-        ev.ratio = &ratio;
         ev.frame = frame;
         if (o->eval_cb(c->depth, o->eval_arg, &ev) == 0) {
             ehf_track_eval(m, &cx, &ratio, c->track, c->start, frame);
@@ -1091,39 +1095,27 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     b = EHF_DIV256(cx.mul[2] * p->mul[2]);
     g = EHF_DIV256(cx.mul[1] * p->mul[1]);
     a = EHF_DIV256(cx.mul[3] * p->mul[3]);
-    cx.add[2] += EHF_DIV256(cx.mul[2] * p->add[2]);
-    cx.add[1] += EHF_DIV256(cx.mul[1] * p->add[1]);
-    cx.add[0] += EHF_DIV256(cx.mul[0] * p->add[0]);
-    cx.add[3] += EHF_DIV256(cx.mul[3] * p->add[3]);
+    ab = cx.add[2] + EHF_DIV256(cx.mul[2] * p->add[2]);
+    ag = cx.add[1] + EHF_DIV256(cx.mul[1] * p->add[1]);
+    ar = cx.add[0] + EHF_DIV256(cx.mul[0] * p->add[0]);
+    aa = cx.add[3] + EHF_DIV256(cx.mul[3] * p->add[3]);
     r = EHF_DIV256(cx.mul[0] * p->mul[0]);
-    if (a < 0) {
-        a = 0;
-    }
-    if (b < 0) {
-        b = 0;
-    }
-    if (g < 0) {
-        g = 0;
-    }
-    if (g > 0xFF) {
-        g = 0xFF;
-    }
-    if (a > 0xFF) {
-        a = 0xFF;
-    }
-    if (b > 0xFF) {
-        b = 0xFF;
-    }
-    if (r < 0) {
-        r = 0;
-    }
-    if (r > 0xFF) {
-        r = 0xFF;
-    }
+    a = ALLEGREX_MAX(a, 0);
+    b = ALLEGREX_MAX(b, 0);
+    g = ALLEGREX_MAX(g, 0);
+    g = ALLEGREX_MIN(g, 0xFF);
+    a = ALLEGREX_MIN(a, 0xFF);
+    b = ALLEGREX_MIN(b, 0xFF);
+    r = ALLEGREX_MAX(r, 0);
+    r = ALLEGREX_MIN(r, 0xFF);
     cx.mul[0] = r;
     cx.mul[1] = g;
     cx.mul[2] = b;
     cx.mul[3] = a;
+    cx.add[0] = ar;
+    cx.add[1] = ag;
+    cx.add[2] = ab;
+    cx.add[3] = aa;
     list = dl_ambient_light(list, r + g * 0x100 + a * 0x1000000 + b * 0x10000);
     mat4_translate2(m, ((float *)shape)[1], ((float *)shape)[2]);
     mat4_scale2(m, ((float *)shape)[3], ((float *)shape)[3]);
@@ -1143,34 +1135,36 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     mh = (EhfMesh *)((char *)shape + shape[4]);
     end = (EhfMesh *)((char *)mh + shape[5]);
     for (; mh < end; mh++) {
-        if (mh->tex == 0) {
+        if (mh->tex != 0) {
+            if (cur != (mh->tex & 0xFFFF)) {
+                list = dl_enable(list, 9);
+                cur = (unsigned short)mh->tex;
+                tex = (EhfTex *)((char *)e->file + e->hdr->tex + cur);
+                list = dl_tex_func(list, 0, 1);
+                if (o->tex_cb == 0) {
+                    list = gim_set_texture(list, tex->gim);
+                } else {
+                    list = o->tex_cb(list, o->tex_arg, tex, cur);
+                }
+                if ((o->flags & 0x100) || (tex->flags & 1)) {
+                    list = dl_blend_func(list, 0, 2, 10, 0xFFFFFFFF, 0xFFFFFFFF);
+                } else {
+                    list = dl_blend_func(list, 0, 2, 3, 0, 0);
+                }
+                if ((tex->flags & 0x10) || (o->flags & 0x400)) {
+                    list = dl_set_tex_filter(list, 1, 1);
+                } else {
+                    list = dl_set_tex_filter(list, 0, 0);
+                }
+            }
+        } else {
             cur = 0xFFFFFFFF;
             list = dl_disable(list, 9);
-        } else if (cur != (mh->tex & 0xFFFF)) {
-            list = dl_enable(list, 9);
-            cur = (unsigned short)mh->tex;
-            tex = (EhfTex *)((char *)e->file + e->hdr->tex + cur);
-            list = dl_tex_func(list, 0, 1);
-            if (o->tex_cb != 0) {
-                list = o->tex_cb(list, o->tex_arg, tex, cur);
-            } else {
-                list = gim_set_texture(list, tex->gim);
-            }
-            if (!(o->flags & 0x100) && !(tex->flags & 1)) {
-                list = dl_blend_func(list, 0, 2, 3, 0, 0);
-            } else {
-                list = dl_blend_func(list, 0, 2, 10, 0xFFFFFFFF, 0xFFFFFFFF);
-            }
-            if (!(tex->flags & 0x10) && !(o->flags & 0x400)) {
-                list = dl_set_tex_filter(list, 0, 0);
-            } else {
-                list = dl_set_tex_filter(list, 1, 1);
-            }
         }
-        CLAMP255(cx.add[2]);
-        CLAMP255(cx.add[0]);
-        CLAMP255(cx.add[1]);
-        CLAMP255(cx.add[3]);
+        cx.add[2] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[2], 0), 0xFF);
+        cx.add[0] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[0], 0), 0xFF);
+        cx.add[1] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[1], 0), 0xFF);
+        cx.add[3] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[3], 0), 0xFF);
         col = cx.add[0] + cx.add[1] * 0x100 + cx.add[3] * 0x1000000 + cx.add[2] * 0x10000;
         list = dl_material_colors(list, col, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
         list = dl_material(list, 1, (unsigned char)mh->alpha * 0x1000000 + (mh->color & 0xFFFFFF));
@@ -1188,7 +1182,7 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
         list = dl_light(list, 1, 0, 6, lpos);
         list = dl_enable(list, 0xB);
         list = dl_light_mode(list, 1);
-        list = dl_draw_array(list, (mh->prim & 0x7FFFF) >> 16, mh->vtype & 0xFFFFFF, mh->prim & 0xFFFF, 0,
+        list = dl_draw_array(list, (mh->prim >> 16) & 7, mh->vtype & 0xFFFFFF, mh->prim & 0xFFFF, 0,
                              (char *)shape + shape[6] + mh->verts);
     }
     return list;

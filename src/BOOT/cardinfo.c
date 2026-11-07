@@ -2,7 +2,6 @@
 // @data 0x088F00E4-0x088F0114
 // @asm 0x0885A1A4-0x0885ADD0
 // @asm 0x0885AFB0-0x0885B498
-// @asm 0x0885BE3C-0x0885C000
 /* Card detail viewer: full-screen panel with the card picture, name, description / genre list /
    deck-list tab, ATK/DEF, level stars and scroll bar. Driven by 0x50 bytes of state at 0x08BEA44C
    and drawn on its own display-list layer; opened/closed with a black fade. */
@@ -96,11 +95,11 @@ void *cardinfo_draw_title_bar(void *list, int x, int y, int w, unsigned short *t
 void *cardinfo_draw_type_row(void *list, int x, int y, int type_class);
 void *cardinfo_draw_genre_row(void *list, int x, int y, int h, int genre);
 void *cardinfo_draw_genre_icon(void *list, int x, int y, int genre);
-void *cardinfo_draw_list_entry(void *list, int x, int y, unsigned short text_id);
+void *cardinfo_draw_list_entry(void *list, int x, int y, int text_id);
 void *cardinfo_draw_list_box(void *list, int x, int y, int lines);
 unsigned short *cardinfo_find_entry(unsigned short id);
-unsigned short *cardinfo_get_text(unsigned int id);
-unsigned int cardinfo_get_text_kind(unsigned int id);
+unsigned short *cardinfo_get_text(unsigned short id);
+unsigned int cardinfo_get_text_kind(unsigned short id);
 void *cardinfo_draw_hint(void *list, int x, int y, unsigned short *text, unsigned char arrows);
 void *cardinfo_draw_lr_arrows(void *list);
 
@@ -712,23 +711,23 @@ void *cardinfo_draw_genre_icon(void *list, int x, int y, int genre)
     return list;
 }
 
-#ifdef NON_MATCHING /* s-register assignment: the original keeps list/x/y/text_id in s4..s1 and re-extends text_id at every call */
 /* One deck-list entry: box sized to the text, kind icon and the text. */
-void *cardinfo_draw_list_entry(void *list, int x, int y, unsigned short text_id)
+/* text_id é int: o original reestende o valor a cada chamada (os parâmetros de cardinfo_get_text*
+   são unsigned short) sem um registrador a mais. */
+void *cardinfo_draw_list_entry(void *list, int x, int y, int text_id)
 {
-    unsigned short id = text_id;         /* a u16 local is re-extended at every use, a parameter is not */
     unsigned short ty = 3;
     int lines, kind;
 
     font_set_color(0xFF000000);
     font_set_size(14, 14);
     if (cardinfo_list_gim != 0) {
-        lines = font_wtext_lines(0x4D40, cardinfo_get_text(id));
+        lines = font_wtext_lines(0x4D40, cardinfo_get_text(text_id));
         list = dl_ambient_color(list, 0xFFFFFFFF);
         list = dl_set_tex_filter(list, 0, 0);
         list = gim_set_texture(list, cardinfo_list_gim);
         list = cardinfo_draw_list_box(list, x, y, lines / font_line_height());
-        kind = cardinfo_get_text_kind(id) & 0xFF;
+        kind = cardinfo_get_text_kind(text_id) & 0xFF;
         if (kind < 5) {
             list = draw_set_offsets(list, 0x11, 0x13, 0x11, 0x13);
             list = draw_sprite(list, x + 4, y + 5, 0, kind * 0x11, 0x2D, 0, 0);
@@ -739,13 +738,11 @@ void *cardinfo_draw_list_entry(void *list, int x, int y, unsigned short text_id)
         ty += 3;
         font_set_line_extra(0x1C0);
     }
-    font_draw_wtext_ex((x + 0x17) * 0x40, (y + ty) * 0x40, 0x4D40, 0x7800, cardinfo_get_text(id), -1);
+    font_draw_wtext_ex((x + 0x17) * 0x40, (y + ty) * 0x40, 0x4D40, 0x7800, cardinfo_get_text(text_id), -1);
     if (cfg_get_language() != 0)
         font_set_line_extra(0);
     return font_text_clear();
 }
-
-#endif
 
 /* Box with `lines` rows: top row 0x16 high, middle rows 0x15, bottom 5. */
 void *cardinfo_draw_list_box(void *list, int x, int y, int lines)
@@ -796,7 +793,7 @@ unsigned short *cardinfo_find_entry(unsigned short id)
     return 0;
 }
 
-unsigned short *cardinfo_get_text(unsigned int id)
+unsigned short *cardinfo_get_text(unsigned short id)
 {
     unsigned int *p = cardinfo_text_pack;
     unsigned int *tbl;
@@ -811,7 +808,7 @@ unsigned short *cardinfo_get_text(unsigned int id)
     return 0;
 }
 
-unsigned int cardinfo_get_text_kind(unsigned int id)
+unsigned int cardinfo_get_text_kind(unsigned short id)
 {
     unsigned int *p = cardinfo_text_pack;
     unsigned int *tbl;
