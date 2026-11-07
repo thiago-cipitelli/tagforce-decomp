@@ -254,7 +254,6 @@ segments:
       - [0x3E2B0, c, dd_fx32]
       - [0x3E308, asm, dd_fx32_asm_088422A8]
       - [0x3E884, c, dd_fx_ripple]
-      - [0x3E98C, asm, dd_fx_ripple_asm_0884292C]
       - [0x3F2A8, c, dd_fx_halo]
       - [0x3F450, asm, dd_fx_halo_asm_088433F0]
       - [0x40084, c, dd_fx_burst]

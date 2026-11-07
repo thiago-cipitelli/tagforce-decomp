@@ -355,6 +355,22 @@ Seis das funções de 2-4 KB de efeitos do libduel_draw bateram com as mesmas re
    (`for (j = 0; j < 1; j++) b = &w->beam[j];`) que iça `buf * 1224` para antes do teste, teste `!(f & 1) != 1`
    (`sltu/xori/beq 1`), `x % 16` em vez de `& 0xF` (`bgez`+`beqzl`), `if (on == 1)` com o `li v0,1` no delay slot.
 
+### Funções de efeito (rodada 8)
+
+`dd_ripple_update` bateu e `dd_ring/halo/tunnel_update` e `dd_orb_draw` ficaram com a forma idêntica (só registradores):
+- **Pilha**: `ScePspFMatrix4`/`ScePspFVector4` com `__attribute__((aligned(16)))` na variável e declarados na ordem
+  de cima para baixo da pilha original; um vetor zerado por laço de bytes no meio da função é local da função zerado
+  com `{ unsigned char *c = (unsigned char *)v; int n = 12; if (c) do { *c++ = 0; } while (--n); }` no ponto do uso
+  (`= {0}` zera no prólogo). Cópia de modelo de `.data` = `off = dd_ripple_off;` de um global nomeado.
+- **Teste de bit `andi; sltu; (xori;) beq/bne x,1`**: `#define DD_BIT(f, m) ((f) & (m) ? 1 : 0)` e
+  `DD_BIT(x, 2) == 1` / `!DD_BIT(x, 1) == 1` / `DD_BIT(x, 1) == 0`.
+- **u/v em temporários** (`tu = i % 4 * du; ... tu + du`), constantes `0.25f`, `10.0f` em locais, e o elemento do
+  array por ponteiro (`f = &d->flame[i]; f->...`, `mt = &d->mote[i]`) quando o original guarda `base + off` num `$s`.
+- **Sorteio de sinal inline**: `x * (DD_RAND(r) % 2 * 2 - 1)` no mesmo comando (não num `sign` à parte), e laços de
+  índices (`idx_a/idx_b`) num `for` próprio depois do laço dos vértices (o mwcc desenrola só esse).
+- Um contador por laço (`build/tmp/fxd/ctr.py` da worktree fxd faz a descida por coordenadas) resolveu dezenas de
+  palavras em cada função.
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
 - **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`) e

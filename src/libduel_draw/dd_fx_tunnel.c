@@ -39,7 +39,8 @@ int dd_fx27_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 2,4 KB: alocação de registradores e laços desenrolados diferem */
+#ifdef NON_MATCHING /* 90 palavras (2026-11-07): forma batendo instrução a instrução; só registradores: `d` em $s3
+   (original $s4) e os contadores do disco rodados ($s3/$s4/$s5) */
 int dd_tunnel_update(int phase, DdTunnelFx *d)
 {
     DdFxSlot *s = d->slot;
@@ -56,15 +57,20 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
     float e;
     float ang;
     float u;
+    float sn;
+    float tv;
+    float cs;
     unsigned int alpha;
     int i;
     int j;
+    int k;
+    int n;
 
     dd_cam_default(7, 240, 136);
     if (phase == 1)
         dd_tunnel_kind(s->id, &d->grow_end, &d->end);
     in = dd_ease_sin(d->t, 8, 1);
-    out = dd_ease_lin(d->t - (d->end - 8), 8);
+    out = 1.0f - dd_ease_lin(d->t - (d->end - 8), 8);
     dd_cue_se(0x6236, d->grow, d->grow_end, &d->se_done, 1);
 
     /* the disc */
@@ -72,17 +78,19 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
         for (i = 0; i < 33; i++) {
             fr = i / 32.0f;
             radius = fr * -600.0f + 800.0f;
-            alpha = (unsigned int)((1.0f - fr) * 255.0f);
-            for (j = 0; j < 33; j++) {
-                v = &d->grid[i][j];
-                fj = j / 32.0f;
+            tv = fr * 0.5f;
+            alpha = (unsigned int)((1.0f - fr) * 255.0f) << 24 | 0xFF00C4;
+            for (k = 0; k < 33; k++) {
+                fj = k / 32.0f;
                 ang = fj * 6.2831855f;
-                v->u = fj * 3.0f;
-                v->v = fr * 0.5f;
-                v->color = alpha << 24 | 0xFF00C4;
-                v->x = radius * sinf(ang);
-                v->y = radius * cosf(ang);
-                v->z = 0.0f;
+                sn = sinf(ang);
+                cs = cosf(ang);
+                d->grid[i][k].u = fj * 3.0f;
+                d->grid[i][k].v = tv;
+                d->grid[i][k].color = alpha;
+                d->grid[i][k].x = radius * sn;
+                d->grid[i][k].y = radius * cs;
+                d->grid[i][k].z = 0.0f;
             }
         }
         for (i = 0; i < 33; i++) {
@@ -99,23 +107,28 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
-        list = dl_ambient_light(list, (unsigned int)(in * 255.0f * (1.0f - out)) << 24 | 0xFFFFFF);
+        list = dl_ambient_light(list, (unsigned int)(in * 255.0f * out) << 24 | 0xFFFFFF);
         list = dl_tex_offset(0.0f, d->frame * 0.03f, list);
-        for (i = 0; i < 32; i++)
-            list = draw_array(list, 4, 0x99F, 66, d->idx, d->grid[i]);
+        for (n = 0; n < 32; n++)
+            list = draw_array(list, 4, 0x99F, 66, d->idx, d->grid[n]);
         mtx_pop();
         dl_set_list(list);
     }
 
     /* the streaks */
     if (phase == 1) {
+        float x1 = 50.0f;
+        float y1 = 200.0f;
+        float x2 = 100.0f;
+        float y2 = 800.0f;
+
         v = d->streak_quad;
-        v[0].u = 0.0f;  v[0].v = 0.0f;  v[0].color = 0xFFFFFF;   v[0].x = -50.0f;  v[0].y = -200.0f; v[0].z = 0.0f;
-        v[1].u = 0.0f;  v[1].v = 0.2f;  v[1].color = 0xFFFFFF;   v[1].x = -100.0f; v[1].y = -800.0f; v[1].z = 0.0f;
-        v[2].u = 0.1f;  v[2].v = 0.0f;  v[2].color = 0xFFFFFF;   v[2].x = 0.0f;    v[2].y = -200.0f; v[2].z = 0.0f;
-        v[3].u = 0.1f;  v[3].v = 0.2f;  v[3].color = 0xFFFFFFFF; v[3].x = 0.0f;    v[3].y = -800.0f; v[3].z = 0.0f;
-        v[4].u = 0.2f;  v[4].v = 0.0f;  v[4].color = 0xFFFFFF;   v[4].x = 50.0f;   v[4].y = -200.0f; v[4].z = 0.0f;
-        v[5].u = 0.2f;  v[5].v = 0.2f;  v[5].color = 0xFFFFFF;   v[5].x = 100.0f;  v[5].y = -800.0f; v[5].z = 0.0f;
+        v[0].u = 0.0f;  v[0].v = 0.0f;  v[0].color = 0xFFFFFF;   v[0].x = -x1;     v[0].y = -y1; v[0].z = 0.0f;
+        v[1].u = 0.0f;  v[1].v = 0.2f;  v[1].color = 0xFFFFFF;   v[1].x = -x2;     v[1].y = -y2; v[1].z = 0.0f;
+        v[2].u = 0.1f;  v[2].v = 0.0f;  v[2].color = 0xFFFFFF;   v[2].x = 0.0f;    v[2].y = -y1; v[2].z = 0.0f;
+        v[3].u = 0.1f;  v[3].v = 0.2f;  v[3].color = 0xFFFFFFFF; v[3].x = 0.0f;    v[3].y = -y2; v[3].z = 0.0f;
+        v[4].u = 0.2f;  v[4].v = 0.0f;  v[4].color = 0xFFFFFF;   v[4].x = x1;      v[4].y = -y1; v[4].z = 0.0f;
+        v[5].u = 0.2f;  v[5].v = 0.2f;  v[5].color = 0xFFFFFF;   v[5].x = x2;      v[5].y = -y2; v[5].z = 0.0f;
     }
     if (d->grow == d->grow_end) {
         st = &d->streak[d->streak_next];
@@ -141,17 +154,17 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
         mtx_identity();
         for (i = 0; i < 8; i++) {
             st = &d->streak[i];
-            if (!(st->flags & 1))
+            if (!(st->flags & 1) == 1)
                 continue;
-            e = dd_ease_sin(st->t, 8, 1);
-            list = dl_ambient_light(list, (unsigned int)((1.0f - out) * dd_ease_cos(st->t, 8, 1) * 255.0f) << 24
+            e = dd_ease_sin(st->t, 8, 1) * 0.5f + 0.5f;
+            list = dl_ambient_light(list, (unsigned int)(out * (dd_ease_cos(st->t, 8, 1) * 255.0f)) << 24
                                               | 0xFFFFFF);
             for (j = 0; j < 4; j++) {
                 u = DD_RAND(r) / 32767.0f;
                 list = dl_tex_offset(DD_RAND(r) / 32767.0f, u, list);
                 mtx_push();
                 mtx_rotate_z(st->ang[j]);
-                dd_scale3(e * 0.5f + 0.5f, 1.0f, 0.0f);
+                dd_scale3(e, 1.0f, 0.0f);
                 list = draw_array(list, 4, 0x19F, 6, 0, d->streak_quad);
                 mtx_pop();
             }

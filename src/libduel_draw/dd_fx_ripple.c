@@ -1,5 +1,4 @@
 // @range 0x08842824-0x08843248
-// @asm 0x0884292C-0x08843248
 // @rodata 0x08870820-0x08870850
 // @data 0x08876BD0-0x08876BF0
 /* Effects 51 and 55-62: at a node of the card model, a ring that refracts the screen behind it (16
@@ -8,8 +7,7 @@
 
 int dd_ripple_update(int phase, DdRippleFx *d);
 
-/* offset of the node for the big models and the w = 1 point: local templates of dd_ripple_update
-   (kept in asm) */
+/* offset of the node for the big models and the w = 1 point, copied by dd_ripple_update */
 ScePspFVector4 dd_ripple_off = { 0.0f, 0.0f, -0.19111691f, 1.0f };
 ScePspFVector4 dd_ripple_w = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -62,19 +60,18 @@ int dd_fx51_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 2,3 KB: alocação de registradores e da pilha diferem */
 int dd_ripple_update(int phase, DdRippleFx *d)
 {
     DdFxSlot *s = d->slot;
     int run = s->param;
     int buf = d->frame % 2;
-    ScePspFMatrix4 bill;
-    ScePspFMatrix4 node;
-    ScePspFMatrix4 rot;
-    ScePspFMatrix4 vp;
-    ScePspFVector4 off;
-    ScePspFVector4 w;
-    unsigned int color[3] = { 0 };
+    unsigned int color[3];
+    ScePspFMatrix4 bill __attribute__((aligned(16)));
+    ScePspFMatrix4 node __attribute__((aligned(16)));
+    ScePspFMatrix4 rot __attribute__((aligned(16)));
+    ScePspFVector4 off __attribute__((aligned(16)));
+    ScePspFMatrix4 vp __attribute__((aligned(16)));
+    ScePspFVector4 w __attribute__((aligned(16)));
     void *list;
     float in;
     float out;
@@ -85,6 +82,10 @@ int dd_ripple_update(int phase, DdRippleFx *d)
     float z;
     int type;
     int i;
+    int j;
+    int k;
+    int m;
+    int l;
 
     dd_mtx_push_saved();
     if (phase == 1) {
@@ -126,21 +127,21 @@ int dd_ripple_update(int phase, DdRippleFx *d)
 
     /* the ring */
     if (phase == 1) {
+        rad = d->ring_scale * 5.0f;
         d->fan[0].u = 0.0f;
         d->fan[0].v = 0.0f;
         d->fan[0].color = 0x805064C8;
         d->fan[0].x = 0.0f;
         d->fan[0].y = 0.0f;
         d->fan[0].z = 0.0f;
-        rad = d->ring_scale * 5.0f;
-        for (i = 0; i < 33; i++) {
-            d->fan[i + 1].u = 0.0f;
-            d->fan[i + 1].v = 0.0f;
-            d->fan[i + 1].color = 0x5064C8;
-            ang = 6.2831855f * i / 32.0f;
-            d->fan[i + 1].x = rad * sinf(ang);
-            d->fan[i + 1].y = rad * cosf(ang);
-            d->fan[i + 1].z = 0.0f;
+        for (j = 0; j < 33; j++) {
+            ang = 6.2831855f * j / 32.0f;
+            d->fan[j + 1].u = 0.0f;
+            d->fan[j + 1].v = 0.0f;
+            d->fan[j + 1].color = 0x5064C8;
+            d->fan[j + 1].x = rad * sinf(ang);
+            d->fan[j + 1].y = rad * cosf(ang);
+            d->fan[j + 1].z = 0.0f;
         }
     }
     if (d->grow == d->grow_end) {
@@ -155,19 +156,21 @@ int dd_ripple_update(int phase, DdRippleFx *d)
         dd_translate3(node.w.x, node.w.y, node.w.z);
         mtx_mult(&bill);
         dd_mtx_mvp_cam(&vp);
-        for (i = 0; i < 34; i++) {
+        for (k = 0; k < 34; k++) {
             w = dd_ripple_w;
-            w.x = d->fan[i].x;
-            w.y = d->fan[i].y;
-            w.z = d->fan[i].z;
+            w.x = d->fan[k].x;
+            w.y = d->fan[k].y;
+            w.z = d->fan[k].z;
             mat4_transform_vec4(&w, &vp, &w);
-            d->fan[i].u = (w.x * 240.0f / w.w + 2048.0f - 1808.0f) / 512.0f;
-            d->fan[i].v = (w.y * -136.0f / w.w + 2048.0f - 1912.0f) / 512.0f;
+            z = (w.y * -136.0f / w.w + 2048.0f - 1912.0f) / 512.0f;
+            x = (w.x * 240.0f / w.w + 2048.0f - 1808.0f) / 512.0f;
+            d->fan[k].u = x;
+            d->fan[k].v = z;
         }
         memcpy(d->fan_buf[buf], d->fan, sizeof(d->fan));
-        for (i = 0; i < 16; i++) {
-            sc = i / 16.0f * 1.5f + 1.0f;
-            list = dl_ambient_light(list, (unsigned int)(out * (1.0f - i / 16.0f) * 255.0f * in) << 24 | 0xFFFFFF);
+        for (m = 0; m < 16; m++) {
+            sc = m / 16.0f * 1.5f + 1.0f;
+            list = dl_ambient_light(list, (unsigned int)(out * ((1.0f - m / 16.0f) * 255.0f * in)) << 24 | 0xFFFFFF);
             mtx_push();
             dd_scale3(sc, sc, 0.0f);
             list = draw_array(list, 5, 0x19F, 34, 0, d->fan_buf[buf]);
@@ -179,30 +182,39 @@ int dd_ripple_update(int phase, DdRippleFx *d)
 
     /* the diamond: three nested outlines, opaque in the middle */
     if (phase == 1) {
+        {
+            unsigned char *c = (unsigned char *)color;
+            int n = 12;
+
+            if (c)
+                do {
+                    *c++ = 0;
+                } while (--n);
+        }
         color[0] = 0x5064C8;
         color[2] = 0x5064C8;
         color[1] = 0xFF5064C8;
-        for (i = 0; i < 3; i++) {
-            sc = ((i - 1.0f) * 0.1f + 1.0f) * d->dia_scale;
+        for (l = 0; l < 3; l++) {
+            sc = ((l - 1.0f) * 0.1f + 1.0f) * d->dia_scale;
             x = sc * 2.3889616f;
             z = sc * 3.406471f;
-            d->dia[0][i].color = color[i];
-            d->dia[0][i].x = -x;
-            d->dia[0][i].y = 0.0f;
-            d->dia[0][i].z = z;
-            d->dia[1][i].color = color[i];
-            d->dia[1][i].x = x;
-            d->dia[1][i].y = 0.0f;
-            d->dia[1][i].z = z;
-            d->dia[2][i].color = color[i];
-            d->dia[2][i].x = x;
-            d->dia[2][i].y = 0.0f;
-            d->dia[2][i].z = -z;
-            d->dia[3][i].color = color[i];
-            d->dia[3][i].x = -x;
-            d->dia[3][i].y = 0.0f;
-            d->dia[3][i].z = -z;
-            d->dia[4][i] = d->dia[0][i];
+            d->dia[0][l].color = color[l];
+            d->dia[0][l].x = -x;
+            d->dia[0][l].y = 0.0f;
+            d->dia[0][l].z = z;
+            d->dia[1][l].color = color[l];
+            d->dia[1][l].x = x;
+            d->dia[1][l].y = 0.0f;
+            d->dia[1][l].z = z;
+            d->dia[2][l].color = color[l];
+            d->dia[2][l].x = x;
+            d->dia[2][l].y = 0.0f;
+            d->dia[2][l].z = -z;
+            d->dia[3][l].color = color[l];
+            d->dia[3][l].x = -x;
+            d->dia[3][l].y = 0.0f;
+            d->dia[3][l].z = -z;
+            d->dia[4][l] = d->dia[0][l];
         }
         d->dia_idx[0] = 0;
         d->dia_idx[1] = 1;
@@ -239,4 +251,3 @@ int dd_ripple_update(int phase, DdRippleFx *d)
     }
     return d->t < d->end ? 2 : 4;
 }
-#endif
