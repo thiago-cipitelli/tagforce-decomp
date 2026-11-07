@@ -1,8 +1,7 @@
 // @range 0x08839360-0x0883F0DC
-// @data 0x08907C3C-0x08907C68
+// @data 0x08907C3C-0x08907C90
 // @asm 0x0883BB00-0x0883D798
 // @asm 0x0883D798-0x0883E63C
-// @asm 0x0883E63C-0x0883F0DC
 /* Battle: step machines of the damage step (duel_w_08919610) with the cards that act on the attacker and the target. */
 #include "duel.h"
 
@@ -773,8 +772,9 @@ int duel_0883B4A8(unsigned int p)
     return 1;
 }
 
-#ifdef NON_MATCHING /* estrutura igual ao original (rodada 7); 27 palavras: ocard e aon/oon trocam de posição de pilha
-   (0x44/0x50, a ordem das declarações não muda) e a ordem dos operandos do | do BATTLE_EV dos laços de efeitos */
+#ifdef NON_MATCHING /* 25 palavras, só pilha: ocard e oon trocam de slot (0x44/0x50). Não mudam: ordem e tipo das
+   declarações, nomes, register, if/ternário, oon = 0 antecipado. O | dos laços de efeitos resolveu com o id relido
+   por duel.players[sp & 1].field[sz] (CSE com o endereço de slot) depois do resto da palavra (rodada 8) */
 /* destruction event word: uid, player, zone, kind 0xE (0xF: not by battle [?], 0xD: with 0x1797) */
 #define ACT_X_INIT(x, s, p, q)                                  \
     do {                                                        \
@@ -1091,7 +1091,7 @@ int duel_0883BB00(unsigned int p)
                                 break;
                             }
                             if (f) {
-                                duel_0884F30C(BATTLE_EV(slot->card.id, sp, sz, 0x2C200000), CARD_UID(duel.players[sp & 1].field[sz].card), *(unsigned int *)&ax);
+                                duel_0884F30C(((sp << 31 & 0x80000000) | 0x2C200000 | (sz << 16 & 0x1F0000)) | duel.players[sp & 1].field[sz].card.id, CARD_UID(duel.players[sp & 1].field[sz].card), *(unsigned int *)&ax);
                             }
                         }
                         break;
@@ -1191,7 +1191,7 @@ int duel_0883BB00(unsigned int p)
                                 break;
                             }
                             if (f) {
-                                duel_0884F30C(BATTLE_EV(slot->card.id, sp, sz, 0x2C200000), CARD_UID(duel.players[sp & 1].field[sz].card), *(unsigned int *)&ox);
+                                duel_0884F30C(((sp << 31 & 0x80000000) | 0x2C200000 | (sz << 16 & 0x1F0000)) | duel.players[sp & 1].field[sz].card.id, CARD_UID(duel.players[sp & 1].field[sz].card), *(unsigned int *)&ox);
                             }
                         }
                         break;
@@ -1263,7 +1263,8 @@ int duel_0883BB00(unsigned int p)
 #endif
 
 #ifdef NON_MATCHING /* 1 palavra: no evento 0x143E o original faz sll de i (s0), aqui sai do andi de i & 1 reaproveitado
-   (sem o & 1 a ordem de avaliação do | inverte: 26 palavras) */
+   (sem o & 1 a ordem de avaliação do | inverte: 26 palavras). Rodada 8, sem efeito: i copiado para outra variável,
+   q unsigned, i % 2, & 3, ponteiro local, uid em local, todas as associações do | */
 /* p: attacking player; end of the damage step: cards that act after the battle */
 int duel_0883D798(unsigned int p)
 {
@@ -1467,9 +1468,6 @@ int duel_0883D798(unsigned int p)
 }
 #endif
 
-#ifdef NON_MATCHING /* switch por tabela (0x08907C68): ao promover, estender o @data com a tabela.
-   7 palavras no case 8 (mask e o ponteiro do laço trocam s4/s5). Os casos 7 e 8 reaproveitam uid/ap/zz/arg
-   como contadores de propósito: é o que dá os registradores do original */
 /* p: attacking player; after the battle: flips, moved cards, then the end of the battle step */
 int duel_0883E63C(unsigned int p)
 {
@@ -1624,19 +1622,20 @@ int duel_0883E63C(unsigned int p)
         duel_w_08919610++;
     case 8:
         if (duel_slot_has_effect(p, 0xB, 0x1512) != 0) {
-            i = 0;
+            unsigned int bits;
+            bits = 0;
             for (uid = 0; uid < 2; uid++) {
                 ap = duel_turn_player ^ uid;
                 arg = ap << 4;
                 for (zz = 0; zz < 5; zz++, arg++) {
                     if (ATK_SLOT(ap, zz)->card.id != 0 && duel_slot_has_effect(ap, zz, 0x1512) != 0) {
-                        i |= 1 << arg;
+                        bits |= 1 << arg;
                     }
                 }
             }
-            if (i != 0) {
+            if (bits != 0) {
                 duel_088C44E4(p, 0x1512);
-                duel_088D13D8(p, 0x1512, i);
+                duel_088D13D8(p, 0x1512, bits);
             }
         }
         duel_w_08919610++;
@@ -1662,4 +1661,3 @@ int duel_0883E63C(unsigned int p)
     }
     return 1;
 }
-#endif

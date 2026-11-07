@@ -333,6 +333,18 @@ Idiomas novos (cada um resolveu pelo menos um trecho):
 - **Inline do original**: `act_x_init` virou macro com o laço de bytes (`ACT_X_INIT`); com o helper `static` o
   código saía 556 bytes menor.
 
+- **Variável nova para um laço de um `case`** (rodada 8, `duel_0883E63C`): máscara e ponteiro induzido trocando `$s`
+  só num `case`, com o mesmo laço batendo noutro `case`: a máscara reaproveitava um local usado em outros `case`s
+  (`i`). Um local novo de bloco (`{ unsigned int bits; ... }`) bateu; permutar declarações e renomear para outros
+  locais existentes não muda nada (a interferência vem do compartilhamento, não da ordem).
+- **Ordem dos operandos de um `|` com campo de bitfield** (rodada 8, `duel_0883BB00`): `or a0,resto,id` no original
+  contra `or a0,id,resto` — o mwcc reordena o `|` sozinho (a ordem no fonte não muda nada); o que bateu foi reler o
+  campo pela expressão completa `duel.players[sp & 1].field[sz].card.id` (CSE com o ponteiro `slot`) em vez de
+  `slot->card.id`.
+- Sem forma até agora: slot de pilha de dois locais derramados trocado (`ocard`/`oon` em `duel_0883BB00`: ordem,
+  tipo, nome, `register` e inicialização antecipada não mudam) e `sll` de `i` com `i & 1` reaproveitado pelo CSE
+  (`duel_0883D798`: cópias de `i`, `% 2`, `unsigned` e reassociação do `|` não quebram o CSE).
+
 ## Funções grandes de efeito (`dd_fx_*`, rodada 7)
 
 Seis das funções de 2-4 KB de efeitos do libduel_draw bateram com as mesmas regras (`dd_fx_swirl_update`,
