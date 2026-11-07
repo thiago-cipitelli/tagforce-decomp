@@ -464,3 +464,20 @@ Funções de vários KB com fuzzy baixo costumam ter a lógica certa e a forma e
   palavras; levou `shop_glow_ultra` de 144 a 20 palavras (bateu depois com `aligned(16)` no `Mat4 mvp` do bloco) e
   `shop_glow_super` de 411 a 31 (este também com `ShopGlowSparks *q = &g->spark_a[i][j];` no laço do meio: o
   original guarda a base do grupo e lê `q->s[n]`).
+Rodada 8 (`leave_field.c`: `duel_leave_mark` de 748 palavras a 0, `duel_088CFBA4` de 797 a 22):
+6. **Cópias mortas espalhadas pela função vinham de um só `return`**: as três cópias mortas de `duel_leave_mark`
+   (inclusive duas longe dali, no `if/else` do topo e no `case 0x12BE`) sumiram ao escrever
+   `if (id == 0 || (duel.zone_off & 1 << (z + p * 16))) return;` em vez de dois `if (...) return;` seguidos
+   (o `||` seguido de `return` da seção "Desvios likely"). Antes de dar uma cópia morta como não-corrigível,
+   procure na função um par de `return` antecipados que possa ser um `||`.
+7. **`andi 0xFFFF`/`0xFF` nos argumentos que o original não tem**: o original chamava sem protótipo
+   (`int duel_card_can_affect();`, como em `effects_s.c`); o protótipo com `unsigned short`/`unsigned char`
+   mascara cada argumento.
+8. **Expressão invariante que o original recalcula dentro do laço** (`xor; sltu; addiu a3,v0,2` antes de cada
+   chamada, e o mwcc a iça para um `$s`): `(q != p ? 1 : 0) + 2` em vez de `(q != p) + 2`. O `?:` só vira
+   `sltu` depois do LICM, então não é içado; `(q != p ? 3 : 2)` dá desvios. `q != p` sozinho (2 instruções) já não
+   é içado.
+9. **`andi 0xFFFF` redundante depois de `andi 0x1FFF`** no `switch` de um campo de 13 bits:
+   `switch ((unsigned short)(int)SLOT_AT(p, i)->card.id)`; o cast direto `(unsigned short)` é descartado.
+10. **Parâmetro relido da pilha a cada uso** (`lw a0,60(sp)` antes de cada `andi`): é um parâmetro derramado; a ordem
+   das inicializações dos flags derivados dele decide a coloração (`keep` antes de `destroy` em `duel_088CFBA4`).
