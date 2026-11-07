@@ -454,7 +454,7 @@ segments:
       - [0xC894C, c, leave_field]
       - [0xC894C, asm, leave_field_asm_088CC8EC]
       - [0xCAC08, c, leave_field]
-      - [0xCAF40, asm, leave_field_asm_088CEEE0]
+      - [0xCBC04, asm, leave_field_asm_088CFBA4]
       - [0xCC8D8, c, leave_field]
       - [0xCD42C, c, act_apply]
       - [0xCDE54, c, battle_088D1DF4]

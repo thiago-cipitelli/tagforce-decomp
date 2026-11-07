@@ -1,6 +1,6 @@
 // @range 0x088CC8EC-0x088D13CC
 // @asm 0x088CC8EC-0x088CEBA8
-// @asm 0x088CEEE0-0x088D0878
+// @asm 0x088CFBA4-0x088D0878
 /* Cards leaving the field: the triggers of a card that left (duel_088CC8EC), which zones an action can
    reach (duel_act_hits_mask), marking the zones that leave together (duel_leave_mark), sending one
    card to another pile with its host message (duel_send_card), the cards that follow it
@@ -29,7 +29,7 @@ int duel_list_has_effect(int uid, int id);
 int duel_slot_e8170(unsigned int p, int z, int id);
 unsigned short duel_slot_e1854(unsigned int p, int z);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
-int duel_card_can_affect(unsigned int p, int z, unsigned short id, unsigned char zone, int arg);
+int duel_card_can_affect();
 unsigned short duel_special_e1934(unsigned int p, unsigned int z);
 int duel_special_get_id(DuelSlot *s);
 unsigned int duel_d_find_name(unsigned int p, int id);
@@ -79,7 +79,8 @@ struct DuelActX1 {
 #define TRIG_K(kind) ((kind) << 25 & 0x7E000000)
 #define TRIG_Z(z) ((unsigned int)(z) << 16 & 0x1F0000)
 
-#ifdef NON_MATCHING /* 24 palavras (2026-11-06), todas no prólogo: o original grava cause (a2) em 112(sp) logo no
+#ifdef NON_MATCHING /* 20 palavras (2026-11-07: id lido primeiro; busca por subida nas 14 atribuições e na ordem das
+   declarações não passa disso), todas no prólogo: o original grava cause (a2) em 112(sp) logo no
    início e lê o byte 1 de x em a2, o id em a0 e o byte do dono em v1; aqui o mwcc lê o id antes e usa a0/v1 trocados.
    Testadas todas as ordens das 6 atribuições de p..z (perm_stmts) e posições de owner/uid. O resto bate: switch na
    ordem inversa dos testes, ok = !protegido zerado por 0x15FF, códigos de duel_0884F30C com máscaras (TRIG_*, com
@@ -114,10 +115,10 @@ void duel_088CC8EC(struct DuelActX1 x, DuelSlot *s, int cause, unsigned int f)
     DuelCard *c;
     int n;
 
+    id = s->card.id;
     owner = s->card.owner;
     uid = owner + (s->card.uid_hi << 1);
     p = x.s_player;                   /* where it was */
-    id = s->card.id;
     by_effect = (f & 0x80000) != 0;
     by_opp = x.s_b18 != p;            /* sent by the opponent of its controller */
     destroyed = x.s_b15;
@@ -601,19 +602,16 @@ unsigned int duel_act_hits_mask(DuelAct *a, unsigned int mask, int kind, int che
     return hit;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (2026-11-04); não-corrigível: o original guarda duas cópias mortas depois de um b (move a0,s0 em 0x088CEF60, or a0,a0,a1 em 0x088CF074). Fora isso a forma segue o original (case na ordem inversa dos testes, switch internos por id) */
 /* Marks zone z of player p as leaving (duel.zone_off) together with the cards that go with it:
    equips, cards linked by effect, the cards named by 0x1A95, 0x1A7C, 0x1A2B-0x1A2E, 0x150E... */
 void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
 {
     int destroy = (int)(f & 2) > 0;
     int id = field_get_card(p, z);
-    unsigned int bit;
-    unsigned int q;
+    int q;
     unsigned int v;
     unsigned int e;
     DuelEffect *ef;
-    DuelSlot *s;
     int i;
 
     if (card_get_type(cause) == 0x16) {
@@ -625,23 +623,19 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
             return;
         }
     }
-    if (z < 5 && destroy && duel_slot_affected(p, z, 0x1825)) {   /* its substitute goes instead */
+    if (5 > z && destroy && duel_slot_affected(p, z, 0x1825)) {   /* its substitute goes instead */
         v = duel_slot_src_attr8(p, z, 1);
         duel_leave_mark(v & 0xFF, v >> 8 & 0xFF, 2, 0, 0);
         return;
     }
-    if (4 < z && destroy && cause != 0 && duel_slot_has_effect(p, z, 0x1513)) {
+    if (z >= 5 && destroy && cause != 0 && duel_slot_has_effect(p, z, 0x1513)) {
         duel_088CC594(p, z, -1, 0x1513);
         return;
     }
-    if (id == 0) {
+    if (id == 0 || (duel.zone_off & 1 << (z + p * 16))) {
         return;
     }
-    bit = 1 << (z + p * 16);
-    if (duel.zone_off & bit) {
-        return;
-    }
-    duel.zone_off |= bit;
+    duel.zone_off |= 1 << (z + p * 16);
     switch (id) {
     case 0x12BE:
         if (!(f & 8) && destroy) {
@@ -664,7 +658,7 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
     case 0x1A9B:
         if (SLOT_ACTIVE(SLOT_AT(p, z))) {
             for (q = 0; q < 2; q++) {
-                for (i = 0; i < 11; i++) {
+                for (i = 0; i <= 10; i++) {
                     if (duel_st_affects(q, i, p, z) && SLOT_AT(q, i)->card.id != 0 &&
                         duel_card_can_affect(q, i, id, z, 1)) {
                         duel_leave_mark(q, i, 2, id, q != p);
@@ -688,7 +682,7 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
             v = duel_slot_e1854(p, z);
             if (v != 0xFFFF) {
                 q = v & 0xFF;
-                i = v >> 8;
+                i = v >> 8 & 0xFF;
                 if (SLOT_AT(q, i)->card.id != 0 && SLOT_AT(q, i)->faceup != 0) {
                     switch (id) {
                     case 0x1625:
@@ -711,11 +705,10 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
     case 0x1498:
     case 0x1499:
     case 0x149A:
-        if (4 < z && SLOT_AT(p, z)->faceup != 0 && duel_find_effect_card(p, 0x1468, -1)) {
+        if (z >= 5 && SLOT_AT(p, z)->faceup != 0 && duel_find_effect_card(p, 0x1468, -1)) {
             for (i = 5; i < 10; i++) {
-                s = SLOT_AT(p, i);
-                if (i != z && s->card.id != 0 && s->faceup != 0) {
-                    switch (s->card.id) {
+                if (i != z && SLOT_AT(p, i)->card.id != 0 && SLOT_AT(p, i)->faceup != 0) {
+                    switch ((unsigned short)(int)SLOT_AT(p, i)->card.id) {
                     case 0x1468:
                     case 0x1497:
                     case 0x1498:
@@ -731,11 +724,10 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
     case 0x17AF:
     case 0x17AD:
     case 0x17AE:                       /* the other pieces of the set */
-        if (4 < z && SLOT_AT(p, z)->faceup != 0 && duel_find_effect_card(p, 0x17AF, -1)) {
+        if (z >= 5 && SLOT_AT(p, z)->faceup != 0 && duel_find_effect_card(p, 0x17AF, -1)) {
             for (i = 5; i < 10; i++) {
-                s = SLOT_AT(p, i);
-                if (i != z && s->card.id != 0 && s->faceup != 0) {
-                    switch (s->card.id) {
+                if (i != z && SLOT_AT(p, i)->card.id != 0 && SLOT_AT(p, i)->faceup != 0) {
+                    switch ((unsigned short)(int)SLOT_AT(p, i)->card.id) {
                     case 0x17AF:
                     case 0x17AD:
                     case 0x17AE:
@@ -747,11 +739,10 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
         }
         break;
     case 0x150E:
-        if (4 < z && SLOT_ACTIVE(SLOT_AT(p, z))) {
+        if (z >= 5 && SLOT_ACTIVE(SLOT_AT(p, z))) {
             for (q = 0; q < 2; q++) {
                 for (i = 0; i < 5; i++) {
-                    s = SLOT_AT(q, i);
-                    if (s->faceup != 0 && card_is_attribute7(s->card.id)) {
+                    if (SLOT_AT(q, i)->faceup != 0 && card_is_attribute7(SLOT_AT(q, i)->card.id)) {
                         duel_leave_mark(q, i, 0, 0x150E, q != p);
                     }
                 }
@@ -774,7 +765,7 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
         }
         break;
     case 0x1A7C:
-        if (4 < z && SLOT_ACTIVE(SLOT_AT(p, z))) {
+        if (z >= 5 && SLOT_ACTIVE(SLOT_AT(p, z))) {
             for (q = 0; q < 2; q++) {
                 for (i = 0; i < 5; i++) {
                     if (duel_slot_effect_with(q, i, id, CARD_UID(SLOT_AT(p, z)->card))) {
@@ -786,7 +777,7 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
         break;
     case 0x1A95:
         for (q = 0; q < 2; q++) {
-            for (i = 0; i < 11; i++) {
+            for (i = 0; i <= 10; i++) {
                 if (duel_st_affects(q, i, p, z) && SLOT_AT(q, i)->card.id != 0 &&
                     duel_card_can_affect(q, i, id, z, 0)) {
                     duel_leave_mark(q, i, 2, id, q != p);
@@ -796,31 +787,31 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
         break;
     }
     for (e = SLOT_AT(p, z)->effects; e != 0;) {   /* cards bound to it by an effect entry */
-        ef = &duel_effects[e];
+        ef = &duel.effects[e];
         e = ef->next;
         if (duel_effect_live(ef, destroy, 0)) {
-            duel_leave_mark(ef->src & 0xFF, ef->src >> 8, 2, 0, (ef->src & 0xFF) != p);
+            duel_leave_mark(ef->src & 0xFF, ef->src >> 8 & 0xFF, 2, 0, (ef->src & 0xFF) != p);
         }
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* lógica e ordem dos jal conferidas com o asm (case invertidos, switch internos por id); ~790 palavras: o mwcc tira (q != p) + 2 dos laços (o original recalcula a cada chamada) e deixa destroy na pilha (original em s8) */
+#ifdef NON_MATCHING /* lógica e ordem dos jal conferidas com o asm. 22 palavras (2026-11-07), só registradores: no case 0x12BE o original tem i/q/ponteiro em s3/s4/s1 (aqui s4/s1/s3) e no 0x150E n/q em s3/s1 (aqui trocados). Testados: nomes próprios por case, formas do laço e de q, ordem das declarações. Resolveu o resto: (q != p ? 1 : 0) + 2 (não içado), keep antes de destroy, n7 no case 0x1A7C */
 /* After the card of slot s (zone z of player p) left: sends the cards that go with it (the same
    cases as duel_leave_mark), then the cards bound to it by effect entries. */
 void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
 {
     int id = duel_special_get_id(s);
-    int destroy = (f & 2) != 0;
     int keep = !((f & 8) != 0);
+    int destroy = (f & 2) != 0;
     int b4 = (f & 4) != 0;
     int b24 = (f & 0x1000000) != 0;
     int n;
-    unsigned int q;
+    int q;
     unsigned int v;
     unsigned int e;
     DuelEffect *ef;
     int i;
+    int n7;
 
     switch (id) {
     case 0x12BE:
@@ -829,7 +820,7 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
                 q = duel_turn_player ^ n;
                 for (i = 0; i < 5; i++) {
                     if (SLOT_ACTIVE(SLOT_AT(q, i)) && card_is_attribute6(field_get_card(q, i))) {
-                        duel_send_card(q, i, 0xE, (q != p) + 2, id);
+                        duel_send_card(q, i, 0xE, (q != p ? 1 : 0) + 2, id);
                     }
                 }
             }
@@ -845,10 +836,10 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
     case 0x1A9B:
         if (SLOT_AT(p, z)->card.id != 0 && SLOT_ACTIVE(SLOT_AT(p, z))) {
             for (q = 0; q < 2; q++) {
-                for (i = 0; i < 11; i++) {
+                for (i = 0; i <= 10; i++) {
                     if (duel_st_affects(q, i, p, z) && SLOT_AT(q, i)->card.id != 0 &&
                         duel_card_can_affect(q, i, id, z, 1)) {
-                        duel_send_card(q, i, 0xE, (q != p) + 2, id);
+                        duel_send_card(q, i, 0xE, (q != p ? 1 : 0) + 2, id);
                     }
                 }
             }
@@ -893,7 +884,7 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
                         break;
                     default:
                         if (duel_card_can_affect(q, i, id, z, 1)) {
-                            duel_send_card(q, i, 0xE, (q != p) + 2, id);
+                            duel_send_card(q, i, 0xE, (q != p ? 1 : 0) + 2, id);
                         }
                         break;
                     }
@@ -912,7 +903,7 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
                     continue;
                 }
                 if (SLOT_AT(p, i)->card.id != 0 && SLOT_AT(p, i)->faceup != 0) {
-                    switch (SLOT_AT(p, i)->card.id) {
+                    switch ((unsigned short)(int)SLOT_AT(p, i)->card.id) {
                     case 0x1468:
                     case 0x1497:
                     case 0x1498:
@@ -934,7 +925,7 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
                     continue;
                 }
                 if (SLOT_AT(p, i)->card.id != 0 && SLOT_AT(p, i)->faceup != 0) {
-                    switch (SLOT_AT(p, i)->card.id) {
+                    switch ((unsigned short)(int)SLOT_AT(p, i)->card.id) {
                     case 0x17AF:
                     case 0x17AD:
                     case 0x17AE:
@@ -962,11 +953,11 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
     case 0x1A2D:
     case 0x1A2E:
         if (s->faceup != 0) {
-            for (n = 0; n < 2; n++) {
-                q = duel_turn_player ^ n;
+            for (n7 = 0; n7 < 2; n7++) {
+                q = duel_turn_player ^ n7;
                 for (i = 0; i < 5; i++) {
                     if (duel_slot_has_effect(q, i, id)) {
-                        duel_send_card(q, i, 0xE, (q != p) + 2, id);
+                        duel_send_card(q, i, 0xE, (q != p ? 1 : 0) + 2, id);
                     }
                 }
             }
@@ -987,20 +978,20 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
     case 0x1A95:
         for (n = 0; n < 2; n++) {
             q = duel_turn_player ^ n;
-            for (i = 0; i < 11; i++) {
+            for (i = 0; i <= 10; i++) {
                 if ((duel_st_affects(q, i, p, z) || duel_slot_effect_with(q, i, id, CARD_UID(s->card))) &&
                     SLOT_AT(q, i)->card.id != 0 && duel_card_can_affect(q, i, id, z, 0)) {
-                    duel_send_card(q, i, 0xE, (q != p) + 2, id);
+                    duel_send_card(q, i, 0xE, (q != p ? 1 : 0) + 2, id);
                 }
             }
         }
         break;
     }
     for (e = s->effects; e != 0;) {
-        ef = &duel_effects[e];
+        ef = &duel.effects[e];
         e = ef->next;
         if (duel_effect_live(ef, destroy, b24)) {
-            duel_send_card(ef->src & 0xFF, ef->src >> 8, 0xE, (f & 0x400000) + destroy * 0x100000 + 2 + b4 * 0x200000, 0);
+            duel_send_card(ef->src & 0xFF, ef->src >> 8 & 0xFF, 0xE, (f & 0x400000) + (destroy * 0x100000 + 2 + b4 * 0x200000), 0);
         }
     }
 }

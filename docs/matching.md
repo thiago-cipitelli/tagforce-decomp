@@ -417,3 +417,21 @@ Funções de vários KB com fuzzy baixo costumam ter a lógica certa e a forma e
 4. `slti at` no teste de um laço contado: `i <= 4` (não `i < 5`). Índice e ponteiro do laço trocados de `$s`:
    variável do laço declarada no bloco (`{ int j; for (j = 0; ...) }`), não a da função.
 5. Dois `case` que usam `&&` com o mesmo corpo `trig = 1` e `beql ..., fim; li s3,1`: era `||` num só `if`.
+
+Rodada 8 (`leave_field.c`: `duel_leave_mark` de 748 palavras a 0, `duel_088CFBA4` de 797 a 22):
+6. **Cópias mortas espalhadas pela função vinham de um só `return`**: as três cópias mortas de `duel_leave_mark`
+   (inclusive duas longe dali, no `if/else` do topo e no `case 0x12BE`) sumiram ao escrever
+   `if (id == 0 || (duel.zone_off & 1 << (z + p * 16))) return;` em vez de dois `if (...) return;` seguidos
+   (o `||` seguido de `return` da seção "Desvios likely"). Antes de dar uma cópia morta como não-corrigível,
+   procure na função um par de `return` antecipados que possa ser um `||`.
+7. **`andi 0xFFFF`/`0xFF` nos argumentos que o original não tem**: o original chamava sem protótipo
+   (`int duel_card_can_affect();`, como em `effects_s.c`); o protótipo com `unsigned short`/`unsigned char`
+   mascara cada argumento.
+8. **Expressão invariante que o original recalcula dentro do laço** (`xor; sltu; addiu a3,v0,2` antes de cada
+   chamada, e o mwcc a iça para um `$s`): `(q != p ? 1 : 0) + 2` em vez de `(q != p) + 2`. O `?:` só vira
+   `sltu` depois do LICM, então não é içado; `(q != p ? 3 : 2)` dá desvios. `q != p` sozinho (2 instruções) já não
+   é içado.
+9. **`andi 0xFFFF` redundante depois de `andi 0x1FFF`** no `switch` de um campo de 13 bits:
+   `switch ((unsigned short)(int)SLOT_AT(p, i)->card.id)`; o cast direto `(unsigned short)` é descartado.
+10. **Parâmetro relido da pilha a cada uso** (`lw a0,60(sp)` antes de cada `andi`): é um parâmetro derramado; a ordem
+   das inicializações dos flags derivados dele decide a coloração (`keep` antes de `destroy` em `duel_088CFBA4`).
