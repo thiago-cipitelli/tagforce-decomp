@@ -493,3 +493,28 @@ Rodada 8 (`leave_field.c`: `duel_leave_mark` de 748 palavras a 0, `duel_088CFBA4
    `switch ((unsigned short)(int)SLOT_AT(p, i)->card.id)`; o cast direto `(unsigned short)` é descartado.
 10. **Parâmetro relido da pilha a cada uso** (`lw a0,60(sp)` antes de cada `andi`): é um parâmetro derramado; a ordem
    das inicializações dos flags derivados dele decide a coloração (`keep` antes de `destroy` em `duel_088CFBA4`).
+## Família `duel_req_*` (rodada 8): coloração e CSE
+
+Pesquisa em `req_effect.c`/`req_step.c`. **O bitfield de halfword não se aplica**: os `DuelLoc` locais dessas funções
+são preenchidos campo a campo (`lbu/sb` estreitados, só `idx` de 8 bits sai `lhu/sh`), como o mwcc 219 já faz; o
+que trava a família é coloração de `$s`, CSE de endereço e escalonamento. Idiomas que resolveram:
+- **Local de bloco muda a coloração** (`duel_req_088D9504`, 553 → 0 palavras): o original usava `$s8` a mais porque o
+  ponteiro da carta do ramo `if (keep)` era outra variável: `DuelCard *c = ...;` declarado **dentro** do bloco
+  (o do `else` continua o da função). Sinal: o original usa um `$s` a mais e um dos registradores só tem um uso.
+- **Seleção por ternário + `return` em cada `case`** (`duel_req_088D9DBC`, 475 → 0): `beq; nop; b` na escolha de um
+  ponteiro = `s = c1 && c2 ? &a : &b;`; cópia morta da 1ª instrução de cada `case` depois do `b` do anterior =
+  os `case` terminam em `return;` (não `break;`).
+- **Deslocamento da zona num local** (`zo = z * sizeof(DuelSlot)` antes do jogador): quando o original calcula
+  `z * 20` antes do `mult` do jogador **e** o põe como operando esquerdo do `addu`, nem `ZSLOT` nem a forma 3 bastam;
+  `ZOSLOT(p, zo)` / `ZOFF(p, zo, T, campo)` em `req_effect.c` (change_pos 201 → 7, flip 202 → 2, move_zone 238 → 15).
+- **Declarar separado de atribuir**: a ordem das declarações decide a coloração e a dos comandos decide a ordem das
+  cargas; com inicializadores elas andam juntas. Declare sem inicializar (na ordem que dá os `$s` do original) e
+  atribua na ordem das cargas do original (change_pos 22 → 9, flip 22 → 2).
+- **Endereço de campo repetido sem CSE**: o original recalcula `lui/addiu duel+0x36` num segundo uso e o mwcc guarda
+  num `$s8`; escrever o segundo como `(unsigned int)((char *)&duel.players[0].field[0] + 6)` evita o CSE.
+- `(unsigned int)(x & 1) << 14` num termo de um `|` muda a ordem de avaliação (flip); `MIN(-n, max)` como ternário
+  `max < -n ? max : -n` dá `beqz; nop; move` sem likely (counters).
+Ainda em asm (registradores/escalonamento, formas esgotadas): `duel_req_effect_set` e `duel_req_order` (4),
+`duel_req_flip` (2: segundo `lui` de `duel_order_ctr` antes do `addiu`, mesma família de `duel_place_monster/st`),
+`duel_req_activate` (2), `duel_req_change_pos` (7), `duel_req_mill` (9, p/n trocados), `duel_req_move_zone` (15,
+ap/az trocados), `duel_req_counters` (20), `duel_req_move_card` (51: `ext 16,16` de `t >> 16` que o 219 dá `srl`).
