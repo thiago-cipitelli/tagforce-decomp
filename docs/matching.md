@@ -440,3 +440,27 @@ Funções de vários KB com fuzzy baixo costumam ter a lógica certa e a forma e
   { 0, 5, 6, 8 };` no bloco onde é copiado; o global do modelo fica só sem `NON_MATCHING` (`dmgr_result_init`).
 - **Índice em vez de ponteiro de laço**: `((DmgrResItem *)tab)[i].on` no lugar de `it++` muda a ordem dos incrementos
   das induções; e `x` calculado no uso (`0xDC + i * 0x3B`) em vez de variável do `for` troca os `$s` (`dmgr_res_draw_series`).
+
+## Rodada 8 (telas de opções e brilho da loja)
+
+- **Funções gêmeas entre módulos com o mesmo tamanho**: `opt_*` de libduel_draw (`dd_duel_options.c`) e `tcfg_*` de
+  libtitle (`t_cfg.c`/`t_cfgdraw.c`) são o mesmo código (asm igual a menos de endereços: confira com `raw_asm.sh` das
+  duas faixas, endereços mascarados). Gerar uma a partir da outra com troca de nomes de campos/funções bateu `opt_update`, `opt_row`, `opt_switch_draw` de uma vez; o draft antigo
+  de libduel_draw tinha protótipos e um campo com tipo errado (`frame` `unsigned int`, era `int`: `% 16` e
+  `%= 0x1000000` mudam). Antes de reescrever uma função grande, procure a gêmea por tamanho em `symbols/`.
+- **Cópia de struct escalonada fora da ordem** (`off = s[1]` com os `lh/sh` de u,v,w antes do `sh` de h no
+  original): `off = ((TCfgSpr2 *)s)->s[1];` depois das leituras de `s[0]` (`tcfg_meter`, `tcfg_arrows`).
+- **`static` de uma folha chamada por funções em asm**: `shop_glow_ratio` e `shop_glow_ratio_inv` viraram `static` (linha `type:func static
+  matched` em `symbols/`, o `PROVIDE` do `fix_ld.py` atende o asm); `shop_glow_draw_bar` passou de 266 para 21
+  palavras e bateu com um contador por laço (`i`, `j`, `k`). Sinal: o original mantém um `$f`/`$v` temporário (não
+  `$s`/`$f20+`) vivo através do `jal` da folha.
+- **Mesmo endereço por duas expressões = dois ponteiros de indução**: o original tinha `a0` e `a2` de
+  `mat4_transform_vec4(out, &mvp, in)` em `$s` diferentes, ambos `&scr[i]`; `(Vec4 *)((char *)scr + i * 16)` num
+  deles e `&scr[i]` no outro reproduz (`shop_glow_ultra`).
+- **Temporário float calculado antes de uma chamada** (`div.s $f20` no delay slot do `jal`): o local `f` declarado
+  no escopo da função, não no bloco do laço (no bloco o mwcc guarda o int em `$s` e converte depois da chamada).
+- **Descida por coordenadas no nome do contador de cada laço**: renomeia o contador de
+  cada `for (x = ...)` para um nome de um conjunto (sem repetir entre laços aninhados) e mantém o que reduz as
+  palavras; levou `shop_glow_ultra` de 144 a 20 palavras (bateu depois com `aligned(16)` no `Mat4 mvp` do bloco) e
+  `shop_glow_super` de 411 a 31 (este também com `ShopGlowSparks *q = &g->spark_a[i][j];` no laço do meio: o
+  original guarda a base do grupo e lê `q->s[n]`).

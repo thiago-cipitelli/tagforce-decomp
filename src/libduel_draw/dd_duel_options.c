@@ -1,10 +1,6 @@
 // @range 0x088682AC-0x0886A3F4
-// @asm 0x08868524-0x08868B30
+// @rodata 0x08872B98-0x08872BE0
 // @asm 0x08868B30-0x08869790
-// @asm 0x08869790-0x08869BE4
-// @asm 0x08869BE4-0x08869D34
-// @asm 0x08869D34-0x08869F04
-// @asm 0x08869F04-0x0886A010
 // @data 0x0887CBD0-0x0887CF74
 /* Duel options window (m_menu_panel / menu_opt textures, option_msg_<lang>.bin captions): four
    groups of rows (auto-advance, speed, volumes, display mode, flags), edited with the d-pad;
@@ -34,7 +30,7 @@ typedef struct Options {               /* 0x30, heap */
     void *pack;                        /* 0x18 */
     void *panel_gim;                   /* 0x1C */
     void *opt_gim;                     /* 0x20 */
-    unsigned int frame;                /* 0x24 */
+    int frame;                         /* 0x24 */
     unsigned int color;                /* 0x28 */
     unsigned int color_sel;            /* 0x2C */
 } Options;
@@ -42,6 +38,14 @@ typedef struct Options {               /* 0x30, heap */
 typedef struct OptRect {
     short u, v, w, h;
 } OptRect;
+
+typedef struct OptRect2 {               /* a pair of pieces, copied whole from a template */
+    OptRect s[2];
+} OptRect2;
+
+typedef struct OptRectA {               /* OptRect copied as two words (lwc1/swc1) */
+    short u, v, w, h;
+} __attribute__((aligned(4))) OptRectA;
 
 extern Options *options;               /* 0x08C5B9B8 */
 extern int opt_prev_mode;              /* 0x08C5B9BC */
@@ -98,10 +102,10 @@ void *dd_pack_get(int id);
 PadState *dd_pad(void);
 
 void opt_read(OptValues *v);
-void *opt_row(void *dl, Options *o, int group, int row, int sel, int x, int y, int w, int h);
-void *opt_gauge_draw(void *dl, Options *o, unsigned int level, short x, short y);
-void *opt_arrows_draw(void *dl, Options *o, short x, short y, int pos, int last);
-void *opt_switch_draw(void *dl, Options *o, int on, int which, short x, short y);
+void *opt_row(void *list, Options *c, int group, int row, unsigned char sel, int x, int y, int w, int h);
+void *opt_gauge_draw(void *list, Options *c, unsigned char level, int x, int y);
+void *opt_arrows_draw(void *list, Options *c, int x, int y, unsigned char pos, unsigned char max);
+void *opt_switch_draw(void *list, Options *c, unsigned char kind, unsigned char on, int x, int y);
 void *opt_tex(void *dl, void *gim);
 void *opt_text(void *dl, int x, int y, int w, int msg, int center);
 void *opt_text_left(void *dl, int x, int y, int w, int msg);
@@ -159,19 +163,19 @@ void opt_free(void)
     heap_set_level(options->heap, options);
 }
 
-/* 1 while open, 2 when closed */
-#ifdef NON_MATCHING /* cópia de modelos locais e alocação diferem; não insistido */
+/* 1 while open, 2 when closed (the same code as tcfg_update of libtitle) */
 int opt_update(void)
 {
-    Options *o = options;
+    Options *c = options;
     OptValues *v = &options->cur;
     PadState *pad = pad_get();
+    unsigned int rep;
+    unsigned int trig;
     int first;
-    unsigned int rep, trig;
 
-    o->drawn = 1;
+    c->drawn = 1;
     first = 0;
-    if (o->full == 1)
+    if (c->full == 1)
         first = 3;
     rep = pad->b.rep;
     trig = pad->b.trig;
@@ -182,12 +186,12 @@ int opt_update(void)
     }
     if (rep & region_pick_value(1)) {
         se_play(0x6214);
-        o->cur = o->saved;
+        c->cur = c->saved;
         opt_write(v);
         return 2;
     }
     if (rep & 0x80) {
-        switch (o->cursor) {
+        switch (c->cursor) {
         case 0:
             se_play(0x6212);
             v->auto_on = 1;
@@ -239,7 +243,7 @@ int opt_update(void)
             break;
         }
     } else if (rep & 0x20) {
-        switch (o->cursor) {
+        switch (c->cursor) {
         case 0:
             se_play(0x6212);
             v->auto_on = 0;
@@ -291,241 +295,310 @@ int opt_update(void)
             break;
         }
     } else if ((trig & 0x10) || (rep & 0x10)) {
-        if (first < o->cursor) {
-            se_play(0x6212);
-            if (o->cursor == 3)
-                o->cursor -= 2;
-            else
-                o->cursor--;
+        if (c->cursor > first) {
+            if (c->cursor == 3) {
+                se_play(0x6212);
+                c->cursor -= 2;
+            } else {
+                se_play(0x6212);
+                c->cursor--;
+            }
         } else if (trig & 0x10) {
             se_play(0x6212);
-            o->cursor = 8;
+            c->cursor = 8;
         }
     } else if ((trig & 0x40) || (rep & 0x40)) {
-        if (o->cursor < 8) {
+        if (c->cursor < 8) {
             se_play(0x6212);
-            o->cursor++;
-            if (cfg_get_language() != 0 && o->cursor == 2)
-                o->cursor = 3;
+            c->cursor++;
+            if (cfg_get_language() != 0 && c->cursor == 2)
+                c->cursor++;
         } else if (trig & 0x40) {
             se_play(0x6212);
-            o->cursor = first;
+            c->cursor = first;
         }
     }
-    o->frame++;
-    if ((int)o->frame < 0 && (o->frame & 0xFFFFFF) == 0)
-        o->frame = 0;
-    else
-        o->frame &= 0xFFFFFF;
+    c->frame++;
+    c->frame %= 0x1000000;
     return 1;
 }
-#else
-int opt_update(void);
-#endif
 
-#ifdef NON_MATCHING /* reescrita do asm em 2026-11-04 (moldura do grupo, cabeçalho r[9..11], cursor r[12],
-                       caixa de ajuda em nove partes r[17..25] e linha r[26]); forma não ajustada */
+#ifdef NON_MATCHING /* gerado de tcfg_draw (libtitle, mesmo código): ver o comentário lá */
 /* the window: per group a frame of three by three pieces, a title strip, the cursor and the rows;
    at the bottom a nine-piece help box and the help line of the current row */
-typedef struct { char s[2][0x40]; } OptGims;
-typedef struct { OptRect r[27]; } OptRects;
-typedef struct { int v[4]; } OptI4;
-typedef struct { unsigned char v[4]; } OptC4;
-typedef struct { short v[4]; } OptS4;
-
-void opt_draw(void *dl)
+void *opt_draw(void *list)
 {
-    Options *o = options;
-    OptGims gims_a = *(OptGims *)opt_gims_a;
-    OptGims gims_b = *(OptGims *)opt_gims_b;
-    OptRects rr = *(OptRects *)opt_rects;
-    OptI4 icon = *(OptI4 *)opt_group_icon;
-    OptC4 c = *(OptC4 *)opt_group_c;
-    OptS4 rows = *(OptS4 *)opt_group_rows;
-    OptRect *r = rr.r;
-    short gy[4], gx[4], gstart[4];
-    int start, cur, n, i, k, msg, found;
-    short sel, group, idx;
-    short x, y, w, h, dw, dh, bx, by;
-    OptRect *p;
+    int piece;
+    Options *c = options;
+    int first = 0;
+    char gims[2][64] = { "m_menu_panel01.gim", "menu_opt01.gim" };
+    char gims_alt[2][64] = { "m_menu_panel02.gim", "menu_opt02.gim" };
+    OptRect spr[27] = {
+        { 0, 0, 6, 24 }, { 6, 0, 1, 24 }, { 17, 0, 3, 24 },
+        { 0, 0, 6, 24 }, { 6, 0, 1, 24 }, { 17, 0, 3, 24 },
+        { 0, 10, 6, 1 }, { 6, 10, 1, 1 }, { 17, 10, 3, 1 },
+        { 0, 0, 4, 14 }, { 4, 0, 1, 14 }, { 31, 0, 1, 14 },
+        { 10, 12, 1, 1 }, { 48, 0, 8, 12 }, { 56, 0, 8, 12 },
+        { 32, 16, 6, 12 }, { 38, 16, 6, 12 }, { 32, 0, 4, 4 },
+        { 38, 0, 1, 4 }, { 40, 0, 5, 4 }, { 32, 6, 4, 1 },
+        { 38, 6, 1, 1 }, { 40, 6, 5, 1 }, { 32, 8, 4, 5 },
+        { 38, 8, 1, 5 }, { 40, 8, 5, 5 }, { 48, 12, 16, 14 },
+    };
+    int style[4] = { 8, 9, 10, 11 };
+    /* piece being drawn (the switches below leave them as they were for an index none of their cases covers) */
+    short x = 131;
+    short y = 34;
+    short rw = 218;
+    short rh = 17;
+    short sel_group = 0;
+    unsigned char tab[4] = { 0, 0, 0, 1 };
+    short n = 0;
+    short top[4];
+    short rows[4] = { 1, 1, 4, 5 };
+    unsigned char cur = c->cursor;
+    int found = 0;
+    short gx[4];
+    short gy[4];
+    int g, i, k;
+    short sel_row;
+    unsigned char sel;
+    short pieces;
+    short u, v;
+    short base_x, base_y, mw, mh;
 
-    start = 0;
-    group = 0;
-    idx = 0;
-    found = 0;
-    cur = o->cursor & 0xFF;
     cfg_get_language();
-    if (o->full == 1)
-        start = 2;
+    if (c->full == 1)
+        first = 2;
     if (cfg_get_language() != 0) {
-        rows.v[2] = 3;
-        if (o->cursor >= 3)
-            cur = (o->cursor - 1) & 0xFF;
+        rows[2] = 3;
+        if (c->cursor > 2)
+            cur = c->cursor - 1;
     }
-    if (o->full == 1) {
-        o->panel_gim = ehp_find(o->pack, gims_b.s[0], 0);
-        o->opt_gim = ehp_find(o->pack, gims_b.s[1], 0);
+    if (c->full == 1) {
+        c->panel_gim = ehp_find(c->pack, gims_alt[0], 0);
+        c->opt_gim = ehp_find(c->pack, gims_alt[1], 0);
     } else {
-        o->panel_gim = ehp_find(o->pack, gims_a.s[0], 0);
-        o->opt_gim = ehp_find(o->pack, gims_a.s[1], 0);
+        c->panel_gim = ehp_find(c->pack, gims[0], 0);
+        c->opt_gim = ehp_find(c->pack, gims[1], 0);
     }
     /* group and row of the cursor */
-    for (i = 0; i < 4; i++) {
-        if (rows.v[i] < 2) {
-            sel = 0;
-            if (cur == idx)
+    for (g = 0; g < 4; g++) {
+        if (rows[g] < 2) {
+            sel_row = 0;
+            if (cur == n)
                 break;
-            sel++;
-            idx++;
+            sel_row++;
+            n++;
         } else {
-            sel = 1;
-            for (k = 0; k < rows.v[i] - 1; k++) {
-                if (cur == idx) {
-                    found = 1;
-                    break;
+            sel_row = 1;
+            for (k = 0; k < rows[g] - 1; k++) {
+                if (cur != n) {
+                    sel_row++;
+                    n++;
+                    continue;
                 }
-                sel++;
-                idx++;
+                found = 1;
+                break;
             }
         }
         if (found)
             break;
-        group++;
+        sel_group++;
     }
-    /* layout of the groups */
-    for (i = start; i < 4; i++) {
-        if (i == start)
-            gstart[i] = 0;
+    /* group positions */
+    for (g = first; g < 4; g++) {
+        if (g == first)
+            top[g] = 0;
         else
-            gstart[i] = gstart[i - 1] + rows.v[i - 1];
-        gx[i] = 131;
-        gy[i] = i * 6 + gstart[i] * 17 + 34;
+            top[g] = top[g - 1] + rows[g - 1];
+        gx[g] = 131;
+        gy[g] = g * 6 + top[g] * 17 + 34;
         if (cfg_get_language() != 0)
-            gy[i] = i * 6 + gstart[i] * 17 + 42;
+            gy[g] = g * 6 + top[g] * 17 + 42;
     }
-    for (i = start; i < 4; i++) {
-        /* frame: one row of three pieces for a one-row group, else three by three */
-        n = rows.v[i] == 1 ? 3 : 9;
-        for (k = 0; k < n; k++) {
-            short u, v;
+    for (; first < 4; first++) {
+        pieces = rows[first] == 1 ? 3 : 9;
 
-            p = &r[k];
-            u = p->u + icon.v[i] % 6 * 20;
-            v = p->v + icon.v[i] / 6 * 24;
-            dl = opt_tex(dl, o->panel_gim);
-            switch (k % 3) {
-            case 0: w = p->w; x = p->u + 131; break;
-            case 1: w = 218 - (r[0].w + r[2].w); x = p->u + 131; break;
-            case 2: w = p->w; x = 349 - w; break;
+        /* frame */
+        for (piece = 0; piece < pieces; piece++) {
+            u = spr[piece].u + style[first] % 6 * 20;
+            v = spr[piece].v + style[first] / 6 * 24;
+            list = opt_tex(list, c->panel_gim);
+            switch (piece % 3) {
+            case 0:
+                rw = spr[piece].w;
+                x = spr[piece].u + 131;
+                break;
+            case 1:
+                rw = 218 - (spr[0].w + spr[2].w);
+                x = spr[piece].u + 131;
+                break;
+            case 2:
+                rw = spr[piece].w;
+                x = 349 - rw;
+                break;
             }
-            switch (k / 3) {
-            case 0: y = gy[i]; h = p->h; break;
-            case 1: y = gy[i] + 10; h = rows.v[i] * 17 - 10; break;
-            case 2: h = p->h; y = gy[i] + (rows.v[i] - 1) * 17; break;
+            switch (piece / 3) {
+            case 0:
+                y = gy[first];
+                rh = spr[piece].h;
+                break;
+            case 2:
+                y = gy[first] + 10;
+                rh = rows[first] * 17 - 10;
+                break;
+            case 1:
+                rh = spr[piece].h;
+                y = gy[first] + (rows[first] - 1) * 17;
+                break;
             }
-            dl = draw_set_offsets(dl, p->w, p->h, w, h);
-            dl = draw_sprite(dl, x, y, 0, u, v, 0, 0);
+            list = draw_set_offsets(list, spr[piece].w, spr[piece].h, rw, rh);
+            list = draw_sprite(list, x, y, 0, u, v, 0, 0);
         }
-        /* title strip of a group with several rows */
-        if (rows.v[i] >= 2) {
-            y = gy[i] + 4;
-            for (k = 0; k < 3; k++) {
-                short v;
-
-                p = &r[9 + k];
-                v = p->v + c.v[i] * 16;
-                dl = opt_tex(dl, o->opt_gim);
-                switch (k % 3) {
-                case 0: w = p->w; x = gx[i] + 4 + p->u; break;
-                case 1: w = 209 - (r[9].w + r[11].w); x = gx[i] + 4 + p->u; break;
-                case 2: w = p->w; x = gx[i] + 213 - w; break;
+        /* tab of the group title */
+        if (rows[first] > 1) {
+            y = gy[first] + 4;
+            for (i = 0; i < 3; i++) {
+                u = spr[(unsigned int)(9 + i)].u;
+                v = tab[first] * 16 + spr[(unsigned int)(9 + i)].v;
+                list = opt_tex(list, c->opt_gim);
+                switch (i % 3) {
+                case 0:
+                    rw = spr[(unsigned int)(9 + i)].w;
+                    x = gx[first] + 4 + u;
+                    break;
+                case 1:
+                    rw = 209 - (spr[9].w + spr[11].w);
+                    x = gx[first] + 4 + u;
+                    break;
+                case 2:
+                    rw = spr[(unsigned int)(9 + i)].w;
+                    x = gx[first] + 213 - rw;
+                    break;
                 }
-                h = p->h;
-                dl = draw_set_offsets(dl, p->w, h, w, h);
-                dl = draw_sprite(dl, x, y, 0, p->u, v, 0, 0);
+                rh = spr[(unsigned int)(9 + i)].h;
+                list = draw_set_offsets(list, spr[(unsigned int)(9 + i)].w, spr[(unsigned int)(9 + i)].h, rw, rh);
+                list = draw_sprite(list, x, y, 0, u, v, 0, 0);
             }
         }
         /* cursor bar */
-        if (o->drawn && i == group) {
-            x = gx[i] + 4;
-            y = gy[i] + 4 + sel * 17;
-            dl = opt_tex(dl, o->panel_gim);
-            dl = draw_set_offsets(dl, r[12].w, r[12].h, 209, 14);
-            dl = draw_sprite(dl, x, y, 0, r[12].u, r[12].v, 0, 0);
+        if (c->drawn && first == sel_group) {
+            x = gx[first] + 4;
+            y = gy[first] + 4 + sel_row * 17;
+            rw = 209;
+            rh = 14;
+            list = opt_tex(list, c->panel_gim);
+            list = draw_set_offsets(list, spr[12].w, spr[12].h, rw, rh);
+            list = draw_sprite(list, x, y, 0, spr[12].u, spr[12].v, 0, 0);
         }
-        for (k = 0; k < rows.v[i]; k++)
-            dl = opt_row(dl, o, i, k, i == group && k == sel, gx[i], gy[i], 218, rows.v[i] * 17);
+        for (i = 0; i < rows[first]; i++) {
+            if (first == sel_group && i == sel_row)
+                sel = 1;
+            else
+                sel = 0;
+            list = opt_row(list, c, first, i, sel, gx[first], gy[first], 218, rows[first] * 17);
+        }
     }
-    /* help box: nine pieces r[17..25], the middle column and row stretched to 462 x 20 */
-    dw = 0;
-    dh = 0;
-    bx = r[17].w + 8;
-    by = r[17].h + 246;
-    for (k = 0; k < 9; k++) {
-        p = &r[17 + k];
-        switch (k) {
-        case 0: case 3: case 6: w = p->w; x = 8; break;
+    /* help box at the bottom: 3x3 pieces; the stretched middle uses the pieces beside it in the template
+       (s[-1], s[1]) for both axes, as the original does */
+    base_x = spr[17].w + 8;
+    base_y = spr[17].h + 246;
+    mw = 0;
+    mh = 0;
+    for (i = 0; i < 9; i++) {
+        u = spr[(unsigned int)(17 + i)].u;
+        v = spr[(unsigned int)(17 + i)].v;
+        switch (i) {
+        case 0: case 3: case 6:
+            rw = spr[(unsigned int)(17 + i)].w;
+            x = 8;
+            break;
         }
-        switch (k) {
+        switch (i) {
         case 1: case 4: case 7:
-            x = bx;
-            dw = 462 - p[-1].w - p[1].w;
-            if (dw < 0)
-                dw = 0;
-            w = dw;
+            x = base_x;
+            mw = 462 - spr[(unsigned int)(17 + i) - 1].w - spr[(unsigned int)(17 + i) + 1].w;
+            if (mw < 0)
+                mw = 0;
+            rw = mw;
             break;
         }
-        switch (k) {
-        case 2: case 5: case 8: x = bx + dw; w = p->w; break;
+        switch (i) {
+        case 2: case 5: case 8:
+            rw = spr[(unsigned int)(17 + i)].w;
+            x = base_x + mw;
+            break;
         }
-        switch (k) {
-        case 0: case 1: case 2: h = p->h; y = 246; break;
+        switch (i) {
+        case 0: case 1: case 2:
+            rh = spr[(unsigned int)(17 + i)].h;
+            y = 246;
+            break;
         }
-        switch (k) {
+        switch (i) {
         case 3: case 4: case 5:
-            y = by;
-            dh = 20 - p[-1].h - p[1].h;
-            if (dh < 0)
-                dh = 0;
-            h = dh;
+            y = base_y;
+            mh = 20 - spr[(unsigned int)(17 + i) - 1].h - spr[(unsigned int)(17 + i) + 1].h;
+            if (mh < 0)
+                mh = 0;
+            rh = mh;
             break;
         }
-        switch (k) {
-        case 6: case 7: case 8: y = by + dh; h = p->h; break;
+        switch (i) {
+        case 6: case 7: case 8:
+            rh = spr[(unsigned int)(17 + i)].h;
+            y = base_y + mh;
+            break;
         }
-        dl = opt_tex(dl, o->opt_gim);
-        dl = draw_set_offsets(dl, p->w, p->h, w, h);
-        dl = draw_sprite(dl, x, y, 0, p->u, p->v, 0, 0);
+        list = opt_tex(list, c->opt_gim);
+        list = draw_set_offsets(list, spr[(unsigned int)(17 + i)].w, spr[(unsigned int)(17 + i)].h, rw, rh);
+        list = draw_sprite(list, x, y, 0, u, v, 0, 0);
     }
-    /* help line */
-    dl = opt_tex(dl, o->opt_gim);
-    dl = draw_set_offsets(dl, r[26].w, r[26].h, r[26].w, r[26].h);
-    dl = draw_sprite(dl, 12, 250, 0, r[26].u, r[26].v, 0, 0);
-    msg = o->cursor + 19;
-    if (o->cursor == 4)
-        msg = 22;
-    else if (o->cursor == 3)
-        msg = 23;
+    u = spr[26].u;
+    v = spr[26].v;
+    rw = spr[26].w;
+    rh = spr[26].h;
+    list = opt_tex(list, c->opt_gim);
+    list = draw_set_offsets(list, rw, rh, rw, rh);
+    list = draw_sprite(list, 12, 250, 0, u, v, 0, 0);
+    k = c->cursor + 19;
+    switch (c->cursor) {
+    case 3:
+        k = 23;
+        break;
+    case 4:
+        k = 22;
+        break;
+    }
     font_set_size(13, 13);
     font_set_color(0xFF000000);
     font_set_flag4(1);
-    opt_text_left(dl, 29, 251, 436, msg);
-    o->drawn = 0;
+    list = opt_text_left(list, 29, 251, 436, k);
+    c->drawn = 0;
+    return list;
 }
 #else
-void opt_draw(void *dl);
+void *opt_draw(void *list);
 #endif
 
 /* one row: caption, then its control (gauge, arrows with a value caption, or an on/off switch) */
-#ifdef NON_MATCHING /* cópia de modelos locais e alocação diferem; não insistido */
-void *opt_row(void *dl, Options *o, int group, int row, int sel, int x, int y, int w, int h)
+void *opt_row(void *list, Options *c, int group, int row, unsigned char sel, int x, int y, int w, int h)
 {
-    OptValues *v = &o->cur;
-    unsigned char level = 0;
-    unsigned char on;
-    int tx, ty, msg, kind, which, last, pos;
+    OptValues *v;
+    int kind;
     unsigned int color;
+    int ty;
+    int id;
+    int tx;
+    unsigned char level;
+    unsigned char sel2;
+    unsigned char on;
+    unsigned char max;
+    unsigned char val;
+    int cx;
 
+    v = &c->cur;
+    level = 0;
     kind = 0;
     if (row == 0) {
         tx = x + 8;
@@ -535,197 +608,237 @@ void *opt_row(void *dl, Options *o, int group, int row, int sel, int x, int y, i
         ty = y + 5 + row * 17;
     }
     switch (group) {
-    case 3:
-        w = 0x70;
-        if (row == 4)
-            msg = 18;
-        else if (row == 3)
-            msg = 11;
-        else if (row == 2)
-            msg = 9;
-        else if (row == 1)
-            msg = 8;
-        else {
-            msg = 7;
-            w = 0xCA;
-        }
-        break;
-    case 2:
-        msg = row + 3;
-        w = 0xCA;
-        if (cfg_get_language() != 0 && msg > 3)
-            msg = row + 4;
-        if (msg > 3)
-            w = 0x4B;
+    case 0:
+        id = row + 1;
+        w = 120;
         break;
     case 1:
-        msg = row + 2;
-        w = 0x78;
+        id = row + 2;
+        w = 120;
         break;
-    case 0:
-        msg = row + 1;
-        w = 0x78;
+    case 2:
+        id = row + 3;
+        w = 202;
+        if (cfg_get_language() != 0 && id > 3)
+            id++;
+        if (id > 3)
+            w = 75;
+        break;
+    case 3:
+        w = 112;
+        switch (row) {
+        default:
+            id = 7;
+            w = 202;
+            break;
+        case 1:
+            id = 8;
+            break;
+        case 2:
+            id = 9;
+            break;
+        case 3:
+            id = 11;
+            break;
+        case 4:
+            id = 18;
+            break;
+        }
         break;
     }
-    if (!sel || !o->drawn)
-        color = o->color;
+    if (sel && c->drawn)
+        color = c->color_sel;
     else
-        color = o->color_sel;
+        color = c->color;
     font_set_size(13, 13);
     font_set_color(color);
     font_set_flag4(1);
-    dl = opt_text_left(dl, tx, ty, w, msg);
+    list = opt_text_left(list, tx, ty, w, id);
     switch (group) {
+    case 0:
+        kind = 1;
+        break;
+    case 1:
+        kind = 2;
+        break;
+    case 2:
+        if (row != 0)
+            kind = 3;
+        break;
     case 3:
         if (row == 1)
             kind = 2;
         else if (row > 1)
             kind = 1;
         break;
-    case 2:
-        if (row != 0)
-            kind = 3;
-        break;
-    case 1:
-        kind = 2;
-        break;
-    case 0:
-        kind = 1;
-        break;
     }
     font_set_flag4(1);
-    if (kind == 3) {
-        if (cfg_get_language() == 0) {
-            if (row == 3)
-                level = v->voice;
-            else if (row == 2)
-                level = v->se;
-            else if (row == 1)
-                level = v->bgm;
-        } else if (row == 2) {
-            level = v->voice;
-        } else if (row == 1) {
-            level = v->se;
-        } else {
-            level = 0;
-        }
-        dl = opt_gauge_draw(dl, o, level, x + 0x5E, ty);
-    } else if (kind == 2) {
-        last = 3;
-        if (group == 1) {
-            last = 2;
-            pos = v->speed;
-            msg = pos + 15;
-        } else {
-            pos = v->mode;
-            msg = pos + 14;
-        }
-        dl = opt_text(dl, x + 0x90, ty, 0x36, msg, 1);
-        if (sel)
-            dl = opt_arrows_draw(dl, o, x + 0x84, ty, pos, last);
-    } else if (kind == 1) {
+    switch (kind) {
+    case 0:
+        break;
+    case 1:
+        cx = x + 137;
         if (group == 0) {
-            which = 1;
+            sel2 = 1;
             on = v->auto_on;
         } else {
-            which = 0;
-            if (row == 4)
-                on = v->flag3;
-            else if (row == 3)
-                on = v->flag2;
-            else if (row == 2)
+            sel2 = 0;
+            switch (row) {
+            case 2:
                 on = v->flag0;
+                break;
+            case 3:
+                on = v->flag2;
+                break;
+            case 4:
+                on = v->flag3;
+                break;
+            }
         }
-        dl = opt_switch_draw(dl, o, which, on, x + 0x89, ty);
-        dl = opt_text(dl, x + 0x88, ty, 0x1E, 12, 1);
-        dl = opt_text(dl, x + 0xAB, ty, 0x1E, 13, 1);
+        list = opt_switch_draw(list, c, sel2, on, cx, ty);
+        cx = x + 136;
+        list = opt_text(list, cx, ty, 30, 12, 1);
+        list = opt_text(list, cx + 35, ty, 30, 13, 1);
+        break;
+    case 2:
+        max = 3;
+        if (group == 1) {
+            max = 2;
+            val = v->speed;
+            id = val + 15;
+        } else {
+            val = v->mode;
+            id = val + 14;
+        }
+        cx = x + 144;
+        list = opt_text(list, cx, ty, 54, id, 1);
+        if (sel)
+            list = opt_arrows_draw(list, c, cx - 12, ty, val, max);
+        break;
+    case 3:
+        cx = x + 94;
+        if (cfg_get_language() != 0) {
+            switch (row) {
+            case 1:
+                level = v->se;
+                break;
+            case 2:
+                level = v->voice;
+                break;
+            }
+        } else {
+            switch (row) {
+            case 1:
+                level = v->bgm;
+                break;
+            case 2:
+                level = v->se;
+                break;
+            case 3:
+                level = v->voice;
+                break;
+            }
+        }
+        list = opt_gauge_draw(list, c, level, cx, ty);
+        break;
     }
-    return dl;
+    return list;
 }
-#else
-void *opt_row(void *dl, Options *o, int group, int row, int sel, int x, int y, int w, int h);
-#endif
 
 /* volume gauge: 15 cells, the first level ones lit */
-#ifdef NON_MATCHING /* cópia de modelos locais e alocação diferem; não insistido */
-void *opt_gauge_draw(void *dl, Options *o, unsigned int level, short x, short y)
+void *opt_gauge_draw(void *list, Options *c, unsigned char level, int x, int y)
 {
-    OptRect r[2];
-    OptRect *p;
+    OptRect s[2];
+    OptRectA cur;
+    OptRect off;
+    short w;
+    short h;
+    short sx;
+    short sy;
     short i;
 
-    r[0] = opt_gauge[0];
-    r[1] = opt_gauge[1];
+    *(OptRect2 *)s = *(OptRect2 *)opt_gauge;
+    sy = y;
+    w = s[0].w;
+    h = s[0].h;
+    off = ((OptRect2 *)s)->s[1];
     for (i = 0; i < 15; i++) {
-        p = i < (int)(level & 0xFF) ? &r[0] : &r[1];
-        dl = opt_tex(dl, o->opt_gim);
-        dl = draw_set_offsets(dl, p->w, p->h, r[0].w, r[0].h);
-        dl = draw_sprite(dl, x, y, 0, p->u, p->v, 0, 0);
-        x += 7;
+        sx = x + i * 7;
+        if (i < (unsigned char)level)
+            cur = *(OptRectA *)&s[0];
+        else
+            cur = *(OptRectA *)&off;
+        list = opt_tex(list, c->opt_gim);
+        list = draw_set_offsets(list, cur.w, cur.h, w, h);
+        list = draw_sprite(list, sx, sy, 0, cur.u, cur.v, 0, 0);
     }
-    return dl;
+    return list;
 }
-#else
-void *opt_gauge_draw(void *dl, Options *o, unsigned int level, short x, short y);
-#endif
 
 /* blinking left/right arrows, hidden at the ends */
-#ifdef NON_MATCHING /* cópia de modelos locais e alocação diferem; não insistido */
-void *opt_arrows_draw(void *dl, Options *o, short x, short y, int pos, int last)
+void *opt_arrows_draw(void *list, Options *c, int x, int y, unsigned char pos, unsigned char max)
 {
-    OptRect r[2];
-    OptRect *p;
+    OptRect s[2];
+    OptRectA cur;
+    OptRect off;
+    unsigned char a;
+    short w, h;
+    short sx, sy;
+    int show;
     short i;
-    int show, a;
 
-    r[0] = opt_arrows[0];
-    r[1] = opt_arrows[1];
+    *(OptRect2 *)s = *(OptRect2 *)opt_arrows;
+    sy = y;
+    w = s[0].w;
+    h = s[0].h;
+    off = ((OptRect2 *)s)->s[1];
     for (i = 0; i < 2; i++) {
         show = 1;
-        if (i == 0) {
-            p = &r[0];
-            if ((char)pos == 0)
+        sx = x + i * 68;
+        if (!i) {
+            cur = *(OptRectA *)&s[0];
+            if ((unsigned char)pos == 0)
                 show = 0;
         } else {
-            p = &r[1];
-            if ((char)pos == (char)last)
+            cur = *(OptRectA *)&off;
+            if ((unsigned char)pos == (unsigned char)max)
                 show = 0;
         }
         if (show) {
-            a = (int)(o->frame % 16) / 8 == 0 ? 0 : 0xFF;
-            dl = opt_tex(dl, o->opt_gim);
-            dl = dl_color(dl, a << 24 | 0xFFFFFF);
-            dl = draw_set_offsets(dl, p->w, p->h, r[0].w, r[0].h);
-            dl = draw_sprite(dl, x, y, 0, p->u, p->v, 0, 0);
+            a = c->frame % 16 / 8 ? 0xFF : 0;
+            list = opt_tex(list, c->opt_gim);
+            list = dl_color(list, a << 24 | 0xFFFFFF);
+            list = draw_set_offsets(list, cur.w, cur.h, w, h);
+            list = draw_sprite(list, sx, sy, 0, cur.u, cur.v, 0, 0);
         }
-        x += 0x44;
     }
-    return dl;
+    return list;
 }
-#else
-void *opt_arrows_draw(void *dl, Options *o, short x, short y, int pos, int last);
-#endif
 
 /* on/off switch */
-#ifdef NON_MATCHING /* cópia de modelos locais e alocação diferem; não insistido */
-void *opt_switch_draw(void *dl, Options *o, int which, int on, short x, short y)
+void *opt_switch_draw(void *list, Options *c, unsigned char kind, unsigned char on, int x, int y)
 {
-    OptRect r[2];
-    OptRect *p;
-    short sx = x - 2;
+    OptRect s[2];
+    OptRectA cur;
+    short w, h;
+    short sx;
+    short sy;
 
-    r[0] = opt_switch[0];
-    r[1] = opt_switch[1];
-    p = which != 0 ? &r[0] : &r[1];
-    if ((char)on == 0)
-        sx = x + 0x21;
-    dl = opt_tex(dl, o->opt_gim);
-    dl = draw_set_offsets(dl, p->w, p->h, r[0].w, r[0].h);
-    return draw_sprite(dl, sx, y, 0, p->u, p->v, 0, 0);
+    *(OptRect2 *)s = *(OptRect2 *)opt_switch;
+    sy = y;
+    w = s[0].w;
+    h = s[0].h;
+    sx = x - 2;
+    if (kind)
+        cur = *(OptRectA *)&s[0];
+    else
+        *(OptRect *)&cur = s[1];
+    if ((unsigned char)on == 0)
+        sx = x + 33;
+    list = opt_tex(list, c->opt_gim);
+    list = draw_set_offsets(list, cur.w, cur.h, w, h);
+    return draw_sprite(list, sx, sy, 0, cur.u, cur.v, 0, 0);
 }
-#else
-void *opt_switch_draw(void *dl, Options *o, int which, int on, short x, short y);
-#endif
 
 void *opt_tex(void *dl, void *gim)
 {

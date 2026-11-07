@@ -1,6 +1,5 @@
 // @range 0x08814F58-0x08817DD4
-// @asm 0x0881561C-0x08815A64
-// @asm 0x08815B9C-0x08817DD4
+// @asm 0x08815B9C-0x08816DA8
 // @rodata 0x0881C29C-0x0881C2B8
 /* Shine of the rare cards when they turn to the camera in the opened pack: a light bar sweeping
    over the card (rare), and the larger effects of the super/ultra rares; GE state and matrix
@@ -87,7 +86,8 @@ typedef struct ShopGlowRay {    /* fan of 16 light rays */
 } ShopGlowRay;
 
 typedef struct ShopGlowMaskVtx {        /* GE vertex 0x800100: s16 xyz, screen coordinates */
-    short x, y, z;
+    short x, y;
+    unsigned short z;
 } ShopGlowMaskVtx;
 
 typedef struct ShopGlowUltra {  /* shop_glow_ultra_st 0x08F8EF30 */
@@ -157,8 +157,8 @@ float atan2f_vfpu(float y, float x);
 void shop_glow_view_rot(Mat4 *out);
 void shop_glow_rot_only(Mat4 *out, Mat4 *m);
 void shop_glow_mvp(Mat4 *out);
-float shop_glow_ratio(int t, int max);
-float shop_glow_ratio_inv(int t, int max);
+static float shop_glow_ratio(int t, int max);
+static float shop_glow_ratio_inv(int t, int max);
 void shop_glow_draw_bar(int first, Mat4 *m, int t, int max, int r, int g, int b, int a);
 int shop_glow_rare(int t, Mat4 *m, unsigned short speed, void *vram);
 int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram);
@@ -300,7 +300,7 @@ void shop_glow_rot_only(Mat4 *out, Mat4 *m)
     mat4_copy(out, &t);
 }
 
-float shop_glow_ratio(int t, int max)
+static float shop_glow_ratio(int t, int max)
 {
     if (t < 0)
         t = 0;
@@ -309,7 +309,7 @@ float shop_glow_ratio(int t, int max)
     return (float)t / (float)max;
 }
 
-float shop_glow_ratio_inv(int t, int max)
+static float shop_glow_ratio_inv(int t, int max)
 {
     return 1.0f - shop_glow_ratio(t, max);
 }
@@ -356,7 +356,6 @@ int shop_card_glow(int t, Mat4 *m, unsigned short rarity, unsigned short speed, 
     return r;
 }
 
-#ifdef NON_MATCHING /* no original shop_glow_ratio é static (len fica em $f2 durante a chamada); aqui ela é global porque os efeitos em asm a chamam; também troca s1/s3 nos laços */
 /* the light bar sweeping over the card */
 void shop_glow_draw_bar(int first, Mat4 *m, int t, int max, int r, int g, int b, int a)
 {
@@ -368,7 +367,7 @@ void shop_glow_draw_bar(int first, Mat4 *m, int t, int max, int r, int g, int b,
     Vec4 scr[2];
     Mat4 mvp;
     float ang, len;
-    int i;
+    int i, j, k;
 
     if (t > max)
         t = max;
@@ -407,10 +406,10 @@ void shop_glow_draw_bar(int first, Mat4 *m, int t, int max, int r, int g, int b,
     mtx_push();
     mtx_load(m);
     shop_glow_mvp(&mvp);
-    for (i = 0; i < 2; i++) {
-        mat4_transform_vec4(&scr[i], &mvp, &bar->corner[i]);
-        scr[i].x = roundf_vfpu(2048.0f + 240.0f * scr[i].x / scr[i].w - 1808.0f);
-        scr[i].y = roundf_vfpu(2048.0f + -136.0f * scr[i].y / scr[i].w - 1912.0f);
+    for (j = 0; j < 2; j++) {
+        mat4_transform_vec4(&scr[j], &mvp, &bar->corner[j]);
+        scr[j].x = roundf_vfpu(2048.0f + 240.0f * scr[j].x / scr[j].w - 1808.0f);
+        scr[j].y = roundf_vfpu(2048.0f + -136.0f * scr[j].y / scr[j].w - 1912.0f);
     }
     list = dl_scissor(list, scr[0].x, scr[0].y, scr[1].x - scr[0].x, scr[1].y - scr[0].y);
     list = dl_enable(list, 2);
@@ -419,14 +418,13 @@ void shop_glow_draw_bar(int first, Mat4 *m, int t, int max, int r, int g, int b,
     mtx_rotate_z(ang);
     shop_glow_translate(0.0f, len, 0.0f);
     list = dl_ambient_light(list, -1);
-    for (i = 0; i < 2; i++)
-        list = draw_array(list, 4, 0x99C, 4, bar->idx, &bar->v[0][i]);
+    for (k = 0; k < 2; k++)
+        list = draw_array(list, 4, 0x99C, 4, bar->idx, &bar->v[0][k]);
     list = dl_scissor(list, 0, 0, 480, 272);
     list = dl_disable(list, 2);
     mtx_pop();
     dl_set_list(list);
 }
-#endif
 
 /* rare: one sweep, then a short wait */
 int shop_glow_rare(int t, Mat4 *m, unsigned short speed, void *vram)
@@ -455,16 +453,18 @@ int shop_glow_rare(int t, Mat4 *m, unsigned short speed, void *vram)
     return 0;
 }
 
-#ifdef NON_MATCHING /* mesma sequência de chamadas e constantes; difere nos spills dos contadores dos laços (4 slots de ponteiro + 2 de contador no original) e no $f2/$v1 mantido sobre shop_glow_ratio, que no original é static */
+#ifdef NON_MATCHING /* 31 palavras, mesma forma (diff estrutural 0): f no escopo da função, ponteiro q para o grupo de faíscas, um contador por laço; falta a rotação dos $s em três laços (contador × dois ponteiros de indução: laço das órbitas s3/s1/s0, laços que soltam faíscas s3/s4/s6) */
 /* super rare: halo pulsing out of the card, the light bar, orbs rising around the card that leave
    two kinds of sparks */
 int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
 {
+    int lp8;
+    int lp0, lp1, lp2, lp3, lp4, lp5, lp6, lp7;
     ShopGlowSuper *g = &shop_glow_super_st;
     int first = t == 0;
     Mat4 view, rot;
     Vec4 a, b, c;
-    float fade_in, fade_out, k, y, ph;
+    float fade_in, fade_out, k, y, ph, f;
     unsigned int *list;
     RandSeed *r;
     int i, j, n;
@@ -623,28 +623,28 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
 
     /* small sparks */
     if (first == 1) {
-        for (i = 0; i < 8; i++) {
-            float du = 0.25f, dv = 0.5f, k = 0.3f, u = i % 4 * du, v = i / 4 * dv;
+        for (lp0 = 0; lp0 < 8; lp0++) {
+            float du = 0.25f, dv = 0.5f, k = 0.3f, u = lp0 % 4 * du, v = lp0 / 4 * dv;
 
-            g->spark_uv_a[i][0].u = u;
-            g->spark_uv_a[i][0].v = v;
-            g->spark_uv_a[i][0].x = -k;
-            g->spark_uv_a[i][0].y = k;
-            g->spark_uv_a[i][0].z = 0.0f;
-            g->spark_uv_a[i][1].u = u + du;
-            g->spark_uv_a[i][1].v = v + dv;
-            g->spark_uv_a[i][1].x = k;
-            g->spark_uv_a[i][1].y = -k;
-            g->spark_uv_a[i][1].z = 0.0f;
+            g->spark_uv_a[lp0][0].u = u;
+            g->spark_uv_a[lp0][0].v = v;
+            g->spark_uv_a[lp0][0].x = -k;
+            g->spark_uv_a[lp0][0].y = k;
+            g->spark_uv_a[lp0][0].z = 0.0f;
+            g->spark_uv_a[lp0][1].u = u + du;
+            g->spark_uv_a[lp0][1].v = v + dv;
+            g->spark_uv_a[lp0][1].x = k;
+            g->spark_uv_a[lp0][1].y = -k;
+            g->spark_uv_a[lp0][1].z = 0.0f;
         }
     }
-    for (i = 0; i < 24; i++) {
-        ShopGlowOrb *o = &g->orb[i];
+    for (lp1 = 0; lp1 < 24; lp1++) {
+        ShopGlowOrb *o = &g->orb[lp1];
 
         if (!(o->flags & 1) == 1)
             continue;
         for (j = 0; j < 2; j++) {
-            ShopGlowSparks *q = &g->spark_a[i][j];
+            ShopGlowSparks *q = &g->spark_a[lp1][j];
             ShopGlowSpark *s = &q->s[q->next];
             float an;
 
@@ -671,11 +671,12 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    for (i = 0; i < 24; i++) {
-        for (j = 0; j < 2; j++) {
-            for (n = 0; n < 6; n++) {
-                ShopGlowSpark *s = &g->spark_a[i][j].s[n];
-                float f;
+    for (lp2 = 0; lp2 < 24; lp2++) {
+        for (lp3 = 0; lp3 < 2; lp3++) {
+            ShopGlowSparks *q = &g->spark_a[lp2][lp3];
+
+            for (lp4 = 0; lp4 < 6; lp4++) {
+                ShopGlowSpark *s = &q->s[lp4];
 
                 if (!(s->flags & 1) == 1)
                     continue;
@@ -700,28 +701,28 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
 
     /* large sparks */
     if (first == 1) {
-        for (i = 0; i < 4; i++) {
-            float du = 0.5f, dv = 0.5f, k = 0.6f, u = i % 2 * du, v = i / 2 * dv;
+        for (lp5 = 0; lp5 < 4; lp5++) {
+            float du = 0.5f, dv = 0.5f, k = 0.6f, u = lp5 % 2 * du, v = lp5 / 2 * dv;
 
-            g->spark_uv_b[i][0].u = u;
-            g->spark_uv_b[i][0].v = v;
-            g->spark_uv_b[i][0].x = -k;
-            g->spark_uv_b[i][0].y = k;
-            g->spark_uv_b[i][0].z = 0.0f;
-            g->spark_uv_b[i][1].u = u + du;
-            g->spark_uv_b[i][1].v = v + dv;
-            g->spark_uv_b[i][1].x = k;
-            g->spark_uv_b[i][1].y = -k;
-            g->spark_uv_b[i][1].z = 0.0f;
+            g->spark_uv_b[lp5][0].u = u;
+            g->spark_uv_b[lp5][0].v = v;
+            g->spark_uv_b[lp5][0].x = -k;
+            g->spark_uv_b[lp5][0].y = k;
+            g->spark_uv_b[lp5][0].z = 0.0f;
+            g->spark_uv_b[lp5][1].u = u + du;
+            g->spark_uv_b[lp5][1].v = v + dv;
+            g->spark_uv_b[lp5][1].x = k;
+            g->spark_uv_b[lp5][1].y = -k;
+            g->spark_uv_b[lp5][1].z = 0.0f;
         }
     }
-    for (i = 0; i < 24; i++) {
-        ShopGlowOrb *o = &g->orb[i];
+    for (lp6 = 0; lp6 < 24; lp6++) {
+        ShopGlowOrb *o = &g->orb[lp6];
 
         if (!(o->flags & 1) == 1)
             continue;
         for (j = 0; j < 2; j++) {
-            ShopGlowSparks *q = &g->spark_b[i][j];
+            ShopGlowSparks *q = &g->spark_b[lp6][j];
             ShopGlowSpark *s = &q->s[q->next];
             float an;
 
@@ -748,11 +749,12 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    for (i = 0; i < 24; i++) {
-        for (j = 0; j < 2; j++) {
+    for (lp7 = 0; lp7 < 24; lp7++) {
+        for (lp8 = 0; lp8 < 2; lp8++) {
+            ShopGlowSparks *q = &g->spark_b[lp7][lp8];
+
             for (n = 0; n < 6; n++) {
-                ShopGlowSpark *s = &g->spark_b[i][j].s[n];
-                float f;
+                ShopGlowSpark *s = &q->s[n];
 
                 if (!(s->flags & 1) == 1)
                     continue;
@@ -781,11 +783,12 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
 }
 #endif
 
-#ifdef NON_MATCHING /* mesma sequência de chamadas e constantes, 4132 B contra 4140; difere na alocação dos $s, no layout da pilha (mvp abaixo de scr e a no original) e no $f/$v mantido sobre shop_glow_ratio, que no original é static */
 /* ultra/ultimate/secret rare: halo, light bar, a flash at the card center, bursts of sparks out of
    the card (masked to its rectangle) and fans of rays */
 int shop_glow_ultra(int t, Mat4 *m, unsigned short speed, void *vram)
 {
+    int lp5, lp6;                  /* one counter per loop: the original keeps each in its own $s */
+    int lp0, lp1, lp2, lp3, lp4;
     ShopGlowUltra *g = &shop_glow_ultra_st;
     int first = t == 0;
     Mat4 view, rot;
@@ -845,11 +848,11 @@ int shop_glow_ultra(int t, Mat4 *m, unsigned short speed, void *vram)
     mtx_load(&rot);
     al = (unsigned int)(255.0f * fade_in * fade_out) << 24 | 0xFFFFFF;
     list = dl_ambient_light(list, al);
-    for (i = 0; i < 8; i++) {
-        k = 1.0f + 0.3f * i / 8.0f;
+    for (lp0 = 0; lp0 < 8; lp0++) {
+        k = 1.0f + 0.3f * lp0 / 8.0f;
         mtx_push();
         shop_glow_scale(k, k, 0.0f);
-        list = dl_color(list, (8 - i) * 100 / 8 << 24 | 0x6ED2FF);
+        list = dl_color(list, (8 - lp0) * 100 / 8 << 24 | 0x6ED2FF);
         list = draw_array(list, 4, 0x183, 4, 0, g->halo);
         mtx_pop();
     }
@@ -910,34 +913,34 @@ int shop_glow_ultra(int t, Mat4 *m, unsigned short speed, void *vram)
 
     /* bursts */
     if (first == 1) {
-        for (i = 0; i < 8; i++) {
-            float du = 0.25f, dv = 0.5f, k = 0.3f, u = i % 4 * du, v = i / 4 * dv;
+        for (lp1 = 0; lp1 < 8; lp1++) {
+            float du = 0.25f, dv = 0.5f, k = 0.3f, u = lp1 % 4 * du, v = lp1 / 4 * dv;
 
-            g->spark_uv[i][0].u = u;
-            g->spark_uv[i][0].v = v;
-            g->spark_uv[i][0].x = -k;
-            g->spark_uv[i][0].y = k;
-            g->spark_uv[i][0].z = 0.0f;
-            g->spark_uv[i][1].u = u + du;
-            g->spark_uv[i][1].v = v + dv;
-            g->spark_uv[i][1].x = k;
-            g->spark_uv[i][1].y = -k;
-            g->spark_uv[i][1].z = 0.0f;
+            g->spark_uv[lp1][0].u = u;
+            g->spark_uv[lp1][0].v = v;
+            g->spark_uv[lp1][0].x = -k;
+            g->spark_uv[lp1][0].y = k;
+            g->spark_uv[lp1][0].z = 0.0f;
+            g->spark_uv[lp1][1].u = u + du;
+            g->spark_uv[lp1][1].v = v + dv;
+            g->spark_uv[lp1][1].x = k;
+            g->spark_uv[lp1][1].y = -k;
+            g->spark_uv[lp1][1].z = 0.0f;
         }
     }
-    for (i = 0; i < speed; i++) {
+    for (lp5 = 0; lp5 < speed; lp5++) {
         ShopGlowBurst *b = &g->burst[g->next_burst];
 
         b->flags |= 1;
         b->t = 0;
-        for (j = 0; j < 16; j++) {
+        for (lp2 = 0; lp2 < 16; lp2++) {
             float an, len;
 
             r = &rand3_seeds[rand3_slot];
             an = 6.2831855f * ((float)GLOW_RAND(r) / 32767.0f);
             len = 1.0f + 5.0f * ((float)GLOW_RAND(r) / 32767.0f);
-            b->kind[j] = GLOW_RAND(r) % 8;
-            vec4_set(&b->dir[j], len * sinf(an), len * cosf(an), 0.0f, 1.0f);
+            b->kind[lp2] = GLOW_RAND(r) % 8;
+            vec4_set(&b->dir[lp2], len * sinf(an), len * cosf(an), 0.0f, 1.0f);
         }
         if (g->next_burst < 15)
             g->next_burst++;
@@ -983,18 +986,18 @@ int shop_glow_ultra(int t, Mat4 *m, unsigned short speed, void *vram)
     if (first == 1) {
         float w = 2.689f, h = 3.817f;
         Vec4 scr[2];
-        Mat4 mvp;
+        Mat4 mvp __attribute__((aligned(16)));
 
         vec4_set(&scr[0], -w, h, 0.0f, 1.0f);
         vec4_set(&scr[1], w, -h, 0.0f, 1.0f);
         shop_glow_mvp(&mvp);
-        for (i = 0; i < 2; i++) {
-            mat4_transform_vec4(&scr[i], &mvp, &scr[i]);
-            scr[i].x = 2048.0f + 240.0f * scr[i].x / scr[i].w - 1808.0f;
-            scr[i].y = 2048.0f + -136.0f * scr[i].y / scr[i].w - 1912.0f;
-            g->mask[i].x = scr[i].x;
-            g->mask[i].y = scr[i].y;
-            g->mask[i].z = -1;
+        for (lp3 = 0; lp3 < 2; lp3++) {
+            mat4_transform_vec4(&scr[lp3], &mvp, (Vec4 *)((char *)scr + lp3 * 16));
+            scr[lp3].x = 2048.0f + 240.0f * scr[lp3].x / scr[lp3].w - 1808.0f;
+            scr[lp3].y = 2048.0f + -136.0f * scr[lp3].y / scr[lp3].w - 1912.0f;
+            g->mask[lp3].x = scr[lp3].x;
+            g->mask[lp3].y = scr[lp3].y;
+            g->mask[lp3].z = -1;
         }
     }
     list = dl_select_layer(3, 0);
@@ -1009,29 +1012,29 @@ int shop_glow_ultra(int t, Mat4 *m, unsigned short speed, void *vram)
 
     /* rays */
     if (first == 1) {
-        for (i = 0; i < 8; i++) {
-            float du = 0.25f, dv = 0.5f, k = 0.3f, z = 10.0f, u = i % 4 * du, v = i / 4 * dv;
+        for (lp4 = 0; lp4 < 8; lp4++) {
+            float du = 0.25f, dv = 0.5f, k = 0.3f, z = 10.0f, u = lp4 % 4 * du, v = lp4 / 4 * dv;
 
-            g->ray_uv[i][0].u = u;
-            g->ray_uv[i][0].v = v;
-            g->ray_uv[i][0].x = -k;
-            g->ray_uv[i][0].y = 2.0f;
-            g->ray_uv[i][0].z = -z;
-            g->ray_uv[i][1].u = u;
-            g->ray_uv[i][1].v = v + dv;
-            g->ray_uv[i][1].x = -k;
-            g->ray_uv[i][1].y = 2.0f;
-            g->ray_uv[i][1].z = z;
-            g->ray_uv[i][2].u = u + du;
-            g->ray_uv[i][2].v = v;
-            g->ray_uv[i][2].x = k;
-            g->ray_uv[i][2].y = 2.0f;
-            g->ray_uv[i][2].z = -z;
-            g->ray_uv[i][3].u = u + du;
-            g->ray_uv[i][3].v = v + dv;
-            g->ray_uv[i][3].x = k;
-            g->ray_uv[i][3].y = 2.0f;
-            g->ray_uv[i][3].z = z;
+            g->ray_uv[lp4][0].u = u;
+            g->ray_uv[lp4][0].v = v;
+            g->ray_uv[lp4][0].x = -k;
+            g->ray_uv[lp4][0].y = 2.0f;
+            g->ray_uv[lp4][0].z = -z;
+            g->ray_uv[lp4][1].u = u;
+            g->ray_uv[lp4][1].v = v + dv;
+            g->ray_uv[lp4][1].x = -k;
+            g->ray_uv[lp4][1].y = 2.0f;
+            g->ray_uv[lp4][1].z = z;
+            g->ray_uv[lp4][2].u = u + du;
+            g->ray_uv[lp4][2].v = v;
+            g->ray_uv[lp4][2].x = k;
+            g->ray_uv[lp4][2].y = 2.0f;
+            g->ray_uv[lp4][2].z = -z;
+            g->ray_uv[lp4][3].u = u + du;
+            g->ray_uv[lp4][3].v = v + dv;
+            g->ray_uv[lp4][3].x = k;
+            g->ray_uv[lp4][3].y = 2.0f;
+            g->ray_uv[lp4][3].z = z;
         }
     }
     for (i = 0; i < speed; i++) {
@@ -1072,10 +1075,10 @@ int shop_glow_ultra(int t, Mat4 *m, unsigned short speed, void *vram)
         list = dl_ambient_light(list, ya << 24 | 0xFFFFFF);
         mtx_push();
         shop_glow_translate(0.0f, 0.0f, k);
-        for (j = 0; j < 16; j++) {
+        for (lp6 = 0; lp6 < 16; lp6++) {
             mtx_push();
-            mtx_rotate_z(y->ang[j]);
-            list = draw_array(list, 4, 0x183, 4, 0, g->ray_uv[y->kind[j]]);
+            mtx_rotate_z(y->ang[lp6]);
+            list = draw_array(list, 4, 0x183, 4, 0, g->ray_uv[y->kind[lp6]]);
             mtx_pop();
         }
         mtx_pop();
@@ -1090,4 +1093,3 @@ int shop_glow_ultra(int t, Mat4 *m, unsigned short speed, void *vram)
         g->done = 1;
     return 0;
 }
-#endif
