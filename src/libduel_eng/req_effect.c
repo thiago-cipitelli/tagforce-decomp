@@ -3,11 +3,16 @@
 // @asm 0x088D8AB8-0x088D8B1C
 // @asm 0x088D8C50-0x088D8CF8
 // @asm 0x088D8DD0-0x088D9080
-// @asm 0x088D9504-0x088DA5EC
 /* Requests that change effect entries and slot values directly (the effect half of the request steps
    in req_step.c), and the requests that show a card, flip a card of the hand/deck/extra deck and send
    a card from a zone or from the special slots to another pile. */
 #include "duel.h"
+
+/* Zone before player (docs/matching.md, "Zona antes do jogador" and round 8): the zone offset
+   o = z * sizeof(DuelSlot) is a local computed before the player part, and is the left operand.
+   ZOFF: field f of that zone with the field offset folded into the symbol; ZOSLOT: the zone itself. */
+#define ZOFF(p, o, T, f) (*(T *)((o) + (((p) & 1) * sizeof(DuelPlayer) + (unsigned int)&duel.players[0].field[0].f)))
+#define ZOSLOT(p, o) (((DuelPlayer *)((o) + (unsigned int)&duel.players[(p) & 1]))->field)
 
 typedef struct DuelLoc {
     unsigned short player : 1;
@@ -16,6 +21,12 @@ typedef struct DuelLoc {
     unsigned short b14 : 1;
     unsigned short b15 : 1;
 } DuelLoc;
+
+typedef struct DuelReqCard {           /* request argument naming a card: player, zone and uid */
+    unsigned short player : 1;
+    unsigned short zone : 5;
+    unsigned short uid : 10;
+} DuelReqCard;
 
 typedef struct DuelReq {               /* 0x08914A30 */
     unsigned short id;                 /* bit 15: player */
@@ -198,35 +209,38 @@ void duel_req_move(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* draft */
+#ifdef NON_MATCHING /* 51 palavras (era 264): forma igual; o original extrai t >> 16 com ext no delay slot do
+                      1º teste do switch e o mwcc 219 dá srl logo depois da chamada (ver docs/matching.md, rodada 8) */
 /* Move the card at location arg (its uid in the index bits) to location loc + offset; w: low byte
    and bit 8 go to the new place. */
 void duel_req_move_card(void)
 {
-    DuelLoc src = duel_req.loc;
-    unsigned int uid = duel_req.arg >> 6;
-    unsigned int sp = duel_req.arg & 1;
-    unsigned int sz = (duel_req.arg & 0x3F) >> 1;
+    DuelReqCard a = *(DuelReqCard *)&duel_req.arg;
+    unsigned int uid = a.uid;
+    unsigned int sp = a.player;
+    int sz = a.zone;
     unsigned int t = duel_card_locate(uid);
+    DuelReqCard l = *(DuelReqCard *)&duel_req.loc;
     unsigned int w = duel_req.w;
-    unsigned int off = *(unsigned short *)&duel_req.loc >> 6;
-    unsigned int tz = (*(unsigned short *)&duel_req.loc & 0x3F) >> 1;
-    unsigned int tp = *(unsigned short *)&duel_req.loc & 1;
+    unsigned int off = l.uid;
+    unsigned int w0 = w & 0xFF;
+    unsigned int w1 = w >> 8 & 0xFF;
+    int tz = l.zone;
+    unsigned int tp = l.player;
+    unsigned int i = t >> 16;
     DuelCard *c;
-    unsigned int i;
     DuelLoc from;
     DuelLoc to;
 
-    (void)src;
     switch (duel_req_step) {
     case 0:
-        if (sz == 0xE && duel.players[sp].n_grave - 1 != duel_grave_find_uid(sp, uid)) {
+        if (sz == 0xE && duel.players[sp & 1].n_grave - 1 != duel_grave_find_uid(sp, uid)) {
             duel_grave_to_top(sp, uid);
-            duel_host_call(0x16, sp, 0xE, uid);
+            duel_host_call(0x16, sp, sz, uid);
         }
-        if (sz == 0xF && duel.players[sp].n_f - 1 != duel_f_find_uid(sp, uid)) {
+        if (sz == 0xF && duel.players[sp & 1].n_f - 1 != duel_f_find_uid(sp, uid)) {
             duel_zone_f_to_top(sp, uid);
-            duel_host_call(0x16, sp, 0xF, uid);
+            duel_host_call(0x16, sp, sz, uid);
         }
         duel_req_step++;
         break;
@@ -234,28 +248,27 @@ void duel_req_move_card(void)
         if (duel_req_flag(0x16) != 0) {
             break;
         }
-        c = duel_field_card_deb2c(sp, sz, t >> 16);
+        c = duel_field_card_deb2c(sp, sz, i);
         c->b18 = 0;
         c->b19 = 0;
         c->b17 = 0;
         c->b20 = 0;
         c->b21 = 0;
         duel_card_copy(&duel_card_tmp, c);
-        i = t >> 16 & 0xFF;
         from.player = sp;
         from.zone = sz;
         from.idx = i;
-        from.b15 = duel_zone_pos(from.player, from.zone, i);
+        from.b15 = duel_zone_pos(from.player, from.zone, from.idx);
         from.b14 = duel_zone_faceup(from.player, from.zone, from.idx);
         to.player = tp;
         to.zone = tz + off;
         to.idx = 0;
-        to.b15 = w >> 8;
-        to.b14 = w;
+        to.b15 = w1;
+        to.b14 = w0;
         duel_card_take(from.player, from.zone, from.idx);
-        duel_card_put(to.player, to.zone, (w & 0xFF) | (w >> 8) << 8, &duel_card_tmp);
-        duel_host_call(0x18, CARD_UID(duel_card_tmp), *(unsigned short *)&from, *(unsigned short *)&to);
-        if (tp == duel_view_player && (w & 0xFF) == 0 && tz > 4 && tz < 11) {
+        duel_card_put(to.player, to.zone, (unsigned short)((w0 & 0xFF) | (w1 & 0xFF) << 8), &duel_card_tmp);
+        duel_host_call(0x18, (unsigned short)CARD_UID(duel_card_tmp), *(unsigned short *)&from, *(unsigned short *)&to);
+        if (tp == duel_view_player && w0 == 0 && tz >= 5 && tz <= 10) {
             duel_0884DB38(0x1D, 1);
         }
         duel_req_step++;
@@ -267,58 +280,73 @@ void duel_req_move_card(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* draft */
+#ifdef NON_MATCHING /* 15 palavras (era 238): forma igual; só ap/az trocados (s4/s5); ordem e tipos das
+                      declarações e dos comandos não mudam */
 /* Move the card of zone arg to zone loc (player | zone << 8); into a spell/trap zone it loses its
    position and value. */
 void duel_req_move_zone(void)
 {
-    unsigned int a = duel_req.arg;
-    unsigned int b = *(unsigned short *)&duel_req.loc;
-    unsigned int ap = a & 0xFF;
-    unsigned int az = a >> 8;
-    unsigned int bp = b & 0xFF;
-    unsigned int bz = b >> 8;
+    unsigned int a;
+    unsigned int b;
+    unsigned int ap;
+    int az;
+    unsigned int bp;
+    int bz;
+    DuelSlot *src;
+    unsigned int ao;
+    unsigned int bo;
     DuelSlot *dst;
     DuelLoc from;
     DuelLoc to;
 
+    a = duel_req.arg;
+    b = *(unsigned short *)&duel_req.loc;
+    ap = a & 0xFF;
+    az = a >> 8 & 0xFF;
+    bp = b & 0xFF;
+    bz = b >> 8 & 0xFF;
     switch (duel_req_step) {
     case 0:
-        if (az < 11 && bz < 11) {
-            duel_req_step = 1;
-        } else {
+        if (az > 10 || bz > 10) {
             duel_busy_0891523C = 0;
+        } else {
+            duel_req_step++;
         }
         break;
     case 1:
         duel_card_copy(&duel_card_tmp, duel_field_card_deb2c(ap, az, 0));
-        if (bp == duel_view_player && az < 5 && bz < 5) {
+        if (bp == duel_view_player && az <= 4 && bz <= 4) {
             duel_0884DB38(0x2D, 1);
         }
-        from.player = a;
+        from.player = ap;
         from.zone = az;
         from.idx = 0;
-        from.b15 = duel.players[a & 1].field[az].pos;
-        from.b14 = duel.players[a & 1].field[az].faceup;
-        to = from;
-        to.player = b;
+        ao = az * sizeof(DuelSlot);
+        from.b15 = ZOFF(ap, ao, unsigned short, pos);
+        from.b14 = ZOFF(ap, ao, unsigned short, faceup);
+        to.player = bp;
         to.zone = bz;
-        if (bz > 4) {
+        to.idx = 0;
+        to.b15 = from.b15;
+        to.b14 = from.b14;
+        if (bz >= 5) {
             to.b15 = 0;
         }
-        dst = &duel.players[b & 1].field[bz];
-        duel_memcpy(dst, &duel.players[a & 1].field[az], sizeof(DuelSlot));
+        src = ZOSLOT(ap, ao);
+        bo = bz * sizeof(DuelSlot);
+        dst = ZOSLOT(bp, bo);
+        duel_memcpy(dst, src, sizeof(DuelSlot));
         duel_card_copy(&dst->card, &duel_card_tmp);
-        duel_bzero(&duel.players[a & 1].field[az], sizeof(DuelSlot));
+        duel_bzero(src, sizeof(DuelSlot));
         duel.zone_off &= ~(1 << (az + ap * 16));
-        dst->flags &= ~0x200000;
-        duel_effects_move_src(ap | az << 8, bp | bz << 8);
-        if (bz > 4) {
+        ZOFF(bp, bo, unsigned int, flags) &= ~0x200000;
+        duel_effects_move_src((unsigned char)ap | (unsigned char)az << 8, (bp & 0xFF) | (bz & 0xFF) << 8);
+        if (bz >= 5) {
             duel_slot_effects_free_keep(dst);
-            dst->pos = 0;
-            dst->link = 0;
+            *(unsigned short *)(bo + ((bp & 1) * sizeof(DuelPlayer) + (unsigned int)((char *)&duel.players[0].field[0] + 6))) = 0;
+            ZOFF(bp, bo, unsigned int, link) = 0;
         }
-        duel_host_call(0x18, CARD_UID(duel_card_tmp), *(unsigned short *)&from, *(unsigned short *)&to);
+        duel_host_call(0x18, (unsigned short)CARD_UID(duel_card_tmp), *(unsigned short *)&from, *(unsigned short *)&to);
         duel_req_step++;
         break;
     default:
@@ -326,6 +354,7 @@ void duel_req_move_zone(void)
         break;
     }
 }
+
 #endif
 
 #ifdef NON_MATCHING /* draft */
@@ -393,17 +422,26 @@ void duel_req_swap_zones(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* draft */
+#ifdef NON_MATCHING /* 7 palavras (era 201): forma igual; temporários do argumento do pedido 0x1A (v1/a0 trocados) */
 /* Change the position of the monster in zone arg (w: by an effect; loc: also flip it). */
 void duel_req_change_pos(void)
 {
-    short by_effect = duel_req.w;
-    unsigned int flip = *(unsigned short *)&duel_req.loc;
-    unsigned int z = duel_req.arg;
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    DuelSlot *s = &duel.players[p & 1].field[z];
-    unsigned int q;
+    unsigned int flip;
+    unsigned int z;
+    unsigned int zo;
+    unsigned int p;
+    unsigned int w;
+    DuelSlot *s;
+    unsigned int src;
+    int q;
     int k;
+
+    p = (duel_req.id & 0x8000) != 0;
+    z = duel_req.arg;
+    flip = *(unsigned short *)&duel_req.loc;
+    w = duel_req.w;
+    zo = z * sizeof(DuelSlot);
+    s = ((DuelPlayer *)(zo + (unsigned int)&duel.players[p & 1]))->field;
 
     if (s->card.id == 0) {
         duel_busy_0891523C = 0;
@@ -411,7 +449,7 @@ void duel_req_change_pos(void)
     }
     switch (duel_req_step) {
     case 0:
-        if (duel_req.w != 0 && *(unsigned short *)&duel_req.loc == 0) {
+        if (w != 0 && flip == 0) {
             duel_host_call(0x46, p, 1 - s->pos, 0);
         }
         duel_req_step++;
@@ -420,11 +458,11 @@ void duel_req_change_pos(void)
         if (duel_req_flag(0x46) != 0) {
             break;
         }
-        if (by_effect != 0 && flip != 0) {
+        if (w != 0 && flip != 0) {
             duel_088DF554(p, z, 1, 1);
         }
-        duel_host_call(0x1A, (1 - s->pos & 1) << 15 | ((flip ^ s->faceup) & 1) << 14 | p | (z & 0x1F) << 1,
-                       by_effect == 0 && flip != 0, 0);
+        duel_host_call(0x1A, (unsigned short)((1 - s->pos & 1) << 15 | (((flip ^ s->faceup) & 1) << 14 | ((p & 1) | (z & 0x1F) << 1))),
+                       !w && flip, 0);
         duel_req_step++;
         break;
     case 2:
@@ -439,10 +477,13 @@ void duel_req_change_pos(void)
                 duel_0884DB38(0x1C, 1);
             }
         }
-        if (s->pos != 0 && field_get_card(p, z) == 0x1743) {
-            for (q = 0; (int)q < 2; q++) {
-                for (k = 0; k < 5; k++) {
-                    duel_effects_free_src(duel.players[q & 1].field[k].effects, p | (z & 0xFF) << 8, 1);
+        if (s->pos != 0) {
+            switch (field_get_card(p, z)) {
+            case 0x1743:
+                for (q = 0; q < 2; q++) {
+                    for (k = 0; k <= 4; k++) {
+                        duel_effects_free_src(duel.players[q & 1].field[k].effects, (p & 0xFF) | (z & 0xFF) << 8, 1);
+                    }
                 }
             }
         }
@@ -451,7 +492,7 @@ void duel_req_change_pos(void)
         }
         if (flip != 0) {
             duel_088DF554(p, z, 0x13, s->faceup);
-            s->flags |= 0x80;
+            *(unsigned int *)(zo + ((p & 1) * sizeof(DuelPlayer) + (unsigned int)&duel.players[0].field[0].flags)) |= 0x80;
         }
         duel_busy_0891523C = 0;
         break;
@@ -459,21 +500,34 @@ void duel_req_change_pos(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* draft: the original keeps the zone address parts in s registers */
+#ifdef NON_MATCHING /* 2 palavras (era 202): o original agenda o 2º lui de duel_order_ctr antes do addiu (mesma
+                      família de duel_req_order e duel_place_monster/st) */
 /* Turn the card in zone arg face up or down (w: 1 reveal first, 2 set, 4 announce, 8 only show). */
 void duel_req_flip(void)
 {
-    unsigned int z = duel_req.arg;
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    DuelSlot *s = &duel.players[p & 1].field[z];
-    unsigned int pos = *(unsigned short *)&duel_req.loc;
-    unsigned int w = duel_req.w;
-    unsigned int show = w & 1;
-    unsigned int set = w & 2;
-    unsigned int ann = w & 4;
-    unsigned int only = w & 8;
-    unsigned int id = s->card.id;
+    int z;
+    unsigned int p;
+    unsigned int zo;
+    DuelSlot *s;
+    unsigned int pos;
+    unsigned int w;
+    unsigned int show;
+    unsigned int set;
+    unsigned int ann;
+    unsigned int only;
+    unsigned int id;
 
+    p = (duel_req.id & 0x8000) != 0;
+    z = duel_req.arg;
+    zo = z * sizeof(DuelSlot);
+    s = ZOSLOT(p, zo);
+    pos = *(unsigned short *)&duel_req.loc;
+    w = duel_req.w;
+    show = w & 1;
+    set = w & 2;
+    ann = w & 4;
+    only = w & 8;
+    id = s->card.id;
     if (id == 0) {
         duel_busy_0891523C = 0;
         return;
@@ -496,10 +550,10 @@ void duel_req_flip(void)
         if (ann || set) {
             duel_088DF554(p, z, 1, 1);
         }
-        if (only == 0) {
-            duel_host_call(0x1A, (s->pos & 1) << 15 | (1 - s->faceup & 1) << 14 | p | (z & 0x1F) << 1, set == 0, 0);
+        if (only) {
+            duel_host_call(0x1A, (unsigned short)((s->pos & 1) << 15 | ((unsigned int)(pos & 1) << 14 | ((p & 1) | (z & 0x1F) << 1))), 1, 0);
         } else {
-            duel_host_call(0x1A, (s->pos & 1) << 15 | (pos & 1) << 14 | p | (z & 0x1F) << 1, 1, 0);
+            duel_host_call(0x1A, (unsigned short)((s->pos & 1) << 15 | ((1 - s->faceup & 1) << 14 | ((p & 1) | (z & 0x1F) << 1))), !set, 0);
         }
         duel_req_step++;
         break;
@@ -509,23 +563,23 @@ void duel_req_flip(void)
         }
         if (only == 0) {
             s->faceup = !(s->faceup != 0);
-            if (s->faceup == 0) {
-                duel_slot_effects_reset(p, z);
-                if (p == duel_view_player && z < 5) {
-                    duel_0884DB38(0x1C, 1);
-                }
-            } else {
+            if (s->faceup) {
                 duel_order_ctr++;
                 s->unk4 = duel_order_ctr;
+            } else {
+                duel_slot_effects_reset(p, z);
+                if (p == duel_view_player && z <= 4) {
+                    duel_0884DB38(0x1C, 1);
+                }
             }
-            if (z < 5) {
+            if (z <= 4) {
                 duel_088DF554(p, z, 0x13, s->faceup);
             }
         }
         if (ann) {
             duel_host_call(0x43, p, id, 1);
         }
-        s->flags |= 0x80;
+        ZOFF(p, zo, unsigned int, flags) |= 0x80;
         duel_req_step++;
         break;
     case 3:
@@ -623,21 +677,27 @@ void duel_req_slot_value(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* the s registers and the clamping branches differ */
+#ifdef NON_MATCHING /* 20 palavras (era 48): forma igual (MIN como ternário); z e id trocados (s2/s4) */
 /* Change the counters of zone arg by loc (w 0: the zone value up to the card's maximum, w 1: the zone
    value, else entries of card w). */
 void duel_req_counters(void)
 {
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    unsigned int z = duel_req.arg;
     int k;
     int i;
-    int n = (short)*(unsigned short *)&duel_req.loc;
     int max;
-    unsigned int id = duel_req.w;
+    unsigned int p;
+    unsigned int z;
+    unsigned int id;
+    int n;
     int v;
     int old;
-    int card = field_get_card(p, z);
+    int card;
+
+    p = (duel_req.id & 0x8000) != 0;
+    z = duel_req.arg;
+    n = (short)*(unsigned short *)&duel_req.loc;
+    id = duel_req.w;
+    card = field_get_card(p, z);
 
     switch (duel_req_step) {
     case 0:
@@ -665,15 +725,12 @@ void duel_req_counters(void)
                 }
             } else {
                 max = duel_slot_counter_kind(p, z, id, 3);
-                k = -n;
-                if (max < k) {
-                    k = max;
-                }
+                k = max < -n ? max : -n;
                 for (i = 0; i < k; i++) {
                     duel_effects_free_card(duel.players[p & 1].field[z].effects, id, 0);
                 }
             }
-            duel_host_call(0x25, (unsigned char)p | (unsigned char)z << 8, n, id);
+            duel_host_call(0x25, (unsigned short)((unsigned char)p | (unsigned char)z << 8), n, id);
         }
         duel_req_step++;
         break;
@@ -847,7 +904,6 @@ void duel_req_088D9248(void)
     }
 }
 
-#ifdef NON_MATCHING /* forma igual (hi4 como andi 0xF0/ext); o original usa um $s a mais ($s8) e o quadro difere e, em 088D9DBC, a escolha do slot e o case 1 saem com outro arranjo de desvios */
 /* Request 0x31: send card i of zone arg (low byte; the high byte is the index, or the uid w is looked up
    in the hand, the extra deck or the deck) to zone loc (low byte; high byte: bits 0-3 position shown
    to the viewer, bits 4-7 keep the b14 bit). Deck and extra deck cards lose their state. */
@@ -912,7 +968,7 @@ void duel_req_088D9504(void)
             break;
         }
         if (keep) {
-            c = duel_field_card_deb2c(p, fz, i);
+            DuelCard *c = duel_field_card_deb2c(p, fz, i);
             c->b18 = 0;
             c->b19 = 0;
             c->b17 = 0;
@@ -993,23 +1049,19 @@ void duel_req_088D9DBC(void)
     DuelLoc from;
     DuelLoc dst;
 
-    if (p == duel_special.player[0] && fz == duel_special.zone[0]) {
-        s = &duel_special.slot[0];
-    } else {
-        s = &duel_special.slot[1];
-    }
+    s = p == duel_special.player[0] && fz == duel_special.zone[0] ? &duel_special.slot[0] : &duel_special.slot[1];
     id = s->card.id;
     switch (duel_req_step) {
     case 0:
         duel_host_call(0x1E, p, fz, CARD_UID(s->card));
         duel_req_step++;
         duel_req_count = 0;
-        break;
+        return;
     case 1:
         if (duel_req_flag(0x1E) == 0) {
             duel_req_step++;
         }
-        break;
+        return;
     case 2:
         s->card.b18 = shown;
         s->card.b19 = 1;
@@ -1077,4 +1129,3 @@ void duel_req_088D9DBC(void)
         break;
     }
 }
-#endif
