@@ -354,7 +354,7 @@ int dd_pyre_update(int phase, DdPyreFx *d)
             axis = dd_pyre_axis;
             vec4_copy(&up, dd_chara_pos());
             mat4_identity(&tilt);
-            mat4_mul_rot_x(&tilt, &tilt, 1.3962634f);
+            mat4_mul_rot_x(&tilt, &tilt, 1.3962635f);
             for (i = 0; i < 8; i++) {
                 f = &d->flare[i];
                 if (!(f->flags & 1))
