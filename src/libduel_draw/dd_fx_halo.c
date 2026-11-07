@@ -63,22 +63,27 @@ int dd_fx42_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 3,1 KB com quadro grande: alocação de registradores e da pilha diferem */
+#ifdef NON_MATCHING /* 35 palavras (2026-11-07): forma e pilha batem; faltam registradores: `flip` em $s2 (original $s1,
+   o de `s`), `list`/`sp`/`j` rodados no laço das faíscas, e a ordem da cópia do modelo de `scale` */
 int dd_halo_update(int phase, DdHaloFx *d)
 {
     DdFxSlot *s = d->slot;
     int run = s->param;
-    ScePspFMatrix4 bill;
-    ScePspFMatrix4 tmp;
-    ScePspFMatrix4 rot;
-    ScePspFVector4 off;
-    ScePspFVector4 node;
-    ScePspFVector4 up;
-    ScePspFVector4 axis;
-    ScePspFVector4 dir;
-    ScePspFVector4 side;
-    ScePspFVector4 back;
     ScePspFVector3 scale;
+    ScePspFMatrix4 bill __attribute__((aligned(16)));
+    ScePspFVector4 off __attribute__((aligned(16)));
+    ScePspFVector4 down __attribute__((aligned(16)));
+    ScePspFMatrix4 tmp __attribute__((aligned(16)));
+    ScePspFVector4 node __attribute__((aligned(16)));
+    ScePspFMatrix4 rot __attribute__((aligned(16)));
+    ScePspFVector4 axis __attribute__((aligned(16)));
+    ScePspFVector4 up __attribute__((aligned(16)));
+    ScePspFVector4 dir __attribute__((aligned(16)));
+    ScePspFVector4 side __attribute__((aligned(16)));
+    ScePspFVector4 ndir __attribute__((aligned(16)));
+    ScePspFVector4 back __attribute__((aligned(16)));
+    ScePspFMatrix4 m __attribute__((aligned(16)));
+    ScePspFMatrix4 mrot __attribute__((aligned(16)));
     DdRandSeed *r;
     DdHaloSpark *sp;
     DdRingVtx *q;
@@ -88,6 +93,7 @@ int dd_halo_update(int phase, DdHaloFx *d)
     float grow;
     float tilt;
     float rad;
+    float radz;
     float ang;
     float sx;
     float sy;
@@ -96,6 +102,8 @@ int dd_halo_update(int phase, DdHaloFx *d)
     int flip;
     int i;
     int j;
+    int k;
+    int n;
 
     dd_mtx_push_saved();
     dd_proj_set(0.0f, 0.0f, 1.0f, 0.0f);
@@ -111,27 +119,31 @@ int dd_halo_update(int phase, DdHaloFx *d)
         tilt = 0.0f;
         off = dd_halo_off;
         flip = 1;
-        if (s->id == 76 || s->id == 47) {
-            tilt = 0.17453294f;
-        } else if (s->id == 46) {
-            off.x = 10.0f;
-            off.y = 52.0f;
+        switch (s->id) {
+        case 43:
             flip = 0;
-        } else if (s->id == 43) {
             off.y = -16.0f;
+            break;
+        case 46:
+            off.x = 10.0f;
             flip = 0;
+            off.y = 52.0f;
+            break;
+        case 47: case 76:
+            tilt = 0.17453294f;
+            break;
         }
         d->placed = 1;
         dd_chara_bone_mtx(&d->m, 0x27);
-        if (flip) {
-            node = dd_halo_down;
+        if (flip == 1) {
+            down = dd_halo_down;
             mat4_copy(&tmp, &d->m);
             dd_mtx_strip(&tmp, &tmp);
-            mat4_transform_vec4(&node, &tmp, &node);
+            mat4_transform_vec4(&down, &tmp, &down);
             mat4_identity(&tmp);
             mat4_mul_rot_x(&tmp, &tmp, tilt + 3.1415927f);
             mat4_mul(&d->m, &d->m, &tmp);
-            mat4_translate(&d->m, &d->m, &node);
+            mat4_translate(&d->m, &d->m, &down);
             mat4_translate(&d->m, &d->m, &off);
         } else {
             node = dd_halo_up;
@@ -149,28 +161,30 @@ int dd_halo_update(int phase, DdHaloFx *d)
 
     /* the petals */
     if (phase == 1) {
+        float pw = 30.0f;
+
         d->petal[0].u = 0.0f;
         d->petal[0].v = 0.0f;
         d->petal[0].color = 0xFFAA64;
-        d->petal[0].x = -30.0f;
+        d->petal[0].x = -pw;
         d->petal[0].y = 100.0f;
         d->petal[0].z = 0.0f;
         d->petal[1].u = 0.0f;
         d->petal[1].v = 0.5f;
         d->petal[1].color = 0x80FFAA64;
-        d->petal[1].x = -30.0f;
+        d->petal[1].x = -pw;
         d->petal[1].y = 0.0f;
         d->petal[1].z = 0.0f;
         d->petal[2].u = 1.0f;
         d->petal[2].v = 0.0f;
         d->petal[2].color = 0xFFAA64;
-        d->petal[2].x = 30.0f;
+        d->petal[2].x = pw;
         d->petal[2].y = 100.0f;
         d->petal[2].z = 0.0f;
         d->petal[3].u = 1.0f;
         d->petal[3].v = 0.5f;
         d->petal[3].color = 0x80FFAA64;
-        d->petal[3].x = 30.0f;
+        d->petal[3].x = pw;
         d->petal[3].y = 0.0f;
         d->petal[3].z = 0.0f;
     }
@@ -183,15 +197,15 @@ int dd_halo_update(int phase, DdHaloFx *d)
         mtx_set_mode(2);
         mtx_push();
         mtx_load(&d->m);
-        scale.x = dd_halo_scale.x;
+        scale = *(ScePspFVector3 *)&dd_halo_scale;
         scale.y = in;
-        scale.z = dd_halo_scale.z;
         rad = grow * 28.0f;
+        radz = grow * 5.0f;
         list = dl_ambient_light(list, (unsigned int)(in * 255.0f * out) << 24 | 0xFFFFFF);
-        for (i = 0; i < 16; i++) {
-            ang = 6.2831855f * i / 16.0f + d->frame * 0.0034906587f;
+        for (k = 0; k < 16; k++) {
+            ang = 6.2831855f * k / 16.0f + d->frame * 0.0034906587f;
             mtx_push();
-            dd_translate3(rad * sinf(ang), 0.0f, grow * 5.0f * cosf(ang));
+            dd_translate3(rad * sinf(ang), 0.0f, radz * cosf(ang));
             mtx_rotate_y(ang);
             mtx_rotate_x(0.17453294f);
             mtx_scale3(&scale);
@@ -204,30 +218,34 @@ int dd_halo_update(int phase, DdHaloFx *d)
 
     /* the sparks: 8 frames of a 4 x 2 sheet, anchored at the bottom */
     if (phase == 1) {
-        for (i = 0; i < 8; i++) {
-            q = d->spark_v[i];
-            tu = i % 4 * 0.25f;
-            tv = i / 4 * 0.5f;
-            q[0].u = tu;
-            q[0].v = tv;
-            q[0].x = -8.0f;
-            q[0].y = 48.0f;
-            q[0].z = 0.0f;
-            q[1].u = tu;
-            q[1].v = tv + 0.5f;
-            q[1].x = -8.0f;
-            q[1].y = -48.0f;
-            q[1].z = 0.0f;
-            q[2].u = tu + 0.25f;
-            q[2].v = tv;
-            q[2].x = 8.0f;
-            q[2].y = 48.0f;
-            q[2].z = 0.0f;
-            q[3].u = tu + 0.25f;
-            q[3].v = tv + 0.5f;
-            q[3].x = 8.0f;
-            q[3].y = -48.0f;
-            q[3].z = 0.0f;
+        float w = 8.0f;
+        float h = 48.0f;
+        float du = 0.25f;
+        float dv = 0.5f;
+
+        for (n = 0; n < 8; n++) {
+            tu = n % 4 * du;
+            tv = n / 4 * dv;
+            d->spark_v[n][0].u = tu;
+            d->spark_v[n][0].v = tv;
+            d->spark_v[n][0].x = -w;
+            d->spark_v[n][0].y = h;
+            d->spark_v[n][0].z = 0.0f;
+            d->spark_v[n][1].u = tu;
+            d->spark_v[n][1].v = tv + dv;
+            d->spark_v[n][1].x = -w;
+            d->spark_v[n][1].y = -h;
+            d->spark_v[n][1].z = 0.0f;
+            d->spark_v[n][2].u = tu + du;
+            d->spark_v[n][2].v = tv;
+            d->spark_v[n][2].x = w;
+            d->spark_v[n][2].y = h;
+            d->spark_v[n][2].z = 0.0f;
+            d->spark_v[n][3].u = tu + du;
+            d->spark_v[n][3].v = tv + dv;
+            d->spark_v[n][3].x = w;
+            d->spark_v[n][3].y = -h;
+            d->spark_v[n][3].z = 0.0f;
         }
     }
     if (d->grow == d->grow_end) {
@@ -259,29 +277,29 @@ int dd_halo_update(int phase, DdHaloFx *d)
         vec4_copy(&up, dd_chara_pos());
         for (i = 0; i < 12; i++) {
             sp = &d->spark[i];
-            if (!(sp->flags & 1))
+            if (!(sp->flags & 1) == 1)
                 continue;
             sx = 1.0f - dd_ease_sin(sp->t - 4, 8, 2) * 0.7f;
             sy = dd_ease_sin(sp->t - 4, 8, 2) * 0.2f + 1.0f;
-            list = dl_ambient_light(list, (unsigned int)(out * in * dd_ease_cos(sp->t, 12, 1) * 255.0f) << 24
+            list = dl_ambient_light(list, (unsigned int)(out * (in * (dd_ease_cos(sp->t, 12, 1) * 255.0f))) << 24
                                               | 0xFFFFFF);
             for (j = 0; j < 3; j++) {
                 /* a frame whose y follows the halo axis and whose x faces the camera */
-                mat4_identity(&tmp);
-                mat4_translate(&tmp, &tmp, &sp->pos[j]);
-                mat4_mul(&tmp, &d->m, &tmp);
-                dd_mtx_strip(&rot, &tmp);
-                mat4_transform_vec4(&dir, &rot, &axis);
-                vec3_normalize2(&dir, &dir);
-                vec3_cross(&side, &dir, &up);
+                mat4_identity(&m);
+                mat4_translate(&m, &m, &sp->pos[j]);
+                mat4_mul(&m, &d->m, &m);
+                dd_mtx_strip(&mrot, &m);
+                mat4_transform_vec4(&dir, &mrot, &axis);
+                vec3_normalize2(&ndir, &dir);
+                vec3_cross(&side, &ndir, &up);
                 vec3_normalize2(&side, &side);
-                vec3_cross(&back, &side, &dir);
+                vec3_cross(&back, &side, &ndir);
                 vec3_normalize2(&back, &back);
-                vec4_set(&tmp.x, side.x * sx, side.y * sx, side.z * sx, 0.0f);
-                vec4_set(&tmp.y, dir.x * sy, dir.y * sy, dir.z * sy, 0.0f);
-                vec4_set(&tmp.z, back.x, back.y, back.z, 0.0f);
+                vec4_set(&m.x, side.x * sx, side.y * sx, side.z * sx, 0.0f);
+                vec4_set(&m.y, ndir.x * sy, ndir.y * sy, ndir.z * sy, 0.0f);
+                vec4_set(&m.z, back.x, back.y, back.z, 0.0f);
                 mtx_push();
-                mtx_load(&tmp);
+                mtx_load(&m);
                 list = draw_array(list, 4, 0x183, 4, 0, d->spark_v[sp->frame[j]]);
                 mtx_pop();
                 sp->pos[j].y += 8.0f;

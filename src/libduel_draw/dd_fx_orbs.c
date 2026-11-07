@@ -7,8 +7,8 @@
 
 int dd_orbs_update(int phase, DdOrbFx *d);
 
-/* flame frames of the orb sheet (u from, u to) and the two rows (v from, v to); local templates of
-   dd_orb_draw (kept in asm) */
+/* flame frames of the orb sheet (u from, u to) and the two rows (v from, v to): local templates of
+   dd_orb_draw (data of the asm while it is kept as asm) */
 int dd_orb_frames[7][2] = {
     { 0, 22 }, { 0, 26 }, { 26, 60 }, { 60, 94 }, { 94, 148 }, { 148, 202 }, { 202, 256 },
 };
@@ -27,18 +27,22 @@ int dd_orbs_start(int count, int flag, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* mesma forma; o original guarda y na pilha e passo/x em $s3/$s4 (alocação de registradores) */
+#ifdef NON_MATCHING /* 12 palavras (2026-11-07): forma batendo; no halo, `list` e `u` com $s0/$s2 trocados */
 /* one orb: the flame animation and, once faded in, the halo above it */
-void dd_orb_draw(float alpha, DdOrb *o, int flag, int x, int y, int step)
+void dd_orb_draw(DdOrb *o, int flag, int x, int y, float alpha, int step)
 {
     void *list = dl_select_layer(6, 0);
     int t = o->t;
-    int anim = o->anim;
     int full = t >= 16;
-    int u = dd_orb_frames[anim][0];
-    int w = dd_orb_frames[anim][1] - u;
-    int v = dd_orb_bands[anim != 0][0];
-    int h = dd_orb_bands[anim != 0][1] - v;
+    int anim = o->anim;
+    int frames[7][2] = {
+        { 0, 22 }, { 0, 26 }, { 26, 60 }, { 60, 94 }, { 94, 148 }, { 148, 202 }, { 202, 256 },
+    };
+    int bands[2][2] = { { 0, 64 }, { 64, 128 } };
+    int u = frames[anim][0];
+    int v = bands[anim != 0][0];
+    int w = frames[anim][1] - u;
+    int h = bands[anim != 0][1] - v;
     int sw = (float)w;
     int sh = (float)h;
     int hu;
@@ -57,18 +61,19 @@ void dd_orb_draw(float alpha, DdOrb *o, int flag, int x, int y, int step)
     o->t += step;
     if (full == 1) {
         /* the halo: 31x31, column idx of the sheet, row 0 or 1 by `flag` */
+        w = 31;
+        t = (float)w;
         hu = o->idx * 32 + 23;
         u = 0;
-        v = 31.0f;
-        h = -v / 2;
-        sh = -v / 2 + 4;
+        h = -t / 2;
+        sh = -(int)t / 2 + 4;
         sw = (unsigned int)(alpha * (255.0f * dd_ease_lin(o->t2, 16)));
         if (flag == 0)
             u += 32;
-        sh = sh + 5.0f * sinf(0.08726647f * o->t2 + o->phase2);
+        anim = sh + 5.0f * sinf(0.08726647f * o->t2 + o->phase2);
         list = dl_color(list, sw << 24 | 0xFFFFFF);
-        list = draw_set_offsets(list, 31, 31, v, v);
-        list = draw_sprite(list, x + h, y + sh, 0, hu, u, 0, 0);
+        list = draw_set_offsets(list, 31, 31, t, t);
+        list = draw_sprite(list, x + h, y + anim, 0, hu, u, 0, 0);
         o->t2 += step;
     }
     dl_set_list(list);
@@ -169,7 +174,7 @@ int dd_orbs_update(int phase, DdOrbFx *d)
             y = e * ((int)(k * 5.0f * s) - 40) + 157.0f;
             o->x = x;
             o->y = y;
-            dd_orb_draw(a, o, d->flag, x, y, step);
+            dd_orb_draw(o, d->flag, x, y, a, step);
         }
     }
 
