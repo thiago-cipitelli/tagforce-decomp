@@ -44,8 +44,6 @@ segments:
       - [0x74A8, c, ai_0880B448]
       - [0x81BC, asm, ai_0880B448_asm_0880C15C]
       - [0x856C, c, ai_0880B448]
-      - [0x866C, asm, ai_0880B448_asm_0880C60C]
-      - [0x92E8, c, ai_0880B448]
       - [0xBE54, c, ai_cond3]
       - [0xC00C, asm, ai_cond3_asm_0880FFAC]
       - [0xC0F8, c, ai_cond3]

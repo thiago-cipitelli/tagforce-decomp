@@ -619,3 +619,41 @@ Também: helper `static` definido antes no mesmo `.c` (`mat4_det`, `ehf_track_ev
 `type:func static`. Família não resolvida: cópia morta do destino nos `u32 → float` (`bltzl; srl` com o `srl`
 original mantido depois do `b`) em `cardlist_draw_arrow`: o mwcc 219 a remove nessa função, embora a mantenha em
 `ehf_track_eval`.
+
+## Rodada 9 (`ai_*` de libduel_eng): constantes que o original não dobra, contadores de laço, posições de pilha
+
+Bateram `duel_ai_atk_update`, `duel_0881657C`, `duel_08816A74`, `duel_0880DC1C`, `duel_0880E690`, `duel_0880C60C`, `duel_08827DA4`,
+`duel_08828740`. Idiomas novos:
+- **`r |= a; r |= b;` em comandos separados** (`duel_08827DA4`, `duel_08828740`): o mwcc dobra `r = r | a | b` (e
+  `r = 4`) com `r == 0` conhecido, mas não dobra `r |= x`. Quando o original tem `or v0,s1,s0; or s1,v0,s5` /
+  `ori s1,s1,4` num caminho onde `r` só pode valer 0, o fonte era `r |= a; r |= b;` / `r |= 4;`.
+  `#pragma opt_propagation off` também reproduz, mas não é preciso. Nos `case` de retorno, `if (c) r |= x; return r;`
+  dá o `or s1; move v0,s1; b; nop` do original (com `{ r |= x; return r; } return r;` o mwcc funde no `v0`).
+- **Valor u16 mascarado depois do teste** (`andi s7,a1,0xffff` logo depois de `beqz a1; nop`): o id passa por um
+  `int` (`faceup = slot.card.id; if (faceup != 0) { id = (unsigned short)faceup; ...`) com `id` declarado `int`; com
+  `id` u16 o mwcc remascara cada uso.
+- **Zona do índice sem CSE com a do evento**: `field[(unsigned char)a->zone]` no índice e `ev.zone = a->zone`, com
+  `p` atribuído dentro do índice (`duel.players[(p = a->player) & 1]`), separou `z & 0xFF` de `a->zone` como no original.
+- **Posição de pilha de um local cujo endereço é tomado**: `*(unsigned short *)&atk` põe `atk` no topo da área de
+  locais; o original o tinha embaixo de tudo: era `(atk & 0xFFFF)` (o mwcc relê o derramamento com `lhu`).
+- **Ordem de criação na inline**: os `$s` da chave inline de `duel_0880DC1C` bateram com `int i;` antes dos outros
+  locais e o parâmetro copiado para um local (`int zz` → `int z = zz;`): parâmetros são criados antes dos locais.
+- **Mesma inline duas vezes com `$s` diferentes**: em `duel_0880E690` o segundo `duel_ai_view_refresh()` só bateu
+  escrevendo os dois laços na função com as **mesmas** variáveis `q`/`t` (vidas unidas mudam a coloração).
+- **`if (x < 0 || duel_rand(2)) x = i;`** em vez de `if (x >= 0) { if (rand) x = i; } else x = i;` (`bltzl` para
+  depois da atribuição + `move; b; nop`), e `if (keep) return -1; return other;` (`duel_08816A74`).
+- **Cópia de struct com campos escalares**: `duel_0880C60C` copia `duel_special` com `lw/sw` nos 11 primeiros
+  campos (escalares no original; um `int[2]` sai `lwc1/swc1`), laço para `act[2]` e `lwc1/swc1` para os arrays
+  pequenos. Uma struct de visão com os campos na forma do original só se decompõe se a cópia for de um **global**
+  (`extern DuelSpecialCopy duel_special_save;`, alias em `symbols/`); por ponteiro (`*(T *)&g`) sai cópia em bloco.
+- Laços: `for (i = 0; i <= 4; i++)` (`slti at`), `pb` atribuído no `for` (`for (i = 0, b = pb = p << 4; ...)`) para o
+  `sw` do derramamento sair depois de `i = 0`, e a descida por contadores de laço (um nome novo por laço/jogador).
+- `duel_0880C60C` também: `forced = 0;` depois da cópia (não na declaração), `n = g->dmg_opp > 0; if (n == 0) n =
+  g->won > g->lost; g->ok = n;` (o `sw` comum com `bnezl` + cópia), campos de `st[p][z]` sem ponteiro, `atk > def`,
+  `level <= 4`, a ordem dos `case` pelos corpos e `(int)` no `+=` de um campo para a ordem das cargas.
+- Tabelas de salto de um arquivo que sai inteiro do asm: as duas tabelas de `ai_08827DA4.c` são contíguas
+  (`@rodata 0x08907908-0x08907940`); com só a primeira, o `make check` acusa a `.data` deslocada.
+- Ainda em asm: `duel_0880C15C` (16 linhas: o mwcc agenda `tz * 44` e o `mult` do jogador antes de `(1 - p) * 220`;
+  operandos trocados, ponteiro de linha, índice achatado e `ZSLOT` não resolvem), `duel_ai_sum_088239EC` (875 contra
+  846 instruções: o original relê campos de `a` (`lbu 0(s0)`) depois de chamadas/gravações que o C atual reaproveita,
+  além das cópias mortas dos `?:`), `duel_08817598` (não tentado).
