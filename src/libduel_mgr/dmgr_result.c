@@ -4,11 +4,8 @@
 // @asm 0x0880F9C0-0x0880FEAC
 // @asm 0x0880FEAC-0x08810750
 // @asm 0x08810DCC-0x088111DC
-// @asm 0x088119B4-0x08811BC4
 // @asm 0x08811C98-0x08812124
-// @asm 0x088122B4-0x08812A98
 // @asm 0x08812A98-0x08812D74
-// @asm 0x08815050-0x08815328
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
    summary), the money paid out, the series score of a match and the continue / net wait dialogs. */
 #include "allegrex.h"
@@ -969,12 +966,11 @@ unsigned int *dmgr_res_draw_bg(unsigned int *list)
     return gfx_end_2d(list);
 }
 
-#ifdef NON_MATCHING /* 8 palavras (declarações f, i, v, u, x por busca): o teste f < 6 sai beqzl/b em vez de bnezl direto ao epílogo (f < 6, 6 > f, !(f >= 6), switch não mudam; com o corpo em if (f >= 6) o bnezl sai certo, mas list deixa de voltar em v0) */
 unsigned int *dmgr_res_draw_bar(unsigned int *list)
 {
     int opts[0x18];
-    int edge = 0;
     void *e;
+    int edge = 0;
     int f;
     int i;
     int v;
@@ -994,10 +990,7 @@ unsigned int *dmgr_res_draw_bar(unsigned int *list)
     list = dl_tex_func(list, 0, 1);
     list = dl_blend_func(list, 0, 2, 3, 0, 0);
     f = ehf_get_frame_count(e);
-    if (f < 6) {
-        return list;
-    }
-    if (f > 0x61) {
+    if (f < 6 || f > 0x61) {
         return list;
     }
     if (f == 6 || f == 0x61) {
@@ -1027,7 +1020,6 @@ unsigned int *dmgr_res_draw_bar(unsigned int *list)
     }
     return list;
 }
-#endif
 
 unsigned int *dmgr_res_draw_result(unsigned int *list)
 {
@@ -1203,7 +1195,6 @@ unsigned int *dmgr_res_draw_page(unsigned int *list)
 short dmgr_res_bob[4] = { 0, 1, 2, 1 };
 typedef struct DmgrBob { unsigned short v[4]; } DmgrBob;
 
-#ifdef NON_MATCHING /* 7 palavras: com as posições relativas a l = x + 0x3E (o original soma l + 347, não x + 0x199) e um q próprio no laço dos totais, só o par de temporários r/q sai trocado (a0/v1 no original, v1/a0 aqui; ordem das declarações, do for e do if não muda) */
 unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
 {
     void *g;
@@ -1266,11 +1257,11 @@ unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
     sum = 0;
     memset(idx, -1, sizeof idx);
     {
-        int *q;
+        int n = 0;
         DmgrRes *r = dmgr_res;
-        for (i = 0, q = idx; i < 4; i++) {
+        for (i = 0; i < 4; i++) {
             if (r->total[i] != 0) {
-                *q++ = i;
+                idx[n++] = i;
                 sum += r->total[i];
             }
         }
@@ -1300,7 +1291,6 @@ unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
     font_set_color(0xFFFFFFFF);
     return dmgr_res_draw_number(list, (short)(l + 0x14a), 0xB1, sum, 10, 5, 0);
 }
-#endif
 
 unsigned short dmgr_res_page_text[4] = { 4, 5, 6, 7 };
 
@@ -1886,24 +1876,23 @@ unsigned int *dmgr_res_draw_arrow(unsigned int *list, int x, int y, unsigned cha
     return list;
 }
 
-#ifdef NON_MATCHING /* 102 palavras: com os clamps em ALLEGREX_MAX/MIN e o ramo rows >= count primeiro o fluxo é o do original; falta a alocação dos $s (list/x/y/h em s7/s5/s4/s3 no original; ordem das declarações não muda) */
 unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, int pos, int rows, int count)
 {
     int track = h - 2;
+    void *g = dmgr_res_file(5);
     int len;
-    int at;
-    void *g;
+    int period_up;
+    int period_down;
 
-    g = dmgr_res_file(5);
     if (g == 0) {
         return list;
     }
     if (count <= rows) {
-        at = 0;
         len = track;
+        track = 0;
     } else {
         len = ALLEGREX_MAX(rows * track / count, 10);
-        at = ALLEGREX_MIN(ALLEGREX_MAX(pos * (track - len) / (count - rows), 0), track - len);
+        track = ALLEGREX_MIN(ALLEGREX_MAX(pos * (track - len) / (count - rows), 0), h - 2 - len);
     }
     list = dl_set_tex_filter(list, 0, 0);
     list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -1914,18 +1903,16 @@ unsigned int *dmgr_res_draw_scrollbar(unsigned int *list, int x, int y, int h, i
     list = draw_set_offsets(list, 8, 5, 8, h - 10);
     list = draw_sprite(list, x, y + 5, 0, 0xF7, 5, 0, 0);
     list = draw_set_offsets(list, 4, 5, 4, 5);
-    at += y;
-    list = draw_sprite(list, x + 2, at + 2, 0, 0xF7, 0x28, 0, 0);
-    list = draw_sprite(list, x + 2, len + at - 3, 0, 0xF7, 0x37, 0, 0);
+    list = draw_sprite(list, x + 2, y + track + 2, 0, 0xF7, 0x28, 0, 0);
+    list = draw_sprite(list, x + 2, len + (y + track - 3), 0, 0xF7, 0x37, 0, 0);
     list = draw_set_offsets(list, 4, 5, 4, len - 10);
-    list = draw_sprite(list, x + 2, at + 7, 0, 0xF7, 0x2D, 0, 0);
-    list = dmgr_res_draw_arrow(list, x, y - 7, 0, ((unsigned int *)gfx_get_state())[1], pos > 0, 1,
+    list = draw_sprite(list, x + 2, y + track + 7, 0, 0xF7, 0x2D, 0, 0);
+    period_up = ((unsigned int *)gfx_get_state())[1];
+    list = dmgr_res_draw_arrow(list, x, y - 7, 0, period_up, pos > 0, 1, *(unsigned int *)gfx_get_state(), g);
+    period_down = ((unsigned int *)gfx_get_state())[1];
+    return dmgr_res_draw_arrow(list, x, y + h + 2, 1, period_down, pos < count - rows, 1,
                                *(unsigned int *)gfx_get_state(), g);
-    list = dmgr_res_draw_arrow(list, x, y + h + 2, 1, ((unsigned int *)gfx_get_state())[1],
-                               pos < count - rows, 1, *(unsigned int *)gfx_get_state(), g);
-    return list;
 }
-#endif
 
 void dmgr_res_text_fit(int x, int y, int w, int sw, int sh, void *text)
 {
