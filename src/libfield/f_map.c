@@ -1,6 +1,5 @@
 // @range 0x08807844-0x08808214
 // @asm 0x08807844-0x08807BDC
-// @asm 0x08807F50-0x08807FB0
 /* Cell map of the room: walkable cells (with the doors of the dormitory and the stage closed by
    story flags), height of a point on the ground triangles, cell <-> position, marked cells, the
    door cells leading to another room and the cells of the special hall. */
@@ -153,21 +152,19 @@ void fld_pos_to_cell(float x, float z, int *cx, int *cz)
     *cz = z / 0.5f;
 }
 
-#ifdef NON_MATCHING /* 8 palavras: o original mantém o deslocamento i*4 numa variável de indução (t0) ao lado de i; com o índice com sizeof o mwcc refaz o sll a cada volta, com i*4 com sinal reduz a ponteiros (20 palavras) */
 int fld_cell_marked(int cx, int cz)
 {
     FieldBg *b = &field_bg_state;
     int i;
 
     for (i = 0; i < field_bg_state.n_cells; i++) {
-        FieldCell *c = (FieldCell *)((char *)b->cells + i * sizeof(FieldCell));
+        FieldCell *c = (FieldCell *)((char *)b->cells + (unsigned int)(i * 4));
 
         if (cx == c->x && cz == c->z)
             return 1;
     }
     return 0;
 }
-#endif
 
 /* room a door cell leads to, -1 if none */
 int fld_cell_door(int cx, int cz)
