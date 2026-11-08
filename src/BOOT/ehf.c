@@ -1052,23 +1052,26 @@ typedef struct EhfMesh {               /* 0x18 per mesh of a shape */
     unsigned int prim;                 /* +0x14 prim << 16 | count */
 } EhfMesh;
 
-#ifdef NON_MATCHING /* com ehf_track_eval static (o original mantém &ratio em a2 através da chamada) e a forma
-   abaixo (cores em locais, clamps com max/min, testes de textura na ordem do original): 61-64 palavras.
-   Falta: (1) a pilha do original tem 4 bytes livres entre m e lpos (m em sp+96, cx em sp+64); com
-   `float m[17]` a pilha bate, mas nenhum tipo natural deu isso (aligned(8/16), união com double e
-   typedef alinhado mandam m para o fundo); (2) o escalonamento dos max/min dos clamps (o original
-   faz o max de r depois dos min de g/a/b) e a associação das somas das cores. */
+#ifdef NON_MATCHING /* 57 palavras. Pilha certa com aligned(8) em m e cx (o buraco de 4 bytes fica entre m e lpos);
+   ordem dos clamps por busca (2520 ordens); col montado em três passos. Falta: coloração dos temporários
+   dos clamps e das somas das cores (t1/a2/a3 rodados) */
 void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, float *mtx, EhfColor *p, EhfOpts *o)
 {
     int ratio;
     EhfEval ev;
     float zero[3];
     float lpos[3];
-    float m[16];
-    EhfColor cx;
+    float m[16] __attribute__((aligned(8)));
+    EhfColor cx __attribute__((aligned(8)));
     int *shape;
-    int r, g, b, a;
-    int ar, ag, ab, aa;
+    int r;
+    int g;
+    int b;
+    int a;
+    int ar;
+    int ag;
+    int ab;
+    int aa;
     EhfMesh *mh;
     EhfMesh *end;
     unsigned int cur;
@@ -1100,13 +1103,13 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     ar = cx.add[0] + EHF_DIV256(cx.mul[0] * p->add[0]);
     aa = cx.add[3] + EHF_DIV256(cx.mul[3] * p->add[3]);
     r = EHF_DIV256(cx.mul[0] * p->mul[0]);
-    a = ALLEGREX_MAX(a, 0);
-    b = ALLEGREX_MAX(b, 0);
     g = ALLEGREX_MAX(g, 0);
     g = ALLEGREX_MIN(g, 0xFF);
+    r = ALLEGREX_MAX(r, 0);
+    a = ALLEGREX_MAX(a, 0);
+    b = ALLEGREX_MAX(b, 0);
     a = ALLEGREX_MIN(a, 0xFF);
     b = ALLEGREX_MIN(b, 0xFF);
-    r = ALLEGREX_MAX(r, 0);
     r = ALLEGREX_MIN(r, 0xFF);
     cx.mul[0] = r;
     cx.mul[1] = g;
@@ -1165,7 +1168,9 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
         cx.add[0] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[0], 0), 0xFF);
         cx.add[1] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[1], 0), 0xFF);
         cx.add[3] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[3], 0), 0xFF);
-        col = cx.add[0] + cx.add[1] * 0x100 + cx.add[3] * 0x1000000 + cx.add[2] * 0x10000;
+        col = cx.add[2] * 0x10000 + cx.add[3] * 0x1000000;
+        col = cx.add[1] * 0x100 + col;
+        col = cx.add[0] + col;
         list = dl_material_colors(list, col, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
         list = dl_material(list, 1, (unsigned char)mh->alpha * 0x1000000 + (mh->color & 0xFFFFFF));
         zero[0] = 0.0f;
