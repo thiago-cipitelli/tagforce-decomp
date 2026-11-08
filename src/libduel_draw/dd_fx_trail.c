@@ -7,7 +7,15 @@
    sparks and a ring that refracts the screen behind it (task of 0x7F70 bytes). */
 #include "dd_fx.h"
 
+#define DD_BIT(f, m) ((f) & (m) ? 1 : 0)
+
 int dd_trail_update(int phase, DdTrailFx *d);
+
+typedef struct DdTrailPart {           /* DdTrailSpark.p[] */
+    int frame;
+    ScePspFVector3 pos;
+    ScePspFVector3 vel;
+} DdTrailPart;
 
 /* zero vector and w = 1 point: local templates of dd_trail_update (kept in asm) */
 #pragma explicit_zero_data on
@@ -76,36 +84,60 @@ int dd_fx13_start_b(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 5,2 KB com quadro de 448 bytes: alocação de registradores e da pilha diferem */
+#ifdef NON_MATCHING /* 16 palavras (2026-11-08): forma e quadro iguais ao original; faltam os $s do laço de spline_eval
+                      (contador s0/ponteiro s1 trocados) e as posições de derrame de list e do contador externo das fitas
+                      (0x60/0x64); os contadores nN têm um nome por laço para os $s (busca automática) */
 int dd_trail_update(int phase, DdTrailFx *d)
 {
+    int n39;
+    int n33;
+    int n29;
+    int n27;
+    int n19;
+    int n9;
+    int n5;
     DdFxSlot *s = d->slot;
+    int q;
+    int q2;
     int run = s->param;
     int buf = d->frame % 2;
-    ScePspFMatrix4 bill;
-    ScePspFMatrix4 vp;
-    ScePspFVector4 bl[3][2];
-    ScePspFVector4 edge[2];
-    ScePspFVector4 w;
     ScePspFVector3 head;
     ScePspFVector3 ring;
     ScePspFVector3 pos;
+    ScePspFMatrix4 bill __attribute__((aligned(16)));
+    ScePspFVector4 bl[3][2] __attribute__((aligned(16)));
+    ScePspFVector4 edge[2] __attribute__((aligned(16)));
+    ScePspFMatrix4 vp __attribute__((aligned(16)));
+    ScePspFVector4 w __attribute__((aligned(16)));
     DdRandSeed *r;
     DdTrailSpark *sp;
-    DdCVtx *v;
+    DdTrailPart *pp;
+    DdCVtx *v0;
+    DdCVtx *v1;
+    DdCVtx *v2;
+    ScePspFVector4 *cv;
     void *list;
     unsigned int rgb;
     unsigned int alpha;
+    unsigned int c;
     float in;
     float out;
     float k;
     float ang;
     float sc;
     float e;
+    float g;
+    float fv;
+    float du;
+    float dv;
+    float w3;
+    float tu;
+    float tv;
     int i;
     int j;
     int n;
     int m;
+    int n26;
 
     dd_mtx_push_saved();
     if (phase == 1) {
@@ -195,16 +227,16 @@ int dd_trail_update(int phase, DdTrailFx *d)
         /* push the head into the history */
         if (d->npts < 32)
             d->npts++;
-        for (i = d->npts - 1; i > 0; i--) {
-            d->pts[i] = d->pts[i - 1];
+        for (n5 = d->npts - 1; n5 > 0; n5--) {
+            d->pts[n5] = d->pts[n5 - 1];
             for (j = 0; j < 8; j++)
-                d->curve[i][j] = d->curve[i - 1][j];
+                d->curve[n5][j] = d->curve[n5 - 1][j];
         }
         vec4_set(&d->pts[0], head.x, head.y, head.z, 1.0f);
         spline_init(d->coef, d->pts, d->npts);
-        for (j = 0; j < 8; j++)
-            spline_eval(j / 8.0f, &d->curve[0][j], d->pts, d->coef, d->npts);
-        rgb = d->r | d->b << 16 | d->g << 8;
+        for (n9 = 0; n9 < 8; n9++)
+            spline_eval(n9 / 8.0f, &d->curve[0][n9], d->pts, d->coef, d->npts);
+        rgb = d->r | (d->b << 16 | d->g << 8);
         for (i = 0; i < 3; i++)
             for (j = 0; j < 2; j++)
                 mat4_transform_vec4(&bl[i][j], &bill, &d->blade[i][j]);
@@ -212,26 +244,30 @@ int dd_trail_update(int phase, DdTrailFx *d)
         d->nsteps = 0;
         for (i = 0; i < d->npts; i++) {
             for (j = 0; j < 8; j++) {
+                cv = &d->curve[i][j];
                 k = 1.0f - d->nsteps / 47.0f;
                 alpha = (unsigned int)d->a * (k * 0.5f + 0.5f);
-                for (n = 0; n < 3; n++) {
+                c = d->r | (d->g << 8 | (alpha << 24 | d->b << 16));
+                for (n19 = 0; n19 < 3; n19++) {
+                    v0 = &d->strip[n19][d->nsteps][0];
+                    v1 = &d->strip[n19][d->nsteps][1];
+                    v2 = &d->strip[n19][d->nsteps][2];
                     for (m = 0; m < 2; m++) {
-                        vec4_scale(&edge[m], &bl[n][m], k);
-                        vec4_add(&edge[m], &edge[m], &d->curve[i][j]);
+                        vec4_scale(&edge[m], &bl[n19][m], k);
+                        vec4_add(&edge[m], &edge[m], cv);
                     }
-                    v = d->strip[n][d->nsteps];
-                    v[0].color = rgb;
-                    v[0].x = edge[0].x;
-                    v[0].y = edge[0].y;
-                    v[0].z = edge[0].z;
-                    v[1].color = d->r | d->g << 8 | alpha << 24 | d->b << 16;
-                    v[1].x = d->curve[i][j].x;
-                    v[1].y = d->curve[i][j].y;
-                    v[1].z = d->curve[i][j].z;
-                    v[2].color = rgb;
-                    v[2].x = edge[1].x;
-                    v[2].y = edge[1].y;
-                    v[2].z = edge[1].z;
+                    v0->color = rgb;
+                    v0->x = edge[0].x;
+                    v0->y = edge[0].y;
+                    v0->z = edge[0].z;
+                    v1->color = c;
+                    v1->x = cv->x;
+                    v1->y = cv->y;
+                    v1->z = cv->z;
+                    v2->color = rgb;
+                    v2->x = edge[1].x;
+                    v2->y = edge[1].y;
+                    v2->z = edge[1].z;
                 }
                 if (++d->nsteps >= 48)
                     goto built;
@@ -242,8 +278,8 @@ int dd_trail_update(int phase, DdTrailFx *d)
         if (d->nsteps > 1) {
             list = dl_ambient_light(list, (unsigned int)(in * 255.0f * out) << 24 | 0xFFFFFF);
             for (n = 0; n < 3; n++)
-                for (j = 0; j < 2; j++)
-                    list = draw_array(list, 4, 0x99C, d->nsteps * 2, d->idx, &d->strip_buf[buf][n][0][j]);
+                for (n26 = 0; n26 < 2; n26++)
+                    list = draw_array(list, 4, 0x99C, d->nsteps * 2, d->idx, &d->strip_buf[buf][n][0][n26]);
         }
         mtx_pop();
         dl_set_list(list);
@@ -262,36 +298,38 @@ int dd_trail_update(int phase, DdTrailFx *d)
             d->b2 = 230;
             d->a2 = 255;
         }
-        rgb = d->r2 | d->b2 << 16 | d->g2 << 8;
+        c = d->r2 | (d->g2 << 8 | (d->a2 << 24 | d->b2 << 16));
+        rgb = d->r2 | (d->b2 << 16 | d->g2 << 8);
+        g = 20.0f;
         d->glow[0].u = 0.5f;
         d->glow[0].v = 0.5f;
-        d->glow[0].color = d->r2 | d->g2 << 8 | d->a2 << 24 | d->b2 << 16;
+        d->glow[0].color = c;
         d->glow[0].x = 0.0f;
         d->glow[0].y = 0.0f;
         d->glow[0].z = 0.0f;
         d->glow[1].u = 0.0f;
         d->glow[1].v = 0.0f;
         d->glow[1].color = rgb;
-        d->glow[1].x = -20.0f;
-        d->glow[1].y = 20.0f;
+        d->glow[1].x = -g;
+        d->glow[1].y = g;
         d->glow[1].z = 0.0f;
         d->glow[2].u = 1.0f;
         d->glow[2].v = 0.0f;
         d->glow[2].color = rgb;
-        d->glow[2].x = 20.0f;
-        d->glow[2].y = 20.0f;
+        d->glow[2].x = g;
+        d->glow[2].y = g;
         d->glow[2].z = 0.0f;
         d->glow[3].u = 1.0f;
         d->glow[3].v = 1.0f;
         d->glow[3].color = rgb;
-        d->glow[3].x = 20.0f;
-        d->glow[3].y = -20.0f;
+        d->glow[3].x = g;
+        d->glow[3].y = -g;
         d->glow[3].z = 0.0f;
         d->glow[4].u = 0.0f;
         d->glow[4].v = 1.0f;
         d->glow[4].color = rgb;
-        d->glow[4].x = -20.0f;
-        d->glow[4].y = -20.0f;
+        d->glow[4].x = -g;
+        d->glow[4].y = -g;
         d->glow[4].z = 0.0f;
         d->glow[5] = d->glow[1];
     }
@@ -315,27 +353,27 @@ int dd_trail_update(int phase, DdTrailFx *d)
     if (d->variant != 0) {
         /* sparks shed along the newest segment */
         if (phase == 1) {
-            for (i = 0; i < 4; i++) {
-                d->sq[i][0].u = i % 4 * 0.25f;
-                d->sq[i][0].v = i / 4 * 0.5f;
-                d->sq[i][0].x = -3.0f;
-                d->sq[i][0].y = 3.0f;
-                d->sq[i][0].z = 0.0f;
-                d->sq[i][1].u = i % 4 * 0.25f + 0.25f;
-                d->sq[i][1].v = i / 4 * 0.5f + 0.5f;
-                d->sq[i][1].x = 3.0f;
-                d->sq[i][1].y = -3.0f;
-                d->sq[i][1].z = 0.0f;
+            du = 0.25f;
+            w3 = 3.0f;
+            dv = 0.5f;
+            for (n27 = 0; n27 < 4; n27++) {
+                tu = n27 % 4 * du;
+                tv = n27 / 4 * dv;
+                d->sq[n27][0].u = tu;      d->sq[n27][0].v = tv;      d->sq[n27][0].x = -w3;
+                d->sq[n27][0].y = w3;      d->sq[n27][0].z = 0.0f;
+                d->sq[n27][1].u = tu + du; d->sq[n27][1].v = tv + dv; d->sq[n27][1].x = w3;
+                d->sq[n27][1].y = -w3;     d->sq[n27][1].z = 0.0f;
             }
         }
         if (d->grow == d->grow_end && d->npts > 0) {
             sp = &d->spark[d->spark_next];
             sp->flags |= 1;
             sp->t = 0;
-            for (j = 0; j < 8; j++) {
-                sp->p[j].frame = DD_RAND(r) % 4;
-                vec3_set(&sp->p[j].pos, d->curve[0][j].x, d->curve[0][j].y, d->curve[0][j].z);
-                dd_rand_dir(5.0f, &sp->p[j].vel);
+            for (n29 = 0; n29 < 8; n29++) {
+                pp = (DdTrailPart *)&sp->p[n29];
+                pp->frame = DD_RAND(r) % 4;
+                vec3_set(&pp->pos, d->curve[0][n29].x, d->curve[0][n29].y, d->curve[0][n29].z);
+                dd_rand_dir(5.0f, &pp->vel);
             }
             if (d->spark_next < 15)
                 d->spark_next++;
@@ -353,25 +391,28 @@ int dd_trail_update(int phase, DdTrailFx *d)
             mtx_push();
             mtx_identity();
             for (i = 0; i < 16; i++) {
-                sp = &d->spark[i];
-                if (!(sp->flags & 1))
-                    continue;
-                e = dd_ease_sin(sp->t, 16, 1);
-                list = dl_ambient_light(list, (unsigned int)(out * in * dd_ease_cos(sp->t, 16, 1) * 255.0f) << 24
+                DdTrailSpark *sp2 = &d->spark[i];
+
+                if (!DD_BIT(d->spark[i].flags, 1) != 1) {
+                int jb;
+                e = dd_ease_sin(sp2->t, 16, 1) * 0.3f + 0.7f;
+                list = dl_ambient_light(list, (unsigned int)(out * (in * (dd_ease_cos(sp2->t, 16, 1) * 255.0f))) << 24
                                                   | 0xFFFFFF);
-                for (j = 0; j < 8; j++) {
-                    vec3_scale(&pos, &sp->p[j].vel, e * 0.3f + 0.7f);
-                    vec3_add(&pos, &pos, &sp->p[j].pos);
+                for (n33 = 0; n33 < 8; n33++) {
+                    pp = (DdTrailPart *)&sp2->p[n33];
+                    vec3_scale(&pos, &pp->vel, e);
+                    vec3_add(&pos, &pos, &pp->pos);
                     mtx_push();
                     mtx_translate(&pos);
                     mtx_mult(&bill);
-                    list = draw_array(list, 6, 0x183, 2, 0, d->sq[sp->p[j].frame]);
+                    list = draw_array(list, 6, 0x183, 2, 0, d->sq[pp->frame]);
                     mtx_pop();
                 }
-                if (sp->t < 15)
-                    sp->t++;
+                if (sp2->t < 15)
+                    sp2->t++;
                 else
-                    sp->flags &= ~1;
+                    sp2->flags &= ~1;
+            }
             }
             mtx_pop();
             dl_set_list(list);
@@ -385,14 +426,14 @@ int dd_trail_update(int phase, DdTrailFx *d)
             d->fan[0].x = 0.0f;
             d->fan[0].y = 0.0f;
             d->fan[0].z = 0.0f;
-            for (i = 0; i < 33; i++) {
-                d->fan[i + 1].u = 0.0f;
-                d->fan[i + 1].v = 0.0f;
-                d->fan[i + 1].color = 0x00E6FF64;
-                ang = 6.2831855f * i / 32.0f;
-                d->fan[i + 1].x = sinf(ang) * 30.0f;
-                d->fan[i + 1].y = cosf(ang) * 30.0f;
-                d->fan[i + 1].z = 0.0f;
+            for (q = 0; q < 33; q++) {
+                ang = 6.2831855f * q / 32.0f;
+                d->fan[q + 1].u = 0.0f;
+                d->fan[q + 1].v = 0.0f;
+                d->fan[q + 1].color = 0x00E6FF64;
+                d->fan[q + 1].x = sinf(ang) * 30.0f;
+                d->fan[q + 1].y = cosf(ang) * 30.0f;
+                d->fan[q + 1].z = 0.0f;
             }
         }
         list = dl_select_layer(7, 0);
@@ -406,20 +447,22 @@ int dd_trail_update(int phase, DdTrailFx *d)
         mtx_translate(&ring);
         mtx_mult(&bill);
         dd_mtx_mvp_cam(&vp);
-        for (i = 0; i < 34; i++) {
+        for (q2 = 0; q2 < 34; q2++) {
             w = dd_trail_w;
-            w.x = d->fan[i].x;
-            w.y = d->fan[i].y;
-            w.z = d->fan[i].z;
+            w.x = d->fan[q2].x;
+            w.y = d->fan[q2].y;
+            w.z = d->fan[q2].z;
             mat4_transform_vec4(&w, &vp, &w);
-            d->fan[i].u = (w.x * 240.0f / w.w + 2048.0f - 1808.0f) / 512.0f;
-            d->fan[i].v = (w.y * -136.0f / w.w + 2048.0f - 1912.0f) / 512.0f;
+            fv = (w.y * -136.0f / w.w + 2048.0f - 1912.0f) / 512.0f;
+            d->fan[q2].u = (w.x * 240.0f / w.w + 2048.0f - 1808.0f) / 512.0f;
+            d->fan[q2].v = fv;
         }
         memcpy(d->fan_buf[buf], d->fan, sizeof(d->fan));
-        for (i = 0; i < 3; i++) {
-            sc = i / 3.0f * 0.3f + 1.0f;
-            list = dl_ambient_light(list, (unsigned int)(out * (1.0f - i / 3.0f) * 255.0f *
-                                                         dd_ease_sin(d->grow, d->grow_end, 1)) << 24 | 0xFFFFFF);
+        for (n39 = 0; n39 < 3; n39++) {
+            k = n39 / 3.0f;
+            sc = k * 0.3f + 1.0f;
+            list = dl_ambient_light(list, (unsigned int)(out * ((1.0f - k) * 255.0f *
+                                                         dd_ease_sin(d->grow, d->grow_end, 1))) << 24 | 0xFFFFFF);
             mtx_push();
             dd_scale3(sc, sc, 0.0f);
             list = draw_array(list, 5, 0x19F, 34, 0, d->fan_buf[buf]);

@@ -402,6 +402,38 @@ Seis das funções de 2-4 KB de efeitos do libduel_draw bateram com as mesmas re
   índices (`idx_a/idx_b`) num `for` próprio depois do laço dos vértices (o mwcc desenrola só esse).
 - Um contador por laço (`build/tmp/fxd/ctr.py` da worktree fxd faz a descida por coordenadas) resolveu dezenas de
   palavras em cada função.
+### Rodada 9 (`dd_burst_update`, `dd_pyre_update` batendo; `dd_burst2_update` a 23 palavras, `dd_trail_update` a 16)
+- **Vetor zerado no meio do laço**: `ScePspFVector3 v = { 0 };` declarado num **bloco interno** depois dos sorteios
+  (`y = ...; a = ...; b = ...; { ScePspFVector3 v = { 0 }; ScePspFMatrix3 rot; v.y = ...; mat3_...(&rot, ...); }`)
+  dá o laço de bytes no ponto certo e põe `v`/`rot` na pilha do bloco; o laço manual `do { *c++ = 0; }` no mesmo ponto
+  não reproduz a alocação dos temporários do LCG.
+- **Pilha por blocos**: locais da função (não alinhados) no topo, depois os de cada bloco **na ordem do fonte, sem
+  sobreposição entre blocos irmãos**, e as variáveis da função com `aligned(16)` no fundo. Para um quadro como o de
+  `dd_pyre_update` (656 bytes) bastou pôr cada vetor/matriz no bloco onde é usado (`node`/`tmp` em cada ramo do
+  `if (flip == 1)`, `w` no laço das faíscas, `axis`/`tilt`/`up` no bloco das labaredas, `off`..`rot` no laço interno).
+  Em `dd_trail_update` (só função) a ordem das declarações com `aligned(16)` em todos os vetores de 16 deu o quadro.
+- **Laço de 4 voltas sem chamadas desenrolado pelo mwcc** (o original não): `i = 0; do { ... } while (++i < 4);` ou
+  `(unsigned int)i < 4` mantêm o laço (`dd_pyre_update`, sorteio das labaredas).
+- **Cópia de modelo campo a campo**: `scale.x = g.x; scale.y = g.y; scale.z = g.z; ...; scale.y = in;` (a primeira
+  gravação de `y` sobrevive) reproduz a ordem lw/lw/sw/sw/lw/sw; a cópia de struct agenda diferente.
+- **Expressão que o original calcula antes de um desvio** (conversão float→u32 da cor): temporário de uso único é
+  propagado para o uso; reatribuir uma variável já usada (`ca = -ca + x; sa = -sa + y;` depois de gravar `q[0]`) a
+  mantém no bloco básico de cima (`dd_burst2_update`, 1058 → 23 palavras).
+- **Testes**: `if (id == 80) 0.2 else 1.0` com `beql`+`b` = `switch (s->id) { case 80: ...; default: ...; }`;
+  `if (a == 18 && b == 1)` com `beql`+`b; nop` = `switch (a) { case 18: if (b == 1) ...; break; }`;
+  `beq` para `move s0,zero` + `b; li s0,1` = `if (id != 90 && id != 84) flip = 1; else flip = 0;`.
+- **Laço com teste de bit e ponteiro no atraso do `beq`**: `{ T *p2 = &d->arr[i]; if (!DD_BIT(d->arr[i].flags, 1) != 1)
+  { int jb; ... } }` (ponteiro e contador interno no bloco: `$s` como no original).
+- **Três ponteiros de vértice** (`base+0x44/0x54/0x64` em três `$s`): `v0 = &d->strip[n][k][0]; v1 = ...[1]; v2 = ...[2];`
+  em vez de um ponteiro com deslocamentos; ponteiro do ponto da curva (`cv = &d->curve[i][j]`) no topo do laço.
+- **Constantes em local com operando trocado**: `du * (i % 4)` / `tv + du` (constante primeiro na multiplicação e
+  segundo na soma) = `du` local na ordem do fonte; `0.25f` literal vai sempre para `fs`.
+- **Constantes dobradas parcialmente** (`dd_fx_shatter_update`): o original guarda meia-célula e deslocamento em locais
+  (`hw = 7.75f; ox = 2.5833333f;`); `hw + ox` sai dobrado (`sw` do inteiro) e `-hw + ox` em tempo de execução (`neg.s`).
+- **Busca de contadores** (`build/tmp/burst/ctr.py` da worktree `burst`, não versionado): para cada `for (x = ...` renomeia
+  `x` só no laço para um nome novo declarado no topo, no fim das declarações ou num bloco em volta, e guarda o melhor;
+  levou `dd_trail_update` de 107 a 16 palavras. Sobra em `dd_trail_update` um par de posições de derrame (`list` e o
+  contador externo das fitas, 0x60/0x64) que não muda com ordem de declaração nem variável nova.
 ## Ordem de criação das variáveis decide os `$s` (pesquisa da rodada 8, `dd_fx32.c`)
 
 O "par trocado" de laço (`s3`/`s4` entre o ponteiro da partícula e o contador do laço interno, `dd_fx32_s0/s2/s3/s5`)

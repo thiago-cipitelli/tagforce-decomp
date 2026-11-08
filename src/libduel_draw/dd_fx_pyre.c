@@ -1,14 +1,15 @@
 // @range 0x08846348-0x0884774C
-// @asm 0x0884653C-0x0884774C
 // @data 0x08876C40-0x08876C80
 /* Effects 83-90 and 118-128: a ring of 16 petals turning under a node of the card model, sparks
    rising from it and, in the red variant (dd_fx_table.arg4 != 0), flame flares bursting outward
    (task of 0x11E0 bytes). */
 #include "dd_fx.h"
 
+#define DD_BIT(f, m) ((f) & (m) ? 1 : 0)
+
 int dd_pyre_update(int phase, DdPyreFx *d);
 
-/* local templates of dd_pyre_update (kept in asm): the two node offsets, the petal scale (y = fade
+/* templates read by dd_pyre_update: the two node offsets, the petal scale (y = fade
    in, padded to 16 bytes) and the flares' axis */
 ScePspFVector4 dd_pyre_down = { 0.0f, 0.0f, 44.0f, 1.0f };
 ScePspFVector4 dd_pyre_up = { 0.0f, 0.0f, -44.0f, 1.0f };
@@ -91,30 +92,15 @@ int dd_fx83_start(DdFxSlot *s, int red, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 4,6 KB com quadro grande: alocação de registradores e da pilha diferem */
 int dd_pyre_update(int phase, DdPyreFx *d)
 {
     DdFxSlot *s = d->slot;
     int run = s->param;
-    ScePspFMatrix4 bill;
-    ScePspFMatrix4 tmp;
-    ScePspFMatrix4 rot;
-    ScePspFMatrix4 tilt;
-    ScePspFVector4 node;
-    ScePspFVector4 up;
-    ScePspFVector4 axis;
-    ScePspFVector4 dir;
-    ScePspFVector4 side;
-    ScePspFVector4 back;
-    ScePspFVector4 off;
-    ScePspFVector4 w;
     ScePspFVector3 scale;
+    ScePspFMatrix4 bill __attribute__((aligned(16)));
     DdRandSeed *r;
     DdHaloSpark *sp;
     DdFlare *f;
-    DdRingVtx *q;
-    DdTCVtx *v;
-    DdTCVtx *m;
     void *list;
     unsigned int c0;
     unsigned int c1;
@@ -122,13 +108,31 @@ int dd_pyre_update(int phase, DdPyreFx *d)
     float out;
     float grow;
     float rad;
+    float zr;
     float ang;
     float e;
+    float g;
+    float w4;
+    float du;
+    float dv;
     float tu;
     float tv;
+    float tu2;
+    float tv2;
+    float fw;
+    float fz;
+    float eps;
     int flip;
     int i;
+    int i1;
+    int i2;
+    int i3;
+    int i4;
+    int i5;
+    int i6;
+    int i7;
     int j;
+    int j1;
 
     dd_mtx_push_saved();
     dd_proj_set(0.0f, 0.0f, 1.0f, 0.0f);
@@ -141,10 +145,16 @@ int dd_pyre_update(int phase, DdPyreFx *d)
 
     /* first frame: under the node, turned over (above it for effects 84 and 90) */
     if (d->grow == 0 && d->placed == 0) {
-        flip = !(s->id == 90 || s->id == 84);
+        if (s->id != 90 && s->id != 84)
+            flip = 1;
+        else
+            flip = 0;
         d->placed = 1;
         dd_chara_bone_mtx(&d->m, 0x27);
-        if (flip) {
+        if (flip == 1) {
+            ScePspFVector4 node __attribute__((aligned(16)));
+            ScePspFMatrix4 tmp __attribute__((aligned(16)));
+
             node = dd_pyre_down;
             mat4_copy(&tmp, &d->m);
             dd_mtx_strip(&tmp, &tmp);
@@ -154,13 +164,16 @@ int dd_pyre_update(int phase, DdPyreFx *d)
             mat4_mul(&d->m, &d->m, &tmp);
             mat4_translate(&d->m, &d->m, &node);
         } else {
+            ScePspFVector4 node __attribute__((aligned(16)));
+            ScePspFMatrix4 tmp __attribute__((aligned(16)));
+
             node = dd_pyre_up;
-            mat4_copy(&rot, &d->m);
-            dd_mtx_strip(&rot, &rot);
-            mat4_transform_vec4(&node, &rot, &node);
-            mat4_identity(&rot);
-            mat4_mul_rot_x(&rot, &rot, -1.5707964f);
-            mat4_mul(&d->m, &d->m, &rot);
+            mat4_copy(&tmp, &d->m);
+            dd_mtx_strip(&tmp, &tmp);
+            mat4_transform_vec4(&node, &tmp, &node);
+            mat4_identity(&tmp);
+            mat4_mul_rot_x(&tmp, &tmp, -1.5707964f);
+            mat4_mul(&d->m, &d->m, &tmp);
             mat4_translate(&d->m, &d->m, &node);
         }
     }
@@ -175,14 +188,15 @@ int dd_pyre_update(int phase, DdPyreFx *d)
             c0 = 0x6464FF;
             c1 = 0xB26464FF;
         }
+        g = 30.0f;
         d->petal[0].u = 0.0f; d->petal[0].v = 0.0f; d->petal[0].color = c0;
-        d->petal[0].x = -30.0f; d->petal[0].y = 200.0f; d->petal[0].z = 0.0f;
+        d->petal[0].x = -g;   d->petal[0].y = 200.0f; d->petal[0].z = 0.0f;
         d->petal[1].u = 0.0f; d->petal[1].v = 0.5f; d->petal[1].color = c1;
-        d->petal[1].x = -30.0f; d->petal[1].y = 0.0f; d->petal[1].z = 0.0f;
+        d->petal[1].x = -g;   d->petal[1].y = 0.0f; d->petal[1].z = 0.0f;
         d->petal[2].u = 1.0f; d->petal[2].v = 0.0f; d->petal[2].color = c0;
-        d->petal[2].x = 30.0f; d->petal[2].y = 200.0f; d->petal[2].z = 0.0f;
+        d->petal[2].x = g;    d->petal[2].y = 200.0f; d->petal[2].z = 0.0f;
         d->petal[3].u = 1.0f; d->petal[3].v = 0.5f; d->petal[3].color = c1;
-        d->petal[3].x = 30.0f; d->petal[3].y = 0.0f; d->petal[3].z = 0.0f;
+        d->petal[3].x = g;    d->petal[3].y = 0.0f; d->petal[3].z = 0.0f;
     }
     if (d->grow == d->grow_end) {
         list = dl_select_layer(7, 0);
@@ -194,14 +208,16 @@ int dd_pyre_update(int phase, DdPyreFx *d)
         mtx_push();
         mtx_load(&d->m);
         scale.x = dd_pyre_scale.x;
-        scale.y = in;
+        scale.y = dd_pyre_scale.y;
         scale.z = dd_pyre_scale.z;
-        rad = grow * 35.0f;
+        rad = 35.0f * grow;
+        zr = 5.0f * grow;
+        scale.y = in;
         list = dl_ambient_light(list, (unsigned int)(in * 255.0f * out) << 24 | 0xFFFFFF);
-        for (i = 0; i < 16; i++) {
-            ang = 6.2831855f * i / 16.0f + d->frame * 0.0034906587f;
+        for (i1 = 0; i1 < 16; i1++) {
+            ang = 6.2831855f * i1 / 16.0f + d->frame * 0.0034906587f;
             mtx_push();
-            dd_translate3(rad * sinf(ang), 0.0f, grow * 5.0f * cosf(ang));
+            dd_translate3(rad * sinf(ang), 0.0f, zr * cosf(ang));
             mtx_rotate_y(ang);
             mtx_rotate_x(0.17453294f);
             mtx_scale3(&scale);
@@ -214,28 +230,28 @@ int dd_pyre_update(int phase, DdPyreFx *d)
 
     /* sparks rising from the ring */
     if (phase == 1) {
-        for (i = 0; i < 8; i++) {
-            q = d->spark_v[i];
-            q[0].u = i % 4 * 0.25f;
-            q[0].v = i / 4 * 0.5f;
-            q[0].x = -4.0f;
-            q[0].y = 4.0f;
-            q[0].z = 0.0f;
-            q[1].u = i % 4 * 0.25f + 0.25f;
-            q[1].v = i / 4 * 0.5f + 0.5f;
-            q[1].x = 4.0f;
-            q[1].y = -4.0f;
-            q[1].z = 0.0f;
+        du = 0.25f;
+        w4 = 4.0f;
+        dv = 0.5f;
+        for (i2 = 0; i2 < 8; i2++) {
+            tu = i2 % 4 * du;
+            tv = i2 / 4 * dv;
+            d->spark_v[i2][0].u = tu;      d->spark_v[i2][0].v = tv;      d->spark_v[i2][0].x = -w4;
+            d->spark_v[i2][0].y = w4;      d->spark_v[i2][0].z = 0.0f;
+            d->spark_v[i2][1].u = tu + du; d->spark_v[i2][1].v = tv + dv; d->spark_v[i2][1].x = w4;
+            d->spark_v[i2][1].y = -w4;     d->spark_v[i2][1].z = 0.0f;
         }
     }
     if (d->grow == d->grow_end) {
         sp = &d->spark[d->spark_next];
+        rad = 35.0f * grow;
+        zr = 20.0f * grow;
         sp->flags |= 1;
         sp->t = 0;
-        for (i = 0; i < 3; i++) {
-            ang = DD_RAND(r) / 32767.0f * 6.2831855f;
-            sp->frame[i] = DD_RAND(r) % 8;
-            vec4_set(&sp->pos[i], grow * 35.0f * sinf(ang), 0.0f, grow * 20.0f * cosf(ang), 1.0f);
+        for (i3 = 0; i3 < 3; i3++) {
+            ang = 6.2831855f * (DD_RAND(r) / 32767.0f);
+            sp->frame[i3] = DD_RAND(r) % 8;
+            vec4_set(&sp->pos[i3], rad * sinf(ang), 0.0f, zr * cosf(ang), 1.0f);
         }
         if (d->spark_next < 31)
             d->spark_next++;
@@ -258,25 +274,29 @@ int dd_pyre_update(int phase, DdPyreFx *d)
         mtx_set_mode(2);
         mtx_push();
         mtx_identity();
-        for (i = 0; i < 32; i++) {
-            sp = &d->spark[i];
-            if (!(sp->flags & 1))
-                continue;
-            list = dl_ambient_light(list, (unsigned int)(out * in * dd_ease_cos(sp->t, 32, 1) * 255.0f) << 24
-                                              | 0xFFFFFF);
-            for (j = 0; j < 3; j++) {
-                mtx_push();
-                mat4_transform_vec4(&w, &d->m, &sp->pos[j]);
-                dd_translate3(w.x, w.y, w.z);
-                mtx_mult(&bill);
-                list = draw_array(list, 6, 0x183, 2, 0, d->spark_v[sp->frame[j]]);
-                mtx_pop();
-                sp->pos[j].y += 5.0f;
+        for (i4 = 0; i4 < 32; i4++) {
+            DdHaloSpark *sp2 = &d->spark[i4];
+
+            if (!DD_BIT(d->spark[i4].flags, 1) != 1) {
+                int jb;
+                list = dl_ambient_light(list, (unsigned int)(out * (in * (dd_ease_cos(sp2->t, 32, 1) * 255.0f))) << 24
+                                                  | 0xFFFFFF);
+                for (jb = 0; jb < 3; jb++) {
+                    ScePspFVector4 w __attribute__((aligned(16)));
+
+                    mtx_push();
+                    mat4_transform_vec4(&w, &d->m, &sp2->pos[jb]);
+                    dd_translate3(w.x, w.y, w.z);
+                    mtx_mult(&bill);
+                    list = draw_array(list, 6, 0x183, 2, 0, d->spark_v[sp2->frame[jb]]);
+                    mtx_pop();
+                    sp2->pos[jb].y += 5.0f;
+                }
+                if (sp2->t < 31)
+                    sp2->t++;
+                else
+                    sp2->flags &= ~1;
             }
-            if (sp->t < 31)
-                sp->t++;
-            else
-                sp->flags &= ~1;
         }
         mtx_pop();
         dl_set_list(list);
@@ -285,64 +305,92 @@ int dd_pyre_update(int phase, DdPyreFx *d)
     if (d->red != 0) {
         /* the flares: 6 frames of the lower half of the sheet and their mirrors */
         if (phase == 1) {
-            for (i = 0; i < 6; i++) {
-                v = d->flare_v[i];
-                tu = i % 4 * 0.25f;
-                tv = i / 4 * 0.25f + 0.5f;
-                switch (i / 2) {
+            fw = 30.0f;
+            fz = 120.0f;
+            du = 0.25f;
+            dv = 0.5f;
+            eps = 0.001953125f;
+            for (i5 = 0; i5 < 6; i5++) {
+                tu = du * (i5 % 4);
+                tv = dv + du * (i5 / 4);
+                switch (i5 / 2) {
                 case 0:
-                    v[0].u = tu;         v[0].v = tv + 0.25f;
-                    v[1].u = tu;         v[1].v = tv + 0.001953125f;
-                    v[2].u = tu + 0.25f; v[2].v = tv + 0.25f;
-                    v[3].u = tu + 0.25f; v[3].v = tv + 0.001953125f;
+                    d->flare_v[i5][0].u = tu;         d->flare_v[i5][0].v = tv + du;
+                    d->flare_v[i5][0].color = 0xFF6496;
+                    d->flare_v[i5][0].x = -fw; d->flare_v[i5][0].y = 0.0f; d->flare_v[i5][0].z = -fz;
+                    d->flare_v[i5][1].u = tu;         d->flare_v[i5][1].v = tv + eps;
+                    d->flare_v[i5][1].color = 0xFFFF6496;
+                    d->flare_v[i5][1].x = -fw; d->flare_v[i5][1].y = 0.0f; d->flare_v[i5][1].z = 0.0f;
+                    d->flare_v[i5][2].u = tu + du; d->flare_v[i5][2].v = tv + du;
+                    d->flare_v[i5][2].color = 0xFF6496;
+                    d->flare_v[i5][2].x = fw;  d->flare_v[i5][2].y = 0.0f; d->flare_v[i5][2].z = -fz;
+                    d->flare_v[i5][3].u = tu + du; d->flare_v[i5][3].v = tv + eps;
+                    d->flare_v[i5][3].color = 0xFFFF6496;
+                    d->flare_v[i5][3].x = fw;  d->flare_v[i5][3].y = 0.0f; d->flare_v[i5][3].z = 0.0f;
                     break;
                 case 1:
-                    v[0].u = tu + 0.25f; v[0].v = tv;
-                    v[1].u = tu;         v[1].v = tv;
-                    v[2].u = tu + 0.25f; v[2].v = tv + 0.25f;
-                    v[3].u = tu;         v[3].v = tv + 0.25f;
+                    d->flare_v[i5][0].u = tu + du; d->flare_v[i5][0].v = tv;
+                    d->flare_v[i5][0].color = 0xFF6496;
+                    d->flare_v[i5][0].x = -fw; d->flare_v[i5][0].y = 0.0f; d->flare_v[i5][0].z = -fz;
+                    d->flare_v[i5][1].u = tu;         d->flare_v[i5][1].v = tv;
+                    d->flare_v[i5][1].color = 0xFFFF6496;
+                    d->flare_v[i5][1].x = -fw; d->flare_v[i5][1].y = 0.0f; d->flare_v[i5][1].z = 0.0f;
+                    d->flare_v[i5][2].u = tu + du; d->flare_v[i5][2].v = tv + du;
+                    d->flare_v[i5][2].color = 0xFF6496;
+                    d->flare_v[i5][2].x = fw;  d->flare_v[i5][2].y = 0.0f; d->flare_v[i5][2].z = -fz;
+                    d->flare_v[i5][3].u = tu;         d->flare_v[i5][3].v = tv + du;
+                    d->flare_v[i5][3].color = 0xFFFF6496;
+                    d->flare_v[i5][3].x = fw;  d->flare_v[i5][3].y = 0.0f; d->flare_v[i5][3].z = 0.0f;
                     break;
                 case 2:
-                    v[0].u = tu;         v[0].v = tv;
-                    v[1].u = tu;         v[1].v = tv + 0.25f;
-                    v[2].u = tu + 0.25f; v[2].v = tv;
-                    v[3].u = tu + 0.25f; v[3].v = tv + 0.25f;
+                    d->flare_v[i5][0].u = tu;         d->flare_v[i5][0].v = tv;
+                    d->flare_v[i5][0].color = 0xFF6496;
+                    d->flare_v[i5][0].x = -fw; d->flare_v[i5][0].y = 0.0f; d->flare_v[i5][0].z = -fz;
+                    d->flare_v[i5][1].u = tu;         d->flare_v[i5][1].v = tv + du;
+                    d->flare_v[i5][1].color = 0xFFFF6496;
+                    d->flare_v[i5][1].x = -fw; d->flare_v[i5][1].y = 0.0f; d->flare_v[i5][1].z = 0.0f;
+                    d->flare_v[i5][2].u = tu + du; d->flare_v[i5][2].v = tv;
+                    d->flare_v[i5][2].color = 0xFF6496;
+                    d->flare_v[i5][2].x = fw;  d->flare_v[i5][2].y = 0.0f; d->flare_v[i5][2].z = -fz;
+                    d->flare_v[i5][3].u = tu + du; d->flare_v[i5][3].v = tv + du;
+                    d->flare_v[i5][3].color = 0xFFFF6496;
+                    d->flare_v[i5][3].x = fw;  d->flare_v[i5][3].y = 0.0f; d->flare_v[i5][3].z = 0.0f;
                     break;
                 }
-                v[0].color = 0xFF6496;   v[0].x = -30.0f; v[0].y = 0.0f; v[0].z = -120.0f;
-                v[1].color = 0xFFFF6496; v[1].x = -30.0f; v[1].y = 0.0f; v[1].z = 0.0f;
-                v[2].color = 0xFF6496;   v[2].x = 30.0f;  v[2].y = 0.0f; v[2].z = -120.0f;
-                v[3].color = 0xFFFF6496; v[3].x = 30.0f;  v[3].y = 0.0f; v[3].z = 0.0f;
                 /* the mirror: texture swapped left and right */
-                m = d->flare_v[i + 6];
-                m[0] = v[0];
-                m[1] = v[1];
-                m[2] = v[2];
-                m[3] = v[3];
-                m[0].u = v[2].u;
-                m[0].v = v[2].v;
-                m[1].u = v[3].u;
-                m[1].v = v[3].v;
-                m[2].u = v[0].u;
-                m[2].v = v[0].v;
-                m[3].u = v[1].u;
-                m[3].v = v[1].v;
+                d->flare_v[(unsigned int)(i5 + 6)][0] = d->flare_v[i5][0];
+                d->flare_v[(unsigned int)(i5 + 6)][1] = d->flare_v[i5][1];
+                d->flare_v[(unsigned int)(i5 + 6)][2] = d->flare_v[i5][2];
+                d->flare_v[(unsigned int)(i5 + 6)][3] = d->flare_v[i5][3];
+                d->flare_v[(unsigned int)(i5 + 6)][0].u = d->flare_v[i5][2].u;
+                d->flare_v[(unsigned int)(i5 + 6)][0].v = d->flare_v[i5][2].v;
+                d->flare_v[(unsigned int)(i5 + 6)][1].u = d->flare_v[i5][3].u;
+                d->flare_v[(unsigned int)(i5 + 6)][1].v = d->flare_v[i5][3].v;
+                d->flare_v[(unsigned int)(i5 + 6)][2].u = d->flare_v[i5][0].u;
+                d->flare_v[(unsigned int)(i5 + 6)][2].v = d->flare_v[i5][0].v;
+                d->flare_v[(unsigned int)(i5 + 6)][3].u = d->flare_v[i5][1].u;
+                d->flare_v[(unsigned int)(i5 + 6)][3].v = d->flare_v[i5][1].v;
             }
         }
         if (d->grow == d->grow_end) {
             f = &d->flare[d->flare_next];
             f->flags |= 1;
             f->t = 0;
-            for (i = 0; i < 4; i++) {
-                f->frame[i] = DD_RAND(r) % 12;
-                f->ang[i] = DD_RAND(r) / 32767.0f * 6.2831855f;
-            }
+            i6 = 0;
+            do {
+                f->frame[i6] = DD_RAND(r) % 12;
+                f->ang[i6] = 6.2831855f * (DD_RAND(r) / 32767.0f);
+            } while (++i6 < 4);
             if (d->flare_next < 7)
                 d->flare_next++;
             else
                 d->flare_next = 0;
         }
         if (d->grow == d->grow_end) {
+            ScePspFVector4 axis __attribute__((aligned(16)));
+            ScePspFMatrix4 tilt __attribute__((aligned(16)));
+            ScePspFVector4 up __attribute__((aligned(16)));
+
             list = dl_select_layer(7, 0);
             list = dd_tex_enable(list, 1, 1, 1, 0, 0, 1, 1);
             list = dd_depth_enable(list, 0, 1);
@@ -355,38 +403,49 @@ int dd_pyre_update(int phase, DdPyreFx *d)
             vec4_copy(&up, dd_chara_pos());
             mat4_identity(&tilt);
             mat4_mul_rot_x(&tilt, &tilt, 1.3962635f);
-            for (i = 0; i < 8; i++) {
-                f = &d->flare[i];
-                if (!(f->flags & 1))
-                    continue;
-                e = dd_ease_sin(f->t, 8, 1);
-                list = dl_ambient_light(list, (unsigned int)(out * in * dd_ease_cos(f->t, 8, 1) * 255.0f) << 24
-                                                  | 0xFFFFFF);
-                for (j = 0; j < 4; j++) {
-                    /* a frame whose z follows the flare and whose x faces the camera */
-                    vec4_set(&off, sinf(f->ang[j]) * -20.0f, 0.0f, cosf(f->ang[j]) * -5.0f, 1.0f);
-                    mat4_mul_rot_y(&tmp, &tilt, f->ang[j]);
-                    mat4_translate(&tmp, &tmp, &off);
-                    mat4_mul(&tmp, &d->m, &tmp);
-                    dd_mtx_strip(&rot, &tmp);
-                    mat4_transform_vec4(&dir, &rot, &axis);
-                    vec3_normalize2(&back, &dir);
-                    vec3_cross(&side, &back, &up);
-                    vec3_normalize2(&side, &side);
-                    vec3_cross(&dir, &side, &back);
-                    vec3_normalize2(&dir, &dir);
-                    vec4_set(&tmp.x, side.x * e, side.y * e, side.z * e, 0.0f);
-                    vec4_set(&tmp.y, dir.x, dir.y, dir.z, 0.0f);
-                    vec4_set(&tmp.z, back.x, back.y, back.z, 0.0f);
-                    mtx_push();
-                    mtx_load(&tmp);
-                    list = draw_array(list, 4, 0x19F, 4, 0, d->flare_v[f->frame[j]]);
-                    mtx_pop();
+            for (i7 = 0; i7 < 8; i7++) {
+                DdFlare *f2 = &d->flare[i7];
+
+                if (!DD_BIT(d->flare[i7].flags, 1) != 1) {
+                    int jb;
+
+                    e = dd_ease_sin(f2->t, 8, 1);
+                    list = dl_ambient_light(list, (unsigned int)(out * (in * (dd_ease_cos(f2->t, 8, 1) * 255.0f))) << 24
+                                                      | 0xFFFFFF);
+                    for (jb = 0; jb < 4; jb++) {
+                        /* a frame whose z follows the flare and whose x faces the camera */
+                        ScePspFVector4 off __attribute__((aligned(16)));
+                        ScePspFVector4 dir __attribute__((aligned(16)));
+                        ScePspFVector4 side __attribute__((aligned(16)));
+                        ScePspFVector4 upv __attribute__((aligned(16)));
+                        ScePspFVector4 back __attribute__((aligned(16)));
+                        ScePspFMatrix4 tmp __attribute__((aligned(16)));
+                        ScePspFMatrix4 rot __attribute__((aligned(16)));
+
+                        vec4_set(&off, -20.0f * sinf(f2->ang[jb]), 0.0f, -5.0f * cosf(f2->ang[jb]), 1.0f);
+                        mat4_mul_rot_y(&tmp, &tilt, f2->ang[jb]);
+                        mat4_translate(&tmp, &tmp, &off);
+                        mat4_mul(&tmp, &d->m, &tmp);
+                        dd_mtx_strip(&rot, &tmp);
+                        mat4_transform_vec4(&dir, &rot, &axis);
+                        vec3_normalize2(&back, &dir);
+                        vec3_cross(&side, &back, &up);
+                        vec3_normalize2(&side, &side);
+                        vec3_cross(&upv, &side, &back);
+                        vec3_normalize2(&upv, &upv);
+                        vec4_set(&tmp.x, side.x * e, side.y * e, side.z * e, 0.0f);
+                        vec4_set(&tmp.y, upv.x, upv.y, upv.z, 0.0f);
+                        vec4_set(&tmp.z, back.x, back.y, back.z, 0.0f);
+                        mtx_push();
+                        mtx_load(&tmp);
+                        list = draw_array(list, 4, 0x19F, 4, 0, d->flare_v[f2->frame[jb]]);
+                        mtx_pop();
+                    }
+                    if (f2->t < 7)
+                        f2->t++;
+                    else
+                        f2->flags &= ~1;
                 }
-                if (f->t < 7)
-                    f->t++;
-                else
-                    f->flags &= ~1;
             }
             mtx_pop();
             dl_set_list(list);
@@ -403,4 +462,3 @@ int dd_pyre_update(int phase, DdPyreFx *d)
     }
     return d->t < d->end ? 2 : 4;
 }
-#endif
