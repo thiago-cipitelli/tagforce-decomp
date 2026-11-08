@@ -1,6 +1,5 @@
 // @range 0x0881FFEC-0x08822898
 // @asm 0x088213DC-0x088216B0
-// @asm 0x0882244C-0x08822690
 // @rodata 0x08839344-0x08839368
 // @data 0x0883D44C-0x0883D504
 /* The pages of the PDA: the player's status (days, duels won/lost/drawn, win rate, cards), the
@@ -364,19 +363,21 @@ void *pda_draw_options(void *list, int x, int y)
 }
 
 /* the page buttons; n < 4: the buttons slide in (n = frame), else the cursor is on the page */
-#ifdef NON_MATCHING /* 21 palavras: x recebe s6 aqui (s1 no original) e por isso py/alpha/i trocam de $s; e o teste
-   do bit de wait (bne para hl = 1, b para sel) sai invertido com beql. O laço com as expressões em i (o mwcc cria as
-   variáveis de indução) e i * 2 + 2u reproduzem o i*2 mantido à parte */
+#ifdef NON_MATCHING /* 4 palavras: com hl, i, sel, d, py, alpha nessa ordem os $s batem; falta o teste do bit de
+   wait: o original faz bne para hl = 1 e b com sel = 1 no atraso; aqui sai beql (== 1) com sel no atraso. Nenhuma forma
+   do if (||, else if, goto para um bloco comum hl/sel, == 1 vazio) reproduziu. O laço com as expressões em i (o mwcc
+   cria as variáveis de indução) e i * 2 + 2u reproduzem o i*2 mantido à parte */
 void *pda_draw_tabs(void *list, int x, int y, int n)
 {
     int sliding = 0;
     unsigned short *title = 0;
     int last = 1;
-    unsigned char alpha;
     int hl;
-    int sel;
     int i;
+    int sel;
     int d;
+    int py;
+    unsigned char alpha;
 
     if (n < 4) {
         sliding = 1;
@@ -386,12 +387,12 @@ void *pda_draw_tabs(void *list, int x, int y, int n)
     }
     list = func_0881FBCC(list, x, y, title);
     for (i = last; i >= 0; i--) {
-        int py = y + 0x11 + i * 0x20;
+        py = y + 0x11 + i * 0x20;
         hl = 0;
         sel = 0;
         alpha = 0xFF;
         if (!sliding && field_pda->cursor == i) {
-            if (field_pda->leaving) {
+if (field_pda->leaving) {
                 if ((field_pda->wait >> 1 & 1) != 1)
                     hl = 1;
             } else
@@ -650,15 +651,13 @@ void *pda_draw_cursor(void *list, int x, int y, int w, int h)
 }
 
 /* nine-slice frame from the 8x8 corners at uv (u | v << 16) */
-#ifdef NON_MATCHING /* o original calcula u+8/v+8 antes de x+8/y+8 nos argumentos (temporários resolvem os blocos
-   do meio); falta a última chamada: v+8 sai depois de x+8/y+8, 3 palavras */
 void *pda_draw_frame(void *list, int x, int y, int w, int h, int uv)
 {
     int u = uv & 0xFFFF;
     int v = uv >> 16 & 0xFFFF;
     int by;
     int rx;
-    int t, t2;
+    int t;
 
     list = draw_set_offsets(list, 8, 8, 8, 8);
     list = draw_sprite(list, x, y, 0, u, v, 0, 0);
@@ -686,11 +685,10 @@ void *pda_draw_frame(void *list, int x, int y, int w, int h, int uv)
         list = draw_sprite(list, rx, y + 8, 0, t, v8, 0, 0);
     }
     list = draw_set_offsets(list, 1, 1, w - 0x10, h - 0x10);
-    t = u + 8;
-    t2 = v + 8;
-    return draw_sprite(list, x + 8, y + 8, 0, t, t2, 0, 0);
+    rx = u + 8;
+    by = v + 8;
+    return draw_sprite(list, x + 8, y + 8, 0, rx, by, 0, 0);
 }
-#endif
 
 /* 15-step gauge, level steps lit */
 void *pda_draw_gauge(void *list, int x, int y, int level)

@@ -1,5 +1,4 @@
 // @range 0x08806FC4-0x08807844
-// @asm 0x088071E8-0x08807660
 /* The room (bg_NN_NN): its models, door models and marker cells, the area the player stands in
    (with a 30 frame crossfade when it changes) and the cell map used by the collision. */
 #include "libfield.h"
@@ -112,11 +111,10 @@ int fld_bg_stencil_hook(void **list, void *m, int a, int b, int phase);
 void fld_pos_set(Vec3 *p, int cx, int cz);
 int fld_bg_id(void);
 
-typedef struct FieldVec3w { Vec3 v; int w; } FieldVec3w;  /* the w of the mark is copied as a word (lw/sw) */
+typedef struct FieldVec3w { Vec3 v; int w; } __attribute__((aligned(16))) FieldVec3w;  /* the w of the mark is copied as a word (lw/sw); aligned like Vec4 */
 extern Vec3 field_mark_pos;                    /* 0x0883A4A0 the mark of room 3 */
 extern Vec4 field_mark_w[2];                   /* 0x0883A4B0 w of the mark volumes */
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 26 palavras: os dois Vec4 das marcas (t, montado com p e o w do template, e a cópia v passada a fmrk_volume) saem em posições de pilha trocadas; ordem das declarações e Vec4 por cast não resolvem */
 /* draws the room: the render state of layers 1 and 2, the objects, area models, shadow and sky
    under the light offset, and during an area change (fade 1) the previous area through the stencil
    texture; then the marks of the marked cells (room 3: one fixed spot) */
@@ -130,10 +128,10 @@ void fld_bg_draw(void)
     ModelDrawOpts o;
     Vec3 p;
     Vec3 q;
-    FieldVec3w t0;
     Vec4 v0;
-    FieldVec3w t1;
     Vec4 v1;
+    FieldVec3w t0;
+    FieldVec3w t1;
 
     if (field_bg_state.file != 0 && *b->file != 0) {
         list = dl_select_layer(1, 0);
@@ -216,7 +214,6 @@ void fld_bg_draw(void)
         fld_bg_model_draw(b->id);
     }
 }
-#endif
 
 int fld_bg_area_is(int cx, int cz)
 {
