@@ -1,6 +1,4 @@
 // @range 0x08815E90-0x08819F94
-// @asm 0x0881657C-0x08816A74
-// @asm 0x08816A74-0x08816D74
 // @asm 0x08817598-0x08818C34
 /* Computer player: picking one of its cards (zone mask bit player * 16 + zone) to send away. */
 #include "duel.h"
@@ -218,21 +216,20 @@ int duel_088163E4(unsigned int p, unsigned int mask)
     return duel_08815E20(p, mask);
 }
 
-#ifdef NON_MATCHING /* 14 palavras (era 275): troca do embaralhamento com temporário próprio (k2), variável própria
-                      (u) no laço do controlador, k = f() == 0 no primeiro duel_slot_affected; faltam o sltu/xori desse
-                      teste (o original calcula (f() != 0) ^ 1; escrito assim, os $s mudam), um move no prólogo e o leiaute
-                      do return -1 depois do MAX > 1400 e do bltzl antes de duel_08815E20 */
 /* A card of p in the mask (zones) the computer gives up: one it does not control, a summon material
-   whose sibling is in the hand, a card it wants in the graveyard, ... then the weakest. */
+   whose sibling is in the hand, a card it wants in the graveyard, ... then the weakest.
+   Forma: pb atribuído no for, troca com temporário próprio (k2), papéis de t/zt trocados no laço de
+   duel_slot_affected, (f() != 0) ^ 1 e return duel_08815E20(...) direto. */
 int duel_0881657C(unsigned int p, unsigned int mask, int strong)
 {
+    int zt;
     int z[11];
     unsigned int m = 0;
     int n = 0;
     int i;
     int j;
     int t;
-    unsigned int pb = p << 4;
+    unsigned int pb;
     unsigned int b;
     unsigned int k;
     int id;
@@ -240,7 +237,7 @@ int duel_0881657C(unsigned int p, unsigned int mask, int strong)
     int u;
     int k2;
 
-    for (i = 0, b = pb; i <= 10; i++) {
+    for (i = 0, b = pb = p << 4; i <= 10; i++) {
         if (mask & (1 << b)) {
             z[n++] = i;
         }
@@ -291,20 +288,20 @@ int duel_0881657C(unsigned int p, unsigned int mask, int strong)
             return t;
         }
     }
-    for (i = 0; i < n; i++) {
-        t = z[i];
-        k = duel_slot_affected(p, t, 0x149D) == 0;
+    for (t = 0; t < n; t++) {
+        zt = z[t];
+        k = (duel_slot_affected(p, zt, 0x149D) != 0) ^ 1;
         if (!k) {
-            return t;
+            return zt;
         }
-        if (duel_slot_affected(p, t, 0x1286) != 0) {
-            return t;
+        if (duel_slot_affected(p, zt, 0x1286) != 0) {
+            return zt;
         }
-        if (duel_slot_affected(p, t, 0x13F3) != 0) {
-            return t;
+        if (duel_slot_affected(p, zt, 0x13F3) != 0) {
+            return zt;
         }
-        if (duel_slot_affected(p, t, 0x14B2) != 0) {
-            return t;
+        if (duel_slot_affected(p, zt, 0x14B2) != 0) {
+            return zt;
         }
     }
     for (i = 0; i < n; i++) {
@@ -317,21 +314,18 @@ int duel_0881657C(unsigned int p, unsigned int mask, int strong)
     if (strong != 0) {
         if (t >= 0) {
             duel_0880546C(p, t, &st);
-            if (MAX(st.atk, st.def) > 1400) {
-                t = -1;
+            if (MAX(st.atk, st.def) <= 1400) {
+                return t;
             }
-            return t;
         }
         return -1;
     }
-    if (t < 0) {
-        t = duel_08815E20(p, mask);
+    if (t >= 0) {
+        return t;
     }
-    return t;
+    return duel_08815E20(p, mask);
 }
-#endif
 
-#ifdef NON_MATCHING /* desvios bltzl das atribuições de candidatos e alocação de registradores (big/i) não reproduzidos */
 /* Hand index of the card p would discard for a cost (fn tells which cards qualify); -1 if none. */
 int duel_08816A74(unsigned int p, int (*fn)(), int a, int keep)
 {
@@ -378,19 +372,11 @@ int duel_08816A74(unsigned int p, int (*fn)(), int a, int keep)
             break;
         }
         if (duel_08806730(p, 1, id) == 0 && card_get_limit(id) == 3) {
-            if (lim3 >= 0) {
-                if (duel_rand(2) != 0) {
-                    lim3 = i;
-                }
-            } else {
+            if (lim3 < 0 || duel_rand(2) != 0) {
                 lim3 = i;
             }
         } else {
-            if (other >= 0) {
-                if (duel_rand(2) != 0) {
-                    other = i;
-                }
-            } else {
+            if (other < 0 || duel_rand(2) != 0) {
                 other = i;
             }
         }
@@ -410,11 +396,10 @@ int duel_08816A74(unsigned int p, int (*fn)(), int a, int keep)
         return lim3;
     }
     if (keep != 0) {
-        other = -1;
+        return -1;
     }
     return other;
 }
-#endif
 
 /* Use the effect of a on a random zone of p or else of the opponent that accepts it. */
 int duel_08816D74(DuelAct *a, unsigned int p)
