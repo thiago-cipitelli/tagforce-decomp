@@ -345,7 +345,6 @@ fuzzy	size	module	function	address	file
 91.5	1340	libduel_draw	dd_fcam_from_tms	0x08807CD4	src/libduel_draw/dd_fieldcam.c
 91.4	1228	librecipe_viewer	recipe_viewer_draw	0x08805874	src/librecipe_viewer/rv_screen.c
 91.4	500	BOOT	ptp_accept	0x0886C59C	src/BOOT/net_ctl.c
-91.3	436	libduel_draw	dd_cobj_gather	0x0880C48C	src/libduel_draw/dd_cobj2.c
 91.3	712	libdeck	dk_help_scrollbar	0x0881D3EC	src/libdeck/dk_help_ui.c
 91.3	436	libselect_card	sc_layout_scroll	0x0880D0F8	src/libselect_card/sc_state.c
 91.2	1356	libtitle	tdl_deck_item	0x08825D7C	src/libtitle/t_deckpick.c
@@ -445,7 +444,6 @@ fuzzy	size	module	function	address	file
 84.8	520	libduel_eng	duel_08898608	0x08898608	src/libduel_eng/effects_088966D8.c
 84.6	592	libstory	st_chr_g_update	0x08805E24	src/libstory/s_chr.c
 84.6	620	libduel_draw	declare_update	0x0886646C	src/libduel_draw/dd_card_declare.c
-84.2	212	libduel_draw	dd_cobjs_idle	0x0880CC64	src/libduel_draw/dd_cobj2.c
 84.1	844	libduel_draw	dd_roll_number	0x08832808	src/libduel_draw/dd_roll.c
 83.8	736	libduel_draw	dd_zone_sync	0x0880B890	src/libduel_draw/dd_slot.c
 83.7	1000	libduel_draw	dd_sel_draw_after	0x0881ABD8	src/libduel_draw/dd_card_select.c

@@ -617,15 +617,15 @@ void func_08822240(void)
     dv_w624_set(v);
 }
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
+#ifdef NON_MATCHING /* 58 palavras: by antes de fit acerta o começo; no fim o original sai por beqzl com a cópia do lw ra e faz o move a0,v0 dentro do if (o mwcc o põe no delay de um beqz) */
 /* the cards of the chain in a row under the text ("..." when they don't fit) */
 void func_0882228C(unsigned int *dl)
 {
     DdChainSel *c = &dd_chain_sel;
     MenuWidget *w = dd_chain_sel.w;
     int cx = w->def.x + w->def.w / 2;
-    int fit = (w->def.w - 9) / 22;
     int by = w->def.y + w->def.h - 25;
+    int fit = (w->def.w - 9) / 22;
     int more = dd_chain_sel.more;
     int n = dd_chain_sel.n;
     int cnt;
