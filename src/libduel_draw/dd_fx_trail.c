@@ -86,7 +86,10 @@ int dd_fx13_start_b(DdFxSlot *s, int a, int b)
 
 #ifdef NON_MATCHING /* 16 palavras (2026-11-08): forma e quadro iguais ao original; faltam os $s do laço de spline_eval
                       (contador s0/ponteiro s1 trocados) e as posições de derrame de list e do contador externo das fitas
-                      (0x60/0x64); os contadores nN têm um nome por laço para os $s (busca automática) */
+                      (0x60/0x64); os contadores nN têm um nome por laço para os $s (busca automática). Rodada 10: o laço
+                      de spline_eval bate (9 palavras) com `char *pc` declarado no topo, `for (n9 = 0, pc = (char *)d; ...;
+                      n9++, pc += sizeof(ScePspFVector4))` e `((DdTrailFx *)pc)->curve[0]`; não aplicado porque as
+                      posições de derrame não mudam (ordem das declarações, list/i próprios no bloco testados) */
 int dd_trail_update(int phase, DdTrailFx *d)
 {
     int n39;

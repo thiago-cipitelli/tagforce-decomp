@@ -492,6 +492,20 @@ era idêntica e só faltavam registradores. O que resolveu, além da regra da ro
 - **Conferir os operandos que o `-d` mascara**: o diff estrutural com relocações normalizadas escondeu 2 palavras que
   eram outra forma da mesma lógica (`&ring_idx[0]` sobre `ring[i] + 1` na segunda faixa do anel, não `&ring_idx[4]` sobre `ring[i]`: mesmos vértices, offsets diferentes).
 
+### Rodada 10 (gêmeas do libdeck e quase-acertos de libduel_draw)
+- **Gêmeas**: `hguide_draw`, `list_draw`, `ui_nine_patch`, `hscene_init`, `hscene_update` bateram copiando a forma de
+  `dk_help_bar_draw`, `dk_pager_draw`, `dk_help_frame`, `dk_help_init`, `dk_help_update` (só nomes trocados). Ao promover
+  um `switch` denso copiado, estender o `// @rodata` até cobrir a tabela nova (`hguide_draw`: +0x18).
+- **Parâmetro float fora de ordem**: no EABI da PSP o primeiro float vai para `$f12` em qualquer posição do protótipo;
+  a posição só muda a ordem de avaliação dos argumentos. `dd_die_tex(float scale, list, ...)` → `dd_die_tex(list, ...,
+  face, float scale)` levou o `mtc1` do 1.5f para depois do `y + 40` (`dd_dice_draw`). Vale testar quando um `mtc1` de
+  constante sai antes/depois de um argumento inteiro.
+- **Operando de `mul.s` trocado** que nenhuma associação muda: o produto num inline (`static inline float m(float a,
+  float b) { return a * b; }` chamado com `m(expr, in)`) fixa a ordem dos operandos (`dd_fx_spin_update`).
+- **Ponteiro de indução com o deslocamento do campo no argumento** (`move s1,d` e `addiu a0,s1,0x5610` na chamada,
+  contador abaixo do ponteiro): `char *pc` no topo, `for (n = 0, pc = (char *)d; ...; n++, pc += sizeof(T))` e
+  `((Struct *)pc)->campo[0]` (`dd_trail_update`, laço de `spline_eval`: 16 → 9 palavras, não aplicado; sobra o derrame).
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
 - **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`) e
