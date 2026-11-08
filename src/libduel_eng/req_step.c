@@ -1,5 +1,5 @@
 // @range 0x088DA5EC-0x088DEB2C
-// @asm 0x088DA5EC-0x088DB520
+// @asm 0x088DB240-0x088DB520
 // @asm 0x088DC4E0-0x088DCA4C
 // @asm 0x088DD038-0x088DD1A4
 // @asm 0x088DD88C-0x088DD98C
@@ -120,21 +120,24 @@ unsigned short duel_zone_pos(unsigned int p, int z, int i);
 int card_is_attribute9(int id);
 int card_get_level(int id);
 
-#ifdef NON_MATCHING /* 23 palavras (era 334): casos 0-2 com return (b para o epílogo sem preencher o delay slot),
-                      teste redundante to_zone == 0xE dentro do bloco z < 5 (está no original), uid (unsigned short);
-                      falta só a rotação dos $s de p, z e t (s2/s4/s0 no original) */
 /* Move the card with uid w from zone arg of player p to pile loc (0xD deck, 0xE graveyard, 0xF banished
    zone), counting what goes to the graveyard. */
 void duel_req_send(void)
 {
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    unsigned int w = duel_req.w;
-    unsigned int t = (unsigned short)(duel_card_locate(w) >> 16);
-    unsigned int to_zone = *(unsigned short *)&duel_req.loc;
-    unsigned int z = duel_req.arg;
+    unsigned int w;
+    unsigned int to_zone;
+    unsigned int z;
     DuelCard *c;
+    unsigned int p;
+    unsigned int t;
     DuelLoc from;
     DuelLoc to;
+
+    p = (duel_req.id & 0x8000) != 0;
+    z = duel_req.arg;
+    to_zone = *(unsigned short *)&duel_req.loc;
+    w = duel_req.w;
+    t = (unsigned short)(duel_card_locate(w) >> 16);
 
     switch (duel_req_step) {
     case 0:
@@ -203,30 +206,37 @@ void duel_req_send(void)
         break;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* 333 palavras; corrigido 2026-11-05: o pedido 0x1F leva o uid da carta como 4º argumento
-                      (o rascunho passava 0). Forma conferida com o asm (z int, else antes, arg num local); falta a alocação */
+typedef struct DuelCardB15 {           /* DuelCard with b15 and b16 as one 2-bit field */
+    unsigned int lo : 15;
+    unsigned int b15 : 2;
+    unsigned int hi : 15;
+} DuelCardB15;
+
 /* Banish the card at arg (zone | index << 8; piles: card uid w) of player p. loc: 1 show it, 0x30
    keeps it face down, 0x80/0x2000/0x40 how it is recorded in zone F. */
 void duel_req_banish(void)
 {
-    unsigned int arg = duel_req.arg;
-    int z = arg & 0xFF;
-    unsigned int w = duel_req.w;
-    unsigned int p = (duel_req.id & 0x8000) != 0;
+    int z;
+    unsigned int arg;
+    unsigned int w;
     unsigned int i;
     unsigned int how;
     unsigned int show;
-    unsigned int down;
+    int down;
     int uid;
     DuelCard *c;
+    unsigned int p;
     unsigned int lvl;
     unsigned int mark;
     DuelLoc from;
     DuelLoc to;
 
-    if (z >= 11) {
+    p = (duel_req.id & 0x8000) != 0;
+    arg = duel_req.arg;
+    z = arg & 0xFF;
+    w = duel_req.w;
+    if (z > 10) {
         i = (unsigned short)(duel_card_locate(w) >> 16);
     } else {
         i = (unsigned short)arg >> 8 & 0xFF;
@@ -245,10 +255,10 @@ void duel_req_banish(void)
     case 1:
         if (duel_req_flag(0x16) == 0) {
             uid = CARD_UID(*duel_field_card_deb2c(p, z, i));
-            if (uid == 0) {
-                duel_busy_0891523C = 0;
-            } else {
+            if (uid != 0) {
                 duel_host_call(0x1F, p, (unsigned short)((z & 0xFF) | (i & 0xFF) << 8), uid);
+            } else {
+                duel_busy_0891523C = 0;
             }
             duel_req_step++;
         }
@@ -262,11 +272,9 @@ void duel_req_banish(void)
         c->b19 = 0;
         c->b17 = 0;
         c->b20 = 0;
-        lvl = *(unsigned int *)c >> 15 & 3;
-        if (lvl >= down) {
-            down = lvl;
-        }
-        *(unsigned int *)c = (*(unsigned int *)c & ~0x18000) | (down & 3) << 15;
+        lvl = ((DuelCardB15 *)c)->b15;
+        down = lvl < down ? down : lvl;
+        ((DuelCardB15 *)c)->b15 = down;
         c->b21 = 0;
         duel_add_counters(0, 0x16DA, 1);
         duel_add_counters(1, 0x16DA, 1);
@@ -291,10 +299,12 @@ void duel_req_banish(void)
             mark = 0x80;
         }
         if (how & 0x2040) {
+            unsigned int lo = (p | (from.b15 << 2 | from.b14 << 1)) & 0xF;
+
             if (how & 0x2000) {
                 z = 0xFF;
             }
-            mark = (unsigned short)((unsigned char)((p | (from.b15 << 2 | from.b14 << 1)) & 0xF | (z & 0xF) << 4) << 8 | 0x40);
+            mark = (unsigned short)((unsigned char)(lo | (z & 0xF) << 4) << 8 | 0x40);
         }
         duel_card_put(to.player, to.zone, mark, &duel_card_tmp);
         to.b15 = duel_zone_pos(to.player, to.zone, to.idx);
@@ -303,7 +313,7 @@ void duel_req_banish(void)
         duel_req_step++;
         break;
     case 3:
-        if (show && z + i < 11) {
+        if (show && (int)(z + i) < 11) {
             duel_host_call(0x4A, p, CARD_UID(duel_card_tmp), 0);
         }
         duel_req_step++;
@@ -315,7 +325,6 @@ void duel_req_banish(void)
         break;
     }
 }
-#endif
 
 int duel_zone_card_id(unsigned int p, int z, int i);
 void duel_zone_f_to_top(unsigned int p, unsigned short uid);
