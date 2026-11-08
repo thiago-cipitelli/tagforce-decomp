@@ -578,6 +578,31 @@ Ainda em asm (registradores/escalonamento, formas esgotadas): `duel_req_effect_s
 `duel_req_flip` (2: segundo `lui` de `duel_order_ctr` antes do `addiu`, mesma família de `duel_place_monster/st`),
 `duel_req_activate` (2), `duel_req_change_pos` (7), `duel_req_mill` (9, p/n trocados), `duel_req_move_zone` (15,
 ap/az trocados), `duel_req_counters` (20), `duel_req_move_card` (51: `ext 16,16` de `t >> 16` que o 219 dá `srl`).
+### Rodada 9 (`req_effect.c`/`req_step.c`): tipo antes de ordem, busca de ordem dos comandos
+
+Bateram `duel_req_change_pos`, `duel_req_move_zone`, `duel_req_counters`, `duel_req_send` e `duel_req_banish` (333 → 0);
+`duel_req_move` 470 → 19 (reescrito do asm), `duel_req_move_card` 51 → 25.
+- **Tipo do local decide se a ordem das declarações importa.** Com todos os locais `unsigned int`, 1000+ permutações das
+  declarações davam o mesmo resultado; trocar um só (`az` de `int` para `unsigned int` em move_zone: 15 → 2; `z` de
+  `unsigned` para `int` em counters: 20 → 16) fez a ordem das declarações voltar a decidir (counters 16 → 1 com busca).
+  Experimente `int`/`unsigned` de cada local antes de permutar; comparações que mudam de `slti` para `sltiu` voltam com
+  `(int)x`.
+- **Ordem das atribuições do topo** (com declarações separadas): em `duel_req_move` só a ordem das 7 atribuições dos
+  campos de `arg`/`loc` mudava os `$s` (37 → 19, busca nas 5040 ordens num TU só); declarações e tipos não mudavam nada.
+- **Argumento montado com temporários de bloco** (change_pos 7 → 0): `{ unsigned int fu = flip ^ s->faceup; unsigned int ps
+  = 1 - s->pos; f(..., (ps & 1) << 15 | ((fu & 1) << 14 | lo), ...); }` deu as cargas e os temporários do original.
+- **`lvl = c->b15:16` e regravação** (banish): o original relê a palavra (`lw` de novo) depois do teste: campo de 2 bits
+  numa struct de visão (`DuelCardB15`), não `*(unsigned int *)c` com máscara (o mwcc reaproveita a carga). O máximo é
+  `down = lvl < down ? down : lvl;` (`sltu at; beqzl; move`), não `if`.
+- `tz == 0xC || tz == 0xD || tz == 0xB` com testes separados no original (`beql`/`beq` para o mesmo corpo) = `switch`
+  com `case 0xB: case 0xD: case 0xC:`; o `||` vira `addiu -11; sltiu 3`.
+- `(int)t >> 16 & 0xFFFF` dá o `ext x,16,16` do original (`t >> 16 & 0xFFFF` com `t` unsigned dá `srl`).
+- Ferramentas (não versionadas, `build/tmp/req2/` da worktree `req2`): `hill.py` (descida gulosa sobre ordem e tipo
+  das declarações, um TU por rodada) e `batch.py` (troca um trecho por N variantes, todas num TU).
+Ainda em asm: `duel_req_move` (19: ti/sp trocados), `duel_req_move_card` (25: escalonamento depois da chamada),
+`duel_req_swap_zones` (o original recalcula o endereço da zona A e guarda bo na pilha; o mwcc 219 faz CSE: 7
+instruções a menos), `duel_req_host_3b_table` (7), `duel_req_end_turn` (15): nenhuma ordem/tipo/forma mudou.
+
 ## `return 0` fora de linha e `if (x == y) { ... }` (rodada 8, `ai_08811BDC.c`)
 
 `duel_08811BDC` (4,5 KB, 60 casos) e `duel_08812DBC` bateram corrigindo a **forma dos retornos**, não registradores:

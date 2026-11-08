@@ -476,7 +476,7 @@ segments:
       - [0xD4CB0, asm, req_effect_asm_088D8C50]
       - [0xD4D58, c, req_effect]
       - [0xD664C, c, req_step]
-      - [0xD6C38, asm, req_step_asm_088DABD8]
+      - [0xD72A0, asm, req_step_asm_088DB240]
       - [0xD7580, c, req_step]
       - [0xD8540, asm, req_step_asm_088DC4E0]
       - [0xD8AAC, c, req_step]
