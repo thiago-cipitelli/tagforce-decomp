@@ -2,7 +2,6 @@
 // @data 0x0891190C-0x0891193C
 // @asm 0x088995A0-0x088997E8
 // @asm 0x088999B8-0x08899BF0
-// @asm 0x08899D34-0x0889A100
 /* Card effect handlers (DuelAct *a), after effects_088966D8.c. */
 #include "duel.h"
 
@@ -496,9 +495,9 @@ int duel_08899C6C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores s trocados nos laços de 0x80/0x7F */
 int duel_08899D34(DuelAct *a)
 {
+    unsigned int q2;
     unsigned int q;
     int u;
     unsigned int c1;
@@ -555,19 +554,19 @@ int duel_08899D34(DuelAct *a)
         a->w[1] = 0xFFFF;
         a->w[0] = 0xFFFF;
         for (i = 0; i < 2; i++) {
-            q = a->player ^ i;
-            w = *(unsigned int *)&a->idx >> ((1 - q) << 4);
+            q2 = a->player ^ i;
+            w = *(unsigned int *)&a->idx >> ((1 - q2) << 4);
             u = w >> 3;
             c1 = w >> 1 & 1;
             c0 = w & 1;
             loc = duel_card_locate(u);
             lp = loc & 0xFF;
-            a->w[q] = duel_pick_monster_zone(q);
+            a->w[q2] = duel_pick_monster_zone(q2);
             if (((unsigned short)loc >> 8 & 0xFF) == 0xF) {
-                if (a->w[q] < 0) {
+                if (a->w[q2] < 0) {
                     duel_088CB490(lp, u);
                 } else {
-                    duel_088CB778(lp, 0xF, u, q, a->w[q], c0, c1);
+                    duel_088CB778(lp, 0xF, u, q2, a->w[q2], c0, c1);
                 }
             }
         }
@@ -587,7 +586,6 @@ int duel_08899D34(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0889A100(DuelAct *a)
 {

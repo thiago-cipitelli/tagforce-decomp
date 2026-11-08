@@ -1,6 +1,5 @@
 // @range 0x088C4864-0x088C77D4
 // @asm 0x088C4864-0x088C5424
-// @asm 0x088C5E78-0x088C625C
 // @asm 0x088C626C-0x088C6508
 // @asm 0x088C6BC8-0x088C7478
 /* LP payment, drawing cards, sending cards from the deck and the D zone, with their commands to the
@@ -88,11 +87,16 @@ typedef struct DuelDmgEv {             /* event argument of battle damage */
     unsigned short pad : 5;
 } DuelDmgEv;
 
-#ifdef NON_MATCHING /* mesma sequência de chamadas; 2960 B contra 3008: difere nos $s dos laços (o original não reaproveita a máscara do evento entre os laços de 0x130C e 0x1720) e no clamp de n */
+#ifdef NON_MATCHING /* mesma sequência de chamadas e mesma forma (3008 B); 65 palavras de $s dos laços (2026-11-08). Resolveram a forma: (unsigned int)q << 31 nos laços de 0x1720 e 0x14ED (o original recalcula a máscara), switch de um caso em 0x1281, id do switch reaproveitado em 0x15D6, protótipo K&R de duel_slot_effect_with */
 /* battle damage of record r (r->a: attacker, r->b: target) with the cards that react to it */
 void duel_088C4864(DuelSpecRec *r)
 {
+    int i_17;
+    int z_16;
+    int z_12;
+    int i_2;
     extern int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int ev);
+    extern int duel_slot_effect_with();
     unsigned int tp = r->b[0];
     int self = 0;
     DuelSpecAct *act;
@@ -172,10 +176,10 @@ void duel_088C4864(DuelSpecRec *r)
         case 0xFCB:
             if (!ev.direct && duel_special.act[1 - r->a[0]].unk8) {
                 q = 1 - tp;
-                for (i = 5; i < 10; i++) {
-                    if (duel_slot_e8170(q, i, 0x187D)) {
-                        duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)i << 16 & 0x1F0000)
-                                      | duel.players[q & 1].field[i].card.id, CARD_UID(duel.players[q & 1].field[i].card), *(unsigned int *)&ev);
+                for (i_2 = 5; i_2 < 10; i_2++) {
+                    if (duel_slot_e8170(q, i_2, 0x187D)) {
+                        duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)i_2 << 16 & 0x1F0000)
+                                      | duel.players[q & 1].field[i_2].card.id, CARD_UID(duel.players[q & 1].field[i_2].card), *(unsigned int *)&ev);
                     }
                 }
             }
@@ -190,7 +194,7 @@ void duel_088C4864(DuelSpecRec *r)
         }
         for (z = 5; z < 10; z++) {
             if (duel_slot_e8170(q, z, 0x1720)) {
-                duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000)
+                duel_0884F30C(((unsigned int)q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000)
                               | duel.players[q & 1].field[z].card.id, CARD_UID(duel.players[q & 1].field[z].card), *(unsigned int *)&ev);
             }
         }
@@ -201,7 +205,7 @@ void duel_088C4864(DuelSpecRec *r)
     q = 1 - tp;
     for (z = 5; z < 10; z++) {
         if (duel_slot_e8170(q, z, 0x14ED) && duel_slot_has_src10(q, z, r->a[0], r->a[1])) {
-            duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000)
+            duel_0884F30C(((unsigned int)q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000)
                           | duel.players[q & 1].field[z].card.id, CARD_UID(duel.players[q & 1].field[z].card), *(unsigned int *)&ev);
         }
     }
@@ -217,38 +221,43 @@ void duel_088C4864(DuelSpecRec *r)
     if (src != 0xFFFF) {
         zz = src >> 8 & 0xFF;
         pp = src & 0xFF;
-        switch (duel.players[pp & 1].field[zz].card.id) {
+        switch (id = duel.players[pp & 1].field[zz].card.id) {
         case 0x15D6:
         case 0x15D7:
             if (pp != ev.tp) {
-                duel_0884F30C((pp << 31 & 0x80000000 | 0x1E200000 | (zz << 16 & 0x1F0000)) | (unsigned short)duel.players[pp & 1].field[zz].card.id,
+                duel_0884F30C((pp << 31 & 0x80000000 | 0x1E200000 | (zz << 16 & 0x1F0000)) | (unsigned short)id,
                               CARD_UID(duel.players[pp & 1].field[zz].card), *(unsigned int *)&ev);
             }
             break;
         }
     }
-    if (!(duel.players[r->b[0] & 1].field[r->b[1]].flags >> 5 & 1) && field_get_card(r->b[0], r->b[1]) == 0x1281
-        && duel_slot_src13(r->b[0], r->b[1]) != 0xFFFF) {
-        duel_088C4448(r->b[0], r->b[1], CARD_UID(duel.players[r->b[0] & 1].field[r->b[1]].card));
-        duel_088C4730(1 - r->b[0], ev.n, 1, 0x1281);
+    if (!(duel.players[r->b[0] & 1].field[r->b[1]].flags >> 5 & 1)) {
+        switch (field_get_card(r->b[0], r->b[1])) {
+        case 0x1281:
+            if (duel_slot_src13(r->b[0], r->b[1]) != 0xFFFF) {
+                duel_088C4448(r->b[0], r->b[1], CARD_UID(duel.players[r->b[0] & 1].field[r->b[1]].card));
+                duel_088C4730(1 - r->b[0], ev.n, 1, 0x1281);
+            }
+        }
     }
+
     if (duel_atk_direct) {
         for (i = 0; i < 2; i++) {
             q = duel.turn_player ^ i;
-            for (z = 5; z < 10; z++) {
-                if (duel_slot_e8170(q, z, 0x17B5)) {
-                    duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000) | 0x17B5,
-                                  CARD_UID(duel.players[q & 1].field[z].card), *(unsigned int *)&ev);
+            for (z_12 = 5; z_12 < 10; z_12++) {
+                if (duel_slot_e8170(q, z_12, 0x17B5)) {
+                    duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z_12 << 16 & 0x1F0000) | 0x17B5,
+                                  CARD_UID(duel.players[q & 1].field[z_12].card), *(unsigned int *)&ev);
                 }
             }
         }
     }
-    for (i = 0; i < 2; i++) {
-        q = duel.turn_player ^ i;
-        for (z = 5; z < 10; z++) {
-            if (duel_slot_e8170(q, z, 0x171E)) {
-                duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000) | 0x171E,
-                              CARD_UID(duel.players[q & 1].field[z].card), *(unsigned int *)&ev);
+    for (i_17 = 0; i_17 < 2; i_17++) {
+        q = duel.turn_player ^ i_17;
+        for (z_16 = 5; z_16 < 10; z_16++) {
+            if (duel_slot_e8170(q, z_16, 0x171E)) {
+                duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z_16 << 16 & 0x1F0000) | 0x171E,
+                              CARD_UID(duel.players[q & 1].field[z_16].card), *(unsigned int *)&ev);
             }
         }
     }
@@ -414,15 +423,11 @@ int duel_088C5E70(unsigned int p, int n)
     return duel_088C5510(p, n, 1);
 }
 
-#ifdef NON_MATCHING
-/* 26 palavras: $s2/$s3 trocados entre id e z, e o original lê o uid de ev por c e o id do switch pela base
-   (o contrário daqui); as formas que trocam isso fazem o mwcc reaproveitar o uid entre ev e as chamadas */
 /* the first n cards of zone D of p to the graveyard (x: for the opponent; y: banished, zone 0xF) */
 void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
 {
     int m = duel.players[p & 1].n_d;
     int i;
-    int z;
 
     if (n < (unsigned int)m) {
         m = n;
@@ -433,6 +438,7 @@ void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
         DuelCard *c = &duel.players[p & 1].zone_d[i];
         unsigned int id = c->id;
         DuelMoveEv ev;
+        int z;
 
         z = y ? 0xF : 0xE;
         if (!y) {
@@ -443,14 +449,14 @@ void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
         ev.opp = p ^ x;
         ev.player = p;
         ev.zone = z;
-        ev.uid = CARD_UID(duel.players[p & 1].zone_d[i]);
+        ev.uid = CARD_UID(*(DuelCard *)c);
         ev.b10 = 0;
         if (z == 0xE) {
             switch (id) {
             case 0x14A5:
             case 0x16F9:
                 duel_088C4448((int)c->owner, 0xE, CARD_UID(*c));
-                duel_088C77D4((int)c->owner, c->id, 1, CARD_UID(*c));
+                duel_088C77D4((int)c->owner, duel.players[p & 1].zone_d[i].id, 1, CARD_UID(*c));
                 break;
             case 0x106D:
             case 0x1653:
@@ -466,7 +472,7 @@ void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
             case 0x16F5:
             case 0x17C5:
             case 0x19FE:
-                duel_0884F30C((p << 31 & 0x80000000 | 0x384E0000) | c->id, CARD_UID(*c), ev);
+                duel_0884F30C((p << 31 & 0x80000000 | 0x384E0000) | duel.players[p & 1].zone_d[i].id, CARD_UID(*c), ev);
                 break;
             }
             if (card_get_type(id) == 9) {
@@ -481,7 +487,6 @@ void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
     }
     duel_088C7CF0();
 }
-#endif
 
 void duel_088C625C(unsigned int p, int n, int x)
 {
@@ -495,7 +500,8 @@ void duel_088C6264(unsigned int p, int n, int x)
 
 #ifdef NON_MATCHING
 /* 13 palavras: o original faz os stores de ev.opp antes de mascarar k (`k & 0x1F`); a ordem dos 5 stores de ev
-   (perm_stmts) não resolve */
+   (perm_stmts) não resolve; nem tipo de k, if/else, k pré-mascarado, argumento num local antes/depois dos stores,
+   associação do | (2026-11-08) */
 /* card uid of zone D of p to the graveyard of its owner (x: for the opponent) */
 void duel_088C626C(unsigned int p, unsigned int uid, int x)
 {
@@ -682,26 +688,33 @@ int card_attribute_icon_is3(int id);
 int duel_card_protected(int id, int uid);
 int duel_d_find_name(unsigned int p, int id);
 
-/* ~490 palavras, quase só registradores: o original põe grave em $s5, x em $s6 e z em $s7 e testa !ban como
-   valor (sltu/xori); a lógica foi conferida com o asm */
+/* 75 palavras (2026-11-08), só registradores: o original tem grave/ban/f/c/id/o em s5/s4/s3/s2/s1/s0 (aqui grave
+   fica em s2); 5040 ordens das declarações não resolvem. Resolveram a forma: !ban materializado num bloco,
+   (unsigned short) no 3º argumento de duel_088C77D4, (unsigned int)q << 31, (x & 0xF) << 8 | ev.zone */
 /* card c (index i) of zone z of p banished or sent to the graveyard (x: by the opponent's effect), with the
    triggers of the cards that watch it */
 void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
 {
-    unsigned int id = c->id;
-    unsigned int o = (int)c->owner;
-    int ban = !duel_088DFCC8(CARD_UID(*c));
     int grave;
+    unsigned int id;
+    unsigned int o;
     int f;
+    int ban;
     int k;
     int q;
     DuelMoveEv ev;
 
+    id = c->id;
+    o = (int)c->owner;
+    ban = !duel_088DFCC8(CARD_UID(*c));
     grave = 0;
-    if (!ban) {
-        int t = !card_is_attribute9(id);
-        if (t) {
-            grave = 1;
+    {
+        int u = !ban;
+        if (u) {
+            int t = !card_is_attribute9(id);
+            if (t) {
+                grave = 1;
+            }
         }
     }
     f = 0;
@@ -720,7 +733,7 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
     ev.b10 = 1;
     ev.opp = p ^ x;
     ev.zone = ban ? 0xF : 0xE;
-    duel_cmd((p ? 0x8000 : 0) | 0x31, z, ev.zone | (x & 0xF) << 8, ev.uid);
+    duel_cmd((p ? 0x8000 : 0) | 0x31, z, (x & 0xF) << 8 | ev.zone, ev.uid);
     switch (id) {
     case 0x106D:
         if (!ban && x && z == 0xD) {
@@ -764,7 +777,7 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
         break;
     case 0x1A62:
         if (!ban) {
-            duel_088C77D4(o, id, (unsigned char)((o == duel_turn_player) + 1) << 4 | 1, CARD_UID(*c));
+            duel_088C77D4(o, id, (unsigned short)((unsigned char)((o == duel_turn_player) + 1) << 4 | 1), CARD_UID(*c));
         }
         break;
     }
@@ -774,7 +787,7 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
     if (grave && card_is_monster(id) && card_is_in_group_1911(id)) {
         for (q = 0; q < 2; q++) {
             if (duel_slot_e8170(q, 10, 0x169F)) {
-                duel_0884F30C((q << 31 & 0x80000000) | 0x3C000000 | ((o != q) << 24 & 0x1000000) | 0x2A169F,
+                duel_0884F30C(((unsigned int)q << 31 & 0x80000000) | 0x3C000000 | ((o != q) << 24 & 0x1000000) | 0x2A169F,
                               CARD_UID(duel.players[q & 1].field[10].card), ev);
             }
         }
@@ -782,7 +795,7 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
     if (grave && card_attribute_icon_is3(id)) {
         for (q = 0; q < 2; q++) {
             if (duel_slot_e8170(q, 10, 0x187F)) {
-                duel_0884F30C((q << 31 & 0x80000000) | 0x3C000000 | ((o != q) << 24 & 0x1000000) | 0x2A187F,
+                duel_0884F30C(((unsigned int)q << 31 & 0x80000000) | 0x3C000000 | ((o != q) << 24 & 0x1000000) | 0x2A187F,
                               CARD_UID(duel.players[q & 1].field[10].card), ev);
             }
         }
@@ -811,13 +824,13 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
     case 0x1522:
         if (p == o && grave && x) {
             k = o == duel_turn_player ? (duel_phase != 0) << 1 : 1;
-            duel_088C77D4(o, id, (k & 0xF) << 4 | 1, CARD_UID(*c));
+            duel_088C77D4(o, id, (unsigned short)((k & 0xF) << 4 | 1), CARD_UID(*c));
         }
         break;
     case 0x185C:
         if (grave) {
             k = o == duel_turn_player ? (duel_phase != 0) << 1 : 1;
-            duel_088C77D4(o, id, (k & 0xF) << 4 | 1, CARD_UID(*c));
+            duel_088C77D4(o, id, (unsigned short)((k & 0xF) << 4 | 1), CARD_UID(*c));
         }
         break;
     }

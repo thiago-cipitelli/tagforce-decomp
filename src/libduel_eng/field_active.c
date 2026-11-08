@@ -1,5 +1,5 @@
 // @range 0x088E80CC-0x088E8CF4
-// @asm 0x088E83C8-0x088E8884
+// @asm 0x088E83C8-0x088E8624
 // @asm 0x088E8920-0x088E8AD4
 // @asm 0x088E8B14-0x088E8CF4
 /* Active copies of a card on the field (face up, not negated, zone enabled), including the two
@@ -114,7 +114,6 @@ int duel_find_effect_card(unsigned int p, int id, int skip)
 }
 #endif
 
-#ifdef NON_MATCHING /* 9 palavras: no laço das mágicas/armadilhas i e o ponteiro do slot trocam $s2/$s4; o resto bate */
 /* Active copies of card id on both fields. */
 int duel_count_active(int id)
 {
@@ -134,7 +133,7 @@ int duel_count_active(int id)
             }
         }
     } else if (card_get_prop5_hi(id) != 2) {
-        unsigned int b; unsigned int p;
+        unsigned int b;
         for (p = 0, b = 0; (int)p < 2; p++, b += 16) {
             DuelPlayer *pl = &duel.players[p & 1];
 
@@ -155,7 +154,6 @@ int duel_count_active(int id)
     }
     return n;
 }
-#endif
 
 /* Copies of card id whose effect applies to player p: both fields (ref 0) or the sides not
    excluded by ref (bit 0: p, bit 1: the opponent). */
