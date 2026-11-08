@@ -1,6 +1,5 @@
 // @range 0x0881794C-0x08819A70
 // @rodata 0x088700A8-0x088700C0
-// @asm 0x08817EF4-0x08817F08
 // @asm 0x08817F08-0x088182C8
 // @asm 0x08818FB0-0x0881917C
 // @asm 0x08819184-0x08819430
@@ -347,13 +346,10 @@ int dd_ev_10(void)
 }
 
 /* end of the attack cut-in: the attack animation itself */
-#ifdef NON_MATCHING /* o mwcc copia a0 para v0 (move v0,a0) e carrega a[0] por último; o original carrega
-                       a[2], a[1], a[3], a[0] direto de a0 sem cópia: 6 palavras, formas testadas: locais, struct, K&R */
 void dd_ev_attack_done(int *a)
 {
-    dd_mark_move(a[0], a[1], a[2], a[3]);
+    dd_mark_move(a[0], a[1], (unsigned int)a[2], a[3]);
 }
-#endif
 
 /* 11: attack declaration: attacker and target values go to the panels; a direct attack (target
    zone >= 5) plays the attack cut-in first */
@@ -776,11 +772,11 @@ typedef struct DdChainLink { /* chain link of the engine (dv_chain() + 0x300), 0
 } DdChainLink;
 
 /* 47: a face-down card is flipped (cut-in when requested by event 46) */
-#ifdef NON_MATCHING /* 12 palavras: o original materializa h = eng + 0x300 + (n - 1) * 0x18 num registrador antes do lhu; aqui o 0x300 vai no deslocamento do lhu (formas com ponteiro intermediário/índice local testadas) */
+#ifdef NON_MATCHING /* 7 palavras: com a soma inteira (base + 0x300 materializada) a forma bate; falta só a coloração do bloco (n em v1 e base em a1 no original; locais n/l testados) */
 int dd_ev_47(int player, int zone, int idx)
 {
     char *eng = dv_chain();
-    DdChainLink *h = (DdChainLink *)(eng + 0x300) + (*(int *)(eng + 0x480) - 1);
+    DdChainLink *h = (DdChainLink *)((unsigned int)(eng + 0x300) + (*(int *)(eng + 0x480) - 1) * sizeof(DdChainLink));
     int v = h->value;
     DdFlip *f;
     DdCutinDesc d;

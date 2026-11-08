@@ -3,7 +3,6 @@
 // @rodata 0x08870180-0x088701B4
 // @asm 0x0881CA74-0x0881CA80
 // @asm 0x0881D1B0-0x0881D658
-// @asm 0x0881DC40-0x0881DE48
 // @data 0x08875F84-0x088760B0
 /* The duel scene's input modes: a stack of modes (1 field, 2 card list, 3 yes/no, 4 numbers,
    5 card info, 6.. other sub-screens), each with enter/draw/update/leave; the scene heaps, the
@@ -758,7 +757,6 @@ unsigned short *dd_text(int id)
 }
 
 /* camera of an animation at time t (position, target, fov, near/far keyed) */
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 int dd_camera_from_anim(void *a, float t)
 {
     int *anim = a;
@@ -768,8 +766,8 @@ int dd_camera_from_anim(void *a, float t)
     float pos[4];
     float rot[4];
     float m[16];
-    float target[4];
     float up[4];
+    float target[4];
     float fwd[4];
 
     if (anim == 0)
@@ -778,8 +776,7 @@ int dd_camera_from_anim(void *a, float t)
     fov_h = keyframe_eval((void *)(anim[2] + 8), t);
     near = keyframe_eval((void *)(anim[2] + 0x10), t);
     far = keyframe_eval((void *)(anim[2] + 0x18), t);
-    if (near < 1.0f)
-        near = 1.0f;
+    near = near < 1.0f ? 1.0f : near;
     fovy = atanf((0.5f * fov_h) / (0.03937f * fov_w)) * 2.0f;
     idx = (unsigned short *)anim[1];
     keys = (int *)(anim[2] + idx[0] * 8);
@@ -800,7 +797,6 @@ int dd_camera_from_anim(void *a, float t)
     camera_load_view();
     return 1;
 }
-#endif
 
 unsigned int *dd_mode_de48(unsigned int *list, void *tms, float t)
 {

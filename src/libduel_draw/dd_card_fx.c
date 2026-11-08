@@ -1,5 +1,4 @@
 // @range 0x0881EBA0-0x0881F0A8
-// @asm 0x0881EFB4-0x0881F03C
 // @rodata 0x088701B4-0x088701B8
 /* Card picture/text popups queued as tasks (wait until the commentary and the camera are free)
    and the glow effect attached to the field cards (up to 512 at a time). */
@@ -167,24 +166,23 @@ void dd_glow_off(DdCard *c)
     dd_cobj_link_del(c, func_08820D40);
 }
 
-#ifdef NON_MATCHING /* 10 palavras: só alocação (orig: base &dd_tasks em s1, c em s0, lui antes do sw s0); ordem das declarações e local no laço testados */
+/* g walks dd_tasks one card pointer at a time, so g->glow[0] is dd_tasks.glow[i] */
 void dd_glow_all_off(void)
 {
-    DdTasks *s = &dd_tasks;
     int i;
+    DdTasks *g = &dd_tasks;
     DdCard *c;
 
-    for (i = 0; i < 512; i++) {
-        c = s->glow[i];
+    for (i = 0; i < 512; i++, g = (DdTasks *)((DdCard **)g + 1)) {
+        c = g->glow[0];
         if (c != 0 && c->glow != -1) {
             dd_task_pause(c->glow);
             c->glow = -1;
-            s->glow[i] = 0;
+            g->glow[0] = 0;
             dd_cobj_link_del(c, func_08820D40);
         }
     }
 }
-#endif
 
 void dd_effect_leave(DdTask *t, int *arg)
 {

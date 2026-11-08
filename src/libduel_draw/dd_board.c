@@ -1,8 +1,8 @@
 // @range 0x0880E45C-0x0880FCFC
 // @rodata 0x0886FE64-0x0886FE80
 // @data 0x08874EA0-0x08874F70
-// @asm 0x0880E788-0x0880F4D4
-// @asm 0x0880F6C8-0x0880FAC4
+// @asm 0x0880EB70-0x0880F4D4
+// @asm 0x0880F804-0x0880FAC4
 /* Drawing of the field and of the card objects: the layer setup, the field sheet model, the
    deck/extra/graveyard piles (a pile model with the top card on it and the count), every card
    object with its picture (models with texture hooks), the counters of the monster zones. */
@@ -151,7 +151,6 @@ int dd_board_pile_tex(void **list, int unused, int which);
 int dd_board_pile_color(void **list);
 void dd_board_card_face(float scale, unsigned short card);
 
-#ifdef NON_MATCHING /* funções grandes de desenho; forma não reproduzida */
 /* the piles (side deck, deck, graveyard, banished) of both players */
 typedef struct { int z[4]; } DdZones4;
 
@@ -168,7 +167,6 @@ void dd_board_piles(void)
     DdCobj *head;
     DdCobj *o;
     DdCobj *first;
-    DdLoc at;
     DdXyzw pos;
     DdXyzw rot;
     int hl;
@@ -185,10 +183,12 @@ void dd_board_piles(void)
             n = 0;
             head = dd_zone_list(p, zone);
             first = head->next;
-            for (o = first; o != head; o = o->next) {
-                if (o->t >= o->dur && !o->b4) {
-                    card = o->card;
-                    n++;
+            if (first != head) {
+                for (o = first; o != head; o = o->next) {
+                    if (o->t >= o->dur && !o->b4) {
+                        card = o->card;
+                        n++;
+                    }
                 }
             }
             switch (zone) {
@@ -197,14 +197,13 @@ void dd_board_piles(void)
                 if (first == head)
                     break;
                 card = first->card;
-                if (first->t < first->dur)
-                    card = 0;
-                else if (!first->b5) {
-                    if (!dv_zone_faceup(p, zone, 0))
-                        card = 0;
-                    else if (first->uid != dv_zone_card_uid(p, zone, 0))
-                        card = 0;
+                if (!(first->t < first->dur)) {
+                    if (first->b5)
+                        break;
+                    if (dv_zone_faceup(p, zone, 0) && first->uid == dv_zone_card_uid(p, zone, 0))
+                        break;
                 }
+                card = 0;
                 break;
             case 14:
             case 15:
@@ -212,23 +211,17 @@ void dd_board_piles(void)
                     card = 0;
                 break;
             }
-            /* the original only ever sets the flag here, never clears it */
             hl = 0;
-            if (dd_scene_flags(0x40, -1) && (dv_08835AEC(p, zone, 0) & ~2) != 0) {
+            if (dd_scene_flags(0x40, -1) == 0 || (dv_08835AEC(p, zone, 0) & ~2) == 0) {
+            } else {
                 hl = 1;
-                dd_board_hilite = hl;
             }
+            dd_board_hilite = hl;
             {
-                int c = 2;
-                unsigned char *d = (unsigned char *)&at;
-                if (d)
-                    do {
-                        *d++ = 0;
-                    } while (--c);
+                DdLoc at = { p, zone };
+
+                dd_slot_xform(&pos, &rot, *(DdPos *)&at);
             }
-            at.player = p;
-            at.zone = zone;
-            dd_slot_xform(&pos, &rot, *(DdPos *)&at);
             pos.y = 0.0f;
             if ((unsigned int)(zone - 12) < 2 && sel_active()) {
                 scale = pos.x >= 0.0f ? 100.0f : -100.0f;
@@ -247,6 +240,7 @@ void dd_board_piles(void)
 
 int dd_board_card_draw(DdCobj *o, int p, int zone, int i);
 
+#ifdef NON_MATCHING /* funções grandes de desenho; forma não reproduzida */
 /* every card object, the one under the cursor last; highlights of the zones to choose */
 void dd_board_cards(void)
 {
@@ -435,21 +429,17 @@ void dd_board_marks(void)
     dl_set_list(list);
 }
 
-#ifdef NON_MATCHING /* funções grandes de desenho; forma não reproduzida */
 /* the pile model with n cards and the top card */
 void dd_board_pile(float scale, DdXyzw *pos, DdXyzw *rot, int n, int card)
 {
-    DdMtx m;
-    float sc[3] = { 0 };
-    float upd[4];
-    Model *mdl;
     int params[13];
+    float upd[4];
+    float sc[3] = { scale, scale, scale };
+    DdMtx m;
+    Model *mdl;
 
     if (n <= 0)
         return;
-    sc[0] = scale;
-    sc[1] = scale;
-    sc[2] = scale;
     mtx_identity();
     mtx_translate(pos);
     quat_to_mat4(&m, rot);
@@ -469,6 +459,7 @@ void dd_board_pile(float scale, DdXyzw *pos, DdXyzw *rot, int n, int card)
     model_draw(mdl, params);
 }
 
+#ifdef NON_MATCHING /* funções grandes de desenho; forma não reproduzida */
 /* the count of a pile, projected on screen above it */
 void dd_board_pile_count(int n)
 {

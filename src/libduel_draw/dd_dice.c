@@ -428,18 +428,18 @@ int dd_dice_update(void)
     return !func_08825728();
 }
 
-#ifdef NON_MATCHING /* alocação de registradores e um bloco de junção a mais (forma igual) */
+#ifdef NON_MATCHING /* 2 palavras: no 2º dd_die_tex o original calcula y + 40 antes do mtc1 de 1.5f (ordem dos argumentos, face++ e 40 + y testados) */
 unsigned int *dd_dice_draw(unsigned int *list, int x, int y)
 {
-    MenuWidget *w = dd_dice.menu;
-    int inner = w->def.w - w->def.pad_l - w->def.pad_r - 9;
-    int cx = x + (inner - dd_dice.n_picked * 40) / 2;
     DdDice *d = &dd_dice;
-    int x0 = x;
-    unsigned short face;
+    MenuWidget *w = dd_dice.menu;
     int i;
+    int inner = w->def.w - w->def.pad_l - w->def.pad_r - 9;
+    int x0 = x;
+    int cx = x + (inner - dd_dice.n_picked * 40) / 2;
+    unsigned short face;
 
-    for (i = 0; i < d->n_picked; i++, cx += 40)
+    for (i = 0; i < d->n_picked; cx += 40, i++)
         list = dd_die_tex(0.7f, list, cx, y, 40, 40, d->picked[i]);
     if (d->state == 0) {
         face = w->scroll + w->cursor;

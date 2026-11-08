@@ -176,7 +176,7 @@ char help_window_gim[] = "window01.gim";
 char help_path_fmt[] = "%s/%s";
 char help_dir[] = "help";
 
-#ifdef NON_MATCHING /* 101 palavras: stores iniciais pelo global e d depois do menu_init já batem; o original grava first = 1 no início do ramo duel e com o v1 da comparação no ramo deck (o mwcc junta os dois) */
+#ifdef NON_MATCHING /* 4 palavras: com `!= 1` o ramo duel vem primeiro; o original grava first = 1 por s0 com li próprio no início do ramo duel (pelo s->first o mwcc reusa o v1 da comparação e afunda o store; pelo global sai um lui a mais) */
 void hscene_init(int category, void *heap, void *frame_gim, void *texts, void *pack)
 {
     HelpScene *s = &help_scene;
@@ -196,17 +196,8 @@ void hscene_init(int category, void *heap, void *frame_gim, void *texts, void *p
     help_scene.image_req = -2;
     help_scene.image_want = -2;
     help_scene.image_loading = -2;
-    if (hscene_is_deck(category) == 1) {
-        s->last = 13;
-        s->cat_base = 13;
-        s->idx_first = 11;
-        s->idx_base = 14;
-        s->f4c = 95;
-        s->f50 = 80;
-        s->text_base = 82;
-        s->ranges = help_deck_ranges;
-        s->images = help_deck_images;
-    } else {
+    if (hscene_is_deck(category) != 1) {
+        help_scene.first = 1;
         s->last = 15;
         s->idx_first = 13;
         s->idx_base = 16;
@@ -216,8 +207,18 @@ void hscene_init(int category, void *heap, void *frame_gim, void *texts, void *p
         s->ranges = help_duel_ranges;
         s->cat_base = 0;
         s->images = help_duel_images;
+    } else {
+        s->last = 13;
+        s->cat_base = 13;
+        s->idx_first = 11;
+        s->idx_base = 14;
+        s->f4c = 95;
+        s->f50 = 80;
+        s->text_base = 82;
+        s->ranges = help_deck_ranges;
+        s->first = 1;
+        s->images = help_deck_images;
     }
-    s->first = 1;
     menu_init(&s->menu, heap);
     d = &s->def;
     memset(d, 0, sizeof(*d));
