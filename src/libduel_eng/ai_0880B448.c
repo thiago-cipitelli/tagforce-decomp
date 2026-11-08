@@ -1,8 +1,5 @@
 // @range 0x0880B448-0x0880FDF4
 // @asm 0x0880C15C-0x0880C50C
-// @asm 0x0880C60C-0x0880D288
-// @asm 0x0880DC1C-0x0880E388
-// @asm 0x0880E690-0x0880EA18
 /* Computer player: values it declares for cards that ask for a monster type, an attribute or a
    number. */
 #include "duel.h"
@@ -445,7 +442,6 @@ int duel_0880C50C(unsigned int p, int skip, int check)
     return best;
 }
 
-#ifdef NON_MATCHING /* 3 KB; o original salva duel_special membro a membro (parte com lwc1/swc1); mantida em asm */
 void duel_08846584(int mode, int view);
 int duel_088482F8(int a, int b);
 int duel_find_effect_card(unsigned int p, int id, int z);
@@ -455,15 +451,28 @@ int duel_count_active(int id);
 int duel_slot_affected(unsigned int p, int z, int id);
 int duel_slot_counter_1439(unsigned int p, int z);
 
-/* Simulate the attack of p's monster at z on the opponent's zone tz (>= 5: direct attack) and judge it. */
+typedef struct DuelSpecialCopy {      /* duel_special as the attack simulation saves it (scalars first) */
+    int player0, player1, unk8, c0, c1, c2, c3, zone0, zone1, unk24, uid;
+    DuelSpecAct act[2];
+    DuelSpecRec recs[2];
+    DuelSlot slot[2];
+    int ec, f0;
+    int t0[5];
+    int t1[5];
+    int t2[5];
+} DuelSpecialCopy;
+extern DuelSpecialCopy duel_special_save; /* duel_special (0x08913F10) */
+
+/* Simulate the attack of p's monster at z on the opponent's zone tz (>= 5: direct attack) and judge it.
+   Forma: a cópia de duel_special pelo alias duel_special_save (campos escalares: lw/sw como no original; por
+   ponteiro sai cópia em bloco), forced = 0 depois da cópia, ok por variável, campos de st sem ponteiro. */
 void duel_0880C60C(unsigned int p, int z, int tz, int force, DuelAtkGuess *g)
 {
-    DuelSpecial saved;
+    DuelSpecialCopy saved;
     unsigned int q;
-    int forced = 0;
+    int forced;
     int n;
     int i;
-    DuelStats *a;
 
     g->direct = tz >= 5;
     g->z = z;
@@ -477,12 +486,13 @@ void duel_0880C60C(unsigned int p, int z, int tz, int force, DuelAtkGuess *g)
         g->won = 1;
         return;
     }
-    saved = duel_special;
-    q = 1 - p;
+    saved = duel_special_save;
+    forced = 0;
     duel_special.unk8 = g->direct;
+    q = 1 - p;
     duel_special.player[0] = p;
-    duel_special.player[1] = q;
     duel_special.zone[0] = z;
+    duel_special.player[1] = q;
     duel_special.zone[1] = tz;
     duel_08846584(0, 1);
     n = duel_find_effect_card(q, 0x1381, -1);
@@ -492,9 +502,11 @@ void duel_0880C60C(unsigned int p, int z, int tz, int force, DuelAtkGuess *g)
     duel_088482F8(0, 1);
     for (i = 0; i < 2; i++) {
         if (duel_special.recs[i].b[0] == p) {
-            g->dmg_self += duel_special.recs[i].w0;
+            n = duel_special.recs[i].w0;
+            g->dmg_self += n;
         } else {
-            g->dmg_opp += duel_special.recs[i].w0;
+            n = duel_special.recs[i].w0;
+            g->dmg_opp += n;
         }
     }
     if (g->direct != 0) {
@@ -502,43 +514,43 @@ void duel_0880C60C(unsigned int p, int z, int tz, int force, DuelAtkGuess *g)
     } else {
         if (!(duel.players[p & 1].field[z].flags >> 5 & 1)) {
             switch (field_get_card(p, z)) {
-            case 0x16BF:
-                forced = 1;
+            case 0x10A6:
+                g->won = 1;
+                g->lost = 1;
+                break;
+            case 0x1657:
+            case 0x172C:
+                if (g->lost != 0) {
+                    g->won = 1;
+                }
                 break;
             case 0x13CB:
                 if (duel.players[q & 1].field[tz].pos == 0 && duel_count_monsters_pos_is(p, 0) > 1) {
                     g->dmg_opp += 500;
                 }
                 break;
-            case 0x172C:
-            case 0x1657:
-                if (g->lost != 0) {
-                    g->won = 1;
-                }
-                break;
-            case 0x10A6:
-                g->won = 1;
-                g->lost = 1;
+            case 0x16BF:
+                forced = 1;
                 break;
             }
         }
         if (SLOT_ACTIVE(&duel.players[q & 1].field[tz])) {
             switch (field_get_card(q, tz)) {
-            case 0x129A:
-                if (duel.players[q & 1].field[tz].pos == 0) {
-                    g->dmg_self += duel_w_08913CF4.st[p][z].atk;
-                    g->won = 1;
-                }
+            case 0x10A6:
+            case 0x1657:
+                g->won = 1;
+                g->lost = 1;
                 break;
             case 0x172C:
                 if (g->won != 0) {
                     g->lost = 1;
                 }
                 break;
-            case 0x1657:
-            case 0x10A6:
-                g->won = 1;
-                g->lost = 1;
+            case 0x129A:
+                if (duel.players[q & 1].field[tz].pos == 0) {
+                    g->dmg_self += (int)duel_w_08913CF4.st[p][z].atk;
+                    g->won = 1;
+                }
                 break;
             }
         }
@@ -550,17 +562,17 @@ void duel_0880C60C(unsigned int p, int z, int tz, int force, DuelAtkGuess *g)
         }
         g->lost |= duel_special.act[p].pad14[6] | duel_special.act[p].pad14[7];
         g->won |= duel_special.act[q].pad14[6] | duel_special.act[q].pad14[7];
-        if (g->dmg_opp > 0) {
-            g->ok = 1;
-        } else {
-            g->ok = g->lost < g->won;
+        n = g->dmg_opp > 0;
+        if (n == 0) {
+            n = g->won > g->lost;
         }
+        g->ok = n;
         if (g->won != 0 && g->lost != 0) {
             /* both destroyed: still attack with a strong monster when the opponent has nothing as strong */
-            a = &duel_w_08913CF4.st[p][z];
-            if (a->def < a->atk && (a->level < 5 || a->level <= duel_w_08913CF4.st[q][tz].level)) {
+            if (duel_w_08913CF4.st[p][z].atk > duel_w_08913CF4.st[p][z].def &&
+                (duel_w_08913CF4.st[p][z].level <= 4 || duel_w_08913CF4.st[p][z].level <= duel_w_08913CF4.st[q][tz].level)) {
                 n = duel_0880C50C(p, z, 1);
-                if (n <= a->atk && n >= 1600 && duel_0880C50C(q, tz, 1) < n) {
+                if (n <= duel_w_08913CF4.st[p][z].atk && n >= 1600 && duel_0880C50C(q, tz, 1) < n) {
                     g->ok = 1;
                 }
             }
@@ -570,13 +582,13 @@ void duel_0880C60C(unsigned int p, int z, int tz, int force, DuelAtkGuess *g)
                 g->ok = 1;
             }
             switch (field_get_card(q, tz)) {
-            case 0x152E:
-                if (duel.players[q & 1].field[tz].faceup == 0 && duel.players[p & 1].lp > 1000 && g->dmg_self <= 1000) {
+            case 0x129C:
+                if (duel_0880C50C(p, z, 1) >= 1000 && duel.players[p & 1].lp > 1000 && g->dmg_self <= 1000) {
                     g->ok = 1;
                 }
                 break;
-            case 0x129C:
-                if (duel_0880C50C(p, z, 1) >= 1000 && duel.players[p & 1].lp > 1000 && g->dmg_self <= 1000) {
+            case 0x152E:
+                if (duel.players[q & 1].field[tz].faceup == 0 && duel.players[p & 1].lp > 1000 && g->dmg_self <= 1000) {
                     g->ok = 1;
                 }
                 break;
@@ -589,9 +601,8 @@ void duel_0880C60C(unsigned int p, int z, int tz, int force, DuelAtkGuess *g)
             g->ok = 1;
         }
     }
-    duel_special = saved;
+    duel_special_save = saved;
 }
-#endif
 
 /* Is the attack of p's monster at z on zone tz (>= 5: direct) worth trying at all? */
 int duel_0880D288(unsigned int p, int z, int tz, int careful)
@@ -774,13 +785,13 @@ int duel_0880D924(unsigned int p, int z, int careful, DuelAtkGuess *g, int force
     return r;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (2026-11-04): chave inline, prio com ++/--/-=, dois buffers DuelAtkGuess. 141 palavras: posições de pilha dos valores guardados no laço de ordenação (atk em 56(sp) no original, mode em 88(sp)) e o break do laço 0x19C2 em linha */
 /* Order of p's attackers: low priority and low ATK first. */
-static inline unsigned int duel_attacker_key(unsigned int p, int z)
+static inline unsigned int duel_attacker_key(unsigned int p, int zz)
 {
+    int i;
+    int z = zz;
     int atk = duel_w_08913CF4.st[p][z].atk;
     int prio = 10;
-    int i;
 
     if (!(duel.players[p & 1].field[z].flags >> 5 & 1)) {
         switch (field_get_card(p, z)) {
@@ -830,10 +841,12 @@ static inline unsigned int duel_attacker_key(unsigned int p, int z)
             break;
         }
     }
-    return *(unsigned short *)&atk | (prio & 0xFFFF) << 16;
+    return (atk & 0xFFFF) | (prio & 0xFFFF) << 16;
 }
 
-/* Pick the computer's next attack into duel_w_08913EF0; mode < 0 skips monsters that attack twice. */
+/* Pick the computer's next attack into duel_w_08913EF0; mode < 0 skips monsters that attack twice.
+   Forma: atk (int) lido com & 0xFFFF (não *(u16 *)&atk), zona copiada para um local depois de i na chave inline,
+   laço de ordenação com z e laço de escolha com j como contadores, g antes de g2. */
 int duel_0880DC1C(unsigned int p, int mode)
 {
     int list[5];
@@ -845,8 +858,8 @@ int duel_0880DC1C(unsigned int p, int mode)
     int t;
     unsigned int key;
     unsigned int min;
-    DuelAtkGuess g2;
     DuelAtkGuess g;
+    DuelAtkGuess g2;
 
     duel_w_08913EF0.direct = 0;
     duel_w_08913EF0.dmg_self = 0;
@@ -878,22 +891,22 @@ int duel_0880DC1C(unsigned int p, int mode)
     if (n == 0) {
         return 0;
     }
-    for (i = 0; i < n - 1; i++) {
-        k = i;
+    for (z = 0; z < n - 1; z++) {
+        k = z;
         min = 0xFFFFFFFF;
-        for (j = i; j < n; j++) {
+        for (j = z; j < n; j++) {
             key = duel_attacker_key(p, list[j]);
             if (key < min) {
                 min = key;
                 k = j;
             }
         }
-        t = list[i];
-        list[i] = list[k];
+        t = list[z];
+        list[z] = list[k];
         list[k] = t;
     }
-    for (i = 0; i < n; i++) {
-        if (!(duel_0880D924(p, list[i], 1, &g, 0) != 0) == 0) {
+    for (j = 0; j < n; j++) {
+        if (!(duel_0880D924(p, list[j], 1, &g, 0) != 0) == 0) {
             duel_memcpy(&duel_w_08913EF0, &g, sizeof(g));
             return 1;
         }
@@ -908,7 +921,6 @@ int duel_0880DC1C(unsigned int p, int mode)
     }
     return 0;
 }
-#endif
 
 /* Save the monster zones of both players into buf (200 bytes). */
 void duel_0880E388(DuelSlot *buf, unsigned int p)
@@ -994,10 +1006,13 @@ static inline void duel_ai_view_refresh(void)
     }
 }
 
-#ifdef NON_MATCHING /* 53 palavras (era 161): dmg é membro de duel_w_08913CF4 (+0x1E8), corpo dentro de if (duel_08836868(p) != 0); falta: o original relê duel_w_08913EF0.dmg_opp depois do store em dmg[z] (aqui reaproveitado) e os $s do laço de refresh inline (q em s2, base em s5) */
-/* Simulate all the attacks the computer would make this turn; returns the total damage dealt. */
+/* Simulate all the attacks the computer would make this turn; returns the total damage dealt.
+   Forma: os dois laços de duel_ai_view_refresh escritos aqui com as mesmas variáveis q/t (com a inline os $s do
+   segundo saem trocados) e dmg_opp relido por volatile depois do store em dmg[z]. */
 int duel_0880E690(unsigned int p)
 {
+    int q;
+    int t;
     int total = 0;
     int z;
     DuelPlayer *me;
@@ -1011,7 +1026,13 @@ int duel_0880E690(unsigned int p)
         duel_w_08913CF4.dmg[z] = 0;
     }
     if (duel_08836868(p) != 0) {
-        duel_ai_view_refresh();
+        for (q = 0; q < 2; q++) {
+            for (t = 0; t < 5; t++) {
+                if (duel.players[q & 1].field[t].card.id != 0) {
+                    duel_0880546C(q, t, &duel_w_08913CF4.st[q][t]);
+                }
+            }
+        }
         if (duel_0880DC1C(p, -1) != 0) {
             me = &duel.players[p & 1];
             op = &duel.players[(1 - p) & 1];
@@ -1026,14 +1047,19 @@ int duel_0880E690(unsigned int p)
                     duel_w_08913ECC++;
                 }
                 duel_w_08913CF4.dmg[duel_w_08913EF0.z] = duel_w_08913EF0.dmg_opp + 1;
-                total += duel_w_08913EF0.dmg_opp;
-                duel_ai_view_refresh();
+                total += *(volatile int *)&duel_w_08913EF0.dmg_opp;
+                for (q = 0; q < 2; q++) {
+                    for (t = 0; t < 5; t++) {
+                        if (duel.players[q & 1].field[t].card.id != 0) {
+                            duel_0880546C(q, t, &duel_w_08913CF4.st[q][t]);
+                        }
+                    }
+                }
             } while (duel_0880DC1C(p, -1) != 0);
         }
     }
     return total;
 }
-#endif
 
 /* Damage the computer expects to deal this turn (cached until duel_w_08913EC4 is cleared). */
 int duel_0880EA18(unsigned int p)
