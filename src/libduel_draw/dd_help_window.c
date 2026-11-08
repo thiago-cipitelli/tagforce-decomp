@@ -1,7 +1,6 @@
 // @range 0x08861238-0x088621A0
 // @rodata 0x08872794-0x088727B4
 // @asm 0x088617A8-0x088617E4
-// @asm 0x08861F24-0x08862180
 /* Duel help window: a framed list of help pages (text entries first..last of a table pack),
    opened with an animation, moved with the d-pad, closed by confirm/cancel; plus the scrolling
    list widget it is built on (layout of the items, scrolling to the cursor, drawing). */
@@ -350,56 +349,51 @@ void list_layout(DdList *l)
         l->total += l->item_h(i, w);
 }
 
-#ifdef NON_MATCHING /* só alocação de registradores difere */
 void *list_draw(void *dl, DdList *l)
 {
-    int w, x0, y0, x, y, cw, ch;
-    int sum, yy, h;
+    int w;
+    int sum;
     int i;
+    int y;
+    int h;
+    int cw;
 
-    if (l->draw_bg != 0)
+    if (l->draw_bg)
         dl = l->draw_bg(dl, l->x, l->y, l->w, l->h);
-    if (l->draw_item == 0 && l->draw_item_bg == 0 && l->draw_cursor == 0)
-        return dl;
-    x0 = l->x;
-    w = l->w - l->pad_l - l->pad_r;
-    sum = 0;
-    if (x0 < 480) {
-        y0 = l->y;
-        if (y0 < 272) {
-            x = x0 + l->pad_l;
-            if (x < 0)
-                x = 0;
-            y = y0 + l->pad_t;
-            if (y < 0)
-                y = 0;
+    if (l->draw_item || l->draw_item_bg || l->draw_cursor) {
+        w = cw = l->w - l->pad_l - l->pad_r;
+        sum = 0;
+        if (l->x < 480 && l->y < 272) {
+            int cx = l->x + l->pad_l;
+            int cy;
+            int ch;
+
+            cx = cx >= 0 ? cx : 0;
+            cy = l->y + l->pad_t;
+            cy = cy >= 0 ? cy : 0;
             ch = l->h - l->pad_t - l->pad_b;
-            cw = w;
-            if (x + w > 480)
-                cw = 480 - x0;
-            if (y + ch > 272)
-                ch = 272 - y0;
-            dl = dl_scissor(dl, x, y, cw, ch);
+            if (cx + cw > 480)
+                cw = 480 - l->x;
+            if (cy + ch > 272)
+                ch = 272 - l->y;
+            dl = dl_scissor(dl, cx, cy, cw, ch);
             dl = dl_enable(dl, 2);
         }
-    }
-    for (i = 0; i < l->count; i++) {
-        yy = l->scroll + sum + l->y + l->pad_t;
-        h = l->item_h(i, w);
-        sum += h;
-        if (yy + h > l->y && yy < l->y + l->h) {
-            void *d2 = l->draw_item_bg(dl, i, l->x + l->pad_l, yy, w, h);
-
-            if (l->cursor == i && l->draw_cursor != 0)
-                d2 = l->draw_cursor(d2, l->x + l->pad_l, yy, w, h);
-            dl = l->draw_item(d2, i, l->x + l->pad_l, yy, w, h);
+        for (i = 0; i < l->count; i++) {
+            y = l->scroll + (sum + (l->y + l->pad_t));
+            h = l->item_h(i, w);
+            sum += h;
+            if (l->y < y + h && y < l->y + l->h) {
+                void *d2 = l->draw_item_bg(dl, i, l->x + l->pad_l, y, w, h);
+                if (l->cursor == i && l->draw_cursor)
+                    d2 = l->draw_cursor(d2, l->x + l->pad_l, y, w, h);
+                dl = l->draw_item(d2, i, l->x + l->pad_l, y, w, h);
+            }
         }
+        dl = dl_disable(dl, 2);
     }
-    return dl_disable(dl, 2);
+    return dl;
 }
-#else
-void *list_draw(void *dl, DdList *l);
-#endif
 
 void list_term(DdList *l)
 {

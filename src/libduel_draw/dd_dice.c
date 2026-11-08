@@ -1,5 +1,4 @@
 // @range 0x0882A94C-0x0882BF00
-// @asm 0x0882BBAC-0x0882BDDC
 // @data 0x088769F0-0x08876A68
 // @rodata 0x088701D8-0x088701F4
 /* Coin and die windows: the coin or die model rendered into a 128x128 VRAM texture with two
@@ -205,7 +204,7 @@ unsigned int *dd_coin_tex(float scale, unsigned int *list, int x, int y, int w, 
     }
 }
 
-unsigned int *dd_die_tex(float scale, unsigned int *list, int x, int y, int w, int h, int face)
+unsigned int *dd_die_tex(unsigned int *list, int x, int y, int w, int h, int face, float scale)
 {
 
 
@@ -337,7 +336,7 @@ void dd_dice_ok_reset(void);
 int dd_dice_ok_update(void);
 unsigned int *dd_dice_ok_draw(unsigned int *list, int x, int y);
 unsigned int *dd_dice_draw(unsigned int *list, int x, int y);
-unsigned int *dd_die_tex(float scale, unsigned int *list, int x, int y, int w, int h, int face);
+unsigned int *dd_die_tex(unsigned int *list, int x, int y, int w, int h, int face, float scale);
 
 void dd_dice_open(int a, int max, unsigned int allowed)
 {
@@ -428,7 +427,6 @@ int dd_dice_update(void)
     return !func_08825728();
 }
 
-#ifdef NON_MATCHING /* 2 palavras: no 2º dd_die_tex o original calcula y + 40 antes do mtc1 de 1.5f (ordem dos argumentos, face++ e 40 + y testados) */
 unsigned int *dd_dice_draw(unsigned int *list, int x, int y)
 {
     DdDice *d = &dd_dice;
@@ -440,7 +438,7 @@ unsigned int *dd_dice_draw(unsigned int *list, int x, int y)
     unsigned short face;
 
     for (i = 0; i < d->n_picked; cx += 40, i++)
-        list = dd_die_tex(0.7f, list, cx, y, 40, 40, d->picked[i]);
+        list = dd_die_tex(list, cx, y, 40, 40, d->picked[i], 0.7f);
     if (d->state == 0) {
         face = w->scroll + w->cursor;
         x += (inner - 100) / 2;
@@ -448,7 +446,7 @@ unsigned int *dd_dice_draw(unsigned int *list, int x, int y)
         list = menu_draw_cursor(list, w, x + 4, y + 44, 92, 92);
         list = dl_ambient_color(list, 0xFFFFFFFF);
         list = dl_set_tex_filter(list, 0, 1);
-        list = dd_die_tex(1.5f, list, x, y + 40, 100, 100, face + 1);
+        list = dd_die_tex(list, x, y + 40, 100, 100, face + 1, 1.5f);
         list = dl_disable(list, 1);
         list = gim_set_texture(list, w->icon_gim);
         list = menu_draw_arrow(list, x, y + 88, 2);
@@ -459,7 +457,6 @@ unsigned int *dd_dice_draw(unsigned int *list, int x, int y)
         list = dd_dice_ok_draw(list, x0 + inner / 2, y + 60);
     return list;
 }
-#endif
 
 void dd_dice_ok_open(void)
 {

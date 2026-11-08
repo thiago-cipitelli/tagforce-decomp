@@ -1,5 +1,4 @@
 // @range 0x08832138-0x0883264C
-// @asm 0x08832284-0x0883264C
 /* Effect: a pulsing disc (k02_256b.gim or, mirrored, k02_256y.gim) lying on the field and
    turning slowly, for a number of frames or until the task gets flag 1 (dur -1). */
 #define DD_FX
@@ -50,7 +49,9 @@ int dd_fx_spin_move(int id, float *pos, float *rot, float s)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 1 palavra: no produto com in o original põe o in em ft (mul.s f0,f0,f21); todas as associações testadas saem com ele em fs */
+/* the product with `in` as an inline call keeps it as the second operand of mul.s */
+static inline float dd_spin_mul(float a, float b) { return a * b; }
+
 int dd_fx_spin_update(int state, DdFxSpin *fx)
 {
     float in = (float)fx->in / 4.0f;
@@ -120,8 +121,7 @@ int dd_fx_spin_update(int state, DdFxSpin *fx)
     mtx_rotate_zyx(fx->rot);
     mtx_scale3(fx->scale);
     mtx_rotate_y((float)fx->count * -0.017453292f);
-    list = dl_ambient_light(list, ((unsigned int)(fo * ((cosf((float)(fx->pulse % 32) * 6.2831855f / 32.0f) * 0.3f + 0.7f)
-                                                        * 255.0f * in)) << 24) | 0xFFFFFF);
+    list = dl_ambient_light(list, ((unsigned int)(fo * dd_spin_mul((cosf((float)(fx->pulse % 32) * 6.2831855f / 32.0f) * 0.3f + 0.7f) * 255.0f, in)) << 24) | 0xFFFFFF);
     list = draw_array(list, 4, 0x183, 4, 0, fx->quad);
     mtx_pop();
     dl_set_list(list);
@@ -147,4 +147,3 @@ int dd_fx_spin_update(int state, DdFxSpin *fx)
         return 2;
     return 4;
 }
-#endif

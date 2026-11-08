@@ -1,5 +1,4 @@
 // @range 0x088546C4-0x08854C44
-// @asm 0x0885471C-0x08854C44
 /* Character effect "sparkles": pairs of small sparks (PT88_R_a.gim) rising from around the
    character's feet, 32 alive at once. */
 #include "libduel_draw.h"
@@ -74,9 +73,11 @@ int dd_fx_sparkle_start(int arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 16 palavras: só registradores $s dos dois laços (i, j e o ponteiro do par trocados entre s2, s3 e s4); ordem das declarações não muda */
+/* counters and the pair pointer of the draw loop are own variables (ci, k, pp): they decide the $s registers */
 int dd_fx_sparkle_update(int phase, DdFxSparkle *w)
 {
+    int ci;
+    int k;
     FxMat4 cam;
     void *list;
     DdSparkPair *p;
@@ -97,20 +98,20 @@ int dd_fx_sparkle_update(int phase, DdFxSparkle *w)
         h = 0.15f;
         q = 0.25f;
         hv = 0.5f;
-        for (i = 0; i < 8; i++) {
-            float u = (float)(i % 4) * q;
-            float v = (float)(i / 4) * hv;
+        for (ci = 0; ci < 8; ci++) {
+            float u = (float)(ci % 4) * q;
+            float v = (float)(ci / 4) * hv;
 
-            w->cell[i][0].u = u;
-            w->cell[i][0].v = v;
-            w->cell[i][0].x = -h;
-            w->cell[i][0].y = h;
-            w->cell[i][0].z = 0.0f;
-            w->cell[i][1].u = u + q;
-            w->cell[i][1].v = v + hv;
-            w->cell[i][1].x = h;
-            w->cell[i][1].y = -h;
-            w->cell[i][1].z = 0.0f;
+            w->cell[ci][0].u = u;
+            w->cell[ci][0].v = v;
+            w->cell[ci][0].x = -h;
+            w->cell[ci][0].y = h;
+            w->cell[ci][0].z = 0.0f;
+            w->cell[ci][1].u = u + q;
+            w->cell[ci][1].v = v + hv;
+            w->cell[ci][1].x = h;
+            w->cell[ci][1].y = -h;
+            w->cell[ci][1].z = 0.0f;
         }
     }
     n = phase == 1 ? 32 : 1;
@@ -143,23 +144,23 @@ int dd_fx_sparkle_update(int phase, DdFxSparkle *w)
     mtx_identity();
     dd_translate3(0.02f, 1.13f, 0.0f);
     for (i = 0; i < 32; i++) {
-        p = &w->pair[i];
-        if (!(p->flags & 1) != 1) {
-            list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(p->t, 4) * 255.0f *
-                                                         dd_ease_cos(p->t - 16, 16, 1)) << 24 | 0xFFFFFF);
-            for (j = 0; j < 2; j++) {
-                s = &p->s[j];
+        DdSparkPair *pp = &w->pair[i];
+        if (!(pp->flags & 1) != 1) {
+            list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(pp->t, 4) * 255.0f *
+                                                         dd_ease_cos(pp->t - 16, 16, 1)) << 24 | 0xFFFFFF);
+            for (k = 0; k < 2; k++) {
+                s = &pp->s[k];
                 mtx_push();
-                s->pos.y = s->speed * (float)p->t;
+                s->pos.y = s->speed * (float)pp->t;
                 mtx_translate(&s->pos);
                 mtx_mult(&cam);
                 list = draw_array(list, 6, 0x183, 2, 0, w->cell[s->cell]);
                 mtx_pop();
             }
-            if (p->t < 31)
-                p->t++;
+            if (pp->t < 31)
+                pp->t++;
             else
-                p->flags &= ~1;
+                pp->flags &= ~1;
         }
     }
     mtx_pop();
@@ -168,4 +169,3 @@ int dd_fx_sparkle_update(int phase, DdFxSparkle *w)
     w->frame++;
     return 2;
 }
-#endif

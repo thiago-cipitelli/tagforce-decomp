@@ -1,9 +1,6 @@
 // @range 0x08863998-0x088649D4
-// @asm 0x08863998-0x08863C1C
-// @asm 0x08863C1C-0x08863F74
-// @asm 0x088645FC-0x0886492C
 // @data 0x08878EA0-0x0887965C
-// @rodata 0x088727B4-0x08872874
+// @rodata 0x088727B4-0x0887288C
 /* Duel help screen (window01.gim): category list, index and text page with its picture, loaded
    from help/<image>.gim on demand; duel help (categories 0..12) and deck help (13..23) differ
    only by their tables. Plus the button guide at the bottom. */
@@ -176,51 +173,54 @@ char help_window_gim[] = "window01.gim";
 char help_path_fmt[] = "%s/%s";
 char help_dir[] = "help";
 
-#ifdef NON_MATCHING /* 4 palavras: com `!= 1` o ramo duel vem primeiro; o original grava first = 1 por s0 com li próprio no início do ramo duel (pelo s->first o mwcc reusa o v1 da comparação e afunda o store; pelo global sai um lui a mais) */
 void hscene_init(int category, void *heap, void *frame_gim, void *texts, void *pack)
 {
-    HelpScene *s = &help_scene;
+    HelpScene *h = &help_scene;
     MenuItemDef *d;
 
-    memset(s, 0, sizeof(help_scene));
-    help_scene.category = category;
-    help_scene.heap = heap;
-    help_scene.frame_gim = frame_gim;
-    help_scene.parts_gim = ehp_find(syspack_get(), help_window_gim, 0);
-    help_scene.texts = texts;
-    help_scene.pack = pack;
-    help_scene.state = 0;
-    help_scene.focus = 1;
-    help_scene.cat_cursor = 0;
-    help_scene.idx_cursor = 0;
-    help_scene.image_req = -2;
-    help_scene.image_want = -2;
-    help_scene.image_loading = -2;
-    if (hscene_is_deck(category) != 1) {
-        help_scene.first = 1;
-        s->last = 15;
-        s->idx_first = 13;
-        s->idx_base = 16;
-        s->f4c = 106;
-        s->f50 = 89;
-        s->text_base = 91;
-        s->ranges = help_duel_ranges;
-        s->cat_base = 0;
-        s->images = help_duel_images;
-    } else {
-        s->last = 13;
-        s->cat_base = 13;
-        s->idx_first = 11;
-        s->idx_base = 14;
-        s->f4c = 95;
-        s->f50 = 80;
-        s->text_base = 82;
-        s->ranges = help_deck_ranges;
-        s->first = 1;
-        s->images = help_deck_images;
+    memset(h, 0, sizeof(*h));
+    h->category = category;
+    h->heap = heap;
+    h->frame_gim = frame_gim;
+    h->parts_gim = ehp_find(syspack_get(), help_window_gim, 0);
+    h->texts = texts;
+    h->pack = pack;
+    h->state = 0;
+    h->focus = 1;
+    h->cat_cursor = 0;
+    h->idx_cursor = 0;
+    h->image_req = -2;
+    h->image_want = -2;
+    h->image_loading = -2;
+    switch (hscene_is_deck(category)) {
+    case 0:
+    default:
+            h->first = 1;
+            h->last = 15;
+            h->idx_first = 13;
+            h->idx_base = 16;
+            h->f4c = 106;
+            h->f50 = 89;
+            h->cat_base = 0;
+            h->text_base = 91;
+            h->ranges = help_duel_ranges;
+            h->images = help_duel_images;
+        break;
+    case 1:
+            h->first = 1;
+            h->last = 13;
+            h->idx_first = 11;
+            h->idx_base = 14;
+            h->f4c = 95;
+            h->f50 = 80;
+            h->cat_base = 13;
+            h->text_base = 82;
+            h->ranges = help_deck_ranges;
+            h->images = help_deck_images;
+        break;
     }
-    menu_init(&s->menu, heap);
-    d = &s->def;
+    d = &h->def;
+    menu_init(&h->menu, heap);
     memset(d, 0, sizeof(*d));
     d->visible = 1;
     d->w = 480;
@@ -229,126 +229,121 @@ void hscene_init(int category, void *heap, void *frame_gim, void *texts, void *p
     d->style = 0;
     d->x = 0;
     d->y = 0;
-    menu_add_item(&s->menu, d);
-    help_init(s->heap, s->frame_gim, s->parts_gim, s->texts, s->pack, s->first + 1, s->last - 1,
-              hscene_index_from_cat(s->category));
-    hscene_load_index(s->category, 0);
-    hscene_load_text(s->category, 0);
-    hguide_init(s->heap, s->frame_gim, s->pack);
+    menu_add_item(&h->menu, d);
+    help_init(h->heap, h->frame_gim, h->parts_gim, h->texts, h->pack, h->first + 1, h->last - 1, hscene_index_from_cat(h->category));
+    hscene_load_index(h->category, 0);
+    hscene_load_text(h->category, 0);
+    hguide_init(h->heap, h->frame_gim, h->pack);
     help_set_active(0);
     hidx_set_active(0);
     fade_start(1, 0xFF000000, 16);
 }
-#else
-void hscene_init(int category, void *heap, void *frame_gim, void *texts, void *pack);
-#endif
 
 /* 1 when the screen is over */
-#ifdef NON_MATCHING /* alocação de registradores/ordem dos testes difere; não insistido */
 int hscene_update(void)
 {
-    HelpScene *s = &help_scene;
-    int r = 0;
-    int in, cur, cat, res;
-    char path[0x100];
-    int size;
+    char path[256];
+    HelpScene *h = &help_scene;
+    int done = 0;
+    int row;
+    int topic;
+    int r;
 
     help_update();
     hidx_update();
     htext_update();
-    switch (s->state) {
-    case 0:
+    switch (h->state) {
+    default:
         if (fade_is_done())
-            s->state = 1;
+            h->state = 1;
         break;
     case 1:
-        in = hscene_input();
-        switch (in) {
+        switch (hscene_input()) {
+        case 0:
+            break;
         case 1:
-            s->saved_idx = hidx_cursor();
-            help_reset(s->first + 1, s->last - 1, hscene_index_from_cat(s->category));
+            h->saved_idx = hidx_cursor();
+            help_reset(h->first + 1, h->last - 1, hscene_index_from_cat(h->category));
             help_open();
-            s->cat_cursor = help_cursor();
-            s->focus = 0;
+            h->cat_cursor = help_cursor();
+            h->focus = 0;
             break;
         case 2:
-            s->focus = 1;
+            h->focus = 1;
             break;
         case 3:
             fade_start_in(1, 0xFF000000, 16);
-            s->state = 2;
+            h->state = 2;
             break;
         }
-        if (s->focus == 1) {
-            help_set_active(0);
-            hidx_set_active(1);
-            htext_scroll();
-        } else {
-            cur = help_cursor();
-            cat = hscene_cat_from_index(cur);
+        if (h->focus != 1) {
+            row = help_cursor();
+            topic = hscene_cat_from_index(row);
             help_set_active(1);
             hidx_set_active(0);
-            if (cur != s->cat_cursor) {
-                s->cat_cursor = cur;
-                hscene_load_index(cat, 1);
-                hscene_load_text(cat, 1);
+            if (row != h->cat_cursor) {
+                h->cat_cursor = row;
+                hscene_load_index(topic, 1);
+                hscene_load_text(topic, 1);
             }
-            res = help_result();
-            if (res != 0) {
-                s->focus = 1;
-                if (cat != s->category)
-                    s->category = cat;
-                switch (res) {
+            r = help_result();
+            if (r != 0) {
+                h->focus = 1;
+                if (topic != h->category)
+                    h->category = topic;
+                switch (r) {
                 case 1:
-                    hscene_load_index(cat, 1);
-                    hscene_load_text(cat, 1);
+                    hscene_load_index(topic, 1);
+                    hscene_load_text(topic, 1);
                     break;
                 case 2:
-                    hidx_set_cursor(s->saved_idx);
+                    hidx_set_cursor(h->saved_idx);
                     break;
                 }
             }
+        } else {
+            help_set_active(0);
+            hidx_set_active(1);
+            htext_scroll();
         }
         break;
     case 2:
         if (fade_is_done())
-            s->state = 3;
+            h->state = 3;
         break;
     case 3:
-        r = 1;
+        done = 1;
         break;
     }
-    cur = hidx_cursor();
-    if (cur != s->idx_cursor) {
-        s->idx_cursor = cur;
-        hscene_load_text(s->category, 1);
+    row = hidx_cursor();
+    if (row != h->idx_cursor) {
+        h->idx_cursor = row;
+        hscene_load_text(h->category, 1);
     }
-    if (s->image_req != -1) {
+    if (h->image_req != -1) {
         hscene_image_want();
-        if (s->image_want != s->image_req && s->focus == 1) {
-            if (s->image != 0) {
-                heap_set_level(s->heap, s->image);
-                s->image = 0;
+        if (h->image_want != h->image_req && h->focus == 1) {
+            if (h->image) {
+                heap_set_level(h->heap, h->image);
+                h->image = 0;
             }
             htext_set_image(0);
-            if (s->images[s->image_want] == 0) {
-                s->image_req = -2;
-            } else {
-                sprintf(path, help_path_fmt, help_dir, s->images[s->image_want]);
+            if (h->images[h->image_want]) {
+                int size;
+
+                sprintf(path, help_path_fmt, help_dir, h->images[h->image_want]);
                 size = ehfile_get_size(3, path);
-                s->image = heap_alloc(s->heap, size);
-                s->image_loading = s->image_want;
-                ehfile_read_async_alias(3, path, s->image, size, (int (*)(void *, int))hscene_image_done,
-                                        &s->image_loading);
-                s->image_req = -1;
+                h->image = heap_alloc(h->heap, size);
+                h->image_loading = h->image_want;
+                ehfile_read_async_alias(3, path, h->image, size, (int (*)(void *, int))hscene_image_done, &h->image_loading);
+                h->image_req = -1;
+            } else {
+                h->image_req = -2;
             }
         }
     }
-    return r;
+    return done;
 }
-#else
-int hscene_update(void);
-#endif
 
 void *hscene_draw(void *dl)
 {
@@ -547,13 +542,14 @@ void hguide_init(void *heap, void *frame_gim, void *pack)
     menu_add_item(&help_guide.menu, d);
 }
 
-#define GUIDE_Y(base) (((region_get() == 0 ? 0 : 5) + (base)) << 6)
 
 /* button guide: per language offsets of the four captions */
-#ifdef NON_MATCHING /* alocação de registradores/ordem dos testes difere; não insistido */
 void *hguide_draw(void *dl, int index_only)
 {
-    int w0, dx1, dx2, dx3, w1, w2, w3;
+    HelpGuide *b = &help_guide;
+    int dx1, dx2, dx3;
+    int w0, w1, w2, w3;
+    unsigned short *t;
 
     switch (cfg_get_language()) {
     case 0:
@@ -567,42 +563,75 @@ void *hguide_draw(void *dl, int index_only)
         w3 = 480;
         break;
     case 1:
-        dx1 = 15; dx2 = 50; dx3 = 25; w0 = 100; w1 = 125; w2 = 57; w3 = 101;
+        dx1 = 15;
+        dx2 = 50;
+        dx3 = 25;
+        w0 = 100;
+        w1 = 125;
+        w2 = 57;
+        w3 = 101;
         break;
     case 2:
-        dx1 = 15; dx2 = 50; dx3 = 25; w0 = 100; w1 = 125; w2 = 57; w3 = 101;
+        dx1 = 15;
+        dx2 = 50;
+        dx3 = 25;
+        w0 = 100;
+        w1 = 125;
+        w2 = 57;
+        w3 = 101;
         break;
     case 3:
-        dx1 = 15; dx2 = 50; dx3 = 25; w0 = 100; w1 = 125; w2 = 57; w3 = 101;
+        dx1 = 15;
+        dx2 = 50;
+        dx3 = 25;
+        w0 = 100;
+        w1 = 125;
+        w2 = 57;
+        w3 = 101;
         break;
     case 4:
-        dx1 = 15; dx2 = 50; dx3 = 25; w0 = 100; w1 = 125; w2 = 57; w3 = 101;
+        dx1 = 15;
+        dx2 = 50;
+        dx3 = 25;
+        w0 = 100;
+        w1 = 125;
+        w2 = 57;
+        w3 = 101;
         break;
     case 5:
-        dx1 = 15; dx2 = 50; dx3 = 25; w0 = 100; w1 = 125; w2 = 57; w3 = 101;
+        dx1 = 15;
+        dx2 = 50;
+        dx3 = 25;
+        w0 = 100;
+        w1 = 125;
+        w2 = 57;
+        w3 = 101;
         break;
     }
-    menu_layout(&dl, &help_guide.menu);
+    menu_layout(&dl, &b->menu);
     dl = dl_ambient_color(dl, 0xFFFFFFFF);
     dl = dl_enable(dl, 9);
-    dl = gim_set_texture(dl, help_guide.frame_gim);
+    dl = gim_set_texture(dl, b->frame_gim);
     dl = ui_sprite(dl, 13, 244, 0, 16, 9, 19);
     dl = ui_sprite(dl, dx1 + 109, 244, 13, 16, 15, 19);
-    if (index_only == 0)
+    if (!index_only)
         dl = ui_sprite(dl, dx2 + 215, 244, 46, 35, 18, 18);
     dl = ui_sprite(dl, dx3 + 315, 250, 0, 35, 26, 11);
     hguide_font();
     font_text_set(dl);
-    font_draw_wtext(0x600, GUIDE_Y(242), w0 << 6, table_get_entry(help_guide.pack, 5));
-    font_draw_wtext((dx1 + 125) << 6, GUIDE_Y(242), w1 << 6, table_get_entry(help_guide.pack, 6));
-    if (index_only == 0)
-        font_draw_wtext((dx2 + 235) << 6, GUIDE_Y(242), w2 << 6, table_get_entry(help_guide.pack, 7));
-    font_draw_wtext((dx3 + 345) << 6, GUIDE_Y(242), w3 << 6, table_get_entry(help_guide.pack, 8));
-    return font_text_clear();
+    t = table_get_entry(b->pack, 5);
+    font_draw_wtext(0x600, ((region_get() ? 5 : 0) + 242) << 6, w0 << 6, t);
+    t = table_get_entry(b->pack, 6);
+    font_draw_wtext((dx1 + 125) << 6, ((region_get() ? 5 : 0) + 242) << 6, w1 << 6, t);
+    if (!index_only) {
+        t = table_get_entry(b->pack, 7);
+        font_draw_wtext((dx2 + 235) << 6, ((region_get() ? 5 : 0) + 242) << 6, w2 << 6, t);
+    }
+    t = table_get_entry(b->pack, 8);
+    font_draw_wtext((dx3 + 345) << 6, ((region_get() ? 5 : 0) + 242) << 6, w3 << 6, t);
+    dl = font_text_clear();
+    return dl;
 }
-#else
-void *hguide_draw(void *dl, int index_only);
-#endif
 
 void hguide_term(void)
 {
