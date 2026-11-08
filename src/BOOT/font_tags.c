@@ -1,7 +1,6 @@
 // @range 0x0884900C-0x0884A9B4
 // @data 0x088EE9E0-0x088EEA58
 // @asm 0x088490EC-0x08849778
-// @asm 0x08849C9C-0x08849E54
 // @asm 0x08849F44-0x0884A430
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
    capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph
@@ -28,7 +27,7 @@ void *dl_set_tex_filter(void *list, int min, int mag);
 void *dl_push(void *list, void *words, int n);
 void *dl_push1(void *list, unsigned int word);
 void *gim_set_texture(void *list, void *gim);
-void font_glyph_vertices(short *v, int x, int y, int slot);
+void font_glyph_vertices(short *v, int x, int y, unsigned int slot);
 extern const unsigned char font_clut[32];           /* .rodata 0x08875740: 16-entry 16-bit palette of the 4bpp atlas */
 
 /* Next printable character after the tags at p; `in_ruby` skips a "(...)" ruby body. */
@@ -72,7 +71,7 @@ done:
     return c;
 }
 
-#ifdef NON_MATCHING /* font_word_width e font_run_width: o original usa s7/s8 para cópias mascaradas de c e t e por isso guarda w na pilha; com c unsigned short ou int e o teste de maiúscula em if/else invertido fica em ~150 palavras */
+#ifdef NON_MATCHING /* font_word_width (199 palavras) e font_run_width (103): com o caso de maiúscula num inline (font_fold_case, ramo de wc_is_upper != 0 primeiro, resultado por ponteiro) a forma bate; falta a cópia mascarada de c/t (s7/s8) que o original passa às duas chamadas: com ch int o mwcc junta a máscara com a do teste do topo, com ch unsigned short some a cópia */
 /* Width in 26.6 of the word starting at p (up to the next breakable character), including the
    ruby padding, so that a word is not split across lines. */
 int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned short *p, int wrap)
@@ -161,11 +160,30 @@ int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned
     }
 }
 
+static inline void font_fold_case(FontLayout *st, unsigned short *c, unsigned short *flags, unsigned char *sx)
+{
+    int ch = *c;
+
+    if (wc_is_upper(ch) != 0) {
+        if (*flags & 0x10) {
+            *sx = st->size_x;
+            *flags &= ~0x10;
+        }
+    } else {
+        unsigned short r = towupper(ch);
+        if (!(*flags & 0x10)) {
+            *flags |= 0x10;
+            *sx = st->size_x * 10 / 12;
+        }
+        *c = r;
+    }
+}
+
 /* Width in 26.6 of the run of non-breakable characters starting at p. */
 int font_run_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned short *p)
 {
     unsigned short c;
-    unsigned char upper = st->force_upper;
+    int upper = (unsigned char)st->force_upper;
     unsigned char sx = st->cur_size_x;
     unsigned short flags = st->flags;
     int w = 0;
@@ -192,35 +210,15 @@ int font_run_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned 
                     continue;
                 }
             }
-            if ((f->flags & 0x4000) || upper != 0) {
-                if (wc_is_upper(c) == 0) {
-                    c = towupper(c);
-                    if (!(flags & 0x10)) {
-                        flags |= 0x10;
-                        sx = st->size_x * 10 / 12;
-                    }
-                } else if (flags & 0x10) {
-                    sx = st->size_x;
-                    flags &= ~0x10;
-                }
-            }
+            if ((f->flags & 0x4000) || upper != 0)
+                font_fold_case(st, &c, &flags, &sx);
             cls = wc_break_class(c);
             if (cls == 0)
                 return w;
             if (cls == 1) {
                 t = wtext_next_char(f, p, 0);
-                if ((f->flags & 0x4000) || upper != 0) {
-                    if (wc_is_upper(t) == 0) {
-                        t = towupper(t);
-                        if (!(flags & 0x10)) {
-                            flags |= 0x10;
-                            sx = st->size_x * 10 / 12;
-                        }
-                    } else if (flags & 0x10) {
-                        sx = st->size_x;
-                        flags &= ~0x10;
-                    }
-                }
+                if ((f->flags & 0x4000) || upper != 0)
+                    font_fold_case(st, &t, &flags, &sx);
                 if (wc_break_class(t) <= 0) {
                     slot = font_glyph_cache(img, c);
                     w += f->slots[slot].advance * sx / 20;
@@ -372,10 +370,11 @@ unsigned int font_shadow_color(unsigned int c)
     return ((a << 7) / 255) << 24;
 }
 /* Emits the ruby characters of "(...)" at p as glyph commands above the base text. */
-#ifdef NON_MATCHING /* 3 palavras: o original carrega c direto em s0 e passa o valor cru a wc_no_line_start (`move a0,s0` no atraso), refazendo a máscara no teste (v0); com c int o mwcc reaproveita a máscara do teste (a0) na chamada; com c unsigned short ele mascara na cópia para s0 (48 palavras) */
+/* K&R local declaration: the original passes the raw c to wc_no_line_start (no unsigned short mask). */
 unsigned short *font_ruby_layout(FontCtx *f, FontLayout *st, unsigned short *p)
 {
     int c;
+    int wc_no_line_start();
 
     while ((c = *p++) != ')') {
         if ((unsigned short)c < 0x20)
@@ -400,7 +399,6 @@ unsigned short *font_ruby_layout(FontCtx *f, FontLayout *st, unsigned short *p)
     return p;
 }
 
-#endif
 /* Same as font_ruby_layout without emitting commands (measurement). */
 unsigned short *font_ruby_skip(FontCtx *f, FontLayout *st, unsigned short *p)
 {
@@ -421,8 +419,8 @@ unsigned short *font_ruby_skip(FontCtx *f, FontLayout *st, unsigned short *p)
     st->ruby_xmax = st->xmax;
     return p;
 }
-#ifdef NON_MATCHING /* switch com os case na ordem 1,3,4,5,2 (sequência de jal igual ao original); falta o quadro: o original
-   guarda size_y na pilha (sp+60, quadro 0x40) e copia f para s6 antes do laço; 273 palavras */
+#ifdef NON_MATCHING /* 2 palavras: no caso 1 do segundo laço o original calcula n * 32 em v1 (o mwcc dá v0); laços por
+   índice (c = &f->cmds[i]), n = 0 depois da 1ª chamada, slot unsigned int no protótipo e o código do rubi lido por lhu */
 
 /* Draws the commands of the current line: shadow pass (flag 4) then the main pass; ruby glyphs
    come from rubi_font00.gim. Resets the command count. */
@@ -431,17 +429,19 @@ void font_layout_end(FontCtx *f, FontLayout *st)
     unsigned char sx = f->size_x;
     unsigned char sy = f->size_y;
     short *verts;
-    int n = 0;
+    int n;
     int i;
     int in_ruby;
     unsigned int color;
     FontCmd *c;
 
     verts = font_flush_quads(&f->dl, 0, 0);
+    n = 0;
     if (f->flags & 4) {
         in_ruby = 0;
         f->dl = dl_ambient_color(f->dl, st->color2);
-        for (i = 0, c = f->cmds; i < f->ncmds; i++, c++) {
+        for (i = 0; i < f->ncmds; i++) {
+            c = &f->cmds[i];
             switch ((unsigned short)c->kind) {
             case 1:
                 if (!in_ruby) {
@@ -481,13 +481,14 @@ void font_layout_end(FontCtx *f, FontLayout *st)
     color = st->color;
     in_ruby = 0;
     f->dl = dl_ambient_color(f->dl, color);
-    for (i = 0, c = f->cmds; i < f->ncmds; i++, c++) {
+    for (i = 0; i < f->ncmds; i++) {
+        c = &f->cmds[i];
         switch ((unsigned short)c->kind) {
         case 1:
             if (in_ruby) {
-                font_rubi_quad(c->a, c->b, c->c);
+                font_rubi_quad(c->a, c->b, (unsigned short)c->c);
             } else {
-                font_glyph_vertices(verts + n * 16, c->a, c->b, c->c);
+                font_glyph_vertices(&verts[n * 16], c->a, c->b, c->c);
                 n++;
             }
             break;

@@ -1,6 +1,4 @@
 // @range 0x0882923C-0x0882AD90
-// @asm 0x08829B10-0x08829C00
-// @asm 0x08829C20-0x08829DB4
 // @asm 0x0882A538-0x0882A99C
 // @data 0x088ED758-0x088ED770
 /* EFS effects: .efs files hold trees of commands (the EHF command handlers) under named roots.
@@ -387,23 +385,23 @@ int efs_heap_used(void)
     return used;
 }
 
-#ifdef NON_MATCHING /* register allocation of the search (id in $t0) */
 /* Replaces handlers of the command table: {id, fn} pairs up to id -1 or a null fn. */
 void efs_cmds_override(EfsCmdDef *d)
 {
     EfsMgr *e = &efs;
     efs_cmd_lookup(1);
     for (; d->id != -1 && d->fn != 0; d++) {
+        int id = d->id;
         int lo = -1;
         int hi = e->ncmds;
         int mid = (hi - 1) / 2;
 
         while (lo < mid && mid < hi) {
-            if (d->id == efs_cmd_table[mid].id) {
+            if (id == efs_cmd_table[mid].id) {
                 efs_cmd_table[mid].fn = d->fn;
                 break;
             }
-            if (d->id < efs_cmd_table[mid].id) {
+            if (id < efs_cmd_table[mid].id) {
                 hi = mid;
             } else {
                 lo = mid;
@@ -412,7 +410,6 @@ void efs_cmds_override(EfsCmdDef *d)
         }
     }
 }
-#endif
 
 void efs_set_kill(void)
 {
@@ -426,11 +423,12 @@ void efs_set_hold(void)
     e->hold = 1;
 }
 
-#ifdef NON_MATCHING /* register allocation (phase in $s1, the instance shares $s0 with the argument pointer) */
-/* 1: instance of the root named by arg0, with argument format arg1 and words from arg2. */
-int efs_cmd_inst(EfsInst *inst, EfsNode *node, EfsCmd *cmd, int phase)
+/* 1: instance of the root named by arg0, with argument format arg1 and words from arg2. The instance
+   comes in as void * and is copied to a local (the original gives it the last $s). */
+int efs_cmd_inst(void *in, EfsNode *node, EfsCmd *cmd, int phase)
 {
     EfsRef r;
+    EfsInst *inst = in;
 
     switch (phase) {
     case 0: {
@@ -480,7 +478,6 @@ int efs_cmd_inst(EfsInst *inst, EfsNode *node, EfsCmd *cmd, int phase)
         return 0;
     }
 }
-#endif
 
 /* 2: runs the commands of the existing instance of the root named by arg0. */
 int efs_cmd_ref(EfsInst **p, EfsNode *node, EfsCmd *cmd, int phase)

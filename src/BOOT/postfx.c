@@ -1,6 +1,4 @@
 // @range 0x0881FFB0-0x08820ED4
-// @asm 0x0882009C-0x088209FC
-// @asm 0x08820B1C-0x08820EBC
 /* Full-screen effects drawn from the frame buffer through two 256x128 work textures in VRAM
    (0x1F0000 and 0x1E0000): a shrink, a darkened copy and additive blends of offset copies
    (blur/glow), and a threshold pass through a CLUT that keeps only the bright half. The vertex
@@ -81,12 +79,16 @@ void postfx_blur_b(unsigned int *list)
     postfx_blur(list, 0x1F0000, 0x1E0000, 0x100, postfx_vtx_088EBC40, 2, postfx_vtx_088EBC60, 16, postfx_vtx_088EBD60, 64, postfx_vtx_088EC160, 8);
 }
 
-#ifdef NON_MATCHING /* the original keeps the vertex table addresses in $s registers */
+/* The vertex tables live in locals and the frame address is built as `frame = edram; frame += ...`
+   (the original keeps both in $s; edram + fb in one expression is folded into the use). */
 void postfx_glow_a(unsigned int *list)
 {
-    char *edram;
-    int fb;
+    unsigned short *v1e0;
+    unsigned short *v200;
+    unsigned short *v300;
+    unsigned short *v580;
     char *frame;
+    char *edram;
     unsigned int i;
 
     if (postfx_clut_a[1] == 0) {
@@ -98,13 +100,13 @@ void postfx_glow_a(unsigned int *list)
             postfx_clut_a[i] = 0;
         }
     }
+    v1e0 = postfx_vtx_088EC1E0;
+    v200 = postfx_vtx_088EC200;
+    v300 = postfx_vtx_088EC300;
+    v580 = postfx_vtx_088EC580;
     edram = sceGeEdramGetAddr();
-    if (!(*gfx_get_state() & 1)) {
-        fb = 0x88000;
-    } else {
-        fb = 0;
-    }
-    frame = edram + fb;
+    frame = edram;
+    frame += (*gfx_get_state() & 1) ? 0 : 0x88000;
     list = gfx_set_draw_target(list, 0x1F0000, 0xFFFFFFFE, 0x100, 0x80, 0);
     list = dl_disable(list, 1);
     list = dl_enable(list, 9);
@@ -116,14 +118,14 @@ void postfx_glow_a(unsigned int *list)
     list = dl_tex_wrap(list, 1, 1);
     list = dl_enable(list, 4);
     list = dl_blend_func(list, 0, 2, 10, 0xFFFFFFFF, 0);
-    list = dl_draw_array(list, 6, 0x800182, 0x10, 0, postfx_vtx_088EC200);
+    list = dl_draw_array(list, 6, 0x800182, 0x10, 0, v200);
     list = gfx_set_default_target(list);
     list = gfx_set_draw_target(list, 0x1E0000, 0xFFFFFFFE, 0x100, 0x80, 0);
     list = dl_disable(list, 3);
     list = dl_disable(list, 1);
     list = dl_disable(list, 9);
     list = dl_color(list, 0);
-    list = dl_draw_array(list, 6, 0x800182, 2, 0, postfx_vtx_088EC1E0);
+    list = dl_draw_array(list, 6, 0x800182, 2, 0, v1e0);
     list = dl_enable(list, 9);
     list = dl_color(list, 0xFFFFFFFF);
     list = dl_tex_mode(list, 0, 0, 0, 0);
@@ -135,7 +137,7 @@ void postfx_glow_a(unsigned int *list)
     list = dl_blend_func(list, 0, 10, 10, 0xFBFBFBFB, 0xFFFFFFFF);
     list = dl_draw_array(list, 6, 0x800182, 8, 0, postfx_vtx_088EC500);
     list = dl_blend_func(list, 2, 10, 10, 0x3F3F3F3F, 0xFFFFFFFF);
-    list = dl_draw_array(list, 6, 0x800182, 32, 0, postfx_vtx_088EC300);
+    list = dl_draw_array(list, 6, 0x800182, 32, 0, v300);
     list = gfx_set_default_target(list);
     list = dl_tex_sync(list);
     list = dl_tex_flush(list);
@@ -145,19 +147,20 @@ void postfx_glow_a(unsigned int *list)
     list = dl_clut_mode(list, 3, 5, 0x3F, 0);
     list = dl_clut_load(list, 0x20, postfx_clut_a);
     list = dl_blend_func(list, 2, 10, 10, 0xFFFFFFFF, 0xFFFFFFFF);
-    list = dl_draw_array(list, 6, 0x800182, 8, 0, postfx_vtx_088EC580);
-    list = dl_draw_array(list, 6, 0x800182, 8, 0, postfx_vtx_088EC580);
+    list = dl_draw_array(list, 6, 0x800182, 8, 0, v580);
+    list = dl_draw_array(list, 6, 0x800182, 8, 0, v580);
     list = dl_disable(list, 9);
     dl_disable(list, 4);
 }
-#endif
 
-#ifdef NON_MATCHING /* same as postfx_glow_a */
 void postfx_glow_b(unsigned int *list)
 {
-    char *edram;
-    int fb;
+    unsigned short *v600;
+    unsigned short *v620;
+    unsigned short *v720;
+    unsigned short *v9a0;
     char *frame;
+    char *edram;
     unsigned int i;
 
     if (postfx_clut_b[1] == 0) {
@@ -169,13 +172,13 @@ void postfx_glow_b(unsigned int *list)
             postfx_clut_b[i] = 0;
         }
     }
+    v600 = postfx_vtx_088EC600;
+    v620 = postfx_vtx_088EC620;
+    v720 = postfx_vtx_088EC720;
+    v9a0 = postfx_vtx_088EC9A0;
     edram = sceGeEdramGetAddr();
-    if (!(*gfx_get_state() & 1)) {
-        fb = 0x88000;
-    } else {
-        fb = 0;
-    }
-    frame = edram + fb;
+    frame = edram;
+    frame += (*gfx_get_state() & 1) ? 0 : 0x88000;
     list = gfx_set_draw_target(list, 0x1F0000, 0xFFFFFFFE, 0x100, 0x80, 0);
     list = dl_disable(list, 1);
     list = dl_enable(list, 9);
@@ -187,14 +190,14 @@ void postfx_glow_b(unsigned int *list)
     list = dl_tex_wrap(list, 1, 1);
     list = dl_enable(list, 4);
     list = dl_blend_func(list, 0, 2, 10, 0xFFFFFFFF, 0);
-    list = dl_draw_array(list, 6, 0x800182, 0x10, 0, postfx_vtx_088EC620);
+    list = dl_draw_array(list, 6, 0x800182, 0x10, 0, v620);
     list = gfx_set_default_target(list);
     list = gfx_set_draw_target(list, 0x1E0000, 0xFFFFFFFE, 0x100, 0x80, 0);
     list = dl_disable(list, 3);
     list = dl_disable(list, 1);
     list = dl_disable(list, 9);
     list = dl_color(list, 0);
-    list = dl_draw_array(list, 6, 0x800182, 2, 0, postfx_vtx_088EC600);
+    list = dl_draw_array(list, 6, 0x800182, 2, 0, v600);
     list = dl_enable(list, 9);
     list = dl_color(list, 0xFFFFFFFF);
     list = dl_tex_mode(list, 0, 0, 0, 0);
@@ -204,7 +207,7 @@ void postfx_glow_b(unsigned int *list)
     list = dl_tex_sync(list);
     list = dl_tex_flush(list);
     list = dl_blend_func(list, 0, 10, 10, 0x3F3F3F3F, 0xFFFFFFFF);
-    list = dl_draw_array(list, 6, 0x800182, 32, 0, postfx_vtx_088EC720);
+    list = dl_draw_array(list, 6, 0x800182, 32, 0, v720);
     list = dl_blend_func(list, 2, 10, 10, 0xFBFBFBFB, 0xFFFFFFFF);
     list = dl_draw_array(list, 6, 0x800182, 8, 0, postfx_vtx_088EC920);
     list = gfx_set_default_target(list);
@@ -216,12 +219,11 @@ void postfx_glow_b(unsigned int *list)
     list = dl_clut_mode(list, 3, 5, 0x3F, 0);
     list = dl_clut_load(list, 0x20, postfx_clut_b);
     list = dl_blend_func(list, 2, 10, 10, 0xFFFFFFFF, 0xFFFFFFFF);
-    list = dl_draw_array(list, 6, 0x800182, 8, 0, postfx_vtx_088EC9A0);
-    list = dl_draw_array(list, 6, 0x800182, 8, 0, postfx_vtx_088EC9A0);
+    list = dl_draw_array(list, 6, 0x800182, 8, 0, v9a0);
+    list = dl_draw_array(list, 6, 0x800182, 8, 0, v9a0);
     list = dl_disable(list, 9);
     dl_disable(list, 4);
 }
-#endif
 
 void postfx_blur_c(unsigned int *list)
 {
@@ -238,22 +240,16 @@ void postfx_blur_e(unsigned int *list)
     postfx_blur(list, 0x1F0000, 0x1E0000, 0x100, postfx_vtx_088ECF60, 2, postfx_vtx_088ECF80, 16, postfx_vtx_088ED080, 16, postfx_vtx_088ED180, 8);
 }
 
-#ifdef NON_MATCHING /* the original spills the frame texture address instead of a parameter */
 /* Shrinks the frame buffer into `src` (v1), darkens `dst` (v0), adds `src` into `dst` (v2) and
    draws `dst` back through the stencil (v3). */
 void postfx_blur(unsigned int *list, int src, int dst, int w, void *v0, int n0, void *v1, int n1, void *v2, int n2, void *v3, int n3)
 {
     char *edram;
-    int fb;
     char *frame;
 
     edram = sceGeEdramGetAddr();
-    if (!(*gfx_get_state() & 1)) {
-        fb = 0x88000;
-    } else {
-        fb = 0;
-    }
-    frame = edram + fb;
+    frame = edram;
+    frame += (*gfx_get_state() & 1) ? 0 : 0x88000;
     list = gfx_set_draw_target(list, src, 0xFFFFFFFE, w, 0x80, 0);
     list = dl_color(list, 0xFFFFFFFF);
     list = dl_disable(list, 1);
@@ -298,7 +294,6 @@ void postfx_blur(unsigned int *list, int src, int dst, int w, void *v0, int n0, 
     list = dl_disable(list, 9);
     dl_disable(list, 4);
 }
-#endif
 
 int postfx_get_param(void)
 {
