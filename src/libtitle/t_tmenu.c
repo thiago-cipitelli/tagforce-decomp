@@ -1,6 +1,6 @@
 // @range 0x08808D48-0x08809DC4
-// @asm 0x08808F00-0x088094DC
 // @asm 0x088095F8-0x08809C4C
+// @rodata 0x0882AC40-0x0882AC60
 // @data 0x0882E404-0x0882E414
 /* The title's panel menus (TMenu): a column of panels from the title sprites that fade in one after
    the other, a cursor moved with the pad (skipping disabled items), accept/cancel with a blink, and the
@@ -66,7 +66,6 @@ void tmenu_init(TMenu *m)
     m->draw = 0;
 }
 
-#ifdef NON_MATCHING /* forma quase igual; blocos de retorno e registradores dos laços de busca diferem */
 /* mode 1 = takes input, 2 = only animates; returns the accepted item, -2 on cancel, -1 while running,
    -3 when idle or finished */
 int tmenu_update(TMenu *m, int mode)
@@ -99,14 +98,13 @@ int tmenu_update(TMenu *m, int mode)
                 m->state++;
             break;
         case 3:
-            r = -1;
-            goto done;
+            break;
         }
         r = -1;
         break;
     case 2:
         if (mode != 1)
-            return -3;
+            goto dflt;
         m->state++;
         k = 0;
         found = 0;
@@ -155,6 +153,9 @@ int tmenu_update(TMenu *m, int mode)
             m->anim = m->cancel_anim;
         } else if ((trig & 0x10) || (dir & 0x10)) {
             if (m->cursor > 0) {
+                int i;
+                int k;
+                int found;
                 k = 1;
                 found = 0;
                 for (i = m->cursor - 1; i >= 0; i--, k++) {
@@ -187,6 +188,9 @@ int tmenu_update(TMenu *m, int mode)
             }
         } else if ((trig & 0x40) || (dir & 0x40)) {
             if (m->cursor < last) {
+                int i;
+                int k;
+                int found;
                 k = 1;
                 found = 0;
                 for (i = m->cursor + 1; i <= last; i++, k++) {
@@ -247,8 +251,7 @@ int tmenu_update(TMenu *m, int mode)
                 m->state = m->next;
             break;
         case 3:
-            r = -1;
-            goto done;
+            break;
         }
         r = -1;
         break;
@@ -261,13 +264,12 @@ int tmenu_update(TMenu *m, int mode)
         r = -3;
         break;
     default:
+    dflt:
         r = -3;
         break;
     }
-done:
     return r;
 }
-#endif
 
 /* goes back from the accepted state to input */
 void tmenu_back(TMenu *m)

@@ -3,7 +3,6 @@
 // @rodata 0x0882B2D4-0x0882B344
 // @asm 0x0881BA64-0x0881BB7C
 // @asm 0x0881C0E0-0x0881C474
-// @asm 0x0881CC08-0x0881CDAC
 // @asm 0x0881D94C-0x0881D994
 /* End of the free duel setup: the password lobby (cards picked with libselect_card), the duel info
    panel, the vs CPU entry, the option list drawing, the character pick (libcharalist) and the entry
@@ -415,17 +414,16 @@ void *tfd_duelinfo_update(void *list)
     return tbox_draw(list, b);
 }
 
-#ifdef NON_MATCHING /* alocação de $s nos dois laços */
 /* the empty card frames and the cards chosen */
 void *tfd_duelinfo_draw(void *list)
 {
     TDuelCfg *d = &title.duel;
     TFdPass *pa = &d->pass;
     TFdPassSel *ps = &d->psel;
-    int y;
     int j;
-    int x;
     int i;
+    int y;
+    int x;
     int loaded;
 
     y = 0x25;
@@ -439,9 +437,7 @@ void *tfd_duelinfo_draw(void *list)
         int y2;
         int j2;
         int n;
-        int i2;
         int x2;
-        unsigned short *c;
         int id;
 
         y2 = 0x25;
@@ -451,8 +447,9 @@ void *tfd_duelinfo_draw(void *list)
                 y2 = 0x95;
                 n = ps->n;
             }
-            for (i2 = 0, x2 = 0xA6, c = ps->card; i2 < n; i2++, c++, x2 += 0x3C) {
-                id = *c;
+            for (i = 0; i < n; i++) {
+                id = ps->card[i];
+                x2 = 0xA6 + i * 0x3C;
                 list = cip_get_image(list, pa->cip, id, inv_get_hi(id), &loaded);
                 list = dl_set_tex_filter(list, 1, 1);
                 list = draw_set_offsets(list, 0x40, 0x40, 0x36, 0x4D);
@@ -462,7 +459,6 @@ void *tfd_duelinfo_draw(void *list)
     }
     return list;
 }
-#endif
 
 /* all the images of the chosen cards are loaded */
 int tfd_duelinfo_check(void)
