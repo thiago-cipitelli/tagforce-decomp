@@ -513,6 +513,33 @@ Funções de vários KB com fuzzy baixo costumam ter a lógica certa e a forma e
 - **Índice em vez de ponteiro de laço**: `((DmgrResItem *)tab)[i].on` no lugar de `it++` muda a ordem dos incrementos
   das induções; e `x` calculado no uso (`0xDC + i * 0x3B`) em vez de variável do `for` troca os `$s` (`dmgr_res_draw_series`).
 
+### Rodada 9 (`dmgr_result.c` todo batendo menos `dmgr_res_summary_row`)
+
+- **Endereço de um byte de bitfields num registrador** (`addiu v0,s1,376` no atraso do teste e depois `sb x,0(v0)` /
+  `lbu x,0(v0)` em casos distantes): todos os acessos a esses campos passam por um ponteiro de visão
+  (`DmgrResMf *m = (DmgrResMf *)&r->pad179 - 1;`, recalculado junto com `r = dmgr_res`), inclusive os testes; o mwcc dobra
+  `m->campo` em `376(s1)` nos testes e materializa `v0` para os outros usos. Misturar `r->campo` e `m->campo` impede o
+  reaproveitamento do `lbu` do teste no RMW (`dmgr_result_update`).
+- **`dmgr_res` em `s1` através de chamadas**: um local `r = dmgr_res;` no topo, recarregado depois de `menu_update`, e
+  `switch (r->state)` / `r->sub` / `r->state = 7` onde o original usa `s1`; o resto com `dmgr_res->` (relido).
+- **Bitfield gravado com o literal 0** sai `andi x,zero,K` (como o local da rodada 8); só constantes não nulas dão `li`.
+- **`k = (prev + 4 - i) % 4` num `for (i = 1; i < 4; i++)`** com `int k` (resto com sinal, `bgez/andi/addiu -4`) e o
+  `tab + 4` içado: a forma das buscas de página anterior/seguinte de `dmgr_res_input`/`dmgr_res_draw_footer`.
+- **Indução `i * 2` acima de um contador** (`s2` para o deslocamento, `s1` para `partners`, `s0` para `i`): o mwcc cria a
+  indução reduzida depois de todas as variáveis, então ela fica abaixo; só um deslocamento explícito declarado antes
+  (`int off; int partners; int c;` num bloco, `off += 2`) e o laço guardado (`c = 0; if (c < n) { off = 0; do {...}
+  while (c < n); }`, para o `off = 0` sair depois do `blez`) reproduziu (`dmgr_result_init`).
+- **Gêmeas entre módulos**: `dmgr_res_draw_scrollbar` é `tlist_draw_scrollbar` (libtutoriallist); portar a forma (track
+  reaproveitado como deslocamento, `h - 2 - len` recalculado, `period_up`/`period_down`, `len + (y + track - 3)`) bateu
+  de primeira, depois de ordens de declaração e reescritas locais não mudarem nada.
+- **`andi a0,v0,0xff` antes de `font_set_size`** = `font_measure_wtext` devolve `int` (o protótipo local dizia `unsigned char`).
+- **`dmgr_jk_pick` (janken, 25 palavras, sem solução)**: no `case 2` o original não usa `v0` depois de `lb v1,2(v0)` até o
+  fim do laço (todos os temporários deslocados um registrador). O mesmo efeito aparece no `case 3` (que bate): depois de um
+  `peer_get` o mwcc evita `v0` no resto do laço, mas quando `peer` é lido no bloco de junção (`peer[2]`) o `lb` reaproveita
+  `v0`. Uma leitura de `peer` depois do `if` reproduz todos os registradores (prova de que `peer` vive até lá no original),
+  mas acrescenta instruções. Não mudaram: escopo/posição da declaração de `peer`, `peer[2]` num local, `switch (i)`,
+  `continue`, `do/while`, `goto`, `volatile`, função `inline`, atribuições encadeadas, leituras mortas de `peer`.
+
 ## Rodada 8 (telas de opções e brilho da loja)
 
 - **Funções gêmeas entre módulos com o mesmo tamanho**: `opt_*` de libduel_draw (`dd_duel_options.c`) e `tcfg_*` de

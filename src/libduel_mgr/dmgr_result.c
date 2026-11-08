@@ -1,10 +1,6 @@
 // @range 0x0880F9C0-0x08815888
 // @data 0x0881B9B0-0x0881BC88
-// @rodata 0x0881A124-0x0881A14C
-// @asm 0x0880F9C0-0x0880FEAC
-// @asm 0x0880FEAC-0x08810750
-// @asm 0x08810DCC-0x088111DC
-// @asm 0x08811C98-0x08812124
+// @rodata 0x0881A0D0-0x0881A14C
 // @asm 0x08812A98-0x08812D74
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
    summary), the money paid out, the series score of a match and the continue / net wait dialogs. */
@@ -38,7 +34,7 @@ void font_set_size(unsigned char w, unsigned char h);
 int font_line_height(void);
 int font_wtext_lines(int w, void *text);
 int font_measure_text(void *text);
-unsigned char font_measure_wtext(int w, void *text);
+int font_measure_wtext(int w, void *text);
 void font_set_line_extra(int n);
 void font_text_set(void *list);
 unsigned int *font_text_clear(void);
@@ -134,18 +130,13 @@ char *dmgr_res_files[8] = {
 };
 unsigned short dmgr_res_pt[4] = { 'D', 'P', 0, 0 };
 
-#ifndef NON_MATCHING /* no original é o modelo do vetor local div de dmgr_result_init */
-unsigned short dmgr_res_div[4] = { 0, 5, 6, 8 };
-#endif
 
-#ifdef NON_MATCHING /* 22 palavras: com div[4] local (modelo em dmgr_res_div), o total somado num laço, switch dos parceiros e if (partners == 0) primeiro, o fluxo e a pilha batem; falta partners/total (s1/s2 no original, trocados aqui; ordem das declarações e do for não muda) */
 void dmgr_result_init(void)
 {
     void *heap = dd_heap_get();
     DmgrResTab *t;
     DmgrResItem *it;
     SaveExtra *ex;
-    int partners;
     int total;
     int pay;
     int i;
@@ -190,15 +181,28 @@ void dmgr_result_init(void)
         }
     }
     t->count = n;
+    {
+    /* contador c e deslocamento off próprios do laço, com off criado antes de partners: assim o mwcc dá
+       off/partners/c em s2/s1/s0 como o original (com extra[i] a indução sai abaixo de partners) */
+    int off;
+    int partners;
+    int c;
     partners = 0;
-    for (i = 0; i < partner_count_get(); i++) {
-        k = ((DmgrGameHdr *)game_state_get())->extra[i];
-        switch (k) {
-        case 1:
-        case 3:
-            partners++;
-        }
+    c = 0;
+    if (c < partner_count_get()) {
+        off = 0;
+        do {
+            k = *(unsigned short *)((char *)game_state_get() + 0x108 + off);
+            switch (k) {
+            case 1:
+            case 3:
+                partners++;
+            }
+            off += 2;
+            c++;
+        } while (c < partner_count_get());
     }
+
     {
     unsigned short div[4] = { 0, 5, 6, 8 };
     ex = sysstate2_get_ptr_51c();
@@ -255,10 +259,15 @@ void dmgr_result_init(void)
         dmgr_res->net = 1;
     }
     }
+    }
 }
-#endif
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
+typedef struct DmgrResMf {             /* DmgrRes +0x178 */
+    unsigned char menu_kind : 2;
+    unsigned char menu_done : 1;
+    unsigned char b178 : 5;
+} DmgrResMf;
+
 int dmgr_result_update(void)
 {
     DmgrRes *r;
@@ -266,14 +275,18 @@ int dmgr_result_update(void)
     int ret;
     int s;
     int ask;
+    DmgrResMf *m;
 
-    if (dmgr_res->menu_kind != 0) {
-        ret = menu_update(&dmgr_res->menu);
+    r = dmgr_res;
+    m = (DmgrResMf *)&r->pad179 - 1;
+    if (m->menu_kind != 0) {
+        ret = menu_update(&r->menu);
         r = dmgr_res;
-        switch (r->menu_kind) {
+        m = (DmgrResMf *)&r->pad179 - 1;
+        switch (m->menu_kind) {
         case 1:
             if (ret != -1) {
-                r->menu_kind = 0;
+                m->menu_kind = 0;
                 menu_reset(&dmgr_res->menu);
                 if (ret == 2) {
                     dmgr_res->menu_done = 1;
@@ -286,7 +299,7 @@ int dmgr_result_update(void)
                         }
                     }
                 }
-            } else if (sysvar_get_a98() != 0 && net_get_alive() < dmgr_res->n_peers) {
+            } else if (sysvar_get_a98() != 0 && dmgr_res->n_peers > net_get_alive()) {
                 dmgr_res_menu_open(3);
             }
             return 0;
@@ -302,18 +315,17 @@ int dmgr_result_update(void)
             return 0;
         case 3:
             if (ret != -1) {
-                r->menu_done = 0;
+                m->menu_done = 0;
                 dmgr_res->menu_kind = 0;
                 dmgr_res->net = 0;
                 menu_reset(&dmgr_res->menu);
-                return 0;
             }
             return 0;
         }
     }
-    switch (dmgr_res->state) {
+    switch (r->state) {
     case 0:
-        if (!dmgr_res->loading) {
+        if (!r->loading) {
             gfx_overlay_enable(0);
             dmgr_res_measure();
             fade_start(1, 0xFF000000, 0x10);
@@ -340,7 +352,7 @@ int dmgr_result_update(void)
         dmgr_res_slide();
         break;
     case 5:
-        switch (dmgr_res->sub) {
+        switch (r->sub) {
         case 0:
             dmgr_res_bg_anim(3);
             dmgr_res->sub++;
@@ -361,7 +373,9 @@ int dmgr_result_update(void)
             }
             break;
         case 3:
-            if (((DmgrGameHdr *)game_state_get())->kind2 == 2) {
+            if (((DmgrGameHdr *)game_state_get())->kind2 != 2) {
+                dmgr_res->state = 10;
+            } else {
                 if (dmgr_res_series() == 0) {
                     dmgr_res->bar = 4;
                     fade_start(1, 0xFF000000, 0x10);
@@ -382,15 +396,13 @@ int dmgr_result_update(void)
                     fade_start(1, 0xFF000000, 0x10);
                     dmgr_res->state = 6;
                 }
-            } else {
-                dmgr_res->state = 10;
             }
             dmgr_res->sub = 0;
             break;
         }
         break;
     case 6:
-        switch (dmgr_res->sub) {
+        switch (r->sub) {
         case 0:
             if (fade_is_done() != 0) {
                 dmgr_res_bg_anim(1);
@@ -415,7 +427,7 @@ int dmgr_result_update(void)
             }
             break;
         case 3:
-            dmgr_res->state = 7;
+            r->state = 7;
             dmgr_res->sub = 0;
             break;
         }
@@ -426,11 +438,15 @@ int dmgr_result_update(void)
             s = dmgr_res_series();
             ask = 0;
             if (s != 0) {
-                DmgrGameHdr *gs = (DmgrGameHdr *)game_state_get();
-                if (gs->rematch == 2) {
+                switch (((DmgrGameHdr *)game_state_get())->rematch) {
+                case 1:
+                    if (s != 1) {
+                        ask = 1;
+                    }
+                    break;
+                case 2:
                     ask = 1;
-                } else if (gs->rematch == 1 && s != 1) {
-                    ask = 1;
+                    break;
                 }
             }
             if (ask) {
@@ -444,12 +460,12 @@ int dmgr_result_update(void)
         }
         break;
     case 8:
-        switch (dmgr_res->sub) {
+        switch (r->sub) {
         case 0:
             dmgr_res_bg_anim(3);
             dmgr_res_result_anim(3);
             dmgr_res->sub++;
-            return 0;
+            break;
         case 1:
             if (dmgr_res_result_done() != 0) {
                 dmgr_res_result_anim(0);
@@ -465,8 +481,6 @@ int dmgr_result_update(void)
                 dmgr_res->sub = 0;
             }
             break;
-        default:
-            return 0;
         }
         break;
     case 9:
@@ -475,7 +489,7 @@ int dmgr_result_update(void)
         }
         break;
     case 10:
-        if (dmgr_res->menu_done) {
+        if (m->menu_done) {
             ret = 2;
         } else {
             ret = 1;
@@ -488,7 +502,6 @@ int dmgr_result_update(void)
     }
     return 0;
 }
-#endif
 
 void dmgr_result_draw(void)
 {
@@ -697,27 +710,29 @@ unsigned short dmgr_res_series(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 void dmgr_res_input(void)
 {
     PadState *pad = pad_get();
-    unsigned int prev = dmgr_res->tab;
+    unsigned short prev = dmgr_res->tab;
     DmgrResTab *t;
-    unsigned int k;
+    int k;
     int sum;
     int last;
     int ask;
     int i;
-    int j;
 
     if (pad->b.trig & region_pick_value(0)) {
         ask = 0;
         if (((DmgrGameHdr *)game_state_get())->kind2 != 2) {
-            DmgrGameHdr *gs = (DmgrGameHdr *)game_state_get();
-            if (gs->rematch == 2) {
+            switch (((DmgrGameHdr *)game_state_get())->rematch) {
+            case 1:
+                if (((DuelResults *)game_state2_get())->result != 1) {
+                    ask = 1;
+                }
+                break;
+            case 2:
                 ask = 1;
-            } else if (gs->rematch == 1 && ((DuelResults *)game_state2_get())->result != 1) {
-                ask = 1;
+                break;
             }
         }
         if (ask) {
@@ -731,17 +746,14 @@ void dmgr_res_input(void)
         return;
     }
     if (pad->b.rep & 0x180) {
-        for (i = 1, j = -1;; j = -i) {
-            k = (prev + 4 + j) % 4;
+        for (i = 1; i < 4; i++) {
+            k = (prev + 4 - i) % 4;
             if (k == 0) {
                 dmgr_res->tab = 0;
                 break;
             }
             if (dmgr_res->total[k - 1] > 0) {
                 dmgr_res->tab = k;
-                break;
-            }
-            if (++i > 3) {
                 break;
             }
         }
@@ -754,15 +766,14 @@ void dmgr_res_input(void)
             se_play(0x6212);
         }
     } else if (pad->b.rep & 0x220) {
-        k = prev;
         for (i = 1; i < 4; i++) {
-            k++;
-            if (k % 4 == 0) {
+            k = (prev + i) % 4;
+            if (k == 0) {
                 dmgr_res->tab = 0;
                 break;
             }
-            if (dmgr_res->total[k % 4 - 1] > 0) {
-                dmgr_res->tab = k % 4;
+            if (dmgr_res->total[k - 1] > 0) {
+                dmgr_res->tab = k;
                 break;
             }
         }
@@ -776,8 +787,11 @@ void dmgr_res_input(void)
         }
     } else if (pad->b.rep & 0x10) {
         k = dmgr_res->tab;
-        if (k != 0 && dmgr_res->tabs[k].scroll != 0) {
-            dmgr_res->tabs[k].scroll--;
+        if (k != 0) {
+            t = &dmgr_res->tabs[k];
+            if (t->scroll > 0) {
+                t->scroll--;
+            }
         }
     } else if (pad->b.rep & 0x40) {
         k = dmgr_res->tab;
@@ -787,11 +801,10 @@ void dmgr_res_input(void)
             last = 0;
             for (i = t->count - 1; i >= 0; i--) {
                 sum += t->lines[i];
-                last = i;
-                if (sum > 9) {
+                if (sum >= 10) {
+                    last = i;
                     break;
                 }
-                last = 0;
             }
             if (t->scroll < last) {
                 t->scroll++;
@@ -799,7 +812,6 @@ void dmgr_res_input(void)
         }
     }
 }
-#endif
 
 void dmgr_res_slide(void)
 {
@@ -1051,14 +1063,13 @@ unsigned int *(*dmgr_res_pages[4])(unsigned int *list, int x) = {
 };
 unsigned short dmgr_res_tab_text[4] = { 0xF6, 0xF7, 0xF8, 0xF9 };
 
-#ifdef NON_MATCHING /* função grande: alocação de registradores e ordem dos blocos diferentes */
 unsigned int *dmgr_res_draw_footer(unsigned int *list)
 {
     void *left = 0;
     void *right = 0;
     void *mid;
     void *g;
-    unsigned int k;
+    int k;
     int w;
     int tw;
     int i;
@@ -1073,15 +1084,12 @@ unsigned int *dmgr_res_draw_footer(unsigned int *list)
     list = dl_tex_func(list, 0, 1);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     switch (dmgr_res->state) {
-    case 0:
-    case 4:
-        return list;
     case 1:
     case 2:
     case 3:
     case 5:
-        for (i = 1, j = -1;; j = -i) {
-            k = (dmgr_res->tab + 4 + j) % 4;
+        for (i = 1; i < 4; i++) {
+            k = (dmgr_res->tab + 4 - i) % 4;
             if (k == 0) {
                 left = table_get_entry(dmgr_res_file(7), 0xF6);
                 break;
@@ -1090,22 +1098,19 @@ unsigned int *dmgr_res_draw_footer(unsigned int *list)
                 left = table_get_entry(dmgr_res_file(7), dmgr_res_tab_text[k]);
                 break;
             }
-            if (++i > 3) {
-                break;
-            }
         }
-        k = dmgr_res->tab;
         for (i = 1; i < 4; i++) {
-            k++;
-            if (k % 4 == 0) {
+            k = (dmgr_res->tab + i) % 4;
+            if (k == 0) {
                 right = table_get_entry(dmgr_res_file(7), 0xF6);
                 break;
             }
-            if (dmgr_res->total[k % 4 - 1] > 0) {
-                right = table_get_entry(dmgr_res_file(7), dmgr_res_tab_text[k % 4]);
+            if (dmgr_res->total[k - 1] > 0) {
+                right = table_get_entry(dmgr_res_file(7), dmgr_res_tab_text[k]);
                 break;
             }
         }
+
         mid = table_get_entry(dmgr_res_file(7), 0xFA);
         w = 0x78;
         break;
@@ -1120,6 +1125,8 @@ unsigned int *dmgr_res_draw_footer(unsigned int *list)
         }
         w = 0x1E0;
         break;
+    case 0:
+    case 4:
     default:
         return list;
     }
@@ -1140,7 +1147,11 @@ unsigned int *dmgr_res_draw_footer(unsigned int *list)
         font_set_size(0xE, 0xE);
     }
     list = font_text_clear();
-    if ((left != 0 || right != 0) && (g = dmgr_res_file(5)) != 0) {
+    if (left != 0 || right != 0) {
+        g = dmgr_res_file(5);
+        if (g == 0) {
+            return list;
+        }
         list = gim_set_texture(list, g);
         list = dl_ambient_color(list, 0xFFFFFFFF);
         list = dl_set_tex_filter(list, 0, 0);
@@ -1154,7 +1165,6 @@ unsigned int *dmgr_res_draw_footer(unsigned int *list)
     }
     return list;
 }
-#endif
 
 unsigned int *dmgr_res_draw_page(unsigned int *list)
 {
