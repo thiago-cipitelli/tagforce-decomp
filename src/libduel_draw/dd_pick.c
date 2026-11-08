@@ -1,5 +1,4 @@
 // @range 0x088299C8-0x0882A94C
-// @asm 0x08829BBC-0x08829E2C
 // @data 0x088769E0-0x088769F0
 /* Grid picker of the duel: a window listing the entries first..last in a grid; the player marks
    between min and max of them (the marked ones get a frame) and confirms with an OK button
@@ -105,7 +104,6 @@ void dd_pick_open_confirm(void)
     dd_pick_confirm_open(0, 0, 100, 21);
 }
 
-#ifdef NON_MATCHING /* alocação de registradores (forma igual) */
 unsigned int *dd_pick_draw(unsigned int *list, MenuWidget *w, int x, int y)
 {
     int first = dd_pick.cfg.first;
@@ -126,10 +124,13 @@ unsigned int *dd_pick_draw(unsigned int *list, MenuWidget *w, int x, int y)
     else
         sel = p->cur_x + p->cur_y * w->count;
     list = dd_pick_draw_title(list, x, y, p->grid_w, 20, sel >= 0 ? sel + first : -1);
-    n = last - first;
     ty = y + 20;
+    n = last - first;
     for (i = 0; i < n; i++) {
-        cx = x + (i % w->count) * w->item_w;
+        {
+            int col = i % w->count;
+            cx = x + col * w->item_w;
+        }
         cy = ty + w->item_h * (i / w->count);
         if (sel == i)
             list = menu_draw_cursor(list, w, cx, cy, p->cfg.cell_w - 1, p->cfg.cell_h - 1);
@@ -147,7 +148,6 @@ unsigned int *dd_pick_draw(unsigned int *list, MenuWidget *w, int x, int y)
     }
     return list;
 }
-#endif
 
 void dd_pick_update(MenuWidget *w)
 {

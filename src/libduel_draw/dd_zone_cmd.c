@@ -24,19 +24,19 @@ void dd_chara_busy_set(void);
 int mtx_get_mode(void);
 void mat4_identity(DdMat4 *m);
 
-#ifdef NON_MATCHING /* empacotamento dos campos de bits diferente; não insistido */
+#ifdef NON_MATCHING /* 57 palavras: side antes da chamada e zone/index depois batem na ordem; faltam os $s (side s1, zone s2, index s0 no original) e os andi 0xff/0xffff que o original repete em zone e index */
 void zone_cmd(PopupLoc loc, ZoneArg arg, int value)
 {
     int side = loc.side;
-    int zone = loc.zone;
-    int index = loc.index;
+    int pl = dv_side_to_player(side) ? 0x8000 : 0;
+    unsigned short index = loc.index;
+    unsigned char zone = loc.zone;
     char *card;
 
-    dv_cmd((dv_side_to_player(side) ? 0x8000 : 0) | 0x44, zone | (index & 0xFF) << 8, value,
-           arg.huge * 10 + arg.big);
+    dv_cmd(pl | 0x44, zone | (index & 0xFF) << 8, value, arg.huge * 10 + arg.big);
     card = dd_cobj_at(side, zone, index);
     if (card == 0) {
-        dd_cobj_spawn(*(short *)&arg, value, dv_slot_uid(side, zone));
+        dd_cobj_spawn(*(short *)&arg, value, (unsigned short)dv_slot_uid(side, zone));
         card = dd_cobj_at(side, zone, index);
         if (card == 0)
             return;

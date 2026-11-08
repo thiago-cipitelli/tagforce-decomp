@@ -1,9 +1,7 @@
 // @range 0x08819C04-0x0881CA2C
-// @asm 0x0881A504-0x0881ABD8
 // @asm 0x0881ABD8-0x0881AFC0
-// @asm 0x0881BE90-0x0881BF1C
-// @asm 0x0881BF1C-0x0881BFA8
 // @data 0x08875E60-0x08875F84
+// @rodata 0x0887015C-0x08870180
 /* The card list window of prompts (choose N cards out of a list: deck search, graveyard, ...):
    list of card rows (picture, name, attribute, ATK/DEF, level), picks with min/max, a sort window
    (key and direction), a filter window by card kind and an options window (card info, sort,
@@ -414,126 +412,130 @@ int dd_sel_icons_of(int *out, int attr);
 unsigned int *dd_sel_draw_icon(unsigned int *list, int x, int y, int icon);
 
 /* a row of the list: picture, pick mark, name, frame, ATK/DEF and level */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void *dd_sel_draw_item(void *dl, int i, int x, int y)
 {
     DdSel *s = &dd_sel;
-    unsigned int *list = dl;
+    unsigned int *list;
     int id = s->order[(unsigned short)i];
     int f = dv_0884C8E4(id);
     int uid;
-    float r[12] = { 0 };
-    int icons[2];
-    unsigned short num[8];
-    void *gim;
-    int k, n, atk, def, lv;
-    unsigned short *name;
 
-    list = dl_ambient_color(list, 0xFFFFFFFF);
-    list = dl_set_tex_filter(list, 0, 1);
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
+    list = dl_set_tex_filter(dl, 0, 1);
     uid = duel_0884C830(id);
     if (uid <= 0)
         uid = -1;
-    r[0] = (float)(x + 4);
-    r[9] = r[0];
-    r[1] = (float)(y + 0x14);
-    r[3] = (float)(x + 0x2C);
-    r[6] = r[3];
-    r[4] = (float)(y + 0x15);
-    r[7] = (float)(y + 0x93);
-    r[10] = r[7];
-    list = dd_wline_draw(list, 0, 4, r, 1);
-    gim = dd_gim_get(0x40005);
-    if (gim != 0)
-        list = gim_set_texture(list, gim);
-    list = draw_set_offsets(dl_ambient_color(list, 0xFFFFFFFF), 0x25, 0xF, 0x25, 0xF);
-    list = draw_sprite(list, x + 5, y + 0x19, 0, (f & 0x1000) ? 0x58 : 0x30, 0x10, 0, 0);
-    n = dd_sel_icons_of(icons, f);
-    if (n == 1) {
-        list = dd_sel_draw_icon(list, x + 0x10, y + 0x19, icons[0]);
-    } else if (n == 2) {
-        list = dd_sel_draw_icon(list, x + 8, y + 0x19, icons[0]);
-        list = dd_sel_draw_icon(list, x + 0x18, y + 0x19, icons[1]);
-    }
-    list = dd_card_texture(list, uid);
-    list = draw_set_offsets(list, 0x40, 0x40, 0x20, 0x2E);
-    list = draw_sprite(list, x + 8, y + 0x2D, 0, 0, 0, 0, 0);
-    k = -1;
-    for (n = 0; n < s->n_picked; n++) {
-        if (s->picked[n] == s->order[(unsigned short)i]) {
-            k = n;
-            break;
-        }
-    }
-    if (k >= 0) {
+    {
+        float r[12] = { 0 };
+        int icons[4];
+        unsigned short num[8];
+        void *gim;
+        int k, n, atk, def, lv;
+        unsigned short *name;
+        r[0] = (float)(x + 4);
+        r[9] = r[0];
+        r[1] = (float)(y + 0x14);
+        r[3] = (float)(x + 0x2C);
+        r[6] = r[3];
+        r[4] = (float)(y + 0x15);
+        r[7] = (float)(y + 0x93);
+        r[10] = r[7];
+        list = dd_wline_draw(list, 0, 4, r, 1);
         gim = dd_gim_get(0x40005);
         if (gim != 0)
             list = gim_set_texture(list, gim);
-        list = dl_tex_func(list, 0, 1);
-        list = dl_enable(list, 4);
-        list = dl_blend_func(list, 0, 2, 3, 0, 0);
-        list = draw_set_offsets(list, 0x17, 0xE, 0x17, 0xE);
-        list = draw_sprite(list, x + 0xD, y + 0x27, 0, 0x35, 0x69, 0, 0);
-        if (s->max == 1) {
-            list = func_088212C4(list, x + 0x12, y + 0x27, 0xB);
-        } else {
-            wtext_from_int(k + 1, num);
+        list = draw_set_offsets(dl_ambient_color(list, 0xFFFFFFFF), 0x25, 0xF, 0x25, 0xF);
+        list = draw_sprite(list, x + 5, y + 0x19, 0, (f & 0x1000) ? 0x58 : 0x30, 0x10, 0, 0);
+        n = dd_sel_icons_of(icons, f);
+        if (n == 1) {
+            list = dd_sel_draw_icon(list, x + 0x10, y + 0x19, icons[0]);
+        } else if (n == 2) {
+            list = dd_sel_draw_icon(list, x + 8, y + 0x19, icons[0]);
+            list = dd_sel_draw_icon(list, x + 0x18, y + 0x19, icons[1]);
+        }
+        list = dd_card_texture(list, uid);
+        list = draw_set_offsets(list, 0x40, 0x40, 0x20, 0x2E);
+        list = draw_sprite(list, x + 8, y + 0x2D, 0, 0, 0, 0, 0);
+        k = -1;
+        {
+            int j;
+
+            for (j = 0; j < s->n_picked; j++) {
+                if (s->picked[j] == s->order[(unsigned short)i]) {
+                    k = j;
+                    break;
+                }
+            }
+        }
+        if (k >= 0) {
+            gim = dd_gim_get(0x40005);
+            if (gim != 0)
+                list = gim_set_texture(list, gim);
+            list = dl_tex_func(list, 0, 1);
+            list = dl_enable(list, 4);
+            list = dl_blend_func(list, 0, 2, 3, 0, 0);
+            list = draw_set_offsets(list, 0x17, 0xE, 0x17, 0xE);
+            list = draw_sprite(list, x + 0xD, y + 0x27, 0, 0x35, 0x69, 0, 0);
+            if (s->max == 1) {
+                list = func_088212C4(list, x + 0x12, y + 0x27, 0xB);
+            } else {
+                wtext_from_int(k + 1, num);
+                font_text_set(list);
+                font_set_size(0xC, 0xC);
+                font_set_color(0xFF000000);
+                font_draw_text((x + (0x31 - (font_measure_text(num) >> 6)) / 2) << 6, (y + 0x29) << 6, 0xA00, num);
+                list = font_text_clear();
+            }
+        }
+        if (uid > 0) {
+            name = card_get_name(uid);
             font_text_set(list);
             font_set_size(0xC, 0xC);
             font_set_color(0xFF000000);
-            font_draw_text((x + (0x31 - (font_measure_text(num) >> 6)) / 2) << 6, (y + 0x29) << 6, 0xA00, num);
+            font_draw_text((x + 4) << 6, (y + 0x5F) << 6, 0xA00, name);
             list = font_text_clear();
-        }
-    }
-    if (uid > 0) {
-        name = card_get_name(uid);
-        font_text_set(list);
-        font_set_size(0xC, 0xC);
-        font_set_color(0xFF000000);
-        font_draw_text((x + 4) << 6, (y + 0x5F) << 6, 0xA00, name);
-        list = font_text_clear();
-        switch (card_get_attribute_icon(uid)) {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-            gim = dd_gim_get(0x40006);
-            if (gim != 0)
-                list = gim_set_texture(list, gim);
-            list = draw_set_offsets(dl_ambient_color(list, 0xFFFFFFFF), 8, 8, 8, 8);
-            list = draw_sprite(list, x + 6, y + 0x6E, 0, 0, 0x53, 0, 0);
-            list = draw_sprite(list, x + 6, y + 0x7B, 0, 9, 0x53, 0, 0);
-            atk = card_get_atk_q(uid);
-            def = card_get_def_q(uid);
-            lv = card_get_level(uid);
-            if (atk == 0xFFFF)
-                atk = -1;
-            if (def == 0xFFFF)
-                def = -1;
-            list = dd_sel_draw_number(list, x + 0xF, y + 0x6C, atk);
-            list = dd_sel_draw_number(list, x + 0xF, y + 0x79, def);
-            list = cardlist_draw_stars(dl_ambient_color(list, 0xFFFFFFFF), x + 6, y + 0x86, lv, 0xFF000000);
-            list = dl_ambient_color(list, 0xFFFFFFFF);
-            break;
-        case 7:
-        case 8:
-            list = dl_ambient_color(list, 0xFFFFFFFF);
-            if (card_get_prop5_hi(uid) != 0) {
-                list = card_draw_frame_special(list, x + 6, y + 0x6C, card_get_attribute(uid));
-                list = cardlist_draw_icon(list, x + 0x19, y + 0x6C, card_get_attribute(uid), card_get_prop5_hi(uid));
-            } else {
-                list = card_draw_frame_special(list, x + 0x10, y + 0x6C, card_get_attribute(uid));
+            switch (card_get_attribute_icon(uid)) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+                gim = dd_gim_get(0x40006);
+                if (gim != 0)
+                    list = gim_set_texture(list, gim);
+                list = draw_set_offsets(dl_ambient_color(list, 0xFFFFFFFF), 8, 8, 8, 8);
+                list = draw_sprite(list, x + 6, y + 0x6E, 0, 0, 0x53, 0, 0);
+                list = draw_sprite(list, x + 6, y + 0x7B, 0, 9, 0x53, 0, 0);
+                atk = card_get_atk_q(uid);
+                def = card_get_def_q(uid);
+                lv = card_get_level(uid);
+                if (atk == 0xFFFF)
+                    atk = -1;
+                if (def == 0xFFFF)
+                    def = -1;
+                list = dd_sel_draw_number(list, x + 0xF, y + 0x6C, atk);
+                list = dd_sel_draw_number(list, x + 0xF, y + 0x79, def);
+                list = cardlist_draw_stars(dl_ambient_color(list, 0xFFFFFFFF), x + 6, y + 0x86, lv, 0xFF000000);
+                list = dl_ambient_color(list, 0xFFFFFFFF);
+                break;
+            case 7:
+            case 8:
+                list = dl_ambient_color(list, 0xFFFFFFFF);
+                if (card_get_prop5_hi(uid) == 0) {
+                    list = card_draw_frame_special(list, x + 0x10, y + 0x6C, card_get_attribute(uid));
+                } else {
+                    list = card_draw_frame_special(list, x + 6, y + 0x6C, card_get_attribute(uid));
+                    list = cardlist_draw_icon(list, x + 0x19, y + 0x6C, card_get_attribute(uid), card_get_prop5_hi(uid));
+                }
+                break;
             }
-            break;
         }
+        if (s->done == 0 && s->mode == 2 && (unsigned short)i == s->list.scroll + s->list.cursor) {
+            s->sub.def.x = x + (0x31 - s->sub.def.w) / 2;
+            s->sub.def.y = y + 0x32 - s->sub.def.h;
+        }
+        return list;
     }
-    if (s->done == 0 && s->mode == 2 && (unsigned short)i == s->list.scroll + s->list.cursor) {
-        s->sub.def.x = x + (0x31 - s->sub.def.w) / 2;
-        s->sub.def.y = y + 0x32 - s->sub.def.h;
-    }
-    return list;
 }
-#endif
 
 /* sort and filter bar, scroll bar and the OK button */
 #ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
@@ -952,62 +954,51 @@ int dd_sel_key_of(int i, int id, int key)
     return 0xFFFF7FFF;
 }
 
-#ifdef NON_MATCHING /* 11 palavras: último teste sai como beqz/nop; b; li 1 com move v0,zero separado; returns diretos, goto, switch e r=0 inicial testados */
 int dd_sel_cmp_down(const void *pa, const void *pb)
 {
     const DdSelKey *a = pa;
     const DdSelKey *b = pb;
-    int r;
 
     if (a->key == b->key) {
         if (a->idx < b->idx)
-            r = -1;
-        else if (b->idx < a->idx)
-            r = 1;
-        else
-            r = 0;
-    } else if (a->key == 0xFFFF7FFF)
-        r = 1;
-    else if (b->key == 0xFFFF7FFF)
-        r = -1;
-    else if (b->key > a->key)
-        r = -1;
-    else if (a->key > b->key)
-        r = 1;
-    else {
-        r = 0;
+            return -1;
+        if (b->idx < a->idx)
+            return 1;
+    } else {
+        if (a->key == 0xFFFF7FFF)
+            return 1;
+        if (b->key == 0xFFFF7FFF)
+            return -1;
+        if (b->key > a->key)
+            return -1;
+        if (a->key > b->key)
+            return 1;
     }
-    return r;
+    return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* só o fim difere: o original faz beqz/nop; b; li; move no último teste (11 palavras) */
 int dd_sel_cmp_up(const void *pa, const void *pb)
 {
     const DdSelKey *a = pa;
     const DdSelKey *b = pb;
-    int r;
 
     if (a->key == b->key) {
         if (a->idx > b->idx)
-            r = -1;
-        else if (b->idx > a->idx)
-            r = 1;
-        else
-            r = 0;
-    } else if (a->key == 0xFFFF7FFF)
-        r = 1;
-    else if (b->key == 0xFFFF7FFF)
-        r = -1;
-    else if (b->key > a->key)
-        r = 1;
-    else if (a->key > b->key)
-        r = -1;
-    else
-        r = 0;
-    return r;
+            return -1;
+        if (b->idx > a->idx)
+            return 1;
+    } else {
+        if (a->key == 0xFFFF7FFF)
+            return 1;
+        if (b->key == 0xFFFF7FFF)
+            return -1;
+        if (b->key > a->key)
+            return 1;
+        if (a->key > b->key)
+            return -1;
+    }
+    return 0;
 }
-#endif
 
 int dd_sel_can_accept(void)
 {

@@ -1,7 +1,5 @@
 // @range 0x0880C48C-0x0880D31C
-// @asm 0x0880C48C-0x0880C640
 // @asm 0x0880CB44-0x0880CBF4
-// @asm 0x0880CC64-0x0880CD38
 // @asm 0x0880CE60-0x0880D028
 // @asm 0x0880D028-0x0880D0B4
 /* Card objects, continued: fusion gathering (the cards fly to the middle), state bits and the
@@ -24,7 +22,6 @@ char *dv_special(void);
 unsigned int cfg_get_bits_1_3_4(void);
 void dd_cobjs_dirty(void);
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
 /* gathers the monsters of `mask` (zones 0..4 of player p) in the middle of them, lifted */
 void dd_cobj_gather(int p, unsigned int mask)
 {
@@ -32,32 +29,37 @@ void dd_cobj_gather(int p, unsigned int mask)
     DdCobj *last = 0;
     int z;
     DdCobj *o;
-    DdXyzw rot;
     DdXyzw mid;
+    DdXyzw rot;
 
     for (z = 0; z < 5; z++) {
-        if ((mask & 1 << z) && (o = dd_cobj_at(p, z, 0)) != 0) {
-            o->uid = dv_slot_uid(p, z);
-            o->card = dv_list_id(o->uid);
-            last = o;
-            if (first == 0)
-                first = o;
+        if (mask & 1 << z) {
+            o = dd_cobj_at(p, z, 0);
+            if (o != 0) {
+                o->uid = dv_slot_uid(p, z);
+                o->card = dv_list_id(o->uid);
+                if (first == 0)
+                    first = o;
+                last = o;
+            }
         }
     }
-    if (first == 0 || last == 0)
-        return;
-    rot = first->rot;
-    vec3_lerp_w(&mid, &first->pos, &last->pos, 0.5f);
-    mid.y += 30.0f;
-    for (z = 0; z < 5; z++) {
-        if ((mask & 1 << z) && (o = dd_cobj_at(p, z, 0)) != 0) {
-            dd_cobj_move(dd_move_time() * 2.0f, o, &mid, &rot, 1);
-            o->a5 = 1;
-            dd_cobj_goto(o->loc, o->loc, -1, 0);
+    if (first != 0 && last != 0) {
+        rot = first->rot;
+        vec3_lerp_w(&mid, &first->pos, &last->pos, 0.5f);
+        mid.y += 30.0f;
+        for (z = 0; z < 5; z++) {
+            if (mask & 1 << z) {
+                o = dd_cobj_at(p, z, 0);
+                if (o != 0) {
+                    dd_cobj_move(dd_move_time() * 2.0f, o, &mid, &rot, 1);
+                    o->a5 = 1;
+                    dd_cobj_goto(o->loc, o->loc, -1, 0);
+                }
+            }
         }
     }
 }
-#endif
 
 void dd_cobj_end_a2(DdCobj *o)
 {
@@ -206,7 +208,6 @@ float dd_stack_y(int n)
     return (float)n * 45.822002f / 120.0f + 0.204f;
 }
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
 /* 1 when no card object moves */
 int dd_cobjs_idle(void)
 {
@@ -219,20 +220,16 @@ int dd_cobjs_idle(void)
         for (z = 0; z < 15; z++) {
             head = dd_zone_list(p, z);
             o = head->next;
-            if (o != head && o != head) {
-                do {
-                    if (o->t < o->dur)
+            if (o != head) {
+                for (; o != head; o = o->next) {
+                    if (o->t < o->dur || o->a7 || o->b0 || o->a6)
                         return 0;
-                    if (o->a7 || o->b0 || o->a6)
-                        return 0;
-                    o = o->next;
-                } while (o != head);
+                }
             }
         }
     }
     return 1;
 }
-#endif
 
 /* 1 when no card object is busy with an effect */
 int dd_cobjs_free(void)

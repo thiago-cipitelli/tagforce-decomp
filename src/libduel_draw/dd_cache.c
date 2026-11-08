@@ -1,7 +1,6 @@
 // @range 0x08804788-0x08805BF4
 // @rodata 0x0886FD90-0x0886FE34
 // @data 0x08874410-0x08874A2C
-// @asm 0x088051B4-0x0880529C
 /* Data loaded for the duel: the card image cache (CIP, medium and large), the field backgrounds
    (duel/bg/fmagicNNNN.ehp) and the character cut-ins with their faces and voices; the binary
    search shared by the resource tables. */
@@ -328,7 +327,6 @@ int dd_res_find(unsigned int id, void *table, int n, int size)
     return -1;
 }
 
-#ifdef NON_MATCHING /* o original carrega e->id antes de c->cip_m para a chamada */
 /* 1 when the medium image of cache entry i is loaded */
 int dd_card_ready_m(int i, int unused)
 {
@@ -341,11 +339,9 @@ int dd_card_ready_m(int i, int unused)
     if (e->id == 0)
         return 1;
     hi = inv_get_hi(e->id);
-    return cip_get_image(list, c->cip_m, e->id, hi, 0) != list;
+    return cip_get_image(list, c->cip_m, (unsigned int)e->id, hi, 0) != list;
 }
-#endif
 
-#ifdef NON_MATCHING /* o original carrega e->id antes de c->cip_h para a chamada */
 /* 1 when the large image of cache entry i is loaded */
 int dd_card_ready_h(int i, int unused)
 {
@@ -358,9 +354,8 @@ int dd_card_ready_h(int i, int unused)
     if (e->id == 0)
         return 1;
     hi = inv_get_hi(e->id);
-    return cip_get_image(list, c->cip_h, e->id, hi, 0) != list;
+    return cip_get_image(list, c->cip_h, (unsigned int)e->id, hi, 0) != list;
 }
-#endif
 
 /* read callback of a background; retries with fmagic0000 when the file is too big */
 int dd_bg_loaded(int slot, int size)

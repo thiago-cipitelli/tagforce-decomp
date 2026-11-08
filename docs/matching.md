@@ -788,3 +788,33 @@ palavras, os dois em sentidos opostos); `move a0,v0; jal; nop` antes de `fld_voi
 instrução, desloca o resto); constante 0.5 em `v1` em vez de `v0` (`fld_scene_input`); cópias mortas `li s4,18`/`b; nop`
 de `fbm_draw_marks` (família "cópia × movida"); `fld_dir_vec` (`lui` de `field_dirs` antes do `sw ra`, mas a tabela é
 usada por duas funções, então não é `static` de função).
+## Rodada 9 (libduel_draw fora de `dd_fx*`)
+
+| No asm original | Fonte |
+|---|---|
+| local preenchido depois de várias chamadas (laço `sb zero` no meio da função), mas no **topo** da pilha | abrir um bloco no ponto da inicialização com esse local declarado **primeiro** e todos os outros locais e o resto da função dentro dele (`dd_coin_tex`/`dd_die_tex`, `dd_sel_draw_item`); o mwcc não aceita declaração no meio do bloco |
+| `mul.s fd, resultado, const` com a constante recarregada a cada uso | inline `static inline float dd_dice_mul(float x, float k) { return x * k; }` chamado com o literal (local `k` é propagado) |
+| `lb` (não `lbu`) relendo um byte de bitfield de 1 bit | o tipo base do bitfield é `signed char` |
+| `and; sltu v0,zero,v0; bnezl v0` (o bit materializado como 0/1 antes do teste) | `if (((*flags & bit) ? 1 : 0) == 0 && ...)` (`dd_cue_*`) |
+| campo carregado antes do argumento anterior (global) na chamada | cast `(unsigned int)campo` no argumento (`dd_card_ready_m/h`, `dd_ev_attack_done`), a regra do tipo do parâmetro da rodada 7 |
+| `beqzl` com a cópia do `move v0,zero` e o último teste `beqz; nop; b; li 1` com o `move v0,zero` separado | `return` direto em cada caso e um `return 0;` comum no fim, com os testes de igualdade dentro de `if (a == b) { ... } else { ... }` (`dd_sel_cmp_*`) |
+| flag guardada num `$s` e gravada sempre (`move s0,zero` no delay, `li s0,1`, `sw s0`) | `hl = 0; if (A == 0 \|\| B == 0) { } else { hl = 1; } g = hl;` (`&&` ou `if` aninhado viram `sltu`); era bug de lógica: o draft só gravava o 1 (`dd_board_piles`) |
+| `beql first,head` para o `switch` e logo outro `beq first,head` para pular o laço | `if (first != head) { for (o = first; o != head; ...) }` |
+| bloco "card = 0" compartilhado entre dois testes distantes | `if (!(t < dur)) { if (b5) break; if (A && B) break; } card = 0; break;` |
+| locais de pilha em outra ordem | declarar na ordem de cima para baixo do original (`float sc[3] = { s, s, s };` com a inicialização antes do teste `n <= 0` em `dd_board_pile`; `up`, `target`, `fwd` em `dd_camera_from_anim`); 8 bytes de folga acima de um vetor `char opts[0x60]` = `__attribute__((aligned(16)))` nele (`lpc_panel_2d`) |
+| ponteiro de laço com o deslocamento do campo no `lw` (`lw s0,32(s1)`, `addiu s1,s1,4`) | o ponteiro anda pela struct: `DdTasks *g = &dd_tasks; ... g = (DdTasks *)((DdCard **)g + 1)` e `g->glow[0]` (`dd_glow_all_off`, `dd_mark_all_off`) |
+| `move s1,v0` do 1º resultado e o 2º noutro `$s` | duas variáveis: `dl = f(dl, ...); list = g(dl, ...);` (`dd_sel_draw_item`) |
+| `c->cur` carregado antes de `c->speed` num `1 - MIN(MAX(cur, 0), speed) / speed` | o valor limitado num local de bloco antes das conversões: `{ int v = MIN(MAX(c->cur, 0), c->speed); k = 1.0f - (float)v / (float)c->speed; }` (`lpc_panel_2d`) |
+| `near < 1.0f ? 1.0f : near` com o resultado noutro registrador float | ternário em vez de `if (near < 1.0f) near = 1.0f;` |
+| `c.lt.s; bc1tl → epílogo; move v0,zero` seguido dos testes de bits com `bnez` para um `return 0` comum (o C deu o float materializado em 0/1) | um só `if (o->t < o->dur \|\| o->a7 \|\| o->b0 \|\| o->a6) return 0;` (`dd_cobjs_idle`) |
+| `move s5,v0; beqz s5` (atribuição separada do teste) e `beqzl first → epílogo; lw ra` / `beqz last; nop` | `o = f(); if (o != 0) {...}` em vez de `(o = f()) != 0` no `&&`; resto dentro de `if (first != 0 && last != 0) {...}`; `if (first == 0) first = o;` antes de `last = o;` (`dd_cobj_gather`) |
+
+Famílias sem forma nesta rodada:
+- **Laço interno com o teste no topo mantido** (`slti at,z,16; beqzl` antes do corpo, o externo rotacionado sem
+  teste de entrada, e o índice interno sem redução de força): `dd_cobjs_update`, `dd_cobjs_busy`,
+  `dd_cobjs_counters`, `dd_counter_tick`, `dd_zone_anim_update`, `dd_zone_anim_busy`, `func_08822520`, `func_08822B90`, `func_08822C2C`. O mwcc 219 sempre elimina
+  o teste de entrada do laço interno (`z = 0` conhecido); `while`, `do`/`if`, `for (;;)`+`break`, `z = 0` no
+  incremento do externo, inline, tipos de `z` e pragmas `opt_*` testados. Provável diferença de build do compilador.
+- **`bnez v, corpo; nop; b epílogo; nop`** no 2º teste de `if (!a && !b) return;` (`dd_voice_enable`,
+  `dd_info_hide`): o 219 inverte para `beqz v, epílogo`; `goto`, `do { break; } while (0)`, `switch` e `if`
+  aninhados testados.

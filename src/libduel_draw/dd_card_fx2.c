@@ -1,5 +1,4 @@
 // @range 0x0881F0A8-0x08820138
-// @asm 0x0881F704-0x0881F78C
 // @data 0x088760B0-0x088760D0
 /* Effects played on field cards: summon/set beams, the target marks of graves and decks (shared by
    all their cards), damage/recovery and ATK/DEF change counters, destruction and the short lock of
@@ -281,24 +280,23 @@ void dd_mark_off(DdCard *c)
     }
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; alocação, quadro e ordem dos blocos diferentes */
+/* g walks dd_tasks one card pointer at a time, so g->glow[0] is dd_tasks.glow[i] */
 void dd_mark_all_off(void)
 {
-    DdTasks *s = &dd_tasks;
     int i;
+    DdTasks *g = &dd_tasks;
     DdCard *c;
 
-    for (i = 0; i < 512; i++) {
-        c = s->glow[i];
+    for (i = 0; i < 512; i++, g = (DdTasks *)((DdCard **)g + 1)) {
+        c = g->glow[0];
         if (c != 0 && c->mark != -1) {
             dd_task_pause(c->mark);
             c->mark = -1;
-            s->glow[i] = 0;
+            g->glow[0] = 0;
             dd_cobj_link_del(c, func_08820D40);
         }
     }
 }
-#endif
 
 void dd_destroy_wait(float dt, DdTask *t, void *arg)
 {

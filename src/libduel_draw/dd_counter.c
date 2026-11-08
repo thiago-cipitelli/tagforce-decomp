@@ -1,5 +1,5 @@
 // @range 0x08810758-0x08811718
-// @asm 0x08810758-0x088115CC
+// @asm 0x08810758-0x08811310
 /* ATK/DEF of the monsters drawn over the field (animated when they change, blue when they rise,
    red when they fall), the selection count marker over a card, and small helpers. */
 #include "dd_d1.h"
@@ -22,6 +22,7 @@ void font_set_size(int w, int h);
 unsigned int font_set_color(unsigned int c);
 int font_measure_text(unsigned short *text);
 int font_draw_text(int x, int y, int w, unsigned short *text);
+float dd_stack_y(int n);
 void font_text_set(void *list);
 void *font_text_clear(void);
 void dv_field_stats(int player, int zone, int *out);
@@ -152,16 +153,15 @@ void dd_counter_tick(float dt)
 }
 #endif
 
-#ifdef NON_MATCHING /* alocação/ordem não reproduzidas */
 /* marker with the selection count n over the card at pos */
 void dd_counter_sel(DdXyzw *pos, int stack, int n)
 {
+    unsigned short txt[16];
+    DdMtx vp;
+    DdXyzw s;
     DdMtx view;
     DdMtx proj;
-    DdMtx vp;
     DdXyzw p;
-    DdXyzw s;
-    unsigned short txt[16];
     void *list;
     void *gim;
     int w;
@@ -173,12 +173,17 @@ void dd_counter_sel(DdXyzw *pos, int stack, int n)
     mtx_set_mode(2);
     mat4_mul(&vp, &proj, &view);
     p = *pos;
-    p.w = 1.0f;
-    p.y += dd_stack_y(stack) + 0.1f;
+    p.y += dd_stack_y(stack);
+    p.y += 0.1f;
     p.z -= 44.0f;
+    p.w = 1.0f;
     mat4_transform_vec4(&s, &vp, &p);
-    s.x = s.x * 480.0f / s.w + 2122.0f - 1808.0f;
-    s.y = s.y * -272.0f / s.w + 2044.0f - 1912.0f;
+    s.x = s.x * 480.0f / s.w;
+    s.y = s.y * -272.0f / s.w;
+    s.x += 2122.0f;
+    s.y += 2044.0f;
+    s.x -= 1808.0f;
+    s.y -= 1912.0f;
     list = dl_select_layer(4, 0);
     list = dl_disable(list, 1);
     gim = dd_gim_get(0x4001E);
@@ -199,7 +204,6 @@ void dd_counter_sel(DdXyzw *pos, int stack, int n)
     list = dl_enable(list, 1);
     dl_set_list(list);
 }
-#endif
 
 /* takes the ATK/DEF of the monster at (p, z) from the engine without animation */
 void dd_counter_reset(int p, int z)

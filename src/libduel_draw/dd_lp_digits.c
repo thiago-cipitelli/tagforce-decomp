@@ -1,6 +1,5 @@
 // @range 0x08857100-0x08858224
 // @asm 0x0885731C-0x08857614
-// @asm 0x08857614-0x08857960
 // @rodata 0x08870D3C-0x08870DF0
 // @data 0x08877850-0x08877878
 /* LP counting object of the duel (continues dd_lp_panel.c): draws the panel with the five
@@ -137,7 +136,7 @@ void *lpc_back(void *dl, DdLpCount *c)
     return draw_sprite(dl, c->sx + 15, c->sy + 10, 0, 0, 68, 0, 0);
 }
 
-#ifdef NON_MATCHING /* 17 palavras: o original carrega c->cur antes de c->speed e converte speed primeiro; opts fica 8 bytes mais baixo na pilha */
+#ifdef NON_MATCHING /* lpc_drum: 179 palavras (alocação e ordem das contas de ponto flutuante) */
 /* drum of digit i: the current face, and the next one turned by t half a turn */
 void *lpc_drum(void *dl, LpDigit *d, int i)
 {
@@ -186,6 +185,9 @@ void *lpc_drum(void *dl, LpDigit *d, int i)
     mtx_pop();
     return dl;
 }
+#else
+void *lpc_drum(void *dl, LpDigit *d, int i);
+#endif
 
 /* 2D panel: background, damage effect (ehf frame by the LP left), two bars and the heart */
 typedef struct { int v[3][2]; } LpHeartUv;
@@ -193,13 +195,15 @@ typedef struct { int v[3][2]; } LpHeartUv;
 void *lpc_panel_2d(void *dl, DdLpCount *c)
 {
     LpHeartUv uv = *(LpHeartUv *)lp_heart_uv;
-    char opts[0x60];
+    char opts[0x60] __attribute__((aligned(16)));
     unsigned int frame;
     int w;
     float k;
 
-    k = (float)c->speed;
-    k = 1.0f - (float)ALLEGREX_MIN(ALLEGREX_MAX(c->cur, 0), c->speed) / k;
+    {
+        int v = ALLEGREX_MIN(ALLEGREX_MAX(c->cur, 0), c->speed);
+        k = 1.0f - (float)v / (float)c->speed;
+    }
     dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
     dl = dl_set_tex_filter(dl, 0, 0);
     dl = gim_set_texture(dl, dd_lp.pnl_a01);
@@ -229,10 +233,6 @@ void *lpc_panel_2d(void *dl, DdLpCount *c)
         return draw_sprite(dl, c->sx + 63, c->sy + 87, 0, f[0], f[1], 0, 0);
     }
 }
-#else
-void *lpc_drum(void *dl, LpDigit *d, int i);
-void *lpc_panel_2d(void *dl, DdLpCount *c);
-#endif
 
 void *lpc_digit_2d(void *dl, DdLpCount *c, int i)
 {
