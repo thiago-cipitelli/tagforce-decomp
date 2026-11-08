@@ -1,6 +1,4 @@
 // @range 0x0886AAB4-0x0886CB44
-// @asm 0x0886B6B8-0x0886BCDC
-// @asm 0x0886BCDC-0x0886C2E0
 /* Card effect handlers and activation checks (DuelAct *a). */
 #include "duel.h"
 
@@ -289,16 +287,14 @@ int duel_0886B4E8(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* forma quase igual (diff estrutural só de ordem); alocação dos oito $s diferente */
 /* Fills f[12] with the restrictions on activations in force (per player: f[0..1] spells/traps,
    f[2..3], f[4..5] min order, f[6], f[7..11] single cards on the field). */
 void duel_0886B6B8(int *f)
 {
-    int best;
     int q;
     int z;
+    int best;
     int side;
-    int other;
     int bits;
     int id;
     int m;
@@ -328,24 +324,22 @@ void duel_0886B6B8(int *f)
     }
     best = 0;
     for (q = 0, bits = 0; q < 2; q++, bits += 16) {
-        pl = &duel.players[q & 1];
-        other = 1 - q;
         for (z = 0; z <= 4; z++) {
-            if (field_get_card(q, z) != 0x1955) {
-                continue;
-            }
-            if (pl->field[z].faceup == 0 || (pl->field[z].flags >> 1 & 1) || (duel_w_08917DB8 & 1 << (z + bits))) {
-                continue;
-            }
-            if (f[11] && pl->field[z].pos != 0) {
-                continue;
-            }
-            if (duel_field_protected(q, z) || duel_slot_count_src(q, z, 0x1A6D) || duel_count_monsters(other) != 3) {
-                continue;
-            }
-            if (best == 0 || pl->field[z].unk4 < best) {
-                best = pl->field[z].unk4;
-                side = other;
+            switch (field_get_card(q, z)) {
+            case 0x1955:
+                if (duel.players[q & 1].field[z].faceup == 0 || (duel.players[q & 1].field[z].flags >> 1 & 1) || (duel_w_08917DB8 & 1 << (z + bits))) {
+                    continue;
+                }
+                if (f[11] && duel.players[q & 1].field[z].pos != 0) {
+                    continue;
+                }
+                if (duel_field_protected(q, z) || duel_slot_count_src(q, z, 0x1A6D) || duel_count_monsters(1 - q) != 3) {
+                    continue;
+                }
+                if (best == 0 || duel.players[q & 1].field[z].unk4 < best) {
+                    best = duel.players[q & 1].field[z].unk4;
+                    side = 1 - q;
+                }
             }
         }
     }
@@ -354,7 +348,7 @@ void duel_0886B6B8(int *f)
             f[side] = f[side + 2] = f[side + 4] = 1;
         }
     }
-    for (q = 0, bits = 0; q < 2; q++, bits += 16) {
+    for (q = 0; q < 2; q++) {
         if (f[q + 4] != 0) {
             continue;
         }
@@ -365,7 +359,7 @@ void duel_0886B6B8(int *f)
             if (id == 0) {
                 continue;
             }
-            if (pl->field[z].faceup == 0 || (pl->field[z].flags >> 1 & 1) || (duel_w_08917DB8 & 1 << (z + bits))) {
+            if (pl->field[z].faceup == 0 || (pl->field[z].flags >> 1 & 1) || (duel_w_08917DB8 & 1 << (z + q * 16))) {
                 continue;
             }
             if (f[11] && pl->field[z].pos != 0) {
@@ -432,9 +426,7 @@ void duel_0886B6B8(int *f)
         }
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* usa $fp e guarda f[]/g na pilha; o mwcc distribui os $s de outro jeito (tamanho quase igual) */
 /* Recomputes the "negated" flag (bit 5) of every face-up card on the field from the restrictions of
    duel_0886B6B8 and the cards that negate others; returns whether any flag changed. */
 int duel_0886BCDC(void)
@@ -445,24 +437,23 @@ int duel_0886BCDC(void)
     int z;
     int id;
     int neg;
-    int r;
-    int y;
     int cnt;
     DuelPlayer *pl;
     DuelPlayer *rp;
     int f[12];
 
     duel_0886B6B8(f);
-    g = f;
-    for (q = 0; q < 2; q++, g++) {
+    for (q = 0, g = f; q < 2; q++, g++) {
         pl = &duel.players[q & 1];
-        for (z = 0; z < 11; z++) {
+        for (z = 0; z <= 10; z++) {
             id = field_get_card(q, z);
             neg = 0;
             if (id == 0 || pl->field[z].faceup == 0 || (pl->field[z].flags >> 1 & 1) || card_is_in_group_147e(id)) {
                 goto check;
             }
             if (z < 5 && card_attribute_to_group(id) && !duel_slot_has_effect(q, z, 0x1A5C)) {
+                extern int card_get_special_group(int);
+
                 switch (id) {
                 case 0x1437:
                 case 0x194E:
@@ -506,10 +497,8 @@ int duel_0886BCDC(void)
             }
             if (z >= 5 || duel_field_flag9(q, z)) {
                 if (card_get_type(id) == 0x17 && !(pl->field[z].flags >> 8 & 1)) {
-                    if (*g == 2) {
-                        if (id != 0x1302) {
-                            neg = 1;
-                        }
+                    if (*g == 2 && id != 0x1302) {
+                        neg = 1;
                     } else if (*g == 1) {
                         neg = 1;
                     }
@@ -534,6 +523,9 @@ int duel_0886BCDC(void)
                     neg = 1;
                 }
                 if (neg == 0) {
+                    int y;
+                    int r;
+
                     for (r = 0; r < 2; r++) {
                         cnt = duel_count_monster_active_atk(r, 0x1A07);
                         rp = &duel.players[r & 1];
@@ -574,7 +566,6 @@ int duel_0886BCDC(void)
     }
     return changed;
 }
-#endif
 
 /* Whether the restrictions of duel_0886B6B8 forbid player q to activate card id. */
 int duel_0886C2E0(int q, int id)

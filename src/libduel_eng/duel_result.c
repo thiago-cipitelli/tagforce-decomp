@@ -1,5 +1,6 @@
 // @range 0x088FF3FC-0x08900C94
-// @asm 0x088FF8C4-0x08900C94
+// @asm 0x088FFFDC-0x08900C94
+// @data 0x08912078-0x08912118
 /* After the duel: kind of result of a tag series, deck statistics for the rewards, one-time
    flags in the save. */
 #include "card_db.h"
@@ -175,8 +176,7 @@ int duel_save_once_120(int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* same steps; the original keeps the duel results in $s0 and the save records in $s5, and gives the
-                        record pointer $s1 (~108 palavras); caso 9: duel_stat_get(1) uma vez só (o MAX chamava duas) */
+/* caso 9: duel_stat_get(1) uma vez só (o MAX chamava duas) */
 #define REC_MAX(e)                                                             \
     v = (e);                                                                   \
     if (*best < v) {                                                           \
@@ -190,18 +190,17 @@ int duel_save_once_120(int i)
 void duel_records_update(void)
 {
     DuelResults *r;
-    int v;
     int *rec;
-    int *best;
+    int v;
     int i;
     int *cur;
+    int *best;
 
     r = game_state2_get();
     cur = (int *)((unsigned char *)r + 0x3C);
     rec = (int *)sysstate2_get_ptr_51c();
-    best = rec;
 
-    for (i = 0; i < 0x28; i++, cur++, best++) {
+    for (i = 0, best = rec; i < 0x28; i++, cur++, best++) {
         *cur = 0;
         switch (i) {
         case 0:
@@ -320,11 +319,11 @@ void duel_records_update(void)
             }
         }
         if (*cur != 0) {
-            ((unsigned char *)rec)[i + 0xA0] = 1;
+            *(unsigned char *)((unsigned int)rec + i + 0xA0) = 1;
+
         }
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* 36 palavras: só registradores (i em s0, k em s4, rec em s1 no original); testes como k >= N e o máximo do case 33 em k já batem */
 /* Bonuses of the duel (r->bonus[i]); a bonus counts only the first time it is earned (save +0xCC).

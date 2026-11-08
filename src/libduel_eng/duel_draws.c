@@ -1,6 +1,5 @@
 // @range 0x088C4864-0x088C77D4
 // @asm 0x088C4864-0x088C5424
-// @asm 0x088C5E78-0x088C625C
 // @asm 0x088C626C-0x088C6508
 // @asm 0x088C6BC8-0x088C7478
 /* LP payment, drawing cards, sending cards from the deck and the D zone, with their commands to the
@@ -414,15 +413,11 @@ int duel_088C5E70(unsigned int p, int n)
     return duel_088C5510(p, n, 1);
 }
 
-#ifdef NON_MATCHING
-/* 26 palavras: $s2/$s3 trocados entre id e z, e o original lê o uid de ev por c e o id do switch pela base
-   (o contrário daqui); as formas que trocam isso fazem o mwcc reaproveitar o uid entre ev e as chamadas */
 /* the first n cards of zone D of p to the graveyard (x: for the opponent; y: banished, zone 0xF) */
 void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
 {
     int m = duel.players[p & 1].n_d;
     int i;
-    int z;
 
     if (n < (unsigned int)m) {
         m = n;
@@ -433,6 +428,7 @@ void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
         DuelCard *c = &duel.players[p & 1].zone_d[i];
         unsigned int id = c->id;
         DuelMoveEv ev;
+        int z;
 
         z = y ? 0xF : 0xE;
         if (!y) {
@@ -443,14 +439,14 @@ void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
         ev.opp = p ^ x;
         ev.player = p;
         ev.zone = z;
-        ev.uid = CARD_UID(duel.players[p & 1].zone_d[i]);
+        ev.uid = CARD_UID(*(DuelCard *)c);
         ev.b10 = 0;
         if (z == 0xE) {
             switch (id) {
             case 0x14A5:
             case 0x16F9:
                 duel_088C4448((int)c->owner, 0xE, CARD_UID(*c));
-                duel_088C77D4((int)c->owner, c->id, 1, CARD_UID(*c));
+                duel_088C77D4((int)c->owner, duel.players[p & 1].zone_d[i].id, 1, CARD_UID(*c));
                 break;
             case 0x106D:
             case 0x1653:
@@ -466,7 +462,7 @@ void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
             case 0x16F5:
             case 0x17C5:
             case 0x19FE:
-                duel_0884F30C((p << 31 & 0x80000000 | 0x384E0000) | c->id, CARD_UID(*c), ev);
+                duel_0884F30C((p << 31 & 0x80000000 | 0x384E0000) | duel.players[p & 1].zone_d[i].id, CARD_UID(*c), ev);
                 break;
             }
             if (card_get_type(id) == 9) {
@@ -481,7 +477,6 @@ void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
     }
     duel_088C7CF0();
 }
-#endif
 
 void duel_088C625C(unsigned int p, int n, int x)
 {
