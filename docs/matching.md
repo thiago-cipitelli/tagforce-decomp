@@ -619,3 +619,37 @@ Também: helper `static` definido antes no mesmo `.c` (`mat4_det`, `ehf_track_ev
 `type:func static`. Família não resolvida: cópia morta do destino nos `u32 → float` (`bltzl; srl` com o `srl`
 original mantido depois do `b`) em `cardlist_draw_arrow`: o mwcc 219 a remove nessa função, embora a mantenha em
 `ehf_track_eval`.
+
+## Rodada 9 (libtitle, libcharalist, librecipe_viewer): retornos, contadores e parâmetros copiados
+
+Bateram `title_newgame_update`, `tfd_adhoctop_init`, `tfd_duelinfo_draw`, `tmenu_update`, `cl_costume_anim`,
+`cl_draw_number`, `rv_build_list`, `rv_fill_grid`, `rv_apply_select`. Idiomas:
+- **`case K: return;` ou `case K: r = -1; goto done;` num `switch` interno → `case K: break;`** quando o código depois do
+  `switch` faz o mesmo. Com `break` o mwcc *move* o corpo para o atraso do `beql` (some do destino); com `return` ele o
+  *copia* e os `b` vizinhos levam cópias (`li a0,1`, `li v0,-1`) que o original não tem. Um teste que salta para o
+  bloco `return K` do `default` (e não para um `return` próprio) é `goto` ao rótulo dentro do `default:` (`tmenu_update`:
+  `if (mode != 1) goto dflt;`). Uma mudança de uma instrução no topo deslocava 315 palavras.
+- **Contador reaproveitado**: o 2º laço de `tfd_duelinfo_draw` e o último de `rv_build_list` usam o `i` da função (criado
+  primeiro), não um contador próprio do bloco; um `int i` no lugar de `unsigned int` resolve `bgez`/`sltu`.
+  O inverso também vale (`tmenu_update`: `int i, k, found;` no bloco de cada busca; `tpanel_draw_split`: contador novo
+  declarado antes de todos no laço das abas, 114 → 39). `build/tmp/tcl/loops.py` (worktree `tcl`) faz a descida.
+- **Coordenada como indução**: `x2 = 0xA6 + i2 * 0x3C` dentro do laço (o mwcc cria a indução no pré-cabeçalho, depois
+  do teste de guarda) em vez de `x2 += 0x3C` no `for`; e `ps->card[i]` indexado em vez de ponteiro próprio.
+- **Parâmetro copiado para um local** (`move sX,aY` depois de um laço de zeragem, não na entrada): `cx = x; v = n; if
+  (v > 999) v = 999;` (`cl_draw_number`).
+- **Valor de argumento que também vai para um campo** (`move t0,zero; sw t0,268(a2)` com `t0` = 5º argumento):
+  `deck = 0;` antes das gravações e a chamada com `k->deck` (encaminhado da gravação), `tfd_adhoctop_init`.
+- **`ptr = &arr[i]` declarado antes dos outros locais do laço** (`RvEntry *e = &c->main[i];` primeiro) quando o original
+  calcula `e + 2` num `$s` antes do 1º uso (`rv_fill_grid`); `RvPos *p = &rv.pos[t]; p->top + p->cursor` quando o
+  original lê os dois campos pela base do elemento (`rv_apply_select`).
+- **Entrada da lista sem o inline**: `cl_entry()` (inline com dois `return`) deixa o resultado no `$s` mais baixo; o
+  cálculo num bloco (`if (i >= cl.count[t]) e = 0; else e = &cl.list[t][i];`) dá a ordem do original.
+- `x = (b = &tab[set])->campo` dentro do teste quando o original carrega o global comparado antes de calcular `b`.
+- Promover uma função com `switch` denso exige `@rodata` da tabela: `title_newgame_update` (0x0882AD1C) e
+  `tmenu_update` (0x0882AC40) deslocaram o módulo inteiro até entrarem no cabeçalho.
+Sem forma encontrada (registradores/escalonamento): `tcfg_draw` (229: os dois `li 1` içados, `found = 0` no atraso, a
+cópia de `rows[]` em pares), `tpanel_init` (2), `ll_move_grid` (6), `tfd_main_text` (8: `y + 16` antes do `move a1`),
+`rv_draw_grid_cursor` (9), `tut_script_preload_faces` (8 depois de `int i` antes de `done`: o `!done` depois do
+incremento de `tut_pc`), `tdl_rules_draw` e `ttab_draw` (o original usa `beqzl` para a instrução seguinte com o corpo
+no atraso; o 219 dá `bnez; nop`), `tfd_chr_copy_draw` (o 219 junta os `case 2`/`case 3` iguais), `tfd_regulation_select`
+(constante 1 num registrador comparada com `slt`).
