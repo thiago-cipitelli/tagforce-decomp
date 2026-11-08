@@ -455,7 +455,6 @@ fuzzy	size	module	function	address	file
 83.2	696	libcharalist	cl_voices_build	0x08809C54	src/libcharalist/cl_list.c
 83.1	2584	BOOT	menu_draw	0x0884ACB4	src/BOOT/menu_widget.c
 83.1	776	libshop	shop_msgwin_draw	0x088090B8	src/libshop/shop_msgwin.c
-83.0	700	libduel_draw	dd_counter_sel	0x08811310	src/libduel_draw/dd_counter.c
 82.9	508	libduel_eng	duel_088619FC	0x088619FC	src/libduel_eng/ai_0886191C.c
 82.8	544	libselect_card	sc_draw_counts	0x08808694	src/libselect_card/sc_panes.c
 82.7	532	libshop	shop_open_cards_done	0x08812D64	src/libshop/shop_anim.c
@@ -481,7 +480,6 @@ fuzzy	size	module	function	address	file
 80.3	136	libduel_mgr	dmgr_attr_single	0x08806190	src/libduel_mgr/dmgr_event.c
 80.3	224	libduel_eng	duel_0888BA00	0x0888BA00	src/libduel_eng/effects_z.c
 80.1	156	libduel_draw	func_08822B90	0x08822B90	src/libduel_draw/dd_field_marks.c
-80.1	704	libduel_draw	dd_board_pile_count	0x0880F804	src/libduel_draw/dd_board.c
 80.0	104	libstory	scal_period_a	0x0880C4C8	src/libstory/s_cal.c
 80.0	104	libstory	scal_period_b	0x0880C530	src/libstory/s_cal.c
 79.7	560	libduel_draw	dd_cobj_to_top	0x0880A6B0	src/libduel_draw/dd_cobj.c
