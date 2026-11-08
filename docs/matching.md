@@ -619,3 +619,25 @@ Também: helper `static` definido antes no mesmo `.c` (`mat4_det`, `ehf_track_ev
 `type:func static`. Família não resolvida: cópia morta do destino nos `u32 → float` (`bltzl; srl` com o `srl`
 original mantido depois do `b`) em `cardlist_draw_arrow`: o mwcc 219 a remove nessa função, embora a mantenha em
 `ehf_track_eval`.
+
+## Rodada 9 (libfield: telas do PDA, `fld_scene_frame`, `fld_cell_marked`)
+
+| No asm original | Fonte |
+|---|---|
+| máscara montada em tempo de execução (`move v1,zero; ori 1; ori 2; ori 4; sw`) que o mwcc dobra para `li 7` | `|=` direto no campo da struct: `s->padac[2] = 0; s->padac[2] |= 1; …` (os stores mortos somem depois da dobra; um local não serve) (`fld_scene_frame`) |
+| argumentos guardados em `$s` (`(x + 9) << 6`, `480 - …`, `rows + i`) calculados **depois** do `jal` da última chamada-argumento; o mwcc os calcula antes | resultado da chamada num temporário de bloco e os argumentos depois: `{ unsigned short *t = table_get_entry(…); lw = …; lx = …; font_draw_text(lx, …, lw, t); }` (`pda_draw_status`, `pda_draw_options`: de ~450 para 0 palavras com isso e o item abaixo) |
+| laços com várias variáveis de indução (`x + i*K`, ponteiro de tabela, `i*2`) só depois do teste de entrada | escrever as expressões em função do contador (`x + 3 + row * 0x36`, `pda_tab_names[i]`) e deixar o mwcc criar as variáveis de indução; com vírgulas no `for` elas saem antes do teste (`pda_draw_calendar`, `pda_draw_tabs`) |
+| `$s` de contadores trocados em laços aninhados | trocar qual variável é o contador de fora e qual o de dentro (busca exaustiva das 4 escolhas por par de laços); um `tx` próprio no bloco de um laço o põe abaixo dos ponteiros de indução |
+| `i*2` mantido como variável de indução e `+ 2` somado no uso (o C dava a variável de indução `i*2+2`) | `n <= (int)(i * 2 + 2u)` / `d = i * 2 + 2u - n` (`pda_draw_tabs`) |
+| deslocamento em bytes como variável de indução e `base + desl` a cada volta | `(FieldCell *)((char *)b->cells + (unsigned int)(i * 4))` (com sinal reduz a ponteiro, com `sizeof` refaz o `sll`) (`fld_cell_marked`) |
+| retorno de função sem `andi 0xFF` | conferir o tipo de retorno da definição: `fpda_cal_day` devolve `int`, o protótipo local dizia `unsigned char` (bug de fidelidade) |
+| cópia `lh/lh/sh/sh` de um global de 2 halfwords para a pilha, o global no início do `@data` | struct de visão: `PdaText2 t = *(PdaText2 *)pda_times_text;` (um local inicializado põe o template no fim do `.data` do objeto) |
+| `ty = y + 0x17` no atraso do `jal` seguinte | a atribuição logo antes do comando que a usa (depois das chamadas de fonte), não antes delas |
+| `(x + 9) << 6` repetido e `tx` no mesmo `$s` | `tx = x + 9; if (i >= 2) tx += 7;` (não `tx = x + 0x10`) |
+| ponteiro de dados (`gim`) e `list` com `$s` trocados | declarar o local inicializado por último |
+
+Não resolvidos: ordem do `sw` do argumento de pilha contra um `move` de argumento (`fbm_icon`, `fld_digits`: 2
+palavras, os dois em sentidos opostos); `move a0,v0; jal; nop` antes de `fld_voice_play` em `fld_scene_update` (1
+instrução, desloca o resto); constante 0.5 em `v1` em vez de `v0` (`fld_scene_input`); cópias mortas `li s4,18`/`b; nop`
+de `fbm_draw_marks` (família "cópia × movida"); `fld_dir_vec` (`lui` de `field_dirs` antes do `sw ra`, mas a tabela é
+usada por duas funções, então não é `static` de função).
