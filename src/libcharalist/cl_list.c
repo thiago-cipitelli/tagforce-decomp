@@ -1,6 +1,6 @@
 // @range 0x08807F68-0x0880A34C
 // @asm 0x08808264-0x0880981C
-// @asm 0x08809C54-0x0880A2D8
+// @asm 0x08809C54-0x08809F0C
 // @data 0x0880E138-0x0880EA74
 /* The three tabs (the met duelists, the other ones, the deck-only ones), input of the list and of
    the detail page (costumes, profile scroll, voice test with its theme), the character table and the
@@ -886,68 +886,81 @@ void cl_voices_build(ClEntry *e, int alt)
     cl.voice = 0;
 }
 
+#endif
+
 /* portrait of a deck-only duelist: a generic head for the special ids, else head + body from the
    charmap */
 unsigned int *cl_draw_portrait(unsigned int *list, unsigned short id, int x, int y, int scale, void *head, void *body)
 {
-    int generic = 0;
-    int code;
-    int u = 0;
-    int v = 0;
-    CharmapPos pos;
+    unsigned char m[4];
+    int whole = 0;
+    int v;
+    int u;
+    int c;
+    int sw;
 
-    if (head == 0 || body == 0)
+    if (head == 0 || body == 0) {
         return list;
-    code = charmap_lookup(id, 0);
-    switch (code) {
-    case 0x3F4:
-        u = 0x33;
-        v = 0xA8;
-        break;
-    case 0x3F3:
-        v = 0xA8;
-        break;
-    case 0x3F2:
-        u = 0xCC;
-        v = 0x54;
-        break;
-    case 0x3F1:
-        u = 0x99;
-        v = 0x54;
-        break;
-    case 0x3F0:
-        u = 0x66;
-        v = 0x54;
+    }
+
+    c = charmap_lookup((unsigned short)(int)id, 0);
+    u = 0;
+    v = 0;
+    switch (c) {
+    case 1000:
+        u = 0x54;
+        whole = 1;
         break;
     case 0x3EF:
-        u = 0x33;
-        v = 0x54;
+        v = 0x33;
+        u = 0x54;
+        whole = 1;
         break;
-    case 1000:
-        v = 0x54;
+    case 0x3F0:
+        v = 0x66;
+        u = 0x54;
+        whole = 1;
+        break;
+    case 0x3F1:
+        v = 0x99;
+        u = 0x54;
+        whole = 1;
+        break;
+    case 0x3F2:
+        v = 0xCC;
+        u = 0x54;
+        whole = 1;
+        break;
+    case 0x3F3:
+        u = 0xA8;
+        whole = 1;
+        break;
+    case 0x3F4:
+        v = 0x33;
+        u = 0xA8;
+        whole = 1;
         break;
     default:
-        if (charmap_lookup2(code, &pos) == 0)
+        if (charmap_lookup2(c, (CharmapPos *)m) == 0) {
             return list;
-        goto draw;
+        }
+        break;
     }
-    generic = 1;
-draw:
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 1, 1);
-    if (generic) {
+    if (whole) {
         list = gim_set_texture(list, body);
         list = draw_set_offsets(list, 0x33, 0x54, scale * 0x33 / 100, scale * 0x54 / 100);
-        return draw_sprite(list, x, y - scale * 6 / 100, 0, u, v, 0, 0);
+        return draw_sprite(list, x, y - scale * 6 / 100, 0, v, u, 0, 0);
     }
     list = gim_set_texture(list, body);
-    list = draw_set_offsets(list, 0x33, 0x40, scale * 0x33 / 100, (scale << 6) / 100);
-    list = draw_sprite(list, x, y + (scale << 4) / 100, 0, pos.b * 0x33, 0, 0, 0);
-    list = gim_set_texture_sub(list, head, 0, 0, 0, pos.c);
-    list = draw_set_offsets(list, 0x33, 0x32, scale * 0x33 / 100, scale * 0x32 / 100);
-    return draw_sprite(list, x, y, 0, pos.a % 5 * 0x33, pos.a / 5 * 0x32, 0, 0);
+    sw = scale * 0x33 / 100;
+    list = draw_set_offsets(list, 0x33, 0x40, sw, (scale << 6) / 100);
+    list = draw_sprite(list, x, y + (scale << 4) / 100, 0, m[1] * 0x33, 0, 0, 0);
+    list = gim_set_texture_sub(list, head, 0, 0, 0, m[2] & 0xF);
+    list = draw_set_offsets(list, 0x33, 0x32, sw, scale * 0x32 / 100);
+    return draw_sprite(list, x, y, 0, m[0] % 5 * 0x33, m[0] / 5 * 0x32, 0, 0);
 }
-#endif
 
 ClChara *cl_chara_find(unsigned short id)
 {

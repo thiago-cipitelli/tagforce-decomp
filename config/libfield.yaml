@@ -89,8 +89,6 @@ segments:
       - [0x119E4, asm, f_digits_asm_08815984]
       - [0x11B08, c, f_digits]
       - [0x12038, c, f_msg]
-      - [0x12A4C, asm, f_msg_asm_088169EC]
-      - [0x12B60, c, f_msg]
       - [0x13278, c, f_talk]
       - [0x13570, asm, f_talk_asm_08817510]
       - [0x137D0, c, f_talk]

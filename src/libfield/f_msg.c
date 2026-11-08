@@ -1,5 +1,4 @@
 // @range 0x08815FD8-0x08817218
-// @asm 0x088169EC-0x08816B00
 // @rodata 0x08838AE0-0x08838AFC
 /* The message window of the field (field_msg; libtitle's tmsg is a trimmed copy): a system menu frame
    sliding in and out, up to three lines typed at the text speed of the options, the pages, the
@@ -322,37 +321,35 @@ int fmsg_moving(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* lógica conferida. 34 palavras: o mwcc adianta as leituras de x/w0/size/style para antes dos stores constantes; o original lê cada uma junto do uso (cast por char * e base FieldMsg * não mudam) */
 void fmsg_create(void)
 {
     MenuItemDef *d = &field_msg.def;
 
     menu_init(&field_msg.menu, field_msg.heap);
-    memset(d, 0, sizeof(*d));
+    memset(d, 0, 0x78);
     d->visible = 1;
     d->auto_title = 1;
     d->font_flag4 = 1;
+    d->style = field_msg.style;
     d->style2 = 2;
     d->pad_t = 2;
-    d->style = field_msg.style;
     d->show_title = 0;
-    d->y = 210;
     d->x = field_msg.x;
+    d->y = 210;
+    d->w = field_msg.w0;
     d->text = 0;
     d->title = 0;
     d->h = 60;
     d->color = 0xFFFFFFFF;
     d->title_color = 0xFFFFFFFF;
-    d->w = field_msg.w0;
+    d->font_size = field_msg.size;
     d->text_color = 0xFF000000;
     d->pad_l = 4;
-    d->font_size = field_msg.size;
     d->title_font_size = field_msg.size;
     d->pad_r = 20;
     menu_add_item(&field_msg.menu, d);
     fmsg_reset(field_msg.x, field_msg.w0, field_msg.size, field_msg.input, field_msg.style);
 }
-#endif
 
 void fmsg_blink_tick(void)
 {
