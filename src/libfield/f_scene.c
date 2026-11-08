@@ -1,7 +1,6 @@
 // @range 0x08810814-0x08811BE0
 // @asm 0x08810814-0x08810F44
 // @asm 0x088114E8-0x0881181C
-// @asm 0x0881181C-0x08811B1C
 /* Scene commands of the field scripts: the story parameters of the scene, placing the player,
    the camera target, saving the positions of the player and the NPCs, door sounds, waits, and the
    scene GIM loaded with them. */
@@ -69,7 +68,10 @@ int fcho_update(void);
 void fld_dlg_open(unsigned short *text, int buttons, int button);
 int fld_dlg_update(void);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm (mesmo tamanho). 161 palavras, quase todas deslocamento de duas diferenças: no case 5 o original não põe o move a0 no atraso do jal de fld_voice_play, e no case 5 do calendário recarrega o 23 que aqui é reaproveitado */
+#ifdef NON_MATCHING /* C novo, conferido com o asm. O switch de fcal_update tem tabela de saltos (case 0/2 explícitos;
+   tabela em 0x08838878, a do switch de modo em 0x08838890: promover exige @rodata 0x08838878-0x088388F0). Falta 1
+   instrução: no case 5 o original deixa o move a0,v0 antes do jal de fld_voice_play (nop no atraso), o que desloca o
+   resto (~150 palavras). */
 /* per frame: the NPC in front of the player, then the scene mode (x88): 0 lock and turn back,
    1 input, 2/3 the question box, 5/6 talking (sctab), 7/8 the bag, 9/10 a message, 11/12 the
    calendar, 13..16 the get windows, 17/18 the clock, 19/20 the choice list, 23 leave for the
@@ -185,6 +187,9 @@ void fld_scene_update(void)
             s->xa8 = 0;
             if (fld_hud_hidden() != 0) {
                 switch (fcal_update()) {
+                case 0:
+                case 2:
+                    break;
                 case 1:
                     fld_hud_show();
                     *mode = 0;
@@ -669,7 +674,6 @@ void fld_hud_update(void);
 void fget_update(void);
 int fget_done(void);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 14 palavras: o original monta a máscara de botões em tempo de execução (move 0; ori 1; ori 2; ori 4) e o mwcc dobra para li 7/li 15 (tipos menores e bitfields não reproduzem) */
 /* per frame: the player and the partner, the info box of the character in front (its record and
    deck, nothing for the shop keepers and the like), the HUD and the get window; then the buttons
    allowed in the button bar (8 only while ctx->x14 is clear) */
@@ -685,7 +689,6 @@ void fld_scene_frame(void)
     int w1;
     int w2;
     int deck;
-    unsigned int mask;
 
     if (field_scene.x88 != 1)
         fld_player_set_lock(0);
@@ -750,17 +753,13 @@ void fld_scene_frame(void)
         ctx->pad04 = 1;
     else
         ctx->pad04 = 0;
-    mask = 0;
-    mask |= 1;
-    mask |= 2;
-    mask |= 4;
-    s->padac[2] = mask;
-    if (ctx->x14 == 0) {
-        mask |= 8;
-        s->padac[2] = mask;
-    }
+    s->padac[2] = 0;
+    s->padac[2] |= 1;
+    s->padac[2] |= 2;
+    s->padac[2] |= 4;
+    if (ctx->x14 == 0)
+        s->padac[2] |= 8;
 }
-#endif
 
 void fld_scene_gim_loaded(int *file, void *arg)
 {
