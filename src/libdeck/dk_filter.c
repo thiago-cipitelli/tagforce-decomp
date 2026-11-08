@@ -2,7 +2,6 @@
 // @data 0x0882313C-0x08823178
 // @rodata 0x0882266C-0x08822688
 // @asm 0x08817FF8-0x0881815C
-// @asm 0x08819138-0x088192C8
 /* Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
    with its word history, the filters (kind, type, race, level ranges, spell/trap kinds, limit,
    genre/new/alternate picture), the text match (Boyer-Moore-Horspool over the normalised name and
@@ -545,7 +544,6 @@ int dk_sort_key_value(DkEnt *e, int key)
 }
 
 
-#ifdef NON_MATCHING /* 16 palavras: o "default: v = -2" do switch(sort) interno vai para o atraso do b; no original fica no fim (b+nop), alvo comum com o "sort != 8" dos ícones 7/8. goto, retornos e default sem corpo não reproduzem */
 /* the value shown for key sort (-1 = "?", -2 none) */
 int dk_sort_value(DkEnt *e, unsigned short sort)
 {
@@ -564,10 +562,14 @@ int dk_sort_value(DkEnt *e, unsigned short sort)
         switch (card_get_attribute_icon(e->id)) {
         case 7:
         case 8:
-            if (sort != 8)
-                return -2;
-            v = card_get_prop5_hi(e->id);
-            v = v == 0 ? 7 : v;
+            switch (sort) {
+            case 8:
+                v = card_get_prop5_hi(e->id);
+                v = v == 0 ? 7 : v;
+                break;
+            default:
+                goto none;
+            }
             break;
         default:
             switch (sort) {
@@ -589,6 +591,7 @@ int dk_sort_value(DkEnt *e, unsigned short sort)
                 v = card_get_kind(e->id);
                 break;
             default:
+            none:
                 v = -2;
                 break;
             }
@@ -598,4 +601,3 @@ int dk_sort_value(DkEnt *e, unsigned short sort)
     }
     return v;
 }
-#endif

@@ -1,6 +1,5 @@
 // @range 0x0881C0E8-0x0881D318
-// @data 0x08821090-0x088210AC
-// @asm 0x0881C65C-0x0881C964
+// @rodata 0x08821090-0x088210AC
 /* (The code of libtutorial tut_text.c, with a teardown and without the done/wait/close helpers.) Text box of the talk windows: a menu window that slides in and out, the message typed line by
    line at the speed of the game options (or skipped with a button), pages of two or three lines
    and the blinking "next" icon while the box waits for the player. */
@@ -79,9 +78,11 @@ void dt_text_open(void);
 int dt_text_typing(void);
 int dt_text_anim_busy(void);
 
-int dt_text_speeds[3] = { 10, 20, 480 };    /* width typed per frame by speed option */
-short dt_text_icon_rect[4] = { 0x38, 0x4A, 14, 14 };
-int dt_text_icon_off[2] = { -20, -20 };
+const int dt_text_speeds[3] = { 10, 20, 480 };    /* width typed per frame by speed option */
+const struct {
+    short u, v, w, h;
+    int dx, dy;
+} dt_text_icon_spr = { 0x38, 0x4A, 14, 14, -20, -20 };  /* the "next" icon: source rect and offset */
 
 void dt_text_init(void *heap, int x, int w, int size, int wait, int style)
 {
@@ -225,20 +226,19 @@ int dt_text_update(void)
     return t->done;
 }
 
-#ifdef NON_MATCHING
-/* teste da região (região 0 e 1 com corpos separados) e alocação dos $s no laço das linhas */
 void dt_text_draw(void **list)
 {
-    DtText *t = &dt_tb;
-    MenuItemDef *d = &dt_tb.def;
+    DtText *const t = &dt_tb;
+    MenuItemDef *const d = &dt_tb.def;
     unsigned short flags;
-    int i;
     DtLine *l;
+    int i;
     int g;
     int y;
     int h;
-    int x0, y0, w0, h0;
     int off;
+    float fh;
+    int x0, y0, w0, h0;
 
     if (dt_tb.state == 0)
         return;
@@ -263,14 +263,13 @@ void dt_text_draw(void **list)
             }
             if (l->w > 0) {
                 if (y < 0x110) {
-                    h = (y + h < 0x110) ? h : 0x110 - y;
+                    h = y + h < 0x110 ? h : 0x110 - y;
                     *list = dl_scissor(*list, l->x, y, l->w + 1, h);
                     *list = dl_enable(*list, 2);
                 }
                 if (y < 0x110) {
-                    float fh = (float)font_line_height() / 64.0f;
-
-                    off = -(int)((float)t->page * ((float)t->lines * (fh + (float)g)));
+                    fh = font_line_height() / 64.0f;
+                    off = -(int)(t->page * (t->lines * (fh + g)));
                     menu_item_rect(&t->menu, &t->def, &x0, &y0, &w0, &h0);
                     font_text_set(*list);
                     font_draw_wtext_ex(x0 << 6, (y0 + off) << 6, w0 << 6, 0x4400, t->text, -1);
@@ -282,16 +281,14 @@ void dt_text_draw(void **list)
         dt_text_font_end(flags);
     }
     if (t->wait != 0 && dt_text_typing() == 0 && dt_text_anim_busy() == 0 && t->icon != 0) {
-        int x = d->x + d->w;
-        int yy = d->y + d->h;
-
+        y = d->x + d->w;
+        h = d->y + d->h;
         *list = dl_ambient_color(*list, 0xFFFFFFFF);
         *list = gim_set_texture(*list, t->icon);
-        dt_text_icon(list, x + dt_text_icon_off[0], yy + dt_text_icon_off[1], 0, dt_text_icon_rect[0],
-                      dt_text_icon_rect[1], dt_text_icon_rect[2], dt_text_icon_rect[3], t->blink / 10 & 1);
+        dt_text_icon(list, y + dt_text_icon_spr.dx, h + dt_text_icon_spr.dy, 0, dt_text_icon_spr.u, dt_text_icon_spr.v,
+                     dt_text_icon_spr.w, dt_text_icon_spr.h, (t->blink / 10) & 1);
     }
 }
-#endif
 
 void dt_text_set_icon(void *gim)
 {

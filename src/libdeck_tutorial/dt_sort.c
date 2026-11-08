@@ -1,5 +1,4 @@
 // @range 0x08817B78-0x08818E94
-// @asm 0x08818D04-0x08818E94
 // @data 0x08822520-0x08822578
 /* The sort menu (the code of libdeck dk_sortmenu.c, first half: a list of the sort keys and a small
    up/down menu beside it; the pane is re-sorted live while the cursor moves and restored on cancel)
@@ -444,7 +443,6 @@ int dt_sort_key_value(DtEnt *e, unsigned short sort)
     return v;
 }
 
-#ifdef NON_MATCHING /* 50 palavras: com break em todos os casos o código sai 32 bytes menor que o original, que mantém desvios para outro b (o fim do caso 7/8) e um li v0,-2 próprio antes do epílogo; com return nos casos (forma de ds_sort_value) sai 36 bytes maior */
 /* the value shown for key sort (-1 = "?", -2 none) */
 
 int dt_sort_value(DtEnt *e, unsigned short sort)
@@ -464,10 +462,14 @@ int dt_sort_value(DtEnt *e, unsigned short sort)
         switch (card_get_attribute_icon(e->id)) {
         case 7:
         case 8:
-            if (sort != 8)
-                return -2;
-            v = card_get_prop5_hi(e->id);
-            v = v == 0 ? 7 : v;
+            switch (sort) {
+            case 8:
+                v = card_get_prop5_hi(e->id);
+                v = v == 0 ? 7 : v;
+                break;
+            default:
+                goto none;
+            }
             break;
         default:
             switch (sort) {
@@ -489,6 +491,7 @@ int dt_sort_value(DtEnt *e, unsigned short sort)
                 v = card_get_kind(e->id);
                 break;
             default:
+            none:
                 v = -2;
                 break;
             }
@@ -498,4 +501,3 @@ int dt_sort_value(DtEnt *e, unsigned short sort)
     }
     return v;
 }
-#endif

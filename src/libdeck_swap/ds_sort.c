@@ -1,5 +1,4 @@
 // @range 0x0880B750-0x0880BE1C
-// @asm 0x0880BC8C-0x0880BE1C
 // @data 0x0881A1E8-0x0881A1F8
 /* Sorting a pane's visible order by one of the nine keys (stable, "no value" last), the key value
    of a card and the value shown for the key (same source as libselect_card sc_filter.c). */
@@ -144,7 +143,6 @@ int ds_sort_key_value(DsEnt *e, unsigned short sort)
     return v;
 }
 
-#ifdef NON_MATCHING /* 16 palavras: o "default: v = -2" do switch(sort) interno vai para o atraso do b; no original fica no fim (b+nop); como dk_sort_value */
 /* the value shown for key sort (-1 = "?", -2 none) */
 int ds_sort_value(DsEnt *e, unsigned short sort)
 {
@@ -163,10 +161,14 @@ int ds_sort_value(DsEnt *e, unsigned short sort)
         switch (card_get_attribute_icon(e->id)) {
         case 7:
         case 8:
-            if (sort != 8)
-                return -2;
-            v = card_get_prop5_hi(e->id);
-            v = v == 0 ? 7 : v;
+            switch (sort) {
+            case 8:
+                v = card_get_prop5_hi(e->id);
+                v = v == 0 ? 7 : v;
+                break;
+            default:
+                goto none;
+            }
             break;
         default:
             switch (sort) {
@@ -188,6 +190,7 @@ int ds_sort_value(DsEnt *e, unsigned short sort)
                 v = card_get_kind(e->id);
                 break;
             default:
+            none:
                 v = -2;
                 break;
             }
@@ -197,4 +200,3 @@ int ds_sort_value(DsEnt *e, unsigned short sort)
     }
     return v;
 }
-#endif

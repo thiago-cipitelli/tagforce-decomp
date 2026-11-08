@@ -1,5 +1,4 @@
 // @range 0x08810BF4-0x088119C8
-// @asm 0x08811130-0x088112C0
 // @asm 0x088115CC-0x08811730
 // @data 0x0881B424-0x0881B454
 /* Sorting a pane's visible order by one of the nine keys (stable, "no value" last), the key value
@@ -173,8 +172,6 @@ int sc_sort_key_value(ScEnt *e, int key)
 }
 
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 50 palavras: o original tem um "b fim" próprio em cada caso
-                       (sem encadear os desvios ao epílogo); com return por caso piora para 92 */
 /* the value shown for key sort (-1 = "?", -2 none) */
 int sc_sort_value(ScEnt *e, unsigned short sort)
 {
@@ -193,10 +190,14 @@ int sc_sort_value(ScEnt *e, unsigned short sort)
         switch (card_get_attribute_icon(e->id)) {
         case 7:
         case 8:
-            if (sort != 8)
-                return -2;
-            v = card_get_prop5_hi(e->id);
-            v = v == 0 ? 7 : v;
+            switch (sort) {
+            case 8:
+                v = card_get_prop5_hi(e->id);
+                v = v == 0 ? 7 : v;
+                break;
+            default:
+                goto none;
+            }
             break;
         default:
             switch (sort) {
@@ -218,6 +219,7 @@ int sc_sort_value(ScEnt *e, unsigned short sort)
                 v = card_get_kind(e->id);
                 break;
             default:
+            none:
                 v = -2;
                 break;
             }
@@ -227,7 +229,6 @@ int sc_sort_value(ScEnt *e, unsigned short sort)
     }
     return v;
 }
-#endif
 
 /* clears the filter of l (keeping only the marked cards of the owned list when the mark mode
    asks for it), re-sorted by key 1 */

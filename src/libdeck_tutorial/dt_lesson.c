@@ -1,5 +1,4 @@
 // @range 0x0881A20C-0x0881C0E8
-// @asm 0x0881A8D4-0x0881AA50
 // @asm 0x0881BBFC-0x0881BE08
 // @rodata 0x08821074-0x08821090
 // @data 0x08822578-0x088228C0
@@ -255,7 +254,6 @@ void dt_editor_update(void)
         dt.pad.down |= dt.btn_one;
 }
 
-#ifdef NON_MATCHING /* 2 palavras (forma com return em cada saída e "default: return 1"): o default do switch interno sai "b; nop" para o "return 0" no original; o mwcc enche o atraso com o move v0,zero e salta 4 bytes adiante (inner default: break/return 0 pioram) */
 /* step 9: the lesson presses the buttons itself (press 0) or the card's (press 1) */
 int dt_press_update(void)
 {
@@ -267,7 +265,7 @@ int dt_press_update(void)
             dt.press_step = 0;
             return 1;
         }
-        return 0;
+        break;
     case 1:
         switch (dt.press_step) {
         case 0:
@@ -305,7 +303,6 @@ int dt_press_update(void)
     }
     return 0;
 }
-#endif
 
 /* step 10: 1 once the goal is reached */
 int dt_goal_update(void)

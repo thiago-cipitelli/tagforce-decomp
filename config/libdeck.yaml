@@ -56,7 +56,6 @@ segments:
       - [0xBCCC, c, dk_cards]
       - [0xC024, asm, dk_cards_asm_0880FFC4]
       - [0xC400, c, dk_icons]
-      - [0xC820, asm, dk_icons_asm_088107C0]
       - [0xCD30, c, dk_sortmenu]
       - [0xE570, c, dk_fmenu]
       - [0xF2C8, c, dk_action]
@@ -69,7 +68,6 @@ segments:
       - [0x13D78, c, dk_filter]
       - [0x14058, asm, dk_filter_asm_08817FF8]
       - [0x141BC, c, dk_filter]
-      - [0x15198, asm, dk_filter_asm_08819138]
       - [0x15328, c, dk_word]
       - [0x166FC, c, dk_osk]
       - [0x16BC4, c, dk_help_ui]
@@ -95,7 +93,7 @@ segments:
       - [0x1E5D4, .data, dk_scene__rodata]
       - [0x1E610, .data, dk_res__rodata]
       - [0x1E618, .data, dk_draw__rodata]
-      - [0x1E638, data, data_0]
+      - [0x1E638, .data, dk_icons__rodata]
       - [0x1E688, .data, dk_fmenu__rodata]
       - [0x1E6A8, .data, dk_parts__rodata]
       - [0x1E6CC, .data, dk_filter__rodata]
@@ -116,7 +114,7 @@ segments:
       - [0x1F19C, .data, dk_filter]
       - [0x1F1D8, .data, dk_osk]
       - [0x1F1E4, .data, dk_help]
-      - [0x1F9A0, data, data_1]
+      - [0x1F9A0, data, data_0]
       - { start: 0x1F9B0, type: bss, vram: 0x8823950, name: bss }
   - [0x1F9B0]
 

@@ -646,3 +646,26 @@ Também: helper `static` definido antes no mesmo `.c` (`mat4_det`, `ehf_track_ev
 `type:func static`. Família não resolvida: cópia morta do destino nos `u32 → float` (`bltzl; srl` com o `srl`
 original mantido depois do `b`) em `cardlist_draw_arrow`: o mwcc 219 a remove nessa função, embora a mantenha em
 `ehf_track_eval`.
+
+## Rodada 9: família dk_/ds_/dt_/sc_ e `tools/find_twins.py`
+
+`python3 tools/find_twins.py` lista as gêmeas entre módulos (palavras mascaradas idênticas, `=`; ou, para funções da
+fila, ≥ 90% iguais a uma que já bate, `~`; `--ratio 0.85` alarga, `--all` mostra também grupos só de fila). Com o
+grupo em mãos: case a cópia mais próxima, compare as fontes das outras com `sed` trocando o prefixo e aplique as
+mesmas substituições (as quatro `*_draw_detail` e `*_sort_value` bateram assim).
+
+| No asm original | Fonte |
+|---|---|
+| `addiu v1,cols,-1; addu v1,count,v1` | `(count + (cols - 1)) / cols` (o mwcc não reassocia `count + cols - 1`) |
+| `y + q` primeiro, depois `- h / 2` | `y = y + hh * r / rows - h / 2;` (com `y += ...` a subtração vai antes) |
+| `bXX; nop` de um teste e do `default` interno para o mesmo `li v0,K` no fim, e o primeiro (`b fim; li K`) com a cópia | `switch (x) { case 8: ...; break; default: goto none; }` e `default: none: v = K;` no `switch` interno (`*_sort_value`) |
+| `case 0` de um `switch` que termina em `return 0` com `beqzl; move v0,zero` e o `default` interno `b; nop` | `break` no lugar do `return 0` do caso (cai no `return 0` comum: `dt_press_update`) |
+| campos de uma tabela pequena carregados cada um com seu `lui` (sem base comum) | a tabela é `const` (`.rodata`, `// @rodata`): `dt_text_icon_spr` como `fmsg_cursor_spr` |
+| `or v1,a2,v1` com o ternário das colunas como 1º operando | sem o local `view`: as duas expressões direto no argumento (`*_set_mode`, laço 1) |
+
+Ao promover uma função com `switch` denso (`sltiu; lui; addiu; jr`), as tabelas de salto vão para a `.rodata` do
+objeto: declarar `// @rodata` cobrindo-as (as duas tabelas de `*_draw_detail` ficam juntas, a do 2º `switch` primeiro).
+Abertos (todas as cópias com a mesma causa): `*_draw_info` (3 palavras: `list` em `$s1` no original, aqui divide
+`$s0` com `r`), `*_draw_rows[_small]` (12: o original carrega `row_w` depois da junção do ternário de `DK_ENT`),
+`ds/sc_input_move` e `dk/dt_flight_undo` (3–5: lado 0/1 com `bnezl; li 1; move zero`, o mwcc 219 faz `sltu` ou
+inverte o desvio), `*_set_mode` (o 2º laço de releitura dos painéis com outros temporários que o 1º, idêntico no fonte).
