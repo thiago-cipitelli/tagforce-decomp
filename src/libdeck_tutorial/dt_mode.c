@@ -60,7 +60,7 @@ DtMode dt_modes[9] = {   /* one zero row more than libdeck */
     { 0, 0, 0, 0 },
 };
 
-#ifdef NON_MATCHING /* forma de dk_set_mode (asm idêntico), 40 palavras: só o segundo laço de releitura dos painéis com outros temporários que o primeiro */
+#ifdef NON_MATCHING /* forma de dk_set_mode (asm idêntico), 39 palavras: só o segundo laço de releitura dos painéis com outros temporários que o primeiro */
 /* switches the pane layout (dt_modes row), keeping each list's scroll position */
 void dt_set_mode(unsigned short mode)
 {
@@ -70,7 +70,6 @@ void dt_set_mode(unsigned short mode)
     int i;
     DtPane *p;
     int grid;
-    unsigned short view;
     int tab;
     int keep;
 
@@ -96,9 +95,8 @@ void dt_set_mode(unsigned short mode)
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         dt_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)(unsigned short)(p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows) << 8,
                          p->list->count, &p->top, &p->cx, &p->cy);
         if (dtv.mode <= 1)
             break;
@@ -146,9 +144,8 @@ void dt_set_mode(unsigned short mode)
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         dt_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)(unsigned short)(p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows) << 8,
                          p->list->count, &p->top, &p->cx, &p->cy);
         if (dtv.mode <= 1)
             break;

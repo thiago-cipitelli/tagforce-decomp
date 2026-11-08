@@ -259,7 +259,7 @@ DkMode dk_modes[8] = {
     { 0, 3, 1, 4 },
 };
 
-#ifdef NON_MATCHING /* 40 palavras: tudo bate até o segundo laço de releitura dos painéis, que no original usa outros temporários (v1/a1/a2/t0 contra v0/v1/t0/a3) que o primeiro, idêntico no fonte; locais de bloco e ordem das declarações não mudam */
+#ifdef NON_MATCHING /* 39 palavras: o 1º laço de releitura dos painéis bate com o ternário das colunas antes da linha no argumento (sem o local view); o 2º, idêntico no fonte, usa outros temporários no original (v1/a1/a2/t0 contra v0/v1/t0/a3); locais de bloco, ordem das declarações e helper inline não mudam */
 /* switches the pane layout (dk_modes row), keeping each list's scroll position */
 void dk_set_mode(unsigned short mode)
 {
@@ -269,7 +269,6 @@ void dk_set_mode(unsigned short mode)
     int i;
     DkPane *p;
     int grid;
-    unsigned short view;
     int tab;
     int keep;
 
@@ -295,9 +294,8 @@ void dk_set_mode(unsigned short mode)
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         dk_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)(unsigned short)(p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows) << 8,
                          p->list->count, &p->top, &p->cx, &p->cy);
         if (dkv.mode <= 1)
             break;
@@ -345,9 +343,8 @@ void dk_set_mode(unsigned short mode)
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         dk_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)(unsigned short)(p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows) << 8,
                          p->list->count, &p->top, &p->cx, &p->cy);
         if (dkv.mode <= 1)
             break;
