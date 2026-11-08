@@ -427,6 +427,39 @@ Receita (bateu `dd_fx32_s0`, `s2`, `s4`, `s5`, `s6`, `s7`, `s8`):
 Os 9 `dd_fx32_s*_update` são variações do mesmo molde (tubo, faíscas, grade): a forma que bate num serve de modelo
 para os outros (tubo de `s2` em `s1/s4/s5/s8`, grade de `s5` em `s4`, lâminas de `s0` em `s7`, `out = 1.0f - lin`).
 
+## Rodada 9 (`dd_fx_*`): registradores que a ordem de criação sozinha não resolve
+
+`dd_fx_glow_update`, `dd_fx32_s1_update`, `dd_ring_update`, `dd_halo_update`, `dd_tunnel_update` e `dd_fx_summon_update` bateram; a forma já
+era idêntica e só faltavam registradores. O que resolveu, além da regra da rodada 8:
+- **Ponteiro de laço declarado no topo da função** (antes de todas as outras, inclusive da primeira com
+  inicializador): o ponteiro do elemento num laço de desenho que tem o mesmo nome do laço de criação (`f`, `sp`, `st`)
+  vira uma variável própria declarada na primeira linha (`DdRingFlame *fl;`, `DdHaloSpark *ns;`, `DdStreak *sk;`). Vale
+  para float também (`float place;` em `dd_ring_update`). Busca automática: renomear cada uso por faixa de linhas para
+  uma variável nova no topo / no fim das declarações / no bloco, ou para uma variável existente, em descida gulosa
+  (`build/tmp/fxe/ren.py` da worktree `fxe`, não versionado).
+- **Expressão repetida em vez de variável**: `void *tb = d->tube_buf[buf]; memcpy(tb, ...); f(..., tb)` dá `$s`
+  diferentes de `memcpy(d->tube_buf[buf], ...); f(..., d->tube_buf[buf])` (o temporário do CSE é criado depois),
+  com o contador do laço sendo o `i` da função (`dd_fx32_s1_update`).
+- **`&local` mantido num `$s` através de uma chamada** (`addiu s1,sp,404` antes do `sinf`, passado ao sprite depois):
+  o mwcc rematerializa `&c` em qualquer forma direta; o que reproduz é um ponteiro de indução de um laço de uma volta,
+  declarado antes de `list`: `pos = &c; for (n = 0; n < 1; n++) { in = ...; list = f(list, pos++, ...sinf...); }`
+  (`dd_fx_glow_update`).
+- **Cópia de modelo por campo**: `scale.x = g.x; scale.y = g.y; scale.z = g.z;` intercala `lwc1/swc1` como o
+  original (`lw x; lw y; sw x; sw y; lw z; sw z`); `scale = *(V3 *)&g` agenda a última carga antes do `sw y`.
+- **Ordem dos comandos sem dependência decide o `$s` de uma flag**: `off = tmpl; tilt = 0.0f; flip = 1;` (não
+  `tilt; off; flip`) fez `flip` herdar o registrador de `s` (`dd_halo_update`).
+- **Constante em `ft`** num `fr * K + C`: local no bloco do laço (`float dr = -600.0f; radius = fr * dr + 800.0f;`).
+- **`list` dividida em duas variáveis** (`dd_orb_draw`, 12 → 2 palavras): a partir do primeiro `draw_sprite`, o
+  resto da função usa `l2 = draw_sprite(list, ...)`; o valor de 31 do halo reaproveita `v` em vez de `t`.
+- **`dd_fx_summon_update` (290 → 0)**: descida gulosa de nomes (contadores próprios no topo, cores do anel em
+  variáveis próprias) levou a 30; o resto: `bb[16] __attribute__((aligned(16)))` (a matriz vai para o fundo da pilha),
+  `alpha` sem o `<< 24` e o deslocamento na chamada (`alpha << 24 | 0xFFFFFF`), constantes das somas dos vértices em
+  locais (`tv + q`, `q = 0.25f`; a literal nos produtos fica), e o modelo `{0, 0, 1}` com o `e` gravado entre a cópia
+  do 1º e do 2º campo = cópia por campo de um global nomeado (`s[0] = g[0]; s[1] = g[1]; s[2] = g[2]; s[0] = e;`).
+  O outro modelo do mesmo `@data` vira global também (`DdSumVec3 ofs = *(DdSumVec3 *)g;`), para manter a ordem no `.data`.
+- **Conferir os operandos que o `-d` mascara**: o diff estrutural com relocações normalizadas escondeu 2 palavras que
+  eram outra forma da mesma lógica (`&ring_idx[0]` sobre `ring[i] + 1` na segunda faixa do anel, não `&ring_idx[4]` sobre `ring[i]`: mesmos vértices, offsets diferentes).
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
 - **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`) e

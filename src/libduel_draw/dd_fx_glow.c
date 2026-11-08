@@ -1,5 +1,5 @@
 // @range 0x08849060-0x0884A86C
-// @asm 0x088494D0-0x0884A86C
+// @data 0x08876C80-0x08876CE4
 /* Card effects "hit sound" (effects 204-376: only the hit sounds and the character's reaction)
    and "body glow" (effect 18): orange glows (orang_light.gim) projected on the character's
    bones, pulsing with a random phase each, faded in and out. */
@@ -200,11 +200,11 @@ void *dd_fx_glow_sprite(void *list, FxVec3 *pos, int alpha, FxVec4 *rect, FxMat4
     return draw_sprite(r, x[0], y[0], 0, 40, 8, 0, 0);
 }
 
-#ifdef NON_MATCHING /* 1 instrução (rodada 8; o resto é deslocamento): no fim, o original guarda &c num s1 antes do sinf (addiu s1,sp,404 no delay do bltz da conversão de a255) e passa s1 ao sprite; o mwcc rematerializa &c na chamada. Testados: ponteiro p2 = &c antes/depois de in, argumento em linha, bloco próprio, core[4]. O resto (q por bloco, matrizes cam/vp/proj/view, out com len >= 0, f depois de a, arm[i] + 12 por char *, pc = &c, contadores n0..n6) bate */
 int dd_fx_glow_update(int phase, DdFxGlow *w)
 {
     DdFxArg *arg = w->arg;
     int run = arg->run;
+    FxVec3 *pos;
     void *list;
     float in;
     float out;
@@ -226,6 +226,7 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
     int n4;
     int n5;
     int n6;
+    int n7;
 
     dd_mtx_push_saved();
     if (phase == 1)
@@ -374,8 +375,11 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
             vec3_lerp(&core[1], &core[1], &core[2], 0.5f);
             vec3_lerp(pc, &core[1], &core[0], 1.1f);
             list = dd_blend_enable(list, 1, 0, 6, 10, 0, 0xFFFFFFFF);
-            in = 0.8f * (float)a255;
-            list = dd_fx_glow_sprite(list, &c, (unsigned int)(in * (0.8f + 0.2f * sinf(w->ph_core + rot))), w->rect[3], &cam, &vp);
+            pos = &c;
+            for (n7 = 0; n7 < 1; n7++) {
+                in = 0.8f * (float)a255;
+                list = dd_fx_glow_sprite(list, pos++, (unsigned int)(in * (0.8f + 0.2f * sinf(w->ph_core + rot))), w->rect[3], &cam, &vp);
+            }
         }
         mtx_pop();
         dl_set_list(list);
@@ -401,4 +405,3 @@ int dd_fx_glow_update(int phase, DdFxGlow *w)
     }
     return 2;
 }
-#endif
