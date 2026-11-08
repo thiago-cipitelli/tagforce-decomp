@@ -42,7 +42,6 @@ segments:
       - [0x3AA4, c, rv_list]
       - [0x42D4, asm, rv_list_asm_08808274]
       - [0x44F0, c, rv_list]
-      - [0x4C90, asm, rv_list_asm_08808C30]
       - [0x52D4, c, rv_menu]
       - [0x5684, asm, rv_menu_asm_08809624]
       - [0x57FC, c, rv_menu]
