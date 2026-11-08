@@ -1,6 +1,5 @@
 // @range 0x08865060-0x08866074
-// @asm 0x08865374-0x08865BB0
-// @asm 0x08865BB0-0x08866028
+// @rodata 0x088728A4-0x08872A04
 /* Voice lines of the duel characters: for a model event (summon, attack, damage, ...) picks the
    clips of each step (named characters through their cast table, the generic ones by card kind),
    then plays the clips of a step when the animation reaches its trigger. Tables in .data (asm). */
@@ -129,8 +128,6 @@ void voice_stop(ChrModel *m)
 
 #define RND(n) ((int)rand_next() % (n))
 
-#ifdef NON_MATCHING /* voice_pick_cast: 74 palavras, só $s trocados (n em s0 e p em s2 no original); ordens das
-                       declarações tentadas (perm_stmts, 720). */
 /* characters with a cast entry: clips by event, card kind, the character's own cards and the
    flags of the event (clip numbers relative to 0x152) */
 void voice_pick_cast(ChrModel *m, int ev, unsigned int flags)
@@ -140,11 +137,11 @@ void voice_pick_cast(ChrModel *m, int ev, unsigned int flags)
     int own[4];
     VoiceRange *r;
     VoiceCast *cast;
+    int *p = clips[0];
+    int pick;
     int n;
     int i;
     int k;
-    int pick;
-    int *p = clips[0];
 
     pick = -1;
     memset(p, 0xFF, sizeof(clips));
@@ -297,12 +294,7 @@ void voice_pick_cast(ChrModel *m, int ev, unsigned int flags)
             m->voices[k][i] = clips[k][i] - 0x152;
 }
 
-#else
-void voice_pick_cast(ChrModel *m, int ev, unsigned int flags);
-#endif
 
-#ifdef NON_MATCHING /* bate com -DNON_MATCHING (0 palavras), mas as tabelas de salto vêm depois das de
-                       voice_pick_cast, ainda em asm: promover junto com ela */
 /* characters of the charmap: the same events with fixed clip numbers */
 void voice_pick_generic(ChrModel *m, int ev, unsigned int flags)
 {
@@ -427,9 +419,6 @@ void voice_pick_generic(ChrModel *m, int ev, unsigned int flags)
         for (k = 0; k < 4; k++)
             m->voices[k][i] = clips[k][i];
 }
-#else
-void voice_pick_generic(ChrModel *m, int ev, unsigned int flags);
-#endif
 
 /* cast entry of a character and costume (default entry when absent) */
 VoiceCast *voice_cast_find(int chr, int costume)
