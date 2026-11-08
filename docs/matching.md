@@ -619,3 +619,19 @@ Também: helper `static` definido antes no mesmo `.c` (`mat4_det`, `ehf_track_ev
 `type:func static`. Família não resolvida: cópia morta do destino nos `u32 → float` (`bltzl; srl` com o `srl`
 original mantido depois do `b`) em `cardlist_draw_arrow`: o mwcc 219 a remove nessa função, embora a mantenha em
 `ehf_track_eval`.
+## Rodada 9 (BOOT: postfx.c, efs.c, cardlist.c, font_tags.c)
+
+| No asm original | Fonte |
+|---|---|
+| parâmetro com o `$s` **mais baixo** (criado por último), os outros em ordem | parâmetro `void *in` copiado para um local tipado: `EfsInst *inst = in;` (`efs_cmd_inst`, 28 → 0); com o mesmo tipo no parâmetro não muda nada |
+| valores novos de um bloco no `$s` de parâmetros já mortos (`ty` no registrador de `y`, `x - scroll` no de `mask`) | variáveis novas declaradas no bloco (`int sc, sx, ty;` no `if` do nome rolante), em vez de reatribuir o parâmetro (`card_draw_stats`, 72 → 0) |
+| segundo laço sobre o mesmo vetor com `i`/`pos` e `id`/`s` trocados | ponteiro do laço num bloco próprio em volta do `for` (`{ int *pos2; for (...) }`) e `int id2;` como **primeira** declaração da função (`cardlist_draw_pair_at`, 47 → 0); o modelo do vetor local passa a sair do objeto: apague o global que o asm usava (`cardlist_pair_init`) |
+| `edram + fb` calculado logo depois da chamada num `$s` (`addu s6,s0,v0`), não no uso | `frame = edram; frame += (*gfx_get_state() & 1) ? 0 : 0x88000;` (`frame = edram + fb` e o ternário inteiro são dobrados para dentro do uso); endereços das tabelas de vértices em locais atribuídos antes da chamada (`postfx_glow_a/b`, `postfx_blur`) |
+| `move a0,sX` com o `u16` cru para um chamado e o `andi` só no teste | declaração K&R local `int wc_no_line_start();` dentro da função (o protótipo do header mascara e o mwcc junta a máscara do teste com a do argumento) (`font_ruby_layout`) |
+| carga do 4º argumento antes do 2º (`lw a3,12(s0)` antes de `lw a1,4(s0)`) | tipo do parâmetro no protótipo local: `unsigned int slot` em vez de `int` reordenou as cargas (`font_layout_end`, 7 → 2) |
+| `s6 = f + i*16` e `s0 = s6 + off` a cada volta | laço por índice com `c = &f->cmds[i];` no corpo, não ponteiro incrementado (`font_layout_end`, 273 → 7) |
+
+Busca automática: gerar variantes inteiras da função (declarações em blocos, renomeações, ordens) e compilar
+todas num só TU em lotes de 200 (`perm_decls.py --alts` estoura o limite de argumentos com mais de ~1000
+variantes; o script `build/tmp/boot2/alts.py` da worktree boot2 lê as variantes de um JSON). 1100 variantes de
+`cardlist_draw_at` (subconjuntos e ordens de locais movidos para um bloco) em ~3 min levaram 14 → 5 palavras.

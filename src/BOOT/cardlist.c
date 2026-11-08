@@ -2,9 +2,7 @@
 // @data 0x088EF468-0x088EFFF8
 // @rodata 0x088B499C-0x088B4B04
 // @asm 0x08854A68-0x08854D94
-// @asm 0x08854DA8-0x088552B0
 // @asm 0x08856E08-0x08857148
-// @asm 0x08857DD8-0x088580AC
 /* Card list / card panel drawing: the card picture (read through cip.c into VRAM and drawn with
    a cross-fade when the card changes), its frame from cil_0000<l>.gim, level stars, attribute
    and type icons, ATK/DEF, the description box with scroll bar and blinking arrows, and the
@@ -407,19 +405,16 @@ void *cardlist_draw(void *list, CardView *v)
     return cardlist_draw_at(list, 0, 0, v);
 }
 
-#ifdef NON_MATCHING /* 20 palavras: s/cs/id do segundo bloco em $s rodados e posições de spill na pilha
-   (ordem das declarações: melhor de 400 permutações) */
+#ifdef NON_MATCHING /* 3 palavras: o original calcula &v->shown_cmp (a3) antes dos outros argumentos da 1ª chamada
+   de card_type_line; locais do 2º cartão num bloco (regra da ordem de criação) */
 void *cardlist_draw_at(void *list, int x, int y, CardView *v)
 {
     CardStats *sh;
     unsigned short *desc;
     int id;
-    CardStats *cs;
-    CardStats *s;
     unsigned short *name;
     int variant;
     unsigned short *line;
-    int mask;
     void *tex;
     CardList *c = &cardlist;
 
@@ -452,29 +447,39 @@ void *cardlist_draw_at(void *list, int x, int y, CardView *v)
             tex = cardlist_get_picture(id, variant);
         }
         list = cardlist_draw_picture(list, x + 5, y + 4, tex, v->vram, v->fade, name, line, desc, sh);
-        id = v->id;
-        name = card_get_name(id);
-        desc = card_get_desc(id);
-        mask = v->show_mask;
-        s = &v->cur;
-        cs = &v->cmp;
-        line = card_type_line(id, mask, s, cs);
-        if (id == -1 || tex == 0) {
-            unsigned short empty[1] = { 0 };
+        {
+            unsigned short *name2;
+            unsigned short *line2;
+            int id2;
+            CardStats *s2;
+            CardStats *cs2;
+            int mask2;
 
-            list = card_draw_ehf_frame(list, x, y + 0x9D, -1, 0);
-            list = card_draw_desc_box(list, x + 1, y + 0xAE, 0x87, 0x61, 0, empty, empty, empty, &v->desc_max);
-            list = cardlist_draw_scrollbar(list, x + 0x8A, y + 0xB8, 0x4D, 0, 0x4B);
-        } else {
-            list = card_draw_ehf_frame(list, x, y + 0x9D, s->attr, 0);
-            list = card_draw_stats(list, x, y + 0x9D, mask, s, cs, v->fade);
-            list = card_draw_icons_col(list, x + 0x73, y + 0x9B, mask, s, cs);
-            list = card_draw_desc_box(list, x + 1, y + 0xAE, 0x87, 0x61, v->desc_scroll, name, line, desc, &v->desc_max);
-            list = card_draw_desc_arrows(list, x + 0x8A, y + 0xB0, 0x5D, 0x61, v, c->arrows);
+            id2 = v->id;
+            name2 = card_get_name(id2);
+            desc = card_get_desc(id2);
+            s2 = &v->cur;
+            cs2 = &v->cmp;
+            mask2 = v->show_mask;
+            line2 = card_type_line(id2, mask2, s2, cs2);
+            if (id2 == -1 || tex == 0) {
+                unsigned short empty[1] = { 0 };
+
+                list = card_draw_ehf_frame(list, x, y + 0x9D, -1, 0);
+                list = card_draw_desc_box(list, x + 1, y + 0xAE, 0x87, 0x61, 0, empty, empty, empty, &v->desc_max);
+                list = cardlist_draw_scrollbar(list, x + 0x8A, y + 0xB8, 0x4D, 0, 0x4B);
+            } else {
+                list = card_draw_ehf_frame(list, x, y + 0x9D, s2->attr, 0);
+                list = card_draw_stats(list, x, y + 0x9D, mask2, s2, cs2, v->fade);
+                list = card_draw_icons_col(list, x + 0x73, y + 0x9B, mask2, s2, cs2);
+                list = card_draw_desc_box(list, x + 1, y + 0xAE, 0x87, 0x61, v->desc_scroll, name2, line2, desc, &v->desc_max);
+                list = card_draw_desc_arrows(list, x + 0x8A, y + 0xB0, 0x5D, 0x61, v, c->arrows);
+            }
         }
     }
     return list;
 }
+
 #endif
 
 void *cardlist_draw_pair(void *list, CardView *a, CardView *b)
@@ -483,13 +488,12 @@ void *cardlist_draw_pair(void *list, CardView *a, CardView *b)
 }
 
 /* Two cards side by side (deck editor comparison). */
-/* Initial positions of cardlist_draw_pair_at's local block (picture, frame, icons per side). */
-int cardlist_pair_init[12] = { 1, 3, 0, 107, 0, 125, 1, 167, 0, 150, 0, 137 };
 
-#ifdef NON_MATCHING /* 47 palavras: $s de i/list/pos trocados no 2º laço e spills de name/desc na pilha;
-   forma: return cedo, dois vetores locais, c = &cardlist, variant lido antes de card_get_name */
+/* Second loop: its own pos (block local) and id2 declared first, so that the creation order gives the
+   original's $s (i/pos and id/s were swapped with the shared variables). */
 void *cardlist_draw_pair_at(void *list, int x, int y, CardView *a, CardView *b)
 {
+    int id2;
     int tp[2][6] = { { 1, 3, 0, 107, 0, 125 }, { 1, 167, 0, 150, 0, 137 } };  /* picture x, y; frame x, y; icons x, y */
     CardList *c = &cardlist;
     CardView *tv[2] = { 0 };
@@ -537,43 +541,46 @@ void *cardlist_draw_pair_at(void *list, int x, int y, CardView *a, CardView *b)
         list = dl_ambient_color(list, 0x80000000);
         list = draw_set_offsets(list, 0, 0, 0x8E, tp[1][5] + 0xF - tp[0][5]);
         list = draw_sprite(list, x + 1, y + tp[0][5], 0, 0, 0, 0, 0);
-        for (i = 0, pv = tv, pos = tp[0]; i < 2; i++, pv++, pos += 6) {
-            v = *pv;
-            if (v != 0) {
-                ehf = i == 0 ? 0 : (void *)c->cfg.frame_view;
-                id = v->id;
-                if (i == 0) {
-                    list = dl_disable(list, 9);
-                    list = dl_tex_func(list, 4, 0);
-                    list = dl_ambient_color(list, 0x80000000);
-                    list = draw_set_offsets(list, 0, 0, 0x87, 3);
-                    list = draw_sprite(list, x + pos[0], y + pos[1] + 0x68, 0, 0, 0, 0, 0);
-                }
-                if (id < 1) {
-                    unsigned short empty[1] = { 0 };
+        {
+            int *pos2;
 
-                    list = card_draw_ehf_frame(list, x + pos[2], y + pos[3], -1, ehf);
-                    list = card_draw_desc_box(list, x + pos[0], y + pos[1], 0x87, 0x68, 0, empty, empty, empty, &v->desc_max);
-                    list = cardlist_draw_scrollbar(list, x + pos[0] + 0x89, y + pos[1] + 10, 0x54, 0, 0x52);
-                } else {
-                    mask = v->show_mask;
-                    s = &v->cur;
-                    cs = &v->cmp;
-                    name = card_get_name(id);
-                    desc = card_get_desc(id);
-                    line = card_type_line(id, mask, s, cs);
-                    list = card_draw_ehf_frame(list, x + pos[2], y + pos[3], s->attr, ehf);
-                    list = card_draw_stats(list, x + pos[2], y + pos[3], mask, s, cs, v->fade);
-                    list = card_draw_icons_row(list, x + pos[4], y + pos[5], 0x91, mask, s, cs);
-                    list = card_draw_desc_box(list, x + pos[0], y + pos[1], 0x87, 0x68, v->desc_scroll, name, line, desc, &v->desc_max);
-                    list = card_draw_desc_arrows(list, x + pos[0] + 0x89, y + pos[1] + 2, 100, 0x68, v, c->arrows);
+            for (i = 0, pv = tv, pos2 = tp[0]; i < 2; i++, pv++, pos2 += 6) {
+                v = *pv;
+                if (v != 0) {
+                    ehf = i == 0 ? 0 : (void *)c->cfg.frame_view;
+                    id2 = v->id;
+                    if (i == 0) {
+                        list = dl_disable(list, 9);
+                        list = dl_tex_func(list, 4, 0);
+                        list = dl_ambient_color(list, 0x80000000);
+                        list = draw_set_offsets(list, 0, 0, 0x87, 3);
+                        list = draw_sprite(list, x + pos2[0], y + pos2[1] + 0x68, 0, 0, 0, 0, 0);
+                    }
+                    if (id2 < 1) {
+                        unsigned short empty[1] = { 0 };
+
+                        list = card_draw_ehf_frame(list, x + pos2[2], y + pos2[3], -1, ehf);
+                        list = card_draw_desc_box(list, x + pos2[0], y + pos2[1], 0x87, 0x68, 0, empty, empty, empty, &v->desc_max);
+                        list = cardlist_draw_scrollbar(list, x + pos2[0] + 0x89, y + pos2[1] + 10, 0x54, 0, 0x52);
+                    } else {
+                        mask = v->show_mask;
+                        s = &v->cur;
+                        cs = &v->cmp;
+                        name = card_get_name(id2);
+                        desc = card_get_desc(id2);
+                        line = card_type_line(id2, mask, s, cs);
+                        list = card_draw_ehf_frame(list, x + pos2[2], y + pos2[3], s->attr, ehf);
+                        list = card_draw_stats(list, x + pos2[2], y + pos2[3], mask, s, cs, v->fade);
+                        list = card_draw_icons_row(list, x + pos2[4], y + pos2[5], 0x91, mask, s, cs);
+                        list = card_draw_desc_box(list, x + pos2[0], y + pos2[1], 0x87, 0x68, v->desc_scroll, name, line, desc, &v->desc_max);
+                        list = card_draw_desc_arrows(list, x + pos2[0] + 0x89, y + pos2[1] + 2, 100, 0x68, v, c->arrows);
+                    }
                 }
             }
         }
     }
     return list;
 }
-#endif
 
 /* Exported: card panel record -> drawn panel. */
 void *cardlist_build(void *list, CardPanel *p)
@@ -1599,8 +1606,7 @@ int cardlist_ready(void)
 
 /* Stats strip under the picture: spell/trap kind icon and scrolling name, or ATK/DEF (red or
    blue against the compared card), kind and type icons. Bits of `mask` pick cmp fields. */
-#ifdef NON_MATCHING /* 72 palavras: o original dá os parâmetros a s1-s6 e attr a s0 (o sw s0 do prólogo vai
-   para o delay slot do primeiro jal); ordem das declarações não muda */
+/* The scrolling name uses block locals (sc, sx, ty): the original gives them the $s of dead parameters. */
 void *card_draw_stats(void *list, int x, int y, unsigned int mask, CardStats *s, CardStats *cmp, int scroll)
 {
     unsigned short *name;
@@ -1609,7 +1615,6 @@ void *card_draw_stats(void *list, int x, int y, unsigned int mask, CardStats *s,
     int sub;
     int w;
     int tw;
-    int ty;
 
     list = dl_color(list, 0xFFFFFFFF);
     list = dl_enable(list, 4);
@@ -1621,6 +1626,10 @@ void *card_draw_stats(void *list, int x, int y, unsigned int mask, CardStats *s,
         w = sub == 0 ? 0x7F : 0x6E;
         list = card_draw_frame_special(list, x + w, y, attr);
         if (mask & 0x20000) {
+            int sc;
+            int sx;
+            int ty;
+
             name = card_get_name(cmp->mask);
             list = dl_scissor(list, x, y, w, 0x18);
             list = dl_enable(list, 2);
@@ -1629,15 +1638,15 @@ void *card_draw_stats(void *list, int x, int y, unsigned int mask, CardStats *s,
             font_set_size(9, 0xC);
             tw = (font_measure_text(name) + 0x3F) >> 6;
             if (w < tw) {
-                scroll %= tw + 0x14;
+                sc = scroll % (tw + 0x14);
             } else {
-                scroll = 0;
+                sc = 0;
             }
             ty = (y + 4) * 0x40;
-            x -= scroll;
-            font_draw_text(x * 0x40, ty, (0x1E0 - x) * 0x40, name);
-            if (scroll > 0) {
-                tw = tw + x + 0x14;
+            sx = x - sc;
+            font_draw_text(sx * 0x40, ty, (0x1E0 - sx) * 0x40, name);
+            if (sc > 0) {
+                tw = tw + sx + 0x14;
                 font_draw_text(tw * 0x40, ty, (0x1E0 - tw) * 0x40, name);
             }
             list = dl_disable(font_text_clear(), 2);
@@ -1670,7 +1679,6 @@ void *card_draw_stats(void *list, int x, int y, unsigned int mask, CardStats *s,
     }
     return list;
 }
-#endif
 
 /* Extra icons laid out to the right. */
 void *card_draw_icons_row(void *list, int x, int y, int w, unsigned int mask, CardStats *s, CardStats *cmp)
