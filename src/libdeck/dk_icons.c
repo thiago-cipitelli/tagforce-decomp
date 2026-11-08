@@ -1,5 +1,5 @@
 // @range 0x088103A0-0x08810CD0
-// @asm 0x088107C0-0x08810CD0
+// @rodata 0x088225D8-0x08822628
 /* Small drawing helpers: the card icons (type, attribute, kind, limit, pack) at a position, a
    button icon with its label, the shade over a pane and its list tab, and the bubble beside the
    scroll bar with the sort value of the cursor's card. */
@@ -90,7 +90,6 @@ void *dk_draw_shade(void *list, unsigned short side, unsigned short tab, int sho
     return dl_ambient_color(list, 0xFFFFFFFF);
 }
 
-#ifdef NON_MATCHING /* ~62 palavras: sort int, conta da bolha com h - 43, y + 12 e i / cols em locais, ch zerado por laço de bytes, (u16)v << 16; resta a escolha s1/s2 entre w e l/x (ordem das declarações não muda) e a ordem das cargas da conta */
 unsigned int font_sample_glyph_size(void);
 int font_measure_text(unsigned short *text);
 void font_text_set(void *list);
@@ -110,16 +109,16 @@ void *dk_draw_detail(void *list)
     DkEnt *e = DK_ENT(l, i);
     int sort = l->sort;
     unsigned int v;
+    unsigned int sz;
+    int x;
     int w;
+    int r;
     int h;
     int cols;
-    int rows;
-    int x;
-    int y;
-    unsigned int sz;
-    int lw;
     int hh;
-    int r;
+    int y;
+    int rows;
+    int lw;
 
     if (e == 0)
         return list;
@@ -151,15 +150,15 @@ void *dk_draw_detail(void *list)
         break;
     }
     hh = p->lay.h - 0x2B;
-    cols = p->lay.cols;
-    rows = (l->count + cols - 1) / cols;
     y = p->lay.y + 12;
+    cols = p->lay.cols;
+    rows = (l->count + (cols - 1)) / cols;
     r = i / cols;
     x = p->lay.x + p->lay.w - 10 - w;
     if (rows == 0)
         y += (hh - h) / 2;
     else
-        y += hh * r / rows - h / 2;
+        y = y + hh * r / rows - h / 2;
     list = dk_draw_box(list, x, y, w, h, dk_res_get(0x8013));
     if (v == 0xFFFFFFFE)
         return list;
@@ -173,8 +172,8 @@ void *dk_draw_detail(void *list)
         font_set_size(14, 14);
         font_set_color(0xFFFFFFFF);
         {
-            int n = 4;
             unsigned char *d = (unsigned char *)ch;
+            int n = 4;
 
             if (d)
                 do {
@@ -222,4 +221,3 @@ void *dk_draw_detail(void *list)
     }
     return list;
 }
-#endif

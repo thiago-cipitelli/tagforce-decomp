@@ -1,5 +1,5 @@
 // @range 0x08806F0C-0x08807828
-// @asm 0x08807318-0x08807828
+// @rodata 0x08819C2C-0x08819C7C
 /* The icon wrappers (type, attribute, kind, limit, pack), a button icon with its label, the pane
    shade and the detail window shown with Square (same source as libdeck_swap ds_info.c). */
 #include "libdeck_swap.h"
@@ -17,7 +17,7 @@ unsigned short *card_info_fill(int id);
 void *cardlist_build(void *list, DsScroll *s);
 unsigned int font_sample_glyph_size(void);
 unsigned short ds_cur_index(unsigned short side);
-int ds_sort_value(DsEnt *e, unsigned int sort);
+int ds_sort_value(DsEnt *e, unsigned short sort);
 unsigned int ds_tab_pos(unsigned short i);
 void *ds_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned short type);
 void *ds_draw_attr_icon(void *list, unsigned short x, unsigned short y, unsigned short attr);
@@ -84,7 +84,6 @@ void *ds_draw_shade(void *list, unsigned short side, unsigned short tab)
     return dl_ambient_color(list, 0xFFFFFFFF);
 }
 
-#ifdef NON_MATCHING /* ~62 palavras: sort int, conta da bolha com h - 43, y + 12 e i / cols em locais, ch zerado por laço de bytes, (u16)v << 16; resta a escolha s1/s2 entre w e l/x (ordem das declarações não muda) e a ordem das cargas da conta */
 /* the value of the sort key of the cursor's card, in a bubble beside the scroll bar */
 void *ds_draw_detail(void *list)
 {
@@ -94,16 +93,16 @@ void *ds_draw_detail(void *list)
     DsEnt *e = DS_ENT(l, i);
     int sort = l->sort;
     unsigned int v;
+    unsigned int sz;
+    int x;
     int w;
+    int r;
     int h;
     int cols;
-    int rows;
-    int x;
-    int y;
-    unsigned int sz;
-    int lw;
     int hh;
-    int r;
+    int y;
+    int rows;
+    int lw;
 
     if (e == 0)
         return list;
@@ -135,15 +134,15 @@ void *ds_draw_detail(void *list)
         break;
     }
     hh = p->lay.h - 0x2B;
-    cols = p->lay.cols;
-    rows = (l->count + cols - 1) / cols;
     y = p->lay.y + 12;
+    cols = p->lay.cols;
+    rows = (l->count + (cols - 1)) / cols;
     r = i / cols;
     x = p->lay.x + p->lay.w - 10 - w;
     if (rows == 0)
         y += (hh - h) / 2;
     else
-        y += hh * r / rows - h / 2;
+        y = y + hh * r / rows - h / 2;
     list = ds_draw_box(list, x, y, w, h, res_get(0x8013));
     if (v == 0xFFFFFFFE)
         return list;
@@ -157,8 +156,8 @@ void *ds_draw_detail(void *list)
         font_set_size(14, 14);
         font_set_color(0xFFFFFFFF);
         {
-            int n = 4;
             unsigned char *d = (unsigned char *)ch;
+            int n = 4;
 
             if (d)
                 do {
@@ -206,5 +205,4 @@ void *ds_draw_detail(void *list)
     }
     return list;
 }
-#endif
 

@@ -1,6 +1,6 @@
 // @range 0x0880D54C-0x0880E64C
+// @rodata 0x0881A984-0x0881A9D4
 // @asm 0x0880D54C-0x0880D928
-// @asm 0x0880DD34-0x0880E244
 /* The card info strip under the panes (name, icons, level, ATK/DEF, scrolling description), the
    icon wrappers, a button icon with its label, the pane shade, the sort value bubble next to the
    cursor, and the card action menu (opened with Circle). */
@@ -20,7 +20,7 @@ unsigned short *card_info_fill(int id);
 void *cardlist_build(void *list, ScScroll *s);
 unsigned int font_sample_glyph_size(void);
 unsigned short sc_cur_index(unsigned short side);
-int sc_sort_value(ScEnt *e, unsigned int sort);
+int sc_sort_value(ScEnt *e, unsigned short sort);
 unsigned int sc_tab_pos(unsigned short i);
 void *sc_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned short type);
 void *sc_draw_attr_icon(void *list, unsigned short x, unsigned short y, unsigned short attr);
@@ -162,7 +162,6 @@ void *sc_draw_shade(void *list, unsigned short side, unsigned short tab)
     return dl_ambient_color(list, 0xFFFFFFFF);
 }
 
-#ifdef NON_MATCHING /* ~62 palavras: sort int, conta da bolha com h - 43, y + 12 e i / cols em locais, ch zerado por laço de bytes, (u16)v << 16; resta a escolha s1/s2 entre w e l/x (ordem das declarações não muda) e a ordem das cargas da conta */
 /* the value of the sort key of the cursor's card, in a bubble beside the scroll bar */
 void *sc_draw_detail(void *list)
 {
@@ -172,16 +171,16 @@ void *sc_draw_detail(void *list)
     ScEnt *e = SC_ENT(l, i);
     int sort = l->sort;
     unsigned int v;
+    unsigned int sz;
+    int x;
     int w;
+    int r;
     int h;
     int cols;
-    int rows;
-    int x;
-    int y;
-    unsigned int sz;
-    int lw;
     int hh;
-    int r;
+    int y;
+    int rows;
+    int lw;
 
     if (e == 0)
         return list;
@@ -213,15 +212,15 @@ void *sc_draw_detail(void *list)
         break;
     }
     hh = p->lay.h - 0x2B;
-    cols = p->lay.cols;
-    rows = (l->count + cols - 1) / cols;
     y = p->lay.y + 12;
+    cols = p->lay.cols;
+    rows = (l->count + (cols - 1)) / cols;
     r = i / cols;
     x = p->lay.x + p->lay.w - 10 - w;
     if (rows == 0)
         y += (hh - h) / 2;
     else
-        y += hh * r / rows - h / 2;
+        y = y + hh * r / rows - h / 2;
     list = sc_draw_box(list, x, y, w, h, res_get(0x8013));
     if (v == 0xFFFFFFFE)
         return list;
@@ -235,8 +234,8 @@ void *sc_draw_detail(void *list)
         font_set_size(14, 14);
         font_set_color(0xFFFFFFFF);
         {
-            int n = 4;
             unsigned char *d = (unsigned char *)ch;
+            int n = 4;
 
             if (d)
                 do {
@@ -284,7 +283,6 @@ void *sc_draw_detail(void *list)
     }
     return list;
 }
-#endif
 
 /* opens the card action menu on e (or the reduced one on an empty slot) */
 void sc_action_open(ScEnt *e)

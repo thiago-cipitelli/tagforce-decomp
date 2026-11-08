@@ -1,9 +1,7 @@
 // @range 0x08805BE4-0x08808C6C
-// @rodata 0x08820F58-0x08820F78
+// @rodata 0x08820F08-0x08820F78
 // @asm 0x08805BE4-0x08805FC0
-// @asm 0x088063E0-0x088068F0
 // @asm 0x088071CC-0x0880779C
-// @asm 0x08807A5C-0x08807B58
 // @asm 0x08807F60-0x08808098
 // @asm 0x088082AC-0x088087EC
 // @asm 0x088087EC-0x08808924
@@ -56,7 +54,7 @@ void *dl_clear(void *list, unsigned int flags);
 
 void *dt_eres_get(unsigned short id);
 unsigned short dt_cur_index(unsigned short side);
-int dt_sort_value(DtEnt *e, unsigned int sort);
+int dt_sort_value(DtEnt *e, unsigned short sort);
 unsigned int dt_tab_pos(unsigned short tab);
 unsigned short dt_tab_rect(unsigned short i, unsigned short sel, DtRect *r);
 int dt_kind_icon(unsigned short kind);
@@ -246,7 +244,6 @@ void *dt_draw_shade(void *list, unsigned short side, unsigned short tab, int wit
     return dl_ambient_color(list, 0xFFFFFFFF);
 }
 
-#ifdef NON_MATCHING /* ~62 palavras: sort int, conta da bolha com h - 43, y + 12 e i / cols em locais, ch zerado por laço de bytes, (u16)v << 16; resta a escolha s1/s2 entre w e l/x (ordem das declarações não muda) e a ordem das cargas da conta */
 /* the value of the sort key of the cursor's card, in a bubble beside the scroll bar */
 void *dt_draw_detail(void *list)
 {
@@ -256,16 +253,16 @@ void *dt_draw_detail(void *list)
     DtEnt *e = SC_ENT(l, i);
     int sort = l->sort;
     unsigned int v;
+    unsigned int sz;
+    int x;
     int w;
+    int r;
     int h;
     int cols;
-    int rows;
-    int x;
-    int y;
-    unsigned int sz;
-    int lw;
     int hh;
-    int r;
+    int y;
+    int rows;
+    int lw;
 
     if (e == 0)
         return list;
@@ -297,15 +294,15 @@ void *dt_draw_detail(void *list)
         break;
     }
     hh = p->lay.h - 0x2B;
-    cols = p->lay.cols;
-    rows = (l->count + cols - 1) / cols;
     y = p->lay.y + 12;
+    cols = p->lay.cols;
+    rows = (l->count + (cols - 1)) / cols;
     r = i / cols;
     x = p->lay.x + p->lay.w - 10 - w;
     if (rows == 0)
         y += (hh - h) / 2;
     else
-        y += hh * r / rows - h / 2;
+        y = y + hh * r / rows - h / 2;
     list = dt_draw_box(list, x, y, w, h, dt_eres_get(0x8013));
     if (v == 0xFFFFFFFE)
         return list;
@@ -319,8 +316,8 @@ void *dt_draw_detail(void *list)
         font_set_size(14, 14);
         font_set_color(0xFFFFFFFF);
         {
-            int n = 4;
             unsigned char *d = (unsigned char *)ch;
+            int n = 4;
 
             if (d)
                 do {
@@ -368,7 +365,6 @@ void *dt_draw_detail(void *list)
     }
     return list;
 }
-#endif
 
 /* the editor frame (called by dt_draw before the lesson overlays) */
 void dt_editor_draw(void)
@@ -754,33 +750,29 @@ int value;
     return dl_disable(list, 2);
 }
 
-#ifdef NON_MATCHING /* 9 palavras: só a base do laço (&dts, induzida) e x2 trocam $s0/$s2; c/x/yy int e PT(x, yy) (perm_decls: melhor ordem i, x, c, x2, y, yy) */
 /* the number of cards of each type in the deck */
 void *dt_draw_type_counts(void *list)
 {
     int i;
     int x;
-    int c;
-    int x2 = 0x18;
-    int y = 0x17;
-    int yy;
+    int v;
+    int y;
 
-    for (i = 0; i < 6; i++, y += 0x13, x2 += 0x15) {
-        c = dts.n_type[i];
+    for (i = 0; i < 6; i++) {
+        v = dts.n_type[i];
         if (dtv.mode < 4) {
-            x = 0x7A;
-            yy = y;
+            x = 122;
+            y = i * 19 + 23;
         } else {
-            x = x2;
-            yy = 3;
+            x = i * 21 + 24;
+            y = 3;
         }
-        if (c < 10)
+        if (v < 10)
             x -= 3;
-        list = dt_draw_digits(list, PT(x, yy), 0, c, 2, 0xFFFFFFFF, dt_eres_get(0x8009));
+        list = dt_draw_digits(list, PT(x, y), 0, v, 2, 0xFFFFFFFF, dt_eres_get(0x8009));
     }
     return list;
 }
-#endif
 
 /* the type proportions of the deck as a bar (vertical in the deck modes) */
 void *dt_draw_type_bar(void *list)
