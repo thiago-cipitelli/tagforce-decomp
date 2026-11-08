@@ -619,3 +619,16 @@ Também: helper `static` definido antes no mesmo `.c` (`mat4_det`, `ehf_track_ev
 `type:func static`. Família não resolvida: cópia morta do destino nos `u32 → float` (`bltzl; srl` com o `srl`
 original mantido depois do `b`) em `cardlist_draw_arrow`: o mwcc 219 a remove nessa função, embora a mantenha em
 `ehf_track_eval`.
+
+## Rodada 9 (`duel_draws.c`, `duel_result.c`, `effects_0886AAB4.c`, `effects_088B7D94.c`, `field_active.c`)
+
+| No asm original | Fonte |
+|---|---|
+| contador de laço num `$s` **acima** de um parâmetro copiado no prólogo (`move s3,a2` e o contador em `s4`) | o laço usa o **parâmetro não usado** como contador (`for (b = 0; ...)` em `duel_088B94F4(p, b, c)`): parâmetros são criados antes dos locais |
+| uid de um evento recalculado em cada chamada depois de gravado no evento (o mwcc reaproveita) | `ev.uid = CARD_UID(*(DuelCard *)c);` (o cast quebra o CSE); campos `id` lidos pela base (`duel.players[p & 1].zone_d[i].id`) quando o original usa `928(s1)` (`duel_088C5E78`) |
+| `addu v1,rec,i; sb a0,0xA0(v1)` sem ponteiro induzido | `*(unsigned char *)((unsigned int)rec + i + 0xA0) = 1;` (a forma com `[]` vira ponteiro de indução); `for (i = 0, best = rec; ...)` põe o `i = 0` antes da cópia (`duel_records_update`) |
+| ponteiro de slot induzido e um local trocados de `$s` num laço por jogador | sem `pl = &duel.players[q & 1]`: `duel.players[q & 1].field[z]` direto; `1 << (z + q * 16)` em vez de um `bits += 16` próprio (`duel_0886B6B8`) |
+| `beql id,K → corpo; b próximo` dentro de um laço | `switch (f(...)) { case K: ... }` de um caso só (vale também dentro de `for`) |
+| argumento carregado antes da constante do delay (`srl a3; jal; li a2,K`) | protótipo K&R no bloco: `extern int duel_slot_effect_with();` (`duel_088C4864`) |
+| redeclaração `unsigned int p;` num bloco igual à da função | apagar a do bloco: a variável nova muda a coloração (`duel_count_active`) |
+| `$s` de laço trocados em muitas funções da fila | busca gulosa por laço (`build/tmp/misc/greedy_for.py` da worktree `misc`, não versionado): renomear o contador/variável de cada `for` para uma nova (topo, fim das declarações ou bloco em volta do laço), só quando a variável é atribuída antes de ser lida no laço e não é lida depois dele |

@@ -795,7 +795,7 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
     }
 }
 
-#ifdef NON_MATCHING /* lógica e ordem dos jal conferidas com o asm. 22 palavras (2026-11-07), só registradores: no case 0x12BE o original tem i/q/ponteiro em s3/s4/s1 (aqui s4/s1/s3) e no 0x150E n/q em s3/s1 (aqui trocados). Testados: nomes próprios por case, formas do laço e de q, ordem das declarações. Resolveu o resto: (q != p ? 1 : 0) + 2 (não içado), keep antes de destroy, n7 no case 0x1A7C */
+#ifdef NON_MATCHING /* lógica e ordem dos jal conferidas com o asm. 8 palavras (2026-11-08), só registradores: no case 0x150E o original tem n em s3 e o ponteiro do slot em s4 (aqui trocados); testados: variável nova por laço (topo, fim, bloco), troca de nomes entre n/q/i/v/e/n7, ponteiro explícito, formas do laço. Resolveu: case 0x12BE com n→q e q→v, (q != p ? 1 : 0) + 2, keep antes de destroy, n7 no case 0x1A7C */
 /* After the card of slot s (zone z of player p) left: sends the cards that go with it (the same
    cases as duel_leave_mark), then the cards bound to it by effect entries. */
 void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
@@ -816,11 +816,11 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
     switch (id) {
     case 0x12BE:
         if (keep && destroy) {
-            for (n = 0; n < 2; n++) {
-                q = duel_turn_player ^ n;
+            for (q = 0; q < 2; q++) {
+                v = duel_turn_player ^ q;
                 for (i = 0; i < 5; i++) {
-                    if (SLOT_ACTIVE(SLOT_AT(q, i)) && card_is_attribute6(field_get_card(q, i))) {
-                        duel_send_card(q, i, 0xE, (q != p ? 1 : 0) + 2, id);
+                    if (SLOT_ACTIVE(SLOT_AT(v, i)) && card_is_attribute6(field_get_card(v, i))) {
+                        duel_send_card(v, i, 0xE, (v != p ? 1 : 0) + 2, id);
                     }
                 }
             }

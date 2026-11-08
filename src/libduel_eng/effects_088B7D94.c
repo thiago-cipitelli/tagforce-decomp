@@ -1,5 +1,4 @@
 // @range 0x088B7D94-0x088B9CC8
-// @asm 0x088B94F4-0x088B967C
 /* Card effect handlers: candidate lists for duel_088BFC64. */
 #include "duel.h"
 
@@ -405,13 +404,11 @@ void duel_088B944C(unsigned int p)
     }
 }
 
-#ifdef NON_MATCHING /* registradores de c e i trocados ($s3/$s4) */
 void duel_088B94F4(unsigned int p, int b, int c)
 {
     DuelAct act;
     char *q;
     int n;
-    unsigned int i;
     int id;
 
     q = (char *)&act;
@@ -424,18 +421,17 @@ void duel_088B94F4(unsigned int p, int b, int c)
     act.player = p;
     act.zone = 0xB;
     act.b3_4 = 0;
-    for (i = 0; i < duel.players[p & 1].n_grave; i++) {
-        id = duel.players[p & 1].grave[i].id;
+    for (b = 0; b < duel.players[p & 1].n_grave; b++) {
+        id = duel.players[p & 1].grave[b].id;
         if (card_get_prop5_hi(id) == 3) {
-            act.uid = CARD_UID(duel.players[p & 1].grave[i]);
+            act.uid = CARD_UID(duel.players[p & 1].grave[b]);
             act.id = id;
             if (duel_act_check_08853CE8(&act, p, c) == 1) {
-                duel_088BFC64(p, 0xE, i);
+                duel_088BFC64(p, 0xE, b);
             }
         }
     }
 }
-#endif
 
 void duel_088B967C(unsigned int p, int b, int i)
 {
