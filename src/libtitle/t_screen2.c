@@ -1,6 +1,5 @@
 // @range 0x0880B7D0-0x0880C0F0
-// @asm 0x0880B7D0-0x0880B8CC
-// @rodata 0x0882AD34-0x0882AD68
+// @rodata 0x0882AD1C-0x0882AD68
 /* Title screen, second part: the new game prompt, continuing (save load), and the options screen
    (state 13: a tabbed panel of settings). */
 #include "libtitle.h"
@@ -21,7 +20,6 @@ void *tpanel_draw(void *list, TPanel *p);
 void *title_start_label(void *list, int i, int x, int y, int w);
 void *title_newgame_text(void *list, int x, int y);
 
-#ifdef NON_MATCHING /* os corpos do switch interno repetem o `li a0,1` que o original deixa só no delay slot */
 /* sub 6: "start a new game?" */
 void title_newgame_update(void)
 {
@@ -48,7 +46,7 @@ void title_newgame_update(void)
             t->step = 4;
             break;
         case -3:
-            return;
+            break;
         case 0:
             title_goto_fade(1, 8, 0);
             t->step = 4;
@@ -61,7 +59,6 @@ void title_newgame_update(void)
         break;
     }
 }
-#endif
 
 void *title_newgame_text(void *list, int x, int y)
 {

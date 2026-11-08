@@ -315,32 +315,39 @@ void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
 }
 #endif
 
-#ifdef NON_MATCHING /* registradores do laço das abas e das células (o original chama tframe_tab com int) */
+#ifdef NON_MATCHING /* 24 palavras (de 114: contador próprio `tab` declarado primeiro no laço das abas, tframe_tab com protótipo int no bloco, y da barra do cursor sem variável); faltam a ordem das cargas dos argumentos de tframe_cursor (o original calcula iy - 1 antes de ix - 1) e i/iy trocados (s0/s1) no laço de b->draw */
 /* the two-column layout of the panel (f0 == 2) */
 void *tpanel_draw_split(void *list, TPanel *p)
 {
+    int tab;
     TBox *b = &p->box;
     int sel = b->cursor;
-    short ix, iy, iw, ih;
     short pos, len;
     short sx, sy, sh;
     int x, w;
+    short ix;
+    short iy;
+    short iw;
+    short ih;
     int i;
 
     if (b->n <= sel)
         sel = b->n - 1;
     list = tframe_window(list, 0xFFFFFFFF, p->x, p->y, p->w, p->h);
-    for (i = 0; i < 2; i++) {
-        if (i == 0) {
+    for (tab = 0; tab < 2; tab++) {
+        if (tab == 0) {
             w = 83;
             x = p->x + 27;
         } else {
             w = 355;
             x = p->x + 115;
         }
-        list = tframe_tab(list, 0xFFFFFFFF, x, p->y);
+        {
+            extern void *tframe_tab(void *, unsigned int, int, int);
+            list = tframe_tab(list, 0xFFFFFFFF, x, p->y);
+        }
         if (p->draw2)
-            list = p->draw2(list, (unsigned short)i, x + 2, p->y, w, 0);
+            list = p->draw2(list, (unsigned short)tab, x + 2, p->y, w, 0);
     }
     if (!b->no_cells) {
         ix = b->ix;
@@ -353,8 +360,7 @@ void *tpanel_draw_split(void *list, TPanel *p)
         }
     }
     if (!b->no_cursor) {
-        iy = b->iy + sel * (b->ih + 1);
-        list = tframe_bar(list, 1, 0xFFFFFFFF, b->ix + 23, iy + 4, 88, 14);
+        list = tframe_bar(list, 1, 0xFFFFFFFF, b->ix + 23, (short)(b->iy + sel * (b->ih + 1)) + 4, 88, 14);
         list = tframe_cursor(list, b->color, (short)(b->ix - 1), (short)(b->iy - 1 + sel * (b->ih + 1)),
                              (short)(b->iw + 2), (short)(b->ih + 2));
     }

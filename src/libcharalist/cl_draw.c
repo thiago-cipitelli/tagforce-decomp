@@ -1,6 +1,5 @@
 // @range 0x08804F48-0x08807F68
 // @asm 0x08804F48-0x08805354
-// @asm 0x0880629C-0x08806364
 // @asm 0x088073D8-0x088077D0
 // @data 0x0880E01C-0x0880E138
 /* Drawing of the screen: the window with the three tabs, four duelist lines (face, number and name,
@@ -398,24 +397,27 @@ unsigned int *cl_draw_record(unsigned int *list, int x, int y, ClEntry *e)
     return font_text_clear();
 }
 
-#ifdef NON_MATCHING /* o original copia os parâmetros para $s depois do laço de zeragem de ch; o mwcc os copia no prólogo */
 /* n (at most 999) right-aligned before x */
 void cl_draw_number(int x, int y, int n)
 {
-    int px;
     unsigned short ch[2] = { 0 };
+    int cx;
+    int v;
+    int px;
 
-    n = n > 999 ? 999 : n;
+    cx = x;
+    v = n;
+    if (v > 999)
+        v = 999;
     px = x * 64;
     do {
         px -= 0x200;
-        x -= 8;
-        ch[0] = n % 10 + '0';
-        font_draw_text(px, y * 64, (480 - x) * 64, ch);
-        n /= 10;
-    } while (n > 0);
+        cx -= 8;
+        ch[0] = v % 10 + '0';
+        font_draw_text(px, y * 64, (480 - cx) * 64, ch);
+        v /= 10;
+    } while (v > 0);
 }
-#endif
 
 /* cursor box; pulses by 2 pixels every 8 frames */
 unsigned int *cl_draw_cursor(unsigned int *list, int x, int y, int w, int h)

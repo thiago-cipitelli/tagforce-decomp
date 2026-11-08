@@ -1,6 +1,5 @@
 // @range 0x08809274-0x0880A248
 // @rodata 0x0880E528-0x0880E544
-// @asm 0x08809624-0x0880979C
 // @asm 0x08809C64-0x08809FE8
 // @data 0x0880E8BC-0x0880E8D4
 /* Recipe grid helpers (cards per row, entry under the cursor, the reveal animation), the menus
@@ -188,12 +187,12 @@ void rv_counter_step(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original lê as posições pela base de rv e testa as abas com beql; registradores diferem */
 /* hands the recipe under the list cursor to the caller */
 void rv_apply_select(void)
 {
     unsigned int t = rv.tab;
-    unsigned short i = rv.pos[t].top + rv.pos[t].cursor;
+    RvPos *p = &rv.pos[t];
+    unsigned short i = p->top + p->cursor;
     unsigned short *name = 0;
     int ok = 0;
     RecipeData rd;
@@ -227,7 +226,6 @@ void rv_apply_select(void)
     if (ok && rv.on_select)
         rv.on_select(&rd, name);
 }
-#endif
 
 unsigned short rv_osk_lang[6] = { 0, 1, 4, 2, 5, 3 };   /* SceUtility language by cfg_get_language() */
 

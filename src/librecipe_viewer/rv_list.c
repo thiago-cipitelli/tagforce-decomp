@@ -1,6 +1,5 @@
 // @range 0x08807A44-0x08809274
 // @asm 0x08808274-0x08808490
-// @asm 0x08808C30-0x08809274
 /* Logic of the lists and of the shown recipe: loading the extra data lists, input of the list
    state (tabs, cursor with fast scrolling, open/menu), of the recipe grid, the card info state,
    the blink before a menu, and building the recipe grid (copies owned, partners, new cards). */
@@ -487,17 +486,15 @@ int rv_card_cmp(const void *a, const void *b)
     return x - y;
 }
 
-#ifdef NON_MATCHING /* só o bloco do contador de cópias sai em ordem diferente (incremento antes do teste) */
 /* how many cards of a recipe are owned: r->need cards, r->have owned */
 void rv_build_list(RecipeData *d, RvRecipe *r)
 {
     unsigned short ids[126];
     unsigned short n = 0;
-    unsigned int i;
+    int i;
     unsigned short prev;
     unsigned short copies;
-    int have;
-    int j;
+    unsigned short have;
 
     for (i = 0; i < d->n_main; i++)
         ids[n++] = d->main_ids[i];
@@ -509,27 +506,28 @@ void rv_build_list(RecipeData *d, RvRecipe *r)
     prev = 0;
     copies = 0;
     have = 0;
-    for (j = 0; j < n; j++) {
-        unsigned short id = ids[j];
-        unsigned short owned = inv_get_count(id);
+    for (i = 0; i < n; i++) {
+        unsigned short id = ids[i];
+        int owned = (unsigned short)inv_get_count(id);
         if (prev == id) {
-            if (owned - ++copies > 0)
+            unsigned short left;
+            copies++;
+            left = owned - copies;
+            if (left > 0)
                 have++;
         } else {
-            if (owned > 0)
+            if ((unsigned short)owned > 0)
                 have++;
-            copies = 0;
             prev = id;
+            copies = 0;
         }
     }
-    r->need = d->n_extra + d->n_main + d->n_side;
+    r->need = d->n_main + d->n_extra + d->n_side;
     r->have = have;
 }
-#endif
 
 /* fills the grid with the sorted cards of recipe d; a card counts as owned while copies are
    left, or (marked) while partners hold it */
-#ifdef NON_MATCHING /* mesma forma; os três laços sobre a cópia da receita usam outros $s e deslocamentos */
 void rv_fill_grid(RvCards *c, RecipeData *src)
 {
     RecipeData d;
@@ -544,9 +542,9 @@ void rv_fill_grid(RvCards *c, RecipeData *src)
     memset(used, 0, sizeof(used));
     c->n_main = d.n_main;
     for (i = 0; i < d.n_main; i++) {
+        RvEntry *e = &c->main[i];
         unsigned short id = d.main_ids[i];
         int have = inv_get_count(id);
-        RvEntry *e = &c->main[i];
         unsigned char u;
 
         e->id = id;
@@ -565,9 +563,9 @@ void rv_fill_grid(RvCards *c, RecipeData *src)
     }
     c->n_extra = d.n_extra;
     for (i = 0; i < d.n_extra; i++) {
+        RvEntry *e = &c->extra[i];
         unsigned short id = d.extra_ids[i];
         int have = inv_get_count(id);
-        RvEntry *e = &c->extra[i];
         unsigned char u;
 
         e->id = id;
@@ -586,9 +584,9 @@ void rv_fill_grid(RvCards *c, RecipeData *src)
     }
     c->n_side = d.n_side;
     for (i = 0; i < d.n_side; i++) {
+        RvEntry *e = &c->side[i];
         unsigned short id = d.side_ids[i];
         int have = inv_get_count(id);
-        RvEntry *e = &c->side[i];
         unsigned char u;
 
         e->id = id;
@@ -606,4 +604,3 @@ void rv_fill_grid(RvCards *c, RecipeData *src)
         }
     }
 }
-#endif

@@ -1,6 +1,5 @@
 // @range 0x08807F68-0x0880A34C
 // @asm 0x08808264-0x0880981C
-// @asm 0x08809914-0x08809B8C
 // @asm 0x08809C54-0x0880A2D8
 // @data 0x0880E138-0x0880EA74
 /* The three tabs (the met duelists, the other ones, the deck-only ones), input of the list and of
@@ -728,21 +727,28 @@ unsigned short cl_entries_simple(ClEntry *out, ClPair *src, unsigned short n)
     return count;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (bgm_cmd3 recebe cl.bgm); 50 palavras: $s0-$s3 em rotação
-   (o original põe e em $s3 e body em $s0); ordem das declarações não muda nada */
 /* next costume animation frame; Jaden and Chazz swap their theme with the costume */
 void cl_costume_anim(void)
 {
-    ClEntry *e = cl_entry(cl.tab, cl.top[cl.tab] + cl.cursor[cl.tab]);
-    void *body = cl_bustup_get(e, 0);
+    int last;
+    ClBgm *b;
+    int end;
+    ClEntry *e;
     int n;
     int f;
     int set;
     int alt;
-    int end;
-    int last;
-    ClBgm *b;
+    void *body;
 
+    {
+        int t = cl.tab;
+        int i = cl.top[t] + cl.cursor[t];
+        if (i >= cl.count[t])
+            e = 0;
+        else
+            e = &cl.list[t][i];
+    }
+    body = cl_bustup_get(e, 0);
     if (body == 0)
         return;
     n = ehf_get_frame_count(body);
@@ -779,8 +785,7 @@ void cl_costume_anim(void)
         return;
     e->u.info->bgm[0] = set;
     snd_cmd_fef8();
-    b = &cl_bgm[set];
-    if (cl.bgm != b->bgm) {
+    if (cl.bgm != (b = &cl_bgm[set])->bgm) {
         if (cl.bgm >= 0)
             bgm_cmd3(cl.bgm);
         bgm_fade(b->bgm);
@@ -789,7 +794,6 @@ void cl_costume_anim(void)
         cl_voices_build(e, alt);
     }
 }
-#endif
 
 /* height of the profile text, for its scroll bar */
 void cl_profile_measure(ClEntry *e)

@@ -1,6 +1,5 @@
 // @range 0x088195B4-0x0881BA64
 // @rodata 0x0882B1D0-0x0882B2D4
-// @asm 0x088195B4-0x088198EC
 // @data 0x0882F290-0x0882F370
 /* Free duel setup: the top of the ad hoc mode (own duelist, partner and the extra data step). */
 #include "libtitle.h"
@@ -44,7 +43,6 @@ typedef struct TRect {
     int x, y, w, h;
 } TRect;
 
-#ifdef NON_MATCHING /* o terceiro bloco (parceiro do outro lado) troca registradores: a2/a3/t0 e a ordem do sw de deck */
 void tfd_adhoctop_init(void)
 {
     int type;
@@ -88,16 +86,16 @@ void tfd_adhoctop_init(void)
     k->deck = deck;
 
     k = &l->deck[other];
+    type = 1;
+    var = other;
+    deck = 0;
     k->kind = 1;
     k->side = 0;
     k->type = 1;
     k->u76 = other;
     k->dk = 0;
-    k->deck = 0;
-    type = 1;
-    var = other;
-    deck = 0;
-    tpt_set_name(1, type, var, 0, deck, k->name);
+    k->deck = deck;
+    tpt_set_name(1, type, var, 0, k->deck, k->name);
 
     k = &l->deck[other + 2];
     k->kind = 1;
@@ -113,7 +111,6 @@ void tfd_adhoctop_init(void)
     k->u76 = var;
     k->deck = deck;
 }
-#endif
 
 /* the panel entry of a player: a saved deck or a recipe has its own deck name */
 #define TFD_SET_ENTRY(k, kind, type2)                                                              \
