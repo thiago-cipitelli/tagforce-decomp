@@ -117,82 +117,125 @@ int dd_fx_shatter_tint[3] = { 0, 0, 0 };
 #pragma explicit_zero_data reset
 int dd_fx_shatter_tint_a = 0xFF;
 
-#ifdef NON_MATCHING /* função grande (4,7 KB): helpers inline, sequência de jal igual à do original (2026-11-06); falta a
-   forma: o original monta os vértices dos cacos a partir de meias-células (7.75, 7.3333) e deslocamentos
-   (2.5833, 2.4444) somados em tempo de execução, com -x por neg.s de locais; aqui as somas já vêm prontas */
-inline static void dd_rand_vec(DdRandSeed *r, float *out, float s)
-{
-    vec3_set(out, DD_RAND(r) / 32767.0f * s * (DD_RAND(r) % 2 * 2 - 1),
-             DD_RAND(r) / 32767.0f * s * (DD_RAND(r) % 2 * 2 - 1),
-             DD_RAND(r) / 32767.0f * s * (DD_RAND(r) % 2 * 2 - 1));
-}
+typedef struct DdShatterTint {         /* dd_fx_shatter_tint as one local copy */
+    int r, g, b, a;
+} DdShatterTint;
 
-inline static void dd_tv(DdTexVert *v, float u, float tv, float x, float z)
-{
-    v->u = u;
-    v->v = tv;
-    v->x = x;
-    v->y = 0.0f;
-    v->z = z;
-}
+#define DD_RAND_SGN(r, s) (DD_RAND(r) / 32767.0f * (s) * (DD_RAND(r) % 2 * 2 - 1))
 
-inline static void dd_fv(DdFxVert *v, float u, float tv, unsigned int c, float x, float y)
-{
-    v->u = u;
-    v->v = tv;
-    v->color = c;
-    v->x = x;
-    v->y = y;
-    v->z = 0.0f;
-}
-
+#ifdef NON_MATCHING /* struct 146 linhas, ~1000 palavras (2026-11-08): forma das seções certa (meias-células e deslocamentos
+   em locais, sorteios por vec3_set com o slot relido, cópia do modelo da cor); faltam a ordem dos sorteios no bloco
+   das velocidades, registradores $s (fx em $s7, contadores) e a ordem de agendamento de u0/cx */
 int dd_fx_shatter_update(int state, DdFxShatter *fx)
 {
-    DdRandSeed *r = &rand3_seeds[rand3_slot];
+    DdRandSeed *r;
     int step = dd_anim_step();
-    float bb[18];
-    float ofs[3], d[3], p[3], m3[9];
+    float ofs[3];
     unsigned int *list;
-    unsigned int alpha, tint;
-    float fade, e, dark, s, a;
-    int i, j, k;
+    unsigned int alpha;
+    unsigned int tint;
+    float v0;
+    float xa;
+    float za;
+    float xb;
+    float zb;
+    float v1;
+    float cz0;
+    float cz1;
+    float cx;
+    float fade;
+    float e;
+    float dark;
+    float hw;
+    float hh;
+    float ox;
+    float oz;
+    float cz;
+    float du;
+    float dv;
+    float u0;
+    float u1;
+    float nu0;
+    float nu1;
+    float a;
+    float sa;
+    float ca;
+    float w;
+    float tu;
+    float tv;
+    int i;
+    int j;
+    int k;
+    DdShard *sh;
+    DdShatterSpark *sp;
+    float bb[18] __attribute__((aligned(16)));
 
     dd_mtx_billboard_view(bb);
     dd_cue_se(0x6226, fx->frame, 0, &fx->se, 1);
     if (state == 1) {
+        float d[3];
+        float p[3];
+
         vec3_set(fx->acc, 0.0f, -0.5f, 0.0f);
+        hw = 7.75f;
+        ox = 2.5833333f;
+        hh = 7.3333335f;
+        oz = 2.4444444f;
+        xa = -hw + ox;
+        xb = -hw - ox;
+        za = -hh + oz;
+        zb = -hh - oz;
         for (i = 0; i < 6; i++) {
-            float v0 = (float)i * 0.1640625f - 0.4921875f;
-            float v1 = v0 + 0.1640625f;
-            float cz = (float)i * 14.666667f + -36.666668f;
-
+            dv = 0.1640625f;
+            v0 = dv * i - 0.4921875f;
+            cz = 14.666667f * i + -36.666668f;
+            v1 = v0 + dv;
+            cz0 = cz - oz;
+            cz1 = oz + cz;
             for (j = 0; j < 4; j++) {
-                DdShard *sh = &fx->shard[i][j];
-                float u0 = (float)j * 0.24609375f - 0.4921875f;
-                float u1 = u0 + 0.24609375f;
-                float cx = (float)j * 15.5f + -23.25f;
-
-                dd_tv(&sh->tri[0][0], u0, v0, -5.1666667f, -4.888889f);
-                dd_tv(&sh->tri[0][1], u0, v1, -5.1666667f, 9.777777f);
-                dd_tv(&sh->tri[0][2], u1, v0, 10.333333f, -4.888889f);
-                dd_tv(&sh->tri[1][0], u0, v1, -10.333333f, 4.888889f);
-                dd_tv(&sh->tri[1][1], u1, v1, 5.166667f, 4.888889f);
-                dd_tv(&sh->tri[1][2], u1, v0, 5.166667f, -9.777777f);
-                dd_tv(&sh->tri[2][0], -u0, v0, -5.1666667f, -4.888889f);
-                dd_tv(&sh->tri[2][1], -u0 - 0.24609375f, v0, 10.333333f, -4.888889f);
-                dd_tv(&sh->tri[2][2], -u0, v1, -5.1666667f, 9.777777f);
-                dd_tv(&sh->tri[3][0], -u0, v1, -10.333333f, 4.888889f);
-                dd_tv(&sh->tri[3][1], -u0 - 0.24609375f, v0, 5.166667f, -9.777777f);
-                dd_tv(&sh->tri[3][2], -u0 - 0.24609375f, v1, 5.166667f, 4.888889f);
-                vec3_set(sh->pos[0], cx - 2.5833333f, 0.0f, cz - 2.4444444f);
-                vec3_set(sh->pos[1], cx + 2.5833333f, 0.0f, cz + 2.4444444f);
+                sh = &fx->shard[i][j];
+                du = 0.24609375f;
+                u0 = du * j - 0.4921875f;
+                cx = 15.5f * j + -23.25f;
+                u1 = u0 + du;
+                fx->shard[i][j].tri[0][0].u = u0;  fx->shard[i][j].tri[0][0].v = v0;
+                fx->shard[i][j].tri[0][0].x = xa;  fx->shard[i][j].tri[0][0].y = 0.0f; fx->shard[i][j].tri[0][0].z = za;
+                fx->shard[i][j].tri[0][1].u = u0;  fx->shard[i][j].tri[0][1].v = v1;
+                fx->shard[i][j].tri[0][1].x = xa;  fx->shard[i][j].tri[0][1].y = 0.0f; fx->shard[i][j].tri[0][1].z = hh + oz;
+                fx->shard[i][j].tri[0][2].u = u1;  fx->shard[i][j].tri[0][2].v = v0;
+                fx->shard[i][j].tri[0][2].x = hw + ox; fx->shard[i][j].tri[0][2].y = 0.0f; fx->shard[i][j].tri[0][2].z = za;
+                fx->shard[i][j].tri[1][0].u = u0;  fx->shard[i][j].tri[1][0].v = v1;
+                fx->shard[i][j].tri[1][0].x = xb;  fx->shard[i][j].tri[1][0].y = 0.0f; fx->shard[i][j].tri[1][0].z = hh - oz;
+                fx->shard[i][j].tri[1][1].u = u1;  fx->shard[i][j].tri[1][1].v = v1;
+                fx->shard[i][j].tri[1][1].x = hw - ox; fx->shard[i][j].tri[1][1].y = 0.0f; fx->shard[i][j].tri[1][1].z = hh - oz;
+                fx->shard[i][j].tri[1][2].u = u1;  fx->shard[i][j].tri[1][2].v = v0;
+                fx->shard[i][j].tri[1][2].x = hw - ox; fx->shard[i][j].tri[1][2].y = 0.0f; fx->shard[i][j].tri[1][2].z = zb;
+                nu0 = -u0;
+                nu1 = nu0 - du;
+                fx->shard[i][j].tri[2][0].u = nu0; fx->shard[i][j].tri[2][0].v = v0;
+                fx->shard[i][j].tri[2][0].x = xa;  fx->shard[i][j].tri[2][0].y = 0.0f; fx->shard[i][j].tri[2][0].z = za;
+                fx->shard[i][j].tri[2][1].u = nu1; fx->shard[i][j].tri[2][1].v = v0;
+                fx->shard[i][j].tri[2][1].x = hw + ox; fx->shard[i][j].tri[2][1].y = 0.0f; fx->shard[i][j].tri[2][1].z = za;
+                fx->shard[i][j].tri[2][2].u = nu0; fx->shard[i][j].tri[2][2].v = v1;
+                fx->shard[i][j].tri[2][2].x = xa;  fx->shard[i][j].tri[2][2].y = 0.0f; fx->shard[i][j].tri[2][2].z = hh + oz;
+                fx->shard[i][j].tri[3][0].u = nu0; fx->shard[i][j].tri[3][0].v = v1;
+                fx->shard[i][j].tri[3][0].x = xb;  fx->shard[i][j].tri[3][0].y = 0.0f; fx->shard[i][j].tri[3][0].z = hh - oz;
+                fx->shard[i][j].tri[3][1].u = nu1; fx->shard[i][j].tri[3][1].v = v0;
+                fx->shard[i][j].tri[3][1].x = hw - ox; fx->shard[i][j].tri[3][1].y = 0.0f; fx->shard[i][j].tri[3][1].z = zb;
+                fx->shard[i][j].tri[3][2].u = nu1; fx->shard[i][j].tri[3][2].v = v1;
+                fx->shard[i][j].tri[3][2].x = hw - ox; fx->shard[i][j].tri[3][2].y = 0.0f; fx->shard[i][j].tri[3][2].z = hh - oz;
+                vec3_set(sh->pos[0], cx - ox, 0.0f, cz0);
+                vec3_set(sh->pos[1], ox + cx, 0.0f, cz1);
                 for (k = 0; k < 2; k++) {
                     vec3_copy(sh->pos0[k], sh->pos[k]);
                     vec3_normalize(d, sh->pos0[k]);
                     vec3_scale(d, d, 90.0f);
-                    dd_rand_vec(r, p, 35.0f);
+                    r = &rand3_seeds[rand3_slot];
+                    vec3_set(p, DD_RAND_SGN(r, 35.0f), DD_RAND_SGN(r, 35.0f), DD_RAND_SGN(r, 35.0f));
                     vec3_add(sh->vel[k], d, p);
-                    dd_rand_vec(r, sh->spin[k], (float)step * 0.34906587f);
+                    r = &rand3_seeds[rand3_slot];
+                    vec3_set(sh->spin[k], step * DD_RAND_SGN(r, 0.34906587f), step * DD_RAND_SGN(r, 0.34906587f),
+                             step * DD_RAND_SGN(r, 0.34906587f));
                 }
             }
         }
@@ -215,41 +258,42 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
     mtx_translate(ofs);
     mtx_rotate_zyx(fx->rot);
     mtx_scale3(fx->scale);
-    e = dd_ease_sin(fx->frame, 24, 1);
-    dark = (1.0f - dd_ease_sin(fx->frame, 24, 1)) * 0.7f;
-    alpha = ((unsigned int)(fade * 255.0f) << 24) | 0xFFFFFF;
-    list = dl_ambient_light(list, alpha);
-    list = dd_tex_card(list, fx->card, 1);
-    s = fx->t / 64.0f + 1.0f;
-    list = dd_tex_enable_uv(list, 1, 1, 1, 4, 0, 1, 1, 0.5f, 0.5f, s, s);
-    list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
-    tint = (unsigned int)(dark * 255.0f) | (unsigned int)(dark * 220.0f) << 8 | dd_fx_shatter_tint_a << 24
-           | (unsigned int)(dark * 130.0f) << 16;
-    list = dl_color(list, tint);
-    for (i = 0; i < 6; i++) {
-        for (j = 0; j < 4; j++) {
-            DdShard *sh = &fx->shard[i][j];
+    {
+        DdShatterTint c;
+        float d[3];
 
-            for (k = 0; k < 2; k++) {
-                vec3_scale(d, sh->vel[k], e);
-                vec3_add(sh->pos[k], sh->pos0[k], d);
-                mtx_push();
-                mtx_translate(sh->pos[k]);
-                mtx_rotate_zyx(sh->rot[k]);
-                list = draw_array(list, 3, 0x183, 3, 0, sh->tri[k]);
-                mtx_pop();
+        e = dd_ease_sin(fx->frame, 24, 1);
+        dark = 0.7f * (1.0f - dd_ease_sin(fx->frame, 24, 1));
+        c = *(DdShatterTint *)dd_fx_shatter_tint;
+        alpha = (unsigned int)(255.0f * fade) << 24 | 0xFFFFFF;
+        list = dl_ambient_light(list, alpha);
+        list = dd_tex_card(list, fx->card, 1);
+        list = dd_tex_enable_uv(list, 1, 1, 1, 4, 0, 1, 1, 0.5f, 0.5f, 1.0f + fx->t / 64.0f, 1.0f + fx->t / 64.0f);
+        list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
+        tint = (unsigned int)(255.0f * dark) | ((unsigned int)(220.0f * dark) << 8 | (c.a << 24 | (unsigned int)(130.0f * dark) << 16));
+        list = dl_color(list, tint);
+        for (i = 0; i < 6; i++) {
+            for (j = 0; j < 4; j++) {
+                sh = &fx->shard[i][j];
+                for (k = 0; k < 2; k++) {
+                    vec3_scale(d, sh->vel[k], e);
+                    vec3_add(sh->pos[k], sh->pos0[k], d);
+                    mtx_push();
+                    mtx_translate(sh->pos[k]);
+                    mtx_rotate_zyx(sh->rot[k]);
+                    list = draw_array(list, 3, 0x183, 3, 0, sh->tri[k]);
+                    mtx_pop();
+                }
             }
         }
     }
     list = dd_tex_card(list, -1, 1);
-    s = fx->t / 64.0f + 1.0f;
-    list = dd_tex_enable_uv(list, 1, 1, 1, 4, 0, 1, 1, 0.5f, 0.5f, s, s);
+    list = dd_tex_enable_uv(list, 1, 1, 1, 4, 0, 1, 1, 0.5f, 0.5f, 1.0f + fx->t / 64.0f, 1.0f + fx->t / 64.0f);
     list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
     list = dl_color(list, tint);
     for (i = 0; i < 6; i++) {
         for (j = 0; j < 4; j++) {
-            DdShard *sh = &fx->shard[i][j];
-
+            sh = &fx->shard[i][j];
             for (k = 0; k < 2; k++) {
                 mtx_push();
                 mtx_translate(sh->pos[k]);
@@ -266,12 +310,19 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
 
     /* the flash */
     if (state == 1) {
-        dd_fv(&fx->flash[0], 0.5f, 0.5f, 0xFFC8FFFF, 0.0f, 0.0f);
-        dd_fv(&fx->flash[1], 0.0f, 0.0f, 0xC8FFFF, -150.0f, 150.0f);
-        dd_fv(&fx->flash[2], 1.0f, 0.0f, 0xC8FFFF, 150.0f, 150.0f);
-        dd_fv(&fx->flash[3], 1.0f, 1.0f, 0xC8FFFF, 150.0f, -150.0f);
-        dd_fv(&fx->flash[4], 0.0f, 1.0f, 0xC8FFFF, -150.0f, -150.0f);
-        dd_fv(&fx->flash[5], 0.0f, 0.0f, 0xC8FFFF, -150.0f, 150.0f);
+        w = 150.0f;
+        fx->flash[0].u = 0.5f; fx->flash[0].v = 0.5f; fx->flash[0].color = 0xFFC8FFFF;
+        fx->flash[0].x = 0.0f; fx->flash[0].y = 0.0f; fx->flash[0].z = 0.0f;
+        fx->flash[1].u = 0.0f; fx->flash[1].v = 0.0f; fx->flash[1].color = 0xC8FFFF;
+        fx->flash[1].x = -w;   fx->flash[1].y = w;    fx->flash[1].z = 0.0f;
+        fx->flash[2].u = 1.0f; fx->flash[2].v = 0.0f; fx->flash[2].color = 0xC8FFFF;
+        fx->flash[2].x = w;    fx->flash[2].y = w;    fx->flash[2].z = 0.0f;
+        fx->flash[3].u = 1.0f; fx->flash[3].v = 1.0f; fx->flash[3].color = 0xC8FFFF;
+        fx->flash[3].x = w;    fx->flash[3].y = -w;   fx->flash[3].z = 0.0f;
+        fx->flash[4].u = 0.0f; fx->flash[4].v = 1.0f; fx->flash[4].color = 0xC8FFFF;
+        fx->flash[4].x = -w;   fx->flash[4].y = -w;   fx->flash[4].z = 0.0f;
+        fx->flash[5].u = 0.0f; fx->flash[5].v = 0.0f; fx->flash[5].color = 0xC8FFFF;
+        fx->flash[5].x = -w;   fx->flash[5].y = w;    fx->flash[5].z = 0.0f;
     }
     list = dl_select_layer(4, 0);
     list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
@@ -291,37 +342,36 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
 
     /* the sparks */
     if (state == 1) {
+        float m3[9];
+        float p[3];
+        float d[3];
+
         mat3_identity(m3);
         mat3_from_euler(m3, m3, fx->rot);
         for (i = 0; i < 16; i++) {
-            DdShatterSpark *sp = &fx->spark[i];
-            float sa, ca;
-
-            a = (float)i * 6.2831855f / 16.0f;
-            sp->uv = DD_RAND(r) % 4;
+            sp = &fx->spark[i];
+            a = 6.2831855f * i / 16.0f;
             sa = sinf(a);
             ca = cosf(a);
-            vec3_set(p, sa * 30.0f, 0.0f, ca * 30.0f);
+            r = &rand3_seeds[rand3_slot];
+            sp->uv = DD_RAND(r) % 4;
+            vec3_set(p, 30.0f * sa, 0.0f, 30.0f * ca);
             mat3_transform_vec3(sp->base, m3, p);
-            vec3_set(p, sa * 40.0f, 0.0f, ca * 40.0f);
-            dd_rand_vec(r, d, 35.0f);
+            vec3_set(p, 40.0f * sa, 0.0f, 40.0f * ca);
+            r = &rand3_seeds[rand3_slot];
+            vec3_set(d, DD_RAND_SGN(r, 35.0f), DD_RAND_SGN(r, 35.0f), DD_RAND_SGN(r, 35.0f));
             vec3_add(p, p, d);
             mat3_transform_vec3(sp->dir, m3, p);
         }
+        w = 20.0f;
+        du = 0.5f;
         for (i = 0; i < 4; i++) {
-            float u = (float)(i % 2) * 0.5f;
-            float tv = (float)(i / 2) * 0.5f;
-
-            fx->spark_uv[i][0].u = u;
-            fx->spark_uv[i][0].v = tv;
-            fx->spark_uv[i][0].x = -20.0f;
-            fx->spark_uv[i][0].y = 20.0f;
-            fx->spark_uv[i][0].z = 0.0f;
-            fx->spark_uv[i][1].u = u + 0.5f;
-            fx->spark_uv[i][1].v = tv + 0.5f;
-            fx->spark_uv[i][1].x = 20.0f;
-            fx->spark_uv[i][1].y = -20.0f;
-            fx->spark_uv[i][1].z = 0.0f;
+            tu = du * (i % 2);
+            tv = du * (i / 2);
+            fx->spark_uv[i][0].u = tu;      fx->spark_uv[i][0].v = tv;      fx->spark_uv[i][0].x = -w;
+            fx->spark_uv[i][0].y = w;       fx->spark_uv[i][0].z = 0.0f;
+            fx->spark_uv[i][1].u = tu + du; fx->spark_uv[i][1].v = tv + du; fx->spark_uv[i][1].x = w;
+            fx->spark_uv[i][1].y = -w;      fx->spark_uv[i][1].z = 0.0f;
         }
     }
     list = dl_select_layer(4, 0);
@@ -339,8 +389,9 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
     e = dd_ease_sin(fx->frame, 24, 1);
     list = dl_ambient_light(list, alpha);
     for (i = 0; i < 16; i++) {
-        DdShatterSpark *sp = &fx->spark[i];
+        float p[3];
 
+        sp = &fx->spark[i];
         vec3_scale(p, sp->dir, e);
         vec3_add(p, p, sp->base);
         mtx_push();
