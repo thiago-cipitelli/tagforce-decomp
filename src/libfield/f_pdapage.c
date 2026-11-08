@@ -1,8 +1,7 @@
 // @range 0x0881FFEC-0x08822898
-// @asm 0x0881FFEC-0x08820A04
-// @asm 0x08820BD0-0x088213DC
 // @asm 0x088213DC-0x088216B0
 // @asm 0x0882244C-0x08822690
+// @rodata 0x08839344-0x08839368
 // @data 0x0883D44C-0x0883D504
 /* The pages of the PDA: the player's status (days, duels won/lost/drawn, win rate, cards), the
    options, the page titles, the calendar of the month, the mail list and an open mail; plus the
@@ -18,6 +17,10 @@ void *func_0881FBCC(void *list, int x, int y, unsigned short *title);
 void *fface_draw(void *list, void *face, int x, int y);
 
 extern unsigned char pda_event_marks[16];      /* 0x0883D410 */
+
+typedef struct PdaText2 {
+    unsigned short c[2];
+} PdaText2;
 
 unsigned short pda_times_text[2] = { 'x', 0 };                                    /* "x" before the card count */
 unsigned char pda_opt_rows[16] = { 0x12, 0x29, 0x52, 0x65, 0x78, 0xA3, 0xB6, 0xC9, 0xDC };      /* y of each option */
@@ -35,30 +38,35 @@ unsigned short pda_wday_names_en[8] = { 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56
 #define PDA_XY(x, y) ((x) & 0xFFFF | ((y) & 0xFFFF) << 16)   /* packed position or uv */
 
 /* status page: days played, duel record and win rate, and the card count when the PDA has one */
-#ifdef NON_MATCHING /* função grande, não iterada: rebase de y e alocação de registradores */
 void *pda_draw_status(void *list, int x, int y)
 {
     unsigned short dot[2];
     unsigned short unit[2];
     unsigned int rec[3];
-    void *gim = field_pda->gim;
     int cards = -1;
     int total;
     int w;
     int cx;
-    int lx;
     int lw;
-    int rx;
+    int lx;
     int rw;
+    int rx;
     int ty;
-    int sy;
     int pct;
     int fy;
+    int r0;
+    int r1;
+    int r2;
+    void *gim = field_pda->gim;
+    int sy;
 
     if (gim == 0)
         return list;
-    if (field_pda_count != 0 && 999 < (cards = field_pda_count()))
-        cards = 999;
+    if (field_pda_count != 0) {
+        cards = field_pda_count();
+        if (cards > 999)
+            cards = 999;
+    }
     list = gim_set_texture(list, gim);
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
@@ -91,26 +99,42 @@ void *pda_draw_status(void *list, int x, int y)
         list = draw_set_offsets(list, 0x11, 0x1E, 0x11, 0x1E);
         list = draw_sprite(list, cx, y + 0xE4, 0, 0x100, 0x10, 0, 0);
     }
-    ty = y + 0x17;
     font_text_set(list);
     font_set_size(0x0D, 0x0D);
     font_set_color(FONT_BROWN);
+    ty = y + 0x17;
     /* name */
-    font_draw_text((x + 0x2E) << 6, ty << 6, (480 - (x + 0x2E)) << 6, table_get_entry(fld_gim_get(5), 0x3E));
+    {
+        unsigned short *t = table_get_entry(fld_gim_get(5), 0x3E);
+
+        font_draw_text((x + 0x2E) << 6, ty << 6, (480 - (x + 0x2E)) << 6, t);
+    }
     w = font_measure_text(table_get_entry(fld_gim_get(5), 0x3E));
-    cx = x + 0x2E + ((w >> 6) + 2);
-    font_draw_text(cx << 6, ty << 6, (480 - cx) << 6, sysstate_get_name());
+    {
+        unsigned short *name = sysstate_get_name();
+
+        cx = x + 0x2E + ((w >> 6) + 2);
+        font_draw_text(cx << 6, ty << 6, (480 - cx) << 6, name);
+    }
     /* day */
     font_draw_text((x + 0x2E) << 6, (ty + 0xF) << 6, (480 - (x + 0x2E)) << 6, table_get_entry(fld_gim_get(5), 0x3F));
     pda_draw_number(0, x + 0xCF, ty + 0xF, day_next(), 9, 3);
     /* days */
-    lx = (x + 9) << 6;
-    lw = (480 - (x + 9)) << 6;
-    font_draw_text(lx, (ty + 0x26) << 6, lw, table_get_entry(fld_gim_get(5), 0x40));
+    {
+        unsigned short *t = table_get_entry(fld_gim_get(5), 0x40);
+
+        lw = (480 - (x + 9)) << 6;
+        lx = (x + 9) << 6;
+        font_draw_text(lx, (ty + 0x26) << 6, lw, t);
+    }
     pda_draw_number(0, x + 0xB5, ty + 0x35, day_calc(0), 10, 9);
-    rx = (x + 0xB9) << 6;
-    rw = (480 - (x + 0xB9)) << 6;
-    font_draw_text(rx, (ty + 0x35) << 6, rw, table_get_entry(fld_gim_get(5), 0x41));
+    {
+        unsigned short *t = table_get_entry(fld_gim_get(5), 0x41);
+
+        rw = (480 - (x + 0xB9)) << 6;
+        rx = (x + 0xB9) << 6;
+        font_draw_text(rx, (ty + 0x35) << 6, rw, t);
+    }
     font_draw_text(lx, (ty + 0x44) << 6, lw, table_get_entry(fld_gim_get(5), 0x42));
     pda_draw_number(0, x + 0xB5, ty + 0x53, day_calc(2), 10, 9);
     font_draw_text(rx, (ty + 0x53) << 6, rw, table_get_entry(fld_gim_get(5), 0x41));
@@ -120,36 +144,38 @@ void *pda_draw_status(void *list, int x, int y)
     /* duel record */
     font_draw_text(lx, (ty + 0x8F) << 6, lw, table_get_entry(fld_gim_get(5), 0x44));
     sysstate2_get_triplet(0, rec);
-    total = rec[2] + (rec[0] + rec[1]);
+    r0 = rec[0];
+    r1 = rec[1];
+    r2 = rec[2];
+    total = r2 + (r0 + r1);
     if (cfg_get_language() == 0) {
         unsigned short c[2] = { 0 };
 
-        pda_draw_number(0, x + 0x3E, ty + 0x9E, rec[0], 10, 5);
+        pda_draw_number(0, x + 0x3E, ty + 0x9E, r0, 10, 5);
         c[0] = 0x52DD;
         sy = (ty + 0x9E) << 6;
         font_draw_text((x + 0x40) << 6, sy, (480 - (x + 0x40)) << 6, c);
-        pda_draw_number(0, x + 0x82, ty + 0x9E, rec[1], 10, 5);
+        pda_draw_number(0, x + 0x82, ty + 0x9E, r1, 10, 5);
         c[0] = 0x6557;
         font_draw_text((x + 0x84) << 6, sy, (480 - (x + 0x84)) << 6, c);
-        pda_draw_number(0, x + 0xC4, ty + 0x9E, rec[2], 10, 5);
+        pda_draw_number(0, x + 0xC4, ty + 0x9E, r2, 10, 5);
         c[0] = 0x5206;
         font_draw_text((x + 0xC6) << 6, sy, (480 - (x + 0xC6)) << 6, c);
     } else {
-        pda_draw_number(0, x + 0x4E, ty + 0x9E, rec[0], 10, 5);
-        pda_draw_number(0, x + 0x92, ty + 0x9E, rec[1], 10, 5);
-        pda_draw_number(0, x + 0xD4, ty + 0x9E, rec[2], 10, 5);
+        pda_draw_number(0, x + 0x4E, ty + 0x9E, r0, 10, 5);
+        pda_draw_number(0, x + 0x92, ty + 0x9E, r1, 10, 5);
+        pda_draw_number(0, x + 0xD4, ty + 0x9E, r2, 10, 5);
     }
     /* win rate */
-    sy = (ty + 0xB5) << 6;
-    font_draw_text(lx, sy, lw, table_get_entry(fld_gim_get(5), 0x45));
-    if (rec[0] == 0) {
+    font_draw_text(lx, sy = (ty + 0xB5) << 6, lw, table_get_entry(fld_gim_get(5), 0x45));
+    if (r0 == 0) {
         pda_draw_number(0, x + 0xC0, ty + 0xB5, 0, 10, 1);
-    } else if (rec[0] == total) {
+    } else if (r0 == total) {
         pda_draw_number(0, x + 0xC0, ty + 0xB5, 100, 10, 3);
     } else {
         unsigned short d[2] = { 0 };
 
-        pct = rec[0] * 1000 / total;
+        pct = r0 * 1000 / total;
         if (pct == 0)
             pct = 1;
         pda_draw_number(0, x + 0xAC, ty + 0xB5, pct / 10, 10, 2);
@@ -159,6 +185,8 @@ void *pda_draw_status(void *list, int x, int y)
     }
     font_draw_text((x + 0xC2) << 6, sy, (480 - (x + 0xC2)) << 6, table_get_entry(fld_gim_get(5), 0x46));
     if (cards >= 0) {
+        PdaText2 t = *(PdaText2 *)pda_times_text;
+
         font_draw_text(lx, (ty + 0xCC) << 6, lw, table_get_entry(fld_gim_get(5), 0x47));
         pda_draw_number(0, x + 0xD2, ty + 0xDD, cards, 10, 3);
         cx = x + 0xBF;
@@ -166,11 +194,10 @@ void *pda_draw_status(void *list, int x, int y)
             cx -= 10;
         if (cards >= 100)
             cx -= 10;
-        font_draw_text(cx << 6, (ty + 0xDD) << 6, (480 - cx) << 6, pda_times_text);
+        font_draw_text(cx << 6, (ty + 0xDD) << 6, (480 - cx) << 6, t.c);
     }
     return font_text_clear();
 }
-#endif
 
 /* widest value text of the text speed and volume options (pixels) */
 unsigned char pda_opt_value_width(void)
@@ -218,7 +245,6 @@ unsigned int pda_mail_label_width(void)
 }
 
 /* options page: nine rows, on/off switches, the speed and volume values and the three gauges */
-#ifdef NON_MATCHING /* função grande, não iterada: alocação de registradores */
 void *pda_draw_options(void *list, int x, int y)
 {
     void *gim = field_pda->gim;
@@ -278,7 +304,7 @@ void *pda_draw_options(void *list, int x, int y)
         cur = field_pda->opt[field_pda->cursor];
         list = draw_set_offsets(list, 8, 0x0C, 8, 0x0C);
         if (cur > 0)
-            list = draw_sprite(list, x + 0xA3 + shift - ((unsigned int)field_pda->opt_w >> 1), y + rows[field_pda->cursor] + 5, 0, 0xB7, 0x30, 0, 0);
+            list = draw_sprite(list, x + 0xA3 + shift - (int)((unsigned int)field_pda->opt_w >> 1), y + rows[field_pda->cursor] + 5, 0, 0xB7, 0x30, 0, 0);
         if (cur < fpda_opt_max(field_pda->cursor))
             list = draw_sprite(list, x + 0xBA + shift + ((unsigned int)field_pda->opt_w >> 1), y + rows[field_pda->cursor] + 5, 0, 0xBF, 0x30, 0, 0);
         }
@@ -286,12 +312,14 @@ void *pda_draw_options(void *list, int x, int y)
     font_text_set(list);
     font_set_size(0x0D, 0x0D);
     font_set_color(FONT_BROWN);
-    tx = (x + 9) << 6;
-    font_draw_text(tx, (y + 0x44) << 6, 0x32C0, table_get_entry(fpda_option_msgs(0), 3));
+    {
+        unsigned short *t = table_get_entry(fpda_option_msgs(0), 3);
+
+        tx = (x + 9) << 6;
+        font_draw_text(tx, (y + 0x44) << 6, 0x32C0, t);
+    }
     font_draw_text(tx, (y + 0x95) << 6, 0x32C0, table_get_entry(fpda_option_msgs(0), 7));
-    names = pda_opt_names;
-    vx = x + 0xB2 + shift;
-    for (i = 0; i < 9; i++, names++) {
+    for (i = 0, names = pda_opt_names, vx = x + 0xB2 + shift; i < 9; i++, names++) {
         tx = x + 9;
         if (cfg_get_language() != 0 && i == 2)
             continue;
@@ -301,7 +329,11 @@ void *pda_draw_options(void *list, int x, int y)
             font_set_color(FONT_BROWN);
         if (i >= 2)
             tx += 7;
-        font_draw_text(tx << 6, (y + rows[i] + 4) << 6, 0x2000, table_get_entry(fpda_option_msgs(0), *names));
+        {
+            unsigned short *t = table_get_entry(fpda_option_msgs(0), *names);
+
+            font_draw_text(tx << 6, (y + rows[i] + 4) << 6, 0x2000, t);
+        }
         switch (i) {
         case 0:
         case 6:
@@ -330,7 +362,6 @@ void *pda_draw_options(void *list, int x, int y)
     }
     return font_text_clear();
 }
-#endif
 
 /* the page buttons; n < 4: the buttons slide in (n = frame), else the cursor is on the page */
 #ifdef NON_MATCHING /* 21 palavras: x recebe s6 aqui (s1 no original) e por isso py/alpha/i trocam de $s; e o teste

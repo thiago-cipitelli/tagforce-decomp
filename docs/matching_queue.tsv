@@ -413,7 +413,6 @@ fuzzy	size	module	function	address	file
 88.8	928	libshop	shop_draw_open	0x08811E40	src/libshop/shop_open.c
 88.6	228	libstory	st_cond_partner_flag	0x08805708	src/libstory/s_chr.c
 88.5	336	libfield	fld_sys_init	0x0880FBB4	src/libfield/f_sys.c
-88.5	2584	libfield	pda_draw_status	0x0881FFEC	src/libfield/f_pdapage.c
 88.4	572	libduel_eng	duel_0882EA4C	0x0882EA4C	src/libduel_eng/ai_0882D398.c
 88.2	528	libduel_eng	duel_08868F80	0x08868F80	src/libduel_eng/effects_08867F54.c
 88.2	664	libduel_eng	duel_08882B04	0x08882B04	src/libduel_eng/effects_r.c
@@ -444,7 +443,6 @@ fuzzy	size	module	function	address	file
 86.5	640	libduel_draw	func_08823344	0x08823344	src/libduel_draw/dd_chain_menu.c
 86.3	1080	BOOT	ehf_cmd_prim_ribbon	0x08826014	src/BOOT/ehf_prim.c
 86.2	240	libduel_eng	duel_08890730	0x08890730	src/libduel_eng/effects_zd.c
-86.1	2060	libfield	pda_draw_options	0x08820BD0	src/libfield/f_pdapage.c
 86.0	856	libduel_draw	hscene_update	0x08863C1C	src/libduel_draw/dd_help_scene.c
 86.0	504	libduel_eng	duel_08844C2C	0x08844C2C	src/libduel_eng/ai_08844C2C.c
 85.9	248	BOOT	msgbox_open	0x0886C904	src/BOOT/msgbox.c
