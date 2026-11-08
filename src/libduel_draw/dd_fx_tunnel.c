@@ -1,5 +1,4 @@
 // @range 0x0883AB6C-0x0883B62C
-// @asm 0x0883AC7C-0x0883B620
 /* The tunnel of effects 27-31, 38-41 and 54: a disc of 33 textured rings that scrolls toward the
    center, with light streaks bursting at random angles (task of 0x67CC bytes). */
 #include "dd_fx.h"
@@ -39,10 +38,9 @@ int dd_fx27_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 90 palavras (2026-11-07): forma batendo instrução a instrução; só registradores: `d` em $s3
-   (original $s4) e os contadores do disco rodados ($s3/$s4/$s5) */
 int dd_tunnel_update(int phase, DdTunnelFx *d)
 {
+    DdStreak *sk;
     DdFxSlot *s = d->slot;
     int run = s->param;
     DdRandSeed *r;
@@ -76,8 +74,10 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
     /* the disc */
     if (phase == 1) {
         for (i = 0; i < 33; i++) {
+            float dr = -600.0f;
+
             fr = i / 32.0f;
-            radius = fr * -600.0f + 800.0f;
+            radius = fr * dr + 800.0f;
             tv = fr * 0.5f;
             alpha = (unsigned int)((1.0f - fr) * 255.0f) << 24 | 0xFF00C4;
             for (k = 0; k < 33; k++) {
@@ -153,25 +153,25 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
         mtx_push();
         mtx_identity();
         for (i = 0; i < 8; i++) {
-            st = &d->streak[i];
-            if (!(st->flags & 1) == 1)
+            sk = &d->streak[i];
+            if (!(sk->flags & 1) == 1)
                 continue;
-            e = dd_ease_sin(st->t, 8, 1) * 0.5f + 0.5f;
-            list = dl_ambient_light(list, (unsigned int)(out * (dd_ease_cos(st->t, 8, 1) * 255.0f)) << 24
+            e = dd_ease_sin(sk->t, 8, 1) * 0.5f + 0.5f;
+            list = dl_ambient_light(list, (unsigned int)(out * (dd_ease_cos(sk->t, 8, 1) * 255.0f)) << 24
                                               | 0xFFFFFF);
             for (j = 0; j < 4; j++) {
                 u = DD_RAND(r) / 32767.0f;
                 list = dl_tex_offset(DD_RAND(r) / 32767.0f, u, list);
                 mtx_push();
-                mtx_rotate_z(st->ang[j]);
+                mtx_rotate_z(sk->ang[j]);
                 dd_scale3(e, 1.0f, 0.0f);
                 list = draw_array(list, 4, 0x19F, 6, 0, d->streak_quad);
                 mtx_pop();
             }
-            if (st->t < 7)
-                st->t++;
+            if (sk->t < 7)
+                sk->t++;
             else
-                st->flags &= ~1;
+                sk->flags &= ~1;
         }
         mtx_pop();
         dl_set_list(list);
@@ -186,7 +186,6 @@ int dd_tunnel_update(int phase, DdTunnelFx *d)
     }
     return d->t < d->end ? 2 : 4;
 }
-#endif
 
 /* export: argument of the effects 32-37 and 52-53 (sound of the duel state, from dd_state_se_play) */
 void dd_fx_set_arg0(int v)

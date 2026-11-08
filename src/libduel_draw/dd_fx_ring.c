@@ -1,5 +1,4 @@
 // @range 0x08838068-0x08838CDC
-// @asm 0x0883813C-0x08838CDC
 // @data 0x08876B9C-0x08876BB4
 /* The ring of flames: up to 20 flames placed on a tilted circle in 3D, each shedding sprite sparks;
    the full ring (count 20) lights one flame every 16 frames, plays a sound and ends in a white flash
@@ -8,7 +7,7 @@
 
 int dd_ring_update(int phase, DdRingFx *d);
 
-/* camera eye and up vector: local templates of dd_ring_update (kept in asm) */
+/* camera eye and up vector: local templates of dd_ring_update */
 ScePspFVector3 dd_ring_eye = { 0.0f, 0.0f, 500.0f };
 ScePspFVector3 dd_ring_up = { 0.0f, 1.0f, 0.0f };
 
@@ -54,10 +53,10 @@ int dd_ring_start(int count, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 22 palavras (2026-11-07): forma e pilha batem; faltam registradores: `f` em $s3 (original $s4, trocado
-   com o ponteiro do laço das faíscas) e ang/dist em $f20/$f21 trocados no laço que cria as faíscas */
 int dd_ring_update(int phase, DdRingFx *d)
 {
+    float place;
+    DdRingFlame *fl;
     int step = dd_anim_step();
     ScePspFVector3 eye = dd_ring_eye;
     ScePspFVector3 at = { 0 };
@@ -136,9 +135,9 @@ int dd_ring_update(int phase, DdRingFx *d)
         mat3_identity(&rot);
         mat3_rot_x(&rot, &rot, 1.0471976f);
         for (i = 0; i < 20; i++) {
-            ang = 6.2831855f * i / 20.0f;
+            place = 6.2831855f * i / 20.0f;
             f = &d->flame[i];
-            vec3_set(&f->pos, sinf(ang) * 150.0f, cosf(ang) * 150.0f, 0.0f);
+            vec3_set(&f->pos, sinf(place) * 150.0f, cosf(place) * 150.0f, 0.0f);
             mat3_transform_vec3(&f->pos, &rot, &f->pos);
         }
         if (d->count < 20) {
@@ -173,17 +172,17 @@ int dd_ring_update(int phase, DdRingFx *d)
     mtx_push();
     mtx_identity();
     for (i = 0; i < 20; i++) {
-        f = &d->flame[i];
-        if (!DD_BIT(f->flags, 1) == 1)
+        fl = &d->flame[i];
+        if (!DD_BIT(fl->flags, 1) == 1)
             continue;
-        a = out * dd_ease_lin(f->t, 16);
+        a = out * dd_ease_lin(fl->t, 16);
         sc = 1.0f;
         if (DD_BIT(d->flags, 2) == 1)
             sc = 1.5f;
         vec3_set(&scale, sc, sc, 0.0f);
         /* `step` new sparks */
         for (j = 0; j < step; j++) {
-            p = &f->p[f->next];
+            p = &fl->p[fl->next];
             p->flags |= 1;
             p->t = 0;
             ang = 6.2831855f * (DD_RAND(r) / 32767.0f);
@@ -195,14 +194,14 @@ int dd_ring_update(int phase, DdRingFx *d)
             q->frame = DD_RAND(r) % 8;
             q->vy = cosf(ang2) * 0.95f + 0.35f;
             vec3_set(&q->pos, dist * sinf(ang), yc, dist * cosf(ang));
-            if (f->next < 31)
-                f->next++;
+            if (fl->next < 31)
+                fl->next++;
             else
-                f->next = 0;
+                fl->next = 0;
         }
         /* the sparks rise and fade */
         for (j = 0; j < 32; j++) {
-            p = &f->p[j];
+            p = &fl->p[j];
             if (!DD_BIT(p->flags, 1) == 1)
                 continue;
             list = dl_ambient_light(list, (unsigned int)(a * 255.0f * dd_ease_lin(p->t, 4) *
@@ -210,7 +209,7 @@ int dd_ring_update(int phase, DdRingFx *d)
             q = (DdRingSparkMove *)&p->frame;
             vec3_set(&pos, p->pos.x, p->pos.y + p->vy * p->t, p->pos.z);
             vec3_scale(&pos, &pos, sc);
-            vec3_add(&pos, &pos, &f->pos);
+            vec3_add(&pos, &pos, &fl->pos);
             mtx_push();
             mtx_translate(&pos);
             mtx_mult(&bill);
@@ -221,7 +220,7 @@ int dd_ring_update(int phase, DdRingFx *d)
             if (p->t >= 32)
                 p->flags &= ~1;
         }
-        f->t += step;
+        fl->t += step;
     }
     mtx_pop();
     dl_set_list(list);
@@ -255,4 +254,3 @@ int dd_ring_update(int phase, DdRingFx *d)
         d->out += step;
     return d->out < 16 ? 2 : 4;
 }
-#endif

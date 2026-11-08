@@ -1,5 +1,4 @@
 // @range 0x08843248-0x08844024
-// @asm 0x088433F0-0x08844024
 // @data 0x08876BF0-0x08876C40
 /* Effects 42-50, 63-64, 71-77 and 82: a ring of 16 glowing petals turning under a node of the card
    model, with sparks that rise and stretch along the view (task of 0x710 bytes). */
@@ -7,7 +6,7 @@
 
 int dd_halo_update(int phase, DdHaloFx *d);
 
-/* local templates of dd_halo_update (kept in asm): placement offset, the two node offsets, the petal
+/* local templates of dd_halo_update: placement offset, the two node offsets, the petal
    scale (x = fade in, padded to 16 bytes) and the sparks' axis */
 ScePspFVector4 dd_halo_off = { 0.0f, 0.0f, 0.0f, 1.0f };
 ScePspFVector4 dd_halo_down = { 0.0f, 0.0f, 44.0f, 1.0f };
@@ -63,10 +62,9 @@ int dd_fx42_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 35 palavras (2026-11-07): forma e pilha batem; faltam registradores: `flip` em $s2 (original $s1,
-   o de `s`), `list`/`sp`/`j` rodados no laço das faíscas, e a ordem da cópia do modelo de `scale` */
 int dd_halo_update(int phase, DdHaloFx *d)
 {
+    DdHaloSpark *ns;
     DdFxSlot *s = d->slot;
     int run = s->param;
     ScePspFVector3 scale;
@@ -116,8 +114,8 @@ int dd_halo_update(int phase, DdHaloFx *d)
 
     /* first frame: the halo frame, under the node (or above it, turned, for 43 and 46) */
     if (d->grow == 0 && d->placed == 0) {
-        tilt = 0.0f;
         off = dd_halo_off;
+        tilt = 0.0f;
         flip = 1;
         switch (s->id) {
         case 43:
@@ -197,7 +195,9 @@ int dd_halo_update(int phase, DdHaloFx *d)
         mtx_set_mode(2);
         mtx_push();
         mtx_load(&d->m);
-        scale = *(ScePspFVector3 *)&dd_halo_scale;
+        scale.x = dd_halo_scale.x;
+        scale.y = dd_halo_scale.y;
+        scale.z = dd_halo_scale.z;
         scale.y = in;
         rad = grow * 28.0f;
         radz = grow * 5.0f;
@@ -249,14 +249,14 @@ int dd_halo_update(int phase, DdHaloFx *d)
         }
     }
     if (d->grow == d->grow_end) {
-        sp = &d->spark[d->spark_next];
+        ns = &d->spark[d->spark_next];
         rad = grow * 28.0f;
-        sp->flags |= 1;
-        sp->t = 0;
+        ns->flags |= 1;
+        ns->t = 0;
         for (i = 0; i < 3; i++) {
             ang = DD_RAND(r) / 32767.0f * 6.2831855f;
-            sp->frame[i] = DD_RAND(r) % 8;
-            vec4_set(&sp->pos[i], rad * sinf(ang), 0.0f, cosf(ang) * 20.0f, 1.0f);
+            ns->frame[i] = DD_RAND(r) % 8;
+            vec4_set(&ns->pos[i], rad * sinf(ang), 0.0f, cosf(ang) * 20.0f, 1.0f);
         }
         if (d->spark_next < 11)
             d->spark_next++;
@@ -323,4 +323,3 @@ int dd_halo_update(int phase, DdHaloFx *d)
     }
     return d->t < d->end ? 2 : 4;
 }
-#endif

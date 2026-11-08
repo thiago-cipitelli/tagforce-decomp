@@ -1,6 +1,5 @@
 // @range 0x0883B62C-0x08842824
 // @rodata 0x088707FC-0x08870820
-// @asm 0x0883C744-0x0883D9D4
 // @asm 0x0883E6F8-0x0883EF6C
 /* Effects 32-37 and 52-53: nine styles of full-screen burst picked by dd_fx_table.arg0 (style 0-8),
    each a task with its own particles, drawn through a stencil mask of the field except for effect 33,
@@ -380,7 +379,6 @@ int dd_fx32_s1_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 10 palavras: no laço de desenho do tubo o ponteiro do buffer (tb), o contador e o ponteiro do índice saem em s0/s3/s2 em vez de s2/s0/s3 (declaração do tb em qualquer posição não muda) */
 int dd_fx32_s1_update(int phase, DdFx32S1 *d)
 {
     int k5;
@@ -389,7 +387,6 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
     int k2;
     int k1;
     int k0;
-    void *tb;
     float rd;
     DdFxSlot *s = d->slot;
     int run = s->param;
@@ -425,7 +422,6 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
     int j3;
     int i3;
     int j2;
-    int i2;
     DdFx32Motes *m_0;
     DdFx32Spin *sp_0;
 
@@ -556,12 +552,11 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
             d->tube[k5][32].x = d->tube[k5][0].x;
             d->tube[k5][32].y = d->tube[k5][0].y;
         }
-        tb = d->tube_buf[buf];
-        memcpy(tb, d->tube, sizeof(d->tube));
+        memcpy(d->tube_buf[buf], d->tube, sizeof(d->tube));
         list = dl_tex_offset(d->tex_u, d->tex_v, list);
         list = dl_ambient_light(list, alpha << 24 | 0xFFFFFF);
-        for (i2 = 0; i2 < 48; i2++)
-            list = draw_array(list, 4, 0x119F, 66, d->idx[i2], tb);
+        for (i = 0; i < 48; i++)
+            list = draw_array(list, 4, 0x119F, 66, d->idx[i], d->tube_buf[buf]);
         d->tex_u = d->tex_u + 0.01f;
         d->tex_v = d->tex_v - 0.05f;
         mtx_pop();
@@ -664,7 +659,6 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
     }
     return d->t < d->end ? 2 : 4;
 }
-#endif
 
 /* ---- style 2: a white tube of light scrolling fast into the screen and spinning sparks ---- */
 
