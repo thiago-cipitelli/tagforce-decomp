@@ -1,5 +1,5 @@
 // @range 0x088DA5EC-0x088DEB2C
-// @asm 0x088DA5EC-0x088DB520
+// @asm 0x088DABD8-0x088DB520
 // @asm 0x088DC4E0-0x088DCA4C
 // @asm 0x088DD038-0x088DD1A4
 // @asm 0x088DD88C-0x088DD98C
@@ -120,21 +120,24 @@ unsigned short duel_zone_pos(unsigned int p, int z, int i);
 int card_is_attribute9(int id);
 int card_get_level(int id);
 
-#ifdef NON_MATCHING /* 23 palavras (era 334): casos 0-2 com return (b para o epílogo sem preencher o delay slot),
-                      teste redundante to_zone == 0xE dentro do bloco z < 5 (está no original), uid (unsigned short);
-                      falta só a rotação dos $s de p, z e t (s2/s4/s0 no original) */
 /* Move the card with uid w from zone arg of player p to pile loc (0xD deck, 0xE graveyard, 0xF banished
    zone), counting what goes to the graveyard. */
 void duel_req_send(void)
 {
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    unsigned int w = duel_req.w;
-    unsigned int t = (unsigned short)(duel_card_locate(w) >> 16);
-    unsigned int to_zone = *(unsigned short *)&duel_req.loc;
-    unsigned int z = duel_req.arg;
+    unsigned int w;
+    unsigned int to_zone;
+    unsigned int z;
     DuelCard *c;
+    unsigned int p;
+    unsigned int t;
     DuelLoc from;
     DuelLoc to;
+
+    p = (duel_req.id & 0x8000) != 0;
+    z = duel_req.arg;
+    to_zone = *(unsigned short *)&duel_req.loc;
+    w = duel_req.w;
+    t = (unsigned short)(duel_card_locate(w) >> 16);
 
     switch (duel_req_step) {
     case 0:
@@ -203,7 +206,6 @@ void duel_req_send(void)
         break;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* 333 palavras; corrigido 2026-11-05: o pedido 0x1F leva o uid da carta como 4º argumento
                       (o rascunho passava 0). Forma conferida com o asm (z int, else antes, arg num local); falta a alocação */

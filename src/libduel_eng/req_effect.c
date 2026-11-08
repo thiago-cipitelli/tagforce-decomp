@@ -1,8 +1,9 @@
 // @range 0x088D6DE8-0x088DA5EC
-// @asm 0x088D6DE8-0x088D8A24
+// @asm 0x088D6DE8-0x088D7AB8
+// @asm 0x088D7EA4-0x088D8354
+// @asm 0x088D86B8-0x088D8A24
 // @asm 0x088D8AB8-0x088D8B1C
 // @asm 0x088D8C50-0x088D8CF8
-// @asm 0x088D8DD0-0x088D9080
 /* Requests that change effect entries and slot values directly (the effect half of the request steps
    in req_step.c), and the requests that show a card, flip a card of the hand/deck/extra deck and send
    a card from a zone or from the special slots to another pile. */
@@ -209,28 +210,44 @@ void duel_req_move(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* 51 palavras (era 264): forma igual; o original extrai t >> 16 com ext no delay slot do
-                      1º teste do switch e o mwcc 219 dá srl logo depois da chamada (ver docs/matching.md, rodada 8) */
+#ifdef NON_MATCHING /* 25 palavras (era 51): declarações separadas das atribuições e (int)t >> 16 & 0xFFFF (dá o ext
+                      do original); falta o escalonamento depois da chamada (o original mantém t em v0 e faz o ext
+                      no delay slot do 1º teste do switch) e w0/tz, tp/w1 trocados; ordem e tipos das declarações,
+                      locais de bloco e ordem dos comandos não mudam nada */
 /* Move the card at location arg (its uid in the index bits) to location loc + offset; w: low byte
    and bit 8 go to the new place. */
 void duel_req_move_card(void)
 {
-    DuelReqCard a = *(DuelReqCard *)&duel_req.arg;
-    unsigned int uid = a.uid;
-    unsigned int sp = a.player;
-    int sz = a.zone;
-    unsigned int t = duel_card_locate(uid);
-    DuelReqCard l = *(DuelReqCard *)&duel_req.loc;
-    unsigned int w = duel_req.w;
-    unsigned int off = l.uid;
-    unsigned int w0 = w & 0xFF;
-    unsigned int w1 = w >> 8 & 0xFF;
-    int tz = l.zone;
-    unsigned int tp = l.player;
-    unsigned int i = t >> 16;
+    DuelReqCard a;
+    unsigned int sp;
+    int sz;
+    unsigned int uid;
+    unsigned int t;
+    DuelReqCard l;
+    unsigned int w;
+    unsigned int off;
+    unsigned int w0;
+    unsigned int w1;
+    int tz;
+    unsigned int tp;
+    unsigned int i;
     DuelCard *c;
     DuelLoc from;
     DuelLoc to;
+
+    a = *(DuelReqCard *)&duel_req.arg;
+    uid = a.uid;
+    sp = a.player;
+    sz = a.zone;
+    t = duel_card_locate(uid);
+    l = *(DuelReqCard *)&duel_req.loc;
+    w = duel_req.w;
+    off = l.uid;
+    w0 = w & 0xFF;
+    w1 = w >> 8 & 0xFF;
+    tz = l.zone;
+    tp = l.player;
+    i = (int)t >> 16 & 0xFFFF;
 
     switch (duel_req_step) {
     case 0:
@@ -280,8 +297,6 @@ void duel_req_move_card(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* 15 palavras (era 238): forma igual; só ap/az trocados (s4/s5); ordem e tipos das
-                      declarações e dos comandos não mudam */
 /* Move the card of zone arg to zone loc (player | zone << 8); into a spell/trap zone it loses its
    position and value. */
 void duel_req_move_zone(void)
@@ -289,7 +304,7 @@ void duel_req_move_zone(void)
     unsigned int a;
     unsigned int b;
     unsigned int ap;
-    int az;
+    unsigned int az;
     unsigned int bp;
     int bz;
     DuelSlot *src;
@@ -307,7 +322,7 @@ void duel_req_move_zone(void)
     bz = b >> 8 & 0xFF;
     switch (duel_req_step) {
     case 0:
-        if (az > 10 || bz > 10) {
+        if ((int)az > 10 || bz > 10) {
             duel_busy_0891523C = 0;
         } else {
             duel_req_step++;
@@ -315,7 +330,7 @@ void duel_req_move_zone(void)
         break;
     case 1:
         duel_card_copy(&duel_card_tmp, duel_field_card_deb2c(ap, az, 0));
-        if (bp == duel_view_player && az <= 4 && bz <= 4) {
+        if (bp == duel_view_player && (int)az <= 4 && bz <= 4) {
             duel_0884DB38(0x2D, 1);
         }
         from.player = ap;
@@ -355,7 +370,6 @@ void duel_req_move_zone(void)
     }
 }
 
-#endif
 
 #ifdef NON_MATCHING /* draft */
 /* Swap the cards of zones arg and loc (player | zone << 8): exchange the slots, hide the ids while
@@ -422,7 +436,6 @@ void duel_req_swap_zones(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* 7 palavras (era 201): forma igual; temporários do argumento do pedido 0x1A (v1/a0 trocados) */
 /* Change the position of the monster in zone arg (w: by an effect; loc: also flip it). */
 void duel_req_change_pos(void)
 {
@@ -461,8 +474,8 @@ void duel_req_change_pos(void)
         if (w != 0 && flip != 0) {
             duel_088DF554(p, z, 1, 1);
         }
-        duel_host_call(0x1A, (unsigned short)((1 - s->pos & 1) << 15 | (((flip ^ s->faceup) & 1) << 14 | ((p & 1) | (z & 0x1F) << 1))),
-                       !w && flip, 0);
+        { unsigned int fu = flip ^ s->faceup; unsigned int ps = 1 - s->pos;
+        duel_host_call(0x1A, (unsigned short)((ps & 1) << 15 | ((fu & 1) << 14 | ((p & 1) | (z & 0x1F) << 1))), !w && flip, 0); }
         duel_req_step++;
         break;
     case 2:
@@ -498,7 +511,6 @@ void duel_req_change_pos(void)
         break;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* 2 palavras (era 202): o original agenda o 2º lui de duel_order_ctr antes do addiu (mesma
                       família de duel_req_order e duel_place_monster/st) */
@@ -677,21 +689,20 @@ void duel_req_slot_value(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* 20 palavras (era 48): forma igual (MIN como ternário); z e id trocados (s2/s4) */
 /* Change the counters of zone arg by loc (w 0: the zone value up to the card's maximum, w 1: the zone
    value, else entries of card w). */
 void duel_req_counters(void)
 {
-    int k;
-    int i;
-    int max;
     unsigned int p;
-    unsigned int z;
-    unsigned int id;
-    int n;
     int v;
     int old;
+    int z;
+    int k;
     int card;
+    int i;
+    int n;
+    unsigned int id;
+    int max;
 
     p = (duel_req.id & 0x8000) != 0;
     z = duel_req.arg;
@@ -716,7 +727,8 @@ void duel_req_counters(void)
                     }
                 }
             } else if (id == 1) {
-                v = duel.players[p & 1].field[z].link + n;
+                old = duel.players[p & 1].field[z].link;
+                v = old + n;
                 v = MAX(v, 0);
                 duel.players[p & 1].field[z].link = v;
             } else if (n > 0) {
@@ -742,7 +754,6 @@ void duel_req_counters(void)
         break;
     }
 }
-#endif
 
 /* 0x088D9080-0x088DA5EC: requests 0x28, 0x29, 0x31 and 0x32 (duel_req_088D28F8 dispatches them). */
 
