@@ -458,7 +458,7 @@ era idêntica e só faltavam registradores. O que resolveu, além da regra da ro
   do 1º e do 2º campo = cópia por campo de um global nomeado (`s[0] = g[0]; s[1] = g[1]; s[2] = g[2]; s[0] = e;`).
   O outro modelo do mesmo `@data` vira global também (`DdSumVec3 ofs = *(DdSumVec3 *)g;`), para manter a ordem no `.data`.
 - **Conferir os operandos que o `-d` mascara**: o diff estrutural com relocações normalizadas escondeu 2 palavras que
-  eram lógica (`&ring_idx[0]` e `ring[i] + 1` na segunda faixa do anel, não `&ring_idx[4]` e `ring[i]`).
+  eram outra forma da mesma lógica (`&ring_idx[0]` sobre `ring[i] + 1` na segunda faixa do anel, não `&ring_idx[4]` sobre `ring[i]`: mesmos vértices, offsets diferentes).
 
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
