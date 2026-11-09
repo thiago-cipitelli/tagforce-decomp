@@ -1,5 +1,4 @@
 // @range 0x08837B28-0x088390C4
-// @asm 0x08837B28-0x08837D10
 /* "HOGE" heap: a sorted table of block boundaries, each word holding an address and a free flag
    (block i spans ent[i].addr to ent[i + 1].addr). The table lives in a block of the heap itself
    and grows by doubling, moving to the lowest free block when possible. Allocation is best fit
@@ -38,20 +37,20 @@ int heap_merge(Heap *h, HeapEnt *e);
 int heap_relocate_table(Heap *h);
 
 /* Creates a heap of `size` bytes in `mem` (allocated when 0). */
-#ifdef NON_MATCHING /* o original calcula h->pad com `subu v0,a0,a0` (h e mem no mesmo registrador); aqui o resultado do malloc fica em v0 e os temporários dos bitfields mudam. Todas as formas de cópia (h = mem = f(), local raw, cópia depois do teste) dobram para zero ou deixam mem em v0 */
 Heap *heap_create(Heap *mem, unsigned int size)
 {
     Heap *h = mem;
     HeapEnt *e;
 
     if (h == 0) {
-        if ((mem = h = heap_malloc_cur(0x10, size)) == 0) {
+        if ((mem = heap_malloc_cur(0x10, size)) == 0) {
             return 0;
         }
+        h = (Heap *)((char *)mem + 0);  /* the copy through +0 keeps h - mem unfolded (subu a0,a0) */
         h->size = size;
         h->pad = (char *)h - (char *)mem;
     } else {
-        h->pad = 0x3F;
+        h->pad = -1;                    /* 0x3F: external memory */
         h->size = size & ~0xF;
     }
     h->magic = HEAP_MAGIC;
@@ -71,7 +70,6 @@ Heap *heap_create(Heap *mem, unsigned int size)
     e[3].free = 0;
     return h;
 }
-#endif
 
 int heap_free_block(Heap *h)
 {

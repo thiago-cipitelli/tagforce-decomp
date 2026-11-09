@@ -1,7 +1,7 @@
 // @range 0x0884C8D0-0x0884EA38
 // @data 0x088EEBA0-0x088EEF50
 // @rodata 0x088AEAE0-0x088AEB84
-// @asm 0x0884CB1C-0x0884D0FC
+// @asm 0x0884CB1C-0x0884CEE8
 /* Deck recipes (RCP%03d.ydc in the recipes pack) and the card database: cardinfo_<lang>.ehp
    holds the names/descriptions (CARD_Name/Indx/Desc), properties (CARD_Prop.bin), passwords,
    sort keys, genre bits, the alphabetical index (CARD_Top) and alternate-art groups. */
@@ -217,12 +217,10 @@ int deck_validate(RecipeData *deck, int with_side)
 
 /* For each partner card: 4 unused, 1 in main, 3 in side, 2 in extra (GameState +0x108). */
 /* Marks each partner card: 1 missing from main, 3 missing from side, 2 missing from extra, 4 unused.
-   Only the loop counter/pointer registers of the first loop differ (a1/a2). */
-#ifdef NON_MATCHING
+   The three deck loops reuse the partner loop's counter k. */
 void gamestate_fill_partner_list(RecipeData *deck, int with_side)
 {
     unsigned short *where = (unsigned short *)((char *)game_state_get() + 0x108);
-    unsigned int j;
     int i, k;
     unsigned short id;
     unsigned short owned, used;
@@ -236,23 +234,23 @@ void gamestate_fill_partner_list(RecipeData *deck, int with_side)
             if (id == partner_id_get(k) && where[k] != 4)
                 owned++;
         }
-        for (j = 0; j < deck->n_main; j++) {
-            if (deck->main_ids[j] == id)
+        for (k = 0; k < deck->n_main; k++) {
+            if (deck->main_ids[k] == id)
                 used++;
         }
         if (owned < used) {
             where[i] = 1;
             continue;
         }
-        for (j = 0; j < deck->n_side; j++) {
-            if (deck->side_ids[j] == id)
+        for (k = 0; k < deck->n_side; k++) {
+            if (deck->side_ids[k] == id)
                 used++;
         }
         if (owned < used) {
             where[i] = 3;
         } else if (with_side != 0) {
-            for (j = 0; j < deck->n_extra; j++) {
-                if (deck->extra_ids[j] == id)
+            for (k = 0; k < deck->n_extra; k++) {
+                if (deck->extra_ids[k] == id)
                     used++;
             }
             if (owned < used)
@@ -260,7 +258,6 @@ void gamestate_fill_partner_list(RecipeData *deck, int with_side)
         }
     }
 }
-#endif
 
 /* Scene callback showing a card's 3D model (menu item kind 2); see the scene callback protocol. */
 int cardinfo_model_cb(void **obj, void *scene, unsigned char *item, int msg)

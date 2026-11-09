@@ -1,6 +1,5 @@
 // @range 0x08808E68-0x0880B3E4
 // @asm 0x088097F4-0x088098DC
-// @asm 0x0880AEF4-0x0880B048
 // @data 0x0881C0E0-0x0881C16C
 /* Script instructions 0xC3A0..0xC3F5 (inventory, money, flags, field commands, duel setup, sound,
    characters on the map, partner) and the helpers of the interpreter: block skipping, comparisons
@@ -840,11 +839,10 @@ void op_sv_08_2(void)
 
 /* skips forward to the instruction op (with the given arguments, 0 = any) closing the current block;
    nested blocks are counted */
-#ifdef NON_MATCHING /* 10 palavras: registradores s3/s4 de depth e ca trocados (ordem das declarações, das leituras e
-   forma da inicialização de depth testadas: 3600 variantes) */
 int vm_skip(unsigned int op, unsigned int a, unsigned int b, unsigned int c)
 {
-    unsigned int cop, ca, cb, cc;
+    unsigned int cop;
+    int ca, cb, cc;
     int depth = 0;
     StoryVm *vm = &story_vm;
     StoryCmd *p;
@@ -868,7 +866,6 @@ int vm_skip(unsigned int op, unsigned int a, unsigned int b, unsigned int c)
              || (c != 0 && cc != c && cc != 0));
     return 1;
 }
-#endif
 
 int vm_cmp(unsigned int v, unsigned int ref, int mode)
 {
