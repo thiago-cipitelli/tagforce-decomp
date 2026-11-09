@@ -4,8 +4,8 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-11-09, após a rodada 11 (funções mais fáceis da fila; ByteMatch): 81,4% do
-código batendo, 95,4% fuzzy, 10248/11039 funções (libduel_eng 82,2%/97,5%, libduel_draw 76,9%/95,8%). Fila: 342
+Estado em 2026-11-09, após a rodada 12 (funções de 97-98% nunca tentadas; ByteMatch): 81,5% do
+código batendo, 95,5% fuzzy, 10258/11039 funções (libduel_eng 82,6%/97,5%, libduel_draw 76,9%/95,8%). Fila: 320
 funções em `docs/matching_queue.tsv` (53 abaixo de 80%, nenhuma em 0%: toda função tem
 C que compila), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
@@ -1067,3 +1067,6 @@ Quando o original faz `bnezl …; li v0,K` para um `return K` no começo e o mwc
 o teste e deixe o retorno por último: `if (!A || !B || !C) { …resto… } return K;` (`duel_0888BF08`). Outros
 achados: o 5º argumento de `duel_088C87A8` é o byte do jogador (`duel_088859A8`, era bug de lógica); tabelas locais
 inicializadas (`t0[side][k]`) pedem `// @data` com os modelos (`duel_tag_slot`).
+`bootx`: `- 12U` em `x + 20 + (d + 2) - 12U` impede o mwcc de dobrar `20 - 12` e reproduz a aritmética do original
+(`shop_shelf_cursor`); em `ehp_unload`, atribuir o ponteiro auxiliar só depois do teste de entrada do laço põe o
+ponteiro da entrada no delay slot do primeiro desvio.

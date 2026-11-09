@@ -5,9 +5,9 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-08 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 81,4% | 95,4% | 10248 / 11039 |
-| BOOT | 69,6% | 82,4% | 1861 / 2208 |
-| libduel_eng | 82,2% | 97,5% | 3262 / 3429 |
+| total | 81,5% | 95,5% | 10258 / 11039 |
+| BOOT | 69,7% | 82,4% | 1862 / 2208 |
+| libduel_eng | 82,6% | 97,5% | 3270 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
 | libpassword | 100,0% | 100,0% | 33 / 33 |
@@ -26,7 +26,7 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-08 (
 | libshop | 78,4% | 97,3% | 203 / 223 |
 | libtitle | 88,0% | 98,1% | 415 / 434 |
 | libtutorial | 95,8% | 99,9% | 205 / 207 |
-| libfield | 83,6% | 99,1% | 610 / 652 |
+| libfield | 84,2% | 99,2% | 611 / 652 |
 | libstory | 89,9% | 98,8% | 659 / 676 |
 | libduel_draw | 76,9% | 95,8% | 1517 / 1609 |
 
