@@ -1,6 +1,5 @@
 // @range 0x088C87A8-0x088C936C
 // @asm 0x088C8DC4-0x088C8E88
-// @asm 0x088C8F04-0x088C914C
 /* Commands to the presentation about a zone (0x36: a card moves to it, 0x37: an effect of a card,
    0x38: an effect counter). */
 #include "duel.h"
@@ -158,18 +157,22 @@ void duel_088C8E88(int q, int sz)
     }
 }
 
-#ifdef NON_MATCHING /* corrigido 2026-11-04: duel_088C8B3C recebe a entrada atual (o rascunho passava a seguinte); 10 palavras: $s de next e sz trocados (s4/s2) */
 void duel_088C8F04(unsigned int p, int z)
 {
     unsigned int e = duel.players[p & 1].field[z].effects;
 
     while (e != 0) {
         DuelEffect *ef = &duel.effects[e];
-        unsigned int sz = ef->src >> 8 & 0xFF;
-        unsigned int sp = ef->src & 0xFF;
-        unsigned int next = ef->next;
-        unsigned int k = ef->kind & 0xF;
+        unsigned int next;
+        unsigned int sp;
+        unsigned int sz;
         int v;
+        unsigned int k;
+
+        sp = ef->src & 0xFF;
+        next = ef->next;
+        k = ef->kind & 0xF;
+        sz = ef->src >> 8 & 0xFF;
 
         switch (k) {
         case 10:
@@ -207,7 +210,6 @@ void duel_088C8F04(unsigned int p, int z)
         e = next;
     }
 }
-#endif
 
 void duel_088C914C(unsigned int p, int z)
 {

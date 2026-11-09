@@ -4,7 +4,6 @@
 // @asm 0x08871674-0x088717B4
 // @asm 0x088731C0-0x088732B4
 // @asm 0x08873B8C-0x08873C84
-// @asm 0x088766B0-0x088768A8
 // @asm 0x088770C0-0x088771D4
 // @asm 0x0887C93C-0x0887CAE8
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
@@ -3110,12 +3109,12 @@ int duel_0887665C(DuelAct *a)
     return duel_count_field(a->player) < 6;
 }
 
-#ifdef NON_MATCHING /* 12 palavras: os testes 0xC/0xB dos dois switch saem com beq+nop no original (aqui beql com o li v0,1); contadores dos laços em outros $s */
 int duel_088766B0(DuelAct *a)
 {
-    int i;
-    unsigned int j;
+    DuelCard *c;
     unsigned char p;
+    int id;
+    int i;
 
     if (duel_phase_ok2(a->player) == 0) {
         return 0;
@@ -3130,29 +3129,25 @@ int duel_088766B0(DuelAct *a)
         switch ((unsigned short)duel_field_type(a->player, i)) {
         case 0xB:
         case 0xC:
-            return 1;
         case 0x10:
             return 1;
         }
     }
-    for (j = 0; j < duel.players[(p = a->player) & 1].n_hand; j++) {
-        DuelCard *c = &duel.players[p & 1].hand[j];
-        int id = c->id;
-
+    for (i = 0; i < duel.players[(p = a->player) & 1].n_hand; i++) {
+        c = &duel.players[p & 1].hand[i];
+        id = c->id;
         if (duel_088DFCC8(CARD_UID(*c)) == 0) {
             return 0;
         }
         switch (card_get_type(id)) {
         case 0xB:
         case 0xC:
-            return 1;
         case 0x10:
             return 1;
         }
     }
     return 0;
 }
-#endif
 
 int duel_088768A8(DuelAct *a)
 {

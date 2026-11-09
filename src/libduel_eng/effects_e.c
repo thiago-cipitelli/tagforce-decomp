@@ -1,5 +1,4 @@
 // @range 0x088F9C00-0x088FA288
-// @asm 0x088F9C00-0x088F9ED0
 // @asm 0x088FA080-0x088FA288
 /* Card effect handlers (continued). */
 #include "duel.h"
@@ -38,7 +37,6 @@ void duel_0884C588(unsigned int p, int a, unsigned short id, unsigned int b);
 int duel_088BFF78(unsigned int p, unsigned short id, int b);
 void duel_0884ACD8(unsigned int p, int msg);
 
-#ifdef NON_MATCHING /* 18 palavras: o default do switch interno sai no original direto ao epílogo (b; move v0,zero) e o return 0 final fica no fim; aqui o mwcc junta os dois retornos 0 */
 int duel_eff_f9c00(DuelAct *a, int b)
 {
     unsigned int k = a->kind;
@@ -91,19 +89,15 @@ int duel_eff_f9c00(DuelAct *a, int b)
                 return 0x7F;
             }
             duel_088CC178(a->player, a->zone, *(volatile int *)&duel_w_08914900);
-            break;
+            return 0;
         }
-        return 0;
-    }
-    if (k == 15) {
+    } else if (k == 15) {
         return duel_0889BD04(a, b);
-    }
-    if (k == 22) {
+    } else if (k == 22) {
         return duel_0887F728(a, b);
     }
     return 0;
 }
-#endif
 
 int duel_eff_f9ed0(DuelAct *a)
 {
