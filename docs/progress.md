@@ -5,30 +5,30 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-08 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 80,8% | 95,4% | 10226 / 11039 |
-| BOOT | 68,9% | 82,3% | 1858 / 2208 |
-| libduel_eng | 81,6% | 97,5% | 3252 / 3429 |
+| total | 81,4% | 95,4% | 10248 / 11039 |
+| BOOT | 69,6% | 82,4% | 1861 / 2208 |
+| libduel_eng | 82,2% | 97,5% | 3262 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
 | libpassword | 100,0% | 100,0% | 33 / 33 |
 | libtutoriallist | 89,5% | 99,8% | 25 / 26 |
 | libduelrecord | 92,2% | 99,9% | 26 / 27 |
-| libduel_mgr | 88,7% | 99,2% | 149 / 158 |
+| libduel_mgr | 89,7% | 99,3% | 150 / 158 |
 | libselect_card | 84,9% | 98,7% | 193 / 207 |
 | libcardalbum | 97,2% | 100,0% | 67 / 68 |
 | libcharalist | 67,3% | 91,7% | 44 / 50 |
 | libconv_machine | 94,7% | 99,1% | 46 / 47 |
 | liblimitlist | 85,4% | 99,3% | 58 / 62 |
-| librecipe_viewer | 81,6% | 98,4% | 62 / 69 |
-| libdeck | 88,7% | 99,1% | 312 / 328 |
+| librecipe_viewer | 83,0% | 98,4% | 63 / 69 |
+| libdeck | 89,7% | 99,1% | 313 / 328 |
 | libdeck_swap | 86,1% | 98,8% | 191 / 204 |
-| libdeck_tutorial | 87,3% | 98,4% | 276 / 293 |
+| libdeck_tutorial | 89,5% | 98,5% | 278 / 293 |
 | libshop | 78,4% | 97,3% | 203 / 223 |
 | libtitle | 88,0% | 98,1% | 415 / 434 |
 | libtutorial | 95,8% | 99,9% | 205 / 207 |
 | libfield | 83,6% | 99,1% | 610 / 652 |
-| libstory | 88,9% | 98,8% | 657 / 676 |
-| libduel_draw | 76,8% | 95,8% | 1515 / 1609 |
+| libstory | 89,9% | 98,8% | 659 / 676 |
+| libduel_draw | 76,9% | 95,8% | 1517 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
