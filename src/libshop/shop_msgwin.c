@@ -1,5 +1,4 @@
 // @range 0x08808B44-0x08809D2C
-// @asm 0x088090B8-0x088093C0
 // @rodata 0x0881C15C-0x0881C178
 /* Message window of the shop: a menu item that slides in and out, the text typed a few pixels per
    frame on up to three lines (speed from the options, held button to hurry), pages and the blinking
@@ -196,70 +195,75 @@ int shop_msgwin_update(void)
     return m->closed;
 }
 
-/* icon frames of the "next" arrow and its offset from the window corner */
-const short shop_msg_icon_uv[4] = { 0x38, 0x4A, 0x0E, 0x0E };
-const int shop_msg_icon_off[2] = { -20, -20 };
+/* the "next" arrow: source rect and offset from the window corner */
+const struct {
+    short u, v, w, h;
+    int dx, dy;
+} shop_msg_icon_spr = { 0x38, 0x4A, 14, 14, -20, -20 };
 
-#ifdef NON_MATCHING /* muitos registradores salvos ($fp) e a conta da rolagem em float; alocação diferente */
 void shop_msgwin_draw(unsigned int **list)
 {
     ShopMsgWin *m = &shop_msg;
     MenuItemDef *d = &shop_msg.def;
-    ShopMsgLine *l;
     unsigned short flags;
+    ShopMsgLine *l;
     int i;
-    int y, h, gap;
+    int g;
+    int y;
+    int h;
+    int off;
+    float fh;
     int x0, y0, w0, h0;
 
     if (shop_msg.state == 0)
         return;
     font_set_flag8000(0);
     menu_layout((void **)list, &m->menu);
-    if (m->text) {
+    if (m->text != 0) {
         flags = shop_msg_font_push();
-        for (i = 0, l = m->lines; i <= m->line; i++, l++) {
+        for (i = 0; i <= m->line; i++) {
+            l = &m->lines[i];
             switch (region_get()) {
-            case 1:
-            case 0:
-                y = l->y;
-                gap = 1;
-                h = l->h + 1;
-                break;
             default:
-                gap = 3;
+                g = 3;
                 y = l->y - 2;
                 h = l->h + 4;
                 break;
+            case 0:
+            case 1:
+                y = l->y;
+                g = 1;
+                h = l->h + 1;
+                break;
             }
-            if (l->w <= 0)
-                continue;
-            if (y < 272) {
-                if (y + h >= 272)
-                    h = 272 - y;
-                *list = dl_scissor(*list, l->x, y, l->w + 1, h);
-                *list = dl_enable(*list, 2);
+            if (l->w > 0) {
+                if (y < 0x110) {
+                    h = y + h < 0x110 ? h : 0x110 - y;
+                    *list = dl_scissor(*list, l->x, y, l->w + 1, h);
+                    *list = dl_enable(*list, 2);
+                }
+                if (y < 0x110) {
+                    fh = font_line_height() / 64.0f;
+                    off = -(int)(m->page * (m->n_lines * (fh + g)));
+                    menu_item_rect(&m->menu, &m->def, &x0, &y0, &w0, &h0);
+                    font_text_set(*list);
+                    font_draw_wtext_ex(x0 << 6, (y0 + off) << 6, w0 << 6, 0x4400, m->text, -1);
+                    *list = font_text_clear();
+                }
+                *list = dl_disable(*list, 2);
             }
-            if (y < 272) {
-                int scroll = -(int)(m->page * (m->n_lines * (font_line_height() / 64.0f + gap)));
-                menu_item_rect(&m->menu, d, &x0, &y0, &w0, &h0);
-                font_text_set(*list);
-                font_draw_wtext_ex(x0 << 6, (y0 + scroll) << 6, w0 << 6, 0x4400, m->text, -1);
-                *list = font_text_clear();
-            }
-            *list = dl_disable(*list, 2);
         }
         shop_msg_font_pop(flags);
     }
-    if (m->input && shop_msg_typing() == 0 && shop_msgwin_moving() == 0 && m->icon) {
-        int x = d->x + d->w;
-        int yy = d->y + d->h;
+    if (m->input != 0 && shop_msg_typing() == 0 && shop_msgwin_moving() == 0 && m->icon != 0) {
+        y = d->x + d->w;
+        h = d->y + d->h;
         *list = dl_ambient_color(*list, 0xFFFFFFFF);
         *list = gim_set_texture(*list, m->icon);
-        shop_draw_icon(list, x + shop_msg_icon_off[0], yy + shop_msg_icon_off[1], 0, shop_msg_icon_uv[0],
-                       shop_msg_icon_uv[1], shop_msg_icon_uv[2], shop_msg_icon_uv[3], m->blink / 10 & 1);
+        shop_draw_icon(list, y + shop_msg_icon_spr.dx, h + shop_msg_icon_spr.dy, 0, shop_msg_icon_spr.u,
+                       shop_msg_icon_spr.v, shop_msg_icon_spr.w, shop_msg_icon_spr.h, ((unsigned int)m->blink / 10) & 1);
     }
 }
-#endif
 
 void shop_msgwin_set_size(int size)
 {

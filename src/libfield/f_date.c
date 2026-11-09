@@ -1,5 +1,4 @@
 // @range 0x088274B4-0x08827C44
-// @asm 0x088275FC-0x08827788
 // @rodata 0x088398E4-0x08839924
 // @data 0x0883D650-0x0883D67C
 /* The date banner of a new day (field_date): the date of the story ("July 3 (Mon)", "3rd July (Mon)"
@@ -72,13 +71,13 @@ void fdate_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* 6 palavras: $f0/$f1 de largura e 0,5 trocados no centro do texto (0.5f * w, / 2.0f e float local não mudam) */
 void fdate_draw(void)
 {
     FieldDate *d = &field_date;
     void *list;
     int sub;
     unsigned short *text;
+    int w;
 
     if (field_date.state != 0) {
         list = dl_select_layer(4, 0);
@@ -88,22 +87,19 @@ void fdate_draw(void)
         font_set_flag4(0);
         font_set_size(22, 22);
         font_set_flag8000(0);
-        list = fdate_text(list, d->text, 22,
-                          (int)(240.0f - (float)(font_measure_text(d->text) >> 6) * 0.5f), 110,
-                          d->color, d->shadow);
+        w = font_measure_text(d->text) >> 6;
+        list = fdate_text(list, d->text, 22, (int)(240.0f - (float)w * 0.5f), 110, d->color, d->shadow);
         font_set_size(15, 15);
         font_set_flag8000(cfg_get_language() == 0);
         sub = d->sub;
         if (sub != -1) {
             text = table_get_entry(fld_gim_get(7), sub);
-            list = fdate_text(list, text, 15,
-                              (int)(240.0f - (float)(font_measure_text(text) >> 6) * 0.5f), 150,
-                              d->color, d->shadow);
+            w = font_measure_text(text) >> 6;
+            list = fdate_text(list, text, 15, (int)(240.0f - (float)w * 0.5f), 150, d->color, d->shadow);
         }
         dl_set_list(list);
     }
 }
-#endif
 
 /* shows the date of the story, with the text sub of the message table under it (-1 none) */
 void fdate_start(int sub)

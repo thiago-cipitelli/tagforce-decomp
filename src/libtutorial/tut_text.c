@@ -1,6 +1,5 @@
 // @range 0x08809A5C-0x0880AC6C
 // @data 0x0880F938-0x0880F954
-// @asm 0x08809F94-0x0880A29C
 /* Text box of the talk windows: a menu window that slides in and out, the message typed line by
    line at the speed of the game options (or skipped with a button), pages of two or three lines
    and the blinking "next" icon while the box waits for the player. */
@@ -80,8 +79,10 @@ int tut_text_typing(void);
 int tut_text_anim_busy(void);
 
 int tut_text_speeds[3] = { 10, 20, 480 };    /* width typed per frame by speed option */
-short tut_text_icon_rect[4] = { 0x38, 0x4A, 14, 14 };
-int tut_text_icon_off[2] = { -20, -20 };
+const struct {
+    short u, v, w, h;
+    int dx, dy;
+} tut_text_icon_spr = { 0x38, 0x4A, 14, 14, -20, -20 };  /* the "next" icon: source rect and offset */
 
 void tut_text_init(void *heap, int x, int w, int size, int wait, int style)
 {
@@ -217,11 +218,6 @@ int tut_text_update(void)
     return t->done;
 }
 
-#ifdef NON_MATCHING
-/* 16 palavras, só na chamada de tut_text_icon: o original faz move a0 e carrega
-   tut_text_icon_off[0]/[1] com um lui cada antes do ext do blink e dos lh de tut_text_icon_rect;
-   aqui os lui sobem e o blink é calculado primeiro. Arrays extern, structs no lugar dos arrays,
-   o quadro numa variável, protótipo sem tipos ou com short não mudam o escalonamento */
 void tut_text_draw(void **list)
 {
     TutText *t = &tut_tb;
@@ -277,16 +273,14 @@ void tut_text_draw(void **list)
         tut_text_font_end(flags);
     }
     if (t->wait != 0 && tut_text_typing() == 0 && tut_text_anim_busy() == 0 && t->icon != 0) {
-        int x = d->x + d->w;
-        int yy = d->y + d->h;
-
+        y = d->x + d->w;
+        h = d->y + d->h;
         *list = dl_ambient_color(*list, 0xFFFFFFFF);
         *list = gim_set_texture(*list, t->icon);
-        tut_text_icon(list, x + tut_text_icon_off[0], yy + tut_text_icon_off[1], 0, tut_text_icon_rect[0],
-                      tut_text_icon_rect[1], tut_text_icon_rect[2], tut_text_icon_rect[3], t->blink / 10 & 1);
+        tut_text_icon(list, y + tut_text_icon_spr.dx, h + tut_text_icon_spr.dy, 0, tut_text_icon_spr.u,
+                      tut_text_icon_spr.v, tut_text_icon_spr.w, tut_text_icon_spr.h, (t->blink / 10) & 1);
     }
 }
-#endif
 
 int tut_text_done(void)
 {
