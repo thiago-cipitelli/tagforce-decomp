@@ -118,8 +118,6 @@ segments:
       - [0x1E8F8, c, f_pdaparts]
       - [0x1F544, asm, f_pdaparts_asm_088234E4]
       - [0x1F7C4, c, f_pdaparts]
-      - [0x1F7C4, asm, f_pdaparts_asm_08823764]
-      - [0x1FB24, c, f_pdaparts]
       - [0x20088, c, f_pdamenu]
       - [0x21FDC, c, f_get]
       - [0x22C10, c, f_fx]

@@ -1,5 +1,4 @@
 // @range 0x08833420-0x0883451C
-// @asm 0x088338C8-0x08833A30
 // @data 0x088ED9A8-0x088ED9CC
 /* EHP packs: name lookup (binary search over the sorted entry table), relocation after loading
    (ptrs.txt pointer lists, TGMA/TGMT models, TMS sets, EHF animations with their GIM textures,
@@ -183,7 +182,6 @@ int ehp_mount(void (*cb)(EhpPack *p), EhpPack *pack)
     return 1;
 }
 
-#ifdef NON_MATCHING /* the loop entry schedules the entry pointer before the branch instead of in its delay slot */
 /* Calls the handlers of the pack's entries with load 0, then marks the pack invalid. */
 int ehp_unload(EhpPack *p)
 {
@@ -198,35 +196,36 @@ int ehp_unload(EhpPack *p)
     int len;
 
     e = p->e;
-    size = &p->size;
-    while (e->name != 0) {
-        ext = (unsigned char *)str_ext((char *)p + *(int *)e);
-        if (ext != 0) {
-            key = EXT4(ext);
-            if (key != 0x6D69672E && key != 0x6668652E && key != 0x736D742E && key != 0x746D742E && key != 0x616D742E) {
-                data = e->data;
-                ptr = (char *)p + data;
-                for (i = 0; i < st->n; i++) {
-                    if (key == st->ext[i]) {
-                        if (st->handler[i] != 0) {
-                            if (e[1].name == 0) {
-                                len = *size - data;
-                            } else {
-                                len = e[1].data - data;
+    if (e->name != 0) {
+        size = &p->size;
+        do {
+            ext = (unsigned char *)str_ext((char *)p + *(int *)e);
+            if (ext != 0) {
+                key = EXT4(ext);
+                if (key != 0x6D69672E && key != 0x6668652E && key != 0x736D742E && key != 0x746D742E && key != 0x616D742E) {
+                    data = e->data;
+                    ptr = (char *)p + data;
+                    for (i = 0; i < st->n; i++) {
+                        if (key == st->ext[i]) {
+                            if (st->handler[i] != 0) {
+                                if (e[1].name == 0) {
+                                    len = *size - data;
+                                } else {
+                                    len = e[1].data - data;
+                                }
+                                st->handler[i](0, ptr, len, p);
                             }
-                            st->handler[i](0, ptr, len, p);
+                            break;
                         }
-                        break;
                     }
                 }
             }
-        }
-        e++;
+            e++;
+        } while (e->name != 0);
     }
     *(unsigned int *)p = 0;
     return 1;
 }
-#endif
 
 /* Load completion: relocates the pack once (version 2+ packs are marked BIND) and calls the
    pending callback. */
