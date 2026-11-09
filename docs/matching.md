@@ -1060,3 +1060,10 @@ Bateram `duel_0888D74C`, `duel_088C8F04`, `duel_eff_f9c00`, `duel_088766B0`, `du
 Sem forma: `duel_count_tributes` (3 instruções a menos: cópias mortas depois de `b` no `blezl` do início e no
 `beql` do `case 0x194C`, e `b; nop` sem preenchimento depois do `xori`; `else`/`goto`/`switch` no teste do início
 e 5 formas do `case` testadas).
+
+## Rodada 12 (`engD`): `bnezl` + `li K` de um `return K` antecipado
+
+Quando o original faz `bnezl …; li v0,K` para um `return K` no começo e o mwcc gera `beqz; nop; b; li`, inverta
+o teste e deixe o retorno por último: `if (!A || !B || !C) { …resto… } return K;` (`duel_0888BF08`). Outros
+achados: o 5º argumento de `duel_088C87A8` é o byte do jogador (`duel_088859A8`, era bug de lógica); tabelas locais
+inicializadas (`t0[side][k]`) pedem `// @data` com os modelos (`duel_tag_slot`).
