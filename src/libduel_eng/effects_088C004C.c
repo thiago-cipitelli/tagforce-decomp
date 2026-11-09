@@ -289,7 +289,9 @@ void duel_088C0BB0(unsigned int p, int z)
     }
 }
 
-#ifdef NON_MATCHING /* no segundo laço o jogador e os ponteiros de best/ids saem em $s1-$s3 rodados, e o MAX das magias carrega best antes do unk4 */
+#ifdef NON_MATCHING /* 28 palavras (rodada 10, era 35: q no 1º laço de jogador e o MAX das magias com u num local);
+                      falta o laço de seleção: jogador, ponteiros de best/ids e contador q em $s1-$s3/$s5 rodados; ordem/tipo das
+                      declarações, renomear contadores (um por laço, pares) e trocar p/q no laço não resolvem */
 int duel_088C0CD0(void)
 {
     int p;
@@ -309,18 +311,18 @@ int duel_088C0CD0(void)
 
     n = 0;
 
-    for (p = 0; p < 2; p++) {
+    for (q = 0; q < 2; q++) {
         for (z = 0; z < 5; z++) {
-            if (SLOT_ACTIVE(&duel.players[p & 1].field[z]) && id == field_get_card(p, z)) {
-                best[4][p] = MAX(best[4][p], duel.players[p & 1].field[z].unk4);
+            if (SLOT_ACTIVE(&duel.players[q & 1].field[z]) && id == field_get_card(q, z)) {
+                best[4][q] = MAX(best[4][q], duel.players[q & 1].field[z].unk4);
                 n++;
             }
         }
         for (z = 5; z < 10; z++) {
-            if (SLOT_ACTIVE(&duel.players[p & 1].field[z])) {
+            if (SLOT_ACTIVE(&duel.players[q & 1].field[z])) {
                 for (k = 0; k < 4; k++) {
-                    if (duel_w_08911B78[k] == field_get_card(p, z)) {
-                        best[k][p] = MAX(duel.players[p & 1].field[z].unk4, best[k][p]);
+                    if (duel_w_08911B78[k] == field_get_card(q, z)) {
+                        { int u = duel.players[q & 1].field[z].unk4; best[k][q] = u < best[k][q] ? best[k][q] : u; }
                         n++;
                     }
                 }

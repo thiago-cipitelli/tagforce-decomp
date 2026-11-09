@@ -1,5 +1,4 @@
 // @range 0x088B08B8-0x088B153C
-// @asm 0x088B0C88-0x088B1134
 // @data 0x08911AF0-0x08911B78
 /* Response window: "activate a card?" question asked to a player after an event (duel_chain.kinds[0])
    or a chain link, with the text of the event; the computer answers by itself (duel_08815288/duel_0881530C). */
@@ -54,7 +53,7 @@ void duel_0884AD2C(unsigned short *msg, int kind);
 void duel_08835944();
 void duel_0884C588(unsigned int p, int a, int id, int b);
 void duel_088AFEE0(int a);
-void duel_088348BC(int a, unsigned int p);
+void duel_088348BC(int a, unsigned int p, int b);
 void duel_08834614(int a);
 void duel_08834734(int a, int b, int c);
 void duel_0883449C(int a);
@@ -202,7 +201,6 @@ void duel_088B08B8(unsigned short *buf)
     duel_wcscat(buf, (unsigned short *)0x10D);
 }
 
-#ifdef NON_MATCHING /* alocação de registradores: temporários (a2/v1, t0/a3) e o 1 de retorno mantido em $v0 */
 /* window after an event, for the player duel_w_089149D0 then for the other one; returns 1 */
 int duel_088B0C88(void)
 {
@@ -310,7 +308,7 @@ int duel_088B0C88(void)
         case 0xD:
         case 0xE:
         case 0xF:
-            duel_088348BC(0, duel_w_0891964C);
+            duel_088348BC(0, duel_w_0891964C, duel_w_08919650);
             break;
         default:
             duel_0883449C(0);
@@ -335,7 +333,6 @@ int duel_088B0C88(void)
     return 1;
 }
 
-#endif
 
 /* window of the local player (duel_view_player) after an event or a chain link; 1: closed */
 int duel_088B1134(void)

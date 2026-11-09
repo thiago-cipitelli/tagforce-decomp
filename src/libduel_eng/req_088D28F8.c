@@ -1,6 +1,5 @@
 // @range 0x088D28F8-0x088D6DE8
 // @data 0x08911B8C-0x08911D2C
-// @asm 0x088D31F0-0x088D36C8
 // @asm 0x088D42C8-0x088D43F8
 // @asm 0x088D6168-0x088D624C
 /* Requests carried out one step per frame (duel_req, duel_req_step): revealing and flipping a card,
@@ -462,14 +461,12 @@ void duel_req_088D3144(void)
     }
 }
 
-#ifdef NON_MATCHING /* 6 palavras: no primeiro laço de duel_effects_move_src o contador e o ponteiro de from trocam s2/s3; lógica conferida com o asm */
 /* Shuffle p's monsters among the zones of the mask w (the seed is arg | loc << 16). */
 void duel_req_088D31F0(void)
 {
     unsigned int seed;
     int n;
     unsigned int p;
-    int z;
     int i;
     int j;
     unsigned short mask;
@@ -486,10 +483,10 @@ void duel_req_088D31F0(void)
     switch (duel_req_step) {
     case 0:
         n = 0;
-        for (z = 0; z < 5; z++) {
-            if ((int)mask >> z & 1) {
-                to[n] = z;
-                from[n] = z;
+        for (i = 0; i < 5; i++) {
+            if ((int)mask >> i & 1) {
+                to[n] = i;
+                from[n] = i;
                 n++;
             }
         }
@@ -498,10 +495,10 @@ void duel_req_088D31F0(void)
             break;
         }
         duel_089195C8 = seed;
-        for (z = n - 1; z > 0; z--) {
-            j = duel_rand(z + 1);
-            t = to[z];
-            to[z] = to[j];
+        for (i = n - 1; i > 0; i--) {
+            j = duel_rand(i + 1);
+            t = to[i];
+            to[i] = to[j];
             to[j] = t;
         }
         for (i = 0; i < n; i++) {
@@ -529,7 +526,6 @@ void duel_req_088D31F0(void)
         break;
     }
 }
-#endif
 
 void duel_req_088D36C8(void)
 {

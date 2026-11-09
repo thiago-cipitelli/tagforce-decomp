@@ -908,3 +908,18 @@ Bateram `duel_ai_atk_update`, `duel_0881657C`, `duel_08816A74`, `duel_0880DC1C`,
   operandos trocados, ponteiro de linha, índice achatado e `ZSLOT` não resolvem), `duel_ai_sum_088239EC` (875 contra
   846 instruções: o original relê campos de `a` (`lbu 0(s0)`) depois de chamadas/gravações que o C atual reaproveita,
   além das cópias mortas dos `?:`), `duel_08817598` (não tentado).
+
+## Rodada 10 (`libduel_eng`: quase-acertos)
+
+Bateram `duel_req_move`, `duel_088CFBA4` (contador `q` e jogador `v` no case 0x150E, como no 0x12BE), `duel_088B1854`, `duel_0880A54C`, `duel_088B0C88` e `duel_req_088D31F0`. O que resolveu:
+- **Varredura de posição de 1 ou 2 declarações** (`duel_req_move`, 19 → 0): mover só as duas variáveis trocadas
+  (`ti`, `sp`) para todas as posições da lista (N² variantes num TU por vez, segundos) achou a ordem que a busca de
+  permutações completas não achou (`sp` primeiro, `ti` logo depois de `tp`). Barato; tente antes de permutar tudo.
+- **Contador reaproveitado de outro laço** (`duel_088B1854`: o `k` do laço de uids vira `q`; `duel_req_088D31F0`: os
+  laços em `z` passam a usar `i`, e `z` some): a descida de nomes por laço (`ren.py`) inclui "renomear para um local
+  existente que não aparece no laço".
+- **Argumento que faltava** (bugs de lógica): `duel_088348BC(0, p, duel_w_08919650)` em `chain_prompt.c` (o `a2` da
+  diferença era a zona comparada no `switch`; `duel_end.c` tem a mesma chamada com 2 argumentos) e
+  `duel_slot_ef098(p, z, a->id)` em `ai_util.c` (protótipo K&R escondia o 3º argumento). Diferença em `a2`/`a3` de
+  registrador "trocado" logo antes de um `jal`: confira o número de argumentos antes de mexer em registradores.
+- `case A: case B: v += 500; break; case C: v += 500; break;`: o original tinha os três rótulos no mesmo corpo.
