@@ -4,13 +4,10 @@ fuzzy	size	module	function	address	file
 98.1	484	BOOT	snd_box_filter	0x0885CCE0	src/BOOT/snd_mix.c
 98.1	444	libduel_eng	duel_08862E5C	0x08862E5C	src/libduel_eng/ai_08862E24.c
 98.1	336	libtitle	tdl_rules_draw	0x08822D64	src/libtitle/t_duel.c
-98.1	708	libduel_eng	duel_0888D74C	0x0888D74C	src/libduel_eng/effects_za.c
 98.0	456	libduel_eng	duel_088859A8	0x088859A8	src/libduel_eng/effects_u.c
 97.9	524	BOOT	ehf_cmd_matrix_slot	0x088234C4	src/BOOT/ehf_cmd.c
 97.9	928	BOOT	snd_obj_start	0x0885FE04	src/BOOT/snd_play.c
 97.9	300	libduel_eng	duel_088BECC0	0x088BECC0	src/libduel_eng/effects_088BC9E0.c
-97.9	584	libduel_eng	duel_088C8F04	0x088C8F04	src/libduel_eng/duel_reqs.c
-97.9	720	libduel_eng	duel_eff_f9c00	0x088F9C00	src/libduel_eng/effects_e.c
 97.8	912	libduel_eng	duel_0888EB8C	0x0888EB8C	src/libduel_eng/effects_zb.c
 97.8	236	libduel_eng	duel_tag_slot	0x088FE724	src/libduel_eng/duel_api.c
 97.8	360	BOOT	ehp_unload	0x088338C8	src/BOOT/ehp.c
