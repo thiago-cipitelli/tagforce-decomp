@@ -1,5 +1,5 @@
 // @range 0x08806A18-0x088075F4
-// @asm 0x08806B20-0x08806CE4
+// @rodata 0x0881BD70-0x0881BD98
 // @data 0x0881BD98-0x0881C02C
 /* Story script interpreter: the scripts are arrays of 10-byte instructions (StoryCmd); vm_update
    starts the queued script or reports what stopped the last one, vm_run executes instructions until
@@ -78,7 +78,6 @@ int vm_script_id(void)
     return *story_vm_slot;
 }
 
-#ifdef NON_MATCHING /* o retorno 0x6B passa por um bloco de salto ao epílogo a mais no mwcc */
 int vm_update(void)
 {
     StoryVm *vm = &story_vm;
@@ -109,6 +108,8 @@ int vm_update(void)
     default:
         if (st_sv_alt()) {
             switch (st_sv_get_08()) {
+            default:
+                return 0x6B;
             case 1:
                 st_sv_set_08(0);
                 return 0x6D;
@@ -117,7 +118,6 @@ int vm_update(void)
                 vm_stop_all();
                 return 0x6E;
             }
-            return 0x6B;
         } else if (st_free_state0()) {
             switch (st_free_state1()) {
             case 0:
@@ -135,7 +135,6 @@ int vm_update(void)
     *slot = -1;
     return status;
 }
-#endif
 
 void vm_step(void)
 {

@@ -1,7 +1,6 @@
 // @range 0x0885133C-0x08853A2C
 // @data 0x088EF098-0x088EF28C
 // @bss 0x08BE8ED4-0x08BE8EDC
-// @asm 0x088513E0-0x08851BA4
 // @asm 0x08851D10-0x08851F4C
 // @asm 0x08852708-0x088527AC
 /* PMF movie player (Sony PSMF sample code): movie_run() builds the sceMpeg ring buffer and decoder
@@ -136,7 +135,6 @@ int snd_volume = 0x8000;
 
 /* Plays a .pmf: returns 0 at the end, 1 when skipped. flags: 1 mute, 2 any key skips, 4 no skip. */
 
-#ifdef NON_MATCHING /* forma igual, 20 palavras: au declarado depois de mpeg_size acerta s6/s7/s8; falta a troca s0/s2 de avc_stream e avc_es (ordem das declarações e das zerações testadas) e dois slots de pilha (76/100) */
 int movie_run(const char *path, unsigned int flags, int volume, int packets)
 {
     void *mpeg;
@@ -158,19 +156,24 @@ int movie_run(const char *path, unsigned int flags, int volume, int packets)
     int result;
     MovieDisp *disp;
     MovieSnd *snd;
-    void *avc_stream, *atrac_stream, *avc_es;
-    int rb_packets, rb_size, mpeg_size;
+    void *avc_es;
+    void *atrac_stream;
+    void *avc_stream;
+    int rb_packets;
+    int rb_size;
+    int mpeg_size;
     MovieAu *au;
     int r;
-    unsigned int rb_data, atrac_es;
+    unsigned int rb_data;
+    unsigned int atrac_es;
 
     mem = movie_mem_base;
+    avc_es = 0;
     movie_flags = flags;
     movie_has_sound = 1;
     reader = 0;
     vid = 0;
     ctrl = 0;
-    avc_es = 0;
     result = 0;
     avc_stream = 0;
     atrac_stream = 0;
@@ -221,8 +224,7 @@ int movie_run(const char *path, unsigned int flags, int volume, int packets)
     if (movie_has_sound == 1) {
         if (sceMpegQueryAtracEsSize(&mpeg, &es_size, &out_size) != 0)
             goto cleanup;
-        mem += es_size;
-        mem = ALIGN64(mem);
+        mem = ALIGN64((int)mem + es_size);
         if (sceMpegInitAu(&mpeg, (void *)atrac_es, atrac_au) != 0)
             goto cleanup;
     }
@@ -287,7 +289,7 @@ int movie_run(const char *path, unsigned int flags, int volume, int packets)
     sceKernelDeleteThread(movie_read_thread);
 free:
     if (reader != 0) {
-        pmf_reader_term();
+        pmf_reader_term(reader);
         reader = 0;
     }
     if (vid != 0) {
@@ -321,7 +323,6 @@ done:
     movie_ctrl_ref = 0;
     return result;
 }
-#endif
 
 /* 0 once every ring is drained (or stop was requested), else -1. */
 int movie_check_end(MovieVid *vid, PmfReader *reader, MovieCtrl *ctrl)
