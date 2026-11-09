@@ -1,5 +1,4 @@
 // @range 0x08830E94-0x088324F0
-// @asm 0x08830E94-0x0883136C
 // @data 0x089079C4-0x08907A18
 /* Questions asked during an event, continued (see ai_0882FF4C.c), and duel_ev_run, which runs the
    handler of the pending event (duel_ev_kind). */
@@ -106,7 +105,6 @@ int duel_08830CDC();
 int duel_088309F8(unsigned int p, unsigned short id, unsigned short arg);
 int duel_08831590();
 
-#ifdef NON_MATCHING /* 7 palavras: no laço do case 2 o original relê duel_w_0891968C depois do sh em duel.unk3832 (o mwcc adianta o lhu para dentro do corpo) */
 /* Pick cards of the hand or the deck (duel_0884C588) for the card of the event; the answers are
    the uids (duel.unk3832) or the card picked. */
 int duel_08830E94(unsigned int p, int id)
@@ -202,8 +200,8 @@ int duel_08830E94(unsigned int p, int id)
             if ((unsigned int)n > 7) {
                 n = 7;
             }
-            duel_w_0891968C[0] = n;
-            for (k = 0; k < duel_w_0891968C[0]; k++) {
+            duel.unk3830 = n; /* duel_w_0891968C */
+            for (k = 0; k < duel.unk3830; k++) {
                 duel.unk3832[k] = duel_0884CCBC(k + 1)->owner + (duel_0884CCBC(k + 1)->uid_hi << 1);
             }
             return 1;
@@ -215,7 +213,6 @@ int duel_08830E94(unsigned int p, int id)
     return 0;
 }
 
-#endif
 
 int duel_0883136C(unsigned int p)
 {
