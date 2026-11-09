@@ -68,7 +68,7 @@ typedef struct MovieAu {        /* at the start of the memory block, before Movi
 /* pmf_umd.c */
 int pmf_reader_attach(PmfReader *s, void *rb, MovieCtrl *ctrl);
 int pmf_reader_start(PmfReader *s, int total);
-int pmf_reader_term(void);
+int pmf_reader_term(PmfReader *s);
 int pmf_reader_get_state(PmfReader *s);
 int pmf_reader_set_state(PmfReader *s, int state);
 int pmf_reader_is_paused(PmfReader *s);

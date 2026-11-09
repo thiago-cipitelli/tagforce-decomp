@@ -1,5 +1,4 @@
 fuzzy	size	module	function	address	file
-99.8	1988	BOOT	movie_run	0x088513E0	src/BOOT/movie.c
 99.8	436	libduel_eng	duel_088867D0	0x088867D0	src/libduel_eng/effects_v.c
 99.8	3256	libduel_eng	duel_bonus_calc	0x088FFFDC	src/libduel_eng/duel_result.c
 99.7	552	libduel_eng	duel_088674DC	0x088674DC	src/libduel_eng/effects_08865F2C.c

@@ -26,7 +26,7 @@ int pmf_reader_start(PmfReader *s, int total)
     return 0;
 }
 
-int pmf_reader_term(void)
+int pmf_reader_term(PmfReader *s)
 {
     return 0;
 }
