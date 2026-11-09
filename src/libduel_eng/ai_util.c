@@ -1,6 +1,5 @@
 // @range 0x08809B50-0x0880B448
 // @asm 0x08809DA8-0x08809F2C
-// @asm 0x0880A54C-0x0880A8AC
 // @asm 0x0880ADF4-0x0880AEF4
 /* Helpers of the computer player: picking cards for a dialog, comparing the strongest monsters of
    both players. */
@@ -293,7 +292,6 @@ int duel_0880A400(unsigned int p, unsigned int q, int skip, int fa, int fd)
     return best;
 }
 
-#ifdef NON_MATCHING /* mwcc merges the identical bodies of the 0x186C and 0x186B/0x1193 cases */
 int duel_0880A54C(DuelAct *a, unsigned int p, int skip, int any)
 {
     int best = -1;
@@ -324,7 +322,7 @@ int duel_0880A54C(DuelAct *a, unsigned int p, int skip, int any)
                     v = 0x10000 - v;
                     break;
                 case 0x1322:
-                    if (duel_slot_ef098(p, z) == 0) {
+                    if (duel_slot_ef098(p, z, a->id) == 0) {
                         v = -1;
                     }
                     break;
@@ -347,8 +345,6 @@ int duel_0880A54C(DuelAct *a, unsigned int p, int skip, int any)
                     break;
                 case 0x1193:
                 case 0x186B:
-                    v += 500;
-                    break;
                 case 0x186C:
                     v += 500;
                     break;
@@ -388,7 +384,6 @@ int duel_0880A54C(DuelAct *a, unsigned int p, int skip, int any)
     }
     return best;
 }
-#endif
 
 int duel_0880A8AC(unsigned int p, unsigned int q)
 {

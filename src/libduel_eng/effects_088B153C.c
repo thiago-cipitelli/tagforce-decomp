@@ -1,5 +1,4 @@
 // @range 0x088B153C-0x088B1EAC
-// @asm 0x088B1854-0x088B1EAC
 /* Ritual summon helpers: the ritual table at 0x0891291C (monster and spell of each ritual). */
 #include "duel.h"
 
@@ -90,7 +89,6 @@ int duel_088B1774(unsigned int p)
     return sum;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores no laço da mão ($s0/$s1/$s2 trocados) */
 /* can the card (p, z, i) be the next tribute of the ritual a? It must not be picked yet, and the
    levels of the other tributes still available must complete the level to pay (duel_088B1EAC) */
 int duel_088B1854(DuelAct *a, unsigned int p, int z, unsigned int i)
@@ -151,8 +149,8 @@ int duel_088B1854(DuelAct *a, unsigned int p, int z, unsigned int i)
     if (lv == 0) {
         return 0;
     }
-    for (k = 0; k < a->w[1]; k++) {
-        if (duel_chain.uids[(duel_chain.uids_head + k) & 0x7F] == uid) {
+    for (q = 0; q < a->w[1]; q++) {
+        if (duel_chain.uids[(duel_chain.uids_head + q) & 0x7F] == uid) {
             return 0;
         }
     }
@@ -220,4 +218,3 @@ int duel_088B1854(DuelAct *a, unsigned int p, int z, unsigned int i)
     }
     return duel_088B1EAC(levels, n - 1, rest, max);
 }
-#endif

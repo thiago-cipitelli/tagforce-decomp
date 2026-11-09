@@ -138,7 +138,8 @@ int card_is_monster(int id);
 void duel_0884DBAC(DuelAct *a, int i);
 int duel_0886B1F4(DuelAct *a);
 
-#ifdef NON_MATCHING /* forma igual; o original não carrega $a1 antes de duel_msg_send3(3, 0, 0, 0) (4 bytes a menos) */
+#ifdef NON_MATCHING /* forma igual; não-corrigível: o original não carrega $a1 antes de duel_msg_send3(3, 0, 0, 0) e não guarda
+                      o retorno de duel_net_recv: o `size < 0x18` do case 0x19 lê o $v0 que sobra de duel_msg_count (void) */
 /* Reads one command from the other console and applies it. Returns 0 when the link is over. */
 int duel_msg_poll(void)
 {

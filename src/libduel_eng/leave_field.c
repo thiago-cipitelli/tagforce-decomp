@@ -1,6 +1,5 @@
 // @range 0x088CC8EC-0x088D13CC
 // @asm 0x088CC8EC-0x088CEBA8
-// @asm 0x088CFBA4-0x088D0878
 /* Cards leaving the field: the triggers of a card that left (duel_088CC8EC), which zones an action can
    reach (duel_act_hits_mask), marking the zones that leave together (duel_leave_mark), sending one
    card to another pile with its host message (duel_send_card), the cards that follow it
@@ -795,7 +794,6 @@ void duel_leave_mark(unsigned int p, int z, unsigned int f, int cause, int opp)
     }
 }
 
-#ifdef NON_MATCHING /* lógica e ordem dos jal conferidas com o asm. 8 palavras (2026-11-08), só registradores: no case 0x150E o original tem n em s3 e o ponteiro do slot em s4 (aqui trocados); testados: variável nova por laço (topo, fim, bloco), troca de nomes entre n/q/i/v/e/n7, ponteiro explícito, formas do laço. Resolveu: case 0x12BE com n→q e q→v, (q != p ? 1 : 0) + 2, keep antes de destroy, n7 no case 0x1A7C */
 /* After the card of slot s (zone z of player p) left: sends the cards that go with it (the same
    cases as duel_leave_mark), then the cards bound to it by effect entries. */
 void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
@@ -938,11 +936,11 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
         break;
     case 0x150E:
         if (z >= 5 && SLOT_ACTIVE(SLOT_AT(p, z))) {
-            for (n = 0; n < 2; n++) {
-                q = duel_turn_player ^ n;
+            for (q = 0; q < 2; q++) {
+                v = duel_turn_player ^ q;
                 for (i = 0; i < 5; i++) {
-                    if (SLOT_AT(q, i)->faceup != 0 && card_is_attribute7(SLOT_AT(q, i)->card.id)) {
-                        duel_send_card(q, i, 0xB, q != p, 0x150E);
+                    if (SLOT_AT(v, i)->faceup != 0 && card_is_attribute7(SLOT_AT(v, i)->card.id)) {
+                        duel_send_card(v, i, 0xB, v != p, 0x150E);
                     }
                 }
             }
@@ -995,7 +993,6 @@ void duel_088CFBA4(DuelSlot *s, unsigned int p, int z, unsigned int f)
         }
     }
 }
-#endif
 
 /* Sends the card in zone z of player p to pile dest (0xB hand, 0xC extra deck, 0xD deck, 0xE graveyard,
    0xF banished; < 11 another zone) because of card cause. f: bit 0 by the opponent, 1 destroyed,

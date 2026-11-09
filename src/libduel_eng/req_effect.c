@@ -1,5 +1,5 @@
 // @range 0x088D6DE8-0x088DA5EC
-// @asm 0x088D6DE8-0x088D7AB8
+// @asm 0x088D7604-0x088D7AB8
 // @asm 0x088D7EA4-0x088D8354
 // @asm 0x088D86B8-0x088D8A24
 // @asm 0x088D8AB8-0x088D8B1C
@@ -88,25 +88,21 @@ void duel_effects_move_src(unsigned short from, unsigned short to);
 void duel_memcpy(void *dst, void *src, int n);
 void duel_slot_effects_reset(unsigned int p, unsigned int z);
 
-#ifdef NON_MATCHING /* 19 palavras (era 470; reescrito a partir do asm: arg/loc como DuelReqCard copiados pela pilha,
-                      b15:16 como campo de 2 bits, switch (tz) para os zeramentos e para o índice de destino, from/to
-                      lidos dos campos nas chamadas); falta só ti/sp trocados (s5/s2); ordem e tipos das declarações
-                      não mudam, a ordem das atribuições do topo foi escolhida por busca nas 5040 ordens */
 /* Move a card from location arg to the end of pile loc (or index loc >> 6), with the graveyard
    counters and the messages for the viewer (w: 1 show, 8 not by battle, 0x10/0x20 level bits,
    0x40/0x2000 zone F mark). */
 void duel_req_move(void)
 {
+    unsigned int sp;
     DuelReqCard a;
     DuelReqCard l;
-    unsigned int ti;
     unsigned int w;
     unsigned int si;
     unsigned int sz;
     unsigned int tz;
     unsigned int tp;
+    unsigned int ti;
     unsigned int lvl;
-    unsigned int sp;
     unsigned int show;
     DuelCard *c;
     unsigned int mark;
@@ -235,7 +231,6 @@ void duel_req_move(void)
         break;
     }
 }
-#endif
 
 #ifdef NON_MATCHING /* 25 palavras (era 51): declarações separadas das atribuições e (int)t >> 16 & 0xFFFF (dá o ext
                       do original); falta o escalonamento depois da chamada (o original mantém t em v0 e faz o ext
