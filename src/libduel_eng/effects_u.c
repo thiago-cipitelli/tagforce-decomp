@@ -1,5 +1,4 @@
 // @range 0x08884F18-0x08885B70
-// @asm 0x088859A8-0x08885B70
 /* Card effect handlers (DuelAct *a), after effects_t.c. */
 #include "duel.h"
 
@@ -286,7 +285,6 @@ int duel_088857F8(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: o original guarda loc como unsigned short (andi 0xffff em $s1) e calcula (unsigned char)p em t0 antes do or; o 5º argumento de duel_088C87A8 é só o jogador (o rascunho passava loc inteiro) */
 int duel_088859A8(DuelAct *a, DuelAct *b)
 {
     unsigned int t = duel_act_target(a, 0);
@@ -316,8 +314,10 @@ int duel_088859A8(DuelAct *a, DuelAct *b)
             return 0;
         }
         p = a->player;
-        loc = (unsigned char)p | (unsigned char)duel_pick_monster_zone(p) << 8;
-        duel_088C87A8(q, z, a->id, 1, (unsigned char)loc);
+        loc = (unsigned char)duel_pick_monster_zone(p) << 8;
+        p = (unsigned char)p;
+        loc = (unsigned short)(p | loc);
+        duel_088C87A8(q, z, a->id, 1, p);
         duel_088CA184(t, loc);
         if (duel_can_attack(duel_special.player[0], duel_special.zone[0], 0) == 0) {
             return 0;
@@ -330,4 +330,3 @@ int duel_088859A8(DuelAct *a, DuelAct *b)
     }
     return 0;
 }
-#endif

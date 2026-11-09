@@ -1,5 +1,5 @@
 // @range 0x088FE638-0x088FF0DC
-// @asm 0x088FE724-0x088FE810
+// @data 0x08913530-0x08913540
 /* Exported accessors of the duel state (library libduel_eng, imported by NID by libduel_draw),
    duel input log and the host callback. */
 #include "duel.h"
@@ -75,8 +75,6 @@ int duel_player_protected(unsigned int p)
     return r | duel_slot_has_effect(p, 0xB, 0x1548);
 }
 
-#ifdef NON_MATCHING /* tabelas locais copiadas dos templates em 0x08913530 (no asm); 11 palavras: o original carrega
-                      o resultado em s0 (side) e faz move v0,s0 na junção; aqui sai direto em v0 */
 /* Player slot (0-3) acting for side `side` in the current turn of a tag duel. */
 int duel_tag_slot(int side)
 {
@@ -88,13 +86,14 @@ int duel_tag_slot(int side)
         return side;
     }
     if (duel_setup_10_get() == 0) {
-        side = (&t0[0][duel_turn_get() & 3])[side * 4];
+        int k = duel_turn_get() & 3;
+        side = t0[side][k];
     } else {
-        side = (&t1[0][duel_turn_get() & 3])[side * 4];
+        int k = duel_turn_get() & 3;
+        side = t1[side][k];
     }
     return side;
 }
-#endif
 
 int duel_088FE810(int side)
 {

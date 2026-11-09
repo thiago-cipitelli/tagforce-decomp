@@ -84,17 +84,16 @@ int duel_0884407C(unsigned int p)
     return 1;
 }
 
-#ifdef NON_MATCHING /* o original relê duel_w_08919608 depois do if (g == 0) g = 5 */
+#ifdef NON_MATCHING /* 12 palavras: só $s1/$s2 trocados entre z e o 1 - p içado (q local, ordem e tipos testados) */
 int duel_088441D0(unsigned int p)
 {
-    int z;
+    unsigned int z;
     int n;
 
     if (duel_w_08919608 == 0) {
         duel_w_08919608 = 5;
     }
-    for (; duel_w_08919608 < 10; duel_w_08919608++) {
-        z = duel_w_08919608;
+    for (z = *(volatile unsigned int *)&duel_w_08919608; z < 10; z = ++duel_w_08919608) {
         if (duel_slot_e8170(p, z, 0x1491) != 0 && (n = duel_zone_f_count_monsters(1 - p)) != 0) {
             duel_088C4448(p, z, CARD_UID(duel.players[p & 1].field[z].card));
             duel_088C4730(1 - p, n * 100, 1, 0x1491);

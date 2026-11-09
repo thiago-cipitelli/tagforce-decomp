@@ -1,7 +1,6 @@
 // @range 0x0888B904-0x0888C1A8
 // @asm 0x0888B9A8-0x0888BAE0
 // @asm 0x0888BBE4-0x0888BDE0
-// @asm 0x0888BF08-0x0888C0AC
 // @asm 0x0888C10C-0x0888C1A8
 /* Card effect handlers (DuelAct *a), after effects_y.c. duel_088C87A8 is called without a prototype here
    (four arguments in 0x0888B904), so these are a separate file. */
@@ -161,24 +160,21 @@ int duel_0888BDE0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* bnezl no retorno 0x7F */
 int duel_0888BF08(DuelAct *a)
 {
     unsigned int t = duel_act_target(a, 0);
 
     switch (duel_step) {
     case 0x80:
-        if (duel_can_place_st(a->player, 0x13EA) != 0 && duel_088A9008(a, 0, 0) != 0) {
-            if (duel_act_check_08853CE8(a, t & 0xFF, (unsigned short)t >> 8 & 0xFF) != 0) {
-                return 0x7F;
+        if (duel_can_place_st(a->player, 0x13EA) == 0 || duel_088A9008(a, 0, 0) == 0 || duel_act_check_08853CE8(a, t & 0xFF, (unsigned short)t >> 8 & 0xFF) == 0) {
+            if (duel_d_count_name(a->player, 0x13EA) != 0) {
+                duel_088C6508(a->player, 0x13EA, 0, 0);
+                return 1;
             }
+            duel_0884ACD8(a->player, 0xD);
+            return 0x78;
         }
-        if (duel_d_count_name(a->player, 0x13EA) != 0) {
-            duel_088C6508(a->player, 0x13EA, 0, 0);
-            return 1;
-        }
-        duel_0884ACD8(a->player, 0xD);
-        return 0x78;
+        return 0x7F;
     case 0x7F:
         duel_w_089148FC = duel_pick_st_zone(a->player);
         duel_088C6A10(a->player, 0x13EA, duel_w_089148FC);
@@ -198,7 +194,6 @@ int duel_0888BF08(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888C0AC(DuelAct *a)
 {
