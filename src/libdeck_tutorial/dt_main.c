@@ -1,5 +1,4 @@
 // @range 0x08804000-0x088058E0
-// @asm 0x088047F4-0x08804C40
 // @data 0x088210AC-0x08821D18
 /* Entry points of the deck-building lesson (init / per-frame update / draw, exported to libtitle,
    libstory, liblabo and libdeck), the unload steps, the darkened screen with a highlighted area cut
@@ -569,24 +568,30 @@ DtShape dt_shapes[22] = {
 };
 
 
-#ifdef NON_MATCHING
-/* 121 palavras (ordem das iniciações por perm_stmts, teste do modo invertido no caso 1): y e s trocam $s0/$s4 e o original recarrega &dt_shapes[k] por lui em cada caso */
 /* darken the screen except the highlighted area (the card panes for kinds 0..3, fixed shapes for
    the others); the hole's border blinks */
 void *dt_draw_highlight(void *list, unsigned short kind)
 {
-    DtLayout *pane = 0;
-    int y = 0;
-    DtVert *v = 0;
-    int fixed = 0;
-    int w = 0;
-    int h = 0;
-    int x = 0;
+    DtLayout *pane;
     DtShape *s;
+    DtVert *v;
+    int fixed;
+    int x;
+    int w;
+    int y;
+    int h;
     unsigned int size;
-    unsigned int a;
+    unsigned short t;
+    unsigned char a;
     int i;
 
+    pane = 0;
+    v = 0;
+    fixed = 0;
+    h = 0;
+    w = 0;
+    y = 0;
+    x = 0;
     switch (kind) {
     case 0:
         pane = &dtv.pane[0].lay;
@@ -657,10 +662,10 @@ void *dt_draw_highlight(void *list, unsigned short kind)
     list = dl_stencil_op(list, 3, 0, 0xF);
     list = dl_enable(list, 3);
     list = dl_tex_func(list, 4, 0);
-    a = *gfx_get_state() & 0xF;
-    if (a > 8)
-        a = (unsigned short)(16 - a);
-    a = (unsigned char)((int)(a * 0xA0) / 8);
+    t = *gfx_get_state() & 0xF;
+    if (t > 8)
+        t = 16 - t;
+    a = t * 0xA0 / 8;
     for (i = 0; i < s->n; i++)
         v[i].color |= a << 24;
     if (s != 0 && v != 0)
@@ -676,7 +681,6 @@ void *dt_draw_highlight(void *list, unsigned short kind)
     list = dl_ambient_color(list, 0xFFFFFFFF);
     return list;
 }
-#endif
 
 /* one button of button.gim (0..3 face buttons, 4/5 L/R, 6 START); arrow = bouncing pointer */
 void *dt_draw_button(void *list, int x, int y, unsigned short kind, int lit, int arrow)

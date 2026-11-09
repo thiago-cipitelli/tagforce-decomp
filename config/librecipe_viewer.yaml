@@ -37,8 +37,6 @@ segments:
       - [0x1DA0, c, rv_screen]
       - [0x1FCC, asm, rv_screen_asm_08805F6C]
       - [0x2558, c, rv_screen]
-      - [0x3644, asm, rv_screen_asm_088075E4]
-      - [0x37CC, c, rv_screen]
       - [0x3AA4, c, rv_list]
       - [0x42D4, asm, rv_list_asm_08808274]
       - [0x44F0, c, rv_list]

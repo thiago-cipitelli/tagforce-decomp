@@ -27,8 +27,6 @@ segments:
     subalign: null
     subsegments:
       - [0x60, c, dt_main]
-      - [0x854, asm, dt_main_asm_088047F4]
-      - [0xCA0, c, dt_main]
       - [0x1940, c, dt_res]
       - [0x1C44, c, dt_edraw]
       - [0x1C44, asm, dt_edraw_asm_08805BE4]
@@ -59,8 +57,6 @@ segments:
       - [0xF8E8, asm, dt_filter_asm_08813888]
       - [0xFA4C, c, dt_filter]
       - [0x104C0, c, dt_mode]
-      - [0x104C0, asm, dt_mode_asm_08814460]
-      - [0x10908, c, dt_mode]
       - [0x10DA4, c, dt_action]
       - [0x12C94, c, dt_pane]
       - [0x12F1C, asm, dt_pane_asm_08816EBC]
