@@ -158,12 +158,11 @@ int duel_088904A8(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* alocação dos $s no laço; ramo do id 0x1835 */
+#ifdef NON_MATCHING /* 6 palavras: p (1 - p) e o deslocamento z trocam $s1/$s2 no laço; com b separado eram 7 */
 int duel_088905D0(DuelAct *a)
 {
     int i;
     unsigned int mask;
-    int b;
     unsigned int z;
     int atk;
     unsigned int loc;
@@ -179,10 +178,10 @@ int duel_088905D0(DuelAct *a)
             atk = duel_field_atk(p, z);
             p = 1 - p;
             mask = 0;
-            for (i = 0, b = p * 16; i < 5; i++, b++) {
+            for (i = 0, z = p * 16; i < 5; i++, z++) {
                 if (duel.players[p & 1].field[i].card.id != 0 && duel.players[p & 1].field[i].faceup != 0 &&
                     duel_field_def(p, i) <= atk) {
-                    mask |= 1 << b;
+                    mask |= 1 << z;
                 }
             }
             duel_088D13CC(a, mask);

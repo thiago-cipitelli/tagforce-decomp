@@ -1,5 +1,4 @@
 // @range 0x08865F2C-0x08867F54
-// @asm 0x088674DC-0x08867704
 // @data 0x089116FC-0x08911760
 /* Card effect handlers (DuelAct *a): step machines on duel_w_08914904 that ask the player (or the
    computer) for a card and apply the result. */
@@ -609,13 +608,12 @@ int duel_08867474(DuelAct *a, unsigned int p, int z)
     return (a->w[p + 2] & 1 << z) == 0;
 }
 
-#ifdef NON_MATCHING /* forma igual; p e attrs trocam de registrador $s (s2/s0) com qualquer ordem e tipo das declarações */
 /* Picks field cards until their attributes cover 4 (w[0] attribute bits, w[1] multi-attribute cards). */
 int duel_088674DC(DuelAct *a)
 {
-    unsigned int p;
-    unsigned int attrs;
+    int p;
     int z;
+    unsigned int attrs;
 
     switch (duel_w_08914904) {
     case 0:
@@ -655,7 +653,6 @@ int duel_088674DC(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 static const int ids_08867704[3] = { 0x189E, 0x18A0, 0x189F };
 

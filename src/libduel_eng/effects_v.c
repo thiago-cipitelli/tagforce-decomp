@@ -1,7 +1,6 @@
 // @range 0x08885B70-0x08886984
 // @asm 0x088860BC-0x08886250
 // @asm 0x088862DC-0x08886604
-// @asm 0x088867D0-0x08886984
 /* Card effect handlers (DuelAct *a), after effects_u.c. */
 #include "duel.h"
 
@@ -381,8 +380,7 @@ int duel_08886684(DuelAct *a, DuelAct *b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* só o registrador de duel_step (a2 no original, a1 aqui) nos 5 testes do switch; 5 palavras */
-int duel_088867D0(DuelAct *a)
+int duel_088867D0(DuelAct *a, int b)
 {
     unsigned int p = a->player;
     unsigned int i;
@@ -398,7 +396,7 @@ int duel_088867D0(DuelAct *a)
         if (duel_w_089148FC == 0) {
             return 0;
         }
-        if (duel_0886F2C0(a) == 0) {
+        if (duel_0886F2C0(a, b) == 0) {
             return 0;
         }
         if (duel_player_type[p] == 1) {
@@ -424,4 +422,3 @@ int duel_088867D0(DuelAct *a)
     }
     return 0;
 }
-#endif
