@@ -1039,3 +1039,24 @@ mudam), `tms_draw_prims` (7, `d` em v0), `pda_draw_mail_item` (13, `face` em t0,
 `fld_map_walkable` (5, último teste `beqz; nop` + bloco `r = 0` próprio), `gim_walk` (cópia morta do `case 0xFF`),
 `font_glyph_cache` (60, `f`/`font` em s1/s5 trocados; posição e inicialização das declarações não mudam),
 `shop_shelf_input` (testes 1 depois 2 com corpos na mesma ordem; nenhuma forma de switch/if chegou perto).
+
+## Rodada 12 (`engE`: libduel_eng, funções 97-98% nunca tentadas)
+
+Bateram `duel_0888D74C`, `duel_088C8F04`, `duel_eff_f9c00`, `duel_088766B0`, `duel_eff_fdaf8`. Idiomas:
+- **`a->player`/`a->zone` direto em vez de locais `p`/`z`** (`duel_eff_fdaf8`, 26 → 0): os temporários (`$v`/`$t`)
+  só mudam assim; o mwcc reaproveita a leitura de `a->player` até o `case` que a usa (sem chamadas no caminho).
+  Tipos e ordem dos locais não mexiam em nada (36 variantes iguais).
+- **Variável própria para um valor da 2ª metade** (`duel_0888D74C`: o uid de `a->idx >> 1` não é o `uid` do ramo
+  de cima; 25 → 5) e soma com o resultado de uma chamada num local (`int c = f(); g(c + uid * 2)` dá `addu v0,v0,v1`).
+- **Retorno comum por queda**: `if (f()) { ... }` sem `return 0;` interno, caindo no `return 0` de fora, dá o
+  `beqz; nop` para o bloco `move v0,zero; b fim` do original (com o `return 0` interno o mwcc faz `beqzl` direto).
+- **`if/else if` sem `default`** (`duel_eff_f9c00`): `if (k == 6) { switch ... case 0x7D: ...; return 0; } } else if
+  (k == 15) ... return 0;` dá o `b fim; move v0,zero` do `switch` interno e o `move v0,zero` próprio no fim.
+- **Declarações sem inicializador + ordem das atribuições** (`duel_088C8F04`: `next, sp, sz, v, k` declarados e
+  atribuídos `sp, next, k, sz`; busca em 600 de 2880 combinações de ordem × tipo × ordem das atribuições).
+- **Contador reaproveitado** de novo (`duel_088766B0`: o 2º laço usa o `i` do 1º) e `case 0xB: case 0xC: case 0x10:
+  return 1;` num corpo só (o `beql` do 1º teste leva a cópia, os outros `beq; nop`).
+- `duel_088C6BC8` (75 → 54): o parâmetro não usado `i` é o `grave` do original.
+Sem forma: `duel_count_tributes` (3 instruções a menos: cópias mortas depois de `b` no `blezl` do início e no
+`beql` do `case 0x194C`, e `b; nop` sem preenchimento depois do `xori`; `else`/`goto`/`switch` no teste do início
+e 5 formas do `case` testadas).
