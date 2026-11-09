@@ -1,5 +1,4 @@
 // @range 0x08814460-0x08814D44
-// @asm 0x08814460-0x088148A8
 // @data 0x08822050-0x088221E4
 /* Pane layout switching (the code of libdeck dk_mode.c, second half): layouts, modes, scroll kept per
    list, the tab buttons' positions and frames and the background animation. */
@@ -60,7 +59,6 @@ DtMode dt_modes[9] = {   /* one zero row more than libdeck */
     { 0, 0, 0, 0 },
 };
 
-#ifdef NON_MATCHING /* forma de dk_set_mode (asm idêntico), 39 palavras: só o segundo laço de releitura dos painéis com outros temporários que o primeiro */
 /* switches the pane layout (dt_modes row), keeping each list's scroll position */
 void dt_set_mode(unsigned short mode)
 {
@@ -137,10 +135,10 @@ void dt_set_mode(unsigned short mode)
     }
     for (i = 0; i < 2; i++) {
         keep = 0;
-        dtv.pane[i].top = dtv.pane[i].list->u18;
-        dtv.pane[i].cx = dtv.pane[i].list->u1c_lo;
-        dtv.pane[i].cy = dtv.pane[i].list->u1c_hi;
         p = &dtv.pane[i];
+        p->top = p->list->u18;
+        p->cx = p->list->u1c_lo;
+        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
@@ -154,7 +152,6 @@ void dt_set_mode(unsigned short mode)
     if (dt_cur_entry(dtv.side) != 0)
         dt_info_update();
 }
-#endif
 
 /* dt_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int dt_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)

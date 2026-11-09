@@ -1,5 +1,4 @@
 // @range 0x0880A694-0x0880B874
-// @asm 0x0880AF34-0x0880B37C
 // @rodata 0x08822554-0x08822574
 // @data 0x08822A24-0x08822BE4
 /* Deck check before saving (sizes, forbidden/limited cards), the message popup (deck errors, card
@@ -259,7 +258,6 @@ DkMode dk_modes[8] = {
     { 0, 3, 1, 4 },
 };
 
-#ifdef NON_MATCHING /* 39 palavras: o 1º laço de releitura dos painéis bate com o ternário das colunas antes da linha no argumento (sem o local view); o 2º, idêntico no fonte, usa outros temporários no original (v1/a1/a2/t0 contra v0/v1/t0/a3); locais de bloco, ordem das declarações e helper inline não mudam */
 /* switches the pane layout (dk_modes row), keeping each list's scroll position */
 void dk_set_mode(unsigned short mode)
 {
@@ -336,10 +334,10 @@ void dk_set_mode(unsigned short mode)
     }
     for (i = 0; i < 2; i++) {
         keep = 0;
-        dkv.pane[i].top = dkv.pane[i].list->u18;
-        dkv.pane[i].cx = dkv.pane[i].list->u1c_lo;
-        dkv.pane[i].cy = dkv.pane[i].list->u1c_hi;
         p = &dkv.pane[i];
+        p->top = p->list->u18;
+        p->cx = p->list->u1c_lo;
+        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
@@ -353,7 +351,6 @@ void dk_set_mode(unsigned short mode)
     if (dk_cur_entry(dkv.side) != 0)
         dk_info_update();
 }
-#endif
 
 /* dk_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int dk_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)

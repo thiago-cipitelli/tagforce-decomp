@@ -506,6 +506,18 @@ era idêntica e só faltavam registradores. O que resolveu, além da regra da ro
   contador abaixo do ponteiro): `char *pc` no topo, `for (n = 0, pc = (char *)d; ...; n++, pc += sizeof(T))` e
   `((Struct *)pc)->campo[0]` (`dd_trail_update`, laço de `spline_eval`: 16 → 9 palavras, não aplicado; sobra o derrame).
 
+### Rodada 11 (família dk_/dt_, librecipe_viewer)
+- **Temporários de um laço idêntico a outro que bate** (`dk/dt_set_mode`, 39 → 0): o 2º laço de releitura dos painéis
+  tinha a mesma forma do 1º e outros `$v`/`$a`/`$t`. O original toma o ponteiro antes das gravações:
+  `keep = 0; p = &v.pane[i]; p->top = p->list->u18; ...` (no 1º laço, `v.pane[i].top = ...; p = &v.pane[i];`).
+  A ordem em que o ponteiro e os temporários nascem decide as cores do laço inteiro.
+- **Zeros iniciais como comandos, não inicializadores** (`dt_draw_highlight`, 121 → 0): a ordem dos `move sN,zero`
+  do original (`pane, v, fixed, h, w, y, x`) saiu com declarações sem inicializador e `pane = 0; v = 0; ...` na
+  ordem do original antes do `switch`; os `$s` vêm da ordem das declarações (achada movendo duas por vez:
+  `build/tmp/fam/mv2.py` da worktree `fam`, não versionado). O alfa era `unsigned short t` (0..8 espelhado) e
+  `unsigned char a = t * 0xA0 / 8` (dois `andi 0xffff` / `andi 0xff` no original).
+- **Parâmetro reaproveitado** (`rv_draw_grid_cursor`): `x1` declarado no lugar de `x0` (antes de `d`) e `x0` no fim.
+
 ## Não-corrigíveis conhecidos (registre em `docs/matching_skip.tsv` e siga)
 
 - **Cópia morta do destino depois de um `b`** (`bnezl/beql; b; <delay>; <cópia da 1ª instrução do destino>`) e
@@ -772,7 +784,7 @@ objeto: declarar `// @rodata` cobrindo-as (as duas tabelas de `*_draw_detail` fi
 Abertos (todas as cópias com a mesma causa): `*_draw_info` (3 palavras: `list` em `$s1` no original, aqui divide
 `$s0` com `r`), `*_draw_rows[_small]` (12: o original carrega `row_w` depois da junção do ternário de `DK_ENT`),
 `ds/sc_input_move` e `dk/dt_flight_undo` (3–5: lado 0/1 com `bnezl; li 1; move zero`, o mwcc 219 faz `sltu` ou
-inverte o desvio), `*_set_mode` (o 2º laço de releitura dos painéis com outros temporários que o 1º, idêntico no fonte).
+inverte o desvio); `*_set_mode` bateu na rodada 11 (ponteiro do painel antes das gravações no 2º laço).
 ## Rodada 9 (libtitle, libcharalist, librecipe_viewer): retornos, contadores e parâmetros copiados
 
 Bateram `title_newgame_update`, `tfd_adhoctop_init`, `tfd_duelinfo_draw`, `tmenu_update`, `cl_costume_anim`,

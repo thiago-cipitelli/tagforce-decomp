@@ -33,8 +33,6 @@ segments:
       - [0x537C, c, dk_input]
       - [0x6588, asm, dk_input_asm_0880A528]
       - [0x66F4, c, dk_mode]
-      - [0x6F94, asm, dk_mode_asm_0880AF34]
-      - [0x73DC, c, dk_mode]
       - [0x78D4, c, dk_main]
       - [0x7D90, c, dk_pane]
       - [0x8018, asm, dk_pane_asm_0880BFB8]

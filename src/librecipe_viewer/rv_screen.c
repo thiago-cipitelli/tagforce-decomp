@@ -1,7 +1,6 @@
 // @range 0x08805874-0x08807A44
 // @asm 0x08805874-0x08805D40
 // @asm 0x08805F6C-0x088064F8
-// @asm 0x088075E4-0x0880776C
 // @data 0x0880E88C-0x0880E8BC
 /* The screen: background and title animations, the per-type counters, the recipe grid (main deck,
    extra deck, side deck) with the cursor, the lists of saved decks / recipes / extra data lists
@@ -570,16 +569,15 @@ void *rv_draw_grid_card(void *dl, int x, int y, RvEntry *e)
     return dl;
 }
 
-#ifdef NON_MATCHING /* 9 palavras: o original mascara x num registrador novo e reaproveita o do parâmetro para x0, e x1 reaproveita o de x. Tentado: x0 antes de y0, x numa local int, x1 por atribuição a ela */
 /* the four pulsing corners of the grid cursor */
 void *rv_draw_grid_cursor(void *dl, unsigned short x, unsigned short y)
 {
     void *gim;
-    int x0;
+    int x1;
     int d = (gfx_get_state()->frame >> 1) % 6;
     int y0;
 
-    int x1;
+    int x0;
     int y1;
 
     if (d > 3)
@@ -604,7 +602,6 @@ void *rv_draw_grid_cursor(void *dl, unsigned short x, unsigned short y)
     }
     return dl;
 }
-#endif
 
 void *rv_draw_scrollbar(void *dl, int x, int y, int h, int pos, int page, int total)
 {
