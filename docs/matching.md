@@ -908,3 +908,20 @@ Bateram `duel_ai_atk_update`, `duel_0881657C`, `duel_08816A74`, `duel_0880DC1C`,
   operandos trocados, ponteiro de linha, índice achatado e `ZSLOT` não resolvem), `duel_ai_sum_088239EC` (875 contra
   846 instruções: o original relê campos de `a` (`lbu 0(s0)`) depois de chamadas/gravações que o C atual reaproveita,
   além das cópias mortas dos `?:`), `duel_08817598` (não tentado).
+
+## Rodada 10 (gêmeas pequenas: libshop, libtutorial, libfield, libcharalist)
+
+Bateram `shop_msgwin_draw`, `tut_text_draw` (forma de `dt_text_draw`), `fmsg_create` (`dt_text_build`), `cl_draw_portrait`
+(`dmgr_pt_draw_chr`), `pda_draw_frame`, `fdate_draw`, `fld_bg_draw`, `shop_glow_super`. Idiomas:
+- **Tabela de ícone `const` mesmo num módulo sem `.rodata`** (`tut_text_icon_spr`): cada campo com seu `lui` só sai de
+  objeto `const`; nos gmodules o `.rodata` do objeto vai logo depois do `.data` dele, então a tabela no fim do `@data` serve.
+- **Posições de pilha de structs locais**: o mwcc agrupa por alinhamento; um `{ Vec3; int w; }` sem `aligned(16)` vai para
+  depois dos `Vec4` (`fld_bg_draw`). Com o mesmo alinhamento, a ordem das declarações decide (`perm_decls.py`).
+- **`$f` trocados em `240 - w * 0.5f`**: a largura num `int` local antes da conversão (`fdate_draw`).
+- **Argumentos `u + 8`/`v + 8` depois de `x + 8`/`y + 8`**: reaproveitar locais mortos (`rx = u + 8; by = v + 8;`) (`pda_draw_frame`).
+- **Contador por laço interno** declarado no bloco do laço de fora, depois do ponteiro do elemento (`ShopGlowOrb *o = …; int jb;`):
+  resolveu a rotação de `$s` dos três laços de `shop_glow_super` (busca em `build/tmp/twsmall/gl.py`).
+- Cuidado com `sed` sem âncora ao trocar um argumento: `menu_item_rect(&m->menu, d, …)` aparecia em outras três funções e
+  quebrou duas que batiam (o `check_file` acusa).
+Sem forma: `fld_scene_update` (`move a0,v0; jal; nop` de `fld_voice_play`), `fld_chr_draw_model` e `fclk_time_draw` (ordem
+de dois `lw` de argumentos vizinhos, 4 palavras), `pda_draw_tabs` (4: `bne`+`b; li` contra `beql`).

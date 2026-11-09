@@ -1,5 +1,4 @@
 // @range 0x08814F58-0x08817DD4
-// @asm 0x08815B9C-0x08816DA8
 // @rodata 0x0881C29C-0x0881C2B8
 /* Shine of the rare cards when they turn to the camera in the opened pack: a light bar sweeping
    over the card (rare), and the larger effects of the super/ultra rares; GE state and matrix
@@ -453,7 +452,6 @@ int shop_glow_rare(int t, Mat4 *m, unsigned short speed, void *vram)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 31 palavras, mesma forma (diff estrutural 0): f no escopo da função, ponteiro q para o grupo de faíscas, um contador por laço; falta a rotação dos $s em três laços (contador × dois ponteiros de indução: laço das órbitas s3/s1/s0, laços que soltam faíscas s3/s4/s6) */
 /* super rare: halo pulsing out of the card, the light bar, orbs rising around the card that leave
    two kinds of sparks */
 int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
@@ -591,6 +589,7 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
     mtx_identity();
     for (i = 0; i < 24; i++) {
         ShopGlowOrb *o = &g->orb[i];
+        int jb;
         float f;
         unsigned int al;
 
@@ -602,12 +601,12 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
         ph = 3.14159274f * f;
         o->alpha = al;
         y = 11.0f * f - 5.5f;
-        for (j = 0; j < 2; j++) {
-            float an = o->ang[j] + 0.13962634f * o->t;
-            float rr = 3.0f + o->rad[j] * sinf(ph);
+        for (jb = 0; jb < 2; jb++) {
+            float an = o->ang[jb] + 0.13962634f * o->t;
+            float rr = 3.0f + o->rad[jb] * sinf(ph);
 
-            vec4_set(&o->pos[j], rr * sinf(an), y, 0.5f * (rr * cosf(an)), 1.0f);
-            mat4_transform_vec4(&a, &rot, &o->pos[j]);
+            vec4_set(&o->pos[jb], rr * sinf(an), y, 0.5f * (rr * cosf(an)), 1.0f);
+            mat4_transform_vec4(&a, &rot, &o->pos[jb]);
             mtx_push();
             shop_glow_translate(a.x, a.y, a.z);
             mtx_mult(&view);
@@ -640,18 +639,19 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
     }
     for (lp1 = 0; lp1 < 24; lp1++) {
         ShopGlowOrb *o = &g->orb[lp1];
+        int jb;
 
         if (!(o->flags & 1) == 1)
             continue;
-        for (j = 0; j < 2; j++) {
-            ShopGlowSparks *q = &g->spark_a[lp1][j];
+        for (jb = 0; jb < 2; jb++) {
+            ShopGlowSparks *q = &g->spark_a[lp1][jb];
             ShopGlowSpark *s = &q->s[q->next];
             float an;
 
             s->flags |= 1;
             s->t = 0;
             s->alpha = o->alpha;
-            vec4_copy(&s->pos, &o->pos[j]);
+            vec4_copy(&s->pos, &o->pos[jb]);
             r = &rand3_seeds[rand3_slot];
             an = 6.2831855f * ((float)GLOW_RAND(r) / 32767.0f);
             s->kind = GLOW_RAND(r) % 8;
@@ -718,18 +718,19 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
     }
     for (lp6 = 0; lp6 < 24; lp6++) {
         ShopGlowOrb *o = &g->orb[lp6];
+        int jb;
 
         if (!(o->flags & 1) == 1)
             continue;
-        for (j = 0; j < 2; j++) {
-            ShopGlowSparks *q = &g->spark_b[lp6][j];
+        for (jb = 0; jb < 2; jb++) {
+            ShopGlowSparks *q = &g->spark_b[lp6][jb];
             ShopGlowSpark *s = &q->s[q->next];
             float an;
 
             s->flags |= 1;
             s->t = 0;
             s->alpha = o->alpha;
-            vec4_copy(&s->pos, &o->pos[j]);
+            vec4_copy(&s->pos, &o->pos[jb]);
             r = &rand3_seeds[rand3_slot];
             an = 6.2831855f * ((float)GLOW_RAND(r) / 32767.0f);
             s->kind = GLOW_RAND(r) % 4;
@@ -781,7 +782,6 @@ int shop_glow_super(int t, Mat4 *m, unsigned short speed, void *vram)
         g->done = 1;
     return 0;
 }
-#endif
 
 /* ultra/ultimate/secret rare: halo, light bar, a flash at the card center, bursts of sparks out of
    the card (masked to its rectangle) and fans of rays */

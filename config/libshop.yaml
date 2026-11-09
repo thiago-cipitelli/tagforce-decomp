@@ -74,8 +74,6 @@ segments:
       - [0x10054, c, shop_sort]
       - [0x10C48, c, shop_dialog]
       - [0x10FB8, c, shop_glow]
-      - [0x11BFC, asm, shop_glow_asm_08815B9C]
-      - [0x12E08, c, shop_glow]
       - [0x13E34, c, shop_lsort]
       - [0x143C8, asm, shop_lsort_asm_08818368]
       - [0x145B4, asm, sceStub_text]
