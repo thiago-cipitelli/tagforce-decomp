@@ -1,5 +1,4 @@
 // @range 0x088FD690-0x088FDE68
-// @asm 0x088FDAF8-0x088FDCF4
 /* Card effect handlers (continued). */
 #include "duel.h"
 
@@ -129,17 +128,12 @@ int duel_eff_fda70(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 26 palavras: ordem zona/jogador certa com ZSLOT no 1º uso (o 2º recalcula a base); falta a coloração
-                      (o original lê o byte em v1 e deixa o jogador em v0 até o passo 0x7F) */
 int duel_eff_fdaf8(DuelAct *a, int b)
 {
-    unsigned char z = a->zone;
-    unsigned int p = a->player;
-
-    if (a->uid != CARD_UID(ZSLOT(p, z)->card)) {
+    if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
         return 0;
     }
-    if (duel.players[p & 1].field[z].faceup == 0) {
+    if (duel.players[a->player & 1].field[a->zone].faceup == 0) {
         return 0;
     }
     switch (duel_step) {
@@ -163,12 +157,11 @@ int duel_eff_fdaf8(DuelAct *a, int b)
         return 0;
     }
     case 0x7F:
-        duel_088C87A8(p, duel_w_089148FC, p | z << 8, 7, 0);
+        duel_088C87A8(a->player, duel_w_089148FC, a->player | a->zone << 8, 7, 0);
         return 0;
     }
     return 0;
 }
-#endif
 
 int duel_eff_fdcf4(DuelAct *a, int b)
 {
