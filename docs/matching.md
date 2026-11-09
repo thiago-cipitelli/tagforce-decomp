@@ -988,3 +988,23 @@ Bateram `duel_req_move`, `duel_088CFBA4` (contador `q` e jogador `v` no case 0x1
   `duel_slot_ef098(p, z, a->id)` em `ai_util.c` (protótipo K&R escondia o 3º argumento). Diferença em `a2`/`a3` de
   registrador "trocado" logo antes de um `jal`: confira o número de argumentos antes de mexer em registradores.
 - `case A: case B: v += 500; break; case C: v += 500; break;`: o original tinha os três rótulos no mesmo corpo.
+
+## Rodada 11 (`bfs`: BOOT, libstory, libfield, libshop)
+
+Bateram `gamestate_fill_partner_list`, `heap_create`, `vm_skip`, `vm_update`, `movie_run`. O que resolveu:
+- **Contador de outro laço reaproveitado** também em `$a`/`$t` (não só `$s`): os três laços do deck usam o `k` do laço
+  dos parceiros e `j` some (`gamestate_fill_partner_list`; ordem/tipos de declaração não mexiam em nada).
+- **`x - x` que o original não dobra** (`subu v0,a0,a0`): a cópia passa por `+ 0` (`h = (Heap *)((char *)mem + 0);
+  h->pad = (char *)h - (char *)mem;`); `h = mem` ou atribuição encadeada dobram para 0. Bitfield de 6 bits gravado com
+  `li 252` sem os registradores do `0x3F`: `h->pad = -1` (`heap_create`).
+- **`default:` primeiro no `switch` interno** com `return K` (`vm_update`); o `@rodata` da tabela do `switch` externo
+  pode cair num `data_N` sem dono (antes do `@data`): declarar `// @rodata` e regenerar o config.
+- **Argumento que faltava**: `lw a0,reader; beqzl a0` antes de `jal pmf_reader_term` = `pmf_reader_term(reader)`
+  (definição com parâmetro não usado). Busca de posição de 2 declarações + `(int)mem + es_size` + mover um comando de
+  zeragem (`avc_es = 0;` logo depois de `mem = ...`) levou `movie_run` de 20 a 0.
+Sem forma (skip): `fld_chr_collide`, `fld_player_update` (e `fpt_update`, `fld_draw_add`, mesma família: o original
+divide `q.x / 0.5f` antes de carregar `q.z` reusando `$f0`; locais, inline, ponteiro, cast, ordem e `float h` não
+mudam), `tms_draw_prims` (7, `d` em v0), `pda_draw_mail_item` (13, `face` em t0, arg 4 = 0 materializado tarde),
+`fld_map_walkable` (5, último teste `beqz; nop` + bloco `r = 0` próprio), `gim_walk` (cópia morta do `case 0xFF`),
+`font_glyph_cache` (60, `f`/`font` em s1/s5 trocados; posição e inicialização das declarações não mudam),
+`shop_shelf_input` (testes 1 depois 2 com corpos na mesma ordem; nenhuma forma de switch/if chegou perto).
