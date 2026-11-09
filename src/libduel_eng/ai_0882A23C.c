@@ -1,6 +1,5 @@
 // @range 0x0882A23C-0x0882AFA4
 // @asm 0x0882A680-0x0882A838
-// @asm 0x0882AAA0-0x0882ABB4
 // @data 0x08907940-0x0890794C
 /* Summoning a monster (duel_summon, 0x08914A14): the zone filters used while the player or the
    computer picks the tributes, and the start of a summon. */
@@ -248,7 +247,6 @@ int duel_0882AA10(unsigned int p, int z, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* só a alocação de registradores difere (need em v1, base em a0) */
 /* Zone filter: own spell/trap zone holding 0x19B2 with enough counters for the level. */
 int duel_0882AAA0(unsigned int p, int z, int i)
 {
@@ -268,7 +266,7 @@ int duel_0882AAA0(unsigned int p, int z, int i)
         return 0;
     }
     if (duel_slot_e8170(p, zz, 0x19B2) != 0) {
-        need = (duel_list_card_level(duel_summon.player, duel_summon.uid) >= 7) + 1;
+        need = (duel_list_card_level(duel_summon.player, duel_summon.uid) >= 7 ? 1 : 0) + 1;
 
         if (duel.players[duel_summon.player & 1].field[zz].link >= need) {
             return 0x800;
@@ -277,7 +275,6 @@ int duel_0882AAA0(unsigned int p, int z, int i)
     return 0;
 }
 
-#endif
 
 /* Zone filter: monsters of the 0x1A6x group that may be tributed (0x1A65). */
 int duel_0882ABB4(unsigned int p, int z, int i)

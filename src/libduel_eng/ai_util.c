@@ -1,6 +1,5 @@
 // @range 0x08809B50-0x0880B448
 // @asm 0x08809DA8-0x08809F2C
-// @asm 0x0880ADF4-0x0880AEF4
 /* Helpers of the computer player: picking cards for a dialog, comparing the strongest monsters of
    both players. */
 #include "duel.h"
@@ -518,25 +517,22 @@ int duel_0880AD78(unsigned int p)
     return -1;
 }
 
-#ifdef NON_MATCHING /* 15 palavras (era 31): contador do primeiro laço e resultado de duel_rand em variáveis próprias; falta trocar o s1/s2 de n (ponteiro de n_hand) e do contador/índice */
 int duel_0880ADF4(unsigned int p, int (*fn)(unsigned int p, int z, int i))
 {
-    unsigned int *n;
     unsigned int i;
     unsigned int c;
     int r;
     unsigned int q;
 
     q = 1 - p;
-    n = (unsigned int *)((char *)&duel.players[0].n_hand + (q & 1) * sizeof(DuelPlayer));
     c = 0;
-    for (i = 0; i < *n; i++) {
+    for (i = 0; i < duel.players[q & 1].n_hand; i++) {
         if (fn(q, 11, i) != 0) {
             c++;
         }
     }
     r = duel_rand(c);
-    for (c = 0; c < *n; c++) {
+    for (c = 0; c < duel.players[q & 1].n_hand; c++) {
         if (fn(q, 11, c) != 0) {
             if (r-- == 0) {
                 return c;
@@ -545,7 +541,6 @@ int duel_0880ADF4(unsigned int p, int (*fn)(unsigned int p, int z, int i))
     }
     return -1;
 }
-#endif
 
 int duel_0880AEF4(unsigned int p, int id)
 {

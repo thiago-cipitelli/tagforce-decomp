@@ -1,5 +1,4 @@
 // @range 0x08861E7C-0x08862E24
-// @asm 0x0886268C-0x08862E24
 /* The computer player: handlers of the cards it activates. */
 #include "duel.h"
 
@@ -261,7 +260,6 @@ int duel_08862648(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* só difere na ordem do cálculo do endereço do slot (z * 20 antes de jogador * 0xFAC) depois de duel_slot_e1854, como em duel_08862208 */
 int duel_0886268C(DuelAct *a, int b)
 {
     int msg = 0x103;
@@ -426,9 +424,10 @@ int duel_0886268C(DuelAct *a, int b)
             if (a->w[2] == 2) {
                 t = duel_slot_e1854(a->player, a->zone);
                 duel_088D1AC8(a->player, a->zone);
-                p = (unsigned short)t >> 8 & 0xFF;
-                m = t & 0xFF;
-                a->w[3] = CARD_UID(duel.players[m & 1].field[p].card);
+                {
+                    unsigned int sz = (unsigned short)t >> 8 & 0xFF, sp = t & 0xFF;
+                    a->w[3] = CARD_UID(ZSLOT(sp, sz)->card);
+                }
             }
             break;
         case 0x15D3:
@@ -453,4 +452,3 @@ int duel_0886268C(DuelAct *a, int b)
     }
     return 0;
 }
-#endif

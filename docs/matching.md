@@ -988,3 +988,23 @@ Bateram `duel_req_move`, `duel_088CFBA4` (contador `q` e jogador `v` no case 0x1
   `duel_slot_ef098(p, z, a->id)` em `ai_util.c` (protótipo K&R escondia o 3º argumento). Diferença em `a2`/`a3` de
   registrador "trocado" logo antes de um `jal`: confira o número de argumentos antes de mexer em registradores.
 - `case A: case B: v += 500; break; case C: v += 500; break;`: o original tinha os três rótulos no mesmo corpo.
+
+## Rodada 11 (`engC`: libduel_eng, quase-acertos)
+
+Bateram `duel_0880ADF4`, `duel_0882AAA0`, `duel_08830E94`, `duel_0886268C`. Idiomas:
+- **Global que é campo de `duel`** (`duel_08830E94`): o original relia `duel_w_0891968C` depois do `sh` em
+  `duel.unk3832[k]`; o mwcc só deixa de adiantar a carga quando os dois acessos são do mesmo objeto. Esse endereço é
+  `duel + 0x3830` (`duel.unk3830`): usar o campo. Vale conferir `endereço - 0x08915E5C` de toda global de libduel_eng
+  que cai dentro de `Duel` quando uma carga sobe acima de um store.
+- **Ponteiro local para um campo × expressão repetida** (`duel_0880ADF4`): `unsigned int *n = &…n_hand` dava `$s`
+  trocados em qualquer ordem/tipo (3840 variantes); `duel.players[q & 1].n_hand` nos dois laços (CSE do mwcc) bateu.
+- **`(c ? 1 : 0) + 1`** em vez de `(c) + 1` mudou a coloração de um temporário (`duel_0882AAA0`).
+- **`ZSLOT` com `sz`/`sp` de bloco** num `case` que só usa a zona para o endereço (`duel_0886268C`).
+- Busca em lote: `build/tmp/engC/varb.py ARQ FUNC VARIANTES` (worktree engC, não versionado) compila centenas de
+  variantes inteiras da função num só TU (cabeçalho = o `.c` até a função) e dá as palavras diferentes de cada uma.
+Sem forma (rodada 11): a família "contador de bits × ponteiro do slot" (`duel_min_order`, `duel_find_effect_card`,
+`duel_count_id_flag18`, `duel_count_monster_active`: ordem/tipos/bloco/ponteiro explícito/`ZSLOT`/inline testados),
+`duel_wfmt_s`/`duel_wfmt_d` (`dst` e o 3º parâmetro trocam `$s0`/`$s2`; K&R, `register`, cópias locais, formas de
+laço testadas), `duel_08858440` (prólogo `lhu` de `a->kind`, como `duel_08856860`), `duel_08863780` (o mwcc sabe
+que `v0` vale 1 no `default`), `duel_piles_swap` (o original soma `sp+24` e `+6` em dois passos; o mwcc dobra em
+qualquer forma testada), `duel_bonus_calc` (36: 1680 posições de declarações sem efeito).
