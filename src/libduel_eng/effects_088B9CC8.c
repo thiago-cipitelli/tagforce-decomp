@@ -1,5 +1,4 @@
 // @range 0x088B9CC8-0x088BB8C0
-// @asm 0x088BAB94-0x088BAE0C
 // @asm 0x088BAF7C-0x088BB0A0
 /* Card effect handlers: candidate lists for duel_088BFC64 (after effects_088B7D94.c). */
 #include "duel.h"
@@ -259,7 +258,6 @@ void duel_088BAAE8(unsigned int p)
     }
 }
 
-#ifdef NON_MATCHING /* contador e ponteiro do laço que preenche mats trocam $s1/$s2 */
 void duel_088BAB94(unsigned int p, int b)
 {
     unsigned int i;
@@ -268,7 +266,6 @@ void duel_088BAB94(unsigned int p, int b)
     int n_ok;
     int j;
 
-    int q;
     int z;
     unsigned int *l;
     int k;
@@ -277,11 +274,10 @@ void duel_088BAB94(unsigned int p, int b)
     int mats[3];
 
     n_locs = 0;
-    l = locs;
-    for (q = 0; q < 2; q++) {
+    for (j = 0, l = locs; j < 2; j++) {
         for (z = 0; z <= 4; z++) {
-            if (duel_tributable(p, q, z) && (q == p || duel.players[q & 1].field[z].faceup)) {
-                *l++ = (unsigned short)((unsigned char)q | (unsigned char)z << 8);
+            if (duel_tributable(p, j, z) && (j == p || duel.players[j & 1].field[z].faceup)) {
+                *l++ = (unsigned short)((unsigned char)j | (unsigned char)z << 8);
                 n_locs++;
             }
         }
@@ -309,7 +305,6 @@ void duel_088BAB94(unsigned int p, int b)
         }
     }
 }
-#endif
 
 void duel_088BAE0C(unsigned int p)
 {

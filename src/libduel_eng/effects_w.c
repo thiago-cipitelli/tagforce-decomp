@@ -1,5 +1,4 @@
 // @range 0x08886984-0x08887618
-// @asm 0x08886E88-0x08887034
 /* Card effect handlers (DuelAct *a), after effects_v.c. */
 #include "duel.h"
 
@@ -160,12 +159,11 @@ static int duel_08886E80(unsigned int p, int z)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores */
 int duel_08886E88(DuelAct *a)
 {
     int z;
     int i;
-    unsigned int q;
+    int q;
 
     switch (duel_step) {
     case 0x80:
@@ -202,7 +200,6 @@ int duel_08886E88(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_08887034(DuelAct *a)
 {

@@ -1,5 +1,4 @@
 // @range 0x088E0890-0x088E1FE0
-// @asm 0x088E0C30-0x088E0DD0
 // @asm 0x088E1390-0x088E14C0
 /* Effect list upkeep and scans by source: drop expiring entries at the end of a turn, reset a zone,
    move the entries of a source to another zone, count and find the entries placed on a zone by
@@ -126,7 +125,6 @@ void duel_effects_end_turn(void)
     }
 }
 
-#ifdef NON_MATCHING /* register allocation of the loop counters and of the source fields differs */
 /* The card in zone z of player p leaves it: drop its own timed entries and every entry it placed. */
 void duel_slot_effects_reset(unsigned int p, unsigned int z)
 {
@@ -134,7 +132,6 @@ void duel_slot_effects_reset(unsigned int p, unsigned int z)
     unsigned int src;
     int k;
     unsigned int next;
-    unsigned int q;
 
     if (s->card.id != 0) {
         unsigned int e = duel.players[p & 1].field[z].effects;
@@ -154,16 +151,15 @@ void duel_slot_effects_reset(unsigned int p, unsigned int z)
             e = next;
         }
         src = (p & 0xFF) | (z & 0xFF) << 8;
-        for (q = 0; (int)q < 2; q++) {
+        for (next = 0; (int)next < 2; next++) {
             for (k = 0; k <= 11; k++) {
-                duel_effects_free_src(duel.players[q & 1].field[k].effects, src, 1);
+                duel_effects_free_src(duel.players[next & 1].field[k].effects, src, 1);
             }
         }
         s->link = 0;
         duel.players[p & 1].field[z].flags &= ~0x10;
     }
 }
-#endif
 
 /* Set kind and arg of entry i; kind 0 empties it, a card kind on a zone entry keeps its card id. */
 void duel_effect_set(unsigned int p, int z, int i, int kind, unsigned short arg)

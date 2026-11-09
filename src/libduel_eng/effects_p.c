@@ -1,7 +1,6 @@
 // @range 0x0887DB24-0x0888146C
 // @data 0x08911770-0x089117A0
 // @asm 0x0887F8E4-0x0887FCA8
-// @asm 0x08880624-0x088807F0
 // @asm 0x08881054-0x0888112C
 /* Card effect handlers (DuelAct *a): what a's card does when it resolves. */
 #include "duel.h"
@@ -1021,13 +1020,13 @@ int duel_08880204(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 7 palavras: no case 0x7F o original põe i em s3 e p = turn ^ i em s1 (aqui trocados); ordem das declarações e tipos não resolvem */
 int duel_08880624(DuelAct *a)
 {
     unsigned int mask;
     int i;
     int z;
-    unsigned int p;
+    int p;
+    int j;
 
     if (a->b4_2) {
         return 0;
@@ -1045,8 +1044,8 @@ int duel_08880624(DuelAct *a)
         duel_088D13CC(a, mask);
         return mask != 0 ? 0x7F : 1;
     case 0x7F:
-        for (i = 0; i < 2; i++) {
-            p = duel_turn_player ^ i;
+        for (j = 0; j < 2; j++) {
+            p = duel_turn_player ^ j;
             for (z = 0; z < 5; z++) {
                 if (duel.players[p & 1].field[z].card.id > 0 && duel.players[p & 1].field[z].faceup != 0 &&
                     duel.players[p & 1].field[z].pos != 0 && (unsigned short)duel_field_type(p, z) == 1) {
@@ -1058,7 +1057,6 @@ int duel_08880624(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088807F0(DuelAct *a)
 {
