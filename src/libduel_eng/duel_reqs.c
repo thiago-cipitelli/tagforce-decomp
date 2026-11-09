@@ -1,7 +1,6 @@
 // @range 0x088C87A8-0x088C936C
 // @asm 0x088C8DC4-0x088C8E88
 // @asm 0x088C8F04-0x088C914C
-// @asm 0x088C914C-0x088C929C
 /* Commands to the presentation about a zone (0x36: a card moves to it, 0x37: an effect of a card,
    0x38: an effect counter). */
 #include "duel.h"
@@ -210,7 +209,6 @@ void duel_088C8F04(unsigned int p, int z)
 }
 #endif
 
-#ifdef NON_MATCHING /* 6 palavras: só os registradores de zona*20 e do mflo trocados (a1/a2) no case 6; forma (switch com case 6 caindo nos 10-13) conferida */
 void duel_088C914C(unsigned int p, int z)
 {
     unsigned int e = duel.players[p & 1].field[z].effects;
@@ -221,11 +219,14 @@ void duel_088C914C(unsigned int p, int z)
 
         e = ef->next;
         switch (ef->kind & 0xF) {
-        case 6:
-            s = ef->src >> 8 & 0xFF;
-            if (duel.players[(unsigned char)ef->src & 1].field[s].card.id != 0x19ED) {
+        case 6: {
+            unsigned int sz = ef->src >> 8 & 0xFF;
+            unsigned int sp = ef->src & 0xFF;
+
+            if (ZSLOT(sp, sz)->card.id != 0x19ED) {
                 break;
             }
+        }
         case 10:
         case 11:
         case 12:
@@ -236,7 +237,6 @@ void duel_088C914C(unsigned int p, int z)
         }
     }
 }
-#endif
 
 void duel_088C929C(unsigned int p, int z, unsigned int kind)
 {

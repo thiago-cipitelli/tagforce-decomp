@@ -955,3 +955,21 @@ Bateram `shop_msgwin_draw`, `tut_text_draw` (forma de `dt_text_draw`), `fmsg_cre
   quebrou duas que batiam (o `check_file` acusa).
 Sem forma: `fld_scene_update` (`move a0,v0; jal; nop` de `fld_voice_play`), `fld_chr_draw_model` e `fclk_time_draw` (ordem
 de dois `lw` de argumentos vizinhos, 4 palavras), `pda_draw_tabs` (4: `bne`+`b; li` contra `beql`).
+
+## Rodada 10 (`engA`: libduel_eng, funções de 99% fuzzy)
+
+Bateram `duel_08865658`, `duel_0884E02C`, `duel_0888293C`, `duel_088C914C`, `duel_0880FFAC`, `duel_088C7954`,
+`duel_0888B434`, `duel_088B6A04`. Quase todas eram `$s` trocados que nenhuma ordem de declaração resolvia:
+- **O tipo `int` × `unsigned int` de um local decide a coloração** mesmo sem mudar nenhuma instrução: `int p` em
+  `duel_08865658`, `int id` em `duel_0880FFAC`, `int q` em `duel_088C7954`. Quando a permutação das declarações
+  não mexe em nada, varie os tipos (um local por vez) e depois **tipos × ordens juntos**: `duel_0888B434`
+  (`int z0` + ordem) e `duel_0888293C` (`int z`, `int qz` + ordem) só bateram na combinação.
+- **Parâmetro não usado como contador** (idioma da rodada 9) também nos três laços de `duel_088B6A04(p, b, mode)`,
+  com `b` `unsigned int` na definição (o `sltu` do teste).
+- **`ZSLOT` com `sz`/`sp` de bloco** num `case` que cai no seguinte: `case 6: { unsigned int sz = …, sp = …;
+  if (ZSLOT(sp, sz)->card.id != K) break; }` (`duel_088C914C`).
+- **Registrador de argumento "estranho" para uma global** (`lw a2,duel_w_08919650` usado num `switch`): a
+  chamada seguinte recebe esse valor como argumento a mais. `duel_0884E02C` chamava `duel_088348BC(0, p)`
+  sem o 3º argumento (zona) — bug de lógica; a mesma chamada sem argumento está em `chain_prompt.c`.
+- **`switch` interno cujos `case` saltam para um `b` comum** (sem threading até o fim): o `case` externo termina
+  em `return;` em vez de `break;` (`duel_0884E02C`). Ao promover um `switch` denso, `@rodata` da tabela.

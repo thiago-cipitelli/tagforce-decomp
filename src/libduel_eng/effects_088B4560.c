@@ -1,6 +1,5 @@
 // @range 0x088B4560-0x088B7D94
 // @asm 0x088B4D54-0x088B4E64
-// @asm 0x088B6A04-0x088B6BF8
 /* Card effect handlers: candidate lists for duel_088BFC64 (player, zone, index). */
 #include "duel.h"
 
@@ -637,43 +636,32 @@ void duel_088B6900(unsigned int p)
     }
 }
 
-#ifdef NON_MATCHING /* os laços dos case 1 e 2 trocam s2/s3 (contador e ponteiro) em relação ao original com qualquer combinação de variáveis por case */
-void duel_088B6A04(unsigned int p, int b, int mode)
+void duel_088B6A04(unsigned int p, unsigned int b, int mode)
 {
     switch (mode) {
-    case 0: {
-        unsigned int i;
-
-        for (i = 0; i < duel.players[p & 1].n_d; i++) {
-            if (card_is_monster(duel.players[p & 1].zone_d[i].id) && !duel_slot_effect_with(p, 0xB, 0x12A1, CARD_UID(duel.players[p & 1].zone_d[i]))) {
-                duel_088BFC64(p, 0xD, i);
+    case 0:
+        for (b = 0; b < duel.players[p & 1].n_d; b++) {
+            if (card_is_monster(duel.players[p & 1].zone_d[b].id) && !duel_slot_effect_with(p, 0xB, 0x12A1, CARD_UID(duel.players[p & 1].zone_d[b]))) {
+                duel_088BFC64(p, 0xD, b);
             }
         }
         break;
-    }
-    case 1: {
-        unsigned int j;
-
-        for (j = 0; j < duel.players[p & 1].n_d; j++) {
-            if (card_get_type(duel.players[p & 1].zone_d[j].id) == 0x16) {
-                duel_088BFC64(p, 0xD, j);
+    case 1:
+        for (b = 0; b < duel.players[p & 1].n_d; b++) {
+            if (card_get_type(duel.players[p & 1].zone_d[b].id) == 0x16) {
+                duel_088BFC64(p, 0xD, b);
             }
         }
         break;
-    }
-    case 2: {
-        unsigned int k;
-
-        for (k = 0; k < duel.players[p & 1].n_d; k++) {
-            if (card_get_type(duel.players[p & 1].zone_d[k].id) == 0x17) {
-                duel_088BFC64(p, 0xD, k);
+    case 2:
+        for (b = 0; b < duel.players[p & 1].n_d; b++) {
+            if (card_get_type(duel.players[p & 1].zone_d[b].id) == 0x17) {
+                duel_088BFC64(p, 0xD, b);
             }
         }
         break;
-    }
     }
 }
-#endif
 
 void duel_088B6BF8(unsigned int p, int x)
 {

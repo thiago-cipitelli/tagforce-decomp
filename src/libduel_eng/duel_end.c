@@ -1,6 +1,6 @@
 // @range 0x0884D050-0x0884E228
 // @asm 0x0884D72C-0x0884D874
-// @asm 0x0884E02C-0x0884E1D8
+// @rodata 0x08907F88-0x08907FB4
 /* End of the duel: the reason each player wins or loses (LP, deck out, Exodia and the other
    special victories), the end-of-duel presentation, replaying the input log. */
 #include "duel.h"
@@ -57,7 +57,7 @@ int duel_host_call(int a, int b, int c, int d);
 void duel_0884E02C(void);
 void duel_0884C588(unsigned int p, int a, int id, int b);
 void duel_0882AF5C(int a, int b, int c);
-void duel_088348BC(int a, unsigned int p);
+void duel_088348BC(int a, unsigned int p, int b);
 int card_is_monster(int id);
 void duel_08834734(int a, int b, int c);
 void duel_08834614(int a);
@@ -481,8 +481,6 @@ int duel_0884DFB0(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 9 palavras: o switch interno do case 3 usa $a2 (o mwcc usa $v1) e o original sai dele por um `b`
-                       comum ao fim do case 3 (o mwcc salta direto ao fim); switch, if/||, inline: mesmo resultado */
 /* runs the computer's pending action (duel_w_08919640: its kind) */
 void duel_0884E02C(void)
 {
@@ -521,13 +519,13 @@ void duel_0884E02C(void)
         case 0xD:
         case 0xE:
         case 0xF:
-            duel_088348BC(0, duel_w_0891964C);
+            duel_088348BC(0, duel_w_0891964C, duel_w_08919650);
             break;
         default:
             duel_0883449C(0);
             break;
         }
-        break;
+        return;
     case 10:
         duel_088349BC();
         break;
@@ -541,7 +539,6 @@ void duel_0884E02C(void)
         break;
     }
 }
-#endif
 
 int duel_0884E1D8(void)
 {

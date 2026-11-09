@@ -1,6 +1,5 @@
 // @range 0x0888146C-0x08883114
 // @asm 0x088823E0-0x088824E4
-// @asm 0x0888293C-0x08882B04
 // @asm 0x08882B04-0x08882D9C
 /* Card effect handlers (DuelAct *a), after effects_p.c. */
 #include "duel.h"
@@ -610,14 +609,13 @@ int duel_0888286C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 10 palavras: z e qz trocam s0/s2 e a ordem do and/sll do último argumento de duel_088CA270 */
 int duel_0888293C(DuelAct *a)
 {
     unsigned int loc;
     unsigned int p;
-    unsigned int z;
-    unsigned int qz;
+    int z;
     unsigned int q;
+    int qz;
 
     if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
         return 0;
@@ -640,7 +638,6 @@ int duel_0888293C(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 #ifdef NON_MATCHING /* faltava o 3º argumento (loc) de duel_088C8B70; registradores e ordem dos blocos */
 int duel_08882B04(DuelAct *a)

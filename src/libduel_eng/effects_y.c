@@ -1,7 +1,6 @@
 // @range 0x08889BE4-0x0888B904
 // @asm 0x08889BE4-0x0888A020
 // @asm 0x0888A88C-0x0888AB18
-// @asm 0x0888B434-0x0888B5B8
 /* Card effect handlers (DuelAct *a), after effects_x.c. */
 #include "duel.h"
 
@@ -638,15 +637,14 @@ int duel_0888B3F0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* alocação de $s0-$s3 entre as duas zonas */
 int duel_0888B434(DuelAct *a)
 {
     unsigned int l1;
     unsigned int l0;
     unsigned int p0;
-    unsigned int z0;
-    unsigned int z1;
+    int z0;
     unsigned int p1;
+    unsigned int z1;
     int atk;
     int v;
 
@@ -671,7 +669,6 @@ int duel_0888B434(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888B5B8(DuelAct *a, int b)
 {
