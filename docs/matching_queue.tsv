@@ -19,7 +19,6 @@ fuzzy	size	module	function	address	file
 99.8	436	libduel_eng	duel_088867D0	0x088867D0	src/libduel_eng/effects_v.c
 99.8	3256	libduel_eng	duel_bonus_calc	0x088FFFDC	src/libduel_eng/duel_result.c
 99.7	552	libduel_eng	duel_088674DC	0x088674DC	src/libduel_eng/effects_08865F2C.c
-99.7	1008	libdeck	dk_deck_load	0x08805900	src/libdeck/dk_lists.c
 99.7	1320	libduel_draw	dd_fx_sparkle_update	0x0885471C	src/libduel_draw/dd_fx_bubble.c
 99.7	1840	libfield	fld_scene_update	0x08810814	src/libfield/f_scene.c
 99.6	384	libduel_eng	duel_08865658	0x08865658	src/libduel_eng/effects_q.c
@@ -33,11 +32,8 @@ fuzzy	size	module	function	address	file
 99.6	428	libduel_eng	duel_0884E02C	0x0884E02C	src/libduel_eng/duel_end.c
 99.6	504	libduel_eng	duel_088C1B88	0x088C1B88	src/libduel_eng/effects_088C134C.c
 99.6	584	libduel_eng	duel_088995A0	0x088995A0	src/libduel_eng/effects_08898B10.c
-99.5	396	libstory	st_mail_open	0x088136E8	src/libstory/s_mail.c
 99.5	2716	libduel_eng	duel_msg_poll	0x088F7418	src/libduel_eng/msg.c
-99.5	280	libtitle	tfd_adhoc_pass_init	0x0881BA64	src/libtitle/t_fdlobby.c
 99.5	392	librecipe_viewer	rv_draw_grid_cursor	0x088075E4	src/librecipe_viewer/rv_screen.c
-99.5	516	BOOT	day_threshold	0x0883EAB4	src/BOOT/save.c
 99.5	416	libduel_eng	duel_slot_effects_reset	0x088E0C30	src/libduel_eng/effect_scan.c
 99.5	572	libduel_eng	duel_088C7954	0x088C7954	src/libduel_eng/duel_cmds.c
 99.5	3008	libduel_eng	duel_088C4864	0x088C4864	src/libduel_eng/duel_draws.c

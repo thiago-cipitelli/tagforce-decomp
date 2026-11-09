@@ -1,6 +1,5 @@
 // @range 0x088132FC-0x088138AC
 // @asm 0x088134BC-0x088136E8
-// @asm 0x088136E8-0x08813874
 // @asm 0x08813874-0x08813894
 /* Mails of the PDA: the received list in the save (100 records of 6 bytes: mail id, new/read flags,
    sender, date), the mail table of brain.ehp (MailESM) and its texts (MailEL/MailEI), the view list
@@ -176,16 +175,21 @@ StMailView *st_mail_view_list(int *count)
 }
 #endif
 
-#ifdef NON_MATCHING /* 7 palavras: com o retorno de st_remap_812334 em (unsigned short) só p e k trocam de registrador (s3/s5); ordens das declarações e do k = p[4] não mudam */
-/* attachments of a mail (ended by a zeroed entry); marks the mail read */
+/* attachments of a mail (ended by a zeroed entry); marks the mail read. k declarado primeiro e p atribuído
+   depois das declarações (ordem de criação dos $s) */
 StMailAttach *st_mail_open(int id)
 {
-    unsigned short *p = st_mail_find(id) + 10;
-    int i = 0;
-    StMail *m;
     int k;
-    StMailAttach *a = st_mail_attach;
-    unsigned short *text = st_mail_attach_text[0];
+    int i;
+    unsigned short *p;
+    StMailAttach *a;
+    unsigned short *text;
+    StMail *m;
+
+    p = st_mail_find(id) + 10;
+    i = 0;
+    a = st_mail_attach;
+    text = st_mail_attach_text[0];
 
     for (;;) {
         if (*p == 0) {
@@ -218,7 +222,6 @@ StMailAttach *st_mail_open(int id)
     }
     return st_mail_attach;
 }
-#endif
 
 #ifdef NON_MATCHING /* 6 palavras: o original materializa &st_mail_tbl (lui/addiu) antes do lw 0; o mwcc sempre dobra o %lo (const, cast char*, volatile, register, inline não mudam); o laço já bate */
 /* record of a mail in MailESM (assumed present) */

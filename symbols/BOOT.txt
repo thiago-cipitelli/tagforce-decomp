@@ -1582,7 +1582,7 @@ pack_recipes = 0x08899CE0; // type:data EHP RCP*.ydc (357)
 pack_loading = 0x088AEBF0; // type:data EHP loading.ehf + gims
 pack_sysmsg = 0x088B4B10; // type:data EHP sysmsg_?.bin
 sysstate_size = 0x0883EA58; // type:func matched src/BOOT/save.c returns 0xFCA4
-day_threshold = 0x0883EAB4; // type:func C under NON_MATCHING in src/BOOT/save.c, kept in asm via @asm; (day) progress needed, 7 then +1/7 per day
+day_threshold = 0x0883EAB4; // type:func matched src/BOOT/save.c; (day) progress needed, 7 then +1/7 per day
 inv_rec = 0x0883F340; // type:func static, matched src/BOOT/inv.c (id) -> &save.inv[card index] or 0
 card_limit_table = 0x0887544C; // type:data u16[0xA6] (card id, limit) pairs applied at new game
 sysflag_recs_init = 0x08840608; // type:func matched src/BOOT/cfg.c byte0=0xAA, data zeroed

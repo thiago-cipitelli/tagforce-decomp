@@ -27,8 +27,6 @@ segments:
     subalign: null
     subsegments:
       - [0x60, c, dk_lists]
-      - [0x1960, asm, dk_lists_asm_08805900]
-      - [0x1D50, c, dk_lists]
       - [0x2110, c, dk_move]
       - [0x2C78, asm, dk_move_asm_08806C18]
       - [0x3160, c, dk_move]

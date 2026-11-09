@@ -1,5 +1,4 @@
 // @range 0x0883E670-0x0883F340
-// @asm 0x0883EAB4-0x0883ECB8
 // @asm 0x0883ED7C-0x0883EE0C
 /* Save state ("sysstate"): new game defaults, checksum, player name, day counter, money and the
    duel record counters. Continues the game.c unit (main.c, main2.c). */
@@ -151,17 +150,16 @@ unsigned short *sysstate_get_name(void)
     return sysstate_get()->name;
 }
 
-#ifdef NON_MATCHING
 /* Progress needed to finish `day`: 7 on day 1, then each day 1/7 longer than the previous.
-   The original is this loop unrolled by 8. 1 palavra: o original entra no switch por bnezl (li a3,1 no
-   atraso, cópia do destino) e o mwcc gera bnez com o mesmo atraso; if/goto/else não mudam. */
+   The original is this loop unrolled by 8. `i = 1` depois do primeiro teste: o li a3,1 vai para o atraso do bnezl. */
 int day_threshold(int day)
 {
-    int i = 1;
+    int i;
     int step, total;
 
     if (day > 99)
         return 0;
+    i = 1;
     switch (day) {
     case 0:
         return 0;
@@ -175,7 +173,6 @@ int day_threshold(int day)
     }
     return total;
 }
-#endif
 
 int day_next(void)
 {

@@ -908,3 +908,19 @@ Bateram `duel_ai_atk_update`, `duel_0881657C`, `duel_08816A74`, `duel_0880DC1C`,
   operandos trocados, ponteiro de linha, índice achatado e `ZSLOT` não resolvem), `duel_ai_sum_088239EC` (875 contra
   846 instruções: o original relê campos de `a` (`lbu 0(s0)`) depois de chamadas/gravações que o C atual reaproveita,
   além das cópias mortas dos `?:`), `duel_08817598` (não tentado).
+## Rodada 10 (BOOT, libdeck, libstory, libtitle): ordem de criação também por atribuição e por uso
+
+| No asm original | Fonte |
+|---|---|
+| contador e ponteiro de laço com `$s` trocados só no 2º e 3º laço de uma série de blocos (`dk_deck_load`) | `dst` e `i` **da função**, compartilhados pelos blocos, e só `id` em cada bloco (`DkList *dst; unsigned int i;` no topo, `dst = &dk_lists[k];` em cada bloco) |
+| `li` de uma constante no atraso de um `bnezl` (o mwcc dá `bnez`) | inicializar o local **depois** do primeiro teste (`int i; if (day > 99) return 0; i = 1;`), não na declaração (`day_threshold`) |
+| locais inicializados na declaração com `$s` acima do esperado | declarar sem inicializar, na ordem dos `$s` (do mais alto ao mais baixo), e atribuir depois de todas as declarações (`st_mail_open`: `int k;` primeiro, `p = st_mail_find(id) + 10;` depois) |
+| variáveis de indução (`x+8`, `x+10`, `x+0x22`, ponteiro da tabela) em ordem diferente | o mwcc as cria na ordem do primeiro uso no corpo: `x = i * 0x74 + 0x22;` entre a 2ª chamada e o acesso à tabela (`tfd_adhoc_pass_init`) |
+
+Busca: `build/tmp/bootdeck/alts.py` (worktree bootdeck) compila variantes inteiras de uma função em lotes de 150
+num só TU (cabeçalho = o `.c` sem `NON_MATCHING`); `greedy.py` faz a descida gulosa movendo cada declaração
+(topo, outra posição, bloco marcado `{BLK}`): `movie_run` 35 → 20.
+Sem forma: `font_layout_end` (2: `n * 32` em v1), `cardlist_draw_at` (3, escalonamento dos argumentos),
+`snd_group_cmd` (1: `bne v0,s3` com operandos invertidos, tipos/ordens/formas testados), `*_draw_info` (3, `list` e `r`
+dividem `$s0`; ordem de declarações, `r` em bloco, ramos invertidos testados), `vm_skip` (10: `depth`/`ca` trocados,
+3600 variantes), `snd_obj_begin` (43, a descida gulosa não mexe).

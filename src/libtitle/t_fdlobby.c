@@ -1,7 +1,6 @@
 // @range 0x0881BA64-0x0881E0CC
 // @data 0x0882F370-0x0882F384
 // @rodata 0x0882B2D4-0x0882B344
-// @asm 0x0881BA64-0x0881BB7C
 // @asm 0x0881C0E0-0x0881C474
 // @asm 0x0881D94C-0x0881D994
 /* End of the free duel setup: the password lobby (cards picked with libselect_card), the duel info
@@ -93,28 +92,29 @@ int tfd_load_selectcard(void *arg, int id);
     (b)->text = 0;             \
     (b)->draw = 0
 
-#ifdef NON_MATCHING /* 7 palavras: os contadores x+0x22 e o ponteiro do deck trocam $s0/$s1 (original: s3=x+8, s2=x+10, s1=x+0x22, s0=deck). Tentado: ponteiro TFdDeck explícito, x numa variável, continue, ordem das declarações */
-/* names of the players of the ad hoc list */
+/* names of the players of the ad hoc list; x calculado depois das duas sprites: as variáveis de indução
+   saem na ordem do uso (x+8, x+10, x+0x22, deck) */
 void *tfd_adhoc_pass_init(void *list, int mode)
 {
     int i;
+    int x;
     unsigned short *name;
 
     if (mode == 2) {
         for (i = 0; i < title.duel.list.n; i++) {
             list = tpt_sprite_def(list, 0x16, i * 0x74 + 8, 0x34);
             list = tpt_sprite_def(list, i + 0x12, i * 0x74 + 10, 0x36);
+            x = i * 0x74 + 0x22;
             if ((name = title.duel.list.deck[i].name) != 0) {
                 font_set_size(11, 11);
                 font_set_color(0xFFFFFFFF);
                 font_set_flag4(1);
-                list = title_text_frame(list, i * 0x74 + 0x22, 0x36, 0x40, name, 2);
+                list = title_text_frame(list, x, 0x36, 0x40, name, 2);
             }
         }
     }
     return list;
 }
-#endif
 
 void tfd_pass_init(void)
 {

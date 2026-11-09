@@ -136,7 +136,7 @@ int snd_volume = 0x8000;
 
 /* Plays a .pmf: returns 0 at the end, 1 when skipped. flags: 1 mute, 2 any key skips, 4 no skip. */
 
-#ifdef NON_MATCHING /* forma igual; o original põe rb_size, mpeg_size e au em s6, s7, s8 (o mwcc dá s7, s8, s6) e troca s0/s2; permutar as declarações piora (35 palavras) */
+#ifdef NON_MATCHING /* forma igual, 20 palavras: au declarado depois de mpeg_size acerta s6/s7/s8; falta a troca s0/s2 de avc_stream e avc_es (ordem das declarações e das zerações testadas) e dois slots de pilha (76/100) */
 int movie_run(const char *path, unsigned int flags, int volume, int packets)
 {
     void *mpeg;
@@ -156,11 +156,12 @@ int movie_run(const char *path, unsigned int flags, int volume, int packets)
     int prio;
     int sampling;
     int result;
-    MovieAu *au;
     MovieDisp *disp;
     MovieSnd *snd;
     void *avc_stream, *atrac_stream, *avc_es;
-    int rb_packets, rb_size, mpeg_size, r;
+    int rb_packets, rb_size, mpeg_size;
+    MovieAu *au;
+    int r;
     unsigned int rb_data, atrac_es;
 
     mem = movie_mem_base;

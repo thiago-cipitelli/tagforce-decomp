@@ -840,7 +840,8 @@ void op_sv_08_2(void)
 
 /* skips forward to the instruction op (with the given arguments, 0 = any) closing the current block;
    nested blocks are counted */
-#ifdef NON_MATCHING /* registradores s3/s4 de depth e do argumento a trocados */
+#ifdef NON_MATCHING /* 10 palavras: registradores s3/s4 de depth e ca trocados (ordem das declarações, das leituras e
+   forma da inicialização de depth testadas: 3600 variantes) */
 int vm_skip(unsigned int op, unsigned int a, unsigned int b, unsigned int c)
 {
     unsigned int cop, ca, cb, cc;
@@ -854,9 +855,9 @@ int vm_skip(unsigned int op, unsigned int a, unsigned int b, unsigned int c)
         vm->pc++;
         p = &vm->script[vm->pc];
         cop = p->op;
+        ca = p->a;
         cb = p->b;
         cc = p->c;
-        ca = p->a;
         if (cop == 0)
             return 0;
         if (vm_is_open(cop, ca))
