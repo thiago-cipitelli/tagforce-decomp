@@ -1,6 +1,5 @@
 // @range 0x0886A3F4-0x0886AE68
 // @asm 0x0886A3F4-0x0886A794
-// @asm 0x0886A9D8-0x0886AB2C
 // @data 0x0887CF74-0x0887CFF8
 /* Field cursor guide: two d-pad pictures (texture 0x40026) with the caption of each direction
    around them, in a frame with a title; sized from the captions. */
@@ -143,38 +142,35 @@ void *guide_pad_picture(void *dl, int x, int y, int which)
     return dl;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores difere; não insistido */
 void *guide_caption(void *dl, int x, int y, GuideCaption *c)
 {
+    int px, py;
     unsigned short *text = dd_text(c->msg);
     int w, h;
 
-    x += c->dx;
-    y += c->dy;
+    px = x + c->dx;
+    py = y + c->dy;
     guide_text_size(&w, &h, c);
     switch (c->align) {
     case 0:
-        x -= w / 2;
-        y -= h;
+        px -= w / 2;
+        py -= h;
         break;
     case 1:
-        x -= w / 2;
+        px -= w / 2;
         break;
     case 2:
-        x -= w;
-        y -= h / 2;
+        px -= w;
+        py -= h / 2;
         break;
     case 3:
-        y -= h / 2;
+        py -= h / 2;
         break;
     }
     font_text_set(dl);
-    font_draw_wtext_ex(x << 6, y << 6, w << 6, h << 6, text, -1);
+    font_draw_wtext_ex(px << 6, py << 6, w << 6, h << 6, text, -1);
     return font_text_clear();
 }
-#else
-void *guide_caption(void *dl, int x, int y, GuideCaption *c);
-#endif
 
 void *guide_pad(void *dl, int x, int y, int which, GuideCaption *c)
 {

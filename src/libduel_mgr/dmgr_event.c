@@ -2,7 +2,6 @@
 // @asm 0x08806190-0x08806218
 // @asm 0x088062E8-0x08806518
 // @asm 0x08806678-0x088069F4
-// @asm 0x08807430-0x088076F8
 // @data 0x0881A1D4-0x0881A6F8
 // @rodata 0x08819D90-0x08819F34
 /* Duel presentation events: the queue of cut-ins, music and waits that the duel engine's host
@@ -874,7 +873,6 @@ void dmgr_ev_attack(int *args)
     }
 }
 
-#ifdef NON_MATCHING /* o teste de dmgr_cutin_card sai bnezl + "b fim" com cópia morta no original; o mwcc gera beqz direto */
 void dmgr_ev_effect(int *args)
 {
     DmgrGameHdr *gs = (DmgrGameHdr *)game_state_get();
@@ -906,10 +904,10 @@ void dmgr_ev_effect(int *args)
     if (dmgr_is_npc(s->type) == 0) {
         return;
     }
-    if ((*(unsigned char *)&from & 1) != p) {
+    if ((*(unsigned char *)&from & 1) != p || dmgr_cutin_card(1, s->type, id) == 0) {
         return;
     }
-    if (dmgr_cutin_card(1, s->type, id) != 0) {
+    {
         switch (act) {
         case 0:
             if ((*(unsigned char *)&to & 1) == p) {
@@ -969,7 +967,6 @@ count:
     ev.type = 4;
     dmgr_event_push(&ev);
 }
-#endif
 
 void dmgr_ev_activate(int *args)
 {

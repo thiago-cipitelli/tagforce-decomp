@@ -1,5 +1,4 @@
 // @range 0x08809B1C-0x0880A8E0
-// @asm 0x08809DF0-0x08809E14
 // @asm 0x08809EF0-0x0880A47C
 // @asm 0x0880A6B0-0x0880A8E0
 /* The 3D card objects of the field: a pool of 460 nodes and one list per player and zone (deck,
@@ -97,15 +96,12 @@ void dd_cobjs_map(int side, int deck)
         o->home.player = side;
 }
 
-#ifdef NON_MATCHING /* 1 palavra: o original soma índice + base (addu v1,v0,v1), aqui base + índice em todas as formas tentadas */
 int dd_cobjs_map_get(int side)
 {
-    char *b = (char *)&dd_cobjs;
+    DdCobjs *b = &dd_cobjs;
 
-    b = b + (side != 0) * 4;
-    return ((DdCobjs *)b)->map[0];
+    return b->map[side ? 1 : 0];
 }
-#endif
 
 int dd_cobjs_map_other(int side)
 {

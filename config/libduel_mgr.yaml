@@ -34,8 +34,6 @@ segments:
       - [0x2578, c, dmgr_event]
       - [0x26D8, asm, dmgr_event_asm_08806678]
       - [0x2A54, c, dmgr_event]
-      - [0x3490, asm, dmgr_event_asm_08807430]
-      - [0x3758, c, dmgr_event]
       - [0x4A80, c, dmgr_janken]
       - [0x6318, asm, dmgr_janken_asm_0880A2B8]
       - [0x6E08, c, dmgr_janken]
