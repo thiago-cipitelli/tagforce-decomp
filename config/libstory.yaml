@@ -74,8 +74,6 @@ segments:
       - [0xF35C, c, s_mail]
       - [0xF51C, asm, s_mail_asm_088134BC]
       - [0xF748, c, s_mail]
-      - [0xF748, asm, s_mail_asm_088136E8]
-      - [0xF8D4, c, s_mail]
       - [0xF8D4, asm, s_mail_asm_08813874]
       - [0xF8F4, c, s_mail]
       - [0xF90C, c, s_evlist]

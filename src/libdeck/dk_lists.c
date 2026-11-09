@@ -1,5 +1,4 @@
 // @range 0x08804000-0x088060B0
-// @asm 0x08805900-0x08805CF0
 // @data 0x08822A00-0x08822A24
 /* The card lists of the editor: the deck being built (main, side, extra), the owned cards (trunk) and
    the cards rented to the partner, allocated from dk_heap with the capacity of each tab; entries added
@@ -617,7 +616,7 @@ void dk_deck_save(int slot)
     r->used = 1;
 }
 
-#ifdef NON_MATCHING /* 12 palavras: dk_list_find redeclarado no bloco com id u16 (o original não remascara o id: 3 andi a menos); nos laços do extra e do side o mwcc troca os registradores do índice e do ponteiro dos ids (s1/s3), ordem das declarações dos blocos testada */
+/* dk_list_find redeclarado com id u16: o original não remascara o id */
 /* one card of a loaded deck into dst: taken from the trunk, or else from the rented list (marked
    fixed) */
 static inline void dk_deck_take(DkList *dst, unsigned short id)
@@ -647,19 +646,21 @@ static inline void dk_deck_take(DkList *dst, unsigned short id)
     }
 }
 
-/* replaces the deck with recipe d (name, or none) */
+/* replaces the deck with recipe d (name, or none); dst e i da função, id em cada bloco */
 void dk_deck_load(RecipeData *d, unsigned short *name)
 {
+    DkList *dst;
+    unsigned int i;
+
     if (name != 0)
         wcscpy((unsigned short *)dk_deck_name, name);
     else
         memset(dk_deck_name, 0, 0x40);
     dk_deck_clear();
     {
-        DkList *dst = &dk_lists[0];
-        unsigned int i;
         unsigned short id;
 
+        dst = &dk_lists[0];
         for (i = 0; i < d->n_main; i++) {
             id = d->main_ids[i];
             dk_deck_take(dst, id);
@@ -669,9 +670,8 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
     }
     {
         unsigned short id;
-        unsigned int i;
-        DkList *dst = &dk_lists[2];
 
+        dst = &dk_lists[2];
         for (i = 0; i < d->n_extra; i++) {
             id = d->extra_ids[i];
             dk_deck_take(dst, id);
@@ -680,16 +680,15 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
         dk_list_sort(dst, 1, 0);
     }
     {
-        DkList *dst = &dk_lists[4];
+        DkList *dst4 = &dk_lists[4];
 
-        dk_list_filter_reset(dst);
-        dk_list_sort(dst, 1, 0);
+        dk_list_filter_reset(dst4);
+        dk_list_sort(dst4, 1, 0);
     }
     {
         unsigned short id;
-        unsigned int i;
-        DkList *dst = &dk_lists[1];
 
+        dst = &dk_lists[1];
         for (i = 0; i < d->n_side; i++) {
             id = d->side_ids[i];
             dk_deck_take(dst, id);
@@ -700,7 +699,6 @@ void dk_deck_load(RecipeData *d, unsigned short *name)
     dk_undo_count = 0;
     dk_attr_count_update();
 }
-#endif
 
 /* one list written back as saved deck <which>: rented copies go back to the partner (state which),
    the "new" marks of the cards seen are cleared */

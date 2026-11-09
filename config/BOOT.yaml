@@ -248,8 +248,6 @@ segments:
       - [0x3A19C, asm, main_asm_0883E13C]
       - [0x3A404, c, main]
       - [0x3A6D0, c, save]
-      - [0x3AB14, asm, save_asm_0883EAB4]
-      - [0x3AD18, c, save]
       - [0x3ADDC, asm, save_asm_0883ED7C]
       - [0x3AE6C, c, save]
       - [0x3B3A0, c, inv]

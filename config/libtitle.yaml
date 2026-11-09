@@ -68,8 +68,6 @@ segments:
       - [0x14AE8, c, t_fdduelist]
       - [0x15614, c, t_fdadhoc]
       - [0x17AC4, c, t_fdlobby]
-      - [0x17AC4, asm, t_fdlobby_asm_0881BA64]
-      - [0x17BDC, c, t_fdlobby]
       - [0x18140, asm, t_fdlobby_asm_0881C0E0]
       - [0x184D4, c, t_fdlobby]
       - [0x199AC, asm, t_fdlobby_asm_0881D94C]
