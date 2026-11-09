@@ -1,5 +1,4 @@
 // @range 0x088C77D4-0x088C7F18
-// @asm 0x088C7954-0x088C7B90
 /* Commands to the presentation (duel_cmd: command | 0x8000 for player 1, two halfwords) and the
    nesting counter of the effect being shown. */
 #include "duel.h"
@@ -71,8 +70,6 @@ void duel_088C7940(int a)
 int card_get_attribute_icon(int id);
 int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
 
-#ifdef NON_MATCHING /* 15 palavras: no segundo laço o original troca $s4/$s5 (q e o ponteiro do jogador) e faz
-                       `or v0,v0,s1` no primeiro argumento do 0x3F */
 /* command 0x3F for every attribute-3 card in both graveyards and every 0x12A1 in zone D that still has its
    effect, then 0x5B and the hand refresh of both players */
 void duel_088C7954(void)
@@ -92,7 +89,7 @@ void duel_088C7954(void)
         }
     }
     for (i = 0; i < 2; i++) {
-        unsigned int q = duel_turn_player ^ i;
+        int q = duel_turn_player ^ i;
         unsigned int p = q & 1;
 
         for (j = 0; j < duel.players[p].n_d; j++) {
@@ -107,7 +104,6 @@ void duel_088C7954(void)
     duel_088C78E0(duel_turn_player);
     duel_088C78E0(1 - duel_turn_player);
 }
-#endif
 
 void duel_088C7B90(int a)
 {

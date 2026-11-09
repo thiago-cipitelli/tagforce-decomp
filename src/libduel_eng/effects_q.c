@@ -1,5 +1,4 @@
 // @range 0x08864DF0-0x08865F2C
-// @asm 0x08865658-0x088657D8
 // @asm 0x08865838-0x08865A48
 // @asm 0x08865C10-0x08865E14
 /* Card effect handlers (descriptor callbacks of the card effect tables). */
@@ -289,8 +288,6 @@ void duel_0886560C(DuelAct *a, int b)
     duel_08868038(a, b);
 }
 
-#ifdef NON_MATCHING /* 7 palavras: no case 11 o original põe p em s1 e i em s0 (o registrador de a); o mwcc
-                      troca, em qualquer ordem de declarações e de atribuições */
 int duel_08865658(DuelAct *a, int b)
 {
     int r;
@@ -314,7 +311,7 @@ int duel_08865658(DuelAct *a, int b)
         return 0;
     case 11:
         if (duel_08835AC0() != 0) {
-            unsigned int p;
+            int p;
             int i;
 
             p = duel_w_0891964C;
@@ -327,7 +324,6 @@ int duel_08865658(DuelAct *a, int b)
         return 0;
     }
 }
-#endif
 
 int duel_088657D8(DuelAct *a, int b)
 {

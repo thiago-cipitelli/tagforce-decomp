@@ -1,5 +1,4 @@
 // @range 0x0880FDF4-0x08810370
-// @asm 0x0880FFAC-0x08810098
 // @asm 0x088102DC-0x08810370
 /* More conditions of the computer player (after the ones in ai_util.c). */
 #include "duel.h"
@@ -67,7 +66,6 @@ int duel_0880FF3C(DuelAct *a)
     return duel_hand_count_level(a->player, 4) != 0;
 }
 
-#ifdef NON_MATCHING /* registradores/ordem de desvios */
 int duel_0880FFAC(DuelAct *a)
 {
     int z;
@@ -75,7 +73,7 @@ int duel_0880FFAC(DuelAct *a)
 
     for (z = 0; z <= 4; z++) {
         unsigned int q = 1 - a->player;
-        unsigned int id = duel.players[q & 1].field[z].card.id;
+        int id = duel.players[q & 1].field[z].card.id;
 
         if (id != 0 && duel.players[q & 1].field[z].faceup != 0 && card_get_kind(id) != k && card_get_kind(id) < 7) {
             if (k != 0) {
@@ -86,7 +84,6 @@ int duel_0880FFAC(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_08810098(DuelAct *a)
 {

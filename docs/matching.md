@@ -908,3 +908,21 @@ Bateram `duel_ai_atk_update`, `duel_0881657C`, `duel_08816A74`, `duel_0880DC1C`,
   operandos trocados, ponteiro de linha, índice achatado e `ZSLOT` não resolvem), `duel_ai_sum_088239EC` (875 contra
   846 instruções: o original relê campos de `a` (`lbu 0(s0)`) depois de chamadas/gravações que o C atual reaproveita,
   além das cópias mortas dos `?:`), `duel_08817598` (não tentado).
+
+## Rodada 10 (`engA`: libduel_eng, funções de 99% fuzzy)
+
+Bateram `duel_08865658`, `duel_0884E02C`, `duel_0888293C`, `duel_088C914C`, `duel_0880FFAC`, `duel_088C7954`,
+`duel_0888B434`, `duel_088B6A04`. Quase todas eram `$s` trocados que nenhuma ordem de declaração resolvia:
+- **O tipo `int` × `unsigned int` de um local decide a coloração** mesmo sem mudar nenhuma instrução: `int p` em
+  `duel_08865658`, `int id` em `duel_0880FFAC`, `int q` em `duel_088C7954`. Quando a permutação das declarações
+  não mexe em nada, varie os tipos (um local por vez) e depois **tipos × ordens juntos**: `duel_0888B434`
+  (`int z0` + ordem) e `duel_0888293C` (`int z`, `int qz` + ordem) só bateram na combinação.
+- **Parâmetro não usado como contador** (idioma da rodada 9) também nos três laços de `duel_088B6A04(p, b, mode)`,
+  com `b` `unsigned int` na definição (o `sltu` do teste).
+- **`ZSLOT` com `sz`/`sp` de bloco** num `case` que cai no seguinte: `case 6: { unsigned int sz = …, sp = …;
+  if (ZSLOT(sp, sz)->card.id != K) break; }` (`duel_088C914C`).
+- **Registrador de argumento "estranho" para uma global** (`lw a2,duel_w_08919650` usado num `switch`): a
+  chamada seguinte recebe esse valor como argumento a mais. `duel_0884E02C` chamava `duel_088348BC(0, p)`
+  sem o 3º argumento (zona) — bug de lógica; a mesma chamada sem argumento está em `chain_prompt.c`.
+- **`switch` interno cujos `case` saltam para um `b` comum** (sem threading até o fim): o `case` externo termina
+  em `return;` em vez de `break;` (`duel_0884E02C`). Ao promover um `switch` denso, `@rodata` da tabela.
