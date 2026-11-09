@@ -13,7 +13,6 @@ fuzzy	size	module	function	address	file
 97.9	720	libduel_eng	duel_eff_f9c00	0x088F9C00	src/libduel_eng/effects_e.c
 97.8	912	libduel_eng	duel_0888EB8C	0x0888EB8C	src/libduel_eng/effects_zb.c
 97.8	236	libduel_eng	duel_tag_slot	0x088FE724	src/libduel_eng/duel_api.c
-97.8	360	BOOT	ehp_unload	0x088338C8	src/BOOT/ehp.c
 97.7	876	libduel_eng	duel_088D1F1C	0x088D1F1C	src/libduel_eng/battle_088D1DF4.c
 97.7	460	libduel_eng	duel_088C07FC	0x088C07FC	src/libduel_eng/effects_088C004C.c
 97.7	504	libduel_eng	duel_088766B0	0x088766B0	src/libduel_eng/act_cond2.c
@@ -27,7 +26,6 @@ fuzzy	size	module	function	address	file
 97.5	792	BOOT	menu_layout	0x08843600	src/BOOT/menu.c
 97.4	508	libduel_eng	duel_eff_fdaf8	0x088FDAF8	src/libduel_eng/effects_n.c
 97.4	464	libshop	shop_shelf_cursor	0x0880CDAC	src/libshop/shop_shelf.c
-97.4	864	libfield	pda_draw_mail_head	0x08823764	src/libfield/f_pdaparts.c
 97.4	1104	BOOT	snd_obj_3d	0x0886205C	src/BOOT/snd_obj.c
 97.4	340	libduel_eng	duel_088441D0	0x088441D0	src/libduel_eng/ai_08844024.c
 97.3	972	BOOT	deck_validate	0x0884CB1C	src/BOOT/card_db.c

@@ -1,6 +1,5 @@
 // @range 0x08822898-0x08824028
 // @asm 0x088234E4-0x08823764
-// @asm 0x08823764-0x08823AC4
 // @data 0x0883D504-0x0883D530
 /* Pieces of the PDA pages: calendar cells and their marks, the date text of a mail, the scroll
    bar and its arrows, a mail of the list and its header, the gauge of a mail and the input of the top
@@ -266,19 +265,15 @@ void *pda_draw_mail_item(void *list, int x, int y, FieldPdaMail *m, int sel)
 #endif
 
 /* header of a mail: subject, sender and date */
-#ifdef NON_MATCHING /* permutação dos registradores salvos no laço dos rótulos e no fim; faltam 29 palavras */
 void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int sel)
 {
     unsigned short *labels[3];
     unsigned short date[512];
     int u;
     int i;
-    int tx;
     int ty;
     int lx;
     int lw;
-    int month;
-    int day;
     int wday;
 
     if (field_pda->gim == 0)
@@ -308,27 +303,32 @@ void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int s
     labels[0] = table_get_entry(fld_gim_get(5), 0x5E);
     labels[1] = table_get_entry(fld_gim_get(5), 0x5F);
     labels[2] = table_get_entry(fld_gim_get(5), 0x60);
-    tx = (x + 2) << 6;
     for (i = 0; i < 3; i++) {
         ty = y + 1 + i * 13;
-        font_draw_wtext(tx, ty << 6, field_pda->label_w, labels[i]);
-        lx = tx + field_pda->label_w;
+        font_draw_wtext((x + 2) << 6, ty << 6, field_pda->label_w, labels[i]);
+        lx = ((x + 2) << 6) + field_pda->label_w;
         font_draw_text(lx, ty << 6, 0x400, table_get_entry(fld_gim_get(5), 0x61));
     }
-    lw = field_pda->label_w + font_measure_text(table_get_entry(fld_gim_get(5), 0x61));
-    ty = (y + 1) << 6;
-    lx = tx + lw;
-    month = m->month - 5;
-    lw = ((w - 2) << 6) - lw;
-    day = m->day;
-    wday = fpda_cal_cell(month, day) % 7;
-    font_draw_wtext(lx, ty, lw, m->title);
-    font_draw_wtext(lx, ty + 0x340, lw, chara_get_name(0, m->chara));
-    pda_date_text(date, month, day, wday);
-    font_draw_wtext(lx, ty + 0x680, lw, date);
+    {
+        int lx2;
+        int lw2;
+        int month;
+        int day;
+
+        lw = field_pda->label_w + font_measure_text(table_get_entry(fld_gim_get(5), 0x61));
+        ty = (y + 1) << 6;
+        lx2 = ((x + 2) << 6) + lw;
+        lw2 = ((w - 2) << 6) - lw;
+        month = m->month - 5;
+        day = m->day;
+        wday = fpda_cal_cell(month, day) % 7;
+        font_draw_wtext(lx2, ty, lw2, m->title);
+        font_draw_wtext(lx2, ty + 0x340, lw2, chara_get_name(0, m->chara));
+        pda_date_text(date, month, day, wday);
+        font_draw_wtext(lx2, ty + 0x680, lw2, date);
+    }
     return font_text_clear();
 }
-#endif
 
 /* gauge of value out of max */
 void *pda_draw_bar(void *list, int x, int y, int value, int max)
