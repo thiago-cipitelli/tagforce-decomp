@@ -1,6 +1,5 @@
 // @range 0x08804F48-0x08807F68
 // @asm 0x08804F48-0x08805354
-// @asm 0x088073D8-0x088077D0
 // @data 0x0880E01C-0x0880E138
 /* Drawing of the screen: the window with the three tabs, four duelist lines (face, number and name,
    rank, stars of the deck level, win/draw/loss record), cursor and scroll bars, and the detail page
@@ -676,7 +675,6 @@ unsigned int *cl_draw_detail(unsigned int *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* o original soma 5/45 a x/y e desloca os sprites do quadro interno a partir deles; o mwcc dobra as somas nas constantes */
 unsigned int *cl_draw_detail_frame(unsigned int *list, int x, int y)
 {
     void *parts = cl_res_get(0x1003);
@@ -699,8 +697,8 @@ unsigned int *cl_draw_detail_frame(unsigned int *list, int x, int y)
     list = draw_sprite(list, x + 0x11D, y + 6, 0, 0xFA, 0x58, 0, 0);
     list = draw_set_offsets(list, 1, 1, 0x117, 0xCC);
     list = draw_sprite(list, x + 6, y + 6, 0, 0xF2, 0x58, 0, 0);
-    x += 5;                    /* the inner frame */
-    y += 0x2D;
+    x = x + 5U;                /* the inner frame (unsigned: the original does not fold the offsets) */
+    y = y + 0x2DU;
     list = draw_set_offsets(list, 6, 6, 6, 6);
     list = draw_sprite(list, x, y, 0, 0xEC, 0x66, 0, 0);
     list = draw_sprite(list, x, y + 0x9F, 0, 0xEC, 0x74, 0, 0);
@@ -717,7 +715,6 @@ unsigned int *cl_draw_detail_frame(unsigned int *list, int x, int y)
     list = draw_set_offsets(list, 1, 1, 0x106, 0x99);
     return draw_sprite(list, x + 6, y + 6, 0, 0xF2, 0x6C, 0, 0);
 }
-#endif
 
 /* the duelist's bust-up (body + mouth) sliding in with the page, cross-faded on costume change */
 unsigned int *cl_draw_bustup(unsigned int *list, ClEntry *e)
