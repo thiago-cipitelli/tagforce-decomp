@@ -1,6 +1,5 @@
 // @range 0x08807F68-0x0880A34C
 // @asm 0x08808264-0x0880981C
-// @asm 0x08809C54-0x08809F0C
 // @data 0x0880E138-0x0880EA74
 /* The three tabs (the met duelists, the other ones, the deck-only ones), input of the list and of
    the detail page (costumes, profile scroll, voice test with its theme), the character table and the
@@ -819,8 +818,6 @@ void cl_profile_measure(ClEntry *e)
     cl.scroll = 0;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 133 palavras: o original guarda k e o ponteiro da tabela
-                       na pilha e n em s8; switch do id na ordem do original */
 /* voice test list: the voice-test entries whose sound differs in this duelist's voice table */
 void cl_voices_build(ClEntry *e, int alt)
 {
@@ -831,12 +828,11 @@ void cl_voices_build(ClEntry *e, int alt)
     int k;
     short *v;
     int i;
-    short a, b, c, d;
-    unsigned short la;
+    int a, b, c, d;
 
+    id = e->id;
     if (e->simple)
         return;
-    id = e->id;
     var = e->u.info->cur;
     switch (id) {
     case 0x12:
@@ -862,7 +858,7 @@ void cl_voices_build(ClEntry *e, int alt)
     if (tbl == 0)
         return;
     n = 0;
-    for (k = 0, v = cl_voice_se[0]; k < 0x7C; k++, v += 2) {
+    for (k = 0, v = cl_voice_se[0]; k < 0x7C; v += 2, k++) {
         a = v[0];
         b = v[1];
         if (partner_table_lookup(1, 0, a, tbl) == partner_table_lookup(1, 0, b, tbl))
@@ -886,7 +882,6 @@ void cl_voices_build(ClEntry *e, int alt)
     cl.voice = 0;
 }
 
-#endif
 
 /* portrait of a deck-only duelist: a generic head for the special ids, else head + body from the
    charmap */
