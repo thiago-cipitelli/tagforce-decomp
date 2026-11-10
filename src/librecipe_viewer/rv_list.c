@@ -1,5 +1,4 @@
 // @range 0x08807A44-0x08809274
-// @asm 0x08808274-0x08808490
 /* Logic of the lists and of the shown recipe: loading the extra data lists, input of the list
    state (tabs, cursor with fast scrolling, open/menu), of the recipe grid, the card info state,
    the blink before a menu, and building the recipe grid (copies owned, partners, new cards). */
@@ -237,11 +236,11 @@ void rv_input_list(void)
     rv_grid_select();
 }
 
-#ifdef NON_MATCHING /* forma próxima; desvios e registradores dos testes do d-pad diferem */
 /* recipe state: cursor in the grid, card info, back */
 void rv_input_recipe(void)
 {
     PadState *pad = pad_get();
+    RvGrid *g = &rv.grid;
     unsigned int rep;
     int n;
 
@@ -257,35 +256,34 @@ void rv_input_recipe(void)
     } else {
         rep = pad->b.rep;
         if (rep & 0x80) {
-            if (rv.grid.col == 0)
+            if (g->col == 0)
                 rv.state = 3;
             else
-                rv.grid.col--;
+                g->col--;
             se_play(0x6212);
         } else if (rep & 0x20) {
-            if (rv.grid.col < rv_grid_row_cols(rv.grid.row) - 1) {
-                rv.grid.col++;
+            if (g->col < rv_grid_row_cols(g->row) - 1) {
+                g->col++;
                 se_play(0x6212);
             }
         } else if (rep & 0x10) {
-            if (rv.grid.row != 0) {
-                n = rv_grid_row_cols(rv.grid.row - 1);
-                if (n <= rv.grid.col)
-                    rv.grid.col = n - 1;
-                rv.grid.row--;
+            if (g->row > 0) {
+                n = rv_grid_row_cols(g->row - 1);
+                if (g->col >= n)
+                    g->col = n - 1;
+                g->row--;
                 se_play(0x6212);
             }
-        } else if ((rep & 0x40) && rv.grid.row < 6) {
-            n = rv_grid_row_cols(rv.grid.row + 1);
-            if (n <= rv.grid.col)
-                rv.grid.col = n - 1;
-            rv.grid.row++;
+        } else if ((rep & 0x40) && g->row < 6) {
+            n = rv_grid_row_cols(g->row + 1);
+            if (g->col >= n)
+                g->col = n - 1;
+            g->row++;
             se_play(0x6212);
         }
     }
     rv_grid_select();
 }
-#endif
 
 /* card info of the card under the grid cursor */
 void rv_info_update(void)
