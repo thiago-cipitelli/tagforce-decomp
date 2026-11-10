@@ -17,7 +17,7 @@ int duel_zone_usable(unsigned int p, unsigned int z);
 int duel_field_same_name(unsigned int p, int z, int id);
 int field_get_card(unsigned int, int);
 int card_is_in_group_18be(int id);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 
 int duel_08857B34(DuelAct *a, unsigned int p, int z)

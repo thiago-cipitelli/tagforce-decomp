@@ -12,7 +12,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st);
 int duel_field_same_name(unsigned int p, int z, int id);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_bit_count(unsigned int m);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_is_in_group_1911(int id);
 int duel_0884E690(DuelAct *a, DuelZoneFn fn);
 int duel_0884E698(DuelAct *a, DuelZoneFn fn, unsigned int skip);

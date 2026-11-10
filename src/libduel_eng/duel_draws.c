@@ -41,7 +41,7 @@ typedef struct DuelMoveEv {            /* event argument of a card moving (see d
     unsigned short pad;
 } DuelMoveEv;
 
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 void duel_088C4448(unsigned int, int, int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
@@ -681,10 +681,10 @@ void duel_088C6B24(unsigned int p)
 #ifdef NON_MATCHING
 extern unsigned int duel_turn_player;
 extern unsigned int duel_phase;
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_is_in_group_1911(int id);
 int card_is_monster(int id);
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 int duel_card_protected(int id, int uid);
 int duel_d_find_name(unsigned int, int);
 

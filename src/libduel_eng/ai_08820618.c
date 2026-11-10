@@ -983,7 +983,7 @@ extern unsigned char duel_b_08914A2F;
 
 int card_is_attribute6(int id);
 int card_attribute_icon_in_2_3(int id);
-int card_get_special_group(int id);
+int card_get_special_group(int);
 int duel_field_level(unsigned int p, int z);
 void duel_088C448C(int p, int a);
 void duel_088D1438(unsigned int p, int z, int a, int b);
@@ -1122,7 +1122,7 @@ extern unsigned int duel_w_089149F0;
 extern unsigned int duel_w_08914A00;
 
 int duel_no_1a1b(unsigned int p);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_field_atk(unsigned int p, int z);
 void duel_088328C8(unsigned int p, unsigned short a, unsigned int x, unsigned int y);

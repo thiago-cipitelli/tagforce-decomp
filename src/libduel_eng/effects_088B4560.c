@@ -31,7 +31,7 @@ int duel_088DFCC8(unsigned int uid);
 int card_get_def_q(int id);
 int card_is_in_group_1566(int id);
 int card_is_in_group_158d(int id);
-int card_is_attribute8(int id);
+int card_is_attribute8(int);
 
 extern unsigned int duel_w_08914920;
 

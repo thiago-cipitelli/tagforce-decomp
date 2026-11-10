@@ -3,7 +3,7 @@
 /* Conditions of the computer player: LP against the strongest ATK, monsters on the field, the chain. */
 #include "duel.h"
 int card_attribute_to_group(unsigned short id);
-int card_get_special_group(unsigned short id);
+int card_get_special_group(int);
 
 extern int duel_phase;
 extern unsigned int duel_turn_player;
@@ -144,7 +144,7 @@ int duel_088106D8(DuelAct *a)
             n++;
         }
         id = duel.players[p & 1].field[z].card.id;
-        if (id != 0 && duel.players[p & 1].field[z].faceup == 0 && card_get_special_group(id) != 0) {
+        if (id != 0 && duel.players[p & 1].field[z].faceup == 0 && card_get_special_group((unsigned short)id) != 0) {
             return 0;
         }
     }
@@ -497,7 +497,7 @@ int duel_0881180C(DuelAct *a)
     int z;
 
     for (z = 0; z < 5; z++) {
-        unsigned short id = duel.players[a->player & 1].field[z].card.id;
+        int id = duel.players[a->player & 1].field[z].card.id;
 
         if (duel.players[a->player & 1].field[z].faceup != 0 && card_get_special_group(id) != 0) {
             return 1;

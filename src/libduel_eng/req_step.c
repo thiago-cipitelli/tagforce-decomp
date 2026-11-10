@@ -73,7 +73,7 @@ int duel_0884B08C(void);
 void duel_wcscpy(unsigned short *dst, unsigned short *src);
 void duel_wcscat(unsigned short *dst, unsigned short *src);
 unsigned short *card_get_name(int id);
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 void duel_swap_d_grave(unsigned int p);
 int duel_hand_shuffle(unsigned int p);
 void duel_card_put(unsigned int p, int zone, unsigned int arg, DuelCard *c);
@@ -117,7 +117,7 @@ void duel_add_counters(unsigned int p, int id, int n);
 void duel_set_flag4(unsigned int p, int id);
 unsigned short duel_zone_pos(unsigned int, int, int);
 
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_get_level(int);
 
 /* Move the card with uid w from zone arg of player p to pile loc (0xD deck, 0xE graveyard, 0xF banished

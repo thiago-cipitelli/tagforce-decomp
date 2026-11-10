@@ -9,7 +9,7 @@ int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
 int duel_can_attack_target(unsigned int p, int z, unsigned int q, int i, int arg);
 unsigned int card_get_type(int);
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 
 int duel_088594D0(DuelAct *a, unsigned int p, int z)
 {

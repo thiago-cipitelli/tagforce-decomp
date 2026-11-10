@@ -65,7 +65,7 @@ int field_get_card(unsigned int, int);
 int card_get_group_value_1983(int id);
 int duel_slot_counter_kind(unsigned int p, int z, int id, int kind);
 void duel_0884DB38(int a, int b);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_is_monster(int id);
 int card_get_level(int);
 void duel_add_counters(unsigned int p, int id, int n);

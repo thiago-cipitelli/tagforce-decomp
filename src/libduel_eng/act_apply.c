@@ -7,7 +7,7 @@
 unsigned int duel_act_apply();
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_act_can_affect();
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 
 unsigned int duel_088D13CC(DuelAct *a, unsigned int mask)
 {

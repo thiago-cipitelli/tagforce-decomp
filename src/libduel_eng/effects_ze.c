@@ -37,7 +37,7 @@ int duel_card_fits_zone(unsigned int p, int z, int id);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
 int duel_slot_can_act(unsigned int p, unsigned int z, int x, int y);
 void duel_088C8DC4(int loc, unsigned short t);
-int card_get_special_group(unsigned short id);
+int card_get_special_group(int);
 int duel_08835AC0(void);
 void duel_088D147C(DuelAct *a, unsigned int p, int z);
 int duel_0884E5E0(DuelAct *a);

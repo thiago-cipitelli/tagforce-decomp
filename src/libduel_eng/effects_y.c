@@ -16,8 +16,8 @@ extern int duel_player_type[2];
 extern unsigned short duel_w_0891968C;
 
 int card_is_monster(int id);
-int card_is_attribute9(int id);
-int card_attribute_icon_is3(int id);
+int card_is_attribute9(int);
+int card_attribute_icon_is3(int);
 int card_attribute_icon_in_2_3(int id);
 int card_get_level(int);
 void duel_088D19B4(DuelAct *a, unsigned int mask);

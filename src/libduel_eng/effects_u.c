@@ -11,9 +11,9 @@ extern int duel_tokens_089117A0[4];    /* tokens summoned by 0x12D2 */
 extern int duel_tokens_089117B0[2];    /* tokens summoned by 0x1710 */
 
 unsigned int duel_act_target(DuelAct *a, int i);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_same_name(int a, int b);
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 void duel_088C7478(unsigned int p, int i, DuelCard *c, int a);
 void duel_088C7490(unsigned int p, int i, int a);

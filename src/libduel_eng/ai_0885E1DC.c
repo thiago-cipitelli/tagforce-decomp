@@ -26,7 +26,7 @@ int duel_088A6360(int id, int i);
 int duel_088A62AC(int k, unsigned int p, int z);
 int duel_0885CD48(DuelAct *a, unsigned int p, int z);
 int duel_0885D284(DuelAct *a, unsigned int p, int z);
-int card_attribute_icon_is3(unsigned short id);
+int card_attribute_icon_is3(int);
 
 int duel_0885E1DC(DuelAct *a, unsigned int p, int z)
 {
@@ -296,7 +296,7 @@ int duel_0885EF30(DuelAct *a, unsigned int p, int z)
     if (id == 0) {
         return 0;
     }
-    if (card_attribute_icon_is3(id) == 0) {
+    if (card_attribute_icon_is3((unsigned short)id) == 0) {
         return 0;
     }
     if (duel.players[p & 1].field[z].faceup == 0) {

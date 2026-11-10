@@ -73,7 +73,7 @@ int duel_088AA224(DuelAct *a);
 void duel_088328FC(unsigned int p);
 void duel_088C78E0(unsigned int p);
 int duel_088D16C4(DuelAct *a, unsigned int p, int z, int f);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int duel_field_controller(unsigned int p, int z, int a);
 unsigned int duel_card_locate(unsigned int);
 void duel_088CB778(unsigned int p, int z, int uid, int a, int b, int c, int d);

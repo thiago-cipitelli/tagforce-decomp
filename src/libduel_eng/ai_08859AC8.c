@@ -14,8 +14,8 @@ int duel_0884E698(DuelAct *a, int (*fn)(DuelAct *a, unsigned int p, int z), unsi
 int field_get_card(unsigned int, int);
 int card_is_in_group_1a90(int id);
 unsigned short duel_field_type(unsigned int p, int z);
-int card_is_attribute8(int id);
-int card_is_attribute9(int id);
+int card_is_attribute8(int);
+int card_is_attribute9(int);
 int duel_attack_check(unsigned int p, int z, int arg);
 int duel_direct_attack_allowed(unsigned int p, int z);
 int duel_field_e5ae0(unsigned int p, int z);

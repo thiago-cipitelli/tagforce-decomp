@@ -13,7 +13,7 @@ int card_get_level(int);
 unsigned int card_get_type(int);
 int card_is_in_group_1973(int id);
 int card_is_in_group_19bf(int id);
-int card_is_attribute8(int id);
+int card_is_attribute8(int);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 int card_get_prop5_hi(int);
 int duel_act_check_08853CE8(DuelAct*, unsigned int, int);

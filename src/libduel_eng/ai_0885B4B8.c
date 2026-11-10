@@ -22,7 +22,7 @@ int duel_08859120(DuelAct *a, unsigned int p, int z);
 int duel_088578B8(DuelAct *a, unsigned int p, int z);
 
 int field_get_card(unsigned int, int);
-int card_is_attribute8(unsigned short id);
+int card_is_attribute8(int);
 int duel_st_affects(unsigned int q, int i, unsigned int p, int z);
 int duel_08854D4C(DuelAct *a, unsigned int p, int z);
 unsigned int duel_act_target(DuelAct *a, int i);
@@ -342,7 +342,7 @@ int duel_0885C18C(DuelAct *a, unsigned int p, int z)
         if (j == 0) {
             return 0;
         }
-        if (card_is_attribute8(j) == 0) {
+        if (card_is_attribute8((unsigned short)j) == 0) {
             return 0;
         }
         if (duel_act_can_target(a, p, z) == 0) {

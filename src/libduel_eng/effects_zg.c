@@ -81,7 +81,7 @@ int duel_0887F8E4();
 int duel_08890A64();
 int duel_08897160();
 void duel_0884C7C0(int i);
-int card_is_attribute7(int id);
+int card_is_attribute7(int);
 void duel_088CC594(unsigned int p, int z, int a, int id);
 void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t);
 int duel_count_field(unsigned int p);

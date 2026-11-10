@@ -26,7 +26,7 @@ int duel_card_check_9148(unsigned int p, int id);
 void duel_0886B6B8(int *f);
 int card_is_in_group_147e(int id);
 int card_attribute_to_group(int id);
-int card_get_special_group(unsigned short id);
+int card_get_special_group(int);
 unsigned int card_get_type(int);
 unsigned int duel_field_flag9(unsigned int, int);
 int duel_card_fits_zone(unsigned int p, int z, int id);

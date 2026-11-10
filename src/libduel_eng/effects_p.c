@@ -51,7 +51,7 @@ void duel_08835978(int (*fn)(int id));
 void duel_0884AD18(int msg);
 extern int duel_atk_zone;
 int card_is_in_group_1a6f(int id);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_is_monster(int id);
 int card_get_def(int id);
 int card_get_atk(int);

@@ -17,7 +17,7 @@ void duel_08832894(unsigned int p, unsigned short id);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 int duel_0886CE38();
 int field_get_card(unsigned int, int);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_is_monster(int id);
 int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, void *msg);

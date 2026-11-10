@@ -29,7 +29,7 @@ int duel_slot_ef098(unsigned int p, int z, int id);
 int duel_slot_immune(unsigned int p, int z, int opp);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);
 int card_is_monster(int id);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_is_in_group_1a58(int id);
 int duel_can_attack_target(unsigned int p, int z, unsigned int q, int i, int arg);
 extern int duel_atk_zone;              /* 0x08913F2C */

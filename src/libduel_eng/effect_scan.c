@@ -27,7 +27,7 @@ int duel_slot_immune(unsigned int p, int z, int opp);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);
 unsigned int card_get_type(int);
 int card_is_monster(int id);
-int card_is_attribute8(int id);
+int card_is_attribute8(int);
 int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 int duel_slot_e1390(unsigned int p, int z, int id, unsigned int q);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);

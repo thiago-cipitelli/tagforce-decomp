@@ -22,7 +22,7 @@ int duel_0884E9E8(DuelAct *a, int b);
 int duel_088D14B8(DuelAct *a, unsigned int p, int z);
 void duel_088C5424(unsigned int p, int n);
 int duel_088D16C4(DuelAct *a, unsigned int p, int z, int f);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 unsigned int duel_field_controller(unsigned int p, int z, int arg);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_pick_monster_zone(unsigned int p);

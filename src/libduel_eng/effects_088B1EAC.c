@@ -37,7 +37,7 @@ int duel_0884B078(int a, int b);
 int duel_host_call(int, int, unsigned int, int);
 int duel_list_card_level(unsigned int p, int i);
 int duel_field_level(unsigned int p, int z);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 unsigned int duel_card_locate(unsigned int);
 void duel_088CABF4(unsigned int p, int i, int a);
 unsigned int duel_088D1BBC(DuelAct *a, unsigned int mask);

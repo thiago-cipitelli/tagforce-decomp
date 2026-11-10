@@ -10,7 +10,7 @@ int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_tributable(unsigned int p);
 int duel_field_atk(unsigned int p, int z);
 unsigned int duel_slot_e5a48(unsigned int, int);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_slot_ef098(unsigned int p, int z, int id);
 int duel_slot_has_src10(unsigned int, unsigned int, unsigned int, int);

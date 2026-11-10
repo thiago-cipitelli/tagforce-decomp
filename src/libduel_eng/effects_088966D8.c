@@ -75,7 +75,7 @@ void duel_0882619C(unsigned int, DuelCard*, int, int, unsigned int);
 void duel_088D1438(unsigned int p, int z, int a, int b);
 void duel_0884DB38(int a, int b);
 int duel_088D16C4(DuelAct *a, unsigned int p, int z, int f);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 unsigned int duel_field_controller(unsigned int p, int z, int arg);
 unsigned int duel_card_locate(unsigned int);
 void duel_088C7E68(unsigned int, int, int, int);

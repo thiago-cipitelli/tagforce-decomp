@@ -2230,7 +2230,7 @@ int duel_088AE348(DuelAct *a)
 
 /* Card effect handlers (DuelAct *a): target selection on duel_w_08914908, after effects_088ACCF8.c. */
 
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int duel_field_e5ae0(unsigned int p, int z);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 void duel_088D1AC8(unsigned int p, int z);

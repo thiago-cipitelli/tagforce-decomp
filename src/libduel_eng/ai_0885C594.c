@@ -8,8 +8,8 @@ int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_slot_efb84(unsigned int p, int z);
 int duel_slot_has_src10(unsigned int, unsigned int, unsigned int, int);
 int field_get_card(unsigned int, int);
-int card_is_attribute7(unsigned short id);
-int card_is_attribute9(unsigned short id);
+int card_is_attribute7(int);
+int card_is_attribute9(int);
 int card_is_in_group_158d(int id);
 int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_count_free_monster_zones(unsigned int p);
@@ -115,7 +115,7 @@ int duel_0885C8A0(DuelAct *a, unsigned int p, int z)
 
         return 0;
     }
-    return card_is_attribute7(id) != 0;
+    return card_is_attribute7((unsigned short)id) != 0;
 }
 
 int duel_0885C948(DuelAct *a, unsigned int p, int z)
@@ -234,7 +234,7 @@ int duel_0885CD48(DuelAct *a, unsigned int p, int z)
 
         return 0;
     }
-    if (card_is_attribute9(id) != 0) {
+    if (card_is_attribute9((unsigned short)id) != 0) {
     int id;
 
         return 1;
@@ -371,7 +371,7 @@ int duel_0885D370(DuelAct *a, unsigned int p, int z)
     if (id == 0) {
         return 0;
     }
-    if (card_is_attribute9(id) == 0) {
+    if (card_is_attribute9((unsigned short)id) == 0) {
         return 0;
     }
     return !duel_act_immune(a, p, z);

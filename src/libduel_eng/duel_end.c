@@ -49,7 +49,7 @@ int card_get_prop5_hi(int);
 int field_get_card(unsigned int, int);
 int duel_field_atk(unsigned int p, int z);
 int duel_zone_usable(unsigned int p, unsigned int z);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_same_name(int id, int id2);
 int duel_req_flag(int f);
 int duel_host_call(int, int, unsigned int, int);
