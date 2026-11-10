@@ -133,6 +133,4 @@ fuzzy	size	module	function	address	file
 55.6	2392	libcharalist	cl_detail_update	0x08808844	src/libcharalist/cl_list.c
 53.8	516	libduel_draw	func_08822C2C	0x08822C2C	src/libduel_draw/dd_field_marks.c
 52.1	2144	BOOT	font_layout_wtext	0x08847768	src/BOOT/font_text.c
-51.5	1328	libduel_draw	dd_fx_throb_update	0x08833950	src/libduel_draw/dd_fx_lpicon.c
-47.6	1296	libduel_draw	dd_fx_blink_update	0x08833F08	src/libduel_draw/dd_fx_lpicon.c
 37.1	5788	libduel_eng	duel_08817598	0x08817598	src/libduel_eng/ai_08815E90.c
