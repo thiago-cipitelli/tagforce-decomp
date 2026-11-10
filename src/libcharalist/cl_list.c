@@ -1,5 +1,5 @@
 // @range 0x08807F68-0x0880A34C
-// @asm 0x08808264-0x0880981C
+// @asm 0x08808844-0x0880981C
 // @data 0x0880E138-0x0880EA74
 /* The three tabs (the met duelists, the other ones, the deck-only ones), input of the list and of
    the detail page (costumes, profile scroll, voice test with its theme), the character table and the
@@ -241,16 +241,15 @@ void cl_list_build(void)
         heap_set_level(cl.heap, buf[i]);
 }
 
-#ifdef NON_MATCHING /* não testado para matching; forma igual à do original (pseudocódigo + asm) */
 /* list input: cancel leaves, confirm opens the detail page (or picks, in the random/labo modes) */
 void cl_input(void)
 {
     PadState *pad = pad_get();
     unsigned int trig = pad->b.trig;
     ClEntry *e;
-    unsigned int top;
-    unsigned int cur;
-    unsigned int count;
+    int top;
+    int cur;
+    int count;
     int pos;
     ClInfo *info;
 
@@ -259,118 +258,118 @@ void cl_input(void)
         cl.state = 5;
         se_play(0x6214);
         switch (cl.mode) {
+        case 3:
+        case 2:
+            cl.cancelled = 1;
+            break;
         case 0:
         case 1:
             bgm_cmd(600);
             break;
-        case 2:
-        case 3:
-            cl.cancelled = 1;
-            break;
         }
-        return;
-    }
-    if (trig & region_pick_value(0)) {
+    } else if (trig & region_pick_value(0)) {
         e = cl_entry(cl.tab, cl.top[cl.tab] + cl.cursor[cl.tab]);
-        if (e == 0) {
-            se_play(0x6215);
-            return;
-        }
-        switch (cl.mode) {
-        case 2:
-            cl.costume = 0;
-            cl.chosen = e->id;
-            if (!e->simple) {
-                info = e->u.info;
-                if (info->cur < info->n) {
-                    cl.costume = info->cur;
-                    if (info->sel)
-                        cl.costume = info->sel;
+        if (e != 0) {
+            switch (cl.mode) {
+            case 0:
+            case 1:
+                if (!e->simple) {
+                    cl.state = 3;
+                    cl.step = 0;
+                    se_play(0x6213);
                 }
-            }
-            cl.timer = 0;
-            cl.state = 4;
-            se_play(0x6213);
-            break;
-        case 3:
-            cl.costume = 0;
-            cl.chosen = e->id;
-            cl.timer = 0;
-            cl.state = 4;
-            se_play(0x6213);
-            break;
-        case 0:
-        case 1:
-            if (!e->simple) {
-                cl.state = 3;
-                cl.step = 0;
+                break;
+            case 3:
+                cl.chosen = e->id;
+                cl.costume = 0;
+                cl.timer = 0;
+                cl.state = 4;
                 se_play(0x6213);
+                break;
+            case 2:
+                cl.chosen = e->id;
+                cl.costume = 0;
+                if (!e->simple) {
+                    int c, s;
+
+                    info = e->u.info;
+                    c = info->cur;
+                    if (c < info->n) {
+                        s = info->sel;
+                        if (!s)
+                            cl.costume = c;
+                        else
+                            cl.costume = s;
+                    }
+                }
+                cl.timer = 0;
+                cl.state = 4;
+                se_play(0x6213);
+                break;
             }
-            break;
+        } else {
+            se_play(0x6215);
         }
-        return;
-    }
-    if (trig & 0x100) {
+    } else if (trig & 0x100) {
         cl.tab = (cl.tab + 2) % 3;
         se_play(0x621B);
-        return;
-    }
-    if (trig & 0x8200) {
+    } else if (trig & 0x8200) {
         cl.tab = (cl.tab + 1) % 3;
         se_play(0x621B);
-        return;
-    }
-    cur = cl.cursor[cl.tab];
-    top = cl.top[cl.tab];
-    count = cl.count[cl.tab];
-    pos = top + cur;
-    e = pos < count ? &cl.list[cl.tab][pos] : 0;
-    if (pad->b.rep & 0x10) {
-        if (pos > 0) {
-            if (cur > 0)
-                cur--;
-            else if (top > 0)
-                top--;
-            se_play(0x6212);
-        } else if (trig & 0x10) {
-            if (count < 5) {
-                cur = count - 1;
-            } else {
-                cur = 3;
-                top = count - 4;
+    } else {
+        top = cl.top[cl.tab];
+        cur = cl.cursor[cl.tab];
+        count = cl.count[cl.tab];
+        pos = top + cur;
+        e = cl_entry(cl.tab, pos);
+        if (pad->b.rep & 0x10) {
+            if (pos > 0) {
+                if (cur > 0)
+                    cur--;
+                else if (top > 0)
+                    top--;
+                se_play(0x6212);
+            } else if (trig & 0x10) {
+                if (count < 5) {
+                    cur = count - 1;
+                } else {
+                    cur = 3;
+                    top = count - 4;
+                }
+                se_play(0x6212);
             }
-            se_play(0x6212);
+        } else if (pad->b.rep & 0x40) {
+            if (pos < count - 1) {
+                if (cur < 3)
+                    cur++;
+                else
+                    top++;
+                se_play(0x6212);
+            } else if (trig & 0x40) {
+                top = 0;
+                cur = 0;
+                se_play(0x6212);
+            }
+        } else if (pad->b.rep & 0x80) {
+            if (e && !e->simple && e->u.info->cur > 0) {
+                e->u.info->cur--;
+                se_play(0x6212);
+            }
+        } else if (pad->b.rep & 0x20) {
+            if (e && !e->simple && e->u.info->cur < e->u.info->n - 1) {
+                e->u.info->cur++;
+                se_play(0x6212);
+            }
         }
-    } else if (pad->b.rep & 0x40) {
-        if (pos < count - 1) {
-            if (cur < 3)
-                cur++;
-            else
-                top++;
-            se_play(0x6212);
-        } else if (trig & 0x40) {
-            top = 0;
-            cur = 0;
-            se_play(0x6212);
+        pos = top + cur;
+        if (pos >= 0 && pos < count) {
+            cl.top[cl.tab] = top;
+            cl.cursor[cl.tab] = cur;
         }
-    } else if (pad->b.rep & 0x80) {
-        if (e && !e->simple && e->u.info->cur > 0) {
-            e->u.info->cur--;
-            se_play(0x6212);
-        }
-    } else if (pad->b.rep & 0x20) {
-        if (e && !e->simple && e->u.info->cur < e->u.info->n - 1) {
-            e->u.info->cur++;
-            se_play(0x6212);
-        }
-    }
-    pos = top + cur;
-    if (pos >= 0 && pos < count) {
-        cl.top[cl.tab] = top;
-        cl.cursor[cl.tab] = cur;
     }
 }
 
+#ifdef NON_MATCHING /* não testado para matching; forma igual à do original (pseudocódigo + asm) */
 /* detail page: slide in, theme of the duelist, costume change, profile scroll, voice test */
 void cl_detail_update(void)
 {
