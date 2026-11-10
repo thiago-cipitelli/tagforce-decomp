@@ -14,7 +14,7 @@ int duel_0884E9E8(DuelAct *a, int b);
 int duel_08807C7C(DuelAct *a);
 void duel_0884AD40(int msg, int uid);
 void duel_0884ACD8(unsigned int p, int msg);
-int duel_hand_find_uid(unsigned int p, int uid);
+int duel_hand_find_uid(unsigned int, int);
 void duel_088CABA8(unsigned int p, int i);
 void duel_088C7DD4(unsigned int, unsigned int, unsigned int);
 void duel_088328B8(unsigned int p, unsigned short a, int b);

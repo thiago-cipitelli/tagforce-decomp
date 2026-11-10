@@ -42,7 +42,7 @@ void duel_0881956C(unsigned int p, unsigned short id, int (*fn)(int id));
 void duel_08835978(int (*fn)(int id));
 int duel_08835AC0(void);
 void duel_08832950(unsigned int, int);
-void duel_088CBAA4(unsigned int p, int z, int uid);
+void duel_088CBAA4(unsigned int, int, int);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
 void duel_slot_foreach_effect(unsigned int p, int z, int (*fn)(DuelEffect *e, int *ctx), int *ctx);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);

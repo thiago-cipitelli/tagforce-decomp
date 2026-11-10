@@ -58,7 +58,7 @@ void duel_0884AD18(int msg);
 void duel_08832894(unsigned int p, int a);
 void duel_088C7548(unsigned int p, int i, int x);
 int duel_0886CE38();
-unsigned int duel_card_locate(int uid);
+unsigned int duel_card_locate(unsigned int);
 int duel_zone_f_card_usable(unsigned int p, unsigned int q, int i);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 DuelCard *duel_card_by_uid(int uid);
@@ -86,12 +86,12 @@ int duel_088D1684(DuelAct *a, unsigned int p, int z, int flags);
 int duel_088C97F0(DuelAct*, unsigned int, int, int, int);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 int duel_0887DDB0(DuelAct *a, int b);
-void duel_08832AF4(unsigned int p, int a, unsigned int x, unsigned int y);
+void duel_08832AF4(unsigned int, int, int, int);
 int duel_rand(int n);
 int duel_0884AF88(int);
 int duel_088708E4(DuelAct *a);
 void duel_088C8874(unsigned int uid, unsigned short id, int a, unsigned short b);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C7E68(unsigned int, int, int, int);
 
 #ifdef NON_MATCHING /* &a->w[p] guardado num $s; endereço de duel_w_0891525C num $s no caso 0x7D */
 int duel_08889BE4(DuelAct *a)

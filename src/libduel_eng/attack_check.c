@@ -16,7 +16,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st);
 int duel_field_protected(unsigned int p, int z);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_has_effect2(unsigned int p, int z, int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 unsigned int duel_slot_effect_arg(unsigned int, int, int);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 int duel_slot_affected(unsigned int p, int z, int id);

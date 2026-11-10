@@ -41,7 +41,7 @@ int duel_088154D8(unsigned int p);
 int duel_list_card_level(unsigned int p, int i);
 int duel_0884E948(DuelAct *a, unsigned int p);
 int duel_card_fits_zone(unsigned int p, int z, unsigned short id);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 DuelCard *duel_field_card_deb2c(unsigned int p, int zone, int i);
 int duel_0880B07C(unsigned int p);
 

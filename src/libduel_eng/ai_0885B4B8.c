@@ -9,7 +9,7 @@ int duel_slot_efb84(unsigned int p, int z);
 unsigned int duel_field_flag9(unsigned int, int);
 int card_get_type(int id);
 int duel_field_atk(unsigned int p, int z);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_slot_ef098(unsigned int p, int z, int id);
 int duel_08856860(DuelAct *a, unsigned int p, int z);
 int duel_08855F54(DuelAct *a, unsigned int p, int z);

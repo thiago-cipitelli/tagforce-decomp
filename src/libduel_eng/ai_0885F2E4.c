@@ -8,7 +8,7 @@ int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int field_get_card(unsigned int, int);
 int duel_card_e4fd0(int id);
 int card_is_monster(int id);
-int duel_slot_e68a0(unsigned int p, int z);
+int duel_slot_e68a0(unsigned int, int);
 int card_get_group_value_1983(int id);
 unsigned short duel_field_type(unsigned int p, int z);
 int duel_field_level(unsigned int p, int z);

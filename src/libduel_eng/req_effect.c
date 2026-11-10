@@ -75,7 +75,7 @@ int duel_grave_find_uid(unsigned int p, int uid);
 int duel_f_find_uid(unsigned int p, int uid);
 void duel_grave_to_top(unsigned int p, unsigned short uid);
 void duel_zone_f_to_top(unsigned int p, unsigned short uid);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 unsigned short duel_zone_pos(unsigned int, int, int);
 unsigned int duel_zone_faceup(unsigned int, int, int);
 void duel_card_take(unsigned int p, int zone, int i);
@@ -819,10 +819,10 @@ typedef struct DuelLogSrc {            /* entry of the duel_chain.uids ring */
 
 extern unsigned int duel_req_count;
 
-int duel_hand_find_uid(unsigned int p, int uid);
+int duel_hand_find_uid(unsigned int, int);
 unsigned int duel_c_find_uid(unsigned int p, int uid);
 unsigned int duel_d_find_uid(unsigned int p, int uid);
-int duel_zone_card_id(unsigned int p, int z, int i);
+int duel_zone_card_id(unsigned int, int, int);
 int duel_card_e5b88(int id, int kind);
 int duel_slot_e8170(unsigned int p, int z, int id);
 int card_is_in_group_19bf(int id);

@@ -12,7 +12,7 @@ int duel_088A9008(DuelAct*, int, unsigned int*);
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
 int duel_088D1858(DuelAct *a, unsigned int p, int z);
-int duel_hand_find_uid(unsigned int p, int uid);
+int duel_hand_find_uid(unsigned int, int);
 int card_get_level(int);
 int duel_0886CF1C(DuelAct *a, int b);
 int duel_0887FCA8(int id);

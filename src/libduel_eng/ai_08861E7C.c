@@ -2,9 +2,9 @@
 /* The computer player: handlers of the cards it activates. */
 #include "duel.h"
 
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
-unsigned int duel_card_locate(unsigned int uid);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C4448(unsigned int, int, int);
+unsigned int duel_card_locate(unsigned int);
+void duel_088C7E68(unsigned int, int, int, int);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 int duel_0884E5E0(DuelAct *a);
 int duel_088619FC(DuelAct *a, int b);

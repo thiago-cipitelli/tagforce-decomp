@@ -62,7 +62,7 @@ void duel_0884DB38(int a, int b);
 void duel_0884DB7C();
 void duel_088DF554(unsigned int, int, unsigned int, int);
 DuelCard *duel_card_by_uid(int uid);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 int duel_grave_find_uid(unsigned int p, int uid);
 void duel_grave_to_top(unsigned int p, unsigned short uid);
 DuelCard *duel_0884C7EC(int i);
@@ -103,7 +103,7 @@ extern unsigned char duel_w_0891434C;
 
 void duel_0884DA24(int a, int b);
 void duel_0884DAF0(int a, int b);
-int duel_stat_get(int i);
+int duel_stat_get(int);
 void duel_log_push(DuelLogEnt *v);
 void duel_req_088D57E0(void);
 void duel_req_088D5830(void);

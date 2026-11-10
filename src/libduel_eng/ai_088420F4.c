@@ -21,13 +21,13 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned s
 void duel_088AFD5C(int kind, unsigned int a);
 int field_get_card(unsigned int, int);
 void duel_088CC1D0(unsigned int p, int z, int a);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
+void duel_088C4448(unsigned int, int, int);
 unsigned short *card_get_name(int id);
 void duel_wfmt_s();
 int duel_0884AD18(int msg);
 void duel_08832624(unsigned int, unsigned int, int, int);
 int duel_088D1438(unsigned int p, int z, unsigned int q, unsigned short id);
-int duel_088D189C(unsigned int p, int z, unsigned int q, unsigned short id);
+int duel_088D189C(unsigned int, int, unsigned int, int);
 unsigned short duel_slot_e1854(unsigned int, int);
 int duel_slot_counter_1a90(unsigned int p, int z);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);

@@ -14,7 +14,7 @@ int duel_level_cb(DuelEffect *e, int *ctx);
 unsigned int duel_field_type_ex(unsigned int p, int z, int skip);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_slot_e8170(unsigned int p, int z, int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 
 int duel_field_level(unsigned int p, int z)
 {

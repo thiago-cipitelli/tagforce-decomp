@@ -11,7 +11,7 @@
 
 void* game_state2_get(void);
 int sysflag_test(int);
-int duel_stat_get(int i);
+int duel_stat_get(int);
 extern int duel_view_player;
 extern unsigned int duel_turn_player;
 extern int duel_w_0891A194;

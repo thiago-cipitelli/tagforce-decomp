@@ -37,7 +37,7 @@ int duel_f_find_uid(unsigned int p, int uid);
 void duel_088CB14C(DuelAct *a, unsigned int p, DuelCard *c);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_phase_ok2(unsigned int p);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 int duel_zone_f_card_usable(unsigned int p, unsigned int q, int i);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 void duel_088C7BA4(void);

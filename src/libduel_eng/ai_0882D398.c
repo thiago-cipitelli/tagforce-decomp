@@ -55,7 +55,7 @@ int duel_field_protected(unsigned int p, int z);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_zone_usable(unsigned int p, unsigned int z);
 int card_is_in_group_1a6f_b(int id);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 void duel_088D19C0(unsigned int p, int z, int a, int b);
 void duel_088C78E0(unsigned int p);
 int duel_count_active(int id);
@@ -63,7 +63,7 @@ int duel_count_tributes();
 int duel_0886AAB4(DuelAct *a, int b);
 int duel_slot_efb84(unsigned int p, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);
-void duel_088D1BEC(unsigned int p, int z, int a, int b);
+int duel_088D1BEC(unsigned int, int, int, int);
 int duel_0882EA4C(unsigned int p, int z, int i);
 
 /* Name of the attribute (or type) asked by the card being summoned. */

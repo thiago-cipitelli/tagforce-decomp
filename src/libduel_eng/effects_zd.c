@@ -12,7 +12,7 @@ extern int duel_w_08919654;
 
 int duel_count_free_monster_zones(unsigned int p);
 int duel_phase_ok2();
-int duel_088BFF78(unsigned int p, int id, int b);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, void *msg);
 void duel_0884C588(unsigned int, int, int, int);
 DuelCard *duel_0884C7CC(void);

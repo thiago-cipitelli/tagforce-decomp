@@ -19,7 +19,7 @@ int duel_0886CE38();
 int field_get_card(unsigned int, int);
 int card_is_attribute9(int id);
 int card_is_monster(int id);
-int duel_088BFF78(unsigned int p, int id, int b);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, void *msg);
 int duel_count_free_monster_zones(unsigned int p);
 void duel_0884C588(unsigned int, int, int, int);
@@ -42,7 +42,7 @@ void duel_088CB554(unsigned int p, DuelCard *c);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void duel_088C7880(unsigned int p);
 void duel_088C7B90(int n);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 void duel_088D147C(DuelAct *a, unsigned int p, int z);
 
 int duel_08895C8C(DuelAct *a, int b)

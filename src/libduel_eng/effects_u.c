@@ -40,7 +40,7 @@ int duel_088C4604(DuelAct*, unsigned int, int);
 int card_get_atk(int);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 void duel_088328FC(unsigned int p);
-int duel_088BFF78(unsigned int p, unsigned short id, int b);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
 void duel_08832ADC(int a);
 int duel_0886F65C(DuelAct *a, DuelAct *b);

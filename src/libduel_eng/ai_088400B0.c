@@ -14,9 +14,9 @@ int duel_count_active(int id);
 int card_is_attribute7(int id);
 int card_attribute_icon_is3(int id);
 int card_is_in_group_1a6f_b(int id);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
-void duel_088D1BEC(unsigned int p, int z, int a, int b);
-void duel_088D189C(unsigned int p, int z, int a, int b);
+void duel_088C4448(unsigned int, int, int);
+int duel_088D1BEC(unsigned int, int, int, int);
+int duel_088D189C(unsigned int, int, unsigned int, int);
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_0883FA64(unsigned int p, int id);
 

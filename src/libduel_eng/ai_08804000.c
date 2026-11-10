@@ -80,7 +80,7 @@ int duel_count_grave_spells(unsigned int p, unsigned int st);
 int duel_hand_count_name(unsigned int p, unsigned short id);
 int duel_0880A400(unsigned int p, unsigned int q, int skip, int fa, int fd);
 int duel_0880B07C(unsigned int p);
-int duel_slot_e68a0(unsigned int p, int z);
+int duel_slot_e68a0(unsigned int, int);
 int duel_is_cur_card(int id);
 int duel_count_monsters_faceup_is(unsigned int p, unsigned int faceup);
 int duel_count_free_monster_zones(unsigned int p);

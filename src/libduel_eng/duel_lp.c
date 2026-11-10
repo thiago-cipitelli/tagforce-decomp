@@ -18,7 +18,7 @@ void duel_088C321C(unsigned int p);
 void duel_088AFD5C(int kind, DuelLpEv ev);
 int duel_088C4730(unsigned int, int, int, int);
 
-void duel_088C4448(unsigned int p, int a, unsigned int uid)
+void duel_088C4448(unsigned int p, int a, int uid)
 {
     unsigned int id = duel.list[uid].id;
 

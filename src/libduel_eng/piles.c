@@ -107,7 +107,7 @@ void duel_d_shuffle(unsigned int p)
 }
 
 /* Index of the first card of the deck with the name of id, -1 if none. */
-unsigned int duel_d_find_name(unsigned int p, int id)
+int duel_d_find_name(unsigned int p, int id)
 {
     unsigned int i;
 

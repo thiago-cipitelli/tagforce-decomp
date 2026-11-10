@@ -28,7 +28,7 @@ int duel_088DFCC8(unsigned int uid);
 int card_is_in_group_170b(int id);
 int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 int card_attribute_icon_in_2_3(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 
 void duel_088B7D94(unsigned int p, int b, int i)
 {

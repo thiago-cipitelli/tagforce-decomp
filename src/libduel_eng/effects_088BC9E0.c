@@ -26,8 +26,8 @@ int card_is_in_group_19bb(int id);
 int duel_088B5F74(int n, int x);
 int duel_card_e59b0(int id);
 int duel_pick_st_zone(unsigned int p);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
-unsigned int duel_card_locate(unsigned int uid);
+int duel_slot_effect_with(unsigned int, int, int, int);
+unsigned int duel_card_locate(unsigned int);
 int card_is_in_group_1a6x(int id);
 int card_is_in_group_1a6f(int id);
 int card_get_attribute_icon(int id);
@@ -869,7 +869,7 @@ static int duel_088BFF08(unsigned int key)
     return -1;
 }
 
-unsigned int duel_088BFF78(unsigned int p, unsigned int key, int c)
+int duel_088BFF78(unsigned int p, int key, int c)
 {
     int k = duel_088BFF08(key & 0xFFFF);
 

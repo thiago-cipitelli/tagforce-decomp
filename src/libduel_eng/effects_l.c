@@ -21,7 +21,7 @@ int duel_phase_ok2(unsigned int p);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_hand_count_monsters(unsigned int p);
 int duel_field_atk(unsigned int p, int z);
-int duel_088BFF78(unsigned int p, unsigned short id, int a);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
 void duel_0884C588(unsigned int, int, int, int);
 DuelCard *duel_0884CCBC(int i);

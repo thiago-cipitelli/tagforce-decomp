@@ -23,7 +23,7 @@ int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
 int duel_088071E8(int id);
 int duel_field_atk(unsigned int p, int z);
 int duel_field_base_atk(unsigned int p, int z);
-unsigned int duel_d_find_name(unsigned int p, int id);
+int duel_d_find_name(unsigned int, int);
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_088BFFD8(unsigned int p, unsigned int key, int c);
 int duel_field_level(unsigned int p, int z);

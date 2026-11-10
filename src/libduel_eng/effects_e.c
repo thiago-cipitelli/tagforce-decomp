@@ -33,7 +33,7 @@ DuelCard *duel_0884C7CC(void);
 void duel_088C6728(unsigned int p, int uid, int a);
 int duel_088AA224(DuelAct *a);
 void duel_0884C588(unsigned int, int, int, int);
-int duel_088BFF78(unsigned int p, unsigned short id, int b);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
 
 int duel_eff_f9c00(DuelAct *a, int b)

@@ -27,7 +27,7 @@ extern int duel_w_0891A19C;
 void* game_state2_get(void);
 DeckSlot *deck_slot_get(int i);
 int deck_slot_get_level(int i);
-int duel_stat_get(int i);
+int duel_stat_get(int);
 int duel_card_used(unsigned int);
 int duel_series_result(void);
 int duel_save_once_cc(int i);

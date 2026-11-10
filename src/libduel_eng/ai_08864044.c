@@ -5,7 +5,7 @@
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);
 void duel_088CABA8(unsigned int p, int i);
-int duel_088BFF78(unsigned int p, unsigned short id, int b);
+int duel_088BFF78(unsigned int, int, int);
 int duel_0884C824(void);
 DuelCard *duel_0884C7EC(int i);
 int duel_0886CE38();

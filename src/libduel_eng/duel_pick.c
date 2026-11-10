@@ -41,7 +41,7 @@ unsigned int duel_grave_find_uid();
 unsigned int duel_f_find_uid();
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 int duel_zone_f_card_usable(unsigned int p, unsigned int q, int i);
-unsigned int duel_card_locate(int uid);
+unsigned int duel_card_locate(unsigned int);
 
 unsigned int duel_0884C718(void)
 {

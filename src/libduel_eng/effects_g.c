@@ -22,7 +22,7 @@ int duel_card_dfac8(unsigned int p, int id, int a);
 void duel_0884AD40(int msg, int uid);
 int duel_088AA224(DuelAct *a);
 void duel_0884C588(unsigned int, int, int, int);
-int duel_088BFF78(unsigned int p, unsigned short id, int b);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
 void duel_088CB4BC(unsigned int p, int uid);
 int duel_0887F728(DuelAct *a, int b);

@@ -27,14 +27,14 @@ void duel_088CC594(unsigned int p, int z, int a, int id);
 extern int duel_w_089148FC;
 extern unsigned int duel_turn_player;
 int duel_0886CE38(DuelAct *a, int b);
-unsigned int duel_card_locate(int idx);
+unsigned int duel_card_locate(unsigned int);
 int card_is_monster(int id);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 int duel_0888D5A8(DuelAct *a, int b);
 int duel_088C4604(DuelAct*, unsigned int, int);
 void duel_088C5424(unsigned int p, int n);
-void duel_08832AF4(unsigned int p, int z, int a, int b);
+void duel_08832AF4(unsigned int, int, int, int);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);
 

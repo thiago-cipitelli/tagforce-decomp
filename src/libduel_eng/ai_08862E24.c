@@ -3,7 +3,7 @@
 /* The computer player: handlers of the cards it activates. */
 #include "duel.h"
 
-void duel_088C8AD0(unsigned int p, int z, int id, int v);
+void duel_088C8AD0(unsigned int, int, int, int);
 int duel_0884E398(DuelAct *a, int b);
 void duel_0884AD18(int msg);
 int duel_0886191C(DuelAct *a, int b);

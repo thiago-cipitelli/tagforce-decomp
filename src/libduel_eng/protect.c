@@ -11,7 +11,7 @@ int duel_count_active(int id);
 int field_get_card(unsigned int, int);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_field_same_name(unsigned int p, int z, int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_affected(unsigned int p, int z, int id);
 int duel_slot_affected_ex(unsigned int p, int z, int id);

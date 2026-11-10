@@ -40,7 +40,7 @@ int duel_count_field_cards(unsigned int p, int faceup, int facedown, int fzone);
 int duel_0880A8AC(unsigned int p, unsigned int q);
 int duel_088BFFD8(unsigned int p, int id, int i);
 int duel_08828740(unsigned int, int);
-int duel_088BFF78(unsigned int p, int id, int b);
+int duel_088BFF78(unsigned int, int, int);
 int duel_0884C824(void);
 unsigned int duel_0884C830(int i);
 DuelCard *duel_0884C7EC(int i);
@@ -56,7 +56,7 @@ int duel_0880A934(unsigned int p, unsigned short id);
 int card_get_type(int id);
 void duel_msg_send(unsigned short cmd, int arg, void *data, int len);
 int duel_08853660(void);
-int duel_d_find_name(unsigned int p, int id);
+int duel_d_find_name(unsigned int, int);
 int duel_grave_find_name(unsigned int p, int id);
 int duel_count_active(int id);
 int duel_monster_can_act(unsigned int p, int z);
@@ -708,13 +708,13 @@ int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_field_base_atk(unsigned int p, int z);
 void duel_field_stats(unsigned int p, int z, DuelStats *st);
 int duel_0886BCDC(void);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 int duel_slot_e8170(unsigned int p, int z, int id);
 void duel_088CC4B4(unsigned int p, int z, int n);
 void duel_088C0BB0(unsigned int p, int z);
 int duel_slot_faceup_live(unsigned int p, int z);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
+void duel_088C4448(unsigned int, int, int);
 
 /* Steps of the attack: announce, targets, damage calculation (duel_ai_atk_08821C80), end. */
 #ifdef NON_MATCHING /* 7 palavras: no laço que conta os alvos distintos do passo 9 o original tem cnt em a3 e j em a0
@@ -987,7 +987,7 @@ int card_get_special_group(int id);
 int duel_field_level(unsigned int p, int z);
 void duel_088C448C(int p, int a);
 void duel_088D1438(unsigned int p, int z, int a, int b);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C7E68(unsigned int, int, int, int);
 int duel_0886B0E4(unsigned int a, unsigned short uid, unsigned int c);
 
 #define DUEL_EV(p, z, f, id) ((p) << 31 & 0x80000000 | (f) | (unsigned int)(z) << 16 & 0x1F0000 | (id))
@@ -1754,7 +1754,7 @@ void duel_08826000(unsigned int p, int z)
 }
 
 int duel_first_free_zone(unsigned int p);
-int duel_hand_find_uid(unsigned int p, int uid);
+int duel_hand_find_uid(unsigned int, int);
 
 /* Sets up the summon of the card c in the first free monster zone of p; w holds the extra flags
    (low half) and the card that caused the summon (high half). */

@@ -47,7 +47,7 @@ extern unsigned int duel_req_step;                 /* 0x08915240 */
 extern unsigned int duel_req_count;    /* 0x08915244 */
 extern DuelCard duel_card_tmp;         /* 0x08915248 */
 
-int duel_hand_find_uid(unsigned int p, int uid);
+int duel_hand_find_uid(unsigned int, int);
 int duel_host_call(int a, int b, int c, int d);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
 void duel_card_take(unsigned int p, int zone, int i);
@@ -99,7 +99,7 @@ void duel_0884DAF0(int a, int b);
 
 void duel_d_shuffle(unsigned int p);
 void duel_d_reverse(unsigned int p);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 int duel_d_remove(unsigned int p, DuelCard *c);
 void duel_d_push_top(unsigned int p, DuelCard *c);
 void duel_d_push(unsigned int p, DuelCard *c);
@@ -326,7 +326,7 @@ void duel_req_banish(void)
     }
 }
 
-int duel_zone_card_id(unsigned int p, int z, int i);
+int duel_zone_card_id(unsigned int, int, int);
 void duel_zone_f_to_top(unsigned int p, unsigned short uid);
 
 #ifdef NON_MATCHING /* 2 palavras: em (i << 6) | (z << 1 | p & 1) o original calcula p & 1 antes do sll de z (registradores trocados); ordens de operandos, * 2 e casts não resolvem */

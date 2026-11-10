@@ -54,7 +54,7 @@ unsigned short duel_slot_e1854(unsigned int, int);
 int card_get_special_group(unsigned short id);
 unsigned int duel_field_attrs(unsigned int p, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
+void duel_088C4448(unsigned int, int, int);
 int duel_count_type_skip(unsigned int p, unsigned int type, int skip);
 unsigned int duel_slot_e5a48(unsigned int, int);
 int duel_count_attr(unsigned int p, int attr);
@@ -62,7 +62,7 @@ int duel_slot_counter_1a90(unsigned int p, int z);
 int card_is_in_group_158d(int id);
 int duel_slot_affected_ex(unsigned int p, int z, int id);
 int card_is_attribute8(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 void duel_088CC594(unsigned int p, int z, int a, int id);
 void duel_0884DAF0(int a, int b);
 

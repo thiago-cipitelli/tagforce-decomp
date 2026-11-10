@@ -1662,7 +1662,7 @@ int duel_088ACB24(DuelAct *a, DuelAct *b)
 extern unsigned short duel_h_0891968E;
 
 unsigned int duel_slot_effect_arg(unsigned int, int, int);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 void duel_0884AD40(int msg, int uid);
 int duel_08871868(DuelAct *a, int b);  /* defined with one parameter; b keeps $a1 live as in the original */

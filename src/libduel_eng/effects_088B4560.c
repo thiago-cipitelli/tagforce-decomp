@@ -15,7 +15,7 @@ int card_get_atk_q(int id);
 int card_attribute_to_group(int id);
 int card_get_level(int);
 int duel_card_dfac8(unsigned int p, int id, int field);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_grave_find_uid(unsigned int p, int uid);
 int card_attribute_icon_in_2_3(int id);
 int card_same_name(int id, int id2);

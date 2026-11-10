@@ -17,7 +17,7 @@ int duel_field_e5ae0(unsigned int p, int z);
 int duel_field_level(unsigned int p, int z);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
 int duel_slot_has_effect(unsigned int p, int z, int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 unsigned int duel_slot_effect_arg(unsigned int, int, int);
 int duel_slot_affected(unsigned int p, int z, int id);
 int duel_slot_affected_ex(unsigned int p, int z, int id);

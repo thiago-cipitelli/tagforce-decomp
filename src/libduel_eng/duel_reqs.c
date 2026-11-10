@@ -11,7 +11,7 @@ int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 unsigned int duel_slot_effect_index(unsigned int p, int z, unsigned int id, unsigned int arg);
 void duel_088CC178();
 void duel_088CC1D0(unsigned int p, int z, int a);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C7E68(unsigned int, int, int, int);
 int field_get_card(unsigned int, int);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 void duel_088AFD5C(int kind, unsigned int a);
@@ -74,7 +74,7 @@ void duel_088C8A38(unsigned int p, int z, int id, int k, int c)
     }
 }
 
-void duel_088C8AD0(unsigned int p, int z, unsigned int id, unsigned int arg)
+void duel_088C8AD0(unsigned int p, int z, int id, int arg)
 {
     unsigned int n = duel_slot_effect_index(p, z, id, arg);
 

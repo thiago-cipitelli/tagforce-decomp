@@ -29,7 +29,7 @@ int duel_field_def(unsigned int p, int z);
 int duel_phase_ok2(unsigned int p);
 unsigned int duel_card_b14(DuelCard *c);
 int duel_count_free_monster_zones(unsigned int p);
-int duel_088BFF78(unsigned int p, unsigned short id, int b);
+int duel_088BFF78(unsigned int, int, int);
 int duel_088A6300(int id);
 int duel_088A6D2C(int id, int n, void *out);
 int duel_08809FC4();

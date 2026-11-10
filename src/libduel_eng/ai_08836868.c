@@ -51,11 +51,11 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, int c);
 int memcmp2(const void *a, const void *b, int n);
 int duel_can_direct_attack(unsigned int p, int z);
 int duel_direct_attack_kind(unsigned int p, int z, int arg);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C7E68(unsigned int, int, int, int);
 int duel_host_call(int a, int b, int c, int d);
 unsigned int duel_slot_effect12_arg(unsigned int, int, int);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
-void duel_088C8AD0(unsigned int p, int z, int id, int v);
+void duel_088C8AD0(unsigned int, int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 

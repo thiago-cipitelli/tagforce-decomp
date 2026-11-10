@@ -74,7 +74,7 @@ void duel_cmd(unsigned short cmd, int p, unsigned short id, int arg);
 DuelCard *duel_0884CCBC(int i);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 void duel_0884C588(unsigned int, int, int, int);
-int duel_088BFF78(unsigned int p, unsigned short id, int b);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884AD18(int msg);
 int duel_0885B2F8();
 

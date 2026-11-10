@@ -295,7 +295,7 @@ int duel_0884D874(void)
     return 1;
 }
 
-unsigned int duel_stat_get(int i)
+int duel_stat_get(int i)
 {
     int j;
 

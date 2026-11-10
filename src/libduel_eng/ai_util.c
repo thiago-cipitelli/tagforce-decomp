@@ -8,7 +8,7 @@
 extern unsigned int duel_w_08913CF4;   /* player the computer is choosing for [?] */
 extern int duel_w_08919624;
 
-int duel_088BFF78(unsigned int p, int id, int a);
+int duel_088BFF78(unsigned int, int, int);
 int duel_088087C0(unsigned int p, int id, int a);
 void duel_0884C7C0(int i);
 void duel_0884CB8C(int i, int v);

@@ -72,7 +72,7 @@ extern unsigned int duel_view_player;
 void duel_0884DB38(int a, int b);
 void duel_0884DAF0(int a, int b);
 void duel_0884DA24(int a, int b);
-int duel_stat_get(int i);
+int duel_stat_get(int);
 int duel_count_monsters(unsigned int p);
 int duel_0880B17C(unsigned int p, int i);
 int duel_0880B0FC(unsigned int p);

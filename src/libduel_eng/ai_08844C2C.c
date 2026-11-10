@@ -17,7 +17,7 @@ void duel_08832950(unsigned int, int);
 int field_get_card(unsigned int, int);
 int duel_088D1438(unsigned int p, int z, int a, int b);
 int duel_tributable(unsigned int p, unsigned int q, int z);
-int duel_slot_e68a0(unsigned int p, int z);
+int duel_slot_e68a0(unsigned int, int);
 
 #ifdef NON_MATCHING /* registradores e o teste 5 < 10 que o original não dobra */
 int duel_08844C2C(unsigned int p, int id)

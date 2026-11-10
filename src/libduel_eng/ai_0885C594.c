@@ -19,7 +19,7 @@ int duel_08853A28(DuelAct *a, unsigned int p, int z);
 int duel_field_atk(unsigned int p, int z);
 int duel_field_def(unsigned int p, int z);
 unsigned int duel_field_flag9(unsigned int, int);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_0885FA30(DuelAct *a, unsigned int p, int z);
 int duel_08855DC8(DuelAct *a, unsigned int p, int z);
 int duel_088580B8(DuelAct *a, unsigned int p, int z);

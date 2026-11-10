@@ -25,7 +25,7 @@ int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 int duel_d_count_name(unsigned int p, unsigned short id);
 void duel_088C6508(unsigned int p, int id, int a, int b);
 void duel_0884ACD8(unsigned int p, int msg);
-void duel_088C6A10(unsigned int p, int id, int z);
+int duel_088C6A10(unsigned int, unsigned short, int);
 int duel_0886BCDC(void);
 void duel_088328FC(unsigned int p);
 void duel_088C78E0(unsigned int p);

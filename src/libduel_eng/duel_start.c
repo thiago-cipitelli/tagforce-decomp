@@ -53,7 +53,7 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned s
 void duel_deck_build_uids(unsigned int p, int a);
 int memcmp(const void *a, const void *b, int n);
 int sscanf(const char *s, const char *fmt, ...);
-void duel_088BFF78(unsigned int p, int id, int a);
+int duel_088BFF78(unsigned int, int, int);
 unsigned int duel_0884C718(void);
 int duel_08809B50(unsigned int p, int id, int a);
 int duel_08809BE8(unsigned int p, int id, int a, int n);

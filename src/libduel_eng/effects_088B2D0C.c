@@ -6,7 +6,7 @@ void duel_088BFC64(unsigned int p, int z, int i);
 int card_is_monster(int id);
 int card_get_atk_q(int id);
 unsigned int card_get_type(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int card_same_name(int a, int b);
 int card_id_remap_1a6c(int id, int *out);
 

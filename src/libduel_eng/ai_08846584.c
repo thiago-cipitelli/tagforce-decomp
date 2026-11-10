@@ -22,7 +22,7 @@ int duel_hand_count_type(unsigned int, unsigned int);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_affected(unsigned int p, int z, int id);
 int duel_slot_affected_ex(unsigned int p, int z, int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_slot_effect_sum(unsigned int p, int z, unsigned int id);
 int card_is_in_group_1a90(int id);
 int card_is_in_group_1a6f(int id);
@@ -31,7 +31,7 @@ int duel_slot_counter_1a90(unsigned int p, int z);
 int duel_count_1a90(void);
 unsigned int duel_slot_immunity(unsigned int p, int z);
 int duel_effect_applies(int, unsigned int, int);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
+void duel_088C4448(unsigned int, int, int);
 void duel_08846498(unsigned int p, int z, int id, int f);
 void duel_0884DAF0(int a, int b);
 

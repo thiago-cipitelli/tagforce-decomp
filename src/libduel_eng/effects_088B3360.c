@@ -11,7 +11,7 @@ unsigned int card_get_type(int id);
 int card_same_name(int id, int name);
 int card_is_in_group_1a58(int id);
 int card_not_in_group_1a6f(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_card_dfac8(unsigned int p, int id, int field);
 int duel_088A6B5C(unsigned int p, int id);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);

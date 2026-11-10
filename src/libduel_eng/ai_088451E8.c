@@ -25,7 +25,7 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned s
 void duel_088AFD5C(int kind, unsigned int a);
 int field_get_card(unsigned int, int);
 int card_is_monster(int id);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
+void duel_088C4448(unsigned int, int, int);
 int duel_count_tributable_except(unsigned int p, unsigned short src);
 int duel_08845070(int id);
 int duel_sum_e68a0(unsigned int p);
@@ -53,7 +53,7 @@ unsigned int duel_slot_effect_arg(unsigned int, int, int);
 void duel_088C7BA4(void);
 int duel_088C4730(unsigned int, int, int, int);
 void duel_088C7CF0(void);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 void duel_088C44E4(unsigned int p, int id);
 
 #ifdef NON_MATCHING /* forma quase igual; difere a alocação de registradores (z, q e id trocados, `me` não vai para a pilha) */

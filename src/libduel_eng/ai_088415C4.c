@@ -25,7 +25,7 @@ int duel_find_effect_card(unsigned int p, int id, int skip);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 void duel_088C8A38(unsigned int p, int z, int id, int k, int c);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 int field_get_card(unsigned int, int);
 int duel_0886B0E4(unsigned int a, int b, int c);
 int duel_list_find_id(unsigned int p, unsigned int id);

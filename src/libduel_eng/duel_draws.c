@@ -42,11 +42,11 @@ typedef struct DuelMoveEv {            /* event argument of a card moving (see d
 } DuelMoveEv;
 
 int card_attribute_icon_is3(int id);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
+void duel_088C4448(unsigned int, int, int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
 int duel_slot_e8170(unsigned int p, int z, int id);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C7E68(unsigned int, int, int, int);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);
 unsigned int duel_dfc10(void);
@@ -65,8 +65,8 @@ int duel_count_monster_active(unsigned int p, int id);
 void duel_088C44E4(unsigned int p, int id);
 void duel_088C4508(unsigned int p, int id);
 void duel_088C77EC(unsigned int p, int uid);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
-void duel_088C8AD0(unsigned int p, int z, int id, int v);
+int duel_slot_effect_with(unsigned int, int, int, int);
+void duel_088C8AD0(unsigned int, int, int, int);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_0886956C(int uid);
 
@@ -650,7 +650,7 @@ void duel_088C69EC(unsigned int p, int a, int b)
     duel_cmd((p ? 0x8000 : 0) | 0x33, 0xD, b, a);
 }
 
-int duel_088C6A10(unsigned int p, int id, int x)
+int duel_088C6A10(unsigned int p, unsigned short id, int x)
 {
     unsigned int i;
     int r;
@@ -686,7 +686,7 @@ int card_is_in_group_1911(int id);
 int card_is_monster(int id);
 int card_attribute_icon_is3(int id);
 int duel_card_protected(int id, int uid);
-int duel_d_find_name(unsigned int p, int id);
+int duel_d_find_name(unsigned int, int);
 
 /* 54 palavras (2026-11-09), só registradores: o parâmetro i (não usado) é o "grave" do original (75 -> 54, c volta
    a s2); falta a rotação p/ban/grave (original s3/s4/s5, aqui s4/s5/s3): 720 ordens das declarações, tipos de

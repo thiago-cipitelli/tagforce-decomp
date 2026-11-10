@@ -56,7 +56,7 @@ extern DuelFlags8 duel_msg_state;      /* 0x08914340 low byte */
 int card_is_monster(int id);
 int card_get_type(int id);
 int card_is_attribute7(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_088DFCC8(unsigned int uid);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);

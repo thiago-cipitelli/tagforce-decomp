@@ -14,7 +14,7 @@ int card_get_attribute_icon(int id);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 int card_get_special_group(unsigned short id);
 int card_get_atk_q(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int card_get_kind(int id);
 int card_is_in_group_198c(int id);
 void duel_088B5588(unsigned int p, int b, int c);

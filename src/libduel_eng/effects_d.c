@@ -13,7 +13,7 @@ int duel_grave_count_id(unsigned int, unsigned int);
 int duel_088C4604(DuelAct*, unsigned int, int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088CC4B4(unsigned int p, int z, int a);
-void duel_08832AF4(unsigned int p, int z, int a, int b);
+void duel_08832AF4(unsigned int, int, int, int);
 int duel_0884AF88(int);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_08885F68(DuelAct *a, int b);

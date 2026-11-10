@@ -29,7 +29,7 @@ int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
 unsigned short duel_slot_e1854(unsigned int, int);
 unsigned int duel_field_flag9(unsigned int, int);
 unsigned short duel_slot_value_1909(unsigned int p, int z);
-unsigned int duel_slot_e68a0(unsigned int p, int z);
+int duel_slot_e68a0(unsigned int, int);
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_find_effect_card(unsigned int p, int id, int skip);
 int duel_count_active(int id);

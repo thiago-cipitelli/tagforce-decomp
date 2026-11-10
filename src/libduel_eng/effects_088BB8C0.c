@@ -28,7 +28,7 @@ int card_get_prop5_hi(int);
 int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 int card_get_atk_q(int id);
 int card_get_kind(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int card_is_in_group_198c(int id);
 unsigned int duel_card_b14(DuelCard *c);
 int card_same_name(int id, int id2);
