@@ -1379,3 +1379,35 @@ Batendo: `font_glyph_find`, `netsync_queue_pop`, `ptp_accept` (BOOT), `fld_npc_f
   quando só é usado uma vez no laço: o mwcc dobra o deslocamento (`1529(t0)`) em todas as formas tentadas (tipo
   `DuelSrc *`, visão `DuelActY`, declaração na função ou no bloco). `duel_0886DE70` (17 palavras) e
   `duel_08865838` (85, quase tudo deslocamento) param aí.
+## Rodada 18 (`engL`: libduel_eng, funções 60-92% nunca tentadas)
+
+Batendo: `duel_088719DC`, `duel_088770C0`, `duel_08881054`, `duel_08890730`, `duel_08837250`, `duel_08809DA8`,
+`duel_088860BC`, `duel_088619FC`, `duel_08898608`, `duel_088977BC` (estava em `matching_skip`), `duel_08888ED0`,
+`duel_088AFF8C`. Idiomas novos:
+- **Endereços de campo materializados em `$s`** (`addiu s1,s2,290` / `addiu s0,s2,289` e depois `lhu 0(s1)`, o
+  bloqueio aberto da rodada 17): ponteiro para o **jogador** e índice num local, `pl = &duel.players[q & 1];
+  i = duel_w_08919654;` e `CARD_UID(pl->hand[i])` em cada uso; o mwcc faz CSE de `pl + i*4` e guarda `&campo` em `$s`
+  (`duel_088860BC`, 94 -> 0; no caso 10 de `duel_field_controller` o `&slot` = `pl->field[zz]` sai em `$s` do mesmo
+  jeito). Vale tentar em `duel_0886DE70`/`duel_08865838`.
+- **Produto `(p & 1) * 0xFAC` refeito depois de uma chamada** (o mwcc o guardava num `$s`): `(int)p & 1` no índice do
+  acesso depois da chamada; a expressão de tipo diferente não entra na CSE (`duel_08809DA8`, 88 -> 0).
+- **Argumento recalculado depois dos outros** (`a->player` e uma global carregados antes do teste do clamp
+  `v > 0xFFFF ? 0xFFFF : v`): helper `static inline void f(int z, unsigned int p, int id, int v)` com o clamp; só com
+  os parâmetros nessa ordem o mwcc carrega v, p e z na ordem do original (`duel_token_set_stat`, `duel_08898608`,
+  `duel_088977BC`).
+- **5º argumento u16 com `andi` repetido nos dois caminhos**: `int n = 0;` (ou `n = 0;` no bloco) e `switch (a->id)
+  { case K: n = ...; }` de um `case` só (`duel_08881054`, `duel_08890730`).
+- **Corpos mortos de `switch` de um `case` só** (`beql; li v0,1; b cont; nop; li v0,1; b fim; nop`): o mwcc às
+  vezes os mantém, às vezes não, conforme o resto da função; em `duel_088AFF8C` apareceram só depois de reescrever os
+  testes de dois outros `case` como no original (dois `if` separados, `switch (id) { case 0x1AA8: return 1; }`).
+- **Registrador do valor do `switch` em `a2` em vez de `a1`**: `a1` está vivo porque a função tem o 2º parâmetro `b`
+  e o repassa a uma chamada (`duel_08870188(a, b)`, condição de ativação com a assinatura das outras); `duel_08888ED0`.
+- Deslocamento `z * 20` calculado antes do produto do jogador: num local (`k = z * 20;` e
+  `(DuelSlot *)((char *)duel.players[p & 1].field + k)`), com `z = a->w[j]` antes de `ev.s_player` (`duel_08888ED0`).
+- `CARD_UID(...)` num local antes do `!=` com `a->uid` (`duel_088770C0`); `||` nos testes que devolvem 1
+  (`duel_08837250`); `case 1:` com o corpo dentro de `if (g == 0) { ... } return 1;` e `default: m = 0xFA;` no switch
+  interno (`duel_088619FC`).
+- Ainda em asm: `duel_08871B14` (13: `bnezl/li 1` e `bnez; nop; b; move zero; li 1` dos dois testes finais),
+  `duel_0883449C` (20: agendamento do `p != duel_ai_player` e da soma z), `duel_place_st` (24: `duel_order_ctr`
+  gravado antes de `s->unk4`, como em `duel_place_monster`), `duel_088A2950` (13: `li v0,0x7D; b fim; nop` sem
+  preencher), `duel_field_controller` (102: `$s` de {base, cur, p} e {ef, src, &slot} trocados em bloco).
