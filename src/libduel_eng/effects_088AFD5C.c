@@ -1,5 +1,5 @@
 // @range 0x088AFD5C-0x088B08B8
-// @asm 0x088AFF8C-0x088B0504
+// @rodata 0x08911A68-0x08911AF0
 /* Pending duel events (duel_chain.kinds / srcs) and their network echo. */
 #include "duel.h"
 
@@ -80,7 +80,6 @@ void duel_088AFEE0(int b)
 int card_is_monster(int id);
 int card_is_in_group_1a60(int id);
 
-#ifdef NON_MATCHING /* switch de um caso só não gera o bloco morto do original; agendamento do move a0 */
 int duel_088AFF8C(unsigned int p, int id)
 {
     unsigned int i;
@@ -110,8 +109,6 @@ int duel_088AFF8C(unsigned int p, int id)
             switch (id) {
             case 0x1472:
                 return 1;
-            default:
-                break;
             }
             break;
         case 6:
@@ -175,8 +172,6 @@ int duel_088AFF8C(unsigned int p, int id)
             switch (id) {
             case 0x12D7:
                 return 1;
-            default:
-                break;
             }
             break;
         case 9:
@@ -200,8 +195,6 @@ int duel_088AFF8C(unsigned int p, int id)
             switch (id) {
             case 0x134E:
                 return 1;
-            default:
-                break;
             }
             break;
         case 0x19:
@@ -229,18 +222,23 @@ int duel_088AFF8C(unsigned int p, int id)
             switch (id) {
             case 0x1354:
                 return 1;
-            default:
-                break;
             }
             break;
         case 5:
-            if (duel_player_type[p] == 1 || id == 0x1AA8) {
+            if (duel_player_type[p] == 1) {
+                return 1;
+            }
+            switch (id) {
+            case 0x1AA8:
                 return 1;
             }
             return p != duel_turn_player;
         case 0x17:
-            if (p != duel_turn_player && id == 0x12F3) {
-                return 1;
+            if (p != duel_turn_player) {
+                switch (id) {
+                case 0x12F3:
+                    return 1;
+                }
             }
             break;
         case 0x1F:
@@ -258,7 +256,6 @@ int duel_088AFF8C(unsigned int p, int id)
     }
     return 0;
 }
-#endif
 
 int field_get_card(unsigned int, int);
 int duel_088695B8(unsigned int p, unsigned int q, int z, DuelAct *a);
