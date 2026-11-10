@@ -28,8 +28,6 @@ segments:
     subsegments:
       - [0x60, c, cm_main]
       - [0xBB0, c, cm_draw]
-      - [0xBB0, asm, cm_draw_asm_08804B50]
-      - [0xFA0, c, cm_draw]
       - [0x2058, c, cm_gfx]
       - [0x2DAC, c, cm_states]
       - [0x4A98, asm, sceStub_text]

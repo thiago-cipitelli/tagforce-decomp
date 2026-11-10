@@ -1,5 +1,4 @@
 // @range 0x08804B50-0x08805FF8
-// @asm 0x08804B50-0x08804F40
 // @data 0x0880CBBC-0x0880CC1C
 /* 2D part of the machine and the per-frame draw export: background, machine panel, the EHF
    animations of the panel, the message window with its cursor, the card coming out (rendered to a
@@ -62,7 +61,8 @@ void cm_draw_lid(void);
 void cm_draw_card3d(CmCard *c);
 void cm_draw_result3d(void);
 
-#ifdef NON_MATCHING /* o original deixa a cópia morta da primeira instrução do ramo depois do `b` (beql; b; <cópia>), problema aberto */
+/* `switch (cm.state) { case 0: return; }`: o return de case é alvo de desvio e faz o mwcc manter as cópias mortas
+   depois de cada `b`, como o original (docs/matching.md, rodada 19); case 3 antes de 4/5 (testes 5, 4, 3) */
 /* 0x08804B50: export, once per frame (libselect_card draws itself while it is up) */
 void conv_draw(void)
 {
@@ -79,8 +79,10 @@ void conv_draw(void)
     list = dl_clear_stencil(list, 0);
     list = dl_clear(list, 0x17);
     dl_set_list(list);
-    if (cm.state == 0)
+    switch (cm.state) {
+    case 0:
         return;
+    }
     if (cm.detail) {
         cardinfo_draw();
         return;
@@ -106,6 +108,10 @@ void conv_draw(void)
     mtx_set_mode(2);
     cm_draw_lid();
     switch (cm.state) {
+    case 3:
+        for (i = 0; i < cm.n_cards; i++)
+            cm_draw_card3d(&cm.flying[i]);
+        break;
     case 4:
     case 5:
         if (cm.dim) {
@@ -114,10 +120,6 @@ void conv_draw(void)
             dl_set_list(list);
         }
         cm_draw_result3d();
-        break;
-    case 3:
-        for (i = 0; i < cm.n_cards; i++)
-            cm_draw_card3d(&cm.flying[i]);
         break;
     }
     list = dl_select_layer(4, 0);
@@ -141,7 +143,6 @@ void conv_draw(void)
     fade_apply((void **)&list);
     dl_set_list(list);
 }
-#endif
 
 /* 480x272 background in 64-pixel strips; the bottom 16 lines come from the right edge, rotated */
 unsigned int *cm_draw_bg(unsigned int *list)
