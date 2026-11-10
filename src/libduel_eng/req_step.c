@@ -48,7 +48,7 @@ extern unsigned int duel_req_count;    /* 0x08915244 */
 extern DuelCard duel_card_tmp;         /* 0x08915248 */
 
 int duel_hand_find_uid(unsigned int, int);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
 void duel_card_take(unsigned int p, int zone, int i);
 void duel_place_monster(unsigned int p, int z, DuelCard *c, int a, int b);

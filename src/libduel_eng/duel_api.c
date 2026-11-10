@@ -443,7 +443,7 @@ DuelLog *duel_log_end(void)
     return duel_log_buf;
 }
 
-int duel_host_call(int a, int b, int c, int d)
+int duel_host_call(int a, int b, unsigned int c, int d)
 {
     duel_host_args[0] = a;
     duel_host_args[1] = b;

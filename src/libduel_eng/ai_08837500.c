@@ -40,7 +40,7 @@ int duel_find_effect_card(unsigned int p, int id, int z);
 int field_get_card(unsigned int, int);
 void duel_088CC178(unsigned int p, int z, unsigned int v);
 int duel_088369D8(unsigned int p);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_08835944(int k);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 void duel_0884AD18(int msg);

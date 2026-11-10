@@ -43,7 +43,7 @@ int duel_0886CE38();
 int duel_slot_value_1909(unsigned int p, int z);
 void duel_088359E8(unsigned int p, int id, int (*fn)());
 int duel_088537B0(int id);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 int duel_0884E5E0(DuelAct *a);
 void duel_0884AD18(int msg);
 void duel_088D1B20(unsigned int p, unsigned int mask);

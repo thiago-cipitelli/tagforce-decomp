@@ -57,7 +57,7 @@ typedef struct DuelPick {              /* 0x0891524C, as in duel_pick.c */
 extern DuelPick duel_w_0891524C;
 
 int duel_req_flag(int i);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_0884DB38(int a, int b);
 void duel_0884DB7C();
 void duel_088DF554(unsigned int, int, unsigned int, int);
@@ -515,7 +515,7 @@ void duel_req_088D31F0(void)
         for (i = 0; i < n; i++) {
             duel.players[p & 1].field[to[i]].flags &= ~0x80;
         }
-        duel_host_call(0x27, p, mask, 0);
+        duel_host_call(0x27, p, (int)mask, 0);
         duel_req_step++;
         break;
     case 1:

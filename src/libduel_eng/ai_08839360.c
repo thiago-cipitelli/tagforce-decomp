@@ -73,7 +73,7 @@ extern int duel_w_08919614;
 extern int duel_atk_w28;               /* 0x08913F28 */
 int duel_08843844(void);
 int duel_attack_check(unsigned int p, int z, int arg);
-int duel_host_call(int a, int b, unsigned int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 int duel_088C9878(unsigned int p, int z, int x, int y, int id, int opp);
 int duel_slot_counter_1439(unsigned int p, int z);
 int duel_slot_e8170(unsigned int p, int z, int id);

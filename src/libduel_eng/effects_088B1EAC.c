@@ -34,7 +34,7 @@ void duel_088359B0(int (*fn)());
 void duel_0881956C(unsigned int p, int id, int (*fn)());
 void duel_0884ACD8(unsigned int p, int msg);
 int duel_0884B078(int a, int b);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 int duel_list_card_level(unsigned int p, int i);
 int duel_field_level(unsigned int p, int z);
 int card_is_attribute9(int id);

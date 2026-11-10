@@ -23,7 +23,7 @@ extern unsigned int duel_w_089149F8;   /* materials picked */
 #define CHAIN_I (*(unsigned int *)&duel_chain.pad638[0x6A8 - 0x638])
 
 int duel_08835AC0(void);
-int duel_host_call(int a, int b, unsigned int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 int duel_0884AD18(int msg);
 void duel_wfmt_d();
 void duel_wfmt_s();

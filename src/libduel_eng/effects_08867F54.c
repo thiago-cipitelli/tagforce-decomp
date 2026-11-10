@@ -27,7 +27,7 @@ void duel_088CAE24(unsigned int p, DuelCard *c, int a);
 int duel_08835AC0(void);
 void duel_088359E8(unsigned int p, int id, int (*fn)());
 int duel_088537B0(int id);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_088D1B20(unsigned int p, unsigned int mask);
 int duel_088657D8(DuelAct *a, int b);
 int duel_0886CD1C(DuelAct *a, unsigned int p);

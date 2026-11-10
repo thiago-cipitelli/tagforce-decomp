@@ -65,7 +65,7 @@ unsigned int duel_c_find_uid(unsigned int p, int uid);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 int duel_field_base_atk(unsigned int p, int z);
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 int duel_slot_efb84(unsigned int p, int z);
 void duel_wfmt_d(unsigned short *dst, int fmt, int n);
 int duel_zone_card_id(unsigned int, int, int);

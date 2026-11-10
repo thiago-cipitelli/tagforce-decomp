@@ -47,7 +47,7 @@ extern char duel_msg_buf[0x310];
 void duel_bzero(void *p, int n);
 void duel_deck_load(unsigned int p, RecipeData *d);
 void duel_d_shuffle(unsigned int p);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_0884D618(int a);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void duel_deck_build_uids(unsigned int p, int a);

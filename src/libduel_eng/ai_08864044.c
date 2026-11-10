@@ -20,7 +20,7 @@ void duel_088D1D64(DuelAct *a, unsigned int mask);
 int duel_08861360(DuelAct *a);
 void duel_08832788(unsigned int p, int id, int a, int b);
 unsigned int duel_0884E5E0(DuelAct *a);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_088D1B20(unsigned int p, unsigned int mask);
 int duel_088619FC(DuelAct *a, int b);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);

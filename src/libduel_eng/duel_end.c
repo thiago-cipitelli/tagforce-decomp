@@ -52,7 +52,7 @@ int duel_zone_usable(unsigned int p, unsigned int z);
 int card_is_attribute9(int id);
 int card_same_name(int id, int id2);
 int duel_req_flag(int f);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_0884E02C(void);
 void duel_0884C588(unsigned int, int, int, int);
 int duel_0882AF5C(int, int, int);

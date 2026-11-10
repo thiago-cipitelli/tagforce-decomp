@@ -53,7 +53,7 @@ extern unsigned int duel_turn_player;
 extern int duel_phase;
 
 int duel_req_flag(int i);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_slot_effect_add(unsigned int p, int z, int kind, int src, int arg);
 void duel_list_effect_add(int uid, int kind, int src, int arg);
 void duel_effect_set(unsigned int p, int z, int i, int kind, unsigned short arg);

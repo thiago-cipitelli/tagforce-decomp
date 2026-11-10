@@ -62,7 +62,7 @@ void duel_088C7BA4(void);
 void duel_088C7CF0(void);
 void duel_0884B064(int msg);
 void duel_0881956C(unsigned int p, int id, int (*fn)());
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_088359B0(int (*fn)());
 int duel_08835AC0(void);
 void duel_088CAE34(unsigned int p, int a);

@@ -14,7 +14,7 @@ extern int duel_w_08919650;            /* picked zone */
 extern int duel_w_08919654;
 
 int duel_08835AC0(void);
-int duel_host_call(int a, int b, unsigned int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 int duel_0884AD18(int msg);
 void duel_wfmt_d(unsigned short *dst, int fmt, int n);
 int duel_list_card_level(unsigned int p, int i);
