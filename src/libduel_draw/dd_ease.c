@@ -1,5 +1,4 @@
 // @range 0x088279A4-0x08827F68
-// @asm 0x08827BA4-0x08827D64
 /* Small helpers of the effect scripts: easing curves of a frame counter (linear, sine, cosine,
    their complements and their "last n frames" variants), a random direction, a clamped step,
    a random percentage, model animation helpers and positions read from the duel scene. */
@@ -93,27 +92,23 @@ float dd_ease_cos_out(int t, int n, int end, int k)
     return dd_ease_cos(t - (end - n), n, k);
 }
 
-#ifdef NON_MATCHING /* 107 palavras: sorteios na ordem do original (z, y, x; sinal antes do tamanho); registradores e escalonamento diferem */
+/* random direction of length len: the six draws in the original order (z, y, x; the sign before the size) */
 void dd_rand_dir(float len, float *out)
 {
     DdRandSeed *r = &rand3_seeds[rand3_slot];
     float v[3];
     int sz = DD_RAND(r);
-    int mz = DD_RAND(r);
+    float z = DD_RAND(r) / 32767.0f;
     int sy = DD_RAND(r);
-    int my = DD_RAND(r);
+    float y = DD_RAND(r) / 32767.0f;
     int sx = DD_RAND(r);
-    int mx = DD_RAND(r);
-    float k = 32767.0f;
+    float x = DD_RAND(r) / 32767.0f;
 
-    /* the six draws in the original order (z, y, x; the sign before the size): the order of evaluation
-       of the arguments is not portable */
-    vec3_set(v, mx / k * (sx % 2 * 2 - 1), my / k * (sy % 2 * 2 - 1), mz / k * (sz % 2 * 2 - 1));
+    vec3_set(v, x * (sx % 2 * 2 - 1), y * (sy % 2 * 2 - 1), z * (sz % 2 * 2 - 1));
     vec3_normalize(v, v);
     vec3_scale(v, v, len);
     vec3_copy(out, v);
 }
-#endif
 
 int dd_step_clamp(int v, int d, int lim)
 {

@@ -1,6 +1,5 @@
 // @range 0x08855B10-0x08857100
 // @data 0x08877730-0x088777F0
-// @asm 0x088565F8-0x088566EC
 // @asm 0x088566EC-0x08856DC0
 // @asm 0x08856DC0-0x08857100
 /* The LP panel of the duel (dd_lp): its textures (lp_pnl01_j/02_j and digits in Japan,
@@ -407,53 +406,38 @@ void dd_lp_quad(FxVtx2DT *v, int x, int y, int z, int u, int tv, int w, int h,
     v[3].color = color;
 }
 
-#ifdef NON_MATCHING /* ordem das contas de ponto flutuante diferente (43 palavras); o 13º argumento é a cor
-                       (int em t3), não float: corrigido em 2026-11-04 */
 /* Fills a textured quad (4 vertices, u v z x y z) centred on (x, y) from a texel rectangle. */
 void dd_lp_rect(float x, float y, float z, float w, float h, DdFxVert *v, int tx, int ty, int tw, int th,
                 int texw, int texh, unsigned int color)
 {
     float fw = (float)texw;
     float fh = (float)texh;
-    float u0 = (float)tx / fw - 0.5f / fw;
-    float u1 = (float)(tx + tw) / fw - 0.5f / fw;
-    float v0;
-    float v1;
-    float x1;
-    float y1;
 
-    v[0].u = u1;
-    v0 = (float)ty / fh - 0.5f / fh;
-    v[0].v = v0;
-    v1 = (float)(ty + th) / fh - 0.5f / fh;
-    x1 = x + w * 0.5f;
-    v[0].x = x1;
-    y1 = y + h * 0.5f;
-    v[0].y = y1;
+    v[0].u = (float)(tx + tw) / fw - 0.5f / fw;
+    v[0].v = (float)ty / fh - 0.5f / fh;
+    v[0].x = x + 0.5f * w;
+    v[0].y = y + 0.5f * h;
     v[0].z = z;
     v[0].color = color;
-    v[1].u = u0;
-    x = x + w * -0.5f;
-    v[1].v = v0;
-    v[1].x = x;
-    v[1].y = y1;
+    v[1].u = (float)tx / fw - 0.5f / fw;
+    v[1].v = (float)ty / fh - 0.5f / fh;
+    v[1].x = x + -0.5f * w;
+    v[1].y = y + 0.5f * h;
     v[1].z = z;
     v[1].color = color;
-    v[2].u = u1;
-    v[2].v = v1;
-    y = y + h * -0.5f;
-    v[2].x = x1;
-    v[2].y = y;
+    v[2].u = (float)(tx + tw) / fw - 0.5f / fw;
+    v[2].v = (float)(ty + th) / fh - 0.5f / fh;
+    v[2].x = x + 0.5f * w;
+    v[2].y = y + -0.5f * h;
     v[2].z = z;
     v[2].color = color;
-    v[3].u = u0;
-    v[3].v = v1;
-    v[3].x = x;
-    v[3].y = y;
+    v[3].u = (float)tx / fw - 0.5f / fw;
+    v[3].v = (float)(ty + th) / fh - 0.5f / fh;
+    v[3].x = x + -0.5f * w;
+    v[3].y = y + -0.5f * h;
     v[3].z = z;
     v[3].color = color;
 }
-#endif
 
 /* Draws the Japanese LP panel frame at (x, y): three shining bands, the border masked through
    the stencil with a rotating light, and the front plate. */
