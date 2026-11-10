@@ -1,5 +1,4 @@
 // @range 0x0888F420-0x08890094
-// @asm 0x0888F82C-0x0888FC28
 /* Card effect handlers (DuelAct *a), after effects_zb.c. */
 #include "duel.h"
 
@@ -100,10 +99,6 @@ int duel_0888F6B0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* alocação dos $s (uid reaproveita o registrador da zona); 1028 B contra 1020: o original lê o byte
-                      +2 de a uma vez e mantém a->player em a0 do teste do uid até os casos 0x80/0x7F (sem recarregar),
-                      o mwcc o recalcula com andi 0xFF; trocar a->player por p nesses casos piora (223 -> 187 palavras, a0
-                      continua sobrando) */
 int duel_0888F82C(DuelAct *a)
 {
     unsigned int p = a->player;
@@ -141,14 +136,14 @@ int duel_0888F82C(DuelAct *a)
     }
     switch (duel_step) {
     case 0x80:
-        if (duel_088BFF78(a->player, a->id, cid) == 0) {
+        if (duel_088BFF78((int)a->player, (int)a->id, cid) == 0) {
             duel_0884ACD8(a->player, (void *)0xD);
             return 0x78;
         }
         duel_0884ACD8(p, (void *)0xF6);
         return 0x7F;
     case 0x7F:
-        duel_0884C588(a->player, 6, a->id, cid);
+        duel_0884C588((int)a->player, 6, (int)a->id, cid);
         return 0x7E;
     case 0x7E:
         switch (duel_0884C804()) {
@@ -194,7 +189,6 @@ int duel_0888F82C(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888FC28(DuelAct *a)
 {
