@@ -1,5 +1,4 @@
 // @range 0x08828DD0-0x088299C8
-// @asm 0x08828DD0-0x0882923C
 // @data 0x08876710-0x088769E0
 /* Window frames drawn along a polyline (the field zone highlights): for each segment an edge
    sprite and, at each turn, a corner sprite taken from window01.gim with one of 8 colour styles;
@@ -83,7 +82,6 @@ DdWPiece dd_wline_pieces[8][11] = {
 
 char dd_wline_gim_name[] = "window01.gim";
 
-#ifdef NON_MATCHING /* 179 palavras: tamanho n * 2 * sizeof * 2 como no original; registradores e posições de pilha diferem */
 /* direction of a segment: 1 right, 2 down, 3 left, 4 up */
 unsigned int *dd_wline_draw(unsigned int *list, int style, int n, float *pts, int closed)
 {
@@ -91,27 +89,26 @@ unsigned int *dd_wline_draw(unsigned int *list, int style, int n, float *pts, in
     DdWVert *corners;
     DdWVert *ep, *cp;
     int cnt;
-    int i, j;
     int dir, nd;
+    int i, j;
     int ox;
+    float oy;                          /* always 0 here */
     int next, prev;
     float *a, *b;
     DdWPieceFn fn;
     void *gim;
 
     dd_wline_style = style;
-    edges = dl_alloc_inline(&list, n * 2 * sizeof(DdWVert) * 2);
-    corners = edges + n * 2;
-    ep = edges;
-    cp = corners;
+    ep = edges = dl_alloc_inline(&list, n * 2 * 2 * sizeof(DdWVert));
+    cp = corners = edges + n * 2;
     if (closed) {
         prev = n - 1;
         next = 0;
         cnt = n;
     } else {
-        cnt = n - 1;
         prev = 0;
         next = 1;
+        cnt = n - 1;
     }
     b = &pts[next * 3];
     a = &pts[prev * 3];
@@ -123,7 +120,8 @@ unsigned int *dd_wline_draw(unsigned int *list, int style, int n, float *pts, in
         dir = 2;
     else
         dir = 4;
-    for (i = 0, a = pts; i < cnt; i++, a += 3) {
+    for (i = 0; i < cnt; i++) {
+        a = &pts[i * 3];
         j = i + 1;
         if (j >= n)
             j = 0;
@@ -138,31 +136,47 @@ unsigned int *dd_wline_draw(unsigned int *list, int style, int n, float *pts, in
             nd = 4;
         fn = 0;
         ox = 0;
+        oy = 0.0f;
         switch (dir) {
         case 1:
-            if (nd == 4)
-                fn = dd_wline_inner_up_right;
-            else if (nd == 2)
+            switch (nd) {
+            case 2:
                 fn = dd_wline_corner_tr;
+                break;
+            case 4:
+                fn = dd_wline_inner_up_right;
+                break;
+            }
             break;
         case 2:
-            if (nd == 1)
-                fn = dd_wline_inner_down_right;
-            else if (nd == 3)
+            switch (nd) {
+            case 3:
                 fn = dd_wline_corner_br;
+                break;
+            case 1:
+                fn = dd_wline_inner_down_right;
+                break;
+            }
             break;
         case 3:
-            if (nd == 4)
-                fn = dd_wline_corner_bl;
-            else if (nd == 2)
+            switch (nd) {
+            case 2:
                 fn = dd_wline_inner_down_left;
+                break;
+            case 4:
+                fn = dd_wline_corner_bl;
+                break;
+            }
             break;
         case 4:
-            if (nd == 1) {
-                fn = dd_wline_corner_tl;
-            } else if (nd == 3) {
+            switch (nd) {
+            case 3:
                 fn = dd_wline_inner_up_left;
                 ox = -4;
+                break;
+            case 1:
+                fn = dd_wline_corner_tl;
+                break;
             }
             break;
         }
@@ -185,7 +199,7 @@ unsigned int *dd_wline_draw(unsigned int *list, int style, int n, float *pts, in
             break;
         }
         if (fn != 0)
-            ep = fn(ep, ox + a[0], 0 + a[1], b[0], b[1]);
+            ep = fn(ep, ox + a[0], oy + a[1], b[0], b[1]);
     }
     gim = ehp_find(syspack_get(), dd_wline_gim_name, 0);
     if (gim != 0)
@@ -194,7 +208,6 @@ unsigned int *dd_wline_draw(unsigned int *list, int style, int n, float *pts, in
     list = dl_draw_array(list, 6, 0x800102, ((unsigned int)cp - (unsigned int)corners) / 10, 0, corners);
     return list;
 }
-#endif
 
 unsigned int *dd_wline_sprite(unsigned int *list, int style, float *p0, float *p1)
 {

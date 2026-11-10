@@ -136,8 +136,6 @@ segments:
       - [0x23FC8, c, dd_sfx]
       - [0x24344, c, dd_mon_anim]
       - [0x24E30, c, dd_wline]
-      - [0x24E30, asm, dd_wline_asm_08828DD0]
-      - [0x2529C, c, dd_wline]
       - [0x25A28, c, dd_pick]
       - [0x269AC, c, dd_dice]
       - [0x27F60, c, dd_menu_hooks]
