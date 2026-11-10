@@ -45,8 +45,8 @@ typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
 extern int rand3_slot;                 /* BOOT variable imports, 0 in the relocated ELF */
 extern RandSeed rand3_seeds[];
 
-#define RAND15() (rand3_seeds[rand3_slot].lcg *= 0x41C64E6D, rand3_seeds[rand3_slot].lcg += 0x3039, \
-                  (int)(rand3_seeds[rand3_slot].lcg >> 16 & 0x7FFF))
+#define RAND15() (rand3_seeds[rand3_slot].lcg *= 0x41C64E6D, \
+                  (int)((rand3_seeds[rand3_slot].lcg += 0x3039) >> 16 & 0x7FFF))
 
 typedef struct DdLinesPart {           /* 0x10 */
     int cell;                          /* +0x00 cell of the texture */

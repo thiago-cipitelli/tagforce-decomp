@@ -1,5 +1,5 @@
 // @range 0x088117B8-0x08812C60
-// @asm 0x0881189C-0x088121E0
+// @asm 0x0881189C-0x08811E40
 // @asm 0x0881259C-0x08812754
 // @data 0x088203A0-0x08820410
 /* Opening the bought packs one after the other: the pack model flies in and turns, it bursts, the
@@ -194,8 +194,8 @@ int shop_result_input(void)
 
 #endif
 
-#ifdef NON_MATCHING /* 3 palavras: o k = 0 do 2º laço sai antes da guarda blez (no original, no atraso dela); o deslocamento off explícito acertou os $s de k/off. O original usa a mesma variável como contador do 1º laço e como x dos nomes; cadeia de if no estado, w + 0x40 da dica num só valor */
-/* the 3D pack and cards, the names of the cards shown and the "skip" hint */
+/* the 3D pack and cards, the names of the cards shown and the "skip" hint; the names loop is a guarded
+   do/while (k = 0 in the delay slot of the guard, off = 0 inside it) */
 void shop_draw_open(void)
 {
     unsigned short *name;
@@ -222,38 +222,42 @@ void shop_draw_open(void)
     list = shop_dl_2d(list);
     font_text_set(list);
     font_set_flag4(0);
-    for (k = 0, off = 0; k < shop_open->n_cards; k++, off += sizeof(ShopOpenCard)) {
-        ShopOpenCard *c = ((ShopOpen *)((char *)shop_open + off))->cards;
-        name = card_get_name(c->id);
-        font_set_size(18, 18);
-        if (c->state == 3) {
-            w = font_measure_text(name);
-            x = (0x7800 - w) / 2;
-        } else if (c->state == 4) {
-            w = font_measure_text(name);
-            x = (0x7800 - w) / 2;
-            { int t = x + w; x -= t * c->timer / 14; }
-        } else if (c->state == 2) {
-            w = font_measure_text(name);
-            x = 0x7800 - (0x7800 - (0x7800 - w) / 2) * c->timer / 16;
-        } else {
-            continue;
-        }
-        color = 0xFFFFFFFF;
-        font_set_color(0xFF000000);
-        switch (card_get_prop6_hi(c->id)) {
-        case 3:
-        case 4:
-            font_set_color(0xFF008080);
-            color = 0xFF00FFFF;
-            break;
-        }
-        font_draw_wtext(x & ~0x3F, 0x3840, w << 6, name);
-        font_draw_wtext(((x >> 6) + 2) << 6, 0x3840, w << 6, name);
-        font_draw_wtext(((x >> 6) + 1) << 6, 0x3800, w << 6, name);
-        font_draw_wtext(((x >> 6) + 1) << 6, 0x3880, w << 6, name);
-        font_set_color(color);
-        font_draw_wtext(((x >> 6) + 1) << 6, 0x3840, w << 6, name);
+    k = 0;
+    if (k < shop_open->n_cards) {
+        off = 0;
+        do {
+            ShopOpenCard *c = ((ShopOpen *)((char *)shop_open + off))->cards;
+            name = card_get_name(c->id);
+            font_set_size(18, 18);
+            if (c->state == 3) {
+                w = font_measure_text(name);
+                x = (0x7800 - w) / 2;
+            } else if (c->state == 4) {
+                w = font_measure_text(name);
+                x = (0x7800 - w) / 2;
+                { int t = x + w; x -= t * c->timer / 14; }
+            } else if (c->state == 2) {
+                w = font_measure_text(name);
+                x = 0x7800 - (0x7800 - (0x7800 - w) / 2) * c->timer / 16;
+            } else {
+                continue;
+            }
+            color = 0xFFFFFFFF;
+            font_set_color(0xFF000000);
+            switch (card_get_prop6_hi(c->id)) {
+            case 3:
+            case 4:
+                font_set_color(0xFF008080);
+                color = 0xFF00FFFF;
+                break;
+            }
+            font_draw_wtext(x & ~0x3F, 0x3840, w << 6, name);
+            font_draw_wtext(((x >> 6) + 2) << 6, 0x3840, w << 6, name);
+            font_draw_wtext(((x >> 6) + 1) << 6, 0x3800, w << 6, name);
+            font_draw_wtext(((x >> 6) + 1) << 6, 0x3880, w << 6, name);
+            font_set_color(color);
+            font_draw_wtext(((x >> 6) + 1) << 6, 0x3840, w << 6, name);
+        } while (k++, off += sizeof(ShopOpenCard), k < shop_open->n_cards);
     }
     font_set_flag4(1);
     font_set_color(0xFFFFFFFF);
@@ -264,7 +268,6 @@ void shop_draw_open(void)
                    w, table_get_entry(shop_str_get(0xC001), 0x1B));
     dl_set_list(font_text_clear());
 }
-#endif
 
 /* opens the packs left (skip), builds the display order of the bought list, goes to the list */
 void shop_result_update(void)
