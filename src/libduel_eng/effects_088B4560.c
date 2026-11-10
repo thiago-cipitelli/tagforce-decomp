@@ -2,7 +2,7 @@
 /* Card effect handlers: candidate lists for duel_088BFC64 (player, zone, index). */
 #include "duel.h"
 
-void duel_088BFC64(unsigned int p, int zone, unsigned int i);
+void duel_088BFC64(unsigned int, int, unsigned int);
 int card_is_monster(int id);
 int card_get_attribute_icon(int id);
 unsigned int card_get_type(int);

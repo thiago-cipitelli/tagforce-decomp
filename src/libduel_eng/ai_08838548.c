@@ -34,7 +34,7 @@ int duel_0884AF88(int);
 void duel_0884ACD8(unsigned int p, int msg);
 void duel_0881956C(unsigned int p, int id, int (*fn)());
 void duel_08835978(int (*fn)());
-void duel_088D1AC8(unsigned int p, int z);
+void duel_088D1AC8(unsigned int, int);
 int duel_08837020(void);
 void duel_08832AF4(unsigned int, int, int, int);
 void duel_088C45B4(unsigned int p, int n);

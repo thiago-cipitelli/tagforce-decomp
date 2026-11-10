@@ -4,7 +4,7 @@
 #include "duel.h"
 
 int duel_088619FC(DuelAct *a, int b);
-void duel_088D1AC8(unsigned int p, int z);
+void duel_088D1AC8(unsigned int, int);
 unsigned int duel_slot_link_1a0c(unsigned int p, int z);
 void duel_0884ACD8(unsigned int p, int msg);
 void duel_088359E8(unsigned int p, int id, int (*fn)());

@@ -61,7 +61,7 @@ typedef struct DuelCandList {          /* 0x08915258: cards collected by the lis
 extern DuelCandList duel_w_08915258;
 extern DuelCandHandler duel_w_08912988[];
 
-void duel_088BFC64(unsigned int p, int zone, unsigned int i);
+void duel_088BFC64(unsigned int, int, unsigned int);
 extern unsigned short duel_w_089147E8[];
 
 void duel_088BC9E0(unsigned int p)

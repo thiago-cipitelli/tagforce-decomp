@@ -27,7 +27,7 @@ int duel_d_find_name(unsigned int, int);
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_088BFFD8(unsigned int p, unsigned int key, int c);
 int duel_field_level(unsigned int p, int z);
-int duel_08845070(int id);
+int duel_08845070(int);
 void duel_field_stats(unsigned int p, int z, DuelStats *st);
 int duel_list_card_level(unsigned int p, int i);
 unsigned int duel_0884E4A0(DuelAct*);

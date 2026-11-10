@@ -2233,7 +2233,7 @@ int duel_088AE348(DuelAct *a)
 int card_is_attribute9(int);
 int duel_field_e5ae0(unsigned int p, int z);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
-void duel_088D1AC8(unsigned int p, int z);
+void duel_088D1AC8(unsigned int, int);
 void duel_088C44E4(unsigned int p, int id);
 
 int duel_088AE378(DuelAct *a, int b)

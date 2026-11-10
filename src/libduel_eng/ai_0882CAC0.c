@@ -27,7 +27,7 @@ int duel_slot_effect_with(unsigned int, int, int, int);
 void duel_088C4448(unsigned int, int, int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C448C(int p, int a);
-void duel_088D1AC8(unsigned int p, int z);
+void duel_088D1AC8(unsigned int, int);
 int card_is_in_group_19bb(int id);
 int duel_count_free_monster_zones(unsigned int p);
 unsigned short *card_get_name(int id);

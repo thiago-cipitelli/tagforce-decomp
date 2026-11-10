@@ -23,7 +23,7 @@ int duel_d_count_name(unsigned int p, unsigned short id);
 int duel_08810AE0(DuelAct *a);
 int duel_08809F2C();
 int duel_field_def(unsigned int p, int z);
-int duel_08845070(unsigned short id);
+int duel_08845070(int);
 int duel_grave_count_monsters(unsigned int p);
 int duel_field_level(unsigned int p, int z);
 int duel_hand_count_name(unsigned int p, unsigned short id);
@@ -295,7 +295,7 @@ int duel_08810F24(DuelAct *a)
     for (z = 0; z <= 10; z++) {
         unsigned int id = duel.players[a->player & 1].field[z].card.id;
 
-        if (id != 0 && !(duel.players[a->player & 1].field[z].flags >> 5 & 1) && duel_08845070(id) > 0) {
+        if (id != 0 && !(duel.players[a->player & 1].field[z].flags >> 5 & 1) && duel_08845070((unsigned short)id) > 0) {
             return 1;
         }
     }

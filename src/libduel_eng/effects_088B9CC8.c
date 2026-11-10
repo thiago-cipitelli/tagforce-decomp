@@ -5,7 +5,7 @@
 
 int duel_list_card_level(unsigned int p, int i);
 int duel_card_dfac8(unsigned int p, int id, int field);
-void duel_088BFC64(unsigned int p, int zone, unsigned int i);
+void duel_088BFC64(unsigned int, int, unsigned int);
 int card_is_monster(int id);
 int card_get_level(int);
 unsigned int card_get_type(int);

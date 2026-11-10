@@ -27,7 +27,7 @@ int duel_field_base_atk(unsigned int p, int z);
 int duel_field_level(unsigned int p, int z);
 int duel_field_atk(unsigned int p, int z);
 int duel_088619C4(DuelAct *a, int b);
-void duel_088D1AC8(unsigned int p, int z);
+void duel_088D1AC8(unsigned int, int);
 int duel_count_tributable_except(unsigned int p, int src);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_08874528(DuelAct *a, int b);

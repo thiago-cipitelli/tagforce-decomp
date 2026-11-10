@@ -4,7 +4,7 @@
 
 int duel_list_card_level(unsigned int p, int i);
 int duel_card_dfac8(unsigned int p, int id, int field);
-void duel_088BFC64(unsigned int p, int zone, unsigned int i);
+void duel_088BFC64(unsigned int, int, unsigned int);
 int card_same_name(int id, int id2);
 int duel_count_active(int id);
 int duel_find_effect_card(unsigned int p, int id, int skip);
