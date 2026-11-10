@@ -13,7 +13,7 @@ extern int duel_w_0891962C;
 int duel_count_free_monster_zones(unsigned int p);
 int duel_field_locate(int uid);
 int duel_zone_usable(unsigned int p, unsigned int z);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_can_tribute(unsigned int p, unsigned int q, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);

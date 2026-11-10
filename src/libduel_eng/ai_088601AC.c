@@ -7,7 +7,7 @@ unsigned short duel_field_type(unsigned int p, int z);
 int duel_field_level(unsigned int p, int z);
 int duel_field_atk(unsigned int p, int z);
 int duel_field_same_name(unsigned int p, int z, int id);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int card_get_attribute_icon(int id);
 int duel_is_cur_card(int id);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);

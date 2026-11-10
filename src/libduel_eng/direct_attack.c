@@ -6,10 +6,10 @@
 
 int duel_has_faceup_attr6(unsigned int p);
 int duel_is_cur_card(int id);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_slot_has_effect(unsigned int p, int z, int id);
-int duel_slot_effect_arg(unsigned int p, int z, int id);
-unsigned int duel_slot_ref(unsigned int p, int z);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
+unsigned int duel_slot_ref(unsigned int, int);
 int duel_has_attack_target(unsigned int p);
 int duel_has_st_12be(unsigned int p);
 int duel_no_faceup_attrs46(unsigned int p);

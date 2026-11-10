@@ -5,7 +5,7 @@
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_card_e4fd0(int id);
 int card_is_monster(int id);
 int duel_slot_e68a0(unsigned int p, int z);

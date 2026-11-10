@@ -19,7 +19,7 @@ unsigned int duel_hand_locked(unsigned int p);
 void duel_mode_set(unsigned int bit, int on);
 void duel_player_flag_set(unsigned int p, unsigned int bit, int on);
 void duel_msg_send(unsigned short cmd, int arg, void *data, int len);
-void duel_088DF554(unsigned int p, int z, unsigned int bit, int on);
+void duel_088DF554(unsigned int, int, unsigned int, int);
 
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b)
 {

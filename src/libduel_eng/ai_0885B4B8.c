@@ -6,7 +6,7 @@ int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_slot_efb84(unsigned int p, int z);
-int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_field_flag9(unsigned int, int);
 int card_get_type(int id);
 int duel_field_atk(unsigned int p, int z);
 int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
@@ -21,7 +21,7 @@ int duel_08857D98(DuelAct *a, unsigned int p, int z);
 int duel_08859120(DuelAct *a, unsigned int p, int z);
 int duel_088578B8(DuelAct *a, unsigned int p, int z);
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int card_is_attribute8(unsigned short id);
 int duel_st_affects(unsigned int q, int i, unsigned int p, int z);
 int duel_08854D4C(DuelAct *a, unsigned int p, int z);

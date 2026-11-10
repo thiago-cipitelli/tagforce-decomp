@@ -23,7 +23,7 @@ extern DuelAiCard duel_ai_cards_08906DA0[5];
 extern DuelAiCard duel_ai_monster_cards[0x103]; /* 0x08906DC8 */
 extern DuelAiCard duel_ai_st_cards[0x57];      /* 0x089075E0 */
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_0886981C(DuelAct *a, DuelAct *b);
 int duel_08869ACC(DuelAct *a, DuelAct *b);
 int duel_ai_0882054C(DuelAct *a);
@@ -39,7 +39,7 @@ int duel_grave_count_monsters(unsigned int p);
 int duel_count_field_cards(unsigned int p, int faceup, int facedown, int fzone);
 int duel_0880A8AC(unsigned int p, unsigned int q);
 int duel_088BFFD8(unsigned int p, int id, int i);
-unsigned int duel_08828740(unsigned int p, int uid);
+int duel_08828740(unsigned int, int);
 int duel_088BFF78(unsigned int p, int id, int b);
 int duel_0884C824(void);
 unsigned int duel_0884C830(int i);
@@ -49,7 +49,7 @@ void duel_088367A8(unsigned int p, int b, int id, int uid);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_count_free_st_zones(unsigned int p);
 int duel_df664(unsigned int p);
-int card_get_prop5_hi(int id);
+int card_get_prop5_hi(int);
 int duel_card_e59b0(int id);
 int duel_can_pay(unsigned int p, int id);
 int duel_0880A934(unsigned int p, unsigned short id);
@@ -702,7 +702,7 @@ void duel_088C44E4(unsigned int p, int id);
 void duel_088D1B20(unsigned int p, unsigned int mask);
 void duel_088CC178(unsigned int p, int z, unsigned int v);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
-int card_is_in_group_1a2f(int id);
+int card_is_in_group_1a2f(int);
 int card_get_kind(int id);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_field_base_atk(unsigned int p, int z);
@@ -1425,7 +1425,7 @@ void duel_088C05B0(int id);
 int duel_slot_immune(unsigned int p, int z, int opp);
 int duel_slot_counter_arg(unsigned int p, int z, int id, int arg);
 void duel_088C7C54(void);
-int duel_088C4730(unsigned int p, int n, int f, int id);
+int duel_088C4730(unsigned int, int, int, int);
 void duel_088C7CF0(void);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 void duel_msg_send3(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
@@ -1657,7 +1657,7 @@ done:
     return 0;
 }
 
-void duel_088C7DD4(unsigned int p, int a, int b);
+void duel_088C7DD4(unsigned int, unsigned int, unsigned int);
 
 /* Starts the record: uids of the targets, then the record is sent to the peer when the player is
    remote. */

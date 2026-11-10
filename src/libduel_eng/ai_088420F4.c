@@ -19,22 +19,22 @@ extern DuelAiCheck duel_ai_checks_08907E04[5];
 int duel_08841B54(unsigned int p);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void duel_088AFD5C(int kind, unsigned int a);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 void duel_088CC1D0(unsigned int p, int z, int a);
 void duel_088C4448(unsigned int p, int z, unsigned int uid);
 unsigned short *card_get_name(int id);
 void duel_wfmt_s();
 int duel_0884AD18(int msg);
-void duel_08832624(unsigned int p, unsigned int id, int a, int b);
+void duel_08832624(unsigned int, unsigned int, int, int);
 int duel_088D1438(unsigned int p, int z, unsigned int q, unsigned short id);
 int duel_088D189C(unsigned int p, int z, unsigned int q, unsigned short id);
-unsigned short duel_slot_e1854(unsigned int p, int z);
+unsigned short duel_slot_e1854(unsigned int, int);
 int duel_slot_counter_1a90(unsigned int p, int z);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);
 void duel_088CC594(unsigned int p, int z, int n, int id);
 int duel_slot_value_1909(unsigned int p, int z);
 int duel_card_can_affect(unsigned int p, int z, unsigned short id, int zone, int arg);
-int duel_slot_min_1130(unsigned int p, int z);
+unsigned int duel_slot_min_1130(unsigned int, int);
 
 #ifdef NON_MATCHING /* forma igual; difere a alocação de registradores dos casos 4 e 5 e o original mantém o duel_w_08919600++ do fim do caso 6, que o mwcc elimina por ser sobrescrito no caso 7 */
 /* returns 0 while the step machine has work left */

@@ -4,7 +4,7 @@
 #include "duel.h"
 #include "card_db.h"
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_field_same_name(unsigned int p, int z, int id);
 int duel_slot_value_1909(unsigned int p, int z);
 

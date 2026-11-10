@@ -20,7 +20,7 @@ int duel_088AA844(DuelAct *a, unsigned int p, int z);
 int duel_0887A96C(DuelAct *a, int b);
 int duel_grave_find_name(unsigned int p, int id);
 DuelCard *duel_0884C7CC(void);
-int duel_0884C804(void);
+unsigned int duel_0884C804(void);
 DuelCard *duel_0884C7EC(int i);
 int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
 int duel_0884E5E0(DuelAct *a);

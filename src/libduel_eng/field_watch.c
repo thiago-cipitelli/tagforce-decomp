@@ -8,7 +8,7 @@ extern unsigned int duel_w_08919620;   /* moves in a row, reset after 10 */
 int duel_slot_eef84(unsigned int p, int z);
 unsigned int duel_field_controller(unsigned int p, int z, int arg);
 int duel_pick_monster_zone(unsigned int p);
-unsigned int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_field_flag9(unsigned int, int);
 int duel_pick_st_zone(unsigned int p);
 void duel_088D1438(unsigned int p, int z, int a, int b);
 void duel_088CA184(unsigned short loc, unsigned short to);
@@ -22,8 +22,8 @@ void duel_088CBAA4(unsigned int p, int z, int uid);
 void duel_088C7E68(unsigned int p, int z, int a, int b);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C88B8(unsigned int p, int z, int v, int c);
-int field_get_card(unsigned int p, int z);
-int duel_act_check_08853CE8(DuelAct *a, unsigned int p, int z);
+int field_get_card(unsigned int, int);
+int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 
 /* the monster (p, z) is controlled by the other player: move it to his side; 1 if handled */
 int duel_088C7F18(unsigned int p, int z)

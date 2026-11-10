@@ -23,7 +23,7 @@ extern int (*duel_ai_phases[])(void);  /* 0x08912438 */
 
 int duel_0884E948(DuelAct *a, unsigned int p);
 int duel_facedown_can_act(unsigned int p, int z);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_count_field_cards(unsigned int p, int faceup, int facedown, int fzone);
 void duel_08826000(unsigned int p, int z);
 int duel_088078AC(unsigned int p, int uid);
@@ -31,11 +31,11 @@ int duel_double_tribute(unsigned int p, int id, unsigned int q, int z);
 int duel_0880750C(unsigned int p, int id, int a, int i, unsigned short *out);
 int duel_can_special_summon(unsigned int p);
 int duel_can_activate(unsigned int p);
-void duel_0882AF5C(int a, int b, int c);
+int duel_0882AF5C(int, int, int);
 int duel_count_field_all(unsigned int p);
 int duel_0880AF74(unsigned int p, int id);
 int duel_count_name(unsigned int p, int id);
-int duel_08827D98(unsigned int p, int uid);
+int duel_08827D98(unsigned int, int);
 int duel_count_monsters(unsigned int p);
 int duel_count_tributable_except(unsigned int p, int src);
 int duel_count_tributes();
@@ -68,9 +68,9 @@ int duel_can_attack(unsigned int p, int z, int arg);
 int duel_0880A17C(unsigned int p, unsigned int q, int a, int b, int c);
 int duel_0880A8AC(unsigned int p, unsigned int q);
 int duel_count_facedown_st(unsigned int p);
-int duel_hand_count_type(unsigned int p, int type);
+int duel_hand_count_type(unsigned int, unsigned int);
 int duel_field_base_atk(unsigned int p, int z);
-int duel_count_type(unsigned int p, unsigned int type);
+int duel_count_type(unsigned int, unsigned int);
 int duel_card_check_9148(unsigned int p, int id);
 int duel_08805DA4(unsigned int p, int id, int a, int b);
 int duel_slot_has_effect(unsigned int p, int z, int id);
@@ -89,9 +89,9 @@ int duel_0880AEF4(unsigned int p, int id);
 int duel_count_monsters_fn(unsigned int p, int (*fn)(int id));
 int duel_card_fits_zone(unsigned int p, int z, int id);
 int duel_088C1D80(unsigned int p);
-int duel_count_grave_type(unsigned int p, unsigned int type);
+int duel_count_grave_type(unsigned int, unsigned int);
 int duel_count_monsters_pos(unsigned int p, int faceup, int pos0);
-int duel_grave_count_id(unsigned int p, int id);
+int duel_grave_count_id(unsigned int, unsigned int);
 
 int module_entry(void)
 {

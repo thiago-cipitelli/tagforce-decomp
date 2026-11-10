@@ -19,7 +19,7 @@ void duel_0881956C(unsigned int p, int id, int (*fn)());
 void duel_08835978(int (*fn)());
 int duel_0882926C(unsigned int p, int z, int i);
 int duel_0882AAA0(unsigned int p, int z, int i);
-int duel_08827DA4(unsigned int p, int uid, int a, int b);
+unsigned int duel_08827DA4(unsigned int, int, int, int);
 void duel_0884AD40(int msg, int uid);
 int duel_0884ACD8(unsigned int p, int msg);
 int duel_list_find_id(unsigned int p, unsigned int id);

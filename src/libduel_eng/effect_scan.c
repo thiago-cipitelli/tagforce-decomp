@@ -20,18 +20,18 @@ extern DuelListCard duel_cards[512];
 
 void duel_effect_free(unsigned int i);
 void duel_effects_free_src(unsigned int e, unsigned short src, int all);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 unsigned int duel_slot_immunity(unsigned int p, int z);
-unsigned int duel_slot_ref(unsigned int p, int z);
+unsigned int duel_slot_ref(unsigned int, int);
 int duel_slot_immune(unsigned int p, int z, int opp);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);
 int card_get_type(int id);
 int card_is_monster(int id);
 int card_is_attribute8(int id);
-int duel_act_check_08853CE8(DuelAct *a, int x, int y);
+int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 int duel_slot_e1390(unsigned int p, int z, int id, unsigned int q);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
-unsigned short duel_slot_e1854(unsigned int p, int z);
+unsigned short duel_slot_e1854(unsigned int, int);
 
 /* Free the kind 3 entries of the card with uid. */
 void duel_088E0890(int uid)

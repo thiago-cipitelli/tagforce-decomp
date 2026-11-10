@@ -11,7 +11,7 @@ void duel_088CC718(int id);
 int duel_slot_e8170(unsigned int p, int z, int id);
 void duel_088CC1A0(unsigned int p, int z, unsigned int v);
 void duel_088C7E68(unsigned int p, int z, int a, int b);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 void duel_088CC178(unsigned int p, int z, unsigned int v);
 int duel_slot_value_1909(unsigned int p, int z);

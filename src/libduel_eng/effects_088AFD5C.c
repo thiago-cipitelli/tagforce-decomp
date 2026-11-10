@@ -260,7 +260,7 @@ int duel_088AFF8C(unsigned int p, int id)
 }
 #endif
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_088695B8(unsigned int p, unsigned int q, int z, DuelAct *a);
 int duel_08869728(unsigned int p, int i, DuelAct *a);
 int duel_088BFFD8(unsigned int p, int id, int i);

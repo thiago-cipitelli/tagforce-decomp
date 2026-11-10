@@ -8,10 +8,10 @@ extern int duel_zone_order_st[5];      /* 0x08911DB4 */
 int duel_count_active(int id);
 int duel_count_field(unsigned int p);
 int duel_zone_usable(unsigned int p, unsigned int z);
-unsigned int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_field_flag9(unsigned int, int);
 unsigned int duel_field_attrs(unsigned int p, int z);
 int duel_field_same_name(unsigned int p, int z, int id);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_count_field_cards(unsigned int p, int faceup, int facedown, int fzone);
 int duel_st_zone_free(unsigned int p, int z);
 int duel_pick_st_zone(unsigned int p);

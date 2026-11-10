@@ -19,7 +19,7 @@ extern int duel_w_08919624;
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 int duel_find_effect_card(unsigned int p, int id, int z);
 void duel_088C448C(int p, int a);
-int duel_088C4730(unsigned int p, int n, int f, int id);
+int duel_088C4730(unsigned int, int, int, int);
 void duel_088AFD5C();
 
 void duel_088C01F8(unsigned int p, int id, int a);
@@ -27,7 +27,7 @@ int duel_088C5510(unsigned int p, int n, int f);
 void duel_088C5E78(unsigned int p, unsigned int n, int x, int y);
 int duel_088DFCC8(unsigned int uid);
 void duel_088C626C(unsigned int p, unsigned int uid, int a);
-void duel_088CB728(unsigned int p, int z, int uid, unsigned int q, int qz, int a, int b);
+void duel_088CB728(int, int, int, unsigned int, int, int, int);
 DuelCard *duel_0884CCBC(int k);
 void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int a);
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
@@ -70,9 +70,9 @@ void duel_088C8AD0(unsigned int p, int z, int id, int v);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_0886956C(int uid);
 
-int duel_slot_has_src10(unsigned int p, int z, int q, int k);
+int duel_slot_has_src10(unsigned int, unsigned int, unsigned int, int);
 unsigned short duel_slot_src_attr8(unsigned int p, int z, int active);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 unsigned short duel_slot_src13(unsigned int p, int z);
 extern int duel_atk_direct;            /* 0x08913F18 */
 extern int duel_atk_zone;              /* 0x08913F2C attacker zone */

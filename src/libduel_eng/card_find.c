@@ -4,8 +4,8 @@
 #include "duel.h"
 #include "card_db.h"
 
-int field_get_card(unsigned int p, int z);
-int duel_slot_e1854(unsigned int p, int z);
+int field_get_card(unsigned int, int);
+unsigned short duel_slot_e1854(unsigned int, int);
 int duel_slot_counter(unsigned int p, int z, int id);
 void duel_slot_foreach_effect(unsigned int p, int z, int (*fn)(DuelEffect *e, int *ctx), int *ctx);
 DuelCard *duel_field_card_deb2c(unsigned int p, int zone, int i);

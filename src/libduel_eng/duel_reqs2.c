@@ -7,8 +7,8 @@
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_count_active(int id);
-int field_get_card(unsigned int p, int z);
-unsigned short duel_slot_e1854(unsigned int p, int z);
+int field_get_card(unsigned int, int);
+unsigned short duel_slot_e1854(unsigned int, int);
 void duel_088C88B8(unsigned int p, int z, int v, int c);
 void duel_088CC178();
 void duel_088CC1D0(unsigned int p, int z, int a);

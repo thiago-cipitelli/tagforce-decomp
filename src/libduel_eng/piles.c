@@ -4,7 +4,7 @@
 #include "duel.h"
 #include "card_db.h"
 
-unsigned int duel_slot_effect_arg(unsigned int p, int z, int id);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
 unsigned int duel_card_effect_arg(DuelSlot *s, int id);
 int duel_card_protected(int id, int uid);
 void duel_card_copy(DuelCard *dst, DuelCard *src);

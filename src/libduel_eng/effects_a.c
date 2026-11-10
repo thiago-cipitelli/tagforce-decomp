@@ -18,19 +18,19 @@ void duel_088C7CF0(void);
 void duel_088C7BA4(void);
 void duel_088CA384(unsigned int p, int id, int a);
 void duel_08832894(unsigned int p, unsigned short id);
-void duel_08832950(unsigned int p, unsigned short id);
+void duel_08832950(unsigned int, int);
 int duel_0886CE38(void);
 void duel_088998D8(DuelAct *a, int b);
-void duel_08832624(unsigned int p, int a, int b, int c);
+void duel_08832624(unsigned int, unsigned int, int, int);
 void duel_088824E4(void);
-void duel_088C5E70(unsigned int p, int a);
+int duel_088C5E70(unsigned int, int);
 void duel_088C78E0(unsigned int p);
-unsigned int duel_act_target2(DuelAct *a, int i);
+unsigned int duel_act_target2(DuelAct*, int);
 int duel_grave_find_uid(unsigned int p, unsigned int uid);
 void duel_088CA428(unsigned int p, unsigned int uid, int a);
 int duel_0887DB24(void);
 void duel_08883FBC(DuelAct *a, int b);
-void duel_088C7DD4(unsigned int p, int a, int b);
+void duel_088C7DD4(unsigned int, unsigned int, unsigned int);
 void duel_088C625C(unsigned int p, int a, int b);
 
 int duel_msg_done(void)

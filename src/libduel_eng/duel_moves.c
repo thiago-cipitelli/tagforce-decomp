@@ -12,7 +12,7 @@ unsigned int duel_f_find_uid(unsigned int p, int uid);
 int duel_088CB55C(unsigned int p, DuelCard *c, int f);
 void duel_088CBB64(unsigned int p, int z, unsigned int on);
 extern unsigned int duel_w_08919620;
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 void duel_088C7E68(unsigned int p, int z, int a, int b);
 void duel_088D1438(unsigned int p, int z, int a, int b);
 void duel_088C89BC(unsigned int p, int z, int id, int c);

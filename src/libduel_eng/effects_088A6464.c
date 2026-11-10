@@ -10,7 +10,7 @@ extern int duel_w_089149FC;              /* duel_chain + 0x6AC */
 int duel_088A6264(int k, int id);
 int duel_088A62AC(int k, unsigned int p, int z);
 int card_is_in_group_1872(int id);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 
 #define CHAIN_LIST ((int *)((char *)&duel_chain + 0x6B0))
 #define CHAIN_W(i) (((int *)&duel_chain)[0x6B0 / 4 + (i)])

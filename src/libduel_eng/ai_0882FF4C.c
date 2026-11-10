@@ -37,7 +37,7 @@ extern int duel_atk_zone;              /* 0x08913F2C */
 int duel_zone_card_uid(unsigned int p, int z, int i);
 int duel_08809B50(unsigned int p, unsigned short id, unsigned short a);
 DuelCard *duel_0884C7CC(void);
-void duel_0884C588(unsigned int p, int a, int id, int b);
+void duel_0884C588(unsigned int, int, int, int);
 int duel_0880B448(unsigned int p, int id);
 unsigned int duel_0880BD00(unsigned int p, int id, int x); /* x is unsigned short in the definition; passed unmasked here */
 int duel_0884AF34(int a, int b);

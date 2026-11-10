@@ -7,7 +7,7 @@
 
 extern short duel_field_tbl[6][24];    /* 0x08911DC8 field spells 0x10F0-0x10F5 by type */
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 
 /* Returns the ATK bonus in the low half and the DEF bonus in the high half. */
 unsigned int duel_field_bonus(DuelStats *st, unsigned int p, int z, unsigned int q, int qz)
@@ -105,7 +105,7 @@ unsigned int duel_field_bonus(DuelStats *st, unsigned int p, int z, unsigned int
     return atk & 0xFFFF | (def & 0xFFFF) << 16;
 }
 
-int duel_count_type(unsigned int p, unsigned int type);
+int duel_count_type(unsigned int, unsigned int);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_count_same_name_other(unsigned int p, int z);
 
@@ -271,11 +271,11 @@ unsigned int duel_card_bonus(DuelStats *st, unsigned int p, int z, unsigned int 
     return atk & 0xFFFF | (def & 0xFFFF) << 16;
 }
 
-int duel_slot_e1854(unsigned int p, int z);
+unsigned short duel_slot_e1854(unsigned int, int);
 void duel_field_stats(unsigned int p, int z, DuelStats *st);
-unsigned int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_field_flag9(unsigned int, int);
 int duel_count_zone_f_type(unsigned int p, unsigned int type);
-int duel_grave_count_id(unsigned int p, unsigned int id);
+int duel_grave_count_id(unsigned int, unsigned int);
 int duel_count_monsters_fn(unsigned int p, int (*fn)(int id));
 
 #ifdef NON_MATCHING /* same code; the effect loop of the original keeps its index and pointer in $s1/$s0 and

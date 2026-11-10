@@ -51,7 +51,7 @@ int duel_08815288(unsigned int p);
 int duel_0881530C(unsigned int p, DuelAct *a);
 void duel_0884AD2C(unsigned short *msg, int kind);
 void duel_08835944();
-void duel_0884C588(unsigned int p, int a, int id, int b);
+void duel_0884C588(unsigned int, int, int, int);
 void duel_088AFEE0(int a);
 void duel_088348BC(int a, unsigned int p, int b);
 void duel_08834614(int a);

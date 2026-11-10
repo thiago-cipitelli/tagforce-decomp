@@ -5,7 +5,7 @@
 #include "duel.h"
 #include "card_db.h"
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_special_get_id(DuelSlot *s);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_card_protected(int id, int uid);

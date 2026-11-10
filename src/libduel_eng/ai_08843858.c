@@ -6,10 +6,10 @@ extern unsigned int duel_w_08919608;
 
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 void duel_088CC1D0(unsigned int p, int z, int a);
-int duel_slot_effect_arg(unsigned int p, int z, int id);
-unsigned int duel_slot_effect12_arg(unsigned int p, int z, int id);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
+unsigned int duel_slot_effect12_arg(unsigned int, int, int);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 void duel_088C8AD0(unsigned int p, int z, int id, int v);
 int duel_count_monsters(unsigned int p);

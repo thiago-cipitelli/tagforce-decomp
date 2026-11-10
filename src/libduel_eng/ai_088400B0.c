@@ -5,11 +5,11 @@
 extern unsigned int duel_turn_player;
 extern unsigned int duel_w_08919608;
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
-int duel_slot_effect_arg(unsigned int p, int z, int id);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
-int duel_zone_faceup(unsigned int p, int z, int i);
+unsigned int duel_zone_faceup(unsigned int, int, int);
 int duel_count_active(int id);
 int card_is_attribute7(int id);
 int card_attribute_icon_is3(int id);

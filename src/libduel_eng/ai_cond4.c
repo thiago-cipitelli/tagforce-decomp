@@ -11,7 +11,7 @@ extern unsigned int duel_turn_player;
 int duel_08809FC4();
 int duel_0880F8C4(DuelAct *a, int b);
 int duel_is_cur_card(int id);
-unsigned int duel_0884E4A0(DuelAct *a);
+unsigned int duel_0884E4A0(DuelAct*);
 int duel_088159C8(unsigned int p, unsigned int mask, int (*fn)());
 int duel_0881743C();
 int duel_count_monsters(unsigned int p);
@@ -34,14 +34,14 @@ int duel_0884E948(DuelAct *a, unsigned int p);
 int duel_0880B07C(unsigned int p);
 int duel_0880ABE0();
 int duel_slot_has_effect(unsigned int p, int z, int id);
-int card_get_atk(unsigned short id);
+int card_get_atk(int);
 int duel_hand_count_monsters(unsigned int p);
 void duel_act_0887E140(DuelAct *a, int d[2]);
 int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
 int duel_088BFFD8(unsigned int p, int id, int i);
 int duel_count_monsters_state(unsigned int p, int pos, int state);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
-int card_is_in_group_1a2f(unsigned short id);
+int card_is_in_group_1a2f(int);
 
 int duel_08810370(DuelAct *a)
 {

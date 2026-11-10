@@ -39,7 +39,7 @@ int card_get_type(int id);
 int card_get_kind(int id);
 int duel_field_atk(unsigned int p, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int card_is_in_group_1b2d(int id);
 int duel_count_free_monster_zones();
 int duel_zone_usable(unsigned int p, unsigned int z);

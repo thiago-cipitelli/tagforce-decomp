@@ -11,7 +11,7 @@ extern int duel_w_08919650;
 extern int duel_w_08919654;
 
 unsigned int duel_act_target(DuelAct *a, int i);
-int duel_088A9008(DuelAct *a, int b, int c);
+int duel_088A9008(DuelAct*, int, unsigned int*);
 int duel_0884E440();
 int duel_field_level(unsigned int p, int z);
 int duel_088537B0(int id);

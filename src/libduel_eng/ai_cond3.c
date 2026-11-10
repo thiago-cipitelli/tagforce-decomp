@@ -9,7 +9,7 @@ extern unsigned int duel_turn_player;
 
 int duel_count_monsters(unsigned int p);
 int duel_count_monsters_pos(unsigned int p, int faceup, int pos0);
-unsigned int duel_0884E4A0(DuelAct *a);
+unsigned int duel_0884E4A0(DuelAct*);
 int duel_088159C8(unsigned int p, unsigned int mask, int (*fn)());
 int duel_088171C8();
 int duel_field_base_atk(unsigned int p, int z);

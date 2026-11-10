@@ -33,7 +33,7 @@ extern int duel_atk_tz;                /* 0x08913F30 */
 extern unsigned int duel_turn_player;
 extern int duel_phase;
 
-unsigned int duel_slot_ref(unsigned int p, int z);
+unsigned int duel_slot_ref(unsigned int, int);
 void duel_088480D8(int *a, int *b, int c);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_find_effect_card(unsigned int p, int id, int z);
@@ -50,13 +50,13 @@ int duel_slot_affected(unsigned int p, int z, int id);
 int duel_count_id_flag18(unsigned int p, int id);
 int card_is_in_group_1a6x(int id);
 int duel_field_base_atk(unsigned int p, int z);
-unsigned short duel_slot_e1854(unsigned int p, int z);
+unsigned short duel_slot_e1854(unsigned int, int);
 int card_get_special_group(unsigned short id);
 unsigned int duel_field_attrs(unsigned int p, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 void duel_088C4448(unsigned int p, int z, unsigned int uid);
 int duel_count_type_skip(unsigned int p, unsigned int type, int skip);
-int duel_slot_e5a48(unsigned int p, int z);
+unsigned int duel_slot_e5a48(unsigned int, int);
 int duel_count_attr(unsigned int p, int attr);
 int duel_slot_counter_1a90(unsigned int p, int z);
 int card_is_in_group_158d(int id);

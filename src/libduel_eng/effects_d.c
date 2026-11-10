@@ -9,12 +9,12 @@ extern int duel_w_08919624;
 
 int duel_rand(int n);
 int duel_count_field_all(unsigned int p);
-int duel_grave_count_id(unsigned int p, unsigned int id);
-int duel_088C4604(DuelAct *a, unsigned int p, int n);
+int duel_grave_count_id(unsigned int, unsigned int);
+int duel_088C4604(DuelAct*, unsigned int, int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088CC4B4(unsigned int p, int z, int a);
 void duel_08832AF4(unsigned int p, int z, int a, int b);
-void duel_0884AF88(int msg);
+int duel_0884AF88(int);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_08885F68(DuelAct *a, int b);
 int duel_08894A84(DuelAct *a, int b);

@@ -19,15 +19,15 @@ extern int duel_atk_zone;              /* 0x08913F2C attacker zone */
 extern int duel_atk_tz;                /* 0x08913F30 target zone */
 extern AiSnap duel_atk_snap;           /* 0x08913FFC */
 
-void duel_088C7D74(int a, int b);
-void duel_088C7DD4(unsigned int p, int a, int b);
+void duel_088C7D74(unsigned int, unsigned int);
+void duel_088C7DD4(unsigned int, unsigned int, unsigned int);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 void duel_08836ED0(AiSnap *s);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 void duel_088C44E4(unsigned int p, int id);
 int duel_slot_has_effect(unsigned int p, int z, int id);
-int duel_slot_effect_arg(unsigned int p, int z, int id);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_slot_faceup_live(unsigned int p, int z);
@@ -49,9 +49,9 @@ void duel_088C7BA4(void);
 void duel_088C7CF0(void);
 int duel_spec_act_ok(DuelSpecAct *s);
 void duel_088C4864(DuelSpecRec *r);
-int duel_088C4730(unsigned int p, int n, int f, int id);
+int duel_088C4730(unsigned int, int, int, int);
 int duel_088D1438(unsigned int p, int z, int a, int b);
-int duel_088D1F1C(DuelAct *a, int i);
+int duel_088D1F1C(DuelAct*, int);
 int duel_088C168C(void);
 int duel_088C30D4(void);
 unsigned int duel_field_type(unsigned int p, int z);
@@ -81,9 +81,9 @@ int duel_slot_e68a0(unsigned int p, int z);
 void duel_088CC284(unsigned int p, int z, int n);
 int duel_pick_st_zone(unsigned int p);
 unsigned int duel_card_locate(unsigned int uid);
-void duel_088CB728(unsigned int p, int z, int uid, unsigned int q, int qz, int a, int b);
-void duel_088C8B78(unsigned int p, unsigned short loc, unsigned short t, unsigned short k);
-unsigned int duel_field_flag9(unsigned int p, int z);
+void duel_088CB728(int, int, int, unsigned int, int, int, int);
+void duel_088C8B78(unsigned int, unsigned short, unsigned short, int);
+unsigned int duel_field_flag9(unsigned int, int);
 unsigned int duel_088D13D8(unsigned int p, unsigned short id, unsigned int mask);
 
 #define ATK_SLOT(p, z) (&duel.players[(p) & 1].field[(z)])

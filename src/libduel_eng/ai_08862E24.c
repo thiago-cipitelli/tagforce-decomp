@@ -19,7 +19,7 @@ void duel_0884ACD8(unsigned int p, int msg);
 int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
 void duel_088359E8(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p, int z));
 int duel_08835AC0(void);
-void duel_088D1CF4(DuelAct *a, unsigned int p, int z);
+int duel_088D1CF4(DuelAct*, unsigned int, int);
 
 extern int duel_w_08914904;
 extern int duel_w_08919624;

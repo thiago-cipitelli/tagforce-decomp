@@ -9,7 +9,7 @@
 
 int duel_req_flag(int i);
 int duel_slot_has_effect(unsigned int p, int z, int id);
-void duel_088DF554(unsigned int p, int z, unsigned int bit, int on);
+void duel_088DF554(unsigned int, int, unsigned int, int);
 
 extern unsigned int duel_turn_player;
 extern unsigned int duel_view_player;
@@ -105,20 +105,20 @@ void duel_d_push_top(unsigned int p, DuelCard *c);
 void duel_d_push(unsigned int p, DuelCard *c);
 void duel_mode_set(unsigned int bit, int on);
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int card_is_in_group_1909(int id);
 int duel_slot_value_1909(unsigned int p, int z);
 int duel_list_find_id(unsigned int p, unsigned int id);
 
 void duel_grave_to_top(unsigned int p, unsigned short uid);
 int duel_grave_find_uid(unsigned int p, int uid);
-unsigned int duel_zone_faceup(unsigned int p, int z, int i);
+unsigned int duel_zone_faceup(unsigned int, int, int);
 void duel_add_counters(unsigned int p, int id, int n);
 void duel_set_flag4(unsigned int p, int id);
-unsigned short duel_zone_pos(unsigned int p, int z, int i);
+unsigned short duel_zone_pos(unsigned int, int, int);
 
 int card_is_attribute9(int id);
-int card_get_level(int id);
+int card_get_level(int);
 
 /* Move the card with uid w from zone arg of player p to pile loc (0xD deck, 0xE graveyard, 0xF banished
    zone), counting what goes to the graveyard. */

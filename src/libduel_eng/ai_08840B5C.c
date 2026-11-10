@@ -20,7 +20,7 @@ int duel_field_level(unsigned int p, int z);
 int duel_find_effect_card(unsigned int p, int id, int skip);
 void duel_088C448C(int p, int a);
 unsigned int duel_088D13D8(unsigned int p, unsigned short id, unsigned int mask);
-unsigned int duel_0884E4A0(DuelAct *a);
+unsigned int duel_0884E4A0(DuelAct*);
 void duel_088C44E4(unsigned int p, int id);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);

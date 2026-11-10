@@ -8,9 +8,9 @@ int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_field_same_name(unsigned int p, int z, int id);
 int duel_field_protected(unsigned int p, int z);
 int duel_find_st(unsigned int p, int id);
-int field_get_card(unsigned int p, int z);
-unsigned int duel_field_flag9(unsigned int p, int z);
-unsigned int duel_slot_effect_arg(unsigned int p, int z, int id);
+int field_get_card(unsigned int, int);
+unsigned int duel_field_flag9(unsigned int, int);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
 int duel_count_active(int id);
 int duel_zone_usable(unsigned int p, unsigned int z);
 

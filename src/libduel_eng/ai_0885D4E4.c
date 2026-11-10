@@ -4,12 +4,12 @@
 
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
-int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_field_flag9(unsigned int, int);
 int duel_field_e5ae0(unsigned int p, int z);
 int duel_field_level(unsigned int p, int z);
 int duel_field_same_name(unsigned int p, int z, int id);
 int duel_tributable(unsigned int p, unsigned int q, int z);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int card_is_attribute9(int id);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_field_atk(unsigned int p, int z);
