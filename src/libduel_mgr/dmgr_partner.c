@@ -1,10 +1,8 @@
 // @range 0x0880C8E8-0x0880F9C0
-// @asm 0x0880CFA4-0x0880D360
-// @asm 0x0880D360-0x0880D590
 // @asm 0x0880D590-0x0880D78C
 // @asm 0x0880EF5C-0x0880F274
 // @data 0x0881A774-0x0881B9B0
-// @rodata 0x08819FF8-0x0881A068
+// @rodata 0x08819FF8-0x0881A0D0
 /* Partner / versus panel of the start menu: who plays with and against whom (faces, names, decks),
    the slide-in animations of its EHF layers and the small text and sprite helpers it draws with. */
 #include "libduel_mgr.h"
@@ -352,19 +350,18 @@ void dmgr_pt_anim_start(int on, int len)
     dmgr_anim_start(&dmgr_pt->anim, on, len);
 }
 
-#ifdef NON_MATCHING /* função grande: o original guarda seis limites de quadro em $s e um na pilha; o mwcc aloca outros */
 int dmgr_partner_update(int net)
 {
     DmgrPartner *p = dmgr_pt;
-    int a1 = 0x1D;
-    int b2 = 0x3C;
-    int a2 = 0x3B;
     DmgrAnim *anim = &p->anim;
-    int b1 = 0x5D;
     int f1;
     int t1;
     int f2;
     int e1;
+    int a1 = 0x1D;
+    int a2 = 0x3B;
+    int b2 = 0x3C;
+    int b1 = 0x5D;
 
     p->net = sysvar_get_a98();
     switch (p->mode) {
@@ -373,7 +370,7 @@ int dmgr_partner_update(int net)
     case 8:
         f1 = a1;
         t1 = a2;
-        f2 = 0x3C;
+        f2 = b2;
         e1 = b1;
         break;
     case 2:
@@ -392,9 +389,9 @@ int dmgr_partner_update(int net)
         break;
     }
     if (((DmgrGameHdr *)game_state_get())->kind2 == 2) {
-        b2 = 0xA0;
         a1 = 0x81;
         a2 = 0x9F;
+        b2 = 0xA0;
         b1 = 0xC1;
     }
     switch (p->state) {
@@ -440,7 +437,7 @@ int dmgr_partner_update(int net)
     case 6:
         if ((unsigned int)(p->mode - 8) < 2) {
             pad_get();
-            if (net != 0 && p->timer > 0x77) {
+            if (net != 0 && p->timer >= 0x78) {
                 dmgr_pt_anim_start(2, 10);
                 se_play(0x628A);
                 p->state = 7;
@@ -470,9 +467,7 @@ int dmgr_partner_update(int net)
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* bate com -DNON_MATCHING; fica em asm só pela jtbl_0881A0B8, que vem depois das duas de dmgr_partner_update (em asm) */
 unsigned int *dmgr_partner_draw(unsigned int *list)
 {
     DmgrPartner *p = dmgr_pt;
@@ -537,7 +532,6 @@ unsigned int *dmgr_partner_draw(unsigned int *list)
     }
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* lógica conferida com o asm. 83 palavras: o original testa on/len com bnezl+b e cópias mortas (lh do len, corpos dos case 2/3) que o mwcc 219 remove, e o retorno 0 fica depois do return r */
 int dmgr_pt_flip(int mode, int i)
