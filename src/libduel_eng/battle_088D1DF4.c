@@ -1,5 +1,4 @@
 // @range 0x088D1DF4-0x088D28F8
-// @asm 0x088D1DF4-0x088D1F1C
 // @asm 0x088D1F1C-0x088D2288
 // @asm 0x088D2760-0x088D28F8
 /* Results of a battle: destroying or moving the cards that fought (duel_special.slot[i]: 0 attacker,
@@ -23,7 +22,6 @@ extern int duel_atk_tz;                /* 0x08913F30 */
 /* player and zone of the card that fought: 0 the attacker, 1 the target */
 #define BATTLE_PZ(i, q, z) ((q) = (i) == 0 ? duel_special.player[0] : duel_atk_tp, (z) = (i) == 0 ? duel_atk_zone : duel_atk_tz)
 
-#ifdef NON_MATCHING /* jogador e zona extraídos de x trocam s2/s3; o teste z < 5 sai com slti at em vez de slti v1 */
 /* Card c (described by x) leaves the field to zone x.s_zone2 (0xE graveyard). */
 void duel_088D1DF4(DuelCard *c, struct DuelActX x)
 {
@@ -34,23 +32,31 @@ void duel_088D1DF4(DuelCard *c, struct DuelActX x)
     int grave = to == 0xE;
     unsigned int f;
 
-    if (c->id != 0) {
-        if (5 > z) {
-            duel_cmd((p ? 0x8000 : 0) | 0x32, z, to, opp != 0);
-            duel_088CC8EC(x, c, 0, 0);
-            duel_088AFD5C(0x16, x);
-            f = 6;
-            if (opp) {
-                f |= 1;
-            }
-            if (grave) {
-                f |= 0x1000000;
-            }
-            duel_088CFBA4(c, p, z, f);
+    if (c->id == 0 || z >= 5) {
+        return;
+    }
+    {
+        int o = opp != 0;
+        unsigned int k;
+
+        if (p) {
+            k = 0x8000;
+        } else {
+            k = 0;
         }
+        duel_cmd(k | 0x32, z, to, o);
+        duel_088CC8EC(x, c, 0, 0);
+        duel_088AFD5C(0x16, x);
+        f = 6;
+        if (opp) {
+            f |= 1;
+        }
+        if (grave) {
+            f |= 0x1000000;
+        }
+        duel_088CFBA4(c, x.s_player, z, f);
     }
 }
-#endif
 
 struct DuelActX1 {                     /* struct DuelActX with bit 23 as a 1-bit field */
     unsigned int s_uid : 9;
