@@ -1,5 +1,4 @@
 // @range 0x08805E58-0x08806654
-// @asm 0x08805E58-0x0880624C
 // @data 0x0881A014-0x0881A170
 /* Pane layouts (one or two panes, grid or list each) and the tab positions of the three lists;
    the window and stream animations that follow the layout and the deck size (same source as
@@ -30,7 +29,7 @@ void ds_set_panes(unsigned short which);
 void ds_select_tab(unsigned short side, unsigned short tab, int how);
 DsEnt *ds_cur_entry(unsigned short side);
 void ds_info_update(void);
-void ds_layout_scroll(int grid, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
+void ds_layout_scroll(int grid, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 void ds_window_anim(void);
 void ds_stream_anim(void);
 
@@ -53,7 +52,6 @@ DsMode ds_modes[8] = {
     { 0, 3, 1, 4 },
 };
 
-#ifdef NON_MATCHING /* forma de dk_set_mode; corrigido: o original troca o painel 1 para a aba tab_a - 2 quando tab_a >= 2 (o rascunho usava != 0 e - 1). 56 palavras: temporários dos dois laços de releitura dos painéis */
 /* switches the pane layout (ds_modes row), keeping each list's scroll position */
 void ds_set_mode(unsigned short mode)
 {
@@ -63,7 +61,6 @@ void ds_set_mode(unsigned short mode)
     int i;
     DsPane *p;
     int grid;
-    unsigned short view;
     int keep;
 
     if (dsv.mode > 1)
@@ -88,9 +85,8 @@ void ds_set_mode(unsigned short mode)
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         ds_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)(unsigned short)(p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows) << 8,
                          p->list->count, &p->top, &p->cx, &p->cy);
         if (dsv.mode <= 1)
             break;
@@ -107,16 +103,15 @@ void ds_set_mode(unsigned short mode)
     }
     for (i = 0; i < 2; i++) {
         keep = 0;
-        dsv.pane[i].top = dsv.pane[i].list->u18;
-        dsv.pane[i].cx = dsv.pane[i].list->u1c_lo;
-        dsv.pane[i].cy = dsv.pane[i].list->u1c_hi;
         p = &dsv.pane[i];
+        p->top = p->list->u18;
+        p->cx = p->list->u1c_lo;
+        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         ds_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)(unsigned short)(p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows) << 8,
                          p->list->count, &p->top, &p->cx, &p->cy);
         if (dsv.mode <= 1)
             break;
@@ -125,7 +120,6 @@ void ds_set_mode(unsigned short mode)
     if (ds_cur_entry(dsv.side) != 0)
         ds_info_update();
 }
-#endif
 
 /* ds_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int ds_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)

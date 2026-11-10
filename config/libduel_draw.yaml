@@ -117,8 +117,6 @@ segments:
       - [0x19210, asm, dd_scene_mode_asm_0881D1B0]
       - [0x196B8, c, dd_scene_mode]
       - [0x19FF4, c, dd_task_list]
-      - [0x1A274, asm, dd_task_list_asm_0881E214]
-      - [0x1A308, c, dd_task_list]
       - [0x1AC00, c, dd_card_fx]
       - [0x1B108, c, dd_card_fx2]
       - [0x1C198, c, dd_field_events]

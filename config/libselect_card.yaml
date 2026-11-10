@@ -45,8 +45,6 @@ segments:
       - [0x5698, c, sc_panes]
       - [0x5A2C, c, sc_lists]
       - [0x6D8C, c, sc_input]
-      - [0x6D8C, asm, sc_input_asm_0880AD2C]
-      - [0x7180, c, sc_input]
       - [0x8834, asm, sc_input_asm_0880C7D4]
       - [0x89A0, c, sc_state]
       - [0x9158, asm, sc_state_asm_0880D0F8]

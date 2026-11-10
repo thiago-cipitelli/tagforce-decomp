@@ -1,10 +1,8 @@
 // @range 0x0881F02C-0x08821D3C
-// @asm 0x0881F744-0x0881FB00
-// @asm 0x0881FB00-0x0881FD30
 // @asm 0x0881FD30-0x0881FF2C
 // @asm 0x088216FC-0x08821A14
 // @data 0x0882F398-0x08830140
-// @rodata 0x0882B40C-0x0882B47C
+// @rodata 0x0882B40C-0x0882B4E4
 /* Partner / versus panel of the duel setup (the same code as libduel_mgr's dmgr_partner.c, with a
    few small extras): who plays with and against whom (faces, names, decks), the slide-in animations
    of its EHF layers and the small text and sprite helpers it draws with. */
@@ -315,19 +313,18 @@ int tpartner_update_net(void)
     return tpartner_update(1);
 }
 
-#ifdef NON_MATCHING /* 53 palavras: o original guarda b2 na pilha e f2 em $s6 (o mwcc faz o contrário e reaproveita o 0x3C de b2 em f2); lógica conferida com o asm */
 int tpartner_update(int net)
 {
     TPartner *p = tpt;
-    int a1 = 0x1D;
-    int b2 = 0x3C;
-    int a2 = 0x3B;
     TAnim *anim = &p->anim;
-    int b1 = 0x5D;
     int f1;
     int t1;
     int f2;
     int e1;
+    int a1 = 0x1D;
+    int a2 = 0x3B;
+    int b2 = 0x3C;
+    int b1 = 0x5D;
 
     p->net = sysvar_get_a98();
     switch (p->mode) {
@@ -336,7 +333,7 @@ int tpartner_update(int net)
     case 8:
         f1 = a1;
         t1 = a2;
-        f2 = 0x3C;
+        f2 = b2;
         e1 = b1;
         break;
     case 2:
@@ -355,9 +352,9 @@ int tpartner_update(int net)
         break;
     }
     if (((TGameHdr *)game_state_get())->kind2 == 2) {
-        b2 = 0xA0;
         a1 = 0x81;
         a2 = 0x9F;
+        b2 = 0xA0;
         b1 = 0xC1;
     }
     switch (p->state) {
@@ -433,9 +430,7 @@ int tpartner_update(int net)
     }
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* bate (0 palavras), mas a tabela de saltos sairia antes das de tpartner_update (ainda em asm) */
 void *tpartner_draw(void *list)
 {
     TPartner *p = tpt;
@@ -500,7 +495,6 @@ void *tpartner_draw(void *list)
     }
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* 86 palavras, não-corrigível: o original deixa cópias mortas dos destinos depois de cada b (li side, li r de case 2/3) e um return 0 separado; lógica conferida com o asm */
 int tpt_flip(int mode, int i)

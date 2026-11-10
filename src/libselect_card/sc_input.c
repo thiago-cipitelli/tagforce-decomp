@@ -1,5 +1,4 @@
 // @range 0x0880AD2C-0x0880C940
-// @asm 0x0880AD2C-0x0880B120
 // @asm 0x0880C7D4-0x0880C940
 // @rodata 0x0881A960-0x0881A984
 // @data 0x0881AE58-0x0881B378
@@ -32,7 +31,7 @@ void sc_set_panes(unsigned short which);
 void sc_select_tab(unsigned short side, unsigned short tab, int how);
 ScEnt *sc_cur_entry(unsigned short side);
 void sc_info_update(void);
-void sc_layout_scroll(int grid, unsigned short count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
+void sc_layout_scroll(int grid, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 unsigned short sc_cur_index(unsigned short side);
 int sc_sort_value(ScEnt *e, unsigned short sort);
 void sc_input_sort_menu(void);
@@ -104,7 +103,6 @@ ScTab sc_tabs_trade[6][6] __attribute__((aligned(16))) = {
 #undef T2
 };
 
-#ifdef NON_MATCHING /* forma de dk_set_mode (painéis por ponteiro, keep = 0/1, tab_a/tab_b int, switch); 56 palavras: temporários dos dois laços de releitura dos painéis */
 /* switches the pane layout (sc_modes row), keeping each list's scroll position */
 void sc_set_mode(unsigned short mode)
 {
@@ -114,7 +112,6 @@ void sc_set_mode(unsigned short mode)
     int i;
     ScPane *p;
     int grid;
-    unsigned short view;
     int keep;
 
     if (scv.mode > 1)
@@ -139,9 +136,8 @@ void sc_set_mode(unsigned short mode)
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         sc_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)(unsigned short)(p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows) << 8,
                          p->list->count, &p->top, &p->cx, &p->cy);
         if (scv.mode <= 1)
             break;
@@ -158,16 +154,15 @@ void sc_set_mode(unsigned short mode)
     }
     for (i = 0; i < 2; i++) {
         keep = 0;
-        scv.pane[i].top = scv.pane[i].list->u18;
-        scv.pane[i].cx = scv.pane[i].list->u1c_lo;
-        scv.pane[i].cy = scv.pane[i].list->u1c_hi;
         p = &scv.pane[i];
+        p->top = p->list->u18;
+        p->cx = p->list->u1c_lo;
+        p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
         if (p->list->u1d_lo == grid)
             keep = 1;
-        view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         sc_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)view << 8 | (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1),
+                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)(unsigned short)(p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows) << 8,
                          p->list->count, &p->top, &p->cx, &p->cy);
         if (scv.mode <= 1)
             break;
@@ -176,7 +171,6 @@ void sc_set_mode(unsigned short mode)
     if (sc_cur_entry(scv.side) != 0)
         sc_info_update();
 }
-#endif
 
 /* sc_modes row for a pane count, narrow second pane and the list mode of each pane; -1 none */
 int sc_mode_for(unsigned short panes, int narrow, unsigned short a, unsigned short b)

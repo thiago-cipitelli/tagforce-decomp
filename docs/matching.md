@@ -1119,3 +1119,20 @@ Sem forma: `duel_088D1F1C` (8: o original copia o `lbu a0,a->player` nos dois ca
   `or` (`duel_setup_load_text`).
 - Busca de declarações: tipos × ordem × ordem das atribuições (`duel_ai_0881A7C0`: `int id; int uid; int n;` na
   função, `id` atribuído antes de `uid`).
+## Rodada 13 (`menus`): gêmeas de `*_set_mode`, soma sem sinal, chamada indireta com float
+
+- **Protótipo da chamada decide os temporários** (`ds_set_mode`, `sc_set_mode`, 56 → 0): além da forma de
+  `dk_set_mode` (ponteiro do 2º laço antes das gravações), o 2º parâmetro de `*_layout_scroll` tem de ser `int` como
+  em libdeck; com `unsigned short` o mwcc carrega `u1a` antes do ternário e sobram 36 palavras.
+- **Soma que o original não dobra**: `x = x + 5U` (`cl_draw_detail_frame`) e `x = (d + 2) + (x + 20) - 12U` com `x`/`y`
+  reaproveitados (`shop_shelf_cursor`): o sufixo `U` corta a dobra de constantes; a ordem dos operandos decide qual
+  `addiu` sai primeiro.
+- **Contador incrementado no corpo e antes do `continue`** (`shop_shelf_icons`): `pack++` dentro do laço, não no
+  incremento do `for`, dá a ordem `pack`, `col` dos `addiu`.
+- **Constantes de troca como locais** (`tpartner_update`): `f2 = b2` (não o literal) e as declarações `f1..e1` antes de
+  `a1..b1` puseram `b2` na pilha como no original; `mv.py` (mover 1 ou 2 declarações) achou de 55 para 3.
+- **Chamada indireta com float** (`dd_tasks_update`): o original monta `a0` antes de `$f12`; o tipo do ponteiro tinha
+  `dt` por último (mesmos registradores na EABI). Cast sob `#ifdef __MWERKS__`, chamada portável no `#else`.
+- **Sem solução**: `dk/dt/sc_draw_rows(_small)` (o mwcc 219 põe o `lhu` de `row_w` da junção no atraso do teste
+  do ternário em vez de fazer `bnezl` com o `sll` do ramo; 12 palavras em todas); `snd_curve_volume` (6, posição do
+  `lhu vol_far`); `menu_layout` (67, cópia desenrolada).
