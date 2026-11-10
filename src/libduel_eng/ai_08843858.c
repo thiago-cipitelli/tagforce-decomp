@@ -1,5 +1,4 @@
 // @range 0x08843858-0x08844024
-// @asm 0x08843AE0-0x08843C74
 /* Computer player: responses from the spell/trap zones and the graveyard. */
 #include "duel.h"
 
@@ -55,7 +54,6 @@ int duel_08843AD8(unsigned int p)
     return duel_08843998(p, 0x13FF);
 }
 
-#ifdef NON_MATCHING /* registradores: o original não mantém pl->field[z] num registrador salvo */
 int duel_08843AE0(unsigned int p)
 {
     int z;
@@ -68,7 +66,7 @@ int duel_08843AE0(unsigned int p)
             duel_088CC1D0(p, z, 1);
             if (SLOT_ACTIVE(&duel.players[p & 1].field[z])) {
                 duel_0884F30C((p << 31 & 0x80000000) | 0x4200000 | (z << 16 & 0x1F0000) | 0x1A7E,
-                              CARD_UID(pl->field[z].card), 0);
+                              CARD_UID(duel.players[p & 1].field[z].card), 0);
             }
             duel_w_08919608++;
             return 0;
@@ -76,7 +74,6 @@ int duel_08843AE0(unsigned int p)
     }
     return 1;
 }
-#endif
 
 int duel_08843C74(unsigned int p)
 {
