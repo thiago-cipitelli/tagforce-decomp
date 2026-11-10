@@ -11,7 +11,7 @@ int duel_pick_monster_zone(void);
 int duel_hand_find_name(unsigned int p, int id);
 int duel_0886CE38();
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088CC178();
 void duel_088C8874(unsigned int uid, unsigned short id, int a, unsigned short b);
 void duel_088D1BEC(unsigned int p, int z, int a, int b);

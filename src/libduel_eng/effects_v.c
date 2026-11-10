@@ -52,7 +52,7 @@ void duel_0882AF5C(int a, int b, int c);
 void duel_08819B94(unsigned int p);
 void duel_08835944(int a);
 int duel_08827D98(unsigned int p, int uid);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_0884C588(unsigned int p, int a, int id, int b);
 void duel_088CBAA4(unsigned int p, int z, int uid);
 void duel_088C5E70(unsigned int p, int a);

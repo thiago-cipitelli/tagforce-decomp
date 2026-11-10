@@ -11,7 +11,7 @@ extern int duel_w_08919654;
 void duel_088C9344(DuelAct *a, unsigned int p, int z, int b);
 int duel_088C97F0(DuelAct *a, unsigned int p, int z, int b, int c);
 void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, int c);
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C7CF0(void);
 void duel_088C7BA4(void);
 int duel_0886CE38();
@@ -32,7 +32,7 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned s
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_088A9008(DuelAct *a, int i, unsigned int *loc);
 int duel_field_base_atk(unsigned int p, int z);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 unsigned int duel_088D1920(DuelAct *a, unsigned int mask);
 int field_get_card(unsigned int p, int z);
 int card_is_in_group_160f(int id);

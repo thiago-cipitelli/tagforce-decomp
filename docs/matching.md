@@ -1192,3 +1192,24 @@ Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` 
   `$s` e usa a cópia como valor fixo, o parâmetro é o que o laço altera e o local guarda o original.
 - Static usada por ponteiro e definida no meio do arquivo pode ter de ir para depois (`card_db_loaded` depois de
   `card_db_load`): ao promover a última função em asm de `card_db.c`, o `make check` acusou o deslocamento.
+
+## Rodada 15 (`proto`: protótipos locais divergentes)
+
+- **Mecanismo:** cada `.c` do libduel_eng declara seus próprios protótipos dos chamados, e eles divergem
+  (`duel_088C77D4` tinha 5 assinaturas em 48 arquivos). O original tinha um header só: há (quase sempre) **uma**
+  assinatura com que todo o código que já bate concorda, e as divergentes foram chutes locais que só não quebravam
+  porque o argumento passado já era `u16`/constante. Com a assinatura única os `@asm` que dependiam dela batem.
+- **Ferramenta:** `tools/proto_conflicts.py <m> -n 20` lista os chamados com assinaturas divergentes (contagem,
+  arquivos, `DEF`, arquivos com rascunho `@asm` que chamam). `--unify CALLEE ["decl;" ...]` põe cada assinatura
+  candidata (todas as vistas, K&R e as dadas) em todos os arquivos que declaram o chamado e mostra funções que
+  deixam de bater (`check_file`) e palavras dos `@asm` que mudam: a candidata com `lost 0` é a do header original.
+  Dos 140 chamados divergentes usados por `@asm` do libduel_eng, 89 têm uma assinatura tipada com `lost 0`, 30 só
+  a K&R e 21 nenhuma (structs por valor como `DuelMoveEv`, `duel_cmd`, `card_*` do `card_db.h`).
+- **Unificados:** `duel_088C77D4(unsigned int, unsigned short, unsigned short, unsigned short)`,
+  `duel_088C87A8(unsigned int, int, unsigned short, unsigned short, unsigned short)` (definição com
+  `(unsigned char)a << 8`), `duel_08832960`/`duel_08832974(unsigned int, int, int)` (a da definição).
+  Bateram `duel_0888BA00`, `duel_0888BD08` (ambas do skip/fila como "ordem de carga"), `duel_088A83B4`,
+  `duel_088AC6A0` (0 palavras, promoção fica com quem edita o corpo); `duel_088999B8` (`break;` depois do
+  `switch` interno em vez de `return 0;`) e `duel_0888E5D4` (`h = w >> 8 & 0xFF` num local antes do teste)
+  caíram a poucas palavras com o protótipo e fecharam com a forma.
+- Antes de mexer na forma de um `@asm` que chama um chamado de `proto_conflicts`, rode `--unify` nele.

@@ -42,7 +42,7 @@ int duel_08835AC0(void);
 void duel_088D147C(DuelAct *a, unsigned int p, int z);
 int duel_0884E5E0(DuelAct *a);
 void duel_088359E8(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p, int z));
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 unsigned int duel_0884E4E4(DuelAct *a);
 void duel_08832B18(unsigned int p, int z);
 void duel_088D192C(DuelAct *a, unsigned int p, int z);
@@ -59,7 +59,7 @@ int duel_locks_ok(int p, int monster);
 unsigned int duel_act_target2(DuelAct *a, int i);
 int duel_f_find_uid(unsigned int p, int uid);
 void duel_088CB490(unsigned int p, int uid);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 
 int duel_08890820(DuelAct *a)
 {

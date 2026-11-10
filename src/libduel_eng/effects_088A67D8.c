@@ -1,6 +1,5 @@
 // @range 0x088A67D8-0x088A8B94
 // @asm 0x088A6F00-0x088A77A8
-// @asm 0x088A83B4-0x088A8B94
 /* Card effect handlers after effects_088A6464.c. */
 #include "duel.h"
 
@@ -78,14 +77,14 @@ int duel_0884C804(void);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_0884E9E8(DuelAct *a, int b);
 int duel_slot_has_effect2(unsigned int p, int z, int id);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 unsigned int duel_slot_effect12_arg(unsigned int p, int z, int id);
 int duel_c_find_name(unsigned int p, int id);
 int duel_0886CE38(DuelAct *a, int b);
 void duel_088C6508(unsigned int p, int id, int a, int b);
 void duel_088C78E0(unsigned int p);
 void duel_088328FC(unsigned int p);
-void duel_08832974(unsigned int p, unsigned short id, int a);
+void duel_08832974(unsigned int p, int a, int b);
 void duel_088C7BA4(void);
 void duel_088C6728(unsigned int p, int uid, int a);
 void duel_088C7CF0(void);
@@ -688,7 +687,6 @@ int duel_088A8304(DuelAct *a)
     return r;
 }
 
-#ifdef NON_MATCHING /* passo 0x7B: duel_w_08919624 em $a1 e duel_w_089149F8 em $a0 (original: $a0/$v1), como em duel_088A7C88 */
 int duel_088A83B4(DuelAct *a, int b)
 {
     unsigned short buf[256];
@@ -826,4 +824,3 @@ int duel_088A83B4(DuelAct *a, int b)
     }
     return 0;
 }
-#endif

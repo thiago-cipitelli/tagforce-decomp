@@ -1,7 +1,6 @@
 // @range 0x08898B10-0x0889A75C
 // @data 0x0891190C-0x0891193C
 // @asm 0x088995A0-0x088997E8
-// @asm 0x088999B8-0x08899BF0
 /* Card effect handlers (DuelAct *a), after effects_088966D8.c. */
 #include "duel.h"
 
@@ -25,14 +24,14 @@ void duel_088C5424(unsigned int p, int n);
 int duel_088D16C4(DuelAct *a, unsigned int p, int z, int f);
 int card_is_attribute9(int id);
 unsigned int duel_field_controller(unsigned int p, int z, int arg);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_pick_monster_zone(unsigned int p);
 void duel_088CB490(unsigned int p, int uid);
 void duel_088CB778(unsigned int p, int z, int uid, int a, int b, int c, int d);
 void duel_088D1438(unsigned int p, int z, int a, int b);
 void duel_088C7E68(unsigned int p, int z, int a, int b);
 int duel_08882190(DuelAct *a);
-void duel_08832960(unsigned int p, unsigned short id, int a);
+void duel_08832960(unsigned int p, int a, int b);
 int duel_count_free_monster_zones(unsigned int p);
 void duel_0884ADAC(int a, int b, int c, int d, int e, int f);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
@@ -51,7 +50,7 @@ int duel_0884E440(DuelAct *a, unsigned int p, int z);
 void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, int c);
 int duel_088A9008(DuelAct *a, int i, unsigned int *loc);
 unsigned int duel_act_target(DuelAct *a, int i);
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088CC284(unsigned int p, int z, int n);
 int duel_0887DB24(DuelAct *a);
 void duel_088C625C(unsigned int p, int a, int b);
@@ -420,7 +419,6 @@ int duel_088998D8(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original mantém a em a0 e duel_step em v1 no switch interno */
 int duel_088999B8(DuelAct *a)
 {
     unsigned int q;
@@ -459,11 +457,10 @@ int duel_088999B8(DuelAct *a)
             }
             return 0;
         }
-        return 0;
+        break;
     }
     return 0;
 }
-#endif
 
 int duel_08899BF0(DuelAct *a)
 {

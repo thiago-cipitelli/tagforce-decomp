@@ -82,7 +82,7 @@ int duel_088BFFD8(unsigned int p, int id, int i);
 unsigned short *card_get_name(int id);
 void duel_wfmt_s(unsigned short *dst, int fmt, unsigned short *arg);
 int field_get_card(unsigned int p, int z);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_0884CEBC(unsigned int p);
 int duel_0884EB10(DuelAct *a, DuelAct *b);
 int duel_0884EB90(DuelAct *a, DuelAct *b);

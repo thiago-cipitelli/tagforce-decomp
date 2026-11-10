@@ -17,7 +17,7 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned s
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 void duel_088CA4E8(unsigned int p, DuelCard *c, int a, int z, int b, int d);
 int duel_count_active(int id);
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088AFD5C(int kind, DuelMoveEv ev);
 int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
 void duel_088C44E4(unsigned int p, int id);

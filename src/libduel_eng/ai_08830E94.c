@@ -66,7 +66,7 @@ int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 void duel_088C448C(int p, int a);
 void duel_088C44E4(unsigned int p, int id);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 extern unsigned int duel_view_player;
 void duel_0884DB38(int a, int b);

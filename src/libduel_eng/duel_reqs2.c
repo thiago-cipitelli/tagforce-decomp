@@ -23,7 +23,7 @@ int duel_088C9878(unsigned int p, int z, int x, int y, int id, int opp);
 
 int duel_slot_immune(unsigned int p, int z, int opp);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short k, int b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 
 extern DuelCard duel_cards[512];
 
@@ -85,7 +85,7 @@ void duel_088C936C(unsigned int p, int z, int n, int id, int opp)
     }
 }
 void duel_088C7E68(unsigned int p, int z, int a, int b);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 
 void duel_088C96EC(unsigned int p, int z, int v)

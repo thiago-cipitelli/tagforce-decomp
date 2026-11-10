@@ -47,7 +47,7 @@ int duel_0884FD04(DuelAct *a, unsigned int p);
 int duel_0886B0E4(unsigned int code, unsigned short uid, int arg);
 void duel_0884F07C(int which, unsigned int code, unsigned short uid, unsigned int arg);
 void duel_088C4448(unsigned int p, int z, unsigned int uid);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void duel_msg_send(unsigned short cmd, int arg, void *data, int len);
 void duel_memcpy(void *dst, void *src, int n);

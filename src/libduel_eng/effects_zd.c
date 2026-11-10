@@ -34,12 +34,12 @@ void duel_088C7CF0(void);
 int duel_first_free_zone(unsigned int p);
 void duel_088C6728(unsigned int p, int uid, int a);
 void duel_088AFD5C(int kind, unsigned int a);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_088A9008(DuelAct *a, int i, unsigned int *loc);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
 int duel_field_def(unsigned int p, int z);
 unsigned int duel_088D13CC(DuelAct *a, unsigned int mask);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 
 int duel_08890094(DuelAct *a)
 {

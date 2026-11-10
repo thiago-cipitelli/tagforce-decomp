@@ -701,7 +701,7 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned s
 void duel_088C44E4(unsigned int p, int id);
 void duel_088D1B20(unsigned int p, unsigned int mask);
 void duel_088CC178(unsigned int p, int z, unsigned int v);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int card_is_in_group_1a2f(int id);
 int card_get_kind(int id);
 int duel_field_attr_is(unsigned int p, int z, int attr);

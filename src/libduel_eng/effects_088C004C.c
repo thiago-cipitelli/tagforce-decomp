@@ -19,7 +19,7 @@ void duel_088CC1D0(unsigned int p, int z, int a);
 void duel_088C4448(unsigned int p, int z, unsigned int uid);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_088E9150(int id);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);

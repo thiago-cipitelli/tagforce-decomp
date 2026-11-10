@@ -14,7 +14,7 @@ extern DuelAct *duel_w_089147DC;
 extern int duel_w_08914900;
 extern int duel_w_089148FC;
 
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_08832950(unsigned int p, unsigned short id);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void duel_088C7880(unsigned int p);
@@ -62,7 +62,7 @@ void duel_088C452C(unsigned int p, int n);
 int duel_088A9008(DuelAct *a, int i, unsigned int *loc);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
 int duel_field_base_def(unsigned int p, int z);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_088A32A4(DuelAct *a);
 void duel_088C625C(unsigned int p, int a, int b);
 int duel_088BFF78(unsigned int p, unsigned short id, int b);
