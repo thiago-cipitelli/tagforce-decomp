@@ -1296,3 +1296,31 @@ Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` 
   `duel_slot_value_1909`, `duel_088D1438`, `duel_0884F91C`, `duel_0884AF68` (a definição ou um `@asm` piora), as de
   aridade diferente da definição (`duel_088619C4`, `duel_0886191C`, `duel_08861964`, `duel_0883F174`,
   `duel_ai_088204A8`) e os K&R/sem assinatura comum da rodada 15.
+
+## Rodada 17 (`drawK`: libduel_draw, funções 85-97% nunca tentadas)
+
+Bateram `zone_cmd`, `func_08822914`, `func_08823344`, `dd_face_frame`, `dd_fx_mark_update`, `dd_lp_show`,
+`dd_fx_rock_spray`, `dd_fx_lpjump_update`, `dd_lpp_draw`, `dd_fx_eyes_update`. Idiomas novos:
+- **Constante mantida num `$s` e calculada em tempo de execução** (`li s0,132` no prólogo e `sra` dela depois;
+  `li s4,255` repetido nos dois ramos): o mwcc só propaga uma constante quando **uma** definição alcança o uso. Duas
+  definições com o mesmo valor desligam a propagação: `default: top = 132;` num `switch` anterior
+  (`func_08823344`), `a = 255;` em cada `case` (`dd_fx_aura_halo`). `#pragma opt_propagation off` também reproduz,
+  mas muda o resto da função.
+- **`andi` de estreitamento repetido no mesmo registrador** (`andi s0,s0,0xffff` antes de cada chamada, sem
+  necessidade): parâmetros `unsigned char`/`unsigned short` de um helper `static inline` (`zone_cmd`: `zc_at(side,
+  zone, index)` em volta de `dd_cobj_at`), com os locais `int`/`unsigned char` atribuídos de `(unsigned short)(int)campo`.
+- **Temporário de uso único afundado para depois de uma chamada**: o mwcc substitui adiante uma variável com uma só
+  definição; reaproveitar uma variável já morta (`dx`/`dy` do começo para o deslocamento da legenda em
+  `func_08822914`) segura o cálculo antes da chamada, como no original.
+- **Variáveis de laço**: busca aleatória (250 sorteios) de renomear `i`/`v`/`show` por bloco para variáveis novas no
+  topo, no fim das declarações ou no bloco bateu `dd_lp_show` (34 -> 0) onde a descida gulosa parou em 13.
+  `(float)(i * 2 - 1)` em vez de um `side += 2` próprio: a indução criada pelo mwcc fica com o `$s` mais baixo
+  (`dd_fx_eyes_update`).
+- **Ordem dos operandos de `or`/`mul.s`**: com uma expressão de ponto flutuante como operando, o mwcc a põe por último;
+  guardar o valor num local (`unsigned int al = ...; al << 24 | b << 16`, `a = ...; a *= in;`) devolve a ordem do
+  fonte (`dd_fx_lpjump_update`, `dd_fx_mark_update`).
+- **Base `w + buf*48` com o campo no imediato**: `((DdFxEyes *)((char *)w + buf * sizeof(w->screen[0])))->screen[0]`
+  (num ponteiro local) em vez de `w->screen[buf]`.
+- **`ALLEGREX_MIN`/`MAX` sem `#include "allegrex.h"`** viram chamada de função implícita (`jal min`): conferir o
+  include antes de procurar forma (`dd_lpp_draw`).
+- **Array local maior que o `memset`**: `int opts[26]` com `memset(opts, 0, 0x60)` dá o buraco de 8 bytes na pilha.
