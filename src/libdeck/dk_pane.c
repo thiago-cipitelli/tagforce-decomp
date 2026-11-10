@@ -1,5 +1,4 @@
 // @range 0x0880BD30-0x0880C728
-// @asm 0x0880BFB8-0x0880C270
 // @data 0x08822BE4-0x08822BF4
 /* Panes: the card list sprites, the cursor's index and entry, the cursor card's info text, switching
    the list shown in a pane (each list keeps its own scroll), the list names, scroll clamping, saving
@@ -116,22 +115,26 @@ void dk_info_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* cópias mortas depois de b (li s5,5 / li v1,1 repetidos, problema aberto) e o li a1,1 do teste de side */
+static inline unsigned short dk_lay_pack(unsigned char cols, unsigned char rows)
+{
+    return cols | rows << 8;
+}
+
 /* shows tab (how 0 = previous, 1 = next, else tab itself) in pane side, keeping each list's scroll;
-   the partner list (5 in the wide layout, 2 in the split one) is skipped when there is no partner */
+   the partner list (5 in the wide layout, 2 in the split one) is skipped when there is no partner.
+   The else return; (pane 1 in the wide layout) is the trigger of the dead copies after b (docs/matching.md) */
 void dk_select_tab(unsigned short side, unsigned short tab, unsigned short how)
 {
     unsigned short n;
     int sel;
     DkPane *p;
     DkList *l;
-    int keep;
+    unsigned short keep;
     int grid;
     unsigned short view;
 
     if (dkv.mode > 1) {
-        if (tab >= 3)
-            tab -= 3;
+        tab = tab >= 3 ? tab - 3 : tab;
         n = 3;
     } else {
         n = 6;
@@ -155,30 +158,31 @@ void dk_select_tab(unsigned short side, unsigned short tab, unsigned short how)
                 sel = 0;
         }
     } else {
-        if (side != 0)
+        if (side == 0) {
+            if (sel == 4) {
+                if (how == 0)
+                    sel = 3;
+                else
+                    sel = 5;
+            }
+            if (sel == 5 && partner_count_get() <= 0) {
+                if (how == 0)
+                    sel = 3;
+                else
+                    sel = 0;
+            }
+        } else
             return;
-        if (sel == 4) {
-            if (how == 0)
-                sel = 3;
-            else
-                sel = 5;
-        }
-        if (sel == 5 && partner_count_get() <= 0) {
-            if (how == 0)
-                sel = 3;
-            else
-                sel = 0;
-        }
     }
-    p = &dkv.pane[side];
     keep = 1;
+    p = &dkv.pane[side];
     if (side == 1)
         sel += 3;
     l = &dk_lists[sel];
     if (p->list->tab != l->tab) {
         dk_save_panes(side);
         p->list = l;
-        p->top = l->u18;
+        p->top = p->list->u18;
         p->cx = p->list->u1c_lo;
         p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
@@ -186,12 +190,11 @@ void dk_select_tab(unsigned short side, unsigned short tab, unsigned short how)
             keep = 0;
         view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         dk_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)view << 8,
+                         dk_lay_pack(p->list_mode == 0 ? p->lay.cols : 1, view),
                          p->list->count, &p->top, &p->cx, &p->cy);
         dk_bg_anim_update();
     }
 }
-#endif
 
 unsigned short dk_list_name_ids[6] = { 1, 2, 3, 4, 3, 5 };
 
