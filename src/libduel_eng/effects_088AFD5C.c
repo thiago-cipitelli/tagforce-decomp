@@ -1,5 +1,5 @@
 // @range 0x088AFD5C-0x088B08B8
-// @asm 0x088AFEE0-0x088B0504
+// @asm 0x088AFF8C-0x088B0504
 /* Pending duel events (duel_chain.kinds / srcs) and their network echo. */
 #include "duel.h"
 
@@ -58,36 +58,23 @@ void duel_088AFD5C(unsigned short kind, unsigned int ev)
     }
 }
 
-#ifdef NON_MATCHING /* 13 palavras: o original carrega a contagem antes do sh m[0] e indexa kinds/srcs com um só ponteiro que anda 1 byte por volta; aqui a base fica fixa */
 void duel_088AFEE0(int b)
 {
     unsigned short m[97];
     int i;
     int n;
-    unsigned short *q;
-    unsigned int c;
-    DuelChain *ch;
 
     if (duel_w_089195EC != 0) {
-        c = duel_w_08914920;
         n = 0;
-        m[n++] = c;
-        i = 0;
-        if (c != 0) {
-            ch = &duel_chain;
-            q = &m[n];
-            do {
-                q[0] = duel_chain.kinds[i];
-                q[1] = ((unsigned int *)ch->srcs)[i];
-                q[2] = ((unsigned int *)ch->srcs)[i] >> 16;
-                n += 3;
-                q += 3;
-            } while (++i < c);
+        m[n++] = duel_chain.n_kinds;
+        for (i = 0; i < duel_chain.n_kinds; i++) {
+            m[n++] = duel_chain.kinds[i];
+            m[n++] = *(unsigned int *)&duel_chain.srcs[i];
+            m[n++] = *(unsigned int *)&duel_chain.srcs[i] >> 16;
         }
         duel_msg_send(b != 0 ? 0xC : 0xB, -1, m, n << 1);
     }
 }
-#endif
 
 
 int card_is_monster(int id);

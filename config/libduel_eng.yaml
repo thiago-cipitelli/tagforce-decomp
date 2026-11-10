@@ -300,7 +300,7 @@ segments:
       - [0xA9C94, c, effects_088A8B94]
       - [0xAB3F0, c, effects_088AF390]
       - [0xABDBC, c, effects_088AFD5C]
-      - [0xABF40, asm, effects_088AFD5C_asm_088AFEE0]
+      - [0xABFEC, asm, effects_088AFD5C_asm_088AFF8C]
       - [0xAC564, c, effects_088AFD5C]
       - [0xAC918, c, chain_prompt]
       - [0xAD59C, c, effects_088B153C]
