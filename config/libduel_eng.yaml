@@ -241,8 +241,6 @@ segments:
       - [0xBAD20, asm, effects_088BC9E0_asm_088BECC0]
       - [0xBAE4C, c, effects_088BC9E0]
       - [0xBC0AC, c, effects_088C004C]
-      - [0xBC85C, asm, effects_088C004C_asm_088C07FC]
-      - [0xBCA28, c, effects_088C004C]
       - [0xBCD30, asm, effects_088C004C_asm_088C0CD0]
       - [0xBD3AC, c, effects_088C134C]
       - [0xBDBE8, asm, effects_088C134C_asm_088C1B88]

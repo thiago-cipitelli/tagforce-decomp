@@ -1,5 +1,4 @@
 // @range 0x088C004C-0x088C134C
-// @asm 0x088C07FC-0x088C09C8
 // @asm 0x088C0CD0-0x088C134C
 /* Effect helpers after the candidate lists (effects_088BC9E0.c): whether a card is in the chain, the
    active field spell, and loops over the monster or spell/trap zones holding a card. */
@@ -218,7 +217,7 @@ int duel_088C0668(int id)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o teste do bit 5 sai como beqz para o corpo seguido de b fim, que nem o if, nem o switch de um case, nem ifs aninhados reproduzem */
+/* the || return; is the trigger of the dead copies after b (docs/matching.md, rodada 19) */
 void duel_088C07FC(unsigned int p, int z, int c)
 {
     int q;
@@ -226,20 +225,19 @@ void duel_088C07FC(unsigned int p, int z, int c)
 
     if (duel.players[p & 1].field[z].flags >> 4 & 1 && duel_slot_value_1909(p, z) < 4) {
         duel_088CC1D0(p, z, 1);
-        if (c == 0 && !(duel.players[p & 1].field[z].flags >> 5 & 1)) {
-            duel_088C4448(p, z, CARD_UID(duel.players[p & 1].field[z].card));
-            for (q = 0; q < 2; q++) {
-                for (k = 0; k < 5; k++) {
-                    if (duel.players[q & 1].field[k].card.id != 0 && duel.players[q & 1].field[k].faceup != 0 &&
-                        (unsigned short)duel_field_type(q, k) == 2 && duel_st_affects(q, k, p, z)) {
-                        duel_088C87A8(q, k, (unsigned char)p | (unsigned char)z << 8, 7, 0);
-                    }
+        if (c != 0 || duel.players[p & 1].field[z].flags >> 5 & 1)
+            return;
+        duel_088C4448(p, z, CARD_UID(duel.players[p & 1].field[z].card));
+        for (q = 0; q < 2; q++) {
+            for (k = 0; k < 5; k++) {
+                if (duel.players[q & 1].field[k].card.id != 0 && duel.players[q & 1].field[k].faceup != 0 &&
+                    (unsigned short)duel_field_type(q, k) == 2 && duel_st_affects(q, k, p, z)) {
+                    duel_088C87A8(q, k, (unsigned char)p | (unsigned char)z << 8, 7, 0);
                 }
             }
         }
     }
 }
-#endif
 
 void duel_088C09C8(unsigned int p, int c)
 {
