@@ -269,7 +269,7 @@ segments:
       - [0x44CC8, c, font_flags]
       - [0x4506C, c, font_tags]
       - [0x4514C, asm, font_tags_asm_088490EC]
-      - [0x457D8, c, font_tags]
+      - [0x45488, c, font_tags]
       - [0x45FA4, asm, font_tags_asm_08849F44]
       - [0x46490, c, font_tags]
       - [0x46A14, c, menu_widget]
