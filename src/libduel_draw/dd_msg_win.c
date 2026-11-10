@@ -1,5 +1,4 @@
 // @range 0x08825088-0x08825DDC
-// @asm 0x088250E8-0x088252B0
 /* The message window (one MenuWidget, dd_msg_win, shared by the duel's questions and choices:
    open/update/draw/close, heap copies of its texts, hooks), the number choice drawn in it, and the
    bouncing marks over the monsters that can still attack. */
@@ -54,9 +53,8 @@ unsigned short *func_08825088(int i)
     return dd_num_text;
 }
 
-#ifdef NON_MATCHING /* registradores dos argumentos das setas diferentes; o +1 dobra com o +20 */
 /* MenuWidget draw_all of the number choice: the number in a cursor box, arrows when it can change */
-void func_088250E8(void *dl, int x, int y, int w_, int h_)
+void *func_088250E8(void *dl, int x, int y, int w_, int h_)
 {
     MenuWidget *w = dd_num_prompt.w;
     int tx;
@@ -79,9 +77,9 @@ void func_088250E8(void *dl, int x, int y, int w_, int h_)
     if (i > 0)
         dl = menu_draw_arrow(dl, x + cx - 4, y + 20 - th / 2, 1);
     if (i < w->count - 1)
-        menu_draw_arrow(dl, x + cx - 4, y + 20 + th / 2 + 1, 0);
+        dl = menu_draw_arrow(dl, x + cx - 4, th / 2 + (y + 20) + 1U, 0);
+    return dl;
 }
-#endif
 
 void func_088252B0(void)
 {
