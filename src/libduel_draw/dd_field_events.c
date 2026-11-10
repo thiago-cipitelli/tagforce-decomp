@@ -1,6 +1,5 @@
 // @range 0x08820138-0x08820F88
-// @asm 0x08820CC0-0x08820D40
-// @data 0x088760D0-0x08876100
+// @data 0x088760D0-0x08876110
 /* Field effects driven by duel events: the LP change number, the deck shuffle (coins flying to the
    deck), coin toss and die roll, fusion, the orbs, the ring and ring glow, the wait-for-condition
    task, rotation angles from a matrix/quaternion (card marks and glows follow the cards) and the
@@ -395,9 +394,8 @@ void func_08820A8C(float *out, float *q, int back)
     }
 }
 
-#ifdef NON_MATCHING /* quadro de pilha 16 bytes maior no original (80) que o gerado (64); cópia de template por local e local extra testados */
 /* position and rotation of a field slot, the rotation turned 180 degrees around z */
-void func_08820CC0(float *pos, float *rot, int at)
+void func_08820CC0(float *pos, float *rot, DdLoc at)
 {
     FxVec4 tmp_pos;
     FxVec4 tmp_rot;
@@ -406,14 +404,16 @@ void func_08820CC0(float *pos, float *rot, int at)
         pos = &tmp_pos.x;
     if (rot == 0)
         rot = &tmp_rot.x;
-    dd_slot_xform(pos, rot, at);
+    {
+        extern void dd_slot_xform(float *pos, float *rot, DdLoc at);
+        dd_slot_xform(pos, rot, at);
+    }
     {
         FxVec4 flip = { 0.0f, 0.0f, 1.0f, 0.0f };
 
         quat_mul(rot, rot, &flip.x);
     }
 }
-#endif
 
 /* moves the glow and the target mark of a card object with it */
 int func_08820D40(DdCobj *o)

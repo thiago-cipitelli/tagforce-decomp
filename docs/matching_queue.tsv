@@ -30,7 +30,6 @@ fuzzy	size	module	function	address	file
 94.2	864	libduel_eng	duel_088044C8	0x088044C8	src/libduel_eng/ai_08804000.c
 94.2	860	libduel_eng	duel_zone_usable	0x088E9D3C	src/libduel_eng/field_count.c
 94.1	1444	libshop	shop_result_input	0x0881189C	src/libshop/shop_open.c
-94.1	128	libduel_draw	func_08820CC0	0x08820CC0	src/libduel_draw/dd_field_events.c
 94.1	1020	libduel_eng	duel_0888F82C	0x0888F82C	src/libduel_eng/effects_zc.c
 94.1	1244	libduel_draw	dd_cobj_goto	0x08809FA0	src/libduel_draw/dd_cobj.c
 94.1	236	BOOT	snd_channels_update	0x08865BC4	src/BOOT/sndapi.c
@@ -48,7 +47,6 @@ fuzzy	size	module	function	address	file
 93.6	808	libduel_eng	duel_088862DC	0x088862DC	src/libduel_eng/effects_v.c
 93.5	592	libduel_eng	duel_0888E1A4	0x0888E1A4	src/libduel_eng/effects_za.c
 93.4	964	libduel_eng	duel_0887F8E4	0x0887F8E4	src/libduel_eng/effects_p.c
-93.3	60	libduel_draw	help_result	0x088617A8	src/libduel_draw/dd_help_window.c
 93.3	992	libstory	stext_names	0x08815058	src/libstory/s_talk.c
 93.2	100	libduel_eng	duel_list_find_id	0x088E6314	src/libduel_eng/card_find.c
 93.2	240	libfield	fld_draw_add	0x0881CC4C	src/libfield/f_shadow.c

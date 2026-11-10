@@ -1,6 +1,5 @@
 // @range 0x08861238-0x088621A0
 // @rodata 0x08872794-0x088727B4
-// @asm 0x088617A8-0x088617E4
 /* Duel help window: a framed list of help pages (text entries first..last of a table pack),
    opened with an animation, moved with the d-pad, closed by confirm/cancel; plus the scrolling
    list widget it is built on (layout of the items, scrolling to the cursor, drawing). */
@@ -194,7 +193,6 @@ int help_cursor(void)
 }
 
 /* 0 open, 1 closed by cancel, 2 closed by accept */
-#ifdef NON_MATCHING /* 4 palavras: falta o segundo li v0,1 morto depois do teste de result == 2 (variantes com case 1:/default:, if/else e returns testadas) */
 int help_result(void)
 {
     DdList *l = &help_win.list;
@@ -202,19 +200,17 @@ int help_result(void)
 
     if (help_win.state == 7) {
         switch (l->result) {
+        default:
+        case 1:
+            r = 1;
+            break;
         case 2:
             r = 2;
-            break;
-        default:
-            r = 1;
             break;
         }
     }
     return r;
 }
-#else
-int help_result(void);
-#endif
 
 void *help_draw_bg(void *dl, int x, int y, int w, int h)
 {
