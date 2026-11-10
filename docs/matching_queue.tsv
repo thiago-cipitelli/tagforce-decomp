@@ -24,7 +24,6 @@ fuzzy	size	module	function	address	file
 96.7	556	libstory	st_mail_view_list	0x088134BC	src/libstory/s_mail.c
 96.7	524	BOOT	ehf_ptcl_cone	0x08827B8C	src/BOOT/particle3.c
 96.7	856	libtitle	tpanel_draw_split	0x08811300	src/libtitle/t_panel.c
-96.6	500	libduel_eng	duel_08810D08	0x08810D08	src/libduel_eng/ai_cond4.c
 96.6	1016	libcharalist	cl_draw_detail_frame	0x088073D8	src/libcharalist/cl_draw.c
 96.6	1684	libduel_eng	duel_0882E1B8	0x0882E1B8	src/libduel_eng/ai_0882D398.c
 96.5	756	libduel_eng	duel_08858E2C	0x08858E2C	src/libduel_eng/ai_08858A30.c

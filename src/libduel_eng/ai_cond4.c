@@ -1,5 +1,4 @@
 // @range 0x08810370-0x08811BDC
-// @asm 0x08810D08-0x08810EFC
 // @asm 0x088119FC-0x08811B24
 /* Conditions of the computer player: LP against the strongest ATK, monsters on the field, the chain. */
 #include "duel.h"
@@ -239,11 +238,9 @@ int duel_08810BDC(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* ordem dos testes do switch e registradores */
 int duel_08810D08(DuelAct *a, int b)
 {
     unsigned int i;
-    unsigned int n;
     unsigned int id;
     int r;
 
@@ -257,8 +254,7 @@ int duel_08810D08(DuelAct *a, int b)
             return 1;
         }
         if (duel_count_monsters(a->player) >= 3) {
-            n = duel.players[a->player & 1].n_hand;
-            for (i = 0; i < n; i++) {
+            for (i = 0; i < duel.players[a->player & 1].n_hand; i++) {
                 id = duel.players[a->player & 1].hand[i].id;
                 switch (id) {
                 case 4998:
@@ -266,7 +262,6 @@ int duel_08810D08(DuelAct *a, int b)
                 case 5000:
                 case 0x1905:
                 case 0x13B5:
-                    return 1;
                 case 0x154B:
                     return 1;
                 }
@@ -284,7 +279,6 @@ int duel_08810D08(DuelAct *a, int b)
     }
     return 0;
 }
-#endif
 
 int duel_08810EFC(DuelAct *a)
 {
