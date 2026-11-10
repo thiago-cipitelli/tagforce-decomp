@@ -1,6 +1,5 @@
 // @range 0x08843D78-0x08845AC0
-// @rodata 0x088756F8-0x08875734
-// @asm 0x08844B44-0x088454DC
+// @rodata 0x088756D8-0x08875734
 /* Window rendering for the menu layer: open/close animation state machine, 9-slice frame built
    from window01.gim pieces into the layer-4 display list, title bar and text. */
 #include "psp.h"
@@ -51,10 +50,6 @@ extern unsigned short wside_u;         /* 0x088EE8BC */
 extern short wside_v;                  /* 0x088EE8BE */
 extern short wside_w;                  /* 0x088EE8C0 */
 extern short wside_h;                  /* 0x088EE8C2 */
-
-/* menu_item_build_frame fica em asm (pilha e registradores diferentes; a tabela de saltos dela fica em
-   0x088756D8..0x088756F8). O `dl` dela é o ponteiro para a lista (o void ** de menu_item_build), que ela
-   repassa a dl_alloc_inline; o rascunho antigo passava *dl. */
 
 /* State machine of one item; (re)builds its frame when the definition changed. */
 void menu_item_build(void **dl, MenuItem *it, Menu *m)
@@ -379,7 +374,6 @@ void menu_item_build_text(void **dl, MenuItem *it, Menu *m)
     *dl = font_text_clear();
 }
 
-#ifdef NON_MATCHING
 /* Builds the frame sprites (and the ghost copy when `ghost`) into inline display-list memory. */
 void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
 {
@@ -401,16 +395,16 @@ void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
     float tx, tyf;
 
     d = it->def;
-    n = menu_item_sprite_count(it, ghost);
+    k = menu_item_sprite_count(it, ghost);
     if (ghost == 0) {
-        v = it->verts = dl_alloc_inline(dl, n << 4);
+        v = it->verts = dl_alloc_inline(dl, k << 4);
         x = d->x;
         y = d->y;
         sx = d->scale_x;
         sy = d->scale_y;
         color = d->color;
     } else {
-        v = it->verts2 = dl_alloc_inline(dl, n << 4);
+        v = it->verts2 = dl_alloc_inline(dl, k << 4);
         x = it->x2;
         y = it->y2;
         sx = it->scale_x2;
@@ -455,18 +449,25 @@ void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
     /* center, in rows of 8 texels */
     cw = w - fr[0].w - fr[1].w;
     h = h - fr[0].h - fr[2].h;
-    for (rows = 0, k = 0; k < h; k += 8, n += 2, rows++) {
-        rest = 8;
-        if (h < (rows + 1) * 8)
-            rest = h - k;
-        side.y = wside_v;
-        side.w = wside_w;
-        side.h = wside_h;
-        side.x = wside_u;
-        side.x = fr[8].x;
-        side.y = fr[8].y;
-        side.h = rest;
-        menu_sprite(&v[n], m->heap, &side, (int)(tl[0] + (float)fr[0].w), (int)((float)k + (tl[1] + (float)fr[0].h)), d->z + 1, cw, rest, color, uv, 0);
+    rows = 0;
+    if (h > 0) {
+        k = 0;
+        do {
+            rest = 8;
+            if (h < (rows + 1) * 8)
+                rest = h - k;
+            side.y = wside_v;
+            side.w = wside_w;
+            side.h = wside_h;
+            side.x = wside_u;
+            side.x = fr[8].x;
+            side.y = fr[8].y;
+            side.h = rest;
+            menu_sprite(&v[n], m->heap, &side, (int)(tl[0] + (float)fr[0].w), (int)((float)k + (tl[1] + (float)fr[0].h)), d->z + 1, cw, rest, color, uv, 0);
+            k += 8;
+            n += 2;
+            rows++;
+        } while (k < h);
     }
     /* tab */
     if (d->tab != 0 && d->style < 4) {
@@ -494,9 +495,9 @@ void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
     /* title bar */
     if (d->title != 0 && d->show_title != 0) {
         ttw = wtitle[1].w;
-        tth = wtitle[2].w;
         tx = tl[0];
         tyf = tl[1] - (float)d->title_h;
+        tth = wtitle[2].w;
         tty = (int)tyf;
         menu_sprite(&v[n], m->heap, &wtitle[0], (int)(tx + (float)ttw), tty, d->z, d->title_w - ttw - tth, -1, color, uvt, 0);
         menu_sprite(&v[n + 2], m->heap, &wtitle[1], (int)tx, tty, d->z, -1, -1, color, uvt, 0);
@@ -509,8 +510,6 @@ void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
     else
         it->nverts2 = n;
 }
-
-#endif
 
 /* Number of sprites (2 vertices each) the frame needs. */
 int menu_item_sprite_count(MenuItem *it, int ghost)
