@@ -70,15 +70,20 @@ fuzzy	size	module	function	address	file
 87.7	280	libtutorial	tut_script_preload_faces	0x08809944	src/libtutorial/tut_script.c
 87.7	2012	libstory	st_fld_place_chrs	0x0880DE58	src/libstory/s_fldset.c
 87.6	232	libduel_eng	duel_08871B14	0x08871B14	src/libduel_eng/act_cond2.c
+87.5	276	libduel_eng	duel_088770C0	0x088770C0	src/libduel_eng/act_cond2.c
 87.5	32	libstory	st_mail_find	0x08813874	src/libstory/s_mail.c
 87.1	1132	BOOT	draw_sphere_visible	0x08837674	src/BOOT/draw.c
+87.1	404	libduel_eng	duel_088860BC	0x088860BC	src/libduel_eng/effects_v.c
 87.0	768	libfield	fcal_draw_tabs	0x0881FCEC	src/libfield/f_cal.c
 86.8	1360	libdeck	dk_draw_row	0x0880F5E4	src/libdeck/dk_cards.c
+86.7	140	libduel_eng	duel_088719DC	0x088719DC	src/libduel_eng/act_cond2.c
 86.7	376	libduel_eng	duel_0883449C	0x0883449C	src/libduel_eng/ai_08832B54.c
 86.7	916	libtitle	tfd_lobby_handler	0x0881C0E0	src/libtitle/t_fdlobby.c
 86.4	504	libduel_eng	duel_08844C2C	0x08844C2C	src/libduel_eng/ai_08844C2C.c
 86.3	1080	BOOT	ehf_cmd_prim_ribbon	0x08826014	src/BOOT/ehf_prim.c
+86.2	240	libduel_eng	duel_08890730	0x08890730	src/libduel_eng/effects_zd.c
 85.9	248	BOOT	msgbox_open	0x0886C904	src/BOOT/msgbox.c
+85.7	388	libduel_eng	duel_08809DA8	0x08809DA8	src/libduel_eng/ai_util.c
 85.6	2256	BOOT	snd_streams_decode	0x0885D078	src/BOOT/snd_mix.c
 85.5	464	BOOT	extdata_load_list	0x0886DAB0	src/BOOT/extdata.c
 85.4	1132	libduel_draw	dd_wline_draw	0x08828DD0	src/libduel_draw/dd_wline.c
@@ -114,6 +119,7 @@ fuzzy	size	module	function	address	file
 82.1	960	libduel_draw	dd_ev_11	0x08817F08	src/libduel_draw/dd_event_cmd.c
 81.8	928	libduel_draw	guide_draw	0x0886A3F4	src/libduel_draw/dd_pad_guide.c
 81.7	760	libduel_draw	lpc_drum	0x0885731C	src/libduel_draw/dd_lp_digits.c
+81.3	216	libduel_eng	duel_08881054	0x08881054	src/libduel_eng/effects_p.c
 81.2	540	librecipe_viewer	rv_input_recipe	0x08808274	src/librecipe_viewer/rv_list.c
 81.0	1460	libduel_draw	dd_fx_note_update	0x0884FDB8	src/libduel_draw/dd_fx_note.c
 80.8	244	libduel_draw	dd_lp_rect	0x088565F8	src/libduel_draw/dd_lp_panel.c
@@ -129,6 +135,7 @@ fuzzy	size	module	function	address	file
 78.5	1508	BOOT	model_outline_begin	0x0882D208	src/BOOT/toon.c
 78.2	76	libfield	fface_free	0x0882B0A4	src/libfield/f_face.c
 78.1	832	libduel_draw	dd_lp_shine	0x08856DC0	src/libduel_draw/dd_lp_panel.c
+77.8	340	libduel_eng	duel_08837250	0x08837250	src/libduel_eng/ai_08836868.c
 77.5	72	libtitle	tfd_main_text	0x0881D94C	src/libtitle/t_fdlobby.c
 77.1	1524	libduel_draw	dd_board_cards	0x0880EB70	src/libduel_draw/dd_board.c
 77.1	716	libduel_draw	dd_face	0x08812C94	src/libduel_draw/dd_face.c

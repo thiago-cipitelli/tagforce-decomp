@@ -1,5 +1,4 @@
 // @range 0x0886191C-0x08861E7C
-// @asm 0x088619FC-0x08861BF8
 /* The computer player: handlers of the cards it activates (damage, messages). */
 #include "duel.h"
 
@@ -47,7 +46,6 @@ int duel_088619C4(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* o original testa os passos 2 e 1 com beq sem likely e adia o move s2,a0 para o delay slot; o mwcc usa beql e move o a0 antes */
 int duel_088619FC(DuelAct *a, int b)
 {
     unsigned int q = a->player ^ a->opp;
@@ -85,29 +83,27 @@ int duel_088619FC(DuelAct *a, int b)
         duel_w_08914904++;
         return 0;
     case 1:
-        if (duel_w_08919624 != 0) {
-            return 1;
+        if (duel_w_08919624 == 0) {
+            switch (a->id) {
+            case 0x17C9:
+            case 0x17CC:
+            case 0x190A:
+            case 0x1A28:
+            case 0x18EC:
+                break;
+            default:
+                duel_08832950(1 - q, 0x10D6);
+            }
+            duel_w_08914904++;
+            return 0;
         }
-        switch (a->id) {
-        case 0x17C9:
-        case 0x17CC:
-        case 0x190A:
-        case 0x1A28:
-        case 0x18EC:
-            break;
-        default:
-            duel_08832950(1 - q, 0x10D6);
-        }
-        duel_w_08914904++;
-        return 0;
+        return 1;
     case 2:
-        break;
+        return -1;
     default:
         return 1;
     }
-    return -1;
 }
-#endif
 
 int duel_08861BF8(DuelAct *a)
 {

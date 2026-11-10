@@ -175,7 +175,8 @@ void duel_place_monster(unsigned int p, int z, DuelCard *c, unsigned short pos, 
 }
 #endif
 
-#ifdef NON_MATCHING /* same as duel_place_monster */
+#ifdef NON_MATCHING /* 24 palavras: como em duel_place_monster, o original grava duel_order_ctr antes de s->unk4/pos
+                      (nem campo de Duel, volatile ou ++ prefixo reproduzem) e lê c->id antes do mult do prólogo */
 /* Put card c in spell/trap zone z of player p, face up or set. */
 void duel_place_st(unsigned int p, int z, DuelCard *c, int up)
 {
@@ -192,7 +193,7 @@ void duel_place_st(unsigned int p, int z, DuelCard *c, int up)
     ((DuelListCard *)&duel.list[CARD_UID(*c)])->placed++;
     s->link = 0;
     duel_088DF554(p, z, 0, p != c->owner);
-    duel_088DF554(p, z, 0x14, up == 0);
+    duel_088DF554(p, z, 0x14, !up);
     duel_088DF554(p, z, 7, up);
     if (up == 0 && card_get_type(id) == 0x16 && duel_count_active(0x1390)) {
         duel_slot_effect_add(p, z, (p == duel_turn_player) << 4 | 1, 0x1390, 0);

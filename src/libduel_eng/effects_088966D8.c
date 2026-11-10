@@ -1,6 +1,4 @@
 // @range 0x088966D8-0x08898B10
-// @asm 0x088977BC-0x08897A5C
-// @asm 0x08898608-0x08898810
 /* Card effect handlers (DuelAct *a), after effects_zi.c. */
 #include "duel.h"
 
@@ -474,7 +472,13 @@ int duel_0889778C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* clamps: o original carrega duel_w_089148FC antes do teste de 0xFFFF */
+/* Sets stat value v (clamped to 16 bits) on token id in zone z of player p. Only an inline helper with the
+   arguments in this order reproduces the original's load order (v, p, z) and the clamp after the loads. */
+static inline void duel_token_set_stat(int z, unsigned int p, int id, int v)
+{
+    duel_088C87A8(p, z, id, 5, v > 0xFFFF ? 0xFFFF : v);
+}
+
 int duel_088977BC(DuelAct *a)
 {
     unsigned int t;
@@ -523,14 +527,13 @@ int duel_088977BC(DuelAct *a)
         duel_field_stats(p, z, &st);
         duel_088C87A8(a->player, duel_w_089148FC, 0x1602, 5,
                       (card_get_type(st.id) & 0xFF) << 8 | (unsigned char)((card_get_kind(st.id) & 0xF) | (card_get_level(st.id) & 0xF) << 4));
-        duel_088C87A8(a->player, duel_w_089148FC, 0x1602, 5, st.batk > 0xFFFF ? 0xFFFF : st.batk);
-        duel_088C87A8(a->player, duel_w_089148FC, 0x1602, 5, st.bdef > 0xFFFF ? 0xFFFF : st.bdef);
+        duel_token_set_stat(duel_w_089148FC, a->player, 0x1602, st.batk);
+        duel_token_set_stat(duel_w_089148FC, a->player, 0x1602, st.bdef);
         duel_088C87A8(p, z, (unsigned short)((unsigned char)a->player | (unsigned char)duel_w_089148FC << 8), 7, 0);
         break;
     }
     return 0;
 }
-#endif
 
 int duel_08897A5C(DuelAct *a)
 {
@@ -793,7 +796,6 @@ int duel_0889850C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* clamps: como em duel_088977BC */
 int duel_08898608(DuelAct *a)
 {
     unsigned int t;
@@ -831,15 +833,14 @@ int duel_08898608(DuelAct *a)
     case 0x7F:
         t = duel_act_target(a, 0);
         duel_field_stats(t & 0xFF, (unsigned short)t >> 8 & 0xFF, &st);
-        duel_088C87A8(a->player, duel_w_089148FC, 0x1608, 5,
+        duel_088C87A8(a->player, *(volatile int *)&duel_w_089148FC, 0x1608, 5,
                       (unsigned char)st.attr << 8 | (unsigned char)((st.unk8 & 0xF) | (st.level & 0xF) << 4));
-        duel_088C87A8(a->player, duel_w_089148FC, 0x1608, 5, st.atk > 0xFFFF ? 0xFFFF : st.atk);
-        duel_088C87A8(a->player, duel_w_089148FC, 0x1608, 5, st.def > 0xFFFF ? 0xFFFF : st.def);
+        duel_token_set_stat(duel_w_089148FC, a->player, 0x1608, st.atk);
+        duel_token_set_stat(duel_w_089148FC, a->player, 0x1608, st.def);
         break;
     }
     return 0;
 }
-#endif
 
 int duel_08898810(DuelAct *a)
 {
