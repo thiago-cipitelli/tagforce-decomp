@@ -66,8 +66,6 @@ segments:
       - [0xF8F4, c, s_mail]
       - [0xF90C, c, s_evlist]
       - [0xFCE4, c, s_talk]
-      - [0x110B8, asm, s_talk_asm_08815058]
-      - [0x11498, c, s_talk]
       - [0x11704, c, s_pickup]
       - [0x11BB4, c, s_duel]
       - [0x12658, c, s_free]

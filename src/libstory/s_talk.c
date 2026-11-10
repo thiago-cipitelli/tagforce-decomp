@@ -1,5 +1,4 @@
 // @range 0x08813C84-0x088156A4
-// @asm 0x08815058-0x08815438
 /* Story dialogs: the message window and the bust-ups of the speakers (two at most, placed on the
    left/centre/right slots) driven through the libfield commands 0xE (open), 0xF (animation),
    0x10 (close), 0x13 (message) and 0x14 (choice), and the expansion of the message text:
@@ -622,23 +621,21 @@ void stext_cards(unsigned short *text)
     }
 }
 
-#ifdef NON_MATCHING /* mesma lógica; o original mantém o deslocamento de buf[i + 7] num registrador próprio e reestende as entradas das tabelas, e a alocação de registradores não bate */
 /* 《Cnnn?v》 -> name of character nnn (variant v), 《Mnnn?v》 -> text of the b table, in colour */
 void stext_names(unsigned short *text)
 {
     unsigned short buf[256];
     unsigned short out[256];
     unsigned short code[4];
-    int mode = 0;
     int len;
     int i;
-    unsigned short *p;
-    int id;
     int var;
     unsigned short *name;
+    int id;
+    int mode = 0;
     unsigned short *tab;
-    unsigned short *e;
     int j;
+    unsigned short *e;
     unsigned short c;
 
     memset(buf, 0, sizeof(buf));
@@ -652,38 +649,40 @@ void stext_names(unsigned short *text)
     len = wcslen(buf);
     if (len > 0x100)
         return;
-    for (i = 0, p = buf;; i++, p++) {
-        if (*p == 0) {
+    for (i = 0;; i++) {
+        if (buf[i] == 0) {
             wcscpy(text, buf);
             return;
         }
-        if (*p != 0x300A)
+        if (buf[i] != 0x300A)
             continue;
-        if (p[1] == 'C')
+        if (buf[i + 1] == 'C')
             mode = 1;
-        else if (p[1] == 'M')
+        else if (buf[i + 1] == 'M')
             mode = 2;
-        else if (p[1] == 'P')
+        else if (buf[i + 1] == 'P')
             continue;
         if (mode == 0)
             return;
         memset(out, 0, sizeof(out));
         if (i > 0)
             wcsncpy(out, buf, i);
-        id = (unsigned short)(p[2] - '0') * 100 + (unsigned short)(p[3] - '0') * 10 + (unsigned short)(p[4] - '0');
-        var = (unsigned short)(p[6] - '0');
+        id = (unsigned short)(buf[i + 2] - '0') * 100 + (unsigned short)(buf[i + 3] - '0') * 10;
+        id += (unsigned short)(buf[i + 4] - '0');
+        var = (unsigned short)(buf[i + 6] - '0');
         switch (mode) {
         case 1:
             if (var == 1) {
                 name = chara_get_name(0, st_id_to_rec(id));
             } else {
                 tab = stt_count_a();
-                for (j = 0, e = tab;; j++, e += 3) {
+                for (j = 0;; j++) {
+                    e = &tab[j * 3];
                     if (e[0] == 0 && e[1] == 0 && e[2] == 0) {
                         name = chara_get_name(0, st_id_to_rec(id));
                         break;
                     }
-                    if (id == e[0] && var == e[1]) {
+                    if (id == (e[0] & 0xFFFF) && var == e[1]) {
                         name = stt_get_a(tab[j * 3 + 2]);
                         break;
                     }
@@ -693,12 +692,13 @@ void stext_names(unsigned short *text)
             break;
         case 2:
             tab = stt_count_b();
-            for (j = 0, e = tab;; j++, e += 3) {
+            for (j = 0;; j++) {
+                e = &tab[j * 3];
                 if (e[0] == 0 && e[1] == 0 && e[2] == 0) {
                     name = stt_get_b(tab[j * 3 - 1]);
                     break;
                 }
-                if (id == e[0] && (var == e[1] || e[0] != e[3])) {
+                if (id == (e[0] & 0xFFFF) && (var == e[1] || (e[0] & 0xFFFF) != e[3])) {
                     name = stt_get_b(tab[j * 3 + 2]);
                     break;
                 }
@@ -711,8 +711,10 @@ void stext_names(unsigned short *text)
         code[2] = '0';
         wcscat(out, code);
         /* ponytail: the original never advances here and spins unless the tag closes at i + 7 */
-        c = buf[i + 7];
-        while (c != 0) {
+        c = *(unsigned short *)((char *)buf + (unsigned int)(i * 2) + 14);
+        for (;;) {
+            if (c == 0)
+                break;
             if (c == 0x300B) {
                 wcsncat(out, &buf[i + 8], len - (i + 8));
                 break;
@@ -724,7 +726,6 @@ void stext_names(unsigned short *text)
             return;
     }
 }
-#endif
 
 /* the player name (at most 32 characters) */
 void stext_player(unsigned short *dst)
