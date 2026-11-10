@@ -1,5 +1,4 @@
 // @range 0x0888146C-0x08883114
-// @asm 0x088823E0-0x088824E4
 // @asm 0x08882B04-0x08882D9C
 /* Card effect handlers (DuelAct *a), after effects_p.c. */
 #include "duel.h"
@@ -477,18 +476,16 @@ int duel_08882314(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores do laço */
 int duel_088823E0(DuelAct *a)
 {
-    unsigned int q = 1 - a->player;
     unsigned int mask = 0;
     int z;
 
     for (z = 5; z < 10; z++) {
-        unsigned int id = duel.players[q & 1].field[z].card.id;
+        unsigned int id = duel.players[(1 - a->player) & 1].field[z].card.id;
 
-        if (duel.players[q & 1].field[z].faceup != 0 && id == 0x1102) {
-            mask |= 1 << (z + q * 16);
+        if (duel.players[(1 - a->player) & 1].field[z].faceup != 0 && id == 0x1102) {
+            mask |= 1 << (z + (1 - a->player) * 16);
         }
     }
     duel_088D13CC(a, mask);
@@ -503,7 +500,6 @@ int duel_088823E0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088824E4(DuelAct *a)
 {
