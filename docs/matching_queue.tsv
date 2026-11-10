@@ -46,7 +46,6 @@ fuzzy	size	module	function	address	file
 94.7	672	libduel_eng	duel_088977BC	0x088977BC	src/libduel_eng/effects_088966D8.c
 94.7	192	BOOT	snd_group_release_all	0x08861CA0	src/BOOT/snd_obj.c
 94.5	572	BOOT	movie_main_loop	0x08851D10	src/BOOT/movie.c
-94.5	432	libduel_eng	duel_088ADA84	0x088ADA84	src/libduel_eng/effects_088A8B94.c
 94.5	1460	libshop	shop_list_row	0x0880DFE4	src/libshop/shop_list.c
 94.5	232	libstory	op_bgm	0x088097F4	src/libstory/s_vmops.c
 94.3	364	libduel_eng	duel_088A9174	0x088A9174	src/libduel_eng/effects_088A8B94.c

@@ -2,7 +2,6 @@
 // @data 0x089119A8-0x08911A38
 // @asm 0x088A9174-0x088A92E0
 // @asm 0x088AC6A0-0x088AC82C
-// @asm 0x088ADA84-0x088ADC34
 /* Target list of a DuelAct (w[0..4], then duel_chain.uids from w[5]) and effect handlers. */
 #include "duel.h"
 
@@ -2033,7 +2032,6 @@ int duel_088DFE24(unsigned int p, unsigned int q);
 void duel_088329D0();
 int duel_count_type(unsigned int p, unsigned int type);
 
-#ifdef NON_MATCHING /* despacho do switch: constante 1 em \$v1 e retorno 0 padrão no despacho */
 int duel_088ADA84(DuelAct *a)
 {
     if (a->w[2] == 0) {
@@ -2054,9 +2052,10 @@ int duel_088ADA84(DuelAct *a)
             return 0;
         }
         duel_w_08914908 += 2;
+    one:
         return 1;
     case 4:
-        return 1;
+        goto one;
     case 1:
     case 3:
         duel_088A8EA0(a, duel_h_0891968E & 1, 0xE, duel_h_0891968E);
@@ -2065,7 +2064,6 @@ int duel_088ADA84(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088ADC34(DuelAct *a)
 {

@@ -294,8 +294,6 @@ segments:
       - [0xA5340, c, effects_088A8B94]
       - [0xA8700, asm, effects_088A8B94_asm_088AC6A0]
       - [0xA888C, c, effects_088A8B94]
-      - [0xA9AE4, asm, effects_088A8B94_asm_088ADA84]
-      - [0xA9C94, c, effects_088A8B94]
       - [0xAB3F0, c, effects_088AF390]
       - [0xABDBC, c, effects_088AFD5C]
       - [0xABFEC, asm, effects_088AFD5C_asm_088AFF8C]
