@@ -1,5 +1,4 @@
 // @range 0x08900C94-0x08901BA0
-// @asm 0x08901730-0x08901AC8
 // @data 0x08912260-0x08912438
 /* End of a duel: results of the series, the 118 titles, records and bonuses; the character table. */
 #include "card_db.h"
@@ -459,20 +458,20 @@ void duel_titles_check(void)
     }
 }
 
-#ifdef NON_MATCHING /* same steps; the original keeps the game state in $s5 and the results in $s1 */
 /* Called when the duel is over: fill the results, then the titles, records and bonuses of the
    single human player. Returns 1 when they were computed. */
 int duel_finish(void)
 {
-    unsigned short scene = scene_stack_peek_arg(6);
+    int scene = (unsigned short)scene_stack_peek_arg(6);
     GameState *g = game_state_get();
     DuelResults *r = game_state2_get();
     int *cur = r->cur;
-    PlayerSlot *a;
     PlayerSlot *b;
+    PlayerSlot *a;
+    unsigned short sc;
     int n;
-    int cnt;
     int i;
+    int cnt;
     int k;
 
     sysstate2_get_ptr_51c();
@@ -496,10 +495,7 @@ int duel_finish(void)
     if (((unsigned char *)g)[0x118] != 1) {
         return 0;
     }
-    n = 2;
-    if (g->partner_mode == 2) {
-        n = 4;
-    }
+    n = g->partner_mode == 2 ? 4 : 2;
     cnt = 0;
     for (i = 0; i < n; i++) {
         if (g->slot[i].type == 1) {
@@ -523,38 +519,43 @@ int duel_finish(void)
     } else {
         duel_record_add(r->result, a->type, b->type);
     }
-    k = scene == 0xD ? 1 : 2;
+    sc = scene;
+    k = sc == 0xD ? 1 : 2;
     switch (r->result) {
+    case 0:
+        return 0;
+    case 1:
+        break;
     case 2:
-        r->bonus[3] = 10;
+        cur[43] = 10;                  /* r->bonus[3], through cur as in the original */
         duel_save_once_cc(3);
-        r->bonus[5] = k * (duel_turn_get() + 1);
+        cur[45] = k * (duel_turn_get() + 1);
         duel_save_once_cc(5);
         return 1;
     case 3:
-        r->bonus[4] = 0x32;
+        cur[44] = 0x32;
         duel_save_once_cc(4);
-        r->bonus[5] = k * (duel_turn_get() + 1);
+        cur[45] = k * (duel_turn_get() + 1);
         duel_save_once_cc(5);
         duel_save_once_120(0x1D);
         return 1;
-    case 0:
-        return 0;
-    default:
-        duel_deck_stats(&g->slot[duel_w_0891A19C].recipe, &duel_deck_stats_cur);
-        if (g->partner_mode == 2) {
-            duel_w_0891A198 = (recipe_get_id(a->deck_id) + recipe_get_id(b->deck_id)) / 2;
-        } else {
-            duel_w_0891A198 = recipe_get_id(a->deck_id);
-        }
-        duel_w_0891A194 = day_advance(duel_w_0891A198 / (scene == 0xD ? 2 : 1) * 3);
-        duel_titles_check();
-        duel_records_update();
-        duel_bonus_calc();
-        return 1;
     }
+    duel_deck_stats((RecipeData *)((unsigned int)&g->slot[duel_w_0891A19C] + 0x80U), &duel_deck_stats_cur);
+    if (g->partner_mode == 2) {
+        extern int recipe_get_id();
+
+        duel_w_0891A198 = (recipe_get_id(a->deck_id) + recipe_get_id(b->deck_id)) / 2;
+    } else {
+        extern int recipe_get_id();
+
+        duel_w_0891A198 = recipe_get_id(a->deck_id);
+    }
+    duel_w_0891A194 = day_advance(*(volatile int *)&duel_w_0891A198 / (sc == 0xD ? 2 : 1) * 3);
+    duel_titles_check();
+    duel_records_update();
+    duel_bonus_calc();
+    return 1;
 }
-#endif
 
 DuelChar *duel_char_find(int id)
 {

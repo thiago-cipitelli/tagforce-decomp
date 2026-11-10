@@ -1,5 +1,4 @@
 // @range 0x088CAF24-0x088CB400
-// @asm 0x088CAF24-0x088CB14C
 /* Cards added to the hand (from the graveyard, from zone 0xF, from the graveyard of the opponent):
    command 0x3F to the presentation, then the reveal (duel_088C77EC) and the event 0x1A. */
 #include "duel.h"
@@ -23,7 +22,6 @@ int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
 void duel_088AFD5C(int kind, DuelMoveEv ev);
 
-#ifdef NON_MATCHING /* alocação de registradores (a/c em $s1/$s0 no original) e ordem dos loads iniciais */
 /* card c of the graveyard of p to his hand, for the action a */
 int duel_088CAF24(DuelAct *a, unsigned int p, DuelCard *c)
 {
@@ -36,10 +34,10 @@ int duel_088CAF24(DuelAct *a, unsigned int p, DuelCard *c)
     DuelMoveEv ev;
 
     if (duel_grave_pos(p, c) >= 0) {
-        opp = a->player != p;
-        n = duel.players[p & 1].n_hand;
         id = c->id;
         uid = CARD_UID(*c);
+        opp = a->player != p;
+        n = duel.players[p & 1].n_hand;
         k = card_attribute_icon_is3(id) ? 0xC : 0xB;
         duel_cmd(0x3F, (uid & 0x3FF) << 6 | ((p & 1) | 0x1C), (n & 0x3FF) << 6 | ((p & 1) | (k & 0x1F) << 1), opp);
         if (!card_attribute_icon_is3(id)) {
@@ -61,7 +59,6 @@ int duel_088CAF24(DuelAct *a, unsigned int p, DuelCard *c)
     }
     return 0;
 }
-#endif
 
 /* card c of zone 0xF of p to his hand */
 int duel_088CB14C(DuelAct *a, unsigned int p, DuelCard *c)

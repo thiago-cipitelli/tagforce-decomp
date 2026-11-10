@@ -1,5 +1,4 @@
 // @range 0x08819F94-0x0881C118
-// @asm 0x0881A3EC-0x0881A554
 /* Conditions the computer player checks before activating a card (continued in ai_cond1.c). */
 #include "duel.h"
 #include "card_db.h"
@@ -190,7 +189,6 @@ int duel_ai_0881A2B4(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 20 palavras: o original não recarrega a0 antes de duel_08809F2C (a0 ainda vale a->player do índice do LP); com a chamada sem argumento ficam 8 (a0/a1 trocados no 1 - player) */
 int duel_ai_0881A3EC(DuelAct *a)
 {
     int n = duel_count_field_all(1 - a->player);
@@ -208,14 +206,14 @@ int duel_ai_0881A3EC(DuelAct *a)
     if (duel_08836868(a->player) == 0) {
         return 0;
     }
-    if ((duel_count_active(0x140E) != 0 || duel_count_active(0x17A6) != 0) &&
-        ((v = duel_088054A8(a->player, -1, 0)) >= duel.players[(1 - a->player) & 1].lp || v >= 0x960) &&
-        duel_08809F2C(a->player) > 0) {
-        return 1;
+    if (duel_count_active(0x140E) != 0 || duel_count_active(0x17A6) != 0) {
+        v = duel_088054A8(a->player, -1, 0);
+        if ((v >= duel.players[(1 - a->player) & 1].lp || v >= 0x960) && duel_08809F2C(a->player) > 0) {
+            return 1;
+        }
     }
     return 0;
 }
-#endif
 
 int duel_ai_0881A554(DuelAct *a)
 {

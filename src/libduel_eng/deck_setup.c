@@ -1,5 +1,5 @@
 // @range 0x088E7518-0x088E80CC
-// @asm 0x088E77F0-0x088E7D64
+// @asm 0x088E79F0-0x088E7D64
 // @data 0x08911D88-0x08911DA0
 /* Deck setup from the recipes (uids, the list of every card of the duel), saving and restoring the
    piles of a player, removing a card from a zone and putting it in a zone. */
@@ -91,15 +91,15 @@ void duel_deck_load(unsigned int p, DuelRecipe *r)
     duel.players[q].unk4 = k;
 }
 
-#ifdef NON_MATCHING /* the original keeps the uid and the output pointer as their own induction registers */
 /* Uids of the recipe of player p in the save block: shuffled main deck (5 to the hand), side. */
 void duel_deck_build_uids(unsigned int p, DuelDecks *d)
 {
-    int k = duel.players[p & 1].unk8 + 1;
+    unsigned int k = duel.players[p & 1].unk8 + 1;
     DuelRecipe *r = (DuelRecipe *)d->n_main[p];
     DuelPileSave *s = &d->save[p];
     unsigned short *u;
     unsigned int i;
+    unsigned short *q;
     int j;
 
     u = s->uid;
@@ -113,12 +113,17 @@ void duel_deck_build_uids(unsigned int p, DuelDecks *d)
         u[i] = uid;
         k++;
     }
-    for (j = r->n_main - 1; j >= 0; j--) {
-        int x = duel_rand(j + 1);
-        unsigned short t = u[j];
+    j = r->n_main - 1;
+    if (j >= 0) {
+        q = &u[j];
+        do {
+            int x = duel_rand(j + 1);
+            unsigned short t = *q;
 
-        u[j] = u[x];
-        u[x] = t;
+            *q = u[x];
+            u[x] = t;
+            q--;
+        } while (--j >= 0);
     }
     u += r->n_main;
     for (i = 0; i < r->n_side; i++) {
@@ -131,7 +136,6 @@ void duel_deck_build_uids(unsigned int p, DuelDecks *d)
     duel.players[p & 1].unk8 = k - 1;
     duel.players[p & 1].unk4 = k;
 }
-#endif
 
 #ifdef NON_MATCHING /* 2026-11-05: contagens lidas na ordem hand, d, c e owner = uid & 1, uid_hi = uid >> 1 como no original; falta o ponteiro u (o original soma sp+24 e +6 em dois passos) e a alocação dos temporários */
 /* Swap the hand, deck and zone C of player p with the ones saved in the block. */

@@ -1,5 +1,4 @@
 // @range 0x08834734-0x08835AEC
-// @asm 0x08834A84-0x08834E44
 /* Steps of the computer player's actions (duel_w_08919644 is the step, duel_w_08919638 cleared
    when the action is done). */
 #include "duel.h"
@@ -145,13 +144,11 @@ void duel_088349BC(void)
     }
 }
 
-#ifdef NON_MATCHING /* o compilador dobra r = 0 em r | duel_08827D98(); leiaute do teste card_get_prop5_hi == 5 não reproduzido */
 unsigned int duel_08834A84(int id, unsigned int p, int i)
 {
-    unsigned int r;
+    unsigned int r = 0;
     int uid = CARD_UID(duel.players[p & 1].hand[i]);
 
-    r = 0;
     if (p == (duel_view_player ^ 1)) {
         return 0;
     }
@@ -189,7 +186,8 @@ unsigned int duel_08834A84(int id, unsigned int p, int i)
                 duel_err = 0xD;
                 r |= duel_08828740(p, uid);
             } else if (!(duel.players[p & 1].flags >> 17 & 1)) {
-                r = r | duel_08827D98(p, uid) | duel_08828740(p, uid);
+                r |= duel_08827D98(p, uid);
+                r |= duel_08828740(p, uid);
             } else {
                 duel_err = 2;
                 r |= duel_08828740(p, uid);
@@ -206,16 +204,16 @@ unsigned int duel_08834A84(int id, unsigned int p, int i)
     case 3:
         switch (card_get_type(id)) {
         case 0x16:
-            if (card_get_prop5_hi(id) == 5) {
-                if (duel_can_place_st(p, id)) {
-                    if (duel_0886AFF8(p, i, id)) {
-                        r |= 8;
-                    }
-                } else {
-                    duel_err = 0xC;
+            if (card_get_prop5_hi(id) != 5) {
+                duel_err = 5;
+                break;
+            }
+            if (duel_can_place_st(p, id)) {
+                if (duel_0886AFF8(p, i, id)) {
+                    r |= 8;
                 }
             } else {
-                duel_err = 5;
+                duel_err = 0xC;
             }
             break;
         case 0x17:
@@ -235,7 +233,6 @@ unsigned int duel_08834A84(int id, unsigned int p, int i)
     }
     return r;
 }
-#endif
 
 unsigned int duel_08834E44(int id, unsigned int p, int z)
 {

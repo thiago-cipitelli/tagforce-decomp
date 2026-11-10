@@ -1,5 +1,4 @@
 // @range 0x0880FDF4-0x08810370
-// @asm 0x088102DC-0x08810370
 /* More conditions of the computer player (after the ones in ai_util.c). */
 #include "duel.h"
 #include "card_db.h"
@@ -149,20 +148,18 @@ int duel_08810244(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores/ordem de desvios */
 int duel_088102DC(DuelAct *a)
 {
     int z;
 
     if (duel_phase == 5) {
         unsigned int q = 1 - a->player;
-
+        unsigned int b = (unsigned int)&duel.players[q & 1];
         for (z = 5; z <= 10; z++) {
-            if (duel.players[q & 1].field[z].card.id != 0 && (duel.players[q & 1].field[z].flags >> 20 & 1)) {
+            if (duel.players[q & 1].field[z].card.id != 0 && (*(unsigned int *)(b + z * 20 + 64) >> 20 & 1)) {
                 return 1;
             }
         }
     }
     return 0;
 }
-#endif

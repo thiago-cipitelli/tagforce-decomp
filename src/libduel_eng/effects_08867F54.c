@@ -1,5 +1,4 @@
 // @range 0x08867F54-0x08869190
-// @asm 0x08868F80-0x08869190
 // @data 0x08911760-0x08911770
 /* Card effect handlers (DuelAct *a): step machines on duel_w_08914904 (draws, checks by card id). */
 #include "duel.h"
@@ -475,18 +474,16 @@ int duel_08868C28(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original guarda pl e o valor em pilha e usa s8; o mwcc aloca tudo em registradores (forma igual) */
 /* Pays 1000, 2000 or 3000 life points: k * 1000 for the k that the cards of the hand allow. */
 int duel_08868F80(DuelAct *a)
 {
     unsigned int p = a->player ^ a->opp;
-    DuelPlayer *pl;
     int v;
+    unsigned int i;
+    int k;
+    int hi;
     unsigned int mask;
     int lo;
-    int hi;
-    int k;
-    unsigned int i;
 
     switch (duel_w_08914904) {
     case 0:
@@ -494,13 +491,12 @@ int duel_08868F80(DuelAct *a)
         mask = 0;
         lo = 0;
         hi = 0;
-        pl = &duel.players[p & 1];
-        for (k = 1; k < 4; k++, v += 1000) {
-            if (!(v < pl->lp)) {
+        for (k = 1; k <= 3; k++, v += 1000) {
+            if (!(v < duel.players[p & 1].lp)) {
                 break;
             }
-            for (i = 0; i < pl->n_hand; i++) {
-                if (duel_08827DA4(p, CARD_UID(pl->hand[i]), 1, k)) {
+            for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+                if (duel_08827DA4(p, CARD_UID(duel.players[p & 1].hand[i]), 1, k)) {
                     mask |= 1 << k;
                     if (lo == 0) {
                         lo = k;
@@ -510,7 +506,7 @@ int duel_08868F80(DuelAct *a)
             }
         }
         if (mask == 0) {
-            return 1;
+            break;
         }
         if (hi == lo || duel_player_type[p] == 1) {
             duel_w_08919624 = hi;
@@ -522,8 +518,7 @@ int duel_08868F80(DuelAct *a)
     case 1:
         a->w[0] = duel_w_08919624;
         duel_088C4564(p, a->w[0] * 1000);
-        return 1;
+        break;
     }
     return 1;
 }
-#endif

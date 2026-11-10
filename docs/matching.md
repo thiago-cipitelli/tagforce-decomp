@@ -1350,3 +1350,32 @@ Batendo: `font_glyph_find`, `netsync_queue_pop`, `ptp_accept` (BOOT), `fld_npc_f
 - **Cópia de struct via ponteiro**: `f = *(Vec3 *)&t;` agenda o `addiu a0` antes do último `swc1` como o original
   (`fld_npc_facing`); `f = t` não. Cópia de global para o meio de uma matriz passando por um `Vec4` local
   (`v4 = g; *(Vec4 *)&m->m[12] = *(Vec4 *)&v4;`) dá o temporário de pilha a mais do original (`shop_open_layout`).
+## Rodada 17 (`engK`: libduel_eng, funções 85-93% nunca tentadas)
+
+15 das 20 batem. Idiomas novos (todos de `libduel_eng`):
+- **Duas induções no mesmo laço (ponteiro + deslocamento):** o original anda com `a1 = base + z*20` (ponteiro) e
+  `a0 = z*20` (deslocamento somado à base fixa) quando um campo vem de `duel.players[q & 1].field[z]` e o outro de
+  uma base inteira: `unsigned int b = (unsigned int)&duel.players[q & 1]; ... *(unsigned int *)(b + z * 20 + 64)`
+  (`duel_088102DC`). `ZSLOT` e `sizeof(DuelSlot)` não servem (o `z * 20` precisa ser `int`).
+- **Deslocamento de campo que o original não dobra:** `&g->slot[i].recipe` dá `addiu 416`; o original faz
+  `addiu 288` e depois `addiu 128`: `(RecipeData *)((unsigned int)&g->slot[i] + 0x80U)` (`duel_finish`).
+- **`r | f()` que o mwcc dobra porque `r` vale 0 no caminho:** `unsigned int r = 0;` na declaração e `r |= f();
+  r |= g();` em dois comandos mantêm o `or s0,s2,v0` (`duel_08834A84`).
+- **Escritas por um ponteiro-base em vez do campo:** o original grava `r->bonus[3..5]` como `cur[43..45]`
+  (`cur = r->cur`, já em `$s`): o deslocamento do `sw` denuncia a base (`duel_finish`). Retorno sem `andi` de uma
+  função `unsigned short` no header: `{ extern int recipe_get_id(); ... }` no bloco.
+- **`case K: break;` + código depois do `switch`** = o `beq K` vai direto ao código comum e o `default` some
+  (`duel_finish`, testes 3,2,1,0 com `case 0, 1, 2, 3` na fonte).
+- **Mais globais internos do `Duel` como campos:** `duel_w_08917DC4 = duel.unk1f68`, `duel_w_089195E4 =
+  duel.unk3788` (`duel_req_088D42C8`); `duel_ai_player` (+0x37EC) e `duel_w_0891964C` (+0x37F0) gravados como
+  campos mantêm os stores antes das leituras de `duel.players` (`duel_088042D4`, 35 -> 21; falta a cópia tardia do
+  parâmetro `a`).
+- `1 - a->player` sem local (`duel_088823E0`); `if (c->id == 0 || z >= 5) return;` num teste só e o jogador de
+  `x` relido na última chamada (`duel_088D1DF4`); `&a->src` no bloco do `else` para cair no delay slot
+  (`duel_088731C0`); embaralhamento com ponteiro `q` próprio declarado antes de `j` e `do/while` guardado
+  (`duel_deck_build_uids`); `if (id == want) { laço }` e testes `||` para o `return 0x800` comum
+  (`duel_0882EA4C`, `duel_0882A680`); `return 1` comum depois do `switch` com `break` (`duel_08868F80`).
+- **Bloqueio aberto:** `x = &duel_chain.srcs[i]` materializado num registrador (`addiu a1,t0,1528; lbu 1(a1)`)
+  quando só é usado uma vez no laço: o mwcc dobra o deslocamento (`1529(t0)`) em todas as formas tentadas (tipo
+  `DuelSrc *`, visão `DuelActY`, declaração na função ou no bloco). `duel_0886DE70` (17 palavras) e
+  `duel_08865838` (85, quase tudo deslocamento) param aí.
