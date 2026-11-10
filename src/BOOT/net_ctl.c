@@ -1,7 +1,6 @@
 // @range 0x0886B654-0x0886C904
 // @data 0x088F0B74-0x088F0C94
 // @rodata 0x088EB0DC-0x088EB110
-// @asm 0x0886C59C-0x0886C790
 /* Ad hoc control: sceNetAdhocctl init and handler, scan/connect/disconnect steps, the per-frame
    dispatcher net_update, and the PTP handshake in which the host sends the list of player MACs
    to every guest. */
@@ -528,14 +527,13 @@ int ptp_flush(void)
     return r;
 }
 
-#ifdef NON_MATCHING /* the original recomputes ptp_buf + 4 + i * 6 in the copy loop instead of stepping a pointer */
 int ptp_accept(void)
 {
-    int n;
+    unsigned char mac[6];
     int len;
-    unsigned char mac[8];
-    int r;
+    int n;
     int i;
+    int r;
 
     if (net.state != 0x15) {
         return 0;
@@ -571,7 +569,7 @@ int ptp_accept(void)
     }
     memset(net.macs, 0, 0x36);
     for (i = 0; i < n; i++) {
-        memcpy(net.macs[i], ptp_buf + 4 + i * 6, 6);
+        memcpy(net.macs[i], ptp_buf + (unsigned int)i * 6 + 4, 6);
     }
     net.peer_count = n;
 done:
@@ -582,7 +580,6 @@ done:
     }
     return r;
 }
-#endif
 
 int ptp_update(void)
 {

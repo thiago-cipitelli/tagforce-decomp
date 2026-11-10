@@ -56,7 +56,6 @@ fuzzy	size	module	function	address	file
 91.5	1620	libselect_card	sc_draw_headers	0x08808040	src/libselect_card/sc_panes.c
 91.5	1340	libduel_draw	dd_fcam_from_tms	0x08807CD4	src/libduel_draw/dd_fieldcam.c
 91.4	1228	librecipe_viewer	recipe_viewer_draw	0x08805874	src/librecipe_viewer/rv_screen.c
-91.4	500	BOOT	ptp_accept	0x0886C59C	src/BOOT/net_ctl.c
 91.3	712	libdeck	dk_help_scrollbar	0x0881D3EC	src/libdeck/dk_help_ui.c
 91.3	436	libselect_card	sc_layout_scroll	0x0880D0F8	src/libselect_card/sc_state.c
 91.2	1356	libtitle	tdl_deck_item	0x08825D7C	src/libtitle/t_deckpick.c
