@@ -37,7 +37,7 @@ float *mat3_rot_z(float *out, float *m, float a);
 float *mat4_transform_vec4(FxVec4 *out, float *m, FxVec4 *v);
 void *memcpy(void *, const void *, size_t);
 void dd_mtx_mvp_cur(float *out);
-void dd_roll_number(float t, int x, int y, int from, int to);
+void dd_roll_number(int x, int y, int from, int to, float t);
 
 int dd_fx_counter_update(int state, DdFxCounter *fx);
 
@@ -208,7 +208,7 @@ int dd_fx_counter_update(int state, DdFxCounter *fx)
             }
         }
     }
-    dd_roll_number(t, x + fx->num_x, y + fx->num_y, a, b);
+    dd_roll_number(x + fx->num_x, y + fx->num_y, a, b, t);
     return ret;
 }
 #endif

@@ -25,7 +25,7 @@ typedef struct DdFxIcon {              /* 0x50 */
 
 float *mat4_transform_vec4(FxVec4 *out, float *m, FxVec4 *v);
 void dd_mtx_mvp_cur(float *out);
-void dd_roll_number(float t, int x, int y, int from, int to);
+void dd_roll_number(int x, int y, int from, int to, float t);
 unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
 unsigned int *draw_sprite(unsigned int *list, int x, int y, int z, int u, int v, int flip_uv, int flip_xy);
 
@@ -139,7 +139,7 @@ int dd_fx_throb_update(int state, DdFxIcon *fx)
     list = draw_sprite(list, fx->x - (float)((int)(fx->w * k) - fx->w) / 2.0f,
                        fx->y - (float)((int)(fx->h * k) - fx->h) / 2.0f, 0, fx->u + du, fx->v, 0, 0);
     dl_set_list(list);
-    dd_roll_number((float)fx->roll / 4.0f, x + fx->num_x, y + fx->num_y, fx->from, fx->to);
+    dd_roll_number(x + fx->num_x, y + fx->num_y, fx->from, fx->to, (float)fx->roll / 4.0f);
     return dd_fx_icon_tail(fx, step, fx->anim_len);
 }
 #endif
@@ -198,7 +198,7 @@ int dd_fx_blink_update(int state, DdFxIcon *fx)
     list = draw_sprite(list, fx->x - (float)((int)(fx->w * k) - fx->w) / 2.0f,
                        fx->y - (float)((int)(fx->h * k) - fx->h) / 2.0f, 0, fx->u + fx->w, fx->v, 0, 0);
     dl_set_list(list);
-    dd_roll_number((float)fx->roll / 4.0f, x + fx->num_x, y + fx->num_y, fx->from, fx->to);
+    dd_roll_number(x + fx->num_x, y + fx->num_y, fx->from, fx->to, (float)fx->roll / 4.0f);
     fx->anim_len++;
     return dd_fx_icon_tail(fx, step, 4);
 }
