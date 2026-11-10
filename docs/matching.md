@@ -1596,3 +1596,16 @@ Batendo: `dd_fx_throb_update`, `dd_fx_blink_update`, `dd_fx_counter_update`, `dd
   original deixa `x` em `s8` e derrama `p`; ordem de declarações e `register` não mudam), `duel_0883F3A0` (231),
   `duel_08842D98` (328: o original não reduz `z << 16` a indução e duplica o `z++`), `duel_08838A84`,
   `duel_eff_f8b34`, `duel_088BD4E0`, `dd_counter_draw` não mexidos ou sem ganho.
+
+## Rodada 20 (`trig`): o gatilho das cópias mortas, casos de borda
+
+- `if (side != 0) return;` (o `if (c) return;` simples) **não** liga o modo; reescrito como
+  `if (side == 0) { ... } else return;` liga (`dk_select_tab`/`dt_select_tab` 137 → 0, `duel_088C07FC` 76 → 0 com
+  `if (c != 0 || flags >> 5 & 1) return;` dentro do `if` externo).
+- Laço cujo contador é zerado no delay slot da guarda (`blez` + `move k,zero`) e cuja outra variável de indução
+  começa dentro da guarda é um `do/while` guardado: `k = 0; if (k < n) { off = 0; do { ... continue; ... }
+  while (k++, off += K, k < n); }` (`shop_draw_open`).
+- Não é esta família quando o nosso build já tem o modo ligado e o que difere é um desvio que o original nunca
+  converteu em likely (`st_pl_card_bit_set`, `lps_glyph`, `fld_chr_draw_sprite`, `pda_draw_tabs`), nem quando o
+  original não mostra cópia morta nem `b` sem preencher (`*_focus_update`, `dd_cobjs_update/counters`). Funções que
+  devolvem valor continuam fora do alcance do gatilho.
