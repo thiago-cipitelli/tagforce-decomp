@@ -1,5 +1,4 @@
 // @range 0x088F9024-0x088F9668
-// @asm 0x088F943C-0x088F9668
 // @data 0x0891205C-0x08912078
 /* Card effect handlers (continued). */
 #include "duel.h"
@@ -129,7 +128,6 @@ int duel_eff_f920c(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the uid argument of the 0x7E step is scheduled differently */
 int duel_eff_f943c(DuelAct *a)
 {
     switch (duel_step) {
@@ -150,7 +148,8 @@ int duel_eff_f943c(DuelAct *a)
         } else {
             duel_w_089148FC = duel_pick_st_zone(a->player);
         }
-        duel_088CB728(a->player, 0xD, CARD_UID(*duel_0884C7CC()), a->player, duel_w_089148FC, 0, 0);
+        /* relido depois do store (sem encaminhamento) */
+        duel_088CB728(a->player, 0xD, CARD_UID(*duel_0884C7CC()), a->player, *(volatile int *)&duel_w_089148FC, 0, 0);
         return 0x7D;
     case 0x7D:
         duel_088C87A8(a->player, duel_w_089148FC, a->id, 1, 0);
@@ -168,4 +167,3 @@ int duel_eff_f943c(DuelAct *a)
     }
     return 0;
 }
-#endif

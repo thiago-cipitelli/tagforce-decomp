@@ -1,5 +1,4 @@
 // @range 0x088E5F84-0x088E6998
-// @asm 0x088E6314-0x088E6378
 /* Where a card is: location of a card uid (player | zone << 8 | index << 16), index of a uid in
    each pile, values kept in the zone of some cards. */
 #include "duel.h"
@@ -65,26 +64,25 @@ unsigned int duel_card_locate(int uid)
     return 0x1000;
 }
 
-#ifdef NON_MATCHING /* o original mantém o índice q + 2i como variável de indução e refaz o sll a cada volta; o mwcc
-                      reduz para ponteiro ou i * 2 (testados j += 2, i * 2 + q); 24 palavras */
 /* Uid of a card id of player p (the list alternates players), checking p then the opponent. */
 int duel_list_find_id(unsigned int p, unsigned int id)
 {
+    int i;
     unsigned int k;
 
     for (k = 0; (int)k < 2; k++) {
         unsigned int q = p ^ k;
-        int i;
+        unsigned int j;
 
-        for (i = 0; i < 0x100; i++) {
-            if (duel.list[q + i * 2].id == id) {
+        for (i = 0, j = q; i < 0x100; i++) {
+            if (duel.list[(int)j].id == id) {
                 return q + i * 2;
             }
+            j += 2;
         }
     }
     return 0;
 }
-#endif
 
 /* Field location of the card with uid, -1 if it is not on the field. */
 unsigned int duel_field_locate(int uid)

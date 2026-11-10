@@ -100,7 +100,10 @@ int duel_0888F6B0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* alocação dos $s (uid reaproveita o registrador da zona) */
+#ifdef NON_MATCHING /* alocação dos $s (uid reaproveita o registrador da zona); 1028 B contra 1020: o original lê o byte
+                      +2 de a uma vez e mantém a->player em a0 do teste do uid até os casos 0x80/0x7F (sem recarregar),
+                      o mwcc o recalcula com andi 0xFF; trocar a->player por p nesses casos piora (223 -> 187 palavras, a0
+                      continua sobrando) */
 int duel_0888F82C(DuelAct *a)
 {
     unsigned int p = a->player;

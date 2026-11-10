@@ -16,7 +16,9 @@ int duel_grave_remove(unsigned int p, unsigned int i);
 void duel_card_swap(DuelCard *a, DuelCard *b);
 int duel_zone_f_remove(unsigned int p, unsigned int i);
 
-#ifdef NON_MATCHING /* the equip branch places its `faceup != 0` block after the `return 1` */
+#ifdef NON_MATCHING /* the equip branch places its `faceup != 0` block after the `return 1`; 17 palavras. Com
+                      `if (z >= 11) return 1;` antes a ordem dos blocos bate, mas o return 1 salta para a cauda do
+                      faceup e o b final rouba o lw ra (69 palavras); else, local r, switch testados */
 /* Card id may be in zone z of player p (monsters in the spell/trap zones, equips, a few others). */
 int duel_card_fits_zone(unsigned int p, int z, int id)
 {

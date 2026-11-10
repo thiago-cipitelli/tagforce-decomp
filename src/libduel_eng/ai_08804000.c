@@ -1,6 +1,5 @@
 // @range 0x08804000-0x088070A8
 // @asm 0x088042D4-0x088044C8
-// @asm 0x088044C8-0x08804828
 /* Computer player: the main-phase steps that summon monsters from the hand. */
 #include "duel.h"
 #include "card_db.h"
@@ -199,7 +198,6 @@ int duel_088042D4(unsigned int p, int h, int a)
 }
 #endif
 
-#ifdef NON_MATCHING /* o original grava duel_ai_player e duel_w_0891964C antes de ler o uid da carta; o mwcc antecipa as leituras */
 /* Special summon from the hand a monster whose condition is met. */
 int duel_088044C8(unsigned int p)
 {
@@ -251,8 +249,10 @@ int duel_088044C8(unsigned int p)
         if (ok) {
             DuelCard *c = &duel.players[p & 1].hand[i];
 
-            duel_ai_player = p;
-            duel_w_0891964C = p;
+            /* duel_ai_player e duel_w_0891964C (Duel +0x37EC/+0x37F0): gravados como campos de duel, que
+               podem apelidar a carta c, as leituras do uid ficam depois */
+            ((unsigned int *)&duel)[0x37EC / 4] = p;
+            ((unsigned int *)&duel)[0x37F0 / 4] = p;
             duel_w_0891962C = CARD_UID(*c);
             duel_0882AF5C(1, 0, 1);
             return 1;
@@ -260,7 +260,6 @@ int duel_088044C8(unsigned int p)
     }
     return 0;
 }
-#endif
 
 /* Main-phase summon steps of the computer player; 0 while there is more to do. */
 int duel_08804828(void)
