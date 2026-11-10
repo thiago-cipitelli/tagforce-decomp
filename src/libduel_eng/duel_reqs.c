@@ -88,6 +88,11 @@ void duel_088C8B3C(unsigned int p, int z, int n, unsigned short id, unsigned sho
     duel_cmd((p ? 0x8000 : 0) | 0x38, (z & 0xFF) | (n & 0xFF) << 8, id, c);
 }
 
+void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t)
+{
+    duel_088C8B78(p, loc, t, 10);
+}
+
 void duel_088C8B78(unsigned int p, unsigned short loc, unsigned short t, int k)
 {
     unsigned int lp = loc & 0xFF;
@@ -116,11 +121,6 @@ void duel_088C8B78(unsigned int p, unsigned short loc, unsigned short t, int k)
         }
     }
     duel_088AFD5C(0x18, loc | (unsigned int)t << 16);
-}
-
-void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t)
-{
-    duel_088C8B78(p, loc, t, 10);
 }
 
 void duel_088C8DC4(unsigned short loc, unsigned short t)
