@@ -2,7 +2,6 @@
 // @rodata 0x088700A8-0x088700F8
 // @asm 0x08817F08-0x088182C8
 // @asm 0x08818FB0-0x0881917C
-// @asm 0x088199C8-0x08819A70
 /* The duel-event handlers 1..73 of the dispatcher table (dd_event.c): cut-ins (duel start/end,
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
    and prompts. The player numbers of the engine are turned into screen sides by dv_player_to_side. */
@@ -1071,12 +1070,10 @@ int dd_ev_73(int player, int a)
 }
 
 /* export: commentary on/off (the exports that follow are in dd_voice.c) */
-#ifdef NON_MATCHING /* teste do segundo caso sai com bnez + b em vez de beqz */
+/* os dois testes num só `||` antes do return: o original mantém o bnez; nop; b <epílogo> do 2º */
 void dd_voice_enable(int on)
 {
-    if (on != 0 && dd_scene_flags(8, -1) != 0)
-        return;
-    if (on == 0 && dd_scene_flags(8, -1) == 0)
+    if ((on != 0 && dd_scene_flags(8, -1) != 0) || (on == 0 && dd_scene_flags(8, -1) == 0))
         return;
     if (on != 0) {
         dd_chara_busy_clear();
@@ -1088,4 +1085,3 @@ void dd_voice_enable(int on)
         dd_chara_reset();
     }
 }
-#endif

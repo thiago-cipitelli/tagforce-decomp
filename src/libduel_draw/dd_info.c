@@ -1,6 +1,5 @@
 // @range 0x08808D10-0x08809B1C
 // @rodata 0x0886FE34-0x0886FE64
-// @asm 0x08809474-0x08809508
 // @asm 0x08809548-0x0880989C
 /* Card info panel of the duel (BOOT cardlist): one panel, or two side by side when the player
    opens it or browses the field; the panel slides in and out, shows the printed stats of the card
@@ -246,15 +245,14 @@ void dd_info_show_uid(int which, int uid, int keep)
     in->target = 3;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: o 2º teste (peek == 0 e pinned == 0) sai no original como bnezl a0; lw; bnez; b <epílogo> */
-/* closes the pair opened by the player (peek == 0) or by browsing (peek != 0) */
+/* closes the pair opened by the player (peek == 0) or by browsing (peek != 0). Os dois testes num só `||`
+   antes do return (o original mantém o bnez; nop; b <epílogo> do 2º) */
 void dd_info_hide(int peek)
 {
     DdInfo *in = &dd_info;
 
-    if (peek && !in->peek)
+    if ((peek && !in->peek) || (!peek && !in->pinned))
         return;
-    if (peek ? 1 : in->pinned != 0) {
     in->view[0].on = 0;
     in->view[1].on = 0;
     if (peek == 0) {
@@ -266,9 +264,7 @@ void dd_info_hide(int peek)
     }
     if (!dd_info_dual())
         in->target = 0;
-    }
 }
-#endif
 
 void dd_info_disable(int off)
 {
