@@ -1,8 +1,7 @@
 // @range 0x0881794C-0x08819A70
-// @rodata 0x088700A8-0x088700C0
+// @rodata 0x088700A8-0x088700F8
 // @asm 0x08817F08-0x088182C8
 // @asm 0x08818FB0-0x0881917C
-// @asm 0x08819184-0x08819430
 // @asm 0x088199C8-0x08819A70
 /* The duel-event handlers 1..73 of the dispatcher table (dd_event.c): cut-ins (duel start/end,
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
@@ -814,20 +813,20 @@ int dd_ev_48(void)
 }
 
 /* 49: message windows (text id or string, kind 0..13) */
-#ifdef NON_MATCHING /* switch com tabela e testes aninhados */
 int dd_ev_49(int kind, unsigned int text, unsigned int arg)
 {
-    int id;
     void *msg;
+    int id;
     int flag;
     unsigned int hi;
+    unsigned int *pad;
 
-    if ((text & 0xFFFF0000) == 0) {
-        msg = dlg_get_text(text);
-        id = text;
-    } else {
+    id = text;
+    if ((id & 0xFFFF0000) != 0) {
         msg = (void *)text;
         id = -1;
+    } else {
+        msg = dlg_get_text(id);
     }
     dd_view_x14_set(kind);
     switch (kind) {
@@ -835,10 +834,12 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
         func_088226C0(msg, 0, 0);
         break;
     case 1:
-        if (id == 6)
+flag = 0;
+        switch (id) {
+        case 6:
             flag = 1;
-        else
-            flag = 0;
+            break;
+        }
         if ((int)arg > 0)
             dd_info_select_uid(arg);
         func_088226C0(msg, 1, flag);
@@ -846,22 +847,25 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
     case 2:
         dv_w624_set(0);
         switch (arg) {
-        case 3:
-        case 2:
-            break;
-        case 1:
         case 0:
-            if ((*dd_pad() & (region_pick_value(0) & 0xFFFF)) == 0)
+        case 1:
+            pad = dd_pad();
+            if ((*pad & region_pick_value(0)) == 0)
                 goto done;
             if (dd_is_tag_duel() != 0)
                 goto done;
+        case 2:
+        case 3:
             break;
         default:
             goto done;
         }
-        if ((*dd_pad() & (region_pick_value(0) & 0xFFFF)) == 0 &&
-            (*dd_pad() & (region_pick_value(1) & 0xFFFF)) != 0)
-            break;
+        pad = dd_pad();
+        if ((*pad & region_pick_value(0)) == 0) {
+            pad = dd_pad();
+            if ((*pad & region_pick_value(1)) != 0)
+                break;
+        }
         func_0882214C(msg, arg);
         break;
     case 4:
@@ -871,21 +875,24 @@ int dd_ev_49(int kind, unsigned int text, unsigned int arg)
         func_08824544(msg, arg);
         break;
     case 6:
-        func_08823E34(msg, arg & 0xFFFF, arg >> 16);
+        func_08823E34(msg, (unsigned short)arg, (unsigned short)(arg >> 16));
         break;
     case 7:
-        func_08822838(msg, arg & 0xFFFF, arg >> 16);
+        {
+            extern int func_08822838(void *, unsigned short, int);
+            func_08822838(msg, arg, (unsigned short)(arg >> 16));
+        }
         dd_info_select_uid(arg & 0xFFFF);
         break;
     case 8:
         func_08824CC8(msg);
         break;
     case 9:
-        dd_dice_open(msg, arg & 0xFFFF, arg >> 16);
+        dd_dice_open(msg, (unsigned short)arg, (unsigned short)(arg >> 16));
         break;
     case 10:
-        hi = arg >> 16;
-        func_08824F3C(msg, (hi & 0xFF) & 0xF, hi >> 8 & 0xFF, ((hi & 0xFF) & 0xF0) >> 4, arg & 0xFFFF);
+        hi = (unsigned short)(arg >> 16);
+        func_08824F3C(msg, (unsigned char)hi & 0xF, (unsigned char)(hi >> 8), (unsigned char)(((unsigned char)hi & 0xF0) >> 4), (unsigned short)arg);
         break;
     case 12:
         func_0882308C(msg);
@@ -901,7 +908,6 @@ done:
     dd_ev_36();
     return 1;
 }
-#endif
 
 /* 50: prompts (choice of zone, yes/no, ...) */
 int dd_ev_50(int player, int kind)
