@@ -1,6 +1,5 @@
 // @range 0x0882D398-0x0882EE74
 // @asm 0x0882E0A8-0x0882E1B8
-// @asm 0x0882E1B8-0x0882E84C
 // @asm 0x0882EA4C-0x0882EC88
 // @data 0x08907974-0x089079C4
 /* Summoning a monster (duel_summon), continued: summons that ask for monsters of an attribute
@@ -18,6 +17,10 @@ extern unsigned int duel_w_089147E4;   /* duel_chain.uids_head */
 extern unsigned short duel_w_089147E8[]; /* duel_chain.uids */
 extern int duel_w_089149F0;            /* count of duel_chain.ids */
 extern unsigned int duel_w_089149F8;   /* materials picked */
+/* the same two counters as duel_chain fields: written through duel_chain, mwcc rereads them after each store to the
+   uid ring like the original (duel_0882E1B8) */
+#define CHAIN_N (*(int *)&duel_chain.pad638[0x6A0 - 0x638])
+#define CHAIN_I (*(unsigned int *)&duel_chain.pad638[0x6A8 - 0x638])
 
 int duel_08835AC0(void);
 int duel_host_call(int a, int b, unsigned int c, int d);
@@ -384,7 +387,6 @@ int duel_0882E0A8(unsigned int p, int z, int i)
 
 #endif
 
-#ifdef NON_MATCHING /* 23 palavras: o original relê os campos de duel_chain (contagem, índice, uids_head) depois de cada store no anel; as leituras voláteis reproduzem quase tudo, falta a releitura de uids_head depois do sh da troca no caso 3 */
 /* Summon that sends the materials named by the card (two or three fixed ids) from the field. */
 int duel_0882E1B8(void)
 {
@@ -464,13 +466,13 @@ int duel_0882E1B8(void)
             z = duel_w_08919650 + duel_w_08919654;
             id = field_get_card(p, z);
             uid = CARD_UID(duel.players[p & 1].field[z].card);
-            for (k = 0; k < *(volatile int *)&duel_w_089149F0; k++) {
+            for (k = 0; k < CHAIN_N; k++) {
                 if (duel_chain.ids[k] == id) {
                     duel_chain.ids[k] = 0;
                 }
             }
-            duel_w_089147E8[(duel_w_089147E4 + duel_w_089149F8) & 0x7F] = uid;
-            if (++*(volatile unsigned int *)&duel_w_089149F8 < *(volatile int *)&duel_w_089149F0) {
+            duel_chain.uids[(duel_chain.uids_head + CHAIN_I) & 0x7F] = uid;
+            if (++CHAIN_I < CHAIN_N) {
                 duel_summon.step--;
             } else {
                 duel_summon.step++;
@@ -480,22 +482,23 @@ int duel_0882E1B8(void)
         duel_summon.step = 0;
         return 0;
     case 3:
-        if (duel_w_089149F8 == duel_w_089149F0) {
-            for (k = 0; k < duel_w_089149F0 - 1; k++) {
-                loc = duel_card_locate(duel_chain.uids[(duel_w_089147E4 + k) & 0x7F]);
-                for (j = 1; j < duel_w_089149F0; j++) {
-                    loc2 = duel_card_locate(duel_chain.uids[(duel_w_089147E4 + j) & 0x7F]);
+        if (CHAIN_I == CHAIN_N) {
+            for (k = 0; k < CHAIN_N - 1; k++) {
+                loc = duel_card_locate(duel_chain.uids[(duel_chain.uids_head + k) & 0x7F]);
+                for (j = 1; j < CHAIN_N; j++) {
+                    loc2 = duel_card_locate(duel_chain.uids[(duel_chain.uids_head + j) & 0x7F]);
                     if ((unsigned char)((loc & 0xFFFF) >> 8) > (unsigned char)((loc2 & 0xFFFF) >> 8)) {
                         loc = loc2;
-                        t = duel_chain.uids[(duel_w_089147E4 + k) & 0x7F];
-                        duel_chain.uids[(duel_w_089147E4 + k) & 0x7F] = duel_chain.uids[(duel_w_089147E4 + j) & 0x7F];
-                        duel_chain.uids[(*(volatile unsigned int *)&duel_w_089147E4 + j) & 0x7F] = t;
+                        t = duel_chain.uids[(duel_chain.uids_head + k) & 0x7F];
+                        duel_chain.uids[(duel_chain.uids_head + k) & 0x7F] =
+                            duel_chain.uids[(duel_chain.uids_head + j) & 0x7F];
+                        duel_chain.uids[(duel_chain.uids_head + j) & 0x7F] = t;
                     }
                 }
             }
         }
-        duel_w_089149F8--;
-        loc = duel_card_locate(duel_w_089147E8[(duel_w_089147E4 + duel_w_089149F8) & 0x7F]);
+        CHAIN_I--;
+        loc = duel_card_locate(duel_chain.uids[(duel_chain.uids_head + CHAIN_I) & 0x7F]);
         z = (unsigned char)((loc & 0xFFFF) >> 8) + (unsigned short)(loc >> 16);
         if (z < 0xB) {
             if (card_is_in_group_1a6f_b(duel_summon.id) != 0) {
@@ -505,7 +508,7 @@ int duel_0882E1B8(void)
                 duel_088D1608(duel_summon.player, z, 0);
             }
         }
-        if (duel_w_089149F8 == 0) {
+        if (CHAIN_I == 0) {
             for (k = 0; k < 2; k++) {
                 if (duel_summon.step2 >> (duel_turn_player ^ k) & 1) {
                     duel_088C78E0(duel_turn_player ^ k);
@@ -517,7 +520,6 @@ int duel_0882E1B8(void)
     }
     return 1;
 }
-#endif
 
 /* Summon of 0x154B/0x13B5: asks whether to tribute three monsters (duel_0886AAB4) and goes on at
    step 0x1F of duel_summon_tributes. */
