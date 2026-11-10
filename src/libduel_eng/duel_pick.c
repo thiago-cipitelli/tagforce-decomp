@@ -1,5 +1,5 @@
 // @range 0x0884C718-0x0884D050
-// @asm 0x0884C8E4-0x0884CB8C
+// @rodata 0x08907F70-0x08907F88
 /* List of cards a dialog lets the player pick from (each with the zone and index it came from), the
    duel random generator, pile sizes and a few checks of the presentation. */
 #include "duel.h"
@@ -35,8 +35,10 @@ int duel_hand_count_name(unsigned int p, unsigned short id);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_find_st(unsigned int p, int id);
 int card_is_monster(int id);
-unsigned int duel_grave_find_uid(unsigned int p, int uid);
-unsigned int duel_f_find_uid(unsigned int p, int uid);
+/* (unsigned int p, int uid), declared without a prototype: with one mwcc adds an andi 0xFF to the owner bit and
+   reads it before uid_hi (duel_0884C8E4) */
+unsigned int duel_grave_find_uid();
+unsigned int duel_f_find_uid();
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 int duel_zone_f_card_usable(unsigned int p, unsigned int q, int i);
 unsigned int duel_card_locate(int uid);
@@ -108,7 +110,6 @@ unsigned int duel_0884C8CC(int i)
     return duel_w_0891524C.where[i].b.zone;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (2026-11-05; faltava o else que limpa 0x1000, switch da posição e das marcas); 688 B contra 680: aqui o dono passado a duel_grave_find_uid/duel_f_find_uid ganha andi 0xFF e é lido antes de uid_hi */
 unsigned int duel_0884C8E4(int i)
 {
     DuelCard *c = &duel_w_0891524C.c[i];
@@ -185,7 +186,6 @@ unsigned int duel_0884C8E4(int i)
     }
     return f;
 }
-#endif
 
 void duel_0884CB8C(int i, int v)
 {
