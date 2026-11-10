@@ -1,6 +1,6 @@
 // @range 0x0886CF50-0x0886E0A4
 // @data 0x088F0C94-0x088F0CB0
-// @asm 0x0886DAB0-0x0886DE28
+// @asm 0x0886DC80-0x0886DE28
 /* Extra data files on the Memory Stick: the save folder may hold "YGTF" files with a card
    (.YGC), a deck recipe (.YGR) or a card list (.YGL). extdata_scan lists the files of one kind
    behind a "please wait" message box, extdata_load reads and verifies them (two checksums, a
@@ -358,8 +358,6 @@ int extdata_load_recipe(char *name, int size, ExtRecipe *out)
     return 1;
 }
 
-#ifdef NON_MATCHING /* load_list: the original computes count << 1 before the 0xA28 test; verify (17 palavras; eram 88 com o
-                       índice (unsigned)k e o if final com return 1): só a soma e o índice trocados nos laços 2 e 3 */
 int extdata_load_list(char *name, int size, ExtList *out)
 {
     unsigned char *buf;
@@ -385,7 +383,7 @@ int extdata_load_list(char *name, int size, ExtList *out)
     out->count = RD16(p);
     p += 2;
     out->ids = heap_alloc(extdata->heap, out->count << 2);
-    if ((unsigned int)(size - off) < (unsigned int)(out->count << 2)) {
+    if ((unsigned int)(size - off) < (out->count << 1) * sizeof(short)) {
         heap_set_level(extdata->heap, buf);
         return 0;
     }
@@ -403,6 +401,7 @@ int extdata_load_list(char *name, int size, ExtList *out)
     return 1;
 }
 
+#ifdef NON_MATCHING /* 17 palavras: só a soma e o índice trocados nos laços 2 e 3 */
 int extdata_verify(int kind, unsigned short *buf, unsigned int size)
 {
     unsigned char *p;

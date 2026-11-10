@@ -340,7 +340,7 @@ segments:
       - [0x68964, asm, msgbox_asm_0886C904]
       - [0x68A5C, c, msgbox]
       - [0x68FB0, c, extdata]
-      - [0x69B10, asm, extdata_asm_0886DAB0]
+      - [0x69CE0, asm, extdata_asm_0886DC80]
       - [0x69E88, c, extdata]
       - [0x6A104, c, netsync]
       - [0x6A9E8, asm, netsync_asm_0886E988]

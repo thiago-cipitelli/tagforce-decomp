@@ -147,21 +147,21 @@ int shop_bought_total(void)
     return n;
 }
 
-#ifdef NON_MATCHING /* a seleção das cartas não possuídas e os laços de preenchimento desenrolados alocam os $s de outro jeito */
+#ifdef NON_MATCHING /* 39 palavras: contadores do 1º laço (a2/a3), $s de c/j nos laços das não possuídas, pool/cnt e j do fim */
 /* the cards of one pack of kind `pack` into `out` */
 void shop_pack_open(int pack, unsigned short *out)
 {
     ShopPackDef *d = &shop_pack_defs[pack];
     ShopCardList *own = 0;
-    unsigned int n = 0;
-    short left[4];
+    int n = 0;
+    unsigned short left[4];
     unsigned short slots[20];
     unsigned short *save;
     int i, k, m;
     int rarity;
     ShopCardList *l;
-    unsigned short *ids;
     int cnt;
+    unsigned short *ids;
     int r;
 
     left[0] = shop_rarity_slots[0];
@@ -169,8 +169,8 @@ void shop_pack_open(int pack, unsigned short *out)
     left[2] = shop_rarity_slots[2];
     left[3] = shop_rarity_slots[3];
     save = sysflag_rec_get_data(pack);
-    for (i = 0, k = 0; k < 20; k++, i++) {
-        if (save[k] == 0 || save[k] >= 4)
+    for (k = 0, i = 0; k < 20; i++, k++) {
+        if (save[k] <= 0 || save[k] >= 4)
             break;
         left[save[k]]--;
     }
@@ -188,9 +188,12 @@ void shop_pack_open(int pack, unsigned short *out)
         slots[m++] = 2;
     for (i = 0; i < (unsigned short)left[1]; i++)
         slots[m++] = 1;
-    rarity = slots[rand_next_alias() % m];
+    rarity = slots[(int)rand_next_alias() % m];
     sysflag_rec_set_u16(pack, 20 - m, rarity);
-    if ((pack == 47 || pack == 28 || pack == 15) && (own = heap_alloc(shop.heap, 0x20)) != 0) {
+    switch (pack) {
+    case 15: case 28: case 47:
+      own = heap_alloc(shop.heap, 0x20);
+      if (own != 0) {
         for (k = 0; k < 4; k++) {
             if (d->lists[k].n > 0)
                 own[k].ids = heap_alloc(shop.heap, d->lists[k].n * 2);
@@ -198,9 +201,10 @@ void shop_pack_open(int pack, unsigned short *out)
         for (k = 0; k < 4; k++) {
             own[k].n = 0;
             if (own[k].ids) {
+                int j;
                 int c = 0;
-                for (i = 0; i < d->lists[k].n; i++) {
-                    unsigned short id = d->lists[k].ids[i];
+                for (j = 0; j < d->lists[k].n; j++) {
+                    unsigned short id = d->lists[k].ids[j];
                     if (inv_get_count(id) <= 0)
                         own[k].ids[c++] = id;
                 }
@@ -209,18 +213,20 @@ void shop_pack_open(int pack, unsigned short *out)
         }
         for (k = 0; k < 4; k++) {
             if (own[k].ids && own[k].n <= 0) {
+                int j;
                 int c = 0;
-                for (i = 0; i < d->lists[k].n; i++) {
-                    unsigned short id = d->lists[k].ids[i];
+                for (j = 0; j < d->lists[k].n; j++) {
+                    unsigned short id = d->lists[k].ids[j];
                     if (inv_get_count(id) < 3)
                         own[k].ids[c++] = id;
                 }
                 own[k].n = c;
             }
         }
+      }
     }
     for (; rarity >= 0; rarity--) {
-        if (own && own[rarity].ids && own[rarity].n > 0 && rand_next_alias() % 10 < 5) {
+        if (own && own[rarity].ids && own[rarity].n > 0 && (int)rand_next_alias() % 10 < 5) {
             ids = own[rarity].ids;
             cnt = own[rarity].n;
         } else {
@@ -228,8 +234,8 @@ void shop_pack_open(int pack, unsigned short *out)
             cnt = d->lists[rarity].n;
         }
         if (cnt > 0) {
-            out[0] = ids[rand_next_alias() % cnt];
-            n = 1;
+            out[0] = ids[(int)rand_next_alias() % cnt];
+            n++;
             break;
         }
     }
@@ -238,19 +244,22 @@ void shop_pack_open(int pack, unsigned short *out)
     cnt = l->n;
     k = 0;
     if (ids == 0 || cnt == 0) {
-        for (k = 1; k < 4; k++) {
-            ids = l[k].ids;
-            cnt = l[k].n;
-            if (ids && cnt > 0)
+        int j;
+        for (j = 1; 4 > j; j++) {
+            ids = l[j].ids;
+            cnt = l[j].n;
+            if (ids && cnt > 0) {
+                k = j;
                 break;
+            }
         }
     }
     while (n < d->n_cards) {
         unsigned short id;
-        if (own && own[k].ids && own[k].n > 0 && rand_next_alias() % 10 < 3)
-            id = own[k].ids[rand_next_alias() % own[k].n];
+        if (own && own[k].ids && own[k].n > 0 && (int)rand_next_alias() % 10 < 3)
+            id = own[k].ids[(int)rand_next_alias() % own[k].n];
         else
-            id = ids[rand_next_alias() % cnt];
+            id = ids[(int)rand_next_alias() % cnt];
         if (card_get_flag31(id) && !shop_card_in(id, out, n))
             out[n++] = id;
     }
