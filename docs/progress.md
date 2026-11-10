@@ -5,30 +5,30 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-08 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 83,9% | 95,7% | 10389 / 11039 |
-| BOOT | 70,5% | 82,4% | 1871 / 2208 |
-| libduel_eng | 86,0% | 97,8% | 3342 / 3429 |
+| total | 84,7% | 95,8% | 10414 / 11039 |
+| BOOT | 70,6% | 82,4% | 1872 / 2208 |
+| libduel_eng | 86,1% | 97,8% | 3344 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
 | libpassword | 100,0% | 100,0% | 33 / 33 |
-| libtutoriallist | 89,5% | 99,8% | 25 / 26 |
-| libduelrecord | 92,2% | 99,9% | 26 / 27 |
-| libduel_mgr | 92,0% | 99,7% | 153 / 158 |
-| libselect_card | 86,8% | 98,8% | 195 / 207 |
-| libcardalbum | 97,2% | 100,0% | 67 / 68 |
-| libcharalist | 71,3% | 91,8% | 45 / 50 |
-| libconv_machine | 94,7% | 99,1% | 46 / 47 |
-| liblimitlist | 85,4% | 99,3% | 58 / 62 |
-| librecipe_viewer | 83,0% | 98,5% | 63 / 69 |
-| libdeck | 90,1% | 99,2% | 314 / 328 |
+| libtutoriallist | 100,0% | 100,0% | 26 / 26 |
+| libduelrecord | 100,0% | 100,0% | 27 / 27 |
+| libduel_mgr | 94,0% | 99,9% | 155 / 158 |
+| libselect_card | 86,8% | 98,7% | 195 / 207 |
+| libcardalbum | 100,0% | 100,0% | 68 / 68 |
+| libcharalist | 75,4% | 91,9% | 46 / 50 |
+| libconv_machine | 100,0% | 100,0% | 47 / 47 |
+| liblimitlist | 88,0% | 99,5% | 59 / 62 |
+| librecipe_viewer | 85,0% | 98,9% | 64 / 69 |
+| libdeck | 90,1% | 99,1% | 314 / 328 |
 | libdeck_swap | 88,1% | 98,9% | 193 / 204 |
 | libdeck_tutorial | 89,9% | 98,5% | 279 / 293 |
-| libshop | 80,6% | 97,5% | 207 / 223 |
+| libshop | 81,2% | 97,8% | 208 / 223 |
 | libtitle | 89,1% | 98,2% | 417 / 434 |
 | libtutorial | 95,8% | 99,9% | 205 / 207 |
-| libfield | 84,7% | 99,2% | 613 / 652 |
-| libstory | 90,4% | 98,9% | 662 / 676 |
-| libduel_draw | 81,8% | 96,5% | 1546 / 1609 |
+| libfield | 85,0% | 99,2% | 614 / 652 |
+| libstory | 91,2% | 99,0% | 663 / 676 |
+| libduel_draw | 84,9% | 97,2% | 1556 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).

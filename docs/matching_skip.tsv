@@ -172,3 +172,7 @@ fbag_draw	libfield	54 palavras e 28 bytes a menos: cópias move a0,v0 / li v1,1 
 dd_zone_rebuild	libduel_draw	24 palavras: agendamento; o original carrega zone depois de o->next/o->prev no unlink/add_tail inline (rodada 18)
 ui_scrollbar	libduel_draw	52 palavras: permutação dos 9 $s; ordem de declarações e instruções testadas (rodadas 17-18)
 dk_help_scrollbar	libdeck	52 palavras: gêmea de ui_scrollbar, mesma causa (rodadas 17-18)
+ehf_draw_shape	BOOT	57 palavras: coloração dos temporários do clamp; 2520 ordens testadas (rodada 19)
+fld_npc_cmd_place	libfield	118 palavras: o mwcc iça os endereços de fld_npc_loaded_a/b do laço, o original recalcula a cada volta (rodada 19)
+tfd_lobby_handler	libtitle	171 palavras: cópias mortas depois de b??l em toda a cadeia; o helper inline piorou (rodada 19)
+fcal_draw_tabs	libfield	162 palavras: slots de derrame de unfolding/last (rodada 19)
