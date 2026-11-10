@@ -1,6 +1,5 @@
 // @range 0x0880B3E4-0x0880C728
 // @rodata 0x0881C16C-0x0881C29C
-// @asm 0x0880BF94-0x0880C07C
 // @data 0x0881D1E0-0x0881D32C
 /* The story calendar (scal): the date kept in the save (month 1..8 of the story = May..December,
    day, 73 time slots of 15 minutes from 5:45), the derived fields (hour, minute, week day, days
@@ -522,7 +521,6 @@ int sdate_weekday(void)
     return scal_daynum_of(scal_date);
 }
 
-#ifdef NON_MATCHING /* ordem dos operandos e agendamento das somas *100 diferem */
 /* today between month m0 day d0 and month m1 day d1 (all 0: always) */
 int story_date_in_range(int m0, int d0, int m1, int d1)
 {
@@ -533,17 +531,19 @@ int story_date_in_range(int m0, int d0, int m1, int d1)
     if (m0 == 0 && d0 == 0 && m1 == 0 && d1 == 0) {
         r = 1;
     } else {
-        day = month * 100 + day;
-        if (day < m0 * 100 + d0)
-            r = 0;
-        else if (m1 * 100 + d1 < day)
-            r = 0;
-        else
+        month *= 100;
+        month += day;
+        m0 *= 100;
+        m0 += d0;
+        m1 *= 100;
+        m1 += d1;
+        if (month >= m0 && month <= m1)
             r = 1;
+        else
+            r = 0;
     }
     return r;
 }
-#endif
 
 /* 1 (and remembers it) when the day changed since the last call */
 int scal_day_changed(void)

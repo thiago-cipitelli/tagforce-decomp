@@ -47,8 +47,6 @@ segments:
       - [0x5854, asm, s_vmops_asm_088097F4]
       - [0x593C, c, s_vmops]
       - [0x7444, c, s_cal]
-      - [0x7FF4, asm, s_cal_asm_0880BF94]
-      - [0x80DC, c, s_cal]
       - [0x8788, c, s_res]
       - [0x8A44, c, s_story]
       - [0x9A00, asm, s_story_asm_0880D9A0]
