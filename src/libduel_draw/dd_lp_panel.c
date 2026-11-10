@@ -407,7 +407,7 @@ void dd_lp_quad(FxVtx2DT *v, int x, int y, int z, int u, int tv, int w, int h,
 }
 
 /* Fills a textured quad (4 vertices, u v z x y z) centred on (x, y) from a texel rectangle. */
-void dd_lp_rect(float x, float y, float z, float w, float h, DdFxVert *v, int tx, int ty, int tw, int th,
+void dd_lp_rect(DdFxVert *v, float x, float y, float z, float w, float h, int tx, int ty, int tw, int th,
                 int texw, int texh, unsigned int color)
 {
     float fw = (float)texw;
