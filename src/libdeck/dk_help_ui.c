@@ -1158,7 +1158,7 @@ void *dk_help_box_flash(void *list, void *gim, int x, int y, int w, int h, unsig
     return dk_help_box(list, gim, x, y, w, h, color);
 }
 
-#ifdef NON_MATCHING /* forma igual; o original usa nove registradores $s (top em s8), o nosso reaproveita um */
+#ifdef NON_MATCHING /* 52 palavras (eram 174): top antes da primeira chamada e bottom = y + h; end = bottom - 6 antes do track dão os nove $s; falta a atribuição (original: h s0, view s1, y s2, x s3, max s4, thumb s5, gim s6, end s7, top s8; nosso: max s0, thumb s1, view s2, h s3, y s4, x s5, top s6, gim/bottom s7, end s8). Ordem das declarações não muda nada */
 /* vertical scroll bar: track of height h at (x, y), thumb sized view/total, blinking arrows */
 void *dk_help_scrollbar(void *list, void *gim, int x, int y, int h, int scroll, int total, int view, int arrows)
 {
@@ -1181,10 +1181,11 @@ void *dk_help_scrollbar(void *list, void *gim, int x, int y, int h, int scroll, 
     list = dl_set_tex_filter(list, 0, 0);
     list = dl_enable(list, 9);
     list = gim_set_texture(list, gim);
+    bottom = y + h;
+    end = bottom - 6;
     list = dk_help_scroll_track(list, x, top, h - 12);
-    end = y + h - 6;
     list = dk_help_scroll_arrows(list, x + 1, y, x + 1, end);
-    list = dk_help_scroll_thumb(list, x + 2, (float)top + pos * ((float)(y + h - thumb - 6) - (float)top), thumb, arrows);
+    list = dk_help_scroll_thumb(list, x + 2, (float)top + pos * ((float)(bottom - thumb - 6) - (float)top), thumb, arrows);
     if (arrows) {
         int up = 0;
         int down = 0;
@@ -1203,7 +1204,7 @@ void *dk_help_scrollbar(void *list, void *gim, int x, int y, int h, int scroll, 
         if (up)
             list = dk_help_scroll_up(list, x + 1, y);
         if (down)
-            list = dk_help_scroll_down(list, x + 1, y + h - 6);
+            list = dk_help_scroll_down(list, x + 1, end);
     }
     return list;
 }
