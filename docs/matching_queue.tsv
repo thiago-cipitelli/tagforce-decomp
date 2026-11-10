@@ -4,7 +4,6 @@ fuzzy	size	module	function	address	file
 98.4	508	libstory	op_choice	0x0880798C	src/libstory/s_vmcond.c
 98.4	928	BOOT	snd_obj_start	0x0885FE04	src/BOOT/snd_play.c
 98.1	336	libtitle	tdl_rules_draw	0x08822D64	src/libtitle/t_duel.c
-97.6	1376	libduel_draw	dd_fx_eyes_update	0x0884A8C4	src/libduel_draw/dd_fx_eyes.c
 97.2	2292	libshop	shop_pack_open	0x0880AD08	src/libshop/shop_packs.c
 97.1	416	libduel_draw	func_08822520	0x08822520	src/libduel_draw/dd_action_menu.c
 97.0	1016	libfield	fpt_update	0x0881BAB0	src/libfield/f_partner.c

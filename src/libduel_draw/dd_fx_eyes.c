@@ -1,5 +1,5 @@
 // @range 0x0884A86C-0x0884AE24
-// @asm 0x0884A8C4-0x0884AE24
+// @data 0x08876CE4-0x08876CEC
 /* Card effect "eye flash": the screen flashes white and two magenta lens flares (lens_aP8A.gim)
    light up on the character's eyes (bones 31 and 32) for 60 frames. */
 #include "libduel_draw.h"
@@ -60,7 +60,6 @@ int dd_fx_eyes_start(DdFxArg *arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* a cópia do modelo {31, 32} sai intercalada com dois lui no original; o resto bate */
 int dd_fx_eyes_update(int phase, DdFxEyes *w)
 {
     int run = w->arg->run;
@@ -72,17 +71,20 @@ int dd_fx_eyes_update(int phase, DdFxEyes *w)
     unsigned int c;
     FxMat4 cam;
     FxVec3 eye[2];
-    DdBones2 bones = { 31, 32 };
     int i;
-    int side;
     int j;
     float S;
+    DdFxEyes *r;
 
     dd_mtx_push_cam();
-    for (i = 0, side = -1; i < 2; i++, side += 2) {
-        dd_slot_pos(bones.bone[i], &eye[i]);
-        eye[i].x += (float)side * -1.0f;
-        eye[i].y += -0.2f;
+    {   /* the template is copied after the call: a block-level initialized local */
+        DdBones2 bones = { 31, 32 };
+
+        for (i = 0; i < 2; i++) {
+            dd_slot_pos(bones.bone[i], &eye[i]);
+            eye[i].x += (float)(i * 2 - 1) * -1.0f;
+            eye[i].y += -0.2f;
+        }
     }
     dd_mtx_billboard_cam(&cam);
     if (phase == 1) {
@@ -99,11 +101,12 @@ int dd_fx_eyes_update(int phase, DdFxEyes *w)
     ia = dd_ease_lin_out(w->t, 40, 60) * 255.0f;
     ib = dd_ease_lin_inv(w->t, 40) * 255.0f;
     c = ia << 24 | 0xFFFFFF;
-    w->screen[buf][0].color = c;
-    w->screen[buf][1].color = c;
-    w->screen[buf][2].color = c;
-    w->screen[buf][3].color = ib << 24 | 0xFFFFFF;
-    list = draw_array(list, 4, 0x80011C, 4, 0, w->screen[buf]);
+    r = (DdFxEyes *)((char *)w + buf * sizeof(w->screen[0])); /* r->screen[0] is w->screen[buf] */
+    r->screen[0][0].color = c;
+    r->screen[0][1].color = c;
+    r->screen[0][2].color = c;
+    r->screen[0][3].color = ib << 24 | 0xFFFFFF;
+    list = draw_array(list, 4, 0x80011C, 4, 0, r->screen[0]);
     dl_set_list(list);
     S = 10.0f;
     if (phase == 1) {
@@ -146,4 +149,3 @@ int dd_fx_eyes_update(int phase, DdFxEyes *w)
         return 2;
     return 4;
 }
-#endif
