@@ -1,5 +1,5 @@
 // @range 0x0888C1A8-0x0888E5D4
-// @data 0x08911868-0x08911894
+// @data 0x08911868-0x089118AC
 /* Card effect handlers and pick filters, after effects_z.c. */
 #include "duel.h"
 
