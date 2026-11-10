@@ -1475,3 +1475,34 @@ Bateram `dd_lp_rect`, `dd_chr_init`, `dd_rand_dir`, `declare_update`, `dd_ev_49`
   o primeiro teste e o laço, do/while e `goto` testados); `ui_scrollbar` (52: ordem max/thumb/frac e
   atribuição antecipada de top/bottom testadas, nenhuma muda a permutação dos `$s`); `dd_face` (74: `$s` de
   id/size/x0/y0 e `big / 2` recalculado duas vezes no original).
+
+## Rodada 19 (`menuM`: menus e BOOT, funções nunca tentadas)
+
+Bateram `extdata_load_list` (BOOT), `fld_res_update` (libfield), `shop_open_cards_done` (libshop),
+`st_chr_g_update` (libstory), `rv_input_recipe` (librecipe_viewer). Idiomas novos:
+- **Ordem das atribuições iniciais por busca** (`st_chr_g_update`): declarar os ponteiros de tabela sem
+  inicializador e permutar as atribuições (`gs = ...; s = ...; gp = ...`) acertou a ordem das cargas do prólogo
+  depois que a ordem das declarações (busca gulosa) já tinha acertado os `$s`. 3 de 60 ordens dão 0.
+- **`case K: k = 0; break;` explícito**, com `k = 0` já atribuído antes do `switch` (`fld_res_update`): mantém o teste
+  do `case` e os corpos mortos `li; b; nop` do original (com só `break;` o mwcc funde o caso no `default`).
+- **Subexpressão comum forçada pela forma** (`extdata_load_list`): o original calcula `count << 1` antes do teste
+  `count > 0xA28` porque o teste de tamanho é `(count << 1) * sizeof(short)`; o mwcc reaproveita o `count << 1`
+  na guarda do laço `i < count << 1`.
+- **Deslocamento de laço como variável própria** (`shop_draw_open`): `$s` de contador e deslocamento `k * 96`
+  trocados se resolvem com `int off;` declarado antes de `k`, `for (k = 0, off = 0; ...; k++, off += sizeof(T))`
+  e `((T *)((char *)base + off))->campo` (a base primeiro no `addu`).
+- **Contador reaproveitado entre laços com papéis diferentes** (`shop_draw_open`): o contador do 1º laço é o `x`
+  dos nomes no 2º (mesmo `$s1`), e o 2º laço tem contador próprio.
+- **`if (k >= n)` em vez de `if (n <= k)`** e **ponteiro local para a sub-struct** (`RvGrid *g = &rv.grid;` em `$s0`,
+  `rv_input_recipe`); **nível lido antes do `if`** (`lv = f(); if (lv == gs[0] ...)`) para o original reler `gs[0]`
+  depois da chamada em vez de içá-lo (`st_chr_g_update`).
+- **Parâmetro sem `andi`/`seh` no prólogo** (`shop_open_cards_done`): `int speed` e `c->timer = c->timer + speed;`
+  (com `+=` o mwcc estreita). Alinhar o protótipo do chamador.
+- Busca gulosa da ordem das declarações (`build/tmp/menuM/greedy.py` na worktree `menuM`, não versionado: move
+  uma declaração por todas as posições, compila todas as candidatas num só TU, aceita a melhor, repete) baixou
+  `dk/dt_draw_headers` 291 -> 203, `sc_draw_counts` 95 -> 82.
+- Não bateram (palavras restantes): `shop_pack_open` 39 (contadores dos laços das não possuídas), `shop_draw_open` 3
+  (o `k = 0` antes da guarda `blez`), `ehf_draw_shape` 57 (coloração dos temporários dos clamps, já buscado),
+  `fld_npc_cmd_place` 118 (o mwcc iça os endereços de `fld_npc_loaded_a/b` para fora do laço; o original os
+  recalcula), `tfd_lobby_handler` 171 e `dk/dt_select_tab` (cópias mortas depois de `b??l` em toda a cadeia; helper
+  `static inline` com `return`s não reproduz), `fcal_draw_tabs` 162 (derrames de `unfolding/last`).
