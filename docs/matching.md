@@ -1235,6 +1235,21 @@ Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` 
   só-K&R e os 21 sem assinatura comum ficam para o port (argumentos reais, structs por valor). Pistas K&R abertas:
   `duel_0884C588();`/`duel_088BFF78();` em `duel_0888F82C` (224 → 132), `duel_0884ACD8();` em `duel_088862DC`
   (25 → 23). Roteiro completo da rodada em `build/tmp/PROMPT_R16.md` (local, fora do git).
+## Rodada 16 (`protoB`: protótipos fora do libduel_eng)
+
+- Nos gmodules a maior parte das divergências de `proto_conflicts` é só de ponteiro (`void *` contra `unsigned int *`,
+  `Vec4 *` contra `ScePspFVector4 *`) ou de headers de outros módulos (o script lê todo `include/`): sem efeito no
+  código. Filtrando para largura de inteiro/retorno e para chamados de `@asm`: BOOT 100, libshop 27, libfield 15,
+  libdeck 10, libdeck_tutorial 7, libtitle 5, libselect_card 3, libstory 3, libdeck_swap 1.
+- `--unify` nesses chamados (com a definição do BOOT como candidata extra) achou um caso:
+  `shop_item_key(ShopItem *, unsigned short)` (a da definição) levou `shop_list_find_group` de 177 para 108 palavras
+  e fechou com `--i` na 1ª chamada, `key == 8 || key == 9` e um `return i` comum às duas direções; a única função
+  que perdia com o protótipo (`shop_list_key_bubble`) volta a bater com a chave local `unsigned short`.
+- Quando o protótipo "certo" piora o `@asm` (`snd_obj_alloc(..., unsigned short)` contra `snd_obj_start`, 24 -> 147;
+  `dk_draw_flag_icon` K&R muda o tamanho em 2 instruções, o original tem 1 a menos), a causa é outra: não force.
+- `proto_conflicts.py` não acha os rascunhos `@asm` dos gmodules (`#ifdef NON_MATCHING /* comentário */` na mesma
+  linha; a regex exige `\n` logo depois de `NON_MATCHING`), então a coluna `asm:` sai vazia fora do libduel_eng.
+
 ## Rodada 15 (`engJ`: libduel_eng, funções 93-94% nunca tentadas)
 
 - Global de rascunho gravado e relido na mesma função (`duel_w_089148FC`, `duel_w_08914900`, dentro de `duel_chain`):
