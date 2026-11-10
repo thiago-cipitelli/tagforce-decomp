@@ -1475,3 +1475,45 @@ Bateram `dd_lp_rect`, `dd_chr_init`, `dd_rand_dir`, `declare_update`, `dd_ev_49`
   o primeiro teste e o laço, do/while e `goto` testados); `ui_scrollbar` (52: ordem max/thumb/frac e
   atribuição antecipada de top/bottom testadas, nenhuma muda a permutação dos `$s`); `dd_face` (74: `$s` de
   id/size/x0/y0 e `big / 2` recalculado duas vezes no original).
+
+## Rodada 19 (`drawM`: libduel_draw/libduel_eng/libduel_mgr, funções grandes pouco tentadas)
+
+Batendo: `dd_fx_throb_update`, `dd_fx_blink_update`, `dd_fx_counter_update`, `dd_fx_note_update`, `dd_fx_petal_update`,
+`dd_cobj_tick`, `dd_cobjs_rebuild`, `dd_lp_frame` (8, todas do libduel_draw). Idiomas novos:
+- **Gerador de números do BOOT lido pelo valor do `+=`**: `(seed.lcg *= K, (int)((seed.lcg += 0x3039) >> 16 & 0x7FFF))`
+  em vez de reler `seed.lcg` depois. Com a releitura o mwcc recarrega a semente e reordena tudo em volta (o `ext`
+  do sorteio sai do registrador do `addiu` no original). `dd_fx_note`/`dd_fx_petal` bateram com isso e
+  `dd_orbs_update` caiu de 121 para 65 palavras com um `DD_RAND` local. Vale para os outros `RAND15`/`DD_RAND`/
+  `DD_RAND3` ainda em asm.
+- **Sinal ±1 sorteado**: `k = RAND15(); f = c * RANDF(); x = f * (float)(k % 2 * 2 - 1);` (sorteio do sinal antes,
+  `% 2` com `bgez`, produto já calculado como primeiro operando).
+- **`slti at,x,K` contra `slti v0,x,K`**: `x < K` sai em `v0`; `x <= K - 1` (e `x > K - 1` no `if`) sai em `at`.
+  Ex.: `for (z = 0; z <= 10; z++)`, `if (du > 2)`, `(int)cfg() <= 1`. Barato de testar quando só o registrador do
+  `slti` difere.
+- **Teste materializado com `sltu` + `bnez`**: `if (!!(f & 1) == 0)` (`dd_fx_note`); `!(f & 1) != 1` dá `xori` + `beq 1`.
+- **Store depois de um sorteio**: o original relê `n->flags` depois do primeiro `RAND15()` (o store na semente pode
+  ser alias) quando o `flags |= 1` vem depois do sorteio no fonte.
+- **Constante como segundo operando** (`add.s f0,f0,f1` com f1 = 0.25): era uma variável (`cw = 0.25f`) ou `u += K`;
+  o literal sempre vai como primeiro operando. Metade da largura negada com `neg.s` = variável `h` e `-h`.
+- **`(p & 1) * 0xFAC` guardado num `$s` entre os `case`** (libduel_eng): variável `ofs` e acesso aos campos por
+  `*(T *)((char *)&duel.players[0].f + ofs)` (o `lui/addiu` aponta para o campo, não para `duel`). Tirou ~190
+  palavras de `duel_0883F3A0`. `switch` cujo despacho faz `addiu v1,v1,-13` e compara com 3/5 é
+  `switch (x - 13) { case 3: case 5: }` (`duel_08842D98`).
+- **`switch` com `default` e `case 11` no mesmo corpo**: o despacho carrega o `li v0,11` mas não compara
+  (`dd_cobjs_rebuild`). Os `case` vêm na ordem inversa das comparações.
+- **Inicializador de local depois de outras instruções**: o modelo `{0,0,0,1}` lido depois dos `dd_ease_*` = bloco
+  `{ float in = ...; FxVec4 v = {...}; ... }` depois do `if (state == 1)` (`dd_fx_throb`, `dd_fx_counter`).
+  Matrizes no bloco do laço junto do local com inicializador reproduzem a ordem da pilha (`dd_lp_frame`).
+- **Expressões invariantes no laço**: o original recalcula no laço e o mwcc iça (mantendo vivas as variáveis de
+  origem); calcular antes no fonte muda a alocação (`dd_lp_frame`: ângulo e centro).
+- **Callee `static` muda o escalonamento do chamador**: com `dd_lp_quad` static, o `sw` do 9º argumento vai para o
+  delay slot do `jal` (sem static ia antes). Marcar `type:func static matched` em `symbols/`.
+- **Helpers `static` do rascunho que o original expande**: `dd_fx_throb/blink` são o corpo de `dd_fx_tally_update`
+  repetido; copiar a forma da gêmea já batendo e não fatorar.
+- **Parâmetros mortos reaproveitados**: `dmgr_pt_sprite` guarda x + w e o u do ícone extra em `v`/`u` (161 → 127).
+- **Bugs de lógica**: `dd_cobjs_rebuild` montava a lista livre com `add_tail` (o original insere na cabeça: a ordem
+  de alocação é a inversa).
+- **Abertos**: `dd_orbs_update` (65: rotação de `f20`-`f25` e `$s` do laço das faíscas), `dmgr_pt_sprite` (127: o
+  original deixa `x` em `s8` e derrama `p`; ordem de declarações e `register` não mudam), `duel_0883F3A0` (231),
+  `duel_08842D98` (328: o original não reduz `z << 16` a indução e duplica o `z++`), `duel_08838A84`,
+  `duel_eff_f8b34`, `duel_088BD4E0`, `dd_counter_draw` não mexidos ou sem ganho.
