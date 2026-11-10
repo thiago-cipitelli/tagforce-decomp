@@ -272,9 +272,9 @@ int duel_08886250(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 25 palavras (era ~180): zona antes do jogador com a->player direto no índice e p atribuído
+#ifdef NON_MATCHING /* 23 palavras (era ~180): zona antes do jogador com a->player direto no índice e p atribuído
                       depois; duel.mode & 1; p u8; teste != 4 && != 6. Faltam a coloração do 1º bloco e do fim do laço
-                      e um andi 0xff a mais em p antes de duel_0884ACD8(p, 0x27) */
+                      ((int)p na chamada de duel_0884ACD8 tira o andi 0xff que sobrava) */
 int duel_088862DC(DuelAct *a)
 {
     unsigned char p;
@@ -306,7 +306,7 @@ int duel_088862DC(DuelAct *a)
         if (n == 0) {
             return 0x78;
         }
-        duel_0884ACD8(p, 0x27);
+        duel_0884ACD8((int)p, 0x27);
         return 0x7F;
     case 0x7F:
         duel_w_08914A2A.b4 = 0;
