@@ -534,11 +534,10 @@ void snd_streams_decode(int mix)
             rd = s->u.st.rd;
             b = pcm + rd;
             dst = (unsigned int *)snd_mix_buf[snd_mix_idx] + filled;
-            tmp = 0x100 - filled;
             cnt = s->decoded - s->pos;
             a = b;
             wrap = 0;
-            if (tmp < cnt) {
+            if ((tmp = 0x100 - filled) < cnt) {
                 cnt = tmp;
             }
             rd += cnt;
@@ -553,8 +552,8 @@ void snd_streams_decode(int mix)
             s->u.st.rd = rd;
             switch (s->e6) {
             case 1:
-                if (s->fade8.cur != 0) {
-                    snd_box_filter((short *)hist, (short *)a, cnt, s->fade8.cur);
+                if ((lo = s->fade8.cur) != 0) {
+                    snd_box_filter((short *)hist, (short *)a, cnt, (signed char)lo);
                 }
                 break;
             case 2:
@@ -565,15 +564,19 @@ void snd_streams_decode(int mix)
                 if (mix == 0 && n == 1) {
                     if (r == 0x1000 && l == 0x1000) {
                         while (--cnt >= 0) {
-                            *dst++ = *a++;
+                            *dst = *a;
+                            a++;
+                            dst++;
                         }
                         while (--wrap >= 0) {
-                            *dst++ = *b++;
+                            *dst = *b;
+                            b++;
+                            dst++;
                         }
                     } else {
                         while (--cnt >= 0) {
                             x = *a;
-                            lo = (short)x * l >> 12;
+                            lo = (short)(x & 0xFFFF) * l >> 12;
                             if (lo < 0) {
                                 lo++;
                             }
@@ -587,7 +590,7 @@ void snd_streams_decode(int mix)
                         }
                         while (--wrap >= 0) {
                             x = *b;
-                            lo = (short)x * l >> 12;
+                            lo = (short)(x & 0xFFFF) * l >> 12;
                             if (lo < 0) {
                                 lo++;
                             }
@@ -603,7 +606,7 @@ void snd_streams_decode(int mix)
                 } else {
                     while (--cnt >= 0) {
                         x = *a;
-                        lo = (short)x * l >> 12;
+                        lo = (short)(x & 0xFFFF) * l >> 12;
                         if (lo < 0) {
                             lo++;
                         }
@@ -629,7 +632,7 @@ void snd_streams_decode(int mix)
                     }
                     while (--wrap >= 0) {
                         x = *b;
-                        lo = (short)x * l >> 12;
+                        lo = (short)(x & 0xFFFF) * l >> 12;
                         if (lo < 0) {
                             lo++;
                         }
