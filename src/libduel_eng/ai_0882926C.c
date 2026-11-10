@@ -35,7 +35,7 @@ int duel_can_tribute(unsigned int p, unsigned int q, int z);
 int card_id_remap_164a(int id);
 int duel_st_affects();
 unsigned int duel_field_type(unsigned int p, int z);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_get_kind(int id);
 int duel_field_atk(unsigned int p, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);

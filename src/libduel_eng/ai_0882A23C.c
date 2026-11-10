@@ -18,7 +18,7 @@ int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_can_tribute(unsigned int p, unsigned int q, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 unsigned int duel_field_type(unsigned int p, int z);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_get_kind(int id);
 int duel_field_level(unsigned int p, int z);
 int duel_count_active(int id);

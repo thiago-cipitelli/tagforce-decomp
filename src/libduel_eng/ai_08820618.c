@@ -53,7 +53,7 @@ int card_get_prop5_hi(int);
 int duel_card_e59b0(int id);
 int duel_can_pay(unsigned int p, int id);
 int duel_0880A934(unsigned int p, unsigned short id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 void duel_msg_send(unsigned short cmd, int arg, void *data, int len);
 int duel_08853660(void);
 int duel_d_find_name(unsigned int, int);

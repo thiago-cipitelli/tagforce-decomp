@@ -14,7 +14,7 @@ extern int duel_phase;
 int duel_0886C99C(unsigned int p, int n, int uid, int mode);
 int duel_count_free_monster_zones(unsigned int p);
 int card_is_monster(int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_088DFCC8(unsigned int uid);
 int duel_hand_find_uid(unsigned int, int);

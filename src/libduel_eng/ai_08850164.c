@@ -53,7 +53,7 @@ void duel_msg_send(unsigned short cmd, int arg, void *data, int len);
 void duel_memcpy(void *dst, void *src, int n);
 int field_get_card(unsigned int, int);
 int card_is_monster(int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_get_prop5_hi(int);
 int card_is_in_group_1983(int id);
 int duel_special_get_id(DuelSlot *s);

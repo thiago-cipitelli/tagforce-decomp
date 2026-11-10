@@ -26,7 +26,7 @@ int duel_count_monsters(unsigned int p);
 int duel_08827934(unsigned int p, int id);
 int card_is_in_group_1a6f(int id);
 int card_is_in_group_19bb(int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int duel_08827B80(unsigned int p, int i);
 int duel_08827BF0(unsigned int p, int i);
 int duel_08827C80(unsigned int p, int i);

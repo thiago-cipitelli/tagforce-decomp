@@ -25,7 +25,7 @@ int card_is_in_group_1911(int id);
 int card_is_in_group_18be(int id);
 int card_is_in_group_1a6f(int id);
 unsigned int duel_field_flag9(unsigned int, int);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_in_group_160f(int id);
 int card_is_in_group_1a6x(int id);
 int duel_slot_ef098(unsigned int p, int z, int id);

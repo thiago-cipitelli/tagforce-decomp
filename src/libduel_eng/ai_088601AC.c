@@ -13,7 +13,7 @@ int duel_is_cur_card(int id);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_slot_efb84(unsigned int p, int z);
-int card_get_type(unsigned short id);
+unsigned int card_get_type(int);
 int duel_0884E948(DuelAct *a, unsigned int p);
 int duel_088580B8(DuelAct *a, unsigned int p, int z);
 int duel_0885A004(DuelAct *a, unsigned int p, int z);
@@ -123,7 +123,7 @@ int duel_0886065C(DuelAct *a, unsigned int p, int z)
     if (z < 5 || z > 10) {
         return 0;
     }
-    if (!(duel.players[p & 1].field[z].flags >> 8 & 1) && card_get_type(id) == 0x17) {
+    if (!(duel.players[p & 1].field[z].flags >> 8 & 1) && card_get_type((unsigned short)id) == 0x17) {
         return 0;
     }
     if (duel_act_can_affect(a, p, z, 0) == 0) {

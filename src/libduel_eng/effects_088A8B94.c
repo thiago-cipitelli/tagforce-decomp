@@ -2435,7 +2435,7 @@ int duel_0884EB90(DuelAct *a, int b);
 int duel_pick_st_zone(unsigned int p);
 int duel_0885FB0C(DuelAct *a, unsigned int p, int z);
 int duel_088601AC(DuelAct *a, unsigned int p, int z);
-unsigned int card_get_type(int id);
+unsigned int card_get_type(int);
 int duel_0886CE90(DuelAct *a, int b);
 
 int duel_088AEB24(DuelAct *a)

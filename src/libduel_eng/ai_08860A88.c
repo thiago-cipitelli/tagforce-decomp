@@ -2,7 +2,7 @@
 /* The computer player: the life point damage it expects from a card. */
 #include "duel.h"
 
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int duel_find_effect_card(unsigned int p, int id, int skip);
 int duel_list_counter(int uid, int id);
 

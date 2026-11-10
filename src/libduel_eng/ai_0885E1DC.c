@@ -8,7 +8,7 @@ int duel_field_attr_is(unsigned int p, int z, int attr);
 unsigned short duel_field_type(unsigned int p, int z);
 int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 int field_get_card(unsigned int, int);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_in_group_1a5c(int id);
 int card_is_1a6c(int id);
 unsigned int duel_field_flag9(unsigned int, int);

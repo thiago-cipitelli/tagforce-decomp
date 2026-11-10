@@ -10,7 +10,7 @@ int duel_list_card_level(unsigned int p, int i);
 int duel_card_dfac8(unsigned int p, int id, int field);
 int card_is_monster(int id);
 int card_get_level(int);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_in_group_1973(int id);
 int card_is_in_group_19bf(int id);
 int card_is_attribute8(int id);

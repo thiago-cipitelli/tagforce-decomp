@@ -34,7 +34,7 @@ unsigned int duel_08827DA4(unsigned int, int, int, int);
 void duel_0884AD40(int msg, int uid);
 int duel_0884ACD8(unsigned int p, int msg);
 int duel_summon_tributes(void);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_get_kind(int id);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);

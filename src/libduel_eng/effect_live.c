@@ -15,7 +15,7 @@ int duel_count_field_all(unsigned int p);
 int duel_find_effect_card(unsigned int p, int id, int z);
 unsigned int duel_slot_effect_arg(unsigned int, int, int);
 void duel_act_0887E140(DuelAct *a, int *n);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_monster(int id);
 extern unsigned int duel_turn_player;
 

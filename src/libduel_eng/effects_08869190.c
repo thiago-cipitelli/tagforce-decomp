@@ -31,7 +31,7 @@ int card_is_attribute8(int id);
 unsigned short duel_slot_e1854(unsigned int, int);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
 int card_is_in_group_1a60(int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int duel_can_place_st(unsigned int p, int id);
 int duel_count_active(int id);
 int duel_slot_has_effect(unsigned int p, int z, int id);

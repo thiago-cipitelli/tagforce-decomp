@@ -5,7 +5,7 @@
 void duel_088BFC64(unsigned int p, int zone, unsigned int i);
 int card_is_monster(int id);
 int card_get_attribute_icon(int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_get_prop5_hi(int);
 int card_is_1a9f(int id);
 int duel_card_e59b0(int id);

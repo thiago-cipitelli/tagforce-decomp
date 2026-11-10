@@ -27,7 +27,7 @@ void duel_0886B6B8(int *f);
 int card_is_in_group_147e(int id);
 int card_attribute_to_group(int id);
 int card_get_special_group(unsigned short id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 unsigned int duel_field_flag9(unsigned int, int);
 int duel_card_fits_zone(unsigned int p, int z, int id);
 int duel_count_monster_active_atk(unsigned int p, int id);

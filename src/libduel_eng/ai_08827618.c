@@ -38,7 +38,7 @@ int duel_count_free_monster_zones(unsigned int p);
 int duel_count_free_zones(unsigned int p);
 int duel_088BFFD8(unsigned int p, int id, int i);
 unsigned int duel_field_type(unsigned int p, int z);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_get_kind(int id);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_field_kind(unsigned int p, int z);

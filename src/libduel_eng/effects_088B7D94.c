@@ -10,7 +10,7 @@ int duel_count_active(int id);
 int duel_find_effect_card(unsigned int p, int id, int skip);
 int card_is_monster(int id);
 int card_get_level(int);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_in_group_1a58(int id);
 int card_not_in_group_1a6f(int id);
 int card_get_prop5_hi(int);

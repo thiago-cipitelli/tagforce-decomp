@@ -8,7 +8,7 @@ extern int duel_phase;
 
 unsigned int duel_act_target(DuelAct *a, int i);
 unsigned int duel_act_target2(DuelAct*, int);
-int card_get_type(unsigned short id);
+unsigned int card_get_type(int);
 int duel_act_e3920(DuelAct*);
 int duel_act_e30c0(DuelAct *a);
 int duel_08807B38(int id, int a, int b);

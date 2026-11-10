@@ -99,7 +99,7 @@ int duel_act_can_affect();
 int field_get_card(unsigned int, int);
 int duel_088D1684(DuelAct *a, unsigned int p, int z, int flags);
 int card_get_special_group(int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 unsigned int duel_act_target(DuelAct *a, int i);
 unsigned int duel_act_target2(DuelAct*, int);
 int duel_grave_find_uid(unsigned int p, int uid);

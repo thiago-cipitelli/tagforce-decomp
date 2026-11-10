@@ -60,7 +60,7 @@ void duel_088C7810(unsigned int, unsigned int);
 void duel_088CAB04(unsigned int p, int i, int b);
 void duel_0884ADAC(int a, int b, int c, int d, int e, int f);
 void duel_08832974(unsigned int p, int a, int b);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 void duel_088C452C(unsigned int p, int n);
 void duel_088CA384(unsigned int p, int i, int f);
 int duel_088C5E70(unsigned int, int);

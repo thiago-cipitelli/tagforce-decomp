@@ -44,7 +44,7 @@ int duel_msg_poll(void);
 int duel_req_088D557C(void);
 int duel_08827544(void);
 int duel_card_used_e66ac(unsigned int id);
-unsigned int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_get_prop5_hi(int);
 int field_get_card(unsigned int, int);
 int duel_field_atk(unsigned int p, int z);

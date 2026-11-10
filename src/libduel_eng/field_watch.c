@@ -17,7 +17,7 @@ unsigned short duel_slot_src_of(unsigned int p, int z, int id, int active);
 int duel_find_effect_card(unsigned int p, int id, int z);
 unsigned short duel_slot_src_of_pos(unsigned int p, int z, int id, unsigned int pos);
 void duel_field_stats(unsigned int p, int z, DuelStats *st);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 void duel_088CBAA4(unsigned int, int, int);
 void duel_088C7E68(unsigned int, int, int, int);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);

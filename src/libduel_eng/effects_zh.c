@@ -24,7 +24,7 @@ void duel_0884ADAC(int a, int b, int c, int d, int e, int f);
 void duel_08832974(unsigned int p, int a, int b);
 void duel_088C77EC(unsigned int p, int uid);
 int card_is_monster(int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int duel_088C4604(DuelAct*, unsigned int, int);
 int duel_0884E9E8(DuelAct *a, int b);
 void duel_088328E8(unsigned int p, unsigned short id, unsigned short loc);

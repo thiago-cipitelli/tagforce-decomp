@@ -18,7 +18,7 @@ int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 int duel_0884E4E4(DuelAct *a);
 int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t);
 void duel_088CC178();
 void duel_088D1438(unsigned int p, int z, int a, int b);

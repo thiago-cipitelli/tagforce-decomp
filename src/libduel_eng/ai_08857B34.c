@@ -7,7 +7,7 @@ int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 unsigned int duel_field_flag9(unsigned int, int);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int duel_card_fits_zone(unsigned int p, int z, int id);
 unsigned short duel_slot_e1854(unsigned int, int);
 int duel_slot_can_act(unsigned int p, unsigned int z, int x, int y);

@@ -35,7 +35,7 @@ void duel_wfmt_s();
 int duel_summon_tributes(void);
 int duel_0882A680(unsigned int p, int z, int i);
 int duel_0882AA10(unsigned int p, int z, int i);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 void duel_088C4564(unsigned int p, int n);
 void duel_088CABA8(int p, unsigned int i);
 extern int duel_w_0891962C;            /* picked card (uid) */

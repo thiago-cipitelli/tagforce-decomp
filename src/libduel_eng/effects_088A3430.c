@@ -67,7 +67,7 @@ void duel_088CC1D0(unsigned int p, int z, int a);
 int duel_slot_value_1909(unsigned int p, int z);
 void duel_088D1438(unsigned int p, int z, int a, int b);
 int duel_hand_find_name(unsigned int p, int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int duel_0887F728(DuelAct *a, int b);
 int duel_0887DDB0(DuelAct *a, int b);
 int duel_08883FBC(DuelAct *a, int b);

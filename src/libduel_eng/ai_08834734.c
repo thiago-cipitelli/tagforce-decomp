@@ -38,7 +38,7 @@ void duel_0884AD18(int msg);
 void duel_088367A8(unsigned int p, int b, int id, int uid);
 int duel_card_protected(int id, int uid);
 int duel_can_pay(unsigned int p, int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_monster(int id);
 int duel_can_place_st(unsigned int p, int id);
 int duel_0886AFF8(unsigned int p, int i, int id);

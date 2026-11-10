@@ -17,7 +17,7 @@ extern unsigned int duel_w_08914920;   /* duel_chain.n_kinds */
 
 int duel_088DFE24(int, unsigned int);
 int card_is_monster(int id);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_in_group_147e(int id);
 int duel_0886CD1C(DuelAct *a, unsigned int p);
 int duel_0886CE38(DuelAct *a, int b);

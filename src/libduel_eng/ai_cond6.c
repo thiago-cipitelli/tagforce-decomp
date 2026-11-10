@@ -12,7 +12,7 @@ extern DuelAiCard duel_ai_chain_cards[0x56];   /* 0x08906338 cards answering a c
 extern unsigned int duel_w_08913CF4;
 extern unsigned int duel_ai_player;            /* 0x08919648 */
 
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_monster(int id);
 int duel_0886C2E0(unsigned int p, unsigned int id);
 int duel_count_active(int id);

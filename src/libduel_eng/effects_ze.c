@@ -51,7 +51,7 @@ int duel_088D14B8(DuelAct *a, unsigned int p, int z);
 void duel_088C9344(DuelAct *a, unsigned int p, int z, int b);
 void duel_088C4508(unsigned int p, int id);
 void duel_088C7B90(int n);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int duel_0886AF00(unsigned int p, int z, int id);
 void duel_088C4448(unsigned int, int, int);
 void duel_0884F91C(unsigned int a, unsigned short b);

@@ -82,7 +82,7 @@ void duel_088C7E68(unsigned int, int, int, int);
 int duel_0886CB44(unsigned int p, int n, int uid, int monster, int all);
 void duel_08832950(unsigned int, int);
 void duel_08832670(unsigned int p, int a, int b, int c);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 void duel_088CBAA4(unsigned int, int, int);
 void duel_088D15B4(DuelAct *a, unsigned int p, int z);
 int duel_088C97F0(DuelAct*, unsigned int, int, int, int);

@@ -7,7 +7,7 @@ int card_is_monster(int id);
 int card_get_def_q(int id);
 int card_get_atk_q(int id);
 int card_get_kind(int id);
-unsigned int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_same_name(int id, int name);
 int card_is_in_group_1a58(int id);
 int card_not_in_group_1a6f(int id);
