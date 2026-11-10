@@ -1,5 +1,4 @@
 // @range 0x088E94E4-0x088EA23C
-// @asm 0x088E9D3C-0x088EA098
 /* Counting cards on the field: by effective type or attribute, by name, free monster zones. */
 #include "duel.h"
 #include "card_db.h"
@@ -258,7 +257,6 @@ int duel_count_monsters_pos_is(unsigned int p, unsigned int pos)
     return n;
 }
 
-#ifdef NON_MATCHING /* the zone mark nibbles are masked twice and two tests branch to their bodies */
 /* Zone z (< 5 monster, else spell/trap) of player p is not locked by an effect. */
 int duel_zone_usable(unsigned int p, unsigned int z)
 {
@@ -276,29 +274,35 @@ int duel_zone_usable(unsigned int p, unsigned int z)
                 if ((f->kind & 0xF) == 6) {
                     unsigned int sp = EFF_PLAYER(f);
                     unsigned int sz = EFF_ZONE(f);
-                    int id = field_get_card(sp, sz);
 
-                    if (id == 0x17EE || id == 0x1432) {
+                    switch (field_get_card(sp, sz)) {
+                    case 0x1432:
+                    case 0x17EE:
                         sp &= 1;
 
                         if ((1 << (z + p * 16) & duel.players[sp].field[sz].link) &&
                             SLOT_ACTIVE(&duel.players[sp].field[sz])) {
                             return 0;
                         }
+                        break;
                     }
                 }
             }
             for (i = 0; i < duel.players[q & 1].n_f; i++) {
-                unsigned short m = duel.players[q & 1].marks[i];
-                unsigned char b = m >> 8;
+                int m = duel.players[q & 1].marks[i];
 
-                if ((m & 0xFF) == 0x40 && p == ((b & 0xF) & 1) && z == (unsigned char)((b & 0xF0) >> 4)) {
-                    return 0;
+                if ((m & 0xFF) == 0x40) {
+                    unsigned int b = (unsigned short)m >> 8 & 0xFF;
+
+                    if (p == ((unsigned char)(b & 0xF) & 1) && z == (unsigned char)((b & 0xF0) >> 4)) {
+                        return 0;
+                    }
                 }
             }
         }
     } else {
         unsigned int e = duel.players[1 - p & 1].effects;
+        int i;
         int q;
 
         while (e != 0) {
@@ -306,20 +310,22 @@ int duel_zone_usable(unsigned int p, unsigned int z)
 
             e = f->next;
             if ((f->kind & 0xF) == 6) {
-                unsigned int sp = EFF_PLAYER(f) & 1;
+                unsigned char sp = EFF_PLAYER(f);
                 unsigned int sz = EFF_ZONE(f);
 
-                if (duel.players[sp].field[sz].card.id == 0x1AA9 && (1 << (z + 16) & duel.players[sp].field[sz].link) &&
-                    SLOT_ACTIVE(&duel.players[sp].field[sz])) {
-                    return 0;
+                switch (duel.players[sp & 1].field[sz].card.id) {
+                case 0x1AA9:
+                    if ((1 << (z + 16) & duel.players[sp & 1].field[sz].link) &&
+                        SLOT_ACTIVE(&duel.players[sp & 1].field[sz])) {
+                        return 0;
+                    }
+                    break;
                 }
             }
         }
         for (q = 0; q < 2; q++) {
-            int i;
-
-            for (i = 0; i < 5; i++) {
-                if (duel_field_flag9(q, i) && (p & 0xFF | (z & 0xFF) << 8) == duel_slot_effect_arg(q, i, 0x1472)) {
+            for (i = 0; i <= 4; i++) {
+                if (duel_field_flag9(q, i) && (unsigned short)(p & 0xFF | (z & 0xFF) << 8) == duel_slot_effect_arg(q, i, 0x1472)) {
                     return 0;
                 }
             }
@@ -327,7 +333,6 @@ int duel_zone_usable(unsigned int p, unsigned int z)
     }
     return 1;
 }
-#endif
 
 /* Zone z of player p is empty and usable. */
 int duel_zone_free(unsigned int p, int z)
