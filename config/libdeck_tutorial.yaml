@@ -59,8 +59,6 @@ segments:
       - [0x104C0, c, dt_mode]
       - [0x10DA4, c, dt_action]
       - [0x12C94, c, dt_pane]
-      - [0x12F1C, asm, dt_pane_asm_08816EBC]
-      - [0x1319C, c, dt_pane]
       - [0x1365C, c, dt_eres]
       - [0x13BD8, c, dt_sort]
       - [0x14EF4, c, dt_word]

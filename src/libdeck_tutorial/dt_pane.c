@@ -1,5 +1,4 @@
 // @range 0x08816C34-0x088175FC
-// @asm 0x08816EBC-0x0881713C
 // @data 0x0882225C-0x0882226C
 /* (The code of libdeck dk_pane.c.) Panes: the card list sprites, the cursor's index and entry, the cursor card's info text, switching
    the list shown in a pane (each list keeps its own scroll), the list names, scroll clamping, saving
@@ -117,22 +116,26 @@ void dt_info_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* como dk_select_tab (sem a lista do parceiro): cópias mortas depois de b e temporários diferentes */
+static inline unsigned short dt_lay_pack(unsigned char cols, unsigned char rows)
+{
+    return cols | rows << 8;
+}
+
 /* shows tab (how 0 = previous, 1 = next, else tab itself) in pane side, keeping each list's scroll;
-   the partner list (5 in the wide layout, 2 in the split one) is always skipped in the lesson */
+   the partner list (5 in the wide layout, 2 in the split one) is always skipped in the lesson.
+   The else return; is the trigger of the dead copies after b (docs/matching.md) */
 void dt_select_tab(unsigned short side, unsigned short tab, unsigned short how)
 {
     unsigned short n;
     int sel;
     DtPane *p;
     DtList *l;
-    int keep;
+    unsigned short keep;
     int grid;
     unsigned short view;
 
     if (dtv.mode > 1) {
-        if (tab >= 3)
-            tab -= 3;
+        tab = tab >= 3 ? tab - 3 : tab;
         n = 3;
     } else {
         n = 6;
@@ -156,30 +159,31 @@ void dt_select_tab(unsigned short side, unsigned short tab, unsigned short how)
                 sel = 0;
         }
     } else {
-        if (side != 0)
+        if (side == 0) {
+            if (sel == 4) {
+                if (how == 0)
+                    sel = 3;
+                else
+                    sel = 5;
+            }
+            if (sel == 5) {
+                if (how == 0)
+                    sel = 3;
+                else
+                    sel = 0;
+            }
+        } else
             return;
-        if (sel == 4) {
-            if (how == 0)
-                sel = 3;
-            else
-                sel = 5;
-        }
-        if (sel == 5) {
-            if (how == 0)
-                sel = 3;
-            else
-                sel = 0;
-        }
     }
-    p = &dtv.pane[side];
     keep = 1;
+    p = &dtv.pane[side];
     if (side == 1)
         sel += 3;
     l = &dts.list[sel];
     if (p->list->tab != l->tab) {
         dt_save_panes(side);
         p->list = l;
-        p->top = l->u18;
+        p->top = p->list->u18;
         p->cx = p->list->u1c_lo;
         p->cy = p->list->u1c_hi;
         grid = p->list_mode == 0 ? p->lay.cols : 1;
@@ -187,12 +191,11 @@ void dt_select_tab(unsigned short side, unsigned short tab, unsigned short how)
             keep = 0;
         view = p->list_mode == 0 ? p->lay.grid_rows : p->lay.rows;
         dt_layout_scroll(keep, p->list->u1a,
-                         (unsigned char)(p->list_mode == 0 ? p->lay.cols : 1) | (unsigned char)view << 8,
+                         dt_lay_pack(p->list_mode == 0 ? p->lay.cols : 1, view),
                          p->list->count, &p->top, &p->cx, &p->cy);
         dt_bg_anim_update();
     }
 }
-#endif
 
 unsigned short dt_list_name_ids[6] = { 1, 2, 3, 4, 3, 5 };
 
