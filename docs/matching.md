@@ -1229,6 +1229,12 @@ Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` 
   `switch` interno em vez de `return 0;`) e `duel_0888E5D4` (`h = w >> 8 & 0xFF` num local antes do teste)
   caíram a poucas palavras com o protótipo e fecharam com a forma.
 - Antes de mexer na forma de um `@asm` que chama um chamado de `proto_conflicts`, rode `--unify` nele.
+- **Próximo passo (rodada 16):** unificar os ~85 chamados restantes do libduel_eng com candidata `lost 0`
+  (só um agente por módulo, porque cada chamado toca dezenas de arquivos), rodar `proto_conflicts` nos outros
+  módulos e retestar os itens de `docs/matching_skip.tsv` com motivo de "ordem de carga"/argumento. Os 30 chamados
+  só-K&R e os 21 sem assinatura comum ficam para o port (argumentos reais, structs por valor). Pistas K&R abertas:
+  `duel_0884C588();`/`duel_088BFF78();` em `duel_0888F82C` (224 → 132), `duel_0884ACD8();` em `duel_088862DC`
+  (25 → 23). Roteiro completo da rodada em `build/tmp/PROMPT_R16.md` (local, fora do git).
 ## Rodada 15 (`engJ`: libduel_eng, funções 93-94% nunca tentadas)
 
 - Global de rascunho gravado e relido na mesma função (`duel_w_089148FC`, `duel_w_08914900`, dentro de `duel_chain`):
