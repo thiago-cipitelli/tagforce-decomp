@@ -113,8 +113,6 @@ segments:
       - [0x1B108, c, dd_card_fx2]
       - [0x1C198, c, dd_field_events]
       - [0x1CFE8, c, dd_action_menu]
-      - [0x1D600, asm, dd_action_menu_asm_088215A0]
-      - [0x1D8C8, c, dd_action_menu]
       - [0x1E2EC, asm, dd_action_menu_asm_0882228C]
       - [0x1E580, c, dd_action_menu]
       - [0x1E580, asm, dd_action_menu_asm_08822520]
