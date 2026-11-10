@@ -1521,7 +1521,6 @@ int duel_088AC6A0(DuelAct *a)
         return 0;
     case 3:
         {
-            extern void duel_08832974(unsigned int, int, int); /* o protótipo do arquivo (unsigned short id) tira a de $a0 */
 
             duel_08832974(1 - a->player, a->id, a->w[0]);
         }
