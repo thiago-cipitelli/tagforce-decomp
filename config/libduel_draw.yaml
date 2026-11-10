@@ -164,7 +164,6 @@ segments:
       - [0x30478, c, dd_fx_lpjump]
       - [0x30B00, c, dd_fx_toss]
       - [0x313C4, c, dd_fx_coinfly]
-      - [0x31438, asm, dd_fx_coinfly_asm_088353D8]
       - [0x31810, c, dd_fx_fusion]
       - [0x330F8, c, dd_fx_orbs]
       - [0x33168, asm, dd_fx_orbs_asm_08837108]
