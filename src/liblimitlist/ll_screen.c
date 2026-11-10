@@ -1,5 +1,4 @@
 // @range 0x08806490-0x0880740C
-// @asm 0x08806490-0x088066C8
 // @asm 0x08806DC0-0x0880740C
 // @data 0x0880D5EC-0x0880D634
 /* The screen: background animation, tab titles with the list sizes, header with the list name,
@@ -68,7 +67,8 @@ static inline LlEntry *ll_entry_at(LimitList *l, unsigned int t, unsigned short 
     return &l->list[t][i];
 }
 
-#ifdef NON_MATCHING /* o original deixa uma cópia morta do `li a0,4` depois do `b` do ramo da ficha da carta (problema aberto, como tlist_draw/duelrecord_draw) */
+/* `switch (ll.state) { case 7: return; }`: o return de case é alvo de desvio e faz o mwcc manter a cópia morta do
+   `li a0,4` depois do `b`, como o original (docs/matching.md, rodada 19); menu num switch com case 3/5 */
 /* 0x08806490: export */
 void limitlist_draw(void)
 {
@@ -79,7 +79,13 @@ void limitlist_draw(void)
     dl = dl_clear_stencil(dl, 0);
     dl = dl_clear(dl, 0x17);
     dl_set_list(dl);
-    if (ll.state != 7 && ll.state != 0) {
+    switch (ll.state) {
+    case 7:
+        return;
+    }
+    if (ll.state == 0)
+        return;
+    {
         if (ll.info) {
             cardinfo_draw();
         } else {
@@ -95,12 +101,15 @@ void limitlist_draw(void)
             dl = ll_draw_tabs(dl);
             dl = ll_draw_header(dl);
             dl = ll_draw_entries(dl);
-            if (ll.state == 5 || ll.state == 3)
+            switch (ll.state) {
+            case 3:
+            case 5:
                 dl = ll_menu_draw(dl);
-            else {
+                break;
+            default: {
                 LlRect *r = &ll.cur;
-                void *gim = llres_get(0x8006);
-                dl = ll_draw_frame(dl, r->x, r->y, r->w, r->h, gim, gfx_get_state()->frame);
+                dl = ll_draw_frame(dl, r->x, r->y, r->w, r->h, llres_get(0x8006), gfx_get_state()->frame);
+            }
             }
             dl_set_list(dl);
             dl = dl_select_layer(5, 0);
@@ -110,7 +119,6 @@ void limitlist_draw(void)
         }
     }
 }
-#endif
 
 void *ll_draw_bg(void *dl)
 {

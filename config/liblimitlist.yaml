@@ -32,8 +32,6 @@ segments:
       - [0x1A60, c, ll_res]
       - [0x2124, c, ll_main]
       - [0x24F0, c, ll_screen]
-      - [0x24F0, asm, ll_screen_asm_08806490]
-      - [0x2728, c, ll_screen]
       - [0x2E20, asm, ll_screen_asm_08806DC0]
       - [0x346C, c, ll_list]
       - [0x4090, asm, ll_list_asm_08808030]
