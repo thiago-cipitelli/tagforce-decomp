@@ -190,26 +190,26 @@ void snd_obj_detach(SndObj *o)
 
 /* Starts sound `id` (handle form from snd_id_handle); `name` identifies the group read, `flags`
    0x8000 starts it suspended, 0x4000 marks a restart. Returns the object handle or 0. */
-#ifdef NON_MATCHING /* the original keeps `flags` in s4 and spills `name` and `fade`; mwcc spills `flags` here */
-unsigned int snd_obj_start(unsigned int id, void *name, int fade, unsigned int flags, int pan)
+#ifdef NON_MATCHING /* 24 palavras: o original põe `st` no $s3 de `d` e `o` no $s4 de `flags` (que não vai para a pilha); o mwcc dá a `o` o registrador de `d` e derrama `flags`. O parâmetro é o id que o laço muda (rodada 14: 46 -> 24) */
+unsigned int snd_obj_start(unsigned int cur, void *name, int fade, unsigned int flags, int pan)
 {
-    int data = snd_group_data_of(id);
-    unsigned char *d = snd_desc(id);
+    int data = snd_group_data_of(cur);
+    unsigned char *d = snd_desc(cur);
     SndRandHist *hist;
     unsigned int susp;
     unsigned int st;
     unsigned int kind;
     unsigned int v;
     SndObj *o;
-    unsigned int cur;
+    unsigned int id;
     int n;
     int r;
     int idx;
 
-    if ((id & 0x100000) && data == 0) {
+    if ((cur & 0x100000) && data == 0) {
         return 0;
     }
-    cur = id;
+    id = cur;
     if ((id & 0x100000) && d != 0 && (d[0x10] != 0 || d[0x11] != 0)) {
         hist = snd_rand_hist(id, pan);
         do {
