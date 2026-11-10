@@ -1379,3 +1379,25 @@ Batendo: `font_glyph_find`, `netsync_queue_pop`, `ptp_accept` (BOOT), `fld_npc_f
   quando só é usado uma vez no laço: o mwcc dobra o deslocamento (`1529(t0)`) em todas as formas tentadas (tipo
   `DuelSrc *`, visão `DuelActY`, declaração na função ou no bloco). `duel_0886DE70` (17 palavras) e
   `duel_08865838` (85, quase tudo deslocamento) param aí.
+
+## Rodada 18 (`otherL`: menus e BOOT, funções 60-92% nunca tentadas)
+
+Bateram `scal_period_a`/`scal_period_b` (libstory), `tpt_flip` (libtitle) = `dmgr_pt_flip` (libduel_mgr),
+`st_cond_partner_flag` (libstory), `dmgr_attr_single` (libduel_mgr), `dl_depth_range_i` (BOOT). Idiomas novos:
+- **Helper `static inline` com `return` em cada ramo** explica dois sintomas que nenhuma forma direta reproduzia:
+  (1) `bne; nop; b fim; nop` sem encadeamento de desvios (o `return` do inline vira um `b` para o fim do corpo
+  inlinado, que o mwcc não funde com o teste: `scal_period_a`, busca da faixa com `return i;`); (2) **cópias mortas
+  depois de cada `b`** espalhadas por um trecho (`li a1,1; b; nop`, o `slti` repetido): o lado da carta de
+  `tpt_flip` num `static inline int side(mode, i)` com `if (i == 0) return 0; else return 1;`. Antes de dar uma
+  cópia morta como não-corrigível, ponha o trecho num helper inline com `return`s.
+- **`return` dentro de cada `case` + falhas com `goto` para um `return 0` final** (`st_cond_partner_flag`): os `case`
+  terminados em `return` deixam a cópia morta do `lw` do `beql`; `default: goto fail;` (e não `return 0;`) faz o
+  `b` do `default` levar a cópia do `move v0,zero` e os testes dos `case` ficarem `beqz; nop` para ela.
+- **`if (on == 0) return 0; else { if (len != 0) { ...; return r; } } return 0;`** dá `bnezl` + `b fim` + cópia
+  morta e o `return 0` separado depois do `return r` (`tpt_flip`).
+- **Tipo de retorno**: `snd_bank_open_async` era `void` e o original deixa `r` em `v0` nos dois retornos (31 -> 8).
+- **Locais sem inicializar na declaração**, atribuídos na ordem dos `move` do original (`n = 0; i = 0;`), e
+  `if (n == 0 || n > 1) return 7;` (`dmgr_attr_single`).
+- Sem forma (lista para `matching_skip`): `fclk_list_item`, `fld_hud_name_init` (o original guarda `&global`
+  num `$s` no início mesmo com um só uso; casts, `register`, ordem e inline não seguram); `fld_sys_init` (laço de 25
+  desenrolado x8 com resto no original, x5 aqui); `snd_output`, `dl_tex_image` (escalonamento).
