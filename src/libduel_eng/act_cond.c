@@ -748,7 +748,9 @@ int duel_0886E53C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 18 palavras: no laço da mão o original calcula o argumento p (andi 0xff) antes do índice p & 1, e no laço da cadeia k/ponteiro trocam a0/a1 */
+#ifdef NON_MATCHING /* 16 palavras: condição do laço da mão por a->player & 1 resolveu o andi; falta o addiu de i depois do mult
+                       (o original incrementa i tarde) e, no laço da cadeia, k/ponteiro trocam a0/a1 (ordem/escopo de k,
+                       ponteiro explícito, while e if/else testados) */
 /* Paying 500 LP to activate is allowed when another card in the hand could be used now and the chain
    does not already hold all of them. */
 int duel_0886E590(DuelAct *a)
@@ -766,7 +768,7 @@ int duel_0886E590(DuelAct *a)
     }
     if (ok && duel.players[p & 1].lp > 500) {
         n = 0;
-        for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+        for (i = 0; i < duel.players[a->player & 1].n_hand; i++) {
             if (duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i]))) {
                 n++;
             }

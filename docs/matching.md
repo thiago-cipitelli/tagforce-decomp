@@ -1136,3 +1136,21 @@ Sem forma: `duel_088D1F1C` (8: o original copia o `lbu a0,a->player` nos dois ca
 - **Sem solução**: `dk/dt/sc_draw_rows(_small)` (o mwcc 219 põe o `lhu` de `row_w` da junção no atraso do teste
   do ternário em vez de fazer `bnezl` com o `sll` do ramo; 12 palavras em todas); `snd_curve_volume` (6, posição do
   `lhu vol_far`); `menu_layout` (67, cópia desenrolada).
+## Rodada 14 (`engH`: libduel_eng, funções 94-98% nunca tentadas)
+
+- **Protótipo local de `duel_088C77D4` por arquivo** (`effects_z.c`): com `(unsigned int p, unsigned short id,
+  unsigned short a, unsigned short b)` bateram `duel_0888C10C` (3 → 0, `move s0,a0` antes da 1ª carga) e as duas
+  de `matching_skip` `duel_0888B9A8`/`duel_0888BBE4` ("ordem de carga dos argumentos"): o `andi a2,0xFFFF` no atraso
+  do `jal` denuncia o 3º parâmetro `unsigned short`. Os protótipos de `duel_088C77D4`/`duel_088C87A8` variam entre os
+  arquivos (`grep -rn "void duel_088C77D4(" src/`); antes de mexer na forma, tente o protótipo de outro arquivo.
+- **Tipo do parâmetro decide quem fica em `$s`** (`duel_088BC910`): `int k` → `unsigned int k` trocou `s1`/`s2`.
+- **Índice do jogador misto** (`duel_08873B8C`): `int p = a->player;`, `duel.players[p & 1]` no teste e no `id`
+  do laço, `duel.players[a->player & 1]` no `CARD_UID`: o original tem um IV para o `id` e base+`i*20` para o uid.
+  Busca em grade (tipo de `p` × forma do índice em cada uso, 216 variantes) achou.
+- **Contagem relida na condição do `for`** (`duel_088AFEE0`): `i < duel_chain.n_kinds` (não um local `c`) e
+  `m[n++] = …` sem ponteiro auxiliar deram o `sh` no atraso do `beqz` e os dois IVs com a mesma base.
+- **`goto` para o `return 1` de outro `case`** (`duel_088ADA84`, 83 → 0): `case 4: goto one;` em vez de
+  `return 1;` impede o mwcc de reaproveitar o `1` dos testes do `switch` em `v0`; a constante vai para `v1`.
+Sem forma: `duel_0886E590` (16: `i++` tarde e `k`/ponteiro trocados no laço da cadeia), `duel_08865C10` (51:
+registrador do valor do `switch` sem `return` no `default`), `duel_088977BC` (18: carga de `duel_w_089148FC` antes
+do teste do corte), `duel_0886981C` (684 B contra 688: falta uma instrução no teste inicial), `duel_08889BE4` (115).
