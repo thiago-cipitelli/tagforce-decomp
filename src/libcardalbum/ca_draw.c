@@ -1,5 +1,4 @@
 // @range 0x08805CA4-0x0880681C
-// @asm 0x08805CA4-0x08805F30
 // @data 0x0880DBA0-0x0880DC50
 /* 2D part of the screen and the per-frame draw export: background, title bar with the completion
    percentage, the skip menu with the page number, the pointing hand over the cursor and the digits. */
@@ -40,7 +39,8 @@ unsigned int *ca_draw_number(unsigned int *list, int x, short y, int n, int step
 unsigned int *ca_index_draw(unsigned int *list);
 CaPage *ca_cur_page(void);
 
-#ifdef NON_MATCHING /* o original deixa a cópia morta da primeira instrução do ramo depois do `b` (beqzl; b; <cópia>), problema aberto (ver docs/build.md) */
+/* `switch (state) { case K: return; }` no lugar do `state != K &&`: o return de case é alvo de desvio e faz o mwcc
+   manter as cópias mortas depois de cada `b`, como o original (docs/matching.md, rodada 19) */
 /* 0x08805CA4: export, once per frame */
 void cardalbum_draw(void)
 {
@@ -52,7 +52,13 @@ void cardalbum_draw(void)
     list = dl_clear_stencil(list, 0);
     list = dl_clear(list, 0x17);
     dl_set_list(list);
-    if (ca.state != 8 && ca.state != 0) {
+    switch (ca.state) {
+    case 8:
+        return;
+    }
+    if (ca.state == 0)
+        return;
+    {
         if (ca.detail) {
             cardinfo_draw();
         } else {
@@ -91,7 +97,6 @@ void cardalbum_draw(void)
         }
     }
 }
-#endif
 
 /* 480x272 background in 64-pixel strips; the bottom 16 lines come from the right edge, rotated */
 unsigned int *ca_draw_bg(unsigned int *list)

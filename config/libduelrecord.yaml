@@ -28,8 +28,6 @@ segments:
     subsegments:
       - [0x60, c, drec_main]
       - [0x6F0, c, drec_draw]
-      - [0x6F0, asm, drec_draw_asm_08804690]
-      - [0xA3C, c, drec_draw]
       - [0x2104, c, drec_build]
       - [0x2A8C, asm, sceStub_text]
       - [0x5174, bin, lib_ent_top]

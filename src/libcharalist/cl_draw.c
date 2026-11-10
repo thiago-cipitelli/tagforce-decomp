@@ -1,5 +1,4 @@
 // @range 0x08804F48-0x08807F68
-// @asm 0x08804F48-0x08805354
 // @data 0x0880E01C-0x0880E138
 /* Drawing of the screen: the window with the three tabs, four duelist lines (face, number and name,
    rank, stars of the deck level, win/draw/loss record), cursor and scroll bars, and the detail page
@@ -59,7 +58,8 @@ unsigned int *cl_draw_face(unsigned int *list, int x, int y, int face, int lit);
 unsigned int *cl_draw_face_arrow(unsigned int *list, int x, int y, int face, int right);
 unsigned int *cl_draw_portrait(unsigned int *list, unsigned short id, int x, int y, int scale, void *head, void *body);
 
-#ifdef NON_MATCHING /* o original deixa a cópia morta do `addiu` do case 3 depois do `b` (beql; b; <cópia>), problema aberto */
+/* `switch (state) { case K: return; }` no lugar do `state != K &&`: o return de case é alvo de desvio e faz o mwcc
+   manter as cópias mortas depois de cada `b`, como o original (docs/matching.md, rodada 19) */
 /* 0x08804F48: export, once per frame */
 void charalist_draw(void)
 {
@@ -80,7 +80,13 @@ void charalist_draw(void)
     list = dl_clear_stencil(list, 0);
     list = dl_clear(list, 0x17);
     dl_set_list(list);
-    if (cl.state != 6 && cl.state != 0) {
+    switch (cl.state) {
+    case 6:
+        return;
+    }
+    if (cl.state == 0)
+        return;
+    {
         list = dl_select_layer(4, 0);
         list = dl_enable(list, 9);
         list = dl_enable(list, 4);
@@ -134,7 +140,6 @@ void charalist_draw(void)
         dl_set_list(list);
     }
 }
-#endif
 
 unsigned int *cl_draw_clear(unsigned int *list)
 {

@@ -1,9 +1,7 @@
 # Funções que não batem por limitação conhecida (docs/matching.md, "Não-corrigíveis"). Uma por linha:
 # função<TAB>módulo<TAB>motivo. tools/asm_queue.py tira estas da fila; acrescente as que você confirmar.
-duelrecord_draw	libduelrecord	cópia morta do primeiro destino depois de um b (if/else, goto, pragmas, build 121 testados)
 tlist_draw	libtutoriallist	cópia morta depois de b
 conv_draw	libconv_machine	cópia morta depois de b
-cardalbum_draw	libcardalbum	cópia morta depois de b
 limitlist_draw	liblimitlist	cópia morta depois de b (switch de um caso e || antes de return testados)
 st_chr_dn_find	libstory	o original lê locais da pilha não inicializados
 debug_menu_draw	libduel_draw	menu de depuração inalcançável, sem C
@@ -104,7 +102,6 @@ ds_input_move	libdeck_swap	3 palavras: mesma causa de dk_flight_undo (rodada 11)
 sc_input_move	libselect_card	mesma causa de dk_flight_undo (rodada 11)
 rv_draw_digits	librecipe_viewer	18 palavras de registradores; 5040 ordens testadas; gêmea de *_draw_digits/shop_ui_draw_digits (rodada 11)
 tut_event_hook	libtutorial	15 palavras: cópia de struct usa a0/v1 no original, v1/v0 no nosso (rodada 11)
-charalist_draw	libcharalist	160 palavras: cópia morta da 1ª instrução do case 3 depois do desvio (rodada 11)
 fld_chr_collide	libfield	6 palavras: x / 0.5f antes da carga de z, reuso de $f0; família de fpt_update/fld_draw_add (rodada 11)
 fld_player_update	libfield	mesma causa de fld_chr_collide (rodada 11)
 tms_draw_prims	BOOT	7 palavras: d em v0 e offset carregado por último (rodada 11)

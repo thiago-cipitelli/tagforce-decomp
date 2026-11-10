@@ -30,8 +30,6 @@ segments:
       - [0x468, c, ca_res]
       - [0xD68, c, ca_gfx]
       - [0x1D04, c, ca_draw]
-      - [0x1D04, asm, ca_draw_asm_08805CA4]
-      - [0x1F90, c, ca_draw]
       - [0x287C, c, ca_input]
       - [0x3D30, c, ca_list]
       - [0x4EBC, c, ca_index]
