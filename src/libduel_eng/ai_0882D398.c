@@ -1,6 +1,5 @@
 // @range 0x0882D398-0x0882EE74
 // @asm 0x0882E0A8-0x0882E1B8
-// @asm 0x0882EA4C-0x0882EC88
 // @data 0x08907974-0x089079C4
 /* Summoning a monster (duel_summon), continued: summons that ask for monsters of an attribute
    (0x14A0 makes them come from the hand), summons that may skip the tributes, and summons that send
@@ -560,14 +559,13 @@ int duel_0882E84C(void)
     return duel_summon_tributes();
 }
 
-#ifdef NON_MATCHING /* registradores (zona, carta e id pedido) e desvios para o fim diferem */
 /* Zone filter for 0x196B-0x196E: first the named monster (0x18BF-0x18C2) with another monster of
    the attribute beside it, then a monster of the attribute. */
 int duel_0882EA4C(unsigned int p, int z, int i)
 {
+    int want;
     int zz = z + i;
     int id;
-    int want;
     int k;
 
     if (zz > 0xA) {
@@ -598,36 +596,27 @@ int duel_0882EA4C(unsigned int p, int z, int i)
             want = 0x18C2;
             break;
         }
-        if (id != want) {
-            return 0;
-        }
-        for (k = 0; k < 5; k++) {
-            if (k == zz) {
-                continue;
-            }
-            if (duel_field_attr_is(p, k, card_get_kind(duel_summon.id)) != 0) {
-                if (duel_count_free_monster_zones(p) != 0) {
-                    return 0x800;
+        if (id == want) {
+            for (k = 0; k <= 4; k++) {
+                if (k == zz) {
+                    continue;
                 }
-                if (duel_zone_usable(p, zz) != 0 || duel_zone_usable(p, k) != 0) {
-                    return 0x800;
+                if (duel_field_attr_is(p, k, card_get_kind(duel_summon.id)) != 0) {
+                    if (duel_count_free_monster_zones(p) != 0 || duel_zone_usable(p, zz) != 0 || duel_zone_usable(p, k) != 0) {
+                        return 0x800;
+                    }
                 }
             }
         }
     } else if (duel_summon.locs[0] != (unsigned short)((unsigned char)p | (unsigned char)zz << 8)
                && duel.players[p & 1].field[zz].faceup != 0
                && duel_field_attr_is(p, zz, card_get_kind(duel_summon.id)) != 0) {
-        if (duel_count_free_monster_zones(p) != 0) {
-            return 0x800;
-        }
-        if (duel_zone_usable(p, zz) != 0) {
+        if (duel_count_free_monster_zones(p) != 0 || duel_zone_usable(p, zz) != 0) {
             return 0x800;
         }
     }
     return 0;
 }
-
-#endif
 
 /* Summon of 0x196B-0x196E by an effect: the two monsters of duel_0882EA4C are destroyed. */
 int duel_0882EC88(void)
