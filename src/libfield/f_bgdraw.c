@@ -1,5 +1,5 @@
 // @range 0x08808214-0x08809C40
-// @asm 0x08808214-0x08808770
+// @data 0x0883A4D0-0x0883A4FC
 // @asm 0x088092E0-0x088094B4
 /* Room loading and drawing: the models of each area and their stencil shadows, the placed objects,
    the camera of the room, the mesh mask by area and the hook that hides the door meshes ("_DD."). */
@@ -58,7 +58,6 @@ int fld_bg_index(int id);
 int fld_time_index(int t);
 void fld_bg_mask_area(void *m, int area);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm (mesma sequência de chamadas). ~139 palavras: tamanho 1396 contra 1372 e outros slots de spill para i, pa, pt e os ponteiros das portas (ordem das declarações não muda) */
 /* the room pack is loaded: its area models (and their _mask stencil models), the doors with the
    placed objects that use them, the tma/tmt animations and the height map (made relative to its
    first vertex, which becomes the light offset); then the meshes of the time of day */
@@ -71,10 +70,8 @@ void fld_bg_loaded(int *file)
     void *pack;
     int nmodels;
     int ndoors;
-    FieldBgAnim *pa;
-    FieldBgAnim *pt;
-    int nobj;
     int i;
+    int nobj;
     int j;
     int k;
     void *data;
@@ -82,6 +79,7 @@ void fld_bg_loaded(int *file)
     char *p;
     FieldDoorInfo *e;
     Vec3 *v;
+    Vec3 *w;
     FieldBgAnim tmas[2];
     FieldBgAnim tmts[2];
     char name[64];
@@ -96,8 +94,6 @@ void fld_bg_loaded(int *file)
     pack = (void *)*file;
     nmodels = 0;
     ndoors = 0;
-    pa = tmas;
-    pt = tmts;
     nobj = 0;
     for (i = 0;; i++) {
         data = ehp_get_name_by_index(pack, i, name);
@@ -136,15 +132,13 @@ void fld_bg_loaded(int *file)
                 }
             }
         } else if (strcmp(ext, "tma") == 0) {
-            strcpy(pa->name, name);
+            strcpy(tmas[ntma].name, name);
+            tmas[ntma].data = data;
             ntma++;
-            pa->data = data;
-            pa++;
         } else if (strcmp(ext, "tmt") == 0) {
-            strcpy(pt->name, name);
+            strcpy(tmts[ntmt].name, name);
+            tmts[ntmt].data = data;
             ntmt++;
-            pt->data = data;
-            pt++;
         } else if (strcmp(ext, "hmp") == 0) {
             b->map = data;
         }
@@ -152,40 +146,51 @@ void fld_bg_loaded(int *file)
     b->n_objs = nobj;
     b->n_doors = ndoors;
     b->n_models = nmodels;
-    for (k = 0; k < b->n_models; k++) {
-        p = field_bg_models[fld_bg_index(b->id)][k];
-        strcpy(tma, p);
-        strcpy(fld_after_dot(tma), "tma");
-        strcpy(tmt, p);
-        strcpy(fld_after_dot(tmt), "tmt");
-        for (j = 0; j < ntma; j++) {
-            if (strcmp(tma, tmas[j].name) == 0) {
-                model_set_tgma(b->model[k], tmas[j].data);
-                break;
+    {
+        int m;
+        int x;
+
+        for (m = 0; m < b->n_models; m++) {
+            p = field_bg_models[fld_bg_index(b->id)][m];
+            strcpy(tma, p);
+            strcpy(fld_after_dot(tma), "tma");
+            strcpy(tmt, p);
+            strcpy(fld_after_dot(tmt), "tmt");
+            for (x = 0; x < ntma; x++) {
+                FieldBgAnim *q = &tmas[x];
+                if (strcmp(tma, q->name) == 0) {
+                    model_set_tgma(b->model[m], q->data);
+                    break;
+                }
             }
-        }
-        for (j = 0; j < ntmt; j++) {
-            if (strcmp(tmt, tmts[j].name) == 0) {
-                model_anim_set(b->model[k], tmts[j].data);
-                model_anim_play(b->model[k], 0, 2);
-                break;
+            for (j = 0; j < ntmt; j++) {
+                FieldBgAnim *q = &tmts[j];
+                if (strcmp(tmt, q->name) == 0) {
+                    model_anim_set(b->model[m], q->data);
+                    model_anim_play(b->model[m], 0, 2);
+                    break;
+                }
             }
         }
     }
-    v = (Vec3 *)((char *)b->map + ((int *)b->map)[3]);
-    l = v[0];
-    b->light = l;
-    for (i = 0; i < b->map->n_vert; i++)
-        vec3_sub(&v[i], &v[i], &l);
+    {
+        int n;
+
+        v = (Vec3 *)((char *)b->map + ((int *)b->map)[3]);
+        l = v[0];
+        w = v;
+        b->light = l;
+        for (n = 0; n < b->map->n_vert; n++)
+            vec3_sub(&w[n], &v[n], &l);
+    }
     if (st != 0) {
-        k = fld_time_index(*(int *)st->w[3]);
-        for (i = 0; i < b->n_models; i++)
-            fld_bg_mask_area(b->model[i], k);
+        i = fld_time_index(*(int *)st->w[3]);
+        for (k = 0; k < b->n_models; k++)
+            fld_bg_mask_area(b->model[k], i);
     }
     fld_bg_set_hook(b->id);
     b->loading = 0;
 }
-#endif
 
 /* shows meshes 0..4, 5..9 or 10..14 only for the area */
 void fld_bg_mask_area(void *m, int area)

@@ -57,25 +57,30 @@ float dd_flipup_eye[3] = { 0.0f, 0.0f, 500.0f };
 float dd_flipup_up[3] = { 0.0f, 1.0f, 0.0f };
 FxVec4 dd_flipup_corner = { 1.0f, 1.0f, 0.0f, 1.0f };
 
-#ifdef NON_MATCHING /* alocação de pilha e de registradores de ponto flutuante */
+#ifdef NON_MATCHING /* 6 palavras: só hh e -hw trocam f0/f1 no fim do cálculo (o original faz mul.s f0,f0(2.0),f1). Ao promover, os modelos de eye/up/corner passam a sair do C (trocar os globais dd_flipup_* do @data) */
 int dd_fx_flipup_update(int state, DdFxFlipUp *fx)
 {
     int step = dd_anim_step();
     float eye[3] = { 0.0f, 0.0f, 500.0f };
     float target[3] = { 0 };
-    float up[3] = { 0.0f, 1.0f, 0.0f };   /* dd_flipup_eye, dd_flipup_up */
-    float proj[16], view[16], model[16], m[16];
+    DdXyz up = { 0.0f, 1.0f, 0.0f };
+    float proj[16] __attribute__((aligned(16)));
+    float view[16] __attribute__((aligned(16)));
+    float model[16] __attribute__((aligned(16)));
+    float m[16] __attribute__((aligned(16)));
     FxVec4 v;
     unsigned int *list;
     float e, f;
 
-    dd_cam_begin(6, fx->pos.x, 77.0f + fx->pos.y, 0.38397247f, 1.7647059f, 1.0f, 1000.0f, eye, target, up);
+    dd_cam_begin(6, fx->pos.x, 77.0f + fx->pos.y, 0.38397247f, 1.7647059f, 1.0f, 1000.0f, eye, target, (float *)&up);
     e = dd_ease_sin(fx->in, 16, 2);
     f = dd_ease_lin_inv(fx->out, 8);
     if (state == 1) {
-        float hw = 54.0f, hh = 77.0f;
+        float hw, hh;
 
         v = dd_flipup_corner;
+        hw = 54.0f;
+        hh = 77.0f;
         mtx_set_mode(0);
         mtx_get34(proj);
         mtx_set_mode(1);
@@ -86,8 +91,9 @@ int dd_fx_flipup_update(int state, DdFxFlipUp *fx)
         mat4_transform_vec4(&v, m, &v);
         v.x = 240.0f * v.x / v.w;
         v.y = 136.0f * v.y / v.w;
-        hh = 2.0f * (hh / v.y);
-        hw = hw / v.x;
+        hh /= v.y;
+        hw /= v.x;
+        hh = 2.0f * hh;
         fx->quad[0].u = 0.0f;
         fx->quad[0].v = 0.0f;
         fx->quad[0].x = -hw;
@@ -126,16 +132,16 @@ int dd_fx_flipup_update(int state, DdFxFlipUp *fx)
     list = dl_disable(list, 5);
     dl_set_list(list);
     dd_cam_end(6);
-    if (dd_task_flag_test(fx->id, 1)) {
+    if (!dd_task_flag_test(fx->id, 1)) {
+        fx->in += step;
+        if (fx->in > 16)
+            fx->in = 16;
+    } else {
         fx->in = 16;
         fx->out += step;
-        if (fx->out < 8)
-            return 2;
-        return 4;
+        if (fx->out >= 8)
+            return 4;
     }
-    fx->in += step;
-    if (fx->in > 16)
-        fx->in = 16;
     return 2;
 }
 #endif

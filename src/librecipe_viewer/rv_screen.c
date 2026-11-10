@@ -1,5 +1,4 @@
 // @range 0x08805874-0x08807A44
-// @asm 0x08805874-0x08805D40
 // @asm 0x08805F6C-0x088064F8
 // @data 0x0880E88C-0x0880E8BC
 /* The screen: background and title animations, the per-type counters, the recipe grid (main deck,
@@ -59,7 +58,8 @@ void *rv_draw_grid_card(void *dl, int x, int y, RvEntry *e);
 void *rv_draw_grid_cursor(void *dl, unsigned short x, unsigned short y);
 void *rv_draw_scrollbar(void *dl, int x, int y, int h, int pos, int page, int total);
 
-#ifdef NON_MATCHING /* o original deixa uma cópia morta do `li a0,4` depois do `b` do ramo da ficha da carta (problema aberto, como tlist_draw) */
+/* `switch (rv.state) { case 7: return; }` e `case 0: ...; return;` (return alvo de desvio) mantêm as cópias mortas
+   depois de cada `b`, como o original (docs/matching.md, rodada 19) */
 /* 0x08805874: export */
 void recipe_viewer_draw(void)
 {
@@ -70,7 +70,11 @@ void recipe_viewer_draw(void)
     dl = dl_clear_stencil(dl, 0);
     dl = dl_clear(dl, 0x17);
     dl_set_list(dl);
-    if (rv.state != 7 && rv.state != 1) {
+    switch (rv.state) {
+    case 7:
+        return;
+    }
+    if (rv.state != 1) {
         if (rv.info_open) {
             cardinfo_draw();
         } else {
@@ -81,10 +85,13 @@ void recipe_viewer_draw(void)
             dl = dl_set_tex_filter(dl, 0, 0);
             dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
             dl = dl_disable(dl, 1);
-            if (rv.state == 0) {
+            switch (rv.state) {
+            case 0:
                 dl = extdata_draw(dl);
                 dl_set_list(dl);
-            } else {
+                return;
+            }
+            {
                 dl = rv_draw_bg(dl);
                 dl = rv_draw_title(dl);
                 dl = rv_draw_tabs(dl);
@@ -93,16 +100,18 @@ void recipe_viewer_draw(void)
                 dl = rv_draw_recipe(dl);
                 dl = rv_draw_lists(dl);
                 if (rv.state == 4) {
-                    int y = rv.pos[rv.tab].cursor * 29;
+                    int y = 18;
+                    int h = rv.pos[rv.tab].cursor * 29 + 18;
                     dl = dl_disable(dl, 9);
                     dl = dl_tex_func(dl, 4, 0);
                     dl = dl_ambient_color(dl, 0x80000000);
-                    dl = draw_set_offsets(dl, 0, 0, 146, y + 18);
-                    dl = draw_sprite(dl, 148, 18, 0, 0, 0, 0, 0);
+                    dl = draw_set_offsets(dl, 0, 0, 146, h);
+                    dl = draw_sprite(dl, 148, y, 0, 0, 0, 0, 0);
+                    y += h;
                     dl = draw_set_offsets(dl, 0, 0, 10, 29);
-                    dl = draw_sprite(dl, 284, y + 36, 0, 0, 0, 0, 0);
-                    dl = draw_set_offsets(dl, 0, 0, 146, 271 - (y + 65));
-                    dl = draw_sprite(dl, 148, y + 65, 0, 0, 0, 0, 0);
+                    dl = draw_sprite(dl, 284, y, 0, 0, 0, 0, 0);
+                    dl = draw_set_offsets(dl, 0, 0, 146, 271 - (y + 29));
+                    dl = draw_sprite(dl, 148, y + 29, 0, 0, 0, 0, 0);
                     dl = dl_enable(dl, 9);
                     dl = dl_tex_func(dl, 0, 1);
                     dl = dl_ambient_color(dl, 0xFFFFFFFF);
@@ -118,7 +127,7 @@ void recipe_viewer_draw(void)
                     dl = rv_osk_draw(dl);
                 dl_set_list(dl);
                 if (rv.busy) {
-                    rv.busy = rv_osk_update(4) == 0;
+                    rv.busy = !rv_osk_update(4);
                 } else {
                     dl = dl_select_layer(4, 0);
                     dl = dl_disable(dl, 1);
@@ -129,7 +138,6 @@ void recipe_viewer_draw(void)
         }
     }
 }
-#endif
 
 void *rv_draw_bg(void *dl)
 {

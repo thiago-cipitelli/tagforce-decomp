@@ -1,7 +1,6 @@
 // @range 0x0881E0CC-0x0881F02C
 // @data 0x0882F384-0x0882F398
 // @rodata 0x0882B344-0x0882B40C
-// @asm 0x0881EA4C-0x0881ECB4
 /* Free duel setup, the option list: the player rows, the box titles, the icons, the character pick
    (libcharalist) and the entry message. */
 #include "libtitle.h"
@@ -455,18 +454,17 @@ void *tfd_icon_setup(void *list, MenuWidget *w, int x, int y, int cw, int ch)
     return tframe_cursor(list, 0xFFFFFFFF, x - 4, y - 4, cw, ch - 1);
 }
 
-#ifdef NON_MATCHING /* ordem das cargas da tabela de sprites e alocação de $s */
 /* an icon of the player list (title_sprites2[0x4A], 5 per row) */
 void *tfd_icon_draw(void *list, int id, int x, int y)
 {
+    TDuelCfg *d = &title.duel;
     short tw = title_sprites2[0x4A].tw;
     short th = title_sprites2[0x4A].th;
     short a = title_sprites2[0x4A].a;
-    short u = title_sprites2[0x4A].u;
+    short b = title_sprites2[0x4A].b;
     short sx = x;
     short sy = y;
-    TDuelCfg *d = &title.duel;
-    short b = title_sprites2[0x4A].b;
+    short u = title_sprites2[0x4A].u;
     short v = title_sprites2[0x4A].v;
     short col = id % 5;
     short row = id / 5;
@@ -484,17 +482,17 @@ void *tfd_icon_draw(void *list, int id, int x, int y)
         u += (short)(d->blink / 10 * 0x11);
         break;
     case 9:
-        u += 0x88;
         row = 1;
+        u += 0x88;
         break;
     default:
         u += (short)(col * 0x11 + (col - 1) * 0x22);
         break;
     }
+    v += (short)(row * 0x11);
     list = draw_set_offsets(list, tw, th, tw, th);
-    return draw_sprite(list, sx, sy, 0, u, (short)(v + (short)(row * 0x11)), a, b);
+    return draw_sprite(list, sx, sy, 0, u, v, a, b);
 }
-#endif
 
 void tfd_load_charalist(void)
 {
