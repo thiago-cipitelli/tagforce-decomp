@@ -1,5 +1,4 @@
 // @range 0x08834418-0x08834AA0
-// @asm 0x08834628-0x08834AA0
 /* Damage/gain number popping on screen: the digits of a value (and a sign) jump one after the
    other, optionally sliding to another position, in a given colour; then fade out. */
 #define DD_FX
@@ -73,22 +72,28 @@ float dd_fx_lpjump_digit(float ang, int digit, int i, int x, int y)
     return a;
 }
 
-#ifdef NON_MATCHING /* função grande */
 int dd_fx_lpjump_update(int state, DdFxLpJump *fx)
 {
     int step = dd_anim_step();
     float in = dd_ease_lin(fx->in, 4);
     float out = dd_ease_lin_inv(fx->out, 4);
     unsigned int *list;
+    unsigned int al;
     float ang, last, k;
-    int v, w, x, y, i;
+    int v2; /* the digits' value (v is the width loop of state 1) */
+    int x;
+    int i;
+    int v;
+    int w;
+    int y;
 
     list = dl_select_layer(6, 0);
     list = dd_depth_enable(list, 0, 0);
     list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
     list = dd_tex_pack(list, 24);
     list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
-    list = dl_color(list, fx->r | fx->g << 8 | (unsigned int)(out * (float)fx->a * in) << 24 | fx->b << 16);
+    al = out * ((float)fx->a * in);
+    list = dl_color(list, fx->r | (fx->g << 8 | (al << 24 | fx->b << 16)));
     dl_set_list(list);
     dd_cue_se(fx->value > 0 ? 0x6245 : 0x6244, fx->phase, 0, &fx->se, 1);
     if (state == 1) {
@@ -102,27 +107,29 @@ int dd_fx_lpjump_update(int state, DdFxLpJump *fx)
         fx->ox = w / 2 - 19;
         fx->oy = -11;
     }
-    v = int_abs(fx->value);
+    v2 = int_abs(fx->value);
     ang = (((float)(step - 1) * 10.0f + 30.0f) * 3.1415927f / 180.0f) * (float)fx->tick;
+    x = fx->ox;
+    y = fx->oy;
+    i = 0;
     if (fx->moving == 0) {
-        x = fx->ox + fx->pos.x;
-        y = fx->oy + fx->pos.y;
+        x += fx->pos.x;
+        y += fx->pos.y;
     } else {
         k = dd_ease_cos_inv(fx->slide, 10, 1);
-        x = fx->ox + (int)((float)fx->pos.x + k * (float)(fx->to.x - fx->pos.x));
-        y = fx->oy + (int)((float)fx->pos.y + k * (float)(fx->to.y - fx->pos.y));
+        x += (int)((float)fx->pos.x + k * (float)(fx->to.x - fx->pos.x));
+        y += (int)((float)fx->pos.y + k * (float)(fx->to.y - fx->pos.y));
     }
-    i = 0;
     do {
-        last = dd_fx_lpjump_digit(ang, v % 10, i, x, y);
+        last = dd_fx_lpjump_digit(ang, v2 % 10, i, x, y);
         x -= 19;
-        v /= 10;
+        v2 /= 10;
         i++;
-    } while (v != 0);
+    } while (v2 != 0);
     if (fx->value != 0)
         last = dd_fx_lpjump_digit(ang, fx->value > 0 ? 11 : 12, i, x, y);
     if (last == 3.1415927f && fx->phase == 0)
-        fx->phase = 1;
+        fx->phase++;
     fx->tick++;
     if (fx->in < 4) {
         fx->in = dd_step_clamp(fx->in, step, 4);
@@ -140,4 +147,3 @@ int dd_fx_lpjump_update(int state, DdFxLpJump *fx)
         return 2;
     return 4;
 }
-#endif

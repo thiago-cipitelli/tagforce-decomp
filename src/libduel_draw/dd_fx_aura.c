@@ -45,20 +45,25 @@ void *dd_tex_enable(void *list, int on, int min, int mag, int func, int comp, in
 void dd_chara_bone_mtx(void *out, int bone);
 int dd_chara_get_08813FBC(void);
 
-#ifdef NON_MATCHING /* o original mantém a = 255 num $s em vez de dobrar a constante e materializa a condição do id em v0; restante próximo */
+#ifdef NON_MATCHING /* 241 palavras: a = 255 em cada case (não dobra, como no original); faltam o a << 24 recalculado no azul (o mwcc faz CSE), a condição do id materializada em v0 (slti at + b; move v0,zero) e os $s (run s1, arg s2, i s3, ponteiro s2, a s4) */
 int dd_fx_aura_halo(int phase, DdFxHalo *w, DdFxArg *arg)
 {
-    int run = arg->run;
     void *list;
     float s;
     float r;
     float ang;
     int a;
     int i;
+    int run;
 
+    run = arg->run;
     if (phase == 1) {
-        int on = arg->id < 247 || arg->id >= 290;
+        int on;
 
+        if (arg->id < 247 || arg->id >= 290)
+            on = 1;
+        else
+            on = 0;
         if (on)
             w->alpha = 1.0f;
         else
@@ -83,12 +88,13 @@ int dd_fx_aura_halo(int phase, DdFxHalo *w, DdFxArg *arg)
             switch (((int *)arg)[2]) {
             case 9:
                 s = 0.8f;
+                a = 255;
                 break;
             default:
                 s = 1.0f;
+                a = 255;
                 break;
             }
-            a = 255;
             r = 5.0f * s;
             w->yellow[0].color = a << 24 | 0xFFFF00;
             w->yellow[0].x = 0.0f;

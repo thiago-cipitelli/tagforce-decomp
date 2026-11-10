@@ -1,6 +1,5 @@
 // @range 0x088513A4-0x088522F0
 // @data 0x08876DB8-0x08876E20
-// @asm 0x088513A4-0x088517DC
 /* Character effect "whirlpool": a tilted swirl of water (nsea.gim/sen_07.gim scrolled), rocks
    (082rock.gim) falling into it and two rings of spray (PT88_R_a.gim) on both sides. */
 #include "libduel_draw.h"
@@ -84,11 +83,11 @@ typedef struct DdFxRock {              /* 0x1680 */
 
 int dd_fx_rock_update(int phase, DdFxRock *w);
 
-#ifdef NON_MATCHING /* corpo de laço com índice circular e duas fontes; registradores diferentes */
 /* Ring of spray on side `side` (0 front, 1 back): 64 particles thrown around the swirl. */
 void dd_fx_rock_spray(int phase, int side, DdFxRock *w, FxMat4 *cam)
 {
     DdPart *p;
+    DdPartP *pp;
     int *cur;
     int c;
     float base;
@@ -99,6 +98,7 @@ void dd_fx_rock_spray(int phase, int side, DdFxRock *w, FxMat4 *cam)
     void *list;
     int n;
     int i;
+    int k;
 
     if (side == 1) {
         p = w->spray[0];
@@ -115,9 +115,10 @@ void dd_fx_rock_spray(int phase, int side, DdFxRock *w, FxMat4 *cam)
 
         q->flags |= 1;
         q->t = n - 1 - i;
+        pp = &q->p;
         ang = base + RAND15() / 32767.0f * 3.1415927f;
-        q->p.cell = RAND15() % 8;
-        vec3_set(&q->p.dir, cosf(ang) * 2.5f, 0.5f, sinf(ang) * 2.5f);
+        pp->cell = RAND15() % 8;
+        vec3_set(&pp->dir, cosf(ang) * 2.5f, 0.5f, sinf(ang) * 2.5f);
         if (c < 63)
             c++;
         else
@@ -132,18 +133,21 @@ void dd_fx_rock_spray(int phase, int side, DdFxRock *w, FxMat4 *cam)
     mtx_push();
     mtx_identity();
     dd_translate3(0.0f, 3.0f, 0.0f);
-    for (i = 0; i < 64; i++, p++) {
-        if (p->flags & 1) {
+    for (k = 0; k < 64; k++, p++) {
+        if (!(p->flags & 1) != 1) {
+            void *l2;
+
             s = dd_ease_lin(p->t, 64) * 0.9f + 0.1f;
             y = dd_ease_cos_inv(p->t, 64, 2);
-            list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(p->t, 8) * 255.0f *
-                                                         dd_ease_cos(p->t - 56, 8, 1)) << 24 | 0xFFFFFF);
+            l2 = dl_ambient_light(list, (unsigned int)(dd_ease_lin(p->t, 8) * 255.0f *
+                                                       dd_ease_cos(p->t - 56, 8, 1)) << 24 | 0xFFFFFF);
+            pp = &p->p;
             mtx_push();
-            vec3_set(&v, p->p.dir.x * s, p->p.dir.y * y, p->p.dir.z * s);
+            vec3_set(&v, pp->dir.x * s, pp->dir.y * y, pp->dir.z * s);
             mat3_transform_vec3(&v, w->tilt, &v);
             mtx_translate(&v);
             mtx_mult(cam);
-            list = draw_array(list, 4, 0x19F, 6, 0, w->cell[p->p.cell]);
+            list = draw_array(l2, 4, 0x19F, 6, 0, w->cell[pp->cell]);
             mtx_pop();
             if (p->t < 63)
                 p->t++;
@@ -155,7 +159,6 @@ void dd_fx_rock_spray(int phase, int side, DdFxRock *w, FxMat4 *cam)
     dl_set_list(list);
     *cur = c;
 }
-#endif
 
 int dd_fx_rock_start(int arg, void *a, void *b)
 {

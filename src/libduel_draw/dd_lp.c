@@ -1,11 +1,11 @@
 // @range 0x08811718-0x0881299C
 // @rodata 0x0886FE80-0x0886FF0C
 // @data 0x08874FA0-0x08875104
-// @asm 0x08811718-0x08811BE0
 /* The LP and phase panel: the frame (ehf), the names of the duelists, the LP counters counting
    to their new value, turn and card counters, the results of a series of duels, the phase
    animation (states of the phase ehf) and the turn switch. */
 #include "dd_d1.h"
+#include "allegrex.h"
 
 void *gfx_begin_2d(void *list);
 void *gfx_end_2d(void *list);
@@ -63,14 +63,12 @@ void dd_lpp_count_tick(float dt);
 void dd_lpp_turn_tick(float dt);
 void dd_lpp_phase_tick(float dt);
 
-#ifdef NON_MATCHING /* função grande de desenho; forma não reproduzida */
-#ifdef NON_MATCHING /* forma/alocação não reproduzidas */
 /* draws the whole panel on layer 6 */
 void dd_lpp_draw(void)
 {
-    int opts[24];
     DdInt6 sx;
-    unsigned short flags;
+    int opts[26];                      /* 26 words on the stack, only 24 cleared */
+    int flags;
     unsigned short *name;
     int w;
     void *list;
@@ -80,6 +78,7 @@ void dd_lpp_draw(void)
     int r;
     int s;
     int pct;
+    int *row;
 
     memset(opts, 0, 0x60);
     opts[0] = *gfx_get_state();
@@ -98,8 +97,7 @@ void dd_lpp_draw(void)
     font_draw_wtext(0x3480, 0x40, 0x1580, dd_game_slot(dd_cobjs_map_get(0)));
     name = dd_game_slot(dd_cobjs_map_get(1));
     w = font_measure_text(name) >> 6;
-    if (w > 0x57)
-        w = 0x57;
+    w = ALLEGREX_MIN(w, 0x57);
     font_draw_wtext((0x1A2 - w) * 64, 0x40, (w + 2) * 64, name);
     list = font_text_clear();
     font_set_flags(flags);
@@ -110,49 +108,56 @@ void dd_lpp_draw(void)
         list = gim_set_texture(list, gim);
     list = dd_lpp_counters(list);
     list = dd_lpp_turn(list, 0x12E, 8);
-    list = dd_lpp_count(list, 0xBF, 0xF, dv_088FE810(0), dd_input_player() == 0);
+    list = dd_lpp_count(list, 0xBF, 0xF, dv_088FE810(0), !(dd_input_player() != 0));
     list = dd_lpp_count(list, 0x186, 0xF, dv_088FE810(1), dd_input_player());
     list = dl_ambient_color(list, 0xFFFFFFFF);
-    if (dd_game_flag119() == 0) {
+    if (dd_game_flag119() != 0) {
+        list = dd_sprite_at(list, 0xA0, 0xF, &dd_uv[0x21]);
+        list = dd_sprite_at(list, 0x1BD, 0xF, &dd_uv[0x21]);
+    } else {
         sx = dd_lpp_series_x;
-        for (p = 0; p < 2; p++) {
+        for (p = 0, row = sx.v; p < 2; p++, row += 3) {
             for (n = 0; n < 3; n++) {
                 r = dd_series_result(p, n);
                 if (r == -1)
                     continue;
-                if (r == 2)
-                    s = 0x20;
-                else if (r == 1)
-                    s = 0x1F;
-                else if (r == 0)
+                switch (r) {
+                case 0:
                     s = 0x1E;
-                list = dd_sprite_at(list, sx.v[p * 3 + n], 0xF, &dd_uv[s]);
+                    break;
+                case 1:
+                    s = 0x1F;
+                    break;
+                case 2:
+                    s = 0x20;
+                    break;
+                }
+                list = dd_sprite_at(list, row[n], 0xF, &dd_uv[s]);
             }
         }
-    } else {
-        list = dd_sprite_at(list, 0xA0, 0xF, &dd_uv[0x21]);
-        list = dd_sprite_at(list, 0x1BD, 0xF, &dd_uv[0x21]);
     }
     pct = dd_08807024();
-    if (pct >= 0x47)
+    if (pct > 0x46)
         list = dd_sprite_at(list, 0x73, 2, &dd_uv[0x44]);
-    else if (pct >= 0x1F)
+    else if (pct > 0x1E)
         list = dd_sprite_at(list, 0x73, 2, &dd_uv[0x45]);
     else if (pct >= 1)
         list = dd_sprite_at(list, 0x73, 2, &dd_uv[0x46]);
     else if (pct == 0)
         list = dd_sprite_at(list, 0x73, 2, &dd_uv[0x47]);
     if (hl_allowed()) {
+        unsigned short *msg;
+
         gim = dd_gim_get(0x4001F);
         if (gim)
             list = gim_set_texture(list, gim);
         list = draw_set_offsets(list, 0x2B, 0xC, 0x2B, 0xC);
         list = draw_sprite(list, 0x197, 0x104, 0, 0, 0x34, 0, 0);
-        name = sysmsg_get(0x15);
+        msg = sysmsg_get(0x15);
         font_text_set(list);
         font_set_size(11, 11);
         font_set_color(0xFFFFFFFF);
-        font_draw_text(0x70C0, 0x4100, 0x740, name);
+        font_draw_text(0x70C0, 0x4100, 0x740, msg);
         list = font_text_clear();
     }
     list = dd_face_panel(list, 0x93, 0x1B, 0);
@@ -160,8 +165,6 @@ void dd_lpp_draw(void)
     list = dd_turn_icon(list);
     dl_set_list(list);
 }
-#endif
-#endif
 
 /* the phase panel (ehf 0x20003) */
 void *dd_lpp_phase_draw(void *list)
