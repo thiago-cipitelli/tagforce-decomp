@@ -1,5 +1,4 @@
 // @range 0x0884B094-0x0884C718
-// @asm 0x0884C140-0x0884C588
 // @data 0x089124E8-0x089125F0
 /* Start of a duel: state reset, normal start (LP 8000, decks shuffled), and the tutorial/puzzle start
    from a text file of settings (NN_field_set.txt: LP, phase, cards of each zone, attached effects). */
@@ -396,7 +395,6 @@ int duel_setup_parse_line(char *line)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original testa o byte de destino com andi+ext sobre o halfword do efeito (6 palavras) */
 /* tutorial/puzzle start: reads the settings text line by line, then shows the field to the host */
 void duel_setup_load_text(char *text)
 {
@@ -438,7 +436,11 @@ void duel_setup_load_text(char *text)
     for (i = 0; i < duel_w_0891524C.n; i++) {
         DuelEffectLoc *ef = (DuelEffectLoc *)&duel.effects[i + 1];
 
-        duel_cmd((ef->dst_player ? 0x8000 : 0) | 0x36, ef->dst_zone | ef->kind << 8, ef->src, 0);
+        /* dst_player | dst_zone << 8 read as one halfword */
+        unsigned int w = *(unsigned short *)((char *)ef + 4);
+
+        duel_cmd(((w & 0xFF) ? 0x8000 : 0) | 0x36, ((unsigned short)w >> 8 & 0xFF) | (unsigned int)ef->kind << 8,
+                 ef->src, 0);
         ef->kind = 0;
     }
     duel_w_0891524C.n = 0;
@@ -463,7 +465,6 @@ void duel_setup_load_text(char *text)
     duel_host_call(0x14, 0, 0xF, 0);
     duel_host_call(0x14, 1, 0xF, 0);
 }
-#endif
 
 /* opens a card list for player p (kind a: 6..0x4A pick, else a message) and lets the computer answer */
 void duel_0884C588(unsigned int p, int a, int id, int b)
