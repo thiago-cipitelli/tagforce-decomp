@@ -1,5 +1,4 @@
 // @range 0x0882A23C-0x0882AFA4
-// @asm 0x0882A680-0x0882A838
 // @data 0x08907940-0x0890794C
 /* Summoning a monster (duel_summon, 0x08914A14): the zone filters used while the player or the
    computer picks the tributes, and the start of a summon. */
@@ -122,7 +121,6 @@ int duel_0882A550(unsigned int p, int z, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original mantém cópias mortas depois dos beql do teste 0x13E7/0x13E5 */
 /* Zone filter: monsters that may be tributed for the summon (0x13E5/0x13E7 when none was picked
    yet). */
 int duel_0882A680(unsigned int p, int z, int i)
@@ -149,8 +147,6 @@ int duel_0882A680(unsigned int p, int z, int i)
 
         switch (id) {
         case 0x13E5:
-            r = 0x800;
-            break;
         case 0x13E7:
             r = 0x800;
             break;
@@ -167,11 +163,7 @@ int duel_0882A680(unsigned int p, int z, int i)
         if (duel_count_free_monster_zones(duel_summon.player) == 0) {
             if ((duel_summon.locs[0] & 0xFF) != duel_summon.player
                 || !duel_zone_usable(duel_summon.locs[0] & 0xFF, (unsigned char)((duel_summon.locs[0] & 0xFFFF) >> 8))) {
-                if (p == duel_summon.player) {
-                    if (duel_zone_usable(p, zz) == 0) {
-                        return 0;
-                    }
-                } else {
+                if (p != duel_summon.player || duel_zone_usable(p, zz) == 0) {
                     return 0;
                 }
             }
@@ -180,8 +172,6 @@ int duel_0882A680(unsigned int p, int z, int i)
     }
     return r;
 }
-
-#endif
 
 /* Zone filter: opponent monsters that may be tributed. */
 int duel_0882A838(unsigned int p, int z, int i)
