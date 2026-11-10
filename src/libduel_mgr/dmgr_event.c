@@ -1,6 +1,4 @@
 // @range 0x08805FF8-0x08808A20
-// @asm 0x088062E8-0x08806518
-// @asm 0x08806678-0x088069F4
 // @data 0x0881A1D4-0x0881A6F8
 // @rodata 0x08819D90-0x08819F34
 /* Duel presentation events: the queue of cut-ins, music and waits that the duel engine's host
@@ -279,7 +277,8 @@ int dmgr_cutin_card(int kind, int chr, int card)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original mantém cópias mortas da primeira instrução dos blocos destino depois de cada b??l */
+/* `else return;` nos testes do bgm atual: um return alvo de desvio no meio da função faz o mwcc manter as cópias
+   mortas da 1ª instrução dos destinos depois de cada b??l, como o original; `score > 1` (não `>= 2`) dá o slti at */
 void dmgr_bgm_mood_update(void)
 {
     DmgrSeq *q = &dmgr.seq;
@@ -328,32 +327,30 @@ void dmgr_bgm_mood_update(void)
     }
     if (score < -1) {
         q->mood = 2;
-    } else if (score < 2) {
-        q->mood = 0;
-    } else {
+    } else if (score > 1) {
         q->mood = 1;
+    } else {
+        q->mood = 0;
     }
     if (duel_turn_player_get() == duel_view_player_get()) {
         if (score < -1) {
-            if (q->cur_bgm != q->bgm.a[1]) {
-                return;
-            }
-            id = q->bgm.a[0];
-        } else if (score < 2) {
-            id = q->bgm.a[0];
-        } else {
+            if (q->cur_bgm == q->bgm.a[1]) {
+                id = q->bgm.a[0];
+            } else return;
+        } else if (score > 1) {
             id = q->bgm.a[1];
+        } else {
+            id = q->bgm.a[0];
         }
     } else {
-        if (score >= 2) {
-            if (q->cur_bgm != q->bgm.a[2]) {
-                return;
-            }
-            id = q->bgm.a[0];
-        } else if (score >= -1) {
-            id = q->bgm.a[0];
-        } else {
+        if (score > 1) {
+            if (q->cur_bgm == q->bgm.a[2]) {
+                id = q->bgm.a[0];
+            } else return;
+        } else if (score < -1) {
             id = q->bgm.a[2];
+        } else {
+            id = q->bgm.a[0];
         }
     }
     if (id != q->cur_bgm) {
@@ -365,7 +362,6 @@ void dmgr_bgm_mood_update(void)
         dmgr_event_push(&ev);
     }
 }
-#endif
 
 int dmgr_mood_of(int p)
 {
@@ -432,7 +428,8 @@ void dmgr_cutin_show(int on)
     }
 }
 
-#ifdef NON_MATCHING /* cópias mortas depois dos b??l no original (lbu/lhu/sh repetidos), que o mwcc remove */
+/* o `return` depois do if (gs->kind != 2) {...} é alvo de desvio no meio da função: com ele o mwcc mantém as cópias
+   mortas depois dos b??l (lbu/lhu/sh repetidos) e os bgezl com o sh copiado, como o original */
 void dmgr_ev_start(int *args)
 {
     DmgrSeq *q = &dmgr.seq;
@@ -441,7 +438,6 @@ void dmgr_ev_start(int *args)
     DmgrEvent ev;
     int order[2];
     int shown;
-    int i;
     int t;
 
     frame_counter_reset();
@@ -454,13 +450,12 @@ void dmgr_ev_start(int *args)
     if (dmgr_cutins_off() != 0) {
         dmgr_cutin_show(0);
         dd_event_dispatch(args[0], args[1], args[2], args[3]);
-        if (gs->kind == 2) {
-            return;
+        if (gs->kind != 2) {
+            memset(&ev, 0, sizeof ev);
+            ev.type = 6;
+            ev.a = q->bgm.a[0];
+            dmgr_event_push(&ev);
         }
-        memset(&ev, 0, sizeof ev);
-        ev.type = 6;
-        ev.a = q->bgm.a[0];
-        dmgr_event_push(&ev);
         return;
     }
     switch (gs->partner_mode) {
@@ -486,19 +481,22 @@ void dmgr_ev_start(int *args)
         order[1] = t;
     }
     if (order[0] >= 0 || order[1] >= 0) {
+        int *o;
+        int i;
+
         shown = 0;
-        for (i = 0; i < 2; i++) {
-            if (order[i] >= 0) {
+        for (i = 0, o = order; i < 2; i++, o++) {
+            if (*o >= 0) {
                 if (shown == 0) {
                     dmgr_cutin_show(1);
-                    dd_voice_state(order[i], 1);
+                    dd_voice_state(*o, 1);
                     dd_voice_play(0, 0);
                     shown++;
                 } else {
                     memset(&ev, 0, sizeof ev);
                     ev.type = 1;
                     ev.b = 1;
-                    ev.a = order[i];
+                    ev.a = *o;
                     dmgr_event_push(&ev);
                     memset(&ev, 0, sizeof ev);
                     ev.type = 15;
@@ -521,15 +519,15 @@ void dmgr_ev_start(int *args)
     dmgr_event_push(&ev);
     memset(&ev, 0, sizeof ev);
     ev.type = 11;
-    if (order[0] >= 0) {
-        ev.a = order[0];
-    } else {
+    if (order[0] < 0) {
         ev.a = 4;
-    }
-    if (order[1] >= 0) {
-        ev.b = order[1];
     } else {
+        ev.a = order[0];
+    }
+    if (order[1] < 0) {
         ev.b = 4;
+    } else {
+        ev.b = order[1];
     }
     dmgr_event_push(&ev);
     memset(&ev, 0, sizeof ev);
@@ -540,7 +538,6 @@ void dmgr_ev_start(int *args)
         q->opening = 1;
     }
 }
-#endif
 
 void dmgr_ev_end(int *args)
 {
