@@ -1,5 +1,4 @@
 // @range 0x08804000-0x088052F8
-// @asm 0x08804C50-0x08804DC4
 // @rodata 0x0881C0E0-0x0881C0E8
 // @data 0x0881C2B8-0x0881C890
 /* Entry points of the shop (scene 7 and the exports used by libstory), its release, the resources
@@ -435,27 +434,28 @@ Model *shop_model_get(unsigned short id)
 /* ".gim": file extension of the pack pictures (the .iff names of the TMS are mapped to it) */
 char shop_gim_ext[] = ".gim";
 
-#ifdef NON_MATCHING /* o original mantém a linha da tabela em s0 e o índice já multiplicado por 4 em s1 até depois do ehp_find; o mwcc troca os dois registradores */
 /* texture for the texture slot `name` of a pack model: the box/pack pictures are numbered by pack */
 void *shop_box_tex_get(const char *name, int pack)
 {
     void *data = shop_pack_get(0x1001);
     int i;
+    void **row;
     char buf[128];
     char *ext;
 
     for (i = 0; i < 3; i++) {
         sprintf(buf, shop_box_names[i], 1);
         if (strcmp(buf, name) == 0) {
-            if (shop_box_tex[pack][i])
-                return shop_box_tex[pack][i];
+            if ((row = shop_box_tex[pack])[i])
+                return row[i];
             if (data == 0)
                 return 0;
             sprintf(buf, shop_box_names[i], pack);
             ext = strrchr_str(buf, '.');
             if (ext)
                 strcpy(ext, shop_gim_ext);
-            return shop_box_tex[pack][i] = ehp_find(data, buf, 0);
+            row += i;
+            return *row = ehp_find(data, buf, 0);
         }
     }
     if (data == 0)
@@ -466,7 +466,6 @@ void *shop_box_tex_get(const char *name, int pack)
         strcpy(ext, shop_gim_ext);
     return ehp_find(data, buf, 0);
 }
-#endif
 
 /* binds the textures of model `id` to the pictures of pack `pack` */
 void shop_model_set_box(unsigned short id, int pack)

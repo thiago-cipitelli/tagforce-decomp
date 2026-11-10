@@ -5,7 +5,6 @@ fuzzy	size	module	function	address	file
 97.9	928	BOOT	snd_obj_start	0x0885FE04	src/BOOT/snd_play.c
 97.6	1376	libduel_draw	dd_fx_eyes_update	0x0884A8C4	src/libduel_draw/dd_fx_eyes.c
 97.4	1104	BOOT	snd_obj_3d	0x0886205C	src/BOOT/snd_obj.c
-97.3	972	BOOT	deck_validate	0x0884CB1C	src/BOOT/card_db.c
 97.3	1232	BOOT	gfx_save_bmp	0x08834848	src/BOOT/gfx.c
 97.2	2292	libshop	shop_pack_open	0x0880AD08	src/libshop/shop_packs.c
 97.1	416	libduel_draw	func_08822520	0x08822520	src/libduel_draw/dd_action_menu.c
@@ -15,7 +14,6 @@ fuzzy	size	module	function	address	file
 96.7	856	libtitle	tpanel_draw_split	0x08811300	src/libtitle/t_panel.c
 96.5	552	libtitle	tfd_chr_copy_draw	0x088158B4	src/libtitle/t_fdnet.c
 96.4	1204	libduel_eng	duel_req_move_card	0x088D7604	src/libduel_eng/req_effect.c
-96.4	768	BOOT	snd_fx_apply	0x0885D948	src/BOOT/snd_out.c
 96.3	1080	libduel_draw	dd_fx_rock_spray	0x088513A4	src/libduel_draw/dd_fx_rock.c
 96.0	1372	libfield	fld_bg_loaded	0x08808214	src/libfield/f_bgdraw.c
 96.0	2948	libduel_draw	dd_orbs_update	0x088374E4	src/libduel_draw/dd_fx_orbs.c
@@ -38,7 +36,6 @@ fuzzy	size	module	function	address	file
 95.1	412	libduel_eng	duel_ai_0881D17C	0x0881D17C	src/libduel_eng/ai_cond0.c
 95.1	944	libduel_eng	duel_0880C15C	0x0880C15C	src/libduel_eng/ai_0880B448.c
 95.0	1612	liblimitlist	ll_draw_row	0x08806DC0	src/liblimitlist/ll_screen.c
-95.0	372	libshop	shop_box_tex_get	0x08804C50	src/libshop/shop_main.c
 95.0	688	libduel_eng	duel_0886981C	0x0886981C	src/libduel_eng/effects_08869190.c
 95.0	456	libduel_draw	func_088250E8	0x088250E8	src/libduel_draw/dd_msg_win.c
 94.8	1192	libduel_draw	dd_m1_update	0x0881D1B0	src/libduel_draw/dd_scene_mode.c
