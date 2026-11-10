@@ -23,7 +23,7 @@ typedef struct DdFxTally {             /* 0x54 */
 
 float *mat4_transform_vec4(FxVec4 *out, float *m, FxVec4 *v);
 void dd_mtx_mvp_cur(float *out);
-void dd_roll_number(float t, int x, int y, int from, int to);
+void dd_roll_number(int x, int y, int from, int to, float t);
 float dd_ease_sin_inv(int t, int n, int k);
 float dd_ease_cos_inv(int t, int n, int k);
 unsigned int *draw_set_offsets(unsigned int *list, int tw, int th, int w, int h);
@@ -116,7 +116,7 @@ int dd_fx_tally_update(int state, DdFxTally *fx)
     list = draw_set_offsets(l2, fx->w, fx->h, fx->w, fx->h);
     list = draw_sprite(list, fx->x, fx->y + dy, 0, fx->u, fx->v, 0, 0);
     dl_set_list(list);
-    dd_roll_number((float)fx->roll / 4.0f, x + fx->num_x, y + fx->num_y, fx->from, fx->to);
+    dd_roll_number(x + fx->num_x, y + fx->num_y, fx->from, fx->to, (float)fx->roll / 4.0f);
     if (fx->in < 8) {
         fx->in = dd_step_clamp(fx->in, step, 8);
     } else if (fx->wait < 4) {

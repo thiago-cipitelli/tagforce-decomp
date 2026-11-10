@@ -1,5 +1,4 @@
 // @range 0x08866074-0x088666D8
-// @asm 0x0886646C-0x088666D8
 /* "Declare a card name" list of the duel: every card that can be declared (all of them, the
    non-token ones, or only monsters, by effect kind 75..77), sorted by name, in a 10-row menu;
    left/right jump to the previous/next initial, R + up/down move nine rows. */
@@ -151,44 +150,33 @@ int declare_cmp(const void *a, const void *b)
     return sa - card_get_sort(ib);
 }
 
-#ifdef NON_MATCHING /* o original mantém pos * 4 num registrador salvo a mais (s5 em vez de s4) */
 int declare_update(void)
 {
     DeclareList *d = declare_list;
     PadState *pad;
     int pos, cur, step, moved;
-    int *p;
 
     if (dd_input_on()) {
         d->result = menu_update(d->menu);
         if (d->menu->state == 3) {
             pad = dd_pad();
             pos = d->menu->scroll + d->menu->cursor;
-            p = &d->ids[pos];
-            cur = card_get_sort_position(*p);
+            cur = card_get_sort_position(d->ids[pos]);
             moved = 0;
             if (pad->b.rep & 0x80) {
-                if (pos <= 0)
-                    step = 1;
-                else if (card_get_sort_position(*p) == card_get_sort_position(p[-1]))
-                    step = 1;
-                else
+                if (pos > 0 && card_get_sort_position(d->ids[pos]) != card_get_sort_position(d->ids[pos - 1]))
                     step = 2;
+                else
+                    step = 1;
                 cur -= step;
-                while (pos > 0 && card_get_sort_position(*p) != cur) {
-                    p--;
+                while (pos > 0 && card_get_sort_position(d->ids[pos]) != cur)
                     pos--;
-                }
                 if (card_get_sort_position(d->ids[pos]) == cur)
                     pos++;
                 moved = 1;
             } else if (pad->b.rep & 0x20) {
-                while (pos < d->count - 1) {
-                    if (card_get_sort_position(*p) != cur)
-                        break;
-                    p++;
+                while (pos < d->count - 1 && card_get_sort_position(d->ids[pos]) == cur)
                     pos++;
-                }
                 moved = 1;
             } else if ((pad->b.down & 0x200) && (pad->b.rep & 0x10)) {
                 pos -= 9;
@@ -212,6 +200,5 @@ int declare_update(void)
             }
         }
     }
-    return func_08825728() == 0;
+    return !func_08825728();
 }
-#endif

@@ -1,5 +1,4 @@
 // @range 0x08857100-0x08858224
-// @asm 0x0885731C-0x08857614
 // @rodata 0x08870D3C-0x08870DF0
 // @data 0x08877850-0x08877878
 /* LP counting object of the duel (continues dd_lp_panel.c): draws the panel with the five
@@ -59,7 +58,7 @@ int lp_heart_uv[3][2] = { { 184, 0 }, { 184, 16 }, { 184, 32 } };
 void *dd_lp_begin_2d(void *dl, int x, int y);
 void *dd_lp_frame(void *dl, int x, int y);
 void *dd_lp_end_2d(void *dl);
-void dd_lp_rect(float x, float y, float z, float w, float h, void *v, int tx, int ty, int tw, int th, int texw,
+void dd_lp_rect(void *v, float x, float y, float z, float w, float h, int tx, int ty, int tw, int th, int texw,
                    int texh, unsigned int color);
 int dd_task_remove_cur(void);
 int dd_free(void *p);
@@ -136,37 +135,40 @@ void *lpc_back(void *dl, DdLpCount *c)
     return draw_sprite(dl, c->sx + 15, c->sy + 10, 0, 0, 68, 0, 0);
 }
 
-#ifdef NON_MATCHING /* lpc_drum: 179 palavras (alocação e ordem das contas de ponto flutuante) */
 /* drum of digit i: the current face, and the next one turned by t half a turn */
 void *lpc_drum(void *dl, LpDigit *d, int i)
 {
     void *cur = 0;
     void *next = 0;
-    ChrVec4 pos;
-    DdMat4 rot2, mv, view, rot, m;
+    const int *uv;
+    DdMat4 m, view, rot, rot2, mv;
+    DdVec4A pos;
 
     if (d->cur != -1) {
+        uv = lp_digit3d_uv[d->cur];
         cur = dl_alloc_inline(&dl, 0x60);
-        dd_lp_rect(0.0f, 0.0f, 0.0f, 0.3f, 0.5f, cur, lp_digit3d_uv[d->cur][0], lp_digit3d_uv[d->cur][1], 24,
-                      34, 128, 128, 0xFFFFFFFF);
+        dd_lp_rect(cur, 0.0f, 0.0f, 0.0f, 0.3f, 0.5f, uv[0], uv[1], 24, 34, 128, 128, 0xFFFFFFFF);
     }
     if (d->next != -1) {
+        uv = lp_digit3d_uv[d->next];
         next = dl_alloc_inline(&dl, 0x60);
-        dd_lp_rect(0.0f, 0.0f, 0.0f, 0.3f, 0.5f, next, lp_digit3d_uv[d->next][0], lp_digit3d_uv[d->next][1],
-                      24, 34, 128, 128, 0xFFFFFFFF);
+        dd_lp_rect(next, 0.0f, 0.0f, 0.0f, 0.3f, 0.5f, uv[0], uv[1], 24, 34, 128, 128, 0xFFFFFFFF);
     }
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    pos = *(ChrVec4 *)lp_drum_pos;
+    pos = *(DdVec4A *)lp_drum_pos;
     pos.x = (float)(5 - i) * 0.3f + -3.4f;
     mat4_identity(&rot);
     mat4_mul_rot_x(&rot, &rot, d->t * 3.1415927f);
     mtx_set_mode(1);
     mtx_get34(&view);
     mat4_inverse_ortho(&view, &view);
+    view.m[12] = 0.0f;
+    view.m[13] = 0.0f;
+    view.m[14] = 0.0f;
     mat4_identity(&mv);
-    mat4_translate(&mv, &mv, &pos);
+    mat4_translate(&mv, &mv, (ChrVec4 *)&pos);
     mat4_identity(&m);
     mat4_mul(&m, &m, &mv);
     mat4_mul(&m, &m, &view);
@@ -185,9 +187,6 @@ void *lpc_drum(void *dl, LpDigit *d, int i)
     mtx_pop();
     return dl;
 }
-#else
-void *lpc_drum(void *dl, LpDigit *d, int i);
-#endif
 
 /* 2D panel: background, damage effect (ehf frame by the LP left), two bars and the heart */
 typedef struct { int v[3][2]; } LpHeartUv;

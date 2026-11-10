@@ -1,5 +1,4 @@
 // @range 0x08819C04-0x0881CA2C
-// @asm 0x0881ABD8-0x0881AFC0
 // @data 0x08875E60-0x08875F84
 // @rodata 0x0887015C-0x08870180
 /* The card list window of prompts (choose N cards out of a list: deck search, graveyard, ...):
@@ -538,23 +537,22 @@ void *dd_sel_draw_item(void *dl, int i, int x, int y)
 }
 
 /* sort and filter bar, scroll bar and the OK button */
-#ifdef NON_MATCHING /* forma reconstruída; alocação/ordem de blocos diferente */
 void *dd_sel_draw_after(void *dl, int x0, int y0, int w0, int h0)
 {
     DdSel *s = &dd_sel;
+    MenuItemDef *d = &s->list.def;
     unsigned int *list;
-    int x = s->list.def.x + s->list.def.pad_l;
-    int y = menu_cursor_y(&s->list.menu, &s->list.def);
-    int w = s->list.def.w;
-    int cx = w - 9;
+    int x = d->x + d->pad_l + 4;       /* left edge of the list + 4 */
+    int y = menu_cursor_y(&s->list.menu, d);
+    int cx = d->w - 9;
     unsigned short *t = dd_text(0x2D);
     void *gim;
-    int px, bw, pos, size, tw, n;
+    int px, bw, pos, size, tw, n, bx, by;
 
     font_text_set(dl);
     font_set_size(0xC, 0xC);
     font_set_color(0xFF000000);
-    font_draw_text((x + 8) << 6, (y + 2) << 6, 0x3C40, t);
+    font_draw_text((x + 4) << 6, (y + 2) << 6, 0x3C40, t);
     list = font_text_clear();
     px = font_get_cursor_x() >> 6;
     gim = dd_gim_get(0x40005);
@@ -568,46 +566,54 @@ void *dd_sel_draw_after(void *dl, int x0, int y0, int w0, int h0)
         font_text_set(list);
         font_draw_text((px + 0x35) << 6, (y + 2) << 6, (0x1E0 - (px + 0x35)) << 6, t);
         list = font_text_clear();
-        px = font_get_cursor_x();
+        px = font_get_cursor_x() >> 6;
         gim = dd_gim_get(0x40006);
         if (gim != 0)
             list = gim_set_texture(list, gim);
         list = dl_ambient_color(list, 0xFFFFFFFF);
-        list = dd_sel_draw_filter_icon(list, (px >> 6) + 0xC, y - 1, s->filter);
+        list = dd_sel_draw_filter_icon(list, px + 0xC, y - 1, s->filter);
     }
     n = s->list.count;
-    bw = w - 0x27;
-    if (n == 0) {
+    bw = cx - 30;
+    bx = x + 5;
+    by = y + 0x9E;
+    /* the scroll bar under the list, between its two arrows */
+    if (n == 0)
         pos = 0;
-        size = bw;
-    } else {
+    else
         pos = s->list.scroll * bw / n;
+    if (n == 0)
+        size = bw;
+    else
         size = s->list.rows * bw / n;
-    }
     gim = dd_gim_get(0x40004);
     if (gim != 0)
         list = gim_set_texture(list, gim);
-    list = card_draw_glow(list, x + 9, y + 0x9E, 1, gfx_get_state()[1], pos > 0);
-    list = cardlist_draw_bar(list, x + 0x13, y + 0x9E, bw, pos, size);
-    list = card_draw_glow(list, x + 0x13 + bw, y + 0x9E, 0, gfx_get_state()[1], s->list.scroll < s->list.count - s->list.rows);
-    cx = x + 4 + cx / 2;
-    font_set_size(0xC, 0xC);
-    if (s->min == 0 && s->max == 0)
-        t = dd_text(0x31);
-    else
-        t = dd_text(0x16);
-    tw = (font_measure_text(t) >> 6) + 2;
-    list = menu_draw_button(list, &s->list, cx - 0x1E, y + 0xA8, 0, s->done != 0);
-    font_set_size(0xC, 0xC);
-    if (dd_sel_can_accept() != 0)
-        font_set_color(0xFF000000);
-    else
-        font_set_color(0xFF808080);
-    font_text_set(list);
-    font_draw_text((cx - tw / 2) << 6, (y + 0xAF) << 6, tw << 6, t);
+    list = card_draw_glow(list, bx, by, 1, gfx_get_state()[1], pos > 0);
+    bx += 10;
+    list = cardlist_draw_bar(list, bx, by, bw, pos, size);
+    bx += bw;
+    list = card_draw_glow(list, bx, by, 0, gfx_get_state()[1], s->list.scroll < s->list.count - s->list.rows);
+    cx = x + cx / 2;
+    {
+        int ty = y + 0xAE;
+        font_set_size(0xC, 0xC);
+        if (s->min == 0 && s->max == 0)
+            t = dd_text(0x31);
+        else
+            t = dd_text(0x16);
+        tw = (font_measure_text(t) >> 6) + 2;
+        list = menu_draw_button(list, &s->list, cx - 0x1E, ty - 6, 0, s->done != 0);
+        font_set_size(0xC, 0xC);
+        if (dd_sel_can_accept() != 0)
+            font_set_color(0xFF000000);
+        else
+            font_set_color(0xFF808080);
+        font_text_set(list);
+        font_draw_text((cx - tw / 2) << 6, (ty + 1) << 6, tw << 6, t);
+    }
     return font_text_clear();
 }
-#endif
 
 void dd_sel_show(int i)
 {

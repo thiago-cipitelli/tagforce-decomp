@@ -1433,3 +1433,45 @@ Bateram `scal_period_a`/`scal_period_b` (libstory), `tpt_flip` (libtitle) = `dmg
 - Sem forma (lista para `matching_skip`): `fclk_list_item`, `fld_hud_name_init` (o original guarda `&global`
   num `$s` no início mesmo com um só uso; casts, `register`, ordem e inline não seguram); `fld_sys_init` (laço de 25
   desenrolado x8 com resto no original, x5 aqui); `snd_output`, `dl_tex_image` (escalonamento).
+
+## Rodada 18 (`drawL`: libduel_draw, funções 68-85% nunca tentadas)
+
+Bateram `dd_lp_rect`, `dd_chr_init`, `dd_rand_dir`, `declare_update`, `dd_ev_49`, `func_088215A0`, `dd_zone_sync`,
+`lpc_drum`, `dd_face_panel`, `dd_lp_shine`, `dd_roll_number`, `dd_sel_draw_after`, `dd_wline_draw`,
+`dd_fx_coinfly_update`. `dd_zone_rebuild` 173 -> 24. Idiomas novos:
+- **Ordem dos `mtc1`/`a0` de uma chamada ou do prólogo diz a posição do parâmetro float**: com EABI os int e os
+  float têm registradores independentes, então mover o float de lugar no protótipo não muda o ABI, mas muda a ordem
+  de avaliação. `move a0` antes dos `mov.s` → o ponteiro vem antes dos floats (`dd_lp_rect(v, x, y, ...)`); `mov.s
+  $f20,$f12` depois dos `move s*,a*` no prólogo → o float é o último parâmetro (`dd_roll_number(x, y, from, to, t)`,
+  `dd_roll_digit(..., t)`). Mudar definição e todos os chamadores juntos (os que já batiam continuam batendo).
+- **Pilha: o último declarado fica embaixo**, mas tipos `aligned(16)` (`FxVec4`, `DdVec4A`, `DdMat4`) vão para o
+  fundo antes dos outros: um vetor que o original põe embaixo das matrizes precisa ser `DdVec4A`, não `ChrVec4`.
+- **`x + 0.0f` e `0 + x` são dobrados**; o original tinha uma variável float zerada (`oy = 0.0f; ... oy + a[1]`,
+  `dd_wline_draw`) que dá o `mtc1 zero; add.s`.
+- **Constante somada que o mwcc dobra** (`y += 174; ... y - 6` vira `y + 168`): `{ int ty = y + 174; ... }` num
+  bloco mantém o `addiu s1,s1,174` (`dd_sel_draw_after`).
+- **`if (c) v = 1; else v = 0;` sai como `sltiu`**; o `beq; move v,zero; b; li v,1` do original é
+  `v = 0; switch (id) { case 6: v = 1; break; }` (`dd_ev_49`). `n = n < 9 ? n : 0` dá `beqzl at; move n,zero`
+  onde `if (n > 8) n = 0` dá `bnezl` (`dd_lp_shine`).
+- **Laço de busca com `beq` no topo e `bnel ...; lw` no fim** é `do { if (o->uid == uid) break; ... } while ((o =
+  o->next) != head);` (`dd_zone_sync`, `dd_zone_rebuild`); o draft com `for (...; p->uid != uid; p = p->next)` e
+  `if (p == head) break` testava head antes de avançar (lógica diferente).
+- **Corpo duplicado nos dois ramos** (link da lista no alloc e no unlink): o mwcc não duplica cauda; escrever o
+  código nos dois ramos (`dd_zone_sync`).
+- **Cadeia `beql x,K1; ...; beql x,K2; ...; b fim` dentro de um `case`** é outro `switch` aninhado, com os `case` na
+  ordem inversa dos testes (`dd_wline_draw`).
+- **Índice de dois vetores com o mesmo deslocamento** (`lw 80(t0)`, `lw 72(t0)` com `t0 = f * 4 + sp`): eram dois
+  vetores (`offx[2]`, `offy[2]`), não `off[f + 2]`/`off[f]` de um só (`dd_face_panel`).
+- **`&tab[i]` guardado num `$s` antes de uma chamada** (`s0 = lp_digit3d_uv + cur * 8` antes do `dl_alloc_inline`):
+  ponteiro local atribuído antes da chamada (`lpc_drum`). Ao contrário, quando o original recalcula
+  `d->ids[pos]` sem ponteiro, tirar o ponteiro do draft (`declare_update`).
+- **Template local de função ainda em asm dentro do `@data`**: um `.c` só tem um `@data`; quando o template de
+  outra função (em asm) fica no meio, defini-lo em C com o nome que o asm usa (`float D_088777F0[3]`, não-zero para
+  não ir ao `.bss`) e os outros rótulos como `type:data alias` em `symbols/` (`dd_lp_panel.c`).
+- **Bugs de lógica achados**: `lpc_drum` não zerava a translação da view (`view.m[12..14] = 0`);
+  `dd_fx_coinfly_update` passava 40.0f em vez de `grow / 8` ao `vec3_lerp_w`; `dd_zone_sync` (acima).
+- **Abertos**: `dd_zone_rebuild` (24 palavras: escalonamento do unlink/add_tail inline; a zona carregada depois de
+  `o->next`/`o->prev` no original; `uid` `unsigned short` acertou os `$s`); `dd_cobj_find` (4: likely trocado entre
+  o primeiro teste e o laço, do/while e `goto` testados); `ui_scrollbar` (52: ordem max/thumb/frac e
+  atribuição antecipada de top/bottom testadas, nenhuma muda a permutação dos `$s`); `dd_face` (74: `$s` de
+  id/size/x0/y0 e `big / 2` recalculado duas vezes no original).

@@ -1,6 +1,8 @@
 // @range 0x0880A8E0-0x0880C48C
 // @data 0x08874BB0-0x08874E10
-// @asm 0x0880B834-0x0880C48C
+// @asm 0x0880B834-0x0880B890
+// @asm 0x0880BB70-0x0880BEB0
+// @asm 0x0880BEB0-0x0880C48C
 /* Where a card sits on the field: position and rotation of each zone (by player, face up, defense
    position, stack height), the lookups in the zone lists and the rebuild of the lists from the
    duel engine (card uids) after the engine moves cards around. */
@@ -144,12 +146,12 @@ DdCobj *dd_cobj_find(int player, int zone, int uid)
 }
 #endif
 
-#ifdef NON_MATCHING /* laços de busca e campos de bits; não reproduzido */
 void dd_zone_rebuild(int player, int keep);
 
 /* matches the objects of a pile (deck, extra, graveyard...) with the engine's list of uids */
 void dd_zone_sync(int player, int zone)
 {
+    DdCobjs *b = &dd_cobjs;
     DdUidFn uid_of;
     int n;
     DdCobj *head;
@@ -157,15 +159,15 @@ void dd_zone_sync(int player, int zone)
     DdCobj *p = 0;
     int i;
     int uid;
-    unsigned short id;
+    int id;
 
     switch (zone) {
-    case 15: uid_of = dv_zone_f_uid; n = dv_n_f(player); break;
-    case 11: uid_of = dv_hand_uid; n = dv_n_hand(player); break;
-    case 14: uid_of = dv_grave_uid; n = dv_n_grave(player); break;
-    case 12: uid_of = dv_zone_c_uid; n = dv_n_18(player); break;
-    case 13: uid_of = dv_zone_d_uid; n = dv_n_d(player); break;
     default: return;
+    case 13: uid_of = dv_zone_d_uid; n = dv_n_d(player); break;
+    case 12: uid_of = dv_zone_c_uid; n = dv_n_18(player); break;
+    case 14: uid_of = dv_grave_uid; n = dv_n_grave(player); break;
+    case 11: uid_of = dv_hand_uid; n = dv_n_hand(player); break;
+    case 15: uid_of = dv_zone_f_uid; n = dv_n_f(player); break;
     }
     head = dd_zone_list(player, zone);
     o = head->next;
@@ -182,17 +184,18 @@ void dd_zone_sync(int player, int zone)
                 o = o->next;
                 continue;
             }
-            for (p = o->next; p->uid != uid; p = p->next) {
+            p = o->next;
+            do {
+                if (p->uid == uid)
+                    break;
                 if (p->uid == 0 && p->card == id) {
                     p->uid = uid;
                     break;
                 }
-                if (p == head)
-                    break;
-            }
+            } while ((p = p->next) != head);
         }
         if (o == head || p == head) {
-            if (dd_cobjs.sync == 0) {
+            if (b->sync == 0) {
                 dd_zone_rebuild(player, 0);
                 return;
             }
@@ -203,13 +206,17 @@ void dd_zone_sync(int player, int zone)
             p->home.player = player;
             p->home.zone = zone;
             p->home.idx = i;
+            p->prev = o->prev;
+            p->next = o;
+            p->prev->next = p;
+            p->next->prev = p;
         } else {
             dd_list_unlink(p, head);
+            p->prev = o->prev;
+            p->next = o;
+            p->prev->next = p;
+            p->next->prev = p;
         }
-        p->prev = o->prev;
-        p->next = o;
-        p->prev->next = p;
-        p->next->prev = p;
     }
     if (o != head)
         dd_zone_rebuild(player, 0);
@@ -217,62 +224,80 @@ void dd_zone_sync(int player, int zone)
 
 extern int dd_pile_zones[5];           /* 0x08874E10 13, 12, 11, 14, 15 */
 
-/* rebuilds the piles of a player from the engine's lists, reusing the objects by uid */
+#ifdef NON_MATCHING /* 24 palavras: escalonamento do unlink/add_tail inline (a zona carregada depois de o->next/o->prev) */
+/* rebuilds the piles of a player from the engine's lists, reusing the objects by uid; the unlink and
+   add_tail are inline here. Reads tmp.uid when every pile was empty (as the original). */
 void dd_zone_rebuild(int player, int redraw)
 {
     DdCobj tmp;
     int k;
-    DdCobj *head;
-    DdCobj *o;
+    DdCobj *last;
     DdUidFn uid_of;
     int n;
     int i;
-    int uid;
-    unsigned short id;
+    DdCobj *o;
+    unsigned short uid;
+    int id;
     int zone;
 
-    tmp.prev = tmp.next = &tmp;
+    tmp.next = tmp.prev = &tmp;
     for (k = 0; k < 5; k++) {
-        head = dd_zone_list(player, dd_pile_zones[k]);
-        if (head->next != head) {
-            head->prev->next = &tmp;
-            head->next->prev = tmp.prev;
-            tmp.prev->next = head->next;
-            tmp.prev = head->prev;
-            head->prev = head->next = head;
+        DdCobj *h = dd_zone_list(player, dd_pile_zones[k]);
+        DdCobj *first = h->next;
+        if (first != h) {
+            last = h->prev;
+            h->next = h->prev = h;
+            last->next = &tmp;
+            first->prev = tmp.prev;
+            tmp.prev->next = first;
+            tmp.prev = last;
         }
     }
     for (k = 0; k < 5; k++) {
-        zone = dd_pile_zones[k];
-        switch (zone) {
-        case 15: uid_of = dv_zone_f_uid; n = dv_n_f(player); break;
-        case 14: uid_of = dv_grave_uid; n = dv_n_grave(player); break;
-        case 11: uid_of = dv_hand_uid; n = dv_n_hand(player); break;
-        case 12: uid_of = dv_zone_c_uid; n = dv_n_18(player); break;
+        switch (dd_pile_zones[k]) {
         case 13: uid_of = dv_zone_d_uid; n = dv_n_d(player); break;
+        case 12: uid_of = dv_zone_c_uid; n = dv_n_18(player); break;
+        case 11: uid_of = dv_hand_uid; n = dv_n_hand(player); break;
+        case 14: uid_of = dv_grave_uid; n = dv_n_grave(player); break;
+        case 15: uid_of = dv_zone_f_uid; n = dv_n_f(player); break;
         default: continue;
         }
-        head = dd_zone_list(player, zone);
+        {
+        DdCobj *head = dd_zone_list(player, dd_pile_zones[k]);
         for (i = 0; i < n; i++) {
-            uid = uid_of(player, i) & 0xFFFF;
+            uid = uid_of(player, i);
             id = dv_list_id(uid);
-            for (o = tmp.next; o != &tmp && o->uid != uid; o = o->next) {
+            o = tmp.next;
+            do {
+                if (o->uid == uid)
+                    break;
                 if (o->uid == 0 && o->card == id) {
                     o->uid = uid;
                     break;
                 }
-            }
+            } while ((o = o->next) != &tmp);
             if (o == &tmp)
                 continue;
-            dd_list_unlink(o, &tmp);
-            dd_list_add_tail(o, head);
+            o->prev->next = o->next;
+            o->next->prev = o->prev;
+            o->prev = o->next = 0;
+            zone = dd_pile_zones[k];
+            o->prev = head->prev;
+            o->next = head;
+            o->prev->next = o;
+            o->next->prev = o;
             o->home.zone = zone;
             o->home.idx = i;
             o->loc.zone = zone;
             o->loc.idx = i;
-            if (zone == 11)
-                o->b3 = dv_zone_faceup(player, 11, i) != 0;
+            if (zone == 11) {
+                if (dv_zone_faceup(player, 11, i))
+                    o->b3 = 1;
+                else
+                    o->b3 = 0;
+            }
         }
+    }
     }
     if (redraw) {
         if (player == 0)
@@ -281,7 +306,9 @@ void dd_zone_rebuild(int player, int redraw)
             dd_hand_layout1(0, 1);
     }
 }
+#endif
 
+#ifdef NON_MATCHING /* dd_cobjs_rebuild: não reproduzido */
 /* builds every card object from the engine's state (after a load) */
 void dd_cobjs_rebuild(void)
 {

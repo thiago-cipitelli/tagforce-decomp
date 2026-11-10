@@ -24,7 +24,7 @@ typedef struct DdFxLpJump {            /* 0x50 */
 } DdFxLpJump;
 
 int int_abs(int x);
-void dd_roll_digit(float t, int layer, int x, int y, int digit, int down);
+void dd_roll_digit(int layer, int x, int y, int digit, int down, float t);
 
 int dd_fx_lpjump_update(int state, DdFxLpJump *fx);
 
@@ -68,7 +68,7 @@ float dd_fx_lpjump_digit(float ang, int digit, int i, int x, int y)
         a = 0.0f;
     else if (a > 3.1415927f)
         a = 3.1415927f;
-    dd_roll_digit(1.0f, 6, x, y + (int)(-11.0f * sinf(a)), digit, 1);
+    dd_roll_digit(6, x, y + (int)(-11.0f * sinf(a)), digit, 1, 1.0f);
     return a;
 }
 

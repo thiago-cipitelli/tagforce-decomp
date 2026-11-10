@@ -1,6 +1,5 @@
 // @range 0x0881351C-0x088143A4
 // @data 0x0887541C-0x088755B8
-// @asm 0x08813554-0x08813684
 // @asm 0x08813D8C-0x08813F1C
 /* Duel characters (partner/rival model from the cut-in pack): setup and free, the model with its
    animations (gzip'd TGMT), the voice track, the per-frame animation and draw, bone matrices for
@@ -97,22 +96,24 @@ typedef struct DdChrDesc {             /* the first 13 words of DdChr, copied fr
     int w[13];
 } DdChrDesc;
 
-#ifdef NON_MATCHING /* ~51 palavras: o original reusa o registrador de voice para pack e põe voice=1 por bgezl; if/else e ponteiro único testados */
 /* takes the description (13 words) and the voice and word tables of the cut-in pack */
 void dd_chr_init(DdChr *c, DdChr *desc)
 {
     int voice;
+    void *cut;
     void *pack;
 
     memset(c, 0, sizeof(DdChr));
     *(DdChrDesc *)c = *(DdChrDesc *)desc;
-    if (charmap_lookup(c->chr, 0) >= 0)
+    if (charmap_lookup(c->chr, 0) >= 0 || (c->chr == 0x12 && c->sub == 2))
         voice = 1;
     else
-        voice = (c->chr == 0x12 && c->sub == 2) ? 1 : 0;
-    pack = dd_cutin_get(c->chr, c->sub);
+        voice = 0;
+    cut = dd_cutin_get(c->chr, c->sub);
     if (voice)
-        pack = ehp_find(pack, dd_chr_s_voice, 0);
+        pack = ehp_find(cut, dd_chr_s_voice, 0);
+    else
+        pack = cut;
     if (c->voice_tbl == 0)
         c->voice_tbl = ehp_find(pack, dd_chr_s_voiceid, 0);
     if (c->words == 0)
@@ -122,7 +123,6 @@ void dd_chr_init(DdChr *c, DdChr *desc)
     c->time = 0.0f;
     c->buf = 0;
 }
-#endif
 
 /* loads the model; the duel academy students take their face texture from the pack */
 void dd_chr_load(DdChr *c)

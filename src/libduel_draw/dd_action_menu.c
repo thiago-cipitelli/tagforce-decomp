@@ -1,5 +1,4 @@
 // @range 0x08820F88-0x08822B0C
-// @asm 0x088215A0-0x08821868
 // @asm 0x0882228C-0x08822520
 // @asm 0x08822520-0x088226C0
 // @data 0x08876110-0x08876200
@@ -279,14 +278,13 @@ void func_08821460(void)
         m->n = 32;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 /* places the window above the card on screen, its tab pointing at the card */
 void func_088215A0(void)
 {
     DdActMenu *m = &dd_act_menu;
-    FxMat4 model, view, proj, mvp;
-    FxVec4 rot, scr, pos;
     DdLoc loc;
+    FxVec4 pos, scr, rot;
+    FxMat4 mvp, proj, view, model;
     DdCobj *o;
     MenuItemDef *d;
 
@@ -294,11 +292,11 @@ void func_088215A0(void)
         return;
     m->src.get(&loc);
     o = dd_cobj_at(loc.player, loc.zone, loc.idx);
-    if (o != 0 && loc.zone == 11) {
+    if (o == 0 || loc.zone != 11) {
+        dd_slot_xform(&pos.x, &rot.x, loc);
+    } else {
         pos = *(FxVec4 *)&o->pos;
         rot = *(FxVec4 *)&o->rot;
-    } else {
-        dd_slot_xform(&pos.x, &rot.x, loc);
     }
     mtx_set_mode(2);
     mtx_get34(proj.m);
@@ -333,7 +331,6 @@ void func_088215A0(void)
     if (d->tab_x > d->w - 4)
         d->tab_x = d->w - 4;
 }
-#endif
 
 /* close hook: does the chosen action */
 void func_08821868(void)

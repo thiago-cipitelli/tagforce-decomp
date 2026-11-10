@@ -1,6 +1,6 @@
 // @range 0x0881299C-0x0881351C
 // @data 0x08875104-0x0887541C
-// @asm 0x0881299C-0x08812F60
+// @asm 0x08812C94-0x08812F60
 /* Portraits of the duelists on the LP panel: the frame, the cut-in face (kao.gim/karada.gim of
    the character's cut-in pack) or the icon of the character, the blinking turn marker, the
    pad button icon; the sprite table of duel_thing01.gim used by the panel. */
@@ -38,48 +38,58 @@ void *dd_face_frame(void *list, int x, int y, int w, int h, int side);
 void *dd_face_blink(void *list, int side);
 void *dd_button_icon(void *list, int x, int y);
 
-#ifdef NON_MATCHING /* funções de desenho; forma não reproduzida */
 /* portrait(s) of side `side` at x, y (two in a tag duel, sliding when they swap) */
 void *dd_face_panel(void *list, int x, int y, int side)
 {
     DdInt8 pos = dd_face_pos;
     int turn;
     int chr[2];
+    int offx[2];
+    int offy[2];
     float k[2];
-    int off[4];
     unsigned int front[2];
     float sw;
     int i;
-    int f;
+    int id;
 
     if (side == 0)
-        turn = dd_input_player() == 0;
+        turn = !dd_input_player();
     else
         turn = dd_input_player();
-    if (dd_view_tag_get() == 0)
-        return dd_face(0.0f, list, x + pos.v[side * 4 + 0], y + pos.v[side * 4 + 1], side,
-                       dd_cobjs_map_get(side), turn);
-    sw = sel_progress_total(side);
-    front[1] = sw < 0.5f;
-    front[0] = sw >= 0.5f;
-    chr[0] = dd_cobjs_map_get(side);
-    chr[1] = dd_cobjs_map_other(side);
-    k[0] = sel_progress(side) / 2.0f;
-    k[1] = 1.0f - k[0];
-    off[2] = (int)(k[0] * (float)pos.v[side * 4 + 2] + k[1] * (float)pos.v[side * 4 + 0] + 0.999f);
-    off[3] = (int)(k[1] * (float)pos.v[side * 4 + 2] + k[0] * (float)pos.v[side * 4 + 0] + 0.999f);
-    off[0] = (int)(k[0] * (float)pos.v[side * 4 + 3] + k[1] * (float)pos.v[side * 4 + 1] + 0.999f);
-    off[1] = (int)(k[1] * (float)pos.v[side * 4 + 3] + k[0] * (float)pos.v[side * 4 + 1] + 0.999f);
-    for (i = 0; i < 2; i++) {
-        if (front[i] == 0 || dd_view_tag_get()) {
-            f = front[i];
-            list = dd_face(k[f], list, x + off[f + 2], y + off[f], side, chr[f],
-                           i == 0 && turn && sw == 0.0f);
+    if (dd_view_tag_get() == 0) {
+        id = dd_cobjs_map_get(side);
+        x += pos.v[side * 4];
+        y += pos.v[side * 4 + 1];
+        list = dd_face(0.0f, list, x, y, side, id, turn);
+    } else {
+        sw = sel_progress_total(side);
+        if (sw < 0.5f) {
+            front[0] = 0;
+            front[1] = 1;
+        } else {
+            front[1] = 0;
+            front[0] = 1;
+        }
+        chr[0] = dd_cobjs_map_get(side);
+        chr[1] = dd_cobjs_map_other(side);
+        k[0] = sel_progress(side) / 2.0f;
+        k[1] = 1.0f - k[0];
+        offx[0] = (int)(k[0] * (float)pos.v[side * 4 + 2] + k[1] * (float)pos.v[side * 4 + 0] + 0.999f);
+        offx[1] = (int)(k[1] * (float)pos.v[side * 4 + 2] + k[0] * (float)pos.v[side * 4 + 0] + 0.999f);
+        offy[0] = (int)(k[0] * (float)pos.v[side * 4 + 3] + k[1] * (float)pos.v[side * 4 + 1] + 0.999f);
+        offy[1] = (int)(k[1] * (float)pos.v[side * 4 + 3] + k[0] * (float)pos.v[side * 4 + 1] + 0.999f);
+        for (i = 0; i < 2; i++) {
+            if (front[i] == 0 || dd_view_tag_get()) {
+                list = dd_face(k[front[i]], list, x + offx[front[i]], y + offy[front[i]], side, chr[front[i]],
+                               i == 0 && turn && sw == 0.0f);
+            }
         }
     }
     return list;
 }
 
+
+#ifdef NON_MATCHING /* dd_face: não reproduzido */
 /* one portrait of size 27..47 (k: 0 big, 1 small) */
 void *dd_face(float k, void *list, int x, int y, int side, int chr, int turn)
 {

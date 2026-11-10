@@ -1,5 +1,4 @@
 // @range 0x08835364-0x088357B0
-// @asm 0x088353D8-0x088357B0
 // @data 0x08876B10-0x08876B30
 /* The coin of the toss model flying in from one side of the field, spinning while it grows, then
    playing its spin animation with random clinks before shrinking away. */
@@ -57,17 +56,13 @@ int dd_fx_coinfly_start(int side, int height, DdTaskTermFn term, void *arg)
     return id;
 }
 
-/* templates of the locals of dd_fx_coinfly_update (kept in asm) */
-FxVec4 dd_fx_coinfly_from1 = { 315.0f, 0.0f, 240.0f, 1.0f };
-FxVec4 dd_fx_coinfly_from2 = { -315.0f, 0.0f, -240.0f, 1.0f };
-
-#ifdef NON_MATCHING /* ramos da máquina de estados e alocação (forma próxima) */
+/* grows in from its side, spins (with clinks when it lands flat) and shrinks away */
 int dd_fx_coinfly_update(int state, DdFxCoinFly *fx)
 {
     float speed = dd_anim_speed();
     FxVec4 p;
-    float g, rot, h, s;
-    int spinning = 0;
+    float t, rot, h, s;
+    int spinning;
 
     if (state == 1) {
         if (fx->side == 1) {
@@ -85,13 +80,14 @@ int dd_fx_coinfly_update(int state, DdFxCoinFly *fx)
         }
         fx->draw.layer[0] = 4;
         fx->draw.layer[1] = 4;
-        fx->anim[0] = speed * 2.0f;
+        fx->anim[0] = 2.0f * speed;
         fx->anim[1] = 0.0f;
         fx->anim[2] = 0.0f;
         fx->anim[3] = 0.0f;
         fx->model = dd_model_get(0x10020);
         dd_model_rewind(fx->model);
     }
+    spinning = 0;
     switch (fx->phase) {
     case 0:
         fx->grow += speed;
@@ -101,11 +97,7 @@ int dd_fx_coinfly_update(int state, DdFxCoinFly *fx)
         }
         break;
     case 1:
-        if (fx->height < 2) {
-            fx->frame += speed;
-            if (fx->frame >= 60.0f)
-                fx->phase = 2;
-        } else {
+        if (fx->height > 1) {
             dd_cue_se_f(dd_rand_hit_se(), fx->se_frame, 0.0f, &fx->se, 1);
             dd_cue_se_f(dd_rand_hit_se(), fx->se_frame, 10.0f, &fx->se, 2);
             dd_cue_se_f(dd_rand_hit_se(), fx->se_frame, 20.0f, &fx->se, 4);
@@ -113,6 +105,10 @@ int dd_fx_coinfly_update(int state, DdFxCoinFly *fx)
             fx->se_frame += speed;
             spinning = 1;
             if (dd_model_anim_done(fx->model) == 1)
+                fx->phase = 2;
+        } else {
+            fx->frame += speed;
+            if (fx->frame >= 60.0f)
                 fx->phase = 2;
         }
         break;
@@ -122,25 +118,22 @@ int dd_fx_coinfly_update(int state, DdFxCoinFly *fx)
             fx->grow = 0.0f;
         break;
     }
-    g = fx->grow;
-    rot = fx->rot;
+    t = fx->grow / 8.0f;
+    rot = fx->rot + 0.7853982f * t;
     h = (float)fx->height / 40.0f;
-    s = g / 8.0f * 2.0f + 1.0f;
-    vec3_lerp_w(&p, &fx->from, &fx->to, 40.0f);
+    s = 1.0f + 2.0f * t;
+    vec3_lerp_w(&p, &fx->from, &fx->to, t);
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
     dd_translate3(p.x, p.y, p.z);
-    mtx_rotate_y(rot + g / 8.0f * 0.7853982f);
+    mtx_rotate_y(rot);
     dd_scale3(s, s, s);
     dd_scale3(1.0f, h, 1.0f);
     model_draw(fx->model, &fx->draw);
-    if (spinning)
+    if (spinning == 1)
         model_update(fx->model, fx->anim);
     mtx_pop();
     dd_rstate_reset(4);
-    if (fx->phase == 2 && fx->grow == 0.0f)
-        return 4;
-    return 2;
+    return (fx->phase == 2 && fx->grow == 0.0f) ? 4 : 2;
 }
-#endif
