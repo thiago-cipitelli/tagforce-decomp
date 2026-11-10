@@ -2,7 +2,7 @@
 // @asm 0x088108A0-0x08810ADC
 // @asm 0x0881103C-0x08811658
 // @asm 0x08811A8C-0x08811FBC
-// @asm 0x08812200-0x08812674
+// @rodata 0x0882AED0-0x0882AEE8
 /* The title's panel widgets: a framed box of cells with a scrollbar (TBox), tabs (TTab), the tabbed
    window combining them with a system list (TPanel), the nine-piece frames drawn from title_sprites2,
    the blinking cursor frame, and preset boxes and help windows used by the duel setup screens. */
@@ -690,63 +690,77 @@ void tscroll_calc2(short *pos, short *len, int count, int n, int top, int sel, i
     *pos = y + 1 + top * (in - *len) / hidden;
 }
 
-#ifdef NON_MATCHING /* o original guarda quase todos os temporários na pilha (sw/lh); forma não reproduzida */
 /* vertical scrollbar: track, thumb and the two arrows (blinking when there is more to scroll) */
 void *tscroll_draw(void *list, unsigned int color, int x, int y, int h, int pos, int len)
 {
+    int i;
     TSpr16 s;
+    TSpr16 t;
     short x1 = x + 1;
-    short y0 = y;
+    short y2 = y + 2;
     short th = h - 4;
+    short y3;
     short ty;
     short tl;
+    short ty2;
     short px, py, ph;
+    short u, v, tw, sh;
     int show;
-    int i;
 
     if (th < 0)
         th = 0;
+    y3 = y2 + th;
     ty = pos + 3;
     tl = len - 6;
     if (tl < 0)
         tl = 0;
+    ty2 = ty + tl;
     list = tmenu_gfx_setup(list, 0);
     list = dl_color(list, color);
     list = gim_set_texture(list, ehp_find(title_pack(), title_sprite_gim(title_sprites2, 49), 0));
-    for (i = 53; i < 59; i++) {
+    for (i = 53; i <= 58; i++) {
         s = title_sprites2[i];
+        u = s.u;
+        v = s.v;
+        tw = s.tw;
         ph = s.th;
         px = x;
-        py = y0;
+        py = y;
         switch (i) {
+        case 53:
+            break;
         case 54:
+            py = y2;
             ph = th;
-            py = y0 + 2;
             break;
         case 55:
-            py = y0 + 2 + th;
+            py = y3;
             break;
         case 56:
             px = x1;
             py = pos;
             break;
         case 57:
-            ph = tl;
             px = x1;
             py = ty;
+            ph = tl;
             break;
         case 58:
             px = x1;
-            py = ty + tl;
+            py = ty2;
             break;
         }
-        list = draw_set_offsets(list, s.tw, s.th, s.tw, ph);
-        list = draw_sprite(list, px, py, 0, s.u, s.v, s.a, s.b);
+        list = draw_set_offsets(list, tw, s.th, tw, ph);
+        list = draw_sprite(list, px, py, 0, u, v, s.a, s.b);
     }
-    for (i = 49; i < 53; i++) {
-        s = title_sprites2[i];
-        px = s.x + x;
-        py = s.y + y0;
+    for (i = 49; i <= 52; i++) {
+        t = title_sprites2[i];
+        px = t.x + x;
+        py = t.y + y;
+        u = t.u;
+        v = t.v;
+        tw = t.tw;
+        sh = t.th;
         show = 0;
         switch (i) {
         case 49:
@@ -754,28 +768,27 @@ void *tscroll_draw(void *list, unsigned int color, int x, int y, int h, int pos,
         case 51:
             if (y + 1 != pos)
                 show = 1;
-            py += -5;
+            py -= 5;
             break;
         case 50:
             show = 1;
         case 52:
             if (y + h - 1 != pos + len)
                 show = 1;
-            py += (short)h + 1;
+            py += (short)(h + 1);
             break;
         }
         if ((unsigned int)(i - 51) < 2)
-            list = dl_color(list, (0xFF - title_get_ticks() % 16 * 0xFF / 15) << 24 | 0xFFFFFF);
+            list = dl_color(list, (unsigned char)(0xFF - title_get_ticks() % 16 * 0xFF / 15) << 24 | 0xFFFFFF);
         else
             list = dl_color(list, color);
         if (show) {
-            list = draw_set_offsets(list, s.tw, s.th, s.tw, s.th);
-            list = draw_sprite(list, px, py, 0, s.u, s.v, s.a, s.b);
+            list = draw_set_offsets(list, tw, sh, tw, sh);
+            list = draw_sprite(list, px, py, 0, u, v, t.a, t.b);
         }
     }
     return list;
 }
-#endif
 
 /* the small box of the setup screens (title.panel.box2) with an optional message */
 void *tbox_small(void *list, int id, int x, int y, int w, int h)
