@@ -27,11 +27,12 @@ void *sc_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
 void *sc_draw_rows_small(void *list, ScPane *p);
 void *sc_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, ScEnt *e);
 
-#ifdef NON_MATCHING /* 308 palavras: forma de dk_draw_headers (x/y/h da barra antes do estilo, res_get(id = 0x8007), marca int lida e testada em dois comandos); falta a alocação: o original guarda o id u16 na pilha e aqui o mwcc derrama outro valor */
+#ifdef NON_MATCHING /* 205 palavras: forma de dk_draw_headers (h, by e x da barra antes do estilo, (count + (cols - 1)) / cols, res_get(id = 0x8007), marca int lida e testada em dois comandos); falta a alocação: o original guarda o id u16 na pilha e aqui o mwcc derrama outro valor */
 /* header of each pane: sort and direction icons, filter icon with the number of cards, "new"
    mark of the owned list, scroll bar */
 void *sc_draw_headers(void *list)
 {
+    int by;
     ScPane *p;
     ScList *l;
     ScLayout *lay;
@@ -84,9 +85,9 @@ void *sc_draw_headers(void *list)
         if (mark != 0)
             list = sc_draw_flag_icon(list, PT(x, y + 3), mark, res_get(0x800A));
     }
-    x = lay->x + lay->w - 10;
-    y = lay->y + 12;
     h = lay->h - 41;
+    by = lay->y + 12;
+    x = lay->x + lay->w - 10;
     if (scv.side == 0)
         style = 0;
     else
@@ -95,10 +96,10 @@ void *sc_draw_headers(void *list)
         style += 2;
     if (p->list_mode == 0) {
         cols = lay->cols;
-        list = sc_draw_scrollbar(list, x, y, h, p->top / cols, lay->grid_rows,
-                                 (l->count + cols - 1) / cols, style, res_get(id = 0x8007));
+        list = sc_draw_scrollbar(list, x, by, h, p->top / cols, lay->grid_rows,
+                                 (l->count + (cols - 1)) / cols, style, res_get(id = 0x8007));
     } else {
-        list = sc_draw_scrollbar(list, x, y, h, p->top, lay->rows, l->count, style,
+        list = sc_draw_scrollbar(list, x, by, h, p->top, lay->rows, l->count, style,
                                  res_get(id = 0x8007));
     }
     if (scv.mode > 1) {
@@ -142,16 +143,16 @@ void *sc_draw_headers(void *list)
             if (mark != 0)
                 list = sc_draw_flag_icon(list, PT(x, y + 3), mark, res_get(0x800A));
         }
-        x = lay->x + lay->w - 10;
-        y = lay->y + 12;
         h = lay->h - 41;
+        by = lay->y + 12;
+        x = lay->x + lay->w - 10;
         style = scv.side == 1 ? 2 : 3;
         if (p->list_mode == 0) {
             cols = lay->cols;
-            list = sc_draw_scrollbar(list, x, y, h, p->top / cols, lay->grid_rows,
-                                     (l->count + cols - 1) / cols, style, res_get(id));
+            list = sc_draw_scrollbar(list, x, by, h, p->top / cols, lay->grid_rows,
+                                     (l->count + (cols - 1)) / cols, style, res_get(id));
         } else {
-            list = sc_draw_scrollbar(list, x, y, h, p->top, lay->rows, l->count,
+            list = sc_draw_scrollbar(list, x, by, h, p->top, lay->rows, l->count,
                                      style, res_get(id));
         }
     }
