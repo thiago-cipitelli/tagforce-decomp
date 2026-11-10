@@ -27,8 +27,6 @@ segments:
     subalign: null
     subsegments:
       - [0x60, c, shop_main]
-      - [0xCB0, asm, shop_main_asm_08804C50]
-      - [0xE24, c, shop_main]
       - [0x1358, c, shop_gfx]
       - [0x1B14, c, shop_state]
       - [0x2258, asm, shop_state_asm_088061F8]

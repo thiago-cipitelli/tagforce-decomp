@@ -39,7 +39,6 @@ fuzzy	size	module	function	address	file
 95.1	412	libduel_eng	duel_ai_0881D17C	0x0881D17C	src/libduel_eng/ai_cond0.c
 95.1	944	libduel_eng	duel_0880C15C	0x0880C15C	src/libduel_eng/ai_0880B448.c
 95.0	1612	liblimitlist	ll_draw_row	0x08806DC0	src/liblimitlist/ll_screen.c
-95.0	372	libshop	shop_box_tex_get	0x08804C50	src/libshop/shop_main.c
 95.0	688	libduel_eng	duel_0886981C	0x0886981C	src/libduel_eng/effects_08869190.c
 95.0	456	libduel_draw	func_088250E8	0x088250E8	src/libduel_draw/dd_msg_win.c
 94.8	1192	libduel_draw	dd_m1_update	0x0881D1B0	src/libduel_draw/dd_scene_mode.c
