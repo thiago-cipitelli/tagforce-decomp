@@ -151,12 +151,13 @@ void func_08823328(int (*f)(void))
     w->cond = f;
 }
 
-#ifdef NON_MATCHING /* estados em switch; o 132 que o original mantém em $s0 (sem dobrar) não reproduzido */
+#ifdef NON_MATCHING /* 149 palavras: o 132 que o original mantém em $s0 (top / 2 sem dobrar) não reproduzido; #pragma opt_propagation off o mantém, mas troca o &w->def da 1ª chamada; y num local com default y = w->y como no original */
 /* state machine: placement by half of the screen, open/close from the condition */
 void func_08823344(void)
 {
     DdChainWin *w = &dd_chain_win;
     int top = 132;
+    int y;
 
     if (menu_item_state(&w->menu, &w->def) == 4) {
         switch (w->state) {
@@ -174,14 +175,18 @@ void func_08823344(void)
     switch (w->state) {
     case 1:
     case 2:
-        w->y = 202 - w->def.h / 2;
+        y = 202 - w->def.h / 2;
         break;
     case 3:
     case 4:
-        w->y = top / 2 - w->def.h / 2;
+        y = top / 2 - w->def.h / 2;
+        break;
+    default:
+        y = w->y;
         break;
     }
-    w->def.y = w->y;
+    w->y = y;
+    w->def.y = y;
     w->x = 314.0f - (float)(w->def.w / 2);
     w->def.x = w->x;
     if (menu_item_state(&w->menu, &w->def) == 4) {

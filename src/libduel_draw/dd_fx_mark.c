@@ -1,5 +1,4 @@
 // @range 0x08831C58-0x08832138
-// @asm 0x08831D8C-0x08832138
 /* Effect: a pulsing icon (one of 8 in spel_mark01.gim, kind 6 in red) lying at a point of the
    field, for a number of frames or until the task gets flag 1 (dur -1). */
 #define DD_FX
@@ -49,17 +48,19 @@ int dd_fx_mark_start_layer(int layer, float s, int kind, float *pos, float *rot,
     return id;
 }
 
-#ifdef NON_MATCHING /* ordem dos operandos de ponto flutuante e constantes guardadas em registrador (forma igual) */
 int dd_fx_mark_update(int state, DdFxMark *fx)
 {
     float in = (float)fx->in / 4.0f;
     float fo = 1.0f - (float)fx->out / 8.0f;
     unsigned int *list;
+    float a;
 
     if (state == 1) {
-        float u = (float)(fx->kind % 4) * 0.25f;
-        float v = (float)(fx->kind / 4) * 0.5f;
-        float h = h;
+        float du = 0.25f;
+        float dv = 0.5f;
+        float u = (float)(fx->kind % 4) * du;
+        float v = (float)(fx->kind / 4) * dv;
+        float h = 48.0f;
 
         fx->quad[0].u = u;
         fx->quad[0].v = v;
@@ -67,17 +68,17 @@ int dd_fx_mark_update(int state, DdFxMark *fx)
         fx->quad[0].y = 0.0f;
         fx->quad[0].z = -h;
         fx->quad[1].u = u;
-        fx->quad[1].v = v + 0.5f;
+        fx->quad[1].v = v + dv;
         fx->quad[1].x = -h;
         fx->quad[1].y = 0.0f;
         fx->quad[1].z = h;
-        fx->quad[2].u = u + 0.25f;
+        fx->quad[2].u = u + du;
         fx->quad[2].v = v;
         fx->quad[2].x = h;
         fx->quad[2].y = 0.0f;
         fx->quad[2].z = -h;
-        fx->quad[3].u = u + 0.25f;
-        fx->quad[3].v = v + 0.5f;
+        fx->quad[3].u = u + du;
+        fx->quad[3].v = v + dv;
         fx->quad[3].x = h;
         fx->quad[3].y = 0.0f;
         fx->quad[3].z = h;
@@ -97,9 +98,9 @@ int dd_fx_mark_update(int state, DdFxMark *fx)
     mtx_translate(fx->pos);
     mtx_rotate_zyx(fx->rot);
     mtx_scale3(fx->scale);
-    list = dl_ambient_light(list, ((unsigned int)(fo
-                                                  * (cosf((float)(fx->pulse % 32) * 6.2831855f / 32.0f) * 0.3f + 0.7f)
-                                                  * 255.0f * in) << 24) | 0xFFFFFF);
+    a = (cosf((float)(fx->pulse % 32) * 6.2831855f / 32.0f) * 0.3f + 0.7f) * 255.0f;
+    a *= in;
+    list = dl_ambient_light(list, ((unsigned int)(fo * a) << 24) | 0xFFFFFF);
     list = draw_array(list, 4, 0x183, 4, 0, fx->quad);
     mtx_pop();
     dl_set_list(list);
@@ -125,4 +126,3 @@ int dd_fx_mark_update(int state, DdFxMark *fx)
         return 2;
     return 4;
 }
-#endif

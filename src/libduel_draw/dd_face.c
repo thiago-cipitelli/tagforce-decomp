@@ -1,6 +1,6 @@
 // @range 0x0881299C-0x0881351C
 // @data 0x08875104-0x0887541C
-// @asm 0x0881299C-0x088131F0
+// @asm 0x0881299C-0x08812F60
 /* Portraits of the duelists on the LP panel: the frame, the cut-in face (kao.gim/karada.gim of
    the character's cut-in pack) or the icon of the character, the blinking turn marker, the
    pad button icon; the sprite table of duel_thing01.gim used by the panel. */
@@ -118,20 +118,24 @@ void *dd_face(float k, void *list, int x, int y, int side, int chr, int turn)
     return list;
 }
 
+#endif
+
 /* frame of a portrait: 9 slices of duel_bup_frame01.gim (column of `side`) */
 void *dd_face_frame(void *list, int x, int y, int w, int h, int side)
 {
     int u = side * 0x30;
-    int xr = x + w - 4;
-    int yb = y + h - 4;
+    int xr;
+    int yb;
 
     list = draw_set_offsets(list, 0x28, 0x28, w - 7, h - 7);
     list = draw_sprite(list, x + 3, y + 3, 0, u + 3, 3, 0, 0);
     list = draw_set_offsets(list, 3, 3, 3, 3);
     list = draw_sprite(list, x, y, 0, u, 0, 0, 0);
     list = draw_set_offsets(list, 4, 3, 4, 3);
+    xr = x + w - 4;
     list = draw_sprite(list, xr, y, 0, u + 0x2B, 0, 0, 0);
     list = draw_set_offsets(list, 4, 4, 4, 4);
+    yb = y + h - 4;
     list = draw_sprite(list, xr, yb, 0, u + 0x2B, 0x2B, 0, 0);
     list = draw_set_offsets(list, 4, 4, 4, 4);
     list = draw_sprite(list, x, yb, 0, u, 0x2B, 0, 0);
@@ -144,7 +148,6 @@ void *dd_face_frame(void *list, int x, int y, int w, int h, int side)
     list = draw_set_offsets(list, 4, 1, 4, h - 7);
     return draw_sprite(list, xr, y + 3, 0, u + 0x2B, 3, 0, 0);
 }
-#endif
 
 /* blinking glow over the portrait of the player on turn */
 void *dd_face_blink(void *list, int side)

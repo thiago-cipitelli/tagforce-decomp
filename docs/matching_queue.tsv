@@ -17,7 +17,6 @@ fuzzy	size	module	function	address	file
 95.8	384	libduel_eng	duel_place_monster	0x088E5C3C	src/libduel_eng/card_place.c
 95.7	1084	libduel_eng	duel_08889BE4	0x08889BE4	src/libduel_eng/effects_y.c
 95.7	1704	libduel_draw	dd_cobj_tick	0x0880FEF0	src/libduel_draw/dd_cmove.c
-95.6	940	libduel_draw	dd_fx_mark_update	0x08831D8C	src/libduel_draw/dd_fx_mark.c
 95.2	1652	BOOT	ehf_draw_shape	0x08831F5C	src/BOOT/ehf.c
 95.1	944	libduel_eng	duel_0880C15C	0x0880C15C	src/libduel_eng/ai_0880B448.c
 95.0	1612	liblimitlist	ll_draw_row	0x08806DC0	src/liblimitlist/ll_screen.c
@@ -53,7 +52,6 @@ fuzzy	size	module	function	address	file
 91.8	792	libtitle	tpt_sprite	0x088216FC	src/libtitle/t_partner.c
 91.7	252	libfield	fld_npc_facing	0x0880AA4C	src/libfield/f_npc.c
 91.7	408	libfield	fbag_item1_draw	0x0881E83C	src/libfield/f_bag.c
-91.6	1000	libduel_draw	dd_lp_show	0x08855E90	src/libduel_draw/dd_lp_panel.c
 91.5	1620	libselect_card	sc_draw_headers	0x08808040	src/libselect_card/sc_panes.c
 91.5	1340	libduel_draw	dd_fcam_from_tms	0x08807CD4	src/libduel_draw/dd_fieldcam.c
 91.4	1228	librecipe_viewer	recipe_viewer_draw	0x08805874	src/librecipe_viewer/rv_screen.c
@@ -73,7 +71,6 @@ fuzzy	size	module	function	address	file
 90.3	1084	libduel_draw	dd_fx_flipup_update	0x0883134C	src/libduel_draw/dd_fx_flipup.c
 90.2	164	libfield	fld_dir_vec	0x08805664	src/libfield/f_chr.c
 90.2	164	BOOT	font_glyph_find	0x088462E8	src/BOOT/font.c
-90.1	504	libduel_draw	func_08822914	0x08822914	src/libduel_draw/dd_action_menu.c
 90.0	1488	libdeck	dk_draw_headers	0x0880E4D0	src/libdeck/dk_panes.c
 90.0	1488	libdeck_tutorial	dt_draw_headers	0x088071CC	src/libdeck_tutorial/dt_edraw.c
 90.0	148	libduel_eng	duel_088102DC	0x088102DC	src/libduel_eng/ai_cond3.c
@@ -83,7 +80,6 @@ fuzzy	size	module	function	address	file
 89.8	2248	libfield	fbm_input	0x088197B0	src/libfield/f_bmap.c
 89.8	204	libduel_eng	duel_ai_0881E27C	0x0881E27C	src/libduel_eng/ai_cond.c
 89.8	492	libshop	shop_item_key	0x08818368	src/libshop/shop_lsort.c
-89.7	656	libduel_draw	dd_face_frame	0x08812F60	src/libduel_draw/dd_face.c
 89.5	244	libduel_eng	duel_088731C0	0x088731C0	src/libduel_eng/act_cond2.c
 89.5	1296	libdeck_swap	ds_draw_headers	0x08807BE8	src/libdeck_swap/ds_bg.c
 89.4	1732	libduel_eng	duel_0883F3A0	0x0883F3A0	src/libduel_eng/ai_0883F0DC.c
@@ -117,7 +113,6 @@ fuzzy	size	module	function	address	file
 87.0	436	libdeck_tutorial	dt_layout_scroll	0x088171A0	src/libdeck_tutorial/dt_pane.c
 87.0	768	libfield	fcal_draw_tabs	0x0881FCEC	src/libfield/f_cal.c
 86.8	1360	libdeck	dk_draw_row	0x0880F5E4	src/libdeck/dk_cards.c
-86.8	312	libduel_draw	zone_cmd	0x08859CC0	src/libduel_draw/dd_zone_cmd.c
 86.7	140	libduel_eng	duel_088719DC	0x088719DC	src/libduel_eng/act_cond2.c
 86.7	376	libduel_eng	duel_0883449C	0x0883449C	src/libduel_eng/ai_08832B54.c
 86.7	916	libtitle	tfd_lobby_handler	0x0881C0E0	src/libtitle/t_fdlobby.c

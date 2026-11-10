@@ -2,7 +2,6 @@
 // @asm 0x088215A0-0x08821868
 // @asm 0x0882228C-0x08822520
 // @asm 0x08822520-0x088226C0
-// @asm 0x08822914-0x08822B0C
 // @data 0x08876110-0x08876200
 /* The action window over a field location (summon, set, activate, attack... as icons of
    dd_act_tab, placed next to the card on screen) and the message windows of the duel's other
@@ -783,15 +782,13 @@ void func_088228F0(void)
     dv_w624_set(func_08825A14() != 0);
 }
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
-/* choice i: the card upright (0) or sideways (1) with its caption */
+/* choice i: the card upright (0) or sideways (1) with its caption; dx/dy are reused for the caption offset */
 unsigned int *func_08822914(unsigned int *dl, unsigned short i, int x, int y)
 {
     int flip, dx, dy, tw, th, msg;
     int flags;
     unsigned short *text;
     unsigned int m;
-    int tx, ty;
 
     if (i == 0) {
         flip = 0;
@@ -820,12 +817,11 @@ unsigned int *func_08822914(unsigned int *dl, unsigned short i, int x, int y)
         font_set_flag8(1);
     text = dd_text(msg);
     m = font_measure_wtext2(0x1400, 0x600, text);
-    tx = 40 - (int)(m >> 22) / 2;
-    ty = -(int)((m & 0xFFFF) >> 6) / 2;
+    dx = 40 - (int)(m >> 22) / 2;
+    dy = -(int)((m & 0xFFFF) >> 6) / 2;
     font_set_color(0xFF000000);
-    font_draw_wtext_ex((x + tx) << 6, (y + 74 + ty) << 6, 0x1400, 0x600, text, -1);
+    font_draw_wtext_ex((x + dx) << 6, (y + 74 + dy) << 6, 0x1400, 0x600, text, -1);
     dl = font_text_clear();
     font_set_flags(flags);
     return dl;
 }
-#endif

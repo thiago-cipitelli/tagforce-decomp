@@ -1,5 +1,4 @@
 // @range 0x08859CC0-0x08859F18
-// @asm 0x08859CC0-0x08859DF8
 /* Field zone helpers of the duel scene: send a zone command to the engine and refresh the card
    object of the zone; the three saved view matrices; and the confirm button that hurries the
    opponent's animation. */
@@ -24,28 +23,35 @@ void dd_chara_busy_set(void);
 int mtx_get_mode(void);
 void mat4_identity(DdMat4 *m);
 
-#ifdef NON_MATCHING /* 57 palavras: side antes da chamada e zone/index depois batem na ordem; faltam os $s (side s1, zone s2, index s0 no original) e os andi 0xff/0xffff que o original repete em zone e index */
+/* the narrowing of zone/index to the parameter types (andi in place before each dd_cobj_at) is that of an
+   inline helper */
+static inline void *zc_at(int side, unsigned char zone, unsigned short index)
+{
+    return dd_cobj_at(side, zone, index);
+}
+
 void zone_cmd(PopupLoc loc, ZoneArg arg, int value)
 {
-    int side = loc.side;
-    int pl = dv_side_to_player(side) ? 0x8000 : 0;
-    unsigned short index = loc.index;
-    unsigned char zone = loc.zone;
     char *card;
+    unsigned char zone;
+    unsigned char side;
+    int index;
+    int pl;
 
+    side = loc.side;
+    pl = dv_side_to_player(side) ? 0x8000 : 0;
+    index = (unsigned short)(int)loc.index;
+    zone = (unsigned char)(int)loc.zone;
     dv_cmd(pl | 0x44, zone | (index & 0xFF) << 8, value, arg.huge * 10 + arg.big);
-    card = dd_cobj_at(side, zone, index);
+    card = zc_at(side, zone, index);
     if (card == 0) {
         dd_cobj_spawn(*(short *)&arg, value, (unsigned short)dv_slot_uid(side, zone));
-        card = dd_cobj_at(side, zone, index);
+        card = zc_at(side, zone, index);
         if (card == 0)
             return;
     }
     dd_cobj_set_card(card, value, *(unsigned short *)(card + 0x88));
 }
-#else
-void zone_cmd(PopupLoc loc, ZoneArg arg, int value);
-#endif
 
 void zone_views_init(void)
 {

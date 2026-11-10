@@ -1,6 +1,5 @@
 // @range 0x08855B10-0x08857100
 // @data 0x08877730-0x088777F0
-// @asm 0x08855E90-0x08856278
 // @asm 0x088565F8-0x088566EC
 // @asm 0x088566EC-0x08856DC0
 // @asm 0x08856DC0-0x08857100
@@ -195,11 +194,10 @@ void dd_lp_count(int x, int y, int from, int to)
     m->obj = dd_task_add(&desc);
 }
 
-#ifdef NON_MATCHING /* ALLEGREX_MIN/MAX e m = &dd_lp aplicados (200 palavras): o original mantém lp0/lp1 em $s e
-                       guarda y e m na pilha; o mwcc guarda o lp limitado */
 /* Shows the two LP at (x, y); a negative value shows -value "?" digits. */
 void dd_lp_show(int x, int y, int lp0, int lp1)
 {
+    int w; /* the digit loops' values and flag: one variable each, in this order of creation */
     DdLpMgr *const m = &dd_lp;
     int n0 = 0;
     int n1 = 0;
@@ -215,38 +213,43 @@ void dd_lp_show(int x, int y, int lp0, int lp1)
     s->active = 1;
     s->t = 0;
     if (lp0 < 0) {
-        v = fabsf_vfpu((float)lp0);
+        int q;
+
+        q = fabsf_vfpu((float)lp0);
         for (i = 0; i < 5; i++) {
-            if (v > 0) {
+            if (q > 0) {
                 s->text[0][i] = '?';
-                v--;
+                q--;
                 n0++;
             } else {
                 s->text[0][i] = '*';
             }
         }
-        s->lp[0] = lp0;
     } else {
+        int d;
+        int on;
+
         lp0 = ALLEGREX_MIN(ALLEGREX_MAX(lp0, 0), 99999);
-        for (i = 0, v = lp0; i < 5; i++) {
-            show = 0;
+        d = lp0;
+        for (i = 0; i < 5; i++) {
+            on = 0;
             if (region_get() == 0) {
-                if (v > 0 || i == 0)
-                    show = 1;
+                if (d > 0 || i == 0)
+                    on = 1;
             } else {
-                if (v > 0 || i < 4)
-                    show = 1;
+                if (d > 0 || i < 4)
+                    on = 1;
             }
-            if (show) {
+            if (on) {
                 n0++;
-                s->text[0][i] = v % 10 + '0';
-                v /= 10;
+                s->text[0][i] = d % 10 + '0';
+                d /= 10;
             } else {
                 s->text[0][i] = '*';
             }
         }
-        s->lp[0] = lp0;
     }
+    s->lp[0] = lp0;
     if (lp1 < 0) {
         v = fabsf_vfpu((float)lp1);
         for (i = 0; i < 5; i++) {
@@ -258,28 +261,28 @@ void dd_lp_show(int x, int y, int lp0, int lp1)
                 s->text[1][i] = '*';
             }
         }
-        s->lp[1] = lp1;
     } else {
         lp1 = ALLEGREX_MIN(ALLEGREX_MAX(lp1, 0), 99999);
-        for (i = 0, v = lp1; i < 5; i++) {
+        w = lp1;
+        for (i = 0; i < 5; i++) {
             show = 0;
             if (region_get() == 0) {
-                if (v > 0 || i == 0)
+                if (w > 0 || i == 0)
                     show = 1;
             } else {
-                if (v > 0 || i < 4)
+                if (w > 0 || i < 4)
                     show = 1;
             }
             if (show) {
                 n1++;
-                s->text[1][i] = v % 10 + '0';
-                v /= 10;
+                s->text[1][i] = w % 10 + '0';
+                w /= 10;
             } else {
                 s->text[1][i] = '*';
             }
         }
-        s->lp[1] = lp1;
     }
+    s->lp[1] = lp1;
     if (region_get() == 0) {
         s->sx = (float)x - 64.0f;
         s->sy = (float)y - 48.0f;
@@ -303,7 +306,6 @@ void dd_lp_show(int x, int y, int lp0, int lp1)
     m->obj = dd_task_add(&desc);
     se_play(0x622C);
 }
-#endif
 
 int dd_lp_busy(void)
 {

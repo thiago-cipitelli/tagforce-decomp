@@ -49,7 +49,7 @@ void *ui_panel_flash(void *dl, void *gim, int x, int y, int w, int h, unsigned i
 }
 
 /* scrollbar of h pixels: pos (<= 0) is the scroll of a content of size total seen through view */
-#ifdef NON_MATCHING /* só alocação de registradores difere (usa s8) */
+#ifdef NON_MATCHING /* 52 palavras: top antes da 1ª chamada e bottom antes de ui_track já dão os 9 $s do original, mas permutados (orig: h s0, view s1, y s2, x s3, range s4, thumb s5, gim s6, bottom s7, top s8); gêmea de dk_help_scrollbar (libdeck) */
 void *ui_scrollbar(void *dl, void *gim, int x, int y, int h, int pos, int total, int view, int active)
 {
     int range = ALLEGREX_MAX(view, total);
@@ -64,15 +64,15 @@ void *ui_scrollbar(void *dl, void *gim, int x, int y, int h, int pos, int total,
         frac = 0.0f;
     else
         frac = (float)-pos / (float)(range - view);
-    dl = dl_ambient_color(dl, 0xFFFFFFFF);
     top = y + 6;
+    dl = dl_ambient_color(dl, 0xFFFFFFFF);
     dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
     dl = dl_enable(dl, 4);
     dl = dl_set_tex_filter(dl, 0, 0);
     dl = dl_enable(dl, 9);
     dl = gim_set_texture(dl, gim);
-    dl = ui_track(dl, x, top, h - 12);
     bottom = y + h - 6;
+    dl = ui_track(dl, x, top, h - 12);
     dl = ui_track_caps(dl, x + 1, y, x + 1, bottom);
     dl = ui_thumb(dl, x + 2, (float)top + frac * ((float)(y + h - thumb - 6) - (float)top), thumb, active);
     if (active) {
