@@ -1,5 +1,4 @@
 // @range 0x088B4560-0x088B7D94
-// @asm 0x088B4D54-0x088B4E64
 /* Card effect handlers: candidate lists for duel_088BFC64 (player, zone, index). */
 #include "duel.h"
 
@@ -162,11 +161,11 @@ void duel_088B4C7C(unsigned int p)
     }
 }
 
-#ifdef NON_MATCHING /* o original endereça a cabeça da lista como símbolo próprio (duel+0x1F6E) e recarrega a base de duel; o mwcc reaproveita a base (corpo igual) */
 /* Cards of the graveyard named by the 0x12E5 effects of the card uid. */
 void duel_088B4D54(unsigned int p, int b, int uid)
 {
-    unsigned int k = ((unsigned short *)&duel.list[uid])[1];
+    extern struct { unsigned short id; unsigned short effects; } duel_cards[512];
+    unsigned int k = duel_cards[uid].effects;
     DuelPlayer *pl;
     DuelEffect *e;
     int i;
@@ -186,7 +185,6 @@ void duel_088B4D54(unsigned int p, int b, int uid)
         }
     } while (k != 0);
 }
-#endif
 
 void duel_088B4E64(unsigned int p, int b, int lvl)
 {

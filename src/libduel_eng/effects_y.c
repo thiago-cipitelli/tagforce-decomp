@@ -359,7 +359,9 @@ int duel_0888A52C(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* desvio do caso 0x137E para o corpo de 0x14FD */
+#ifdef NON_MATCHING /* desvio do caso 0x137E para o corpo de 0x14FD; o mwcc gera xor v0,v0,zero antes do sltiu e põe o sll
+                      no delay slot do b (original: sll antes do b, nop); ternário, if invertido, !=, Duel.phase
+                      testados; 5 palavras */
 int duel_0888A88C(DuelAct *a)
 {
     int n;

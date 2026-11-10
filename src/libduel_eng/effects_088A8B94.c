@@ -1,7 +1,5 @@
 // @range 0x088A8B94-0x088AF390
 // @data 0x089119A8-0x08911A38
-// @asm 0x088A9174-0x088A92E0
-// @asm 0x088AC6A0-0x088AC82C
 /* Target list of a DuelAct (w[0..4], then duel_chain.uids from w[5]) and effect handlers. */
 #include "duel.h"
 
@@ -193,12 +191,10 @@ int duel_088A9008(DuelAct *a, int i, unsigned int *loc)
     return t->placed == ((DuelListCard *)&duel.list[uid])->placed;
 }
 
-#ifdef NON_MATCHING /* 26 palavras (era 65): uid = t->uid & 0xFFFF (o andi do original) e j <= 10; faltam a1/a2 trocados entre t e uid */
 void duel_088A9174(DuelAct *a, int i)
 {
     DuelTarget *t;
     unsigned char z;
-    unsigned int uid;
     int p;
     int j;
 
@@ -209,11 +205,10 @@ void duel_088A9174(DuelAct *a, int i)
     }
     z = t->zone;
     if (z < 11) {
-        uid = t->uid & 0xFFFF;
-        if (uid != CARD_UID(duel.players[t->player & 1].field[z].card)) {
+        if ((t->uid & 0xFFFF) != CARD_UID(duel.players[t->player & 1].field[z].card)) {
             for (p = 0; p < 2; p++) {
                 for (j = 0; j <= 10; j++) {
-                    if (uid == CARD_UID(duel.players[p & 1].field[j].card)) {
+                    if ((t->uid & 0xFFFF) == CARD_UID(duel.players[p & 1].field[j].card)) {
                         t->player = p;
                         t->zone = j;
                         return;
@@ -223,7 +218,6 @@ void duel_088A9174(DuelAct *a, int i)
         }
     }
 }
-#endif
 
 int duel_088A92E0(DuelAct *a, unsigned int p, int z)
 {
@@ -1494,7 +1488,6 @@ int duel_088AC4CC(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* a fica em $a3 através da chamada a duel_088A8B94 (original: $a0) */
 int duel_088AC6A0(DuelAct *a)
 {
     switch (duel_w_08914908) {
@@ -1527,12 +1520,15 @@ int duel_088AC6A0(DuelAct *a)
         duel_w_08914908++;
         return 0;
     case 3:
-        duel_08832974(1 - a->player, a->id, a->w[0]);
+        {
+            extern void duel_08832974(unsigned int, int, int); /* o protótipo do arquivo (unsigned short id) tira a de $a0 */
+
+            duel_08832974(1 - a->player, a->id, a->w[0]);
+        }
         return 1;
     }
     return 1;
 }
-#endif
 
 int duel_088AC82C(DuelAct *a, int b)
 {
