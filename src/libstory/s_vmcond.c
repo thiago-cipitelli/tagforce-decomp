@@ -137,7 +137,7 @@ void op_nop(void)
 }
 
 /* choice window: the text of the previous instruction split in lines; branch n of the block */
-#ifdef NON_MATCHING /* a tradução resposta->ramo reaproveita as constantes das comparações de outro jeito */
+#ifdef NON_MATCHING /* 1 palavra (rodada 15): o default do switch(res) faz li a1,1 no original; aqui move a1,v1 reaproveita o 1 do teste do case 1 (n pré-inicializado, tipos de n/res, case 0 e cast testados). pc - 1U e a ordem dos case vieram de 100 -> 1 */
 void op_choice(void)
 {
     StoryVm *vm = &story_vm;
@@ -150,7 +150,7 @@ void op_choice(void)
 
     switch (CMD.a) {
     case 1:
-        text = vm_text(vm->script[vm->pc - 1].d);
+        text = vm_text(vm->script[vm->pc - 1U].d);
         memset(vm->text, 0, sizeof(vm->text));
         lines[0] = vm->text[0];
         lines[1] = vm->text[1];
@@ -168,10 +168,10 @@ void op_choice(void)
             sys_frame_wait();
         switch (res) {
         case 1: n = 2; break;
+        default: n = 1; break;
         case 2: n = 3; break;
         case 3: n = 4; break;
         case 4: n = 5; break;
-        default: n = 1; break;
         }
         if (n != 1)
             vm_skip(0xC35C, n, 0, 0);
