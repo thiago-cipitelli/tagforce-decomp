@@ -192,8 +192,6 @@ segments:
       - [0x82664, c, effects_v]
       - [0x829E4, c, effects_w]
       - [0x83678, c, effects_x]
-      - [0x84F30, asm, effects_x_asm_08888ED0]
-      - [0x85494, c, effects_x]
       - [0x85C44, c, effects_y]
       - [0x85C44, asm, effects_y_asm_08889BE4]
       - [0x86080, c, effects_y]

@@ -444,7 +444,8 @@ int duel_088A2864(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o `return 0x7D` do case 0x7E não reaproveita o v0 do teste e duplica os lbu nos delay slots */
+#ifdef NON_MATCHING /* 13 palavras: no case 0x7F o original faz beqzl/li 0x7D no 1º teste e "li v0,0x7D; b fim; nop" (sem
+                      preencher) no 2º; o case 0x7E também termina em "b fim; nop" */
 int duel_088A2950(DuelAct *a)
 {
     unsigned int p;
@@ -465,22 +466,25 @@ int duel_088A2950(DuelAct *a)
         duel_w_08919624 = 1;
         return 0x7E;
     case 0x7F:
-        if (duel_count_free_monster_zones(a->player) != 0 && duel_088BFF78(a->player, a->id, 0) != 0) {
-            if (duel_player_type[a->player] == 1) {
-                duel_w_08919624 = 1;
-            } else {
-                duel_0884AD40(0x35, a->uid);
-            }
-            return 0x7E;
+        if (duel_count_free_monster_zones(a->player) == 0) {
+            return 0x7D;
         }
-        return 0x7D;
+        if (duel_088BFF78(a->player, a->id, 0) == 0) {
+            return 0x7D;
+        }
+        if (duel_player_type[a->player] == 1) {
+            duel_w_08919624 = 1;
+        } else {
+            duel_0884AD40(0x35, a->uid);
+        }
+        return 0x7E;
     case 0x7E:
-        if (duel_w_08919624 != 0) {
-            p = a->player;
-            duel_088263A8(p, &duel.players[p & 1].zone_d[duel_d_find_name(p, a->id)], 1, 0);
-            return 0x7F;
+        if (duel_w_08919624 == 0) {
+            return 0x7D;
         }
-        return 0x7D;
+        p = a->player;
+        duel_088263A8(p, &duel.players[p & 1].zone_d[duel_d_find_name(p, a->id)], 1, 0);
+        return 0x7F;
     case 0x7D:
         duel_088C78E0(a->player);
         duel_088C7CF0();

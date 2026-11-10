@@ -551,7 +551,7 @@ int duel_088700F0(DuelAct *a)
     return duel_0884E690(a, duel_08857148) > 0;
 }
 
-int duel_08870188(DuelAct *a)
+int duel_08870188(DuelAct *a, int b)
 {
     unsigned int p = a->player;
 

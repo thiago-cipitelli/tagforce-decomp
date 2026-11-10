@@ -1,7 +1,6 @@
 // @range 0x08887618-0x08889BE4
 // @data 0x089117B8-0x08911828
 // @rodata 0x08911828-0x08911844
-// @asm 0x08888ED0-0x08889434
 /* Card effect handlers (DuelAct *a), after effects_w.c. */
 #include "duel.h"
 
@@ -690,8 +689,7 @@ int duel_08888D60(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING
-int duel_08870188(DuelAct *a);
+int duel_08870188(DuelAct *a, int b);
 int duel_count_active(int id);
 void duel_088C9D24(DuelAct *a, unsigned int p, int z);
 int duel_088C97F0(DuelAct*, unsigned int, int, int, int);
@@ -699,12 +697,11 @@ void duel_0884CC68(int k);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088AFD5C();
 
-/* 93 palavras, todas no laço do passo 0x78: o original põe i em $s1 e o ponteiro de a->w[i] em $s0 (o mwcc
-   troca) e agenda os campos de ev em outra ordem */
 /* steps of a card that turns up to three monsters of its player face down and back (the change of each is
    sent as event 8, 9 or 11) */
-int duel_08888ED0(DuelAct *a)
+int duel_08888ED0(DuelAct *a, int b)
 {
+    int j;
     int i;
     int z;
     int k;
@@ -715,7 +712,7 @@ int duel_08888ED0(DuelAct *a)
     }
     switch (duel_step) {
     case 0x80:
-        if (!duel_08870188(a)) {
+        if (!duel_08870188(a, b)) {
             return 0;
         }
         if (!duel_088A9008(a, 0, 0)) {
@@ -769,25 +766,26 @@ int duel_08888ED0(DuelAct *a)
         return 0x78;
     case 0x78:
         duel_088C7BA4();
-        for (i = 0; i < 3; i++) {
-            z = a->w[i];
+        for (j = 0; j < 3; j++) {
+            z = a->w[j];
             ev.s_player = a->player;
             ev.s_zone = z;
-            ev.s_b15 = duel.players[a->player & 1].field[z].faceup;
-            ev.s_b14 = duel.players[a->player & 1].field[z].pos;
-            ev.s_uid = CARD_UID(duel.players[a->player & 1].field[z].card);
+            k = z * 20; /* zone offset in k: the original computes z * 20 before the player product */
+            ev.s_b15 = ((DuelSlot *)((char *)duel.players[a->player & 1].field + k))->faceup;
+            ev.s_b14 = ((DuelSlot *)((char *)duel.players[a->player & 1].field + k))->pos;
+            ev.s_uid = CARD_UID(((DuelSlot *)((char *)duel.players[a->player & 1].field + k))->card);
             ev.s_b16 = 0;
             ev.s_b17 = 0;
             if (ev.s_uid == a->w[4]) {
-                unsigned char b = ev.s_b15;
+                unsigned char up = (unsigned char)(int)ev.s_b15;
 
-                if (duel_w_08914900 != b + ev.s_b14 * 2) {
+                if (duel_w_08914900 != up + ev.s_b14 * 2) {
                     k = 0;
-                    switch (b) {
-                    case 0:
-                        k = 9;
-                    }
-                    if (b == (duel_w_08914900 & 1)) {
+                    if (up != (duel_w_08914900 & 1)) {
+                        if (up == 0) {
+                            k = 9;
+                        }
+                    } else {
                         k = 0xB;
                     }
                     if (k) {
@@ -810,7 +808,6 @@ int duel_08888ED0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_08889434(DuelAct *a)
 {

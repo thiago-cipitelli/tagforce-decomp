@@ -32,13 +32,14 @@ void duel_mark_attacked(unsigned int p, int z)
     }
 }
 
-#ifdef NON_MATCHING /* same code; the owner, the current controller and the effect fields get other $s registers */
+#ifdef NON_MATCHING /* 102 palavras (eram 227): forma igual; os $s de {base, cur, p} e {ef, src, &slot} saem trocados
+                      em bloco (s0-s2 <-> s3-s5); ordem/escopo das declarações e forma do laço não mudam nada */
 /* Player controlling monster z of player p: its owner, flipped by bit 0 of the flags, then by the
    control-changing effects in its list (unless arg, which only counts the permanent ones). */
 unsigned int duel_field_controller(unsigned int p, int z, int arg)
 {
-    unsigned int base = duel.players[p & 1].field[z].card.owner;
-    unsigned int cur = base;
+    unsigned int cur = duel.players[p & 1].field[z].card.owner;
+    unsigned int base = cur;
     unsigned int imm = duel_slot_immunity(p, z);
     unsigned int e;
 
@@ -48,7 +49,7 @@ unsigned int duel_field_controller(unsigned int p, int z, int arg)
     cur ^= duel.players[p & 1].field[z].flags & 1;
     for (e = duel.players[p & 1].field[z].effects; e != 0;) {
         DuelEffect *ef = &duel.effects[e];
-        unsigned short src = ef->src;
+        unsigned int src = ef->src;
 
         e = ef->next;
         switch (ef->kind & 0xF) {
@@ -104,17 +105,17 @@ unsigned int duel_field_controller(unsigned int p, int z, int arg)
             if (arg != 0) {
                 break;
             } else {
-                unsigned int q = EFF_PLAYER(ef);
-                int zz = EFF_ZONE(ef);
-                DuelSlot *s = &duel.players[q & 1].field[zz];
+                int zz = (unsigned short)src >> 8 & 0xFF;
+                unsigned int q = src & 0xFF;
+                DuelPlayer *pl = &duel.players[q & 1];
 
-                if (s->card.id == 0 || s->faceup == 0 || s->flags >> 5 & 1) {
+                if (pl->field[zz].card.id == 0 || pl->field[zz].faceup == 0 || pl->field[zz].flags >> 5 & 1) {
                     break;
                 }
-                if ((int)(imm & ((p != q) + 1)) > 0 && card_get_type(s->card.id) != 0x17) {
+                if ((int)(imm & ((p != q) + 1)) > 0 && card_get_type((unsigned short)pl->field[zz].card.id) != 0x17) {
                     break;
                 }
-                switch (s->card.id) {
+                switch (pl->field[zz].card.id) {
                 case 0x1322:
                 case 0x1466:
                 case 0x169A:
@@ -123,7 +124,7 @@ unsigned int duel_field_controller(unsigned int p, int z, int arg)
                     cur = q;
                     break;
                 case 0x13EA:
-                    base = s->link;
+                    base = pl->field[zz].link;
                     cur = base;
                     break;
                 }
