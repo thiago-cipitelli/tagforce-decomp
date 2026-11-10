@@ -483,11 +483,12 @@ void *tframe_bar(void *list, int sel, unsigned int color, int x, int y, int w, i
         return tframe(list, color, x, y, w, h, 70, 0, 0);
 }
 
-#ifdef NON_MATCHING /* quadro de nove peças com switch; registradores e spills diferem */
+#ifdef NON_MATCHING /* 190 palavras: lógica conferida; o switch (kind) do original tem os case em ordem inversa e switch (mode) de um case só; falta o ponteiro de indução de title_sprites2[i] (com o índice comum o mwcc reaproveita kind * 22 e o quadro cresce 16 bytes) e a alocação dos $s */
 /* nine-piece frame from title_sprites2[kind..]; style selects the texture row, mode 1 the shadow */
 void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kind, int style,
              int mode)
 {
+    int pass;
     TSpr16 s;
     int passes = 1;
     int n = 9;
@@ -495,83 +496,96 @@ void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kin
     short du = 0;
     short dv = 0;
     short x1, x2, y1, y2;
+    short cw, ch;
     short px, py, pw, ph;
-    short uv;
-    int pass;
+    short u, v;
+    int uv;
     int i;
 
-    if (kind == 70) {
-        du = style * 14;
-        mode = 0;
-        n = 3;
-    } else if (kind == 73) {
-        n = 1;
-        mode = 0;
-    } else if (kind == 102) {
-        mode = 0;
-        n = 3;
-        passes = 2;
-    } else if (kind == 93) {
-        if (style < 13 || style > 16)
-            style = 13;
-        dv = (style - 13) * 16;
-        mode = 0;
-    } else if (kind == 84 || kind == 75) {
+    switch (kind) {
+    case 75:
+    case 84:
         if (style < 4 || style > 12)
             style = 4;
         style -= 4;
         du = style / 3 * 13;
         mode = 0;
         dv = style % 3 * 13;
-    } else {
+        break;
+    case 93:
+        if (style < 13 || style > 16)
+            style = 13;
+        dv = (style - 13) * 16;
+        mode = 0;
+        break;
+    case 102:
+        mode = 0;
+        n = 3;
+        passes = 2;
+        break;
+    case 73:
+        n = 1;
+        mode = 0;
+        break;
+    case 70:
+        du = style * 14;
+        mode = 0;
+        n = 3;
+        break;
+    default:
         dv = style << 5;
+        break;
     }
-    if (mode == 1) {
+    switch (mode) {
+    case 1:
         last = 9;
         n = 12;
+        break;
     }
     x1 = x + title_sprites2[kind].tw;
-    w -= title_sprites2[kind].tw + title_sprites2[kind + last].tw;
-    if (w < 0)
-        w = 0;
-    x2 = x1 + w;
+    cw = w - (title_sprites2[kind].tw + title_sprites2[kind + last].tw);
+    if (cw < 0)
+        cw = 0;
+    x2 = x1 + cw;
     y1 = y + title_sprites2[kind].th;
-    h -= title_sprites2[kind].th + title_sprites2[kind + 6].th;
-    if (h < 0)
-        h = 0;
-    y2 = y1 + h;
+    ch = h - (title_sprites2[kind].th + title_sprites2[kind + 6].th);
+    if (ch < 0)
+        ch = 0;
+    y2 = y1 + ch;
     list = tmenu_gfx_setup(list, 0);
     list = dl_color(list, color);
     list = gim_set_texture(list, ehp_find(title_pack(), title_sprite_gim(title_sprites2, kind), 0));
-    for (pass = 0, uv = 0; pass < passes; pass++, uv += 32) {
+    for (pass = 0, uv = 0; pass < passes; uv += 32, pass++) {
         if (pass != 0 && kind == 102)
             dv = uv;
         for (i = kind; i < kind + n; i++) {
-            s = title_sprites2[i];
+            s = *(TSpr16 *)((char *)title_sprites2 + i * sizeof(TSpr16));
+            u = s.u + du;
+            v = s.v + dv;
             pw = s.tw;
             ph = s.th;
             px = x;
             py = y;
             switch (i - kind) {
             case 1:
-                pw = w;
+                pw = cw;
                 px = x1;
                 break;
             case 2:
                 px = x2;
                 break;
             case 3:
-                ph = h;
+                ph = ch;
                 py = y1;
                 break;
             case 4:
-                pw = w;
-                ph = h;
+                pw = cw;
+                ph = ch;
                 px = x1;
                 py = y1;
                 break;
             case 5:
-                ph = h;
+                ph = ch;
                 px = x2;
                 py = y1;
                 break;
@@ -579,7 +593,7 @@ void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kin
                 py = y2;
                 break;
             case 7:
-                pw = w;
+                pw = cw;
                 px = x1;
                 py = y2;
                 break;
@@ -591,7 +605,7 @@ void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kin
                 px = x2;
                 break;
             case 10:
-                ph = h;
+                ph = ch;
                 px = x2;
                 py = y1;
                 break;
@@ -601,7 +615,7 @@ void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kin
                 break;
             }
             list = draw_set_offsets(list, s.tw, s.th, pw, ph);
-            list = draw_sprite(list, px, py, 0, (short)(s.u + du), (short)(s.v + dv), s.a, s.b);
+            list = draw_sprite(list, px, py, 0, u, v, s.a, s.b);
         }
     }
     return list;
