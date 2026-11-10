@@ -1,7 +1,6 @@
 // @range 0x0880B3E4-0x0880C728
 // @rodata 0x0881C16C-0x0881C29C
 // @asm 0x0880BF94-0x0880C07C
-// @asm 0x0880C4C8-0x0880C598
 // @data 0x0881D1E0-0x0881D32C
 /* The story calendar (scal): the date kept in the save (month 1..8 of the story = May..December,
    day, 73 time slots of 15 minutes from 5:45), the derived fields (hour, minute, week day, days
@@ -701,42 +700,34 @@ void scal_calc_days_left(ScalDate *d)
         d->days_left = 0;
 }
 
-#ifdef NON_MATCHING /* 12 palavras: o original testa `bne dia; nop; b fim; nop` e `bnez; nop; b fim; nop` (blocos `b fim` próprios);
-   break, return, || e ifs separados dão `beq fim` direto */
+/* index of the period that holds date d (the table ends in a catch-all entry). The original inlined this
+   helper in both callers: its returns give the `bne; nop; b fim; nop` blocks that a plain break merges */
+static inline int scal_period_find(ScalDate *d)
+{
+    int i = 0;
+    ScalPeriod *p = scal_periods;
+
+    for (;;) {
+        if (d->month == p->month) {
+            if (d->day == p->day)
+                return i;
+            if (p->day == 0)
+                return i;
+        }
+        p++;
+        i++;
+    }
+}
+
 int scal_period_a(ScalDate *d)
 {
-    int i = 0;
-    ScalPeriod *p = scal_periods;
-
-    for (;;) {
-        if (d->month == p->month) {
-            if (d->day == p->day || p->day == 0)
-                break;
-        }
-        p++;
-        i++;
-    }
-    return scal_periods[i].a;
+    return scal_periods[scal_period_find(d)].a;
 }
-#endif
 
-#ifdef NON_MATCHING /* mesmo laço de scal_period_a */
 int scal_period_b(ScalDate *d)
 {
-    int i = 0;
-    ScalPeriod *p = scal_periods;
-
-    for (;;) {
-        if (d->month == p->month) {
-            if (d->day == p->day || p->day == 0)
-                break;
-        }
-        p++;
-        i++;
-    }
-    return scal_periods[i].b;
+    return scal_periods[scal_period_find(d)].b;
 }
-#endif
 
 /* day number (1 = month 1 day 1) of a date */
 int scal_daynum_of(ScalDate *d)
