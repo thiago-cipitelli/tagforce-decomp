@@ -1,5 +1,4 @@
 // @range 0x0888146C-0x08883114
-// @asm 0x08882B04-0x08882D9C
 /* Card effect handlers (DuelAct *a), after effects_p.c. */
 #include "duel.h"
 
@@ -635,13 +634,9 @@ int duel_0888293C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* faltava o 3º argumento (loc) de duel_088C8B70; registradores e ordem dos blocos */
 int duel_08882B04(DuelAct *a)
 {
-    unsigned int loc;
-    unsigned int p;
     unsigned int z;
-    unsigned int y;
 
     if (a->b4_2) {
         a->b4_3 = 1;
@@ -651,27 +646,37 @@ int duel_08882B04(DuelAct *a)
     case 0x80:
         duel_w_089148FC = 0;
         duel_088C7BA4();
-        if (a->w[2] == 2) {
-            return 0x7F;
-        }
-        if (duel_088A9008(a, duel_w_089148FC, &loc) != 0) {
-            z = (unsigned short)loc >> 8 & 0xFF;
-            if (duel.players[loc & 1].field[z].card.id != 0 && duel.players[loc & 1].field[z].pos == 0
-                && a->player != (loc & 0xFF)) {
-                duel_088C97F0(a, loc & 0xFF, z, 0, 0);
+        if (a->w[2] != 2) {
+            unsigned int loc;
+
+            if (duel_088A9008(a, duel_w_089148FC, &loc) != 0) {
+                unsigned int sp = loc & 0xFF;
+
+                z = (unsigned short)loc >> 8 & 0xFF;
+                if (duel.players[sp & 1].field[z].card.id != 0 && duel.players[sp & 1].field[z].pos == 0
+                    && a->player != sp) {
+                    duel_088C97F0(a, sp, z, 0, 0);
+                }
             }
+            duel_w_089148FC++;
         }
-        duel_w_089148FC++;
         return 0x7F;
     case 0x7F:
-        if (a->w[2] != 1 && duel_088A9008(a, duel_w_089148FC, &loc) != 0) {
-            y = a->zone;
-            p = a->player;
-            z = (unsigned short)loc >> 8 & 0xFF;
-            if (a->uid == CARD_UID(duel.players[p].field[y].card) && duel.players[loc & 1].field[z].card.id != 0
-                && duel.players[loc & 1].field[z].faceup != 0 && p == (loc & 0xFF)) {
-                duel_088C8B70(p, p | y << 8, loc);
-                return 0x7E;
+        if (a->w[2] != 1) {
+            unsigned int tloc;
+
+            if (duel_088A9008(a, duel_w_089148FC, &tloc) != 0) {
+                unsigned int sp = tloc & 0xFF;
+                unsigned int tz = (unsigned short)tloc >> 8 & 0xFF;
+                unsigned char y = a->zone;
+                unsigned int p = a->player;
+                unsigned short l = tloc;
+
+                if (a->uid == CARD_UID(duel.players[p & 1].field[y].card) && duel.players[sp & 1].field[tz].card.id != 0
+                    && duel.players[sp & 1].field[tz].faceup != 0 && p == sp) {
+                    duel_088C8B70(p, p | y << 8, l);
+                    return 0x7E;
+                }
             }
         }
         a->b4_3 = 1;
@@ -682,7 +687,6 @@ int duel_08882B04(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_08882D9C(DuelAct *a)
 {
