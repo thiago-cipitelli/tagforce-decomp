@@ -107,8 +107,6 @@ segments:
       - [0x15A28, asm, dd_event_cmd_asm_088199C8]
       - [0x15AD0, c, dd_voice]
       - [0x15C64, c, dd_card_select]
-      - [0x16C38, asm, dd_card_select_asm_0881ABD8]
-      - [0x17020, c, dd_card_select]
       - [0x18A8C, c, dd_scene_mode]
       - [0x18AD4, asm, dd_scene_mode_asm_0881CA74]
       - [0x18AE0, c, dd_scene_mode]
