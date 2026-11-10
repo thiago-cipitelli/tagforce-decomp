@@ -141,7 +141,6 @@ fuzzy	size	module	function	address	file
 76.4	796	BOOT	font_init	0x08845AC0	src/BOOT/font.c
 76.3	880	libduel_draw	dd_board_card_draw	0x0880F164	src/libduel_draw/dd_board.c
 75.7	684	libduel_draw	dd_ev_49	0x08819184	src/libduel_draw/dd_event_cmd.c
-75.6	508	libtitle	tpt_flip	0x0881FD30	src/libtitle/t_partner.c
 75.3	1816	libduel_draw	dd_fx_counter_update	0x08832C28	src/libduel_draw/dd_fx_counter.c
 75.0	984	libduel_draw	dd_fx_coinfly_update	0x088353D8	src/libduel_draw/dd_fx_coinfly.c
 74.7	132	libstory	st_chr_step_value	0x088044EC	src/libstory/s_chr.c
@@ -170,7 +169,6 @@ fuzzy	size	module	function	address	file
 62.4	272	libfield	fld_sprite_quad	0x08806CE0	src/libfield/f_chrdraw.c
 59.6	2744	libduel_draw	dd_counter_draw	0x08810758	src/libduel_draw/dd_counter.c
 58.8	1276	BOOT	font_layout_text	0x0884876C	src/BOOT/font_text.c
-57.7	508	libduel_mgr	dmgr_pt_flip	0x0880D590	src/libduel_mgr/dmgr_partner.c
 55.6	2392	libcharalist	cl_detail_update	0x08808844	src/libcharalist/cl_list.c
 53.8	516	libduel_draw	func_08822C2C	0x08822C2C	src/libduel_draw/dd_field_marks.c
 52.1	2144	BOOT	font_layout_wtext	0x08847768	src/BOOT/font_text.c

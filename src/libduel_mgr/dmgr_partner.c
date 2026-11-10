@@ -1,5 +1,4 @@
 // @range 0x0880C8E8-0x0880F9C0
-// @asm 0x0880D590-0x0880D78C
 // @asm 0x0880EF5C-0x0880F274
 // @data 0x0881A774-0x0881B9B0
 // @rodata 0x08819FF8-0x0881A0D0
@@ -533,61 +532,59 @@ unsigned int *dmgr_partner_draw(unsigned int *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm. 83 palavras: o original testa on/len com bnezl+b e cópias mortas (lh do len, corpos dos case 2/3) que o mwcc 219 remove, e o retorno 0 fica depois do return r */
+/* card side shown for slot i in a given layout mode: 1 = front. Inlined by the original (its returns keep the
+   dead copies after each b) */
+static inline int dmgr_pt_flip_side(int mode, int i)
+{
+    if (mode == 1 || mode == 5 || mode == 8) {
+        if (i == 0) return 0; else return 1;
+    } else if (mode == 3) {
+        if (i < 2) return 0; else return 1;
+    } else if (i < 2) {
+        return 0;
+    }
+    return 1;
+}
+
 int dmgr_pt_flip(int mode, int i)
 {
     short cur;
     short len = 1;
     int on;
-    int side;
     int r = 0;
 
     on = dmgr_anim_get(&dmgr_pt->anim, &cur, &len);
     if (on == 0) {
         return 0;
-    } else if (len == 0) {
-        return 0;
     } else {
-        side = 1;
-        if (mode == 1 || mode == 5 || mode == 8) {
-            if (i == 0) {
-                side = 0;
-            } else {
-                side = 1;
+        if (len != 0) {
+            switch (dmgr_pt_flip_side(mode, i)) {
+            case 0:
+                if (on == 1) {
+                    r = cur * 0x168 / (short)(int)len - 0x168;
+                } else {
+                    r = cur * -0x168 / (short)(int)len;
+                }
+                break;
+            case 1:
+                if (on == 1) {
+                    r = 0x168 - cur * 0x168 / (short)(int)len;
+                } else {
+                    r = cur * 0x168 / (short)(int)len;
+                }
+                break;
+            case 2:
+                r = -0x168;
+                break;
+            case 3:
+                r = 0x168;
+                break;
             }
-        } else if (mode == 3) {
-            if (i < 2) {
-                side = 0;
-            }
-        } else if (i < 2) {
-            side = 0;
-        }
-        switch (side) {
-        case 0:
-            if (on == 1) {
-                r = cur * 0x168 / (short)(int)len - 0x168;
-            } else {
-                r = cur * -0x168 / (short)(int)len;
-            }
-            break;
-        case 1:
-            if (on == 1) {
-                r = 0x168 - cur * 0x168 / (short)(int)len;
-            } else {
-                r = cur * 0x168 / (short)(int)len;
-            }
-            break;
-        case 2:
-            r = -0x168;
-            break;
-        case 3:
-            r = 0x168;
-            break;
+            return r;
         }
     }
-    return r;
+    return 0;
 }
-#endif
 
 typedef struct DmgrPtNames { char n[38][0x40]; } DmgrPtNames;
 
