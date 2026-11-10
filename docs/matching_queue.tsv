@@ -38,7 +38,6 @@ fuzzy	size	module	function	address	file
 93.1	708	libtitle	ttab_draw	0x0881103C	src/libtitle/t_panel.c
 92.3	3116	BOOT	cardinfo_draw	0x0885A1A4	src/BOOT/cardinfo.c
 92.1	1340	libduel_draw	dd_fcam_from_tms	0x08807CD4	src/libduel_draw/dd_fieldcam.c
-91.8	1500	libduel_draw	dd_cobjs_rebuild	0x0880BEB0	src/libduel_draw/dd_slot.c
 91.5	1620	libselect_card	sc_draw_headers	0x08808040	src/libselect_card/sc_panes.c
 91.4	1228	librecipe_viewer	recipe_viewer_draw	0x08805874	src/librecipe_viewer/rv_screen.c
 91.2	1356	libtitle	tdl_deck_item	0x08825D7C	src/libtitle/t_deckpick.c
