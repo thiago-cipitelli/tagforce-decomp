@@ -37,8 +37,6 @@ segments:
       - [0x7D90, c, dk_pane]
       - [0x8018, asm, dk_pane_asm_0880BFB8]
       - [0x82D0, c, dk_pane]
-      - [0x8334, asm, dk_pane_asm_0880C2D4]
-      - [0x84E8, c, dk_pane]
       - [0x8788, c, dk_scene]
       - [0x9720, c, dk_res]
       - [0x9C30, c, dk_draw]

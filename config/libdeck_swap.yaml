@@ -28,8 +28,6 @@ segments:
     subsegments:
       - [0x60, c, ds_res]
       - [0x668, c, ds_state]
-      - [0xA38, asm, ds_state_asm_088049D8]
-      - [0xBEC, c, ds_state]
       - [0xE8C, c, ds_lists]
       - [0x1EB8, c, ds_mode]
       - [0x26B4, c, ds_draw]

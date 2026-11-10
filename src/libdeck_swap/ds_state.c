@@ -1,5 +1,4 @@
 // @range 0x08804608-0x08804E2C
-// @asm 0x088049D8-0x08804B8C
 /* Cursor index and entry, the cursor card's info text (measured to scroll it), tab switching with
    the saved scroll of each list, scroll clamping, saving the panes' scroll into their lists, and
    the undo history of moves (same source as libselect_card sc_state.c). */
@@ -126,16 +125,15 @@ void ds_select_tab(unsigned short side, unsigned short tab, unsigned short how)
     }
 }
 
-#ifdef NON_MATCHING /* 85 palavras, a forma de dk_layout_scroll (asm idêntico): cópias mortas depois de b e rows com sra no lugar de ext */
 /* clamps a pane's scroll (top, cx, cy) to total entries in a view of view & 0xFF columns and
    view >> 8 rows; keep puts the cursor back on the entry it was on */
-void ds_layout_scroll(unsigned short keep, int cur, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy)
+void ds_layout_scroll(unsigned short keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy)
 {
     int cols = view & 0xFF;
-    int rows = view >> 8;
+    int rows = (view >> 8) & 0xFF;
     unsigned short area = cols * rows;
     unsigned short otop = *top;
-    unsigned short at = *cx + (otop + *cy * cols);
+    unsigned short cur = *cx + (otop + *cy * cols);
     int i;
     unsigned short r;
 
@@ -143,32 +141,29 @@ void ds_layout_scroll(unsigned short keep, int cur, unsigned short view, unsigne
         return;
     if (total < 2) {
         *top = 0;
-        if ((unsigned short)keep != 0)
-            return;
-        *cy = 0;
-        *cx = 0;
+        if (keep == 0) {
+            *cy = 0;
+            *cx = 0;
+        }
         return;
     }
-    if (area < total) {
-        if (otop + area - cols < total)
-            goto keep_top;
-        *top = cols * ((total + cols - 1) / cols - rows);
-    } else {
+    if (area >= total) {
         *top = 0;
+    } else if (otop + area - cols >= total) {
+        *top = cols * ((total + cols - 1) / cols - rows);
     }
-keep_top:
     if (otop != *top)
-        *cy += (short)((short)otop - (short)*top) / cols;
-    if (total <= at)
-        at = total - 1;
-    i = cur;
-    if ((unsigned short)keep == 1) {
-        if (*cx < cols && *cy < rows)
-            i = -1;
+        *cy += (unsigned short)((short)((short)otop - (short)*top) / cols);
+    if (!(cur < total))
+        cur = total - 1;
+    i = count;
+    if (keep == 1) {
+        if (*cx >= cols || *cy >= rows)
+            i = cur;
         else
-            i = at;
+            i = -1;
     }
-    if (i >= total)
+    if (!(i < total))
         i = total - 1;
     if (i >= 0) {
         r = i / cols;
@@ -180,7 +175,6 @@ keep_top:
         *cy = r - *top / cols;
     }
 }
-#endif
 
 /* stores the scroll of the pane(s) into their lists: which 0 = first, 1 = second, 2 = both */
 void ds_set_panes(unsigned short which)

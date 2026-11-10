@@ -1,6 +1,5 @@
 // @range 0x08816C34-0x088175FC
 // @asm 0x08816EBC-0x0881713C
-// @asm 0x088171A0-0x08817354
 // @data 0x0882225C-0x0882226C
 /* (The code of libdeck dk_pane.c.) Panes: the card list sprites, the cursor's index and entry, the cursor card's info text, switching
    the list shown in a pane (each list keeps its own scroll), the list names, scroll clamping, saving
@@ -38,8 +37,7 @@ int font_measure_text(unsigned short *text);
 int partner_count_get(void);
 
 void dt_bg_anim_update(void);
-void dt_layout_scroll(int keep, int cur, unsigned short view, unsigned short total,
-                      unsigned short *top, unsigned short *cx, unsigned short *cy);
+void dt_layout_scroll(unsigned short keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy);
 
 /* the card list sprites, then the info of the card under the cursor */
 void dt_cardlist_setup(void)
@@ -206,17 +204,15 @@ unsigned short *dt_list_name(unsigned short tab)
     return table_get_entry(dt_eres_get(0x8033), dt_list_name_ids[tab]);
 }
 
-#ifdef NON_MATCHING /* cópias mortas depois de b (problema aberto) e rows com sra no lugar de ext */
 /* clamps a pane's scroll (top, cx, cy) to total entries in a view of view & 0xFF columns and
    view >> 8 rows; keep puts the cursor back on the entry it was on, else on entry cur */
-void dt_layout_scroll(int keep, int cur, unsigned short view, unsigned short total,
-                      unsigned short *top, unsigned short *cx, unsigned short *cy)
+void dt_layout_scroll(unsigned short keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy)
 {
     int cols = view & 0xFF;
-    int rows = view >> 8;
+    int rows = (view >> 8) & 0xFF;
     unsigned short area = cols * rows;
     unsigned short otop = *top;
-    unsigned short at = *cx + (otop + *cy * cols);
+    unsigned short cur = *cx + (otop + *cy * cols);
     int i;
     unsigned short r;
 
@@ -224,32 +220,29 @@ void dt_layout_scroll(int keep, int cur, unsigned short view, unsigned short tot
         return;
     if (total < 2) {
         *top = 0;
-        if ((unsigned short)keep != 0)
-            return;
-        *cy = 0;
-        *cx = 0;
+        if (keep == 0) {
+            *cy = 0;
+            *cx = 0;
+        }
         return;
     }
-    if (area < total) {
-        if (otop + area - cols < total)
-            goto keep_top;
-        *top = cols * ((total + cols - 1) / cols - rows);
-    } else {
+    if (area >= total) {
         *top = 0;
+    } else if (otop + area - cols >= total) {
+        *top = cols * ((total + cols - 1) / cols - rows);
     }
-keep_top:
     if (otop != *top)
-        *cy += (short)((short)otop - (short)*top) / cols;
-    if (total <= at)
-        at = total - 1;
-    i = cur;
-    if ((unsigned short)keep == 1) {
-        if (*cx < cols && *cy < rows)
-            i = -1;
+        *cy += (unsigned short)((short)((short)otop - (short)*top) / cols);
+    if (!(cur < total))
+        cur = total - 1;
+    i = count;
+    if (keep == 1) {
+        if (*cx >= cols || *cy >= rows)
+            i = cur;
         else
-            i = at;
+            i = -1;
     }
-    if (i >= total)
+    if (!(i < total))
         i = total - 1;
     if (i >= 0) {
         r = i / cols;
@@ -262,7 +255,6 @@ keep_top:
     }
 }
 
-#endif
 
 /* stores the scroll of the pane(s) into their lists: which 0 = first, 1 = second, 2 = both
    (o escalonador intercala as leituras e gravações de outro jeito, como sc_set_panes) */
