@@ -1,7 +1,6 @@
 // @range 0x08855B10-0x08857100
-// @data 0x08877730-0x088777F0
+// @data 0x08877730-0x08877850
 // @asm 0x088566EC-0x08856DC0
-// @asm 0x08856DC0-0x08857100
 /* The LP panel of the duel (dd_lp): its textures (lp_pnl01_j/02_j and digits in Japan,
    pnl_a00.ehf elsewhere), the object that counts the LP from one value to another, the panel
    showing the two LP (with "*" padding or "?" for hidden values), the 2D camera it is drawn
@@ -324,6 +323,11 @@ void dd_lp_close(void)
 FxVec4 dd_lp_cam_eye = { 0.0f, 0.0f, 10.0f, 1.0f };     /* 0x088777C0 camera of the 2D panel */
 FxVec4 dd_lp_cam_target = { 0.0f, 0.0f, 0.0f, 1.0f };
 FxVec4 dd_lp_cam_up = { 0.0f, 1.0f, 0.0f, 0.0f };
+#ifndef NON_MATCHING
+/* template { 0, 0, 1.0f } of a local of dd_lp_frame (still in asm), which reads it as D_088777F0 and
+   D_088777F8 (alias in symbols/) */
+float D_088777F0[3] = { 0.0f, 0.0f, 1.0f };
+#endif
 
 /* Sets up a 2D-like perspective (camera at z = 10) with the origin at (x, y). */
 void *dd_lp_begin_2d(void *list, int x, int y)
@@ -529,10 +533,10 @@ void *dd_lp_frame(void *list, int x, int y)
 }
 #endif
 
-#ifdef NON_MATCHING /* tabela de 81 bytes copiada byte a byte e conversões; formas diferentes */
 /* Colour of band `i` of the panel shine at `frame`: 9 keys of 5 frames, interpolated. */
 unsigned int dd_lp_shine(int i, unsigned int frame)
 {
+    unsigned int f = frame % 45;
     unsigned char tab[81] = {
         0xAF, 0xFF, 0xFF, 0x3F, 0xE5, 0xCB, 0x31, 0x5F, 0x7B, 0xB1, 0xFF, 0xFF, 0x42, 0xE1, 0x79, 0x33,
         0x7A, 0x73, 0xA7, 0xFF, 0xAF, 0x7D, 0xDF, 0x3E, 0x2E, 0x82, 0x3E, 0xF5, 0xFF, 0xA5, 0xD9, 0xDC,
@@ -541,24 +545,17 @@ unsigned int dd_lp_shine(int i, unsigned int frame)
         0xB0, 0xFF, 0x6D, 0x42, 0xD4, 0x71, 0x35, 0x81, 0xA6, 0xB4, 0xFF, 0x38, 0x7D, 0xCF, 0x2E, 0x33,
         0x7B
     };
-    unsigned int f = frame % 45;
     unsigned int k = f / 5;
-    unsigned int n = k + 1;
-    unsigned char *a;
-    unsigned char *b;
+    int n = k + 1;
     unsigned int r;
     unsigned int g;
     unsigned int bl;
     float t;
 
-    if (n > 8)
-        n = 0;
-    a = &tab[k * 9 + i * 3];
-    b = &tab[n * 9 + i * 3];
-    t = (float)(f % 5) / 5.0f;
-    bl = (float)a[2] + t * ((float)b[2] - (float)a[2]);
-    g = (float)a[1] + t * ((float)b[1] - (float)a[1]);
-    r = (float)a[0] + t * ((float)b[0] - (float)a[0]);
-    return (r & 0xFF) | (bl & 0xFF) << 16 | 0xFF000000 | (g & 0xFF) << 8;
+    n = n < 9 ? n : 0;
+    t = (float)(f - k * 5) / 5.0f;
+    bl = (float)tab[k * 9 + i * 3 + 2] + t * ((float)tab[n * 9 + i * 3 + 2] - (float)tab[k * 9 + i * 3 + 2]);
+    g = (float)tab[k * 9 + i * 3 + 1] + t * ((float)tab[n * 9 + i * 3 + 1] - (float)tab[k * 9 + i * 3 + 1]);
+    r = (float)tab[k * 9 + i * 3] + t * ((float)tab[n * 9 + i * 3] - (float)tab[k * 9 + i * 3]);
+    return (bl & 0xFF) << 16 | 0xFF000000 | (g & 0xFF) << 8 | (r & 0xFF);
 }
-#endif
