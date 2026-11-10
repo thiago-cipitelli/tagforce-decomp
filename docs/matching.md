@@ -1136,3 +1136,20 @@ Sem forma: `duel_088D1F1C` (8: o original copia o `lbu a0,a->player` nos dois ca
 - **Sem solução**: `dk/dt/sc_draw_rows(_small)` (o mwcc 219 põe o `lhu` de `row_w` da junção no atraso do teste
   do ternário em vez de fazer `bnezl` com o `sll` do ramo; 12 palavras em todas); `snd_curve_volume` (6, posição do
   `lhu vol_far`); `menu_layout` (67, cópia desenrolada).
+
+## Rodada 14 (`mix`: BOOT, libshop, libstory, libfield, liblimitlist)
+
+- **Contador de laço da função reaproveitado em laços consecutivos** (`deck_validate`, 105 -> 0): os três laços que
+  copiam main/side/extra usam o mesmo `k` do laço seguinte (não o `i` do laço de parceiros nem um contador de bloco).
+  Junto com a ordem das declarações (`cur`, `run` primeiro; `used_partner` antes de `n`), que só passou a importar
+  depois disso. Testar cada laço com cada local já existente é barato (combinações em script).
+- **Variáveis de laço declaradas no bloco do `if`, em ordem** (`snd_fx_apply`, 37 -> 0): ponteiro, contador, `any` e
+  amostra do último laço declarados dentro do `if (fx->vpl >= 0) { ... }` nessa ordem; também `in = buf;` antes
+  das contas de `lvl`/`pos` (o `in` precisa nascer antes) e `pos = ...; pos += fx->pos;` em duas linhas para a ordem
+  dos operandos do `addu`. Permutar subconjuntos de declarações movidas para o bloco (24 variantes) achou a ordem.
+- **Endereço de linha de tabela que o original não junta** (`shop_box_tex_get`): `if ((row = tab[pack])[i]) return row[i];`
+  e, no store, `row += i; return *row = ehp_find(...);` mantêm a linha e o `i*4` em registradores separados até o fim.
+- **Parâmetro como a variável que muda** (`snd_obj_start`, 46 -> 24): quando o original copia o parâmetro para um
+  `$s` e usa a cópia como valor fixo, o parâmetro é o que o laço altera e o local guarda o original.
+- Static usada por ponteiro e definida no meio do arquivo pode ter de ir para depois (`card_db_loaded` depois de
+  `card_db_load`): ao promover a última função em asm de `card_db.c`, o `make check` acusou o deslocamento.
