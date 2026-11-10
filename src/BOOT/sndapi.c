@@ -50,7 +50,7 @@ void snd_group_release_all(int cmd, int flag);
 unsigned int snd_bank_offset();
 void snd_callbacks_default(SndCallbacks *cb);
 void snd_thread_start(void *cfg, SndCallbacks *cb);
-void snd_bank_open_async(int a, int b);
+int snd_bank_open_async(int a, int b);
 void snd_sas_init(int a, int b);
 void snd_set_channel_volume(int ch, int vol, int time);
 void snd_set_master_volume(int vol, int time);

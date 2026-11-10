@@ -258,32 +258,31 @@ int snd_thread_start(void *cfg, SndCallbacks *cb)
 }
 
 /* Reads go straight to `fd` (or the file named by `fd` when it is a pointer) from offset `off`. */
-#ifdef NON_MATCHING /* lógica conferida com o asm; o original entra nos ramos de open e wait por bgezl + b (padrão da cópia morta, docs/matching.md) e salva ra antes do primeiro teste: 31 palavras diferem */
-void snd_bank_open_async(int fd, int off)
+#ifdef NON_MATCHING /* 8 palavras: retorna r (o original deixa r em v0 nos dois retornos; era void); falta o bgezl + "b fim; nop" do teste do open (o mwcc faz bltz) e o ternário dá um b a mais */
+int snd_bank_open_async(int fd, int off)
 {
     long long res;
     int r = fd;
+    int ret;
 
     if (off < 0) {
         off = 0;
     } else if (fd >= 0x8000000) {
         r = sceIoOpenAsync((const char *)fd, 1, 0);
         if (r < 0) {
-            goto done;
+        } else {
+            ret = sceIoWaitAsyncCB(r, &res);
+            r = (ret == 0) ? (int)res : ret;
         }
-        r = sceIoWaitAsyncCB(r, &res);
-        if (r == 0) {
-            r = res;
-        }
-    done:
         if (r < 0) {
-            return;
+            return r;
         }
         off = 0;
     }
     snd_fd = r;
     snd_data_base = off;
     snd_cfg_flags |= 0x2000;
+    return r;
 }
 #endif
 
