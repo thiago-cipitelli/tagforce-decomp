@@ -43,7 +43,6 @@ fuzzy	size	module	function	address	file
 95.0	688	libduel_eng	duel_0886981C	0x0886981C	src/libduel_eng/effects_08869190.c
 95.0	456	libduel_draw	func_088250E8	0x088250E8	src/libduel_draw/dd_msg_win.c
 94.8	1192	libduel_draw	dd_m1_update	0x0881D1B0	src/libduel_draw/dd_scene_mode.c
-94.7	156	libduel_eng	duel_0888C10C	0x0888C10C	src/libduel_eng/effects_z.c
 94.7	1208	libstory	st_fld_setup_items	0x0880D9A0	src/libstory/s_story.c
 94.7	672	libduel_eng	duel_088977BC	0x088977BC	src/libduel_eng/effects_088966D8.c
 94.7	192	BOOT	snd_group_release_all	0x08861CA0	src/BOOT/snd_obj.c

@@ -1,7 +1,6 @@
 // @range 0x0888B904-0x0888C1A8
-// @asm 0x0888B9A8-0x0888BAE0
-// @asm 0x0888BBE4-0x0888BDE0
-// @asm 0x0888C10C-0x0888C1A8
+// @asm 0x0888BA00-0x0888BAE0
+// @asm 0x0888BD08-0x0888BDE0
 /* Card effect handlers (DuelAct *a), after effects_y.c. duel_088C87A8 is called without a prototype here
    (four arguments in 0x0888B904), so these are a separate file. */
 #include "duel.h"
@@ -13,8 +12,7 @@ extern int duel_w_089148FC;
 int duel_088A9008(DuelAct *a, int i, unsigned int *loc);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
 void duel_088C87A8();
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
-void duel_088C7BA4(void);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C7CF0(void);
 void duel_08832624(unsigned int p, unsigned int n, int a, int b);
 int duel_0886CE38();
@@ -53,10 +51,6 @@ int duel_0888B904(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* duel_0888B9A8: só a ordem das cargas (o original lê a->id, duel_turn_player e depois a->player;
-                      testados local q/t, sem q, 1 + (...), flag num local; 8 palavras). duel_0888BA00: família
-                      zona-antes-do-jogador (z * 20 antes do mult) e a->uid lido antes do índice; 22 palavras */
-
 int duel_0888B9A8(DuelAct *a)
 {
     unsigned int q = 1 - a->player;
@@ -64,6 +58,9 @@ int duel_0888B9A8(DuelAct *a)
     duel_088C77D4(q, a->id, (unsigned char)((duel_turn_player == q) + 1) << 4 | 1, 0);
     return 0;
 }
+
+#ifdef NON_MATCHING /* duel_0888BA00: família
+                      zona-antes-do-jogador (z * 20 antes do mult) e a->uid lido antes do índice; 22 palavras */
 
 int duel_0888BA00(DuelAct *a)
 {
@@ -103,13 +100,12 @@ int duel_0888BAE0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* ordem das cargas dos argumentos; registradores dos globais da carta especial */
 int duel_0888BBE4(DuelAct *a, int b)
 {
     int i;
 
     if (a->kind != 2) {
-        duel_088C77D4(a->player, a->id, (unsigned char)((a->player == duel_turn_player) + 1) << 4 | 1, a->uid);
+        duel_088C77D4(a->player, a->id, (unsigned char)((duel_turn_player == a->player) + 1) << 4 | 1, a->uid);
         return 0;
     }
     if (duel_0886CE38(a, b) == 0) {
@@ -122,6 +118,7 @@ int duel_0888BBE4(DuelAct *a, int b)
     return 0;
 }
 
+#ifdef NON_MATCHING /* registradores dos globais da carta especial; 44 palavras */
 int duel_0888BD08(DuelAct *a)
 {
     int sz = duel_special.zone[1];
@@ -205,7 +202,6 @@ int duel_0888C0AC(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* move s0,a0 antes da primeira carga */
 int duel_0888C10C(DuelAct *a)
 {
     unsigned int t;
@@ -220,4 +216,3 @@ int duel_0888C10C(DuelAct *a)
     }
     return 0;
 }
-#endif
