@@ -2,7 +2,6 @@
 // @bss 0x08C5745C-0x08C574E4
 // @rodata 0x08870180-0x088701B4
 // @asm 0x0881CA74-0x0881CA80
-// @asm 0x0881D1B0-0x0881D658
 // @data 0x08875F84-0x088760B0
 /* The duel scene's input modes: a stack of modes (1 field, 2 card list, 3 yes/no, 4 numbers,
    5 card info, 6.. other sub-screens), each with enter/draw/update/leave; the scene heaps, the
@@ -429,24 +428,22 @@ unsigned int *dd_m1_draw(unsigned int *list)
     return dl_select_layer(layer, 0);
 }
 
-#ifdef NON_MATCHING /* forma reconstruída; endereçamento da tabela de modos e alocação diferentes */
 void dd_m1_update(void)
 {
     DdModeStack *s = &dd_mode;
     unsigned int *pad = dd_pad();
     unsigned int k;
     int player, zone;
-    DdLoc l;
+    struct {
+        void (*get)(DdLoc *out);
+    } arg2;
     struct {
         int card;
         void (*get)(DdLoc *out);
     } arg;
-    struct {
-        void (*get)(DdLoc *out);
-    } arg2;
 
     if (pad[1] & 1)
-        dd_scene_flags(0x80, dd_scene_flags(0x80, -1) == 0);
+        dd_scene_flags(0x80, !dd_scene_flags(0x80, -1));
     if ((pad[0] & (region_pick_value(1) & 0xFFFF)) == 0 && (pad[2] & (region_pick_value(1) & 0xFFFF)) == 0)
         s->cancel_armed = 1;
     if (dd_08806BC4() == 2)
@@ -501,6 +498,7 @@ void dd_m1_update(void)
         if (player >= 0 && (dv_08835AEC(player, zone, 0) & 2)) {
             dd_act(player, zone, 0, 1);
             s->cancel_armed = 0;
+            return;
         }
         return;
     }
@@ -525,12 +523,17 @@ void dd_m1_update(void)
         func_08820F88(&arg2);
         s->cancel_armed = 0;
     } else if (k & 0x1000) {
+        int card;
+        DdLoc l2;
+        DdLoc l;
+
         dd_cursor_get(&l);
-        arg.card = dv_zone_card_id(l.player, l.zone, l.idx);
+        *(short *)&l2 = *(short *)&l;
+        card = dv_zone_card_id(l2.player, l2.zone, l2.idx);
         memset(&arg, 0, sizeof(arg));
-        if (dd_loc_visible(l) == 0)
-            arg.card = 0;
+        card = dd_loc_visible(l2) ? card : 0;
         arg.get = dd_cursor_get;
+        arg.card = card;
         popup_open(&arg);
         s->cancel_armed = 0;
     } else if ((pad[2] & (region_pick_value(1) & 0xFFFF)) && s->cancel_armed != 0) {
@@ -538,7 +541,6 @@ void dd_m1_update(void)
         s->cancel_armed = 0;
     }
 }
-#endif
 
 void dd_m1_leave(void)
 {
