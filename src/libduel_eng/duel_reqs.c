@@ -1,5 +1,4 @@
 // @range 0x088C87A8-0x088C936C
-// @asm 0x088C8DC4-0x088C8E88
 /* Commands to the presentation about a zone (0x36: a card moves to it, 0x37: an effect of a card,
    0x38: an effect counter). */
 #include "duel.h"
@@ -124,26 +123,23 @@ void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t)
     duel_088C8B78(p, loc, t, 10);
 }
 
-#ifdef NON_MATCHING /* 10 palavras: só os $s de loc & 0xFFFF e da zona trocados (s0/s1; o original reusa o s1 da zona para s >> 8) */
 void duel_088C8DC4(unsigned short loc, unsigned short t)
 {
     unsigned int p = loc & 0xFF;
-    unsigned int z = loc >> 8 & 0xFF;
-    unsigned short s = duel_slot_e1854(p, z);
+    unsigned short s = duel_slot_e1854(p, loc >> 8 & 0xFF);
     int k;
 
     if (s != 0xFFFF) {
         unsigned int sp = s & 0xFF;
         unsigned int sz = s >> 8 & 0xFF;
 
-        k = duel_st_affects(sp, sz, p, z);
+        k = duel_st_affects(sp, sz, p, loc >> 8 & 0xFF);
         duel_088C88B8(sp, sz, loc, 1);
     } else {
         k = 10;
     }
     duel_088C8B78(p, loc, t, k);
 }
-#endif
 
 void duel_088C8E88(int q, int sz)
 {
