@@ -72,7 +72,6 @@ fuzzy	size	module	function	address	file
 90.3	1420	librecipe_viewer	rv_draw_recipe	0x08805F6C	src/librecipe_viewer/rv_screen.c
 90.3	1084	libduel_draw	dd_fx_flipup_update	0x0883134C	src/libduel_draw/dd_fx_flipup.c
 90.2	164	libfield	fld_dir_vec	0x08805664	src/libfield/f_chr.c
-90.2	164	BOOT	font_glyph_find	0x088462E8	src/BOOT/font.c
 90.1	504	libduel_draw	func_08822914	0x08822914	src/libduel_draw/dd_action_menu.c
 90.0	1488	libdeck	dk_draw_headers	0x0880E4D0	src/libdeck/dk_panes.c
 90.0	1488	libdeck_tutorial	dt_draw_headers	0x088071CC	src/libdeck_tutorial/dt_edraw.c
