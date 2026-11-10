@@ -535,10 +535,11 @@ void snd_streams_decode(int mix)
             rd = s->u.st.rd;
             b = pcm + rd;
             dst = (unsigned int *)snd_mix_buf[snd_mix_idx] + filled;
-            cnt = s->decoded - s->pos;
             a = b;
+            cnt = s->decoded - s->pos;
             wrap = 0;
-            if ((tmp = 0x100 - filled) < cnt) {
+            tmp = 0x100 - filled;
+            if (tmp < cnt) {
                 cnt = tmp;
             }
             rd += cnt;
