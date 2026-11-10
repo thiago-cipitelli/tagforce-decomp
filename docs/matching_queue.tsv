@@ -18,7 +18,6 @@ fuzzy	size	module	function	address	file
 96.0	2948	libduel_draw	dd_orbs_update	0x088374E4	src/libduel_draw/dd_fx_orbs.c
 95.8	384	libduel_eng	duel_place_monster	0x088E5C3C	src/libduel_eng/card_place.c
 95.7	1084	libduel_eng	duel_08889BE4	0x08889BE4	src/libduel_eng/effects_y.c
-95.7	1704	libduel_draw	dd_cobj_tick	0x0880FEF0	src/libduel_draw/dd_cmove.c
 95.4	840	libshop	shop_open_layout	0x08813400	src/libshop/shop_anim.c
 95.2	900	librecipe_viewer	rv_menu_open	0x08809C64	src/librecipe_viewer/rv_menu.c
 95.2	1652	BOOT	ehf_draw_shape	0x08831F5C	src/BOOT/ehf.c

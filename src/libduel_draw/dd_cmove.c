@@ -1,6 +1,5 @@
 // @range 0x0880FCFC-0x08810758
 // @data 0x08874F70-0x08874F80
-// @asm 0x0880FEF0-0x08810598
 /* Card objects: the list primitives, the pool allocator, the start of a move (with the card
    slide sound) and the per-frame move with its arc, the end-of-move callbacks, the zone list
    lookup and the move duration of the animation speed option. */
@@ -81,28 +80,25 @@ void dd_cobj_move(float dur, DdCobj *o, DdXyzw *pos, DdXyzw *rot, int sound)
 
 void dd_cobj_done(DdCobj *o);
 
-#ifdef NON_MATCHING /* máquina de estados grande / registrador do slti */
 /* advances a card object by dt: the move, its arc, then the actions queued at its end */
 void dd_cobj_tick(DdCobj *o, float dt)
 {
-    float t;
     float dur;
+    float t;
     float arc;
-    int z;
 
-    if (o->t >= o->dur) {
-        if (o->a7) {
-            if (o->t < dd_move_time() * 2.0f) {
-                t = o->t;
-                goto run;
-            }
-        }
+    if (o->t >= o->dur && (!o->a7 || o->t >= dd_move_time() * 2.0f)) {
         if (!o->a1)
             return;
         o->a1 = 0;
-        z = o->home.zone;
-        if (z == 15 || z == 14 || z == 12 || z == 13)
-            dd_zone_sync(o->home.player, z);
+        switch (o->home.zone) {
+        case 13:
+        case 12:
+        case 14:
+        case 15:
+            dd_zone_sync(o->home.player, o->home.zone);
+            break;
+        }
         if (o->b0)
             o->b0 = 0;
         if (o->a7) {
@@ -151,10 +147,8 @@ void dd_cobj_tick(DdCobj *o, float dt)
         }
         return;
     }
-    t = o->t;
-run:
-    o->t = t + dt;
-    if ((!o->b6 && (o->t < o->dur * 0.5f || o->a0 || cfg_get_bits_1_3_4() < 2)) || o->c1)
+    o->t += dt;
+    if ((!o->b6 && (o->t < o->dur * 0.5f || o->a0 || (int)cfg_get_bits_1_3_4() <= 1)) || o->c1)
         req_flag_set(0);
     if (o->b7)
         req_flag_set(0x1D);
@@ -163,7 +157,7 @@ run:
     if (o->a4)
         req_flag_set(0x34);
     t = o->t;
-    if (t >= o->dur && !(o->a7 && t < dd_move_time() * 2.0f)) {
+    if (t >= o->dur && (!o->a7 || t >= dd_move_time() * 2.0f)) {
         o->pos = o->pos1;
         o->rot = o->rot1;
         o->b1 = 0;
@@ -194,7 +188,6 @@ run:
     }
     dd_cobj_done(o);
 }
-#endif
 
 /* runs the end callbacks of a card object (cleared when they return non-zero) */
 void dd_cobj_done(DdCobj *o)

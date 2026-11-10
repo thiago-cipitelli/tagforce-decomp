@@ -63,8 +63,6 @@ segments:
       - [0xABD0, asm, dd_board_asm_0880EB70]
       - [0xB534, c, dd_board]
       - [0xBD5C, c, dd_cmove]
-      - [0xBF50, asm, dd_cmove_asm_0880FEF0]
-      - [0xC5F8, c, dd_cmove]
       - [0xC7B8, c, dd_counter]
       - [0xC7B8, asm, dd_counter_asm_08810758]
       - [0xD370, c, dd_counter]
