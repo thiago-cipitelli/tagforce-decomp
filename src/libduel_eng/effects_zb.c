@@ -1,6 +1,5 @@
 // @range 0x0888E5D4-0x0888F420
 // @asm 0x0888E5D4-0x0888E6F4
-// @asm 0x0888EB8C-0x0888EF1C
 /* Card effect handlers (DuelAct *a), after effects_za.c. */
 #include "duel.h"
 
@@ -183,16 +182,15 @@ int duel_0888EAFC(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores de p/z e retorno extra depois do primeiro switch */
 int duel_0888EB8C(DuelAct *a)
 {
     unsigned int loc;
-    unsigned int z;
     unsigned int p;
     unsigned char y;
     int i;
     int n;
     int v;
+    int atk;
 
     if (a->b3_4 == 2) {
         switch (duel_step) {
@@ -210,10 +208,9 @@ int duel_0888EB8C(DuelAct *a)
             duel_088C78E0(a->player);
             return 0;
         default:
-            return 0;
+            break;
         }
-    }
-    if (duel_list_counter(a->uid, a->id) < 3) {
+    } else if (duel_list_counter(a->uid, a->id) < 3) {
         switch (duel_step) {
         case 0x80:
             if (duel_088BFFD8(a->player, a->id, 0) == 0) {
@@ -244,21 +241,20 @@ int duel_0888EB8C(DuelAct *a)
         }
     } else {
         if (duel_088A9008(a, 0, &loc) != 0) {
-            p = loc & 0xFF;
-            z = (unsigned short)loc >> 8 & 0xFF;
+            unsigned int p = loc & 0xFF;
+            unsigned int z = (unsigned short)loc >> 8 & 0xFF;
+
             if (duel_0884E440(a, p, z) != 0) {
                 n = duel_count_monsters(1 - a->player);
-                v = n * duel_field_atk(p, z) / 10;
-                if (v > 0xFFFF) {
-                    v = 0xFFFF;
-                }
+                atk = duel_field_atk(p, z);
+                v = atk * n / 10;
+                v = v > 0xFFFF ? 0xFFFF : v;
                 duel_088C87D8(a, p, z, a->id, 2, v);
             }
         }
     }
     return 0;
 }
-#endif
 
 int duel_0888EF1C(DuelAct *a, int b)
 {

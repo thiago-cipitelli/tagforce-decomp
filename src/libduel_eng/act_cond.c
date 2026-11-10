@@ -1,5 +1,4 @@
 // @range 0x0886CB44-0x0886F23C
-// @asm 0x0886D828-0x0886DBC4
 // @asm 0x0886DE70-0x0886E074
 // @asm 0x0886E590-0x0886E784
 /* Activation conditions of cards (DuelAct *a): enough cards to pay or tribute, free zones, phase and
@@ -397,7 +396,6 @@ int duel_0886D754(DuelAct *a)
     return duel_phase_ok2(a->player) != 0;
 }
 
-#ifdef NON_MATCHING /* the original reuses the registers of a and b for the target fields */
 /* Activation b (the chain link a answers) targets or concerns a trap card other than a's own. */
 int duel_0886D828(DuelAct *a, DuelAct *b)
 {
@@ -405,7 +403,6 @@ int duel_0886D828(DuelAct *a, DuelAct *b)
     unsigned int tp;
     unsigned int tz;
     int id;
-    unsigned int z;
     int i;
 
     if (b == 0) {
@@ -451,7 +448,7 @@ int duel_0886D828(DuelAct *a, DuelAct *b)
         if (card_get_type((unsigned short)id) == 0x17) {
             return 1;
         }
-        duel_0886AF00(tp, tz, id);
+        duel_0886AF00(tp, tz, (unsigned short)id);
         return 0;
     case 0x11F0:
         for (i = 0; i < 2; i++) {
@@ -468,9 +465,9 @@ int duel_0886D828(DuelAct *a, DuelAct *b)
     case 0x131B:
     case 0x131C:
     case 0x1321:
-        for (z = 5; (int)z < 10; z++) {
-            id = duel.players[a->player].field[z].card.id;
-            if (id != 0 && z != a->zone && card_get_type((unsigned short)id) == 0x17) {
+        for (i = 5; i < 10; i++) {
+            id = duel.players[a->player & 1].field[i].card.id;
+            if (id != 0 && i != a->zone && card_get_type((unsigned short)id) == 0x17) {
                 return 1;
             }
         }
@@ -478,7 +475,6 @@ int duel_0886D828(DuelAct *a, DuelAct *b)
     }
     return 0;
 }
-#endif
 
 int duel_0886DBC4(DuelAct *a, int b)
 {

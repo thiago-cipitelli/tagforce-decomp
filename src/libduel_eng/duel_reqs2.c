@@ -1,5 +1,4 @@
 // @range 0x088C936C-0x088CA4E8
-// @asm 0x088CA184-0x088CA270
 /* More commands to the presentation: a card is flipped or changes position (0x35), moves between
    zones (0x3D, 0x3E), goes from the hand or the graveyard to the field (0x3F). */
 #include "duel.h"
@@ -89,6 +88,28 @@ void duel_088C7E68(unsigned int p, int z, int a, int b);
 void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 
+void duel_088C96EC(unsigned int p, int z, int v)
+{
+    if (duel.players[p & 1].field[z].card.id != 0) {
+        duel_cmd((p ? 0x8000 : 0) | 0x35, z, v, 8);
+    }
+}
+
+void duel_088C9760(unsigned int p, int z)
+{
+    if (duel.players[p & 1].field[z].card.id != 0) {
+        duel_cmd((p ? 0x8000 : 0) | 0x35, z, !duel.players[p & 1].field[z].faceup, 4);
+    }
+}
+
+int duel_088C97F0(DuelAct *a, unsigned int p, int z, int x, int y)
+{
+    if (duel_act_immune(a, p, z) != 0) {
+        return 0;
+    }
+    return duel_088C9878(p, z, x, y, a->id, p != a->player);
+}
+
 /* monster of p in zone z changes to face up (x) or face down, by the card id (the opponent when opp); with y, a
    flip to face up of a monster whose special group reaches y triggers its flip effect */
 int duel_088C9878(unsigned int p, int z, int x, int y, int id, int opp)
@@ -175,28 +196,6 @@ int duel_088C9878(unsigned int p, int z, int x, int y, int id, int opp)
     return 0;
 }
 
-void duel_088C96EC(unsigned int p, int z, int v)
-{
-    if (duel.players[p & 1].field[z].card.id != 0) {
-        duel_cmd((p ? 0x8000 : 0) | 0x35, z, v, 8);
-    }
-}
-
-void duel_088C9760(unsigned int p, int z)
-{
-    if (duel.players[p & 1].field[z].card.id != 0) {
-        duel_cmd((p ? 0x8000 : 0) | 0x35, z, !duel.players[p & 1].field[z].faceup, 4);
-    }
-}
-
-int duel_088C97F0(DuelAct *a, unsigned int p, int z, int x, int y)
-{
-    if (duel_act_immune(a, p, z) != 0) {
-        return 0;
-    }
-    return duel_088C9878(p, z, x, y, a->id, p != a->player);
-}
-
 void duel_088C9D24(DuelAct *a, unsigned int p, int z)
 {
     unsigned int q = p & 1;
@@ -273,27 +272,24 @@ void duel_088C9F58(int loc, int t)
     }
 }
 
-#ifdef NON_MATCHING /* 5 palavras: o 1º teste é `beqz` (não `beqzl`) com `andi t2,s1,0xff` no delay slot; com pb em
-                       local, if aninhado ou retorno antecipado não sai */
 void duel_088CA184(int a, int b)
 {
-    unsigned int zb = (unsigned short)b >> 8 & 0xFF;
-    unsigned int za = (unsigned short)a >> 8 & 0xFF;
     unsigned int pa = a & 0xFF;
+    unsigned int za = (unsigned short)a >> 8 & 0xFF;
+    unsigned int pb = b & 0xFF;
+    unsigned int zb = (unsigned short)b >> 8 & 0xFF;
 
-    if (duel.players[pa & 1].field[za].card.id == 0) {
-        return;
-    }
-    if (duel.players[(b & 0xFF) & 1].field[zb].card.id == 0) {
-        duel_088C9E88(a, b);
-        {
-            extern void duel_cmd(unsigned short, int, int, int);
-            duel_cmd((pa ? 0x8000 : 0) | 0x3D, a, b, 0);
+    if (duel.players[pa & 1].field[za].card.id != 0) {
+        if (duel.players[pb & 1].field[zb].card.id == 0) {
+            duel_088C9E88(a, b);
+            {
+                extern void duel_cmd(unsigned short, int, int, int);
+                duel_cmd((pa ? 0x8000 : 0) | 0x3D, a, b, 0);
+            }
+            duel_088C9F58(a, b);
         }
-        duel_088C9F58(a, b);
     }
 }
-#endif
 
 void duel_088CA270(unsigned int p, int a, int b)
 {

@@ -1,5 +1,4 @@
 // @range 0x088F1190-0x088F1E5C
-// @asm 0x088F1514-0x088F15E0
 /* Cards that can be taken from the graveyard or zone F, the hand (adding, removing, searching,
    counting, shuffling) and the level of a card in the work list after reductions. */
 #include "duel.h"
@@ -117,13 +116,11 @@ int duel_zone_f_card_usable(unsigned int p, unsigned int q, int i)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 3 palavras: o original soma duel + p * sizeof(DuelPlayer) e depois n * 4 (+288); esta forma soma
-                      na ordem inversa; as formas que invertem a soma perdem o mult antes dos sw (17 palavras) */
 /* Puts card c in the hand of player p (attribute-icon 3 cards go to the field instead). */
 void duel_hand_add(unsigned int p, DuelCard *c)
 {
     unsigned int *n = (unsigned int *)((char *)&duel.players[0].n_hand + (p & 1) * sizeof(DuelPlayer));
-    DuelCard *dst = (DuelCard *)((char *)&duel.players[0].hand[*n] + (p & 1) * sizeof(DuelPlayer));
+    DuelCard *dst = ((DuelPlayer *)(*n * sizeof(DuelCard) + (unsigned int)&duel.players[p & 1]))->hand;
     int id = c->id;
 
     if (id == 0) {
@@ -139,7 +136,6 @@ void duel_hand_add(unsigned int p, DuelCard *c)
         (*n)++;
     }
 }
-#endif
 
 int duel_hand_remove_card(unsigned int p, DuelCard *c)
 {

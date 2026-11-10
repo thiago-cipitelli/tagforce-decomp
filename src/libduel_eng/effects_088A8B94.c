@@ -1,10 +1,8 @@
 // @range 0x088A8B94-0x088AF390
 // @data 0x089119A8-0x08911A38
 // @asm 0x088A9174-0x088A92E0
-// @asm 0x088ABE60-0x088AC0E0
 // @asm 0x088AC6A0-0x088AC82C
 // @asm 0x088ADA84-0x088ADC34
-// @asm 0x088ADF28-0x088ADFC0
 /* Target list of a DuelAct (w[0..4], then duel_chain.uids from w[5]) and effect handlers. */
 #include "duel.h"
 
@@ -1296,11 +1294,10 @@ int duel_088ABD7C(DuelAct *a, unsigned int p, int z)
     return 0;
 }
 
-#ifdef NON_MATCHING /* passo 2: o original calcula z * 0x14 antes do índice do jogador */
 int duel_088ABE60(DuelAct *a)
 {
     unsigned short buf[256];
-    unsigned int t;
+    int t;
     DuelSlot *s;
     int p;
     int z;
@@ -1333,9 +1330,13 @@ int duel_088ABE60(DuelAct *a)
             return 1;
         }
         t = duel_act_target(a, 0);
-        z = (unsigned short)t >> 8 & 0xFF;
-        p = t & 0xFF;
-        duel_wfmt_s(buf, (void *)0x8C, card_get_name(duel.players[p & 1].field[z].card.id));
+        {
+            unsigned int sz, sp;
+
+            sz = (unsigned int)(t & 0xFFFF) >> 8 & 0xFF;
+            sp = t & 0xFF;
+            duel_wfmt_s(buf, (void *)0x8C, card_get_name(ZSLOT(sp, sz)->card.id));
+        }
         duel_0884ACD8(a->player, buf);
         duel_088359E8(a->player, a->id, duel_088ABD7C);
         duel_w_08914908++;
@@ -1352,7 +1353,6 @@ int duel_088ABE60(DuelAct *a)
     }
     return 1;
 }
-#endif
 
 int duel_088AC0E0(DuelAct *a, int b)
 {
@@ -2143,8 +2143,7 @@ int duel_088ADEB0(DuelAct *a, int b)
     return 1;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores (a/p/z) */
-void duel_088ADF28(DuelAct *a)
+int duel_088ADF28(DuelAct *a)
 {
     unsigned int p;
     int z;
@@ -2157,8 +2156,8 @@ void duel_088ADF28(DuelAct *a)
         }
     }
     a->w[0] = 1;
+    return 1;
 }
-#endif
 
 int duel_088ADFC0(DuelAct *a)
 {

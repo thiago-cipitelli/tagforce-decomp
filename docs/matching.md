@@ -1070,3 +1070,31 @@ inicializadas (`t0[side][k]`) pedem `// @data` com os modelos (`duel_tag_slot`).
 `bootx`: `- 12U` em `x + 20 + (d + 2) - 12U` impede o mwcc de dobrar `20 - 12` e reproduz a aritmética do original
 (`shop_shelf_cursor`); em `ehp_unload`, atribuir o ponteiro auxiliar só depois do teste de entrada do laço põe o
 ponteiro da entrada no delay slot do primeiro desvio.
+
+## Rodada 13 (`engF`: libduel_eng, funções 95-98% nunca tentadas)
+
+Bateram `duel_088ADF28`, `duel_088ABE60`, `duel_hand_add`, `duel_088CA184`, `duel_088C28A4`, `duel_0888EB8C`,
+`duel_0886D828`, `duel_08887B34`. Idiomas:
+- **`void` que era `int`** (`duel_088ADF28`, 19 → 0): `li v0,1; sh v0,…` no fim (e `v0`/`v1` trocados em todo o
+  corpo) é `a->w[0] = 1; return 1;`; o valor de retorno ocupa `v0` e muda a coloração dos `$s` também.
+- **`if (c != 0 || bit) return;`** dá `bnez c, fim; nop` + `beqz bit, corpo; nop; b fim; nop` (`duel_088C28A4`);
+  `if (c == 0 && !bit) {…}`, `switch` de um `case` e `if` aninhados não dão.
+- **Global que é campo de struct** (`duel_w_0891525C` = `duel_w_08915258.cards`, `DuelCandList`): com o struct e um
+  ponteiro local (`c = duel_w_08915258.cards; o = c->owner; f(o, c, …)`) sai o `lui; addiu a1` antes do `lbu 1(a1)`;
+  pelo símbolo do array o mwcc gera dois `lui` (`duel_08887B34`). A jump table nova do `switch` estendeu o `@data`
+  do arquivo para trás (`0x089117B8`): o `.rodata` do objeto vem logo depois do `.data` vazio.
+  Cuidado: tirar uma função do `@asm` exige as funções do `.c` em ordem de endereço; `duel_08887ED8` estava antes de
+  `duel_08887B34` e `duel_088C9878` antes de `duel_088C96EC` (`duel_reqs2.c`), o que só aparece no `make check`
+  (jals deslocados), não no `check_file`.
+- **Zona antes do jogador num ponteiro da mão** (`duel_hand_add`): `((DuelPlayer *)(*n * sizeof(DuelCard) +
+  (unsigned int)&duel.players[p & 1]))->hand` (mesma ideia do `ZSLOT`).
+- **Valor do teste num local do topo** (`duel_088CA184`): `unsigned int pb = b & 0xFF;` declarado junto com `pa`,
+  `za`, `zb` (busca de ordem) e `if` aninhados dão o `beqz` com o `andi` no delay slot do original.
+- **`?:` no corte** (`v = v > 0xFFFF ? 0xFFFF : v;`) dá `bnez; nop; li` sem likely; `atk = f(); v = atk * n / 10;` dá
+  a ordem dos operandos do `mult`; `p`/`z` do bloco do `if` corrigiram os `$s` (`duel_0888EB8C`), e `default:
+  break;` + `else if` levaram o `default` do `switch` direto ao `return 0` comum.
+- **`(unsigned short)id` nas duas chamadas** (CSE do `andi` num `$s`) e o contador `i` de outro laço reaproveitado
+  (`duel_0886D828`, 233 → 0: o frame caiu de 32 para 16 bytes).
+Sem forma: `duel_088D1F1C` (8: o original copia o `lbu a0,a->player` nos dois caminhos do `||` e o mwcc copia o
+`xori` de `grave`; ordem/tipo dos locais, forma do `!`, posição de `opp` e do laço de zeragem testados),
+`duel_088A6F00` (108-115: coloração `p`/`a`/`k` rodada; ordem e tipos das declarações sem efeito).

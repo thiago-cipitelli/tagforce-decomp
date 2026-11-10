@@ -1,6 +1,5 @@
 // @range 0x088C134C-0x088C2F80
 // @asm 0x088C1B88-0x088C1D80
-// @asm 0x088C28A4-0x088C2A08
 /* Effects resolved at a phase change (after effects_088C004C.c): one handler per card id, each scanning
    both fields for the cards it affects. */
 #include "duel.h"
@@ -484,27 +483,26 @@ int duel_088C272C(int id)
     return 0;
 }
 
-#ifdef NON_MATCHING /* mesmo beqz para o corpo + b fim do teste do bit 5 que em duel_088C07FC; o y do alvo sai com srl em vez de ext */
 void duel_088C28A4(unsigned int p, int z, int c)
 {
-    unsigned short v = duel_slot_e1854(p, z);
+    unsigned int v = duel_slot_e1854(p, z);
     unsigned int tp;
     unsigned int tz;
 
     if (v != 0xFFFF) {
         tp = v & 0xFF;
-        tz = (v & 0xFFFF) >> 8 & 0xFF;
+        tz = (unsigned short)v >> 8 & 0xFF;
         duel_088CC1D0(p, z, 1);
         if (duel_slot_value_1909(p, z) + 1 >= 3) {
             duel_088C88B8(tp, tz, (unsigned short)((unsigned char)p | (unsigned char)z << 8), 1);
-            if (c == 0 && !(duel.players[p & 1].field[z].flags >> 5 & 1)) {
-                duel_088C4448(p, z, CARD_UID(duel.players[p & 1].field[z].card));
-                duel_088D1438(tp, tz, tp != p, field_get_card(p, z));
+            if (c != 0 || duel.players[p & 1].field[z].flags >> 5 & 1) {
+                return;
             }
+            duel_088C4448(p, z, CARD_UID(duel.players[p & 1].field[z].card));
+            duel_088D1438(tp, tz, tp != p, field_get_card(p, z));
         }
     }
 }
-#endif
 
 int duel_088C2A08(void)
 {
