@@ -32,16 +32,13 @@ fuzzy	size	module	function	address	file
 94.1	1444	libshop	shop_result_input	0x0881189C	src/libshop/shop_open.c
 94.1	1020	libduel_eng	duel_0888F82C	0x0888F82C	src/libduel_eng/effects_zc.c
 94.1	1244	libduel_draw	dd_cobj_goto	0x08809FA0	src/libduel_draw/dd_cobj.c
-94.1	236	BOOT	snd_channels_update	0x08865BC4	src/BOOT/sndapi.c
 94.0	448	libfield	fpt_place	0x0881C03C	src/libfield/f_partner.c
 94.0	2268	libduel_eng	duel_08838A84	0x08838A84	src/libduel_eng/ai_08838548.c
 94.0	440	libduel_eng	duel_card_fits_zone	0x088EFEE4	src/libduel_eng/grave.c
 94.0	396	libduel_eng	duel_088AC6A0	0x088AC6A0	src/libduel_eng/effects_088A8B94.c
 93.9	508	libstory	op_choice	0x0880798C	src/libstory/s_vmcond.c
-93.9	184	BOOT	snd_obj_meter_level	0x088610E0	src/BOOT/snd_core.c
 93.8	172	libduel_eng	duel_0888A88C	0x0888A88C	src/libduel_eng/effects_y.c
 93.8	200	libshop	shop_draw_shelf	0x0880C83C	src/libshop/shop_shelf.c
-93.8	480	BOOT	dl_set_matrix	0x0883B2A0	src/BOOT/dl.c
 93.8	556	libduel_eng	duel_eff_f943c	0x088F943C	src/libduel_eng/effects_c.c
 93.7	400	libduel_eng	duel_08813A6C	0x08813A6C	src/libduel_eng/ai_cond5.c
 93.6	808	libduel_eng	duel_088862DC	0x088862DC	src/libduel_eng/effects_v.c

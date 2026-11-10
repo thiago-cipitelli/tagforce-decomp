@@ -1,6 +1,5 @@
 // @range 0x08839F50-0x0883CEB0
 // @asm 0x0883A4E4-0x0883A6CC
-// @asm 0x0883B2A0-0x0883B480
 // @asm 0x0883B584-0x0883B684
 // @asm 0x0883BF38-0x0883C040
 // @asm 0x0883CBE8-0x0883CDB4
@@ -646,7 +645,6 @@ unsigned int *dl_morph_weight(float w, unsigned int *list, int index)
     return dl_push(list, cmd, 2);
 }
 
-#ifdef NON_MATCHING /* the write pointer and the GE opcode land in other registers */
 /* Loads a matrix straight into the list: 0 projection (4x4), 1 world, 2 view, 3 texture (4x3). */
 unsigned int *dl_set_matrix(unsigned int *list, int type, float *m)
 {
@@ -656,47 +654,49 @@ unsigned int *dl_set_matrix(unsigned int *list, int type, float *m)
     int i;
 
     switch (type) {
-    default:
-        return list;
+    
     case 0:
         *list = 0x3E000000;
         p = list + 1;
         for (i = 0; i < 16; i++) {
             *p++ = *u++ >> 8 | 0x3F000000;
         }
-        return p;
+        break;
     case 1:
         *list = 0x3C000000;
         p = list + 1;
         op = 0x3D;
-        break;
+        goto m43;
     case 2:
         *list = 0x3A000000;
         p = list + 1;
         op = 0x3B;
-        break;
+        goto m43;
     case 3:
         *list = 0x40000000;
         p = list + 1;
         op = 0x41;
+    m43:
+        op <<= 24;
+        p[0] = op | u[0] >> 8;
+        p[1] = op | u[1] >> 8;
+        p[2] = op | u[2] >> 8;
+        p[3] = op | u[4] >> 8;
+        p[4] = op | u[5] >> 8;
+        p[5] = op | u[6] >> 8;
+        p[6] = op | u[8] >> 8;
+        p[7] = op | u[9] >> 8;
+        p[8] = op | u[10] >> 8;
+        p[9] = op | u[12] >> 8;
+        p[10] = op | u[13] >> 8;
+        p[11] = op | u[14] >> 8;
+        p += 12;
         break;
+    default:
+        return list;
     }
-    op <<= 24;
-    p[0] = op | u[0] >> 8;
-    p[1] = op | u[1] >> 8;
-    p[2] = op | u[2] >> 8;
-    p[3] = op | u[4] >> 8;
-    p[4] = op | u[5] >> 8;
-    p[5] = op | u[6] >> 8;
-    p[6] = op | u[8] >> 8;
-    p[7] = op | u[9] >> 8;
-    p[8] = op | u[10] >> 8;
-    p[9] = op | u[12] >> 8;
-    p[10] = op | u[13] >> 8;
-    p[11] = op | u[14] >> 8;
-    return p + 12;
+    return p;
 }
-#endif
 
 /* Depth range (sceGuDepthRange): viewport Z scale/center and the min/max Z clamp. */
 unsigned int *dl_depth_range(unsigned int *list, int near, int far)

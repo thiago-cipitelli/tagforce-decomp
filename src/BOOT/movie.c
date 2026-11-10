@@ -53,7 +53,7 @@ int movie_umd_term(void);
 int movie_check_end(MovieVid *vid, PmfReader *reader, MovieCtrl *ctrl);
 int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *reader, MovieVid *vid, MovieCtrl *ctrl);
 int movie_read_header(void *mpeg, MovieFile *file, int *size, int *offset);
-int movie_poll_input(void);
+int movie_poll_input();
 int movie_file_init(MovieFile *f, const char *path);
 int movie_file_open(MovieFile *f, const char *path, int flags);
 int movie_file_close(MovieFile *f);
@@ -368,7 +368,7 @@ int ctrl_abort(MovieCtrl *c)
 
 /* Decode loop of the main thread. Returns 0 at the end of the stream, 1 when skipped, <0 on error. */
 
-#ifdef NON_MATCHING /* forma igual (52 palavras, só registradores): o original dá s0 a r e s1..s5 a ctrl, vid, reader, au, mpeg; o mwcc põe os parâmetros em s0..s4 e r em s5, com qualquer ordem de declaração */
+#ifdef NON_MATCHING /* forma igual (52 palavras, só registradores): o original dá s0 a r e s1..s5 a ctrl, vid, reader, au, mpeg; o mwcc põe os parâmetros em s0..s4 e r em s5, com qualquer ordem de declaração, r em bloco, K&R ou parâmetros void * copiados para locais tipados (rodada 15) */
 int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *reader, MovieVid *vid, MovieCtrl *ctrl)
 {
     int r;
@@ -385,7 +385,7 @@ int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *r
         if (ended != 0) {
             ended = movie_check_end(vid, reader, ctrl);
         } else {
-            r = movie_poll_input();
+            r = movie_poll_input(vid->disp); /* the original loads vid->disp into a0; the callee ignores it */
             if (r != 0) {
                 sceMpeg_4571CC64(mpeg);
                 ctrl_abort(ctrl);

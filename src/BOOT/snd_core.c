@@ -1,5 +1,4 @@
 // @range 0x08860DA4-0x088615D0
-// @asm 0x088610E0-0x08861198
 /* Sound library, object side: SAS voice allocation mask, per-channel volumes (BGM/SE/voice),
    counters over the active object list, the level meter used for lip sync, and the SAS
    effect/output setup. */
@@ -196,13 +195,13 @@ int snd_obj_base_id(int obj)
     return snd_bank->base_ids[obj];
 }
 
-#ifdef NON_MATCHING /* meter_level: lógica conferida; 24 palavras: o original põe &o->s em a1 (aqui a0) e grava tick a partir de (short)(unsigned short)0 em v1 (andi zero + seh), forma não achada. */
 /* Arms the level meter of a streamed sound (kind 3/4); returns its current level, -1 if none. */
 int snd_obj_meter_level(int handle)
 {
     SndObj *o = snd_obj_find(handle);
     SndStream *s;
     int st;
+    short t;
 
     if (o == 0)
         return -1;
@@ -220,19 +219,17 @@ int snd_obj_meter_level(int handle)
     if ((st & 0x20) == 0) {
         s->sflags |= 0x10;
         s->level = 0;
-        s->meter = 0;
+        t = s->meter = 0;
         s->acc = 0;
         s->shown = 0;
         s->peak = 0;
-        s->tick = 0;
+        s->tick = t;
         s->step = 0;
         o->state |= 0x20;
         return 0;
     }
     return s->level;
 }
-
-#endif
 
 /* Smoothed mouth level for lip sync, advanced by `dt` ticks. */
 int snd_obj_query(int handle, signed char dt)

@@ -1,7 +1,6 @@
 // @range 0x08865260-0x08866068
 // @data 0x088F04AC-0x088F078C
 // @rodata 0x088EAFE0-0x088EB030
-// @asm 0x08865BC4-0x08865CB0
 /* Game-side sound glue: heap and loader callbacks handed to the sound library (0x0885C688..0x08865260,
    still asm), the BGM/SE API exported to the gmodules (thin wrappers), character voice tables,
    per-player voice channels, movie_play with the configured volume, and the save-data path helpers
@@ -462,13 +461,12 @@ void snd_channel_update(int slot)
     *act = 0;
 }
 
-#ifdef NON_MATCHING /* fluxo igual ao original; 24 palavras: só a numeração dos s-registradores (original: q s0, base s1, active s2, slot s3, i s4) */
 /* Per frame: starts the queued voice of each slot, advances the queue when it ends. */
 void snd_channels_update(void)
 {
-    SndChannelSlot *q;
-    int slot;
     int i;
+    int slot;
+    SndChannelSlot *q;
 
     for (slot = 0; slot < 4; slot++) {
         if (snd_channel_tab.active[slot] == 0)
@@ -481,15 +479,13 @@ void snd_channels_update(void)
             if (q->delay != 0) {
                 q->delay--;
             } else {
-                for (i = 1; i < 8; i++, q++)
-                    memcpy(&snd_channel_tab.ch[slot].q[i - 1], q + 1, 0x10);
+                for (i = 1; i < 8; i++)
+                    memcpy(&snd_channel_tab.ch[slot].q[i - 1], &snd_channel_tab.ch[slot].q[i], 0x10);
                 snd_channel_tab.active[slot]--;
             }
         }
     }
 }
-
-#endif
 
 /* Plays a PMF with the configured BGM volume (silent when muted). */
 void movie_play(const char *path, unsigned int flags, int arg)
