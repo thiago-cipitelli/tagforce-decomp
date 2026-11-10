@@ -5,9 +5,9 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-08 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 82,3% | 95,5% | 10300 / 11039 |
-| BOOT | 70,1% | 82,4% | 1864 / 2208 |
-| libduel_eng | 83,9% | 97,6% | 3299 / 3429 |
+| total | 82,6% | 95,5% | 10320 / 11039 |
+| BOOT | 70,3% | 82,4% | 1867 / 2208 |
+| libduel_eng | 84,6% | 97,6% | 3314 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
 | libpassword | 100,0% | 100,0% | 33 / 33 |
@@ -27,8 +27,8 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-08 (
 | libtitle | 88,7% | 98,1% | 416 / 434 |
 | libtutorial | 95,8% | 99,9% | 205 / 207 |
 | libfield | 84,2% | 99,2% | 611 / 652 |
-| libstory | 89,9% | 98,8% | 659 / 676 |
-| libduel_draw | 77,3% | 95,8% | 1520 / 1609 |
+| libstory | 89,9% | 98,9% | 659 / 676 |
+| libduel_draw | 77,4% | 95,8% | 1522 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
