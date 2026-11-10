@@ -262,7 +262,10 @@ void *ll_draw_grid(void *dl)
     return dl;
 }
 
-#ifdef NON_MATCHING /* mesma forma; com cnt inicializado localmente (o original copia ll_row_counters como modelo, via lwc1), x = x + 29 e o nome num temporário, o prólogo e a cópia batem; sobram x re-mascarado em s0 no ramo do monstro e o x += 193 duplicado nos dois ramos (88 palavras) */
+#ifdef NON_MATCHING
+typedef struct LlRowCounters { LlCounter c[3]; } LlRowCounters;
+#endif
+#ifdef NON_MATCHING /* com a cópia de ll_row_counters como struct, x += 193 em cada ramo e value++ antes da cor, só falta 1 instrução: no ramo de magia/armadilha o original re-mascara x (andi de s1) para o x + 18 do ll_draw_type e põe o dl em s0 (aqui o x mascarado em s0 é reaproveitado); todo o resto fica deslocado 4 bytes */
 /* one row of the name list */
 void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
 {
@@ -289,6 +292,7 @@ void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
         yy = (unsigned short)(y + 14) << 16;
         dl = ll_draw_race(dl, x | yy, kind, llres_get(0x8007));
         dl = ll_draw_type(dl, (unsigned short)(x + 18) | yy, type, llres_get(0x8007));
+        x += 193;
     } else {
         unsigned short attr = card_get_type(e->id);
         unsigned short kind = card_get_kind(e->id);
@@ -303,52 +307,52 @@ void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
         dl = ll_draw_badge(dl, (unsigned short)(x + 37) | y2, level, 0xFF000000, llres_get(0x8009));
         dl = ll_draw_stat(dl, atk << 16, (unsigned short)(x + 73) | y2, 0xC0A, 0xFF000000, llres_get(0x8009));
         dl = ll_draw_stat(dl, def << 16 | 1, (unsigned short)(x + 133) | y2, 0xC0A, 0xFF000000, llres_get(0x8009));
+        x += 193;
     }
-    x += 193;
     {
-        LlCounter cnt[3] = { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF000000, 0 }, { 4, { 0 }, 0xFF000000, 0 } };
+        LlRowCounters row = *(LlRowCounters *)ll_row_counters;
         int i;
 
         if (card_attribute_icon_is3(e->id)) {
             /* extra deck card: the extra deck, partners holding it, then the rest */
-            cnt[1].icon = 3;
-            cnt[0].icon = 0;
+            row.c[1].icon = 3;
+            row.c[0].icon = 0;
             for (i = 0; i < deck_count(3); i++) {
                 if (e->id == deck_get_card(3, i))
-                    cnt[1].value++;
+                    row.c[1].value++;
             }
             for (i = 0; i < partner_count_get(); i++) {
                 if (e->id == partner_id_get(i) && partner_state_get(i) == 3) {
-                    cnt[1].color = 0xFF0080FF;
-                    cnt[1].value++;
+                    row.c[1].value++;
+                    row.c[1].color = 0xFF0080FF;
                 }
             }
-            cnt[2].value = inv_get_count(e->id) - cnt[1].value;
+            row.c[2].value = inv_get_count(e->id) - row.c[1].value;
         } else {
             /* main deck, side deck (with the partners holding it), then the rest */
             for (i = 0; i < deck_count(1); i++) {
                 if (e->id == deck_get_card(1, i))
-                    cnt[0].value++;
+                    row.c[0].value++;
             }
             for (i = 0; i < deck_count(2); i++) {
                 if (e->id == deck_get_card(2, i))
-                    cnt[1].value++;
+                    row.c[1].value++;
             }
             for (i = 0; i < partner_count_get(); i++) {
                 if (e->id == partner_id_get(i)) {
                     if (partner_state_get(i) == 1) {
-                        cnt[0].color = 0xFF0080FF;
-                        cnt[0].value++;
+                        row.c[0].value++;
+                        row.c[0].color = 0xFF0080FF;
                     }
                     if (partner_state_get(i) == 2) {
-                        cnt[1].color = 0xFF0080FF;
-                        cnt[1].value++;
+                        row.c[1].value++;
+                        row.c[1].color = 0xFF0080FF;
                     }
                 }
             }
-            cnt[2].value = inv_get_count(e->id) - cnt[0].value - cnt[1].value;
+            row.c[2].value = inv_get_count(e->id) - row.c[0].value - row.c[1].value;
         }
-        return ll_draw_counters(dl, (unsigned short)(x + 7) | yy, cnt, llres_get(0x8006), llres_get(0x800A));
+        return ll_draw_counters(dl, (unsigned short)(x + 7) | yy, row.c, llres_get(0x8006), llres_get(0x800A));
     }
 }
 #endif
