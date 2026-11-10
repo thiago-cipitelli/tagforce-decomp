@@ -1505,15 +1505,21 @@ resto foi ordem de `if/else` (`else if (score > 1) mood = 1; else mood = 0;`: o 
 `score > 1` em vez de `>= 2` (dá `slti at` e não `slti v1`) e ponteiro `o` com `i` declarados no bloco, `for (i =
 0, o = order; ...)` (ordem dos `$s`).
 
-**Sem gatilho natural (ficam no skip):** as `*_draw` de menu (`limitlist_draw`, `duelrecord_draw`, `tlist_draw`,
-`charalist_draw`, `cardalbum_draw`, `conv_draw`) têm as cópias mortas mas o corpo inteiro está em
-`if (state != X && state != 0) {...}` e nada vem depois; o `if (state == X || state == 0) return;` liga o modo
-mas troca o `beql/beqz` do início por `bnez; nop; b; nop` (que o original não tem). Um gatilho artificial
-(`if (t == 77 || t == 3) return;` com código depois) faz aparecer as cópias de `duelrecord_draw`, então a família é
-esta, só falta a forma do fonte. Funções que devolvem valor (`duel_ai_0881E27C`, `efs_run`, `gim_walk`,
-`fld_map_walkable`, `duel_count_tributes`, `duel_act_e3920`, `dmgr_res_summary_row`) não têm gatilho conhecido;
-`op_bgm`, `rv_scroll_add` e `dk_help_topics_result` são outro fenômeno (sem cópias mortas; `b; nop` sem
-preencher / `li` repetido).
+**Telas de menu `*_draw` (mesma família):** o corpo inteiro está em `if (state != K && state != 0) {...}` e nada
+vem depois; o `if (state == K || state == 0) return;` liga o modo mas troca o `beql/beqz` do início por `bnez; nop;
+b; nop`. A forma que liga o modo **sem mudar o início** é o `return` dentro de `case` (o rótulo do case é alvo do
+desvio do switch): `switch (state) { case K: return; } if (state == 0) return; {...}` (ou `if (state != K) {
+switch (state) { case 0: return; } ... }`), dando `beql K -> epílogo; beqz -> epílogo` como o original. Bateram
+`duelrecord_draw`, `charalist_draw`, `cardalbum_draw` (direto), `tlist_draw` (+ `i`/`y` do 2º laço no bloco),
+`limitlist_draw` (+ menu num `switch case 3: case 5:` e `llres_get` direto no argumento) e `conv_draw`
+(`switch (cm.state) { case 0: return; }` + `case 3` antes de `case 4: case 5:`; o mwcc testa os `case` na ordem
+inversa da do fonte).
+
+**Sem gatilho conhecido:** funções que devolvem valor (`duel_ai_0881E27C`, `efs_run`, `gim_walk`,
+`fld_map_walkable`, `duel_count_tributes`, `duel_act_e3920`, `dmgr_res_summary_row`, `cardlist_draw_arrow`,
+`fbm_draw_marks`): nenhum `return valor` liga o modo (testados `||`, `else return`, `switch`/`case`). `op_bgm`,
+`rv_scroll_add` e `dk_help_topics_result` são outro fenômeno (sem cópias mortas; `b; nop` sem preencher / `li`
+repetido). `gfx_save_tga`/`gfx_save_bmp` (void) têm outras 200+ palavras de diferença; o gatilho sozinho não muda.
 
 **Registradores (`duel_0886DE70`, `duel_08865838`):** o endereço `&duel_chain.srcs[i]` sai num `$a1`/`$s0` próprio
 quando o ponteiro `x = &duel_chain.srcs[i]` é declarado no bloco do teste de `kinds[i]` e **todos** os campos
