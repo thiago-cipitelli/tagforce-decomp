@@ -1,5 +1,4 @@
 // @range 0x088EF5EC-0x088EFEE4
-// @asm 0x088EF7D0-0x088EFA2C
 /* Whether the card being activated may target or affect monster z of player p, and a few counts of
    cards on the field. */
 #include "duel.h"
@@ -61,7 +60,6 @@ int duel_act_can_target(DuelAct *a, unsigned int p, int z)
     return 1;
 }
 
-#ifdef NON_MATCHING /* the original keeps `st` as a 0/1 value in a0 and tests it; mwcc threads the jumps here */
 /* Card `a` may affect monster z of player p (arg: also the 0x150A protection). */
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg)
 {
@@ -74,7 +72,7 @@ int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg)
         st = 1;
     }
     if (!st) {
-        if (!(!card_is_monster(a->id))) {
+        if ((card_is_monster(a->id) != 0 ^ 1) == 0) {
             not_mon = 0;
         }
     }
@@ -100,10 +98,7 @@ int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg)
         }
         if (arg != 0 && z < 5 && duel_slot_affected_ex(p, z, 0x150A)) {
             r = duel_act_e3920(a);
-            if (duel_field_flag9(p, z) == 0) {
-                return 0;
-            }
-            if (r == 0 || (r & 2)) {
+            if (duel_field_flag9(p, z) == 0 || r == 0 || (r & 2)) {
                 return 0;
             }
         }
@@ -114,7 +109,6 @@ int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg)
     }
     return 1;
 }
-#endif
 
 /* Same for a card `id` of the opponent of p in zone `zone`. */
 int duel_card_can_affect(unsigned int p, int z, unsigned short id, unsigned char zone, int arg)
