@@ -1,5 +1,5 @@
 // @range 0x08807F68-0x0880A34C
-// @asm 0x08808844-0x0880981C
+// @asm 0x08808844-0x0880919C
 // @data 0x0880E138-0x0880EA74
 /* The three tabs (the met duelists, the other ones, the deck-only ones), input of the list and of
    the detail page (costumes, profile scroll, voice test with its theme), the character table and the
@@ -567,6 +567,8 @@ void cl_detail_update(void)
     }
 }
 
+#endif
+
 /* tabs 0 and 1: one ClInfo per duelist from the character table, with the story-dependent costumes */
 unsigned short cl_entries_build(ClEntry *out, ClPair *src, unsigned short n)
 {
@@ -575,79 +577,84 @@ unsigned short cl_entries_build(ClEntry *out, ClPair *src, unsigned short n)
     ClInfo *crowler = 0;
     unsigned short count = 0;
     int k;
-    ClPair *p = src;
+    ClPair *p;
     ClChara *c;
-    ClInfo *info;
-    unsigned int v;
-    int id;
     int i;
+    ClInfo *info;
+    unsigned short v;
+    unsigned short id;
     ClEntry *e;
 
-    for (k = 0; k < n; k++, p++) {
-        id = p->id;
-        c = cl_chara_find(id);
-        if (c == 0)
-            continue;
-        info = heap_alloc(cl.heap, 0x28);
-        memset(info, 0, 0x28);
-        v = c->u.f.n;
-        switch (cl.mode) {
-        case 2:
-            if (c->u.f.voice) {
-                if (v > 2)
-                    v = 2;
-            } else {
+    k = 0;
+    if (k < n) {
+        p = src;
+        do {
+            id = p->id;
+            c = cl_chara_find(id);
+            if (c == 0)
+                continue;
+            info = heap_alloc(cl.heap, 0x28);
+            memset(info, 0, 0x28);
+            v = c->u.f.n;
+            switch (cl.mode) {
+            case 0:
+            case 1:
+                if (region_get() == 0 && deck_slot_get_level(id) == 3)
+                    info->voice = 1;
+                break;
+            case 3:
                 v = 1;
+                break;
+            case 2:
+                if (!c->u.f.voice)
+                    v = 1;
+                else if (v > 2)
+                    v = 2;
+                break;
             }
-            break;
-        case 3:
-            v = 1;
-            break;
-        case 0:
-        case 1:
-            if (region_get() == 0 && deck_slot_get_level(id) == 3)
-                info->voice = 1;
-            break;
-        }
-        if (v != 0)
-            info->bustup[0] = c->bustup[0];
-        if (v > 1)
-            info->bustup[1] = c->bustup[1];
-        if (v > 2)
-            info->bustup[2] = c->bustup[2];
-        info->n = v;
-        for (i = 0; i < (int)v; i++) {
-            info->rank[i] = c->u.f.rank;
-            info->text[i] = table_get_entry(cl_res_get(CL_STRINGS), cl_profile_text[id][0]);
-            if (info->voice)
-                info->bgm[i] = cl_voice_set[id][i];
-        }
-        if (cl_profile_text[id][1] != 0)
-            info->text[1] = table_get_entry(cl_res_get(CL_STRINGS), cl_profile_text[id][1]);
-        info->face = c->face.face;
-        switch (id) {
-        case 0xE:
-            info->rank[1] = 6;
-            break;
-        case 0x10:
-            crowler = info;
-            break;
-        case 0x18:
-            zane = info;
-            break;
-        case 6:
-            alexis = info;
-            break;
-        }
-        e = &out[count];
-        e->id = id;
-        e->num = p->num;
-        count++;
-        e->simple = 0;
-        e->u.info = info;
+            if (v > 0)
+                info->bustup[0] = c->bustup[0];
+            if (v >= 2)
+                info->bustup[1] = c->bustup[1];
+            if (v >= 3)
+                info->bustup[2] = c->bustup[2];
+            info->n = v;
+            for (i = 0; i < v; i++) {
+                info->rank[i] = c->u.f.rank;
+                info->text[i] = table_get_entry(cl_res_get(CL_STRINGS), cl_profile_text[id][0]);
+                if (info->voice)
+                    info->bgm[i] = cl_voice_set[id][i];
+            }
+            if (cl_profile_text[id][1] != 0)
+                info->text[1] = table_get_entry(cl_res_get(CL_STRINGS), cl_profile_text[id][1]);
+            info->face = c->face.face;
+            switch (id) {
+            case 6:
+                alexis = info;
+                break;
+            case 0x18:
+                zane = info;
+                break;
+            case 0x10:
+                crowler = info;
+                break;
+            case 0xE:
+                info->rank[1] = 6;
+                break;
+            }
+            e = &out[count];
+            e->id = id;
+            e->num = p->num;
+            e->simple = 0;
+            count++;
+            e->u.info = info;
+        } while (p++, ++k < n);
     }
     if (alexis) {
-        if (sysflag_test(4) == 0) {
+        if (sysflag_test(4) != 0) {
+            if (alexis->n >= 2)
+                alexis->rank[1] = 3;
+        } else {
             alexis->bustup[0] = cl_chara_find(6)->bustup[1];
             alexis->rank[0] = 3;
             alexis->text[0] = alexis->text[1];
@@ -655,13 +662,11 @@ unsigned short cl_entries_build(ClEntry *out, ClPair *src, unsigned short n)
                 alexis->bgm[0] = alexis->bgm[1];
             alexis->face++;
             alexis->sel = 1;
-            if (alexis->n > 1) {
+            if (alexis->n >= 2) {
                 alexis->bustup[1] = 0;
                 alexis->text[1] = 0;
             }
             alexis->n = 1;
-        } else if (alexis->n > 1) {
-            alexis->rank[1] = 3;
         }
     }
     if (zane && sysflag_test(5) == 0) {
@@ -671,31 +676,31 @@ unsigned short cl_entries_build(ClEntry *out, ClPair *src, unsigned short n)
             zane->bgm[0] = zane->bgm[1];
         zane->face++;
         zane->sel = 1;
-        if (zane->n > 1) {
+        if (zane->n >= 2) {
             zane->bustup[1] = 0;
             zane->text[1] = 0;
         }
         zane->n = 1;
     }
     if (crowler) {
-        if (sysflag_test(6) == 0) {
+        if (sysflag_test(6) != 0) {
+            if (crowler->n >= 2)
+                crowler->rank[1] = 6;
+        } else {
             crowler->bustup[0] = cl_chara_find(0x10)->bustup[1];
             crowler->rank[0] = 6;
             crowler->text[0] = crowler->text[1];
             crowler->face++;
             crowler->sel = 1;
-            if (crowler->n > 1) {
+            if (crowler->n >= 2) {
                 crowler->bustup[1] = 0;
                 crowler->text[1] = 0;
             }
             crowler->n = 1;
-        } else if (crowler->n > 1) {
-            crowler->rank[1] = 6;
         }
     }
     return count;
 }
-#endif
 
 /* tab 2: the deck-only duelists (rank and card picture) */
 unsigned short cl_entries_simple(ClEntry *out, ClPair *src, unsigned short n)

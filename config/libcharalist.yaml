@@ -31,7 +31,7 @@ segments:
       - [0xFA8, c, cl_draw]
       - [0x3FC8, c, cl_list]
       - [0x48A4, asm, cl_list_asm_08808844]
-      - [0x587C, c, cl_list]
+      - [0x51FC, c, cl_list]
       - [0x63AC, asm, sceStub_text]
       - [0x8A94, bin, lib_ent_top]
       - [0x8A98, bin, lib_ent]
