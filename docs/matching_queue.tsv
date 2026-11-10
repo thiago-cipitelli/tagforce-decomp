@@ -40,7 +40,6 @@ fuzzy	size	module	function	address	file
 92.6	304	libduel_eng	duel_req_088D42C8	0x088D42C8	src/libduel_eng/req_088D28F8.c
 92.5	960	libduel_eng	duel_08834A84	0x08834A84	src/libduel_eng/ai_08834734.c
 92.4	1364	libduel_eng	duel_field_controller	0x088EEA30	src/libduel_eng/control.c
-92.4	208	BOOT	netsync_queue_pop	0x0886E33C	src/BOOT/netsync.c
 92.4	1124	BOOT	efs_run	0x0882A538	src/BOOT/efs.c
 92.3	3116	BOOT	cardinfo_draw	0x0885A1A4	src/BOOT/cardinfo.c
 92.2	1400	libduel_eng	duel_088AFF8C	0x088AFF8C	src/libduel_eng/effects_088AFD5C.c
