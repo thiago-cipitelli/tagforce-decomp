@@ -1070,3 +1070,25 @@ inicializadas (`t0[side][k]`) pedem `// @data` com os modelos (`duel_tag_slot`).
 `bootx`: `- 12U` em `x + 20 + (d + 2) - 12U` impede o mwcc de dobrar `20 - 12` e reproduz a aritmética do original
 (`shop_shelf_cursor`); em `ehp_unload`, atribuir o ponteiro auxiliar só depois do teste de entrada do laço põe o
 ponteiro da entrada no delay slot do primeiro desvio.
+
+## Rodada 13 (`engG`: libduel_eng, funções 95-97% nunca tentadas)
+
+- **`andi 0xFF` num bit de bitfield passado como argumento** (`duel_0884C8E4`, 8 bytes a mais): declarar o callee
+  **sem protótipo** (`unsigned int duel_grave_find_uid();`) tira o `andi` e põe a leitura do `uid_hi` antes da do dono.
+- **Ponteiro de slot que anda a partir da base do jogador** (`addu s1,duel,p*4012` e acessos `54(s1)` = `field[0].pos`
+  com `s1 += 20`) com o bit da zona `b` num `$s` abaixo dele: `DuelPlayer *s` avançado de `sizeof(DuelSlot)` por volta
+  (`s->field[0]` é `field[i]`), iniciado no `for` **depois** de `b` (`for (i = 0, b = p << 4, s = &duel.players[p & 1];
+  ...)`) e a carta num local de bloco (`int c = field_get_card(p, i); if (c == id ...)` dá `bnel v0,sN`; `id == c` não)
+  (`duel_count_monster_active`, `_atk`; `duel_find_effect_card` 10 → 2).
+- **Globais que caem dentro de `duel_chain`** (`duel_w_089149F0/F8` = `+0x6A0/+0x6A8`, `duel_w_089147E4/E8` =
+  `uids_head`/`uids`): acessados como campos de `duel_chain` (macros `CHAIN_N`/`CHAIN_I` sobre `pad638` em
+  `ai_0882D398.c`), o mwcc relê depois de cada store no anel como o original, sem `volatile` (`duel_0882E1B8`, 23 → 0).
+  Só nos trechos que releem: no passo 0 os stores a `ids[]` precisam continuar pelos globais.
+- **`beql` para o epílogo com o `li` no atraso e os outros testes `beq; nop` para um corpo `li v0,1; b fim`**: é um só
+  `case` com todos os ids (o 1º teste é encadeado até o epílogo), não dois grupos com `return 1` (`duel_08810D08`);
+  `n_hand` relido na condição do `for` em vez de num local.
+- Halfword `jogador | zona << 8` testado com `andi 0xFF` e `ext 8,8` depois de `andi 0xFFFF`: ler o halfword num local
+  `unsigned int w` e usar `w & 0xFF` / `(unsigned short)w >> 8 & 0xFF`; `(unsigned int)ef->kind << 8` fixa a ordem do
+  `or` (`duel_setup_load_text`).
+- Busca de declarações: tipos × ordem × ordem das atribuições (`duel_ai_0881A7C0`: `int id; int uid; int n;` na
+  função, `id` atribuído antes de `uid`).
