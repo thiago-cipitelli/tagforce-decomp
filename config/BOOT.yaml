@@ -258,8 +258,6 @@ segments:
       - [0x40BA4, asm, menu_draw_asm_08844B44]
       - [0x4153C, c, menu_draw]
       - [0x41B20, c, font]
-      - [0x41B20, asm, font_asm_08845AC0]
-      - [0x41E3C, c, font]
       - [0x42A48, asm, font_asm_088469E8]
       - [0x42F00, c, font]
       - [0x43068, c, font_text]
@@ -413,7 +411,6 @@ segments:
       - [0xEA418, .data, wstr]
       - [0xEA91C, data, data_13]
       - [0xEA924, .data, font]
-      - [0xEA964, data, data_14]
       - [0xEAA40, .data, font_tags]
       - [0xEAAB8, .data, menu_widget]
       - [0xEAC00, .data, card_db]
@@ -433,7 +430,7 @@ segments:
       - [0xEC968, .data, net_match]
       - [0xECBD4, .data, net_ctl]
       - [0xECCF4, .data, extdata]
-      - [0xECD10, data, data_15]
+      - [0xECD10, data, data_14]
       - { start: 0xECD20, type: bss, vram: 0x88F0CC0, name: bss_0 }
       - { start: 0xECD20, type: .bss, vram: 0x8BE8ED4, name: movie }
       - { start: 0xECD20, type: bss, vram: 0x8BE8EDC, name: bss_1 }

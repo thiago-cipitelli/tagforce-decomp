@@ -1,6 +1,5 @@
 // @range 0x08845AC0-0x08847008
-// @data 0x088EE8C4-0x088EE904
-// @asm 0x08845AC0-0x08845DDC
+// @data 0x088EE8C4-0x088EE9E0
 // @asm 0x088469E8-0x08846EA0
 /* Font layer: libfont.prx setup, the 256-slot glyph atlas with LRU replacement, glyph quads,
    size/color state and the UCS-2 line-breaking character classes. Text layout is in font_draw.c. */
@@ -33,23 +32,23 @@ unsigned int font_color_table[15] = {
 };
 FontCtx *font_ctx_ptr = &font_ctx_storage;
 
-#ifdef NON_MATCHING
-/* Fica em asm: o original copia o modelo de FontNewLibParams (0x088EE904, logo depois do @data
-   deste arquivo) palavra a palavra para um temporário e dele para params, como um literal composto;
-   casar exige mover o modelo e "libfont.prx" para o @data do arquivo. */
+/* o modelo de FontNewLibParams (0x088EE904) e "libfont.prx" saem do @data deste arquivo */
 int font_init(void *fs)
 {
-    FontNewLibParams params = { 0, 2, 0, font_alloc_cb, font_free_cb, 0, 0, 0, 0, 0, 0 };
-    FontCtx *f = font_ctx_ptr;
-    SceFontInfo info;
-    SceFontStyle style;
-    int best;
+    int status;
     unsigned int err;
+    SceFontStyle style;
+    SceFontInfo info;
+    FontNewLibParams params;
+    FontCtx *f;
+    int best;
 
-    do {
-        f->module_id = ehfile_load_module(fs, "libfont.prx");
-    } while (f->module_id <= 0);
-    sceKernelStartModule(f->module_id, 0, 0, (int *)&err, 0);
+    params = (FontNewLibParams){ 0, 2, 0, font_alloc_cb, font_free_cb, 0, 0, 0, 0, 0, 0 };
+    f = font_ctx_ptr;
+
+    while ((f->module_id = ehfile_load_module(fs, "libfont.prx")) <= 0)
+        ;
+    sceKernelStartModule(f->module_id, 0, 0, &status, 0);
     memset(f, 0, sizeof(FontCtx));
     font_scratch_reset();
     f->lib = sceFontNewLib(&params, &err);
@@ -62,8 +61,8 @@ int font_init(void *fs)
     best = sceFontFindOptimumFont(f->lib, &style, &err);
     f->font = sceFontOpen(f->lib, 0, 0, &err);
     switch (region_get()) {
-    case 1:
     case 0:
+    case 1:
         f->font2 = f->font;
         break;
     default:
@@ -85,7 +84,6 @@ int font_init(void *fs)
     f->size_y = 20;
     return 1;
 }
-#endif
 
 void font_mbs_reset(void)
 {
@@ -240,11 +238,8 @@ void font_dl_end(void)
 }
 
 /* GE commands of one glyph quad: 2 vertices (u16 uv, float xyz) drawn with the atlas texture */
-#ifdef NON_MATCHING
-static const GlyphCmds glyph_cmds_template = { 0x14000000, 0x0100000C, 0x0800002C, { 0x00010001, 0, 0, 0 }, { 0x00150015, 0, 0, 0 }, 0x04060002 };
-#else
-extern const GlyphCmds glyph_cmds_template; /* 0x088EE93C, no .data em asm (fora do @data deste arquivo) */
-#endif
+/* lido por um ponteiro const: assim a cópia sai em lwc1/swc1 como no original (definido como const iria para a .rodata) */
+GlyphCmds glyph_cmds_template = { 0x14000000, 0x0100000C, 0x0800002C, { 0x00010001, 0, 0, 0 }, { 0x00150015, 0, 0, 0 }, 0x04060002 };
 
 /* Emits a 2-vertex textured quad for atlas cell `slot` at (x, y) in 26.6. */
 void font_glyph_quad(int x, int y, int slot)
@@ -256,7 +251,7 @@ void font_glyph_quad(int x, int y, int slot)
     unsigned int *q;
     float fx, fy;
 
-    cmds = glyph_cmds_template;
+    cmds = *(const GlyphCmds *)&glyph_cmds_template;
     q = (unsigned int *)((char *)f->dl + 12);
     f->dl = dl_push(f->dl, &cmds, 12);
     fx = (float)x * 0.015625f - (float)(f->size_x * 7) / 20.0f;
@@ -467,9 +462,16 @@ int wc_break_class(unsigned short c)
     return r;
 }
 
-/* sorted lists in .data (asm): characters that cannot start / end a line */
-extern const unsigned short wc_nostart[47];
-extern const unsigned short wc_noend[10];
+/* sorted lists: characters that cannot start / end a line */
+unsigned short wc_nostart[47] = {
+    0x0029, 0x005D, 0x007D, 0x2026, 0x3001, 0x3002, 0x3009, 0x300B, 0x300D, 0x300F, 0x3011, 0x3015,
+    0x3041, 0x3043, 0x3045, 0x3047, 0x3049, 0x3063, 0x3083, 0x3085, 0x3087, 0x308E, 0x30A1, 0x30A3,
+    0x30A5, 0x30A7, 0x30A9, 0x30C3, 0x30E3, 0x30E5, 0x30E7, 0x30EE, 0x30F5, 0x30F6, 0x30FB, 0x30FC,
+    0xFF01, 0xFF05, 0xFF06, 0xFF09, 0xFF0C, 0xFF0D, 0xFF0E, 0xFF0F, 0xFF1A, 0xFF1F, 0xFF5E,
+};
+unsigned short wc_noend[10] = {
+    0x0028, 0x005B, 0x007B, 0x2018, 0x201C, 0x300C, 0x300E, 0x3010, 0x3014, 0xFF08,
+};
 
 int wc_no_line_start(unsigned short c)
 {
