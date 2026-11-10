@@ -1,6 +1,5 @@
 // @range 0x0888C1A8-0x0888E5D4
 // @data 0x08911868-0x08911894
-// @asm 0x0888E1A4-0x0888E3F4
 /* Card effect handlers and pick filters, after effects_z.c. */
 #include "duel.h"
 
@@ -837,7 +836,6 @@ int duel_0888E0E4(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 13 palavras: no caso 0x7C o original calcula 1 - a->player por último (temporário em a0, depois dos globais); o 0x80 não cai no 0x7F (corrigido: return ? 0x7F : 0) */
 int duel_0888E1A4(DuelAct *a, int b)
 {
     switch (duel_step) {
@@ -853,22 +851,22 @@ int duel_0888E1A4(DuelAct *a, int b)
     case 0x7D:
         duel_w_08914900 = duel_w_0891968C >> 8 & 0xFF;
         return 0x7C;
-    case 0x7C:
-        if (duel_act_immune(a, a->player, duel_w_089148FC) != 0) {
+    case 0x7C: /* zonas lidas como volatile: o original carrega os globais antes de calcular 1 - a->player */
+        if (duel_act_immune(a, a->player, *(volatile int *)&duel_w_089148FC) != 0) {
             return 0;
         }
-        if (duel_slot_ef098(a->player, duel_w_089148FC, a->id) == 0) {
+        if (duel_slot_ef098(a->player, *(volatile int *)&duel_w_089148FC, a->id) == 0) {
             return 0;
         }
-        if (duel_act_immune(a, 1 - a->player, duel_w_08914900) != 0) {
+        if (duel_act_immune(a, 1 - a->player, *(volatile int *)&duel_w_08914900) != 0) {
             return 0;
         }
-        if (duel_slot_ef098(1 - a->player, duel_w_08914900, a->id) == 0) {
+        if (duel_slot_ef098(1 - a->player, *(volatile int *)&duel_w_08914900, a->id) == 0) {
             return 0;
         }
-        duel_088C87A8(a->player, duel_w_089148FC, a->id, 5, 1 - a->player);
-        duel_088C87A8(1 - a->player, duel_w_08914900, a->id, 5, a->player);
-        duel_088CA270(a->player, a->player | (duel_w_089148FC & 0xFF) << 8, (1 - a->player & 0xFF) | (duel_w_08914900 & 0xFF) << 8);
+        duel_088C87A8(a->player, *(volatile int *)&duel_w_089148FC, a->id, 5, 1 - a->player);
+        duel_088C87A8(1 - a->player, *(volatile int *)&duel_w_08914900, a->id, 5, a->player);
+        duel_088CA270(a->player, a->player | (*(volatile int *)&duel_w_089148FC & 0xFF) << 8, (1 - a->player & 0xFF) | (*(volatile int *)&duel_w_08914900 & 0xFF) << 8);
         return 0x7B;
     case 0x7B:
         duel_088C7E68(a->player, duel_w_089148FC, 0x15, 1);
@@ -877,7 +875,6 @@ int duel_0888E1A4(DuelAct *a, int b)
     }
     return 0;
 }
-#endif
 
 int duel_0888E3F4(DuelAct *a)
 {
