@@ -1,5 +1,4 @@
 // @range 0x0881F02C-0x08821D3C
-// @asm 0x0881FD30-0x0881FF2C
 // @asm 0x088216FC-0x08821A14
 // @data 0x0882F398-0x08830140
 // @rodata 0x0882B40C-0x0882B4E4
@@ -496,61 +495,59 @@ void *tpartner_draw(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* 86 palavras, não-corrigível: o original deixa cópias mortas dos destinos depois de cada b (li side, li r de case 2/3) e um return 0 separado; lógica conferida com o asm */
+/* card side shown for slot i in a given layout mode: 1 = front. Inlined by the original (its returns keep the
+   dead copies after each b) */
+static inline int tpt_flip_side(int mode, int i)
+{
+    if (mode == 1 || mode == 5 || mode == 8) {
+        if (i == 0) return 0; else return 1;
+    } else if (mode == 3) {
+        if (i < 2) return 0; else return 1;
+    } else if (i < 2) {
+        return 0;
+    }
+    return 1;
+}
+
 int tpt_flip(int mode, int i)
 {
     short cur;
     short len = 1;
     int on;
-    int side;
     int r = 0;
 
     on = tanim_get(&tpt->anim, &cur, &len);
     if (on == 0) {
         return 0;
-    }
-    if (len == 0) {
-        return 0;
-    }
-    side = 1;
-    if (mode == 1 || mode == 5 || mode == 8) {
-        if (i != 0) {
-            side = 1;
-        } else {
-            side = 0;
+    } else {
+        if (len != 0) {
+            switch (tpt_flip_side(mode, i)) {
+            case 0:
+                if (on == 1) {
+                    r = cur * 0x168 / (short)(int)len - 0x168;
+                } else {
+                    r = cur * -0x168 / (short)(int)len;
+                }
+                break;
+            case 1:
+                if (on == 1) {
+                    r = 0x168 - cur * 0x168 / (short)(int)len;
+                } else {
+                    r = cur * 0x168 / (short)(int)len;
+                }
+                break;
+            case 2:
+                r = -0x168;
+                break;
+            case 3:
+                r = 0x168;
+                break;
+            }
+            return r;
         }
-    } else if (mode == 3) {
-        if (i < 2) {
-            side = 0;
-        }
-    } else if (i < 2) {
-        side = 0;
     }
-    switch (side) {
-    case 0:
-        if (on == 1) {
-            r = cur * 0x168 / len - 0x168;
-        } else {
-            r = cur * -0x168 / len;
-        }
-        break;
-    case 1:
-        if (on == 1) {
-            r = 0x168 - cur * 0x168 / len;
-        } else {
-            r = cur * 0x168 / len;
-        }
-        break;
-    case 2:
-        r = -0x168;
-        break;
-    case 3:
-        r = 0x168;
-        break;
-    }
-    return r;
+    return 0;
 }
-#endif
 
 
 void tpt_load(int i, int mode, int from, int to)

@@ -76,8 +76,6 @@ segments:
       - [0x1AAAC, asm, t_fddraw_asm_0881EA4C]
       - [0x1AD14, c, t_fddraw]
       - [0x1B08C, c, t_partner]
-      - [0x1BD90, asm, t_partner_asm_0881FD30]
-      - [0x1BF8C, c, t_partner]
       - [0x1D75C, asm, t_partner_asm_088216FC]
       - [0x1DA74, c, t_partner]
       - [0x1DD9C, c, t_duel]

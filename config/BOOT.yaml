@@ -230,8 +230,6 @@ segments:
       - [0x35FB0, c, dl]
       - [0x36544, asm, dl_asm_0883A4E4]
       - [0x3672C, c, dl]
-      - [0x375E4, asm, dl_asm_0883B584]
-      - [0x376E4, c, dl]
       - [0x37F98, asm, dl_asm_0883BF38]
       - [0x380A0, c, dl]
       - [0x38C48, asm, dl_asm_0883CBE8]

@@ -1,7 +1,6 @@
 // @range 0x08804270-0x088062FC
 // @asm 0x088044EC-0x08804570
 // @asm 0x088048C8-0x08804908
-// @asm 0x08805708-0x088057EC
 // @asm 0x08805974-0x08805B68
 // @asm 0x08805BD0-0x08805E24
 // @asm 0x08805E24-0x08806074
@@ -794,7 +793,6 @@ int st_cond_daytime(int c)
     return 0;
 }
 
-#ifdef NON_MATCHING /* mesmo problema dos desvios sem likely para o bloco final */
 int st_cond_partner_flag(int c, unsigned int bit, int mode)
 {
     StoryChrSave *s;
@@ -813,21 +811,21 @@ int st_cond_partner_flag(int c, unsigned int bit, int mode)
     if (mode != 0) {
         switch (mode) {
         case 3:
-            if (s->flags & mask)
-                return r;
-            break;
-        case 4:
             if (!(s->flags & mask))
-                return r;
-            break;
+                goto fail;
+            return r;
+        case 4:
+            if (s->flags & mask)
+                goto fail;
+            return r;
         default:
-            return 0;
+            goto fail;
         }
-        r = 0;
     }
     return r;
+fail:
+    return 0;
 }
-#endif
 
 int st_cond_weekday(int c, int n)
 {
