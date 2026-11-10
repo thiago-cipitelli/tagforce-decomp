@@ -1,5 +1,4 @@
 // @range 0x0880C940-0x0880D54C
-// @asm 0x0880D0F8-0x0880D2AC
 /* Screen state: the cursor's card (info text measured after a while), the card info screen, the
    first setup after loading (lists, saved layout, card list sprites), cursor index and entry, tab
    switching with the saved scroll of each list, scroll clamping, and the undo history of moves. */
@@ -234,8 +233,6 @@ void sc_select_tab(unsigned short side, unsigned short tab, unsigned short how)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (cols/rows int, keep u16, count int); 79 palavras: o original
-                       tem 4 cópias mortas do destino depois de um `b` (não-corrigível) que deslocam o resto */
 /* clamps a pane's scroll (top, cx, cy) to total entries in a view of view & 0xFF columns and
    view >> 8 rows; keep puts the cursor back on the entry it was on */
 void sc_layout_scroll(unsigned short keep, int count, unsigned short view, unsigned short total, unsigned short *top, unsigned short *cx, unsigned short *cy)
@@ -252,10 +249,10 @@ void sc_layout_scroll(unsigned short keep, int count, unsigned short view, unsig
         return;
     if (total < 2) {
         *top = 0;
-        if (keep != 0)
-            return;
-        *cy = 0;
-        *cx = 0;
+        if (keep == 0) {
+            *cy = 0;
+            *cx = 0;
+        }
         return;
     }
     if (area >= total) {
@@ -267,17 +264,12 @@ void sc_layout_scroll(unsigned short keep, int count, unsigned short view, unsig
         *cy += (unsigned short)((short)((short)otop - (short)*top) / cols);
     if (!(cur < total))
         cur = total - 1;
+    i = count;
     if (keep == 1) {
-        if (*cx < cols) {
-            if (*cy < rows)
-                i = -1;
-            else
-                i = cur;
-        } else {
+        if (*cx >= cols || *cy >= rows)
             i = cur;
-        }
-    } else {
-        i = count;
+        else
+            i = -1;
     }
     if (!(i < total))
         i = total - 1;
@@ -291,7 +283,6 @@ void sc_layout_scroll(unsigned short keep, int count, unsigned short view, unsig
         *cy = r - *top / cols;
     }
 }
-#endif
 
 /* stores the scroll of the pane(s) into their lists: which 0 = first, 1 = second, 2 = both */
 void sc_set_panes(unsigned short which)

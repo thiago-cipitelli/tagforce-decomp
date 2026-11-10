@@ -1,7 +1,6 @@
 // @range 0x08845AC0-0x08847008
 // @data 0x088EE8C4-0x088EE904
 // @asm 0x08845AC0-0x08845DDC
-// @asm 0x088462E8-0x0884638C
 // @asm 0x088469E8-0x08846EA0
 /* Font layer: libfont.prx setup, the 256-slot glyph atlas with LRU replacement, glyph quads,
    size/color state and the UCS-2 line-breaking character classes. Text layout is in font_draw.c. */
@@ -203,29 +202,30 @@ void font_printf_box64(int x, int y, int x0, int xmax, const char *fmt, ...)
 }
 
 /* Binary search in the sorted index: slot of `code`, or 0x100 + insertion position. */
-#ifdef NON_MATCHING /* 29 palavras: o original calcula (mid - 1) * 4 sem dobrar o -1 no deslocamento e materializa lo < mid em v1 (slt v1, não at); índice ou ponteiro local, >=/> nos testes e do-while não mudam. O parâmetro é unsigned int (o chamador font_glyph_cache passa code sem máscara) */
 int font_glyph_find(unsigned int code)
 {
     FontCtx *f = font_ctx_ptr;
     int lo = 0;
     int hi = f->count + 1;
     int mid = hi / 2;
-    unsigned short c = code;
+    int c = (unsigned short)code;
 
     while (lo < mid) {
-        if (f->index[mid - 1].code < c)
+        int i = mid - 1;
+        if (f->index[i].code < c)
             lo = mid;
-        else if (c < f->index[mid - 1].code)
+        else if (c < f->index[i].code)
             hi = mid;
         else
             break;
         mid = (lo + hi) / 2;
     }
-    if (lo < mid)
-        return mid - 1;
-    return mid + 0x100;
+    if (lo >= mid)
+        mid += 0x100;
+    else
+        mid--;
+    return mid;
 }
-#endif
 
 void font_dl_begin(int layer)
 {

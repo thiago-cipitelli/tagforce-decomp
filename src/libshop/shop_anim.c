@@ -209,11 +209,11 @@ Vec4 shop_card_mid = { -9.0f, -1.0f, -5.0f, 1.0f };
 Vec4 shop_card_mid_off = { 2.0f, 7.0f, 7.0f, 1.0f };
 Vec4 shop_card_v500 = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-#ifdef NON_MATCHING /* os temporários Vec4 ficam 16 bytes mais acima no quadro do original e os ponteiros em s0 são recalculados */
+#ifdef NON_MATCHING /* 14 palavras (eram 114): shop_card_v500 passa por um Vec4 na pilha (v4); falta o agendamento do vec4_set de card_ctrl1 (o original lê card_up.z primeiro e põe o 1.0f por último; ordem dos argumentos, constante em local e z antecipado não mudam) */
 /* curve points of the cards, in the space of the card camera */
 void shop_open_layout(void)
 {
-    Vec4 v0, v1, v2, v3;
+    Vec4 v0, v1, v2, v3, v4;
     Vec4 *p;
     Mat4 *m;
 
@@ -237,7 +237,8 @@ void shop_open_layout(void)
     m = &shop_open->card_face;
     mtx_set_mode(1);
     mtx_get34(m);
-    *(Vec4 *)&m->m[12] = shop_card_v500;
+    v4 = shop_card_v500;
+    *(Vec4 *)&m->m[12] = *(Vec4 *)&v4;
     mat4_mul_rot_y(m, m, 3.1415927f);
     mat4_transpose(m, m);
     vec4_set(&shop_open->card_show, -0.2f, 11.3f, 4.6f, 1.0f);

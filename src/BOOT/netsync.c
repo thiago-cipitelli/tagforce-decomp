@@ -1,5 +1,4 @@
 // @range 0x0886E0A4-0x0886ED2C
-// @asm 0x0886E33C-0x0886E40C
 // @asm 0x0886E988-0x0886EBA0
 /* Ad hoc state exchange over one PDP port (0x315): every player owns a 0x100-byte record;
    the local record is sent to the other PSP and the received one copied into peer_records.
@@ -26,18 +25,18 @@ typedef struct NetXfer {
     int ready;                         /* every player answered the start packet */
 } NetXfer;
 
-typedef struct NetQueue {              /* 0x10C */
+typedef struct NetQueue {              /* 0x10C cleared by netsync_init, then delay and send_size */
     int head;
     int tail;
     int size[32];
     void *buf[32];
     void *heap;                        /* +0x108 */
+    int delay;                         /* +0x10C (was netsync_q_delay): frames since the last pop */
+    int send_size;                     /* +0x110 (was netsync_send_size): bytes of local_record to send */
 } NetQueue;
 
 extern NetXfer netsync_xfer;                   /* 0x08E35910 */
 extern NetQueue netsync_q;                     /* 0x08E35920 */
-extern int netsync_q_delay;                    /* 0x08E35A2C */
-extern int netsync_send_size;                  /* 0x08E35A30 */
 extern unsigned int net_frame_count;           /* 0x08E1FD90 */
 
 void *heap_create(void *mem, int size);
@@ -125,7 +124,6 @@ int netsync_exchange(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* queue_pop: lógica conferida; só a alocação difere (o original põe head em a3 e reaproveita a1 para head+1): 11 palavras.*/
 /* Moves the oldest queued packet into the local record after 5 frames. */
 void netsync_queue_pop(void)
 {
@@ -134,22 +132,21 @@ void netsync_queue_pop(void)
     int i;
     int size;
 
-    if (netsync_q_delay < 5) {
-        netsync_q_delay++;
+    if (netsync_q.delay < 5) {
+        netsync_q.delay++;
     }
-    if (q->head != q->tail && netsync_q_delay >= 5) {
+    if (q->head != q->tail && netsync_q.delay >= 5) {
         rec = local_record_get();
         memcpy(rec + 4, q->buf[q->head], q->size[q->head]);
         heap_set_level(q->heap, q->buf[q->head]);
         i = q->head;
         size = q->size[i];
-        netsync_q_delay = 0;
         q->head = (i + 1) & 0x1F;
-        netsync_send_size = size + 4;
+        netsync_q.send_size = size + 4;
+        netsync_q.delay = 0;
     }
 }
 
-#endif
 
 int netsync_exchange_queued(void)
 {
@@ -163,9 +160,9 @@ int netsync_exchange_queued(void)
     self = peer_self_get();
     other = self ^ 1;
     netsync_queue_pop();
-    memcpy(peer_records[self], local_record, netsync_send_size);
+    memcpy(peer_records[self], local_record, netsync_q.send_size);
     memcpy(mac, net.macs[other], 6);
-    sceNetAdhocPdpSend(netsync_pdp, mac, 0x315, local_record, netsync_send_size, 0, 1);
+    sceNetAdhocPdpSend(netsync_pdp, mac, 0x315, local_record, netsync_q.send_size, 0, 1);
     for (;;) {
         len = 0x100;
         if (sceNetAdhocPdpRecv(netsync_pdp, mac, &port, data, &len, 0, 1) == 0x80410709) {

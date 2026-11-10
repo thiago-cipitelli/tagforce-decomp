@@ -1324,3 +1324,29 @@ Bateram `zone_cmd`, `func_08822914`, `func_08823344`, `dd_face_frame`, `dd_fx_ma
 - **`ALLEGREX_MIN`/`MAX` sem `#include "allegrex.h"`** viram chamada de função implícita (`jal min`): conferir o
   include antes de procurar forma (`dd_lpp_draw`).
 - **Array local maior que o `memset`**: `int opts[26]` com `memset(opts, 0, 0x60)` dá o buraco de 8 bytes na pilha.
+## Rodada 17 (`otherK`: BOOT e menus, funções 85-97% nunca tentadas)
+
+Batendo: `font_glyph_find`, `netsync_queue_pop`, `ptp_accept` (BOOT), `fld_npc_facing`, `ftalk_choice` (libfield),
+`sc_layout_scroll` (libselect_card). Reduzidas: `rv_menu_open` 210 -> 39, `shop_open_layout` 114 -> 14.
+- **Global vizinha de uma struct é campo dela** (`netsync_q_delay`/`netsync_send_size` = `NetQueue.delay`/`.send_size`
+  em +0x10C/+0x110 de `netsync_q`): com símbolos separados o mwcc sabe que o store não toca a fila e o sobe acima do
+  load de `q->size[i]`; como campo (`netsync_q.delay`, ainda com `lui` próprio), o aliasing o mantém depois. Sintoma:
+  um `sw` numa global agendado depois de um `lw` da struct vizinha no original e antes no nosso.
+- **Store cujo valor já está pronto sobe no agendamento** (`ftalk_choice`: `item_w = width + 0x23` com `width` num
+  `$s` saía logo depois do `memset`): escrevê-lo mais abaixo no fonte (depois de `selected`) e permutar os vizinhos
+  com `perm_stmts.py`. O mesmo sintoma ao contrário (`fclk_list_setup`, `rv_menu_open`: o original deixa stores
+  antes dos read-modify-write de bitfield/do `lw` de heap) não cedeu a permutação nem a `(T *)(char *)&g`.
+- **"Cópias mortas depois de um `b`" não são não-corrigíveis** (`sc_layout_scroll`, que estava anotada assim): o
+  bloco de `else` esvaziado pelo preenchimento likely fica no original quando a forma do fonte o cria: valor padrão
+  antes do `if` (`i = count; if (keep == 1) { ... }` em vez de `else i = count;`), `if (A || B) i = cur; else i = -1;`
+  em vez de dois `if` aninhados, e o `return` antecipado sem `else` (`if (keep == 0) { ... } return;`). Os gêmeos
+  `dk_layout_scroll`, `ds_layout_scroll` e `dt_layout_scroll` devem aceitar a mesma forma. Em `efs_run` (68 bytes de
+  cópias mortas depois de `return -1` em laços) nem `else` explícito nem `goto` reproduziram.
+- **`-1` não dobrado no deslocamento** (`(mid - 1) * 4` + `lhu 0x800`, não `mid * 4` + `0x7FC`): índice num local de
+  bloco `int i = mid - 1;` (`- 1U` e cast não bastam). Retorno calculado na própria variável (`if (lo >= mid) mid +=
+  0x100; else mid--; return mid;`) põe `mid` em `v0` e materializa o teste em `v1`.
+- **Redução de indução**: `ptp_buf + (unsigned int)i * 6 + 4` recalcula o endereço a cada volta como o original
+  (`ptp_buf + 4 + i * 6` vira ponteiro de indução).
+- **Cópia de struct via ponteiro**: `f = *(Vec3 *)&t;` agenda o `addiu a0` antes do último `swc1` como o original
+  (`fld_npc_facing`); `f = t` não. Cópia de global para o meio de uma matriz passando por um `Vec4` local
+  (`v4 = g; *(Vec4 *)&m->m[12] = *(Vec4 *)&v4;`) dá o temporário de pilha a mais do original (`shop_open_layout`).

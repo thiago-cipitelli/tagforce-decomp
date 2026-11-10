@@ -1,5 +1,4 @@
 // @range 0x08817218-0x08817AA4
-// @asm 0x08817510-0x08817770
 // @rodata 0x08838AFC-0x08838B04
 // @data 0x0883C878-0x0883C888
 /* The talk and choice commands of the field scripts (field_talk): a line said by a slot in the
@@ -127,7 +126,6 @@ int ftalk_msg_done(void)
     return (field_talk.active != 0) ^ 1;
 }
 
-#ifdef NON_MATCHING /* same instructions; mwcc schedules the item_w store before the widget flags */
 void ftalk_choice(FieldList *l)
 {
     FieldTalk *const t = &field_talk;
@@ -159,12 +157,12 @@ void ftalk_choice(FieldList *l)
     w->buttons = 0;
     d->style = 0;
     d->x = 0;
-    w->item_w = width + 0x23;
-    w->cursor = 0;
     w->count = l->n;
+    w->cursor = 0;
     w->scroll = 0;
     w->button = 0;
     w->selected = 0;
+    w->item_w = width + 0x23;
     w->item_h = cfg_get_language() == 0 ? 0x19 : cfg_get_language() == 0 ? 0x11 : 0x13;
     w->cursor_h = cfg_get_language() == 0 ? 0x17 : cfg_get_language() == 0 ? 0xF : 0x11;
     w->draw_item = (MenuDrawItemFn)ftalk_item;
@@ -175,7 +173,6 @@ void ftalk_choice(FieldList *l)
     d2->pad74 = (d2->pad74 != 0) ^ 1;
     t->state = 2;
 }
-#endif
 
 int ftalk_choice_done(int *out)
 {

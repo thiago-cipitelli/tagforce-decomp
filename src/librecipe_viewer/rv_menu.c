@@ -371,7 +371,7 @@ int rv_osk_update(int layer)
     return 0;
 }
 
-#ifdef NON_MATCHING /* forma igual; temporários do bloco comum de inicialização (a0/v1) diferem */
+#ifdef NON_MATCHING /* 39 palavras (eram 210): com `case 0: default: return;` no fim e o teste de buttons invertido o tamanho bate; falta o bloco comum de inicialização: o original não sobe o store de style acima do de heap (o mwcc sobe para preencher o atraso do lw rv.heap), e a ordem dos stores do case 5 */
 /* confirmation or options menu: 1 delete, 2 overwrite, 3 saved, 4 rename, 5 options, 6 load */
 void rv_menu_open(unsigned short kind)
 {
@@ -391,8 +391,6 @@ void rv_menu_open(unsigned short kind)
     d->open_anim = 2;
     d->close_anim = 2;
     switch (kind) {
-    case 0:
-        return;
     case 1:
         d->text = table_get_entry(rvres_get(0x8033), 0x9B);
         w->initial = 4;
@@ -431,20 +429,21 @@ void rv_menu_open(unsigned short kind)
         w->initial = 4;
         w->cancel_resets = 1;
         break;
+    case 0:
     default:
         return;
     }
-    if (w->buttons == 0) {
-        d->pad_l = 2;
-        d->pad_t = 2;
-        d->pad_r = 2;
-        d->pad_b = 2;
-    } else {
+    if (w->buttons != 0) {
         d->max_w = 240;
         d->pad_l = 10;
         d->pad_r = 10;
         d->pad_b = 0;
         d->pad_t = 8;
+    } else {
+        d->pad_l = 2;
+        d->pad_t = 2;
+        d->pad_r = 2;
+        d->pad_b = 2;
     }
     menu_open(w);
     d->x = (480 - d->w) / 2;
