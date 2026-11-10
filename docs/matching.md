@@ -1192,3 +1192,20 @@ Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` 
   `$s` e usa a cópia como valor fixo, o parâmetro é o que o laço altera e o local guarda o original.
 - Static usada por ponteiro e definida no meio do arquivo pode ter de ir para depois (`card_db_loaded` depois de
   `card_db_load`): ao promover a última função em asm de `card_db.c`, o `make check` acusou o deslocamento.
+
+## Rodada 15 (`misc`: BOOT, libduel_draw, libstory, libshop, libfield)
+
+- **`li` morto duplicado num `switch` de dois valores** (`help_result`: `li v0,1; li v0,1` depois do teste de 2):
+  `default: case 1: r = 1; break; case 2: r = 2; break;` (`default:` antes do `case`, não depois).
+- **Quadro de pilha 16 bytes maior sem local visível** (`func_08820CC0`): o parâmetro é uma struct passada por
+  valor (`DdLoc at`, como os chamadores a passam); o `seh` no atraso do `jal` vem da conversão para `short`.
+- **`andi x,zero,0xFFFF; seh x` gravado num campo** (`snd_obj_meter_level`): `short t; t = s->meter = 0; ...
+  s->tick = t;` (atribuição encadeada para um local de outro tipo, gravado depois).
+- **Ponteiro induzido no `$s` mais baixo** (`snd_channels_update`): o laço interno não avança `q`, indexa
+  `&tab.ch[slot].q[i]`; o mwcc cria o ponteiro induzido por último.
+- **Retorno somado no atraso do `b` para o epílogo** (`dl_set_matrix`, 60 -> 0): o bloco comum dentro do
+  `switch` (`case 1: ...; goto m43; case 3: ... m43: ...; p += 12; break; default: return list;` com o `default`
+  no fim); fora do `switch` o ponteiro de retorno coalesce com o parâmetro.
+- **`lw a0` morto no atraso de um `beqzl` antes de um `jal` sem argumentos** (`movie_main_loop`): o original
+  passa um argumento que o chamado ignora (`movie_poll_input(vid->disp)`, protótipo K&R).
+- **`script[pc - 1]` com `addiu -1` antes do `mult`** (`op_choice`): `pc - 1U` impede a dobra no deslocamento.
