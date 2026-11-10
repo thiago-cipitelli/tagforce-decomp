@@ -114,7 +114,6 @@ fuzzy	size	module	function	address	file
 86.7	376	libduel_eng	duel_0883449C	0x0883449C	src/libduel_eng/ai_08832B54.c
 86.7	916	libtitle	tfd_lobby_handler	0x0881C0E0	src/libtitle/t_fdlobby.c
 86.6	696	libdeck	dk_select_tab	0x0880BFB8	src/libdeck/dk_pane.c
-86.5	640	libduel_draw	func_08823344	0x08823344	src/libduel_draw/dd_chain_menu.c
 86.4	504	libduel_eng	duel_08844C2C	0x08844C2C	src/libduel_eng/ai_08844C2C.c
 86.3	1080	BOOT	ehf_cmd_prim_ribbon	0x08826014	src/BOOT/ehf_prim.c
 86.2	240	libduel_eng	duel_08890730	0x08890730	src/libduel_eng/effects_zd.c

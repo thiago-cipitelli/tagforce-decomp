@@ -1,5 +1,4 @@
 // @range 0x0882308C-0x08823674
-// @asm 0x08823344-0x088235C4
 /* Text panel shown beside the field (used by the field browser and the event commands): a single menu
    window that slides to the side opposite to the cursor (cursor listener), closes when its condition
    says so, and exports for the duel manager. */
@@ -151,13 +150,15 @@ void func_08823328(int (*f)(void))
     w->cond = f;
 }
 
-#ifdef NON_MATCHING /* 149 palavras: o 132 que o original mantém em $s0 (top / 2 sem dobrar) não reproduzido; #pragma opt_propagation off o mantém, mas troca o &w->def da 1ª chamada; y num local com default y = w->y como no original */
+/* top has a second (same-valued) definition so that mwcc keeps 132 in $s0 and halves it at run time, as
+   the original does */
 /* state machine: placement by half of the screen, open/close from the condition */
 void func_08823344(void)
 {
     DdChainWin *w = &dd_chain_win;
     int top = 132;
     int y;
+    int x;
 
     if (menu_item_state(&w->menu, &w->def) == 4) {
         switch (w->state) {
@@ -170,25 +171,31 @@ void func_08823344(void)
         case 5:
             w->state = 6;
             break;
+        default:
+            top = 132;
+            break;
         }
     }
     switch (w->state) {
     case 1:
     case 2:
-        y = 202 - w->def.h / 2;
+        y = 202;
+        y -= w->def.h / 2;
         break;
     case 3:
     case 4:
-        y = top / 2 - w->def.h / 2;
+        y = top / 2;
+        y -= w->def.h / 2;
         break;
     default:
         y = w->y;
         break;
     }
+    x = 314.0f - (float)(w->def.w / 2);
     w->y = y;
     w->def.y = y;
-    w->x = 314.0f - (float)(w->def.w / 2);
-    w->def.x = w->x;
+    w->x = x;
+    w->def.x = x;
     if (menu_item_state(&w->menu, &w->def) == 4) {
         switch (w->state) {
         case 2:
@@ -226,7 +233,6 @@ void func_08823344(void)
         }
     }
 }
-#endif
 
 /* cursor listener: the panel moves to the half of the screen away from the cursor's player */
 void func_088235C4(DdLoc loc, int card)

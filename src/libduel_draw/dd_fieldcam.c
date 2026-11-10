@@ -44,7 +44,7 @@ DdXyzw dd_axis_z = { 0.0f, 0.0f, 1.0f, 0.0f };
 
 #define TRACK(n) (&tms->tracks[n])
 
-#ifdef NON_MATCHING /* forma igual; tms e o índice da luz trocam de $s e o original usa i*8 como indução para os canais */
+#ifdef NON_MATCHING /* 89 palavras: tms e o índice da luz trocam de $s e o original reduz chan[i + 1] (indução i*8) e não TRACK(k) (sll k a cada uso); (tms->chan + 1)[i] dá a indução mas mantém a de k (s8 a mais); k = i * 16 + 20 no corpo muda a pilha */
 /* camera of the field at time t from the background tracks */
 void dd_fcam_from_tms(DdCam *cam, DdTms *tms, float t)
 {
@@ -63,6 +63,7 @@ void dd_fcam_from_tms(DdCam *cam, DdTms *tms, float t)
     unsigned short *bone;
     DdTrack *tr;
     int fog;
+    unsigned int rgb;
     float fog_near;
     float fog_far;
     int i;
@@ -87,10 +88,11 @@ void dd_fcam_from_tms(DdCam *cam, DdTms *tms, float t)
     fog = keyframe_eval(TRACK(4), t);
     fog_near = keyframe_eval(TRACK(8), t);
     fog_far = keyframe_eval(TRACK(9), t);
-    cam->fog_color = dd_track_rgb(tms->tracks, 5, t);
+    rgb = dd_track_rgb(tms->tracks, 5, t);
     cam->fog = fog;
     cam->fog_near = fog_near;
     cam->fog_far = fog_far;
+    cam->fog_color = rgb;
     cam->ambient = dd_track_rgb(tms->tracks, 10, t) | 0xFF000000;
     for (i = 0, k = 20; i < 4; i++, k += 16) {
         if ((cam->light_on[i] = keyframe_eval(TRACK(k + 1), t)) == 0)

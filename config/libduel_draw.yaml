@@ -129,8 +129,6 @@ segments:
       - [0x1EC8C, asm, dd_field_marks_asm_08822C2C]
       - [0x1EE90, c, dd_field_marks]
       - [0x1F0EC, c, dd_chain_menu]
-      - [0x1F3A4, asm, dd_chain_menu_asm_08823344]
-      - [0x1F624, c, dd_chain_menu]
       - [0x1F6D4, c, dd_prompt_win]
       - [0x210E8, c, dd_msg_win]
       - [0x21E3C, c, dd_wait_dots]
