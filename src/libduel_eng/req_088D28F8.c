@@ -1,6 +1,5 @@
 // @range 0x088D28F8-0x088D6DE8
 // @data 0x08911B8C-0x08911D2C
-// @asm 0x088D42C8-0x088D43F8
 /* Requests carried out one step per frame (duel_req, duel_req_step): revealing and flipping a card,
    showing a card of a list, sorting the zones, ... */
 #include "duel.h"
@@ -758,7 +757,6 @@ void duel_req_088D416C(void)
     }
 }
 
-#ifdef NON_MATCHING /* 20 palavras: com duel_w_08917DC4 = v = 1 só falta a ordem dos stores: o original grava unk20 do oponente antes de duel_w_08917DC4; aqui ele vai para o delay slot do bne */
 /* Player p loses the duel (arg: reason, 0xB without a message). */
 void duel_req_088D42C8(void)
 {
@@ -779,17 +777,17 @@ void duel_req_088D42C8(void)
 
             duel.players[p & 1].lp = 0;
             duel.players[(1 - p) & 1].unk20[3] = reason;
-            duel_w_08917DC4 = v = 1;
+            duel.unk1f68 = 1;
+            v = 1;
             if (p == duel_view_player) {
                 v = 2;
             }
-            duel_w_089195E4 = v;
+            duel.unk3788 = v;
             duel_busy_0891523C = 0;
         }
         break;
     }
 }
-#endif
 
 void duel_req_088D43F8(int gain)
 {
