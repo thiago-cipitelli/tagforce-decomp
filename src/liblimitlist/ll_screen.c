@@ -265,7 +265,7 @@ void *ll_draw_grid(void *dl)
 #ifdef NON_MATCHING
 typedef struct LlRowCounters { LlCounter c[3]; } LlRowCounters;
 #endif
-#ifdef NON_MATCHING /* com a cópia de ll_row_counters como struct, x += 193 em cada ramo e value++ antes da cor, só falta 1 instrução: no ramo de magia/armadilha o original re-mascara x (andi de s1) para o x + 18 do ll_draw_type e põe o dl em s0 (aqui o x mascarado em s0 é reaproveitado); todo o resto fica deslocado 4 bytes */
+#ifdef NON_MATCHING /* com a cópia de ll_row_counters como struct, value++ antes da cor e `x += 18; ... x += 175;` no ramo de magia/armadilha (o original re-mascara x a partir de s1 e põe o dl em s0), faltam 3 palavras: no ramo de monstro o original monta o `or a1,s0,s4` do ll_draw_race antes dos `move` (o escalonador do mwcc só faz isso quando o x mascarado morre ali, como no ramo de magia; nenhuma forma testada, rodada 21) */
 /* one row of the name list */
 void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
 {
@@ -291,8 +291,9 @@ void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
         unsigned short kind = card_get_kind(e->id);
         yy = (unsigned short)(y + 14) << 16;
         dl = ll_draw_race(dl, x | yy, kind, llres_get(0x8007));
-        dl = ll_draw_type(dl, (unsigned short)(x + 18) | yy, type, llres_get(0x8007));
-        x += 193;
+        x += 18;
+        dl = ll_draw_type(dl, x | yy, type, llres_get(0x8007));
+        x += 175;
     } else {
         unsigned short attr = card_get_type(e->id);
         unsigned short kind = card_get_kind(e->id);
