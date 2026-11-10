@@ -1,6 +1,5 @@
 // @range 0x08894158-0x08895C8C
 // @data 0x089118DC-0x0891190C
-// @asm 0x08894500-0x088946B4
 /* Card effect handlers (DuelAct *a), after effects_zg.c. */
 #include "duel.h"
 
@@ -178,7 +177,6 @@ int duel_088944A0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* duel_step despachado em $a2 (original: $v1) por causa da alocação do caso 0x7D */
 int duel_08894500(DuelAct *a, int b)
 {
     int n;
@@ -203,13 +201,13 @@ int duel_08894500(DuelAct *a, int b)
     case 0x7D:
         if (duel_h_0891968E != 0) {
             n = duel.players[1 - a->player & 1].n_grave;
-            if (n == 0) {
-                return 0x7C;
+            if (n != 0) {
+                duel_088CB400(1 - a->player, &duel.players[1 - a->player & 1].grave[n - 1], 1);
+                return 0x7D;
             }
-            duel_088CB400(1 - a->player, &duel.players[1 - a->player & 1].grave[n - 1], 1);
-            return 0x7D;
+        } else {
+            duel_088C625C(a->player, duel.players[1 - a->player & 1].n_grave, 0);
         }
-        duel_088C625C(a->player, duel.players[1 - a->player & 1].n_grave, 0);
         return 0x7C;
     case 0x7C:
         duel_088C7CF0();
@@ -217,7 +215,6 @@ int duel_08894500(DuelAct *a, int b)
     }
     return 0;
 }
-#endif
 
 int duel_088946B4(DuelAct *a)
 {
