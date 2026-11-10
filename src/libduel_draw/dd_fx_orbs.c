@@ -4,6 +4,9 @@
 /* The spirit orbs: up to five flames that appear in a row over a dimmed field, bob, and shed sparks;
    the last one joins when the others have faded in (task of 0x219C bytes). */
 #include "dd_fx.h"
+#undef DD_RAND
+#define DD_RAND(r) ((r) = &rand3_seeds[rand3_slot], (r)->lcg *= 0x41C64E6D, (int)(((r)->lcg += 0x3039) >> 16 & 0x7FFF))
+
 
 int dd_orbs_update(int phase, DdOrbFx *d);
 
@@ -175,11 +178,12 @@ int dd_orbs_update(int phase, DdOrbFx *d)
         k = one;
     }
     a = fade * out;
+    k = 5.0f * k;
     for (io = 4, xo = 180; io >= 0; io--, xo -= 45) {
         ob = &d->orb[io];
         if (!(ob->flags & 1) != 1) {
             s = sinf(0.08726647f * ob->t + ob->phase);
-            y = (int)(k * 5.0f * s);
+            y = (int)(k * s);
             e = dd_ease_sin(ob->t, 32, 1);
             x = (xo - 90) * e + 314.0f;
             y = e * (y - 40) + 157.0f;

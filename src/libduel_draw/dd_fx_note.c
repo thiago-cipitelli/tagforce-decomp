@@ -1,5 +1,4 @@
 // @range 0x0884FD60-0x0885036C
-// @asm 0x0884FDB8-0x0885036C
 /* Character effect "music notes" (m169_onp01.gim): one note at a time pops near bone 4 of the
    duel character's model, bobbing and tilted at random, faded in and out. */
 #include "libduel_draw.h"
@@ -42,8 +41,8 @@ typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
 extern int rand3_slot;                 /* BOOT variable imports, 0 in the relocated ELF */
 extern RandSeed rand3_seeds[];
 
-#define RAND15() (rand3_seeds[rand3_slot].lcg *= 0x41C64E6D, rand3_seeds[rand3_slot].lcg += 0x3039, \
-                  (int)(rand3_seeds[rand3_slot].lcg >> 16 & 0x7FFF))
+#define RAND15() (rand3_seeds[rand3_slot].lcg *= 0x41C64E6D, \
+                  (int)((rand3_seeds[rand3_slot].lcg += 0x3039) >> 16 & 0x7FFF))
 
 typedef struct DdNote {                /* +0x288 */
     unsigned int flags;                /* bit 0 shown */
@@ -75,17 +74,17 @@ int dd_fx_note_start(int arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* registradores e ordem das constantes da inicialização dos vértices diferentes; C equivalente */
 int dd_fx_note_update(int phase, DdFxNote *w)
 {
     DdNote *n;
     void *list;
     float u;
+    float h = 0.15f;
     float f;
     int sign;
     FxMat4 m;
-    FxVec3 p;
     FxVec3 pos;
+    FxVec3 p;
     int i;
 
     dd_mtx_push_field();
@@ -95,26 +94,28 @@ int dd_fx_note_update(int phase, DdFxNote *w)
         for (i = 0; i < 8; i++) {
             u = (float)i * 0.125f;
             w->cell[i][0].u = u; w->cell[i][0].v = 0.1875f;
-            w->cell[i][0].x = -0.15f; w->cell[i][0].y = 0.15f; w->cell[i][0].z = 0.0f;
+            w->cell[i][0].x = -h; w->cell[i][0].y = h; w->cell[i][0].z = 0.0f;
             w->cell[i][1].u = u; w->cell[i][1].v = 0.3125f;
-            w->cell[i][1].x = -0.15f; w->cell[i][1].y = -0.15f; w->cell[i][1].z = 0.0f;
-            w->cell[i][2].u = u + 0.125f; w->cell[i][2].v = 0.1875f;
-            w->cell[i][2].x = 0.15f; w->cell[i][2].y = 0.15f; w->cell[i][2].z = 0.0f;
-            w->cell[i][3].u = u + 0.125f; w->cell[i][3].v = 0.3125f;
-            w->cell[i][3].x = 0.15f; w->cell[i][3].y = -0.15f; w->cell[i][3].z = 0.0f;
+            w->cell[i][1].x = -h; w->cell[i][1].y = -h; w->cell[i][1].z = 0.0f;
+            u += 0.125f;
+            w->cell[i][2].u = u; w->cell[i][2].v = 0.1875f;
+            w->cell[i][2].x = h; w->cell[i][2].y = h; w->cell[i][2].z = 0.0f;
+            w->cell[i][3].u = u; w->cell[i][3].v = 0.3125f;
+            w->cell[i][3].x = h; w->cell[i][3].y = -h; w->cell[i][3].z = 0.0f;
         }
     }
     n = &w->note;
-    if (!(n->flags & 1)) {
-        n->flags |= 1;
+    if (!!(n->flags & 1) == 0) {
         f = RAND15() / 32767.0f;
+        n->flags |= 1;
         n->t = 0;
         n->life = f * 15.0f + 30.0f;
         n->fade_in = f * 4.0f + 8.0f;
         n->fade_out = f * 8.0f + 16.0f;
         n->cell = RAND15() % 8;
         sign = RAND15();
-        n->angle = RAND15() / 32767.0f * 0.69813174f * (float)((sign & 1) * 2 - 1);
+        f = 0.69813174f * (RAND15() / 32767.0f);
+        n->angle = f * (float)(sign % 2 * 2 - 1);
         n->phase = RAND15() / 32767.0f * 6.2831855f;
         dd_rand_dir(1.0f, &n->offset);
     }
@@ -128,9 +129,11 @@ int dd_fx_note_update(int phase, DdFxNote *w)
     mtx_set_mode(2);
     mtx_push();
     mtx_identity();
-    if (n->flags & 1) {
+    n = &w->note;
+    if (!(n->flags & 1) != 1) {
         f = dd_ease_lin_inv(n->t - (n->life - n->fade_out), n->fade_out);
-        list = dl_ambient_light(list, (unsigned int)(dd_ease_lin(n->t, n->fade_in) * 255.0f * f) << 24 | 0xFFFFFF);
+        u = dd_ease_lin(n->t, n->fade_in);
+        list = dl_ambient_light(list, (unsigned int)(u * 255.0f * f) << 24 | 0xFFFFFF);
         vec3_add(&p, &n->offset, &pos);
         p.y += sinf(n->phase + (float)n->t * 0.17453294f) * 0.15f;
         mtx_push();
@@ -150,4 +153,3 @@ int dd_fx_note_update(int phase, DdFxNote *w)
     w->frame++;
     return 2;
 }
-#endif

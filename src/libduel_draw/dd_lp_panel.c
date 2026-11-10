@@ -1,6 +1,5 @@
 // @range 0x08855B10-0x08857100
 // @data 0x08877730-0x08877850
-// @asm 0x088566EC-0x08856DC0
 /* The LP panel of the duel (dd_lp): its textures (lp_pnl01_j/02_j and digits in Japan,
    pnl_a00.ehf elsewhere), the object that counts the LP from one value to another, the panel
    showing the two LP (with "*" padding or "?" for hidden values), the 2D camera it is drawn
@@ -323,11 +322,6 @@ void dd_lp_close(void)
 FxVec4 dd_lp_cam_eye = { 0.0f, 0.0f, 10.0f, 1.0f };     /* 0x088777C0 camera of the 2D panel */
 FxVec4 dd_lp_cam_target = { 0.0f, 0.0f, 0.0f, 1.0f };
 FxVec4 dd_lp_cam_up = { 0.0f, 1.0f, 0.0f, 0.0f };
-#ifndef NON_MATCHING
-/* template { 0, 0, 1.0f } of a local of dd_lp_frame (still in asm), which reads it as D_088777F0 and
-   D_088777F8 (alias in symbols/) */
-float D_088777F0[3] = { 0.0f, 0.0f, 1.0f };
-#endif
 
 /* Sets up a 2D-like perspective (camera at z = 10) with the origin at (x, y). */
 void *dd_lp_begin_2d(void *list, int x, int y)
@@ -381,7 +375,7 @@ void *dd_lp_end_2d(void *list)
 }
 
 /* Fills a 2D sprite (2 vertices) of size (w, h) at (x, y, z) with texture origin (u, v). */
-void dd_lp_quad(FxVtx2DT *v, int x, int y, int z, int u, int tv, int w, int h,
+static void dd_lp_quad(FxVtx2DT *v, int x, int y, int z, int u, int tv, int w, int h,
                 unsigned int color)
 {
     v[0].u = u + w;
@@ -445,21 +439,16 @@ void dd_lp_rect(DdFxVert *v, float x, float y, float z, float w, float h, int tx
 
 /* Draws the Japanese LP panel frame at (x, y): three shining bands, the border masked through
    the stencil with a rotating light, and the front plate. */
-#ifdef NON_MATCHING /* função de 1,7 KB com três listas de vértices; escalonamento diferente */
 void *dd_lp_frame(void *list, int x, int y)
 {
+    int i;
+    DdLpMgr *lp = &dd_lp;
     unsigned int frame = *gfx_get_state();
     unsigned int c[3] = { 0 };
     FxVtx2DT *v;
     FxVtx2DT *l;
-    float rot[9];
-    float m[9];
-    float t[9];
-    FxVec3 p;
-    float cx;
-    short bx;
-    short by;
-    int i;
+    int bx;
+    int by;
 
     c[0] = dd_lp_shine(0, frame);
     c[1] = dd_lp_shine(1, frame);
@@ -475,7 +464,7 @@ void *dd_lp_frame(void *list, int x, int y)
     v[4].u = 128; v[4].v = 96; v[4].x = x + 128; v[4].y = y + 96; v[4].z = 0; v[4].color = c[2];
     v[5].u = 0; v[5].v = 96; v[5].x = x; v[5].y = y + 96; v[5].z = 0; v[5].color = c[2];
     list = dl_set_tex_filter(list, 0, 0);
-    list = gim_set_texture(list, dd_lp.pnl01);
+    list = gim_set_texture(list, lp->pnl01);
     list = draw_array(list, 4, 0x80011E, 6, 0, v);
     list = dl_stencil_op(list, 1, 1, 0xFF);
     list = dl_stencil_func(list, 0, 0, 2);
@@ -496,24 +485,27 @@ void *dd_lp_frame(void *list, int x, int y)
     list = dl_enable(list, 3);
     list = dl_blend_func(list, 0, 2, 10, 0, 0xFFFFFFFF);
     list = dl_enable(list, 4);
-    l = dl_alloc_inline(&list, sizeof(FxVtx2DT) * 4);
     bx = (float)x + -16.0f;
     by = (float)y + -32.0f;
+    l = dl_alloc_inline(&list, sizeof(FxVtx2DT) * 4);
     l[0].u = 64; l[0].v = 192; l[0].x = bx + 160; l[0].y = by; l[0].z = 0; l[0].color = 0x50FFFFFF;
     l[1].u = 0; l[1].v = 192; l[1].x = bx; l[1].y = by; l[1].z = 0; l[1].color = 0x50FFFFFF;
     l[2].u = 64; l[2].v = 256; l[2].x = bx + 160; l[2].y = by + 160; l[2].z = 0; l[2].color = 0x50FFFFFF;
     l[3].u = 0; l[3].v = 256; l[3].x = bx; l[3].y = by + 160; l[3].z = 0; l[3].color = 0x50FFFFFF;
-    cx = ((float)(int)((float)x + -16.0f) + 80.0f) * -1.0f;
     for (i = 0; i < 4; i++) {
-        p.z = 1.0f;
+        FxVec3 p = { 0.0f, 0.0f, 1.0f };
+        float rot[9];
+        float t[9];
+        float m[9];
+
         p.x = l[i].x;
         p.y = l[i].y;
         mat3_identity(rot);
         mat3_rot_z(rot, rot, (float)frame / 20.0f);
         mat3_identity(t);
         t[8] = 1.0f;
-        t[6] = cx;
-        t[7] = ((float)(int)((float)y + -32.0f) + 80.0f) * -1.0f;
+        t[6] = ((float)bx + 80.0f) * -1.0f;
+        t[7] = ((float)by + 80.0f) * -1.0f;
         mat3_mul(m, rot, t);
         t[6] *= -1.0f;
         t[7] *= -1.0f;
@@ -528,10 +520,9 @@ void *dd_lp_frame(void *list, int x, int y)
     v = dl_alloc_inline(&list, sizeof(FxVtx2DT) * 4);
     dd_lp_quad(v, x, y, 0, 0, 0, 128, 96, 0xFFFFFFFF);
     list = dl_set_tex_filter(list, 0, 0);
-    list = gim_set_texture(list, dd_lp.pnl02);
+    list = gim_set_texture(list, lp->pnl02);
     return list = draw_array(list, 4, 0x80011E, 4, 0, v);   /* the callers go on with this list */
 }
-#endif
 
 /* Colour of band `i` of the panel shine at `frame`: 9 keys of 5 frames, interpolated. */
 unsigned int dd_lp_shine(int i, unsigned int frame)

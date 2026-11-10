@@ -2,7 +2,6 @@
 // @data 0x08874BB0-0x08874E10
 // @asm 0x0880B834-0x0880B890
 // @asm 0x0880BB70-0x0880BEB0
-// @asm 0x0880BEB0-0x0880C48C
 /* Where a card sits on the field: position and rotation of each zone (by player, face up, defense
    position, stack height), the lookups in the zone lists and the rebuild of the lists from the
    duel engine (card uids) after the engine moves cards around. */
@@ -308,7 +307,6 @@ void dd_zone_rebuild(int player, int redraw)
 }
 #endif
 
-#ifdef NON_MATCHING /* dd_cobjs_rebuild: não reproduzido */
 /* builds every card object from the engine's state (after a load) */
 void dd_cobjs_rebuild(void)
 {
@@ -317,20 +315,27 @@ void dd_cobjs_rebuild(void)
     int z;
     int i;
     int n;
+    DdCobj *o;
     int uid;
     DdCobj *head;
-    DdCobj *o;
     DdUidFn uid_of;
     DdPos at;
+    int k;
+    DdCobj *o2;
 
-    b->free.prev = b->free.next = &b->free;
-    for (p = 0; p < 4; p++)
-        for (z = 0; z < 16; z++)
-            b->zone[p][z].prev = b->zone[p][z].next = &b->zone[p][z];
-    for (i = 0; i < 460; i++)
-        dd_list_add_tail(&b->obj[i], &b->free);
+    dd_cobjs.free.next = dd_cobjs.free.prev = &dd_cobjs.free;
+    for (z = 0; z < 4; z++)
+        for (i = 0; i < 16; i++)
+            b->zone[z][i].next = b->zone[z][i].prev = &b->zone[z][i];
+    for (i = 0; i < 460U; i++) {
+        o = &b->obj[i];
+        o->next = b->free.next;
+        o->prev = &b->free;
+        o->prev->next = o;
+        o->next->prev = o;
+    }
     for (p = 0; p < 2; p++) {
-        for (z = 0; z < 11; z++) {
+        for (z = 0; z <= 10; z++) {
             uid = dv_slot_uid(p, z);
             if (uid > 0) {
                 head = dd_zone_list(p, z);
@@ -352,37 +357,37 @@ void dd_cobjs_rebuild(void)
                 dd_list_add_tail(o, head);
             }
         }
-        for (z = 11; z < 16; z++) {
+        for (z = 11; z <= 15; z++) {
             switch (z) {
-            case 15: n = dv_n_f(p); uid_of = dv_zone_f_uid; break;
-            case 14: n = dv_n_grave(p); uid_of = dv_grave_uid; break;
-            case 13: n = dv_n_d(p); uid_of = dv_zone_d_uid; break;
+            default:
+            case 11: n = dv_n_hand(p); uid_of = dv_hand_uid; break;
             case 12: n = dv_n_18(p); uid_of = dv_zone_c_uid; break;
-            default: n = dv_n_hand(p); uid_of = dv_hand_uid; break;
+            case 13: n = dv_n_d(p); uid_of = dv_zone_d_uid; break;
+            case 14: n = dv_n_grave(p); uid_of = dv_grave_uid; break;
+            case 15: n = dv_n_f(p); uid_of = dv_zone_f_uid; break;
             }
             head = dd_zone_list(p, z);
-            for (i = 0; i < n; i++) {
-                uid = uid_of(p, i);
-                o = dd_cobj_alloc();
-                memset(o, 0, sizeof(DdCobj));
-                o->uid = uid;
-                o->card = dv_list_id(uid);
-                o->home.player = p;
-                o->home.zone = z;
-                o->home.idx = 0;
-                at = *(DdPos *)&o->home;
+            for (k = 0; k < n; k++) {
+                uid = uid_of(p, k);
+                o2 = dd_cobj_alloc();
+                memset(o2, 0, sizeof(DdCobj));
+                o2->uid = uid;
+                o2->card = dv_list_id(uid);
+                o2->home.player = p;
+                o2->home.zone = z;
+                o2->home.idx = 0;
+                at = *(DdPos *)&o2->home;
                 at.f14 = dv_slot_faceup(p, z);
                 at.f15 = dv_slot_pos(p, z);
-                dd_slot_xform(&o->pos, &o->rot, at);
-                o->pos0 = o->pos;
-                o->pos1 = o->pos;
-                o->rot0 = o->rot;
-                o->rot1 = o->rot;
-                dd_list_add_tail(o, head);
+                dd_slot_xform(&o2->pos, &o2->rot, at);
+                o2->pos0 = o2->pos;
+                o2->pos1 = o2->pos;
+                o2->rot0 = o2->rot;
+                o2->rot1 = o2->rot;
+                dd_list_add_tail(o2, head);
             }
         }
         dd_hand_layout0(0, 1);
         dd_hand_layout1(0, 1);
     }
 }
-#endif
