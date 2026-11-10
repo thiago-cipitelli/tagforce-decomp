@@ -1,5 +1,4 @@
 // @range 0x088BB8C0-0x088BC9E0
-// @asm 0x088BC910-0x088BC9E0
 /* Card effect handlers: candidate lists for duel_088BFC64 (after effects_088B9CC8.c). */
 #include "duel.h"
 
@@ -297,17 +296,13 @@ void duel_088BC83C(unsigned int p)
     }
 }
 
-#ifdef NON_MATCHING /* 10 palavras: com k numa local id o original copia k para $s1 só depois do teste do laço (aqui antes);
-                       for (i = 0, id = k; ...) também não */
-void duel_088BC910(unsigned int p, int b, int k)
+void duel_088BC910(unsigned int p, int b, unsigned int k)
 {
     unsigned int i;
-    int id = k;
 
     for (i = 0; i < duel.players[p & 1].n_grave; i++) {
-        if (card_same_name(duel.players[p & 1].grave[i].id, id) && duel_grave_card_usable(p, p, i)) {
+        if (card_same_name(duel.players[p & 1].grave[i].id, k) && duel_grave_card_usable(p, p, i)) {
             duel_088BFC64(p, 0xE, i);
         }
     }
 }
-#endif

@@ -27,7 +27,6 @@ fuzzy	size	module	function	address	file
 95.6	924	libduel_eng	duel_0882F320	0x0882F320	src/libduel_eng/ai_0882EE74.c
 95.6	328	libduel_eng	duel_0884D72C	0x0884D72C	src/libduel_eng/duel_end.c
 95.6	500	libduel_eng	duel_0886E590	0x0886E590	src/libduel_eng/act_cond.c
-95.5	208	libduel_eng	duel_088BC910	0x088BC910	src/libduel_eng/effects_088BB8C0.c
 95.4	228	libduel_eng	duel_req_088D6168	0x088D6168	src/libduel_eng/req_088D28F8.c
 95.4	516	libduel_eng	duel_08865C10	0x08865C10	src/libduel_eng/effects_q.c
 95.4	764	BOOT	snd_obj_alloc	0x0885F230	src/BOOT/snd_alloc.c
@@ -50,7 +49,6 @@ fuzzy	size	module	function	address	file
 94.5	432	libduel_eng	duel_088ADA84	0x088ADA84	src/libduel_eng/effects_088A8B94.c
 94.5	1460	libshop	shop_list_row	0x0880DFE4	src/libshop/shop_list.c
 94.5	232	libstory	op_bgm	0x088097F4	src/libstory/s_vmops.c
-94.4	248	libduel_eng	duel_08873B8C	0x08873B8C	src/libduel_eng/act_cond2.c
 94.3	364	libduel_eng	duel_088A9174	0x088A9174	src/libduel_eng/effects_088A8B94.c
 94.3	1668	libfield	fld_chr_sprite_quad	0x08806390	src/libfield/f_chrdraw.c
 94.3	604	libduel_eng	duel_act_can_affect	0x088EF7D0	src/libduel_eng/act_target.c

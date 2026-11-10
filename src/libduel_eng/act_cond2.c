@@ -3,7 +3,6 @@
 // @asm 0x088719DC-0x08871A68
 // @asm 0x08871674-0x088717B4
 // @asm 0x088731C0-0x088732B4
-// @asm 0x08873B8C-0x08873C84
 // @asm 0x088770C0-0x088771D4
 // @asm 0x0887C93C-0x0887CAE8
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
@@ -2008,19 +2007,17 @@ int duel_08873A38(DuelAct *a, DuelAct *b)
     return a->b3_4 == 0;
 }
 
-#ifdef NON_MATCHING /* loop induction variables differ */
 int duel_08873B8C(DuelAct *a)
 {
-    unsigned int p = a->player;
-    DuelPlayer *pl = &duel.players[p & 1];
+    int p = a->player;
     int i;
 
-    if ((unsigned int)pl->n_d <= 1) {
+    if ((unsigned int)duel.players[p & 1].n_d <= 1) {
         return 0;
     }
     if (a->kind != 0x23) {
         for (i = 0; i <= 10; i++) {
-            if (duel.players[a->player].field[i].card.id != 0 && a->uid != CARD_UID(duel.players[a->player].field[i].card)) {
+            if (duel.players[p & 1].field[i].card.id != 0 && a->uid != CARD_UID(duel.players[a->player & 1].field[i].card)) {
                 return duel_slot_efacc(p, i, 0) != 0;
             }
         }
@@ -2028,7 +2025,6 @@ int duel_08873B8C(DuelAct *a)
     }
     return 1;
 }
-#endif
 
 int duel_08873C84(DuelAct *a)
 {
