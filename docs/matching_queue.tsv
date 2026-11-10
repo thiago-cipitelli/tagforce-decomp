@@ -108,7 +108,6 @@ fuzzy	size	module	function	address	file
 76.8	104	libfield	fld_chr_tex	0x08806E6C	src/libfield/f_chrdraw.c
 76.4	796	BOOT	font_init	0x08845AC0	src/BOOT/font.c
 76.3	880	libduel_draw	dd_board_card_draw	0x0880F164	src/libduel_draw/dd_board.c
-75.7	1816	libduel_draw	dd_fx_counter_update	0x08832C28	src/libduel_draw/dd_fx_counter.c
 74.7	132	libstory	st_chr_step_value	0x088044EC	src/libstory/s_chr.c
 74.7	600	BOOT	ehf_cmd_keys	0x08825094	src/BOOT/ehf_cmd4.c
 74.3	3500	libduel_eng	duel_ai_sum_088239EC	0x088239EC	src/libduel_eng/ai_08820618.c
