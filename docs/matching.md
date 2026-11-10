@@ -4,8 +4,8 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-11-10, após a rodada 15 (protótipos locais unificados + funções nunca tentadas; ByteMatch): 82,6% do
-código batendo, 95,5% fuzzy, 10320/11039 funções (libduel_eng 84,6%/97,6%, libduel_draw 77,4%/95,8%). Fila: 227
+Estado em 2026-11-10, após a rodada 16 (89 protótipos unificados no libduel_eng; ByteMatch): 82,6% do
+código batendo, 95,5% fuzzy, 10322/11039 funções (libduel_eng 84,7%/97,6%, libduel_draw 77,4%/95,8%). Fila: 225
 funções em `docs/matching_queue.tsv` (53 abaixo de 80%, nenhuma em 0%: toda função tem
 C que compila), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
@@ -1235,6 +1235,10 @@ Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` 
   só-K&R e os 21 sem assinatura comum ficam para o port (argumentos reais, structs por valor). Pistas K&R abertas:
   `duel_0884C588();`/`duel_088BFF78();` em `duel_0888F82C` (224 → 132), `duel_0884ACD8();` em `duel_088862DC`
   (25 → 23). Roteiro completo da rodada em `build/tmp/PROMPT_R16.md` (local, fora do git).
+- **Resultado da rodada 16:** 89 chamados unificados no libduel_eng sem perder nenhuma função, mas só
+  `duel_0888F82C` (224 → 0 com `(int)` nos argumentos de bitfield) e `shop_list_find_group` (libshop) bateram, e
+  nenhum skip saiu. libduel_draw/libduel_mgr não têm divergência relevante (só tipos de ponteiro); BOOT e menus
+  quase nada. A pista está esgotada para matching; o ganho é de consistência para o port.
 ## Rodada 16 (`protoB`: protótipos fora do libduel_eng)
 
 - Nos gmodules a maior parte das divergências de `proto_conflicts` é só de ponteiro (`void *` contra `unsigned int *`,
