@@ -1,5 +1,4 @@
 // @range 0x08805FF8-0x08808A20
-// @asm 0x08806190-0x08806218
 // @asm 0x088062E8-0x08806518
 // @asm 0x08806678-0x088069F4
 // @data 0x0881A1D4-0x0881A6F8
@@ -222,13 +221,14 @@ void dmgr_attr_cutin_set(unsigned short id)
     }
 }
 
-#ifdef NON_MATCHING /* o original testa n == 0 com beqzl direto ao fim e o n > 1 com bloco "li 7; b fim"; o mwcc inverte o primeiro teste */
 int dmgr_attr_single(void)
 {
     DmgrSeq *q = &dmgr.seq;
-    int i = 0;
-    int n = 0;
-    int last = 0;
+    int i, n, last;
+
+    n = 0;
+    i = 0;
+    last = 0;
 
     for (; i <= 9; i++) {
         if (q->attrs & (1 << i)) {
@@ -236,10 +236,7 @@ int dmgr_attr_single(void)
             last = i;
         }
     }
-    if (n == 0) {
-        return 7;
-    }
-    if (n > 1) {
+    if (n == 0 || n > 1) {
         return 7;
     }
     switch (last) {
@@ -249,7 +246,6 @@ int dmgr_attr_single(void)
     }
     return last;
 }
-#endif
 
 int dmgr_cutin_card(int kind, int chr, int card)
 {

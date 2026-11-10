@@ -122,7 +122,6 @@ fuzzy	size	module	function	address	file
 81.2	540	librecipe_viewer	rv_input_recipe	0x08808274	src/librecipe_viewer/rv_list.c
 81.0	1460	libduel_draw	dd_fx_note_update	0x0884FDB8	src/libduel_draw/dd_fx_note.c
 80.8	244	libduel_draw	dd_lp_rect	0x088565F8	src/libduel_draw/dd_lp_panel.c
-80.3	136	libduel_mgr	dmgr_attr_single	0x08806190	src/libduel_mgr/dmgr_event.c
 80.1	156	libduel_draw	func_08822B90	0x08822B90	src/libduel_draw/dd_field_marks.c
 79.7	560	libduel_draw	dd_cobj_to_top	0x0880A6B0	src/libduel_draw/dd_cobj.c
 79.6	564	libduel_draw	dd_mark_move	0x0884E1E8	src/libduel_draw/dd_arrow.c

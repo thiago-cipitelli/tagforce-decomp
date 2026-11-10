@@ -28,8 +28,6 @@ segments:
     subsegments:
       - [0x60, c, dmgr_main]
       - [0x2058, c, dmgr_event]
-      - [0x21F0, asm, dmgr_event_asm_08806190]
-      - [0x2278, c, dmgr_event]
       - [0x2348, asm, dmgr_event_asm_088062E8]
       - [0x2578, c, dmgr_event]
       - [0x26D8, asm, dmgr_event_asm_08806678]
