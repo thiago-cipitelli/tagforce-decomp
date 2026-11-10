@@ -1193,8 +1193,6 @@ unsigned int *dmgr_pt_sprite(unsigned int *list, int i, short x, short y, short 
                              short tw, short th)
 {
     DmgrPartner *p = dmgr_pt;
-    short sx;
-    short su;
     DmgrPtGims gims = *(DmgrPtGims *)dmgr_pt_gims;
     DmgrPtSprs sprs = *(DmgrPtSprs *)dmgr_pt_sprites;
 
@@ -1233,10 +1231,10 @@ unsigned int *dmgr_pt_sprite(unsigned int *list, int i, short x, short y, short 
     case 0xF:
     case 0x10:
     case 0x11:
-        sx = x + w;
-        su = (i - 0xE) * 0xC + 0x79;
+        v = x + w;
+        u = (i - 0xE) * 0xC + 0x79;
         list = draw_set_offsets(list, 0xC, 0x17, 0xC, 0x17);
-        list = draw_sprite(list, sx, (short)(y + 9), 0, su, 0xC0, 0, 0);
+        list = draw_sprite(list, v, (short)(y + 9), 0, u, 0xC0, 0, 0);
         break;
     }
     return list;
