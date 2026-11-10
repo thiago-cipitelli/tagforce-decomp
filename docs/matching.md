@@ -4,9 +4,9 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-11-10, após a rodada 17 (funções de 85-97% nunca tentadas; ByteMatch): 83,3% do
-código batendo, 95,6% fuzzy, 10356/11039 funções (libduel_eng 85,4%/97,7%, libduel_draw 79,5%/96,0%). Fila: 181
-funções em `docs/matching_queue.tsv` (53 abaixo de 80%, nenhuma em 0%: toda função tem
+Estado em 2026-11-10, após a rodada 18 (funções de 60-92% nunca tentadas; ByteMatch): 83,9% do
+código batendo, 95,7% fuzzy, 10389/11039 funções (libduel_eng 86,0%/97,8%, libduel_draw 81,8%/96,5%). Fila: 137
+funções em `docs/matching_queue.tsv` (39 abaixo de 80%, nenhuma em 0%: toda função tem
 C que compila), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
 A Tarefa 0 (drafts que não compilavam) está concluída. **libfield não tem mais função sem C** (76,2% código, 98,4% fuzzy).
