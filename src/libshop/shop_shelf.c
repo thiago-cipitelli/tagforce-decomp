@@ -1,6 +1,5 @@
 // @range 0x0880C238-0x0880D298
 // @asm 0x0880C83C-0x0880C904
-// @asm 0x0880CDAC-0x0880CF7C
 /* 2D layers of the shop: the counter (clerk, points, total spent, message window, the pack menu
    with completion, price and cards per pack), the shelf with the 48 pack icons in four rows, the
    blinking cursor, and the sold out / price tags of the pack under the cursor. */
@@ -251,16 +250,19 @@ unsigned int *shop_shelf_pegs(unsigned int *list)
     return p;
 }
 
-#ifdef NON_MATCHING /* o original não dobra x + 20 - 12 e aloca o deslocamento do pulso em s4; o mwcc dobra as constantes */
 /* four corners around the icon, breathing with the frame counter */
 unsigned int *shop_shelf_cursor(unsigned int *list, int pack)
 {
-    int x = pack % 12 * 0x16 + 0x56;
-    int y = pack / 12 * 0x2F + 5;
-    int d = gfx_get_state()->frame >> 1 & 7;
+    int d;
+    int x;
+    int y;
     void *gim;
-    int x0, y0, x1, y1;
+    int y0;
+    int x0;
 
+    x = pack % 12 * 0x16 + 0x56;
+    y = pack / 12 * 0x2F + 5;
+    d = gfx_get_state()->frame >> 1 & 7;
     if (d > 4)
         d = 8 - d;
     gim = shop_res_get(0x2002);
@@ -270,16 +272,15 @@ unsigned int *shop_shelf_cursor(unsigned int *list, int pack)
     list = dl_set_tex_filter(list, 0, 0);
     list = gim_set_texture(list, gim);
     list = draw_set_offsets(list, 12, 12, 12, 12);
-    x0 = x - (d + 2);
     y0 = y - (d + 2);
+    x0 = x - (d + 2);
     list = draw_sprite(list, x0, y0, 0, 0, 0xD6, 0, 0);
-    x1 = x + 20 + (d + 2) - 12;
-    list = draw_sprite(list, x1, y0, 0, 0, 0xD6, 1, 0);
-    y1 = y + 40 + (d + 2) - 12;
-    list = draw_sprite(list, x0, y1, 0, 0, 0xD6, 2, 0);
-    return draw_sprite(list, x1, y1, 0, 0, 0xD6, 3, 0);
+    x = (d + 2) + (x + 20) - 12U; /* unsigned: the original keeps the - 12 */
+    list = draw_sprite(list, x, y0, 0, 0, 0xD6, 1, 0);
+    y = (d + 2) + (y + 40) - 12U;
+    list = draw_sprite(list, x0, y, 0, 0, 0xD6, 2, 0);
+    return draw_sprite(list, x, y, 0, 0, 0xD6, 3, 0);
 }
-#endif
 
 /* "now printing": the pack kind is not on sale yet */
 unsigned int *shop_shelf_closed(unsigned int *list)
