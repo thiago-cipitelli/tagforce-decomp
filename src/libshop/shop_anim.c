@@ -1,5 +1,4 @@
 // @range 0x08812C60-0x08813808
-// @asm 0x08812D64-0x08812F78
 // @asm 0x08813400-0x08813748
 // @data 0x08820410-0x08820480
 /* Animation of the opened pack: its model placed and the card pictures requested, the cards moving
@@ -61,54 +60,54 @@ void shop_open_setup(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original recalcula o ponteiro da carta e testa a última; alocação diferente */
 /* advances the cards; the next one starts when the previous is shown; 1 once the last one left */
-int shop_open_cards_done(short speed)
+int shop_open_cards_done(int speed)
 {
     int i;
-    unsigned int n = 0;
     ShopOpenCard *c;
     unsigned short st;
     unsigned short len;
 
-    for (i = 0; i < shop_open->n_cards; i++, n = shop_open->n_cards) {
+    for (i = 0; i < shop_open->n_cards; i++) {
         c = &shop_open->cards[i];
         st = c->state;
         len = shop_card_steps[st];
-        if (st == 3) {
+        switch (st) {
+        case 0:
+        case 5:
+            continue;
+        case 3:
             if (card_get_prop6_hi(c->id))
                 len = 0;
-        } else if (st == 5 || st == 0) {
-            continue;
+            break;
         }
-        c->timer += speed;
-        if (len != 0 && c->timer >= len) {
+        c->timer = c->timer + speed;
+        if (len > 0 && c->timer >= len) {
             c->state++;
             c->timer = 0;
         }
         if (st == 2 && c->state == 3) {
             switch (card_get_prop6_hi(c->id)) {
-            case 4:
-                se_play(0x626A);
+            case 1:
+                se_play(0x626C);
                 break;
             case 3:
                 se_play(0x626B);
                 break;
-            case 1:
-                se_play(0x626C);
+            case 4:
+                se_play(0x626A);
                 break;
             }
         }
-        if (i < shop_open->n_cards - 1 && c->state > 3 && shop_open->cards[i + 1].state == 0) {
+        if (i < shop_open->n_cards - 1 && c->state > 3 && shop_open->cards[i + 1].state <= 0 && i < shop_open->n_cards - 1) {
             shop_open->cards[i + 1].state = 1;
             se_play(0x6267);
             shop_open->cards[i + 1].timer = 0;
         }
         shop_open_card_move(c, i);
     }
-    return shop_open->cards[n - 1].state == 5;
+    return shop_open->cards[shop_open->n_cards - 1].state == 5;
 }
-#endif
 
 /* position and rotation of a card for its step */
 void shop_open_card_move(ShopOpenCard *c, int i)

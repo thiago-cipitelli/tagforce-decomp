@@ -59,8 +59,6 @@ segments:
       - [0xE5FC, asm, shop_open_asm_0881259C]
       - [0xE7B4, c, shop_open]
       - [0xECC0, c, shop_anim]
-      - [0xEDC4, asm, shop_anim_asm_08812D64]
-      - [0xEFD8, c, shop_anim]
       - [0xF460, asm, shop_anim_asm_08813400]
       - [0xF7A8, c, shop_anim]
       - [0xF868, c, shop_detail]

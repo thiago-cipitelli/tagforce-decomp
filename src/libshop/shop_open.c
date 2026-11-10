@@ -63,7 +63,7 @@ int font_draw_wtext(int x, int y, int w, unsigned short *text);
 void *sceGeEdramGetAddr(void);
 void shop_open_layout(void);
 void shop_open_fly(Vec4 *out, Vec4 *a, Vec4 *b, Vec4 *c, float t);
-int shop_open_cards_done(short speed);
+int shop_open_cards_done(int speed);
 int shop_card_tex_hook();
 int shop_card_glow(int a, Mat4 *m, int rarity, int speed, void *vram);
 
