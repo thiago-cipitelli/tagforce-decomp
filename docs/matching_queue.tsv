@@ -59,7 +59,6 @@ fuzzy	size	module	function	address	file
 91.3	436	libselect_card	sc_layout_scroll	0x0880D0F8	src/libselect_card/sc_state.c
 91.2	1356	libtitle	tdl_deck_item	0x08825D7C	src/libtitle/t_deckpick.c
 91.1	1144	libduel_draw	dd_fx_lpjump_update	0x08834628	src/libduel_draw/dd_fx_lpjump.c
-91.1	608	libfield	ftalk_choice	0x08817510	src/libfield/f_talk.c
 91.0	900	librecipe_viewer	rv_menu_open	0x08809C64	src/librecipe_viewer/rv_menu.c
 90.9	296	libduel_eng	duel_088D1DF4	0x088D1DF4	src/libduel_eng/battle_088D1DF4.c
 90.9	360	libduel_eng	duel_ai_0881A3EC	0x0881A3EC	src/libduel_eng/ai_cond2.c
