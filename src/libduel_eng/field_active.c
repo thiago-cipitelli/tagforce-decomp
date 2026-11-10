@@ -1,7 +1,5 @@
 // @range 0x088E80CC-0x088E8CF4
 // @asm 0x088E83C8-0x088E8624
-// @asm 0x088E8920-0x088E8AD4
-// @asm 0x088E8B14-0x088E8CF4
 /* Active copies of a card on the field (face up, not negated, zone enabled), including the two
    cards held outside the zones in the special mode. */
 #include "duel.h"
@@ -81,28 +79,28 @@ int duel_spec_act_ok(DuelSpecAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 10 palavras: no laço dos monstros o contador de bits e o ponteiro do slot trocam $s3/$s4 (ordem
-                       de declaração/inicialização e ponteiro explícito não resolvem) */
+#ifdef NON_MATCHING /* 2 palavras: com o ponteiro de slot explícito (como em duel_count_monster_active) só falta a ordem
+                       de `i = 0` e `b = p << 4` antes do 1º laço (ordens do for, das declarações e contadores
+                       próprios testados) */
 /* Active copies of card id of player p, zone skip excluded. */
 int duel_find_effect_card(unsigned int p, int id, int skip)
 {
     int n = 0;
     int i;
+    DuelPlayer *s;
     unsigned int b;
 
     if (card_is_monster(id) != 0) {
-        DuelPlayer *pl = &duel.players[p & 1];
-
-        for (b = p << 4, i = 0; i <= 4; i++, b++) {
-            if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << b)) {
+        for (s = &duel.players[p & 1], b = p << 4, i = 0; i <= 4;
+             s = (DuelPlayer *)((char *)s + sizeof(DuelSlot)), i++, b++) {
+            if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&s->field[0]) && !(duel.zone_off & 1 << b)) {
                 n++;
             }
         }
     } else if (card_get_prop5_hi(id) != 2) {
-        DuelPlayer *pl = &duel.players[p & 1];
-
-        for (b = (p << 4) + 5, i = 5; i < 10; i++, b++) {
-            if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << b)) {
+        for (i = 5, s = (DuelPlayer *)((char *)&duel.players[p & 1] + 5 * sizeof(DuelSlot)), b = (p << 4) + 5; i < 10;
+             s = (DuelPlayer *)((char *)s + sizeof(DuelSlot)), i++, b++) {
+            if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&s->field[0]) && !(duel.zone_off & 1 << b)) {
                 n++;
             }
         }
@@ -174,19 +172,22 @@ int duel_effect_applies(int id, unsigned int p, int ref)
     return duel_count_active(id);
 }
 
-#ifdef NON_MATCHING /* same code; the zone bit counter and the slot pointer swap $s0/$s1 */
 /* Active monsters of player p with card id, special cards included. */
 int duel_count_monster_active(unsigned int p, int id)
 {
     int i;
-    int n = 0;
+    int n;
+    DuelPlayer *s;
     unsigned int b;
-    DuelPlayer *pl = &duel.players[p & 1];
 
-    for (i = 0, b = p << 4; i < 5; b++, i++) {
+    n = 0;
+    /* s advances one slot per zone from the player base, so s->field[0] is field[i] (the original's induction
+       pointer; with &pl->field[i] mwcc swaps the $s of the pointer and of the zone bit b) */
+    for (i = 0, b = p << 4, s = &duel.players[p & 1]; i < 5;
+         s = (DuelPlayer *)((char *)s + sizeof(DuelSlot)), b++, i++) {
         int c = field_get_card(p, i);
 
-        if (c == id && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << b)) {
+        if (c == id && SLOT_ACTIVE(&s->field[0]) && !(duel.zone_off & 1 << b)) {
             n++;
         }
     }
@@ -202,24 +203,29 @@ int duel_count_monster_active(unsigned int p, int id)
     }
     return n;
 }
-#endif
 
 int duel_count_monster_active_both(int id)
 {
     return duel_count_monster_active(0, id) + duel_count_monster_active(1, id);
 }
 
-#ifdef NON_MATCHING /* same as duel_count_monster_active */
 /* Same, face-up attack position only. */
 int duel_count_monster_active_atk(unsigned int p, int id)
 {
-    int n = 0;
     int i;
-    DuelPlayer *pl = &duel.players[p & 1];
+    int n;
+    DuelPlayer *s;
+    unsigned int b;
 
-    for (i = 0; i < 5; i++) {
-        if (field_get_card(p, i) == id && pl->field[i].pos == 0 && SLOT_ACTIVE(&pl->field[i]) &&
-            !(duel.zone_off & 1 << (p * 16 + i))) {
+    n = 0;
+    /* s advances one slot per zone from the player base, so s->field[0] is field[i] (the original's induction
+       pointer; with &pl->field[i] mwcc swaps the $s of the pointer and of the zone bit b) */
+    for (i = 0, b = p << 4, s = &duel.players[p & 1]; i < 5;
+         s = (DuelPlayer *)((char *)s + sizeof(DuelSlot)), b++, i++) {
+        int c = field_get_card(p, i);
+
+        if (c == id && s->field[0].pos == 0 && SLOT_ACTIVE(&s->field[0]) &&
+            !(duel.zone_off & 1 << b)) {
             n++;
         }
     }
@@ -235,4 +241,3 @@ int duel_count_monster_active_atk(unsigned int p, int id)
     }
     return n;
 }
-#endif

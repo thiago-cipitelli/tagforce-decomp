@@ -48,7 +48,6 @@ fuzzy	size	module	function	address	file
 95.8	312	libdeck_tutorial	dt_draw_rows	0x08807F60	src/libdeck_tutorial/dt_edraw.c
 95.8	312	libdeck_tutorial	dt_draw_rows_small	0x088087EC	src/libdeck_tutorial/dt_edraw.c
 95.8	384	libduel_eng	duel_place_monster	0x088E5C3C	src/libduel_eng/card_place.c
-95.8	480	libduel_eng	duel_count_monster_active_atk	0x088E8B14	src/libduel_eng/field_active.c
 95.8	680	libduel_eng	duel_0884C8E4	0x0884C8E4	src/libduel_eng/duel_pick.c
 95.7	956	libtitle	tpartner_update	0x0881F744	src/libtitle/t_partner.c
 95.7	1084	libduel_eng	duel_08889BE4	0x08889BE4	src/libduel_eng/effects_y.c
