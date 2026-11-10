@@ -70,7 +70,7 @@ segments:
       - [0xD370, c, dd_counter]
       - [0xD778, c, dd_lp]
       - [0xE9FC, c, dd_face]
-      - [0xE9FC, asm, dd_face_asm_0881299C]
+      - [0xECF4, asm, dd_face_asm_08812C94]
       - [0xEFC0, c, dd_face]
       - [0xF57C, c, dd_chr]
       - [0xFDEC, asm, dd_chr_asm_08813D8C]
