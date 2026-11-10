@@ -44,7 +44,7 @@ int font_measure_wtext(int w, unsigned short *text);
 unsigned short shop_pack_can_buy(int pack);
 unsigned short *shop_pack_name(unsigned short pack);
 unsigned short shop_items_count(unsigned short id);
-int shop_item_key(ShopItem *it, int key);
+int shop_item_key(ShopItem *it, unsigned short key);
 unsigned int *shop_draw_sort_tab(unsigned int *list, int sort, int x, int y);
 unsigned int *shop_draw_order_tab(unsigned int *list, int order, int x, int y);
 unsigned int *shop_sort_draw(unsigned int *list);
@@ -486,7 +486,7 @@ unsigned int *shop_list_cursor(unsigned int *list)
 unsigned int *shop_list_key_bubble(unsigned int *list)
 {
     int line = shop.top + shop.cursor;
-    int s = shop.sort;
+    unsigned short s = shop.sort;
     unsigned char size;
     unsigned short ch[2];
     unsigned int key;

@@ -1,7 +1,6 @@
 // @range 0x08805AB4-0x08807CAC
 // @asm 0x088061F8-0x08806634
 // @asm 0x08806CC4-0x088074FC
-// @asm 0x088079A8-0x08807CAC
 // @rodata 0x0881C0E8-0x0881C124
 // @data 0x0881C900-0x0881C970
 /* Main state machine of the shop: the shelf with the 48 pack kinds (two rows of packs per kind, the
@@ -70,7 +69,7 @@ int shop_bought_total(void);
 void shop_stock_save(void);
 void shop_open_start(void);
 void shop_after_open(void);
-int shop_item_key(ShopItem *it, int key);
+int shop_item_key(ShopItem *it, unsigned short key);
 
 /* the pack message has to follow the cursor */
 inline void shop_pack_msg_refresh(void)
@@ -723,12 +722,11 @@ void shop_list_jump(int back)
     }
 }
 
-#ifdef NON_MATCHING /* a chave de ordenação fica crua em s0 e é mascarada depois da primeira chamada; registradores e leiaute dos dois laços diferentes */
 /* first line of the next (or the previous) group of the sort key */
 int shop_list_find_group(int back)
 {
-    unsigned short key = shop.sort;
     int i = shop.top + shop.cursor;
+    unsigned short key = shop.sort;
     int n = shop.n_items;
     ShopItem *it;
     int v;
@@ -740,13 +738,12 @@ int shop_list_find_group(int back)
     if (back) {
         if (i <= 0)
             return -1;
-        i--;
-        v = shop_item_key(shop_item_at(i), key);
-        if (key - 8 < 2u && v > 0)
+        v = shop_item_key(shop_item_at(--i), key);
+        if ((key == 8 || key == 9) && v > 0)
             v /= 100;
-        for (i--; i >= 0; i--) {
+        while (--i >= 0) {
             w = shop_item_key(shop_item_at(i), key);
-            if (key - 8 < 2u && w > 0)
+            if ((key == 8 || key == 9) && w > 0)
                 w /= 100;
             if (w != v) {
                 i++;
@@ -755,21 +752,19 @@ int shop_list_find_group(int back)
         }
         if (i < 0)
             i = 0;
-        return i;
     } else {
         v = shop_item_key(it, key);
-        if (key - 8 < 2u && v > 0)
+        if ((key == 8 || key == 9) && v > 0)
             v /= 100;
         for (i++; i < n; i++) {
             w = shop_item_key(shop_item_at(i), key);
-            if (key - 8 < 2u && w > 0)
+            if ((key == 8 || key == 9) && w > 0)
                 w /= 100;
             if (w != v)
                 break;
         }
-        if (i < n)
-            return i;
-        return -1;
+        if (i >= n)
+            return -1;
     }
+    return i;
 }
-#endif
