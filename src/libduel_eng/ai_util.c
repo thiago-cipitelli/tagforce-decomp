@@ -1,5 +1,4 @@
 // @range 0x08809B50-0x0880B448
-// @asm 0x08809DA8-0x08809F2C
 /* Helpers of the computer player: picking cards for a dialog, comparing the strongest monsters of
    both players. */
 #include "duel.h"
@@ -111,8 +110,6 @@ int duel_08809CA8(unsigned int p, int id, int a, int n)
     return i;
 }
 
-#ifdef NON_MATCHING /* no default o original refaz o mult (p & 1) * 0xFAC depois de cada duel_rand; o mwcc guarda o
-                      produto em $s0 (um $s a mais em todo o corpo); testados local i, base por sizeof/0xFAC */
 int duel_08809DA8(unsigned int p, int id)
 {
     int i;
@@ -129,12 +126,12 @@ int duel_08809DA8(unsigned int p, int id)
         id = 0x161C;
         if (duel_hand_revealed(p) != 0 && duel.players[p & 1].n_hand != 0) {
             i = duel_rand(duel.players[p & 1].n_hand);
-            id = duel.players[p & 1].hand[i].id;
+            id = duel.players[(int)p & 1].hand[i].id;
         } else if (duel.players[p & 1].n_grave != 0) {
             DuelCard *c;
 
             i = duel_rand(duel.players[p & 1].n_grave);
-            c = &duel.players[p & 1].grave[i];
+            c = &duel.players[(int)p & 1].grave[i];
 
             if (card_attribute_icon_is3(c->id) == 0) {
                 id = c->id;
@@ -145,7 +142,6 @@ int duel_08809DA8(unsigned int p, int id)
     duel_w_08919624 = id;
     return id;
 }
-#endif
 
 int duel_08809F2C(unsigned int p)
 {

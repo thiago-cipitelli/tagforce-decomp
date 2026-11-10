@@ -1,5 +1,4 @@
 // @range 0x08885B70-0x08886984
-// @asm 0x088860BC-0x08886250
 // @asm 0x088862DC-0x08886604
 /* Card effect handlers (DuelAct *a), after effects_u.c. */
 #include "duel.h"
@@ -217,14 +216,13 @@ static int duel_08886084(unsigned int p, int z)
     return 0;
 }
 
-#ifdef NON_MATCHING /* desvios como no original; no case 0x7F o original guarda &c->uid_hi e &c->owner em s0/s1 (4 $s);
-                      com c ponteiro o mwcc relê pela base, sem ponteiro relê duel_w_08919654; ~90 palavras */
 int duel_088860BC(DuelAct *a)
 {
     unsigned int w = a->w[0] & 1;
     unsigned int p;
     unsigned int q;
-    DuelCard *c;
+    DuelPlayer *pl;
+    unsigned int i;
 
     if (a->b4_2) {
         return 0;
@@ -244,17 +242,17 @@ int duel_088860BC(DuelAct *a)
     case 0x7F:
         if (duel_08835AC0() != 0) {
             q = duel_w_0891964C;
-            c = &duel.players[q & 1].hand[duel_w_08919654];
-            duel_088CB95C(q, 0xB, CARD_UID(*c));
-            duel_088C4508(q, c->id);
-            duel_088C77EC(q, CARD_UID(*c));
+            i = duel_w_08919654;
+            pl = &duel.players[q & 1];
+            duel_088CB95C(q, 0xB, CARD_UID(pl->hand[i]));
+            duel_088C4508(q, pl->hand[i].id);
+            duel_088C77EC(q, CARD_UID(pl->hand[i]));
             return 0;
         }
         return 0x80;
     }
     return 0;
 }
-#endif
 
 int duel_08886250(DuelAct *a)
 {

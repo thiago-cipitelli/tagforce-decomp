@@ -1,7 +1,6 @@
 // @range 0x0887DB24-0x0888146C
 // @data 0x08911770-0x089117A0
 // @asm 0x0887F8E4-0x0887FCA8
-// @asm 0x08881054-0x0888112C
 /* Card effect handlers (DuelAct *a): what a's card does when it resolves. */
 #include "duel.h"
 
@@ -1262,12 +1261,11 @@ int duel_08880F60(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 19 palavras: o original carrega a->uid depois do endereço do slot e faz o n = a->w[0] com beql para a instrução seguinte; aqui sai bnel com cópia (if, switch, ?: e if/else testados) */
 int duel_08881054(DuelAct *a)
 {
-    unsigned int p = a->player;
+    int n = 0;
     unsigned char z = a->zone;
-    unsigned short n = 0;
+    unsigned int p = a->player;
 
     if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
         return 0;
@@ -1275,13 +1273,13 @@ int duel_08881054(DuelAct *a)
     if (duel.players[p & 1].field[z].faceup == 0) {
         return 0;
     }
-    if (a->id == 0x19A5) {
+    switch (a->id) {
+    case 0x19A5:
         n = a->w[0];
     }
     duel_088C87A8(p, z, a->id, 2, n);
     return 0;
 }
-#endif
 
 int duel_0888112C(DuelAct *a)
 {

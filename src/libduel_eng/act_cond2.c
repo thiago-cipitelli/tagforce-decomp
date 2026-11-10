@@ -1,8 +1,6 @@
 // @range 0x0886F23C-0x0887DB24
 // @asm 0x08871B14-0x08871BFC
-// @asm 0x088719DC-0x08871A68
 // @asm 0x08871674-0x088717B4
-// @asm 0x088770C0-0x088771D4
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
 
@@ -1172,21 +1170,20 @@ int duel_08871940(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* branch layout and registers differ */
 /* Some face-up monster of a's player belongs to the opponent. */
 int duel_088719DC(DuelAct *a)
 {
     unsigned int p = a->player;
+    unsigned int b;
     int z;
 
-    for (z = 0; z <= 4; z++) {
-        if (duel.players[p & 1].field[z].card.id != 0 && duel.players[p & 1].field[z].faceup != 0 && p != duel.players[p & 1].field[z].card.owner) {
+    for (z = 0, b = (unsigned int)&duel.players[p & 1]; z <= 4; z++) {
+        if (duel.players[p & 1].field[z].card.id != 0 && *(unsigned short *)(b + z * 20 + 56) != 0 && p != ((DuelSlot *)(b + z * 20 + 48))->card.owner) {
             return 1;
         }
     }
     return 0;
 }
-#endif
 
 int duel_08871A68(DuelAct *a)
 {
@@ -1209,7 +1206,7 @@ int duel_08871ADC(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 15 palavras: o original testa os dois resultados finais com bnezl/bnez para li v0,1 e
+#ifdef NON_MATCHING /* 13 palavras: o original testa os dois resultados finais com bnezl/bnez para li v0,1 e
                       "b fim; move v0,zero"; if/return 1/return 0 o mwcc reduz a sltu, switch dá beqzl */
 int duel_08871B14(DuelAct *a, int b)
 {
@@ -1237,12 +1234,10 @@ int duel_08871B14(DuelAct *a, int b)
     if (duel_slot_has_effect(a->player, 11, a->id) == 0) {
         return 0;
     }
-    switch (duel_088BFFD8(a->player, a->id, 0)) {
-    case 0:
+    if (duel_088BFFD8(a->player, a->id, 0) == 0) {
         return 0;
-    default:
-        return 1;
     }
+    return 1;
 }
 #endif
 
@@ -3312,20 +3307,19 @@ int duel_0887707C(DuelAct *a)
     return duel_field_def(duel_special.player[1], duel_special.zone[1]) >= 2000;
 }
 
-#ifdef NON_MATCHING /* load order differs */
 int duel_088770C0(DuelAct *a, int b)
 {
     unsigned int i;
     int p;
 
     for (i = 0; i < duel.players[(p = a->player) & 1].n_hand; i++) {
-        if (CARD_UID(duel.players[p & 1].hand[i]) != a->uid && duel_088BFFD8(p, a->id, i) != 0) {
+        unsigned int u = CARD_UID(duel.players[(unsigned char)p & 1].hand[i]);
+        if (u != a->uid && duel_088BFFD8(p, a->id, i) != 0) {
             return 1;
         }
     }
     return 0;
 }
-#endif
 
 int duel_088771D4(DuelAct *a)
 {

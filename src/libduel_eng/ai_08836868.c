@@ -1,5 +1,4 @@
 // @range 0x08836868-0x08837500
-// @asm 0x08837250-0x088373A4
 /* Whether a player may still attack (battle phase locks, cards that force or forbid attacks). */
 #include "duel.h"
 
@@ -271,26 +270,18 @@ int duel_08837020(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* leiaute dos retornos 0/1 depois do teste duel_atk_direct não reproduzido */
 int duel_08837250(void)
 {
-    if (SNAP->uid == CARD_UID(duel.players[duel_special.player[0] & 1].field[duel_atk_zone].card)) {
-        if (SNAP->ob != ((AiCard *)&duel.list[SNAP->uid])->ob) {
+    if (SNAP->uid != CARD_UID(duel.players[duel_special.player[0] & 1].field[duel_atk_zone].card) || SNAP->ob != ((AiCard *)&duel.list[SNAP->uid])->ob) {
+        return 1;
+    }
+    if (duel_atk_direct == 0) {
+        if (SNAP->uids[duel_atk_tz] != CARD_UID(duel.players[duel_atk_tp & 1].field[duel_atk_tz].card) || SNAP->obs[duel_atk_tz] != ((AiCard *)&duel.list[SNAP->uids[duel_atk_tz]])->ob) {
             return 1;
         }
-        if (duel_atk_direct != 0) {
-            return 0;
-        }
-        if (SNAP->uids[duel_atk_tz] == CARD_UID(duel.players[duel_atk_tp & 1].field[duel_atk_tz].card)) {
-            if (SNAP->obs[duel_atk_tz] != ((AiCard *)&duel.list[SNAP->uids[duel_atk_tz]])->ob) {
-                return 1;
-            }
-            return 0;
-        }
     }
-    return 1;
+    return 0;
 }
-#endif
 
 int duel_088373A4(unsigned int p)
 {

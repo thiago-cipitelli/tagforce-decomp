@@ -1,5 +1,5 @@
 // @range 0x08890094-0x08890820
-// @asm 0x088905D0-0x08890820
+// @asm 0x088905D0-0x08890730
 /* Card effect handlers (DuelAct *a), after effects_zc.c. */
 #include "duel.h"
 
@@ -189,18 +189,24 @@ int duel_088905D0(DuelAct *a)
     }
     return 0;
 }
+#endif
 
 int duel_08890730(DuelAct *a)
 {
     unsigned char z = a->zone;
     unsigned int p = a->player;
+    int n;
 
     if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
         return 0;
     }
     if (duel.players[p & 1].field[z].faceup != 0) {
-        duel_088C87A8(p, z, a->id, 3, a->id == 0x1835 ? a->w[2] * 1000 : 0);
+        n = 0;
+        switch (a->id) {
+        case 0x1835:
+            n = a->w[2] * 1000;
+        }
+        duel_088C87A8(p, z, a->id, 3, n);
     }
     return 0;
 }
-#endif
