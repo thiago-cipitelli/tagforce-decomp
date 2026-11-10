@@ -1,6 +1,5 @@
 // @range 0x0880C238-0x0880D298
 // @asm 0x0880C83C-0x0880C904
-// @asm 0x0880CA8C-0x0880CB70
 // @asm 0x0880CDAC-0x0880CF7C
 /* 2D layers of the shop: the counter (clerk, points, total spent, message window, the pack menu
    with completion, price and cards per pack), the shelf with the 48 pack icons in four rows, the
@@ -190,7 +189,6 @@ unsigned int *shop_shelf_bg(unsigned int *list)
     return p;
 }
 
-#ifdef NON_MATCHING /* contador do pack e coluna trocam s2/s4 em todas as ordens de declaração testadas */
 unsigned int *shop_shelf_icons(unsigned int *list)
 {
     int col;
@@ -198,9 +196,10 @@ unsigned int *shop_shelf_icons(unsigned int *list)
     unsigned int pack = 0;
 
     for (row = 0; row < 4; row++) {
-        for (col = 0; col < 12; pack++, col++) {
+        for (col = 0; col < 12; col++) {
             switch (shop_pack_can_buy((unsigned short)pack)) {
             case 0:
+                pack++;
                 continue;
             case 1:
                 list = dl_ambient_color(list, 0xFF808080);
@@ -210,11 +209,11 @@ unsigned int *shop_shelf_icons(unsigned int *list)
                 break;
             }
             list = shop_shelf_icon(list, 0x56 + col * 0x16, 5 + row * 0x2F, pack);
+            pack++;
         }
     }
     return list;
 }
-#endif
 
 unsigned int *shop_shelf_icon(unsigned int *list, int x, int y, int pack)
 {

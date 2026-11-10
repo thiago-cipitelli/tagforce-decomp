@@ -1,5 +1,4 @@
 // @range 0x0881DF94-0x0881EBA0
-// @asm 0x0881E214-0x0881E2A8
 /* The list of running presentation tasks of the scene (draw/update/leave callbacks with a timer,
    removable from inside their own callbacks) and two of its users: the summon/set name banner of
    a card and the card picture shown big. */
@@ -169,7 +168,6 @@ void dd_tasks_draw(void)
     dd_task_update();
 }
 
-#ifdef NON_MATCHING /* 2 palavras: na chamada indireta o original monta a0 antes de f12; bate chamando por um cast para (DdTask *, void *, float), que não foi usado porque a convenção do Windows x64 não é a mesma */
 void dd_tasks_update(float dt)
 {
     DdTasks *s = &dd_tasks;
@@ -178,7 +176,12 @@ void dd_tasks_update(float dt)
     while (t != &s->head) {
         t->time += dt;
         if (t->update != 0)
+#ifdef __MWERKS__
+            /* the original builds a0 before f12: its callback type had dt last (same EABI registers) */
+            ((void (*)(DdTask *, void *, float))t->update)(t, t->arg, dt);
+#else
             t->update(dt, t, t->arg);
+#endif
         if (s->remove_cur == 0) {
             t = t->prev;
         } else {
@@ -190,7 +193,6 @@ void dd_tasks_update(float dt)
         }
     }
 }
-#endif
 
 /* adds a copy of t at the head of the list */
 DdTask *dd_task_add(DdTask *t)
