@@ -31,7 +31,7 @@ int duel_0884E9E8(DuelAct *a, int b);
 void duel_088328E8(unsigned int p, unsigned short id, int a);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_slot_ef098(unsigned int p, int z, int id);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088CA270(unsigned int p, unsigned short a, unsigned short b);
 void duel_088CB9E0(unsigned int p, unsigned int mask);
 int duel_0884E5E0(DuelAct *a);

@@ -77,7 +77,7 @@ void duel_088C5424(unsigned int p, int n);
 void duel_0884AD40(int msg, int uid);
 int duel_d_find_name(unsigned int p, int id);
 int duel_08889680(DuelAct *a);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_grave_count_id(unsigned int p, int id);
 void duel_08832624(unsigned int p, unsigned int n, int a, int b);
 void duel_088C7E68(unsigned int p, int z, int a, int b);
@@ -696,7 +696,7 @@ int duel_count_active(int id);
 void duel_088C9D24(DuelAct *a, unsigned int p, int z);
 int duel_088C97F0(DuelAct *a, unsigned int p, int z, int b, int c);
 void duel_0884CC68(int k);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088AFD5C();
 
 /* 93 palavras, todas no laço do passo 0x78: o original põe i em $s1 e o ponteiro de a->w[i] em $s0 (o mwcc

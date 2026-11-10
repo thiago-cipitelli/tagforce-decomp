@@ -16,7 +16,7 @@ int duel_count_owned_name(unsigned int p, int id);
 unsigned int duel_act_target(DuelAct *a, int i);
 int field_get_card(unsigned int p, int z);
 void duel_088CC178(unsigned int p, int z, int a);
-void duel_08832974(unsigned int p, unsigned short id, int a);
+void duel_08832974(unsigned int p, int a, int b);
 int duel_08861480(unsigned short id, int i);
 void duel_0884ADAC(int a, int b, int c, int d, int e, int f);
 int duel_0889BD04(DuelAct *a, int b);

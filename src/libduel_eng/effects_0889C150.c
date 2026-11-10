@@ -44,7 +44,7 @@ void duel_088C7BA4(void);
 void duel_088C7CF0(void);
 int card_is_monster(int id);
 void duel_088CB400(unsigned int p, DuelCard *c, int a);
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_0887F80C(DuelAct *a, DuelAct *b);
 int duel_slot_effect_arg(unsigned int p, int z, int id);
 void duel_088D1438(unsigned int p, int z, int a, int b);

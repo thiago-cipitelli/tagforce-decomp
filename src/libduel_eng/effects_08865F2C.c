@@ -8,7 +8,7 @@ void duel_088328B8(unsigned int p, unsigned short a, int b);
 void duel_field_stats(unsigned int p, int z, DuelStats *st);
 void duel_0884ADAC(int a, int b, int c, int d, int e, int f);
 void duel_088D1AC8(unsigned int p, int z);
-void duel_08832974(unsigned int p, unsigned short id, int a);
+void duel_08832974(unsigned int p, int a, int b);
 void duel_0884ACD8(unsigned int p, int msg);
 void duel_0881956C(unsigned int p, unsigned short id, int (*fn)());
 void duel_08835978(int (*fn)());

@@ -16,7 +16,7 @@ int duel_field_base_atk(unsigned int p, int z);
 int duel_088A9008(DuelAct *a, int b, int c);
 int duel_0884E440();
 int duel_088D16C4(DuelAct *a, unsigned int p, int z, int b);
-void duel_088C77D4(unsigned int p, int id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_088C4604(DuelAct *a, unsigned int p, int n);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);

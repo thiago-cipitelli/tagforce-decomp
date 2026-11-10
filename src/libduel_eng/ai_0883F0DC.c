@@ -25,7 +25,7 @@ void duel_088C8AD0(unsigned int p, int z, int id, int v);
 unsigned int duel_slot_effect12_arg(unsigned int p, int z, int id);
 int duel_slot_has_effect12_arg(unsigned int p, int z, int id, int arg);
 void duel_088C44E4(unsigned int p, int id);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C7BA4(void);
 void duel_088CAB04();
 void duel_088C7CF0(void);

@@ -43,7 +43,7 @@ typedef struct DuelMoveEv {            /* event argument of a card moving (see d
 
 int card_attribute_icon_is3(int id);
 void duel_088C4448(unsigned int p, int z, unsigned int uid);
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
 int duel_slot_e8170(unsigned int p, int z, int id);
 void duel_088C7E68(unsigned int p, int z, int a, int b);
@@ -67,7 +67,7 @@ void duel_088C4508(unsigned int p, int id);
 void duel_088C77EC(unsigned int p, int uid);
 int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
 void duel_088C8AD0(unsigned int p, int z, int id, int v);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_0886956C(int uid);
 
 int duel_slot_has_src10(unsigned int p, int z, int q, int k);

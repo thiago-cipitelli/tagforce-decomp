@@ -1,8 +1,5 @@
 // @range 0x0888B904-0x0888C1A8
-// @asm 0x0888BA00-0x0888BAE0
-// @asm 0x0888BD08-0x0888BDE0
-/* Card effect handlers (DuelAct *a), after effects_y.c. duel_088C87A8 is called without a prototype here
-   (four arguments in 0x0888B904), so these are a separate file. */
+/* Card effect handlers (DuelAct *a), after effects_y.c. */
 #include "duel.h"
 
 extern unsigned int duel_turn_player;
@@ -11,7 +8,7 @@ extern int duel_w_089148FC;
 
 int duel_088A9008(DuelAct *a, int i, unsigned int *loc);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
-void duel_088C87A8();
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C7CF0(void);
 void duel_08832624(unsigned int p, unsigned int n, int a, int b);
@@ -59,8 +56,6 @@ int duel_0888B9A8(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* duel_0888BA00: família
-                      zona-antes-do-jogador (z * 20 antes do mult) e a->uid lido antes do índice; 22 palavras */
 
 int duel_0888BA00(DuelAct *a)
 {
@@ -75,7 +70,6 @@ int duel_0888BA00(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888BAE0(DuelAct *a)
 {
@@ -118,7 +112,6 @@ int duel_0888BBE4(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores dos globais da carta especial; 44 palavras */
 int duel_0888BD08(DuelAct *a)
 {
     int sz = duel_special.zone[1];
@@ -130,7 +123,6 @@ int duel_0888BD08(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888BDE0(DuelAct *a)
 {

@@ -20,7 +20,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st);
 int card_get_type(int id);
 void duel_088CBAA4(unsigned int p, int z, int uid);
 void duel_088C7E68(unsigned int p, int z, int a, int b);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C88B8(unsigned int p, int z, int v, int c);
 int field_get_card(unsigned int p, int z);
 int duel_act_check_08853CE8(DuelAct *a, unsigned int p, int z);

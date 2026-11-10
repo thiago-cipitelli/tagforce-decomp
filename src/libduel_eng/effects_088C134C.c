@@ -17,7 +17,7 @@ void duel_088CC178(unsigned int p, int z, unsigned int v);
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_slot_affected(unsigned int p, int z, int id);
 int duel_count_same_name_other(unsigned int p, int z);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 unsigned int duel_088D13D8(unsigned int p, unsigned short id, unsigned int mask);
 void duel_088CC1A0(unsigned int p, int z, unsigned int v);
 void duel_088C7E68(unsigned int p, int z, int a, int b);

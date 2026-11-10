@@ -22,7 +22,7 @@ int duel_pick_monster_zone();
 DuelCard *duel_card_by_uid(int uid);
 void duel_0882619C(unsigned int p, DuelCard *c, int a, int b, unsigned int d);
 int duel_field_atk(unsigned int p, int z);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088CC594(unsigned int p, int z, int a, int id);
 extern int duel_w_089148FC;
 extern unsigned int duel_turn_player;

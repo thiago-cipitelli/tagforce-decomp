@@ -31,7 +31,7 @@ void duel_088D184C(DuelAct *a, unsigned int mask, int b);
 int duel_0886CE38();
 void duel_0887DC94(DuelAct *a);
 int duel_slot_has_effect(unsigned int p, int z, int id);
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_088807F0(DuelAct *a, DuelAct *b);
 int duel_08892344(DuelAct *a, DuelAct *b);
 int duel_088A9008(DuelAct *a, int i, unsigned int *loc);
@@ -72,7 +72,7 @@ void duel_088CA384(unsigned int p, int i, int f);
 void duel_088D19B4(DuelAct *a, unsigned int mask);
 void duel_088D2760(DuelAct *a, int i);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
-void duel_08832974(); /* no prototype here: with one, `a` moves out of $a0 in 0889366C */
+void duel_08832974(unsigned int p, int a, int b); /* the definition's prototype (int, int): with unsigned short, `a` moves out of $a0 in 0889366C */
 int card_is_monster(int id);
 void duel_0884ADAC(int a, int b, int c, int d, int e, int f);
 int duel_0888A88C();

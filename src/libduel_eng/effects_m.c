@@ -11,14 +11,14 @@ int duel_088A9008(DuelAct *a, int b, int c);
 int duel_0884E440();
 void duel_088C89BC(unsigned int p, int z, int a, int b);
 void duel_088CC178(unsigned int p, int z, unsigned short a);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_phase_ok2(unsigned int p);
 int duel_0884E4A0(DuelAct *a);
 int duel_088D1D58(DuelAct *a, int b);
 int duel_08881160(DuelAct *a, int b);
 int duel_088D16C4(DuelAct *a, unsigned int p, int z, int f);
 int duel_field_controller(unsigned int p, int z, int a);
-void duel_088C77D4(unsigned int p, unsigned short id, int a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 
 int duel_eff_fd2dc(DuelAct *a)
 {

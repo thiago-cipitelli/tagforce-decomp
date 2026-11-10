@@ -29,7 +29,7 @@ int duel_08886C04(DuelAct *a);
 void duel_088D1858(DuelAct *a, unsigned int p, int z);
 int duel_0888D5A8(DuelAct *a, int b);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C7DD4(unsigned int p, int a, int b);
 int duel_count_tributable_except(unsigned int p, int src);
 void duel_088328B8(unsigned int p, unsigned short a, int b);

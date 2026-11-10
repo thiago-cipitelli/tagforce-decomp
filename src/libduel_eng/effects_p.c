@@ -22,7 +22,7 @@ int card_get_type(int id);
 void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t);
 void duel_088CC178();
 void duel_088D1438(unsigned int p, int z, int a, int b);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088CC718(int id);
 int duel_0887DB24(DuelAct *a);
 void duel_act_0887E140(DuelAct *a, int d[2]);

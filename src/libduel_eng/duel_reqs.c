@@ -22,9 +22,9 @@ int card_get_kind(int id);
 void duel_088C936C(unsigned int p, int a, int b, int id, int opp);
 void duel_088C8B78(unsigned int p, unsigned short loc, unsigned short t, int k);
 
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b)
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b)
 {
-    duel_cmd((p ? 0x8000 : 0) | 0x36, (z & 0xFF) | (a & 0xFF) << 8, id, b);
+    duel_cmd((p ? 0x8000 : 0) | 0x36, (z & 0xFF) | (unsigned char)a << 8, id, b);
 }
 
 int duel_088C87D8(DuelAct *x, unsigned int p, int z, unsigned short id, int a, unsigned short b)

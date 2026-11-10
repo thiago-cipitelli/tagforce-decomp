@@ -36,7 +36,7 @@ typedef struct DuelMoveEv {            /* event argument of a card moving (see h
 void duel_088C77EC(unsigned int p, int uid);
 int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
 void duel_088AFD5C(int kind, DuelMoveEv ev);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short k, int b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 
 void duel_088CB400(unsigned int p, DuelCard *c, int a)
 {

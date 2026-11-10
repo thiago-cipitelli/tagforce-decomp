@@ -33,7 +33,7 @@ void duel_0884AD40(int msg, int uid);
 int duel_count_monsters(unsigned int p);
 int duel_count_active(int id);
 void duel_088C44E4(unsigned int p, int id);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_088C4730(unsigned int p, int n, int f, int id);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void duel_088C452C(unsigned int p, int n);

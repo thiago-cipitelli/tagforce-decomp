@@ -52,7 +52,7 @@ int duel_find_effect_card(unsigned int p, int id, int z);
 void duel_088C448C(int p, int a);
 int duel_count_monster_active_atk(unsigned int p, int id);
 unsigned short duel_slot_src_of_pos(unsigned int p, int z, int id, unsigned int pos);
-void duel_088C87A8(unsigned int p, int z, unsigned short id, int a, unsigned short b);
+void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_field_protected(unsigned int p, int z);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_088C9878(unsigned int p, int z, int x, int y, int id, int opp);

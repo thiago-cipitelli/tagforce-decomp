@@ -29,7 +29,7 @@ int duel_0884ACD8(unsigned int p, int msg);
 int duel_list_find_id(unsigned int p, unsigned int id);
 int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
 void duel_088C4448(unsigned int p, int z, unsigned int uid);
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C448C(int p, int a);
 void duel_088D1AC8(unsigned int p, int z);
 int card_is_in_group_19bb(int id);

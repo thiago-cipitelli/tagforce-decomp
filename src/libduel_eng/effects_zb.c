@@ -1,5 +1,4 @@
 // @range 0x0888E5D4-0x0888F420
-// @asm 0x0888E5D4-0x0888E6F4
 /* Card effect handlers (DuelAct *a), after effects_za.c. */
 #include "duel.h"
 
@@ -10,7 +9,7 @@ extern int duel_w_08919650;
 extern int duel_w_08919654;
 
 void duel_088CC178();
-void duel_088C77D4(unsigned int p, int id, unsigned short a, unsigned short b);
+void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 unsigned int duel_088D13CC(DuelAct *a, unsigned int mask);
 unsigned int duel_0884E4E4(DuelAct *a);
 int duel_0884E5E0(DuelAct *a);
@@ -52,7 +51,6 @@ int duel_0884E9E8(DuelAct *a, int b);
 int duel_0887F728(DuelAct *a, int b);
 int duel_grave_find_uid(unsigned int p, int uid);
 
-#ifdef NON_MATCHING /* ordem das constantes no laço da máscara; endereço de a->w antes do deslocamento */
 int duel_0888E5D4(DuelAct *a)
 {
     unsigned char z = a->zone;
@@ -60,6 +58,7 @@ int duel_0888E5D4(DuelAct *a)
     unsigned int mask;
     int i;
     int k;
+    int h;
 
     if (a->uid != CARD_UID(duel.players[p & 1].field[z].card)) {
         return 0;
@@ -67,16 +66,16 @@ int duel_0888E5D4(DuelAct *a)
     mask = 0;
     for (i = 0; i < a->n7; i++) {
         k = a->w[i] & 0xFF;
+        h = a->w[i] >> 8 & 0xFF;
         if (a->id == 0x1AA9) {
             k = 1;
         }
-        mask |= 1 << ((a->w[i] >> 8 & 0xFF) + k * 16);
+        mask |= 1 << (h + k * 16);
     }
     duel_088CC178(p, z, mask);
     duel_088C77D4(a->player, a->player | a->zone << 8, 6, 0);
     return 0;
 }
-#endif
 
 int duel_0888E6F4(DuelAct *a)
 {
