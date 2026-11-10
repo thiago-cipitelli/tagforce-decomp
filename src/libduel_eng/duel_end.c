@@ -1,5 +1,4 @@
 // @range 0x0884D050-0x0884E228
-// @asm 0x0884D72C-0x0884D874
 // @rodata 0x08907F88-0x08907FB4
 /* End of the duel: the reason each player wins or loses (LP, deck out, Exodia and the other
    special victories), the end-of-duel presentation, replaying the input log. */
@@ -231,7 +230,6 @@ int duel_0884D690(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* branch layout of the end checks not reproduced */
 int duel_0884D72C(void)
 {
     unsigned int t = duel_turn_player;
@@ -240,43 +238,39 @@ int duel_0884D72C(void)
     if (duel_player_type[0] == 3) {
         return duel_log_at_end();
     }
-    if (duel_w_089195EC == 0 || !(duel_msg_state & 1)) {
-        if (duel_w_08917DC4 == 0) {
-            r = duel_0884B08C();
-            if (r == 0) {
-                r = duel_0884DFB0();
-            }
-            if (r == 0) {
-                r = duel_ev_run();
-            }
-            if (r == 0) {
-                r = duel_ai_atk_update();
-            }
-            if (r == 0) {
-                r = duel_0884E1D8();
-            }
-            if (r == 0) {
-                r = duel_088535C0();
-            }
-            duel_w_089195F4 = !(r != 0);
-            if (r != 0) {
-                return 0;
-            }
-            if (duel_0884D1E0() != 0) {
-                return 1;
-            }
-            if (duel_player_type[t] == 2) {
-                duel_0883447C();
-            } else {
-                duel_0884D690();
-            }
-            return 0;
-        }
+    if ((duel_w_089195EC != 0 && (duel_msg_state & 1)) || duel_w_08917DC4 != 0) {
         return 1;
     }
-    return 1;
+    r = duel_0884B08C();
+    if (r == 0) {
+        r = duel_0884DFB0();
+    }
+    if (r == 0) {
+        r = duel_ev_run();
+    }
+    if (r == 0) {
+        r = duel_ai_atk_update();
+    }
+    if (r == 0) {
+        r = duel_0884E1D8();
+    }
+    if (r == 0) {
+        r = duel_088535C0();
+    }
+    duel_w_089195F4 = !(r != 0);
+    if (r != 0) {
+        return 0;
+    }
+    if (duel_0884D1E0() != 0) {
+        return 1;
+    }
+    if (duel_player_type[t] == 2) {
+        duel_0883447C();
+    } else {
+        duel_0884D690();
+    }
+    return 0;
 }
-#endif
 
 int duel_0884D874(void)
 {
