@@ -383,33 +383,34 @@ void menu_item_build_text(void **dl, MenuItem *it, Menu *m)
 /* Builds the frame sprites (and the ghost copy when `ghost`) into inline display-list memory. */
 void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
 {
-    MenuItemDef *d = it->def;
+    const WPiece *fr;
+    int n;
+    unsigned int color;
+    int h;
+    MenuItemDef *d;
+    int w;
     WVertex *v;
     short x, y;
     float sx, sy;
-    unsigned int color;
-    int w, h, n, k, step, rows, rest;
+    int cw, k, rows, rest;
     float tl[2], br[2];
-    const WPiece *fr;
     int uv[2], uvt[2];
     WPiece side;
     int tabflip, taby;
-    unsigned int style;
     int ttw, tth, tty;
-    float tyf;
+    float tx, tyf;
 
+    d = it->def;
     n = menu_item_sprite_count(it, ghost);
     if (ghost == 0) {
-        v = dl_alloc_inline(dl, n << 4);
-        it->verts = v;
+        v = it->verts = dl_alloc_inline(dl, n << 4);
         x = d->x;
         y = d->y;
         sx = d->scale_x;
         sy = d->scale_y;
         color = d->color;
     } else {
-        v = dl_alloc_inline(dl, n << 4);
-        it->verts2 = v;
+        v = it->verts2 = dl_alloc_inline(dl, n << 4);
         x = it->x2;
         y = it->y2;
         sx = it->scale_x2;
@@ -419,27 +420,27 @@ void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
     w = (int)((float)d->w * sx);
     h = (int)((float)d->h * sy);
     menu_anchor_rect(tl, br, x, y, w, h, d->anchor);
-    style = d->style;
-    switch (style) {
+    switch (d->style) {
     case 0:
     case 1:
     case 2:
     case 3:
         fr = wframe_a;
-        uv[0] = wstep_a[0] * style;
-        uv[1] = wstep_a[1] * style;
+        uv[0] = wstep_a[0] * d->style;
+        uv[1] = wstep_a[1] * d->style;
         break;
     case 4:
     case 5:
     case 6:
     case 7:
         fr = wframe_b;
-        uv[0] = wstep_b[0] * style;
-        uv[1] = wstep_b[1] * style;
+        uv[0] = wstep_b[0] * d->style;
+        uv[1] = wstep_b[1] * d->style;
         break;
     }
     uvt[0] = wstep_a[0] * d->style2;
     uvt[1] = wstep_a[1] * d->style2;
+    n = 0;
     /* corners */
     menu_sprite(v, m->heap, &fr[0], (int)tl[0], (int)tl[1], d->z + 1, -1, -1, color, uv, 0);
     menu_sprite(v + 2, m->heap, &fr[1], (int)(br[0] - (float)fr[1].w), (int)tl[1], d->z + 1, -1, -1, color, uv, 0);
@@ -450,58 +451,57 @@ void menu_item_build_frame(void *dl, MenuItem *it, Menu *m, int ghost)
     menu_sprite(v + 10, m->heap, &fr[5], (int)tl[0], (int)(tl[1] + (float)fr[0].h), d->z + 1, -1, h - fr[0].h - fr[2].h, color, uv, 0);
     menu_sprite(v + 12, m->heap, &fr[6], (int)(br[0] - (float)fr[6].w), (int)(tl[1] + (float)fr[1].h), d->z + 1, -1, h - fr[1].h - fr[3].h, color, uv, 0);
     menu_sprite(v + 14, m->heap, &fr[7], (int)(tl[0] + (float)fr[2].w), (int)(br[1] - (float)fr[7].h), d->z + 1, w - fr[2].w - fr[3].w, -1, color, uv, 0);
+    n += 16;
     /* center, in rows of 8 texels */
-    n = 16;
+    cw = w - fr[0].w - fr[1].w;
     h = h - fr[0].h - fr[2].h;
-    rows = 0;
-    if (h > 0) {
-        k = 0;
-        step = 0;
-        do {
-            rest = 8;
-            if (h < (rows + 1) * 8)
-                rest = h - k;
-            side.x = fr[8].x;
-            side.y = fr[8].y;
-            side.w = wside_w;
-            side.h = rest;
-            menu_sprite(v + 16 + step, m->heap, &side, (int)(tl[0] + (float)fr[0].w), (int)((float)k + tl[1] + (float)fr[0].h), d->z + 1, w - fr[0].w - fr[1].w, rest, color, uv, 0);
-            k += 8;
-            step += 2;
-            n += 2;
-            rows++;
-        } while (k < h);
+    for (rows = 0, k = 0; k < h; k += 8, n += 2, rows++) {
+        rest = 8;
+        if (h < (rows + 1) * 8)
+            rest = h - k;
+        side.y = wside_v;
+        side.w = wside_w;
+        side.h = wside_h;
+        side.x = wside_u;
+        side.x = fr[8].x;
+        side.y = fr[8].y;
+        side.h = rest;
+        menu_sprite(&v[n], m->heap, &side, (int)(tl[0] + (float)fr[0].w), (int)((float)k + (tl[1] + (float)fr[0].h)), d->z + 1, cw, rest, color, uv, 0);
     }
     /* tab */
-    if (d->tab != 0) {
-        if (style < 4) {
-            if (d->tab == 4) {
-                tabflip = 3;
-                taby = (int)((float)fr[4].h + (tl[1] - (float)fr[9].h));
-            } else if (d->tab == 3) {
-                tabflip = 2;
-                taby = (int)((float)fr[4].h + (tl[1] - (float)fr[9].h));
-            } else if (d->tab == 2) {
-                tabflip = 1;
-                taby = (int)(br[1] - (float)fr[2].h);
-            } else if (d->tab == 1) {
-                tabflip = 0;
-                taby = (int)(br[1] - (float)fr[2].h);
-            }
-            menu_sprite(v + n, m->heap, &fr[9], (int)(tl[0] + (float)d->tab_x), taby, d->z + 1, -1, -1, color, uv, tabflip);
-            n += 2;
+    if (d->tab != 0 && d->style < 4) {
+        switch (d->tab) {
+        case 1:
+            tabflip = 0;
+            taby = (int)(br[1] - (float)fr[2].h);
+            break;
+        case 2:
+            tabflip = 1;
+            taby = (int)(br[1] - (float)fr[2].h);
+            break;
+        case 3:
+            tabflip = 2;
+            taby = (int)((float)fr[4].h + (tl[1] - (float)fr[9].h));
+            break;
+        case 4:
+            tabflip = 3;
+            taby = (int)((float)fr[4].h + (tl[1] - (float)fr[9].h));
+            break;
         }
+        menu_sprite(&v[n], m->heap, &fr[9], (int)(tl[0] + (float)d->tab_x), taby, d->z + 1, -1, -1, color, uv, tabflip);
+        n += 2;
     }
     /* title bar */
     if (d->title != 0 && d->show_title != 0) {
         ttw = wtitle[1].w;
         tth = wtitle[2].w;
+        tx = tl[0];
         tyf = tl[1] - (float)d->title_h;
         tty = (int)tyf;
-        menu_sprite(v + n, m->heap, &wtitle[0], (int)(tl[0] + (float)ttw), tty, d->z, d->title_w - ttw - tth, -1, color, uvt, 0);
-        menu_sprite(v + n + 2, m->heap, &wtitle[1], (int)tl[0], tty, d->z, -1, -1, color, uvt, 0);
-        menu_sprite(v + n + 4, m->heap, &wtitle[2], (int)((tl[0] + (float)d->title_w) - (float)tth), tty, d->z, -1, -1, color, uvt, 0);
-        menu_sprite(v + n + 6, m->heap, &wtitle[3], (int)(tl[0] + (float)ttw), (int)(tyf + (float)wtitle[0].h), d->z, d->title_w - ttw - tth, wtitle[1].h - wtitle[0].h, color, uvt, 0);
+        menu_sprite(&v[n], m->heap, &wtitle[0], (int)(tx + (float)ttw), tty, d->z, d->title_w - ttw - tth, -1, color, uvt, 0);
+        menu_sprite(&v[n + 2], m->heap, &wtitle[1], (int)tx, tty, d->z, -1, -1, color, uvt, 0);
+        menu_sprite(&v[n + 4], m->heap, &wtitle[2], (int)((tx + (float)d->title_w) - (float)tth), tty, d->z, -1, -1, color, uvt, 0);
+        menu_sprite(&v[n + 6], m->heap, &wtitle[3], (int)(tx + (float)ttw), (int)(tyf + (float)wtitle[0].h), d->z, d->title_w - ttw - tth, wtitle[1].h - wtitle[0].h, color, uvt, 0);
         n += 8;
     }
     if (ghost == 0)
