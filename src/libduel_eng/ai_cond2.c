@@ -1,6 +1,5 @@
 // @range 0x08819F94-0x0881C118
 // @asm 0x0881A3EC-0x0881A554
-// @asm 0x0881A7C0-0x0881A960
 /* Conditions the computer player checks before activating a card (continued in ai_cond1.c). */
 #include "duel.h"
 #include "card_db.h"
@@ -265,10 +264,12 @@ int duel_ai_0881A6F8(DuelAct *a)
     }
     return 0;
 }
-#ifdef NON_MATCHING /* registers of the card id, uid and count swapped */
 int duel_ai_0881A7C0(DuelAct *a)
 {
     int z;
+    int id;
+    int uid;
+    int n;
 
     if (duel_phase_ok2(a->player) == 0) {
         return 0;
@@ -276,12 +277,8 @@ int duel_ai_0881A7C0(DuelAct *a)
     for (z = 0; z <= 4; z++) {
         if (duel_0884E3E4(a, a->player, z) != 0 && duel_card_b14(&duel.players[a->player & 1].field[z].card) != 0 &&
             (duel.players[a->player & 1].field[z].flags >> 22 & 1) + (duel.players[a->player & 1].field[z].flags >> 23 & 1) != 0) {
-            unsigned int id;
-            int n;
-            int uid;
-
-            uid = CARD_UID(duel.players[a->player & 1].field[z].card);
             id = duel.players[a->player & 1].field[z].card.id;
+            uid = CARD_UID(duel.players[a->player & 1].field[z].card);
             n = duel_088A6300(id);
             if (!(duel_count_free_monster_zones(a->player) + 1 < n) && n == duel_088BFF78(a->player, a->id, uid) &&
                 duel_088A6D2C(id, n, duel_w_0891525C) != 0) {
@@ -291,7 +288,6 @@ int duel_ai_0881A7C0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_ai_0881A960(DuelAct *a)
 {

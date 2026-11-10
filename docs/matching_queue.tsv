@@ -19,7 +19,6 @@ fuzzy	size	module	function	address	file
 97.0	1820	libduel_eng	duel_act_e3920	0x088E3920	src/libduel_eng/effect_live.c
 96.9	892	libduel_mgr	dmgr_ev_start	0x08806678	src/libduel_mgr/dmgr_event.c
 96.8	152	libduel_eng	duel_088ADF28	0x088ADF28	src/libduel_eng/effects_088A8B94.c
-96.8	416	libduel_eng	duel_ai_0881A7C0	0x0881A7C0	src/libduel_eng/ai_cond2.c
 96.8	1048	BOOT	gfx_save_tga	0x08834D18	src/BOOT/gfx.c
 96.8	148	libduel_draw	dd_tasks_update	0x0881E214	src/libduel_draw/dd_task_list.c
 96.7	556	libstory	st_mail_view_list	0x088134BC	src/libstory/s_mail.c
