@@ -335,7 +335,7 @@ int duel_088657D8(DuelAct *a, int b)
     return r;
 }
 
-#ifdef NON_MATCHING /* branch layout and register allocation not reproduced */
+#ifdef NON_MATCHING /* 85 palavras (eram 132, quase todas deslocamento: 1 instrução a menos): o original calcula x = &srcs[i] em $s0 logo depois do teste do jogador e lê o uid sempre por 0(s0); aqui o 1º uso é dobrado em 1528(s1) e x só é criado antes do jal (mesmo bloqueio de duel_0886DE70) */
 int duel_08865838(DuelAct *a, int b)
 {
     unsigned int i;
@@ -347,12 +347,14 @@ int duel_08865838(DuelAct *a, int b)
             return -1;
         }
         for (i = 0; i < duel_chain.n_kinds; i++) {
-            if (duel_chain.kinds[i] == 0x19 && duel_chain.srcs[i].s_player == a->player &&
-                card_get_attribute_icon(duel_cards[duel_chain.srcs[i].s_uid].id) == 0 &&
-                duel_hand_find_uid(a->player, duel_chain.srcs[i].s_uid) >= 0) {
-                a->w[0] = duel_chain.srcs[i].s_uid;
-                duel_w_08914904++;
-                return 0;
+            if (duel_chain.kinds[i] == 0x19 && duel_chain.srcs[i].s_player == a->player) {
+                struct DuelActX *x = &duel_chain.srcs[i];
+
+                if (card_get_attribute_icon(duel.list[x->s_uid].id) == 0 && duel_hand_find_uid(a->player, x->s_uid) >= 0) {
+                    a->w[0] = x->s_uid;
+                    duel_w_08914904++;
+                    return 0;
+                }
             }
         }
         return -1;
