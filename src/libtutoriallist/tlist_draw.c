@@ -1,5 +1,4 @@
 // @range 0x088042F4-0x08805B0C
-// @asm 0x088042F4-0x088046E8
 /* Drawing of the screen: animated background (bg.ehf), title bar, the two tabs, the lesson rows
    (number + title in a frame), the cursor box and the scroll bar with its blinking arrows. */
 #include "libtutoriallist.h"
@@ -34,7 +33,8 @@ unsigned int *draw_sprite(unsigned int *list, int x, int y, int z, int u, int v,
 /* lesson at row i of a tab, TL_NONE past the end */
 #define TL_ENTRY(tab, i) ((i) >= tl.count[tab] ? TL_NONE : tl.list[tab][i])
 
-#ifdef NON_MATCHING /* o original mantém a cópia morta da primeira instrução do bloco destino depois de cada `b` das três buscas na lista (bnezl; b; li 24; <cópia>), que o mwcc atual remove; o resto da forma é igual. Tentado sem sucesso: inline com return, goto, if/else, switch de 2 casos, `||` com termo dobrado; no mwcc 219 a cópia morta só sobrevive em corpo de case de switch e no último termo de `||` seguido de return (partner_id_set) */
+/* `switch (tl.state) { case 4: return; }`: o return de case é alvo de desvio e faz o mwcc manter as cópias mortas
+   depois de cada `b` das buscas na lista, como o original (docs/matching.md, rodada 19); i e y do 2º laço no bloco */
 /* 0x088042f4: export, once per frame */
 void tlist_draw(void)
 {
@@ -52,7 +52,13 @@ void tlist_draw(void)
     list = dl_clear_stencil(list, 0);
     list = dl_clear(list, 0x17);
     dl_set_list(list);
-    if (tl.state != 4 && tl.state != 0) {
+    switch (tl.state) {
+    case 4:
+        return;
+    }
+    if (tl.state == 0)
+        return;
+    {
         list = dl_select_layer(4, 0);
         list = dl_enable(list, 9);
         list = dl_enable(list, 4);
@@ -75,6 +81,10 @@ void tlist_draw(void)
                 above_top += y;
         }
         list = tlist_draw_scrollbar(list, 394, 66, 179, above_top, TL_ROWS, total);
+        {
+        int y;
+        int i;
+
         i = 0;
         y = 0;
         do {
@@ -85,6 +95,7 @@ void tlist_draw(void)
             y += tl.lines[id];
             i++;
         } while (y < TL_ROWS);
+        }
         if (tl.count[tl.tab] > 0) {
             list = tlist_draw_cursor(list, 110, (above_cursor - above_top) * 24 + 62, 279,
                                      tl.lines[TL_ENTRY(tl.tab, tl.top[tl.tab] + tl.cursor[tl.tab])] * 24 - 5);
@@ -96,7 +107,6 @@ void tlist_draw(void)
         dl_set_list(list);
     }
 }
-#endif
 
 unsigned int *tlist_draw_bg(unsigned int *list)
 {

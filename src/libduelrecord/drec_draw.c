@@ -1,5 +1,4 @@
 // @range 0x08804690-0x088060A4
-// @asm 0x08804690-0x088049DC
 // @data 0x0880A5CC-0x0880A5D4
 /* Drawing of the duel record screen: title bar with the completion percentage, tab strip, list
    lines (number, text, value column, "new" mark) and the scroll bar with its blinking arrows. */
@@ -22,7 +21,8 @@ void *drec_draw_bar_frame(void *list, int x, int y, unsigned char down, unsigned
                           int show, unsigned int t, void *gim);
 void *drec_draw_scrollbar(void *list, int x, int y, int h, int pos, int page, int total);
 
-#ifdef NON_MATCHING /* forma igual (mesmo inline de drec_tab_rows); o original deixa uma cópia morta do sll no alvo dos dois bnezl do inline (8 bytes a mais, que deslocam o resto); mesmo problema e mesmas tentativas de tlist_draw (ver lá) */
+/* `switch (state) { case K: return; }` no lugar do `state != K &&`: o return de case é alvo de desvio e faz o mwcc
+   manter as cópias mortas depois de cada `b`, como o original (docs/matching.md, rodada 19) */
 void duelrecord_draw(void)
 {
     void *list;
@@ -40,7 +40,13 @@ void duelrecord_draw(void)
     list = dl_clear_stencil(list, 0);
     list = dl_clear(list, 0x17);
     dl_set_list(list);
-    if (drec.state != 4 && drec.state != 0) {
+    switch (drec.state) {
+    case 4:
+        return;
+    }
+    if (drec.state == 0)
+        return;
+    {
         list = dl_select_layer(4, 0);
         list = dl_enable(list, 9);
         list = dl_enable(list, 4);
@@ -92,7 +98,6 @@ void duelrecord_draw(void)
     }
 }
 
-#endif
 
 void *drec_clear_bg(void *list)
 {
