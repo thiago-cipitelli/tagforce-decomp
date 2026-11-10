@@ -1475,3 +1475,47 @@ Bateram `dd_lp_rect`, `dd_chr_init`, `dd_rand_dir`, `declare_update`, `dd_ev_49`
   o primeiro teste e o laço, do/while e `goto` testados); `ui_scrollbar` (52: ordem max/thumb/frac e
   atribuição antecipada de top/bottom testadas, nenhuma muda a permutação dos `$s`); `dd_face` (74: `$s` de
   id/size/x0/y0 e `big / 2` recalculado duas vezes no original).
+
+## Rodada 19 (`dead`): cópias mortas depois de `b` = `return;` alvo de desvio (pesquisa)
+
+**Mecanismo (medido em arquivos de teste com o mwcc 219):** quando uma função `void` tem um `return;` **no meio**
+(com código depois dele no layout) e esse `return` é **alvo de um desvio condicional** (não o `if (c) return;`
+simples, em que o return é o caminho que cai), o mwcc desliga, na função inteira, a limpeza depois da conversão
+para likely: ficam (1) as **cópias mortas** da 1ª instrução do destino depois de cada `b` (`bXXl; b; <atraso>;
+<cópia>`), (2) o **teste que pula um `b`** (`bnez L; nop; b fim; nop; L:`) sem inversão, (3) `b` para o epílogo
+sem preencher. Formas que ligam o modo (cada uma testada isolada):
+- `if (A || B) return;` (o `A` verdadeiro desvia para o return) — também `if (!(a && b)) return;` e o `||`
+  no lugar de dois testes: `if ((on && f()) || (!on && !f())) return;` (`dd_voice_enable`, `dd_info_hide`);
+- `if (c) {...} else return;` com código depois (`dmgr_bgm_mood_update`: `if (cur == a[1]) id = a[0]; else
+  return;`);
+- `if (c) { ... } return;` com o `return` depois de um `if` sem `else` (`dmgr_ev_start`: `if (kind != 2) {
+  push(...); } return;` no lugar de `if (kind == 2) return; push(...); return;`);
+- `switch (x) { case 7: case 0: return; }`.
+
+Não ligam: `if (c) return;` simples, `&&` com return, `goto`, `return` no fim da função (sem código depois),
+helper `static inline` (o efeito do inline de `tpt_flip`/`scal_period_a` é **local** ao trecho inlinado) e
+**qualquer `return valor`** (em função que devolve valor só `return;` sem valor liga o modo, o que não é fonte
+plausível). O modo é por função (uma função com o gatilho não afeta a seguinte do arquivo).
+
+Consequência prática: numa função `void` com cópias mortas por toda parte, procure no asm original o `b` para o
+epílogo sem preencher (`b fim; nop`) ou o teste que pula um `b`, e escreva ali um `return` alvo de desvio
+(`else return;`, `|| ... return;`, `if (...) {...} return;`). Bateram assim `dd_voice_enable` (20 -> 0),
+`dd_info_hide` (6 -> 0), `dmgr_ev_start` (168 -> 0) e `dmgr_bgm_mood_update` (103 -> 0); depois do gatilho o
+resto foi ordem de `if/else` (`else if (score > 1) mood = 1; else mood = 0;`: o original desvia para o `else`),
+`score > 1` em vez de `>= 2` (dá `slti at` e não `slti v1`) e ponteiro `o` com `i` declarados no bloco, `for (i =
+0, o = order; ...)` (ordem dos `$s`).
+
+**Sem gatilho natural (ficam no skip):** as `*_draw` de menu (`limitlist_draw`, `duelrecord_draw`, `tlist_draw`,
+`charalist_draw`, `cardalbum_draw`, `conv_draw`) têm as cópias mortas mas o corpo inteiro está em
+`if (state != X && state != 0) {...}` e nada vem depois; o `if (state == X || state == 0) return;` liga o modo
+mas troca o `beql/beqz` do início por `bnez; nop; b; nop` (que o original não tem). Um gatilho artificial
+(`if (t == 77 || t == 3) return;` com código depois) faz aparecer as cópias de `duelrecord_draw`, então a família é
+esta, só falta a forma do fonte. Funções que devolvem valor (`duel_ai_0881E27C`, `efs_run`, `gim_walk`,
+`fld_map_walkable`, `duel_count_tributes`, `duel_act_e3920`, `dmgr_res_summary_row`) não têm gatilho conhecido;
+`op_bgm`, `rv_scroll_add` e `dk_help_topics_result` são outro fenômeno (sem cópias mortas; `b; nop` sem
+preencher / `li` repetido).
+
+**Registradores (`duel_0886DE70`, `duel_08865838`):** o endereço `&duel_chain.srcs[i]` sai num `$a1`/`$s0` próprio
+quando o ponteiro `x = &duel_chain.srcs[i]` é declarado no bloco do teste de `kinds[i]` e **todos** os campos
+(inclusive o 1º teste, `x->s_b16` / `x->s_player == a->player`) são lidos por ele; com o 1º campo lido por
+`duel_chain.srcs[i].campo` o mwcc dobra o deslocamento (`1528(t0)`) e cria `x` só depois.
