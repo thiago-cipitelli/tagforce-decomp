@@ -1251,3 +1251,29 @@ Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` 
   (`duel_cards[uid].effects`), não `((unsigned short *)&duel.list[uid])[1]` (`duel_088B4D54`).
 - `x = c ? x : f()` (máximo em ternário) dá o `beqzl; b fim; nop` com a chamada fora de linha (`duel_0887C93C`).
 - `(b & 0xF) & 1` é dobrado; `(unsigned char)(b & 0xF) & 1` mantém os dois `andi` (`duel_zone_usable`).
+
+## Rodada 16 (`protoE`: protótipos unificados no libduel_eng)
+
+- **Feito:** 92 chamados passaram a ter uma assinatura só em todos os `.c` do libduel_eng (61 com a da definição ou,
+  sem definição no módulo, a candidata `lost 0`; 17 com a definição retipada para a assinatura das chamadas, que
+  continua batendo; `duel_host_call`, `card_get_type`, `card_is_attribute7/8/9`, `card_attribute_icon_is3`,
+  `card_get_special_group`, `duel_088BFC64`, `duel_088D1AC8`, `duel_08845070`, `duel_088328E8` com ajuste no
+  chamador que perdia). Sozinha, a unificação quase não mexe nos `@asm` (só `duel_field_base_stats` 91 -> 90): as
+  divergências que importavam já tinham sido corrigidas na rodada 15.
+- **Quando a candidata perde 1-2 funções**, o ajuste fica no chamador, sem mudar a semântica:
+  parâmetro `unsigned short` no protótipo de quem perdeu = `(unsigned short)x` explícito no argumento
+  (`card_get_type((unsigned short)id)`); o inverso (o protótipo comum é `int` e o local era `unsigned short` já
+  guardado num local `u16`) = local `int`; contador passado a parâmetro `unsigned` = contador `unsigned` com
+  `(int)i < 5` para manter o `slti`; global passado a parâmetro `unsigned` = `extern unsigned int` como nos outros
+  arquivos (`duel_w_0891964C`).
+- **Pista K&R sem K&R:** o efeito de declarar o chamado `f();` (argumento de bitfield/`u8` passado sem conversão
+  para `unsigned int`) se reproduz com o protótipo tipado e `(int)` no argumento: `duel_088BFF78((int)a->player,
+  (int)a->id, cid)` e `duel_0884C588((int)a->player, 6, (int)a->id, cid)` fecharam `duel_0888F82C` (224 -> 0);
+  `duel_0884ACD8((int)p, 0x27)` dá em `duel_088862DC` o mesmo 25 -> 23 da pista K&R. Nem todo ganho K&R se
+  reproduz assim: `field_get_card` K&R leva `duel_08844C2C` de 68 a 50 e nenhum cast faz o mesmo.
+- Não unificáveis sem mexer em código que bate (ficam para o port): `duel_grave_find_uid`/`duel_f_find_uid`
+  (`duel_0884C8E4` só bate com as declarações K&R `unsigned int f();`; o retorno `int`/`unsigned` muda os testes
+  `>= 0`), `duel_0886B0E4` (`duel_0884F30C` passa `uid` int sem `andi`), `duel_count_free_monster_zones`,
+  `duel_slot_value_1909`, `duel_088D1438`, `duel_0884F91C`, `duel_0884AF68` (a definição ou um `@asm` piora), as de
+  aridade diferente da definição (`duel_088619C4`, `duel_0886191C`, `duel_08861964`, `duel_0883F174`,
+  `duel_ai_088204A8`) e os K&R/sem assinatura comum da rodada 15.
