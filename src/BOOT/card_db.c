@@ -1,7 +1,6 @@
 // @range 0x0884C8D0-0x0884EA38
 // @data 0x088EEBA0-0x088EEF50
 // @rodata 0x088AEAE0-0x088AEB84
-// @asm 0x0884CB1C-0x0884CEE8
 /* Deck recipes (RCP%03d.ydc in the recipes pack) and the card database: cardinfo_<lang>.ehp
    holds the names/descriptions (CARD_Name/Indx/Desc), properties (CARD_Prop.bin), passwords,
    sort keys, genre bits, the alphabetical index (CARD_Top) and alternate-art groups. */
@@ -122,17 +121,18 @@ int u16_cmp(const void *a, const void *b)
    count once the flag is set). Returns 0 invalid, 1 valid, 2 valid using partner cards. */
 /* Checks a deck against the inventory: 40..80 main cards, <=30 side, <=15 extra (when with_side),
    every card in game, copies owned (partner cards count once each) and per-card limit. 0 invalid,
-   1 ok, 2 ok using partner cards. Structure matches; register allocation differs (s1/s2, s7/fp). */
-#ifdef NON_MATCHING
+   1 ok, 2 ok using partner cards. */
 int deck_validate(RecipeData *deck, int with_side)
 {
+    unsigned short cur;
+    unsigned short run;
     unsigned short ids[126];
-    int n = 0;
     int used_partner = 0;
+    int n = 0;
     unsigned int i;
     int k;
-    unsigned short cur, run;
-    unsigned short owned, limit;
+    unsigned short owned;
+    unsigned short limit;
     unsigned short id;
     int spare;
 
@@ -142,18 +142,18 @@ int deck_validate(RecipeData *deck, int with_side)
         return 0;
     if (with_side != 0 && deck->n_extra > 0xF)
         return 0;
-    for (i = 0; i < deck->n_main; i++) {
-        if (card_get_flag31(deck->main_ids[i]) != 0)
-            ids[n++] = deck->main_ids[i];
+    for (k = 0; k < deck->n_main; k++) {
+        if (card_get_flag31(deck->main_ids[k]) != 0)
+            ids[n++] = deck->main_ids[k];
     }
-    for (i = 0; i < deck->n_side; i++) {
-        if (card_get_flag31(deck->side_ids[i]) != 0)
-            ids[n++] = deck->side_ids[i];
+    for (k = 0; k < deck->n_side; k++) {
+        if (card_get_flag31(deck->side_ids[k]) != 0)
+            ids[n++] = deck->side_ids[k];
     }
     if (with_side != 0) {
-        for (i = 0; i < deck->n_extra; i++) {
-            if (card_get_flag31(deck->extra_ids[i]) != 0)
-                ids[n++] = deck->extra_ids[i];
+        for (k = 0; k < deck->n_extra; k++) {
+            if (card_get_flag31(deck->extra_ids[k]) != 0)
+                ids[n++] = deck->extra_ids[k];
         }
     }
     qsort(ids, n, 2, u16_cmp);
@@ -213,7 +213,6 @@ int deck_validate(RecipeData *deck, int with_side)
     }
     return used_partner ? 2 : 1;
 }
-#endif
 
 /* For each partner card: 4 unused, 1 in main, 3 in side, 2 in extra (GameState +0x108). */
 /* Marks each partner card: 1 missing from main, 3 missing from side, 2 missing from extra, 4 unused.
@@ -377,12 +376,6 @@ void card_db_request_load(void)
     ehfile_read_async_alias(5, name, card_db_buffer, size, card_db_loaded, card_db_buffer);
 }
 
-static int card_db_loaded(void *arg, int size)
-{
-    card_db_ready = 1;
-    return 1;
-}
-
 /* Appends the language letter (J E G F I S) and ".bin" to a table name. */
 void card_db_lang_suffix(char *name)
 {
@@ -434,6 +427,12 @@ int card_db_load(void)
     card_db_ptr->password = ehp_find(pack, "CARD_Pass.bin", 0);
     card_db_ptr->int_id = ehp_find(pack, "CARD_IntID.bin", 0);
     card_db_ptr->genre = ehp_find(pack, "CARD_Genre.bin", 0);
+    return 1;
+}
+
+static int card_db_loaded(void *arg, int size)
+{
+    card_db_ready = 1;
     return 1;
 }
 

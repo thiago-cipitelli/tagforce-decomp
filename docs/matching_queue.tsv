@@ -5,7 +5,6 @@ fuzzy	size	module	function	address	file
 97.9	928	BOOT	snd_obj_start	0x0885FE04	src/BOOT/snd_play.c
 97.6	1376	libduel_draw	dd_fx_eyes_update	0x0884A8C4	src/libduel_draw/dd_fx_eyes.c
 97.4	1104	BOOT	snd_obj_3d	0x0886205C	src/BOOT/snd_obj.c
-97.3	972	BOOT	deck_validate	0x0884CB1C	src/BOOT/card_db.c
 97.3	1232	BOOT	gfx_save_bmp	0x08834848	src/BOOT/gfx.c
 97.2	2292	libshop	shop_pack_open	0x0880AD08	src/libshop/shop_packs.c
 97.1	416	libduel_draw	func_08822520	0x08822520	src/libduel_draw/dd_action_menu.c

@@ -282,8 +282,6 @@ segments:
       - [0x46D14, asm, menu_widget_asm_0884ACB4]
       - [0x47D50, c, menu_widget]
       - [0x48930, c, card_db]
-      - [0x48B7C, asm, card_db_asm_0884CB1C]
-      - [0x48F48, c, card_db]
       - [0x4AA98, c, card_groups]
       - [0x4CAD0, c, pmf_umd]
       - [0x4D39C, c, movie]
