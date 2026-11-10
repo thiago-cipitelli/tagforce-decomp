@@ -653,7 +653,8 @@ int font_layout_text(FontCtx *f, FontLayout *st, unsigned short *text, int wrap)
                             extra = font_run_width(f, st, &img, p);
                         }
                     }
-                    if (st->xmax < st->x + pad + adv + extra) {
+                    w = st->x + pad + adv + extra;
+                    if (st->xmax < w) {
                         p = end;
                         break;
                     }
