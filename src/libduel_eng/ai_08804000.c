@@ -154,7 +154,7 @@ int duel_08804008(unsigned int p, int z)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original grava duel_ai_player e duel_w_0891964C antes de ler o uid da carta; o mwcc antecipa as leituras */
+#ifdef NON_MATCHING /* 21 palavras (eram 35): com duel_ai_player e duel_w_0891964C gravados como campos do Duel (+0x37EC/+0x37F0) os stores ficam antes da leitura do uid como no original; falta só a cópia do parâmetro a (move s7,a2), que o original agenda logo antes do 1º jal e aqui sobe ao prólogo (mflo em a2 em vez de a3) */
 /* Summon the monster in hand slot h, picking the tributes. */
 int duel_088042D4(unsigned int p, int h, int a)
 {
@@ -189,8 +189,8 @@ int duel_088042D4(unsigned int p, int h, int a)
         buf[i] = r;
     }
     a = !a;
-    duel_ai_player = p;
-    duel_w_0891964C = p;
+    *(unsigned int *)((char *)&duel + 0x37EC) = p;
+    *(unsigned int *)((char *)&duel + 0x37F0) = p;
     duel_w_0891962C = CARD_UID(duel.players[p & 1].hand[h]);
     duel_0882AF5C(a, 0, 1);
     duel_w_08913EC4 = 0;
