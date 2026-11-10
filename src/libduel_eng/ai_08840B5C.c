@@ -10,7 +10,7 @@ int duel_0883FA64(unsigned int p, int id);
 int duel_0883FD00(unsigned int p, int id);
 int duel_0883FFA0(unsigned int p, unsigned int id);
 int duel_slot_has_effect(unsigned int p, int z, int id);
-int duel_088D189C(unsigned int p, int z, unsigned int q, int id);
+int duel_088D189C(unsigned int, int, unsigned int, int);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 int duel_088D1438(unsigned int p, int z, int a, int b);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);
@@ -20,12 +20,12 @@ int duel_field_level(unsigned int p, int z);
 int duel_find_effect_card(unsigned int p, int id, int skip);
 void duel_088C448C(int p, int a);
 unsigned int duel_088D13D8(unsigned int p, unsigned short id, unsigned int mask);
-unsigned int duel_0884E4A0(DuelAct *a);
+unsigned int duel_0884E4A0(DuelAct*);
 void duel_088C44E4(unsigned int p, int id);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 void duel_088CAB04();
-void duel_088D1BEC(unsigned int p, int z, int a, int b);
+int duel_088D1BEC(unsigned int, int, int, int);
 
 int duel_08840B5C(unsigned int p)
 {

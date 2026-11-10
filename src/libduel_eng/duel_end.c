@@ -44,18 +44,18 @@ int duel_msg_poll(void);
 int duel_req_088D557C(void);
 int duel_08827544(void);
 int duel_card_used_e66ac(unsigned int id);
-unsigned int card_get_type(int id);
-int card_get_prop5_hi(int id);
-int field_get_card(unsigned int p, int z);
+unsigned int card_get_type(int);
+int card_get_prop5_hi(int);
+int field_get_card(unsigned int, int);
 int duel_field_atk(unsigned int p, int z);
 int duel_zone_usable(unsigned int p, unsigned int z);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int card_same_name(int id, int id2);
 int duel_req_flag(int f);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_0884E02C(void);
-void duel_0884C588(unsigned int p, int a, int id, int b);
-void duel_0882AF5C(int a, int b, int c);
+void duel_0884C588(unsigned int, int, int, int);
+int duel_0882AF5C(int, int, int);
 void duel_088348BC(int a, unsigned int p, int b);
 int card_is_monster(int id);
 void duel_08834734(int a, int b, int c);
@@ -295,7 +295,7 @@ int duel_0884D874(void)
     return 1;
 }
 
-unsigned int duel_stat_get(int i)
+int duel_stat_get(int i)
 {
     int j;
 

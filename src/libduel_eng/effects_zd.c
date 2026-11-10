@@ -12,12 +12,12 @@ extern int duel_w_08919654;
 
 int duel_count_free_monster_zones(unsigned int p);
 int duel_phase_ok2();
-int duel_088BFF78(unsigned int p, int id, int b);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, void *msg);
-void duel_0884C588(unsigned int p, int a, int id, int b);
+void duel_0884C588(unsigned int, int, int, int);
 DuelCard *duel_0884C7CC(void);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
-void duel_088C7810(unsigned int p, unsigned int on);
+void duel_088C7810(unsigned int, unsigned int);
 void duel_088328FC(unsigned int p);
 void duel_088C78E0(unsigned int p);
 int duel_0887F80C(DuelAct *a, DuelAct *b);
@@ -29,16 +29,16 @@ int duel_08835AC0(void);
 void duel_088C7BA4(void);
 void duel_088D147C(DuelAct *a, unsigned int p, int z);
 int duel_field_atk(unsigned int p, int z);
-int duel_088C4604(DuelAct *a, unsigned int p, int n);
+int duel_088C4604(DuelAct*, unsigned int, int);
 void duel_088C7CF0(void);
 int duel_first_free_zone(unsigned int p);
 void duel_088C6728(unsigned int p, int uid, int a);
 void duel_088AFD5C(int kind, unsigned int a);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
-int duel_088A9008(DuelAct *a, int i, unsigned int *loc);
+int duel_088A9008(DuelAct*, int, unsigned int*);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
 int duel_field_def(unsigned int p, int z);
-unsigned int duel_088D13CC(DuelAct *a, unsigned int mask);
+unsigned int duel_088D13CC(DuelAct*, unsigned int);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 
 int duel_08890094(DuelAct *a)

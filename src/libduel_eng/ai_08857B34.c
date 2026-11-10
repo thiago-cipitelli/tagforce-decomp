@@ -6,18 +6,18 @@
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
-unsigned int duel_field_flag9(unsigned int p, int z);
-int card_get_type(int id);
+unsigned int duel_field_flag9(unsigned int, int);
+unsigned int card_get_type(int);
 int duel_card_fits_zone(unsigned int p, int z, int id);
-unsigned short duel_slot_e1854(unsigned int p, int z);
+unsigned short duel_slot_e1854(unsigned int, int);
 int duel_slot_can_act(unsigned int p, unsigned int z, int x, int y);
 int duel_tributable(unsigned int p);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_zone_usable(unsigned int p, unsigned int z);
 int duel_field_same_name(unsigned int p, int z, int id);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int card_is_in_group_18be(int id);
-int card_is_attribute9(int id);
+int card_is_attribute9(int);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 
 int duel_08857B34(DuelAct *a, unsigned int p, int z)

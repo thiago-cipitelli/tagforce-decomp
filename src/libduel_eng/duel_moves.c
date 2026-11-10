@@ -12,11 +12,11 @@ unsigned int duel_f_find_uid(unsigned int p, int uid);
 int duel_088CB55C(unsigned int p, DuelCard *c, int f);
 void duel_088CBB64(unsigned int p, int z, unsigned int on);
 extern unsigned int duel_w_08919620;
-int field_get_card(unsigned int p, int z);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+int field_get_card(unsigned int, int);
+void duel_088C7E68(unsigned int, int, int, int);
 void duel_088D1438(unsigned int p, int z, int a, int b);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
-void duel_088C8AD0(unsigned int p, int z, int id, int v);
+void duel_088C8AD0(unsigned int, int, int, int);
 void duel_088CC178(unsigned int p, int z, int a);
 void duel_088C8940(unsigned int p, int z);
 void duel_088C929C(unsigned int p, int z, unsigned int kind);
@@ -186,7 +186,7 @@ void duel_088CB9E0(unsigned int p, unsigned int mask)
     }
 }
 
-void duel_088CBAA4(unsigned int p, int z, unsigned int uid)
+void duel_088CBAA4(unsigned int p, int z, int uid)
 {
     if (z < 11 && uid == CARD_UID(duel.players[p & 1].field[z].card)) {
         duel_088CBB64(p, z, 1);

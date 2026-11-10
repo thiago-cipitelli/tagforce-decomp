@@ -9,12 +9,12 @@ extern int duel_effects_off;           /* 0x08914914 */
 
 int duel_count_active(int id);
 int duel_is_cur_card(int id);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_slot_e1390(unsigned int p, int z, int id, unsigned int q);
-int duel_slot_e5a48(unsigned int p, int z);
+unsigned int duel_slot_e5a48(unsigned int, int);
 unsigned int duel_slot_immunity(unsigned int p, int z);
-unsigned int duel_slot_ref(unsigned int p, int z);
+unsigned int duel_slot_ref(unsigned int, int);
 
 unsigned int duel_slot_immunity(unsigned int p, int z)
 {

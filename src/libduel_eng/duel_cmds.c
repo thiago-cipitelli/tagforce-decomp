@@ -19,7 +19,7 @@ unsigned int duel_hand_locked(unsigned int p);
 void duel_mode_set(unsigned int bit, int on);
 void duel_player_flag_set(unsigned int p, unsigned int bit, int on);
 void duel_msg_send(unsigned short cmd, int arg, void *data, int len);
-void duel_088DF554(unsigned int p, int z, unsigned int bit, int on);
+void duel_088DF554(unsigned int, int, unsigned int, int);
 
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b)
 {
@@ -68,7 +68,7 @@ void duel_088C7940(int a)
 }
 
 int card_get_attribute_icon(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 
 /* command 0x3F for every attribute-3 card in both graveyards and every 0x12A1 in zone D that still has its
    effect, then 0x5B and the hand refresh of both players */
@@ -174,7 +174,7 @@ void duel_088C7DD4(unsigned int p, unsigned int bit, unsigned int on)
     }
 }
 
-void duel_088C7E68(unsigned int p, unsigned int z, unsigned int bit, unsigned int on)
+void duel_088C7E68(unsigned int p, int z, int bit, int on)
 {
     if (on != (duel.players[p & 1].field[z].flags >> bit & 1)) {
         duel_088DF554(p, z, bit, on);

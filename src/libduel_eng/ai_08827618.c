@@ -33,12 +33,12 @@ extern unsigned short duel_h_08914A1A;
 int duel_08827544(int id);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_phase_ok2(unsigned int p);
-int duel_088DFE24(unsigned int p, unsigned int q);
+int duel_088DFE24(int, unsigned int);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_count_free_zones(unsigned int p);
 int duel_088BFFD8(unsigned int p, int id, int i);
 unsigned int duel_field_type(unsigned int p, int z);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_get_kind(int id);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_field_kind(unsigned int p, int z);
@@ -53,7 +53,7 @@ int duel_list_card_level(unsigned int p, int i);
 int duel_grave_count_id_free(unsigned int p, unsigned int id);
 int duel_has_effect_atk(unsigned int p, int id, int atk);
 int duel_count_card_state(unsigned int p, int id, int state);
-int duel_08827DA4(unsigned int p, int uid, int a, int b);
+unsigned int duel_08827DA4(unsigned int, int, int, int);
 
 /* Whether p can summon the card id by tributing monsters of its type or attribute (n tributes
    from duel_08827544); with the effect 0x14A0 the tributes must be on the field. */

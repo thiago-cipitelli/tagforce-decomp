@@ -5,16 +5,16 @@
 
 int duel_list_card_level(unsigned int p, int i);
 int duel_card_dfac8(unsigned int p, int id, int field);
-void duel_088BFC64(unsigned int p, int zone, unsigned int i);
+void duel_088BFC64(unsigned int, int, unsigned int);
 int card_is_monster(int id);
-int card_get_level(int id);
-int card_get_type(int id);
-int card_get_prop5_hi(int id);
+int card_get_level(int);
+unsigned int card_get_type(int);
+int card_get_prop5_hi(int);
 int card_get_attribute_icon(int id);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
-int card_get_special_group(unsigned short id);
+int card_get_special_group(int);
 int card_get_atk_q(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int card_get_kind(int id);
 int card_is_in_group_198c(int id);
 void duel_088B5588(unsigned int p, int b, int c);
@@ -29,10 +29,10 @@ int duel_088A6300(int id);
 int duel_088A6360(int id, int i);
 int duel_088A62AC(int id, unsigned int p, unsigned int z);
 int card_attribute_icon_is2(int id);
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 int card_is_in_group_18a4(int id);
 int duel_0884E948(DuelAct *a, unsigned int p);
-int card_is_in_group_1a2f(int id);
+int card_is_in_group_1a2f(int);
 int duel_088DFCC8(unsigned int uid);
 extern DuelAct *duel_w_089147DC;
 

@@ -9,14 +9,14 @@ int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_slot_ef098(unsigned int p, int z, int id);
 unsigned int duel_field_type(unsigned int p, int z);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int card_is_in_group_1946(int id);
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_field_level(unsigned int p, int z);
 int duel_field_def(unsigned int p, int z);
 int duel_slot_count_14c0(unsigned int p, int z);
-int duel_slot_e5a48(unsigned int p, int z);
-unsigned int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_slot_e5a48(unsigned int, int);
+unsigned int duel_field_flag9(unsigned int, int);
 int card_is_in_group_1a6f(int id);
 
 int duel_08855908(DuelAct *a, unsigned int p, int z)

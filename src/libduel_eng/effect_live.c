@@ -5,17 +5,17 @@
    field and is not negated; bit count; card lists by zone kind. */
 #include "duel.h"
 
-int field_get_card(unsigned int p, int z);
-int card_get_prop5_hi(int id);
+int field_get_card(unsigned int, int);
+int card_get_prop5_hi(int);
 int duel_field_atk(unsigned int p, int z);
 unsigned short duel_act_target(DuelAct *a, int i);
 int duel_act_0884E7E8(DuelAct *a);
 int duel_act_0884E898(DuelAct *a);
 int duel_count_field_all(unsigned int p);
 int duel_find_effect_card(unsigned int p, int id, int z);
-int duel_slot_effect_arg(unsigned int p, int z, int id);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
 void duel_act_0887E140(DuelAct *a, int *n);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_monster(int id);
 extern unsigned int duel_turn_player;
 

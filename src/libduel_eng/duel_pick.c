@@ -28,7 +28,7 @@ extern int duel_w_08917DC4;
 extern int duel_w_089195E4;
 
 int duel_req_flag(int f);
-int duel_zone_faceup(unsigned int p, int z, int i);
+unsigned int duel_zone_faceup(unsigned int, int, int);
 int duel_msg_busy(void);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, int c);
 int duel_hand_count_name(unsigned int p, unsigned short id);
@@ -41,7 +41,7 @@ unsigned int duel_grave_find_uid();
 unsigned int duel_f_find_uid();
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 int duel_zone_f_card_usable(unsigned int p, unsigned int q, int i);
-unsigned int duel_card_locate(int uid);
+unsigned int duel_card_locate(unsigned int);
 
 unsigned int duel_0884C718(void)
 {

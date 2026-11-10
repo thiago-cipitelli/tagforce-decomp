@@ -23,25 +23,25 @@ extern unsigned int duel_w_089149F8;   /* materials picked */
 #define CHAIN_I (*(unsigned int *)&duel_chain.pad638[0x6A8 - 0x638])
 
 int duel_08835AC0(void);
-int duel_host_call(int a, int b, unsigned int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 int duel_0884AD18(int msg);
 void duel_wfmt_d();
 void duel_wfmt_s();
 void duel_0881956C(unsigned int p, int id, int (*fn)());
 void duel_08835978(int (*fn)());
 void duel_088359B0(int (*fn)());
-int duel_08827DA4(unsigned int p, int uid, int a, int b);
+unsigned int duel_08827DA4(unsigned int, int, int, int);
 void duel_0884AD40(int msg, int uid);
 int duel_0884ACD8(unsigned int p, int msg);
 int duel_summon_tributes(void);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_get_kind(int id);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);
 int duel_088D1608(int p, int z, int flags);
-void duel_0884C588(unsigned int p, int a, int id, int b);
+void duel_0884C588(unsigned int, int, int, int);
 DuelCard *duel_0884CCBC(int i);
-void duel_088CB400(unsigned int p, DuelCard *c, int a);
+void duel_088CB400(unsigned int, DuelCard*, int);
 int duel_08827544(int id);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 unsigned short *card_db_table_sel(int i);
@@ -50,12 +50,12 @@ int duel_0882A550(unsigned int p, int z, int i);
 int duel_0882A838(unsigned int p, int z, int i);
 int duel_0882A940(unsigned int p, int z, int i);
 int duel_0882E0A8(unsigned int p, int z, int i);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_field_protected(unsigned int p, int z);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_zone_usable(unsigned int p, unsigned int z);
 int card_is_in_group_1a6f_b(int id);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 void duel_088D19C0(unsigned int p, int z, int a, int b);
 void duel_088C78E0(unsigned int p);
 int duel_count_active(int id);
@@ -63,7 +63,7 @@ int duel_count_tributes();
 int duel_0886AAB4(DuelAct *a, int b);
 int duel_slot_efb84(unsigned int p, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);
-void duel_088D1BEC(unsigned int p, int z, int a, int b);
+int duel_088D1BEC(unsigned int, int, int, int);
 int duel_0882EA4C(unsigned int p, int z, int i);
 
 /* Name of the attribute (or type) asked by the card being summoned. */

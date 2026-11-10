@@ -8,9 +8,9 @@ extern int duel_zone_order[5];         /* 0x08911DA0 center first */
 
 int duel_zone_free(unsigned int p, int z);
 int duel_count_free_monster_zones(unsigned int p);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_count_active(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_field_atk(unsigned int p, int z);

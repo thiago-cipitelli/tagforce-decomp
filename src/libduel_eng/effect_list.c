@@ -154,7 +154,7 @@ unsigned int duel_slot_effect_index(unsigned int p, int z, unsigned int id, unsi
     return 0;
 }
 
-int duel_slot_effect_with(unsigned int p, int z, unsigned int id, unsigned int arg)
+int duel_slot_effect_with(unsigned int p, int z, int id, int arg)
 {
     unsigned int e = duel.players[p & 1].field[z].effects;
 

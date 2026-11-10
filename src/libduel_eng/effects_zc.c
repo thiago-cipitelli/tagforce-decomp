@@ -1,5 +1,4 @@
 // @range 0x0888F420-0x08890094
-// @asm 0x0888F82C-0x0888FC28
 /* Card effect handlers (DuelAct *a), after effects_zb.c. */
 #include "duel.h"
 
@@ -7,31 +6,31 @@ extern int duel_step;
 extern unsigned short duel_w_0891968C;
 
 int duel_0887DB24(DuelAct *a);
-void duel_088C7DD4(unsigned int p, int a, int b);
+void duel_088C7DD4(unsigned int, unsigned int, unsigned int);
 void duel_08832880(unsigned int p, int a, int b);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 int duel_grave_find_uid(unsigned int p, int uid);
 int duel_pick_st_zone(unsigned int p);
-int duel_088A9008(DuelAct *a, int i, unsigned int *loc);
+int duel_088A9008(DuelAct*, int, unsigned int*);
 unsigned int duel_act_target(DuelAct *a, int i);
-void duel_088CB728(unsigned int p, int z, int uid, unsigned int q, int qz, int a, int b);
+void duel_088CB728(int, int, int, unsigned int, int, int, int);
 void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t);
-int duel_088BFF78(unsigned int p, int id, int b);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, void *msg);
-void duel_0884C588(unsigned int p, int a, int id, int b);
-int duel_0884C804(void);
+void duel_0884C588(unsigned int, int, int, int);
+unsigned int duel_0884C804(void);
 DuelCard *duel_0884C7CC(void);
 void duel_088CC178(unsigned int p, int z, int a);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 void duel_088C44E4(unsigned int p, int id);
-int duel_088C4604(DuelAct *a, unsigned int p, int n);
+int duel_088C4604(DuelAct*, unsigned int, int);
 void duel_088C78E0(unsigned int p);
-void duel_088C6A10(unsigned int p, unsigned short id, int z);
-void duel_088C7810(unsigned int p, unsigned int on);
+int duel_088C6A10(unsigned int, unsigned short, int);
+void duel_088C7810(unsigned int, unsigned int);
 void duel_088328FC(unsigned int p);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
-void duel_088C7D74(int a, int b);
-int duel_088C97F0(DuelAct *a, unsigned int p, int z, int b, int c);
+void duel_088C7D74(unsigned int, unsigned int);
+int duel_088C97F0(DuelAct*, unsigned int, int, int, int);
 int duel_attack_check(unsigned int p, int z, int arg);
 int duel_can_attack_target(unsigned int p, int z, unsigned int q, int i, int arg);
 int duel_can_direct_attack(unsigned int p, int z);
@@ -100,10 +99,6 @@ int duel_0888F6B0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* alocação dos $s (uid reaproveita o registrador da zona); 1028 B contra 1020: o original lê o byte
-                      +2 de a uma vez e mantém a->player em a0 do teste do uid até os casos 0x80/0x7F (sem recarregar),
-                      o mwcc o recalcula com andi 0xFF; trocar a->player por p nesses casos piora (223 -> 187 palavras, a0
-                      continua sobrando) */
 int duel_0888F82C(DuelAct *a)
 {
     unsigned int p = a->player;
@@ -141,14 +136,14 @@ int duel_0888F82C(DuelAct *a)
     }
     switch (duel_step) {
     case 0x80:
-        if (duel_088BFF78(a->player, a->id, cid) == 0) {
+        if (duel_088BFF78((int)a->player, (int)a->id, cid) == 0) {
             duel_0884ACD8(a->player, (void *)0xD);
             return 0x78;
         }
         duel_0884ACD8(p, (void *)0xF6);
         return 0x7F;
     case 0x7F:
-        duel_0884C588(a->player, 6, a->id, cid);
+        duel_0884C588((int)a->player, 6, (int)a->id, cid);
         return 0x7E;
     case 0x7E:
         switch (duel_0884C804()) {
@@ -194,7 +189,6 @@ int duel_0888F82C(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888FC28(DuelAct *a)
 {

@@ -6,7 +6,7 @@
 #include "card_db.h"
 
 int duel_slot_e8170(unsigned int p, int z, int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 DuelCard *duel_field_card_deb2c(void);
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_act_resolve_6a230(DuelAct *a);

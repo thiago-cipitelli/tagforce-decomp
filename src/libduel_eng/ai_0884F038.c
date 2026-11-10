@@ -29,11 +29,11 @@ extern int duel_w_08914948[16];   /* duel_chain.srcs */
 int duel_list_find_id(unsigned int p, unsigned int id);
 void duel_msg_send(unsigned short cmd, int arg, void *data, int len);
 void duel_bzero(void *p, int n);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C7E68(unsigned int, int, int, int);
 int duel_0886B0E4(unsigned int code, int uid, int arg);
 int duel_0884E9E8(DuelAct *a, int b);
 int card_is_monster(int id);
-int card_get_prop5_hi(int id);
+int card_get_prop5_hi(int);
 int duel_088B06F0();
 int duel_0881530C(unsigned int p, DuelAct *a);
 void duel_wcscpy(unsigned short *dst, int id);

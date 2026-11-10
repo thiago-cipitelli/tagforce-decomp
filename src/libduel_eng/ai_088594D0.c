@@ -8,8 +8,8 @@ int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
 int duel_can_attack_target(unsigned int p, int z, unsigned int q, int i, int arg);
-int card_get_type(unsigned short id);
-int card_attribute_icon_is3(int id);
+unsigned int card_get_type(int);
+int card_attribute_icon_is3(int);
 
 int duel_088594D0(DuelAct *a, unsigned int p, int z)
 {
@@ -77,7 +77,7 @@ int duel_088596CC(DuelAct *a, unsigned int p, int z)
     if (duel.players[p].field[z].faceup == 0) {
         return 0;
     }
-    if (card_get_type(id) == 0x17) {
+    if (card_get_type((unsigned short)id) == 0x17) {
         return 0;
     }
     return a->uid != CARD_UID(duel.players[p].field[z].card);

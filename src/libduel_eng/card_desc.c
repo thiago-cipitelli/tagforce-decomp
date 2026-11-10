@@ -85,7 +85,7 @@ static DuelCardDesc *duel_card_desc(DuelAct *a)
     return 0;
 }
 
-int duel_0884E340(unsigned short id)
+int duel_0884E340(int id)
 {
     DuelAct t = {0};
 

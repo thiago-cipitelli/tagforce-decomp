@@ -21,12 +21,12 @@ int duel_0886CE38();
 int duel_card_dfac8(unsigned int p, int id, int a);
 void duel_0884AD40(int msg, int uid);
 int duel_088AA224(DuelAct *a);
-void duel_0884C588(unsigned int p, int a, unsigned short id, unsigned int b);
-int duel_088BFF78(unsigned int p, unsigned short id, int b);
+void duel_0884C588(unsigned int, int, int, int);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
 void duel_088CB4BC(unsigned int p, int uid);
 int duel_0887F728(DuelAct *a, int b);
-void duel_0882619C(unsigned int p, DuelCard *c, int a, int b, unsigned int d);
+void duel_0882619C(unsigned int, DuelCard*, int, int, unsigned int);
 void duel_0884AF68(int msg, int uid, int a);
 int duel_0887DB24(void);
 

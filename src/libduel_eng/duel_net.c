@@ -30,7 +30,7 @@ extern unsigned char duel_net_last[4][8]; /* 0x08919BD0 */
 extern unsigned char duel_net_seq;     /* 0x08919BF0 */
 extern unsigned char duel_req[];         /* 0x08914A30 */
 
-void *game_state2_get(void);
+void* game_state2_get(void);
 int peer_count_get(void);
 int peer_self_get(void);
 void *peer_get(int i);

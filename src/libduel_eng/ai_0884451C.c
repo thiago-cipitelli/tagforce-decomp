@@ -8,13 +8,13 @@ int duel_08843858(unsigned int p, int id);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
-unsigned int duel_slot_effect12_arg(unsigned int p, int z, int id);
+unsigned int duel_slot_effect12_arg(unsigned int, int, int);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 int duel_0886C448(DuelAct *a);
-int field_get_card(unsigned int p, int z);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
+int field_get_card(unsigned int, int);
+void duel_088C4448(unsigned int, int, int);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
-void duel_088C8AD0(unsigned int p, int z, int id, int v);
+void duel_088C8AD0(unsigned int, int, int, int);
 
 int duel_0884451C(unsigned int p, int id)
 {

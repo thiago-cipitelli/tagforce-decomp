@@ -21,26 +21,26 @@ int duel_phase_ok2(unsigned int p);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_hand_count_monsters(unsigned int p);
 int duel_field_atk(unsigned int p, int z);
-int duel_088BFF78(unsigned int p, unsigned short id, int a);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
-void duel_0884C588(unsigned int p, int a, unsigned short id, int b);
+void duel_0884C588(unsigned int, int, int, int);
 DuelCard *duel_0884CCBC(int i);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 void duel_088C7CF0(void);
 void duel_088C7BA4(void);
-void duel_088C7810(unsigned int p, int a);
-void duel_08832950(unsigned int p, unsigned short id);
-int duel_08827DA4(unsigned int p, int uid, int a, int b);
+void duel_088C7810(unsigned int, unsigned int);
+void duel_08832950(unsigned int, int);
+unsigned int duel_08827DA4(unsigned int, int, int, int);
 void duel_08819B94(unsigned int p);
 void duel_08835944(int a);
-void duel_0882AF5C(int a, int b, int c);
+int duel_0882AF5C(int, int, int);
 int duel_088E9150(int id);
 int duel_08881160(DuelAct *a, int b);
 void duel_088C7478(unsigned int p, int i, DuelCard *c, int a);
 void duel_08832870(unsigned int p, int a);
 void duel_088D192C(DuelAct *a, unsigned int p, int z);
 void duel_08832880(unsigned int p, unsigned short id, int a);
-int duel_088C4604(DuelAct *a, unsigned int p, int n);
+int duel_088C4604(DuelAct*, unsigned int, int);
 
 int duel_eff_fca90(DuelAct *a)
 {

@@ -4,15 +4,15 @@
 #include "duel.h"
 #include "card_db.h"
 
-int field_get_card(unsigned int p, int z);
-int duel_slot_e1854(unsigned int p, int z);
+int field_get_card(unsigned int, int);
+unsigned short duel_slot_e1854(unsigned int, int);
 int duel_slot_counter(unsigned int p, int z, int id);
 void duel_slot_foreach_effect(unsigned int p, int z, int (*fn)(DuelEffect *e, int *ctx), int *ctx);
 DuelCard *duel_field_card_deb2c(unsigned int p, int zone, int i);
 
 /* Location of the card with uid: field (p | z << 8), piles (p | zone << 8 | index << 16, zone
    0xB..0xF), special cards (0xFFFF0000 | p | z << 8); 0x1000 if the uid is nowhere. */
-unsigned int duel_card_locate(int uid)
+unsigned int duel_card_locate(unsigned int uid)
 {
     unsigned int p;
     unsigned int i;
@@ -152,7 +152,7 @@ unsigned int duel_f_find_uid(unsigned int p, int uid)
     return -1;
 }
 
-unsigned int duel_hand_find_uid(unsigned int p, int uid)
+int duel_hand_find_uid(unsigned int p, int uid)
 {
     unsigned int i;
 
@@ -231,7 +231,7 @@ unsigned int duel_slot_min_1130(unsigned int p, int z)
     return best & 0xFFFF;
 }
 
-unsigned int duel_slot_e68a0(unsigned int p, int z)
+int duel_slot_e68a0(unsigned int p, int z)
 {
     if (card_get_group_value_1983(field_get_card(p, z)) != 0) {
         return duel.players[p & 1].field[z].link;

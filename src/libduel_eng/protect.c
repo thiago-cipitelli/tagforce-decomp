@@ -8,17 +8,17 @@ extern unsigned int duel_view_player;  /* 0x089139F4 */
 extern int duel_err;                   /* 0x0891965C */
 
 int duel_count_active(int id);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_field_same_name(unsigned int p, int z, int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_affected(unsigned int p, int z, int id);
 int duel_slot_affected_ex(unsigned int p, int z, int id);
 unsigned int duel_slot_immunity(unsigned int p, int z);
 int duel_slot_immune(unsigned int p, int z, int opp);
-int duel_slot_ref(unsigned int p, int z);
-int duel_effect_applies(int id, unsigned int p, int ref);
+unsigned int duel_slot_ref(unsigned int, int);
+int duel_effect_applies(int, unsigned int, int);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_count_card_state(unsigned int p, int id, int state);
 int duel_has_st_12be(unsigned int p);

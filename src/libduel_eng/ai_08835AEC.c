@@ -44,7 +44,7 @@ extern struct {
     unsigned char b6 : 2;
 } duel_w_08914A2A;
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 unsigned int duel_08834A84(int id, unsigned int p, int i);
 unsigned int duel_08834E44(int id, unsigned int p, int z);
 unsigned int duel_08835274(int id, unsigned int p, int z);
@@ -55,18 +55,18 @@ int duel_08835740(DuelAct *a, unsigned int p, int z, unsigned int i);
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 int duel_0886B0E4(unsigned int code, unsigned short uid, int b);
 int duel_grave_find_name(unsigned int p, int id);
-int duel_d_find_name(unsigned int p, int id);
+int duel_d_find_name(unsigned int, int);
 int duel_c_find_name(unsigned int p, int id);
-unsigned int duel_08828740(unsigned int p, int uid);
+int duel_08828740(unsigned int, int);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
-void duel_0882AF5C(int a, int b, int c);
-void duel_088C8AD0(unsigned int p, int z, int id, int v);
+int duel_0882AF5C(int, int, int);
+void duel_088C8AD0(unsigned int, int, int, int);
 int duel_slot_has_effect12_arg(unsigned int p, int z, int id, int arg);
-int duel_zone_card_id(unsigned int p, int z, int i);
+int duel_zone_card_id(unsigned int, int, int);
 int duel_grave_find_uid(unsigned int p, int uid);
 int duel_088362FC(unsigned int p, int id, int uid);
 int duel_0883623C(unsigned int p, int id);
-int duel_08827DA4(unsigned int p, int uid, int a, int b);
+unsigned int duel_08827DA4(unsigned int, int, int, int);
 
 unsigned int duel_08835AEC(unsigned int p, int z, unsigned int i)
 {

@@ -57,12 +57,12 @@ typedef struct DuelPick {              /* 0x0891524C, as in duel_pick.c */
 extern DuelPick duel_w_0891524C;
 
 int duel_req_flag(int i);
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_0884DB38(int a, int b);
 void duel_0884DB7C();
-void duel_088DF554(unsigned int p, int z, unsigned int bit, int on);
+void duel_088DF554(unsigned int, int, unsigned int, int);
 DuelCard *duel_card_by_uid(int uid);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 int duel_grave_find_uid(unsigned int p, int uid);
 void duel_grave_to_top(unsigned int p, unsigned short uid);
 DuelCard *duel_0884C7EC(int i);
@@ -76,11 +76,11 @@ void duel_slot_effect_add(unsigned int p, int z, int a, int id, int b);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
 void duel_card_take(unsigned int p, int zone, int i);
 void duel_card_put(unsigned int p, int zone, unsigned int arg, DuelCard *c);
-unsigned short duel_zone_pos(unsigned int p, int z, int i);
-int duel_zone_faceup(unsigned int p, int z, int i);
+unsigned short duel_zone_pos(unsigned int, int, int);
+unsigned int duel_zone_faceup(unsigned int, int, int);
 unsigned short duel_uid_next(unsigned int p);
 void duel_place_monster(unsigned int p, int z, DuelCard *c, int pos, int up);
-unsigned int duel_slot_min_1130(unsigned int p, int z);
+unsigned int duel_slot_min_1130(unsigned int, int);
 void duel_effects_free_card();
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 
@@ -103,7 +103,7 @@ extern unsigned char duel_w_0891434C;
 
 void duel_0884DA24(int a, int b);
 void duel_0884DAF0(int a, int b);
-int duel_stat_get(int i);
+int duel_stat_get(int);
 void duel_log_push(DuelLogEnt *v);
 void duel_req_088D57E0(void);
 void duel_req_088D5830(void);
@@ -205,7 +205,7 @@ void duel_0884D618(int all);
 int duel_slot_count_src(unsigned int p, int z, int id);
 void duel_player_flag_set(unsigned int p, unsigned int bit, int on);
 void duel_mode_set(unsigned int bit, int on);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_088480D0(unsigned int p);
 int duel_0884ACD0(int a);
 int duel_slot_e8170(unsigned int p, int z, int id);
@@ -515,7 +515,7 @@ void duel_req_088D31F0(void)
         for (i = 0; i < n; i++) {
             duel.players[p & 1].field[to[i]].flags &= ~0x80;
         }
-        duel_host_call(0x27, p, mask, 0);
+        duel_host_call(0x27, p, (int)mask, 0);
         duel_req_step++;
         break;
     case 1:

@@ -262,7 +262,7 @@ void duel_08832ADC(int a)
     duel_ev_set(duel_turn_player, 0x11, a, 0);
 }
 
-void duel_08832AF4(unsigned int p, int a, unsigned int x, unsigned int y)
+void duel_08832AF4(unsigned int p, int a, int x, int y)
 {
     duel_ev_set(p, 0x12, a, (x & 0xFF) | (y & 0xFF) << 8);
 }

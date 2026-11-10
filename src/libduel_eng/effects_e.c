@@ -9,11 +9,11 @@ extern int duel_w_089148FC;
 extern int duel_w_08914900;
 extern int duel_w_08919624;
 
-int duel_grave_count_id(unsigned int p, unsigned int id);
+int duel_grave_count_id(unsigned int, unsigned int);
 int duel_grave_find_name(unsigned int p, int id);
 int duel_count_owned_name(unsigned int p, int id);
 unsigned int duel_act_target(DuelAct *a, int i);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 void duel_088CC178(unsigned int p, int z, int a);
 void duel_08832974(unsigned int p, int a, int b);
 int duel_08861480(unsigned short id, int i);
@@ -24,16 +24,16 @@ void duel_088C7CF0(void);
 void duel_088C7BA4(void);
 void duel_088C78E0(unsigned int p);
 void duel_088328FC(unsigned int p);
-void duel_088CB400(unsigned int p, DuelCard *c, int a);
-int duel_088DFE24(unsigned int p, unsigned int q);
-int duel_088A9008(DuelAct *a, int b, int c);
+void duel_088CB400(unsigned int, DuelCard*, int);
+int duel_088DFE24(int, unsigned int);
+int duel_088A9008(DuelAct*, int, unsigned int*);
 int duel_0884E440();
 int duel_088D1684(DuelAct *a, unsigned int p, int z, int b);
 DuelCard *duel_0884C7CC(void);
 void duel_088C6728(unsigned int p, int uid, int a);
 int duel_088AA224(DuelAct *a);
-void duel_0884C588(unsigned int p, int a, unsigned short id, unsigned int b);
-int duel_088BFF78(unsigned int p, unsigned short id, int b);
+void duel_0884C588(unsigned int, int, int, int);
+int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
 
 int duel_eff_f9c00(DuelAct *a, int b)

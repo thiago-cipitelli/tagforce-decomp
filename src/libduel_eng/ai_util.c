@@ -8,7 +8,7 @@
 extern unsigned int duel_w_08913CF4;   /* player the computer is choosing for [?] */
 extern int duel_w_08919624;
 
-int duel_088BFF78(unsigned int p, int id, int a);
+int duel_088BFF78(unsigned int, int, int);
 int duel_088087C0(unsigned int p, int id, int a);
 void duel_0884C7C0(int i);
 void duel_0884CB8C(int i, int v);
@@ -24,14 +24,14 @@ int duel_field_atk(unsigned int p, int z);
 unsigned int duel_field_controller(unsigned int p, int z, int arg);
 int duel_attack_check(unsigned int p, int z, int arg);
 int duel_slot_ef098();
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_slot_affected(unsigned int p, int z, int id);
 int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
-unsigned int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_field_flag9(unsigned int, int);
 int duel_d_count_name(unsigned int p, unsigned short id);
 int duel_hand_count_name(unsigned int p, unsigned short id);
-int duel_grave_count_id(unsigned int p, int id);
+int duel_grave_count_id(unsigned int, unsigned int);
 int duel_count_name(unsigned int p, int id);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_08816A74(unsigned int p, int (*fn)(), int a, int b);

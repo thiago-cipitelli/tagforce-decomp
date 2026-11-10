@@ -9,10 +9,10 @@ int duel_08843858(unsigned int p, int id);
 int duel_08843998(unsigned int p, int id);
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_zone_f_count_monsters(unsigned int p);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
-int duel_088C4730(unsigned int p, int n, int f, int id);
+void duel_088C4448(unsigned int, int, int);
+int duel_088C4730(unsigned int, int, int, int);
 
 int duel_08844024(unsigned int p)
 {

@@ -5,15 +5,15 @@
 
 extern int duel_step;
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 unsigned int duel_act_target(DuelAct *a, int i);
-int duel_088A9008(DuelAct *a, int b, int c);
+int duel_088A9008(DuelAct*, int, unsigned int*);
 int duel_0884E440();
 void duel_088C89BC(unsigned int p, int z, int a, int b);
 void duel_088CC178(unsigned int p, int z, unsigned short a);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 int duel_phase_ok2(unsigned int p);
-int duel_0884E4A0(DuelAct *a);
+unsigned int duel_0884E4A0(DuelAct*);
 int duel_088D1D58(DuelAct *a, int b);
 int duel_08881160(DuelAct *a, int b);
 int duel_088D16C4(DuelAct *a, unsigned int p, int z, int f);

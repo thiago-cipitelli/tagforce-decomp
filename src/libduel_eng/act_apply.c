@@ -7,7 +7,7 @@
 unsigned int duel_act_apply();
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_act_can_affect();
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 
 unsigned int duel_088D13CC(DuelAct *a, unsigned int mask)
 {
@@ -125,7 +125,7 @@ int duel_088D1858(DuelAct *a, unsigned int p, int z)
     return (m & duel_act_apply(a, m, 0xB, 0)) != 0;
 }
 
-int duel_088D189C(unsigned int p, int z, unsigned int q, unsigned short id)
+int duel_088D189C(unsigned int p, int z, unsigned int q, int id)
 {
     unsigned int m = 1 << (z + p * 16);
     DuelAct t = {0};
@@ -207,7 +207,7 @@ unsigned int duel_088D1BBC(DuelAct *a, unsigned int mask)
     return mask & duel_act_apply(a, mask, 0xE, 0x1000);
 }
 
-int duel_088D1BEC(unsigned int p, int z, unsigned int q, unsigned short id)
+int duel_088D1BEC(unsigned int p, int z, int q, int id)
 {
     unsigned int m = 1 << (z + p * 16);
     DuelAct t = {0};

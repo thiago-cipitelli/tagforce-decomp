@@ -3,7 +3,7 @@
 /* Conditions of the computer player: LP against the strongest ATK, monsters on the field, the chain. */
 #include "duel.h"
 int card_attribute_to_group(unsigned short id);
-int card_get_special_group(unsigned short id);
+int card_get_special_group(int);
 
 extern int duel_phase;
 extern unsigned int duel_turn_player;
@@ -11,7 +11,7 @@ extern unsigned int duel_turn_player;
 int duel_08809FC4();
 int duel_0880F8C4(DuelAct *a, int b);
 int duel_is_cur_card(int id);
-unsigned int duel_0884E4A0(DuelAct *a);
+unsigned int duel_0884E4A0(DuelAct*);
 int duel_088159C8(unsigned int p, unsigned int mask, int (*fn)());
 int duel_0881743C();
 int duel_count_monsters(unsigned int p);
@@ -23,7 +23,7 @@ int duel_d_count_name(unsigned int p, unsigned short id);
 int duel_08810AE0(DuelAct *a);
 int duel_08809F2C();
 int duel_field_def(unsigned int p, int z);
-int duel_08845070(unsigned short id);
+int duel_08845070(int);
 int duel_grave_count_monsters(unsigned int p);
 int duel_field_level(unsigned int p, int z);
 int duel_hand_count_name(unsigned int p, unsigned short id);
@@ -34,14 +34,14 @@ int duel_0884E948(DuelAct *a, unsigned int p);
 int duel_0880B07C(unsigned int p);
 int duel_0880ABE0();
 int duel_slot_has_effect(unsigned int p, int z, int id);
-int card_get_atk(unsigned short id);
+int card_get_atk(int);
 int duel_hand_count_monsters(unsigned int p);
 void duel_act_0887E140(DuelAct *a, int d[2]);
 int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
 int duel_088BFFD8(unsigned int p, int id, int i);
 int duel_count_monsters_state(unsigned int p, int pos, int state);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
-int card_is_in_group_1a2f(unsigned short id);
+int card_is_in_group_1a2f(int);
 
 int duel_08810370(DuelAct *a)
 {
@@ -144,7 +144,7 @@ int duel_088106D8(DuelAct *a)
             n++;
         }
         id = duel.players[p & 1].field[z].card.id;
-        if (id != 0 && duel.players[p & 1].field[z].faceup == 0 && card_get_special_group(id) != 0) {
+        if (id != 0 && duel.players[p & 1].field[z].faceup == 0 && card_get_special_group((unsigned short)id) != 0) {
             return 0;
         }
     }
@@ -295,7 +295,7 @@ int duel_08810F24(DuelAct *a)
     for (z = 0; z <= 10; z++) {
         unsigned int id = duel.players[a->player & 1].field[z].card.id;
 
-        if (id != 0 && !(duel.players[a->player & 1].field[z].flags >> 5 & 1) && duel_08845070(id) > 0) {
+        if (id != 0 && !(duel.players[a->player & 1].field[z].flags >> 5 & 1) && duel_08845070((unsigned short)id) > 0) {
             return 1;
         }
     }
@@ -497,7 +497,7 @@ int duel_0881180C(DuelAct *a)
     int z;
 
     for (z = 0; z < 5; z++) {
-        unsigned short id = duel.players[a->player & 1].field[z].card.id;
+        int id = duel.players[a->player & 1].field[z].card.id;
 
         if (duel.players[a->player & 1].field[z].faceup != 0 && card_get_special_group(id) != 0) {
             return 1;

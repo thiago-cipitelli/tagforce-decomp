@@ -6,7 +6,7 @@
 int duel_count_active(int id);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_has_effect2(unsigned int p, int z, int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_card_check_9148(unsigned int p, int id);
 int duel_has_st_12be(unsigned int p);
@@ -57,7 +57,7 @@ DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i)
     return &duel.players[p & 1].field[z + i].card;
 }
 
-unsigned short duel_zone_card_id(unsigned int p, int z, int i)
+int duel_zone_card_id(unsigned int p, int z, int i)
 {
     switch (z) {
     case 0xC:

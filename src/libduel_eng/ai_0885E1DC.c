@@ -6,13 +6,13 @@ int duel_slot_efb84(unsigned int p, int z);
 int duel_field_same_name(unsigned int p, int z, int id);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 unsigned short duel_field_type(unsigned int p, int z);
-int duel_act_check_08853CE8(DuelAct *a, unsigned int p, int z);
-int field_get_card(unsigned int p, int z);
-int card_get_type(int id);
+int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
+int field_get_card(unsigned int, int);
+unsigned int card_get_type(int);
 int card_is_in_group_1a5c(int id);
 int card_is_1a6c(int id);
-int duel_field_flag9(unsigned int p, int z);
-int card_get_prop5_hi(int id);
+unsigned int duel_field_flag9(unsigned int, int);
+int card_get_prop5_hi(int);
 int card_get_kind(int id);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
@@ -26,7 +26,7 @@ int duel_088A6360(int id, int i);
 int duel_088A62AC(int k, unsigned int p, int z);
 int duel_0885CD48(DuelAct *a, unsigned int p, int z);
 int duel_0885D284(DuelAct *a, unsigned int p, int z);
-int card_attribute_icon_is3(unsigned short id);
+int card_attribute_icon_is3(int);
 
 int duel_0885E1DC(DuelAct *a, unsigned int p, int z)
 {
@@ -296,7 +296,7 @@ int duel_0885EF30(DuelAct *a, unsigned int p, int z)
     if (id == 0) {
         return 0;
     }
-    if (card_attribute_icon_is3(id) == 0) {
+    if (card_attribute_icon_is3((unsigned short)id) == 0) {
         return 0;
     }
     if (duel.players[p & 1].field[z].faceup == 0) {

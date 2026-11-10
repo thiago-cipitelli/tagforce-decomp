@@ -7,9 +7,9 @@
 extern unsigned int duel_turn_player;
 
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_slot_value_1909(unsigned int p, int z);
-int duel_slot_e68a0(unsigned int p, int z);
+int duel_slot_e68a0(unsigned int, int);
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_slot_counter(unsigned int p, int z, int id);
 int duel_is_cur_card(int id);

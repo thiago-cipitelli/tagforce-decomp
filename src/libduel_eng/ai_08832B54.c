@@ -54,15 +54,15 @@ extern DuelFlags8 duel_ev_flags;       /* 0x08914341 */
 extern DuelFlags8 duel_msg_state;      /* 0x08914340 low byte */
 
 int card_is_monster(int id);
-int card_get_type(int id);
-int card_is_attribute7(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+unsigned int card_get_type(int);
+int card_is_attribute7(int);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_088DFCC8(unsigned int uid);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);
 void duel_0884B064(int msg);
 void duel_0881956C(unsigned int p, int id, int (*fn)());
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 void duel_088359B0(int (*fn)());
 int duel_08835AC0(void);
 void duel_088CAE34(unsigned int p, int a);
@@ -74,14 +74,14 @@ void duel_088CACF0(unsigned int p, DuelCard *c, int a);
 void duel_088CB95C(unsigned int p, int z, int uid);
 int duel_rand(int n);
 int card_same_name(int id, int id2);
-void duel_088C7810(unsigned int p, unsigned int on);
+void duel_088C7810(unsigned int, unsigned int);
 int duel_0880ADF4(unsigned int p, int (*fn)(unsigned int p, int z, int i));
 void duel_0884ACD8();
 void duel_08835978(int (*fn)(unsigned int p, int z, int i));
 int duel_088BFFD8(unsigned int p, int id, int i);
 unsigned short *card_get_name(int id);
 void duel_wfmt_s(unsigned short *dst, int fmt, unsigned short *arg);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_0884CEBC(unsigned int p);
 int duel_0884EB10(DuelAct *a, DuelAct *b);

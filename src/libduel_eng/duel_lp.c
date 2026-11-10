@@ -13,12 +13,12 @@ typedef struct DuelLpEv {              /* event argument of an LP change */
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_find_effect_card(unsigned int p, int id, int z);
-void duel_08832624(unsigned int p, int a, int b, int c);
+void duel_08832624(unsigned int, unsigned int, int, int);
 void duel_088C321C(unsigned int p);
 void duel_088AFD5C(int kind, DuelLpEv ev);
-int duel_088C4730(unsigned int p, int n, int f, int id);
+int duel_088C4730(unsigned int, int, int, int);
 
-void duel_088C4448(unsigned int p, int a, unsigned int uid)
+void duel_088C4448(unsigned int p, int a, int uid)
 {
     unsigned int id = duel.list[uid].id;
 

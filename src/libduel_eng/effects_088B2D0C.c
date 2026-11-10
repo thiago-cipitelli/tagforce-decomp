@@ -2,11 +2,11 @@
 /* Candidate lists: cards of a pile offered for selection (duel_088BFC64(p, zone, i)). */
 #include "duel.h"
 
-void duel_088BFC64(unsigned int p, int z, int i);
+void duel_088BFC64(unsigned int, int, unsigned int);
 int card_is_monster(int id);
 int card_get_atk_q(int id);
-unsigned int card_get_type(int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+unsigned int card_get_type(int);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int card_same_name(int a, int b);
 int card_id_remap_1a6c(int id, int *out);
 
@@ -36,9 +36,9 @@ void duel_088B2E04(unsigned int p)
 
 void duel_088B2EB0(unsigned int p)
 {
-    int i;
+    unsigned int i;
 
-    for (i = 0; i < (unsigned int)duel.players[p & 1].n_d && i < 5; i++) {
+    for (i = 0; i < (unsigned int)duel.players[p & 1].n_d && (int)i < 5; i++) {
         duel_088BFC64(p, 0xD, i);
     }
 }

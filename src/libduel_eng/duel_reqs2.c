@@ -7,8 +7,8 @@
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_count_active(int id);
-int field_get_card(unsigned int p, int z);
-unsigned short duel_slot_e1854(unsigned int p, int z);
+int field_get_card(unsigned int, int);
+unsigned short duel_slot_e1854(unsigned int, int);
 void duel_088C88B8(unsigned int p, int z, int v, int c);
 void duel_088CC178();
 void duel_088CC1D0(unsigned int p, int z, int a);
@@ -84,7 +84,7 @@ void duel_088C936C(unsigned int p, int z, int n, int id, int opp)
         }
     }
 }
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C7E68(unsigned int, int, int, int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 

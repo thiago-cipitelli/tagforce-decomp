@@ -16,7 +16,7 @@ typedef struct DuelMoveEv {            /* event argument of a card moving (see d
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 int duel_grave_pos(unsigned int p, DuelCard *c);
 unsigned int duel_f_find_uid(unsigned int p, int uid);
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 int card_is_in_group_1a5c(int id);
 void duel_088C77EC(unsigned int p, int uid);
 int duel_slot_e8170(unsigned int p, int z, int id);

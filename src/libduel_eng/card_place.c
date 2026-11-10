@@ -15,15 +15,15 @@ typedef struct DuelListCard {          /* view of duel.list[] entries */
 extern int duel_order_ctr;             /* 0x089195CC activation order of the zones */
 extern unsigned int duel_turn_player;
 
-int duel_act_target2(DuelAct *a, int i);
+unsigned int duel_act_target2(DuelAct*, int);
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_card_protected(int id, int uid);
 void duel_bzero(void *p, int n);
-void duel_088DF554(unsigned int p, int z, int bit, int v);
+void duel_088DF554(unsigned int, int, unsigned int, int);
 int duel_count_active(int id);
 void duel_slot_effect_add(unsigned int p, int z, int a, int id, int b);
-unsigned int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_field_flag9(unsigned int, int);
 
 /* Card uid is one of the targets of activation a (only for the cards that keep targets). */
 int duel_act_has_target(DuelAct *a, int uid)

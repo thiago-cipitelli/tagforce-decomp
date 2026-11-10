@@ -2,20 +2,20 @@
 /* Card effect handlers: candidate lists for duel_088BFC64 (player, zone, index). */
 #include "duel.h"
 
-void duel_088BFC64(unsigned int p, int zone, unsigned int i);
+void duel_088BFC64(unsigned int, int, unsigned int);
 int card_is_monster(int id);
 int card_get_attribute_icon(int id);
-int card_get_type(int id);
-int card_get_prop5_hi(int id);
+unsigned int card_get_type(int);
+int card_get_prop5_hi(int);
 int card_is_1a9f(int id);
 int duel_card_e59b0(int id);
 int duel_pick_st_zone(unsigned int p);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 int card_get_atk_q(int id);
 int card_attribute_to_group(int id);
-int card_get_level(int id);
+int card_get_level(int);
 int duel_card_dfac8(unsigned int p, int id, int field);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 int duel_grave_find_uid(unsigned int p, int uid);
 int card_attribute_icon_in_2_3(int id);
 int card_same_name(int id, int id2);
@@ -23,7 +23,7 @@ int card_is_in_group_1a58(int id);
 int card_not_in_group_1a6f(int id);
 int card_get_kind(int id);
 int duel_card_e5b88(int id, int a);
-int duel_zone_faceup(unsigned int p, int z, int i);
+unsigned int duel_zone_faceup(unsigned int, int, int);
 int duel_field_level(unsigned int p, int z);
 int duel_list_card_level(unsigned int p, int i);
 int duel_088B5F74(int k, int n);
@@ -31,7 +31,7 @@ int duel_088DFCC8(unsigned int uid);
 int card_get_def_q(int id);
 int card_is_in_group_1566(int id);
 int card_is_in_group_158d(int id);
-int card_is_attribute8(int id);
+int card_is_attribute8(int);
 
 extern unsigned int duel_w_08914920;
 

@@ -4,15 +4,15 @@
 #include "card_db.h"
 
 int duel_count_monsters(unsigned int p);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_is_cur_card(int id);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_affected_ex(unsigned int p, int z, int id);
-unsigned int duel_slot_effect_arg(unsigned int p, int z, int id);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 int duel_slot_counter(unsigned int p, int z, int id);
 int duel_slot_count_14c0(unsigned int p, int z);
-int duel_grave_count_id(unsigned int p, int id);
+int duel_grave_count_id(unsigned int, unsigned int);
 int duel_attack_check(unsigned int p, int z, int arg);
 int duel_can_direct_attack(unsigned int p, int z);
 int duel_direct_attack_kind(unsigned int p, int z, int arg);

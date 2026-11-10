@@ -35,7 +35,7 @@ int duel_tag_slot(int side);
 GameState *game_state_get(void);
 int duel_setup_10_get(void);
 unsigned int duel_turn_get(void);
-int *game_state2_get(void);
+void* game_state2_get(void);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_0880C60C();
 int duel_08809F2C();
@@ -443,7 +443,7 @@ DuelLog *duel_log_end(void)
     return duel_log_buf;
 }
 
-int duel_host_call(int a, int b, int c, int d)
+int duel_host_call(int a, int b, unsigned int c, int d)
 {
     duel_host_args[0] = a;
     duel_host_args[1] = b;

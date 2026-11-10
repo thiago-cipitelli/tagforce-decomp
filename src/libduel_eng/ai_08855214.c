@@ -13,8 +13,8 @@ int duel_field_same_name(unsigned int p, int z, int id);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_count_free_monster_zones(unsigned int p);
 unsigned short duel_slot_src_attr8(unsigned int p, int z, int active);
-int field_get_card(unsigned int p, int z);
-int card_get_atk(int id);
+int field_get_card(unsigned int, int);
+int card_get_atk(int);
 int card_is_in_group_1911(int id);
 int card_attribute_to_group(int id);
 

@@ -2,9 +2,9 @@
 /* The computer player: handlers of the cards it activates. */
 #include "duel.h"
 
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
-unsigned int duel_card_locate(unsigned int uid);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C4448(unsigned int, int, int);
+unsigned int duel_card_locate(unsigned int);
+void duel_088C7E68(unsigned int, int, int, int);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
 int duel_0884E5E0(DuelAct *a);
 int duel_088619FC(DuelAct *a, int b);
@@ -12,9 +12,9 @@ void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned
 void duel_088328B8(unsigned int p, unsigned short a, int b);
 void duel_0884AD40(int msg, int uid);
 void duel_088C4564(unsigned int p, int n);
-unsigned short duel_slot_e1854(unsigned int p, int z);
+unsigned short duel_slot_e1854(unsigned int, int);
 void duel_088D1B20(unsigned int p, unsigned int mask);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
 int duel_08856860(DuelAct *a, unsigned int p, int z);
 int duel_0884E690(DuelAct *a, int (*fn)(DuelAct *a, unsigned int p, int z));
@@ -27,7 +27,7 @@ int duel_field_base_atk(unsigned int p, int z);
 int duel_field_level(unsigned int p, int z);
 int duel_field_atk(unsigned int p, int z);
 int duel_088619C4(DuelAct *a, int b);
-void duel_088D1AC8(unsigned int p, int z);
+void duel_088D1AC8(unsigned int, int);
 int duel_count_tributable_except(unsigned int p, int src);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_08874528(DuelAct *a, int b);
@@ -36,7 +36,7 @@ int duel_act_target_is_monster(DuelAct *a);
 int duel_hand_can_discard(unsigned int p, int n, int uid, int monster, int type16);
 int duel_pick_st_zone(unsigned int p);
 int duel_phase_ok2(unsigned int p);
-int duel_grave_count_id(unsigned int p, int id);
+int duel_grave_count_id(unsigned int, unsigned int);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_0884E948(DuelAct *a, unsigned int p);

@@ -4,7 +4,7 @@
 #include "duel.h"
 
 unsigned int duel_field_type_ex(unsigned int p, int z, int skip);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_field_atk(unsigned int p, int z);
 int duel_field_level(unsigned int p, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);

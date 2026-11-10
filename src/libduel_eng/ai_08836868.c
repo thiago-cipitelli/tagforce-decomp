@@ -36,8 +36,8 @@ extern AiSnap duel_atk_snap;           /* 0x08913FFC */
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_has_effect2(unsigned int p, int z, int id);
 int duel_find_effect_card(unsigned int p, int id, int z);
-int duel_count_grave_type(unsigned int p, unsigned int type);
-int duel_slot_effect_arg(unsigned int p, int z, int id);
+int duel_count_grave_type(unsigned int, unsigned int);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
 int duel_can_attack(unsigned int p, int z, int arg);
 int duel_can_attack_any(unsigned int p, int z, int arg);
 int duel_can_attack_target(unsigned int p, int z, unsigned int q, int i, int arg);
@@ -51,11 +51,11 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, int c);
 int memcmp2(const void *a, const void *b, int n);
 int duel_can_direct_attack(unsigned int p, int z);
 int duel_direct_attack_kind(unsigned int p, int z, int arg);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
-int duel_host_call(int a, int b, int c, int d);
-int duel_slot_effect12_arg(unsigned int p, int z, int id);
+void duel_088C7E68(unsigned int, int, int, int);
+int duel_host_call(int, int, unsigned int, int);
+unsigned int duel_slot_effect12_arg(unsigned int, int, int);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
-void duel_088C8AD0(unsigned int p, int z, int id, int v);
+void duel_088C8AD0(unsigned int, int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 

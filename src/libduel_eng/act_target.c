@@ -7,15 +7,15 @@
 extern int duel_targeting_off;         /* 0x08914910 */
 
 int duel_count_active(int id);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 unsigned int duel_field_type(unsigned int p, int z);
-unsigned int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_field_flag9(unsigned int, int);
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_slot_affected_ex(unsigned int p, int z, int id);
-int duel_slot_e1854(unsigned int p, int z);
-int duel_slot_e68a0(unsigned int p, int z);
-unsigned int duel_act_e3920(DuelAct *a);
+unsigned short duel_slot_e1854(unsigned int, int);
+int duel_slot_e68a0(unsigned int, int);
+int duel_act_e3920(DuelAct*);
 unsigned int duel_dfc10(void);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 

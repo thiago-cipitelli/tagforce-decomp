@@ -5,7 +5,7 @@
 #include "duel.h"
 
 extern int duel_player_type[2];
-int duel_host_call(int a, int b, int c, int d);
+int duel_host_call(int, int, unsigned int, int);
 int duel_088482F8(int a, int b);
 int duel_req_flag(int a);
 unsigned short *card_get_name(int id);

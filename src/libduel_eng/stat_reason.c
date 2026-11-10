@@ -7,7 +7,7 @@
 
 extern unsigned int duel_view_player;
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int duel_field_protected(unsigned int p, int z);
 int duel_field_act(unsigned int player, int zone, int unused);
 int duel_chain_targets(unsigned int p, int z, unsigned int player, int zone);

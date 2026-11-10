@@ -2,13 +2,13 @@
 /* Computer player: target tests (DuelAct *a, p, z) for the zones it may choose. */
 #include "duel.h"
 
-int duel_act_check_08853CE8(DuelAct *a, unsigned int p, int z);
+int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_tributable(unsigned int p);
 int duel_field_atk(unsigned int p, int z);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 
 int duel_08854D4C(DuelAct *a, unsigned int p, int z)
 {

@@ -4,17 +4,17 @@
 #include "duel.h"
 #include "card_db.h"
 
-int duel_slot_e1854(unsigned int p, int z);
-int field_get_card(unsigned int p, int z);
+unsigned short duel_slot_e1854(unsigned int, int);
+int field_get_card(unsigned int, int);
 unsigned int duel_slot_immunity(unsigned int p, int z);
-unsigned int duel_slot_ref(unsigned int p, int z);
+unsigned int duel_slot_ref(unsigned int, int);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 void duel_slot_foreach_effect(unsigned int p, int z, int (*fn)(DuelEffect *e, int *ctx), int *ctx);
 int duel_level_cb(DuelEffect *e, int *ctx);
 unsigned int duel_field_type_ex(unsigned int p, int z, int skip);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_slot_e8170(unsigned int p, int z, int id);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
+int duel_slot_effect_with(unsigned int, int, int, int);
 
 int duel_field_level(unsigned int p, int z)
 {

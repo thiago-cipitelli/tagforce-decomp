@@ -9,14 +9,14 @@
 int duel_list_card_level(unsigned int p, int i);
 int duel_card_dfac8(unsigned int p, int id, int field);
 int card_is_monster(int id);
-int card_get_level(int id);
-int card_get_type(int id);
+int card_get_level(int);
+unsigned int card_get_type(int);
 int card_is_in_group_1973(int id);
 int card_is_in_group_19bf(int id);
-int card_is_attribute8(int id);
+int card_is_attribute8(int);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
-int card_get_prop5_hi(int id);
-int duel_act_check_08853CE8(DuelAct *a, int x, int y);
+int card_get_prop5_hi(int);
+int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 int card_get_atk_q(int id);
 int duel_088DFCC8(unsigned int uid);
 int card_same_name(int id, int id2);
@@ -26,12 +26,12 @@ int card_is_in_group_19bb(int id);
 int duel_088B5F74(int n, int x);
 int duel_card_e59b0(int id);
 int duel_pick_st_zone(unsigned int p);
-int duel_slot_effect_with(unsigned int p, int z, int id, unsigned int src);
-unsigned int duel_card_locate(unsigned int uid);
+int duel_slot_effect_with(unsigned int, int, int, int);
+unsigned int duel_card_locate(unsigned int);
 int card_is_in_group_1a6x(int id);
 int card_is_in_group_1a6f(int id);
 int card_get_attribute_icon(int id);
-int duel_zone_faceup(unsigned int p, int z, int i);
+unsigned int duel_zone_faceup(unsigned int, int, int);
 int duel_zone_f_card_usable(unsigned int p, unsigned int q, int i);
 int card_is_1a5c_or_1a53(int id);
 int card_is_in_group_1a5c(int id);
@@ -61,7 +61,7 @@ typedef struct DuelCandList {          /* 0x08915258: cards collected by the lis
 extern DuelCandList duel_w_08915258;
 extern DuelCandHandler duel_w_08912988[];
 
-void duel_088BFC64(unsigned int p, int zone, unsigned int i);
+void duel_088BFC64(unsigned int, int, unsigned int);
 extern unsigned short duel_w_089147E8[];
 
 void duel_088BC9E0(unsigned int p)
@@ -869,7 +869,7 @@ static int duel_088BFF08(unsigned int key)
     return -1;
 }
 
-unsigned int duel_088BFF78(unsigned int p, unsigned int key, int c)
+int duel_088BFF78(unsigned int p, int key, int c)
 {
     int k = duel_088BFF08(key & 0xFFFF);
 

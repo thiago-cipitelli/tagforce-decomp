@@ -9,7 +9,7 @@
 
 int duel_req_flag(int i);
 int duel_slot_has_effect(unsigned int p, int z, int id);
-void duel_088DF554(unsigned int p, int z, unsigned int bit, int on);
+void duel_088DF554(unsigned int, int, unsigned int, int);
 
 extern unsigned int duel_turn_player;
 extern unsigned int duel_view_player;
@@ -47,8 +47,8 @@ extern unsigned int duel_req_step;                 /* 0x08915240 */
 extern unsigned int duel_req_count;    /* 0x08915244 */
 extern DuelCard duel_card_tmp;         /* 0x08915248 */
 
-int duel_hand_find_uid(unsigned int p, int uid);
-int duel_host_call(int a, int b, int c, int d);
+int duel_hand_find_uid(unsigned int, int);
+int duel_host_call(int, int, unsigned int, int);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
 void duel_card_take(unsigned int p, int zone, int i);
 void duel_place_monster(unsigned int p, int z, DuelCard *c, int a, int b);
@@ -73,7 +73,7 @@ int duel_0884B08C(void);
 void duel_wcscpy(unsigned short *dst, unsigned short *src);
 void duel_wcscat(unsigned short *dst, unsigned short *src);
 unsigned short *card_get_name(int id);
-int card_attribute_icon_is3(int id);
+int card_attribute_icon_is3(int);
 void duel_swap_d_grave(unsigned int p);
 int duel_hand_shuffle(unsigned int p);
 void duel_card_put(unsigned int p, int zone, unsigned int arg, DuelCard *c);
@@ -99,26 +99,26 @@ void duel_0884DAF0(int a, int b);
 
 void duel_d_shuffle(unsigned int p);
 void duel_d_reverse(unsigned int p);
-unsigned int duel_card_locate(unsigned int uid);
+unsigned int duel_card_locate(unsigned int);
 int duel_d_remove(unsigned int p, DuelCard *c);
 void duel_d_push_top(unsigned int p, DuelCard *c);
 void duel_d_push(unsigned int p, DuelCard *c);
 void duel_mode_set(unsigned int bit, int on);
 
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 int card_is_in_group_1909(int id);
 int duel_slot_value_1909(unsigned int p, int z);
 int duel_list_find_id(unsigned int p, unsigned int id);
 
 void duel_grave_to_top(unsigned int p, unsigned short uid);
 int duel_grave_find_uid(unsigned int p, int uid);
-unsigned int duel_zone_faceup(unsigned int p, int z, int i);
+unsigned int duel_zone_faceup(unsigned int, int, int);
 void duel_add_counters(unsigned int p, int id, int n);
 void duel_set_flag4(unsigned int p, int id);
-unsigned short duel_zone_pos(unsigned int p, int z, int i);
+unsigned short duel_zone_pos(unsigned int, int, int);
 
-int card_is_attribute9(int id);
-int card_get_level(int id);
+int card_is_attribute9(int);
+int card_get_level(int);
 
 /* Move the card with uid w from zone arg of player p to pile loc (0xD deck, 0xE graveyard, 0xF banished
    zone), counting what goes to the graveyard. */
@@ -326,7 +326,7 @@ void duel_req_banish(void)
     }
 }
 
-int duel_zone_card_id(unsigned int p, int z, int i);
+int duel_zone_card_id(unsigned int, int, int);
 void duel_zone_f_to_top(unsigned int p, unsigned short uid);
 
 #ifdef NON_MATCHING /* 2 palavras: em (i << 6) | (z << 1 | p & 1) o original calcula p & 1 antes do sll de z (registradores trocados); ordens de operandos, * 2 e casts não resolvem */

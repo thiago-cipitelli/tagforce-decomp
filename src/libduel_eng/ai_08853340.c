@@ -16,13 +16,13 @@ int duel_08850F44(void);
 int duel_088C3F80(void);
 int duel_088B0C88(void);
 int duel_0884E440(DuelAct *a, unsigned int p, int z);
-unsigned int duel_field_flag9(unsigned int p, int z);
+unsigned int duel_field_flag9(unsigned int, int);
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_slot_ef098(unsigned int p, int z, int id);
 unsigned short duel_slot_src_attr8(unsigned int p, int z, int active);
-int card_get_type(int id);
+unsigned int card_get_type(int);
 int card_is_monster(int id);
 
 int duel_08853340(void)

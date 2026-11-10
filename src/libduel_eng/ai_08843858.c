@@ -6,16 +6,16 @@ extern unsigned int duel_w_08919608;
 
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
-int field_get_card(unsigned int p, int z);
+int field_get_card(unsigned int, int);
 void duel_088CC1D0(unsigned int p, int z, int a);
-int duel_slot_effect_arg(unsigned int p, int z, int id);
-unsigned int duel_slot_effect12_arg(unsigned int p, int z, int id);
+unsigned int duel_slot_effect_arg(unsigned int, int, int);
+unsigned int duel_slot_effect12_arg(unsigned int, int, int);
 void duel_088C89BC(unsigned int p, int z, int id, int c);
-void duel_088C8AD0(unsigned int p, int z, int id, int v);
+void duel_088C8AD0(unsigned int, int, int, int);
 int duel_count_monsters(unsigned int p);
-void duel_088C4448(unsigned int p, int z, unsigned int uid);
+void duel_088C4448(unsigned int, int, int);
 int duel_088C9878(unsigned int p, int z, int x, int y, int id, int opp);
-void duel_088C7E68(unsigned int p, int z, int a, int b);
+void duel_088C7E68(unsigned int, int, int, int);
 
 int duel_08843858(unsigned int p, int id)
 {

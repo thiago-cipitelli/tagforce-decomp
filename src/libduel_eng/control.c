@@ -8,12 +8,12 @@
 int duel_count_active(int id);
 int duel_count_attr(unsigned int p, int attr);
 int duel_pick_st_zone(unsigned int p);
-int field_get_card(unsigned int p, int z);
-unsigned int duel_field_flag9(unsigned int p, int z);
+int field_get_card(unsigned int, int);
+unsigned int duel_field_flag9(unsigned int, int);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 unsigned int duel_slot_immunity(unsigned int p, int z);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);
-int duel_effect_applies(int id, unsigned int p, unsigned int ref);
+int duel_effect_applies(int, unsigned int, int);
 void duel_slot_effect_add(unsigned int p, int z, int a, int id, int b);
 int duel_slot_eef84(unsigned int p, int z);
 
