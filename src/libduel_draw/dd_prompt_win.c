@@ -100,7 +100,7 @@ void func_08824D58(void);
 void func_08824D7C(unsigned int *dl, int x, int y);
 void func_08824FF0(MenuWidget *w, int open);
 void func_0882504C(void);
-void func_088250E8(void *dl, int x, int y, int w, int h);
+void *func_088250E8(void *dl, int x, int y, int w, int h);
 
 /* choice among the duel's list (dv_list2); nothing to choose answers 0 at once */
 void func_08823674(unsigned short *text)

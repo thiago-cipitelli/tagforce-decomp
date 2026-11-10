@@ -1,7 +1,6 @@
 // @range 0x088D28F8-0x088D6DE8
 // @data 0x08911B8C-0x08911D2C
 // @asm 0x088D42C8-0x088D43F8
-// @asm 0x088D6168-0x088D624C
 /* Requests carried out one step per frame (duel_req, duel_req_step): revealing and flipping a card,
    showing a card of a list, sorting the zones, ... */
 #include "duel.h"
@@ -1625,7 +1624,6 @@ void duel_req_088D613C(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* as duas máscaras ~2 e ~1 de duel_w_08917DB4 ficam separadas no original; o mwcc as funde */
 void duel_req_088D6168(void)
 {
     unsigned int arg = duel_req.req.arg;
@@ -1637,13 +1635,12 @@ void duel_req_088D6168(void)
         duel_w_0891960C = 0xC;
         duel_w_08919610 = 0;
     }
-    duel_w_08917DB4 &= ~2;
-    duel_w_08917DB4 &= ~1;
+    duel.mode &= ~2;
+    duel.mode &= ~1;
     duel_effects_end_turn();
     duel_host_call(0x24, 0, 0, 0);
     duel_busy_0891523C = 0;
 }
-#endif
 
 void duel_req_088D624C(void)
 {

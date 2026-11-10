@@ -1154,3 +1154,24 @@ Sem forma: `duel_088D1F1C` (8: o original copia o `lbu a0,a->player` nos dois ca
 Sem forma: `duel_0886E590` (16: `i++` tarde e `k`/ponteiro trocados no laço da cadeia), `duel_08865C10` (51:
 registrador do valor do `switch` sem `return` no `default`), `duel_088977BC` (18: carga de `duel_w_089148FC` antes
 do teste do corte), `duel_0886981C` (684 B contra 688: falta uma instrução no teste inicial), `duel_08889BE4` (115).
+## Rodada 14 (`engI`: libduel_eng/mgr/draw, funções 94-98% nunca tentadas)
+
+Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` saiu junto, só esperava as jump tables:
+`@rodata` estendido), `duel_088C8DC4`, `duel_ai_0881D17C`, `duel_req_088D6168`, `duel_ai_0881F58C`, `duel_0884D72C`,
+`duel_08843AE0`, `duel_0882F320`, `func_088250E8`, `dd_m1_update`. Idiomas:
+- **Dois `return 1` que compartilham um bloco** (`li v0,1; b fim; nop` sem likely, com outro teste `bnezl … li v0,1`
+  antes): é um `if` só com `||` (`if ((a && b) || c) return 1;`, `duel_0884D72C`). O `li` não vai para o atraso porque
+  o bloco é destino de outro desvio.
+- **`bnel x,y,fim; li v0,1` + `b fim; move v0,zero`**: `if (x != y) goto ret1; return 0;` com `ret1: return 1;` no fim
+  da função (`duel_ai_0881F58C`; if/else, `==`, `?:` e `switch` não dão).
+- **Global dentro de `Duel` com duas máscaras seguidas** (`and -3; and -2` num só `lw`/`sw`): `duel.mode &= ~2;
+  duel.mode &= ~1;` (`duel_w_08917DB4` = `duel.mode`); pelo símbolo o mwcc funde as máscaras.
+- **`&pl->field[z]` num `$s` a mais**: o original lê um dos campos por `duel.players[p & 1].field[z]` (`duel_08843AE0`).
+- **Zona num `$s` e o halfword mascarado no outro trocados**: recalcular `loc >> 8 & 0xFF` no argumento em vez de
+  guardar num local (`duel_088C8DC4`).
+- **`slt v0` (não `at`) com o campo lido depois do `?:`**: `((volatile T *)&g)->n >= max` (`duel_0882F320`);
+  `max <= n` lê na ordem certa mas dá `at`, `n >= max` dá `v0` mas o mwcc antecipa o load.
+- **`beqzl v0; move s,zero` + `b; nop` + `move s,zero`**: `card = f() ? card : 0;` (`dd_m1_update`).
+- **Struct de bitfields copiada por `lh/sh`**: `*(short *)&l2 = *(short *)&l;` (`l2 = l` copia campo a campo).
+- **Função `void` que devolve o `dl`** (`func_088250E8`, tipo `MenuDrawRectFn`): `return dl;` e
+  `th / 2 + (y + 20) + 1U` (o `U` impede `y + 21`; a ordem dá `addu s0,v1`).

@@ -1,6 +1,5 @@
 // @range 0x0881E0A0-0x08820618
 // @asm 0x0881E27C-0x0881E348
-// @asm 0x0881F58C-0x0881F644
 /* Conditions the computer player checks before activating a card (one per card). */
 #include "duel.h"
 #include "card_db.h"
@@ -546,7 +545,6 @@ int duel_ai_0881F4D4(DuelAct *a)
     return r != 0;
 }
 
-#ifdef NON_MATCHING /* o original faz p != dono como bnel/li 1/b/li 0; o mwcc vira xor/sltu (testados if/else com r, return em cada ramo, ==, switch); ~10 palavras */
 int duel_ai_0881F58C(DuelAct *a)
 {
     int z = a->zone;
@@ -556,7 +554,7 @@ int duel_ai_0881F58C(DuelAct *a)
         unsigned int p = a->player;
 
         if (p != (duel_slot_e1854(p, z) & 0xFF)) {
-            return 1;
+            goto ret1;
         }
         return 0;
     }
@@ -569,9 +567,9 @@ int duel_ai_0881F58C(DuelAct *a)
             return 0;
         }
     }
+ret1:
     return 1;
 }
-#endif
 
 int duel_ai_0881F644(DuelAct *a, int b)
 {

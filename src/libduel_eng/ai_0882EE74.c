@@ -1,5 +1,4 @@
 // @range 0x0882EE74-0x0882FF4C
-// @asm 0x0882F320-0x0882F6BC
 /* Summoning a monster (duel_summon), end: summons that send cards of the field (0x19A3, 0x19A4,
    0x19C8) and duel_summon_run, which picks the step machine of the card being summoned. */
 #include "duel.h"
@@ -221,7 +220,6 @@ int duel_0882F174(unsigned int p, int z, int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original relê duel_summon.n depois de gravar a zona e calcula o máximo em v1 */
 /* Summon that sends two (0x19C8) or three own cards of the field picked with duel_0882F174. */
 int duel_0882F320(void)
 {
@@ -244,11 +242,11 @@ int duel_0882F320(void)
         if (duel_08835AC0() != 0) {
             duel_summon.locs[duel_summon.n++] = (unsigned char)duel_w_0891964C | (unsigned char)(duel_w_08919650 + duel_w_08919654) << 8;
             max = duel_summon.id != 0x19C8 ? 3 : 2;
-            if (duel_summon.n >= max) {
+            if (((volatile DuelSummon *)&duel_summon)->n >= max) {
                 duel_summon.step = 0xA;
-            } else {
-                duel_summon.step++;
+                return 0;
             }
+            duel_summon.step++;
             return 0;
         }
         return -1;
@@ -270,8 +268,6 @@ int duel_0882F320(void)
     }
     return 0;
 }
-
-#endif
 
 /* Runs one step of the summon of duel_summon: the step machine of the card (or the tributes of a
    normal summon), then puts the monster on the field when it is done. Returns 1 when finished. */

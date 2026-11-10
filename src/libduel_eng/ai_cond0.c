@@ -1,5 +1,4 @@
 // @range 0x0881D0D8-0x0881E0A0
-// @asm 0x0881D17C-0x0881D318
 /* Conditions the computer player checks before activating a card (continued in ai_cond.c). */
 #include "duel.h"
 #include "card_db.h"
@@ -62,13 +61,14 @@ int duel_ai_0881D0D8(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original swaps the registers of the card id and the hand offset */
 int duel_ai_0881D17C(DuelAct *a)
 {
     unsigned int i;
     int r;
-    int n = 0;
+    int n;
+    int id;
 
+    n = 0;
     if (duel.players[(1 - a->player) & 1].n_hand < 3) {
         return 0;
     }
@@ -78,8 +78,7 @@ int duel_ai_0881D17C(DuelAct *a)
     i = 0;
     if (duel.players[a->player & 1].n_hand != 0) {
         do {
-            unsigned int id = duel.players[a->player & 1].hand[i].id;
-
+            id = duel.players[a->player & 1].hand[i].id;
             r = !duel_08806730(a->player, 1, id);
             if (!r) {
                 return 0;
@@ -90,9 +89,8 @@ int duel_ai_0881D17C(DuelAct *a)
             i++;
         } while (i < duel.players[a->player & 1].n_hand);
     }
-    return duel.players[(1 - a->player) & 1].n_hand < 5 ? n > 0 : 1;
+    return duel.players[(1 - a->player) & 1].n_hand >= 5 ? 1 : n > 0;
 }
-#endif
 
 int duel_ai_0881D318(DuelAct *a)
 {
