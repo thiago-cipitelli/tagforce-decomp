@@ -4,7 +4,6 @@
 // @asm 0x08871674-0x088717B4
 // @asm 0x088731C0-0x088732B4
 // @asm 0x088770C0-0x088771D4
-// @asm 0x0887C93C-0x0887CAE8
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
 
@@ -5515,11 +5514,10 @@ int duel_0887C82C(DuelAct *a, int b)
     return duel_0886CE38(a, b);
 }
 
-#ifdef NON_MATCHING /* 2026-11-05: forma dos returns como no original; falta o teste do nível (o original salta com beqzl para a chamada de card_get_level e deixa um b para o fim do laço), o ponteiro de srcs[k] para s_b17 e os $s de k e best */
 int duel_0887C93C(DuelAct *a)
 {
-    int best = 0;
     unsigned int k;
+    int best = 0;
 
     if (a->kind != 0x1B) {
         return 0;
@@ -5529,11 +5527,11 @@ int duel_0887C93C(DuelAct *a)
     }
     for (k = 0; k < duel_chain.n_kinds; k++) {
         if (duel_chain.kinds[k] == 0x1B) {
-            int id = duel.list[duel_chain.srcs[k].s_uid].id;
+            struct DuelActX *s = &duel_chain.srcs[k];
+            int id = duel.list[s->s_uid].id;
 
-            if (duel_chain.srcs[k].s_player == a->player && duel_chain.srcs[k].s_b17 &&
-                card_is_in_group_1a6f(id) != 0 && best <= card_get_level(id)) {
-                best = card_get_level(id);
+            if (s->s_player == a->player && s->s_b17 && card_is_in_group_1a6f(id) != 0) {
+                best = card_get_level(id) < best ? best : card_get_level(id);
             }
         }
     }
@@ -5544,7 +5542,6 @@ int duel_0887C93C(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0887CAE8(DuelAct *a)
 {

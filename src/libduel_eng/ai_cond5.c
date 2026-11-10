@@ -124,7 +124,7 @@ int duel_08813A40(DuelAct *a, DuelAct *b)
     return b->player != a->player;
 }
 
-#ifdef NON_MATCHING /* 36 palavras: no teste b->n_targets != 1 o original faz bnel -> fim com li v0,1 no atraso; o mwcc sabe que v0 já vale 1 e inverte (beql, 1 instrução a menos) */
+#ifdef NON_MATCHING /* 36 palavras: no teste b->n_targets != 1 o original faz bnel -> fim com li v0,1 no atraso; o mwcc sabe que v0 já vale 1 e inverte (beql, 1 instrução a menos); o original também mantém o andi 0xFF de p (unsigned char p reproduz, mas 45 palavras); goto, if (== 1), switch sem default testados */
 int duel_08813A6C(DuelAct *a, DuelAct *b)
 {
     unsigned int t;
