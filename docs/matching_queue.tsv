@@ -15,7 +15,6 @@ fuzzy	size	module	function	address	file
 96.7	856	libtitle	tpanel_draw_split	0x08811300	src/libtitle/t_panel.c
 96.5	552	libtitle	tfd_chr_copy_draw	0x088158B4	src/libtitle/t_fdnet.c
 96.4	1204	libduel_eng	duel_req_move_card	0x088D7604	src/libduel_eng/req_effect.c
-96.4	768	BOOT	snd_fx_apply	0x0885D948	src/BOOT/snd_out.c
 96.3	1080	libduel_draw	dd_fx_rock_spray	0x088513A4	src/libduel_draw/dd_fx_rock.c
 96.0	1372	libfield	fld_bg_loaded	0x08808214	src/libfield/f_bgdraw.c
 96.0	2948	libduel_draw	dd_orbs_update	0x088374E4	src/libduel_draw/dd_fx_orbs.c

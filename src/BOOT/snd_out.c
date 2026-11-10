@@ -1,5 +1,4 @@
 // @range 0x0885D948-0x0885DE90
-// @asm 0x0885D948-0x0885DC48
 /* Sound library, output: the global effect (stereo widening, echo into its own buffer, box filter)
    applied to the mixed block, and the sound thread that mixes SAS voices and streams into one of two
    0x100-frame buffers and hands it to the audio channel. */
@@ -42,27 +41,24 @@ int snd_sas_core_mix(short *buf, int l, int r);
 int wave_audio_write(int ch, int l, int r, void *buf);
 int sceKernelDeleteVpl(int vpl);
 
-#ifdef NON_MATCHING /* register allocation of the echo loop */
 void snd_fx_apply(short *buf)
 {
-    int v;
     short *in;
     short *p;
     int pos;
     int lvl;
     int n;
-    int i;
     SndFx *fx = &snd_fx;
-    unsigned int any;
 
     switch (fx->type) {
     case 1:
             snd_stereo_widen(snd_widen_hist, buf, 0x100);
         break;
     case 2:
-        lvl = fx->lvl * 0x40A0 >> 14;
-        pos = ((fx->delay * 0x40A0 >> 14) * 0x2F00 >> 7) + fx->pos;
         in = buf;
+        lvl = fx->lvl * 0x40A0 >> 14;
+        pos = (fx->delay * 0x40A0 >> 14) * 0x2F00 >> 7;
+        pos += fx->pos;
         if (pos >= 0x3000) {
             pos -= 0x3000;
         }
@@ -102,8 +98,8 @@ void snd_fx_apply(short *buf)
                 s = 0x7FFF;
             }
             *p = s;
-            p++;
             in++;
+            p++;
         }
         break;
     case 3:
@@ -114,14 +110,19 @@ void snd_fx_apply(short *buf)
         snd_fader8_update(&fx->amount);
     }
     if (fx->vpl >= 0) {
+        short *q;
+        int i;
+        unsigned int any;
+        int v;
+
         any = 0;
-        p = fx->buf + fx->pos * 2;
+        q = fx->buf + fx->pos * 2;
         for (i = 0; i < 0x200; i++) {
-            v = *p >> 1;
+            v = *q >> 1;
             if (v < 0) {
                 v++;
             }
-            *p = v;
+            *q = v;
             any |= v;
             v += *buf;
             if (v < -0x8000) {
@@ -130,7 +131,7 @@ void snd_fx_apply(short *buf)
                 v = 0x7FFF;
             }
             *buf = v;
-            p++;
+            q++;
             buf++;
         }
         n = fx->pos + 0x100;
@@ -143,7 +144,6 @@ void snd_fx_apply(short *buf)
         }
     }
 }
-#endif
 
 void snd_thread_main(void)
 {
