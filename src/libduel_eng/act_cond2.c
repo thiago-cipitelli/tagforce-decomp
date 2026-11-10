@@ -2,7 +2,6 @@
 // @asm 0x08871B14-0x08871BFC
 // @asm 0x088719DC-0x08871A68
 // @asm 0x08871674-0x088717B4
-// @asm 0x088731C0-0x088732B4
 // @asm 0x088770C0-0x088771D4
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
@@ -1762,25 +1761,24 @@ int duel_08873150(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* forma do original (b != 0 primeiro, case 0x1F/0x20 juntos); 29 palavras: o original calcula &a->src no delay slot do beq do case 0x21, aqui sobe para o prólogo (dentro do case o mwcc dobra o ponteiro) */
 int duel_088731C0(DuelAct *a, DuelAct *b)
 {
-    DuelSrc *s = &a->src;
-
     if (b != 0) {
         if (card_is_in_group_147e(b->id) == 0) {
             return 2;
         }
     } else {
+        DuelSrc *s = &a->src;
+
         switch (a->kind) {
         case 0x1F:
         case 0x20:
             return 0;
         case 0x21:
-            if (duel.players[s->player & 1].field[s->zone].card.id == 0) {
-                return 0;
+            if (duel.players[s->player & 1].field[s->zone].card.id != 0) {
+                return 2;
             }
-            return 2;
+            return 0;
         }
     }
     if (a->b3_4 == 3) {
@@ -1788,7 +1786,6 @@ int duel_088731C0(DuelAct *a, DuelAct *b)
     }
     return 1;
 }
-#endif
 
 int duel_088732B4(DuelAct *a)
 {
