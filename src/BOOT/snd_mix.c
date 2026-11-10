@@ -431,6 +431,7 @@ void snd_streams_decode(int mix)
     int rd;
     int x;
     int lo;
+    int sum;
 
     sceKernelWaitSema(snd_atrac_sema, 1, 0);
     tmp = snd_sas_list.count;
@@ -565,13 +566,13 @@ void snd_streams_decode(int mix)
                     if (r == 0x1000 && l == 0x1000) {
                         while (--cnt >= 0) {
                             *dst = *a;
-                            a++;
                             dst++;
+                            a++;
                         }
                         while (--wrap >= 0) {
                             *dst = *b;
-                            b++;
                             dst++;
+                            b++;
                         }
                     } else {
                         while (--cnt >= 0) {
@@ -636,11 +637,11 @@ void snd_streams_decode(int mix)
                         if (lo < 0) {
                             lo++;
                         }
-                        lo += ((short *)dst)[0];
-                        if (lo < -0x8000) {
-                            lo = -0x8000;
-                        } else if (lo > 0x7FFF) {
-                            lo = 0x7FFF;
+                        sum = lo + ((short *)dst)[0];
+                        if (sum < -0x8000) {
+                            sum = -0x8000;
+                        } else if (sum > 0x7FFF) {
+                            sum = 0x7FFF;
                         }
                         tmp = (x >> 16) * r >> 12;
                         if (tmp < 0) {
@@ -652,7 +653,7 @@ void snd_streams_decode(int mix)
                         } else if (tmp > 0x7FFF) {
                             tmp = 0x7FFF;
                         }
-                        *dst = (lo & 0xFFFF) | tmp << 16;
+                        *dst = (sum & 0xFFFF) | tmp << 16;
                         dst++;
                         b++;
                     }
