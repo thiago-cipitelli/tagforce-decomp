@@ -10,8 +10,8 @@
 
 int wcslen(const unsigned short *s);
 int wcschr_index(const unsigned short *s, unsigned short c);
-unsigned short towupper(unsigned short c);
-int wc_is_lower(unsigned short c);
+unsigned short towupper(int c);
+int wc_is_lower(int c);
 
 /* Draws `text` at (x, y) in 26.6 inside width w (26.6), one line, breaking words that do not fit.
    Returns the number of characters consumed. */
@@ -571,12 +571,12 @@ int font_layout_text(FontCtx *f, FontLayout *st, unsigned short *text, int wrap)
 {
     SceFontGlyphImage img;
     FontCmd cmd;
-    unsigned short *p, *next, *end;
+    unsigned short *p, *end;
     unsigned short c;
-    int pending_break = 0;
-    int slot, adv, extra, pad, w;
-    int cls;
-    int sx, sy;
+    unsigned short pad;
+    int pending = 0;
+    int slot, adv, extra, w, sx, sy;
+    unsigned short n;
 
     img.buf_w = 32;
     img.buf_h = 32;
@@ -585,97 +585,98 @@ int font_layout_text(FontCtx *f, FontLayout *st, unsigned short *text, int wrap)
     img.pad = 0;
     if (text == 0)
         return 0;
-    c = *text;
     p = text;
-    for (;;) {
-        next = p + 1;
-        end = next;
-        if (c == 0)
-            break;
+    end = p;
+    while ((c = *p++) != 0) {
         pad = 0;
         if (!(st->flags & 0x20) && c == '$') {
-            next = font_parse_tag(f, st, &cmd, next);
+            p = font_parse_tag(f, st, &cmd, p);
+            end = p;
+            continue;
         } else {
             if ((f->flags & 0x8000) && (st->flags & 2))
                 pad = st->ruby_pad >> 1;
             if ((st->flags & 2) && c == '(') {
                 if (f->flags & 0x8000) {
-                    next = font_ruby_skip(f, st, next);
-                    if (st->ruby_y + 0x1C0 == st->y) {
-                        if (st->x < st->ruby_x)
-                            st->x = st->ruby_x;
-                    }
+                    p = font_ruby_skip(f, st, p);
+                    if (st->ruby_y + 0x1C0 == st->y && st->x < st->ruby_x)
+                        st->x = st->ruby_x;
                 } else {
-                    w = wcschr_index(next, ')');
-                    if (w < 0)
-                        next = p + 2;
+                    w = wcschr_index(p, ')');
+                    if (w >= 0)
+                        p += w + 1;
                     else
-                        next = next + w + 1;
+                        p += 1;
                 }
                 st->flags &= ~2;
+                end = p;
+                continue;
             } else {
-                if ((f->flags & 0x4000) || st->force_upper != 0) {
-                    if (wc_is_lower(c) == 0) {
-                        if (st->flags & 0x10) {
-                            st->flags &= ~0x10;
-                            st->cur_size_x = st->size_x;
-                            st->cur_size_y = st->size_y;
-                            st->yoff = 0;
-                        }
-                    } else {
-                        c = towupper(c);
+                if ((f->flags & 0x4000) || *(unsigned char *)&st->force_upper != 0) {
+                    if (wc_is_lower(c)) {
+                        n = towupper(c);
                         if (!(st->flags & 0x10)) {
-                            st->flags |= 0x10;
-                            st->cur_size_x = st->size_x * 10 / 12;
+                            sx = st->size_x * 10 / 12;
                             sy = st->size_y * 10 / 12;
+                            st->flags |= 0x10;
+                            st->cur_size_x = sx;
                             st->cur_size_y = sy;
                             st->yoff = f->line_h * (f->size_y - (sy & 0xFF)) / 20 - 0x20;
                         }
+                        c = n;
+                    } else if (st->flags & 0x10) {
+                        st->flags &= ~0x10;
+                        st->cur_size_x = st->size_x;
+                        st->cur_size_y = st->size_y;
+                        st->yoff = 0;
                     }
                 }
-                if (c < 0x20) {
-                    if (c == '\n')
-                        goto done;
-                    if (c == '\t')
-                        st->x += f->max_glyph_w * 4;
-                } else {
+                if (c >= 0x20) {
                     slot = font_glyph_cache(&img, c);
-                    extra = 0;
-                    st->x += pad;
                     adv = f->slots[slot].advance * st->cur_size_x / 20;
+                    st->x += pad;
+                    extra = 0;
                     if (f->flags & 1)
-                        extra = font_word_width(f, st, &img, p, wrap);
+                        extra = font_word_width(f, st, &img, p - 1, wrap);
                     if (f->flags & 8) {
-                        cls = wc_break_class(c);
-                        if (pending_break) {
-                            extra = font_run_width(f, st, &img, next);
-                            pending_break = 0;
-                        } else if (cls == 1) {
-                            cls = wc_break_class(wtext_next_char(f, next, 0));
-                            if (cls < 1)
-                                pending_break = 1;
+                        w = wc_break_class(c);
+                        if (pending) {
+                            extra = font_run_width(f, st, &img, p);
+                            pending = 0;
+                        } else if (w == 1) {
+                            n = wtext_next_char(f, p, 0);
+                            if (wc_break_class(n) > 0)
+                                extra = font_run_width(f, st, &img, p);
                             else
-                                extra = font_run_width(f, st, &img, next);
-                        } else if (cls == 0 || cls == 2) {
-                            extra = font_run_width(f, st, &img, next);
+                                pending = 1;
+                        } else if (w == 0 || w == 2) {
+                            extra = font_run_width(f, st, &img, p);
                         }
                     }
-                    end = p;
-                    if (st->xmax < extra + adv + st->x + pad)
+                    if (st->xmax < st->x + pad + adv + extra) {
+                        p = end;
                         break;
-                    st->x = st->x + adv + pad;
+                    }
+                    st->x += adv + pad;
                     if (st->flags & 0x20)
                         st->flags &= ~0x20;
+                } else switch (c) {
+                case '\r':
+                    break;
+                case '\t':
+                    st->x += f->max_glyph_w * 4;
+                    break;
+                case '\n':
+                    goto out;
                 }
             }
         }
-        p = next;
-        c = *p;
+        end = p;
     }
+out:
     if (st->flags & 2)
         st->ruby_xmax = st->x;
-done:
-    st->consumed = (end - text);
+    st->consumed = p - text;
     return st->x;
 }
 #endif
