@@ -1192,3 +1192,20 @@ Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` 
   `$s` e usa a cópia como valor fixo, o parâmetro é o que o laço altera e o local guarda o original.
 - Static usada por ponteiro e definida no meio do arquivo pode ter de ir para depois (`card_db_loaded` depois de
   `card_db_load`): ao promover a última função em asm de `card_db.c`, o `make check` acusou o deslocamento.
+
+## Rodada 15 (`engJ`: libduel_eng, funções 93-94% nunca tentadas)
+
+- Global de rascunho gravado e relido na mesma função (`duel_w_089148FC`, `duel_w_08914900`, dentro de `duel_chain`):
+  o original carrega o global antes de calcular os outros argumentos; `*(volatile int *)&g` na leitura reproduz
+  (`duel_eff_f943c`, `duel_0888E1A4`: 12 e 13 palavras -> 0).
+- Stores em globais que ficam dentro de `Duel` (`duel_ai_player` = +0x37EC) feitos pelo nome do global deixam o mwcc
+  antecipar as leituras de `duel.players[...]` que vêm depois; gravando como campo de `duel`
+  (`((unsigned int *)&duel)[0x37EC / 4] = p;`) o apelidamento segura a ordem do original (`duel_088044C8`).
+- Protótipo local diferente da definição muda registradores da função inteira: com `duel_08832974(..., unsigned short id, ...)`
+  `a` sai de `$a0`; a definição é `(unsigned int, int, int)` (`duel_088AC6A0`, declaração no bloco).
+- Índice de lista que o original refaz com `sll` a cada volta: `for (i = 0, j = q; ...) { duel.list[(int)j] ...; j += 2; }`
+  (o cast `(int)` impede a redução a ponteiro; `duel_list_find_id`).
+- Campo de array global em deslocamento próprio (`lui/addiu sym+2`, `lhu 0`): array de struct pelo alias
+  (`duel_cards[uid].effects`), não `((unsigned short *)&duel.list[uid])[1]` (`duel_088B4D54`).
+- `x = c ? x : f()` (máximo em ternário) dá o `beqzl; b fim; nop` com a chamada fora de linha (`duel_0887C93C`).
+- `(b & 0xF) & 1` é dobrado; `(unsigned char)(b & 0xF) & 1` mantém os dois `andi` (`duel_zone_usable`).
