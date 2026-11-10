@@ -22,7 +22,7 @@ void *dk_draw_counts(void *list);
 void *dk_draw_count(void *list, unsigned short x, DkRect *r, unsigned short ndig, int value);
 void *dk_draw_attr_bar(void *list, int x, int y, int len, int dir, int i);
 
-#ifdef NON_MATCHING /* 291 palavras, mesmo tamanho: x/y/h da barra calculados antes do estilo e dk_res_get(id = 0x8007) como no original; falta a alocação (o original põe x em $s0 e lay em $s1 e guarda o id u16 na pilha, aqui o mwcc derrama outro valor) */
+#ifdef NON_MATCHING /* 203 palavras, mesmo tamanho: h/by/sx da barra (by separado do y dos ícones), (count + (cols - 1)) / cols, ordem das declarações por busca gulosa; falta a alocação (o original põe p em $s3, l em $s2, lay em $s1, x em $s0 e list em $s4, e guarda o id u16 na pilha) */
 /* header of each pane: sort and direction icons, filter icon with the number of cards, "new"
    mark of the trunk, scroll bar */
 void *dk_draw_headers(void *list)
@@ -32,9 +32,10 @@ void *dk_draw_headers(void *list)
     DkLayout *lay;
     int x;
     int fx;
-    int sx;
     int y;
+    int by;
     int h;
+    int sx;
     int show;
     int mark;
     int style;
@@ -67,9 +68,9 @@ void *dk_draw_headers(void *list)
     fx = lay->x + lay->w - 20;
     if (l->tab == 3 && (mark = cfg_get_byte0_hi2()) != 0)
         list = dk_draw_flag_icon(list, PT(fx, y + 3), mark, dk_res_get(0x800A));
-    sx = lay->x + lay->w - 10;
-    y = lay->y + 12;
     h = lay->h - 41;
+    by = lay->y + 12;
+    sx = lay->x + lay->w - 10;
     if (dkv.side == 0)
         style = 0;
     else
@@ -78,10 +79,10 @@ void *dk_draw_headers(void *list)
         style += 2;
     if (p->list_mode == 0) {
         cols = lay->cols;
-        list = dk_draw_scrollbar(list, sx, y, h, p->top / cols, lay->grid_rows, (l->count + cols - 1) / cols, style,
+        list = dk_draw_scrollbar(list, sx, by, h, p->top / cols, lay->grid_rows, (l->count + (cols - 1)) / cols, style,
                                  dk_res_get(id = 0x8007));
     } else {
-        list = dk_draw_scrollbar(list, sx, y, h, p->top, lay->rows, l->count, style, dk_res_get(id = 0x8007));
+        list = dk_draw_scrollbar(list, sx, by, h, p->top, lay->rows, l->count, style, dk_res_get(id = 0x8007));
     }
     if (dkv.mode > 1) {
         p = &dkv.pane[1];
@@ -110,16 +111,16 @@ void *dk_draw_headers(void *list)
         fx = lay->x + lay->w - 20;
         if (l->tab == 3 && (mark = cfg_get_byte0_hi2()) != 0)
             list = dk_draw_flag_icon(list, PT(fx, y + 3), mark, dk_res_get(0x800A));
-        sx = lay->x + lay->w - 10;
-        y = lay->y + 12;
         h = lay->h - 41;
+        by = lay->y + 12;
+        sx = lay->x + lay->w - 10;
         style = dkv.side == 1 ? 2 : 3;
         if (p->list_mode == 0) {
             cols = lay->cols;
-            list = dk_draw_scrollbar(list, sx, y, h, p->top / cols, lay->grid_rows, (l->count + cols - 1) / cols, style,
+            list = dk_draw_scrollbar(list, sx, by, h, p->top / cols, lay->grid_rows, (l->count + (cols - 1)) / cols, style,
                                      dk_res_get(id));
         } else {
-            list = dk_draw_scrollbar(list, sx, y, h, p->top, lay->rows, l->count, style, dk_res_get(id));
+            list = dk_draw_scrollbar(list, sx, by, h, p->top, lay->rows, l->count, style, dk_res_get(id));
         }
     }
     return dk_draw_counts(list);

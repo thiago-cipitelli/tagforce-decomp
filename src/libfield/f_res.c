@@ -1,5 +1,5 @@
 // @range 0x0880BB98-0x0880C1C4
-// @asm 0x0880BBE4-0x0880BDFC
+// @rodata 0x0883836C-0x08838384
 /* File loader of the field: the heap of the module (7.5 MB), the card picture reader, the cache of
    the shared GIM files (story_sys01.gim, ...) and the textures looked up in it. */
 #include "libfield.h"
@@ -33,46 +33,13 @@ void fld_res_init(void)
     fld_req_init();
 }
 
-int fld_res_term(void)
-{
-    FieldRes *r = &field_res;
-
-    if (fld_req_idle() == 0)
-        return 0;
-    if (r->heap) {
-        heap_free_block(r->heap);
-        r->heap = 0;
-    }
-    if (r->cip) {
-        if (field_cip_closing == 0) {
-            cip_close(r->cip);
-            field_cip_closing = 1;
-        } else if (cip_is_idle(r->cip) == 0) {
-            return 0;
-        }
-    }
-    memset(&field_res, 0, sizeof(FieldRes));
-    field_cip_closing = 0;
-    return 1;
-}
-
-void fld_res_cancel(void)
-{
-    fld_gims_free();
-    fld_load_cancel_chr();
-    fld_load_cancel_bg();
-    fld_load_cancel_all();
-    fld_req_cancel_all();
-}
-
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 96 palavras: com o corpo em "if (r != 0 && q->busy == 0) {" o teste de busy sai bnezl para o epílogo como no original; falta &field_res.q materializado em a0 (const, cast char *, atribuição no teste não mudam) e as cópias mortas depois de b dos case internos */
 /* runs the request at the head of the queue when no read is in flight: step 0 starts the read,
    step 1 publishes the file (buf -> data), unloads it again if it was discarded meanwhile, calls the
    requester and the queued waiters and pops the request */
 void fld_res_update(void)
 {
-    FieldReq *r = field_res.q.head;
     FieldReqQ *q = &field_res.q;
+    FieldReq *r = field_res.q.head;
     FieldWaitQ wg;
     FieldWaitQ wp;
     FieldResEnt *e;
@@ -116,6 +83,7 @@ void fld_res_update(void)
                 k = 0;
                 switch (r->kind) {
                 case 1:
+                    k = 0;
                     break;
                 case 2:
                     k = 1;
@@ -142,7 +110,38 @@ void fld_res_update(void)
     }
     }
 }
-#endif
+
+int fld_res_term(void)
+{
+    FieldRes *r = &field_res;
+
+    if (fld_req_idle() == 0)
+        return 0;
+    if (r->heap) {
+        heap_free_block(r->heap);
+        r->heap = 0;
+    }
+    if (r->cip) {
+        if (field_cip_closing == 0) {
+            cip_close(r->cip);
+            field_cip_closing = 1;
+        } else if (cip_is_idle(r->cip) == 0) {
+            return 0;
+        }
+    }
+    memset(&field_res, 0, sizeof(FieldRes));
+    field_cip_closing = 0;
+    return 1;
+}
+
+void fld_res_cancel(void)
+{
+    fld_gims_free();
+    fld_load_cancel_chr();
+    fld_load_cancel_bg();
+    fld_load_cancel_all();
+    fld_req_cancel_all();
+}
 
 void *fld_alloc(unsigned int size)
 {
