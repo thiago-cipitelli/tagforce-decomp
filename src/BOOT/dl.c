@@ -1,6 +1,5 @@
 // @range 0x08839F50-0x0883CEB0
 // @asm 0x0883A4E4-0x0883A6CC
-// @asm 0x0883B584-0x0883B684
 // @asm 0x0883BF38-0x0883C040
 // @asm 0x0883CBE8-0x0883CDB4
 // @data 0x088EE050-0x088EE0A4
@@ -721,7 +720,6 @@ unsigned int *dl_depth_range(unsigned int *list, int near, int far)
     return list;
 }
 
-#ifdef NON_MATCHING /* register allocation of the float conversions differs */
 /* Same range with the center moved by `bias`. */
 unsigned int *dl_depth_range_i(unsigned int *list, int bias)
 {
@@ -737,14 +735,13 @@ unsigned int *dl_depth_range_i(unsigned int *list, int bias)
     half = sum / 2;
     center = half;
     scale = far - (half + sum % 2);
-    cmd[2] = ADDR(0xD6000000, ALLEGREX_MIN(near, far));
-    cmd[0] = (FBITS(scale) & 0xFFFFFF) | 0x44000000;
     center += bias;
-    cmd[3] = ADDR(0xD7000000, ALLEGREX_MAX(near, far));
+    cmd[0] = (FBITS(scale) & 0xFFFFFF) | 0x44000000;
     cmd[1] = (FBITS(center) & 0xFFFFFF) | 0x47000000;
+    cmd[2] = ADDR(0xD6000000, ALLEGREX_MIN(near, far));
+    cmd[3] = ADDR(0xD7000000, ALLEGREX_MAX(near, far));
     return dl_push(list, cmd, 4);
 }
-#endif
 
 unsigned int *dl_viewport(unsigned int *list, int cx, int cy, int w, int h)
 {

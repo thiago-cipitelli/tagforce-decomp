@@ -87,7 +87,6 @@ fuzzy	size	module	function	address	file
 85.5	464	BOOT	extdata_load_list	0x0886DAB0	src/BOOT/extdata.c
 85.4	1132	libduel_draw	dd_wline_draw	0x08828DD0	src/libduel_draw/dd_wline.c
 85.3	1716	libduel_draw	dd_fx_petal_update	0x08854CD8	src/libduel_draw/dd_fx_petal.c
-85.3	256	BOOT	dl_depth_range_i	0x0883B584	src/BOOT/dl.c
 85.2	696	libdeck	dk_select_tab	0x0880BFB8	src/libdeck/dk_pane.c
 84.9	760	libduel_draw	dd_face_panel	0x0881299C	src/libduel_draw/dd_face.c
 84.8	1264	libduel_eng	duel_eff_f8b34	0x088F8B34	src/libduel_eng/effects_b.c
