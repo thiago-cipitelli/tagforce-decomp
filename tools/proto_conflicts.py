@@ -45,7 +45,7 @@ def strip_comments(s):
 def asm_callers(src):
     """names called inside #ifdef NON_MATCHING drafts (functions still @asm) of one file"""
     called = set()
-    for m in re.finditer(r"^#ifdef NON_MATCHING\n(.*?)^#endif", src, re.M | re.S):
+    for m in re.finditer(r"^#ifdef NON_MATCHING[^\n]*\n(.*?)^#endif", src, re.M | re.S):
         called.update(re.findall(r"\b(\w+)\s*\(", m.group(1)))
     return called
 
