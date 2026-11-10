@@ -3,7 +3,6 @@
 // @asm 0x088048C8-0x08804908
 // @asm 0x08805974-0x08805B68
 // @asm 0x08805BD0-0x08805E24
-// @asm 0x08805E24-0x08806074
 /* Story characters (150): the script tables of each one (Scr<i>_G/Step/Deck/DH/DN/Sche/...), their
    saved state (level, affinity, flags, position, look, deck in use), the conditions of the tables
    (date, level, flags, weekday, daytime) and the daily update that picks look, place and deck. */
@@ -1028,20 +1027,24 @@ find:
 #endif
 
 /* place and x24 from the first G table entry that holds (date, then level, chr flag, story flag) */
-#ifdef NON_MATCHING /* forma igual, alocação dos s0..s7 diferente (as variáveis dos laços trocam de registrador) */
 int st_chr_g_update(int i)
 {
-    unsigned short *gp = ST_CHR(i)->gp;
-    unsigned short *gs = ST_CHR(i)->gs;
-    unsigned short *gc = ST_CHR(i)->gc;
-    unsigned short *g = ST_CHR(i)->g;
-    StoryChrSave *s = ST_CHR_SAVE(i);
-    unsigned short *p;
+    unsigned short *gp;
+    StoryChrSave *s;
+    unsigned short *gs;
+    unsigned short *gc;
+    unsigned short *g;
     int k;
+    unsigned short *p;
     unsigned short *q;
     int j;
     int lv;
 
+    gs = ST_CHR(i)->gs;
+    s = ST_CHR_SAVE(i);
+    gp = ST_CHR(i)->gp;
+    gc = ST_CHR(i)->gc;
+    g = ST_CHR(i)->g;
     for (k = 0, p = gp; ; p += 6, k++) {
         if (p[4] == 0 && p[5] == 0)
             break;
@@ -1055,16 +1058,17 @@ int st_chr_g_update(int i)
     for (j = 0, q = gs; ; q += 3, j++) {
         if (q[1] == 0 && q[2] == 0)
             break;
-        if ((lv = st_chr_level(i)) == gs[0] || lv == 0) {
+        lv = st_chr_level(i);
+        if (lv == gs[0] || lv == 0) {
             s->x28 = gs[j * 3 + 1];
             s->x24 = gs[j * 3 + 2];
             return 1;
         }
     }
-    for (j = 0, q = gc; ; q += 3, j++) {
-        if (q[1] == 0 && q[2] == 0)
+    for (j = 0, p = gc; ; p += 3, j++) {
+        if (p[1] == 0 && p[2] == 0)
             break;
-        if (q[0] == 0 || st_chr_flag_get(i, q[0])) {
+        if (p[0] == 0 || st_chr_flag_get(i, p[0])) {
             s->x28 = gc[j * 3 + 1];
             s->x24 = gc[j * 3 + 2];
             return 1;
@@ -1083,7 +1087,6 @@ int st_chr_g_update(int i)
     s->x24 = 0;
     return 0;
 }
-#endif
 
 /* recipe of the first Deck entry that holds (date range, level, chr flag, story flag) */
 int st_chr_deck_find(int i)

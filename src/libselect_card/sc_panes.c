@@ -162,15 +162,15 @@ void *sc_draw_headers(void *list)
 /* digits of the copy count on each tab */
 unsigned short sc_count_digits[3][2] = { { 4, 1 }, { 6, 2 }, { 6, 1 } };
 
-#ifdef NON_MATCHING /* 95 palavras: o original mantém o 2 do teste de sc.kind num registrador s como limite dos laços (n = 2 em cada case e x += lay.x como em ds_draw_counts aproximam); ordem das cargas do segundo laço difere */
+#ifdef NON_MATCHING /* 82 palavras (ordem das declarações por busca gulosa; a ordem das cargas d[i]/total e a troca das linhas x/r.x não mudam): o original mantém o 2 do teste de sc.kind num registrador s como limite dos laços (n = 2 em cada case e x += lay.x como em ds_draw_counts aproximam); ordem das cargas do segundo laço difere */
 /* the total of copies on the tab buttons of each pane */
 void *sc_draw_counts(void *list)
 {
     ScPane *p = &scv.pane[0];
-    unsigned short sel = p->list->tab;
-    int n = 2;
     unsigned short *d;
+    int n = 2;
     int i;
+    unsigned short sel = p->list->tab;
     unsigned short x;
     ScRect r;
 
