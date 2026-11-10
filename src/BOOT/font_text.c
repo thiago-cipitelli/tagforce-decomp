@@ -178,7 +178,7 @@ int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max
     return n;
 }
 
-#ifdef NON_MATCHING /* forma do original, mas registradores/pilha diferentes (fica em asm; este C é a versão do port) */
+#ifdef NON_MATCHING /* igual ao original menos uma instrução: o original guarda p = text num $s (move s3,a2; move v0,s3) e o mwcc daqui propaga text; nenhuma forma reproduziu a cópia */
 /* Lays out one line of UCS-2 text into f->cmds. Tags: $R...(ruby) $f $F (lower/upper small caps)
    $Cn (color) $$ (literal). Returns 0 at end of text, 1 at a line break (when `wrap`),
    2 when max_glyphs is reached, -1 when the command buffer is full. */
@@ -554,7 +554,7 @@ int font_wtext_lines(int w, unsigned short *text)
     return st.y + step;
 }
 
-#ifdef NON_MATCHING /* forma do original, mas registradores/pilha diferentes (fica em asm; este C é a versão do port) */
+#ifdef NON_MATCHING /* igual ao original menos uma instrução: a cópia morta move s3,a2 do início (p = text antes de end = p) */
 /* Measures one line of text with the same rules as font_layout_wtext but emits no commands.
    Returns the pen x after the text (26.6). */
 int font_layout_text(FontCtx *f, FontLayout *st, unsigned short *text, int wrap)
