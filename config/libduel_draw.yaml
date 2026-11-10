@@ -143,7 +143,6 @@ segments:
       - [0x2C4C8, c, dd_fx_card2d]
       - [0x2CB0C, c, dd_fx_orb]
       - [0x2D2F0, c, dd_fx_flipup]
-      - [0x2D3AC, asm, dd_fx_flipup_asm_0883134C]
       - [0x2D7E8, c, dd_fx_ringglow]
       - [0x2DCB8, c, dd_fx_mark]
       - [0x2E198, c, dd_fx_spin]

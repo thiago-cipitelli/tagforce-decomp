@@ -1,5 +1,4 @@
 // @range 0x08831290-0x08831788
-// @asm 0x0883134C-0x08831788
 // @data 0x08876A9C-0x08876AD0
 /* Effect on a card shown on screen: the card rises from lying flat to facing the camera (16
    frames) and stays until the task gets flag 1, then fades out in 8 frames. */
@@ -52,12 +51,7 @@ int dd_fx_flipup_start(int card, DdScrPos *pos, DdTaskTermFn term, void *arg)
     return id;
 }
 
-/* templates of the locals of dd_fx_flipup_update (kept in asm) */
-float dd_flipup_eye[3] = { 0.0f, 0.0f, 500.0f };
-float dd_flipup_up[3] = { 0.0f, 1.0f, 0.0f };
-FxVec4 dd_flipup_corner = { 1.0f, 1.0f, 0.0f, 1.0f };
-
-#ifdef NON_MATCHING /* 6 palavras: só hh e -hw trocam f0/f1 no fim do cálculo (o original faz mul.s f0,f0(2.0),f1). Ao promover, os modelos de eye/up/corner passam a sair do C (trocar os globais dd_flipup_* do @data) */
+/* `2.0F * (float)hh` depois do `quad[0].x = -hw` dá o mul.s com a constante à esquerda como no original */
 int dd_fx_flipup_update(int state, DdFxFlipUp *fx)
 {
     int step = dd_anim_step();
@@ -77,8 +71,9 @@ int dd_fx_flipup_update(int state, DdFxFlipUp *fx)
     f = dd_ease_lin_inv(fx->out, 8);
     if (state == 1) {
         float hw, hh;
+        FxVec4 c = { 1.0f, 1.0f, 0.0f, 1.0f };
 
-        v = dd_flipup_corner;
+        v = c;
         hw = 54.0f;
         hh = 77.0f;
         mtx_set_mode(0);
@@ -93,10 +88,10 @@ int dd_fx_flipup_update(int state, DdFxFlipUp *fx)
         v.y = 136.0f * v.y / v.w;
         hh /= v.y;
         hw /= v.x;
-        hh = 2.0f * hh;
         fx->quad[0].u = 0.0f;
         fx->quad[0].v = 0.0f;
         fx->quad[0].x = -hw;
+        hh = 2.0F * (float)hh;
         fx->quad[0].y = hh;
         fx->quad[0].z = 0.0f;
         fx->quad[1].u = 0.0f;
@@ -144,4 +139,3 @@ int dd_fx_flipup_update(int state, DdFxFlipUp *fx)
     }
     return 2;
 }
-#endif
