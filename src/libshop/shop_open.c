@@ -192,15 +192,18 @@ int shop_result_input(void)
     return 0;
 }
 
+#endif
+
+#ifdef NON_MATCHING /* 6 palavras: k e o deslocamento k * 96 do 2º laço com $s2/$s3 trocados (tipo, posição e bloco de k não mudam). O original usa a mesma variável como contador do 1º laço e como x dos nomes; cadeia de if no estado, w + 0x40 da dica num só valor */
 /* the 3D pack and cards, the names of the cards shown and the "skip" hint */
 void shop_draw_open(void)
 {
-    unsigned int *list;
-    int i;
-    int w;
-    int x;
-    unsigned int color;
     unsigned short *name;
+    unsigned int *list;
+    int x;
+    int w;
+    unsigned int color;
+    int k;
     unsigned short *hint;
 
     shop_gfx_open();
@@ -209,40 +212,37 @@ void shop_draw_open(void)
     shop_gfx_cards();
     mtx_set_mode(2);
     shop_open_draw_pack(&shop_open->pack);
-    for (i = 0; i < shop_open->n_cards; i++) {
-        if (shop_open->cards[i].state != 0 && shop_open->cards[i].state != 5)
-            shop_open_draw_card(&shop_open->cards[i]);
+    for (x = 0; x < shop_open->n_cards; x++) {
+        ShopOpenCard *c = &shop_open->cards[x];
+        if (c->state != 0 && c->state != 5)
+            shop_open_draw_card(c);
     }
     list = dl_select_layer(4, 0);
     list = shop_dl_2d(list);
     font_text_set(list);
     font_set_flag4(0);
-    for (i = 0; i < shop_open->n_cards; i++) {
-        ShopOpenCard *c = &shop_open->cards[i];
+    for (k = 0; k < shop_open->n_cards; k++) {
+        ShopOpenCard *c = &shop_open->cards[k];
         name = card_get_name(c->id);
         font_set_size(18, 18);
-        switch (c->state) {
-        case 3:
+        if (c->state == 3) {
             w = font_measure_text(name);
             x = (0x7800 - w) / 2;
-            break;
-        case 4:
+        } else if (c->state == 4) {
             w = font_measure_text(name);
             x = (0x7800 - w) / 2;
-            x -= (x + w) * c->timer / 14;
-            break;
-        case 2:
+            { int t = x + w; x -= t * c->timer / 14; }
+        } else if (c->state == 2) {
             w = font_measure_text(name);
             x = 0x7800 - (0x7800 - (0x7800 - w) / 2) * c->timer / 16;
-            break;
-        default:
+        } else {
             continue;
         }
         color = 0xFFFFFFFF;
         font_set_color(0xFF000000);
         switch (card_get_prop6_hi(c->id)) {
-        case 4:
         case 3:
+        case 4:
             font_set_color(0xFF008080);
             color = 0xFF00FFFF;
             break;
@@ -258,9 +258,9 @@ void shop_draw_open(void)
     font_set_color(0xFFFFFFFF);
     font_set_size(14, 14);
     hint = table_get_entry(shop_str_get(0xC001), 0x1B);
-    w = font_measure_text(hint);
-    font_draw_text(0x7700 - (w + 0x40), 0x4300 - font_line_height(),
-                   w + 0x40, table_get_entry(shop_str_get(0xC001), 0x1B));
+    w = font_measure_text(hint) + 0x40;
+    font_draw_text(0x7700 - w, 0x4300 - font_line_height(),
+                   w, table_get_entry(shop_str_get(0xC001), 0x1B));
     dl_set_list(font_text_clear());
 }
 #endif
