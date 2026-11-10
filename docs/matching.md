@@ -1670,3 +1670,23 @@ Bateram `story_date_in_range`, `stext_names` (libstory), `fld_bg_loaded` (libfie
 - **Diff estrutural**: comparar o desassembly com operandos relocados, deslocamentos de globais e alvos mascarados
   (`sed` sobre `full_orig.txt`/`full_new.txt`) mostra só as diferenças de forma; a contagem do `asm_try` é inútil
   enquanto o tamanho difere.
+## Rodada 21 (`near`): três quase-batidas
+
+Bateram `dd_fx_flipup_update` (libduel_draw) e `font_init` (BOOT); `ll_draw_row` (liblimitlist) foi de 1 para 3
+palavras (forma mais fiel, falta uma ordem do escalonador).
+- **Ordem dos operandos de `mul.s` com constante**: o mwcc canoniza `2.0f * hh` e `hh * 2.0f` para o mesmo
+  `mul.s fd,hh,k`; o original (`mul.s fd,k,hh`) é `2.0F * (float)hh` (o cast redundante inverte). A posição da
+  multiplicação (depois do `quad[0].x = -hw`) decide em que registrador cai o produto.
+- **Modelo de struct copiado por `lwc1/swc1` para um temporário e dele ao destino**: `params = (T){ ... };` (literal
+  composto) depois das declarações; os locais na pilha saem em ordem **inversa** da declaração (o último declarado
+  fica no endereço mais baixo, logo acima do temporário). Dois `err` em endereços diferentes = duas variáveis.
+- **`while ((f->id = load()) <= 0);`** relê `f->id` da memória depois do laço; o `do { f->id = load(); } while
+  (f->id <= 0);` reaproveita o `v0`.
+- **`switch` com dois `case` juntos**: a ordem dos testes segue a do fonte invertida (`case 0: case 1:` testa 1 antes).
+- **Global em `.data` copiado por `lwc1/swc1`**: um `extern const T g;` gera `lwc1`; ao definir `g` no arquivo, `const`
+  o manda para a `.rodata` e sem `const` a cópia vira `lw/sw`. Ler por `*(const T *)&g` mantém `lwc1` com `g` em
+  `.data` (`font_glyph_quad`, com o `@data` de `font.c` estendido sobre o modelo).
+- **Escalonador e morte de variável** (`ll_draw_row`): o mwcc monta o argumento `or a1,s0,s4` antes dos `move` só
+  quando o valor em `s0` morre ali; no ramo de magia isso veio de `x += 18; draw(x | yy); x += 175;` (o x + 18
+  re-mascarado a partir de `s1`, como no original). No ramo de monstro o original faz o mesmo com `s0` ainda vivo
+  depois; nenhuma forma achada.
