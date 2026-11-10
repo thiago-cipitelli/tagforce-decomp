@@ -191,7 +191,8 @@ int font_layout_wtext(FontCtx *f, FontLayout *st, unsigned short *text, int wrap
     unsigned short c;
     unsigned short pad;
     int pending = 0;
-    int slot, adv, extra, w, sx, sy, yoff;
+    int slot, adv, extra, w, yoff;
+    unsigned char sx, sy;
     unsigned short n;
 
     img.buf_w = 32;
@@ -258,13 +259,13 @@ int font_layout_wtext(FontCtx *f, FontLayout *st, unsigned short *text, int wrap
                     sx = st->size_x * 10 / 12;
                     sy = st->size_y * 10 / 12;
                     f->cmds[f->ncmds].kind = 2;
-                    f->cmds[f->ncmds].a = sx & 0xFF;
-                    f->cmds[f->ncmds].b = sy & 0xFF;
+                    f->cmds[f->ncmds].a = sx;
+                    f->cmds[f->ncmds].b = sy;
                     f->ncmds++;
                     st->flags |= 0x10;
                     st->cur_size_x = sx;
                     st->cur_size_y = sy;
-                    st->yoff = f->line_h * (f->size_y - (sy & 0xFF)) / 20 - 0x20;
+                    st->yoff = f->line_h * (f->size_y - sy) / 20 - 0x20;
                 }
                 c = n;
             } else if (st->flags & 0x10) {
@@ -308,33 +309,34 @@ int font_layout_wtext(FontCtx *f, FontLayout *st, unsigned short *text, int wrap
                     r = 1;
                 goto out;
             }
-            if (st->max_glyphs >= 0 && st->max_glyphs <= st->nglyphs) {
+            if (st->max_glyphs < 0 || st->nglyphs < st->max_glyphs) {
+                f->cmds[f->ncmds].kind = 1;
+                f->cmds[f->ncmds].a = st->x;
+                f->cmds[f->ncmds].b = st->y + yoff;
+                f->cmds[f->ncmds].c = slot;
+                if (st->flags & 0x20)
+                    st->flags &= ~0x20;
+                st->nglyphs++;
+            } else {
                 r = 2;
                 goto out;
             }
-            f->cmds[f->ncmds].kind = 1;
-            f->cmds[f->ncmds].a = st->x;
-            f->cmds[f->ncmds].b = st->y + yoff;
-            f->cmds[f->ncmds].c = slot;
-            if (st->flags & 0x20)
-                st->flags &= ~0x20;
-            st->nglyphs++;
             st->x += adv + pad;
             f->ncmds++;
             if (f->ncmds >= 0x100) {
                 r = -1;
                 goto out;
             }
+        } else if (c == '\n') {
+            if (wrap != 0)
+                r = 1;
+            goto out;
         } else switch (c) {
         case '\r':
             break;
         case '\t':
             st->x += f->max_glyph_w * 4;
             break;
-        case '\n':
-            if (wrap != 0)
-                r = 1;
-            goto out;
         }
         end = p;
     }
