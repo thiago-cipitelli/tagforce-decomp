@@ -198,7 +198,6 @@ segments:
       - [0x4F6D4, c, dd_fx_beam]
       - [0x50724, c, dd_fx_bubble]
       - [0x50CA4, c, dd_fx_petal]
-      - [0x50D38, asm, dd_fx_petal_asm_08854CD8]
       - [0x513EC, c, dd_chara06]
       - [0x51B70, c, dd_lp_panel]
       - [0x5274C, asm, dd_lp_panel_asm_088566EC]

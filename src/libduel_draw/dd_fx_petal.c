@@ -1,5 +1,4 @@
 // @range 0x08854C44-0x0885538C
-// @asm 0x08854CD8-0x0885538C
 // @data 0x08876E20-0x08876E2C
 /* Character effect "petals": 128 petals (PT88_R_a.gim) drifting from above a fixed point in front
    of the camera, spinning slowly and fading over 512 frames. */
@@ -44,17 +43,21 @@ typedef struct RandSeed {              /* BOOT rand3_seeds entry, 12 bytes */
 extern int rand3_slot;                 /* BOOT variable imports, 0 in the relocated ELF */
 extern RandSeed rand3_seeds[];
 
-#define RAND15() (rand3_seeds[rand3_slot].lcg *= 0x41C64E6D, rand3_seeds[rand3_slot].lcg += 0x3039, \
-                  (int)(rand3_seeds[rand3_slot].lcg >> 16 & 0x7FFF))
+#define RAND15() (rand3_seeds[rand3_slot].lcg *= 0x41C64E6D, \
+                  (int)((rand3_seeds[rand3_slot].lcg += 0x3039) >> 16 & 0x7FFF))
 #define RANDF() (RAND15() / 32767.0f)
 
-typedef struct DdPetal {               /* 0x28 */
-    unsigned int flags;
-    int t;
+typedef struct DdPetalPath {           /* +0x08 of DdPetal */
     int cell;
     float spin;                        /* radians per frame */
     FxVec3 out;                        /* +0x10 burst direction */
     FxVec3 drift;                      /* +0x1C wind over the lifetime */
+} DdPetalPath;
+
+typedef struct DdPetal {               /* 0x28 */
+    unsigned int flags;
+    int t;
+    DdPetalPath m;
 } DdPetal;
 
 typedef struct DdFxPetal {             /* 0x169C */
@@ -84,19 +87,23 @@ int dd_fx_petal_start(int arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* função de 1,7 KB; C equivalente */
 int dd_fx_petal_update(int phase, DdFxPetal *w)
 {
     FxMat4 cam;
     void *list;
     DdPetal *p;
+    DdPetalPath *m;
     FxVec3 a;
     FxVec3 b;
     FxVec3 q;
     float r;
     float ang;
-    float sign;
+    int k;
     float f;
+    float v;
+    float cw = 0.25f;
+    float ch = 0.5f;
+    float h = 2.0f;
     int n;
     int i;
 
@@ -104,15 +111,16 @@ int dd_fx_petal_update(int phase, DdFxPetal *w)
     dd_mtx_billboard_field(&cam);
     if (phase == 1) {
         for (i = 0; i < 8; i++) {
-            f = (float)(i % 4) * 0.25f;
-            w->cell[i][0].u = f; w->cell[i][0].v = (float)(i / 4) * 0.5f;
-            w->cell[i][0].x = -2.0f; w->cell[i][0].y = 2.0f; w->cell[i][0].z = 0.0f;
-            w->cell[i][1].u = f; w->cell[i][1].v = (float)(i / 4) * 0.5f + 0.5f;
-            w->cell[i][1].x = -2.0f; w->cell[i][1].y = -2.0f; w->cell[i][1].z = 0.0f;
-            w->cell[i][2].u = f + 0.25f; w->cell[i][2].v = (float)(i / 4) * 0.5f;
-            w->cell[i][2].x = 2.0f; w->cell[i][2].y = 2.0f; w->cell[i][2].z = 0.0f;
-            w->cell[i][3].u = f + 0.25f; w->cell[i][3].v = (float)(i / 4) * 0.5f + 0.5f;
-            w->cell[i][3].x = 2.0f; w->cell[i][3].y = -2.0f; w->cell[i][3].z = 0.0f;
+            f = (float)(i % 4) * cw;
+            v = (float)(i / 4) * ch;
+            w->cell[i][0].u = f; w->cell[i][0].v = v;
+            w->cell[i][0].x = -h; w->cell[i][0].y = h; w->cell[i][0].z = 0.0f;
+            w->cell[i][1].u = f; w->cell[i][1].v = v + ch;
+            w->cell[i][1].x = -h; w->cell[i][1].y = -h; w->cell[i][1].z = 0.0f;
+            w->cell[i][2].u = f + cw; w->cell[i][2].v = v;
+            w->cell[i][2].x = h; w->cell[i][2].y = h; w->cell[i][2].z = 0.0f;
+            w->cell[i][3].u = f + cw; w->cell[i][3].v = v + ch;
+            w->cell[i][3].x = h; w->cell[i][3].y = -h; w->cell[i][3].z = 0.0f;
         }
     }
     if (w->parity % 4 == 0) {
@@ -121,14 +129,16 @@ int dd_fx_petal_update(int phase, DdFxPetal *w)
             p = &w->petal[w->cur];
             p->flags |= 1;
             p->t = (n - 1 - i) * 4;
+            m = &p->m;
             r = RANDF() * 0.5f;
             ang = RANDF() * 6.2831855f;
-            p->cell = RAND15() % 8;
-            sign = (float)((RAND15() & 1) * 2 - 1);
-            p->spin = RANDF() * 0.017453292f * sign;
-            vec3_set(&p->out, r * sinf(ang), 0.5f, r * cosf(ang));
+            m->cell = RAND15() % 8;
+            k = RAND15();
+            f = 0.017453292f * RANDF();
+            m->spin = f * (float)(k % 2 * 2 - 1);
+            vec3_set(&m->out, r * sinf(ang), 0.5f, r * cosf(ang));
             f = RANDF();
-            vec3_set(&p->drift, RANDF() * 15.0f + 1.0f, f * 5.0f + 5.0f, 0.0f);
+            vec3_set(&m->drift, RANDF() * 15.0f + 1.0f, f * 5.0f + 5.0f, 0.0f);
             if (w->cur < 127)
                 w->cur++;
             else
@@ -146,20 +156,21 @@ int dd_fx_petal_update(int phase, DdFxPetal *w)
     mtx_push();
     mtx_identity();
     mtx_translate(&w->pos);
-    for (i = 0; i < 128; i++) {
-        p = &w->petal[i];
-        if (p->flags & 1) {
+    for (k = 0; k < 128; k++) {
+        p = &w->petal[k];
+        if (!(p->flags & 1) != 1) {
             f = dd_ease_lin(p->t, 512);
-            r = dd_ease_sin(p->t, 16, 1);
+            r = dd_ease_sin(p->t, 16, 1) * 2.0f + 1.0f;
             list = dl_ambient_light(list, (unsigned int)(dd_ease_lin_inv(p->t - 256, 256) * 255.0f) << 24 | 0xFFFFFF);
-            vec3_scale(&a, &p->out, r * 2.0f + 1.0f);
-            vec3_scale(&b, &p->drift, f);
+            m = &p->m;
+            vec3_scale(&a, &m->out, r);
+            vec3_scale(&b, &m->drift, f);
             vec3_add(&q, &a, &b);
             mtx_push();
             mtx_translate(&q);
             mtx_mult(&cam);
-            mtx_rotate_z(p->spin * (float)p->t);
-            list = draw_array(list, 4, 0x183, 4, 0, w->cell[p->cell]);
+            mtx_rotate_z(m->spin * (float)p->t);
+            list = draw_array(list, 4, 0x183, 4, 0, w->cell[m->cell]);
             mtx_pop();
             if (p->t < 511)
                 p->t++;
@@ -175,4 +186,3 @@ int dd_fx_petal_update(int phase, DdFxPetal *w)
     w->frame++;
     return 2;
 }
-#endif

@@ -71,7 +71,6 @@ fuzzy	size	module	function	address	file
 85.9	248	BOOT	msgbox_open	0x0886C904	src/BOOT/msgbox.c
 85.6	2256	BOOT	snd_streams_decode	0x0885D078	src/BOOT/snd_mix.c
 85.5	464	BOOT	extdata_load_list	0x0886DAB0	src/BOOT/extdata.c
-85.3	1716	libduel_draw	dd_fx_petal_update	0x08854CD8	src/libduel_draw/dd_fx_petal.c
 85.2	696	libdeck	dk_select_tab	0x0880BFB8	src/libdeck/dk_pane.c
 84.8	1264	libduel_eng	duel_eff_f8b34	0x088F8B34	src/libduel_eng/effects_b.c
 84.6	592	libstory	st_chr_g_update	0x08805E24	src/libstory/s_chr.c
