@@ -76,10 +76,12 @@ int duel_08842C24(void)
 }
 
 #ifdef NON_MATCHING /* registradores: o original guarda (p & 1) * 0xFAC em s1 e testa duel_w_08919640 num switch */
+#define PFO(T, f) (*(T *)((char *)&duel.players[0].f + ofs))
 int duel_08842D98(void)
 {
     unsigned int p = duel_turn_player;
-    unsigned int b24 = duel.players[p & 1].flags >> 24 & 1;
+    int ofs = (p & 1) * 0xFAC;
+    unsigned int b24 = PFO(unsigned int, flags) >> 24 & 1;
     int has = duel_slot_has_effect(p, 0xB, 0x13B1);
     int z;
     int id;
@@ -97,8 +99,8 @@ int duel_08842D98(void)
             return 0;
         }
         duel_cmd((p != 0 ? 0x8000 : 0) | 0xE, 0, 0, 0);
-        duel_w_08919600++;
         duel_w_08919638 = 0;
+        duel_w_08919600++;
         return 0;
     case 1:
         duel_w_08919600++;
@@ -115,19 +117,24 @@ int duel_08842D98(void)
     case 3:
         if (duel_w_08919638 != 0) {
             duel_w_0891963C = 1;
-            duel_w_08919600 = 2;
+            duel_w_08919600--;
             return 0;
         }
-        if (duel_w_08919640 == 0x12) {
+        switch (duel_w_08919640 - 13) {
+        case 3:
+            if (duel_08836868(p) != 0) {
+                duel_w_08919614 = 0;
+                duel_w_0891960C = 0;
+                duel_w_08919600 = 0x15;
+                return 0;
+            }
+            break;
+        case 5:
             if (duel_088369D8(p) != 0) {
                 duel_w_08919600 = 0x1E;
                 return 0;
             }
-        } else if (duel_w_08919640 == 0x10 && duel_08836868(p) != 0) {
-            duel_w_08919600 = 0x15;
-            duel_w_0891960C = 0;
-            duel_w_08919614 = 0;
-            return 0;
+            break;
         }
         m = duel_088369D8(p) != 0 ? 0x20 : 0;
         n = duel_08836868(p) != 0 ? 8 : 0;
@@ -186,9 +193,9 @@ int duel_08842D98(void)
         if (duel_phase == 2 || duel_phase == 4) {
             for (z = 0; z < 5; z++) {
                 id = field_get_card(p, z);
-                if (id == 0x1954 && duel.players[p & 1].field[z].faceup != 0
+                if (id == 0x1954 && PFO(DuelSlot, field[z]).faceup != 0
                     && duel_0884F30C((p << 31 & 0x80000000) | 0x600000 | (z << 16 & 0x1F0000) | 0x1954,
-                                     CARD_UID(duel.players[p & 1].field[z].card), 0) != 0) {
+                                     CARD_UID(PFO(DuelCard, field[z].card)), 0) != 0) {
                     return 0;
                 }
             }
