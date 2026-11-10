@@ -200,8 +200,6 @@ segments:
       - [0x50CA4, c, dd_fx_petal]
       - [0x513EC, c, dd_chara06]
       - [0x51B70, c, dd_lp_panel]
-      - [0x5274C, asm, dd_lp_panel_asm_088566EC]
-      - [0x52E20, c, dd_lp_panel]
       - [0x53160, c, dd_lp_digits]
       - [0x54284, c, dd_lp_show]
       - [0x54674, asm, dd_lp_show_asm_08858614]

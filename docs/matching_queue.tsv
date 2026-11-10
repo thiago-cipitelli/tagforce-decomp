@@ -88,7 +88,6 @@ fuzzy	size	module	function	address	file
 82.3	364	libdeck_swap	ds_focus_update	0x0880A9BC	src/libdeck_swap/ds_input.c
 82.3	364	libdeck_tutorial	dt_focus_update	0x08811210	src/libdeck_tutorial/dt_input.c
 82.3	364	libselect_card	sc_focus_update	0x0880C7D4	src/libselect_card/sc_input.c
-82.3	1748	libduel_draw	dd_lp_frame	0x088566EC	src/libduel_draw/dd_lp_panel.c
 82.1	960	libduel_draw	dd_ev_11	0x08817F08	src/libduel_draw/dd_event_cmd.c
 81.8	928	libduel_draw	guide_draw	0x0886A3F4	src/libduel_draw/dd_pad_guide.c
 81.2	540	librecipe_viewer	rv_input_recipe	0x08808274	src/librecipe_viewer/rv_list.c
