@@ -87,7 +87,7 @@ void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t);
 int duel_count_field(unsigned int p);
 void duel_08832950(unsigned int, int);
 int duel_08860788(int id);
-void duel_088328E8(unsigned int p, unsigned short id, unsigned short loc);
+void duel_088328E8(unsigned int, unsigned short, int);
 int duel_hand_find_uid(unsigned int, int);
 void duel_088CAE24(unsigned int p, DuelCard *c, int a);
 void duel_088D1C70(DuelAct *a, unsigned int p, int z);
@@ -725,7 +725,7 @@ int duel_08893F14(DuelAct *a)
                 return 0x78;
             }
         }
-        duel_088328E8(p, a->id, a->player | a->zone << 8);
+        duel_088328E8(p, a->id, (unsigned short)(a->player | a->zone << 8));
         return 0x7D;
     case 0x7D:
         i = duel_hand_find_uid(p, duel_h_0891968E);

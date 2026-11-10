@@ -26,7 +26,7 @@ void duel_088CAE24(unsigned int p, DuelCard *c, int a);
 unsigned int duel_0884E4E4(DuelAct *a);
 unsigned int duel_088D13CC(DuelAct*, unsigned int);
 int duel_count_monsters(unsigned int p);
-void duel_088328E8(unsigned int p, unsigned short id, int a);
+void duel_088328E8(unsigned int, unsigned short, int);
 void duel_08832894(unsigned int p, unsigned short id);
 int duel_088559C0();
 int duel_d_count_monsters(unsigned int p);

@@ -184,7 +184,7 @@ void duel_08832960(unsigned int p, int a, int b);
 int duel_088A9008(DuelAct*, int, unsigned int*);
 void duel_088CB914(unsigned int p, int z);
 int duel_088304A0(unsigned int p, int z, int a);
-void duel_088328E8(unsigned int p, unsigned short id, int a);
+void duel_088328E8(unsigned int, unsigned short, int);
 
 #ifdef NON_MATCHING /* same steps; register allocation and several branch layouts differ */
 int duel_eff_f8b34(DuelAct *a)

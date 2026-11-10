@@ -20,7 +20,7 @@ void duel_088CAE24(unsigned int p, DuelCard *c, int a);
 int duel_count_field(unsigned int p);
 void duel_088D1C70(DuelAct *a, unsigned int p, int z);
 void duel_08832950(unsigned int, int);
-void duel_088328E8(unsigned int p, unsigned short id, int a);
+void duel_088328E8(unsigned int, unsigned short, int);
 int duel_0884E690(DuelAct *a, int (*fn)());
 int duel_08860788();
 int duel_0884E398(DuelAct *a, int b);
