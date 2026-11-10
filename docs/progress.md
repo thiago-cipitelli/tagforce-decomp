@@ -5,15 +5,15 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-08 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 82,0% | 95,5% | 10280 / 11039 |
-| BOOT | 69,7% | 82,4% | 1862 / 2208 |
-| libduel_eng | 83,5% | 97,5% | 3285 / 3429 |
+| total | 82,3% | 95,5% | 10300 / 11039 |
+| BOOT | 70,1% | 82,4% | 1864 / 2208 |
+| libduel_eng | 83,9% | 97,6% | 3299 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
 | libpassword | 100,0% | 100,0% | 33 / 33 |
 | libtutoriallist | 89,5% | 99,8% | 25 / 26 |
 | libduelrecord | 92,2% | 99,9% | 26 / 27 |
-| libduel_mgr | 89,7% | 99,3% | 150 / 158 |
+| libduel_mgr | 91,1% | 99,3% | 151 / 158 |
 | libselect_card | 86,2% | 98,7% | 194 / 207 |
 | libcardalbum | 97,2% | 100,0% | 67 / 68 |
 | libcharalist | 71,3% | 91,8% | 45 / 50 |
@@ -23,12 +23,12 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-08 (
 | libdeck | 89,7% | 99,1% | 313 / 328 |
 | libdeck_swap | 87,5% | 98,8% | 192 / 204 |
 | libdeck_tutorial | 89,5% | 98,5% | 278 / 293 |
-| libshop | 79,2% | 97,3% | 205 / 223 |
+| libshop | 79,7% | 97,3% | 206 / 223 |
 | libtitle | 88,7% | 98,1% | 416 / 434 |
 | libtutorial | 95,8% | 99,9% | 205 / 207 |
 | libfield | 84,2% | 99,2% | 611 / 652 |
 | libstory | 89,9% | 98,8% | 659 / 676 |
-| libduel_draw | 76,9% | 95,8% | 1518 / 1609 |
+| libduel_draw | 77,3% | 95,8% | 1520 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
