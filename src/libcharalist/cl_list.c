@@ -1,6 +1,4 @@
 // @range 0x08807F68-0x0880A34C
-// @asm 0x08808264-0x0880981C
-// @asm 0x08809C54-0x08809F0C
 // @data 0x0880E138-0x0880EA74
 /* The three tabs (the met duelists, the other ones, the deck-only ones), input of the list and of
    the detail page (costumes, profile scroll, voice test with its theme), the character table and the
@@ -39,7 +37,7 @@ int snd_seq_get_u16();
 int snd_count_se();
 void snd_cmd_fef8(void);
 void snd_set_volume(int ch, int vol);
-unsigned char cfg_get_byte3_b(int i);
+int cfg_get_byte3_b();
 unsigned short partner_table_lookup(int flag, unsigned short mode, unsigned short idx, unsigned short *table);
 int font_wtext_lines(int w, unsigned short *text);
 unsigned short font_get_flags(void);
@@ -242,16 +240,15 @@ void cl_list_build(void)
         heap_set_level(cl.heap, buf[i]);
 }
 
-#ifdef NON_MATCHING /* não testado para matching; forma igual à do original (pseudocódigo + asm) */
 /* list input: cancel leaves, confirm opens the detail page (or picks, in the random/labo modes) */
 void cl_input(void)
 {
     PadState *pad = pad_get();
     unsigned int trig = pad->b.trig;
     ClEntry *e;
-    unsigned int top;
-    unsigned int cur;
-    unsigned int count;
+    int top;
+    int cur;
+    int count;
     int pos;
     ClInfo *info;
 
@@ -260,115 +257,114 @@ void cl_input(void)
         cl.state = 5;
         se_play(0x6214);
         switch (cl.mode) {
+        case 3:
+        case 2:
+            cl.cancelled = 1;
+            break;
         case 0:
         case 1:
             bgm_cmd(600);
             break;
-        case 2:
-        case 3:
-            cl.cancelled = 1;
-            break;
         }
-        return;
-    }
-    if (trig & region_pick_value(0)) {
+    } else if (trig & region_pick_value(0)) {
         e = cl_entry(cl.tab, cl.top[cl.tab] + cl.cursor[cl.tab]);
-        if (e == 0) {
-            se_play(0x6215);
-            return;
-        }
-        switch (cl.mode) {
-        case 2:
-            cl.costume = 0;
-            cl.chosen = e->id;
-            if (!e->simple) {
-                info = e->u.info;
-                if (info->cur < info->n) {
-                    cl.costume = info->cur;
-                    if (info->sel)
-                        cl.costume = info->sel;
+        if (e != 0) {
+            switch (cl.mode) {
+            case 0:
+            case 1:
+                if (!e->simple) {
+                    cl.state = 3;
+                    cl.step = 0;
+                    se_play(0x6213);
                 }
-            }
-            cl.timer = 0;
-            cl.state = 4;
-            se_play(0x6213);
-            break;
-        case 3:
-            cl.costume = 0;
-            cl.chosen = e->id;
-            cl.timer = 0;
-            cl.state = 4;
-            se_play(0x6213);
-            break;
-        case 0:
-        case 1:
-            if (!e->simple) {
-                cl.state = 3;
-                cl.step = 0;
+                break;
+            case 3:
+                cl.chosen = e->id;
+                cl.costume = 0;
+                cl.timer = 0;
+                cl.state = 4;
                 se_play(0x6213);
+                break;
+            case 2:
+                cl.chosen = e->id;
+                cl.costume = 0;
+                if (!e->simple) {
+                    int c, s;
+
+                    info = e->u.info;
+                    c = info->cur;
+                    if (c < info->n) {
+                        s = info->sel;
+                        if (!s)
+                            cl.costume = c;
+                        else
+                            cl.costume = s;
+                    }
+                }
+                cl.timer = 0;
+                cl.state = 4;
+                se_play(0x6213);
+                break;
             }
-            break;
+        } else {
+            se_play(0x6215);
         }
-        return;
-    }
-    if (trig & 0x100) {
+    } else if (trig & 0x100) {
         cl.tab = (cl.tab + 2) % 3;
         se_play(0x621B);
-        return;
-    }
-    if (trig & 0x8200) {
+    } else if (trig & 0x8200) {
         cl.tab = (cl.tab + 1) % 3;
         se_play(0x621B);
-        return;
-    }
-    cur = cl.cursor[cl.tab];
-    top = cl.top[cl.tab];
-    count = cl.count[cl.tab];
-    pos = top + cur;
-    e = pos < count ? &cl.list[cl.tab][pos] : 0;
-    if (pad->b.rep & 0x10) {
-        if (pos > 0) {
-            if (cur > 0)
-                cur--;
-            else if (top > 0)
-                top--;
-            se_play(0x6212);
-        } else if (trig & 0x10) {
-            if (count < 5) {
-                cur = count - 1;
-            } else {
-                cur = 3;
-                top = count - 4;
+    } else {
+        top = cl.top[cl.tab];
+        cur = cl.cursor[cl.tab];
+        count = cl.count[cl.tab];
+        pos = top + cur;
+        e = cl_entry(cl.tab, pos);
+        if (pad->b.rep & 0x10) {
+            if (pos > 0) {
+                if (cur > 0)
+                    cur--;
+                else if (top > 0)
+                    top--;
+                se_play(0x6212);
+            } else if (trig & 0x10) {
+                if (count < 5) {
+                    cur = count - 1;
+                } else {
+                    cur = 3;
+                    top = count - 4;
+                }
+                se_play(0x6212);
             }
-            se_play(0x6212);
+        } else if (pad->b.rep & 0x40) {
+            if (pos < count - 1) {
+                if (cur < 3)
+                    cur++;
+                else
+                    top++;
+                se_play(0x6212);
+            } else if (trig & 0x40) {
+                top = 0;
+                cur = 0;
+                se_play(0x6212);
+            }
+        } else if (pad->b.rep & 0x80) {
+            if (e && !e->simple && e->u.info->cur > 0) {
+                e->u.info->cur--;
+                se_play(0x6212);
+            }
+        } else if (pad->b.rep & 0x20) {
+            if (e && !e->simple && e->u.info->cur < e->u.info->n - 1) {
+                e->u.info->cur++;
+                se_play(0x6212);
+            }
         }
-    } else if (pad->b.rep & 0x40) {
-        if (pos < count - 1) {
-            if (cur < 3)
-                cur++;
-            else
-                top++;
-            se_play(0x6212);
-        } else if (trig & 0x40) {
-            top = 0;
-            cur = 0;
-            se_play(0x6212);
+        pos = top + cur;
+        if (pos >= 0 && pos < count) {
+            cl.top[cl.tab] = top;
+            cl.cursor[cl.tab] = cur;
         }
-    } else if (pad->b.rep & 0x80) {
-        if (e && !e->simple && e->u.info->cur > 0) {
-            e->u.info->cur--;
-            se_play(0x6212);
-        }
-    } else if (pad->b.rep & 0x20) {
-        if (e && !e->simple && e->u.info->cur < e->u.info->n - 1) {
-            e->u.info->cur++;
-            se_play(0x6212);
-        }
-    }
-    pos = top + cur;
-    if (pos >= 0 && pos < count) {
-        cl.top[cl.tab] = top;
-        cl.cursor[cl.tab] = cur;
     }
 }
 
@@ -379,11 +375,12 @@ void cl_detail_update(void)
     PadState *pad = pad_get();
     int vol;
     int lo;
+    int v;
     int d;
     ClInfo *info;
     ClBgm *b;
-    int set;
-    unsigned int voice;
+    short *se;
+    int voice;
 
     if (cl.bgm_wait && snd_seq_get_u16(cl.bgm))
         cl.bgm_wait = 0;
@@ -391,24 +388,29 @@ void cl_detail_update(void)
         vol = cl.volume;
         lo = vol / 3;
         cl.timer++;
-        if (cl.vol_fade == 2) {
-            if (cl.timer < 13) {
-                lo += cl.timer * (vol - lo) / 12;
-                if (lo <= vol)
-                    vol = lo;
-            } else {
+        switch (cl.vol_fade) {
+        case 1:
+            if (cl.timer > 12) {
+                v = lo;
                 cl.vol_fade = 0;
-            }
-            snd_set_volume(0, vol);
-        } else if (cl.vol_fade == 1) {
-            if (cl.timer < 13) {
-                vol -= cl.timer * (vol - lo) / 12;
-                if (lo <= vol)
-                    lo = vol;
             } else {
-                cl.vol_fade = 0;
+                v = vol - cl.timer * (vol - lo) / 12;
+                if (v < lo)
+                    v = lo;
             }
-            snd_set_volume(0, lo);
+            snd_set_volume(0, v);
+            break;
+        case 2:
+            if (cl.timer > 12) {
+                cl.vol_fade = 0;
+                v = vol;
+            } else {
+                v = lo + cl.timer * (vol - lo) / 12;
+                if (vol < v)
+                    v = vol;
+            }
+            snd_set_volume(0, v);
+            break;
         }
     }
     switch (cl.step) {
@@ -420,15 +422,15 @@ void cl_detail_update(void)
         cl.anim = 0;
         cl.slide = 0;
         cl_profile_measure(e);
-        info = e->u.info;
-        if (info->voice) {
+        if (e->u.info->voice) {
             if (snd_count_se())
                 return;
-            set = info->bgm[info->cur];
-            if (set == 0) {
+            info = e->u.info;
+            d = info->bgm[info->cur];
+            if (d == 0) {
                 info->voice = 0;
             } else {
-                b = &cl_bgm[set];
+                b = &cl_bgm[d];
                 if (cl.bgm != b->bgm) {
                     if (cl.bgm >= 0)
                         bgm_cmd3(cl.bgm);
@@ -438,6 +440,8 @@ void cl_detail_update(void)
                     cl_voices_build(e, 0);
                 }
             }
+            cl.step++;
+            return;
         }
         cl.step++;
         return;
@@ -450,83 +454,66 @@ void cl_detail_update(void)
     case 2:
         if (++cl.anim < 12)
             return;
-        cl.step = 3;
         cl.anim = 12;
+        cl.step++;
         return;
     case 3:
-        break;
-    case 4:
-        if (cl.anim != 0) {
-            cl.anim--;
-            return;
+        d = cl.fade;
+        if (d) {
+            if (d == 1) {
+                if (cl.alpha < 0x31) {
+                    cl_costume_anim();
+                    cl.alpha = 0x20;
+                    cl.fade = 2;
+                } else {
+                    cl.alpha -= 0x10;
+                }
+            } else if (d == 2) {
+                if (cl.alpha >= 0xEF) {
+                    cl.alpha = 0xFF;
+                    cl.fade = 0;
+                } else {
+                    cl.alpha += 0x10;
+                }
+            } else {
+                cl.fade = 0;
+            }
         }
-        cl.anim--;
-        snd_set_volume(0, cl.volume);
-        cl.state = 2;
-        cl.step = 0;
-        cl.timer = 0;
-        cl.anim = 0;
-        cl.slide = 0;
-        cl.vol_fade = 0;
-        return;
-    default:
-        return;
-    }
-    switch (cl.fade) {
-    case 0:
-        break;
-    case 1:
-        if (cl.alpha < 0x31) {
-            cl_costume_anim();
-            cl.alpha = 0x20;
-            cl.fade = 2;
+        if (pad->b.trig & region_pick_value(1)) {
+            cl.step++;
+            se_play(0x6214);
+            if (cl.volume != cfg_get_byte3_b(0)) {
+                cl.vol_fade = 2;
+                cl.timer = 0;
+            }
+        } else if (cl.fade == 0 && (pad->b.rep & 0x8000)) {
+            cl.fade = 1;
+            cl.alpha = 0xEF;
+            se_play(0x621B);
         } else {
-            cl.alpha -= 0x10;
+            d = 0;
+            if (pad->b.analog_y > 0x9E)
+                d += (pad->b.analog_y - 0x9E) * 4;
+            if (pad->b.analog_y < 0x62)
+                d += (pad->b.analog_y - 0x62) * 4;
+            if (pad->b.down & 0x10)
+                d -= 0x80;
+            if (pad->b.down & 0x40)
+                d += 0x80;
+            v = cl.scroll + d;
+            if (v <= 0)
+                cl.scroll = 0;
+            else if ((unsigned int)v >= (unsigned int)cl.scroll_max)
+                cl.scroll = cl.scroll_max;
+            else
+                cl.scroll = v;
         }
-        break;
-    case 2:
-        if (cl.alpha < 0xEF) {
-            cl.alpha += 0x10;
-        } else {
-            cl.alpha = 0xFF;
-            cl.fade = 0;
-        }
-        break;
-    default:
-        cl.fade = 0;
-        break;
-    }
-    if (pad->b.trig & region_pick_value(1)) {
-        cl.step++;
-        se_play(0x6214);
-        if (cl.volume != cfg_get_byte3_b(0)) {
-            cl.vol_fade = 2;
-            cl.timer = 0;
-        }
-    } else if (cl.fade == 0 && (pad->b.rep & 0x8000)) {
-        cl.fade = 1;
-        cl.alpha = 0xEF;
-        se_play(0x621B);
-    } else {
-        d = 0;
-        if (pad->b.analog_y > 0x9E)
-            d = (pad->b.analog_y - 0x9E) * 4;
-        if (pad->b.analog_y < 0x62)
-            d += (pad->b.analog_y - 0x62) * 4;
-        if (pad->b.down & 0x10)
-            d -= 0x80;
-        if (pad->b.down & 0x40)
-            d += 0x80;
-        cl.scroll += d;
-        if (cl.scroll <= 0)
-            cl.scroll = 0;
-        else if (cl.scroll >= cl.scroll_max)
-            cl.scroll = cl.scroll_max;
-    }
-    info = e->u.info;
-    if (info->voice) {
-        set = info->bgm[info->cur];
+        info = e->u.info;
+        if (!info->voice)
+            break;
+        d = info->bgm[info->cur];
         voice = cl.voice;
+        b = &cl_bgm[d];
         if (cl.se_wait && snd_count_se() == 0) {
             se_play(cl.se_next);
             cl.se_wait = 0;
@@ -535,10 +522,11 @@ void cl_detail_update(void)
             if (voice < cl.n_voices) {
                 snd_cmd_fef8();
                 cl.se_wait = 0;
-                se_play(cl_voice_se[cl.voices[voice]][0] + cl_bgm[set].se);
-                if (cl_voice_se[cl.voices[voice]][1] >= 0) {
-                    cl.se_next = cl_voice_se[cl.voices[voice]][1] + cl_bgm[set].se;
+                se = cl_voice_se[cl.voices[voice]];
+                se_play(se[0] + b->se);
+                if (se[1] >= 0) {
                     cl.se_wait = 1;
+                    cl.se_next = se[1] + b->se;
                 }
                 if (cl.volume == cfg_get_byte3_b(0)) {
                     cl.vol_fade = 1;
@@ -551,21 +539,33 @@ void cl_detail_update(void)
             else
                 voice -= 10;
         } else if (pad->b.rep & 0x200) {
-            if ((int)voice < cl.n_voices - 10)
-                voice += 10;
-            else
+            if (voice >= cl.n_voices - 10)
                 voice = cl.n_voices - 1;
+            else
+                voice += 10;
         } else if (pad->b.rep & 0x80) {
-            if (voice != 0)
+            if (voice > 0)
                 voice--;
         } else if (pad->b.rep & 0x20) {
-            if ((int)voice < cl.n_voices - 1)
+            if (voice < cl.n_voices - 1)
                 voice++;
         }
         if (cl.voice != voice) {
             cl.voice = voice;
             se_play(0x6212);
         }
+        break;
+    case 4:
+        if (cl.anim-- > 0)
+            return;
+        snd_set_volume(0, cl.volume);
+        cl.vol_fade = 0;
+        cl.timer = 0;
+        cl.anim = 0;
+        cl.slide = 0;
+        cl.step = 0;
+        cl.state = 2;
+        return;
     }
 }
 
@@ -577,79 +577,84 @@ unsigned short cl_entries_build(ClEntry *out, ClPair *src, unsigned short n)
     ClInfo *crowler = 0;
     unsigned short count = 0;
     int k;
-    ClPair *p = src;
+    ClPair *p;
     ClChara *c;
-    ClInfo *info;
-    unsigned int v;
-    int id;
     int i;
+    ClInfo *info;
+    unsigned short v;
+    unsigned short id;
     ClEntry *e;
 
-    for (k = 0; k < n; k++, p++) {
-        id = p->id;
-        c = cl_chara_find(id);
-        if (c == 0)
-            continue;
-        info = heap_alloc(cl.heap, 0x28);
-        memset(info, 0, 0x28);
-        v = c->u.f.n;
-        switch (cl.mode) {
-        case 2:
-            if (c->u.f.voice) {
-                if (v > 2)
-                    v = 2;
-            } else {
+    k = 0;
+    if (k < n) {
+        p = src;
+        do {
+            id = p->id;
+            c = cl_chara_find(id);
+            if (c == 0)
+                continue;
+            info = heap_alloc(cl.heap, 0x28);
+            memset(info, 0, 0x28);
+            v = c->u.f.n;
+            switch (cl.mode) {
+            case 0:
+            case 1:
+                if (region_get() == 0 && deck_slot_get_level(id) == 3)
+                    info->voice = 1;
+                break;
+            case 3:
                 v = 1;
+                break;
+            case 2:
+                if (!c->u.f.voice)
+                    v = 1;
+                else if (v > 2)
+                    v = 2;
+                break;
             }
-            break;
-        case 3:
-            v = 1;
-            break;
-        case 0:
-        case 1:
-            if (region_get() == 0 && deck_slot_get_level(id) == 3)
-                info->voice = 1;
-            break;
-        }
-        if (v != 0)
-            info->bustup[0] = c->bustup[0];
-        if (v > 1)
-            info->bustup[1] = c->bustup[1];
-        if (v > 2)
-            info->bustup[2] = c->bustup[2];
-        info->n = v;
-        for (i = 0; i < (int)v; i++) {
-            info->rank[i] = c->u.f.rank;
-            info->text[i] = table_get_entry(cl_res_get(CL_STRINGS), cl_profile_text[id][0]);
-            if (info->voice)
-                info->bgm[i] = cl_voice_set[id][i];
-        }
-        if (cl_profile_text[id][1] != 0)
-            info->text[1] = table_get_entry(cl_res_get(CL_STRINGS), cl_profile_text[id][1]);
-        info->face = c->face.face;
-        switch (id) {
-        case 0xE:
-            info->rank[1] = 6;
-            break;
-        case 0x10:
-            crowler = info;
-            break;
-        case 0x18:
-            zane = info;
-            break;
-        case 6:
-            alexis = info;
-            break;
-        }
-        e = &out[count];
-        e->id = id;
-        e->num = p->num;
-        count++;
-        e->simple = 0;
-        e->u.info = info;
+            if (v > 0)
+                info->bustup[0] = c->bustup[0];
+            if (v >= 2)
+                info->bustup[1] = c->bustup[1];
+            if (v >= 3)
+                info->bustup[2] = c->bustup[2];
+            info->n = v;
+            for (i = 0; i < v; i++) {
+                info->rank[i] = c->u.f.rank;
+                info->text[i] = table_get_entry(cl_res_get(CL_STRINGS), cl_profile_text[id][0]);
+                if (info->voice)
+                    info->bgm[i] = cl_voice_set[id][i];
+            }
+            if (cl_profile_text[id][1] != 0)
+                info->text[1] = table_get_entry(cl_res_get(CL_STRINGS), cl_profile_text[id][1]);
+            info->face = c->face.face;
+            switch (id) {
+            case 6:
+                alexis = info;
+                break;
+            case 0x18:
+                zane = info;
+                break;
+            case 0x10:
+                crowler = info;
+                break;
+            case 0xE:
+                info->rank[1] = 6;
+                break;
+            }
+            e = &out[count];
+            e->id = id;
+            e->num = p->num;
+            e->simple = 0;
+            count++;
+            e->u.info = info;
+        } while (p++, ++k < n);
     }
     if (alexis) {
-        if (sysflag_test(4) == 0) {
+        if (sysflag_test(4) != 0) {
+            if (alexis->n >= 2)
+                alexis->rank[1] = 3;
+        } else {
             alexis->bustup[0] = cl_chara_find(6)->bustup[1];
             alexis->rank[0] = 3;
             alexis->text[0] = alexis->text[1];
@@ -657,13 +662,11 @@ unsigned short cl_entries_build(ClEntry *out, ClPair *src, unsigned short n)
                 alexis->bgm[0] = alexis->bgm[1];
             alexis->face++;
             alexis->sel = 1;
-            if (alexis->n > 1) {
+            if (alexis->n >= 2) {
                 alexis->bustup[1] = 0;
                 alexis->text[1] = 0;
             }
             alexis->n = 1;
-        } else if (alexis->n > 1) {
-            alexis->rank[1] = 3;
         }
     }
     if (zane && sysflag_test(5) == 0) {
@@ -673,31 +676,31 @@ unsigned short cl_entries_build(ClEntry *out, ClPair *src, unsigned short n)
             zane->bgm[0] = zane->bgm[1];
         zane->face++;
         zane->sel = 1;
-        if (zane->n > 1) {
+        if (zane->n >= 2) {
             zane->bustup[1] = 0;
             zane->text[1] = 0;
         }
         zane->n = 1;
     }
     if (crowler) {
-        if (sysflag_test(6) == 0) {
+        if (sysflag_test(6) != 0) {
+            if (crowler->n >= 2)
+                crowler->rank[1] = 6;
+        } else {
             crowler->bustup[0] = cl_chara_find(0x10)->bustup[1];
             crowler->rank[0] = 6;
             crowler->text[0] = crowler->text[1];
             crowler->face++;
             crowler->sel = 1;
-            if (crowler->n > 1) {
+            if (crowler->n >= 2) {
                 crowler->bustup[1] = 0;
                 crowler->text[1] = 0;
             }
             crowler->n = 1;
-        } else if (crowler->n > 1) {
-            crowler->rank[1] = 6;
         }
     }
     return count;
 }
-#endif
 
 /* tab 2: the deck-only duelists (rank and card picture) */
 unsigned short cl_entries_simple(ClEntry *out, ClPair *src, unsigned short n)
@@ -819,8 +822,6 @@ void cl_profile_measure(ClEntry *e)
     cl.scroll = 0;
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 133 palavras: o original guarda k e o ponteiro da tabela
-                       na pilha e n em s8; switch do id na ordem do original */
 /* voice test list: the voice-test entries whose sound differs in this duelist's voice table */
 void cl_voices_build(ClEntry *e, int alt)
 {
@@ -831,12 +832,11 @@ void cl_voices_build(ClEntry *e, int alt)
     int k;
     short *v;
     int i;
-    short a, b, c, d;
-    unsigned short la;
+    int a, b, c, d;
 
+    id = e->id;
     if (e->simple)
         return;
-    id = e->id;
     var = e->u.info->cur;
     switch (id) {
     case 0x12:
@@ -862,7 +862,7 @@ void cl_voices_build(ClEntry *e, int alt)
     if (tbl == 0)
         return;
     n = 0;
-    for (k = 0, v = cl_voice_se[0]; k < 0x7C; k++, v += 2) {
+    for (k = 0, v = cl_voice_se[0]; k < 0x7C; v += 2, k++) {
         a = v[0];
         b = v[1];
         if (partner_table_lookup(1, 0, a, tbl) == partner_table_lookup(1, 0, b, tbl))
@@ -886,7 +886,6 @@ void cl_voices_build(ClEntry *e, int alt)
     cl.voice = 0;
 }
 
-#endif
 
 /* portrait of a deck-only duelist: a generic head for the special ids, else head + body from the
    charmap */

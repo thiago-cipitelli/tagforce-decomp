@@ -105,13 +105,12 @@ int font_set_layer(char layer)
     return old;
 }
 
-/* Draws tag-free UCS-2 text at (x, y) in 26.6, wrapping at xmax back to x0; returns x << 16 | y.
-   c is int (font_glyph_cache gets it unmasked); the tests compare its low 16 bits. */
+/* Draws tag-free UCS-2 text at (x, y) in 26.6, wrapping at xmax back to x0; returns x << 16 | y. */
 unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned short *text)
 {
     FontCtx *f = font_ctx_ptr;
     SceFontGlyphImage img;
-    int c;
+    unsigned short c;
     int began = 0;
     unsigned int slot;
     int adv;
@@ -122,7 +121,7 @@ unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned sho
     img.bytes_per_line = 16;
     img.pad = 0;
     while ((c = *text++) != 0) {
-        if ((unsigned short)c >= 0x20) {
+        if (c >= 0x20) {
             slot = font_glyph_cache(&img, c);
             if (!began) {
                 began = 1;
@@ -136,7 +135,7 @@ unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned sho
             font_glyph_quad(x, y, slot);
             x += adv;
         } else {
-            switch ((unsigned short)c) {
+            switch (c) {
             case '\n':
                 y += f->line_h * f->size_y / 20;
                 x = x0;
@@ -357,7 +356,7 @@ int font_line_height(void)
    when absent; keeps the sorted index and the LRU list up to date. */
 /* Fica em asm (60 palavras): forma igual, mas o original dá f a s1 e font a s5 (aqui trocados) e
    mascara code mais tarde; nenhuma ordem de declaração muda isso. */
-unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
+unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned short code)
 {
     FontCtx *f = font_ctx_ptr;
     int i = font_glyph_find(code);
@@ -395,7 +394,7 @@ unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code)
         f->slots[slot].code = code;
         f->index[pos].code = code;
         f->index[pos].slot = slot;
-        if ((unsigned short)code < 0x2300 && font_half_width[(unsigned short)code] != 0)
+        if (code < 0x2300 && font_half_width[code] != 0)
             font = f->font2;
         sceFontGetCharInfo(font, code, &ci);
         f->slots[slot].advance = ci.advance_h;

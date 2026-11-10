@@ -160,7 +160,7 @@ unsigned int font_set_color(unsigned int c);
 unsigned int font_get_color(void);
 int font_measure_text(unsigned short *text);
 int font_line_height(void);
-unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned int code);
+unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned short code);
 int wc_break_class(unsigned short c);
 int wc_no_line_start(unsigned short c);
 int wc_no_line_end(unsigned short c);

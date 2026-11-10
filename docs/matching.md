@@ -1647,3 +1647,26 @@ Bateram `story_date_in_range`, `stext_names` (libstory), `fld_bg_loaded` (libfie
   com `return` por `case` não liga), `ll_draw_row` (1 instrução: o ramo de magia re-mascara `x` com `andi` de `s1`),
   `dd_fx_flipup_update` (6: `f0/f1` de `hh`/`-hw`), `dd_fcam_from_tms` (89, indução de `k`), família
   `*_draw_headers` (alocação; sombrear variáveis do 2º painel não muda nada).
+## Rodada 20 (bootN): libcharalist inteiro, telas de menu reescritas do asm
+
+- **Tela inteira num `case` do `switch` de etapas**: quando o bloco do `case 4` aparece no fim da função, depois da
+  lógica principal, o corpo principal está dentro do `case 3:` (com `break` no lugar dos `return`) e o `case 4` vem
+  depois dele no fonte (`cl_detail_update`, 534 -> 0).
+- **Cadeia `if / else if` sem `return` até o epílogo comum**: `b epílogo` com o delay ocupado (e não `b` para o
+  `lw ra`) indica que cada ramo cai no fim da função; os `return` intermediários viram `else if` (`cl_input`).
+- **Desvio para o fim do laço sem `likely`**: `case 'F': case 'f': q++; break;` juntos reproduzem o `beq` + bloco
+  separado do F e, de quebra, o `beqz ...; nop` do resto do laço (`font_word_width` 199 -> 25); em
+  `font_run_width` o `else break;` final (em vez de `else return w;`) fez o mesmo.
+- **`lh` + `andi` em cada passagem**: o local é `int` recebendo um `short` (o `short` faz o mwcc carregar com `lhu`
+  e não mascarar), `cl_voices_build` 133 -> 0. O valor de retorno comparado sem `andi`: protótipo local `int f();`
+  em vez de `unsigned char f(int)` (`cfg_get_byte3_b`).
+- **Parâmetro `unsigned short` deduzido dos chamadores**: todos os chamadores passam o `u16` sem `andi` e a definição
+  mascara só no uso: o protótipo é `unsigned short` (`font_glyph_cache`; o `c` de `font_draw_wtext_simple`, que era
+  `int` só para fugir da máscara, voltou a `unsigned short`).
+- **Inicialização de ponteiro depois do teste do laço** (`blez n; sw zero,k` e só então `sw a1,p`): `k = 0; if (k <
+  n) { p = src; do { ... } while (p++, ++k < n); }` (`cl_entries_build`). `continue` dentro do `do` cai na condição.
+- **Ordem de stores de campos de bitfield**: permutar as 4-5 atribuições do registro (120 variantes, segundos) achou
+  `id, num, simple, count++, info` (`cl_entries_build`).
+- **Diff estrutural**: comparar o desassembly com operandos relocados, deslocamentos de globais e alvos mascarados
+  (`sed` sobre `full_orig.txt`/`full_new.txt`) mostra só as diferenças de forma; a contagem do `asm_try` é inútil
+  enquanto o tamanho difere.

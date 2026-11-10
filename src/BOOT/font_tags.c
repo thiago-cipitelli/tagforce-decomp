@@ -1,6 +1,6 @@
 // @range 0x0884900C-0x0884A9B4
 // @data 0x088EE9E0-0x088EEA58
-// @asm 0x088490EC-0x08849778
+// @asm 0x088490EC-0x08849428
 // @asm 0x08849F44-0x0884A430
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
    capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph
@@ -14,7 +14,7 @@ extern char font_rubi_gim_name[16];
 
 int wcschr_index(const unsigned short *s, unsigned short c);
 unsigned short *wcsncpy(unsigned short *d, const unsigned short *s, unsigned int n);
-unsigned short towupper(unsigned short c);
+unsigned short towupper(int c);
 int wc_is_upper(unsigned short c);
 int wc_is_lower(unsigned short c);
 int cfg_get_language(void);
@@ -71,98 +71,106 @@ done:
     return c;
 }
 
-#ifdef NON_MATCHING /* font_word_width (199 palavras) e font_run_width (103): com o caso de maiúscula num inline (font_fold_case, ramo de wc_is_upper != 0 primeiro, resultado por ponteiro) a forma bate; falta a cópia mascarada de c/t (s7/s8) que o original passa às duas chamadas: com ch int o mwcc junta a máscara com a do teste do topo, com ch unsigned short some a cópia */
+#ifdef NON_MATCHING /* 25 palavras, só registradores: o original dá w a s0 e c a s2 (aqui trocados); nenhuma ordem de declaração, tipo ou ordem de atribuição muda isso. O `case 'F': case 'f':` juntos reproduzem o beq sem likely do F e o beqz sem likely do in_word */
 /* Width in 26.6 of the word starting at p (up to the next breakable character), including the
    ruby padding, so that a word is not split across lines. */
 int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned short *p, int wrap)
 {
     unsigned short pad = 0;
-    unsigned short rpad, rw, rtotal, rlast;
-    int in_ruby = (st->flags & 2) != 0;
-    int in_word = 0;
-    int w = 0;
-    unsigned short c, t;
+    unsigned short rtotal, rpad, rw;
+    int in_word;
     unsigned short *q, *next;
+    int w;
+    int in_ruby;
+    unsigned short c;
     int slot;
 
-    if (in_ruby)
-        pad = st->ruby_pad;
-    c = *p;
     q = p;
-    for (;;) {
-        if (c == 0)
-            return w;
-        next = q + 1;
-        if (c < 0x20)
-            return w;
-        if (c == '$') {
-            t = *next;
-            if (t == 'R') {
-                q += 2;
-                if (f->flags & 0x8000) {
-                    next = font_ruby_measure(f, q, &pad, &rpad, &rw, &rtotal);
-                    if (wrap == 0) {
-                        in_word = 0;
-                        w += rw;
-                        c = rtotal;
-                        goto glyph;
+    in_ruby = 0;
+    in_word = 0;
+    w = 0;
+    if (st->flags & 2) {
+        pad = st->ruby_pad;
+        in_ruby = 1;
+    }
+    while ((c = *q++) != 0) {
+        if (c >= 0x20) {
+            if (c == '$') {
+                switch (*q) {
+                case 'C':
+                    q += 2;
+                    break;
+                case 'F':
+                case 'f':
+                    q++;
+                    break;
+                case 'R':
+                    q++;
+                    if (f->flags & 0x8000) {
+                        next = font_ruby_measure(f, q, &pad, &rpad, &rw, &rtotal);
+                        if (wrap != 0) {
+                            w += (unsigned int)pad >> 1;
+                        } else {
+                            q = next;
+                            c = rtotal;
+                            in_word = 0;
+                            w += rw;
+                            goto glyph;
+                        }
                     }
-                    w += pad >> 1;
-                }
-                in_ruby = 1;
-            } else if (t == 'f') {
-                q += 2;
-            } else if (t == 'F') {
-                q += 2;
-            } else {
-                if (t != 'C')
+                    in_ruby = 1;
+                    break;
+                default:
                     goto glyph;
-                q += 3;
-            }
-        } else {
-        glyph:
-            if (in_ruby && c == '(') {
-                slot = wcschr_index(next, ')');
-                if (slot < 0)
-                    q = next + 1;
-                else
-                    q = next + slot + 1;
-                pad = 0;
-                in_ruby = 0;
+                }
             } else {
-                q = next;
-                if (in_word) {
+            glyph:
+                if (in_ruby && c == '(') {
+                    slot = wcschr_index(q, ')');
+                    if (slot >= 0)
+                        q += slot + 1;
+                    else
+                        q++;
+                    pad = 0;
+                    in_ruby = 0;
+                } else if (in_word) {
                     slot = font_glyph_cache(img, c);
-                    w += f->slots[slot].advance * st->cur_size_x / 20 + pad;
+                    w += f->slots[slot].advance * st->cur_size_x / 20;
+                    w += pad;
                     if (wc_no_line_end(c) != 0) {
                         in_word = 0;
                         goto tail;
                     }
                 } else if (wc_no_line_end(c) == 0) {
                     slot = font_glyph_cache(img, c);
-                    if (p != next - 1)
+                    if (p != q - 1)
                         w += f->slots[slot].advance * st->cur_size_x / 20;
                     in_word = 1;
                     w += pad;
                 } else {
                 tail:
-                    t = wtext_next_char(f, next, in_ruby);
+                    c = wtext_next_char(f, q, in_ruby);
                     if (!(st->flags & 8))
-                        return w;
-                    if (wc_no_line_start(t) != 0)
-                        return w;
-                    slot = font_glyph_cache(img, t);
-                    w += f->slots[slot].advance * st->cur_size_x / 20 + pad;
+                        break;
+                    if (wc_no_line_start(c) != 0)
+                        break;
+                    slot = font_glyph_cache(img, c);
+                    w += f->slots[slot].advance * st->cur_size_x / 20;
+                    w += pad;
                 }
             }
+        } else {
+            break;
         }
-        c = *q;
     }
+    return w;
 }
+
+#endif
 
 static inline void font_fold_case(FontLayout *st, unsigned short *c, unsigned short *flags, unsigned char *sx)
 {
-    int ch = *c;
+    unsigned int ch = *c;
 
     if (wc_is_upper(ch) != 0) {
         if (*flags & 0x10) {
@@ -214,7 +222,7 @@ int font_run_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned 
                 font_fold_case(st, &c, &flags, &sx);
             cls = wc_break_class(c);
             if (cls == 0)
-                return w;
+                break;
             if (cls == 1) {
                 t = wtext_next_char(f, p, 0);
                 if ((f->flags & 0x4000) || upper != 0)
@@ -222,19 +230,18 @@ int font_run_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned 
                 if (wc_break_class(t) <= 0) {
                     slot = font_glyph_cache(img, c);
                     w += f->slots[slot].advance * sx / 20;
-                    return w;
+                    break;
                 }
             }
             slot = font_glyph_cache(img, c);
             w += f->slots[slot].advance * sx / 20;
         } else {
-            return w;
+            break;
         }
     }
     return w;
 }
 
-#endif
 /* Handles the character after '$'; fills *cmd for size/color changes. Returns the next position. */
 unsigned short *font_parse_tag(FontCtx *f, FontLayout *st, FontCmd *cmd, unsigned short *p)
 {
