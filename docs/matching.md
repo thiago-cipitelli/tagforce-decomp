@@ -1596,3 +1596,41 @@ Batendo: `dd_fx_throb_update`, `dd_fx_blink_update`, `dd_fx_counter_update`, `dd
   original deixa `x` em `s8` e derrama `p`; ordem de declarações e `register` não mudam), `duel_0883F3A0` (231),
   `duel_08842D98` (328: o original não reduz `z << 16` a indução e duplica o `z++`), `duel_08838A84`,
   `duel_eff_f8b34`, `duel_088BD4E0`, `dd_counter_draw` não mexidos ou sem ganho.
+## Rodada 20 (`uiN`: menus, libstory, libfield, funções pouco tentadas)
+
+Bateram `story_date_in_range`, `stext_names` (libstory), `fld_bg_loaded` (libfield), `tfd_icon_draw` (libtitle),
+`recipe_viewer_draw` (librecipe_viewer). Idiomas novos:
+- **Ordem dos operandos do `addu` com produto**: `m * 100 + d` sai `addu r,d,prod`; o original (`addu r,prod,d`) é
+  `m *= 100; m += d;` (`story_date_in_range`); `id = a * 100 + b * 10; id += c;` idem (`stext_names`).
+- **`andi 0xFFFF` redundante depois de `lhu`**: `(e[0] & 0xFFFF)` na comparação (`stext_names`).
+- **Indução `2*i` sem a base da pilha, com o deslocamento no `lhu`** (`addu v0,s7,sp; lhu 590(v0)`):
+  `*(unsigned short *)((char *)buf + (unsigned int)(i * 2) + 14)`; com `buf[i + 7]` o mwcc reaproveita o ponteiro do
+  laço e com `(i * 2 + 14)` põe o 14 na indução.
+- **Ordem de inicialização de ponteiro e contador de laço**: `for (j = 0;; j++) { e = &tab[j * 3]; ... }` em vez de
+  `for (j = 0, e = tab;; j++, e += 3)` (o `move` do contador vem antes do do ponteiro, registradores certos).
+- **Contador de bloco por laço** (`fld_bg_loaded` 30 -> 0): `{ int m; int x; for (m ...) { for (x ...) } }` e
+  `{ int n; for (n ...) }` quando a busca gulosa da ordem das declarações não muda nada (os `$s` dos contadores de
+  laços diferentes ficam trocados). Sombrear uma variável num bloco sem mudar o contador não muda nada (o mwcc já
+  separa as teias).
+- **Ponteiro de bloco no laço de busca** (`FieldBgAnim *q = &tmas[x];` no corpo) dá a indução no pré-cabeçalho
+  depois da guarda; **apêndice indexado** `tmas[ntma].data = d; ntma++;` em vez de ponteiro andante (`pa++`) acerta
+  os slots de derrame (139 -> 30).
+- **Slots de derrame na ordem das declarações** das variáveis derramadas (`tfd_icon_draw`: b, sx, sy, v de 76 a 64);
+  a busca gulosa (um movimento por vez) não acha quando são preciso dois: permutar só as derramadas.
+- **Valor calculado antes da chamada**: `v += row * 0x11;` antes de `draw_set_offsets` (o original soma antes de
+  montar os argumentos); `row = 1;` antes de `u += 0x88;` decide o que vai no delay slot do `b`.
+- **Gatilho das cópias mortas por `case 0: ...; return;`** (`recipe_viewer_draw` 283 -> 0): o ramo final
+  `if (state == 0) {...} else {...}` reescrito como `switch (state) { case 0: ...; return; } {...}` (o `switch case 7:
+  return;` do início sozinho não ligou o modo nessa função). Para achar: no original, o teste que pula um `b`
+  (`beqz then; sw; b else; <cópia>`).
+- **Matrizes locais com `__attribute__((aligned(16)))`** quando o original as põe logo acima de um `FxVec4` e deixa
+  12 bytes livres no topo (`dd_fx_flipup_update`); constantes de bloco (`hw = 54.0f; hh = 77.0f;`) atribuídas depois
+  da cópia do modelo ficam em `f20/f21` como no original.
+- Ferramentas de busca (não versionadas, `build/tmp/uiN/` na worktree `uiN`): `vary.py` (produto cartesiano de
+  trechos alternativos da função num só TU) e `perm2.py` (`perm_decls.py` com `NOBR=1`: compara por difflib e ignora
+  deslocamentos de desvio, útil quando o tamanho muda).
+- Não bateram: `st_fld_setup_items` (precisa do modo das cópias mortas: `case 14/26/27` com o teste que pula `b`,
+  corpos iguais mantidos, `b; nop` no `case 5`; nenhuma posição plausível de `return;` achada, helper `static inline`
+  com `return` por `case` não liga), `ll_draw_row` (1 instrução: o ramo de magia re-mascara `x` com `andi` de `s1`),
+  `dd_fx_flipup_update` (6: `f0/f1` de `hh`/`-hw`), `dd_fcam_from_tms` (89, indução de `k`), família
+  `*_draw_headers` (alocação; sombrear variáveis do 2º painel não muda nada).
