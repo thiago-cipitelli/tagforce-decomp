@@ -1,5 +1,4 @@
 // @range 0x0886CB44-0x0886F23C
-// @asm 0x0886DE70-0x0886E074
 // @asm 0x0886E590-0x0886E784
 /* Activation conditions of cards (DuelAct *a): enough cards to pay or tribute, free zones, phase and
    turn, cards in the piles. */
@@ -540,7 +539,7 @@ int duel_0886DE0C(DuelAct *a)
     return duel.players[a->player & 1].n_hand != 0;
 }
 
-#ifdef NON_MATCHING /* 17 palavras (eram 107): resto de n == 1 dentro do if e os três testes do fim num só || batem; falta só o laço: o original materializa x = &srcs[i] em $a1 (addiu a1,t0,1528; lbu 1(a1)) e reaproveita o byte de s_b16 para s_zone2, e numera as induções t2/t1/t0 (aqui t1/t0/a3); x usado uma vez é dobrado no deslocamento */
+/* x = &srcs[i] declarado no bloco do teste de kinds e usado nos três campos: o mwcc o materializa em $a1 */
 /* The only chain link that brings a monster back from the graveyard is this one, and its monster can
    come back. */
 int duel_0886DE70(DuelAct *a)
@@ -561,10 +560,10 @@ int duel_0886DE70(DuelAct *a)
         return 0;
     }
     for (i = 0; i < duel_chain.n_kinds; i++) {
-        if (duel_chain.kinds[i] == 0x16 && duel_chain.srcs[i].s_b16) {
+        if (duel_chain.kinds[i] == 0x16) {
             struct DuelActX *x = &duel_chain.srcs[i];
 
-            if (((struct DuelActY *)x)->y15_7 && duel_chain.srcs[i].s_zone2 == 0xE) {
+            if (x->s_b16 && ((struct DuelActY *)x)->y15_7 && x->s_zone2 == 0xE) {
                 n++;
             }
         }
@@ -591,7 +590,6 @@ int duel_0886DE70(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0886E074(DuelAct *a)
 {

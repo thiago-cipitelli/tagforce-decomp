@@ -1,5 +1,4 @@
 // @range 0x08864DF0-0x08865F2C
-// @asm 0x08865838-0x08865A48
 // @asm 0x08865C10-0x08865E14
 /* Card effect handlers (descriptor callbacks of the card effect tables). */
 #include "duel.h"
@@ -335,7 +334,7 @@ int duel_088657D8(DuelAct *a, int b)
     return r;
 }
 
-#ifdef NON_MATCHING /* 85 palavras (eram 132, quase todas deslocamento: 1 instrução a menos): o original calcula x = &srcs[i] em $s0 logo depois do teste do jogador e lê o uid sempre por 0(s0); aqui o 1º uso é dobrado em 1528(s1) e x só é criado antes do jal (mesmo bloqueio de duel_0886DE70) */
+/* x = &srcs[i] no bloco do teste de kinds e usado também no teste do jogador: o mwcc o guarda em $s0 */
 int duel_08865838(DuelAct *a, int b)
 {
     unsigned int i;
@@ -347,10 +346,10 @@ int duel_08865838(DuelAct *a, int b)
             return -1;
         }
         for (i = 0; i < duel_chain.n_kinds; i++) {
-            if (duel_chain.kinds[i] == 0x19 && duel_chain.srcs[i].s_player == a->player) {
+            if (duel_chain.kinds[i] == 0x19) {
                 struct DuelActX *x = &duel_chain.srcs[i];
 
-                if (card_get_attribute_icon(duel.list[x->s_uid].id) == 0 && duel_hand_find_uid(a->player, x->s_uid) >= 0) {
+                if (x->s_player == a->player && card_get_attribute_icon(duel.list[x->s_uid].id) == 0 && duel_hand_find_uid(a->player, x->s_uid) >= 0) {
                     a->w[0] = x->s_uid;
                     duel_w_08914904++;
                     return 0;
@@ -376,7 +375,6 @@ int duel_08865838(DuelAct *a, int b)
     }
     return 1;
 }
-#endif
 
 int duel_08865A48(DuelAct *a)
 {
