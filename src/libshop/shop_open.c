@@ -194,7 +194,7 @@ int shop_result_input(void)
 
 #endif
 
-#ifdef NON_MATCHING /* 6 palavras: k e o deslocamento k * 96 do 2º laço com $s2/$s3 trocados (tipo, posição e bloco de k não mudam). O original usa a mesma variável como contador do 1º laço e como x dos nomes; cadeia de if no estado, w + 0x40 da dica num só valor */
+#ifdef NON_MATCHING /* 3 palavras: o k = 0 do 2º laço sai antes da guarda blez (no original, no atraso dela); o deslocamento off explícito acertou os $s de k/off. O original usa a mesma variável como contador do 1º laço e como x dos nomes; cadeia de if no estado, w + 0x40 da dica num só valor */
 /* the 3D pack and cards, the names of the cards shown and the "skip" hint */
 void shop_draw_open(void)
 {
@@ -203,6 +203,7 @@ void shop_draw_open(void)
     int x;
     int w;
     unsigned int color;
+    int off;
     int k;
     unsigned short *hint;
 
@@ -221,8 +222,8 @@ void shop_draw_open(void)
     list = shop_dl_2d(list);
     font_text_set(list);
     font_set_flag4(0);
-    for (k = 0; k < shop_open->n_cards; k++) {
-        ShopOpenCard *c = &shop_open->cards[k];
+    for (k = 0, off = 0; k < shop_open->n_cards; k++, off += sizeof(ShopOpenCard)) {
+        ShopOpenCard *c = ((ShopOpen *)((char *)shop_open + off))->cards;
         name = card_get_name(c->id);
         font_set_size(18, 18);
         if (c->state == 3) {
