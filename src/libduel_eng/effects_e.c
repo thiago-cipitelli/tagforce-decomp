@@ -1,5 +1,4 @@
 // @range 0x088F9C00-0x088FA288
-// @asm 0x088FA080-0x088FA288
 /* Card effect handlers (continued). */
 #include "duel.h"
 #include "card_db.h"
@@ -141,7 +140,6 @@ int duel_eff_f9ed0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* branch layout of the 0x80 step */
 int duel_eff_fa080(DuelAct *a)
 {
     switch (duel_step) {
@@ -151,19 +149,18 @@ int duel_eff_fa080(DuelAct *a)
             unsigned int q = t & 0xFF;
             unsigned int z = (unsigned char)((t & 0xFFFF) >> 8);
 
-            if (duel_0884E440(a, q, z) == 0) {
-                return 0;
-            }
-            a->w[1] = field_get_card(q, z);
-            if (duel_088BFF78(a->player, a->id, duel_088AA224(a)) == 0) {
-                if (card_attribute_icon_is3(a->w[1]) == 0) {
+            if (duel_0884E440(a, q, z) != 0) {
+                a->w[1] = field_get_card(q, z);
+                if (duel_088BFF78(a->player, a->id, duel_088AA224(a)) == 0) {
+                    if (card_attribute_icon_is3(a->w[1]) != 0) {
+                        return 0;
+                    }
                     duel_0884ACD8(a->player, 0xD);
                     return 0x78;
                 }
-                return 0;
+                duel_0884ACD8(a->player, 0x3A);
+                return 0x7E;
             }
-            duel_0884ACD8(a->player, 0x3A);
-            return 0x7E;
         }
         return 0;
     case 0x7E:
@@ -185,4 +182,3 @@ int duel_eff_fa080(DuelAct *a)
     }
     return 0;
 }
-#endif
