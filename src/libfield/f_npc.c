@@ -1,6 +1,5 @@
 // @range 0x08809C40-0x0880AC74
 // @asm 0x0880A2FC-0x0880A58C
-// @asm 0x0880AA4C-0x0880AB48
 /* NPCs of the room (32 walking on paths) and the extra characters (80): reset, drawing, the ones
    near the player, the NPC in front of the player, the commands that place them, turn them to the
    player while talking and wait for their files. */
@@ -499,7 +498,6 @@ FieldNpc *fld_npc_find(int id)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o caso dot <= *best tem bloco próprio depois do "b" no original */
 /* 1 if pos is in front of p (nearer along its direction than *best) */
 int fld_npc_facing(float *best, Vec3 *pos, FieldNpc *p, FieldNpc *n)
 {
@@ -509,30 +507,24 @@ int fld_npc_facing(float *best, Vec3 *pos, FieldNpc *p, FieldNpc *n)
     Vec3 t;
     float l;
     float dot;
-    int res;
 
     if (n->m.c.id == 0x3A)
         r = 1.5f;
     vec3_sub(&d, pos, &p->m.c.pos);
     l = fld_vec3_len(&d);
-    if (fabsf_vfpu(d.y) >= 1.0f) {
-        res = 0;
-    } else if (l <= r) {
+    if (fabsf_vfpu(d.y) >= 1.0f)
+        return 0;
+    if (l <= r) {
         fld_dir_vec(&t, p->m.c.dir);
-        f = t;
+        f = *(Vec3 *)&t;
         dot = vec3_dot(&f, &d);
         if (dot > *best) {
             *best = dot;
-            res = 1;
-        } else {
-            res = 0;
+            return 1;
         }
-    } else {
-        res = 0;
     }
-    return res;
+    return 0;
 }
-#endif
 
 void fld_npc_loaded_a(int *file, FieldNpc *n)
 {

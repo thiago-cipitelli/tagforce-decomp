@@ -50,7 +50,6 @@ fuzzy	size	module	function	address	file
 91.8	1500	libduel_draw	dd_cobjs_rebuild	0x0880BEB0	src/libduel_draw/dd_slot.c
 91.8	1084	libduel_draw	dd_fx_aura_halo	0x0884AE24	src/libduel_draw/dd_fx_aura.c
 91.8	792	libtitle	tpt_sprite	0x088216FC	src/libtitle/t_partner.c
-91.7	252	libfield	fld_npc_facing	0x0880AA4C	src/libfield/f_npc.c
 91.7	408	libfield	fbag_item1_draw	0x0881E83C	src/libfield/f_bag.c
 91.6	1000	libduel_draw	dd_lp_show	0x08855E90	src/libduel_draw/dd_lp_panel.c
 91.5	1620	libselect_card	sc_draw_headers	0x08808040	src/libselect_card/sc_panes.c
