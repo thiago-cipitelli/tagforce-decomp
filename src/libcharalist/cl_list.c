@@ -1,5 +1,4 @@
 // @range 0x08807F68-0x0880A34C
-// @asm 0x08808844-0x0880919C
 // @data 0x0880E138-0x0880EA74
 /* The three tabs (the met duelists, the other ones, the deck-only ones), input of the list and of
    the detail page (costumes, profile scroll, voice test with its theme), the character table and the
@@ -38,7 +37,7 @@ int snd_seq_get_u16();
 int snd_count_se();
 void snd_cmd_fef8(void);
 void snd_set_volume(int ch, int vol);
-unsigned char cfg_get_byte3_b(int i);
+int cfg_get_byte3_b();
 unsigned short partner_table_lookup(int flag, unsigned short mode, unsigned short idx, unsigned short *table);
 int font_wtext_lines(int w, unsigned short *text);
 unsigned short font_get_flags(void);
@@ -369,7 +368,6 @@ void cl_input(void)
     }
 }
 
-#ifdef NON_MATCHING /* não testado para matching; forma igual à do original (pseudocódigo + asm) */
 /* detail page: slide in, theme of the duelist, costume change, profile scroll, voice test */
 void cl_detail_update(void)
 {
@@ -377,11 +375,12 @@ void cl_detail_update(void)
     PadState *pad = pad_get();
     int vol;
     int lo;
+    int v;
     int d;
     ClInfo *info;
     ClBgm *b;
-    int set;
-    unsigned int voice;
+    short *se;
+    int voice;
 
     if (cl.bgm_wait && snd_seq_get_u16(cl.bgm))
         cl.bgm_wait = 0;
@@ -389,24 +388,29 @@ void cl_detail_update(void)
         vol = cl.volume;
         lo = vol / 3;
         cl.timer++;
-        if (cl.vol_fade == 2) {
-            if (cl.timer < 13) {
-                lo += cl.timer * (vol - lo) / 12;
-                if (lo <= vol)
-                    vol = lo;
-            } else {
+        switch (cl.vol_fade) {
+        case 1:
+            if (cl.timer > 12) {
+                v = lo;
                 cl.vol_fade = 0;
-            }
-            snd_set_volume(0, vol);
-        } else if (cl.vol_fade == 1) {
-            if (cl.timer < 13) {
-                vol -= cl.timer * (vol - lo) / 12;
-                if (lo <= vol)
-                    lo = vol;
             } else {
-                cl.vol_fade = 0;
+                v = vol - cl.timer * (vol - lo) / 12;
+                if (v < lo)
+                    v = lo;
             }
-            snd_set_volume(0, lo);
+            snd_set_volume(0, v);
+            break;
+        case 2:
+            if (cl.timer > 12) {
+                cl.vol_fade = 0;
+                v = vol;
+            } else {
+                v = lo + cl.timer * (vol - lo) / 12;
+                if (vol < v)
+                    v = vol;
+            }
+            snd_set_volume(0, v);
+            break;
         }
     }
     switch (cl.step) {
@@ -418,15 +422,15 @@ void cl_detail_update(void)
         cl.anim = 0;
         cl.slide = 0;
         cl_profile_measure(e);
-        info = e->u.info;
-        if (info->voice) {
+        if (e->u.info->voice) {
             if (snd_count_se())
                 return;
-            set = info->bgm[info->cur];
-            if (set == 0) {
+            info = e->u.info;
+            d = info->bgm[info->cur];
+            if (d == 0) {
                 info->voice = 0;
             } else {
-                b = &cl_bgm[set];
+                b = &cl_bgm[d];
                 if (cl.bgm != b->bgm) {
                     if (cl.bgm >= 0)
                         bgm_cmd3(cl.bgm);
@@ -436,6 +440,8 @@ void cl_detail_update(void)
                     cl_voices_build(e, 0);
                 }
             }
+            cl.step++;
+            return;
         }
         cl.step++;
         return;
@@ -448,83 +454,66 @@ void cl_detail_update(void)
     case 2:
         if (++cl.anim < 12)
             return;
-        cl.step = 3;
         cl.anim = 12;
+        cl.step++;
         return;
     case 3:
-        break;
-    case 4:
-        if (cl.anim != 0) {
-            cl.anim--;
-            return;
+        d = cl.fade;
+        if (d) {
+            if (d == 1) {
+                if (cl.alpha < 0x31) {
+                    cl_costume_anim();
+                    cl.alpha = 0x20;
+                    cl.fade = 2;
+                } else {
+                    cl.alpha -= 0x10;
+                }
+            } else if (d == 2) {
+                if (cl.alpha >= 0xEF) {
+                    cl.alpha = 0xFF;
+                    cl.fade = 0;
+                } else {
+                    cl.alpha += 0x10;
+                }
+            } else {
+                cl.fade = 0;
+            }
         }
-        cl.anim--;
-        snd_set_volume(0, cl.volume);
-        cl.state = 2;
-        cl.step = 0;
-        cl.timer = 0;
-        cl.anim = 0;
-        cl.slide = 0;
-        cl.vol_fade = 0;
-        return;
-    default:
-        return;
-    }
-    switch (cl.fade) {
-    case 0:
-        break;
-    case 1:
-        if (cl.alpha < 0x31) {
-            cl_costume_anim();
-            cl.alpha = 0x20;
-            cl.fade = 2;
+        if (pad->b.trig & region_pick_value(1)) {
+            cl.step++;
+            se_play(0x6214);
+            if (cl.volume != cfg_get_byte3_b(0)) {
+                cl.vol_fade = 2;
+                cl.timer = 0;
+            }
+        } else if (cl.fade == 0 && (pad->b.rep & 0x8000)) {
+            cl.fade = 1;
+            cl.alpha = 0xEF;
+            se_play(0x621B);
         } else {
-            cl.alpha -= 0x10;
+            d = 0;
+            if (pad->b.analog_y > 0x9E)
+                d += (pad->b.analog_y - 0x9E) * 4;
+            if (pad->b.analog_y < 0x62)
+                d += (pad->b.analog_y - 0x62) * 4;
+            if (pad->b.down & 0x10)
+                d -= 0x80;
+            if (pad->b.down & 0x40)
+                d += 0x80;
+            v = cl.scroll + d;
+            if (v <= 0)
+                cl.scroll = 0;
+            else if ((unsigned int)v >= (unsigned int)cl.scroll_max)
+                cl.scroll = cl.scroll_max;
+            else
+                cl.scroll = v;
         }
-        break;
-    case 2:
-        if (cl.alpha < 0xEF) {
-            cl.alpha += 0x10;
-        } else {
-            cl.alpha = 0xFF;
-            cl.fade = 0;
-        }
-        break;
-    default:
-        cl.fade = 0;
-        break;
-    }
-    if (pad->b.trig & region_pick_value(1)) {
-        cl.step++;
-        se_play(0x6214);
-        if (cl.volume != cfg_get_byte3_b(0)) {
-            cl.vol_fade = 2;
-            cl.timer = 0;
-        }
-    } else if (cl.fade == 0 && (pad->b.rep & 0x8000)) {
-        cl.fade = 1;
-        cl.alpha = 0xEF;
-        se_play(0x621B);
-    } else {
-        d = 0;
-        if (pad->b.analog_y > 0x9E)
-            d = (pad->b.analog_y - 0x9E) * 4;
-        if (pad->b.analog_y < 0x62)
-            d += (pad->b.analog_y - 0x62) * 4;
-        if (pad->b.down & 0x10)
-            d -= 0x80;
-        if (pad->b.down & 0x40)
-            d += 0x80;
-        cl.scroll += d;
-        if (cl.scroll <= 0)
-            cl.scroll = 0;
-        else if (cl.scroll >= cl.scroll_max)
-            cl.scroll = cl.scroll_max;
-    }
-    info = e->u.info;
-    if (info->voice) {
-        set = info->bgm[info->cur];
+        info = e->u.info;
+        if (!info->voice)
+            break;
+        d = info->bgm[info->cur];
         voice = cl.voice;
+        b = &cl_bgm[d];
         if (cl.se_wait && snd_count_se() == 0) {
             se_play(cl.se_next);
             cl.se_wait = 0;
@@ -533,10 +522,11 @@ void cl_detail_update(void)
             if (voice < cl.n_voices) {
                 snd_cmd_fef8();
                 cl.se_wait = 0;
-                se_play(cl_voice_se[cl.voices[voice]][0] + cl_bgm[set].se);
-                if (cl_voice_se[cl.voices[voice]][1] >= 0) {
-                    cl.se_next = cl_voice_se[cl.voices[voice]][1] + cl_bgm[set].se;
+                se = cl_voice_se[cl.voices[voice]];
+                se_play(se[0] + b->se);
+                if (se[1] >= 0) {
                     cl.se_wait = 1;
+                    cl.se_next = se[1] + b->se;
                 }
                 if (cl.volume == cfg_get_byte3_b(0)) {
                     cl.vol_fade = 1;
@@ -549,25 +539,35 @@ void cl_detail_update(void)
             else
                 voice -= 10;
         } else if (pad->b.rep & 0x200) {
-            if ((int)voice < cl.n_voices - 10)
-                voice += 10;
-            else
+            if (voice >= cl.n_voices - 10)
                 voice = cl.n_voices - 1;
+            else
+                voice += 10;
         } else if (pad->b.rep & 0x80) {
-            if (voice != 0)
+            if (voice > 0)
                 voice--;
         } else if (pad->b.rep & 0x20) {
-            if ((int)voice < cl.n_voices - 1)
+            if (voice < cl.n_voices - 1)
                 voice++;
         }
         if (cl.voice != voice) {
             cl.voice = voice;
             se_play(0x6212);
         }
+        break;
+    case 4:
+        if (cl.anim-- > 0)
+            return;
+        snd_set_volume(0, cl.volume);
+        cl.vol_fade = 0;
+        cl.timer = 0;
+        cl.anim = 0;
+        cl.slide = 0;
+        cl.step = 0;
+        cl.state = 2;
+        return;
     }
 }
-
-#endif
 
 /* tabs 0 and 1: one ClInfo per duelist from the character table, with the story-dependent costumes */
 unsigned short cl_entries_build(ClEntry *out, ClPair *src, unsigned short n)
