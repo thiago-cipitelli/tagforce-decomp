@@ -1254,7 +1254,7 @@ Bateram `dmgr_partner_update` (gêmea de `tpartner_update`; `dmgr_partner_draw` 
 
 ## Rodada 16 (`protoE`: protótipos unificados no libduel_eng)
 
-- **Feito:** 92 chamados passaram a ter uma assinatura só em todos os `.c` do libduel_eng (61 com a da definição ou,
+- **Feito:** 89 chamados passaram a ter uma assinatura só em todos os `.c` do libduel_eng (61 com a da definição ou,
   sem definição no módulo, a candidata `lost 0`; 17 com a definição retipada para a assinatura das chamadas, que
   continua batendo; `duel_host_call`, `card_get_type`, `card_is_attribute7/8/9`, `card_attribute_icon_is3`,
   `card_get_special_group`, `duel_088BFC64`, `duel_088D1AC8`, `duel_08845070`, `duel_088328E8` com ajuste no
