@@ -1,5 +1,4 @@
 // @range 0x0881C240-0x0881CE68
-// @asm 0x0881CC4C-0x0881CD3C
 // @data 0x0883C9E0-0x0883D3C0
 /* Draw list of the field (field_draw): the characters and items queued during the frame, drawn
    sorted by depth after their stencil shadows (a 12-sided cylinder per character, lit by
@@ -374,13 +373,12 @@ void fld_draw_flush(void)
     dl_set_list(list);
 }
 
-#ifdef NON_MATCHING /* 5 palavras: o original divide x antes de carregar z (todas as formas testadas, inclusive inline, carregam os dois antes); scale é o 3º parâmetro (o prólogo copia scale depois de volume) */
 int fld_draw_add(void *shadow, int volume, float scale, int area, void *fn, void *arg)
 {
     FieldDraw *d = &field_draw;
     FieldDrawEnt *e;
 
-    if (area != 0 && fld_bg_area_is(((Mat4 *)shadow)->m[12] / 0.5f, ((Mat4 *)shadow)->m[14] / 0.5f) == 0)
+    if (area != 0 && fld_bg_area_is(((volatile Mat4 *)shadow)->m[12] / 0.5f, ((volatile Mat4 *)shadow)->m[14] / 0.5f) == 0)
         return 0;
     if (d->n < 0x82) {
         e = &d->ent[d->n];
@@ -394,7 +392,6 @@ int fld_draw_add(void *shadow, int volume, float scale, int area, void *fn, void
     }
     return 0;
 }
-#endif
 
 /* qsort: the farthest from the camera first */
 int fld_draw_cmp(const void *a, const void *b)

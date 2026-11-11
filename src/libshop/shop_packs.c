@@ -1,5 +1,4 @@
 // @range 0x0880A960-0x0880C238
-// @asm 0x0880AD08-0x0880B5FC
 /* The 48 pack kinds: which are on sale (unlocked by story progress, days, decks and collection),
    their prices and messages, the completion of each, and the opening of a pack: the rarity of the
    best card is drawn from a 20-slot cycle saved per pack (14 rare, 4 super, 2 ultra), the other cards
@@ -147,7 +146,6 @@ int shop_bought_total(void)
     return n;
 }
 
-#ifdef NON_MATCHING /* 39 palavras: contadores do 1º laço (a2/a3), $s de c/j nos laços das não possuídas, pool/cnt e j do fim */
 /* the cards of one pack of kind `pack` into `out` */
 void shop_pack_open(int pack, unsigned short *out)
 {
@@ -160,7 +158,7 @@ void shop_pack_open(int pack, unsigned short *out)
     int i, k, m;
     int rarity;
     ShopCardList *l;
-    int cnt;
+    int cnt = 0;
     unsigned short *ids;
     int r;
 
@@ -169,12 +167,12 @@ void shop_pack_open(int pack, unsigned short *out)
     left[2] = shop_rarity_slots[2];
     left[3] = shop_rarity_slots[3];
     save = sysflag_rec_get_data(pack);
-    for (k = 0, i = 0; k < 20; i++, k++) {
-        if (save[k] <= 0 || save[k] >= 4)
+    for (k = 0, i = 0; i < 20; k++, i++) {
+        if (save[i] <= 0 || save[i] >= 4)
             break;
-        left[save[k]]--;
+        left[save[i]]--;
     }
-    if (i >= 20) {
+    if (k >= 20) {
         memset(save, 0, 40);
         left[1] = 14;
         left[2] = 4;
@@ -202,25 +200,25 @@ void shop_pack_open(int pack, unsigned short *out)
             own[k].n = 0;
             if (own[k].ids) {
                 int j;
-                int c = 0;
+                i = 0;
                 for (j = 0; j < d->lists[k].n; j++) {
                     unsigned short id = d->lists[k].ids[j];
                     if (inv_get_count(id) <= 0)
-                        own[k].ids[c++] = id;
+                        own[k].ids[i++] = id;
                 }
-                own[k].n = c;
+                own[k].n = i;
             }
         }
         for (k = 0; k < 4; k++) {
             if (own[k].ids && own[k].n <= 0) {
                 int j;
-                int c = 0;
+                i = 0;
                 for (j = 0; j < d->lists[k].n; j++) {
                     unsigned short id = d->lists[k].ids[j];
                     if (inv_get_count(id) < 3)
-                        own[k].ids[c++] = id;
+                        own[k].ids[i++] = id;
                 }
-                own[k].n = c;
+                own[k].n = i;
             }
         }
       }
@@ -245,9 +243,9 @@ void shop_pack_open(int pack, unsigned short *out)
     k = 0;
     if (ids == 0 || cnt == 0) {
         int j;
-        for (j = 1; 4 > j; j++) {
-            ids = l[j].ids;
-            cnt = l[j].n;
+        for (l++, j = 1; j <= 3; j++, l++) {
+            ids = l->ids;
+            cnt = l->n;
             if (ids && cnt > 0) {
                 k = j;
                 break;
@@ -274,7 +272,6 @@ void shop_pack_open(int pack, unsigned short *out)
         heap_set_level(shop.heap, own);
     }
 }
-#endif
 
 /* 1 if `id` is among the first n of `list` */
 int shop_card_in(unsigned short id, unsigned short *list, unsigned short n)

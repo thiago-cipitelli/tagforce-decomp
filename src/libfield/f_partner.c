@@ -1,6 +1,4 @@
 // @range 0x0881BA90-0x0881C240
-// @asm 0x0881BAB0-0x0881BEA8
-// @asm 0x0881C03C-0x0881C1FC
 // @data 0x0883C9C8-0x0883C9E0
 /* The partner walking behind the player on the map (field_partner): it follows the position the player
    had on the previous frame, slides along the NPCs it bumps into and marks the cells it leaves and
@@ -23,10 +21,6 @@ void fpt_loaded_a(int *file, FieldChr *c);
 void fpt_loaded_b(int *file, FieldChr *c);
 void fpt_place(void);
 
-/* side vectors of fpt_update (kept in asm) */
-Vec3 fpt_up = { 0.0f, 1.0f, 0.0f };
-Vec3 fpt_down = { 0.0f, -1.0f, 0.0f };
-
 void fpt_clear(void)
 {
     memset(&field_partner, 0, sizeof(field_partner));
@@ -37,7 +31,6 @@ void fpt_reset(void)
     fld_chr_reset(&field_partner.c);
 }
 
-#ifdef NON_MATCHING /* lógica conferida (fpt_up/fpt_down são os modelos locais up/down). 20 palavras: ordem das cópias de c->vel e das divisões por 0.5 */
 void fpt_update(void)
 {
     FieldPartner *p = &field_partner;
@@ -102,9 +95,9 @@ void fpt_update(void)
         vec3_normalize(&d, &d);
         vec3_scale(&d, &d, speed);
         c->vel = d;
-        fld_cell_mark(c->pos.x / 0.5f, c->pos.z / 0.5f, 0);
+        fld_cell_mark(((volatile Vec3 *)&c->pos)->x / 0.5f, c->pos.z / 0.5f, 0);
         vec3_add(&c->pos, &c->pos, &c->vel);
-        fld_cell_mark(c->pos.x / 0.5f, c->pos.z / 0.5f, 2);
+        fld_cell_mark(((volatile Vec3 *)&c->pos)->x / 0.5f, c->pos.z / 0.5f, 2);
         if (fld_vec3_len(&d) > 0.0f)
             c->anim = 1;
         else
@@ -117,7 +110,6 @@ void fpt_update(void)
     fpt_face();
     fld_chr_update(c);
 }
-#endif
 
 void fpt_draw(void)
 {
@@ -167,7 +159,6 @@ void fpt_loaded_b(int *file, FieldChr *c)
 }
 
 /* the first walkable cell around the player, starting behind it */
-#ifdef NON_MATCHING /* 10 palavras: o original divide p.x por 0.5 (lido em $f0, quociente em $f1) antes de ler p.z; aqui as duas leituras saem antes (mesmo padrão de fld_chr_collide, fld_player_update, fpt_update; float local, cast, inline e ordem com ok não mudam) */
 void fpt_place(void)
 {
     FieldChr *c = &field_partner.c;
@@ -184,10 +175,13 @@ void fpt_place(void)
     for (i = 0; i < 8; i++) {
         p = pl->pos;
         fld_dir_vec(&t, dir);
-        v = t;
-        vec3_scale(&v, &v, 0.5f);
+        {
+            Vec3 *q = &v;
+            *q = t;
+            vec3_scale(q, q, 0.5f);
+        }
         vec3_add(&p, &p, &v);
-        x = p.x / 0.5f;
+        x = ((volatile Vec3 *)&p)->x / 0.5f;
         z = p.z / 0.5f;
         ok = 1;
         ok &= fld_map_walkable(x, z, 0);
@@ -206,7 +200,6 @@ void fpt_place(void)
         c->dir = pl->dir;
     }
 }
-#endif
 
 void fpt_face(void)
 {
