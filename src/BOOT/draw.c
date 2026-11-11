@@ -140,8 +140,8 @@ void *draw_0883ABC0(void *list, int a, int b, int c, int d, int e, int f, int g)
 }
 
 #ifdef NON_MATCHING /* reescrito do asm com os flags do original (bit 8 = passou em todos os planos;
-   o resto é calculado e descartado): mesmo tamanho, 125 palavras de agendamento de float (o original
-   calcula c[2]*c[2] uma vez e r2 antes de z; kx só depois dos dois primeiros planos) */
+   o resto é calculado e descartado): mesmo tamanho, 60 palavras, só registradores float (o original dá f9 a z,
+   f7 a c[7] e f6 a kx; o nosso f7/f6/f2). A releitura de c[5] no 2º teste só saiu com o cast volatile. */
 /* 1 when the sphere is inside the view frustum of the current projection and view matrices. */
 int draw_sphere_visible(DrawSphere *s)
 {

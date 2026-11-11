@@ -258,7 +258,10 @@ int snd_thread_start(void *cfg, SndCallbacks *cb)
 }
 
 /* Reads go straight to `fd` (or the file named by `fd` when it is a pointer) from offset `off`. */
-#ifdef NON_MATCHING /* 8 palavras: retorna r (o original deixa r em v0 nos dois retornos; era void); falta o bgezl + "b fim; nop" do teste do open (o mwcc faz bltz) e o ternário dá um b a mais */
+#ifdef NON_MATCHING /* 8 palavras: retorna r (o original deixa r em v0 nos dois retornos; como void, r vai para a0);
+   falta o bgezl + "b fim; nop" do teste do open (o mwcc inverte para bltz) e o ternário dá um b a mais. Rodada 22:
+   if/else, goto, do/while(0) e helper inline não mudam; `switch (r < 0) { case 0: ... }` mantém o "b; nop" mas
+   materializa slt + beqzl (6 palavras de forma). */
 int snd_bank_open_async(int fd, int off)
 {
     long long res;

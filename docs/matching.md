@@ -1715,3 +1715,20 @@ palavras (forma mais fiel, falta uma ordem do escalonador).
   inline sai invertida em qualquer ordem do fonte.
 - **Tabela local inicializada copiada com `lwc1/swc1`**: `int ids[4] = {10, 11, 12};` dentro da função (o modelo
   fica no `@data` do arquivo; o global antigo some).
+
+## Rodada 22 (`bootP`): cópia mantida por cast redundante, callee static já batendo
+
+- **Cópia `p = param` mantida num `$s`** (`move s3,a2; move v0,s3` no original, `move v0,a2` no nosso): um cast
+  redundante na atribuição, `p = (unsigned short *)text;` com `text` já `unsigned short *`, impede a propagação da
+  cópia. Bateram `font_layout_text` e `font_layout_wtext` (1 instrução cada; ordem de declarações, `p = end =
+  text`, rótulos e blocos não mudavam nada). Vale tentar em qualquer `move sN,aK` seguido de `move vX,sN`.
+- **Callee já batendo marcado `static` sob `NON_MATCHING`** muda a alocação do chamador também fora dos laços:
+  `snd_echo_mix` static deu `lw a0,idx` + `addu a0,v1,a0` na chamada final de `snd_streams_decode` (21 -> 15).
+- **`andi 0xFFFF` e `andi 0x8000` separados** de um parâmetro `unsigned int`: `(unsigned short)flags & 0x8000`
+  (`(flags & 0xFFFF) & 0x8000` é dobrado num só `andi`). Com isso e `SndObj *o;` declarado antes dos inicializadores
+  (`data`, `d`), `snd_obj_start` foi de 24 para 0.
+- **Releitura de um elemento de array local já carregado** (`lwc1 c[5]` duas vezes, sem store entre elas): só
+  `((volatile float *)c)[5]` no 2º uso reproduziu (`draw_sphere_visible`, mesmo tamanho a partir daí, 125 -> 60).
+  Ordem dos cálculos float segue o original: `c[2]` antes de `c[5]`, `kx` calculado só antes do 3º plano.
+- **`switch (cond) { case 0: ... }`** mantém o `b; nop` de um teste que pula um `b` (o mwcc não inverte desvios de
+  `switch`), mas materializa a condição com `slt` (`snd_bank_open_async`, não bateu).

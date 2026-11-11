@@ -402,10 +402,11 @@ int snd_block_level(short *p)
     return sum >> 8;
 }
 
-#ifdef NON_MATCHING /* 21 palavras: só registradores no primeiro laço de mistura com saturação (o original
-   dá t0 à amostra escalada, t1 ao lh do destino e t3 à soma; o nosso t1/t0/t1; um local separado para a soma,
-   como no segundo laço, não resolve) e na chamada final de snd_echo_mix (v1/a0 contra v0/v1). Depende de
-   snd_stereo_widen/snd_box_filter static (sob NON_MATCHING enquanto ela e snd_box_filter ficam em asm). */
+#ifdef NON_MATCHING /* 15 palavras: só registradores no primeiro laço de mistura com saturação (o original
+   dá t0 à amostra escalada, t1 ao lh do destino e t3 à soma; o nosso t1/t0/t1). Testados sem efeito (rodada 22):
+   nomes/escopo de x, lo e soma (variáveis de bloco e de função, soma separada), sem x, produto em duas instruções,
+   lh num local, callees static. Depende de snd_stereo_widen/snd_box_filter/snd_echo_mix static (sob NON_MATCHING;
+   snd_echo_mix static resolveu a chamada final, 21 -> 15). */
 /* Decodes the active Atrac streams into their PCM rings (0x1000 frames, decoded ahead by up to
    `budget` frames, less when many SAS voices are active) and mixes 0x100 frames of each into the
    current output block: copied when it is the only stream of the first pass, else added with
