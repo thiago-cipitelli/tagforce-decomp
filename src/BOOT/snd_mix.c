@@ -208,7 +208,10 @@ void snd_echo_mix(short *out)
 
 /* Widens the stereo image: adds the L-R difference of the frame two back; `hist` carries the last two
    differences across blocks. Each sum is clamped to 16 bits on the side its sign can overflow. */
-static void snd_stereo_widen(short *hist, short *buf, int n)
+#ifdef NON_MATCHING /* static: o chamador mantém t7/t8/v0 vivos através do jal (snd_streams_decode) */
+static
+#endif
+void snd_stereo_widen(short *hist, short *buf, int n)
 {
     short save[2];
     short *p;
@@ -265,7 +268,10 @@ static void snd_stereo_widen(short *hist, short *buf, int n)
 
 #ifdef NON_MATCHING /* lógica corrigida (quociente negativo +1, laço interno do-while); 31 palavras: só registradores (o original dá t1 ao k externo, t0 a i e t4/t5/t6 a idx/r/l), nenhuma ordem de declaração resolve */
 /* Box filter of `taps` frames over `n` stereo frames; `hist` holds the 16 frames before the block. */
-static void snd_box_filter(short *hist, short *buf, int n, int taps)
+#ifdef NON_MATCHING /* static: o chamador mantém t7/t8/v0 vivos através do jal (snd_streams_decode) */
+static
+#endif
+void snd_box_filter(short *hist, short *buf, int n, int taps)
 {
     short save[32];
     int k;
@@ -393,9 +399,10 @@ int snd_block_level(short *p)
     return sum >> 8;
 }
 
-#ifdef NON_MATCHING /* the original keeps $t7/$t8/$v0 live across the calls to snd_stereo_widen and
-   snd_box_filter (which leave them untouched); mwcc build 219 with our flags always saves them in
-   $s registers or on the stack, so the register allocation and frame cannot match */
+#ifdef NON_MATCHING /* 21 palavras: só registradores no primeiro laço de mistura com saturação (o original
+   dá t0 à amostra escalada, t1 ao lh do destino e t3 à soma; o nosso t1/t0/t1; um local separado para a soma,
+   como no segundo laço, não resolve) e na chamada final de snd_echo_mix (v1/a0 contra v0/v1). Depende de
+   snd_stereo_widen/snd_box_filter static (sob NON_MATCHING enquanto ela e snd_box_filter ficam em asm). */
 /* Decodes the active Atrac streams into their PCM rings (0x1000 frames, decoded ahead by up to
    `budget` frames, less when many SAS voices are active) and mixes 0x100 frames of each into the
    current output block: copied when it is the only stream of the first pass, else added with
