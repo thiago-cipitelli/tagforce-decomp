@@ -56,8 +56,6 @@ segments:
       - [0xF0E8, c, t_ext]
       - [0xFB24, c, t_freeduel]
       - [0x109AC, c, t_fdnet]
-      - [0x11914, asm, t_fdnet_asm_088158B4]
-      - [0x11B3C, c, t_fdnet]
       - [0x1232C, c, t_fdvscpu]
       - [0x13FF8, asm, t_fdvscpu_asm_08817F98]
       - [0x1410C, c, t_fdvscpu]

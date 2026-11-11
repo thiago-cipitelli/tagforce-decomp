@@ -1,6 +1,5 @@
 // @range 0x0881494C-0x088162CC
 // @rodata 0x0882AF94-0x0882AFD8
-// @asm 0x088158B4-0x08815ADC
 /* Free duel over ad hoc: the player entries exchanged with the other machines. */
 #include "libtitle.h"
 
@@ -403,7 +402,6 @@ int tfd_comm_machine(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o case 2 (swap = 1) vira um bloco próprio no original; o mwcc o dobra no delay slot do teste */
 void tfd_chr_copy_draw(RecipeData *dst, TFdDeck *src)
 {
     Title *t = &title;
@@ -443,8 +441,6 @@ void tfd_chr_copy_draw(RecipeData *dst, TFdDeck *src)
             p->rec_index = 0;
             break;
         case 2:
-            swap = 1;
-            break;
         case 3:
             swap = 1;
             break;
@@ -463,7 +459,6 @@ void tfd_chr_copy_draw(RecipeData *dst, TFdDeck *src)
             *dst = q->decks[1].recipe;
     }
 }
-#endif
 
 void tfd_chr_setup(void)
 {
