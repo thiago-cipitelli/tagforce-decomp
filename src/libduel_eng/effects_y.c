@@ -1,5 +1,5 @@
 // @range 0x08889BE4-0x0888B904
-// @asm 0x08889BE4-0x0888A020
+// @rodata 0x08911844-0x08911868
 // @asm 0x0888A88C-0x0888AB18
 /* Card effect handlers (DuelAct *a), after effects_x.c. */
 #include "duel.h"
@@ -9,6 +9,15 @@ extern unsigned int duel_turn_player;
 extern int duel_w_089148FC;
 extern int duel_w_08914900;
 extern DuelCard duel_w_0891525C[];
+
+typedef struct DuelCandList {          /* 0x08915258: cards collected by the list handlers (effects_088BC9E0.c) */
+    unsigned int n;
+    DuelCard cards[512];               /* +0x004 (duel_w_0891525C) */
+    unsigned short zones[512];         /* +0x804 */
+} DuelCandList;
+
+extern DuelCandList duel_w_08915258;
+
 extern int duel_w_08919624;
 extern int duel_phase;
 extern unsigned short duel_h_0891968E;
@@ -93,7 +102,6 @@ int duel_088708E4(DuelAct *a);
 void duel_088C8874(unsigned int uid, unsigned short id, int a, unsigned short b);
 void duel_088C7E68(unsigned int, int, int, int);
 
-#ifdef NON_MATCHING /* &a->w[p] guardado num $s; endereço de duel_w_0891525C num $s no caso 0x7D */
 int duel_08889BE4(DuelAct *a)
 {
     int i;
@@ -143,20 +151,19 @@ int duel_08889BE4(DuelAct *a)
                 duel_088C7880(p);
             }
             duel_088CB980(p);
-            if (card_is_monster(id) == 0) {
-                return 0x7C;
-            }
-            a->w[p]--;
-            if (card_get_level(id) < 5 && duel_card_dfac8(p, id, 1) != 0 && duel_no_1a1b(p) != 0 &&
-                duel_count_free_monster_zones(o) > 0 && (duel_w_08914900 >> o & 1)) {
-                duel_card_copy(duel_w_0891525C, c);
-                return 0x7D;
+            if (card_is_monster(id) != 0) {
+                a->w[(int)p]--;
+                if (card_get_level(id) < 5 && duel_card_dfac8(p, id, 1) != 0 && duel_no_1a1b(p) != 0 &&
+                    duel_count_free_monster_zones(o) > 0 && (duel_w_08914900 >> o & 1)) {
+                    duel_card_copy(duel_w_0891525C, c);
+                    return 0x7D;
+                }
             }
             return 0x7C;
         }
         return 0x7B;
     case 0x7D:
-        c = duel_w_0891525C;
+        c = duel_w_08915258.cards;
         o = c->owner;
         duel_0882619C(o, c, card_attribute_icon_in_2_3(c->id), 1, 0);
         a->w[2 + o] |= 1 << duel_pick_monster_zone(o);
@@ -181,7 +188,6 @@ int duel_08889BE4(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888A020(DuelAct *a, int b)
 {

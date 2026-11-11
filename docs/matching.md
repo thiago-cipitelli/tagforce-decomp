@@ -1790,3 +1790,30 @@ Bateram `dd_fx_aura_halo` (241 -> 0), `dd_cobj_goto` (192 -> 0), `dd_fcam_from_t
 - Não resolvidos: `dd_orbs_update` (16 palavras: `$f20`/`$f22` trocados entre `one` e `amp` e dois derrames de
   pilha trocados; ordem das declarações, blocos e nomes testados) e `dmgr_pt_sprite` (o original guarda `x` em
   `s8` e derrama `p`, o ponteiro do `file` e `y`).
+## Rodada 22 (`engP`: libduel_eng, quase-acertos)
+
+Bateram `duel_place_monster`, `duel_place_st` (estava em `matching_skip`), `duel_088A2950`, `duel_08889BE4` e
+`duel_req_move_card`; `duel_088C4864` foi de 65 para 7 palavras.
+- **`duel_order_ctr` é `duel+0x3770`**: lido como campo (`*(int *)((char *)&duel + 0x3770)`) com `++` prefixo na
+  atribuição (`s->unk4 = ++CTR;`), o `sw` do contador fica antes dos `sh` no slot, como no original (o mwcc não
+  separa mais os dois acessos ao mesmo objeto `duel`). Com o símbolo avulso, `CTR++; s->unk4 = CTR;` ou só o
+  campo sem o `++` prefixo não reproduzem.
+- **Dois testes que caem no mesmo `return K`** (`beqzl` + `li K` direto ao epílogo no 1º, `li K; b fim; nop` no 2º):
+  um só `if (A == 0 || B == 0) return K;` (`duel_088A2950`). O `return 0x7C` comum de `duel_08889BE4` saiu de
+  `if (card_is_monster(id) != 0) { ... } return 0x7C;` em vez do teste invertido com `return` próprio.
+- **Endereço `&a->w[p]` guardado num `$s` entre o teste e o `a->w[p]--`**: `a->w[(int)p]--` faz o mwcc refazer o
+  endereço (tipo diferente, sem CSE). Ponteiro global de struct em `$s` (`lui/addiu s2` no caso 0x7D): o global
+  que é campo de outra struct (`duel_w_0891525C` = `duel_w_08915258.cards`) acessado como campo.
+- **Busca da ordem dos comandos resolve o escalonamento** (`duel_req_move_card`, 25 -> 0): `i = t >> 16` logo depois
+  da chamada e os campos de `loc` antes de `w`; 3360 ordens topológicas das 8 atribuições, 3 processos, ~8 min.
+- **Temporário de expressão em vez de variável** (`duel_088C4864`): `q = 1 - tp;` antes de cada laço dava `q` e o
+  ponteiro de indução do laço trocados; com `1 - tp` direto nos argumentos o mwcc cria o temporário depois do
+  ponteiro e as cores batem (65 -> 10). Os contadores de laço (qual variável cada laço reaproveita e a posição da
+  declaração) saíram de busca aleatória (`build/tmp/<x>/` com cópia do `.c`, avaliação ~0,4 s). O `or a0,v1,v0`
+  do `case 0x15D6` só ficou na ordem do original relendo `card.id` (CSE com o valor do `switch`).
+- Ainda em asm: `duel_088042D4` (21: cópia do parâmetro `a` para `s7` agendada antes do 1º `jal` no original;
+  local `f = a` em qualquer posição, tipos, K&R, ponteiro do jogador: nada muda), `duel_088C6BC8` (54: rotação
+  p/ban/grave; ordem e tipo das declarações, contadores próprios ou de bloco, ordem dos comandos do topo:
+  1500 mutações sem melhora), `duel_field_controller` (102: a ordem das declarações não muda nada, nem com todas as
+  variáveis do laço no topo; `ofs`/`zo` explícitos viram o mesmo CSE), `duel_0880C15C` (20: o original calcula
+  `(1 - p) * 55` antes de `tz * 11`; formas inteiras, vírgula e local `q` não reproduzem).
