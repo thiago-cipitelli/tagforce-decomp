@@ -177,6 +177,9 @@ void snd_echo_add(SndObj *o, short *in)
 }
 
 /* Mixes the echo at the read position into `out` (0x100 frames), halving what stays in the buffer. */
+#ifdef NON_MATCHING /* static: muda a alocação da chamada final de snd_streams_decode */
+static
+#endif
 void snd_echo_mix(short *out)
 {
     int i;
