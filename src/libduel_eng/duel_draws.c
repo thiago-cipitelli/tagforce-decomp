@@ -87,22 +87,26 @@ typedef struct DuelDmgEv {             /* event argument of battle damage */
     unsigned short pad : 5;
 } DuelDmgEv;
 
-#ifdef NON_MATCHING /* mesma sequência de chamadas e mesma forma (3008 B); 65 palavras de $s dos laços (2026-11-08). Resolveram a forma: (unsigned int)q << 31 nos laços de 0x1720 e 0x14ED (o original recalcula a máscara), switch de um caso em 0x1281, id do switch reaproveitado em 0x15D6, protótipo K&R de duel_slot_effect_with */
+#ifdef NON_MATCHING /* 7 palavras (eram 65): 1 - tp direto nos argumentos dos laços de 0x187D/0x130C/0x1720/0x14ED/0x187B (sem q: o mwcc cria o temporário depois do ponteiro de indução), card.id relido no 0x15D6 (or na ordem do original), pp antes de zz e contadores por busca; falta só o laço de 0x17B5 (q e contador externo trocados, s1/s3); busca aleatória e exaustiva das declarações não fecha */
 /* battle damage of record r (r->a: attacker, r->b: target) with the cards that react to it */
 void duel_088C4864(DuelSpecRec *r)
 {
-    int i_17;
-    int z_16;
-    int z_12;
-    int i_2;
+    int z3;
     extern int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int ev);
     extern int duel_slot_effect_with();
     unsigned int tp = r->b[0];
     int self = 0;
+    int z4;
+    int z2;
+    unsigned int q;
     DuelSpecAct *act;
-    unsigned int n, q, pp;
+    int j;
+    unsigned int n;
+    unsigned int pp;
     unsigned short src;
-    int i, z, zz;
+    int z1;
+    int zz;
+    int k;
     unsigned int id;
     DuelDmgEv ev;
 
@@ -175,57 +179,54 @@ void duel_088C4864(DuelSpecRec *r)
             break;
         case 0xFCB:
             if (!ev.direct && duel_special.act[1 - r->a[0]].unk8) {
-                q = 1 - tp;
-                for (i_2 = 5; i_2 < 10; i_2++) {
-                    if (duel_slot_e8170(q, i_2, 0x187D)) {
-                        duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)i_2 << 16 & 0x1F0000)
-                                      | duel.players[q & 1].field[i_2].card.id, CARD_UID(duel.players[q & 1].field[i_2].card), *(unsigned int *)&ev);
+                for (z1 = 5; z1 < 10; z1++) {
+                    if (duel_slot_e8170(1 - tp, z1, 0x187D)) {
+                        duel_0884F30C(((1 - tp) << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z1 << 16 & 0x1F0000)
+                                      | duel.players[(1 - tp) & 1].field[z1].card.id, CARD_UID(duel.players[(1 - tp) & 1].field[z1].card), *(unsigned int *)&ev);
                     }
                 }
             }
             break;
         }
-        q = 1 - tp;
-        for (z = 5; z < 10; z++) {
-            if (duel_slot_e8170(q, z, 0x130C)) {
-                duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000)
-                              | duel.players[q & 1].field[z].card.id, CARD_UID(duel.players[q & 1].field[z].card), *(unsigned int *)&ev);
+        for (z1 = 5; z1 < 10; z1++) {
+            if (duel_slot_e8170(1 - tp, z1, 0x130C)) {
+                duel_0884F30C(((1 - tp) << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z1 << 16 & 0x1F0000)
+                              | duel.players[(1 - tp) & 1].field[z1].card.id, CARD_UID(duel.players[(1 - tp) & 1].field[z1].card), *(unsigned int *)&ev);
             }
         }
-        for (z = 5; z < 10; z++) {
-            if (duel_slot_e8170(q, z, 0x1720)) {
-                duel_0884F30C(((unsigned int)q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000)
-                              | duel.players[q & 1].field[z].card.id, CARD_UID(duel.players[q & 1].field[z].card), *(unsigned int *)&ev);
+        for (z2 = 5; z2 < 10; z2++) {
+            if (duel_slot_e8170(1 - tp, z2, 0x1720)) {
+                duel_0884F30C(((unsigned int)(1 - tp) << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z2 << 16 & 0x1F0000)
+                              | duel.players[(1 - tp) & 1].field[z2].card.id, CARD_UID(duel.players[(1 - tp) & 1].field[z2].card), *(unsigned int *)&ev);
             }
         }
     }
     if (duel_slot_effect_with(r->a[0], r->a[1], 0x1511, ev.tp)) {
         duel_0884F30C((ev.p << 31 & 0x80000000) | 0x1E501511, 0, *(unsigned int *)&ev);
     }
-    q = 1 - tp;
-    for (z = 5; z < 10; z++) {
-        if (duel_slot_e8170(q, z, 0x14ED) && duel_slot_has_src10(q, z, r->a[0], r->a[1])) {
-            duel_0884F30C(((unsigned int)q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000)
-                          | duel.players[q & 1].field[z].card.id, CARD_UID(duel.players[q & 1].field[z].card), *(unsigned int *)&ev);
+    for (z1 = 5; z1 < 10; z1++) {
+        if (duel_slot_e8170(1 - tp, z1, 0x14ED) && duel_slot_has_src10(1 - tp, z1, r->a[0], r->a[1])) {
+            duel_0884F30C(((unsigned int)(1 - tp) << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z1 << 16 & 0x1F0000)
+                          | duel.players[(1 - tp) & 1].field[z1].card.id, CARD_UID(duel.players[(1 - tp) & 1].field[z1].card), *(unsigned int *)&ev);
         }
     }
     if (act->pad14[4] == 11) {
-        for (z = 5; z < 10; z++) {
-            if (duel_slot_e8170(q, z, 0x187B)) {
-                duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000)
-                              | duel.players[q & 1].field[z].card.id, CARD_UID(duel.players[q & 1].field[z].card), *(unsigned int *)&ev);
+        for (k = 5; k < 10; k++) {
+            if (duel_slot_e8170(1 - tp, k, 0x187B)) {
+                duel_0884F30C(((1 - tp) << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)k << 16 & 0x1F0000)
+                              | duel.players[(1 - tp) & 1].field[k].card.id, CARD_UID(duel.players[(1 - tp) & 1].field[k].card), *(unsigned int *)&ev);
             }
         }
     }
     src = duel_slot_src_attr8(r->a[0], r->a[1], 1);
     if (src != 0xFFFF) {
-        zz = src >> 8 & 0xFF;
         pp = src & 0xFF;
+        zz = src >> 8 & 0xFF;
         switch (id = duel.players[pp & 1].field[zz].card.id) {
         case 0x15D6:
         case 0x15D7:
             if (pp != ev.tp) {
-                duel_0884F30C((pp << 31 & 0x80000000 | 0x1E200000 | (zz << 16 & 0x1F0000)) | (unsigned short)id,
+                duel_0884F30C((pp << 31 & 0x80000000 | 0x1E200000 | (zz << 16 & 0x1F0000)) | duel.players[pp & 1].field[zz].card.id,
                               CARD_UID(duel.players[pp & 1].field[zz].card), *(unsigned int *)&ev);
             }
             break;
@@ -242,22 +243,22 @@ void duel_088C4864(DuelSpecRec *r)
     }
 
     if (duel_atk_direct) {
-        for (i = 0; i < 2; i++) {
-            q = duel.turn_player ^ i;
-            for (z_12 = 5; z_12 < 10; z_12++) {
-                if (duel_slot_e8170(q, z_12, 0x17B5)) {
-                    duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z_12 << 16 & 0x1F0000) | 0x17B5,
-                                  CARD_UID(duel.players[q & 1].field[z_12].card), *(unsigned int *)&ev);
+        for (k = 0; k < 2; k++) {
+            q = duel.turn_player ^ k;
+            for (z3 = 5; z3 < 10; z3++) {
+                if (duel_slot_e8170(q, z3, 0x17B5)) {
+                    duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z3 << 16 & 0x1F0000) | 0x17B5,
+                                  CARD_UID(duel.players[q & 1].field[z3].card), *(unsigned int *)&ev);
                 }
             }
         }
     }
-    for (i_17 = 0; i_17 < 2; i_17++) {
-        q = duel.turn_player ^ i_17;
-        for (z_16 = 5; z_16 < 10; z_16++) {
-            if (duel_slot_e8170(q, z_16, 0x171E)) {
-                duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z_16 << 16 & 0x1F0000) | 0x171E,
-                              CARD_UID(duel.players[q & 1].field[z_16].card), *(unsigned int *)&ev);
+    for (j = 0; j < 2; j++) {
+        q = duel.turn_player ^ j;
+        for (z4 = 5; z4 < 10; z4++) {
+            if (duel_slot_e8170(q, z4, 0x171E)) {
+                duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z4 << 16 & 0x1F0000) | 0x171E,
+                              CARD_UID(duel.players[q & 1].field[z4].card), *(unsigned int *)&ev);
             }
         }
     }
