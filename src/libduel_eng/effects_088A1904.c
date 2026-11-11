@@ -1,5 +1,4 @@
 // @range 0x088A1904-0x088A3430
-// @asm 0x088A2950-0x088A2B64
 /* Card effect handlers (DuelAct *a). */
 #include "duel.h"
 
@@ -444,8 +443,6 @@ int duel_088A2864(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 13 palavras: no case 0x7F o original faz beqzl/li 0x7D no 1º teste e "li v0,0x7D; b fim; nop" (sem
-                      preencher) no 2º; o case 0x7E também termina em "b fim; nop" */
 int duel_088A2950(DuelAct *a)
 {
     unsigned int p;
@@ -466,10 +463,7 @@ int duel_088A2950(DuelAct *a)
         duel_w_08919624 = 1;
         return 0x7E;
     case 0x7F:
-        if (duel_count_free_monster_zones(a->player) == 0) {
-            return 0x7D;
-        }
-        if (duel_088BFF78(a->player, a->id, 0) == 0) {
+        if (duel_count_free_monster_zones(a->player) == 0 || duel_088BFF78(a->player, a->id, 0) == 0) {
             return 0x7D;
         }
         if (duel_player_type[a->player] == 1) {
@@ -498,7 +492,6 @@ int duel_088A2950(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_088A2B64(DuelAct *a)
 {
