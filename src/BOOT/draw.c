@@ -150,14 +150,16 @@ int draw_sphere_visible(DrawSphere *s)
     float v[4];
     float view[16];
     float proj[16];
+    float z;
     unsigned int flags;
     char *p;
     int n;
     float cot;
+    float kx;
+    float ky;
     float r2;
-    float z;
-    float ky, kx;
-    float d, q;
+    float d;
+    float q;
 
     flags = 0;
     p = (char *)c;
@@ -171,8 +173,8 @@ int draw_sphere_visible(DrawSphere *s)
     c[3] = 480.0f;
     c[4] = 272.0f;
     cot = tanf_vfpu(s->fovy / 2.0f);
-    c[5] = s->near;
     c[2] = 0.5f * (c[4] / cot);
+    c[5] = s->near;
     c[6] = s->far;
     c[7] = 4186116.0f + c[2] * c[2];
     c[8] = c[3] * c[3] / 4.0f + c[2] * c[2];
@@ -189,7 +191,7 @@ int draw_sphere_visible(DrawSphere *s)
             flags = 1;
             break;
         }
-        if (c[5] > v[2] - s->radius)
+        if (((volatile float *)c)[5] > v[2] - s->radius)
             flags |= 3;
         if (c[6] < v[2] - s->radius) {
             flags = 1;
@@ -200,7 +202,6 @@ int draw_sphere_visible(DrawSphere *s)
         r2 = s->radius * s->radius;
         z = 2046.0f * v[2];
         ky = c[1] * (c[2] * v[1]);
-        kx = c[2] * v[0];
         d = z - ky;
         q = d * d / c[7];
         if (d < 0.0f) {
@@ -223,6 +224,7 @@ int draw_sphere_visible(DrawSphere *s)
         } else if (q <= r2) {
             flags |= 5;
         }
+        kx = c[2] * v[0];
         d = z - kx;
         q = d * d / c[7];
         if (d < 0.0f) {
