@@ -33,8 +33,6 @@ segments:
       - [0x30C4, c, dd_view]
       - [0x326C, c, dd_field]
       - [0x3D34, c, dd_fieldcam]
-      - [0x3D34, asm, dd_fieldcam_asm_08807CD4]
-      - [0x4270, c, dd_fieldcam]
       - [0x4D70, c, dd_info]
       - [0x55A8, asm, dd_info_asm_08809548]
       - [0x58FC, c, dd_info]

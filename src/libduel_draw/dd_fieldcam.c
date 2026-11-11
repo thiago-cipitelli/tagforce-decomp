@@ -1,6 +1,5 @@
 // @range 0x08807CD4-0x08808D10
 // @data 0x08874AB0-0x08874BA0
-// @asm 0x08807CD4-0x08808210
 /* Camera, fog and lights of the field: read from the tracks of the background's camera file
    (bone 0 the camera, bones 1..4 the lights) or the default set; the field spell effects that
    start with a background. */
@@ -44,15 +43,14 @@ DdXyzw dd_axis_z = { 0.0f, 0.0f, 1.0f, 0.0f };
 
 #define TRACK(n) (&tms->tracks[n])
 
-#ifdef NON_MATCHING /* 89 palavras: tms e o índice da luz trocam de $s e o original reduz chan[i + 1] (indução i*8) e não TRACK(k) (sll k a cada uso); (tms->chan + 1)[i] dá a indução mas mantém a de k (s8 a mais); k = i * 16 + 20 no corpo muda a pilha */
 /* camera of the field at time t from the background tracks */
-void dd_fcam_from_tms(DdCam *cam, DdTms *tms, float t)
+void dd_fcam_from_tms(DdCam *cam, void *in, float t)
 {
-    float focal = keyframe_eval(TRACK(0), t);
-    float film = keyframe_eval(TRACK(1), t);
-    float n = keyframe_eval(TRACK(2), t);
-    float far = keyframe_eval(TRACK(3), t);
-    float near = n < 1.0f ? 1.0f : n;
+    float focal;
+    float film;
+    float n;
+    float far;
+    float near;
     DdLight l;
     DdXyzw pos;
     DdXyzw q;
@@ -67,8 +65,15 @@ void dd_fcam_from_tms(DdCam *cam, DdTms *tms, float t)
     float fog_near;
     float fog_far;
     int i;
+    DdTms *tms;                        /* after i: the original gives it the lower $s */
     int k;
 
+    tms = in;
+    focal = keyframe_eval(TRACK(0), t);
+    film = keyframe_eval(TRACK(1), t);
+    n = keyframe_eval(TRACK(2), t);
+    far = keyframe_eval(TRACK(3), t);
+    near = n < 1.0f ? 1.0f : n;
     cam->fov = 2.0f * atanf(0.5f * film / (0.03937f * focal));
     cam->near = near;
     cam->far = far;
@@ -94,17 +99,17 @@ void dd_fcam_from_tms(DdCam *cam, DdTms *tms, float t)
     cam->fog_far = fog_far;
     cam->fog_color = rgb;
     cam->ambient = dd_track_rgb(tms->tracks, 10, t) | 0xFF000000;
-    for (i = 0, k = 20; i < 4; i++, k += 16) {
+    for (i = 0, k = 20; i < 4; k += 16, i++) {
         if ((cam->light_on[i] = keyframe_eval(TRACK(k + 1), t)) == 0)
             continue;
-        l.type = keyframe_eval(TRACK(k), t);
+        l.type = keyframe_eval(TRACK(k + 0U), t); /* + 0U: k * 8 is not strength-reduced */
         l.ambient = dd_track_rgb(tms->tracks, k + 2, t);
         l.diffuse = dd_track_rgb(tms->tracks, k + 5, t);
         l.specular = dd_track_rgb(tms->tracks, k + 8, t);
         l.atten[0] = keyframe_eval(TRACK(k + 11), t);
         l.atten[1] = keyframe_eval(TRACK(k + 12), t);
         l.atten[2] = keyframe_eval(TRACK(k + 13), t);
-        bone = tms->chan[i + 1];
+        bone = (tms->chan + 1)[i];
         tr = TRACK(bone[0]);
         pos.x = keyframe_eval(tr, t);
         pos.y = keyframe_eval(tr + 1, t);
@@ -120,8 +125,12 @@ void dd_fcam_from_tms(DdCam *cam, DdTms *tms, float t)
             l.pos = *(DdXyz *)&pos;
             break;
         case 2:
-            l.dir = *(DdXyz *)&dir;
-            l.pos = *(DdXyz *)&pos;
+            l.dir.x = dir.x;
+            l.dir.y = dir.y;
+            l.dir.z = dir.z;
+            l.pos.x = pos.x;
+            l.pos.y = pos.y;
+            l.pos.z = pos.z;
             l.spot_exp = keyframe_eval(TRACK(k + 15), t);
             l.spot_cutoff = cosf_vfpu(keyframe_eval(TRACK(k + 14), t) / 2.0f);
             break;
@@ -130,7 +139,6 @@ void dd_fcam_from_tms(DdCam *cam, DdTms *tms, float t)
     }
 }
 
-#endif
 
 #define VEC3(x, y, z) (*(DdXyzw *)&(DdXyz){ x, y, z })
 
