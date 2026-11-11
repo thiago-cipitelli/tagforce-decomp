@@ -10,6 +10,10 @@
 
 int dd_orbs_update(int phase, DdOrbFx *d);
 
+typedef struct DdXy {                  /* x, y of an orb or a spark, copied as a pair */
+    float x, y;
+} DdXy;
+
 /* flame frames of the orb sheet (u from, u to) and the two rows (v from, v to): local templates of
    dd_orb_draw (data of the asm while it is kept as asm) */
 int dd_orb_frames[7][2] = {
@@ -85,7 +89,7 @@ void dd_orb_draw(DdOrb *o, int flag, int x, int y, float alpha, int step)
 
 #endif
 
-#ifdef NON_MATCHING /* 121 palavras (rodada 9; eram ~717 com a função 128 B menor): forma batendo quase toda; faltam registradores do laço das faíscas (ponteiros s0-s5 rodados), f20-f25 rodados entre `one`/`k`/`a`, e a ordem das constantes no laço da primeira volta (12,566371 e 0,017453292 carregadas antes do sorteio no original) */
+#ifdef NON_MATCHING /* 16 palavras (rodada 22; eram 65): faltam $f20/$f22 trocados entre `one` e `amp` (o alfa das faíscas divide o registrador com amp) e as posições de pilha do contador e do ponteiro de orb derramados no laço que solta as faíscas (+92/+84 trocados). Resolveram o resto: set = &d->set[xo], amp separado de k, xo = io * 45 (indução criada depois do ponteiro), cópia de x/y como par (DdXy) e q próprio no laço das faíscas. Testados sem efeito: ordem das declarações (busca gulosa), blocos, nomes dos contadores, o = d->orb + i */
 /* phase 1 = first frame; returns 2 while running, 4 when done */
 int dd_orbs_update(int phase, DdOrbFx *d)
 {
@@ -105,6 +109,7 @@ int dd_orbs_update(int phase, DdOrbFx *d)
     float k;
     float one;
     float a;
+    float amp;
     float s;
     float e;
     float dist;
@@ -155,7 +160,8 @@ int dd_orbs_update(int phase, DdOrbFx *d)
         xo = d->count - 1;
         o = &d->orb[xo];
         o->flags |= 1;
-        d->set[xo].flags |= 1;
+        set = &d->set[xo];
+        set->flags |= 1;
         o->idx = d->count - 1;
         o->phase = 12.566371f * o->idx / 5.0f + 0.017453292f * (DD_RAND(r) / 32767.0f);
         o->phase2 = 6.2831855f * (DD_RAND(r) / 32767.0f);
@@ -177,14 +183,15 @@ int dd_orbs_update(int phase, DdOrbFx *d)
         one = 1.0f;
         k = one;
     }
+    amp = 5.0f * k;
     a = fade * out;
-    k = 5.0f * k;
-    for (io = 4, xo = 180; io >= 0; io--, xo -= 45) {
+    for (io = 4; io >= 0; io--) {
         ob = &d->orb[io];
         if (!(ob->flags & 1) != 1) {
             s = sinf(0.08726647f * ob->t + ob->phase);
-            y = (int)(k * s);
+            y = (int)(amp * s);
             e = dd_ease_sin(ob->t, 32, 1);
+            xo = io * 45;
             x = (xo - 90) * e + 314.0f;
             y = e * (y - 40) + 157.0f;
             ob->x = x;
@@ -212,8 +219,7 @@ int dd_orbs_update(int phase, DdOrbFx *d)
                     x = DD_RAND(r) % 8;
                     sp->u = x % 4 * 32;
                     sp->v = x / 4 * 32;
-                    sp->x = o->x;
-                    sp->y = o->y;
+                    *(DdXy *)&sp->x = *(DdXy *)&o->x;
                     dist = DD_RAND(r) / 32767.0f;
                     ang = 6.2831855f * (DD_RAND(r) / 32767.0f);
                     sp->x = sp->x + dist * 30.0f * sinf(ang);
@@ -229,6 +235,9 @@ int dd_orbs_update(int phase, DdOrbFx *d)
     }
 
     /* the sparks */
+    {
+    DdSpark *q;                        /* own variable: p gives other $s */
+
     list = dl_select_layer(6, 0);
     list = dd_depth_enable(list, 0, 0);
     list = dd_tex_enable(list, 1, 1, 1, 0, 1, 1, 1);
@@ -239,22 +248,23 @@ int dd_orbs_update(int phase, DdOrbFx *d)
         set = &d->set[i];
         if (!(set->flags & 1) != 1) {
             for (n = 0; n < 32; n++) {
-                p = &set->p[n];
-                if (!(p->flags & 1) != 1) {
-                    s = sinf(3.1415927f * p->t / 32.0f);
-                    list = dl_color(list, (unsigned int)(out * (fade * (p->alpha * (s * 200.0f)))) << 24 | 0xFFFF80);
+                q = &set->p[n];
+                if (!(q->flags & 1) != 1) {
+                    s = sinf(3.1415927f * q->t / 32.0f);
+                    list = dl_color(list, (unsigned int)(out * (fade * (q->alpha * (s * 200.0f)))) << 24 | 0xFFFF80);
                     for (j = 0; j < 2; j++) {
-                        sp = &p->spr[j];
-                        list = draw_sprite(list, sp->x - 12.0f, sp->y - 12.0f + sp->vy * p->t, 0, sp->u, sp->v, 0, 0);
+                        sp = &q->spr[j];
+                        list = draw_sprite(list, sp->x - 12.0f, sp->y - 12.0f + sp->vy * q->t, 0, sp->u, sp->v, 0, 0);
                     }
-                    p->t += step;
-                    if (p->t >= 32)
-                        p->flags &= ~1;
+                    q->t += step;
+                    if (q->t >= 32)
+                        q->flags &= ~1;
                 }
             }
         }
     }
     dl_set_list(list);
+    }
 
     if (d->fade < 16) {
         d->fade += step;
