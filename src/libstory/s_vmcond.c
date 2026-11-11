@@ -1,5 +1,4 @@
 // @range 0x088075F4-0x08808E68
-// @asm 0x0880798C-0x08807B88
 // @data 0x0881C02C-0x0881C0E0
 /* Script instructions 0xC351..0xC37E: messages, the choice window, the random branch and the
    conditional blocks (each tests a story value and, when false, skips to its end marker op + 0x23). */
@@ -137,7 +136,6 @@ void op_nop(void)
 }
 
 /* choice window: the text of the previous instruction split in lines; branch n of the block */
-#ifdef NON_MATCHING /* 1 palavra (rodada 15): o default do switch(res) faz li a1,1 no original; aqui move a1,v1 reaproveita o 1 do teste do case 1 (n pré-inicializado, tipos de n/res, case 0 e cast testados). pc - 1U e a ordem dos case vieram de 100 -> 1 */
 void op_choice(void)
 {
     StoryVm *vm = &story_vm;
@@ -167,8 +165,8 @@ void op_choice(void)
         while (!fld_cmd_poll(0x14, &res))
             sys_frame_wait();
         switch (res) {
+        case 0: default: n = 1; break;
         case 1: n = 2; break;
-        default: n = 1; break;
         case 2: n = 3; break;
         case 3: n = 4; break;
         case 4: n = 5; break;
@@ -184,7 +182,6 @@ void op_choice(void)
         break;
     }
 }
-#endif
 
 /* random branch among the next n */
 void op_random(void)

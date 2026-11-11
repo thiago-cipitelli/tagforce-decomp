@@ -41,8 +41,6 @@ segments:
       - [0x2A10, c, s_player]
       - [0x2A78, c, s_vm]
       - [0x3654, c, s_vmcond]
-      - [0x39EC, asm, s_vmcond_asm_0880798C]
-      - [0x3BE8, c, s_vmcond]
       - [0x4EC8, c, s_vmops]
       - [0x5854, asm, s_vmops_asm_088097F4]
       - [0x593C, c, s_vmops]
