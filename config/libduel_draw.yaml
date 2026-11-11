@@ -155,7 +155,7 @@ segments:
       - [0x313C4, c, dd_fx_coinfly]
       - [0x31810, c, dd_fx_fusion]
       - [0x330F8, c, dd_fx_orbs]
-      - [0x33168, asm, dd_fx_orbs_asm_08837108]
+      - [0x33544, asm, dd_fx_orbs_asm_088374E4]
       - [0x340C8, c, dd_fx_ring]
       - [0x34D3C, c, dd_fx_slot]
       - [0x35634, c, dd_fx_trail]

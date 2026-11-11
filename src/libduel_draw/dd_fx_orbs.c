@@ -1,5 +1,5 @@
 // @range 0x08837098-0x08838068
-// @asm 0x08837108-0x08838068
+// @asm 0x088374E4-0x08838068
 // @data 0x08876B54-0x08876B9C
 /* The spirit orbs: up to five flames that appear in a row over a dimmed field, bob, and shed sparks;
    the last one joins when the others have faded in (task of 0x219C bytes). */
@@ -7,19 +7,11 @@
 #undef DD_RAND
 #define DD_RAND(r) ((r) = &rand3_seeds[rand3_slot], (r)->lcg *= 0x41C64E6D, (int)(((r)->lcg += 0x3039) >> 16 & 0x7FFF))
 
-
 int dd_orbs_update(int phase, DdOrbFx *d);
 
 typedef struct DdXy {                  /* x, y of an orb or a spark, copied as a pair */
     float x, y;
 } DdXy;
-
-/* flame frames of the orb sheet (u from, u to) and the two rows (v from, v to): local templates of
-   dd_orb_draw (data of the asm while it is kept as asm) */
-int dd_orb_frames[7][2] = {
-    { 0, 22 }, { 0, 26 }, { 26, 60 }, { 60, 94 }, { 94, 148 }, { 148, 202 }, { 202, 256 },
-};
-int dd_orb_bands[2][2] = { { 0, 64 }, { 64, 128 } };
 
 int dd_orbs_start(int count, int flag, int a, int b)
 {
@@ -34,7 +26,6 @@ int dd_orbs_start(int count, int flag, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 2 palavras (rodada 9): falta só o registrador do 31.0f do halo (lui/mtc1 em v1 no original, v0 aqui); `list` dividida em l2 a partir do primeiro sprite e o 31 do halo em `v` resolveram o resto. Testados: ordem de w/v/hu/u, w = 31 fora do if, float local, ternário em full */
 /* one orb: the flame animation and, once faded in, the halo above it */
 void dd_orb_draw(DdOrb *o, int flag, int x, int y, float alpha, int step)
 {
@@ -70,9 +61,9 @@ void dd_orb_draw(DdOrb *o, int flag, int x, int y, float alpha, int step)
     if (full == 1) {
         /* the halo: 31x31, column idx of the sheet, row 0 or 1 by `flag` */
         w = 31;
-        v = (float)w;
         hu = o->idx * 32 + 23;
         u = 0;
+        v = (float)w;
         h = -v / 2;
         sh = -(int)v / 2 + 4;
         sw = (unsigned int)(alpha * (255.0f * dd_ease_lin(o->t2, 16)));
@@ -87,7 +78,6 @@ void dd_orb_draw(DdOrb *o, int flag, int x, int y, float alpha, int step)
     dl_set_list(l2);
 }
 
-#endif
 
 #ifdef NON_MATCHING /* 16 palavras (rodada 22; eram 65): faltam $f20/$f22 trocados entre `one` e `amp` (o alfa das faíscas divide o registrador com amp) e as posições de pilha do contador e do ponteiro de orb derramados no laço que solta as faíscas (+92/+84 trocados). Resolveram o resto: set = &d->set[xo], amp separado de k, xo = io * 45 (indução criada depois do ponteiro), cópia de x/y como par (DdXy) e q próprio no laço das faíscas. Testados sem efeito: ordem das declarações (busca gulosa), blocos, nomes dos contadores, o = d->orb + i */
 /* phase 1 = first frame; returns 2 while running, 4 when done */
