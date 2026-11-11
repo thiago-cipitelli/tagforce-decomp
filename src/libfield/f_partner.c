@@ -1,5 +1,4 @@
 // @range 0x0881BA90-0x0881C240
-// @asm 0x0881C03C-0x0881C1FC
 // @data 0x0883C9C8-0x0883C9E0
 /* The partner walking behind the player on the map (field_partner): it follows the position the player
    had on the previous frame, slides along the NPCs it bumps into and marks the cells it leaves and
@@ -160,7 +159,6 @@ void fpt_loaded_b(int *file, FieldChr *c)
 }
 
 /* the first walkable cell around the player, starting behind it */
-#ifdef NON_MATCHING /* 10 palavras: o original divide p.x por 0.5 (lido em $f0, quociente em $f1) antes de ler p.z; aqui as duas leituras saem antes (mesmo padrão de fld_chr_collide, fld_player_update, fpt_update; float local, cast, inline e ordem com ok não mudam) */
 void fpt_place(void)
 {
     FieldChr *c = &field_partner.c;
@@ -177,10 +175,13 @@ void fpt_place(void)
     for (i = 0; i < 8; i++) {
         p = pl->pos;
         fld_dir_vec(&t, dir);
-        v = t;
-        vec3_scale(&v, &v, 0.5f);
+        {
+            Vec3 *q = &v;
+            *q = t;
+            vec3_scale(q, q, 0.5f);
+        }
         vec3_add(&p, &p, &v);
-        x = p.x / 0.5f;
+        x = ((volatile Vec3 *)&p)->x / 0.5f;
         z = p.z / 0.5f;
         ok = 1;
         ok &= fld_map_walkable(x, z, 0);
@@ -199,7 +200,6 @@ void fpt_place(void)
         c->dir = pl->dir;
     }
 }
-#endif
 
 void fpt_face(void)
 {
