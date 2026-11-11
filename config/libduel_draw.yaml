@@ -176,8 +176,6 @@ segments:
       - [0x450C0, c, dd_fx_glow]
       - [0x468CC, c, dd_fx_eyes]
       - [0x46E84, c, dd_fx_aura]
-      - [0x46E84, asm, dd_fx_aura_asm_0884AE24]
-      - [0x472C0, c, dd_fx_aura]
       - [0x47A7C, c, dd_fx_times]
       - [0x47E10, c, dd_fx_cardse]
       - [0x494E8, c, dd_fx_fade]
