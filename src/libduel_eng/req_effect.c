@@ -1,5 +1,4 @@
 // @range 0x088D6DE8-0x088DA5EC
-// @asm 0x088D7604-0x088D7AB8
 // @asm 0x088D7EA4-0x088D8354
 // @asm 0x088D86B8-0x088D8A24
 // @asm 0x088D8AB8-0x088D8B1C
@@ -232,10 +231,6 @@ void duel_req_move(void)
     }
 }
 
-#ifdef NON_MATCHING /* 25 palavras (era 51): declarações separadas das atribuições e (int)t >> 16 & 0xFFFF (dá o ext
-                      do original); falta o escalonamento depois da chamada (o original mantém t em v0 e faz o ext
-                      no delay slot do 1º teste do switch) e w0/tz, tp/w1 trocados; ordem e tipos das declarações,
-                      locais de bloco e ordem dos comandos não mudam nada */
 /* Move the card at location arg (its uid in the index bits) to location loc + offset; w: low byte
    and bit 8 go to the new place. */
 void duel_req_move_card(void)
@@ -262,14 +257,14 @@ void duel_req_move_card(void)
     sp = a.player;
     sz = a.zone;
     t = duel_card_locate(uid);
+    i = (int)t >> 16 & 0xFFFF;
     l = *(DuelReqCard *)&duel_req.loc;
-    w = duel_req.w;
     off = l.uid;
-    w0 = w & 0xFF;
-    w1 = w >> 8 & 0xFF;
     tz = l.zone;
     tp = l.player;
-    i = (int)t >> 16 & 0xFFFF;
+    w = duel_req.w;
+    w0 = w & 0xFF;
+    w1 = w >> 8 & 0xFF;
 
     switch (duel_req_step) {
     case 0:
@@ -317,7 +312,6 @@ void duel_req_move_card(void)
         break;
     }
 }
-#endif
 
 /* Move the card of zone arg to zone loc (player | zone << 8); into a spell/trap zone it loses its
    position and value. */
