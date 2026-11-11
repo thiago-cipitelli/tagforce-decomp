@@ -1,5 +1,4 @@
 // @range 0x0885FAA8-0x08860DA4
-// @asm 0x0885FE04-0x088601A4
 // @asm 0x08860C88-0x08860DA4
 /* Sound library, playback: object reset, attaching to the per-kind lists, starting a sound (random
    or sequential variants, group data loading, SAS voices), the BGM slots (a new BGM suspends the
@@ -190,9 +189,9 @@ void snd_obj_detach(SndObj *o)
 
 /* Starts sound `id` (handle form from snd_id_handle); `name` identifies the group read, `flags`
    0x8000 starts it suspended, 0x4000 marks a restart. Returns the object handle or 0. */
-#ifdef NON_MATCHING /* 24 palavras: o original põe `st` no $s3 de `d` e `o` no $s4 de `flags` (que não vai para a pilha); o mwcc dá a `o` o registrador de `d` e derrama `flags`. O parâmetro é o id que o laço muda (rodada 14: 46 -> 24) */
 unsigned int snd_obj_start(unsigned int cur, void *name, int fade, unsigned int flags, int pan)
 {
+    SndObj *o;
     int data = snd_group_data_of(cur);
     unsigned char *d = snd_desc(cur);
     SndRandHist *hist;
@@ -200,7 +199,6 @@ unsigned int snd_obj_start(unsigned int cur, void *name, int fade, unsigned int 
     unsigned int st;
     unsigned int kind;
     unsigned int v;
-    SndObj *o;
     unsigned int id;
     int n;
     int r;
@@ -242,7 +240,7 @@ unsigned int snd_obj_start(unsigned int cur, void *name, int fade, unsigned int 
             d = snd_desc(cur);
         } while (cur != id);
     }
-    susp = (flags & 0xFFFF) & 0x8000;
+    susp = (unsigned short)flags & 0x8000;
     st = 0x4000;
     if (susp) {
         st |= 0x40;
@@ -297,7 +295,6 @@ unsigned int snd_obj_start(unsigned int cur, void *name, int fade, unsigned int 
     sceKernelSignalSema(snd_obj_sema, 1);
     return idx << 16 | (cur & 0xFFFF) | 0x20000000;
 }
-#endif
 
 /* Retries a start that found no free object once more as suspended. */
 unsigned int snd_obj_start_retry(unsigned int id, void *name, int fade, unsigned int flags)

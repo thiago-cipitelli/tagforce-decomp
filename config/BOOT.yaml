@@ -303,8 +303,6 @@ segments:
       - [0x5B0BC, c, snd_alloc]
       - [0x5B290, asm, snd_alloc_asm_0885F230]
       - [0x5BB08, c, snd_play]
-      - [0x5BE64, asm, snd_play_asm_0885FE04]
-      - [0x5C204, c, snd_play]
       - [0x5CCE8, asm, snd_play_asm_08860C88]
       - [0x5CE04, c, snd_core]
       - [0x5D630, c, snd_obj]
