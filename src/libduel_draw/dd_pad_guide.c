@@ -1,9 +1,9 @@
 // @range 0x0886A3F4-0x0886AE68
-// @asm 0x0886A3F4-0x0886A794
 // @data 0x0887CF74-0x0887CFF8
 /* Field cursor guide: two d-pad pictures (texture 0x40026) with the caption of each direction
    around them, in a frame with a title; sized from the captions. */
 #include "dd_duelui.h"
+#include "allegrex.h"
 
 typedef struct GuideCaption {          /* caption around a d-pad picture */
     int msg;                           /* 0x0881DBC8 text */
@@ -15,7 +15,6 @@ GuideCaption guide_captions[2][4] = {
     { { 56, 0, 0, -19 }, { 57, 1, 0, 19 }, { 58, 2, -23, 0 }, { 59, 3, 23, 0 } },
     { { 62, 0, 0, -19 }, { 61, 1, 0, 19 }, { 63, 2, -23, 0 }, { 60, 3, 23, 0 } },
 };
-unsigned short guide_title[2] = { 0xFF0B, 0 };
 
 void *dd_text(int id);
 void *dl_select_layer(int layer, unsigned int *size);
@@ -29,7 +28,6 @@ void guide_size(int *w, int *h, GuideCaption *c);
 void *guide_pad(void *dl, int x, int y, int which, GuideCaption *c);
 void *guide_frame(void *dl, int x, int y, int w, int h, void *gim);
 
-#ifdef NON_MATCHING /* alocação de registradores difere; não insistido */
 void guide_draw(void)
 {
     int w[2];
@@ -37,26 +35,20 @@ void guide_draw(void)
     int i, tw, th, cx, cy;
     void *dl;
     void *gim;
-    unsigned short title[2];
-    int x, y, hw;
+    int x, y;
 
     font_set_size(12, 12);
     for (i = 0; i < 2; i++)
         guide_size(&w[i], &h[i], guide_captions[i]);
     if (cfg_get_language() == 0) {
-        if (w[0] < w[1])
-            w[0] = w[1];
-        w[1] = w[0];
-        if (h[0] < h[1])
-            h[0] = h[1];
+        w[0] = w[1] = ALLEGREX_MAX(w[0], w[1]);
+        h[0] = ALLEGREX_MAX(h[0], h[1]);
     } else {
         w[0] += 8;
         h[0] += 4;
     }
     tw = w[0] + w[1];
-    th = h[0];
-    if (th < h[1])
-        th = h[1];
+    th = ALLEGREX_MAX(h[0], h[1]);
     if (cfg_get_language() == 0) {
         cx = 314;
         cy = 132;
@@ -67,36 +59,33 @@ void guide_draw(void)
     dl = dl_select_layer(8, 0);
     dl = dl_disable(dl, 1);
     gim = dd_gim_get(0x40026);
-    hw = tw / 2;
     if (gim != 0) {
-        *(int *)title = *(int *)guide_title;
-        x = cx - tw / 2;
-        y = cy - th / 2;
-        dl = guide_frame(dl, x - 5, y - 4, tw + 9, th + 9, gim);
+        unsigned short title[2] = { 0xFF0B, 0 };
+
+        x = cx - tw / 2 - 5;
+        y = cy - th / 2 - 4;
+        dl = guide_frame(dl, x, y, tw + 9, th + 9, gim);
         dl = gim_set_texture(dl, gim);
         dl = dl_ambient_color(dl, 0xFFFFFFFF);
         dl = dl_set_tex_filter(dl, 0, 0);
         dl = draw_set_offsets(dl, 4, 16, 4, 16);
-        dl = draw_sprite(dl, x - 5, y - 18, 0, 0, 38, 0, 0);
+        dl = draw_sprite(dl, x, y - 14, 0, 0, 38, 0, 0);
         dl = draw_set_offsets(dl, 1, 16, 36, 16);
-        dl = draw_sprite(dl, x - 1, y - 18, 0, 4, 38, 0, 0);
+        dl = draw_sprite(dl, x + 4, y - 14, 0, 4, 38, 0, 0);
         dl = draw_set_offsets(dl, 9, 16, 9, 16);
-        dl = draw_sprite(dl, x + 35, y - 18, 0, 5, 38, 0, 0);
+        dl = draw_sprite(dl, x + 40, y - 14, 0, 5, 38, 0, 0);
         dl = draw_set_offsets(dl, 23, 11, 23, 11);
-        dl = draw_sprite(dl, x, y - 15, 0, 94, 22, 0, 0);
+        dl = draw_sprite(dl, x + 5, y - 11, 0, 94, 22, 0, 0);
         font_text_set(dl);
         font_set_size(12, 12);
-        font_draw_text((x + 24) << 6, (y - 15) << 6, (480 - (x + 24)) << 6, title);
+        font_draw_text((x + 29) << 6, (y - 11) << 6, (480 - (x + 29)) << 6, title);
         dl = font_text_clear();
     }
     for (i = 0; i < 2; i++)
-        dl = guide_pad(dl, cx - hw + w[i] / 2 + (i == 0 ? 0 : w[0]), cy, i, guide_captions[i]);
+        dl = guide_pad(dl, cx - tw / 2 + w[i] / 2 + (i == 0 ? 0 : w[0]), cy, i, guide_captions[i]);
     dl = dl_enable(dl, 1);
     dl_set_list(dl);
 }
-#else
-void guide_draw(void);
-#endif
 
 void guide_text_size(int *w, int *h, GuideCaption *c)
 {
