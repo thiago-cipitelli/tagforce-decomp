@@ -1690,3 +1690,28 @@ palavras (forma mais fiel, falta uma ordem do escalonador).
   quando o valor em `s0` morre ali; no ramo de magia isso veio de `x += 18; draw(x | yy); x += 175;` (o x + 18
   re-mascarado a partir de `s1`, como no original). No ramo de monstro o original faz o mesmo com `s0` ainda vivo
   depois; nenhuma forma achada.
+
+## Rodada 21 (`tmenu`): tmenu_draw e tscroll_draw (libtitle) refeitos do asm
+
+- **`switch` esparso (cadeia de comparações)**: o mwcc compara os `case` na ordem INVERSA da do fonte e põe os
+  corpos na ordem do fonte. Cadeia `70, 73, 102, 93, 84, 75` com corpos `84/75, 93, 102, 73, 70` = fonte
+  `case 75: case 84: ... case 93: ... case 102: ... case 73: ... case 70: ... default:` (`tframe`).
+- **`beql x,K,corpo` + `b fim` em vez de `bnel x,K,fim`**: `switch (x) { case K: ...; break; }` de um só case
+  (`tframe`, `mode == 1`; também o `switch (k) { case 1: ...; case 2: ... }` de `tmenu_draw`).
+- **Campos carregados (e guardados na pilha) antes do `switch`/`if` das peças**: o original copiava os campos da
+  struct para locais logo após a cópia (`u = s.u; v = s.v; tw = s.tw; ph = s.th;`) e usava os locais nas chamadas;
+  isso também muda o tamanho do quadro (`tscroll_draw` 229 -> 64). A ordem das atribuições decide quem fica em `$s`
+  e quem vai para a pilha (`px = ...; py = ...; u = t.u;` -> 21).
+- **Valores `short` usados no laço com `seh` + `sw` logo depois do cálculo**: declarar `int su = (short)(expr);`.
+  Com `short su = expr;` o mwcc mantém o short em registrador e cria no pré-cabeçalho do laço uma cópia `int` extra
+  (`seh` duplicado + spill tardio) (`tmenu_draw` 398 -> 263). Já `u`/`v` que vão como argumento `short`
+  (`seh` na chamada) são `short u = tu + selu;` com `int tu = s.u;` carregado antes do `if`.
+- **`sx += x;` antes da primeira chamada** quando o original soma em `$s` antes de `draw_set_offsets` e só faz `seh`
+  na chamada seguinte; `px = sx + x` numa variável nova é propagado para depois da chamada.
+- **`unsigned char a = m->mode; if (!a)`** dá `andi v0` + `bnezl v0` com o `andi v1,v0` do teste seguinte no delay
+  slot; `if (a == 0)` põe o valor em `v1` e o `li` do próximo teste no slot. Atribuir constantes com `if/else`
+  (não ternário) evita o `andi 0xFF` no ponto de junção.
+- **Ordem dos operandos de `and`**: `c = a | ...; dl_color(list, c & mask)` deu `and a1,a1,v0`; a mesma expressão
+  inline sai invertida em qualquer ordem do fonte.
+- **Tabela local inicializada copiada com `lwc1/swc1`**: `int ids[4] = {10, 11, 12};` dentro da função (o modelo
+  fica no `@data` do arquivo; o global antigo some).

@@ -1,5 +1,4 @@
 // @range 0x08808D48-0x08809DC4
-// @asm 0x088095F8-0x08809C4C
 // @rodata 0x0882AC40-0x0882AC60
 // @data 0x0882E404-0x0882E414
 /* The title's panel menus (TMenu): a column of panels from the title sprites that fade in one after
@@ -327,43 +326,44 @@ int tmenu_anim_instant(TMenu *m)
     return 1;
 }
 
-/* template of the panel sprites (left, middle, right) */
-int tmenu_draw_ids[4] = { 10, 11, 12 };
-
-#ifdef NON_MATCHING /* registradores e spills do laço de três sprites diferem */
 void *tmenu_draw(void *list, TMenu *m)
 {
-    int *ids = tmenu_draw_ids;
+    int i;
+    int ids[4] = { 10, 11, 12 }; /* panel sprites: left, middle, right */
     unsigned char style = m->style;
     unsigned char sel = m->style_sel;
     unsigned char hil = m->style_hilite;
     int n = m->n;
-    short su = style % 6 * 20;
-    short sv = style / 6 * 24;
-    short selu = sel % 6 * 20;
-    short selv = sel / 6 * 24;
-    short hu = hil % 6 * 20;
-    short hv = hil / 6 * 24;
+    int su = (short)(style % 6 * 20);
+    int sv = (short)(style / 6 * 24);
+    int selu = (short)(sel % 6 * 20);
+    int selv = (short)(sel / 6 * 24);
+    int hu = (short)(hil % 6 * 20);
+    int hv = (short)(hil / 6 * 24);
     TSprite s;
-    int i;
     int j;
     int k;
     int on;
     short x;
     short y;
-    short w;
     short sx;
+    short sy;
     short sw;
+    short sh;
+    short w;
     short u;
     short v;
-    unsigned int a;
+    int tu;
+    int tv;
+    unsigned char a;
+    unsigned int t;
 
-    if (m->state < 3) {
-        m->blink = 0;
-    } else {
+    if (m->state >= 3) {
         m->blink = m->blink + 1;
         if (m->blink >= 60)
             m->blink = 0;
+    } else {
+        m->blink = 0;
     }
     for (i = 0; i < n; i++) {
         x = m->x;
@@ -376,56 +376,70 @@ void *tmenu_draw(void *list, TMenu *m)
         else
             list = dl_color(list, m->color);
         list = gim_set_texture(list, ehp_find(title_pack(), title_sprite_name(ids[0]), 0));
-        if (m->state < 3)
-            on = 0;
-        else if (i == m->cursor)
+        if (m->state >= 3 && i == m->cursor)
             on = 1;
         else
             on = 0;
         for (j = 0; j <= on; j++) {
             if (j != 0) {
-                if (m->mode == 0) {
-                    a = m->blink;
-                    if (a < 20)
-                        a = (unsigned char)(a * 48 / 20 + 207);
-                    else if (a < 40)
+                unsigned int c;
+
+                a = m->mode;
+                if (!a) {
+                    t = m->blink;
+                    if (t < 20)
+                        a = t * 48 / 20 + 207;
+                    else if (t < 40)
                         a = 255;
                     else
-                        a = (unsigned char)(255 - (a - 40) * 48 / 20);
-                } else if (m->mode == 1) {
-                    a = m->blink % 6 < 3 ? 255 : 64;
+                        a = 255 - (t - 40) * 48 / 20;
+                } else if (a == 1) {
+                    if (m->blink % 6 < 3)
+                        a = 255;
+                    else
+                        a = 64;
                 } else {
                     a = 0;
                 }
-                a = (unsigned char)a;
-                list = dl_color(list, (a | (a << 16 | 0xFF000000) | a << 8) & (a << 24 | 0xFFFFFF));
+                c = a | (a << 16 | 0xFF000000 | a << 8);
+                list = dl_color(list, c & (a << 24 | 0xFFFFFF));
             }
             for (k = 0; k < 3; k++) {
                 s = title_sprites[ids[k]];
+                sx = s.x;
+                sy = s.y;
+                sw = s.w;
+                sh = s.h;
                 w = m->w;
+                tu = s.u;
+                tv = s.v;
                 if (j != 0) {
-                    u = s.u + selu;
-                    v = s.v + selv;
+                    u = tu + selu;
+                    v = tv + selv;
                 } else if (m->hilite && i == m->hilite_idx) {
-                    u = s.u + hu;
-                    v = s.v + hv;
+                    u = tu + hu;
+                    v = tv + hv;
                 } else if (m->item[i] == 2) {
-                    u = s.u + (short)(m->style_mark % 6 * 20);
-                    v = s.v + (short)(m->style_mark / 6 * 24);
+                    u = tu + (short)(m->style_mark % 6 * 20);
+                    v = tv + (short)(m->style_mark / 6 * 24);
                 } else {
-                    u = s.u + su;
-                    v = s.v + sv;
+                    u = tu + su;
+                    v = tv + sv;
                 }
                 if (w < 9)
                     w = 9;
-                sx = s.x;
-                sw = s.w;
-                if (k == 2)
-                    sx = w - 3;
-                else if (k == 1)
+                switch (k) {
+                case 1:
                     sw = w - 9;
-                list = draw_set_offsets(list, s.tw, s.th, sw, s.h);
-                list = draw_sprite(list, (short)(sx + x), (short)(s.y + y), 0, u, v, s.a, s.b);
+                    break;
+                case 2:
+                    sx = w - 3;
+                    break;
+                }
+                sx += x;
+                sy += y;
+                list = draw_set_offsets(list, s.tw, s.th, sw, sh);
+                list = draw_sprite(list, sx, sy, 0, u, v, s.a, s.b);
             }
         }
         if (m->draw)
@@ -433,7 +447,6 @@ void *tmenu_draw(void *list, TMenu *m)
     }
     return list;
 }
-#endif
 
 unsigned int tmenu_text_color(TMenu *m, int i0)
 {
