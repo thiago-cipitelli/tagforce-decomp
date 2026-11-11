@@ -208,6 +208,9 @@ void snd_echo_mix(short *out)
 
 /* Widens the stereo image: adds the L-R difference of the frame two back; `hist` carries the last two
    differences across blocks. Each sum is clamped to 16 bits on the side its sign can overflow. */
+#ifdef NON_MATCHING /* static: o chamador mantém t7/t8/v0 vivos através do jal (snd_streams_decode) */
+static
+#endif
 void snd_stereo_widen(short *hist, short *buf, int n)
 {
     short save[2];
@@ -265,6 +268,9 @@ void snd_stereo_widen(short *hist, short *buf, int n)
 
 #ifdef NON_MATCHING /* lógica corrigida (quociente negativo +1, laço interno do-while); 31 palavras: só registradores (o original dá t1 ao k externo, t0 a i e t4/t5/t6 a idx/r/l), nenhuma ordem de declaração resolve */
 /* Box filter of `taps` frames over `n` stereo frames; `hist` holds the 16 frames before the block. */
+#ifdef NON_MATCHING /* static: o chamador mantém t7/t8/v0 vivos através do jal (snd_streams_decode) */
+static
+#endif
 void snd_box_filter(short *hist, short *buf, int n, int taps)
 {
     short save[32];
@@ -393,44 +399,46 @@ int snd_block_level(short *p)
     return sum >> 8;
 }
 
-#ifdef NON_MATCHING /* the original keeps $t7/$t8/$v0 live across the calls to snd_stereo_widen and
-   snd_box_filter (which leave them untouched); mwcc build 219 with our flags always saves them in
-   $s registers or on the stack, so the register allocation and frame cannot match */
+#ifdef NON_MATCHING /* 21 palavras: só registradores no primeiro laço de mistura com saturação (o original
+   dá t0 à amostra escalada, t1 ao lh do destino e t3 à soma; o nosso t1/t0/t1; um local separado para a soma,
+   como no segundo laço, não resolve) e na chamada final de snd_echo_mix (v1/a0 contra v0/v1). Depende de
+   snd_stereo_widen/snd_box_filter static (sob NON_MATCHING enquanto ela e snd_box_filter ficam em asm). */
 /* Decodes the active Atrac streams into their PCM rings (0x1000 frames, decoded ahead by up to
    `budget` frames, less when many SAS voices are active) and mixes 0x100 frames of each into the
    current output block: copied when it is the only stream of the first pass, else added with
    saturation. Handles the loop points and the end of the stream. */
 void snd_streams_decode(int mix)
 {
-    SndStreamRef list[7];
-    int loops;
-    int tmp;
-    short r;
     short l;
-    int remain;
-    int end;
+    short r;
+    int tmp;
+    int loops;
+    SndStreamRef list[7];
     int decoded;
+    int end;
+    int remain;
     int n;
     int budget;
-    SndStreamRef *e;
+    int loop_end;
     SndObj *o;
     SndStream *s;
     int id;
     int v;
-    unsigned int *pcm;
-    unsigned int *pcm_hi;
-    short (*hist)[2];
-    int loop_end;
-    int rd0;
     int filled;
+    SndStreamRef *e;
+    short (*hist)[2];
+    unsigned int *pcm_hi;
+    int rd0;
+    unsigned int *pcm;
     unsigned int *dst;
-    unsigned int *a;
-    unsigned int *b;
     int cnt;
     int wrap;
+    unsigned int *a;
+    unsigned int *b;
     int rd;
     int x;
     int lo;
+    int sum;
 
     sceKernelWaitSema(snd_atrac_sema, 1, 0);
     tmp = snd_sas_list.count;
@@ -441,8 +449,14 @@ void snd_streams_decode(int mix)
             budget = 0;
         }
     }
-    n = snd_streams_sorted(list);
-    for (e = list; (o = e->obj) != 0; e++) {
+    e = list;
+    n = snd_streams_sorted(e);
+    e--;
+    for (;;) {
+        e++;
+        o = e->obj;
+        if (o == 0)
+            break;
         if (o->state & 0x10) {
             continue;
         }
@@ -452,7 +466,7 @@ void snd_streams_decode(int mix)
         s = &o->s;
         if (!(s->sflags & 0x80)) {
             s->sflags |= 0x80;
-            if (s->u.st.end < s->pos) {
+            if (s->pos > s->u.st.end) {
                 tmp = s->u.st.loop;
                 if (tmp < 0) {
                     tmp = 0;
@@ -462,7 +476,7 @@ void snd_streams_decode(int mix)
             sceAtracResetPlayPosition(id, s->pos, 0, 0);
             sceAtracSetLoopNum(id, -1);
             s->u.st.start = 0;
-            s->wr = s->u.st.rd = 0x800;
+            s->u.st.rd = s->wr = 0x800;
         }
         if (s->e7) {
             s->e7 = 0;
@@ -486,12 +500,13 @@ void snd_streams_decode(int mix)
         hist = snd_filter_hist[v];
         do {
             decoded = 0;
+            x = budget - s->u.st.c4;
             if (s->sflags & 1) {
                 goto out;
             }
-            if (e->left < 0x100 || budget - s->u.st.c4 > 0) {
+            if (e->left < 0x100 || x > 0) {
                 tmp = s->decoded - s->pos;
-                if ((s->sflags & 0x40) && s->u.st.c4 < tmp) {
+                if ((s->sflags & 0x40) && tmp > s->u.st.c4) {
                     goto out;
                 }
                 v = s->wr;
@@ -527,10 +542,10 @@ void snd_streams_decode(int mix)
             rd = s->u.st.rd;
             b = pcm + rd;
             dst = (unsigned int *)snd_mix_buf[snd_mix_idx] + filled;
-            tmp = 0x100 - filled;
-            cnt = s->decoded - s->pos;
             a = b;
+            cnt = s->decoded - s->pos;
             wrap = 0;
+            tmp = 0x100 - filled;
             if (tmp < cnt) {
                 cnt = tmp;
             }
@@ -544,24 +559,33 @@ void snd_streams_decode(int mix)
                 cnt -= rd;
             }
             s->u.st.rd = rd;
-            if (s->e6 == 2) {
+            switch (s->e6) {
+            case 1:
+                if ((lo = s->fade8.cur) != 0) {
+                    snd_box_filter((short *)hist, (short *)a, cnt, (signed char)lo);
+                }
+                break;
+            case 2:
                 snd_stereo_widen((short *)hist, (short *)a, cnt);
-            } else if (s->e6 == 1 && s->fade8.cur != 0) {
-                snd_box_filter((short *)hist, (short *)a, cnt, s->fade8.cur);
+                break;
             }
             if (r != 0 || l != 0) {
                 if (mix == 0 && n == 1) {
                     if (r == 0x1000 && l == 0x1000) {
                         while (--cnt >= 0) {
-                            *dst++ = *a++;
+                            *dst = *a;
+                            dst++;
+                            a++;
                         }
                         while (--wrap >= 0) {
-                            *dst++ = *b++;
+                            *dst = *b;
+                            dst++;
+                            b++;
                         }
                     } else {
                         while (--cnt >= 0) {
                             x = *a;
-                            lo = (short)x * l >> 12;
+                            lo = (short)(x & 0xFFFF) * l >> 12;
                             if (lo < 0) {
                                 lo++;
                             }
@@ -575,7 +599,7 @@ void snd_streams_decode(int mix)
                         }
                         while (--wrap >= 0) {
                             x = *b;
-                            lo = (short)x * l >> 12;
+                            lo = (short)(x & 0xFFFF) * l >> 12;
                             if (lo < 0) {
                                 lo++;
                             }
@@ -591,7 +615,7 @@ void snd_streams_decode(int mix)
                 } else {
                     while (--cnt >= 0) {
                         x = *a;
-                        lo = (short)x * l >> 12;
+                        lo = (short)(x & 0xFFFF) * l >> 12;
                         if (lo < 0) {
                             lo++;
                         }
@@ -617,15 +641,15 @@ void snd_streams_decode(int mix)
                     }
                     while (--wrap >= 0) {
                         x = *b;
-                        lo = (short)x * l >> 12;
+                        lo = (short)(x & 0xFFFF) * l >> 12;
                         if (lo < 0) {
                             lo++;
                         }
-                        lo += ((short *)dst)[0];
-                        if (lo < -0x8000) {
-                            lo = -0x8000;
-                        } else if (lo > 0x7FFF) {
-                            lo = 0x7FFF;
+                        sum = lo + ((short *)dst)[0];
+                        if (sum < -0x8000) {
+                            sum = -0x8000;
+                        } else if (sum > 0x7FFF) {
+                            sum = 0x7FFF;
                         }
                         tmp = (x >> 16) * r >> 12;
                         if (tmp < 0) {
@@ -637,7 +661,7 @@ void snd_streams_decode(int mix)
                         } else if (tmp > 0x7FFF) {
                             tmp = 0x7FFF;
                         }
-                        *dst = (lo & 0xFFFF) | tmp << 16;
+                        *dst = (sum & 0xFFFF) | tmp << 16;
                         dst++;
                         b++;
                     }
