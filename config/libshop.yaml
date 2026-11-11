@@ -37,8 +37,6 @@ segments:
       - [0x4BA4, c, shop_msgwin]
       - [0x5D8C, c, shop_points]
       - [0x69C0, c, shop_packs]
-      - [0x6D68, asm, shop_packs_asm_0880AD08]
-      - [0x765C, c, shop_packs]
       - [0x8298, c, shop_shelf]
       - [0x889C, asm, shop_shelf_asm_0880C83C]
       - [0x8964, c, shop_shelf]
