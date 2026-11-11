@@ -1715,3 +1715,38 @@ palavras (forma mais fiel, falta uma ordem do escalonador).
   inline sai invertida em qualquer ordem do fonte.
 - **Tabela local inicializada copiada com `lwc1/swc1`**: `int ids[4] = {10, 11, 12};` dentro da função (o modelo
   fica no `@data` do arquivo; o global antigo some).
+
+## Rodada 22 (`drawP`): libduel_draw/libduel_mgr, quase-acertos e reescritas médias
+
+Bateram `dd_fx_aura_halo` (241 -> 0), `dd_cobj_goto` (192 -> 0), `dd_fcam_from_tms` (89 -> 0), `guide_draw`
+(224 -> 0) e `dd_orb_draw` (2 -> 0). Idiomas novos:
+- **Booleano materializado com o teste que pula um `b`** (`slti at; beqz at,L1; nop; b J; move v0,zero; L1: li v0,1`)
+  numa função que devolve valor: helper `static inline int f(int id) { if (id >= 247 && id <= 289) return 0;
+  return 1; }` e `if (!on) x = 0.0f; else x = 1.0f;` (`dd_fx_aura_halo`). Outras formas do helper (`||`, `else`,
+  `return !(...)`) não dão.
+- **`a << 24` recalculado (sem CSE) no segundo uso**: `(unsigned int)a << 24` num dos dois.
+- **Campos de um parâmetro struct relidos da pilha depois de cada chamada** (o mwcc os mantinha em `$s`): tomar o
+  endereço do parâmetro numa cópia, `*(DdPos *)&o->home = *(DdPos *)&from;` (`dd_cobj_goto`, 73 palavras de uma vez).
+- **`(unsigned int)(z - 12) < 4` = `sltiu`**; o `z - 12 < 4` com sinal do draft era bug (valia para as zonas 0-11).
+- **Uma condição com `||` para dois caminhos que gravam o mesmo campo e caem no mesmo bloco** (`beqzl ... sh` com a
+  cópia do primeiro store no slot): `if ((t < dur && !b7 && !c0) || a1 || a6 || a7 || b0) { ... return; }` em vez
+  de `goto` para o meio do bloco.
+- **Redução de força controlada** (`dd_fcam_from_tms`): `TRACK(k + 0U)` impede o `k * 8` de virar indução (o
+  original faz `sll` a cada uso); `(tms->chan + 1)[i]` dá a indução `i * 8` com o `+8` no deslocamento do `lhu`;
+  `for (...; k += 16, i++)` põe o incremento de `k` antes das induções, como no original.
+- **Parâmetro com `$s` mais baixo que o contador do laço**: parâmetro `void *in`, local `DdTms *tms;` declarado
+  logo DEPOIS de `int i;` e atribuído no início (`tms = in;`), com as inicializações das outras declarações
+  movidas para depois dele.
+- **Indução criada depois do ponteiro do laço** (`li s3,4; addiu s1,s7,160; li s0,180`): `xo = io * 45;` dentro do
+  corpo em vez de `xo` no cabeçalho do `for` (`dd_orbs_update`).
+- **Cópia de par de floats com as duas cargas antes dos dois stores**: `*(DdXy *)&sp->x = *(DdXy *)&o->x;` (struct
+  local `{ float x, y; }`); cópia de `DdXyz` intercalada no original = três atribuições campo a campo
+  (`dd_fcam_from_tms`, caso 2 da luz). Teste as duas formas.
+- **Ponteiro novo num bloco para um laço** (`{ DdSpark *q; ... }` no laço que desenha as faíscas) acertou a rotação
+  de `$s` de `list`/`set`/`p`/`sp` de uma vez.
+- **Modelo local copiado só dentro de um `if`** (`lh/sh` depois do teste): declarar o vetor inicializado no bloco do
+  `if` (`guide_draw`); no topo da função a cópia sobe para o prólogo. O global que servia ao asm some.
+- **`max` do Allegrex em reescritas**: `w[0] = w[1] = ALLEGREX_MAX(w[0], w[1]);` grava `w[1]` antes de `w[0]`.
+- Não resolvidos: `dd_orbs_update` (16 palavras: `$f20`/`$f22` trocados entre `one` e `amp` e dois derrames de
+  pilha trocados; ordem das declarações, blocos e nomes testados) e `dmgr_pt_sprite` (o original guarda `x` em
+  `s8` e derrama `p`, o ponteiro do `file` e `y`).
