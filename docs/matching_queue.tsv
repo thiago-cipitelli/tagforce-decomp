@@ -1,12 +1,11 @@
 fuzzy	size	module	function	address	file
-99.9	1084	libduel_draw	dd_fx_flipup_update	0x0883134C	src/libduel_draw/dd_fx_flipup.c
+99.7	2256	BOOT	snd_streams_decode	0x0885D078	src/BOOT/snd_mix.c
 99.6	2292	libshop	shop_pack_open	0x0880AD08	src/libshop/shop_packs.c
 99.5	3008	libduel_eng	duel_088C4864	0x088C4864	src/libduel_eng/duel_draws.c
 99.5	2224	libduel_eng	duel_088C6BC8	0x088C6BC8	src/libduel_eng/duel_draws.c
 98.5	2948	libduel_draw	dd_orbs_update	0x088374E4	src/libduel_draw/dd_fx_orbs.c
 98.4	508	libstory	op_choice	0x0880798C	src/libstory/s_vmcond.c
 98.4	928	BOOT	snd_obj_start	0x0885FE04	src/BOOT/snd_play.c
-98.2	1612	liblimitlist	ll_draw_row	0x08806DC0	src/liblimitlist/ll_screen.c
 98.1	336	libtitle	tdl_rules_draw	0x08822D64	src/libtitle/t_duel.c
 97.8	500	libduel_eng	duel_088042D4	0x088042D4	src/libduel_eng/ai_08804000.c
 97.1	416	libduel_draw	func_08822520	0x08822520	src/libduel_draw/dd_action_menu.c
@@ -55,7 +54,6 @@ fuzzy	size	module	function	address	file
 86.8	1360	libdeck	dk_draw_row	0x0880F5E4	src/libdeck/dk_cards.c
 86.4	504	libduel_eng	duel_08844C2C	0x08844C2C	src/libduel_eng/ai_08844C2C.c
 86.3	1080	BOOT	ehf_cmd_prim_ribbon	0x08826014	src/BOOT/ehf_prim.c
-85.6	2256	BOOT	snd_streams_decode	0x0885D078	src/BOOT/snd_mix.c
 84.8	1264	libduel_eng	duel_eff_f8b34	0x088F8B34	src/libduel_eng/effects_b.c
 84.1	232	libduel_eng	duel_08871B14	0x08871B14	src/libduel_eng/act_cond2.c
 83.8	544	libselect_card	sc_draw_counts	0x08808694	src/libselect_card/sc_panes.c
@@ -73,7 +71,6 @@ fuzzy	size	module	function	address	file
 77.1	1524	libduel_draw	dd_board_cards	0x0880EB70	src/libduel_draw/dd_board.c
 77.1	716	libduel_draw	dd_face	0x08812C94	src/libduel_draw/dd_face.c
 76.8	104	libfield	fld_chr_tex	0x08806E6C	src/libfield/f_chrdraw.c
-76.4	796	BOOT	font_init	0x08845AC0	src/BOOT/font.c
 76.3	880	libduel_draw	dd_board_card_draw	0x0880F164	src/libduel_draw/dd_board.c
 75.7	784	BOOT	spline_init_ring	0x08839558	src/BOOT/transform.c
 74.7	132	libstory	st_chr_step_value	0x088044EC	src/libstory/s_chr.c
@@ -83,14 +80,8 @@ fuzzy	size	module	function	address	file
 73.1	596	libstory	st_chr_update	0x08805BD0	src/libstory/s_chr.c
 71.1	440	libshop	shop_open_add	0x0881259C	src/libshop/shop_open.c
 71.1	1344	libdeck_tutorial	dt_draw_row	0x088082AC	src/libdeck_tutorial/dt_edraw.c
-70.3	2456	BOOT	menu_item_build_frame	0x08844B44	src/BOOT/menu_draw.c
 70.0	2104	libshop	shop_buy_step	0x08806CC4	src/libshop/shop_state.c
 69.9	1096	libshop	shop_draw_shelf_3d	0x0880D3E0	src/libshop/shop_list.c
-68.8	1620	libtitle	tmenu_draw	0x088095F8	src/libtitle/t_tmenu.c
-67.7	1328	libtitle	tframe	0x08811A8C	src/libtitle/t_panel.c
-65.6	1140	libtitle	tscroll_draw	0x08812200	src/libtitle/t_panel.c
 59.6	2744	libduel_draw	dd_counter_draw	0x08810758	src/libduel_draw/dd_counter.c
-59.2	1276	BOOT	font_layout_text	0x0884876C	src/BOOT/font_text.c
 53.8	516	libduel_draw	func_08822C2C	0x08822C2C	src/libduel_draw/dd_field_marks.c
-52.1	2144	BOOT	font_layout_wtext	0x08847768	src/BOOT/font_text.c
 37.1	5788	libduel_eng	duel_08817598	0x08817598	src/libduel_eng/ai_08815E90.c
