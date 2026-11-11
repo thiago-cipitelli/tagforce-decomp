@@ -30,6 +30,113 @@ void fld_player_reset(void)
     fld_chr_reset(&field_player.c);
 }
 
+void fld_player_input(void);
+void fld_player_fx(int kind, int b);
+void fld_player_mark_cells(int v);
+void fld_player_move(void);
+void fld_player_seek(void);
+int fld_bg_id(void);
+int fld_bg_event(int bg, int cx, int cz);
+int fld_story_flag(int id, int arg);
+int fld_fx_kind(FieldFx *fx);
+
+/* per frame: input and step (twice when running), the block in front of the rooms 0x0C/0x25, the walk
+   toward a target cell, the cell marks, the effect of the event under the player (padac[2] on) and
+   the footstep sound flags on frames 1 and 4 of the walk (padac[3] last frame) */
+void fld_player_update(void)
+{
+    FieldPlayer *p = &field_player;
+    FieldChr *c;
+    int k;
+    int ev;
+    int cx;
+    int cz;
+
+    fld_ctx_get();
+    c = &field_player.c;
+    if (field_player.lock != 0) {
+        fld_player_input();
+        fld_player_move();
+        switch (fld_bg_id()) {
+        case 12:
+        case 37:
+            cz = p->c.pos.z / 0.5f;
+            cx = p->c.pos.x / 0.5f;
+            if (cx == 14 && cz >= 11 && 26 > cz && p->c.pos.x >= 7.25f && c->vel.x > 0.0f)
+                c->vel.x = 0.0f;
+            break;
+        }
+        if (c->run != 0) {
+            fld_player_mark_cells(0);
+            vec3_add(&c->pos, &c->pos, &c->vel);
+            fld_player_mark_cells(1);
+            fld_player_input();
+            fld_player_move();
+            switch (fld_bg_id()) {
+            case 12:
+            case 37:
+                cz = p->c.pos.z / 0.5f;
+                cx = p->c.pos.x / 0.5f;
+                if (cx == 14 && cz >= 11 && 26 > cz && p->c.pos.x >= 7.25f && c->vel.x > 0.0f)
+                    c->vel.x = 0.0f;
+                break;
+            }
+        }
+    } else {
+        c->anim = 0;
+        memset(&c->vel, 0, sizeof(Vec3));
+    }
+    if (p->busy != 0)
+        fld_player_seek();
+    fld_player_mark_cells(0);
+    vec3_add(&c->pos, &c->pos, &c->vel);
+    fld_player_mark_cells(1);
+    fld_chr_update(c);
+    ev = fld_bg_event(fld_bg_id(), ((volatile Vec3 *)&c->pos)->x / 0.5f, c->pos.z / 0.5f);
+    if (ev == 0) {
+        if (p->padac[2] != 0)
+            fld_player_fx(0, 0);
+        p->padac[2] = 0;
+    } else {
+        switch (ev) {
+        case 1:
+        default:
+            k = 11;
+            break;
+        case 2:
+            k = 12;
+            break;
+        case 3:
+            k = 13;
+            break;
+        case 4:
+            k = 14;
+            break;
+        }
+        if (p->padac[2] == 0 || fld_fx_kind((FieldFx *)c->fx) != k)
+            fld_player_fx(k, 0);
+        p->padac[2] = 1;
+    }
+    switch (c->anim) {
+    case 0:
+        p->padac[3] = -1;
+        break;
+    case 1:
+        if (p->padac[3] != c->frame || p->padac[3] == -1) {
+            switch (c->frame) {
+            case 1:
+                fld_story_flag(0x6259, 0);
+                break;
+            case 4:
+                fld_story_flag(0x625A, 0);
+                break;
+            }
+            p->padac[3] = c->frame;
+        }
+        break;
+    }
+}
+
 void fld_player_draw(void)
 {
     FieldPlayer *p = &field_player;
@@ -376,109 +483,4 @@ void fld_player_seek(void)
     c->anim = 1;
     if (fld_vec3_len(&c->vel) > 0.0f)
         c->dir = fld_dir_nearest(&c->vel);
-}
-
-void fld_player_input(void);
-void fld_player_move(void);
-void fld_player_seek(void);
-int fld_bg_id(void);
-int fld_bg_event(int bg, int cx, int cz);
-int fld_story_flag(int id, int arg);
-int fld_fx_kind(FieldFx *fx);
-
-/* per frame: input and step (twice when running), the block in front of the rooms 0x0C/0x25, the walk
-   toward a target cell, the cell marks, the effect of the event under the player (padac[2] on) and
-   the footstep sound flags on frames 1 and 4 of the walk (padac[3] last frame) */
-void fld_player_update(void)
-{
-    FieldPlayer *p = &field_player;
-    FieldChr *c;
-    int k;
-    int ev;
-    int cx;
-    int cz;
-
-    fld_ctx_get();
-    c = &field_player.c;
-    if (field_player.lock != 0) {
-        fld_player_input();
-        fld_player_move();
-        switch (fld_bg_id()) {
-        case 12:
-        case 37:
-            cz = p->c.pos.z / 0.5f;
-            cx = p->c.pos.x / 0.5f;
-            if (cx == 14 && cz >= 11 && 26 > cz && p->c.pos.x >= 7.25f && c->vel.x > 0.0f)
-                c->vel.x = 0.0f;
-            break;
-        }
-        if (c->run != 0) {
-            fld_player_mark_cells(0);
-            vec3_add(&c->pos, &c->pos, &c->vel);
-            fld_player_mark_cells(1);
-            fld_player_input();
-            fld_player_move();
-            switch (fld_bg_id()) {
-            case 12:
-            case 37:
-                cz = p->c.pos.z / 0.5f;
-                cx = p->c.pos.x / 0.5f;
-                if (cx == 14 && cz >= 11 && 26 > cz && p->c.pos.x >= 7.25f && c->vel.x > 0.0f)
-                    c->vel.x = 0.0f;
-                break;
-            }
-        }
-    } else {
-        c->anim = 0;
-        memset(&c->vel, 0, sizeof(Vec3));
-    }
-    if (p->busy != 0)
-        fld_player_seek();
-    fld_player_mark_cells(0);
-    vec3_add(&c->pos, &c->pos, &c->vel);
-    fld_player_mark_cells(1);
-    fld_chr_update(c);
-    ev = fld_bg_event(fld_bg_id(), ((volatile Vec3 *)&c->pos)->x / 0.5f, c->pos.z / 0.5f);
-    if (ev == 0) {
-        if (p->padac[2] != 0)
-            fld_player_fx(0, 0);
-        p->padac[2] = 0;
-    } else {
-        switch (ev) {
-        case 1:
-        default:
-            k = 11;
-            break;
-        case 2:
-            k = 12;
-            break;
-        case 3:
-            k = 13;
-            break;
-        case 4:
-            k = 14;
-            break;
-        }
-        if (p->padac[2] == 0 || fld_fx_kind((FieldFx *)c->fx) != k)
-            fld_player_fx(k, 0);
-        p->padac[2] = 1;
-    }
-    switch (c->anim) {
-    case 0:
-        p->padac[3] = -1;
-        break;
-    case 1:
-        if (p->padac[3] != c->frame || p->padac[3] == -1) {
-            switch (c->frame) {
-            case 1:
-                fld_story_flag(0x6259, 0);
-                break;
-            case 4:
-                fld_story_flag(0x625A, 0);
-                break;
-            }
-            p->padac[3] = c->frame;
-        }
-        break;
-    }
 }
