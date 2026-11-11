@@ -1726,7 +1726,7 @@ Bateram `dd_fx_aura_halo` (241 -> 0), `dd_cobj_goto` (192 -> 0), `dd_fcam_from_t
   `return !(...)`) não dão.
 - **`a << 24` recalculado (sem CSE) no segundo uso**: `(unsigned int)a << 24` num dos dois.
 - **Campos de um parâmetro struct relidos da pilha depois de cada chamada** (o mwcc os mantinha em `$s`): tomar o
-  endereço do parâmetro numa cópia, `*(DdPos *)&o->home = *(DdPos *)&from;` (`dd_cobj_goto`, 73 palavras de uma vez).
+  endereço do parâmetro numa cópia, `*(DdPos *)&o->home = *(DdPos *)&from;` (`dd_cobj_goto`: zerou o resto da função de uma vez).
 - **`(unsigned int)(z - 12) < 4` = `sltiu`**; o `z - 12 < 4` com sinal do draft era bug (valia para as zonas 0-11).
 - **Uma condição com `||` para dois caminhos que gravam o mesmo campo e caem no mesmo bloco** (`beqzl ... sh` com a
   cópia do primeiro store no slot): `if ((t < dur && !b7 && !c0) || a1 || a6 || a7 || b0) { ... return; }` em vez
