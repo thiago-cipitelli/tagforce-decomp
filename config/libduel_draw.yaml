@@ -40,7 +40,7 @@ segments:
       - [0x58FC, c, dd_info]
       - [0x5B7C, c, dd_cobj]
       - [0x5F50, asm, dd_cobj_asm_08809EF0]
-      - [0x64DC, c, dd_cobj]
+      - [0x6000, c, dd_cobj]
       - [0x6710, asm, dd_cobj_asm_0880A6B0]
       - [0x6940, c, dd_slot]
       - [0x7894, asm, dd_slot_asm_0880B834]

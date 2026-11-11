@@ -1,5 +1,5 @@
 // @range 0x08809B1C-0x0880A8E0
-// @asm 0x08809EF0-0x0880A47C
+// @asm 0x08809EF0-0x08809FA0
 // @asm 0x0880A6B0-0x0880A8E0
 /* The 3D card objects of the field: a pool of 460 nodes and one list per player and zone (deck,
    extra, graveyard...), filled from the decks at the start; the moves of a card between two
@@ -154,7 +154,6 @@ void dd_cobjs_update(float dt)
 }
 #endif
 
-#ifdef NON_MATCHING /* funções grandes com campos de bits; forma não reproduzida */
 extern DdPos dd_pos_up;                /* 0x08874BA0 templates {up = 1} */
 extern DdPos dd_pos_up2;
 /* moves the object of card `uid` from `from` to `to` (kind: how it moves) */
@@ -196,28 +195,21 @@ void dd_cobj_goto(DdPos from, DdPos to, int uid, int kind)
     }
     if (o->uid == 0)
         o->uid = uid;
-    if (o->t < o->dur) {
-        if (!o->b7 && !o->c0) {
-            o->dest = from;
-            goto later;
-        }
-    }
-    if (o->a1 || o->a6 || o->a7 || o->b0) {
+    if ((o->t < o->dur && !o->b7 && !o->c0) || o->a1 || o->a6 || o->a7 || o->b0) {
         o->dest = from;
-    later:
         o->dest_kind = kind;
         o->a0 = 1;
         req_flag_set(0);
         return;
     }
-    if (!o->b5 && to.zone - 12 < 4) {
+    if (!o->b5 && (unsigned int)(to.zone - 12) < 4) {
         dd_slot_xform(&pos, &rot, to);
         o->pos = pos;
         o->rot = rot;
     }
     dd_list_unlink(o, dd_zone_list(to.player, to.zone));
     dd_list_add_tail(o, dd_zone_list(from.player, from.zone));
-    *(DdPos *)&o->home = from;
+    *(DdPos *)&o->home = *(DdPos *)&from;
     o->loc = from;
     o->b5 = 0;
     dd_slot_xform(&pos, &rot, from);
@@ -241,8 +233,6 @@ done:
     if (dv_phase() == 3 && kind != 6 && from.zone < 5)
         dd_counter_reset(from.player, from.zone);
 }
-
-#endif
 
 /* turns the card `zone` of player p face up/down in place */
 void dd_cobj_flip(int p, int zone)
