@@ -1,6 +1,6 @@
 // @range 0x08805220-0x08805DF4
+// @data 0x0883A130-0x0883A160
 // @asm 0x08805664-0x08805708
-// @asm 0x08805930-0x08805CBC
 /* SD characters of the map: setup (model or sprite by chara kind), per-frame animation counters,
    shadow/draw registration, the eight walking directions and the collision of a moving character
    against the cells of the map. */
@@ -151,7 +151,7 @@ void fld_chr_get_pos(Vec3 *out, FieldChr *c)
     *out = c->pos;
 }
 
-#ifdef NON_MATCHING /* o original calcula o endereço de field_dirs[i] antes de salvar ra/s0; só escalonamento */
+#ifdef NON_MATCHING /* 4 palavras: o original calcula o endereço de field_dirs[i] antes de salvar ra/s0; um static da função (static Vec3 dd[8] = {...}) bate, mas a tabela é lida também por fld_dir_from_vec (rodada 22) */
 /* walking direction i turned by 45 degrees */
 void fld_dir_vec(Vec3 *out, int i)
 {
@@ -238,7 +238,6 @@ int fld_in_range(int x)
     return 0;
 }
 
-#ifdef NON_MATCHING /* lógica conferida. 6 palavras: o original divide q.x por 0.5 antes de ler q.z (inline, ponteiro e cast (int) não mudam; fld_hud_event, que bate, lê os dois antes) */
 /* clips the motion vel of a character of radius r at pos against blocked cells */
 void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r)
 {
@@ -282,7 +281,7 @@ void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r)
         fld_chr_corners(&p, r, &c[0], &c[1], &c[2], &c[3]);
         for (j = 0, e = c; j < 4; j++, e++) {
             vec3_add(&q, e, &d);
-            x = q.x / 0.5f;
+            x = ((volatile Vec3 *)&q)->x / 0.5f;
             z = q.z / 0.5f;
             if (fld_map_walkable(x, z, 1) == 0 || fld_map_attr(x, z) == 5 || q.x < 0.0f || q.z < 0.0f
                 || x >= m->w || z >= m->h) {
@@ -305,7 +304,6 @@ void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r)
     }
     *out = v;
 }
-#endif
 
 /* the four corners of the square of side 1 - 2r (minus a margin) around p */
 void fld_chr_corners(Vec3 *p, float r, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d)
