@@ -1,5 +1,4 @@
 // @range 0x088E5800-0x088E5F84
-// @asm 0x088E5C3C-0x088E5F84
 /* Small card rules (targets of an activation, kinds), card references (copy, swap, compare), the
    next uid of a player, and placing a card in a monster or spell/trap zone. */
 #include "duel.h"
@@ -13,6 +12,8 @@ typedef struct DuelListCard {          /* view of duel.list[] entries */
 } DuelListCard;
 
 extern int duel_order_ctr;             /* 0x089195CC activation order of the zones */
+/* duel_order_ctr is duel+0x3770: read as a Duel field, its store stays before the zone stores */
+#define DUEL_ORDER_CTR (*(int *)((char *)&duel + 0x3770))
 extern unsigned int duel_turn_player;
 
 unsigned int duel_act_target2(DuelAct*, int);
@@ -155,7 +156,6 @@ int duel_uid_next(unsigned int p)
     return old;
 }
 
-#ifdef NON_MATCHING /* the original stores the activation counter before the zone fields */
 /* Put card c in monster zone z of player p with position pos and face. */
 void duel_place_monster(unsigned int p, int z, DuelCard *c, unsigned short pos, int up)
 {
@@ -164,8 +164,7 @@ void duel_place_monster(unsigned int p, int z, DuelCard *c, unsigned short pos, 
 
     duel_bzero(s, 0x14);
     duel_card_copy(&s->card, c);
-    duel_order_ctr++;
-    s->unk4 = duel_order_ctr;
+    s->unk4 = ++DUEL_ORDER_CTR;
     s->pos = pos;
     s->faceup = up;
     ((DuelListCard *)&duel.list[CARD_UID(*c)])->placed++;
@@ -173,21 +172,17 @@ void duel_place_monster(unsigned int p, int z, DuelCard *c, unsigned short pos, 
     duel_088DF554(p, z, 7, up);
     duel_088DF554(p, z, 0, p != c->owner);
 }
-#endif
 
-#ifdef NON_MATCHING /* 24 palavras: como em duel_place_monster, o original grava duel_order_ctr antes de s->unk4/pos
-                      (nem campo de Duel, volatile ou ++ prefixo reproduzem) e lê c->id antes do mult do prólogo */
 /* Put card c in spell/trap zone z of player p, face up or set. */
 void duel_place_st(unsigned int p, int z, DuelCard *c, int up)
 {
-    unsigned short id = c->id;
     unsigned int q = p & 1;
     DuelSlot *s = &duel.players[q].field[z];
+    unsigned short id = c->id;
 
     duel_bzero(s, 0x14);
     duel_card_copy(&s->card, c);
-    duel_order_ctr++;
-    s->unk4 = duel_order_ctr;
+    s->unk4 = ++DUEL_ORDER_CTR;
     s->pos = 0;
     s->faceup = up;
     ((DuelListCard *)&duel.list[CARD_UID(*c)])->placed++;
@@ -199,4 +194,3 @@ void duel_place_st(unsigned int p, int z, DuelCard *c, int up)
         duel_slot_effect_add(p, z, (p == duel_turn_player) << 4 | 1, 0x1390, 0);
     }
 }
-#endif
