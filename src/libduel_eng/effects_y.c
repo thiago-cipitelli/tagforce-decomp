@@ -1,4 +1,5 @@
 // @range 0x08889BE4-0x0888B904
+// @rodata 0x08911844-0x08911868
 // @asm 0x0888A88C-0x0888AB18
 /* Card effect handlers (DuelAct *a), after effects_x.c. */
 #include "duel.h"
