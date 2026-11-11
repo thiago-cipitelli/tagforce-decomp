@@ -95,8 +95,6 @@ segments:
       - [0x1809C, asm, f_partner_asm_0881C03C]
       - [0x1825C, c, f_partner]
       - [0x182A0, c, f_shadow]
-      - [0x18CAC, asm, f_shadow_asm_0881CC4C]
-      - [0x18D9C, c, f_shadow]
       - [0x18EC8, c, f_bag]
       - [0x191E0, asm, f_bag_asm_0881D180]
       - [0x19318, c, f_bag]
