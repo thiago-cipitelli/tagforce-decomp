@@ -1188,7 +1188,7 @@ DmgrSpr dmgr_pt_sprites[24] = {
     { 0, 0, { 231, 230, 24, 10 } }, { 0, 0, { 141, 241, 115, 15 } }, { 9, 0, { 0, 0, 64, 64 } },
 };
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (cópias dos modelos na pilha, gfx_setup(list, 0)). 106 palavras (rodada 22; eram 133): switch (dmgr_pt->mode) derrama p na pilha (+56) como o original; falta x em s8: o mwcc dá s8 ao ponteiro &sprs.s[i].file (o original o derrama em +52) e derrama x (+62) e y (+60; o original tem y em +62). Testados: register, ponteiro/local para o file, int sx, ordem de p */
+#ifdef NON_MATCHING /* lógica conferida com o asm (cópias dos modelos na pilha, gfx_setup(list, 0)). 133 palavras: o original guarda x em s8 e derrama p (+56, relido em p->mode e p->pack), y (+62) e o ponteiro &sprs.s[i].file (+52); o mwcc dá s8 a p e derrama x (+62) e y (+60). switch (dmgr_pt->mode) derrama p como o original (106 palavras) mas lê o global em vez de p. Testados (rodada 22): register, ponteiro/local para o file, int sx, ordem de p */
 unsigned int *dmgr_pt_sprite(unsigned int *list, int i, short x, short y, short w, short h, short u, short v,
                              short tw, short th)
 {
@@ -1215,7 +1215,7 @@ unsigned int *dmgr_pt_sprite(unsigned int *list, int i, short x, short y, short 
     if (h < 0) {
         h = th;
     }
-    switch (dmgr_pt->mode) {
+    switch (p->mode) {
     case 8:
     case 9:
         if (sprs.s[i].file == 0) {
