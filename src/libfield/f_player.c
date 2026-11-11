@@ -1,9 +1,7 @@
 // @range 0x0880AC74-0x0880BB98
 // @data 0x0883A51C-0x0883A534
-// @asm 0x0880AC94-0x0880B010
-// @asm 0x0880BA30-0x0880BB98
 /* The player character: setup, drawing, input lock, the effect attached to it, the marks it leaves
-   on the cells under it, and (in asm) its per-frame update, the stick input and the movement. */
+   on the cells under it, its per-frame update, the stick input and the movement. */
 #include "libfield.h"
 
 void fld_player_update(void);                  /* 0x0880AC94 */
@@ -343,7 +341,6 @@ void fld_player_move(void)
     c->vel = v;
 }
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 9 palavras: o original lê padac[0] antes de carregar 0.5 (com "/ 2.0f" a ordem bate, então é a multiplicação; ordem dos operandos, cast e parênteses não mudam) */
 /* walks the player toward the centre of its target cell (x at +0xAC, z at +0xB0) by steps of 0.1;
    busy drops to 0 once it is within 0.1 */
 void fld_player_seek(void)
@@ -363,7 +360,7 @@ void fld_player_seek(void)
                 *q++ = 0;
             } while (--k);
     }
-    to.x = 0.25f + 0.5f * field_player.padac[0];
+    to.x = 0.25f + 0.5f * ((volatile int *)field_player.padac)[0];
     to.z = 0.25f + 0.5f * field_player.padac[1];
     vec3_sub(&d, &to, &c->pos);
     d.y = 0.0f;
@@ -380,7 +377,6 @@ void fld_player_seek(void)
     if (fld_vec3_len(&c->vel) > 0.0f)
         c->dir = fld_dir_nearest(&c->vel);
 }
-#endif
 
 void fld_player_input(void);
 void fld_player_move(void);
@@ -390,7 +386,6 @@ int fld_bg_event(int bg, int cx, int cz);
 int fld_story_flag(int id, int arg);
 int fld_fx_kind(FieldFx *fx);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 6 palavras: ordem das divisões por 0.5 nos argumentos de fld_bg_event (o original carrega pos.x em $f0 e divide antes de ler pos.z) */
 /* per frame: input and step (twice when running), the block in front of the rooms 0x0C/0x25, the walk
    toward a target cell, the cell marks, the effect of the event under the player (padac[2] on) and
    the footstep sound flags on frames 1 and 4 of the walk (padac[3] last frame) */
@@ -443,7 +438,7 @@ void fld_player_update(void)
     vec3_add(&c->pos, &c->pos, &c->vel);
     fld_player_mark_cells(1);
     fld_chr_update(c);
-    ev = fld_bg_event(fld_bg_id(), c->pos.x / 0.5f, c->pos.z / 0.5f);
+    ev = fld_bg_event(fld_bg_id(), ((volatile Vec3 *)&c->pos)->x / 0.5f, c->pos.z / 0.5f);
     if (ev == 0) {
         if (p->padac[2] != 0)
             fld_player_fx(0, 0);
@@ -487,4 +482,3 @@ void fld_player_update(void)
         break;
     }
 }
-#endif
