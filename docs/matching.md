@@ -1715,3 +1715,28 @@ palavras (forma mais fiel, falta uma ordem do escalonador).
   inline sai invertida em qualquer ordem do fonte.
 - **Tabela local inicializada copiada com `lwc1/swc1`**: `int ids[4] = {10, 11, 12};` dentro da função (o modelo
   fica no `@data` do arquivo; o global antigo some).
+
+## Rodada 22 (`menuP`): libshop, libstory, libtitle, libfield
+
+Bateram `shop_pack_open` (39), `op_choice` (1), `tfd_chr_copy_draw` (62), `fld_draw_add` (5), `fpt_update` (20),
+`fpt_place` (10) e `fld_chr_collide` (6, estava em `matching_skip`).
+- **`x / 0.5f` dividido antes de carregar `z`** (família `fld_chr_collide`/`fld_player_update`/`fpt_*`/`fld_draw_add`,
+  o original lê `x` em `$f0`, divide para `$f1` e só então lê `z` em `$f0`): ler `x` por um ponteiro `volatile`,
+  `((volatile Vec3 *)&q)->x / 0.5f` (ou os dois por `((volatile Mat4 *)shadow)->m[12]`/`m[14]`, `fld_draw_add`).
+  Num `FieldChr *c` constante (`&field_partner.c`), o cast do struct inteiro faz o mwcc materializar endereços: use o
+  cast no `Vec3` do campo (`(volatile Vec3 *)&c->pos`). `fld_player_update` (f_player.c, não tocado) é da mesma família.
+- **Dois `case` com o mesmo corpo, um em bloco próprio (`li; b; nop`) e o outro no atraso de um `beql` para o fim**:
+  `case 2: case 3: swap = 1; break;` (um só corpo); com corpos repetidos o mwcc 219 junta os dois (`tfd_chr_copy_draw`).
+- **`default` que faz `li a1,1` em vez de reaproveitar o `1` do teste do `case 1`**: `case 0: default: n = 1;` como
+  PRIMEIRO rótulo do `switch` (`op_choice`; busca das 120 ordens dos rótulos × 4 formas do `default`).
+- **Contadores de laço criados abaixo das variáveis de indução** (`$s` de `c` menor que `j*2`/`c*2`): o contador era um
+  local da FUNÇÃO já usado antes (`i`), não um local de bloco; `int cnt = 0;` na declaração (inicializador morto)
+  muda a ordem de criação de `cnt`/`ids` sem gerar código; laço de busca por ponteiro `for (l++, j = 1; j <= 3; j++,
+  l++)` (`shop_pack_open`).
+- **`lui/addiu` de uma tabela em `.data` antes do `sw ra` do prólogo** (`fld_dir_vec`): reproduz com `static` da função
+  com inicializador (`static Vec3 dd[8] = {...}`), mas `field_dirs` também é lida por `fld_dir_from_vec`: sem forma.
+- Sem forma: `st_mail_find` (o único `lui; addiu; lw 0(r)` de todo o jogo: `&st_mail_tbl` materializado antes do `lw`;
+  testados inteiro constante, ponteiro, índice zero, `volatile`, laço indexado), `tdl_rules_draw`/`ttab_draw` (o modo
+  sem limpeza pós-likely em função que devolve valor: `beqzl` para a instrução seguinte, `b; nop` sem preencher),
+  `tpanel_draw_split` (24: argumentos de `tframe_cursor` e `i`/`iy` do laço de `b->draw`, buscados contador × `y` ×
+  ordem), `shop_open_layout` (14: o `vec4_set` de `card_ctrl1` lê `card_up.z` primeiro com `shop_open` em `v1`).
