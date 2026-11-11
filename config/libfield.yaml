@@ -90,8 +90,6 @@ segments:
       - [0x172C8, asm, f_bmap_asm_0881B268]
       - [0x17668, c, f_bmap]
       - [0x17AF0, c, f_partner]
-      - [0x17B10, asm, f_partner_asm_0881BAB0]
-      - [0x17F08, c, f_partner]
       - [0x1809C, asm, f_partner_asm_0881C03C]
       - [0x1825C, c, f_partner]
       - [0x182A0, c, f_shadow]

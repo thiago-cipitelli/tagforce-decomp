@@ -1,5 +1,4 @@
 // @range 0x0881BA90-0x0881C240
-// @asm 0x0881BAB0-0x0881BEA8
 // @asm 0x0881C03C-0x0881C1FC
 // @data 0x0883C9C8-0x0883C9E0
 /* The partner walking behind the player on the map (field_partner): it follows the position the player
@@ -23,10 +22,6 @@ void fpt_loaded_a(int *file, FieldChr *c);
 void fpt_loaded_b(int *file, FieldChr *c);
 void fpt_place(void);
 
-/* side vectors of fpt_update (kept in asm) */
-Vec3 fpt_up = { 0.0f, 1.0f, 0.0f };
-Vec3 fpt_down = { 0.0f, -1.0f, 0.0f };
-
 void fpt_clear(void)
 {
     memset(&field_partner, 0, sizeof(field_partner));
@@ -37,7 +32,6 @@ void fpt_reset(void)
     fld_chr_reset(&field_partner.c);
 }
 
-#ifdef NON_MATCHING /* lógica conferida (fpt_up/fpt_down são os modelos locais up/down). 20 palavras: ordem das cópias de c->vel e das divisões por 0.5 */
 void fpt_update(void)
 {
     FieldPartner *p = &field_partner;
@@ -102,9 +96,9 @@ void fpt_update(void)
         vec3_normalize(&d, &d);
         vec3_scale(&d, &d, speed);
         c->vel = d;
-        fld_cell_mark(c->pos.x / 0.5f, c->pos.z / 0.5f, 0);
+        fld_cell_mark(((volatile Vec3 *)&c->pos)->x / 0.5f, c->pos.z / 0.5f, 0);
         vec3_add(&c->pos, &c->pos, &c->vel);
-        fld_cell_mark(c->pos.x / 0.5f, c->pos.z / 0.5f, 2);
+        fld_cell_mark(((volatile Vec3 *)&c->pos)->x / 0.5f, c->pos.z / 0.5f, 2);
         if (fld_vec3_len(&d) > 0.0f)
             c->anim = 1;
         else
@@ -117,7 +111,6 @@ void fpt_update(void)
     fpt_face();
     fld_chr_update(c);
 }
-#endif
 
 void fpt_draw(void)
 {
