@@ -1,5 +1,4 @@
 // @range 0x08890094-0x08890820
-// @asm 0x088905D0-0x08890730
 /* Card effect handlers (DuelAct *a), after effects_zc.c. */
 #include "duel.h"
 
@@ -158,12 +157,11 @@ int duel_088904A8(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: p (1 - p) e o deslocamento z trocam $s1/$s2 no laço; com b separado eram 7 */
 int duel_088905D0(DuelAct *a)
 {
     int i;
     unsigned int mask;
-    unsigned int z;
+    unsigned int z = 0; /* dead initializer: creation order of z (its $s) */
     int atk;
     unsigned int loc;
     unsigned int p;
@@ -189,7 +187,6 @@ int duel_088905D0(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_08890730(DuelAct *a, int b)
 {
