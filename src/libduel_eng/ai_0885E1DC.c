@@ -17,7 +17,12 @@ int card_get_kind(int id);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
 int duel_08853B98(DuelAct *a, unsigned int p, int z);

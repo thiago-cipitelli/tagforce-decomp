@@ -10,7 +10,12 @@ unsigned int duel_field_flag9(unsigned int, int);
 unsigned int card_get_type(int);
 int duel_field_atk(unsigned int p, int z);
 int duel_slot_effect_with(unsigned int, int, int, int);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_08856860(DuelAct *a, unsigned int p, int z);
 int duel_08855F54(DuelAct *a, unsigned int p, int z);
 int duel_08855214(DuelAct *a, unsigned int p, int z);

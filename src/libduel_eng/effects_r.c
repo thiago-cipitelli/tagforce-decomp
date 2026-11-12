@@ -68,7 +68,12 @@ void duel_088C8AD0(unsigned int, int, int, int);
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_088C5510(unsigned int p, int n, int f);
 void duel_088CC178(unsigned int p, int z, unsigned int v);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 void duel_088CA270(unsigned int p, unsigned short a, unsigned short b);
 void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t);
 void duel_088C77EC(unsigned int p, int uid);

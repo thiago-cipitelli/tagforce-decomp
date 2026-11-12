@@ -70,7 +70,12 @@ int duel_slot_efb84(unsigned int p, int z);
 void duel_wfmt_d(unsigned short *dst, int fmt, int n);
 int duel_zone_card_id(unsigned int, int, int);
 void duel_088C1618(unsigned int p);
+#ifdef __MWERKS__
 int duel_slot_efacc(unsigned int p, int z, int id);
+#else
+int duel_slot_efacc(unsigned int p, int z);
+#define duel_slot_efacc(a0, a1, a2) duel_slot_efacc(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_088DFE24(int, unsigned int);
 void duel_0884CC68(int k);
 unsigned int duel_0884C804(void);

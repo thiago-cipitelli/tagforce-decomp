@@ -28,7 +28,12 @@ unsigned int duel_field_flag9(unsigned int, int);
 unsigned int card_get_type(int);
 int card_is_in_group_160f(int id);
 int card_is_in_group_1a6x(int id);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 void duel_field_stats(unsigned int p, int z, DuelStats *st);
 
 extern unsigned int duel_w_089147E4;

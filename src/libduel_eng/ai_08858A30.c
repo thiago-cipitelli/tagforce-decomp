@@ -8,12 +8,17 @@ int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_slot_has_src10(unsigned int, unsigned int, unsigned int, int);
 int duel_slot_efb84(unsigned int p, int z);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_slot_effect_kind(unsigned int p, int z, int id, int kind);
 unsigned int duel_field_type(unsigned int p, int z);
 int card_is_attribute8(int);
 int duel_field_locate(int uid);
-int duel_tributable(unsigned int p);
+int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_count_free_monster_zones(int p);
 int duel_zone_usable(unsigned int p, unsigned int z);
 int duel_field_same_name(unsigned int p, int z, int id);
@@ -139,7 +144,7 @@ int duel_08858E2C(DuelAct *a, unsigned int p, int z)
     if (id == 0) {
         return 0;
     }
-    if (duel_tributable(a->player) == 0) {
+    if (duel_tributable(a->player, p, z) == 0) {
         return 0;
     }
     if (a->player != p && duel.players[p & 1].field[z].faceup == 0) {

@@ -7,7 +7,7 @@
 
 typedef int (*DuelZoneFn)(DuelAct *a, unsigned int p, int z);
 
-int duel_tributable(unsigned int p);
+int duel_tributable(unsigned int p, unsigned int q, int z);
 void duel_field_stats(unsigned int p, int z, DuelStats *st);
 int duel_field_same_name(unsigned int p, int z, int id);
 int duel_field_attr_is(unsigned int p, int z, int attr);
@@ -31,7 +31,7 @@ int duel_08856860(DuelAct *a, unsigned int p, int z)
     if (a->kind == 0x23) {
         return 1;
     }
-    if (duel_tributable(a->player) != 0 && (a->player == p || duel.players[p & 1].field[z].faceup != 0)) {
+    if (duel_tributable(a->player, p, z) != 0 && (a->player == p || duel.players[p & 1].field[z].faceup != 0)) {
         duel_field_stats(p, z, &st);
         switch (a->id) {
         case 0x123B:

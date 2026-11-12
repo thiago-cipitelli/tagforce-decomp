@@ -25,7 +25,12 @@ int duel_0884DF2C(int (*fn)());
 void duel_088D1B20(unsigned int p, unsigned int mask);
 int duel_tributable(unsigned int p, unsigned int q, int z);
 unsigned int duel_field_type(unsigned int p, int z);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_slot_immune(unsigned int p, int z, int opp);
 int duel_slot_ref_immune(unsigned int p, int z, int opp);
 int card_is_monster(int id);
@@ -38,7 +43,7 @@ int duel_08809B50(unsigned int p, unsigned short id, unsigned short a);
 DuelCard *duel_0884C7CC(void);
 void duel_0884C588(unsigned int, int, int, int);
 int duel_0880B448(unsigned int p, int id);
-int duel_0880BD00(void);
+unsigned int duel_0880BD00(unsigned int p, int id, unsigned short x);
 int duel_0884AF34(int a, int b);
 int duel_0884AF48(int a, int b, int c);
 int duel_088302BC(unsigned int p, int z, int i);

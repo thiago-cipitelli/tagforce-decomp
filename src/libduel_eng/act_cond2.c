@@ -54,7 +54,12 @@ int duel_slot_effect_with(unsigned int, int, int, int);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_card_dfac8(unsigned int p, int id, int field);
 int duel_hand_can_discard(unsigned int p, int n, int uid, int monster, int type16);
+#ifdef __MWERKS__
 int duel_is_cur_card(int id, int b);
+#else
+int duel_is_cur_card(int id);
+#define duel_is_cur_card(a0, a1) duel_is_cur_card(a0) /* port: the definition takes 1 argument, the rest are not read */
+#endif
 int duel_find_effect_card(unsigned int p, int id, int z);
 int duel_0886F89C(DuelAct *b, unsigned int p, int z);
 unsigned int duel_slot_effect_arg(unsigned int, int, int);
@@ -94,7 +99,12 @@ int duel_08873730(DuelAct *a);
 int duel_08874A10(DuelAct *a, int b);
 int duel_0887307C(DuelAct *a);
 int duel_08872D64(DuelAct *a);
+#ifdef __MWERKS__
 int duel_slot_efacc(unsigned int p, int z, int c); /* defined with two parameters; called here with a third 0 */
+#else
+int duel_slot_efacc(unsigned int p, int z);
+#define duel_slot_efacc(a0, a1, a2) duel_slot_efacc(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_count_free_monster_zones(unsigned int p);
 int duel_act_e4168(DuelAct *a);
 int duel_act_e403c(DuelAct *a);

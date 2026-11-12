@@ -11,7 +11,7 @@ unsigned int card_get_type(int);
 int duel_card_fits_zone(unsigned int p, int z, int id);
 unsigned short duel_slot_e1854(unsigned int, int);
 int duel_slot_can_act(unsigned int p, unsigned int z, int x, int y);
-int duel_tributable(unsigned int p);
+int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_zone_usable(unsigned int p, unsigned int z);
 int duel_field_same_name(unsigned int p, int z, int id);
@@ -192,7 +192,7 @@ int duel_08858440(DuelAct *a, unsigned int p, int z)
     if (a->kind == 0x23) {
         return 1;
     }
-    if (duel_tributable(a->player) == 0) {
+    if (duel_tributable(a->player, p, z) == 0) {
         return 0;
     }
     if (duel.players[p & 1].field[z].faceup == 0) {

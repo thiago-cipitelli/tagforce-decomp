@@ -26,7 +26,7 @@ int duel_facedown_can_act(unsigned int p, int z);
 int field_get_card(unsigned int, int);
 int duel_count_field_cards(unsigned int p, int faceup, int facedown, int fzone);
 void duel_08826000(unsigned int p, int z);
-int duel_088078AC(unsigned int p, int uid);
+int duel_088078AC(unsigned int p, int uid, int a);
 int duel_double_tribute(unsigned int p, int id, unsigned int q, int z);
 int duel_0880750C(unsigned int p, int id, int a, int i, unsigned short *out);
 int duel_can_special_summon(unsigned int p);
@@ -59,7 +59,12 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned s
 int duel_08836868(unsigned int p);
 int duel_0880EA88(unsigned int p, int a);
 void duel_088AFD5C(int kind, unsigned int a);
+#ifdef __MWERKS__
 int duel_0883F174(unsigned int p);
+#else
+int duel_0883F174(void);
+#define duel_0883F174(a0) duel_0883F174() /* port: the definition takes 0 arguments, the rest are not read */
+#endif
 int duel_088369D8(unsigned int p);
 int duel_08820FD0(unsigned int p, int z);
 void duel_field_stats(unsigned int p, int z, DuelStats *st);
@@ -160,7 +165,7 @@ int duel_088042D4(unsigned int p, int h, int a)
 {
     unsigned short buf[4];
     int id = duel.players[p & 1].hand[h].id;
-    int n = duel_088078AC(p, CARD_UID(duel.players[p & 1].hand[h]));
+    int n = duel_088078AC(p, CARD_UID(duel.players[p & 1].hand[h]), a);
     int i;
     unsigned int r;
     int z;

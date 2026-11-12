@@ -14,7 +14,12 @@ int field_get_card(unsigned int, int);
 unsigned int duel_field_type(unsigned int p, int z);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
+#ifdef __MWERKS__
 int duel_slot_efacc(unsigned int p, int z, int id);
+#else
+int duel_slot_efacc(unsigned int p, int z);
+#define duel_slot_efacc(a0, a1, a2) duel_slot_efacc(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_find_effect_card(unsigned int p, int id, int skip);
 int duel_count_active(int id);
 int duel_card_check_9148(unsigned int p, int id);

@@ -7,12 +7,17 @@ extern unsigned int duel_w_08914920;
 
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
-int duel_tributable(unsigned int p);
+int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_field_atk(unsigned int p, int z);
 unsigned int duel_slot_e5a48(unsigned int, int);
 int card_is_attribute9(int);
 unsigned int duel_field_type(unsigned int p, int z);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_slot_has_src10(unsigned int, unsigned int, unsigned int, int);
 int duel_slot_can_act(unsigned int p, unsigned int z, int x, int y);
 int duel_0885C594(DuelAct *a, unsigned int p, int z);
@@ -68,7 +73,7 @@ int duel_0885705C(DuelAct *a, unsigned int p, int z)
 
 int duel_088570D0(DuelAct *a, unsigned int p, int z)
 {
-    if (duel_tributable(duel_turn_player) == 0) {
+    if (duel_tributable(duel_turn_player, p, z) == 0) {
         return 0;
     }
     return duel.players[p & 1].field[z].faceup != 0;

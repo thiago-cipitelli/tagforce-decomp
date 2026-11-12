@@ -102,7 +102,12 @@ int duel_088C4604(DuelAct*, unsigned int, int);
 int duel_0884E9E8(DuelAct *a, int b);
 void duel_088328E8(unsigned int, unsigned short, int);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, unsigned short id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 void duel_088CA270(unsigned int p, unsigned short a, unsigned short b);
 int duel_088D14B8(DuelAct *a, unsigned int p, int z);
 void duel_088CA184(unsigned short loc, unsigned short to);

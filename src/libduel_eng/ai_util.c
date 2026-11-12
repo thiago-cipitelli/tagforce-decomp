@@ -8,7 +8,12 @@ extern unsigned int duel_w_08913CF4;   /* player the computer is choosing for [?
 extern int duel_w_08919624;
 
 int duel_088BFF78(unsigned int, int, int);
+#ifdef __MWERKS__
 int duel_088087C0(unsigned int p, int id, int a);
+#else
+int duel_088087C0(unsigned int p, int id);
+#define duel_088087C0(a0, a1, a2) duel_088087C0(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 void duel_0884C7C0(int i);
 void duel_0884CB8C(int i, int v);
 int duel_count_field_all(unsigned int p);

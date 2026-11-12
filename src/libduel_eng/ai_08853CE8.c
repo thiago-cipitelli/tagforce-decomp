@@ -10,7 +10,12 @@ int duel_field_level(unsigned int p, int z);
 int duel_field_attr_is(unsigned int p, int z, int attr);
 int duel_field_same_name(unsigned int p, int z, int id);
 int duel_field_e5ae0(unsigned int p, int z);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_slot_count_src(unsigned int p, int z, int id);
 int card_same_name(int id, int id2);
 int card_is_in_group_18be(int id);

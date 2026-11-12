@@ -13,7 +13,12 @@ int card_get_group_value_1983(int id);
 unsigned short duel_field_type(unsigned int p, int z);
 int duel_field_level(unsigned int p, int z);
 int duel_field_atk(unsigned int p, int z);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 int duel_slot_efb84(unsigned int p, int z);
 int duel_slot_counter_1a90(unsigned int p, int z);
 int duel_088BFFD8(unsigned int p, int id, int i);

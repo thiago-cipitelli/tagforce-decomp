@@ -7,7 +7,12 @@ extern unsigned int duel_turn_player;
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
+#ifdef __MWERKS__
 int duel_slot_ef098(unsigned int p, int z, int id);
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(a0, a1, a2) duel_slot_ef098(a0, a1) /* port: the definition takes 2 arguments, the rest are not read */
+#endif
 unsigned int duel_field_type(unsigned int p, int z);
 int field_get_card(unsigned int, int);
 int card_is_in_group_1946(int id);
