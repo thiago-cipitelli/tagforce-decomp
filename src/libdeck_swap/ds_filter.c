@@ -71,13 +71,14 @@ unsigned short ds_search_step(DsList *l)
     return ds_search.pos * 1000 / ds_search.total;
 }
 
-#ifdef NON_MATCHING /* 16 palavras: len, ponteiro do histórico e k em $s em rodízio (original s2/s0/s1), como dk_search_finish */
+#ifdef NON_MATCHING /* 8 palavras: len e o ponteiro do histórico com $s0/$s2 trocados (ponteiro explícito como em dt/sc_search_finish; ordens de declaração, tipos, inicializadores mortos, bloco e o parâmetro l como ponteiro testados) */
 /* the matches become the visible order; the word goes on top of the history */
 void ds_search_finish(DsList *l)
 {
-    int len;
     int i;
+    unsigned short *w;
     int k;
+    int len;
 
     if (ds_search.out != 0) {
         memcpy(l->order, ds_search.out, ds_search.n << 1);
@@ -88,16 +89,14 @@ void ds_search_finish(DsList *l)
     l->filter = 8;
     len = wcslen(ds_search.word);
     k = 7;
-    for (i = 0; i < 8; i++) {
-        if (ds.words[i][0] == 0) {
+    for (i = 0, w = ds.words[0]; i < 8; i++, w += 32) {
+        if (w[0] == 0) {
             k = i;
             break;
         }
-        if (len == wcslen(ds.words[i])) {
-            if (wcscmp(ds.words[i], ds_search.word) == 0) {
-                k = i;
-                break;
-            }
+        if (len == wcslen(w) && wcscmp(w, ds_search.word) == 0) {
+            k = i;
+            break;
         }
     }
     for (; k > 0; k--)

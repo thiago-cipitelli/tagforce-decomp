@@ -119,13 +119,14 @@ unsigned short dk_search_step(DkList *l)
 }
 
 
-#ifdef NON_MATCHING /* 16 palavras: len, ponteiro do histórico e k em $s em rodízio (original s2/s0/s1); ordens de declaração e de instrução testadas */
+#ifdef NON_MATCHING /* 8 palavras: len e o ponteiro do histórico com $s0/$s2 trocados (ponteiro explícito como em dt/sc_search_finish; ordens de declaração, tipos, inicializadores mortos, bloco e o parâmetro l como ponteiro testados) */
 /* the matches become the visible order; the word goes on top of the history */
 void dk_search_finish(DkList *l)
 {
-    int len;
     int i;
+    DkWordsView *v;
     int k;
+    int len;
 
     if (dk_search.out != 0) {
         memcpy(l->order, dk_search.out, dk_search.n << 1);
@@ -136,12 +137,12 @@ void dk_search_finish(DkList *l)
     l->filter = 8;
     len = wcslen(dk_search.word);
     k = 7;
-    for (i = 0; i < 8; i++) {
-        if (DK_WORDS[i][0] == 0) {
+    for (i = 0, v = (DkWordsView *)&dk_deck; i < 8; i++, v = (DkWordsView *)((char *)v + 64)) {
+        if (v->words[0][0] == 0) {
             k = i;
             break;
         }
-        if (len == wcslen(DK_WORDS[i]) && wcscmp(DK_WORDS[i], dk_search.word) == 0) {
+        if (len == wcslen(v->words[0]) && wcscmp(v->words[0], dk_search.word) == 0) {
             k = i;
             break;
         }
