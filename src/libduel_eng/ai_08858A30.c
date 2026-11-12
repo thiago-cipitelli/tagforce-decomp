@@ -1,5 +1,4 @@
 // @range 0x08858A30-0x088594D0
-// @asm 0x08858E2C-0x08859120
 /* Computer player: more target tests (DuelAct *a, p, z). */
 #include "duel.h"
 
@@ -131,7 +130,6 @@ int duel_08858D08(DuelAct *a, unsigned int p, int z)
     return duel_slot_has_src10(p, z, r & 0xFF, (unsigned short)r >> 8 & 0xFF) != 0;
 }
 
-#ifdef NON_MATCHING /* só o escalonamento do prólogo (lhu de a->kind) difere */
 int duel_08858E2C(DuelAct *a, unsigned int p, int z)
 {
     unsigned int k = a->kind;
@@ -193,7 +191,6 @@ int duel_08858E2C(DuelAct *a, unsigned int p, int z)
     }
     return 1;
 }
-#endif
 
 int duel_08859120(DuelAct *a, unsigned int p, int z)
 {

@@ -1,5 +1,4 @@
 // @range 0x08884118-0x08884F18
-// @asm 0x08884118-0x0888439C
 /* Card effect handlers (DuelAct *a), after effects_s.c. */
 #include "duel.h"
 
@@ -47,7 +46,6 @@ void duel_088C7CF0(void);
 void duel_088C7BA4(void);
 int duel_088C5E70(unsigned int, int);
 
-#ifdef NON_MATCHING /* 34 palavras: início certo com z e p u8 locais do bloco; falta o sw de duel_w_08914900 adiantado no case 0x7F e o return 0 do case 0x7E fundido com o do fim (o original tem b + move próprio e o default com b; nop para um move v0,zero final; testados break, default: break/goto/return) */
 int duel_08884118(DuelAct *a)
 {
     int i;
@@ -66,32 +64,36 @@ int duel_08884118(DuelAct *a)
         duel_088C77D4(1 - p, a->id, 5, a->uid);
         duel_088D1A44(a, a->player, a->zone);
         duel_088C78E0(1 - a->player);
-        return 0;
-    }
-    switch (duel_step) {
-    case 0x80:
-        i = duel_hand_find_uid(a->player, a->uid);
-        if (i >= 0) {
-            if (duel_count_free_monster_zones(a->player) == 0 || duel_phase_ok2(a->player) == 0) {
-                duel_088C7478(a->player, i, &duel.players[a->player & 1].hand[i], 0);
-                return 0;
+    } else {
+        switch (duel_step) {
+        case 0x80:
+            i = duel_hand_find_uid(a->player, a->uid);
+            if (i >= 0) {
+                if (duel_count_free_monster_zones(a->player) == 0 || duel_phase_ok2(a->player) == 0) {
+                    duel_088C7478(a->player, i, &duel.players[a->player & 1].hand[i], 0);
+                    return 0;
+                }
+                duel_w_089148FC = i;
+                return 0x7F;
             }
-            duel_w_089148FC = i;
-            return 0x7F;
+            return 0;
+        case 0x7F:
+            {
+                unsigned int p;
+                int z = duel_pick_monster_zone(a->player);
+                DuelCard *c = &duel.players[(p = a->player) & 1].hand[duel_w_089148FC];
+                duel_w_08914900 = z;
+                duel_0882619C(p, c, 1, 1, 1);
+            }
+            return 0x7E;
+        case 0x7E:
+            duel_088C87A8(a->player, duel_w_08914900, a->id, 5, a->player);
+            duel_088C4604(a, a->player, 1000);
+            return 0;
         }
-        return 0;
-    case 0x7F:
-        duel_w_08914900 = duel_pick_monster_zone(a->player);
-        duel_0882619C(a->player, &duel.players[a->player & 1].hand[duel_w_089148FC], 1, 1, 1);
-        return 0x7E;
-    case 0x7E:
-        duel_088C87A8(a->player, duel_w_08914900, a->id, 5, a->player);
-        duel_088C4604(a, a->player, 1000);
-        return 0;
     }
     return 0;
 }
-#endif
 
 int duel_0888439C(DuelAct *a)
 {

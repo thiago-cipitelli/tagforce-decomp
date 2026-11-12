@@ -1,5 +1,4 @@
 // @range 0x08844C2C-0x088451E8
-// @asm 0x08844C2C-0x08844E24
 /* Computer player: last responses of the zone tables, value of some cards and selection filters. */
 #include "duel.h"
 
@@ -19,10 +18,10 @@ int duel_088D1438(unsigned int p, int z, int a, int b);
 int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_slot_e68a0(unsigned int, int);
 
-#ifdef NON_MATCHING /* registradores e o teste 5 < 10 que o original não dobra */
 int duel_08844C2C(unsigned int p, int id)
 {
     unsigned int z;
+    int w;
 
     switch (duel_w_08919608) {
     case 0:
@@ -35,19 +34,18 @@ int duel_08844C2C(unsigned int p, int id)
                 return 0;
             }
         }
-        return 1;
+        break;
     default:
-        if (duel_w_0891968C == 0) {
-            return 1;
+        if (duel_w_0891968C != 0) {
+            w = duel_w_08919608;
+            duel_0884F91C(((p << 31 & 0x80000000) | 0x4200000 | (w << 16 & 0x1F0000)) | (field_get_card(p, w) & 0xFFFF),
+                          CARD_UID(duel.players[p & 1].field[w].card));
+            duel_w_08919608 = 0;
+            return 0;
         }
-        z = duel_w_08919608;
-        duel_0884F91C((p << 31 & 0x80000000) | 0x4200000 | (z << 16 & 0x1F0000) | (field_get_card(p, z) & 0xFFFF),
-                      CARD_UID(duel.players[p & 1].field[z].card));
-        duel_w_08919608 = 0;
-        return 0;
     }
+    return 1;
 }
-#endif
 
 int duel_08844E24(unsigned int p)
 {

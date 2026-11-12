@@ -1,5 +1,4 @@
 // @range 0x08857B34-0x08858A30
-// @asm 0x08858440-0x08858594
 /* Computer player: more target tests (DuelAct *a, p, z). */
 #include "duel.h"
 
@@ -186,7 +185,6 @@ int duel_08858304(DuelAct *a, unsigned int p, int z)
     return !duel.players[p & 1].field[z].faceup;
 }
 
-#ifdef NON_MATCHING /* só a ordem do lhu de a->kind no prólogo difere */
 int duel_08858440(DuelAct *a, unsigned int p, int z)
 {
     if (a->kind == 0x23) {
@@ -216,7 +214,6 @@ int duel_08858440(DuelAct *a, unsigned int p, int z)
     }
     return 1;
 }
-#endif
 
 /* 0x08858594: alvo é um monstro do oponente de a, com carta, e sem pos (+0x06) */
 int duel_08858594(DuelAct *a, unsigned int p, int z)

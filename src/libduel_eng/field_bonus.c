@@ -1,5 +1,4 @@
 // @range 0x088F1E5C-0x088F2D70
-// @asm 0x088F275C-0x088F2D70
 /* ATK/DEF bonus that the card in zone z of player p gives to monster qz of player q: field spells
    by type, attribute boosters, a few named cards. */
 #include "duel.h"
@@ -278,15 +277,13 @@ int duel_count_zone_f_type(unsigned int p, unsigned int type);
 int duel_grave_count_id(unsigned int, unsigned int);
 int duel_count_monsters_fn(unsigned int p, int (*fn)(int id));
 
-#ifdef NON_MATCHING /* same code; the effect loop of the original keeps its index and pointer in $s1/$s0 and
-   the 0x19ED case branches the other way */
 /* Base ATK/DEF of monster z of player p: printed values, cards whose values depend on the duel,
    and the effects in its list that set or swap them. */
 void duel_field_base_stats(unsigned int p, int z, DuelStats *st)
 {
     int same = 0;
     unsigned int active = SLOT_ACTIVE(&duel.players[p & 1].field[z]);
-    unsigned short e;
+    unsigned int e;
 
     st->id = duel.players[p & 1].field[z].card.id;
     st->batk = card_get_atk(st->id);
@@ -383,16 +380,14 @@ void duel_field_base_stats(unsigned int p, int z, DuelStats *st)
     case 0x19ED: {
         unsigned int r = duel_slot_e1854(p, z);
 
-        if ((r & 0xFFFF) == 0xFFFF) {
-            same = 1;
-        } else {
+        if ((r & 0xFFFF) != 0xFFFF) {
             DuelStats t;
 
-            duel_field_stats(r & 0xFF, (r & 0xFFFF) >> 8, &t);
+            duel_field_stats(r & 0xFF, ((unsigned short)r >> 8) & 0xFF, &t);
             st->batk = t.atk;
             st->bdef = t.def;
-            same = 1;
         }
+        same = 1;
         break;
     }
     }
@@ -403,22 +398,36 @@ void duel_field_base_stats(unsigned int p, int z, DuelStats *st)
 
         e = ef->next;
         k = ef->kind & 0xF;
-        if (k == 5 || k == 4 || k == 2) {
-            if (src == 0x1621) {
-                st->batk = 200;
-            } else if (src == 0x1608 || src == 0x1602) {
-                st->batk = duel.effects[e].arg;
-                st->bdef = duel.effects[duel.effects[e].next].arg;
-                e = duel.effects[duel.effects[e].next].next;
-            } else if (src == 0x14B0) {
-                st->batk = ef->arg;
-            } else if ((src == 0x19F1 || src == 0x12CB) && !same) {
-                int t = st->batk;
+        switch (k) {
+        case 2:
+        case 4:
+        case 5:
+            switch (src) {
+            case 0x12CB:
+            case 0x19F1:
+                if (!same) {
+                    int t = st->batk;
 
-                st->batk = st->bdef;
-                st->bdef = t;
+                    st->batk = st->bdef;
+                    st->bdef = t;
+                }
+                break;
+            case 0x14B0:
+                st->batk = ef->arg;
+                break;
+            case 0x1602:
+            case 0x1608:
+                ef = &duel.effects[(unsigned short)e];
+                st->batk = ef->arg;
+                ef = &duel.effects[ef->next];
+                st->bdef = ef->arg;
+                e = ef->next;
+                break;
+            case 0x1621:
+                st->batk = 200;
+                break;
             }
+            break;
         }
     }
 }
-#endif

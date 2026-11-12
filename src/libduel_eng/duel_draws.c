@@ -1,6 +1,4 @@
 // @range 0x088C4864-0x088C77D4
-// @asm 0x088C4864-0x088C5424
-// @asm 0x088C626C-0x088C6508
 // @asm 0x088C6BC8-0x088C7478
 /* LP payment, drawing cards, sending cards from the deck and the D zone, with their commands to the
    presentation. The long step functions are kept in asm. */
@@ -91,22 +89,38 @@ typedef struct DuelDmgEv {             /* event argument of battle damage */
     unsigned short pad : 5;
 } DuelDmgEv;
 
-#ifdef NON_MATCHING /* 7 palavras (eram 65): 1 - tp direto nos argumentos dos laços de 0x187D/0x130C/0x1720/0x14ED/0x187B (sem q: o mwcc cria o temporário depois do ponteiro de indução), card.id relido no 0x15D6 (or na ordem do original), pp antes de zz e contadores por busca; falta só o laço de 0x17B5 (q e contador externo trocados, s1/s3); busca aleatória e exaustiva das declarações não fecha */
+/* the cards on the field of both players (turn player first) that react to battle damage */
+static inline void duel_dmg_trigger(unsigned short cid, DuelDmgEv *ev)
+{
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
+    extern int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int ev);
+#endif
+    int z;
+    int k;
+    int q;
+
+    for (k = 0; k < 2; k++) {
+        q = duel.turn_player ^ k;
+        for (z = 5; z < 10; z++) {
+            if (duel_slot_e8170(q, z, cid)) {
+                duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z << 16 & 0x1F0000) | cid,
+                              CARD_UID(duel.players[q & 1].field[z].card), *(unsigned int *)ev);
+            }
+        }
+    }
+}
+
 /* battle damage of record r (r->a: attacker, r->b: target) with the cards that react to it */
 void duel_088C4864(DuelSpecRec *r)
 {
-    int z3;
 #ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
     extern int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int ev);
 #endif
     extern int duel_slot_effect_with();
     unsigned int tp = r->b[0];
     int self = 0;
-    int z4;
     int z2;
-    unsigned int q;
     DuelSpecAct *act;
-    int j;
     unsigned int n;
     unsigned int pp;
     unsigned short src;
@@ -249,28 +263,11 @@ void duel_088C4864(DuelSpecRec *r)
     }
 
     if (duel_atk_direct) {
-        for (k = 0; k < 2; k++) {
-            q = duel.turn_player ^ k;
-            for (z3 = 5; z3 < 10; z3++) {
-                if (duel_slot_e8170(q, z3, 0x17B5)) {
-                    duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z3 << 16 & 0x1F0000) | 0x17B5,
-                                  CARD_UID(duel.players[q & 1].field[z3].card), *(unsigned int *)&ev);
-                }
-            }
-        }
+        duel_dmg_trigger(0x17B5, &ev);
     }
-    for (j = 0; j < 2; j++) {
-        q = duel.turn_player ^ j;
-        for (z4 = 5; z4 < 10; z4++) {
-            if (duel_slot_e8170(q, z4, 0x171E)) {
-                duel_0884F30C((q << 31 & 0x80000000 | 0x1E200000) | ((unsigned int)z4 << 16 & 0x1F0000) | 0x171E,
-                              CARD_UID(duel.players[q & 1].field[z4].card), *(unsigned int *)&ev);
-            }
-        }
-    }
+    duel_dmg_trigger(0x171E, &ev);
     duel_088AFD5C(0xF, *(unsigned int *)&ev);
 }
-#endif
 
 /* 0x088C5E78, 0x088C626C, 0x088C6BC8: kept in asm. */
 
@@ -523,10 +520,6 @@ void duel_088C6264(unsigned int p, int n, int x)
     duel_088C5E78(p, n, x, 1);
 }
 
-#ifdef NON_MATCHING
-/* 13 palavras: o original faz os stores de ev.opp antes de mascarar k (`k & 0x1F`); a ordem dos 5 stores de ev
-   (perm_stmts) não resolve; nem tipo de k, if/else, k pré-mascarado, argumento num local antes/depois dos stores,
-   associação do | (2026-11-08) */
 /* card uid of zone D of p to the graveyard of its owner (x: for the opponent) */
 void duel_088C626C(unsigned int p, unsigned int uid, int x)
 {
@@ -541,7 +534,7 @@ void duel_088C626C(unsigned int p, unsigned int uid, int x)
     ev.zone = 0xE;
     ev.uid = uid;
     ev.b10 = 0;
-    duel_cmd(0x3F, (uid & 0x3FF) << 6 | ((k & 0x1F) << 1 | (p & 1)), (o & 1) | 0x5C, x != 0);
+    duel_cmd(0x3F, (uid & 0x3FF) << 6 | ((k & 0x1F) * 2 | ((int)p & 1)), (o & 1) | 0x5C, x != 0);
     switch (id) {
     case 0x14A5:
     case 0x16F9:
@@ -578,7 +571,6 @@ void duel_088C626C(unsigned int p, unsigned int uid, int x)
     }
     duel_088AFD5C(0x1C, ev);
 }
-#endif
 
 /* sends the cards named like id of p from zone D (his own) and zone C to the graveyard (only the first one
    unless all); just shows them when the locks forbid it */

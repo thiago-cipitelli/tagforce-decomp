@@ -1841,3 +1841,30 @@ famílias estavam em `matching_skip`); `sc_draw_counts` 82 -> 21, `dk/ds_search_
   mwcc troca os `$s`).
 - **Local u16 derramado com `sh` no momento da atribuição** (`*_draw_headers`, `id`): `volatile unsigned short id`
   reproduz o `sh`/`lhu` (203 -> 113), mas passa `andi a0` em vez da constante; não aplicado.
+## Rodada 23 (`engQ`: libduel_eng, fila e retestes do `matching_skip`)
+
+Bateram `duel_088C4864` (7 -> 0), `duel_08871B14`, `duel_08844C2C`, `duel_08884118`, `duel_field_base_stats` (90 -> 0)
+e, do `matching_skip`, `duel_req_flip`, `duel_req_order`, `duel_req_activate`, `duel_088D2760`, `duel_088C626C`,
+`duel_088119FC`, `duel_088905D0`; `duel_088042D4`, `duel_08858440` e `duel_08858E2C` já batiam sem mudar o fonte
+(vale rodar `asm_try.sh` em todo o `matching_skip` de vez em quando).
+- **Dois laços iguais que só mudam uma constante = helper `static inline` chamado duas vezes**
+  (`duel_dmg_trigger` em `duel_088C4864`): o mwcc cria as variáveis do inline de novo a cada chamada, na ordem da
+  declaração no helper, e a rotação de `$s` entre contador externo e `q` que nenhuma ordem de declarações da função
+  resolvia some. O tipo de `q` (`int` em vez de `unsigned int`) decidiu entre `q` e o ponteiro de indução.
+- **`(z & 0x1F) * 2 | ((int)p & 1)`** em vez de `(z & 0x1F) << 1 | (p & 1)`: o original faz o `andi p,1` antes do
+  `sll` de `z`. Só a combinação (`* 2` e o cast) reproduz; resolveu três funções do `matching_skip`.
+- **`b L; nop` não preenchido para um `move v0,zero` final** (default de `switch (duel_step)`): o `switch` estava no
+  `else` de `if (a->b3_4 != 2) {...} else { switch ... }` com um só `return 0` no fim (`duel_08884118`).
+- **`bnezl` + `li v0,1` do fim compartilhado**: `goto ok;` para um `ok: return 1;` no fim em vez de `return 1` no
+  `default` (`duel_08871B14`). `return best == q ? 1 : 0;` no lugar de `return best == q;` deu o `b` preenchido com
+  o `lw ra` e o `v0 = 1` reaproveitado (`duel_088119FC`).
+- **Operandos calculados antes do `jal` que entra num argumento** (`field_get_card(p, z) & 0xFFFF` no 1º argumento,
+  com o resto do código e o endereço do slot prontos antes): o `z` do `default` lido num `int` próprio
+  (`w = duel_w_08919608;`) em vez de reaproveitar o `unsigned int z` do laço (`duel_08844C2C`).
+- **Laço de efeitos com testes em cadeia** (`duel_field_base_stats`): `switch (k) { case 2: case 4: case 5: switch
+  (src) {...} }` (os `beq; nop` + `b` são de `switch`, não de `||`), ponteiro do efeito reaproveitado para o próximo
+  (`ef = &duel.effects[ef->next]`), índice `unsigned int` com `(unsigned short)e` só onde o original faz `andi`;
+  `((unsigned short)r >> 8) & 0xFF` dá o `ext` que `(r & 0xFFFF) >> 8 & 0xFF` dobra em `srl`.
+- **Inicializador morto `unsigned int z = 0;`** numa variável reaproveitada (zona e depois deslocamento) trocou os
+  `$s` de `1 - p` e do deslocamento (`duel_088905D0`). Uma varredura de `= 0` em cada local das outras entradas do
+  `matching_skip` não mudou nada.

@@ -1,5 +1,4 @@
 // @range 0x088DA5EC-0x088DEB2C
-// @asm 0x088DB240-0x088DB520
 // @asm 0x088DC4E0-0x088DCA4C
 // @asm 0x088DD038-0x088DD1A4
 // @asm 0x088DD88C-0x088DD98C
@@ -330,7 +329,6 @@ void duel_req_banish(void)
 int duel_zone_card_id(unsigned int, int, int);
 void duel_zone_f_to_top(unsigned int p, unsigned short uid);
 
-#ifdef NON_MATCHING /* 2 palavras: em (i << 6) | (z << 1 | p & 1) o original calcula p & 1 antes do sll de z (registradores trocados); ordens de operandos, * 2 e casts não resolvem */
 /* Activation of card loc from zone arg (uid w): bring it to the top of its pile, announce it,
    point at it. */
 void duel_req_activate(void)
@@ -374,7 +372,7 @@ void duel_req_activate(void)
             if (i < 0 || (z < 11 && duel_zone_card_id(p, z, i) == 0)) {
                 duel_host_call(0x20, (unsigned short)((p & 1) | 0x20), id, w);
             } else {
-                duel_host_call(0x20, (unsigned short)((i & 0xFF) << 6 | (((z & 0x1F) << 1) | (p & 1))), id, w);
+                duel_host_call(0x20, (unsigned short)((i & 0xFF) << 6 | (((z & 0x1F) * 2) | ((int)p & 1))), id, w);
             }
             duel_req_step++;
         }
@@ -389,7 +387,6 @@ void duel_req_activate(void)
         break;
     }
 }
-#endif
 
 DuelCard *duel_card_by_uid(int uid);
 

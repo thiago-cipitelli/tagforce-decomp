@@ -275,9 +275,10 @@ int duel_08886250(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 23 palavras (era ~180): zona antes do jogador com a->player direto no índice e p atribuído
-                      depois; duel.mode & 1; p u8; teste != 4 && != 6. Faltam a coloração do 1º bloco e do fim do laço
-                      ((int)p na chamada de duel_0884ACD8 tira o andi 0xff que sobrava) */
+#ifdef NON_MATCHING /* 14 palavras (eram 23): p = a->player antes do teste do uid acerta o 1º bloco. Falta o laço de
+                      0x80: o original recarrega p direto em a0 (lbu a0 no atraso do beqzl) e faz o andi 0xff antes do
+                      p & 1 do índice; tipos/ordem das declarações, casts no índice e no argumento, vírgula no for,
+                      while e volatile não reproduzem */
 int duel_088862DC(DuelAct *a)
 {
     unsigned char p;
@@ -287,10 +288,10 @@ int duel_088862DC(DuelAct *a)
     if (a->b4_2) {
         return 0;
     }
-    if (a->uid != CARD_UID(duel.players[(unsigned int)a->player & 1].field[a->zone].card)) {
+    p = a->player;
+    if (a->uid != CARD_UID(duel.players[p & 1].field[a->zone].card)) {
         return 0;
     }
-    p = a->player;
     if (duel.mode & 1) {
         return 0;
     }

@@ -111,7 +111,10 @@ int duel_0883F2CC(unsigned int p)
     return 1;
 }
 
-#ifdef NON_MATCHING /* registradores: o original guarda (p & 1) * 0xFAC em s1 para todos os casos */
+#ifdef NON_MATCHING /* 79 palavras (eram 231): casos 5 e 8 com um return 0 por ramo e o teste != 0 primeiro; caso 3
+   com o ponteiro do jogador pl (indução de pl->field[z]) e (unsigned int)z << 16 sem redução de força. Falta a
+   coloração: o original tem p em s0, ofs em s1, prot em s2, b24 em s3 (o nosso p s1, ofs s2, b24 s0, prot s3);
+   a ordem das declarações não muda nada (busca aleatória), prot com || e sem ofs pioram */
 #define PFO(T, f) (*(T *)((char *)&duel.players[0].f + ofs))
 int duel_0883F3A0(void)
 {
@@ -177,21 +180,23 @@ int duel_0883F3A0(void)
         duel_w_08919600++;
     case 3:
         if (PFO(int, n_d) != 0) {
+            DuelPlayer *pl = (DuelPlayer *)((char *)duel.players + ofs);
+
             for (z = 0; z <= 4; z++) {
                 if (duel_slot_e8170(p, z, 0x14C4) != 0) {
-                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | (z << 16 & 0x1F0000) | 0x14C4,
-                                  CARD_UID(PFO(DuelCard, field[z].card)), 0);
+                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | ((unsigned int)z << 16 & 0x1F0000) | 0x14C4,
+                                  CARD_UID(pl->field[z].card), 0);
                 }
             }
             for (z = 0; z <= 4; z++) {
                 if (duel_slot_e8170(p, z, 0x1A97) != 0) {
-                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | (z << 16 & 0x1F0000) | 0x1A97,
-                                  CARD_UID(PFO(DuelCard, field[z].card)), 0);
+                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | ((unsigned int)z << 16 & 0x1F0000) | 0x1A97,
+                                  CARD_UID(pl->field[z].card), 0);
                 }
             }
             for (n = PFO(unsigned int, n_grave) - 1; n >= 0; n--) {
-                if (PFO(DuelCard, grave[n]).id == 0x1984) {
-                    duel_0884F30C((p << 31 & 0x80000000) | 0x4E1984, CARD_UID(PFO(DuelCard, grave[n])), 0);
+                if (pl->grave[n].id == 0x1984) {
+                    duel_0884F30C((p << 31 & 0x80000000) | 0x4E1984, CARD_UID(pl->grave[n]), 0);
                 }
             }
         }
@@ -208,14 +213,16 @@ int duel_0883F3A0(void)
         }
         return 0;
     case 5:
-        if (duel_w_08919638 == 0) {
-            duel_w_08919600--;
-        } else if (duel_w_08919640 == 0xC) {
-            duel_w_08919600++;
-        } else {
+        if (duel_w_08919638 != 0) {
+            if (duel_w_08919640 == 0xC) {
+                duel_w_08919600++;
+                return 0;
+            }
             duel_w_0891963C = 1;
             duel_w_08919600--;
+            return 0;
         }
+        duel_w_08919600--;
         return 0;
     case 6:
         duel_088C5510(p, 1, 0);
@@ -227,11 +234,11 @@ int duel_0883F3A0(void)
         duel_w_08919600++;
         return 0;
     case 8:
-        if (duel_w_089147D8 == 0) {
-            duel_w_08919600++;
-        } else {
+        if (duel_w_089147D8 != 0) {
             duel_w_08919600--;
+            return 0;
         }
+        duel_w_08919600++;
         return 0;
     }
     return 1;
