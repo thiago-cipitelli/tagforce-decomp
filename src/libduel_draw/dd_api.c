@@ -9,12 +9,12 @@
 void dd_param_load(int a, const char *path);
 void dd_view_init(void);
 void dd_view_free(void);
-void dd_info_select_uid();
+void dd_info_select_uid(int uid);
 void dd_cobjs_setup(void);
 void dd_cobjs_add_deck(int i, RecipeData *deck);
 void dd_cobjs_map(int side, int v);
 void dd_cobjs_rebuild(void);
-void dd_cobjs_sync_set();
+void dd_cobjs_sync_set(int on);
 void dd_lpp_set(int side, int lp, int a);
 void dd_lpp_turn_set(int side, int a);
 void dd_lpp_phase_set(int phase, int a);
@@ -29,10 +29,10 @@ void dd_mode_set(int on);
 int dd_mode_get(void);
 void dd_mode_update(void);
 void dd_input_set(int on);
-void dd_act_set_filter();
+void dd_act_set_filter(int (*f)(void));
 void dd_tasks_init(void);
 void dd_tasks_term(void);
-void func_088212B8();
+void func_088212B8(int (*hook)(DdLoc loc, int *acts, int n));
 void dd_menu_hook_start(void);
 void dd_menu_hook_frame(void);
 void dd_menu_hook_nop(void);
@@ -227,7 +227,7 @@ void dd_api_update(void)
 }
 
 /* export: nothing */
-void dd_api_nop2(void)
+void dd_api_nop2(float t)
 {
 }
 
@@ -252,9 +252,9 @@ void dd_api_set_de9c(int off)
 }
 
 /* export */
-void dd_api_df40(void)
+void dd_api_df40(int (*f)(void))
 {
-    dd_act_set_filter();
+    dd_act_set_filter(f);
 }
 
 /* export: refreshes the turn and phase panels */
@@ -269,9 +269,9 @@ void dd_api_refresh_turn(void)
 }
 
 /* export */
-void dd_api_212b8(void)
+void dd_api_212b8(int (*hook)(DdLoc loc, int *acts, int n))
 {
-    func_088212B8();
+    func_088212B8(hook);
 }
 
 /* export: 1 in the states 5 and 8 of the duel menu */
@@ -301,9 +301,9 @@ void dd_api_view_locs(DdLoc *a, DdLoc *b)
 }
 
 /* export */
-void dd_api_info_select_uid(void)
+void dd_api_info_select_uid(int uid)
 {
-    dd_info_select_uid();
+    dd_info_select_uid(uid);
 }
 
 /* export: shows the turn player and the phase */
@@ -314,7 +314,7 @@ void dd_api_show_turn_phase(void)
 }
 
 /* export */
-void dd_api_cobjs_sync_set(void)
+void dd_api_cobjs_sync_set(int on)
 {
-    dd_cobjs_sync_set();
+    dd_cobjs_sync_set(on);
 }

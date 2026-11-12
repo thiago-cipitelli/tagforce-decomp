@@ -52,7 +52,11 @@ void func_08820A8C(void *out, void *pos, int back);
 int dd_fx_spin_start(float k, int a, float *pos, void *b, int c, int d, int e);
 void dd_cobj_link_add(DdCard *c, void (*cb)(void));
 void dd_cobj_link_del(DdCard *c, void (*cb)(void));
+#ifdef __MWERKS__
 void func_08820D40(void);
+#else
+int func_08820D40(void *o); /* only its address is taken (dd_cobj_link_add/del) */
+#endif
 void dd_task_pause(int h);
 void dd_task_kill(int h);
 void dd_popup(int player, int zone, int card, int flag, int text);

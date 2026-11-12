@@ -11,7 +11,7 @@ void dd_mode_pop(void);
 void dd_chara_busy_clear(void);
 void dd_chara_reset(void);
 int dd_chara_ready(void);
-void dd_chara_select(void);
+void dd_chara_select(int i);
 void dd_chara_set_voice(int v);
 void dd_chara_redraw(int state);
 void dd_chara_anim(int v, int a);
@@ -45,7 +45,7 @@ void dd_voice_state(int a, int state)
 {
     int v;
 
-    dd_chara_select();
+    dd_chara_select(a);
     dd_chara_redraw(state);
     dd_chara_set_voice(-1);
     v = -1;

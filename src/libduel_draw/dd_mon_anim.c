@@ -38,8 +38,18 @@ void dd_fx3_stop();
 void dd_fx3_start(int o, int id);
 void dd_fx3_stop(int o);
 #endif
+#ifdef __MWERKS__
 void dd_fx_start(int o, int id, int c);
+#else
+void dd_fx_start(int o, int id);
+#define dd_fx_start(o, id, c) dd_fx_start(o, id) /* port: the definition takes 2 arguments */
+#endif
+#ifdef __MWERKS__
 void dd_fx_stop(int o, int anim, int c, int d);
+#else
+void dd_fx_stop(int o);
+#define dd_fx_stop(o, anim, c, d) dd_fx_stop(o) /* port: the definition takes 1 argument */
+#endif
 void dd_fx3_set_param(DdMon *o, int anim, int c, int frame, int flag);
 void dd_fx_set_param(DdMon *m, int anim, int c, int frame, int flag);
 void voice_event(DdMon *m, int anim, int c, int frame, int flag);

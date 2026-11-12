@@ -51,7 +51,7 @@ typedef struct DdPose {                /* camera/light pose table entry (bsearch
 
 extern DdHookAnim *dd_hook_default_anim;   /* 0x08C54630 */
 
-int voice_is_playing(void);
+int voice_is_playing(void *m);
 /* model callbacks of dd_mon_anim.c; the hooks forward their argument registers unchanged */
 int dd_mon_on_start(void *o, int id, int c);
 int dd_mon_on_event(void *o, int anim, int c, int d);
@@ -152,14 +152,14 @@ void dd_hook_bone(int bone, void *arg, int *ctx)
     }
 }
 
-int dd_hook_true(void)
+int dd_hook_true(void *c)
 {
     return 1;
 }
 
-int dd_hook_8147d0(void)
+int dd_hook_8147d0(void *c)
 {
-    return voice_is_playing() != 0;
+    return voice_is_playing(c) != 0;
 }
 
 /* material of "duel_disc_02.iff": the deck texture, or texturing off */

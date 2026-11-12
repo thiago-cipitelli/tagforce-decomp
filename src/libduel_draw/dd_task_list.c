@@ -60,7 +60,12 @@ int dd_08806C84(int id);
 int func_08825728(void);
 void dd_task_pause(int h);
 void func_08820EA8(int a, int b);
+#ifdef __MWERKS__
 void func_08820E58(int a);
+#else
+void func_08820E58(void);
+#define func_08820E58(a) func_08820E58() /* port: the definition takes no argument */
+#endif
 int dd_task_alive(int h);
 void func_08820938(DdTask *t, void *arg);
 void func_08820A8C(void *out, void *pos, int back);
@@ -71,7 +76,7 @@ int dd_fx_rays_start_t(int id, void *pos, void *cb, void *arg, float a, float b)
 int dd_fx_rays_start_t(float a, float b, int id, void *pos, void *cb, void *arg);
 #define dd_fx_rays_start_t(id, pos, cb, arg, a, b) dd_fx_rays_start_t(a, b, id, pos, cb, arg) /* port: argument order of the definition */
 #endif
-void func_08820980(void);
+void func_08820980(void *c);
 int dd_fx_flipup_start(int id, int *xy, int a, int b);
 int dv_list_id(int uid);
 int dv_slot_pos(int player, int zone);

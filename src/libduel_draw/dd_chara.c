@@ -30,7 +30,7 @@ void dd_chr_free(DdCharSlot *s, int all);
 void *dd_chr_draw(void *list, DdCharSlot *s);
 void dd_mtx_save(void);
 void dd_chr_tick(DdCharSlot *s);
-void dd_chr_update(DdCharSlot *s);
+int dd_chr_update(DdCharSlot *s, float dt);
 void dd_mon_cb_init(int chr, int variant, void *setup);
 void dd_chr_init(DdCharSlot *s, void *setup);
 void dd_chr_load(DdCharSlot *s);
@@ -161,9 +161,9 @@ void dd_chara_update(void)
     dd_chr_tick(dd_chara_mgr.cur);
 }
 
-int dd_chara_update2(void)
+int dd_chara_update2(float dt)
 {
-    dd_chr_update(dd_chara_mgr.cur);
+    dd_chr_update(dd_chara_mgr.cur, dt);
     return 0;
 }
 

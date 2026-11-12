@@ -58,10 +58,20 @@ unsigned int *dd_coin_tex(float scale, unsigned int *list, int x, int y, int w, 
 void dd_pick_init(DdPickCfg *cfg);
 void dd_pick_setup(MenuWidget *w);
 void dd_pick_update(MenuWidget *w);
+#ifdef __MWERKS__
 unsigned int dd_pick_mask();
+#else
+unsigned int dd_pick_mask(void);
+#define dd_pick_mask(w) dd_pick_mask() /* port: the definition takes no argument */
+#endif
 int dd_pick_width(MenuWidget *w);
 int dd_pick_height(MenuWidget *w);
+#ifdef __MWERKS__
 unsigned int *dd_pick_draw();
+#else
+unsigned int *dd_pick_draw(unsigned int *list, MenuWidget *w, int x, int y);
+#define dd_pick_draw(l, w, x, y, a, b) dd_pick_draw(l, w, x, y) /* port: the definition takes 4 arguments */
+#endif
 void dd_pick_open_confirm(void);
 unsigned short *dlg_table_sel(int i);
 unsigned short *card_db_table_sel(int i);

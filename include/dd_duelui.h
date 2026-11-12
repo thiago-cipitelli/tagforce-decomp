@@ -51,8 +51,18 @@ int dd_mon_on_start(void *self, void *a, void *b);
 int dd_mon_on_event(void *self, int ev, void *a, void *b);
 int dd_mon_on_frame(void *self, void *a, void *b, void *c, void *d);
 void dd_mon_bone(void *self, void *a, void *b, int c, float d);
+#ifdef __MWERKS__
 int dd_fx2_start(void *self, void *a, void *b);
+#else
+void dd_fx2_start(void *self, int id);
+#define dd_fx2_start(self, a, b) dd_fx2_start(self, (int)(a)) /* port: the definition takes (owner, id) */
+#endif
+#ifdef __MWERKS__
 int dd_fx2_stop(void *self, int ev, void *a, void *b);
+#else
+void dd_fx2_stop(void *self);
+#define dd_fx2_stop(self, ev, a, b) dd_fx2_stop(self) /* port: the definition takes the owner only */
+#endif
 int dd_fx2_set_param(void *self, void *a, void *b, void *c, void *d);
 
 #endif

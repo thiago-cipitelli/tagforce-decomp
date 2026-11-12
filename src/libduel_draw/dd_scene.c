@@ -19,7 +19,7 @@ int dd_api_draw(void);
 void dd_view_draw3d(void);
 void dd_view_update(float dt);
 
-void dd_lpp_get();
+int dd_lpp_get(int p);
 int dd_chr_term(void);
 void dd_heap_clear(void);
 int dd_mode_get(void);
@@ -286,9 +286,9 @@ int dd_input_player(void)
     return dv_turn_side();
 }
 
-void dd_08806B5C(void)
+int dd_08806B5C(int side)
 {
-    dd_lpp_get();
+    return dd_lpp_get(side);
 }
 
 /* character slot `i` of the game state */

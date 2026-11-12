@@ -26,7 +26,7 @@ int dd_fx_glow_start(DdFxSlot *s, int a, int b);
 int dd_fx_eyes_start(DdFxSlot *s, int a, int b);
 int dd_fx_aura_start(DdFxSlot *s, int a, int b);
 void dd_fx_fade_set(int a, int b);
-void dd_fx_fade_cb(void);                                   /* model hook of the kind 28 effects */
+int dd_fx_fade_cb(void **plist, int a, int layer, int b, int pass);                                   /* model hook of the kind 28 effects */
 void dd_chr_flag_set(DdFxOwner *o, int v);                    /* sets o->+0x158 */
 void dd_ryusen_set_alpha(int level, int flag);                    /* dims the field behind the effect */
 

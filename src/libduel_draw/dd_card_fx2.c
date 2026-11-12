@@ -59,7 +59,11 @@ int dd_fx_spiral_start_ex(int id, float *pos, float s, float zone_kind, void *di
 int dd_fx_spin_start(float k, int a, float *pos, void *b, int c, int d, int e);
 void dd_cobj_link_add(DdCard *c, void (*cb)(void));
 void dd_cobj_link_del(DdCard *c, void (*cb)(void));
+#ifdef __MWERKS__
 void func_08820D40(void);
+#else
+int func_08820D40(void *o); /* only its address is taken (dd_cobj_link_add/del) */
+#endif
 void dd_task_pause(int h);
 int dd_cobjs_busy(void);
 int dd_cobjs_idle(void);

@@ -11,7 +11,7 @@ typedef struct DdWaitDots {
 
 extern DdWaitDots dd_wait_dots;
 
-void func_0882308C(void);
+void func_0882308C(const unsigned short *text);
 void func_0882331C(void *draw);
 void func_08823328(int (*done)(void));
 MenuItemDef *func_08823310(void);
@@ -25,12 +25,12 @@ void req_flag_set(int i);
 unsigned int *dd_wait_dots_draw(unsigned int *list, Menu *m, MenuItemDef *d);
 int dd_wait_dots_done(void);
 
-void dd_wait_dots_open(void)
+void dd_wait_dots_open(const unsigned short *msg)
 {
     MenuItemDef *d;
     short dh;
 
-    func_0882308C();
+    func_0882308C(msg);
     func_0882331C(dd_wait_dots_draw);
     func_08823328(dd_wait_dots_done);
     d = func_08823310();

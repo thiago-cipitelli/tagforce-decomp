@@ -14,14 +14,14 @@ extern int dd_ev_player;               /* 0x08C547B0 */
 /* other files and ranges (unprototyped: some are called with fewer arguments) */
 void *dd_ehf_get();
 int dd_game_flag119();
-int dd_08806B5C();
+int dd_08806B5C(int side);
 int dd_view_x14_set();
 int dd_is_tag_duel();
 int dd_view_locs_set();
 int dd_loc_visible();
 int dd_view_x10_set();
-int dd_field_set();
-int dd_info_select();
+int dd_field_set(int id);
+void dd_info_select(int id);
 int dd_info_select_uid();
 int dd_info_show_uid();
 int dd_info_hide();
@@ -37,14 +37,23 @@ int dd_cobj_end_a3();
 int dd_cobj_end_a4();
 int dd_cobj_set_card();
 int dd_cobj_spawn();
+#ifdef __MWERKS__
 int dd_cobj_remove();
+#else
+void dd_cobj_remove(DdPos at);
+#endif
 int dd_cobj_hide();
 int dd_cobj_extra_up();
 void dd_cobjs_counters(void);
 int dd_zone_anim_update();
 int dd_zone_anim_busy();
 int dd_hl_push();
+#ifdef __MWERKS__
 int dd_hl_pop();
+#else
+void dd_hl_pop(unsigned int p, unsigned int zone);
+#define dd_hl_pop(p, zone, idx) dd_hl_pop(p, zone) /* port: the definition takes 2 arguments, idx is not read */
+#endif
 int dd_lpp_set();
 int dd_lpp_turn_set();
 int dd_lpp_phase_set();
@@ -85,7 +94,12 @@ int func_088207A8();
 int func_088208B0();
 int func_08820F88();
 int func_08821D20();
+#ifdef __MWERKS__
 int func_0882214C();
+#else
+void func_0882214C(unsigned short *text);
+#define func_0882214C(text, arg) func_0882214C(text) /* port: the definition takes 1 argument */
+#endif
 int func_088226C0();
 int func_08822838();
 int func_0882308C();
@@ -95,7 +109,7 @@ int func_08824544();
 int func_08824CC8();
 int func_08824F3C();
 int func_088259D8();
-int dd_wait_dots_open();
+void dd_wait_dots_open(const unsigned short *msg);
 int dd_dice_open();
 int dd_chara_set_anim_range();
 int dd_mark_show();
@@ -310,9 +324,9 @@ int dd_ev_05(int player)
     return 1;
 }
 
-int dd_ev_06(void)
+int dd_ev_06(int a)
 {
-    dd_field_set();
+    dd_field_set(a);
     return 1;
 }
 
@@ -519,7 +533,11 @@ int dd_ev_24(int uid, int arg, DdLoc2 from, DdLoc2 to)
     to.player = dv_player_to_side(to.player);
     id = dv_list_id(uid);
     if (card_is_attribute9(id) != 0 && (unsigned int)(to.zone - 0xE) <= 2) {
+#ifdef __MWERKS__
         dd_cobj_remove(from, id, uid & 0xFFFF);
+#else
+        dd_cobj_remove(*(DdPos *)&from); /* port: the definition takes only the location; id and uid are not read */
+#endif
         return 1;
     }
     dd_cobj_goto(to, from, uid, arg);
@@ -1005,9 +1023,9 @@ int dd_ev_53(int player, int uid, int n)
     return 1;
 }
 
-int dd_ev_54(void)
+int dd_ev_54(int a)
 {
-    dd_info_select();
+    dd_info_select(a);
     return 1;
 }
 
