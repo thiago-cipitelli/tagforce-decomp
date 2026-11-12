@@ -163,15 +163,15 @@ void *sc_draw_headers(void *list)
 /* digits of the copy count on each tab */
 unsigned short sc_count_digits[3][2] = { { 4, 1 }, { 6, 2 }, { 6, 1 } };
 
-#ifdef NON_MATCHING /* 82 palavras (ordem das declarações por busca gulosa; a ordem das cargas d[i]/total e a troca das linhas x/r.x não mudam): o original mantém o 2 do teste de sc.kind num registrador s como limite dos laços (n = 2 em cada case e x += lay.x como em ds_draw_counts aproximam); ordem das cargas do segundo laço difere */
+#ifdef NON_MATCHING /* 25 palavras: o original carrega total antes de gravar r.x e d[i] depois; aqui o mwcc sobe d[i] e desce total (volatile, short *, ordem das linhas x/r.x não resolvem). O 1º painel do modo duplo é um laço de uma volta (for (i = 0; i < 1; i++)), desenrolado pelo mwcc com o ponteiro de sc.list já em $s */
 /* the total of copies on the tab buttons of each pane */
 void *sc_draw_counts(void *list)
 {
     ScPane *p = &scv.pane[0];
     unsigned short *d;
     int n = 2;
-    int i;
     unsigned short sel = p->list->tab;
+    int i;
     unsigned short x;
     ScRect r;
 
@@ -199,14 +199,15 @@ void *sc_draw_counts(void *list)
             list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         }
     } else {
-        i = 0;
-        x = sc_tab_rect(i, sel, &r);
-        x += p->lay.x;
-        r.x += p->lay.x;
-        list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
+        for (i = 0; i < 1; i++) {
+            x = sc_tab_rect(i, sel, &r);
+            x += p->lay.x;
+            r.x += p->lay.x;
+            list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
+        }
         p = &scv.pane[1];
         sel = p->list->tab;
-        for (i++; i < n; i++) {
+        for (; i < n; i++) {
             x = sc_tab_rect(i, sel, &r);
             x += p->lay.x;
             r.x += p->lay.x;
