@@ -1,5 +1,4 @@
 // @range 0x08804000-0x088070A8
-// @asm 0x088042D4-0x088044C8
 /* Computer player: the main-phase steps that summon monsters from the hand. */
 #include "duel.h"
 #include "card_db.h"
@@ -159,7 +158,6 @@ int duel_08804008(unsigned int p, int z)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 21 palavras (eram 35): com duel_ai_player e duel_w_0891964C gravados como campos do Duel (+0x37EC/+0x37F0) os stores ficam antes da leitura do uid como no original; falta só a cópia do parâmetro a (move s7,a2), que o original agenda logo antes do 1º jal e aqui sobe ao prólogo (mflo em a2 em vez de a3) */
 /* Summon the monster in hand slot h, picking the tributes. */
 int duel_088042D4(unsigned int p, int h, int a)
 {
@@ -201,7 +199,6 @@ int duel_088042D4(unsigned int p, int h, int a)
     duel_w_08913EC4 = 0;
     return 1;
 }
-#endif
 
 /* Special summon from the hand a monster whose condition is met. */
 int duel_088044C8(unsigned int p)
