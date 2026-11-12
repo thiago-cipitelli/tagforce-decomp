@@ -14,7 +14,11 @@ int tfd_sprite_slidein(void);
 void tfd_regulation_init(void);
 void tfd_regulation_handler(void);
 int tfd_regulation_input(void);
+#ifdef __MWERKS__
 int tfd_regulation_select();
+#else
+int tfd_regulation_select(int i, int unused1, int unused2, int lim);
+#endif
 void text_ext_reset(void);
 int net_get_state(void);
 void *tfd_rule_init(void *list);
@@ -898,10 +902,18 @@ void tfd_regulation_handler(void)
     case 5:
     case 6:
     case 7:
+#ifdef __MWERKS__
         tfd_regulation_select(r);
+#else
+        tfd_regulation_select(r, 0, 0, 1); /* port: lim is what tfd_regulation_input left in a3 (undefined in the original when the duel kind is not 0 or 2); 1 is the value of kinds 0 and 2 */
+#endif
         return;
     case 9:
+#ifdef __MWERKS__
         if (tfd_regulation_select(r)) {
+#else
+        if (tfd_regulation_select(r, 0, 0, 1)) { /* port: same as above */
+#endif
             if (o->kind == 0) {
                 t->step = 0x1C;
                 tframe_cursor_mode(1);

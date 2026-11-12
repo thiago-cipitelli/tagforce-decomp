@@ -34,8 +34,16 @@ void dk_help_init(int page, void *heap, void *gim, void *strtbl, void *labels);
 void dk_help_open(int page, void *heap, void *gim, void *strtbl, void *labels);
 int dk_help_update(void);
 int dk_help_close(void);
+#ifdef __MWERKS__
 void dk_deck_save(void);
+#else
+void dk_deck_save(int slot); /* only its address is taken (cfg.save) */
+#endif
+#ifdef __MWERKS__
 void dk_deck_load(void);
+#else
+void dk_deck_load(RecipeData *d, unsigned short *name); /* only its address is taken (cfg.load) */
+#endif
 void *dk_pack_get(void);
 int dk_res_load(void);
 void dk_cardlist_setup(void);

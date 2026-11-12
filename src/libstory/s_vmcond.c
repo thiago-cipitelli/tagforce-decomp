@@ -15,7 +15,12 @@ int st_remap_812334(int id);
 void stalk_say(int a, int b, int c, int op, int text);
 void stalk_bu_enter(int a, int b, int c);
 void stalk_bu_enter2(int a, int b, int c, int d);
+#ifdef __MWERKS__
 void stalk_bu_hide_all(int a);
+#else
+void stalk_bu_hide_all(void);
+#define stalk_bu_hide_all(a) stalk_bu_hide_all() /* port: the definition takes no argument */
+#endif
 void stalk_bu_close_all(void);
 void stalk_bu_wait(void);
 void stalk_show(int text, int a);

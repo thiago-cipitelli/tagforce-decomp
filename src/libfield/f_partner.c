@@ -9,7 +9,12 @@ FieldChr *fld_player_get(void);
 void fld_chr_update(FieldChr *c);
 int fld_dir_nearest(Vec3 *v);
 /* the caller passes a fifth argument (0) that fld_chr_collide does not read */
+#ifdef __MWERKS__
 void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r, int flag);
+#else
+void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r);
+#define fld_chr_collide(out, vel, pos, r, flag) fld_chr_collide(out, vel, pos, r) /* port: the definition takes 4 arguments */
+#endif
 void fld_npc_near(FieldNpc **out, int *n, FieldNpc *p, float r);
 int fld_map_walkable(int x, int z, int flag);
 int fld_cell_free(int x, int z);

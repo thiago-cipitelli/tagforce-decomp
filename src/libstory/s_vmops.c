@@ -16,7 +16,12 @@ int st_ev2_get_0(void);
 int st_chr_is_away(int i);
 void st_fld_setup(int kind, int arg);
 void st_se_play(int id);
+#ifdef __MWERKS__
 void st_snd_load(int id);
+#else
+void st_snd_load(void);
+#define st_snd_load(id) st_snd_load() /* port: the definition takes no argument (snd_load_data(void)) */
+#endif
 void deck_slot_add_card(int i, unsigned int id);
 void deck_name_set(int i, int c);
 void deck_slot_set_level(int i, int n);

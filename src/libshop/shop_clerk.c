@@ -48,7 +48,11 @@ int shop_clerk_voice_busy(void);
 void shop_packs_refresh(void);
 void shop_msgwin_init(void *heap, int a1, int a2, int a3, int a4, int a5);
 void shop_tabs_setup(int x, int y, int w, int h);
+#ifdef __MWERKS__
 void *shop_menu_draw(void *dl, int x, int y, int w, int h);
+#else
+unsigned int *shop_menu_draw(unsigned int *list, int x, int y); /* used as a MenuDrawRectFn, w/h not read */
+#endif
 int shop_pack_can_buy(int pack);
 unsigned short shop_pack_rank(unsigned short pack);
 int shop_bought_total(void);

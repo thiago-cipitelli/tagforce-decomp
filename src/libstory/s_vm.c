@@ -222,9 +222,19 @@ void op_end_6f(void);
 void op_field_8(void);
 void op_field_9(void);
 void op_bgm(void);
+#ifdef __MWERKS__
 void op_fade(void);
+#else
+void op_fade(int mode);
+#define op_fade() op_fade(0) /* port: op_fade sets mode itself for both of its opcodes (C3BE/C3BF) */
+#endif
 void op_chr_show(void);
+#ifdef __MWERKS__
 void op_wait(void);
+#else
+void op_wait(int unused, int n);
+#define op_wait() op_wait(0, 0) /* port: n is whatever vm_run left in a1 when CMD.b is not 1-4 (undefined in the original); 0 here */
+#endif
 void op_field_17(void);
 void op_field_1d(void);
 void op_duel_vs(void);

@@ -13,7 +13,12 @@ unsigned short *chara_get_name(int set, int id);
 unsigned short *recipe_get_name(int n);
 void *title_text_frame(void *list, int x, int y, int w, unsigned short *text, int align);
 void *tnum_draw(void *list, short x, short y, int n, int step, unsigned short digits, int zeros);
+#ifdef __MWERKS__
 void *tnum_draw_spr(void *list, short x, short y, unsigned int n, short digits, int color);
+#else
+void *tnum_draw_spr(void *list, short x, short y, unsigned int n, short digits);
+#define tnum_draw_spr(l, x, y, n, d, c) tnum_draw_spr(l, x, y, n, d) /* port: the definition takes 5 arguments */
+#endif
 void tscroll_calc2(short *pos, short *len, int count, int n, int top, int sel, int x, short y, short h);
 void *tscroll_draw(void *list, unsigned int color, int x, int y, int h, int pos, int len);
 void *tframe_cursor(void *list, unsigned int color, int x, int y, int w, int h);

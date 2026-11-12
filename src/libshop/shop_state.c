@@ -57,7 +57,12 @@ int shop_menu_input(void);
 void shop_sort_update(void);
 void shop_card_detail(ShopItem *it);
 void shop_sort_open(void);
+#ifdef __MWERKS__
 void shop_dialog_open(int what, int arg);
+#else
+void shop_dialog_open(unsigned short what);
+#define shop_dialog_open(what, arg) shop_dialog_open(what) /* port: the definition takes 1 argument */
+#endif
 void shop_dialog_update(void);
 void shop_ui_scroll_analog(UiScroll *s);
 void shop_tabs_hide(void);

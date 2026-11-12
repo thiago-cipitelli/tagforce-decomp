@@ -23,7 +23,12 @@ TFD_AT(TFdDeck, type, 0x74);
 unsigned short *chara_get_name(int set, int id);
 void *tfd_icon_setup(void *list, MenuWidget *w, int x, int y, int cw, int ch);
 int tfd_evt_handler(int a, int b);
+#ifdef __MWERKS__
 void tfd_comm_machine(int a, int b);
+#else
+int tfd_comm_machine(void);
+#define tfd_comm_machine(a, b) tfd_comm_machine() /* port: the definition takes no argument */
+#endif
 void tfd_show_msgbox(MenuWidget *w, int msg);
 void text_ext_reset(void);
 unsigned short *sysstate_get_name(void);

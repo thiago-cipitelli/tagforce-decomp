@@ -60,7 +60,11 @@ void *sc_draw_fmenu_values(void *list, int x, int y, int w, int h);
 void *sc_draw_fmenu_kind(void *list, int i, int x, int y);
 void *sc_draw_check(void *list, unsigned short x, unsigned short y);
 unsigned short *sc_filter_label(unsigned short f, unsigned short v);
+#ifdef __MWERKS__
 void *sc_draw_word_win(void *list, int x, int y, int w, int h);
+#else
+void *sc_draw_word_win(void *list, int x, int y); /* used as a MenuDrawRectFn, w/h not read */
+#endif
 void sc_word_reset(void);
 
 /* filter kind icons and labels */

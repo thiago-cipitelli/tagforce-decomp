@@ -15,9 +15,21 @@ int fld_chr_kind(int id);                      /* 0x08806DF0 */
 int fld_chr_tex(int id);                       /* 0x08806E6C */
 void fld_load_chr(int id, int n, int arg, FieldChr *c); /* 0x0880C53C */
 Vec3 *fld_light_dir(void);                     /* 0x08818878 */
+#ifdef __MWERKS__
 void fld_chr_draw_model(void);                 /* 0x08805DF4 */
+#else
+void *fld_chr_draw_model(void *list, FieldChr *c);                 /* 0x08805DF4 */
+#endif
+#ifdef __MWERKS__
 void fld_chr_draw_sprite(void);                /* 0x08806200 */
+#else
+void *fld_chr_draw_sprite(void *list, FieldChr *c);                /* 0x08806200 */
+#endif
+#ifdef __MWERKS__
 void fld_chr_draw_flat(void);                  /* 0x08806AF0 */
+#else
+void *fld_chr_draw_flat(void *list, FieldChr *c);                  /* 0x08806AF0 */
+#endif
 float fld_vec3_len(Vec3 *v);                    /* 0x0880D140 */
 FieldMap *fld_map_get(void);                   /* 0x088077E0 */
 int fld_map_walkable(int x, int z, int flag);  /* 0x08807844 */
