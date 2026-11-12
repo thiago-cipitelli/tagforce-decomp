@@ -1817,3 +1817,27 @@ Bateram `duel_place_monster`, `duel_place_st` (estava em `matching_skip`), `duel
   1500 mutações sem melhora), `duel_field_controller` (102: a ordem das declarações não muda nada, nem com todas as
   variáveis do laço no topo; `ofs`/`zo` explícitos viram o mesmo CSE), `duel_0880C15C` (20: o original calcula
   `(1 - p) * 55` antes de `tz * 11`; formas inteiras, vírgula e local `q` não reproduzem).
+## Rodada 23 (`deckQ`): família dk_/ds_/dt_/sc_, `volatile` e cast que corta CSE
+
+Bateram as quatro `*_draw_row`, as oito `*_draw_rows[_small]` e as quatro `*_focus_update` (as duas últimas
+famílias estavam em `matching_skip`); `sc_draw_counts` 82 -> 21, `dk/ds_search_finish` 16 -> 8.
+- **Carga subida para o atraso de um desvio** (`*_draw_rows`: o `lhu row_w` da junção do `?:` de `DK_ENT` ia para o
+  atraso do `bnez`, e o original faz `bnezl` com o `sll` do ramo): ler o campo por ponteiro volatile,
+  `*(volatile unsigned short *)&lay->row_w`. O cast do struct inteiro (`(volatile DkLayout *)lay`) piora.
+- **Cargas de dois cálculos intercaladas** (`*_focus_update`: o original lê `x, grid_x, cx, y, ...` e grava `w = 23`
+  depois de todas as cargas): só `*(volatile short *)&lay->x` na primeira parcela de `x`, e as gravações na ordem
+  natural `x, y, w, h` (24 ordens de gravação sem o volatile não davam). Vale testar o volatile em UMA leitura de
+  cada vez e depois permutar os comandos. `sc_draw_counts`: `*(volatile int *)&...total` põe a carga antes do `sh`.
+- **`andi` de um local u16 reaproveitado entre ramos** (`*_draw_row`: no original `tx << 6` refaz `andi v0,s4` e
+  cada ramo tem o seu): `(unsigned int)tx << 6` (o cast muda a expressão e o mwcc não faz CSE com os usos de `tx`
+  nos ramos) e o nome lido antes (`name = card_get_name(id); font_draw_text(..., name)`).
+- **`addiu; andi` repetido no fim dos dois ramos e `andi sN,sN` na junção**: a atribuição (`tx += 193`) está no fim
+  de cada ramo, não depois do `if`.
+- **Primeira volta de laço desenrolada com o ponteiro já em `$s`** (`sc_draw_counts`, `lui s5` + `move s4,zero`
+  antes de uma chamada solta, `i` continuando no laço seguinte): é um laço de uma volta `for (i = 0; i < 1; i++)`.
+- **`beqz` para o `case 0` + `b` para o resto** (`sc_draw_row`): `switch (sc.kind) { case 0: ...; break; default: }`.
+- **Metades de um retorno empacotado** (`ds_list_count_id`, `ext a0,v0,16,16` + `andi` em locais u16): `hi = r >> 16;`
+  locais `unsigned short`, e a metade baixa reatribuída ao próprio `a = (unsigned short)a;` (com um local novo o
+  mwcc troca os `$s`).
+- **Local u16 derramado com `sh` no momento da atribuição** (`*_draw_headers`, `id`): `volatile unsigned short id`
+  reproduz o `sh`/`lhu` (203 -> 113), mas passa `andi a0` em vez da constante; não aplicado.
