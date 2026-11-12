@@ -106,7 +106,12 @@ int dd_fx_noise_update(int state, DdFxNoise *fx)
     list = dl_color(list, alpha | 0xFFFFFF);
     list = draw_set_offsets(list, 85, 121, 108, 154);
     r = &rand3_seeds[rand3_slot];
+#ifdef __MWERKS__
     list = draw_sprite(list, fx->pos.x - 54, fx->pos.y - 77, 0, DD_RAND(r) % 128, DD_RAND(r) % 128, 0, 0);
+#else /* port: mwcc draws the second offset first (asm of 0x088307D8); in C the order is unspecified */
+    { int v = DD_RAND(r) % 128, u = DD_RAND(r) % 128;
+      list = draw_sprite(list, fx->pos.x - 54, fx->pos.y - 77, 0, u, v, 0, 0); }
+#endif
     mtx_pop();
     dl_set_list(list);
     fx->frame += step;

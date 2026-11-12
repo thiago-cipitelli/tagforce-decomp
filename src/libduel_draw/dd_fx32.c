@@ -608,7 +608,11 @@ int dd_fx32_s1_update(int phase, DdFx32S1 *d)
             vec3_set(&sp->pos[i3], rd * sn, rd * cs + 120.0f,
                      DD_RAND(r) / 32767.0f * 20.0f + 160.0f);
             sp->ang[i3] = 0.0f;
+#ifdef __MWERKS__
             sp->spin[i3] = (DD_RAND(r) % 2 * 2 - 1) * (DD_RAND(r) / 32767.0f * 0.34906587f);
+#else /* port: sign drawn first, as mwcc does; in C the order is unspecified */
+            { int sg = DD_RAND(r) % 2 * 2 - 1; sp->spin[i3] = sg * (DD_RAND(r) / 32767.0f * 0.34906587f); }
+#endif
         }
         if (d->spin_next < 23)
             d->spin_next++;
@@ -811,7 +815,11 @@ int dd_fx32_s2_update(int phase, DdFx32S2 *d)
             vec3_set(&sp->pos[i3], rad * sn, rad * cs + 120.0f,
                      DD_RAND(r) / 32767.0f * 20.0f + 160.0f);
             sp->ang[i3] = 0.0f;
+#ifdef __MWERKS__
             sp->spin[i3] = (DD_RAND(r) % 2 * 2 - 1) * (DD_RAND(r) / 32767.0f * 0.34906587f);
+#else /* port: sign drawn first, as mwcc does; in C the order is unspecified */
+            { int sg = DD_RAND(r) % 2 * 2 - 1; sp->spin[i3] = sg * (DD_RAND(r) / 32767.0f * 0.34906587f); }
+#endif
         }
         if (d->spin_next < 23)
             d->spin_next++;
@@ -1217,7 +1225,11 @@ int dd_fx32_s4_update(int phase, DdFx32S4 *d)
             vec3_set(&sp->pos[i3], rad * sn, rad * cs + 120.0f,
                      DD_RAND(r) / 32767.0f * 20.0f + 160.0f);
             sp->ang[i3] = 0.0f;
+#ifdef __MWERKS__
             sp->spin[i3] = (DD_RAND(r) % 2 * 2 - 1) * (DD_RAND(r) / 32767.0f * 0.34906587f);
+#else /* port: sign drawn first, as mwcc does; in C the order is unspecified */
+            { int sg = DD_RAND(r) % 2 * 2 - 1; sp->spin[i3] = sg * (DD_RAND(r) / 32767.0f * 0.34906587f); }
+#endif
         }
         if (d->spin_next < 23)
             d->spin_next++;
@@ -1468,7 +1480,11 @@ int dd_fx32_s5_update(int phase, DdFx32S5 *d)
             vec3_set(&sp->pos[i3], rad * sn, rad * cs + 120.0f,
                      DD_RAND(r) / 32767.0f * 20.0f + 160.0f);
             sp->ang[i3] = 0.0f;
+#ifdef __MWERKS__
             sp->spin[i3] = (DD_RAND(r) % 2 * 2 - 1) * (DD_RAND(r) / 32767.0f * 0.34906587f);
+#else /* port: sign drawn first, as mwcc does; in C the order is unspecified */
+            { int sg = DD_RAND(r) % 2 * 2 - 1; sp->spin[i3] = sg * (DD_RAND(r) / 32767.0f * 0.34906587f); }
+#endif
         }
         if (d->spin_next < 23)
             d->spin_next++;

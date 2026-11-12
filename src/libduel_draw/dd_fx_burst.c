@@ -185,8 +185,14 @@ int dd_burst_update(int phase, DdBurstFx *d)
         for (i2 = 0; i2 < 16; i2++) {
             pt = &d->petal[i2];
             pt->frame = DD_RAND(r) % 8;
+#ifdef __MWERKS__
             pt->tilt = DD_RAND(r) / 32767.0f * 0.5235988f * (DD_RAND(r) % 2 * 2 - 1);
             pt->ang = 6.2831855f * i2 / 16.0f + DD_RAND(r) / 32767.0f * 6.2831855f / 16.0f / 2.0f * (DD_RAND(r) % 2 * 2 - 1);
+#else /* port: mwcc draws the sign before the magnitude (asm of dd_burst_update); in C the order is unspecified */
+            { int sg = DD_RAND(r) % 2 * 2 - 1; pt->tilt = DD_RAND(r) / 32767.0f * 0.5235988f * sg; }
+            { int sg = DD_RAND(r) % 2 * 2 - 1;
+              pt->ang = 6.2831855f * i2 / 16.0f + DD_RAND(r) / 32767.0f * 6.2831855f / 16.0f / 2.0f * sg; }
+#endif
         }
     }
     if (d->grow == d->grow_end) {
@@ -444,8 +450,14 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
             sw = &d->swirl[i2];
             d->swirl[i2].u = DD_RAND(r) / 32767.0f;
             d->swirl[i2].v = DD_RAND(r) / 32767.0f;
+#ifdef __MWERKS__
             sw->tilt = DD_RAND(r) / 32767.0f * 1.0471976f * (DD_RAND(r) % 2 * 2 - 1);
             sw->ang = 6.2831855f * i2 / 16.0f + DD_RAND(r) / 32767.0f * 6.2831855f / 16.0f / 2.0f * (DD_RAND(r) % 2 * 2 - 1);
+#else /* port: mwcc draws the sign before the magnitude (asm of dd_burst_update); in C the order is unspecified */
+            { int sg = DD_RAND(r) % 2 * 2 - 1; sw->tilt = DD_RAND(r) / 32767.0f * 1.0471976f * sg; }
+            { int sg = DD_RAND(r) % 2 * 2 - 1;
+              sw->ang = 6.2831855f * i2 / 16.0f + DD_RAND(r) / 32767.0f * 6.2831855f / 16.0f / 2.0f * sg; }
+#endif
         }
     }
     if (d->grow == d->grow_end) {
