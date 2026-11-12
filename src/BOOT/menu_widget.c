@@ -1,6 +1,6 @@
 // @range 0x0884A9B4-0x0884C8D0
 // @data 0x088EEA58-0x088EEBA0
-// @asm 0x0884ACB4-0x0884BCF0
+// @asm 0x0884B6CC-0x0884BCF0
 /* Menu widget: a window (menu.c) hosting a scrollable list with a blinking cursor and/or a row of
    OK / YES / NO / CANCEL buttons (buttom_icon1.gim), driven by the pad. */
 #include "psp.h"
@@ -143,35 +143,26 @@ void menu_open(MenuWidget *w)
     }
 }
 
-#ifdef NON_MATCHING
-/* menu_draw and menu_update: structure follows the original, register allocation does not.
-   Kept in asm. */
 /* Draws the window, its list (with cursor, highlights and arrows) and the buttons; the window
    alpha follows the open/close animation of the item. */
 void menu_draw(void **dl, MenuWidget *w)
 {
-    MenuItemDef *d = &w->def;
-    void *start = *dl;
-    unsigned int alpha = 0xFF;
+    MenuItemDef *d;
+    unsigned int *start = *dl;
+    unsigned char alpha = 0xFF;
     unsigned int c;
-    int x0, y0, cx, cy, cw, chh, k, span;
-    unsigned int n, rows, style, i, bit;
-    unsigned int *p;
-    int ix, iy;
+    int cw;
+    int chh;
+    int x0;
+    int y0;
+    int n;
+    int k, span, rows, style, ix, iy, id;
+    unsigned int bit;
 
     menu_layout(dl, &w->menu);
     if (w->keep_dl)
         *dl = start;
     switch (w->state) {
-    case 4:
-        alpha = 0xFF;
-        break;
-    case 3:
-        break;
-    case 5:
-        c = menu_item_counter(w);
-        alpha = c < 2 ? 0x80 : 0;
-        break;
     case 2:
         c = menu_item_counter(w);
         if (c < 3)
@@ -179,70 +170,86 @@ void menu_draw(void **dl, MenuWidget *w)
         else if (c == 3)
             alpha = 0x80;
         break;
+    case 5:
+        c = menu_item_counter(w);
+        if (c < 2)
+            alpha = 0x80;
+        else
+            alpha = 0;
+        break;
+    case 3:
+    case 4:
+        break;
     default:
         return;
     }
-    if (alpha == 0 || d->visible == 0)
+    if (alpha == 0)
+        return;
+    if ((d = &w->def)->visible == 0)
         return;
     x0 = d->x + d->pad_l + 4;
     y0 = menu_cursor_y(&w->menu, d) + 1;
     if (w->center) {
         style = w->style;
         if (style != 0) {
+            int m = w->count;
+
             rows = w->rows;
-            n = w->count;
-            if (rows != 0 && rows < n)
-                n = rows;
-            if (!(style & 1)) {
-                span = w->item_h * n;
-                k = d->y + d->h - d->pad_b - 4 - y0;
-                if (span < k)
-                    y0 += (k - span) / 2;
-            } else {
-                span = w->item_w * n;
+            if (rows != 0 && rows < m)
+                m = rows;
+            if (style & 1) {
+                span = w->item_w * m;
                 k = d->x + d->w - d->pad_r - 4 - x0;
                 if (span < k)
                     x0 += (k - span) / 2;
+            } else {
+                span = w->item_h * m;
+                k = d->y + d->h - d->pad_b - 4 - y0;
+                if (span < k)
+                    y0 += (k - span) / 2;
             }
         }
     }
-    cw = d->x + d->w - x0 - d->pad_r - 5;
-    chh = d->y + d->h - y0 - d->pad_b - 5;
+    ix = x0;
+    iy = y0;
+    cw = d->x + d->w - ix - d->pad_r - 5;
+    chh = d->y + d->h - iy - d->pad_b - 5;
     start = *dl;
     if (w->draw_all != 0) {
-        *dl = w->draw_all(start, x0, y0, cw, chh);
+        *dl = w->draw_all(start, ix, iy, cw, chh);
     } else {
         n = w->count;
         if (w->draw_before != 0)
-            *dl = w->draw_before(start, x0, y0, cw, chh);
+            *dl = w->draw_before(start, ix, iy, cw, chh);
         rows = w->rows;
         if (rows != 0 && rows < n)
             n = rows;
-        ix = x0;
-        iy = y0;
         if (w->style != 0) {
+            int i;
+
             for (i = 0; i < n; i++) {
-                bit = 1 << ((i + w->scroll) & 0x1F);
+                id = i + w->scroll;
+                bit = 1 << id;
                 if (w->selected & bit) {
-                    if (w->draw_selected == 0)
-                        menu_draw_selected(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
-                    else
+                    if (w->draw_selected != 0)
                         *dl = w->draw_selected(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
+                    else
+                        *dl = menu_draw_selected(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
                 }
                 if (w->cursor == i) {
                     if (w->no_cancel) {
-                        if (w->draw_cursor == 0)
-                            *dl = menu_draw_cursor(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
-                        else
-                            *dl = w->draw_cursor(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
-                    } else if (w->draw_selected == 0) {
-                        menu_draw_selected(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
+                        *dl = w->draw_cursor != 0
+                                  ? w->draw_cursor(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h)
+                                  : menu_draw_cursor(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
                     } else {
-                        *dl = w->draw_selected(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
+                        if (w->draw_selected != 0)
+                            *dl = w->draw_selected(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
+                        else
+                            *dl = menu_draw_selected(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
                     }
                 }
                 if (w->draw_item != 0)
-                    *dl = w->draw_item(*dl, (i + w->scroll) & 0xFFFF, ix, iy);
+                    *dl = w->draw_item(*dl, (unsigned short)id, ix, iy);
                 if (w->selected & bit) {
                     if (w->draw_selected_post != 0)
                         *dl = w->draw_selected_post(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
@@ -251,62 +258,69 @@ void menu_draw(void **dl, MenuWidget *w)
                     if (w->no_cancel) {
                         if (w->draw_cursor_post != 0)
                             *dl = w->draw_cursor_post(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
-                    } else if (w->draw_selected_post != 0) {
-                        *dl = w->draw_selected_post(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
+                    } else {
+                        if (w->draw_selected_post != 0)
+                            *dl = w->draw_selected_post(*dl, w, ix + w->item_x, iy + w->item_y, w->cursor_w, w->cursor_h);
                     }
                 }
-                if ((w->style & 1))
+                if (w->style & 1)
                     ix += w->item_w;
                 else
                     iy += w->item_h;
             }
         }
-        if (w->scroll != 0) {
+        if (w->scroll > 0) {
             *dl = gim_set_texture(*dl, w->icon_gim);
-            if ((w->style & 1))
-                *dl = menu_draw_arrow(*dl, x0 - w->arrow_off, y0 + (w->item_h >> 1), 2);
+            if (w->style & 1)
+                *dl = menu_draw_arrow(*dl, x0 - w->arrow_off, y0 + ((unsigned int)w->item_h >> 1), 2);
             else
-                *dl = menu_draw_arrow(*dl, x0 + (w->item_w >> 1), y0 - w->arrow_off, 1);
+                *dl = menu_draw_arrow(*dl, x0 + ((unsigned int)w->item_w >> 1), y0 - w->arrow_off, 1);
         }
-        if (w->rows != 0) {
+        if (w->rows > 0) {
             if (w->scroll + w->rows < w->count) {
                 *dl = gim_set_texture(*dl, w->icon_gim);
-                if ((w->style & 1))
-                    *dl = menu_draw_arrow(*dl, ix + w->arrow_off, y0 + (w->item_h >> 1), 3);
+                if (w->style & 1)
+                    *dl = menu_draw_arrow(*dl, ix + w->arrow_off, y0 + ((unsigned int)w->item_h >> 1), 3);
                 else
-                    *dl = menu_draw_arrow(*dl, x0 + (w->item_w >> 1), iy + w->arrow_off, 0);
+                    *dl = menu_draw_arrow(*dl, x0 + ((unsigned int)w->item_w >> 1), iy + w->arrow_off, 0);
             }
         }
         switch (w->buttons) {
-        case 4:
-            *dl = menu_draw_button(*dl, w, d->x + d->w / 2 - 0x60, iy + 10, 2, w->button == 2);
-            *dl = menu_draw_button(*dl, w, d->x + (d->w - 0x3C) / 2, iy + 10, 3, w->button == 3);
-            *dl = menu_draw_button(*dl, w, d->x + d->w / 2 + 0x24, iy + 10, 4, w->button == 4);
-            break;
-        case 3:
-            *dl = menu_draw_button(*dl, w, d->x + d->w / 2 - 0x46, iy + 10, 2, w->button == 2);
-            *dl = menu_draw_button(*dl, w, d->x + d->w / 2 + 10, iy + 10, 3, w->button == 3);
+        case 1:
+            *dl = menu_draw_button(*dl, w, d->x + (d->w - 0x3C) / 2, iy + 10, 1, w->button == 1);
             break;
         case 2:
             *dl = menu_draw_button(*dl, w, d->x + d->w / 2 - 0x46, iy + 10, 1, w->button == 1);
             *dl = menu_draw_button(*dl, w, d->x + d->w / 2 + 10, iy + 10, 4, w->button == 4);
             break;
-        case 1:
-            *dl = menu_draw_button(*dl, w, d->x + (d->w - 0x3C) / 2, iy + 10, 1, w->button == 1);
+        case 3:
+            *dl = menu_draw_button(*dl, w, d->x + d->w / 2 - 0x46, iy + 10, 2, w->button == 2);
+            *dl = menu_draw_button(*dl, w, d->x + d->w / 2 + 10, iy + 10, 3, w->button == 3);
+            break;
+        case 4:
+            *dl = menu_draw_button(*dl, w, d->x + d->w / 2 - 0x60, iy + 10, 2, w->button == 2);
+            *dl = menu_draw_button(*dl, w, d->x + (d->w - 0x3C) / 2, iy + 10, 3, w->button == 3);
+            *dl = menu_draw_button(*dl, w, d->x + d->w / 2 + 0x24, iy + 10, 4, w->button == 4);
+            break;
+        case 0:
             break;
         }
         if (w->draw_after != 0)
             *dl = w->draw_after(*dl, x0, y0, cw, chh);
     }
     /* fade: scale every ambient alpha command (0x58) emitted above */
-    if (alpha < 0xFF && (unsigned int *)start < (unsigned int *)*dl) {
-        for (p = start; p < (unsigned int *)*dl; p++) {
-            if (*p >> 24 == 0x58)
-                *p = (((*p & 0xFF) * alpha) / 0xFF & 0xFF) | 0x58000000;
-        }
+    if (alpha < 0xFF && start < (unsigned int *)*dl) {
+        do {
+            unsigned int op = (*start >> 24) & 0xFF;
+
+            if (op == 0x58)
+                *start = (op << 24) | ((int)((*start & 0xFF) * alpha) / 0xFF & 0xFF);
+            start++;
+        } while (start < (unsigned int *)*dl);
     }
 }
 
+#ifdef NON_MATCHING
 /* NON_MATCHING: switch (state) na ordem do original (2, 5 -> 6 -> 3 com fall-through, 4, default);
    1748 B contra 1572 B: a entrada (cancelar/aceitar/cursor) ainda tem blocos em outra ordem e
    cópias recarregadas (415 palavras). */
@@ -592,11 +606,11 @@ void *menu_draw_cursor(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
 }
 
 /* Highlight box of a selected entry (steady color). */
-void menu_draw_selected(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
+void *menu_draw_selected(void *dl, MenuWidget *w, int x, int y, int cw, int ch)
 {
     dl = gim_set_texture(dl, w->menu.window_gim);
     dl = dl_ambient_color(dl, 0x803A768D);
-    menu_draw_box(dl, x, y, cw, ch);
+    return menu_draw_box(dl, x, y, cw, ch);
 }
 
 /* 9-slice box from the 12 x 12 corner pieces at (0..12, 112..124) of the window texture; returns

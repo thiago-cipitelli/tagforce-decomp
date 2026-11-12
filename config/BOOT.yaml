@@ -261,7 +261,7 @@ segments:
       - [0x45FA4, asm, font_tags_asm_08849F44]
       - [0x46490, c, font_tags]
       - [0x46A14, c, menu_widget]
-      - [0x46D14, asm, menu_widget_asm_0884ACB4]
+      - [0x4772C, asm, menu_widget_asm_0884B6CC]
       - [0x47D50, c, menu_widget]
       - [0x48930, c, card_db]
       - [0x4AA98, c, card_groups]
