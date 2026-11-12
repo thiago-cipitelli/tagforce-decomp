@@ -1,6 +1,6 @@
 // @range 0x08809B1C-0x0880A8E0
 // @asm 0x08809EF0-0x08809FA0
-// @asm 0x0880A6B0-0x0880A8E0
+// @data 0x08874BA0-0x08874BA8
 /* The 3D card objects of the field: a pool of 460 nodes and one list per player and zone (deck,
    extra, graveyard...), filled from the decks at the start; the moves of a card between two
    places as the duel engine reports them. */
@@ -154,8 +154,6 @@ void dd_cobjs_update(float dt)
 }
 #endif
 
-extern DdPos dd_pos_up;                /* 0x08874BA0 templates {up = 1} */
-extern DdPos dd_pos_up2;
 /* moves the object of card `uid` from `from` to `to` (kind: how it moves) */
 void dd_cobj_goto(DdPos from, DdPos to, int uid, int kind)
 {
@@ -263,15 +261,12 @@ void dd_cobj_flip(int p, int zone)
     o->b5 = !o->b5;
 }
 
-#ifdef NON_MATCHING
 /* puts the card `uid` on top of the pile p/zone */
 void dd_cobj_to_top(int p, int zone, int uid)
 {
     int n = dd_zone_count(p, zone);
     DdCobj *o = dd_cobj_at(p, zone, n - 1);
     DdCobj *head;
-    DdPos at;
-    DdPos to;
     DdXyzw pos;
     DdXyzw rot;
 
@@ -288,15 +283,14 @@ void dd_cobj_to_top(int p, int zone, int uid)
         return;
     dd_list_unlink(o, dd_zone_list(p, zone));
     dd_list_add_tail(o, dd_zone_list(p, zone));
-    at = dd_pos_up;
-    at.player = p;
-    at.zone = zone;
-    dd_slot_xform(&o->pos, &o->rot, at);
-    to = dd_pos_up2;
-    to.player = p;
-    to.zone = zone;
-    to.idx = n;
-    dd_slot_xform(&pos, &rot, to);
+    {
+        DdPos at = { p, zone, 0, 1 };
+        dd_slot_xform(&o->pos, &o->rot, at);
+    }
+    {
+        DdPos to = { p, zone, n, 1 };
+        dd_slot_xform(&pos, &rot, to);
+    }
     pos.y += dd_stack_y(1);
     o->pos.y = 0.0f;
     dd_cobj_move(dd_move_time(), o, &pos, &rot, 1);
@@ -304,4 +298,3 @@ void dd_cobj_to_top(int p, int zone, int uid)
     o->c1 = 1;
     o->a2 = 1;
 }
-#endif
