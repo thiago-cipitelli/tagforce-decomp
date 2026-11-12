@@ -1,5 +1,4 @@
 // @range 0x0886F23C-0x0887DB24
-// @asm 0x08871B14-0x08871BFC
 // @asm 0x08871674-0x088717B4
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
@@ -1216,19 +1215,14 @@ int duel_08871ADC(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 13 palavras: o original testa os dois resultados finais com bnezl/bnez para li v0,1 e
-                      "b fim; move v0,zero"; if/return 1/return 0 o mwcc reduz a sltu, switch dá beqzl */
 int duel_08871B14(DuelAct *a, int b)
 {
     unsigned int p;
 
     if (a->b3_4 != 2) {
         p = a->player;
-        switch (duel_tributable(p ^ a->opp, p, a->zone)) {
-        case 0:
-            break;
-        default:
-            return 1;
+        if (duel_tributable(p ^ a->opp, p, a->zone) != 0) {
+            goto ok;
         }
         return 0;
     }
@@ -1247,9 +1241,9 @@ int duel_08871B14(DuelAct *a, int b)
     if (duel_088BFFD8(a->player, a->id, 0) == 0) {
         return 0;
     }
+ok:
     return 1;
 }
-#endif
 
 int duel_08871BFC(DuelAct *a)
 {
