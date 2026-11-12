@@ -14,7 +14,12 @@ PadState *pad_get(void);
 int region_get(void);
 void fld_dir_vec(Vec3 *out, int i);
 float fld_stick_axis(int v);
+#ifdef __MWERKS__
 void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r, int flag);
+#else
+void fld_chr_collide(Vec3 *out, Vec3 *vel, Vec3 *pos, float r);
+#define fld_chr_collide(a0, a1, a2, a3, a4) fld_chr_collide(a0, a1, a2, a3) /* port: the definition takes 4 arguments, the rest are not read */
+#endif
 void fld_npc_near(FieldNpc **out, int *n, FieldNpc *p, float r);
 int fld_dir_nearest(Vec3 *v);
 Vec3 *vec3_cross_nw(Vec3 *out, Vec3 *a, Vec3 *b);

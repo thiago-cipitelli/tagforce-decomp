@@ -647,7 +647,12 @@ extern int duel_w_089195EC;
 extern int duel_w_08914920;
 extern int duel_player_type[2];
 
+#ifdef __MWERKS__
 void duel_088AFD5C(unsigned short kind, DuelAtkEv ev);
+#else
+void duel_088AFD5C(unsigned short kind, unsigned int ev);
+#define duel_088AFD5C(kind, ev) duel_088AFD5C(kind, *(unsigned int *)&(ev)) /* port: the definition takes the event as a word */
+#endif
 
 int duel_ai_atk_08821C80(int kind)
 {

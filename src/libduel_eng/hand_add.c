@@ -19,8 +19,18 @@ int card_attribute_icon_is3(int);
 int card_is_in_group_1a5c(int id);
 void duel_088C77EC(unsigned int p, int uid);
 int duel_slot_e8170(unsigned int p, int z, int id);
+#ifdef __MWERKS__
 int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
+#else
+int duel_0884F30C(unsigned int code, int uid, int arg);
+#define duel_0884F30C(a, uid, ev) duel_0884F30C(a, uid, *(int *)&(ev)) /* port: the definition takes the event as a word */
+#endif
+#ifdef __MWERKS__
 void duel_088AFD5C(int kind, DuelMoveEv ev);
+#else
+void duel_088AFD5C(unsigned short kind, unsigned int ev);
+#define duel_088AFD5C(kind, ev) duel_088AFD5C(kind, *(unsigned int *)&(ev)) /* port: the definition takes the event as a word */
+#endif
 
 /* card c of the graveyard of p to his hand, for the action a */
 int duel_088CAF24(DuelAct *a, unsigned int p, DuelCard *c)

@@ -16,7 +16,11 @@ int dv_side_to_player(int side);
 int dv_slot_uid(int side, int z);
 void dv_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void *dd_cobj_at(int side, int zone, int index);
+#ifdef __MWERKS__
 void dd_cobj_spawn(short arg, int value, int uid);
+#else
+void dd_cobj_spawn(DdPos at, unsigned short card, unsigned short uid);
+#endif
 void dd_cobj_set_card(void *card, int value, int uid);
 unsigned int *dd_pad(void);
 void dd_chara_busy_set(void);
@@ -45,7 +49,11 @@ void zone_cmd(PopupLoc loc, ZoneArg arg, int value)
     dv_cmd(pl | 0x44, zone | (index & 0xFF) << 8, value, arg.huge * 10 + arg.big);
     card = zc_at(side, zone, index);
     if (card == 0) {
+#ifdef __MWERKS__
         dd_cobj_spawn(*(short *)&arg, value, (unsigned short)dv_slot_uid(side, zone));
+#else
+        dd_cobj_spawn(*(DdPos *)&arg, value, (unsigned short)dv_slot_uid(side, zone));
+#endif
         card = zc_at(side, zone, index);
         if (card == 0)
             return;

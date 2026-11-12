@@ -180,8 +180,15 @@ void dd_ev_8817670(int v)
 }
 
 /* export: runs duel event `id` with its packed arguments; 1 when there is no handler */
+#ifdef __MWERKS__
 int dd_event_dispatch(int id, DdEvArg a, DdEvArg b, DdEvArg c)
 {
+#else
+/* port: every caller (libduel_mgr, libtutorial) passes plain words; the union by value is the same word */
+int dd_event_dispatch(int id, int a_word, int b_word, int c_word)
+{
+    DdEvArg a, b, c;
+#endif
     DdEvCmd *found = 0;
     DdEvCmd *e;
     int (*fn)();
@@ -190,6 +197,11 @@ int dd_event_dispatch(int id, DdEvArg a, DdEvArg b, DdEvArg c)
     DdEvCmd *tab;
     static int dd_ev_sorted; /* 0x08C54798 (@bss) */
 
+#ifndef __MWERKS__
+    a.i = a_word;
+    b.i = b_word;
+    c.i = c_word;
+#endif
     if (dd_ev_sorted == 0) {
         qsort(dd_ev_table, 72, sizeof(DdEvCmd), dd_ev_cmp);
         dd_ev_sorted = 1;

@@ -86,7 +86,12 @@ void dd_mode_push(int m);
 void dd_mode_set_flag(int f);
 void dd_mode_set_card(int card);
 DdCobj *dd_cobj_at(int player, int zone, int index);
+#ifdef __MWERKS__
 void dd_slot_xform(float *pos, float *rot, DdLoc at);
+#else
+void dd_slot_xform(float *pos, float *rot, DdPos at);
+#define dd_slot_xform(pos, rot, at) dd_slot_xform(pos, rot, *(DdPos *)&(at)) /* port: DdLoc and DdPos are the same 16 bits */
+#endif
 float *mat4_transform_vec4(float *out, float *m, float *v);
 unsigned int *dl_set_tex_filter(unsigned int *list, int min, int mag);
 int font_draw_wtext_ex(int x, int y, int w, int h, unsigned short *text, int max_glyphs);

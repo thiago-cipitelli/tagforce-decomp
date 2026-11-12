@@ -16,7 +16,12 @@ extern DdMarks dd_marks;
 
 int dd_task_pause(int h);
 DdCobj *dd_cobj_at(int player, int zone, int index);
+#ifdef __MWERKS__
 void dd_slot_xform(float *pos, float *rot, DdLoc at);
+#else
+void dd_slot_xform(float *pos, float *rot, DdPos at);
+#define dd_slot_xform(pos, rot, at) dd_slot_xform(pos, rot, *(DdPos *)&(at)) /* port: the same 16 bits as DdPos */
+#endif
 float dd_stack_y(int n);
 int dv_n_d(int side);
 int dv_n_18(int side);

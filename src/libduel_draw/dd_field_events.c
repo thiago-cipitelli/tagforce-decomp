@@ -72,8 +72,8 @@ int dd_fx_ringglow_done(int id);
 int dd_fx_spin_move(int id, float *pos, float *rot, float s);
 #ifdef __MWERKS__
 void dd_slot_xform(float *pos, float *rot, short at);
-#else /* chamada ora com struct por valor, ora com palavra: protótipo comum no passo 2 de docs/port_survey.md */
-void dd_slot_xform();
+#else
+void dd_slot_xform(float *pos, float *rot, DdPos at); /* the definition's; DdLoc arguments go as the same 16 bits */
 #endif
 float asinf_vfpu(float x);
 float atan2f_vfpu(float y, float x);
@@ -412,7 +412,11 @@ void func_08820CC0(float *pos, float *rot, DdLoc at)
 #ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
         extern void dd_slot_xform(float *pos, float *rot, DdLoc at);
 #endif
+#ifdef __MWERKS__
         dd_slot_xform(pos, rot, at);
+#else
+        dd_slot_xform(pos, rot, *(DdPos *)&at);
+#endif
     }
     {
         FxVec4 flip = { 0.0f, 0.0f, 1.0f, 0.0f };

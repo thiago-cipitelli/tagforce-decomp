@@ -67,7 +67,12 @@ int dd_cursor_zone_order[2][16] = {
 
 int dd_zone_count(int player, int zone);
 void *dd_cobj_at(int player, int zone, int idx);
+#ifdef __MWERKS__
 void dd_slot_xform(float *pos, float *rot, DdLoc2 loc);
+#else
+void dd_slot_xform(float *pos, float *rot, DdPos at);
+#define dd_slot_xform(pos, rot, at) dd_slot_xform(pos, rot, *(DdPos *)&(at)) /* port: the same 16 bits as DdPos */
+#endif
 int dd_0880702C(void);
 int dd_loc_visible(DdLoc loc);
 void dd_info_select_uid(int id);

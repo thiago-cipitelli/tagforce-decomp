@@ -46,8 +46,8 @@ void duel_088C4448(unsigned int, int, int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 #ifdef __MWERKS__
 int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
-#else /* chamada ora com struct por valor, ora com palavra: protótipo comum no passo 2 de docs/port_survey.md */
-int duel_0884F30C();
+#else
+int duel_0884F30C(unsigned int code, int uid, int arg); /* the definition's; DuelMoveEv arguments go as their word */
 #endif
 int duel_slot_e8170(unsigned int p, int z, int id);
 void duel_088C7E68(unsigned int, int, int, int);
@@ -352,13 +352,21 @@ int duel_088C5510(unsigned int p, int n, int f)
         switch (c->id) {
         case 0x12A1:
             if (duel_slot_effect_with(p, 0xB, 0x12A1, CARD_UID(*c))
+#ifdef __MWERKS__
                 && !duel_0884F30C((p << 31 & 0x80000000 | 0x32500000) | c->id, CARD_UID(*c), ev)) {
+#else
+                && !duel_0884F30C((p << 31 & 0x80000000 | 0x32500000) | c->id, CARD_UID(*c), *(int *)&ev)) {
+#endif
                 duel_088C8AD0(p, 0xB, 0x12A1, CARD_UID(*c));
             }
             break;
         case 0x17CC:
             if (f) {
+#ifdef __MWERKS__
                 duel_0884F30C((p << 31 & 0x80000000 | 0x32500000) | (c->id & 0xFFFF), CARD_UID(*c), ev);
+#else
+                duel_0884F30C((p << 31 & 0x80000000 | 0x32500000) | (c->id & 0xFFFF), CARD_UID(*c), *(int *)&ev);
+#endif
             }
             break;
         }
@@ -375,7 +383,11 @@ int duel_088C5510(unsigned int p, int n, int f)
             ev2.b10 = 1;
             ev2.uid = 0;
             duel_0884F30C((o << 31 & 0x80000000 | 0x32200000) | ((unsigned int)i << 16 & 0x1F0000)
+#ifdef __MWERKS__
                           | duel.players[o & 1].field[i].card.id, CARD_UID(duel.players[o & 1].field[i].card), ev2);
+#else
+                          | duel.players[o & 1].field[i].card.id, CARD_UID(duel.players[o & 1].field[i].card), *(int *)&ev2);
+#endif
         }
     }
     {
@@ -481,7 +493,11 @@ void duel_088C5E78(unsigned int p, unsigned int n, int x, int y)
             case 0x16F5:
             case 0x17C5:
             case 0x19FE:
+#ifdef __MWERKS__
                 duel_0884F30C((p << 31 & 0x80000000 | 0x384E0000) | duel.players[p & 1].zone_d[i].id, CARD_UID(*c), ev);
+#else
+                duel_0884F30C((p << 31 & 0x80000000 | 0x384E0000) | duel.players[p & 1].zone_d[i].id, CARD_UID(*c), *(int *)&ev);
+#endif
                 break;
             }
             if (card_get_type(id) == 9) {
@@ -546,7 +562,11 @@ void duel_088C626C(unsigned int p, unsigned int uid, int x)
     case 0x16F5:
     case 0x17C5:
     case 0x19FE:
+#ifdef __MWERKS__
         duel_0884F30C((o << 31 & 0x80000000 | 0x384E0000) | (id & 0xFFFF), uid, ev);
+#else
+        duel_0884F30C((o << 31 & 0x80000000 | 0x384E0000) | (id & 0xFFFF), uid, *(int *)&ev);
+#endif
         break;
     }
     if (card_get_type(id) == 9) {
@@ -791,13 +811,21 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
         break;
     }
     if (id == 0x18AA && duel_d_find_name(p, 0x1445) >= 0) {
+#ifdef __MWERKS__
         duel_0884F30C((p << 31 & 0x80000000) | 0x3C501445, 0, ev);
+#else
+        duel_0884F30C((p << 31 & 0x80000000) | 0x3C501445, 0, *(int *)&ev);
+#endif
     }
     if (i && card_is_monster(id) && card_is_in_group_1911(id)) {
         for (q = 0; q < 2; q++) {
             if (duel_slot_e8170(q, 10, 0x169F)) {
                 duel_0884F30C(((unsigned int)q << 31 & 0x80000000) | 0x3C000000 | ((o != q) << 24 & 0x1000000) | 0x2A169F,
+#ifdef __MWERKS__
                               CARD_UID(duel.players[q & 1].field[10].card), ev);
+#else
+                              CARD_UID(duel.players[q & 1].field[10].card), *(int *)&ev);
+#endif
             }
         }
     }
@@ -805,7 +833,11 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
         for (q = 0; q < 2; q++) {
             if (duel_slot_e8170(q, 10, 0x187F)) {
                 duel_0884F30C(((unsigned int)q << 31 & 0x80000000) | 0x3C000000 | ((o != q) << 24 & 0x1000000) | 0x2A187F,
+#ifdef __MWERKS__
                               CARD_UID(duel.players[q & 1].field[10].card), ev);
+#else
+                              CARD_UID(duel.players[q & 1].field[10].card), *(int *)&ev);
+#endif
             }
         }
     }
@@ -844,7 +876,11 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
         break;
     }
     if (f) {
+#ifdef __MWERKS__
         duel_0884F30C((o << 31 & 0x80000000 | 0x3C4E0000) | (id & 0xFFFF), CARD_UID(*c), ev);
+#else
+        duel_0884F30C((o << 31 & 0x80000000 | 0x3C4E0000) | (id & 0xFFFF), CARD_UID(*c), *(int *)&ev);
+#endif
     }
     duel_088AFD5C(0x1E, ev);
 }

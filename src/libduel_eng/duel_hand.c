@@ -18,7 +18,12 @@ DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 void duel_088CA4E8(unsigned int p, DuelCard *c, int a, int z, int b, int d);
 int duel_count_active(int id);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
+#ifdef __MWERKS__
 void duel_088AFD5C(int kind, DuelMoveEv ev);
+#else
+void duel_088AFD5C(unsigned short kind, unsigned int ev);
+#define duel_088AFD5C(kind, ev) duel_088AFD5C(kind, *(unsigned int *)&(ev)) /* port: the definition takes the event as a word */
+#endif
 int duel_slot_effect_with(unsigned int, int, int, int);
 void duel_088C44E4(unsigned int p, int id);
 int duel_088C4730(unsigned int, int, int, int);
@@ -30,7 +35,12 @@ void duel_088C01F8(unsigned int p, int id, int a);
 void duel_088C1884(unsigned int p);
 int duel_slot_e8170(unsigned int p, int z, int id);
 void duel_088C7E68(unsigned int, int, int, int);
+#ifdef __MWERKS__
 int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
+#else
+int duel_0884F30C(unsigned int code, int uid, int arg);
+#define duel_0884F30C(a, uid, ev) duel_0884F30C(a, uid, *(int *)&(ev)) /* port: the definition takes the event as a word */
+#endif
 
 /* card c leaves the hand of p for zone z (0xE graveyard, 0xF if it cannot go there, else D): a is the command
    argument (bit 0: for the opponent, bit 12: shown with 0x46), b: by an effect (event 0x1D, else 0x1E),

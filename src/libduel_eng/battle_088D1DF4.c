@@ -7,8 +7,30 @@
 #include "card_db.h"
 
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
+struct DuelActX1 {                     /* struct DuelActX with bit 23 as a 1-bit field */
+    unsigned int s_uid : 9;
+    unsigned int s_player : 1;
+    unsigned int s_zone : 4;
+    unsigned int s_b14 : 1;
+    unsigned int s_b15 : 1;
+    unsigned int s_b16 : 1;
+    unsigned int s_b17 : 1;
+    unsigned int s_b18 : 1;
+    unsigned int s_zone2 : 4;
+    unsigned int s_b23 : 1;
+    unsigned int s_b24 : 8;
+};
+
+#ifdef __MWERKS__
 void duel_088CC8EC(struct DuelActX x, DuelCard *c, int a, int b);
 void duel_088AFD5C(int kind, struct DuelActX x);
+#else
+void duel_088CC8EC(struct DuelActX1 x, DuelSlot *s, int cause, unsigned int f);
+void duel_088AFD5C(unsigned short kind, unsigned int ev);
+/* port: the original passes the DuelActX word in a0/a1 as is; the definitions take it as DuelActX1 / unsigned int */
+#define duel_088CC8EC(x, c, a, b) duel_088CC8EC(*(struct DuelActX1 *)&(x), (DuelSlot *)(c), a, b)
+#define duel_088AFD5C(kind, x) duel_088AFD5C(kind, *(unsigned int *)&(x))
+#endif
 void duel_088CFBA4(DuelCard *c, unsigned int p, int z, unsigned int f);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_special_get_id(DuelSlot *s);
@@ -57,20 +79,6 @@ void duel_088D1DF4(DuelCard *c, struct DuelActX x)
         duel_088CFBA4(c, x.s_player, z, f);
     }
 }
-
-struct DuelActX1 {                     /* struct DuelActX with bit 23 as a 1-bit field */
-    unsigned int s_uid : 9;
-    unsigned int s_player : 1;
-    unsigned int s_zone : 4;
-    unsigned int s_b14 : 1;
-    unsigned int s_b15 : 1;
-    unsigned int s_b16 : 1;
-    unsigned int s_b17 : 1;
-    unsigned int s_b18 : 1;
-    unsigned int s_zone2 : 4;
-    unsigned int s_b23 : 1;
-    unsigned int s_b24 : 8;
-};
 
 #ifdef NON_MATCHING /* 8 palavras: lógica conferida; o original antecipa a carga de a->player para o delay slot antes de card_is_attribute9 e troca a0/v0 no laço de zeragem de x */
 /* The card that fought (i) is destroyed by a's effect. */

@@ -15,7 +15,12 @@ int duel_slot_has_effect(unsigned int p, int z, int id);
 int duel_find_effect_card(unsigned int p, int id, int z);
 void duel_08832624(unsigned int, unsigned int, int, int);
 void duel_088C321C(unsigned int p);
+#ifdef __MWERKS__
 void duel_088AFD5C(int kind, DuelLpEv ev);
+#else
+void duel_088AFD5C(unsigned short kind, unsigned int ev);
+#define duel_088AFD5C(kind, ev) duel_088AFD5C(kind, *(unsigned int *)&(ev)) /* port: the definition takes the event as a word */
+#endif
 int duel_088C4730(unsigned int, int, int, int);
 
 void duel_088C4448(unsigned int p, int a, int uid)

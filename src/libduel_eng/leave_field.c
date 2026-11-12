@@ -45,7 +45,12 @@ unsigned int duel_dfc10(void);
 int duel_0886BCDC(void);
 void duel_088CC594(unsigned int p, int z, int a, int id);
 int duel_0884F30C(unsigned int code, unsigned short uid, unsigned int arg);
+#ifdef __MWERKS__
 void duel_088AFD5C(int kind, struct DuelActX x);
+#else
+void duel_088AFD5C(unsigned short kind, unsigned int ev);
+#define duel_088AFD5C(kind, ev) duel_088AFD5C(kind, *(unsigned int *)&(ev)) /* port: the definition takes the event as a word */
+#endif
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);

@@ -34,7 +34,11 @@ void dv_08836028(void);
 void opt_open(void);
 void hl_open(void);
 void *dd_cobj_at(int side, int zone, int index);
+#ifdef __MWERKS__
 void dd_slot_xform(DdVec4A *pos, DdVec4A *rot, short loc);
+#else
+void dd_slot_xform(DdVec4A *pos, DdVec4A *rot, DdPos at);
+#endif
 void *dd_gim_get(int id);
 
 void popup_build(void);
@@ -162,7 +166,11 @@ void popup_place(MenuWidget *w, int side, int zone, int index)
     if (e == 0 || zone != 0xB) {
         PopupLoc loc = { side, zone, index };
 
+#ifdef __MWERKS__
         dd_slot_xform(&pos, &rot, *(short *)&loc);
+#else
+        dd_slot_xform(&pos, &rot, *(DdPos *)&loc);
+#endif
     } else {
         pos = *(DdVec4A *)(e + 0x10);
         rot = *(DdVec4A *)(e + 0x40);

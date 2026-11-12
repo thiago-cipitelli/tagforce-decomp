@@ -51,7 +51,11 @@ DdObj *dd_task_add(DdObj *desc);
 void dd_task_remove_cur(void);
 void dd_task_remove(DdObj *o);
 void dd_cursor_unlisten(void (*fn)(short, int));
+#ifdef __MWERKS__
 void dd_slot_xform(void *pos, void *rot, short at);
+#else
+void dd_slot_xform(void *pos, void *rot, DdPos at);
+#endif
 float dd_speed_get(void);
 void dd_cursor_get(short *loc);
 void *dd_gim_get(int id);
@@ -151,7 +155,11 @@ void dd_mark_move(int player, int zone, int to_player, int to_zone)
     m->to.zone = to_zone;
     p.f14 = 0;
     p.f15 = 0;
+#ifdef __MWERKS__
     dd_slot_xform(&m->dest, rot, *(short *)&p);
+#else
+    dd_slot_xform(&m->dest, rot, *(DdPos *)&p);
+#endif
     m->dest.y = -2.0f;
     o->update = (DdObjFn)dd_mark_glide;
     o->time = 0.0f;
@@ -205,7 +213,11 @@ void dd_mark_reset(void)
     p.idx = 0;
     p.f14 = 0;
     p.f15 = 0;
+#ifdef __MWERKS__
     dd_slot_xform(m, &m->rot, *(short *)&p);
+#else
+    dd_slot_xform(m, &m->rot, *(DdPos *)&p);
+#endif
     m->pos.y += 30.0f;
     m->moving = 0;
     o->draw = (DdObjFn)dd_mark_draw;
@@ -302,7 +314,11 @@ void dd_mark_aim(DdLoc loc, int unused, int hl)
     p.idx = 0;
     p.f14 = 0;
     p.f15 = 0;
+#ifdef __MWERKS__
     dd_slot_xform(&pos, &tmp, *(short *)&p);
+#else
+    dd_slot_xform(&pos, &tmp, *(DdPos *)&p);
+#endif
     dx = pos.x - m->pos.x;
     dz = pos.z - m->pos.z;
     if (dx == 0.0f && dz == 0.0f) {
