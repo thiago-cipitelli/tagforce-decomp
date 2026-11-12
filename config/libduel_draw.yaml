@@ -175,8 +175,6 @@ segments:
       - [0x496BC, c, dd_chara]
       - [0x49F8C, c, dd_ryusen]
       - [0x4A154, c, dd_arrow]
-      - [0x4A248, asm, dd_arrow_asm_0884E1E8]
-      - [0x4A47C, c, dd_arrow]
       - [0x4B430, c, dd_fx_swirl]
       - [0x4BDC0, c, dd_fx_note]
       - [0x4C3CC, c, dd_fx_splash]
