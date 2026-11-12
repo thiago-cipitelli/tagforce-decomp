@@ -1,5 +1,5 @@
 // @range 0x08810758-0x08811718
-// @asm 0x08810758-0x08811310
+// @asm 0x08811210-0x08811310
 /* ATK/DEF of the monsters drawn over the field (animated when they change, blue when they rise,
    red when they fall), the selection count marker over a card, and small helpers. */
 #include "dd_d1.h"
@@ -27,37 +27,68 @@ void font_text_set(void *list);
 void *font_text_clear(void);
 void dv_field_stats(int player, int zone, int *out);
 
-#ifdef NON_MATCHING /* o original tem a cor como struct de 4 bytes (bitfields unsigned de 8 bits: cópias byte a byte, conversão float->unsigned por canal) e val[] copiado por um temporário zerado; forma não reproduzida */
+typedef struct DdRgba {
+    unsigned int r : 8;
+    unsigned int g : 8;
+    unsigned int b : 8;
+    unsigned int a : 8;
+} DdRgba;
 extern DdXyzw dd_counter_off;          /* 0x08874F80 */
-extern unsigned int dd_counter_col[4]; /* 0x08874F90 atk, def colours (f15 set: [0], [1]; clear: [3], [2]) */
+extern DdRgba dd_counter_col[4];       /* 0x08874F90 atk, def colours (f15 set: [0], [1]; clear: [3], [2]) */
 
-inline static unsigned int dd_dim(unsigned int c, float r, float g, float b)
+static inline DdRgba dd_rgba(DdRgba *c)
 {
-    return (c & 0xFF000000) | (unsigned int)((float)(c >> 16 & 0xFF) * b) << 16 |
-           (unsigned int)((float)(c >> 8 & 0xFF) * g) << 8 | (unsigned int)((float)(c & 0xFF) * r);
+    DdRgba t;
+
+    t.r = c->r;
+    t.g = c->g;
+    t.b = c->b;
+    t.a = c->a;
+    return t;
 }
 
+/* the original multiplies by 1.0f too (conversions kept, the product folded): a macro, not an inline */
+#define DD_DIM(c, kr, kg, kb) ((c).r = (c).r * (kr), (c).g = (c).g * (kg), (c).b = (c).b * (kb))
+
+typedef struct DdI2 {
+    int v[2];
+} DdI2;
+
+/* both colours as 0xAABBGGRR words */
+static inline DdI2 dd_rgba_words(DdRgba *a, DdRgba *b)
+{
+    DdI2 w = { { a->r | a->g << 8 | a->b << 16 | (unsigned int)a->a << 24,
+                 b->r | b->g << 8 | b->b << 16 | (unsigned int)b->a << 24 } };
+
+    return w;
+}
+
+#ifdef __MWERKS__
+#pragma opt_decomposeaggregates off /* the original copies the aggregates as words */
+#endif
 /* ATK and DEF of the monster at `at`, projected above its card at pos */
 void *dd_counter_draw(void *list, DdPos at, DdXyzw *pos)
 {
+    DdXyzw p;
+    DdMtx vp;
+    DdXyzw s;
     DdMtx view;
     DdMtx proj;
-    DdMtx vp;
-    DdMtx m;
     DdXyzw off;
-    DdXyzw p;
-    DdXyzw s;
-    DdZoneAnim *za = &dd_cobjs.za[at.player][at.zone];
-    int w = 7;
-    int h = 9;
-    int changed = 0;
-    int val[2];
-    unsigned int col[2];
+    DdMtx m;
+    DdCobjs *b = &dd_cobjs;
+    DdZoneAnim *za;
     unsigned short txt[16];
+    DdI2 val;
+    DdI2 col;
+    DdRgba ca;
+    DdRgba cb;
+    int changed;
     unsigned short *c;
     int k;
     int x;
     int y;
+    int ty;
 
     mtx_set_mode(1);
     mtx_get34(&view);
@@ -67,59 +98,74 @@ void *dd_counter_draw(void *list, DdPos at, DdXyzw *pos)
     mtx_set_mode(2);
     off = dd_counter_off;
     if (pos->z < 0.0f)
-        off.z = dd_counter_off.z * -1.0f;
+        off.z *= -1.0f;
     mat4_identity(&m);
     mat4_translate(&m, &m, pos);
     mat4_transform_vec4(&p, &m, &off);
     mat4_transform_vec4(&s, &vp, &p);
-    s.x = s.x * 480.0f / s.w + 2122.0f - 1808.0f;
-    s.y = s.y * -272.0f / s.w + 2044.0f - 1912.0f;
-    val[0] = za->a;
-    val[1] = za->b;
-    if (at.f15) {
-        col[0] = dd_counter_col[0];
-        col[1] = dd_counter_col[1];
-    } else {
-        col[0] = dd_counter_col[3];
-        col[1] = dd_counter_col[2];
-    }
-    if (za->a < za->a1) {
-        col[0] = dd_dim(col[0], 0.5f, 0.5f, 1.0f);
-        changed = 1;
-    }
-    if (za->b < za->b1) {
-        col[1] = dd_dim(col[1], 0.5f, 0.5f, 1.0f);
-        changed = 1;
-    }
-    if (za->a1 < za->a) {
-        col[0] = dd_dim(col[0], 1.0f, 0.5f, 0.5f);
-        changed = 1;
-    }
-    if (za->b1 < za->b) {
-        col[1] = dd_dim(col[1], 1.0f, 0.5f, 0.5f);
-        changed = 1;
-    }
-    if (changed) {
-        w = 8;
-        h = 10;
-    }
-    if (pos->z >= 0.0f)
-        y = (int)(s.y + 9.0f - (float)h);
-    else
-        y = (int)(s.y - 9.0f - (float)h);
-    list = dl_enable(list, 9);
-    list = dl_set_tex_filter(list, 0, 0);
-    for (k = 0; k < 2; k++, y += h) {
-        c = wtext_from_int(val[k], txt);
-        x = (int)(s.x - (float)(w * wcslen(c) / 2));
-        list = dl_ambient_color(list, col[k]);
-        for (; *c; c++, x += w) {
-            list = draw_set_offsets(list, 7, 9, w, h);
-            list = draw_sprite(list, x, y, 0, (*c - '0') * 7, 0, 0, 0);
+    s.x = s.x * 480.0f / s.w;
+    s.y = s.y * -272.0f / s.w;
+    s.x += 2122.0f;
+    s.y += 2044.0f;
+    s.x -= 1808.0f;
+    s.y -= 1912.0f;
+    {
+        int w = 7;
+        int h = 9;
+
+        changed = 0;
+        za = &b->za[at.player][at.zone];
+        val = (DdI2){ { za->a, za->b } };
+
+        if (at.f15) {
+            ca = dd_rgba(&dd_counter_col[0]);
+            cb = dd_rgba(&dd_counter_col[1]);
+        } else {
+            cb = dd_rgba(&dd_counter_col[2]);
+            ca = dd_rgba(&dd_counter_col[3]);
+        }
+        if (za->a < za->a1) {
+            DD_DIM(ca, 0.5f, 0.5f, 1.0f);
+            changed = 1;
+        }
+        if (za->b < za->b1) {
+            DD_DIM(cb, 0.5f, 0.5f, 1.0f);
+            changed = 1;
+        }
+        if (za->a1 < za->a) {
+            DD_DIM(ca, 1.0f, 0.5f, 0.5f);
+            changed = 1;
+        }
+        if (za->b1 < za->b) {
+            DD_DIM(cb, 1.0f, 0.5f, 0.5f);
+            changed = 1;
+        }
+        col = dd_rgba_words(&ca, &cb);
+        if (changed) {
+            w = 8;
+            h = 10;
+        }
+        if (pos->z >= 0.0f)
+            y = (int)(s.y + 9.0f - (float)h);
+        else
+            y = (int)(s.y - 9.0f - (float)h);
+        list = dl_enable(list, 9);
+        list = dl_set_tex_filter(list, 0, 0);
+        for (k = 0; k < 2; k++) {
+            c = wtext_from_int(val.v[k], txt);
+            x = (int)(s.x - (float)(w * wcslen(c) / 2));
+            ty = y + k * h;
+            list = dl_ambient_color(list, col.v[k]);
+            for (; *c; c++, x += w) {
+                list = draw_set_offsets(list, 7, 9, w, h);
+                list = draw_sprite(list, x, ty, 0, (*c - '0') * 7, 0, 0, 0);
+            }
         }
     }
     return dl_set_tex_filter(list, 1, 1);
 }
+#ifdef __MWERKS__
+#pragma opt_decomposeaggregates reset
 #endif
 
 #ifdef NON_MATCHING /* alocação/ordem não reproduzidas */

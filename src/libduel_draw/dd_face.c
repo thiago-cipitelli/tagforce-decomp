@@ -1,6 +1,5 @@
 // @range 0x0881299C-0x0881351C
 // @data 0x08875104-0x0887541C
-// @asm 0x08812C94-0x08812F60
 /* Portraits of the duelists on the LP panel: the frame, the cut-in face (kao.gim/karada.gim of
    the character's cut-in pack) or the icon of the character, the blinking turn marker, the
    pad button icon; the sprite table of duel_thing01.gim used by the panel. */
@@ -33,7 +32,7 @@ DdInt8 dd_face_pos = { { 0x17, 0x17, 0x3C, 0xD, 0x32, 0x17, 0xD, 0xD } };
 char dd_face_kao[] = "kao.gim";
 char dd_face_karada[] = "karada.gim";
 
-void *dd_face(float k, void *list, int x, int y, int side, int chr, int turn);
+void *dd_face(void *list, int x, int y, float k, int side, int chr, int turn);
 void *dd_face_frame(void *list, int x, int y, int w, int h, int side);
 void *dd_face_blink(void *list, int side);
 void *dd_button_icon(void *list, int x, int y);
@@ -60,7 +59,7 @@ void *dd_face_panel(void *list, int x, int y, int side)
         id = dd_cobjs_map_get(side);
         x += pos.v[side * 4];
         y += pos.v[side * 4 + 1];
-        list = dd_face(0.0f, list, x, y, side, id, turn);
+        list = dd_face(list, x, y, 0.0f, side, id, turn);
     } else {
         sw = sel_progress_total(side);
         if (sw < 0.5f) {
@@ -80,7 +79,7 @@ void *dd_face_panel(void *list, int x, int y, int side)
         offy[1] = (int)(k[1] * (float)pos.v[side * 4 + 3] + k[0] * (float)pos.v[side * 4 + 1] + 0.999f);
         for (i = 0; i < 2; i++) {
             if (front[i] == 0 || dd_view_tag_get()) {
-                list = dd_face(k[front[i]], list, x + offx[front[i]], y + offy[front[i]], side, chr[front[i]],
+                list = dd_face(list, x + offx[front[i]], y + offy[front[i]], k[front[i]], side, chr[front[i]],
                                i == 0 && turn && sw == 0.0f);
             }
         }
@@ -89,21 +88,27 @@ void *dd_face_panel(void *list, int x, int y, int side)
 }
 
 
-#ifdef NON_MATCHING /* dd_face: não reproduzido */
 /* one portrait of size 27..47 (k: 0 big, 1 small) */
-void *dd_face(float k, void *list, int x, int y, int side, int chr, int turn)
+void *dd_face(void *list, int x, int y, float k, int side, int chr, int turn)
 {
-    int id = dd_chara_chr(chr);
-    int sub = dd_chara_variant(chr);
-    int size = (int)((1.0f - k) * 47.0f + k * 27.0f + 0.999f);
-    int big = (int)((float)size * 1.1f);
-    int x0 = x - size / 2;
-    int y0 = y - size / 2;
-    void *gim = dd_gim_get(0x4001F);
+    int sub;
+    int big;
+    int x0;
+    int y0;
+    int id;
+    int size;
+    void *gim;
     void *pack;
     void *kao;
     void *karada;
 
+    id = dd_chara_chr(chr);
+    sub = dd_chara_variant(chr);
+    size = (int)((1.0f - k) * 47.0f + k * 27.0f + 0.999f);
+    big = (int)((float)size * 1.1f);
+    x0 = x - size / 2;
+    y0 = y - size / 2;
+    gim = dd_gim_get(0x4001F);
     if (gim)
         list = gim_set_texture(list, gim);
     list = dd_face_frame(list, x0, y0, size, size, side);
@@ -120,15 +125,14 @@ void *dd_face(float k, void *list, int x, int y, int side, int chr, int turn)
         karada = ehp_find(pack, dd_face_karada, 0);
         list = dl_scissor(list, x0 + 3, y0 + 3, size - 7, size - 7);
         list = dl_enable(list, 2);
-        list = chr_icon_draw(list, id, x - big / 2, y - big / 2 - 2, big * 100 / 51, kao, karada);
+        /* 2L: the original divides big by 2 twice (no CSE) */
+        list = chr_icon_draw(list, id, x - big / 2, y - big / 2L - 2, big * 100 / 51, kao, karada);
         list = dl_disable(list, 2);
     }
     if (turn)
         list = dd_face_blink(list, side);
     return list;
 }
-
-#endif
 
 /* frame of a portrait: 9 slices of duel_bup_frame01.gim (column of `side`) */
 void *dd_face_frame(void *list, int x, int y, int w, int h, int side)

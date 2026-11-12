@@ -1,6 +1,5 @@
 // @range 0x0881794C-0x08819A70
 // @rodata 0x088700A8-0x088700F8
-// @asm 0x08817F08-0x088182C8
 // @asm 0x08818FB0-0x0881917C
 /* The duel-event handlers 1..73 of the dispatcher table (dd_event.c): cut-ins (duel start/end,
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
@@ -366,24 +365,16 @@ void dd_ev_attack_done(int *a)
 
 /* 11: attack declaration: attacker and target values go to the panels; a direct attack (target
    zone >= 5) plays the attack cut-in first */
-#ifdef NON_MATCHING /* locais DdLoc e alocação */
 int dd_ev_11(int zone, int tplayer, int tzone)
 {
     int me = dd_ev_player;
     int tid = -1;
-    DdLoc t = { 0 };
-    DdLoc a = { 0 };
-    DdLoc l = { 0 };
     DdCutinDesc d;
     DdCard *card;
     int atk, def;
     int aid;
 
-    t.player = dv_player_to_side(tplayer);
-    t.zone = tzone;
-    a.player = dv_player_to_side(me);
-    a.zone = zone;
-    dd_view_locs_set(a, t);
+    dd_view_locs_set((DdLoc){ dv_player_to_side(me), zone }, (DdLoc){ dv_player_to_side(tplayer), tzone });
     card = dd_cobj_at(dv_player_to_side(me), zone, 0);
     atk = card_get_atk(card->id);
     def = card_get_def(card->id);
@@ -417,21 +408,18 @@ int dd_ev_11(int zone, int tplayer, int tzone)
         d.flag = 0xB;
         d.always = 1;
         d.start = 0;
-        if (dd_ev_attack[0] != 0)
-            d.y = 100.0f;
-        else
-            d.y = -100.0f;
+        d.y = dd_ev_attack[0] != 0 ? 100.0f : -100.0f;
         dd_cutin_play(&d);
         req_flag_set(0xB);
     }
     dd_info_show_uid(1 - dv_player_to_side(me), aid, 0);
-    l.player = dv_player_to_side(tplayer);
-    l.zone = tzone;
-    if (tid >= 0 && dd_loc_visible(l) != 0)
-        dd_info_select_uid(tid);
+    {
+        DdLoc l = { dv_player_to_side(tplayer), tzone };
+        if (tid >= 0 && dd_loc_visible(l) != 0)
+            dd_info_select_uid(tid);
+    }
     return 1;
 }
-#endif
 
 /* 12: battle damage step */
 int dd_ev_12(void)

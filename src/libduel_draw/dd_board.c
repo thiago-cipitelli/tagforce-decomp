@@ -1,7 +1,7 @@
 // @range 0x0880E45C-0x0880FCFC
 // @rodata 0x0886FE64-0x0886FE80
 // @data 0x08874EA0-0x08874F70
-// @asm 0x0880EB70-0x0880F4D4
+// @asm 0x0880EB70-0x0880F164
 /* Drawing of the field and of the card objects: the layer setup, the field sheet model, the
    deck/extra/graveyard piles (a pile model with the top card on it and the count), every card
    object with its picture (models with texture hooks), the counters of the monster zones. */
@@ -159,7 +159,7 @@ void dd_board_pile(float scale, DdXyzw *pos, DdXyzw *rot, int n, int card);
 void dd_board_pile_count(int n);
 int dd_board_pile_tex(void **list, int unused, int which);
 int dd_board_pile_color(void **list);
-void dd_board_card_face(float scale, unsigned short card);
+void dd_board_card_face(unsigned short card, float scale);
 
 /* the piles (side deck, deck, graveyard, banished) of both players */
 typedef struct { int z[4]; } DdZones4;
@@ -250,12 +250,19 @@ void dd_board_piles(void)
 
 int dd_board_card_draw(DdCobj *o, int p, int zone, int i);
 
-#ifdef NON_MATCHING /* funções grandes de desenho; forma não reproduzida */
+typedef struct DdZones16 {
+    int v[16];
+} DdZones16;
+
+#ifdef NON_MATCHING /* refeita do asm (rodada 23): 1540 B contra 1524. Falta: (1) o segundo par de laços é da
+   família "laço interno com o teste no topo mantido" (slti at,s3,16; beqzl), que o mwcc 219 sempre elimina;
+   (2) o original guarda o DdLoc do segundo dd_cursor_get inteiro em s0 (lh s0; andi 0xffff na extração do idx);
+   (3) o laço dos objetos tem dois testes o == head (beql para o k++ e beq para o teste de cur_o). */
 /* every card object, the one under the cursor last; highlights of the zones to choose */
 void dd_board_cards(void)
 {
-    int zones[16];
-    DdLoc at = { 0 };
+    DdZones16 zones = *(DdZones16 *)dd_board_zones;
+    DdPos at = { 0 };
     unsigned int drawn[2] = { 0 };
     int p;
     unsigned int k;
@@ -264,13 +271,11 @@ void dd_board_cards(void)
     DdCobj *cur_o;
     int i;
     int zone;
-    DdLoc cur;
     void *list;
     DdXyzw pos;
     DdXyzw rot;
     DdMtx m;
 
-    memcpy(zones, dd_board_zones, sizeof(zones));
     list = dl_select_layer(4, 0);
     list = dl_enable(list, 5);
     list = dl_disable(list, 4);
@@ -283,27 +288,37 @@ void dd_board_cards(void)
     for (p = 0; p < 2; p++) {
         at.player = p;
         for (k = 0; k < 16; k++) {
-            at.zone = zones[k];
-            head = dd_zone_list(at.player, at.zone);
+            at.zone = zones.v[k];
             cur_o = 0;
+            head = dd_zone_list(at.player, at.zone);
             for (o = head->next, i = 0; o != head; o = o->next, i++) {
                 zone = at.zone;
-                if ((zone == 15 || zone == 14 || zone == 13 || zone == 12) && o->t >= o->dur)
-                    continue;
+                switch (zone) {
+                case 12:
+                case 13:
+                case 14:
+                case 15:
+                    if (o->t >= o->dur)
+                        continue;
+                }
                 if (o->b4)
                     continue;
                 if (zone == 11) {
-                    dd_cursor_get(&cur);
+                    DdLoc cur;
+                    DdLoc t;
+
+                    dd_cursor_get(&t);
+                    *(short *)&cur = *(short *)&t;
                     if (cur.player == p && cur.zone == 11 && cur.idx == i) {
                         cur_o = o;
                         continue;
                     }
                 }
                 list = dl_enable(dl_select_layer(4, 0), 1);
-                if (at.zone == 11)
-                    list = dl_depth_func(list, 1);
-                else
+                if (at.zone != 11)
                     list = dl_depth_func(list, 7);
+                else
+                    list = dl_depth_func(list, 1);
                 dl_set_list(list);
                 if (dd_board_card_draw(o, p, at.zone, i))
                     drawn[p] |= 1 << at.zone;
@@ -312,13 +327,18 @@ void dd_board_cards(void)
                 dl_set_list(list);
             }
             if (cur_o) {
-                dd_cursor_get(&cur);
+                DdLoc t;
+
+                dd_cursor_get(&t);
+                {
+                DdLoc cur = t;
                 dl_set_list(dl_depth_func(dl_enable(dl_select_layer(4, 0), 1), 1));
                 if (dd_board_card_draw(cur_o, p, 11, cur.idx))
                     drawn[p] |= 0x800;
                 list = dl_select_layer(4, 0);
                 dl_depth_func(list, 7);
                 dl_set_list(list);
+                }
             }
         }
     }
@@ -330,14 +350,20 @@ void dd_board_cards(void)
                 at.player = p;
                 at.zone = zone;
                 at.idx = 0;
-                dd_slot_xform(&pos, &rot, *(DdPos *)&at);
+                at.f14 = 0;
+                at.f15 = 0;
+                dd_slot_xform(&pos, &rot, at);
                 mtx_identity();
                 mtx_translate(&pos);
                 quat_to_mat4(&m, &rot);
                 mtx_mult(&m);
                 mtx_mult(&m);
                 list = dl_select_layer(4, 0);
-                list = dd_cursor_draw_model(list, at, 1);
+                {
+                    DdLoc l = { p, zone };
+
+                    list = dd_cursor_draw_model(list, l, 1);
+                }
                 list = dl_enable(list, 5);
                 dl_set_list(list);
             }
@@ -349,21 +375,31 @@ void dd_board_cards(void)
     mtx_pop();
 }
 
+#endif
+
+/* a scale vector the original builds and never uses (the scaling call is gone) */
+static inline void dd_board_sc(float k)
+{
+    DdXyz sc = { 0 };
+
+    sc.x = k;
+    sc.y = k;
+    sc.z = k;
+}
+
 /* one card object at place i of (p, zone); 1 when it is highlighted */
 int dd_board_card_draw(DdCobj *o, int p, int zone, int i)
 {
+    DdCobjs *b = &dd_cobjs;
     int hilite = 0;
+    int hl = 0;
     void *list = dl_select_layer(4, 0);
     float scale;
-    DdXyzw off;
     DdMtx m;
-    DdXyzw axis;
-    DdLoc at = { 0 };
-    float k;
 
     if (dd_scene_flags(0x40, -1) && (dv_08835AEC(p, zone, i) & ~2) != 0)
-        hilite = 1;
-    if (hilite && (*gfx_get_state() & 0x10)) {
+        hilite = hl = 1;
+    if (hl && ((*gfx_get_state() >> 4) & 1)) {
         list = dl_tex_func(list, 4, 0);
         list = dl_disable(list, 10);
         list = dl_ambient_color(list, 0xFF404040);
@@ -374,34 +410,41 @@ int dd_board_card_draw(DdCobj *o, int p, int zone, int i)
     dl_set_list(list);
     scale = dd_count_scale(p, zone);
     mtx_identity();
-    memset(&off, 0, sizeof(off));
-    if (zone == 11 && sel_active()) {
-        k = 1.0f - sel_progress(p);
-        off.y = o->pos.z >= 0.0f ? -150.0f : 250.0f;
-        off.y *= sel_progress(p);
+    {
+        DdXyzw off = { 0 };
+
+        if (zone == 11 && sel_active()) {
+            dd_board_sc(1.0f - sel_progress(p));
+            if (o->pos.z >= 0.0f)
+                off.y = -150.0f;
+            else
+                off.y = 250.0f;
+            off.y *= sel_progress(p);
+        }
+        mtx_translate(&o->pos);
+        mtx_translate(&off);
     }
-    mtx_translate(&o->pos);
-    mtx_translate(&off);
     quat_to_mat4(&m, &o->rot);
     mtx_mult(&m);
-    dd_board_card_face(scale, 0);
-    axis = dd_board_zaxis;
-    quat_to_mat4(&m, &axis);
-    mtx_mult(&m);
-    dd_board_card_face(scale, o->card);
+    dd_board_card_face(0, scale);
+    {
+        DdXyzw axis = dd_board_zaxis;
+
+        quat_to_mat4(&m, &axis);
+        mtx_mult(&m);
+    }
+    dd_board_card_face(o->card, scale);
     if (hilite) {
-        at.player = p;
-        at.zone = zone;
-        at.idx = i;
+        DdLoc at = { p, zone, i };
+
         list = dd_cursor_draw_model(dl_select_layer(4, 0), at, 1);
         list = dl_enable(list, 5);
         dl_set_list(list);
     }
-    if (dd_cobjs.sel[p][zone] > 0)
-        dd_counter_sel(&o->pos, 0, dd_cobjs.sel[p][zone]);
+    if (b->sel[p][zone] > 0)
+        dd_counter_sel(&o->pos, 0, b->sel[p][zone]);
     return hilite;
 }
-#endif
 
 /* overlays of the cards on the field (attack/defense position markers...) */
 void dd_board_marks(void)
@@ -567,7 +610,7 @@ DdCardVtx dd_board_card_quad[4] = {
 };
 
 /* one face of a card (picture `card`, 0 the back) scaled for its zone */
-void dd_board_card_face(float scale, unsigned short card)
+void dd_board_card_face(unsigned short card, float scale)
 {
     void *list = dl_select_layer(4, 0);
     float k;

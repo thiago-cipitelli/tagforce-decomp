@@ -1,5 +1,4 @@
 // @range 0x0884E0F4-0x0884F3D0
-// @asm 0x0884E1E8-0x0884E41C
 // @data 0x08876D30-0x08876DA0
 /* Card cursor marker and attack arrow (dd_mark): a model standing on the zone under the cursor,
    turned towards the zone it points at and gliding between zones, and an arrow of 60 particles
@@ -122,16 +121,15 @@ void dd_mark_hide(void)
         dd_arrow_kill();
 }
 
-#ifdef NON_MATCHING /* os parâmetros ficam em $s0-$s3 e os ponteiros em $s4/$s5 no original, e a ordem das gravações dos campos de bits intercala os dois DdPos; nenhuma forma reproduziu */
 /* Glides the marker from zone (player, zone) to (to_player, to_zone), turned to the target. */
 void dd_mark_move(int player, int zone, int to_player, int to_zone)
 {
     DdMarkMgr *k = &dd_mark;
     DdObj *o;
     DdMarker *m;
-    float rot[4];
-    DdPos p;
     DdLoc l;
+    DdPos p;
+    float rot[4] __attribute__((aligned(16)));
 
     if (k->marker != 0)
         dd_mark_reset();
@@ -148,11 +146,11 @@ void dd_mark_move(int player, int zone, int to_player, int to_zone)
     m->moving = 1;
     m->at.player = player;
     m->at.zone = zone;
-    p.player = to_player;
     m->to.player = to_player;
+    m->to.zone = to_zone;
+    p.player = to_player;
     p.zone = to_zone;
     p.idx = 0;
-    m->to.zone = to_zone;
     p.f14 = 0;
     p.f15 = 0;
 #ifdef __MWERKS__
@@ -167,7 +165,6 @@ void dd_mark_move(int player, int zone, int to_player, int to_zone)
     m->from = m->pos;
     req_flag_set(11);
 }
-#endif
 
 int dd_mark_is_at(int player, int zone)
 {
