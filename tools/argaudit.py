@@ -3,6 +3,7 @@
 the same module. Default: only calls inside `#ifdef NON_MATCHING` drafts (often a missing argument: check the
 argument register just before the jal in the original). --all also lists matched code, where the original passes
 fewer arguments too (wrappers that forward registers): the port has to give those calls their real arguments.
+Code under #ifdef __MWERKS__ (up to its #else) is skipped: that is the matching form, the port uses the other branch.
 sanity: tools/argaudit.py --check"""
 import re,glob,sys,collections
 defs={}
@@ -33,6 +34,8 @@ for f in sorted(glob.glob("src/*/*.c")):
     mod=f.split('/')[1]
     s=open(f,errors='replace').read()
     s=re.sub(r"/\*.*?\*/",lambda m:re.sub(r"[^\n]"," ",m.group(0)),s,flags=re.S)
+    # what only mwcc sees (#ifdef __MWERKS__ up to #else/#endif) is the matching form; the port uses the other branch
+    s=re.sub(r"^#ifdef __MWERKS__\n.*?^#(?:else|endif)",lambda m:re.sub(r"[^\n]"," ",m.group(0)),s,flags=re.S|re.M)
     nm=[(m.start(),s.index("#endif",m.start())) for m in re.finditer(r"^#ifdef NON_MATCHING",s,re.M)]
     kr=set(re.findall(r"^[A-Za-z][\w \*]*?\b(\w+)\(\);",s,re.M))
     for name in kr:

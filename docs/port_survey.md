@@ -15,7 +15,8 @@ como a PSP; os rascunhos `NON_MATCHING` no lugar do asm, que é o C que o port u
 
 **681 de 681 compilam** desde 2026-11-11 (eram 670). As declarações que existiam só para o matching ficaram sob
 `#ifdef __MWERKS__` (o mwcc vê o mesmo fonte, então o matching não muda); o port usa o protótipo do arquivo.
-`duel_0884F30C` e `dd_slot_xform` ficaram com declaração K&R no host até o passo 2. Os 11 que falhavam:
+(`duel_0884F30C` e `dd_slot_xform`, que ficaram com declaração K&R no host no passo 1, têm o protótipo da definição
+desde o passo 2, seção 1.1.) Os 11 que falhavam:
 
 | Arquivo | Causa |
 |---|---|
@@ -39,6 +40,58 @@ por função chamada; um nome repetido em vários gmodules conta uma vez):
 Atenção: mudar a ordem dos argumentos `float` numa chamada pode mudar a ordem em que o mwcc monta os
 argumentos (rodada 18) e quebrar uma função que já bate. Por isso a correção vai pelo protótipo comum num header e
 é conferida com `make verify`.
+
+### 1.1 Protótipos entre arquivos (passo 2, feito em 2026-11-11)
+
+Gate: `make host-lto` compila cada `src/*/*.c` com `gcc -m32 -std=gnu89 -O0 -flto -DNON_MATCHING` e liga tudo junto
+(`-r`) com `-Wlto-type-mismatch`, que compara cada declaração com a definição, entre arquivos e entre módulos (os
+gmodules chamam o BOOT pela `libehsys`, então a definição do BOOT é a verdade). `tools/lto_mismatch.py` relê as
+duas declarações de cada aviso no fonte e separa o que quebra a ABI do i386 mesmo em 32 bits (número de argumentos,
+`float` fora de posição ou contra inteiro, struct por valor de outro tipo, retorno `float`) do resto. O gcc avisa uma
+vez por variante de tipo, então corrigir uma variante pode revelar outra: repetir até zerar.
+
+| Classe (`lto_mismatch.py`) | Antes | Depois |
+|---|---|---|
+| número de argumentos | 109 | 4 (pontos de entrada, abaixo) |
+| posição de `float` / `float` contra inteiro | 25 | 0 |
+| struct por valor | 11 | 0 |
+| retorno `float` | 0 | 0 |
+| benigno: retorno `void` contra valor | 22 | 24 |
+| benigno: ponteiro/inteiro/sinal/largura | 303 | 305 |
+| benigno: variável (tipo de global) | 48 | 48 |
+| **total de avisos** | 518 | 381 |
+
+Os 4 graves que ficam são pontos de entrada, que o port substitui: `main` (o `crt0` chama `main(argc, argv)`,
+definido `void main(void)`), `module_start` de libcharalist/libshop e `module_entry` do libfield contra o de outro
+gmodule. Junto com eles, 7 símbolos são definidos em mais de um módulo ou arquivo e precisam de nome próprio quando
+os gmodules forem ligados num executável só: `cl_entry`, `dmgr_slot`, `drec_entry`, `module_entry`, `module_start`,
+`res_get`, `voice_start` (os dois primeiros são globais sem `static` repetidos dentro do mesmo módulo).
+
+Como foi corrigido sem mudar o que o mwcc compila (objeto de cada arquivo tocado conferido idêntico antes e depois, e
+`make verify` → ALL MATCH):
+- **Posição de `float`**: o mwcc avalia os argumentos na ordem do texto, então reescrever a chamada muda o objeto. A
+  declaração local na ordem errada fica sob `#ifdef __MWERKS__` e no `#else` vai a da definição com um `#define` que
+  reordena (`#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list)`). Os `chrNN_motion` passaram a ter a
+  assinatura de callback de osso `(void *, void *, void *, int, float)` de `dd_mon_bone`.
+- **Argumentos a mais** (o chamado não lê): mesma forma, com `#define` que descarta os excedentes.
+- **Argumentos a menos** (o chamado lê o que estiver em a0-a3): lido no asm do original o que o registrador contém no
+  `jal` e passado explicitamente no `#else` (ou direto, quando o objeto não muda). Casos: parâmetros do chamador ainda
+  em a0/a1 (handlers `(DuelAct *, int)` da tabela de efeitos do `card_desc`, que ganharam o `int b` que não usam;
+  exports da `dd_api`, handlers de evento do `dd_event_dispatch`, wrappers `bgm_*`, `snd_load_data(g)`), `a2 = p` em
+  `duel_088AE548`, `a2 = link / 10` em `duel_eff_fbcd4`, o owner recém-gravado em `duel_pick_monster_zone`, `cur`
+  preservado pela folha `duel_0884F930`, `p`/`z` dos alvos `(a, p, z)` para `duel_tributable`, `i` repassado por
+  `duel_field_act`.
+- **Struct por valor**: os eventos (`DuelMoveEv`, `DuelLpEv`, `DuelAtkEv`, `DuelActX`) vão como a palavra que a
+  definição recebe; `DdLoc`/`DdLoc2`/`short` como `DdPos` (os mesmos 16 bits); `dd_event_dispatch` recebe palavras no
+  host (todos os chamadores passam palavras).
+
+Ficaram com valor escolhido (o original lê registrador não inicializado; marcados `port:` no fonte):
+`op_wait` (n quando `CMD.b` não é 1-4; 0), `tfd_regulation_select` (`lim` quando o tipo de duelo não é 0 nem 2; 1).
+Bugs do C achados: `_svfprintf_r` (0x088116A4) era o `_strtod_r` do newlib (renomeado; o corpo gdtoa ainda falta, o
+rascunho não converte nada); o C do port de `libc_sfvwrite` passava `(reent, fp)` a `nl_swsetup(fp)`.
+
+`tools/argaudit.py --all` (chamadas por protótipo K&R com outro número de argumentos) ignora agora o ramo
+`#ifdef __MWERKS__` e não lista mais nada além de dois falsos positivos (linhas de definição).
 
 Avisos do gcc que valem revisão (podem ser bugs do rascunho ou fiéis ao original; conferir no asm antes de mudar):
 - `-Wimplicit-function-declaration`: 204 funções chamadas sem protótipo (retorno assumido `int`; com
@@ -92,8 +145,9 @@ display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescr
 ## 3. Ordem sugerida
 
 1. ~~Zerar o `make host-check`~~ (feito).
-2. Protótipos comuns em headers para as classes "número de argumentos" e "posição de float" (as que quebram
-   no PC), conferidos com `make verify`.
+2. ~~Protótipos consistentes com a definição para as classes que quebram no PC~~ (feito, seção 1.1; gate
+   `make host-lto`). Falta: unificar os ~380 avisos benignos num header por módulo (limpeza de tipos), o corpo de
+   `_strtod_r` e nomes próprios para os 7 símbolos repetidos quando os gmodules forem ligados juntos.
 3. Revisar os avisos do gcc da lista acima contra o asm.
 4. `platform/` em 32 bits: arquivos, thread/timer, input, janela, áudio PCM; gmodules linkados juntos.
 5. Gráficos (decisão GE vs `dl.c`), depois save/OSK/fonte; rede e vídeo como stubs.
