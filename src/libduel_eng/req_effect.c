@@ -1,8 +1,6 @@
 // @range 0x088D6DE8-0x088DA5EC
 // @asm 0x088D7EA4-0x088D8354
-// @asm 0x088D86B8-0x088D8A24
 // @asm 0x088D8AB8-0x088D8B1C
-// @asm 0x088D8C50-0x088D8CF8
 /* Requests that change effect entries and slot values directly (the effect half of the request steps
    in req_step.c), and the requests that show a card, flip a card of the hand/deck/extra deck and send
    a card from a zone or from the special slots to another pile. */
@@ -45,6 +43,7 @@ extern DuelReq duel_req;
 extern unsigned int duel_req_step;
 extern int duel_busy_0891523C;
 extern int duel_order_ctr;
+#define DUEL_ORDER_CTR (*(int *)((char *)&duel + 0x3770)) /* duel_order_ctr, a field of Duel */
 extern unsigned int duel_view_player;
 extern DuelCard duel_card_tmp;
 
@@ -551,8 +550,6 @@ void duel_req_change_pos(void)
     }
 }
 
-#ifdef NON_MATCHING /* 2 palavras (era 202): o original agenda o 2º lui de duel_order_ctr antes do addiu (mesma
-                      família de duel_req_order e duel_place_monster/st) */
 /* Turn the card in zone arg face up or down (w: 1 reveal first, 2 set, 4 announce, 8 only show). */
 void duel_req_flip(void)
 {
@@ -615,8 +612,7 @@ void duel_req_flip(void)
         if (only == 0) {
             s->faceup = !(s->faceup != 0);
             if (s->faceup) {
-                duel_order_ctr++;
-                s->unk4 = duel_order_ctr;
+                s->unk4 = ++DUEL_ORDER_CTR;
             } else {
                 duel_slot_effects_reset(p, z);
                 if (p == duel_view_player && z <= 4) {
@@ -640,7 +636,6 @@ void duel_req_flip(void)
         break;
     }
 }
-#endif
 
 /* Add an effect entry (loc bit 15: to the list card arg instead of the zone). */
 void duel_req_effect_add(void)
@@ -693,7 +688,6 @@ void duel_req_effect_free(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* 4 palavras: o original grava duel_order_ctr antes do sh no slot; ++, temporário e cast não mudam a ordem */
 /* Give zone arg its activation order. */
 void duel_req_order(void)
 {
@@ -702,14 +696,12 @@ void duel_req_order(void)
     char *b = (char *)(z * sizeof(DuelSlot) + (int)&duel.players[p & 1]);
 
     if (((DuelSlot *)(b + 0x30))->card.id != 0) {
-        duel_order_ctr++;
-        ((DuelSlot *)(b + 0x30))->unk4 = duel_order_ctr;
+        ((DuelSlot *)(b + 0x30))->unk4 = ++DUEL_ORDER_CTR;
         duel_088DF554(p, z, 1, 0);
         duel_host_call(0x24, 0, 0, 0);
     }
     duel_busy_0891523C = 0;
 }
-#endif
 
 /* Set (arg >> 8 == 0) or add the value loc | w << 16 of zone arg & 0xFF. */
 void duel_req_slot_value(void)

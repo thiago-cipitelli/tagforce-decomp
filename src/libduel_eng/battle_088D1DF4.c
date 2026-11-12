@@ -1,6 +1,5 @@
 // @range 0x088D1DF4-0x088D28F8
 // @asm 0x088D1F1C-0x088D2288
-// @asm 0x088D2760-0x088D28F8
 /* Results of a battle: destroying or moving the cards that fought (duel_special.slot[i]: 0 attacker,
    1 target) and the commands to the presentation. */
 #include "duel.h"
@@ -238,7 +237,6 @@ int duel_088D2468(int i)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 2 palavras: o original faz andi q,1 antes do sll de (z & 0x1F); (z, q) no or já bate */
 /* The card that fought (i) is banished/moved away by a's effect. */
 int duel_088D2760(DuelAct *a, int i)
 {
@@ -265,11 +263,10 @@ int duel_088D2760(DuelAct *a, int i)
             if (a->player != q) {
                 opp |= 1;
             }
-            duel_cmd(0x40, ((z & 0x1F) << 1 | (q & 1)) | 0xFFC0, (o & 1) | 0x5A, opp);
+            duel_cmd(0x40, ((z & 0x1F) * 2 | ((int)q & 1)) | 0xFFC0, (o & 1) | 0x5A, opp);
         }
         duel_088CFBA4(&s->card, q, z, opp);
         return 1;
     }
     return 0;
 }
-#endif

@@ -1,5 +1,4 @@
 // @range 0x088C4864-0x088C77D4
-// @asm 0x088C626C-0x088C6508
 // @asm 0x088C6BC8-0x088C7478
 /* LP payment, drawing cards, sending cards from the deck and the D zone, with their commands to the
    presentation. The long step functions are kept in asm. */
@@ -521,10 +520,6 @@ void duel_088C6264(unsigned int p, int n, int x)
     duel_088C5E78(p, n, x, 1);
 }
 
-#ifdef NON_MATCHING
-/* 13 palavras: o original faz os stores de ev.opp antes de mascarar k (`k & 0x1F`); a ordem dos 5 stores de ev
-   (perm_stmts) não resolve; nem tipo de k, if/else, k pré-mascarado, argumento num local antes/depois dos stores,
-   associação do | (2026-11-08) */
 /* card uid of zone D of p to the graveyard of its owner (x: for the opponent) */
 void duel_088C626C(unsigned int p, unsigned int uid, int x)
 {
@@ -539,7 +534,7 @@ void duel_088C626C(unsigned int p, unsigned int uid, int x)
     ev.zone = 0xE;
     ev.uid = uid;
     ev.b10 = 0;
-    duel_cmd(0x3F, (uid & 0x3FF) << 6 | ((k & 0x1F) << 1 | (p & 1)), (o & 1) | 0x5C, x != 0);
+    duel_cmd(0x3F, (uid & 0x3FF) << 6 | ((k & 0x1F) * 2 | ((int)p & 1)), (o & 1) | 0x5C, x != 0);
     switch (id) {
     case 0x14A5:
     case 0x16F9:
@@ -576,7 +571,6 @@ void duel_088C626C(unsigned int p, unsigned int uid, int x)
     }
     duel_088AFD5C(0x1C, ev);
 }
-#endif
 
 /* sends the cards named like id of p from zone D (his own) and zone C to the graveyard (only the first one
    unless all); just shows them when the locks forbid it */

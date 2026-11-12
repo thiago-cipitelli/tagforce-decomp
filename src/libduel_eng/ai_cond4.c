@@ -1,5 +1,4 @@
 // @range 0x08810370-0x08811BDC
-// @asm 0x088119FC-0x08811B24
 /* Conditions of the computer player: LP against the strongest ATK, monsters on the field, the chain. */
 #include "duel.h"
 int card_attribute_to_group(unsigned short id);
@@ -543,7 +542,6 @@ int duel_088119B0(DuelAct *a)
     return duel_count_monsters_state(1 - a->player, 1, 0) > 0;
 }
 
-#ifdef NON_MATCHING /* 2 palavras: cópia morta do lw ra depois do b (lp do oponente <= m / 2: return 1), não-corrigível conhecido */
 int duel_088119FC(DuelAct *a)
 {
     int p;
@@ -572,9 +570,8 @@ int duel_088119FC(DuelAct *a)
     if (duel.players[q & 1].lp <= m / 2) {
         return 1;
     }
-    return best == q;
+    return best == q ? 1 : 0;
 }
-#endif
 
 int duel_08811B24(DuelAct *a)
 {
