@@ -250,12 +250,19 @@ void dd_board_piles(void)
 
 int dd_board_card_draw(DdCobj *o, int p, int zone, int i);
 
-#ifdef NON_MATCHING /* funções grandes de desenho; forma não reproduzida */
+typedef struct DdZones16 {
+    int v[16];
+} DdZones16;
+
+#ifdef NON_MATCHING /* refeita do asm (rodada 23): 1540 B contra 1524. Falta: (1) o segundo par de laços é da
+   família "laço interno com o teste no topo mantido" (slti at,s3,16; beqzl), que o mwcc 219 sempre elimina;
+   (2) o original guarda o DdLoc do segundo dd_cursor_get inteiro em s0 (lh s0; andi 0xffff na extração do idx);
+   (3) o laço dos objetos tem dois testes o == head (beql para o k++ e beq para o teste de cur_o). */
 /* every card object, the one under the cursor last; highlights of the zones to choose */
 void dd_board_cards(void)
 {
-    int zones[16];
-    DdLoc at = { 0 };
+    DdZones16 zones = *(DdZones16 *)dd_board_zones;
+    DdPos at = { 0 };
     unsigned int drawn[2] = { 0 };
     int p;
     unsigned int k;
@@ -264,13 +271,11 @@ void dd_board_cards(void)
     DdCobj *cur_o;
     int i;
     int zone;
-    DdLoc cur;
     void *list;
     DdXyzw pos;
     DdXyzw rot;
     DdMtx m;
 
-    memcpy(zones, dd_board_zones, sizeof(zones));
     list = dl_select_layer(4, 0);
     list = dl_enable(list, 5);
     list = dl_disable(list, 4);
@@ -283,27 +288,37 @@ void dd_board_cards(void)
     for (p = 0; p < 2; p++) {
         at.player = p;
         for (k = 0; k < 16; k++) {
-            at.zone = zones[k];
-            head = dd_zone_list(at.player, at.zone);
+            at.zone = zones.v[k];
             cur_o = 0;
+            head = dd_zone_list(at.player, at.zone);
             for (o = head->next, i = 0; o != head; o = o->next, i++) {
                 zone = at.zone;
-                if ((zone == 15 || zone == 14 || zone == 13 || zone == 12) && o->t >= o->dur)
-                    continue;
+                switch (zone) {
+                case 12:
+                case 13:
+                case 14:
+                case 15:
+                    if (o->t >= o->dur)
+                        continue;
+                }
                 if (o->b4)
                     continue;
                 if (zone == 11) {
-                    dd_cursor_get(&cur);
+                    DdLoc cur;
+                    DdLoc t;
+
+                    dd_cursor_get(&t);
+                    *(short *)&cur = *(short *)&t;
                     if (cur.player == p && cur.zone == 11 && cur.idx == i) {
                         cur_o = o;
                         continue;
                     }
                 }
                 list = dl_enable(dl_select_layer(4, 0), 1);
-                if (at.zone == 11)
-                    list = dl_depth_func(list, 1);
-                else
+                if (at.zone != 11)
                     list = dl_depth_func(list, 7);
+                else
+                    list = dl_depth_func(list, 1);
                 dl_set_list(list);
                 if (dd_board_card_draw(o, p, at.zone, i))
                     drawn[p] |= 1 << at.zone;
@@ -312,13 +327,18 @@ void dd_board_cards(void)
                 dl_set_list(list);
             }
             if (cur_o) {
-                dd_cursor_get(&cur);
+                DdLoc t;
+
+                dd_cursor_get(&t);
+                {
+                DdLoc cur = t;
                 dl_set_list(dl_depth_func(dl_enable(dl_select_layer(4, 0), 1), 1));
                 if (dd_board_card_draw(cur_o, p, 11, cur.idx))
                     drawn[p] |= 0x800;
                 list = dl_select_layer(4, 0);
                 dl_depth_func(list, 7);
                 dl_set_list(list);
+                }
             }
         }
     }
@@ -330,14 +350,20 @@ void dd_board_cards(void)
                 at.player = p;
                 at.zone = zone;
                 at.idx = 0;
-                dd_slot_xform(&pos, &rot, *(DdPos *)&at);
+                at.f14 = 0;
+                at.f15 = 0;
+                dd_slot_xform(&pos, &rot, at);
                 mtx_identity();
                 mtx_translate(&pos);
                 quat_to_mat4(&m, &rot);
                 mtx_mult(&m);
                 mtx_mult(&m);
                 list = dl_select_layer(4, 0);
-                list = dd_cursor_draw_model(list, at, 1);
+                {
+                    DdLoc l = { p, zone };
+
+                    list = dd_cursor_draw_model(list, l, 1);
+                }
                 list = dl_enable(list, 5);
                 dl_set_list(list);
             }
