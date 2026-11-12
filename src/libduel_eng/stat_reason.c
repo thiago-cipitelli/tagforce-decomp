@@ -9,7 +9,7 @@ extern unsigned int duel_view_player;
 
 int field_get_card(unsigned int, int);
 int duel_field_protected(unsigned int p, int z);
-int duel_field_act(unsigned int player, int zone, int unused);
+int duel_field_act(unsigned int player, int zone, int i);
 int duel_chain_targets(unsigned int p, int z, unsigned int player, int zone);
 void duel_field_stats(unsigned int p, int z, DuelStats *st);
 void duel_field_base_stats(unsigned int p, int z, DuelStats *st);

@@ -34,8 +34,8 @@ DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 int card_get_prop5_hi(int);
 int duel_0886CD24(DuelAct *a, unsigned int p);
 int duel_grave_count_monsters(unsigned int p);
-int duel_0884E690(DuelAct *a, int (*fn)(int id));
-int duel_08857148(int id);
+int duel_0884E690(DuelAct *a, int (*fn)(DuelAct *a, unsigned int p, int z));
+int duel_08857148(DuelAct *a, unsigned int p, int z);
 int duel_phase_ok2(unsigned int p);
 int duel_no_1a1b(unsigned int p);
 int duel_08871F70(DuelAct *a, int b);
@@ -3497,7 +3497,7 @@ int duel_08877810(DuelAct *a)
 
 int duel_08877838(DuelAct *a)
 {
-    return duel_0884E690(a, (int (*)(int))duel_088559C0) > 0;
+    return duel_0884E690(a, (int (*)(DuelAct *, unsigned int, int))duel_088559C0) > 0;
 }
 
 int duel_0887785C(DuelAct *a)
@@ -3559,7 +3559,7 @@ int duel_088779E0(DuelAct *a, int b)
 
 int duel_08877A70(DuelAct *a)
 {
-    return duel_0884E690(a, (int (*)(int))duel_08858704) > 0;
+    return duel_0884E690(a, (int (*)(DuelAct *, unsigned int, int))duel_08858704) > 0;
 }
 
 int duel_08877A94(DuelAct *a)
@@ -4108,10 +4108,10 @@ int duel_08878FA4(DuelAct *a)
     if (duel_count_attr(a->player, 6) == 0 && duel_count_attr(1 - a->player, 6) == 0) {
         return 0;
     }
-    if (duel_0884E690(a, (int (*)(int))duel_088559C0) != 0) {
+    if (duel_0884E690(a, (int (*)(DuelAct *, unsigned int, int))duel_088559C0) != 0) {
         return 1;
     }
-    if (duel_0884E690(a, (int (*)(int))duel_08857FEC) != 0) {
+    if (duel_0884E690(a, (int (*)(DuelAct *, unsigned int, int))duel_08857FEC) != 0) {
         return 1;
     }
     p = a->player;
@@ -4734,7 +4734,7 @@ int duel_0887AAC4(DuelAct *a)
 
 int duel_0887AAF8(DuelAct *a)
 {
-    return duel_0884E690(a, (int (*)(int))duel_08856860) > 0;
+    return duel_0884E690(a, (int (*)(DuelAct *, unsigned int, int))duel_08856860) > 0;
 }
 
 int duel_0887AB1C(DuelAct *a)
@@ -4751,7 +4751,7 @@ int duel_0887AB84(DuelAct *a)
         if (duel_0884E5E0(a) != 1) {
             return 0;
         }
-        if (duel_0884E690(a, (int (*)(int))duel_0885E154) != 0) {
+        if (duel_0884E690(a, (int (*)(DuelAct *, unsigned int, int))duel_0885E154) != 0) {
             return 2;
         }
         return 0;
@@ -4919,7 +4919,7 @@ int duel_0887B1C4(DuelAct *a, int b)
 
 int duel_0887B224(DuelAct *a)
 {
-    return duel_0884E690(a, (int (*)(int))duel_08855F54) > 1;
+    return duel_0884E690(a, (int (*)(DuelAct *, unsigned int, int))duel_08855F54) > 1;
 }
 
 int duel_0887B24C(DuelAct *a)
@@ -5830,10 +5830,10 @@ int duel_0887D650(DuelAct *a, int b)
 
 int duel_0887D710(DuelAct *a)
 {
-    if (duel_0884E690(a, (int (*)(int))duel_0885A004) == 0) {
+    if (duel_0884E690(a, (int (*)(DuelAct *, unsigned int, int))duel_0885A004) == 0) {
         return 0;
     }
-    return duel_0884E690(a, (int (*)(int))duel_088580B8) != 0;
+    return duel_0884E690(a, (int (*)(DuelAct *, unsigned int, int))duel_088580B8) != 0;
 }
 
 int duel_0887D75C(DuelAct *a, int b)

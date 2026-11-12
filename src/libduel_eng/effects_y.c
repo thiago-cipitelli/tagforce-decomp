@@ -103,7 +103,7 @@ int duel_0887DDB0(DuelAct *a, int b);
 void duel_08832AF4(unsigned int, int, int, int);
 int duel_rand(int n);
 int duel_0884AF88(int);
-int duel_088708E4(DuelAct *a);
+int duel_088708E4(DuelAct *a, int b);
 void duel_088C8874(unsigned int uid, unsigned short id, int a, unsigned short b);
 void duel_088C7E68(unsigned int, int, int, int);
 
@@ -713,11 +713,11 @@ int duel_0888B5B8(DuelAct *a, int b)
     return 0;
 }
 
-int duel_0888B6D4(DuelAct *a)
+int duel_0888B6D4(DuelAct *a, int b)
 {
     int i;
 
-    if (duel_088708E4(a) == 0) {
+    if (duel_088708E4(a, b) == 0) {
         return 0;
     }
     duel_088C8874(a->uid, a->id, 5, 0);

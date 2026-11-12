@@ -58,7 +58,7 @@ void duel_088C9D24(DuelAct *a, unsigned int p, int z);
 void duel_088D1920(DuelAct *a, unsigned int mask);
 void duel_08832B18(unsigned int p, int z);
 void duel_088327F8(unsigned int p, int a, int b);
-int duel_0886CE38();
+int duel_0886CE38(DuelAct *a, int b);
 unsigned int duel_act_target2(DuelAct*, int);
 unsigned int duel_card_locate(unsigned int);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
@@ -409,7 +409,7 @@ int duel_08894D84(DuelAct *a)
     return 0;
 }
 
-int duel_08894DE8(DuelAct *a)
+int duel_08894DE8(DuelAct *a, int b)
 {
     unsigned int loc;
     unsigned int p;
@@ -418,7 +418,7 @@ int duel_08894DE8(DuelAct *a)
 
     switch (duel_step) {
     case 0x80:
-        if (duel_0886CE38() != 0) {
+        if (duel_0886CE38(a, b) != 0) {
             loc = duel_card_locate(duel_act_target2(a, 0));
             p = loc & 0xFF;
             i = loc >> 16 & 0xFFFF;

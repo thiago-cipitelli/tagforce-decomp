@@ -8,14 +8,14 @@ void duel_088CABA8(unsigned int p, int i);
 int duel_088BFF78(unsigned int, int, int);
 int duel_0884C824(void);
 DuelCard *duel_0884C7EC(int i);
-int duel_0886CE38();
+int duel_0886CE38(DuelAct *a, int b);
 void duel_0884ACD8(unsigned int p, int msg);
 int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
 void duel_08835F34(unsigned int p, int z, int i, int d);
-int duel_088537B0(int id);
-void duel_088359E8(unsigned int p, int id, int (*fn)(int id));
+int duel_088537B0(DuelAct *a, unsigned int p, int z);
+void duel_088359E8(unsigned int p, int id, int (*fn)());
 int duel_08835AC0(void);
-int duel_0884E690(DuelAct *a, int (*fn)(int id));
+int duel_0884E690(DuelAct *a, int (*fn)(DuelAct *a, unsigned int p, int z));
 void duel_088D1D64(DuelAct *a, unsigned int mask);
 int duel_08861360(DuelAct *a);
 void duel_08832788(unsigned int p, int id, int a, int b);
@@ -72,9 +72,9 @@ int duel_08864044(DuelAct *a)
 
 }
 
-int duel_088641B0(void)
+int duel_088641B0(DuelAct *a, int b)
 {
-    if (duel_0886CE38() != 0) {
+    if (duel_0886CE38(a, b) != 0) {
         return 1;
     }
     return -1;

@@ -15,7 +15,7 @@ int duel_088D1858(DuelAct *a, unsigned int p, int z);
 int duel_0886CF1C(DuelAct *a, int b);
 void duel_08832894(unsigned int p, unsigned short id);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
-int duel_0886CE38();
+int duel_0886CE38(DuelAct *a, int b);
 int field_get_card(unsigned int, int);
 int card_is_attribute9(int);
 int card_is_monster(int id);
@@ -81,7 +81,7 @@ int duel_08895C8C(DuelAct *a, int b)
     return 0;
 }
 
-int duel_08895E4C(DuelAct *a)
+int duel_08895E4C(DuelAct *a, int b)
 {
     unsigned int t;
     unsigned int p;
@@ -90,7 +90,7 @@ int duel_08895E4C(DuelAct *a)
 
     switch (duel_step) {
     case 0x80:
-        if (duel_0886CE38() == 0) {
+        if (duel_0886CE38(a, b) == 0) {
             return 0;
         }
         if (duel_088A9008(a, 0, 0) != 0) {

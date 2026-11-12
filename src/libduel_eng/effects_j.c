@@ -7,7 +7,11 @@ extern int duel_w_089148FC;
 
 int duel_count_free_monster_zones(unsigned int p);
 int duel_phase_ok2(unsigned int p);
+#ifdef __MWERKS__
 int duel_pick_monster_zone(void);
+#else
+int duel_pick_monster_zone(unsigned int p);
+#endif
 int duel_hand_find_name(unsigned int p, int id);
 int duel_0886CE38();
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
@@ -51,7 +55,11 @@ int duel_eff_fbac8(DuelAct *a, int b)
 
                 c.id = 0x19ED;
                 c.owner = a->player;
+#ifdef __MWERKS__
                 duel_w_089148FC = duel_pick_monster_zone();
+#else
+                duel_w_089148FC = duel_pick_monster_zone(c.owner); /* port: a0 still holds the owner just stored into c */
+#endif
                 duel_088263A8(a->player, &c, 1, a->id << 16 | 1);
             }
             return 0x7F;

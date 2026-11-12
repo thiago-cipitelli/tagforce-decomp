@@ -58,7 +58,7 @@ extern DuelPick duel_w_0891524C;
 int duel_req_flag(int i);
 int duel_host_call(int, int, unsigned int, int);
 void duel_0884DB38(int a, int b);
-void duel_0884DB7C();
+void duel_0884DB7C(int id);
 void duel_088DF554(unsigned int, int, unsigned int, int);
 DuelCard *duel_card_by_uid(int uid);
 unsigned int duel_card_locate(unsigned int);

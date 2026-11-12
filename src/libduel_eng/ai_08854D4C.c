@@ -6,7 +6,7 @@ int duel_act_check_08853CE8(DuelAct*, unsigned int, int);
 int duel_act_can_target(DuelAct *a, unsigned int p, int z);
 int duel_act_can_affect(DuelAct *a, unsigned int p, int z, int arg);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
-int duel_tributable(unsigned int p);
+int duel_tributable(unsigned int p, unsigned int q, int z);
 int duel_field_atk(unsigned int p, int z);
 unsigned int card_get_type(int);
 
@@ -18,9 +18,9 @@ int duel_08854D4C(DuelAct *a, unsigned int p, int z)
     return duel_act_can_target(a, p, z) != 0;
 }
 
-int duel_08854DAC(DuelAct *a)
+int duel_08854DAC(DuelAct *a, unsigned int p, int z)
 {
-    return duel_tributable(a->player) != 0;
+    return duel_tributable(a->player, p, z) != 0;
 }
 
 int duel_08854DD0(DuelAct *a, unsigned int p, int z)

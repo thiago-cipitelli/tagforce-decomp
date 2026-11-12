@@ -14,7 +14,7 @@ void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, 
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C7CF0(void);
 void duel_088C7BA4(void);
-int duel_0886CE38();
+int duel_0886CE38(DuelAct *a, int b);
 int duel_count_free_monster_zones(unsigned int p);
 int duel_grave_find_uid(unsigned int p, int uid);
 int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
@@ -37,9 +37,9 @@ unsigned int duel_088D1920(DuelAct *a, unsigned int mask);
 int field_get_card(unsigned int, int);
 int card_is_in_group_160f(int id);
 int duel_088BFFD8();
-int duel_0887FCA8(int id);
-void duel_0881956C(unsigned int p, unsigned short id, int (*fn)(int id));
-void duel_08835978(int (*fn)(int id));
+int duel_0887FCA8(unsigned int p, int z, int k);
+void duel_0881956C(unsigned int p, unsigned short id, int (*fn)(unsigned int q, int z, int i));
+void duel_08835978(int (*fn)());
 int duel_08835AC0(void);
 void duel_08832950(unsigned int, int);
 void duel_088CBAA4(unsigned int, int, int);
@@ -67,13 +67,13 @@ int duel_088917D4(DuelAct *a)
     return 0;
 }
 
-int duel_088918EC(DuelAct *a)
+int duel_088918EC(DuelAct *a, int b)
 {
     int i;
 
     switch (duel_step) {
     case 0x80:
-        if (duel_0886CE38() == 0) {
+        if (duel_0886CE38(a, b) == 0) {
             return 0;
         }
         duel_088C7BA4();
@@ -232,7 +232,7 @@ int duel_08891F38(DuelAct *a, DuelAct *b)
         }
         return 0x7F;
     case 0x7F:
-        if (duel_0886CE38() == 0) {
+        if (duel_0886CE38(a, (int)b) == 0) {
             return 0;
         }
         for (i = 0; i < duel.players[a->player & 1].n_hand; i++) {

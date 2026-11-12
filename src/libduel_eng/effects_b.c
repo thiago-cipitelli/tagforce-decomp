@@ -20,8 +20,8 @@ int duel_grave_find_uid(unsigned int p, unsigned int uid);
 int duel_0884E5E0(DuelAct *a);
 void duel_wfmt_s(void *dst, int fmt, void *arg);
 void duel_0884ACD8(unsigned int p, void *msg);
-int duel_0884E440(int id);
-void duel_088359E8(unsigned int p, int id, int (*fn)(int id));
+int duel_0884E440(DuelAct *a, unsigned int p, int z);
+void duel_088359E8(unsigned int p, int id, int (*fn)());
 int duel_08835AC0(void);
 void duel_088CB728(int, int, int, unsigned int, int, int, int);
 void duel_088C8B78(unsigned int, unsigned short, unsigned short, int);
@@ -35,9 +35,9 @@ int duel_088C4604(DuelAct*, unsigned int, int);
 int duel_088C5E70(unsigned int, int);
 void duel_088C78E0(unsigned int p);
 void duel_088CA384(unsigned int p, int id, int a);
-int duel_0887FCA8(int id);
-void duel_0881956C(unsigned int p, unsigned short id, int (*fn)(int id));
-void duel_08835978(int (*fn)(int id));
+int duel_0887FCA8(unsigned int p, int z, int k);
+void duel_0881956C(unsigned int p, unsigned short id, int (*fn)(unsigned int q, int z, int i));
+void duel_08835978(int (*fn)());
 
 int duel_eff_f85d4(DuelAct *a)
 {

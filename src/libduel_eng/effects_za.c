@@ -22,7 +22,7 @@ extern struct {
 
 int card_is_monster(int id);
 int duel_card_dfac8(unsigned int p, int id, int field);
-int duel_08870C54(DuelAct *a);
+int duel_08870C54(DuelAct *a, int b);
 void duel_0884ACD8(unsigned int p, void *msg);
 void duel_08835978(int (*fn)(unsigned int p, int z, unsigned int i));
 void duel_088359B0(int (*fn)(unsigned int p, int z, unsigned int i));
@@ -136,7 +136,7 @@ int duel_0888C1A8(unsigned int p, int z, unsigned int i)
     return 0;
 }
 
-int duel_0888C2E0(DuelAct *a)
+int duel_0888C2E0(DuelAct *a, int b)
 {
     unsigned short buf2[256];
     unsigned short buf[256];
@@ -151,7 +151,7 @@ int duel_0888C2E0(DuelAct *a)
     }
     switch (duel_step) {
     case 0x80:
-        if (duel_08870C54(a) == 0) {
+        if (duel_08870C54(a, b) == 0) {
             return 0;
         }
         a->n7 = 0;

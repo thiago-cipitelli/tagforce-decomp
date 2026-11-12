@@ -7,7 +7,7 @@
 
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_slot_effect_with(unsigned int, int, int, int);
-DuelCard *duel_field_card_deb2c(void);
+DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_act_resolve_6a230(DuelAct *a);
 void duel_card_copy(DuelCard *dst, DuelCard *src);
@@ -75,10 +75,10 @@ int duel_chain_targets(unsigned int p, int z, unsigned int player, int zone)
     return 0;
 }
 
-int duel_field_act(unsigned int player, int zone)
+int duel_field_act(unsigned int player, int zone, int i)
 {
     if (zone > 4) {
-        DuelCard *c = duel_field_card_deb2c();
+        DuelCard *c = duel_field_card_deb2c(player, zone, i);
         DuelAct a = { 0 };
 
         a.player = player;

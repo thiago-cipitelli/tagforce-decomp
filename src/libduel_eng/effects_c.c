@@ -27,10 +27,10 @@ void duel_0884C588(unsigned int, int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
 int duel_08835AC0(void);
 void duel_088C77EC(unsigned int p, int i);
-int duel_0887FCA8(int id);
-void duel_0881956C(unsigned int p, unsigned short id, int (*fn)(int id));
-void duel_08835978(int (*fn)(int id));
-int duel_0884E9E8(void);
+int duel_0887FCA8(unsigned int p, int z, int k);
+void duel_0881956C(unsigned int p, unsigned short id, int (*fn)(unsigned int q, int z, int i));
+void duel_08835978(int (*fn)());
+int duel_0884E9E8(DuelAct *a, int b);
 void duel_088C96EC(unsigned int p, int z, int a);
 void duel_088C4508(unsigned int p, int id);
 void duel_088C7B90(int n);
@@ -82,11 +82,11 @@ int duel_eff_f9024(DuelAct *a)
     return 0;
 }
 
-int duel_eff_f920c(DuelAct *a)
+int duel_eff_f920c(DuelAct *a, int b)
 {
     switch (duel_step) {
     case 0x80:
-        if (duel_0884E9E8() == 0) {
+        if (duel_0884E9E8(a, b) == 0) {
             return 0;
         }
         duel_0884ACD8(a->player, 0x49);

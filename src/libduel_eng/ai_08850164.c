@@ -36,7 +36,7 @@ int duel_088C0CD0(void);
 void duel_088AFEE0(int a);
 int duel_088C3F80(void);
 int duel_0884F930(DuelAct *a);
-int duel_0884ED08();
+int duel_0884ED08(DuelAct *a);
 int duel_0884EB10(DuelAct *a, DuelAct *b);
 int duel_0884EB5C(DuelAct *a);
 int duel_0884EB90(DuelAct *a, DuelAct *b);
@@ -91,7 +91,7 @@ int duel_08850164(void)
         return 1;
     case 1:
         if (duel_0884F930(cur) != 0) {
-            if (duel_0884ED08() != 0) {
+            if (duel_0884ED08(cur) != 0) {
                 k = cur->zone;
                 if (k != 0x10) {
                     duel_cmd((cur->player != 0 ? 0x8000 : 0) | 0x28, k, cur->uid, 0);
@@ -185,7 +185,7 @@ int duel_08850164(void)
         }
         if (duel_ev_flags.b5) {
             if (cur->b15) {
-                if (duel_0884F930(cur) != 0 && duel_0884ED08() != 0) {
+                if (duel_0884F930(cur) != 0 && duel_0884ED08(cur) != 0) {
                     duel_088C4448(cur->player, cur->zone, cur->uid);
                 }
                 duel_w_089148EC++;

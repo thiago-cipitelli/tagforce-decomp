@@ -42,7 +42,7 @@ int duel_088535C0(void);
 void duel_0883447C(void);
 int duel_msg_poll(void);
 int duel_req_088D557C(void);
-int duel_08827544(void);
+int duel_08827544(int id);
 int duel_card_used_e66ac(unsigned int id);
 unsigned int card_get_type(int);
 int card_get_prop5_hi(int);
@@ -339,9 +339,9 @@ int duel_card_used(unsigned int id)
     return duel_card_used_e66ac(id);
 }
 
-void duel_0884DB7C(void)
+void duel_0884DB7C(int id)
 {
-    if (duel_08827544() != 0) {
+    if (duel_08827544(id) != 0) {
         duel_0884DB38(0x1A, 1);
     }
 }

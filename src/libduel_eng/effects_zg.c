@@ -21,14 +21,14 @@ int duel_grave_card_usable(unsigned int p, unsigned int q, int i);
 int card_get_level(int);
 int duel_0884E5E0(DuelAct *a);
 void duel_0884ACD8(unsigned int p, void *msg);
-int duel_0884E690(DuelAct *a, int (*fn)(int id));
-int duel_088537B0(int id);
-void duel_088359E8(unsigned int p, int id, int (*fn)(int id));
+int duel_0884E690(DuelAct *a, int (*fn)(DuelAct *a, unsigned int p, int z));
+int duel_088537B0(DuelAct *a, unsigned int p, int z);
+void duel_088359E8(unsigned int p, int id, int (*fn)());
 int duel_08835AC0(void);
 int duel_field_level(unsigned int p, int z);
 void duel_088CB914(unsigned int p, int z);
 void duel_088D184C(DuelAct *a, unsigned int mask, int b);
-int duel_0886CE38();
+int duel_0886CE38(DuelAct *a, int b);
 #ifdef __MWERKS__
 void duel_0887DC94(DuelAct *a);
 #else
@@ -100,7 +100,7 @@ void duel_088CC594(unsigned int p, int z, int a, int id);
 void duel_088C8B70(unsigned int p, unsigned short loc, unsigned short t);
 int duel_count_field(unsigned int p);
 void duel_08832950(unsigned int, int);
-int duel_08860788(int id);
+int duel_08860788(DuelAct *a, unsigned int p, int z);
 void duel_088328E8(unsigned int, unsigned short, int);
 int duel_hand_find_uid(unsigned int, int);
 void duel_088CAE24(unsigned int p, DuelCard *c, int a);
@@ -108,7 +108,7 @@ void duel_088D1C70(DuelAct *a, unsigned int p, int z);
 void duel_0882619C(unsigned int, DuelCard*, int, int, unsigned int);
 unsigned int duel_088D13CC(DuelAct*, unsigned int);
 
-int duel_08892554(DuelAct *a)
+int duel_08892554(DuelAct *a, int b)
 {
     unsigned int uid;
     unsigned int loc;
@@ -161,7 +161,7 @@ int duel_08892554(DuelAct *a)
         duel_088D184C(a, a->w[0] | a->w[1] << 16, 0);
         return 0x7B;
     case 0x7B:
-        if (duel_0886CE38() != 0) {
+        if (duel_0886CE38(a, b) != 0) {
             a->w[0] = a->w[3];
             duel_0887DC94(a);
         }

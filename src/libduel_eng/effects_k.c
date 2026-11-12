@@ -13,18 +13,22 @@ extern int duel_w_08919654;
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_088A9008(DuelAct*, int, unsigned int*);
 int duel_0884E440();
-int duel_0884E690(DuelAct *a, int (*fn)(int id));
-int duel_08856754(int id);
+int duel_0884E690(DuelAct *a, int (*fn)(DuelAct *a, unsigned int p, int z));
+int duel_08856754(DuelAct *a, unsigned int p, int z);
 int duel_0886CE38();
 int duel_08861480(unsigned short id, int i);
 void duel_0884ADAC(int a, int b, int c, int d, int e, int f);
 void duel_08832974(unsigned int p, int a, int b);
+#ifdef __MWERKS__
 int duel_pick_monster_zone();
+#else
+int duel_pick_monster_zone(unsigned int p);
+#endif
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, int c);
 void duel_0884ACD8(unsigned int p, int msg);
-void duel_088359E8(unsigned int p, int id, int (*fn)(int id));
+void duel_088359E8(unsigned int p, int id, int (*fn)());
 int duel_08835AC0(void);
 void duel_088D147C(DuelAct *a, int b, int c);
 void duel_088C452C(unsigned int p, int n);
@@ -113,7 +117,11 @@ int duel_eff_fc114(DuelAct *a, int b)
 
                 c.id = 0x19ED;
                 c.owner = a->player;
+#ifdef __MWERKS__
                 duel_w_089148FC = duel_pick_monster_zone();
+#else
+                duel_w_089148FC = duel_pick_monster_zone(c.owner); /* port: a0 still holds the owner just stored into c */
+#endif
                 duel_088263A8(a->player, &c, 1, a->id << 16 | 1);
                 return 0x7D;
             }
