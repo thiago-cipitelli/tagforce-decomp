@@ -93,8 +93,6 @@ segments:
       - [0x13030, c, dd_cutin]
       - [0x13644, c, dd_event]
       - [0x139AC, c, dd_event_cmd]
-      - [0x13F68, asm, dd_event_cmd_asm_08817F08]
-      - [0x14328, c, dd_event_cmd]
       - [0x15010, asm, dd_event_cmd_asm_08818FB0]
       - [0x151DC, c, dd_event_cmd]
       - [0x15AD0, c, dd_voice]
