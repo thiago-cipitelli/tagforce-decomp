@@ -1,7 +1,7 @@
 // @range 0x0880E45C-0x0880FCFC
 // @rodata 0x0886FE64-0x0886FE80
 // @data 0x08874EA0-0x08874F70
-// @asm 0x0880EB70-0x0880F4D4
+// @asm 0x0880EB70-0x0880F164
 /* Drawing of the field and of the card objects: the layer setup, the field sheet model, the
    deck/extra/graveyard piles (a pile model with the top card on it and the count), every card
    object with its picture (models with texture hooks), the counters of the monster zones. */
@@ -159,7 +159,7 @@ void dd_board_pile(float scale, DdXyzw *pos, DdXyzw *rot, int n, int card);
 void dd_board_pile_count(int n);
 int dd_board_pile_tex(void **list, int unused, int which);
 int dd_board_pile_color(void **list);
-void dd_board_card_face(float scale, unsigned short card);
+void dd_board_card_face(unsigned short card, float scale);
 
 /* the piles (side deck, deck, graveyard, banished) of both players */
 typedef struct { int z[4]; } DdZones4;
@@ -349,21 +349,31 @@ void dd_board_cards(void)
     mtx_pop();
 }
 
+#endif
+
+/* a scale vector the original builds and never uses (the scaling call is gone) */
+static inline void dd_board_sc(float k)
+{
+    DdXyz sc = { 0 };
+
+    sc.x = k;
+    sc.y = k;
+    sc.z = k;
+}
+
 /* one card object at place i of (p, zone); 1 when it is highlighted */
 int dd_board_card_draw(DdCobj *o, int p, int zone, int i)
 {
+    DdCobjs *b = &dd_cobjs;
     int hilite = 0;
+    int hl = 0;
     void *list = dl_select_layer(4, 0);
     float scale;
-    DdXyzw off;
     DdMtx m;
-    DdXyzw axis;
-    DdLoc at = { 0 };
-    float k;
 
     if (dd_scene_flags(0x40, -1) && (dv_08835AEC(p, zone, i) & ~2) != 0)
-        hilite = 1;
-    if (hilite && (*gfx_get_state() & 0x10)) {
+        hilite = hl = 1;
+    if (hl && ((*gfx_get_state() >> 4) & 1)) {
         list = dl_tex_func(list, 4, 0);
         list = dl_disable(list, 10);
         list = dl_ambient_color(list, 0xFF404040);
@@ -374,34 +384,41 @@ int dd_board_card_draw(DdCobj *o, int p, int zone, int i)
     dl_set_list(list);
     scale = dd_count_scale(p, zone);
     mtx_identity();
-    memset(&off, 0, sizeof(off));
-    if (zone == 11 && sel_active()) {
-        k = 1.0f - sel_progress(p);
-        off.y = o->pos.z >= 0.0f ? -150.0f : 250.0f;
-        off.y *= sel_progress(p);
+    {
+        DdXyzw off = { 0 };
+
+        if (zone == 11 && sel_active()) {
+            dd_board_sc(1.0f - sel_progress(p));
+            if (o->pos.z >= 0.0f)
+                off.y = -150.0f;
+            else
+                off.y = 250.0f;
+            off.y *= sel_progress(p);
+        }
+        mtx_translate(&o->pos);
+        mtx_translate(&off);
     }
-    mtx_translate(&o->pos);
-    mtx_translate(&off);
     quat_to_mat4(&m, &o->rot);
     mtx_mult(&m);
-    dd_board_card_face(scale, 0);
-    axis = dd_board_zaxis;
-    quat_to_mat4(&m, &axis);
-    mtx_mult(&m);
-    dd_board_card_face(scale, o->card);
+    dd_board_card_face(0, scale);
+    {
+        DdXyzw axis = dd_board_zaxis;
+
+        quat_to_mat4(&m, &axis);
+        mtx_mult(&m);
+    }
+    dd_board_card_face(o->card, scale);
     if (hilite) {
-        at.player = p;
-        at.zone = zone;
-        at.idx = i;
+        DdLoc at = { p, zone, i };
+
         list = dd_cursor_draw_model(dl_select_layer(4, 0), at, 1);
         list = dl_enable(list, 5);
         dl_set_list(list);
     }
-    if (dd_cobjs.sel[p][zone] > 0)
-        dd_counter_sel(&o->pos, 0, dd_cobjs.sel[p][zone]);
+    if (b->sel[p][zone] > 0)
+        dd_counter_sel(&o->pos, 0, b->sel[p][zone]);
     return hilite;
 }
-#endif
 
 /* overlays of the cards on the field (attack/defense position markers...) */
 void dd_board_marks(void)
@@ -567,7 +584,7 @@ DdCardVtx dd_board_card_quad[4] = {
 };
 
 /* one face of a card (picture `card`, 0 the back) scaled for its zone */
-void dd_board_card_face(float scale, unsigned short card)
+void dd_board_card_face(unsigned short card, float scale)
 {
     void *list = dl_select_layer(4, 0);
     float k;

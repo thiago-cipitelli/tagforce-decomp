@@ -55,7 +55,7 @@ segments:
       - [0x937C, asm, dd_hand_asm_0880D31C]
       - [0xA4BC, c, dd_board]
       - [0xABD0, asm, dd_board_asm_0880EB70]
-      - [0xB534, c, dd_board]
+      - [0xB1C4, c, dd_board]
       - [0xBD5C, c, dd_cmove]
       - [0xC7B8, c, dd_counter]
       - [0xC7B8, asm, dd_counter_asm_08810758]
