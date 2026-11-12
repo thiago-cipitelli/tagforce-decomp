@@ -48,7 +48,7 @@ typedef struct LibcUio {               /* newlib struct __suio */
 void *heap_get_current(void);
 void *_malloc_r(void *r, size_t n);
 void *_realloc_r(void *r, void *p, size_t n);
-int nl_swsetup(void *r, LibcFile *fp);
+int nl_swsetup(LibcFile *fp);
 void *memchr(const void *s, int c, size_t n);
 void *memmove(void *d, const void *s, size_t n);
 void *mem_move(void *d, const void *s, size_t n);
@@ -673,7 +673,7 @@ int libc_sfvwrite(LibcFile *fp, LibcUio *uio)
         return 0;
     }
     if (!(fp->flags & 8) || fp->base == 0) {
-        if (nl_swsetup(heap_get_current(), fp) != 0) {
+        if (nl_swsetup(fp) != 0) { /* the original passes fp alone (a0) */
             return -1;
         }
     }

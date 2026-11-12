@@ -47,7 +47,7 @@ void *heap_create(void *mem, unsigned int size);
 void *heap_alloc(void *heap, int size);
 void heap_set_level(void *heap, void *p);
 void snd_group_release_all(int cmd, int flag);
-unsigned int snd_bank_offset();
+unsigned int snd_bank_offset(unsigned int g);
 void snd_callbacks_default(SndCallbacks *cb);
 void snd_thread_start(void *cfg, SndCallbacks *cb);
 int snd_bank_open_async(int a, int b);
@@ -63,11 +63,11 @@ void snd_stop_fade(int x, int ms);
 void snd_group_cmd(int cmd, int arg);
 int snd_obj_count_bgm();
 int snd_obj_count_se();
-int snd_cur_set_volume();
-int snd_obj_set_volume();
-int snd_obj_query();
-int snd_obj_status();
-int snd_seq_entry();
+int snd_cur_set_volume(int vol, int time);
+int snd_obj_set_volume(unsigned int h, int vol, int time);
+int snd_obj_query(int handle, signed char dt);
+unsigned int snd_obj_status(int handle);
+int snd_seq_entry(unsigned int g);
 int snd_group_read_done(void *obj, int a);
 void snd_set_volume(int ch, int vol);
 SysConfig *cfg_get(void);
@@ -172,9 +172,9 @@ void snd_heap_free_cb(void *p)
 }
 
 /* Loads the bank header of psp_snddat.bin into the sound heap. */
-void snd_load_data(void)
+void snd_load_data(unsigned int g)
 {
-    unsigned int off = snd_bank_offset();
+    unsigned int off = snd_bank_offset(g);
     void *buf = heap_alloc(snd_heap, 0x40);
     ehfile_read_async(7, "psp_snddat.bin", buf, off, 0, (EhfileCallback)snd_load_cb, buf);
 }
@@ -331,11 +331,11 @@ void snd_cmd_fef8(void)          { snd_group_cmd(-0x108, 0); }
 void snd_cmd_fef8_arg(int arg)   { snd_group_cmd(-0x108, arg); }
 int snd_count_bgm()              { return snd_obj_count_bgm(); }
 int snd_count_se()               { return snd_obj_count_se(); }
-int bgm_set_pan()                { return snd_cur_set_volume(); }
-int bgm_set_volume()             { return snd_obj_set_volume(); }
-int bgm_query()                  { return snd_obj_query(); }
-int bgm_get_status()             { return snd_obj_status(); }
-int snd_seq_get_u16()            { return snd_seq_entry(); }
+int bgm_set_pan(int vol, int time)                 { return snd_cur_set_volume(vol, time); }
+int bgm_set_volume(unsigned int h, int vol, int time) { return snd_obj_set_volume(h, vol, time); }
+int bgm_query(int handle, signed char dt)           { return snd_obj_query(handle, dt); }
+int bgm_get_status(int handle)                      { return snd_obj_status(handle); }
+int snd_seq_get_u16(unsigned int g)                 { return snd_seq_entry(g); }
 int snd_get_base_id(int obj)     { return snd_obj_base_id(obj); }
 
 /* Voice base id for a character: 0..0x28 use the pair list, 0x29.. derive from the charmap group. */

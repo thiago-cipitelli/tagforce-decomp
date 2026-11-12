@@ -7,7 +7,7 @@
 #include "ehsys.h"
 #include "game.h"
 
-unsigned short *chara_get_name(int i);
+unsigned short *chara_get_name(int i, int j);
 void wtext_strip_tags(unsigned short *dst, const unsigned short *src);
 unsigned short *recipe_get_name(int n);
 void recipe_load(int n, RecipeData *out);
@@ -228,7 +228,7 @@ void gamestate_load(const void *src)
             break;
         default:
             if (type < 0x98)
-                wtext_strip_tags(slot->name, chara_get_name(0));
+                wtext_strip_tags(slot->name, chara_get_name(0, type));
             break;
         }
         deck = slot->deck_id;

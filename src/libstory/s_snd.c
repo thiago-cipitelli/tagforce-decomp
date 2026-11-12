@@ -17,7 +17,7 @@ extern int st_snd_x;                   /* 0x08ACBB24 */
 
 void bgm_fade(int x);
 void se_play(int id);
-void snd_load_data(void);
+void snd_load_data(unsigned int g);
 unsigned int bgm_get_status(int id);
 void bgm_play(int id);
 void snd_cmd_fefb_arg(int arg);
@@ -106,9 +106,9 @@ void se_play_delta(int d)
     st_se_play(id);
 }
 
-void st_snd_load(void)
+void st_snd_load(int id)
 {
-    snd_load_data();
+    snd_load_data(id);
 }
 
 void st_bgm_play(int id)
@@ -116,7 +116,7 @@ void st_bgm_play(int id)
     StBgm *b = st_bgm;
 
     if (b->want != -1) {
-        st_snd_load();
+        st_snd_load(id);
         st_bgm_stop();
     }
     bgm_fade(id);

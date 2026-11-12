@@ -385,7 +385,11 @@ int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *r
         if (ended != 0) {
             ended = movie_check_end(vid, reader, ctrl);
         } else {
+#ifdef __MWERKS__
             r = movie_poll_input(vid->disp); /* the original loads vid->disp into a0; the callee ignores it */
+#else
+            r = movie_poll_input(); /* the original loads vid->disp into a0; the callee ignores it */
+#endif
             if (r != 0) {
                 sceMpeg_4571CC64(mpeg);
                 ctrl_abort(ctrl);

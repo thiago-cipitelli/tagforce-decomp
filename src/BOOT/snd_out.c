@@ -145,7 +145,7 @@ void snd_fx_apply(short *buf)
     }
 }
 
-void snd_thread_main(void)
+int snd_thread_main(unsigned int args, void *argp)
 {
     unsigned char mode;
     int vol;

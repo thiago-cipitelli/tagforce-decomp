@@ -1122,9 +1122,14 @@ char *strstr(const char *s, const char *find)
 #endif
 
 #ifdef NON_MATCHING /* GCC: jump table and tables through %hi/%lo */
-/* the string-stream variant of _vfprintf_r [?]: same formatting */
-int _svfprintf_r(void *r, LibcFile *fp, const char *fmt, va_list ap)
+/* newlib _strtod_r (gdtoa: _Bfree, __lshift, __ulp, __d2b and the soft-double helpers); was taken for a
+   string-stream vfprintf before the port's prototype check (strtod and vfscanf call it with (reent, s, end)) */
+double _strtod_r(void *r, const char *s, char **end)
 {
-    return _vfprintf_r(r, fp, fmt, ap);
+    /* port: the gdtoa body is not reconstructed yet; nothing is converted */
+    if (end != 0) {
+        *end = (char *)s;
+    }
+    return 0.0;
 }
 #endif

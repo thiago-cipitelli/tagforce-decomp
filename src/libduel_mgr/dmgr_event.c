@@ -65,7 +65,11 @@ unsigned int cfg_get_flag(int which);
 void frame_counter_reset(void);
 unsigned int frame_counter_get(void);
 void se_play(int id);
+#ifdef __MWERKS__
 void snd_load_data();
+#else
+void snd_load_data(unsigned int g);
+#endif
 int snd_is_muted(void);
 void bgm_play(int id);
 void bgm_fade_out(int x, int ms);

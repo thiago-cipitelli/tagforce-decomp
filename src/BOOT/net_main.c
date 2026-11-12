@@ -117,7 +117,7 @@ int netconf_update(void);
 int net_dialog_update(void);
 
 /* Sound side: wakes on the event flag and walks the idle list under the sound semaphore. */
-void snd_idle_thread(void)
+int snd_idle_thread(unsigned int args, void *argp)
 {
     void *p;
 
