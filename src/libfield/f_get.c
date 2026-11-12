@@ -14,7 +14,12 @@ void fmsg_reset(int x, int w, int size, int input, int style);
 int wsprintf(unsigned short *out, unsigned short *fmt, ...);
 unsigned short *card_get_name(int id);
 void *mat4_zero(Mat4 *out);
+#ifdef __MWERKS__
 Mat4 *mat4_mul_rot_y(float a, Mat4 *out, Mat4 *m);
+#else
+Mat4 *mat4_mul_rot_y(Mat4 *out, Mat4 *m, float a);
+#define mat4_mul_rot_y(a, out, m) mat4_mul_rot_y(out, m, a) /* port: argument order of the definition */
+#endif
 FieldCamera *camera_get(void);
 int inv_get_hi(unsigned short id);
 unsigned int cip_read_card(void *handle, int id, int variant);
@@ -39,7 +44,12 @@ void *dl_tex_image(void *list, int mip, int w, int h, int stride, const void *da
 void *dl_tex_func(void *list, int func, int comp);
 void *dl_tex_wrap(void *list, int u, int v);
 void *dl_tex_offset(float u, float v, void *list);
+#ifdef __MWERKS__
 void *dl_tex_scale(void *list, float u, float v);
+#else
+void *dl_tex_scale(float u, float v, void *list);
+#define dl_tex_scale(list, u, v) dl_tex_scale(u, v, list) /* port: argument order of the definition */
+#endif
 void *dl_blend_func(void *list, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
 void *dl_ambient_color(void *list, unsigned int color);
 void *sceGeEdramGetAddr(void);

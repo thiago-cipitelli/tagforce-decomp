@@ -924,7 +924,12 @@ int sprintf(char *buf, const char *fmt, ...);
 void *draw_set_offsets(void *list, int tw, int th, int w, int h);
 void *draw_sprite(void *list, int x, int y, int z, int u, int v, int a, int b);
 void color_unpack(float *out, unsigned int rgba);
+#ifdef __MWERKS__
 void vec4_lerp2(float t, float *out, float *a, float *b);
+#else
+void vec4_lerp2(float *out, float *a, float *b, float t);
+#define vec4_lerp2(t, out, a, b) vec4_lerp2(out, a, b, t) /* port: argument order of the definition */
+#endif
 unsigned int color_pack(float *v);
 void deck_cur_get_u16_0(short *out);
 void ehfile_read_async_alias(int dir, const char *name, void *buf, int size, int (*cb)(void *, int), void *arg);

@@ -37,7 +37,12 @@ void mtx_identity(void);
 void mtx_perspective(float fovy, float aspect, float near, float far);
 void mtx_ortho(float l, float r, float b, float t, float n, float f);
 void mtx_look_at(float *eye, float *target, float *up);
+#ifdef __MWERKS__
 float keyframe_eval(float t, TgmaTrack *track);
+#else
+float keyframe_eval(TgmaTrack *track, float t);
+#define keyframe_eval(t, track) keyframe_eval(track, t) /* port: argument order of the definition */
+#endif
 
 int ehf_cmd_perspective(void *a, void *b, void *cmd, int phase)
 {

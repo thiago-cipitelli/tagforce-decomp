@@ -23,8 +23,18 @@ unsigned int *dl_color_material(unsigned int *list, int comps);
 unsigned int *dl_shade_model(unsigned int *list, int mode);
 unsigned int *dl_front_face(unsigned int *list, int cw);
 unsigned int *dl_tex_map_mode(unsigned int *list, int mode, int a, int b);
+#ifdef __MWERKS__
 unsigned int *dl_tex_offset(unsigned int *list, float u, float v);
+#else
+unsigned int *dl_tex_offset(float u, float v, unsigned int *list);
+#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list) /* port: argument order of the definition */
+#endif
+#ifdef __MWERKS__
 unsigned int *dl_tex_scale(unsigned int *list, float u, float v);
+#else
+unsigned int *dl_tex_scale(float u, float v, unsigned int *list);
+#define dl_tex_scale(list, u, v) dl_tex_scale(u, v, list) /* port: argument order of the definition */
+#endif
 unsigned int *dl_alpha_test(unsigned int *list, int func, int ref, int mask);
 unsigned int *dl_depth_func(unsigned int *list, int func);
 unsigned int *dl_depth_mask(unsigned int *list, int mask);

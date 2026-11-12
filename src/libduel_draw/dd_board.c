@@ -39,8 +39,18 @@ void *dl_set_tex_filter(void *list, int min, int mag);
 void *dl_tex_func(void *list, int func, int comp);
 void *dl_depth_func(void *list, int func);
 unsigned int *dl_tex_wrap(unsigned int *list, int u, int v);
+#ifdef __MWERKS__
 unsigned int *dl_tex_offset(unsigned int *list, float u, float v);
+#else
+unsigned int *dl_tex_offset(float u, float v, unsigned int *list);
+#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list) /* port: argument order of the definition */
+#endif
+#ifdef __MWERKS__
 unsigned int *dl_tex_scale(unsigned int *list, float u, float v);
+#else
+unsigned int *dl_tex_scale(float u, float v, unsigned int *list);
+#define dl_tex_scale(list, u, v) dl_tex_scale(u, v, list) /* port: argument order of the definition */
+#endif
 void *dl_blend_func(void *list, int op, int src, int dst, unsigned int srcfix, unsigned int dstfix);
 int wcslen(const unsigned short *s);
 unsigned short *wtext_from_int(int v, unsigned short *out);

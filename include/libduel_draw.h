@@ -405,7 +405,7 @@ typedef struct ChrVt {                 /* callbacks of a character model (0x0884
     void *f20;
     int (*bone_id)(void *self, int i);                              /* 0x24 slot -> bone id */
     int (*bone_rest)(void *self, ChrVec4 *pos, ChrVec4 *rot, int id); /* 0x28 */
-    int (*motion)(void *self, void *a, void *b, void *c, int d);     /* 0x2C */
+    void (*motion)(void *self, void *a, void *b, int bone, float t); /* 0x2C: bone callback, see dd_mon_bone */
     int *pairs;                                                     /* 0x30 (bone, x) pairs, 0-terminated */
 } ChrVt;
 

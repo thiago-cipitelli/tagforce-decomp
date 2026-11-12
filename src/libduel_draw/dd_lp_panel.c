@@ -22,7 +22,12 @@ void *dl_enable(void *list, int state);
 void *dl_disable(void *list, int state);
 void *dl_tex_func(void *list, int func, int comp);
 void *dl_ambient_color(void *list, unsigned int color);
+#ifdef __MWERKS__
 void *dl_tex_offset(void *list, float u, float v);
+#else
+void *dl_tex_offset(float u, float v, void *list);
+#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list) /* port: argument order of the definition */
+#endif
 void *dl_clear_depth(void *list, unsigned int z);
 void *dl_clear(void *list, unsigned int flags);
 void *dl_shade_model(void *list, int mode);

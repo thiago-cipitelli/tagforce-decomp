@@ -45,7 +45,12 @@ int spline_init_ring(Vec4 *d, Vec4 *p, int start, int ring, int n);
 Vec4 *vec3_add_w(Vec4 *out, Vec4 *a, Vec4 *b);
 Vec4 *vec3_sub_w(Vec4 *out, Vec4 *a, Vec4 *b);
 Vec4 *vec3_scale_w(Vec4 *out, Vec4 *a, float s);
+#ifdef __MWERKS__
 void vec4_lerp(float t, Vec4 *out, Vec4 *a, Vec4 *b);
+#else
+void vec4_lerp(Vec4 *out, Vec4 *a, Vec4 *b, float t);
+#define vec4_lerp(t, out, a, b) vec4_lerp(out, a, b, t) /* port: argument order of the definition */
+#endif
 
 /* 0x10013: billboard at `pos` whose y axis is `dir`, its z axis facing the up vector. */
 int ehf_cmd_billboard_up(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)

@@ -41,7 +41,12 @@ void se_play(int id);
 void money_add(int delta);
 int sysstate_get_u32_54(int i);
 GfxState *gfx_get_state(void);
+#ifdef __MWERKS__
 void vec2_lerp(float t, float *out, float *a, float *b);
+#else
+void vec2_lerp(float *out, float *a, float *b, float t);
+#define vec2_lerp(t, out, a, b) vec2_lerp(out, a, b, t) /* port: argument order of the definition */
+#endif
 int rand(void);
 int strlen(const char *s);
 float fabsf_vfpu(float x);

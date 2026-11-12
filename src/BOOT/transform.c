@@ -29,7 +29,12 @@ Vec4 *vec3_sub_w(Vec4 *out, Vec4 *a, Vec4 *b);
 Vec4 *vec3_mul_w(Vec4 *out, Vec4 *a, Vec4 *b);
 Vec4 *vec3_div_w(Vec4 *out, Vec4 *a, Vec4 *b);
 Vec4 *vec3_scale_w(Vec4 *out, Vec4 *a, float s);
+#ifdef __MWERKS__
 Vec4 *vec3_lerp_w(float t, Vec4 *out, Vec4 *a, Vec4 *b);
+#else
+Vec4 *vec3_lerp_w(Vec4 *out, Vec4 *a, Vec4 *b, float t);
+#define vec3_lerp_w(t, out, a, b) vec3_lerp_w(out, a, b, t) /* port: argument order of the definition */
+#endif
 
 #ifdef NON_MATCHING /* register allocation of the two induction variables over spline_work differs */
 /* Second-derivative terms `d` of the spline through the `n` keys `p`. Returns n (0 when n < 0). */

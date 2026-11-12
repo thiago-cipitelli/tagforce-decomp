@@ -23,7 +23,12 @@ unsigned short *wcscpy(unsigned short *d, const unsigned short *s);
 unsigned short *wcscat(unsigned short *d, const unsigned short *s);
 int wsprintf(unsigned short *out, unsigned short *fmt, ...);
 FieldCamera *camera_get(void);
+#ifdef __MWERKS__
 void mat4_mul_rot_x(float a, Mat4 *out, Mat4 *m);
+#else
+void mat4_mul_rot_x(Mat4 *out, Mat4 *m, float a);
+#define mat4_mul_rot_x(a, out, m) mat4_mul_rot_x(out, m, a) /* port: argument order of the definition */
+#endif
 void *efs_start(const char *name, const char *path, int flag);
 void efs_send(void *e, int a, int b, void *arg);
 void efs_inst_free(void *e);

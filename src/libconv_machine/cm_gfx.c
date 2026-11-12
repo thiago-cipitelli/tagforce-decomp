@@ -66,7 +66,12 @@ unsigned int *dl_clear_depth(unsigned int *list, unsigned int z);
 unsigned int *dl_clear_stencil(unsigned int *list, unsigned int s);
 unsigned int *dl_set_tex_filter(unsigned int *list, int min, int mag);
 unsigned int *dl_tex_func(unsigned int *list, int func, int comp);
+#ifdef __MWERKS__
 unsigned int *dl_tex_offset(unsigned int *list, float u, float v);
+#else
+unsigned int *dl_tex_offset(float u, float v, unsigned int *list);
+#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list) /* port: argument order of the definition */
+#endif
 unsigned int *dl_tex_scale(float u, float v, unsigned int *list);
 unsigned int *dl_bone_matrix(unsigned int *list, int index, float *m);
 Mat4 *mat4_identity(Mat4 *out);

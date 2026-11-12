@@ -105,7 +105,12 @@ void *gfx_end_2d(void *list);
 void ehf_get_size(void *ehf, int *w, int *h);
 void *ehf_draw(void *list, void *ehf, void *frame);
 void ehf_set_anim(void *ehf, int first, int last);
+#ifdef __MWERKS__
 void ehf_inst_init(float a, float b, float c, float d, void *ehf, int view);
+#else
+void ehf_inst_init(float a, float b, void *ehf, int view);
+#define ehf_inst_init(a, b, c, d, ehf, view) ehf_inst_init(a, b, ehf, view) /* port: cx, cy: the definition takes only w, h (the original also loads f14/f15, which it never reads) */
+#endif
 void *ehp_find(void *pack, const char *name, int flags);
 unsigned char *syspack_get(void);
 int region_get(void);

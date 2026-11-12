@@ -16,7 +16,12 @@ void mtx_load(FxMat4 *m);
 
 void dd_mtx_push_cam(void);
 void dd_mtx_pop_all(void);
+#ifdef __MWERKS__
 void dd_mat4_rot_x(float a, FxMat4 *out, FxMat4 *m);
+#else
+void dd_mat4_rot_x(FxMat4 *out, FxMat4 *m, float a);
+#define dd_mat4_rot_x(a, out, m) dd_mat4_rot_x(out, m, a) /* port: argument order of the definition */
+#endif
 float dd_ease_lin(int t, int len);
 float dd_ease_lin_out(int t, int len, int end);
 int dd_task_create(void *update, void *a, void *b, int size);

@@ -10,7 +10,12 @@ int sysflag_test(unsigned int bit);
 unsigned short region_pick_value(int flag);
 unsigned int cfg_get_byte0_bits4_5(void);
 GfxState *gfx_get_state(void);
+#ifdef __MWERKS__
 void vec2_lerp(float t, float *out, float *a, float *b);
+#else
+void vec2_lerp(float *out, float *a, float *b, float t);
+#define vec2_lerp(t, out, a, b) vec2_lerp(out, a, b, t) /* port: argument order of the definition */
+#endif
 int wcslen(const unsigned short *s);
 void font_set_flag1(int on);
 void font_set_flag2(int on);

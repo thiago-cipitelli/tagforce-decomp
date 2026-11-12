@@ -68,8 +68,18 @@ void *dl_tex_mode(void *list, int pixfmt, int maxmips, int a2, int swizzle);
 void *dl_tex_image(void *list, int mip, int w, int h, int stride, const void *data);
 unsigned int *dl_tex_func(unsigned int *list, int func, int rgba);
 unsigned int *dl_tex_wrap(unsigned int *list, int u, int v);
+#ifdef __MWERKS__
 unsigned int *dl_tex_offset(unsigned int *list, float u, float v);
+#else
+unsigned int *dl_tex_offset(float u, float v, unsigned int *list);
+#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list) /* port: argument order of the definition */
+#endif
+#ifdef __MWERKS__
 unsigned int *dl_tex_scale(unsigned int *list, float u, float v);
+#else
+unsigned int *dl_tex_scale(float u, float v, unsigned int *list);
+#define dl_tex_scale(list, u, v) dl_tex_scale(u, v, list) /* port: argument order of the definition */
+#endif
 unsigned int *tms_env_light(unsigned int *list, int after);
 unsigned int *tms_env_light_add(unsigned int *list, int after);
 int toon_tex_hook(unsigned int **list, int *t, int mat, int layer, void *arg);

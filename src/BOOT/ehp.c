@@ -69,7 +69,12 @@ void tms_set_lookup(void *(*fn)(char *name));
 void tms_relocate(void *p);
 void gim_reset(void *gim);
 int ehf_tex_foreach(void *f, unsigned char *flags, int (*cb)(EhpPack *pack, EhfTexName *t), void *arg);
+#ifdef __MWERKS__
 void *ehf_inst_init(float w, float h, float cx, float cy, void *f, void *e);
+#else
+void *ehf_inst_init(float w, float h, void *f, void *e);
+#define ehf_inst_init(w, h, cx, cy, f, e) ehf_inst_init(w, h, f, e) /* port: cx, cy: the definition takes only w, h (the original also loads f14/f15, which it never reads) */
+#endif
 
 int ehp_is_valid(EhpPack *p);
 EhpEntry *ehp_find_entry(EhpPack *p, const char *name);

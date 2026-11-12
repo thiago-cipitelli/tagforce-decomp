@@ -43,7 +43,12 @@ int font_draw_text(int x, int y, int w, unsigned short *text);
 float ceilf_vfpu(float f);
 void color_unpack(float *out, unsigned int rgba);
 unsigned int color_pack(float *v);
+#ifdef __MWERKS__
 void vec4_lerp2(float t, float *out, float *a, float *b);
+#else
+void vec4_lerp2(float *out, float *a, float *b, float t);
+#define vec4_lerp2(t, out, a, b) vec4_lerp2(out, a, b, t) /* port: argument order of the definition */
+#endif
 
 /* 8-bit tab/edge texel coordinates of the variable-height side piece (.data) */
 extern unsigned short wside_u;         /* 0x088EE8BC */

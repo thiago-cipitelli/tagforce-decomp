@@ -34,7 +34,12 @@ void dd_mtx_pop_all(void);
 void dd_mtx_billboard_field(FxMat4 *out);
 void dd_translate3(float x, float y, float z);
 void dd_scale3(float x, float y, float z);
+#ifdef __MWERKS__
 void dd_mat3_rot_x(float a, float *out, float *m);
+#else
+void dd_mat3_rot_x(float *out, float *m, float a);
+#define dd_mat3_rot_x(a, out, m) dd_mat3_rot_x(out, m, a) /* port: argument order of the definition */
+#endif
 void dd_field_dir_get(FxVec4 *up);
 int dd_task_create(void *update, void *a, void *b, int size);
 void *dd_task_mem(int task);

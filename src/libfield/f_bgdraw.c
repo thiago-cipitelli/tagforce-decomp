@@ -668,8 +668,18 @@ void *sceGeEdramGetAddr(void);
 void *dl_tex_image(void *list, int mip, int w, int h, int tbw, void *addr);
 void *dl_tex_func(void *list, int func, int rgba);
 void *dl_tex_wrap(void *list, int u, int v);
+#ifdef __MWERKS__
 void *dl_tex_offset(void *list, float u, float v);
+#else
+void *dl_tex_offset(float u, float v, void *list);
+#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list) /* port: argument order of the definition */
+#endif
+#ifdef __MWERKS__
 void *dl_tex_scale(void *list, float u, float v);
+#else
+void *dl_tex_scale(float u, float v, void *list);
+#define dl_tex_scale(list, u, v) dl_tex_scale(u, v, list) /* port: argument order of the definition */
+#endif
 void *dl_set_tex_filter(void *list, int min, int mag);
 void *dl_blend_func(void *list, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
 

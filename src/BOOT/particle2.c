@@ -54,7 +54,12 @@ extern int rand3_slot;
 extern unsigned int rand3_seeds[][3];
 
 void vec3_add(float *out, float *a, float *b);
+#ifdef __MWERKS__
 float *vec3_scale(float s, float *out, float *a);
+#else
+float *vec3_scale(float *out, float *a, float s);
+#define vec3_scale(s, out, a) vec3_scale(out, a, s) /* port: argument order of the definition */
+#endif
 float *vec3_normalize(float *out, float *a);
 float *mat3_identity(float *m);
 float *mat3_from_euler(float *out, float *m, float *v);

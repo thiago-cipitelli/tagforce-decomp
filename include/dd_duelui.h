@@ -50,7 +50,7 @@ void listw_set_cursor(DdList *l, int c);
 int dd_mon_on_start(void *self, void *a, void *b);
 int dd_mon_on_event(void *self, int ev, void *a, void *b);
 int dd_mon_on_frame(void *self, void *a, void *b, void *c, void *d);
-int dd_mon_bone(void *self, void *a, void *b, void *c, int d);
+void dd_mon_bone(void *self, void *a, void *b, int c, float d);
 int dd_fx2_start(void *self, void *a, void *b);
 int dd_fx2_stop(void *self, int ev, void *a, void *b);
 int dd_fx2_set_param(void *self, void *a, void *b, void *c, void *d);

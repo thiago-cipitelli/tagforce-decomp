@@ -122,8 +122,18 @@ unsigned int *dl_depth_mask(unsigned int *list, int mask);
 unsigned int *dl_light_mode(unsigned int *list, int mode);
 unsigned int *dl_material_colors(unsigned int *list, unsigned int emissive, unsigned int ambient, unsigned int diffuse, unsigned int specular);
 unsigned int *dl_color_material(unsigned int *list, int comps);
+#ifdef __MWERKS__
 unsigned int *dl_tex_offset(unsigned int *list, float u, float v);
+#else
+unsigned int *dl_tex_offset(float u, float v, unsigned int *list);
+#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list) /* port: argument order of the definition */
+#endif
+#ifdef __MWERKS__
 unsigned int *dl_tex_scale(unsigned int *list, float u, float v); /* args in a0, f12, f13 either way */
+#else
+unsigned int *dl_tex_scale(float u, float v, unsigned int *list);
+#define dl_tex_scale(list, u, v) dl_tex_scale(u, v, list) /* port: argument order of the definition */
+#endif
 unsigned int *dl_tex_wrap(unsigned int *list, int u, int v);
 Mat4 *mat4_transpose(Mat4 *out, Mat4 *m);
 Mat4 *mat4_copy(Mat4 *out, Mat4 *m);

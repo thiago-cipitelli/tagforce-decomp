@@ -68,7 +68,12 @@ Vec4 ehf_ptcl_x = { 1.0f, 0.0f, 0.0f, 0.0f }; /* fallback cone axis (particle3.c
 GfxState *gfx_get_state(void);
 void vec3_add(float *out, float *a, float *b);
 void vec3_mul(float *out, float *a, float *b);
+#ifdef __MWERKS__
 void vec3_lerp(float t, float *out, float *a, float *b);
+#else
+void vec3_lerp(float *out, float *a, float *b, float t);
+#define vec3_lerp(t, out, a, b) vec3_lerp(out, a, b, t) /* port: argument order of the definition */
+#endif
 float sinf(float x);
 float cosf(float x);
 

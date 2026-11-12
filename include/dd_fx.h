@@ -160,8 +160,15 @@ typedef struct DdRingFx {
     int flash_end;                     /* +0x4940 0-30 */
 } DdRingFx;
 
+#ifdef __MWERKS__
 void dd_cam_begin(float fov, float aspect, float znear, float zfar, int layer, int cx, int cy,
                    ScePspFVector3 *eye, ScePspFVector3 *at, ScePspFVector3 *up); /* 3D camera begin */
+#else
+void dd_cam_begin(int layer, int cx, int cy, float fov, float aspect, float znear, float zfar,
+                  ScePspFVector3 *eye, ScePspFVector3 *at, ScePspFVector3 *up);
+#define dd_cam_begin(fov, aspect, znear, zfar, layer, cx, cy, eye, at, up) \
+    dd_cam_begin(layer, cx, cy, fov, aspect, znear, zfar, eye, at, up) /* port: argument order of the definition */
+#endif
 void dd_cam_end(int layer);                               /* 3D camera end */
 void dd_mtx_billboard_view(ScePspFMatrix4 *m);                      /* billboard matrix of the camera */
 float dd_ease_cos(int t, int n, int k);                   /* ease in */

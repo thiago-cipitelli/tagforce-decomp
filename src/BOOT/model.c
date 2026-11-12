@@ -103,8 +103,18 @@ TgmtCore *tgm_relocate(void *p);
 int is_gzip(const void *p);
 int gzip_decompress(void *dst, int dst_len, const void *src, int *out_size);
 void mat4_mul(Mat4 *out, Mat4 *a, Mat4 *b);
+#ifdef __MWERKS__
 void anim_eval(TgmtCore *a, TmsCore *t, Mat4 *bones, float *dt, float frame);
+#else
+void anim_eval(TgmtCore *a, TmsCore *t, Mat4 *bones, float frame, float *dt);
+#define anim_eval(a, t, bones, dt, frame) anim_eval(a, t, bones, frame, dt) /* port: argument order of the definition */
+#endif
+#ifdef __MWERKS__
 void anim_blend(TgmtCore *a, TmsCore *t, Mat4 *bones, TgmtCore *prev, float *dt, float frame, float prev_frame, float w);
+#else
+void anim_blend(TgmtCore *a, TmsCore *t, Mat4 *bones, float frame, TgmtCore *prev, float prev_frame, float w, float *dt);
+#define anim_blend(a, t, bones, prev, dt, frame, prev_frame, w) anim_blend(a, t, bones, frame, prev, prev_frame, w, dt) /* port: argument order of the definition */
+#endif
 void tgma_apply(TgmaCore *anim, TmsCore *model, void *mats, void *uv, float t);
 void mtx_mark_cur_dirty(void);
 unsigned int *dl_enable(unsigned int *list, int state);

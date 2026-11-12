@@ -22,7 +22,12 @@ unsigned int *dl_color_material(unsigned int *list, int comps);
 unsigned int *dl_specular_power(float p, unsigned int *list);
 unsigned int *dl_clear_color(unsigned int *list, unsigned int color);
 unsigned int *dl_clear_depth(unsigned int *list, unsigned int z);
+#ifdef __MWERKS__
 unsigned int *dl_tex_offset(unsigned int *list, float u, float v);
+#else
+unsigned int *dl_tex_offset(float u, float v, unsigned int *list);
+#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list) /* port: argument order of the definition */
+#endif
 unsigned int *dl_tex_scale(float u, float v, unsigned int *list);
 unsigned int *dl_bone_matrix(unsigned int *list, int index, float *m);
 Mat4 *mat4_identity(Mat4 *out);

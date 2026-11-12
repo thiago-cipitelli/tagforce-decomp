@@ -22,8 +22,18 @@ void *dl_color(void *list, unsigned int color);
 void *dl_blend_func(void *list, int op, int src, int dst, unsigned int fixa, unsigned int fixb);
 void *dl_alpha_test(void *list, int func, int ref, int mask);
 void *dl_tex_func(void *list, int func, int comp);
+#ifdef __MWERKS__
 void *dl_tex_offset(void *list, float u, float v);
+#else
+void *dl_tex_offset(float u, float v, void *list);
+#define dl_tex_offset(list, u, v) dl_tex_offset(u, v, list) /* port: argument order of the definition */
+#endif
+#ifdef __MWERKS__
 void *dl_tex_scale(void *list, float u, float v);
+#else
+void *dl_tex_scale(float u, float v, void *list);
+#define dl_tex_scale(list, u, v) dl_tex_scale(u, v, list) /* port: argument order of the definition */
+#endif
 void *dl_tex_mode(void *list, int mode, int a, int b, int c);
 void *dl_tex_wrap(void *list, int u, int v);
 void *dl_set_tex_filter(void *list, int min, int mag);

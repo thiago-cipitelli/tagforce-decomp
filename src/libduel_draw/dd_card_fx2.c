@@ -68,7 +68,12 @@ void dd_cobj_sync_extra(int a);
 void dd_cobj_gather(int a, int b);
 void func_08820938(DdTask *t, void *arg);
 void func_08820988(float *out, float *m);
+#ifdef __MWERKS__
 void dd_fx_shatter_start_t(int id, float *pos, float *dir, int a, int b, float s, float zone_kind);
+#else
+void dd_fx_shatter_start_t(float s, float zone_kind, int id, float *pos, float *dir, int a, int b);
+#define dd_fx_shatter_start_t(id, pos, dir, a, b, s, zone_kind) dd_fx_shatter_start_t(s, zone_kind, id, pos, dir, a, b) /* port: argument order of the definition */
+#endif
 int dd_fx_twist_start_t(int id, float *pos, float s, float zone_kind, void *dir, void (*done)(DdTask *), DdTask *t);
 void dd_fx_orb_start(void *a, void *b, void (*cb)(DdCard *c), void *arg);
 int dv_slot_link_1a0c(int player, int zone);

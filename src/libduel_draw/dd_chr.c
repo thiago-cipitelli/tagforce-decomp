@@ -30,7 +30,12 @@ float keyframe_eval(void *tr, float t);
 unsigned int *gfx_get_state(void);
 int dl_get_layer(void);
 void zone_view_save(int a);
+#ifdef __MWERKS__
 void dd_camera_from_anim(float t, void *anim);
+#else
+void dd_camera_from_anim(void *anim, float t);
+#define dd_camera_from_anim(t, anim) dd_camera_from_anim(anim, t) /* port: argument order of the definition */
+#endif
 void dd_fx_set_arg4(int on);
 void dd_fx_lines_set(int on);
 int dd_lp_busy(void);

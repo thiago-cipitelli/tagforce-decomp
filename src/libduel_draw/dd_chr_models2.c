@@ -36,7 +36,7 @@ int chr_generic_event(void *self, int ev, void *a, void *b);
 int chr_generic_update(void *self, void *a, void *b, void *c, void *d);
 int chr_generic_bone_id(void *self, int i);
 int chr_generic_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
-int chr_generic_motion(void *self, void *a, void *b, void *c, int d);
+void chr_generic_motion(void *self, void *a, void *b, int c, float d);
 
 void chr_generic_setup(ChrVt *vt)
 {
@@ -632,9 +632,9 @@ int chr_generic_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     return 1;
 }
 
-int chr_generic_motion(void *self, void *a, void *b, void *c, int d)
+void chr_generic_motion(void *self, void *a, void *b, int c, float d)
 {
-    return dd_mon_bone(self, a, b, c, d);
+    dd_mon_bone(self, a, b, c, d);
 }
 
 /* character 38 */
@@ -643,7 +643,7 @@ int chr38_event(void *self, int ev, void *a, void *b);
 int chr38_update(void *self, void *a, void *b, void *c, void *d);
 int chr38_bone_id(void *self, int i);
 int chr38_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
-int chr38_motion(void *self, void *a, void *b, void *c, int d);
+void chr38_motion(void *self, void *a, void *b, int c, float d);
 
 void chr38_setup(ChrVt *vt)
 {
@@ -730,9 +730,9 @@ int chr38_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     return 1;
 }
 
-int chr38_motion(void *self, void *a, void *b, void *c, int d)
+void chr38_motion(void *self, void *a, void *b, int c, float d)
 {
-    return dd_mon_bone(self, a, b, c, d);
+    dd_mon_bone(self, a, b, c, d);
 }
 
 /* character 19 */
@@ -741,7 +741,7 @@ int chr19_event(void *self, int ev, void *a, void *b);
 int chr19_update(void *self, void *a, void *b, void *c, void *d);
 int chr19_bone_id(void *self, int i);
 int chr19_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id);
-int chr19_motion(void *self, void *a, void *b, void *c, int d);
+void chr19_motion(void *self, void *a, void *b, int c, float d);
 
 void chr19_setup(ChrVt *vt)
 {
@@ -828,7 +828,7 @@ int chr19_bone_rest(void *self, ChrVec4 *pos, ChrVec4 *rot, int id)
     return 1;
 }
 
-int chr19_motion(void *self, void *a, void *b, void *c, int d)
+void chr19_motion(void *self, void *a, void *b, int c, float d)
 {
-    return dd_mon_bone(self, a, b, c, d);
+    dd_mon_bone(self, a, b, c, d);
 }

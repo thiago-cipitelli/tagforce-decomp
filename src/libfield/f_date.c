@@ -7,7 +7,12 @@
 #include "libfield.h"
 
 FieldStory *fld_story_get(void);
+#ifdef __MWERKS__
 unsigned int fld_color_lerp(unsigned int a, unsigned int b, float t);
+#else
+unsigned int fld_color_lerp(float t, unsigned int a, unsigned int b);
+#define fld_color_lerp(a, b, t) fld_color_lerp(t, a, b) /* port: argument order of the definition */
+#endif
 void *fld_dl_clear(void *list, short z, unsigned int color);
 int font_measure_text(unsigned short *text);
 void font_set_flag8000(int on);

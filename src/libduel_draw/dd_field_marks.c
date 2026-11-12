@@ -26,7 +26,12 @@ int dv_zone_usable(int side, unsigned int z);
 void dv_slot_markers(int side, int z, unsigned short (*out)[11]);
 void func_08820A8C(float *out, float *rot, int back);
 int dd_fx_mark_start(float s, int kind, float *pos, float *rot, int dur, void *term, void *arg);
+#ifdef __MWERKS__
 int dd_fx_mark_start_layer(float s, int layer, int kind, float *pos, float *rot, int dur, void *term, void *arg);
+#else
+int dd_fx_mark_start_layer(int layer, float s, int kind, float *pos, float *rot, int dur, void *term, void *arg);
+#define dd_fx_mark_start_layer(s, layer, kind, pos, rot, dur, term, arg) dd_fx_mark_start_layer(layer, s, kind, pos, rot, dur, term, arg) /* port: argument order of the definition */
+#endif
 int func_08822E30(int player, int zone, unsigned char kind, int layer);
 void func_08823068(int h);
 
