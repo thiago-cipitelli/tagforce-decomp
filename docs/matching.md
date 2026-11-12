@@ -1902,3 +1902,38 @@ Rascunhos: `shop_result_input` 344 -> 2, `st_chr_update` 145 -> 15, `shop_item_k
   ordens de declaração/atribuição × tipos), `shop_result_input` (2: `b; nop` depois do `se_play` do passo 1, o nosso
   preenche com o `move v0,zero` do alvo), `op_bgm` (4: o modo sem limpeza pós-likely aparece com um `return` artificial;
   nenhum plausível achado).
+## Rodada 23 (`bootQ`): BOOT, reescritas do asm
+
+Bateram `spline_init` (estava em `matching_skip`), `spline_init_ring`, `ehf_cmd_prim_ribbon` e `menu_draw`;
+`cardinfo_draw` 588 -> 89, `model_outline_begin` 306 -> 40, `ehf_cmd_keys` 102 -> 51, `menu_update` 415 -> 282.
+- **Endereço que o original recalcula em vez de compartilhar** (`addu v0,base,i16; addiu a2,v0,512` depois de já
+  ter usado `base + i16`, ou dois ponteiros de indução com o mesmo início): escrever um dos usos em deslocamento de
+  bytes, `(Vec4 *)((char *)w + (i << 4) + 512)` ou `(Vec4 *)((char *)w + (i << 4))`. A árvore diferente impede o
+  CSE e a indução única (`spline_init` 56 -> 0, `spline_init_ring`).
+- **Divisões calculadas antes da primeira chamada mas afundadas pelo mwcc até o uso**: o mwcc propaga para o uso um
+  local atribuído uma vez só; reaproveitar o mesmo local em outro laço (`cur`/`next` atribuídos também no laço de
+  volta) mantém o cálculo no lugar do fonte.
+- **Modelo `{0, 0, 0, 1}` do qual o original copia só a palavra que não é sobrescrita** (`lw v0,modelo+12; sw`
+  isolado, e as outras palavras vêm dos campos): o mwcc 219 copia o modelo inteiro com `Vec4 t = {v[0], v[1],
+  v[2], 1.0f}`. Reproduz: `t.x = v[0]; t.y = v[1]; t.z = v[2]; *(int *)&t.w = *(int *)&modelo.w;` com o modelo
+  global com nome (`ehf_cmd_prim_ribbon`).
+- **Locais de uma função inline ficam abaixo dos locais do chamador na pilha**: os `size` de `TOON_ALLOC` (macro
+  com `&size`) ficavam acima dos modelos dos vértices; como `static inline` a alocação da sublista põe os
+  tamanhos no fim do quadro, como no original (`model_outline_begin`). Vale para qualquer macro com local de
+  endereço tomado cuja posição na pilha não bate.
+- **`b X; ... X: b fim; nop` (desvio para desvio só num ramo)**: ternário no lugar de `if/else` com a mesma
+  atribuição (`*dl = f ? f(...) : g(...);`): o `sw` comum vai para o delay slot e o desvio fica apontando para o
+  `b` seguinte (`menu_draw`).
+- **Saída antecipada de tela `*_draw` com `beql K -> epílogo; beqz -> epílogo; nop`**: `switch (estado) { case 0:
+  case 4: return; }` liga o modo sem limpeza pós-likely sem inverter os testes (`cardinfo_draw`, como nas telas da
+  rodada 19).
+- **Teste de campo depois de outro `return`**: `if ((d = &w->def)->visible == 0) return;` põe o `addiu d` no delay
+  slot do teste, como no original.
+- **Temporário de expressão nova em vez de reaproveitar a variável**: a contagem do bloco de centralização em
+  `menu_draw` era outro local (`int m`) e não o `n` da lista (o `n` derramado mudava de posição na pilha).
+- Bugs de lógica achados nos rascunhos: `menu_update` lia `pad->b.dir_rep`/`trig` onde o original lê `trig`/`rep`;
+  `menu_draw` não guardava o retorno de `menu_draw_selected` (que devolve a lista: `void *` em `menu.h`);
+  `cardinfo_draw` tinha `gfx_get_state()[1]`/`[0]` trocados entre as duas chamadas.
+- Sem forma: `menu_update` (o modo sem limpeza pós-likely numa função que devolve valor, `li v0,-1; b; nop`),
+  `snd_group_cmd`/`netsync_transfer` (ordem dos operandos de `bne`/`addu`; testadas a ordem dos operandos, casts,
+  `volatile`, variável própria para o deslocamento).

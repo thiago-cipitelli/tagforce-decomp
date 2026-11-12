@@ -1,6 +1,4 @@
 // @range 0x088390C4-0x08839A8C
-// @asm 0x088390C4-0x08839364
-// @asm 0x08839558-0x08839868
 // @data 0x088EE010-0x088EE050
 /* Cubic splines through key positions: the second-derivative terms of a natural spline (a
    tridiagonal system solved forward into a work buffer and back into `d`), open or cyclic over a
@@ -15,8 +13,7 @@ typedef struct Vec4 {
 
 extern Vec4 spline_work[64];          /* 0x08905110: gamma[32], then delta[32] */
 
-/* Diagonal and numerator of the tridiagonal system (one pair per solver; both solvers are in asm,
-   so the initializers live here instead of as local templates). */
+/* Diagonal and numerator of the tridiagonal system (one pair per solver), copied into the loop locals. */
 Vec4 spline_four = { 4.0f, 4.0f, 4.0f, 0.0f };
 Vec4 spline_one = { 1.0f, 1.0f, 1.0f, 0.0f };
 Vec4 spline_ring_four = { 4.0f, 4.0f, 4.0f, 0.0f };
@@ -36,8 +33,8 @@ Vec4 *vec3_lerp_w(Vec4 *out, Vec4 *a, Vec4 *b, float t);
 #define vec3_lerp_w(t, out, a, b) vec3_lerp_w(out, a, b, t) /* port: argument order of the definition */
 #endif
 
-#ifdef NON_MATCHING /* register allocation of the two induction variables over spline_work differs */
-/* Second-derivative terms `d` of the spline through the `n` keys `p`. Returns n (0 when n < 0). */
+/* Second-derivative terms `d` of the spline through the `n` keys `p`. Returns n (0 when n < 0). The
+   byte-offset forms of the work-buffer addresses give the original's separate induction pointers. */
 int spline_init(Vec4 *d, Vec4 *p, int n)
 {
     Vec4 v;
@@ -77,92 +74,18 @@ int spline_init(Vec4 *d, Vec4 *p, int n)
         vec3_sub_w(&v, &p[i + 1], &v);
         vec3_add_w(&v, &v, &p[i - 1]);
         vec3_scale_w(&v, &v, 3.0f);
-        vec3_sub_w(&v, &v, &(w + 32)[i - 1]);
-        vec3_mul_w(&w[i + 32], &v, &w[i]);
+        vec3_sub_w(&v, &v, (Vec4 *)((char *)w + ((i - 1) << 4) + 512));
+        vec3_mul_w(&w[i] + 32, &v, (Vec4 *)((char *)w + (i << 4)));
     }
     vec4_zero(&d[n - 1]);
     d[n - 1].w = 1.0f;
     for (i = n - 2; i >= 0; i--) {
         vec3_mul_w(&b, &w[i], &d[i + 1]);
-        vec3_sub_w(&d[i], &w[i + 32], &b);
+        vec3_sub_w(&d[i], (Vec4 *)((char *)w + (i << 4) + 512), &b);
         d[i].w = 1.0f;
     }
     return n;
 }
-#endif
-
-/* Point of the spline at key index `t` (clamped to the last segment). */
-
-
-#ifdef NON_MATCHING /* 135 palavras: o original calcula os três % (cur, next, prev) antes da primeira chamada e guarda prev*16/cur*16 em $s; o mwcc afunda as divisões até o uso */
-/* spline_init over `n` keys of a ring of `ring`, starting at key `start`. */
-int spline_init_ring(Vec4 *d, Vec4 *p, int start, int ring, int n)
-{
-    Vec4 v;
-    Vec4 t;
-    Vec4 b;
-    Vec4 *w = spline_work;
-    int i;
-    int k;
-    int prev;
-    int cur;
-
-    start %= ring;
-    if (n < 3) {
-        switch (n) {
-        case 1:
-            vec3_zero(&d[start]);
-            d[start].w = 1.0f;
-            return 1;
-        case 2:
-            k = (start + 1) % ring;
-            vec3_zero(&d[start]);
-            vec3_zero(&d[k]);
-            d[start].w = 1.0f;
-            d[k].w = 1.0f;
-            return 2;
-        default:
-            return 0;
-        }
-    }
-    {
-        Vec4 *ws = &w[start];
-
-        vec4_zero(ws);
-        vec4_zero(ws + 32);
-    }
-    for (i = 1; i < n - 1; i++) {
-        Vec4 four;
-        Vec4 one;
-        int next;
-
-        k = start + i;
-        cur = k % ring;
-        next = (k + 1) % ring;
-        prev = (k - 1) % ring;
-        four = spline_ring_four;
-        vec3_sub_w(&t, &four, &w[prev]);
-        one = spline_ring_one;
-        vec3_div_w(&w[cur], &one, &t);
-        vec3_scale_w(&v, &p[cur], 2.0f);
-        vec3_sub_w(&v, &p[next], &v);
-        vec3_add_w(&v, &v, &p[prev]);
-        vec3_scale_w(&v, &v, 3.0f);
-        vec3_sub_w(&v, &v, &w[prev] + 32);
-        vec3_mul_w(&w[cur] + 32, &v, &w[cur]);
-    }
-    k = (n + start + ring - 1) % ring;
-    vec4_zero(&d[k]);
-    d[k].w = 1.0f;
-    for (i = n - 2; i >= 0; i--) {
-        k = (start + i) % ring;
-        vec3_mul_w(&b, &w[k], &d[(start + i + 1) % ring]);
-        vec3_sub_w(&d[k], &w[k] + 32, &b);
-        d[k].w = 1.0f;
-    }
-    return n;
-}
-#endif
 
 /* Point of the spline at key index `t` (clamped to the last segment). */
 void spline_eval(float t, Vec4 *out, Vec4 *p, Vec4 *d, int n)
@@ -207,6 +130,81 @@ void spline_eval(float t, Vec4 *out, Vec4 *p, Vec4 *d, int n)
         vec3_add_w(out, out, &a);
         out->w = 1.0f;
     }
+}
+
+/* spline_init over `n` keys of a ring of `ring`, starting at key `start`. The byte-offset forms of the
+   work-buffer addresses keep mwcc from sharing w + i*16 between the calls, as the original does. */
+int spline_init_ring(Vec4 *d, Vec4 *p, int start, int ring, int n)
+{
+    Vec4 v;
+    Vec4 t;
+    Vec4 b;
+    Vec4 *w = spline_work;
+    int i;
+    int k;
+    int prev;
+    int cur;
+    int next;
+
+    start %= ring;
+    if (n < 3) {
+        switch (n) {
+        case 1:
+            vec3_zero(&d[start]);
+            d[start].w = 1.0f;
+            return 1;
+        case 2:
+            k = (start + 1) % ring;
+            vec3_zero(&d[start]);
+            vec3_zero(&d[k]);
+            d[start].w = 1.0f;
+            d[k].w = 1.0f;
+            return 2;
+        default:
+            return 0;
+        }
+    }
+    {
+        Vec4 *ws = &w[start];
+
+        vec4_zero(ws);
+        vec4_zero(ws + 32);
+    }
+    for (i = 1; i < n - 1; i++) {
+        k = start + i;
+        cur = k % ring;
+        next = (k + 1) % ring;
+        prev = (k - 1) % ring;
+        {
+            Vec4 four;
+
+            four = spline_ring_four;
+            vec3_sub_w(&t, &four, &w[prev]);
+        }
+        {
+            Vec4 one;
+
+            one = spline_ring_one;
+            vec3_div_w(&w[cur], &one, &t);
+        }
+        vec3_scale_w(&v, &p[cur], 2.0f);
+        vec3_sub_w(&v, &p[next], &v);
+        vec3_add_w(&v, &v, &p[prev]);
+        vec3_scale_w(&v, &v, 3.0f);
+        vec3_sub_w(&v, &v, (Vec4 *)((char *)w + (prev << 4) + 512));
+        vec3_mul_w(&w[cur] + 32, &v, (Vec4 *)((char *)w + (cur << 4)));
+    }
+    k = (start + ring + n - 1) % ring;
+    vec4_zero(&d[k]);
+    d[k].w = 1.0f;
+    for (i = n - 2; i >= 0; i--) {
+        cur = (start + i) % ring;
+        next = (start + i + 1) % ring;
+        vec3_mul_w(&b, &w[cur], &d[next]);
+        vec3_sub_w(&d[cur], (Vec4 *)((char *)w + (cur << 4) + 512), &b);
+        d[cur].w = 1.0f;
+    }
+    return n;
 }
 
 /* spline_eval over a ring of `ring` keys starting at `start`. */

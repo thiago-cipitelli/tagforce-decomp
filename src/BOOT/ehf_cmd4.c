@@ -409,15 +409,16 @@ unsigned int ehf_axis_vtx[0x90 / 4] = {
     0x00000000, 0x00000000, 0x3F800000, 0x3F000000, 0xBFDDB3D7, 0x00000000,
 };
 
-#ifdef NON_MATCHING /* lógica conferida; forma com a zeragem byte a byte dos Vec4 temporários (EHF_KEY_VEC) e as posições de pilha do original; 102 palavras: registradores e o load antecipado de k->frame no laço */
+#ifdef NON_MATCHING /* lógica conferida; 51 palavras, só registradores $t/$v (o original dá t0 a k0 e v1 a n; testadas ordem das declarações, ordem f/n, reaproveitar k0 no laço e na cauda, laço por índice, função inline no lugar da macro). Rodada 23: k1->frame e k->frame lidos em locais antes das zeragens (o original não relê depois dos sb), cópia por *(Vec4 *)&kv_ (sem ela o mwcc propaga os registradores para o destino), temporários da zeragem no escopo da função: 102 -> 51 */
 /* 0x10312: *arg0 interpolated between the keys (frame, vector) arg1, arg6, ... at the node frame. */
-/* a Vec4 built from a key: zeroed byte by byte, filled, then copied (as the original) */
+/* a Vec4 built from a key: zeroed byte by byte, filled, then copied (as the original); the zeroing
+   temporaries kz_/kn_ are locals of the caller */
 #define EHF_KEY_VEC(dst, k)                                                                   \
     {                                                                                         \
         Vec4 kv_;                                                                             \
-        unsigned char *kz_ = (unsigned char *)&kv_;                                           \
-        int kn_ = sizeof(Vec4);                                                               \
                                                                                               \
+        kn_ = sizeof(Vec4);                                                                   \
+        kz_ = (unsigned char *)&kv_;                                                          \
         if (kz_)                                                                              \
             do {                                                                              \
                 *kz_++ = 0;                                                                   \
@@ -426,13 +427,15 @@ unsigned int ehf_axis_vtx[0x90 / 4] = {
         kv_.y = (k)->v[1];                                                                    \
         kv_.z = (k)->v[2];                                                                    \
         kv_.w = (k)->v[3];                                                                    \
-        dst = kv_;                                                                            \
+        dst = *(Vec4 *)&kv_;                                                                  \
     }
 
 int ehf_cmd_keys(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
 {
     Vec4 a0;
     Vec4 a1;
+    unsigned char *kz_;
+    int kn_;
     Vec4 *out = cmd->a.p[0];
     EhfKey *k0 = cmd->a.p[1];
     int f;
@@ -449,15 +452,17 @@ int ehf_cmd_keys(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
         EHF_KEY_VEC(*out, k0);
         return 0;
     }
-    for (i = 1, p = &cmd->a.p[5]; i < n; i++, p += 5) {
+    for (p = &cmd->a.p[5], i = 1; i < n; i++, p += 5) {
         EhfKey *k1 = p[1];
+        int f1 = k1->frame;
         EhfKey *k = p[-4];
 
-        if (f < k1->frame) {
+        if (f < f1) {
+            int f0 = k->frame;
 
             EHF_KEY_VEC(a0, k);
             EHF_KEY_VEC(a1, k1);
-            vec4_lerp((float)(f - k->frame) / (float)(k1->frame - k->frame), out, &a0, &a1);
+            vec4_lerp((float)(f - f0) / (float)(f1 - f0), out, &a0, &a1);
             return 0;
         }
     }
