@@ -1118,7 +1118,7 @@ int duel_08871674(DuelAct *a)
 }
 #endif
 
-int duel_088717B4(DuelAct *a)
+int duel_088717B4(DuelAct *a, int b)
 {
     if (duel_0886CB44(a->player, 1, a->uid, 0, 1)) {
         return 2;
@@ -1134,7 +1134,7 @@ int duel_08871818(DuelAct *a)
     return 0;
 }
 
-int duel_08871868(DuelAct *a)
+int duel_08871868(DuelAct *a, int b)
 {
     if (duel_0884E948(a, 1 - a->player) == 0) {
         return 0;
@@ -1385,7 +1385,7 @@ int duel_0887217C(void)
     return 0;
 }
 
-int duel_0887221C(DuelAct *a)
+int duel_0887221C(DuelAct *a, int b)
 {
     int n;
     int p;

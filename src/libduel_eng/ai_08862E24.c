@@ -103,7 +103,7 @@ int duel_08863060(DuelAct *a, int b)
     return -1;
 }
 
-int duel_088630A4(DuelAct *a)
+int duel_088630A4(DuelAct *a, int b)
 {
     duel_088D1AC8(a->player, a->zone);
     return 1;

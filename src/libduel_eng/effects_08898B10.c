@@ -52,7 +52,12 @@ int duel_088A9008(DuelAct*, int, unsigned int*);
 unsigned int duel_act_target(DuelAct *a, int i);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088CC284(unsigned int p, int z, int n);
+#ifdef __MWERKS__
 int duel_0887DB24(DuelAct *a);
+#else
+int duel_0887DB24(DuelAct *a, int b);
+#define duel_0887DB24(a) duel_0887DB24(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 void duel_088C625C(unsigned int p, int a, int b);
 int duel_d_count_monsters(unsigned int p);
 void duel_088C7BA4(void);
@@ -117,7 +122,7 @@ int duel_08898BA0(DuelAct *a)
     return 0;
 }
 
-int duel_08898C40(DuelAct *a)
+int duel_08898C40(DuelAct *a, int b)
 {
     if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
         return 0;
@@ -402,7 +407,7 @@ int duel_088997E8(DuelAct *a, int b)
     return 0;
 }
 
-int duel_088998D8(DuelAct *a)
+int duel_088998D8(DuelAct *a, int b)
 {
     int g;
 
@@ -462,7 +467,7 @@ int duel_088999B8(DuelAct *a)
     return 0;
 }
 
-int duel_08899BF0(DuelAct *a)
+int duel_08899BF0(DuelAct *a, int b)
 {
     int g;
 

@@ -531,7 +531,7 @@ int duel_0886DD78(DuelAct *a)
     return duel.players[p & 1].field[z].faceup != 0;
 }
 
-int duel_0886DE0C(DuelAct *a)
+int duel_0886DE0C(DuelAct *a, int b)
 {
     if (duel_phase_ok2(a->player) == 0) {
         return 0;

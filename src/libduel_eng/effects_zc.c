@@ -5,7 +5,12 @@
 extern int duel_step;
 extern unsigned short duel_w_0891968C;
 
+#ifdef __MWERKS__
 int duel_0887DB24(DuelAct *a);
+#else
+int duel_0887DB24(DuelAct *a, int b);
+#define duel_0887DB24(a) duel_0887DB24(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 void duel_088C7DD4(unsigned int, unsigned int, unsigned int);
 void duel_08832880(unsigned int p, int a, int b);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);

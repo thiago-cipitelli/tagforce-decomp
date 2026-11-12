@@ -339,7 +339,7 @@ int duel_08896FCC(DuelAct *a)
     return 0;
 }
 
-int duel_08897160(DuelAct *a)
+int duel_08897160(DuelAct *a, int b)
 {
     duel_088C77D4(1 - a->player, a->id, 0x11, 0);
     return 0;

@@ -20,7 +20,7 @@ void duel_088CA384(unsigned int p, int id, int a);
 void duel_08832894(unsigned int p, unsigned short id);
 void duel_08832950(unsigned int, int);
 int duel_0886CE38(void);
-void duel_088998D8(DuelAct *a, int b);
+int duel_088998D8(DuelAct *a, int b);
 void duel_08832624(unsigned int, unsigned int, int, int);
 void duel_088824E4(void);
 int duel_088C5E70(unsigned int, int);
@@ -28,8 +28,12 @@ void duel_088C78E0(unsigned int p);
 unsigned int duel_act_target2(DuelAct*, int);
 int duel_grave_find_uid(unsigned int p, unsigned int uid);
 void duel_088CA428(unsigned int p, unsigned int uid, int a);
+#ifdef __MWERKS__
 int duel_0887DB24(void);
-void duel_08883FBC(DuelAct *a, int b);
+#else
+int duel_0887DB24(DuelAct *a, int b);
+#endif
+int duel_08883FBC(DuelAct *a, int b);
 void duel_088C7DD4(unsigned int, unsigned int, unsigned int);
 void duel_088C625C(unsigned int p, int a, int b);
 
@@ -210,7 +214,11 @@ int duel_eff_f8438(DuelAct *a)
 {
     switch (duel_step) {
     case 0x80:
+#ifdef __MWERKS__
         if (duel_0887DB24()) {
+#else
+        if (duel_0887DB24(a, 0)) { /* port: a0 still holds a; b ignored by the definition */
+#endif
             return 0x7F;
         }
         break;

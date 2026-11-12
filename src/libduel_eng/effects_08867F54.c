@@ -84,7 +84,7 @@ int duel_08867F54(DuelAct *a, DuelAct *b)
 }
 
 /* Draws 2 cards (for 0x18F8: the counter of its zone, at most 0x20). */
-int duel_08868038(DuelAct *a)
+int duel_08868038(DuelAct *a, int b)
 {
     int n;
     unsigned int i;

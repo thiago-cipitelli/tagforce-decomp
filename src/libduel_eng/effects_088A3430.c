@@ -21,7 +21,12 @@ void duel_0884ACD8(unsigned int p, int msg);
 void duel_08835978(int (*fn)(int id));
 int duel_08835AC0(void);
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
+#ifdef __MWERKS__
 int duel_0887DB24(DuelAct *a);
+#else
+int duel_0887DB24(DuelAct *a, int b);
+#define duel_0887DB24(a) duel_0887DB24(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 void duel_088C625C(unsigned int p, int a, int b);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 int duel_088998D8(DuelAct *a, int b);

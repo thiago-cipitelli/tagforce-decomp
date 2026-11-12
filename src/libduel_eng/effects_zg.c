@@ -29,10 +29,19 @@ int duel_field_level(unsigned int p, int z);
 void duel_088CB914(unsigned int p, int z);
 void duel_088D184C(DuelAct *a, unsigned int mask, int b);
 int duel_0886CE38();
+#ifdef __MWERKS__
 void duel_0887DC94(DuelAct *a);
+#else
+int duel_0887DC94(DuelAct *a, int b);
+#define duel_0887DC94(a) duel_0887DC94(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 int duel_slot_has_effect(unsigned int p, int z, int id);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
+#ifdef __MWERKS__
 int duel_088807F0(DuelAct *a, DuelAct *b);
+#else
+int duel_088807F0(DuelAct *a, int b); /* the original passes a DuelAct * as b, which the definition ignores */
+#endif
 int duel_08892344(DuelAct *a, DuelAct *b);
 int duel_088A9008(DuelAct*, int, unsigned int*);
 unsigned int duel_act_target(DuelAct *a, int i);
@@ -43,7 +52,12 @@ int duel_0888B7A8(DuelAct *a);
 void duel_088C9D24(DuelAct *a, unsigned int p, int z);
 void duel_088CBAA4(unsigned int, int, int);
 void duel_088D147C(DuelAct *a, unsigned int p, int z);
+#ifdef __MWERKS__
 int duel_0887DDD0(DuelAct *a);
+#else
+int duel_0887DDD0(DuelAct *a, int b);
+#define duel_0887DDD0(a) duel_0887DDD0(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 int duel_0887DDB0(DuelAct *a, int b);
 int duel_0887F728(DuelAct *a, int b);
 void duel_088C7BA4(void);

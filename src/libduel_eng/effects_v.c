@@ -32,7 +32,12 @@ void duel_088359E8(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p,
 int duel_088A9008(DuelAct*, int, unsigned int*);
 int duel_bit_count(unsigned int m);
 int duel_count_active(int id);
+#ifdef __MWERKS__
 void duel_0887DC94(DuelAct *a);
+#else
+int duel_0887DC94(DuelAct *a, int b);
+#define duel_0887DC94(a) duel_0887DC94(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 unsigned int duel_act_target2(DuelAct*, int);
 unsigned int duel_card_locate(unsigned int);
 int duel_088DFE24(int, unsigned int);
@@ -60,7 +65,7 @@ int duel_08807B38(int id, int a, int b);
 void duel_0884AD18(int msg);
 void duel_08832624(unsigned int, unsigned int, int, int);
 
-int duel_08885B70(DuelAct *a)
+int duel_08885B70(DuelAct *a, int b)
 {
     int p;
     int z;
@@ -176,7 +181,7 @@ int duel_08885F24(DuelAct *a)
     return 0;
 }
 
-int duel_08885F68(DuelAct *a)
+int duel_08885F68(DuelAct *a, int b)
 {
     int i;
     unsigned int z;

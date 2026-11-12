@@ -1360,7 +1360,7 @@ int duel_0880F3B4(unsigned int p, int *pos)
 }
 
 /* Conditions of the computer player for activating cards (DuelAct of the card). */
-int duel_0880F8C4(DuelAct *a)
+int duel_0880F8C4(DuelAct *a, int b)
 {
     return duel_turn_player != a->player && duel_phase == 5;
 }

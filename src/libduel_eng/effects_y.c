@@ -60,7 +60,12 @@ void duel_088CB2AC(DuelAct *a, unsigned int p, DuelCard *c);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
 void duel_088C7810(unsigned int, unsigned int);
 void duel_088C7B90(int a);
+#ifdef __MWERKS__
 int duel_0887DB24(DuelAct *a);
+#else
+int duel_0887DB24(DuelAct *a, int b);
+#define duel_0887DB24(a) duel_0887DB24(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 int duel_df664(unsigned int p);
 int duel_088BFFD8();
 void duel_0884AD18(int msg);
@@ -368,7 +373,7 @@ int duel_0888A52C(DuelAct *a, int b)
 #ifdef NON_MATCHING /* desvio do caso 0x137E para o corpo de 0x14FD; o mwcc gera xor v0,v0,zero antes do sltiu e põe o sll
                       no delay slot do b (original: sll antes do b, nop); ternário, if invertido, !=, Duel.phase
                       testados; 5 palavras */
-int duel_0888A88C(DuelAct *a)
+int duel_0888A88C(DuelAct *a, int b)
 {
     int n;
 

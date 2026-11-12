@@ -311,7 +311,7 @@ int duel_088948B8(DuelAct *a, int b)
     return 0;
 }
 
-int duel_08894A84(DuelAct *a)
+int duel_08894A84(DuelAct *a, int b)
 {
     if (duel_special.padc[2] != 0) {
         return 0;

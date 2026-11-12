@@ -39,7 +39,11 @@ int duel_count_field_all(unsigned int p);
 int duel_field_level(unsigned int p, int z);
 int duel_088BFFD8(unsigned int p, int id, int i);
 void duel_act_0887E140(DuelAct *a, int d[2]);
+#ifdef __MWERKS__
 int duel_0880F8C4(DuelAct *a, DuelAct *b);
+#else
+int duel_0880F8C4(DuelAct *a, int b); /* the original passes a DuelAct * as b, which the definition ignores */
+#endif
 int duel_08809FC4();
 int duel_count_monsters_state(unsigned int p, int pos, int state);
 

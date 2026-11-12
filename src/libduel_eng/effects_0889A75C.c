@@ -583,7 +583,7 @@ int duel_0889BC80(DuelAct *a)
     return 0;
 }
 
-int duel_0889BD04(DuelAct *a)
+int duel_0889BD04(DuelAct *a, int b)
 {
     if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
         return 0;

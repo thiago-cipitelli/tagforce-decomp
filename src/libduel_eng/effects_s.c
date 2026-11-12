@@ -35,7 +35,12 @@ int duel_card_can_affect();
 int duel_slot_immune(unsigned int p, int z, int opp);
 int duel_0888A020(DuelAct *a, int b);
 void duel_08832AF4(unsigned int, int, int, int);
+#ifdef __MWERKS__
 void duel_0887DB24(DuelAct *a);
+#else
+int duel_0887DB24(DuelAct *a, int b);
+#define duel_0887DB24(a) duel_0887DB24(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 void duel_088C78E0(unsigned int p);
 void duel_088328FC(unsigned int p);
 DuelCard *duel_0884C7CC(void);
@@ -44,7 +49,12 @@ void duel_0884C588(unsigned int, int, int, int);
 void duel_0884C7C0(int i);
 int duel_088BFF78(unsigned int, int, int);
 void duel_0884ACD8(unsigned int p, int msg);
+#ifdef __MWERKS__
 void duel_0887DC94(DuelAct *a);
+#else
+int duel_0887DC94(DuelAct *a, int b);
+#define duel_0887DC94(a) duel_0887DC94(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 void duel_088C8DC4(unsigned short loc, unsigned short src);
 int duel_0887DDB0(DuelAct *a, int b);
 
@@ -349,7 +359,7 @@ int duel_08883EA0(DuelAct *a)
     return 0;
 }
 
-int duel_08883FBC(DuelAct *a)
+int duel_08883FBC(DuelAct *a, int b)
 {
     duel_0887DC94(a);
     return 0;

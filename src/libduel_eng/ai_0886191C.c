@@ -24,13 +24,13 @@ extern int duel_w_08919624;
 extern unsigned int duel_w_0891964C;
 extern int duel_player_type[2];
 
-int duel_0886191C(DuelAct *a)
+int duel_0886191C(DuelAct *a, int b)
 {
     duel_088C4564(a->player ^ a->opp, duel_08860A88(a));
     return 1;
 }
 
-int duel_08861964(DuelAct *a)
+int duel_08861964(DuelAct *a, int b)
 {
     int n;
 
@@ -40,7 +40,7 @@ int duel_08861964(DuelAct *a)
     return 1;
 }
 
-int duel_088619C4(DuelAct *a)
+int duel_088619C4(DuelAct *a, int b)
 {
     duel_088C87A8(a->player, a->zone, 0xFB6, 2, 0);
     return 1;

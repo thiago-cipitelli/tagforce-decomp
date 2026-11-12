@@ -329,7 +329,7 @@ int duel_08887B34(DuelAct *a)
     return 0;
 }
 
-int duel_08887ED8(DuelAct *a)
+int duel_08887ED8(DuelAct *a, int b)
 {
     unsigned int p = a->player ^ a->opp;
     int id;

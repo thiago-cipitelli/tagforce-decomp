@@ -23,7 +23,7 @@ void duel_088CC178();
 void duel_088D1438(unsigned int p, int z, int a, int b);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
 void duel_088CC718(int id);
-int duel_0887DB24(DuelAct *a);
+int duel_0887DB24(DuelAct *a, int b);
 void duel_act_0887E140(DuelAct *a, int d[2]);
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);
@@ -114,7 +114,7 @@ int card_is_in_group_198c(int id);
 int duel_0886CE38();
 extern unsigned int duel_view_player;
 
-int duel_0887DB24(DuelAct *a)
+int duel_0887DB24(DuelAct *a, int b)
 {
     int t;
     int p;
@@ -149,7 +149,7 @@ void duel_0887DBB4(DuelAct *a)
     duel_088D13CC(a, mask);
 }
 
-int duel_0887DC94(DuelAct *a)
+int duel_0887DC94(DuelAct *a, int b)
 {
     unsigned int q = a->player ^ a->opp;
 
@@ -172,19 +172,19 @@ int duel_0887DC94(DuelAct *a)
     return 0;
 }
 
-int duel_0887DDB0(DuelAct *a)
+int duel_0887DDB0(DuelAct *a, int b)
 {
-    duel_0887DB24(a);
+    duel_0887DB24(a, b);
     return 0;
 }
 
-int duel_0887DDD0(DuelAct *a)
+int duel_0887DDD0(DuelAct *a, int b)
 {
     duel_088D13CC(a, duel_0884E4E4(a));
     return 0;
 }
 
-int duel_0887DE04(DuelAct *a)
+int duel_0887DE04(DuelAct *a, int b)
 {
     int t;
     unsigned int p;
@@ -212,7 +212,7 @@ int duel_0887DE04(DuelAct *a)
     return 0;
 }
 
-int duel_0887DF94(DuelAct *a)
+int duel_0887DF94(DuelAct *a, int b)
 {
     unsigned int p = a->player;
     unsigned int q = 1 - p;
@@ -639,7 +639,7 @@ void duel_act_0887E140(DuelAct *a, int d[2])
     }
 }
 
-int duel_0887F728(DuelAct *a)
+int duel_0887F728(DuelAct *a, int b)
 {
     int d[2];
     unsigned int q;
@@ -681,7 +681,7 @@ int duel_0887F80C(DuelAct *a, DuelAct *b)
 }
 
 #ifdef NON_MATCHING /* 132 palavras, só registradores: forma dos case e dos grupos confere; o original deixa p em v0, a->id em a2 e as constantes dos testes em v1 (aqui id em v0, p em v1) */
-int duel_0887F8E4(DuelAct *a)
+int duel_0887F8E4(DuelAct *a, int b)
 {
     unsigned int p = a->player;
     unsigned int q = p ^ a->opp;
@@ -1057,7 +1057,7 @@ int duel_08880624(DuelAct *a)
     return 0;
 }
 
-int duel_088807F0(DuelAct *a)
+int duel_088807F0(DuelAct *a, int b)
 {
     unsigned int q = a->player ^ a->opp;
 
@@ -1178,7 +1178,7 @@ int duel_08880C7C(DuelAct *a)
     return 0;
 }
 
-int duel_08880D54(DuelAct *a)
+int duel_08880D54(DuelAct *a, int b)
 {
     duel_088327F8(1 - a->player, 1, 1);
     return 0;

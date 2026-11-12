@@ -105,7 +105,7 @@ int duel_0889098C(DuelAct *a)
     return 0;
 }
 
-int duel_08890A64(DuelAct *a)
+int duel_08890A64(DuelAct *a, int b)
 {
     unsigned int t;
     unsigned int p;
@@ -185,7 +185,7 @@ int duel_08890C90(DuelAct *a)
     return 0;
 }
 
-int duel_08890D6C(DuelAct *a)
+int duel_08890D6C(DuelAct *a, int b)
 {
     unsigned int t;
     unsigned int p;

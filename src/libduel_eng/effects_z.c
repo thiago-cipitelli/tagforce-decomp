@@ -48,7 +48,7 @@ int duel_0888B904(DuelAct *a)
     return 0;
 }
 
-int duel_0888B9A8(DuelAct *a)
+int duel_0888B9A8(DuelAct *a, int b)
 {
     unsigned int q = 1 - a->player;
 

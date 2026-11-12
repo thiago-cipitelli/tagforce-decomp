@@ -903,7 +903,7 @@ int duel_ai_088203F4(DuelAct *a, int b)
     return 0;
 }
 
-int duel_ai_088204A8(DuelAct *a)
+int duel_ai_088204A8(DuelAct *a, int b)
 {
     int v[2];
     unsigned int p;

@@ -191,7 +191,7 @@ int duel_088905D0(DuelAct *a)
 }
 #endif
 
-int duel_08890730(DuelAct *a)
+int duel_08890730(DuelAct *a, int b)
 {
     unsigned char z = a->zone;
     unsigned int p = a->player;

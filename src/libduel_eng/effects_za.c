@@ -90,7 +90,12 @@ void duel_088C96EC(unsigned int p, int z, int a);
 int card_attribute_to_group(int id);
 void duel_088C4508(unsigned int p, int a);
 void duel_088C7B90(int a);
+#ifdef __MWERKS__
 int duel_0887DB24(DuelAct *a);
+#else
+int duel_0887DB24(DuelAct *a, int b);
+#define duel_0887DB24(a) duel_0887DB24(a, 0) /* port: b: the definition ignores it (the original leaves a1 as is) */
+#endif
 void duel_088CA384(unsigned int p, int i, int f);
 int duel_088C5E70(unsigned int, int);
 int duel_088C4604(DuelAct*, unsigned int, int);
@@ -568,7 +573,7 @@ int duel_0888D520(DuelAct *a, int b)
     return 0;
 }
 
-int duel_0888D5A8(DuelAct *a)
+int duel_0888D5A8(DuelAct *a, int b)
 {
     switch (duel_step) {
     case 0x80:

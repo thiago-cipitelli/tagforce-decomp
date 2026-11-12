@@ -28,7 +28,11 @@ void duel_088CB4BC(unsigned int p, int uid);
 int duel_0887F728(DuelAct *a, int b);
 void duel_0882619C(unsigned int, DuelCard*, int, int, unsigned int);
 void duel_0884AF68(int msg, int uid, int a);
+#ifdef __MWERKS__
 int duel_0887DB24(void);
+#else
+int duel_0887DB24(DuelAct *a, int b);
+#endif
 
 int duel_eff_fa920(DuelAct *a, int b)
 {
@@ -122,7 +126,11 @@ int duel_eff_fad48(DuelAct *a)
 {
     switch (duel_step) {
     case 0x80:
+#ifdef __MWERKS__
         if (duel_0887DB24() != 0) {
+#else
+        if (duel_0887DB24(a, 0) != 0) { /* port: a0 still holds a; b ignored by the definition */
+#endif
             return 0x7F;
         }
         return 0;

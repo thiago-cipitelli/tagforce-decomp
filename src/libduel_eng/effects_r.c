@@ -437,7 +437,7 @@ int duel_08882210(DuelAct *a, int b)
     return 0;
 }
 
-int duel_0888229C(DuelAct *a)
+int duel_0888229C(DuelAct *a, int b)
 {
     int n = 1;
 
