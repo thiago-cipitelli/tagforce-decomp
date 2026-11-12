@@ -8,6 +8,7 @@
    the cards that came out (scrolling, marks, jumps between groups of the sort key) and the card info
    window; the button code on the shelf. */
 #include "libshop.h"
+void shop_wait_deck_pack(void);
 
 
 unsigned short region_pick_value(int flag);

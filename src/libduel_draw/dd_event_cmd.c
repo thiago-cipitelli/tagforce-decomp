@@ -6,6 +6,7 @@
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
    and prompts. The player numbers of the engine are turned into screen sides by dv_player_to_side. */
 #include "dd_field_ui.h"
+int dd_scene_flags(int mask, int on);
 
 extern int dd_ev_attack[4];            /* 0x08C5479C attacker side, zone, target side, zone */
 extern int dd_ev_flip_cutin;           /* 0x08C547AC the next flip plays the cut-in */

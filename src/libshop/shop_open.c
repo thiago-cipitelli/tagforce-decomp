@@ -6,6 +6,10 @@
    cards fly out and turn over one by one (names drawn under them, gold for the rare ones), and the
    cards are added to the bought list (copies of the same card are counted) before the list opens. */
 #include "libshop.h"
+unsigned short region_pick_value(int flag);
+void *mat4_copy(void *out, void *m);
+void shop_gfx_open(void);
+void shop_gfx_cards(void);
 
 typedef struct ModelDrawOpts {  /* BOOT model_draw options, 0x34 */
     int layer[2];

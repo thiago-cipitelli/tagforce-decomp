@@ -2,6 +2,7 @@
 // @data 0x08907968-0x08907974
 /* Summoning a monster (duel_summon), continued: summons with special costs. */
 #include "duel.h"
+int duel_0882BF2C(void);
 
 extern int duel_player_type[2];
 extern int duel_w_08919624;            /* answer of the last question */

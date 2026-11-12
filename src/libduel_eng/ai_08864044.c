@@ -1,6 +1,9 @@
 // @range 0x08864044-0x08864DF0
 /* The computer player: handlers of the cards it activates. */
 #include "duel.h"
+#ifndef __MWERKS__ /* port: the original calls these without a prototype; one here changes the mwcc object */
+int duel_088BFFD8(unsigned int p, unsigned int key, int c);
+#endif
 
 void duel_088C7BA4(void);
 void duel_088C7CF0(void);

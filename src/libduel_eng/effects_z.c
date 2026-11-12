@@ -1,6 +1,7 @@
 // @range 0x0888B904-0x0888C1A8
 /* Card effect handlers (DuelAct *a), after effects_y.c. */
 #include "duel.h"
+void duel_088C7BA4(void);
 
 extern unsigned int duel_turn_player;
 extern int duel_step;

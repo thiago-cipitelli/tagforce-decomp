@@ -4,6 +4,7 @@
 /* Room loading and drawing: the models of each area and their stencil shadows, the placed objects,
    the camera of the room, the mesh mask by area and the hook that hides the door meshes ("_DD."). */
 #include "libfield.h"
+void *mat4_transform_vec4(void *out, void *m, void *v);
 
 int fld_story_flag(int id, int arg);           /* 0x0880F228 */
 int fld_bg_hook(void **list, void *m, int a, int b, int phase);

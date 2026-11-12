@@ -3,6 +3,7 @@
    effects: the sounds 0x6225-0x623C to play at given frames of each effect id, some depending on
    the duelist (chara) and its variant. */
 #include "libduel_draw.h"
+int dd_cue_bgm_stop(int x, int now, int at, unsigned int *flags, unsigned int bit);
 
 int dd_cue_se(int se, int t, int at, unsigned int *flags, unsigned int bit);
 int dd_task_create(void *update, void *a, void *b, int size);

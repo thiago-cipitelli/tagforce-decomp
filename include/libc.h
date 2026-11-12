@@ -8,6 +8,7 @@ char *strcpy(char *, const char *);
 char *strncpy(char *, const char *, size_t);
 char *strcat(char *, const char *);
 size_t strlen(const char *);
+int strcmp(const char *, const char *);
 int stricmp(const char *, const char *);
 int sprintf(char *, const char *, ...);
 void *malloc(size_t);

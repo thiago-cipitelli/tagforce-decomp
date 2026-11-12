@@ -6,6 +6,7 @@
    per-object effect links, the queries "is anything still moving", the stack height of a pile,
    the counters of the monster zones and the stack of highlighted locations. */
 #include "dd_d1.h"
+void dd_zone_sync(int player, int zone);
 
 void dd_cobj_goto(DdPos from, DdPos to, int uid, int kind);
 void vec3_lerp_w(DdXyzw *out, DdXyzw *a, DdXyzw *b, float t);

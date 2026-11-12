@@ -6,6 +6,8 @@
    out, the card flown along a curve from its slot to the slot it lands in, the result checks of the
    deck limits, and the slot positions on screen. */
 #include "libdeck_tutorial.h"
+int dt_slot_pos(float *out, int side, unsigned int tab, int pos, int scroll);
+int dt_dst_pos(int tab, int id);
 
 unsigned short dt_cur_index(unsigned short side);
 DtEnt *dt_cur_entry(unsigned short side);

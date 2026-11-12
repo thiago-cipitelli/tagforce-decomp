@@ -5,6 +5,8 @@
    as button icons with labels. */
 #include "libselect_card.h"
 #include "menu.h"
+unsigned short sc_list_filter_reset(ScList *l);
+void sc_list_sort(ScList *l, int sort, unsigned short dir);
 
 typedef struct ScButton {              /* sc_draw_button */
     unsigned short res;

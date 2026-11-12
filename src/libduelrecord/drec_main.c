@@ -6,6 +6,7 @@
 #include "libc.h"
 #include "font.h"
 #include "libduelrecord.h"
+int cfg_get_language(void);
 
 void drec_build(void);
 void drec_input(void);

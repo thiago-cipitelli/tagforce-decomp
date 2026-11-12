@@ -9,6 +9,8 @@
 #include "ehfile.h"
 #include "modmgr.h"
 #include "game.h"
+int sysvar_get_a90(void);
+void ehfile_build_lbn_table(int pool_size);
 
 void movie_exit_cleanup(void);
 void net_hold_create(void);

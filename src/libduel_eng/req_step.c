@@ -6,6 +6,7 @@
 /* Steps of the requests the engine carries out one per frame (duel_req, duel_req_step): input log, messages,
    graveyard and hand moves, summoning and setting a card from the hand. */
 #include "duel.h"
+int card_is_monster(int id);
 
 int duel_req_flag(int i);
 int duel_slot_has_effect(unsigned int p, int z, int id);

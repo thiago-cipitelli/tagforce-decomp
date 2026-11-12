@@ -2,6 +2,8 @@
 // @data 0x089118AC-0x089118DC
 /* Card effect handlers (DuelAct *a), after effects_zf.c. */
 #include "duel.h"
+int duel_0884E9E8(DuelAct *a, int b);
+void duel_088C7810(unsigned int p, unsigned int on);
 
 extern int duel_step;
 extern int duel_w_089148FC;

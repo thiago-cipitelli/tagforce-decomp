@@ -3,6 +3,7 @@
 /* Story player state (save data): room and position, the current event ids, the point counters,
    the counts of the 20 items and 50 cards held, and the bit set of cards ever obtained. */
 #include "libstory.h"
+void sysflag_set(unsigned int bit);
 
 int sev_find(int x, int y, int z);
 void sev_done_set(unsigned int n, int on);

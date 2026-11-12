@@ -7,6 +7,10 @@
    of its EHF layers and the small text and sprite helpers it draws with. */
 #include "libtitle.h"
 #include "duel_setup.h"
+int sysvar_get_a98(void);
+int peer_self_get(void);
+int tpartner_update(int net);
+unsigned char *game_state2_get(void);
 
 typedef struct TPtSpr {               /* a sprite of the panel textures, 10 bytes */
     unsigned char file;                /* index into the gim names, 0 = by language */

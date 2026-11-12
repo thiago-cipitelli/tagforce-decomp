@@ -5,6 +5,92 @@
    characters on the map, partner) and the helpers of the interpreter: block skipping, comparisons
    and the text lookup of the running script. */
 #include "libstory.h"
+void st_pl_item_inc(int i);
+void st_pl_item_dec(int i);
+void st_pl_card_dec(int i);
+int st_pl_x20_get(void);
+int st_pl_card_last_get(void);
+int st_id_to_chr(int id);
+void st_chr_affinity_add(int i, int d);
+void st_pl_points_add(int d);
+void scal_flag_set(unsigned int id, int on);
+void st_chr_flag_set(int i, unsigned int bit, int on);
+void st_chr_level_up(int i);
+void st_pl_room_set(int room);
+#ifndef __MWERKS__ /* port: the original calls these without a prototype; one here changes the mwcc object */
+void inv_adjust_count(unsigned short id, int dir);
+void inv_set_bit3(unsigned short id);
+void st_duel_set_rule(int mode, unsigned char x, int rule);
+void st_duel_set_x11e(unsigned char a, unsigned char b);
+void sysstate_max_byte_97d0(int i, unsigned char v);
+void st_chr_x70_set(int i, unsigned short v);
+void st_chr_x72_set(int i, unsigned short v);
+void st_chr_x74_set(int i, unsigned short a, unsigned short b);
+void st_chr_x78_set(int i, unsigned short v);
+void st_chr_x5c_set(int i, int a, int b, unsigned short c);
+void st_chr_x65_set(int i, int a, unsigned char b);
+void st_chr_set_dir_b(int i, unsigned char dir);
+void st_chr_x67_set(int i, unsigned char v);
+void st_chr_x7a_set(int i, unsigned short a, unsigned short b);
+#endif
+int st_id_to_rec(int id);
+void st_mail_receive(int id);
+void sysflag_set2(int id, int v);
+void st_fade(int out, int wait, int frames);
+void st_chr_away_set(int i, int on);
+int st_chr_x(int chr);
+int st_chr_y(int chr);
+int st_chr_flag_a(int chr);
+int st_chr_dir(int chr);
+int st_chr_text_a(int i); /* unsigned short * in the definition; kept as the int the fields hold */
+int st_chr_text_b(int i);
+int st_remap_8126ac(int id);
+void st_lesson_set_a(int v);
+void st_duel_set_vs(int id, int costume);
+void st_duel_set_params_b(int a, int b, int c);
+void st_duel_set_tag(int id, int costume);
+void st_duel_set_opp2(int id, int costume);
+void st_duel_set_partner(int id, int costume);
+void st_duel_set_watch(int id, int costume);
+void st_duel_set_opp(int id, int costume);
+void st_duel_set_args(int a, int b);
+void st_duel_set_params_a(int a, int b, int c);
+void st_lesson_set_b(int v);
+void st_free_state2_set(int v);
+int st_remap_812628(int id);
+int st_id_to_item(int id);
+int st_pl_x14_get(void);
+void st_sv_set_chapter(int ch);
+void st_msg_unload(int kind);
+void st_msg_load_iso(int i);
+int st_sv_chapter(void);
+int st_iso_find_es(int id); /* StoryCmd * */
+void st_free_state1_set(int v);
+void st_ev2_set_0(int v);
+void st_chr_named_set(int n);
+void st_chr_name_real(int i);
+int st_chr_costume(int chr);
+void sysflag_set(unsigned int bit);
+void st_pl_x150_set(int v);
+int st_remap_812498(int id);
+int st_remap_8124b0(int id);
+void st_sv_set_08(int v);
+void st_sv_set_0c(int v);
+void st_sv_set_crowd(int v);
+void st_chr_clear_ext_all(void);
+void st_sv_set_14(int v);
+void st_chr_x68_set(int i, int v);
+void st_chr_x6c_set(int i, int v);
+int st_sv_get_0c(void);
+void st_chr_set_pos_b(int i, int x, int y);
+void st_pl_x14_set(int v);
+int st_free_xc(void);
+int st_free_x8(void);
+int st_iso_get_ei(void); /* pointers in the definitions, held as int here */
+int st_iso_get_el(void);
+int st_scr_get_ei(int i);
+int st_scr_get_el(int i);
+int st_text_at(int i, int offsets, int text);
 
 #define CMD (story_vm.script[story_vm.pc])
 

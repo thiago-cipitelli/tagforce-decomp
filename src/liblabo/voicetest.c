@@ -3,6 +3,7 @@
 /* Labo voice test (last entry of the debug menu): picks character / sub id / pack / voice, plays the
    matching BGM or voice, and shows the character name and the line from labo/voicetest.ehp. */
 #include "ehsys.h"
+int cfg_get_language(void);
 
 void *memset(void *, int, unsigned int);
 char *strcpy(char *, const char *);

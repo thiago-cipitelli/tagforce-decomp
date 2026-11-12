@@ -5,6 +5,8 @@
    labels (same source as libselect_card sc_action.c and libdeck dk_action.c). */
 #include "libdeck_swap.h"
 #include "menu.h"
+unsigned short ds_list_filter_reset(DsList *l);
+void ds_list_sort(DsList *l, unsigned short sort, unsigned short dir);
 
 typedef struct DsButton {              /* ds_draw_button */
     unsigned short res;

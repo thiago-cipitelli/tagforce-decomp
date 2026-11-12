@@ -4,6 +4,8 @@
 /* HUD of the field: the room name window, the event icon of the cell the player stands on, the
    blinking of the HUD parts, the slide-in of a part, the text callbacks of the menus. */
 #include "libfield.h"
+int fld_bg_id(void);
+FieldStory *fld_story_get(void);
 
 int fld_bg_event(int bg, int cx, int cz);      /* 0x0880CF74 */
 int fld_bg_group(int x);

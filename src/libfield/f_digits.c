@@ -5,6 +5,7 @@
    clock (rotated quads, still in asm). */
 #include "libfield.h"
 #include "allegrex.h"
+FieldStory *fld_story_get(void);
 
 void *fld_clock_hand(float angle, void *list, int x, int y, int z, int u, int v, int w, int h);
 

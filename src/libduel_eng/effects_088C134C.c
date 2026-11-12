@@ -3,6 +3,7 @@
 /* Effects resolved at a phase change (after effects_088C004C.c): one handler per card id, each scanning
    both fields for the cards it affects. */
 #include "duel.h"
+int field_get_card(unsigned int p, int z);
 
 int duel_count_active(int id);
 int duel_find_effect_card(unsigned int p, int id, int z);

@@ -4,6 +4,7 @@
    slide sound) and the per-frame move with its arc, the end-of-move callbacks, the zone list
    lookup and the move duration of the animation speed option. */
 #include "dd_d1.h"
+void dd_zone_sync(int player, int zone);
 
 unsigned int rand_next(void);
 void se_play(int id);

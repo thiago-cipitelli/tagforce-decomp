@@ -6,6 +6,8 @@
    the per-frame input dispatch and the input of the main state: cursor moves in the grid and in
    the list, paging, jumps between sort groups, moving cards between the panes; focus frame. */
 #include "libselect_card.h"
+unsigned short sc_list_filter_reset(ScList *l);
+void sc_list_sort(ScList *l, int sort, unsigned short dir);
 
 typedef struct ScMode {                /* sc_modes: pane layouts of a mode */
     short list_a;                      /* pane 0 in list mode */

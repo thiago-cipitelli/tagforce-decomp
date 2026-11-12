@@ -2,6 +2,7 @@
 // @data 0x08907A30-0x08907A9C
 /* What the computer (or the local player) may pick for the current choice (duel_w_08919630). */
 #include "duel.h"
+unsigned int duel_zone_count(unsigned int p, int z);
 
 extern unsigned int duel_view_player;
 extern int duel_err;

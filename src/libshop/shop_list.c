@@ -8,6 +8,7 @@
    picture, marks, name, icons, ATK/DEF and counters, the cursor frame, the header and the bubble that
    shows the sort key of the line under the cursor on the scroll bar. */
 #include "libshop.h"
+void shop_gfx_shelf(void);
 
 void mtx_translate(float *v);
 void mtx_rotate_x(float a);

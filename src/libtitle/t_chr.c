@@ -4,6 +4,7 @@
    portrait (face over body, scaled) and the character table of the face sprites (the same code as
    libduel_mgr's dmgr_partner.c). */
 #include "libtitle.h"
+int charmap_lookup2(int code, void *out);
 
 int charmap_lookup(unsigned short c, int a);
 void *gim_set_texture_sub(void *list, void *g, int a, int b, int c, int d);

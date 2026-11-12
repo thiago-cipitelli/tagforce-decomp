@@ -4,6 +4,7 @@
    cards held outside the zones in the special mode. */
 #include "duel.h"
 #include "card_db.h"
+int duel_count_active(int id);
 
 int field_get_card(unsigned int, int);
 int duel_special_get_id(DuelSlot *s);

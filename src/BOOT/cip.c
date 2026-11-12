@@ -11,6 +11,7 @@
 #include "ehfile.h"
 #include "ehsys.h"
 #include "cip.h"
+int ehfile_read_async(int dir, const char *name, void *buf, int offset, int size, EhfileCallback cb, void *arg);
 
 unsigned char *sys_info_get(void);
 void *gim_set_texture(void *list, void *gim);

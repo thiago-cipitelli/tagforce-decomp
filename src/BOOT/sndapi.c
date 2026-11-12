@@ -11,6 +11,9 @@
 #include "ehfile.h"
 #include "ehsys.h"
 #include "movie.h"
+int ehfile_read_async(int dir, const char *name, void *buf, int offset, int size, EhfileCallback cb, void *arg);
+int modmgr_load_by_id(int id);
+int modmgr_none_loading(void);
 
 typedef struct SndCallbacks {          /* handed to snd_thread_start; snd_callbacks_default fills the rest */
     int (*read)(void *name, void *buf, int size, int off);

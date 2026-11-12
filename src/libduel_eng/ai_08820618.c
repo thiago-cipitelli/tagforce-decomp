@@ -5,6 +5,8 @@
 /* The computer player's choice of a card to activate (second part): the tables of cards checked
    on the field and in the hand, and the step machine that goes through them. */
 #include "duel.h"
+int duel_08821888(unsigned int p);
+int duel_08821124(unsigned int p);
 
 typedef struct DuelAiCard {            /* 8 */
     unsigned int id;

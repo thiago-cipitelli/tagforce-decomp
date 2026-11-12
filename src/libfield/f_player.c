@@ -3,6 +3,7 @@
 /* The player character: setup, drawing, input lock, the effect attached to it, the marks it leaves
    on the cells under it, its per-frame update, the stick input and the movement. */
 #include "libfield.h"
+void fld_chr_update(FieldChr *c);
 
 void fld_player_update(void);                  /* 0x0880AC94 */
 void fld_player_loaded_a(int *file, FieldChr *c);

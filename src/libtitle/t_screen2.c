@@ -3,6 +3,7 @@
 /* Title screen, second part: the new game prompt, continuing (save load), and the options screen
    (state 13: a tabbed panel of settings). */
 #include "libtitle.h"
+void title_newgame_win_init(void);
 
 void bgm_fade_out(int x, int ms);
 

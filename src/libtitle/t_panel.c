@@ -7,6 +7,7 @@
    window combining them with a system list (TPanel), the nine-piece frames drawn from title_sprites2,
    the blinking cursor frame, and preset boxes and help windows used by the duel setup screens. */
 #include "libtitle.h"
+int title_get_ticks(void);
 
 void tbox_init(TBox *b);
 void ttab_init(TTab *t);

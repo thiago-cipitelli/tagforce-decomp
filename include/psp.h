@@ -63,6 +63,10 @@ int sceUtilityUnloadUsbModule(int module);
 SceUID sceIoOpen(const char *file, int flags, int mode);
 int sceIoClose(SceUID fd);
 int sceIoRead(SceUID fd, void *data, SceSize size);
+int sceIoWrite(SceUID fd, const void *data, SceSize size);
+void sceKernelDcacheWritebackInvalidateAll(void);
+int sceKernelTryAllocateVpl(SceUID uid, unsigned int size, void **data);
+int sceKernelFreeVpl(SceUID uid, void *data);
 int sceIoLseek(SceUID fd, SceOff offset, int whence);
 int sceIoGetstat(const char *file, SceIoStat *stat);
 

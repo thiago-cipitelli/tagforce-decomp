@@ -3,6 +3,7 @@
 // @asm 0x08817F98-0x088180AC
 /* Free duel: drawing dispatch, the vs CPU screens, the cursor and regulation sub-screens. */
 #include "libtitle.h"
+int inv_get_bit7_default1(unsigned short id);
 
 void *tfd_icon_setup(void *list, MenuWidget *w, int x, int y, int cw, int ch);
 void *tfd_entry_draw(void *list);

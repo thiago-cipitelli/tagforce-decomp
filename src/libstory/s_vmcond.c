@@ -3,6 +3,7 @@
 /* Script instructions 0xC351..0xC37E: messages, the choice window, the random branch and the
    conditional blocks (each tests a story value and, when false, skips to its end marker op + 0x23). */
 #include "libstory.h"
+int inv_get_bit3(unsigned short id);
 
 #define CMD (story_vm.script[story_vm.pc])
 

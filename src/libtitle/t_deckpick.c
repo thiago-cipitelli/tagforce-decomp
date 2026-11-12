@@ -6,6 +6,11 @@
    list, the rows with the deck name, owner, number and duel record, and the faster cursor repeat while
    up/down is held (tpad_accel). */
 #include "libtitle.h"
+#ifndef __MWERKS__ /* port: the original calls these without a prototype; one here changes the mwcc object */
+unsigned short recipe_get_id(int i);
+#endif
+void recipe_load(int n, RecipeData *out);
+int deck_validate(RecipeData *deck, int with_side);
 
 void tpt_set(short i, int kind, int type2, int src, int deck);
 void tpt_set_all(short i, int kind, int type2, int src, int deck, void *name, void *deckname);

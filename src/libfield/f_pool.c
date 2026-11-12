@@ -3,6 +3,7 @@
    file before reading it, the typed load requests, cancelling a pool, the reset of the caches and
    the lookups in the tables. */
 #include "libfield.h"
+int fld_bg_index(int x);
 
 void fld_pool_load(int kind, int name, void (*cb)(), void *arg, int flag); /* 0x0880C1C4 */
 int fld_chr_index(int id);                     /* 0x0880D4F4 */

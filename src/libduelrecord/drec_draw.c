@@ -6,6 +6,7 @@
 #include "allegrex.h"
 #include "font.h"
 #include "libduelrecord.h"
+int cfg_get_language(void);
 
 void *dl_select_layer(int layer, unsigned int *size);
 int dl_set_list(void *list);

@@ -7,6 +7,10 @@
    field setup commands (date/time advance, room info, room objects, player position). */
 #include "libstory.h"
 #include "duel_setup.h"
+int st_room_variant(void);
+#ifndef __MWERKS__ /* port: the original calls these without a prototype; one here changes the mwcc object */
+unsigned short stt_branch_find(unsigned int id);
+#endif
 
 typedef struct StFldInfo {             /* argument of field command 0: the story data the PDA shows */
     int *date[6];                      /* +0x00 scal_get_ptrs */

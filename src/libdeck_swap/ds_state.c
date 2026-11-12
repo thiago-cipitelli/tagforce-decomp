@@ -3,6 +3,7 @@
    the saved scroll of each list, scroll clamping, saving the panes' scroll into their lists, and
    the undo history of moves (same source as libselect_card sc_state.c). */
 #include "libdeck_swap.h"
+void ds_window_anim(void);
 
 int font_measure_text(unsigned short *text);
 unsigned short *card_get_desc(int id);

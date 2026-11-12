@@ -3,6 +3,8 @@
 // @data 0x0882F290-0x0882F370
 /* Free duel setup: the top of the ad hoc mode (own duelist, partner and the extra data step). */
 #include "libtitle.h"
+int tfd_adhoctop_icon(int i);
+int tfd_adhoctop_enter_init(int on);
 
 unsigned short *wcsncpy(unsigned short *dst, const unsigned short *src, int n);
 void tpt_set_name(short i, int kind, int type2, int src, int deck, void *name);

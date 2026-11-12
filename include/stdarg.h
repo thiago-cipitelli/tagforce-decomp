@@ -4,6 +4,7 @@
 #ifndef STDARG_H
 #define STDARG_H
 
+#ifdef __MWERKS__
 typedef char *va_list;
 
 #define va_start(ap, parm) \
@@ -12,5 +13,12 @@ typedef char *va_list;
 #define va_arg(ap, T) \
     (*(T *)(((ap) = (ap) + ((sizeof(T) == 8 && ((unsigned int)(ap) & 7)) ? 4 : 0) + sizeof(T)) - sizeof(T)))
 #define va_end(ap) ((void)0)
+#else
+/* port: the host compiler's own varargs (__builtin_args_info is mwcc-only) */
+typedef __builtin_va_list va_list;
+#define va_start(ap, parm) __builtin_va_start(ap, parm)
+#define va_arg(ap, T) __builtin_va_arg(ap, T)
+#define va_end(ap) __builtin_va_end(ap)
+#endif
 
 #endif

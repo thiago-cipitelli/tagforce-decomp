@@ -5,6 +5,7 @@
    through their steps (in the pack, rising, turning to the camera, shown, leaving) along curves, the
    card picture rendered into VRAM as the texture of the card model, and the curve points. */
 #include "libshop.h"
+void shop_gfx_cards(void);
 
 void model_update(Model *m, float *dt);
 Vec4 *vec4_copy(Vec4 *out, Vec4 *v);
