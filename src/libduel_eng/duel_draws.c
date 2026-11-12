@@ -44,7 +44,11 @@ typedef struct DuelMoveEv {            /* event argument of a card moving (see d
 int card_attribute_icon_is3(int);
 void duel_088C4448(unsigned int, int, int);
 void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned short b);
+#ifdef __MWERKS__
 int duel_0884F30C(unsigned int a, unsigned short uid, DuelMoveEv ev);
+#else /* chamada ora com struct por valor, ora com palavra: protótipo comum no passo 2 de docs/port_survey.md */
+int duel_0884F30C();
+#endif
 int duel_slot_e8170(unsigned int p, int z, int id);
 void duel_088C7E68(unsigned int, int, int, int);
 void duel_088C7BA4(void);
@@ -92,7 +96,9 @@ typedef struct DuelDmgEv {             /* event argument of battle damage */
 void duel_088C4864(DuelSpecRec *r)
 {
     int z3;
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
     extern int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int ev);
+#endif
     extern int duel_slot_effect_with();
     unsigned int tp = r->b[0];
     int self = 0;
@@ -374,7 +380,9 @@ int duel_088C5510(unsigned int p, int n, int f)
     }
     {
     /* the rest passes no event */
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
     extern int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int ev);
+#endif
 
     if (f) {
         for (i = 0; i < 2; i++) {

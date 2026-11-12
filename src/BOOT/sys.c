@@ -95,10 +95,12 @@ int ehscript_set_static(void (*fn)(void))
     EhscriptCtx *c = &ehscript_ctx;
 
     strcpy(ehscript_ctx.name, "staticmodule");
+#ifdef __MWERKS__ /* lê o código MIPS de fn: só faz sentido na PSP */
     if ((*(unsigned int *)fn & 0xFC000000) == 0x08000000) { /* function starting with a `j`: thunk, refuse */
         asm { addi $v0, $ra, 0 } /* stray instruction in the original */
         fn = 0;
     }
+#endif
     c->static_fn = fn;
     return 1;
 }

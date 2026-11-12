@@ -624,7 +624,9 @@ static inline void dk_deck_take(DkList *dst, unsigned short id)
     DkEnt e;
     DkList *l;
     int k;
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
     extern int dk_list_find(DkList *, unsigned short);
+#endif
 
     memset(&e, 0, 6);
     e.id = id;

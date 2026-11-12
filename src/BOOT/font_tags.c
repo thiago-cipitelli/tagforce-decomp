@@ -381,7 +381,9 @@ unsigned int font_shadow_color(unsigned int c)
 unsigned short *font_ruby_layout(FontCtx *f, FontLayout *st, unsigned short *p)
 {
     int c;
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
     int wc_no_line_start();
+#endif
 
     while ((c = *p++) != ')') {
         if ((unsigned short)c < 0x20)

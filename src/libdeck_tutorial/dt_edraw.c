@@ -704,7 +704,9 @@ void *dt_draw_counts(void *list)
     int i;
     unsigned short x;
     DtRect r;
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
     extern void *dt_draw_count(void *list, unsigned short x, DtRect *r, unsigned short ndig, int value);
+#endif
 
     if (dtv.mode < 2) {
         for (i = 0; i < 5; i++) {

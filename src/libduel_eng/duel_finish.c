@@ -542,11 +542,15 @@ int duel_finish(void)
     }
     duel_deck_stats((RecipeData *)((unsigned int)&g->slot[duel_w_0891A19C] + 0x80U), &duel_deck_stats_cur);
     if (g->partner_mode == 2) {
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
         extern int recipe_get_id();
+#endif
 
         duel_w_0891A198 = (recipe_get_id(a->deck_id) + recipe_get_id(b->deck_id)) / 2;
     } else {
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
         extern int recipe_get_id();
+#endif
 
         duel_w_0891A198 = recipe_get_id(a->deck_id);
     }

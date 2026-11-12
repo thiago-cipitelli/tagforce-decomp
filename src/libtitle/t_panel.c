@@ -343,7 +343,9 @@ void *tpanel_draw_split(void *list, TPanel *p)
             x = p->x + 115;
         }
         {
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
             extern void *tframe_tab(void *, unsigned int, int, int);
+#endif
             list = tframe_tab(list, 0xFFFFFFFF, x, p->y);
         }
         if (p->draw2)

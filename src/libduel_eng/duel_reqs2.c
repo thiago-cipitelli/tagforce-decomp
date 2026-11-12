@@ -283,7 +283,9 @@ void duel_088CA184(int a, int b)
         if (duel.players[pb & 1].field[zb].card.id == 0) {
             duel_088C9E88(a, b);
             {
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
                 extern void duel_cmd(unsigned short, int, int, int);
+#endif
                 duel_cmd((pa ? 0x8000 : 0) | 0x3D, a, b, 0);
             }
             duel_088C9F58(a, b);
@@ -299,7 +301,9 @@ void duel_088CA270(unsigned int p, int a, int b)
         duel_088C9E88(a, b);
         duel_088C9E88(b, a);
         {
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
             extern void duel_cmd(unsigned short, int, int, int);
+#endif
             duel_cmd((p ? 0x8000 : 0) | 0x3E, a, b, 0);
         }
         duel_088C9F58(a, b);

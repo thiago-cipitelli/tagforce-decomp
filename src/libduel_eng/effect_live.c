@@ -998,7 +998,9 @@ int duel_act_e50ec(DuelAct *a)
     int i;
 
     for (i = 0; i < a->n_targets; i++) {
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
         extern int duel_act_target(DuelAct *, int);
+#endif
         int t = duel_act_target(a, i);
         unsigned int tp = t & 0xFF;
 

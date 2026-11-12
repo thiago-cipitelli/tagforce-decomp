@@ -878,7 +878,9 @@ flag = 0;
         break;
     case 7:
         {
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
             extern int func_08822838(void *, unsigned short, int);
+#endif
             func_08822838(msg, arg, (unsigned short)(arg >> 16));
         }
         dd_info_select_uid(arg & 0xFFFF);

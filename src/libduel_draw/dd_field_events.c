@@ -70,7 +70,11 @@ int dd_ring_done(int task);
 int dd_fx_ringglow_start(DdScrPos *pos, void *term, void *arg);
 int dd_fx_ringglow_done(int id);
 int dd_fx_spin_move(int id, float *pos, float *rot, float s);
+#ifdef __MWERKS__
 void dd_slot_xform(float *pos, float *rot, short at);
+#else /* chamada ora com struct por valor, ora com palavra: protótipo comum no passo 2 de docs/port_survey.md */
+void dd_slot_xform();
+#endif
 float asinf_vfpu(float x);
 float atan2f_vfpu(float y, float x);
 float fmaxf_vfpu(float a, float b);
@@ -405,7 +409,9 @@ void func_08820CC0(float *pos, float *rot, DdLoc at)
     if (rot == 0)
         rot = &tmp_rot.x;
     {
+#ifdef __MWERKS__ /* declaração só para o matching; o port usa o protótipo do arquivo */
         extern void dd_slot_xform(float *pos, float *rot, DdLoc at);
+#endif
         dd_slot_xform(pos, rot, at);
     }
     {

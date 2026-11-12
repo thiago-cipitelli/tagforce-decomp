@@ -13,7 +13,9 @@ ramos `#ifdef NON_MATCHING`/`#else`, nunca para o caminho que o mwcc compila.
 Gate: `make host-check` roda cada `src/*/*.c` em `gcc -m32 -std=gnu89 -fsyntax-only -w -DNON_MATCHING` (32 bits,
 como a PSP; os rascunhos `NON_MATCHING` no lugar do asm, que é o C que o port usa).
 
-**670 de 681 arquivos compilam.** Os 11 que falham:
+**681 de 681 compilam** desde 2026-11-11 (eram 670). As declarações que existiam só para o matching ficaram sob
+`#ifdef __MWERKS__` (o mwcc vê o mesmo fonte, então o matching não muda); o port usa o protótipo do arquivo.
+`duel_0884F30C` e `dd_slot_xform` ficaram com declaração K&R no host até o passo 2. Os 11 que falhavam:
 
 | Arquivo | Causa |
 |---|---|
@@ -89,7 +91,7 @@ display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescr
 
 ## 3. Ordem sugerida
 
-1. Zerar o `make host-check` (os 11 arquivos), sem quebrar o ALL MATCH.
+1. ~~Zerar o `make host-check`~~ (feito).
 2. Protótipos comuns em headers para as classes "número de argumentos" e "posição de float" (as que quebram
    no PC), conferidos com `make verify`.
 3. Revisar os avisos do gcc da lista acima contra o asm.
