@@ -1,5 +1,4 @@
 // @range 0x088100AC-0x08811BB8
-// @asm 0x08811210-0x0881137C
 // @rodata 0x08820FF0-0x08821030
 // @data 0x08821F4C-0x08821F74
 /* Input of the editor (the code of libdeck dk_input.c and the popup of dk_mode.c): dispatch by
@@ -598,7 +597,6 @@ void dt_scroll_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* 56 palavras: a ordem das cargas no ramo da grade (x, grid_x, cx... no original) e a alocação; tentadas a ordem dos stores, a multiplicação comutada e o ponteiro do layout por dtv */
 /* the focus frame follows the cursor */
 void dt_focus_update(void)
 {
@@ -609,9 +607,9 @@ void dt_focus_update(void)
     DtRect *f = &dts.focus;
 
     if (p->list_mode == 0) {
-        f->w = 0x17;
-        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->x = *(volatile short *)&lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w; /* volatile: x's loads first */
         f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
+        f->w = 0x17;
         f->h = 0x1F;
     } else if (side == 1 && dtv.mode < 4) {
         f->x = lay->x + lay->row_x;
@@ -625,7 +623,6 @@ void dt_focus_update(void)
         f->h = (unsigned short)lay->row_h - 1;
     }
 }
-#endif
 
 /* 0 ok; 1 main deck under 40, 2 over 80, 3 extra deck over 15, 4 side deck over 30, 5 a card over
    its limit (*id) */

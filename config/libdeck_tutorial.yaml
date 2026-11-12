@@ -44,8 +44,6 @@ segments:
       - [0x99CC, asm, dt_move_asm_0880D96C]
       - [0x9EB4, c, dt_move]
       - [0xC10C, c, dt_input]
-      - [0xD270, asm, dt_input_asm_08811210]
-      - [0xD3DC, c, dt_input]
       - [0xDC18, c, dt_fmenu]
       - [0xF608, c, dt_filter]
       - [0xF8E8, asm, dt_filter_asm_08813888]

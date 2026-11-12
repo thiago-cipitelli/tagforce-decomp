@@ -1,5 +1,4 @@
 // @range 0x0880AD2C-0x0880C940
-// @asm 0x0880C7D4-0x0880C940
 // @rodata 0x0881A960-0x0881A984
 // @data 0x0881AE58-0x0881B378
 /* Pane layouts (one or two panes, grid or list each) and the tab positions per kind and language;
@@ -851,8 +850,6 @@ void sc_scroll_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm; 65 palavras: o original faz todas as leituras do
-                       layout antes das gravações em sc.focus; o mwcc intercala */
 /* the focus frame follows the cursor */
 void sc_focus_update(void)
 {
@@ -863,9 +860,9 @@ void sc_focus_update(void)
     ScRect *f = &sc.focus;
 
     if (p->list_mode == 0) {
-        f->w = 0x17;
-        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->x = *(volatile short *)&lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w; /* volatile: x's loads first */
         f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
+        f->w = 0x17;
         f->h = 0x1F;
     } else if (side == 1 && scv.mode < 4) {
         f->x = lay->x + lay->row_x;
@@ -879,4 +876,3 @@ void sc_focus_update(void)
         f->h = (unsigned short)lay->row_h - 1;
     }
 }
-#endif

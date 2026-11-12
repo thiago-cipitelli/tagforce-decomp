@@ -38,7 +38,6 @@ segments:
       - [0x4158, c, ds_bg]
       - [0x4AB4, c, ds_cards]
       - [0x5864, c, ds_input]
-      - [0x6A1C, asm, ds_input_asm_0880A9BC]
       - [0x6B88, c, ds_sortmenu]
       - [0x77B0, c, ds_sort]
       - [0x7E7C, c, ds_move]

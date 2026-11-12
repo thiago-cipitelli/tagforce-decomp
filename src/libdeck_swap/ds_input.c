@@ -1,5 +1,4 @@
 // @range 0x08809804-0x0880AB28
-// @asm 0x0880A9BC-0x0880AB28
 // @rodata 0x08819C7C-0x08819CA0
 /* The per-frame input dispatch and the input of the main state: cursor moves in the grid and in
    the list, the help states while Square/Triangle are held (pages, sort groups, marks, the sort and
@@ -578,9 +577,6 @@ void ds_scroll_update(void)
     }
 }
 
-#ifdef NON_MATCHING
-/* NON_MATCHING, 20 palavras: lógica conferida com o asm; no ramo da grade o original soma x + grid_x antes do
-   mult e grava w = 23 antes de x (perm_stmts não achou ordem) */
 /* the focus frame follows the cursor */
 void ds_focus_update(void)
 {
@@ -591,9 +587,9 @@ void ds_focus_update(void)
     DsRect *f = &ds.focus;
 
     if (p->list_mode == 0) {
-        f->w = 0x17;
-        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->x = *(volatile short *)&lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w; /* volatile: x's loads first */
         f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
+        f->w = 0x17;
         f->h = 0x1F;
     } else if (side == 1 && dsv.mode < 4) {
         f->x = lay->x + lay->row_x;
@@ -607,4 +603,3 @@ void ds_focus_update(void)
         f->h = (unsigned short)lay->row_h - 1;
     }
 }
-#endif

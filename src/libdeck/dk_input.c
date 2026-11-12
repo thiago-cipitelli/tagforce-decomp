@@ -1,5 +1,4 @@
 // @range 0x0880931C-0x0880A694
-// @asm 0x0880A528-0x0880A694
 // @rodata 0x08822534-0x08822554
 /* Input of the list screen: dispatch by scene state, the main keys (Circle move, Cross quick move or
    info, Triangle action menu, Square switch tab, Select pane layout, L/R pages and sort groups with
@@ -588,9 +587,6 @@ void dk_scroll_update(void)
     }
 }
 
-#ifdef NON_MATCHING
-/* NON_MATCHING, 20 palavras: lógica conferida com o asm; no ramo da grade o original soma x + grid_x antes do
-   mult e grava w = 23 antes de x (perm_stmts não achou ordem) */
 /* the focus frame follows the cursor */
 void dk_focus_update(void)
 {
@@ -601,9 +597,9 @@ void dk_focus_update(void)
     DkRect *f = &dk_focus;
 
     if (p->list_mode == 0) {
-        f->w = 0x17;
-        f->x = lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w;
+        f->x = *(volatile short *)&lay->x + lay->grid_x + p->cx * (unsigned short)lay->cell_w; /* volatile: x's loads first */
         f->y = lay->y + lay->grid_y + p->cy * (unsigned short)lay->cell_h;
+        f->w = 0x17;
         f->h = 0x1F;
     } else if (side == 1 && dkv.mode < 4) {
         f->x = lay->x + lay->row_x;
@@ -617,4 +613,3 @@ void dk_focus_update(void)
         f->h = (unsigned short)lay->row_h - 1;
     }
 }
-#endif
