@@ -22,7 +22,7 @@ void mat4_transform_vec4(Vec4 *out, Mat4 *m, Vec4 *v);
 void fld_sprite_quad(float x, FieldVtx *q, int tw, int th, int u, int v, int w, int h, float y,
                      unsigned int color);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 4 palavras: nas duas chamadas de fld_chr_model_quads o original lê c->anim antes de c->dir (protótipo K&R e unsigned não mudam) */
+#ifdef NON_MATCHING /* bate (0 palavras) com c->anim lido por *(volatile int *) (o original o lê antes de c->dir), mas a tabela de saltos (0x08834DB4) vem antes das de fld_chr_model_quads e fld_chr_sprite_quad (ainda em asm): promover as três juntas */
 /* character drawn as a model of two quads (sheet by facing: even dir tex[1], odd tex[0]) at its
    matrix, the second one moved by the light offset of field_chr_glb; then its effect */
 void *fld_chr_draw_model(void *list, FieldChr *c)
@@ -55,11 +55,11 @@ void *fld_chr_draw_model(void *list, FieldChr *c)
     mtx_push();
     mtx_identity();
     q = dl_alloc_inline(&list, sizeof(FieldVtx) * 4);
-    fld_chr_model_quads(1, q, c->dir, c->anim, c->frame);
+    fld_chr_model_quads(1, q, c->dir, *(volatile int *)&c->anim, c->frame);
     mtx_load((Mat4 *)c->shadow);
     list = draw_array(list, 4, 0x19F, 4, 0, q);
     q = dl_alloc_inline(&list, sizeof(FieldVtx) * 4);
-    fld_chr_model_quads(0, q, c->dir, c->anim, c->frame);
+    fld_chr_model_quads(0, q, c->dir, *(volatile int *)&c->anim, c->frame);
     m = *(Mat4 *)c->shadow;
     mat4_identity(&t);
     mat4_translate(&t, &t, (Vec4 *)&g->light);
