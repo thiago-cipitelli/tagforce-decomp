@@ -84,51 +84,62 @@ unsigned int *tms_env_light(unsigned int *list, int after);
 unsigned int *tms_env_light_add(unsigned int *list, int after);
 int toon_tex_hook(unsigned int **list, int *t, int mat, int layer, void *arg);
 
-/* Memory inside the current list for n bytes (a sceGu sublist skipped over by a jump). */
-#define TOON_ALLOC(list, p, n, size_) \
-    do { \
-        void *layer_ = dl_get_layer(); \
-        void *base_; \
-        dl_set_list(list); \
-        list = dl_select_layer((int)layer_, &size_); \
-        dl_set_cur_list_base(list); \
-        sceGuStart(2, list, size_); \
-        p = sceGuGetMemory(n); \
-        layer_ = dl_get_layer(); \
-        base_ = dl_get_cur_list_base(); \
-        dl_set_list((unsigned int *)((char *)base_ + sceGuFinish() - 8)); \
-        list = dl_select_layer((int)layer_, 0); \
-    } while (0)
 
 RampVtx toon_ramp0[4] = { { -1, 0, 0, 0 }, { -1, 0, 32, 0 }, { -1, 64, 0, 0 }, { -1, 64, 32, 0 } };
 RampVtx toon_ramp1[3] = { { 0, 0, 32, 0 }, { 0, 64, 0, 0 }, { 0, 64, 32, 0 } };
 
-#ifdef NON_MATCHING /* the vertex templates and the list sizes sit in other stack slots */
+#ifdef NON_MATCHING /* 40 palavras: a metade do segundo degradê troca os $s de v/n/layer (s2/s3/s4 no original, s3/s4/s2 aqui; testados variáveis novas, blocos, funções inline por metade, ordem das declarações). Rodada 23: modelos dos vértices como locais inicializados em blocos, alocação da sublista como função inline (os tamanhos ficam abaixo dos modelos na pilha), tamanho n * sizeof(RampVtx) e laços com p = v antes do for: 306 -> 40 */
+/* Memory inside the current list for n bytes (a sceGu sublist skipped over by a jump). */
+static inline unsigned int *toon_alloc(unsigned int *list, RampVtx **p, int n)
+{
+    void *layer = dl_get_layer();
+    void *base;
+    unsigned int size;
+
+    dl_set_list(list);
+    dl_set_cur_list_base(list = dl_select_layer((int)layer, &size));
+    sceGuStart(2, list, size);
+    *p = sceGuGetMemory(n);
+    layer = dl_get_layer();
+    base = dl_get_cur_list_base();
+    dl_set_list((unsigned int *)((char *)base + sceGuFinish() - 8));
+    return dl_select_layer((int)layer, 0);
+}
+
 unsigned int *model_outline_begin(unsigned int *list, ToonModel *m, ToonDraw *c)
 {
     RampVtx *v;
     int n;
     int i;
-    unsigned int size0;
-    unsigned int size1;
-    unsigned int size2;
-    unsigned int size3;
 
     list = dl_disable(list, 9);
     list = dl_disable(list, 3);
     if (c->n0 < 2) {
         n = 4;
-        TOON_ALLOC(list, v, 0x20, size0);
-        v[0] = toon_ramp0[0];
-        v[1] = toon_ramp0[1];
-        v[2] = toon_ramp0[2];
-        v[3] = toon_ramp0[3];
+        list = toon_alloc(list, &v, 0x20);
+        {
+            RampVtx t = { -1, 0, 0, 0 };
+            v[0] = t;
+        }
+        {
+            RampVtx t = { -1, 0, 32, 0 };
+            v[1] = t;
+        }
+        {
+            RampVtx t = { -1, 64, 0, 0 };
+            v[2] = t;
+        }
+        {
+            RampVtx t = { -1, 64, 32, 0 };
+            v[3] = t;
+        }
     } else {
         RampVtx *p;
 
         n = c->n0 * 2;
-        TOON_ALLOC(list, v, c->n0 << 4, size1);
-        for (i = 0, p = v; i < c->n0; i++, p += 2) {
+        list = toon_alloc(list, &v, n * sizeof(RampVtx));
+        p = v;
+        for (i = 0; i < c->n0; i++, p += 2) {
             short col = (unsigned char)((c->val0[i] & 0xF0) >> 4) << 12;
             short x;
 
@@ -148,17 +159,37 @@ unsigned int *model_outline_begin(unsigned int *list, ToonModel *m, ToonDraw *c)
     list = gfx_set_default_target(list);
     if (c->n1 < 2) {
         n = 4;
-        TOON_ALLOC(list, v, 0x20, size2);
-        v[0] = (RampVtx){ 0 };
-        v[1] = toon_ramp1[0];
-        v[2] = toon_ramp1[1];
-        v[3] = toon_ramp1[2];
+        list = toon_alloc(list, &v, 0x20);
+        {
+            RampVtx t;
+            char *d = (char *)&t;
+            int k = sizeof(RampVtx);
+
+            if (d)
+                do {
+                    *d++ = 0;
+                } while (--k);
+            v[0] = t;
+        }
+        {
+            RampVtx t = { 0, 0, 32, 0 };
+            v[1] = t;
+        }
+        {
+            RampVtx t = { 0, 64, 0, 0 };
+            v[2] = t;
+        }
+        {
+            RampVtx t = { 0, 64, 32, 0 };
+            v[3] = t;
+        }
     } else {
         RampVtx *p;
 
         n = c->n1 * 2;
-        TOON_ALLOC(list, v, c->n1 << 4, size3);
-        for (i = 0, p = v; i < c->n1; i++, p += 2) {
+        list = toon_alloc(list, &v, n * sizeof(RampVtx));
+        p = v;
+        for (i = 0; i < c->n1; i++, p += 2) {
             unsigned char k = (unsigned char)((c->val1[i] & 0xF0) >> 4);
             short col = k * 0x101 + k * 0x10;
             short x;
