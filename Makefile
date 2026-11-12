@@ -60,7 +60,7 @@ $(OUT): $(LD_SCRIPT) $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)
 clean:
 	rm -rf build/asm/$(MODULE) build/src/$(MODULE) build/assets/$(MODULE) $(OUT) build/$(MODULE).map $(LD_SCRIPT) asm/$(MODULE) assets/$(MODULE)
 
-.PHONY: all check check-all clean verify host-check
+.PHONY: all check check-all clean verify host-check host-lto
 
 check-all:
 	@for m in $$(ls build/elf | sed 's/\.elf$$//'); do printf '%s: ' $$m; $(MAKE) --no-print-directory MODULE=$$m check 2>&1 | tail -1; done
@@ -80,3 +80,13 @@ verify:
 host-check:
 	@n=0; for f in src/*/*.c; do gcc -m32 -std=gnu89 -fsyntax-only -w -DNON_MATCHING -Iinclude -I$$(dirname $$f) $$f \
 	  >/dev/null 2>&1 || { echo "FAIL $$f"; n=$$((n+1)); }; done; echo "host-check: $$n file(s) fail"
+
+# port gate (phase 5): every src/*.c with gcc -flto, linked together (-r) so that -Wlto-type-mismatch compares each
+# declaration with the definition across files and modules; tools/lto_mismatch.py prints the count per class
+# (severe = argument count, float position, struct by value, float return; docs/port_survey.md)
+host-lto:
+	@rm -rf build/host-lto; mkdir -p build/host-lto; for f in src/*/*.c; do \
+	  gcc -m32 -std=gnu89 -w -O0 -flto -fno-builtin -DNON_MATCHING -Iinclude -I$$(dirname $$f) -c $$f \
+	  -o build/host-lto/$$(basename $$(dirname $$f)).$$(basename $$f .c).o || echo "FAIL $$f"; done
+	@gcc -m32 -flto -r -nostdlib -Wlto-type-mismatch build/host-lto/*.o -o build/host-lto/all.o 2> build/host-lto/lto.log; \
+	  python3 tools/lto_mismatch.py build/host-lto/lto.log
