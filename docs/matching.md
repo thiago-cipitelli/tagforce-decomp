@@ -1868,3 +1868,37 @@ e, do `matching_skip`, `duel_req_flip`, `duel_req_order`, `duel_req_activate`, `
 - **Inicializador morto `unsigned int z = 0;`** numa variável reaproveitada (zona e depois deslocamento) trocou os
   `$s` de `1 - p` e do deslocamento (`duel_088905D0`). Uma varredura de `= 0` em cada local das outras entradas do
   `matching_skip` não mudou nada.
+## Rodada 23 (`uiQ`: libshop, libfield, libstory, libtitle, libtutorial, librecipe_viewer)
+
+Bateram `shop_open_add` (71% fuzzy), `fld_scene_input` e `fclk_time_draw` (estas duas em `matching_skip`);
+`fld_chr_draw_model` chega a 0 palavras mas não pode ser promovida sem `fld_chr_sprite_quad` (tabela de saltos).
+Rascunhos: `shop_result_input` 344 -> 2, `st_chr_update` 145 -> 15, `shop_item_key` 56 -> 20, `shop_list_row`
+294 -> 159, `shop_open_layout` 14 -> 4, `tut_script_preload_faces` 12 -> 9.
+- **Leitura `volatile` fixa a ordem das cargas de argumentos**: `((volatile FclkPos *)p)[6].x` faz `p[6].x` ser lido
+  antes de `p[6].y` (`fclk_time_draw`); `((volatile Vec3 *)&pl->pos)->x / 0.5f` põe a constante 0,5 no registrador do
+  original (`fld_scene_input`); `*(volatile int *)&c->anim` lê `anim` antes de `dir` (`fld_chr_draw_model`). Para um
+  argumento que o original carrega PRIMEIRO apesar de vir por último: lê-lo por volatile num temporário de bloco
+  antes da chamada (`float z = vol->z + 2.0f; vec4_set(..., z, 1.0f)`, `shop_open_layout`). O volatile só ordena as
+  cargas entre si; não impede o escalonador de mover stores (família `rv_menu_open`/`fclk_list_setup` continua).
+- **Constante reaproveitada de um registrador** (`move a0,s1` / `move v0,s1` com `s1 = speed = 1` no lugar de `li 1`):
+  a variável é `int` e muda por `speed += 2` (não `speed = 3`); com `+=` o mwcc sabe que `s1` vale 1 no caminho do
+  `return 1` e usa o registrador (`shop_result_input`). Provável mesma causa em `tfd_regulation_select` (a constante 1
+  em `a0`), não achada.
+- **Vários `Vec4` de blocos diferentes na pilha**: o original os declarou todos no topo da função; a ordem na pilha
+  (endereço maior = declarado antes) dá a ordem das declarações, e as cópias viram atribuições (`e = shop_open_v3;`).
+- **`andi` de um parâmetro calculado antes do `jr` de um `switch`** e reutilizado num `case`: o protótipo do callee no
+  arquivo do chamador é `unsigned short` (o original declarava assim; a definição é `int`): protótipo sob
+  `#ifdef __MWERKS__`, o `int` no `#else` para o port. Um `(unsigned short)` explícito na chamada re-mascara.
+- **Laço de busca para trás com ponteiro** (`addiu t5,-10` com `bltz` de guarda e `bgez` no fim): `k = n - 1; if (k >=
+  0) { T *it = &tab[k]; do { ...; it--; } while (--k >= 0); }`; o `for` com o ponteiro no cabeçalho não dá a guarda.
+  Índice lido antes do `n_items++`: `int j = idx[i];` como PRIMEIRA declaração do bloco (`shop_open_add`).
+- **`li K; addu r,K,x`** em vez de `addiu`: `y = row * 0x2D; y += 0x1A;` (`shop_list_row`); `andi` repetido no uso de
+  um valor já mascarado: era a macro `PT(0, atk)` (o `(unsigned short)` dela), não `atk << 16`.
+- **Laço de busca não rotacionado** (teste no topo, `b` de volta): `for (;;) { if (*t == key) break; t += 25; }`;
+  `switch (mode) { case 0: ...; break; case 1: break; }` deu o `b` com a cópia de `lw` do ramo vazio (`st_chr_update`).
+- Sem forma: `tfd_main_text` (8: o original calcula `y + 16` e o `move a1,a2` antes do `sw ra`), `fface_free` (5: a cópia
+  de `f` para `$s1` sai no atraso do 2º `beqz`), `fld_chr_tex` (6: os testes saem 3, 1, 2 com corpos iguais aos do
+  original; 72 ordens de `case`/`default` testadas), `st_chr_step_value` (10: registradores do `level`/tabela; 288
+  ordens de declaração/atribuição × tipos), `shop_result_input` (2: `b; nop` depois do `se_play` do passo 1, o nosso
+  preenche com o `move v0,zero` do alvo), `op_bgm` (4: o modo sem limpeza pós-likely aparece com um `return` artificial;
+  nenhum plausível achado).

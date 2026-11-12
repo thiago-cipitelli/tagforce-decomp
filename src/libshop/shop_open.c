@@ -1,6 +1,5 @@
 // @range 0x088117B8-0x08812C60
 // @asm 0x0881189C-0x08811E40
-// @asm 0x0881259C-0x08812754
 // @data 0x088203A0-0x08820410
 /* Opening the bought packs one after the other: the pack model flies in and turns, it bursts, the
    cards fly out and turn over one by one (names drawn under them, gold for the rare ones), and the
@@ -67,7 +66,11 @@ int font_draw_wtext(int x, int y, int w, unsigned short *text);
 void *sceGeEdramGetAddr(void);
 void shop_open_layout(void);
 void shop_open_fly(Vec4 *out, Vec4 *a, Vec4 *b, Vec4 *c, float t);
+#ifdef __MWERKS__
+int shop_open_cards_done(unsigned short speed); /* the original's caller masks speed (andi before the switch) */
+#else
 int shop_open_cards_done(int speed);
+#endif
 int shop_card_tex_hook();
 int shop_card_glow(int a, Mat4 *m, int rarity, int speed, void *vram);
 
@@ -102,21 +105,28 @@ void shop_open_start(void)
     fade_start(1, 0xFF000000, 16);
 }
 
-#ifdef NON_MATCHING /* 344 palavras: máquina de passos longa com templates Vec4 copiados pela pilha; alocação diferente. Chamadas conferidas com o asm (passo 0 chama shop_open_setup) */
+#ifdef NON_MATCHING /* 2 palavras: no fim do then do passo 1 (depois de se_play) o original deixa b; nop e o nosso preenche o atraso com o move v0,zero do alvo (testados break, goto, return 0, sem else). Chegaram aqui: speed int com += 2, Vec4 todos no topo da função na ordem da pilha, ponteiro da carta por volta, id int e protótipo u16 de shop_open_cards_done */
 /* the opening, step by step; 1 once START (skip) was pressed or all packs are open */
 int shop_result_input(void)
 {
     PadState *pad = pad_get();
-    unsigned short speed = 1;
+    int speed = 1;
     int i;
-    int k;
     int all;
-    ShopOpen *o;
+    int k;
+    Vec4 d;
+    Vec4 e;
+    Vec4 c1;
+    Vec4 b1;
+    Vec4 a1;
+    Vec4 b5;
+    Vec4 a5;
+    Vec4 c5;
 
     if (pad->b.trig & region_pick_value(0))
         return 1;
     if (pad->b.down & region_pick_value(1))
-        speed = 3;
+        speed += 2;
     shop_open->speed = speed;
     switch (shop_open->step) {
     case 0:
@@ -129,22 +139,24 @@ int shop_result_input(void)
     case 1:
         shop_open->timer += speed;
         if (shop_open->timer >= 24) {
-            Vec4 e = shop_open_v3;
+            e = shop_open_v3;
             vec4_copy(&shop_open->pack.pos, &e);
-            o = shop_open;
-            o->pack.rot = 0.0f;
+            shop_open->pack.rot = 0.0f;
             for (i = 0; i < shop_open->n_cards; i++) {
-                vec4_copy(&o->cards[i].pos, &shop_open->card_from);
-                mat4_copy(&o->cards[i].rot, &shop_open->card_rot);
-                o->cards[i].state = 0;
-                o->cards[i].timer = 0;
+                ShopOpenCard *c = &shop_open->cards[i];
+                vec4_copy(&c->pos, &shop_open->card_from);
+                mat4_copy(&c->rot, &shop_open->card_rot);
+                c->state = 0;
+                c->timer = 0;
             }
             shop_open->timer = 0;
             shop_open->step = 2;
             se_play(0x6269);
         } else {
-            Vec4 a = shop_open_v0, b = shop_open_v1, c = shop_open_v2;
-            shop_open_fly(&shop_open->pack.pos, &c, &b, &a, shop_open->timer / 24.0f);
+            a1 = shop_open_v0;
+            b1 = shop_open_v1;
+            c1 = shop_open_v2;
+            shop_open_fly(&shop_open->pack.pos, &c1, &b1, &a1, shop_open->timer / 24.0f);
             shop_open->pack.rot = shop_open->timer * 12.566371f / 24.0f;
         }
         break;
@@ -153,8 +165,8 @@ int shop_result_input(void)
         break;
     case 3:
         all = 1;
-        for (i = 0; i < shop_open->n_cards; i++) {
-            unsigned short id = shop_open->cards[i].id;
+        for (k = 0; k < shop_open->n_cards; k++) {
+            int id = shop_open->cards[k].id;
             if (cip_query(shop.cip, id, inv_get_hi(id)))
                 all = 0;
         }
@@ -184,12 +196,12 @@ int shop_result_input(void)
             shop_open->step = 0;
             shop_open->timer = 0;
         } else {
-            Vec4 d;
-            Vec4 a = shop_open_v4, b = shop_open_v5, c;
-            vec4_sub(&d, &b, &a);
+            a5 = shop_open_v4;
+            b5 = shop_open_v5;
+            vec4_sub(&d, &b5, &a5);
             vec4_scale(&d, &d, shop_open->timer / 12.0f);
-            c = shop_open_v6;
-            vec3_add_w(&shop_open->pack.pos, &c, &d);
+            c5 = shop_open_v6;
+            vec3_add_w(&shop_open->pack.pos, &c5, &d);
         }
         break;
     }
@@ -347,7 +359,6 @@ int shop_open_next_kind(int kind)
     return -1;
 }
 
-#ifdef NON_MATCHING /* busca para trás na lista e inserção com laços aninhados; alocação diferente */
 /* adds the cards of the opened pack to the bought list */
 void shop_open_add(void)
 {
@@ -359,30 +370,38 @@ void shop_open_add(void)
     int found;
 
     for (i = 0; i < shop_open->n_cards; i++) {
+        unsigned short id = shop_open->cards[i].id;
         found = 0;
-        for (k = shop.n_items - 1; k >= 0 && kind == shop.items[k].pack; k--) {
-            if (shop_open->cards[i].id == shop.items[k].id) {
-                found = 1;
-                if (shop.items[k].count < 100)
-                    shop.items[k].count++;
-                break;
-            }
+        k = shop.n_items - 1;
+        if (k >= 0) {
+            ShopItem *it = &shop.items[k];
+            do {
+                if (kind != it->pack)
+                    break;
+                if (id == it->id) {
+                    found = 1;
+                    if (it->count < 100)
+                        it->count++;
+                    break;
+                }
+                it--;
+            } while (--k >= 0);
         }
         if (!found)
             idx[n++] = i;
     }
     if (n != 0 && shop_items_grow(n)) {
         for (i = 0; i < n; i++) {
+            int j = idx[i];
             ShopItem *it = &shop.items[shop.n_items++];
-            it->id = shop_open->cards[idx[i]].id;
-            it->key = shop_open->cards[idx[i]].key;
+            it->id = shop_open->cards[j].id;
+            it->key = shop_open->cards[j].key;
             it->pack = kind;
             it->count = 1;
             shop_item_refresh(it);
         }
     }
 }
-#endif
 
 /* room for n more lines in the bought list */
 int shop_items_grow(int n)

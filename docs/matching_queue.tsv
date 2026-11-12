@@ -47,7 +47,6 @@ fuzzy	size	module	function	address	file
 74.3	3500	libduel_eng	duel_ai_sum_088239EC	0x088239EC	src/libduel_eng/ai_08820618.c
 73.4	1572	BOOT	menu_update	0x0884B6CC	src/BOOT/menu_widget.c
 73.1	596	libstory	st_chr_update	0x08805BD0	src/libstory/s_chr.c
-71.1	440	libshop	shop_open_add	0x0881259C	src/libshop/shop_open.c
 71.1	1344	libdeck_tutorial	dt_draw_row	0x088082AC	src/libdeck_tutorial/dt_edraw.c
 70.0	2104	libshop	shop_buy_step	0x08806CC4	src/libshop/shop_state.c
 69.9	1096	libshop	shop_draw_shelf_3d	0x0880D3E0	src/libshop/shop_list.c

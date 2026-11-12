@@ -171,7 +171,7 @@ int shop_sort_value(ShopItem *it, unsigned short key)
 }
 
 
-#ifdef NON_MATCHING /* mesma lógica; o original guarda as cópias do primeiro lhu de cada caso e repete desvios (492 bytes contra 468) */
+#ifdef NON_MATCHING /* 20 palavras (488 bytes contra 492): o original deixa o default do switch interno (v = -2) num bloco próprio antes do epílogo, com b; nop; aqui o li v0,-2 vai para o atraso do b. Testados goto para um bloco comum, default primeiro, return -2 */
 /* value shown in the list row for the sort key, -2 = none */
 int shop_item_key(ShopItem *it, unsigned short key)
 {
@@ -202,12 +202,11 @@ int shop_item_key(ShopItem *it, unsigned short key)
         switch (card_get_attribute_icon(it->id)) {
         case 7:
         case 8:
-            if (key == 12) {
-                v = card_get_prop5_hi(it->id);
-                if (v == 0)
-                    v = 7;
-            } else {
+            if (key != 12) {
                 v = -2;
+            } else {
+                v = card_get_prop5_hi(it->id);
+                v = v == 0 ? 7 : v;
             }
             break;
         default:
@@ -217,13 +216,11 @@ int shop_item_key(ShopItem *it, unsigned short key)
                 break;
             case 8:
                 v = card_get_atk_q(it->id);
-                if (v == 0xFFFF)
-                    v = -1;
+                v = v == 0xFFFF ? -1 : v;
                 break;
             case 9:
                 v = card_get_def_q(it->id);
-                if (v == 0xFFFF)
-                    v = -1;
+                v = v == 0xFFFF ? -1 : v;
                 break;
             case 10:
                 v = card_get_type(it->id);

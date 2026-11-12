@@ -314,7 +314,10 @@ UiCounter shop_row_counters[3] = {
     { 0, { 0 }, 0, 0 }, { 5, { 0 }, 0xFF000000, 0 }, { 6, { 0 }, 0xFF000000, 0 },
 };
 
-#ifdef NON_MATCHING /* 294 palavras: muitos valores da carta guardados em s e na pilha; alocação diferente. O trecho dos
+#ifdef NON_MATCHING /* 159 palavras (1436 bytes contra 1460): y = row * 0x2D; y += 0x1A (li 26 + addu no original) e
+                       PT(0, atk)/PT(1, def) (andi no uso) acertaram o tamanho até os contadores; falta a troca s0/s1 de
+                       type e row/y e o x dos contadores, que o original calcula como 0xB3 + 0xC0 nos dois ramos do
+                       card_is_monster (uma variável x = 0xB3 nos dois ramos reproduz o li/addiu mas desarranja os $s). O trecho dos
                        contadores já sai igual ao original: c[] é um inicializador com valores em tempo de execução
                        (cópia do template, value gravado com lhu/and/or/sh, o 99 depois com sb); com ele o template
                        sai anônimo no .data, e shop_row_counters fica só para o asm. Corrigido em 2026-11-05: as
@@ -355,7 +358,8 @@ unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
         def = 0;
     }
     rarity = card_get_prop6_hi(it->id);
-    y = 0x1A + row * 0x2D;
+    y = 0x1A;
+    y += row * 0x2D;
     list = shop_ui_draw_card_pict(list, 0x97, y, 1, 0xFFFFFFFF, &e, shop_res_get(0x2020), shop_res_get(0x2021),
                                   shop_str_get(0xC004));
     list = shop_ui_draw_card_marks(list, 0x97, y, &e, 1, inv_get_state(e.id) == 0, 0, 0, shop_res_get(0x2025),
@@ -382,8 +386,8 @@ unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
     if (card_is_monster(it->id)) {
         list = shop_ui_draw_icon_a(list, PT(0xC4, ty), type, shop_res_get(0x2023));
         list = shop_ui_draw_level(list, PT(0xD7, ty + 2), level, 0xFF000000, shop_res_get(0x2025));
-        list = shop_ui_draw_stat(list, atk << 16, PT(0xFB, ty + 2), 0xC0A, 0xFF000000, 0);
-        list = shop_ui_draw_stat(list, def << 16 | 1, PT(0x137, ty + 2), 0xC0A, 0xFF000000, 0);
+        list = shop_ui_draw_stat(list, PT(0, atk), PT(0xFB, ty + 2), 0xC0A, 0xFF000000, 0);
+        list = shop_ui_draw_stat(list, PT(1, def), PT(0x137, ty + 2), 0xC0A, 0xFF000000, 0);
     } else {
         list = shop_ui_draw_icon_b(list, PT(0xC4, ty), type, shop_res_get(0x2023));
     }

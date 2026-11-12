@@ -1,6 +1,5 @@
 // @range 0x08810814-0x08811BE0
 // @asm 0x08810814-0x08810F44
-// @asm 0x088114E8-0x0881181C
 /* Scene commands of the field scripts: the story parameters of the scene, placing the player,
    the camera target, saving the positions of the player and the NPCs, door sounds, waits, and the
    scene GIM loaded with them. */
@@ -544,7 +543,6 @@ int fld_item_take_b(int cx, int cz, int take);
 unsigned short region_pick_value(int flag);
 int fld_bg_id(void);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 2 palavras: a constante 0.5 das divisões sai em v0 no original, v1 aqui */
 /* input of the field: the menu buttons (with the button bar held), talking/examining the cell,
    opening the menu or the map, then the scene events of the cell the player stands on (marked cell,
    door, items); *cmd/*arg get the scene command to run */
@@ -553,7 +551,7 @@ void fld_scene_input(int *cmd, int *arg)
     FieldScene *s = &field_scene;
     PadState *pad = pad_get();
     FieldChr *pl = fld_player_get();
-    int cx = pl->pos.x / 0.5f;
+    int cx = ((volatile Vec3 *)&pl->pos)->x / 0.5f;
     int cz = pl->pos.z / 0.5f;
     unsigned int trig;
     int k;
@@ -656,7 +654,6 @@ void fld_scene_input(int *cmd, int *arg)
         fld_player_stop();
     }
 }
-#endif
 
 void fld_player_set_lock(int lock);
 void fld_player_update(void);

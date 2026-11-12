@@ -1,6 +1,6 @@
 // @range 0x08827FE4-0x088290BC
 // @asm 0x088280F8-0x0882834C
-// @asm 0x088289AC-0x08828EC4
+// @asm 0x088289AC-0x08828A90
 // @rodata 0x08839924-0x088399B4
 /* Menu of the hour to wait until (field_hour_menu): the title window, the choice list with its help
    text and the hour picker that moves by quarters of hour between the current time and 23:45. */
@@ -289,7 +289,7 @@ void fclk_free(void)
     }
 }
 
-#ifdef NON_MATCHING /* fclk_list_item (lógica conferida, 50 palavras): o original materializa &field_hour_menu em $s0 no início e o mantém nas chamadas; fclk_time_draw (4 palavras): na primeira fld_draw_cell o original lê p[6].x antes de p[6].y (ordem/associação dos operandos não muda) */
+#ifdef NON_MATCHING /* fclk_list_item (lógica conferida, 50 palavras): o original materializa &field_hour_menu em $s0 no início e o mantém nas chamadas */
 void *fclk_list_item(void *list, unsigned int i, int x, int y)
 {
     FieldHourMenu *c = &field_hour_menu;
@@ -305,6 +305,7 @@ void *fclk_list_item(void *list, unsigned int i, int x, int y)
     font_set_flag8000(flag);
     return list;
 }
+#endif
 
 void *fclk_time_draw(void *list)
 {
@@ -345,7 +346,7 @@ void *fclk_time_draw(void *list)
     }
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = gim_set_texture(list, w->menu.window_gim);
-    list = fld_draw_cell(list, dx + (x + p[6].x), y + p[6].y, 0x10, 0x37, 1, 1, 0x53, 0x12);
+    list = fld_draw_cell(list, dx + (x + ((volatile FclkPos *)p)[6].x), y + ((volatile FclkPos *)p)[6].y, 0x10, 0x37, 1, 1, 0x53, 0x12);
     if (c->hour < 12)
         text = table_get_entry(fld_gim_get(5), 0x26);
     else
@@ -405,7 +406,6 @@ void *fclk_time_draw(void *list)
     font_set_flag8000(flag);
     return list;
 }
-#endif
 
 void *fclk_label_jp(void *list, int x, int y)
 {
