@@ -93,15 +93,55 @@ rascunho não converte nada); o C do port de `libc_sfvwrite` passava `(reent, fp
 `tools/argaudit.py --all` (chamadas por protótipo K&R com outro número de argumentos) ignora agora o ramo
 `#ifdef __MWERKS__` e não lista mais nada além de dois falsos positivos (linhas de definição).
 
-Avisos do gcc que valem revisão (podem ser bugs do rascunho ou fiéis ao original; conferir no asm antes de mudar):
-- `-Wimplicit-function-declaration`: 204 funções chamadas sem protótipo (retorno assumido `int`; com
-  `float` ou ponteiro de 64 bits isso quebra). Mais frequentes: `st_chr_flag_get`, `st_ev2_get_0`, `strcmp`.
-- `-Wsequence-point` (`r->lcg` em `include/dd_d3.h:60` e `dd_fx_shatter.c:53`): ordem de avaliação indefinida
-  no RNG; o gcc pode gerar outra sequência de números.
-- `-Wreturn-type`: `BOOT/deck.c:333`, `:337`, `BOOT/sys.c:162` (função não-void sem `return`).
-- `-Woverflow`: `65535` em `unsigned char` (`req_088D28F8.c:1709`, `req_effect.c:1157`).
-- `-Wtype-limits` (8), `-Wbool-compare` (`ai_cond.c:869`), `-Wmemset-elt-size` (`duel_net.c:97`),
-  `-Wincompatible-pointer-types` (`particle3.c:166`).
+### 1.2 Avisos do gcc contra o asm (passo 3, feito em 2026-11-11)
+
+Gate: `make host-warn` roda `gcc -m32 -std=gnu89 -fsyntax-only -Wall -Wextra -DNON_MATCHING` em cada `src/*/*.c`,
+sem as classes que são idioma de matching ou ruído de tipo (`-Wno-parentheses`, `-Wno-sign-compare`, `-Wno-unused`
+etc., lista em `HOST_WARN` no Makefile), e imprime a contagem por classe (log em `build/host-warn.log`). Cada aviso foi
+classificado lendo o asm do original (`tools/raw_asm.sh`) ou o objeto do mwcc, que é o original quando a função bate:
+**fiel** (o original faz o mesmo), **bug do rascunho** (o C faz o que o asm não faz) ou **port** (certo na PSP,
+indefinido ou errado no PC).
+
+| Classe | Antes | Depois | Veredito |
+|---|---|---|---|
+| `-Wimplicit-function-declaration` | 159 | 0 | port: 155 chamadas ganharam o protótipo da definição (84 no `s_vmops`); `strcmp` em `libc.h`, `sceIoWrite`, `sceKernelDcacheWritebackInvalidateAll`, `sceKernelTryAllocateVpl`/`FreeVpl` em `psp.h`; as 4 restantes eram `__builtin_args_info` do `stdarg.h`, que no host usa o `va_list` do gcc |
+| `-Wsequence-point` | 7 | 0 | port (RNG, abaixo) |
+| `-Wincompatible-pointer-types` | 10 | 0 | fiel; tipos corrigidos (abaixo) |
+| `-Wlogical-not-parentheses` | 50 | 50 | fiel: `!(x & 1) == 1` / `!= 1` é idioma de matching e tem a mesma semântica no gcc; os 9 em rascunho (`dd_fx32_s3_update`, `dd_fx_lines_update`, `dd_orbs_update`, `dd_trail_update`, `duel_0887F8E4`) diferem do original só em registradores/ordem |
+| `-Wtype-limits` | 8 | 8 | fiel (abaixo) |
+| `-Wint-to-pointer-cast` | 6 | 6 | port, não corrigido: `HeapEnt.addr` (`BOOT/heap.c`) tem 31 bits, então a arena do heap precisa ficar abaixo de `0x80000000` no host (anotado no fonte) |
+| `-Wint-conversion` | 3 | 3 | fiel: `duel_0880F8C4`/`duel_088807F0` recebem um `DuelAct *` como `b`, que a definição ignora (passo 2) |
+| `-Waddress` | 3 | 3 | fiel: `&r != 0` em `ehf_cmd_srt` (bate); `&crt0_init_hook != 0` em `crt0_run_init` é o teste do símbolo fraco, igual ao asm (0x08804364: endereço, depois `lw` e `jalr`) |
+| `-Wreturn-type` | 2 | 2 | fiel: `state_noop_update`/`state_noop_exit` (`BOOT/deck.c`) são `jr ra` e `sys_state_update`/`sys_state_set_callbacks` ignoram o retorno |
+| `-Woverflow` | 2 | 2 | fiel: `idx = 0xFFFF` num `unsigned char` (`duel_req_088D63FC`, `duel_req_088D9DBC`, ambas batem): o original grava `0xFF` |
+| `-Wmemset-elt-size` | 1 | 1 | fiel (bug do original): `duel_net_poll` (bate) zera 4 bytes de `int duel_net_done[4]`, só o jogador 0 |
+| `-Wbool-compare` | 1 | 1 | fiel (bug do original): `!duel_count_monsters(p) < 3` em `duel_ai_08820260` (bate; asm `sltu`/`xori`/`slti 3`): a função sempre devolve 0 |
+| `-Wmain` | 1 | 1 | ponto de entrada (`void main(void)`), que o port substitui |
+| **total** | 253 | 77 | |
+
+Nenhum bug de rascunho apareceu: todos os avisos em código `NON_MATCHING` conferem com o asm. Detalhes:
+- **Protótipos que mudam o objeto do mwcc**: com argumento ou retorno `unsigned char`/`unsigned short`, o protótipo faz
+  o mwcc estreitar o valor (`andi`, `lbu` no lugar de `lhu`) ou realocar registradores. Esses ficam sob
+  `#ifndef __MWERKS__` (`s_vmops` 14, `stt_branch_find` no `s_story`, `recipe_get_id` no `t_deckpick`,
+  `duel_088BFFD8` no `ai_08864044`). Os chamados conferidos gravam o byte (`sb`), então estreitar no PC dá o mesmo
+  resultado. No `s_vmops` os getters que devolvem ponteiro e o `st_text_at` ficam declarados com `int`, o tipo dos
+  campos que recebem o valor (benigno em 32 bits).
+- **RNG (`DD_RAND`)**: duas chamadas na mesma expressão não têm ordem definida em C. No asm, o mwcc sorteia o sinal
+  (`DD_RAND(r) % 2 * 2 - 1`) antes da magnitude dos dois lados do `*` (`dd_fx32` ×4, `dd_burst_update` e o original de
+  `dd_burst2_update`, `dd_fx_shatter_update` em 0x0882DA98), avalia os argumentos de `vec3_set` da direita para a
+  esquerda (`dd_fx_shatter`) e sorteia o 6º argumento de `draw_sprite` antes do 5º (`dd_fx_noise_update`, 0x088307D8).
+  O ramo `#else` de `__MWERKS__` usa temporários nessa ordem (`dd_rand_sgn` no `dd_fx_shatter`). A busca cobriu toda
+  expressão com dois sorteios, não só as que o gcc avisa (`dd_fx_burst` e `dd_fx32` não avisavam).
+- **`-Wtype-limits`**: `flight->idx < 0` com `idx` `unsigned short` (`dk_flight_undo`, `ds_input_move`,
+  `dt_flight_undo`, `sc_input_move`, rascunhos): o original faz `lhu` + `bgez`, então o teste também nunca falha lá
+  (quando a carta não é achada, `idx` fica `0xFFFF` e o fluxo segue); `v >= 0` com `v` sem sinal (`inv_set_limit`,
+  `partner_count_set`), `play_counter < 0xFFFFFFFFF` (`frame_tick`) e `a->w[q2] < 0` (`duel_08899D34`) batem.
+- **Tipos**: `struct EhfEmitter` declarada antes do `EhfPosFn` (`particle3.c`; antes ficava com escopo do protótipo);
+  `DkRecipeCfg.save/load` com a assinatura de `RvParams.on_delete/on_select` no host; `dd_cobj_link_add/del` com o tipo
+  do callback de `func_08820D40` no host; cast do callback de `duel_08865C10` (rascunho) para o tipo do parâmetro.
+
+Ponto aberto para o `platform/`: o gcc em `-m32` usa x87 com precisão estendida; para os `float` darem os mesmos bits
+que a FPU da PSP, compilar com `-msse2 -mfpmath=sse` (*inferido*, não testado).
 
 **64 bits** (`-m64`, *inferido* como trabalho grande): 398 casts ponteiro→inteiro e 241 inteiro→ponteiro em 124
 arquivos, além de structs com ponteiros que são carregadas de arquivo (EHP relocado no lugar). Começar o port em
@@ -148,6 +188,6 @@ display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescr
 2. ~~Protótipos consistentes com a definição para as classes que quebram no PC~~ (feito, seção 1.1; gate
    `make host-lto`). Falta: unificar os ~380 avisos benignos num header por módulo (limpeza de tipos), o corpo de
    `_strtod_r` e nomes próprios para os 7 símbolos repetidos quando os gmodules forem ligados juntos.
-3. Revisar os avisos do gcc da lista acima contra o asm.
+3. ~~Revisar os avisos do gcc contra o asm~~ (feito, seção 1.2; gate `make host-warn`).
 4. `platform/` em 32 bits: arquivos, thread/timer, input, janela, áudio PCM; gmodules linkados juntos.
 5. Gráficos (decisão GE vs `dl.c`), depois save/OSK/fonte; rede e vídeo como stubs.

@@ -10,7 +10,7 @@
 #define HEAP_MAGIC 0x45474F48          /* "HOGE" */
 
 typedef struct HeapEnt {
-    unsigned int addr : 31;
+    unsigned int addr : 31;   /* port: 31 bits, so the heap arena must sit below 0x80000000 on the host */
     unsigned int free : 1;
 } HeapEnt;
 

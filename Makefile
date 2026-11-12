@@ -60,7 +60,7 @@ $(OUT): $(LD_SCRIPT) $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)
 clean:
 	rm -rf build/asm/$(MODULE) build/src/$(MODULE) build/assets/$(MODULE) $(OUT) build/$(MODULE).map $(LD_SCRIPT) asm/$(MODULE) assets/$(MODULE)
 
-.PHONY: all check check-all clean verify host-check host-lto
+.PHONY: all check check-all clean verify host-check host-lto host-warn
 
 check-all:
 	@for m in $$(ls build/elf | sed 's/\.elf$$//'); do printf '%s: ' $$m; $(MAKE) --no-print-directory MODULE=$$m check 2>&1 | tail -1; done
@@ -90,3 +90,13 @@ host-lto:
 	  -o build/host-lto/$$(basename $$(dirname $$f)).$$(basename $$f .c).o || echo "FAIL $$f"; done
 	@gcc -m32 -flto -r -nostdlib -Wlto-type-mismatch build/host-lto/*.o -o build/host-lto/all.o 2> build/host-lto/lto.log; \
 	  python3 tools/lto_mismatch.py build/host-lto/lto.log
+
+# port gate (phase 5): gcc -Wall -Wextra over every src/*.c (32-bit, NON_MATCHING drafts), minus the classes that are
+# matching idioms or type noise; prints the count per warning class (full log in build/host-warn.log;
+# docs/port_survey.md, step 3)
+HOST_WARN := -Wall -Wextra -Wno-parentheses -Wno-missing-field-initializers -Wno-missing-braces -Wno-cast-function-type \
+  -Wno-unterminated-string-initialization -Wno-builtin-declaration-mismatch -Wno-unknown-pragmas -Wno-comment \
+  -Wno-unused -Wno-sign-compare -Wno-unused-parameter
+host-warn:
+	@for f in src/*/*.c; do gcc -m32 -std=gnu89 -fsyntax-only $(HOST_WARN) -DNON_MATCHING -Iinclude -I$$(dirname $$f) $$f; \
+	  done > build/host-warn.log 2>&1; grep -o '\[-W[a-z-]*\]' build/host-warn.log | sort | uniq -c | sort -rn

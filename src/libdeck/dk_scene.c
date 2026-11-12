@@ -55,8 +55,13 @@ typedef struct DkRecipeCfg {           /* recipe_viewer_init */
     void *heap;
     Cip *cip;
     void *pack;
+#ifdef __MWERKS__
     void (*save)(void);
     void (*load)(void);
+#else
+    void (*save)(int slot);                              /* RvParams.on_delete */
+    void (*load)(RecipeData *d, unsigned short *name);  /* RvParams.on_select */
+#endif
 } DkRecipeCfg;
 
 typedef struct DkTutorialCfg {         /* dt_init */

@@ -448,7 +448,7 @@ int duel_08865C10(DuelAct *a)
     case 2:
         duel_0884ACD8(a->player, 0x3A);
         if (duel_player_type[a->player] == 1) {
-            duel_0881956C(a->player, a->id, (int (*)(int))duel_08865ABC);
+            duel_0881956C(a->player, a->id, (int (*)(unsigned int, int, int))duel_08865ABC);
         } else {
             duel_08835978((int (*)(int))duel_08865ABC);
         }

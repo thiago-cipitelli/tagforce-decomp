@@ -19,6 +19,7 @@ typedef struct EhfPool {
     int n;
 } EhfPool;
 
+struct EhfEmitter;
 typedef void (*EhfPosFn)(Vec4 *out, struct EhfEmitter *e, void *arg);
 
 typedef struct EhfEmitter {
