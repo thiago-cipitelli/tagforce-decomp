@@ -321,24 +321,34 @@ void menu_draw(void **dl, MenuWidget *w)
 }
 
 #ifdef NON_MATCHING
-/* NON_MATCHING: switch (state) na ordem do original (2, 5 -> 6 -> 3 com fall-through, 4, default);
-   1748 B contra 1572 B: a entrada (cancelar/aceitar/cursor) ainda tem blocos em outra ordem e
-   cópias recarregadas (415 palavras). */
+/* Rodada 23: refeito do asm; lógica corrigida (a tecla aceitar/cancelar vem de pad->b.trig e o movimento
+   do cursor de pad->b.rep: o rascunho lia dir_rep e trig; cancelar com cancel_resets primeiro, linhas > 0 e
+   initial >= scroll + rows; busca dos botões com teste booleano materializado). 282 palavras (1580 B contra 1572 B; antes 415), do modo
+   sem limpeza pós-likely (li v0,-1; b; nop sem preencher, cadeias de b), que numa função que devolve valor não
+   tem gatilho conhecido (docs/matching.md, rodadas 19-20). */
 /* Advances the widget one frame. Returns -3 when idle, -2 when cancelled, the selected list index
    or button when accepted, -1 otherwise. */
+static inline int menu_bit_on(unsigned char bits, int k)
+{
+    return (bits & (1 << k)) != 0;
+}
+
 int menu_update(MenuWidget *w)
 {
     PadState *pad = w->pad;
-    unsigned int pressed, accept, cancel, style;
-    unsigned char bits, b, nb, i;
-    int k;
+    unsigned int pressed;
+    unsigned short accept;
+    unsigned char bits, b, nb;
+    int i, k, n, style;
 
     if (pad == 0)
         pad = pad_get();
     switch (w->state) {
     case 2:
-        if (menu_item_is_open(&w->menu, &w->def) != 0)
+        if (menu_item_is_open(&w->menu, &w->def) != 0) {
             w->state = 3;
+            return -1;
+        }
         return -1;
     case 5:
         if (menu_item_is_open(&w->menu, &w->def) == 0)
@@ -384,41 +394,37 @@ int menu_update(MenuWidget *w)
     default:
         return -3;
     }
-    pressed = pad->b.dir_rep;
+    pressed = pad->b.trig;
     accept = region_pick_value(0);
-    cancel = region_pick_value(1);
-    if (pressed & cancel & 0xFFFF) {
+    if (pressed & region_pick_value(1)) {
         if (w->cancel_blocked) {
             se_play(0x6215);
             return -1;
         }
         se_play(0x6214);
         w->cancelled = 1;
-        if (!(w->cancel_resets)) {
-            if (!(w->keep_open)) {
-                menu_finish(w);
-                return -1;
+        if (w->cancel_resets) {
+            if (w->style != 0) {
+                if (w->rows > 0 && w->initial >= w->scroll + w->rows) {
+                    w->cursor = w->rows - 1;
+                    w->scroll = w->initial - w->cursor;
+                } else {
+                    w->cursor = w->initial;
+                }
+                w->state = 4;
             }
+            if (w->buttons != 0) {
+                w->button = w->initial;
+                w->state = 4;
+            }
+            return -1;
+        }
+        if (w->keep_open)
             return -2;
-        }
-        if (w->style != 0) {
-            if (w->rows == 0) {
-                w->cursor = w->initial;
-            } else if (w->initial < w->scroll + w->rows) {
-                w->cursor = w->initial;
-            } else {
-                w->cursor = w->rows - 1;
-                w->scroll = w->initial - w->cursor;
-            }
-            w->state = 4;
-        }
-        if (w->buttons != 0) {
-            w->button = w->initial & 0xF;
-            w->state = 4;
-        }
+        menu_finish(w);
         return -1;
     }
-    if (pressed & accept & 0xFFFF) {
+    if (pressed & accept) {
         if (w->accept_blocked)
             return -1;
         if (w->style != 0 && (w->disabled >> (w->scroll + w->cursor)) & 1) {
@@ -433,34 +439,35 @@ int menu_update(MenuWidget *w)
     style = w->style;
     if (style != 0) {
         if (style & 1) {
-            if (pad->b.trig & 0x80) {
+            if (pad->b.rep & 0x80) {
                 menu_cursor_prev(w);
                 se_play(0x6212);
             }
-            if (pad->b.trig & 0x20) {
+            if (pad->b.rep & 0x20) {
                 menu_cursor_next(w);
                 se_play(0x6212);
             }
         } else {
-            if (pad->b.trig & 0x10) {
+            if (pad->b.rep & 0x10) {
                 menu_cursor_prev(w);
                 se_play(0x6212);
             }
-            if (pad->b.trig & 0x40) {
+            if (pad->b.rep & 0x40) {
                 menu_cursor_next(w);
                 se_play(0x6212);
             }
         }
         return -1;
     }
-    if (w->buttons == 0)
+    n = w->buttons;
+    if (n == 0)
         return -1;
-    bits = menu_button_bits[w->buttons];
+    bits = menu_button_bits[n];
     b = w->button;
     nb = b;
-    if (pad->b.trig & 0x80) {
+    if (pad->b.rep & 0x80) {
         for (i = 1; i < 8; i++) {
-            if (bits & (1 << ((b + 8 - i) & 7))) {
+            if (menu_bit_on(bits, (b + 8 - i) & 7)) {
                 nb = (b + 8 - i) & 7;
                 break;
             }
@@ -470,11 +477,9 @@ int menu_update(MenuWidget *w)
             w->button = nb;
         }
     }
-    if (pad->b.trig & 0x20) {
-        k = nb;
-        for (i = 1; i < 8; i++) {
-            k++;
-            if (bits & (1 << (k & 7))) {
+    if (pad->b.rep & 0x20) {
+        for (i = 1, k = nb + 1; i < 8; i++, k++) {
+            if (menu_bit_on(bits, k & 7)) {
                 nb = (nb + i) & 7;
                 break;
             }
