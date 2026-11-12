@@ -1,8 +1,6 @@
 // @range 0x08808040-0x088099CC
 // @asm 0x08808040-0x08808694
 // @asm 0x08808694-0x088088B4
-// @asm 0x08808A1C-0x08808B30
-// @asm 0x08809524-0x08809638
 // @data 0x0881AE28-0x0881AE58
 /* The two card panes: header icons (sort, direction, filter and its count, the "new" mark), the
    scroll bars, the copy counts of the tabs, and the cards themselves, as a grid of pictures or as
@@ -251,7 +249,6 @@ void *sc_draw_panes(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* o original carrega a largura da linha depois da junção do ternário; o mwcc atual a sobe para o atraso do desvio */
 /* list mode: one card per row */
 void *sc_draw_rows(void *list, ScPane *p)
 {
@@ -271,13 +268,12 @@ void *sc_draw_rows(void *list, ScPane *p)
             e = 0;
         else
             e = &l->ents[l->order[idx]];
-        list = sc_draw_row(list, x, y, lay->row_w, e);
+        list = sc_draw_row(list, x, y, *(volatile unsigned short *)&lay->row_w, e); /* volatile: row_w read after the join of the ?: (not in the branch delay slot) */
         idx++;
         y += lay->row_h;
     }
     return list;
 }
-#endif
 
 /* grid mode: card pictures with their marks */
 void *sc_draw_grid(void *list, ScPane *p)
@@ -442,7 +438,6 @@ void *sc_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
     return sc_draw_card_marks(list, x, y, e, full, inv_get_state(e->id == 1), 0, rank, res_get(0x8009), res_get(0x800A));
 }
 
-#ifdef NON_MATCHING /* o original carrega a largura da linha depois da junção do ternário; o mwcc atual a sobe para o atraso do desvio */
 /* small rows of the second pane (modes 2 and 3) */
 void *sc_draw_rows_small(void *list, ScPane *p)
 {
@@ -459,13 +454,12 @@ void *sc_draw_rows_small(void *list, ScPane *p)
         n = l->count - idx;
     for (i = 0; i < n; i++) {
         e = SC_ENT(l, idx);
-        list = sc_draw_row_small(list, x, y, lay->row_w, e);
+        list = sc_draw_row_small(list, x, y, *(volatile unsigned short *)&lay->row_w, e);
         idx++;
         y += lay->row_h;
     }
     return list;
 }
-#endif
 
 void *sc_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, ScEnt *e)
 {

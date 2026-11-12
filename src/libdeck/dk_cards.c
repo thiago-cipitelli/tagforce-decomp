@@ -1,6 +1,4 @@
 // @range 0x0880F1E4-0x088103A0
-// @asm 0x0880F284-0x0880F3BC
-// @asm 0x0880FB34-0x0880FC6C
 // @asm 0x0880FFC4-0x088103A0
 // @data 0x08822EF0-0x08822F14
 /* The cards of the two panes, as a grid of pictures or as rows (picture, name, kind/attribute
@@ -68,7 +66,6 @@ void *dk_draw_panes(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* o original carrega a largura da linha depois da junção do ternário; o mwcc atual a sobe para o atraso do desvio (como sc_draw_rows) */
 /* list mode: one card per row (the copies are not shown for the rented list) */
 void *dk_draw_rows(void *list, DkPane *p)
 {
@@ -92,13 +89,12 @@ void *dk_draw_rows(void *list, DkPane *p)
         n = l->count - idx;
     for (i = 0; i < n; i++) {
         e = DK_ENT(l, idx);
-        list = dk_draw_row(list, x, y, lay->row_w, e, show);
+        list = dk_draw_row(list, x, y, *(volatile unsigned short *)&lay->row_w, e, show); /* volatile: row_w read after the join of the ?: (not in the branch delay slot) */
         idx++;
         y += lay->row_h;
     }
     return list;
 }
-#endif
 
 /* grid mode: card pictures with their marks */
 void *dk_draw_grid(void *list, DkPane *p)
@@ -213,7 +209,6 @@ void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
     return dk_draw_card_marks(list, x, y, e, full, inv_get_state(e->id) == 1, show, 0, dk_res_get(0x8009), dk_res_get(0x800A));
 }
 
-#ifdef NON_MATCHING /* mesmo problema de dk_draw_rows */
 /* small rows of the second pane (modes 2 and 3) */
 void *dk_draw_rows_small(void *list, DkPane *p)
 {
@@ -237,13 +232,12 @@ void *dk_draw_rows_small(void *list, DkPane *p)
         n = l->count - idx;
     for (i = 0; i < n; i++) {
         e = DK_ENT(l, idx);
-        list = dk_draw_row_small(list, x, y, lay->row_w, e, show);
+        list = dk_draw_row_small(list, x, y, *(volatile unsigned short *)&lay->row_w, e, show);
         idx++;
         y += lay->row_h;
     }
     return list;
 }
-#endif
 
 void *dk_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, DkEnt *e, int show)
 {

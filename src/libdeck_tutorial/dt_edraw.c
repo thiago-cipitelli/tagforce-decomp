@@ -2,8 +2,6 @@
 // @rodata 0x08820F08-0x08820F78
 // @asm 0x08805BE4-0x08805FC0
 // @asm 0x088071CC-0x0880779C
-// @asm 0x08807F60-0x08808098
-// @asm 0x088087EC-0x08808924
 // @data 0x08821E34-0x08821E70
 /* Drawing of the deck editor (the libdeck screen the lesson runs on): the card info strip, the icon
    wrappers, the pane shade, the sort value bubble, the frame export (clear, background, panes, focus
@@ -862,7 +860,6 @@ void *dt_draw_panes(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* 12 palavras: o original calcula e (SC_ENT) com bnezl e só depois carrega row_w; aqui a carga de row_w vai para o delay do bnez */
 /* list mode: one card per row */
 void *dt_draw_rows(void *list, DtPane *p)
 {
@@ -886,13 +883,12 @@ void *dt_draw_rows(void *list, DtPane *p)
         n = l->count - idx;
     for (i = 0; i < n; i++) {
         e = SC_ENT(l, idx);
-        list = dt_draw_row(list, x, y, lay->row_w, e, blink);
+        list = dt_draw_row(list, x, y, *(volatile unsigned short *)&lay->row_w, e, blink); /* volatile: row_w read after the join of the ?: (not in the branch delay slot) */
         idx++;
         y += lay->row_h;
     }
     return list;
 }
-#endif
 
 /* grid mode: card pictures with their marks */
 void *dt_draw_grid(void *list, DtPane *p)
@@ -1011,7 +1007,6 @@ void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
     return dt_draw_card_marks(list, x, y, e, full, 0, blink, 0, dt_eres_get(0x8009), dt_eres_get(0x800A));
 }
 
-#ifdef NON_MATCHING /* 12 palavras: como dt_draw_rows */
 /* small rows of the second pane (modes 2 and 3) */
 void *dt_draw_rows_small(void *list, DtPane *p)
 {
@@ -1035,13 +1030,12 @@ void *dt_draw_rows_small(void *list, DtPane *p)
         n = l->count - idx;
     for (i = 0; i < n; i++) {
         e = SC_ENT(l, idx);
-        list = dt_draw_row_small(list, x, y, lay->row_w, e, blink);
+        list = dt_draw_row_small(list, x, y, *(volatile unsigned short *)&lay->row_w, e, blink);
         idx++;
         y += lay->row_h;
     }
     return list;
 }
-#endif
 
 void *dt_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, DtEnt *e, int blink)
 {

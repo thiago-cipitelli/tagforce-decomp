@@ -1,6 +1,4 @@
 // @range 0x08808A54-0x08809804
-// @asm 0x08808AF4-0x08808C08
-// @asm 0x088093A0-0x088094B4
 // @data 0x0881A17C-0x0881A1A0
 /* The cards of the two panes, as a grid of pictures or as rows (picture, name, kind/attribute
    icons, level, ATK/DEF and the copies in the main and extra decks), small rows for the narrow
@@ -41,7 +39,6 @@ void *ds_draw_panes(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* o original carrega a largura da linha depois da junção do ternário; o mwcc atual a sobe para o atraso do desvio */
 /* list mode: one card per row */
 void *ds_draw_rows(void *list, DsPane *p)
 {
@@ -61,13 +58,12 @@ void *ds_draw_rows(void *list, DsPane *p)
             e = 0;
         else
             e = &l->ents[l->order[idx]];
-        list = ds_draw_row(list, x, y, lay->row_w, e);
+        list = ds_draw_row(list, x, y, *(volatile unsigned short *)&lay->row_w, e); /* volatile: row_w read after the join of the ?: (not in the branch delay slot) */
         idx++;
         y += lay->row_h;
     }
     return list;
 }
-#endif
 
 /* grid mode: card pictures with their marks */
 void *ds_draw_grid(void *list, DsPane *p)
@@ -201,7 +197,6 @@ void *ds_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
     return ds_draw_card_marks(list, x, y, e, full, inv_get_state(e->id == 1), 1, 0, res_get(0x8009), res_get(0x800A));
 }
 
-#ifdef NON_MATCHING /* o original carrega a largura da linha depois da junção do ternário; o mwcc atual a sobe para o atraso do desvio */
 /* small rows of the second pane (modes 2 and 3) */
 void *ds_draw_rows_small(void *list, DsPane *p)
 {
@@ -218,13 +213,12 @@ void *ds_draw_rows_small(void *list, DsPane *p)
         n = l->count - idx;
     for (i = 0; i < n; i++) {
         e = DS_ENT(l, idx);
-        list = ds_draw_row_small(list, x, y, lay->row_w, e);
+        list = ds_draw_row_small(list, x, y, *(volatile unsigned short *)&lay->row_w, e);
         idx++;
         y += lay->row_h;
     }
     return list;
 }
-#endif
 
 void *ds_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, DsEnt *e)
 {
