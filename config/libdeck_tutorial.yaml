@@ -35,8 +35,6 @@ segments:
       - [0x37FC, c, dt_edraw]
       - [0x3FC0, asm, dt_edraw_asm_08807F60]
       - [0x40F8, c, dt_edraw]
-      - [0x430C, asm, dt_edraw_asm_088082AC]
-      - [0x484C, c, dt_edraw]
       - [0x484C, asm, dt_edraw_asm_088087EC]
       - [0x4984, c, dt_edraw]
       - [0x4CCC, c, dt_parts]

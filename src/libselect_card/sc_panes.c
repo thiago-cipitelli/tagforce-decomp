@@ -2,7 +2,7 @@
 // @asm 0x08808040-0x08808694
 // @asm 0x08808694-0x088088B4
 // @asm 0x08808A1C-0x08808B30
-// @asm 0x08808D88-0x08809638
+// @asm 0x08809524-0x08809638
 // @data 0x0881AE28-0x0881AE58
 /* The two card panes: header icons (sort, direction, filter and its count, the "new" mark), the
    scroll bars, the copy counts of the tabs, and the cards themselves, as a grid of pictures or as
@@ -319,27 +319,32 @@ void *sc_draw_grid(void *list, ScPane *p)
 }
 
 /* the three counters of a row (template of sc_draw_row's local) */
-ScCounter sc_row_counters[3] = { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF000000, 0 }, { 4, { 0 }, 0xFF000000, 0 } };
+typedef struct ScRowCounters {         /* copied as one struct */
+    ScCounter c[3];
+} ScRowCounters;
 
-#ifdef NON_MATCHING /* o modelo dos contadores é copiado com lwc1/swc1 e a alocação de s/pilha difere */
+ScRowCounters sc_row_counters = { { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF000000, 0 }, { 4, { 0 }, 0xFF000000, 0 } } };
+
 /* a wide row: frame, picture, name, icons, level, ATK/DEF, then the counters or the copies */
 void *sc_draw_row(void *list, unsigned short x, unsigned short y, unsigned short w, ScEnt *e)
 {
     unsigned short attr;
     unsigned short tx;
-    int full = 0;
-    unsigned short rank = 0;
+    int full;
+    unsigned short rank;
     unsigned int color;
     unsigned short type;
     unsigned short kind;
     unsigned short atk;
     unsigned short def;
     unsigned short level;
-    unsigned short cx;
     int i;
     unsigned short id;
+    unsigned short *name;
 
     attr = card_get_attribute_icon(e->id);
+    full = 0;
+    rank = 0;
     list = sc_draw_row_frame(list, PT(x + 23, y), w, attr, res_get(0x8006));
     color = 0xFFFFFFFF;
     if (sc.kind == 0 && e->rank != 4) {
@@ -355,7 +360,8 @@ void *sc_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         font_set_flag4000(1);
         font_set_flag8(0);
     }
-    font_draw_text(tx << 6, (y + 2) << 6, (w - 54) << 6, card_get_name(e->id));
+    name = card_get_name(e->id);
+    font_draw_text((unsigned int)tx << 6, (y + 2) << 6, (w - 54) << 6, name); /* cast: no CSE of tx with the branches */
     if (cfg_get_language() != 0) {
         font_set_flag4000(0);
         font_set_flag8(1);
@@ -366,6 +372,7 @@ void *sc_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         kind = card_get_kind(e->id);
         list = sc_draw_kind_icon(list, tx, y + 14, kind);
         list = sc_draw_attr_icon(list, tx + 18, y + 14, type);
+        tx += 193;
     } else {
         type = card_get_type(e->id);
         kind = card_get_kind(e->id);
@@ -377,62 +384,62 @@ void *sc_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         list = sc_draw_level(list, PT(tx + 37, y + 16), level, 0xFF000000, res_get(0x8009));
         list = sc_draw_stat(list, atk << 16, PT(tx + 73, y + 16), 0xC0A, 0xFF000000, res_get(0x8009));
         list = sc_draw_stat(list, def << 16 | 1, PT(tx + 133, y + 16), 0xC0A, 0xFF000000, res_get(0x8009));
+        tx += 193;
     }
-    cx = tx + 193;
-    if (x + w < cx + 50) {
+    if (x + w < tx + 50) {
         full = 1;
     } else {
-        ScCounter c[3];
+        ScRowCounters c = sc_row_counters;
 
-        memcpy(c, sc_row_counters, sizeof(c));
-
-        if (sc.kind == 0) {
-            c[0].icon = 0;
-            c[1].icon = 5;
-            c[1].value = sc_list_count_id(&sc.list[1], e->id, 0);
-            c[2].icon = 6;
-            c[2].value = inv_get_count(e->id);
-        } else {
+        switch (sc.kind) {
+        case 0:
+            c.c[0].icon = 0;
+            c.c[1].icon = 5;
+            c.c[1].value = sc_list_count_id(&sc.list[1], e->id, 0);
+            c.c[2].icon = 6;
+            c.c[2].value = inv_get_count(e->id);
+            break;
+        default:
             if (card_attribute_icon_is3(e->id)) {
-                c[1].icon = 3;
-                c[0].icon = 0;
+                c.c[1].icon = 3;
+                c.c[0].icon = 0;
                 for (i = 0; i < deck_count(3); i++) {
                     if (e->id == deck_get_card(3, i))
-                        c[1].value++;
+                        c.c[1].value++;
                 }
                 for (i = 0; i < partner_count_get(); i++) {
                     if (e->id == partner_id_get(i) && partner_state_get(i) == 3)
-                        c[1].color = 0xFF0080FF;
+                        c.c[1].color = 0xFF0080FF;
                 }
             } else {
                 for (i = 0; i < deck_count(1); i++) {
                     if (e->id == deck_get_card(1, i))
-                        c[0].value++;
+                        c.c[0].value++;
                 }
                 for (i = 0; i < deck_count(2); i++) {
                     if (e->id == deck_get_card(2, i))
-                        c[1].value++;
+                        c.c[1].value++;
                 }
                 for (i = 0; i < partner_count_get(); i++) {
                     if (e->id == partner_id_get(i)) {
                         if (partner_state_get(i) == 1)
-                            c[0].color = 0xFF0080FF;
+                            c.c[0].color = 0xFF0080FF;
                         if (partner_state_get(i) == 2)
-                            c[1].color = 0xFF0080FF;
+                            c.c[1].color = 0xFF0080FF;
                     }
                 }
             }
-            c[2].value = sc_list_count_id(&sc.list[0], e->id, 0);
+            c.c[2].value = sc_list_count_id(&sc.list[0], e->id, 0);
             if (scv.pane[scv.side].list->tab == 1)
                 full = 1;
+            break;
         }
-        list = sc_draw_counters(list, PT(cx + 7, y + 14), c, res_get(0x8006), res_get(0x800A));
+        list = sc_draw_counters(list, PT(tx + 7, y + 14), c.c, res_get(0x8006), res_get(0x800A));
     }
     if (inv_get_flag7(e->id))
         list = sc_draw_flag_icon(list, PT(x + w - 24, y + 3), 2, res_get(0x800A));
     return sc_draw_card_marks(list, x, y, e, full, inv_get_state(e->id == 1), 0, rank, res_get(0x8009), res_get(0x800A));
 }
-#endif
 
 #ifdef NON_MATCHING /* o original carrega a largura da linha depois da junção do ternário; o mwcc atual a sobe para o atraso do desvio */
 /* small rows of the second pane (modes 2 and 3) */

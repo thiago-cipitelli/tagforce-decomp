@@ -44,7 +44,7 @@ segments:
       - [0xB244, c, dk_cards]
       - [0xB2E4, asm, dk_cards_asm_0880F284]
       - [0xB41C, c, dk_cards]
-      - [0xB644, asm, dk_cards_asm_0880F5E4]
+      - [0xBB94, asm, dk_cards_asm_0880FB34]
       - [0xBCCC, c, dk_cards]
       - [0xC024, asm, dk_cards_asm_0880FFC4]
       - [0xC400, c, dk_icons]

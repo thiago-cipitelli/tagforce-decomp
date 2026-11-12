@@ -1,6 +1,6 @@
 // @range 0x0880F1E4-0x088103A0
 // @asm 0x0880F284-0x0880F3BC
-// @asm 0x0880F5E4-0x0880FC6C
+// @asm 0x0880FB34-0x0880FC6C
 // @asm 0x0880FFC4-0x088103A0
 // @data 0x08822EF0-0x08822F14
 /* The cards of the two panes, as a grid of pictures or as rows (picture, name, kind/attribute
@@ -138,7 +138,6 @@ void *dk_draw_grid(void *list, DkPane *p)
 /* the three counters of a row: copies in the deck / side / extra (blue when rented to the partner) */
 DkRowCounters dk_row_counters = { { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF000000, 0 }, { 4, { 0 }, 0xFF000000, 0 } } };
 
-#ifdef NON_MATCHING /* o modelo dos contadores é copiado com lwc1/swc1 como no original, mas a alocação de s/pilha difere (como sc_draw_row) */
 /* a wide row: frame, picture, name, icons, level, ATK/DEF, then the counters */
 void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short w, DkEnt *e, int show)
 {
@@ -150,6 +149,7 @@ void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
     unsigned short atk;
     unsigned short def;
     unsigned short level;
+    unsigned short *name;
 
     attr = card_get_attribute_icon(e->id);
     full = 0;
@@ -163,7 +163,8 @@ void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         font_set_flag4000(1);
         font_set_flag8(0);
     }
-    font_draw_text(tx << 6, (y + 2) << 6, (w - 54) << 6, card_get_name(e->id));
+    name = card_get_name(e->id);
+    font_draw_text((unsigned int)tx << 6, (y + 2) << 6, (w - 54) << 6, name); /* cast: no CSE of tx with the branches */
     if (cfg_get_language() != 0) {
         font_set_flag4000(0);
         font_set_flag8(1);
@@ -174,6 +175,7 @@ void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         kind = card_get_kind(e->id);
         list = dk_draw_kind_icon(list, tx, y + 14, kind);
         list = dk_draw_attr_icon(list, tx + 18, y + 14, type);
+        tx += 193;
     } else {
         type = card_get_type(e->id);
         kind = card_get_kind(e->id);
@@ -185,8 +187,8 @@ void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         list = dk_draw_level(list, PT(tx + 37, y + 16), level, 0xFF000000, dk_res_get(0x8009));
         list = dk_draw_stat(list, atk << 16, PT(tx + 73, y + 16), 0xC0A, 0xFF000000, dk_res_get(0x8009));
         list = dk_draw_stat(list, def << 16 | 1, PT(tx + 133, y + 16), 0xC0A, 0xFF000000, dk_res_get(0x8009));
+        tx += 193;
     }
-    tx += 193;
     if (x + w < tx + 50) {
         full = 1;
     } else {
@@ -210,7 +212,6 @@ void *dk_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         list = dk_draw_flag_icon(list, PT(x + w - 24, y + 3), 2, dk_res_get(0x800A));
     return dk_draw_card_marks(list, x, y, e, full, inv_get_state(e->id) == 1, show, 0, dk_res_get(0x8009), dk_res_get(0x800A));
 }
-#endif
 
 #ifdef NON_MATCHING /* mesmo problema de dk_draw_rows */
 /* small rows of the second pane (modes 2 and 3) */

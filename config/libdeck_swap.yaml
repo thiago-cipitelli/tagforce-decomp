@@ -39,7 +39,7 @@ segments:
       - [0x4AB4, c, ds_cards]
       - [0x4B54, asm, ds_cards_asm_08808AF4]
       - [0x4C68, c, ds_cards]
-      - [0x4E78, asm, ds_cards_asm_08808E18]
+      - [0x5400, asm, ds_cards_asm_088093A0]
       - [0x5514, c, ds_cards]
       - [0x5864, c, ds_input]
       - [0x6A1C, asm, ds_input_asm_0880A9BC]

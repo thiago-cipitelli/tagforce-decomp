@@ -3,7 +3,6 @@
 // @asm 0x08805BE4-0x08805FC0
 // @asm 0x088071CC-0x0880779C
 // @asm 0x08807F60-0x08808098
-// @asm 0x088082AC-0x088087EC
 // @asm 0x088087EC-0x08808924
 // @data 0x08821E34-0x08821E70
 /* Drawing of the deck editor (the libdeck screen the lesson runs on): the card info strip, the icon
@@ -931,24 +930,27 @@ void *dt_draw_grid(void *list, DtPane *p)
 }
 
 /* the three counters of a row (template of dt_draw_row's local) */
-DtCounter dt_row_counters[3] = { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF000000, 0 }, { 4, { 0 }, 0xFF000000, 0 } };
+typedef struct DtRowCounters {         /* copied as one struct */
+    DtCounter c[3];
+} DtRowCounters;
 
-#ifdef NON_MATCHING
+DtRowCounters dt_row_counters = { { { 1, { 0 }, 0xFF000000, 0 }, { 2, { 0 }, 0xFF000000, 0 }, { 4, { 0 }, 0xFF000000, 0 } } };
+
 /* a wide row: frame, picture, name, icons, level, ATK/DEF, then the counters of the three decks */
 void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short w, DtEnt *e, int blink)
 {
-    unsigned short attr = card_get_attribute_icon(e->id);
-    int full = 0;
+    int full;
+    unsigned short attr;
     unsigned short tx;
-    unsigned short cx;
     unsigned short type;
     unsigned short kind;
-    int atk;
-    int def;
+    unsigned short atk;
+    unsigned short def;
     unsigned short level;
-    unsigned int pos;
-    unsigned short right;
+    unsigned short *name;
 
+    attr = card_get_attribute_icon(e->id);
+    full = 0;
     list = dt_draw_row_frame(list, PT(x + 23, y), w, attr, dt_eres_get(0x8006));
     list = dt_draw_card_pict(list, x, y, 1, 0xFFFFFFFF, e, dt_eres_get(0x8001), dt_eres_get(0x8002), dt_eres_get(0x8032));
     tx = x + 29;
@@ -959,17 +961,19 @@ void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         font_set_flag4000(1);
         font_set_flag8(0);
     }
-    font_draw_text(tx << 6, (y + 2) << 6, (w - 54) << 6, card_get_name(e->id));
+    name = card_get_name(e->id);
+    font_draw_text((unsigned int)tx << 6, (y + 2) << 6, (w - 54) << 6, name); /* cast: no CSE of tx with the branches */
     if (cfg_get_language() != 0) {
         font_set_flag4000(0);
         font_set_flag8(1);
     }
     list = font_text_clear();
-    if (attr - 7U < 2) {
+    if (attr - 7 < 2u) {
         type = card_get_prop5_hi(e->id);
         kind = card_get_kind(e->id);
         list = dt_draw_kind_icon(list, tx, y + 14, kind);
         list = dt_draw_attr_icon(list, tx + 18, y + 14, type);
+        tx += 193;
     } else {
         type = card_get_type(e->id);
         kind = card_get_kind(e->id);
@@ -978,40 +982,34 @@ void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
         level = card_get_level(e->id);
         list = dt_draw_kind_icon(list, tx, y + 14, kind);
         list = dt_draw_type_icon(list, tx + 18, y + 14, type);
-        pos = (y + 16) << 16;
-        list = dt_draw_level(list, (unsigned short)(tx + 37) | pos, level, 0xFF000000, dt_eres_get(0x8009));
-        list = dt_draw_stat(list, atk << 16, (unsigned short)(tx + 73) | pos, 0xC0A, 0xFF000000, dt_eres_get(0x8009));
-        list = dt_draw_stat(list, def << 16 | 1, (unsigned short)(tx + 133) | pos, 0xC0A, 0xFF000000, dt_eres_get(0x8009));
+        list = dt_draw_level(list, PT(tx + 37, y + 16), level, 0xFF000000, dt_eres_get(0x8009));
+        list = dt_draw_stat(list, atk << 16, PT(tx + 73, y + 16), 0xC0A, 0xFF000000, dt_eres_get(0x8009));
+        list = dt_draw_stat(list, def << 16 | 1, PT(tx + 133, y + 16), 0xC0A, 0xFF000000, dt_eres_get(0x8009));
+        tx += 193;
     }
-    cx = tx + 193;
-    right = x + w;
-    if (right < cx + 50) {
+    if (x + w < tx + 50) {
         full = 1;
     } else {
-        DtCounter c[3];
+        DtRowCounters c = dt_row_counters;
 
-        c[0] = dt_row_counters[0];
-        c[1] = dt_row_counters[1];
-        c[2] = dt_row_counters[2];
         if (card_attribute_icon_is3(e->id)) {
-            c[0].icon = 0;
-            c[1].icon = 3;
-            if (dt_list_count_fixed(&dts.list[1], e->id, (unsigned short *)&c[1].value))
-                c[1].color = 0xFF0080FF;
+            c.c[0].icon = 0;
+            c.c[1].icon = 3;
+            if (dt_list_count_fixed(&dts.list[1], e->id, (unsigned short *)&c.c[1].value))
+                c.c[1].color = 0xFF0080FF;
         } else {
-            if (dt_list_count_fixed(&dts.list[0], e->id, (unsigned short *)&c[0].value))
-                c[0].color = 0xFF0080FF;
-            if (dt_list_count_fixed(&dts.list[2], e->id, (unsigned short *)&c[1].value))
-                c[1].color = 0xFF0080FF;
+            if (dt_list_count_fixed(&dts.list[0], e->id, (unsigned short *)&c.c[0].value))
+                c.c[0].color = 0xFF0080FF;
+            if (dt_list_count_fixed(&dts.list[2], e->id, (unsigned short *)&c.c[1].value))
+                c.c[1].color = 0xFF0080FF;
         }
-        c[2].value = dt_list_count_id(&dts.list[3], e->id, 0);
-        list = dt_draw_counters(list, PT(cx + 7, y + 14), c, dt_eres_get(0x8006), dt_eres_get(0x800A));
+        c.c[2].value = dt_list_count_id(&dts.list[3], e->id, 0);
+        list = dt_draw_counters(list, PT(tx + 7, y + 14), c.c, dt_eres_get(0x8006), dt_eres_get(0x800A));
     }
     if (inv_get_flag7(e->id))
-        list = dt_draw_flag_icon(list, PT(right - 24, y + 3), 2, dt_eres_get(0x800A));
+        list = dt_draw_flag_icon(list, PT(x + w - 24, y + 3), 2, dt_eres_get(0x800A));
     return dt_draw_card_marks(list, x, y, e, full, 0, blink, 0, dt_eres_get(0x8009), dt_eres_get(0x800A));
 }
-#endif
 
 #ifdef NON_MATCHING /* 12 palavras: como dt_draw_rows */
 /* small rows of the second pane (modes 2 and 3) */
