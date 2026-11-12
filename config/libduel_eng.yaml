@@ -182,8 +182,6 @@ segments:
       - [0x8A634, c, effects_zb]
       - [0x8B480, c, effects_zc]
       - [0x8C0F4, c, effects_zd]
-      - [0x8C630, asm, effects_zd_asm_088905D0]
-      - [0x8C790, c, effects_zd]
       - [0x8C880, c, effects_ze]
       - [0x8D834, c, effects_zf]
       - [0x8E5B4, c, effects_zg]
