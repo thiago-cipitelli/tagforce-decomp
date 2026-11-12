@@ -1,5 +1,4 @@
 // @range 0x088253FC-0x0882644C
-// @asm 0x08826014-0x0882644C
 // @data 0x088ED380-0x088ED3D0
 /* EHF primitives: a small axis gizmo (command 0xB), and primitives whose vertices are filled by
    later commands (0x10201..0x10206: begin with room in the list or on outside vertices, then
@@ -272,8 +271,9 @@ int ehf_cmd_prim_args(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     return 0;
 }
 
-/* Point templates of ehf_cmd_prim_ribbon (in asm, so they are named; defined after the template of
-   ehf_cmd_prim_args so that the data keeps its order). */
+/* Point templates of ehf_cmd_prim_ribbon: the original copies only their w word (an initializer whose
+   other elements are overwritten), so they are named; defined after the template of ehf_cmd_prim_args
+   so that the data keeps its order. */
 Vec4 ehf_ribbon_p0 = { 0.0f, 0.0f, 0.0f, 1.0f };
 Vec4 ehf_ribbon_p1 = { 0.0f, 0.0f, 0.0f, 1.0f };
 Vec4 ehf_ribbon_p2 = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -431,7 +431,6 @@ int ehf_cmd_prim_pos(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original keeps each point in a temporary before copying it; mwcc 3.0.1 propagates the copy */
 /* 0x10206: a ribbon of half width arg ('F' value or 'f' pointer) along the points that follow ('V'
    three floats or 'v' a pointer), facing the camera: two vertices per point, swapped whenever the
    side normal turns over. */
@@ -451,8 +450,8 @@ int ehf_cmd_prim_ribbon(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     int *args;
     int *a;
     float w;
-    int flip;
     int i;
+    int flip;
     int k;
 
     switch (phase) {
@@ -474,17 +473,25 @@ int ehf_cmd_prim_ribbon(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
         switch (*f++) {
         case 'v': {
             float *v = (float *)*a;
-            Vec4 t = { v[0], v[1], v[2], 1.0f };
+            Vec4 t;
 
-            cur = t;
+            t.x = v[0];
+            t.y = v[1];
+            t.z = v[2];
+            *(int *)&t.w = *(int *)&ehf_ribbon_p0.w; /* w of the {0, 0, 0, 1} template, copied as a word */
+            cur = *(Vec4 *)&t;
             a++;
             break;
         }
         case 'V': {
             float *v = (float *)a;
-            Vec4 t = { v[0], v[1], v[2], 1.0f };
+            Vec4 t;
 
-            cur = t;
+            t.x = v[0];
+            t.y = v[1];
+            t.z = v[2];
+            *(int *)&t.w = *(int *)&ehf_ribbon_p1.w; /* w of the {0, 0, 0, 1} template, copied as a word */
+            cur = *(Vec4 *)&t;
             a += 3;
             break;
         }
@@ -501,17 +508,25 @@ int ehf_cmd_prim_ribbon(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
                 switch (*f++) {
                 case 'v': {
                     float *v = (float *)*a;
-                    Vec4 t = { v[0], v[1], v[2], 1.0f };
+                    Vec4 t;
 
-                    cur = t;
+                    t.x = v[0];
+                    t.y = v[1];
+                    t.z = v[2];
+                    *(int *)&t.w = *(int *)&ehf_ribbon_p2.w; /* w of the {0, 0, 0, 1} template, copied as a word */
+                    cur = *(Vec4 *)&t;
                     a++;
                     break;
                 }
                 case 'V': {
                     float *v = (float *)a;
-                    Vec4 t = { v[0], v[1], v[2], 1.0f };
+                    Vec4 t;
 
-                    cur = t;
+                    t.x = v[0];
+                    t.y = v[1];
+                    t.z = v[2];
+                    *(int *)&t.w = *(int *)&ehf_ribbon_p3.w; /* w of the {0, 0, 0, 1} template, copied as a word */
+                    cur = *(Vec4 *)&t;
                     a += 3;
                     break;
                 }
@@ -544,4 +559,3 @@ int ehf_cmd_prim_ribbon(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     }
     return 0;
 }
-#endif

@@ -186,7 +186,6 @@ segments:
       - [0x210F4, asm, ehf_cmd4_asm_08825094]
       - [0x2134C, c, ehf_cmd4]
       - [0x2145C, c, ehf_prim]
-      - [0x22074, asm, ehf_prim_asm_08826014]
       - [0x224AC, c, particle]
       - [0x23090, c, particle2]
       - [0x23BEC, c, particle3]
