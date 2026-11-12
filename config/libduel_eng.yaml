@@ -244,8 +244,6 @@ segments:
       - [0xBEFE0, c, duel_checks]
       - [0xC04A8, c, duel_lp]
       - [0xC08C4, c, duel_draws]
-      - [0xC08C4, asm, duel_draws_asm_088C4864]
-      - [0xC1484, c, duel_draws]
       - [0xC22CC, asm, duel_draws_asm_088C626C]
       - [0xC2568, c, duel_draws]
       - [0xC2C28, asm, duel_draws_asm_088C6BC8]
