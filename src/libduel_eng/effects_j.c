@@ -16,7 +16,11 @@ int duel_hand_find_name(unsigned int p, int id);
 int duel_0886CE38();
 void duel_088263A8(unsigned int p, DuelCard *c, int a, unsigned int b);
 void duel_088C87A8(unsigned int p, int z, unsigned short id, unsigned short a, unsigned short b);
+#ifdef __MWERKS__
 void duel_088CC178();
+#else
+void duel_088CC178(unsigned int p, int z, unsigned int v);
+#endif
 void duel_088C8874(unsigned int uid, unsigned short id, int a, unsigned short b);
 int duel_088D1BEC(unsigned int, int, int, int);
 int duel_0887DB24(DuelAct *a, int b);
@@ -89,7 +93,11 @@ int duel_eff_fbcd4(DuelAct *a, int b)
         duel_088C87A8(p, z, a->id, 3, 0);
         break;
     default:
+#ifdef __MWERKS__
         duel_088CC178(p, z);
+#else
+        duel_088CC178(p, z, duel.players[p & 1].field[z].link / 10); /* port: a2 still holds the switch value link / 10 */
+#endif
         break;
     }
     return 0;

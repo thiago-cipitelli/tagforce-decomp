@@ -38,7 +38,12 @@ int duel_0880AEF4(unsigned int p, int id);
 int duel_0880AF74(unsigned int p, int id);
 int duel_0880B07C(unsigned int p);
 int duel_0880A17C(unsigned int p, unsigned int q, int a, int b, int c);
+#ifdef __MWERKS__
 int duel_0880ABE0();
+#else
+int duel_0880ABE0(DuelAct *a, unsigned int p);
+#define duel_0880ABE0(a, p, c) duel_0880ABE0(a, p) /* port: the definition takes 2 arguments, the third is not read */
+#endif
 unsigned int duel_08807434(unsigned int p, int a);
 int duel_08809B50(unsigned int p, unsigned short id, int a);
 int duel_08817220(unsigned int p, int z);

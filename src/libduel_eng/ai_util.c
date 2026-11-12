@@ -27,7 +27,12 @@ int duel_08854D4C(DuelAct *a, unsigned int p, int z);
 int duel_field_atk(unsigned int p, int z);
 unsigned int duel_field_controller(unsigned int p, int z, int arg);
 int duel_attack_check(unsigned int p, int z, int arg);
+#ifdef __MWERKS__
 int duel_slot_ef098();
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(p, z, c) duel_slot_ef098(p, z) /* port: the definition takes 2 arguments, the third is not read */
+#endif
 int field_get_card(unsigned int, int);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
 int duel_slot_affected(unsigned int p, int z, int id);

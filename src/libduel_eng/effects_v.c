@@ -60,7 +60,7 @@ void duel_088C77D4(unsigned int p, unsigned short id, unsigned short a, unsigned
 void duel_0884C588(unsigned int, int, int, int);
 void duel_088CBAA4(unsigned int, int, int);
 int duel_088C5E70(unsigned int, int);
-int duel_0886F2C0();
+int duel_0886F2C0(DuelAct *a, int b);
 int duel_08807B38(int id, int a, int b);
 void duel_0884AD18(int msg);
 void duel_08832624(unsigned int, unsigned int, int, int);

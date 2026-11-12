@@ -37,8 +37,13 @@ int duel_setup_10_get(void);
 unsigned int duel_turn_get(void);
 void* game_state2_get(void);
 int duel_slot_has_effect(unsigned int p, int z, int id);
+#ifdef __MWERKS__
 int duel_0880C60C();
 int duel_08809F2C();
+#else
+void duel_0880C60C(unsigned int p, int z, int tz, int force, void *g);
+int duel_08809F2C(unsigned int p);
+#endif
 int req_flag_get(int i);
 
 void duel_start_decks(int a)
@@ -106,10 +111,18 @@ int duel_088FE810(int side)
     return v / 30 + 1;
 }
 
+#ifdef __MWERKS__
 int duel_088FE87C()
 {
     return duel_0880C60C();
 }
+#else
+int duel_088FE87C(unsigned int p, int z, int tz, int force, void *g)
+{
+    duel_0880C60C(p, z, tz, force, g);
+    return 0; /* port: duel_0880C60C is void; the original forwards a0-t0 and returns its leftover v0 */
+}
+#endif
 
 unsigned int duel_mode_bit(int i)
 {
@@ -362,10 +375,17 @@ int *duel_list2_get(void)
     return &duel_w_0891524C;
 }
 
+#ifdef __MWERKS__
 int duel_088FEE74()
 {
     return duel_08809F2C();
 }
+#else
+int duel_088FEE74(unsigned int p)
+{
+    return duel_08809F2C(p);
+}
+#endif
 
 unsigned int duel_player_flag(unsigned int p, int i)
 {

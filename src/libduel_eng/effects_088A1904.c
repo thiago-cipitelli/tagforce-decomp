@@ -56,7 +56,7 @@ int duel_08861480(unsigned short id, int i);
 void duel_0884ADAC(int a, int b, int c, int d, int e, int f);
 void duel_08832974(unsigned int p, int a, int b);
 unsigned int duel_088D13CC(DuelAct*, unsigned int);
-int duel_0884E398();
+int duel_0884E398(DuelAct *a, int b);
 unsigned int duel_act_target(DuelAct *a, int i);
 int duel_field_atk(unsigned int p, int z);
 int duel_088C97F0(DuelAct*, unsigned int, int, int, int);
@@ -392,7 +392,7 @@ int duel_088A2454(DuelAct *a)
     return 0;
 }
 
-int duel_088A2700(DuelAct *a)
+int duel_088A2700(DuelAct *a, int b)
 {
     unsigned int p = duel_special.player[1];
     int z = duel_special.zone[1];
@@ -400,7 +400,7 @@ int duel_088A2700(DuelAct *a)
     unsigned int q;
     unsigned int y;
 
-    if (duel_0884E398(a) == 0) {
+    if (duel_0884E398(a, b) == 0) {
         return 0;
     }
     if (duel_088A9008(a, 0, 0) != 0) {

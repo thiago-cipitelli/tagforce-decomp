@@ -31,7 +31,12 @@ int field_get_card(unsigned int, int);
 int duel_0884F30C(unsigned int a, unsigned short uid, unsigned int b);
 int duel_0886B0E4(unsigned int a, unsigned short uid, int c);
 void duel_088AFD5C(int kind, unsigned int a);
+#ifdef __MWERKS__
 int duel_0883F174();
+#else
+int duel_0883F174(void);
+#define duel_0883F174(p) duel_0883F174() /* port: the definition takes no argument */
+#endif
 int duel_08836868(unsigned int p);
 int duel_0883698C(unsigned int p);
 int duel_088369D8(unsigned int p);

@@ -214,7 +214,7 @@ int duel_0886F23C(DuelAct *a)
     return 0;
 }
 
-int duel_0886F2C0(DuelAct *a)
+int duel_0886F2C0(DuelAct *a, int b)
 {
     unsigned int i;
 

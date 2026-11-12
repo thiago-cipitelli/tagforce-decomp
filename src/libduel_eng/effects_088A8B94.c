@@ -44,7 +44,7 @@ int duel_08817598(DuelAct *a, int b, int id);
 int card_get_level(int);
 unsigned short duel_slot_e1854(unsigned int, int);
 int duel_field_atk(unsigned int p, int z);
-int duel_088BFFD8();
+int duel_088BFFD8(unsigned int p, int id, int i);
 void duel_0884C588(unsigned int, int, int, int);
 DuelCard *duel_0884C7CC(void);
 unsigned int duel_0884C804(void);
@@ -2024,7 +2024,7 @@ int duel_088AD8BC(DuelAct *a)
 }
 
 int duel_088DFE24(int, unsigned int);
-void duel_088329D0();
+void duel_088329D0(unsigned int p, int a, int b);
 int duel_count_type(unsigned int, unsigned int);
 
 int duel_088ADA84(DuelAct *a)
@@ -2285,13 +2285,13 @@ int duel_088AE548(DuelAct *a)
 
     switch (duel_w_08914908) {
     case 0:
-        if (duel_088BFFD8(p, a->id) == 0) {
+        if (duel_088BFFD8(p, a->id, p) == 0) {
             return -1;
         }
         duel_w_08914908++;
         return 0;
     case 1:
-        duel_088329D0(1 - p, a->id);
+        duel_088329D0(1 - p, a->id, p);
         duel_w_08914908++;
         return 0;
     case 2:

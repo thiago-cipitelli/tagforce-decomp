@@ -18,7 +18,11 @@ int duel_0884E5E0(DuelAct *a);
 int duel_0887A828(DuelAct *a, int b);
 int duel_0887B2B8(DuelAct *a);
 int duel_0886CFE0(DuelAct *a, int b);
+#ifdef __MWERKS__
 int duel_0887CCA8();
+#else
+int duel_0887CCA8(DuelAct *a);
+#endif
 int duel_088619FC(DuelAct *a, int b);
 void duel_088CC4B4(unsigned int p, int z, int n);
 void duel_088CAE24(unsigned int p, DuelCard *c, int a);
@@ -361,7 +365,11 @@ int duel_08868A54(DuelAct *a, int b)
     int z;
     int n;
 
+#ifdef __MWERKS__
     if (duel_0887CCA8() == 0) {
+#else
+    if (duel_0887CCA8(a) == 0) { /* port: a0 still holds a */
+#endif
         return -1;
     }
     r = duel_088619FC(a, b);

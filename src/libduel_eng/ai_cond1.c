@@ -32,7 +32,12 @@ int duel_count_name(unsigned int p, int id);
 int duel_hand_count_name(unsigned int p, unsigned short id);
 int duel_0884E3E4(DuelAct *a, unsigned int p, int z);
 int duel_act_immune(DuelAct *a, unsigned int p, int z);
+#ifdef __MWERKS__
 int duel_slot_ef098();
+#else
+int duel_slot_ef098(unsigned int p, int z);
+#define duel_slot_ef098(p, z, c) duel_slot_ef098(p, z) /* port: the definition takes 2 arguments, the third is not read */
+#endif
 int field_get_card(unsigned int, int);
 int duel_088154D8(unsigned int p);
 int duel_088086D4(int id, int a);

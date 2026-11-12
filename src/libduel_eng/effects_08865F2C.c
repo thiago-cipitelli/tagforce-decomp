@@ -25,7 +25,11 @@ int duel_08835AC0(void);
 int card_get_level(int);
 int duel_slot_efb84(unsigned int p, int z);
 void duel_088D1D64(DuelAct *a, unsigned int mask);
+#ifdef __MWERKS__
 int duel_08877C00();
+#else
+int duel_08877C00(DuelAct *a);
+#endif
 int duel_088619FC(DuelAct *a, int b);
 int duel_grave_find_uid(unsigned int p, int uid);
 void duel_088CB400(unsigned int, DuelCard*, int);
@@ -241,7 +245,11 @@ int duel_0886655C(DuelAct *a, int b)
     int i;
     unsigned int p;
 
+#ifdef __MWERKS__
     if (duel_08877C00() == 0) {
+#else
+    if (duel_08877C00(a) == 0) { /* port: a0 still holds a */
+#endif
         return -1;
     }
     r = duel_088619FC(a, b);

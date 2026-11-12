@@ -41,8 +41,13 @@ void netsync_queue_push(void *rec, int size);
 int duel_msg_class(int cmd);
 int duel_tag_slot(int side);
 void duel_memcpy(void *dst, void *src, int n);
+#ifdef __MWERKS__
 int duel_cmd();
 int duel_088D4CD8();
+#else
+void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
+void duel_088D4CD8(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
+#endif
 
 int duel_net_poll(void)
 {
@@ -163,15 +168,31 @@ int duel_net_recv(void *buf)
     return r->m.size;
 }
 
+#ifdef __MWERKS__
 int duel_net_cmd()
 {
     return duel_cmd();
 }
+#else
+int duel_net_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c)
+{
+    duel_cmd(cmd, a, b, c);
+    return 0; /* port: duel_cmd is void; the original forwards a0-a3 and returns its leftover v0 */
+}
+#endif
 
+#ifdef __MWERKS__
 int duel_net_088D4CD8()
 {
     return duel_088D4CD8();
 }
+#else
+int duel_net_088D4CD8(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c)
+{
+    duel_088D4CD8(cmd, a, b, c);
+    return 0; /* port: duel_088D4CD8 is void; the original forwards a0-a3 and returns its leftover v0 */
+}
+#endif
 
 Duel *duel_get(void)
 {

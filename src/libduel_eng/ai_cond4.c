@@ -32,7 +32,12 @@ int duel_monster_can_act(unsigned int p, int z);
 int duel_08807474(unsigned int p, int b, unsigned int mask);
 int duel_0884E948(DuelAct *a, unsigned int p);
 int duel_0880B07C(unsigned int p);
+#ifdef __MWERKS__
 int duel_0880ABE0();
+#else
+int duel_0880ABE0(DuelAct *a, unsigned int p);
+#define duel_0880ABE0(a, p, c) duel_0880ABE0(a, p) /* port: the definition takes 2 arguments, the third is not read */
+#endif
 int duel_slot_has_effect(unsigned int p, int z, int id);
 int card_get_atk(int);
 int duel_hand_count_monsters(unsigned int p);
