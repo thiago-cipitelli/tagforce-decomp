@@ -198,7 +198,7 @@ int cardinfo_update(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original keeps the duplicated instruction after every likely branch to an else block (8 dead copies) where this compile moves it */
+#ifdef NON_MATCHING /* 89 palavras, só numeração dos $s (o original: title s4, hint_l s3, id s2, hint_r s1; aqui id s4, hint_l s2, title s0; testadas ordem das declarações, das atribuições iniciais, posição de id = ..., tipos de id). Rodada 23: o switch (estado) { case 0: case 4: return; } liga o modo sem limpeza pós-likely (as 8 cópias mortas); if/else nos hints, monstro primeiro no texto final, gfx_get_state()[1] da 1a chamada e [0] da 2a, pos * 0xB2 / range antes do ceil, range int: 588 -> 89 */
 void cardinfo_draw(void)
 {
     void *list;
@@ -209,8 +209,9 @@ void cardinfo_draw(void)
     unsigned short *title = 0;
     unsigned short *line;
     unsigned short v;
-    unsigned int *gs;
-    unsigned int pos, range;
+    unsigned int st;
+    unsigned int pos;
+    int range;
     int y, i, n, attr, cls, pict;
 
     list = dl_select_layer(cardinfo_layer, 0);
@@ -219,177 +220,184 @@ void cardinfo_draw(void)
     list = dl_clear_stencil(list, 0);
     list = dl_clear(list, 0x17);
     dl_set_list(list);
-    if (cardinfo_view_state != 4 && cardinfo_view_state != 0) {
-
-        list = dl_select_layer(cardinfo_layer, 0);
-        list = dl_enable(list, 9);
-        list = dl_enable(list, 4);
-        list = dl_tex_func(list, 0, 1);
-        list = dl_set_tex_filter(list, 0, 0);
-        list = dl_blend_func(list, 0, 2, 3, 0, 0);
-        list = dl_disable(list, 1);
-        id = cardinfo_card_id;
-        list = cardinfo_draw_bg(list);
-        list = card_panel_draw(list, 5, 4, cardinfo_panel);
-        list = dl_tex_mode(list, 3, 0, 0, 0);
-        list = dl_tex_func(list, 0, 1);
-        list = dl_set_tex_filter(list, 0, 0);
-        list = dl_blend_func(list, 0, 2, 3, 0, 0);
-        list = cardinfo_draw_window(list, 2, 0x76, 4, 0x165, 0x30);
-        list = cardinfo_draw_frame(list, 0x7B, 8, 0x136, 0x1B);
-        list = cardinfo_draw_window(list, 0, 0x76, 0x35, 0x165, 0xD9);
-        list = cardinfo_draw_tabs(list, 3, 0xA4);
-        if (card_is_monster(id) != 0) {
-            list = cardlist_draw_stars(list, 0x1B5, 8, card_get_level(id), -1);
-            list = card_draw_kind_icon(list, 0x1B2, 0x13, card_get_kind(id));
-            list = card_draw_type_icon(list, 0x1C3, 0x13, card_get_type(id));
-        } else {
-            attr = card_get_attribute(id);
-            list = card_draw_frame_special(list, 0x1B2, 0x13, attr);
-            list = cardlist_draw_icon(list, 0x1C3, 0x13, attr, card_get_prop5_hi(id));
-        }
-        saved_flags = font_get_flags();
-        font_set_flag4(1);
-        if (cfg_get_language() == 0) {
-            font_set_flag8000(1);
-            font_set_flag1(1);
-        } else {
-            font_set_flag8(1);
-        }
-        font_set_color(0xFFFFFFFF);
-        font_set_size(14, 14);
-        font_set_line_extra(0x80);
+    switch (cardinfo_view_state) {
+    case 0:
+    case 4:
+        return;
+    }
+    list = dl_select_layer(cardinfo_layer, 0);
+    list = dl_enable(list, 9);
+    list = dl_enable(list, 4);
+    list = dl_tex_func(list, 0, 1);
+    list = dl_set_tex_filter(list, 0, 0);
+    list = dl_blend_func(list, 0, 2, 3, 0, 0);
+    list = dl_disable(list, 1);
+    id = cardinfo_card_id;
+    list = cardinfo_draw_bg(list);
+    list = card_panel_draw(list, 5, 4, cardinfo_panel);
+    list = dl_tex_mode(list, 3, 0, 0, 0);
+    list = dl_tex_func(list, 0, 1);
+    list = dl_set_tex_filter(list, 0, 0);
+    list = dl_blend_func(list, 0, 2, 3, 0, 0);
+    list = cardinfo_draw_window(list, 2, 0x76, 4, 0x165, 0x30);
+    list = cardinfo_draw_frame(list, 0x7B, 8, 0x136, 0x1B);
+    list = cardinfo_draw_window(list, 0, 0x76, 0x35, 0x165, 0xD9);
+    list = cardinfo_draw_tabs(list, 3, 0xA4);
+    if (card_is_monster(id) != 0) {
+        list = cardlist_draw_stars(list, 0x1B5, 8, card_get_level(id), -1);
+        list = card_draw_kind_icon(list, 0x1B2, 0x13, card_get_kind(id));
+        list = card_draw_type_icon(list, 0x1C3, 0x13, card_get_type(id));
+    } else {
+        attr = card_get_attribute(id);
+        list = card_draw_frame_special(list, 0x1B2, 0x13, attr);
+        list = cardlist_draw_icon(list, 0x1C3, 0x13, attr, card_get_prop5_hi(id));
+    }
+    saved_flags = font_get_flags();
+    font_set_flag4(1);
+    if (cfg_get_language() == 0) {
+        font_set_flag8000(1);
+        font_set_flag1(1);
+    } else {
+        font_set_flag8(1);
+    }
+    font_set_color(0xFFFFFFFF);
+    font_set_size(14, 14);
+    font_set_line_extra(0x80);
+    font_text_set(list);
+    if (cfg_get_language() == 0) {
+        font_draw_wtext(8000, 0x2C0, 0x4C80, card_get_name(id));
+    } else {
+        font_set_flag4000(1);
+        font_draw_wtext(8000, 0x480, 0x4C80, card_get_name(id));
+        font_set_flag4000(0);
+    }
+    font_set_color(0xFF000000);
+    list = font_text_clear();
+    list = dl_scissor(list, 0x7A, 0x48, 0x155, 0xC0);
+    list = dl_enable(list, 2);
+    switch (cardinfo_tab) {
+    case 0:
         font_text_set(list);
-        if (cfg_get_language() == 0) {
-            font_draw_wtext(8000, 0x2C0, 0x4C80, card_get_name(id));
-        } else {
-            font_set_flag4000(1);
-            font_draw_wtext(8000, 0x480, 0x4C80, card_get_name(id));
-            font_set_flag4000(0);
-        }
-        font_set_color(0xFF000000);
+        font_draw_wtext_ex(0x1F00, 0x1200 - cardinfo_scroll, 0x5300, cardinfo_scroll_max + 0x3000, card_get_desc(id), -1);
         list = font_text_clear();
-        list = dl_scissor(list, 0x7A, 0x48, 0x155, 0xC0);
-        list = dl_enable(list, 2);
-        switch (cardinfo_tab) {
-        case 0:
-            font_text_set(list);
-            font_draw_wtext_ex(0x1F00, 0x1200 - cardinfo_scroll, 0x5300, cardinfo_scroll_max + 0x3000, card_get_desc(id), -1);
-            list = font_text_clear();
-            if (card_is_monster(id) != 0)
-                title = sysmsg_get(0x10);
-            else
-                title = sysmsg_get(0x11);
-            hint_r = sysmsg_get(0x12);
+        if (card_is_monster(id) != 0)
+            title = sysmsg_get(0x10);
+        else
+            title = sysmsg_get(0x11);
+        hint_r = sysmsg_get(0x12);
+        if (cardinfo_flags.has_lists)
+            hint_l = sysmsg_get(0x13);
+        else
             hint_l = hint_r;
-            if (cardinfo_flags.has_lists)
-                hint_l = sysmsg_get(0x13);
-            break;
-        case 1:
-            y = 0x48 - (cardinfo_scroll >> 6);
-            for (i = 1; i < 0x23; i++) {
-                if (card_has_genre_bit(id, i)) {
-                    list = cardinfo_draw_genre_row(list, 0x80, y, 0x18, i);
-                    y += 0x18;
-                }
-            }
-            if (inv_get_bit3(cardinfo_card_id) && card_get_samepict(cardinfo_card_id) > 1)
-                list = cardinfo_draw_genre_row(list, 0x80, y, 0x18, 0x23);
-            title = sysmsg_get(0x12);
-            if (card_is_monster(id) != 0)
-                hint_l = sysmsg_get(0x10);
-            else
-                hint_l = sysmsg_get(0x11);
-            hint_r = hint_l;
-            if (cardinfo_flags.has_lists)
-                hint_r = sysmsg_get(0x13);
-            break;
-        case 2:
-            if (cardinfo_entry.count != 0) {
-                line = (unsigned short *)((unsigned char *)cardinfo_index + cardinfo_entry.offset);
-                y = 0x48 - (cardinfo_scroll >> 6);
-                font_set_line_extra(0);
-                for (i = 0; i < cardinfo_entry.count; i++) {
-                    v = *line++;
-                    pict = (v >> 12) & 0xF;
-                    if (pict == inv_get_hi(cardinfo_card_id)) {
-                        list = cardinfo_draw_list_entry(list, 0x7A, y, v & 0xFFF);
-                        y = (font_get_cursor_y() >> 6) + 6;
-                    }
-                }
-            }
-            title = sysmsg_get(0x13);
-            hint_l = sysmsg_get(0x12);
-            if (card_is_monster(id) != 0)
-                hint_r = sysmsg_get(0x10);
-            else
-                hint_r = sysmsg_get(0x11);
-            break;
-        }
-        font_set_flags(saved_flags);
-        list = dl_disable(list, 2);
-        font_set_line_extra(0);
-        font_set_size(12, 12);
-        list = dl_ambient_color(list, 0xFFFFFFFF);
-        if (cardinfo_window_gim != 0) {
-            list = dl_set_tex_filter(list, 0, 0);
-            list = gim_set_texture(list, cardinfo_window_gim);
-            list = draw_set_offsets(list, 8, 8, 8, 0xCA);
-            list = draw_sprite(list, 0x1CE, 0x40, 0, 0x4F, 0x65, 0, 0);
-        }
-        range = (cardinfo_scroll_max >> 6) + 0xC0;
-        pos = cardinfo_scroll >> 6;
-        list = cardlist_draw_scrollbar(list, 0x1D0, 0x4E, 0xB4, pos * 0xB2 / range, ceil_to_int(34176.0f / (float)range));
-        gs = gfx_get_state();
-        list = cardlist_draw_arrow(list, 0x1D0, 0x46, 1, gfx_get_state()[1], cardinfo_scroll != 0, 0, gs[0]);
-        gs = gfx_get_state();
-        list = cardlist_draw_arrow(list, 0x1D0, 0x103, 0, gfx_get_state()[1],
-                                   cardinfo_scroll < cardinfo_scroll_max, 0, gs[0]);
-        if ((card_is_monster(id) == 0 || card_attribute_to_group(id) != 0) && (cls = card_get_type_class(id)) > 0)
-            list = cardinfo_draw_type_row(list, 8, 0xCE, cls);
-        n = 0;
+        break;
+    case 1:
+        y = 0x48 - (cardinfo_scroll >> 6);
         for (i = 1; i < 0x23; i++) {
             if (card_has_genre_bit(id, i)) {
-                list = cardinfo_draw_genre_icon(list, (n % 6) * 0x11 + 9, (n / 6) * 0x11 + 0xAA, i);
-                n++;
+                list = cardinfo_draw_genre_row(list, 0x80, y, 0x18, i);
+                y += 0x18;
             }
         }
         if (inv_get_bit3(cardinfo_card_id) && card_get_samepict(cardinfo_card_id) > 1)
-            list = cardinfo_draw_genre_icon(list, (n % 6) * 0x11 + 9, (n / 6) * 0x11 + 0xAA, 0x23);
-        if (hint_l != 0 || hint_r != 0) {
-            if (hint_l == hint_r) {
-                list = cardinfo_draw_hint(list, 3, 0xFA, hint_l, 3);
-            } else {
-                if (hint_l != 0)
-                    list = cardinfo_draw_hint(list, 3, 0xE5, hint_l, 1);
-                if (hint_r != 0)
-                    list = cardinfo_draw_hint(list, 3, 0xFA, hint_r, 2);
+            list = cardinfo_draw_genre_row(list, 0x80, y, 0x18, 0x23);
+        title = sysmsg_get(0x12);
+        if (card_is_monster(id) != 0)
+            hint_l = sysmsg_get(0x10);
+        else
+            hint_l = sysmsg_get(0x11);
+        if (cardinfo_flags.has_lists)
+            hint_r = sysmsg_get(0x13);
+        else
+            hint_r = hint_l;
+        break;
+    case 2:
+        if (cardinfo_entry.count > 0) {
+            line = (unsigned short *)((unsigned char *)cardinfo_index + cardinfo_entry.offset);
+            y = 0x48 - (cardinfo_scroll >> 6);
+            font_set_line_extra(0);
+            for (i = 0; i < cardinfo_entry.count; i++) {
+                v = *line++;
+                pict = (v >> 12) & 0xF;
+                if (pict == inv_get_hi(cardinfo_card_id)) {
+                    list = cardinfo_draw_list_entry(list, 0x7A, y, v & 0xFFF);
+                    y = (font_get_cursor_y() >> 6) + 6;
+                }
             }
         }
-        if (cardinfo_flags.has_alt)
-            list = cardinfo_draw_lr_arrows(list);
-        list = cardinfo_draw_title_bar(list, 0x79, 0x38, 0x15E, title);
-        font_text_set(list);
-        if (cfg_get_language() != 0)
-            font_set_flag4000(1);
-        if (card_is_monster(id) == 0) {
-            font_set_color(0xFF00FF00);
-            font_draw_wtext(0x1F00, 0x900, 0x2200, card_info_fill(id));
-            font_set_flag4000(0);
-        } else {
-            font_set_color(0xFF00FF00);
-            font_draw_wtext(0x1F00, 0x900, 0x2300, card_info_fill(id));
-            font_set_flag4000(0);
-            font_set_color(0xFF00FFFF);
-            font_draw_wtext(0x4300, 0x900, 0xE00, dlg_table_sel(card_get_kind(id)));
-            cardinfo_draw_stat(0x14A, 0x24, 0, card_get_atk_q(id));
-            cardinfo_draw_stat(0x195, 0x24, 1, card_get_def_q(id));
-        }
-        list = font_text_clear();
-        if (cardinfo_view_state == 3 || cardinfo_view_state == 1)
-            fade_apply(&list);
-        dl_set_list(list);
+        title = sysmsg_get(0x13);
+        hint_l = sysmsg_get(0x12);
+        if (card_is_monster(id) != 0)
+            hint_r = sysmsg_get(0x10);
+        else
+            hint_r = sysmsg_get(0x11);
+        break;
     }
+    font_set_flags(saved_flags);
+    list = dl_disable(list, 2);
+    font_set_line_extra(0);
+    font_set_size(12, 12);
+    list = dl_ambient_color(list, 0xFFFFFFFF);
+    if (cardinfo_window_gim != 0) {
+        list = dl_set_tex_filter(list, 0, 0);
+        list = gim_set_texture(list, cardinfo_window_gim);
+        list = draw_set_offsets(list, 8, 8, 8, 0xCA);
+        list = draw_sprite(list, 0x1CE, 0x40, 0, 0x4F, 0x65, 0, 0);
+    }
+    range = (cardinfo_scroll_max >> 6) + 0xC0;
+    pos = (cardinfo_scroll >> 6) * 0xB2 / range;
+    list = cardlist_draw_scrollbar(list, 0x1D0, 0x4E, 0xB4, pos, ceil_to_int(34176.0f / (float)range));
+    st = gfx_get_state()[1];
+    list = cardlist_draw_arrow(list, 0x1D0, 0x46, 1, st, cardinfo_scroll != 0, 0, gfx_get_state()[0]);
+    st = gfx_get_state()[1];
+    list = cardlist_draw_arrow(list, 0x1D0, 0x103, 0, st, cardinfo_scroll < cardinfo_scroll_max, 0,
+                               gfx_get_state()[0]);
+    if ((card_is_monster(id) == 0 || card_attribute_to_group(id) != 0) && (cls = card_get_type_class(id)) > 0)
+        list = cardinfo_draw_type_row(list, 8, 0xCE, cls);
+    n = 0;
+    for (i = 1; i < 0x23; i++) {
+        if (card_has_genre_bit(id, i)) {
+            list = cardinfo_draw_genre_icon(list, (n % 6) * 0x11 + 9, (n / 6) * 0x11 + 0xAA, i);
+            n++;
+        }
+    }
+    if (inv_get_bit3(cardinfo_card_id) && card_get_samepict(cardinfo_card_id) > 1)
+        list = cardinfo_draw_genre_icon(list, (n % 6) * 0x11 + 9, (n / 6) * 0x11 + 0xAA, 0x23);
+    if (hint_l != 0 || hint_r != 0) {
+        if (hint_l == hint_r) {
+            list = cardinfo_draw_hint(list, 3, 0xFA, hint_l, 3);
+        } else {
+            if (hint_l != 0)
+                list = cardinfo_draw_hint(list, 3, 0xE5, hint_l, 1);
+            if (hint_r != 0)
+                list = cardinfo_draw_hint(list, 3, 0xFA, hint_r, 2);
+        }
+    }
+    if (cardinfo_flags.has_alt)
+        list = cardinfo_draw_lr_arrows(list);
+    list = cardinfo_draw_title_bar(list, 0x79, 0x38, 0x15E, title);
+    font_text_set(list);
+    if (cfg_get_language() != 0)
+        font_set_flag4000(1);
+    if (card_is_monster(id) != 0) {
+        font_set_color(0xFF00FF00);
+        font_draw_wtext(0x1F00, 0x900, 0x2300, card_info_fill(id));
+        font_set_flag4000(0);
+        font_set_color(0xFF00FFFF);
+        font_draw_wtext(0x4300, 0x900, 0xE00, dlg_table_sel(card_get_kind(id)));
+        cardinfo_draw_stat(0x14A, 0x24, 0, card_get_atk_q(id));
+        cardinfo_draw_stat(0x195, 0x24, 1, card_get_def_q(id));
+    } else {
+        font_set_color(0xFF00FF00);
+        font_draw_wtext(0x1F00, 0x900, 0x2200, card_info_fill(id));
+        font_set_flag4000(0);
+    }
+    list = font_text_clear();
+    switch (cardinfo_view_state) {
+    case 1:
+    case 3:
+        fade_apply(&list);
+    }
+    dl_set_list(list);
 }
 
 #endif
