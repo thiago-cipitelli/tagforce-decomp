@@ -1817,3 +1817,36 @@ Bateram `duel_place_monster`, `duel_place_st` (estava em `matching_skip`), `duel
   1500 mutações sem melhora), `duel_field_controller` (102: a ordem das declarações não muda nada, nem com todas as
   variáveis do laço no topo; `ofs`/`zo` explícitos viram o mesmo CSE), `duel_0880C15C` (20: o original calcula
   `(1 - p) * 55` antes de `tz * 11`; formas inteiras, vírgula e local `q` não reproduzem).
+## Rodada 23 (`drawQ`): libduel_draw, reescritas do asm
+
+Bateram `dd_ev_11`, `dd_cobj_to_top`, `dd_mark_move`, `dd_face`, `dd_board_card_draw` e `dd_counter_draw` (2744 B,
+615 -> 0). `dd_board_cards` foi refeita do asm e fica em `@asm` (o segundo par de laços é da família do teste de
+entrada mantido). Idiomas novos:
+- **RMW de meia palavra encadeado sem laço de zeros** (`lhu` do local não inicializado; `and/or; andi 0xffff` por
+  campo; um só `sh`) seguido de cópia de um "global" de `.data` (`lhu`+`ext` ou `lbu`+`sb`): é um inicializador com
+  um campo **constante não nulo** (`DdPos at = { p, zone, 0, 1 };`). O mwcc copia os campos constantes de um template
+  anônimo que ele mesmo põe na `.data` do objeto: os "globais" `dd_pos_up`/`dd_pos_up2` eram esses templates
+  (`// @data` no arquivo e os símbolos somem). Sem campo constante não nulo sai o laço de zeros + `sh` por campo.
+- **Ordem de pilha de locais `DdLoc` passados por valor**: literais compostos direto nos argumentos
+  (`dd_view_locs_set((DdLoc){ me, zone }, (DdLoc){ tp, tz })`, os argumentos avaliados da direita para a esquerda).
+- **Locais de um `static inline` são criados depois de todos os da função**: ficam abaixo deles na pilha
+  (`dd_board_card_draw`: o vetor de escala morto num helper inline passou para baixo do `DdLoc`).
+- **Ordem dos comandos decide os `$s` dos parâmetros**: em `dd_mark_move`, gravar todos os campos de `m->at`/`m->to`
+  antes dos de `p` (e não intercalados) pôs os parâmetros em `s0-s3` abaixo dos ponteiros; nenhuma ordem de
+  declaração mexia.
+- **Float na posição do parâmetro**: `move`/`mov.s $f20` do prólogo e `a0` antes do `mov.s $f12` no slot do `jal`
+  dizem onde o float está na lista (`dd_face(list, x, y, k, ...)`, `dd_board_card_face(card, scale)`); o código do
+  callee não muda.
+- **`x / 2L`** num dos dois usos impede o CSE de uma divisão que o original faz duas vezes (`dd_face`).
+- **`ext v,v,4,1`** de um bit de palavra: `(*p >> 4) & 1` (não `& 0x10`).
+- **Constante float gravada com `sw` do inteiro** (`lui; sw` em vez de `mtc1`): `if/else` atribuindo o campo em cada
+  ramo; o ternário passa por `$f0`.
+- **`#pragma opt_decomposeaggregates off` só numa função** (com `reset` depois, sob `#ifdef __MWERKS__`): cópias de
+  struct/array em bloco (`lwc1/swc1`) por um temporário. Com ela: valor de struct devolvido por `static inline`
+  que copia campo a campo (`t.r = c->r; ...; return t;`) = `lbu/sb` para um temporário + cópia em bloco; literal
+  composto `v = (DdI2){ { a, b } };` = laço de zeros no temporário + cópia; `x.b = x.b * 1.0f` mantém as conversões
+  e dobra o produto (`*= 1.0f` some inteiro; parâmetro `1.0f` de inline não dobra: use macro).
+- **Variáveis que só existem num trecho** (`w`, `h` de `dd_counter_draw`) num bloco: trocam de `$s` com um parâmetro
+  quando nenhuma ordem de declaração resolve.
+- Ainda em asm: `dd_board_cards` (família do teste de entrada; o `DdLoc` do 2º `dd_cursor_get` inteiro em `s0`),
+  `func_08822C2C` (lógica conferida: só a família do teste de entrada).
