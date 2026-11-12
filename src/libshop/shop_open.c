@@ -1,6 +1,5 @@
 // @range 0x088117B8-0x08812C60
 // @asm 0x0881189C-0x08811E40
-// @asm 0x0881259C-0x08812754
 // @data 0x088203A0-0x08820410
 /* Opening the bought packs one after the other: the pack model flies in and turns, it bursts, the
    cards fly out and turn over one by one (names drawn under them, gold for the rare ones), and the
@@ -347,7 +346,6 @@ int shop_open_next_kind(int kind)
     return -1;
 }
 
-#ifdef NON_MATCHING /* busca para trás na lista e inserção com laços aninhados; alocação diferente */
 /* adds the cards of the opened pack to the bought list */
 void shop_open_add(void)
 {
@@ -359,30 +357,38 @@ void shop_open_add(void)
     int found;
 
     for (i = 0; i < shop_open->n_cards; i++) {
+        unsigned short id = shop_open->cards[i].id;
         found = 0;
-        for (k = shop.n_items - 1; k >= 0 && kind == shop.items[k].pack; k--) {
-            if (shop_open->cards[i].id == shop.items[k].id) {
-                found = 1;
-                if (shop.items[k].count < 100)
-                    shop.items[k].count++;
-                break;
-            }
+        k = shop.n_items - 1;
+        if (k >= 0) {
+            ShopItem *it = &shop.items[k];
+            do {
+                if (kind != it->pack)
+                    break;
+                if (id == it->id) {
+                    found = 1;
+                    if (it->count < 100)
+                        it->count++;
+                    break;
+                }
+                it--;
+            } while (--k >= 0);
         }
         if (!found)
             idx[n++] = i;
     }
     if (n != 0 && shop_items_grow(n)) {
         for (i = 0; i < n; i++) {
+            int j = idx[i];
             ShopItem *it = &shop.items[shop.n_items++];
-            it->id = shop_open->cards[idx[i]].id;
-            it->key = shop_open->cards[idx[i]].key;
+            it->id = shop_open->cards[j].id;
+            it->key = shop_open->cards[j].key;
             it->pack = kind;
             it->count = 1;
             shop_item_refresh(it);
         }
     }
 }
-#endif
 
 /* room for n more lines in the bought list */
 int shop_items_grow(int n)

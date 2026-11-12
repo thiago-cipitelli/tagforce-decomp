@@ -949,9 +949,10 @@ int st_chr_dn_pick(int i)
 }
 
 /* daily update of a character: look id (mode 0 picks it again), look entry, place, deck */
-#ifdef NON_MATCHING /* laço de busca e cópia da entrada Sche com alocação de registradores diferente */
+#ifdef NON_MATCHING /* 15 palavras: só o 2º laço de busca; o original não o rotaciona (b de volta no fim), testa cur != key com bnel e o slt de cur < key no atraso, k em a2 e key em a0. Testados if/else, goto, for com a condição, lt materializado e o gatilho das cópias mortas */
 void st_chr_update(int i, int mode)
 {
+    StoryChr *c = ST_CHR(i);
     StoryChrSave *s = ST_CHR_SAVE(i);
     unsigned short *t;
     unsigned short *p;
@@ -961,17 +962,19 @@ void st_chr_update(int i, int mode)
     unsigned int key;
     unsigned short look;
 
-    if (mode != 1) {
-        if (mode != 0) {
-            t = ST_CHR(i)->sche;
-            goto find;
-        }
+    switch (mode) {
+    case 0:
         s->look_id = st_chr_dn_pick(i);
+        break;
+    case 1:
+        break;
     }
-    t = ST_CHR(i)->sche;
-find:
-    while (*t != s->look_id)
+    t = c->sche;
+    for (;;) {
+        if (*t == s->look_id)
+            break;
         t += 25;
+    }
     cur = sdate_get_0c();
     k = 0;
     p = t;
@@ -979,7 +982,11 @@ find:
         key = p[1];
         if (cur == key)
             break;
-        if ((int)cur < (int)key || key == 0) {
+        if ((int)cur < (int)key) {
+            k--;
+            break;
+        }
+        if (key == 0) {
             k--;
             break;
         }
