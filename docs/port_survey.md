@@ -1,0 +1,97 @@
+# Levantamento para o port (fase 5)
+
+Feito em 2026-11-11, depois da rodada 22 de matching (86,1% do código batendo). Responde a duas perguntas:
+o quanto o C do decomp está longe de compilar fora do mwcc, e qual API do firmware o `platform/` precisa cobrir.
+Os números são *observados* (gcc e `symbols/`), salvo onde está marcado *inferido*.
+
+O port fica neste repositório (`platform/psp`, `platform/pc`). Regra: nenhuma mudança do port pode quebrar
+`make verify` (ALL MATCH). O que for só do port vai para `platform/`, para typedefs/macros de `include/` ou para os
+ramos `#ifdef NON_MATCHING`/`#else`, nunca para o caminho que o mwcc compila.
+
+## 1. Compilação no host (gcc)
+
+Gate: `make host-check` roda cada `src/*/*.c` em `gcc -m32 -std=gnu89 -fsyntax-only -w -DNON_MATCHING` (32 bits,
+como a PSP; os rascunhos `NON_MATCHING` no lugar do asm, que é o C que o port usa).
+
+**670 de 681 arquivos compilam.** Os 11 que falham:
+
+| Arquivo | Causa |
+|---|---|
+| `BOOT/sys.c` | `asm { addi $v0, $ra, 0 }` do mwcc em `ehscript_set_static` (instrução solta do original); a mesma função lê o código de máquina de `fn` para recusar thunks, o que não faz sentido no PC |
+| `BOOT/font_tags.c` (`wc_no_line_start`), `libduel_eng/duel_finish.c` (`recipe_get_id`), `libdeck_tutorial/dt_edraw.c` (`dt_draw_count`) | declaração K&R `f();` seguida de definição com parâmetro `char`/`short`/`float`: o gcc recusa (promoção de argumentos) |
+| `libdeck/dk_lists.c` (`dk_list_find`), `libduel_draw/dd_event_cmd.c` (`func_08822838`), `libduel_eng/duel_draws.c` (`duel_0884F30C`), `libduel_eng/duel_reqs2.c` (`duel_cmd`), `libduel_eng/effect_live.c` (`duel_act_target`), `libtitle/t_panel.c` (`tframe_tab`), `libduel_draw/dd_field_events.c` (`dd_slot_xform`) | protótipo local e definição no mesmo arquivo com tipos diferentes (`unsigned short` vs `int`, struct por valor) |
+
+`-fsyntax-only` só olha um arquivo por vez. O problema maior está **entre arquivos**: cada `.c` declara os
+protótipos que usa, e as declarações divergem. Classificação (`tools/proto_conflicts.py` de todos os módulos,
+por função chamada; um nome repetido em vários gmodules conta uma vez):
+
+| Classe | Funções | Efeito no PC |
+|---|---|---|
+| só ponteiro/inteiro de mesmo tamanho | ~1006 | nenhum em 32 bits; limpeza de tipos |
+| só o tipo de retorno difere (`void` vs `int` etc.) | ~219 | lixo lido de um retorno `void`; revisar |
+| **posição de `float` diferente** (`f(float*, float*, float)` vs `f(float, float*, float*)`) | ~106 | **bug real no PC**: no EABI da PSP floats vão em registradores próprios e a ordem relativa a inteiros não importa; no x86 importa. Parte é SDK soft-float (`__adddf3` etc.), que o port troca |
+| **número de argumentos diferente** | ~97 | **bug real no PC**: wrappers do original que repassam registradores (K&R); `tools/argaudit.py --all` lista as 73 chamadas |
+| só K&R + uma assinatura | 15 | trocar o `f();` pela assinatura |
+| struct por valor com tipos diferentes | 5 | `dd_cobj_spawn`, `dd_slot_xform`, `duel_0884F30C`, `duel_088AFD5C`, `duel_088CC8EC` |
+
+Atenção: mudar a ordem dos argumentos `float` numa chamada pode mudar a ordem em que o mwcc monta os
+argumentos (rodada 18) e quebrar uma função que já bate. Por isso a correção vai pelo protótipo comum num header e
+é conferida com `make verify`.
+
+Avisos do gcc que valem revisão (podem ser bugs do rascunho ou fiéis ao original; conferir no asm antes de mudar):
+- `-Wimplicit-function-declaration`: 204 funções chamadas sem protótipo (retorno assumido `int`; com
+  `float` ou ponteiro de 64 bits isso quebra). Mais frequentes: `st_chr_flag_get`, `st_ev2_get_0`, `strcmp`.
+- `-Wsequence-point` (`r->lcg` em `include/dd_d3.h:60` e `dd_fx_shatter.c:53`): ordem de avaliação indefinida
+  no RNG; o gcc pode gerar outra sequência de números.
+- `-Wreturn-type`: `BOOT/deck.c:333`, `:337`, `BOOT/sys.c:162` (função não-void sem `return`).
+- `-Woverflow`: `65535` em `unsigned char` (`req_088D28F8.c:1709`, `req_effect.c:1157`).
+- `-Wtype-limits` (8), `-Wbool-compare` (`ai_cond.c:869`), `-Wmemset-elt-size` (`duel_net.c:97`),
+  `-Wincompatible-pointer-types` (`particle3.c:166`).
+
+**64 bits** (`-m64`, *inferido* como trabalho grande): 398 casts ponteiro→inteiro e 241 inteiro→ponteiro em 124
+arquivos, além de structs com ponteiros que são carregadas de arquivo (EHP relocado no lugar). Começar o port em
+`-m32` e tratar 64 bits como etapa própria.
+
+## 2. API do firmware que `platform/` precisa cobrir
+
+Só o BOOT importa do firmware: **274 funções em 28 bibliotecas** (`symbols/BOOT.txt`, `type:func import:`).
+Os gmodules não têm imports de firmware próprios, mas o BOOT **reexporta** parte deles pela `libehsys`
+(o export aponta direto para o stub): 18 funções `sce*` são chamadas de gmodules assim (Fpl, Module start/stop,
+OSK, `sceGeEdramGetAddr`, `sceNetInit/Term`, `sceKernelChangeCurrentThreadAttr`).
+
+| Biblioteca | Imports | Usadas no BOOT | Via gmodule | Sem chamada no C | Área do `platform/` | Prioridade |
+|---|---|---|---|---|---|---|
+| ThreadManForUser | 43 | 41 | 5 | 1 | thread/timer/sync | alta |
+| IoFileMgrForUser | 33 | 13 | 0 | 20 | arquivos | alta |
+| sceGe_user | 12 | 12 | 1 | 0 | gráficos | alta |
+| sceDisplay | 6 | 6 | 0 | 0 | janela/frame | alta |
+| sceCtrl | 3 | 3 | 0 | 0 | input | alta |
+| sceAudio | 9 | 9 | 0 | 0 | áudio PCM | alta |
+| sceSasCore | 21 | 21 | 0 | 0 | áudio (mixer de vozes) | alta |
+| SysMemUserForUser, UtilsForUser, Kernel_Library, InterruptManager, sceDmac, StdioForUser | 23 | 19 | 1 | 4 | memória, cache, tempo | alta (quase tudo vira no-op ou stdlib) |
+| ModuleMgrForUser, LoadExecForUser | 14 | 10 | 3 | 4 | carregador de gmodules | alta (no PC os gmodules são linkados juntos) |
+| sceUtility | 23 | 19 | 6 | 0 | save, diálogos, OSK | média |
+| sceLibFont | 7 | 7 | 0 | 0 | fonte do sistema | média |
+| sceUmdUser, sceSuspendForUser, sceRtc, sceOpenPSID | 8 | 8 | 0 | 0 | stubs | baixa |
+| sceMpeg | 25 | 25 | 0 | 0 | vídeo PMF | fase 7 (ffmpeg) |
+| sceAtrac3plus | 9 | 9 | 0 | 0 | música Atrac3+ | fase 7 (ffmpeg) |
+| sceNet, sceNetAdhoc, sceNetAdhocctl, sceNetAdhocMatching, sceWlanDrv | 38 | 38 | 2 | 0 | rede ad hoc | stub (sem rede) |
+
+"Sem chamada no C": 29 imports sem chamada direta em nenhum `src/` (20 do `sceIo`, como `sceIoMkdir`,
+`sceIoRemove`, os `*Async`). São reexportados pela `libehsys` e chamados de gmodules por endereço, ou não são
+usados. Conferir antes de implementar.
+
+**Gráficos: a fronteira não é o `sceGu`.** O `sceGu` (79 funções usadas, em 12 arquivos do BOOT e 7 de gmodules)
+está linkado no BOOT e já é C do decomp. Mas `BOOT/dl.c` escreve comandos da GE direto na display list
+(`0xD4000000 | ...`, `0xD5000000 | ...`, linha 241). Então o `platform/pc` tem duas opções: interpretar as
+display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescrever `dl.c` sobre uma API própria.
+*Inferido*: interpretar a GE dá menos mudanças no código do jogo e mantém o build PSP idêntico.
+
+## 3. Ordem sugerida
+
+1. Zerar o `make host-check` (os 11 arquivos), sem quebrar o ALL MATCH.
+2. Protótipos comuns em headers para as classes "número de argumentos" e "posição de float" (as que quebram
+   no PC), conferidos com `make verify`.
+3. Revisar os avisos do gcc da lista acima contra o asm.
+4. `platform/` em 32 bits: arquivos, thread/timer, input, janela, áudio PCM; gmodules linkados juntos.
+5. Gráficos (decisão GE vs `dl.c`), depois save/OSK/fonte; rede e vídeo como stubs.

@@ -60,7 +60,7 @@ $(OUT): $(LD_SCRIPT) $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)
 clean:
 	rm -rf build/asm/$(MODULE) build/src/$(MODULE) build/assets/$(MODULE) $(OUT) build/$(MODULE).map $(LD_SCRIPT) asm/$(MODULE) assets/$(MODULE)
 
-.PHONY: all check check-all clean verify
+.PHONY: all check check-all clean verify host-check
 
 check-all:
 	@for m in $$(ls build/elf | sed 's/\.elf$$//'); do printf '%s: ' $$m; $(MAKE) --no-print-directory MODULE=$$m check 2>&1 | tail -1; done
@@ -74,3 +74,9 @@ verify:
 	python3 tools/link_map.py build/elf symbols tools/psp_nids.txt >/dev/null
 	@n=$$($(MAKE) --no-print-directory check-all 2>&1 | grep -c ': MATCH$$'); t=$$(ls build/elf/*.elf | wc -l); \
 	  [ "$$n" = "$$t" ] || { echo "check-all $$n/$$t"; exit 1; }; echo "ALL MATCH"
+
+# port gate (phase 5): every src/*.c through the host gcc as the PSP sees it (32-bit, NON_MATCHING drafts);
+# prints the files that do not compile and their count (docs/port_survey.md)
+host-check:
+	@n=0; for f in src/*/*.c; do gcc -m32 -std=gnu89 -fsyntax-only -w -DNON_MATCHING -Iinclude -I$$(dirname $$f) $$f \
+	  >/dev/null 2>&1 || { echo "FAIL $$f"; n=$$((n+1)); }; done; echo "host-check: $$n file(s) fail"
