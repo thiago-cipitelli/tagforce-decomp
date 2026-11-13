@@ -2397,3 +2397,29 @@ funcionou: estrutura primeiro (`fd.py --struct`), depois slots de pilha, por fim
   `sw` no delay slot da 1ª chamada; `switch (link) { case 1: ...; case 2: ... }` no `0x12C6`.
 - **Lógica**: `duel_field_type_ex` comparado como `unsigned short` no `0x149F` (o original faz `andi 0xffff` no
   retorno); o resto das mudanças é equivalente (fusões, ordem de somas, índices).
+## Rodada 27 (`skB`): reteste do skip do BOOT, helpers inline em funções que devolvem valor
+
+Bateram `snd_output`, `snd_bank_open_async`, `snd_obj_alloc`, `gfx_save_bmp` e `gfx_save_tga`; `menu_update` 282 -> 275.
+- **`b; nop` sem preencher / `bltzl` para a instrução seguinte numa função que devolve valor**: não é o modo sem
+  limpeza da rodada 19 (que só liga em `void`), é um **helper `static inline` com `return` em cada saída** (o
+  `return` do inline vira `b` para o fim do corpo inlinado, que o mwcc não funde com o teste seguinte).
+  `snd_bank_open_async`: `open + wait` num helper (`if (r < 0) return r; ... if (ret == 0) return (int)res;
+  return ret;`) dá o `bgezl` + `b; nop` e o `bnez; nop` (8 -> 0); `snd_obj_alloc`: `if (same >= 0) return same;
+  return low;` num helper dá o `bltzl` degenerado + `b fim` (34 -> 0). O sentido do teste dentro do helper importa
+  (`if (same < 0) return low;` não serve). `menu_update`: casos 2/5 com helper `menu_opened` e
+  `if (aberto) { ... } else return -1;`.
+- **Bloco trampolim (`b X; sll` para um `b topo; nop`)** num laço de duplicação (`gfx_save_*`, 219/253 -> 0): o
+  teste de saída é `if (fd >= 0) { close(fd); } else { if (n < 2) { count += n; goto done; } break; }` dentro do
+  `for (n = 1; ; n <<= 1)`; o `else` sai fora de linha (`bltzl`), o incremento vai para o delay slot do `b` ao
+  trampolim. Depois: ordem das declarações do macro (`lo` antes de `n`), da função (`path` por último), ordem
+  `s = p + 4; d = p + 3;` e `s += 4; d += 3;`, e `(void *)((int)base + fb)` para os operandos do `addu`.
+- **`static` de função em `.bss` (`snd_output`, 26 -> 0)**: `lui` da global antes do `sw ra`; o `@bss` de
+  `movie.c` foi estendido de `0x08BE8EDC` a `0x08BE8EFC` definindo no C as globais do meio (`= 0`, em ordem de
+  fonte, depois do `static` de `movie_poll_input`) e `static int snd_out_idx;` na função; `int n = s->bufsize;`
+  antes do `memcpy` dá a ordem dos argumentos.
+- `font_glyph_cache` (302 palavras agora): com `code` `unsigned short` na definição o mwcc faz `andi` na entrada;
+  o original não (passa `code` cru a `font_glyph_find` e mascara só no teste `< 0x2300`). Com `unsigned int code`
+  (protótipo em `font.h`) volta a 60 palavras (f/font trocam s1/s5); não aplicado (mexe em header compartilhado e
+  nos chamadores já batendo).
+- Script: `build/tmp/skB/perm.py SRC FUNC N [--types]` (busca aleatória da ordem/tipo das declarações em cópias,
+  sem tocar o fonte; achou a ordem de `gfx_save_tga`).
