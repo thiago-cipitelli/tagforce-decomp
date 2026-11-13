@@ -60,6 +60,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st);
 /* An effect of the side of player q applies to a monster of player p unless its immunity bits say no
    (bit 0: effects of its controller, bit 1: of the opponent). */
 #define IMMUNE(bits, p, q) ((bits) & (((p) != (q)) + 1))
+/* the original tests the immunity as a signed value (bgtz): "not immune" is `<= 0` */
+#define AFFECTS(x) ((int)(x) <= 0)
 
 /* bit 5 of a slot's flags: the card there is negated */
 /* the monster itself */
@@ -455,21 +457,26 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             st->def = st->atk;
             break;
         case 0x1A6F:
-            atk_eff += (duel_count_field_all(0) + duel_count_field_all(1)) * 400;
+            atk_eff = (duel_count_field_all(0) + duel_count_field_all(1)) * 400;
             break;
         case 0x1A75:
-            atk_eff += duel_count_field_all(1 - p) * 400;
+            atk_eff = duel_count_field_all(1 - p) * 400;
             break;
         }
     }
-    if (st->id == 0x19ED) {
-        fixed = 1;
-    } else if (st->id == 0x1782 && !(st->imm & 1)) {
-        for (i = 5; i < 11; i++) {
-            if (duel_slot_e8170(p, i, 0x1843) && duel_slot_has_effect(p, i, 0x1843)) {
-                st->atk = 3000;
+    switch (st->id) {
+    case 0x1782:
+        if (AFFECTS(st->imm & 1)) {
+            for (i = 5; i < 11; i++) {
+                if (duel_slot_e8170(p, i, 0x1843) && duel_slot_has_effect(p, i, 0x1843)) {
+                    st->atk = 3000;
+                }
             }
         }
+        break;
+    case 0x19ED:
+        fixed = 1;
+        break;
     }
 
     /* bonuses given by the cards on both fields */
@@ -495,7 +502,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
     def_fld = 0;
     for (q = 0; q < 2; q++) {
         s = &duel.players[q & 1].field[10];
-        if (s->card.id != 0 && SLOT_ACTIVE(s) && IMMUNE(st->imm, p, q) == 0) {
+        if (s->card.id != 0 && SLOT_ACTIVE(s) && AFFECTS(IMMUNE(st->imm, p, q))) {
             b = duel_field_bonus(st, q, 10, p, z);
             atk_fld += (short)b;
             def_fld += (short)(b >> 16);
@@ -803,7 +810,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                 }
                 break;
             case 0x18FE:
-                if (!(st->imm & 1)) {
+                if (AFFECTS(st->imm & 1)) {
                     atk_eff += st->batk;
                 }
                 break;
@@ -830,12 +837,12 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     }
                     break;
                 case 0x1243:
-                    if (!(st->imm2 & 2)) {
+                    if (AFFECTS(st->imm2 & 2)) {
                         atk_bon += -700;
                     }
                     break;
                 case 0x13F9:
-                    if (!(st->imm2 & 2)) {
+                    if (AFFECTS(st->imm2 & 2)) {
                         st->atk = 0;
                         atk_bon = 0;
                         atk_eq = 0;
@@ -843,7 +850,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     }
                     break;
                 case 0x175D:           /* the next two entries hold the new ATK and DEF */
-                    if (!fixed && !(st->imm & 1)) {
+                    if (!fixed && AFFECTS(st->imm & 1)) {
                         e1 = &duel_effects[ef->next];
                         e2 = &duel_effects[e1->next];
                         if (e1->src == 0x175D && e2->src == 0x175D) {
@@ -859,23 +866,23 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     }
                     break;
                 case 0x180F:
-                    if (IMMUNE(st->imm2, p, sp) == 0) {
+                    if (AFFECTS(IMMUNE(st->imm2, p, sp))) {
                         atk_bon -= duel_slot_value_1909(sp, sz) * 500;
                     }
                     break;
                 case 0x1843:
-                    if (p == sp && IMMUNE(st->imm, p, sp) == 0) {
+                    if (p == sp && AFFECTS(IMMUNE(st->imm, p, sp))) {
                         st->atk = 3000;
                         atk_eff = 0;
                     }
                     break;
                 case 0x184B:
-                    if (IMMUNE(st->imm2, p, sp) == 0) {
+                    if (AFFECTS(IMMUNE(st->imm2, p, sp))) {
                         atk_bon += 500;
                     }
                     break;
                 case 0x18D3:           /* 700 DEF when its controller has 2+ monsters, all in defense */
-                    if (!(st->imm & 1)) {
+                    if (AFFECTS(st->imm & 1)) {
                         n = 0;
                         all = 1;
                         for (i = 0; i < 5; i++) {
@@ -892,7 +899,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     }
                     break;
                 case 0x1A7C:
-                    if (IMMUNE(st->imm, p, sp) == 0) {
+                    if (AFFECTS(IMMUNE(st->imm, p, sp))) {
                         atk_bon += arg;
                     }
                     break;
@@ -917,7 +924,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     } else {
                         v = IMMUNE(st->imm, p, sp);
                     }
-                    if (v != 0) {
+                    if (!AFFECTS(v)) {
                         break;
                     }
                     switch (id) {
@@ -1163,7 +1170,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             break;
         case 0xC:
             s = &duel.players[src & 1].field[sz];
-            if (s->card.id != 0 && !SLOT_NEGATED(s) && IMMUNE(st->imm, p, sp) == 0) {
+            if (s->card.id != 0 && !SLOT_NEGATED(s) && AFFECTS(IMMUNE(st->imm, p, sp))) {
                 atk_eq += 200;
             }
             break;
