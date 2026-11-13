@@ -2032,3 +2032,42 @@ compilação), `hill.py` (descida aleatória sobre ordem e `int`/`unsigned` das 
   `case` troca a cor dos parâmetros sem regra visível), `duel_0883F3A0` (79: p/ofs/prot/b24 rodados),
   `duel_08838A84` (32: 2ª definição de `q` vira outro web), `duel_088862DC` (14: o original estreita `p` com
   `andi 0xff` antes do `andi 1` do índice; 20 formas testadas).
+
+## Rodada 25 (`twinR`): `*_parts.c` (dk/ds/dt/sc/shop_ui), três famílias de gêmeas
+
+Bateram as cinco `*_draw_counters` e as cinco `*_draw_help`; `*_draw_digits` 60 -> 2 palavras nas cinco.
+Caminho: casar a cópia do libdeck e copiar a forma para as outras quatro (só renomear), como na rodada 9.
+- **Procure a gêmea fora da família antes de reescrever** (`grep` do nome curto em `symbols/*.txt`):
+  `ll_draw_counters` (liblimitlist) já batia; a forma dela, com os arrays locais `offs`/`widths` e `p = c` antes do
+  laço, bateu de primeira depois do protótipo certo do callee.
+- **Parâmetro `short` no callee** (`*_draw_num_text(list, short x, short y, ...)`, como `ll_draw_number`): o
+  `y + 1` invariante sai içado como `int` e relido com `lh` (o `seh` da conversão do parâmetro fica na chamada e o
+  mwcc o funde com a recarga do derrame); com `int y` e `(short)(y + 1)` no chamador o `seh` é içado junto. O corpo
+  passa a `int px = (unsigned short)x;` e `y << 6`. Nos outros arquivos o protótipo pode continuar `int`: em
+  `ds_bg.c`/`dt_edraw.c` ele **tem** de ser `int` (`ds_draw_stream` faz `seh` de um `short x` só com parâmetro
+  `int`), então o protótipo saiu de `libdeck_swap.h` e ficou local em `ds_bg.c`.
+- **Globais `*_counter_xs/ws`, `*_help_plus` eram modelos de inicializador** (`.data`): com a função em C o array
+  local volta e os globais somem (o `@data` do arquivo já cobria os endereços).
+- **Constante não dobrada** (`*_draw_help`): `0xD4 - w - 0x1CU`, `y + 7 + lh + 12U` (o `U` impede o mwcc 219 de
+  juntar as constantes; já era idioma das rodadas 12-13).
+- **`if (c) A else B` com o desvio `bnezl` para B**: inverta a condição (`if (fit >= 12) {...} else {wtext}`) quando o
+  original cai no ramo que o rascunho tinha como `else`; o mesmo no `if (alt != 0)` do ícone final.
+- **Valor medido em local antes da conta** (`tx = font_measure_text(text) >> 6; tx = x + 5 + ((0x4Du - tx) >> 1);`):
+  dá o `sra a0` e o `x + 5` antes do `srl` do original.
+- **`*_draw_digits`**: `case 3: step = -1;` **caindo** no `case 0: w = 7; break;` (com `w = 7` nos dois casos o
+  mwcc cria `w` depois de `px` e troca s4-s8), `int px = (short)(pos & 0xFFFF)` (com `short px` sai um `seh` a mais)
+  e `w + step` escrito nos dois usos em vez de `step += w`. Ficam 2 palavras: o original põe `move t0,a2` antes do
+  `jal draw_set_offsets` e `move a3,s7` no atraso; aqui é o contrário (args `9U`, `(short)`, local `h`, protótipo
+  K&R, helper inline, cópia de `w`, corpos dos `case 1/2` não mudam). `rv_draw_digits` (librecipe_viewer) é a
+  mesma função.
+- **`*_draw_headers` (dk/ds/dt/sc, em `matching_skip` desde a rodada 13; 168-205 palavras -> 0)**: três passos.
+  (1) Ordem das cargas = ordem **inversa** das atribuições vizinhas: `y = ...; x = ...;` no começo de cada painel
+  e `sx; by; h` na barra (o original carrega `h` primeiro). Permutar 3 linhas por painel (6 ordens cada) baixou de
+  ~110 para 9-18. (2) `id` u16 derramado na pilha com `andi v0,a0` antes do `sh` (sem `volatile`, que põe o `id` no
+  offset errado e relê): `dt_eres_get((id = 0x8007, id))` nos dois ramos. (3) Os 9 restantes eram `$s6-$s8`
+  rodados na barra do painel 0: **qual variável recebe cada valor** decide a cor. Busca de renomeação (os três
+  valores em todas as permutações de nomes já existentes, regex `(?<![>.\w])nome\b` só no bloco) achou
+  `by = sx; h = by; fx|x = h` no painel 0 (o painel 1 fica com os nomes naturais). Vale como idioma geral quando a
+  forma já bate e só a coloração de um trecho difere: reatribuir o valor a outra variável já morta.
+- Não bateu: `sc_draw_counts` (21; o original carrega `d[i]` depois do `sh r.x` e o `total` antes; 64 combinações
+  de `volatile`, local para o total e store por ponteiro não mudam).
