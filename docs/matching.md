@@ -2302,3 +2302,20 @@ desvio de 3 instruções no meio vira 1000 palavras); usar o número de linhas `
 - `if (c) { if (z >= 5) continue; } else if (z < 5) continue;` (não o ternário) para `beqzl; slti` +
   `bnezl; li` do original; `switch (id) { case 0x1596: case 0x1598: ...; break; }` para `beql; beq; nop; b`;
   `if (unk480 > 1) prev = a - 1; else prev = 0;` para o `bnez` com o `prev = 0` fora de linha.
+
+## Rodada 26 (`engS2`): `duel_08850164` (9 -> 0)
+
+Bateu e foi promovida (`@data 0x089116C0-0x089116FC` para a tabela de saltos do `switch` de 15 casos).
+- **Troca de `$s` que nenhuma mudança isolada move = combinação de ordem e tipo**: no laço do caso 0xB o
+  ponteiro de indução do campo e `code` saíam `s2/s1` (o original `s1/s2`). Nada isolado mexia: ordem das
+  declarações do bloco (todas as posições de cada uma), `code` reaproveitando um local da função (`card`, `r`),
+  variável própria por bloco (`c2`, `c3`), inicializador morto, cópia (`c2 = code`), cast, 101 formas e
+  associações da expressão de `code`, `code` dividido em `|=`, helper `static inline` para a chamada, ponteiro
+  explícito (`DuelSlot *f`, `DuelPlayer *pz` andando 20 bytes, em todas as posições), `ZSLOT`, `volatile`,
+  `q & 1U`, formas do laço (`&&`, `||`, aninhado, `goto`, do/while), ordem de 600 listas de declarações da
+  função. O que bateu saiu de uma busca aleatória que muda **ao mesmo tempo** a ordem e o tipo de todos os
+  locais do bloco (`build/tmp/engS2/rs.py`, 1500 variantes, 14 com a troca desfeita, 2 com 0 palavras):
+  `unsigned int uid; unsigned int q; int z; int i; int n; unsigned int code;` (`uid` primeiro, `code` por
+  último e `unsigned`). Só `unsigned int code` dava 14; só a ordem, 9. Vale para as trocas "imóveis": antes de
+  desistir, rodar uma busca conjunta ordem x tipo (x locais descartados) com detector da troca (endereços do
+  diff), não só o total de palavras.
