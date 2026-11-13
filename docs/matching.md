@@ -2197,3 +2197,37 @@ Caminho: casar a cópia do libdeck e copiar a forma para as outras quatro (só r
   forma já bate e só a coloração de um trecho difere: reatribuir o valor a outra variável já morta.
 - Não bateu: `sc_draw_counts` (21; o original carrega `d[i]` depois do `sh r.x` e o `total` antes; 64 combinações
   de `volatile`, local para o total e store por ponteiro não mudam).
+## Rodada 25 (`uiR`: libshop, libtitle, librecipe_viewer)
+
+Bateram `tosk_open`/`tosk_update` (64%/69%: gêmeas byte a byte de `ds_osk_open`/`ds_osk_update`; o rascunho tinha
+`sceUtilityOskUpdate(1)` em vez de 2 e outro tratamento dos estados; o símbolo `tosk` apontava para `intext`, +0x78),
+`shop_list_row` (159), `tdl_deck_item` (212), `rv_draw_recipe` (343), `shop_buy_step` (307) e `shop_draw_shelf_3d` (248).
+Antes de reescrever uma função de 64-70% num módulo de menu, procure a gêmea pelo tamanho (`symbols/*.txt`): o
+`t_osk.c` era a mesma coisa que `ds_osk.c`/`dk_osk.c`/`rv_menu.c` já batendo.
+- **Posições de pilha = ordem das declarações** (maior endereço = declarado antes), inclusive o ponteiro `text`
+  que só recebe o retorno de uma chamada (`tdl_deck_item`) e os `done`/`limit` de cada seção, que eram variáveis
+  próprias (`rv_draw_recipe`: `limit, done, sel_x, sel_y, sel, done2, limit2` no topo). Um `Mat4` sem alinhamento sobe
+  para o topo da pilha mesmo declarado num bloco; `Mat4 id __attribute__((aligned(16)))` no bloco o põe abaixo dos
+  `Vec4` (que são `aligned(16)` pelo typedef) como no original (`shop_buy_step`).
+- **Templates de struct**: `f(&(Vec4){...})` dá uma cópia só (para o temporário, passado direto); `c = (Vec4){...};`
+  dá duas (temporário e variável). Os globais `shop_fly_*` eram esses templates anônimos (saem do `symbols/`).
+- **Constante não dobrada `li K1; addiu r,K1,K2`** nos dois ramos de um `if`: `x = K1; x += K2;` em cada ramo
+  (`shop_list_row`); `y + 29` seguido de `+ 3` sem dobrar: um local `sy = y + 0x1D` usado nas duas expressões.
+- **`int a, b, c;` numa linha contra um por linha** mudou a cor de `type`/`row` (`shop_list_row`: 85 -> 55 palavras);
+  `unsigned char chara` contra `int chara` decide quem vai para `$s8` e quem para a pilha (`tdl_deck_item` 212 -> 52).
+- **Base de array num registrador temporário entre stores** (o original reusa `&shop.stock` em `v1`): escrever o
+  último acesso como `&((unsigned char *)&shop.stock)[pack]` (3 instruções a menos, 307 -> 18).
+- **Contador reaproveitado**: `rv_draw_recipe` usa o mesmo `k` nas duas seções (um `k2` próprio roda os `$s` das
+  variáveis de indução) e `k++` nos dois ramos do teste do cursor; `dl = f(...)` + um só `return dl` em vez de
+  `return f(...)` dentro do `if` (o `bnel` para o epílogo com `lw ra` copiado).
+- **Teste de estado com `default: return;` num `switch`** (`shop_draw_shelf_3d`): liga o modo sem limpeza pós-likely
+  (rodada 19), que explica o `b; nop` do fim do último `case` antes do `return`.
+- Ordem de `if/else` ao contrário do rascunho (`if (n <= 0) {...} else {...}` quando o `then` original está no fim,
+  alcançado por `bgtzl`), `if (ok == 2) ... else if (ok == 0)` era `switch (ok) { case 0: ...; case 2: ...; }`,
+  `a = u * u` antes de `b = 2.0f * t * u` decide os registradores float, `step++` antes de `timer = 0`.
+- Sem forma: `shop_result_input` (2: `b; nop` depois do `se_play` do passo 1, o nosso preenche com o `move v0,zero` do
+  alvo; testados `default:` primeiro/último, `return 0` no `then`, `if` invertido, `break` antecipado) e
+  `shop_item_key` (20: o `default` do `switch` interno fica num bloco próprio `li v0,-2` antes do epílogo com `b; nop`
+  no despacho; testados `int v = -2`, `goto`, `return -2` final, `return` em todos os casos, `default` sem `break`).
+  Nos dois o original deixa sem preencher um `b` que o nosso preenche com a 1ª instrução do alvo; os `b; nop` dos
+  outros `case` de `shop_item_key` vêm da cópia `move v0,v` do `return v` removida depois do preenchimento.

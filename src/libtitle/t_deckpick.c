@@ -1,6 +1,5 @@
 // @range 0x08824DA8-0x0882647C
-// @asm 0x08825D7C-0x088262C8
-// @data 0x0883022C-0x08830230
+// @data 0x08830214-0x08830230
 /* Deck choice of the duel setups (state 12 and the ad hoc lobby): the lists of the own deck and the
    saved decks, of the recipes and of the deck files of the extra data, the cursor with L/R to change
    list, the rows with the deck name, owner, number and duel record, and the faster cursor repeat while
@@ -464,11 +463,14 @@ void *tdl_deck_draw(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* the owner (chara) and the recipe id swap places between s8 and the stack */
+/* one deck row of the list: frame by state (ok), name of the own deck / saved deck / file / recipe with its
+   owner and number; text declared first (top of the stack), e->type read once at the top, ok as a switch */
 void *tdl_deck_item(void *list, int i, int x, int y)
 {
-    Title *t = &title;
+    unsigned short *text;
     TExtList *e = &title.duel.tail.ext;
+    Title *t = &title;
+    int type = e->type;
     int id = 0;
     int saved = 0;
     int has_rec = 0;
@@ -477,13 +479,12 @@ void *tdl_deck_item(void *list, int i, int x, int y)
     int own = 0;
     int rec = 0;
     int file = 0;
-    unsigned char chara = 0;
+    int chara = 0;
     unsigned int color = 0xFF000000;
-    unsigned int amb;
-    unsigned short *text;
     SaveRec *sr;
+    unsigned int amb;
 
-    if (e->type == 1 || e->type == 0x29) {
+    if (type == 1 || type == 0x29) {
         switch (t->u86c) {
         case 0:
             if (i == 0) {
@@ -513,10 +514,14 @@ void *tdl_deck_item(void *list, int i, int x, int y)
     if (ok != 1) {
         amb = 0;
         list = tmenu_gfx_setup(list, 2);
-        if (ok == 2)
-            color = 0xFF0070FF;
-        else if (ok == 0)
+        switch (ok) {
+        case 0:
             amb = 0x40000000;
+            break;
+        case 2:
+            color = 0xFF0070FF;
+            break;
+        }
         list = dl_ambient_color(list, amb);
         list = draw_set_offsets(list, 0, 0, 0x84, 0x1D);
         list = draw_sprite(list, x, y, 0, 0, 0, 0, 0);
@@ -576,7 +581,6 @@ void *tdl_deck_item(void *list, int i, int x, int y)
         list = title_msg_font(list, 0, 0xF6, 0x1E0, 0, 0x4D, 3, 15, 15, 0xFFFFFFFF);
     return list;
 }
-#endif
 
 void *tdl_deck_record(void *list, int x, int y, unsigned short *v)
 {

@@ -1,7 +1,6 @@
 // @range 0x08805AB4-0x08807CAC
 // @asm 0x088061F8-0x08806634
-// @asm 0x08806CC4-0x088074FC
-// @rodata 0x0881C0E8-0x0881C124
+// @rodata 0x0881C0E8-0x0881C140
 // @data 0x0881C900-0x0881C970
 /* Main state machine of the shop: the shelf with the 48 pack kinds (two rows of packs per kind, the
    cursor and the shelf rotation), buying a pack (it flies from the shelf to the counter), the list of
@@ -485,19 +484,19 @@ void shop_list_input(void)
     shop_sel_update();
 }
 
-/* flight of the bought pack: offset from the shelf, control point, counter */
-Vec4 shop_fly_off = { 0.0f, -3.0f, -8.0f, 1.0f };
-Vec4 shop_fly_ctrl = { 0.0f, -3.44000006f, 5.0f, 1.0f };
-Vec4 shop_fly_to = { 0.0f, -3.44000006f, 5.0f, 1.0f };
-Vec4 shop_fly_end = { 0.0f, -3.44000006f, 5.0f, 1.0f };
-
-#ifdef NON_MATCHING /* cálculo do voo do pack com templates Vec4 copiados pela pilha e índices do bitfield; forma e registradores diferentes */
-/* buying the pack under the cursor: points, the pack flies to the counter */
+/* buying the pack under the cursor: points, the pack flies to the counter (offset from the shelf, control
+   point and end as compound literals: their templates are the anonymous Vec4s of .data; id is aligned(16) so it
+   sits below the Vec4s, &((unsigned char *)&shop.stock)[pack] keeps the stock base in a register) */
 void shop_buy_step(void)
 {
     unsigned short side = SHELF_SIDE(shop.cur);
     Mat4 m;
     Vec4 v;
+    Vec4 c;
+    Vec4 to;
+    Vec4 q0;
+    Vec4 q1;
+    Vec4 q;
     float t;
 
     switch (shop.step) {
@@ -523,8 +522,6 @@ void shop_buy_step(void)
         }
         break;
     case 2: {
-        Vec4 off;
-        Vec4 c;
         unsigned char *s;
         int n;
 
@@ -534,16 +531,15 @@ void shop_buy_step(void)
         mat4_copy(&shop.rot0, &m);
         v.x = -3.0f + 6.0f * SHELF_SIDE(shop.cur);
         v.y = shop.lift[SHELF_SIDE(shop.cur)][SHELF_IDX(shop.cur)];
-        v.w = 1.0f;
         v.z = -1.4f + 0.3f * SHELF_IDX(shop.cur);
+        v.w = 1.0f;
         mat4_transform_vec4(&v, &m, &v);
-        off = shop_fly_off;
-        vec3_add_w(&shop.from, &off, &v);
+        vec3_add_w(&shop.from, &(Vec4){ 0.0f, -3.0f, -8.0f, 1.0f }, &v);
         mat4_copy(&shop.rotm, &shop.rot0);
         vec4_copy(&shop.pos, &shop.from);
         shop.timer = 0;
         shop.taken = 1;
-        c = shop_fly_ctrl;
+        c = (Vec4){ 0.0f, -3.44000006f, 5.0f, 1.0f };
         shop.ctrl.x = c.x;
         shop.ctrl.y = 2.0f + shop.from.y;
         shop.ctrl.z = c.z;
@@ -551,14 +547,9 @@ void shop_buy_step(void)
         shop.stock[shop.pack] -= (unsigned char)(1 << (side << 2));
         shop.bought[shop.pack]++;
         shop.lift[side][SHELF_IDX(shop.cur)] = 0.0f;
-        s = &shop.stock[shop.pack];
+        s = &((unsigned char *)&shop.stock)[shop.pack];
         n = *s >> (side << 2) & 0xF;
-        if (n > 0) {
-            if (SHELF_IDX(shop.cur) >= n - 1) {
-                shop.cur &= 0x80;
-                shop.cur |= (unsigned char)((*s >> (side << 2) & 0xF) - 1);
-            }
-        } else {
+        if (n <= 0) {
             side = (side + 1) & 1;
             if ((*s >> (side << 2) & 0xF) > 0) {
                 shop.cur = side << 7;
@@ -566,38 +557,42 @@ void shop_buy_step(void)
             } else {
                 shop.back = 1;
             }
+        } else {
+            if (SHELF_IDX(shop.cur) >= n - 1) {
+                shop.cur &= 0x80;
+                shop.cur |= (unsigned char)((*s >> (side << 2) & 0xF) - 1);
+            }
         }
         shop.step++;
         break;
     }
     case 3:
         if (++shop.timer < 10) {
-            Mat4 id;
-            Vec4 q0, q1, q;
-            Vec4 to;
+            Mat4 id __attribute__((aligned(16)));
             float u, a, b, c2;
 
-            to = shop_fly_to;
+            to = (Vec4){ 0.0f, -3.44000006f, 5.0f, 1.0f };
             t = shop.timer / 10.0f;
             u = 1.0f - t;
-            b = 2.0f * t * u;
             a = u * u;
+            b = 2.0f * t * u;
             c2 = t * t;
-            shop.pos.z = c2 * to.z + (a * shop.from.z + b * shop.ctrl.z);
             shop.pos.x = c2 * to.x + (a * shop.from.x + b * shop.ctrl.x);
             shop.pos.y = c2 * to.y + (a * shop.from.y + b * shop.ctrl.y);
+            shop.pos.z = c2 * to.z + (a * shop.from.z + b * shop.ctrl.z);
             mat4_identity(&id);
             mat3_to_quat(&q0, &shop.rot0);
             mat3_to_quat(&q1, &id);
             quat_slerp(&q, &q0, &q1, t);
             quat_to_mat4(&shop.rotm, &q);
         } else {
-            Vec4 to;
-            to = shop_fly_end;
-            vec4_copy(&shop.pos, &to);
+            Vec4 end;
+
+            end = (Vec4){ 0.0f, -3.44000006f, 5.0f, 1.0f };
+            vec4_copy(&shop.pos, &end);
             mat4_identity(&shop.rotm);
-            shop.timer = 0;
             shop.step++;
+            shop.timer = 0;
         }
         break;
     case 4:
@@ -618,7 +613,6 @@ void shop_buy_step(void)
         break;
     }
 }
-#endif
 
 /* the card info window over the list */
 void shop_info_step(void)

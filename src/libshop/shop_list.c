@@ -1,6 +1,4 @@
 // @range 0x0880D298-0x0880EF74
-// @asm 0x0880D3E0-0x0880D828
-// @asm 0x0880DFE4-0x0880E598
 // @data 0x088202B4-0x088202E4
 // @rodata 0x0881C1F0-0x0881C260
 /* 3D part of the shelf (the pack model over the counter, the shelf of the chosen kind with its
@@ -114,20 +112,32 @@ void shop_draw_shelf_pack(void)
     model_draw(m, &o);
 }
 
-#ifdef NON_MATCHING /* laços das duas fileiras com a matriz salva; alocação diferente */
-/* the shelf of the chosen kind: the box, the packs left in both rows, the one flying to the counter */
+/* the shelf of the chosen kind: the box, the packs left in both rows, the one flying to the counter (the
+   state test is a switch whose default returns: no post-likely cleanup in the whole function) */
 void shop_draw_shelf_3d(void)
 {
-    Mat4 fly;
-    Mat4 base;
-    ModelDraw o;
     float pos[3];
+    ModelDraw o;
+    Mat4 base;
+    Mat4 fly;
     Model *m;
     int side;
     int i;
 
     mtx_identity();
-    if (shop.state == 4 || shop.state == 3) {
+    switch (shop.state) {
+    case 2:
+    case 5:
+        dl_set_list(shop_dl_fade(dl_select_layer(2, 0), (unsigned char)(shop.timer * 0xA0 / 18)));
+        pos[0] = 0.0f;
+        pos[1] = -20.0f - -17.0f * shop.timer / 18.0f;
+        pos[2] = -200.0f - -192.0f * shop.timer / 18.0f;
+        mtx_translate(pos);
+        mtx_rotate_x(0.7853982f);
+        mtx_rotate_y(3.1415927f * (shop.rot + 360.0f * shop.timer / 18.0f) / 180.0f);
+        break;
+    case 3:
+    case 4:
         dl_set_list(shop_dl_fade(dl_select_layer(2, 0), 0xA0));
         pos[1] = -3.0f;
         pos[2] = -8.0f;
@@ -135,15 +145,8 @@ void shop_draw_shelf_3d(void)
         mtx_translate(pos);
         mtx_rotate_x(0.7853982f);
         mtx_rotate_y(3.1415927f * shop.rot / 180.0f);
-    } else if (shop.state == 5 || shop.state == 2) {
-        dl_set_list(shop_dl_fade(dl_select_layer(2, 0), (unsigned char)(shop.timer * 0xA0 / 18)));
-        pos[0] = 0.0f;
-        pos[1] = -20.0f - shop.timer * -17.0f / 18.0f;
-        pos[2] = -200.0f - shop.timer * -192.0f / 18.0f;
-        mtx_translate(pos);
-        mtx_rotate_x(0.7853982f);
-        mtx_rotate_y(3.1415927f * (shop.rot + shop.timer * 360.0f / 18.0f) / 180.0f);
-    } else {
+        break;
+    default:
         return;
     }
     mtx_get34(&base);
@@ -156,8 +159,8 @@ void shop_draw_shelf_3d(void)
     m = shop_model_get(0x8001);
     model_update(m, 0);
     for (side = 0; side < 2; side++) {
-        pos[2] = -1.4f;
         pos[0] = -3.0f + 6.0f * side;
+        pos[2] = -1.4f;
         for (i = 0; i < (shop.stock[shop.pack] >> (side * 4) & 0xF); i++) {
             mtx_load(&base);
             pos[1] = shop.lift[side][i];
@@ -174,7 +177,6 @@ void shop_draw_shelf_3d(void)
         model_draw(m, &o);
     }
 }
-#endif
 
 /* darkens the screen behind the 3D shelf */
 unsigned int *shop_dl_fade(unsigned int *list, int alpha)
@@ -308,20 +310,10 @@ unsigned int *shop_list_rows(unsigned int *list)
     return list;
 }
 
-/* counters of a row: copies that came out, copies owned (red over 99); the template of the
-   initializer of c[] in shop_list_row (the asm reads it by this name) */
-UiCounter shop_row_counters[3] = {
-    { 0, { 0 }, 0, 0 }, { 5, { 0 }, 0xFF000000, 0 }, { 6, { 0 }, 0xFF000000, 0 },
-};
-
-#ifdef NON_MATCHING /* 159 palavras (1436 bytes contra 1460): y = row * 0x2D; y += 0x1A (li 26 + addu no original) e
-                       PT(0, atk)/PT(1, def) (andi no uso) acertaram o tamanho até os contadores; falta a troca s0/s1 de
-                       type e row/y e o x dos contadores, que o original calcula como 0xB3 + 0xC0 nos dois ramos do
-                       card_is_monster (uma variável x = 0xB3 nos dois ramos reproduz o li/addiu mas desarranja os $s). O trecho dos
-                       contadores já sai igual ao original: c[] é um inicializador com valores em tempo de execução
-                       (cópia do template, value gravado com lhu/and/or/sh, o 99 depois com sb); com ele o template
-                       sai anônimo no .data, e shop_row_counters fica só para o asm. Corrigido em 2026-11-05: as
-                       cópias que saíram vão para c[1] (ícone 5), não c[0] */
+/* counters of a row (c[] below is an initializer with runtime values: the template goes anonymous to .data,
+   value written with lhu/and/or/sh, the 99 later with sb): copies that came out (icon 5), copies owned (icon 6,
+   red over 99). The counters' x is 0xB3 + 0xC0 set in both branches of card_is_monster (li/addiu in each one),
+   the pack name's y a separate local sy = y + 0x1D (y + 0x1D + 3 is not folded) */
 typedef struct UiCounterB {      /* UiCounter with value as a bitfield of the halfword at +8 */
     unsigned char icon;
     unsigned char pad01[3];
@@ -334,9 +326,18 @@ unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
     UiEnt e;
     unsigned short *name;
     unsigned short *pack;
-    int attr, kind, type, level, atk, def, rarity;
-    int y, ty;
+    int y;
+    int type;
+    int attr;
+    int kind;
+    int level;
+    int atk;
+    int def;
+    int rarity;
+    int ty;
     int total, owned;
+    int x;
+    int sy;
 
     memset(&e, 0, sizeof(e));
     e.id = it->id;
@@ -388,8 +389,12 @@ unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
         list = shop_ui_draw_level(list, PT(0xD7, ty + 2), level, 0xFF000000, shop_res_get(0x2025));
         list = shop_ui_draw_stat(list, PT(0, atk), PT(0xFB, ty + 2), 0xC0A, 0xFF000000, 0);
         list = shop_ui_draw_stat(list, PT(1, def), PT(0x137, ty + 2), 0xC0A, 0xFF000000, 0);
+        x = 0xB3;
+        x += 0xC0;
     } else {
         list = shop_ui_draw_icon_b(list, PT(0xC4, ty), type, shop_res_get(0x2023));
+        x = 0xB3;
+        x += 0xC0;
     }
     {
         UiCounterB c[3] = { { 0, { 0 }, 0, 0 }, { 5, { 0 }, 0xFF000000, it->partners },
@@ -402,22 +407,22 @@ unsigned int *shop_list_row(unsigned int *list, ShopItem *it, int row)
             if (owned > 99)
                 c[2].value = 99;
         }
-        list = shop_ui_draw_counters(list, PT(0x173, ty), (UiCounter *)c, shop_res_get(0x2022), shop_res_get(0x2026));
+        list = shop_ui_draw_counters(list, PT(x, ty), (UiCounter *)c, shop_res_get(0x2022), shop_res_get(0x2026));
     }
+    sy = y + 0x1D;
     if ((name = shop_res_get(0x2002)) != 0) {
         list = gim_set_texture(list, name);
         list = dl_ambient_color(list, 0xFFFFFFFF);
         list = dl_set_tex_filter(list, 0, 0);
         list = draw_set_offsets(list, 10, 16, 10, 16);
-        list = draw_sprite(list, 0xD7, y + 0x1D, 0, 0x53, 0x91, 0, 0);
+        list = draw_sprite(list, 0xD7, sy, 0, 0x53, 0x91, 0, 0);
     }
     font_set_size(12, 12);
     font_set_color(0xFFFFFFFF);
     font_text_set(list);
-    font_draw_text(0x38C0, (y + 0x20) << 6, 0x3A80, pack);
+    font_draw_text(0x38C0, (sy + 3) << 6, 0x3A80, pack);
     return font_text_clear();
 }
-#endif
 
 /* the frame of the card kind behind a row */
 unsigned int *shop_draw_kind_frame(unsigned int *list, int x, int y, int kind)
