@@ -428,20 +428,16 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             atk_eff += n * 300;
             break;
         case 0x19F5:
-            atk_eff += duel.players[p & 1].n_f * 300;
-            def_eff += duel.players[p & 1].n_f * 300;
+            atk_eff = def_eff = duel.players[p & 1].n_f * 300;
             break;
         case 0x19F6:
-            st->atk = (duel_zone_f_count_monsters(0) + duel_zone_f_count_monsters(1)) * 100;
-            st->def = st->atk;
+            st->atk = st->def = (duel_zone_f_count_monsters(0) + duel_zone_f_count_monsters(1)) * 100;
             break;
         case 0x19F7:
-            st->atk = (duel_zone_f_count_monsters(0) + duel_zone_f_count_monsters(1)) * 200;
-            st->def = st->atk;
+            st->atk = st->def = (duel_zone_f_count_monsters(0) + duel_zone_f_count_monsters(1)) * 200;
             break;
         case 0x19F8:
-            st->atk = (duel_zone_f_count_monsters(0) + duel_zone_f_count_monsters(1)) * 300;
-            st->def = st->atk;
+            st->atk = st->def = (duel_zone_f_count_monsters(0) + duel_zone_f_count_monsters(1)) * 300;
             break;
         case 0x1A05:                   /* the base ATK of the other 0x1A6x monsters it controls */
             st->atk = 0;
