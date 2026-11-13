@@ -37,8 +37,9 @@ def build():
             continue
         if src not in sdk:
             t = open(src, errors="replace").read()  # GCC SDK: mwcc asm functions, or one @asm over the whole @range
-            r = re.search(r"^// @range (\S+)", t, re.M)  # (not "__MWERKS__": game files use it for the PC port)
-            sdk[src] = bool(re.search(r"^asm \w", t, re.M)) or bool(r and re.search(r"^// @asm " + re.escape(r.group(1)) + "$", t, re.M))
+            r = re.search(r"^// @range (\S+)", t, re.M)  # (not "__MWERKS__": game files use it for the PC port;
+            # whole-range @asm only means SDK in BOOT: gmodule files with one big function look the same)
+            sdk[src] = bool(re.search(r"^asm \w", t, re.M)) or src.startswith("src/BOOT/") and bool(r and re.search(r"^// @asm " + re.escape(r.group(1)) + "$", t, re.M))
         if sdk[src]:
             continue
         mod = src.split("/")[1]
