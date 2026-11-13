@@ -122,7 +122,11 @@ typedef struct DdShatterTint {         /* dd_fx_shatter_tint as one local copy *
 } DdShatterTint;
 
 #ifdef __MWERKS__
-#define DD_RAND_SGN(r, s) (DD_RAND(r) / 32767.0f * (s) * (DD_RAND(r) % 2 * 2 - 1))
+/* the six draws of a vector come first (z to x, sign before magnitude, each magnitude divided at once), then the
+   products: with DD_RAND_SGN in the arguments mwcc interleaves draws and sign branches (asm of 0x0882DA98) */
+#define DD_RAND6(r) (zs = DD_RAND(r), zm = DD_RAND(r) / 32767.0f, ys = DD_RAND(r), ym = DD_RAND(r) / 32767.0f, \
+                     xs = DD_RAND(r), xm = DD_RAND(r) / 32767.0f)
+#define DD_SGN(m, sg, s) ((m) * (s) * ((sg) % 2 * 2 - 1))
 #else
 /* port: mwcc draws the sign before the magnitude (asm of 0x0882DA98); in C the order is unspecified */
 static float dd_rand_sgn(DdRandSeed *r, float s)
@@ -133,9 +137,9 @@ static float dd_rand_sgn(DdRandSeed *r, float s)
 #define DD_RAND_SGN(r, s) dd_rand_sgn(r, s)
 #endif
 
-#ifdef NON_MATCHING /* struct 146 linhas, ~1000 palavras (2026-11-08): forma das seções certa (meias-células e deslocamentos
-   em locais, sorteios por vec3_set com o slot relido, cópia do modelo da cor); faltam a ordem dos sorteios no bloco
-   das velocidades, registradores $s (fx em $s7, contadores) e a ordem de agendamento de u0/cx */
+#ifdef NON_MATCHING /* 1196 x 1192 instruções, 60 linhas de estrutura (rodada 27): sorteios certos (DD_RAND6); faltam
+   registradores $s (fx em $s7 e step em $s0 no original, aqui $s8/$s1; o contador da 1a passada de desenho em $s8 e
+   não na pilha), o par de slots 112/120 e tri[2 + k] como variável de indução nos laços de desenho */
 int dd_fx_shatter_update(int state, DdFxShatter *fx)
 {
     DdRandSeed *r;
@@ -206,7 +210,6 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
                 sh = &fx->shard[i][j];
                 du = 0.24609375f;
                 u0 = du * j - 0.4921875f;
-                cx = 15.5f * j + -23.25f;
                 u1 = u0 + du;
                 fx->shard[i][j].tri[0][0].u = u0;  fx->shard[i][j].tri[0][0].v = v0;
                 fx->shard[i][j].tri[0][0].x = xa;  fx->shard[i][j].tri[0][0].y = 0.0f; fx->shard[i][j].tri[0][0].z = za;
@@ -234,6 +237,7 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
                 fx->shard[i][j].tri[3][1].x = hw - ox; fx->shard[i][j].tri[3][1].y = 0.0f; fx->shard[i][j].tri[3][1].z = zb;
                 fx->shard[i][j].tri[3][2].u = nu1; fx->shard[i][j].tri[3][2].v = v1;
                 fx->shard[i][j].tri[3][2].x = hw - ox; fx->shard[i][j].tri[3][2].y = 0.0f; fx->shard[i][j].tri[3][2].z = hh - oz;
+                cx = 15.5f * j + -23.25f;
                 vec3_set(sh->pos[0], cx - ox, 0.0f, cz0);
                 vec3_set(sh->pos[1], ox + cx, 0.0f, cz1);
                 for (k = 0; k < 2; k++) {
@@ -242,7 +246,13 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
                     vec3_scale(d, d, 90.0f);
                     r = &rand3_seeds[rand3_slot];
 #ifdef __MWERKS__
-                    vec3_set(p, DD_RAND_SGN(r, 35.0f), DD_RAND_SGN(r, 35.0f), DD_RAND_SGN(r, 35.0f));
+                    {
+                        int zs, ys, xs;
+                        float zm, ym, xm;
+
+                        DD_RAND6(r);
+                        vec3_set(p, DD_SGN(xm, xs, 35.0f), DD_SGN(ym, ys, 35.0f), DD_SGN(zm, zs, 35.0f));
+                    }
 #else /* port: mwcc evaluates these arguments right to left */
                     { float z = DD_RAND_SGN(r, 35.0f), y = DD_RAND_SGN(r, 35.0f), x = DD_RAND_SGN(r, 35.0f);
                       vec3_set(p, x, y, z); }
@@ -250,8 +260,14 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
                     vec3_add(sh->vel[k], d, p);
                     r = &rand3_seeds[rand3_slot];
 #ifdef __MWERKS__
-                    vec3_set(sh->spin[k], step * DD_RAND_SGN(r, 0.34906587f), step * DD_RAND_SGN(r, 0.34906587f),
-                             step * DD_RAND_SGN(r, 0.34906587f));
+                    {
+                        int zs, ys, xs;
+                        float zm, ym, xm;
+
+                        DD_RAND6(r);
+                        vec3_set(sh->spin[k], step * DD_SGN(xm, xs, 0.34906587f), step * DD_SGN(ym, ys, 0.34906587f),
+                                 step * DD_SGN(zm, zs, 0.34906587f));
+                    }
 #else /* port: right to left, as mwcc */
                     { float z = step * DD_RAND_SGN(r, 0.34906587f), y = step * DD_RAND_SGN(r, 0.34906587f),
                             x = step * DD_RAND_SGN(r, 0.34906587f);
@@ -381,7 +397,13 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
             vec3_set(p, 40.0f * sa, 0.0f, 40.0f * ca);
             r = &rand3_seeds[rand3_slot];
 #ifdef __MWERKS__
-            vec3_set(d, DD_RAND_SGN(r, 35.0f), DD_RAND_SGN(r, 35.0f), DD_RAND_SGN(r, 35.0f));
+            {
+                int zs, ys, xs;
+                float zm, ym, xm;
+
+                DD_RAND6(r);
+                vec3_set(d, DD_SGN(xm, xs, 35.0f), DD_SGN(ym, ys, 35.0f), DD_SGN(zm, zs, 35.0f));
+            }
 #else /* port: right to left, as mwcc */
             { float z = DD_RAND_SGN(r, 35.0f), y = DD_RAND_SGN(r, 35.0f), x = DD_RAND_SGN(r, 35.0f);
               vec3_set(d, x, y, z); }
