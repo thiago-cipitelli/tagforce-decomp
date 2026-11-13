@@ -165,7 +165,7 @@ static inline void duel_battle_atk_card(DuelFighter *me, DuelFighter *foe, unsig
             me->destroyed = 0;
             if (show) {
                 duel_088C4448(mp, me->zone, me->uid);
-                duel_088C87A8(fp, *fz, (mp & 0xFF) | (*mz & 0xFF) << 8, 6, 0);
+                duel_088C87A8(fp, *fz, (unsigned char)mp | (*mz & 0xFF) << 8, 6, 0);
             }
         }
         break;
@@ -309,7 +309,7 @@ static inline void duel_battle_def_card(DuelFighter *me, DuelFighter *foe, unsig
             me->destroyed = 0;
             if (show) {
                 duel_088C4448(mp, me->zone, me->uid);
-                duel_088C87A8(fp, *fz, (mp & 0xFF) | (*mz & 0xFF) << 8, 6, 0);
+                duel_088C87A8(fp, *fz, (unsigned char)mp | (*mz & 0xFF) << 8, 6, 0);
             }
         }
         break;
@@ -497,7 +497,7 @@ static inline void duel_battle_keep(DuelFighter *me, unsigned int mp, const int 
             }
         }
     }
-    if (mp != ap) {
+    if (defender ? ap != mp : mp != ap) {
         if (duel.players[mp & 1].flags >> 23 & 1) {
             me->destroyed = 0;
         }
@@ -545,10 +545,10 @@ static inline void duel_battle_keep(DuelFighter *me, unsigned int mp, const int 
             if (ef->kind < 6) {
                 continue;
             }
-            hit = 0;
             q = EFF_PLAYER(ef);
             sz = EFF_ZONE(ef);
             id = duel.players[q & 1].field[sz].card.id;
+            hit = 0;
             if (ef->kind == 0xD && !neg) {
                 hit = 1;
             } else if (card_is_attribute8(id) && (unsigned int)(ef->kind - 10) < 2 && SLOT_ACTIVE(&duel.players[q & 1].field[sz])) {
