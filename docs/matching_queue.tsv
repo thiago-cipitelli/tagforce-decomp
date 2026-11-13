@@ -1,7 +1,1 @@
 fuzzy	size	module	function	address	file
-99.9	10712	libduel_eng	duel_088482F8	0x088482F8	src/libduel_eng/battle_calc.c
-99.9	3552	libduel_eng	duel_08850164	0x08850164	src/libduel_eng/ai_08850164.c
-97.7	12260	libduel_eng	duel_field_stats	0x088F2D70	src/libduel_eng/field_stats.c
-95.2	900	librecipe_viewer	rv_menu_open	0x08809C64	src/librecipe_viewer/rv_menu.c
-89.8	2248	libfield	fbm_input	0x088197B0	src/libfield/f_bmap.c
-87.7	2012	libstory	st_fld_place_chrs	0x0880DE58	src/libstory/s_fldset.c
