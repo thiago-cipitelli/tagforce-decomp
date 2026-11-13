@@ -198,21 +198,26 @@ int cardinfo_update(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 89 palavras, só numeração dos $s (o original: title s4, hint_l s3, id s2, hint_r s1; aqui id s4, hint_l s2, title s0; testadas ordem das declarações, das atribuições iniciais, posição de id = ..., tipos de id). Rodada 23: o switch (estado) { case 0: case 4: return; } liga o modo sem limpeza pós-likely (as 8 cópias mortas); if/else nos hints, monstro primeiro no texto final, gfx_get_state()[1] da 1a chamada e [0] da 2a, pos * 0xB2 / range antes do ceil, range int: 588 -> 89 */
+#ifdef NON_MATCHING /* rodada 27: ordem/tipo das declarações (busca aleatória) 89 -> 54 palavras, sobra id/title trocados (s4/s2). Antes: 89 palavras, só numeração dos $s (o original: title s4, hint_l s3, id s2, hint_r s1; aqui id s4, hint_l s2, title s0; testadas ordem das declarações, das atribuições iniciais, posição de id = ..., tipos de id). Rodada 23: o switch (estado) { case 0: case 4: return; } liga o modo sem limpeza pós-likely (as 8 cópias mortas); if/else nos hints, monstro primeiro no texto final, gfx_get_state()[1] da 1a chamada e [0] da 2a, pos * 0xB2 / range antes do ceil, range int: 588 -> 89 */
 void cardinfo_draw(void)
 {
+    unsigned short saved_flags;
+    unsigned int attr;
+    unsigned short *line;
+    int range;
+    int n;
     void *list;
     unsigned short id;
-    unsigned short saved_flags;
-    unsigned short *hint_l = 0;
-    unsigned short *hint_r = 0;
-    unsigned short *title = 0;
-    unsigned short *line;
-    unsigned short v;
+    int pict;
+    unsigned int y;
+    int pos;
     unsigned int st;
-    unsigned int pos;
-    int range;
-    int y, i, n, attr, cls, pict;
+    unsigned short v;
+    int i;
+    unsigned short *hint_l = 0;
+    unsigned short *title = 0;
+    int cls;
+    unsigned short *hint_r = 0;
 
     list = dl_select_layer(cardinfo_layer, 0);
     list = dl_clear_color(list, 0xFF000000);
@@ -461,14 +466,22 @@ void *cardinfo_draw_bg(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* cardinfo_draw_window: y5/v5 allocation and x+5 rematerialisation; cardinfo_draw_frame: order of three argument moves */
+#ifdef NON_MATCHING /* cardinfo_draw_window (9 palavras, rodada 27: ordem das declarações 20 -> 9): o original dá a v5 o $s de x5 e
+   recalcula x + 5 na última chamada (o mwcc junta v5 com v e reusa x5); cardinfo_draw_frame: ordem de três moves de argumento */
 /* 9-slice window from window01.gim (style = row of 24 px in the sheet). */
 void *cardinfo_draw_window(void *list, unsigned int style, int x, int y, int w, int h)
 {
-    void *gim = ehp_find(syspack_get(), cardinfo_window01_gim, 0);
-    int v = (style & 0xFFFF) * 0x18;
-    int x1, y1, v2, x5, y5, v5;
+    int y5;
+    int v;
+    int v2;
+    int x5;
+    int y1;
+    void *gim;
+    int x1;
+    int v5;
 
+    gim = ehp_find(syspack_get(), cardinfo_window01_gim, 0);
+    v = (style & 0xFFFF) * 0x18;
     if (gim == 0)
         return list;
     list = dl_ambient_color(list, 0xFFFFFFFF);
