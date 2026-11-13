@@ -325,12 +325,22 @@ void menu_draw(void **dl, MenuWidget *w)
    do cursor de pad->b.rep: o rascunho lia dir_rep e trig; cancelar com cancel_resets primeiro, linhas > 0 e
    initial >= scroll + rows; busca dos botões com teste booleano materializado). 282 palavras (1580 B contra 1572 B; antes 415), do modo
    sem limpeza pós-likely (li v0,-1; b; nop sem preencher, cadeias de b), que numa função que devolve valor não
-   tem gatilho conhecido (docs/matching.md, rodadas 19-20). */
+   tem gatilho conhecido (docs/matching.md, rodadas 19-20). Rodada 27: 275 palavras; os casos 2 e 5 já batem (helper
+   inline menu_opened com return em cada saída e `if (aberto) {...} else return -1;`): os outros "b; nop" devem vir de
+   helpers inline do mesmo tipo. */
 /* Advances the widget one frame. Returns -3 when idle, -2 when cancelled, the selected list index
    or button when accepted, -1 otherwise. */
 static inline int menu_bit_on(unsigned char bits, int k)
 {
     return (bits & (1 << k)) != 0;
+}
+
+static inline int menu_opened(MenuWidget *w, int st)
+{
+    if (menu_item_is_open(&w->menu, &w->def) == 0)
+        return 0;
+    w->state = st;
+    return 1;
 }
 
 int menu_update(MenuWidget *w)
@@ -345,15 +355,14 @@ int menu_update(MenuWidget *w)
         pad = pad_get();
     switch (w->state) {
     case 2:
-        if (menu_item_is_open(&w->menu, &w->def) != 0) {
-            w->state = 3;
-            return -1;
-        }
+        menu_opened(w, 3);
         return -1;
     case 5:
-        if (menu_item_is_open(&w->menu, &w->def) == 0)
+        if (menu_item_is_open(&w->menu, &w->def) != 0) {
+            w->state = 6;
+        } else {
             return -1;
-        w->state = 6;
+        }
         /* fall through */
     case 6:
         if (w->cancelled)

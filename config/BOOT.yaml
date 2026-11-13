@@ -290,7 +290,7 @@ segments:
       - [0x59EF0, c, snd_bank]
       - [0x5A694, c, snd_engine]
       - [0x5B0BC, c, snd_alloc]
-      - [0x5B290, asm, snd_alloc_asm_0885F230]
+      - [0x5B58C, asm, snd_alloc_asm_0885F52C]
       - [0x5BB08, c, snd_play]
       - [0x5CCE8, asm, snd_play_asm_08860C88]
       - [0x5CE04, c, snd_core]
