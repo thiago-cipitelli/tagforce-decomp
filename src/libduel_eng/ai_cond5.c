@@ -1,5 +1,4 @@
 // @range 0x088137BC-0x08814EC8
-// @asm 0x08813A6C-0x08813BFC
 /* Conditions of the computer player against a card being activated (b, may be null). */
 #include "duel.h"
 
@@ -128,12 +127,12 @@ int duel_08813A40(DuelAct *a, DuelAct *b)
     return b->player != a->player;
 }
 
-#ifdef NON_MATCHING /* 36 palavras: no teste b->n_targets != 1 o original faz bnel -> fim com li v0,1 no atraso; o mwcc sabe que v0 já vale 1 e inverte (beql, 1 instrução a menos); o original também mantém o andi 0xFF de p (unsigned char p reproduz, mas 45 palavras); goto, if (== 1), switch sem default testados */
+/* n_targets != 1 vai por goto ao return 1 do default do switch interno (o original repete o li v0,1); z unsigned char, p = (unsigned char)t */
 int duel_08813A6C(DuelAct *a, DuelAct *b)
 {
-    unsigned int t;
-    unsigned int z;
-    unsigned int p;
+    int t;
+    unsigned char z;
+    int p;
     int n;
 
     if (b == 0) {
@@ -146,11 +145,11 @@ int duel_08813A6C(DuelAct *a, DuelAct *b)
     case 1:
     case 2:
         if (b->n_targets != 1) {
-            return 1;
+            goto ret1;
         }
         t = duel_act_target(b, 0);
         z = (unsigned short)t >> 8 & 0xFF;
-        p = t & 0xFF;
+        p = (unsigned char)t;
         switch (duel.players[p & 1].field[z].card.id) {
         case 0x10DD:
         case 0x12FE:
@@ -160,6 +159,7 @@ int duel_08813A6C(DuelAct *a, DuelAct *b)
         case 0x14DE:
             return 0;
         default:
+        ret1:
             return 1;
         }
     case 4:
@@ -169,7 +169,6 @@ int duel_08813A6C(DuelAct *a, DuelAct *b)
     }
     return 1;
 }
-#endif
 
 int duel_08813BFC(DuelAct *a, DuelAct *b)
 {
