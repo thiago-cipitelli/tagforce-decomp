@@ -69,7 +69,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st);
 
 #define SLOT_NEGATED(s) ((s)->flags >> 5 & 1)
 
-#ifdef NON_MATCHING /* 12 KB; o original guarda endereços de duel.players[p].field[z] na pilha e avalia SLOT_ACTIVE antes do teste de stamp: alocação e escalonamento diferentes em quase todo o corpo */
+#ifdef NON_MATCHING /* 12 KB; 2214 palavras e 207 linhas de estrutura (rodada 25, eram 2911/589): falta a fusão de corpos iguais dos switch de efeitos (o 219 dobra no delay slot o 1º rótulo de um grupo que repete o corpo de um caso único posterior; o original dá beq+nop), slots de pilha e coloração */
 void duel_field_stats(unsigned int p, int z, DuelStats *st)
 {
     int atk_eq = 0;                    /* equips and cards attached to the slot */

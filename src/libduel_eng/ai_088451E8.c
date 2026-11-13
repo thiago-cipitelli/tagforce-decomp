@@ -56,7 +56,7 @@ void duel_088C7CF0(void);
 unsigned int duel_card_locate(unsigned int);
 void duel_088C44E4(unsigned int p, int id);
 
-#ifdef NON_MATCHING /* forma quase igual; difere a alocação de registradores (z, q e id trocados, `me` não vai para a pilha) */
+#ifdef NON_MATCHING /* 1165 palavras (rodada 25), 19 linhas de estrutura: o original guarda `me` na pilha (60(sp)) desde o início e põe s8 = me*4012; aqui `me` fica num $s e só vai para a pilha no caso 200; a chamada duel_088D1438(p, z, 0, id) do caso 0x1AA9 tem o move a2,zero no delay slot no original */
 /* returns 0 while the step machine has work left */
 int duel_088451E8(void)
 {

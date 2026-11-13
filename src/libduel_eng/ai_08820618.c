@@ -1358,8 +1358,10 @@ int duel_ai_sum_088239EC(void)
         }
         duel_ai_atk_step++;
         return 0;
-    default:
+#ifndef __MWERKS__
+    default:                           /* the original has no default: it returns with v0 = 1 left by the case tests */
         return 1;
+#endif
     }
 }
 #endif

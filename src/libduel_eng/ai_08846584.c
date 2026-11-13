@@ -44,7 +44,7 @@ void duel_0884DAF0(int a, int b);
 
 /* act[k].pad14: 0 base ATK, 1 base DEF, 2 ATK, 3 DEF (>= 0), 4 attribute, 5 level, 6/7 destroyed flags (duel_088482F8) */
 
-#ifdef NON_MATCHING /* 7 KB com os laços de divisão desenrolados; mesma forma geral, difere a escolha de registradores e o cálculo de jogador/zona do primeiro laço */
+#ifdef NON_MATCHING /* 264 palavras (rodada 25): estrutura idêntica ao asm (fd.py --struct 0 linhas); só coloração: ap/k/st/pk ficam em s3/s5/s2/s4 no original e em s2/s4/s3/s5 aqui (ordem e tipo das declarações não resolvem: hill.py chega a 240) */
 /* mode: 0 simulation, 1 real battle, >= 2 also shows the cards that apply; view: take the stats from duel_w_08913CF4 */
 void duel_08846584(int mode, int view)
 {
