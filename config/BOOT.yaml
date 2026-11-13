@@ -208,8 +208,6 @@ segments:
       - [0x2E630, c, ehf]
       - [0x2F480, c, ehp]
       - [0x3057C, c, gfx]
-      - [0x308A8, asm, gfx_asm_08834848]
-      - [0x31190, c, gfx]
       - [0x316B0, c, gim]
       - [0x31FA8, c, vram]
       - [0x32218, asm, vram_asm_088361B8]
@@ -267,8 +265,6 @@ segments:
       - [0x4D39C, c, movie]
       - [0x4DD70, asm, movie_asm_08851D10]
       - [0x4DFAC, c, movie]
-      - [0x4E768, asm, movie_asm_08852708]
-      - [0x4E80C, c, movie]
       - [0x4FA8C, c, cip]
       - [0x4FCF4, asm, cip_asm_08853C94]
       - [0x4FD7C, c, cip]
@@ -291,10 +287,8 @@ segments:
       - [0x599A8, c, snd_out]
       - [0x59EF0, c, snd_bank]
       - [0x5A694, c, snd_engine]
-      - [0x5ABF4, asm, snd_engine_asm_0885EB94]
-      - [0x5AC8C, c, snd_engine]
       - [0x5B0BC, c, snd_alloc]
-      - [0x5B290, asm, snd_alloc_asm_0885F230]
+      - [0x5B58C, asm, snd_alloc_asm_0885F52C]
       - [0x5BB08, c, snd_play]
       - [0x5CCE8, asm, snd_play_asm_08860C88]
       - [0x5CE04, c, snd_core]
@@ -418,6 +412,6 @@ segments:
       - [0xECD10, data, data_13]
       - { start: 0xECD20, type: bss, vram: 0x88F0CC0, name: bss_0 }
       - { start: 0xECD20, type: .bss, vram: 0x8BE8ED4, name: movie }
-      - { start: 0xECD20, type: bss, vram: 0x8BE8EDC, name: bss_1 }
+      - { start: 0xECD20, type: bss, vram: 0x8BE8EFC, name: bss_1 }
   - [0xECD20]
 

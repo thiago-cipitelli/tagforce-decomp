@@ -1,5 +1,5 @@
 // @range 0x0885F05C-0x0885FAA8
-// @asm 0x0885F230-0x0885FAA8
+// @asm 0x0885F52C-0x0885FAA8
 // @data 0x088F0114-0x088F03BC
 /* Sound library, allocation and start: history of the last variant picked per sound, choice of the
    object slot for a new sound (free slot, suspended BGM or the oldest of the same class), and the
@@ -148,7 +148,16 @@ SndRandHist *snd_rand_hist(unsigned int id, int pan)
     return snd_rand_hist_tab;
 }
 
-#ifdef NON_MATCHING /* the SE tail returns through branch-likely to the epilogue instead of the original's bltzl + b; 34 words */
+/* `same`, or `low` when no instance of the same sound was found. Inlined by the original: its returns give the
+   bltzl to the next instruction + "b fim" of the SE tail. */
+static inline int snd_pick(int same, int low)
+{
+    if (same >= 0) {
+        return same;
+    }
+    return low;
+}
+
 /* Object slot for a new sound, <0 none. Voices (kinds 1-2) use slots 0-3 for one-shot sounds and
    4-27 for SE; BGM (4) and streams (3) use 28-33, limited by snd_out_mode. An SE takes the oldest
    instance of itself when `max` are already playing, or the oldest SE of no higher priority. */
@@ -254,23 +263,16 @@ int snd_obj_alloc(unsigned int id, int pan, int max, unsigned short flags)
         return free;
     }
     if (free < 0) {
-        if (same < 0) {
-            same = low;
-        }
-        return same;
+        return snd_pick(same, low);
     }
     if (avail <= 0) {
-        if (same < 0) {
-            same = low;
-        }
+        return snd_pick(same, low);
+    }
+    if (max <= 0) {
         return same;
     }
-    if (max > 0) {
-        same = free;
-    }
-    return same;
+    return free;
 }
-#endif
 
 #ifdef NON_MATCHING /* mesma forma; o original guarda o ponteiro da amostra (e depois pitch) em $s0, onde estava id, e o tom em $s3: 43 palavras; a ordem das declarações não muda isso */
 /* Starts the SAS voices of `o` (kinds 1-2, one per bit of the voice mask) or its Atrac stream

@@ -1,5 +1,4 @@
 // @range 0x0883451C-0x08835650
-// @asm 0x08834848-0x08835130
 // @data 0x088ED9CC-0x088EDFC4
 /* Graphics frame: GE/libgu initialization, end of frame (vsync with a 30 fps cap, flip callback,
    swap), draw targets, screenshots to host0: as BMP or TGA, and the GE state tracker: every
@@ -264,68 +263,70 @@ void gfx_set_default_target(unsigned int *list)
 }
 
 /* Next free index of host0:./<fmt>: doubling search, then bisection. */
-#define NEXT_FILE(path, name, fmt, count)                                    \
-    do {                                                                     \
-        int n = 1;                                                           \
-        int fd;                                                              \
-        for (;;) {                                                           \
-            snprintf(name, 0x40, fmt, count + n);                            \
-            fd = sceIoOpen(path, 1, 0);                                      \
-            if (fd < 0) {                                                    \
-                break;                                                       \
-            }                                                                \
-            sceIoClose(fd);                                                  \
-            n <<= 1;                                                         \
-        }                                                                    \
-        if (n < 2) {                                                         \
-            count += n;                                                      \
-        } else {                                                             \
-            int lo = n >> 1;                                                 \
-            int mid = (lo + n) / 2;                                          \
-            while (lo < mid) {                                               \
-                snprintf(name, 0x40, fmt, count + mid);                      \
-                fd = sceIoOpen(path, 1, 0);                                  \
-                if (fd >= 0) {                                               \
-                    sceIoClose(fd);                                          \
-                    lo = mid;                                                \
-                } else {                                                     \
-                    n = mid;                                                 \
-                }                                                            \
-                mid = (lo + n) / 2;                                          \
-            }                                                                \
-            snprintf(name, 0x40, fmt, count + n);                            \
-            count += n;                                                      \
-        }                                                                    \
+#define NEXT_FILE(path, name, fmt, count) \
+    do { \
+        int lo; \
+        int n; \
+        int fd; \
+        int mid; \
+        for (n = 1; ; n <<= 1) { \
+            snprintf(name, 0x40, fmt, count + n); \
+            fd = sceIoOpen(path, 1, 0); \
+            if (fd >= 0) { \
+                sceIoClose(fd); \
+            } else { \
+                if (n < 2) { \
+                    count += n; \
+                    goto done; \
+                } \
+                break; \
+            } \
+        } \
+        lo = n >> 1; \
+        mid = (lo + n) / 2; \
+        while (lo < mid) { \
+            snprintf(name, 0x40, fmt, count + mid); \
+            fd = sceIoOpen(path, 1, 0); \
+            if (fd >= 0) { \
+                sceIoClose(fd); \
+                lo = mid; \
+            } else { \
+                n = mid; \
+            } \
+            mid = (lo + n) / 2; \
+        } \
+        snprintf(name, 0x40, fmt, count + n); \
+        count += n; \
+    done:; \
     } while (0)
 
 /* Converts the 480x272 RGBA frame copied to `p` into BGR in place. */
 #define RGBA_TO_BGR(p)                                                       \
     do {                                                                     \
-        unsigned char *d;                                                    \
         unsigned char *s;                                                    \
+        unsigned char *d;                                                    \
         int i;                                                               \
         p[0] = p[2];                                                         \
         p[2] = p[0];                                                         \
-        d = p + 3;                                                           \
         s = p + 4;                                                           \
+        d = p + 3;                                                           \
         for (i = 1; i < 480 * 272; i++) {                                    \
             d[0] = s[2];                                                     \
             d[1] = s[1];                                                     \
             d[2] = s[0];                                                     \
-            d += 3;                                                          \
             s += 4;                                                          \
+            d += 3;                                                          \
         }                                                                    \
     } while (0)
 
-#ifdef NON_MATCHING /* the doubling search jumps back through a trampoline block in the original */
 /* Screenshot of the displayed buffer as host0:./cgNNNNNN.bmp (`buf`: 0x5FA00 bytes of work). */
 void gfx_save_bmp(unsigned int buf)
 {
-    char path[0x40];
     char *name;
-    int fd;
     unsigned char *p;
+    int fd;
     int fb;
+    char path[0x40];
 
     strcpy(path, gfx_host_dir);
     name = path + strlen(path);
@@ -357,24 +358,22 @@ void gfx_save_bmp(unsigned int buf)
     fb = (gfx_get_state()->frame & 1) ? 0x88000 : 0;
     sceKernelDcacheWritebackInvalidateAll();
     sceGuStart(0, gfx_bmp_list, 0x100);
-    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
+    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, (void *)((int)sceGeEdramGetAddr() + fb), 0, 0, 480, p);
     sceGuFinish();
     sceGuSync(0, 0);
     RGBA_TO_BGR(p);
     sceIoWrite(fd, p, 0x5FA00);
     sceIoClose(fd);
 }
-#endif
 
-#ifdef NON_MATCHING /* same as gfx_save_bmp */
 /* Same as a TGA (uncompressed true color, top-down, with the TRUEVISION footer). */
 void gfx_save_tga(unsigned int buf)
 {
-    char path[0x40];
     char *name;
-    int fd;
     unsigned char *p;
+    int fd;
     int fb;
+    char path[0x40];
 
     strcpy(path, gfx_host_dir);
     name = path + strlen(path);
@@ -387,7 +386,7 @@ void gfx_save_tga(unsigned int buf)
     fb = (gfx_get_state()->frame & 1) ? 0x88000 : 0;
     sceKernelDcacheWritebackInvalidateAll();
     sceGuStart(0, gfx_tga_list, 0x100);
-    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, (char *)sceGeEdramGetAddr() + fb, 0, 0, 480, p);
+    sceGuCopyImage(3, 0, 0, 480, 272, 0x200, (void *)((int)sceGeEdramGetAddr() + fb), 0, 0, 480, p);
     sceGuFinish();
     sceGuSync(0, 0);
     RGBA_TO_BGR(p);
@@ -395,7 +394,6 @@ void gfx_save_tga(unsigned int buf)
     sceIoWrite(fd, gfx_tga_footer, 0x1C);
     sceIoClose(fd);
 }
-#endif
 
 /* Emits FBP/FBW for the depth buffer, then a sub-list with the draw buffer. */
 void gfx_draw_target(unsigned int *list, int psm, void *fbp, unsigned int zbp, unsigned int fbw)

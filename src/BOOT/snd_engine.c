@@ -1,5 +1,4 @@
 // @range 0x0885E634-0x0885F05C
-// @asm 0x0885EB94-0x0885EC2C
 // @data 0x088F03BC-0x088F0428
 /* Sound library, engine side: initialization (state, lists, callbacks or heap, semaphores, SAS,
    object pool, threads), thread start, the bank file opened for direct reads, the per-frame
@@ -258,25 +257,33 @@ int snd_thread_start(void *cfg, SndCallbacks *cb)
 }
 
 /* Reads go straight to `fd` (or the file named by `fd` when it is a pointer) from offset `off`. */
-#ifdef NON_MATCHING /* 8 palavras: retorna r (o original deixa r em v0 nos dois retornos; como void, r vai para a0);
-   falta o bgezl + "b fim; nop" do teste do open (o mwcc inverte para bltz) e o ternário dá um b a mais. Rodada 22:
-   if/else, goto, do/while(0) e helper inline não mudam; `switch (r < 0) { case 0: ... }` mantém o "b; nop" mas
-   materializa slt + beqzl (6 palavras de forma). */
-int snd_bank_open_async(int fd, int off)
+/* The open + wait is an inline helper of the original: its `return`s become branches to the end of the inlined
+   body that mwcc does not fuse with the next test (bgezl + "b; nop", bnez + nop). */
+static inline int snd_bank_open_wait(int fd)
 {
     long long res;
-    int r = fd;
+    int r;
     int ret;
+
+    r = sceIoOpenAsync((const char *)fd, 1, 0);
+    if (r < 0) {
+        return r;
+    }
+    ret = sceIoWaitAsyncCB(r, &res);
+    if (ret == 0) {
+        return (int)res;
+    }
+    return ret;
+}
+
+int snd_bank_open_async(int fd, int off)
+{
+    int r = fd;
 
     if (off < 0) {
         off = 0;
     } else if (fd >= 0x8000000) {
-        r = sceIoOpenAsync((const char *)fd, 1, 0);
-        if (r < 0) {
-        } else {
-            ret = sceIoWaitAsyncCB(r, &res);
-            r = (ret == 0) ? (int)res : ret;
-        }
+        r = snd_bank_open_wait(fd);
         if (r < 0) {
             return r;
         }
@@ -287,7 +294,6 @@ int snd_bank_open_async(int fd, int off)
     snd_cfg_flags |= 0x2000;
     return r;
 }
-#endif
 
 /* State 0x8 requests pause, 0x4 resume (or the reverse while 0x10 is set): ramps fader 2 and, at the
    end of the ramp, pauses the SAS voices or remembers the stream position. 1 while paused. */
