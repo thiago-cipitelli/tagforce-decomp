@@ -173,16 +173,26 @@ typedef struct DuelChain {             /* 0x08914350 */
     DuelAct acts[16];                  /* +0x300 */
     int unk480;
     int len;                           /* +0x484 */
-    unsigned char pad488[0x494 - 0x488];
+    int n_cleanup;                     /* +0x488 links to clean up after the chain (duel_w_089147D8) */
+    DuelAct *resolving;                /* +0x48C link being resolved (duel_w_089147DC) */
+    unsigned char pad490[0x494 - 0x490];
     unsigned int uids_head;            /* +0x494 ring of card uids: uids[head & 0x7F] = count, then the uids */
     unsigned short uids[128];          /* +0x498 */
-    unsigned char pad598[0x5D0 - 0x598];
+    unsigned char pad598[0x5A0 - 0x598];
+    int unk5a0;                        /* +0x5A0 duel_w_089148F0 */
+    int res_step;                      /* +0x5A4 step of the resolution (duel_w_089148F4) */
+    int card_step;                     /* +0x5A8 step of the card's own machine (duel_step) */
+    int res_target;                    /* +0x5AC target being checked (duel_w_089148FC) */
+    int res_cnt;                       /* +0x5B0 duel_w_08914900 */
+    unsigned char pad5b4[0x5D0 - 0x5B4];
     unsigned int n_kinds;              /* +0x5D0 */
     int unk5d4;
     unsigned char kinds[16];           /* +0x5D8 kind of each pending entry [?] */
     unsigned char pad5e8[0x5F8 - 0x5E8];
     struct DuelActX srcs[16];          /* +0x5F8 source card of each pending entry [?] */
-    unsigned char pad638[0x6B0 - 0x638]; /* +0x6A0 count of ids (duel_w_089149F0), +0x6A8 index (duel_w_089149F8) */
+    unsigned char pad638[0x684 - 0x638];
+    int unk684;                        /* +0x684 duel_w_089149D4 */
+    unsigned char pad688[0x6B0 - 0x688]; /* +0x6A0 count of ids (duel_w_089149F0), +0x6A8 index (duel_w_089149F8) */
     int ids[3];                        /* +0x6B0 materials asked by the summon (duel_0882E1B8) */
 } DuelChain;
 
