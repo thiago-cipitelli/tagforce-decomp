@@ -28,7 +28,7 @@ int duel_slot_count_14c0(unsigned int p, int z);
 int duel_st_affects(unsigned int p, int z, unsigned int q, int sz);
 unsigned short duel_slot_e1854(unsigned int, int);
 unsigned int duel_field_flag9(unsigned int, int);
-unsigned short duel_slot_value_1909(unsigned int p, int z);
+int duel_slot_value_1909(unsigned int p, int z);
 int duel_slot_e68a0(unsigned int, int);
 int duel_slot_e8170(unsigned int p, int z, int id);
 int duel_find_effect_card(unsigned int p, int id, int skip);
@@ -244,7 +244,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             }
             break;
         case 0x13E8:
-            atk_eff += duel_count_monsters_special(1 - p) * -200;
+            atk_eff -= duel_count_monsters_special(1 - p) * 200;
             break;
         case 0x1437:
             if (duel_count_faceup_traps(0) != 0 || duel_count_faceup_traps(1) != 0) {
@@ -388,7 +388,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             atk_eff += duel_grave_count_1a6f(p) * 300;
             break;
         case 0x194C:
-            atk_eff += duel_count_monsters(1 - p) * 200 + (duel_count_monsters(p) - 1) * -500;
+            atk_eff += duel_count_monsters(1 - p) * 200 - (duel_count_monsters(p) - 1) * 500;
             break;
         case 0x1983:
             atk_eff += duel_slot_e68a0(p, z) * 500;
@@ -862,7 +862,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     break;
                 case 0x180F:
                     if (IMMUNE(st->imm2, p, sp) == 0) {
-                        atk_bon += duel_slot_value_1909(sp, sz) * -500;
+                        atk_bon -= duel_slot_value_1909(sp, sz) * 500;
                     }
                     break;
                 case 0x1843:
@@ -1059,11 +1059,11 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                         break;
                     case 0x130D:
                         if (st->attr != 7) {
-                            atk_eq += duel_slot_value_1909(sp, sz) * -300;
+                            atk_eq -= duel_slot_value_1909(sp, sz) * 300;
                         }
                         break;
                     case 0x131A:
-                        atk_eq += duel_slot_value_1909(sp, sz) * -200 + 700;
+                        atk_eq += 700 - duel_slot_value_1909(sp, sz) * 200;
                         break;
                     case 0x145C:
                         atk_eq += duel_count_monsters_pos(sp, 1, 0) * 800;
