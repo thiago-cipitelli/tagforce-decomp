@@ -2032,3 +2032,30 @@ compilação), `hill.py` (descida aleatória sobre ordem e `int`/`unsigned` das 
   `case` troca a cor dos parâmetros sem regra visível), `duel_0883F3A0` (79: p/ofs/prot/b24 rodados),
   `duel_08838A84` (32: 2ª definição de `q` vira outro web), `duel_088862DC` (14: o original estreita `p` com
   `andi 0xff` antes do `andi 1` do índice; 20 formas testadas).
+
+## Rodada 25 (`drawR`): `dd_hand.c` inteiro e `chr_icon_draw`
+
+Bateram `dd_cobjs_init`, `dd_hand_layout0`, `dd_hand_layout1` (52%/49% fuzzy, refeitas do asm) e `chr_icon_draw`.
+`dd_fx_shatter_update` fica em `@asm` (ver o fim).
+- **"Globais" lidos por `lui/lwc1` só no topo de uma função e copiados para a pilha eram templates de inicializadores
+  locais** (`dd_hand_pos0/tilt0/down0/zaxis0`...): `DdXyzw tilt = { 0, 0, 1, 0 };`, e um `DdPos at = { 0, 11 };` todo
+  constante passado por valor sai como `lh a2,%lo(template)` direto no argumento. Cada template é uma seção `.data`
+  própria no objeto, na ordem das **declarações** (não do uso): o `DdPos` de 2 bytes ia para depois dos vetores até ser
+  declarado primeiro no bloco. `// @data` do arquivo cobrindo os templates e os símbolos somem. Conferir os valores
+  contra o `.data` original ao reescrever (o `make check` acusa o template trocado; o eixo do jogador 1 é `{0,1,0,0}`).
+- **Laço de zeros + `lui; sw` de uma constante float + cópia `lwc1/swc1`** para outro vetor: literal composto com um
+  valor **não constante** para o compilador (`float w = 65.0f; step = (DdXyzw){ w };`); com o literal `65.0f` sai a
+  cópia de um template. Um `temp` por ramo (cada literal composto tem o seu slot).
+- **`start = base;` repetido em cada ramo** (três cópias no asm) estava no fonte em cada ramo; o mwcc não duplica.
+- **Cópia do `DdLoc` do cursor por `lh/sh`**: `*(short *)&cur = *(short *)&t;` (idioma de `dd_board_cards`), `cur`
+  declarado antes de `t` para a ordem de pilha.
+- **`seb` antes do `andi 1` de um bitfield de 1 bit** gravado a partir de um `int`: `o->b6 = (signed char)quick;`.
+- **Lista duplamente ligada**: `o->prev->next = o;` (store pelo ponteiro recém-gravado) em vez de `b->free.next = o;`;
+  o contador do laço que troca de `$s` com o ponteiro se resolve reaproveitando o contador de um laço anterior.
+- `chr_icon_draw` (94,9%): `switch` linear com os `case` na ordem inversa dos testes e `u = v = 0` atribuídos depois da
+  chamada (o original zera no delay slot do 1º `beq`).
+- **Bug de lógica** (`dd_hand_layout1`): o original chama `memcmp2(&o->rot1, &rot, 16)` e descarta o resultado,
+  passando `sound = 0` a `dd_cobj_move` (o rascunho calculava `snd` como no jogador 0, com o teste de `a5`).
+- `dd_fx_shatter_update` (4,8 KB, 1079 palavras, 205 linhas de estrutura): o resto é ordem de agendamento dos
+  sorteios/divisões no bloco das velocidades e das faíscas (o original divide `R2/32767` logo depois do 2º sorteio) e
+  coloração; macro do sinal invertida, helper `static inline`, `+=` com valor e temporários por eixo pioram.
