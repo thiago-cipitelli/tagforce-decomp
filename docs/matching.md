@@ -1970,3 +1970,65 @@ entrada mantido). Idiomas novos:
   quando nenhuma ordem de declaração resolve.
 - Ainda em asm: `dd_board_cards` (família do teste de entrada; o `DdLoc` do 2º `dd_cursor_get` inteiro em `s0`),
   `func_08822C2C` (lógica conferida: só a família do teste de entrada).
+
+## Rodada 24 (`fableE`: libduel_eng, reescritas do asm das funções grandes de fuzzy baixo)
+
+Bateu `duel_eff_f8b34`; `duel_08842D98` 328 -> 1, `duel_088BD4E0` 277 -> 8, `duel_08838A84` 552 -> 32,
+`duel_08817598` 1274 -> 441 (estrutura igual, só coloração de `$s`), `duel_ai_sum_088239EC` 431 -> 92 linhas de
+estrutura. Ferramentas da worktree (`build/tmp/fableE/`, não versionadas): `sw.py LO HI` (extrai a cadeia
+`li; beq(l)` de um `switch` linear do asm e imprime os grupos de `case` por corpo, na ordem dos corpos, rótulos na
+ordem inversa dos testes), `reorder.py` (reordena os `case` de um rascunho para essa ordem), `fd.py --struct`
+(diff lado a lado com registradores, relocações e alvos mascarados: separa estrutura de coloração), `jals.py` e
+`consts.py` (multiconjunto de `jal` e de constantes/deslocamentos do original contra o objeto `-DNON_MATCHING`,
+com `EXTRA_FLAGS="-inline all"` para rascunhos com helpers `static`), `vt.py` (N variantes textuais por
+compilação), `hill.py` (descida aleatória sobre ordem e `int`/`unsigned` das declarações).
+- **Ordem dos `case` de um `switch` linear grande = ordem dos corpos no asm.** O rascunho de `duel_08817598`
+  (5,8 KB, 37% fuzzy) tinha os 33 grupos na ordem dos testes (a do pseudocódigo), que é a inversa da fonte: só
+  reordenar levou a estrutura de 2191 para 262 linhas. Grupos cujos rótulos saem de `sw.py` já na ordem certa.
+- **Bugs de lógica achados no asm** (`duel_08817598`): 2ª chamada de `duel_0880A54C(a, 1 - q, -1, 1)` tinha o 4º
+  argumento 0 (o `bltzl` repete `li a3,1` no delay slot antes da chamada); a condição do caso 0x1889 é
+  `(f >> 22 & 1) + (f >> 23 & 1) != 0` (`ext; ext; addu; beqz`), o rascunho tinha `!=` entre os bits; o caso
+  0x1362/0x1420 chama `duel_088A8D40(a, a->player, duel_atk_tz)` (o original recarrega `lbu 2(s3)`), o
+  rascunho passava `duel_atk_tp`.
+- **Byte de bitfields compartilhado**: o original mantém `lbu v0,2(a)` vivo do topo até o caso 0x1690 (a cadeia
+  de testes usa `v1` até lá e `v0` depois) e extrai `a->zone` dele com `sll 26; srl 27`. O mwcc não faz CSE de
+  `a->player`/`a->zone` (teste em `t/cse.c`): a fonte lia o byte num local, `w = ((unsigned char *)a)[2]; p = w
+  & 1;` e `w << 26 >> 27` como zona. Só assim a cadeia muda de `v0` para `v1`.
+- **Helper inline do original com o jogador como parâmetro** (`duel_10D3`): `andi a1,a0,1; beq; move s2,a1` e
+  `subu s2,v0,a1` = `p = a->player; q = p;` com os `case` escrevendo `q = 1 - p` e o teste `duel_atk_tp == p`; um
+  `static inline` com `q` modificado no lugar (`q = 1 - q`) dá `andi s0` direto e um retorno materializado.
+- **Máximo em ternário com a chamada repetida**: `beqzl at,corpo; copia; b continua; nop` dentro de um `for` =
+  `v = duel_field_atk(...) < v ? v : duel_field_atk(...);` (`if (v <= f()) v = f();` dá `bnez; nop`).
+- **`duel_phase` é `unsigned int`** (`sltiu` em `< 2`); `(unsigned int)(a->kind - 0x12) < 2`.
+- **Anel `duel_chain.uids` com desenrolar por 8** (`duel_088BD4E0`): o original relê o cabeçalho e `cnt[j]` a
+  cada `sh` e desenrola o laço por 8 com `lui` em `t1..t9`; a fonte gravava `duel_chain.uids[(duel_chain.uids_head
+  + n) & 0x7F] = j` (campos do mesmo objeto). Com `duel_w_089147E8[...]`/`duel_w_089147E4` (símbolos avulsos) o
+  mwcc iça o cabeçalho, não desenrola e reserva 112 bytes de pilha em vez de 128. `(int)c >> 16 & 0xFFFF` dá o
+  `ext`; `int i` para o laço de zeragem (`slti` em vez de `sltiu`); `i <= 12`/`lv <= 4` para `slti at`.
+  Faltam 7 palavras no topo (`sw` de `p` antes do `ext` e `sw` de `max` antes do `bnez`): nenhuma forma mudou.
+- **`switch` de 2 casos em vez de `if`/`if`** (`duel_08842D98`, caso 0x14): testes `beql 5; beql 3; b default`
+  com o corpo do 5 depois do corpo do 3 = `switch (w) { case 3: ...; break; case 5: ...; return 0; }`.
+  `if (f() != 0) { if (w != 0) return 1; ...; w = 2; } return 0;` dá `beqzl; move v0,zero` direto + `beqz; nop; b;
+  li v0,1`. Laço do caso 0x1E igual ao de `duel_08843344` (vizinha batendo): `pl = (DuelPlayer *)((char *)&duel +
+  ofs)` como 1ª instrução do corpo (o `beq; nop` do `if (phase == 2 || phase == 4)` só sai sem cópia se o corpo
+  começa por `lui v0`, que o teste seguinte usa), máscara `(p << 31 & 0x80000000) | 0x600000 | ...` inline no
+  argumento (o mwcc a iça depois do `z = 0`; num local sai antes). Os tipos das declarações (`int b24`) saíram do
+  `hill.py`. Fica 1 palavra: `or a0,v0,s0` contra `or a0,s0,v0` no argumento de `duel_0884AF20(1 << phase | n | m)`;
+  nenhuma associação, tipo ou ordem das atribuições inverte.
+- **CSE da base do jogador entre dois laços** (`duel_08838A84`): o original recalcula `&duel + (q & 1) * 4012`
+  antes do 2º laço; o 219 guardava a do 1º num `$s`. `&duel.players[(int)q & 1]` no 2º laço (tipo diferente, fora
+  da CSE: idioma da rodada 18) tirou 300 palavras.
+- **Dois corpos iguais que o 219 funde** (`case 0x154C: f = 1; break; case 0x1954: f = 1; break;`; o original tem
+  `li; b join` para um e `li` caindo no join para o outro): a fonte era `case 0x154C: f = 1;` **sem `break`**
+  caindo em `case 0x1954: f = 1; break;` (o store morto fica como corpo próprio). O mesmo par aparece no `switch`
+  de `ok` de `duel_ai_sum_088239EC` (grupo 0x12B1 caindo em 0x19F4).
+- **Cópias mortas numa função que devolve valor** (`duel_ai_sum_088239EC`): o original tem o "modo" da rodada 19
+  ligado (1ª instrução de cada corpo de `case` copiada no delay slot **e** mantida no corpo); um `else return;`
+  sem valor no caso 8 liga o modo no 219 (92 -> 73 linhas) mas perde o `li v0,1` do `return 1` original. Pista
+  para pesquisa: a fonte original tinha um `return;` sem valor em função `int` em algum ramo.
+- **Coloração sem forma** (fica para a família "rotação de registradores"): `duel_08817598` (a/id/mask/b em
+  s1/s2/s0/s3 no original, s2/s0/s1/s3 aqui; ordem/tipo das declarações, K&R, `register`, tipo de `id`,
+  contadores de laço por busca aleatória não mudam nada; o miniteste `t/col.c` mostra que um laço ou o número de
+  `case` troca a cor dos parâmetros sem regra visível), `duel_0883F3A0` (79: p/ofs/prot/b24 rodados),
+  `duel_08838A84` (32: 2ª definição de `q` vira outro web), `duel_088862DC` (14: o original estreita `p` com
+  `andi 0xff` antes do `andi 1` do índice; 20 formas testadas).
