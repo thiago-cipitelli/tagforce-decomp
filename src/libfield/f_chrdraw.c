@@ -460,36 +460,32 @@ void *fld_chr_draw_flat(void *list, FieldChr *c)
     return list;
 }
 
-#ifdef NON_MATCHING /* conversões e divisões em outra ordem (escalonamento de ponto flutuante) */
+#ifdef NON_MATCHING /* 17 palavras (55 antes): os u/v por extenso em cada vértice e y1 declarado antes de y0; falta a ordem de criação das constantes (o original materializa 0,23, -0,5 e 0,5 nessa ordem) e os registradores de float que dependem dela */
 /* quad of the sprite cell (u, v, w, h) of a tw x th sheet centered on x and standing on y */
 void fld_sprite_quad(float x, FieldVtx *q, int tw, int th, int u, int v, int w, int h, float y,
                      unsigned int color)
 {
     float sw = w / 64.0f;
     float sh = h / 64.0f;
-    float u1 = (float)(u + w) / tw;
-    float v0 = (float)v / th;
-    float u0 = (float)u / tw;
-    float v1 = (float)(v + h) / th;
-    float y0 = y + 0.5f * sh + 0.23f * sh;
     float y1 = y + -0.5f * sh;
-    float x0 = x + 0.5f * sw;
+    float y0 = y + 0.5f * sh + 0.23f * sh;
     float x1 = x + -0.5f * sw;
+    float x0 = x + 0.5f * sw;
 
-    q[0].u = u1;
-    q[0].v = v0;
+    q[0].u = (float)(u + w) / tw;
+    q[0].v = (float)v / th;
     q[0].x = x0;
     q[0].y = y0;
-    q[1].u = u0;
-    q[1].v = v0;
+    q[1].u = (float)u / tw;
+    q[1].v = (float)v / th;
     q[1].x = x1;
     q[1].y = y0;
-    q[2].u = u1;
-    q[2].v = v1;
+    q[2].u = (float)(u + w) / tw;
+    q[2].v = (float)(v + h) / th;
     q[2].x = x0;
     q[2].y = y1;
-    q[3].u = u0;
-    q[3].v = v1;
+    q[3].u = (float)u / tw;
+    q[3].v = (float)(v + h) / th;
     q[3].x = x1;
     q[3].y = y1;
     q[3].color = color;
