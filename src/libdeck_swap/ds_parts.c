@@ -1,7 +1,5 @@
 // @range 0x08812880-0x08815318
 // @asm 0x088129F4-0x08812B9C
-// @asm 0x08813F54-0x088141D0
-// @asm 0x08814C24-0x08815318
 // @rodata 0x08819CDC-0x08819D00
 // @data 0x0881A320-0x0881A3D8
 /* Drawing pieces shared by the panes (same source as libselect_card sc_parts.c): lookups in sorted
@@ -93,11 +91,11 @@ int ds_kind_icon(unsigned short kind)
     }
 }
 
-#ifdef NON_MATCHING /* forma igual; o mwcc troca os registradores s4-s8 de value, pad, x, w e y */
+#ifdef NON_MATCHING /* 2 palavras: o original passa t0 (9) antes de a3 (w) para draw_set_offsets e põe a3 no atraso do jal */
 /* digits right to left from pos, w x 9 each: n = fmt & 0xFF digits, style = fmt >> 8 */
 void *ds_draw_digits(void *list, DsPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim)
 {
-    short px = pos & 0xFFFF;
+    int px = (short)(pos & 0xFFFF);
     short py = pos >> 16 & 0xFFFF;
     unsigned char style = fmt >> 8;
     unsigned char n = fmt & 0xFF;
@@ -114,8 +112,6 @@ void *ds_draw_digits(void *list, DsPt pos, int pad, unsigned int value, unsigned
     switch (style) {
     case 3:
         step = -1;
-        w = 7;
-        break;
     case 0:
         w = 7;
         break;
@@ -125,11 +121,10 @@ void *ds_draw_digits(void *list, DsPt pos, int pad, unsigned int value, unsigned
         break;
     }
     list = draw_set_offsets(list, w, 9, w, 9);
-    step = w + step;
-    x = px + (short)((n - 1) * step);
+    x = px + (short)((n - 1) * (w + step));
     for (i = 0; i < n; i++) {
         list = draw_sprite(list, x, py, 0, value % 10 * w, 0, 0, 0);
-        x -= (short)step;
+        x -= (short)(w + step);
         value /= 10;
         if (!pad && value == 0)
             break;
@@ -139,17 +134,17 @@ void *ds_draw_digits(void *list, DsPt pos, int pad, unsigned int value, unsigned
 #endif
 
 /* font digits right to left, n at most (all of them with pad) */
-void *ds_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad)
+void *ds_draw_num_text(void *list, short x, short y, int value, int step, unsigned short n, int pad)
 {
     short digit[2] = { '0', 0 };
-    int px = x & 0xFFFF;
+    int px = (unsigned short)x;
     int i;
 
     font_text_set(list);
     for (i = n - 1; i >= 0; i--) {
-        px = (px - step) & 0xFFFF;
+        px = (unsigned short)(px - step);
         digit[0] = value % 10 + '0';
-        font_draw_text(px << 6, (short)y << 6, (480 - px) << 6, (unsigned short *)digit);
+        font_draw_text(px << 6, y << 6, (480 - px) << 6, (unsigned short *)digit);
         value /= 10;
         if (!pad && value == 0)
             break;
@@ -526,50 +521,46 @@ unsigned char ds_count_icons[7][4] = {   /* u, v, w, h */
     { 0x24, 0x58, 0x0C, 0x0C }, { 0x24, 0x40, 0x0C, 0x0C }, { 0x30, 0x34, 0x0C, 0x0C },
 };
 
-/* label x offsets and strip widths of the counters (the templates of ds_draw_counters' locals) */
-short ds_counter_xs[3] = { 0x17, 0x30, 0x50 };
-unsigned short ds_counter_ws[3] = { 0x18, 0x1A, 0x14 };
-
-#ifdef NON_MATCHING /* o original guarda os dois gim na pilha e c/x em outros registradores s; a forma muda pouco */
 /* the three counters under a card (icon, label strip, number) */
 void *ds_draw_counters(void *list, DsPt pos, DsCounter *c, void *gim_strip, void *gim)
 {
-    short y = pos >> 16 & 0xFFFF;
-    int xx = pos & 0xFFFF;
-    short *px = ds_counter_xs;
-    unsigned short *pw = ds_counter_ws;
-    unsigned short off = 0;
-    short x;
+    unsigned short bx;
     int i;
-    int ix;
-    unsigned char *ic;
+    short x = pos & 0xFFFF;
+    unsigned short offs[3] = { 0x17, 0x30, 0x50 };
+    short y = pos >> 16 & 0xFFFF;
+    DsCounter *p;
+    unsigned short widths[3] = { 0x18, 0x1A, 0x14 };
 
+    bx = 0;
     if (gim_strip == 0 || gim == 0)
         return list;
-    x = xx;
-    for (i = 0, ix = x; i < 3; i++, c++, ix += 25, pw++, px++) {
-        if (c->icon != 0) {
+    p = c;
+    for (i = 0; i < 3; i++) {
+        if (p->icon != 0) {
+            unsigned char *q;
+
             list = dl_ambient_color(list, 0xFFFFFFFF);
             list = dl_set_tex_filter(list, 0, 0);
-            ic = ds_count_icons[c->icon];
+            q = ds_count_icons[p->icon];
             list = gim_set_texture(list, gim);
-            list = draw_set_offsets(list, ic[2], ic[3], ic[2], ic[3]);
-            list = draw_sprite(list, ix, y, 0, ic[0], ic[1], 0, 0);
+            list = draw_set_offsets(list, q[2], q[3], q[2], q[3]);
+            list = draw_sprite(list, x + i * 25, y, 0, q[0], q[1], 0, 0);
             list = gim_set_texture(list, gim_strip);
-            list = draw_set_offsets(list, *pw, 14, *pw, 14);
-            list = draw_sprite(list, x + 12 + off, y, 0, off, 234, 0, 0);
+            list = draw_set_offsets(list, widths[i], 14, widths[i], 14);
+            list = draw_sprite(list, x + 12 + bx, y, 0, bx, 234, 0, 0);
             font_set_size(10, 12);
-            font_set_color(c->color);
+            font_set_color(p->color);
             if (i == 2)
-                list = ds_draw_num_text(list, (short)(x + *px), (short)(y + 1), c->value, 8, 2, 0);
+                list = ds_draw_num_text(list, x + offs[i], y + 1, p->value, 8, 2, 0);
             else
-                list = ds_draw_num_text(list, (short)(x + *px), (short)(y + 1), c->value, 8, 1, 0);
+                list = ds_draw_num_text(list, x + offs[i], y + 1, p->value, 8, 1, 0);
         }
-        off += *pw;
+        bx += widths[i];
+        p++;
     }
     return list;
 }
-#endif
 
 /* an icon with a text on its right */
 void *ds_draw_icon_text(void *list, DsIconText *t, int x, int y)
@@ -782,9 +773,7 @@ unsigned short ds_help_text[2][6] = {
     { 0x79, 0x77, 0x75, 0x78, 0x76, 0 },
 };
 
-unsigned short ds_help_plus[2] = { 0xFF0B, 0 };   /* "+" (template of a local of ds_draw_help) */
 
-#ifdef NON_MATCHING /* (y + 7 + lh) + 12 do original não é reassociado, e o mwcc atual dobra as constantes */
 /* the button help window: flags select the lines (bit 0 title, 0x1000/0x2000/0x4000/0x8000 buttons) */
 void *ds_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *gim, void *strtbl)
 {
@@ -817,7 +806,7 @@ void *ds_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
     }
     if ((flags & 1) && (text = table_get_entry(strtbl, ids[0])) != 0) {
         font_set_size(12, 12);
-        tx = x + ((unsigned int)(0xD4 - (font_measure_text(text) >> 6) - 0x1C) >> 1);
+        tx = x + ((0xD4 - (font_measure_text(text) >> 6) - 0x1CU) >> 1);
         ty = y + 0x51 - lh;
         if (gim != 0) {
             list = draw_set_offsets(list, 0x1A, 0xB, 0x1A, 0xB);
@@ -853,12 +842,13 @@ void *ds_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
         font_set_size(12, 12);
         if (text != 0) {
             fit = font_measure_wtext(0x1340, text);
-            if (fit < 12) {
-                font_draw_wtext_ex((x + 5) << 6, (y + 7 + lh + 6) << 6, 0x1340, 0xC00, text, -1);
-            } else {
+            if (fit >= 12) {
                 font_set_size(fit, 12);
-                tx = x + 5 + ((0x4Du - (font_measure_text(text) >> 6)) >> 1);
-                font_draw_text(tx << 6, (y + 7 + lh + 12) << 6, (480 - tx) << 6, text);
+                tx = font_measure_text(text) >> 6;
+                tx = x + 5 + ((0x4Du - tx) >> 1);
+                font_draw_text(tx << 6, (y + 7 + lh + 12U) << 6, (480 - tx) << 6, text);
+            } else {
+                font_draw_wtext_ex((x + 5) << 6, (y + 7 + lh + 6U) << 6, 0x1340, 0xC00, text, -1);
             }
         }
     }
@@ -870,19 +860,20 @@ void *ds_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
         font_set_size(12, 12);
         if (text != 0) {
             fit = font_measure_wtext(0x1340, text);
-            if (fit < 12) {
-                font_draw_wtext_ex((x + 0x81) << 6, (y + 7 + lh + 6) << 6, 0x1340, 0xC00, text, -1);
-            } else {
+            if (fit >= 12) {
                 font_set_size(fit, 12);
-                tx = x + 0x81 + ((0x4Du - (font_measure_text(text) >> 6)) >> 1);
-                font_draw_text(tx << 6, (y + 7 + lh + 12) << 6, (480 - tx) << 6, text);
+                tx = font_measure_text(text) >> 6;
+                tx = x + 0x81 + ((0x4Du - tx) >> 1);
+                font_draw_text(tx << 6, (y + 7 + lh + 12U) << 6, (480 - tx) << 6, text);
+            } else {
+                font_draw_wtext_ex((x + 0x81) << 6, (y + 7 + lh + 6U) << 6, 0x1340, 0xC00, text, -1);
             }
         }
     }
     list = font_text_clear();
     font_set_flag4(1);
     if (gim != 0) {
-        unsigned short *plus = ds_help_plus;
+        unsigned short plus[2] = { 0xFF0B, 0 };
 
         list = gim_set_texture(list, gim);
         list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -894,10 +885,10 @@ void *ds_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
         list = draw_set_offsets(list, 9, 0x10, 9, 0x10);
         list = draw_sprite(list, x + 0x28, y - 0xE, 0, 5, 0x26, 0, 0);
         list = draw_set_offsets(list, 0x17, 0xB, 0x17, 0xB);
-        if (alt == 0)
-            list = draw_sprite(list, x + 5, y - 0xB, 0, 0x5E, 0x16, 0, 0);
-        else
+        if (alt != 0)
             list = draw_sprite(list, x + 5, y - 0xB, 0, 0x5E, 0x21, 0, 0);
+        else
+            list = draw_sprite(list, x + 5, y - 0xB, 0, 0x5E, 0x16, 0, 0);
         font_text_set(list);
         font_set_size(12, 12);
         font_draw_text((x + 0x1D) << 6, (y - 0xB) << 6, (480 - (x + 0x1D)) << 6, plus);
@@ -905,4 +896,3 @@ void *ds_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
     }
     return list;
 }
-#endif

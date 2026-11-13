@@ -51,7 +51,7 @@ unsigned int *shop_draw_order_tab(unsigned int *list, int order, int x, int y);
 unsigned int *shop_sort_draw(unsigned int *list);
 unsigned int *shop_detail_draw(unsigned int *list);
 
-void *shop_ui_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
+void *shop_ui_draw_num_text(void *list, short x, short y, int value, int step, unsigned short n, int pad);
 void *shop_ui_draw_frame(void *list, int x, int y, int w, int h, void *gim, int style);
 void *shop_ui_draw_icon_a(void *list, UiPt pos, unsigned short id, void *gim);
 void *shop_ui_draw_icon_b(void *list, UiPt pos, unsigned short id, void *gim);

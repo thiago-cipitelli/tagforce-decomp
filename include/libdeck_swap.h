@@ -242,7 +242,6 @@ unsigned short ds_sort_key(unsigned short id, unsigned short *tab);
 int ds_id_find(unsigned short id, unsigned short sub, DsIdList *l);
 int ds_kind_icon(unsigned short kind);
 void *ds_draw_digits(void *list, DsPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim);
-void *ds_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
 void *ds_draw_frame(void *list, int x, int y, int w, int h, void *gim, int style);
 void *ds_draw_sprite(void *list, DsSprite *s, void *gim);
 void *ds_draw_icon_a(void *list, DsPt pos, unsigned short id, void *gim);

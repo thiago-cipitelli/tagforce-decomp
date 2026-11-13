@@ -42,7 +42,7 @@ void *dk_draw_detail(void *list);
 void *dk_popup_draw(void *list);
 void *dk_draw_frame(void *list, int x, int y, int w, int h, void *gim, int style);
 void *dk_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *gim, void *strtbl);
-void *dk_draw_num_text(void *list, int x, int y, unsigned int value, int w, int ndig, int pad);
+void *dk_draw_num_text(void *list, short x, short y, unsigned int value, int w, int ndig, int pad);
 
 /* sys_state_set_callbacks draw callback */
 void dk_draw_scene(void)
