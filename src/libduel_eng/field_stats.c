@@ -95,7 +95,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
     int kind;
     int src;
     int arg;
-    int id;
+    unsigned short id;
     int i;
     int n;
     int all;
@@ -897,8 +897,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         case 11:                       /* equips (11: equip spell) */
             pl = &duel.players[sp & 1];
             s = &pl->field[sz];
-            id = pl->field[sz].card.id;
-            if (id != 0) {
+            if ((id = pl->field[sz].card.id) != 0) {
                 if (pl->field[sz].faceup != 0 && !SLOT_NEGATED(&pl->field[sz])) {
                     if (card_get_type(id) == 0x17) {
                         if (!AFFECTS(IMMUNE(st->imm2, p, sp))) {
@@ -1018,7 +1017,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                             if (pl->lp < duel.players[(1 - sp) & 1].lp) {
                                 st->atk = st->batk << 1;
                             }
-                            if (duel.players[(1 - sp) & 1].lp < pl->lp) {
+                            if (pl->lp > duel.players[(1 - sp) & 1].lp) {
                                 st->atk = (st->batk + 1) >> 1;
                             }
                         }
@@ -1052,7 +1051,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                         def_eq += duel_count_field_all(sp) * 500;
                         break;
                     case 0x149F:
-                        if (duel_field_type_ex(p, z, pl->field[sz].unk4) == 0xF) {
+                        if ((unsigned short)duel_field_type_ex(p, z, pl->field[sz].unk4) == 0xF) {
                             atk_eq += 500;
                             def_eq += 500;
                         }
@@ -1110,9 +1109,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             switch (st->id) {
             case 0x1281:
             case 0x1284:
-                s = &duel.players[sp & 1].field[sz];
-                if (s->faceup != 0) {
-                    id = s->card.id;
+                if (duel.players[sp & 1].field[sz].faceup != 0) {
+                    id = duel.players[sp & 1].field[sz].card.id;
                     switch (id) {
                     case 0x1472:
                         st->atk = 1600;
@@ -1145,8 +1143,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             }
             break;
         case 0xC:
-            s = &duel.players[sp & 1].field[sz];
-            if (s->card.id != 0 && !SLOT_NEGATED(s) && AFFECTS(IMMUNE(st->imm, p, sp))) {
+            if (duel.players[sp & 1].field[sz].card.id != 0 && !SLOT_NEGATED(&duel.players[sp & 1].field[sz]) && AFFECTS(IMMUNE(st->imm, p, sp))) {
                 atk_eq += 200;
             }
             break;
@@ -1157,11 +1154,11 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
 
     if (!fixed) {
         if (neg != 0) {
-            st->atk -= atk_bon + atk_eff + atk_eq;
-            st->def -= def_bon + def_eff + def_eq;
+            st->atk -= atk_bon + (atk_eff + atk_eq);
+            st->def -= def_bon + (def_eff + def_eq);
         } else {
-            st->atk += atk_bon + atk_eff + atk_eq;
-            st->def += def_bon + def_eff + def_eq;
+            st->atk += atk_bon + (atk_eff + atk_eq);
+            st->def += def_bon + (def_eff + def_eq);
         }
         if (duel_count_active(0x1951)) {
             if (st->attr == 4 || (st->mask & 0x10)) {
