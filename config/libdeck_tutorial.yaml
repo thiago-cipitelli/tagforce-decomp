@@ -50,8 +50,6 @@ segments:
       - [0x13BD8, c, dt_sort]
       - [0x14EF4, c, dt_word]
       - [0x1626C, c, dt_lesson]
-      - [0x17C5C, asm, dt_lesson_asm_0881BBFC]
-      - [0x17E68, c, dt_lesson]
       - [0x18148, c, dt_text]
       - [0x19378, asm, sceStub_text]
       - [0x1BA60, bin, lib_ent_top]
