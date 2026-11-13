@@ -340,8 +340,9 @@ int dd_burst2_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 23 palavras (2026-11-08): só a ordem do bloco das bordas da língua de fogo (-ca + x e -sa + y saem
-                      antes da cor no original, com -sa num $f próprio); o resto bate */
+#ifdef NON_MATCHING /* 16 palavras (rodada 27; eram 23): só a ordem do bloco das bordas da língua de fogo (-ca + x e
+                      -sa + y saem antes da cor no original, com -sa num $f próprio); flame[1].u = 0.2f gravado antes
+                      de flame[0].x tirou 7 (busca gulosa de uma linha); o resto bate */
 int dd_burst2_update(int phase, DdBurst2Fx *d)
 {
     DdFxSlot *s = d->slot;
@@ -424,12 +425,12 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
             d->flame[i1][0].u = 0.0f;
             d->flame[i1][0].v = fr;
             d->flame[i1][0].color = 0x7A2EFF;
+            d->flame[i1][1].u = 0.2f;
             d->flame[i1][0].x = ca + x;
             d->flame[i1][0].y = sa + y;
             d->flame[i1][0].z = 0.0f;
             ca = -ca + x;
             sa = -sa + y;
-            d->flame[i1][1].u = 0.2f;
             d->flame[i1][1].v = fr;
             d->flame[i1][1].color = (unsigned int)((1.0f - fr) * 255.0f) << 24 | 0x7A2EFF;
             d->flame[i1][1].x = x;
