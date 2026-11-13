@@ -713,12 +713,12 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     def_bon = 0;
                 }
                 break;
-            case 0x1153:               /* ATK halved (arg 0) or doubled */
+            case 0x1153:               /* ATK doubled, or halved (arg 0) */
                 if (!fixed) {
-                    if (arg == 0) {
-                        st->atk = (atk_bon + atk_eq + st->atk + atk_eff + 1) >> 1;
+                    if (arg != 0) {
+                        st->atk = (st->atk + atk_eff + atk_eq + atk_bon) * 2;
                     } else {
-                        st->atk = (atk_bon + atk_eq + st->atk + atk_eff) * 2;
+                        st->atk = (st->atk + atk_eff + atk_eq + atk_bon + 1) >> 1;
                     }
                     atk_bon = 0;
                     atk_eq = 0;
@@ -731,7 +731,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                 }
                 break;
             case 0x1391:               /* arg: value / 10 << 1 | 1 to add instead of set */
-                n = (arg >> 1) * 10;
+                n = arg / 2 * 10;
                 if (arg & 1) {
                     atk_eff += n;
                 } else if (!fixed) {
@@ -1079,7 +1079,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                         def_eq += duel_count_field_all(sp) * 500;
                         break;
                     case 0x149F:
-                        if (duel_field_type_ex(p, z, (short)s->unk4) == 0xF) {
+                        if (duel_field_type_ex(p, z, s->unk4) == 0xF) {
                             atk_eq += 500;
                             def_eq += 500;
                         }
