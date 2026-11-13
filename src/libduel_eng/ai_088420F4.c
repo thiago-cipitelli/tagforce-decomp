@@ -1,5 +1,4 @@
 // @range 0x088420F4-0x08842C24
-// @asm 0x088420F4-0x08842C24
 /* Computer player: step machine of the standby phase (cards that act at the start of the turn, then the check tables). */
 #include "duel.h"
 
@@ -36,7 +35,9 @@ int duel_slot_value_1909(unsigned int p, int z);
 int duel_card_can_affect(unsigned int p, int z, unsigned short id, int zone, int arg);
 unsigned int duel_slot_min_1130(unsigned int, int);
 
-#ifdef NON_MATCHING /* forma igual; difere a alocação de registradores dos casos 4 e 5 e o original mantém o duel_w_08919600++ do fim do caso 6, que o mwcc elimina por ser sobrescrito no caso 7 */
+/* duel_w_08919600 (passo da máquina) é duel.unk37a4: lido como campo por ponteiro, o mwcc mantém o duel_w_08919600++ do fim
+   do caso 6 que o caso 7 sobrescreve (com o símbolo avulso ele elimina o store) */
+#define DSTEP (*(unsigned int *)&duel.unk37a4)
 /* returns 0 while the step machine has work left */
 int duel_088420F4(void)
 {
@@ -46,7 +47,6 @@ int duel_088420F4(void)
     int id;
     unsigned short loc;
     unsigned int lp;
-    unsigned int lz;
     unsigned int q;
     int i;
     DuelAiCheck *f;
@@ -57,15 +57,15 @@ int duel_088420F4(void)
     unsigned int n;
     unsigned short buf[256];
 
-    if (duel_w_08919600 != 0 && duel_08841B54(p) == 0) {
+    if (DSTEP != 0 && duel_08841B54(p) == 0) {
         return 0;
     }
-    switch (duel_w_08919600) {
+    switch (DSTEP) {
     case 0: /* announce the phase */
         if (!quiet) {
             duel_cmd((p ? 0x8000 : 0) | 0x11, 0, 0, 0);
         }
-        duel_w_08919600++;
+        DSTEP++;
         duel_w_08919604 = 0;
         duel_w_08919608 = 0;
         return 0;
@@ -74,14 +74,14 @@ int duel_088420F4(void)
             duel_088AFD5C(5, 0);
             duel_w_089147D8 = 0;
         }
-        duel_w_08919600++;
+        DSTEP++;
         return 0;
     case 2: /* wait for the previous step to finish */
         if (duel_w_089147D8 != 0) {
-            duel_w_08919600--;
+            DSTEP--;
             return 0;
         }
-        duel_w_08919600++;
+        DSTEP++;
         duel_w_08919604 = 0;
         duel_w_08919608 = 0;
     case 3: /* own cards with a standby effect */
@@ -136,10 +136,10 @@ int duel_088420F4(void)
                 if (duel_w_08919608 >= 5 && !(duel.players[me].field[z].flags >> 5 & 1)) {
                     loc = duel_slot_e1854(p, z);
                     if (loc != 0xFFFF) {
-                        lz = loc >> 8 & 0xFF;
+                        k = loc >> 8 & 0xFF;
                         lp = loc & 0xFF;
-                        if (duel_slot_counter_1a90(lp, lz) != 0 && duel_slot_ref_immune(lp, lz, lp != p) == 0) {
-                            duel_088CC594(lp, lz, -1, 0x1A90);
+                        if (duel_slot_counter_1a90(lp, k) != 0 && duel_slot_ref_immune(lp, k, lp != p) == 0) {
+                            duel_088CC594(lp, k, -1, 0x1A90);
                             duel_w_08919608++;
                             return 0;
                         }
@@ -148,47 +148,47 @@ int duel_088420F4(void)
                 break;
             }
         }
-        duel_w_08919600++;
+        DSTEP++;
         duel_w_08919608 = 5;
     case 4: /* opponent's spells/traps that act on this turn */
-        p = 1 - p;
         for (; duel_w_08919608 < 10; duel_w_08919608++) {
             z = duel_w_08919608;
-            id = duel.players[p & 1].field[z].card.id;
-            if (id == 0 || duel.players[p & 1].field[z].faceup == 0) {
+            id = duel.players[(1 - p) & 1].field[z].card.id;
+            if (id == 0 || duel.players[(1 - p) & 1].field[z].faceup == 0) {
                 continue;
             }
             switch ((unsigned short)id) {
             case 0x1102:
             case 0x1AA3:
-                duel_088CC1D0(p, z, 1);
-                if (!quiet && duel_slot_value_1909(p, z) + 1 == 3) {
-                    duel_088D1438(p, z, 0, 0);
+                duel_088CC1D0(1 - p, z, 1);
+                if (!quiet && duel_slot_value_1909(1 - p, z) + 1 == 3) {
+                    duel_088D1438(1 - p, z, 0, 0);
                 }
                 duel_w_08919608++;
                 return 0;
             case 0x1400:
-                duel_088CC1D0(p, z, 1);
-                if (!quiet && duel_slot_value_1909(p, z) + 1 == 2) {
-                    duel_088D1438(p, z, 0, 0);
+                duel_088CC1D0(1 - p, z, 1);
+                if (!quiet && duel_slot_value_1909(1 - p, z) + 1 == 2) {
+                    duel_088D1438(1 - p, z, 0, 0);
                 }
                 duel_w_08919608++;
                 return 0;
             }
         }
-        duel_w_08919600++;
+        DSTEP++;
         return 0;
     case 5: /* 0x149D of both players pointing at a card of the turn player */
         for (i = 0; i < 2; i++) {
             q = p ^ i;
             for (j = 5; j < 10; j++) {
+                unsigned int lz;
                 if (duel.players[q & 1].field[j].card.id != 0x149D || duel.players[q & 1].field[j].faceup == 0) {
                     continue;
                 }
                 loc = duel_slot_e1854(q, j);
-                lp = loc & 0xFF;
+                n = loc & 0xFF;
                 lz = loc >> 8 & 0xFF;
-                if (lp != p) {
+                if (n != p) {
                     continue;
                 }
                 duel_088CC1D0(q, j, 1);
@@ -196,8 +196,8 @@ int duel_088420F4(void)
                     r = 0;
                     duel_088C4448(q, j, CARD_UID(duel.players[q & 1].field[j].card));
                     duel.players[q & 1].field[j].card.id = 0;
-                    if (duel_card_can_affect(lp, lz, 0x149D, j, 1) != 0) {
-                        r = duel_088D1438(lp, lz, q != lp, 0x149D);
+                    if (duel_card_can_affect(n, lz, 0x149D, j, 1) != 0) {
+                        r = duel_088D1438(n, lz, q != n, 0x149D);
                     }
                     duel.players[q & 1].field[j].card.id = 0x149D;
                     if (r != 0) {
@@ -206,7 +206,7 @@ int duel_088420F4(void)
                 }
             }
         }
-        duel_w_08919600++;
+        DSTEP++;
         duel_w_08919608 = 0;
     case 6: /* monster counters that run out */
         for (; duel_w_08919608 < 5; duel_w_08919608++) {
@@ -220,16 +220,16 @@ int duel_088420F4(void)
                 }
             }
         }
-        duel_w_08919600++;
+        DSTEP++;
         duel_w_08919608 = 0;
     case 7:
         if (quiet) {
-            duel_w_08919600 = 20;
+            DSTEP = 20;
             return 0;
         }
-        duel_w_08919600 = 10;
+        DSTEP = 10;
     case 10:
-        duel_w_08919600++;
+        DSTEP++;
         duel_w_08919604 = 0;
         duel_w_08919608 = 0;
     case 11:
@@ -239,7 +239,7 @@ int duel_088420F4(void)
             }
             duel_w_08919608 = 0;
         }
-        duel_w_08919600++;
+        DSTEP++;
         duel_w_08919604 = 0;
         duel_w_08919608 = 0;
         return 0;
@@ -251,7 +251,7 @@ int duel_088420F4(void)
             }
             duel_w_08919608 = 0;
         }
-        duel_w_08919600 = 20;
+        DSTEP = 20;
         duel_w_08919604 = 0;
         duel_w_08919608 = 0;
         return 0;
@@ -262,11 +262,10 @@ int duel_088420F4(void)
             }
             duel_w_08919608 = 0;
         }
-        duel_w_08919600++;
+        DSTEP++;
         duel_w_08919604 = 0;
         duel_w_08919608 = 0;
         return 0;
     }
     return 1;
 }
-#endif

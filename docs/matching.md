@@ -2059,3 +2059,36 @@ Bateram `dd_cobjs_init`, `dd_hand_layout0`, `dd_hand_layout1` (52%/49% fuzzy, re
 - `dd_fx_shatter_update` (4,8 KB, 1079 palavras, 205 linhas de estrutura): o resto é ordem de agendamento dos
   sorteios/divisões no bloco das velocidades e das faíscas (o original divide `R2/32767` logo depois do 2º sorteio) e
   coloração; macro do sinal invertida, helper `static inline`, `+=` com valor e temporários por eixo pioram.
+## Rodada 25 (`engR3`: libduel_eng, quase-acertos)
+
+Bateram `duel_08842D98` (1 -> 0) e `duel_088420F4` (167 -> 0, nunca tinha entrado na fila); `duel_08850164` 34 -> 9.
+- **Ordem dos operandos de `|` com chamadas = ordem de avaliação**: o mwcc avalia o operando DIREITO de `|` primeiro.
+  `m = f() ? 0x20 : 0; n = g() ? 8 : 0; h(1 << ph | n | m)` deixava `or a0,s0,v0` (nenhuma associação, tipo ou
+  ordem das atribuições invertia); com as chamadas dentro da expressão, `h((g() ? 8 : 0) | 1 << ph | (f() ? 0x20 : 0))`
+  chama `f` primeiro e sai `or a0,v0,s0`. Testar as 12 permutações/associações (`build/tmp/engR3/v1.py`).
+- **Passo de máquina que é campo do `Duel` lido por ponteiro** (`duel_w_08919600` = `duel.unk37a4`):
+  `#define DSTEP (*(unsigned int *)&duel.unk37a4)` em todos os acessos da função. Com o símbolo avulso o mwcc
+  elimina o `step++` do fim de um `case` que cai num `case` que sobrescreve o passo nos dois ramos (o original
+  mantém o store) e enche um `beq` do `switch` com `li v0,1` (`beql`); pelo ponteiro, nada disso. Em
+  `duel_08838A84` (`duel_w_08919610` = `duel+0x37B4`) a mesma troca piora (32 -> 532): vale só onde o store morto
+  aparece.
+- **Invariante içado depois da guarda do laço**: `p = 1 - p;` antes de `for (; g < 10; g++)` calcula `1 - p` antes do
+  teste; o original o calcula no pré-cabeçalho (depois do `sltiu; beqz`). Com `1 - p` escrito como expressão em cada
+  uso dentro do laço (`duel.players[(1 - p) & 1]`, `f(1 - p, z, 1)`) o mwcc faz CSE, iça para o lugar certo e as cores
+  `z`/`1 - p` batem (um local `q = 1 - p` no corpo, de qualquer variável ou tipo, não).
+- **Variável por bloco/reuso para separar webs**: a zona de `duel_slot_e1854` em dois `case` era o mesmo `lz` de
+  função; com `unsigned int lz` declarado no corpo do laço de um `case`, `n` (já declarado, sem uso ali) para o
+  jogador, e `k` para a zona no outro `case`, as cores dos dois batem. Renomear em massa com `re.sub(r"\bnome\b")`
+  por `case` (busca de pares de nomes, `v15.py`) é barato e achou as duas.
+- **Callee chamado sem argumento no original** (`jal; nop` sem `move a0` logo depois de outra chamada com o mesmo
+  argumento): `duel_0884ED08()` depois de `duel_0884F930(cur)`, que é folha e não mexe em `a0`, então o callee recebe
+  `cur` por acaso. Sob `__MWERKS__` protótipo K&R `int duel_0884ED08();` e chamada sem argumento; no port, com `cur`.
+- **Locais de um `case` declarados no bloco por busca aleatória** (`brand.py`: ordem × `int`/`unsigned` × presença,
+  6 processos, 500 variantes em ~2 min) levou o caso 0xB de `duel_08850164` de 32 para 9; o resto é a troca
+  ponteiro do campo/`code` (s2/s1), que nem o ponteiro explícito, a máscara num local, o helper inline para os três
+  testes iguais nem as formas do teste mudam.
+- Sem saída: `duel_088BD4E0` (8: `sw` de `p` antes do `ext` e do `max` antes do `bnez` no original; o índice
+  `c & 0xFFFF` num local, em `i/j/k/n`, `(unsigned short)c`, `if ((max = ...) == 0)`, `volatile`, ordem/tipo das
+  declarações (hill 150) não movem), `duel_08838A84` (32: as cores de `1 - p`/`q & 0xFF` no caso 2 com locais de
+  bloco, troca de variáveis flag/contador e tipos; permutações do `|` final; `volatile`/macro FIELDQ/local para
+  `duel_atk_zone` no corpo 0x18AB).
