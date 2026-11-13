@@ -1,8 +1,7 @@
 // @range 0x0885133C-0x08853A2C
 // @data 0x088EF098-0x088EF28C
-// @bss 0x08BE8ED4-0x08BE8EDC
+// @bss 0x08BE8ED4-0x08BE8EFC
 // @asm 0x08851D10-0x08851F4C
-// @asm 0x08852708-0x088527AC
 /* PMF movie player (Sony PSMF sample code): movie_run() builds the sceMpeg ring buffer and decoder
    in the block set by movie_set_memory, starts the display/read/sound threads and runs the decode
    loop until the stream ends or the user skips. Control flow between threads uses two event flags
@@ -30,7 +29,6 @@ extern unsigned int movie_flags;        /* 1 mute, 2 any key skips, 4 not skippa
 extern unsigned int movie_mem_size, movie_mem_base;
 extern int movie_result;                /* 1 restart requested, 10 skipped */
 extern int movie_has_sound;
-extern int snd_out_idx;
 extern unsigned int snd_out[2];
 extern int snd_pts_step, snd_delay_count, snd_play_count;
 extern int vid_pts_step;
@@ -477,6 +475,16 @@ int movie_poll_input(void)
     return 0;
 }
 
+/* .bss of this object after the statics of movie_poll_input (0x08BE8EDC-0x08BE8EF8); `= 0` keeps them in
+   source order (see docs/matching.md, "static em .bss") */
+MovieCtrl **movie_ctrl_ref = 0;
+unsigned int movie_flags = 0;
+unsigned int movie_mem_size = 0;
+unsigned int movie_mem_base = 0;
+int movie_result = 0;
+int movie_bss_08BE8EF0 = 0;             /* no reference found */
+int movie_has_sound = 0;
+
 int msnd_init(MovieSnd *s, int bufsize, int nbufs, MovieCtrl *ctrl, unsigned int *mem, int mute)
 {
     int r;
@@ -646,16 +654,18 @@ int snd_thread(SceSize args, void *argp)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original lê snd_out_idx antes do `sw ra` e intercala o epílogo com o xor de snd_out_idx (escalonamento, 26 palavras) */
+/* snd_out_idx is a static of this function (0x08BE8EF8, @bss): its lui comes before the `sw ra` */
 int snd_output(MovieSnd *s, void *buf)
 {
-    memcpy((void *)snd_out[snd_out_idx], buf, s->bufsize);
+    static int snd_out_idx;
+    int n = s->bufsize;
+
+    memcpy((void *)snd_out[snd_out_idx], buf, n);
     s->rd = (s->rd + 1) % s->nbufs;
     wave_audio_write(0, snd_volume, snd_volume, (void *)snd_out[snd_out_idx]);
     snd_out_idx ^= 1;
     return 0;
 }
-#endif
 
 int snd_play_next(MovieSnd *s)
 {
