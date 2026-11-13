@@ -1138,12 +1138,11 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             }
             break;
         case 0xD:                      /* 0x1284/0x1281 take the stats of the card in slot src */
-            if (st->id == 0x1284 || st->id == 0x1281) {
-                s = &duel.players[src & 1].field[sz];
-                if (s->faceup == 0) {
-                    st->atk = 0;
-                    st->def = 0;
-                } else {
+            switch (st->id) {
+            case 0x1281:
+            case 0x1284:
+                s = &duel.players[sp & 1].field[sz];
+                if (s->faceup != 0) {
                     id = s->card.id;
                     switch (id) {
                     case 0x1472:
@@ -1167,13 +1166,17 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                         st->def = card_get_def(id);
                         break;
                     }
+                } else {
+                    st->atk = 0;
+                    st->def = 0;
                 }
                 def_eff = 0;
                 atk_eff = 0;
+                break;
             }
             break;
         case 0xC:
-            s = &duel.players[src & 1].field[sz];
+            s = &duel.players[sp & 1].field[sz];
             if (s->card.id != 0 && !SLOT_NEGATED(s) && AFFECTS(IMMUNE(st->imm, p, sp))) {
                 atk_eq += 200;
             }
@@ -1184,17 +1187,15 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
     }
 
     if (!fixed) {
-        if (neg == 0) {
-            st->atk += atk_bon + atk_eff + atk_eq;
-            st->def += def_bon + def_eff + def_eq;
-        } else {
+        if (neg != 0) {
             st->atk -= atk_bon + atk_eff + atk_eq;
             st->def -= def_bon + def_eff + def_eq;
+        } else {
+            st->atk += atk_bon + atk_eff + atk_eq;
+            st->def += def_bon + def_eff + def_eq;
         }
         if (duel_count_active(0x1951)) {
-            if (st->attr == 4) {
-                st->atk = 0;
-            } else if (st->mask & 0x10) {
+            if (st->attr == 4 || (st->mask & 0x10)) {
                 st->atk = 0;
             }
         }
