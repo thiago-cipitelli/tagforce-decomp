@@ -186,10 +186,9 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             break;
         case 0x129E:
         case 0x154A:                   /* 300 for each 0x1278, 0x142D and 0xFC9 in both graveyards */
-            for (n = 0; n < 2; n++) {
-                pl = &duel.players[n & 1];
-                for (i = 0; i < *(volatile unsigned int *)&pl->n_grave; i++) {
-                    switch (pl->grave[i].id) {
+            for (q = 0; q < 2; q++) {
+                for (i = 0; i < duel.players[q & 1].n_grave; i++) {
+                    switch (duel.players[q & 1].grave[i].id) {
                     case 0xFC9:
                     case 0x142D:
                     case 0x1278:
@@ -275,9 +274,9 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         case 0x14FC:                   /* copies the stats of the monster in slot v */
             v = duel_slot_e1854(p, z);
             if (v != 0xFFFF) {
-                duel_field_stats(v & 0xFF, (v & 0xFFFF) >> 8 & 0xFF, &other);
-                fixed = 1;
+                duel_field_stats(v & 0xFF, (unsigned short)v >> 8 & 0xFF, &other);
                 st->atk = other.atk;
+                fixed = 1;
                 st->def = other.def;
             }
             break;
@@ -322,9 +321,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         case 0x1742:                   /* with field spell 0x175E: the LP lead */
             if (duel.players[p & 1].field[10].card.id == 0x175E) {
                 n = duel.players[p & 1].lp - duel.players[(1 - p) & 1].lp;
-                if (n < 0) {
-                    n = 0;
-                }
+                n = n < 0 ? 0 : n;
                 atk_eff += n;
                 def_eff += n;
             }
@@ -414,7 +411,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             atk_eff += duel_grave_count_id(p, 0x1919) * 300;
             break;
         case 0x19D1:
-            atk_eff += duel_grave_count_id(p, 0x19D1) * 500;
+            atk_eff += duel_grave_count_id(p, st->id) * 500;
             break;
         case 0x19D3:
             if (SLOT.link & 1) {
@@ -799,7 +796,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         case 5:
             switch (src) {
             case 0x13A6:
-                st->atk = st->def = 1000;
+                st->def = st->atk = 1000;
                 break;
             }
             break;
@@ -807,9 +804,9 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         case 7:
         case 8:
         case 9:                        /* cards on the field acting on this monster: src is the card slot */
-            pl = &duel.players[src & 1];
+            pl = &duel.players[sp & 1];
             s = &pl->field[sz];
-            if (s->card.id != 0 && !SLOT_NEGATED(s)) {
+            if (pl->field[sz].card.id != 0 && !SLOT_NEGATED(&pl->field[sz])) {
                 switch (field_get_card(sp, sz)) {
                 case 0xFF9:
                     if (st->attr == 2) {
