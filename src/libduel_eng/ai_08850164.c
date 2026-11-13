@@ -1,5 +1,5 @@
 // @range 0x08850164-0x08850F44
-// @asm 0x08850164-0x08850F44
+// @data 0x089116C0-0x089116FC
 /* Computer player: resolving the chain built in duel_chain.acts (step duel_w_089148EC). */
 #include "duel.h"
 
@@ -66,10 +66,6 @@ int card_get_prop5_hi(int);
 int card_is_in_group_1983(int id);
 int duel_special_get_id(DuelSlot *s);
 
-#ifdef NON_MATCHING /* 9 palavras (eram 34, rodada 25): no laço do caso 0xB o ponteiro do campo e code ficam em s2/s1 e o original
-   tem s1/s2. Locais do caso 0xB no bloco (i, q unsigned, z, code, uid unsigned, n) por busca aleatória; declarações fora
-   do bloco, máscara num local, ponteiro explícito do jogador/slot, helper inline para os três testes, formas do teste
-   e do code não trocam. */
 int duel_08850164(void)
 {
     DuelAct *cur = &duel_chain.acts[duel_chain.len];
@@ -286,12 +282,12 @@ int duel_08850164(void)
             goto dflt;
         }
         if (card_is_monster(last->id) != 0) {
-            int i;
+            unsigned int uid;
             unsigned int q;
             int z;
-            int code;
-            unsigned int uid;
+            int i;
             int n;
+            unsigned int code;
             n = 0;
             for (i = 0; i < 2; i++) {
                 q = duel_turn_player ^ i;
@@ -371,4 +367,3 @@ int duel_08850164(void)
         return 1;
     }
 }
-#endif

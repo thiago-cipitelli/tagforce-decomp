@@ -2326,3 +2326,19 @@ for (i = 0, s = &duel_special; i < 2; i++, s = SPEC_NEXT_REC(s)) {
 - Sem efeito (antes de achar): contador `unsigned`, contar para baixo (muda a estrutura), `q = &DAMAGE[i]` no
   corpo (18, outra forma), helper `static inline` com o ponteiro como parâmetro (`(r, i)` acerta os registradores
   mas dobra o deslocamento; `(i, r)` troca), `volatile` no `me->zone` (muda a estrutura).
+## Rodada 26 (`engS2`): `duel_08850164` (9 -> 0)
+
+Bateu e foi promovida (`@data 0x089116C0-0x089116FC` para a tabela de saltos do `switch` de 15 casos).
+- **Troca de `$s` que nenhuma mudança isolada move = combinação de ordem e tipo**: no laço do caso 0xB o
+  ponteiro de indução do campo e `code` saíam `s2/s1` (o original `s1/s2`). Nada isolado mexia: ordem das
+  declarações do bloco (todas as posições de cada uma), `code` reaproveitando um local da função (`card`, `r`),
+  variável própria por bloco (`c2`, `c3`), inicializador morto, cópia (`c2 = code`), cast, 101 formas e
+  associações da expressão de `code`, `code` dividido em `|=`, helper `static inline` para a chamada, ponteiro
+  explícito (`DuelSlot *f`, `DuelPlayer *pz` andando 20 bytes, em todas as posições), `ZSLOT`, `volatile`,
+  `q & 1U`, formas do laço (`&&`, `||`, aninhado, `goto`, do/while), ordem de 600 listas de declarações da
+  função. O que bateu saiu de uma busca aleatória que muda **ao mesmo tempo** a ordem e o tipo de todos os
+  locais do bloco (`build/tmp/engS2/rs.py`, 1500 variantes, 14 com a troca desfeita, 2 com 0 palavras):
+  `unsigned int uid; unsigned int q; int z; int i; int n; unsigned int code;` (`uid` primeiro, `code` por
+  último e `unsigned`). Só `unsigned int code` dava 14; só a ordem, 9. Vale para as trocas "imóveis": antes de
+  desistir, rodar uma busca conjunta ordem x tipo (x locais descartados) com detector da troca (endereços do
+  diff), não só o total de palavras.
