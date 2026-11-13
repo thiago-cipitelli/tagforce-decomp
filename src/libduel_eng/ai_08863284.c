@@ -1,5 +1,4 @@
 // @range 0x08863284-0x08864044
-// @asm 0x08863780-0x08863A64
 /* The computer player: handlers of the cards it activates. */
 #include "duel.h"
 
@@ -186,7 +185,7 @@ int duel_0886371C(DuelAct *a, unsigned int p, int z)
     return duel.players[p & 1].field[z].card.id != 0;
 }
 
-#ifdef NON_MATCHING /* 21 palavras: com default como primeiro rótulo o corpo sai logo depois dos testes, mas o mwcc sabe que v0 já vale 1 e salta direto ao epílogo (o original repete li v0,1); o return 1 final também sai sem o b próprio */
+/* default: goto ret1 (um return 1 compartilhado): com return 1 no default o mwcc sabia que v0 já valia 1 e pulava o li */
 int duel_08863780(DuelAct *a, int b)
 {
     int has = duel_slot_has_effect(a->player, 11, 0x14A0);
@@ -205,7 +204,7 @@ int duel_08863780(DuelAct *a, int b)
     if (has != 0) {
         switch (duel_w_08914904) {
         default:
-            return 1;
+            goto ret1;
         case 0:
             duel_088C44E4(a->player, 0x14A0);
             duel_0884ACD8(a->player, 0x50);
@@ -248,9 +247,9 @@ int duel_08863780(DuelAct *a, int b)
         duel_w_08914904++;
         return 0;
     }
+ret1:
     return 1;
 }
-#endif
 
 int duel_08863A64(DuelAct *a, int b)
 {
