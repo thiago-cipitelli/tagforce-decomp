@@ -1,5 +1,4 @@
 // @range 0x088B9CC8-0x088BB8C0
-// @asm 0x088BAF7C-0x088BB0A0
 /* Card effect handlers: candidate lists for duel_088BFC64 (after effects_088B7D94.c). */
 #include "duel.h"
 
@@ -328,12 +327,11 @@ void duel_088BAF00(unsigned int p)
     }
 }
 
-#ifdef NON_MATCHING /* c e i trocam $s1/$s4 */
-void duel_088BAF7C(unsigned int p, int b, int c)
+void duel_088BAF7C(unsigned int p, int b, unsigned int c)
 {
-    int n;
+    int i;
     int j;
-    unsigned int i;
+    int n;
 
     n = duel_088A6300(c);
     for (i = 0; i < duel.players[p & 1].n_grave; i++) {
@@ -347,7 +345,6 @@ void duel_088BAF7C(unsigned int p, int b, int c)
         }
     }
 }
-#endif
 
 void duel_088BB0A0(unsigned int p)
 {
