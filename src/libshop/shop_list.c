@@ -1,5 +1,4 @@
 // @range 0x0880D298-0x0880EF74
-// @asm 0x0880D3E0-0x0880D828
 // @data 0x088202B4-0x088202E4
 // @rodata 0x0881C1F0-0x0881C260
 /* 3D part of the shelf (the pack model over the counter, the shelf of the chosen kind with its
@@ -113,20 +112,32 @@ void shop_draw_shelf_pack(void)
     model_draw(m, &o);
 }
 
-#ifdef NON_MATCHING /* laços das duas fileiras com a matriz salva; alocação diferente */
-/* the shelf of the chosen kind: the box, the packs left in both rows, the one flying to the counter */
+/* the shelf of the chosen kind: the box, the packs left in both rows, the one flying to the counter (the
+   state test is a switch whose default returns: no post-likely cleanup in the whole function) */
 void shop_draw_shelf_3d(void)
 {
-    Mat4 fly;
-    Mat4 base;
-    ModelDraw o;
     float pos[3];
+    ModelDraw o;
+    Mat4 base;
+    Mat4 fly;
     Model *m;
     int side;
     int i;
 
     mtx_identity();
-    if (shop.state == 4 || shop.state == 3) {
+    switch (shop.state) {
+    case 2:
+    case 5:
+        dl_set_list(shop_dl_fade(dl_select_layer(2, 0), (unsigned char)(shop.timer * 0xA0 / 18)));
+        pos[0] = 0.0f;
+        pos[1] = -20.0f - -17.0f * shop.timer / 18.0f;
+        pos[2] = -200.0f - -192.0f * shop.timer / 18.0f;
+        mtx_translate(pos);
+        mtx_rotate_x(0.7853982f);
+        mtx_rotate_y(3.1415927f * (shop.rot + 360.0f * shop.timer / 18.0f) / 180.0f);
+        break;
+    case 3:
+    case 4:
         dl_set_list(shop_dl_fade(dl_select_layer(2, 0), 0xA0));
         pos[1] = -3.0f;
         pos[2] = -8.0f;
@@ -134,15 +145,8 @@ void shop_draw_shelf_3d(void)
         mtx_translate(pos);
         mtx_rotate_x(0.7853982f);
         mtx_rotate_y(3.1415927f * shop.rot / 180.0f);
-    } else if (shop.state == 5 || shop.state == 2) {
-        dl_set_list(shop_dl_fade(dl_select_layer(2, 0), (unsigned char)(shop.timer * 0xA0 / 18)));
-        pos[0] = 0.0f;
-        pos[1] = -20.0f - shop.timer * -17.0f / 18.0f;
-        pos[2] = -200.0f - shop.timer * -192.0f / 18.0f;
-        mtx_translate(pos);
-        mtx_rotate_x(0.7853982f);
-        mtx_rotate_y(3.1415927f * (shop.rot + shop.timer * 360.0f / 18.0f) / 180.0f);
-    } else {
+        break;
+    default:
         return;
     }
     mtx_get34(&base);
@@ -155,8 +159,8 @@ void shop_draw_shelf_3d(void)
     m = shop_model_get(0x8001);
     model_update(m, 0);
     for (side = 0; side < 2; side++) {
-        pos[2] = -1.4f;
         pos[0] = -3.0f + 6.0f * side;
+        pos[2] = -1.4f;
         for (i = 0; i < (shop.stock[shop.pack] >> (side * 4) & 0xF); i++) {
             mtx_load(&base);
             pos[1] = shop.lift[side][i];
@@ -173,7 +177,6 @@ void shop_draw_shelf_3d(void)
         model_draw(m, &o);
     }
 }
-#endif
 
 /* darkens the screen behind the 3D shelf */
 unsigned int *shop_dl_fade(unsigned int *list, int alpha)

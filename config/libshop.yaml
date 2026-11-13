@@ -39,8 +39,6 @@ segments:
       - [0x889C, asm, shop_shelf_asm_0880C83C]
       - [0x8964, c, shop_shelf]
       - [0x92F8, c, shop_list]
-      - [0x9440, asm, shop_list_asm_0880D3E0]
-      - [0x9888, c, shop_list]
       - [0xAFD4, c, shop_parts]
       - [0xB0FC, asm, shop_parts_asm_0880F09C]
       - [0xB2A4, c, shop_parts]
