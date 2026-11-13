@@ -1,5 +1,4 @@
 // @range 0x08842C24-0x08843858
-// @asm 0x08842D98-0x08843344
 // @data 0x08907E18-0x08907E38
 /* Computer player: steps of the standby, main and battle phases (duel_w_08919600 / duel_w_08919618). */
 #include "duel.h"
@@ -80,7 +79,7 @@ int duel_08842C24(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 1 palavra (eram 328): or a0,v0,s0 contra or a0,s0,v0 no argumento de duel_0884AF20 do caso 3. Rodada 24:
+/* Bate (rodada 25: ordem de avaliação do argumento de duel_0884AF20). Rodada 24:
    switch no caso 0x14, if (f != 0) { if (w614 != 0) return 1; ... } return 0 no caso 0x16, laço do caso 0x1E como em
    duel_08843344 (pl = &duel + ofs primeiro, máscara içada pelo mwcc), tipos das declarações por busca (hill.py) */
 #define PFO(T, f) (*(T *)((char *)&duel.players[0].f + ofs))
@@ -143,9 +142,8 @@ int duel_08842D98(void)
             }
             break;
         }
-        m = duel_088369D8(p) != 0 ? 0x20 : 0;
-        n = duel_08836868(p) != 0 ? 8 : 0;
-        duel_0884AF20(1 << duel_phase | n | m);
+        /* o mwcc avalia o operando direito de | primeiro: 088369D8 e depois 08836868, como no original */
+        duel_0884AF20((duel_08836868(p) != 0 ? 8 : 0) | 1 << duel_phase | (duel_088369D8(p) != 0 ? 0x20 : 0));
         duel_w_08919600 = 0x14;
         return 0;
     case 0xA:
@@ -219,7 +217,6 @@ int duel_08842D98(void)
     }
     return 0;
 }
-#endif
 
 int duel_08843344(unsigned int p)
 {
