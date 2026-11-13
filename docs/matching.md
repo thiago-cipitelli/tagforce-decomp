@@ -2302,3 +2302,27 @@ desvio de 3 instruções no meio vira 1000 palavras); usar o número de linhas `
 - `if (c) { if (z >= 5) continue; } else if (z < 5) continue;` (não o ternário) para `beqzl; slti` +
   `bnezl; li` do original; `switch (id) { case 0x1596: case 0x1598: ...; break; }` para `beql; beq; nop; b`;
   `if (unk480 > 1) prev = a - 1; else prev = 0;` para o `bnez` com o `prev = 0` fora de linha.
+
+## Rodada 26 (`engS1`): `duel_088482F8` bate (contador e ponteiro de laço trocados)
+
+As 20 palavras da rodada 25 (laço do `case 0x13CB` nas duas cópias: o original põe o contador em `a0` e o
+ponteiro em `a1`) saem com um **ponteiro explícito declarado antes do contador, no nível do helper**:
+```c
+DuelSpecial *s;   /* antes de `int i;` */
+int i;
+...
+for (i = 0, s = &duel_special; i < 2; i++, s = SPEC_NEXT_REC(s)) {
+    if (s->recs[0].b[0] == mp && s->recs[0].b[1] == me->zone) s->recs[0].w0 = 0;
+}
+```
+- **Variável criada antes recebe o registrador mais alto** também nos `$a`/`$v` temporários: com o ponteiro
+  só como variável de indução (criada pelo otimizador depois de `i`) ele fica em `a0`; declarado antes de `i`, vai
+  para `a1`. A mesma ordem com variáveis de bloco (`{ DuelSpecial *s; int k; ... }`) acerta este laço mas troca o
+  laço seguinte (`case 0x14AF`, que usa `i`): o `i` compartilhado entre os laços do helper tem de continuar sendo
+  o contador do primeiro laço. Ponteiro depois de `i` (ou `for (s = ..., i = 0; ...)`, 4 palavras) não serve.
+- **Base do ponteiro**: `DuelSpecRec *s = DAMAGE; s++` dobra o `+0x9C` no `addiu` (`lw 12(a1)`); o original
+  mantém `&duel_special` e os deslocamentos `0xA8/0xAC/0x9C` nos acessos: ponteiro `DuelSpecial *` andando de um
+  `DuelSpecRec` (`(DuelSpecial *)((DuelSpecRec *)s + 1)`) e acesso `s->recs[0]`.
+- Sem efeito (antes de achar): contador `unsigned`, contar para baixo (muda a estrutura), `q = &DAMAGE[i]` no
+  corpo (18, outra forma), helper `static inline` com o ponteiro como parâmetro (`(r, i)` acerta os registradores
+  mas dobra o deslocamento; `(i, r)` troca), `volatile` no `me->zone` (muda a estrutura).

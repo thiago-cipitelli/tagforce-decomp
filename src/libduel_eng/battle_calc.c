@@ -1,5 +1,4 @@
 // @range 0x088482F8-0x0884ACD0
-// @asm 0x088482F8-0x0884ACD0
 /* Battle result: compares the ATK/DEF of the attacker (duel_special.player[0]) and of the attacked
    monster, records the damage of each player (duel_special.recs) and which monster is destroyed,
    then applies the cards that change the outcome. show: send the cards' animations to the host;
@@ -32,6 +31,9 @@ typedef struct DuelFighter {           /* duel_special.act[p] seen as a monster 
 #define ATK_ZONE duel_special.zone[0]  /* 0x08913F2C */
 #define ATK_TZ duel_special.zone[1]    /* 0x08913F30 */
 /* the side of a zone reference is not protected (duel_slot_ref) */
+/* walks duel_special.recs keeping the base &duel_special (the 0x13CB loops); the pointer declared before the
+   counter gives the original's a0 counter / a1 pointer */
+#define SPEC_NEXT_REC(s) ((DuelSpecial *)((DuelSpecRec *)(s) + 1))
 #define REF_OPEN(ref, side) ((int)((ref) & (side)) <= 0)
 extern unsigned int duel_turn_player;
 extern int duel_phase;
@@ -69,12 +71,12 @@ int duel_slot_effect_with(unsigned int, int, int, int);
 void duel_088CC594(unsigned int p, int z, int a, int id);
 void duel_0884DAF0(int a, int b);
 
-#ifdef NON_MATCHING /* refeito do asm na rodada 25: faltam 20 palavras, contador e ponteiro do laço do case 0x13CB trocados (a0/a1) nas duas cópias */
 
 /* effects of the attacking monster `me` (not negated, player mp, zone *mz) on the battle against `foe` */
 static inline void duel_battle_atk_card(DuelFighter *me, DuelFighter *foe, unsigned int mp, const int *mz, unsigned int fp,
                                     const int *fz, int show, int check)
 {
+    DuelSpecial *s;                    /* steps one DuelSpecRec: base &duel_special, offsets 0xA8.. */
     int i;
 
     switch (me->id) {
@@ -86,9 +88,9 @@ static inline void duel_battle_atk_card(DuelFighter *me, DuelFighter *foe, unsig
     case 0x13CB:
         if (duel_turn_player == mp && duel_phase == 3) {
             me->destroyed = 0;
-            for (i = 0; i < 2; i++) {
-                if (DAMAGE[i].b[0] == mp && DAMAGE[i].b[1] == me->zone) {
-                    DAMAGE[i].w0 = 0;
+            for (i = 0, s = &duel_special; i < 2; i++, s = SPEC_NEXT_REC(s)) {
+                if (s->recs[0].b[0] == mp && s->recs[0].b[1] == me->zone) {
+                    s->recs[0].w0 = 0;
                 }
             }
         }
@@ -215,6 +217,7 @@ static inline void duel_battle_atk_card(DuelFighter *me, DuelFighter *foe, unsig
 static inline void duel_battle_def_card(DuelFighter *me, DuelFighter *foe, unsigned int mp, const int *mz, unsigned int fp,
                                     const int *fz, int show, int check, int doubled)
 {
+    DuelSpecial *s;                    /* steps one DuelSpecRec: base &duel_special, offsets 0xA8.. */
     int i;
 
     switch (me->id) {
@@ -226,9 +229,9 @@ static inline void duel_battle_def_card(DuelFighter *me, DuelFighter *foe, unsig
     case 0x13CB:
         if (duel_turn_player == mp && duel_phase == 3) {
             me->destroyed = 0;
-            for (i = 0; i < 2; i++) {
-                if (DAMAGE[i].b[0] == mp && DAMAGE[i].b[1] == me->zone) {
-                    DAMAGE[i].w0 = 0;
+            for (i = 0, s = &duel_special; i < 2; i++, s = SPEC_NEXT_REC(s)) {
+                if (s->recs[0].b[0] == mp && s->recs[0].b[1] == me->zone) {
+                    s->recs[0].w0 = 0;
                 }
             }
         }
@@ -946,4 +949,3 @@ void duel_088482F8(int show, int check)
     DAMAGE[0].w0 = (unsigned int)DAMAGE[0].w0 > 0xFFFF ? 0xFFFF : DAMAGE[0].w0;
     DAMAGE[1].w0 = (unsigned int)DAMAGE[1].w0 > 0xFFFF ? 0xFFFF : DAMAGE[1].w0;
 }
-#endif

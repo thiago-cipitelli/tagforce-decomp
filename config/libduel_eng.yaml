@@ -103,7 +103,6 @@ segments:
       - [0x425E4, asm, ai_08846584_asm_08846584]
       - [0x44130, c, ai_088480D0]
       - [0x44358, c, battle_calc]
-      - [0x44358, asm, battle_calc_asm_088482F8]
       - [0x46D30, c, duel_dialog]
       - [0x46E0C, asm, duel_dialog_asm_0884ADAC]
       - [0x46F80, c, duel_dialog]
