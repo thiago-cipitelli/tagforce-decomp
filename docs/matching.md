@@ -2397,3 +2397,31 @@ funcionou: estrutura primeiro (`fd.py --struct`), depois slots de pilha, por fim
   `sw` no delay slot da 1ª chamada; `switch (link) { case 1: ...; case 2: ... }` no `0x12C6`.
 - **Lógica**: `duel_field_type_ex` comparado como `unsigned short` no `0x149F` (o original faz `andi 0xffff` no
   retorno); o resto das mudanças é equivalente (fusões, ordem de somas, índices).
+## Rodada 27 (`skF`): retestes do `matching_skip` de libfield, libstory e libtutorial
+
+Bateram `fld_sys_init`, `fld_dir_vec`, `fld_npc_cmd_place`, `fclk_list_item`, `fbag_item1_draw` e
+`fld_hud_name_init`; `fld_sprite_quad` 55 -> 17. Três das seis eram **tipo errado nas declarações**, não forma do código:
+- **Tamanho do array global** (`fld_sys_init`): o laço desenrolado x8 com resto de 1 e teste `slti 25` contra o
+  contador somado de 8 é um laço de 33 voltas (4x8 + 1), não de 25 (que o mwcc desenrola x5). `field_cmds` vai de
+  0x0883C640 a 0x0883C7CC = 33 x 12 bytes; o rascunho só zerava 25 (bug de lógica). Antes de procurar forma para
+  um desenrolar estranho, refaça a conta das voltas e confira o tamanho do objeto pelo símbolo seguinte.
+- **`const` numa tabela extern** (`fld_dir_vec`): `extern const Vec3 field_dirs[8]` põe o `lui/addiu` da tabela
+  antes do `sw ra` do prólogo, como o `static` de função fazia; os leitores não-const precisam de cast.
+- **Callback passado como `int`** (`fld_npc_cmd_place`, 118 -> 22): `fld_chr_setup(..., (int)fld_npc_loaded_a, ...)`
+  deixa o mwcc tirar os endereços das funções do laço (`$s8` e pilha); com os parâmetros `void (*a)()` (o tipo de
+  `fld_load_chr`) ele os recalcula a cada chamada como o original. O resto (22 -> 0) foi ordem das declarações e
+  `(unsigned short)rand() % 120` (o original faz `div` com sinal, `rand() & 0xFFFF` dá `divu`).
+- **Endereço de global mantido num `$s` desde a entrada** (`lui s0; ... addiu s0` no atraso da 1ª chamada, usado
+  bem depois): é o mwcc **sem propagação de cópias**. `#pragma opt_propagation off` ... `reset` em volta da função
+  (sob `#ifdef __MWERKS__`) bateu `fclk_list_item` direto; `fbag_item1_draw` precisou ler `field_bag.ids1[i]` pelo
+  global (só `b->w[1].cursor_w` passa pelo ponteiro) e `fld_hud_name_init` tirar os casts e pôr o `-1` de
+  `text_color`/`pad_b` num local de bloco (com a pragma, o `-1` repetido vira um `$s`). Varredura das pragmas em
+  todas as entradas: `build/tmp/skF/prag.py MODULE FUNC FILE "PRAGMA"...` (embrulha a função em push/pop).
+  `opt_lifetimes off` muda muito (`fld_scene_update` 379 -> 11, uma variável por registrador na função inteira),
+  mas nenhuma entrada bateu com ela; `global_optimizer`, `scheduling`, `register_coloring` etc. não mudam nada.
+- `fld_sprite_quad`: u/v por extenso em cada vértice (rodada 25) e `y1` declarado antes de `y0`; falta a ordem de
+  criação das constantes float (o original materializa 0,23, -0,5, 0,5).
+- Sem forma (testado de novo): `fld_chr_draw_sprite`, `fld_digits`, `fbm_icon`, `st_pl_card_bit_set`,
+  `st_scr_find_es`, `pda_draw_tabs`, `op_bgm` (o `if` invertido dá o `bnezl`, falta o `b; nop` depois do `-2`),
+  `fld_map_walkable`, `fface_free`, `st_mail_find` (ponteiro `static const` para a tabela dá o `lw 0(r)` mas carrega o
+  ponteiro; `peephole off` também não), `tut_event_hook`, `fld_scene_update`.
