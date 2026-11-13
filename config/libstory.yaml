@@ -47,8 +47,6 @@ segments:
       - [0x8A44, c, s_story]
       - [0x9A00, asm, s_story_asm_0880D9A0]
       - [0x9EB8, c, s_fldset]
-      - [0x9EB8, asm, s_fldset_asm_0880DE58]
-      - [0xA694, c, s_fldset]
       - [0xAC98, c, s_mode]
       - [0xBC44, c, s_modtab]
       - [0xC580, c, s_ending]

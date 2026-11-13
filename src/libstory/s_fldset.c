@@ -1,5 +1,4 @@
 // @range 0x0880DE58-0x0880EC38
-// @asm 0x0880DE58-0x0880E634
 // @data 0x0881D330-0x0881D608
 /* Field setup commands of the story (second half): the characters standing in the current room (with
    the scripted walks of the cafeteria/classroom regulars and the crowd of the special days), the
@@ -118,7 +117,6 @@ StCrowdSpot st_crowd_spots[19] = {
 
 int st_crowd_pick_name(int *name);
 
-#ifdef NON_MATCHING /* forma igual; ordem dos stores das rotas, pilha 16 bytes menor e registradores dos laços diferem */
 /* places the characters of the current room (fld command 8): the story characters standing here,
    the scripted walks of the regulars of the classroom (3), the cafeteria (5) and the dorm (25), and on
    crowd days the extras of the festival (place 2) or of the tournament rows (place 4) */
@@ -139,7 +137,7 @@ int st_fld_place_chrs(void)
     int at;
     int x, y;
     int seq;
-    StCrowdSpot *spot;
+    int k;
     int j;
     int dir;
     int r;
@@ -148,8 +146,7 @@ int st_fld_place_chrs(void)
     n = -1;
     place = st_pl_room_get();
     partner = st_pl_x14_get();
-    e = list - 1;
-    for (i = 0; i < 150; i++) {
+    for (i = 0, e = list - 1; i < 150; i++) {
         at = st_chr_place(i);
         if (place != at || at == 0 || partner == i)
             continue;
@@ -182,16 +179,11 @@ int st_fld_place_chrs(void)
         case 3:
             if (e->x == 10000 && e->y == 10000) {
                 route_a[0].x = 0x16;
-                route_a[0].a = 1;
-                route_a[0].b = 1;
-                route_a[0].c = 1;
-                route_a[0].d = 1;
-                route_a[1].a = 1;
-                route_a[1].b = 1;
-                route_a[1].c = 1;
-                route_a[1].d = 1;
+                route_a[0].y = 0xC;
+                route_a[0].a = route_a[0].b = route_a[0].c = route_a[0].d = 1;
                 route_a[1].x = 0x15;
                 route_a[1].y = 0xD;
+                route_a[1].a = route_a[1].b = route_a[1].c = route_a[1].d = 1;
                 e->x = 0x13;
                 e->y = 0xC;
                 e->x2 = 0x13;
@@ -199,101 +191,70 @@ int st_fld_place_chrs(void)
                 e->dir = 7;
                 e->flag_a = 0;
                 e->route = route_a;
-                route_a[0].y = 0xC;
                 e->nroute = 2;
             }
             break;
         case 5:
             if (e->x == 10000 && e->y == 10000) {
+                route_a[0].x = 7;
+                route_a[0].y = 10;
+                route_a[0].a = route_a[0].b = route_a[0].c = route_a[0].d = 1;
+                route_a[1].x = 7;
+                route_a[1].y = 11;
+                route_a[1].a = route_a[1].b = route_a[1].c = route_a[1].d = 1;
+                route_a[2].x = 4;
+                route_a[2].y = 9;
+                route_a[2].a = route_a[2].b = route_a[2].c = route_a[2].d = 1;
+                route_a[3].x = 4;
+                route_a[3].y = 10;
+                route_a[3].a = route_a[3].b = route_a[3].c = route_a[3].d = 1;
                 e->x = 5;
                 e->y = 10;
                 e->x2 = 5;
-                route_a[0].y = 10;
-                route_a[3].y = 10;
                 e->y2 = 10;
                 e->dir = 7;
-                route_a[0].a = 1;
-                route_a[0].b = 1;
-                route_a[0].c = 1;
-                route_a[0].d = 1;
-                route_a[1].a = 1;
-                route_a[1].b = 1;
-                route_a[1].c = 1;
-                route_a[1].d = 1;
-                route_a[2].a = 1;
-                route_a[2].b = 1;
-                route_a[2].c = 1;
-                route_a[2].d = 1;
-                route_a[3].a = 1;
-                route_a[3].b = 1;
-                route_a[3].c = 1;
-                route_a[3].d = 1;
-                route_a[1].y = 0xB;
-                route_a[2].y = 9;
-                route_a[0].x = 7;
-                route_a[1].x = 7;
                 e->flag_a = 0;
                 e->route = route_a;
-                route_a[2].x = 4;
-                route_a[3].x = 4;
                 e->nroute = 4;
             }
             break;
         case 25:
             if (e->x == 10000 && e->y == 10000) {
-                route_a[0].x = 0xC;
-                route_a[1].x = 0xC;
-                route_a[2].y = 0xC;
+                route_a[0].x = 12;
                 route_a[0].y = 10;
-                route_a[0].a = 1;
-                route_a[0].b = 1;
-                route_a[0].c = 1;
-                route_a[0].d = 1;
-                route_a[1].a = 1;
-                route_a[1].b = 1;
-                route_a[1].c = 1;
-                route_a[1].d = 1;
-                route_a[2].a = 1;
-                route_a[2].b = 1;
-                route_a[2].c = 1;
-                route_a[2].d = 1;
-                e->x = 0xB;
-                e->y = 0xB;
-                e->x2 = 0xB;
-                route_a[1].y = 0xB;
-                e->y2 = 0xB;
-                route_a[2].x = 0xD;
+                route_a[0].a = route_a[0].b = route_a[0].c = route_a[0].d = 1;
+                route_a[1].x = 12;
+                route_a[1].y = 11;
+                route_a[1].a = route_a[1].b = route_a[1].c = route_a[1].d = 1;
+                route_a[2].x = 13;
+                route_a[2].y = 12;
+                route_a[2].a = route_a[2].b = route_a[2].c = route_a[2].d = 1;
+                e->x = 11;
+                e->y = 11;
+                e->x2 = 11;
+                e->y2 = 11;
                 e->dir = 7;
                 e->flag_a = 0;
                 e->route = route_a;
                 e->nroute = 2;
             }
             if (e->x == 10001 && e->y == 10001) {
-                e->x = 0x1B;
+                route_b[0].x = 27;
+                route_b[0].y = 2;
+                route_b[0].a = route_b[0].b = route_b[0].c = route_b[0].d = 1;
+                route_b[1].x = 28;
+                route_b[1].y = 2;
+                route_b[1].a = route_b[1].b = route_b[1].c = route_b[1].d = 1;
+                route_b[2].x = 29;
+                route_b[2].y = 2;
+                route_b[2].a = route_b[2].b = route_b[2].c = route_b[2].d = 1;
+                e->x = 27;
                 e->y = 1;
-                e->x2 = 0x1B;
+                e->x2 = 27;
                 e->y2 = 1;
                 e->dir = 1;
-                route_b[0].a = 1;
-                route_b[0].b = 1;
-                route_b[0].c = 1;
-                route_b[0].d = 1;
-                route_b[1].a = 1;
-                route_b[1].b = 1;
-                route_b[1].c = 1;
-                route_b[1].d = 1;
-                route_b[2].a = 1;
-                route_b[2].b = 1;
-                route_b[2].c = 1;
-                route_b[2].d = 1;
-                route_b[1].x = 0x1C;
-                route_b[2].x = 0x1D;
                 e->flag_a = 0;
                 e->route = route_b;
-                route_b[0].x = 0x1B;
-                route_b[0].y = 2;
-                route_b[1].y = 2;
-                route_b[2].y = 2;
                 e->nroute = 2;
             }
             break;
@@ -313,28 +274,25 @@ int st_fld_place_chrs(void)
             switch (place) {
             case 2:
                 if (n < 53) {
-                    e = &list[n];
-                    for (i = 0; i < 53; i++) {
-                        e++;
-                        e->item = 0x68;
+                    for (j = 0; j < 53; j++) {
                         n++;
-                        e->model = st_crowd_pick_name(&last_name);
-                        e->x = st_crowd_cells[i][0];
-                        e->y = st_crowd_cells[i][1];
-                        e->visible = 1;
-                        e->crowd = 1;
-                        e->dir = 1;
+                        list[n].item = 0x68;
+                        list[n].model = st_crowd_pick_name(&last_name);
+                        list[n].x = st_crowd_cells[j][0];
+                        list[n].y = st_crowd_cells[j][1];
+                        list[n].visible = 1;
+                        list[n].crowd = 1;
+                        list[n].dir = 1;
                     }
                 }
                 break;
             case 4:
                 seq = -1;
-                for (spot = st_crowd_spots;; spot++) {
-                    e = &list[n];
-                    for (j = 0; j < spot->n; j++) {
+                for (k = 0;; k++) {
+                    for (j = 0; j < st_crowd_spots[k].n; j++) {
                         if (n + 1 >= 60)
                             goto done;
-                        if (spot->x == 0 && spot->y == 0)
+                        if (st_crowd_spots[k].x == 0 && st_crowd_spots[k].y == 0)
                             goto done;
                         seq = (seq + 1) % 3;
                         if (seq == 0) {
@@ -343,30 +301,31 @@ int st_fld_place_chrs(void)
                             perm[1] = (r + 1) % 3;
                             perm[2] = (r + 2) % 3;
                         }
-                        if (perm[seq] != 0)
-                            continue;
-                        y = spot->y;
-                        dir = spot->dir;
-                        x = spot->x;
-                        switch (dir) {
-                        case 5:
-                        case 1:
-                            x += j;
-                            break;
-                        case 7:
-                        case 3:
-                            y += j;
+                        switch (perm[seq]) {
+                        case 0:
+                            dir = st_crowd_spots[k].dir;
+                            x = st_crowd_spots[k].x;
+                            y = st_crowd_spots[k].y;
+                            switch (dir) {
+                            case 5:
+                            case 1:
+                                x += j;
+                                break;
+                            case 7:
+                            case 3:
+                                y += j;
+                                break;
+                            }
+                            n++;
+                            list[n].item = 0x68;
+                            list[n].model = st_crowd_pick_name(&last_name);
+                            list[n].x = x;
+                            list[n].y = y;
+                            list[n].visible = 1;
+                            list[n].crowd = 1;
+                            list[n].dir = dir;
                             break;
                         }
-                        e++;
-                        e->item = 0x68;
-                        n++;
-                        e->model = st_crowd_pick_name(&last_name);
-                        e->x = x;
-                        e->y = y;
-                        e->visible = 1;
-                        e->crowd = 1;
-                        e->dir = dir;
                     }
                 }
             }
@@ -378,11 +337,11 @@ done:
     arg.list = list;
     if ((arg.target = st_pl_x18_get()) > 0) {
         i = st_id_to_deck(arg.target);
-        if (st_chr_flag_a(i)) {
+        if (!st_chr_flag_a(i)) {
+            arg.target_dir = st_chr_dir(i);
+        } else {
             arg.target = -1;
             arg.target_dir = 1;
-        } else {
-            arg.target_dir = st_chr_dir(i);
         }
     }
     if (arg.n <= 0)
@@ -392,8 +351,6 @@ done:
         sys_frame_wait();
     return 1;
 }
-
-#endif
 
 /* shows the partner standing next to the player (fld command 0xB) */
 int st_fld_partner(int chr)
