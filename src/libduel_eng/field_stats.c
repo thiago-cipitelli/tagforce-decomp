@@ -783,19 +783,22 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                 }
                 break;
             case 0x153D:
-                if (arg == 2) {
-                    def_eff += 500;
-                } else if (arg == 1) {
+                switch (arg) {
+                case 1:
                     atk_eff += 200;
+                    break;
+                case 2:
+                    def_eff += 500;
+                    break;
                 }
                 break;
             case 0x17AB:
-                st->atk += neg == 0 ? 1000 : -1000;
-                st->def += neg == 0 ? 1000 : -1000;
+                st->atk += neg != 0 ? -1000 : 1000;
+                st->def += neg != 0 ? -1000 : 1000;
                 break;
             case 0x17AC:
-                st->atk += neg == 0 ? 2000 : -2000;
-                st->def += neg == 0 ? 2000 : -2000;
+                st->atk += neg != 0 ? -2000 : 2000;
+                st->def += neg != 0 ? -2000 : 2000;
                 break;
             case 0x1890:
                 if (arg != 1 && duel_phase == 3) {
@@ -803,10 +806,10 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                 }
                 break;
             case 0x18F2:
-                if (arg == 0) {
-                    atk_eff += -500;
-                } else {
+                if (arg != 0) {
                     atk_eff += 500;
+                } else {
+                    atk_eff -= 500;
                 }
                 break;
             case 0x18FE:
@@ -817,9 +820,10 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             }
             break;
         case 5:
-            if (src == 0x13A6) {
-                st->atk = 1000;
-                st->def = 1000;
+            switch (src) {
+            case 0x13A6:
+                st->atk = st->def = 1000;
+                break;
             }
             break;
         case 6:
