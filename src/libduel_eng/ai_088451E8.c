@@ -224,7 +224,9 @@ int duel_088451E8(void)
                 if (duel_count_active(0x169F) == 0) {
                     duel_088C4448(p, z, CARD_UID(duel.players[me].field[z].card));
                     lp = duel.players[me].lp;
-                    if (duel_08845070(id) < lp) {
+                    if (duel_08845070(id) >= lp) {
+                        r = 1;
+                    } else {
                         n = duel_08845070(id);
                         duel_088C4564(p, n);
                         if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, p) != 0 && n < duel.players[(1 - p) & 1].lp) {
@@ -233,8 +235,6 @@ int duel_088451E8(void)
                         if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, 1 - p) != 0 && n * 2 < duel.players[me].lp) {
                             duel_088C4564(p, n);
                         }
-                    } else {
-                        r = 1;
                     }
                 }
                 break;
@@ -306,9 +306,9 @@ int duel_088451E8(void)
             duel_088D1AC8(duel_w_0891964C, duel_w_08919650 + duel_w_08919654);
             duel_w_08919608++;
             duel_w_08919600 = 101;
-        } else {
-            duel_w_08919600 = 120;
+            return 0;
         }
+        duel_w_08919600 = 120;
         return 0;
     case 130: /* 0x161B: ask the controller */
         q = p ^ duel_w_08919604;
@@ -336,9 +336,9 @@ int duel_088451E8(void)
             duel_088CC284(duel_w_0891964C, duel_w_08919650 + duel_w_08919654, -1);
             duel_w_08919608++;
             duel_w_08919600 = 101;
-        } else {
-            duel_w_08919600 = 130;
+            return 0;
         }
+        duel_w_08919600 = 130;
         return 0;
     case 150:
         duel_w_08919600 = 200;
@@ -426,7 +426,7 @@ int duel_088451E8(void)
                     if (!skip && ef->kind_hi == 0) {
                         uid = ef->arg;
                         loc = duel_card_locate(uid);
-                        if (((loc & 0xFFFF) >> 8 & 0xFF) == 0xF) {
+                        if ((unsigned char)((loc & 0xFFFF) >> 8) == 0xF) {
                             duel_088C44E4(p, 0x12C8);
                             duel_cmd(0x3F, ((unsigned char)loc & 1) | 0x1E | (uid & 0x3FF) << 6,
                                      me | 0x16 | (duel.players[me].n_hand & 0x3FF) << 6, 0);
