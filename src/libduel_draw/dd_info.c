@@ -277,7 +277,8 @@ void dd_info_disable(int off)
         in->target = 0;
 }
 
-#ifdef NON_MATCHING /* a ordem das cargas/gravações da cópia de si[] para st difere (7 palavras) */
+#ifdef NON_MATCHING /* 4 palavras (rodada 27; eram 7): o original lê si[2] antes de si[6]; as leituras voláteis de si[2],
+                      si[5] e si[7] acertam o resto; ~800 ordens x subconjuntos voláteis testados */
 /* current values of the card of panel `v` on the field */
 void dd_info_stats(DdInfoView *v)
 {
@@ -313,9 +314,9 @@ void dd_info_stats(DdInfoView *v)
                 st.type = si[1];
                 st.level = si[4];
                 st.def = si[6];
-                st.kind = si[2];
-                st.atk = si[5];
-                v->cur.atk = si[7];
+                st.kind = ((volatile int *)si)[2];
+                st.atk = ((volatile int *)si)[5];
+                v->cur.atk = ((volatile int *)si)[7];
                 v->cur.def = si[8];
                 mask = 0x7C;
                 if (v->cur.attr == 13 || v->cur.attr == 14) {
