@@ -123,8 +123,16 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
     st->unk8 = duel_field_kind_ex(p, z, &stamp);
     st->level = duel_field_level(p, z);
     st->mask = 1 << st->unk8;
-    if (stamp == 0 && (st->id == 0x19EF || st->id == 0x18C7) && SLOT_ACTIVE(&SLOT)) {
-        st->mask |= 0x78;
+    n = SLOT_ACTIVE(&SLOT);
+    if (stamp == 0) {
+        switch (st->id) {
+        case 0x18C7:
+        case 0x19EF:
+            if (n) {
+                st->mask |= 0x78;
+            }
+            break;
+        }
     }
     duel_field_base_stats(p, z, st);
     st->atk = st->batk;
@@ -352,10 +360,11 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             break;
         case 0x18C3:                   /* 1000 for each 0x18C3 in attack position, or in defense */
             c = (unsigned char *)cnt;
+            n = 8;
             if (c != 0) {
-                for (n = 8; n != 0; n--) {
+                do {
                     *c++ = 0;
-                }
+                } while (--n);
             }
             s = &duel.players[p & 1].field[0];
             for (i = 0; i < 5; i++, s++) {
