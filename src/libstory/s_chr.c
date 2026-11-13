@@ -2,7 +2,6 @@
 // @asm 0x088044EC-0x08804570
 // @asm 0x088048C8-0x08804908
 // @asm 0x08805974-0x08805B68
-// @asm 0x08805BD0-0x08805E24
 /* Story characters (150): the script tables of each one (Scr<i>_G/Step/Deck/DH/DN/Sche/...), their
    saved state (level, affinity, flags, position, look, deck in use), the conditions of the tables
    (date, level, flags, weekday, daytime) and the daily update that picks look, place and deck. */
@@ -948,18 +947,34 @@ int st_chr_dn_pick(int i)
     return 0;
 }
 
+/* index of the schedule entry in effect today: the one whose date is today, else the one before the
+   first later (or empty) date */
+static inline int st_chr_sche_slot(unsigned short *t)
+{
+    unsigned int cur = sdate_get_0c();
+    int k = 0;
+    unsigned short *p = t;
+    unsigned int key;
+
+    for (;;) {
+        key = p[1];
+        if (cur == key)
+            return k;
+        if ((int)cur < (int)key || key == 0)
+            return k - 1;
+        p += 25;
+        k++;
+    }
+}
+
 /* daily update of a character: look id (mode 0 picks it again), look entry, place, deck */
-#ifdef NON_MATCHING /* 15 palavras: só o 2º laço de busca; o original não o rotaciona (b de volta no fim), testa cur != key com bnel e o slt de cur < key no atraso, k em a2 e key em a0. Testados if/else, goto, for com a condição, lt materializado e o gatilho das cópias mortas */
 void st_chr_update(int i, int mode)
 {
     StoryChr *c = ST_CHR(i);
     StoryChrSave *s = ST_CHR_SAVE(i);
     unsigned short *t;
-    unsigned short *p;
     int day;
     int k;
-    unsigned int cur;
-    unsigned int key;
     unsigned short look;
 
     switch (mode) {
@@ -975,24 +990,7 @@ void st_chr_update(int i, int mode)
             break;
         t += 25;
     }
-    cur = sdate_get_0c();
-    k = 0;
-    p = t;
-    for (;;) {
-        key = p[1];
-        if (cur == key)
-            break;
-        if ((int)cur < (int)key) {
-            k--;
-            break;
-        }
-        if (key == 0) {
-            k--;
-            break;
-        }
-        p += 25;
-        k++;
-    }
+    k = st_chr_sche_slot(t);
     look = t[k * 25 + 2];
     day = sdate_weekday();
     if (s->look != look)
@@ -1031,7 +1029,6 @@ void st_chr_update(int i, int mode)
         st_chr_name_default(i);
     st_chr_deck_update(i);
 }
-#endif
 
 /* place and x24 from the first G table entry that holds (date, then level, chr flag, story flag) */
 int st_chr_g_update(int i)
