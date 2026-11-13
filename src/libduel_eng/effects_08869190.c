@@ -1,5 +1,4 @@
 // @range 0x08869190-0x0886AAB4
-// @asm 0x0886981C-0x08869ACC
 /* Card effect handlers (DuelAct *a): step machines on duel_w_08914904. */
 #include "duel.h"
 
@@ -209,14 +208,14 @@ int duel_08869728(unsigned int p, int i, int x)
     return duel_08869ACC(&act, x);
 }
 
-#ifdef NON_MATCHING /* só o teste inicial difere: o original carrega opp antes de duel_view_player e usa bnel; nenhuma grafia da comparação reproduziu */
 /* Activation check of a face-up card on the field. */
 int duel_0886981C(DuelAct *a, int b)
 {
+    unsigned int v = a->player ^ a->opp;
     unsigned short t;
     unsigned int i;
 
-    if ((a->player ^ a->opp) == duel_view_player) {
+    if (v == duel_view_player) {
         duel_err = 4;
     }
     if (a->id == 0) {
@@ -265,7 +264,6 @@ int duel_0886981C(DuelAct *a, int b)
     }
     return 0;
 }
-#endif
 
 /* Activation check of a card of the hand or set on the field. */
 int duel_08869ACC(DuelAct *a, int b)
