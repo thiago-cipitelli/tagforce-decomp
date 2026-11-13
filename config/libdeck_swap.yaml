@@ -53,7 +53,6 @@ segments:
       - [0xE8E0, c, ds_parts]
       - [0xEA54, asm, ds_parts_asm_088129F4]
       - [0xEBFC, c, ds_parts]
-      - [0x10C84, asm, ds_parts_asm_08814C24]
       - [0x11378, c, ds_osk]
       - [0x11840, c, ds_scene]
       - [0x11F34, asm, sceStub_text]

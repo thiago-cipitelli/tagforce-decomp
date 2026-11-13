@@ -49,7 +49,6 @@ segments:
       - [0x112E0, c, dk_parts]
       - [0x11454, asm, dk_parts_asm_088153F4]
       - [0x115FC, c, dk_parts]
-      - [0x13684, asm, dk_parts_asm_08817624]
       - [0x13D78, c, dk_filter]
       - [0x14058, asm, dk_filter_asm_08817FF8]
       - [0x141BC, c, dk_filter]

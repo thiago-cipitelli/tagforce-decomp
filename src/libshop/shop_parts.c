@@ -1,6 +1,5 @@
 // @range 0x0880EF74-0x088117B8
 // @asm 0x0880F09C-0x0880F244
-// @asm 0x088110C4-0x088117B8
 // @rodata 0x0881C260-0x0881C284
 // @data 0x088202E4-0x0882039C
 /* Drawing pieces shared with libselect_card (the same source): sort key lookup, digit strips, framed
@@ -740,9 +739,7 @@ unsigned short shop_ui_help_text[2][6] = {
     { 0x79, 0x77, 0x75, 0x78, 0x76, 0 },
 };
 
-unsigned short shop_ui_help_plus[2] = { 0xFF0B, 0 };   /* "+" (template of a local of shop_ui_draw_help) */
 
-#ifdef NON_MATCHING /* (y + 7 + lh) + 12 do original não é reassociado, e o mwcc atual dobra as constantes */
 /* the button help window: flags select the lines (bit 0 title, 0x1000/0x2000/0x4000/0x8000 buttons) */
 void *shop_ui_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *gim, void *strtbl)
 {
@@ -775,7 +772,7 @@ void *shop_ui_draw_help(void *list, int x, int y, int alt, unsigned int flags, v
     }
     if ((flags & 1) && (text = table_get_entry(strtbl, ids[0])) != 0) {
         font_set_size(12, 12);
-        tx = x + ((unsigned int)(0xD4 - (font_measure_text(text) >> 6) - 0x1C) >> 1);
+        tx = x + ((0xD4 - (font_measure_text(text) >> 6) - 0x1CU) >> 1);
         ty = y + 0x51 - lh;
         if (gim != 0) {
             list = draw_set_offsets(list, 0x1A, 0xB, 0x1A, 0xB);
@@ -811,12 +808,13 @@ void *shop_ui_draw_help(void *list, int x, int y, int alt, unsigned int flags, v
         font_set_size(12, 12);
         if (text != 0) {
             fit = font_measure_wtext(0x1340, text);
-            if (fit < 12) {
-                font_draw_wtext_ex((x + 5) << 6, (y + 7 + lh + 6) << 6, 0x1340, 0xC00, text, -1);
-            } else {
+            if (fit >= 12) {
                 font_set_size(fit, 12);
-                tx = x + 5 + ((0x4Du - (font_measure_text(text) >> 6)) >> 1);
-                font_draw_text(tx << 6, (y + 7 + lh + 12) << 6, (480 - tx) << 6, text);
+                tx = font_measure_text(text) >> 6;
+                tx = x + 5 + ((0x4Du - tx) >> 1);
+                font_draw_text(tx << 6, (y + 7 + lh + 12U) << 6, (480 - tx) << 6, text);
+            } else {
+                font_draw_wtext_ex((x + 5) << 6, (y + 7 + lh + 6U) << 6, 0x1340, 0xC00, text, -1);
             }
         }
     }
@@ -828,19 +826,20 @@ void *shop_ui_draw_help(void *list, int x, int y, int alt, unsigned int flags, v
         font_set_size(12, 12);
         if (text != 0) {
             fit = font_measure_wtext(0x1340, text);
-            if (fit < 12) {
-                font_draw_wtext_ex((x + 0x81) << 6, (y + 7 + lh + 6) << 6, 0x1340, 0xC00, text, -1);
-            } else {
+            if (fit >= 12) {
                 font_set_size(fit, 12);
-                tx = x + 0x81 + ((0x4Du - (font_measure_text(text) >> 6)) >> 1);
-                font_draw_text(tx << 6, (y + 7 + lh + 12) << 6, (480 - tx) << 6, text);
+                tx = font_measure_text(text) >> 6;
+                tx = x + 0x81 + ((0x4Du - tx) >> 1);
+                font_draw_text(tx << 6, (y + 7 + lh + 12U) << 6, (480 - tx) << 6, text);
+            } else {
+                font_draw_wtext_ex((x + 0x81) << 6, (y + 7 + lh + 6U) << 6, 0x1340, 0xC00, text, -1);
             }
         }
     }
     list = font_text_clear();
     font_set_flag4(1);
     if (gim != 0) {
-        unsigned short *plus = shop_ui_help_plus;
+        unsigned short plus[2] = { 0xFF0B, 0 };
 
         list = gim_set_texture(list, gim);
         list = dl_ambient_color(list, 0xFFFFFFFF);
@@ -852,10 +851,10 @@ void *shop_ui_draw_help(void *list, int x, int y, int alt, unsigned int flags, v
         list = draw_set_offsets(list, 9, 0x10, 9, 0x10);
         list = draw_sprite(list, x + 0x28, y - 0xE, 0, 5, 0x26, 0, 0);
         list = draw_set_offsets(list, 0x17, 0xB, 0x17, 0xB);
-        if (alt == 0)
-            list = draw_sprite(list, x + 5, y - 0xB, 0, 0x5E, 0x16, 0, 0);
-        else
+        if (alt != 0)
             list = draw_sprite(list, x + 5, y - 0xB, 0, 0x5E, 0x21, 0, 0);
+        else
+            list = draw_sprite(list, x + 5, y - 0xB, 0, 0x5E, 0x16, 0, 0);
         font_text_set(list);
         font_set_size(12, 12);
         font_draw_text((x + 0x1D) << 6, (y - 0xB) << 6, (480 - (x + 0x1D)) << 6, plus);
@@ -863,4 +862,3 @@ void *shop_ui_draw_help(void *list, int x, int y, int alt, unsigned int flags, v
     }
     return list;
 }
-#endif

@@ -1,6 +1,5 @@
 // @range 0x08815280-0x08817D18
 // @asm 0x088153F4-0x0881559C
-// @asm 0x08817624-0x08817D18
 // @data 0x08823084-0x0882313C
 // @rodata 0x08822648-0x0882266C
 /* Drawing pieces shared by the panes and menus: lookups in sorted id tables, digit strips, framed
@@ -806,9 +805,7 @@ unsigned short dk_help_ids[2][6] = {
 };
 
 
-unsigned short dk_help_plus[2] = { 0xFF0B, 0 };   /* "+" (template of a local of dk_draw_help) */
 
-#ifdef NON_MATCHING /* (y + 7 + lh) + 12 e (0xD4 - w) - 0x1C não são reassociados no original; o mwcc 3.0 dobra as constantes */
 /* the button help window: flags select the lines (bit 0 title, 0x1000/0x2000/0x4000/0x8000 buttons) */
 void *dk_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *gim, void *strtbl)
 {
@@ -841,7 +838,7 @@ void *dk_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
     }
     if ((flags & 1) && (text = table_get_entry(strtbl, ids[0])) != 0) {
         font_set_size(12, 12);
-        tx = x + ((unsigned int)(0xD4 - (font_measure_text(text) >> 6) - 0x1C) >> 1);
+        tx = x + ((0xD4 - (font_measure_text(text) >> 6) - 0x1CU) >> 1);
         ty = y + 0x51 - lh;
         if (gim != 0) {
             list = draw_set_offsets(list, 0x1A, 0xB, 0x1A, 0xB);
@@ -877,12 +874,13 @@ void *dk_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
         font_set_size(12, 12);
         if (text != 0) {
             fit = font_measure_wtext(0x1340, text);
-            if (fit < 12) {
-                font_draw_wtext_ex((x + 5) << 6, (y + 7 + lh + 6) << 6, 0x1340, 0xC00, text, -1);
-            } else {
+            if (fit >= 12) {
                 font_set_size(fit, 12);
-                tx = x + 5 + ((0x4Du - (font_measure_text(text) >> 6)) >> 1);
-                font_draw_text(tx << 6, (y + 7 + lh + 12) << 6, (480 - tx) << 6, text);
+                tx = font_measure_text(text) >> 6;
+                tx = x + 5 + ((0x4Du - tx) >> 1);
+                font_draw_text(tx << 6, (y + 7 + lh + 12U) << 6, (480 - tx) << 6, text);
+            } else {
+                font_draw_wtext_ex((x + 5) << 6, (y + 7 + lh + 6U) << 6, 0x1340, 0xC00, text, -1);
             }
         }
     }
@@ -894,12 +892,13 @@ void *dk_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
         font_set_size(12, 12);
         if (text != 0) {
             fit = font_measure_wtext(0x1340, text);
-            if (fit < 12) {
-                font_draw_wtext_ex((x + 0x81) << 6, (y + 7 + lh + 6) << 6, 0x1340, 0xC00, text, -1);
-            } else {
+            if (fit >= 12) {
                 font_set_size(fit, 12);
-                tx = x + 0x81 + ((0x4Du - (font_measure_text(text) >> 6)) >> 1);
-                font_draw_text(tx << 6, (y + 7 + lh + 12) << 6, (480 - tx) << 6, text);
+                tx = font_measure_text(text) >> 6;
+                tx = x + 0x81 + ((0x4Du - tx) >> 1);
+                font_draw_text(tx << 6, (y + 7 + lh + 12U) << 6, (480 - tx) << 6, text);
+            } else {
+                font_draw_wtext_ex((x + 0x81) << 6, (y + 7 + lh + 6U) << 6, 0x1340, 0xC00, text, -1);
             }
         }
     }
@@ -918,10 +917,10 @@ void *dk_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
         list = draw_set_offsets(list, 9, 0x10, 9, 0x10);
         list = draw_sprite(list, x + 0x28, y - 0xE, 0, 5, 0x26, 0, 0);
         list = draw_set_offsets(list, 0x17, 0xB, 0x17, 0xB);
-        if (alt == 0)
-            list = draw_sprite(list, x + 5, y - 0xB, 0, 0x5E, 0x16, 0, 0);
-        else
+        if (alt != 0)
             list = draw_sprite(list, x + 5, y - 0xB, 0, 0x5E, 0x21, 0, 0);
+        else
+            list = draw_sprite(list, x + 5, y - 0xB, 0, 0x5E, 0x16, 0, 0);
         font_text_set(list);
         font_set_size(12, 12);
         font_draw_text((x + 0x1D) << 6, (y - 0xB) << 6, (480 - (x + 0x1D)) << 6, plus);
@@ -929,4 +928,3 @@ void *dk_draw_help(void *list, int x, int y, int alt, unsigned int flags, void *
     }
     return list;
 }
-#endif

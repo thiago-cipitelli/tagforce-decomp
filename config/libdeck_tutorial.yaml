@@ -36,7 +36,6 @@ segments:
       - [0x4CCC, c, dt_parts]
       - [0x4E40, asm, dt_parts_asm_08808DE0]
       - [0x4FE8, c, dt_parts]
-      - [0x7070, asm, dt_parts_asm_0880B010]
       - [0x7764, c, dt_lists]
       - [0x8E28, c, dt_move]
       - [0x99CC, asm, dt_move_asm_0880D96C]
