@@ -1,5 +1,4 @@
 // @range 0x08867EE0-0x088682AC
-// @asm 0x08867EE0-0x088682AC
 /* Portrait of a duelist at scale percent: the fixed portraits 1000..1012 (one sprite of the
    portrait sheet), or for charmap characters a body sprite plus the face (palette from the
    charmap entry). */
@@ -7,25 +6,26 @@
 
 void *gim_set_texture_sub(void *list, void *gim, int a, int b, int c, int frame);
 
-#ifdef NON_MATCHING /* usa $fp; alocação de registradores não reproduzida */
 void *chr_icon_draw(void *dl, int chr, int x, int y, int scale, void *face_gim, void *gim)
 {
     DdCharPos pos;
     int fixed = 0;
-    int u = 0, v = 0;
+    int u, v;
     int id, w;
 
     if (face_gim == 0 || gim == 0)
         return dl;
     id = charmap_lookup((unsigned short)chr, 0);
+    v = 0;
+    u = 0;
     switch (id) {
-    case 1012: u = 51; v = 168; fixed = 1; break;
-    case 1011: v = 168; fixed = 1; break;
-    case 1010: u = 204; v = 84; fixed = 1; break;
-    case 1009: u = 153; v = 84; fixed = 1; break;
-    case 1008: u = 102; v = 84; fixed = 1; break;
-    case 1007: u = 51; v = 84; fixed = 1; break;
     case 1000: v = 84; fixed = 1; break;
+    case 1007: u = 51; v = 84; fixed = 1; break;
+    case 1008: u = 102; v = 84; fixed = 1; break;
+    case 1009: u = 153; v = 84; fixed = 1; break;
+    case 1010: u = 204; v = 84; fixed = 1; break;
+    case 1011: v = 168; fixed = 1; break;
+    case 1012: u = 51; v = 168; fixed = 1; break;
     default:
         if (charmap_lookup2(id, &pos) == 0)
             return dl;
@@ -46,6 +46,3 @@ void *chr_icon_draw(void *dl, int chr, int x, int y, int scale, void *face_gim, 
     dl = draw_set_offsets(dl, 51, 50, w, scale * 50 / 100);
     return draw_sprite(dl, x, y, 0, pos.kind % 5 * 51, pos.kind / 5 * 50, 0, 0);
 }
-#else
-void *chr_icon_draw(void *dl, int chr, int x, int y, int scale, void *face_gim, void *gim);
-#endif
