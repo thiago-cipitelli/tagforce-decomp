@@ -1231,8 +1231,60 @@ int duel_ai_sum_088239EC(void)
             return 0;
         }
         switch (a->atk_id) {
-        case 0x1A65:
-            duel_088C87A8(a->player, a->zone, 0x1A65, ((duel_turn_player != a->player) + 1) * 16 | 2, 0);
+        case 0x12EA:
+        case 0x17D5:
+        case 0x1A2B:
+        case 0x1A2C:
+        case 0x1A2D:
+        case 0x1A2E:
+            duel_088C87A8(a->player, a->zone, a->atk_id, 5, 0);
+            break;
+        case 0x14A7:
+        case 0x14F7:
+        case 0x188F:
+        case 0x196B:
+        case 0x196C:
+        case 0x196D:
+        case 0x196E:
+        case 0x1990:
+        case 0x1A5C:
+            duel_088C87A8(a->player, a->zone, a->atk_id, 3, 0);
+            break;
+        case 0x19F7:
+        case 0x19F8:
+            if (duel_h_08914A18 & 0x20) {
+                duel_088C87A8(a->player, a->zone, a->atk_id, 3, 0);
+            }
+            break;
+        case 0x151E:
+            duel_088C87A8(a->player, a->zone, 0x151E, 1, 1);
+            break;
+        case 0x1481:
+        case 0x156A:
+        case 0x15ED:
+        case 0x1619:
+        case 0x16A4:
+        case 0x17BE:
+        case 0x1876:
+        case 0x1900:
+        case 0x1944:
+        case 0x1A7B:
+            duel_088C87A8(a->player, a->zone, a->atk_id, 2, 0);
+            break;
+        case 0x17D1:
+        case 0x1822:
+        case 0x185E:
+            duel_088C87A8(a->player, a->zone, a->id, 3, 0);
+            break;
+        case 0x1595:
+            duel_088CC178(a->player, a->zone, 1 - a->player);
+            break;
+        case 0x19D2:
+            duel_088CC178(a->player, a->zone, 1);
+            break;
+        case 0x18FE:
+            duel_088C87A8(a->player, a->zone, 0x18FE, 3, 0);
+            duel_088C77D4(a->player, a->atk_id, 1, duel_field_base_atk(a->player, a->zone));
             break;
         case 0x1A31:
             v = duel_field_atk(a->player, a->zone) / 2;
@@ -1241,57 +1293,35 @@ int duel_ai_sum_088239EC(void)
             }
             duel_088C87A8(a->player, a->zone, a->atk_id, 2, v);
             break;
-        case 0x18FE:
-            duel_088C87A8(a->player, a->zone, 0x18FE, 3, 0);
-            duel_088C77D4(a->player, a->atk_id, 1, duel_field_base_atk(a->player, a->zone));
-            break;
-        case 0x19D2:
-            duel_088CC178(a->player, a->zone, 1);
-            break;
-        case 0x1595:
-            duel_088CC178(a->player, a->zone, 1 - a->player);
-            break;
-        case 0x17D1:
-        case 0x1822:
-        case 0x185E:
-            duel_088C87A8(a->player, a->zone, a->id, 3, 0);
-            break;
-        case 0x1481: case 0x156A: case 0x15ED: case 0x1619: case 0x16A4: case 0x17BE: case 0x1876:
-        case 0x1900: case 0x1944: case 0x1A7B:
-            duel_088C87A8(a->player, a->zone, a->atk_id, 2, 0);
-            break;
-        case 0x151E:
-            duel_088C87A8(a->player, a->zone, 0x151E, 1, 1);
-            break;
-        case 0x19F7:
-        case 0x19F8:
-            if (duel_h_08914A18 & 0x20) {
-                duel_088C87A8(a->player, a->zone, a->atk_id, 3, 0);
-            }
-            break;
-        case 0x14A7: case 0x14F7: case 0x188F: case 0x196B: case 0x196C: case 0x196D: case 0x196E:
-        case 0x1990: case 0x1A5C:
-            duel_088C87A8(a->player, a->zone, a->atk_id, 3, 0);
-            break;
-        case 0x12EA: case 0x17D5: case 0x1A2B: case 0x1A2C: case 0x1A2D: case 0x1A2E:
-            duel_088C87A8(a->player, a->zone, a->atk_id, 5, 0);
+        case 0x1A65:
+            duel_088C87A8(a->player, a->zone, 0x1A65, ((duel_turn_player != a->player) + 1) * 16 | 2, 0);
             break;
         }
         if (duel_slot_faceup_live(a->player, a->zone) != 0) {
             ok = 0;
             switch (a->id) {
-            case 0x1A05:
-                ok = duel_h_08914A1A == 0x1A0C;
+            case 0x12B1:
+            case 0x1388:
+            case 0x14FC:
+            case 0x164A:
+            case 0x167C:
+            case 0x16F8:
+            case 0x16FB:
+            case 0x1745:
+            case 0x1788:
+            case 0x17C9:
+            case 0x17EE:
+            case 0x1807:
+            case 0x180B:
+            case 0x180C:
+            case 0x19A7:
+            case 0x1996:
+                ok = 1;
+            case 0x19F4:
+                ok = 1;
                 break;
-            case 0x19EF:
-            case 0x1A4E:
-                ok = (duel_h_08914A18 & 1) != 0;
-                break;
-            case 0x190A:
-                ok = 0;
-                if (duel_h_08914A1A == 0x190A) {
-                    ok = (duel_h_08914A18 & 0x20) == 0;
-                }
+            case 0x16F7:
+                ok = (duel_h_08914A18 & 0x20) != 0;
                 break;
             case 0x176C:
             case 0x185C:
@@ -1299,16 +1329,18 @@ int duel_ai_sum_088239EC(void)
             case 0x1A92:
                 ok = duel_h_08914A1A == a->id;
                 break;
-            case 0x16F7:
-                ok = (duel_h_08914A18 & 0x20) != 0;
+            case 0x190A:
+                ok = 0;
+                if (duel_h_08914A1A == 0x190A) {
+                    ok = (duel_h_08914A18 & 0x20) == 0;
+                }
                 break;
-            case 0x19F4:
-                ok = 1;
+            case 0x19EF:
+            case 0x1A4E:
+                ok = (duel_h_08914A18 & 1) != 0;
                 break;
-            case 0x12B1: case 0x1388: case 0x14FC: case 0x164A: case 0x167C: case 0x16F8: case 0x16FB:
-            case 0x1745: case 0x1788: case 0x17C9: case 0x17EE: case 0x1807: case 0x180B: case 0x180C:
-            case 0x19A7: case 0x1996:
-                ok = 1;
+            case 0x1A05:
+                ok = duel_h_08914A1A == 0x1A0C;
                 break;
             }
             if (ok) {

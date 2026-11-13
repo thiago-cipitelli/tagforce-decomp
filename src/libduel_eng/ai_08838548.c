@@ -178,7 +178,10 @@ int duel_08838980(unsigned int p)
 
 #define FIELDQ(T, f, q, z) (*(T *)((char *)&duel.players[0].field[0].f + ((q) & 1) * 0xFAC + (z) * 20))
 
-#ifdef NON_MATCHING /* alocação de registradores: o original reaproveita $s0 para q nas duas definições e usa ponteiro no segundo laço; aqui sobra um $s */
+#ifdef NON_MATCHING /* 32 palavras (eram 552): no caso 2 q e q & 0xFF trocam s0/s2 (a 2ª definição de q vira outro web); no caso 3
+   o original carrega duel_atk_zone antes de formar pl = &duel + ofs no corpo 0x18AB, e o | final do laço tem os operandos
+   trocados. Rodada 24: pl = &duel.players[(int)q & 1] no 2º laço (quebra a CSE da base com o 1º), case 0x154C: f = 1;
+   caindo em case 0x1954: f = 1; break; (dois corpos iguais), ponteiro s->field[0] andando no laço 5..9, !duel_atk_w28 */
 int duel_08838A84(unsigned int p)
 {
     unsigned int q = duel_atk_tp;
@@ -212,10 +215,12 @@ int duel_08838A84(unsigned int p)
             z = 1;
         }
         if (duel_atk_w28 == 0) {
+            DuelPlayer *pl = &duel.players[(int)q & 1];
+
             for (id = 0; id <= 4; id++) {
-                if (duel_slot_e8170(q, id, 0x19A8) && duel.players[q & 1].field[id].pos == 0 &&
+                if (duel_slot_e8170(q, id, 0x19A8) && pl->field[id].pos == 0 &&
                     !duel_slot_has_effect(q, id, 0xFB6)) {
-                    duel_088C4448(q, id, CARD_UID(duel.players[q & 1].field[id].card));
+                    duel_088C4448(q, id, CARD_UID(pl->field[id].card));
                     duel_088C87A8(q, id, 0xFB6, 2, 0);
                     z = 1;
                 }
@@ -257,7 +262,6 @@ int duel_08838A84(unsigned int p)
             break;
         case 0x154C:
             f = 1;
-            break;
         case 0x1954:
             f = 1;
             break;
@@ -269,7 +273,7 @@ int duel_08838A84(unsigned int p)
         }
         if (f) {
             duel_0884F30C(((p << 31 & 0x80000000) | 0x24200000 | (duel_atk_zone << 16 & 0x1F0000)) | (field_get_card(p, duel_atk_zone) & 0xFFFF),
-                          CARD_UID(duel.players[p & 1].field[duel_atk_zone].card), duel_atk_w28 == 0);
+                          CARD_UID(duel.players[p & 1].field[duel_atk_zone].card), !duel_atk_w28);
         }
         if (duel_atk_direct == 0 && FIELDQ(unsigned short, faceup, q, duel_atk_tz)) {
             f = 0;
@@ -280,23 +284,28 @@ int duel_08838A84(unsigned int p)
             }
             if (f) {
                 duel_0884F30C(((q << 31 & 0x80000000) | 0x24200000 | (duel_atk_tz << 16 & 0x1F0000)) | (field_get_card(q, duel_atk_tz) & 0xFFFF),
-                              CARD_UID(duel.players[q & 1].field[duel_atk_tz].card), duel_atk_w28 == 0);
+                              CARD_UID(duel.players[q & 1].field[duel_atk_tz].card), !duel_atk_w28);
             }
         }
-        for (z = 5; z < 10; z++) {
-            id = duel.players[q & 1].field[z].card.id;
+        {
+        DuelPlayer *s = (DuelPlayer *)((char *)&duel.players[q & 1] + 5 * sizeof(DuelSlot));
+        unsigned int m = (q << 31 & 0x80000000) | 0x24200000;
+
+        for (z = 5; z < 10; z++, s = (DuelPlayer *)((char *)s + sizeof(DuelSlot))) {
+            id = s->field[0].card.id;
             switch (id) {
             case 0x13F9:
             case 0x153F:
             case 0x1931:
-                if (SLOT_ACTIVE(&duel.players[q & 1].field[z])) {
-                    duel_0884F30C(((q << 31 & 0x80000000) | 0x24200000 | (z << 16 & 0x1F0000)) | (id & 0xFFFF),
-                                  CARD_UID(duel.players[q & 1].field[z].card), duel_atk_w28 == 0);
+                if (SLOT_ACTIVE(&s->field[0])) {
+                    duel_0884F30C(m | ((unsigned int)z << 16 & 0x1F0000) | (id & 0xFFFF),
+                                  CARD_UID(s->field[0].card), !duel_atk_w28);
                 }
                 break;
             }
         }
-        duel_088AFD5C(0x12, duel_atk_w28 == 0);
+        }
+        duel_088AFD5C(0x12, !duel_atk_w28);
         duel_w_089147D8 = 0;
         duel_w_08919610++;
         return 0;
@@ -304,12 +313,12 @@ int duel_08838A84(unsigned int p)
         if (duel_08837020() != 0) {
             return 0;
         }
-        if (duel_w_089147D8 == 0) {
-            return 1;
+        if (duel_w_089147D8 != 0) {
+            duel_088AFD5C(0x13, 0);
+            duel_w_089147D8 = 0;
+            return 0;
         }
-        duel_088AFD5C(0x13, 0);
-        duel_w_089147D8 = 0;
-        return 0;
+        return 1;
     }
     return 1;
 }

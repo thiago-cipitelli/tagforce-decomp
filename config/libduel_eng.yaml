@@ -307,7 +307,6 @@ segments:
       - [0xF3478, asm, msg_asm_088F7418]
       - [0xF3F14, c, effects_a]
       - [0xF4634, c, effects_b]
-      - [0xF4B94, asm, effects_b_asm_088F8B34]
       - [0xF5084, c, effects_c]
       - [0xF56C8, c, effects_d]
       - [0xF5C60, c, effects_e]

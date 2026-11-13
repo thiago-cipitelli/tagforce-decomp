@@ -243,19 +243,21 @@ void duel_088BD3F8(unsigned int p, int b, int i)
     }
 }
 
-#ifdef NON_MATCHING /* o original guarda p e max na pilha, usa $s8 e recarrega duel_w_089147E4 a cada escrita no anel; frame de 128 bytes contra 112 */
+#ifdef NON_MATCHING /* 8 palavras (eram 277): só o topo difere (sw de p antes do ext e sw de max antes do bnez; andi do índice no
+   delay slot). Rodada 24: anel por duel_chain.uids[(duel_chain.uids_head + n) & 0x7F] (o store por array global não
+   invalida o head nem cnt[j], e o mwcc não desenrola por 8), (int)c >> 16 & 0xFFFF, i int para o laço de zeragem */
 void duel_088BD4E0(unsigned int p, int b, unsigned int c)
 {
-    unsigned int i;
+    int i;
     int id;
     int lv;
-    int j;
     int k;
+    int j;
     int n;
     int max;
     int cnt[13];
 
-    max = c >> 16;
+    max = (int)c >> 16 & 0xFFFF;
     if (max == 0) {
         id = duel.players[p & 1].hand[c & 0xFFFF].id;
         if (!card_is_monster(id)) {
@@ -265,13 +267,13 @@ void duel_088BD4E0(unsigned int p, int b, unsigned int c)
             return;
         }
         lv = duel_list_card_level(p, CARD_UID(duel.players[p & 1].hand[c & 0xFFFF]));
-        if (lv < 5) {
+        if (lv <= 4) {
             return;
         }
         max = lv * 2;
     }
-    for (lv = 1; lv < 13; lv++) {
-        cnt[lv] = 0;
+    for (i = 1; i <= 12; i++) {
+        cnt[i] = 0;
     }
     for (i = 0; i < duel.players[p & 1].n_grave; i++) {
         id = duel.players[p & 1].grave[i].id;
@@ -284,7 +286,7 @@ void duel_088BD4E0(unsigned int p, int b, unsigned int c)
             n = 0;
             for (j = 12; j > 0; j--) {
                 for (k = lv == j; k < cnt[j]; k++) {
-                    duel_w_089147E8[(duel_w_089147E4 + n) & 0x7F] = j;
+                    duel_chain.uids[(duel_chain.uids_head + n) & 0x7F] = j;
                     n++;
                 }
             }

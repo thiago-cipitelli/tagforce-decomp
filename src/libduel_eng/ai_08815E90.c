@@ -61,10 +61,18 @@ extern unsigned int duel_atk_tp;       /* 0x08913F14 */
 extern int duel_atk_tz;                /* 0x08913F30 */
 extern unsigned int duel_w_08913CF4;
 extern int duel_w_08913EDC[5];
+
+typedef struct DuelAiView {            /* 0x08913CF4, see ai_0880B448.c */
+    unsigned int player;
+    int unk4[5];
+    DuelStats st[2][5];
+    int unk1d0[6];
+    int dmg[5];                        /* +0x1E8 = duel_w_08913EDC */
+} DuelAiView;
 extern DuelAct *duel_w_089147DC;       /* one past the card being resolved */
 
 extern unsigned int duel_turn_player;
-extern int duel_phase;
+extern unsigned int duel_phase;
 
 /* A spell/trap of p in the mask: a face-down one of kind 2-4 first, then face-up ones, then sets. */
 int duel_08815E90(unsigned int p, unsigned int mask)
@@ -600,49 +608,12 @@ int duel_08817550(unsigned int p, int i)
     return duel_list_card_level(p, CARD_UID(duel.players[p & 1].hand[i]));
 }
 
-#ifdef NON_MATCHING /* 5,8 KB: escolha do alvo por carta; o original compartilha os blocos de cada estratégia; mantida em asm */
+#ifdef NON_MATCHING /* 441 palavras (eram 1274; estrutura igual): a coloração de a/id/mask/b é s1/s2/s0/s3 no original e s2/s0/s1/s3
+   aqui; ordem/tipo das declarações, parâmetros, K&R, contadores dos laços (busca aleatória) não mudam. Rodada 24: ordem dos
+   case = ordem dos corpos no asm (sw.py), w = byte 2 de a para o a->zone do caso 0x1690, p reatribuído + q = p no caso 0x10D3,
+   v = atk < v ? v : atk (máximo em ternário), duel_phase unsigned, (unsigned)(kind - 0x12) < 2 */
 #define TARGET(q, z) do { duel_088A8D40(a, (q), (z)); return 1; } while (0)
 #define IN_MASK(q, z) (mask & 1 << ((z) + (q) * 16))
-
-/* Monster target for the destroying cards: the opponent's (or own for some), by duel_0880A54C. */
-static inline int duel_ai_target_monster(DuelAct *a, unsigned int mask)
-{
-    unsigned int q = a->player;
-    int z;
-
-    switch (a->id) {
-    case 0x1980:
-        if (duel_atk_tp == q && IN_MASK(duel_atk_tp, duel_atk_tz)) {
-            TARGET(duel_atk_tp, duel_atk_tz);
-        }
-        break;
-    case 0x130D:
-    case 0x130E:
-    case 0x13E3:
-    case 0x13E9:
-    case 0x13EA:
-    case 0x13F3:
-    case 0x149D:
-    case 0x1842:
-    case 0x18D1:
-        q = 1 - q;
-        break;
-    case 0x1237:
-        if (duel.players[(1 - q) & 1].lp < duel.players[q & 1].lp) {
-            q = 1 - q;
-        }
-        break;
-    }
-    z = duel_0880A54C(a, q, -1, 1);
-    if (z >= 0) {
-        TARGET(q, z);
-    }
-    z = duel_0880A54C(a, 1 - q, -1, 0);
-    if (z >= 0) {
-        TARGET(1 - q, z);
-    }
-    return -1;
-}
 
 /* The computer picks the targets of its card a (b: the card it answers, if any); id selects the strategy. */
 int duel_08817598(DuelAct *a, DuelAct *b, int id)
@@ -657,132 +628,303 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
     int v;
     unsigned int f;
     DuelStats st;
+    unsigned int w;
 
     if (mask == 0) {
         return 1;
     }
-    p = a->player;
+    w = ((unsigned char *)a)[2];
+    p = w & 1;
     duel_w_08913CF4 = p ^ a->opp;
     switch (id) {
-    case 0x16A2:
-        z = duel_088159C8(p, mask, duel_0881743C);
-        if (z >= 0) {
-            TARGET(a->player, z);
-        }
-        break;
-    case 0x158E:
-    case 0x18F0:
-        z = duel_088159C8(1 - a->player, mask, duel_088171D0);
-        if (z >= 0) {
-            TARGET(1 - a->player, z);
-        }
-        break;
-    case 0x14D3:
-    case 0x1538:
-        if (b != 0 && b->n_targets == 1 && ((unsigned short)duel_act_target(b, 0) >> 8 & 0xFF) < 11) {
-            t = duel_act_target(b, 0);
-            if (IN_MASK(t & 0xFF, (unsigned short)t >> 8 & 0xFF)) {
-                TARGET(t & 0xFF, (unsigned short)t >> 8 & 0xFF);
+    case 0x14B2:
+    case 0x1243:
+    case 0x1103:
+    case 0x14EB:
+    case 0x14BE:
+    case 0x1330:
+        /* the opponent's monster in the current battle */
+        if (duel_special.player[0] == 1 - a->player) {
+            if (IN_MASK(duel_special.player[0], duel_atk_zone)) {
+                TARGET(duel_special.player[0], duel_atk_zone);
             }
+        } else if (IN_MASK(duel_atk_tp, duel_atk_tz)) {
+            TARGET(duel_atk_tp, duel_atk_tz);
         }
-        if (a->kind - 0x12 < 2 && duel_special.player[0] == 1 - a->player &&
-            IN_MASK(duel_special.player[0], duel_atk_zone)) {
-            TARGET(duel_special.player[0], duel_atk_zone);
+        break;
+    case 0x1362:
+    case 0x1420:
+        if (IN_MASK(duel_atk_tp, duel_atk_tz)) {
+            TARGET(a->player, duel_atk_tz);
+        }
+        break;
+    case 0x10D3:
+    case 0x13E9:
+    case 0x1842:
+    case 0x13E3:
+        /* a monster of the opponent (or own for some), by duel_0880A54C */
+        p = a->player;
+        q = p;
+        switch (a->id) {
+        case 0x1237:
+            if (duel.players[(1 - p) & 1].lp < duel.players[p & 1].lp) {
+                q = 1 - p;
+            }
+            break;
+        case 0x130D:
+        case 0x130E:
+        case 0x13E3:
+        case 0x13E9:
+        case 0x13EA:
+        case 0x13F3:
+        case 0x149D:
+        case 0x1842:
+        case 0x18D1:
+            q = 1 - p;
+            break;
+        case 0x1980:
+            if (duel_atk_tp == p && IN_MASK(duel_atk_tp, duel_atk_tz)) {
+                TARGET(p, duel_atk_tz);
+            }
+            break;
+        }
+        z = duel_0880A54C(a, q, -1, 1);
+        if (z >= 0) {
+            TARGET(q, z);
+        }
+        z = duel_0880A54C(a, 1 - q, -1, 1);
+        if (z >= 0) {
+            TARGET(1 - q, z);
+        }
+        break;
+    case 0x132D:
+        if (((duel_turn_player != p && duel_phase == 5) || (duel_turn_player == p && duel_phase < 2)) &&
+            (z = duel_find_st(p, 0x1539)) >= 0) {
+            TARGET(a->player, z);
         }
         /* fall through */
-    case 0x1694:
-    case 0x172A:
-    case 0x178E:
-        z = duel_088159C8(a->player, mask, duel_08816FE4);
+    case 0xFFA:
+    case 0x1086:
+    case 0x117B:
+    case 0x12E6:
+    case 0x12EB:
+    case 0x134C:
+    case 0x134D:
+    case 0x137C:
+    case 0x147E:
+    case 0x119A:
+    case 0x119B:
+    case 0x1253:
+    case 0x12F8:
+    case 0x134B:
+    case 0x142E:
+    case 0x14C3:
+    case 0x14CB:
+    case 0x152A:
+    case 0x152B:
+    case 0x156C:
+    case 0x1005:
+    case 0x101E:
+    case 0x128D:
+    case 0x1298:
+    case 0x174C:
+    case 0x1388:
+    case 0x161E:
+    case 0x179A:
+    case 0x15B1:
+    case 0x15B4:
+    case 0x15F9:
+    case 0x15FA:
+    case 0x1617:
+    case 0x164B:
+    case 0x128E:
+    case 0x1718:
+    case 0x15A8:
+    case 0x14E1:
+    case 0x17DA:
+    case 0x18BB:
+    case 0x174D:
+    case 0x166F:
+    case 0x18F8:
+    case 0x1962:
+    case 0x1970:
+    case 0x19F3:
+    case 0x19F4:
+    case 0x1A09:
+    case 0x1A1E:
+    case 0x1A9A:
+        z = duel_0881616C(1 - a->player, mask, 1);
+        if (z >= 0) {
+            TARGET(1 - a->player, z);
+        }
+        z = duel_088163E4(a->player, mask);
         if (z >= 0) {
             TARGET(a->player, z);
         }
-        z = duel_08815548(1 - a->player, mask, 1, 0);
+        break;
+    case 0x11C3:
+    case 0x1227:
+    case 0x12FC:
+    case 0x1322:
+    case 0x13B0:
+    case 0x1466:
+    case 0x1281:
+    case 0x1284:
+    case 0x1656:
+    case 0x1685:
+    case 0x16CB:
+    case 0x1727:
+    case 0x1844:
+    case 0x186E:
+    case 0x18BA:
+    case 0x18C6:
+    case 0x16AB:
+    case 0x16BA:
+    case 0x19DB:
+    case 0x15E9:
+    case 0x1A6D:
+        /* destroy a card of the opponent, else one of p's own it wants gone */
+        z = duel_0881616C(1 - a->player, mask, 0);
+        if (z >= 0) {
+            TARGET(1 - a->player, z);
+        }
+        z = duel_088163E4(a->player, mask);
+        if (z >= 0) {
+            TARGET(a->player, z);
+        }
+        break;
+    case 0x171A:
+        z = duel_088159C8(1 - p, mask, duel_08817078);
         if (z >= 0) {
             TARGET(1 - a->player, z);
         }
         break;
-    case 0x184B:
-        if (b != 0 && b->n_targets == 1 && ((unsigned short)duel_act_target(b, 0) >> 8 & 0xFF) < 11) {
-            t = duel_act_target(b, 0);
-            if (IN_MASK(t & 0xFF, (unsigned short)t >> 8 & 0xFF)) {
-                TARGET(t & 0xFF, (unsigned short)t >> 8 & 0xFF);
-            }
-        }
-        return duel_08816D74(a, a->player);
-    case 0x16CE:
-        for (z = 0; z < 5; z++) {
-            if (IN_MASK(a->player, z) && (unsigned int)duel_w_08913EDC[z] > 1 && duel_field_def(a->player, z) != 0) {
-                TARGET(a->player, z);
-            }
-        }
-        break;
-    case 0x1978:
-        for (z = 0; z < 5; z++) {
-            q = a->player;
-            if (IN_MASK(q, z) && duel_088BFFD8(q, a->id, duel.players[q & 1].field[z].card.id) != 0) {
-                TARGET(a->player, z);
-            }
-        }
-        break;
-    case 0x188A:
-        z = duel_088159C8(p, mask, duel_08816FE4);
+    case 0x1537:
+        z = duel_088159C8(p, mask, duel_08816F48);
         if (z >= 0) {
             TARGET(a->player, z);
         }
         break;
-    case 0x157A:
-        z = duel_088159C8(p, mask, duel_08817408);
+    case 0x175D:
+        z = duel_088159C8(p, mask, duel_08817474);
         if (z >= 0) {
             TARGET(a->player, z);
         }
         break;
-    case 0x15B8:
-        if (b != 0 && b->player != p) {
-            for (i = 0; i < b->n_targets; i++) {
-                t = duel_act_target(b, i);
-                if ((t & 0xFF) == a->player && ((unsigned short)t >> 8 & 0xFF) < 5 && IN_MASK(t & 0xFF, (unsigned short)t >> 8 & 0xFF)) {
-                    TARGET(t & 0xFF, (unsigned short)t >> 8 & 0xFF);
-                }
-            }
+    case 0x1690:
+        if (duel_turn_player != p && IN_MASK(p, w << 26 >> 27)) {
+            TARGET(p, w << 26 >> 27);
         }
-        break;
-    case 0x146B:
-        z = duel_08815950(a, 1 - p, -1, 1, -1);
+        z = duel_08815950(a, p, 1, 1, -1);
         if (z >= 0) {
-            TARGET(1 - a->player, z);
+            TARGET(a->player, z);
         }
         break;
-    case 0x138D:
-    case 0x1475:
+    case 0x13EB:
+    case 0x1485:
+    case 0x1487:
+    case 0x1280:
+    case 0x128A:
+    case 0x1391:
+    case 0x15F5:
         q = 1 - a->player;
-        z = duel_08815950(a, q, 1, 0, -1);
+        z = duel_08815950(a, q, 1, 1, -1);
         if (z < 0) {
             q = 1 - q;
-            z = duel_08815950(a, q, 1, 0, -1);
+            z = duel_08815950(a, q, -1, -1, -1);
         }
         if (z >= 0) {
             TARGET(q, z);
         }
         break;
-    case 0x1326:
-    case 0x148D:
-        return duel_08816D74(a, a->player);
-    case 0x13FE:
-        if (duel_turn_player == p) {
-            return duel_08816D74(a, p);
+    case 0x14B9:
+    case 0x1612:
+    case 0x1624:
+    case 0x17FC:
+    case 0x1893:
+    case 0x1A7C:
+        q = a->player;
+        z = duel_08815950(a, q, 1, 1, -1);
+        if (z < 0) {
+            q = 1 - q;
+            z = duel_08815950(a, q, -1, -1, -1);
+        }
+        if (z >= 0) {
+            TARGET(q, z);
         }
         break;
-    case 0x10E6:
+    case 0x1853:
+    case 0x1945:
+        z = duel_08815950(a, a->player, 1, 0, -1);
+        if (z >= 0) {
+            TARGET(a->player, z);
+        }
+        break;
+    case 0x1669:
+        z = duel_088157AC(p, mask, -1);
+        if (z >= 0) {
+            TARGET(a->player, z);
+        }
+        break;
+    case 0x1889:
+        m = 0;
+        for (z = 0; z <= 10; z++) {
+            if (IN_MASK(a->player, z)) {
+                f = duel.players[a->player & 1].field[z].flags;
+                if ((f >> 22 & 1) + (f >> 23 & 1) != 0 &&
+                    card_attribute_icon_in_2_3(duel.players[a->player & 1].field[z].card.id) == 0) {
+                    m |= 1 << (z + a->player * 16);
+                }
+            }
+        }
+        z = duel_08815548(a->player, m, 1, 0);
+        if (z < 0) {
+            z = duel_08815548(a->player, mask, 1, 0);
+        }
+        if (z >= 0) {
+            TARGET(a->player, z);
+        }
+        break;
+    case 0x12BB:
+    case 0x1A0D:
+        z = duel_088159C8(1 - a->player, mask, duel_088171C8);
+        if (z >= 0) {
+            TARGET(1 - a->player, z);
+        }
+        break;
+    case 0x190E:
+        z = duel_088159C8(p, mask, duel_0881749C);
+        if (z >= 0) {
+            TARGET(a->player, z);
+        }
+        z = duel_088159C8(1 - a->player, mask, duel_0881749C);
+        if (z >= 0) {
+            TARGET(1 - a->player, z);
+        }
+        break;
+    case 0x12F1:
+    case 0x12F2:
+    case 0x1329:
+    case 0x132A:
+    case 0x1492:
+    case 0x192D:
+    case 0x16E3:
+        /* the monster of p in the current battle */
+        q = a->player;
+        z = duel_special.player[0] == q ? duel_atk_zone : duel_atk_tz;
+        if (IN_MASK(q, z)) {
+            TARGET(q, z);
+        }
+        return duel_08816D74(a, q);
     case 0x130A:
+    case 0x10E6:
     case 0x1581:
     case 0x1913:
         /* a monster of the opponent this one beats in battle */
         v = 0;
         for (z = 0; z < 5; z++) {
-            if (duel.players[a->player & 1].field[z].card.id != 0 && duel.players[a->player & 1].field[z].pos == 0 &&
-                v <= duel_field_atk(a->player, z)) {
-                v = duel_field_atk(a->player, z);
+            if (duel.players[a->player & 1].field[z].card.id != 0 && duel.players[a->player & 1].field[z].pos == 0) {
+                v = duel_field_atk(a->player, z) < v ? v : duel_field_atk(a->player, z);
             }
         }
         if (v == 0) {
@@ -804,192 +946,115 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
             }
         }
         break;
-    case 0x12F1:
-    case 0x12F2:
-    case 0x1329:
-    case 0x132A:
-    case 0x1492:
-    case 0x192D:
-    case 0x16E3:
-        /* the monster of p in the current battle */
-        q = a->player;
-        z = duel_special.player[0] != q ? duel_atk_tz : duel_atk_zone;
-        if (IN_MASK(q, z)) {
+    case 0x13FE:
+        if (duel_turn_player == p) {
+            return duel_08816D74(a, p);
+        }
+        break;
+    case 0x1326:
+    case 0x148D:
+        return duel_08816D74(a, a->player);
+    case 0x138D:
+    case 0x1475:
+        q = 1 - a->player;
+        z = duel_08815950(a, q, 1, 0, -1);
+        if (z < 0) {
+            q = 1 - q;
+            z = duel_08815950(a, q, 1, 0, -1);
+        }
+        if (z >= 0) {
             TARGET(q, z);
         }
-        return duel_08816D74(a, q);
-    case 0x190E:
-        z = duel_088159C8(p, mask, duel_0881749C);
-        if (z >= 0) {
-            TARGET(a->player, z);
-        }
-        z = duel_088159C8(1 - a->player, mask, duel_0881749C);
+        break;
+    case 0x146B:
+        z = duel_08815950(a, 1 - p, -1, 1, -1);
         if (z >= 0) {
             TARGET(1 - a->player, z);
         }
         break;
-    case 0x12BB:
-    case 0x1A0D:
-        z = duel_088159C8(1 - a->player, mask, duel_088171C8);
-        if (z >= 0) {
-            TARGET(1 - a->player, z);
-        }
-        break;
-    case 0x1889:
-        m = 0;
-        for (z = 0; z <= 10; z++) {
-            if (IN_MASK(a->player, z)) {
-                f = duel.players[a->player & 1].field[z].flags;
-                if ((f >> 23 & 1) != (f >> 22 & 1) &&
-                    card_attribute_icon_in_2_3(duel.players[a->player & 1].field[z].card.id) == 0) {
-                    m |= 1 << (z + a->player * 16);
+    case 0x15B8:
+        if (b != 0 && b->player != p) {
+            for (i = 0; i < b->n_targets; i++) {
+                t = duel_act_target(b, i);
+                q = t & 0xFF;
+                z = (unsigned short)t >> 8 & 0xFF;
+                if (q == a->player && z < 5 && IN_MASK(q, z)) {
+                    TARGET(q, z);
                 }
             }
         }
-        z = duel_08815548(a->player, m, 1, 0);
-        if (z < 0) {
-            z = duel_08815548(a->player, mask, 1, 0);
-        }
+        break;
+    case 0x157A:
+        z = duel_088159C8(p, mask, duel_08817408);
         if (z >= 0) {
             TARGET(a->player, z);
         }
         break;
-    case 0x1669:
-        z = duel_088157AC(p, mask, -1);
+    case 0x188A:
+        z = duel_088159C8(p, mask, duel_08816FE4);
         if (z >= 0) {
             TARGET(a->player, z);
         }
         break;
-    case 0x1853:
-    case 0x1945:
-        z = duel_08815950(a, a->player, 1, 0, -1);
-        if (z >= 0) {
-            TARGET(a->player, z);
+    case 0x1978:
+        for (z = 0; z < 5; z++) {
+            q = a->player;
+            if (IN_MASK(q, z) && duel_088BFFD8(q, a->id, duel.players[q & 1].field[z].card.id) != 0) {
+                TARGET(a->player, z);
+            }
         }
         break;
-    case 0x14B9:
-    case 0x1612:
-    case 0x1624:
-    case 0x17FC:
-    case 0x1893:
-    case 0x1A7C:
-        q = a->player;
-        z = duel_08815950(a, q, 1, 1, -1);
-        if (z < 0) {
-            q = 1 - q;
-            z = duel_08815950(a, q, -1, -1, -1);
-        }
-        if (z >= 0) {
-            TARGET(q, z);
+    case 0x16CE:
+        for (z = 0; z < 5; z++) {
+            if (IN_MASK(a->player, z) && (unsigned int)((DuelAiView *)&duel_w_08913CF4)->dmg[z] > 1 && duel_field_def(a->player, z) != 0) {
+                TARGET(a->player, z);
+            }
         }
         break;
-    case 0x13EB:
-    case 0x1485:
-    case 0x1487:
-    case 0x1280:
-    case 0x128A:
-    case 0x1391:
-    case 0x15F5:
-        q = 1 - a->player;
-        z = duel_08815950(a, q, 1, 1, -1);
-        if (z < 0) {
-            q = 1 - q;
-            z = duel_08815950(a, q, -1, -1, -1);
+    case 0x184B:
+        if (b != 0 && b->n_targets == 1 && ((unsigned short)duel_act_target(b, 0) >> 8 & 0xFF) < 11) {
+            t = duel_act_target(b, 0);
+            if (IN_MASK(t & 0xFF, (unsigned short)t >> 8 & 0xFF)) {
+                TARGET(t & 0xFF, (unsigned short)t >> 8 & 0xFF);
+            }
         }
-        if (z >= 0) {
-            TARGET(q, z);
+        return duel_08816D74(a, a->player);
+    case 0x1538:
+    case 0x14D3:
+        if (b != 0 && b->n_targets == 1 && ((unsigned short)duel_act_target(b, 0) >> 8 & 0xFF) < 11) {
+            t = duel_act_target(b, 0);
+            if (IN_MASK(t & 0xFF, (unsigned short)t >> 8 & 0xFF)) {
+                TARGET(t & 0xFF, (unsigned short)t >> 8 & 0xFF);
+            }
         }
-        break;
-    case 0x1690:
-        if (duel_turn_player != p && IN_MASK(p, a->zone)) {
-            TARGET(p, a->zone);
-        }
-        z = duel_08815950(a, p, 1, 1, -1);
-        if (z >= 0) {
-            TARGET(a->player, z);
-        }
-        break;
-    case 0x175D:
-        z = duel_088159C8(p, mask, duel_08817474);
-        if (z >= 0) {
-            TARGET(a->player, z);
-        }
-        break;
-    case 0x1537:
-        z = duel_088159C8(p, mask, duel_08816F48);
-        if (z >= 0) {
-            TARGET(a->player, z);
-        }
-        break;
-    case 0x171A:
-        z = duel_088159C8(1 - p, mask, duel_08817078);
-        if (z >= 0) {
-            TARGET(1 - a->player, z);
-        }
-        break;
-    case 0x1A6D: case 0x15E9: case 0x19DB: case 0x16BA: case 0x16AB: case 0x18C6: case 0x18BA:
-    case 0x186E: case 0x1844: case 0x1727: case 0x16CB: case 0x1685: case 0x1656: case 0x1284:
-    case 0x1281: case 0x1466: case 0x13B0: case 0x1322: case 0x12FC: case 0x1227: case 0x11C3:
-        /* destroy a card of the opponent, else one of p's own it wants gone */
-        z = duel_0881616C(1 - a->player, mask, 0);
-        if (z >= 0) {
-            TARGET(1 - a->player, z);
-        }
-        z = duel_088163E4(a->player, mask);
-        if (z >= 0) {
-            TARGET(a->player, z);
-        }
-        break;
-    case 0x132D:
-        if (((duel_turn_player != p && duel_phase == 5) || (duel_turn_player == p && duel_phase < 2)) &&
-            (z = duel_find_st(p, 0x1539)) >= 0) {
-            TARGET(a->player, z);
+        if ((unsigned int)(a->kind - 0x12) < 2 && duel_special.player[0] == 1 - a->player &&
+            IN_MASK(duel_special.player[0], duel_atk_zone)) {
+            TARGET(duel_special.player[0], duel_atk_zone);
         }
         /* fall through */
-    case 0x1A9A: case 0x1A1E: case 0x1A09: case 0x19F4: case 0x19F3: case 0x1970: case 0x1962:
-    case 0x18F8: case 0x166F: case 0x174D: case 0x18BB: case 0x17DA: case 0x14E1: case 0x15A8:
-    case 0x1718: case 0x128E: case 0x164B: case 0x1617: case 0x15FA: case 0x15F9: case 0x15B4:
-    case 0x15B1: case 0x179A: case 0x161E: case 5000: case 0x174C: case 0x1298: case 0x128D:
-    case 0x101E: case 0x1005: case 0x156C: case 0x152B: case 0x152A: case 0x14CB: case 0x14C3:
-    case 0x142E: case 0x134B: case 0x12F8: case 0x1253: case 0x119B: case 0x119A: case 0x147E:
-    case 0x137C: case 0x134D: case 0x134C: case 0x12EB: case 0x12E6: case 0x117B: case 0x1086:
-    case 0xFFA:
-        z = duel_0881616C(1 - a->player, mask, 1);
-        if (z >= 0) {
-            TARGET(1 - a->player, z);
-        }
-        z = duel_088163E4(a->player, mask);
+    case 0x1694:
+    case 0x172A:
+    case 0x178E:
+        z = duel_088159C8(a->player, mask, duel_08816FE4);
         if (z >= 0) {
             TARGET(a->player, z);
         }
-        break;
-    case 0x10D3:
-    case 0x13E3:
-    case 0x13E9:
-    case 0x1842:
-        if (duel_ai_target_monster(a, mask) > 0) {
-            return 1;
+        z = duel_08815548(1 - a->player, mask, 1, 0);
+        if (z >= 0) {
+            TARGET(1 - a->player, z);
         }
         break;
-    case 0x1362:
-    case 0x1420:
-        if (IN_MASK(duel_atk_tp, duel_atk_tz)) {
-            TARGET(duel_atk_tp, duel_atk_tz);
+    case 0x18F0:
+    case 0x158E:
+        z = duel_088159C8(1 - a->player, mask, duel_088171D0);
+        if (z >= 0) {
+            TARGET(1 - a->player, z);
         }
         break;
-    case 0x1103:
-    case 0x1243:
-    case 0x1330:
-    case 0x14B2:
-    case 0x14BE:
-    case 0x14EB:
-        /* the opponent's monster in the current battle */
-        if (duel_special.player[0] == 1 - a->player) {
-            if (IN_MASK(duel_special.player[0], duel_atk_zone)) {
-                TARGET(duel_special.player[0], duel_atk_zone);
-            }
-        } else if (IN_MASK(duel_atk_tp, duel_atk_tz)) {
-            TARGET(duel_atk_tp, duel_atk_tz);
+    case 0x16A2:
+        z = duel_088159C8(p, mask, duel_0881743C);
+        if (z >= 0) {
+            TARGET(a->player, z);
         }
         break;
     }

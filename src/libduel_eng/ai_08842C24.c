@@ -80,18 +80,20 @@ int duel_08842C24(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* registradores: o original guarda (p & 1) * 0xFAC em s1 e testa duel_w_08919640 num switch */
+#ifdef NON_MATCHING /* 1 palavra (eram 328): or a0,v0,s0 contra or a0,s0,v0 no argumento de duel_0884AF20 do caso 3. Rodada 24:
+   switch no caso 0x14, if (f != 0) { if (w614 != 0) return 1; ... } return 0 no caso 0x16, laço do caso 0x1E como em
+   duel_08843344 (pl = &duel + ofs primeiro, máscara içada pelo mwcc), tipos das declarações por busca (hill.py) */
 #define PFO(T, f) (*(T *)((char *)&duel.players[0].f + ofs))
 int duel_08842D98(void)
 {
-    unsigned int p = duel_turn_player;
-    int ofs = (p & 1) * 0xFAC;
-    unsigned int b24 = PFO(unsigned int, flags) >> 24 & 1;
-    int has = duel_slot_has_effect(p, 0xB, 0x13B1);
     int z;
+    unsigned int n;
+    unsigned int p = duel_turn_player;
     int id;
+    unsigned int ofs = (p & 1) * 0xFAC;
     int m;
-    int n;
+    int b24 = PFO(unsigned int, flags) >> 24 & 1;
+    int has = duel_slot_has_effect(p, 0xB, 0x13B1);
 
     switch (duel_w_08919600) {
     case 0:
@@ -166,14 +168,17 @@ int duel_08842D98(void)
         duel_w_08919600 = 0x14;
         return 0;
     case 0x14:
-        if (duel_w_08919624 == 5) {
+        switch (duel_w_08919624) {
+        case 3:
+            if (duel_08836868(p) != 0) {
+                duel_w_08919614 = 0;
+                duel_w_0891960C = 0;
+                duel_w_08919600++;
+                return 0;
+            }
+            break;
+        case 5:
             duel_w_08919600 = 0x1E;
-            return 0;
-        }
-        if (duel_w_08919624 == 3 && duel_08836868(p) != 0) {
-            duel_w_08919614 = 0;
-            duel_w_0891960C = 0;
-            duel_w_08919600++;
             return 0;
         }
         duel_w_08919600 = 2;
@@ -185,27 +190,30 @@ int duel_08842D98(void)
         duel_w_08919600++;
         return 0;
     case 0x16:
-        if (duel_0883F174(p) == 0) {
-            return 0;
-        }
-        if (duel_w_08919614 == 0) {
+        if (duel_0883F174(p) != 0) {
+            if (duel_w_08919614 != 0) {
+                return 1;
+            }
             duel_cmd((p != 0 ? 0x8000 : 0) | 0x10, 0, 0, 0);
             duel_w_08919600 = 2;
-            return 0;
         }
-        return 1;
+        return 0;
     case 0x1E:
         if (duel_phase == 2 || duel_phase == 4) {
-            for (z = 0; z < 5; z++) {
+            DuelPlayer *pl = (DuelPlayer *)((char *)&duel + ofs);
+
+            for (z = 0; z <= 4; z++) {
                 id = field_get_card(p, z);
-                if (id == 0x1954 && PFO(DuelSlot, field[z]).faceup != 0
-                    && duel_0884F30C((p << 31 & 0x80000000) | 0x600000 | (z << 16 & 0x1F0000) | 0x1954,
-                                     CARD_UID(PFO(DuelCard, field[z].card)), 0) != 0) {
-                    return 0;
+                switch (id) {
+                case 0x1954:
+                    if (pl->field[z].faceup != 0
+                        && duel_0884F30C((p << 31 & 0x80000000) | 0x600000 | ((unsigned int)z << 16 & 0x1F0000) | (id & 0xFFFF),
+                                         CARD_UID(pl->field[z].card), 0) != 0) {
+                        return 0;
+                    }
                 }
             }
             duel_088AFD5C(4, 0);
-            return 1;
         }
         return 1;
     }
