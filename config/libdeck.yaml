@@ -53,8 +53,6 @@ segments:
       - [0x15328, c, dk_word]
       - [0x166FC, c, dk_osk]
       - [0x16BC4, c, dk_help_ui]
-      - [0x17788, asm, dk_help_ui_asm_0881B728]
-      - [0x177C4, c, dk_help_ui]
       - [0x1944C, asm, dk_help_ui_asm_0881D3EC]
       - [0x19714, c, dk_help_ui]
       - [0x19978, c, dk_help]

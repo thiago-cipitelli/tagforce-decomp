@@ -34,17 +34,17 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
 void *rv_draw_sprite(void *list, RvSprite *s, void *gim);
 int rv_card_pict(unsigned short *page, unsigned short *u, unsigned short *v, RvEntry *e, int *alt);
 
-#ifdef NON_MATCHING /* forma igual; a largura w e x/y ficam em outros $s em todas as ordens de declaração testadas */
+#ifdef NON_MATCHING /* 2 palavras (eram 18; forma de dk_draw_digits): o original passa t0 (9) antes de a3 (w) para draw_set_offsets e põe a3 no atraso do jal */
 /* n with digit sprites (7 x 9) from the right; fmt = style << 8 | digits */
 void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned short fmt, unsigned int color, void *gim)
 {
-    int w;
-    short x = pos & 0xFFFF;
-    short y = pos >> 16 & 0xFFFF;
-    unsigned char style = fmt >> 8 & 0xFF;
+    int px = (short)(pos & 0xFFFF);
+    short py = pos >> 16 & 0xFFFF;
+    unsigned char style = fmt >> 8;
     unsigned char digits = fmt & 0xFF;
     int gap = 0;
-
+    int w;
+    short x;
     int i;
 
     if (gim == 0)
@@ -55,8 +55,6 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
     switch (style) {
     case 3:
         gap = -1;
-        w = 7;
-        break;
     case 0:
         w = 7;
         break;
@@ -66,11 +64,10 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
         break;
     }
     list = draw_set_offsets(list, w, 9, w, 9);
-    gap = w + gap;
-    x += (short)((digits - 1) * gap);
+    x = px + (short)((digits - 1) * (w + gap));
     for (i = 0; i < digits; i++) {
-        list = draw_sprite(list, x, y, 0, n % 10 * w, 0, 0, 0);
-        x -= (short)gap;
+        list = draw_sprite(list, x, py, 0, n % 10 * w, 0, 0, 0);
+        x -= (short)(w + gap);
         n /= 10;
         if (!zeros && n == 0)
             break;
