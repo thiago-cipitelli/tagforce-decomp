@@ -918,17 +918,16 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             break;
         case 10:
         case 11:                       /* equips (11: equip spell) */
-            pl = &duel.players[src & 1];
+            pl = &duel.players[sp & 1];
             s = &pl->field[sz];
             id = s->card.id;
             if (id != 0) {
                 if (s->faceup != 0 && !SLOT_NEGATED(s)) {
                     if (card_get_type(id) == 0x17) {
-                        v = IMMUNE(st->imm2, p, sp);
-                    } else {
-                        v = IMMUNE(st->imm, p, sp);
-                    }
-                    if (!AFFECTS(v)) {
+                        if (!AFFECTS(IMMUNE(st->imm2, p, sp))) {
+                            break;
+                        }
+                    } else if (!AFFECTS(IMMUNE(st->imm, p, sp))) {
                         break;
                     }
                     switch (id) {
