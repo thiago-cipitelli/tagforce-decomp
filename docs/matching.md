@@ -2369,3 +2369,31 @@ As três bateram (39, 490 e 278 palavras -> 0), sem bug de lógica (só equival�
   `switch (m->cur) { default: state = 4; break; case 13: ...; return; case 4: ...; return; } m->dest = m->cur;`
   dá o bloco do `dest` depois do `case 4`; o id escolhido passa por `sel = -1; if (best[0].id != -1) sel = ...`.
   O laço de deslocamento desenrolado por 8 já saía igual do mwcc.
+## Rodada 26 (`engS3`): `duel_field_stats` batendo (2214 -> 0 palavras)
+
+`field_stats.c` inteiro em C (12 KB, `@rodata 0x08911EE8-0x08911F20` para a tabela do `switch (kind)`). Ordem que
+funcionou: estrutura primeiro (`fd.py --struct`), depois slots de pilha, por fim registradores.
+- **Corpos iguais em `case` separados vs um grupo**: o 219 não funde corpos iguais. Quando o original tem
+  `beql` (corpo no delay slot) no 1º teste e `beq; nop` nos demais rótulos que chegam ao mesmo corpo, os rótulos
+  são UM grupo `case A: case B: ...` (14 grupos estavam partidos em `case A: x; break; case B: x; break;`, que dá
+  `beql` nos dois). Um `case` único que o original dobra (`beql`) e cujo corpo existe fora de linha com `b; nop`
+  continua separado (`0x14EB`/`0x15F8`). Script de fusão automática: `build/tmp/engS3/merge.py`.
+- **Ponteiro de slot vs base sem o `+48`**: quando o original acessa `48(s5)`, `56(s5)`, `64(s5)` (s5 = jogador
+  + z*20) o fonte é `pl->field[sz].campo` / `duel.players[p & 1].field[i].campo`, não `s = &...; s->campo`; o
+  ponteiro `s` só existe onde o original o guarda (na pilha, para o teste do fim). Isso sozinho levou a moldura de
+  176 para os 192 do original e 2214 -> 699 palavras.
+- **`if ((id = x) != 0)` com `unsigned short id`**: o teste usa o valor largo e o `andi 0xffff` sai depois, onde o
+  `id` é usado (`andi s0,a0,0xffff` antes do `jal card_get_type`). `id = x; if (id != 0)` não gera o `andi`.
+- **Slots de pilha das variáveis derramadas = ordem de declaração** (a 1ª declarada no endereço mais alto), mas
+  cada uso independente de uma variável (um contador que só existe num `case`) e cada temporário CSE (`1 - p`
+  usado duas vezes) entram como variáveis novas: dê-lhes variável própria (`k` para o contador do `0x19EF`, `op =
+  1 - p`) e mova a declaração; `build/tmp/engS3/slots.py` imprime os pares (slot original, slot compilado).
+- **Registradores de `$v/$a` num laço**: contador, flag e contagem do `0x18D3` trocados; resolveu usar como
+  contador uma variável declarada por último (`j`) e como flag uma anterior (`k`).
+- Outros: `atk_bon + (atk_eff + atk_eq)` nas somas finais; `pl->lp > opp.lp` (ordem das cargas); argumento =
+  valor do `switch` (`duel_grave_count_id(p, st->id)`); `st->def = st->atk = 1000` grava `atk` primeiro;
+  `n = n < 0 ? 0 : n` dá `bgez; nop; move` (o `if` dá `bgezl`); `(unsigned short)v >> 8 & 0xFF` dá `ext`;
+  `i <= 4` para `slti at`; `def_bon`/`fixed` sem inicializador na declaração (zerados como 1º comando) para o
+  `sw` no delay slot da 1ª chamada; `switch (link) { case 1: ...; case 2: ... }` no `0x12C6`.
+- **Lógica**: `duel_field_type_ex` comparado como `unsigned short` no `0x149F` (o original faz `andi 0xffff` no
+  retorno); o resto das mudanças é equivalente (fusões, ordem de somas, índices).
