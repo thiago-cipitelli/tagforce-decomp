@@ -2397,3 +2397,30 @@ funcionou: estrutura primeiro (`fd.py --struct`), depois slots de pilha, por fim
   `sw` no delay slot da 1ª chamada; `switch (link) { case 1: ...; case 2: ... }` no `0x12C6`.
 - **Lógica**: `duel_field_type_ex` comparado como `unsigned short` no `0x149F` (o original faz `andi 0xffff` no
   retorno); o resto das mudanças é equivalente (fusões, ordem de somas, índices).
+## Rodada 27 (`skD`): reteste do skip de libduel_draw/libduel_mgr
+
+- **Sorteios com sinal antes das contas** (`dd_fx_shatter_update`, 1079 -> 639 palavras, 205 -> 60 linhas de
+  estrutura): `DD_RAND(r) / 32767.0f * s * (DD_RAND(r) % 2 * 2 - 1)` nos três argumentos de um `vec3_set` gera, para
+  cada argumento, o `% 2` com sinal (`bgez; beqzl`), e esses desvios partem o bloco básico: sorteios e divisões
+  ficam intercalados e o `32767.0f` é recarregado a cada uso. O original faz os seis sorteios seguidos (z, y, x;
+  sinal antes da magnitude), divide cada magnitude logo depois do seu sorteio com o `32767.0f` num registrador só,
+  e só então calcula sinais e produtos. Fonte: locais de bloco `int zs, ys, xs; float zm, ym, xm;` preenchidos em
+  ordem (`zs = DD_RAND(r); zm = DD_RAND(r) / 32767.0f; ...`, macro `DD_RAND6`) e `vec3_set(p, xm * 35.0f * (xs % 2
+  * 2 - 1), ...)`; com fator externo, `step * (xm * k * sg)` entre parênteses (sem eles o `step` é convertido uma
+  vez e multiplica primeiro). Locais no nível da função pioram (308 -> 412 linhas). Vale para qualquer
+  `DD_RAND_SGN` repetido num mesmo comando; a ordem é a mesma do port (`#ifndef __MWERKS__`).
+- **Leitura volátil de parte de uma cópia** (`dd_info_stats`, 7 -> 4): `((volatile int *)si)[2]` em 3 das 7 cópias
+  de `si[]` para `st`; ~800 combinações de ordem dos comandos x subconjunto volátil (busca aleatória) não passam
+  de 4 (o original lê `si[2]` antes de `si[6]` e grava `def` antes de `kind`).
+- **Busca gulosa de uma linha** (`build/tmp/fableE_tools/greedy.py`) tirou 7 de `dd_burst2_update` (gravar
+  `flame[1].u = 0.2f` antes de `flame[0].x`). Cuidado: em `dd_zone_rebuild` o melhor movimento (24 -> 12) punha
+  `o->next->prev = o->prev` depois de `o->prev = o->next = 0` (desreferência nula): conferir a lógica de todo
+  movimento aceito.
+- **Família do teste de entrada mantido** (9 entradas): o original testa as duas pontas do laço interno com
+  `slti at` (`z <= 4`, não `z < 5`, que dá `slti v1` no fim); o 219 só mantém o teste de entrada quando não sabe o
+  valor inicial (`z = p >> 31 >> 1` mantém, mas gera `sra`; zerar `z` depois do laço interno em vez de antes
+  mantém, mas põe um `b` de entrada no externo). Zero opaco (`p - p`, `p ^ p`, `p * 0`, `(int)0.0f`), `const`
+  local/global, tipos e formas do incremento: todos dobrados. A única função batendo com esse teste
+  (`dd_cursor_cycle`) tem o laço dentro de um `case` alcançado pela tabela de saltos.
+- `debug_menu_draw`/`debug_menu_update` (fuzzy 0 no relatório): existem, mas não têm C nenhum (só `@asm`, menu de
+  depuração inalcançável), então o asm_try não acha a função no objeto.
