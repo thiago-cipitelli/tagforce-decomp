@@ -182,9 +182,9 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             break;
         case 0x129E:
         case 0x154A:                   /* 300 for each 0x1278, 0x142D and 0xFC9 in both graveyards */
-            for (q = 0; q < 2; q++) {
-                pl = &duel.players[q & 1];
-                for (i = 0; i < pl->n_grave; i++) {
+            for (n = 0; n < 2; n++) {
+                pl = &duel.players[n & 1];
+                for (i = 0; i < *(volatile unsigned int *)&pl->n_grave; i++) {
                     switch (pl->grave[i].id) {
                     case 0xFC9:
                     case 0x142D:
@@ -211,8 +211,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             }
             break;
         case 0x1336:
-            atk_eff += duel.players[p & 1].n_hand * -400;
-            def_eff += duel.players[p & 1].n_hand * -400;
+            atk_eff -= duel.players[p & 1].n_hand * 400;
+            def_eff -= duel.players[p & 1].n_hand * 400;
             break;
         case 0x133D:
             if (duel_count_monsters_special(1 - p) > 0) {
@@ -220,8 +220,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             }
             break;
         case 4999:
-            st->atk = duel.players[p & 1].n_hand * 1000;
-            st->def = duel.players[p & 1].n_hand * 1000;
+            st->atk = st->def = duel.players[p & 1].n_hand * 1000;
             break;
         case 5000:                     /* the slot value holds ATK | DEF << 16, or a bonus with flag bit 3 */
             if (SLOT.flags & 8) {
