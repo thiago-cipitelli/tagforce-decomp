@@ -34,8 +34,6 @@ segments:
       - [0x968, c, s_chr]
       - [0x19D4, asm, s_chr_asm_08805974]
       - [0x1BC8, c, s_chr]
-      - [0x1C30, asm, s_chr_asm_08805BD0]
-      - [0x1E84, c, s_chr]
       - [0x235C, c, s_player]
       - [0x2988, asm, s_player_asm_08806928]
       - [0x2A10, c, s_player]

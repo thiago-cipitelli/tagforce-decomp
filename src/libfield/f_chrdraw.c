@@ -1,9 +1,6 @@
 // @range 0x08805DF4-0x08806FC4
-// @rodata 0x08834E14-0x08834E3C
-// @asm 0x08805DF4-0x08805FD0
-// @asm 0x08805FD0-0x08806200
+// @rodata 0x08834DB4-0x08834E3C
 // @asm 0x08806200-0x08806390
-// @asm 0x08806390-0x08806A14
 // @asm 0x08806CE0-0x08806DF0
 // @asm 0x08806E6C-0x08806ED4
 /* Drawing of the SD characters: the 3D model, the sprite sheets (sd_*_sla.gim) as billboards under
@@ -22,7 +19,6 @@ void mat4_transform_vec4(Vec4 *out, Mat4 *m, Vec4 *v);
 void fld_sprite_quad(float x, FieldVtx *q, int tw, int th, int u, int v, int w, int h, float y,
                      unsigned int color);
 
-#ifdef NON_MATCHING /* bate (0 palavras) com c->anim lido por *(volatile int *) (o original o lê antes de c->dir), mas a tabela de saltos (0x08834DB4) vem antes das de fld_chr_model_quads e fld_chr_sprite_quad (ainda em asm): promover as três juntas */
 /* character drawn as a model of two quads (sheet by facing: even dir tex[1], odd tex[0]) at its
    matrix, the second one moved by the light offset of field_chr_glb; then its effect */
 void *fld_chr_draw_model(void *list, FieldChr *c)
@@ -71,9 +67,7 @@ void *fld_chr_draw_model(void *list, FieldChr *c)
         list = fld_fx_draw(list, (void *)c->fx);
     return list;
 }
-#endif
 
-#ifdef NON_MATCHING /* bate (0 palavras), mas a tabela de saltos (0x08834DD4) fica entre a de fld_chr_draw_model e a de fld_chr_sprite_quad, ainda em asm; promover junto com elas */
 /* the two quads of a character model (which 1 upper, 0 lower half) with the sheet cell of its facing
    pair: the idle cell, or the walk cell of frame % 6 */
 void fld_chr_model_quads(int which, FieldVtx *q, int dir, int anim, int frame)
@@ -169,7 +163,6 @@ void fld_chr_model_quads(int which, FieldVtx *q, int dir, int anim, int frame)
     q[1].z = 0.0f;
     q[0].z = 0.0f;
 }
-#endif
 
 #ifdef NON_MATCHING /* C novo, conferido com o asm. 2 palavras: o teste do case 2 sai beq/nop para o corpo do default no original, beql com cópia aqui (ordens dos case e default fundido testados) */
 /* character drawn from its two sprite sheets: tex[1] first, then tex[0] over it, each a billboard
@@ -228,7 +221,6 @@ void mtx_get34(Mat4 *m);
 void mat4_scale(Mat4 *out, Mat4 *m, float s);
 void mat4_transform_vec4(Vec4 *out, Mat4 *m, Vec4 *v);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm (mesma sequência de chamadas; parte inteira igual). 121 palavras, todas no cálculo dos vértices: o original carrega todas as constantes float em registradores antes das contas; a tabela de saltos fica entre as de fld_chr_model_quads e fld_chr_group */
 /* the quad of a sprite character (which 1 the body sheet, 0 the head sheet) at the screen position
    of its matrix: the cell by facing (five columns, mirrored for the left facings) and frame */
 void fld_chr_sprite_quad(int which, FieldVtx *q, FieldChr *c)
@@ -251,10 +243,6 @@ void fld_chr_sprite_quad(int which, FieldVtx *q, FieldChr *c)
     Mat4 view __attribute__((aligned(16)));
     Mat4 model __attribute__((aligned(16)));
     Mat4 m __attribute__((aligned(16)));
-    float u1;
-    float u0;
-    float v0;
-    float v1;
 
     camera_get();
     switch (dir) {
@@ -343,54 +331,45 @@ void fld_chr_sprite_quad(int which, FieldVtx *q, FieldChr *c)
     mat4_transform_vec4(&b, &m, &b);
     switch (which) {
     case 0:
-        t = dy;
-        u1 = (u + 51) / 512.0f;
-        q[0].u = u1;
-        v0 = v / 256.0f;
-        q[0].v = v0;
-        u0 = u / 512.0f;
+        q[0].u = (u + 51) / 512.0f;
+        q[0].v = v / 256.0f;
         q[0].x = a.x + 26.0f;
-        v1 = (v + 50) / 256.0f;
-        q[0].y = a.y + 80.0f - 12.0f + t;
+        q[0].y = a.y + 80.0f - 12.0f + dy;
         q[0].z = b.z + 5.0f + 1.0f;
-        q[1].u = u0;
-        q[1].v = v0;
+        q[1].u = u / 512.0f;
+        q[1].v = v / 256.0f;
         q[1].x = a.x - 25.0f;
-        q[1].y = a.y + 80.0f - 12.0f + t;
+        q[1].y = a.y + 80.0f - 12.0f + dy;
         q[1].z = b.z + 5.0f + 1.0f;
-        q[2].u = u1;
-        q[2].v = v1;
+        q[2].u = (u + 51) / 512.0f;
+        q[2].v = (v + 50) / 256.0f;
         q[2].x = a.x + 26.0f;
-        q[2].y = a.y + 80.0f - 50.0f - 12.0f + t;
+        q[2].y = a.y + 80.0f - 50.0f - 12.0f + dy;
         q[2].z = b.z + (a.z - b.z) * 0.625f + 5.0f + 1.0f;
-        q[3].u = u0;
-        q[3].v = v1;
+        q[3].u = u / 512.0f;
+        q[3].v = (v + 50) / 256.0f;
         q[3].x = a.x - 25.0f;
-        q[3].y = a.y + 80.0f - 50.0f - 12.0f + t;
+        q[3].y = a.y + 80.0f - 50.0f - 12.0f + dy;
         q[3].z = b.z + (a.z - b.z) * 0.625f + 5.0f + 1.0f;
         break;
     case 1:
-        u1 = (u + 51) / 512.0f;
-        q[0].u = u1;
-        v0 = v / 256.0f;
-        q[0].v = v0;
-        u0 = u / 512.0f;
+        q[0].u = (u + 51) / 512.0f;
+        q[0].v = v / 256.0f;
         q[0].x = a.x + 26.0f;
-        v1 = (v + 64) / 256.0f;
         q[0].y = a.y + 64.0f - 12.0f;
         q[0].z = b.z + (a.z - b.z) * 0.2f + 5.0f;
-        q[1].u = u0;
-        q[1].v = v0;
+        q[1].u = u / 512.0f;
+        q[1].v = v / 256.0f;
         q[1].x = a.x - 25.0f;
         q[1].y = a.y + 64.0f - 12.0f;
         q[1].z = b.z + (a.z - b.z) * 0.2f + 5.0f;
-        q[2].u = u1;
-        q[2].v = v1;
+        q[2].u = (u + 51) / 512.0f;
+        q[2].v = (v + 64) / 256.0f;
         q[2].x = a.x + 26.0f;
         q[2].y = a.y - 12.0f;
         q[2].z = a.z + 5.0f;
-        q[3].u = u0;
-        q[3].v = v1;
+        q[3].u = u / 512.0f;
+        q[3].v = (v + 64) / 256.0f;
         q[3].x = a.x - 25.0f;
         q[3].y = a.y - 12.0f;
         q[3].z = a.z + 5.0f;
@@ -409,7 +388,6 @@ void fld_chr_sprite_quad(int which, FieldVtx *q, FieldChr *c)
         q[3].u = t;
     }
 }
-#endif
 
 void fld_ortho_begin(void)
 {

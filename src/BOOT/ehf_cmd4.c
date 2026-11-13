@@ -409,7 +409,7 @@ unsigned int ehf_axis_vtx[0x90 / 4] = {
     0x00000000, 0x00000000, 0x3F800000, 0x3F000000, 0xBFDDB3D7, 0x00000000,
 };
 
-#ifdef NON_MATCHING /* lógica conferida; 51 palavras, só registradores $t/$v (o original dá t0 a k0 e v1 a n; testadas ordem das declarações, ordem f/n, reaproveitar k0 no laço e na cauda, laço por índice, função inline no lugar da macro). Rodada 23: k1->frame e k->frame lidos em locais antes das zeragens (o original não relê depois dos sb), cópia por *(Vec4 *)&kv_ (sem ela o mwcc propaga os registradores para o destino), temporários da zeragem no escopo da função: 102 -> 51 */
+#ifdef NON_MATCHING /* lógica conferida; 49 palavras, só registradores $t/$v (o original dá t0 a k0 e v1 a n; testadas ordem das declarações, ordem f/n, reaproveitar k0 no laço e na cauda, laço por índice, função inline no lugar da macro). Rodada 23: k1->frame e k->frame lidos em locais antes das zeragens (o original não relê depois dos sb), cópia por *(Vec4 *)&kv_ (sem ela o mwcc propaga os registradores para o destino), temporários da zeragem no escopo da função: 102 -> 51. Rodada 25: laço como do/while guardado com p atribuído dentro da guarda (o addiu de p sai depois do bnez, como no original): 51 -> 49 */
 /* 0x10312: *arg0 interpolated between the keys (frame, vector) arg1, arg6, ... at the node frame. */
 /* a Vec4 built from a key: zeroed byte by byte, filled, then copied (as the original); the zeroing
    temporaries kz_/kn_ are locals of the caller */
@@ -452,19 +452,23 @@ int ehf_cmd_keys(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
         EHF_KEY_VEC(*out, k0);
         return 0;
     }
-    for (p = &cmd->a.p[5], i = 1; i < n; i++, p += 5) {
-        EhfKey *k1 = p[1];
-        int f1 = k1->frame;
-        EhfKey *k = p[-4];
+    i = 1;
+    if (i < n) {
+        p = &cmd->a.p[5];
+        do {
+            EhfKey *k1 = p[1];
+            int f1 = k1->frame;
+            EhfKey *k = p[-4];
 
-        if (f < f1) {
-            int f0 = k->frame;
+            if (f < f1) {
+                int f0 = k->frame;
 
-            EHF_KEY_VEC(a0, k);
-            EHF_KEY_VEC(a1, k1);
-            vec4_lerp((float)(f - f0) / (float)(f1 - f0), out, &a0, &a1);
-            return 0;
-        }
+                EHF_KEY_VEC(a0, k);
+                EHF_KEY_VEC(a1, k1);
+                vec4_lerp((float)(f - f0) / (float)(f1 - f0), out, &a0, &a1);
+                return 0;
+            }
+        } while (i++, p += 5, i < n);
     }
     {
         EhfKey *k = cmd->a.p[n * 5 - 4];

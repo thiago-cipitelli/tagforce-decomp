@@ -1,5 +1,4 @@
 // @range 0x0882D208-0x0882D9F0
-// @asm 0x0882D208-0x0882D7EC
 // @data 0x088ED820-0x088ED858
 /* Toon shading for models: two 64x32 ramps drawn into VRAM at 0x1F0000 from the step tables of
    the draw context (light ramp in 5650, the second one in 4444), then layers lit by light 0
@@ -84,26 +83,22 @@ unsigned int *tms_env_light(unsigned int *list, int after);
 unsigned int *tms_env_light_add(unsigned int *list, int after);
 int toon_tex_hook(unsigned int **list, int *t, int mat, int layer, void *arg);
 
-
-RampVtx toon_ramp0[4] = { { -1, 0, 0, 0 }, { -1, 0, 32, 0 }, { -1, 64, 0, 0 }, { -1, 64, 32, 0 } };
-RampVtx toon_ramp1[3] = { { 0, 0, 32, 0 }, { 0, 64, 0, 0 }, { 0, 64, 32, 0 } };
-
-#ifdef NON_MATCHING /* 40 palavras: a metade do segundo degradê troca os $s de v/n/layer (s2/s3/s4 no original, s3/s4/s2 aqui; testados variáveis novas, blocos, funções inline por metade, ordem das declarações). Rodada 23: modelos dos vértices como locais inicializados em blocos, alocação da sublista como função inline (os tamanhos ficam abaixo dos modelos na pilha), tamanho n * sizeof(RampVtx) e laços com p = v antes do for: 306 -> 40 */
 /* Memory inside the current list for n bytes (a sceGu sublist skipped over by a jump). */
 static inline unsigned int *toon_alloc(unsigned int *list, RampVtx **p, int n)
 {
-    void *layer = dl_get_layer();
-    void *base;
     unsigned int size;
+    void *base;
+    void *cur;
+    void *layer = dl_get_layer();
 
     dl_set_list(list);
     dl_set_cur_list_base(list = dl_select_layer((int)layer, &size));
     sceGuStart(2, list, size);
     *p = sceGuGetMemory(n);
-    layer = dl_get_layer();
+    cur = dl_get_layer();
     base = dl_get_cur_list_base();
     dl_set_list((unsigned int *)((char *)base + sceGuFinish() - 8));
-    return dl_select_layer((int)layer, 0);
+    return dl_select_layer((int)cur, 0);
 }
 
 unsigned int *model_outline_begin(unsigned int *list, ToonModel *m, ToonDraw *c)
@@ -138,20 +133,23 @@ unsigned int *model_outline_begin(unsigned int *list, ToonModel *m, ToonDraw *c)
 
         n = c->n0 * 2;
         list = toon_alloc(list, &v, n * sizeof(RampVtx));
-        p = v;
-        for (i = 0; i < c->n0; i++, p += 2) {
-            short col = (unsigned char)((c->val0[i] & 0xF0) >> 4) << 12;
-            short x;
-
-            p[1].c = col;
-            p[0].c = col;
-            x = c->pos0[i] * 64.0f;
-            p[0].x = x;
-            p[0].y = 0;
-            p[0].z = 0;
-            p[1].x = x;
-            p[1].y = 32;
-            p[1].z = 0;
+        i = 0;
+        if (i < c->n0) {
+            p = v;
+            do {
+                short col = (unsigned char)((c->val0[i] & 0xF0) >> 4) << 12;
+                short x;
+    
+                p[1].c = col;
+                p[0].c = col;
+                x = c->pos0[i] * 64.0f;
+                p[0].x = x;
+                p[0].y = 0;
+                p[0].z = 0;
+                p[1].x = x;
+                p[1].y = 32;
+                p[1].z = 0;
+            } while (i++, p += 2, i < c->n0);
         }
     }
     list = gfx_set_draw_target(list, 0x1F0000, -2, 0x40, 0x20, 0);
@@ -188,21 +186,24 @@ unsigned int *model_outline_begin(unsigned int *list, ToonModel *m, ToonDraw *c)
 
         n = c->n1 * 2;
         list = toon_alloc(list, &v, n * sizeof(RampVtx));
-        p = v;
-        for (i = 0; i < c->n1; i++, p += 2) {
-            unsigned char k = (unsigned char)((c->val1[i] & 0xF0) >> 4);
-            short col = k * 0x101 + k * 0x10;
-            short x;
-
-            p[1].c = col;
-            p[0].c = col;
-            x = c->pos1[i] * 64.0f;
-            p[0].x = x;
-            p[0].y = 0;
-            p[0].z = 0;
-            p[1].x = x;
-            p[1].y = 32;
-            p[1].z = 0;
+        i = 0;
+        if (i < c->n1) {
+            p = v;
+            do {
+                unsigned char k = (unsigned char)((c->val1[i] & 0xF0) >> 4);
+                short col = k + (k << 4) + (k << 8);
+                short x;
+    
+                p[1].c = col;
+                p[0].c = col;
+                x = c->pos1[i] * 64.0f;
+                p[0].x = x;
+                p[0].y = 0;
+                p[0].z = 0;
+                p[1].x = x;
+                p[1].y = 32;
+                p[1].z = 0;
+            } while (i++, p += 2, i < c->n1);
         }
     }
     list = gfx_set_draw_target(list, 0x1F0000, -2, 0x40, 0x20, 2);
@@ -213,7 +214,6 @@ unsigned int *model_outline_begin(unsigned int *list, ToonModel *m, ToonDraw *c)
     m->tex_hook = toon_tex_hook;
     return list;
 }
-#endif
 
 unsigned int *model_outline_end(unsigned int *list, ToonModel *m)
 {
