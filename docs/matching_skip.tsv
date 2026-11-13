@@ -129,7 +129,6 @@ duel_card_fits_zone	libduel_eng	17 palavras: ordem dos blocos do ramo do equipam
 duel_ai_0881E27C	libduel_eng	6 palavras: cópia morta depois de b; ~20 variantes if/goto/ternário (rodada 17)
 duel_0887F8E4	libduel_eng	132 palavras de registradores: p em v0, a->id em a2, constantes em v1 (rodada 17)
 ll_move_list	liblimitlist	22 palavras: temporários das primeiras cargas; 90 ordens de declaração, 120 de atribuição (rodada 17)
-fclk_list_setup	libfield	22 palavras: gravações de x/y/cor antes dos read-modify-write de bitfield (rodada 17)
 fbag_item1_draw	libfield	91 palavras: o original mantém &field_bag em s1 através das chamadas (rodada 17)
 tpt_sprite	libtitle	127 palavras: o original derrama p e y e mantém x em s8 (rodada 17)
 efs_run	BOOT	239 palavras: ~68 bytes de cópias mortas depois de return -1 nos laços (rodada 17)

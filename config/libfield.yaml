@@ -95,8 +95,6 @@ segments:
       - [0x23514, c, f_date]
       - [0x23CA4, c, f_clock]
       - [0x24044, c, f_hour]
-      - [0x24158, asm, f_hour_asm_088280F8]
-      - [0x243AC, c, f_hour]
       - [0x24A0C, asm, f_hour_asm_088289AC]
       - [0x24AF0, c, f_hour]
       - [0x2511C, c, f_egg]

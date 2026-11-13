@@ -1,5 +1,4 @@
 // @range 0x08827FE4-0x088290BC
-// @asm 0x088280F8-0x0882834C
 // @asm 0x088289AC-0x08828A90
 // @rodata 0x08839924-0x088399B4
 /* Menu of the hour to wait until (field_hour_menu): the title window, the choice list with its help
@@ -56,7 +55,7 @@ void fclk_title_setup(void)
     d->x = 240.0f - d->w * 0.5f;
 }
 
-#ifdef NON_MATCHING /* the stores of x, y and color are scheduled after the bitfields; the original has them first */
+/* visible = 1 first: the constant 1 then sits in a register before the x/y/color stores, as in the original */
 void fclk_list_setup(void)
 {
     MenuWidget *w = &field_hour_menu.w[0];
@@ -76,6 +75,7 @@ void fclk_list_setup(void)
         }
     }
     memset(w, 0, sizeof(*w));
+    d->visible = 1;
     d->x = 0x9D;
     d->y = 100;
     d->color = 0xFFFFFFFF;
@@ -83,7 +83,6 @@ void fclk_list_setup(void)
     w->keep_open = 1;
     w->style = 2;
     w->buttons = 0;
-    d->visible = 1;
     d->auto_size = 1;
     d->open_anim = 1;
     d->close_anim = 1;
@@ -101,7 +100,6 @@ void fclk_list_setup(void)
     menu_open(w);
     d->x = 240.0f - d->w * 0.5f;
 }
-#endif
 
 int fclk_list_width(void)
 {
