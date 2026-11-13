@@ -44,8 +44,6 @@ segments:
       - [0x5340, asm, f_bgdraw_asm_088092E0]
       - [0x5514, c, f_bgdraw]
       - [0x5CA0, c, f_npc]
-      - [0x635C, asm, f_npc_asm_0880A2FC]
-      - [0x65EC, c, f_npc]
       - [0x6CD4, c, f_player]
       - [0x7BF8, c, f_res]
       - [0x8224, c, f_pool]

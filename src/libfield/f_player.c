@@ -167,8 +167,8 @@ void fld_player_stop(void)
 
 void fld_player_setup(float x, float z, int dir)
 {
-    fld_chr_setup(&field_player.c, 1, 1, 0, 0, 0, dir, 1, 0, (int)fld_player_loaded_a,
-                  (int)fld_player_loaded_b, 0);
+    fld_chr_setup(&field_player.c, 1, 1, 0, 0, 0, dir, 1, 0, fld_player_loaded_a,
+                  fld_player_loaded_b, 0);
     field_player.c.pos.x = x;
     field_player.c.pos.z = z;
     fld_map_height(&field_player.c.pos, x, z);

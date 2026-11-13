@@ -127,7 +127,7 @@ void fpt_draw(void)
 
 void fpt_setup(int kind, int id)
 {
-    fld_chr_setup(&field_partner.c, kind, id, 0, 0, 0, 0, 1, 0, (int)fpt_loaded_a, (int)fpt_loaded_b, 0);
+    fld_chr_setup(&field_partner.c, kind, id, 0, 0, 0, 0, 1, 0, fpt_loaded_a, fpt_loaded_b, 0);
     fpt_place();
     fld_map_height(&field_partner.c.pos, field_partner.c.pos.x, field_partner.c.pos.z);
     field_partner.active = 1;

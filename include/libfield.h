@@ -985,7 +985,7 @@ int fld_draw_add(void *shadow, int volume, float scale, int area, void *fn, void
 void fld_load_gim(int name, void (*cb)(int *file, void *arg), void *arg);
 void *fld_gim_get(int i);
 int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir, int visible,
-                  int arg8c, int a, int b, int fx);
+                  int arg8c, void (*a)(), void (*b)(), int fx);
 void fld_chr_get_pos(Vec3 *out, FieldChr *c);
 void fld_chr_corners(Vec3 *p, float r, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d);
 void fld_map_height(Vec3 *p, float x, float z);

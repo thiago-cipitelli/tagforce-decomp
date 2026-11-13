@@ -12,7 +12,7 @@ void fld_sprites_add(int fx);                    /* 0x08826BD8 */
 void fld_pos_set(Vec3 *pos, int x, int z);     /* 0x08807EE0 */
 int fld_chr_kind(int id);                      /* 0x08806DF0 */
 int fld_chr_tex(int id);                       /* 0x08806E6C */
-void fld_load_chr(int id, int n, int arg, FieldChr *c); /* 0x0880C53C */
+void fld_load_chr(int id, int n, void (*cb)(), FieldChr *c); /* 0x0880C53C */
 Vec3 *fld_light_dir(void);                     /* 0x08818878 */
 #ifdef __MWERKS__
 void fld_chr_draw_model(void);                 /* 0x08805DF4 */
@@ -50,7 +50,7 @@ void fld_chr_term(void)
 }
 
 int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir, int visible,
-                  int arg8c, int a, int b, int fx)
+                  int arg8c, void (*a)(), void (*b)(), int fx)
 {
     c->kind = kind;
     c->id = id;
