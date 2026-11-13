@@ -2270,3 +2270,35 @@ muda centenas de palavras): use `fd.py --struct` como métrica. `build/tmp/engR4
   mwcc (mantido para o port) NÃO liga o modo sem limpeza no 219: o gatilho do original continua desconhecido.
 - **Bugs de lógica**: `duel_field_stats` passava `(short)s->unk4` a `duel_field_type_ex` (o original usa `lhu`,
   sem sinal) e tinha `duel_slot_value_1909` com retorno `unsigned short` no protótipo local (o original não estreita).
+## Rodada 25 (`engR1`): `duel_08850F44` (resolução do elo da corrente) refeito do asm
+
+`chain_resolve.c` (9,2 KB, 17,7% fuzzy, nunca na fila): o rascunho tinha os passos 4 e 7 em funções `static`
+separadas e os globais da resolução como símbolos avulsos. Diferença estrutural (`fd.py --struct`, alinhada) de
+~2300 linhas para 15; registradores todos iguais fora de 3 `v0/v1`; o multiconjunto de `jal` bate (135).
+Métrica: com tamanho diferente, a contagem posicional do `asm_try`/`mwcc_check --size` não serve (um
+desvio de 3 instruções no meio vira 1000 palavras); usar o número de linhas `!` do `fd.py --struct` e do
+`fd.py` sem `--struct` filtrando só relocações/alvos de desvio (`build/tmp/engR1/nr.sh`).
+- **Globais avulsos que são campos da `DuelChain`**: `duel_w_089148F0..08914900` (+0x5A0..+0x5B0, inclusive
+  `duel_step` = +0x5A8), `duel_w_08914920` (`n_kinds`), `08914924` (`unk5d4`), `089149D4` (+0x684),
+  `089147D8/DC` (+0x488/+0x48C). Nomeados em `include/duel.h` (`res_step`, `card_step`, `res_target`,
+  `res_cnt`, `resolving`, `n_cleanup`, `unk5a0`, `unk684`). Só isso tirou centenas de linhas.
+- **`duel_w_0891968C` é `duel.unk3830` (halfword)**: o rascunho o declarava `int` e fazia `sw`/`lw` de 32 bits
+  (apagava também `unk3832`): bug de lógica; o original faz `sh zero`/`lhu` (0x290, 0x1370).
+- **Variáveis do `case` num bloco próprio** (`case 4: { unsigned int t; ... }`): as variáveis de bloco são
+  criadas depois das da função e recebem os `$s` baixos; como função `static` separada ou `static inline`
+  a coloração ficava toda deslocada (`a` em `s4`/`s5` em vez de `s2`) e, com `static inline`, os `return 1`
+  do meio iam para o fim do corpo inline (um `b` para outro `b`) em vez do epílogo.
+- **Uma variável nova por laço** (rodada 8) no 2º laço do passo 7 (`q2`, `z2`, `i2` declarados nessa ordem no
+  bloco do `if`): 3 trocas de `$s` resolvidas.
+- **Parâmetro `unsigned int` de helper inline mantém o índice e evita a CSE do endereço**:
+  `duel_link_announce(duel_chain.unk480 - 1)` com `unsigned int i` recalcula `&acts[i]` (como o original) e
+  dá `i + 1` como `addiu` do índice; com `int i` o 219 reaproveitava `a`.
+- **`(unsigned int)z << 16 & 0x1F0000`**: com `int z` o 219 reduz `z << 16` a uma variável de indução
+  (`lui 1; addu` por volta) e falta registrador (o contador vai para a pilha, quadro +16).
+- **CARD_UID com dois índices de texto diferente** (`hand[...]` com `(unsigned char)p & 1` no `owner` e
+  `p & 1` no `uid_hi`): o original recalcula a base do jogador depois de cada `duel_hand_find_name`; com o
+  mesmo texto o 219 iça a base para antes da 1ª chamada. Falta o `andi 0xff` antes do `andi 1` (o 219 sabe que
+  `p` vem de um bitfield de 1 bit): mesma família de `duel_088862DC` (rodada 24), 3 palavras por bloco.
+- `if (c) { if (z >= 5) continue; } else if (z < 5) continue;` (não o ternário) para `beqzl; slti` +
+  `bnezl; li` do original; `switch (id) { case 0x1596: case 0x1598: ...; break; }` para `beql; beq; nop; b`;
+  `if (unk480 > 1) prev = a - 1; else prev = 0;` para o `bnez` com o `prev = 0` fora de linha.
