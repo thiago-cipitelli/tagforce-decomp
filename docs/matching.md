@@ -2457,3 +2457,31 @@ Bateram `dt_draw_hint2`/`dt_draw_hint3` (29% -> 0), `rv_scroll_add` (+ `rv_scrol
   `tpanel_init`, `tfd_main_text` (wrapper inline, tipos), `shop_open_layout`, `shop_draw_shelf` (tipos do
   protótipo, volatile), `shop_shelf_input` (`default: return;` liga o modo sem
   limpeza da rodada 19 e acerta o `b; b` da junção, mas os testes continuam 2 antes de 1).
+## Rodada 27 (`skE1`): reteste do `matching_skip` (libduel_eng, metade 1)
+
+Bateram `duel_0884ADAC` (4 -> 0), `duel_ai_atk_08822000` (7 -> 0), `duel_08863780` (21 -> 0), `duel_0886E590`
+(16 -> 0) e `duel_08813A6C` (36 -> 0); `duel_08862E5C` caiu de 13 para 2. Idiomas:
+- **`li v0,1` repetido no original (o mwcc sabe que `v0` já vale 1)** = `goto` para um `return 1` compartilhado.
+  `duel_08863780`: `default: goto ret1;` no 1º `switch` e `ret1: return 1;` no fim da função (o `return 1` direto
+  no `default` deixava o mwcc pular o `li`). `duel_08813A6C`: o `bnel ... li v0,1` do teste `n_targets != 1` é um
+  `goto ret1` para DENTRO do `default` do `switch` interno (`default: ret1: return 1;`); o mwcc encadeia o desvio
+  até o epílogo e repete o `li` no atraso. O `return 1` compartilhado também tirou o `andi 0xff` que faltava
+  (`p = (unsigned char)t` com `z` `unsigned char`).
+- **`b fim; nop` depois do último `case` de um `switch` interno numa função `int`** (`duel_08862E5C`): `default:
+  return r;` no `switch` interno, mesmo sendo o mesmo `return r` que vem depois.
+- **Troca de registradores contador/índice (ou contador/ponteiro de indução)**: reaproveitar variáveis que a função
+  já tem, com papéis trocados. Uma busca exaustiva de pares (índice, contador) entre os locais (264 compilações,
+  `for (j = 0, i = 0; i < n; i++) ... j++;`) achou `duel_ai_atk_08822000`; em `duel_0886E590` o laço da cadeia
+  passou a usar `ok` (já morto) como contador. Ordem/escopo/tipo das declarações não mexiam nesses casos.
+- **`i++` agendado tarde** no passo do laço: `for (...; i++, p = a->player)` (o `p = a->player` no fim do corpo
+  dava o `addiu` de `i` cedo).
+- **Soma num campo global** em vez de um local (`duel_0884ADAC`): `duel_dlg_cards.n += id[i] != 0;` com o campo
+  zerado antes do laço reproduz o `move v0,zero` + `addu t5,v0,a1` do 1º passo desenrolado; com `n` local o mwcc
+  punha o zero no próprio registrador do acumulador.
+- Sem forma nesta rodada (testados com as técnicas 22-26): `duel_0883D798` (1), `duel_ai_0881E27C` (6, `return;`
+  sem valor, `goto`, `else return r` não ligam o modo de cópias mortas numa função `int`), `duel_088D1F1C` (8;
+  `grave = ...; opp = ...; grave ^= 1;` acerta o delay slot mas troca a0/v0: 10), `duel_08871674` (9),
+  `duel_0882E0A8` (9: todas as atribuições de papéis entre `zz/id/k/z/i` dão 9), `duel_088441D0` (12),
+  `duel_0880C15C` (20), `duel_0883449C` (20: todas as 120 associações do `|` dão 20), `duel_0883BB00` (25: ordem
+  das declarações não muda os slots), `duel_piles_swap` (106), `duel_field_controller` (102: `ofs`/`zo`
+  explícitos viram um ponteiro de slot, 315).

@@ -1,5 +1,4 @@
 // @range 0x0884ACD0-0x0884B094
-// @asm 0x0884ADAC-0x0884AF20
 /* Dialog requests to the host (duel_host_call 0x31, sub-command, two arguments): messages,
    prompts with a card or a text, yes/no questions; each one only for the local player. */
 #include "duel.h"
@@ -57,29 +56,26 @@ void duel_0884AD40(char *fmt, int uid)
     duel_host_call(0x31, 1, (int)buf, uid);
 }
 
-#ifdef NON_MATCHING /* ids num array local (os sw na pilha); 4 palavras: o original materializa o n = 0 (move v0,zero) depois do primeiro sltu, o mwcc o põe antes do laço desenrolado */
+/* soma direto em duel_dlg_cards.n: com um local n o mwcc punha o n = 0 antes do laço desenrolado */
 void duel_0884ADAC(int msg, int a, int b, int c, int d, unsigned int f)
 {
     int id[4];
-    int n;
     int i;
 
     id[0] = a;
     id[1] = b;
     id[2] = c;
     id[3] = d;
-    n = 0;
+    duel_dlg_cards.n = 0;
 
     for (i = 0; i < 4; i++) {
         duel_dlg_cards.c[i].id = id[i];
         duel_dlg_cards.c[i].mark = f >> i & 1;
-        n += id[i] != 0;
+        duel_dlg_cards.n += id[i] != 0;
     }
-    duel_dlg_cards.n = n;
     duel_dlg_cards.unk0 = 0;
     duel_host_call(0x31, 3, msg, 0);
 }
-#endif
 
 int duel_0884AF20(int a)
 {

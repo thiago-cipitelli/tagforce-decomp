@@ -34,7 +34,7 @@ int duel_08862E24(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* igual ao original exceto um b para a instrução seguinte (b fim; nop) depois do último case do switch interno, que o mwcc não emite */
+#ifdef NON_MATCHING /* 2 palavras: o original carrega duel_w_08914904 com lui v0; lw v1 (aqui lui v1; lw v1); o b fim; nop depois do último case vem do default: return r; */
 int duel_08862E5C(DuelAct *a, int b)
 {
     int r = 1;
@@ -82,6 +82,8 @@ int duel_08862E5C(DuelAct *a, int b)
         case 0x1624:
             r = duel_088619C4(a, b);
             break;
+        default:
+            return r;
         }
         break;
     }
