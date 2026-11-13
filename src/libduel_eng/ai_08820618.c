@@ -1,6 +1,6 @@
 // @range 0x08820618-0x08827618
 // @asm 0x088239EC-0x08824798
-// @data 0x089078C0-0x08907908
+// @data 0x08907898-0x08907908
 /* The computer player's choice of a card to activate (second part): the tables of cards checked
    on the field and in the hand, and the step machine that goes through them. */
 #include "duel.h"
