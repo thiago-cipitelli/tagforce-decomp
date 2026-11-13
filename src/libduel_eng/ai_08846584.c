@@ -50,7 +50,6 @@ void duel_08846584(int mode, int view)
 {
     unsigned int ap = duel_special.player[0];   /* attacker */
     unsigned int tp = duel_special.player[1];   /* attacked player */
-    unsigned int op;
     unsigned int pk;
     int zk;
     int k;
@@ -60,14 +59,15 @@ void duel_08846584(int mode, int view)
     int n;                             /* halvings of the attacker's modifier */
     int h;
     int n2;
+    int once;
     int h2;
     int nul;
+    int nul2;
     int sign;
     int c;
     int r;
     int x;
     int id;
-    int once;
     unsigned int e;
     unsigned int ep;
     unsigned int ez;
@@ -121,15 +121,14 @@ void duel_08846584(int mode, int view)
     add = 0;
     add2 = 0;
     n = duel_slot_count_src(ap, duel_special.zone[0], 0x1381);
-    op = 1 - (int)ap;
-    h = duel_find_effect_card(op, 0x1905, -1);
+    h = duel_find_effect_card((1 - (int)ap), 0x1905, -1);
     h += duel_find_effect_card(ap, 0x1905, duel_special.zone[0]);
     n += h;
     nul = 0;
     if ((st[ap].attr == 4 || (st[ap].mask & 0x10)) != 0 && duel_count_active(0x1951) != 0) {
         nul = 1;
     }
-    if (duel_slot_e8170(ap, duel_special.zone[0], 0x1955) != 0 && duel_count_monsters(op) == 2) {
+    if (duel_slot_e8170(ap, duel_special.zone[0], 0x1955) != 0 && duel_count_monsters((1 - (int)ap)) == 2) {
         n--;
     }
     if (SLOT_ACTIVE(&duel.players[ap & 1].field[duel_special.zone[0]])) {
@@ -158,7 +157,7 @@ void duel_08846584(int mode, int view)
             break;
         case 0x1643:
             if (duel_special.unk8 == 0) {
-                add += st[op].batk;
+                add += st[(1 - (int)ap)].batk;
             }
             break;
         case 0x1956:
@@ -234,9 +233,9 @@ void duel_08846584(int mode, int view)
         h2 = duel_find_effect_card(1 - tp, 0x1905, -1);
         h2 += duel_find_effect_card(tp, 0x1905, duel_special.zone[1]);
         n2 += h2;
-        nul = 0;
+        nul2 = 0;
         if (((st[ap].attr == 4) || ((st[ap].mask & 0x10) != 0)) != 0 && duel_count_active(0x1951) != 0) {
-            nul = 1;
+            nul2 = 1;
         }
         if (duel_slot_e8170(tp, duel_special.zone[1], 0x1955) != 0 && duel_count_monsters(1 - tp) == 2) {
             n2--;
@@ -286,16 +285,16 @@ void duel_08846584(int mode, int view)
         for (i = 0; i < h2; i++) {
             add2 = (add2 + 1) >> 1;
         }
-        if (nul) {
+        if (nul2) {
             add = 0;
         }
-        st[op].atk += sign * add;
-        st[op].def += sign * add2;
+        st[(1 - (int)ap)].atk += sign * add;
+        st[(1 - (int)ap)].def += sign * add2;
 
         /* 0x1238: the attacker gains half of the target's ATK per card */
         r = duel_slot_affected_ex(ap, duel_special.zone[0], 0x1238);
         once = 0;
-        x = r * ((st[op].atk + 1) >> 1);
+        x = r * ((st[(1 - (int)ap)].atk + 1) >> 1);
         DUEL_HALVE(x, n, i);
         st[ap].atk += x;
         if (mode > 1) {
@@ -320,7 +319,7 @@ void duel_08846584(int mode, int view)
             duel_effect_applies(0x1A66, ap, duel_slot_immunity(ap, duel_special.zone[0])) != 0) {
             once = 1;
         }
-        if (once && st[ap].atk < st[op].atk) {
+        if (once && st[ap].atk < st[(1 - (int)ap)].atk) {
             x = 1000;
             DUEL_HALVE(x, n, i);
             once = 0;
@@ -328,7 +327,7 @@ void duel_08846584(int mode, int view)
         }
         /* 0x159E on the target: +2500 against a strong attacker (destroyed above 1000 ATK) */
         if ((c = duel_slot_affected(tp, duel_special.zone[1], 0x159E)) != 0) {
-            if (st[op].atk > 1000) {
+            if (st[(1 - (int)ap)].atk > 1000) {
                 if (mode != 0) {
                     duel_08846498(tp, duel_special.zone[1], 0x159E, 1);
                 }
@@ -339,14 +338,14 @@ void duel_08846584(int mode, int view)
                 if (duel_slot_affected_ex(tp, duel_special.zone[1], 0x159E) != 0) {
                     x = 2500;
                     DUEL_HALVE(x, n2, i);
-                    st[op].atk += sign * x;
+                    st[(1 - (int)ap)].atk += sign * x;
                     x = ((x + 1) >> 1) * r;
                     DUEL_HALVE(x, n, i);
                     st[ap].atk += sign * x;
                 }
             }
         }
-        if (once && st[ap].atk < st[op].atk) {
+        if (once && st[ap].atk < st[(1 - (int)ap)].atk) {
             x = 1000;
             DUEL_HALVE(x, n, i);
             st[ap].atk += sign * x;
@@ -357,7 +356,7 @@ void duel_08846584(int mode, int view)
                 if (mode != 0) {
                     duel_08846498(ap, duel_special.zone[0], 0x159E, 1);
                 }
-            } else if ((ta->unk8 != 0 ? st[op].def : st[op].atk) >= 2500) {
+            } else if ((ta->unk8 != 0 ? st[(1 - (int)ap)].def : st[(1 - (int)ap)].atk) >= 2500) {
                 if (c >= 2 && mode != 0) {     /* only one copy applies */
                     duel_08846498(ap, duel_special.zone[0], 0x159E, 0);
                 }
@@ -373,7 +372,7 @@ void duel_08846584(int mode, int view)
     if (st[ap].atk >= 1300 && mode != 0) {
         duel_08846498(ap, duel_special.zone[0], 0x150A, 1);
     }
-    if (duel_special.unk8 == 0 && st[op].atk >= 1300 && mode != 0) {
+    if (duel_special.unk8 == 0 && st[(1 - (int)ap)].atk >= 1300 && mode != 0) {
         duel_08846498(tp, duel_special.zone[1], 0x150A, 1);
     }
     for (k = 0; k < 2; k++) {
