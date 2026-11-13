@@ -1,5 +1,4 @@
 // @range 0x0886CB44-0x0886F23C
-// @asm 0x0886E590-0x0886E784
 /* Activation conditions of cards (DuelAct *a): enough cards to pay or tribute, free zones, phase and
    turn, cards in the piles. */
 #include "duel.h"
@@ -743,9 +742,7 @@ int duel_0886E53C(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 16 palavras: condição do laço da mão por a->player & 1 resolveu o andi; falta o addiu de i depois do mult
-                       (o original incrementa i tarde) e, no laço da cadeia, k/ponteiro trocam a0/a1 (ordem/escopo de k,
-                       ponteiro explícito, while e if/else testados) */
+/* i++, p = a->player no passo do for (i incrementado antes do p); o laço da cadeia reaproveita ok como contador */
 /* Paying 500 LP to activate is allowed when another card in the hand could be used now and the chain
    does not already hold all of them. */
 int duel_0886E590(DuelAct *a)
@@ -754,7 +751,6 @@ int duel_0886E590(DuelAct *a)
     int ok;
     unsigned int i;
     int n;
-    int k;
 
     if (duel_turn_player == p) {
         ok = duel_phase == 2 || duel_phase == 4;
@@ -763,15 +759,14 @@ int duel_0886E590(DuelAct *a)
     }
     if (ok && duel.players[p & 1].lp > 500) {
         n = 0;
-        for (i = 0; i < duel.players[a->player & 1].n_hand; i++) {
+        for (i = 0; i < duel.players[a->player & 1].n_hand; i++, p = a->player) {
             if (duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i]))) {
                 n++;
             }
-            p = a->player;
         }
         if (n != 0) {
-            for (k = duel_chain.len - 1; k >= 0; k--) {
-                if (a->uid != duel_chain.acts[k].uid) {
+            for (ok = duel_chain.len - 1; ok >= 0; ok--) {
+                if (a->uid != duel_chain.acts[ok].uid) {
                     break;
                 }
                 n--;
@@ -783,7 +778,6 @@ int duel_0886E590(DuelAct *a)
     }
     return a->b3_4 != 3;
 }
-#endif
 
 /* can card a be activated in answer to the action b (a card being activated or resolved)? */
 int duel_0886E784(DuelAct *a, DuelAct *b)
