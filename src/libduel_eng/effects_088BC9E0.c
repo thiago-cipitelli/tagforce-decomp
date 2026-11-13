@@ -1,6 +1,5 @@
 // @range 0x088BC9E0-0x088C004C
 // @asm 0x088BD4E0-0x088BD9A4
-// @asm 0x088BECC0-0x088BEDEC
 /* Card effect handlers: candidate lists for duel_088BFC64 (after effects_088BB8C0.c), and the list itself:
    duel_088BFC64 appends a card and its zone to duel_w_08915258 (at most 0x1FF), and duel_088BFF78 runs the list handler of an effect key from the sorted table at
    0x08912988 (binary search over 0x16D entries) and returns the count. */
@@ -575,7 +574,6 @@ void duel_088BEBD8(unsigned int p, int b, int i)
     }
 }
 
-#ifdef NON_MATCHING /* o original lê o uid da fonte por um ponteiro em $a1 e troca a3/t0 entre o uid e o tamanho da cadeia */
 void duel_088BECC0(unsigned int p, int b, int i)
 {
     int id = duel.players[p & 1].hand[i].id;
@@ -585,14 +583,17 @@ void duel_088BECC0(unsigned int p, int b, int i)
     if (card_is_monster(id) && duel_card_dfac8(p, id, 0)) {
         uid = CARD_UID(duel.players[p & 1].hand[i]);
         for (j = 0; j < duel_w_08914920; j++) {
-            if (duel_chain.kinds[j] == 0x19 && duel_chain.srcs[j].s_player == p && ((DuelSrc *)&duel_chain.srcs[j])->uid == uid) {
-                duel_088BFC64(p, 0xB, i);
-                return;
+            if (duel_chain.kinds[j] == 0x19) {
+                DuelSrc *s = (DuelSrc *)&duel_chain.srcs[j];
+
+                if (s->player == p && s->uid == uid) {
+                    duel_088BFC64(p, 0xB, i);
+                    return;
+                }
             }
         }
     }
 }
-#endif
 
 void duel_088BEDEC(unsigned int p, int b)
 {
