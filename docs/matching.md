@@ -2433,3 +2433,27 @@ Bateram 7 das 31: `duel_req_host_3b_table`, `duel_count_id_flag18`, `duel_min_or
   ordem dos parâmetros também não muda), `duel_find_effect_card`, `duel_088C1B88`, `duel_088995A0`,
   `duel_088BD4E0`, `duel_088CC8EC`, `duel_0888A88C`, `duel_0888A938`, `duel_req_effect_set`, `duel_08865C10`,
   `duel_card_fits_zone`, `duel_088C0CD0`, `duel_088A6F00` (108 com a busca, não promovido).
+## Rodada 27 (`skM`): reteste do `matching_skip` (libtitle, libshop, libdeck*, libselect_card, liblimitlist, librecipe_viewer)
+
+Bateram `dt_draw_hint2`/`dt_draw_hint3` (29% -> 0), `rv_scroll_add` (+ `rv_scroll_pad`, que só esperava por ela) e
+`dk_help_topics_result`; `rv_draw_digits` 18 -> 2 (forma de `dk_draw_digits`).
+- **Procure a gêmea EXATA já batendo antes de qualquer coisa**: `rv_scroll_add` estava no skip desde a rodada 7 e é
+  byte a byte `ll_scroll_add`/`sc_scroll_add`/`shop_ui_scroll_add` (`if ((d < 0 && pos < -d) || max == 0) pos = 0;
+  else {...}`). O `find_twins.py` só compara funções da fila; para o skip, rode o mesmo `load()` contra as
+  funções `matched` (`build/tmp/skM/twins.py`). `dk_help_topics_result` é `help_result` (libduel_draw) com outro nome:
+  `switch (p->result) { default: case 1: r = 1; break; case 2: r = 2; break; }` dá o `li v0,1; li v0,1`.
+- **Cópia de struct "decomposta só em parte" = modelos de inicializador** (`dt_draw_hint2/3`): o global
+  `dt_hint_btns[5]` (8 bytes por botão, alinhado a 4) eram os modelos anônimos de `DtButton x = {consts};` na `.data`.
+  Os botões montados campo a campo (`lhu` + `ext` + RMW de `sh`) são um tipo com campos de bits
+  (`unsigned short u : 8, v : 8;`) inicializado com constantes; o último, copiado em bloco (`lwc1` + `lh`), é um tipo
+  sem campos decomponíveis (`struct { unsigned short h[3]; }`: o mwcc 219 não decompõe array). Cada botão num bloco
+  depois da chamada anterior (a cópia sai depois do `jal`, e o bloco posterior fica mais abaixo na pilha). Os
+  modelos saem na `.data` na posição da função: um global que no original vem antes deles (`dt_cmds`) tem de ser
+  definido antes das funções.
+- Sem forma: os 2 de `*_draw_digits` (protótipos com tipos, varargs, K&R, expressões equivalentes, `h` local,
+  posições das declarações: ~60 formas), `*_draw_info` (`list` em `$s1`), `*_search_finish` (len/v trocados; ordem ×
+  tipo × atribuição, bloco, laço indexado, helper inline), `*_flight_undo` (o mwcc transforma toda forma
+  `if/else` de 0/1 em `slti/xori`; só `side = 1; if (...) side = 0;` mantém o desvio, sem o `likely`),
+  `tpanel_init`, `tfd_main_text` (wrapper inline, tipos), `shop_open_layout`, `shop_draw_shelf` (tipos do
+  protótipo, volatile), `shop_shelf_input` (`default: return;` liga o modo sem
+  limpeza da rodada 19 e acerta o `b; b` da junção, mas os testes continuam 2 antes de 1).

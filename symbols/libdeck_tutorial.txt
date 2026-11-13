@@ -357,12 +357,11 @@ dt_draw_board1 = 0x0881B818; // type:func matched src/libdeck_tutorial/dt_lesson
 dt_draw_board2 = 0x0881B8F8; // type:func matched src/libdeck_tutorial/dt_lesson.c
 dt_draw_board3 = 0x0881B9D8; // type:func matched src/libdeck_tutorial/dt_lesson.c
 dt_press_step = 0x0881BAB8; // type:func matched src/libdeck_tutorial/dt_lesson.c
-dt_draw_hint2 = 0x0881BBFC; // type:func asm (@asm in src/libdeck_tutorial/dt_lesson.c, C under NON_MATCHING)
-dt_draw_hint3 = 0x0881BCC8; // type:func asm (@asm in src/libdeck_tutorial/dt_lesson.c, C under NON_MATCHING)
+dt_draw_hint2 = 0x0881BBFC; // type:func matched src/libdeck_tutorial/dt_lesson.c
+dt_draw_hint3 = 0x0881BCC8; // type:func matched src/libdeck_tutorial/dt_lesson.c
 dt_win_open = 0x0881BE08; // type:func matched src/libdeck_tutorial/dt_lesson.c
 dt_lesson_cards = 0x08822578; // type:data size:0x2BE
 dt_cmds = 0x08822838; // type:data size:0x60
-dt_hint_btns = 0x08822898; // type:data size:0x28
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x0881D318; // type:func import:libehsys nid:00D1378F
 ccc_strlen_utf16 = 0x0881D320; // type:func import:libehsys nid:4BDEB2A8

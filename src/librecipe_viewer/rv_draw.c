@@ -1,6 +1,5 @@
 // @range 0x08804918-0x08805874
 // @asm 0x08804918-0x08804AC0
-// @asm 0x088057BC-0x08805874
 // @data 0x0880E888-0x0880E88C
 /* Drawing helpers of the screen: sprite digits, numbers, the 9-slice window frame, sprites from a
    record, card pictures (alternate art from the CIP pack) with their marks (copies, limit, new),
@@ -34,17 +33,17 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
 void *rv_draw_sprite(void *list, RvSprite *s, void *gim);
 int rv_card_pict(unsigned short *page, unsigned short *u, unsigned short *v, RvEntry *e, int *alt);
 
-#ifdef NON_MATCHING /* forma igual; a largura w e x/y ficam em outros $s em todas as ordens de declaração testadas */
+#ifdef NON_MATCHING /* 2 palavras (eram 18; forma de dk_draw_digits): o original passa t0 (9) antes de a3 (w) para draw_set_offsets e põe a3 no atraso do jal */
 /* n with digit sprites (7 x 9) from the right; fmt = style << 8 | digits */
 void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned short fmt, unsigned int color, void *gim)
 {
-    int w;
-    short x = pos & 0xFFFF;
-    short y = pos >> 16 & 0xFFFF;
-    unsigned char style = fmt >> 8 & 0xFF;
+    int px = (short)(pos & 0xFFFF);
+    short py = pos >> 16 & 0xFFFF;
+    unsigned char style = fmt >> 8;
     unsigned char digits = fmt & 0xFF;
     int gap = 0;
-
+    int w;
+    short x;
     int i;
 
     if (gim == 0)
@@ -55,8 +54,6 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
     switch (style) {
     case 3:
         gap = -1;
-        w = 7;
-        break;
     case 0:
         w = 7;
         break;
@@ -66,11 +63,10 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
         break;
     }
     list = draw_set_offsets(list, w, 9, w, 9);
-    gap = w + gap;
-    x += (short)((digits - 1) * gap);
+    x = px + (short)((digits - 1) * (w + gap));
     for (i = 0; i < digits; i++) {
-        list = draw_sprite(list, x, y, 0, n % 10 * w, 0, 0, 0);
-        x -= (short)gap;
+        list = draw_sprite(list, x, py, 0, n % 10 * w, 0, 0, 0);
+        x -= (short)(w + gap);
         n /= 10;
         if (!zeros && n == 0)
             break;
@@ -318,25 +314,19 @@ void *rv_draw_arrow(void *list, int x, int y, unsigned char kind, unsigned int p
     return draw_sprite(list, x, y, 0, 119, v + 60, 0, flip);
 }
 
-#ifdef NON_MATCHING /* 11 palavras: o original faz `move v1,zero; b; nop` no max == 0 (o mwcc põe o move no atraso do b) e `beqz; nop` (não likely) no v > max: 4 B a menos; testados goto, && no if externo (9 palavras, layout pior); rv_scroll_pad depende de rv_scroll_add ser static compilada antes (mantém o PadState em $v0 através da chamada) */
 static void rv_scroll_add(RvScroll *s, int d)
 {
     unsigned int pos = s->pos;
     unsigned int max = s->max;
-    unsigned int v;
 
-    if (d >= 0 || pos >= (unsigned int)-d) {
-        if (max == 0)
-            v = 0;
-        else {
-            v = pos + d;
-            if (v > max)
-                v = max;
-        }
-    } else {
-        v = 0;
+    if ((d < 0 && pos < (unsigned int)-d) || max == 0)
+        pos = 0;
+    else {
+        pos += d;
+        if (pos > max)
+            pos = max;
     }
-    s->pos = v;
+    s->pos = pos;
 }
 
 void rv_scroll_pad(RvScroll *s)
@@ -350,4 +340,3 @@ void rv_scroll_pad(RvScroll *s)
             rv_scroll_add(s, (pad->b.analog_y - 0x62) * 4);
     }
 }
-#endif

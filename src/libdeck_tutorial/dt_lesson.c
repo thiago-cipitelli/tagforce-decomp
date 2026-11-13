@@ -1,5 +1,4 @@
 // @range 0x0881A20C-0x0881C0E8
-// @asm 0x0881BBFC-0x0881BE08
 // @rodata 0x08821074-0x08821090
 // @data 0x08822578-0x088228C0
 /* The lesson: the editor's lists filled with the lesson's cards, and the lesson script run one
@@ -19,13 +18,6 @@ typedef struct DtArgs8 {         /* command arguments: two halves and a word */
     unsigned short h1;
     unsigned int w;
 } DtArgs8;
-
-typedef struct DtHintBtn {       /* a button of the hints window */
-    DtButton b;
-    unsigned short pad;
-} DtHintBtn;
-
-extern DtHintBtn dt_hint_btns[5];
 
 typedef struct DtLessonCard {    /* a card of the lessons, 6 bytes */
     unsigned short lessons;      /* bit per lesson that gets it */
@@ -791,36 +783,52 @@ int dt_press_step(void)
     return 0;
 }
 
-/* the button hints */
-#ifdef NON_MATCHING /* cópias de struct de 6 bytes: a primeira membro a membro com inserção de bitfield, a última com lwc1/swc1.
-                       Testado: com u, v como "unsigned short : 8" em DtButton, a cópia por inicializador sai igual à do
-                       original (lhu + ext + RMW) mas todas as outras também (bloco aninhado, atribuição); a cópia em
-                       bloco só sai de um tipo sem bitfield com inicializador no topo, e *(T *)& dá lh/sh.
-                       2026-11-06: o mwcc 219 decompõe toda cópia de struct (opt_decomposeaggregates); com
-                       "#pragma opt_decomposeaggregates off" a cópia sai em bloco, mas a pragma vale para a função
-                       inteira, e a cópia em bloco da última só sai com lwc1 se a origem for um símbolo alinhado a 4
-                       (dt_hint_btns[1] fica em símbolo+8: lh). Cópia manual da primeira com máscaras + pragma: 29
-                       palavras. Família "decomposição parcial de cópias", ver docs/matching.md */
+void (*dt_cmds[24])(void) = {
+    0, dt_cmd_text, dt_cmd_win, dt_cmd_win_close, dt_cmd_board, dt_cmd_highlight,
+    dt_cmd_highlight_off, dt_cmd_allow, dt_cmd_allow_off, dt_cmd_press, dt_cmd_goal,
+    dt_cmd_lock_info, dt_cmd_unlock_info, dt_cmd_loop, dt_cmd_loop_end, dt_cmd_menu_lock,
+    dt_cmd_hold, dt_cmd_hold_off, dt_cmd_keep_buttons, dt_cmd_word, dt_cmd_hint,
+    dt_cmd_hint_close, dt_cmd_scroll, dt_cmd_end,
+};
+
+/* the button hints: a DtButton each, from initializer templates (the 5 of dt_hint_btns's old address);
+   the bitfield view makes mwcc build all but the last field by field (lhu + ext + RMW), and the last
+   one, a plain array of halves, is copied in one block (lwc1 + lh) */
+typedef struct DtButtonBf {
+    unsigned short res;
+    unsigned short u : 8, v : 8;
+    unsigned short text;
+} DtButtonBf;
+typedef struct DtButtonRaw {
+    unsigned short h[3];         /* res, u | v << 8, text */
+} DtButtonRaw;
+
 void *dt_draw_hint2(void *list, int x, int y)
 {
-    DtButton a = dt_hint_btns[0].b;
-    DtButton b = dt_hint_btns[1].b;
+    DtButtonBf a = { 0x8008, 0x00, 0x20, 6 };
 
-    list = dt_draw_ibutton(list, &a, x, y + 1, 0);
-    return dt_draw_ibutton(list, &b, x, y + 0x13, 0);
+    list = dt_draw_ibutton(list, (DtButton *)&a, x, y + 1, 0);
+    {
+        DtButtonRaw b = { { 0x8008, 0x3133, 0x14 } };
+        return dt_draw_ibutton(list, (DtButton *)&b, x, y + 0x13, 0);
+    }
 }
 
 void *dt_draw_hint3(void *list, int x, int y)
 {
-    DtButton a = dt_hint_btns[2].b;
-    DtButton b = dt_hint_btns[3].b;
-    DtButton c = dt_hint_btns[4].b;
+    DtButtonBf a = { 0x800A, 0x33, 0x00, 0x35 };
 
-    list = dt_draw_ibutton(list, &a, x, y + 1, 0);
-    list = dt_draw_ibutton(list, &b, x, y + 0x13, 0);
-    return dt_draw_ibutton(list, &c, x, y + 0x25, 0);
+    list = dt_draw_ibutton(list, (DtButton *)&a, x, y + 1, 0);
+    {
+        DtButtonBf b = { 0x800A, 0x44, 0x00, 0x36 };
+
+        list = dt_draw_ibutton(list, (DtButton *)&b, x, y + 0x13, 0);
+        {
+            DtButtonRaw c = { { 0x800A, 0x0055, 0x37 } };
+            return dt_draw_ibutton(list, (DtButton *)&c, x, y + 0x25, 0);
+        }
+    }
 }
-#endif
 
 /* the message window at (x, y) */
 void dt_win_open(int x, int y, unsigned short msg)
@@ -893,18 +901,4 @@ void dt_pause_open(void)
     dt.quit_open = 1;
 }
 
-void (*dt_cmds[24])(void) = {
-    0, dt_cmd_text, dt_cmd_win, dt_cmd_win_close, dt_cmd_board, dt_cmd_highlight,
-    dt_cmd_highlight_off, dt_cmd_allow, dt_cmd_allow_off, dt_cmd_press, dt_cmd_goal,
-    dt_cmd_lock_info, dt_cmd_unlock_info, dt_cmd_loop, dt_cmd_loop_end, dt_cmd_menu_lock,
-    dt_cmd_hold, dt_cmd_hold_off, dt_cmd_keep_buttons, dt_cmd_word, dt_cmd_hint,
-    dt_cmd_hint_close, dt_cmd_scroll, dt_cmd_end,
-};
 
-DtHintBtn dt_hint_btns[5] = {
-    { { 0x8008, 0x00, 0x20, 6 } },
-    { { 0x8008, 0x33, 0x31, 0x14 } },
-    { { 0x800A, 0x33, 0x00, 0x35 } },
-    { { 0x800A, 0x44, 0x00, 0x36 } },
-    { { 0x800A, 0x55, 0x00, 0x37 } },
-};

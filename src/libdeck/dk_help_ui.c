@@ -1,5 +1,4 @@
 // @range 0x0881AB64-0x0881D918
-// @asm 0x0881B728-0x0881B764
 // @asm 0x0881D3EC-0x0881D6B4
 // @rodata 0x08822688-0x088226C0
 /* Help viewer widgets: the button bar at the bottom, a generic scrolling list of rows of varying
@@ -505,18 +504,25 @@ int dk_help_topics_get_cur(void)
     return dk_pager_get_cur_(&dk_help_topics.pager);
 }
 
-#ifdef NON_MATCHING /* o original repete o `li v0,1` do ramo (cópia morta do delay slot), forma igual */
 /* 0 still open, 1 a topic was picked, 2 cancelled */
 int dk_help_topics_result(void)
 {
     DkPager *p = &dk_help_topics.pager;
     int r = 0;
 
-    if (dk_help_topics.state == 7)
-        r = p->result != 2 ? 1 : 2;
+    if (dk_help_topics.state == 7) {
+        switch (p->result) {
+        default:
+        case 1:
+            r = 1;
+            break;
+        case 2:
+            r = 2;
+            break;
+        }
+    }
     return r;
 }
-#endif
 
 /* window frame and the scroll bar */
 void *dk_help_topics_draw_bg(void *list)
