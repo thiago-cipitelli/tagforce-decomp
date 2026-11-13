@@ -1,5 +1,4 @@
 // @range 0x0880FBB4-0x08810814
-// @asm 0x0880FBB4-0x0880FD04
 // @bss 0x08FD1A30-0x08FD1A44
 // @rodata 0x08838854-0x08838878
 /* The field system: init / per-frame update / draw / staged termination of all the subsystems, and
@@ -112,7 +111,6 @@ void famb_update(void);
 extern unsigned int field_fade_colors[];       /* 0x0883884C */
 extern FieldScene field_scene;
 
-#ifdef NON_MATCHING /* o laço de 25 comandos sai desenrolado x8 com resto no original e x5 aqui */
 void fld_sys_init(void)
 {
     int i;
@@ -122,8 +120,10 @@ void fld_sys_init(void)
     memset(&field_sys, 0, sizeof(FieldSys));
     dl_set_list(view_init(dl_select_layer(0, 0)));
     model_set_allocator(fld_alloc, fld_free);
-    for (i = 0; i < 25; i++)
-        field_cmds[i].busy = 0;
+    for (i = 0; i < 33; i++) {
+        FieldCmd *c = &field_cmds[i];
+        c->busy = 0;
+    }
     fld_ctx_init();
     fld_res_init();
     efs_set_heap(fld_heap_get());
@@ -140,7 +140,6 @@ void fld_sys_init(void)
     fmoney_init(500, a, 0x16C, b);
     fmsg_init(fld_heap_get(), 0x27, 400, 0xE, 1, 3);
 }
-#endif
 
 void fld_sys_update(void)
 {
