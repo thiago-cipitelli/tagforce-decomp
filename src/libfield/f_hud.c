@@ -1,6 +1,5 @@
 // @range 0x08811BE0-0x08812FBC
 // @rodata 0x0883892C-0x08838948
-// @asm 0x08812EB0-0x08812FBC
 /* HUD of the field: the room name window, the event icon of the cell the player stands on, the
    blinking of the HUD parts, the slide-in of a part, the text callbacks of the menus. */
 #include "libfield.h"
@@ -621,12 +620,14 @@ void fld_hud_blink(int period, int duty, int kind)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm. 61 palavras: o original materializa &field_hud, &name.state e &name.item em s1/s0/s3 antes da 1ª chamada (const, inline com parâmetros e volatile não reproduzem) */
+#ifdef __MWERKS__
+#pragma opt_propagation off /* the original keeps &field_hud, &name.state and &name.item in $s from the entry */
+#endif
 void fld_hud_name_init(void)
 {
-    FieldHud *h = (FieldHud *)(char *)&field_hud;
-    int *on = (int *)(char *)&field_hud.name.state;
-    MenuItemDef *d = (MenuItemDef *)(char *)&field_hud.name.item;
+    FieldHud *h = &field_hud;
+    int *on = &field_hud.name.state;
+    MenuItemDef *d = &field_hud.name.item;
     int g;
 
     fld_story_get();
@@ -642,12 +643,17 @@ void fld_hud_name_init(void)
     d->font_flag4 = 1;
     d->font_flag8000 = cfg_get_language() == 0;
     d->font_size = 15;
-    d->text_color = 0xFFFFFFFF;
-    d->pad_b = -1;
+    {
+        int neg = -1;
+        d->text_color = neg;
+        d->pad_b = neg;
+    }
     d->pad_t = 1;
     d->pad_l = 3;
     d->pad_r = 2;
     menu_add_item(&h->menu, d);
     *on = 1;
 }
+#ifdef __MWERKS__
+#pragma opt_propagation reset
 #endif

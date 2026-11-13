@@ -559,7 +559,7 @@ void fld_bg_door_update(FieldObj *o)
     mat4_translate(&o->mtx, &o->mtx, &p);
 }
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 26 palavras: o original carrega o 136 e o 272 junto do uso e põe as cores em v0/a0 (aqui as constantes sobem para o início) */
+#ifdef NON_MATCHING /* C novo, conferido com o asm. 18 palavras (26 antes; ordem dos stores achada por busca gulosa, rodada 27): o original carrega o 136 e o 272 junto do uso e põe as cores em v0/a0 */
 /* sky gradient behind the room: top, middle and bottom colour of the area at this time of day */
 void *fld_bg_draw_sky(void *list)
 {
@@ -572,8 +572,6 @@ void *fld_bg_draw_sky(void *list)
     unsigned int mid = c[1];
     unsigned int bot;
 
-    v[1].color = top;
-    v[1].x = 0;
     v[1].y = 0;
     v[1].z = 0;
     v[0].color = top;
@@ -582,13 +580,15 @@ void *fld_bg_draw_sky(void *list)
     v[0].z = 0;
     v[3].color = mid;
     v[3].x = 0;
+    v[1].x = 0;
     v[3].y = 136;
     v[3].z = 0;
+    bot = c[2];
     v[2].color = mid;
     v[2].x = 480;
     v[2].y = 136;
     v[2].z = 0;
-    bot = c[2];
+    v[1].color = top;
     v[5].color = bot;
     v[5].x = 0;
     v[5].y = 272;

@@ -1,6 +1,5 @@
 // @range 0x08805220-0x08805DF4
 // @data 0x0883A130-0x0883A160
-// @asm 0x08805664-0x08805708
 /* SD characters of the map: setup (model or sprite by chara kind), per-frame animation counters,
    shadow/draw registration, the eight walking directions and the collision of a moving character
    against the cells of the map. */
@@ -13,7 +12,7 @@ void fld_sprites_add(int fx);                    /* 0x08826BD8 */
 void fld_pos_set(Vec3 *pos, int x, int z);     /* 0x08807EE0 */
 int fld_chr_kind(int id);                      /* 0x08806DF0 */
 int fld_chr_tex(int id);                       /* 0x08806E6C */
-void fld_load_chr(int id, int n, int arg, FieldChr *c); /* 0x0880C53C */
+void fld_load_chr(int id, int n, void (*cb)(), FieldChr *c); /* 0x0880C53C */
 Vec3 *fld_light_dir(void);                     /* 0x08818878 */
 #ifdef __MWERKS__
 void fld_chr_draw_model(void);                 /* 0x08805DF4 */
@@ -51,7 +50,7 @@ void fld_chr_term(void)
 }
 
 int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir, int visible,
-                  int arg8c, int a, int b, int fx)
+                  int arg8c, void (*a)(), void (*b)(), int fx)
 {
     c->kind = kind;
     c->id = id;
@@ -163,7 +162,6 @@ void fld_chr_get_pos(Vec3 *out, FieldChr *c)
     *out = c->pos;
 }
 
-#ifdef NON_MATCHING /* 4 palavras: o original calcula o endereço de field_dirs[i] antes de salvar ra/s0; um static da função (static Vec3 dd[8] = {...}) bate, mas a tabela é lida também por fld_dir_from_vec (rodada 22) */
 /* walking direction i turned by 45 degrees */
 void fld_dir_vec(Vec3 *out, int i)
 {
@@ -177,7 +175,6 @@ void fld_dir_vec(Vec3 *out, int i)
     vec3_normalize(&v, &v);
     *out = v;
 }
-#endif
 
 /* direction 0..7 closest to v (only the odd ones when diag is 1) */
 int fld_dir_from_vec(Vec3 *v, int diag)
@@ -196,7 +193,7 @@ int fld_dir_from_vec(Vec3 *v, int diag)
     mat3_rot_y(m, m, -0.7853982f);
     mat3_transform_vec3(&n, m, v);
     vec3_normalize(&n, &n);
-    for (i = 0, p = field_dirs; i < 8; i++, p++) {
+    for (i = 0, p = (Vec3 *)field_dirs; i < 8; i++, p++) {
         if (diag == 1) {
             switch (i) {
             case 0:

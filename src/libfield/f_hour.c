@@ -1,5 +1,4 @@
 // @range 0x08827FE4-0x088290BC
-// @asm 0x088289AC-0x08828A90
 // @rodata 0x08839924-0x088399B4
 /* Menu of the hour to wait until (field_hour_menu): the title window, the choice list with its help
    text and the hour picker that moves by quarters of hour between the current time and 23:45. */
@@ -287,7 +286,9 @@ void fclk_free(void)
     }
 }
 
-#ifdef NON_MATCHING /* fclk_list_item (lógica conferida, 50 palavras): o original materializa &field_hour_menu em $s0 no início e o mantém nas chamadas */
+#ifdef __MWERKS__
+#pragma opt_propagation off /* the original keeps &field_hour_menu in $s0 across the calls (no copy propagation) */
+#endif
 void *fclk_list_item(void *list, unsigned int i, int x, int y)
 {
     FieldHourMenu *c = &field_hour_menu;
@@ -303,6 +304,8 @@ void *fclk_list_item(void *list, unsigned int i, int x, int y)
     font_set_flag8000(flag);
     return list;
 }
+#ifdef __MWERKS__
+#pragma opt_propagation reset
 #endif
 
 void *fclk_time_draw(void *list)

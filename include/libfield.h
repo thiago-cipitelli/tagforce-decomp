@@ -828,12 +828,12 @@ extern FieldHud field_hud;                 /* 0x08FD1DAC */
 extern FieldScTab field_scene_tab;         /* 0x08FD1B2C */
 extern FieldScene field_scene;             /* 0x08FD1A74 */
 extern FieldSys field_sys;                 /* 0x08FD1A44 */
-extern FieldCmd field_cmds[25];            /* 0x0883C640 */
+extern FieldCmd field_cmds[33];            /* 0x0883C640 (33 x 12 bytes, up to field_name_from) */
 extern FieldItems field_items;             /* 0x08FD1420 */
 extern FieldCtx field_ctx;                 /* 0x08FD1408 */                 /* 0x08FD10A0 */
 extern FieldResEnt field_res_gim[9];      /* 0x0883BEB8 */
 extern FieldGim field_gims[];              /* 0x0883C49C */               /* 0x08844DB0 */          /* 0x08844960 */
-extern Vec3 field_dirs[8];                 /* 0x08834AD4 */
+extern const Vec3 field_dirs[8];                 /* 0x08834AD4 */
 
 extern FieldBu field_bu;                   /* 0x08844620 */
 extern int field_bu_xpos[3];               /* 0x08834AC8 */
@@ -985,7 +985,7 @@ int fld_draw_add(void *shadow, int volume, float scale, int area, void *fn, void
 void fld_load_gim(int name, void (*cb)(int *file, void *arg), void *arg);
 void *fld_gim_get(int i);
 int fld_chr_setup(FieldChr *c, int kind, int id, int x, int z, int type, int dir, int visible,
-                  int arg8c, int a, int b, int fx);
+                  int arg8c, void (*a)(), void (*b)(), int fx);
 void fld_chr_get_pos(Vec3 *out, FieldChr *c);
 void fld_chr_corners(Vec3 *p, float r, Vec3 *a, Vec3 *b, Vec3 *c, Vec3 *d);
 void fld_map_height(Vec3 *p, float x, float z);

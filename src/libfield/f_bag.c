@@ -1,6 +1,5 @@
 // @range 0x0881CE68-0x0881EDC8
 // @asm 0x0881D180-0x0881D2B8
-// @asm 0x0881E83C-0x0881E9D4
 // @rodata 0x0883904C-0x088392E0
 // @data 0x0883D3C0-0x0883D410
 /* The bag window of the field (field_bag): two tabs (items with their count, cards one row per
@@ -728,11 +727,13 @@ void *fbag_item0_draw(void *list, unsigned short i, int x, int y)
 }
 
 /* a row of the card list: icon and name */
-#ifdef NON_MATCHING /* the original keeps &field_bag in $s1 for the cursor_w read; mwcc rematerializes it */
+#ifdef __MWERKS__
+#pragma opt_propagation off /* the original keeps &field_bag in $s1 for the cursor_w read */
+#endif
 void *fbag_item1_draw(void *list, unsigned short i, int x, int y)
 {
     FieldBag *b = &field_bag;
-    int id = b->ids1[i];
+    int id = field_bag.ids1[i];
     unsigned short *name = table_get_entry(fld_gim_get(6), id + 0x32);
     int w;
 
@@ -750,6 +751,8 @@ void *fbag_item1_draw(void *list, unsigned short i, int x, int y)
     font_draw_wtext((x + 0x21) * 64, (y + (cfg_get_language() == 0 ? 1 : 5)) * 64, w * 64, name);
     return font_text_clear();
 }
+#ifdef __MWERKS__
+#pragma opt_propagation reset
 #endif
 
 void *fbag_menu0_item(void *list, unsigned short i, int x, int y)
