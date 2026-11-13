@@ -1,7 +1,6 @@
 // @range 0x088DA5EC-0x088DEB2C
 // @asm 0x088DC4E0-0x088DCA4C
 // @asm 0x088DD038-0x088DD1A4
-// @asm 0x088DD88C-0x088DD98C
 /* Steps of the requests the engine carries out one per frame (duel_req, duel_req_step): input log, messages,
    graveyard and hand moves, summoning and setting a card from the hand. */
 #include "duel.h"
@@ -1224,19 +1223,18 @@ void duel_req_host_3b(void)
     }
 }
 
-#ifdef NON_MATCHING /* the registers of the player and of the table pointer are swapped */
 /* Point at the spell/trap zones holding the five cards of the table. */
 void duel_req_host_3b_table(void)
 {
-    unsigned int p = (duel_req.id & 0x8000) != 0;
-    unsigned int k;
+    int k;
+    int p = (duel_req.id & 0x8000) != 0;
     int *id;
     int z;
 
     if (duel_req_step == 0) {
         for (k = 0, id = duel_ids_08911D2C; (int)k < 5; k++, id++) {
             for (z = 5; z < 10; z++) {
-                int c = duel.players[p & 1].field[z].card.id;
+                unsigned int c = duel.players[p & 1].field[z].card.id;
 
                 if (c == *id) {
                     duel_host_call(0x3B, p, z, (unsigned short)((k & 0xFF) | 0x100));
@@ -1249,7 +1247,6 @@ void duel_req_host_3b_table(void)
         duel_busy_0891523C = 0;
     }
 }
-#endif
 
 void duel_req_host_3c(void)
 {

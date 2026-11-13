@@ -1,5 +1,4 @@
 // @range 0x088E8CF4-0x088E94E4
-// @asm 0x088E8CF4-0x088E8F88
 /* Copies of a card on the field: counts by id or name with conditions, lowest activation order. */
 #include "duel.h"
 #include "card_db.h"
@@ -8,28 +7,27 @@ int field_get_card(unsigned int, int);
 int duel_field_same_name(unsigned int p, int z, int id);
 int duel_slot_value_1909(unsigned int p, int z);
 
-#ifdef NON_MATCHING /* same code; the original gives the zone bit counter and the slot pointer the other $s registers */
 /* Active monsters of player p with card id, flag bit 18 set, in enabled zones. */
 int duel_count_id_flag18(unsigned int p, int id)
 {
     int i;
-    int n = 0;
-    unsigned int b = p << 4;
-    DuelPlayer *pl = &duel.players[p & 1];
+    int n;
+    DuelPlayer *s;
+    unsigned int b;
 
-    for (i = 0; i < 5; i++, b++) {
+    n = 0;
+    for (i = 0, b = p << 4, s = &duel.players[p & 1]; i < 5;
+         s = (DuelPlayer *)((char *)s + sizeof(DuelSlot)), b++, i++) {
         int c = field_get_card(p, i);
 
-        if (c == id && SLOT_ACTIVE(&pl->field[i]) && (pl->field[i].flags >> 18 & 1) &&
+        if (c == id && SLOT_ACTIVE(&s->field[0]) && (s->field[0].flags >> 18 & 1) &&
             !(duel.zone_off & 1 << b)) {
             n++;
         }
     }
     return n;
 }
-#endif
 
-#ifdef NON_MATCHING /* same code; the original gives the zone bit counter and the slot pointer the other $s registers */
 /* Lowest activation order (unk4) among the active copies of card id of player p, 0 if none. */
 int duel_min_order(unsigned int p, int id)
 {
@@ -37,19 +35,20 @@ int duel_min_order(unsigned int p, int id)
     int i;
 
     if (card_is_monster(id) != 0) {
-        DuelPlayer *pl = &duel.players[p & 1];
+        DuelPlayer *s;
         unsigned int b;
 
-        for (i = 0, b = p << 4; i < 5; i++, b++) {
+        for (i = 0, b = p << 4, s = &duel.players[p & 1]; i < 5;
+             s = (DuelPlayer *)((char *)s + sizeof(DuelSlot)), b++, i++) {
             int c = field_get_card(p, i);
 
-            if (c == id && SLOT_ACTIVE(&pl->field[i]) && !(duel.zone_off & 1 << b)) {
+            if (c == id && SLOT_ACTIVE(&s->field[0]) && !(duel.zone_off & 1 << b)) {
                 if (m != 0) {
-                    if (pl->field[i].unk4 < m) {
-                        m = pl->field[i].unk4;
+                    if (s->field[0].unk4 < m) {
+                        m = ((volatile DuelSlot *)&s->field[0])->unk4; /* the original reloads it */
                     }
                 } else {
-                    m = pl->field[i].unk4;
+                    m = s->field[0].unk4;
                 }
             }
         }
@@ -62,7 +61,7 @@ int duel_min_order(unsigned int p, int id)
             if (c == id && SLOT_ACTIVE(&pl->field[i])) {
                 if (m != 0) {
                     if (pl->field[i].unk4 < m) {
-                        m = pl->field[i].unk4;
+                        m = ((volatile DuelSlot *)&pl->field[i])->unk4;
                     }
                 } else {
                     m = pl->field[i].unk4;
@@ -72,7 +71,6 @@ int duel_min_order(unsigned int p, int id)
     }
     return m;
 }
-#endif
 
 int duel_min_order_both(int id)
 {
