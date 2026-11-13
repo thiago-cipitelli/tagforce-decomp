@@ -191,3 +191,7 @@ display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescr
 3. ~~Revisar os avisos do gcc contra o asm~~ (feito, seção 1.2; gate `make host-warn`).
 4. `platform/` em 32 bits: arquivos, thread/timer, input, janela, áudio PCM; gmodules linkados juntos.
 5. Gráficos (decisão GE vs `dl.c`), depois save/OSK/fonte; rede e vídeo como stubs.
+
+Pendência achada na rodada 27: `debug_menu_draw` e `debug_menu_update` (libduel_draw, `dd_debug_menu.c`) não
+têm C nenhum, só `@asm` (menu de debug inacessível no jogo de varejo). Se o port precisar dele, escrever do zero;
+os protótipos do `#ifdef NON_MATCHING` do arquivo não batem com a tabela de chamadas de `dd_scene_mode.c`.
