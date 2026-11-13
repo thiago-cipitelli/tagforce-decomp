@@ -44,7 +44,6 @@ segments:
       - [0xA114, c, t_cfgdraw]
       - [0xAB80, c, t_lang]
       - [0xB498, c, t_osk]
-      - [0xB498, asm, t_osk_asm_0880F438]
       - [0xB960, c, t_name]
       - [0xC738, c, t_panel]
       - [0xC900, asm, t_panel_asm_088108A0]
