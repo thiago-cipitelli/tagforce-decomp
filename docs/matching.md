@@ -2032,3 +2032,43 @@ compilação), `hill.py` (descida aleatória sobre ordem e `int`/`unsigned` das 
   `case` troca a cor dos parâmetros sem regra visível), `duel_0883F3A0` (79: p/ofs/prot/b24 rodados),
   `duel_08838A84` (32: 2ª definição de `q` vira outro web), `duel_088862DC` (14: o original estreita `p` com
   `andi 0xff` antes do `andi 1` do índice; 20 formas testadas).
+
+## Rodada 25 (`engR4`: libduel_eng, funções grandes de arquivo inteiro em `@asm`)
+
+`duel_08846584` 1687 -> 264 palavras (estrutura idêntica: `fd.py --struct` 0 linhas, só coloração), `duel_088451E8`
+1139 -> 1165 palavras mas estrutura 55 -> 19 linhas, `duel_field_stats` 2911 -> 2214 (estrutura 589 -> 207),
+`duel_ai_sum_088239EC` sem mudança de forma. Com funções deste tamanho a contagem de palavras engana (um deslocamento
+muda centenas de palavras): use `fd.py --struct` como métrica. `build/tmp/engR4/vs.sh FUNC VARIANTS.py` roda o
+`vt.py` e imprime as duas medidas por variante; `reorder2.py` reordena os `case` pela ordem dos testes do `sw.py`
+(aceita rótulos cujo corpo o 219 dobrou no delay slot do teste, que o `reorder.py` descartava).
+- **Ponteiro do elemento do laço no topo do corpo** (`a = &duel_special.act[k];` e `a->campo`): o original calcula
+  `s1 = s6 + 44` no delay slot do 1º teste; com `duel_special.act[k].campo` o 219 usa o índice com deslocamento.
+- **Mesma subexpressão em dois lugares que o original NÃO funde**: `ta = &act[1 - ap]` no topo e `op = 1 - ap`
+  depois da 1ª chamada; o 219 funde (CSE) e guarda `1 - ap` na pilha. `1 - (int)ap` num dos lados (tipo diferente)
+  impede a fusão; sem variável `op` (a expressão em cada uso) o slot de pilha sai na ordem do original.
+- **`||` materializado**: `li a1,1; beq ..; bnez ..; move a1,zero; beqz a1` = `(A || B) != 0 && C`; a variante
+  `xori; sltiu; bnez; ...; sltu; beqz` = `((A == 4) || ((B & 0x10) != 0)) != 0 && C` (parênteses em cada lado).
+- **Argumento que o original não recarrega**: `a2` dos callees de um `switch` era o próprio valor testado
+  (`id = ta->id; switch (id)` e `f(.., id, ..)`), não a constante do `case`.
+- **`slti at` + `bnezl`**: `if (mode > 1)` em vez de `mode >= 2`.
+- **Imunidade testada com sinal** (`duel_field_stats`, 14 sítios): o original faz `and; bgtz` = `(int)(imm & m) <= 0`
+  (`AFFECTS(x)` no arquivo); `== 0` dá `bnez`. Bits isolados com `ext` = `flags >> 4 & 1`, metade alta com `ext 16,16`
+  = `x >> 16 & 0xFFFF`, `(short)(b & 0xFFFF)` para `andi; seh`.
+- **Avaliação da esquerda para a direita**: `s0 = s1 + A; s1 = s0 + B` = duas instruções `x += A; x += B;` (não
+  `x += A + B`); `x -= f() * K` em vez de `x += f() * -K` (shifts e `subu`); `700 - n * 200`.
+- **Atribuição encadeada** `st->atk = st->def = X` grava `def` primeiro (`sw 24; b; sw 20`); `atk_eff = def_eff = X`
+  nos casos do 1º `switch` em que o original sobrescreve (`addu s8,s0,v0; move s1,s8`, valores ainda 0).
+- **Slot indexado em vez de ponteiro**: laços `for (i...) { s = &duel.players[p & 1].field[i]; ... }` dão o
+  `addu` com base do jogador por iteração como no original (o `s++` vira outra indução): -90 linhas de estrutura.
+- **Leituras da lista de efeitos** em `duel.effects[e]` (não no símbolo avulso `duel_effects`) e na ordem
+  `src, kind, arg, next`; zona `src >> 8 & 0xFF` (`ext`), não `sra`.
+- **`if` com dois testes que viram `beql`+`beql`+`b`** = `switch` de dois casos (`0x18C7/0x19EF`, `0x1281/0x1284`,
+  `0x1782/0x19ED`) com os rótulos na ordem inversa dos testes; `if (x == K) {...}` isolado com `beql; b` =
+  `switch (x) { case K: ... }`.
+- **Zeragem por `do/while` com teste de nulo** (`c = (unsigned char *)cnt; n = 8; if (c) do *c++ = 0; while (--n);`)
+  como nos vizinhos que batem: o `for` decrescente é desenrolado pelo 219.
+- **Retorno sem valor** (`duel_ai_sum_088239EC`): o `default` do `switch` sai por `b epílogo; nop` sem `li v0`
+  (o v0 = 1 é sobra das comparações): a fonte não tinha `default`/`return`. Tirar o `default: return 1;` do build
+  mwcc (mantido para o port) NÃO liga o modo sem limpeza no 219: o gatilho do original continua desconhecido.
+- **Bugs de lógica**: `duel_field_stats` passava `(short)s->unk4` a `duel_field_type_ex` (o original usa `lhu`,
+  sem sinal) e tinha `duel_slot_value_1909` com retorno `unsigned short` no protótipo local (o original não estreita).
