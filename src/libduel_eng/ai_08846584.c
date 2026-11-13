@@ -66,22 +66,28 @@ void duel_08846584(int mode, int view)
     int c;
     int r;
     int x;
+    int id;
     int once;
     unsigned int e;
     unsigned int ep;
     unsigned int ez;
     DuelEffect *ef;
+    DuelSpecAct *a;
     DuelSpecAct *aa = &duel_special.act[ap];
     DuelSpecAct *ta = &duel_special.act[1 - ap];
     DuelStats st[2];                   /* [ap] attacker, [1 - ap] target */
 
     /* both cards of the battle */
     for (k = 0; k < 2; k++) {
+        a = &duel_special.act[k];
         if (k == ap) {
             pk = duel_special.player[0];
-            zk = duel_special.zone[0];
         } else {
             pk = duel_special.player[1];
+        }
+        if (k == ap) {
+            zk = duel_special.zone[0];
+        } else {
             zk = duel_special.zone[1];
         }
         if (view != 0) {
@@ -89,20 +95,20 @@ void duel_08846584(int mode, int view)
         } else {
             duel_field_stats(pk, zk, &st[k]);
         }
-        duel_special.act[k].unk0 = pk;
-        duel_special.act[k].unk4 = zk;
-        duel_special.act[k].unk8 = duel.players[pk & 1].field[zk].pos;
-        duel_special.act[k].uid = CARD_UID(duel.players[pk & 1].field[zk].card);
-        duel_special.act[k].id = st[k].id;
-        duel_special.act[k].pad14[0] = 0;
-        duel_special.act[k].pad14[1] = 0;
-        duel_special.act[k].pad14[2] = 0;
-        duel_special.act[k].pad14[3] = 0;
-        duel_special.act[k].pad14[4] = st[k].attr;
-        duel_special.act[k].pad14[5] = st[k].level;
-        duel_special.act[k].pad14[6] = 0;
-        duel_special.act[k].pad14[7] = 0;
-        duel_special.act[k].unk34 = 0;
+        a->unk0 = pk;
+        a->unk4 = zk;
+        a->unk8 = duel.players[pk & 1].field[zk].pos;
+        a->uid = CARD_UID(duel.players[pk & 1].field[zk].card);
+        a->id = st[k].id;
+        a->pad14[0] = 0;
+        a->pad14[1] = 0;
+        a->pad14[2] = 0;
+        a->pad14[3] = 0;
+        a->pad14[4] = st[k].attr;
+        a->pad14[5] = st[k].level;
+        a->pad14[6] = 0;
+        a->pad14[7] = 0;
+        a->unk34 = 0;
         duel_special.recs[k].w0 = 0;
     }
     if (duel_special.unk8 != 0) {      /* direct attack: no target */
@@ -115,12 +121,12 @@ void duel_08846584(int mode, int view)
     add = 0;
     add2 = 0;
     n = duel_slot_count_src(ap, duel_special.zone[0], 0x1381);
-    op = 1 - ap;
+    op = 1 - (int)ap;
     h = duel_find_effect_card(op, 0x1905, -1);
     h += duel_find_effect_card(ap, 0x1905, duel_special.zone[0]);
     n += h;
     nul = 0;
-    if ((st[ap].attr == 4 || (st[ap].mask & 0x10)) && duel_count_active(0x1951) != 0) {
+    if ((st[ap].attr == 4 || (st[ap].mask & 0x10)) != 0 && duel_count_active(0x1951) != 0) {
         nul = 1;
     }
     if (duel_slot_e8170(ap, duel_special.zone[0], 0x1955) != 0 && duel_count_monsters(op) == 2) {
@@ -229,22 +235,23 @@ void duel_08846584(int mode, int view)
         h2 += duel_find_effect_card(tp, 0x1905, duel_special.zone[1]);
         n2 += h2;
         nul = 0;
-        if ((st[ap].attr == 4 || (st[ap].mask & 0x10) != 0) && duel_count_active(0x1951) != 0) {
+        if (((st[ap].attr == 4) || ((st[ap].mask & 0x10) != 0)) != 0 && duel_count_active(0x1951) != 0) {
             nul = 1;
         }
         if (duel_slot_e8170(tp, duel_special.zone[1], 0x1955) != 0 && duel_count_monsters(1 - tp) == 2) {
             n2--;
         }
         if (SLOT_ACTIVE(&duel.players[tp & 1].field[duel_special.zone[1]])) {
-            switch (ta->id) {
+            id = ta->id;
+            switch (id) {
             case 0x13A7:
                 if ((view != 0 && duel.players[tp & 1].lp > 2000) ||
-                    duel_slot_effect_with(tp, duel_special.zone[1], 0x13A7, 1) != 0) {
+                    duel_slot_effect_with(tp, duel_special.zone[1], id, 1) != 0) {
                     add += 3000;
                 }
                 break;
             case 0x13AA:
-                if ((view != 0 && aa->pad14[4] == 15) || duel_slot_has_effect(tp, duel_special.zone[1], 0x13AA) != 0) {
+                if ((view != 0 && aa->pad14[4] == 15) || duel_slot_has_effect(tp, duel_special.zone[1], id) != 0) {
                     add += 2000;
                     add2 += 2000;
                 }
@@ -252,7 +259,7 @@ void duel_08846584(int mode, int view)
             case 0x14CC:
                 if ((view != 0 && aa->pad14[4] != 0 &&
                      aa->pad14[4] == duel.players[tp & 1].field[duel_special.zone[1]].link) ||
-                    duel_slot_has_effect(tp, duel_special.zone[1], 0x14CC) != 0) {
+                    duel_slot_has_effect(tp, duel_special.zone[1], id) != 0) {
                     add += 1000;
                 }
                 break;
@@ -291,7 +298,7 @@ void duel_08846584(int mode, int view)
         x = r * ((st[op].atk + 1) >> 1);
         DUEL_HALVE(x, n, i);
         st[ap].atk += x;
-        if (mode >= 2) {
+        if (mode > 1) {
             for (e = duel.players[ap & 1].field[duel_special.zone[0]].effects; e != 0;) {
                 ef = &duel.effects[e];
                 e = ef->next;
