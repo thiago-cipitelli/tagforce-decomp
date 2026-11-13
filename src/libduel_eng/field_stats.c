@@ -388,7 +388,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             atk_eff += duel_grave_count_1a6f(p) * 300;
             break;
         case 0x194C:
-            atk_eff += duel_count_monsters(1 - p) * 200 - (duel_count_monsters(p) - 1) * 500;
+            atk_eff += duel_count_monsters(1 - p) * 200;
+            atk_eff -= (duel_count_monsters(p) - 1) * 500;
             break;
         case 0x1983:
             atk_eff += duel_slot_e68a0(p, z) * 500;
@@ -397,13 +398,10 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             atk_eff += duel_count_grave_traps(p, 4) * 1000;
             break;
         case 0x19BE:
-            n = duel_count_type_skip(p, 7, z) * 100 + duel_count_type(1 - p, 7) * 100;
-            atk_eff += n;
-            def_eff += n;
+            atk_eff = def_eff = duel_count_type_skip(p, 7, z) * 100 + duel_count_type(1 - p, 7) * 100;
             break;
         case 0x19C4:
-            st->atk = (duel_count_attr9(0) + duel_count_attr9(1)) * 500;
-            st->def = st->atk;
+            st->atk = st->def = (duel_count_attr9(0) + duel_count_attr9(1)) * 500;
             break;
         case 0x19CC:
             atk_eff += duel_grave_count_id(p, 0x1919) * 300;
