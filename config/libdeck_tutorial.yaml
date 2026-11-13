@@ -31,8 +31,6 @@ segments:
       - [0x1C44, c, dt_edraw]
       - [0x1C44, asm, dt_edraw_asm_08805BE4]
       - [0x2020, c, dt_edraw]
-      - [0x322C, asm, dt_edraw_asm_088071CC]
-      - [0x37FC, c, dt_edraw]
       - [0x4CCC, c, dt_parts]
       - [0x4E40, asm, dt_parts_asm_08808DE0]
       - [0x4FE8, c, dt_parts]

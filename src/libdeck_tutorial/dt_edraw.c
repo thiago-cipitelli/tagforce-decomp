@@ -1,7 +1,6 @@
 // @range 0x08805BE4-0x08808C6C
 // @rodata 0x08820F08-0x08820F78
 // @asm 0x08805BE4-0x08805FC0
-// @asm 0x088071CC-0x0880779C
 // @data 0x08821E34-0x08821E70
 /* Drawing of the deck editor (the libdeck screen the lesson runs on): the card info strip, the icon
    wrappers, the pane shade, the sort value bubble, the frame export (clear, background, panes, focus
@@ -586,7 +585,6 @@ void dt_line(DtLineVtx *v, unsigned short x, unsigned short y, unsigned short w)
     v[3].color = 0x19000000;
 }
 
-#ifdef NON_MATCHING /* gêmea de dk_draw_headers, mesma forma (203 palavras): falta a alocação dos $s e o id u16 na pilha */
 /* header of each pane: sort and direction icons, filter icon with the number of cards, "new" mark of
    the owned list, scroll bar */
 void *dt_draw_headers(void *list)
@@ -609,8 +607,8 @@ void *dt_draw_headers(void *list)
     p = &dtv.pane[0];
     l = p->list;
     lay = &p->lay;
-    x = p->lay.x + 3;
     y = p->lay.y + p->lay.h - 18;
+    x = p->lay.x + 3;
     list = dt_draw_sort_icon(list, l->sort, x, y);
     list = dt_draw_dir_icon(list, l->dir, x + 18, y);
     if (l->filter != 0) {
@@ -632,9 +630,11 @@ void *dt_draw_headers(void *list)
     fx = lay->x + lay->w - 20;
     if (l->tab == 3 && (mark = cfg_get_byte0_hi2()) != 0)
         list = dt_draw_flag_icon(list, PT(fx, y + 3), mark, dt_eres_get(0x800A));
-    h = lay->h - 41;
-    by = lay->y + 12;
-    sx = lay->x + lay->w - 10;
+    /* pane 0 keeps x, top and height of the scroll bar in by, h and fx: which variable holds each value decides
+       the $s registers ((id = 0x8007, id) keeps id as a u16 spilled to the stack, as in the original) */
+    by = lay->x + lay->w - 10;
+    h = lay->y + 12;
+    fx = lay->h - 41;
     if (dtv.side == 0)
         style = 0;
     else
@@ -643,17 +643,17 @@ void *dt_draw_headers(void *list)
         style += 2;
     if (p->list_mode == 0) {
         cols = lay->cols;
-        list = dt_draw_scrollbar(list, sx, by, h, p->top / cols, lay->grid_rows, (l->count + (cols - 1)) / cols, style,
-                                 dt_eres_get(id = 0x8007));
+        list = dt_draw_scrollbar(list, by, h, fx, p->top / cols, lay->grid_rows, (l->count + (cols - 1)) / cols, style,
+                                 dt_eres_get((id = 0x8007, id)));
     } else {
-        list = dt_draw_scrollbar(list, sx, by, h, p->top, lay->rows, l->count, style, dt_eres_get(id = 0x8007));
+        list = dt_draw_scrollbar(list, by, h, fx, p->top, lay->rows, l->count, style, dt_eres_get((id = 0x8007, id)));
     }
     if (dtv.mode > 1) {
         p = &dtv.pane[1];
         l = p->list;
         lay = &p->lay;
-        x = p->lay.x + 3;
         y = p->lay.y + p->lay.h - 18;
+        x = p->lay.x + 3;
         list = dt_draw_sort_icon(list, l->sort, x, y);
         list = dt_draw_dir_icon(list, l->dir, x + 18, y);
         if (l->filter != 0) {
@@ -675,9 +675,9 @@ void *dt_draw_headers(void *list)
         fx = lay->x + lay->w - 20;
         if (l->tab == 3 && (mark = cfg_get_byte0_hi2()) != 0)
             list = dt_draw_flag_icon(list, PT(fx, y + 3), mark, dt_eres_get(0x800A));
-        h = lay->h - 41;
-        by = lay->y + 12;
         sx = lay->x + lay->w - 10;
+        by = lay->y + 12;
+        h = lay->h - 41;
         style = dtv.side == 1 ? 2 : 3;
         if (p->list_mode == 0) {
             cols = lay->cols;
@@ -689,7 +689,6 @@ void *dt_draw_headers(void *list)
     }
     return dt_draw_counts(list);
 }
-#endif
 
 unsigned short dt_count_digits[6] = { 2, 2, 2, 6, 2, 1 };   /* digits of the copy count of each tab */
 

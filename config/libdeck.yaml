@@ -38,8 +38,6 @@ segments:
       - [0x9720, c, dk_res]
       - [0x9C30, c, dk_draw]
       - [0xA530, c, dk_panes]
-      - [0xA530, asm, dk_panes_asm_0880E4D0]
-      - [0xAB00, c, dk_panes]
       - [0xB244, c, dk_cards]
       - [0xC024, asm, dk_cards_asm_0880FFC4]
       - [0xC400, c, dk_icons]
