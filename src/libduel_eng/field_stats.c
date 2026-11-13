@@ -151,7 +151,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             atk_eff += duel_card_check_9148(p, 0x11D0) * 500;
             break;
         case 0x1009:
-            if (SLOT.flags & 0x10) {
+            if (SLOT.flags >> 4 & 1) {
                 atk_eff += 100;
                 def_eff += 100;
             }
@@ -200,14 +200,14 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             break;
         case 0x12BB:
             st->atk = SLOT.link & 0xFFFF;
-            st->def = SLOT.link >> 16;
+            st->def = SLOT.link >> 16 & 0xFFFF;
             break;
         case 0x1377:
             atk_eff += duel_count_grave_type(1 - p, 1) * 500 + duel_count_type(1 - p, 1) * 500;
             break;
         case 0x15FC:
-            for (q = 0; q < 2; q++) {
-                atk_eff += duel_count_grave_type(q, 1) * 500 + duel_count_type(q, 1) * 500;
+            for (i = 0; i < 2; i++) {
+                atk_eff += duel_count_grave_type(i, 1) * 500 + duel_count_type(i, 1) * 500;
             }
             break;
         case 0x1336:
@@ -223,12 +223,12 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             st->atk = st->def = duel.players[p & 1].n_hand * 1000;
             break;
         case 5000:                     /* the slot value holds ATK | DEF << 16, or a bonus with flag bit 3 */
-            if (SLOT.flags & 8) {
+            if (SLOT.flags >> 3 & 1) {
                 atk_eff += SLOT.link;
                 def_eff += SLOT.link;
             } else {
                 st->atk = SLOT.link & 0xFFFF;
-                st->def = SLOT.link >> 16;
+                st->def = SLOT.link >> 16 & 0xFFFF;
             }
             break;
         case 0x13A9:
@@ -238,7 +238,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             }
             break;
         case 0x13AD:
-            if (SLOT.flags & 0x10) {
+            if (SLOT.flags >> 4 & 1) {
                 atk_eff += 500;
                 def_eff += 500;
             }
@@ -268,7 +268,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         case 0x14FC:                   /* copies the stats of the monster in slot v */
             v = duel_slot_e1854(p, z);
             if (v != 0xFFFF) {
-                duel_field_stats(v & 0xFF, v >> 8, &other);
+                duel_field_stats(v & 0xFF, (v & 0xFFFF) >> 8 & 0xFF, &other);
                 fixed = 1;
                 st->atk = other.atk;
                 st->def = other.def;
