@@ -1,5 +1,4 @@
 // @range 0x08805874-0x08807A44
-// @asm 0x08805F6C-0x088064F8
 // @data 0x0880E88C-0x0880E8BC
 /* The screen: background and title animations, the per-type counters, the recipe grid (main deck,
    extra deck, side deck) with the cursor, the lists of saved decks / recipes / extra data lists
@@ -196,26 +195,35 @@ void *rv_draw_tabs(void *dl)
 }
 
 /* the shown recipe: main deck (4 rows), side deck (2 rows), extra deck (1 row), revealed up to
-   rv.shown cards, with the cursor in the recipe state */
-#ifdef NON_MATCHING /* forma próxima; contadores e limites das três seções em outros $s e na pilha */
+   rv.shown cards, with the cursor in the recipe state. The side deck has its own done/limit (stack slots) but
+   reuses the counter k; k++ in both branches of the cursor test */
 void *rv_draw_recipe(void *dl)
 {
-    RvGrid *g = &rv.grid;
-    RvEntry *sel = 0;
-    int sel_y = 0;
-    int sel_x = 0;
-    int done = 0;
-    int y = -18;
-    int k = 0;
     int limit;
-    int row;
+    int done;
+    int sel_x;
+    int sel_y;
+    RvEntry *sel;
+    int done2;
+    int limit2;
+    RvGrid *g = &rv.grid;
+    RvCards *c = &g->c;
+    int y;
     int i;
+    int k;
+    int row;
     int n;
 
-    dl = rv_draw_digits(dl, 0x301CD, 0, g->c.n_main, 2, 0xFFFFFFFF, rvres_get(0x8009));
+    sel = 0;
+    sel_y = 0;
+    sel_x = 0;
+    k = 0;
+    done = 0;
+    y = -18;
+    dl = rv_draw_digits(dl, 0x301CD, 0, c->n_main, 2, 0xFFFFFFFF, rvres_get(0x8009));
     limit = rv.shown;
-    if (g->c.n_main < limit)
-        limit = g->c.n_main;
+    if (c->n_main < limit)
+        limit = c->n_main;
     for (row = 0; row < 4; row++) {
         y += 33;
         if (g->row == row)
@@ -230,24 +238,25 @@ void *rv_draw_recipe(void *dl)
                 x = i * 175 / 7 + 300;
             else
                 x = i * 152 / (g->main_cols - 1) + 300;
-            e = &g->c.main[done + i];
+            e = &c->main[done + i];
             if (rv.state == 4 && g->col == i && g->row == row) {
                 sel_x = x;
                 sel = e;
+                k++;
             } else {
                 dl = rv_draw_grid_card(dl, x, y, e);
+                k++;
             }
-            k++;
         }
         done = k;
     }
     k = 0;
-    done = 0;
+    done2 = 0;
     y += 11;
-    dl = rv_draw_digits(dl, 461 | (unsigned short)(y + 21) << 16, 0, g->c.n_side, 2, 0xFFFFFFFF, rvres_get(0x8009));
-    limit = rv.shown - g->c.n_main;
-    if (g->c.n_side < limit)
-        limit = g->c.n_side;
+    dl = rv_draw_digits(dl, 461 | (unsigned short)(y + 21) << 16, 0, c->n_side, 2, 0xFFFFFFFF, rvres_get(0x8009));
+    limit2 = rv.shown - c->n_main;
+    if (c->n_side < limit2)
+        limit2 = c->n_side;
     for (; row < 6; row++) {
         y += 33;
         if (g->row == row)
@@ -256,41 +265,44 @@ void *rv_draw_recipe(void *dl)
             int x;
             RvEntry *e;
 
-            if (done + i >= limit)
+            if (done2 + i >= limit2)
                 break;
             if (g->side_cols < 8)
                 x = i * 175 / 7 + 300;
             else
                 x = i * 152 / (g->side_cols - 1) + 300;
-            e = &g->c.side[done + i];
+            e = &c->side[done2 + i];
             if (rv.state == 4 && g->col == i && g->row == row) {
                 sel_x = x;
                 sel = e;
+                k++;
             } else {
                 dl = rv_draw_grid_card(dl, x, y, e);
+                k++;
             }
-            k++;
         }
-        done = k;
+        done2 = k;
     }
-    dl = rv_draw_digits(dl, 461 | (unsigned short)(y + 32) << 16, 0, g->c.n_extra, 2, 0xFFFFFFFF, rvres_get(0x8009));
-    n = rv.shown - g->c.n_main - g->c.n_side;
-    if (g->c.n_extra < n)
-        n = g->c.n_extra;
+    dl = rv_draw_digits(dl, 461 | (unsigned short)(y + 32) << 16, 0, c->n_extra, 2, 0xFFFFFFFF, rvres_get(0x8009));
+    n = rv.shown - c->n_main - c->n_side;
+    if (c->n_extra < n)
+        n = c->n_extra;
     if (g->row == row)
         sel_y = y + 44;
     for (i = 0; i < n; i++) {
         int x;
+        RvEntry *e;
 
-        if (g->c.n_extra < 8)
+        if (c->n_extra < 8)
             x = i * 175 / 7 + 300;
         else
-            x = i * 152 / (g->c.n_extra - 1) + 300;
+            x = i * 152 / (c->n_extra - 1) + 300;
+        e = &c->extra[i];
         if (rv.state == 4 && g->col == i && g->row == 6) {
             sel_x = x;
-            sel = &g->c.extra[i];
+            sel = e;
         } else {
-            dl = rv_draw_grid_card(dl, x, y + 44, &g->c.extra[i]);
+            dl = rv_draw_grid_card(dl, x, y + 44, e);
         }
     }
     if (rv.state == 4) {
@@ -298,11 +310,10 @@ void *rv_draw_recipe(void *dl)
             sel_x = g->col * 175 / 7 + 300;
         if (sel)
             dl = rv_draw_grid_card(dl, sel_x, sel_y, sel);
-        return rv_draw_grid_cursor(dl, sel_x, sel_y);
+        dl = rv_draw_grid_cursor(dl, sel_x, sel_y);
     }
     return dl;
 }
-#endif
 
 /* row drawers per tab, the template rv_draw_lists copies */
 void *(*rv_row_draw[3])(void *dl, int i, int x, int y) = {
