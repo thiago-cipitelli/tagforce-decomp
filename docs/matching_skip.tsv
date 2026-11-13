@@ -181,3 +181,6 @@ tfd_regulation_select	libtitle	64 palavras: o original mantém a constante 1 viv
 menu_update	BOOT	282 palavras: modo sem limpeza pós-likely em função que devolve valor (rodada 23)
 dd_board_cards	libduel_draw	laço interno mantém o teste de entrada; DdLoc inteiro em s0; teste o == head duplo (rodada 23)
 func_08822C2C	libduel_draw	5 instruções: lógica igual ao asm, só a família do laço que mantém o teste de entrada (rodada 23)
+duel_08817598	libduel_eng	441 palavras: estrutura idêntica (6 linhas), só rotação de $s de a/id/mask/b; ordem/tipos/K&R/register sem efeito (rodada 24, Fable)
+duel_0883F3A0	libduel_eng	79 palavras: rotação de registradores p/ofs/prot/b24; ordem das declarações sem efeito (rodadas 23-24)
+duel_088862DC	libduel_eng	14 palavras: o original estreita p com andi 0xff antes do andi 1 do índice; 20 formas testadas (rodadas 23-24)
