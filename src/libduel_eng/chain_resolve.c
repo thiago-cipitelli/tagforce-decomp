@@ -66,7 +66,9 @@ int card_get_prop5_hi(int);
 int duel_hand_count_name(unsigned int p, unsigned short id);
 int duel_hand_find_name(unsigned int p, int id);
 
-#ifdef NON_MATCHING /* refeito do asm bloco a bloco (rodada 25) */
+#ifdef NON_MATCHING /* refeito do asm bloco a bloco (rodada 25): faltam o agendamento do z < 5 do passo 4 (lui antes
+   do slti, 3 palavras) e o andi 0xff do jogador nos dois CARD_UID da mão (família de duel_088862DC, 6 palavras);
+   o resto da diferença é o deslocamento dos alvos de desvio */
 
 #define SLOT(p, z) (&duel.players[(p) & 1].field[z])
 
