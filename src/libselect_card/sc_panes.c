@@ -1,5 +1,4 @@
 // @range 0x08808040-0x088099CC
-// @asm 0x08808040-0x08808694
 // @asm 0x08808694-0x088088B4
 // @data 0x0881AE28-0x0881AE58
 /* The two card panes: header icons (sort, direction, filter and its count, the "new" mark), the
@@ -25,7 +24,6 @@ void *sc_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
 void *sc_draw_rows_small(void *list, ScPane *p);
 void *sc_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, ScEnt *e);
 
-#ifdef NON_MATCHING /* 205 palavras: forma de dk_draw_headers (h, by e x da barra antes do estilo, (count + (cols - 1)) / cols, res_get(id = 0x8007), marca int lida e testada em dois comandos); falta a alocação: o original guarda o id u16 na pilha e aqui o mwcc derrama outro valor */
 /* header of each pane: sort and direction icons, filter icon with the number of cards, "new"
    mark of the owned list, scroll bar */
 void *sc_draw_headers(void *list)
@@ -46,8 +44,8 @@ void *sc_draw_headers(void *list)
     p = &scv.pane[0];
     l = p->list;
     lay = &p->lay;
-    x = p->lay.x + 3;
     y = p->lay.y + p->lay.h - 18;
+    x = p->lay.x + 3;
     list = sc_draw_sort_icon(list, l->sort, x, y);
     list = sc_draw_dir_icon(list, l->dir, x + 18, y);
     if (l->filter != 0) {
@@ -83,9 +81,11 @@ void *sc_draw_headers(void *list)
         if (mark != 0)
             list = sc_draw_flag_icon(list, PT(x, y + 3), mark, res_get(0x800A));
     }
-    h = lay->h - 41;
-    by = lay->y + 12;
-    x = lay->x + lay->w - 10;
+    /* pane 0 keeps x, top and height of the scroll bar in by, h and x (which variable holds each value decides
+       the $s registers, as in dt_draw_headers) */
+    by = lay->x + lay->w - 10;
+    h = lay->y + 12;
+    x = lay->h - 41;
     if (scv.side == 0)
         style = 0;
     else
@@ -94,18 +94,18 @@ void *sc_draw_headers(void *list)
         style += 2;
     if (p->list_mode == 0) {
         cols = lay->cols;
-        list = sc_draw_scrollbar(list, x, by, h, p->top / cols, lay->grid_rows,
-                                 (l->count + (cols - 1)) / cols, style, res_get(id = 0x8007));
+        list = sc_draw_scrollbar(list, by, h, x, p->top / cols, lay->grid_rows,
+                                 (l->count + (cols - 1)) / cols, style, res_get((id = 0x8007, id)));
     } else {
-        list = sc_draw_scrollbar(list, x, by, h, p->top, lay->rows, l->count, style,
-                                 res_get(id = 0x8007));
+        list = sc_draw_scrollbar(list, by, h, x, p->top, lay->rows, l->count, style,
+                                 res_get((id = 0x8007, id)));
     }
     if (scv.mode > 1) {
         p = &scv.pane[1];
         l = p->list;
         lay = &p->lay;
-        x = p->lay.x + 3;
         y = p->lay.y + p->lay.h - 18;
+        x = p->lay.x + 3;
         list = sc_draw_sort_icon(list, l->sort, x, y);
         list = sc_draw_dir_icon(list, l->dir, x + 18, y);
         if (l->filter != 0) {
@@ -141,9 +141,9 @@ void *sc_draw_headers(void *list)
             if (mark != 0)
                 list = sc_draw_flag_icon(list, PT(x, y + 3), mark, res_get(0x800A));
         }
-        h = lay->h - 41;
-        by = lay->y + 12;
         x = lay->x + lay->w - 10;
+        by = lay->y + 12;
+        h = lay->h - 41;
         style = scv.side == 1 ? 2 : 3;
         if (p->list_mode == 0) {
             cols = lay->cols;
@@ -156,7 +156,6 @@ void *sc_draw_headers(void *list)
     }
     return sc_draw_counts(list);
 }
-#endif
 
 /* digits of the copy count on each tab */
 unsigned short sc_count_digits[3][2] = { { 4, 1 }, { 6, 2 }, { 6, 1 } };

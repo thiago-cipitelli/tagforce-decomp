@@ -32,8 +32,6 @@ segments:
       - [0xF14, c, sc_parts]
       - [0x3690, c, sc_draw]
       - [0x40A0, c, sc_panes]
-      - [0x40A0, asm, sc_panes_asm_08808040]
-      - [0x46F4, c, sc_panes]
       - [0x46F4, asm, sc_panes_asm_08808694]
       - [0x4914, c, sc_panes]
       - [0x5A2C, c, sc_lists]

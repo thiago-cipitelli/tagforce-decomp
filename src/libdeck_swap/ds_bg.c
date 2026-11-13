@@ -1,5 +1,4 @@
 // @range 0x08807828-0x08808A54
-// @asm 0x08807BE8-0x088080F8
 // @data 0x0881A170-0x0881A17C
 /* Background of the swap screen: bg.ehf, the window, the row lines of the list panes, the swap
    stream window with how far the main deck is from its size, the pane headers (sort, direction,
@@ -143,7 +142,6 @@ void ds_line(DsLineVtx *v, unsigned short x, unsigned short y, unsigned short w)
     v[3].color = 0x19000000;
 }
 
-#ifdef NON_MATCHING /* 168 palavras: forma de sc_draw_headers sem a marca de novidade (h, by e x da barra antes do estilo, (count + (cols - 1)) / cols, res_get(id = 0x8007), tab >= 2); falta a alocação: o original guarda o id u16 na pilha */
 /* header of each pane: sort and direction icons, filter icon with the number of cards, "new"
    scroll bar */
 void *ds_draw_headers(void *list)
@@ -163,8 +161,8 @@ void *ds_draw_headers(void *list)
     p = &dsv.pane[0];
     l = p->list;
     lay = &p->lay;
-    x = p->lay.x + 3;
     y = p->lay.y + p->lay.h - 18;
+    x = p->lay.x + 3;
     list = ds_draw_sort_icon(list, l->sort, x, y);
     list = ds_draw_dir_icon(list, l->dir, x + 18, y);
     if (l->filter != 0) {
@@ -183,9 +181,11 @@ void *ds_draw_headers(void *list)
             list = ds_draw_digits(list, PT(x, y + 4), 0, l->count, 4, 0xFFFFFFFF, res_get(0x8009));
         }
     }
-    h = lay->h - 41;
-    by = lay->y + 12;
-    x = lay->x + lay->w - 10;
+    /* pane 0 keeps x, top and height of the scroll bar in by, h and x (which variable holds each value decides
+       the $s registers, as in dt_draw_headers) */
+    by = lay->x + lay->w - 10;
+    h = lay->y + 12;
+    x = lay->h - 41;
     if (dsv.side == 0)
         style = 0;
     else
@@ -194,18 +194,18 @@ void *ds_draw_headers(void *list)
         style += 2;
     if (p->list_mode == 0) {
         cols = lay->cols;
-        list = ds_draw_scrollbar(list, x, by, h, p->top / cols, lay->grid_rows,
-                                 (l->count + (cols - 1)) / cols, style, res_get(id = 0x8007));
+        list = ds_draw_scrollbar(list, by, h, x, p->top / cols, lay->grid_rows,
+                                 (l->count + (cols - 1)) / cols, style, res_get((id = 0x8007, id)));
     } else {
-        list = ds_draw_scrollbar(list, x, by, h, p->top, lay->rows, l->count, style,
-                                 res_get(id = 0x8007));
+        list = ds_draw_scrollbar(list, by, h, x, p->top, lay->rows, l->count, style,
+                                 res_get((id = 0x8007, id)));
     }
     if (dsv.mode > 1) {
         p = &dsv.pane[1];
         l = p->list;
         lay = &p->lay;
-        x = p->lay.x + 3;
         y = p->lay.y + p->lay.h - 18;
+        x = p->lay.x + 3;
         list = ds_draw_sort_icon(list, l->sort, x, y);
         list = ds_draw_dir_icon(list, l->dir, x + 18, y);
         if (l->filter != 0) {
@@ -224,9 +224,9 @@ void *ds_draw_headers(void *list)
                 list = ds_draw_digits(list, PT(x, y + 4), 0, l->count, 4, 0xFFFFFFFF, res_get(0x8009));
             }
         }
-        h = lay->h - 41;
-        by = lay->y + 12;
         x = lay->x + lay->w - 10;
+        by = lay->y + 12;
+        h = lay->h - 41;
         style = dsv.side == 1 ? 2 : 3;
         if (p->list_mode == 0) {
             cols = lay->cols;
@@ -239,7 +239,6 @@ void *ds_draw_headers(void *list)
     }
     return ds_draw_counts(list);
 }
-#endif
 
 /* digits of the copy count on each tab */
 unsigned short ds_count_digits[3] = { 2, 2, 2 };
