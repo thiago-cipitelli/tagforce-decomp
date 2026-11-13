@@ -484,8 +484,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         for (i = 0; i < 10; i++) {
             if (duel.players[q & 1].field[i].card.id != 0 && SLOT_ACTIVE(&duel.players[q & 1].field[i])) {
                 b = duel_card_bonus(st, q, i, p, z);
-                atk_bon += (short)b;
-                def_bon += (short)(b >> 16);
+                atk_bon += (short)(b & 0xFFFF);
+                def_bon += (short)(b >> 16 & 0xFFFF);
             }
         }
     }
@@ -504,8 +504,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         s = &duel.players[q & 1].field[10];
         if (s->card.id != 0 && SLOT_ACTIVE(s) && AFFECTS(IMMUNE(st->imm, p, q))) {
             b = duel_field_bonus(st, q, 10, p, z);
-            atk_fld += (short)b;
-            def_fld += (short)(b >> 16);
+            atk_fld += (short)(b & 0xFFFF);
+            def_fld += (short)(b >> 16 & 0xFFFF);
             if (duel_st_affects(p, z, q, 10) == 0) {
                 atk_bon += atk_fld;
                 atk_fld = 0;
@@ -517,13 +517,13 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
 
     /* effect entries attached to the slot */
     for (e = SLOT.effects; e != 0;) {
-        ef = &duel_effects[e];
+        ef = &duel.effects[e];
         src = ef->src;
+        kind = ef->kind & 0xF;
         arg = ef->arg;
         e = ef->next;
-        kind = ef->kind & 0xF;
         sp = src & 0xFF;
-        sz = src >> 8;
+        sz = src >> 8 & 0xFF;
         switch (kind) {
         case 1:
         case 2:
@@ -851,8 +851,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     break;
                 case 0x175D:           /* the next two entries hold the new ATK and DEF */
                     if (!fixed && AFFECTS(st->imm & 1)) {
-                        e1 = &duel_effects[ef->next];
-                        e2 = &duel_effects[e1->next];
+                        e1 = &duel.effects[ef->next];
+                        e2 = &duel.effects[e1->next];
                         if (e1->src == 0x175D && e2->src == 0x175D) {
                             atk_bon = 0;
                             atk_eq = 0;
