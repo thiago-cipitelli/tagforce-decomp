@@ -523,7 +523,7 @@ tdl_deck_get = 0x08825404; // type:func matched src/libtitle/t_deckpick.c
 tdl_deck_set = 0x088254F4; // type:func matched src/libtitle/t_deckpick.c
 tdl_deck_input = 0x08825720; // type:func matched src/libtitle/t_deckpick.c
 tdl_deck_draw = 0x08825BBC; // type:func matched src/libtitle/t_deckpick.c
-tdl_deck_item = 0x08825D7C; // type:func asm (@asm in src/libtitle/t_deckpick.c, C under NON_MATCHING)
+tdl_deck_item = 0x08825D7C; // type:func matched src/libtitle/t_deckpick.c
 tdl_deck_record = 0x088262C8; // type:func matched src/libtitle/t_deckpick.c
 // --- generated imports below (tools/link_map.py); edit lines above only ---
 str_to_wide = 0x08826B8C; // type:func import:libehsys nid:00D1378F
