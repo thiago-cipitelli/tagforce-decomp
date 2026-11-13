@@ -48,8 +48,6 @@ segments:
       - [0xAFD4, c, shop_parts]
       - [0xB0FC, asm, shop_parts_asm_0880F09C]
       - [0xB2A4, c, shop_parts]
-      - [0xC454, asm, shop_parts_asm_088103F4]
-      - [0xC6D0, c, shop_parts]
       - [0xD124, asm, shop_parts_asm_088110C4]
       - [0xD818, c, shop_open]
       - [0xD8FC, asm, shop_open_asm_0881189C]

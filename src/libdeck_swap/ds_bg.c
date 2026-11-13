@@ -19,6 +19,8 @@ void *ds_draw_bg_ehf(void *list);
 void *ds_draw_window(void *list);
 void *ds_draw_grid_lines(void *list, unsigned short mode);
 void ds_line(DsLineVtx *v, unsigned short x, unsigned short y, unsigned short w);
+/* int x, y here (the call in ds_draw_stream sign-extends x); ds_parts.c defines it with short x, y */
+void *ds_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
 void *ds_draw_stream(void *list);
 void *ds_draw_headers(void *list);
 void *ds_draw_counts(void *list);

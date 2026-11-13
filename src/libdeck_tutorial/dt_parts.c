@@ -1,6 +1,5 @@
 // @range 0x08808C6C-0x0880B704
 // @asm 0x08808DE0-0x08808F88
-// @asm 0x0880A340-0x0880A5BC
 // @asm 0x0880B010-0x0880B704
 // @rodata 0x08820F78-0x08820F9C
 // @data 0x08821E70-0x08821F28
@@ -16,7 +15,7 @@ unsigned short dt_sort_key(unsigned short id, unsigned short *tab);
 int dt_id_find(unsigned short id, unsigned short sub, ScIdList *l);
 int dt_kind_icon(unsigned short kind);
 void *dt_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim);
-void *dt_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
+void *dt_draw_num_text(void *list, short x, short y, int value, int step, unsigned short n, int pad);
 void *dt_draw_frame(void *list, int x, int y, int w, int h, void *gim, int style);
 void *dt_draw_sprite(void *list, ScSprite *s, void *gim);
 void *dt_draw_icon_a(void *list, ScPt pos, unsigned short id, void *gim);
@@ -121,11 +120,11 @@ int dt_kind_icon(unsigned short kind)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-#ifdef NON_MATCHING /* forma igual; o mwcc troca os registradores s4-s8 de value, pad, x, w e y */
+#ifdef NON_MATCHING /* 2 palavras: o original passa t0 (9) antes de a3 (w) para draw_set_offsets e põe a3 no atraso do jal */
 /* digits right to left from pos, w x 9 each: n = fmt & 0xFF digits, style = fmt >> 8 */
 void *dt_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim)
 {
-    short px = pos & 0xFFFF;
+    int px = (short)(pos & 0xFFFF);
     short py = pos >> 16 & 0xFFFF;
     unsigned char style = fmt >> 8;
     unsigned char n = fmt & 0xFF;
@@ -142,8 +141,6 @@ void *dt_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned
     switch (style) {
     case 3:
         step = -1;
-        w = 7;
-        break;
     case 0:
         w = 7;
         break;
@@ -153,11 +150,10 @@ void *dt_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned
         break;
     }
     list = draw_set_offsets(list, w, 9, w, 9);
-    step = w + step;
-    x = px + (short)((n - 1) * step);
+    x = px + (short)((n - 1) * (w + step));
     for (i = 0; i < n; i++) {
         list = draw_sprite(list, x, py, 0, value % 10 * w, 0, 0, 0);
-        x -= (short)step;
+        x -= (short)(w + step);
         value /= 10;
         if (!pad && value == 0)
             break;
@@ -167,17 +163,17 @@ void *dt_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned
 #endif
 
 /* font digits right to left, n at most (all of them with pad) */
-void *dt_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad)
+void *dt_draw_num_text(void *list, short x, short y, int value, int step, unsigned short n, int pad)
 {
     short digit[2] = { '0', 0 };
-    int px = x & 0xFFFF;
+    int px = (unsigned short)x;
     int i;
 
     font_text_set(list);
     for (i = n - 1; i >= 0; i--) {
-        px = (px - step) & 0xFFFF;
+        px = (unsigned short)(px - step);
         digit[0] = value % 10 + '0';
-        font_draw_text(px << 6, (short)y << 6, (480 - px) << 6, (unsigned short *)digit);
+        font_draw_text(px << 6, y << 6, (480 - px) << 6, (unsigned short *)digit);
         value /= 10;
         if (!pad && value == 0)
             break;
@@ -554,50 +550,46 @@ unsigned char dt_count_icons[7][4] = {   /* u, v, w, h */
     { 0x24, 0x58, 0x0C, 0x0C }, { 0x24, 0x40, 0x0C, 0x0C }, { 0x30, 0x34, 0x0C, 0x0C },
 };
 
-/* label x offsets and strip widths of the counters (the templates of dt_draw_counters' locals) */
-short dt_counter_xs[3] = { 0x17, 0x30, 0x50 };
-unsigned short dt_counter_ws[3] = { 0x18, 0x1A, 0x14 };
-
-#ifdef NON_MATCHING /* o original guarda os dois gim na pilha e c/x em outros registradores s; a forma muda pouco */
 /* the three counters under a card (icon, label strip, number) */
 void *dt_draw_counters(void *list, ScPt pos, ScCounter *c, void *gim_strip, void *gim)
 {
-    short y = pos >> 16 & 0xFFFF;
-    int xx = pos & 0xFFFF;
-    short *px = dt_counter_xs;
-    unsigned short *pw = dt_counter_ws;
-    unsigned short off = 0;
-    short x;
+    unsigned short bx;
     int i;
-    int ix;
-    unsigned char *ic;
+    short x = pos & 0xFFFF;
+    unsigned short offs[3] = { 0x17, 0x30, 0x50 };
+    short y = pos >> 16 & 0xFFFF;
+    ScCounter *p;
+    unsigned short widths[3] = { 0x18, 0x1A, 0x14 };
 
+    bx = 0;
     if (gim_strip == 0 || gim == 0)
         return list;
-    x = xx;
-    for (i = 0, ix = x; i < 3; i++, c++, ix += 25, pw++, px++) {
-        if (c->icon != 0) {
+    p = c;
+    for (i = 0; i < 3; i++) {
+        if (p->icon != 0) {
+            unsigned char *q;
+
             list = dl_ambient_color(list, 0xFFFFFFFF);
             list = dl_set_tex_filter(list, 0, 0);
-            ic = dt_count_icons[c->icon];
+            q = dt_count_icons[p->icon];
             list = gim_set_texture(list, gim);
-            list = draw_set_offsets(list, ic[2], ic[3], ic[2], ic[3]);
-            list = draw_sprite(list, ix, y, 0, ic[0], ic[1], 0, 0);
+            list = draw_set_offsets(list, q[2], q[3], q[2], q[3]);
+            list = draw_sprite(list, x + i * 25, y, 0, q[0], q[1], 0, 0);
             list = gim_set_texture(list, gim_strip);
-            list = draw_set_offsets(list, *pw, 14, *pw, 14);
-            list = draw_sprite(list, x + 12 + off, y, 0, off, 234, 0, 0);
+            list = draw_set_offsets(list, widths[i], 14, widths[i], 14);
+            list = draw_sprite(list, x + 12 + bx, y, 0, bx, 234, 0, 0);
             font_set_size(10, 12);
-            font_set_color(c->color);
+            font_set_color(p->color);
             if (i == 2)
-                list = dt_draw_num_text(list, (short)(x + *px), (short)(y + 1), c->value, 8, 2, 0);
+                list = dt_draw_num_text(list, x + offs[i], y + 1, p->value, 8, 2, 0);
             else
-                list = dt_draw_num_text(list, (short)(x + *px), (short)(y + 1), c->value, 8, 1, 0);
+                list = dt_draw_num_text(list, x + offs[i], y + 1, p->value, 8, 1, 0);
         }
-        off += *pw;
+        bx += widths[i];
+        p++;
     }
     return list;
 }
-#endif
 
 /* an icon with a text on its right */
 void *dt_draw_icon_text(void *list, ScIconText *t, int x, int y)

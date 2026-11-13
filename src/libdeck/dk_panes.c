@@ -16,7 +16,7 @@ void *dk_draw_filter_icon(void *list, int filter, int x, int y);
 void *dk_draw_digits(void *list, int pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim);
 void *dk_draw_flag_icon(void *list, int pos, unsigned short kind, void *gim);
 void *dk_draw_scrollbar(void *list, int x, int y, int h, int pos, int first, int total, int frame, void *gim);
-void *dk_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
+void *dk_draw_num_text(void *list, short x, short y, int value, int step, unsigned short n, int pad);
 unsigned short dk_tab_rect(unsigned short tab, unsigned short sel, DkRect *r);
 void *dk_draw_counts(void *list);
 void *dk_draw_count(void *list, unsigned short x, DkRect *r, unsigned short ndig, int value);

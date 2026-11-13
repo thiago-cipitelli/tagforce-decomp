@@ -246,7 +246,7 @@ unsigned short sc_sort_key(unsigned short id, unsigned short *tab);
 int sc_id_find(unsigned short id, unsigned short sub, ScIdList *l);
 int sc_kind_icon(unsigned short kind);
 void *sc_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim);
-void *sc_draw_num_text(void *list, int x, int y, int value, int step, unsigned short n, int pad);
+void *sc_draw_num_text(void *list, short x, short y, int value, int step, unsigned short n, int pad);
 void *sc_draw_frame(void *list, int x, int y, int w, int h, void *gim, int style);
 void *sc_draw_sprite(void *list, ScSprite *s, void *gim);
 void *sc_draw_icon_a(void *list, ScPt pos, unsigned short id, void *gim);
