@@ -2032,3 +2032,40 @@ compilação), `hill.py` (descida aleatória sobre ordem e `int`/`unsigned` das 
   `case` troca a cor dos parâmetros sem regra visível), `duel_0883F3A0` (79: p/ofs/prot/b24 rodados),
   `duel_08838A84` (32: 2ª definição de `q` vira outro web), `duel_088862DC` (14: o original estreita `p` com
   `andi 0xff` antes do `andi 1` do índice; 20 formas testadas).
+
+## Rodada 25 (`engR2`: `duel_088482F8`, cálculo da batalha em `battle_calc.c`)
+
+Reescrita do asm de uma função de 10,7 KB (nunca tentada): 2543 -> 20 palavras com os helpers `static inline`
+(o asm_try antigo dava 1138 porque os helpers `static` não eram expandidos e só 4,7 KB eram comparados). A lógica
+do rascunho estava certa bloco a bloco (multiconjunto de `jal` e constantes iguais); tudo era forma. Ferramenta
+nova na worktree: `fdm.py --regs` (o `fd.py` com relocações mascaradas mas registradores visíveis), para ver a
+coloração depois que a estrutura (`fd.py --struct`) bate.
+- **Helper `static` sem `inline` não é expandido**: compare sempre com os helpers `static inline` (o tamanho
+  compilado tem de chegar perto do original antes de olhar palavras).
+- **Globais avulsos que são campos** (`duel_atk_tp/direct/zone/tz` = `duel_special.player[1]/unk8/zone[0]/zone[1]`):
+  só como campos (macros `ATK_*`) o mwcc relê cada um no lugar do original.
+- **Parâmetro de helper inline que o original relê a cada uso**: o original relê `duel_atk_zone` em cada chamada
+  das partes de atacante/atacado; um parâmetro `int mz` vira um `$s` carregado uma vez. Passar o endereço
+  (`const int *mz`, chamado com `&ATK_ZONE`) e usar `*mz` reproduz a releitura (406 -> 152 linhas de estrutura).
+- **Cópias do mesmo código com `case` diferentes**: o switch do atacante não tem o `case 0x1292` (corpo
+  `if (!attacker ...)`) e o do atacado não tem 0x14BC/0x1140/0x1A93. Um helper com `attacker` constante deixa o
+  teste do `case` com corpo vazio (`li; beq fim`); o original eram duas cópias. Helpers separados por lado.
+- **Ordem dos operandos fixa nas duas cópias**: na cópia do atacado o original compara `p` antes de `tp`
+  (`xor v0,s4,s3`, `beq s4,s3`, `lw 28(s2)` antes de `28(s1)`): escrever `fp != mp`, `foe->atk == me->atk` na
+  cópia do atacado; no helper comum, `defender ? ap != mp : mp != ap` (some depois da expansão).
+- **`if (A == 1) ... else if (A == 16 || A == 12 || A == 11)` com o corpo do 1 depois** = `switch` com
+  `case 0xB: case 0xC: case 0x10:` antes de `case 1:`; `x == 2 || x == 3` vira `addiu; sltiu` (faixa), o
+  original com `li 2; beql; li 3; beq` é `switch (x) { case 3: case 2: ... }`.
+- **Corpo que cai no `case` seguinte**: `if (!check) me->destroyed = 0; break;` antes de um `case` cujo corpo é
+  `me->destroyed = 0; break;` = `if (check) break;` sem `break` final (o original cai no corpo seguinte).
+- **CSE que o original não faz**: `1 - p` recalculado em cada bloco (o 219 guardava num `$s` o `1 - p` do topo):
+  `FIGHTER(1 - (int)p)` no topo. Produto `(p & 1) * 4012` do `a_neg` guardado na pilha: `(int)p & 1` só no topo.
+  E o contrário: `&DAMAGE[1]` mantido em `$s8` do topo até o 0x151E = um local `r1 = &DAMAGE[1]; r1->w0 = 0;`.
+- Miúdos: `(unsigned int)w > 0xFFFF ? 0xFFFF : w` (o `MIN` dá `beqz` com o ramo trocado); `link >= 4` (`sltiu v0`,
+  não `at`); `foe->atk >= 1900`; `duel_slot_e1854() != 0xFFFF` (devolve u16, sem `seh`); `(unsigned char)mp |
+  (*mz & 0xFF) << 8` para a ordem do `andi`; no laço dos efeitos, `hit = 0` depois de `q/sz/id` tira o `li 13`
+  içado; `((volatile DuelSpecRec *)r)->a[0]` tira o `lw a0` do delay slot.
+- **Fica** (20 palavras): no `case 0x13CB` (duas cópias) o original põe o contador em `a0` e o ponteiro do laço
+  em `a1`; aqui saem trocados. Contador por bloco, `j` no helper (todas as combinações dos três laços), `do/while`,
+  `++i`, testes aninhados, operandos trocados, helper inline para o laço e `hill.py` nas declarações da função não
+  mudaram nada (ou pioraram).

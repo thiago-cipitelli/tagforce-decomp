@@ -69,7 +69,7 @@ int duel_slot_effect_with(unsigned int, int, int, int);
 void duel_088CC594(unsigned int p, int z, int a, int id);
 void duel_0884DAF0(int a, int b);
 
-#ifdef NON_MATCHING /* refeito do asm na rodada 25: estrutura igual, faltam 73 palavras (alocação de temporários) */
+#ifdef NON_MATCHING /* refeito do asm na rodada 25: faltam 20 palavras, contador e ponteiro do laço do case 0x13CB trocados (a0/a1) nas duas cópias */
 
 /* effects of the attacking monster `me` (not negated, player mp, zone *mz) on the battle against `foe` */
 static inline void duel_battle_atk_card(DuelFighter *me, DuelFighter *foe, unsigned int mp, const int *mz, unsigned int fp,
