@@ -1,5 +1,4 @@
 // @range 0x08820618-0x08827618
-// @asm 0x08822000-0x088230CC
 // @asm 0x088239EC-0x08824798
 // @data 0x089078C0-0x08907908
 /* The computer player's choice of a card to activate (second part): the tables of cards checked
@@ -724,8 +723,6 @@ int duel_slot_faceup_live(unsigned int p, int z);
 void duel_088C4448(unsigned int, int, int);
 
 /* Steps of the attack: announce, targets, damage calculation (duel_ai_atk_08821C80), end. */
-#ifdef NON_MATCHING /* 7 palavras: no laço que conta os alvos distintos do passo 9 o original tem cnt em a3 e j em a0
-   (aqui trocados); nomes, declarações, formas do laço e inline não mudaram */
 int duel_ai_atk_08822000(void)
 {
     DuelAtkRec *const a = &duel_atk_rec;
@@ -909,12 +906,12 @@ int duel_ai_atk_08822000(void)
             }
             }
         }
-        for (j = 0, cnt = 0; j < a->n; j++) {
-            if (j == 0 || a->locs[j] != a->locs[j - 1]) {
-                cnt++;
+        for (j = 0, i = 0; i < a->n; i++) {
+            if (i == 0 || a->locs[i] != a->locs[i - 1]) {
+                j++;
             }
         }
-        if (cnt >= 2) {
+        if (j >= 2) {
             for (i = 5; i < 10; i++) {
                 if (duel_slot_e8170(a->player, i, 0x1662) != 0) {
                     duel_0884F30C(((unsigned int)a->player << 31 & 0x80000000) | 0x200000 | ((unsigned int)i << 16 & 0x1F0000) | 0x1662,
@@ -984,7 +981,6 @@ int duel_ai_atk_08822000(void)
         return 1;
     }
 }
-#endif
 
 extern unsigned char duel_b_08914A2F;
 
