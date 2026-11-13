@@ -371,8 +371,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     *c++ = 0;
                 } while (--n);
             }
-            s = &duel.players[p & 1].field[0];
-            for (i = 0; i < 5; i++, s++) {
+            for (i = 0; i < 5; i++) {
+                s = &duel.players[p & 1].field[i];
                 if (field_get_card(p, i) == 0x18C3 && s->faceup != 0) {
                     cnt[s->pos]++;
                 }
@@ -425,9 +425,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             break;
         case 0x19EF:                   /* 300 for each opposing monster sharing a kind */
             n = 0;
-            s = &duel.players[(1 - p) & 1].field[0];
-            for (i = 0; i < 5; i++, s++) {
-                if (s->card.id != 0 && s->faceup != 0 && (st->mask & duel_field_attrs(1 - p, i))) {
+            for (i = 0; i < 5; i++) {
+                if (duel.players[(1 - p) & 1].field[i].card.id != 0 && duel.players[(1 - p) & 1].field[i].faceup != 0 && (st->mask & duel_field_attrs(1 - p, i))) {
                     n++;
                 }
             }
@@ -447,9 +446,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             break;
         case 0x1A05:                   /* the base ATK of the other 0x1A6x monsters it controls */
             st->atk = 0;
-            s = &duel.players[p & 1].field[0];
-            for (i = 0; i < 5; i++, s++) {
-                if (i != z && s->card.id != 0 && s->faceup != 0 &&
+            for (i = 0; i < 5; i++) {
+                if (i != z && duel.players[p & 1].field[i].card.id != 0 && duel.players[p & 1].field[i].faceup != 0 &&
                     card_is_in_group_1a6x(field_get_card(p, i))) {
                     st->atk += duel_field_base_atk(p, i);
                 }
@@ -476,9 +474,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
 
     /* bonuses given by the cards on both fields */
     for (q = 0; q < 2; q++) {
-        s = &duel.players[q & 1].field[0];
-        for (i = 0; i < 10; i++, s++) {
-            if (s->card.id != 0 && SLOT_ACTIVE(s)) {
+        for (i = 0; i < 10; i++) {
+            if (duel.players[q & 1].field[i].card.id != 0 && SLOT_ACTIVE(&duel.players[q & 1].field[i])) {
                 b = duel_card_bonus(st, q, i, p, z);
                 atk_bon += (short)b;
                 def_bon += (short)(b >> 16);
