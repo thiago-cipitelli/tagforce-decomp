@@ -2397,3 +2397,39 @@ funcionou: estrutura primeiro (`fd.py --struct`), depois slots de pilha, por fim
   `sw` no delay slot da 1ª chamada; `switch (link) { case 1: ...; case 2: ... }` no `0x12C6`.
 - **Lógica**: `duel_field_type_ex` comparado como `unsigned short` no `0x149F` (o original faz `andi 0xffff` no
   retorno); o resto das mudanças é equivalente (fusões, ordem de somas, índices).
+## Rodada 27 (`skE2`): reteste de `matching_skip` (libduel_eng, 2ª metade)
+
+Bateram 7 das 31: `duel_req_host_3b_table`, `duel_count_id_flag18`, `duel_min_order`, `duel_088BAF7C`,
+`duel_088BECC0`, `duel_0886981C` (e com isso `field_find.c` e `effects_08869190.c` ficaram sem `@asm`).
+- **Busca aleatória ordem x tipo x inicializador** (`build/tmp/skE2/rs.py FUNC CFG.py SEED N`: `DECL` = texto
+  das declarações, `VARS` = (nome, tipos, inicializador ou None; metade das vezes vira atribuição depois das
+  declarações), `EXTRA` = trocas de corpo alternativas, `PREFIX`/`SUFFIX` fixos; 8 compilações em paralelo, grava o
+  melhor em `build/tmp/skE2/best_FUNC.c`). Em 200 variantes achou `duel_req_host_3b_table` (`int k; int p = ...;
+  int *id;`: `p` int e declarado depois do contador) e `duel_088BAF7C` (parâmetro `unsigned int c` e `int i; int
+  j; int n;`), ambas com 1000+ ordens testadas antes (sem os tipos). Parâmetro sem chamadores com protótipo pode
+  mudar de tipo à vontade.
+- **Família `duel_min_order`/`duel_count_id_flag18`** ("contador de bit e ponteiro de slot trocam `$s`"): a forma
+  da gêmea já batendo `duel_count_monster_active` — `for (i = 0, b = p << 4, s = &duel.players[p & 1]; i < 5; s =
+  (DuelPlayer *)((char *)s + sizeof(DuelSlot)), b++, i++)` com `s->field[0]`, `int n;` sem inicializador e `n =
+  0;` antes do laço. Antes de buscar permutações, procurar no mesmo arquivo a gêmea que já bate e copiar o laço.
+- **Releitura de um campo depois da comparação** (`if (x->unk4 < m) m = x->unk4;`, o original faz `lhu` de novo):
+  `m = ((volatile DuelSlot *)&s->field[0])->unk4;` na atribuição (o `volatile` só na segunda leitura).
+- **Ponteiro para `duel_chain.srcs[j]` criado só depois do teste do tipo** (`duel_088BECC0`: o original lê o
+  `player` por `t1+1529` e monta `a1 = t1 + 1528` no atraso): `if (kinds[j] == 0x19) { DuelSrc *s = (DuelSrc
+  *)&duel_chain.srcs[j]; if (s->player == p && s->uid == uid) ... }`. Com o ponteiro declarado no topo do laço o
+  mwcc o calcula antes do 1º teste (10 palavras); com tudo por `duel_chain.srcs[j]` dobra o deslocamento (16).
+- **Expressão do teste num local antes do `if`** (`duel_0886981C`, 162 -> 0, inclusive os 4 bytes que faltavam):
+  `unsigned int v = a->player ^ a->opp; if (v == duel_view_player)` dá a ordem de cargas do original (opp, player,
+  depois a global) e o `bnel` com a 1ª instrução do bloco seguinte no atraso; com a expressão dentro do `if` o mwcc
+  iça a carga da global para o topo e usa `bne` + `nop`.
+- **`duel_msg_poll` (mecanismo, não corrigível com o 219)**: `duel_msg_count` (definida antes no mesmo arquivo) não
+  toca em `v0` nem em `a1`, e o original aproveita as duas coisas: o `size` de `duel_net_recv` sobrevive em `v0`
+  à chamada (não vai para `$s`) e o `a1 = 0` do `duel_msg_count(cmd, 0)` é reaproveitado no `duel_msg_send3(3, 0,
+  0, 0)`. É alocação interprocedural (o compilador conhece os registradores que a função chamada do mesmo arquivo
+  usa); o mwccpsp 219 não tem opção visível para isso (`-help all`), e o cast para ponteiro de função vira `jalr`.
+  Provável família de outro build do compilador.
+- Sem ganho com as técnicas das rodadas 22-26 (ordem de comandos `ins2.py`, busca ordem x tipo, `volatile`, locais
+  de bloco, protótipos): `duel_req_mill`, `duel_req_end_turn`, `duel_slot_e1390`, `duel_wfmt_s/d` (K&R com a
+  ordem dos parâmetros também não muda), `duel_find_effect_card`, `duel_088C1B88`, `duel_088995A0`,
+  `duel_088BD4E0`, `duel_088CC8EC`, `duel_0888A88C`, `duel_0888A938`, `duel_req_effect_set`, `duel_08865C10`,
+  `duel_card_fits_zone`, `duel_088C0CD0`, `duel_088A6F00` (108 com a busca, não promovido).
