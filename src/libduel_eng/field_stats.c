@@ -160,7 +160,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             atk_eff += duel_grave_count_monsters(p) * 100;
             break;
         case 0x1091:
-            atk_eff += duel_count_type(0, 0xD) * 100 + duel_count_type(1, 0xD) * 100;
+            atk_eff += duel_count_type(0, 0xD) * 100;
+            atk_eff += duel_count_type(1, 0xD) * 100;
             break;
         case 0x1128:
             n = duel_088E9150(0xFE4) * 300;
@@ -168,7 +169,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             def_eff += n;
             break;
         case 0x113D:
-            atk_eff += duel_count_type(0, 7) * 100 + duel_count_type(1, 7) * 100;
+            atk_eff += duel_count_type(0, 7) * 100;
+            atk_eff += duel_count_type(1, 7) * 100;
             break;
         case 0x1193:
             atk_eff += duel_slot_count_14c0(p, z) * 500;
@@ -196,18 +198,21 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             }
             break;
         case 0x12A0:
-            atk_eff += duel_count_type(0, 10) * 200 + duel_count_type(1, 10) * 200;
+            atk_eff += duel_count_type(0, 10) * 200;
+            atk_eff += duel_count_type(1, 10) * 200;
             break;
         case 0x12BB:
             st->atk = SLOT.link & 0xFFFF;
             st->def = SLOT.link >> 16 & 0xFFFF;
             break;
         case 0x1377:
-            atk_eff += duel_count_grave_type(1 - p, 1) * 500 + duel_count_type(1 - p, 1) * 500;
+            atk_eff += duel_count_grave_type(1 - p, 1) * 500;
+            atk_eff += duel_count_type(1 - p, 1) * 500;
             break;
         case 0x15FC:
             for (i = 0; i < 2; i++) {
-                atk_eff += duel_count_grave_type(i, 1) * 500 + duel_count_type(i, 1) * 500;
+                atk_eff += duel_count_grave_type(i, 1) * 500;
+                atk_eff += duel_count_type(i, 1) * 500;
             }
             break;
         case 0x1336:
@@ -302,7 +307,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             st->atk = SLOT.link;
             break;
         case 0x16AC:
-            atk_eff += duel_count_type_skip(p, 7, z) * 500 + duel_count_type(1 - p, 7) * 500;
+            atk_eff += duel_count_type_skip(p, 7, z) * 500;
+            atk_eff += duel_count_type(1 - p, 7) * 500;
             break;
         case 0x16C3:
             st->atk = duel_grave_count_monsters(p) * 300;
@@ -483,7 +489,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         atk_bon += duel_grave_count_id_b21(p, 0x1AAA) * 300;
     }
     if (card_is_in_group_1b2d(st->id)) {
-        atk_bon += duel_grave_count_id_b21(0, 0x1B2A) * 300 + duel_grave_count_id_b21(1, 0x1B2A) * 300;
+        atk_bon += duel_grave_count_id_b21(0, 0x1B2A) * 300;
+        atk_bon += duel_grave_count_id_b21(1, 0x1B2A) * 300;
     }
 
     /* field spells; a bonus the monster ignores stays pending */
