@@ -36,7 +36,15 @@ int duel_088C0CD0(void);
 void duel_088AFEE0(int a);
 int duel_088C3F80(void);
 int duel_0884F930(DuelAct *a);
+#ifdef __MWERKS__
+/* o original chama duel_0884ED08 sem argumento logo depois de duel_0884F930(cur), que não mexe em a0: o callee
+   recebe cur por acaso (jal; nop, sem move a0). O port passa cur. */
+int duel_0884ED08();
+#define ED08(a) duel_0884ED08()
+#else
 int duel_0884ED08(DuelAct *a);
+#define ED08(a) duel_0884ED08(a)
+#endif
 int duel_0884EB10(DuelAct *a, DuelAct *b);
 int duel_0884EB5C(DuelAct *a);
 int duel_0884EB90(DuelAct *a, DuelAct *b);
@@ -58,7 +66,10 @@ int card_get_prop5_hi(int);
 int card_is_in_group_1983(int id);
 int duel_special_get_id(DuelSlot *s);
 
-#ifdef NON_MATCHING /* só a alocação de registradores do caso 0xB difere (q, z e o ponteiro do campo) */
+#ifdef NON_MATCHING /* 9 palavras (eram 34, rodada 25): no laço do caso 0xB o ponteiro do campo e code ficam em s2/s1 e o original
+   tem s1/s2. Locais do caso 0xB no bloco (i, q unsigned, z, code, uid unsigned, n) por busca aleatória; declarações fora
+   do bloco, máscara num local, ponteiro explícito do jogador/slot, helper inline para os três testes, formas do teste
+   e do code não trocam. */
 int duel_08850164(void)
 {
     DuelAct *cur = &duel_chain.acts[duel_chain.len];
@@ -71,9 +82,6 @@ int duel_08850164(void)
     int z;
     int card;
     int r;
-    int n;
-    unsigned int code;
-    int uid;
 
     switch (duel_w_089148EC) {
     case 0:
@@ -91,7 +99,7 @@ int duel_08850164(void)
         return 1;
     case 1:
         if (duel_0884F930(cur) != 0) {
-            if (duel_0884ED08(cur) != 0) {
+            if (ED08(cur) != 0) {
                 k = cur->zone;
                 if (k != 0x10) {
                     duel_cmd((cur->player != 0 ? 0x8000 : 0) | 0x28, k, cur->uid, 0);
@@ -185,7 +193,7 @@ int duel_08850164(void)
         }
         if (duel_ev_flags.b5) {
             if (cur->b15) {
-                if (duel_0884F930(cur) != 0 && duel_0884ED08(cur) != 0) {
+                if (duel_0884F930(cur) != 0 && ED08(cur) != 0) {
                     duel_088C4448(cur->player, cur->zone, cur->uid);
                 }
                 duel_w_089148EC++;
@@ -278,6 +286,12 @@ int duel_08850164(void)
             goto dflt;
         }
         if (card_is_monster(last->id) != 0) {
+            int i;
+            unsigned int q;
+            int z;
+            int code;
+            unsigned int uid;
+            int n;
             n = 0;
             for (i = 0; i < 2; i++) {
                 q = duel_turn_player ^ i;
