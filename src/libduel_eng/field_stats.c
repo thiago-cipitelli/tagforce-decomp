@@ -89,7 +89,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
     DuelEffect *e1;
     DuelEffect *e2;
     unsigned int b;
-    unsigned int q;
+    int q;
     unsigned int sp;
     int sz;
     int kind;
@@ -99,8 +99,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
     int i;
     int n;
     int all;
-    int cnt[2];
     DuelStats other;
+    int cnt[2];
     unsigned int e;
     unsigned int v;
     unsigned char *c;
@@ -374,9 +374,8 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                 } while (--n);
             }
             for (i = 0; i < 5; i++) {
-                s = &duel.players[p & 1].field[i];
-                if (field_get_card(p, i) == 0x18C3 && s->faceup != 0) {
-                    cnt[s->pos]++;
+                if (field_get_card(p, i) == 0x18C3 && duel.players[p & 1].field[i].faceup != 0) {
+                    cnt[duel.players[p & 1].field[i].pos]++;
                 }
             }
             if (cnt[1] == 0) {
@@ -498,11 +497,10 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
     }
 
     /* field spells; a bonus the monster ignores stays pending */
-    atk_fld = 0;
     def_fld = 0;
+    atk_fld = 0;
     for (q = 0; q < 2; q++) {
-        s = &duel.players[q & 1].field[10];
-        if (s->card.id != 0 && SLOT_ACTIVE(s) && AFFECTS(IMMUNE(st->imm, p, q))) {
+        if (duel.players[q & 1].field[10].card.id != 0 && SLOT_ACTIVE(&duel.players[q & 1].field[10]) && AFFECTS(IMMUNE(st->imm, p, q))) {
             b = duel_field_bonus(st, q, 10, p, z);
             atk_fld += (short)(b & 0xFFFF);
             def_fld += (short)(b >> 16 & 0xFFFF);
@@ -543,14 +541,10 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             case 0x1945:
             case 0x1996:
             case 0x19A5:
-                atk_eff += arg;
-                break;
             case 0x1A7A:
                 atk_eff += arg;
                 break;
             case 0x1A1C:
-                atk_eff += 400;
-                break;
             case 0x1A32:
                 atk_eff += 400;
                 break;
@@ -565,22 +559,16 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             case 0x18AE:
             case 0x1941:
             case 0x1952:
-                atk_eff += 500;
-                break;
             case 0x1A0F:
                 atk_eff += 500;
                 break;
             case 0x10AC:
             case 0x1329:
             case 0x154D:
-                atk_eff += 700;
-                break;
             case 0x172B:
                 atk_eff += 700;
                 break;
             case 0x14A7:
-                atk_eff += 800;
-                break;
             case 0x1A60:
                 atk_eff += 800;
                 break;
@@ -593,8 +581,6 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             case 0x1A1D:
             case 0x164D:
             case 0x182D:
-                atk_eff += 1000;
-                break;
             case 0x1A61:
                 atk_eff += 1000;
                 break;
@@ -607,8 +593,6 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
             case 0x13EE:
             case 0x1446:
             case 0x14A6:
-                atk_eff -= arg;
-                break;
             case 0x19B4:
                 atk_eff -= arg;
                 break;
@@ -620,8 +604,6 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                 break;
             case 0x13CB:
             case 0x160E:
-                atk_eff += -500;
-                break;
             case 0x1644:
                 atk_eff += -500;
                 break;
@@ -674,11 +656,6 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                 break;
             case 0x167B:
             case 0x1763:               /* DEF set outright */
-                st->def = arg;
-                def_bon = 0;
-                def_eq = 0;
-                def_eff = 0;
-                break;
             case 0x1863:
                 st->def = arg;
                 def_bon = 0;
@@ -920,9 +897,9 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
         case 11:                       /* equips (11: equip spell) */
             pl = &duel.players[sp & 1];
             s = &pl->field[sz];
-            id = s->card.id;
+            id = pl->field[sz].card.id;
             if (id != 0) {
-                if (s->faceup != 0 && !SLOT_NEGATED(s)) {
+                if (pl->field[sz].faceup != 0 && !SLOT_NEGATED(&pl->field[sz])) {
                     if (card_get_type(id) == 0x17) {
                         if (!AFFECTS(IMMUNE(st->imm2, p, sp))) {
                             break;
@@ -933,8 +910,6 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     switch (id) {
                     case 0x1496:
                     case 0x165C:
-                        atk_eq += 300;
-                        break;
                     case 0x193A:
                         atk_eq += 300;
                         break;
@@ -949,8 +924,6 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     case 0x165E:
                     case 0x165F:
                     case 0x19B0:
-                        atk_eq += 500;
-                        break;
                     case 0x1A69:
                         atk_eq += 500;
                         break;
@@ -960,16 +933,12 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                     case 0x1242:
                     case 0x1392:
                     case 0x1467:
-                        atk_eq += 700;
-                        break;
                     case 0x16CC:
                         atk_eq += 700;
                         break;
                     case 0x13F6:
                     case 0x150C:
                     case 0x1989:
-                        atk_eq += 800;
-                        break;
                     case 0x19D8:
                         atk_eq += 800;
                         break;
@@ -977,7 +946,7 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                         atk_eq += 1000;
                         break;
                     case 0x143C:
-                        atk_eq += s->link;
+                        atk_eq += pl->field[sz].link;
                         break;
                     case 0x1660:
                         def_eq += 500;
@@ -1021,8 +990,6 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                         atk_eq += -300;
                         break;
                     case 0x13E3:
-                        atk_eq += -500;
-                        break;
                     case 0x1661:
                         atk_eq += -500;
                         break;
@@ -1058,10 +1025,13 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                         break;
                     case 0x12C6:
                         if (st->attr == 7) {
-                            if (s->link == 2) {
-                                def_eq += 700;
-                            } else if (s->link == 1) {
+                            switch (pl->field[sz].link) {
+                            case 1:
                                 atk_eq += 700;
+                                break;
+                            case 2:
+                                def_eq += 700;
+                                break;
                             }
                         }
                         break;
@@ -1082,13 +1052,13 @@ void duel_field_stats(unsigned int p, int z, DuelStats *st)
                         def_eq += duel_count_field_all(sp) * 500;
                         break;
                     case 0x149F:
-                        if (duel_field_type_ex(p, z, s->unk4) == 0xF) {
+                        if (duel_field_type_ex(p, z, pl->field[sz].unk4) == 0xF) {
                             atk_eq += 500;
                             def_eq += 500;
                         }
                         break;
                     case 0x17A0:
-                        atk_eq += s->link * 1000;
+                        atk_eq += pl->field[sz].link * 1000;
                         break;
                     case 0x1959:
                         atk_eq += duel_count_same_name_other(p, z) * 800;
