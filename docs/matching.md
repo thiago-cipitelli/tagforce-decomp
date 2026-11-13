@@ -2032,3 +2032,34 @@ compilação), `hill.py` (descida aleatória sobre ordem e `int`/`unsigned` das 
   `case` troca a cor dos parâmetros sem regra visível), `duel_0883F3A0` (79: p/ofs/prot/b24 rodados),
   `duel_08838A84` (32: 2ª definição de `q` vira outro web), `duel_088862DC` (14: o original estreita `p` com
   `andi 0xff` antes do `andi 1` do índice; 20 formas testadas).
+## Rodada 25 (`fldR`): libfield, libstory, BOOT
+
+Bateram `fld_chr_sprite_quad` (121 -> 0; promovida junto com `fld_chr_draw_model` e `fld_chr_model_quads`, cujas
+tabelas de saltos são contíguas: `@rodata 0x08834DB4`), `st_chr_update` (15 -> 0) e `model_outline_begin` (40 -> 0).
+`ehf_cmd_keys` 51 -> 49.
+- **Escalonamento de float que "carrega todas as constantes antes"** (`fld_chr_sprite_quad`): o rascunho guardava
+  os `u0/u1/v0/v1` em locais; o original escrevia cada vértice por extenso (`q[2].u = (u + 51) / 512.0f;` repetido
+  em `q[0].u`) e o mwcc faz o CSE. A ordem de criação dos registradores float muda e as 121 palavras somem de uma
+  vez. Antes de buscar ordem de instruções em código de vértices, tente a versão sem locais intermediários.
+- **Laço de busca com `bnel` + `slt` no atraso e `b` sem preencher numa função `void` sem `return`** (`st_chr_update`):
+  o trecho é um `static inline` com `return` em cada saída (`if (cur == key) return k; if (cur < key || key == 0)
+  return k - 1;`), que liga localmente o modo sem limpeza da rodada 18. A posição do `move a2,zero` antes do `move
+  a1,s3` saiu de pôr também a chamada que produz `cur` dentro do helper.
+- **`$s` de locais de uma função inline usada duas vezes** (`model_outline_begin`): o valor relido no fim do helper
+  (`layer = dl_get_layer()` pela 2ª vez) era **outra variável** (`cur`), e `unsigned int size;` vem antes nas
+  declarações do helper. A busca foi por permutação das declarações de uma 2ª cópia do inline só para a metade que
+  diferia (37 -> 8); a forma que bateu serviu para as duas chamadas.
+- **`move` do ponteiro do laço depois do `blez`/`bnez` da guarda** (o nosso o põe antes): do/while guardado com o
+  ponteiro atribuído dentro da guarda, `i = 0; if (i < n) { p = v; do { ... } while (i++, p += 2, i < n); }`
+  (`model_outline_begin` 8 -> 0, `ehf_cmd_keys` 51 -> 49). `for (i = 0, p = v; ...)` e `p = v;` antes do `for` não servem.
+- **Soma de deslocamentos** `sll a2,k,4; sll t0,k,8; addu a2,k,a2; addu a2,t0,a2`: `k + (k << 4) + (k << 8)` (não
+  `k * 0x101 + k * 0x10` nem `k * 0x111`).
+- Modelos de inicializadores: `toon_ramp0/1` eram os templates do próprio mwcc (`RampVtx t = {...}`); ao promover,
+  as definições e os símbolos saem e o `@data` continua cobrindo a faixa.
+- Sem forma: `cardinfo_draw` (89: `id` e o temporário do `lhu` ficam sempre nos `$s` mais altos; ordem/posição em
+  bloco das declarações, atribuições explícitas dos `= 0` e tipos não mudam isso), `ehf_cmd_keys` (49: só `$t/$v`;
+  720 ordens de declaração), `tut_script_preload_faces` (8-9: o `sltu` de `!done` sobe acima do `tut_pc++`; `tut_pc`
+  como campo de `tut_script`, volatile, do/while testados), `st_fld_setup_items` (240: corpos iguais mantidos em
+  separado nos `case 1`/`case 27` além do modo sem limpeza; um `return` artificial liga o modo mas não separa os
+  corpos — família "outras builds do mwcc"), `st_fld_place_chrs`/`fbm_input` (pilha e ordem dos stores, não tentadas
+  a fundo).
