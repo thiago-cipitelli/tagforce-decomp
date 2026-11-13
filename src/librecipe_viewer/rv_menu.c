@@ -1,6 +1,5 @@
 // @range 0x08809274-0x0880A248
-// @rodata 0x0880E528-0x0880E544
-// @asm 0x08809C64-0x08809FE8
+// @rodata 0x0880E50C-0x0880E544
 // @data 0x0880E8BC-0x0880E8D4
 /* Recipe grid helpers (cards per row, entry under the cursor, the reveal animation), the menus
    (delete / rename / save / load confirmations, the saved-deck options) and the on-screen
@@ -371,7 +370,6 @@ int rv_osk_update(int layer)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 39 palavras (eram 210): com `case 0: default: return;` no fim e o teste de buttons invertido o tamanho bate; falta o bloco comum de inicialização: o original não sobe o store de style acima do de heap (o mwcc sobe para preencher o atraso do lw rv.heap), e a ordem dos stores do case 5 */
 /* confirmation or options menu: 1 delete, 2 overwrite, 3 saved, 4 rename, 5 options, 6 load */
 void rv_menu_open(unsigned short kind)
 {
@@ -379,16 +377,16 @@ void rv_menu_open(unsigned short kind)
     MenuItemDef *d = &rvm.def;
 
     memset(w, 0, sizeof(*w));
+    d->visible = 1;
     d->color = 0xFFFFFFFF;
     d->font_size = 12;
+    d->open_anim = 2;
     d->text_color = 0xFF000000;
     rvm.heap = rv.heap;
     rvm.no_cancel = 1;
     d->style = 0;
-    d->visible = 1;
     d->auto_size = 1;
     d->font_flag4 = 1;
-    d->open_anim = 2;
     d->close_anim = 2;
     switch (kind) {
     case 1:
@@ -450,7 +448,6 @@ void rv_menu_open(unsigned short kind)
     d->y = (272 - d->h) / 2;
     rv.osk = kind;
 }
-#endif
 
 /* menu states; 1 when the screen should close */
 int rv_name_update(void)

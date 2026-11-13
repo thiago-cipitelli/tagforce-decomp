@@ -2342,3 +2342,30 @@ Bateu e foi promovida (`@data 0x089116C0-0x089116FC` para a tabela de saltos do 
   último e `unsigned`). Só `unsigned int code` dava 14; só a ordem, 9. Vale para as trocas "imóveis": antes de
   desistir, rodar uma busca conjunta ordem x tipo (x locais descartados) com detector da troca (endereços do
   diff), não só o total de palavras.
+## Rodada 26 (`uiS`): `rv_menu_open`, `fbm_input`, `st_fld_place_chrs`
+
+As três bateram (39, 490 e 278 palavras -> 0), sem bug de lógica (só equivalências: `!(a >= b)` era `a < b`,
+`e = &list[n]` por fileira era o mesmo ponteiro).
+- **"Stores que não sobem acima do RMW de bitfield" não é aliasing, é ordem de criação das constantes**
+  (`rv_menu_open`): o teste com um `d` opaco (lido de uma global) reproduzia a ordem do original e parecia
+  provar falta de desambiguação, mas a causa real era o `1` e o `2` nascerem em `visible = 1` / `open_anim = 2`
+  logo depois do `memset`: escrevê-los primeiro muda os registradores (`a0` primeiro, `v1 = 1`, `a3 = 2`) e com
+  eles as dependências do escalonador. Achado com `build/tmp/uiS/ins.py` (move uma linha para todas as posições
+  do bloco) e `greedy.py` (escalada pela melhor mudança de uma linha): 39 -> 9 -> 0 em duas jogadas. O mesmo
+  vale para `fclk_list_setup` (`matching_skip`): `d->visible = 1;` como primeiro comando depois do `memset` dá
+  0 palavras (testado, não promovido: arquivo fora do escopo desta rodada).
+- **Rascunho que transcreve a ordem dos stores do asm piora** (`st_fld_place_chrs`): os casos 3/5/25 estavam na
+  ordem do asm e davam ~100 palavras; a ordem natural (rota `x`, `y`, `a = b = c = d = 1` por nó, depois a
+  entidade, `flag_a`, `route`, `nroute`) bate de primeira. `a = b = c = d = 1` encadeado dá os stores `d, c, b, a`.
+- **Spills e duas cópias do ponteiro** (`68(sp)` e `$s2`, ambos `+= 64`): o fonte indexava `list[n]` depois de
+  `n++` em vez de manter `e`; e a fileira por índice `st_crowd_spots[k]` dá o par ponteiro + deslocamento
+  (`72(sp)`, `64(sp)`). Com isso a pilha cresceu os 16 bytes que faltavam.
+- **Teste que salta por cima de um `b`** (`beqzl` para o corpo, `b` para o `continue`): `switch (perm[seq]) {
+  case 0: ...; break; }` (rodada 21), não `if (perm[seq] != 0) continue;` nem `if (== 0) {...}`.
+- **Cópias de struct por um temporário de pilha** (`fbm_input`: `lwc1/swc1` para `116(sp)`, depois para `v`):
+  `{ Vec2 t = fbm_dirs[i]; v = *(Vec2 *)&t; }` em cada ramo; os temporários ficam abaixo de todos os locais
+  nomeados do bloco, por isso `p`, `dv`, `n` do laço interno subiram para o bloco de fora (na ordem da pilha).
+  `Vec2 st` passado a `fld_vec3_len` (o `z` é o `v.x` seguinte; `#ifndef __MWERKS__` usa um `Vec3` com z = 0).
+  `switch (m->cur) { default: state = 4; break; case 13: ...; return; case 4: ...; return; } m->dest = m->cur;`
+  dá o bloco do `dest` depois do `case 4`; o id escolhido passa por `sel = -1; if (best[0].id != -1) sel = ...`.
+  O laço de deslocamento desenrolado por 8 já saía igual do mwcc.

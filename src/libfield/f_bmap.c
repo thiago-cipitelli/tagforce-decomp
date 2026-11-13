@@ -1,5 +1,4 @@
 // @range 0x08818FFC-0x0881BA90
-// @asm 0x088197B0-0x0881A078
 // @asm 0x0881B268-0x0881B608
 // @rodata 0x08838B90-0x0883904C
 // @data 0x0883C8B0-0x0883C9C8
@@ -105,7 +104,7 @@ const FieldBmPt fbm_pics[20] = { { 0, 0 }, { 204, 0 }, { 306, 0 }, { 408, 0 }, {
 const FieldBmPt fbm_icons[8] = { { 0, 332 }, { 23, 332 }, { 46, 332 }, { 69, 332 },
                                  { 115, 332 }, { 161, 332 }, { 138, 332 }, { 92, 332 } };
 
-/* d-pad directions of fbm_input (kept in asm): right+down, right+up, left+down, left+up, up, down,
+/* d-pad directions of fbm_input: right+down, right+up, left+down, left+up, up, down,
    left, right */
 Vec2 fbm_dirs[8] = { { 1.0f, 1.0f },  { 1.0f, -1.0f }, { -1.0f, 1.0f }, { -1.0f, -1.0f },
                      { 0.0f, -1.0f }, { 0.0f, 1.0f },  { -1.0f, 0.0f }, { 1.0f, 0.0f } };
@@ -357,7 +356,6 @@ int fbm_cmd_done(int *out)
     return (m->active != 0) ^ 1;
 }
 
-#ifdef NON_MATCHING /* the insertion into the three nearest places is unrolled by 8 in the original */
 void fbm_input(void)
 {
     FieldBm *m = &field_bm;
@@ -369,16 +367,20 @@ void fbm_input(void)
 
     if (down & region_pick_value(0)) {
         fld_story_flag(0x6213, 0);
-        if (m->cur == 4) {
+        switch (m->cur) {
+        default:
+            m->state = 4;
+            break;
+        case 0xD:
+            m->state = 5;
+            return;
+        case 4:
             fbm_sub_open();
             m->state = 3;
             fbm_fade(0, 0xA0000000, 10, 3);
-        } else if (m->cur == 0xD) {
-            m->state = 5;
-        } else {
-            m->state = 4;
-            m->dest = m->cur;
+            return;
         }
+        m->dest = m->cur;
         return;
     }
     if (down & region_pick_value(1)) {
@@ -424,46 +426,62 @@ void fbm_input(void)
     } else {
         /* other maps: the place nearest to the cursor inside a cone of 45, 60 then 75 degrees around the
            d-pad (diagonals included) or the stick direction */
+        Vec2 st;
         float cone[3];
-        Vec2 here;
         struct {
             int id;
             float dist;
         } best[3];
+        Vec2 here;
+        Vec2 p;
+        Vec2 dv;
+        Vec2 n;
         int a, j, q;
+        int sel;
         unsigned int k;
 
-        if ((down & 0x20) && (down & 0x40))
-            v = fbm_dirs[0];
-        else if ((down & 0x20) && (down & 0x10))
-            v = fbm_dirs[1];
-        else if ((down & 0x80) && (down & 0x40))
-            v = fbm_dirs[2];
-        else if ((down & 0x80) && (down & 0x10))
-            v = fbm_dirs[3];
-        else if (down & 0x10)
-            v = fbm_dirs[4];
-        else if (down & 0x40)
-            v = fbm_dirs[5];
-        else if (down & 0x80)
-            v = fbm_dirs[6];
-        else if (down & 0x20)
-            v = fbm_dirs[7];
-        else {
+        if ((down & 0x20) && (down & 0x40)) {
+            /* a copy through the stack, as in the original */
+            Vec2 t = fbm_dirs[0];
+            v = *(Vec2 *)&t;
+        } else if ((down & 0x20) && (down & 0x10)) {
+            Vec2 t = fbm_dirs[1];
+            v = *(Vec2 *)&t;
+        } else if ((down & 0x80) && (down & 0x40)) {
+            Vec2 t = fbm_dirs[2];
+            v = *(Vec2 *)&t;
+        } else if ((down & 0x80) && (down & 0x10)) {
+            Vec2 t = fbm_dirs[3];
+            v = *(Vec2 *)&t;
+        } else if (down & 0x10) {
+            Vec2 t = fbm_dirs[4];
+            v = *(Vec2 *)&t;
+        } else if (down & 0x40) {
+            Vec2 t = fbm_dirs[5];
+            v = *(Vec2 *)&t;
+        } else if (down & 0x80) {
+            Vec2 t = fbm_dirs[6];
+            v = *(Vec2 *)&t;
+        } else if (down & 0x20) {
+            Vec2 t = fbm_dirs[7];
+            v = *(Vec2 *)&t;
+        } else {
             /* the original measures a Vec2 with fld_vec3_len: z is the following v.x, still 0 here */
-            Vec3 st;
-
             st.x = fld_stick_axis(pad_get()->b.analog_x);
             st.y = fld_stick_axis(pad_get()->b.analog_y);
-            st.z = 0.0f;
-            if (fld_vec3_len(&st) >= 0.5f) {
+#ifdef __MWERKS__
+            if (fld_vec3_len((Vec3 *)&st) >= 0.5f) {
+#else
+            Vec3 st3 = { st.x, st.y, 0.0f }; /* z = v.x in the original, 0 here */
+            if (fld_vec3_len(&st3) >= 0.5f) {
+#endif
                 v.x = st.x;
                 v.y = st.y;
             }
         }
         if (v.x == 0.0f && v.y == 0.0f)
             return;
-        { int n = 12; unsigned char *d = (unsigned char *)cone; if (d) do { *d++ = 0; } while (--n); }
+        { unsigned char *d = (unsigned char *)cone; int n = 12; if (d) do { *d++ = 0; } while (--n); }
         cone[0] = cosf_vfpu(0.7853982f);
         cone[1] = cosf_vfpu(1.0471976f);
         cone[2] = cosf_vfpu(1.308997f);
@@ -476,9 +494,6 @@ void fbm_input(void)
         vec2_normalize(&v, &v);
         for (a = 0; a < 3; a++) {
             for (k = 0; (int)k < 14; k++) {
-                Vec2 p;
-                Vec2 dv;
-                Vec2 n;
                 float dist;
 
                 if (k == m->cur || (m->blocked & (1 << k)))
@@ -487,7 +502,7 @@ void fbm_input(void)
                 p.y = fbm_pos[k].y;
                 vec2_sub(&dv, &p, &here);
                 vec2_normalize(&n, &dv);
-                if (!(vec2_dot(&v, &n) >= cone[a]))
+                if (vec2_dot(&v, &n) < cone[a])
                     continue;
                 dist = fabsf_vfpu(sqrtf_vfpu(dv.x * dv.x + dv.y * dv.y));
                 for (j = 0; j < 3; j++) {
@@ -503,17 +518,19 @@ void fbm_input(void)
             if (best[0].id != -1)
                 break;
         }
-        if (best[0].id != -1) {
+        sel = -1;
+        if (best[0].id != -1)
+            sel = best[0].id;
+        if (sel != -1) {
             fld_story_flag(0x6212, 0);
             m->state = 2;
             m->prev = m->cur;
-            m->cur = best[0].id;
-            if (best[0].id != 0xD)
+            m->cur = sel;
+            if (sel != 0xD)
                 ehf_set_frame(m->arrow[3], 0);
         }
     }
 }
-#endif
 
 void fbm_move_dir(int dir, int i)
 {
