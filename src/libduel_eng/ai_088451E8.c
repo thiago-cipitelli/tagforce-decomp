@@ -56,7 +56,7 @@ void duel_088C7CF0(void);
 unsigned int duel_card_locate(unsigned int);
 void duel_088C44E4(unsigned int p, int id);
 
-#ifdef NON_MATCHING /* forma quase igual; difere a alocação de registradores (z, q e id trocados, `me` não vai para a pilha) */
+#ifdef NON_MATCHING /* 1165 palavras (rodada 25), 19 linhas de estrutura: o original guarda `me` na pilha (60(sp)) desde o início e põe s8 = me*4012; aqui `me` fica num $s e só vai para a pilha no caso 200; a chamada duel_088D1438(p, z, 0, id) do caso 0x1AA9 tem o move a2,zero no delay slot no original */
 /* returns 0 while the step machine has work left */
 int duel_088451E8(void)
 {
@@ -199,7 +199,6 @@ int duel_088451E8(void)
         duel_w_08919600++;
         return 0;
     case 102: /* 0x168C-0x1692: pay life points or be destroyed */
-        q = 1 - p;
         for (; duel_w_08919608 < 10; duel_w_08919608++) {
             z = duel_w_08919608;
             if (duel.players[me].field[z].card.id == 0 || duel.players[me].field[z].faceup == 0) {
@@ -225,17 +224,17 @@ int duel_088451E8(void)
                 if (duel_count_active(0x169F) == 0) {
                     duel_088C4448(p, z, CARD_UID(duel.players[me].field[z].card));
                     lp = duel.players[me].lp;
-                    if (duel_08845070(id) < lp) {
+                    if (duel_08845070(id) >= lp) {
+                        r = 1;
+                    } else {
                         n = duel_08845070(id);
                         duel_088C4564(p, n);
-                        if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, p) != 0 && n < duel.players[q & 1].lp) {
-                            duel_088C4564(q, n);
+                        if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, p) != 0 && n < duel.players[(1 - p) & 1].lp) {
+                            duel_088C4564(1 - p, n);
                         }
-                        if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, q) != 0 && n * 2 < duel.players[me].lp) {
+                        if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, 1 - p) != 0 && n * 2 < duel.players[me].lp) {
                             duel_088C4564(p, n);
                         }
-                    } else {
-                        r = 1;
                     }
                 }
                 break;
@@ -307,9 +306,9 @@ int duel_088451E8(void)
             duel_088D1AC8(duel_w_0891964C, duel_w_08919650 + duel_w_08919654);
             duel_w_08919608++;
             duel_w_08919600 = 101;
-        } else {
-            duel_w_08919600 = 120;
+            return 0;
         }
+        duel_w_08919600 = 120;
         return 0;
     case 130: /* 0x161B: ask the controller */
         q = p ^ duel_w_08919604;
@@ -337,9 +336,9 @@ int duel_088451E8(void)
             duel_088CC284(duel_w_0891964C, duel_w_08919650 + duel_w_08919654, -1);
             duel_w_08919608++;
             duel_w_08919600 = 101;
-        } else {
-            duel_w_08919600 = 130;
+            return 0;
         }
+        duel_w_08919600 = 130;
         return 0;
     case 150:
         duel_w_08919600 = 200;
@@ -349,7 +348,7 @@ int duel_088451E8(void)
             if (duel.players[me].field[z].card.id == 0 || duel.players[me].field[z].faceup == 0) {
                 continue;
             }
-            switch ((unsigned short)duel.players[me].field[z].card.id) {
+            switch ((unsigned short)(unsigned int)duel.players[me].field[z].card.id) {
             case 0xFF9:
                 duel_088C07FC(p, z, skip);
                 break;
@@ -359,12 +358,11 @@ int duel_088451E8(void)
             }
         }
         duel_088C09C8(p, skip);
-        q = 1 - p;
         for (z = 5; z < 10; z++) {
             if (duel.players[me].field[z].card.id == 0 || duel.players[me].field[z].faceup == 0) {
                 continue;
             }
-            switch ((unsigned short)duel.players[me].field[z].card.id) {
+            switch ((unsigned short)(unsigned int)duel.players[me].field[z].card.id) {
             case 0x130D:
             case 0x131A:
             case 0x180F:
@@ -388,7 +386,7 @@ int duel_088451E8(void)
                     duel_088C7BA4();
                     n = 200 << n;
                     duel_088C4730(p, n, 0, 0x15A0);
-                    duel_088C4730(q, n, 1, 0x15A0);
+                    duel_088C4730(1 - p, n, 1, 0x15A0);
                     duel_088C7CF0();
                 }
                 break;
@@ -418,23 +416,24 @@ int duel_088451E8(void)
             }
         }
         /* 0x12C8 in the hand: count down its effects, return the banished card at the end */
-        if (duel_slot_has_effect(p, 0xB, 0x12C8) != 0 && (e = duel.players[me].effects) != 0) {
-            do {
+        if (duel_slot_has_effect(p, 0xB, 0x12C8) != 0) {
+            for (e = duel.players[me].effects; e != 0;) {
                 ef = (DuelEffectBits *)&duel.effects[e];
                 e = ef->next;
                 if (ef->kind == 1 && ef->src == 0x12C8) {
-                    duel_cmd((p ? 0x8000 : 0) | 0x3B, 0x12C8, 1, 4 - (ef->kind_hi >> 1));
+                    n = 4 - ((unsigned int)ef->kind_hi >> 1);
+                    duel_cmd((p ? 0x8000 : 0) | 0x3B, 0x12C8, 1, n);
                     if (!skip && ef->kind_hi == 0) {
                         uid = ef->arg;
                         loc = duel_card_locate(uid);
-                        if ((loc & 0xFFFF) >> 8 == 0xF) {
+                        if ((unsigned char)((loc & 0xFFFF) >> 8) == 0xF) {
                             duel_088C44E4(p, 0x12C8);
-                            duel_cmd(0x3F, (loc & 0xFF & 1) | 0x1E | (uid & 0x3FF) << 6,
-                                     me | 0x16 | (duel.players[(int)me].n_hand & 0x3FF) << 6, 0);
+                            duel_cmd(0x3F, ((unsigned char)loc & 1) | 0x1E | (uid & 0x3FF) << 6,
+                                     me | 0x16 | (duel.players[me].n_hand & 0x3FF) << 6, 0);
                         }
                     }
                 }
-            } while (e != 0);
+            }
         }
         duel_w_08919600++;
         return 0;
