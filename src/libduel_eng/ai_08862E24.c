@@ -1,5 +1,4 @@
 // @range 0x08862E24-0x08863284
-// @asm 0x08862E5C-0x08863018
 /* The computer player: handlers of the cards it activates. */
 #include "duel.h"
 
@@ -34,11 +33,8 @@ int duel_08862E24(DuelAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 2 palavras: o original carrega duel_w_08914904 com lui v0; lw v1 (aqui lui v1; lw v1); o b fim; nop depois do último case vem do default: return r; */
 int duel_08862E5C(DuelAct *a, int b)
 {
-    int r = 1;
-
     switch (duel_w_08914904) {
     case 0:
         if (a->b3_4 == 0) {
@@ -68,28 +64,23 @@ int duel_08862E5C(DuelAct *a, int b)
     case 1:
         a->w[2] = duel_w_08919624;
         if (duel_w_08919624 == 0) {
-            return r;
+            return 1;
         }
         switch (a->id) {
         case 0x12F3:
         case 0x14C2:
         case 0x1517:
-            r = duel_0886191C(a, b);
-            break;
+            return duel_0886191C(a, b);
         case 0x14DE:
-            r = duel_08861964(a, b);
-            break;
+            return duel_08861964(a, b);
         case 0x1624:
-            r = duel_088619C4(a, b);
-            break;
+            return duel_088619C4(a, b);
         default:
-            return r;
+            return 1;
         }
-        break;
     }
-    return r;
+    return 1;
 }
-#endif
 
 int duel_08863018(DuelAct *a)
 {
