@@ -2914,3 +2914,14 @@ não mudaram (pragmas `opt_lifetimes`/`opt_propagation`/`opt_common_subs`/`opt_d
 - Scripts em `build/tmp/r29D/`: `tv.py` (variantes de uma função, `//----` separa), `gen.py` (gera variantes por
   substituição `velho>>>novo`, `@@` separa, `PRE>>>` insere antes da função), `ren.py` (troca de contadores),
   `dmove.py` (move 1-2 declarações por todas as posições), `sbs.sh`/`nd.sh` (diff lado a lado e normalizado).
+
+## Rodada 30 (`bC`): parâmetro u16 que o original não mascara na entrada
+
+`font_glyph_cache(img, unsigned short code)`: o mwcc só faz o `andi 0xFFFF` de um parâmetro u16 **na entrada** (e guarda a
+cópia mascarada num `$s`) quando algum uso exige o valor estendido, por exemplo passá-lo a um callee cujo protótipo tem
+`unsigned int`/`int`. No original o u16 fica cru num `$s` e só há `andi` no uso aritmético (`code < 0x2300`): os callees
+que recebem `code` (`font_glyph_find`, `sceFontGetCharInfo`, `sceFontGetCharGlyphImage`) tinham protótipo `unsigned short`.
+Os chamadores confirmam o tipo do parâmetro: `move a1,s2` cru antes do `jal` = protótipo u16 (com `unsigned int` sai
+`andi a1,s2,0xffff`). Trocar o parâmetro para `unsigned int` no draft baixa as palavras mas quebra os chamadores que já
+batiam; o certo é mudar o protótipo dos callees (sob `#ifdef __MWERKS__` quando é API do firmware que o port implementa).
+302 -> 55 palavras (resta só `f`/`font` com `s1`/`s5` trocados).
