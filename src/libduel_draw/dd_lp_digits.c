@@ -253,7 +253,7 @@ void *lpc_digit_2d(void *dl, DdLpCount *c, int i)
     return draw_sprite(dl, c->sx + 62 + w * (n - 1 - i), c->sy + 38, 0, uv[0], uv[1], 0, 0);
 }
 
-void lpc_update(void *o, DdLpCount *c)
+void lpc_update(DD_OBJ_DT void *o, DdLpCount *c)
 {
     int i;
     unsigned int n;
@@ -308,7 +308,7 @@ void lpc_update(void *o, DdLpCount *c)
 }
 #ifdef NON_MATCHING
 #else
-void lpc_update(void *o, DdLpCount *c);
+void lpc_update(DD_OBJ_DT void *o, DdLpCount *c);
 #endif
 
 void lpc_digits_set(LpDigit *d, int value)

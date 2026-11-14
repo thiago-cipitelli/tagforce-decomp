@@ -27,6 +27,13 @@ typedef struct FxVtx {                 /* GU_TEXTURE_32BITF | GU_COLOR_8888 | GU
 
 typedef struct DdObj DdObj;
 typedef void (*DdObjFn)(DdObj *o, void *data);
+/* port: dd_tasks_update calls update(dt, task, data); with the MIPS EABI the float goes in $f12 and the DdObj
+   update callbacks, written without it, still get (task, data) in a0/a1. On the host they take it first. */
+#ifdef __MWERKS__
+#define DD_OBJ_DT
+#else
+#define DD_OBJ_DT float dt_,
+#endif
 struct DdObj {                         /* scene object (dd_task_add), also its creation descriptor, 0x1C */
     int pad00[2];
     DdObjFn draw;                      /* +0x08 */

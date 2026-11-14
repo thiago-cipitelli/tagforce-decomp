@@ -202,66 +202,6 @@ int sceKernelPowerTick(int type)
     return 0;
 }
 
-int sceGeListSync()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeUnsetCallback()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeListEnQueueHead()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeContinue()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeSetCallback()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeListEnQueue()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeDrawSync()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeBreak()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeEdramSetAddrTranslation()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeListUpdateStallAddr()
-{
-    STUB();
-    return 0;
-}
-
 int sceDisplaySetMode(int mode, int width, int height)
 {
     STUB();
@@ -269,12 +209,6 @@ int sceDisplaySetMode(int mode, int width, int height)
 }
 
 int sceDisplayGetAccumulatedHcount()
-{
-    STUB();
-    return 0;
-}
-
-int sceDisplaySetFrameBuf(void *top, int buffer_width, int format, int sync)
 {
     STUB();
     return 0;
@@ -628,60 +562,6 @@ int sceOpenPSIDGetOpenPSID()
     return 0;
 }
 
-int sceAtrac3plus_132F1ECA()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracReleaseAtracID()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracResetPlayPosition()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracDecodeData()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracSetDataAndGetID()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracSetLoopNum()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracGetSoundSample()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracGetMaxSample()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracGetLoopStatus()
-{
-    STUB();
-    return 0;
-}
-
 int __sceSasSetADSR()
 {
     STUB();
@@ -725,12 +605,6 @@ int __sceSasCoreWithMix()
 }
 
 int __sceSasSetSL()
-{
-    STUB();
-    return 0;
-}
-
-int __sceSasGetEndFlag()
 {
     STUB();
     return 0;
