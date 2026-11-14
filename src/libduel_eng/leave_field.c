@@ -1,5 +1,4 @@
 // @range 0x088CC8EC-0x088D13CC
-// @asm 0x088CC8EC-0x088CEBA8
 /* Cards leaving the field: the triggers of a card that left (duel_088CC8EC), which zones an action can
    reach (duel_act_hits_mask), marking the zones that leave together (duel_leave_mark), sending one
    card to another pile with its host message (duel_send_card), the cards that follow it
@@ -88,12 +87,9 @@ struct DuelActX1 {
 #define TRIG_K(kind) ((kind) << 25 & 0x7E000000)
 #define TRIG_Z(z) ((unsigned int)(z) << 16 & 0x1F0000)
 
-#ifdef NON_MATCHING /* 20 palavras (2026-11-07: id lido primeiro; busca por subida nas 14 atribuições e na ordem das
-   declarações não passa disso), todas no prólogo: o original grava cause (a2) em 112(sp) logo no
-   início e lê o byte 1 de x em a2, o id em a0 e o byte do dono em v1; aqui o mwcc lê o id antes e usa a0/v1 trocados.
-   Testadas todas as ordens das 6 atribuições de p..z (perm_stmts) e posições de owner/uid. O resto bate: switch na
-   ordem inversa dos testes, ok = !protegido zerado por 0x15FF, códigos de duel_0884F30C com máscaras (TRIG_*, com
-   cast unsigned para o mwcc não reduzir a força do shift no laço), laços de bloco com j próprio, i <= 4 (slti at). */
+/* Shape notes: switch in the reverse order of the tests, ok = !protected cleared by 0x15FF, duel_0884F30C codes with
+   masks (TRIG_*, unsigned cast against strength reduction), block loops with their own j, i <= 4 (slti at); the
+   order of the first assignments (p first, by_effect last) decides the prologue. */
 /* A card left the field (x: where it was and where it went, s: its slot, cause: card that moved it,
    f: flags of the move): posts the triggers of the card itself and of the cards that watch it. */
 void duel_088CC8EC(struct DuelActX1 x, DuelSlot *s, int cause, unsigned int f)
@@ -124,17 +120,17 @@ void duel_088CC8EC(struct DuelActX1 x, DuelSlot *s, int cause, unsigned int f)
     DuelCard *c;
     int n;
 
+    p = x.s_player;                   /* where it was */
     id = s->card.id;
     owner = s->card.owner;
     uid = owner + (s->card.uid_hi << 1);
-    p = x.s_player;                   /* where it was */
-    by_effect = (f & 0x80000) != 0;
-    by_opp = x.s_b18 != p;            /* sent by the opponent of its controller */
-    destroyed = x.s_b15;
     z = x.s_zone;
+    destroyed = x.s_b15;
+    by_opp = x.s_b18 != p;            /* sent by the opponent of its controller */
     keep = !x.s_b23;
     to_grave = x.s_zone2 == 0xE;
     special = x.s_b16;                /* one of the cards held outside the zones */
+    by_effect = (f & 0x80000) != 0;
     f100 = (f & 0x100000) != 0;
     f200 = (f & 0x200000) != 0;
     f400 = (f & 0x400000) != 0;
@@ -558,7 +554,6 @@ void duel_088CC8EC(struct DuelActX1 x, DuelSlot *s, int cause, unsigned int f)
         break;
     }
 }
-#endif
 
 /* Whether action a reaches the card in zone z of player p (kind 0xF: banishing; check: targeting). */
 int duel_act_hits_slot(DuelAct *a, unsigned int p, int z, int kind, int check)
