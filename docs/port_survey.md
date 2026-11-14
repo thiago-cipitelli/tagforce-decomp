@@ -169,7 +169,7 @@ OSK, `sceGeEdramGetAddr`, `sceNetInit/Term`, `sceKernelChangeCurrentThreadAttr`)
 | sceUtility | 23 | 19 | 6 | 0 | save, diálogos, OSK | média |
 | sceLibFont | 7 | 7 | 0 | 0 | fonte do sistema | média |
 | sceUmdUser, sceSuspendForUser, sceRtc, sceOpenPSID | 8 | 8 | 0 | 0 | stubs | baixa |
-| sceMpeg | 25 | 25 | 0 | 0 | vídeo PMF | fase 7 (ffmpeg) |
+| sceMpeg | 25 | 25 | 0 | 0 | vídeo PMF | feito (passo 7a, ffmpeg) |
 | sceAtrac3plus | 9 | 9 | 0 | 0 | música Atrac3+ | fase 7 (ffmpeg) |
 | sceNet, sceNetAdhoc, sceNetAdhocctl, sceNetAdhocMatching, sceWlanDrv | 38 | 38 | 2 | 0 | rede ad hoc | stub (sem rede) |
 
@@ -505,5 +505,86 @@ ataque). O trecho do título no WAV tem correlação 1,0000 com o PCM que o ffmp
   (correlação 1,0 com o que o jogo mistura); `-loglevel fatal` esconde.
 - **Falta:** reverb do SAS (`RevType/RevParam/RevVON` aceitos e ignorados: só o dry sai; `snd_fx_setup` liga o wet
   quando uma cena pede um tipo de efeito), vozes de ruído e PCM (não usadas), o atraso de 32 amostras no key-on, `sceAudioOutputPanned` não
-  bloqueante (tratado como bloqueante), vídeo PMF (ainda em stub: a abertura do título segue muda e sem imagem), o
+  bloqueante (tratado como bloqueante), vídeo PMF (feito no passo 7a), o
   `.at3` decodificado de forma síncrona na primeira vez (centenas de ms por clipe novo; o cache resolve nas seguintes).
+
+## 9. Passo 7a: vídeo PMF (sceMpeg pelo ffmpeg) e o travamento "os quadros param" (feito em 2026-11-14)
+
+Só `platform/pc/` muda (**nada em `src/` ou `include/`**; `make host-check` 0 falhas, `make host-lto` 4 severos, os
+mesmos; `make host-run` vivo). Duas peças: o `sceMpeg` ao nível da API, e a causa do travamento intermitente do
+passo 5a, que foi reproduzida, explicada e corrigida.
+
+**O que toca (quadros despejados e conferidos; WAV conferido por correlação):** a abertura do título
+(`movie/opening_a.pmf`, 89,5 s, 480×272 a 29,97 fps, Atrac3+ estéreo) inteira, do logo da Konami à arte final
+"TAG FORCE", com a volta ao título e o duelo de demonstração depois; a mesma abertura uma segunda vez no mesmo
+processo (depois do demo), e o pulo por botão (`TAGFORCE_PAD="240:4000:3"`: × na leitura 240 encerra o vídeo e o
+título segue). O áudio do vídeo no `TAGFORCE_WAV` tem **correlação 1,0000** com o PCM que o ffmpeg decodifica do
+fluxo Atrac3+ extraído à mão (ganho 0,80 = volume de BGM 12/15; o WAV começa 2048 amostras adiante: é o buffer
+do `init` que o jogo descarta). **Clipe de duelo:** `movie/dm_attack.pmf` (ataque do Dark Magician, 6 s, 133
+quadros de áudio) toca inteiro pelo mesmo tocador com `TAGFORCE_PMF=<arquivo>` (gancho de teste do `mpeg.c`: troca
+o arquivo de qualquer filme que o jogo abra; aqui o do título), com o som no WAV e a volta ao título. Dentro de um
+duelo o clipe sai pelo mesmo `movie_run` (`dd_movie_show`, `libduel_draw/dd_chara06.c`: bloco de `0x17CC00`, anel
+de 160 pacotes, que cabe: 160 × 2152 + 2 quadros + som < 0x17CC00), mas não foi visto numa partida: ele só toca
+quando o par (personagem, carta) do invocador está em `dmgr_cutin_attack`/`dmgr_cutin_effect`
+(`libduel_mgr/dmgr_event.c`: Jaden + Flame Wingman 6344, Zane + Cyber Dragon 6485...) ou no zoom de carta dos
+eventos de tutorial (cartas 4027 e 5224, `cfg_get_flag(0)`); nove demos de modo atrativo (`TAGFORCE_RTC=1..9`,
+250-330 s) não invocaram nenhum, e o caminho Database → Tutorial mostra a lista `libtutoriallist` vazia (ver
+achados). Quadros em `build/host/frames_7a/*.png` (gitignored).
+
+| Arquivo | O quê |
+|---|---|
+| `platform/pc/mpeg.c` | `sceMpeg*` (todas as 25 que o `movie.c`/`pmf_umd.c` chamam). O anel (`SceMpegRingbuffer` de 0x80 bytes do jogo) guarda só capacidade, pacotes com dados, callback e argumento: `RingbufferPut` chama o callback do jogo (`pmf_read_blocks`, lê N blocos de 2 KB do arquivo) e soma o que ele devolveu; `AvailableSize` = capacidade − pacotes; cada `GetAvcAu`/`GetAtracAu` esvazia o anel até 1 pacote (a thread leitora do jogo segue alimentando até o fim do fluxo) e, quando os dois fluxos acabaram, até 0 (o laço principal termina em "leitor pausado e anel livre"). Nada do anel é demultiplexado: o arquivo por trás é achado pelo fd (`cbArg` é o `MovieFile` do jogo, fd na primeira palavra; `host_io_fd_path` do `io.c`). Vídeo: um `ffmpeg -i x.pmf -an -f rawvideo -pix_fmt rgba -fps_mode passthrough pipe:1` por filme, lido um quadro adiante em `GetAvcAu` (fim do pipe = `0x80618001`, sem dados) e copiado em `AvcDecode` para o buffer 8888 de 512 de largura do jogo (`got` = 1). Áudio: o fluxo privado 1 do MPEG-PS é demultiplexado aqui (andando pelos pacotes a partir do offset do cabeçalho PSMF: pack `BA` de 14 + stuffing, PES com tamanho de 16 bits, sub-cabeçalho privado de 4 bytes), os quadros Atrac3+ (`0F D0 ss ss 00 00 00 00`, tamanho = `(ss & 0x3FF) * 8 + 16`) perdem o cabeçalho de 8 bytes e vão num RIFF/AT3 com o `fmt` dos clipes do próprio jogo (`WAVE_FORMAT_EXTENSIBLE`, GUID do Atrac3+, block align 744 na abertura) para o `host_at3_decode` do `atrac.c` (cache `~/.cache/tagforce/at3/<hash>.pcm`, mmap); `AtracDecode` entrega 2048 quadros estéreo por chamada, zeros no fim. Timestamps como o PPSSPP: primeiro pts do cabeçalho (0x56, 90000 em todos os PMF), +3003 por AU de vídeo, +4180 por AU de áudio; `vid_sync_state` do jogo fica em "sincronizado". `QueryStreamOffset/Size` leem o cabeçalho PSMF (offset em 8, tamanho em 0xC, largura/altura em 0x8E/0x8F × 16); `QueryMemSize` 0x10000, `RingbufferQueryMemSize` pacotes × 2152, `QueryAtracEsSize` 2112/8192, `InitAu` pts/dts −1; `Delete` mata o ffmpeg e desmapeia o PCM. Sem ffmpeg: vídeo vazio e áudio em silêncio com a duração do fluxo (o jogo mostra nada e termina), sem travar |
+| `platform/pc/kernel.c` | `sceKernelRegisterSubIntrHandler/Release/Enable/DisableSubIntr` para a interrupção 30 (vblank): uma thread do kernel de prioridade 0 (`vblank_intr`, criada no primeiro registro) chama os handlers a cada vblank; o `movie.c` registra `ctrl_vblank_handler`, que acende o event flag que a thread de display e o laço principal esperam (sem isso o vídeo nunca avançava). `thread_end` e `host_cpu_leave` soltam o contexto GL (`host_gfx_release`): a thread de display do filme desenha (`sceDisplaySetFrameBuf`) e depois morre; morrendo dona do contexto, o próximo `glXMakeCurrent` de outra thread dava `BadAccess` e matava o processo no fim do vídeo. **Correção do travamento** (abaixo) e `SIGUSR1` imprime o estado de cada thread do jogo (nome, prioridade, em que espera, objeto, deadline) |
+| `platform/pc/ge.c` | `sceDmacMemcpy` real (memcpy) que anota o último endereço da EDRAM escrito pela CPU; `sceDisplaySetFrameBuf` desse endereço sobe os pixels (8888, 272 linhas, `bufw` de passo) para o FBO do offset antes de apresentar: é o caminho dos quadros do filme (`disp_present`: DMA para 0x88000/0x110000 e `SetFrameBuf`) |
+| `platform/pc/io.c` | guarda o caminho do host de cada fd; `host_io_fd_path` |
+| `platform/pc/atrac.c` | `decode` virou `host_at3_decode` (exportada) |
+
+### 9.1 Achados
+
+- **O travamento "os quadros param" (passo 5a, 3 em ~15 rodadas) era uma condição de corrida no `block()` do
+  escalonador.** Reproduzido em 3 de 3 demos de 330 s (`TAGFORCE_RTC=1,2,3`, parando aos 97, 153 e 193 s, em telas
+  diferentes: título, duelo, apresentação). O despejo por `SIGUSR1` mostrou `user_main`, `snd_thread_main` e
+  `vblank_intr` todas em "delay" com o deadline 14 s no passado, e o gdb (o jogo precisa rodar *debaixo* do gdb:
+  `ptrace_scope` impede o attach) as mostrou em `pthread_cond_wait` **sem timeout**. O `block()` lia o relógio
+  duas vezes: `ready(me)` (deadline passou?) e depois `now < deadline` (dorme com timeout?). Quando o deadline
+  vencia entre as duas leituras, a thread se achava "não pronta" e ia para a espera sem timeout, contando com um
+  broadcast que só vem de quem chama `block()`; as outras acordavam, viam-na como a melhor (prioridade 0) e
+  também esperavam por ela. Com a thread do vblank (um deadline a cada 16 ms) a janela era atingida em minutos.
+  Correção: uma leitura do relógio por volta, usada nos dois testes (`ready_at`). Depois: 3 de 3 demos de 330 s
+  inteiras (título → abertura → demo → título → abertura de novo), nenhuma parada.
+- **Como o jogo toca um PMF (`BOOT/movie.c`, código de exemplo PSMF da Sony):** `movie_run` recebe o bloco de memória
+  (5 MB no título, `0x17CC00` nos clipes de duelo), anel de `packets << 2` pacotes (256 e 160), `sceMpegCreate` com
+  largura 512, modo 0; lê 2 KB do cabeçalho para `QueryStreamOffset/Size`; registra os fluxos AVC e Atrac; dois
+  buffers de quadro de 0x88000 (512×272×4, `sceDisplaySetFrameBuf(buf, 0x200, 3, 1)` = 8888) e dois de som de
+  `out_size` (8192: 2048 quadros estéreo, `wave_set_sample(0, 0x800)`); três threads (display 0x3E, leitora 0x40,
+  som 0x3D; a principal passa a 0x3F) e um handler de vblank. Laço principal, por vblank: `GetAtracAu` →
+  `AtracDecode` (o primeiro, `init` = 1, não é comprometido), `GetAvcAu` → `AvcDecode` (`got` = 1 compromete o
+  quadro com o pts do AU, `((int *)au)[1]`); `0x80618001` dos `GetAu` é "sem dados" e é tolerado. O display começa
+  quando os dois anéis estão cheios e o leitor parado (`movie_check_end`); a thread de display mostra um quadro a
+  cada dois vblanks, segurando ou descartando pelo `pts` do som (`vid_sync_state`, ±2 quadros); fim = leitor
+  pausado (todo o fluxo alimentado) e anel livre; depois `AvcDecodeStop` (`got` = 0 aqui) e as threads terminam
+  com os flags 8/0xFF. `movie_play` (`sndapi.c`) sempre passa `flags | 1`: "mudo" só pula o `sceWaveInit`/`wave_exit`,
+  o som sai por `wave_audio_write(0, vol, vol)` com o volume de BGM. Pular: qualquer botão com `flags & 2`
+  (abertura), × ou Start.
+- **PMF = cabeçalho PSMF de 2048 bytes + MPEG-PS:** todos os 47 `movie/*.pmf` são 480×272, estéreo 44,1 kHz,
+  primeiro pts 90000, `offset + tamanho == tamanho do arquivo`. O ffmpeg demultiplexa o H.264 direto do `.pmf`
+  (sem `-skip_initial_bytes`), mas **não vê o Atrac3+ do fluxo privado 1** (sub-id 0x00), daí o demux à mão.
+  Abertura: 21897 PES de vídeo, 1940 quadros de áudio de 752 bytes (90,09 s) contra 89,5 s de vídeo.
+- **Sem cache de quadros**: 90 s de RGBA 480×272 são 1,4 GB; o ffmpeg decodifica esse tamanho a centenas de fps,
+  então o pipe (1 MB, ~2 quadros de folga) basta e o custo por `AvcDecode` é um `read` de 522 KB. O áudio inteiro
+  é decodificado no primeiro `GetAu` (uma vez por máquina, depois cache), ~150 ms para a abertura.
+- O `sceMpegRingbufferPut` real chama o callback com até `packets` pacotes e o jogo lê blocos inteiros; no fim do
+  arquivo a leitura cai em 0 e o leitor para só por `total == stream_size`: por isso o tamanho do cabeçalho tem de
+  bater com o arquivo (bate nos 47).
+- **Roteiro de pad até o menu principal com a abertura tocando** (`TAGFORCE_RTC=1`, leitura:máscara): `240:4000:3`
+  pula a abertura, `400:8` Start, `520:4000` New Game, `700:4000` abre o OSK (o nome vazio é recusado pelo Start:
+  "A name must be entered"), `850:8` Start, `930:4000` confirma, `1050:40,1060:40` Database (o Free Duel
+  desabilitado é pulado pelo cursor), `1100:4000`, `1200:40,1210:40,1250:4000` Tutorial. A lista do tutorial
+  (`database/tutoriallist.ehp`) aparece com as abas Duel/Deck Edit e **sem entradas**: × não faz nada. Fica para
+  conferir se é o texto da lista que não é desenhado ou se as entradas dependem de algo (save, região).
+- **Variáveis:** `TAGFORCE_PMF=<arquivo.pmf>` toca esse arquivo no lugar do filme que o jogo abriu;
+  `TAGFORCE_TRACE_ATRAC=1` deixa o `.at3` demultiplexado do filme no cache para comparar à mão.
+- **Falta:** o clipe dentro de um duelo real (caminho e condições acima); `sceMpegAvcDecodeMode` (o jogo não chama:
+  sempre 8888); `got` = 0 no `AvcDecodeStop` (o firmware pode devolver o último quadro atrasado do decodificador;
+  o jogo só faria um `disp_commit` a mais); o cabeçalho de 2 KB e o offset são lidos do PSMF, mas o tamanho e a
+  taxa de amostragem do áudio são fixos em 2 canais / 44,1 kHz (os 47 PMF são assim).

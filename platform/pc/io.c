@@ -64,6 +64,7 @@ typedef struct {
     DIR *dir;
     long long sector;
     long long async;   /* result of the last Async call */
+    char path[512];    /* host path (mpeg.c finds the movie behind a ring buffer by its fd) */
 } File;
 
 static File files[256];
@@ -181,8 +182,20 @@ int sceIoOpen(const char *file, int flags, int mode)
     }
     fd = new_file(1);
     files[fd].fd = h;
+    strncpy(files[fd].path, path, sizeof files[fd].path - 1);
     dprintf(2, "io: open %s = %d\n", file, fd);
     return fd;
+}
+
+int host_io_fd_path(int fd, char *out, int n)
+{
+    File *f = get(fd);
+
+    if (!f || f->kind != 1)
+        return -1;
+    strncpy(out, f->path, n - 1);
+    out[n - 1] = 0;
+    return 0;
 }
 
 int sceIoClose(int fd)
