@@ -1,4 +1,4 @@
-// @range 0x08827030-0x08827B8C
+// @range 0x08827030-0x08827D98
 // @data 0x088ED3F0-0x088ED434
 /* EHF particles, part 2: position generators on a ring (particles spread evenly by emission
    index), along four tetrahedral directions turned by a random rotation, and on a spherical shell. */
@@ -64,6 +64,7 @@ float *vec3_normalize(float *out, float *a);
 float *mat3_identity(float *m);
 float *mat3_from_euler(float *out, float *m, float *v);
 float *mat3_transform_vec3(float *out, float *m, float *v);
+Vec4 *vec4_scale(Vec4 *out, Vec4 *a, float s);
 float sqrtf_fpu(float x);
 float sinf(float x);
 float cosf(float x);
@@ -264,5 +265,37 @@ int ehf_cmd_ptcl_shell(EhfShell *s, EhfNode *node, EhfCmd *cmd, int phase)
         return 0;
     }
     }
+    return 0;
+}
+
+/* ehf_ptcl_cone fica neste arquivo (e não com o seu comando em particle3.c) porque só bate quando uma função
+   anterior da mesma unidade de tradução já usou aritmética de double (ring e shell, `* 6.283185307179586`):
+   na primeira função da unidade que chama __muldf3/__adddf3 o mwcc dá a0/a1 aos temporários do primeiro
+   bloco; nas seguintes, t0/t1 (ver docs/matching.md, rodada 31). */
+/* Random point in the cone, between radii r0 and r1. */
+int ehf_ptcl_cone(float *out, EhfEmitter *e, EhfCone *c)
+{
+    Mat4 m;
+    float ang;
+    Vec4 v;
+    float s;
+
+    rand3_seeds[rand3_slot][0] *= 0x41C64E6D;
+    rand3_seeds[rand3_slot][0] += 0x3039;
+    ang = RAND15(rand3_seeds[rand3_slot][0]) / 32767.0f * 6.283185307179586;
+    rand3_seeds[rand3_slot][0] *= 0x41C64E6D;
+    rand3_seeds[rand3_slot][0] += 0x3039;
+    v.y = c->cosang + (1.0f - c->cosang) * (RAND15(rand3_seeds[rand3_slot][0]) / 32767.0f);
+    s = sqrtf_fpu(1.0f - v.y * v.y);
+    v.x = s * sinf(ang);
+    v.z = s * cosf(ang);
+    v.w = 0.0f;
+    quat_to_mat4(&m, &c->q);
+    mat4_transform_vec4(&v, &m, &v);
+    rand3_seeds[rand3_slot][0] *= 0x41C64E6D;
+    rand3_seeds[rand3_slot][0] += 0x3039;
+    vec4_scale(&v, &v, c->r0 + (c->r1 - c->r0) * (RAND15(rand3_seeds[rand3_slot][0]) / 32767.0f));
+    vec3_add(out, c->center, &v.x);
+    out[3] = 0.0f;
     return 0;
 }
