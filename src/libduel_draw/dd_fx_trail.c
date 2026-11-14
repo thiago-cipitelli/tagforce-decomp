@@ -1,5 +1,5 @@
 // @range 0x088395D4-0x0883AB6C
-// @rodata 0x088707A4-0x088707D0
+// @rodata 0x088707A4-0x088707FC
 // @data 0x08876BB4-0x08876BD0
 /* The charge trail of effects 13-23: three ribbons that follow a point of the scene along a spline
    of its last 32 positions, a glow at the head and, in the second variant (owners of kind 19),

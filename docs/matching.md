@@ -2792,3 +2792,35 @@ Bateram `tms_draw_prims` (7 -> 0), `scene_reset_to` (27 -> 0) e `snd_obj_3d` (27
   repõem os 68 bytes de cópias mortas), `font_glyph_cache` (K&R com `unsigned int code` conflita com o protótipo
   de `include/font.h`; só mudando o header), e os grandes `ehf_cmd_keys`, `menu_layout`, `draw_sphere_visible`,
   `ehf_draw_shape`, `cardinfo_draw` (150 ordens x tipos cada, sem ganho).
+
+## Rodada 29 (`r29D`): reteste das entradas curtas do skip de libduel_draw, libduel_mgr e libfield
+
+Bateram `fface_free` (5), `dd_fx_lines_update` (6), `fld_map_walkable` (5) e `dd_trail_update` (16). As outras 14 entradas
+não mudaram (pragmas `opt_lifetimes`/`opt_propagation`/`opt_common_subs`/`opt_dead_assignments` varridas em todas).
+- **Cópia tardia de parâmetro = ponteiro `volatile`** (`fface_free`, família `latecopy` da rodada 28): o original testa e lê
+  os campos por `a0` e só copia `f` para `$s1` no atraso do 2º `beqz`. `volatile FieldFace *g;` declarado ANTES de `heap`
+  e `g = f;` depois de `heap = f->heap;` (passado como `(void *)g`) mantém a cópia separada no ponto certo; sem o
+  `volatile` o mwcc propaga `g` para o parâmetro (qualquer ordem, pragma ou helper dá 5).
+- **Contadores de um par de laços aninhados num bloco, o interno declarado antes** (`dd_fx_lines_update`): `{ int jj;
+  int ii; for (ii...) { ... for (jj...) } }` dá o contador interno em `s3` e o ponteiro de indução em `s1`; com os
+  contadores da função (`i`/`j`, usados noutros laços) ou só o interno no bloco sobram 6-8 palavras.
+- **Posições de derrame trocadas = trocar o contador do laço por outro já existente** (`dd_trail_update`, 9 -> 0 depois da
+  forma da rodada 10): o laço das fitas com `n5` (o contador do laço do histórico, logo acima) em vez de `i` põe `list` e
+  o contador nas posições 0x64/0x60 do original; ordem das declarações (2401 posições de `list` x `i`) não mexe.
+  `build/tmp/r29D/ren.py MODULE FUNC SRC` troca o contador de cada `for` por cada outro `int` local e compila todas.
+- **`goto` ao `r = 0` do fim** (`fld_map_walkable`): o original sai do último teste (`i < n_vert`) por `beqz; nop` para o
+  bloco `move v0,zero` que cai no epílogo (o `else r = 0` mais externo). `if (i >= m->n_vert) goto zero; r = a[i];` com
+  o rótulo `zero:` no `else` final reproduz; o ternário/`if-else` local dá o seu próprio `r = 0` em `beqzl`.
+- Sem forma (testado nesta rodada): `fbm_icon`/`fld_digits` (2: pragmas, volátil, protótipos locais com `short`, locais,
+  helper), `dd_disc_tex_hook` (2: 25 formas de `if/else`/helpers; a melhor nova dá 3), `dd_info_stats` (4: os 256
+  subconjuntos voláteis de `si[]` em duas ordens), `fld_chr_tex` (6: 48 ordens de `case` com corpos separados, `return`
+  por `case`, cadeias de `if`), `dd_ev_47` (7: 9 formas do endereço do elo), `dd_fx32_s3_update` (12: o original iça 700
+  antes de -1; 21 formas da expressão, constantes em locais, pragmas), `pda_draw_mail_item` (13: helpers, volátil, tipos),
+  `dd_burst2_update` (16: 685 posições de `ca = -ca + x`/`sa = -sa + y`/`u = 0.2f`), `dd_orbs_update` (16: formas de
+  `one`/`k`, troca de contadores), `fld_sprite_quad` (17: 768 ordens x operandos, constantes em locais), `fld_bg_draw_sky`
+  (18: ordem natural por vértice com `bot` em cada posição, `volatile` no ponteiro: 26), `dd_zone_rebuild` (24: com os
+  dois `lw` do unlink voláteis em locais a ordem `next, prev, zone` acerta, mas o resto do agendamento dá 25-27),
+  `dmgr_jk_pick` (25).
+- Scripts em `build/tmp/r29D/`: `tv.py` (variantes de uma função, `//----` separa), `gen.py` (gera variantes por
+  substituição `velho>>>novo`, `@@` separa, `PRE>>>` insere antes da função), `ren.py` (troca de contadores),
+  `dmove.py` (move 1-2 declarações por todas as posições), `sbs.sh`/`nd.sh` (diff lado a lado e normalizado).
