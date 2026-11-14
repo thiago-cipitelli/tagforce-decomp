@@ -1,5 +1,4 @@
 // @range 0x088070A8-0x08809B50
-// @asm 0x08807C7C-0x08808364
 /* Computer player: card lists and the search for tribute targets. */
 #include "duel.h"
 #include "card_db.h"
@@ -65,7 +64,17 @@ extern unsigned int duel_turn_player;
 extern int duel_phase;
 extern int duel_w_08913D08;            /* card uid the 0x1515/0x1379 effects look for [?] */
 
-extern unsigned int duel_w_08913CF4;
+typedef struct DuelAiView {            /* 0x08913CF4 (same as in ai_0880B448.c) */
+    unsigned int player;               /* player the computer is choosing for */
+    int unk4[5];
+    DuelStats st[2][5];                /* +0x18 monsters as the computer sees them */
+    int unk1d0[6];
+    int dmg[5];                        /* +0x1E8 */
+} DuelAiView;
+
+/* a struct on purpose: a store to a member does not make the mwcc reload a->player/a->zone, a store to a scalar
+   global does */
+extern DuelAiView duel_w_08913CF4;
 extern unsigned int duel_atk_tp;       /* 0x08913F14 */
 extern int duel_atk_zone;              /* 0x08913F2C */
 extern int duel_atk_tz;                /* 0x08913F30 */
@@ -343,38 +352,31 @@ int duel_08807B38(int id, int a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 154 palavras (rodada 28; estrutura igual a menos do agendamento de zona*5 no caso 0x1657): o byte
-   de a->player/a->zone lido num local w (idioma da rodada 24) reproduz o reaproveitamento; falta a cor de w/pl/opp
-   (a2/a1/v1 no original) e as trocas s0/s1 (a/p), s3/s4 (n/z) e s1/s2 (i/base) que ordem e tipo das declarações
-   não mexem. */
 /* Should the computer activate the card of a now? */
 int duel_08807C7C(DuelAct *a)
 {
-    unsigned int w = ((unsigned char *)a)[2];
-    unsigned int pl = w & 1;
-    unsigned int p = pl ^ a->opp;
-    int i;
+    unsigned int p = a->player ^ a->opp;
     int v;
     int atk;
     int z;
     int n;
 
-    duel_w_08913CF4 = p;
+    duel_w_08913CF4.player = p;
     switch (a->id) {
     case 0x10D6:
         return duel_count_monsters(p) >= 2;
     case 0x12A3:
-        return !duel.players[pl & 1].field[w << 26 >> 27].pos;
+        return !duel.players[a->player & 1].field[a->zone].pos;
     case 0x1200:
-        return duel_0884E948(a, 1 - pl) > 0;
+        return duel_0884E948(a, 1 - a->player) > 0;
     case 0x13E3:
-        return duel_0880A54C(a, 1 - pl, -1, 0) >= 0;
+        return duel_0880A54C(a, 1 - a->player, -1, 0) >= 0;
     case 0x1657:
         if (duel_special.player[0] != duel_atk_tp) {
-            if (a->uid != CARD_UID(duel.players[pl & 1].field[w << 26 >> 27].card)) {
+            if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
                 return 1;
             }
-            if (pl == duel_special.player[0] && duel.players[duel_atk_tp & 1].field[duel_atk_tz].card.id != 0) {
+            if (a->player == duel_special.player[0] && duel.players[duel_atk_tp & 1].field[duel_atk_tz].card.id != 0) {
                 return 1;
             }
         }
@@ -386,7 +388,7 @@ int duel_08807C7C(DuelAct *a)
         return st.def < duel_field_atk(duel_special.player[0], duel_atk_zone) - 400;
     }
     case 0x14AB:
-        return duel.players[pl & 1].lp >= 4500;
+        return duel.players[a->player & 1].lp >= 4500;
     case 0x19CB:
         if (duel_count_active(0x1398) != 0) {
             return 0;
@@ -394,11 +396,11 @@ int duel_08807C7C(DuelAct *a)
     case 0x1181:
         return !duel_0886C448(a);
     case 0x17E2:
-        return duel_0884E948(a, 1 - pl) > 0;
+        return duel_0884E948(a, 1 - a->player) > 0;
     case 0x18E0:
         return duel_count_field_all(1 - p) > 0;
     case 0x1593:
-        return !duel.players[pl & 1].field[10].card.id;
+        return !duel.players[a->player & 1].field[10].card.id;
     case 0x1293:
     case 0x139D:
     case 0x1807:
@@ -450,8 +452,8 @@ int duel_08807C7C(DuelAct *a)
         return !n;
     }
     case 0x1967:
-        for (i = 0; i < duel.players[p & 1].n_hand; i++) {
-            if (!duel_08807B38(duel.players[p & 1].hand[i].id, 0, 0)) {
+        for (z = 0; z < duel.players[p & 1].n_hand; z++) {
+            if (!duel_08807B38(duel.players[p & 1].hand[z].id, 0, 0)) {
                 continue;
             }
             return 1;
@@ -477,7 +479,6 @@ int duel_08807C7C(DuelAct *a)
     }
     return 1;
 }
-#endif
 
 /* Has pick entry i been used already? */
 int duel_08808364(int i)
