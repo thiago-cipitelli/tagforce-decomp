@@ -1131,7 +1131,11 @@ int duel_field_atk(unsigned int p, int z);
 void duel_088328C8(unsigned int p, unsigned short a, unsigned int x, unsigned int y);
 int duel_ai_sum_088239EC(void);
 
-#ifdef NON_MATCHING /* o original deixa cópias mortas depois de beql/b nos ?: de duel_cmd (problema aberto) */
+#ifdef NON_MATCHING /* o original deixa cópias mortas depois de beql/b nos ?: de duel_cmd (modo sem limpeza; nenhum desvio
+   condicional vai direto ao epílogo no original, gatilho desconhecido como em efs_run/gim_walk). Rodada 32: o default é
+   `return 1` de verdade (com ele o despacho bate: passo em v1, constantes em v0, e o `b epílogo` sem li porque o 1 do teste
+   do case 1 já está em v0); distância alinhada 204 -> 175 instruções (build/tmp/eA/lcs.py). Sem efeito no modo: default
+   antes de cada case, `return;` sem valor no default */
 /* Steps of a summon (or of the activation of a card from the hand) [?]. */
 int duel_ai_sum_088239EC(void)
 {
@@ -1354,10 +1358,8 @@ int duel_ai_sum_088239EC(void)
         }
         duel_ai_atk_step++;
         return 0;
-#ifndef __MWERKS__
-    default:                           /* the original has no default: it returns with v0 = 1 left by the case tests */
+    default:                           /* b epílogo sem li: o 1 do teste do case 1 já está em v0 */
         return 1;
-#endif
     }
 }
 #endif
