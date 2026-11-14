@@ -197,8 +197,6 @@ segments:
       - [0x269FC, c, efs]
       - [0x26DF0, c, camera]
       - [0x276BC, c, tms]
-      - [0x27974, asm, tms_asm_0882B914]
-      - [0x27AE8, c, tms]
       - [0x28488, c, model]
       - [0x29268, c, toon]
       - [0x29A50, c, anim]
