@@ -69,7 +69,7 @@ def prepare_module(m, objs, pdefs):
             elif t in "TDBRVW":
                 gdef.setdefault(n, []).append((o, sz))
             elif t in "tdbr":
-                ldef.setdefault(n, []).append((o, t))
+                ldef.setdefault(n, []).append((o, t, sz))
     # header `inline` copies: one definition per object; keep them all weak
     for n, l in gdef.items():
         if len(l) > 1:
@@ -78,6 +78,8 @@ def prepare_module(m, objs, pdefs):
             log.append(f"weak {n} ({len(l)} objects)")
     funcs = set(gdef) | pdefs | {n for n, l in ldef.items() if len(l) == 1 and l[0][1] == "t"}
     cdefs = {n: l[0][1] for n, l in gdef.items()}
+    # file statics with a unique name: the data may point at them too (globalized below when it does)
+    cdefs.update({n: l[0][2] for n, l in ldef.items() if len(l) == 1 and l[0][1] in "dbr" and n not in cdefs})
     asm, defsyms, st = host_data.generate(m, cdefs, funcs, undef - set(gdef))
     os.makedirs(f"{OUT}/data", exist_ok=True)
     open(f"{OUT}/data/{m}.s", "w").write(asm)
