@@ -39,8 +39,6 @@ segments:
       - [0xA6AC, c, sc_action]
       - [0xC02C, c, sc_sort]
       - [0xCC54, c, sc_filter]
-      - [0xD62C, asm, sc_filter_asm_088115CC]
-      - [0xD790, c, sc_filter]
       - [0xDA28, c, sc_match]
       - [0xE230, c, sc_fmenu]
       - [0xFD54, c, sc_word]

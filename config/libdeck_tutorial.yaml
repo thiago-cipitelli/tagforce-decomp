@@ -37,8 +37,6 @@ segments:
       - [0xC10C, c, dt_input]
       - [0xDC18, c, dt_fmenu]
       - [0xF608, c, dt_filter]
-      - [0xF8E8, asm, dt_filter_asm_08813888]
-      - [0xFA4C, c, dt_filter]
       - [0x104C0, c, dt_mode]
       - [0x10DA4, c, dt_action]
       - [0x12C94, c, dt_pane]

@@ -1,5 +1,4 @@
 // @range 0x088135A8-0x08814460
-// @asm 0x08813888-0x088139EC
 // @rodata 0x08821050-0x0882106C
 // @data 0x08822024-0x08822050
 /* (The code of libdeck dk_filter.c, first half; the lesson has no "new" filter.) Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
@@ -123,14 +122,14 @@ unsigned short dt_search_step(DtList *l)
 }
 
 
-#ifdef NON_MATCHING /* 8 palavras: len e o ponteiro do histórico com $s0/$s2 trocados (já com o ponteiro explícito e a melhor ordem de declarações) */
 /* the matches become the visible order; the word goes on top of the history */
 void dt_search_finish(DtList *l)
 {
     int i;
-    DtWordsView *v;
+    unsigned int n;
     int k;
     int len;
+    DtWordsView *v;
 
     if (dt_search.out != 0) {
         memcpy(l->order, dt_search.out, dt_search.n << 1);
@@ -139,7 +138,8 @@ void dt_search_finish(DtList *l)
         dt_search.out = 0;
     }
     l->filter = 8;
-    len = wcslen(dt_search.word);
+    n = wcslen(dt_search.word);
+    len = n;
     k = 7;
     for (i = 0, v = (DtWordsView *)&dts; i < 8; i++, v = (DtWordsView *)((char *)v + 64)) {
         if (v->words[0][0] == 0) {
@@ -155,7 +155,6 @@ void dt_search_finish(DtList *l)
         wcscpy(DK_WORDS[k], DK_WORDS[k - 1]);
     wcscpy(DK_WORDS[0], dt_search.word);
 }
-#endif
 
 DtFilterFn dt_filters[9] = {
     0, (DtFilterFn)dt_filter_kind, (DtFilterFn)dt_filter_type, (DtFilterFn)dt_filter_race,

@@ -1,5 +1,4 @@
 // @range 0x08810BF4-0x088119C8
-// @asm 0x088115CC-0x08811730
 // @data 0x0881B424-0x0881B454
 /* Sorting a pane's visible order by one of the nine keys (stable, "no value" last), the key value
    of a card, the "new"-mark filter, the incremental text search and its word history, and the
@@ -296,7 +295,6 @@ unsigned short sc_search_step(ScList *l)
     return sc_search.pos * 1000 / sc_search.total;
 }
 
-#ifdef NON_MATCHING /* laços do histórico com outra alocação */
 /* the matches become the visible order; the word goes on top of the history */
 /* the search word history seen from the start of sc (words at +0x4C), as the loop walks it */
 typedef struct ScWordsView {
@@ -307,9 +305,10 @@ typedef struct ScWordsView {
 void sc_search_finish(ScList *l)
 {
     int i;
-    ScWordsView *v;
+    unsigned int n;
     int k;
     int len;
+    ScWordsView *v;
 
     if (sc_search.out != 0) {
         memcpy(l->order, sc_search.out, sc_search.n << 1);
@@ -318,7 +317,8 @@ void sc_search_finish(ScList *l)
         sc_search.out = 0;
     }
     l->filter = 8;
-    len = wcslen(sc_search.word);
+    n = wcslen(sc_search.word);
+    len = n;
     k = 7;
     for (i = 0, v = (ScWordsView *)&sc; i < 8; i++, v = (ScWordsView *)((char *)v + 64)) {
         if (v->words[0][0] == 0) {
@@ -334,7 +334,6 @@ void sc_search_finish(ScList *l)
         wcscpy(sc.words[k], sc.words[k - 1]);
     wcscpy(sc.words[0], sc_search.word);
 }
-#endif
 
 ScFilterFn sc_filters[8] = {
     0, (ScFilterFn)sc_filter_kind, (ScFilterFn)sc_filter_type, (ScFilterFn)sc_filter_race,
