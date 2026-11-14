@@ -2566,3 +2566,31 @@ Bateram `snd_output`, `snd_bank_open_async`, `snd_obj_alloc`, `gfx_save_bmp` e `
   (`dd_cursor_cycle`) tem o laço dentro de um `case` alcançado pela tabela de saltos.
 - `debug_menu_draw`/`debug_menu_update` (fuzzy 0 no relatório): existem, mas não têm C nenhum (só `@asm`, menu de
   depuração inalcançável), então o asm_try não acha a função no objeto.
+## Rodada 28 (`r28E1`): reteste do `matching_skip` (libduel_eng, metade 1), pragmas e helpers em toda a lista
+
+Bateu `duel_08862E5C` (2 -> 0; `ai_08862E24.c` ficou sem `@asm`); `duel_08807C7C` 334 -> 154 palavras (estrutura 31 -> 10
+linhas) e `duel_piles_swap` estrutura 3 -> 1 linha (126 palavras, posicionais). Varredura de 10 pragmas (`opt_propagation`,
+`opt_lifetimes`, `opt_common_subs`, `opt_dead_assignments`, `opt_loop_invariants`, `opt_strength_reduction`,
+`scheduling`, `peephole`, `opt_vectorize_loops`, `opt_unroll_loops`, todas `off`) nas 20 entradas: nenhuma baixa a
+contagem (as de `duel_088451E8`/`duel_08807C7C` só mexem palavras posicionais). O helper `static inline` com `return` em
+cada saída (rodada 27) não liga o modo de cópias mortas de `duel_ai_sum_088239EC` (corpo inteiro embrulhado: 818 -> 810,
+mesma estrutura) nem reproduz o `b; nop` de `duel_ai_0881E27C` (o helper `if (atk <= 1000) return 0; return 1;` vira
+`slti; xori` materializado; com 3 saídas a estrutura se aproxima mas o 1º `return 1` perde o `lw ra` no atraso).
+- **`lui` do passo em `v0` e `lw` em `v1`** (`switch (duel_w_08914904)` como 1º comando): com `int r = 1;` no topo e
+  `return r` nas saídas o mwcc guarda o `1` da comparação do `case 1` como `r` e o `lui` vai para `v1`; com `return 1`
+  direto em cada saída (e `return f(a, b)` nos `case` internos, `default: return 1;`) o `li v0,1` é só a constante do
+  teste e o `lui` sai em `v0` (`duel_08862E5C`). Mesma lição da rodada 27 ("o mwcc sabe que `v0` já vale 1").
+- **Byte de bitfields reaproveitado através de um store a global** (`duel_08807C7C`, família da rodada 24): `w =
+  ((unsigned char *)a)[2]; pl = w & 1;` e `w << 26 >> 27` como zona nos `case` que o original lê de `a2`; o store em
+  `duel_w_08913CF4` no meio não impede. Mais: `if (A != B) { ... } return 0;` com o `return 0` por último nos casos
+  0x1657/0x14C4 (`beql; move v0,zero` direto ao epílogo) e `n = 0;` antes da chamada que o original agenda antes do `jal`.
+- **Endereço de local calculado em dois passos** (`addiu v0,sp,24; addiu v0,v0,6`): `u = (unsigned short *)((unsigned
+  int)&t + 6)`; `&t.uid[0]`, `((DuelPileSave *)&t)->uid`, `(char *)&t + 6U` e ponteiro intermediário dobram num só `addiu`.
+- Sem forma (testado com as técnicas 22-27 e as buscas aleatórias `rs.py` ordem x tipo x inicializador):
+  `duel_0883D798` (1: `(unsigned int)i << 31` tira a CSE do `andi` mas o agendador adia o `and 0x80000000` para
+  depois do `lw` de `duel_turn_player`, 26 palavras; `duel.turn_player` como campo, `%`, locais, permutações do `|`),
+  `duel_ai_0881E27C` (6), `duel_088D1F1C` (8: as 24 ordens de `f/grave/opp/memset` e `grave ^= 1` com `pl` local dão 8
+  ou 15), `duel_08871674` (9, 160 variantes), `duel_0882E0A8` (9, 120 variantes; `z += i` no parâmetro piora: 65),
+  `duel_088441D0` (12: forma do laço da gêmea `duel_088420F4`, `z` int/bloco, `q` local, `p ^ 1`), `duel_0880C15C`
+  (20: ordem dos operandos do `&`), `duel_0883449C`, `duel_0883BB00`, `duel_08838A84`, `duel_0883F3A0`,
+  `duel_field_controller`, `duel_08846584`, `duel_08817598`, `duel_088451E8`, `duel_08850F44` (só pragmas).
