@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
@@ -88,6 +89,40 @@ void host_save_dir(char *out, int n)
         cat3(out, n, home ? home : ".", "/.local/share/tagforce/ms0", "");
 }
 
+/* The PSP's file systems ignore case and the game relies on it (it asks for duel/cutin_da_faces/DA_boy_R10.gim,
+   the disc has da_boy_R10.gim; the duel start retried that open forever). When the path does not exist, each
+   component that is missing is replaced by the directory entry that matches without case. Same length, in place;
+   a name that matches nothing (a file about to be created) is left alone. */
+static void fix_case(char *path)
+{
+    char *p = path, *e;
+
+    if (access(path, F_OK) == 0)
+        return;
+    while ((e = strchr(p + 1, '/')) || *(e = p + strlen(p)) == 0) {
+        char c = *e;
+        *e = 0;
+        if (*p == '/' && e > p + 1 && access(path, F_OK) != 0) {
+            DIR *d;
+            struct dirent *de;
+            *p = 0;
+            d = opendir(p == path ? "/" : path);
+            *p = '/';
+            for (; d && (de = readdir(d));)
+                if (!strcasecmp(de->d_name, p + 1)) {
+                    memcpy(p + 1, de->d_name, strlen(de->d_name));
+                    break;
+                }
+            if (d)
+                closedir(d);
+        }
+        *e = c;
+        if (!c)
+            break;
+        p = e;
+    }
+}
+
 /* PSP path -> host path; returns 0 for a device the host does not have */
 static int host_path(const char *psp, char *out, int n)
 {
@@ -105,6 +140,7 @@ static int host_path(const char *psp, char *out, int n)
     } else {
         return 0;
     }
+    fix_case(out);
     if (trace < 0)
         trace = getenv("TAGFORCE_TRACE_IO") != 0;
     if (trace)
