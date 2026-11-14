@@ -90,7 +90,7 @@ int func_08825A14(void);
 void func_08825A70(int v);
 void func_08823724(MenuWidget *w, int open);
 void func_08823808(void);
-void func_0882382C(unsigned int *dl, unsigned short i, int x, int y);
+unsigned int *func_0882382C(unsigned int *dl, unsigned short i, int x, int y);
 void *func_08823D84(void *list);
 int func_08823D8C(void);
 void func_08823F44(MenuWidget *w, int open);
@@ -107,7 +107,7 @@ unsigned int *func_08824ABC(unsigned int *dl, int x, int y, int idx);
 unsigned int *func_08824C08(unsigned int *dl, int x, int y);
 void func_08824D18(MenuWidget *w, int open);
 void func_08824D58(void);
-void func_08824D7C(unsigned int *dl, int x, int y);
+unsigned int *func_08824D7C(unsigned int *dl, int x, int y);
 void func_08824FF0(MenuWidget *w, int open);
 void func_0882504C(void);
 void *func_088250E8(void *dl, int x, int y, int w, int h);
@@ -170,7 +170,7 @@ void func_08823808(void)
 
 /* tab i of the list (lit under the cursor, "i/n" label); tab 0 also draws the box with the text of
    the entry under the cursor */
-void func_0882382C(unsigned int *dl, unsigned short i, int x, int y)
+unsigned int *func_0882382C(unsigned int *dl, unsigned short i, int x, int y)
 {
     MenuWidget *w = dd_prompt_list;
     float pts[8][3];
@@ -251,7 +251,7 @@ void func_0882382C(unsigned int *dl, unsigned short i, int x, int y)
     font_set_color(0xFF00354A);
     font_text_set(dl);
     font_draw_text(tx << 6, ty << 6, (480 - tx) << 6, label);
-    dl_disable(font_text_clear(), 2);
+    return dl_disable(font_text_clear(), 2);
 }
 
 /* no cursor drawing */
@@ -596,7 +596,7 @@ void func_08824D58(void)
 }
 
 /* the coin (face by the cursor) between two arrows, its caption below */
-void func_08824D7C(unsigned int *dl, int x, int y)
+unsigned int *func_08824D7C(unsigned int *dl, int x, int y)
 {
     MenuWidget *w = dd_coin_w;
     int msg, back, tw;
@@ -625,7 +625,7 @@ void func_08824D7C(unsigned int *dl, int x, int y)
     font_set_color(0xFF000000);
     x += 50 - tw / 2;
     font_draw_text(x << 6, (y + 100) << 6, (480 - x) << 6, text);
-    dl_enable(font_text_clear(), 1);
+    return dl_enable(font_text_clear(), 1);
 }
 
 /* number choice: min..max by step, shown with dialog format fmt */

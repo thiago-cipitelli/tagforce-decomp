@@ -208,8 +208,8 @@ void fld_sctab_update(int *cmd, int *arg, int *picked)
 
 void *fbag_draw(void *list);
 void fld_hud_event(unsigned short **text, int *ev);
-void fld_sctab_draw_text(void *list, unsigned short i, int x, int y);
-void fld_sctab_draw_text2(void *list, unsigned short i, int x, int y);
+void *fld_sctab_draw_text(void *list, unsigned short i, int x, int y);
+void *fld_sctab_draw_text2(void *list, unsigned short i, int x, int y);
 extern const unsigned short field_sctab_item_w[][5]; /* 0x088388F0 width of the tab bar items by language and event */
 void *fld_dlg_draw(void *list);
 
@@ -357,7 +357,7 @@ void fld_sctab_open2(void)
     t->state = 3;
 }
 
-void fld_sctab_draw_text(void *list, unsigned short i, int x, int y)
+void *fld_sctab_draw_text(void *list, unsigned short i, int x, int y)
 {
     int k = field_scene_tab.idx[i];
 
@@ -366,17 +366,17 @@ void fld_sctab_draw_text(void *list, unsigned short i, int x, int y)
     font_set_flag4(1);
     font_set_color(0xFF000000);
     font_draw_text((x + 4) << 6, y << 6, (480 - (x + 4)) << 6, field_scene_tab.texts[k]);
-    font_text_clear();
+    return font_text_clear();
 }
 
-void fld_sctab_draw_text2(void *list, unsigned short i, int x, int y)
+void *fld_sctab_draw_text2(void *list, unsigned short i, int x, int y)
 {
     font_text_set(list);
     font_set_size(15, 15);
     font_set_flag4(1);
     font_set_color(0xFF000000);
     font_draw_text((x + 4) << 6, y << 6, (480 - (x + 4)) << 6, field_scene_tab.texts2[i]);
-    font_text_clear();
+    return font_text_clear();
 }
 
 /* event of the cell under the player and its label */

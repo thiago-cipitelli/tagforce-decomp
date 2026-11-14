@@ -44,7 +44,6 @@ snd_obj_begin	BOOT	43 palavras: o original reaproveita o registrador de id para 
 duel_msg_poll	libduel_eng	o original lê o $v0 restante de duel_msg_count (void) e não carrega $a1 antes de duel_msg_send3 (rodada 10)
 dd_ev_47	libduel_draw	7 palavras: coloração (count em v1, base em a1); tipos, 120 ordens e helpers testados (rodada 11)
 dd_disc_tex_hook	libduel_draw	2 palavras: o teste de +0x158 vai para o retorno 0 compartilhado do teste de +8 em vez de desvio likely ao epílogo (rodada 11)
-func_0882228C	libduel_draw	58 palavras por uma instrução: original faz beqzl com cópia do lw ra e move a0,v0 dentro do if (rodada 11)
 dd_chr_attach_mtx	libduel_draw	90 palavras por uma instrução: cópia move a3,a2 de id que o mwcc propaga (rodada 11)
 dd_info_stats	libduel_draw	4 palavras: leituras volatile de si[2]/si[5]/si[7]; ~800 combinações sem passar de 4 (rodada 27)
 duel_find_effect_card	libduel_eng	2 palavras: ordem de i = 0 e do sll b antes do 1º laço (rodadas 11-13)

@@ -1,7 +1,6 @@
 // @range 0x08820F88-0x08822B0C
-// @asm 0x0882228C-0x08822520
 // @asm 0x08822520-0x088226C0
-// @data 0x08876110-0x08876200
+// @data 0x08876110-0x08876208
 /* The action window over a field location (summon, set, activate, attack... as icons of
    dd_act_tab, placed next to the card on screen) and the message windows of the duel's other
    questions: the battle position choice, the chain confirmation with the cards involved, yes/no and
@@ -114,7 +113,7 @@ void func_088215A0(void);
 void func_08821868(void);
 void func_088218CC(DdLoc loc, int act);
 void *func_0882192C(void *list);
-void func_08821954(unsigned int *dl, unsigned short i, int x, int y);
+unsigned int *func_08821954(unsigned int *dl, unsigned short i, int x, int y);
 unsigned int func_08821A3C(DdLoc loc);
 int func_08821BAC(void);
 unsigned short *func_08821C90(int text);
@@ -125,7 +124,7 @@ void *func_08821FA0(void *list);
 unsigned int *func_08821FA8(unsigned int *dl, unsigned short i, int x, int y);
 void func_088221C4(MenuWidget *w, int open);
 void func_08822240(void);
-void func_0882228C(unsigned int *dl);
+unsigned int *func_0882228C(unsigned int *dl);
 void func_08822520(void);
 void func_08822740(MenuWidget *w, int open);
 void func_088227EC(void);
@@ -368,7 +367,7 @@ void *func_0882192C(void *list)
 }
 
 /* row i: icon and name */
-void func_08821954(unsigned int *dl, unsigned short i, int x, int y)
+unsigned int *func_08821954(unsigned int *dl, unsigned short i, int x, int y)
 {
     int *a = (int *)((char *)dd_act_menu.act + i * 4);
     DdActIcon *row = &dd_act_tab[*a];
@@ -382,7 +381,7 @@ void func_08821954(unsigned int *dl, unsigned short i, int x, int y)
     font_text_set(dl);
     font_set_color(0xFF000000);
     font_draw_text((x + 15) << 6, (y + 1) << 6, (480 - (x + 15)) << 6, text);
-    font_text_clear();
+    return font_text_clear();
 }
 
 /* allowed actions of a location; a visible card also becomes the detail card */
@@ -618,9 +617,9 @@ void func_08822240(void)
     dv_w624_set(v);
 }
 
-#ifdef NON_MATCHING /* 58 palavras: by antes de fit acerta o começo; no fim o original sai por beqzl com a cópia do lw ra e faz o move a0,v0 dentro do if (o mwcc o põe no delay de um beqz) */
-/* the cards of the chain in a row under the text ("..." when they don't fit) */
-void func_0882228C(unsigned int *dl)
+/* the cards of the chain in a row under the text ("..." when they don't fit); a MenuWidget draw_before callback:
+   it returns the list (v0 of the last call on both exits: dl_enable, or font_text_clear at 0x088224E8) */
+unsigned int *func_0882228C(unsigned int *dl)
 {
     DdChainSel *c = &dd_chain_sel;
     MenuWidget *w = dd_chain_sel.w;
@@ -658,10 +657,10 @@ void func_0882228C(unsigned int *dl)
         font_set_size(6, 12);
         font_set_color(0xFF000000);
         font_draw_text(x << 6, (by - 6) << 6, (480 - x) << 6, dots);
-        font_text_clear();
+        dl = font_text_clear();
     }
+    return dl;
 }
-#endif
 
 #ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 /* collects the cards the current chain link involves (16 at most) */
