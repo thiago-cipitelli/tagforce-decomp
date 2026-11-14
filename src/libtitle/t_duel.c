@@ -1,5 +1,4 @@
 // @range 0x08821D3C-0x08824DA8
-// @asm 0x08822D64-0x08822EB4
 // @data 0x08830140-0x08830214
 // @rodata 0x0882B4E4-0x0882B6D0
 /* Duel against the computer (state 12, main menu item 1): the rules (tag duel, deck swap, life
@@ -568,7 +567,6 @@ void tdl_rules_anim(void)
     }
 }
 
-#ifdef NON_MATCHING /* 31 palavras: o n-- depois da contagem das abas sai no original como beqzl para a instrução seguinte com o decremento no atraso. Tentado (2026-11-05): n >= 3, 2 < n, ternário, if vazio/else, goto, switch com faixa, n = k - 1 */
 void *tdl_rules_draw(void *list)
 {
     Title *t = &title;
@@ -587,16 +585,16 @@ void *tdl_rules_draw(void *list)
     if (t->step2 != 5)
         list = tdl_rules_help(list);
     if ((k = t->step2) != 0) {
-        n = k;
-        if (n > 2)
-            n--;
+        if (k <= 2)
+            n = k;
+        else
+            n = k - 1;
     }
     list = tbox_side(list, 0x14, n, (TBoxDrawFn)tdl_rules_value);
     if (t->step2 == 5)
         list = tframe_cursor(list, 0xFFFFFFFF, 0x147, 0xF2, 0x97, 0x17);
     return list;
 }
-#endif
 
 void *tdl_rules_help(void *list)
 {
