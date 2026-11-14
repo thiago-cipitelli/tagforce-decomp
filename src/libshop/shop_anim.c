@@ -209,7 +209,7 @@ Vec4 shop_card_mid = { -9.0f, -1.0f, -5.0f, 1.0f };
 Vec4 shop_card_mid_off = { 2.0f, 7.0f, 7.0f, 1.0f };
 Vec4 shop_card_v500 = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-#ifdef NON_MATCHING /* 4 palavras (eram 114): shop_card_v500 passa por um Vec4 na pilha (v4); no vec4_set de card_ctrl1 o original lê card_up.z primeiro (só com leitura volatile num temporário) e falta só a alocação: z em $f0 e z + 2 somado antes de mid.x + 2 (temporários, volatile em x/y e ordem testados) */
+#ifdef NON_MATCHING /* 2 palavras (eram 114): shop_card_v500 passa por um Vec4 na pilha (v4); no vec4_set de card_ctrl1 o original lê card_up.z ($f0) antes de mid.x ($f3); com x e z em temporários volatile os registradores batem mas as duas cargas saem na ordem trocada (busca de 4 modos x 3 valores x ordem dos temporários: nada abaixo de 2) */
 /* curve points of the cards, in the space of the card camera */
 void shop_open_layout(void)
 {
@@ -244,8 +244,9 @@ void shop_open_layout(void)
     vec4_set(&shop_open->card_show, -0.2f, 11.3f, 4.6f, 1.0f);
     vec4_set(&shop_open->card_out, 24.0f, -2.0f, 2.0f, 1.0f);
     {
+        float x = ((volatile Vec4 *)&shop_open->card_mid)->x + 2.0f;
         float z = ((volatile Vec4 *)&shop_open->card_up)->z + 2.0f;
-        vec4_set(&shop_open->card_ctrl1, shop_open->card_mid.x + 2.0f, shop_open->card_up.y + 6.0f, z, 1.0f);
+        vec4_set(&shop_open->card_ctrl1, x, shop_open->card_up.y + 6.0f, z, 1.0f);
     }
     vec4_set(&shop_open->card_ctrl2, shop_open->card_show.x - 1.0f, shop_open->card_show.y + 10.0f,
              shop_open->card_up.z + 4.0f, 1.0f);
