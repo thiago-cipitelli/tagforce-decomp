@@ -1,6 +1,5 @@
 // @range 0x08839F50-0x0883CEB0
 // @asm 0x0883A4E4-0x0883A6CC
-// @asm 0x0883BF38-0x0883C040
 // @asm 0x0883CBE8-0x0883CDB4
 // @data 0x088EE050-0x088EE0A4
 // @rodata 0x088753F4-0x0887544C
@@ -996,8 +995,6 @@ unsigned int *dl_front_face(unsigned int *list, int cw)
     return dl_push(list, cmd, 1);
 }
 
-#ifdef NON_MATCHING /* 23 palavras (eram 29; rodada 29: ordem dos stores achada nas 630 ordens possíveis): o original monta as
-   palavras do nível 0 e depois as move para o nível `mip`; o resto é agendamento e numeração de registradores */
 /* Texture image of mip level `mip`: address, buffer width, log2 of the size, TFLUSH. */
 unsigned int *dl_tex_image(unsigned int *list, int mip, int w, int h, int tbw, void *addr)
 {
@@ -1017,14 +1014,17 @@ unsigned int *dl_tex_image(unsigned int *list, int mip, int w, int h, int tbw, v
     }
     cmd[0] = (unsigned int)addr & 0xFFFFFF | 0xA0000000;
     cmd[1] = ((unsigned int)addr >> 24 & 0xFF) << 16 | 0xA8000000 | tbw;
-    cmd[3] = 0xCB000000;
     cmd[2] = lh << 8 | 0xB8000000 | lw;
-    cmd[2] = cmd[2] & 0xFFFFFF | (mip + 0xB8) << 24;
-    cmd[0] = cmd[0] & 0xFFFFFF | (mip + 0xA0) << 24;
-    cmd[1] = cmd[1] & 0xFFFFFF | (mip + 0xA8) << 24;
+    cmd[3] = 0xCB000000;
+    /* the level-0 words, then the opcode moved to level `mip` (&= and |= as two statements: it matches) */
+    cmd[0] &= 0xFFFFFF;
+    cmd[0] |= (mip + 0xA0) << 24;
+    cmd[1] &= 0xFFFFFF;
+    cmd[1] |= (mip + 0xA8) << 24;
+    cmd[2] &= 0xFFFFFF;
+    cmd[2] |= (mip + 0xB8) << 24;
     return dl_push(list, cmd, 4);
 }
-#endif
 
 unsigned int *dl_tex_mode(unsigned int *list, int psm, int maxmips, int a2, int swizzle)
 {
