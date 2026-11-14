@@ -269,7 +269,7 @@ void snd_stereo_widen(short *hist, short *buf, int n)
     }
 }
 
-#ifdef NON_MATCHING /* lógica corrigida (quociente negativo +1, laço interno do-while); 31 palavras: só registradores (o original dá t1 ao k externo, t0 a i e t4/t5/t6 a idx/r/l), nenhuma ordem de declaração resolve */
+#ifdef NON_MATCHING /* lógica corrigida (quociente negativo +1, laço interno do-while); 11 palavras (eram 31, busca exaustiva das 720 ordens de declaração, rodada 28): só registradores, o original dá t1 ao k externo e t0 a i */
 /* Box filter of `taps` frames over `n` stereo frames; `hist` holds the 16 frames before the block. */
 #ifdef NON_MATCHING /* static: o chamador mantém t7/t8/v0 vivos através do jal (snd_streams_decode) */
 static
@@ -278,9 +278,9 @@ void snd_box_filter(short *hist, short *buf, int n, int taps)
 {
     short save[32];
     int k;
-    int idx;
     int l;
     int r;
+    int idx;
     int i;
 
     for (i = 0, k = (n - 16) * 2; i < 32; i++, k++) {
