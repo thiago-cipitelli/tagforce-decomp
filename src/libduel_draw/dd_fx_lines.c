@@ -1,5 +1,4 @@
 // @range 0x08847D0C-0x08848B40
-// @asm 0x08847DD8-0x08848B40
 /* Card effect "speed lines" (effects 102-106): a tunnel of 33x33 vertices turning towards the
    camera (sen_07.gim), bursts of 8 sparks flying outwards (blu_light_g.gim) and lens flares
    (lens_aP8A.gim), with the whoosh sound 0x6237 when it starts and ends. */
@@ -115,7 +114,6 @@ int dd_fx_lines_start(DdFxArg *arg, void *a, void *b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: no laço interno do túnel (32 faixas) o contador e o ponteiro da faixa saem em s1/s3 trocados; estrutura idêntica. Testados (rodada 8): variáveis separadas, do-while/while, ponteiro explícito, register, outro nome para cada contador (descida), mover cada declaração (só a posição atual dá 6) */
 int dd_fx_lines_update(int phase, DdFxLines *w)
 {
     DdFxArg *arg = w->h.arg;
@@ -194,13 +192,18 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
         mtx_push();
         mtx_identity();
         list = dl_ambient_light(list, (unsigned int)(in * 255.0f * out) << 24 | 0xFFFFFF);
-        for (i = 0; i < 2; i++) {
-            list = dl_tex_offset(0.0f, (float)w->h.frame * -0.03f + (float)i / 2.0f, list);
-            mtx_push();
-            mtx_rotate_z((float)i * 0.5235988f + 0.2617994f);
-            for (j = 0; j < 32; j++)
-                list = draw_array(list, 4, 0x99F, 66, w->idx, w->ring[j]);
-            mtx_pop();
+        { /* contadores em bloco, jj antes de ii: o contador do laço interno em s3 e o ponteiro da faixa em s1 */
+            int jj;
+            int ii;
+
+            for (ii = 0; ii < 2; ii++) {
+                list = dl_tex_offset(0.0f, (float)w->h.frame * -0.03f + (float)ii / 2.0f, list);
+                mtx_push();
+                mtx_rotate_z((float)ii * 0.5235988f + 0.2617994f);
+                for (jj = 0; jj < 32; jj++)
+                    list = draw_array(list, 4, 0x99F, 66, w->idx, w->ring[jj]);
+                mtx_pop();
+            }
         }
         mtx_pop();
         dl_set_list(list);
@@ -340,4 +343,3 @@ int dd_fx_lines_update(int phase, DdFxLines *w)
         return 2;
     return 4;
 }
-#endif

@@ -1,5 +1,4 @@
 // @range 0x0882ABD4-0x0882B238
-// @asm 0x0882B0A4-0x0882B0F0
 // @data 0x0883D6D8-0x0883DBC0
 /* Tutorial faces (FieldFace): the animated EHF bust (body.ehf and mouth.ehf of
    tutorial/face/bu_xxx.ehp) of the character teaching, with blinking and the talking mouth. */
@@ -159,19 +158,19 @@ void fface_set(FieldFace *f, int blink, int talk, int anim)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida. 5 palavras: o original copia f para $s1 só depois de ler os dois campos (no delay do beqz); return antecipado, locais e switch não mudam */
 void fface_free(FieldFace *f)
 {
+    volatile FieldFace *g; /* volatile: copia de f para $s1 depois das cargas (no delay do 2o beqz) */
     void *heap;
 
     if (f != 0) {
         heap = f->heap;
+        g = f;
         if (f->pack != 0)
             heap_set_level(heap, f->pack);
-        heap_set_level(heap, f);
+        heap_set_level(heap, (void *)g);
     }
 }
-#endif
 
 unsigned short fface_frame(unsigned short face, unsigned short anim)
 {

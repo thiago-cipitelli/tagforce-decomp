@@ -1,6 +1,5 @@
 // @range 0x088395D4-0x0883AB6C
-// @asm 0x0883970C-0x0883AB6C
-// @rodata 0x088707A4-0x088707D0
+// @rodata 0x088707A4-0x088707FC
 // @data 0x08876BB4-0x08876BD0
 /* The charge trail of effects 13-23: three ribbons that follow a point of the scene along a spline
    of its last 32 positions, a glow at the head and, in the second variant (owners of kind 19),
@@ -17,7 +16,7 @@ typedef struct DdTrailPart {           /* DdTrailSpark.p[] */
     ScePspFVector3 vel;
 } DdTrailPart;
 
-/* zero vector and w = 1 point: local templates of dd_trail_update (kept in asm) */
+/* zero vector and w = 1 point: local templates of dd_trail_update */
 #pragma explicit_zero_data on
 ScePspFVector3 dd_trail_zero = { 0.0f, 0.0f, 0.0f };
 #pragma explicit_zero_data off
@@ -84,14 +83,11 @@ int dd_fx13_start_b(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 16 palavras (2026-11-08): forma e quadro iguais ao original; faltam os $s do laço de spline_eval
-                      (contador s0/ponteiro s1 trocados) e as posições de derrame de list e do contador externo das fitas
-                      (0x60/0x64); os contadores nN têm um nome por laço para os $s (busca automática). Rodada 10: o laço
-                      de spline_eval bate (9 palavras) com `char *pc` declarado no topo, `for (n9 = 0, pc = (char *)d; ...;
-                      n9++, pc += sizeof(ScePspFVector4))` e `((DdTrailFx *)pc)->curve[0]`; não aplicado porque as
-                      posições de derrame não mudam (ordem das declarações, list/i próprios no bloco testados) */
+/* o laço de spline_eval anda com o ponteiro pc (contador s0, ponteiro s1) e as fitas usam n5 (o contador do histórico) como contador
+   externo: com i o mwcc trocava as posições de derrame de list e do contador (0x60/0x64) */
 int dd_trail_update(int phase, DdTrailFx *d)
 {
+    char *pc;
     int n39;
     int n33;
     int n29;
@@ -237,17 +233,17 @@ int dd_trail_update(int phase, DdTrailFx *d)
         }
         vec4_set(&d->pts[0], head.x, head.y, head.z, 1.0f);
         spline_init(d->coef, d->pts, d->npts);
-        for (n9 = 0; n9 < 8; n9++)
-            spline_eval(n9 / 8.0f, &d->curve[0][n9], d->pts, d->coef, d->npts);
+        for (n9 = 0, pc = (char *)d; n9 < 8; n9++, pc += sizeof(ScePspFVector4))
+            spline_eval(n9 / 8.0f, ((DdTrailFx *)pc)->curve[0], d->pts, d->coef, d->npts);
         rgb = d->r | (d->b << 16 | d->g << 8);
         for (i = 0; i < 3; i++)
             for (j = 0; j < 2; j++)
                 mat4_transform_vec4(&bl[i][j], &bill, &d->blade[i][j]);
         /* build the ribbons, thinner and fainter toward the tail */
         d->nsteps = 0;
-        for (i = 0; i < d->npts; i++) {
+        for (n5 = 0; n5 < d->npts; n5++) {
             for (j = 0; j < 8; j++) {
-                cv = &d->curve[i][j];
+                cv = &d->curve[n5][j];
                 k = 1.0f - d->nsteps / 47.0f;
                 alpha = (unsigned int)d->a * (k * 0.5f + 0.5f);
                 c = d->r | (d->g << 8 | (alpha << 24 | d->b << 16));
@@ -484,4 +480,3 @@ int dd_trail_update(int phase, DdTrailFx *d)
     }
     return d->t < d->end ? 2 : 4;
 }
-#endif
