@@ -390,12 +390,12 @@ int snd_obj_stream_pos(unsigned int h)
     return o->s.pos - o->s.u.st.start;
 }
 
-void se_play_pan(unsigned int id, int fade_ms, unsigned short pan)
+unsigned int se_play_pan(unsigned int id, int fade_ms, unsigned short pan)
 {
     int t = MS_TICKS(fade_ms);
     unsigned int h = snd_id_handle(id) | 0x100000;
 
-    snd_obj_start(h, (void *)h, t, 0, pan);
+    return snd_obj_start(h, (void *)h, t, 0, pan);
 }
 
 /* Voice clip: a new one cuts the previous (which fades out) and waits suspended for it. */

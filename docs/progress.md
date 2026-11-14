@@ -1,12 +1,12 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-14 (rodada 30) (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-14 (rodada 31) (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 91,4% | 97,3% | 10601 / 11039 |
-| BOOT | 77,0% | 83,7% | 1897 / 2208 |
+| total | 91,7% | 97,3% | 10614 / 11039 |
+| BOOT | 79,2% | 83,8% | 1909 / 2208 |
 | libduel_eng | 92,0% | 99,9% | 3391 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
@@ -28,7 +28,7 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-14 (
 | libtutorial | 95,8% | 99,9% | 205 / 207 |
 | libfield | 95,6% | 99,8% | 636 / 652 |
 | libstory | 96,5% | 99,7% | 669 / 676 |
-| libduel_draw | 91,3% | 98,4% | 1575 / 1609 |
+| libduel_draw | 91,5% | 98,4% | 1576 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -79,11 +79,11 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ehf_cmd.c`](../src/BOOT/ehf_cmd.c) | 0x08822F84-0x08823BD0 | 19 | 0 | handlers dos comandos EHF: janelas e laços de quadros, palavras GE cruas, transformações, matrizes por mensagem, esferas de visibilidade, billboards, matriz de osso, escala, tremor aleatório, rastros em anel de uma ou duas trilhas suavizados por spline cíclica, interpolação de chaves, callbacks |
 | [`ehf_cmd2.c`](../src/BOOT/ehf_cmd2.c) | 0x08823BD0-0x08824040 | 6 | 1 | handlers dos comandos EHF: janelas e laços de quadros, palavras GE cruas, transformações, matrizes por mensagem, esferas de visibilidade, billboards, matriz de osso, escala, tremor aleatório, rastros em anel de uma ou duas trilhas suavizados por spline cíclica, interpolação de chaves, callbacks |
 | [`ehf_cmd3.c`](../src/BOOT/ehf_cmd3.c) | 0x08824040-0x088243E4 | 3 | 0 | handlers dos comandos EHF: janelas e laços de quadros, palavras GE cruas, transformações, matrizes por mensagem, esferas de visibilidade, billboards, matriz de osso, escala, tremor aleatório, rastros em anel de uma ou duas trilhas suavizados por spline cíclica, interpolação de chaves, callbacks |
-| [`ehf_cmd4.c`](../src/BOOT/ehf_cmd4.c) | 0x088243E4-0x088253FC | 13 | 2 | handlers dos comandos EHF: janelas e laços de quadros, palavras GE cruas, transformações, matrizes por mensagem, esferas de visibilidade, billboards, matriz de osso, escala, tremor aleatório, rastros em anel de uma ou duas trilhas suavizados por spline cíclica, interpolação de chaves, callbacks |
+| [`ehf_cmd4.c`](../src/BOOT/ehf_cmd4.c) | 0x088243E4-0x088253FC | 15 | 0 | handlers dos comandos EHF: janelas e laços de quadros, palavras GE cruas, transformações, matrizes por mensagem, esferas de visibilidade, billboards, matriz de osso, escala, tremor aleatório, rastros em anel de uma ou duas trilhas suavizados por spline cíclica, interpolação de chaves, callbacks |
 | [`ehf_prim.c`](../src/BOOT/ehf_prim.c) | 0x088253FC-0x0882644C | 9 | 1 | gizmo de eixos e primitivas cujos vértices vêm de comandos seguintes: início com espaço na lista ou vértices externos, coordenadas de textura, cores, posições, fita voltada para a câmera |
 | [`particle.c`](../src/BOOT/particle.c) | 0x0882644C-0x08827030 | 8 | 0 | partículas EHF: pool com envelhecimento, emissor periódico com callbacks de posição/velocidade, geradores em caixa, caixa móvel e disco com o gerador rand3 |
-| [`particle2.c`](../src/BOOT/particle2.c) | 0x08827030-0x08827B8C | 6 | 0 | geradores em anel, tetraédrico, casca esférica e cone, posições levadas ao espaço do modelo, velocidades constante e radial, movimento, aceleração e arrasto |
-| [`particle3.c`](../src/BOOT/particle3.c) | 0x08827B8C-0x08828590 | 10 | 1 | geradores em anel, tetraédrico, casca esférica e cone, posições levadas ao espaço do modelo, velocidades constante e radial, movimento, aceleração e arrasto |
+| [`particle2.c`](../src/BOOT/particle2.c) | 0x08827030-0x08827D98 | 7 | 0 | geradores em anel, tetraédrico, casca esférica e cone, posições levadas ao espaço do modelo, velocidades constante e radial, movimento, aceleração e arrasto |
+| [`particle3.c`](../src/BOOT/particle3.c) | 0x08827D98-0x08828590 | 10 | 0 | geradores em anel, tetraédrico, casca esférica e cone, posições levadas ao espaço do modelo, velocidades constante e radial, movimento, aceleração e arrasto |
 | [`ptcl_draw.c`](../src/BOOT/ptcl_draw.c) | 0x08828590-0x0882923C | 7 | 1 | partículas desenhadas como quads de faixa de triângulos no espaço da câmera, cor fixa ou por chaves de idade, textura, tamanho e uv do sprite |
 | [`efs.c`](../src/BOOT/efs.c) | 0x0882923C-0x0882AD90 | 21 | 5 | efeitos .efs: carga com relocação por bytecode, raízes nomeadas com busca binária, 0x300 instâncias em lista circular no heap de efeitos, interpretador de árvores de comandos por fase, argumentos por formato, comandos de instância aninhada |
 | [`camera.c`](../src/BOOT/camera.c) | 0x0882AD90-0x0882B65C | 18 | 0 | câmera com look-at e as quatro luzes do GE com bits de ativação reemitidos na lista |
@@ -98,11 +98,11 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`gim.c`](../src/BOOT/gim.c) | 0x08835650-0x08835F48 | 0 | 3 | texturas GIM: busca de blocos na árvore, modo e imagem de um quadro ou célula, CLUT da paleta, imagem residente na VRAM no lugar da assinatura PSP, troca de textura fora da lista de desenho |
 | [`vram.c`](../src/BOOT/vram.c) | 0x08835F48-0x088362E8 | 1 | 1 | área de texturas na VRAM depois dos framebuffers: alocador linear, envio de um quadro de GIM para a VRAM, percurso dos blocos do GIM |
 | [`mtx.c`](../src/BOOT/mtx.c) | 0x088362E8-0x088370A4 | 30 | 0 | pilhas de matrizes por tipo do GE com a matriz corrente em M300 da VFPU: init, emissão/flush das sujas para a lista, salvar/restaurar estado, identidade, rotações, translação, escala, perspectiva, ortho, look-at, push/pop; blocos `asm` VFPU no C com equivalente em C para o port |
-| [`draw.c`](../src/BOOT/draw.c) | 0x088370A4-0x08837B28 | 0 | 1 | primitivas dentro da lista ou imediatas fechando e reabrindo a sublista, teste de esfera contra o frustum, flags de matriz suja |
+| [`draw.c`](../src/BOOT/draw.c) | 0x088370A4-0x08837B28 | 11 | 0 | primitivas dentro da lista ou imediatas fechando e reabrindo a sublista, teste de esfera contra o frustum, flags de matriz suja |
 | [`heap.c`](../src/BOOT/heap.c) | 0x08837B28-0x088390C4 | 7 | 1 | heap HOGE: tabela ordenada de fronteiras com bit de livre, guardada num bloco do próprio heap e dobrada quando enche, alocação best fit com divisão pelo topo, liberação com fusão, compactação |
 | [`transform.c`](../src/BOOT/transform.c) | 0x088390C4-0x08839A8C | 2 | 2 | splines cúbicas pelas chaves: termos de segunda derivada por sistema tridiagonal, aberto ou em anel, e avaliação num índice fracionário |
 | [`pad.c`](../src/BOOT/pad.c) | 0x08839A8C-0x08839F50 | 2 | 1 | controle: amostra por quadro com reaproveitamento, máscaras de borda e auto-repeat por botão, analógico dobrado em direcional com repetição própria, tempos de repetição pela taxa de quadros, ângulo do analógico ou do direcional |
-| [`dl.c`](../src/BOOT/dl.c) | 0x08839F50-0x0883CEB0 | 76 | 3 | listas de comandos do GE: heap em duas metades com tabela de 16 camadas encadeadas por JUMP, troca de camada, e uma função por estado ou primitiva do GE montando as palavras no stack e empurrando com dl_push: enable/disable, matrizes, luzes, material, textura, CLUT, névoa, scissor, testes, blend, dither, sprite, clear, cópia de imagem; SysConf com os campos reais |
+| [`dl.c`](../src/BOOT/dl.c) | 0x08839F50-0x0883CEB0 | 78 | 1 | listas de comandos do GE: heap em duas metades com tabela de 16 camadas encadeadas por JUMP, troca de camada, e uma função por estado ou primitiva do GE montando as palavras no stack e empurrando com dl_push: enable/disable, matrizes, luzes, material, textura, CLUT, névoa, scissor, testes, blend, dither, sprite, clear, cópia de imagem; SysConf com os campos reais |
 | [`sys.c`](../src/BOOT/sys.c) | 0x0883CEB0-0x0883D708 | 11 | 0 | System glue: display defaults, the "ehscript" scene thread (one gmodule at a time, cooperative with BOOT's main loop), init order and the per-scene state stack |
 | [`ehf_cam.c`](../src/BOOT/ehf_cam.c) | 0x0883D708-0x0883DD58 | 5 | 0 | comandos EHF de câmera perspectiva/orto/look-at e animação de material TGMA |
 | [`main.c`](../src/BOOT/main.c) | 0x0883DD58-0x0883E670 | 21 | 0 | BOOT entry after the C runtime: init order, the frame loop, soft reset, the loading overlay and small accessors of the game globals |
@@ -124,18 +124,18 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`pmf_umd.c`](../src/BOOT/pmf_umd.c) | 0x08850A70-0x0885133C | 18 | 0 | thread do ring buffer sceMpeg, wrappers DvdUmdRetry* da Sony, carga dos módulos de codec |
 | [`movie.c`](../src/BOOT/movie.c) | 0x0885133C-0x08853A2C | 69 | 1 | player PSMF da Sony: movie_run, threads display/read/sound, filas de pts e sincronia A/V |
 | [`cip.c`](../src/BOOT/cip.c) | 0x08853A2C-0x08854920 | 24 | 0 | pilha de cenas scene_push/pop_to/reset_to + leitor CIP/CPM das imagens de carta com anel de slots e prefetch |
-| [`cardlist.c`](../src/BOOT/cardlist.c) | 0x08854920-0x08859044 | 52 | 6 | desenho de carta e painel: imagem com cross-fade, moldura cil_0000, estrelas, atributo, ATK/DEF, caixa de descrição com barra de rolagem, coluna de comparação do editor de deck, tabelas de vértices de 16 bits |
+| [`cardlist.c`](../src/BOOT/cardlist.c) | 0x08854920-0x08859044 | 57 | 1 | desenho de carta e painel: imagem com cross-fade, moldura cil_0000, estrelas, atributo, ATK/DEF, caixa de descrição com barra de rolagem, coluna de comparação do editor de deck, tabelas de vértices de 16 bits |
 | [`modmgr.c`](../src/BOOT/modmgr.c) | 0x08859044-0x08859824 | 14 | 0 | Frame wait, a debug text menu, synchronous file/module loads and the module manager |
 | [`fade.c`](../src/BOOT/fade.c) | 0x08859824-0x08859DF0 | 9 | 0 | fades de tela linear/quadrático/wipe |
-| [`cardinfo.c`](../src/BOOT/cardinfo.c) | 0x08859DF0-0x0885C688 | 24 | 2 | visualizador de detalhes da carta: estado em globais 0x08BEA44C, abas descrição/gêneros/listas, scroll, dicas de botão |
-| [`snd_mix.c`](../src/BOOT/snd_mix.c) | 0x0885C688-0x0885D948 | 8 | 2 | mixer: faders por quadro, parâmetros e key on/fim das vozes SAS, buffer de eco de 0x3000 quadros, ordenação dos streams, nível de bloco, decodificador Atrac que enche o anel PCM de cada stream e o mistura no bloco de saída |
+| [`cardinfo.c`](../src/BOOT/cardinfo.c) | 0x08859DF0-0x0885C688 | 26 | 0 | visualizador de detalhes da carta: estado em globais 0x08BEA44C, abas descrição/gêneros/listas, scroll, dicas de botão |
+| [`snd_mix.c`](../src/BOOT/snd_mix.c) | 0x0885C688-0x0885D948 | 10 | 0 | mixer: faders por quadro, parâmetros e key on/fim das vozes SAS, buffer de eco de 0x3000 quadros, ordenação dos streams, nível de bloco, decodificador Atrac que enche o anel PCM de cada stream e o mistura no bloco de saída |
 | [`snd_out.c`](../src/BOOT/snd_out.c) | 0x0885D948-0x0885DE90 | 1 | 1 | thread de som que mistura vozes SAS e streams em dois buffers e entrega ao canal de áudio; 1 + efeito global em asm |
 | [`snd_bank.c`](../src/BOOT/snd_bank.c) | 0x0885DE90-0x0885E634 | 31 | 2 | cabeçalho SHDS de psp_snddat.bin, grupos, cache de handles, listas intrusivas |
 | [`snd_engine.c`](../src/BOOT/snd_engine.c) | 0x0885E634-0x0885F05C | 4 | 1 | inicialização: estado, listas, callbacks ou buffer de grupos, semáforos, SAS, pool de objetos e threads; início da thread, abertura direta do banco, passo de pausa/retomada com fader, atualização por quadro de todos os sons ativos |
-| [`snd_alloc.c`](../src/BOOT/snd_alloc.c) | 0x0885F05C-0x0885FAA8 | 1 | 2 | histórico de variantes sorteadas, escolha do slot de objeto de um som novo, início das vozes SAS com pitch aleatório e envelope ou do stream Atrac; tabelas de pitch em C, as 3 funções em asm |
+| [`snd_alloc.c`](../src/BOOT/snd_alloc.c) | 0x0885F05C-0x0885FAA8 | 3 | 0 | histórico de variantes sorteadas, escolha do slot de objeto de um som novo, início das vozes SAS com pitch aleatório e envelope ou do stream Atrac; tabelas de pitch em C, as 3 funções em asm |
 | [`snd_play.c`](../src/BOOT/snd_play.c) | 0x0885FAA8-0x08860DA4 | 16 | 2 | reset/anexação de objetos, início de som com variantes aleatórias e sequenciais, slots de BGM com suspensão, voz, parada com fade e callback, ducking, parada por grupo ou classe |
 | [`snd_core.c`](../src/BOOT/snd_core.c) | 0x08860DA4-0x088615D0 | 16 | 3 | máscara de vozes SAS, volumes por canal, medidor de nível para lip sync, reverb |
-| [`snd_obj.c`](../src/BOOT/snd_obj.c) | 0x088615D0-0x08862C5C | 25 | 2 | handles do pool de objetos de som, busca por id, ordem de início, slots do som atual, carga de grupos pelos callbacks ou VPL, curva de distância e modelo 3D com pan e Doppler, faders, volumes SAS por objeto |
+| [`snd_obj.c`](../src/BOOT/snd_obj.c) | 0x088615D0-0x08862C5C | 26 | 1 | handles do pool de objetos de som, busca por id, ordem de início, slots do som atual, carga de grupos pelos callbacks ou VPL, curva de distância e modelo 3D com pan e Doppler, faders, volumes SAS por objeto |
 | [`snd_rand.c`](../src/BOOT/snd_rand.c) | 0x08862C5C-0x08862D28 | 3 | 0 | gerador aleatório da biblioteca de som |
 | [`libsas.c`](../src/BOOT/libsas.c) | 0x08862D28-0x088634EC | 1 | 23 | libsas: wrappers sceSas* das syscalls `__sceSas*` |
 | [`libwave.c`](../src/BOOT/libwave.c) | 0x088634EC-0x08865260 | 1 | 30 | libwave: 8 canais VAG/PCM em software misturados pela thread SceWaveMain, 4 canais de hardware, fades |
@@ -740,7 +740,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`dd_card_fx.c`](../src/libduel_draw/dd_card_fx.c) | 0x0881EBA0-0x0881F0A8 | 3 | 6 | popups de carta/texto que esperam câmera e comentário, brilho das cartas |
 | [`dd_card_fx2.c`](../src/libduel_draw/dd_card_fx2.c) | 0x0881F0A8-0x08820138 | 16 | 12 | feixes de invocação, marcas de alvo, contadores de dano e ATK/DEF, destruição, trava do cursor |
 | [`dd_field_events.c`](../src/libduel_draw/dd_field_events.c) | 0x08820138-0x08820F88 | 27 | 1 | efeitos de campo dirigidos por eventos (LP, embaralhar, tarefas de espera, ângulos) |
-| [`dd_action_menu.c`](../src/libduel_draw/dd_action_menu.c) | 0x08820F88-0x08822B0C | 22 | 10 | janela de ação sobre a posição, janelas de mensagem 0-2 e seus ganchos |
+| [`dd_action_menu.c`](../src/libduel_draw/dd_action_menu.c) | 0x08820F88-0x08822B0C | 31 | 1 | janela de ação sobre a posição, janelas de mensagem 0-2 e seus ganchos |
 | [`dd_field_marks.c`](../src/libduel_draw/dd_field_marks.c) | 0x08822B0C-0x0882308C | 2 | 3 | marcadores sobre as posições do campo |
 | [`dd_chain_menu.c`](../src/libduel_draw/dd_chain_menu.c) | 0x0882308C-0x08823674 | 8 | 1 | janela das ações da carta sob o cursor |
 | [`dd_prompt_win.c`](../src/libduel_draw/dd_prompt_win.c) | 0x08823674-0x08825088 | 27 | 0 | janelas de prompt das mensagens 3-10 |

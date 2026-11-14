@@ -62,7 +62,7 @@ void snd_group_release(int x, int flag);
 void bgm_start(int id, int id2, int pos, int loop, int flags);
 int se_play_pan(int id, int pan, int c);
 int snd_obj_base_id(int obj);
-void snd_stop_fade(int x, int ms);
+int snd_stop_fade(int x, int ms);
 void snd_group_cmd(int cmd, int arg);
 int snd_obj_count_bgm();
 int snd_obj_count_se();
@@ -88,8 +88,8 @@ int gamestate_partner_mode(void);
 int partner_voice_id(unsigned int chr, unsigned int variant);
 int voice_play(int obj, int idx);
 int bgm_get_status();
-void bgm_stop(int x);
-void se_play(int id);
+int bgm_stop(int x);
+int se_play(int id);
 
 /* Character voice table: (character, variant) -> base sound id; the list ends with character 0x98. */
 unsigned short voice_pairs[190] = {   /* {chr, variant, id, 0} records ending with chr 0x98, then 4 bytes of padding */
@@ -293,14 +293,14 @@ void bgm_play_from(int id, int pos)
     bgm_start(id, id, pos, -1, 0);
 }
 
-void se_play(int id)
+int se_play(int id)
 {
-    se_play_pan(id, 0, 0);
+    return se_play_pan(id, 0, 0);
 }
 
-void se_play_at(int id, int pan)
+int se_play_at(int id, int pan)
 {
-    se_play_pan(id, pan, 0);
+    return se_play_pan(id, pan, 0);
 }
 
 /* Plays voice `idx` of a sound object (base id from the bank). */
@@ -312,14 +312,14 @@ int voice_play(int obj, int idx)
     return se_play_pan(base + idx, 0, 0);
 }
 
-void bgm_stop(int x)
+int bgm_stop(int x)
 {
-    snd_stop_fade(x, 0);
+    return snd_stop_fade(x, 0);
 }
 
-void bgm_fade_out(int x, int ms)
+int bgm_fade_out(int x, int ms)
 {
-    snd_stop_fade(x, ms);
+    return snd_stop_fade(x, ms);
 }
 
 void snd_cmd_fefb_0(void)        { snd_group_cmd(-0x105, 0); }
@@ -491,12 +491,12 @@ void snd_channels_update(void)
 }
 
 /* Plays a PMF with the configured BGM volume (silent when muted). */
-void movie_play(const char *path, unsigned int flags, int arg)
+int movie_play(const char *path, unsigned int flags, int arg)
 {
     int vol = cfg_get_byte3(0) * 0x8000 / 15;
     if (snd_is_muted())
         vol = 0;
-    movie_run(path, flags | 1, vol, arg);
+    return movie_run(path, flags | 1, vol, arg);
 }
 
 /* Save-data game id: region code + "0001". */

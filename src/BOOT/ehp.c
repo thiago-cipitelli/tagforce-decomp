@@ -108,14 +108,15 @@ int ehf_tex_or_flags(char *f, unsigned char *flags)
 }
 
 /* Projection for 2D drawing: ortho 480x272, previous matrix mode saved. */
-void gfx_begin_2d(void *list)
+/* returns the list (the tail is jal mtx_commit; every caller does list = gfx_begin_2d(list)) */
+void *gfx_begin_2d(void *list)
 {
     gfx_saved_mtx_mode = mtx_get_mode();
     mtx_set_mode(0);
     mtx_push();
     mtx_identity();
     mtx_ortho(0.0f, 480.0f, 272.0f, 0.0f, -1000.0f, 1000.0f);
-    mtx_commit(list);
+    return mtx_commit(list);
 }
 
 void *gfx_end_2d(void *list)
