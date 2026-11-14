@@ -2566,3 +2566,33 @@ Bateram `snd_output`, `snd_bank_open_async`, `snd_obj_alloc`, `gfx_save_bmp` e `
   (`dd_cursor_cycle`) tem o laço dentro de um `case` alcançado pela tabela de saltos.
 - `debug_menu_draw`/`debug_menu_update` (fuzzy 0 no relatório): existem, mas não têm C nenhum (só `@asm`, menu de
   depuração inalcançável), então o asm_try não acha a função no objeto.
+## Rodada 28 (`r28D`): reteste do skip de libduel_draw/libduel_mgr com a pragma e o helper inline
+
+Bateu `dd_cobj_find` (4 -> 0, no skip desde a rodada 7). As outras 30 entradas não mudam de contagem.
+- **Laço de busca num `static inline` e os `return` no chamador** (`dd_cobj_find`): o original faz `bne; nop` no
+  teste de lista vazia e dá o likely (com a cópia da cabeça do laço, `bnel ...; lw v1,136(a0)`) ao desvio de volta;
+  o 219 com tudo numa função dá o likely ao primeiro teste e `bne; nop` na volta. Só o laço no helper
+  (`static inline DdCobj *scan(head, o, uid) { while (o->uid != uid && (o = o->next) != head) ; return o; }`) e
+  `if (o == head) return 0; o = scan(...); if (o == head) return 0; return o;` no chamador reproduz. Com os
+  `return` dentro do helper o resultado passa por `a0` (11 palavras); `for` com teste de entrada, `do/while` e
+  `goto` dão 4-18. Vale para qualquer "cópia da cabeça de laço no desvio de volta" numa função que devolve valor.
+- **Varredura de pragmas** (`build/tmp/fableE_tools/prag.py`, 6-17 pragmas por função) em `lps_glyph`,
+  `dd_disc_tex_hook`, `dd_ev_47`, `dd_fx_lines_update`, `dd_info_stats`, `dd_cobjs_counters`, `dmgr_jk_pick`,
+  `dd_chr_attach_mtx`, `func_0882228C`: nenhuma baixa a contagem (`opt_propagation off` piora todas; `peephole off`
+  dá 65 em `dd_chr_attach_mtx` mas por outro caminho). A família do **teste de entrada mantido** também não cede ao
+  helper inline (laço interno no helper, índice inicial por parâmetro, por ponteiro, devolvido: 16 em todas as formas).
+- **Busca aleatória ordem x tipo das declarações** (`build/tmp/r28D/rs.py MODULE FUNC SRC N --types [--fixed K]
+  [--order "A|B"]`, 240-300 variantes): `dd_fx_lines_update` (6), `dd_orbs_update` (16), `dd_trail_update` (16),
+  `dd_burst2_update` (16), `ui_scrollbar` (52) não saem da base. `build/tmp/r28D/tryv.py MODULE FUNC SRC VAR...`
+  compila variantes de uma função (arquivos com o texto da função, `//SUB: velho|novo` no topo para trocar um
+  protótipo) sem tocar o fonte.
+- Sem forma (testado nesta rodada): `lps_glyph` (`beq; nop` no teste de `'?'`: 11 formas de if/switch/goto/helper,
+  todas 2 ou piores), `dd_disc_tex_hook` (o teste de `+0x158` não vai por `bnezl` ao epílogo: 14 formas com e sem
+  helper), `dd_ev_47` (temporários `v1/a1/a0` x `a0/v1/a1` na conta de `h`: 24 expressões, struct de visão,
+  helper), `dd_fx32_s3_update` (ordem de içamento de `700` e `-1,0`: 10 formas, local, ordem dos fatores),
+  `dmgr_jk_pick` (o `lb` de `peer[2]` evita `v0` e `a1`: protótipo de `peer_get` sem cast, `void *`, K&R, cópia
+  `q`, volatile), `dmgr_res_summary_row` (o helper inline com `return` em cada saída não gera a cópia morta
+  `move a0` depois do `b`; 157), `func_0882228C` (o `move a0,v0` vai para o delay slot do `beqz` em vez de
+  `beqzl` com `lw ra`: helper, `return` antecipado, `else return`, `goto`), `dd_chr_attach_mtx` (cópia `move a3,a2`
+  de `id`: `(int)id`, `unsigned`, `const`, atribuição antes/depois de `b = 0`, pragma), `dd_zone_rebuild` (a carga
+  de `zone` entre as de `o->next`/`o->prev`: `volatile` em 4 posições piora para 171; posição antes do unlink 27).

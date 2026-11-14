@@ -1,6 +1,5 @@
 // @range 0x0880A8E0-0x0880C48C
 // @data 0x08874BB0-0x08874E10
-// @asm 0x0880B834-0x0880B890
 // @asm 0x0880BB70-0x0880BEB0
 /* Where a card sits on the field: position and rotation of each zone (by player, face up, defense
    position, stack height), the lookups in the zone lists and the rebuild of the lists from the
@@ -128,7 +127,14 @@ DdCobj *dd_cobj_at(int player, int zone, int index)
     return o;
 }
 
-#ifdef NON_MATCHING /* 4 palavras: o primeiro teste e o laço saem com o likely trocado (do/while, while com break, for com e sem retorno antecipado testados) */
+/* the search loop alone in an inline helper: the back edge gets the likely branch with the copy of the loop head */
+static inline DdCobj *dd_cobj_scan(DdCobj *head, DdCobj *o, int uid)
+{
+    while (o->uid != uid && (o = o->next) != head)
+        ;
+    return o;
+}
+
 /* card object of card `uid` in a zone */
 DdCobj *dd_cobj_find(int player, int zone, int uid)
 {
@@ -137,13 +143,11 @@ DdCobj *dd_cobj_find(int player, int zone, int uid)
 
     if (o == head)
         return 0;
-    while (o->uid != uid && (o = o->next) != head)
-        ;
+    o = dd_cobj_scan(head, o, uid);
     if (o == head)
         return 0;
     return o;
 }
-#endif
 
 void dd_zone_rebuild(int player, int keep);
 
