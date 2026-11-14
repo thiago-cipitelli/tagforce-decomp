@@ -562,60 +562,6 @@ int sceOpenPSIDGetOpenPSID()
     return 0;
 }
 
-int sceAtrac3plus_132F1ECA()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracReleaseAtracID()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracResetPlayPosition()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracDecodeData()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracSetDataAndGetID()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracSetLoopNum()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracGetSoundSample()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracGetMaxSample()
-{
-    STUB();
-    return 0;
-}
-
-int sceAtracGetLoopStatus()
-{
-    STUB();
-    return 0;
-}
-
 int __sceSasSetADSR()
 {
     STUB();
@@ -659,12 +605,6 @@ int __sceSasCoreWithMix()
 }
 
 int __sceSasSetSL()
-{
-    STUB();
-    return 0;
-}
-
-int __sceSasGetEndFlag()
 {
     STUB();
     return 0;

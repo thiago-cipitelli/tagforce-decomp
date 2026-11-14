@@ -694,6 +694,12 @@ int sceKernelLibcGettimeofday(void *tp, void *tzp)
 int sceRtcGetCurrentTick(unsigned long long *tick)
 {
     struct timeval tv;
+    const char *fixed = getenv("TAGFORCE_RTC");   /* the game seeds rand() with it: fixed = repeatable runs */
+
+    if (fixed) {
+        *tick = strtoull(fixed, 0, 0);
+        return 0;
+    }
 
     gettimeofday(&tv, 0);
     *tick = (unsigned long long)tv.tv_sec * 1000000 + tv.tv_usec + 62135596800000000ULL;   /* from 0001-01-01 */
@@ -780,6 +786,10 @@ static int audio_block(int ch)
 
 int sceAudioOutputPannedBlocking(int ch, int l, int r, void *buf) { return audio_block(ch); }
 int sceAudioOutputBlocking(int ch, int vol, void *buf) { return audio_block(ch); }
+
+/* no SAS mixing yet: every voice has ended at once (a stub's 0 = "all voices playing" left the duel waiting
+   forever for a voice clip to end) */
+int __sceSasGetEndFlag(void *core) { return -1; }
 
 /* --- exit --- */
 

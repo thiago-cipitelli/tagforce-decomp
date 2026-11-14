@@ -154,10 +154,35 @@ void host_pump(void)
     }
 }
 
+/* TAGFORCE_PAD="frame:mask[:frames],...": hold the PSP buttons mask (hex) from that presented frame on, for
+   frames (default 6); for runs without a keyboard (headless, tests) */
+static unsigned int scripted(void)
+{
+    extern unsigned int frame_no;   /* ge.c */
+    static const char *pad;
+    const char *p;
+    unsigned int b = 0;
+
+    if (!pad && !(pad = getenv("TAGFORCE_PAD")))
+        pad = "";
+    for (p = pad; *p;) {
+        char *e;
+        unsigned int f = strtoul(p, &e, 0), m = 0, n = 6;
+        if (*e == ':')
+            m = strtoul(e + 1, &e, 16);
+        if (*e == ':')
+            n = strtoul(e + 1, &e, 0);
+        if (frame_no >= f && frame_no < f + n)
+            b |= m;
+        p = *e == ',' ? e + 1 : e + strlen(e);
+    }
+    return b;
+}
+
 unsigned int host_buttons(void)
 {
     host_pump();
-    return buttons;
+    return buttons | scripted();
 }
 
 /* shows the 480x272 top-left of the bound read framebuffer (GL rows = PSP rows), integer scaled */

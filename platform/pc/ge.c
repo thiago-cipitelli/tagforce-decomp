@@ -13,8 +13,10 @@
    stencil value.
    Addresses: list words keep 24 bits plus 4 (BASE) or 8 (TBW, CBW...) high bits; host pointers are 32-bit, so a
    28-bit address takes the top nibble of the current list pointer when bits 24-27 agree (stack lists), else 0.
-   Not done (logged once when used): curves (BEZIER/SPLINE), color test, logic op, face culling, DXT, depth-range
-   clamp, dithering, 16-bit frame buffers as textures/transfers. */
+   Not done (logged once when used): curves (BEZIER/SPLINE), color test, logic op, depth-range clamp, dithering,
+   16-bit frame buffers as textures/transfers (an FBO is RGBA8 whatever the PSP format), mipmaps (level 0 only).
+   Debugging: TAGFORCE_GE_TRACE=<frame> logs every draw of that frame, TAGFORCE_GE_SKIP=<n> leaves draw n of it
+   out, TAGFORCE_GE_SKIP_VT=<hex> every draw with that vertex type. */
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glcorearb.h>
 #include <math.h>
@@ -51,7 +53,10 @@ static u8 *vaddr, *iaddr;
 static u32 offset_addr, cur_pc;
 static u8 clut[1024];
 static int gl_on;                       /* 1: draw with GL; 0: only follow the lists */
-static unsigned int frame_no;
+unsigned int frame_no;                  /* presented frames (window.c: scripted pad) */
+static unsigned int trace_frame = ~0u;  /* TAGFORCE_GE_TRACE */
+static int draw_no, skip_draw = -1;
+static u32 skip_vt;     /* TAGFORCE_GE_SKIP: draw of the traced frame left out */
 
 static float f24(u32 d)
 {
@@ -159,6 +164,12 @@ static void gl_setup(void)
     if (tried)
         return;
     tried = 1;
+    if (getenv("TAGFORCE_GE_TRACE"))
+        trace_frame = atoi(getenv("TAGFORCE_GE_TRACE"));
+    if (getenv("TAGFORCE_GE_SKIP_VT"))
+        skip_vt = strtoul(getenv("TAGFORCE_GE_SKIP_VT"), 0, 16);
+    if (getenv("TAGFORCE_GE_SKIP"))
+        skip_draw = atoi(getenv("TAGFORCE_GE_SKIP"));
     if (!host_gfx_init())
         return;
     prog = glCreateProgram();
@@ -300,6 +311,56 @@ static u32 clut_color(u32 i)
 
 static const int fmt_bits[] = { 16, 16, 16, 32, 4, 8, 16, 32 };
 
+/* PSP DXT blocks (after PPSSPP's TextureDecoder): the color part is 4 row bytes of 2-bit indices then two 5650
+   colors; DXT3 adds 4 rows of 4-bit alpha after it, DXT5 48 bits of 3-bit alpha indices (low 32 first) then the
+   two alpha values. DXT3/5 always use the 4-color mode. */
+static void dxt_decode(const u8 *src, u32 fmt, u32 tw, u32 th, u32 rowbytes)
+{
+    u32 bx, by, x, y, bs = fmt == 8 ? 8 : 16;
+
+    for (by = 0; by < th / 4 + (th < 4); by++)
+        for (bx = 0; bx < tw / 4 + (tw < 4); bx++) {
+            const u8 *b = src + by * rowbytes + bx * bs;
+            u32 c1 = b[4] | b[5] << 8, c2 = b[6] | b[7] << 8, col[4], i;
+            u32 ca = c16(c1, 0), cb = c16(c2, 0);
+            unsigned long long ad = 0;
+            u32 al[8];
+            col[0] = ca;
+            col[1] = cb;
+            if (c1 > c2 || fmt != 8) {
+                col[2] = col[3] = 0xFF000000u;
+                for (i = 0; i < 24; i += 8) {
+                    u32 p = ca >> i & 0xFF, q = cb >> i & 0xFF;
+                    col[2] |= (2 * p + q) / 3 << i;
+                    col[3] |= (p + 2 * q) / 3 << i;
+                }
+            } else {
+                col[2] = 0xFF000000u;
+                for (i = 0; i < 24; i += 8)
+                    col[2] |= ((ca >> i & 0xFF) + (cb >> i & 0xFF)) / 2 << i;
+                col[3] = 0;
+            }
+            if (fmt == 10) {
+                u32 a1 = b[14], a2 = b[15];
+                ad = (unsigned long long)(b[12] | b[13] << 8) << 32 | (u32)(b[8] | b[9] << 8 | b[10] << 16 | b[11] << 24);
+                al[0] = a1;
+                al[1] = a2;
+                for (i = 2; i < 8; i++)
+                    al[i] = a1 > a2 ? ((8 - i) * a1 + (i - 1) * a2) / 7
+                          : i < 6 ? ((6 - i) * a1 + (i - 1) * a2) / 5 : i == 6 ? 0 : 255;
+            }
+            for (y = 0; y < 4 && by * 4 + y < th; y++)
+                for (x = 0; x < 4 && bx * 4 + x < tw; x++) {
+                    u32 c = col[b[y] >> x * 2 & 3];
+                    if (fmt == 9)
+                        c = (c & 0xFFFFFF) | ((b[8 + y * 2] | b[9 + y * 2] << 8) >> x * 4 & 15) * 17 << 24;
+                    else if (fmt == 10)
+                        c = (c & 0xFFFFFF) | al[ad >> (y * 4 + x) * 3 & 7] << 24;
+                    texbuf[(by * 4 + y) * tw + bx * 4 + x] = c;
+                }
+        }
+}
+
 /* GL texture for the current TEXADDR0..; *xf: scale and offset of the normalized coordinates */
 static GLuint tex_get(float *xf)
 {
@@ -328,14 +389,16 @@ static GLuint tex_get(float *xf)
             return f->tex;
         }
     }
-    if (fmt > 7) {
-        log_once(3, "DXT texture (not decoded)");
+    if (fmt > 10) {
+        log_once(3, "texture format > 10");
         return 0;
     }
     if (bufw < 1)
         bufw = tw;
-    rowbytes = bufw * fmt_bits[fmt] / 8;
-    bytes = rowbytes * th;
+    if (fmt >= 8)   /* DXT: 4x4 blocks of 8 (DXT1) or 16 bytes, bufw / 4 blocks per row */
+        rowbytes = bufw / 4 * (fmt == 8 ? 8 : 16), bytes = rowbytes * ((th + 3) / 4);
+    else
+        rowbytes = bufw * fmt_bits[fmt] / 8, bytes = rowbytes * th;
     if (fmt >= 4)
         clutkey = hash(clut, fmt == 4 ? 64 : 1024) ^ reg[0xC5] * 31;
     for (i = 0; i < NTEX; i++) {
@@ -384,6 +447,10 @@ static GLuint tex_get(float *xf)
                     memcpy(swzbuf + (by * 8 + l) * rowbytes + bx * 16, s, 16);
         src = swzbuf;
     }
+    if (fmt >= 8) {
+        dxt_decode(src, fmt, tw, th, rowbytes);
+        goto upload;
+    }
     for (y = 0; y < th; y++) {
         u32 *d = texbuf + y * tw;
         const u8 *r = src + y * rowbytes;
@@ -398,6 +465,7 @@ static GLuint tex_get(float *xf)
             }
         }
     }
+upload:
     glBindTexture(GL_TEXTURE_2D, t->id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE, texbuf);
     return t->id;
@@ -607,6 +675,26 @@ static void light(const float *wp, const float *wn, const float *vcol, int has_c
             c0[i] += c1[i], c1[i] = 0;
 }
 
+/* environment-map coordinate from light l: (N.L + 1) / 2, L toward the light (from the vertex unless directional),
+   the half vector with the view direction when the light does specular */
+static float shade_coord(int l, const float *wp, const float *n)
+{
+    float L[3];
+    int i;
+
+    for (i = 0; i < 3; i++)
+        L[i] = f24(reg[0x63 + l * 3 + i]) - ((reg[0x5F + l] >> 8 & 3) ? wp[i] : 0);
+    norm3(L);
+    if ((reg[0x5F + l] & 3) == 1) {
+        float v[3] = { view[2], view[5], view[8] };
+        norm3(v);
+        for (i = 0; i < 3; i++)
+            L[i] += v[i];
+        norm3(L);
+    }
+    return (dot3(L, n) + 1) / 2;
+}
+
 static GV *gv;
 static int gv_cap;
 
@@ -628,6 +716,17 @@ static void prim(u32 d)
     if (!count)
         return;
     if (!gl_on)
+        goto advance;
+    if (trace_frame == frame_no) {   /* TAGFORCE_GE_TRACE=<frame>: one line per draw of that frame */
+        dprintf(2, "draw %d: prim %d n %d vt %06X fb %06X/%d tex %d fmt %d %08X tmap %X light %d blend %d:%03X "
+                "z %d:%d func %03X clear %X cull %d:%d\n", draw_no, type, count, vt, reg[0x9C], reg[0x9D] & 0x7FC,
+                reg[0x1E] & 1, reg[0xC3], (reg[0xA0] & 0xFFFFF0) | (reg[0xA8] & 0xFF0000) << 8, reg[0xC0],
+                reg[0x17] & 1, reg[0x21] & 1, reg[0xDF], reg[0x23] & 1, reg[0xDE], reg[0xC9], reg[0xD3],
+                reg[0x1D] & 1, reg[0x9B]);
+    }
+    if (trace_frame == frame_no && draw_no++ == skip_draw)
+        goto advance;
+    if (skip_vt && vt == skip_vt)   /* TAGFORCE_GE_SKIP_VT: leave out every draw with this vertex type */
         goto advance;
     fbp = ((reg[0x9C] & 0xFFFFF0) | (reg[0x9D] & 0xFF0000) << 8) & 0x1FFFF0;
     fbw = reg[0x9D] & 0x7FC;
@@ -718,19 +817,12 @@ static void prim(u32 d)
                 memcpy(o->uv, t, 12);
                 break;
             }
-            default: {
-                float l0[3], l1[3], n2[3];
-                int a = reg[0xC1] & 3, b = reg[0xC1] >> 8 & 3;
-                for (k = 0; k < 3; k++) {
-                    l0[k] = f24(reg[0x63 + a * 3 + k]);
-                    l1[k] = f24(reg[0x63 + b * 3 + k]);
-                }
-                norm3(l0);
-                norm3(l1);
+            default: {   /* shade mapping (PPSSPP's PSPShadeMapCoord) */
+                float n2[3];
                 memcpy(n2, wn, 12);
                 norm3(n2);
-                o->uv[0] = (1 + dot3(l0, n2)) / 2;
-                o->uv[1] = (1 + dot3(l1, n2)) / 2;
+                o->uv[0] = shade_coord(reg[0xC1] & 3, wp, n2);
+                o->uv[1] = shade_coord(reg[0xC1] >> 8 & 3, wp, n2);
                 o->uv[2] = 1;
                 break;
             }
@@ -752,6 +844,11 @@ static void prim(u32 d)
         for (i = 0; i < nv; i++) {
             GV *a = type == 3 ? &in[i * 3] : type == 4 ? &in[i] : &in[0];
             GV *b = type == 3 ? &in[i * 3 + 1] : &in[i + 1], *c = type == 3 ? &in[i * 3 + 2] : &in[i + 2];
+            if (type == 4 && (i & 1)) {   /* odd strip triangles: same winding as the even ones */
+                GV *t = a;
+                a = b;
+                b = t;
+            }
             gv[n++] = *a;
             gv[n++] = *b;
             gv[n++] = *c;
@@ -910,6 +1007,14 @@ static void prim(u32 d)
                 glUniform3fv(u_env, 1, env);
                 glUniform4fv(u_uvxf, 1, xf);
             }
+        }
+        if ((reg[0x1D] & 1) && !clear && type >= 3 && type <= 5) {
+            glEnable(GL_CULL_FACE);
+            /* with GL row 0 = PSP row 0 (the image is upside down for GL): CULL 0 -> GL_FRONT. Checked on
+               the character models: the other way round the eyes and the mouth come out black. */
+            glCullFace(reg[0x9B] & 1 ? GL_BACK : GL_FRONT);
+        } else {
+            glDisable(GL_CULL_FACE);
         }
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -1102,8 +1207,6 @@ static int running;
 
 static void run(void)
 {
-    int i;
-
     if (running)
         return;
     running = 1;
@@ -1127,7 +1230,6 @@ static void run(void)
         memmove(pend, pend + 1, npend * sizeof *pend);
         fn(id, arg);
     }
-    (void)i;
 }
 
 static int enqueue(const void *list, void *stall, int cbid, int head)
@@ -1230,6 +1332,7 @@ int sceDisplaySetFrameBuf(void *top, int bufw, int fmt, int sync)
     int i;
 
     frame_no++;
+    draw_no = 0;
     gl_setup();
     if (!gl_on)
         return 0;

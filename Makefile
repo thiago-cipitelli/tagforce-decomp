@@ -108,8 +108,9 @@ host-link:
 	@python3 tools/host_link.py
 
 # port step 4b: build/host/tagforce runs HOST_RUN_SECONDS on the extracted ISO (TAGFORCE_ROOT, default extracted/)
-# and must still be running at the end (timeout's 124); the log, with every file opened, goes to build/host/run.log
+# and must still be running at the end (timeout's 124); the log, with every file opened, goes to build/host/run.log;
+# headless by default (TAGFORCE_HEADLESS=0 shows the window)
 HOST_RUN_SECONDS ?= 60
 host-run: host-link
-	@TAGFORCE_ROOT=$${TAGFORCE_ROOT:-extracted} timeout $(HOST_RUN_SECONDS) build/host/tagforce > build/host/run.log 2>&1; \
+	@TAGFORCE_ROOT=$${TAGFORCE_ROOT:-extracted} TAGFORCE_HEADLESS=$${TAGFORCE_HEADLESS:-1} timeout $(HOST_RUN_SECONDS) build/host/tagforce > build/host/run.log 2>&1; \
 	  r=$$?; [ $$r = 124 ] && echo "host-run: alive after $(HOST_RUN_SECONDS) s" || { echo "host-run: exit $$r (build/host/run.log)"; exit 1; }

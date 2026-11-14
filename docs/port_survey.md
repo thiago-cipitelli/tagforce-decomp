@@ -191,7 +191,8 @@ display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescr
    `_strtod_r` e nomes próprios para os 7 símbolos repetidos quando os gmodules forem ligados juntos.
 3. ~~Revisar os avisos do gcc contra o asm~~ (feito, seção 1.2; gate `make host-warn`).
 4. `platform/` em 32 bits: ~~arquivos, thread/timer~~ (feito, seção 5, gate `make host-run`), input, janela, áudio PCM; ~~gmodules linkados juntos~~ (feito, seção 4, gate `make host-link`).
-5. Gráficos (decisão GE vs `dl.c`), depois save/OSK/fonte; rede e vídeo como stubs.
+5. ~~Gráficos~~ (feito, seção 6: interpretador da GE), depois fonte (`sceFont*`), save/OSK, som de verdade (SAS,
+   Atrac3+ por libavcodec); rede e vídeo como stubs.
 
 Pendência achada na rodada 27: `debug_menu_draw` e `debug_menu_update` (libduel_draw, `dd_debug_menu.c`) não
 têm C nenhum, só `@asm` (menu de debug inacessível no jogo de varejo). Se o port precisar dele, escrever do zero;
@@ -330,3 +331,79 @@ arquivos de `src/BOOT` mexidos: todas as funções batendo.
 - Stubs ainda chamados no caminho: GE (`sceGeListEnQueue`, `sceGeListSync`...), `sceFont*` (fonte zerada), `__sceSas*`
   e `sceAtrac*` (som), `sceMpeg*` (vídeo), `sceUtilitySavedata*` (status 0, o jogo segue), `sceDisplaySetMode/
   SetFrameBuf`, `sceKernelDcacheWritebackInvalidateAll`, `sceKernelStdout`.
+
+## 6. Passo 5a: a GE desenhada em OpenGL (feito em 2026-11-14)
+
+Decisão (do brief): interpretar o fluxo de comandos da GE, sem reescrever `sceGu`/`dl.c`. O jogo monta as display
+lists como na PSP e as entrega a `sceGeListEnQueue`; o `platform/pc` executa os comandos e desenha com OpenGL 3.3
+core. **Nada em `src/` muda o que a GE recebe.**
+
+**O que aparece (quadros despejados com `TAGFORCE_DUMP`, conferidos um a um):** logo da Konami com o fade, tela de
+título completa (arte, logo, "PRESS START BUTTON" piscando, copyright), o menu do título com Start (itens sem texto),
+a tela "NORMAL DUEL / Versus" com os retratos, as apresentações 3D dos personagens (modelos com skinning, toon,
+disco de duelo, fundos de linhas), o campo do duelo (tabuleiro iluminado, fundo 3D com textura DXT1, cartas na mão e
+no campo com as imagens DXT dos `.cip`, LP, fases "Draw/Standby/Main Phase", "Next Player's Turn"), cartas em
+close (ATK/DEF) e a volta ao título depois de ~3600 quadros de demonstração (o limite do `dmgr`). Oito quadros
+exportados em `build/host/frames_5a/*.png` (gitignored). ~30 fps com a CPU de vértices em `-O2`.
+
+| Arquivo | O quê |
+|---|---|
+| `platform/pc/ge.c` | fila de listas (`EnQueue`/`EnQueueHead`/`UpdateStallAddr`: roda até o stall ou o END, depois a próxima), JUMP/CALL/RET/BASE/ORIGIN/OFFSETADDR, SIGNAL (handler, CALL/RET/JUMP por sinal) e FINISH com os callbacks do `sceGeSetCallback` chamados depois do interpretador (como a interrupção); registradores em `reg[op]`; matrizes (osso/mundo/vista/projeção/texgen), morph, CLUT (`LOADCLUT` copia), transferência de blocos; PRIM: vértices decodificados e transformados na CPU (morph, skinning, mundo/vista/projeção, iluminação da PSP, texgen UV/projeção/shade map, viewport/offset, fog), tiras/leques/sprites viram triângulos, shade flat copia a cor do último vértice; um shader faz a função de textura (modulate/decal/blend/replace/add, TCC, dobro), especular, fog e alpha test; blend/depth/stencil/scissor/máscara de cor/culling no estado do GL; texturas 5650/5551/4444/8888, CLUT4/8/16/32 (shift/mask/start), swizzle, DXT1/3/5 no layout da PSP, cache por endereço+formato+CLUT com hash do conteúdo uma vez por quadro; um FBO RGBA8 + depth/stencil por (offset na EDRAM, largura): é o alvo de desenho e a textura de quem amostra aquele endereço; `sceDisplaySetFrameBuf` apresenta o FBO do endereço e despeja o quadro; EDRAM falsa de 2 MB alinhada em 4 MB (o `& 0x1FFFFF` do endereço dá o offset, como na PSP) |
+| `platform/pc/window.c` | janela X11 + contexto GLX 3.3 core (libX11/libGL de 32 bits do sistema), escala inteira (`TAGFORCE_SCALE`, padrão 2), teclado → botões (setas, Z=×, X=○, A=□, S=△, Q/W=L/R, Enter=Start, Backspace=Select), fechar a janela = `exit(0)`, `TAGFORCE_PAD` (botões roteirizados por quadro) |
+| `platform/pc/atrac.c` | `sceAtrac*` sem decodificador: silêncio com a duração e os loops do cabeçalho RIFF (`fact`, `smpl`) |
+| `platform/pc/kernel.c` | a EDRAM saiu (foi para `ge.c`); `block()` solta o contexto GL; `sceCtrl*` lê `host_buttons()`; `__sceSasGetEndFlag` = todas as vozes acabaram; `TAGFORCE_RTC` fixa o relógio que semeia o `rand()` |
+| `tools/host_link.py` | `-O2` no `platform/pc`, `-lX11 -lGL`, version script que não exporta nada |
+| `tools/ppm_sheet.py` | quadros PPM → PNG em grade (meia escala) ou inteiros (`--full`), para olhar dezenas de quadros de uma vez |
+| `Makefile` | `make host-run` roda sem janela (`TAGFORCE_HEADLESS=1`) por padrão |
+
+Variáveis: `TAGFORCE_HEADLESS=1` (janela não mapeada; o GL desenha e o despejo funciona; sem display nenhum, não há
+GL e a GE só segue as listas), `TAGFORCE_DUMP=dir/f%05d.ppm` e `TAGFORCE_DUMP_EVERY=N`, `TAGFORCE_PAD="400:8,500:4000"`
+(quadro:máscara hex[:quadros]), `TAGFORCE_RTC=1` (rodadas repetíveis: mesmo duelo de demonstração; o tempo das
+threads ainda varia), `TAGFORCE_GE_TRACE=<quadro>` (uma linha por draw daquele quadro), `TAGFORCE_GE_SKIP=<n>`,
+`TAGFORCE_GE_SKIP_VT=<hex>` (tira draws para achar quem desenha o quê).
+
+### 6.1 Mudanças em `src/` e `include/` (só o host muda; mwcc compila os mesmos tokens)
+
+- `include/libduel_draw.h`: `DD_OBJ_DT` (vazio no mwcc, `float dt_,` no host) na frente dos parâmetros de
+  `lpc_update`, `lps_update` (`dd_lp_digits.c`, `dd_lp_show.c`, `dd_lp_panel.c`), `dd_mark_glide` e
+  `dd_arrow_update` (`dd_arrow.c`). `dd_tasks_update` chama `update(dt, task, data)`; no EABI da PSP o float vai em
+  `$f12` e esses callbacks do tipo `DdObj`, escritos sem ele, recebem `(task, data)` em `a0/a1`. No x86 o `dt` ocupa
+  o primeiro slot: `lps_update` escrevia no próprio nó da lista e o `lps_free` seguinte fazia `dd_free(NULL)`
+  (segfault na primeira mudança de LP do duelo). Classe nova, que o `host-lto` não vê: **float antes de inteiros num
+  ponteiro de função chamado com outro protótipo** (os outros callbacks da lista declaram `float dt` primeiro).
+
+`make MODULE=libduel_draw verify` → ALL MATCH (com o `check-all` dos 23 módulos); `make host-check` 0 falhas;
+`make host-lto` 4 severos (os mesmos de antes); `make host-run` vivo depois de 60 s.
+
+### 6.2 Achados
+
+- **Não há SDL de 32 bits na máquina** (`lib32-sdl2` não existe nos repositórios, `lib32-sdl3` não está instalado; sem
+  sudo). A janela é X11/GLX direto, isolada em `window.c` (cinco funções), para trocar por SDL quando houver um.
+- **O jogo define `mtx_init`** (uma função de matriz) e mais ~50 nomes da libc/libm (`malloc`, `exit`, `strtod`,
+  `sinf`...). Num executável dinâmico eles interpunham os da glibc também para as bibliotecas: o Mesa chamava o
+  `mtx_init` do jogo em vez do C11 e caía no primeiro draw. O version script `{ local: *; }` resolve: o jogo usa os
+  dele, as bibliotecas os da glibc (o código do `platform/pc` continua chamando os do jogo, ligados estaticamente).
+- **Endereços:** as listas da GE guardam 24 bits + 4 (BASE) ou 8 (TBW, CBW, ZBW do `dl.c`) bits altos. Os ponteiros do
+  host cabem em 28 bits fora da pilha (`0x08...`-`0x0D...`); para listas na pilha (`gfx_init` monta uma em
+  `0xFFxxxxxx`) o nibble alto vem do ponteiro da lista atual quando os bits 24-27 coincidem. Nenhum caso errado visto.
+- **Culling:** com a linha 0 do GL = linha 0 da PSP (imagem de cabeça para baixo para o GL), `CULL 0` → `GL_FRONT`;
+  ao contrário os olhos e a boca dos personagens saem pretos. Tiras: os triângulos ímpares são invertidos antes.
+- **A barra vertical escura no meio da tela** (nos personagens e nas janelas de mensagem) é texto: os glifos vêm do
+  `sceFont*` em stub (métricas zero), todos no mesmo x. Some com `TAGFORCE_GE_SKIP_VT=800182`. Não é da GE.
+- **O duelo de demonstração parava na primeira apresentação** (também no binário do passo 4b): `dd_chr_anim_done`
+  espera `voice_is_playing` → o objeto de som da fala acabar, e com os stubs de Atrac o fluxo nunca termina. O
+  `atrac.c` dá a cada fluxo a duração do cabeçalho; `__sceSasGetEndFlag` diz que todas as vozes SAS acabaram.
+  Com isso o demo vai do título ao duelo e volta ao título. O `SetLoopNum` de um fluxo sem loop falha como no
+  firmware (o mixer lê "0 loops" como "termina"; antes disso um fluxo sem loop prendia a thread de som num laço).
+- **Toon (`toon.c`):** as rampas são desenhadas em 0x1F0000 em 5650 e 4444 e amostradas como 4444, com shade map
+  (TMAP 2). Nenhum draw com TMAP 2 apareceu nos quadros rastreados do demo; quando aparecer, o FBO é RGBA8 e é
+  amostrado direto (`ge: frame buffer sampled with a non-8888 format` no log), não a reinterpretação de bits da PSP.
+- **Não conferido contra referência** (PPSSPP não instalado): o fundo cinza com a silhueta vermelha do campo do
+  Chazz, as cores do ícone de "loading" e o fator dos blends `2×alfa` (aproximados por `alfa`). Nenhum comando
+  desconhecido no caminho título → duelo; nenhum BEZIER/SPLINE, color test ou logic op apareceu (o único aviso
+  do log foi DXT, já implementado).
+- **Travamento intermitente:** em 3 de ~15 rodadas os quadros pararam de ser apresentados (o processo seguia vivo);
+  as rodadas debaixo do gdb e as últimas (depois das correções do Atrac e do `DD_OBJ_DT`) não repetiram. Não
+  reproduzido; se voltar, `TAGFORCE_RTC=1` + gdb com `SIGINT`.
+- Com o Start no título e × o jogo abre o menu e entra na checagem do save (a janela de mensagem com o texto
+  empilhado, à espera do `sceUtilitySavedata*`): o caminho do modo história depende de fonte e save.
