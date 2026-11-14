@@ -205,7 +205,8 @@ int sceUtilityMsgDialogAbort(void) { md_status = QUIT; return 0; }
 
 /* SceUtilityOskParams: +0x30 datacount, +0x34 data; SceUtilityOskData: +0x1C desc, +0x20 intext, +0x24
    outtextlength, +0x28 outtext, +0x2C result (0 unchanged, 1 cancelled, 2 changed), +0x30 outtextlimit.
-   No keyboard: TAGFORCE_OSK (ASCII) is "typed" when set, else the text is left as it was. */
+   No keyboard: TAGFORCE_OSK (ASCII) is "typed" when set, else the text is left as it was, or "Player" when it
+   was empty (step 6: a new game starts with an empty name, the PSP user types one here; the TTF renders ASCII). */
 static int osk_status;
 
 int sceUtilityOskInitStart(unsigned char *p)
@@ -216,6 +217,8 @@ int sceUtilityOskInitStart(unsigned char *p)
     int max = *(int *)(d + 0x24), i = 0;
     const char *typed = getenv("TAGFORCE_OSK");
 
+    if (!typed && (!in || !in[0]))
+        typed = "Player";
     if (typed) {
         for (; typed[i] && i < max - 1; i++)
             out[i] = (unsigned char)typed[i];
