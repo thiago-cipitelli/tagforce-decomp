@@ -1,6 +1,5 @@
 // @range 0x08805BE4-0x08808C6C
 // @rodata 0x08820F08-0x08820F78
-// @asm 0x08805BE4-0x08805FC0
 // @data 0x08821E34-0x08821E70
 /* Drawing of the deck editor (the libdeck screen the lesson runs on): the card info strip, the icon
    wrappers, the pane shade, the sort value bubble, the frame export (clear, background, panes, focus
@@ -112,7 +111,6 @@ void *dt_draw_row(void *list, unsigned short x, unsigned short y, unsigned short
 void *dt_draw_rows_small(void *list, DtPane *p);
 void *dt_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned short w, DtEnt *e, int blink);
 
-#ifdef NON_MATCHING /* 3 palavras: list fica em $s1 no original (aqui divide $s0 com r); ordem das declarações não resolve */
 /* the strip under the panes: the card list's own strip in the deck modes, else name, icons, level,
    ATK/DEF and the description scrolling sideways */
 void *dt_draw_info(void *list, DtCursor *c)
@@ -132,19 +130,19 @@ void *dt_draw_info(void *list, DtCursor *c)
     } else {
     if (c->id == 0)
         return list;
-    r = dt_draw_kind_icon(list, 0x146, 0x100, card_get_kind(c->id));
+    list = dt_draw_kind_icon(list, 0x146, 0x100, card_get_kind(c->id));
     if (card_is_monster(c->id)) {
-        r = dt_draw_type_icon(r, 0x158, 0x100, card_get_type(c->id));
+        list = dt_draw_type_icon(list, 0x158, 0x100, card_get_type(c->id));
         level = card_get_level(c->id);
-        r = dt_draw_level(r, PT(0x16B, 0x103), level, 0xFFFFFFFF, dt_eres_get(0x8009));
-        r = dt_draw_stat(r, (unsigned short)card_get_atk_q(c->id) << 16 | 2, PT(0x187, 0x102), 0xC0A, 0xFFFFFFFF, dt_eres_get(0x8009));
-        r = dt_draw_stat(r, (unsigned short)card_get_def_q(c->id) << 16 | 3, PT(0x1B3, 0x102), 0xC0A, 0xFFFFFFFF, dt_eres_get(0x8009));
+        list = dt_draw_level(list, PT(0x16B, 0x103), level, 0xFFFFFFFF, dt_eres_get(0x8009));
+        list = dt_draw_stat(list, (unsigned short)card_get_atk_q(c->id) << 16 | 2, PT(0x187, 0x102), 0xC0A, 0xFFFFFFFF, dt_eres_get(0x8009));
+        list = dt_draw_stat(list, (unsigned short)card_get_def_q(c->id) << 16 | 3, PT(0x1B3, 0x102), 0xC0A, 0xFFFFFFFF, dt_eres_get(0x8009));
     } else if (card_get_prop5_hi(c->id) != 0) {
-        r = dt_draw_attr_icon(r, 0x158, 0x100, card_get_prop5_hi(c->id));
+        list = dt_draw_attr_icon(list, 0x158, 0x100, card_get_prop5_hi(c->id));
     }
     if (inv_get_flag7(c->id))
-        r = dt_draw_flag_icon(r, PT(0x1CE, 0xF5), 2, dt_eres_get(0x800A));
-    font_text_set(r);
+        list = dt_draw_flag_icon(list, PT(0x1CE, 0xF5), 2, dt_eres_get(0x800A));
+    font_text_set(list);
     font_set_size(12, 12);
     font_set_color(0xFF00FFFF);
     if (cfg_get_language() != 0)
@@ -155,10 +153,10 @@ void *dt_draw_info(void *list, DtCursor *c)
     font_set_color(0xFF00FF00);
     x2 = font_get_cursor_x() + 0x40;
     font_draw_wtext(x2, 0x3CC0, 0x6B00 - x2, card_info_fill(c->id));
-    r = font_text_clear();
-    r = dl_scissor(r, 6, 0x100, 0x13D, 0x110);
-    r = dl_enable(r, 2);
-    font_text_set(r);
+    list = font_text_clear();
+    list = dl_scissor(list, 6, 0x100, 0x13D, 0x110);
+    list = dl_enable(list, 2);
+    font_text_set(list);
     font_set_color(0xFFFFFFFF);
     if (cfg_get_language() != 0)
         font_set_flag8(0);
@@ -172,12 +170,11 @@ void *dt_draw_info(void *list, DtCursor *c)
     }
     if (cfg_get_language() != 0)
         font_set_flag8(1);
-    r = font_text_clear();
-    r = dl_disable(r, 2);
+    list = font_text_clear();
+    r = dl_disable(list, 2);
     }
     return r;
 }
-#endif
 
 void *dt_draw_type_icon(void *list, unsigned short x, unsigned short y, unsigned short type)
 {
