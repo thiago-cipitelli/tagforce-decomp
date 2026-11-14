@@ -1,5 +1,4 @@
 // @range 0x0880F1E4-0x088103A0
-// @asm 0x0880FFC4-0x088103A0
 // @data 0x08822EF0-0x08822F14
 /* The cards of the two panes, as a grid of pictures or as rows (picture, name, kind/attribute
    icons, level, ATK/DEF and the copies in the decks), and the strip under the panes with the card
@@ -282,7 +281,6 @@ void *dk_draw_row_small(void *list, unsigned short x, unsigned short y, unsigned
     return list;
 }
 
-#ifdef NON_MATCHING /* forma de dt/sc_draw_info (asm idêntico), 3 palavras: list fica em $s1 no original (aqui divide $s0 com r) */
 /* the strip under the panes: the card list's own strip in one-pane modes, else name, icons, level,
    ATK/DEF and the description scrolling sideways */
 void *dk_draw_info(void *list, DkCursor *c)
@@ -302,19 +300,19 @@ void *dk_draw_info(void *list, DkCursor *c)
     } else {
     if (c->id == 0)
         return list;
-    r = dk_draw_kind_icon(list, 0x146, 0x100, card_get_kind(c->id));
+    list = dk_draw_kind_icon(list, 0x146, 0x100, card_get_kind(c->id));
     if (card_is_monster(c->id)) {
-        r = dk_draw_type_icon(r, 0x158, 0x100, card_get_type(c->id));
+        list = dk_draw_type_icon(list, 0x158, 0x100, card_get_type(c->id));
         level = card_get_level(c->id);
-        r = dk_draw_level(r, PT(0x16B, 0x103), level, 0xFFFFFFFF, dk_res_get(0x8009));
-        r = dk_draw_stat(r, (unsigned short)card_get_atk_q(c->id) << 16 | 2, PT(0x187, 0x102), 0xC0A, 0xFFFFFFFF, dk_res_get(0x8009));
-        r = dk_draw_stat(r, (unsigned short)card_get_def_q(c->id) << 16 | 3, PT(0x1B3, 0x102), 0xC0A, 0xFFFFFFFF, dk_res_get(0x8009));
+        list = dk_draw_level(list, PT(0x16B, 0x103), level, 0xFFFFFFFF, dk_res_get(0x8009));
+        list = dk_draw_stat(list, (unsigned short)card_get_atk_q(c->id) << 16 | 2, PT(0x187, 0x102), 0xC0A, 0xFFFFFFFF, dk_res_get(0x8009));
+        list = dk_draw_stat(list, (unsigned short)card_get_def_q(c->id) << 16 | 3, PT(0x1B3, 0x102), 0xC0A, 0xFFFFFFFF, dk_res_get(0x8009));
     } else if (card_get_prop5_hi(c->id) != 0) {
-        r = dk_draw_attr_icon(r, 0x158, 0x100, card_get_prop5_hi(c->id));
+        list = dk_draw_attr_icon(list, 0x158, 0x100, card_get_prop5_hi(c->id));
     }
     if (inv_get_flag7(c->id))
-        r = dk_draw_flag_icon(r, PT(0x1CE, 0xF5), 2, dk_res_get(0x800A));
-    font_text_set(r);
+        list = dk_draw_flag_icon(list, PT(0x1CE, 0xF5), 2, dk_res_get(0x800A));
+    font_text_set(list);
     font_set_size(12, 12);
     font_set_color(0xFF00FFFF);
     if (cfg_get_language() != 0)
@@ -325,10 +323,10 @@ void *dk_draw_info(void *list, DkCursor *c)
     font_set_color(0xFF00FF00);
     x2 = font_get_cursor_x() + 0x40;
     font_draw_wtext(x2, 0x3CC0, 0x6B00 - x2, card_info_fill(c->id));
-    r = font_text_clear();
-    r = dl_scissor(r, 6, 0x100, 0x13D, 0x110);
-    r = dl_enable(r, 2);
-    font_text_set(r);
+    list = font_text_clear();
+    list = dl_scissor(list, 6, 0x100, 0x13D, 0x110);
+    list = dl_enable(list, 2);
+    font_text_set(list);
     font_set_color(0xFFFFFFFF);
     if (cfg_get_language() != 0)
         font_set_flag8(0);
@@ -342,9 +340,8 @@ void *dk_draw_info(void *list, DkCursor *c)
     }
     if (cfg_get_language() != 0)
         font_set_flag8(1);
-    r = font_text_clear();
-    r = dl_disable(r, 2);
+    list = font_text_clear();
+    r = dl_disable(list, 2);
     }
     return r;
 }
-#endif

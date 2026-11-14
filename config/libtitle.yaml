@@ -70,8 +70,6 @@ segments:
       - [0x1D75C, asm, t_partner_asm_088216FC]
       - [0x1DA74, c, t_partner]
       - [0x1DD9C, c, t_duel]
-      - [0x1EDC4, asm, t_duel_asm_08822D64]
-      - [0x1EF14, c, t_duel]
       - [0x20E08, c, t_deckpick]
       - [0x224DC, c, t_chr]
       - [0x22BEC, asm, sceStub_text]

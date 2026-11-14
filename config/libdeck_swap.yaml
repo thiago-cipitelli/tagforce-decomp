@@ -31,7 +31,6 @@ segments:
       - [0xE8C, c, ds_lists]
       - [0x1EB8, c, ds_mode]
       - [0x26B4, c, ds_draw]
-      - [0x2BC8, asm, ds_draw_asm_08806B68]
       - [0x2F6C, c, ds_icons]
       - [0x3888, c, ds_bg]
       - [0x4AB4, c, ds_cards]

@@ -234,7 +234,7 @@ void *tbox_draw(void *list, TBox *b)
     return list;
 }
 
-#ifdef NON_MATCHING /* tamanho certo; registradores e seh da largura de cada peça diferem */
+#ifdef NON_MATCHING /* 34 palavras (rodada 28: o `if (!sel) show = 0` do case 1 é `if (sel) show = 1; else show = 0;`, then que some e else no atraso do beqzl); restam registradores e seh da largura de cada peça no laço */
 /* one tab: three pieces, coloured by the selection, then its label callback */
 void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
 {
@@ -247,7 +247,9 @@ void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
     case 0:
         break;
     case 1:
-        if (!sel)
+        if (sel)
+            show = 1;
+        else
             show = 0;
         break;
     case 2:
