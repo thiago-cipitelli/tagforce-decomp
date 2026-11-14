@@ -150,7 +150,8 @@ arquivos, além de structs com ponteiros que são carregadas de arquivo (EHP rel
 ## 2. API do firmware que `platform/` precisa cobrir
 
 Só o BOOT importa do firmware: **274 funções em 28 bibliotecas** (`symbols/BOOT.txt`, `type:func import:`).
-Os gmodules não têm imports de firmware próprios, mas o BOOT **reexporta** parte deles pela `libehsys`
+Os gmodules quase não têm imports de firmware próprios (exceções: 23 do `libhtml_view`, rede/HTTP/navegador, e
+`sceRtcGetCurrentClockLocalTime` do `libdeck`; achado no passo 4a), mas o BOOT **reexporta** parte deles pela `libehsys`
 (o export aponta direto para o stub): 18 funções `sce*` são chamadas de gmodules assim (Fpl, Module start/stop,
 OSK, `sceGeEdramGetAddr`, `sceNetInit/Term`, `sceKernelChangeCurrentThreadAttr`).
 
@@ -189,9 +190,59 @@ display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescr
    `make host-lto`). Falta: unificar os ~380 avisos benignos num header por módulo (limpeza de tipos), o corpo de
    `_strtod_r` e nomes próprios para os 7 símbolos repetidos quando os gmodules forem ligados juntos.
 3. ~~Revisar os avisos do gcc contra o asm~~ (feito, seção 1.2; gate `make host-warn`).
-4. `platform/` em 32 bits: arquivos, thread/timer, input, janela, áudio PCM; gmodules linkados juntos.
+4. `platform/` em 32 bits: arquivos, thread/timer, input, janela, áudio PCM; ~~gmodules linkados juntos~~ (feito, seção 4, gate `make host-link`).
 5. Gráficos (decisão GE vs `dl.c`), depois save/OSK/fonte; rede e vídeo como stubs.
 
 Pendência achada na rodada 27: `debug_menu_draw` e `debug_menu_update` (libduel_draw, `dd_debug_menu.c`) não
 têm C nenhum, só `@asm` (menu de debug inacessível no jogo de varejo). Se o port precisar dele, escrever do zero;
 os protótipos do `#ifdef NON_MATCHING` do arquivo não batem com a tabela de chamadas de `dd_scene_mode.c`.
+
+## 4. Passo 4a: todos os módulos num executável de 32 bits (feito em 2026-11-14)
+
+Gate: `make host-link` (`tools/host_link.py`) liga os 681 `src/*/*.c` dos 23 módulos, os dados de cada módulo e o
+`platform/pc` em `build/host/tagforce` (ELF i386, sem PIE) e imprime **`host-link: 0 undefined, 0 duplicate`**.
+Nada em `src/`, `include/` ou `symbols/` mudou: o matching não é afetado. Eram 1295 indefinidos e 7 duplicados.
+
+| Etapa | O quê |
+|---|---|
+| objetos | `gcc -m32 -std=gnu89 -w -O0 -g -fno-common -fno-pie -DNON_MATCHING` por arquivo → `build/host/obj/<m>/` (cache por data); cópias editáveis em `build/host/work/` |
+| `inline` de header | `gnu89` emite uma definição externa de `inline` em cada objeto: `cl_entry` (libcharalist), `dmgr_slot` (libduel_mgr), `drec_entry` (libduelrecord) viram `weak` (cópias idênticas) |
+| `static` chamado de outro arquivo | `objcopy --globalize-symbol` quando há um só: `snd_stereo_widen`, `snd_box_filter` (`static` só sob `NON_MATCHING` em `BOOT/snd_mix.c`, chamados de `snd_out.c`) e `duel_088A8B94` (libduel_eng; o matching resolve pelo linker script) |
+| dados | `tools/host_data.py` → `build/host/data/<m>.s` (x86, `as --32`): `.data` e `.bss` do `build/elf/<m>.elf` em ordem de endereço; cada `R_MIPS_32` (lido das seções de relocação do PRX que o `prx2elf` deixa no ELF) vira `.long alvo`; rótulos globais para os `type:data` de `symbols/<m>.txt` e os `D_XXXXXXXX` pedidos que o C não define; `--selftest MODULE` remonta e compara cada palavra não relocada com o ELF |
+| nomes sem `symbols/` | `extern ... nome; /* 0x08XXXXXX */` no C do módulo (`gu_debug_*`, `gu_one`, `crt0_init_hook`...), mais `__fdlib_version` (0x08873880, endereço no comentário de `libm.c`); `func_XXXXXXXX` vira `--defsym` para o nome do endereço em `symbols/` (`func_088047B8` = `_write` etc.) |
+| apelidos dentro de tabelas do C | um `type:data` que cai dentro de um objeto que o C define (os `alias` de `symbols/`) vira `--defsym nome=objeto+off` no `ld -r` do módulo, para apontar para a tabela do C e não para a cópia (155 `--defsym` ao todo, contando os `func_`) |
+| módulo | `ld -r` de objetos + dados → `build/host/mod/<m>.o` |
+| repetidos entre módulos | ficam no BOOT; em cada gmodule viram `<m>_nome` (`objcopy --redefine-sym`; quem importa de um gmodule segue a linha `import:<lib>`): `module_entry` (13), `module_start` (8 + BOOT), `res_get` (libdeck_swap, libpassword, libselect_card), `voice_start` (libduel_draw contra BOOT). Tabela gerada em `platform/pc/modules.c` (`host_mod_syms`: módulo, nome original, endereço) para o carregador de gmodules do PC |
+| firmware | `platform/pc/stubs.c` (`tools/host_stubs.py`, `--selftest` compila): 294 `sce*`/NIDs de todos os `symbols/*.txt` (não só do BOOT); 98 com o protótipo do `include/psp.h`, o resto `int nome()`; cada um loga o nome uma vez e retorna 0 |
+| resto do `platform/pc` | `libc.c`: `platform_malloc/free/realloc/memalign` (sobre `__libc_*` da glibc), `libc_init/fini` vazios, `libc_thread_reent` → 0; `missing.c`: `debug_menu_draw/update` vazios |
+
+Log por módulo (weak, globalize, estatística dos dados) em `build/host/host_link.log`; saída do `ld` em
+`build/host/link.log`.
+
+### 4.1 Achados
+
+- **Ponto de entrada: o jogo tem `main`** (`BOOT/main.c`), então o `_start` da glibc chama direto o `main` do
+  jogo; `module_start` (crt0) só cria a thread `user_main`, que chama `main`. Não foi preciso `platform/pc/main.c`.
+- **Até onde roda:** `main` → `sys_init` → `gfx_init` → `sceGuStart` → `sceGuSetDither` → `gu_push`:
+  SIGSEGV em `BOOT/libgu.c:63`. `sceGuStart` faz `list & 0x1FFFFFFF | 0x40000000` (espelho sem cache da PSP) no
+  ponteiro da display list, que no PC é um endereço de pilha (`0xffffc32c` → lixo). Antes disso passam pelos stubs:
+  Fpl, UMD, `sceIoOpen/Lseek/Read/Close`, `sceGeEdramGetAddr`, `sceGeListEnQueue`, event flag.
+- **Endereços da PSP no C** (sem contar comentários): ~47 linhas com `0x08xxxxxx`/`0x09xxxxxx`, ~21 com VRAM
+  `0x04xxxxxx`/`0x44xxxxxx`, 9 com `| 0x40000000` e 3 com `& 0x1FFFFFFF` (GU, `dl.c`, debug da GU, `font.c`,
+  `ehp.c`, `gfx.c`; `libduel_eng/effects_ze.c`, `libduel_mgr/dmgr_main.c`). Constantes de VRAM do `gfx_init`
+  (`sceGuDispBuffer(..., (void *)0x88000, ...)`) são offsets da EDRAM: o `platform/pc` precisa de uma EDRAM falsa
+  e de máscaras de endereço que não destruam ponteiros do host.
+- **O jogo intercepta a glibc:** o BOOT define 48 nomes da libc (`malloc`, `free`, `memcpy`, `sprintf`,
+  `vfprintf`, `exit`, `_exit`, `qsort`, `strtod`, `setlocale`, `fread`...). Num executável dinâmico eles
+  substituem os da glibc também para a própria glibc. O `malloc` do jogo cai em `platform_malloc` →
+  `__libc_malloc`, o que funcionou até o crash acima; `exit`/`_exit` também são os do jogo.
+- **Tabelas de salto:** 8416 de 17198 `R_MIPS_32` dos dados apontam para o meio de funções (tabelas de `switch` do mwcc,
+  6 delas para `strtod_r_tail`, bloco frio sem C): viram `0` (o C do host tem os próprios `switch`). Ponteiros para
+  função e imports: 6164 resolvidos por nome.
+- **Dados duplicados:** quando o C define um global (`@data`), os bytes continuam na cópia do `.s` sem rótulo;
+  ponteiros dos dados para ele vão para o objeto do C só quando `symbols/` tem o nome (4 casos); o resto aponta
+  para a cópia (rótulos locais, 2614). Divergência possível se o C escrever num objeto que os dados referenciam.
+- **`.bss` somado: 84 MB** (heaps internos de cada gmodule no começo do `.bss`; na PSP os gmodules dividem a
+  memória porque só alguns ficam carregados).
+- `-fno-pie` é necessário: com PIE o `gcc` gera `__x86.get_pc_thunk.*` em cada módulo e o código do jogo usa
+  endereços absolutos em toda parte.
