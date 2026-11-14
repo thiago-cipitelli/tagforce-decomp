@@ -1,5 +1,4 @@
 // @range 0x088243E4-0x088253FC
-// @asm 0x08825094-0x088252EC
 // @data 0x088ED284-0x088ED380
 /* EHF command handlers, part 4: an axis billboard turned towards a fixed up vector, points carried
    by a bone, trails (a ring of positions, one or two channels, optionally smoothed by a cyclic
@@ -409,20 +408,14 @@ unsigned int ehf_axis_vtx[0x90 / 4] = {
     0x00000000, 0x00000000, 0x3F800000, 0x3F000000, 0xBFDDB3D7, 0x00000000,
 };
 
-#ifdef NON_MATCHING /* lógica conferida; 49 palavras, só registradores $t/$v (o original dá t0 a k0 e v1 a n; testadas ordem das declarações, ordem f/n, reaproveitar k0 no laço e na cauda, laço por índice, função inline no lugar da macro). Rodada 23: k1->frame e k->frame lidos em locais antes das zeragens (o original não relê depois dos sb), cópia por *(Vec4 *)&kv_ (sem ela o mwcc propaga os registradores para o destino), temporários da zeragem no escopo da função: 102 -> 51. Rodada 25: laço como do/while guardado com p atribuído dentro da guarda (o addiu de p sai depois do bnez, como no original): 51 -> 49 */
 /* 0x10312: *arg0 interpolated between the keys (frame, vector) arg1, arg6, ... at the node frame. */
-/* a Vec4 built from a key: zeroed byte by byte, filled, then copied (as the original); the zeroing
-   temporaries kz_/kn_ are locals of the caller */
+/* a Vec4 built from a key: zero-initialized, filled, then copied (as the original). O `= { 0 }` é o que
+   bate: o mwcc gera o laço de bytes `if (p) do *p++ = 0; while (--n)` com temporários próprios (com o laço
+   escrito à mão os registradores saíam trocados, 49 palavras nas rodadas 23-25). */
 #define EHF_KEY_VEC(dst, k)                                                                   \
     {                                                                                         \
-        Vec4 kv_;                                                                             \
+        Vec4 kv_ = { 0 };                                                                     \
                                                                                               \
-        kn_ = sizeof(Vec4);                                                                   \
-        kz_ = (unsigned char *)&kv_;                                                          \
-        if (kz_)                                                                              \
-            do {                                                                              \
-                *kz_++ = 0;                                                                   \
-            } while (--kn_);                                                                  \
         kv_.x = (k)->v[0];                                                                    \
         kv_.y = (k)->v[1];                                                                    \
         kv_.z = (k)->v[2];                                                                    \
@@ -434,14 +427,16 @@ int ehf_cmd_keys(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
 {
     Vec4 a0;
     Vec4 a1;
-    unsigned char *kz_;
-    int kn_;
+    EhfKey *k;
+    EhfKey *k1;
+    int i;
+    int f1;
     Vec4 *out = cmd->a.p[0];
+    int f0;
+    void **p;
+    int n;
     EhfKey *k0 = cmd->a.p[1];
     int f;
-    int n;
-    int i;
-    void **p;
 
     if (phase != 5) {
         return 0;
@@ -456,13 +451,11 @@ int ehf_cmd_keys(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     if (i < n) {
         p = &cmd->a.p[5];
         do {
-            EhfKey *k1 = p[1];
-            int f1 = k1->frame;
-            EhfKey *k = p[-4];
-
+            k1 = p[1];
+            k = p[-4];
+            f1 = k1->frame;
             if (f < f1) {
-                int f0 = k->frame;
-
+                f0 = k->frame;
                 EHF_KEY_VEC(a0, k);
                 EHF_KEY_VEC(a1, k1);
                 vec4_lerp((float)(f - f0) / (float)(f1 - f0), out, &a0, &a1);
@@ -470,14 +463,10 @@ int ehf_cmd_keys(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
             }
         } while (i++, p += 5, i < n);
     }
-    {
-        EhfKey *k = cmd->a.p[n * 5 - 4];
-
-        EHF_KEY_VEC(*out, k);
-    }
+    k0 = *(n * 5 - 4 + (EhfKey **)cmd->a.p); /* the last key (operand order of the original's addu) */
+    EHF_KEY_VEC(*out, k0);
     return 0;
 }
-#endif
 
 /* 0x10313: calls the function set by message 0x110 with the node's argument. */
 int ehf_cmd_callback(void (**st)(int), int *msg, EhfCmd *cmd, int phase)
