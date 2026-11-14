@@ -90,7 +90,7 @@ void menu_free_items(Menu *m)
 }
 
 /* Builds every item in ascending def->z (insertion sort into a local index list). */
-#ifdef NON_MATCHING /* forma igual (198 instruções); os temporários dos laços saem um registrador acima do original (o item em a1 em vez de t0, as constantes 0x80000000 em a3/t0 em vez de a2/a3). Com as 720 ordens de declaração, `it` no primeiro laço ou if no lugar do continue, fica em 67 palavras */
+#ifdef NON_MATCHING /* forma igual (198 instruções); os temporários dos laços saem um registrador acima do original (o item em a1 em vez de t0, as constantes 0x80000000 em a3/t0 em vez de a2/a3). Com as 720 ordens de declaração, `it` no primeiro laço ou if no lugar do continue, fica em 67 palavras. Rodada 30: a cópia não é a causa (o laço de deslocamento e a cópia de struct já batem na forma); só a coloração dos temporários difere (o mwcc dá a1 ao item e o original às constantes 1/0x80000000/0x80000001 do desenrolamento). Sem efeito: z/def/item em local (função ou bloco, int/short), helpers inline para a busca e o deslocamento, while/do-while, j + 1 / j - 1, ponteiro `items`, pragmas opt_* */
 void menu_layout(void **dl, Menu *m)
 {
     int order[16];

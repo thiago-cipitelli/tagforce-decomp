@@ -2914,3 +2914,24 @@ não mudaram (pragmas `opt_lifetimes`/`opt_propagation`/`opt_common_subs`/`opt_d
 - Scripts em `build/tmp/r29D/`: `tv.py` (variantes de uma função, `//----` separa), `gen.py` (gera variantes por
   substituição `velho>>>novo`, `@@` separa, `PRE>>>` insere antes da função), `ren.py` (troca de contadores),
   `dmove.py` (move 1-2 declarações por todas as posições), `sbs.sh`/`nd.sh` (diff lado a lado e normalizado).
+
+## Rodada 30 (`bA`): `menu_update` (275 -> 0), helpers inline em função que devolve valor
+
+O "modo sem limpeza" que parecia não ter gatilho em função que devolve valor era, em `menu_update`, a forma do fonte:
+três trechos são helpers `static inline` com `return` em cada saída, e o `return -1` final de cada corpo inlinado é o
+destino dos `b; nop` sem preencher.
+- **Entrada depois do `switch` num helper**: `return menu_input(w, pad);` com o corpo em `if (cancelar) {...} else if
+  (aceitar) {...} else if (estilo) {...} else if (botões) {...} return -1;`. Os caminhos que caem no `return -1` do
+  fim viram `b <li v0,-1>; nop` / `beqz ...; nop`; os `return -1`/`return -2` explícitos vão direto ao epílogo.
+  `if (!bloqueado) {...} else se_play(...);` põe o ramo do bloqueio fora de linha (`bnezl` + `li a0`), como o original.
+- **Leitura do pad num helper** (`static inline PadState *menu_pad(w) { if (w->pad == 0) return pad_get(); return
+  w->pad; }`): corrigiu a troca `s1`/`s2` de `pad` com as variáveis da entrada (28 -> 4). Com um local `p` no helper
+  continuava trocado: o que conta é o `return` em cada saída.
+- **`if (keep_open) { ...; if (botões) return botão; } else { menu_finish(w); } return -1;`** em vez de
+  `if (botões) return botão; return -1; } menu_finish(w);`: o mwcc deixa de juntar os dois retornos num bloco e o
+  `jal` cai no `li v0,-1` compartilhado (4 -> 0, e o `b; nop` morto do `default` aparece como no original).
+- Teste booleano materializado `sltu; xori 1; bnezl`: helper `return !((bits & (1 << k)) ? 1 : 0);` usado em
+  `if (menu_bit_off(...)) continue;` (com `!= 0` ou `!helper()` o mwcc funde o `!` no desvio).
+- `unsigned int accept = region_pick_value(0)` (que devolve `unsigned short`): sem o `andi 0xFFFF` repetido no `and`.
+`menu_layout` segue em 67: só a coloração dos temporários (item do 1º laço em `a1` contra `t0`, constantes do
+desenrolamento uma posição acima); nenhuma forma da busca/deslocamento/cópia muda isso.
