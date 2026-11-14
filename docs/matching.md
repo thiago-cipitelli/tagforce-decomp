@@ -2566,3 +2566,46 @@ Bateram `snd_output`, `snd_bank_open_async`, `snd_obj_alloc`, `gfx_save_bmp` e `
   (`dd_cursor_cycle`) tem o laço dentro de um `case` alcançado pela tabela de saltos.
 - `debug_menu_draw`/`debug_menu_update` (fuzzy 0 no relatório): existem, mas não têm C nenhum (só `@asm`, menu de
   depuração inalcançável), então o asm_try não acha a função no objeto.
+## Rodada 28 (`r28E2`): reteste do `matching_skip` (libduel_eng, 2ª metade)
+
+Bateram 6 das 25: `duel_0888A88C`, `duel_0888A938`, `duel_088C1B88`, `duel_wfmt_s`, `duel_wfmt_d` e `duel_088C0CD0`
+(`effects_y.c`, `effects_088C134C.c`, `duel_text.c` e `effects_088C004C.c` ficaram inteiros em C); `duel_088862DC`
+14 -> 4. A pragma `opt_propagation off` não ajudou em nenhuma entrada deste lote (piora de 8 a 1225 palavras).
+- **Cópia de parâmetro com mudança de tipo** (`duel_wfmt_s/d`, 16/13 -> 0): os parâmetros copiados para locais na
+  ordem inversa (`a = arg; f = fmt; d = dst;`) dão `s2/s1/s0` (variável criada antes = registrador mais alto), e a
+  cópia `const char *f = fmt` (ou `volatile char *`, ou `(char *)(void *)fmt`) muda o tipo, então o mwcc mantém a
+  cópia e testa `f` em vez de `a1` (o `move s1,a1` antes do `and`). Com `char *f = fmt` ele propaga e testa o
+  argumento. É a família do cast redundante da rodada 22, aplicada a parâmetros.
+- **Helper `static inline` com `return` por saída dentro de um `case`** (`duel_0888A88C`, 5 -> 0): o ramo `if/else`
+  do caso 0x137E vira `if (c) return X; return 1;` num helper; dá o `bnel` para o `b join; nop` (atraso vazio) e o
+  `sll` antes do `b`. `(unsigned int)duel_phase < 1` dá o `sltiu` direto (`duel_phase == 0` sai `xor` + `sltiu`).
+- **Ponteiro de slot explícito declarado antes do bit de zona** (`duel_0888A938`, 7 -> 0): `DuelPlayer *s;` antes
+  de `int b;` e `for (z = 0, s = &duel.players[q & 1], b = q * 16; ...; s = (DuelPlayer *)((char *)s +
+  sizeof(DuelSlot)), b++)` com `s->field[0]`; a mesma regra da rodada 26 (ponteiro antes do contador).
+- **Busca ordem x tipo + papéis trocados** (`rs_skE2.py` com `EXTRA` trocando o contador de jogador e o índice
+  interno): `duel_088C1B88` (9 -> 0: `uid` unsigned primeiro, `i` unsigned com `(int)i` nos testes, laço do deck
+  com `i` como jogador e `q` como índice) e `duel_088C0CD0` (28 -> 0: `best[5][2]` declarado primeiro, `p/q/j`
+  unsigned com `(int)` nos testes, `q` por último, laço de seleção com `q` como dono e `p` como coluna). Depois da
+  busca, os `sltiu` que sobram são os testes das variáveis que viraram `unsigned`: `(int)x < K` resolve sem mudar
+  a ordem de criação. A busca sozinha não achou `duel_088995A0`, `duel_slot_e1390`, `duel_bonus_calc`,
+  `duel_088C6BC8` (200 variantes cada) nem `duel_088A6F00` (108, só com `x/y/k/id` unsigned; não promovido).
+- **Modelo de inicializador local em `.data`** (`duel_088C0CD0`): `int best[5][2] = {{-1,-1},...}` vira 40 bytes
+  anônimos na `.data` do objeto; sem `// @data 0x089134F0-0x08913518` o `fix_ld` não tem onde pôr a `.data` do
+  objeto (vai para 0x08904288, junto com `.lib.ent`) e TODAS as seções do módulo divergem no `make check` (o
+  `check_file` passa). Os 16 bytes de -1 seguintes (0x08913518) são o modelo de `duel_checks.c`: confira pelos
+  subsegmentos `.data` do `config/<m>.yaml` a quem pertence cada pedaço de uma sequência de -1.
+- **Forma de laço da gêmea já batendo** (`duel_088862DC`, 14 -> 4): `for (i = 0; i < n_hand; i++, p = a->player)`
+  (de `duel_0886E590`); as 4 palavras que faltam são o `andi 0xff` de `p` antes do `p & 1` do índice no topo do
+  laço (o original estreita `p` uma vez e deriva o índice do valor estreitado).
+- Sem forma (testadas pragmas, helper inline com retorno, cópias de parâmetro, busca ordem x tipo, volatile):
+  `duel_req_effect_set` (4: `id` em `v0` e `sltu` cedo, mesmo com protótipo K&R/tipos), `duel_find_effect_card`
+  (2: ordem de `move s5,zero` e `sll s3` — todas as 6 ordens do `for` e inicializadores mortos dão 2 ou pior),
+  `duel_req_mill` (9: `opt_lifetimes off` mantém `p/n` trocados, logo não é só ordem de criação), `duel_088BD4E0`
+  (8), `duel_slot_e1390` (12), `duel_088995A0` (13), `duel_req_end_turn` (15: `pl` explícito dá 50), `duel_card_fits_zone`
+  (17: helper com `return` por saída dá 18/69), `duel_088CC8EC` (20), `duel_bonus_calc` (36), `duel_08865C10` (51: o
+  valor do `switch` em `v1` antes do `move s0,a0` não sai nem com local, volatile ou helper), `duel_088C6BC8` (54),
+  `duel_act_e3920` (99: o wrapper inline não reproduz as cópias mortas), `duel_088A6F00` (115), `duel_0887F8E4`
+  (132), `duel_count_tributes` (144: helper com `return 0` cedo não cria a cópia morta do `blezl`),
+  `duel_req_swap_zones` (246: `(int)ap & 1`, formas por deslocamento de byte e volatile não desfazem o CSE),
+  `duel_msg_poll` (642, alocação interprocedural, ver rodada 27).
+
