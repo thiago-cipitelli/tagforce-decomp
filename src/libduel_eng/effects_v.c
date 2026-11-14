@@ -275,10 +275,10 @@ int duel_08886250(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 14 palavras (eram 23): p = a->player antes do teste do uid acerta o 1º bloco. Falta o laço de
-                      0x80: o original recarrega p direto em a0 (lbu a0 no atraso do beqzl) e faz o andi 0xff antes do
-                      p & 1 do índice; tipos/ordem das declarações, casts no índice e no argumento, vírgula no for,
-                      while e volatile não reproduzem */
+#ifdef NON_MATCHING /* 4 palavras (eram 14): p = a->player antes do teste do uid acerta o 1º bloco; `i++, p = a->player`
+                      no passo do for (forma de duel_0886E590) acerta o fim do laço de 0x80. Falta o topo do laço: o
+                      original faz o andi 0xff de p antes do p & 1 do índice (a narrowing do argumento alimenta o
+                      índice); casts no índice/argumento, uid local, while, n +=, ZSLOT não reproduzem (rodada 28) */
 int duel_088862DC(DuelAct *a)
 {
     unsigned char p;
@@ -301,11 +301,10 @@ int duel_088862DC(DuelAct *a)
     switch (duel_step) {
     case 0x80:
         n = 0;
-        for (i = 0; i < duel.players[p & 1].n_hand; i++) {
+        for (i = 0; i < duel.players[p & 1].n_hand; i++, p = a->player) {
             if (duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i])) != 0) {
                 n++;
             }
-            p = a->player;
         }
         if (n == 0) {
             return 0x78;

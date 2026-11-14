@@ -1,5 +1,4 @@
 // @range 0x088FF0DC-0x088FF3FC
-// @asm 0x088FF1F4-0x088FF3FC
 /* Memory helpers and UCS-2 text helpers; a text argument below 0x20000 is a dialog text id. */
 #include "libc.h"
 
@@ -51,66 +50,70 @@ void duel_wcscat_int(unsigned short *dst, int n)
     duel_wcscat(dst, (unsigned short *)&buf[i]);
 }
 
-#ifdef NON_MATCHING /* same code; the original keeps dst in $s0 and the argument in $s2 */
-/* Copy fmt to dst replacing the first "%s" with arg. */
+/* Copy fmt to dst replacing the first "%s" with arg. Parameters copied to locals in reverse order (arg, fmt,
+   dst) for the original's $s2/$s1/$s0; the const copy of fmt is a type change, so mwcc keeps the copy and tests
+   it instead of the argument register. */
 void duel_wfmt_s(char *dst, char *fmt, unsigned short *arg)
 {
+    unsigned short *a = arg;
+    const char *f = fmt;
+    char *d = dst;
     char c;
 
-    dst[1] = 0;
-    dst[0] = 0;
-    if (TEXT_ID(fmt)) {
-        fmt = (char *)dlg_get_text((int)fmt);
+    d[1] = 0;
+    d[0] = 0;
+    if (TEXT_ID(f)) {
+        f = (char *)dlg_get_text((int)f);
     }
-    if (TEXT_ID(arg)) {
-        arg = dlg_get_text((int)arg);
+    if (TEXT_ID(a)) {
+        a = dlg_get_text((int)a);
     }
-    if (fmt == 0) {
+    if (f == 0) {
         return;
     }
-    while ((c = fmt[0]) != 0 || fmt[1] != 0) {
-        if (c == '%' && fmt[1] == 0 && fmt[2] == 's' && fmt[3] == 0) {
-            dst[1] = 0;
-            dst[0] = 0;
-            duel_wcscat((unsigned short *)dst, arg);
-            duel_wcscat((unsigned short *)dst, (unsigned short *)(fmt + 4));
+    while ((c = f[0]) != 0 || f[1] != 0) {
+        if (c == '%' && f[1] == 0 && f[2] == 's' && f[3] == 0) {
+            d[1] = 0;
+            d[0] = 0;
+            duel_wcscat((unsigned short *)d, a);
+            duel_wcscat((unsigned short *)d, (unsigned short *)(f + 4));
             return;
         }
-        dst[0] = c;
-        dst[1] = fmt[1];
-        fmt += 2;
-        dst += 2;
+        d[0] = c;
+        d[1] = f[1];
+        f += 2;
+        d += 2;
     }
-    dst[1] = 0;
-    dst[0] = 0;
+    d[1] = 0;
+    d[0] = 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* same code; the original keeps dst in $s0 and the argument in $s2 */
-/* Copy fmt to dst replacing the first "%d" with n. */
+/* Copy fmt to dst replacing the first "%d" with n (same shape as duel_wfmt_s). */
 void duel_wfmt_d(char *dst, char *fmt, int n)
 {
+    int v = n;
+    const char *f = fmt;
+    char *d = dst;
     char c;
 
-    dst[1] = 0;
-    dst[0] = 0;
-    if (TEXT_ID(fmt)) {
-        fmt = (char *)dlg_get_text((int)fmt);
+    d[1] = 0;
+    d[0] = 0;
+    if (TEXT_ID(f)) {
+        f = (char *)dlg_get_text((int)f);
     }
-    while ((c = fmt[0]) != 0 || fmt[1] != 0) {
-        if (c == '%' && fmt[1] == 0 && fmt[2] == 'd' && fmt[3] == 0) {
-            dst[1] = 0;
-            dst[0] = 0;
-            duel_wcscat_int((unsigned short *)dst, n);
-            duel_wcscat((unsigned short *)dst, (unsigned short *)(fmt + 4));
+    while ((c = f[0]) != 0 || f[1] != 0) {
+        if (c == '%' && f[1] == 0 && f[2] == 'd' && f[3] == 0) {
+            d[1] = 0;
+            d[0] = 0;
+            duel_wcscat_int((unsigned short *)d, v);
+            duel_wcscat((unsigned short *)d, (unsigned short *)(f + 4));
             return;
         }
-        dst[0] = c;
-        dst[1] = fmt[1];
-        fmt += 2;
-        dst += 2;
+        d[0] = c;
+        d[1] = f[1];
+        f += 2;
+        d += 2;
     }
-    dst[1] = 0;
-    dst[0] = 0;
+    d[1] = 0;
+    d[0] = 0;
 }
-#endif
