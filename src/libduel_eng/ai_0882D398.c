@@ -1,5 +1,4 @@
 // @range 0x0882D398-0x0882EE74
-// @asm 0x0882E0A8-0x0882E1B8
 // @data 0x08907974-0x089079C4
 /* Summoning a monster (duel_summon), continued: summons that ask for monsters of an attribute
    (0x14A0 makes them come from the hand), summons that may skip the tributes, and summons that send
@@ -352,10 +351,10 @@ int duel_0882DE18(void)
     return duel_summon_tributes();
 }
 
-#ifdef NON_MATCHING /* só a alocação de registradores difere (zona em s0, carta em s1) */
 /* Zone filter: own cards that are one of the materials still asked (duel_chain.ids). */
 int duel_0882E0A8(unsigned int p, int z, int i)
 {
+    int card;
     int zz = z + i;
     int id;
     int k;
@@ -366,8 +365,9 @@ int duel_0882E0A8(unsigned int p, int z, int i)
     if (p != duel_summon.player) {
         return 0;
     }
-    id = field_get_card(p, zz);
-    if (id == 0) {
+    card = field_get_card(p, zz);
+    id = card;
+    if (card == 0) {
         return 0;
     }
     if (duel_field_protected(p, zz) != 0) {
@@ -376,15 +376,17 @@ int duel_0882E0A8(unsigned int p, int z, int i)
     if (duel_summon.n == 0 && duel_count_free_monster_zones(duel_summon.player) == 0 && duel_zone_usable(p, zz) == 0) {
         return 0;
     }
-    for (k = 0; k < duel_w_089149F0; k++) {
-        if (duel_chain.ids[k] == id) {
-            return 0x800;
+    {
+        int want = id; /* card -> id -> cópia do bloco: é o que deixa a carta em s1 e a zona em s0 */
+
+        for (k = 0; k < duel_w_089149F0; k++) {
+            if (duel_chain.ids[k] == want) {
+                return 0x800;
+            }
         }
     }
     return 0;
 }
-
-#endif
 
 /* Summon that sends the materials named by the card (two or three fixed ids) from the field. */
 int duel_0882E1B8(void)
