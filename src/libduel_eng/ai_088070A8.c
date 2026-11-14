@@ -343,40 +343,40 @@ int duel_08807B38(int id, int a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 334 palavras (2026-11-06; 424/442 opcodes iguais): o original guarda o byte de a->player/a->zone
-   em a2 desde o início e o reaproveita nos case (a->zone extraído do registrador), apesar do store em duel_w_08913CF4 no
-   meio; o mwcc 219 recarrega o byte depois do store (sem o store, reaproveita: testado). Tipos int/char/short do global
-   não mudam. Fora isso p e a trocam s0/s1. Ordem dos case já é a da fonte. */
+#ifdef NON_MATCHING /* 154 palavras (rodada 28; estrutura igual a menos do agendamento de zona*5 no caso 0x1657): o byte
+   de a->player/a->zone lido num local w (idioma da rodada 24) reproduz o reaproveitamento; falta a cor de w/pl/opp
+   (a2/a1/v1 no original) e as trocas s0/s1 (a/p), s3/s4 (n/z) e s1/s2 (i/base) que ordem e tipo das declarações
+   não mexem. */
 /* Should the computer activate the card of a now? */
 int duel_08807C7C(DuelAct *a)
 {
-    unsigned int pl = a->player;
+    unsigned int w = ((unsigned char *)a)[2];
+    unsigned int pl = w & 1;
     unsigned int p = pl ^ a->opp;
-    int atk;
-    int n;
-    int z;
-    unsigned int i;
+    int i;
     int v;
+    int atk;
+    int z;
+    int n;
 
     duel_w_08913CF4 = p;
     switch (a->id) {
     case 0x10D6:
         return duel_count_monsters(p) >= 2;
     case 0x12A3:
-        return !duel.players[pl & 1].field[a->zone].pos;
+        return !duel.players[pl & 1].field[w << 26 >> 27].pos;
     case 0x1200:
         return duel_0884E948(a, 1 - pl) > 0;
     case 0x13E3:
         return duel_0880A54C(a, 1 - pl, -1, 0) >= 0;
     case 0x1657:
-        if (duel_special.player[0] == duel_atk_tp) {
-            return 0;
-        }
-        if (a->uid != CARD_UID(duel.players[pl & 1].field[a->zone].card)) {
-            return 1;
-        }
-        if (pl == duel_special.player[0] && duel.players[duel_atk_tp & 1].field[duel_atk_tz].card.id != 0) {
-            return 1;
+        if (duel_special.player[0] != duel_atk_tp) {
+            if (a->uid != CARD_UID(duel.players[pl & 1].field[w << 26 >> 27].card)) {
+                return 1;
+            }
+            if (pl == duel_special.player[0] && duel.players[duel_atk_tp & 1].field[duel_atk_tz].card.id != 0) {
+                return 1;
+            }
         }
         return 0;
     case 0x154C: {
@@ -434,9 +434,9 @@ int duel_08807C7C(DuelAct *a)
         DuelStats st;
 
         /* only when no monster of the opponent stands in the way */
+        n = 0;
         atk = duel_field_atk(a->player, a->zone);
         p = 1 - p;
-        n = 0;
         for (z = 0; z <= 4; z++) {
             if (duel.players[p & 1].field[z].card.id != 0) {
                 duel_0880546C(p, z, &st);
@@ -459,10 +459,10 @@ int duel_08807C7C(DuelAct *a)
         return 0;
     case 0x14C4:
     case 0x1A97:
-        if (duel_088BFFD8(p, a->id, duel_088AA224(a)) == 0) {
-            return 0;
+        if (duel_088BFFD8(p, a->id, duel_088AA224(a)) != 0) {
+            return duel_hand_count_monsters(p) < 2;
         }
-        return duel_hand_count_monsters(p) < 2;
+        return 0;
     case 0x1984:
         if (duel.players[p & 1].n_d == 1) {
             return 1;
