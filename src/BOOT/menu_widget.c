@@ -1,6 +1,5 @@
 // @range 0x0884A9B4-0x0884C8D0
 // @data 0x088EEA58-0x088EEBA0
-// @asm 0x0884B6CC-0x0884BCF0
 /* Menu widget: a window (menu.c) hosting a scrollable list with a blinking cursor and/or a row of
    OK / YES / NO / CANCEL buttons (buttom_icon1.gim), driven by the pad. */
 #include "psp.h"
@@ -320,14 +319,8 @@ void menu_draw(void **dl, MenuWidget *w)
     }
 }
 
-#ifdef NON_MATCHING
-/* Rodada 23: refeito do asm; lógica corrigida (a tecla aceitar/cancelar vem de pad->b.trig e o movimento
-   do cursor de pad->b.rep: o rascunho lia dir_rep e trig; cancelar com cancel_resets primeiro, linhas > 0 e
-   initial >= scroll + rows; busca dos botões com teste booleano materializado). 282 palavras (1580 B contra 1572 B; antes 415), do modo
-   sem limpeza pós-likely (li v0,-1; b; nop sem preencher, cadeias de b), que numa função que devolve valor não
-   tem gatilho conhecido (docs/matching.md, rodadas 19-20). Rodada 27: 275 palavras; os casos 2 e 5 já batem (helper
-   inline menu_opened com return em cada saída e `if (aberto) {...} else return -1;`): os outros "b; nop" devem vir de
-   helpers inline do mesmo tipo. */
+/* Rodada 30: a entrada (depois do switch) e a leitura do pad são helpers inline com return em cada saída;
+   o mwcc deixa os "b; nop" sem preencher no fim de cada corpo inlinado (docs/matching.md, rodada 30). */
 /* Advances the widget one frame. Returns -3 when idle, -2 when cancelled, the selected list index
    or button when accepted, -1 otherwise. */
 static inline int menu_bit_off(unsigned char bits, int k)
@@ -341,25 +334,6 @@ static inline int menu_opened(MenuWidget *w, int st)
         return 0;
     w->state = st;
     return 1;
-}
-
-static inline int menu_blink(MenuWidget *w)
-{
-        if (w->blink++ > 8) {
-            w->blink = 0;
-            if (w->keep_open) {
-                w->state = 3;
-                if (w->cancelled)
-                    return -2;
-                if (w->style != 0)
-                    return w->scroll + w->cursor;
-                if (w->buttons != 0)
-                    return w->button;
-                return -1;
-            }
-            menu_finish(w);
-        }
-        return -1;
 }
 
 static inline int menu_input(MenuWidget *w, PadState *pad)
@@ -502,13 +476,26 @@ int menu_update(MenuWidget *w)
         }
         break;
     case 4:
-        return menu_blink(w);
+        if (w->blink++ > 8) {
+            w->blink = 0;
+            if (w->keep_open) {
+                w->state = 3;
+                if (w->cancelled)
+                    return -2;
+                if (w->style != 0)
+                    return w->scroll + w->cursor;
+                if (w->buttons != 0)
+                    return w->button;
+            } else {
+                menu_finish(w);
+            }
+        }
+        return -1;
     default:
         return -3;
     }
     return menu_input(w, pad);
 }
-#endif
 
 void menu_set_button(MenuWidget *w, unsigned char b)
 {
