@@ -53,7 +53,7 @@ void dl_set_mode(int mode)
 
 int dl_init(HeapSpec *h)
 {
-    dl.heap = ALLEGREX_INS((unsigned int)h->addr, 4, 28, 4);
+    dl.heap = ALLEGREX_UNCACHED((unsigned int)h->addr);
     dl.size = h->size;
     dl_layers_reset(0);
     dl.sent = 0;
@@ -206,7 +206,11 @@ int dl_get_flag(void)
 }
 
 /* Reserves `bytes` inside the list (jumped over) and moves *list past them. */
+#ifdef __MWERKS__
 void dl_alloc_inline(unsigned int **list, int bytes)
+#else /* port: the callers use the reserved bytes, the result of dl_push that mwcc leaves in $v0 */
+unsigned int *dl_alloc_inline(unsigned int **list, int bytes)
+#endif
 {
     unsigned int *l = *list;
     unsigned int *end = l + (bytes + 3) / 4 + 8;
@@ -214,8 +218,14 @@ void dl_alloc_inline(unsigned int **list, int bytes)
 
     cmd[0] = (((unsigned int)end & 0xFF000000) >> 24 & 0xF) << 16 | 0x10000000;
     cmd[1] = ADDR(0x08000000, end);
+#ifdef __MWERKS__
     dl_push(l, cmd, 2);
     *list = end;
+#else
+    l = dl_push(l, cmd, 2);
+    *list = end;
+    return l;
+#endif
 }
 
 #ifdef NON_MATCHING /* 2 palavras (eram 9): sy/sx em locais de bloco, y + h antes do sy << 10 e o -1 de y só depois do x; resta a ordem dos dois addiu -1 (x antes de y no original), que nenhuma forma troca */

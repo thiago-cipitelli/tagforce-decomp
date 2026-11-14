@@ -60,7 +60,7 @@ $(OUT): $(LD_SCRIPT) $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)
 clean:
 	rm -rf build/asm/$(MODULE) build/src/$(MODULE) build/assets/$(MODULE) $(OUT) build/$(MODULE).map $(LD_SCRIPT) asm/$(MODULE) assets/$(MODULE)
 
-.PHONY: all check check-all clean verify host-check host-lto host-warn host-link
+.PHONY: all check check-all clean verify host-check host-lto host-warn host-link host-run
 
 check-all:
 	@for m in $$(ls build/elf | sed 's/\.elf$$//'); do printf '%s: ' $$m; $(MAKE) --no-print-directory MODULE=$$m check 2>&1 | tail -1; done
@@ -106,3 +106,10 @@ host-warn:
 # gate; docs/port_survey.md, "Passo 4a")
 host-link:
 	@python3 tools/host_link.py
+
+# port step 4b: build/host/tagforce runs HOST_RUN_SECONDS on the extracted ISO (TAGFORCE_ROOT, default extracted/)
+# and must still be running at the end (timeout's 124); the log, with every file opened, goes to build/host/run.log
+HOST_RUN_SECONDS ?= 60
+host-run: host-link
+	@TAGFORCE_ROOT=$${TAGFORCE_ROOT:-extracted} timeout $(HOST_RUN_SECONDS) build/host/tagforce > build/host/run.log 2>&1; \
+	  r=$$?; [ $$r = 124 ] && echo "host-run: alive after $(HOST_RUN_SECONDS) s" || { echo "host-run: exit $$r (build/host/run.log)"; exit 1; }

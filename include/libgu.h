@@ -4,6 +4,16 @@
    settings, as the library keeps them at 0x088F0CE0-0x088F1258. Only the port C (NON_MATCHING)
    uses these definitions; the PSP build keeps the original data. */
 
+/* PSP address spaces: physical (cache bits cleared) and the uncached mirror. On the host a pointer is just a
+   pointer (the EDRAM is a buffer of platform/pc), so both are the identity there. */
+#ifdef __MWERKS__
+#define PSP_PHYS(p) ((unsigned int)(p) & 0x1FFFFFFF)
+#define PSP_UNCACHED(p) ((unsigned int)(p) | 0x40000000)
+#else
+#define PSP_PHYS(p) ((unsigned int)(p))
+#define PSP_UNCACHED(p) ((unsigned int)(p))
+#endif
+
 typedef struct GuList {                /* 0x088F0D5C + i * 0xFC, one per context (0..4) */
     int pad0;
     unsigned int *start;               /* +0x04 */

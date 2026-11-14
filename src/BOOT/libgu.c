@@ -115,7 +115,7 @@ int sceGuStart(int cid, void *list, int arg)
 {
     GuList *l;
     int flags;
-    unsigned int p = (unsigned int)list & 0x1FFFFFFF;
+    unsigned int p = PSP_PHYS(list);
 
     if (!gu.initialized) {
         gu.list = 0;
@@ -137,8 +137,8 @@ int sceGuStart(int cid, void *list, int arg)
         l->start = (unsigned int *)p;
     } else {
         l->arg = arg;
-        l->cur = (unsigned int *)(p | 0x40000000);
-        l->start = (unsigned int *)(p | 0x40000000);
+        l->cur = (unsigned int *)PSP_UNCACHED(p);
+        l->start = (unsigned int *)PSP_UNCACHED(p);
         if (((unsigned int)list << 1) >> 31 == 0) {
             flags = sceKernelCpuSuspendIntr();
             while ((unsigned int)l->cur & 0x3F) {
