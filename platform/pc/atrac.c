@@ -73,8 +73,9 @@ static int run(char *const argv[])
     return WIFEXITED(st) ? WEXITSTATUS(st) : -1;
 }
 
-/* the decoded clip, from the cache or through ffmpeg; 0 (silence) without ffmpeg */
-static void *decode(const unsigned char *buf, int size, size_t *len)
+/* the decoded clip (s16 stereo 44.1 kHz, mmapped), from the cache or through ffmpeg; 0 (silence) without ffmpeg.
+   Also used by mpeg.c for the Atrac3+ stream of a movie. */
+void *host_at3_decode(const unsigned char *buf, int size, size_t *len)
 {
     unsigned long long h = 0xcbf29ce484222325ULL;
     char pcm[1200], at3[1200], tmp[1200];
@@ -152,7 +153,7 @@ int sceAtracSetDataAndGetID(const unsigned char *buf, int size)
         at[i].loop_start -= skip;
         at[i].loop_end -= skip;
     }
-    at[i].map = decode(buf, size, &at[i].map_len);
+    at[i].map = host_at3_decode(buf, size, &at[i].map_len);
     if (at[i].map) {
         int decoded = at[i].map_len / 4;
 

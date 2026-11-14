@@ -1326,6 +1326,17 @@ static void dump(Fbo *f)
     fclose(o);
 }
 
+/* EDRAM offset the CPU wrote last through sceDmacMemcpy (the movie player's frames), -1 when none */
+static u32 cpu_fb = (u32)-1;
+
+int sceDmacMemcpy(void *dst, const void *src, unsigned int size)
+{
+    memcpy(dst, src, size);
+    if (in_edram((u32)dst))
+        cpu_fb = (u32)dst & 0x1FFFFF;
+    return 0;
+}
+
 int sceDisplaySetFrameBuf(void *top, int bufw, int fmt, int sync)
 {
     Fbo *f = 0;
@@ -1337,6 +1348,18 @@ int sceDisplaySetFrameBuf(void *top, int bufw, int fmt, int sync)
     if (!gl_on)
         return 0;
     host_gfx_bind();
+    if (top && in_edram((u32)top) && ((u32)top & 0x1FFFFF) == cpu_fb) {   /* CPU pixels -> the FBO shown */
+        cpu_fb = (u32)-1;
+        if (fmt != 3) {
+            log_once(15, "CPU-written frame buffer not in 8888");
+        } else {
+            f = fbo_get((u32)top & 0x1FFFFF, bufw);
+            glBindTexture(GL_TEXTURE_2D, f->tex);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, bufw);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, f->w, 272, GL_RGBA, GL_UNSIGNED_BYTE, edram + f->fbp);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        }
+    }
     if (top && in_edram((u32)top))
         for (i = 0; i < nfbo; i++)
             if (fbos[i].fbp == ((u32)top & 0x1FFFFF) && fbos[i].fbw == (u32)bufw)

@@ -10,6 +10,8 @@
 #define _GNU_SOURCE
 #include <malloc.h>
 #include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
@@ -101,14 +103,16 @@ static int alloc(int kind, void *base, int size, int n)
 }
 #define ALLOC(kind, arr) alloc(kind, arr, sizeof arr[0], sizeof arr / sizeof arr[0])
 
-static int ready(Thr *t)
+static int ready_at(Thr *t, long long now)
 {
     if (!t->used || t->done || t->suspended)
         return 0;
     if (!t->pred)
         return 1;
-    return t->pred(t) || (t->deadline && host_now_us() >= t->deadline);
+    return t->pred(t) || (t->deadline && now >= t->deadline);
 }
+
+static int ready(Thr *t) { return ready_at(t, host_now_us()); }
 
 /* the thread that should hold the CPU: the highest priority ready one, the current one on ties */
 static Thr *best(void)
@@ -133,11 +137,16 @@ static int block(int (*pred)(Thr *), long long deadline)
     host_gfx_release();   /* another thread may draw next (window.c) */
     pthread_cond_broadcast(&cv);
     for (;;) {
-        if (ready(me) && best() == me)
+        /* one clock read for both tests: with two, a deadline expiring between them put the thread in the untimed
+           wait below while it was already ready; the others then saw it as the best thread and waited for it too
+           (the "frames stop" hang of step 5a, found in step 7a with the SIGUSR1 dump and gdb) */
+        long long now = host_now_us();
+
+        if (ready_at(me, now) && best() == me)
             break;
-        if (me->deadline && !me->pred(me) && host_now_us() < me->deadline) {
+        if (me->deadline && !me->pred(me) && now < me->deadline) {
             struct timespec ts;
-            long long d = me->deadline - host_now_us() + 1;
+            long long d = me->deadline - now + 1;
 
             clock_gettime(CLOCK_REALTIME, &ts);
             ts.tv_sec += d / 1000000;
@@ -197,6 +206,7 @@ static void thread_end(int status)
 {
     self->done = 1;
     self->status = status;
+    host_gfx_release();   /* a thread that drew (the movie's display thread) must not die owning the GL context */
     pthread_cond_broadcast(&cv);
     pthread_mutex_unlock(&cpu);
     pthread_exit(0);
@@ -760,6 +770,64 @@ int sceCtrlReadBufferPositive(void *pad, int count)
     return count;
 }
 
+/* --- vblank sub-interrupt handlers (intno 30): a prio-0 kernel thread calls them every vblank. The movie player's
+   ctrl_vblank_handler sets the event flag its display and main loops wait on; nobody else registers one --- */
+
+typedef struct { int (*fn)(int, void *); void *arg; int on; } SubIntr;
+static SubIntr vblank_sub[16];
+static int vblank_thr;
+
+static int vblank_thread(unsigned int args, void *argp)
+{
+    int i;
+
+    for (;;) {
+        sceDisplayWaitVblankStart();
+        for (i = 0; i < 16; i++)
+            if (vblank_sub[i].fn && vblank_sub[i].on)
+                vblank_sub[i].fn(i, vblank_sub[i].arg);
+    }
+    return 0;
+}
+
+int sceKernelRegisterSubIntrHandler(int intno, int no, void *handler, void *arg)
+{
+    if (intno != 30 || no < 0 || no >= 16)
+        return 0x80020065;   /* ERROR_KERNEL_NOT_FOUND_INTERRUPT */
+    vblank_sub[no].fn = handler;
+    vblank_sub[no].arg = arg;
+    vblank_sub[no].on = 0;
+    if (!vblank_thr) {
+        vblank_thr = sceKernelCreateThread("vblank_intr", vblank_thread, 0, 0x1000, 0, 0);
+        sceKernelStartThread(vblank_thr, 0, 0);
+    }
+    return 0;
+}
+
+int sceKernelReleaseSubIntrHandler(int intno, int no)
+{
+    if (intno != 30 || no < 0 || no >= 16)
+        return 0x80020065;
+    vblank_sub[no].fn = 0;
+    return 0;
+}
+
+int sceKernelEnableSubIntr(int intno, int no)
+{
+    if (intno != 30 || no < 0 || no >= 16)
+        return 0x80020065;
+    vblank_sub[no].on = 1;
+    return 0;
+}
+
+int sceKernelDisableSubIntr(int intno, int no)
+{
+    if (intno != 30 || no < 0 || no >= 16)
+        return 0x80020065;
+    vblank_sub[no].on = 0;
+    return 0;
+}
+
 /* --- audio output (audio.c): the device write happens off the CPU, as a wait --- */
 
 /* sleeps until `deadline` (host_now_us), as a blocking call: the no-device pacing of the sound thread */
@@ -771,6 +839,7 @@ void host_cpu_leave(void)
 {
     self->pred = p_false;
     self->deadline = 0;
+    host_gfx_release();
     pthread_cond_broadcast(&cv);
     pthread_mutex_unlock(&cpu);
 }
@@ -780,6 +849,46 @@ void host_cpu_enter(void)
     pthread_mutex_lock(&cpu);
     block(p_true, 0);
 }
+
+/* --- SIGUSR1: every game thread's state on stderr (the "frames stop" hang of step 5a; `kill -USR1 <pid>`) --- */
+
+static void dump_threads(int sig)
+{
+    long long now = host_now_us() - t0;
+    char line[256];
+    int i, n;
+
+    for (i = 1; i < NTHR; i++) {
+        Thr *t = &thr[i];
+        const char *w = "ready";
+        int idx = t->obj ? (int)(((char *)t->obj - (char *)sema) / sizeof(Sema)) : 0;
+
+        if (!t->used)
+            continue;
+        if (t->done)
+            w = "done";
+        else if (t->pred == p_end)
+            w = "thread end";
+        else if (t->pred == p_wakeup)
+            w = "sleep";
+        else if (t->pred == p_sema)
+            w = "sema";
+        else if (t->pred == p_evf)
+            w = "evf";
+        else if (t->pred == p_false)
+            w = "delay/host";
+        else if (t->pred == p_true)
+            w = "yield";
+        n = snprintf(line, sizeof line, "thread %-16s prio %3d %-10s obj %d bits %x mode %x deadline %+lld ms%s\n",
+                     t->name, t->prio, w, t->pred == p_sema ? idx : t->pred == p_evf ? (int)(((Evf *)t->obj) - evf) : 0,
+                     t->bits, t->mode, t->deadline ? (t->deadline - t0 - now) / 1000 : 0, t->suspended ? " suspended" : "");
+        write(2, line, n);
+    }
+    n = snprintf(line, sizeof line, "t = %lld ms, vblank %d, pad polls %u\n", now / 1000, sceDisplayGetVcount(), host_pad_polls);
+    write(2, line, n);
+}
+
+__attribute__((constructor)) static void dump_init(void) { signal(SIGUSR1, dump_threads); }
 
 /* --- exit --- */
 
