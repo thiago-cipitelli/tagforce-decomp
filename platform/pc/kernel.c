@@ -64,6 +64,7 @@ static pthread_cond_t cv = PTHREAD_COND_INITIALIZER;
 static __thread Thr *self;
 static long long t0;
 static int trace_sched;   /* env TAGFORCE_TRACE_SCHED: log every switch */
+static int trace_pad;     /* env TAGFORCE_TRACE_PAD: pad poll count against time and frames (for TAGFORCE_PAD) */
 
 long long host_now_us(void)
 {
@@ -184,6 +185,7 @@ __attribute__((constructor)) static void kernel_init(void)
     /* every allocation from the brk heap, below 0x80000000: the game keeps addresses in 31-bit fields (HeapEnt) */
     mallopt(M_MMAP_MAX, 0);
     trace_sched = getenv("TAGFORCE_TRACE_SCHED") != 0;
+    trace_pad = getenv("TAGFORCE_TRACE_PAD") != 0;
     pthread_mutex_lock(&cpu);
     thr[1].used = 1;
     thr[1].prio = crt0_thread_prio;
@@ -725,11 +727,18 @@ int sceDisplayWaitVblank(void) { return sceDisplayWaitVblankStart(); }
 int sceDisplayWaitVblankCB(void) { return sceDisplayWaitVblankStart(); }
 float sceDisplayGetFramePerSec(void) { return 59.94005f; }
 
+unsigned int host_pad_polls;   /* game pad reads so far (TAGFORCE_PAD counts these, window.c) */
+
 static void pad_fill(unsigned int *pad, int count)
 {
     unsigned int b = host_buttons();
     int i;
 
+    host_pad_polls++;
+    if (trace_pad && host_pad_polls % 100 == 0) {
+        extern unsigned int frame_no;   /* ge.c */
+        dprintf(2, "pad: poll %u at %lld ms, frame %u\n", host_pad_polls, (host_now_us() - t0) / 1000, frame_no);
+    }
     for (i = 0; i < count; i++, pad += 4) {   /* SceCtrlData: time, buttons, lx, ly, reserved[6] */
         pad[0] = sceKernelGetSystemTimeLow();
         pad[1] = b;
@@ -751,45 +760,26 @@ int sceCtrlReadBufferPositive(void *pad, int count)
     return count;
 }
 
-/* --- audio output: no sound yet, the blocking calls pace the sound thread at 44.1 kHz --- */
+/* --- audio output (audio.c): the device write happens off the CPU, as a wait --- */
 
-static int audio_len[8];
-static long long audio_next[8];
+/* sleeps until `deadline` (host_now_us), as a blocking call: the no-device pacing of the sound thread */
+void host_sleep_until(long long deadline) { block(p_false, deadline); }
 
-int sceAudioChReserve(int ch, int samples, int format)
+/* leave the CPU for a blocking host call (ALSA write) and take it back: like any wait, the thread returns only
+   when it is the highest-priority ready one (the sound thread is, so it preempts at the next scheduling point) */
+void host_cpu_leave(void)
 {
-    static int n;
-
-    if (ch < 0)
-        ch = n++ & 7;
-    audio_len[ch & 7] = samples;
-    return ch;
+    self->pred = p_false;
+    self->deadline = 0;
+    pthread_cond_broadcast(&cv);
+    pthread_mutex_unlock(&cpu);
 }
 
-int sceAudioSetChannelDataLen(int ch, int samples)
+void host_cpu_enter(void)
 {
-    audio_len[ch & 7] = samples;
-    return 0;
+    pthread_mutex_lock(&cpu);
+    block(p_true, 0);
 }
-
-static int audio_block(int ch)
-{
-    long long now = host_now_us();
-    long long *next = &audio_next[ch & 7];
-
-    if (*next < now)
-        *next = now;
-    *next += (long long)audio_len[ch & 7] * 1000000 / 44100;
-    block(p_false, *next);
-    return audio_len[ch & 7];
-}
-
-int sceAudioOutputPannedBlocking(int ch, int l, int r, void *buf) { return audio_block(ch); }
-int sceAudioOutputBlocking(int ch, int vol, void *buf) { return audio_block(ch); }
-
-/* no SAS mixing yet: every voice has ended at once (a stub's 0 = "all voices playing" left the duel waiting
-   forever for a voice clip to end) */
-int __sceSasGetEndFlag(void *core) { return -1; }
 
 /* --- exit --- */
 
