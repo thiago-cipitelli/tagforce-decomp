@@ -2986,3 +2986,40 @@ batiam; o certo é mudar o protótipo dos callees (sob `#ifdef __MWERKS__` quand
 - Sem forma: `cardinfo_draw_frame` (7: as 16 combinações de variável x expressão para `x1/y1/x5/y5`, as ordens de
   declaração, reuso de `y1` para `y5` e as posições de cada atribuição não mexem na ordem dos `move` de argumento),
   `cardinfo_draw_window` (9: `x5 = x + 5U`/`5 + x`/`(unsigned)x + 5` contra `x + 5` no fim continuam CSE).
+
+## Rodada 31 (`cA`): som do BOOT, identidade de variáveis
+
+Quatro entradas antigas do skip batendo (`snd_obj_begin` 43, `snd_streams_decode` 15, `snd_box_filter` 11,
+`snd_curve_volume` 6); em todas a causa era **qual variável guarda o quê**, não ordem de declaração:
+
+- **Resultado de chamada guardado numa variável e convertido em outra** (`snd_obj_begin`): `t = snd_data_ptr_18(...)`
+  (protótipo local devolvendo `SndTone *`) deixava `t` sempre no registrador mais baixo (`s0`), qualquer que fosse a
+  ordem das declarações, o tipo, o bloco ou o lugar da chamada. Com o protótipo igual à definição (`unsigned char *`) e
+  `e = snd_data_ptr_18(grp, p); t = (SndTone *)e;` (o `e` já existente), `t` passa a seguir a ordem das declarações como
+  as outras. O cast direto `t = (SndTone *)snd_data_ptr_18(...)` não serve; tem de haver a variável intermediária.
+  Depois disso, `pitch` declarado no bloco do laço (variável de bloco = registrador mais baixo) fecha os `$s`.
+  Sintoma para reconhecer: um `$s` que **nenhuma** ordem de declaração move e que é definido direto de um `jal`.
+- Sonda usada para achar isso: compilar variantes mutiladas (tirar trechos, trocar a definição de uma variável) e ler
+  só o mapa variável -> `$s` de pontos fixos do asm (`move sX,v0` depois de cada `jal`), em vez de contar palavras.
+  Mostrou que com pressão de registradores as variáveis baratas (poucos usos no laço) recebem os `$s` mais altos em
+  ordem de custo crescente, as demais seguem a ordem das declarações (mais cedo = mais alto), e que somar usos a uma
+  variável barata (`grp` +5 usos) a devolve à ordem das declarações.
+- **Reaproveitar a variável temporária da função** (`snd_streams_decode`): nos dois laços de mistura saturada a amostra
+  esquerda é calculada em `tmp` (a mesma variável do canal direito, que tem o endereço tomado por
+  `sceAtracGetLoopStatus`) e somada numa variável separada (`sum = tmp + dst[0]`); com um `lo` próprio o mwcc escolhe
+  outros `$t` (t1/t0/t1 em vez de t0/t1/t3). Os stores mortos em `tmp` da metade esquerda somem; só os do canal
+  direito ficam (`sw t0,152(sp)`), o que é a pista: um local com endereço tomado gravado na pilha dentro de um laço
+  que não precisa dele é o temporário geral da função.
+- **Ordem das atribuições no `for`** (`snd_box_filter`): `for (k = (n - 16) * 2, i = 0; ...)` em vez de `i = 0, k = ...`
+  troca `t0/t1` de `k` e `i` **no laço seguinte** (as mesmas variáveis); depois `idx = k; r = 0; l = 0; i = 0;` na ordem
+  do asm. A busca das 720 ordens de declaração não podia achar: a ordem que conta é a da primeira atribuição.
+- **Calcular no próprio resultado** (`snd_curve_volume`): `v = (c->vol_mid - base) * ... ; if (v < 0) v = -v; v = v +
+  base;` em vez de um `d` separado. `v` redefinido com `base` vivo faz os dois interferirem, o mwcc deixa de fundir
+  `v = base` (`lhu v1` + `move v0,v1` no delay slot em vez de `lhu v0`), e o `base = c->vol_far` pode ficar dentro do
+  `if` (onde o original o carrega) sem encolher a função.
+- `snd_echo_mix`, `snd_stereo_widen` e `snd_box_filter` são `static` de verdade (`#ifdef __MWERKS__`, `type:func
+  static` em `symbols/` para o `PROVIDE` que `snd_out.c` usa): `snd_mix.c` e `snd_out.c` eram uma unidade só no original.
+- Sem forma: `snd_group_release_all` (12: o original dá `s1` a `free` e `s0` ao contador; tipos, variável de início/fim
+  intermediária, contador de bloco, helper inline do laço, `which` reaproveitado como contador ou limite (196 B), cópia
+  local de `free`, usos extras: `free` fica sempre por último), `snd_group_cmd` (1: `bne v0,s3`; `val = mask` nos
+  casos, tipos x ordem dos operandos, `continue`, `goto`, local para o valor mascarado).
