@@ -1,5 +1,4 @@
 // @range 0x08804D0C-0x08807630
-// @asm 0x08804D0C-0x08804EB4
 // @data 0x0881AD70-0x0881AE28
 /* Drawing pieces shared by the panes: digit strips, framed boxes, card icons (rarity, attribute,
    type, limit marks), the ATK/DEF value, a card's picture tile, the kind frame of a list row, the
@@ -10,7 +9,6 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-#ifdef NON_MATCHING /* 2 palavras: o original passa t0 (9) antes de a3 (w) para draw_set_offsets e põe a3 no atraso do jal */
 /* digits right to left from pos, w x 9 each: n = fmt & 0xFF digits, style = fmt >> 8 */
 void *sc_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim)
 {
@@ -20,6 +18,7 @@ void *sc_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned
     unsigned char n = fmt & 0xFF;
     int step = 0;
     int w;
+    int h;
     short x;
     int i;
 
@@ -33,13 +32,14 @@ void *sc_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned
         step = -1;
     case 0:
         w = 7;
+        h = 9;
         break;
     case 1:
         break;
     case 2:
         break;
     }
-    list = draw_set_offsets(list, w, 9, w, 9);
+    list = draw_set_offsets(list, w, h, w, h);
     x = px + (short)((n - 1) * (w + step));
     for (i = 0; i < n; i++) {
         list = draw_sprite(list, x, py, 0, value % 10 * w, 0, 0, 0);
@@ -50,7 +50,6 @@ void *sc_draw_digits(void *list, ScPt pos, int pad, unsigned int value, unsigned
     }
     return list;
 }
-#endif
 
 /* font digits right to left, n at most (all of them with pad) */
 void *sc_draw_num_text(void *list, short x, short y, int value, int step, unsigned short n, int pad)

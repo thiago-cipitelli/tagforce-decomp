@@ -1,5 +1,4 @@
 // @range 0x08804918-0x08805874
-// @asm 0x08804918-0x08804AC0
 // @data 0x0880E888-0x0880E88C
 /* Drawing helpers of the screen: sprite digits, numbers, the 9-slice window frame, sprites from a
    record, card pictures (alternate art from the CIP pack) with their marks (copies, limit, new),
@@ -33,7 +32,6 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
 void *rv_draw_sprite(void *list, RvSprite *s, void *gim);
 int rv_card_pict(unsigned short *page, unsigned short *u, unsigned short *v, RvEntry *e, int *alt);
 
-#ifdef NON_MATCHING /* 2 palavras (eram 18; forma de dk_draw_digits): o original passa t0 (9) antes de a3 (w) para draw_set_offsets e põe a3 no atraso do jal */
 /* n with digit sprites (7 x 9) from the right; fmt = style << 8 | digits */
 void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned short fmt, unsigned int color, void *gim)
 {
@@ -43,6 +41,7 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
     unsigned char digits = fmt & 0xFF;
     int gap = 0;
     int w;
+    int h;
     short x;
     int i;
 
@@ -56,13 +55,14 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
         gap = -1;
     case 0:
         w = 7;
+        h = 9;
         break;
     case 1:
         break;
     case 2:
         break;
     }
-    list = draw_set_offsets(list, w, 9, w, 9);
+    list = draw_set_offsets(list, w, h, w, h);
     x = px + (short)((digits - 1) * (w + gap));
     for (i = 0; i < digits; i++) {
         list = draw_sprite(list, x, py, 0, n % 10 * w, 0, 0, 0);
@@ -73,7 +73,6 @@ void *rv_draw_digits(void *list, int pos, int zeros, unsigned int n, unsigned sh
     }
     return list;
 }
-#endif
 
 /* n right-aligned at x (digits from the right, `step` apart); leading zeros when `zeros` */
 void *rv_draw_number(void *list, short x, short y, int n, int step, unsigned short digits, int zeros)

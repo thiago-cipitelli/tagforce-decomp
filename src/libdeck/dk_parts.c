@@ -1,5 +1,4 @@
 // @range 0x08815280-0x08817D18
-// @asm 0x088153F4-0x0881559C
 // @data 0x08823084-0x0882313C
 // @rodata 0x08822648-0x0882266C
 /* Drawing pieces shared by the panes and menus: lookups in sorted id tables, digit strips, framed
@@ -120,7 +119,6 @@ int dk_kind_icon(unsigned short kind)
         return -1;
     }
 }
-#ifdef NON_MATCHING /* 2 palavras: o original passa t0 (9) antes de a3 (w) para draw_set_offsets e põe a3 no atraso do jal */
 /* digits right to left from pos, w x 9 each: n = fmt & 0xFF digits, style = fmt >> 8 */
 void *dk_draw_digits(void *list, DkPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim)
 {
@@ -130,6 +128,7 @@ void *dk_draw_digits(void *list, DkPt pos, int pad, unsigned int value, unsigned
     unsigned char n = fmt & 0xFF;
     int step = 0;
     int w;
+    int h;
     short x;
     int i;
 
@@ -143,13 +142,14 @@ void *dk_draw_digits(void *list, DkPt pos, int pad, unsigned int value, unsigned
         step = -1;
     case 0:
         w = 7;
+        h = 9;
         break;
     case 1:
         break;
     case 2:
         break;
     }
-    list = draw_set_offsets(list, w, 9, w, 9);
+    list = draw_set_offsets(list, w, h, w, h);
     x = px + (short)((n - 1) * (w + step));
     for (i = 0; i < n; i++) {
         list = draw_sprite(list, x, py, 0, value % 10 * w, 0, 0, 0);
@@ -160,8 +160,6 @@ void *dk_draw_digits(void *list, DkPt pos, int pad, unsigned int value, unsigned
     }
     return list;
 }
-
-#endif
 
 /* font digits right to left, n at most (all of them with pad) */
 void *dk_draw_num_text(void *list, short x, short y, int value, int step, unsigned short n, int pad)
