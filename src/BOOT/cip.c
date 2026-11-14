@@ -1,7 +1,6 @@
 // @range 0x08853A2C-0x08854920
 // @data 0x088EF28C-0x088EF468
 // @rodata 0x088B4960-0x088B499C
-// @asm 0x08853C94-0x08853D1C
 /* Scene stack (push/pop/reset of gmodule scenes by id, with the transition record the scene reads
    on start) and the CIP/CPM card image reader: slot ring filled by ehfile_read_async callbacks,
    either on demand (cip_read_card/cip_get_image) or sequentially 10 slots at a time (prefetch). */
@@ -97,19 +96,26 @@ void scene_get_transition_info(SceneTrans *out)
     memcpy(out, &s->cur, sizeof(SceneTrans));
 }
 
-#ifdef NON_MATCHING /* only register allocation differs: the original keeps (int)scene in a 5th s-register across memset */
+/* Sem propagação de cópias: o original mantém (int)scene num 5º $s através do memset (rodada 28). */
+#ifdef __MWERKS__
+#pragma opt_propagation off
+#endif
 void scene_reset_to(unsigned short from, unsigned short scene, unsigned short arg)
 {
     SceneStack *s = (SceneStack *)sys_info_get();
 
-    memset(s, 0, sizeof(SceneStack));
-    s->cur.type = 3;
-    s->cur.from = from;
-    s->cur.scene = scene;
-    s->cur.arg = arg;
-    ehscript_set_module(scene_module_name(scene));
+    {
+        int id = scene;
+        memset(s, 0, sizeof(SceneStack));
+        s->cur.type = 3;
+        s->cur.from = from;
+        s->cur.scene = scene;
+        s->cur.arg = arg;
+        ehscript_set_module(scene_module_name(id));
+    }
 }
-
+#ifdef __MWERKS__
+#pragma opt_propagation reset
 #endif
 
 const char *cip_names_h[6] = {

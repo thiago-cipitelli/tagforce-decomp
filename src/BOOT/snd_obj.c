@@ -2,7 +2,6 @@
 // @data 0x088F0428-0x088F04AC
 // @asm 0x08861CA0-0x08861D60
 // @asm 0x08861F88-0x0886205C
-// @asm 0x0886205C-0x088624AC
 /* Sound library, object side (continued): handles of the object pool, lookup by sound id, start
    order of sounds of a class, the 4 slots of the current sound, group data loading through the
    read/alloc callbacks or the VPL, the 3D model (distance curve, pan from the angle, Doppler pitch),
@@ -527,7 +526,6 @@ int snd_curve_volume(float dist, SndCurve *c)
 #endif
 
 /* 3D: distance volume (fader 5), pan from the angle (6) and Doppler pitch (7) of a positioned sound. */
-#ifdef NON_MATCHING /* the SndPos pointer lands in a2 instead of a1 and the Doppler product swaps its operands */
 void snd_obj_3d(SndObj *o)
 {
     Snd3D *g = &snd_3d;
@@ -588,11 +586,11 @@ void snd_obj_3d(SndObj *o)
         v[2] = p->pos[2];
         v[3] = 1.0f;
     } else {
-        pv = v;
         in[0] = p->pos[0];
         in[1] = p->pos[1];
         in[2] = p->pos[2];
         in[3] = 1.0f;
+        pv = v; /* depois do 1.0f: o original materializa a constante antes de &v */
         mat4_transform_vec4(pv, snd_view_mtx, in);
     }
     dist = sqrtf_vfpu(pv[2] * pv[2] + (pv[0] * pv[0] + pv[1] * pv[1]));
@@ -605,7 +603,10 @@ void snd_obj_3d(SndObj *o)
         dir[2] = v[2] / dist;
         dir[3] = 1.0f / dist;
         vec3_normalize2(n, d);
-        pitch = -(int)(vec3_dot2(dir, n) * 4096.0f * sp);
+        {
+            float k = vec3_dot2(dir, n) * 4096.0f; /* local de bloco: o produto fica como 1º operando do mul.s */
+            pitch = -(int)(k * sp);
+        }
         if (pitch > 0x1000) {
             pitch = 0x2000;
         } else {
@@ -640,7 +641,6 @@ void snd_obj_3d(SndObj *o)
         snd_obj_fade(o, 7, (short)pitch, 0);
     }
 }
-#endif
 
 void snd_fader_init(SndFader *f, short v)
 {
