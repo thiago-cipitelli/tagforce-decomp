@@ -1,6 +1,4 @@
 // @range 0x0885C688-0x0885D948
-// @asm 0x0885CCE0-0x0885CEC4
-// @asm 0x0885D078-0x0885D948
 /* Sound library, mixer: per-frame fader update and SAS voice parameters, key on and end detection
    of the SAS voices, the echo ring buffer (0x3000 stereo frames) the streams feed and the output
    reads back at half level, stream filters, ordering of the active streams, the level of a block and
@@ -177,7 +175,7 @@ void snd_echo_add(SndObj *o, short *in)
 }
 
 /* Mixes the echo at the read position into `out` (0x100 frames), halving what stays in the buffer. */
-#ifdef NON_MATCHING /* static: muda a alocação da chamada final de snd_streams_decode */
+#ifdef __MWERKS__ /* static: snd_streams_decode mantém $t/$v0 vivos através do jal (no original este arquivo e snd_out.c são uma unidade só; symbols: type:func static) */
 static
 #endif
 void snd_echo_mix(short *out)
@@ -211,7 +209,7 @@ void snd_echo_mix(short *out)
 
 /* Widens the stereo image: adds the L-R difference of the frame two back; `hist` carries the last two
    differences across blocks. Each sum is clamped to 16 bits on the side its sign can overflow. */
-#ifdef NON_MATCHING /* static: o chamador mantém t7/t8/v0 vivos através do jal (snd_streams_decode) */
+#ifdef __MWERKS__ /* static: snd_streams_decode mantém $t/$v0 vivos através do jal (no original este arquivo e snd_out.c são uma unidade só; symbols: type:func static) */
 static
 #endif
 void snd_stereo_widen(short *hist, short *buf, int n)
@@ -269,9 +267,8 @@ void snd_stereo_widen(short *hist, short *buf, int n)
     }
 }
 
-#ifdef NON_MATCHING /* lógica corrigida (quociente negativo +1, laço interno do-while); 11 palavras (eram 31, busca exaustiva das 720 ordens de declaração, rodada 28): só registradores, o original dá t1 ao k externo e t0 a i */
 /* Box filter of `taps` frames over `n` stereo frames; `hist` holds the 16 frames before the block. */
-#ifdef NON_MATCHING /* static: o chamador mantém t7/t8/v0 vivos através do jal (snd_streams_decode) */
+#ifdef __MWERKS__ /* static: snd_streams_decode mantém $t/$v0 vivos através do jal (no original este arquivo e snd_out.c são uma unidade só; symbols: type:func static) */
 static
 #endif
 void snd_box_filter(short *hist, short *buf, int n, int taps)
@@ -283,15 +280,15 @@ void snd_box_filter(short *hist, short *buf, int n, int taps)
     int idx;
     int i;
 
-    for (i = 0, k = (n - 16) * 2; i < 32; i++, k++) {
+    for (k = (n - 16) * 2, i = 0; i < 32; i++, k++) {
         save[i] = buf[k];
     }
     if (taps != 0) {
         for (k = (n - 1) * 2; k >= 0; k -= 2) {
-            l = 0;
-            r = 0;
-            i = 0;
             idx = k;
+            r = 0;
+            l = 0;
+            i = 0;
             do { /* no test before the first pass: one frame even when taps < 0 */
                 if (idx >= 0) {
                     l += buf[idx];
@@ -320,7 +317,6 @@ void snd_box_filter(short *hist, short *buf, int n, int taps)
         hist[i] = save[i];
     }
 }
-#endif
 
 /* Playing streams ordered by samples left, 0-terminated; returns their number. */
 int snd_streams_sorted(SndStreamRef *out)
@@ -402,11 +398,6 @@ int snd_block_level(short *p)
     return sum >> 8;
 }
 
-#ifdef NON_MATCHING /* 15 palavras: só registradores no primeiro laço de mistura com saturação (o original
-   dá t0 à amostra escalada, t1 ao lh do destino e t3 à soma; o nosso t1/t0/t1). Testados sem efeito (rodada 22):
-   nomes/escopo de x, lo e soma (variáveis de bloco e de função, soma separada), sem x, produto em duas instruções,
-   lh num local, callees static. Depende de snd_stereo_widen/snd_box_filter/snd_echo_mix static (sob NON_MATCHING;
-   snd_echo_mix static resolveu a chamada final, 21 -> 15). */
 /* Decodes the active Atrac streams into their PCM rings (0x1000 frames, decoded ahead by up to
    `budget` frames, less when many SAS voices are active) and mixes 0x100 frames of each into the
    current output block: copied when it is the only stream of the first pass, else added with
@@ -619,15 +610,15 @@ void snd_streams_decode(int mix)
                 } else {
                     while (--cnt >= 0) {
                         x = *a;
-                        lo = (short)(x & 0xFFFF) * l >> 12;
-                        if (lo < 0) {
-                            lo++;
+                        tmp = (short)(x & 0xFFFF) * l >> 12;
+                        if (tmp < 0) {
+                            tmp++;
                         }
-                        lo += ((short *)dst)[0];
-                        if (lo < -0x8000) {
-                            lo = -0x8000;
-                        } else if (lo > 0x7FFF) {
-                            lo = 0x7FFF;
+                        sum = tmp + ((short *)dst)[0];
+                        if (sum < -0x8000) {
+                            sum = -0x8000;
+                        } else if (sum > 0x7FFF) {
+                            sum = 0x7FFF;
                         }
                         tmp = (x >> 16) * r >> 12;
                         if (tmp < 0) {
@@ -639,17 +630,17 @@ void snd_streams_decode(int mix)
                         } else if (tmp > 0x7FFF) {
                             tmp = 0x7FFF;
                         }
-                        *dst = (lo & 0xFFFF) | tmp << 16;
+                        *dst = (sum & 0xFFFF) | tmp << 16;
                         dst++;
                         a++;
                     }
                     while (--wrap >= 0) {
                         x = *b;
-                        lo = (short)(x & 0xFFFF) * l >> 12;
-                        if (lo < 0) {
-                            lo++;
+                        tmp = (short)(x & 0xFFFF) * l >> 12;
+                        if (tmp < 0) {
+                            tmp++;
                         }
-                        sum = lo + ((short *)dst)[0];
+                        sum = tmp + ((short *)dst)[0];
                         if (sum < -0x8000) {
                             sum = -0x8000;
                         } else if (sum > 0x7FFF) {
@@ -700,4 +691,3 @@ void snd_streams_decode(int mix)
     sceKernelSignalSema(snd_atrac_sema, 1);
     snd_echo_mix(snd_mix_buf[snd_mix_idx]);
 }
-#endif

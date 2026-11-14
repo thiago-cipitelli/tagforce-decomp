@@ -1,5 +1,4 @@
 // @range 0x0885F05C-0x0885FAA8
-// @asm 0x0885F52C-0x0885FAA8
 // @data 0x088F0114-0x088F03BC
 /* Sound library, allocation and start: history of the last variant picked per sound, choice of the
    object slot for a new sound (free slot, suspended BGM or the oldest of the same class), and the
@@ -97,7 +96,7 @@ unsigned short snd_desc_type(unsigned int id);
 int snd_entry_flags4(unsigned int id, int mask);
 unsigned char *snd_data_ptr_c(unsigned char *grp, SndDesc *d, int i);
 SndSample *snd_data_ptr_10(unsigned char *grp, unsigned char *p);
-SndTone *snd_data_ptr_18(unsigned char *grp, unsigned char *p);
+unsigned char *snd_data_ptr_18(unsigned char *grp, unsigned char *p);
 void snd_voice_clear(SndObj *o);
 int snd_rand_range(int n);
 void snd_duck_update(void);
@@ -274,7 +273,6 @@ int snd_obj_alloc(unsigned int id, int pan, int max, unsigned short flags)
     return free;
 }
 
-#ifdef NON_MATCHING /* mesma forma; o original guarda o ponteiro da amostra (e depois pitch) em $s0, onde estava id, e o tom em $s3: 43 palavras; a ordem das declarações não muda isso */
 /* Starts the SAS voices of `o` (kinds 1-2, one per bit of the voice mask) or its Atrac stream
    (kinds 3-4). Returns 1, -1 on bad data, 0 when no Atrac id is free. */
 int snd_obj_begin(SndObj *o)
@@ -290,7 +288,6 @@ int snd_obj_begin(SndObj *o)
     int n;
     SndSample *smp;
     SndTone *t;
-    int pitch;
     int x;
     int a1;
     int a2;
@@ -319,12 +316,15 @@ int snd_obj_begin(SndObj *o)
         n = 0;
         p = snd_data_ptr_c(grp, d, 0);
         for (v = 0; mask != 0; mask >>= 1, v++, slot++) {
+            int pitch;
+
             if (!(mask & 1)) {
                 continue;
             }
             snd_voice_key_off(v);
             smp = snd_data_ptr_10(grp, p);
-            t = snd_data_ptr_18(grp, p);
+            e = snd_data_ptr_18(grp, p);
+            t = (SndTone *)e;
             snd_voice_set_vag(v, smp->vag, smp->size, loop);
             pitch = smp->pitch;
             if (t->semi != 0) {
@@ -344,7 +344,8 @@ int snd_obj_begin(SndObj *o)
             x = d->fine_hi - d->fine_lo;
             if (x != 0) {
                 x = d->fine_lo + snd_rand_range(x) + 0x80;
-                pitch += (snd_pitch_semi[t->fine + 1] - snd_pitch_semi[t->fine]) * snd_pitch_fine[x] >> 12;
+                a1 = snd_pitch_semi[t->fine + 1] - snd_pitch_semi[t->fine];
+                pitch += a1 * snd_pitch_fine[x] >> 12;
             }
             if (pitch <= 0) {
                 pitch = 1;
@@ -397,11 +398,10 @@ int snd_obj_begin(SndObj *o)
                 if (x < 0) {
                     x = 0;
                 }
-                if (x >= 0x80) {
-                    slot->pad7 = 0x7F;
-                } else {
-                    slot->pad7 = x;
+                if (x > 0x7F) {
+                    x = 0x7F;
                 }
+                slot->pad7 = x;
             }
             slot->flags = 0;
             p += 8;
@@ -450,4 +450,3 @@ int snd_obj_begin(SndObj *o)
     snd_duck_update();
     return 1;
 }
-#endif
