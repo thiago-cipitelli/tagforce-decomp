@@ -1,6 +1,5 @@
 // @range 0x08859DF0-0x0885C688
 // @data 0x088F00E4-0x088F0114
-// @asm 0x0885AFB0-0x0885B498
 /* Card detail viewer: full-screen panel with the card picture, name, description / genre list /
    deck-list tab, ATK/DEF, level stars and scroll bar. Driven by 0x50 bytes of state at 0x08BEA44C
    and drawn on its own display-list layer; opened/closed with a black fade. */
@@ -452,7 +451,7 @@ void cardinfo_set_layer(unsigned short layer)
     cardinfo_layer = layer;
 }
 
-char cardinfo_window01_gim[] = "window01.gim";   /* .data 0x088F00E4; referenced by the asm of cardinfo_draw_window */
+char cardinfo_window01_gim[] = "window01.gim";   /* .data 0x088F00E4 */
 
 void *cardinfo_draw_bg(void *list)
 {
@@ -466,19 +465,16 @@ void *cardinfo_draw_bg(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING /* cardinfo_draw_window (9 palavras, rodada 27: ordem das declarações 20 -> 9): o original dá a v5 o $s de x5 e
-   recalcula x + 5 na última chamada (o mwcc junta v5 com v e reusa x5); cardinfo_draw_frame: ordem de três moves de argumento */
+/* The last call writes x + 5, y + 5 (and v + 5) in full: mwcc reuses the registers that still hold them and
+   recomputes the one whose register was taken (t), which gives the original's argument order. */
 /* 9-slice window from window01.gim (style = row of 24 px in the sheet). */
 void *cardinfo_draw_window(void *list, unsigned int style, int x, int y, int w, int h)
 {
-    int y5;
     int v;
-    int v2;
-    int x5;
+    int t;
     int y1;
     void *gim;
     int x1;
-    int v5;
 
     gim = ehp_find(syspack_get(), cardinfo_window01_gim, 0);
     v = (style & 0xFFFF) * 0x18;
@@ -492,20 +488,20 @@ void *cardinfo_draw_window(void *list, unsigned int style, int x, int y, int w, 
     x1 = x + w - 5;
     list = draw_sprite(list, x1, y, 0, 0x1B, v, 0, 0);
     y1 = y + h - 5;
-    v2 = v + 0xC;
-    list = draw_sprite(list, x1, y1, 0, 0x1B, v2, 0, 0);
-    list = draw_sprite(list, x, y1, 0, 0, v2, 0, 0);
+    t = v + 0xC;
+    list = draw_sprite(list, x1, y1, 0, 0x1B, t, 0, 0);
+    list = draw_sprite(list, x, y1, 0, 0, t, 0, 0);
     list = draw_set_offsets(list, 1, 5, w - 10, 5);
-    x5 = x + 5;
-    list = draw_sprite(list, x5, y, 0, 5, v, 0, 0);
-    list = draw_sprite(list, x5, y1, 0, 5, v + 0xC, 0, 0);
+    t = x + 5;
+    list = draw_sprite(list, t, y, 0, 5, v, 0, 0);
+    list = draw_sprite(list, t, y1, 0, 5, v + 0xC, 0, 0);
     list = draw_set_offsets(list, 5, 1, 5, h - 10);
-    y5 = y + 5;
-    v5 = v + 5;
-    list = draw_sprite(list, x, y5, 0, 0, v5, 0, 0);
-    list = draw_sprite(list, x1, y5, 0, 0x1B, v5, 0, 0);
+    y1 = y + 5;
+    t = v + 5;
+    list = draw_sprite(list, x, y1, 0, 0, t, 0, 0);
+    list = draw_sprite(list, x1, y1, 0, 0x1B, t, 0, 0);
     list = draw_set_offsets(list, 1, 1, w - 10, h - 10);
-    return draw_sprite(list, x + 5, y5, 0, 5, v5, 0, 0);
+    return draw_sprite(list, x + 5, y + 5, 0, 5, v + 5, 0, 0);
 }
 
 /* 9-slice frame from the window sheet (pieces at 0x33,0x65). */
@@ -534,10 +530,8 @@ void *cardinfo_draw_frame(void *list, int x, int y, int w, int h)
     list = draw_sprite(list, x, y5, 0, 0x33, 0x6A, 0, 0);
     list = draw_sprite(list, x1, y5, 0, 0x49, 0x6A, 0, 0);
     list = draw_set_offsets(list, 1, 1, w - 10, h - 10);
-    return draw_sprite(list, x5, y5, 0, 0x38, 0x6A, 0, 0);
+    return draw_sprite(list, x + 5, y + 5, 0, 0x38, 0x6A, 0, 0);
 }
-
-#endif
 
 /* Tab strip: left cap, stretched middle, right cap. */
 void *cardinfo_draw_tabs(void *list, int x, int y)

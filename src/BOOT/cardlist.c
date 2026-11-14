@@ -2,7 +2,6 @@
 // @data 0x088EF468-0x088EFFF8
 // @rodata 0x088B499C-0x088B4B04
 // @asm 0x08854A68-0x08854D94
-// @asm 0x08856E08-0x08857148
 /* Card list / card panel drawing: the card picture (read through cip.c into VRAM and drawn with
    a cross-fade when the card changes), its frame from cil_0000<l>.gim, level stars, attribute
    and type icons, ATK/DEF, the description box with scroll bar and blinking arrows, and the
@@ -1273,7 +1272,8 @@ void *cardlist_draw_scrollbar(void *list, int x, int y, int h, int pos, int size
 
 /* Blinking scroll arrow: alpha from a triangle wave of `period` frames, faded out after a
    scroll stopped (t0 start, t1 stop, now current frame). */
-#ifdef NON_MATCHING /* the original keeps dead copies in the slots after branch-likely */
+/* The three exits in one `||` chain: a conditional branch to a return whose value is already in v0 turns on
+   mwcc's no-cleanup mode (dead copies after `b` in the unsigned->float conversions), see docs/matching.md. */
 void *cardlist_draw_arrow(void *list, int x, int y, int up, unsigned int period, unsigned int t0, unsigned int t1, unsigned int now)
 {
     unsigned int half = period >> 1;
@@ -1281,42 +1281,40 @@ void *cardlist_draw_arrow(void *list, int x, int y, int up, unsigned int period,
     float a;
 
     list = cardlist_sprite(list, x, y, cardlist_rects[!up + 95]);
-    if (t0 != 0 && (t1 == 0 || now <= t1 + period)) {
-        if (t1 == 0 || t1 <= now) {
-            if (t1 == 0) {
-                if (now - t0 >= half) {
-                    ph = now % period;
-                } else {
-                    ph = (now - t0) % period;
-                    if (ph >= (period - t0 % period) >> 1) {
-                        ph = now % period;
-                    }
-                }
-            } else {
-                ph = t1 % period;
-            }
-            if (ph < half) {
-                a = (float)ph / (float)half;
-            } else {
-                a = (float)(period - ph) / (float)half;
-            }
-            if (t1 != 0) {
-                a = a - (float)(now - t1) / (float)half * 2.0f;
-            }
-            if (a < 0.0f) {
-                a = 0.0f;
-            }
-            if (a > 1.0f) {
-                a = 1.0f;
-            }
-            list = dl_ambient_color(list, (unsigned int)(a * 255.0f) << 24 | 0xFFFFFF);
-            list = cardlist_sprite(list, x, y, cardlist_rects[((up != 0) ^ 1) + 0x59]);
-            list = dl_ambient_color(list, 0xFFFFFFFF);
-        }
+    if (t0 == 0 || (t1 != 0 && now > t1 + period) || (t1 != 0 && now < t1)) {
+        return list;
     }
+    if (t1 == 0) {
+        if (now - t0 >= half) {
+            ph = now % period;
+        } else {
+            ph = (now - t0) % period;
+            if (ph >= (period - t0 % period) >> 1) {
+                ph = now % period;
+            }
+        }
+    } else {
+        ph = t1 % period;
+    }
+    if (ph < half) {
+        a = (float)ph / (float)half;
+    } else {
+        a = (float)(period - ph) / (float)half;
+    }
+    if (t1 != 0) {
+        a = a - (float)(now - t1) / (float)half * 2.0f;
+    }
+    if (a < 0.0f) {
+        a = 0.0f;
+    }
+    if (a > 1.0f) {
+        a = 1.0f;
+    }
+    list = dl_ambient_color(list, (unsigned int)(a * 255.0f) << 24 | 0xFFFFFF);
+    list = cardlist_sprite(list, x, y, cardlist_rects[((up != 0) ^ 1) + 0x59]);
+    list = dl_ambient_color(list, 0xFFFFFFFF);
     return list;
 }
-#endif
 
 /* Horizontal bar (sprites flipped). */
 void *cardlist_draw_bar(void *list, int x, int y, int w, int pos, int size)
