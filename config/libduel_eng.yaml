@@ -222,8 +222,6 @@ segments:
       - [0xD664C, c, req_step]
       - [0xD8540, asm, req_step_asm_088DC4E0]
       - [0xD8AAC, c, req_step]
-      - [0xD9098, asm, req_step_asm_088DD038]
-      - [0xD9204, c, req_step]
       - [0xDAB8C, c, rules_check]
       - [0xDC020, c, effect_mod]
       - [0xDC8F0, c, effect_scan]
