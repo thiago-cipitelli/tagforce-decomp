@@ -588,3 +588,28 @@ achados). Quadros em `build/host/frames_7a/*.png` (gitignored).
   sempre 8888); `got` = 0 no `AvcDecodeStop` (o firmware pode devolver o último quadro atrasado do decodificador;
   o jogo só faria um `disp_commit` a mais); o cabeçalho de 2 KB e o offset são lidos do PSMF, mas o tamanho e a
   taxa de amostragem do áudio são fixos em 2 canais / 44,1 kHz (os 47 PMF são assim).
+
+## 10. Passo 7b: primeiro teste com teclado de verdade (2026-11-14)
+
+Só `platform/pc/` e `tools/host_link.py` mudam (`make host-check` 0 falhas, `make host-run` vivo). Achados de uma
+sessão jogada à mão (título → história → Deck Edit → começo de um duelo no Slifer Red Dorm):
+
+- **A janela num WM de tiling (Hyprland):** o WM ignora o tamanho pedido e o quadro saía num canto. `host_present`
+  ajusta o quadro ao tamanho real (`ConfigureNotify`), com a proporção 480:272 e barras pretas.
+- **"Cancel load?" no Continue:** o newlib do jogo define `fread` (`BOOT/libc_stdio.c`, com o `FILE` dele) e essa
+  definição interpõe a do glibc no executável; o `fread` do `utility.c` sobre um `FILE` do glibc lia 0 bytes e o
+  jogo acusava dado corrompido (`0x80110326`). O load usa `read()`; o `host_link.py` recusa objetos de
+  `platform/pc` que chamem `fread`/`fwrite`/`fflush`/`fgets`/`fputs`/`fseek`/`ftell`/`getc`/`putc`/`ungetc`/`vfprintf`
+  quando o BOOT os define. Com save, o cursor do título já começa em "Continue".
+- **Moldura das cartas em blocos (Deck Edit):** sprite (prim 6) invertido em exatamente um eixo é desenhado girado
+  (as coordenadas de textura dos dois cantos fora da diagonal trocam, `RotateUV` do PPSSPP). A moldura guarda as
+  bordas laterais deitadas (78×15 texels) e as desenha assim; a arte (DXT1 128×64 em três pedaços) estava certa.
+- **Nome do jogador:** com janela e sem `TAGFORCE_OSK`, o OSK fica VISIBLE e o teclado digita (texto na barra de
+  título; Enter confirma, Esc cancela). Sem janela vale o de antes (`TAGFORCE_OSK` ou "Player").
+- **Duelo travado antes do pedra-papel-tesoura:** o jogo pede `duel/cutin_da_faces/DA_boy_R10.gim` e o disco tem
+  `da_boy_R10.gim`; os sistemas de arquivos da PSP ignoram a caixa. `host_path` troca cada componente que falta
+  pela entrada do diretório que bate sem caixa. (O jogo repete a abertura para sempre: 13,5 milhões de linhas no log.)
+- **Ferramentas de teste:** `TAGFORCE_PADFILE=arquivo` (a máscara do pad, em hexa, lida do arquivo a cada leitura:
+  dirige uma rodada sem janela ao vivo, junto com `TAGFORCE_DUMP` de nome fixo); o `TAGFORCE_GE_TRACE` também
+  imprime posição e texel dos vértices (todos quando o desenho tem até 8).
+- **Falta:** as cartas no duelo saem com cores erradas e o jogo morre com SIGSEGV pouco depois do começo do duelo.
