@@ -459,12 +459,17 @@ static inline int menu_input(MenuWidget *w, PadState *pad)
     return -1;
 }
 
+static inline PadState *menu_pad(MenuWidget *w)
+{
+    if (w->pad == 0)
+        return pad_get();
+    return w->pad;
+}
+
 int menu_update(MenuWidget *w)
 {
-    PadState *pad = w->pad;
+    PadState *pad = menu_pad(w);
 
-    if (pad == 0)
-        pad = pad_get();
     switch (w->state) {
     case 2:
         menu_opened(w, 3);
