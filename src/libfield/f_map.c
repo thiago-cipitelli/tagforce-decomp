@@ -1,5 +1,4 @@
 // @range 0x08807844-0x08808214
-// @asm 0x08807844-0x08807BDC
 /* Cell map of the room: walkable cells (with the doors of the dormitory and the stage closed by
    story flags), height of a point on the ground triangles, cell <-> position, marked cells, the
    door cells leading to another room and the cells of the special hall. */
@@ -11,10 +10,10 @@ int fld_bg_id(void);
 unsigned char *fld_map_attrs(void);
 FieldStory *fld_story_get(void);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 5 palavras: o último teste (i < n_vert) sai beqz/nop para um bloco próprio "r = 0" no original; aqui beqzl com o 0 no atraso (árvore de if/else achada por busca das 2^7 formas) */
 /* 1 when the cell can be walked on: the stairs of the hostel are shut (always for flag 0, from the
    22nd for flag 1, which leaves (13, 12) open) and the doors of room 2 while ctx->x14; then the
    attribute of the cell */
+/* i >= n_vert vai por goto ao "r = 0" do m == 0 (beqz; nop para o bloco do fim no original) */
 int fld_map_walkable(int cx, int cz, int flag)
 {
     FieldMap *m = fld_map_get();
@@ -72,7 +71,9 @@ int fld_map_walkable(int cx, int cz, int flag)
                     } else {
                         i = cx + cz * m->w;
                         if (i >= 0) {
-                            r = i < m->n_vert ? a[i] : 0;
+                            if (i >= m->n_vert)
+                                goto zero;
+                            r = a[i];
                         } else {
                             r = 0;
                         }
@@ -81,11 +82,11 @@ int fld_map_walkable(int cx, int cz, int flag)
             }
         }
     } else {
+    zero:
         r = 0;
     }
     return r;
 }
-#endif
 
 Vec3 *fld_map_cells(void);
 int fld_bg_id(void);
