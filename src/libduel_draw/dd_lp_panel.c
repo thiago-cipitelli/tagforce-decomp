@@ -58,10 +58,10 @@ DdObj *dd_task_add(DdObj *desc);
 void dd_task_remove(DdObj *o);
 void lpc_digits_set(void *digits, int value);
 void lpc_draw(DdObj *o, void *data);
-void lpc_update(DdObj *o, void *data);
+void lpc_update(DD_OBJ_DT DdObj *o, void *data);
 void lpc_free(DdObj *o, void *data);
 void lps_draw(DdObj *o, void *data);
-void lps_update(DdObj *o, void *data);
+void lps_update(DD_OBJ_DT DdObj *o, void *data);
 void lps_free(DdObj *o, void *data);
 
 typedef struct DdLpMgr {               /* 0x08C5B294, 0x30 */

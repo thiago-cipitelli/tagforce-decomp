@@ -71,7 +71,7 @@ void dd_mark_reset(void);
 void dd_mark_draw(DdObj *o, DdMarker *m);
 void dd_mark_free(DdObj *o, DdMarker *m);
 void dd_mark_idle(void);
-void dd_mark_glide(DdObj *o, DdMarker *m);
+void dd_mark_glide(DD_OBJ_DT DdObj *o, DdMarker *m);
 void dd_mark_point(short loc, int unused);
 void dd_mark_aim(DdLoc loc, int unused, int hl);
 int dd_arrow_ok(DdLoc loc, int hl);
@@ -79,7 +79,7 @@ void dd_arrow_new(FxVec3 *from, FxVec3 *to, unsigned int color);
 void dd_arrow_kill(void);
 void dd_arrow_free(DdObj *o, DdArrow *a);
 void dd_arrow_draw(DdObj *o, DdArrow *a);
-void dd_arrow_update(DdObj *o, DdArrow *a);
+void dd_arrow_update(DD_OBJ_DT DdObj *o, DdArrow *a);
 void *dd_billboard(void *list, FxVec3 *pos, FxVtx *v);
 void dd_hermite(float t, FxVec3 *out, FxVec3 *p0, FxVec3 *m0, FxVec3 *p1, FxVec3 *m1);
 
@@ -272,7 +272,7 @@ void dd_mark_idle(void)
     dd_mark_point(cur[0], 0);
 }
 
-void dd_mark_glide(DdObj *o, DdMarker *m)
+void dd_mark_glide(DD_OBJ_DT DdObj *o, DdMarker *m)
 {
     if (o->time >= m->dur) {
         m->pos = m->dest;
@@ -459,7 +459,7 @@ void dd_arrow_draw(DdObj *o, DdArrow *a)
 
 /* The wave runs 3 particles a frame from the attacker; lit particles fade by 10 a frame and the
    object ends once all are dark after the arrow was released. */
-void dd_arrow_update(DdObj *o, DdArrow *a)
+void dd_arrow_update(DD_OBJ_DT DdObj *o, DdArrow *a)
 {
     int all_dark = 1;
     int i;

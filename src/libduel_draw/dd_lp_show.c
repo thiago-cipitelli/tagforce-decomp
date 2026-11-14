@@ -191,7 +191,7 @@ void *lps_back_2d(void *dl, DdLpShow *s)
     return draw_sprite(dl, s->sx, s->sy, 0, 0, 122, 0, 0);
 }
 
-void lps_update(void *o, DdLpShow *s)
+void lps_update(DD_OBJ_DT void *o, DdLpShow *s)
 {
     if (++s->t >= 45)
         s->active = 0;
