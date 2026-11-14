@@ -330,9 +330,9 @@ void menu_draw(void **dl, MenuWidget *w)
    helpers inline do mesmo tipo. */
 /* Advances the widget one frame. Returns -3 when idle, -2 when cancelled, the selected list index
    or button when accepted, -1 otherwise. */
-static inline int menu_bit_on(unsigned char bits, int k)
+static inline int menu_bit_off(unsigned char bits, int k)
 {
-    return (bits & (1 << k)) != 0;
+    return !((bits & (1 << k)) ? 1 : 0);
 }
 
 static inline int menu_opened(MenuWidget *w, int st)
@@ -343,11 +343,108 @@ static inline int menu_opened(MenuWidget *w, int st)
     return 1;
 }
 
+static inline int menu_input(MenuWidget *w, PadState *pad)
+{
+    unsigned int pressed;
+    unsigned int accept;
+    unsigned char bits, b, nb;
+    int i, k, n, style;
+
+    pressed = pad->b.trig;
+    accept = region_pick_value(0);
+    if (pressed & region_pick_value(1)) {
+        if (!w->cancel_blocked) {
+            se_play(0x6214);
+            w->cancelled = 1;
+            if (w->cancel_resets) {
+                if (w->style != 0) {
+                    if (w->rows > 0 && w->initial >= w->scroll + w->rows) {
+                        w->cursor = w->rows - 1;
+                        w->scroll = w->initial - w->cursor;
+                    } else {
+                        w->cursor = w->initial;
+                    }
+                    w->state = 4;
+                }
+                if (w->buttons != 0) {
+                    w->button = w->initial;
+                    w->state = 4;
+                }
+            } else if (w->keep_open) {
+                return -2;
+            } else {
+                menu_finish(w);
+            }
+        } else {
+            se_play(0x6215);
+        }
+    } else if (pressed & accept) {
+        if (w->accept_blocked)
+            return -1;
+        if (w->style != 0 && (w->disabled >> (w->scroll + w->cursor)) & 1) {
+            se_play(0x6215);
+        } else {
+            se_play(0x6213);
+            w->accepted = 1;
+            w->state = 4;
+        }
+    } else if ((style = w->style) != 0) {
+        if (style & 1) {
+            if (pad->b.rep & 0x80) {
+                menu_cursor_prev(w);
+                se_play(0x6212);
+            }
+            if (pad->b.rep & 0x20) {
+                menu_cursor_next(w);
+                se_play(0x6212);
+            }
+        } else {
+            if (pad->b.rep & 0x10) {
+                menu_cursor_prev(w);
+                se_play(0x6212);
+            }
+            if (pad->b.rep & 0x40) {
+                menu_cursor_next(w);
+                se_play(0x6212);
+            }
+        }
+    } else if ((n = w->buttons) != 0) {
+        bits = menu_button_bits[n];
+        b = w->button;
+        nb = b;
+        if (pad->b.rep & 0x80) {
+            for (i = 1; i < 8; i++) {
+                if (menu_bit_off(bits, (b + 8 - i) & 7))
+                    continue;
+                nb = (b + 8 - i) & 7;
+                break;
+            }
+            if (b != nb) {
+                se_play(0x6212);
+                w->button = nb;
+            }
+        }
+        if (pad->b.rep & 0x20) {
+            for (i = 1, k = nb + 1; i < 8; i++, k++) {
+                if (menu_bit_off(bits, k & 7))
+                    continue;
+                nb = (nb + i) & 7;
+                break;
+            }
+            if (w->button != nb) {
+                se_play(0x6212);
+                w->button = nb;
+            }
+        }
+    }
+    return -1;
+}
+
 int menu_update(MenuWidget *w)
 {
     PadState *pad = w->pad;
     unsigned int pressed;
-    unsigned short accept;
+    unsigned int accept;
     unsigned char bits, b, nb;
     int i, k, n, style;
 
@@ -403,102 +500,7 @@ int menu_update(MenuWidget *w)
     default:
         return -3;
     }
-    pressed = pad->b.trig;
-    accept = region_pick_value(0);
-    if (pressed & region_pick_value(1)) {
-        if (w->cancel_blocked) {
-            se_play(0x6215);
-            return -1;
-        }
-        se_play(0x6214);
-        w->cancelled = 1;
-        if (w->cancel_resets) {
-            if (w->style != 0) {
-                if (w->rows > 0 && w->initial >= w->scroll + w->rows) {
-                    w->cursor = w->rows - 1;
-                    w->scroll = w->initial - w->cursor;
-                } else {
-                    w->cursor = w->initial;
-                }
-                w->state = 4;
-            }
-            if (w->buttons != 0) {
-                w->button = w->initial;
-                w->state = 4;
-            }
-            return -1;
-        }
-        if (w->keep_open)
-            return -2;
-        menu_finish(w);
-        return -1;
-    }
-    if (pressed & accept) {
-        if (w->accept_blocked)
-            return -1;
-        if (w->style != 0 && (w->disabled >> (w->scroll + w->cursor)) & 1) {
-            se_play(0x6215);
-            return -1;
-        }
-        se_play(0x6213);
-        w->accepted = 1;
-        w->state = 4;
-        return -1;
-    }
-    style = w->style;
-    if (style != 0) {
-        if (style & 1) {
-            if (pad->b.rep & 0x80) {
-                menu_cursor_prev(w);
-                se_play(0x6212);
-            }
-            if (pad->b.rep & 0x20) {
-                menu_cursor_next(w);
-                se_play(0x6212);
-            }
-        } else {
-            if (pad->b.rep & 0x10) {
-                menu_cursor_prev(w);
-                se_play(0x6212);
-            }
-            if (pad->b.rep & 0x40) {
-                menu_cursor_next(w);
-                se_play(0x6212);
-            }
-        }
-        return -1;
-    }
-    n = w->buttons;
-    if (n == 0)
-        return -1;
-    bits = menu_button_bits[n];
-    b = w->button;
-    nb = b;
-    if (pad->b.rep & 0x80) {
-        for (i = 1; i < 8; i++) {
-            if (menu_bit_on(bits, (b + 8 - i) & 7)) {
-                nb = (b + 8 - i) & 7;
-                break;
-            }
-        }
-        if (b != nb) {
-            se_play(0x6212);
-            w->button = nb;
-        }
-    }
-    if (pad->b.rep & 0x20) {
-        for (i = 1, k = nb + 1; i < 8; i++, k++) {
-            if (menu_bit_on(bits, k & 7)) {
-                nb = (nb + i) & 7;
-                break;
-            }
-        }
-        if (w->button != nb) {
-            se_play(0x6212);
-            w->button = nb;
-        }
-    }
-    return -1;
+    return menu_input(w, pad);
 }
 #endif
 
