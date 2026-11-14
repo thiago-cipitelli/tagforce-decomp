@@ -1,6 +1,5 @@
 // @range 0x088E2964-0x088E5800
 // @data 0x08911D40-0x08911D88
-// @asm 0x088E3920-0x088E403C
 /* Which effect entries still apply: an entry placed by a card counts while the card stays on the
    field and is not negated; bit count; card lists by zone kind. */
 #include "duel.h"
@@ -396,12 +395,12 @@ int duel_act_e30c0(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* the original keeps a dead copy of the first instruction of each case body reached by beql */
 /* What activation a waits for before it resolves (0: nothing, 1, 2, 4, 6: kinds of choice). */
+/* O `return A && B;` do case 0x162B é o gatilho do modo sem limpeza desta função (os dois testes desviam direto para
+   o epílogo com o 0 já em v0): com ele aparecem as cópias mortas da 1ª instrução de cada case alcançado por beql. */
 int duel_act_e3920(DuelAct *a)
 {
     int i;
-    int z;
 
     switch (a->id) {
     case 0x12FE:
@@ -541,14 +540,7 @@ int duel_act_e3920(DuelAct *a)
     case 0x14DE:
         return a->w[0] == 1;
     case 0x162B:
-        z = a[-1].zone;
-        if (z < 5) {
-            return 0;
-        }
-        if (z > 10) {
-            return 0;
-        }
-        return 1;
+        return a[-1].zone >= 5 && a[-1].zone <= 10;
     case 0x1A28:
         if (a->b3_4 != 1) {
             return 0;
@@ -565,7 +557,6 @@ int duel_act_e3920(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 /* Number of choices activation a asks for. */
 int duel_act_e403c(DuelAct *a)
