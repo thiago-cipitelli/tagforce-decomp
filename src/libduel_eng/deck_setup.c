@@ -137,14 +137,14 @@ void duel_deck_build_uids(unsigned int p, DuelDecks *d)
     duel.players[p & 1].unk4 = k;
 }
 
-#ifdef NON_MATCHING /* 2026-11-05: contagens lidas na ordem hand, d, c e owner = uid & 1, uid_hi = uid >> 1 como no original; falta o ponteiro u (o original soma sp+24 e +6 em dois passos) e a alocação dos temporários */
+#ifdef NON_MATCHING /* 126 palavras, 1 linha de estrutura (rodada 28): o ponteiro u = (unsigned int)&t + 6 reproduz o sp+24 e +6 em dois passos; falta o endereço de duel.players[q].n_hand reaproveitado dentro do 1º laço de restauração (o 219 refaz t3+12 no pré-cabeçalho) e com ele a cor a1/v1 de s e do endereço */
 /* Swap the hand, deck and zone C of player p with the ones saved in the block. */
 void duel_piles_swap(unsigned int p, DuelDecks *d)
 {
     unsigned int q = p & 1;
     DuelPileSave t;
     DuelPileSave *s;
-    unsigned short *u = t.uid;
+    unsigned short *u = (unsigned short *)((unsigned int)&t + 6); /* sp+24 e +6 em dois passos, como o original */
     unsigned int i;
 
     t.n_hand = duel.players[q].n_hand;

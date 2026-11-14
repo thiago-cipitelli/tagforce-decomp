@@ -343,7 +343,7 @@ int duel_08807B38(int id, int a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 162 palavras (rodada 28; estrutura igual a menos do agendamento de zona*5 no caso 0x1657): o byte
+#ifdef NON_MATCHING /* 154 palavras (rodada 28; estrutura igual a menos do agendamento de zona*5 no caso 0x1657): o byte
    de a->player/a->zone lido num local w (idioma da rodada 24) reproduz o reaproveitamento; falta a cor de w/pl/opp
    (a2/a1/v1 no original) e as trocas s0/s1 (a/p), s3/s4 (n/z) e s1/s2 (i/base) que ordem e tipo das declarações
    não mexem. */
@@ -353,11 +353,11 @@ int duel_08807C7C(DuelAct *a)
     unsigned int w = ((unsigned char *)a)[2];
     unsigned int pl = w & 1;
     unsigned int p = pl ^ a->opp;
-    int atk;
-    int n;
-    int z;
-    unsigned int i;
+    int i;
     int v;
+    int atk;
+    int z;
+    int n;
 
     duel_w_08913CF4 = p;
     switch (a->id) {
