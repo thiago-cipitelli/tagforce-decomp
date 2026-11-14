@@ -148,7 +148,9 @@ void gim_check(Gim *g)
     gim_walk(root, g, (GimBlock *)((char *)root + g->root.size));
 }
 
-#ifdef NON_MATCHING /* idêntico a menos da cópia morta (lw v0,12(s0)) do destino do case 0xFF depois do b: 1 palavra a menos, o resto deslocado (não-corrigível) */
+#ifdef NON_MATCHING /* idêntico a menos da cópia morta (lw v0,12(s0)) do destino do case 0xFF depois do b: é o modo
+   sem limpeza (um gatilho artificial `if (r == 0 || end == 0) return r;` com r em v0 a repõe), sem gatilho sem código
+   conhecido. `#pragma opt_common_subs off` reproduz as releituras de child/size sem o volatile. */
 /* Visits every block; the file info block (0xFF) holds three aligned strings. */
 int gim_walk(GimBlock *start, Gim *g, GimBlock *end)
 {

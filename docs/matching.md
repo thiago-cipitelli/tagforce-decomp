@@ -2914,3 +2914,26 @@ não mudaram (pragmas `opt_lifetimes`/`opt_propagation`/`opt_common_subs`/`opt_d
 - Scripts em `build/tmp/r29D/`: `tv.py` (variantes de uma função, `//----` separa), `gen.py` (gera variantes por
   substituição `velho>>>novo`, `@@` separa, `PRE>>>` insere antes da função), `ren.py` (troca de contadores),
   `dmove.py` (move 1-2 declarações por todas as posições), `sbs.sh`/`nd.sh` (diff lado a lado e normalizado).
+
+## Rodada 30 (`bB`): o gatilho do modo sem limpeza em funções que devolvem valor
+
+O modo sem limpeza da rodada 19 (cópias mortas depois de `b`, `b` sobre blocos mortos) **também liga em funções
+que devolvem valor**: o gatilho é um desvio condicional para um `return` **vazio**, isto é, cujo valor já está em
+`v0` (medido com o mwcc 219 num arquivo de teste e conferido nas funções já batendo do BOOT):
+- `case K: return K;` comparado logo depois do `li v0,K` do despacho (`modmgr_update`: `case 1: return 1;`;
+  `efs_cmd_ref`: `case 1: return 4;` depois do `li v0,4`);
+  o mwcc compara os `case` na ordem inversa do fonte, então o `case` do retorno tem de vir ANTES no fonte;
+- `if (A || B) return r;`, `if (r == 0) {...} else return r;` e `switch (r) { case 0: return r; }` com `r` em `v0`
+  (resultado de chamada); `if (c) {...} return size;` com `size` calculado em `v0` (`ehf_cmd_trail`, `case 2`);
+- não ligam: `return -1`/`return 0` com `||` (o `li` vai para o bloco), `if (r < 0) return r;` simples, código morto
+  (`if (0)`, `int k = 0; if (k)`, depois de `for (;;)`), `if (...) ; else`, atribuição vazia que não é `return`,
+  e um retorno redundante (`if (r == 0) return r; return r;` some antes).
+Sinal no asm: um desvio condicional direto para o epílogo (`beqz v0,fim` / `beql ...,fim+4` com `lw ra`).
+`efs_run` e `gim_walk` estão no modo sem nenhum desvio desses no original: com um gatilho artificial (`case 0:
+return 1;` em `efs_run`, `if (r == 0 || end == 0) return r;` em `gim_walk`) o resto bate palavra por palavra, mas
+o gatilho custa 2 palavras. Há então outro gatilho, sem código, ainda desconhecido; testados sem efeito: helpers
+inline (por `case`, do corpo do `case 0xFF`, da condição do laço, com `return` em cada `case`), `goto`/`break` para
+um `return` comum, `default: break;`, `do {} while (0)`, `switch` vazio, rótulos, pragmas (`opt_*`, `peephole`,
+`scheduling`, `optimization_level`), o build 121. `#pragma opt_common_subs off` explica as releituras de
+`child`/`size` de `gim_walk` sem o `volatile`. `efs_run`: o `default` lê `id = cmd->h.id & 0xFFFFFF` antes do 1º
+teste (`lw v1,0(s2)` antes de `lw v0,36(sp)`), 26 -> 17 palavras alinhadas, todas do modo.

@@ -686,7 +686,10 @@ int efs_set_args(void **dst, char *fmt, int *src)
     return n;
 }
 
-#ifdef NON_MATCHING /* the original keeps the blocks emptied by branch-likely filling (case entries and loop continuations) */
+#ifdef NON_MATCHING /* idêntico ao original a menos de 17 palavras de código morto: o original está no modo sem
+   limpeza depois da conversão para likely (cópias mortas das entradas dos case, dos `addu` e dos `lw s0,4(s0); b; nop`
+   de continuação dos laços, `b` sobre o `else` morto). Com um gatilho artificial (`case 0: return 1;` antes do
+   `case 1`, retorno vazio porque v0 já vale 1) o resto bate palavra por palavra; falta um gatilho sem código. */
 /* Runs a command list with its memory: phase 1 returns the memory size, 2 lays it out, 4 frees,
    5 draws (handler flags: 1 skip children, 2 pop the matrix, 8 pop the projection too, 0x80000000
    call again with 6 after the children); other phases are messages for node->msg. */
@@ -796,8 +799,9 @@ unsigned int efs_run(EfsMem *mem, EfsNode *node, EfsCmd *cmd, int phase)
         for (;;) {
             EfsNode n2 = *node;
             unsigned int r = 0;
+            unsigned int id = cmd->h.id & 0xFFFFFF;
 
-            if (n2.msg == 0 || n2.msg == (cmd->h.id & 0xFFFFFF) || (cmd->h.id & 0xFFFFFF) - 1 < 2) {
+            if (n2.msg == 0 || n2.msg == id || id - 1 < 2) {
                 r = cmd->fn(m->data, (EhfNode *)&n2, cmd, phase);
             }
             if (cmd->child != 0 && !(r & 1)) {
