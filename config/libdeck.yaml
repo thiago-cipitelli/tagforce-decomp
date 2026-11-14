@@ -44,8 +44,6 @@ segments:
       - [0xE570, c, dk_fmenu]
       - [0xF2C8, c, dk_action]
       - [0x112E0, c, dk_parts]
-      - [0x11454, asm, dk_parts_asm_088153F4]
-      - [0x115FC, c, dk_parts]
       - [0x13D78, c, dk_filter]
       - [0x14058, asm, dk_filter_asm_08817FF8]
       - [0x141BC, c, dk_filter]
