@@ -407,3 +407,47 @@ threads ainda varia), `TAGFORCE_GE_TRACE=<quadro>` (uma linha por draw daquele q
   reproduzido; se voltar, `TAGFORCE_RTC=1` + gdb com `SIGINT`.
 - Com o Start no título e × o jogo abre o menu e entra na checagem do save (a janela de mensagem com o texto
   empilhado, à espera do `sceUtilitySavedata*`): o caminho do modo história depende de fonte e save.
+
+## 7. Passo 5b: texto, save e o começo do modo história (feito em 2026-11-14)
+
+Duas peças do firmware que o caminho título → história exigia, as duas só em `platform/pc/` (**nada em `src/` ou
+`include/` muda**; `make host-check` 0 falhas, `make host-lto` 4 severos, os mesmos; `make host-run` vivo).
+
+**O que aparece (quadros despejados e conferidos):** o menu do título com "New Game"/"Continue" em texto; a tela
+"ENTER NAME" com "Press the × button to change your name." e o pedido de confirmação ("Yes"/"No"); o MAIN MENU
+(Story Mode, Free Duel, Deck Menu, ..., Save Data) e o submenu da história ("Start from Part 1"); "1st May (Mon.)
+Transference first day."; o mapa do campo (`libfield`, `bg_11_01.ehp`, sprite do jogador) com o HUD ("Chancellor's
+Office", "1st May Monday", relógio, "7:30 AM", "0 DP", "92 Days Until Tournament"); o primeiro diálogo da história
+(`libstory`, `st01_t01_e.ehp`) com o busto do diretor e a janela "You must be [nome]. Welcome to Duel Academy.";
+"Save Data" no menu principal grava `DATA0` (64 KB) e "Continue" no título encontra o save. Quadros em
+`build/host/frames_5b/*.png` (gitignored).
+
+| Arquivo | O quê |
+|---|---|
+| `platform/pc/font.c` | `sceFont*` sobre a FreeType de 32 bits do sistema (`/usr/lib32/libfreetype.so`, headers em `/usr/include/freetype2`) com um TTF livre: `TAGFORCE_TTF` ou, por ordem, Liberation Sans e DejaVu Sans; tamanho `TAGFORCE_TTF_PX` (padrão 18 px). `NewLib`/`Open` devolvem handles fixos; `GetFontInfo` dá as métricas do tamanho (26.6: ascender, descender, altura = ascender + descender, avanço máximo; bpp 4); `GetCharInfo` dá `bitmap_w/h`, `bitmap_left/top` (do `horiBearing`), `advance_h` (26.6); `GetCharGlyphImage` escreve a cobertura em 4 bpp (formato 0, nibble baixo = x par; formato 1 invertido; 2 = 8 bpp) no topo-esquerdo `(x64, y64) >> 6` do buffer, recortado em `buf_w` × `buf_h`; glifo ausente usa o código de `SetAltCharacterCode` (0x25A1). `TAGFORCE_FONTDIR` (os `.pgf` da PSP) é só um gancho: loga e cai no TTF |
+| `platform/pc/utility.c` | `sceUtilitySavedata*`, `sceUtilityMsgDialog*` e `sceUtilityOsk*` sem interface: `InitStart` faz o trabalho na hora e deixa o resultado no cabeçalho comum (+0x1C); `GetStatus` devolve 1, 2, 3 (o jogo chama `ShutdownStart`), 4 e 0; `Update` não faz nada. Save em `TAGFORCE_SAVE/PSP/SAVEDATA/<gameName><saveName>/<fileName>` (`ULUS101360001/DATA0`), os bytes exatamente como o jogo passa (sem cifra, sem PARAM.SFO nem ícones). Modos: AUTOLOAD(0)/LOAD(2) → lê (`0x80110307` sem arquivo); AUTOSAVE(1)/SAVE(3) → grava; DELETE(7)/AUTODELETE(9); SIZES(8) → espaço livre fixo e o uso deste save em `utilityData`; GETSIZE(22) → `0x80110327` (`RW_NO_DATA`) sem arquivo, `neededKB` 0. MsgDialog loga o texto ou o código de erro e responde YES/OK; OSK devolve o texto de entrada (`TAGFORCE_OSK=texto` "digita" outro) |
+| `platform/pc/io.c` | `host_save_dir`/`host_make_parents` exportados para o `utility.c` |
+| `tools/host_link.py` | `-I/usr/include/freetype2`, `-lfreetype` |
+| `tools/ppm_sheet.py` | o cabeçalho do PPM é lido por regex: o `split()` comia o primeiro byte de pixel quando ele valia 9, 10, 13 ou 32 e o quadro inteiro saía com os canais rodados (parecia um bug de cores intermitente do renderizador) |
+
+### 7.1 Achados
+
+- **Como o jogo usa a `sceFont` (`BOOT/font.c`):** abre a fonte 0 da biblioteca (na PSP, `flash0:/font/ltn0.pgf`;
+  com a região US `font2 = font`, os glifos de meia largura não usam outra fonte), pede o estilo 20×20 e lê as
+  métricas uma vez: `line_h = max_glyph_h`, `baseline = max_ascender + 1 px`. Cada glifo é renderizado num buffer de
+  32×32 a 4 bpp (`bytes_per_line` 16) em `(8 + bitmap_left, 8 + baseline − bitmap_top)` px e copiado para um
+  atlas de 16×16 células (textura T4 swizzled de 512 px de largura: uma célula = um bloco de 16 bytes × 4 blocos de
+  8 linhas); o quad do glifo é a região 28×28 a partir de (1, 1) da célula, desenhada em `(pen − 7, topo − 7)` px e
+  escalada por `size/20`. Logo `(x64, y64)` é o topo-esquerdo do bitmap do glifo e cada glifo tem de caber em 28×28
+  com a linha de base em `ascender + 1`: 18 px de Liberation Sans (ascender 17, descender 4, linha 21) cabe; o
+  tamanho real dos `.pgf` da PSP não foi conferido (não estão no disco).
+- **`utilityData` do modo SIZES:** o jogo reserva 0x1C bytes e copia 8 bytes de `+0x14` como o *texto* que imprime
+  nas mensagens "precisa de %s" (`msd_code`); o SDK público põe um `usedKB32` inteiro em `+0x14` e `usedString32`
+  em `+0x18` (0x20 bytes). O `utility.c` segue o jogo e escreve a string "N KB" em `+0x14`.
+- **Resultado 2 do `sceUtilitySavedata`:** `msd.c` trata `result == 2` como "repetir" (`abort_status` no lugar);
+  nunca é devolvido aqui.
+- **Fluxo roteirizado** (`TAGFORCE_RTC=1`; quadro:máscara): `400:8` Start, `520:4000` × em New Game, `700:8`
+  Start na tela do nome, `780:4000` confirma, `900:4000` Story Mode, `1000:4000` Start from Part 1 → mapa em ~1100,
+  diálogo em ~1200. Save: `900:10` (Up, vai a Save Data), `980:4000`. Continue: `480:40` (Down), `560:4000`.
+- GE: um aviso novo no campo, `blend with two different fixed colors` (fator fixo diferente para fonte e destino;
+  aproximado), além do DXT já implementado.
