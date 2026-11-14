@@ -4,8 +4,8 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-11-13, após a rodada 28 (reteste #2 do skip, 6 agentes Fable; ByteMatch): 90,7% do
-código batendo, 97,3% fuzzy, 10583/11039 funções (libduel_eng 92,0%/99,8%, libduel_draw 89,3%/98,4%). **Fila vazia**: todo
+Estado em 2026-11-14, após a rodada 29 (entradas do skip com até 30 palavras, 5 agentes; ByteMatch): 91,2% do
+código batendo, 97,3% fuzzy, 10598/11039 funções (libduel_eng 92,0%/99,9%, libduel_draw 91,3%/98,4%). **Fila vazia**: todo
 `@asm` restante está em `docs/matching_skip.tsv` com o motivo (toda função tem
 C que compila), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
