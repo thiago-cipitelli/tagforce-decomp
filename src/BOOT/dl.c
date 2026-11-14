@@ -986,7 +986,8 @@ unsigned int *dl_front_face(unsigned int *list, int cw)
     return dl_push(list, cmd, 1);
 }
 
-#ifdef NON_MATCHING /* the original builds the level 0 words first and moves them to level `mip`; scheduling differs */
+#ifdef NON_MATCHING /* 23 palavras (eram 29; rodada 29: ordem dos stores achada nas 630 ordens possíveis): o original monta as
+   palavras do nível 0 e depois as move para o nível `mip`; o resto é agendamento e numeração de registradores */
 /* Texture image of mip level `mip`: address, buffer width, log2 of the size, TFLUSH. */
 unsigned int *dl_tex_image(unsigned int *list, int mip, int w, int h, int tbw, void *addr)
 {
@@ -1006,11 +1007,11 @@ unsigned int *dl_tex_image(unsigned int *list, int mip, int w, int h, int tbw, v
     }
     cmd[0] = (unsigned int)addr & 0xFFFFFF | 0xA0000000;
     cmd[1] = ((unsigned int)addr >> 24 & 0xFF) << 16 | 0xA8000000 | tbw;
-    cmd[2] = lh << 8 | 0xB8000000 | lw;
     cmd[3] = 0xCB000000;
+    cmd[2] = lh << 8 | 0xB8000000 | lw;
+    cmd[2] = cmd[2] & 0xFFFFFF | (mip + 0xB8) << 24;
     cmd[0] = cmd[0] & 0xFFFFFF | (mip + 0xA0) << 24;
     cmd[1] = cmd[1] & 0xFFFFFF | (mip + 0xA8) << 24;
-    cmd[2] = cmd[2] & 0xFFFFFF | (mip + 0xB8) << 24;
     return dl_push(list, cmd, 4);
 }
 #endif

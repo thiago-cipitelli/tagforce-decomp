@@ -2792,3 +2792,32 @@ Bateram `tms_draw_prims` (7 -> 0), `scene_reset_to` (27 -> 0) e `snd_obj_3d` (27
   repõem os 68 bytes de cópias mortas), `font_glyph_cache` (K&R com `unsigned int code` conflita com o protótipo
   de `include/font.h`; só mudando o header), e os grandes `ehf_cmd_keys`, `menu_layout`, `draw_sphere_visible`,
   `ehf_draw_shape`, `cardinfo_draw` (150 ordens x tipos cada, sem ganho).
+
+## Rodada 29 (`r29B`): reteste das entradas do skip do BOOT com até 30 palavras
+
+Bateram `extdata_verify` (17 -> 0) e `ehf_cmd_matrix_slot` (2 -> 0); `dl_tex_image` 29 -> 23. Varredura de
+`opt_lifetimes`, `opt_propagation`, `opt_strength_reduction`, `opt_loop_invariants`, `opt_common_subs`,
+`opt_dead_assignments` e `opt_unroll_loops` (todas `off`) em todas as 19 entradas: só `opt_unroll_loops` rendeu.
+- **`#pragma opt_unroll_loops off` por função** (`extdata_verify`): o rascunho usava `do/while` guardado por
+  `if (n != 0)` porque o `for` natural era desenrolado pelo mwcc e o original não desenrola o laço do 3º checksum
+  (`sum += *p++ >> (k & 3)`). Com a pragma (sob `#ifdef __MWERKS__`, `push`/`pop` em volta da função) os três
+  laços voltam a ser `for (k = 0; (unsigned int)k < hdr - 2; k++)` e a soma/índice trocados somem: 17 -> 8.
+  Sinal no asm: laço com contador e teste `sltu` que o mwcc, sem a pragma, desdobraria em 4 cópias do corpo.
+- **Ponteiro próprio por laço** (`extdata_verify`, 8 -> 0): `q` para o 2º checksum (declarado primeiro) troca
+  o `$t` do ponteiro e do contador; reaproveitar `p` dava `t1/t2` invertidos. Mesma família da rodada 26
+  (ponteiro antes do contador), agora com `$t`.
+- **Parâmetro `void *` com cópia tipada depois das outras declarações** (`ehf_cmd_matrix_slot`): os outros
+  handlers EHF recebem `void *ctx`; com `int argc = cmd->argc; int *a = cmd->a.i; EhfMtxState *st = ctx;` o
+  `move s0,a0` vai para o atraso do 1º `beq` e o `addiu` de `a` sobe antes dele, como no original. É a cópia de
+  parâmetro com mudança de tipo da rodada 28 (`duel_wfmt_s/d`) aplicada ao 1º parâmetro: procure-a quando o
+  `move sN,aK` de um parâmetro sai no lugar errado em relação ao 1º desvio.
+- Sem forma (testado nesta rodada): `snd_group_cmd` (operandos do `bne`: 11 formas do teste, cópias de
+  parâmetro, helper inline), `font_layout_end` (n * 32 em `v0`: 10 formas do endereço), `dl_enable` (os dois
+  `addiu -1`: 8 formas), `snd_group_release_all` (`free`/`i` em `s0/s1`: contador no parâmetro `which`, helper
+  inline do laço, cópias de `free` com tipo trocado), `font_word_width` (`w`/`c`: as 49 posições das duas
+  declarações e os tipos de `c` não mexem), `cardinfo_draw_frame` (90 combinações de locais x expressões),
+  `cardinfo_draw_window` (o `x + 5` da última chamada é sempre CSE de `x5`, inclusive com `5U`, `5 + x`, `x - -5`
+  e `x5` reaproveitado para `v + 5`: o mwcc separa as teias), `cardlist_draw_at`, `snd_curve_volume`
+  (`volatile` em `far`/`near`/`vol_far`, retornos antecipados), `movie_main_loop` (helpers com `return` e
+  `goto` para o `return r` comum), `ehf_ptcl_cone` (`void *` com cópia tipada em `out`/`c`), `dl_clear`
+  (`opt_unroll_loops off` desfaz o laço de zeramento), `dl_tex_image` (as 630 ordens dos 7 stores: melhor 23).
