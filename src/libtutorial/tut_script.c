@@ -1114,11 +1114,13 @@ void tut_field_reset(int file, int turn)
 
 /* the leading face steps (0x67 command 0x17, character * 100) load the faces before the duel */
 #ifdef NON_MATCHING
-/* 9 palavras: com done unsigned char e i declarado antes os $s batem; falta o agendamento: o original
-   põe o addiu de &tutbox.faces antes dos dois move e, no fim do laço, carrega tut_pc em $a0 antes do
-   sltu/xori de !done (aqui o sltu sobe). for/while/do, ++i, ponteiro andante e tipos de done testados */
+/* 6 palavras: o ponteiro b = &tutbox declarado primeiro dá o lui/addiu antes dos dois move (ordem de
+   criação); falta o fim do laço: o original carrega tut_pc em $a0 e só depois faz o sltu/xori de !done em
+   $v1 (aqui o sltu sobe para $a0). for/while/do, ++i, helper inline para o tut_pc++, volatile e tipos de
+   done testados (rodadas 25, 28) */
 void tut_script_preload_faces(void)
 {
+    TutBox *const b = &tutbox;
     int i;
     unsigned char done;
     TutStep *st;
@@ -1132,8 +1134,8 @@ void tut_script_preload_faces(void)
         if (st->a != 0x17)
             return;
         c = st->b / 100;
-        pf = &tutbox.faces[i].face;
-        tutbox.faces[i].chara = c;
+        pf = &b->faces[i].face;
+        b->faces[i].chara = c;
         *pf = tut_face_load(tut_heap_get(), c);
         if (tut_face_ready(*pf))
             sys_frame_wait();

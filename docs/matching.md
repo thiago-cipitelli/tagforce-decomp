@@ -2566,3 +2566,46 @@ Bateram `snd_output`, `snd_bank_open_async`, `snd_obj_alloc`, `gfx_save_bmp` e `
   (`dd_cursor_cycle`) tem o laço dentro de um `case` alcançado pela tabela de saltos.
 - `debug_menu_draw`/`debug_menu_update` (fuzzy 0 no relatório): existem, mas não têm C nenhum (só `@asm`, menu de
   depuração inalcançável), então o asm_try não acha a função no objeto.
+## Rodada 28 (`r28F`): reteste #2 do `matching_skip` de libfield, libstory e libtutorial
+
+Bateram `pda_draw_tabs` (4 -> 0) e `fld_scene_update` (379 -> 0, promovida com `@rodata 0x08838878-0x088388F0`
+das duas tabelas de saltos); `tut_script_preload_faces` 9 -> 6. As duas técnicas da rodada 27 (pragma e helper com
+`return` por saída) foram tentadas em todas as entradas; só o helper rendeu, numa variante nova:
+- **Helper inline que devolve o valor RECEBIDO no caminho "mantém"** (`pda_draw_tabs`): o original faz `bne x,1,L;
+  nop; b M+4; li v0,1 (cópia do alvo); L: li a0,1` (teste sem inversão que pula um `b`) para `if (leaving) { if
+  ((wait >> 1 & 1) != 1) hl = 1; } else hl = 1;`. Nenhuma forma de `if`/`||`/`switch` dá isso numa função que
+  devolve valor; dá `static inline int pda_tab_hl(FieldPda *p, int hl) { if (p->leaving && (p->wait >> 1 & 1) ==
+  1) return hl; return 1; }` chamado como `hl = pda_tab_hl(field_pda, hl);`. O `return hl` (caminho vazio) vira o
+  `b` para o fim do trecho inlinado e o `&&` mantém o 1º teste em likely e o 2º sem inversão. O mesmo helper com
+  `return 0` no lugar de `return hl` dá 7-10 palavras (o `move a0,zero` sobra).
+- **`switch` com dois `case` vazios no lugar de `if (r != 0 && r != -1) f(r);`** (`fld_scene_update`): o original
+  deixa `move a0,v0` antes do `jal` com `nop` no atraso; `switch (r) { case -1: case 0: break; default:
+  fld_voice_play(r); break; }` reproduz (o mwcc não preenche o atraso do `jal` quando o argumento vem do bloco de
+  despacho do `switch`). A ordem `case -1: case 0:` dá os testes `beqzl` (0) e depois `beq` (-1): o mwcc testa os
+  `case` na ordem inversa do fonte. Era a única palavra fora de lugar numa função de 1840 bytes.
+- **Ponteiro para o struct global declarado primeiro** (`TutBox *const b = &tutbox;` como 1ª declaração,
+  `tut_script_preload_faces`): o `lui/addiu` do endereço sai antes dos `move` de `i`/`done` (ordem de criação), 9 ->
+  6. O que sobra (o `sltu` de `!done` sobe acima do `tut_pc++`, `$a0`/`$v1` trocados) não muda com for/while/do,
+  helper inline para o incremento, volatile nem tipos.
+- Sem forma (testadas as técnicas 22-27 e as acima): `fld_chr_draw_sprite` (2: o único `beq` condicional para a
+  instrução seguinte de todo o jogo — `bnext.py`; 36 ordens de case/default em helper e fora), `fld_digits` e
+  `fbm_icon` (2: posição do `sw` do argumento de pilha entre os `move`; outros chamadores batendo põem o `sw`
+  primeiro; só o escalonador decide), `st_scr_find_es` e `st_pl_card_bit_set` (2: o original não copia a cabeça do
+  laço no desvio de entrada; os únicos precedentes batendo — `cardinfo_calc_scroll`, `duel_088087C0` — têm a cabeça
+  com `jal` e o desvio de volta também sem preencher; helpers com `return`, `goto`, `switch (p != 0)`, do/while: nada),
+  `op_bgm` (4: o `if` invertido dá o `bnezl` + `sw` no atraso e só falta o `b; nop` sem preencher — família
+  `rv_scroll_add`, mas sem o `||`; ternário, `switch`, `id = -2; if (a) id = a`, helpers), `fld_map_walkable` (5:
+  `beqz; nop` + `b; lbu` do último teste; helpers com `return a[i]`/`return r` e a cadeia inteira em helper: 5-51),
+  `fface_free` (5: a cópia do parâmetro para `$s1` depois do próprio teste e das cargas é única no jogo —
+  `latecopy2.py`), `fld_chr_tex` (6: helpers em 36 ordens de case: >= 8), `st_chr_step_value` (10: helper 13),
+  `pda_draw_mail_item` (13: `face` em `$t0` e o `9` do `%` em `$a3`; locais para u/v, helper de busca, ordem das
+  declarações: 13-30), `tut_event_hook` (15: o original não usa `$v0` em todo o `switch`; helper do case 2 e ordens:
+  15-225), `fld_sprite_quad` (17: o mwcc cria 0,5 antes de -0,5 em qualquer ordem de declaração/expressão, inclusive
+  com `top = 0.23f * sh` num local), `fld_bg_draw_sky` (18: a ordem natural dos stores por vértice dá 26-34),
+  `fbag_draw` (54: `list` mantido em `$a0` + pilha a cada atribuição; `l` local, `void **lp`, volatile, helpers: 54-65),
+  `fbm_draw_marks` (153: o corpo do laço num helper com `return list` em cada `continue` dá 120 palavras em 816 B mas
+  troca os `$s`). Não retestadas a fundo (razões antigas valem): `st_mail_find`, `st_mail_view_list`,
+  `st_chr_dn_find`, `fcal_draw_tabs`, `st_fld_setup_items`.
+- Scripts em `build/tmp/r28F/`: `tv.py` (variantes de uma função a partir do texto, 8 por lote), `sbs.sh MODULE FUNC
+  [FILE]` (diff lado a lado original | NON_MATCHING, alinhado), `bnext.py` (desvios para a instrução seguinte),
+  `loophead.py` (desvios com `nop` para cabeças de laço), `latecopy2.py` (cópia tardia de parâmetro).
