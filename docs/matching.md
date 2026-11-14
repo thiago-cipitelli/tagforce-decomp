@@ -2986,3 +2986,34 @@ batiam; o certo é mudar o protótipo dos callees (sob `#ifdef __MWERKS__` quand
 - Sem forma: `cardinfo_draw_frame` (7: as 16 combinações de variável x expressão para `x1/y1/x5/y5`, as ordens de
   declaração, reuso de `y1` para `y5` e as posições de cada atribuição não mexem na ordem dos `move` de argumento),
   `cardinfo_draw_window` (9: `x5 = x + 5U`/`5 + x`/`(unsigned)x + 5` contra `x + 5` no fim continuam CSE).
+## Rodada 31 (`cC`): `cardlist_draw_arrow`, `cardinfo_draw_window` e `cardinfo_draw_frame` (BOOT) batendo
+
+- **Gatilho do modo sem limpeza com várias saídas antecipadas** (`cardlist_draw_arrow`, 156 -> 0): as três saídas num
+  só `if (t0 == 0 || (t1 != 0 && now > t1 + period) || (t1 != 0 && now < t1)) return list;` (o `list` é o resultado da
+  chamada anterior, ainda em `v0`). Sinais no asm: o 1º termo vira `beqzl ...,epílogo+4` com o `lw ra` no atraso, o termo
+  do meio desvia direto para o epílogo (`bnez at,fim; nop`) e só o último termo fica como teste que pula um `b fim; nop`.
+  Com dois `if` separados, com `if (...) {...} else return list;` ou com os testes aninhados o modo liga mas a forma de
+  um dos três testes muda (ou `list` vai para `a0`, com `move v0,a0` em cada saída).
+- **Expressão escrita por extenso no último uso** (`cardinfo_draw_window` 9 -> 0, `cardinfo_draw_frame` 7 -> 0): o
+  reaproveitamento de valor do mwcc depende dos registradores. Uma expressão igual à atribuída a uma variável
+  (`x5 = x + 5; ... f(x + 5)`) só reaproveita o registrador da variável enquanto ele não foi sobrescrito, e as
+  expressões por extenso mantêm vivos os operandos (`y`, `v`), o que impede o mwcc de dar o registrador deles a outro
+  valor. Na janela o original tem UMA variável temporária reutilizada (`t = v + 12`, depois `t = x + 5`, depois
+  `t = v + 5`) e a última chamada é `draw_sprite(list, x + 5, y + 5, 0, 5, v + 5, 0, 0)`: `y + 5` e `v + 5` saem dos
+  registradores de `y1`/`t` e `x + 5` é recalculado (`addiu a1,s5,5`). Na moldura, `x5`/`y5` são variáveis e só a
+  última chamada usa `x + 5, y + 5` por extenso: isso muda a ordem dos `move` de argumento de três chamadas
+  ANTERIORES. Quando a diferença é a ordem dos `move` depois de uma chamada ou um `$s` reaproveitado, testar para cada
+  valor {variável em todos os usos, expressão em todos, variável e expressão só no último uso} (256 combinações na
+  moldura, 7 batem).
+- Sem forma (medições novas para a lista de skip):
+  - `font_word_width` (25): `c` fica sempre no `$s` mais baixo (120 ordens de declaração, tipos, variável própria na
+    cauda, laço `for(;;)`/`continue`, helper inline do avanço, 320 variantes aleatórias de 16 mutações). Sem o
+    `c = rtotal` do rubi o `c` sobe um registrador, mas continua abaixo de `w`; o original tem `w` abaixo de `c`.
+  - `font_layout_end` (2): o `n * 32` do caso 1 do 2º laço sai em `v1` quando `n` não é zerado dentro do laço (sem os
+    `n = 0` dos casos 3 e 4) e em `v0` com eles; variáveis próprias (`n2`, `verts2`) no 2º laço são fundidas.
+  - `cardlist_draw_at` (3): `sh`/`cmp`/`mask` como variáveis ou por extenso em qualquer ordem (48 formas) não mudam
+    a ordem `a0, a2, jal, a3`; o `&v->shown` por extenso nos dois usos não é reaproveitado entre chamadas.
+  - `msgbox_open` (11): o 2 do teste fica em `a3` junto com o 4º argumento com qualquer forma do argumento (ternário,
+    if/else, variável, helper inline com `return` por saída, tipo do parâmetro `initial`, cast no `switch`).
+  - `netsync_transfer` (1): 84 formas da soma (`((chunk - 1) << 7) + x->size * i`, ordem, casts, variável hoisted)
+    dão sempre `addu v1,s0,v1`.
