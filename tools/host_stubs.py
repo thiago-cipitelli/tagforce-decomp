@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate platform/pc/stubs.c: every firmware import (symbols/*.txt, `type:func import:<lib>` where <lib> is not
-a gmodule library nor libehsys; mostly BOOT, a few gmodules call the firmware directly) as a function that logs its name once to stderr and returns 0. The signature is the prototype of
+a gmodule library nor libehsys; mostly BOOT, a few gmodules call the firmware directly) and that no other
+platform/pc/*.c implements, as a function that logs its name once to stderr and returns 0. The signature is the prototype of
 include/psp.h when there is one, else `int name()`. Seed of platform/pc: real implementations replace these.
 
 usage: host_stubs.py OUT.c        (--selftest: generate to a temp file and compile it)
@@ -12,12 +13,24 @@ import sys
 import tempfile
 
 
+def implemented():
+    """Names platform/pc/*.c defines (a definition starts at column 0 and opens a body on the same or next line)."""
+    out = set()
+    for path in glob.glob("platform/pc/*.c"):
+        if path.endswith(("/stubs.c", "/modules.c")):
+            continue
+        for m in re.finditer(r"^[A-Za-z_][\w \*]*?\b(\w+)\([^;{]*\)\s*\{", open(path).read(), re.M):
+            out.add(m.group(1))
+    return out
+
+
 def generate():
+    skip = implemented()
     names = []
     for path in ["symbols/BOOT.txt"] + sorted(glob.glob("symbols/lib*.txt")):
         for line in open(path):
             m = re.match(r"^(\w+) = 0x\w+; // type:func import:(\w+)", line)
-            if m and not m.group(2).startswith("lib") and m.group(1) not in names:
+            if m and not m.group(2).startswith("lib") and m.group(1) not in names and m.group(1) not in skip:
                 names.append(m.group(1))
     protos = {}
     for line in open("include/psp.h"):

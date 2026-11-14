@@ -89,7 +89,11 @@ void *dl_get_cur_list_base(void);
 
 void dl_state_init(void);
 void dl_state_reset(void);
+#ifdef __MWERKS__
 void gfx_draw_target(unsigned int *list, int psm, void *fbp, unsigned int zbp, unsigned int fbw);
+#else /* port: these three are void for mwcc, but their callers use the list that dl_select_layer leaves in $v0 */
+unsigned int *gfx_draw_target(unsigned int *list, int psm, void *fbp, unsigned int zbp, unsigned int fbw);
+#endif
 void gfx_finish_cb(int arg);
 
 char gfx_host_dir[] = "host0:./";
@@ -242,7 +246,11 @@ void gfx_set_fps(int fps)
 }
 
 /* fbp -1: the depth buffer area; -2: right after the w x h buffer at `base`. */
+#ifdef __MWERKS__
 void gfx_set_draw_target(unsigned int *list, int base, unsigned int fbp, int w, int h, int psm)
+#else
+unsigned int *gfx_set_draw_target(unsigned int *list, int base, unsigned int fbp, int w, int h, int psm)
+#endif
 {
     if (fbp == 0xFFFFFFFF) {
         fbp = 0x110000;
@@ -254,11 +262,22 @@ void gfx_set_draw_target(unsigned int *list, int base, unsigned int fbp, int w, 
         }
         fbp = fbp + 0x7FFF & 0xFFFF8000;
     }
+#ifdef __MWERKS__
     gfx_draw_target(list, psm, (void *)base, fbp, w);
+#else
+    return gfx_draw_target(list, psm, (void *)base, fbp, w);
+#endif
 }
 
+#ifdef __MWERKS__
 void gfx_set_default_target(unsigned int *list)
+#else
+unsigned int *gfx_set_default_target(unsigned int *list)
+#endif
 {
+#ifndef __MWERKS__
+    return
+#endif
     gfx_draw_target(list, 3, (gfx_get_state()->frame & 1) ? (void *)0 : (void *)0x88000, 0x110000, 0x200);
 }
 
@@ -396,7 +415,11 @@ void gfx_save_tga(unsigned int buf)
 }
 
 /* Emits FBP/FBW for the depth buffer, then a sub-list with the draw buffer. */
+#ifdef __MWERKS__
 void gfx_draw_target(unsigned int *list, int psm, void *fbp, unsigned int zbp, unsigned int fbw)
+#else
+unsigned int *gfx_draw_target(unsigned int *list, int psm, void *fbp, unsigned int zbp, unsigned int fbw)
+#endif
 {
     void *layer;
     unsigned int size;
@@ -413,7 +436,11 @@ void gfx_draw_target(unsigned int *list, int psm, void *fbp, unsigned int zbp, u
     list = dl_get_cur_list_base();
     n = sceGuFinish();
     dl_set_list((char *)list + n - 8);
+#ifdef __MWERKS__
     dl_select_layer(layer, 0);
+#else
+    return dl_select_layer(layer, 0);
+#endif
 }
 
 void dl_state_init(void)
@@ -472,7 +499,7 @@ char *dl_state_flush(char *list)
 void dl_state_reset(void)
 {
     unsigned int fr = gfx_state.frame;
-    unsigned int *u = (unsigned int *)ALLEGREX_INS((unsigned int)gfx_ge_defaults, 4, 28, 4);
+    unsigned int *u = (unsigned int *)ALLEGREX_UNCACHED((unsigned int)gfx_ge_defaults);
     int b = (fr & 1) * 4;
     int i = 0;
     unsigned char *f;

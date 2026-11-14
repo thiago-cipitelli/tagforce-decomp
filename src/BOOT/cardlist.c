@@ -599,7 +599,11 @@ void *cardlist_build(void *list, CardPanel *p)
 }
 
 /* Exported: just the card picture of `id` (any variant). */
+#ifdef __MWERKS__
 void card_draw(void *list, int x, int y, unsigned int id)
+#else /* port: void for mwcc, the callers use the list of the tail call left in $v0 */
+void *card_draw(void *list, int x, int y, unsigned int id)
+#endif
 {
     CardStats s;
     void *tex;
@@ -627,10 +631,17 @@ void card_draw(void *list, int x, int y, unsigned int id)
             s.level = card_get_level(id);
             s.prop5 = card_get_prop5_hi(id);
             line = card_type_line(id, 0, &s, 0);
+#ifdef __MWERKS__
             card_draw_card(list, x, y, tex, name, line, desc, &s);
             return;
+#else
+            return card_draw_card(list, x, y, tex, name, line, desc, &s);
+#endif
         }
     }
+#ifndef __MWERKS__
+    return
+#endif
     cardlist_draw_quad(list, x, y);
 }
 

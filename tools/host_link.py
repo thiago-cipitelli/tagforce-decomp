@@ -23,8 +23,11 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 import host_data  # noqa: E402
 
-CFLAGS = ["-m32", "-std=gnu89", "-w", "-O0", "-g", "-fno-common", "-fno-pie", "-DNON_MATCHING", "-Iinclude"]
-PLATFORM = ["platform/pc/stubs.c", "platform/pc/missing.c", "platform/pc/libc.c", "platform/pc/modules.c"]
+# -mno-sse: the floats are x87 anyway (-mfpmath=387); without SSE gcc never copies a 16-aligned type (Mat4) with
+# movaps, which faults where a caller declares the same object without the alignment
+CFLAGS = ["-m32", "-mno-sse", "-std=gnu89", "-w", "-O0", "-g", "-fno-common", "-fno-pie", "-DNON_MATCHING", "-Iinclude"]
+# platform/pc sees include/ only through "": include/stdarg.h would shadow the system one under <stdarg.h>
+PCFLAGS = [f for f in CFLAGS if f != "-Iinclude"] + ["-iquote", "include", "-pthread"]
 OUT = "build/host"
 
 
@@ -69,7 +72,7 @@ def prepare_module(m, objs, pdefs):
             elif t in "TDBRVW":
                 gdef.setdefault(n, []).append((o, sz))
             elif t in "tdbr":
-                ldef.setdefault(n, []).append((o, t))
+                ldef.setdefault(n, []).append((o, t, sz))
     # header `inline` copies: one definition per object; keep them all weak
     for n, l in gdef.items():
         if len(l) > 1:
@@ -78,6 +81,8 @@ def prepare_module(m, objs, pdefs):
             log.append(f"weak {n} ({len(l)} objects)")
     funcs = set(gdef) | pdefs | {n for n, l in ldef.items() if len(l) == 1 and l[0][1] == "t"}
     cdefs = {n: l[0][1] for n, l in gdef.items()}
+    # file statics with a unique name: the data may point at them too (globalized below when it does)
+    cdefs.update({n: l[0][2] for n, l in ldef.items() if len(l) == 1 and l[0][1] in "dbr" and n not in cdefs})
     asm, defsyms, st = host_data.generate(m, cdefs, funcs, undef - set(gdef))
     os.makedirs(f"{OUT}/data", exist_ok=True)
     open(f"{OUT}/data/{m}.s", "w").write(asm)
@@ -113,14 +118,18 @@ def main():
     mods = sorted(os.path.basename(p)[:-4] for p in glob.glob("build/elf/*.elf"))
     srcs = {m: sorted(glob.glob(f"src/{m}/*.c")) for m in mods}
     objs = {m: [f"{OUT}/obj/{m}/{os.path.basename(s)[:-2]}.o" for s in srcs[m]] for m in mods}
+    stamp = f"{OUT}/obj/cflags"   # the compile cache goes by date: start over when the flags change
+    if not os.path.exists(stamp) or open(stamp).read() != " ".join(CFLAGS):
+        subprocess.run(["rm", "-rf", f"{OUT}/obj"])
+        os.makedirs(f"{OUT}/obj")
+        open(stamp, "w").write(" ".join(CFLAGS))
     run([sys.executable, "tools/host_stubs.py", "platform/pc/stubs.c"])
     pobjs = []
-    for p in PLATFORM:
+    for p in sorted(glob.glob("platform/pc/*.c")):
         o = f"{OUT}/obj/platform/{os.path.basename(p)[:-2]}.o"
         os.makedirs(os.path.dirname(o), exist_ok=True)
-        if os.path.exists(p):
-            run(["gcc"] + CFLAGS + ["-c", p, "-o", o])
-            pobjs.append(o)
+        run(["gcc"] + PCFLAGS + ["-c", p, "-o", o])
+        pobjs.append(o)
     pdefs = {n for o in pobjs for n, t, _sz in nm(o) if t in "TDBR"}
     with cf.ThreadPoolExecutor(jobs) as ex:
         list(ex.map(lambda a: compile_one(*a), [(s, o) for m in mods for s, o in zip(srcs[m], objs[m])]))
@@ -153,11 +162,11 @@ def main():
         if renames[m]:
             run(["objcopy"] + [f"--redefine-sym={a}={b}" for a, b in sorted(renames[m].items())] + [res[m][0]])
     if gen_modules_c(mods, renames):
-        run(["gcc"] + CFLAGS + ["-c", "platform/pc/modules.c", "-o", f"{OUT}/obj/platform/modules.o"])
+        run(["gcc"] + PCFLAGS + ["-c", "platform/pc/modules.c", "-o", f"{OUT}/obj/platform/modules.o"])
         if f"{OUT}/obj/platform/modules.o" not in pobjs:
             pobjs.append(f"{OUT}/obj/platform/modules.o")
     allo = [res[m][0] for m in mods] + pobjs
-    r = subprocess.run(["gcc", "-m32", "-no-pie", "-o", f"{OUT}/tagforce"] + allo + ["-lm"], capture_output=True, text=True)
+    r = subprocess.run(["gcc", "-m32", "-no-pie", "-pthread", "-o", f"{OUT}/tagforce"] + allo + ["-lm"], capture_output=True, text=True)
     open(f"{OUT}/link.log", "w").write(r.stderr)
     und = sorted(set(re.findall(r"undefined reference to `([^']+)'", r.stderr)))
     dup = sorted(set(re.findall(r"multiple definition of `([^']+)'", r.stderr)))

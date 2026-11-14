@@ -9,6 +9,8 @@ in the data (read from the PRX relocation sections that prx2elf leaves in the EL
   - .data/.bss inside an object the host C defines   -> csym+off
   - other .data/.bss                                 -> a local label at the target, in this copy
   - anything else (module info, .lib.ent ...)        -> 0
+Objects the host C defines (address from symbols/ or, for the rest, from the matching link build/<m>.rebuilt.elf) are
+not copied: their bytes and the relocations inside them are dropped, pointers to them become csym+off.
 Global labels: every data symbol of symbols/<m>.txt (and every needed D_XXXXXXXX) that the host C does not define.
 A name that falls inside an object the host C defines (an alias of a table element) is not labelled here: it goes to
 `defsyms` (name -> csym+off) for the module's `ld -r --defsym`.
@@ -101,6 +103,31 @@ def data_bytes(data, a):
     raise KeyError(a)
 
 
+def rebuilt_addrs(module):
+    """name -> (addr, size) of the data objects of build/<m>.rebuilt.elf (the matching link: where mwcc put the
+    globals and file statics the C defines; names unique in the module only). Empty when it was not built."""
+    path = f"build/{module}.rebuilt.elf"
+    if not os.path.exists(path):
+        return {}
+    img, secs = read_elf(path)
+    out, dup = {}, set()
+    for s in secs:
+        if s[0] != ".symtab":
+            continue
+        strtab = secs[s[7]][5]
+        for off in range(s[5], s[5] + s[6], 16):
+            st_name, value, size, info = struct.unpack_from("<IIIB", img, off)
+            if info & 0xF != 1 or not st_name:  # STT_OBJECT
+                continue
+            n = img[strtab + st_name:img.index(b"\0", strtab + st_name)].decode()
+            if n in out:
+                dup.add(n)
+            out[n] = (value, size)
+    for n in dup:
+        del out[n]
+    return out
+
+
 def generate(module, cdefs=None, funcs=None, need=()):
     """cdefs: name -> host size of the globals the module's host objects define (None: no host objects).
     funcs: function names the host link can reach (the module's objects, a static only when unique, platform/pc);
@@ -124,7 +151,13 @@ def generate(module, cdefs=None, funcs=None, need=()):
         if n in need and n not in known and lo <= a < hi:
             dsyms.append((a, n))
     dsyms.sort()
-    cobjs = sorted((a, n, cdefs[n]) for a, n in dsyms if n in cdefs)
+    # objects the host C defines: address from symbols/ (host size), else from the matching link (PSP size)
+    caddr = {n: (a, cdefs[n]) for a, n in dsyms if n in cdefs}
+    if cdefs:
+        for n, (a, sz) in rebuilt_addrs(module).items():
+            if n in cdefs and n not in caddr and lo <= a < hi:
+                caddr[n] = (a, sz)
+    cobjs = sorted((a, n, sz) for n, (a, sz) in caddr.items())
 
     def in_cobj(a):
         """(csym, off) when address a lies inside an object the host C defines."""
@@ -156,7 +189,14 @@ def generate(module, cdefs=None, funcs=None, need=()):
         if fn and (funcs is None or fn in funcs):
             defsyms[n] = fn
 
-    stats = {"rel": len(rels), "rel_zero": 0, "rel_local": 0, "rel_func": 0, "rel_c": 0,
+    # bytes of the objects the host C defines are dropped (every pointer to them is csym+off now), with the
+    # relocations inside them
+    cranges = [(a, a + max(sz, 1)) for a, _n, sz in cobjs]
+
+    def in_c(p):
+        return any(a <= p < b for a, b in cranges)
+    rels = {a: t for a, t in rels.items() if not in_c(a)}
+    stats = {"dropped": sum(b - a for a, b in cranges), "rel": len(rels), "rel_zero": 0, "rel_local": 0, "rel_func": 0, "rel_c": 0,
              "labels": sum(len(v) for v in labels.values()), "defsyms": len(defsyms)}
     locs = set()
     relexpr = {}
@@ -193,10 +233,13 @@ def generate(module, cdefs=None, funcs=None, need=()):
         # labels in the gap after this section (or at the very end) are placed at its end
         own_end = data[k + 1][1] if k + 1 < len(data) else hi + 1
         stops = sorted({p for p in list(labels) + list(locs) if addr <= p < own_end} |
-                       {a for a in relexpr if addr <= a < end and b is not None})
+                       {a for a in relexpr if addr <= a < end and b is not None and not in_c(a)} |
+                       {p for r in cranges for p in r if addr <= p < end} | {end})
         pos = addr
         for p in stops:
             q = min(p, end)
+            if q > pos and in_c(pos):
+                pos = q
             if q > pos:
                 if b is None:
                     out.append(f"\t.zero {q - pos}")
@@ -205,11 +248,13 @@ def generate(module, cdefs=None, funcs=None, need=()):
                     for i in range(0, len(chunk), 16):
                         out.append("\t.byte " + ",".join(str(x) for x in chunk[i:i + 16]))
                 pos = q
+            if p >= own_end:
+                continue
             for n in labels.get(p, []):
                 out += [f"\t.globl {n}", f"{n}:"]
             if p in locs:
                 out.append(f".L{p:08X}:")
-            if p in relexpr and b is not None and p < end:
+            if p in relexpr and b is not None and p < end and not in_c(p):
                 if pos != p:
                     raise SystemExit(f"{module}: overlapping relocation at {p:#x}")
                 out.append(f"\t.long {relexpr[p]}")

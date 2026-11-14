@@ -23,25 +23,7 @@ int sceKernelEnableSubIntr()
     return 0;
 }
 
-int sceIoMkdir()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoWrite(SceUID fd, const void *data, SceSize size)
-{
-    STUB();
-    return 0;
-}
-
 int sceIoDevctl()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoChdir()
 {
     STUB();
     return 0;
@@ -59,31 +41,7 @@ int sceIoIoctl()
     return 0;
 }
 
-int sceIoLseek32()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoRead(SceUID fd, void *data, SceSize size)
-{
-    STUB();
-    return 0;
-}
-
-int sceIoLseekAsync()
-{
-    STUB();
-    return 0;
-}
-
 int sceIoRename()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoClose(SceUID fd)
 {
     STUB();
     return 0;
@@ -95,61 +53,7 @@ int sceIoGetDevType()
     return 0;
 }
 
-SceUID sceIoOpenAsync(const char *file, int flags, int mode)
-{
-    STUB();
-    return 0;
-}
-
-int sceIoReadAsync(SceUID fd, void *data, SceSize size)
-{
-    STUB();
-    return 0;
-}
-
-int sceIoSetAsyncCallback()
-{
-    STUB();
-    return 0;
-}
-
 int sceIoSync()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoGetstat(const char *file, SceIoStat *stat)
-{
-    STUB();
-    return 0;
-}
-
-int sceIoChangeAsyncPriority()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoDopen(const char *dirname)
-{
-    STUB();
-    return 0;
-}
-
-int sceIoWaitAsync()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoDread(int fd, SceIoDirent *dir)
-{
-    STUB();
-    return 0;
-}
-
-int sceIoWriteAsync()
 {
     STUB();
     return 0;
@@ -167,55 +71,7 @@ int sceIoIoctlAsync()
     return 0;
 }
 
-int sceIoDclose(int fd)
-{
-    STUB();
-    return 0;
-}
-
-int sceIoRemove()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoCloseAsync()
-{
-    STUB();
-    return 0;
-}
-
-SceUID sceIoOpen(const char *file, int flags, int mode)
-{
-    STUB();
-    return 0;
-}
-
 int sceIoRmdir()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoLseek32Async()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoLseek(SceUID fd, SceOff offset, int whence)
-{
-    STUB();
-    return 0;
-}
-
-int sceIoPollAsync()
-{
-    STUB();
-    return 0;
-}
-
-int sceIoWaitAsyncCB(SceUID fd, long long *res)
 {
     STUB();
     return 0;
@@ -233,12 +89,6 @@ int sceKernelCpuResumeIntr()
     return 0;
 }
 
-int sceKernelExitGame(void)
-{
-    STUB();
-    return 0;
-}
-
 int sceKernelRegisterExitCallback(SceUID cb)
 {
     STUB();
@@ -251,12 +101,6 @@ int sceKernelLoadExec(const char *file, void *param)
     return 0;
 }
 
-int sceKernelUnloadModule(SceUID modid)
-{
-    STUB();
-    return 0;
-}
-
 int sceKernelGetModuleIdByAddress()
 {
     STUB();
@@ -264,12 +108,6 @@ int sceKernelGetModuleIdByAddress()
 }
 
 int ModuleMgrForUser_F0A26395()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status, void *opt)
 {
     STUB();
     return 0;
@@ -293,12 +131,6 @@ int ModuleMgrForUser_8F2DF740()
     return 0;
 }
 
-SceUID sceKernelLoadModule(const char *path, int flags, void *opt)
-{
-    STUB();
-    return 0;
-}
-
 int sceKernelLoadModuleByID()
 {
     STUB();
@@ -306,12 +138,6 @@ int sceKernelLoadModuleByID()
 }
 
 int sceKernelStopUnloadSelfModule()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelStopModule(SceUID modid, SceSize argsize, void *argp, int *status, void *opt)
 {
     STUB();
     return 0;
@@ -341,31 +167,7 @@ int sceKernelPrintf()
     return 0;
 }
 
-int sceKernelAllocPartitionMemory()
-{
-    STUB();
-    return 0;
-}
-
 int sceKernelSetCompiledSdkVersion()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelGetBlockHeadAddr()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelMaxFreeMemSize()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelFreePartitionMemory()
 {
     STUB();
     return 0;
@@ -377,283 +179,7 @@ int SysMemUserForUser_F77D77CB()
     return 0;
 }
 
-int sceKernelTotalFreeMemSize()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelDelayThread(SceUInt us)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelWakeupThread(SceUID thid)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelSetEventFlag(SceUID evf, unsigned int bits)
-{
-    STUB();
-    return 0;
-}
-
-SceUID sceKernelCreateSema(const char *name, SceUInt attr, int init, int max, void *opt)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelAllocateFpl(SceUID fpl, void **data, unsigned int *timeout)
-{
-    STUB();
-    return 0;
-}
-
-SceUID sceKernelCreateCallback(const char *name, SceKernelCallbackFunction func, void *arg)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelSendMbx()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelChangeCurrentThreadAttr(SceUInt clear, SceUInt set)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelDeleteFpl()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelDeleteEventFlag(SceUID evf)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelStartThread(SceUID thid, SceSize args, void *argp)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelFreeFpl()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelWaitThreadEnd(SceUID thid, SceUInt *timeout)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelDeleteSema(SceUID sema)
-{
-    STUB();
-    return 0;
-}
-
-SceUID sceKernelGetThreadId(void)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelCheckCallback(void)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelGetSystemTimeLow()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelPollMbx()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelSignalSema(SceUID sema, int signal)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelWaitEventFlag(SceUID evf, unsigned int bits, unsigned int wait, unsigned int *out, SceUInt *timeout)
-{
-    STUB();
-    return 0;
-}
-
-SceUID sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int priority, int stack, SceUInt attr, void *opt)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelWaitSema(SceUID sema, int signal, SceUInt *timeout)
-{
-    STUB();
-    return 0;
-}
-
-SceUID sceKernelCreateEventFlag(const char *name, int attr, int bits, void *opt)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelCreateVpl()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelDelayThreadCB(SceUInt us)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelWaitSemaCB(SceUID sema, int signal, SceUInt *timeout)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelChangeThreadPriority(SceUID thid, int prio)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelResumeThread(SceUID thid)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelClearEventFlag(SceUID evf, unsigned int bits)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelCreateMbx()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelGetSystemTimeWide()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelWaitThreadEndCB(SceUID thid, SceUInt *timeout)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelDeleteMbx()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelDeleteVpl()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelGetThreadCurrentPriority(void)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelSuspendThread(SceUID thid)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelSleepThread(void)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelDeleteThread(SceUID thid)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelReferEventFlagStatus(SceUID evf, void *status)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelExitThread(int status)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelTryAllocateVpl(SceUID uid, unsigned int size, void **data)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelFreeVpl(SceUID uid, void *data)
-{
-    STUB();
-    return 0;
-}
-
-SceUID sceKernelCreateFpl(const char *name, int part, int attr, unsigned int size, unsigned int blocks, void *opt)
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelLibcGettimeofday()
-{
-    STUB();
-    return 0;
-}
-
 int sceKernelDcacheWritebackAll()
-{
-    STUB();
-    return 0;
-}
-
-int sceKernelLibcClock()
 {
     STUB();
     return 0;
@@ -662,12 +188,6 @@ int sceKernelLibcClock()
 void sceKernelDcacheWritebackInvalidateAll(void)
 {
     STUB();
-}
-
-int sceKernelLibcTime()
-{
-    STUB();
-    return 0;
 }
 
 int sceKernelGetGPI()
@@ -695,12 +215,6 @@ int sceGeUnsetCallback()
 }
 
 int sceGeListEnQueueHead()
-{
-    STUB();
-    return 0;
-}
-
-int sceGeEdramGetSize()
 {
     STUB();
     return 0;
@@ -748,12 +262,6 @@ int sceGeListUpdateStallAddr()
     return 0;
 }
 
-void * sceGeEdramGetAddr(void)
-{
-    STUB();
-    return 0;
-}
-
 int sceDisplaySetMode(int mode, int width, int height)
 {
     STUB();
@@ -772,37 +280,7 @@ int sceDisplaySetFrameBuf(void *top, int buffer_width, int format, int sync)
     return 0;
 }
 
-int sceDisplayWaitVblankStartCB()
-{
-    STUB();
-    return 0;
-}
-
-int sceDisplayGetVcount()
-{
-    STUB();
-    return 0;
-}
-
-float sceDisplayGetFramePerSec(void)
-{
-    STUB();
-    return 0;
-}
-
 int sceCtrlSetSamplingMode(int mode)
-{
-    STUB();
-    return 0;
-}
-
-int sceCtrlReadBufferPositive(void *pad, int count)
-{
-    STUB();
-    return 0;
-}
-
-int sceCtrlPeekBufferPositive()
 {
     STUB();
     return 0;
@@ -845,36 +323,6 @@ int sceFontGetCharInfo()
 }
 
 int sceFontSetAltCharacterCode()
-{
-    STUB();
-    return 0;
-}
-
-int sceUmdWaitDriveStatCB(int stat, SceUInt timeout)
-{
-    STUB();
-    return 0;
-}
-
-int sceUmdCancelWaitDriveStat(void)
-{
-    STUB();
-    return 0;
-}
-
-int sceUmdGetDriveStat(void)
-{
-    STUB();
-    return 0;
-}
-
-int sceUmdWaitDriveStat(int stat)
-{
-    STUB();
-    return 0;
-}
-
-int sceUmdActivate(int unit, const char *drive)
 {
     STUB();
     return 0;
@@ -1360,24 +808,6 @@ int __sceSasRevVON()
     return 0;
 }
 
-int sceAudioOutputBlocking()
-{
-    STUB();
-    return 0;
-}
-
-int sceAudioOutputPannedBlocking()
-{
-    STUB();
-    return 0;
-}
-
-int sceAudioChReserve()
-{
-    STUB();
-    return 0;
-}
-
 int sceAudioChRelease()
 {
     STUB();
@@ -1402,19 +832,7 @@ int sceAudioChangeChannelVolume()
     return 0;
 }
 
-int sceAudioSetChannelDataLen()
-{
-    STUB();
-    return 0;
-}
-
 int sceAudioOutputPanned()
-{
-    STUB();
-    return 0;
-}
-
-int sceRtcGetCurrentTick(unsigned long long *tick)
 {
     STUB();
     return 0;

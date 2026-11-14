@@ -1592,11 +1592,11 @@ void sceGuDebugFlush(void)
             for (col = 0; col < 8; col++) {
                 if (bits & (1 << col)) {
                     if (gu_debug_psm == 3) {
-                        *(unsigned int *)((gu_debug_edram + gu_debug_fbp + (pos + col) * 4) & 0x1FFFFFFF |
-                                          0x40000000) = c->color;
+                        *(unsigned int *)PSP_UNCACHED(PSP_PHYS(gu_debug_edram + gu_debug_fbp + (pos + col) * 4)) =
+                            c->color;
                     } else {
-                        *(unsigned short *)((gu_debug_edram + gu_debug_fbp + (pos + col) * 2) & 0x1FFFFFFF |
-                                            0x40000000) = (unsigned short)c->color;
+                        *(unsigned short *)PSP_UNCACHED(PSP_PHYS(gu_debug_edram + gu_debug_fbp + (pos + col) * 2)) =
+                            (unsigned short)c->color;
                     }
                 }
             }
