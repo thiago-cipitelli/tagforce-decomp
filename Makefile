@@ -60,7 +60,7 @@ $(OUT): $(LD_SCRIPT) $(ASM_OBJS) $(C_OBJS) $(BIN_OBJS)
 clean:
 	rm -rf build/asm/$(MODULE) build/src/$(MODULE) build/assets/$(MODULE) $(OUT) build/$(MODULE).map $(LD_SCRIPT) asm/$(MODULE) assets/$(MODULE)
 
-.PHONY: all check check-all clean verify host-check host-lto host-warn
+.PHONY: all check check-all clean verify host-check host-lto host-warn host-link
 
 check-all:
 	@for m in $$(ls build/elf | sed 's/\.elf$$//'); do printf '%s: ' $$m; $(MAKE) --no-print-directory MODULE=$$m check 2>&1 | tail -1; done
@@ -100,3 +100,9 @@ HOST_WARN := -Wall -Wextra -Wno-parentheses -Wno-missing-field-initializers -Wno
 host-warn:
 	@for f in src/*/*.c; do gcc -m32 -std=gnu89 -fsyntax-only $(HOST_WARN) -DNON_MATCHING -Iinclude -I$$(dirname $$f) $$f; \
 	  done > build/host-warn.log 2>&1; grep -o '\[-W[a-z-]*\]' build/host-warn.log | sort | uniq -c | sort -rn
+
+# port step 4a: every module (host objects + its data from the ELF, tools/host_data.py) linked into one 32-bit
+# executable with platform/pc (firmware stubs, tools/host_stubs.py); prints the undefined/duplicate counts (0/0 is the
+# gate; docs/port_survey.md, "Passo 4a")
+host-link:
+	@python3 tools/host_link.py
