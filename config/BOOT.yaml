@@ -200,8 +200,6 @@ segments:
       - [0x29A50, c, anim]
       - [0x2AD0C, c, ehfile]
       - [0x2BC9C, c, ehf]
-      - [0x2DFBC, asm, ehf_asm_08831F5C]
-      - [0x2E630, c, ehf]
       - [0x2F480, c, ehp]
       - [0x3057C, c, gfx]
       - [0x316B0, c, gim]
