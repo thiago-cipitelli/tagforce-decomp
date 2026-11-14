@@ -154,11 +154,13 @@ void host_pump(void)
     }
 }
 
-/* TAGFORCE_PAD="frame:mask[:frames],...": hold the PSP buttons mask (hex) from that presented frame on, for
-   frames (default 6); for runs without a keyboard (headless, tests) */
+/* TAGFORCE_PAD="poll:mask[:polls],...": hold the PSP buttons mask (hex) from that pad poll on, for polls
+   (default 1); for runs without a keyboard (headless, tests). Step 6: the unit is the game's pad reads
+   (sceCtrlPeek/ReadBufferPositive, host_pad_polls in kernel.c), not presented frames: pad_update runs once per main
+   loop pass, so a one-poll Down moves exactly once (with frames a 6-frame press moved twice or not at all) */
 static unsigned int scripted(void)
 {
-    extern unsigned int frame_no;   /* ge.c */
+    extern unsigned int host_pad_polls;   /* kernel.c */
     static const char *pad;
     const char *p;
     unsigned int b = 0;
@@ -167,12 +169,12 @@ static unsigned int scripted(void)
         pad = "";
     for (p = pad; *p;) {
         char *e;
-        unsigned int f = strtoul(p, &e, 0), m = 0, n = 6;
+        unsigned int f = strtoul(p, &e, 0), m = 0, n = 1;
         if (*e == ':')
             m = strtoul(e + 1, &e, 16);
         if (*e == ':')
             n = strtoul(e + 1, &e, 0);
-        if (frame_no >= f && frame_no < f + n)
+        if (host_pad_polls >= f && host_pad_polls < f + n)
             b |= m;
         p = *e == ',' ? e + 1 : e + strlen(e);
     }

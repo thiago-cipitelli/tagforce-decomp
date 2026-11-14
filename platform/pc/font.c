@@ -60,8 +60,19 @@ static int load_glyph(unsigned int code, int render)
 {
     unsigned int idx = FT_Get_Char_Index(face, code);
 
-    if (idx == 0)
+    if (idx == 0) {
+        static unsigned int seen[16];
+        static int n;
+        int i;
+
+        for (i = 0; i < n && seen[i] != code; i++)
+            ;
+        if (i == n && n < 16) {
+            seen[n++] = code;
+            fprintf(stderr, "font: no glyph for U+%04X in %s, using U+%04X\n", code, face->family_name, alt_code);
+        }
         idx = FT_Get_Char_Index(face, alt_code);
+    }
     return FT_Load_Glyph(face, idx, FT_LOAD_DEFAULT | (render ? FT_LOAD_RENDER : 0)) == 0;
 }
 

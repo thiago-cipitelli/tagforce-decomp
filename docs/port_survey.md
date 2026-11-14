@@ -454,3 +454,56 @@ apresentado; a escala quadro-apresentado → leitura do pad fica para o próximo
   diálogo em ~1200. Save: `900:10` (Up, vai a Save Data), `980:4000`.
 - GE: um aviso novo no campo, `blend with two different fixed colors` (fator fixo diferente para fonte e destino;
   aproximado), além do DXT já implementado.
+
+## 8. Passo 6: som (SAS, Atrac3+ pelo ffmpeg, ALSA) e dois ajustes de entrada (feito em 2026-11-14)
+
+Três peças do firmware, só em `platform/pc/` (**nada em `src/` ou `include/` muda**; `make host-check` 0 falhas,
+`make host-lto` 4 severos, os mesmos; `make host-run` vivo), mais um ajuste no gerador de dados do host.
+
+**O que toca (conferido pelo despejo `TAGFORCE_WAV`, RMS por segundo, sem ouvido):** a música do título (Atrac3+,
+loop em 245626..1722583 amostras), a música do duelo (loop desde o começo, ~58 s), as falas dos personagens nas
+apresentações e cut-ins (clipes Atrac3+ de 1 a 4 s) e os efeitos (vozes SAS, VAG do `psp_snddat.bin`: carta, cursor,
+ataque). O trecho do título no WAV tem correlação 1,0000 com o PCM que o ffmpeg decodifica do mesmo arquivo AT3
+(`build/host/snd6/`, scripts em `/tmp`): o caminho decodificador → `snd_streams_decode` → `wave_audio_write` →
+`sceAudioOutputPannedBlocking` → WAV é só uma escala de volume. Com a janela e a ALSA real (PipeWire): canal aberto em
+`default`, 25 s sem erro de escrita nem travamento.
+
+| Arquivo | O quê |
+|---|---|
+| `platform/pc/audio.c` | `sceAudio*`: cada canal reservado é um fluxo PCM próprio na ALSA de 32 bits (`default`; o PipeWire ou o dmix misturam os fluxos, como o hardware da PSP mistura os 8 canais). `OutputBlocking`/`OutputPannedBlocking` escalam o bloco pelo volume (`× vol >> 15`), somam no WAV e escrevem no dispositivo **fora da CPU** (`host_cpu_leave`/`host_cpu_enter` do `kernel.c`: a thread sai do escalonador como numa espera e volta só quando é a pronta de maior prioridade; a de som é, então preempta no próximo ponto de escalonamento, como o fim de um delay). Sem dispositivo (`TAGFORCE_HEADLESS=1`, `TAGFORCE_AUDIO=0`, ou a abertura falhando) o relógio do host dá o ritmo, como antes. `TAGFORCE_AUDIO=<nome>` escolhe o dispositivo ALSA (também sem janela). `TAGFORCE_WAV=caminho` grava a mistura de todos os canais (cada um somado no próprio cursor, com saturação; cabeçalho reescrito a cada bloco, então o arquivo vale mesmo com `_Exit`). Na prática o jogo escreve um canal só (`wave_hw_ch[2]`, a thread de som; a `SceWaveMain` da libwave só escreve quando um canal de onda toca, e o jogo não usa nenhum) |
+| `platform/pc/sas.c` | `__sceSas*`: o mixer de 32 vozes da PSP, seguindo o `Core/HW/SasAudio.cpp` do PPSSPP: VAG ADPCM (blocos de 16 bytes: filtro/shift, flag — 7 termina, 6 marca o começo do loop, 3 volta quando o loop está ligado —, 28 nibbles; os 5 filtros da PS1), reamostragem linear a `pitch/0x1000`, envelope ADSR de 0..0x40000000 andado uma vez por amostra de saída (os modos linear/curvo/exponencial, a decodificação das palavras ADSR1/ADSR2 "simples" que o jogo usa — `snd_voice_set_simple_adsr` em `snd_alloc.c` —, mais `SetADSR`/`SetADSRmode`/`SetSL`), volumes em 1/0x1000, `GetEndFlag` com o bit de cada voz parada, `GetEnvelopeHeight`, pausa por máscara. `__sceSasCore` escreve um grão (256 quadros) em `snd_mix_buf`; `CoreWithMix` soma ao que já está lá. Sem atraso de 32 amostras no key-on, sem vozes de ruído ou PCM, sem reverb (o jogo só usa o dry); `TAGFORCE_TRACE_SAS` registra os key-ons e os primeiros grãos com sinal |
+| `platform/pc/atrac.c` | `sceAtrac*` com decodificação real: o jogo entrega a `sceAtracSetDataAndGetID` um arquivo RIFF/AT3 inteiro do banco de som; ele é hasheado (FNV-1a 64), decodificado uma vez pelo `ffmpeg` do sistema (64 bits, subprocesso por `posix_spawnp`: `-i <hash>.at3 -f s16le -ac 2 -ar 44100`) em `$XDG_CACHE_HOME/tagforce/at3/<hash>.pcm` (padrão `~/.cache/tagforce/at3`) e o PCM é `mmap`ado. A amostra 0 do jogo é a amostra `368 + fact[1]` do decodificador (o `FirstSampleOffsetFull` do PPSSPP para Atrac3+: o atraso do codificador, que o ffmpeg também entrega; conferido: `decoded − fact` = exatamente `368 + fact[1]` na música do título); os pontos de loop do `smpl` são amostras do decodificador e `sceAtracGetSoundSample` os devolve a partir da amostra 0, como o firmware — pode dar negativo (a música do duelo começa o loop em `fact[1]`: −368), e o `snd_obj_begin` do jogo trata isso (`if (loop < 0) loop = 0`). `DecodeData` dá 2048 quadros por chamada, enrolando no loop enquanto houver voltas (−1: sempre), o último quadro curto nos sem loop. Sem ffmpeg (ou decodificação falhando) o fluxo é silêncio com a duração do cabeçalho, como no passo 5a. `TAGFORCE_TRACE_ATRAC` registra cada fluxo (tamanho, `fact`, quadros decodificados, salto, loop) e deixa o `.at3` no cache para comparar à mão |
+| `platform/pc/kernel.c` | a saída de áudio saiu (foi para o `audio.c`); `host_sleep_until`, `host_cpu_leave`/`host_cpu_enter`; `host_pad_polls` conta as leituras do pad (`sceCtrlPeek/ReadBufferPositive`); `TAGFORCE_TRACE_PAD` imprime a contagem contra o tempo e os quadros a cada 100 leituras |
+| `platform/pc/window.c` | `TAGFORCE_PAD="leitura:máscara[:leituras],..."`: **a unidade passou a ser a leitura do pad, não o quadro apresentado**, e a duração padrão é 1 leitura. O `pad_update` do BOOT roda uma vez por volta do laço principal (`p.trig` = borda), então um Down de uma leitura move exatamente uma vez — conferido no menu do título (New Game → Continue → "There is no data from this game"). A sintaxe é a mesma; os números do passo 5b valem (no título há uma leitura por quadro apresentado, 30/s) |
+| `platform/pc/utility.c` | OSK sem `TAGFORCE_OSK` e com o campo vazio "digita" `Player` |
+| `platform/pc/font.c` | registra (uma vez por código, até 16) cada glifo que a TTF não tem e o substituto usado |
+| `tools/host_data.py` | cada bloco `.data`/`.bss` copiado do ELF começa em `.balign 4096` + `.skip (endereço & 0xFFF)` e os objetos que o C define viram preenchimento em vez de buraco: **o endereço de cada objeto da cópia mantém a fase da PSP (mod 4096)**. Era o motivo de o SAS não tocar: `snd_sas_core` recusa um buffer de mistura que não esteja alinhado a 64 bytes (`0x80420005`); `snd_mix_buf` está em `0x08BF6680` na PSP e caía em `...824` no host. `--selftest` acompanha o deslocamento |
+| `tools/host_link.py` | `-lasound` |
+
+### 8.1 Achados
+
+- **Como o jogo produz som (`BOOT/snd_out.c`, `libsas.c`, `libwave.c`):** a thread de som (`snd_thread_main`, prioridade
+  0x10) a cada bloco de 256 quadros: `__sceSasCore` para `snd_mix_buf` (modo 0x10), efeito global, `snd_streams_decode`
+  (decodifica os fluxos Atrac para os anéis de PCM e soma 256 quadros de cada no bloco, com pan), depois
+  `wave_audio_write(2, vol, vol, buf)` → `sceAudioOutputPannedBlocking(wave_hw_ch[2], ...)` com o volume mestre
+  (`m->cur << 1`). As vozes SAS: `snd_obj_begin` (`snd_alloc.c`) faz `SetVoice` (VAG cru do banco, sem cabeçalho
+  `VAGp`), `SetPitch` (afinação com espalhamento aleatório), `SetVolume(0)` e `SetSimpleADSR`; `snd_voices_update`
+  aplica o volume/pan e dá o `KeyOn` no bloco seguinte, e libera a voz quando `GetEndFlag` acende o bit. Nenhum
+  `sceAudioOutputPanned` não bloqueante, `ChangeChannelConfig` ou `GetChannelRestLength` é chamado no caminho.
+- **A música do duelo é masterizada no limite:** o PCM do ffmpeg bate em ±32768 a cada 5 s; no WAV o pico constante
+  6543 é só `32767 × volume mestre` (0x1990/0x8000 ≈ 0,2), não saturação nossa. A do título fica em ~13700.
+- **Envelope "simples" do jogo:** ataque curvo com taxa 0x1C000000 (2 amostras), decaimento exponencial com taxa
+  0x7FFFFFFF (um passo até a metade), sustain linear a 0 (mantém) e release instantâneo: na prática a voz toca o VAG
+  a meia altura e termina com o bloco de flag 7 ou o key-off. Mesma aritmética do PPSSPP (`WalkCurve`).
+- **O loop da música do duelo falhava** na primeira rodada: o começo do loop (−368) era tratado como "sem loop" e
+  `sceAtracSetLoopNum(-1)` era recusado; a música parava em 57,6 s. Agora um fluxo tem loop quando o fim do loop existe.
+- **O nome do jogador não era um glifo de substituição:** é vazio num jogo novo (o `SysSave.name` que o título lê
+  só é preenchido pelo OSK; `sysmsg 0x17`, "Default Settings", vai para outro campo, `player_name`). O ícone no campo
+  é da arte da tela. Com `TAGFORCE_OSK=Jaden` (× na tela do nome abre o OSK) o nome aparece na TTF; sem a variável o
+  OSK agora dá `Player`. Nenhum "font: no glyph" em todo o caminho título → história.
+- **ffmpeg avisa "non monotonically increasing dts"** a cada pacote do demuxer WAV com Atrac3+; a saída está certa
+  (correlação 1,0 com o que o jogo mistura); `-loglevel fatal` esconde.
+- **Falta:** reverb do SAS (`RevType/RevParam/RevVON` aceitos e ignorados: só o dry sai; `snd_fx_setup` liga o wet
+  quando uma cena pede um tipo de efeito), vozes de ruído e PCM (não usadas), o atraso de 32 amostras no key-on, `sceAudioOutputPanned` não
+  bloqueante (tratado como bloqueante), vídeo PMF (ainda em stub: a abertura do título segue muda e sem imagem), o
+  `.at3` decodificado de forma síncrona na primeira vez (centenas de ms por clipe novo; o cache resolve nas seguintes).
