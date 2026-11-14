@@ -1,5 +1,4 @@
 // @range 0x0881FFEC-0x08822898
-// @asm 0x088213DC-0x088216B0
 // @rodata 0x08839344-0x08839368
 // @data 0x0883D44C-0x0883D504
 /* The pages of the PDA: the player's status (days, duels won/lost/drawn, win rate, cards), the
@@ -362,11 +361,16 @@ void *pda_draw_options(void *list, int x, int y)
     return font_text_clear();
 }
 
+/* the highlight of the cursor's tab: blinks (bit 1 of wait) while the page is leaving. A helper that
+   returns hl on the "keep" path gives the original's bne + b (the value-returning inline helper of round 27) */
+static inline int pda_tab_hl(FieldPda *p, int hl)
+{
+    if (p->leaving && (p->wait >> 1 & 1) == 1)
+        return hl;
+    return 1;
+}
+
 /* the page buttons; n < 4: the buttons slide in (n = frame), else the cursor is on the page */
-#ifdef NON_MATCHING /* 4 palavras: com hl, i, sel, d, py, alpha nessa ordem os $s batem; falta o teste do bit de
-   wait: o original faz bne para hl = 1 e b com sel = 1 no atraso; aqui sai beql (== 1) com sel no atraso. Nenhuma forma
-   do if (||, else if, goto para um bloco comum hl/sel, == 1 vazio) reproduziu. O laço com as expressões em i (o mwcc
-   cria as variáveis de indução) e i * 2 + 2u reproduzem o i*2 mantido à parte */
 void *pda_draw_tabs(void *list, int x, int y, int n)
 {
     int sliding = 0;
@@ -392,11 +396,7 @@ void *pda_draw_tabs(void *list, int x, int y, int n)
         sel = 0;
         alpha = 0xFF;
         if (!sliding && field_pda->cursor == i) {
-if (field_pda->leaving) {
-                if ((field_pda->wait >> 1 & 1) != 1)
-                    hl = 1;
-            } else
-                hl = 1;
+            hl = pda_tab_hl(field_pda, hl);
             sel = 1;
         }
         if (hl) {
@@ -417,7 +417,6 @@ if (field_pda->leaving) {
     }
     return list;
 }
-#endif
 
 /* calendar of the month shown: weekday header, the days with their marks, and the date of the cursor */
 void *pda_draw_calendar(void *list, int x, int y)
