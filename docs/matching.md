@@ -2566,3 +2566,43 @@ Bateram `snd_output`, `snd_bank_open_async`, `snd_obj_alloc`, `gfx_save_bmp` e `
   (`dd_cursor_cycle`) tem o laço dentro de um `case` alcançado pela tabela de saltos.
 - `debug_menu_draw`/`debug_menu_update` (fuzzy 0 no relatório): existem, mas não têm C nenhum (só `@asm`, menu de
   depuração inalcançável), então o asm_try não acha a função no objeto.
+## Rodada 28 (`r28M`): reteste do `matching_skip` de libtitle, libshop, libdeck*, libselect_card, liblimitlist, librecipe_viewer
+
+Bateram `dk/ds/dt/sc_draw_info` (3 palavras cada, no skip desde a rodada 10) e `tdl_rules_draw` (31, rodada 22);
+`ttab_draw` 37 -> 34. Nenhuma das outras 32 entradas se mexeu com a pragma `opt_propagation off` (varredura de
+`opt_propagation`, `opt_lifetimes`, `opt_dead_assignments`, `opt_common_subs` e `peephole` em todas: só pioram) nem com
+o helper `static inline` com `return` por saída, nem com gêmeas já batendo (`twins_matched.py`: nenhuma).
+- **Duas variáveis para o mesmo valor em ramos diferentes** (`*_draw_info`: `list` em `$s1` e `r` em `$s0` no
+  original, o nosso juntava as duas em `$s0`): o ramo de um painel usa `r = cardlist_build(list, ...)` e o ramo de
+  vários painéis reatribui o **próprio parâmetro** (`list = dk_draw_kind_icon(list, ...)`, ..., `list =
+  font_text_clear()`) e só a última chamada vai para `r` (`r = dl_disable(list, 2)`), que o `return r` comum
+  devolve. O sinal no asm: um ramo faz `move sN,v0` num registrador e o outro noutro, e o parâmetro de entrada
+  fica no registrador do segundo ramo. Inicializador `r = list`, cast redundante, `volatile`, ordem das
+  declarações e `opt_propagation off` não mudam nada; a forma certa é qual variável recebe cada chamada.
+- **Desvio likely para a instrução seguinte com o corpo no atraso** (`tdl_rules_draw`: `slti at,s1,3; beqzl at,+1;
+  addiu s1,s1,-1`): não é "modo sem limpeza" nem helper inline, é um **if/else cujo `then` some**. O mwcc gera
+  `if (c) A; else B;` com `B` de uma instrução como `b!c-likely JOIN; B(atraso); A; JOIN:`; se `A` é uma cópia
+  coalescida (`n = k` com `k` `short` já estendido em `$s1`) ela vira nada e sobra o likely degenerado. Bateu com
+  `if (k <= 2) n = k; else n = k - 1;` (`short k`); `n = k; if (n > 2) n--;` dá `bnez; nop; addiu`, e `int k` dá
+  `bnezl at; move s1,v0; addiu s1,v0,-1` (o then não some porque `k` ainda está em `v0`). O mesmo idioma em
+  `ttab_draw` (`beqzl s1,JOIN; move v1,zero` + `b JOIN; nop` do `break`): `case 1: if (sel) show = 1; else show =
+  0;` (o `show = 1` some porque `show` já é 1). Procure-o onde o original tem `bXXl` para a própria instrução
+  seguinte, ou um likely cujo atraso é o corpo do `else` e o `then` não aparece.
+- Sem forma (testado de novo, 10-20 variantes cada): `*_draw_digits` (2: `move t0,a2` antes do `jal` e `move
+  a3,s7` no atraso; locais `h`/`w2`, wrapper inline, `9U`, tipos, ordem), `shop_result_input` (2: helper inline
+  com `return 0` nos dois ramos do passo 1 continua enchendo o `b` com o `move v0,zero` do alvo e não dobra o
+  valor devolvido), `shop_item_key` (20: a forma de `shop_sort_value`, que bate, tem o `v = -2` depois do switch
+  dos atributos com 3 predecessores; aqui o bloco `li v0,-2` do fim tem 1 só e o mwcc copia-o para o atraso do `b`
+  do `default`; com tudo em `return` o bloco fica órfão mas o `b` continua preenchido), `*_flight_undo`/`*_input_move`
+  (3-5: `bnezl v0; li v0,1; move v0,zero` é um if/else 0/1 que o mwcc transforma em `slti`/`sltu` em todas as
+  formas, inclusive via helper e `switch` do valor negado; o `switch (h.dst)` dá o likely com o case 0 no atraso),
+  `ll_draw_row` (3: o `or a1,s0,s4` do ramo sem monstro sai depois dos `move`; local, `volatile`, expressão
+  inline, ordem não mudam), `tpanel_init` (2), `shop_open_layout` (4: a leitura volátil de `card_up.z` sem o `+2`
+  acerta a ordem das cargas mas troca os `$f`, 6 palavras), `dk_search_finish` (8: `v` em `$s0` reaproveitando o
+  `l` morto e `len` em `$s2`; ordem/tipo, `v` em bloco, reaproveitar `l` como ponteiro do laço não dão),
+  `ll_move_grid` (6, busca aleatória de 240 ordens x tipos), `tfd_main_text` (8), `shop_draw_shelf` (24: `jal
+  shop_shelf_cursor; nop`; protótipo K&R, local, `volatile`, condição reescrita), `tfd_regulation_select` (64: o
+  `1` de `lim` e do `n >= 1` vive em `a0`; variável `one` com e sem `opt_propagation off`, `lim` local com 1
+  parâmetro). Scripts: `build/tmp/r28M/vt.py` (variantes em paralelo por substituição de texto, sem tocar o
+  fonte), `rs.py` (busca aleatória ordem x tipo x inicializador), `nasm.sh`/`fa.sh` (asm compilado e original
+  numerados), `promote.py` (tira o `#ifdef NON_MATCHING`, a linha `@asm` exata e marca `matched`).
