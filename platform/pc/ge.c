@@ -323,6 +323,10 @@ static void dxt_decode(const u8 *src, u32 fmt, u32 tw, u32 th, u32 rowbytes)
             const u8 *b = src + by * rowbytes + bx * bs;
             u32 c1 = b[4] | b[5] << 8, c2 = b[6] | b[7] << 8, col[4], i;
             u32 ca = c16(c1, 0), cb = c16(c2, 0);
+            /* DXT colors are RGB565 with red in the HIGH bits (PPSSPP's DecodeColors, tools/gim.py c565), the
+               opposite of the GE's own 5650: every DXT texture came out with red and blue swapped (blue card backs) */
+            ca = (ca & 0xFF00FF00u) | (ca >> 16 & 0xFF) | (ca & 0xFF) << 16;
+            cb = (cb & 0xFF00FF00u) | (cb >> 16 & 0xFF) | (cb & 0xFF) << 16;
             unsigned long long ad = 0;
             u32 al[8];
             col[0] = ca;

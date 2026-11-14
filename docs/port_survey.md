@@ -612,4 +612,11 @@ sessão jogada à mão (título → história → Deck Edit → começo de um du
 - **Ferramentas de teste:** `TAGFORCE_PADFILE=arquivo` (a máscara do pad, em hexa, lida do arquivo a cada leitura:
   dirige uma rodada sem janela ao vivo, junto com `TAGFORCE_DUMP` de nome fixo); o `TAGFORCE_GE_TRACE` também
   imprime posição e texel dos vértices (todos quando o desenho tem até 8).
-- **Falta:** as cartas no duelo saem com cores erradas e o jogo morre com SIGSEGV pouco depois do começo do duelo.
+- **Cartas com vermelho e azul trocados:** as cores dos blocos DXT são RGB565 com o vermelho nos bits ALTOS (como
+  no `DecodeColors` do PPSSPP e no `c565` do `tools/gim.py`), o contrário do 5650 da GE; o `dxt_decode` usava o
+  5650. Toda textura DXT saía trocada: verso azul das cartas no campo, a arte das cartas (`cardh`/`cardm`).
+- **SIGSEGV no começo do duelo:** `func_0882228C` (`libduel_draw/dd_action_menu.c`, callback `draw_before` da
+  janela de corrente) estava como `void` no rascunho; o `menu_draw` usa o retorno como a lista (`*dl = ...`) e no
+  x86 vinha 0. Com o retorno a função bate (58 → 0). Mesma classe, corrigidas sem perder o match: `func_08821954`,
+  `func_0882382C`, `func_08824D7C`, `fld_sctab_draw_text(2)` (terminavam numa chamada que devolve a lista; na PSP o
+  `v0` sobrevivia por acaso). Conferir os demais callbacks de `MenuWidget` ao escrever novos.
