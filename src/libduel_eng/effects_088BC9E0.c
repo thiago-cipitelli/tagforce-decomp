@@ -1,5 +1,4 @@
 // @range 0x088BC9E0-0x088C004C
-// @asm 0x088BD4E0-0x088BD9A4
 /* Card effect handlers: candidate lists for duel_088BFC64 (after effects_088BB8C0.c), and the list itself:
    duel_088BFC64 appends a card and its zone to duel_w_08915258 (at most 0x1FF), and duel_088BFF78 runs the list handler of an effect key from the sorted table at
    0x08912988 (binary search over 0x16D entries) and returns the count. */
@@ -242,9 +241,9 @@ void duel_088BD3F8(unsigned int p, int b, int i)
     }
 }
 
-#ifdef NON_MATCHING /* 8 palavras (eram 277): só o topo difere (sw de p antes do ext e sw de max antes do bnez; andi do índice no
-   delay slot). Rodada 24: anel por duel_chain.uids[(duel_chain.uids_head + n) & 0x7F] (o store por array global não
-   invalida o head nem cnt[j], e o mwcc não desenrola por 8), (int)c >> 16 & 0xFFFF, i int para o laço de zeragem */
+/* c = (max << 16) | índice na mão. O índice é um local atribuído antes do teste (andi no delay slot do bnez). O anel
+   é gravado por duel_chain.uids[(duel_chain.uids_head + n) & 0x7F] (o store por array global não invalida o head nem
+   cnt[j], e o mwcc não desenrola por 8). */
 void duel_088BD4E0(unsigned int p, int b, unsigned int c)
 {
     int i;
@@ -254,18 +253,20 @@ void duel_088BD4E0(unsigned int p, int b, unsigned int c)
     int j;
     int n;
     int max;
+    unsigned int ix;
     int cnt[13];
 
     max = (int)c >> 16 & 0xFFFF;
+    ix = c & 0xFFFF;
     if (max == 0) {
-        id = duel.players[p & 1].hand[c & 0xFFFF].id;
+        id = duel.players[p & 1].hand[ix].id;
         if (!card_is_monster(id)) {
             return;
         }
         if (!card_is_in_group_19bb(id)) {
             return;
         }
-        lv = duel_list_card_level(p, CARD_UID(duel.players[p & 1].hand[c & 0xFFFF]));
+        lv = duel_list_card_level(p, CARD_UID(duel.players[p & 1].hand[ix]));
         if (lv <= 4) {
             return;
         }
@@ -301,7 +302,6 @@ void duel_088BD4E0(unsigned int p, int b, unsigned int c)
         }
     }
 }
-#endif
 
 void duel_088BD9A4(unsigned int p)
 {

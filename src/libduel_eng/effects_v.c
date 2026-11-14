@@ -1,5 +1,4 @@
 // @range 0x08885B70-0x08886984
-// @asm 0x088862DC-0x08886604
 /* Card effect handlers (DuelAct *a), after effects_u.c. */
 #include "duel.h"
 
@@ -275,13 +274,11 @@ int duel_08886250(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 4 palavras (eram 14): p = a->player antes do teste do uid acerta o 1º bloco; `i++, p = a->player`
-                      no passo do for (forma de duel_0886E590) acerta o fim do laço de 0x80. Falta o topo do laço: o
-                      original faz o andi 0xff de p antes do p & 1 do índice (a narrowing do argumento alimenta o
-                      índice); casts no índice/argumento, uid local, while, n +=, ZSLOT não reproduzem (rodada 28) */
+/* p é unsigned int e os índices de jogador usam (unsigned char)p & 1 (é o cast que dá o andi 0xff antes do & 1 no
+   topo do laço); no 1º teste a base do jogador vem antes de zone * sizeof(DuelSlot) (ZSLOT com a soma invertida). */
 int duel_088862DC(DuelAct *a)
 {
-    unsigned char p;
+    unsigned int p;
     unsigned int i;
     int n;
 
@@ -289,7 +286,7 @@ int duel_088862DC(DuelAct *a)
         return 0;
     }
     p = a->player;
-    if (a->uid != CARD_UID(duel.players[p & 1].field[a->zone].card)) {
+    if (a->uid != CARD_UID(((DuelPlayer *)((unsigned int)&duel.players[(unsigned char)p & 1] + a->zone * sizeof(DuelSlot)))->field[0].card)) {
         return 0;
     }
     if (duel.mode & 1) {
@@ -302,14 +299,14 @@ int duel_088862DC(DuelAct *a)
     case 0x80:
         n = 0;
         for (i = 0; i < duel.players[p & 1].n_hand; i++, p = a->player) {
-            if (duel_08827D98(p, CARD_UID(duel.players[p & 1].hand[i])) != 0) {
+            if (duel_08827D98((unsigned char)p, CARD_UID(duel.players[(unsigned char)p & 1].hand[i])) != 0) {
                 n++;
             }
         }
         if (n == 0) {
             return 0x78;
         }
-        duel_0884ACD8((int)p, 0x27);
+        duel_0884ACD8(p, 0x27);
         return 0x7F;
     case 0x7F:
         duel_w_08914A2A.b4 = 0;
@@ -344,7 +341,6 @@ int duel_088862DC(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_08886604(DuelAct *a)
 {
