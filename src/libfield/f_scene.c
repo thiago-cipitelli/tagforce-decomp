@@ -1,5 +1,5 @@
 // @range 0x08810814-0x08811BE0
-// @asm 0x08810814-0x08810F44
+// @rodata 0x08838878-0x088388F0
 /* Scene commands of the field scripts: the story parameters of the scene, placing the player,
    the camera target, saving the positions of the player and the NPCs, door sounds, waits, and the
    scene GIM loaded with them. */
@@ -67,10 +67,6 @@ int fcho_update(void);
 void fld_dlg_open(unsigned short *text, int buttons, int button);
 int fld_dlg_update(void);
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. O switch de fcal_update tem tabela de saltos (case 0/2 explícitos;
-   tabela em 0x08838878, a do switch de modo em 0x08838890: promover exige @rodata 0x08838878-0x088388F0). Falta 1
-   instrução: no case 5 o original deixa o move a0,v0 antes do jal de fld_voice_play (nop no atraso), o que desloca o
-   resto (~150 palavras). */
 /* per frame: the NPC in front of the player, then the scene mode (x88): 0 lock and turn back,
    1 input, 2/3 the question box, 5/6 talking (sctab), 7/8 the bag, 9/10 a message, 11/12 the
    calendar, 13..16 the get windows, 17/18 the clock, 19/20 the choice list, 23 leave for the
@@ -122,8 +118,14 @@ void fld_scene_update(void)
         case 5:
             fld_sctab_open();
             r = fld_npc_get_c0(s->pad8c[0]);
-            if (r != 0 && r != -1)
+            switch (r) { /* the switch (not an if with &&) leaves the move a0,v0 before the jal */
+            case -1:
+            case 0:
+                break;
+            default:
                 fld_voice_play(r);
+                break;
+            }
             *mode = 6;
             break;
         case 6:
@@ -327,7 +329,6 @@ void fld_scene_update(void)
     if (fpt_ready() != 0)
         s->x08 = 0;
 }
-#endif
 
 /* draws the characters and the HUD, then the menu of the scene mode (x88), and the calendar over it */
 void fld_scene_draw(void)
