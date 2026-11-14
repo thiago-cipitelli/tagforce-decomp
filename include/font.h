@@ -141,8 +141,14 @@ int sceFontFindOptimumFont(int lib, SceFontStyle *style, unsigned int *err);
 int sceFontOpen(int lib, int index, int mode, unsigned int *err);
 int sceFontGetFontInfo(int font, SceFontInfo *info);
 int sceFontSetAltCharacterCode(int lib, unsigned short code);
+#ifdef __MWERKS__
+/* the game's header passed the u16 `code` through without andi 0xFFFF (font_glyph_cache) */
+int sceFontGetCharInfo(int font, unsigned short code, SceFontCharInfo *info);
+int sceFontGetCharGlyphImage(int font, unsigned short code, SceFontGlyphImage *img);
+#else
 int sceFontGetCharInfo(int font, unsigned int code, SceFontCharInfo *info);
 int sceFontGetCharGlyphImage(int font, unsigned int code, SceFontGlyphImage *img);
+#endif
 
 /* font.c */
 int font_init(void *fs);
@@ -150,7 +156,7 @@ void font_mbs_reset(void);
 int font_mbs_to_wcs(unsigned short *dst, unsigned int n, const char *src);
 int font_set_layer(char layer);
 unsigned int font_draw_wtext_simple(int x, int y, int x0, int xmax, unsigned short *text);
-int font_glyph_find(unsigned int code);
+int font_glyph_find(unsigned short code);
 void font_dl_begin(int layer);
 void font_dl_end(void);
 void font_glyph_quad(int x, int y, int slot);

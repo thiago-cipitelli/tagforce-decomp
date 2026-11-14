@@ -2957,3 +2957,13 @@ um `return` comum, `default: break;`, `do {} while (0)`, `switch` vazio, rótulo
 `scheduling`, `optimization_level`), o build 121. `#pragma opt_common_subs off` explica as releituras de
 `child`/`size` de `gim_walk` sem o `volatile`. `efs_run`: o `default` lê `id = cmd->h.id & 0xFFFFFF` antes do 1º
 teste (`lw v1,0(s2)` antes de `lw v0,36(sp)`), 26 -> 17 palavras alinhadas, todas do modo.
+## Rodada 30 (`bC`): parâmetro u16 que o original não mascara na entrada
+
+`font_glyph_cache(img, unsigned short code)`: o mwcc só faz o `andi 0xFFFF` de um parâmetro u16 **na entrada** (e guarda a
+cópia mascarada num `$s`) quando algum uso exige o valor estendido, por exemplo passá-lo a um callee cujo protótipo tem
+`unsigned int`/`int`. No original o u16 fica cru num `$s` e só há `andi` no uso aritmético (`code < 0x2300`): os callees
+que recebem `code` (`font_glyph_find`, `sceFontGetCharInfo`, `sceFontGetCharGlyphImage`) tinham protótipo `unsigned short`.
+Os chamadores confirmam o tipo do parâmetro: `move a1,s2` cru antes do `jal` = protótipo u16 (com `unsigned int` sai
+`andi a1,s2,0xffff`). Trocar o parâmetro para `unsigned int` no draft baixa as palavras mas quebra os chamadores que já
+batiam; o certo é mudar o protótipo dos callees (sob `#ifdef __MWERKS__` quando é API do firmware que o port implementa).
+302 -> 55 palavras (resta só `f`/`font` com `s1`/`s5` trocados).
