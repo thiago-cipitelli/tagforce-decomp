@@ -1,6 +1,5 @@
 // @range 0x088132FC-0x088138AC
 // @asm 0x088134BC-0x088136E8
-// @asm 0x08813874-0x08813894
 /* Mails of the PDA: the received list in the save (100 records of 6 bytes: mail id, new/read flags,
    sender, date), the mail table of brain.ehp (MailESM) and its texts (MailEL/MailEI), the view list
    built for the PDA and the attachments of an opened mail. */
@@ -223,16 +222,21 @@ StMailAttach *st_mail_open(int id)
     return st_mail_attach;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: o original materializa &st_mail_tbl (lui/addiu) antes do lw 0; o mwcc sempre dobra o %lo (const, cast char*, volatile, register, inline não mudam); o laço já bate */
 /* record of a mail in MailESM (assumed present) */
+#ifdef __MWERKS__
+#pragma opt_propagation off /* the original materializes &st_mail_tbl (lui/addiu) before the lw 0 (no copy propagation) */
+#endif
 unsigned short *st_mail_find(int id)
 {
-    unsigned short *p = *(unsigned short **)((char *)&st_mail_tbl + id * 0);
+    StMailTables *t = &st_mail_tbl;
+    unsigned short *p = t->esm;
     for (;;) {
         if (*p == id) return p;
         p += 5;
     }
 }
+#ifdef __MWERKS__
+#pragma opt_propagation reset
 #endif
 
 int *st_mail_index(void)

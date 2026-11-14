@@ -2,7 +2,6 @@
 // @data 0x0882F370-0x0882F384
 // @rodata 0x0882B2D4-0x0882B344
 // @asm 0x0881C0E0-0x0881C474
-// @asm 0x0881D94C-0x0881D994
 /* End of the free duel setup: the password lobby (cards picked with libselect_card), the duel info
    panel, the vs CPU entry, the option list drawing, the character pick (libcharalist) and the entry
    message. */
@@ -796,11 +795,16 @@ void *tfd_config_draw_label(void *list)
     return tbox_small(list, id, 9, 0x67, 0x135, 0x10);
 }
 
-#ifdef NON_MATCHING /* 8 palavras: o original calcula y + 0x10 antes de mover x. Tentado: y += 0x10, local yy, list = ...; return list, (short) */
+#ifdef __MWERKS__
+#pragma opt_propagation off /* the original computes y + 0x10 before moving x: the local yy is kept (no copy propagation) */
+#endif
 void *tfd_main_text(void *list, int i, int x, int y, int w, int h)
 {
-    return title_msg_font(list, x, y + 0x10, 0x12C, 0xC, 0x22, 0, 0xF, 0xF, 0xFF404040);
+    int yy = y + 0x10;
+    return title_msg_font(list, x, yy, 0x12C, 0xC, 0x22, 0, 0xF, 0xF, 0xFF404040);
 }
+#ifdef __MWERKS__
+#pragma opt_propagation reset
 #endif
 
 /* input of the option list */

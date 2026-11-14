@@ -2835,3 +2835,23 @@ Bateu `duel_card_fits_zone` (17 -> 0, `grave.c` inteiro em C). As 19 outras não
   int)(unsigned char)p` no índice e no argumento) faz o `andi 0xff` de `p` alimentar o `& 1` do índice no topo do laço
   (forma do original), mas gira `a1/a2/a3` no teste do uid do início (7 palavras; 240 variantes de ordem x tipo x
   forma do teste não desfazem). Fica a forma de 4 palavras.
+## Rodada 29 (`r29M2`): reteste das entradas curtas do skip (libtitle, liblimitlist, libtutorial, libstory)
+
+Bateram `st_mail_find` (6 -> 0) e `tfd_main_text` (8 -> 0), as duas com a mesma receita: **`#pragma opt_propagation
+off` por função + um local explícito para o valor que o original materializa cedo**. A pragma sozinha não muda nada
+nas duas (6 e 8); o local sozinho é propagado (6 e 8); juntos batem.
+- `st_mail_find` (`lui; addiu; lw 0(r)`, "único no jogo"): `StMailTables *t = &st_mail_tbl; unsigned short *p =
+  t->esm;`. Sem propagação o endereço do global fica inteiro num registrador e a carga usa offset 0. Sinal: um
+  `lui/addiu` de global seguido de `lw/lh 0(r)` que o mwcc normalmente dobraria em `lw %lo(g)(r)`.
+- `tfd_main_text` (o original calcula `y + 0x10` antes dos `move` de argumento): `int yy = y + 0x10;` e `yy` na
+  chamada. Sinal: uma expressão de argumento calculada antes das cópias de parâmetros para os registradores de
+  argumento, num wrapper sem `$s`.
+- Sem forma (pragmas `opt_propagation`/`opt_lifetimes`/`opt_dead_assignments`/`opt_common_subs`, local + pragma,
+  ordem x tipo das declarações, volatile): `tpanel_init` (2: 576 ordens de declaração x forma do `n`), `ll_draw_row`
+  (3), `op_bgm` (4: a forma invertida dá o `bnezl` com `sw` no atraso mas o `b` do `else` sai preenchido com o `sw`;
+  falta o `b; nop` — `else return`, `return` no laço, helpers inline, `id[1]`/struct, `volatile` não ligam o modo sem
+  limpeza só ali), `ll_move_grid` (6: tipos de `t`/`rep`, ordem das atribuições iniciais), `tut_script_preload_faces`
+  (6: condição/incremento/tipo de `done`, 8 pragmas), `st_chr_step_value` (10: 108 ordens x atribuições x tipo de
+  `level`), `tut_event_hook` (15), `ll_move_list` (22: 72 ordens x tipo de `t`, volatile em cada carga, locais
+  removidos), `tpanel_draw_split` (24: contador/`iy` trocados por outras variáveis, locais de bloco em 120 ordens,
+  formas do `iy - 1` do `tframe_cursor`, local + pragma).
