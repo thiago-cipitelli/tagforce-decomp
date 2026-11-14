@@ -1,5 +1,4 @@
-// @range 0x08827B8C-0x08828590
-// @asm 0x08827B8C-0x08827D98
+// @range 0x08827D98-0x08828590
 // @data 0x088ED434-0x088ED474
 /* EHF particles, part 3: positions in a cone around a direction, emitter positions moved into the
    current model space, velocity generators (constant, radial from a center) and the per-frame
@@ -31,14 +30,6 @@ typedef struct EhfEmitter {
     float accum;                       /* +0x14 */
     int next;                          /* +0x18 */
 } EhfEmitter;
-
-typedef struct EhfCone {               /* random direction within `cosang` of the axis rotated by q */
-    Vec4 q;                            /* rotation from +y to the cone axis */
-    float center[3];                   /* +0x10 */
-    float cosang;                      /* +0x1C */
-    float r0;                          /* +0x20 */
-    float r1;                          /* +0x24 */
-} EhfCone;
 
 typedef struct EhfLocal {              /* previous position callback, result moved to model space */
     EhfPosFn pos;
@@ -77,39 +68,7 @@ float sqrtf_vfpu(float x);
 float sinf(float x);
 float cosf(float x);
 
-int ehf_ptcl_cone(float *out, EhfEmitter *e, EhfCone *c);
-
-#define RAND15(s) ((int)((s) >> 16 & 0x7FFF))
-
-#ifdef NON_MATCHING /* the out pointer is copied to $s2 earlier, so the seed pointer lands in $a0 instead of $t0 */
-/* Random point in the cone, between radii r0 and r1. */
-int ehf_ptcl_cone(float *out, EhfEmitter *e, EhfCone *c)
-{
-    Mat4 m;
-    float ang;
-    Vec4 v;
-    float s;
-
-    rand3_seeds[rand3_slot][0] *= 0x41C64E6D;
-    rand3_seeds[rand3_slot][0] += 0x3039;
-    ang = RAND15(rand3_seeds[rand3_slot][0]) / 32767.0f * 6.283185307179586;
-    rand3_seeds[rand3_slot][0] *= 0x41C64E6D;
-    rand3_seeds[rand3_slot][0] += 0x3039;
-    v.y = c->cosang + (1.0f - c->cosang) * (RAND15(rand3_seeds[rand3_slot][0]) / 32767.0f);
-    s = sqrtf_fpu(1.0f - v.y * v.y);
-    v.x = s * sinf(ang);
-    v.z = s * cosf(ang);
-    v.w = 0.0f;
-    quat_to_mat4(&m, &c->q);
-    mat4_transform_vec4(&v, &m, &v);
-    rand3_seeds[rand3_slot][0] *= 0x41C64E6D;
-    rand3_seeds[rand3_slot][0] += 0x3039;
-    vec4_scale(&v, &v, c->r0 + (c->r1 - c->r0) * (RAND15(rand3_seeds[rand3_slot][0]) / 32767.0f));
-    vec3_add(out, c->center, &v.x);
-    out[3] = 0.0f;
-    return 0;
-}
-#endif
+int ehf_ptcl_cone(float *out, EhfEmitter *e, EhfCone *c); /* particle2.c */
 
 Vec4 ehf_ptcl_up = { 0.0f, 1.0f, 0.0f, 0.0f };
 

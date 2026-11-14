@@ -1,5 +1,4 @@
 // @range 0x088370A4-0x08837B28
-// @asm 0x08837674-0x08837AE0
 /* Drawing entry points: each primitive is available inside a display list (flushing the dirty
    matrices first) and as an immediate call that closes the current sub-list, draws and reopens
    it; plus the view-frustum test of a bounding sphere and the matrix dirty flags. */
@@ -139,9 +138,9 @@ void *draw_0883ABC0(void *list, int a, int b, int c, int d, int e, int f, int g)
     return dl_draw_spline(mtx_flush(list), a, b, c, d, e, f, g);
 }
 
-#ifdef NON_MATCHING /* reescrito do asm com os flags do original (bit 8 = passou em todos os planos;
-   o resto é calculado e descartado): mesmo tamanho, 60 palavras, só registradores float (o original dá f9 a z,
-   f7 a c[7] e f6 a kx; o nosso f7/f6/f2). A releitura de c[5] no 2º teste só saiu com o cast volatile. */
+/* Do asm, com os flags do original (bit 8 = passou em todos os planos; o resto é calculado e descartado).
+   Para bater: c[5] relido por ponteiro volatile no 2º teste, e as fases 2 e 3 escritas com a expressão
+   inteira (c[1] * (c[2] * v[1]), c[2] * v[0]) em vez de ky/kx (o CSE reaproveita os registradores). */
 /* 1 when the sphere is inside the view frustum of the current projection and view matrices. */
 int draw_sphere_visible(DrawSphere *s)
 {
@@ -150,16 +149,16 @@ int draw_sphere_visible(DrawSphere *s)
     float v[4];
     float view[16];
     float proj[16];
-    float z;
-    unsigned int flags;
     char *p;
-    int n;
     float cot;
+    float d;
+    float z;
     float kx;
+    int n;
+    unsigned int flags;
+    float q;
     float ky;
     float r2;
-    float d;
-    float q;
 
     flags = 0;
     p = (char *)c;
@@ -248,7 +247,7 @@ int draw_sphere_visible(DrawSphere *s)
             flags |= 5;
         }
         z = 0.5f * (v[2] * c[4]);
-        d = z - ky;
+        d = z - c[1] * (c[2] * v[1]);
         q = d * d / c[9];
         if (d < 0.0f) {
             if (q >= r2) {
@@ -259,7 +258,7 @@ int draw_sphere_visible(DrawSphere *s)
         } else if (q <= r2) {
             flags |= 4;
         }
-        d = z + ky;
+        d = z + c[1] * (c[2] * v[1]);
         q = d * d / c[9];
         if (d < 0.0f) {
             if (q >= r2) {
@@ -271,7 +270,7 @@ int draw_sphere_visible(DrawSphere *s)
             flags |= 4;
         }
         z = 0.5f * (v[2] * c[3]);
-        d = z - kx;
+        d = z - c[2] * v[0];
         q = d * d / c[8];
         if (d < 0.0f) {
             if (q >= r2) {
@@ -282,7 +281,7 @@ int draw_sphere_visible(DrawSphere *s)
         } else if (q <= r2) {
             flags |= 4;
         }
-        d = z + kx;
+        d = z + c[2] * v[0];
         q = d * d / c[8];
         if (d < 0.0f) {
             if (q >= r2) {
@@ -297,8 +296,6 @@ int draw_sphere_visible(DrawSphere *s)
     } while (0);
     return (flags & 8) != 0;
 }
-
-#endif
 
 void mtx_mark_cur_dirty(void)
 {

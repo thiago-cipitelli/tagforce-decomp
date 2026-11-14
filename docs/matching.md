@@ -3088,3 +3088,27 @@ Quatro entradas antigas do skip batendo (`snd_obj_begin` 43, `snd_streams_decode
   intermediária, contador de bloco, helper inline do laço, `which` reaproveitado como contador ou limite (196 B), cópia
   local de `free`, usos extras: `free` fica sempre por último), `snd_group_cmd` (1: `bne v0,s3`; `val = mask` nos
   casos, tipos x ordem dos operandos, `continue`, `goto`, local para o valor mascarado).
+## Rodada 31 (`cB`): quatro famílias novas no BOOT (5 funções do skip batendo)
+
+- **A zeragem `if (p) do { *p++ = 0; } while (--n);` é o que o mwcc gera para `T x = { 0 };`** (`ehf_cmd_keys`,
+  49 -> 0). Escrita à mão, os dois temporários do laço são variáveis do fonte e entram na coloração em outra posição:
+  o sintoma é "só alocação de `$t`/`$v`" em volta de um laço de bytes com `beqz` de ponteiro nulo sobre um endereço de
+  pilha. Trocar por `Vec4 kv = { 0 };` (ou `unsigned int cmd[4] = { 0 };`, como em `dl.c`) antes de qualquer busca de
+  ordem. Vale retestar as entradas do skip que têm esse laço escrito à mão.
+- **Expressão escrita por extenso no lugar da variável local** (`draw_sphere_visible` 60 -> 0, `dl_clear` 11 -> 0):
+  quando o código é idêntico e só a numeração dos registradores difere, repetir a expressão (`c[1] * (c[2] * v[1])`,
+  `c->clear_depth << 24 | c->clear_color & 0xFFFFFF` dentro do laço) e deixar o CSE/o hoisting criarem o temporário.
+  O valor passa a ser um temporário do compilador, colorido depois das variáveis do fonte, e libera o registrador
+  que a variável local ocupava. Testar por uso (só os usos tardios por extenso já bastam) e depois buscar a ordem
+  das declarações.
+- **`x &= M; x |= v;` em duas instruções** (`dl_tex_image` 23 -> 0) não é o mesmo que `x = x & M | v`: muda qual
+  operando fica com o registrador de destino do `or` e desfaz o agendamento atrasado dos stores anteriores.
+- **Estado da unidade de tradução: a primeira função que usa aritmética de `double`** (`ehf_ptcl_cone` 13 -> 0).
+  Na primeira função do arquivo que chama `__muldf3`/`__adddf3`, o mwcc dá `a0`/`a1` aos temporários do primeiro
+  bloco; nas seguintes, `t0`/`t1` (e a cópia do parâmetro para `$s` desce). O original tinha `ring`, `shell` e
+  `cone` na mesma unidade; o nosso corte de arquivo punha `cone` como primeira função de `particle3.c`. Correção:
+  mover a função para o arquivo anterior (ajustando os dois `@range`). Teste barato para outras entradas do skip
+  cujo sintoma seja "`a0`/`a1` no lugar de `t0`/`t1` no início da função": colar antes dela
+  `double dummy_(double x, double y) { return x * y; }` numa cópia do arquivo e medir; se bater, a função pertence
+  à unidade do arquivo anterior. `__extendsfdf2`/`__truncdfsf2` sozinhos e chamadas comuns não disparam.
+- Não resolvido: `dl_enable` (2 palavras, ordem dos dois `addiu -1`; 40 formas novas, nenhuma abaixo de 2).

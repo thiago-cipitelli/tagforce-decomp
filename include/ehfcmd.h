@@ -33,6 +33,13 @@ typedef struct EhfCmd {
     } a;                               /* +0x10 */
 } EhfCmd;
 
+typedef struct EhfCone {               /* random direction within `cosang` of the axis rotated by q */
+    Vec4 q;                            /* rotation from +y to the cone axis */
+    float center[3];                   /* +0x10 */
+    float cosang;                      /* +0x1C */
+    float r0;                          /* +0x20 */
+    float r1;                          /* +0x24 */
+} EhfCone;
 
 typedef struct DrawSphere {
     Vec4 pos;
