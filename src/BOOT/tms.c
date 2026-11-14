@@ -1,5 +1,4 @@
 // @range 0x0882B65C-0x0882C428
-// @asm 0x0882B914-0x0882BA88
 // @data 0x088ED7B0-0x088ED7D0
 /* TGMS model geometry: relocation of the header, materials with four texture layers (texture
    from the TMS set or a hook, lighting, alpha test, depth, blend, masks, environment-map callbacks),
@@ -268,7 +267,6 @@ unsigned int *tms_tex_apply(unsigned int *list, TmsTex *x)
     return list;
 }
 
-#ifdef NON_MATCHING /* o original põe &draws[k] em v0 e lê offset depois de prim/count (soma no delay slot do jal); aqui d vai para a2 e offset é lido primeiro; nenhuma forma de d/offset mudou isso */
 unsigned int *tms_draw_prims(unsigned int *list, Tms *t, float *bones, TmsMat *m)
 {
     int i;
@@ -293,12 +291,12 @@ unsigned int *tms_draw_prims(unsigned int *list, Tms *t, float *bones, TmsMat *m
         for (k = 0; k < p->ndraws; k++) {
             TmsDraw *d = &(&t->draws[p->draw])[k];
 
-            list = draw_array(list, d->prim, p->vtype, d->count, 0, t->verts + d->offset);
+            /* leituras voláteis de prim/count: o original lê offset por último e soma no delay slot do jal */
+            list = draw_array(list, *(volatile int *)&d->prim, p->vtype, *(volatile int *)&d->count, 0, t->verts + d->offset);
         }
     }
     return list;
 }
-#endif
 
 /* Draws the materials of pass `mode` (1 opaque, 2 translucent, else all). */
 unsigned int *tms_draw(unsigned int *list, Tms *t, float *bones, unsigned int mode, TmsHooks *h, TmsCull *c)

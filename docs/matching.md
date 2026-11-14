@@ -2750,3 +2750,45 @@ o helper `static inline` com `return` por saída, nem com gêmeas já batendo (`
   parâmetro). Scripts: `build/tmp/r28M/vt.py` (variantes em paralelo por substituição de texto, sem tocar o
   fonte), `rs.py` (busca aleatória ordem x tipo x inicializador), `nasm.sh`/`fa.sh` (asm compilado e original
   numerados), `promote.py` (tira o `#ifdef NON_MATCHING`, a linha `@asm` exata e marca `matched`).
+## Rodada 28 (`r28B`): reteste #2 do skip do BOOT (pragmas e helpers em todas as entradas)
+
+Bateram `tms_draw_prims` (7 -> 0), `scene_reset_to` (27 -> 0) e `snd_obj_3d` (27 -> 0); melhoraram `movie_main_loop`
+(52 -> 2), `snd_box_filter` (31 -> 11) e `dl_enable` (9 -> 2). As pragmas foram varridas em TODAS as entradas
+(`build/tmp/fableE_tools/prag.py` com `opt_propagation off` e `opt_lifetimes off`): só duas entradas reagiram.
+- **`#pragma opt_lifetimes off` por função** (`movie_main_loop`, 52 -> 2): quando o original tem *uma variável por
+  registrador* (`r` em `s0`, parâmetros em `s1..s5`) e nenhuma ordem de declaração move o `$s` do local, é o mwcc
+  sem fusão de tempos de vida. Vale tentar junto com `opt_propagation off` em toda entrada "só registradores".
+- **`opt_propagation off` + cópia `int` de um parâmetro `unsigned short` num bloco** (`scene_reset_to`): `int id =
+  scene;` dentro de um bloco depois do `s = sys_info_get()`, usado só na última chamada; sem a pragma o mwcc
+  propaga a cópia (27 palavras), com a pragma e o local no nível da função sobra 1.
+- **Leitura volátil de dois campos para atrasar a carga de um terceiro** (`tms_draw_prims`): `draw_array(list,
+  *(volatile int *)&d->prim, p->vtype, *(volatile int *)&d->count, 0, t->verts + d->offset)` faz o mwcc ler
+  `offset` por último e somar no delay slot do `jal`, e põe `&draws[k]` em `v0` em vez de `a2`. Variante da
+  regra da rodada 23 (volátil força a ordem das cargas): aqui o volátil vai nos campos que o original lê PRIMEIRO.
+- **Constante float antes do endereço de um array local** (`snd_obj_3d`): `pv = v;` depois de `in[3] = 1.0f;`
+  (o `lui 0x3f80` sai antes do `addiu s2,sp,80`); **produto num local de bloco para fixar o 1º operando do
+  `mul.s`**: `float k = dot * 4096.0f; pitch = -(int)(k * sp);` (com a expressão inteira o `sp` em `$f20` vinha
+  primeiro).
+- **Busca exaustiva das 720 ordens de declaração** (`build/tmp/r28B/exh.py SRC FUNC`, 8 compilações em
+  paralelo, ~3 min): `snd_box_filter` 31 -> 11 (`save, k, l, r, idx, i`); a busca aleatória com tipos (perm_skB)
+  achava 13 trocando `i` para `unsigned` (sltiu errado). Para blocos de até 7 declarações é mais barato que a
+  aleatória.
+- **Família "operando do `addu` com invariante içado"** (`netsync_transfer`, 1 palavra): o mwcc põe o invariante
+  içado (`(chunk - 1) << 7` em `s0`) sempre como 1º operando, em qualquer forma (`&dst[...]`, `int + ptr`,
+  `* 128U`, variável explícita muda o tamanho). Não corrigível pelo fonte.
+- **Constante do `case` compartilhada com um argumento** (`msgbox_open`): `2U`, `(short)2`, `switch` em
+  `unsigned`, bloco com `if/else`, ordem dos `case` e pragmas não separam o `li a3,2` do teste do `a3 = 2` do
+  4º argumento; o original ainda iça o `li v0,1` do teste de `flag` para o delay slot do `beql` do case 2.
+- Sem efeito (testado com pragmas, helpers inline, volátil, ordem x tipo): `snd_group_cmd` (operandos do `bne`),
+  `font_layout_end` (`v1` em vez de `v0` para `n << 5`), `ehf_cmd_matrix_slot` (cópia de `st` no delay slot do 1º
+  `beq` em vez do `addiu` de `a`), `cardlist_draw_at` (`&v->shown_cmp` antes de `a0/a2`), `snd_curve_volume`
+  (`vol_far` lido entre a carga e o `c.lt` de `far`; qualquer forma que o leia no bloco perde o `move v0,a1`),
+  `cardinfo_draw_frame`/`cardinfo_draw_window` (ordem dos `move` de argumento; `v5` reaproveitando a variável
+  `x5` dá o mesmo código), `dl_clear`, `snd_group_release_all` (`i` em bloco, `start`, cópia de `free`),
+  `ehf_ptcl_cone` (o original mantém `a0..a2` vivos no 1º bloco e usa `t0/t1`; 4º parâmetro, K&R, `void *`,
+  cópia com cast não mudam), `extdata_verify` (variáveis novas por laço pioram), `font_word_width`,
+  `snd_obj_begin` (troca `smp`/`t` de `s0/s3` resiste à ordem de declaração), `gim_walk` (helper inline não repõe
+  a cópia morta do `case 0xFF`), `efs_run` (helpers inline com `return` por saída para os casos 1 e 2 não
+  repõem os 68 bytes de cópias mortas), `font_glyph_cache` (K&R com `unsigned int code` conflita com o protótipo
+  de `include/font.h`; só mudando o header), e os grandes `ehf_cmd_keys`, `menu_layout`, `draw_sphere_visible`,
+  `ehf_draw_shape`, `cardinfo_draw` (150 ordens x tipos cada, sem ganho).

@@ -366,7 +366,10 @@ int ctrl_abort(MovieCtrl *c)
 
 /* Decode loop of the main thread. Returns 0 at the end of the stream, 1 when skipped, <0 on error. */
 
-#ifdef NON_MATCHING /* forma igual (52 palavras, só registradores): o original dá s0 a r e s1..s5 a ctrl, vid, reader, au, mpeg; o mwcc põe os parâmetros em s0..s4 e r em s5, com qualquer ordem de declaração, r em bloco, K&R ou parâmetros void * copiados para locais tipados (rodada 15) */
+#ifdef NON_MATCHING /* 2 palavras (eram 52): com #pragma opt_lifetimes off o original dá s0 a r e s1..s5 a ctrl, vid, reader, au, mpeg (uma variável por registrador); resta o `b; nop` da volta normal para o `move v0,s0` compartilhado com `fail:` (o mwcc põe a cópia no delay slot; goto, helper inline com return por saída e cópia de r não mudam) */
+#ifdef __MWERKS__
+#pragma opt_lifetimes off
+#endif
 int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *reader, MovieVid *vid, MovieCtrl *ctrl)
 {
     int r;
@@ -423,6 +426,9 @@ fail:
     ctrl_abort(ctrl);
     return r;
 }
+#ifdef __MWERKS__
+#pragma opt_lifetimes reset
+#endif
 #endif
 
 /* Reads the first 2 KB to get the stream offset and size, then rewinds. */

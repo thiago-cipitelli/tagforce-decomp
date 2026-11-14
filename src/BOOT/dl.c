@@ -218,7 +218,7 @@ void dl_alloc_inline(unsigned int **list, int bytes)
     *list = end;
 }
 
-#ifdef NON_MATCHING /* the scissor case loads and combines the fields in another order */
+#ifdef NON_MATCHING /* 2 palavras (eram 9): sy/sx em locais de bloco, y + h antes do sy << 10 e o -1 de y só depois do x; resta a ordem dos dois addiu -1 (x antes de y no original), que nenhuma forma troca */
 unsigned int *dl_enable(unsigned int *list, int state)
 {
     SysConf *c = &sys_conf;
@@ -235,10 +235,15 @@ unsigned int *dl_enable(unsigned int *list, int state)
         op = 0x23;
         break;
     case 2:
-        cmd[3] = c->scissor_y << 10;
-        x = c->scissor_x + c->scissor_w - 1;
-        y = (c->scissor_y + c->scissor_h - 1) << 10;
-        cmd[0] = cmd[3] | 0xD4000000 | c->scissor_x;
+        {
+            int sy = c->scissor_y;
+            int sx = c->scissor_x;
+            y = sy + c->scissor_h;
+            cmd[3] = sy << 10;
+            x = sx + c->scissor_w - 1;
+            y = (y - 1) << 10;
+            cmd[0] = cmd[3] | 0xD4000000 | sx;
+        }
         cmd[1] = y | 0xD5000000 | x;
         cmd[2] = 0x15000000;
         cmd[3] = y | 0x16000000 | x;
