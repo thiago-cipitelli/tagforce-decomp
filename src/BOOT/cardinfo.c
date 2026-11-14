@@ -1,6 +1,5 @@
 // @range 0x08859DF0-0x0885C688
 // @data 0x088F00E4-0x088F0114
-// @asm 0x0885A1A4-0x0885ADD0
 // @asm 0x0885AFB0-0x0885B498
 /* Card detail viewer: full-screen panel with the card picture, name, description / genre list /
    deck-list tab, ATK/DEF, level stars and scroll bar. Driven by 0x50 bytes of state at 0x08BEA44C
@@ -198,26 +197,29 @@ int cardinfo_update(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* rodada 27: ordem/tipo das declarações (busca aleatória) 89 -> 54 palavras, sobra id/title trocados (s4/s2). Antes: 89 palavras, só numeração dos $s (o original: title s4, hint_l s3, id s2, hint_r s1; aqui id s4, hint_l s2, title s0; testadas ordem das declarações, das atribuições iniciais, posição de id = ..., tipos de id). Rodada 23: o switch (estado) { case 0: case 4: return; } liga o modo sem limpeza pós-likely (as 8 cópias mortas); if/else nos hints, monstro primeiro no texto final, gfx_get_state()[1] da 1a chamada e [0] da 2a, pos * 0xB2 / range antes do ceil, range int: 588 -> 89 */
+/* Um contador (i, k, j) e um y (y, ly) próprios por laço e n declarado por último: decidem os $s (rodada 30). */
 void cardinfo_draw(void)
 {
     unsigned short saved_flags;
     unsigned int attr;
     unsigned short *line;
     int range;
-    int n;
     void *list;
     unsigned short id;
     int pict;
-    unsigned int y;
     int pos;
     unsigned int st;
     unsigned short v;
-    int i;
-    unsigned short *hint_l = 0;
     unsigned short *title = 0;
+    unsigned short *hint_l = 0;
     int cls;
     unsigned short *hint_r = 0;
+    int i;
+    int k;
+    int j;
+    int n;
+    unsigned int y;
+    unsigned int ly;
 
     list = dl_select_layer(cardinfo_layer, 0);
     list = dl_clear_color(list, 0xFF000000);
@@ -318,14 +320,14 @@ void cardinfo_draw(void)
     case 2:
         if (cardinfo_entry.count > 0) {
             line = (unsigned short *)((unsigned char *)cardinfo_index + cardinfo_entry.offset);
-            y = 0x48 - (cardinfo_scroll >> 6);
+            ly = 0x48 - (cardinfo_scroll >> 6);
             font_set_line_extra(0);
-            for (i = 0; i < cardinfo_entry.count; i++) {
+            for (k = 0; k < cardinfo_entry.count; k++) {
                 v = *line++;
                 pict = (v >> 12) & 0xF;
                 if (pict == inv_get_hi(cardinfo_card_id)) {
-                    list = cardinfo_draw_list_entry(list, 0x7A, y, v & 0xFFF);
-                    y = (font_get_cursor_y() >> 6) + 6;
+                    list = cardinfo_draw_list_entry(list, 0x7A, ly, v & 0xFFF);
+                    ly = (font_get_cursor_y() >> 6) + 6;
                 }
             }
         }
@@ -359,9 +361,9 @@ void cardinfo_draw(void)
     if ((card_is_monster(id) == 0 || card_attribute_to_group(id) != 0) && (cls = card_get_type_class(id)) > 0)
         list = cardinfo_draw_type_row(list, 8, 0xCE, cls);
     n = 0;
-    for (i = 1; i < 0x23; i++) {
-        if (card_has_genre_bit(id, i)) {
-            list = cardinfo_draw_genre_icon(list, (n % 6) * 0x11 + 9, (n / 6) * 0x11 + 0xAA, i);
+    for (j = 1; j < 0x23; j++) {
+        if (card_has_genre_bit(id, j)) {
+            list = cardinfo_draw_genre_icon(list, (n % 6) * 0x11 + 9, (n / 6) * 0x11 + 0xAA, j);
             n++;
         }
     }
@@ -404,8 +406,6 @@ void cardinfo_draw(void)
     }
     dl_set_list(list);
 }
-
-#endif
 
 /* Enables the L/R picture switch when the card has alternate pictures the player has seen. */
 int cardinfo_has_alt_pict(void)

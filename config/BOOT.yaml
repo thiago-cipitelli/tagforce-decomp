@@ -268,8 +268,6 @@ segments:
       - [0x550A4, c, modmgr]
       - [0x55884, c, fade]
       - [0x55E50, c, cardinfo]
-      - [0x56204, asm, cardinfo_asm_0885A1A4]
-      - [0x56E30, c, cardinfo]
       - [0x57010, asm, cardinfo_asm_0885AFB0]
       - [0x574F8, c, cardinfo]
       - [0x586E8, c, snd_mix]
