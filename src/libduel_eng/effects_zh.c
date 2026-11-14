@@ -15,7 +15,7 @@ extern int duel_turn_player;
 
 int duel_08886B34(DuelAct *a, DuelAct *b);
 unsigned int duel_0884E4E4(DuelAct *a);
-void duel_088D184C(DuelAct *a, unsigned int mask, int b);
+unsigned int duel_088D184C(DuelAct *a, unsigned int mask, int b);
 int duel_0884E398(DuelAct *a, int b);
 void duel_08832870(unsigned int p, int a);
 int duel_0880B17C(unsigned int p, int i);
@@ -55,7 +55,7 @@ void duel_088C78E0(unsigned int p);
 void duel_088D147C(DuelAct *a, unsigned int p, int z);
 void duel_088CB9E0(unsigned int p, unsigned int mask);
 void duel_088C9D24(DuelAct *a, unsigned int p, int z);
-void duel_088D1920(DuelAct *a, unsigned int mask);
+unsigned int duel_088D1920(DuelAct *a, unsigned int mask);
 void duel_08832B18(unsigned int p, int z);
 void duel_088327F8(unsigned int p, int a, int b);
 int duel_0886CE38(DuelAct *a, int b);

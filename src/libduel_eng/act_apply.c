@@ -113,9 +113,9 @@ int duel_088D16C4(DuelAct *a, unsigned int p, int z, int f)
     return 0;
 }
 
-void duel_088D184C(DuelAct *a, unsigned int mask, int flags)
+unsigned int duel_088D184C(DuelAct *a, unsigned int mask, int flags)
 {
-    duel_act_apply(a, mask, 0xF, flags);
+    return duel_act_apply(a, mask, 0xF, flags);
 }
 
 int duel_088D1858(DuelAct *a, unsigned int p, int z)
@@ -135,9 +135,9 @@ int duel_088D189C(unsigned int p, int z, unsigned int q, int id)
     return (m & duel_act_apply(&t, m, 0xB, 0)) != 0;
 }
 
-void duel_088D1920(DuelAct *a, unsigned int mask)
+unsigned int duel_088D1920(DuelAct *a, unsigned int mask)
 {
-    duel_act_apply(a, mask, 0xB, 0);
+    return duel_act_apply(a, mask, 0xB, 0);
 }
 
 int duel_088D192C(DuelAct *a, unsigned int p, int z)
@@ -243,9 +243,9 @@ int duel_088D1CF4(DuelAct *a, unsigned int p, int z)
     return (m & r) != 0;
 }
 
-void duel_088D1D58(DuelAct *a, unsigned int mask)
+unsigned int duel_088D1D58(DuelAct *a, unsigned int mask)
 {
-    duel_act_apply(a, mask, 0xE, 0);
+    return duel_act_apply(a, mask, 0xE, 0);
 }
 
 void duel_088D1D64(DuelAct *a, unsigned int mask)

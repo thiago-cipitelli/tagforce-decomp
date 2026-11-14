@@ -2986,3 +2986,38 @@ batiam; o certo é mudar o protótipo dos callees (sob `#ifdef __MWERKS__` quand
 - Sem forma: `cardinfo_draw_frame` (7: as 16 combinações de variável x expressão para `x1/y1/x5/y5`, as ordens de
   declaração, reuso de `y1` para `y5` e as posições de cada atribuição não mexem na ordem dos `move` de argumento),
   `cardinfo_draw_window` (9: `x5 = x + 5U`/`5 + x`/`(unsigned)x + 5` contra `x + 5` no fim continuam CSE).
+
+## Rodada 31 (`cD`): varredura de tipo de retorno nos gmodules
+
+Pergunta: depois de `func_0882228C` (callback `void` cujo chamador usa o retorno, 58 -> 0), quantas definições `void`
+dos gmodules devolvem valor no original? Resposta: poucas, e nenhuma em `@asm`. O método (scripts descartáveis, a
+descrição basta para refazer):
+
+1. **Evidência do binário, por função** (`objdump` do ELF + `symbols/<m>.txt`): anda para trás de cada `jr ra` por
+   todos os caminhos e classifica o `v0`: `W` escrito e não lido depois, `C` a última coisa é um `jal`/`jalr`,
+   `R` só lido, `E` intocado; e conta os chamadores diretos (`jal`) que leem `v0` depois da chamada.
+   Só a segunda medida é confiável. `W` tem falso positivo (o mwcc deixa `li v0,10` de uma divisão no delay slot do
+   laço) e função `static` também (o chamador mantém `v0` vivo através do `jal`: `*_scroll_add`). O delay slot do
+   `jal` roda antes da chamada: não conta como leitura do retorno; o do `jal` seguinte (`jal g; move a0,v0`) conta.
+   Função que termina em `j alvo` (chamada em cauda: `duel_088D184C/1920/1D58` -> `duel_act_apply`) não tem `jr ra`
+   e devolve o que o alvo devolve.
+2. **Imports**: o mesmo teste nos `jal` para os stubs (`import:` em `symbols/`), contra a definição no módulo que
+   exporta. Achou só funções do BOOT (lista no relatório da rodada; a principal é `gfx_begin_2d`, `void` em
+   `src/BOOT/ehp.c` e com o retorno usado em 48 de 48 chamadas: falta `return mtx_commit(list);`).
+3. **Protótipo x definição** (texto): definição `void` com protótipo local não-`void` em outro arquivo E uso do valor
+   nesse arquivo (`x = f(`, `return f(`, `if (f(`). É o critério completo para chamadores que já batem (o C deles só
+   compila usando o valor se o protótipo local devolver valor). Os `int f();` K&R de `dd_event_cmd.c` são ruído:
+   nenhum valor é usado.
+4. **Ponteiros de função**: o próprio gcc lista toda conversão entre tipos de função
+   (`gcc -m32 -std=gnu89 -fsyntax-only -DNON_MATCHING -Wincompatible-pointer-types -Wcast-function-type`; sem `-w`) e
+   `-Wpedantic` lista as que passam por `void *`. Filtrando as que trocam `void` por valor: zero nos gmodules depois
+   do conserto de 2026-11-14. `void (*)(void)` é curinga para o gcc (callbacks de cena em `ehscript_register` /
+   `sys_state_set_callbacks`): conferido à mão, o BOOT não lê o retorno deles. Do lado do binário, a lista dos
+   consumidores é "funções com `jalr` cujo `v0` é lido depois"; como quase todos batem, o tipo do ponteiro no C
+   deles já devolve valor.
+
+Consertos (todos continuam batendo): `fclk_draw` (libfield; o original NÃO tem `return`: o chamador usa o `v0`
+que a última chamada de desenho deixou, que é a lista; `void *` com `return list;` só sob `#ifndef __MWERKS__`),
+`dd_popup_now` (`return dd_task_add(&t);`, `dd_counter` guarda a tarefa), `duel_0887DBB4` (`return
+duel_088D13CC(a, mask);`), `duel_088D184C`, `duel_088D1920`, `duel_088D1D58` (`return duel_act_apply(...)`).
+`make host-lto` classifica `void` x valor como benigno; só é benigno quando o lado `void` é o do chamador.

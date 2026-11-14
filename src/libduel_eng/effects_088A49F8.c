@@ -21,7 +21,7 @@ void duel_088C7810(unsigned int, unsigned int);
 void duel_088328FC(unsigned int p);
 void duel_088C78E0(unsigned int p);
 unsigned int duel_0884E4E4(DuelAct *a);
-void duel_088D184C(DuelAct *a, unsigned int mask, int b);
+unsigned int duel_088D184C(DuelAct *a, unsigned int mask, int b);
 int duel_088DFE24(int, unsigned int);
 int card_is_monster(int id);
 unsigned int card_get_type(int);

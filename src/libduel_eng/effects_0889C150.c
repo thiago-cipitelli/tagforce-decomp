@@ -8,7 +8,7 @@ extern int duel_turn_player;
 extern int duel_w_089148FC;
 
 unsigned int duel_0884E4E4(DuelAct *a);
-void duel_088D184C(DuelAct *a, unsigned int mask, int b);
+unsigned int duel_088D184C(DuelAct *a, unsigned int mask, int b);
 DuelCard *duel_field_card_deb2c(unsigned int p, int z, int i);
 void duel_088C67F0(unsigned int p, int id, int a, int b);
 int card_is_attribute9(int);

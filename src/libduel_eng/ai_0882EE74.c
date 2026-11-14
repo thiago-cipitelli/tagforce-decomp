@@ -62,7 +62,7 @@ unsigned int duel_field_flag9(unsigned int, int);
 int card_get_prop5_hi(int);
 int duel_count_free_zones(unsigned int p);
 int duel_0882F174(unsigned int p, int z, int i);
-void duel_088D1D58(DuelAct *a, unsigned int mask);
+unsigned int duel_088D1D58(DuelAct *a, unsigned int mask);
 int card_is_in_group_1a6f(int id);
 int card_is_in_group_19bb(int id);
 int duel_pick_monster_zone(unsigned int p);

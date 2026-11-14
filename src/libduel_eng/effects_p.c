@@ -130,7 +130,7 @@ int duel_0887DB24(DuelAct *a, int b)
     return 0;
 }
 
-void duel_0887DBB4(DuelAct *a)
+int duel_0887DBB4(DuelAct *a)
 {
     unsigned int mask = 0;
     int i;
@@ -146,7 +146,7 @@ void duel_0887DBB4(DuelAct *a)
             }
         }
     }
-    duel_088D13CC(a, mask);
+    return duel_088D13CC(a, mask);
 }
 
 int duel_0887DC94(DuelAct *a, int b)

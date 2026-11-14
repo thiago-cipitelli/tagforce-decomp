@@ -63,8 +63,8 @@ void dd_task_pause(int h);
 void dd_task_kill(int h);
 void dd_popup(int player, int zone, int card, int flag, int text);
 
-/* shows a card picture (or a text) now */
-void dd_popup_now(int player, int card, int flag, int text)
+/* shows a card picture (or a text) now; returns the task (dd_counter keeps it) */
+DdTask *dd_popup_now(int player, int card, int flag, int text)
 {
     DdCardPopup *p = dd_alloc(sizeof(DdCardPopup));
     DdTask t;
@@ -87,7 +87,7 @@ void dd_popup_now(int player, int card, int flag, int text)
     t.update = (void (*)(float, DdTask *, void *))dd_bigcard_update;
     t.leave = dd_bigcard_leave;
     t.arg = p;
-    dd_task_add(&t);
+    return dd_task_add(&t);
 }
 
 /* waiting popup: starts when the commentary is off and the camera idle */

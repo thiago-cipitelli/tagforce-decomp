@@ -29,7 +29,7 @@ void duel_088359E8(unsigned int p, int id, int (*fn)());
 int duel_08835AC0(void);
 int duel_field_level(unsigned int p, int z);
 void duel_088CB914(unsigned int p, int z);
-void duel_088D184C(DuelAct *a, unsigned int mask, int b);
+unsigned int duel_088D184C(DuelAct *a, unsigned int mask, int b);
 int duel_0886CE38(DuelAct *a, int b);
 #ifdef __MWERKS__
 void duel_0887DC94(DuelAct *a);

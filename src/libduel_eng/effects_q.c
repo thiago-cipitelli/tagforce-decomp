@@ -7,7 +7,7 @@ extern int duel_w_08914904;
 
 int duel_slot_value_1909(unsigned int p, int z);
 int duel_slot_e68a0(unsigned int, int);
-void duel_088D184C(DuelAct *a, unsigned int mask, int b);
+unsigned int duel_088D184C(DuelAct *a, unsigned int mask, int b);
 void duel_088D1D64(DuelAct *a, unsigned int mask);
 void duel_088CAE80(unsigned int p, int a);
 void duel_088CAE34(unsigned int p, int a);

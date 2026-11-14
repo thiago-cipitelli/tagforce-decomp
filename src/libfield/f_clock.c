@@ -119,7 +119,8 @@ int fclk_update(void)
     return -1;
 }
 
-void fclk_draw(void *list)
+/* the original has no return statement: fld_scene_draw uses the v0 the last draw call left (the list) */
+void *fclk_draw(void *list)
 {
     FieldHourMenu *c = &field_hour_menu;
     int i;
@@ -134,6 +135,9 @@ void fclk_draw(void *list)
             list = fclk_time_draw(list);
         break;
     }
+#ifndef __MWERKS__
+    return list;
+#endif
 }
 
 /* the time chosen */

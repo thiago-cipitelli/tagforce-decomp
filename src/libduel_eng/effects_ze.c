@@ -27,7 +27,7 @@ int duel_088C97F0(DuelAct*, unsigned int, int, int, int);
 int duel_grave_find_uid(unsigned int p, int uid);
 void duel_088329BC(unsigned int p, unsigned short id, int b);
 void duel_08832950(unsigned int, int);
-void duel_088D1920(DuelAct *a, unsigned int mask);
+unsigned int duel_088D1920(DuelAct *a, unsigned int mask);
 void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c);
 void duel_08832ADC(int a);
 unsigned int duel_088D13CC(DuelAct*, unsigned int);

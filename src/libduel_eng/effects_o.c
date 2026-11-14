@@ -21,7 +21,7 @@ void duel_0884AD18(int msg);
 void duel_088359E8(unsigned int p, int id, int (*fn)());
 int duel_08835AC0(void);
 void duel_088CB914(unsigned int p, int a);
-void duel_088D1920(DuelAct *a, unsigned int mask);
+unsigned int duel_088D1920(DuelAct *a, unsigned int mask);
 void duel_088C87D8(DuelAct *a, unsigned int p, int z, unsigned short id, int b, int c);
 
 int duel_eff_fde68(DuelAct *a)

@@ -42,7 +42,7 @@ DuelCard *duel_0884CCBC(int i);
 void duel_088C7CF0(void);
 void duel_088C7BA4(void);
 int duel_0884E4E4(DuelAct *a);
-void duel_088D1D58(DuelAct *a, int b);
+unsigned int duel_088D1D58(DuelAct *a, int b);
 int duel_hand_find_uid(unsigned int, int);
 void duel_088C7810(unsigned int, unsigned int);
 void duel_08832950(unsigned int, int);
