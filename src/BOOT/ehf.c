@@ -1,5 +1,4 @@
 // @range 0x0882FC3C-0x08833420
-// @asm 0x08831F5C-0x088325D0
 // @data 0x088ED960-0x088ED9A8
 /* EHF animation player (a Flash-like format: coordinates in twips, a timeline of place/remove
    commands, nested sprites, shapes and text). An instance holds a pool of 0x28-byte clips linked
@@ -1067,9 +1066,6 @@ typedef struct EhfMesh {               /* 0x18 per mesh of a shape */
     unsigned int prim;                 /* +0x14 prim << 16 | count */
 } EhfMesh;
 
-#ifdef NON_MATCHING /* 57 palavras. Pilha certa com aligned(8) em m e cx (o buraco de 4 bytes fica entre m e lpos);
-   ordem dos clamps por busca (2520 ordens); col montado em três passos. Falta: coloração dos temporários
-   dos clamps e das somas das cores (t1/a2/a3 rodados) */
 void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, float *mtx, EhfColor *p, EhfOpts *o)
 {
     int ratio;
@@ -1080,9 +1076,9 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     EhfColor cx __attribute__((aligned(8)));
     int *shape;
     int r;
+    int a;
     int g;
     int b;
-    int a;
     int ar;
     int ag;
     int ab;
@@ -1118,14 +1114,6 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     ar = cx.add[0] + EHF_DIV256(cx.mul[0] * p->add[0]);
     aa = cx.add[3] + EHF_DIV256(cx.mul[3] * p->add[3]);
     r = EHF_DIV256(cx.mul[0] * p->mul[0]);
-    g = ALLEGREX_MAX(g, 0);
-    g = ALLEGREX_MIN(g, 0xFF);
-    r = ALLEGREX_MAX(r, 0);
-    a = ALLEGREX_MAX(a, 0);
-    b = ALLEGREX_MAX(b, 0);
-    a = ALLEGREX_MIN(a, 0xFF);
-    b = ALLEGREX_MIN(b, 0xFF);
-    r = ALLEGREX_MIN(r, 0xFF);
     cx.mul[0] = r;
     cx.mul[1] = g;
     cx.mul[2] = b;
@@ -1134,7 +1122,11 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     cx.add[1] = ag;
     cx.add[2] = ab;
     cx.add[3] = aa;
-    list = dl_ambient_light(list, r + g * 0x100 + a * 0x1000000 + b * 0x10000);
+    cx.mul[2] = ALLEGREX_MIN(ALLEGREX_MAX(cx.mul[2], 0), 0xFF);
+    cx.mul[1] = ALLEGREX_MIN(ALLEGREX_MAX(cx.mul[1], 0), 0xFF);
+    cx.mul[0] = ALLEGREX_MIN(ALLEGREX_MAX(cx.mul[0], 0), 0xFF);
+    cx.mul[3] = ALLEGREX_MIN(ALLEGREX_MAX(cx.mul[3], 0), 0xFF);
+    list = dl_ambient_light(list, cx.mul[0] + ((cx.mul[1] << 8) + ((cx.mul[3] << 24) + (cx.mul[2] << 16))));
     mat4_translate2(m, ((float *)shape)[1], ((float *)shape)[2]);
     mat4_scale2(m, ((float *)shape)[3], ((float *)shape)[3]);
     mat4_mul(m, mtx, m);
@@ -1180,14 +1172,12 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
             list = dl_disable(list, 9);
         }
         cx.add[2] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[2], 0), 0xFF);
-        cx.add[0] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[0], 0), 0xFF);
         cx.add[1] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[1], 0), 0xFF);
+        cx.add[0] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[0], 0), 0xFF);
         cx.add[3] = ALLEGREX_MIN(ALLEGREX_MAX(cx.add[3], 0), 0xFF);
-        col = cx.add[2] * 0x10000 + cx.add[3] * 0x1000000;
-        col = cx.add[1] * 0x100 + col;
-        col = cx.add[0] + col;
+        col = cx.add[0] + ((cx.add[1] << 8) + ((cx.add[3] << 24) + (cx.add[2] << 16)));
         list = dl_material_colors(list, col, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
-        list = dl_material(list, 1, (unsigned char)mh->alpha * 0x1000000 + (mh->color & 0xFFFFFF));
+        list = dl_material(list, 1, ((unsigned char)mh->alpha << 24) + (mh->color & 0xFFFFFF));
         zero[0] = 0.0f;
         zero[1] = 0.0f;
         zero[2] = 0.0f;
@@ -1207,7 +1197,6 @@ void *ehf_draw_shape(void *list, EhfInst *e, EhfClip *c, unsigned int frame, flo
     }
     return list;
 }
-#endif
 
 typedef struct EhfGlyph {              /* 0x14 per glyph of a text */
     float x, y;
