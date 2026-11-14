@@ -54,8 +54,6 @@ segments:
       - [0xCD84, c, s_idmap]
       - [0xE788, c, s_msg]
       - [0xF35C, c, s_mail]
-      - [0xF51C, asm, s_mail_asm_088134BC]
-      - [0xF748, c, s_mail]
       - [0xF90C, c, s_evlist]
       - [0xFCE4, c, s_talk]
       - [0x11704, c, s_pickup]

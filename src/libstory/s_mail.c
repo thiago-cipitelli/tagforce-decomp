@@ -1,5 +1,4 @@
 // @range 0x088132FC-0x088138AC
-// @asm 0x088134BC-0x088136E8
 /* Mails of the PDA: the received list in the save (100 records of 6 bytes: mail id, new/read flags,
    sender, date), the mail table of brain.ehp (MailESM) and its texts (MailEL/MailEI), the view list
    built for the PDA and the attachments of an opened mail. */
@@ -123,15 +122,14 @@ int st_mail_has(int id)
     return 0;
 }
 
-#ifdef NON_MATCHING /* forma igual; a alocação de $s (m em s0, v em s1) e a ordem das cópias de bitfields diferem */
 /* list of the dated mails for the PDA; a mail stops being new 3 days after it arrived */
 StMailView *st_mail_view_list(int *count)
 {
-    int d;
-    StMailView *v = st_mail_view;
-    int i;
-    int n = 0;
+    int text;
     StMail *m;
+    int d;
+    int i;
+    int n;
 
     int month, day;
     unsigned short *subject;
@@ -139,6 +137,7 @@ StMailView *st_mail_view_list(int *count)
     ScalDate now;
 
     *count = 0;
+    n = 0;
     for (i = 0; i < 100; i++) {
         m = &st_mail_list[i];
         if (m->id == 0)
@@ -158,21 +157,20 @@ StMailView *st_mail_view_list(int *count)
             if (scal_daynum_cal(&now) - d >= 3)
                 m->isnew = 0;
         }
-        subject = st_text_at(st_mail_find(m->id)[9], st_mail_index(), st_mail_base());
-        v->m.id = m->id;
-        v->m.isnew = m->isnew;
-        v->m.read = m->read;
-        v->m.from = m->from;
-        v->m.month = m->month;
+        text = st_mail_find(m->id)[9];
+        subject = st_text_at(text, st_mail_index(), st_mail_base());
+        st_mail_view[n].m.id = m->id;
+        st_mail_view[n].m.isnew = m->isnew;
+        st_mail_view[n].m.read = m->read;
+        st_mail_view[n].m.from = m->from;
+        st_mail_view[n].m.month = m->month;
+        st_mail_view[n].m.day = m->day;
+        st_mail_view[n].subject = subject;
         n++;
-        v->m.day = m->day;
-        v->subject = subject;
-        v++;
     }
     *count = n;
     return st_mail_view;
 }
-#endif
 
 /* attachments of a mail (ended by a zeroed entry); marks the mail read. k declarado primeiro e p atribuído
    depois das declarações (ordem de criação dos $s) */
