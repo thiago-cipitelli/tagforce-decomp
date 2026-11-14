@@ -24,6 +24,8 @@ void *__libc_malloc(size_t n);
 void *__libc_memalign(size_t align, size_t n);
 void __libc_free(void *p);
 int dprintf(int fd, const char *fmt, ...);
+void host_gfx_release(void);
+unsigned int host_buttons(void);
 
 typedef int (*Entry)(unsigned int args, void *argp);
 
@@ -127,6 +129,7 @@ static int block(int (*pred)(Thr *), long long deadline)
 
     me->pred = pred;
     me->deadline = deadline;
+    host_gfx_release();   /* another thread may draw next (window.c) */
     pthread_cond_broadcast(&cv);
     for (;;) {
         if (ready(me) && best() == me)
@@ -697,7 +700,7 @@ int sceRtcGetCurrentTick(unsigned long long *tick)
     return 0;
 }
 
-/* --- display, input: 60 Hz from the host clock, no buttons --- */
+/* --- display, input: 60 Hz from the host clock, buttons from the keyboard (window.c) --- */
 
 #define VBLANK_US 16683   /* 59.94 Hz */
 
@@ -718,11 +721,12 @@ float sceDisplayGetFramePerSec(void) { return 59.94005f; }
 
 static void pad_fill(unsigned int *pad, int count)
 {
+    unsigned int b = host_buttons();
     int i;
 
     for (i = 0; i < count; i++, pad += 4) {   /* SceCtrlData: time, buttons, lx, ly, reserved[6] */
         pad[0] = sceKernelGetSystemTimeLow();
-        pad[1] = 0;
+        pad[1] = b;
         pad[2] = 0x8080;
         pad[3] = 0;
     }
@@ -776,13 +780,6 @@ static int audio_block(int ch)
 
 int sceAudioOutputPannedBlocking(int ch, int l, int r, void *buf) { return audio_block(ch); }
 int sceAudioOutputBlocking(int ch, int vol, void *buf) { return audio_block(ch); }
-
-/* --- GE: a fake EDRAM; the display lists are built and never run (step 5) --- */
-
-static unsigned char edram[0x200000] __attribute__((aligned(64)));
-
-void *sceGeEdramGetAddr(void) { return edram; }
-unsigned int sceGeEdramGetSize(void) { return sizeof edram; }
 
 /* --- exit --- */
 

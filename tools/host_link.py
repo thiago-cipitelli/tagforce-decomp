@@ -27,7 +27,11 @@ import host_data  # noqa: E402
 # movaps, which faults where a caller declares the same object without the alignment
 CFLAGS = ["-m32", "-mno-sse", "-std=gnu89", "-w", "-O0", "-g", "-fno-common", "-fno-pie", "-DNON_MATCHING", "-Iinclude"]
 # platform/pc sees include/ only through "": include/stdarg.h would shadow the system one under <stdarg.h>
-PCFLAGS = [f for f in CFLAGS if f != "-Iinclude"] + ["-iquote", "include", "-pthread"]
+PCFLAGS = [f for f in CFLAGS if f != "-Iinclude"] + ["-iquote", "include", "-pthread", "-O2"]
+# window and GL (platform/pc/window.c, ge.c): the system's 32-bit libX11 and libGL. The version script exports
+# nothing: the game defines ~50 libc/libm names (malloc, exit, mtx_init - a matrix function -, strtod, sinf...) that
+# would otherwise interpose glibc's for every shared library too (Mesa crashed in the game's mtx_init)
+LIBS = ["-lX11", "-lGL", "-lm", "-Wl,--version-script=build/host/hide.ver"]
 OUT = "build/host"
 
 
@@ -166,7 +170,8 @@ def main():
         if f"{OUT}/obj/platform/modules.o" not in pobjs:
             pobjs.append(f"{OUT}/obj/platform/modules.o")
     allo = [res[m][0] for m in mods] + pobjs
-    r = subprocess.run(["gcc", "-m32", "-no-pie", "-pthread", "-o", f"{OUT}/tagforce"] + allo + ["-lm"], capture_output=True, text=True)
+    open(f"{OUT}/hide.ver", "w").write("{ local: *; };\n")
+    r = subprocess.run(["gcc", "-m32", "-no-pie", "-pthread", "-o", f"{OUT}/tagforce"] + allo + LIBS, capture_output=True, text=True)
     open(f"{OUT}/link.log", "w").write(r.stderr)
     und = sorted(set(re.findall(r"undefined reference to `([^']+)'", r.stderr)))
     dup = sorted(set(re.findall(r"multiple definition of `([^']+)'", r.stderr)))
