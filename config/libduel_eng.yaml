@@ -263,8 +263,6 @@ segments:
       - [0xEB1D0, c, immunity]
       - [0xEB64C, c, act_target]
       - [0xEBF44, c, grave]
-      - [0xEBF44, asm, grave_asm_088EFEE4]
-      - [0xEC0FC, c, grave]
       - [0xED1F0, c, hand]
       - [0xEDEBC, c, field_bonus]
       - [0xEEDD0, c, field_stats]

@@ -2819,3 +2819,19 @@ Bateram as seis `*_draw_digits` (dk, ds, dt, sc, shop_ui, rv; 2 palavras desde a
   indexado; o `len` sempre herda o `$s0` do parâmetro `l`, que no original vai para o ponteiro do laço),
   `shop_draw_shelf` (24: `jal shop_shelf_cursor; nop` com o `move a0` antes; `return` no then, `switch`, wrapper
   inline e `#pragma scheduling off` não mudam), `sc_draw_counts` (21: helpers inline e formas do corpo do laço).
+## Rodada 29 (`r29E`): reteste das entradas de libduel_eng com até 30 palavras
+
+Bateu `duel_card_fits_zone` (17 -> 0, `grave.c` inteiro em C). As 19 outras não mudaram; a varredura de 6 pragmas
+(`opt_propagation`, `opt_lifetimes`, `opt_common_subs`, `opt_dead_assignments`, `opt_strength_reduction`,
+`opt_loop_invariants`) não baixa nenhuma.
+- **`goto` para o bloco do `then` com o `return` do `else` escrito antes** (`duel_card_fits_zone`): o original faz
+  `bnezl at,L; <1ª instrução de L>; b fim; li v0,1; L: ...; b fim; sltu v0,...` (o `return 1` inline antes do bloco e o
+  valor do bloco calculado no atraso do `b` final). `if (z < 11) return expr; return 1;` põe o bloco antes;
+  `if (z >= 11) return 1; return expr;` acerta a ordem mas o `b` final rouba o `lw ra` (69 palavras); `if (z <= 10)
+  goto fu; return 1; fu: return expr;` reproduz tudo. Com `z < 11` sobra `slti v0` em vez de `slti at` (regra da
+  rodada 19: `<= K-1`). Em `duel_ai_0881E27C` a mesma forma acerta o 1º teste (`b; lw ra`) mas o 2º vira `slti/xori`
+  materializado em vez de `bnez; nop; b; nop` (8 palavras, base 6).
+- **Laço de `duel_088862DC` acertado, primeiro bloco não**: uma cópia `unsigned int q = p;` (ou `(unsigned
+  int)(unsigned char)p` no índice e no argumento) faz o `andi 0xff` de `p` alimentar o `& 1` do índice no topo do laço
+  (forma do original), mas gira `a1/a2/a3` no teste do uid do início (7 palavras; 240 variantes de ordem x tipo x
+  forma do teste não desfazem). Fica a forma de 4 palavras.
