@@ -828,6 +828,10 @@ static void prim(u32 d)
             }
             }
         }
+        if (trace_frame == frame_no && (i == 0 || i == count - 1 || count <= 8))   /* vertices: pixels and texels */
+            dprintf(2, "  v%d: xy %.1f %.1f uv %.1f %.1f (tex %dx%d bufw %d)\n", i,
+                    (o->pos[0] / o->pos[3] + 1) * fw / 2, (o->pos[1] / o->pos[3] + 1) * fh / 2,
+                    o->uv[0] * tw, o->uv[1] * th, (int)tw, (int)th, (int)(reg[0xA8] & 0xFFFF));
     }
     /* expand */
     switch (type) {
@@ -874,6 +878,14 @@ static void prim(u32 d)
                 q[k].uv[0] = k & 1 ? bu : au;
                 q[k].uv[1] = k & 2 ? bv : av;
                 q[k].uv[2] = 1;
+            }
+            /* a sprite flipped in exactly one axis is drawn rotated: the two off-diagonal corners trade texture
+               coordinates (PPSSPP's RotateUV). The card frame keeps its side borders lying down in the texture
+               and draws them this way; without it they came out as stretched blocks */
+            if ((ax < bx) != (ay < by) && ax != bx && ay != by) {
+                float t0 = q[1].uv[0], t1 = q[1].uv[1];
+                q[1].uv[0] = q[2].uv[0]; q[1].uv[1] = q[2].uv[1];
+                q[2].uv[0] = t0; q[2].uv[1] = t1;
             }
             gv[n++] = q[0]; gv[n++] = q[1]; gv[n++] = q[2];
             gv[n++] = q[1]; gv[n++] = q[3]; gv[n++] = q[2];
