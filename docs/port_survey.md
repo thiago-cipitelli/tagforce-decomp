@@ -419,7 +419,10 @@ Duas peças do firmware que o caminho título → história exigia, as duas só 
 Transference first day."; o mapa do campo (`libfield`, `bg_11_01.ehp`, sprite do jogador) com o HUD ("Chancellor's
 Office", "1st May Monday", relógio, "7:30 AM", "0 DP", "92 Days Until Tournament"); o primeiro diálogo da história
 (`libstory`, `st01_t01_e.ehp`) com o busto do diretor e a janela "You must be [nome]. Welcome to Duel Academy.";
-"Save Data" no menu principal grava `DATA0` (64 KB) e "Continue" no título encontra o save. Quadros em
+"Save Data" no menu principal grava `DATA0` (64 KB) e, na rodada seguinte, a checagem do título (GETSIZE) o
+encontra (resultado 0). O caminho "Continue" não foi conferido: o Down roteirizado no menu do título não registra
+com 1, 2 ou 4 quadros e move duas vezes com 6 (o `pad_update` do BOOT roda no laço principal, não por quadro
+apresentado; a escala quadro-apresentado → leitura do pad fica para o próximo passo). Quadros em
 `build/host/frames_5b/*.png` (gitignored).
 
 | Arquivo | O quê |
@@ -448,6 +451,6 @@ Office", "1st May Monday", relógio, "7:30 AM", "0 DP", "92 Days Until Tournamen
   nunca é devolvido aqui.
 - **Fluxo roteirizado** (`TAGFORCE_RTC=1`; quadro:máscara): `400:8` Start, `520:4000` × em New Game, `700:8`
   Start na tela do nome, `780:4000` confirma, `900:4000` Story Mode, `1000:4000` Start from Part 1 → mapa em ~1100,
-  diálogo em ~1200. Save: `900:10` (Up, vai a Save Data), `980:4000`. Continue: `480:40` (Down), `560:4000`.
+  diálogo em ~1200. Save: `900:10` (Up, vai a Save Data), `980:4000`.
 - GE: um aviso novo no campo, `blend with two different fixed colors` (fator fixo diferente para fonte e destino;
   aproximado), além do DXT já implementado.
