@@ -1,6 +1,5 @@
 // @range 0x0887DB24-0x0888146C
 // @data 0x08911770-0x089117A0
-// @asm 0x0887F8E4-0x0887FCA8
 /* Card effect handlers (DuelAct *a): what a's card does when it resolves. */
 #include "duel.h"
 
@@ -680,7 +679,8 @@ int duel_0887F80C(DuelAct *a, DuelAct *b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 132 palavras, só registradores: forma dos case e dos grupos confere; o original deixa p em v0, a->id em a2 e as constantes dos testes em v1 (aqui id em v0, p em v1) */
+/* As duas chamadas recebem a->id (não a constante do case): é o que mantém o id em a2 e põe p em v0 e as constantes
+   dos testes em v1. O case 0x1776 é um ternário (bnel para a instrução seguinte com o li 2 no atraso). */
 int duel_0887F8E4(DuelAct *a, int b)
 {
     unsigned int p = a->player;
@@ -732,16 +732,13 @@ int duel_0887F8E4(DuelAct *a, int b)
         n = 5 - duel.players[p & 1].n_hand;
         break;
     case 0x1776:
-        n = 1;
-        if (a->w[2] != n) {
-            n = 2;
-        }
+        n = a->w[2] == 1 ? 1 : 2;
         break;
     case 0x17D6:
-        n = duel_slot_has_effect(p, 11, 0x17D6) + 1;
+        n = duel_slot_has_effect(p, 11, a->id) + 1;
         break;
     case 0x1888:
-        n = duel_grave_count_id(p, 0x1888) + 1;
+        n = duel_grave_count_id(p, a->id) + 1;
         break;
     case 0x18F9:
         if (duel.players[p & 1].n_hand == 0 &&
@@ -763,7 +760,6 @@ int duel_0887F8E4(DuelAct *a, int b)
     }
     return 0;
 }
-#endif
 
 int duel_0887FCA8(unsigned int p, int z, int k)
 {
