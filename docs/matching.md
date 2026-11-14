@@ -2792,3 +2792,30 @@ Bateram `tms_draw_prims` (7 -> 0), `scene_reset_to` (27 -> 0) e `snd_obj_3d` (27
   repõem os 68 bytes de cópias mortas), `font_glyph_cache` (K&R com `unsigned int code` conflita com o protótipo
   de `include/font.h`; só mudando o header), e os grandes `ehf_cmd_keys`, `menu_layout`, `draw_sphere_visible`,
   `ehf_draw_shape`, `cardinfo_draw` (150 ordens x tipos cada, sem ganho).
+
+## Rodada 29 (`r29M1`): reteste das entradas quase batendo de libdeck*, libselect_card, libshop, librecipe_viewer
+
+Bateram as seis `*_draw_digits` (dk, ds, dt, sc, shop_ui, rv; 2 palavras desde a rodada 25, ~70 formas testadas);
+`dk/dt_flight_undo` 5 -> 2, `shop_open_layout` 4 -> 2.
+- **Constante repetida nos argumentos que vem de uma variável atribuída num `case`** (`*_draw_digits`: o original
+  faz `move t0,a2` antes do `jal draw_set_offsets` e põe `move a3,s7` no atraso; o nosso, o contrário): a altura
+  `9` era uma variável `h` atribuída junto com a largura no `case 0` (`case 0: w = 7; h = 9; break;`) e a chamada
+  `draw_set_offsets(list, w, h, w, h)`. A constante continua saindo como `li a2,9` na junção, mas a ordem das
+  cópias para os registradores de argumento muda. `int h = 9` no topo ou num bloco, `9U`, casts, protótipo e
+  wrapper não mexem. Sinal: o original copia um argumento constante de outro registrador de argumento numa ordem
+  diferente da nossa só em volta de um `jal`.
+- **Flag 0/1 com desvio likely, `beqzl rT; li v,1; move v,zero`** (`*_flight_undo`): todo `if/else`, `?:`, helper e
+  tipo do mwcc 219 viram `slti/xori`; `switch (src < 3) { case 0: side = 1; break; default: side = 0; break; }` dá
+  exatamente o `beqzl` com o `li 1` no atraso e o `move zero` caindo. Sobra o teste em `v0` (`slti v0`) contra o
+  `slti at` do original (o `at` é de um `if` com desvio direto). Na forma `bnezl x; li 1; move zero` (`ds/sc_input_move`,
+  `x` um campo de bits) o `switch` sempre começa com o `beqz` do `case 0`, e não há forma.
+- Levantamento útil: `objdump` de todos os ELFs procurando a sequência exata do original (aqui `bXXl; li r,1;
+  move r,zero`) e cruzando o endereço com `symbols/` acha funções JÁ batendo com o mesmo idioma
+  (`gamestate_partner_mode`, `lpc_digit_update`, `fld_hud_hidden`): nelas o `if/else` 0/1 não vira `slti` porque a
+  junção tem mais de dois predecessores (`else if` em cadeia, `||`) ou é um `switch`.
+- Sem forma: `shop_result_input`/`shop_item_key` (2/20: nos dois o original não preenche um `b` cujo alvo é um bloco
+  de uma instrução que cai no epílogo — `move v0,zero` / `li v0,-2`; testados variável de retorno, `goto` para o
+  rótulo do `default` interno, pragmas e helpers), `*_search_finish` (8: busca de ordem x tipo x inicializador e laço
+  indexado; o `len` sempre herda o `$s0` do parâmetro `l`, que no original vai para o ponteiro do laço),
+  `shop_draw_shelf` (24: `jal shop_shelf_cursor; nop` com o `move a0` antes; `return` no then, `switch`, wrapper
+  inline e `#pragma scheduling off` não mudam), `sc_draw_counts` (21: helpers inline e formas do corpo do laço).

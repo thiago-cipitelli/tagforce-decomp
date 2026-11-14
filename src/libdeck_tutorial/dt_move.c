@@ -253,7 +253,7 @@ static inline int dt_tab_side(int tab)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 5 palavras: só o lado (src >= 3), que o original calcula com beqzl + li 1 no atraso e move zero (aqui beqz e outro temporário); o slot_pos recebe k (não o pos u16 relido) */
+#ifdef NON_MATCHING /* 2 palavras (eram 5): o lado (src >= 3); com switch (src < 3) sai o beqzl + li 1 no atraso + move zero do original, mas o teste vai para v0 (slti v0) e o original faz slti at (desvio direto de um if; todo if/else 0/1 vira slti/xori); o slot_pos recebe k (não o pos u16 relido) */
 /* Triangle: takes the last move back (the card flies from where it landed to its old list) */
 int dt_flight_undo(void)
 {
@@ -278,9 +278,14 @@ int dt_flight_undo(void)
             dt_flight->src = 4;
         if (dt_flight->dst[0] == 2)
             dt_flight->dst[0] = 4;
-        side = 1;
-        if (dt_flight->src < 3)
+        switch (dt_flight->src < 3) {
+        case 0:
+            side = 1;
+            break;
+        default:
             side = 0;
+            break;
+        }
         dt_flight->side = side;
         dt_flight->dside = (dt_flight->side + 1) & 1;
     } else {

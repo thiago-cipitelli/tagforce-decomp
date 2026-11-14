@@ -1,5 +1,4 @@
 // @range 0x0880EF74-0x088117B8
-// @asm 0x0880F09C-0x0880F244
 // @rodata 0x0881C260-0x0881C284
 // @data 0x088202E4-0x0882039C
 /* Drawing pieces shared with libselect_card (the same source): sort key lookup, digit strips, framed
@@ -87,7 +86,6 @@ int shop_ui_kind_icon(unsigned short kind)
     }
 }
 
-#ifdef NON_MATCHING /* 2 palavras: o original passa t0 (9) antes de a3 (w) para draw_set_offsets e põe a3 no atraso do jal */
 /* digits right to left from pos, w x 9 each: n = fmt & 0xFF digits, style = fmt >> 8 */
 void *shop_ui_draw_digits(void *list, UiPt pos, int pad, unsigned int value, unsigned short fmt, unsigned int color, void *gim)
 {
@@ -97,6 +95,7 @@ void *shop_ui_draw_digits(void *list, UiPt pos, int pad, unsigned int value, uns
     unsigned char n = fmt & 0xFF;
     int step = 0;
     int w;
+    int h;
     short x;
     int i;
 
@@ -110,13 +109,14 @@ void *shop_ui_draw_digits(void *list, UiPt pos, int pad, unsigned int value, uns
         step = -1;
     case 0:
         w = 7;
+        h = 9;
         break;
     case 1:
         break;
     case 2:
         break;
     }
-    list = draw_set_offsets(list, w, 9, w, 9);
+    list = draw_set_offsets(list, w, h, w, h);
     x = px + (short)((n - 1) * (w + step));
     for (i = 0; i < n; i++) {
         list = draw_sprite(list, x, py, 0, value % 10 * w, 0, 0, 0);
@@ -127,7 +127,6 @@ void *shop_ui_draw_digits(void *list, UiPt pos, int pad, unsigned int value, uns
     }
     return list;
 }
-#endif
 
 /* font digits right to left, n at most (all of them with pad) */
 void *shop_ui_draw_num_text(void *list, short x, short y, int value, int step, unsigned short n, int pad)

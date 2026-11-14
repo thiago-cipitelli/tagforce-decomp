@@ -29,8 +29,6 @@ segments:
       - [0x60, c, rv_res]
       - [0x7D8, c, rv_util]
       - [0x978, c, rv_draw]
-      - [0x978, asm, rv_draw_asm_08804918]
-      - [0xB20, c, rv_draw]
       - [0x18D4, c, rv_screen]
       - [0x3AA4, c, rv_list]
       - [0x52D4, c, rv_menu]
