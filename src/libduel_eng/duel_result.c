@@ -1,6 +1,5 @@
 // @range 0x088FF3FC-0x08900C94
-// @asm 0x088FFFDC-0x08900C94
-// @data 0x08912078-0x08912118
+// @data 0x08912078-0x08912260
 /* After the duel: kind of result of a tag series, deck statistics for the rewards, one-time
    flags in the save. */
 #include "card_db.h"
@@ -325,19 +324,28 @@ void duel_records_update(void)
     }
 }
 
-#ifdef NON_MATCHING /* 36 palavras: só registradores (i em s0, k em s4, rec em s1 no original); testes como k >= N e o máximo do case 33 em k já batem */
 /* Bonuses of the duel (r->bonus[i]); a bonus counts only the first time it is earned (save +0xCC).
    With any new bonus, bonus 0x52 too, and the total is 30 per new bonus. */
 void duel_bonus_calc(void)
 {
-    DuelResults *r = game_state2_get();
-    int *cur = r->cur;
-    unsigned char *rec = (unsigned char *)sysstate2_get_ptr_51c();
-    unsigned char *g = (unsigned char *)game_state_get();
-    int n = 0;
-    int k;
-    int i;
     int *b;
+    void *t;                           /* the two state pointers go through their own temporaries and the */
+    void *u;                           /* order of these declarations decides the registers (round 32) */
+    int i;
+    int k;
+    unsigned char *rec;
+    DuelResults *r;
+    int *cur;
+    unsigned char *g;
+    int n;
+
+    t = game_state2_get();
+    r = (DuelResults *)t;
+    cur = r->cur;
+    u = sysstate2_get_ptr_51c();
+    rec = (unsigned char *)u;
+    g = (unsigned char *)game_state_get();
+    n = 0;
 
     for (i = 0, b = cur; i < 0x53; i++, b++) {
         b[0x28] = 0;
@@ -773,4 +781,3 @@ void duel_bonus_calc(void)
         cur[0x28 + 0x52] = n * 30;
     }
 }
-#endif
