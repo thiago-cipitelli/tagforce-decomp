@@ -1,6 +1,5 @@
 // @range 0x08839F50-0x0883CEB0
 // @asm 0x0883A4E4-0x0883A6CC
-// @asm 0x0883CBE8-0x0883CDB4
 // @data 0x088EE050-0x088EE0A4
 // @rodata 0x088753F4-0x0887544C
 /* GE display lists: a double-buffered heap with a jump table of 16 layers at the start of each
@@ -1308,7 +1307,6 @@ unsigned int *dl_clear_depth(unsigned int *list, unsigned int z)
     return list;
 }
 
-#ifdef NON_MATCHING /* 11 palavras (eram 68): cmd[nv*3+k] em vez de p, ++i no store, cmd[2] antes do stêncil e contador próprio no zeramento acertaram a forma; resta a numeração dos registradores do laço de 8 faixas (i/x/v em t2/t3/t5 no original) */
 /* Clears with sprites in clear mode (sceGuClear): one full-screen sprite, or 8 strips of 64
    pixels with the fast flag (0x10). */
 unsigned int *dl_clear(unsigned int *list, unsigned int flags)
@@ -1316,14 +1314,11 @@ unsigned int *dl_clear(unsigned int *list, unsigned int flags)
     SysConf *c = &sys_conf;
     int nv = 2;
     unsigned int cmd[64];
-    unsigned int *p;
-    unsigned int *v;
-    unsigned int col;
-    unsigned int st;
-    unsigned int a;
-    int i;
-    int x;
     int j;
+    unsigned int *v;
+    int x;
+    int i;
+    unsigned int a;
 
     for (j = 0; j < 64; j++) {
         cmd[j] = 0;
@@ -1335,17 +1330,14 @@ unsigned int *dl_clear(unsigned int *list, unsigned int flags)
     cmd[0] = a >> 8 & 0xFF0000 | 0x10000000;
     cmd[1] = a & 0xFFFFFF | 0x08000000;
     if (flags & 0x10) {
-        col = c->clear_depth << 24 | c->clear_color & 0xFFFFFF;
-        st = (unsigned short)c->clear_stencil;
-        v = cmd;
-        x = 0;
-        for (i = 0; i < 8; ) {
-            v[2] = col;
+        /* the invariant words written in full in the loop (with col/st locals the registers differ) */
+        for (i = 0, v = cmd, x = 0; i < 8; ) {
+            v[2] = c->clear_depth << 24 | c->clear_color & 0xFFFFFF;
             v[3] = x;
-            v[4] = st;
-            v[5] = col;
+            v[4] = (unsigned short)c->clear_stencil;
+            v[5] = c->clear_depth << 24 | c->clear_color & 0xFFFFFF;
             v[6] = ++i << 6 | 0x01100000;
-            v[7] = st;
+            v[7] = (unsigned short)c->clear_stencil;
             v += 6;
             x += 0x40;
         }
@@ -1365,7 +1357,6 @@ unsigned int *dl_clear(unsigned int *list, unsigned int flags)
     cmd[nv * 3 + 7] = 0xD3000000;
     return dl_push(list, cmd, nv * 3 + 8);
 }
-#endif
 
 /* Block transfer (sceGuCopyImage). */
 unsigned int *dl_copy_image(unsigned int *list, int psm, int sx, int sy, int w, int h, int srcw, void *src, int dx, int dy, int dstw, void *dst)
