@@ -135,6 +135,13 @@ def main():
         run(["gcc"] + PCFLAGS + ["-c", p, "-o", o])
         pobjs.append(o)
     pdefs = {n for o in pobjs for n, t, _sz in nm(o) if t in "TDBR"}
+    # the game's newlib (src/BOOT) defines these on its own FILE layout and interposes glibc's: a platform file
+    # that calls one gets the game's (a load that read 0 bytes); use read()/write() or fprintf there
+    game_stdio = {"fread", "fwrite", "fflush", "fgets", "fputs", "fseek", "ftell", "getc", "putc", "ungetc", "vfprintf"}
+    bad = sorted((o, n) for o in pobjs for n, t, _sz in nm(o) if t == "U" and n in game_stdio
+                 and re.search(rf"^{n} = ", open("symbols/BOOT.txt").read(), re.M))
+    if bad:
+        raise SystemExit("".join(f"{o}: calls {n}, which binds to the game's newlib\n" for o, n in bad))
     with cf.ThreadPoolExecutor(jobs) as ex:
         list(ex.map(lambda a: compile_one(*a), [(s, o) for m in mods for s, o in zip(srcs[m], objs[m])]))
         # objcopy edits the objects in place: start from fresh copies every run

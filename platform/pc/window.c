@@ -9,7 +9,9 @@
    The GL context is current on one thread at a time; the game draws from more than one thread (one runs at a time,
    kernel.c), so a thread that blocks gives the context up (host_gfx_release, called by the scheduler) and the next
    GL user takes it (host_gfx_bind). */
+#include <stdio.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/XKBlib.h>
 #include <X11/keysym.h>
 #define GL_GLEXT_PROTOTYPES
@@ -26,7 +28,7 @@ static Window win;
 static GLXContext ctx;
 static Atom wm_delete;
 static int state;                     /* 0 not tried, 1 GL ready, -1 no GL */
-static int mapped, scale = 2;
+static int mapped, scale = 2, win_w, win_h;   /* win_*: the size the window manager gave us (a tiling WM ignores ours) */
 static pthread_t owner;
 static int owned;
 static unsigned int buttons;
@@ -135,6 +137,62 @@ static unsigned int key_bit(KeySym k)
 }
 
 /* window events: keys to PSP buttons, close = exit */
+/* text entry for the on-screen keyboard (utility.c): while it is on, the keyboard types into text[] instead of
+   pressing buttons, and the window title shows what was typed (the PSP keyboard itself is not drawn) */
+static char text[64];
+static int text_on, text_max, text_done;   /* text_done: 1 Enter, -1 Esc */
+
+static void text_title(void)
+{
+    char t[160];
+
+    snprintf(t, sizeof t, "Type the name: %s_   (Enter = OK, Esc = cancel)", text);
+    XStoreName(dpy, win, text_on ? t : "Yu-Gi-Oh! GX Tag Force");
+    XFlush(dpy);
+}
+
+/* starts typing over `init`, at most max characters; 0 when there is no window to type into */
+int host_text_start(const char *init, int max)
+{
+    if (state <= 0 || !mapped)
+        return 0;
+    snprintf(text, sizeof text, "%s", init);
+    text_max = max < (int)sizeof text - 1 ? max : (int)sizeof text - 1;
+    text[text_max] = 0;
+    text_on = 1;
+    text_done = buttons = 0;
+    text_title();
+    return 1;
+}
+
+/* 0 still typing; 1 confirmed (out gets the text); -1 cancelled */
+int host_text_poll(char *out, int n)
+{
+    if (text_on)
+        return 0;
+    snprintf(out, n, "%s", text);
+    return text_done;
+}
+
+static void text_key(XKeyEvent *e)
+{
+    char c[8];
+    KeySym k;
+    int n = XLookupString(e, c, sizeof c, &k, 0), len = strlen(text);
+
+    if (k == XK_Return || k == XK_KP_Enter || k == XK_Escape) {
+        text_done = k == XK_Escape ? -1 : 1;
+        text_on = 0;
+    } else if (k == XK_BackSpace) {
+        if (len)
+            text[len - 1] = 0;
+    } else if (n == 1 && c[0] >= 0x20 && c[0] < 0x7F && len < text_max) {   /* the TTF renders ASCII */
+        text[len] = c[0];
+        text[len + 1] = 0;
+    }
+    text_title();
+}
+
 void host_pump(void)
 {
     XEvent ev;
@@ -143,12 +201,16 @@ void host_pump(void)
         return;
     while (XPending(dpy)) {
         XNextEvent(dpy, &ev);
-        if (ev.type == KeyPress)
+        if (ev.type == KeyPress && text_on)
+            text_key(&ev.xkey);
+        else if (ev.type == KeyPress)
             buttons |= key_bit(XLookupKeysym(&ev.xkey, 0));
         else if (ev.type == KeyRelease)
             buttons &= ~key_bit(XLookupKeysym(&ev.xkey, 0));
         else if (ev.type == FocusOut)
             buttons = 0;
+        else if (ev.type == ConfigureNotify)
+            win_w = ev.xconfigure.width, win_h = ev.xconfigure.height;
         else if (ev.type == ClientMessage && (Atom)ev.xclient.data.l[0] == wm_delete)
             exit(0);
     }
@@ -167,6 +229,18 @@ static unsigned int scripted(void)
 
     if (!pad && !(pad = getenv("TAGFORCE_PAD")))
         pad = "";
+    {   /* TAGFORCE_PADFILE=path: the mask (hex) is read from that file on every poll, to drive a headless run live */
+        static const char *pf;
+        FILE *f;
+
+        if (!pf && !(pf = getenv("TAGFORCE_PADFILE")))
+            pf = "";
+        if (*pf && (f = fopen(pf, "r"))) {
+            if (fscanf(f, "%x", &b) != 1)
+                b = 0;
+            fclose(f);
+        }
+    }
     for (p = pad; *p;) {
         char *e;
         unsigned int f = strtoul(p, &e, 0), m = 0, n = 1;
@@ -187,14 +261,29 @@ unsigned int host_buttons(void)
     return buttons | scripted();
 }
 
-/* shows the 480x272 top-left of the bound read framebuffer (GL rows = PSP rows), integer scaled */
+/* shows the 480x272 top-left of the bound read framebuffer (GL rows = PSP rows), fitted to the window's real size
+   with the 30:17 aspect kept and black bars around */
 void host_present(void)
 {
     if (state <= 0 || !mapped)
         return;
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glViewport(0, 0, 480 * scale, 272 * scale);
-    glBlitFramebuffer(0, 0, 480, 272, 0, 272 * scale, 480 * scale, 0, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    {
+        int ww = win_w > 0 ? win_w : 480 * scale, wh = win_h > 0 ? win_h : 272 * scale;
+        int w = ww * 272 <= wh * 480 ? ww : wh * 480 / 272, h = w * 272 / 480;
+        int x = (ww - w) / 2, y = (wh - h) / 2;
+        GLboolean sc = glIsEnabled(GL_SCISSOR_TEST);
+
+        glDisable(GL_SCISSOR_TEST);   /* the clear and the blit both obey the game's scissor */
+        glViewport(0, 0, ww, wh);
+        glColorMask(1, 1, 1, 1);      /* ge.c sets the mask again on every draw */
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glBlitFramebuffer(0, 0, 480, 272, x, y + h, x + w, y, GL_COLOR_BUFFER_BIT,
+                          w % 480 || h % 272 ? GL_LINEAR : GL_NEAREST);
+        if (sc)
+            glEnable(GL_SCISSOR_TEST);
+    }
     glXSwapBuffers(dpy, win);
     host_pump();
 }

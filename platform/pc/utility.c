@@ -5,6 +5,7 @@
    gives FINISHED(4) once and NONE(0) after (BOOT/msd.c waits on 1/2/4, shuts down on 3, reads the result on 0).
    Update is a no-op. Only the savedata modes BOOT/savedata.c uses are real: AUTOLOAD(0)/LOAD(2), AUTOSAVE(1)/SAVE(3),
    DELETE(7), SIZES(8), GETSIZE(22). */
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,14 +44,19 @@ static long file_size(const char *path)
 static int sd_load(SaveParam *p)
 {
     char path[640];
-    FILE *f;
+    int fd;
     long n;
 
     sd_path(p, p->file_name, path, sizeof path);
-    if (!(f = fopen(path, "rb")))
+    if ((fd = open(path, O_RDONLY)) < 0)
         return ERR_LOAD_NO_DATA;
-    n = fread(p->data_buf, 1, p->data_buf_size, f);
-    fclose(f);
+    /* read(), not fread(): the game's newlib defines fread (BOOT/libc_stdio.c, its own FILE layout) and that
+       definition interposes glibc's in this executable; on a glibc FILE it read 0 bytes and every load failed
+       with "the data is corrupted" (0x80110326). tools/host_link.py now refuses such calls */
+    n = read(fd, p->data_buf, p->data_buf_size);
+    close(fd);
+    if (n < 0)
+        return ERR_RW_ACCESS;
     p->data_size = (int)n;
     fprintf(stderr, "savedata: load %s (%ld bytes)\n", path, n);
     return 0;
@@ -208,33 +214,67 @@ int sceUtilityMsgDialogAbort(void) { md_status = QUIT; return 0; }
    No keyboard: TAGFORCE_OSK (ASCII) is "typed" when set, else the text is left as it was, or "Player" when it
    was empty (step 6: a new game starts with an empty name, the PSP user types one here; the TTF renders ASCII). */
 static int osk_status;
+static unsigned char *osk_data;   /* the SceUtilityOskData being typed in the window (0: answered at once) */
 
+int host_text_start(const char *init, int max);   /* window.c */
+int host_text_poll(char *out, int n);
+
+static void osk_put(unsigned char *d, const char *typed, int result)
+{
+    unsigned short *out = *(unsigned short **)(d + 0x28);
+    int max = *(int *)(d + 0x24), i = 0;
+
+    for (; typed[i] && i < max - 1; i++)
+        out[i] = (unsigned char)typed[i];
+    out[i] = 0;
+    *(int *)(d + 0x2C) = result;
+}
+
+/* With a window and no TAGFORCE_OSK the name is typed on the keyboard (window.c shows it in the title bar) and
+   the dialog stays VISIBLE until Enter or Esc. Otherwise it answers at once: TAGFORCE_OSK when set, else the
+   text as it was, or "Player" when it was empty (a new game starts with an empty name). */
 int sceUtilityOskInitStart(unsigned char *p)
 {
     unsigned char *d = *(unsigned char **)(p + 0x34);
     const unsigned short *in = *(unsigned short **)(d + 0x20);
-    unsigned short *out = *(unsigned short **)(d + 0x28);
     int max = *(int *)(d + 0x24), i = 0;
     const char *typed = getenv("TAGFORCE_OSK");
+    char cur[64];
 
-    if (!typed && (!in || !in[0]))
-        typed = "Player";
-    if (typed) {
-        for (; typed[i] && i < max - 1; i++)
-            out[i] = (unsigned char)typed[i];
-        *(int *)(d + 0x2C) = 2;
-    } else {
-        for (; in && in[i] && i < max - 1; i++)
-            out[i] = in[i];
-        *(int *)(d + 0x2C) = 0;
-    }
-    out[i] = 0;
-    fprintf(stderr, "osk: %s -> %d chars\n", typed ? "TAGFORCE_OSK" : "unchanged", i);
+    for (; in && in[i] && i < (int)sizeof cur - 1; i++)
+        cur[i] = in[i] < 0x7F ? (char)in[i] : '?';
+    cur[i] = 0;
     *(int *)(p + 0x1C) = 0;
     osk_status = INIT;
+    osk_data = 0;
+    if (!typed && host_text_start(cur, max - 1)) {
+        osk_data = d;
+        fprintf(stderr, "osk: typing in the window\n");
+        return 0;
+    }
+    if (!typed && !cur[0])
+        typed = "Player";
+    osk_put(d, typed ? typed : cur, typed ? 2 : 0);
+    fprintf(stderr, "osk: \"%s\" (no typing)\n", typed ? typed : cur);
     return 0;
 }
 
-int sceUtilityOskGetStatus(void) { return step(&osk_status); }
+int sceUtilityOskGetStatus(void)
+{
+    char t[64];
+    int r;
+
+    if (osk_data && osk_status == VISIBLE) {
+        if (!(r = host_text_poll(t, sizeof t)))
+            return VISIBLE;
+        if (r > 0)
+            osk_put(osk_data, t, 2);
+        else
+            *(int *)(osk_data + 0x2C) = 1;
+        fprintf(stderr, "osk: %s\n", r > 0 ? "typed" : "cancelled");
+        osk_data = 0;
+    }
+    return step(&osk_status);
+}
 int sceUtilityOskUpdate(int n) { (void)n; return 0; }
 int sceUtilityOskShutdownStart(void) { osk_status = FINISHED; return 0; }
