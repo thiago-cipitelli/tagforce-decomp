@@ -1,5 +1,4 @@
 // @range 0x088E0890-0x088E1FE0
-// @asm 0x088E1390-0x088E14C0
 /* Effect list upkeep and scans by source: drop expiring entries at the end of a turn, reset a zone,
    move the entries of a source to another zone, count and find the entries placed on a zone by
    a given card (kinds 6-11 point back to their source zone). */
@@ -301,12 +300,13 @@ int duel_slot_e12e0(unsigned int p, int z, int id, unsigned int q)
     return duel_slot_e1390(p, z, id, q);
 }
 
-#ifdef NON_MATCHING /* register allocation of the parameters and of the source fields differs */
 /* Entries on zone z of p placed by card id of player q, source not negated. */
+/* sp e sz por cast (unsigned char), não por `& 0xFF`: com a máscara o mwcc trata sp como temporário e o colore por
+   último (sempre no $s mais alto, em qualquer ordem de declaração); com o cast ele segue a ordem das declarações. */
 int duel_slot_e1390(unsigned int p, int z, int id, unsigned int q)
 {
-    int n = 0;
     unsigned int e = duel.players[p & 1].field[z].effects;
+    int n = 0;
     unsigned int sp;
     int sz;
     int cid;
@@ -319,8 +319,8 @@ int duel_slot_e1390(unsigned int p, int z, int id, unsigned int q)
         e = ef->next;
         kind = ef->kind & 0xF;
         if (kind >= 6 && kind <= 11) {
-            sp = src & 0xFF;
-            sz = src >> 8 & 0xFF;
+            sp = (unsigned char)src;
+            sz = (unsigned char)(src >> 8);
             cid = field_get_card(sp, sz);
             if (q == sp && !(duel.players[sp & 1].field[sz].flags >> 5 & 1) && cid == id) {
                 n++;
@@ -329,7 +329,6 @@ int duel_slot_e1390(unsigned int p, int z, int id, unsigned int q)
     }
     return n;
 }
-#endif
 
 /* Entries of kind 10 and above on zone z of p whose source zone holds a card. */
 int duel_slot_count_14c0(unsigned int p, int z)
