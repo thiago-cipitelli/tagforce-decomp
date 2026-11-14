@@ -190,7 +190,7 @@ display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescr
    `make host-lto`). Falta: unificar os ~380 avisos benignos num header por módulo (limpeza de tipos), o corpo de
    `_strtod_r` e nomes próprios para os 7 símbolos repetidos quando os gmodules forem ligados juntos.
 3. ~~Revisar os avisos do gcc contra o asm~~ (feito, seção 1.2; gate `make host-warn`).
-4. `platform/` em 32 bits: arquivos, thread/timer, input, janela, áudio PCM; ~~gmodules linkados juntos~~ (feito, seção 4, gate `make host-link`).
+4. `platform/` em 32 bits: ~~arquivos, thread/timer~~ (feito, seção 5, gate `make host-run`), input, janela, áudio PCM; ~~gmodules linkados juntos~~ (feito, seção 4, gate `make host-link`).
 5. Gráficos (decisão GE vs `dl.c`), depois save/OSK/fonte; rede e vídeo como stubs.
 
 Pendência achada na rodada 27: `debug_menu_draw` e `debug_menu_update` (libduel_draw, `dd_debug_menu.c`) não
@@ -242,7 +242,91 @@ Log por módulo (weak, globalize, estatística dos dados) em `build/host/host_li
 - **Dados duplicados:** quando o C define um global (`@data`), os bytes continuam na cópia do `.s` sem rótulo;
   ponteiros dos dados para ele vão para o objeto do C só quando `symbols/` tem o nome (4 casos); o resto aponta
   para a cópia (rótulos locais, 2614). Divergência possível se o C escrever num objeto que os dados referenciam.
+  *Resolvido no passo 4b* (seção 5).
 - **`.bss` somado: 84 MB** (heaps internos de cada gmodule no começo do `.bss`; na PSP os gmodules dividem a
   memória porque só alguns ficam carregados).
 - `-fno-pie` é necessário: com PIE o `gcc` gera `__x86.get_pc_thunk.*` em cada módulo e o código do jogo usa
   endereços absolutos em toda parte.
+
+## 5. Passo 4b: o binário passa da inicialização (feito em 2026-11-14)
+
+Gate: `make host-run` (liga e roda `build/host/tagforce` por `HOST_RUN_SECONDS`, padrão 60, com
+`TAGFORCE_ROOT=extracted`; passa se o processo ainda estiver vivo no fim; log em `build/host/run.log`). Num worktree,
+`extracted/` é um link para o repositório principal: `cd extracted && ../build/host/tagforce` roda o binário **do
+repositório principal**; usar `make host-run` ou `TAGFORCE_ROOT`.
+
+**O que roda (180 s sem falha, ~1% de CPU):** `main` → `sys_init` → `efs_init` → `font_init` (carrega `libfont.prx`,
+no-op) → `snd_init` (threads de som) → `ehscript_start("libtitle")` → laço principal a 30 fps (`gfx_state.fps` 30).
+O `libtitle` abre `msd.ehp`, `cardinfo_eng.ehp`, `title_menu_e.ehp`, tenta o vídeo `opening_a.pmf` (sceMpeg em stub:
+falha e segue), fica na tela de título e, sem botões, entra no **duelo de demonstração**: descarrega o `libtitle`,
+carrega `libduel_mgr`, `libduel_draw`, `libduel_eng`, lê `duel/start/start_all.ehp`, `basic_ue.ehp`, `cutin_*.ehp`,
+`bg/fmagic0000.ehp` e as imagens de carta (`cardh_e.cip`, `cardm_e.cip`, 92 aberturas de cada), e volta ao título.
+Nada é desenhado (as display lists são montadas e nunca executadas, passo 5) e não há som.
+
+| Arquivo | O quê |
+|---|---|
+| `platform/pc/kernel.c` | ThreadManForUser em pthreads, tempo, `sceDisplayWaitVblank*` (60 Hz pelo relógio), `sceCtrl*` (sem botões, `Read` espera o vblank), saída de áudio que só dá o ritmo (44,1 kHz) à thread de som, EDRAM falsa de 2 MB (`sceGeEdramGetAddr`) |
+| `platform/pc/io.c` | `sceIo*` sobre POSIX; `disc0:`/`umd0:` → `TAGFORCE_ROOT` (padrão `.`), `ms0:` → `TAGFORCE_SAVE` (padrão `~/.local/share/tagforce/ms0`), caminho sem dispositivo → `PSP_GAME/SYSDIR`; `*Async` síncronos com o resultado guardado para `sceIoWaitAsync`; `sceUmd*` sempre pronto; `TAGFORCE_TRACE_IO` mostra cada tradução |
+| `platform/pc/module.c` | `sceKernelLoadModule` guarda o nome; `sceKernelStartModule` chama o `module_start`/`module_entry` do gmodule pela tabela `host_mod_syms` (passo 4a); módulos da Sony viram no-op |
+| `tools/host_stubs.py` | não gera stub para nome que outro `platform/pc/*.c` define |
+| `tools/host_link.py` | compila todo `platform/pc/*.c` (com `-iquote include`: o `include/stdarg.h` escondia o do sistema), `-mno-sse`, cache de objetos refeito quando as flags mudam |
+| `tools/host_data.py` | objetos que o C define não são mais copiados (abaixo) |
+
+**Escalonador (`kernel.c`).** A PSP tem um núcleo e escalonamento estrito por prioridade, e o jogo depende disso:
+`ehscript_yield_to` acorda a thread de cena, que roda um quadro e acorda a principal; a principal (prioridade maior)
+toma a CPU e suspende a cena no meio da `sceKernelWakeupThread`. Modelo: **uma trava global é a CPU**; uma thread só
+roda com ela e só a solta numa chamada que bloqueia; volta de uma espera só quando é a thread pronta, não suspensa,
+de prioridade mais alta (número menor). Qualquer chamada que deixa pronta uma thread de prioridade maior (signal, set,
+wakeup, start, resume, change priority) cede a CPU na hora. Um `pthread_cond` único com broadcast a cada mudança;
+o fim de um delay não preempta a thread que está rodando (é visto no próximo ponto de escalonamento). Threads: 5
+(principal 0x20, cena 0x21, ehfile 0x6F, som 0x10 e 0x11). `TAGFORCE_TRACE_SCHED` registra cada troca.
+
+### 5.1 Mudanças em `src/` e `include/` (só o host muda; mwcc compila os mesmos tokens)
+
+- `include/libgu.h`: `PSP_PHYS(p)` (`& 0x1FFFFFFF`) e `PSP_UNCACHED(p)` (`| 0x40000000`), identidade fora do mwcc;
+  usados em `sceGuStart` (`libgu.c`) e no `sceGuDebugFlush` (`libgu_ctx.c`). Eram o segfault do passo 4a.
+- `include/allegrex.h`: `ALLEGREX_UNCACHED(a)` = `__builtin_allegrex_ins(a, 4, 28, 4)` no mwcc, identidade no host;
+  usado em `dl_init` (heap das display lists) e na cópia sem cache de `gfx_ge_defaults` (`gfx.c`).
+- **Funções `void` cujo chamador usa o `$v0` da chamada final** (para bater, o C delas é `void`; no MIPS o valor da
+  última chamada fica em `$v0`): sob `#ifndef __MWERKS__` passam a devolvê-lo: `dl_alloc_inline` (resultado de
+  `dl_push`: os bytes reservados), `gfx_draw_target` (resultado de `dl_select_layer`), `gfx_set_draw_target`,
+  `gfx_set_default_target`, `card_draw` (`card_draw_card`/`cardlist_draw_quad`). O `make host-lto` classifica essa
+  classe como "benigno: retorno void" (24 casos) e não vê estes cinco (as declarações divergentes estão no mesmo
+  arquivo ou não se cruzam); cada um derruba o port no primeiro uso. Das 24 do `host-lto`, só duas têm a
+  definição `void` e uma declaração com valor: `se_play_pan` (`snd_play.c`, declarada `int` em `sndapi.c`) e
+  `dd_fx2_set_param` (`dd_fx_slot.c`, `int` em `include/dd_duelui.h`); conferir se o chamador usa o valor quando
+  o caminho chegar nelas. As outras 22 definem um valor que o chamador ignora (benignas de fato).
+
+Matching: `make MODULE=BOOT verify` → ALL MATCH (inclui `check-all` dos 23 módulos); `tools/check_file.py` dos 5
+arquivos de `src/BOOT` mexidos: todas as funções batendo.
+
+### 5.2 Achados
+
+- **Dados do host sem cópia dupla (tarefa 1 do passo):** o endereço de cada global ou `static` de nome único que o C
+  define vem de `symbols/` ou da tabela de símbolos do link de matching (`build/<m>.rebuilt.elf`); os bytes e as
+  relocações dentro desses objetos saem do `.s` (69527 bytes, 1544 relocações, que eram os ponteiros das tabelas do
+  próprio C). Nenhum dado em asm aponta para objeto do C: os 1070 rótulos locais que sobram são asm → asm.
+  `--selftest` continua batendo (sem objetos do host nada é tirado).
+- **Endereços fixos da PSP no C:** fora de comentários, só sobram palavras de comando da GE: `0x08000000 | addr &
+  0xFFFFFF` (JUMP), `0x09000000` (BJUMP), `0x10000000 | (addr >> 24 & 0xF) << 16` (BASE) em `dl.c`, `libgu*.c`,
+  `font_tags.c`, `ehf_prim.c`, `gfx.c` (lista-modelo com `0x08000178`) e `font.c` (`glyph_cmds_template`). Elas
+  guardam 28 bits do ponteiro: no host os ponteiros vão de `0x08048000` (código/dados) a `0x0Dxxxxxx` (heap) e
+  `0xF7xxxxxx` (pilhas), então o interpretador de GE do passo 5 tem de manter a base do lado do host. As constantes de
+  VRAM (`0x88000`, `0x110000`, `0x160000`, `0x1F0000`...) são offsets somados a `sceGeEdramGetAddr()` e funcionam com
+  a EDRAM falsa. `sndapi.c:152` testa `(int)name >= 0x08000000` para separar nome de arquivo de handle: vale no host
+  para strings dos dados (`0x08xxxxxx`); um nome na pilha (`0xFFxxxxxx`, negativo) falharia.
+- **31 bits de endereço no heap HOGE** (`HeapEnt.addr : 31`): o `malloc` grande da glibc usa `mmap` (`0xF7xxxxxx`).
+  `mallopt(M_MMAP_MAX, 0)` no início deixa tudo no heap do `brk`, abaixo de `0x80000000`.
+- **`-mno-sse`:** as `Mat4`/`Vec4` são `aligned(16)` em `vfpu_mat4.c` mas não em todos os chamadores; o gcc copiava
+  com `movaps` e caía em matriz de pilha desalinhada. Os floats já eram x87 (`-mfpmath=387`), nada muda nos cálculos.
+- **`umd1:`** (disco cru em setores): `ehfile_build_lbn_table` lê o descritor de volume e o diretório raiz para trocar
+  nomes por `disc0:/sce_lbn0x..._size0x...`. O host entrega um volume vazio (PVD, tabela de caminhos, raiz sem
+  entradas): toda busca falha e o jogo abre os arquivos pelo nome, como faz quando a tabela não tem o arquivo.
+- **Bugs do original que a PSP tolera:** `movie_run` restaura a prioridade com `prio` não inicializado quando o vídeo
+  não abre (`sceKernelChangeThreadPriority` agora recusa prioridade fora de 1-126, como o firmware);
+  `dmgr_load_draw` passa `&status`/`&argp` locais a um `sceKernelStartModule` que a thread do ehfile faz depois do
+  retorno: na PSP escreve em pilha morta, aqui escrevia no quadro vivo da thread de cena (o `module.c` não escreve
+  `*status`; ninguém o lê).
+- Stubs ainda chamados no caminho: GE (`sceGeListEnQueue`, `sceGeListSync`...), `sceFont*` (fonte zerada), `__sceSas*`
+  e `sceAtrac*` (som), `sceMpeg*` (vídeo), `sceUtilitySavedata*` (status 0, o jogo segue), `sceDisplaySetMode/
+  SetFrameBuf`, `sceKernelDcacheWritebackInvalidateAll`, `sceKernelStdout`.
