@@ -1,5 +1,4 @@
 // @range 0x088106D8-0x08813088
-// @asm 0x088108A0-0x08810ADC
 // @asm 0x0881103C-0x08811658
 // @asm 0x08811A8C-0x08811FBC
 // @rodata 0x0882AED0-0x0882AEE8
@@ -76,11 +75,10 @@ void ttab_init(TTab *t)
     t->draw = 0;
 }
 
-#ifdef NON_MATCHING /* 2 palavras: o original põe o li s0,1 do ternário no delay slot do beqz e o move s3 (t) antes; o mwcc inverte */
 void tpanel_init(TPanel *p, void *heap)
 {
-    TTab *t;
-    TBox *b;
+    TTab *t = p->tab;
+    TBox *b = &p->box;
     int i;
     int n;
 
@@ -92,8 +90,6 @@ void tpanel_init(TPanel *p, void *heap)
     p->h = 218;
     p->cur = 0;
     p->n = 2;
-    b = &p->box;
-    t = p->tab;
     n = p->n ? p->n : 1;
     for (i = 0; i < 4; i++, t++) {
         ttab_init(t);
@@ -125,7 +121,6 @@ void tpanel_init(TPanel *p, void *heap)
         b->h = 0;
     tpanel_list_init(p, heap);
 }
-#endif
 
 /* the system list of the panel */
 void tpanel_list_init(TPanel *p, void *heap)
