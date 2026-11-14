@@ -199,13 +199,13 @@ void font_printf_box64(int x, int y, int x0, int xmax, const char *fmt, ...)
 }
 
 /* Binary search in the sorted index: slot of `code`, or 0x100 + insertion position. */
-int font_glyph_find(unsigned int code)
+int font_glyph_find(unsigned short code)
 {
     FontCtx *f = font_ctx_ptr;
     int lo = 0;
     int hi = f->count + 1;
     int mid = hi / 2;
-    int c = (unsigned short)code;
+    int c = code;
 
     while (lo < mid) {
         int i = mid - 1;
@@ -349,8 +349,12 @@ int font_line_height(void)
 #ifdef NON_MATCHING
 /* Returns the atlas slot of `code`, rendering it with sceFont into the least recently used slot
    when absent; keeps the sorted index and the LRU list up to date. */
-/* Fica em asm (60 palavras): forma igual, mas o original dá f a s1 e font a s5 (aqui trocados) e
-   mascara code mais tarde; nenhuma ordem de declaração muda isso. */
+/* Fica em asm (55 palavras): forma igual, só f e font com s1/s5 trocados (e por isso os $s do laço de
+   cópia deslocados). `code` é u16 que o original nunca mascara na entrada: os chamadores passam o
+   registrador cru e font_glyph_find/sceFontGetChar* recebem u16 (com `unsigned int` neles o mwcc
+   mascarava code uma vez na entrada: 302 palavras). Testados sem efeito na troca: ordem/tipos das
+   declarações, font no bloco do if, f vinda de cópia, helpers inline (corpo inteiro, LRU), i = pos,
+   pragmas opt_*. */
 unsigned int font_glyph_cache(SceFontGlyphImage *img, unsigned short code)
 {
     FontCtx *f = font_ctx_ptr;
