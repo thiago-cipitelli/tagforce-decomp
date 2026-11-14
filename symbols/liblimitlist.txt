@@ -71,7 +71,7 @@ ll_draw_header = 0x08806960; // type:func matched src/liblimitlist/ll_screen.c
 ll_draw_entries = 0x08806AA0; // type:func matched src/liblimitlist/ll_screen.c
 ll_draw_list = 0x08806AE4; // type:func matched src/liblimitlist/ll_screen.c
 ll_draw_grid = 0x08806C00; // type:func matched src/liblimitlist/ll_screen.c
-ll_draw_row = 0x08806DC0; // type:func asm (@asm in src/liblimitlist/ll_screen.c, C under NON_MATCHING)
+ll_draw_row = 0x08806DC0; // type:func matched src/liblimitlist/ll_screen.c
 ll_tab_x = 0x0880D5EC; // type:data
 ll_row_counters = 0x0880D610; // type:data size:0x24
 // --- generated imports below (tools/link_map.py); edit lines above only ---

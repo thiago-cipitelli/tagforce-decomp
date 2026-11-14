@@ -1,5 +1,4 @@
 // @range 0x08806490-0x0880740C
-// @asm 0x08806DC0-0x0880740C
 // @data 0x0880D5EC-0x0880D634
 /* The screen: background animation, tab titles with the list sizes, header with the list name,
    the list rows (kind banner, picture, name, icons, ATK/DEF and the deck/partner/owned counters)
@@ -262,10 +261,7 @@ void *ll_draw_grid(void *dl)
     return dl;
 }
 
-#ifdef NON_MATCHING
 typedef struct LlRowCounters { LlCounter c[3]; } LlRowCounters;
-#endif
-#ifdef NON_MATCHING /* com a cópia de ll_row_counters como struct, value++ antes da cor e `x += 18; ... x += 175;` no ramo de magia/armadilha (o original re-mascara x a partir de s1 e põe o dl em s0), faltam 3 palavras: no ramo de monstro o original monta o `or a1,s0,s4` do ll_draw_race antes dos `move` (o escalonador do mwcc só faz isso quando o x mascarado morre ali, como no ramo de magia; nenhuma forma testada, rodada 21) */
 /* one row of the name list */
 void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
 {
@@ -300,14 +296,16 @@ void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
         unsigned short atk = card_get_atk_q(e->id);
         unsigned short def = card_get_def_q(e->id);
         unsigned short level = card_get_level(e->id);
+        unsigned int xb;
         int y2;
         yy = (unsigned short)(y + 14) << 16;
         dl = ll_draw_race(dl, x | yy, kind, llres_get(0x8007));
-        dl = ll_draw_attr(dl, (unsigned short)(x + 18) | yy, attr, llres_get(0x8007));
+        xb = x;
+        dl = ll_draw_attr(dl, (unsigned short)(xb + 18) | yy, attr, llres_get(0x8007));
         y2 = (unsigned short)(y + 16) << 16;
-        dl = ll_draw_badge(dl, (unsigned short)(x + 37) | y2, level, 0xFF000000, llres_get(0x8009));
-        dl = ll_draw_stat(dl, atk << 16, (unsigned short)(x + 73) | y2, 0xC0A, 0xFF000000, llres_get(0x8009));
-        dl = ll_draw_stat(dl, def << 16 | 1, (unsigned short)(x + 133) | y2, 0xC0A, 0xFF000000, llres_get(0x8009));
+        dl = ll_draw_badge(dl, (unsigned short)(xb + 37) | y2, level, 0xFF000000, llres_get(0x8009));
+        dl = ll_draw_stat(dl, atk << 16, (unsigned short)(xb + 73) | y2, 0xC0A, 0xFF000000, llres_get(0x8009));
+        dl = ll_draw_stat(dl, def << 16 | 1, (unsigned short)(xb + 133) | y2, 0xC0A, 0xFF000000, llres_get(0x8009));
         x += 193;
     }
     {
@@ -356,4 +354,3 @@ void *ll_draw_row(void *dl, unsigned short x, unsigned short y, LlEntry *e)
         return ll_draw_counters(dl, (unsigned short)(x + 7) | yy, row.c, llres_get(0x8006), llres_get(0x800A));
     }
 }
-#endif
