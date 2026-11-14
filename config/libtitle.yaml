@@ -63,8 +63,6 @@ segments:
       - [0x17AC4, c, t_fdlobby]
       - [0x18140, asm, t_fdlobby_asm_0881C0E0]
       - [0x184D4, c, t_fdlobby]
-      - [0x199AC, asm, t_fdlobby_asm_0881D94C]
-      - [0x199F4, c, t_fdlobby]
       - [0x1A12C, c, t_fddraw]
       - [0x1B08C, c, t_partner]
       - [0x1D75C, asm, t_partner_asm_088216FC]
