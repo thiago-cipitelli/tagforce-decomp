@@ -2914,3 +2914,22 @@ não mudaram (pragmas `opt_lifetimes`/`opt_propagation`/`opt_common_subs`/`opt_d
 - Scripts em `build/tmp/r29D/`: `tv.py` (variantes de uma função, `//----` separa), `gen.py` (gera variantes por
   substituição `velho>>>novo`, `@@` separa, `PRE>>>` insere antes da função), `ren.py` (troca de contadores),
   `dmove.py` (move 1-2 declarações por todas as posições), `sbs.sh`/`nd.sh` (diff lado a lado e normalizado).
+
+## Rodada 30 (`bD`): `cardinfo_draw` e `ehf_draw_shape` (BOOT) batendo
+
+- **Variável que ignora a ordem das declarações = os laços dividem um contador** (`cardinfo_draw`, 54 -> 0): o `id`
+  (`unsigned short` lido de global) ficava sempre em `s4` e o `n` em `s5`, em qualquer posição da declaração (17 posições
+  de cada testadas); só `title`/`hint_l`/`hint_r`/`i` giravam entre `s0`..`s3`. Com um contador próprio por laço (`i` na
+  aba de gêneros, `k` na lista, `j` nos ícones) e um `y` próprio por laço (`y`, `ly`), todos declarados no fim, o `id` cai
+  para `s2` como no original (54 -> 33); depois a ordem simples resolve: `title` antes de `hint_l` (15) e `n` declarado
+  depois dos novos contadores (0). Quando um `$s` não se mexe com a ordem das declarações, dividir os laços primeiro e
+  só então buscar ordem. O `i` não usado deixa de existir (variáveis declaradas e não usadas não mudaram nada aqui).
+- **Clamp nos campos da struct, não nos locais** (`ehf_draw_shape`, 57 -> 0): o rascunho fazia `g = MAX(g, 0); g =
+  MIN(g, 0xFF); ...` nos locais antes de gravar `cx.mul[]`; o original grava os locais e clampa os campos:
+  `cx.mul[k] = ALLEGREX_MIN(ALLEGREX_MAX(cx.mul[k], 0), 0xFF);` na ordem 2,1,0,3 (a mesma do laço com `cx.add`) e a cor
+  é `c[0] + ((c[1] << 8) + ((c[3] << 24) + (c[2] << 16)))` nos dois lugares (57 -> 15). Restos: `(alpha << 24) + cor`
+  em vez de `alpha * 0x1000000 + cor` (operandos do `addu`) e as declarações `r, a, g, b` (busca conjunta de 24 ordens
+  de declaração x 24 ordens de clamp). `if`/ternário não geram `max`/`min`; helper `static inline` de clamp não muda.
+- Sem forma: `cardinfo_draw_frame` (7: as 16 combinações de variável x expressão para `x1/y1/x5/y5`, as ordens de
+  declaração, reuso de `y1` para `y5` e as posições de cada atribuição não mexem na ordem dos `move` de argumento),
+  `cardinfo_draw_window` (9: `x5 = x + 5U`/`5 + x`/`(unsigned)x + 5` contra `x + 5` no fim continuam CSE).
