@@ -1,5 +1,4 @@
 // @range 0x088C134C-0x088C2F80
-// @asm 0x088C1B88-0x088C1D80
 /* Effects resolved at a phase change (after effects_088C004C.c): one handler per card id, each scanning
    both fields for the cards it affects. */
 #include "duel.h"
@@ -216,29 +215,30 @@ int duel_088C19F0(void)
     return r;
 }
 
-#ifdef NON_MATCHING /* no laço do deck o contador e o ponteiro saem com $s2/$s3 trocados; nenhuma ordem de declaração resolve */
+/* Registers: uid (unsigned) declared first and i unsigned with (int) casts in its tests; the deck loop counts
+   the players with i and the deck cards with q (the original's $s1/$s2 roles). */
 void duel_088C1B88(unsigned int p, int z)
 {
+    unsigned int uid;
     int q;
-    int i;
+    unsigned int i;
     int id;
-    int uid;
 
     if (duel.players[p & 1].field[z].card.id == 0x1368) {
         id = duel.players[p & 1].field[z].link;
         duel_088C89BC(p, z, 0x1368, 1);
         for (q = 0; q < 2; q++) {
-            for (i = 0; i <= 10; i++) {
+            for (i = 0; (int)i <= 10; i++) {
                 if (duel_field_same_name(q, i, id)) {
                     duel_088C87A8(p, z, 0x1368, 3, CARD_UID(duel.players[q & 1].field[i].card));
                 }
             }
         }
         if (id == 0x12A1) {
-            for (q = 0; q < 2; q++) {
-                for (i = 0; i < (unsigned int)duel.players[q & 1].n_d; i++) {
-                    uid = CARD_UID(duel.players[q & 1].zone_d[i]);
-                    if (duel_slot_effect_with(q, 0xB, 0x12A1, uid)) {
+            for (i = 0; (int)i < 2; i++) {
+                for (q = 0; q < (unsigned int)duel.players[i & 1].n_d; q++) {
+                    uid = CARD_UID(duel.players[i & 1].zone_d[q]);
+                    if (duel_slot_effect_with(i, 0xB, 0x12A1, uid)) {
                         duel_088C87A8(p, z, 0x1368, 3, uid);
                     }
                 }
@@ -246,7 +246,6 @@ void duel_088C1B88(unsigned int p, int z)
         }
     }
 }
-#endif
 
 int duel_088C1D80(unsigned int p)
 {

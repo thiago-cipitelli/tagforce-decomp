@@ -1,6 +1,5 @@
 // @range 0x08889BE4-0x0888B904
 // @rodata 0x08911844-0x08911868
-// @asm 0x0888A88C-0x0888AB18
 /* Card effect handlers (DuelAct *a), after effects_x.c. */
 #include "duel.h"
 
@@ -370,20 +369,24 @@ int duel_0888A52C(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* desvio do caso 0x137E para o corpo de 0x14FD; o mwcc gera xor v0,v0,zero antes do sltiu e põe o sll
-                      no delay slot do b (original: sll antes do b, nop); ternário, if invertido, !=, Duel.phase
-                      testados; 5 palavras */
+/* The 0x137E branch is a static inline helper with a return per exit: that gives the original's `b join; nop`
+   (unfilled delay slot) and `bnel` to that `b`; `(unsigned int)duel_phase < 1` is the plain `sltiu`
+   (`duel_phase == 0` compiles to `xor` + `sltiu`). */
+static inline int duel_0888A88C_n(DuelAct *a)
+{
+    if (a->player == duel_turn_player) {
+        return ((unsigned int)duel_phase < 1 ^ 1) << 1;
+    }
+    return 1;
+}
+
 int duel_0888A88C(DuelAct *a, int b)
 {
     int n;
 
     switch (a->id) {
     case 0x137E:
-        if (a->player == duel_turn_player) {
-            n = (duel_phase == 0 ^ 1) << 1;
-        } else {
-            n = 1;
-        }
+        n = duel_0888A88C_n(a);
         break;
     case 0x14FD:
         n = (a->player == duel_turn_player) + 1;
@@ -392,10 +395,7 @@ int duel_0888A88C(DuelAct *a, int b)
     duel_088C77D4(a->player, a->id, (n & 0xF) << 4 | 1, a->uid);
     return 0;
 }
-#endif
 
-#ifdef NON_MATCHING /* só registradores: b e o ponteiro do slot trocados (s1/s2) no case 0x7D; perm das declarações
-                      não resolve; 7 palavras */
 int duel_0888A938(DuelAct *a)
 {
     unsigned short buf[256];
@@ -403,6 +403,7 @@ int duel_0888A938(DuelAct *a)
     int z;
     unsigned int mask;
     unsigned int q;
+    DuelPlayer *s; /* declared before b: the slot pointer takes the higher $s than the zone bit */
     int b;
     int i;
 
@@ -425,8 +426,8 @@ int duel_0888A938(DuelAct *a)
         mask = 0;
         for (i = 0; i < 2; i++) {
             q = i != 0 ? a->player : 1 - a->player;
-            for (z = 0, b = q * 16; z < 5; z++, b++) {
-                if (duel.players[q & 1].field[z].card.id != 0 && duel.players[q & 1].field[z].faceup != 0 && duel_field_kind(q, z) == k) {
+            for (z = 0, s = &duel.players[q & 1], b = q * 16; z < 5; z++, s = (DuelPlayer *)((char *)s + sizeof(DuelSlot)), b++) {
+                if (s->field[0].card.id != 0 && s->field[0].faceup != 0 && duel_field_kind(q, z) == k) {
                     mask |= 1 << b;
                 }
             }
@@ -436,7 +437,6 @@ int duel_0888A938(DuelAct *a)
     }
     return 0;
 }
-#endif
 
 int duel_0888AB18(DuelAct *a)
 {
