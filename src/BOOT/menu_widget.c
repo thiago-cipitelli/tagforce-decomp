@@ -343,6 +343,25 @@ static inline int menu_opened(MenuWidget *w, int st)
     return 1;
 }
 
+static inline int menu_blink(MenuWidget *w)
+{
+        if (w->blink++ > 8) {
+            w->blink = 0;
+            if (w->keep_open) {
+                w->state = 3;
+                if (w->cancelled)
+                    return -2;
+                if (w->style != 0)
+                    return w->scroll + w->cursor;
+                if (w->buttons != 0)
+                    return w->button;
+                return -1;
+            }
+            menu_finish(w);
+        }
+        return -1;
+}
+
 static inline int menu_input(MenuWidget *w, PadState *pad)
 {
     unsigned int pressed;
@@ -443,10 +462,6 @@ static inline int menu_input(MenuWidget *w, PadState *pad)
 int menu_update(MenuWidget *w)
 {
     PadState *pad = w->pad;
-    unsigned int pressed;
-    unsigned int accept;
-    unsigned char bits, b, nb;
-    int i, k, n, style;
 
     if (pad == 0)
         pad = pad_get();
@@ -482,21 +497,7 @@ int menu_update(MenuWidget *w)
         }
         break;
     case 4:
-        if (w->blink++ > 8) {
-            w->blink = 0;
-            if (w->keep_open) {
-                w->state = 3;
-                if (w->cancelled)
-                    return -2;
-                if (w->style != 0)
-                    return w->scroll + w->cursor;
-                if (w->buttons != 0)
-                    return w->button;
-                return -1;
-            }
-            menu_finish(w);
-        }
-        return -1;
+        return menu_blink(w);
     default:
         return -3;
     }
