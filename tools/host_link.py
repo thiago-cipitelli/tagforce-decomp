@@ -27,11 +27,11 @@ import host_data  # noqa: E402
 # movaps, which faults where a caller declares the same object without the alignment
 CFLAGS = ["-m32", "-mno-sse", "-std=gnu89", "-w", "-O0", "-g", "-fno-common", "-fno-pie", "-DNON_MATCHING", "-Iinclude"]
 # platform/pc sees include/ only through "": include/stdarg.h would shadow the system one under <stdarg.h>
-PCFLAGS = [f for f in CFLAGS if f != "-Iinclude"] + ["-iquote", "include", "-pthread", "-O2"]
+PCFLAGS = [f for f in CFLAGS if f != "-Iinclude"] + ["-iquote", "include", "-pthread", "-O2", "-I/usr/include/freetype2"]
 # window and GL (platform/pc/window.c, ge.c): the system's 32-bit libX11 and libGL. The version script exports
 # nothing: the game defines ~50 libc/libm names (malloc, exit, mtx_init - a matrix function -, strtod, sinf...) that
 # would otherwise interpose glibc's for every shared library too (Mesa crashed in the game's mtx_init)
-LIBS = ["-lX11", "-lGL", "-lm", "-Wl,--version-script=build/host/hide.ver"]
+LIBS = ["-lX11", "-lGL", "-lfreetype", "-lm", "-Wl,--version-script=build/host/hide.ver"]
 OUT = "build/host"
 
 

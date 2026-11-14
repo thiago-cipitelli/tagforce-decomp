@@ -5,6 +5,7 @@ usage: ppm_sheet.py out.png [--cols N] [--full] frame.ppm...
   --full: frames at full size (default: every other pixel)
   --selftest: write a 2-frame sheet from synthetic frames and read the size back
 """
+import re
 import struct
 import sys
 import zlib
@@ -12,10 +13,11 @@ import zlib
 
 def read_ppm(path):
     data = open(path, "rb").read()
-    parts = data.split(maxsplit=4)
-    assert parts[0] == b"P6" and parts[3] == b"255", path
-    w, h = int(parts[1]), int(parts[2])
-    return w, h, parts[4][: w * h * 3]
+    # one whitespace byte ends the header: a split() would also eat a first pixel byte of 9, 10, 13 or 32
+    m = re.match(rb"P6\s+(\d+)\s+(\d+)\s+255\s", data)
+    assert m, path
+    w, h = int(m.group(1)), int(m.group(2))
+    return w, h, data[m.end(): m.end() + w * h * 3]
 
 
 def write_png(path, w, h, rgb):

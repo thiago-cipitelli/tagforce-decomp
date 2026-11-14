@@ -76,7 +76,7 @@ static const char *root(void)
     return r && *r ? r : ".";
 }
 
-static void save_dir(char *out, int n)
+void host_save_dir(char *out, int n)
 {
     const char *s = getenv("TAGFORCE_SAVE");
     const char *home = getenv("HOME");
@@ -99,7 +99,7 @@ static int host_path(const char *psp, char *out, int n)
     } else if (!strncmp(psp, "disc0:", 6) || !strncmp(psp, "umd0:", 5)) {
         cat3(out, n, root(), colon[1] == '/' ? "" : "/", colon + 1);
     } else if (!strncmp(psp, "ms0:", 4) || !strncmp(psp, "fatms0:", 7)) {
-        save_dir(base, sizeof base);
+        host_save_dir(base, sizeof base);
         cat3(out, n, base, colon[1] == '/' ? "" : "/", colon + 1);
     } else {
         return 0;
@@ -112,7 +112,7 @@ static int host_path(const char *psp, char *out, int n)
 }
 
 /* mkdir -p of the directories above path (saves) */
-static void make_parents(char *path)
+void host_make_parents(char *path)
 {
     char *p;
 
@@ -173,7 +173,7 @@ int sceIoOpen(const char *file, int flags, int mode)
     if (flags & 0x400) f |= O_TRUNC;
     if (flags & 0x800) f |= O_EXCL;
     if (f & O_CREAT)
-        make_parents(path);
+        host_make_parents(path);
     h = open(path, f, 0644);
     if (h < 0) {
         dprintf(2, "io: open %s: %s\n", file, strerror(errno));
@@ -343,7 +343,7 @@ int sceIoMkdir(const char *dir, int mode)
 
     if (!host_path(dir, path, sizeof path))
         return ERR_NOENT;
-    make_parents(path);
+    host_make_parents(path);
     return mkdir(path, 0755) < 0 && errno != EEXIST ? err() : 0;
 }
 

@@ -220,48 +220,6 @@ int sceCtrlSetSamplingMode(int mode)
     return 0;
 }
 
-int sceFontFindOptimumFont()
-{
-    STUB();
-    return 0;
-}
-
-int sceFontGetFontInfo()
-{
-    STUB();
-    return 0;
-}
-
-int sceFontNewLib()
-{
-    STUB();
-    return 0;
-}
-
-int sceFontGetCharGlyphImage()
-{
-    STUB();
-    return 0;
-}
-
-int sceFontOpen()
-{
-    STUB();
-    return 0;
-}
-
-int sceFontGetCharInfo()
-{
-    STUB();
-    return 0;
-}
-
-int sceFontSetAltCharacterCode()
-{
-    STUB();
-    return 0;
-}
-
 int sceUtilityLoadUsbModule(int module)
 {
     STUB();
@@ -274,37 +232,13 @@ int sceUtilityLoadNetModule(int module)
     return 0;
 }
 
-int sceUtilityMsgDialogInitStart()
-{
-    STUB();
-    return 0;
-}
-
 int sceUtilityGetSystemParamString()
 {
     STUB();
     return 0;
 }
 
-int sceUtilityOskShutdownStart()
-{
-    STUB();
-    return 0;
-}
-
-int sceUtilityOskUpdate()
-{
-    STUB();
-    return 0;
-}
-
 int sceUtilityNetconfInitStart()
-{
-    STUB();
-    return 0;
-}
-
-int sceUtilitySavedataInitStart()
 {
     STUB();
     return 0;
@@ -322,61 +256,13 @@ int sceUtilityUnloadNetModule(int module)
     return 0;
 }
 
-int sceUtilityMsgDialogShutdownStart()
-{
-    STUB();
-    return 0;
-}
-
-int sceUtilitySavedataGetStatus()
-{
-    STUB();
-    return 0;
-}
-
 int sceUtilityNetconfUpdate()
 {
     STUB();
     return 0;
 }
 
-int sceUtilityMsgDialogUpdate()
-{
-    STUB();
-    return 0;
-}
-
-int sceUtilitySavedataShutdownStart()
-{
-    STUB();
-    return 0;
-}
-
-int sceUtilityMsgDialogGetStatus()
-{
-    STUB();
-    return 0;
-}
-
 int sceUtilityLoadAvModule(int module)
-{
-    STUB();
-    return 0;
-}
-
-int sceUtilitySavedataUpdate()
-{
-    STUB();
-    return 0;
-}
-
-int sceUtilityOskGetStatus()
-{
-    STUB();
-    return 0;
-}
-
-int sceUtilityOskInitStart()
 {
     STUB();
     return 0;
