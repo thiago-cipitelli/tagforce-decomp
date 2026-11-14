@@ -1,5 +1,4 @@
 // @range 0x08820F88-0x08822B0C
-// @asm 0x08822520-0x088226C0
 // @data 0x08876110-0x08876208
 /* The action window over a field location (summon, set, activate, attack... as icons of
    dd_act_tab, placed next to the card on screen) and the message windows of the duel's other
@@ -662,14 +661,16 @@ unsigned int *func_0882228C(unsigned int *dl)
     return dl;
 }
 
-#ifdef NON_MATCHING /* alocação de registradores ou forma não reproduzida */
 /* collects the cards the current chain link involves (16 at most) */
 void func_08822520(void)
 {
     DdChainSel *c = &dd_chain_sel;
     char *chain;
     void *link;
-    int p, z, i, n;
+    int p;
+    DdZone z;
+    int i;
+    int n;
 
     dd_chain_sel.n = 0;
     dd_chain_sel.more = 0;
@@ -704,7 +705,6 @@ void func_08822520(void)
     if (dv_088BFFD8(0, 0xFFFE, 14))
         c->more = 1;
 }
-#endif
 
 /* yes/no (with_no) or OK question; def_no opens on "no" */
 void func_088226C0(unsigned short *text, int with_no, int def_no)

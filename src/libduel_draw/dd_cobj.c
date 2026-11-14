@@ -1,5 +1,4 @@
 // @range 0x08809B1C-0x0880A8E0
-// @asm 0x08809EF0-0x08809FA0
 // @data 0x08874BA0-0x08874BA8
 /* The 3D card objects of the field: a pool of 460 nodes and one list per player and zone (deck,
    extra, graveyard...), filled from the decks at the start; the moves of a card between two
@@ -128,21 +127,18 @@ void dd_cobjs_draw(void)
     dd_board_end();
 }
 
-#ifdef NON_MATCHING /* 16 palavras: o laço de zonas mantém o teste no topo a cada volta do externo, mas o externo (p) não é rotacionado no original; z = 0 no incremento do externo dá o teste no topo e rotaciona o externo */
 /* advances every card object */
 void dd_cobjs_update(float dt)
 {
     int p;
-    int z;
+    DdZone z;
     DdCobj *head;
     DdCobj *o;
     DdCobj *next;
 
     dd_cursor_nop();
-    p = 0;
-    z = 0;
-    for (; p < 2; p++, z = 0) {
-        for (; z < 16; z++) {
+    for (p = 0; p < 2; p++) {
+        for (z = 0; z < 16; z++) {
             head = dd_zone_list(p, z);
             for (o = head->next; o != head; o = next) {
                 next = o->next;
@@ -152,7 +148,6 @@ void dd_cobjs_update(float dt)
     }
     dd_counter_tick(dt);
 }
-#endif
 
 /* moves the object of card `uid` from `from` to `to` (kind: how it moves) */
 void dd_cobj_goto(DdPos from, DdPos to, int uid, int kind)

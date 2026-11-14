@@ -781,11 +781,15 @@ typedef struct DdChainLink { /* chain link of the engine (dv_chain() + 0x300), 0
 int dd_ev_47(int player, int zone, int idx)
 {
     char *eng = dv_chain();
-    DdChainLink *h = (DdChainLink *)((unsigned int)(eng + 0x300) + (*(int *)(eng + 0x480) - 1) * sizeof(DdChainLink));
-    int v = h->value;
+    int n = *(int *)(eng + 0x480);
+    DdChainLink *h = (DdChainLink *)(eng + 0x300);
+    int v;
     DdFlip *f;
     DdCutinDesc d;
 
+    n--;
+    h += n;
+    v = h->value;
     if (dd_ev_flip_cutin == 0) {
         if (v > 0 && !h->negated && !h->b2)
             dd_popup(dv_player_to_side(player), zone, v, 0x2F, 0);

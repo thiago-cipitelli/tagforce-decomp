@@ -267,11 +267,14 @@ void dd_cursor_first_target(void)
 #endif
 
 /* square button: cycles the cursor */
-#ifdef NON_MATCHING /* teste do laço de zonas no topo e booleano materializado */
+#ifdef NON_MATCHING /* 32 palavras (rodada 32): o teste de entrada do laço de zonas sai com o contador enum (DdZone); falta só o booleano materializado (sltu; xori; bnezl) do teste do alvo, que o mwcc gera para `if (c) { found = 1; break; }` e `if (c) return 1;` mas não para o goto que sai dos três laços (helper inline com return: 70) */
 void dd_cursor_cycle(void)
 {
+    int player;
+    DdZone zone;
+    int i;
     int found;
-    int player, zone, n, i;
+    int n;
 
     switch (dv_08835924()) {
     case 2:

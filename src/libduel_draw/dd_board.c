@@ -1,7 +1,6 @@
 // @range 0x0880E45C-0x0880FCFC
 // @rodata 0x0886FE64-0x0886FE80
 // @data 0x08874EA0-0x08874F70
-// @asm 0x0880EB70-0x0880F164
 /* Drawing of the field and of the card objects: the layer setup, the field sheet model, the
    deck/extra/graveyard piles (a pile model with the top card on it and the count), every card
    object with its picture (models with texture hooks), the counters of the monster zones. */
@@ -254,16 +253,14 @@ typedef struct DdZones16 {
     int v[16];
 } DdZones16;
 
-#ifdef NON_MATCHING /* refeita do asm (rodada 23): 1540 B contra 1524. Falta: (1) o segundo par de laços é da
-   família "laço interno com o teste no topo mantido" (slti at,s3,16; beqzl), que o mwcc 219 sempre elimina;
-   (2) o original guarda o DdLoc do segundo dd_cursor_get inteiro em s0 (lh s0; andi 0xffff na extração do idx);
-   (3) o laço dos objetos tem dois testes o == head (beql para o k++ e beq para o teste de cur_o). */
 /* every card object, the one under the cursor last; highlights of the zones to choose */
 void dd_board_cards(void)
 {
     DdZones16 zones = *(DdZones16 *)dd_board_zones;
     DdPos at = { 0 };
     unsigned int drawn[2] = { 0 };
+    DdLoc cur;
+    DdLoc cur2;
     int p;
     unsigned int k;
     DdCobj *head;
@@ -271,6 +268,7 @@ void dd_board_cards(void)
     DdCobj *cur_o;
     int i;
     int zone;
+    DdZone z;
     void *list;
     DdXyzw pos;
     DdXyzw rot;
@@ -291,7 +289,10 @@ void dd_board_cards(void)
             at.zone = zones.v[k];
             cur_o = 0;
             head = dd_zone_list(at.player, at.zone);
-            for (o = head->next, i = 0; o != head; o = o->next, i++) {
+            o = head->next;
+            if (o == head)
+                continue;
+            for (i = 0; o != head; o = o->next, i++) {
                 zone = at.zone;
                 switch (zone) {
                 case 12:
@@ -304,7 +305,6 @@ void dd_board_cards(void)
                 if (o->b4)
                     continue;
                 if (zone == 11) {
-                    DdLoc cur;
                     DdLoc t;
 
                     dd_cursor_get(&t);
@@ -330,25 +330,23 @@ void dd_board_cards(void)
                 DdLoc t;
 
                 dd_cursor_get(&t);
-                {
-                DdLoc cur = t;
+                *(short *)&cur2 = *(short *)&t;
                 dl_set_list(dl_depth_func(dl_enable(dl_select_layer(4, 0), 1), 1));
-                if (dd_board_card_draw(cur_o, p, 11, cur.idx))
+                if (dd_board_card_draw(cur_o, p, 11, cur2.idx))
                     drawn[p] |= 0x800;
                 list = dl_select_layer(4, 0);
                 dl_depth_func(list, 7);
                 dl_set_list(list);
-                }
             }
         }
     }
     for (p = 0; p < 2; p++) {
-        for (zone = 0; zone < 16; zone++) {
-            if (!(drawn[p] & 1 << zone) && dd_scene_flags(0x40, -1) &&
-                (dv_08835AEC(p, zone, 0) & ~0x402) != 0) {
-                drawn[p] |= 1 << zone;
+        for (z = 0; z < 16; z++) {
+            if (!(drawn[p] & 1 << z) && dd_scene_flags(0x40, -1) &&
+                (dv_08835AEC(p, z, 0) & ~0x402) != 0) {
+                drawn[p] |= 1 << z;
                 at.player = p;
-                at.zone = zone;
+                at.zone = z;
                 at.idx = 0;
                 at.f14 = 0;
                 at.f15 = 0;
@@ -360,7 +358,7 @@ void dd_board_cards(void)
                 mtx_mult(&m);
                 list = dl_select_layer(4, 0);
                 {
-                    DdLoc l = { p, zone };
+                    DdLoc l = { p, z };
 
                     list = dd_cursor_draw_model(list, l, 1);
                 }
@@ -375,7 +373,6 @@ void dd_board_cards(void)
     mtx_pop();
 }
 
-#endif
 
 /* a scale vector the original builds and never uses (the scaling call is gone) */
 static inline void dd_board_sc(float k)

@@ -192,6 +192,16 @@ typedef struct DdFxCircle {            /* spell circle (dd_fx_aura_circle), 0x18
 } DdFxCircle;
 
 /* ---- 0x088143A4-0x08825DDC ---- */
+/* zone index. The original's zone loops count with an enum: with a counter of enum type the mwcc does not
+   fold the entry test of the rotated loop (`slti at,z,5; beqzl` before the body with z = 0 known), which no int
+   form reproduces (round 32). Values are the engine's: 0-4 monsters, 5-9 spells/traps, 0xB hand. */
+typedef enum DdZone {
+    DD_ZONE_MON0 = 0,
+    DD_ZONE_ST0 = 5,
+    DD_ZONE_HAND = 0xB,
+    DD_ZONE_NUM = 16
+} DdZone;
+
 typedef struct DdLoc {                 /* a field location (cursor, targets) */
     unsigned short player : 1;
     unsigned short zone : 5;           /* 0-4 monsters, 5-9 spells/traps, 10 field, 11 hand, 12-15 decks/grave, 16 none */

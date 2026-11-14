@@ -1,7 +1,4 @@
 // @range 0x0880C48C-0x0880D31C
-// @asm 0x0880CB44-0x0880CBF4
-// @asm 0x0880CE60-0x0880D028
-// @asm 0x0880D028-0x0880D0B4
 /* Card objects, continued: fusion gathering (the cards fly to the middle), state bits and the
    per-object effect links, the queries "is anything still moving", the stack height of a pile,
    the counters of the monster zones and the stack of highlighted locations. */
@@ -172,14 +169,13 @@ int dd_cobj_busy(DdCobj *o)
     return 0;
 }
 
-#ifdef NON_MATCHING /* laço interno (z) com teste no topo não reproduzido, mesma família de dd_cobjs_counters */
 /* 1 while any card object has an action pending */
 int dd_cobjs_busy(void)
 {
     int p;
-    int z;
-    DdCobj *head;
     DdCobj *o;
+    DdCobj *head;
+    DdZone z;
 
     for (p = 0; p < 2; p++) {
         for (z = 0; z < 16; z++) {
@@ -192,7 +188,6 @@ int dd_cobjs_busy(void)
     }
     return 0;
 }
-#endif
 
 void dd_cobjs_dirty(void)
 {
@@ -290,26 +285,23 @@ void dd_cobjs_en_set(int i, int on)
     dd_cobjs.en[i] = on;
 }
 
-#ifdef NON_MATCHING /* laço interno com teste no topo (slti at/beqzl antes do corpo) não reproduzido: for, while, for(;;) com break, z=0 no incremento do externo testados */
 /* refreshes the counters of the monster zones */
 void dd_cobjs_counters(void)
 {
     int p;
-    int z;
+    DdZone z;
 
     for (p = 0; p < 2; p++)
-        for (z = 0; z < 5; z++)
+        for (z = 0; z <= 4; z++)
             dd_counter_reset(p, z);
 }
-#endif
 
-#ifdef NON_MATCHING /* alocação, laços com teste no topo ou cadeias de comparação não reproduzidos */
 /* starts the counter animation of the monster zones whose values changed */
 void dd_zone_anim_update(int live)
 {
     DdCobjs *b = &dd_cobjs;
     int p;
-    int z;
+    DdZone z;
     DdZoneAnim *za;
     char *e;
     int a;
@@ -317,14 +309,15 @@ void dd_zone_anim_update(int live)
     int st[11];
 
     for (p = 0; p < 2; p++) {
-        for (z = 0; z < 5; z++) {
-            za = &b->za[p][z];
+        for (z = 0; z <= 4; z++) {
             a = -1;
+            za = &b->za[p][z];
             if (live) {
-                e = dv_special() + dv_side_to_player(p) * 0x38;
-                if (*(int *)(e + 0x30) == z) {
-                    a = *(int *)(e + 0x48);
-                    bv = *(int *)(e + 0x4C);
+                e = dv_special();
+                e = e + dv_side_to_player(p) * 0x38 + 0x2C;
+                if (*(int *)(e + 4) == z) {
+                    a = *(int *)(e + 0x1C);
+                    bv = *(int *)(e + 0x20);
                 }
             }
             if (a < 0) {
@@ -339,7 +332,7 @@ void dd_zone_anim_update(int live)
                 za->b1 = bv;
                 za->t = 0.0f;
                 za->dur = dd_move_time();
-                if (cfg_get_bits_1_3_4() > 2) {
+                if ((int)cfg_get_bits_1_3_4() >= 3) {
                     za->a = a;
                     za->b = bv;
                     za->t = za->dur;
@@ -348,24 +341,24 @@ void dd_zone_anim_update(int live)
         }
     }
 }
-#endif
 
 /* 1 while a counter animation of a monster zone is running (wait callback of the event commands) */
-#ifdef NON_MATCHING /* o original mantém o teste de entrada do laço interno e não reduz o índice z a ponteiro; 33 palavras */
 int dd_zone_anim_busy(void)
 {
+    DdCobjs *b = &dd_cobjs;
     int p;
-    int z;
+    DdZone z;
+    DdZoneAnim *za;
 
     for (p = 0; p < 2; p++) {
-        for (z = 0; z < 5; z++) {
-            if (dd_cobjs.za[p][z].t < dd_cobjs.za[p][z].dur)
+        for (z = 0; z <= 4; z++) {
+            za = &b->za[p][z];
+            if (za->t < za->dur)
                 return 1;
         }
     }
     return 0;
 }
-#endif
 
 /* scale of a counter value v of kind k (digits) */
 float dd_count_scale(int k, int v)

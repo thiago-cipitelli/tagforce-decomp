@@ -1,5 +1,4 @@
 // @range 0x08810758-0x08811718
-// @asm 0x08811210-0x08811310
 /* ATK/DEF of the monsters drawn over the field (animated when they change, blue when they rise,
    red when they fall), the selection count marker over a card, and small helpers. */
 #include "dd_d1.h"
@@ -168,21 +167,19 @@ void *dd_counter_draw(void *list, DdPos at, DdXyzw *pos)
 #pragma opt_decomposeaggregates reset
 #endif
 
-#ifdef NON_MATCHING /* alocação/ordem não reproduzidas */
 /* advances the ATK/DEF animations */
 void dd_counter_tick(float dt)
 {
     DdCobjs *b = &dd_cobjs;
     int p;
-    int z;
+    DdZone z;
     DdZoneAnim *za;
     float k;
 
-    z = 0;
     for (p = 0; p < 2; p++) {
-        for (; z < 5; z++) {
+        for (z = 0; z <= 4; z++) {
             za = &b->za[p][z];
-            if (za->t < za->dur) {
+            if (!(za->t >= za->dur)) {
                 za->t += dt;
                 if (za->t >= za->dur) {
                     za->a = za->a1;
@@ -194,10 +191,8 @@ void dd_counter_tick(float dt)
                 }
             }
         }
-        z = 0;
     }
 }
-#endif
 
 /* marker with the selection count n over the card at pos */
 void dd_counter_sel(DdXyzw *pos, int stack, int n)

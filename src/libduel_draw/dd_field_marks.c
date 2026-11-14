@@ -1,7 +1,5 @@
 // @range 0x08822B0C-0x0882308C
 // @rodata 0x088701B8-0x088701D8
-// @asm 0x08822B90-0x08822C2C
-// @asm 0x08822C2C-0x08822E30
 /* Marks over the field zones (dd_fx_mark: selectable zones, unusable zones), refreshed from the cursor
    and from the duel's slot markers. */
 #include "dd_field_ui.h"
@@ -37,7 +35,7 @@ int dd_fx_mark_start_layer(float s, int layer, int kind, float *pos, float *rot,
 int dd_fx_mark_start_layer(int layer, float s, int kind, float *pos, float *rot, int dur, void *term, void *arg);
 #define dd_fx_mark_start_layer(s, layer, kind, pos, rot, dur, term, arg) dd_fx_mark_start_layer(layer, s, kind, pos, rot, dur, term, arg) /* port: argument order of the definition */
 #endif
-int func_08822E30(int player, int zone, unsigned char kind, int layer);
+int func_08822E30(int player, int zone, int kind, int layer);
 void func_08823068(int h);
 
 /* clears the marks */
@@ -54,12 +52,12 @@ void func_08822B0C(void)
     }
 }
 
-#ifdef NON_MATCHING /* laço interno com teste no topo (slti at/beqzl) não reproduzido */
 /* removes every mark */
 void func_08822B90(void)
 {
+    int p;
+    DdZone i;
     int *t = dd_marks.task[0];
-    int p, i;
 
     for (p = 0; p < 2; p++) {
         for (i = 0; i < 16; i++) {
@@ -72,27 +70,25 @@ void func_08822B90(void)
         t += 16;
     }
 }
-#endif
 
-#ifdef NON_MATCHING /* laço interno com teste no topo (slti at/beqzl) não reproduzido */
 /* per frame: one mark per zone that the duel marks (or that can't be used), except under the cursor */
 void func_08822C2C(void)
 {
     int *t = dd_marks.task[0];
-    unsigned short mk[2][11];
     DdLoc cur;
+    unsigned short mk[2][11];
     unsigned short *row;
-    int p, z;
-    unsigned char kind;
+    int p;
+    DdZone z;
+    int kind;
     int layer;
     DdCobj *o;
 
     dd_cursor_get(&cur);
     dv_slot_markers(cur.player, cur.zone, mk);
-    row = mk[0];
-    for (p = 0; p < 2; p++) {
-        for (z = 0; z < 11; z++) {
-            kind = row[z];
+    for (p = 0, row = mk[0]; p < 2; p++) {
+        for (z = 0; z <= 10; z++) {
+            kind = (unsigned char)row[z];
             layer = 0;
             if (kind != 0 && (o = dd_cobj_at(p, z, 0)) != 0 && o->t < o->dur)
                 kind = 0;           /* the card is still moving */
@@ -100,15 +96,8 @@ void func_08822C2C(void)
                 kind = 7;
                 layer = 3;
             }
-            if (kind == 0 || (z == cur.zone && p == cur.player && kind != 7)) {
-                if (t[z] != -1) {
-                    func_08823068(t[z]);
-                    t[z] = -1;
-                    t[z + 32] = 0;
-                    t[z + 64] = 0;
-                }
-            } else {
-                if (t[z + 32] != kind || t[z + 64] != layer) {
+            if (kind != 0 && (z != cur.zone || p != cur.player || (unsigned char)kind == 7)) {
+                if ((t + 32)[z] != kind || (t + 64)[z] != layer) {
                     func_08823068(t[z]);
                     t[z] = -1;
                     t[z + 32] = 0;
@@ -119,16 +108,22 @@ void func_08822C2C(void)
                     t[z + 32] = kind;
                     t[z + 64] = layer;
                 }
+            } else {
+                if (t[z] != -1) {
+                    func_08823068(t[z]);
+                    t[z] = -1;
+                    t[z + 32] = 0;
+                    t[z + 64] = 0;
+                }
             }
         }
         row += 11;
         t += 16;
     }
 }
-#endif
 
 /* starts the mark of a zone; the piles are marked over their top card */
-int func_08822E30(int player, int zone, unsigned char kind, int layer)
+int func_08822E30(int player, int zone, int kind, int layer)
 {
     DdLoc at = { player, zone };
     float pos[4] __attribute__((aligned(16)));
@@ -136,7 +131,7 @@ int func_08822E30(int player, int zone, unsigned char kind, int layer)
     float rot2[4] __attribute__((aligned(16)));
     int fx;
 
-    switch (kind) {
+    switch ((unsigned char)kind) {
     default: fx = 0; break;
     case 2: fx = 1; break;
     case 3: fx = 2; break;
