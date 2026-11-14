@@ -1,5 +1,4 @@
 // @range 0x08822F84-0x08823BD0
-// @asm 0x088234C4-0x088236D0
 // @data 0x088ED200-0x088ED230
 /* EHF command handlers, part 1: frame windows and loops, raw GE words, and the transform
    commands (translate, rotate, scale/rotate/translate from typed arguments, matrices, quaternions,
@@ -233,12 +232,14 @@ int ehf_cmd_matrix(void *ctx, EhfNode *node, EhfCmd *cmd, int phase)
     return 2;
 }
 
-#ifdef NON_MATCHING /* one instruction of the prologue lands on the other side of the first branch */
-/* 0x10003: matrix set from outside (messages 0x101..0x105), for the node with id arg0. */
-int ehf_cmd_matrix_slot(EhfMtxState *st, int *msg, EhfCmd *cmd, int phase)
+/* 0x10003: matrix set from outside (messages 0x101..0x105), for the node with id arg0. The state
+   arrives as void * like the other handlers; the typed copy declared after argc/a keeps the move to
+   $s0 in the delay slot of the first branch. */
+int ehf_cmd_matrix_slot(void *ctx, int *msg, EhfCmd *cmd, int phase)
 {
     int argc = cmd->argc;
     int *a = cmd->a.i;
+    EhfMtxState *st = ctx;
     Mat4 *ref;
 
     switch (phase) {
@@ -322,7 +323,6 @@ int ehf_cmd_matrix_slot(EhfMtxState *st, int *msg, EhfCmd *cmd, int phase)
     }
     return 0;
 }
-#endif
 
 /* 0x10004: translate + rotate, then skips the children when the sphere (center, radius) is out of
    view. */

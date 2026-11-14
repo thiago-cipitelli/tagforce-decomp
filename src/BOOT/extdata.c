@@ -1,6 +1,5 @@
 // @range 0x0886CF50-0x0886E0A4
 // @data 0x088F0C94-0x088F0CB0
-// @asm 0x0886DC80-0x0886DE28
 /* Extra data files on the Memory Stick: the save folder may hold "YGTF" files with a card
    (.YGC), a deck recipe (.YGR) or a card list (.YGL). extdata_scan lists the files of one kind
    behind a "please wait" message box, extdata_load reads and verifies them (two checksums, a
@@ -401,13 +400,16 @@ int extdata_load_list(char *name, int size, ExtList *out)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 17 palavras: só a soma e o índice trocados nos laços 2 e 3 */
+#ifdef __MWERKS__ /* sem desenrolar: o laço do 3º checksum sai como no original */
+#pragma push
+#pragma opt_unroll_loops off
+#endif
 int extdata_verify(int kind, unsigned short *buf, unsigned int size)
 {
+    unsigned char *q;
     unsigned char *p;
     unsigned short sum;
     unsigned int i;
-    unsigned int n;
     int k;
     int hdr;
     int len;
@@ -425,53 +427,36 @@ int extdata_verify(int kind, unsigned short *buf, unsigned int size)
     }
     p = (unsigned char *)buf;
     sum = 0x573;
-    n = size - 2;
-    i = 0;
-    if (n != 0) {
-        do {
-            i++;
-            sum += *p;
-            sum = ~sum;
-            p++;
-        } while (i < n);
+    for (i = 0; i < size - 2; i++) {
+        sum += *p++;
+        sum = ~sum;
     }
     if (sum != (unsigned short)RD16(p)) {
         return 0;
     }
     hdr = *(int *)(buf + 4);
-    p = (unsigned char *)buf;
+    q = (unsigned char *)buf;
     sum = 0x4654;
-    n = hdr - 2;
-    i = 0;
-    if (n != 0) {
-        do {
-            i++;
-            sum += *p;
-            p++;
-        } while (i < n);
+    for (k = 0; (unsigned int)k < hdr - 2; k++) {
+        sum += *q++;
     }
-    if (sum != (unsigned short)RD16(p)) {
+    if (sum != (unsigned short)RD16(q)) {
         return 0;
     }
     p = (unsigned char *)buf + hdr;
     len = size - hdr - 2;
     extdata_unscramble(buf[2], p, len);
     sum = 0x5847;
-    n = len - 2;
-    i = 0;
-    if (n != 0) {
-        do {
-            k = i & 3;
-            i++;
-            sum += (unsigned short)(*p >> k);
-            p++;
-        } while (i < n);
+    for (k = 0; (unsigned int)k < len - 2; k++) {
+        sum += (unsigned short)(*p++ >> (k & 3));
     }
     if (sum != (unsigned short)RD16(p)) {
         return 0;
     }
     return 1;
 }
+#ifdef __MWERKS__
+#pragma pop
 #endif
 
 #define RAND3() (rand3_seeds[rand3_slot][0] *= 0x41C64E6D, rand3_seeds[rand3_slot][0] += 0x3039, \
