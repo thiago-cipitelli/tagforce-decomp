@@ -1,12 +1,12 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-08 (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-14 (rodada 30) (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 91,2% | 97,3% | 10598 / 11039 |
-| BOOT | 75,6% | 83,7% | 1894 / 2208 |
+| total | 91,4% | 97,3% | 10601 / 11039 |
+| BOOT | 77,0% | 83,7% | 1897 / 2208 |
 | libduel_eng | 92,0% | 99,9% | 3391 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
@@ -92,7 +92,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`toon.c`](../src/BOOT/toon.c) | 0x0882D208-0x0882D9F0 | 3 | 1 | rampas de toon shading desenhadas na VRAM a partir das tabelas do contexto de desenho, hook de textura das camadas iluminadas pela luz 0, relocação TGMT |
 | [`anim.c`](../src/BOOT/anim.c) | 0x0882D9F0-0x0882ECAC | 7 | 0 | animação esquelética TGMT: percurso em profundidade da hierarquia, translação/rotação/escala por chaves Bezier e quatérnios com slerp, cross-fade entre duas animações, quatérnios compactados em 16 bits |
 | [`ehfile.c`](../src/BOOT/ehfile.c) | 0x0882ECAC-0x0882FC3C | 0 | 0 | VFS, 29 funções |
-| [`ehf.c`](../src/BOOT/ehf.c) | 0x0882FC3C-0x08833420 | 15 | 8 | player de animações EHF, formato tipo Flash em twips: acessores de arquivo/instância, timeline com comandos de colocar/remover, pool de clips em listas circulares por profundidade, avanço por tick, desenho com máscara por stencil, transformação de cor e matrizes 2D |
+| [`ehf.c`](../src/BOOT/ehf.c) | 0x0882FC3C-0x08833420 | 40 | 0 | player de animações EHF, formato tipo Flash em twips: acessores de arquivo/instância, timeline com comandos de colocar/remover, pool de clips em listas circulares por profundidade, avanço por tick, desenho com máscara por stencil, transformação de cor e matrizes 2D |
 | [`ehp.c`](../src/BOOT/ehp.c) | 0x08833420-0x0883451C | 10 | 1 | pacotes EHP: busca binária por nome ou ponteiro, relocação por extensão com ptrs.txt, TGMA/TGMT, TMS, EHF e GIM, handlers registrados, carga síncrona e assíncrona, tabela de pacotes montados, projeção 2D |
 | [`gfx.c`](../src/BOOT/gfx.c) | 0x0883451C-0x08835650 | 6 | 2 | inicialização do GE/libgu, fim de quadro com limite de 30 fps e callback de flip, alvos de desenho, capturas BMP/TGA para host0:, rastreador do estado do GE com a lista de valores padrão |
 | [`gim.c`](../src/BOOT/gim.c) | 0x08835650-0x08835F48 | 0 | 3 | texturas GIM: busca de blocos na árvore, modo e imagem de um quadro ou célula, CLUT da paleta, imagem residente na VRAM no lugar da assinatura PSP, troca de textura fora da lista de desenho |
@@ -118,7 +118,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`font_text.c`](../src/BOOT/font_text.c) | 0x08847008-0x08848C68 | 0 | 0 | layout de texto UCS-2 com tags $R/$C/$f/$F, só C sob `NON_MATCHING` |
 | [`font_flags.c`](../src/BOOT/font_flags.c) | 0x08848C68-0x0884900C | 0 | 0 | Font layer state accessors: layout flags, extra line spacing, and the display list used while a menu item's text is being built |
 | [`font_tags.c`](../src/BOOT/font_tags.c) | 0x0884900C-0x0884A9B4 | 11 | 6 | Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph quads |
-| [`menu_widget.c`](../src/BOOT/menu_widget.c) | 0x0884A9B4-0x0884C8D0 | 4 | 2 | janela com lista rolável e botões |
+| [`menu_widget.c`](../src/BOOT/menu_widget.c) | 0x0884A9B4-0x0884C8D0 | 17 | 0 | janela com lista rolável e botões |
 | [`card_db.c`](../src/BOOT/card_db.c) | 0x0884C8D0-0x0884EA38 | 5 | 2 | receitas RCP*.ydc, cardinfo_<lang>.ehp, acessores de carta, 64 + 2 callbacks de cena |
 | [`card_groups.c`](../src/BOOT/card_groups.c) | 0x0884EA38-0x08850A70 | 1 | 1 | listas de ids hard-coded como `switch`, classes especiais e ids alternativos |
 | [`pmf_umd.c`](../src/BOOT/pmf_umd.c) | 0x08850A70-0x0885133C | 18 | 0 | thread do ring buffer sceMpeg, wrappers DvdUmdRetry* da Sony, carga dos módulos de codec |
@@ -127,7 +127,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`cardlist.c`](../src/BOOT/cardlist.c) | 0x08854920-0x08859044 | 52 | 6 | desenho de carta e painel: imagem com cross-fade, moldura cil_0000, estrelas, atributo, ATK/DEF, caixa de descrição com barra de rolagem, coluna de comparação do editor de deck, tabelas de vértices de 16 bits |
 | [`modmgr.c`](../src/BOOT/modmgr.c) | 0x08859044-0x08859824 | 14 | 0 | Frame wait, a debug text menu, synchronous file/module loads and the module manager |
 | [`fade.c`](../src/BOOT/fade.c) | 0x08859824-0x08859DF0 | 9 | 0 | fades de tela linear/quadrático/wipe |
-| [`cardinfo.c`](../src/BOOT/cardinfo.c) | 0x08859DF0-0x0885C688 | 24 | 5 | visualizador de detalhes da carta: estado em globais 0x08BEA44C, abas descrição/gêneros/listas, scroll, dicas de botão |
+| [`cardinfo.c`](../src/BOOT/cardinfo.c) | 0x08859DF0-0x0885C688 | 24 | 2 | visualizador de detalhes da carta: estado em globais 0x08BEA44C, abas descrição/gêneros/listas, scroll, dicas de botão |
 | [`snd_mix.c`](../src/BOOT/snd_mix.c) | 0x0885C688-0x0885D948 | 8 | 2 | mixer: faders por quadro, parâmetros e key on/fim das vozes SAS, buffer de eco de 0x3000 quadros, ordenação dos streams, nível de bloco, decodificador Atrac que enche o anel PCM de cada stream e o mistura no bloco de saída |
 | [`snd_out.c`](../src/BOOT/snd_out.c) | 0x0885D948-0x0885DE90 | 1 | 1 | thread de som que mistura vozes SAS e streams em dois buffers e entrega ao canal de áudio; 1 + efeito global em asm |
 | [`snd_bank.c`](../src/BOOT/snd_bank.c) | 0x0885DE90-0x0885E634 | 31 | 2 | cabeçalho SHDS de psp_snddat.bin, grupos, cache de handles, listas intrusivas |
