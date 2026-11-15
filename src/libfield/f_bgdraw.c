@@ -1,6 +1,5 @@
 // @range 0x08808214-0x08809C40
 // @data 0x0883A4D0-0x0883A4FC
-// @asm 0x088092E0-0x088094B4
 /* Room loading and drawing: the models of each area and their stencil shadows, the placed objects,
    the camera of the room, the mesh mask by area and the hook that hides the door meshes ("_DD."). */
 #include "libfield.h"
@@ -248,74 +247,6 @@ void fld_obj_init(FieldObj *o)
     o->open = 0;
 }
 
-void fld_bg_draw_models(void)
-{
-    FieldBg *b = &field_bg_state;
-    ModelDrawOpts o;
-    int i;
-
-    memset(&o, 0, sizeof(o));
-    o.a = 1;
-    o.b = 2;
-    if (field_bg_state.area == -1) {
-        for (i = 0; i < b->n_models; i++)
-            model_draw(b->model[i], &o);
-    } else {
-        model_draw(b->model[b->area], &o);
-    }
-}
-
-void fld_bg_draw_objs(void)
-{
-    FieldBg *b = &field_bg_state;
-    ModelDrawOpts o;
-    Mat4 m __attribute__((aligned(16)));
-    Mat4 t __attribute__((aligned(16)));
-    int i;
-    FieldObj *p;
-
-    memset(&o, 0, sizeof(o));
-    o.a = 1;
-    o.b = 2;
-    for (i = 0; i < b->n_objs; i++) {
-        p = &b->obj[i];
-        if (b->area == -1 || p->info[2] == b->area) {
-            mat4_identity(&t);
-            t.m[14] = -0.01f;
-            mat4_mul(&m, &p->mtx, &t);
-            mtx_set_mode(2);
-            mtx_push();
-            mtx_load(&m);
-            model_draw(p->model, &o);
-            mtx_pop();
-        }
-    }
-}
-
-void fld_bg_draw_shadow(void)
-{
-    FieldBg *b = &field_bg_state;
-    void *dl = dl_select_layer(1, 0);
-    ModelDrawOpts o;
-    int i;
-
-    dl = dl_depth_mask(dl, 1);
-    dl = dl_stencil_op(dl, 1, 0, 0xFF);
-    dl = dl_stencil_func(dl, 0, 0, 2);
-    dl_set_list(dl);
-    if (field_bg_state.model2[0]) {
-        memset(&o, 0, sizeof(o));
-        o.a = 1;
-        o.b = 2;
-        if (b->area == -1) {
-            for (i = 0; i < b->n_models; i++)
-                model_draw(b->model2[i], &o);
-        } else {
-            model_draw(b->model2[b->area], &o);
-        }
-    }
-}
-
 int fld_bg_id(void);
 void fld_bg_slide_update(FieldObj *o);
 void fld_bg_door_update(FieldObj *o);
@@ -559,36 +490,106 @@ void fld_bg_door_update(FieldObj *o)
     mat4_translate(&o->mtx, &o->mtx, &p);
 }
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 18 palavras (26 antes; ordem dos stores achada por busca gulosa, rodada 27): o original carrega o 136 e o 272 junto do uso e põe as cores em v0/a0 */
-/* sky gradient behind the room: top, middle and bottom colour of the area at this time of day */
+void fld_bg_draw_models(void)
+{
+    FieldBg *b = &field_bg_state;
+    ModelDrawOpts o;
+    int i;
+
+    memset(&o, 0, sizeof(o));
+    o.a = 1;
+    o.b = 2;
+    if (field_bg_state.area == -1) {
+        for (i = 0; i < b->n_models; i++)
+            model_draw(b->model[i], &o);
+    } else {
+        model_draw(b->model[b->area], &o);
+    }
+}
+
+void fld_bg_draw_objs(void)
+{
+    FieldBg *b = &field_bg_state;
+    ModelDrawOpts o;
+    Mat4 m __attribute__((aligned(16)));
+    Mat4 t __attribute__((aligned(16)));
+    int i;
+    FieldObj *p;
+
+    memset(&o, 0, sizeof(o));
+    o.a = 1;
+    o.b = 2;
+    for (i = 0; i < b->n_objs; i++) {
+        p = &b->obj[i];
+        if (b->area == -1 || p->info[2] == b->area) {
+            mat4_identity(&t);
+            t.m[14] = -0.01f;
+            mat4_mul(&m, &p->mtx, &t);
+            mtx_set_mode(2);
+            mtx_push();
+            mtx_load(&m);
+            model_draw(p->model, &o);
+            mtx_pop();
+        }
+    }
+}
+
+void fld_bg_draw_shadow(void)
+{
+    FieldBg *b = &field_bg_state;
+    void *dl = dl_select_layer(1, 0);
+    ModelDrawOpts o;
+    int i;
+
+    dl = dl_depth_mask(dl, 1);
+    dl = dl_stencil_op(dl, 1, 0, 0xFF);
+    dl = dl_stencil_func(dl, 0, 0, 2);
+    dl_set_list(dl);
+    if (field_bg_state.model2[0]) {
+        memset(&o, 0, sizeof(o));
+        o.a = 1;
+        o.b = 2;
+        if (b->area == -1) {
+            for (i = 0; i < b->n_models; i++)
+                model_draw(b->model2[i], &o);
+        } else {
+            model_draw(b->model2[b->area], &o);
+        }
+    }
+}
+
+/* sky gradient behind the room: top, middle and bottom colour of the area at this time of day.
+   field_bg_sky is const: the loads of the colours may then cross the vertex stores, which is what lets mwcc
+   keep 136 and 272 next to their use (docs/matching.md, Rodada 34 lC) */
 void *fld_bg_draw_sky(void *list)
 {
     FieldSkyVtx *v = dl_alloc_inline(&list, sizeof(FieldSkyVtx) * 6);
     FieldStory *st = fld_story_get();
     int bg = fld_bg_index(field_bg_state.id);
     int t = fld_time_index(*(int *)st->w[3]);
-    unsigned int *c = field_bg_sky[field_bg_lights[bg][t].sky];
+    const unsigned int *c = field_bg_sky[field_bg_lights[bg][t].sky];
     unsigned int top = c[0];
-    unsigned int mid = c[1];
+    unsigned int mid;
     unsigned int bot;
 
+    v[1].color = top;
+    v[1].x = 0;
     v[1].y = 0;
     v[1].z = 0;
     v[0].color = top;
     v[0].x = 480;
     v[0].y = 0;
     v[0].z = 0;
+    mid = c[1];
     v[3].color = mid;
     v[3].x = 0;
-    v[1].x = 0;
     v[3].y = 136;
     v[3].z = 0;
-    bot = c[2];
     v[2].color = mid;
     v[2].x = 480;
     v[2].y = 136;
     v[2].z = 0;
-    v[1].color = top;
+    bot = c[2];
     v[5].color = bot;
     v[5].x = 0;
     v[5].y = 272;
@@ -611,7 +612,6 @@ void *fld_bg_draw_sky(void *list)
     mtx_pop();
     return list;
 }
-#endif
 
 /* draws the model of the previous area into the 256x256 texture at 0x164000, then restores the screen */
 void fld_bg_draw_to_tex(void)
