@@ -85,4 +85,6 @@ static unsigned int gu_float_bits(float f)
 }
 
 #define GU_PUSH(w) (*gu.list->cur++ = (w))
+/* the same through a local `GuList *l = gu.list;` (the original often loads the list pointer once) */
+#define LPUSH(w) (*l->cur++ = (w))
 #endif

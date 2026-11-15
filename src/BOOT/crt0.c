@@ -2,7 +2,7 @@
 // @asm 0x08804000-0x08804364
 // @gcc 0x08804364-0x08804394
 // @asm 0x0880455C-0x08804714
-// @gcc 0x088048E0-0x08804A0C
+// @gcc 0x08804714-0x08804A0C
 /* crt0 and the newlib system-call layer of the Sony SDK libc (GCC). module_start starts the
    "user_main" thread, which splits the argument block into argv, sets up the thread's reentrancy
    struct and calls main() then exit(). The _open/_read/... stubs map newlib calls to sceIo*, with
@@ -150,7 +150,7 @@ asm SceUID _open(const char *name, int flags)
     addiu t4, zero, 2
 }
 #else
-SceUID _open(const char *name, int flags)
+SceUID _open(const char *name, int flags, ...)
 {
     int f = 0;
 
@@ -181,13 +181,12 @@ SceUID _open(const char *name, int flags)
 #ifndef __MWERKS__
 static int libc_fd(int fd)
 {
-    if (fd == 0) {
+    switch (fd) {
+    case 0:
         return sceKernelStdin();
-    }
-    if (fd == 1) {
+    case 1:
         return sceKernelStdout();
-    }
-    if (fd == 2) {
+    case 2:
         return sceKernelStderr();
     }
     return fd;
@@ -362,57 +361,7 @@ unsigned int _sbrk(int incr)
 #endif
 
 /* newlib _read */
-#ifdef __MWERKS__
-asm int _read(int fd, void *buf, int n)
-{
-    addiu sp, sp, -16
-    addiu v1, zero, 1
-    sw s1, 4(sp)
-    move s1, a2
-    sw s0, 0(sp)
-    move s0, a1
-    beq a0, v1, @94
-    sw ra, 8(sp)
-    slti v1, a0, 2
-    bnez v1, @7c
-    addiu a1, zero, 2
-    beq a0, a1, @6c
-    nop
-    move v0, a0
-@38:
-    bltz v0, @54
-    addiu v1, zero, -9
-    move a0, v0
-    move a1, s0
-    jal sceIoRead
-    move a2, s1
-    move v1, v0
-@54:
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    move v0, v1
-    jr ra
-    addiu sp, sp, 16
-@6c:
-    jal sceKernelStderr
-    nop
-    j @38
-    nop
-@7c:
-    bnezl a0, @38
-    move v0, a0
-    jal sceKernelStdin
-    nop
-    j @38
-    nop
-@94:
-    jal sceKernelStdout
-    nop
-    j @38
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _read(int fd, void *buf, int n)
 {
     fd = libc_fd(fd);
@@ -421,60 +370,12 @@ int _read(int fd, void *buf, int n)
     }
     return sceIoRead(fd, buf, n);
 }
+#else
+int _read(int fd, void *buf, int n);
 #endif
 
 /* newlib _write */
-#ifdef __MWERKS__
-asm int _write(int fd, const void *buf, int n)
-{
-    addiu sp, sp, -16
-    addiu v1, zero, 1
-    sw s1, 4(sp)
-    move s1, a2
-    sw s0, 0(sp)
-    move s0, a1
-    beq a0, v1, @94
-    sw ra, 8(sp)
-    slti v1, a0, 2
-    bnez v1, @7c
-    addiu a1, zero, 2
-    beq a0, a1, @6c
-    nop
-    move v0, a0
-@38:
-    bltz v0, @54
-    addiu v1, zero, -9
-    move a0, v0
-    move a1, s0
-    jal sceIoWrite
-    move a2, s1
-    move v1, v0
-@54:
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    move v0, v1
-    jr ra
-    addiu sp, sp, 16
-@6c:
-    jal sceKernelStderr
-    nop
-    j @38
-    nop
-@7c:
-    bnezl a0, @38
-    move v0, a0
-    jal sceKernelStdin
-    nop
-    j @38
-    nop
-@94:
-    jal sceKernelStdout
-    nop
-    j @38
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _write(int fd, const void *buf, int n)
 {
     fd = libc_fd(fd);
@@ -483,52 +384,12 @@ int _write(int fd, const void *buf, int n)
     }
     return sceIoWrite(fd, buf, n);
 }
+#else
+int _write(int fd, const void *buf, int n);
 #endif
 
 /* newlib _close */
-#ifdef __MWERKS__
-asm int _close(int fd)
-{
-    addiu sp, sp, -16
-    addiu v1, zero, 1
-    beq a0, v1, @74
-    sw ra, 0(sp)
-    slti v1, a0, 2
-    bnez v1, @5c
-    addiu a1, zero, 2
-    beq a0, a1, @4c
-    nop
-    move v0, a0
-@28:
-    bltz v0, @3c
-    addiu v1, zero, -9
-    jal sceIoClose
-    move a0, v0
-    move v1, v0
-@3c:
-    lw ra, 0(sp)
-    move v0, v1
-    jr ra
-    addiu sp, sp, 16
-@4c:
-    jal sceKernelStderr
-    nop
-    j @28
-    nop
-@5c:
-    bnezl a0, @28
-    move v0, a0
-    jal sceKernelStdin
-    nop
-    j @28
-    nop
-@74:
-    jal sceKernelStdout
-    nop
-    j @28
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _close(int fd)
 {
     fd = libc_fd(fd);
@@ -537,6 +398,8 @@ int _close(int fd)
     }
     return sceIoClose(fd);
 }
+#else
+int _close(int fd);
 #endif
 
 /* newlib _fstat: everything is a character device (S_IFCHR) */

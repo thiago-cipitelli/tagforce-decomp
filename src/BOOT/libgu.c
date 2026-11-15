@@ -6,13 +6,11 @@
 // @asm 0x08805754-0x088057C0
 // @gcc 0x088057C0-0x08805854
 // @asm 0x08805854-0x088058FC
-// @gcc 0x088058FC-0x08805960
-// @asm 0x08805960-0x088059D4
-// @gcc 0x088059D4-0x08805A1C
+// @gcc 0x088058FC-0x08805A1C
 // @asm 0x08805A1C-0x08805ACC
 // @gcc 0x08805ACC-0x08805AE8
-// @asm 0x08805AE8-0x08805DDC
-// @gcc 0x08805DDC-0x08805EC4
+// @asm 0x08805AE8-0x08805D28
+// @gcc 0x08805D28-0x08805EC4
 /* libgu of the Sony SDK (GCC; names from the export NIDs): display-list contexts, frame/draw/depth
    buffers, the state bits and the first state commands. Nearly every function reaches the libgu
    globals through %hi/%lo, so they stay in the split asm and the C below is under NON_MATCHING;
@@ -550,7 +548,7 @@ void gu_set_list(unsigned int *cur)
 /* SIGNAL behavior/value through the context, then stall update */
 void sceGuSignal(int behavior, int signal)
 {
-    gu_ctx_finish(gu.list, behavior, signal);
+    gu_ctx_finish(gu.list, behavior, signal & 0xFFFF);
     gu_update_stall();
 }
 
@@ -559,12 +557,15 @@ void *sceGuSetCallback(int which, void (*cb)(int))
 {
     void (*old)(int) = 0;
 
-    if (which == 1) {
+    switch (which) {
+    case 1:
         old = gu_cb.signal;
         gu_cb.signal = cb;
-    } else if (which == 4) {
+        break;
+    case 4:
         old = gu_cb.finish;
         gu_cb.finish = cb;
+        break;
     }
     return (void *)old;
 }
@@ -690,14 +691,18 @@ void gu_DepthBuffer(unsigned int zbp, int zbw)
 /* sceGuEnable */
 void gu_Enable(int state)
 {
-    gu_ctx_state(gu.list, state, 1);
+    GuList *l = gu.list;
+
+    gu_ctx_state(l, state, 1);
     gu.states |= 1 << state;
 }
 
 /* sceGuDisable */
 void gu_Disable(int state)
 {
-    gu_ctx_state(gu.list, state, 0);
+    GuList *l = gu.list;
+
+    gu_ctx_state(l, state, 0);
     gu.states &= ~(1 << state);
 }
 

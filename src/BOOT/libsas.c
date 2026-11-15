@@ -1,6 +1,5 @@
 // @range 0x08862D28-0x088634EC
-// @asm 0x08862D28-0x08862DE4
-// @gcc 0x08862DE4-0x088634EC
+// @gcc 0x08862D28-0x088634EC
 /* Sony's libsas (user side of the SAS hardware mixer): sceSas* wrappers that check the library was
    initialised and pass the shared SasCore buffer (D_08C1D940, 64-byte aligned) to the __sceSas*
    system calls. Compiled with GCC; every wrapper reads the init flag (D_08C1D900) and the core
@@ -58,7 +57,10 @@ int snd_sas_core(void *out)
     if (!sas_ready) {
         return SAS_NOT_INIT;
     }
-    if (out == 0 || ((unsigned int)out & 0x3F) != 0) {
+    if (out == 0) {
+        return (int)0x80420005;
+    }
+    if (((unsigned int)out & 0x3F) != 0) {
         return (int)0x80420005;
     }
     return __sceSasCore(sas_core, out);
@@ -70,7 +72,10 @@ int snd_sas_core_mix(void *inout, int l, int r)
     if (!sas_ready) {
         return SAS_NOT_INIT;
     }
-    if (inout == 0 || ((unsigned int)inout & 0x3F) != 0) {
+    if (inout == 0) {
+        return (int)0x80420005;
+    }
+    if (((unsigned int)inout & 0x3F) != 0) {
         return (int)0x80420005;
     }
     return __sceSasCoreWithMix(sas_core, inout, l, r);
