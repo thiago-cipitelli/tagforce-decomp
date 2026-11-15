@@ -3632,7 +3632,7 @@ era ordem de declaração; os mecanismos, do mais geral para o mais específico:
   Em `efs_run` o mesmo (rótulo único para os três `return 0` e/ou os dois `return -1`) piora: 20-31 alinhadas.
 ## Rodada 34 (`lB`): bloco vazio que segura o likely, `case A ... B`, proveniência de ponteiro e `const` no escalonador
 
-Terceira passada nas 12 entradas de libduel_draw, libtitle, libshop e libselect_card: 9 batendo (`lps_glyph`,
+Terceira passada nas 12 entradas de libduel_draw, libtitle, libshop e libselect_card: 8 batendo (`lps_glyph`,
 `dd_disc_tex_hook`, `tcfg_draw`, `opt_draw`, `shop_draw_shelf`, `sc_draw_counts`, `dd_zone_rebuild`,
 `dd_burst2_update`; mais nada em `dd_info_stats`, `tpanel_draw_split`, `dd_chr_attach_mtx`, `dd_fx_shatter_update`).
 Nenhuma era ordem de declaração. Mecanismos novos:
