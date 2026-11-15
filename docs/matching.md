@@ -3697,7 +3697,30 @@ escolhidos antes da passada de `p`/`cur`/`base`). Com o mesmo código o grafo de
 de fonte que some depois da coloração, ou é diferença de versão do compilador (2.4.1.01 x 3.0.1 b219) no limiar.
 Vale um experimento dirigido antes de novas buscas de ordem nessas três.
 
-Scripts (em `build/tmp/lA/`): `show.py` (diff alinhado de UMA variante de um arquivo de variantes do `eC/v.py` ou
+### Segunda perna (depois do merge de `lB`/`lC`)
+
+- **`duel_piles_swap` bate (126 -> 0): um campo lido pelo endereço em bytes dentro de um laço.** O original guarda
+  `&duel.players[q].n_hand` num registrador (o do store antes do laço) e relê o limite por ele a cada volta; o 219,
+  com `duel.players[q].n_hand`, refaz o endereço como `base + 12` a partir do ponteiro do jogador que o laço já usa
+  para `hand[i]` (uma instrução a mais no pré-cabeçalho). Escrever o store E o limite do laço como
+  `*(unsigned int *)((char *)&duel.players[0].n_hand + q * sizeof(DuelPlayer))` tira o campo da árvore
+  `players[q]` e o CSE fica com o endereço pronto. Só esse laço; os outros dois continuam na forma normal. Ponteiro
+  local `n = &...` não serve (encolhe a função). Sinal: `addiu rX,base,K` a mais no pré-cabeçalho de um laço cujo
+  limite é um campo gravado logo antes.
+- **Local `struct { unsigned short w; }` fica em registrador mas reserva o slot de pilha** (`duel_req_swap_zones`):
+  três deles dão os 12 bytes "sem dono" do quadro do original (96 bytes, `tmp` em sp+76). Quadro maior que o nosso
+  por múltiplo de 4 sem acesso à pilha = locais agregados de um campo só. (Struct de dois `unsigned char` vai para
+  a pilha com `sb`; bitfields idem.) Distância alinhada 118 -> 86; o CSE do endereço da zona A continua.
+- Pergunta do candidato a mais (`duel_req_mill`, `duel_088C6BC8`, `duel_field_controller`): o build 121 dá o MESMO
+  mapa do 219 nas duas primeiras (com código de tamanho diferente do original), então não é o limiar de uma versão
+  vizinha: é fonte. Não é callee `static` (nenhum callee das três está antes delas na mesma unidade; o único
+  vizinho, `duel_088C4448`, chama `duel_cmd`), nem tipo de parâmetro nos protótipos (27 trocas int/unsigned/K&R em
+  `duel_req_mill`: mapa igual), nem cópia de variável (`m = n` em 7 posições), nem o corpo num inline com os campos
+  do pedido como parâmetros (64 assinaturas). Continua aberto.
+- Sem efeito em `duel_0880C15C` e `duel_0883449C`: `const` no objeto, objeto separado x campo da tabela, linhas de
+  uma tabela, forma em bytes da máscara e do link (56 pares).
+
+Scripts (em `build/tmp/lA/`): `ad_all.sh` (distância alinhada de todas as variantes de um arquivo, em paralelo), `show.py` (diff alinhado de UMA variante de um arquivo de variantes do `eC/v.py` ou
 `hB/fv.py`), `syn/` (harness sintético), `m*.py` (`duel_req_mill`), `f*.py` (`duel_0883F3A0`), `g*.py`
 (`duel_088C6BC8`), `c*.py` (`duel_0880C15C`), `v*.py` (`duel_0883D798`), `w*.py` (`duel_0883449C`).
 ## Rodada 34 (`lC`): cópia apagada na cabeça do laço, alias de `const` no escalonador, callee `static` que mantém v0, arquivos que são uma unidade só
