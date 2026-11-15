@@ -5,7 +5,9 @@
 // @gcc 0x0880FF70-0x0880FFA8 nl_rand
 // @gcc 0x08810038-0x088100A0
 // @asm 0x088100A0-0x088105F8
+// @gcc 0x088105F8-0x0881064C nl_reent
 // @asm 0x088106E0-0x08810854
+// @gcc 0x08810854-0x08810904 nl_reent
 // @gcc 0x08810904-0x08810940 nl_refill
 // @asm 0x08810940-0x08810ADC
 // @gcc 0x08810ADC-0x08810B38
@@ -297,34 +299,7 @@ void *_realloc_r(void *r, void *p, size_t n)
 #endif
 
 /* reent.c cleanup_glue: frees the chain of stream blocks, last first */
-#ifdef __MWERKS__
-asm void libc_cleanup_glue(void *r, void *glue)
-{
-    addiu sp, sp, -16
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    move s0, a0
-    sw ra, 8(sp)
-    lw v0, 0(a1)
-    bnez v0, @44
-    move a1, v0
-    move a0, s0
-@28:
-    jal _free_r
-    move a1, s1
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@44:
-    jal libc_cleanup_glue
-    nop
-    j @28
-    move a0, s0
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_reent.c */
 void libc_cleanup_glue(void *r, void *glue)
 {
     void *next = *(void **)glue;
@@ -469,63 +444,7 @@ void _reclaim_reent(char *r)
 #endif
 
 /* reent.c _wrapup_reent: the atexit handlers (without arguments) then __cleanup */
-#ifdef __MWERKS__
-asm void _wrapup_reent(char *r)
-{
-    addiu sp, sp, -32
-    sw s3, 12(sp)
-    move s3, a0
-    sw ra, 16(sp)
-    sw s2, 8(sp)
-    sw s1, 4(sp)
-    beqz a0, @a0
-    sw s0, 0(sp)
-@20:
-    lw s2, 328(s3)
-    beqzl s2, @6c
-    lw v0, 60(s3)
-    lw s1, 4(s2)
-@30:
-    addiu s1, s1, -1
-    bltz s1, @5c
-    sll v0, s1, 0x2
-    addu v0, v0, s2
-    addiu s0, v0, 8
-    lw v0, 0(s0)
-@48:
-    addiu s1, s1, -1
-    jalr ra, v0
-    addiu s0, s0, -4
-    bgezl s1, @48
-    lw v0, 0(s0)
-@5c:
-    lw s2, 0(s2)
-    bnezl s2, @30
-    lw s1, 4(s2)
-    lw v0, 60(s3)
-@6c:
-    bnez v0, @90
-    nop
-    lw ra, 16(sp)
-@78:
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 32
-@90:
-    jalr ra, v0
-    move a0, s3
-    j @78
-    lw ra, 16(sp)
-@a0:
-    jal heap_get_current
-    nop
-    j @20
-    move s3, v0
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_reent.c */
 void _wrapup_reent(char *r)
 {
     void **p;
