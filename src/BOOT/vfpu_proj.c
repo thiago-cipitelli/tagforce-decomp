@@ -1,5 +1,6 @@
 // @range 0x0881D8A8-0x0881DE88
 // @asm 0x0881D8A8-0x0881DA34
+// @gcc 0x0881DC60-0x0881DD14
 // @asm 0x0881DD14-0x0881DE00
 /* VFPU camera and projection matrices: planar shadow onto n . p = 1, view (look-at), perspective,
    ortho, frustum, and the point projections. Column-major (m[4 * col + row]); functions with an
@@ -344,56 +345,7 @@ Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, 
 
 /* View matrix from a position, a view direction and an up vector: the inverse of the camera matrix
    [unit(up cross dir), dir' cross x, dir' = unit(dir), pos]. */
-#ifdef __MWERKS__
-asm Mat4 *mat4_look_at(Mat4 *out, Vec4 *pos, Vec4 *dir, Vec4 *up)
-{
-    addiu sp, sp, -112
-    sw s3, 92(sp)
-    move s3, a0
-    move a0, sp
-    sw s2, 88(sp)
-    move s2, a2
-    sw s1, 84(sp)
-    addiu s1, sp, 64
-    sw s0, 80(sp)
-    move s0, a3
-    sw ra, 100(sp)
-    sw s4, 96(sp)
-    jal mat4_identity
-    move s4, a1
-    move a2, s2
-    move a1, s0
-    jal vec3_cross
-    move a0, s1
-    move a0, sp
-    move a1, s1
-    jal vec3_normalize2
-    addiu s1, sp, 32
-    move a1, s2
-    jal vec3_normalize2
-    move a0, s1
-    addiu a0, sp, 16
-    move a1, s1
-    jal vec3_cross
-    move a2, sp
-    move a2, s4
-    move a0, sp
-    jal mat4_translate
-    move a1, sp
-    move a0, s3
-    jal mat4_inverse_ortho
-    move a1, sp
-    move v0, s3
-    lw ra, 100(sp)
-    lw s4, 96(sp)
-    lw s3, 92(sp)
-    lw s2, 88(sp)
-    lw s1, 84(sp)
-    lw s0, 80(sp)
-    jr ra
-    addiu sp, sp, 112
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_proj_gcc.c */
 Mat4 *mat4_look_at(Mat4 *out, Vec4 *pos, Vec4 *dir, Vec4 *up)
 {
     Mat4 cam;
@@ -408,6 +360,8 @@ Mat4 *mat4_look_at(Mat4 *out, Vec4 *pos, Vec4 *dir, Vec4 *up)
     mat4_inverse_ortho(out, &cam);
     return out;
 }
+#else
+Mat4 *mat4_look_at(Mat4 *out, Vec4 *pos, Vec4 *dir, Vec4 *up);
 #endif
 
 #ifdef NON_MATCHING /* GCC: 1.0f comes from the .rodata pool (D_088EB1D0) */

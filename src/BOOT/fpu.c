@@ -1,5 +1,10 @@
 // @range 0x08819BEC-0x08819F0C
+// @gcc 0x08819C10-0x08819C18
+// @gcc 0x08819C38-0x08819C78
 // @asm 0x08819C88-0x08819C9C
+// @gcc 0x08819CA4-0x08819CB4
+// @gcc 0x08819CE4-0x08819CFC
+// @gcc 0x08819D60-0x08819D6C
 /* Sony's libfpu (sceFpu*): single precision helpers on the Allegrex FPU and on the IEEE bit
    patterns (signs, zero/denormal/infinity tests, NaN constructors) plus the FCR31 accessors.
    Hand-written or inline-asm code kept as whole `asm` functions; sceFpuRsqrt loads 1.0f from the
@@ -78,17 +83,13 @@ unsigned int fpu_set_fcr31(unsigned int v)
 #endif
 
 /* sceFpuAbs */
-#ifdef __MWERKS__
-asm float fpu_abs(float x)
-{
-    jr ra
-    abs.s $f0, $f12
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpu_gcc.c */
 float fpu_abs(float x)
 {
     return fabsf(x);
 }
+#else
+float fpu_abs(float x);
 #endif
 
 /* sceFpuCeil (ceil.w.s) */
@@ -124,57 +125,33 @@ int floor_to_int(float x)
 #endif
 
 /* sceFpuMax */
-#ifdef __MWERKS__
-asm float fpu_max(float a, float b)
-{
-    c.lt.s $f13, $f12
-    nop
-    bc1t L_08819C4C
-    mov.s $f0, $f12
-    mov.s $f0, $f13
-L_08819C4C:
-    jr ra
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpu_gcc.c */
 float fpu_max(float a, float b)
 {
     return b < a ? a : b;
 }
+#else
+float fpu_max(float a, float b);
 #endif
 
 /* sceFpuMin */
-#ifdef __MWERKS__
-asm float fpu_min(float a, float b)
-{
-    c.lt.s $f12, $f13
-    nop
-    bc1t L_08819C68
-    mov.s $f0, $f12
-    mov.s $f0, $f13
-L_08819C68:
-    jr ra
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpu_gcc.c */
 float fpu_min(float a, float b)
 {
     return a < b ? a : b;
 }
+#else
+float fpu_min(float a, float b);
 #endif
 
 /* sceFpuNeg */
-#ifdef __MWERKS__
-asm float fpu_neg(float x)
-{
-    jr ra
-    neg.s $f0, $f12
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpu_gcc.c */
 float fpu_neg(float x)
 {
     return -x;
 }
+#else
+float fpu_neg(float x);
 #endif
 
 /* sceFpuRound (round.w.s: nearest, ties to even) */
@@ -216,19 +193,13 @@ float sqrtf_fpu(float x)
 #endif
 
 /* sceFpuTrunc */
-#ifdef __MWERKS__
-asm int fpu_trunc(float x)
-{
-    trunc.w.s $f1, $f12
-    mfc1 v0, $f1
-    jr ra
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpu_gcc.c */
 int fpu_trunc(float x)
 {
     return (int)x;
 }
+#else
+int fpu_trunc(float x);
 #endif
 
 /* sceFpuFmod: a - trunc(a / b) * b */
@@ -268,14 +239,7 @@ float fpu_frac(float x)
 #endif
 
 /* sceFpuReinterpretFloat */
-#ifdef __MWERKS__
-asm float fpu_reinterpret_float(unsigned int u)
-{
-    mtc1 a0, $f0
-    jr ra
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpu_gcc.c */
 float fpu_reinterpret_float(unsigned int u)
 {
     union { unsigned int u; float f; } v;
@@ -283,17 +247,12 @@ float fpu_reinterpret_float(unsigned int u)
     v.u = u;
     return v.f;
 }
+#else
+float fpu_reinterpret_float(unsigned int u);
 #endif
 
 /* sceFpuReinterpretUint */
-#ifdef __MWERKS__
-asm unsigned int fpu_reinterpret_uint(float f)
-{
-    mfc1 v0, $f12
-    jr ra
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpu_gcc.c */
 unsigned int fpu_reinterpret_uint(float f)
 {
     union { unsigned int u; float f; } v;
@@ -301,6 +260,8 @@ unsigned int fpu_reinterpret_uint(float f)
     v.f = f;
     return v.u;
 }
+#else
+unsigned int fpu_reinterpret_uint(float f);
 #endif
 
 /* sceFpuIsEqual */
@@ -369,18 +330,13 @@ int fpu_sign_int(float x)
 }
 #endif
 
-#ifdef __MWERKS__
-asm float fpu_positive_zero(void)
-{
-    mtc1 zero, $f0
-    jr ra
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpu_gcc.c */
 float fpu_positive_zero(void)
 {
     return FLOAT(0);
 }
+#else
+float fpu_positive_zero(void);
 #endif
 
 #ifdef __MWERKS__

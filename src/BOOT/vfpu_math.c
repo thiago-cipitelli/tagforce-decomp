@@ -1,5 +1,9 @@
 // @range 0x08819F0C-0x0881AB1C
 // @asm 0x08819F30-0x0881A520
+// @gcc 0x0881A590-0x0881A5A0
+// @gcc 0x0881A5B8-0x0881A5C8
+// @gcc 0x0881A65C-0x0881A7B4
+// @gcc 0x0881A8AC-0x0881A924
 // @asm 0x0881A924-0x0881A940
 /* FPU trig routines (sceFpuSin/Cos/Atan/Acos) and the 2D part of Sony's libvfpu (sceVfpuVector2*).
    All of it was compiled with GCC or written in VFPU assembly, so the PSP build carries the original
@@ -244,21 +248,15 @@ ScePspIVector2 *vec2_sign_int(ScePspIVector2 *out, const ScePspFVector2 *v)
 #endif
 
 /* sceVfpuVector2Set */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_set(ScePspFVector2 *out, float x, float y)
-{
-    move v0, a0
-    swc1 $f12, 0(a0)
-    jr ra
-    swc1 $f13, 4(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_set(ScePspFVector2 *out, float x, float y)
 {
     out->x = x;
     out->y = y;
     return out;
 }
+#else
+ScePspFVector2 *vec2_set(ScePspFVector2 *out, float x, float y);
 #endif
 
 /* sceVfpuVector2Copy */
@@ -281,21 +279,15 @@ ScePspFVector2 *vec2_copy(ScePspFVector2 *out, const ScePspFVector2 *v)
 #endif
 
 /* sceVfpuVector2PositiveZero */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_zero(ScePspFVector2 *out)
-{
-    move v0, a0
-    sw zero, 0(a0)
-    jr ra
-    sw zero, 4(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_zero(ScePspFVector2 *out)
 {
     out->x = 0.0f;
     out->y = 0.0f;
     return out;
 }
+#else
+ScePspFVector2 *vec2_zero(ScePspFVector2 *out);
 #endif
 
 /* sceVfpuVector2NegativeZero */
@@ -406,215 +398,111 @@ ScePspIVector2 *vec2_floor(ScePspIVector2 *out, const ScePspFVector2 *v)
 #endif
 
 /* sceVfpuVector2FromIVector */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_from_ivec(ScePspFVector2 *out, const ScePspIVector2 *v)
-{
-    lwc1 $f1, 4(a1)
-    lwc1 $f2, 0(a1)
-    move v0, a0
-    cvt.s.w $f3, $f1
-    cvt.s.w $f0, $f2
-    swc1 $f3, 4(a0)
-    jr ra
-    swc1 $f0, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_from_ivec(ScePspFVector2 *out, const ScePspIVector2 *v)
 {
     out->x = (float)v->x;
     out->y = (float)v->y;
     return out;
 }
+#else
+ScePspFVector2 *vec2_from_ivec(ScePspFVector2 *out, const ScePspIVector2 *v);
 #endif
 
 /* sceVfpuVector2Add */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_add(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
-{
-    lwc1 $f3, 4(a1)
-    lwc1 $f1, 4(a2)
-    lwc1 $f5, 0(a1)
-    lwc1 $f0, 0(a2)
-    add.s $f4, $f3, $f1
-    move v0, a0
-    add.s $f2, $f5, $f0
-    swc1 $f4, 4(a0)
-    jr ra
-    swc1 $f2, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_add(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
 {
     out->x = a->x + b->x;
     out->y = a->y + b->y;
     return out;
 }
+#else
+ScePspFVector2 *vec2_add(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b);
 #endif
 
 /* sceVfpuVector2Sub */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_sub(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
-{
-    lwc1 $f3, 4(a1)
-    lwc1 $f1, 4(a2)
-    lwc1 $f5, 0(a1)
-    lwc1 $f0, 0(a2)
-    sub.s $f4, $f3, $f1
-    move v0, a0
-    sub.s $f2, $f5, $f0
-    swc1 $f4, 4(a0)
-    jr ra
-    swc1 $f2, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_sub(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
 {
     out->x = a->x - b->x;
     out->y = a->y - b->y;
     return out;
 }
+#else
+ScePspFVector2 *vec2_sub(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b);
 #endif
 
 /* sceVfpuVector2Mul */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_mul(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
-{
-    lwc1 $f3, 4(a1)
-    lwc1 $f1, 4(a2)
-    lwc1 $f5, 0(a1)
-    lwc1 $f0, 0(a2)
-    mul.s $f4, $f3, $f1
-    move v0, a0
-    mul.s $f2, $f5, $f0
-    swc1 $f4, 4(a0)
-    jr ra
-    swc1 $f2, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_mul(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
 {
     out->x = a->x * b->x;
     out->y = a->y * b->y;
     return out;
 }
+#else
+ScePspFVector2 *vec2_mul(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b);
 #endif
 
 /* sceVfpuVector2Div */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_div(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
-{
-    lwc1 $f3, 4(a1)
-    lwc1 $f1, 4(a2)
-    lwc1 $f5, 0(a1)
-    lwc1 $f0, 0(a2)
-    div.s $f4, $f3, $f1
-    move v0, a0
-    div.s $f2, $f5, $f0
-    swc1 $f4, 4(a0)
-    jr ra
-    swc1 $f2, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_div(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
 {
     out->x = a->x / b->x;
     out->y = a->y / b->y;
     return out;
 }
+#else
+ScePspFVector2 *vec2_div(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b);
 #endif
 
 /* sceVfpuVector2Neg */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_neg(ScePspFVector2 *out, const ScePspFVector2 *v)
-{
-    lwc1 $f1, 4(a1)
-    lwc1 $f4, 0(a1)
-    move v0, a0
-    neg.s $f3, $f1
-    neg.s $f2, $f4
-    swc1 $f3, 4(a0)
-    jr ra
-    swc1 $f2, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_neg(ScePspFVector2 *out, const ScePspFVector2 *v)
 {
     out->x = -v->x;
     out->y = -v->y;
     return out;
 }
+#else
+ScePspFVector2 *vec2_neg(ScePspFVector2 *out, const ScePspFVector2 *v);
 #endif
 
 /* sceVfpuVector2Abs */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_abs(ScePspFVector2 *out, const ScePspFVector2 *v)
-{
-    lwc1 $f1, 4(a1)
-    lwc1 $f4, 0(a1)
-    move v0, a0
-    abs.s $f3, $f1
-    abs.s $f2, $f4
-    swc1 $f3, 4(a0)
-    jr ra
-    swc1 $f2, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_abs(ScePspFVector2 *out, const ScePspFVector2 *v)
 {
     out->x = fabsf(v->x);
     out->y = fabsf(v->y);
     return out;
 }
+#else
+ScePspFVector2 *vec2_abs(ScePspFVector2 *out, const ScePspFVector2 *v);
 #endif
 
 /* sceVfpuVector2Lerp: a + t (b - a) */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_lerp(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b, float t)
-{
-    lwc1 $f5, 4(a1)
-    lwc1 $f4, 0(a1)
-    lwc1 $f9, 4(a2)
-    lwc1 $f8, 0(a2)
-    move v0, a0
-    sub.s $f7, $f9, $f5
-    sub.s $f6, $f8, $f4
-    mul.s $f3, $f12, $f7
-    mul.s $f2, $f12, $f6
-    add.s $f1, $f5, $f3
-    add.s $f0, $f4, $f2
-    swc1 $f1, 4(a0)
-    jr ra
-    swc1 $f0, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_lerp(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b, float t)
 {
     out->x = a->x + t * (b->x - a->x);
     out->y = a->y + t * (b->y - a->y);
     return out;
 }
+#else
+ScePspFVector2 *vec2_lerp(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b, float t);
 #endif
 
 /* sceVfpuVector2Scale */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_scale(ScePspFVector2 *out, const ScePspFVector2 *v, float s)
-{
-    lwc1 $f1, 4(a1)
-    lwc1 $f4, 0(a1)
-    move v0, a0
-    mul.s $f3, $f1, $f12
-    mul.s $f2, $f4, $f12
-    swc1 $f3, 4(a0)
-    jr ra
-    swc1 $f2, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_scale(ScePspFVector2 *out, const ScePspFVector2 *v, float s)
 {
     out->x = v->x * s;
     out->y = v->y * s;
     return out;
 }
+#else
+ScePspFVector2 *vec2_scale(ScePspFVector2 *out, const ScePspFVector2 *v, float s);
 #endif
 
 /* Cubic Hermite: the basis (2,-3,0,1) (1,-2,1,0) (1,-1,0,0) (-2,3,0,0) comes from constant prefixes and
@@ -737,73 +625,35 @@ ScePspFVector2 *vec2_max(ScePspFVector2 *out, const ScePspFVector2 *a, const Sce
 #endif
 
 /* sceVfpuVector2Min */
-#ifdef __MWERKS__
-asm ScePspFVector2 *vec2_min(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
-{
-    lwc1 $f3, 0(a1)
-    lwc1 $f1, 0(a2)
-    move v0, a0
-    c.lt.s $f3, $f1
-    nop
-    bc1t @20
-    mov.s $f2, $f3
-    mov.s $f2, $f1
-@20:
-    lwc1 $f3, 4(a1)
-    lwc1 $f1, 4(a2)
-    swc1 $f2, 0(v0)
-    c.lt.s $f3, $f1
-    nop
-    bc1t @40
-    mov.s $f2, $f3
-    mov.s $f2, $f1
-@40:
-    jr ra
-    swc1 $f2, 4(v0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 ScePspFVector2 *vec2_min(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
 {
     out->x = a->x < b->x ? a->x : b->x;
     out->y = a->y < b->y ? a->y : b->y;
     return out;
 }
+#else
+ScePspFVector2 *vec2_min(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b);
 #endif
 
 /* sceVfpuVector2InnerProduct */
-#ifdef __MWERKS__
-asm float vec2_dot(const ScePspFVector2 *a, const ScePspFVector2 *b)
-{
-    lwc1 $f0, 0(a1)
-    lwc1 $f2, 4(a0)
-    lwc1 $f1, 4(a1)
-    lwc1 $f5, 0(a0)
-    mul.s $f4, $f2, $f1
-    mul.s $f3, $f5, $f0
-    jr ra
-    add.s $f0, $f3, $f4
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 float vec2_dot(const ScePspFVector2 *a, const ScePspFVector2 *b)
 {
     return a->x * b->x + a->y * b->y;
 }
+#else
+float vec2_dot(const ScePspFVector2 *a, const ScePspFVector2 *b);
 #endif
 
 /* sceVfpuVector2Funnel: sum of the components */
-#ifdef __MWERKS__
-asm float vec2_funnel(const ScePspFVector2 *v)
-{
-    lwc1 $f3, 4(a0)
-    lwc1 $f2, 0(a0)
-    jr ra
-    add.s $f0, $f2, $f3
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_math_gcc.c */
 float vec2_funnel(const ScePspFVector2 *v)
 {
     return v->x + v->y;
 }
+#else
+float vec2_funnel(const ScePspFVector2 *v);
 #endif
 
 #ifdef NON_MATCHING /* GCC: literal pool loaded through $v1 */

@@ -1,7 +1,8 @@
 // @range 0x08804000-0x08804A0C
-// @asm 0x08804000-0x08804394
+// @asm 0x08804000-0x08804364
+// @gcc 0x08804364-0x08804394
 // @asm 0x0880455C-0x08804714
-// @asm 0x0880495C-0x08804998
+// @gcc 0x088048E0-0x08804A0C
 /* crt0 and the newlib system-call layer of the Sony SDK libc (GCC). module_start starts the
    "user_main" thread, which splits the argument block into argv, sets up the thread's reentrancy
    struct and calls main() then exit(). The _open/_read/... stubs map newlib calls to sceIo*, with
@@ -539,171 +540,116 @@ int _close(int fd)
 #endif
 
 /* newlib _fstat: everything is a character device (S_IFCHR) */
-#ifdef __MWERKS__
-asm int _fstat(int fd, int *st)
-{
-    addiu v1, zero, 8192
-    move v0, zero
-    jr ra
-    sw v1, 4(a1)
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _fstat(int fd, int *st)
 {
     st[1] = 0x2000;
     return 0;
 }
+#else
+int _fstat(int fd, int *st);
 #endif
 
 /* newlib _isatty */
-#ifdef __MWERKS__
-asm int _isatty(int fd)
-{
-    jr ra
-    addiu v0, zero, 1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _isatty(int fd)
 {
     return 1;
 }
+#else
+int _isatty(int fd);
 #endif
 
 /* newlib _rename */
-#ifdef __MWERKS__
-asm int _rename(const char *oldname, const char *newname)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal sceIoRename
-    nop
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _rename(const char *oldname, const char *newname)
 {
     return sceIoRename(oldname, newname);
 }
+#else
+int _rename(const char *oldname, const char *newname);
 #endif
 
 /* newlib system calls without an implementation (_link, _unlink, _kill, _getpid, ...): -1 */
-#ifdef __MWERKS__
-asm int libc_nosys_08804914(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_08804914(void)
 {
     return -1;
 }
+#else
+int libc_nosys_08804914(void);
 #endif
 
-#ifdef __MWERKS__
-asm int libc_nosys_0880491C(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_0880491C(void)
 {
     return -1;
 }
+#else
+int libc_nosys_0880491C(void);
 #endif
 
-#ifdef __MWERKS__
-asm int libc_nosys_08804924(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_08804924(void)
 {
     return -1;
 }
+#else
+int libc_nosys_08804924(void);
 #endif
 
-#ifdef __MWERKS__
-asm int libc_nosys_0880492C(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_0880492C(void)
 {
     return -1;
 }
+#else
+int libc_nosys_0880492C(void);
 #endif
 
-#ifdef __MWERKS__
-asm int libc_nosys_08804934(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_08804934(void)
 {
     return -1;
 }
+#else
+int libc_nosys_08804934(void);
 #endif
 
-#ifdef __MWERKS__
-asm int libc_nosys_0880493C(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_0880493C(void)
 {
     return -1;
 }
+#else
+int libc_nosys_0880493C(void);
 #endif
 
-#ifdef __MWERKS__
-asm int libc_nosys_08804944(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_08804944(void)
 {
     return -1;
 }
+#else
+int libc_nosys_08804944(void);
 #endif
 
-#ifdef __MWERKS__
-asm int libc_nosys_0880494C(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_0880494C(void)
 {
     return -1;
 }
+#else
+int libc_nosys_0880494C(void);
 #endif
 
-#ifdef __MWERKS__
-asm int libc_nosys_08804954(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_08804954(void)
 {
     return -1;
 }
+#else
+int libc_nosys_08804954(void);
 #endif
 
 #ifdef NON_MATCHING /* GCC: loads globals through %hi/%lo */
@@ -718,102 +664,61 @@ void _sbrk_free(void)
 #endif
 
 /* newlib _times -> clock() */
-#ifdef __MWERKS__
-asm int _times(void *buf)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal sceKernelLibcClock
-    nop
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _times(void *buf)
 {
     return sceKernelLibcClock();
 }
+#else
+int _times(void *buf);
 #endif
 
 /* newlib _time */
-#ifdef __MWERKS__
-asm int _time(int *t)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal sceKernelLibcTime
-    nop
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _time(int *t)
 {
     return sceKernelLibcTime(t);
 }
+#else
+int _time(int *t);
 #endif
 
 /* newlib _gettimeofday */
-#ifdef __MWERKS__
-asm int _gettimeofday(void *tp, void *tzp)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal sceKernelLibcGettimeofday
-    nop
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _gettimeofday(void *tp, void *tzp)
 {
     return sceKernelLibcGettimeofday(tp, tzp);
 }
+#else
+int _gettimeofday(void *tp, void *tzp);
 #endif
 
 /* newlib _fork / _wait: -1 */
-#ifdef __MWERKS__
-asm int libc_nosys_088049EC(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_088049EC(void)
 {
     return -1;
 }
+#else
+int libc_nosys_088049EC(void);
 #endif
 
 /* newlib _wait-like stub: *status = -1, returns 0 */
-#ifdef __MWERKS__
-asm int libc_nosys_088049F4(int *status)
-{
-    addiu v1, zero, -1
-    move v0, zero
-    jr ra
-    sw v1, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_088049F4(int *status)
 {
     *status = -1;
     return 0;
 }
+#else
+int libc_nosys_088049F4(int *status);
 #endif
 
-#ifdef __MWERKS__
-asm int libc_nosys_08804A04(void)
-{
-    jr ra
-    addiu v0, zero, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int libc_nosys_08804A04(void)
 {
     return -1;
 }
+#else
+int libc_nosys_08804A04(void);
 #endif
