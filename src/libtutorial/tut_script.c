@@ -1,5 +1,4 @@
 // @range 0x08807E24-0x08809A5C
-// @asm 0x08809944-0x08809A5C
 // @rodata 0x0880F884-0x0880F938
 // @data 0x0880FAA8-0x0880FAC0
 /* The lesson script and its hooks into the duel: %02d_duel_command.bin is a list of steps
@@ -1109,11 +1108,8 @@ void tut_field_reset(int file, int turn)
 }
 
 /* the leading face steps (0x67 command 0x17, character * 100) load the faces before the duel */
-#ifdef NON_MATCHING
-/* 6 palavras: o ponteiro b = &tutbox declarado primeiro dá o lui/addiu antes dos dois move (ordem de
-   criação); falta o fim do laço: o original carrega tut_pc em $a0 e só depois faz o sltu/xori de !done em
-   $v1 (aqui o sltu sobe para $a0). for/while/do, ++i, helper inline para o tut_pc++, volatile e tipos de
-   done testados (rodadas 25, 28) */
+/* o `else return;` do if externo fecha o bloco do tut_pc++ antes do teste do laço: o sltu/xori de !done
+   não sobe para o atraso da carga de tut_pc (rodada 35) */
 void tut_script_preload_faces(void)
 {
     TutBox *const b = &tutbox;
@@ -1123,21 +1119,21 @@ void tut_script_preload_faces(void)
     int c;
     TutFace **pf;
 
-    for (i = 0, done = 0; !done; tut_pc++) {
+    i = 0; done = 0;
+    while (!done) {
         st = &tut_script.step[tut_pc];
-        if ((st->cmd & 0xFFF) != 0x67)
+        if ((st->cmd & 0xFFF) == 0x67 && st->a == 0x17) {
+            c = st->b / 100;
+            pf = &b->faces[i].face;
+            b->faces[i].chara = c;
+            *pf = tut_face_load(tut_heap_get(), c);
+            if (tut_face_ready(*pf))
+                sys_frame_wait();
+            i++;
+            if (i >= 8)
+                done = 1;
+            tut_pc++;
+        } else
             return;
-        if (st->a != 0x17)
-            return;
-        c = st->b / 100;
-        pf = &b->faces[i].face;
-        b->faces[i].chara = c;
-        *pf = tut_face_load(tut_heap_get(), c);
-        if (tut_face_ready(*pf))
-            sys_frame_wait();
-        i++;
-        if (i >= 8)
-            done = 1;
     }
 }
-#endif

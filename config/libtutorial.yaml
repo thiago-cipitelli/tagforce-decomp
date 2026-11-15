@@ -33,7 +33,6 @@ segments:
       - [0x2C20, c, tut_sprite]
       - [0x3A70, c, tut_arrow]
       - [0x3E84, c, tut_script]
-      - [0x59A4, asm, tut_script_asm_08809944]
       - [0x5ABC, c, tut_text]
       - [0x6CCC, c, tut_face]
       - [0x72E4, asm, sceStub_text]
