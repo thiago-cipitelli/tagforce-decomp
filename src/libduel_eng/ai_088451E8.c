@@ -56,25 +56,30 @@ void duel_088C7CF0(void);
 unsigned int duel_card_locate(unsigned int);
 void duel_088C44E4(unsigned int p, int id);
 
-#ifdef NON_MATCHING /* 1165 palavras (rodada 25), 19 linhas de estrutura: o original guarda `me` na pilha (60(sp)) desde o início e põe s8 = me*4012; aqui `me` fica num $s e só vai para a pilha no caso 200; a chamada duel_088D1438(p, z, 0, id) do caso 0x1AA9 tem o move a2,zero no delay slot no original */
+#ifdef NON_MATCHING /* 1164 palavras posicionais, distância alinhada 106 instruções (era 145; rodada 33: ordem das
+   declarações por sorteio, build/tmp/hA/hrand.py com METRIC=lcs). O que falta: o original guarda `me` na pilha (60(sp)) desde o
+   início e deixa em $s o ponteiro &duel.players[me] do caso 200; aqui `me` fica em s4 e é esse ponteiro que vai para 60(sp).
+   Sem efeito: pl explícito no caso 200, ofs = me * 0xFAC explícito, p & 1 por extenso (recalcula o produto em cada caso),
+   tipos de me (int, const, register, enum; u8/u16 aumentam o código). A chamada duel_088D1438(p, z, 0, id) do caso 0x1AA9
+   tem o move a2,zero no delay slot no original */
 /* returns 0 while the step machine has work left */
 int duel_088451E8(void)
 {
-    unsigned int p = duel_turn_player;
-    unsigned int me = p & 1;
-    int b24 = duel.players[me].flags >> 24 & 1;
-    int skip;                          /* no automatic resolutions (flag bit 24 or 0x137E in the hand) */
-    unsigned int k;
-    unsigned int q;
-    int z;
-    int id;
-    int r;
-    int n;
-    int lp;
-    unsigned int e;
-    DuelEffectBits *ef;
     unsigned int uid;
     unsigned int loc;
+    int n;
+    unsigned int p = duel_turn_player;
+    int z;
+    int id;
+    unsigned int q;
+    int lp;
+    DuelEffectBits *ef;
+    unsigned int me = p & 1;
+    int r;
+    int skip;                          /* no automatic resolutions (flag bit 24 or 0x137E in the hand) */
+    int b24 = duel.players[me].flags >> 24 & 1;
+    unsigned int k;
+    unsigned int e;
     unsigned short txt2[256];
     unsigned short txt1[256];
     unsigned short txt120[256];
