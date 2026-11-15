@@ -1,7 +1,6 @@
 // @range 0x08854920-0x08859044
 // @data 0x088EF468-0x088EFFF8
 // @rodata 0x088B499C-0x088B4B04
-// @asm 0x08854A68-0x08854D94
 /* Card list / card panel drawing: the card picture (read through cip.c into VRAM and drawn with
    a cross-fade when the card changes), its frame from cil_0000<l>.gim, level stars, attribute
    and type icons, ATK/DEF, the description box with scroll bar and blinking arrows, and the
@@ -409,8 +408,8 @@ void *cardlist_draw(void *list, CardView *v)
     return cardlist_draw_at(list, 0, 0, v);
 }
 
-#ifdef NON_MATCHING /* 3 palavras: o original calcula &v->shown_cmp (a3) antes dos outros argumentos da 1ª chamada
-   de card_type_line; locais do 2º cartão num bloco (regra da ordem de criação) */
+/* A 1ª chamada de card_type_line calcula &v->shown_cmp (a3) antes dos outros argumentos: só a forma com
+   aritmética inteira `(CardStats *)((int)v + 0xD8)` reproduz essa ordem (rodada 33). */
 void *cardlist_draw_at(void *list, int x, int y, CardView *v)
 {
     CardStats *sh;
@@ -444,7 +443,11 @@ void *cardlist_draw_at(void *list, int x, int y, CardView *v)
         name = card_get_name(id);
         desc = card_get_desc(id);
         sh = &v->shown;
+#ifdef __MWERKS__
+        line = card_type_line(id, v->shown_mask, sh, (CardStats *)((int)v + 0xD8));
+#else
         line = card_type_line(id, v->shown_mask, sh, &v->shown_cmp);
+#endif
         if (id == -1) {
             tex = 0;
         } else {
@@ -483,8 +486,6 @@ void *cardlist_draw_at(void *list, int x, int y, CardView *v)
     }
     return list;
 }
-
-#endif
 
 void *cardlist_draw_pair(void *list, CardView *a, CardView *b)
 {
