@@ -725,7 +725,11 @@ void duel_req_draw(void)
 }
 
 #ifdef NON_MATCHING /* 9 palavras: id e uid da carta do topo lidos no início (sem ponteiro), case 0 com if (n == 0);
-                      faltam p e n trocados (s3/s5) */
+                      faltam p e n trocados (s3/s5).
+   Rodada 34: o original empilha n, banish, p nessa ordem (s5, s4, s3); aqui sai p, banish, n. Com p vindo de um
+   inline que devolve unsigned (`p = req_player()`) p passa para depois de banish (20 palavras, mas é o mapa
+   banish/p do original); n só sobe para antes de banish com um TERCEIRO uso de máquina no case 0 (um store a mais
+   dá o mapa exato do original, p=s3 n=s5 banish=s4, mas com código a mais); usos que o mwcc dobra não contam */
 /* Send arg cards from the top of the deck to the graveyard, or banish them (loc bits: 1 always,
    2 monsters, 4 cards of player 0, 8 cards of player 1); w: show them. */
 void duel_req_mill(void)
