@@ -1,6 +1,5 @@
 // @range 0x08898B10-0x0889A75C
 // @data 0x0891190C-0x0891193C
-// @asm 0x088995A0-0x088997E8
 /* Card effect handlers (DuelAct *a), after effects_088966D8.c. */
 #include "duel.h"
 
@@ -342,16 +341,13 @@ int duel_088994E4(DuelAct *a)
     return 0;
 }
 
-#ifdef NON_MATCHING /* registradores s: a, t e g trocados */
+/* x é um local de bloco com `= { 0 }` depois das três chamadas: é o inicializador que gera o laço de bytes (escrito à
+   mão, os temporários do laço entram na coloração e trocam os $s de a, t e g). */
 int duel_088995A0(DuelAct *a)
 {
-    int g;
-    int z;
     int t;
-    DuelAct x;
-
-    char *q;
-    int n;
+    int z;
+    int g;
 
     if (a->uid != CARD_UID(duel.players[a->player & 1].field[a->zone].card)) {
         return 0;
@@ -362,31 +358,27 @@ int duel_088995A0(DuelAct *a)
     t = duel_act_target2(a, 0);
     g = duel_grave_find_uid(a->player, t);
     z = duel_pick_st_zone(a->player);
-    q = (char *)&x;
-    n = 0x18;
-    if (q != 0) {
-        do {
-            *q++ = 0;
-        } while (--n);
-    }
-    if (z < 0) {
-        return 0;
-    }
-    if (g < 0) {
-        return 0;
-    }
-    x.player = a->player;
-    x.zone = 0xB;
-    x.b3_4 = 0;
-    x.id = duel.players[a->player & 1].grave[g].id;
-    x.uid = t;
-    if (duel_act_check_08853CE8(&x, a->player, a->zone) == 1) {
-        duel_088CB728(a->player, 0xE, t, a->player, z, 1, 0);
-        duel_088C8B78(a->player, (unsigned short)(a->player | (unsigned char)z << 8), (unsigned short)(a->player | a->zone << 8), 10);
+    {
+        DuelAct x = { 0 };
+
+        if (z < 0) {
+            return 0;
+        }
+        if (g < 0) {
+            return 0;
+        }
+        x.player = a->player;
+        x.zone = 0xB;
+        x.b3_4 = 0;
+        x.id = duel.players[a->player & 1].grave[g].id;
+        x.uid = t;
+        if (duel_act_check_08853CE8(&x, a->player, a->zone) == 1) {
+            duel_088CB728(a->player, 0xE, t, a->player, z, 1, 0);
+            duel_088C8B78(a->player, (unsigned short)(a->player | (unsigned char)z << 8), (unsigned short)(a->player | a->zone << 8), 10);
+        }
     }
     return 0;
 }
-#endif
 
 int duel_088997E8(DuelAct *a, int b)
 {

@@ -1,5 +1,4 @@
 // @range 0x0886F23C-0x0887DB24
-// @asm 0x08871674-0x088717B4
 /* More activation conditions of cards (DuelAct *a; b: the chain link a answers). */
 #include "duel.h"
 
@@ -1101,15 +1100,15 @@ int duel_0887153C(DuelAct *a, int b)
     return 0;
 }
 
-#ifdef NON_MATCHING /* forma e fluxo batem; só p (s0 no original) e i*4 (s1) trocados de registrador, em todas as
-                      ordens de declaração e de i = 0 / p = a->player testadas; 9 palavras */
-/* Every other card in the hand belongs to a's player. */
+/* Every other card in the hand belongs to a's player. p recebe o jogador antes da contagem (primeiro uso numa
+   chamada) e é relido depois: é isso que deixa p no $s mais baixo, abaixo do ponteiro de indução. */
 int duel_08871674(DuelAct *a)
 {
     unsigned int i;
     unsigned int p;
 
-    if (duel_count_monsters(a->player) == 0) {
+    p = a->player;
+    if (duel_count_monsters(p) == 0) {
         return 0;
     }
     i = 0;
@@ -1125,7 +1124,6 @@ int duel_08871674(DuelAct *a)
     }
     return 1;
 }
-#endif
 
 int duel_088717B4(DuelAct *a, int b)
 {

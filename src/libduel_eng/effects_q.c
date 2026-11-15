@@ -1,5 +1,4 @@
 // @range 0x08864DF0-0x08865F2C
-// @asm 0x08865C10-0x08865E14
 /* Card effect handlers (descriptor callbacks of the card effect tables). */
 #include "duel.h"
 
@@ -423,7 +422,10 @@ none:
     return 0;
 }
 
-#ifdef NON_MATCHING /* 51 palavras (era 91): case 3 com o corpo dentro de if (duel_08835AC0() != 0); falta o registrador do valor do switch (v1 no original, carregado antes do move s0,a0) e o b/nop do default */
+/* O default devolve 1: o mwcc reaproveita o v0 = 1 deixado pelo teste do case 1 (b; nop sem li), e é esse return
+   que põe o valor do switch em v1 e as constantes em v0. case 1 com a saída -1 antecipada (bnezl para o corpo). */
+// default return 1
+// returns + default: break with trailing nothing (void-ish) 
 int duel_08865C10(DuelAct *a)
 {
     switch (duel_w_08914904) {
@@ -440,11 +442,11 @@ int duel_08865C10(DuelAct *a)
         duel_w_08914904++;
         return 0;
     case 1:
-        if (duel_w_08919624 != 0) {
-            duel_w_08914904++;
-            return 0;
+        if (duel_w_08919624 == 0) {
+            return -1;
         }
-        return -1;
+        duel_w_08914904++;
+        return 0;
     case 2:
         duel_0884ACD8(a->player, 0x3A);
         if (duel_player_type[a->player] == 1) {
@@ -465,10 +467,10 @@ int duel_08865C10(DuelAct *a)
         }
         duel_w_08914904--;
         return 0;
+    default:
+        return 1;
     }
-    /* no return in the original: the default case returns the v0 = 1 left by the switch tests (port: return 1) */
 }
-#endif
 
 int duel_08865E14(DuelAct *a)
 {
