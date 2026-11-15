@@ -3963,3 +3963,10 @@ Quarta passada nas 12 entradas fora de libduel_eng: 4 batendo (`gim_walk`, `efs_
   `font_glyph_cache` (500 amostras com cast redundante/cópia de `img`/contador reaproveitado: 52),
   `menu_layout` (700 amostras de identidade x ordem x forma dos laços: 67), `dd_fx_shatter_update` (só a bateria
   de estado da unidade: sem efeito). A bateria de funções anteriores (`tu.py`) não muda nenhuma das 6 dos gmodules.
+- Segunda perna: `stat_event_record` (main.c, 616 B com 22 blocos mortos) bate na primeira com o mesmo gatilho no
+  `case 0x18c8` vazio (`case 0x18c8: stat_save_ok(s); break;`); `day_calc` (save.c, 14 -> 0) já estava no modo e
+  só faltava `t -= s->day_progress; return t;` na própria variável (o `subu` vai para o atraso do `b`). A varredura
+  do `dead.py` nos outros módulos (menos libduel_eng) não acha mais nenhuma função em `@asm` no modo. `menu.c` e
+  `msgbox.c` não são uma unidade com os vizinhos para efeito destas duas: `wfmt.c + menu.c` e `net_ctl.c +
+  msgbox.c` concatenados, a bateria de funções anteriores e os callees `static` (todos definidos DEPOIS dos
+  chamadores) deixam `menu_layout` em 67 e `msgbox_open` em 36 por posição.
