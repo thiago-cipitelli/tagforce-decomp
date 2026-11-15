@@ -58,12 +58,7 @@ void duel_cmd(unsigned short cmd, unsigned short a, unsigned short b, unsigned s
 int duel_08836868(unsigned int p);
 int duel_0880EA88(unsigned int p, int a);
 void duel_088AFD5C(int kind, unsigned int a);
-#ifdef __MWERKS__
 int duel_0883F174(unsigned int p);
-#else
-int duel_0883F174(void);
-#define duel_0883F174(a0) duel_0883F174() /* port: the definition takes 0 arguments, the rest are not read */
-#endif
 int duel_088369D8(unsigned int p);
 int duel_08820FD0(unsigned int p, int z);
 void duel_field_stats(unsigned int p, int z, DuelStats *st);

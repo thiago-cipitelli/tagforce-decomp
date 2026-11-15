@@ -3,7 +3,7 @@
 /* Duel events run by the computer player: step tables and card checks. */
 #include "duel.h"
 
-extern int (*duel_ev_funcs[])(void);   /* 0x089124AC */
+extern int (*duel_ev_funcs[])();   /* 0x089124AC; each step takes the player */
 extern unsigned int duel_w_0891960C;
 extern int duel_w_08919610;
 extern int duel_ev_unk;
@@ -57,10 +57,12 @@ int duel_0883F0DC(void)
     return 1;
 }
 
-int duel_0883F174(void)
+/* p is not read here: it stays in a0 for the step function (duel_08837500(p) is one of them) */
+int duel_0883F174(p)
+unsigned int p;
 {
     if (duel_ev_funcs[duel_w_0891960C] != 0) {
-        if (duel_ev_funcs[duel_w_0891960C]() != 0) {
+        if (duel_ev_funcs[duel_w_0891960C](p) != 0) {
             duel_w_08919610 = 0;
             duel_w_0891960C++;
         }
@@ -84,7 +86,11 @@ int duel_0883F1DC(unsigned int p, int flag)
         duel_ev_unk++;
         break;
     case 1:
-        duel_0883F174();
+#ifdef __MWERKS__
+        duel_0883F174();   /* p is still in a0 */
+#else
+        duel_0883F174(p);
+#endif
         return duel_w_0891960C > 8;
     }
     return 0;
