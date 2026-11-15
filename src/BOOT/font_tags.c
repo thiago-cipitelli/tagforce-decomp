@@ -1,6 +1,5 @@
 // @range 0x0884900C-0x0884A9B4
 // @data 0x088EE9E0-0x088EEA58
-// @asm 0x088490EC-0x08849428
 // @asm 0x08849F44-0x0884A430
 /* Text tags and line emission: $R ruby (furigana over the base text), $C color, $f/$F small
    capitals, word-break measurement, and font_layout_end which turns FontCtx.cmds into glyph
@@ -71,19 +70,22 @@ done:
     return c;
 }
 
-#ifdef NON_MATCHING /* 25 palavras, só registradores: o original dá w a s0 e c a s2 (aqui trocados); nenhuma ordem de declaração, tipo ou ordem de atribuição muda isso. O `case 'F': case 'f':` juntos reproduzem o beq sem likely do F e o beqz sem likely do in_word */
+/* Forma que bate (rodada 33): o resultado de wtext_next_char passa por `ch` (unsigned short) antes de `c`; com
+   `c` definido direto do jal ele ficava sempre no $s mais baixo, qualquer que fosse a ordem das declarações. */
 /* Width in 26.6 of the word starting at p (up to the next breakable character), including the
    ruby padding, so that a word is not split across lines. */
 int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned short *p, int wrap)
 {
     unsigned short pad = 0;
     unsigned short rtotal, rpad, rw;
-    int in_word;
-    unsigned short *q, *next;
-    int w;
-    int in_ruby;
+    unsigned short *q;
     unsigned short c;
+    int in_ruby;
+    int in_word;
     int slot;
+    unsigned short *next;
+    int w;
+    unsigned short ch;
 
     q = p;
     in_ruby = 0;
@@ -149,7 +151,8 @@ int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned
                     w += pad;
                 } else {
                 tail:
-                    c = wtext_next_char(f, q, in_ruby);
+                    ch = wtext_next_char(f, q, in_ruby);
+                    c = ch;
                     if (!(st->flags & 8))
                         break;
                     if (wc_no_line_start(c) != 0)
@@ -165,8 +168,6 @@ int font_word_width(FontCtx *f, FontLayout *st, SceFontGlyphImage *img, unsigned
     }
     return w;
 }
-
-#endif
 
 static inline void font_fold_case(FontLayout *st, unsigned short *c, unsigned short *flags, unsigned char *sx)
 {
