@@ -1,8 +1,6 @@
 // @range 0x08808A20-0x0880C8E8
-// @asm 0x0880A2B8-0x0880ADA8
-// @asm 0x0880ADA8-0x0880B58C
 // @data 0x0881A6F8-0x0881A774
-// @rodata 0x08819F34-0x08819FC4
+// @rodata 0x08819F34-0x08819FF8
 /* Start menu of a duel: rock-paper-scissors (janken) for the first turn, local or over ad hoc,
    then "go first / go second", the partner selection and the hand-over to the duel. */
 #include "libduel_mgr.h"
@@ -68,11 +66,9 @@ int dmgr_jk_anim_done(unsigned short i);
 void dmgr_jk_cards_reset(void);
 /* static no original: dmgr_jk_pick e dmgr_jk_reveal guardam valores em t4-t7 através da chamada (o mwcc só
    usa o uso de registradores do chamado quando ele é static); fica global no build enquanto dmgr_jk_pick está em asm */
-#ifdef NON_MATCHING
-static
-#endif
-int dmgr_jk_cards_move(unsigned short n, unsigned short side);
-void dmgr_jk_cards_hover(void);
+/* static in the original: dmgr_jk_pick and dmgr_jk_reveal keep registers live across the calls */
+static int dmgr_jk_cards_move(unsigned short n, unsigned short side);
+static void dmgr_jk_cards_hover(void);
 void dmgr_jk_pick(void);
 void dmgr_jk_reveal(void);
 void dmgr_jk_choose(void);
@@ -593,10 +589,7 @@ void dmgr_jk_cards_reset(void)
     }
 }
 
-#ifdef NON_MATCHING
-static
-#endif
-int dmgr_jk_cards_move(unsigned short n, unsigned short side)
+static int dmgr_jk_cards_move(unsigned short n, unsigned short side)
 {
     DmgrJkCard *c;
     int t;
@@ -622,7 +615,7 @@ int dmgr_jk_cards_move(unsigned short n, unsigned short side)
     return 0;
 }
 
-void dmgr_jk_cards_hover(void)
+static void dmgr_jk_cards_hover(void)
 {
     DmgrJkCard *c;
     int i;
@@ -648,7 +641,6 @@ void dmgr_jk_cards_hover(void)
     }
 }
 
-#ifdef NON_MATCHING /* lógica conferida com o asm. 25 palavras (com dmgr_jk_cards_move static, ver o protótipo): no case 2 o original carrega peer[2] em v1 e o 1 em a2 (aqui v0/a1), como se peer continuasse vivo; nomes, ordem das declarações e forma do if não mudam. Bater esta libera dmgr_jk_reveal (0 palavras) e o static */
 void dmgr_jk_pick(void)
 {
     PadState *pad = pad_get();
@@ -875,9 +867,6 @@ void dmgr_jk_pick(void)
         }
     }
 }
-#endif
-
-#ifdef NON_MATCHING /* 0 palavras com dmgr_jk_cards_move static (ponteiros a/b recalculados de dmgr_jk em cada grupo de cópias, if/else-if no case 3, sysvar != 0 primeiro no case 4); fica em asm até dmgr_jk_pick bater, porque o static quebra a chamada do asm */
 void dmgr_jk_reveal(void)
 {
     DmgrJkCard *a;
@@ -1025,7 +1014,6 @@ void dmgr_jk_reveal(void)
         break;
     }
 }
-#endif
 
 void dmgr_jk_choose(void)
 {
