@@ -1,5 +1,5 @@
 // @range 0x088106D8-0x08813088
-// @asm 0x0881103C-0x08811658
+// @asm 0x08811300-0x08811658
 // @rodata 0x0882AEA0-0x0882AEE8
 /* The title's panel widgets: a framed box of cells with a scrollbar (TBox), tabs (TTab), the tabbed
    window combining them with a system list (TPanel), the nine-piece frames drawn from title_sprites2,
@@ -231,7 +231,6 @@ void *tbox_draw(void *list, TBox *b)
     return list;
 }
 
-#ifdef NON_MATCHING /* 33 palavras (rodada 28: o `if (!sel) show = 0` do case 1 é `if (sel) show = 1; else show = 0;`; rodada 32: o callback recebe i como unsigned short, sem andi); restam registradores e seh da largura de cada peça no laço (pw short e a ordem x, y, h, u, v, w, pw das atribuições alinham mais instruções, 23 alinhadas contra 40, mas mudam o tamanho) */
 /* one tab: three pieces, coloured by the selection, then its label callback */
 void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
 {
@@ -282,17 +281,17 @@ void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
             list = dl_color(list, t->color_off);
         list = gim_set_texture(list, ehp_find(title_pack(), title_sprite_gim(title_sprites2, 16), 0));
         for (j = 0; j < 3; j++) {
-            short v, w, x, y, h, u, px, py;
-            int pw;
+            short v, x, y, h, u, pw, w;
 
             s = title_sprites2[k + j];
-            v = s.v + (short)(t->cap << 5);
-            w = t->w;
             x = s.x;
             y = s.y;
             pw = s.w;
             h = s.h;
             u = s.u;
+            v = s.v;
+            v += (short)(t->cap << 5);
+            w = t->w;
             if (w < 7)
                 w = 7;
             switch (j) {
@@ -303,17 +302,16 @@ void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
                 x = w - 4;
                 break;
             }
-            px = x + t->x;
-            py = y + t->y;
+            x += t->x;
+            y += t->y;
             list = draw_set_offsets(list, s.tw, s.th, pw, h);
-            list = draw_sprite(list, px, py, 0, u, v, s.a, s.b);
+            list = draw_sprite(list, x, y, 0, u, v, s.a, s.b);
         }
         if (t->draw)
             list = ((void *(*)(void *, unsigned short, int, int, int, int))t->draw)(list, i, t->x, t->y, t->w, t->h);
     }
     return list;
 }
-#endif
 
 #ifdef NON_MATCHING /* 8 palavras (eram 24): os argumentos de tframe_cursor passam por ix/iy/iw/ih (as variáveis short, nessa ordem); falta só i/iy trocados (s0/s1) no laço de b->draw (ordem das declarações, das atribuições, contador ou y próprios e y int não mudam) */
 /* the two-column layout of the panel (f0 == 2) */
