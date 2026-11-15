@@ -66,9 +66,11 @@ int card_get_prop5_hi(int);
 int duel_hand_count_name(unsigned int p, unsigned short id);
 int duel_hand_find_name(unsigned int p, int id);
 
-#ifdef NON_MATCHING /* refeito do asm bloco a bloco (rodada 25): faltam o agendamento do z < 5 do passo 4 (lui antes
-   do slti, 3 palavras) e o andi 0xff do jogador nos dois CARD_UID da mão (família de duel_088862DC, 6 palavras);
-   o resto da diferença é o deslocamento dos alvos de desvio */
+#ifdef NON_MATCHING /* refeito do asm bloco a bloco (rodada 25); rodada 32: o z < 5 do passo 4 bate com o índice do alvo
+   lido num local antes do teste. Faltam só 4 instruções: o andi 0xff do jogador antes do & 1 e do << 31 nos dois
+   gatilhos da mão do passo 7 (família de duel_088862DC; o mwcc dobra (unsigned char)ph & 1; tipos de ph, cópia
+   unsigned char, helpers inline com parâmetro unsigned char e formas da atribuição testados); o resto da contagem
+   de asm_try é o deslocamento (build/tmp/eC/adiff.py alinha) */
 
 #define SLOT(p, z) (&duel.players[(p) & 1].field[z])
 
@@ -152,6 +154,7 @@ int duel_08850F44(void)
         {
             unsigned int t;
             unsigned int loc;
+            int rt;
             unsigned int q;
             int z;
             int id;
@@ -171,7 +174,8 @@ int duel_08850F44(void)
                 loc = t;
                 q = t & 0xFF;
                 z = (unsigned char)((t & 0xFFFF) >> 8);
-                if (z < 5 && duel_088A9008(a, duel_chain.res_target, &loc)) {
+                rt = duel_chain.res_target; /* read before the z test, as the original */
+                if (z < 5 && duel_088A9008(a, rt, &loc)) {
                     id = field_get_card(q, z);
                     if (!duel_0884E440(a, q, z)) {
                         continue;
