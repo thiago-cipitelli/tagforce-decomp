@@ -1,5 +1,6 @@
 // @range 0x0880DC98-0x0880E700
-// @asm 0x0880E1F8-0x0880E520
+// @gcc 0x0880E1F8-0x0880E270
+// @asm 0x0880E270-0x0880E520
 /* newlib (GCC) of the Sony SDK libc: memcmp, memcpy, memmove, memset, the interrupt-disabling
    malloc lock, and the Sony layer that keeps one reentrancy struct per module (a hash of 32 slots
    by module id, chained in 0x104-byte blocks) plus _REENT_INIT. The lock and the module table use
@@ -497,23 +498,6 @@ extern int libc_malloc_intr;           /* 0x088F96B8 */
 extern char *libc_global_reent;        /* 0x088EB598 */
 
 /* the malloc lock disables interrupts (nesting) */
-void __malloc_lock(void *r)
-{
-    int flags = sceKernelCpuSuspendIntr();
-
-    if (libc_malloc_depth == 0) {
-        libc_malloc_intr = flags;
-    }
-    libc_malloc_depth++;
-}
-
-void __malloc_unlock(void *r)
-{
-    if (--libc_malloc_depth == 0) {
-        sceKernelCpuResumeIntr(libc_malloc_intr);
-    }
-}
-
 /* _getmodreent: the reent struct of the calling thread's module (its id is kept at +0x37C of the
    thread's reent); the global one, with a message, when there is none */
 void *libc_get_thread_module(void)

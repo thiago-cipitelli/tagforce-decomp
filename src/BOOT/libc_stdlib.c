@@ -1,6 +1,6 @@
 // @range 0x0880A5C0-0x0880C040
-// @asm 0x0880A5C0-0x0880A694
-// @asm 0x0880A820-0x0880A87C
+// @gcc 0x0880A5C0-0x0880A694
+// @gcc 0x0880A820-0x0880A87C
 // @asm 0x0880AAC4-0x0880BF10
 /* newlib (GCC) of the Sony SDK libc: atexit, bsearch, _calloc_r, _close_r, the quorem and _dtoa_r
    of dtoa.c, __errno and exit. The reentrancy struct of the calling thread comes from
@@ -38,32 +38,6 @@ int sceKernelCpuSuspendIntr(void);
 void sceKernelCpuResumeIntr(int flags);
 
 /* registers fn in the thread's atexit list (blocks of 32) */
-int atexit(void (*fn)(void))
-{
-    int flags = sceKernelCpuSuspendIntr();
-    char *r = libc_get_thread_module();
-    LibcAtexit *p = *(LibcAtexit **)(r + 0x148);
-
-    if (p == 0) {
-        p = (LibcAtexit *)(r + 0x14C);
-        *(LibcAtexit **)(r + 0x148) = p;
-    }
-    if (p->ind >= 32) {
-        sceKernelCpuResumeIntr(flags);
-        p = _malloc_r(r, sizeof(LibcAtexit));
-        if (p == 0) {
-            return -1;
-        }
-        flags = sceKernelCpuSuspendIntr();
-        p->ind = 0;
-        p->next = *(LibcAtexit **)(r + 0x148);
-        p->fntypes = 0;
-        *(LibcAtexit **)(r + 0x148) = p;
-    }
-    p->fns[p->ind++] = fn;
-    sceKernelCpuResumeIntr(flags);
-    return 0;
-}
 #endif
 
 #ifdef __MWERKS__
@@ -224,17 +198,6 @@ void *_calloc_r(void *r, size_t n, size_t size)
 #ifdef NON_MATCHING /* GCC: errno global through %hi/%lo */
 extern int libc_errno;                 /* 0x08E35A34 */
 
-int _close_r(int *r, int fd)
-{
-    int ret;
-
-    libc_errno = 0;
-    ret = _close(fd);
-    if (ret == -1 && libc_errno != 0) {
-        *r = libc_errno;
-    }
-    return ret;
-}
 #endif
 
 /* dtoa.c quorem: b -= q * S for the quotient digit q (< 10), returns q */

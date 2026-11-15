@@ -1,7 +1,11 @@
 // @range 0x0880C040-0x0880CDD4
 // @asm 0x0880C040-0x0880C194
-// @asm 0x0880C208-0x0880C3B4
-// @asm 0x0880C4D0-0x0880C8EC
+// @asm 0x0880C208-0x0880C2EC
+// @gcc 0x0880C2EC-0x0880C30C
+// @asm 0x0880C30C-0x0880C330
+// @gcc 0x0880C330-0x0880C3B4
+// @asm 0x0880C4D0-0x0880C888
+// @gcc 0x0880C888-0x0880C8EC
 // @asm 0x0880CCCC-0x0880CDD4
 /* newlib (GCC) of the Sony SDK libc, stdio and malloc pieces in link order: fflush, findfp.c
    (std, __sfmoreglue, __sfp, _cleanup_r, _cleanup, __sinit), fread, freer.c (_free_r,
@@ -205,28 +209,12 @@ LibcFile *libc_sfp(int *r)
     return 0;
 }
 
-int libc_cleanup_r(void *r)
-{
-    return libc_fwalk(r, fflush);
-}
-
 void libc_cleanup(void)
 {
     libc_cleanup_r(libc_global_reent);
 }
 
 /* findfp.c __sinit: stdin (read), stdout (write, line buffered), stderr (unbuffered) */
-void libc_sinit(char *r)
-{
-    *(int (**)(void *))(r + 0x3C) = libc_cleanup_r;
-    *(int *)(r + 0x38) = 1;
-    *(int *)(r + 0x260) = 3;
-    *(char **)(r + 0x264) = r + 0x268;
-    *(int *)(r + 0x25C) = 0;
-    libc_std(*(LibcFile **)(r + 4), 4, 0, r);
-    libc_std(*(LibcFile **)(r + 8), 9, 1, r);
-    libc_std(*(LibcFile **)(r + 0xC), 10, 2, r);
-}
 #endif
 
 /* fread: from the buffer, refilling with __srefill */
@@ -358,17 +346,6 @@ int _malloc_trim_r(void *r, size_t pad)
 int _fstat(int fd, void *st);
 extern int libc_errno;                 /* 0x08E35A34 */
 
-int _fstat_r(int *r, int fd, void *st)
-{
-    int ret;
-
-    libc_errno = 0;
-    ret = _fstat(fd, st);
-    if (ret == -1 && libc_errno != 0) {
-        *r = libc_errno;
-    }
-    return ret;
-}
 #endif
 
 /* fvwrite.c __sfvwrite_r: writes uio to fp, through its buffer (string streams grow it when
