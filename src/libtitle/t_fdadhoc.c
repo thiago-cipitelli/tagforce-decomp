@@ -912,7 +912,7 @@ void *tfd_adhoctop_handler2(void *list)
             }
         } else if (t->step < 0x2E) {
             if (t->step >= 0x23 && t->step < 0x26)
-                list = extdata_draw();
+                list = extdata_draw(list);
             else if (t->step > 0x26)
                 list = tdl_deck_draw(title_ehf_draw(list, 10));
         }

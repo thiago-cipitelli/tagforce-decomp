@@ -185,7 +185,7 @@ int title_set_state(int st, int sub)
         title_screen_enter(st, sub);
         break;
     case 6:
-        text_enter();
+        text_enter(st);
         break;
     case 8:
         tname_enter();
@@ -194,13 +194,13 @@ int title_set_state(int st, int sub)
         title_menu_enter(st, sub, 0);
         break;
     case 12:
-        tdl_enter();
+        tdl_enter(st, sub);
         break;
     case 13:
         topt_enter(st, sub);
         break;
     case 14:
-        tfd_config_init();
+        tfd_config_init(st, sub);
         break;
     case 17:
         tcfg_enter(st, sub);

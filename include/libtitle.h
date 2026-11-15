@@ -828,9 +828,9 @@ void title_state_init(int state, int sub);
 void title_logo_enter(int state, int sub);
 void title_movie_enter(int state, int sub);
 
-void text_enter(); /* (short state): set_state calls it with the state still in a0 */
+void text_enter(); /* (int state): on the PSP set_state left the state in a0; the call now names it (same code) */
 void tname_enter(void);
-void tdl_enter(); /* (short state, short sub): set_state calls it with them still in a0/a1 */
+void tdl_enter(); /* (int state, int sub): same, a0/a1 */
 
 void tfd_config_init();
 void tlang_enter(void);

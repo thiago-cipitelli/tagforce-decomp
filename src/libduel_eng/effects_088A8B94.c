@@ -1842,14 +1842,15 @@ int duel_088AD30C(DuelAct *a, int b)
     return duel_088AA1C0(a, b);
 }
 
-int duel_088AD368(DuelAct *a)
+/* b is not read here: it stays in a1 for duel_088AA5F4 */
+int duel_088AD368(DuelAct *a, int b)
 {
     unsigned int t;
 
     switch (duel_w_08914908) {
     case 0:
     case 1:
-        if (duel_088AA5F4(a) != 0) {
+        if (duel_088AA5F4(a, b) != 0) {
             duel_w_08914908 = 2;
         }
         return 0;
@@ -2214,10 +2215,11 @@ int duel_088AE1F8(DuelAct *a)
     return 0;
 }
 
-int duel_088AE314(DuelAct *a)
+/* b is not read here: it stays in a1 for duel_088AA5F4 */
+int duel_088AE314(DuelAct *a, int b)
 {
     if (a->zone < 5) {
-        return duel_088AA5F4(a);
+        return duel_088AA5F4(a, b);
     }
     return 1;
 }
@@ -2395,7 +2397,8 @@ int duel_088AE8CC(DuelAct *a)
     return 1;
 }
 
-int duel_088AE9A8(DuelAct *a)
+/* b is not read here: it stays in a1 for duel_088AA5F4 */
+int duel_088AE9A8(DuelAct *a, int b)
 {
     unsigned int t;
     unsigned int tz;
@@ -2404,7 +2407,7 @@ int duel_088AE9A8(DuelAct *a)
     int id;
 
     if (duel_w_08914908 != 10) {
-        if (duel_088AA5F4(a) != 0) {
+        if (duel_088AA5F4(a, b) != 0) {
             duel_w_08914908 = 10;
         }
         return 0;
@@ -2610,12 +2613,13 @@ int duel_088AF110(DuelAct *a, int b)
     return -1;
 }
 
-int duel_088AF180(DuelAct *a)
+/* b is not read here: it stays in a1 for duel_088AA5F4 */
+int duel_088AF180(DuelAct *a, int b)
 {
     if (a->kind == 2) {
         return 1;
     }
-    return duel_088AA5F4(a);
+    return duel_088AA5F4(a, b);
 }
 
 int duel_088AF1BC(DuelAct *a)
