@@ -32,7 +32,10 @@ void msgbox_open_buttons(void *heap, unsigned short *text, int buttons, int init
 int msgbox_update_plain(void **dl);
 int msgbox_update_buttons(void **dl);
 
-#ifdef NON_MATCHING /* o original grava m->kind antes dos testes e carrega o 2 em v0 (beql com o `li v0,1` do case 2 no atraso); o mwcc usa a3 para o 2 e põe a gravação no atraso do beq. Ternário, if/else, cast no switch e `case 0` não mudam isso */
+#ifdef NON_MATCHING /* 8 palavras alinhadas (36 por posição; com o switch eram 10 alinhadas, 11 por posição): o original carrega o 2 do teste em v0 (`li v0,2; beql s2,v0` com o `li v0,1`
+   do ramo no atraso) e depois `li a3,3` / `li a3,2`; o mwcc junta o 2 do teste com o do 4º argumento em a3. O if
+   aninhado (em vez do switch) acerta o atraso do jal de msgbox_open_plain. Sem efeito no 2: enum (tipo, flag, init),
+   tipos estreitos, helpers inline, switch aninhado em flag, 2U/2L; `type - 2 != 0` separa mas troca a instrução. */
 int msgbox_open(unsigned short *text, void *heap, int type, int flag)
 {
     MsgBox *m = &msgbox;
@@ -42,16 +45,14 @@ int msgbox_open(unsigned short *text, void *heap, int type, int flag)
     }
     memset(m, 0, 0x1E8);
     m->kind = msgbox_kind(type);
-    switch (type) {
-    default:
-        msgbox_open_plain(heap, text);
-        break;
-    case 1:
-        msgbox_open_buttons(heap, text, 1, 0);
-        break;
-    case 2:
+    if (type != 2) {
+        if (type != 1) {
+            msgbox_open_plain(heap, text);
+        } else {
+            msgbox_open_buttons(heap, text, 1, 0);
+        }
+    } else {
         msgbox_open_buttons(heap, text, 3, flag != 1 ? 2 : 3);
-        break;
     }
     msgbox_active = 1;
     se_play(0x621A);

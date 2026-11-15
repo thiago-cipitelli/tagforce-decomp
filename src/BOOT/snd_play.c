@@ -1,5 +1,4 @@
 // @range 0x0885FAA8-0x08860DA4
-// @asm 0x08860C88-0x08860DA4
 /* Sound library, playback: object reset, attaching to the per-kind lists, starting a sound (random
    or sequential variants, group data loading, SAS voices), the BGM slots (a new BGM suspends the
    current one, which resumes when it ends), voice clips, stopping with fade-out and the release
@@ -625,13 +624,15 @@ int snd_group_stop(int g, int fade)
 }
 
 /* -0x109 SE of channel 1 only, -0x108 voices, -0x107 SE, -0x106 BGM, -0x105 everything. */
-#ifdef NON_MATCHING /* one compare takes its operands in the other order */
+/* Forma que bate (rodada 33): o valor mascarado numa variável atribuída DENTRO da condição com vírgula; com a
+   expressão direta (ou `(id = ...) == val`) o mwcc põe `val` como primeiro operando do bne. */
 int snd_group_cmd(unsigned int cmd, int fade)
 {
     unsigned int val;
     unsigned int mask;
     SndObj *cur;
     SndObj *o;
+    unsigned int id;
 
     if (cmd < 0xFFFFFEF0) {
         return 0;
@@ -667,10 +668,9 @@ int snd_group_cmd(unsigned int cmd, int fade)
         }
         cur = o;
         o = snd_list_next(&snd_active, o);
-        if ((int)val < 0 || (cur->id & mask) == val) {
+        if ((int)val < 0 || (id = cur->id & mask, id == val)) {
             snd_stop_fade((unsigned int)cur, fade);
         }
     }
     return 1;
 }
-#endif

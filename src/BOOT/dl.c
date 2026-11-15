@@ -1,7 +1,6 @@
 // @range 0x08839F50-0x0883CEB0
-// @asm 0x0883A4E4-0x0883A6CC
 // @data 0x088EE050-0x088EE0A4
-// @rodata 0x088753F4-0x0887544C
+// @rodata 0x0887539C-0x0887544C
 /* GE display lists: a double-buffered heap with a jump table of 16 layers at the start of each
    half (a layer's list is spliced in by a JUMP from the previous one), and one function per GE
    state or primitive that builds the command words on the stack and appends them with dl_push
@@ -226,7 +225,8 @@ unsigned int *dl_alloc_inline(unsigned int **list, int bytes)
 #endif
 }
 
-#ifdef NON_MATCHING /* 2 palavras (eram 9): sy/sx em locais de bloco, y + h antes do sy << 10 e o -1 de y só depois do x; resta a ordem dos dois addiu -1 (x antes de y no original), que nenhuma forma troca */
+/* Forma que bate (rodada 33, busca conjunta de forma x ordem das instruções): sx antes de sy, a borda direita
+   num temporário próprio (`right`) e o -1 de x numa instrução separada, y numa expressão só. */
 unsigned int *dl_enable(unsigned int *list, int state)
 {
     SysConf *c = &sys_conf;
@@ -244,12 +244,16 @@ unsigned int *dl_enable(unsigned int *list, int state)
         break;
     case 2:
         {
-            int sy = c->scissor_y;
-            int sx = c->scissor_x;
-            y = sy + c->scissor_h;
+            int sy;
+            int sx;
+            int right;
+
+            sx = c->scissor_x;
+            sy = c->scissor_y;
             cmd[3] = sy << 10;
-            x = sx + c->scissor_w - 1;
-            y = (y - 1) << 10;
+            right = sx + c->scissor_w;
+            x = right - 1;
+            y = (sy + c->scissor_h - 1) << 10;
             cmd[0] = cmd[3] | 0xD4000000 | sx;
         }
         cmd[1] = y | 0xD5000000 | x;
@@ -324,7 +328,6 @@ unsigned int *dl_enable(unsigned int *list, int state)
     }
     return list;
 }
-#endif
 
 unsigned int *dl_disable(unsigned int *list, int state)
 {
