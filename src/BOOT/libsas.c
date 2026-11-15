@@ -1,6 +1,6 @@
 // @range 0x08862D28-0x088634EC
-// @asm 0x08862D28-0x088634A8
-// @asm 0x088634C4-0x088634EC
+// @asm 0x08862D28-0x08862DE4
+// @gcc 0x08862DE4-0x088634EC
 /* Sony's libsas (user side of the SAS hardware mixer): sceSas* wrappers that check the library was
    initialised and pass the shared SasCore buffer (D_08C1D940, 64-byte aligned) to the __sceSas*
    system calls. Compiled with GCC; every wrapper reads the init flag (D_08C1D900) and the core
@@ -39,7 +39,7 @@ int snd_voice_set_pitch(int voice, int pitch);
 int snd_voice_set_simple_adsr(int voice, int adsr1, int adsr2);
 int snd_voice_set_volume(int voice, int l, int r, int el, int er);
 
-#ifdef __MWERKS__
+#if defined(__MWERKS__) || defined(__mips__) /* PSP (mwcc and the SDK's GCC, libsas_gcc.c): the original objects */
 extern int D_08C1D900;                 /* initialised flag */
 extern char D_08C1D940[];              /* SasCore work area */
 #define sas_ready D_08C1D900
@@ -226,22 +226,13 @@ int snd_fx_set_param(int delay, int feedback)
 #endif
 
 /* sceSasInit with the default grain of 256 samples */
-#ifdef __MWERKS__
-asm int snd_sas_open_default(void)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal snd_sas_open
-    addiu a0, zero, 256
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: libsas_gcc.c */
 int snd_sas_open_default(void)
 {
     return snd_sas_open(0x100);
 }
+#else
+int snd_sas_open_default(void);
 #endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: the init flag through a split lui/lo */

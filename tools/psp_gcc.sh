@@ -47,5 +47,14 @@ shoff, = struct.unpack_from("<I", d, 0x20); shnum, = struct.unpack_from("<H", d,
 for i in range(shnum):
     o = shoff + i * 40 + 8
     struct.pack_into("<I", d, o, struct.unpack_from("<I", d, o)[0] & ~0x30)
+# Every function the object defines becomes a weak definition: only the functions of the `@gcc` ranges are linked
+# from it, the others are defined by the mwcc file (asm) and must win. `#pragma weak` in the source does the same,
+# but at -O3 a weak function is not inlined, which changes the code of its callers.
+for i in range(shnum):
+    typ, _, _, off, size, link = struct.unpack_from("<6I", d, shoff + i * 40 + 4)
+    if typ == 2:
+        for j in range(off, off + size, 16):
+            info = d[j + 12]; shndx, = struct.unpack_from("<H", d, j + 14)
+            if info == 0x12 and shndx: d[j + 12] = 0x22
 open(sys.argv[1], "wb").write(d)
 PY

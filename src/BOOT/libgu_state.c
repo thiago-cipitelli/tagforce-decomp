@@ -1,5 +1,30 @@
 // @range 0x08805EC4-0x08807070
-// @asm 0x08805EC4-0x08807070
+// @asm 0x08805EC4-0x0880631C
+// @gcc 0x0880631C-0x08806378
+// @asm 0x08806378-0x08806460
+// @gcc 0x08806460-0x088064BC
+// @asm 0x088064BC-0x08806564
+// @gcc 0x08806564-0x0880661C
+// @asm 0x0880661C-0x0880665C
+// @gcc 0x0880665C-0x08806688
+// @asm 0x08806688-0x088066F4
+// @gcc 0x088066F4-0x088067E4
+// @asm 0x088067E4-0x088068EC
+// @gcc 0x088068EC-0x088069C8
+// @asm 0x088069C8-0x088069F0
+// @gcc 0x088069F0-0x08806A1C
+// @asm 0x08806A1C-0x08806A74
+// @gcc 0x08806A74-0x08806B1C
+// @asm 0x08806B1C-0x08806BE0
+// @gcc 0x08806BE0-0x08806C00
+// @asm 0x08806C00-0x08806C2C
+// @gcc 0x08806C2C-0x08806C68
+// @asm 0x08806C68-0x08806D84
+// @gcc 0x08806D84-0x08806E08
+// @asm 0x08806E08-0x08806E48
+// @gcc 0x08806E48-0x08806F14
+// @asm 0x08806F14-0x08807034
+// @gcc 0x08807034-0x08807070
 /* libgu of the Sony SDK (GCC; names from the export NIDs): primitives, lighting, texture,
    blending and the other state commands. Every function reaches the current context through the
    libgu globals (%hi/%lo), so all of them stay in the split asm; the C below (NON_MATCHING) writes

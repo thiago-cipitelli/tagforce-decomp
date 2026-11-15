@@ -1,6 +1,9 @@
 // @range 0x088634EC-0x08865260
-// @asm 0x088634EC-0x088641A4
-// @asm 0x088641DC-0x08865260
+// @asm 0x088634EC-0x08863A6C
+// @gcc 0x08863A6C-0x08863AA0
+// @asm 0x08863AA0-0x08864100
+// @gcc 0x08864100-0x08864254
+// @asm 0x08864254-0x08865260
 /* libwave (SDK sample library, "SceWaveMain"): 8 software channels of VAG ADPCM or 16-bit PCM
    (mono or stereo, one-shot, looping, or streamed through a callback) mixed by a thread into one
    448-sample stereo hardware channel, plus 4 directly driven hardware channels (wave_set_sample,
@@ -68,7 +71,7 @@ void wave_ch_copy_pcm(int ch, unsigned char *pcm);
 void wave_ch_mix(int ch, short *out, short *pcm);
 int wave_ch_is_playing(unsigned int ch);
 
-#ifdef __MWERKS__
+#if defined(__MWERKS__) || defined(__mips__) /* PSP (mwcc and the SDK's GCC, libwave_gcc.c): the original objects */
 extern int D_08C1E780;                 /* 0 none, 1 initialised, 3 thread running */
 extern int D_08C1E784;                 /* thread stop request */
 extern unsigned char D_08C1E788[];     /* decoded block, 0x70 bytes */
@@ -509,26 +512,7 @@ int wave_ch_resume(unsigned int ch)
 }
 #endif
 
-#ifdef __MWERKS__
-asm void wave_ch_stop_all(void)
-{
-    addiu sp, sp, -16
-    sw ra, 4(sp)
-    sw s0, 0(sp)
-    move s0, zero
-    move a0, s0
-L_088641B8:
-    jal wave_ch_stop
-    addiu s0, s0, 1
-    slti v0, s0, 8
-    bnez v0, L_088641B8
-    move a0, s0
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: libwave_gcc.c */
 void wave_ch_stop_all(void)
 {
     int ch;
@@ -537,6 +521,8 @@ void wave_ch_stop_all(void)
         wave_ch_stop(ch);
     }
 }
+#else
+void wave_ch_stop_all(void);
 #endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: the library state through split lui/lo */

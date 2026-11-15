@@ -1,4 +1,6 @@
 // @range 0x0881F6E4-0x0881FFB0
+// @gcc 0x0881F914-0x0881F94C
+// @gcc 0x0881F980-0x0881F9F0
 /* Sony's libdeflt: gzip container (RFC 1952) and raw deflate decoder (RFC 1951). The gzip helpers are
    GCC-compiled C and the decoder is hand-written (one routine with local subroutines called through
    jal/bltzal and the fixed-code tables at D_08874F00), so all of them stay whole `asm` functions here;
@@ -490,31 +492,15 @@ int gzip_get_info(const void *buf, const void **extra, const char **name, const 
 #endif
 
 /* start of the compressed data, 0 on a bad header */
-#ifdef __MWERKS__
-asm const void *gzip_get_data(const void *buf)
-{
-    addiu sp, sp, -32
-    move a1, zero
-    move a2, zero
-    move a3, zero
-    move t0, zero
-    sw ra, 16(sp)
-    jal gzip_get_info
-    move t1, sp
-    slti a0, v0, 0
-    lw v0, 0(sp)
-    lw ra, 16(sp)
-    movn v0, zero, a0
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+#ifndef __MWERKS__ /* PSP: gzip_gcc.c */
 const void *gzip_get_data(const void *buf)
 {
     const void *p;
 
     return gzip_get_info(buf, 0, 0, 0, 0, &p) < 0 ? 0 : p;
 }
+#else
+const void *gzip_get_data(const void *buf);
 #endif
 
 /* 1 when buf starts with the gzip magic 1F 8B */
@@ -547,59 +533,27 @@ int is_gzip(const void *buf)
 #endif
 
 /* FNAME of the header, 0 when absent or on a bad header */
-#ifdef __MWERKS__
-asm const char *gzip_get_name(const void *buf)
-{
-    addiu sp, sp, -32
-    move a1, zero
-    move a2, sp
-    move a3, zero
-    move t0, zero
-    sw ra, 16(sp)
-    jal gzip_get_info
-    move t1, zero
-    slti a0, v0, 0
-    lw v0, 0(sp)
-    lw ra, 16(sp)
-    movn v0, zero, a0
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+#ifndef __MWERKS__ /* PSP: gzip_gcc.c */
 const char *gzip_get_name(const void *buf)
 {
     const char *p;
 
     return gzip_get_info(buf, 0, &p, 0, 0, 0) < 0 ? 0 : p;
 }
+#else
+const char *gzip_get_name(const void *buf);
 #endif
 
 /* FCOMMENT of the header, 0 when absent or on a bad header */
-#ifdef __MWERKS__
-asm const char *gzip_get_comment(const void *buf)
-{
-    addiu sp, sp, -32
-    move a1, zero
-    move a2, zero
-    move a3, sp
-    move t0, zero
-    sw ra, 16(sp)
-    jal gzip_get_info
-    move t1, zero
-    slti a0, v0, 0
-    lw v0, 0(sp)
-    lw ra, 16(sp)
-    movn v0, zero, a0
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+#ifndef __MWERKS__ /* PSP: gzip_gcc.c */
 const char *gzip_get_comment(const void *buf)
 {
     const char *p;
 
     return gzip_get_info(buf, 0, 0, &p, 0, 0) < 0 ? 0 : p;
 }
+#else
+const char *gzip_get_comment(const void *buf);
 #endif
 
 /* Decodes the raw deflate stream at src into dst (at most dst_len bytes); returns the size or an
