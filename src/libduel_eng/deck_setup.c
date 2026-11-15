@@ -1,5 +1,4 @@
 // @range 0x088E7518-0x088E80CC
-// @asm 0x088E79F0-0x088E7D64
 // @data 0x08911D88-0x08911DA0
 /* Deck setup from the recipes (uids, the list of every card of the duel), saving and restoring the
    piles of a player, removing a card from a zone and putting it in a zone. */
@@ -137,7 +136,6 @@ void duel_deck_build_uids(unsigned int p, DuelDecks *d)
     duel.players[p & 1].unk4 = k;
 }
 
-#ifdef NON_MATCHING /* 126 palavras, 1 linha de estrutura (rodada 28): o ponteiro u = (unsigned int)&t + 6 reproduz o sp+24 e +6 em dois passos; falta o endereço de duel.players[q].n_hand reaproveitado dentro do 1º laço de restauração (o 219 refaz t3+12 no pré-cabeçalho) e com ele a cor a1/v1 de s e do endereço */
 /* Swap the hand, deck and zone C of player p with the ones saved in the block. */
 void duel_piles_swap(unsigned int p, DuelDecks *d)
 {
@@ -161,10 +159,10 @@ void duel_piles_swap(unsigned int p, DuelDecks *d)
     }
     s = &d->save[p];
     u = s->uid;
-    duel.players[q].n_hand = s->n_hand;
+    *(unsigned int *)((char *)&duel.players[0].n_hand + q * sizeof(DuelPlayer)) = s->n_hand;
     duel.players[q].n_d = s->n_d;
     duel.players[q].n_18 = s->n_c;
-    for (i = 0; i < duel.players[q].n_hand; i++) {
+    for (i = 0; i < *(unsigned int *)((char *)&duel.players[0].n_hand + q * sizeof(DuelPlayer)); i++) {
         unsigned int uid = *u++;
 
         duel.players[q].hand[i].id = duel.list[uid].id;
@@ -187,7 +185,6 @@ void duel_piles_swap(unsigned int p, DuelDecks *d)
     }
     memcpy(s, &t, 0x1B8);
 }
-#endif
 
 void duel_slot_clear(DuelSlot *s)
 {

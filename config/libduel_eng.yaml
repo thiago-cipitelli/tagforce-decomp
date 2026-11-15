@@ -201,8 +201,6 @@ segments:
       - [0xE1FE4, c, card_find]
       - [0xE29F8, c, piles]
       - [0xE3578, c, deck_setup]
-      - [0xE3A50, asm, deck_setup_asm_088E79F0]
-      - [0xE3DC4, c, deck_setup]
       - [0xE412C, c, field_active]
       - [0xE4D54, c, field_find]
       - [0xE5544, c, field_count]
