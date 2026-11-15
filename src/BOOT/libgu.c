@@ -8,8 +8,8 @@
 // @asm 0x08805854-0x088058FC
 // @gcc 0x088058FC-0x08805A1C
 // @asm 0x08805A1C-0x08805ACC
-// @gcc 0x08805ACC-0x08805AE8
-// @asm 0x08805AE8-0x08805D28
+// @gcc 0x08805ACC-0x08805B54
+// @asm 0x08805B54-0x08805D28
 // @gcc 0x08805D28-0x08805EC4
 /* libgu of the Sony SDK (GCC; names from the export NIDs): display-list contexts, frame/draw/depth
    buffers, the state bits and the first state commands. Nearly every function reaches the libgu
@@ -634,10 +634,10 @@ int sceGuDisplay(int on)
 {
     int old;
 
-    if (on) {
-        sceDisplaySetFrameBuf((void *)(gu.edram + gu.disp_fbp), gu.fbw, gu.psm, 1);
-    } else {
+    if (!on) {
         sceDisplaySetFrameBuf(0, 0, 0, 1);
+    } else {
+        sceDisplaySetFrameBuf((void *)(gu.edram + gu.disp_fbp), gu.fbw, gu.psm, 1);
     }
     old = gu.display_on;
     gu.display_on = on;

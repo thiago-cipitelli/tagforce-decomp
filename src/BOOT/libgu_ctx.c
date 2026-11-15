@@ -6,8 +6,10 @@
 // @gcc 0x08807F94-0x08807FD8
 // @gcc 0x08808058-0x08808084
 // @gcc 0x08808100-0x08808130
-// @asm 0x08808130-0x0880874C
-// @gcc 0x0880874C-0x08808790
+// @asm 0x08808130-0x0880823C
+// @gcc 0x0880823C-0x08808294
+// @asm 0x08808294-0x088086F0
+// @gcc 0x088086F0-0x08808790
 /* libgu of the Sony SDK (GCC), context level: the builders that write into a given GuList (state
    enables, matrices, sprites, clear, depth range, lights, ...), the GE signal/finish handlers, the
    context reset, the stall update and the sceGuDebugPrint/Flush text overlay. The builders do not
@@ -1377,14 +1379,14 @@ void gu_init_contexts(void)
 /* moves the GE stall address to the write position of the main list */
 int gu_update_stall(void)
 {
-    if (gu.cid != 0 || gu.list->obj_depth != 0) {
-        return 0;
-    }
-    {
+    if (gu.cid == 0 && gu.list->obj_depth == 0) {
         int r = sceGeListUpdateStallAddr(gu.ge_list, gu.list->cur);
 
-        return r < 0 ? r : 0;
+        if (r < 0) {
+            return r;
+        }
     }
+    return 0;
 }
 
 /* sceGuDebugPrint/Flush: up to 1024 characters per buffer, drawn with the 8x8 font at 0x08872FF0
@@ -1520,7 +1522,7 @@ void gu_debug_set_draw(int psm, unsigned int fbp, int fbw)
 }
 
 /* starts the overlay without printing */
-int gu_debug_open(void)
+void gu_debug_open(void)
 {
     gu_debug_edram = (unsigned int)sceGeEdramGetAddr();
     gu_debug_buf = 0;
