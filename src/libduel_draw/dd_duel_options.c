@@ -355,8 +355,8 @@ void *opt_draw(void *list)
     short n = 0;
     short top[4];
     short rows[4] = { 1, 1, 4, 5 };
+    unsigned char found = 0;
     unsigned char cur = c->cursor;
-    int found = 0;
     short gx[4];
     short gy[4];
     int g, i, k;
@@ -412,9 +412,9 @@ void *opt_draw(void *list)
         else
             top[g] = top[g - 1] + rows[g - 1];
         gx[g] = 131;
-        gy[g] = g * 6 + top[g] * 17 + 34;
+        gy[g] = top[g] * 17 + 34 + g * 6;
         if (cfg_get_language() != 0)
-            gy[g] = g * 6 + top[g] * 17 + 42;
+            gy[g] = top[g] * 17 + 42 + g * 6;
     }
     for (; first < 4; first++) {
         pieces = rows[first] == 1 ? 3 : 9;
@@ -430,8 +430,8 @@ void *opt_draw(void *list)
                 x = spr[piece].u + 131;
                 break;
             case 1:
-                rw = 218 - (spr[0].w + spr[2].w);
                 x = spr[piece].u + 131;
+                rw = 218 - (spr[0].w + spr[2].w);
                 break;
             case 2:
                 rw = spr[piece].w;
@@ -459,17 +459,21 @@ void *opt_draw(void *list)
         if (rows[first] > 1) {
             y = gy[first] + 4;
             for (i = 0; i < 3; i++) {
-                u = spr[(unsigned int)(9 + i)].u;
+                int tu = spr[(unsigned int)(9 + i)].u;
+                int bx;
+
                 v = tab[first] * 16 + spr[(unsigned int)(9 + i)].v;
                 list = opt_tex(list, c->opt_gim);
                 switch (i % 3) {
                 case 0:
                     rw = spr[(unsigned int)(9 + i)].w;
-                    x = gx[first] + 4 + u;
+                    bx = gx[first] + 4;
+                    x = bx + tu;
                     break;
                 case 1:
+                    bx = gx[first] + 4;
+                    x = bx + tu;
                     rw = 209 - (spr[9].w + spr[11].w);
-                    x = gx[first] + 4 + u;
                     break;
                 case 2:
                     rw = spr[(unsigned int)(9 + i)].w;
@@ -478,18 +482,20 @@ void *opt_draw(void *list)
                 }
                 rh = spr[(unsigned int)(9 + i)].h;
                 list = draw_set_offsets(list, spr[(unsigned int)(9 + i)].w, spr[(unsigned int)(9 + i)].h, rw, rh);
-                list = draw_sprite(list, x, y, 0, u, v, 0, 0);
+                list = draw_sprite(list, x, y, 0, (short)tu, v, 0, 0);
             }
         }
         /* cursor bar */
         if (c->drawn && first == sel_group) {
+            u = spr[12].u;
+            v = spr[12].v;
             x = gx[first] + 4;
             y = gy[first] + 4 + sel_row * 17;
             rw = 209;
             rh = 14;
             list = opt_tex(list, c->panel_gim);
             list = draw_set_offsets(list, spr[12].w, spr[12].h, rw, rh);
-            list = draw_sprite(list, x, y, 0, spr[12].u, spr[12].v, 0, 0);
+            list = draw_sprite(list, x, y, 0, u, v, 0, 0);
         }
         for (i = 0; i < rows[first]; i++) {
             if (first == sel_group && i == sel_row)
