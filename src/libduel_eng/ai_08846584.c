@@ -44,35 +44,38 @@ void duel_0884DAF0(int a, int b);
 
 /* act[k].pad14: 0 base ATK, 1 base DEF, 2 ATK, 3 DEF (>= 0), 4 attribute, 5 level, 6/7 destroyed flags (duel_088482F8) */
 
-#ifdef NON_MATCHING /* 264 palavras (rodada 25): estrutura idêntica ao asm (fd.py --struct 0 linhas); só coloração: ap/k/st/pk ficam em s3/s5/s2/s4 no original e em s2/s4/s3/s5 aqui (ordem e tipo das declarações não resolvem: hill.py chega a 240) */
+#ifdef NON_MATCHING /* 264 palavras (rodada 25): estrutura idêntica ao asm (fd.py --struct 0 linhas); só coloração: ap/k/st/pk ficam em s3/s5/s2/s4 no original e em s2/s4/s3/s5 aqui (ordem e tipo das declarações não resolvem: hill.py chega a 240).
+   Rodada 35: o último laço conta em i (não em k) e, com esta ordem das declarações, k e pk ficam certos (s5/s4): 253 palavras; falta ap/st
+   (s3/s2) e a permutação de add/n/h no trecho do atacante; cópias dos parâmetros com cast redundante e contador próprio no 1º laço, 240
+   sorteios + 600 passos de subida (build/tmp/mA/ehill.py), não passam de 253 */
 /* mode: 0 simulation, 1 real battle, >= 2 also shows the cards that apply; view: take the stats from duel_w_08913CF4 */
 void duel_08846584(int mode, int view)
 {
     unsigned int ap = duel_special.player[0];   /* attacker */
     unsigned int tp = duel_special.player[1];   /* attacked player */
-    unsigned int pk;
-    int zk;
-    int k;
-    int i;
-    int add;                           /* ATK modifier */
-    int add2;                          /* DEF modifier */
-    int n;                             /* halvings of the attacker's modifier */
     int h;
-    int n2;
-    int once;
+    int add2;                          /* DEF modifier */
+    int k;
     int h2;
-    int nul;
-    int nul2;
-    int sign;
-    int c;
-    int r;
-    int x;
-    int id;
     unsigned int e;
     unsigned int ep;
-    unsigned int ez;
-    DuelEffect *ef;
+    unsigned int pk;
+    int add;                           /* ATK modifier */
     DuelSpecAct *a;
+    unsigned int ez;
+    int c;
+    int x;
+    int id;
+    int n;                             /* halvings of the attacker's modifier */
+    DuelEffect *ef;
+    int once;
+    int i;
+    int nul2;
+    int zk;
+    int r;
+    int n2;
+    int nul;
+    int sign;
     DuelSpecAct *aa = &duel_special.act[ap];
     DuelSpecAct *ta = &duel_special.act[1 - ap];
     DuelStats st[2];                   /* [ap] attacker, [1 - ap] target */
@@ -375,13 +378,13 @@ void duel_08846584(int mode, int view)
     if (duel_special.unk8 == 0 && st[(1 - (int)ap)].atk >= 1300 && mode != 0) {
         duel_08846498(tp, duel_special.zone[1], 0x150A, 1);
     }
-    for (k = 0; k < 2; k++) {
-        duel_special.act[k].pad14[0] = st[k].batk < 0 ? 0 : st[k].batk;
-        duel_special.act[k].pad14[1] = st[k].bdef < 0 ? 0 : st[k].bdef;
-        duel_special.act[k].pad14[2] = st[k].atk < 0 ? 0 : st[k].atk;
-        duel_special.act[k].pad14[3] = st[k].def < 0 ? 0 : st[k].def;
-        if (mode != 0 && view == 0 && duel_special.act[k].unk0 == duel_view_player) {
-            duel_0884DAF0(0, st[k].atk);
+    for (i = 0; i < 2; i++) {
+        duel_special.act[i].pad14[0] = st[i].batk < 0 ? 0 : st[i].batk;
+        duel_special.act[i].pad14[1] = st[i].bdef < 0 ? 0 : st[i].bdef;
+        duel_special.act[i].pad14[2] = st[i].atk < 0 ? 0 : st[i].atk;
+        duel_special.act[i].pad14[3] = st[i].def < 0 ? 0 : st[i].def;
+        if (mode != 0 && view == 0 && duel_special.act[i].unk0 == duel_view_player) {
+            duel_0884DAF0(0, st[i].atk);
         }
     }
 }

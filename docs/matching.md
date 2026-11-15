@@ -3963,3 +3963,25 @@ Quarta passada nas 12 entradas fora de libduel_eng: 4 batendo (`gim_walk`, `efs_
   `font_glyph_cache` (500 amostras com cast redundante/cópia de `img`/contador reaproveitado: 52),
   `menu_layout` (700 amostras de identidade x ordem x forma dos laços: 67), `dd_fx_shatter_update` (só a bateria
   de estado da unidade: sem efeito). A bateria de funções anteriores (`tu.py`) não muda nenhuma das 6 dos gmodules.
+
+### Rodada 35 (`mA`), segunda perna (depois do merge do `mB`)
+
+- **`duel_ai_sum_088239EC` bate (810 -> 0).** O gatilho sem código do `mB` (`else { ok(a); }` num `if` de um
+  `case` interno; a varredura "um `else` em cada `if`" liga o modo em 2 de 15 posições, visível pelo TAMANHO: 3392
+  -> 3492 de 3500) serviu para enxergar o resto: com o modo ligado a distância alinhada cai de 174 para 152 e o que
+  sobra são diferenças de forma e de LÓGICA, cada uma local. No fim o gatilho de verdade era outro, já conhecido da
+  rodada 32: `ok = a->atk_id == a->id && !((duel_h_08914A18 & 0x20) != 0);` (valor de um `&&` atribuído) no caso
+  0x190A; com ele o `else` artificial sai e a função continua batendo. Correções do rascunho:
+  `duel_h_08914A1A`/`duel_b_08914A1D` são `a->atk_id`/`a->count` (o original lê pelo ponteiro, `lhu 6(s0)`), o caso
+  0x190A compara `atk_id` com `a->id` e não com a constante, os ids passados a `duel_088C87A8`/`duel_088C77D4` são
+  os campos (o valor do `switch` já está em `a2`), `(a->player ^ f()) ? 0x8000 : 0`, `switch` de um `case` para
+  0x14D5, `v = (int)v > 0xFFFF ? 0xFFFF : v;`, `x > 0xFFFF ? 0xFFFF : x` (o `lui at,1; sltu at`) e `(unsigned
+  char)((a != b) + 1) << 4 | 2`. Receita para as outras do modo: ligar o modo com o gatilho artificial primeiro,
+  consertar o resto, e só então procurar o gatilho natural entre as formas que sobraram.
+- `duel_08846584` (264 -> 253): o último laço conta em `i` e, com a ordem de declarações gravada no arquivo, `k` e
+  `pk` ficam em `s5`/`s4`; `ap`/indução de `st` continuam trocados e o trecho do atacante tem uma permutação de
+  `add`/`n`/`h`. 240 sorteios (contadores x cópias de `mode`/`view` com cast redundante x ordem) e 600 passos de
+  subida (`build/tmp/mA/ehill.py`) não passam de 253.
+- `duel_0883449C`: `#pragma schedule off` dá `lw, lw, addu, andi, li, mult`; o original (`lw, andi, lw, addu | li,
+  mult`) é o que sairia com um fim de bloco entre a soma/`p & 1` e o produto. A chamada do inline sem código solta
+  entre as duas instruções não segura o bloco (12 formas); não há desvio ali para pendurar um `else`.
