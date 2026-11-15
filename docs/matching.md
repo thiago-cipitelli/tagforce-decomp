@@ -3671,8 +3671,10 @@ a passada final em ordem de índice invertida.
 
 O que muda o índice ou o custo sem mudar o código:
 
-- local com definição única por carga (`n = duel_req.arg`) segue a ordem das instruções; local com várias definições
-  (`banish`) ou definido por comparação (`p = (x & K) != 0`) segue a ordem das declarações;
+- em `duel_req_mill` os locais de definição única por carga (`n`, `how`, `show`) seguem a ordem das INSTRUÇÕES
+  (60 ordens de declaração não mexem neles, 80 ordens de atribuição sim), enquanto `banish` (várias definições) e
+  `p = (x & K) != 0` seguem a das declarações; no harness de 4 locais as cargas seguem a declaração, então o que
+  manda ali é o grau (quem é carregado depois cruza menos temporários), não o índice;
 - valor que vem de um **inline que devolve `unsigned`** (`p = req_player()`) passa para depois dos locais da função
   (em `duel_req_mill` troca `p`/`banish`); devolvendo `int` não muda;
 - número de usos DE MÁQUINA: usos que o mwcc dobra (`n + n - n`, `(void)n`, store duplicado) não contam. Em
