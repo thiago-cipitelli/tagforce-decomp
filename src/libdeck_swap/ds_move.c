@@ -1,5 +1,4 @@
 // @range 0x0880BE1C-0x0880D23C
-// @asm 0x0880C254-0x0880C648
 /* Moving a card between the main and the extra deck (Circle, undo with Triangle): the entry is
    taken out, flown along a curve from its slot to the slot it lands in and added to the other list;
    the position of a slot on screen, and the filter reset of a list (same source as libselect_card
@@ -120,7 +119,9 @@ int ds_flight_open(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 3 palavras: só o lado (switch em h.dst), que o original calcula com bnezl + li 1 no atraso e move zero (aqui beqzl); o slot_pos recebe k (não o pos u16 relido) */
+/* pane of a list; the enum type is what keeps the 0/1 if/else as a branch (an int becomes slti/xori) */
+typedef enum DsSide { DS_SIDE_LEFT, DS_SIDE_RIGHT } DsSide;
+
 /* Triangle: undoes the last move */
 int ds_input_move(void)
 {
@@ -129,7 +130,7 @@ int ds_input_move(void)
     int i;
     int k;
     int found;
-    int side;
+    DsSide side;
 
     if (ds_hist_pop((DsMove *)&h) == 0)
         return 0;
@@ -140,14 +141,10 @@ int ds_input_move(void)
     ds_flight->sel.src = h.dst;
     ds_flight->idx = h.pos;
     if (dsv.mode > 1) {
-        switch (h.dst) {
-        case 0:
-            side = 0;
-            break;
-        default:
-            side = 1;
-            break;
-        }
+        if (h.dst == 0)
+            side = DS_SIDE_LEFT;
+        else
+            side = DS_SIDE_RIGHT;
         ds_flight->sel.side = side;
         ds_flight->sel.dside = (ds_flight->sel.side + 1) & 1;
     } else {
@@ -201,7 +198,6 @@ int ds_input_move(void)
     ds_flight_take();
     return 1;
 }
-#endif
 
 /* state 2 */
 void ds_input_sort_menu(void)

@@ -32,8 +32,6 @@ segments:
       - [0x4CCC, c, dt_parts]
       - [0x7764, c, dt_lists]
       - [0x8E28, c, dt_move]
-      - [0x99CC, asm, dt_move_asm_0880D96C]
-      - [0x9EB4, c, dt_move]
       - [0xC10C, c, dt_input]
       - [0xDC18, c, dt_fmenu]
       - [0xF608, c, dt_filter]

@@ -1,5 +1,4 @@
 // @range 0x08815168-0x08816DD4
-// @asm 0x088158DC-0x08815CD0
 // @data 0x0881B51C-0x0881B528
 /* The keyboard frame update, moving a card between the panes (Circle, undo with Triangle): the
    entry is taken out, flown along a curve from its slot to the slot it lands in and added to the
@@ -283,7 +282,9 @@ int sc_cancel_request(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 3 palavras: só o lado (switch em h.dst), que o original calcula com bnezl + li 1 no atraso e move zero (aqui beqzl); o slot_pos recebe k (não o pos u16 relido) */
+/* pane of a list; the enum type is what keeps the 0/1 if/else as a branch (an int becomes slti/xori) */
+typedef enum ScSide { SC_SIDE_LEFT, SC_SIDE_RIGHT } ScSide;
+
 /* Triangle: undoes the last move */
 int sc_input_move(void)
 {
@@ -292,7 +293,7 @@ int sc_input_move(void)
     int i;
     int k;
     int found;
-    int side;
+    ScSide side;
 
     if (sc_hist_pop((ScMove *)&h) == 0)
         return 0;
@@ -303,14 +304,10 @@ int sc_input_move(void)
     sc_flight->sel.src = h.dst;
     sc_flight->idx = h.pos;
     if (scv.mode > 1) {
-        switch (h.dst) {
-        case 0:
-            side = 0;
-            break;
-        default:
-            side = 1;
-            break;
-        }
+        if (h.dst == 0)
+            side = SC_SIDE_LEFT;
+        else
+            side = SC_SIDE_RIGHT;
         sc_flight->sel.side = side;
         sc_flight->sel.dside = (sc_flight->sel.side + 1) & 1;
     } else {
@@ -364,7 +361,6 @@ int sc_input_move(void)
     sc_flight_take();
     return 1;
 }
-#endif
 
 /* state 2 */
 void sc_input_sort_menu(void)
