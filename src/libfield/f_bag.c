@@ -1,5 +1,4 @@
 // @range 0x0881CE68-0x0881EDC8
-// @asm 0x0881D180-0x0881D2B8
 // @rodata 0x0883904C-0x088392E0
 // @data 0x0883D3C0-0x0883D410
 /* The bag window of the field (field_bag): two tabs (items with their count, cards one row per
@@ -178,20 +177,26 @@ int fbag_update(int *picked)
     return 0;
 }
 
-#ifdef NON_MATCHING /* 54 palavras: o switch (state) com case 0/12 dá os testes do original (beq 12, beqzl 0); falta o corpo próprio "move v0,a0; b; nop" do case 12, um li v1,1 morto antes da escolha das abas e o "move a0,v0; sw a0" de cada list = f(list) (o original passa o valor por a0 antes de gravar na pilha) */
 void *fbag_draw(void *list)
 {
     FieldBag *b = &field_bag;
     FieldBagTab *tabs;
 
-    switch (field_bag.state) {
+    switch (b->state) {
     case 0:
-        return list;
     case 12:
         return list;
     }
     {
-        tabs = cfg_get_language() != 0 ? fbag_tabs_en : fbag_tabs_jp;
+        switch (cfg_get_language()) {
+        case 1:
+        default:
+            tabs = fbag_tabs_en;
+            break;
+        case 0:
+            tabs = fbag_tabs_jp;
+            break;
+        }
         menu_layout(&list, &b->menu);
         switch (b->tab) {
         case 0:
@@ -211,7 +216,6 @@ void *fbag_draw(void *list)
     }
     return list;
 }
-#endif
 
 void fbag_open(void)
 {

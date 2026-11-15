@@ -3231,3 +3231,48 @@ Quatro entradas do skip batendo (`duel_08807C7C` 154, `duel_088441D0` 12, `duel_
   extenso, `p` vindo de outra variável), `duel_08817598` (441: `id` em `s2` no original e em `s0` aqui; cópia de `id`
   e de `mask` por outra variável), `duel_08846584` (264: contador próprio em cada laço, `ap` por extenso),
   `duel_0883BB00` (25: slots de pilha), `duel_088451E8` (distância alinhada 145: `me` na pilha desde o início).
+## Rodada 32 (`fA`): reteste do skip de libfield, libstory e libtutorial (9 de 19 batendo)
+
+Bateram `fld_sprite_quad`, `pda_draw_mail_item`, `fbag_draw`, `fcal_draw_tabs`, `fbm_draw_marks`, `fld_chr_tex`
+(libfield), `st_mail_view_list`, `st_chr_dn_find`, `st_fld_setup_items` (libstory). Nenhuma era ordem de declaração:
+
+- **`case 0: case K: default:` mantém o teste de K** (`st_fld_setup_items`, `fld_chr_tex`). Sintoma: um `li v1,K;
+  beql x,v1,corpo+4` cujo alvo é o próprio corpo do `default` logo abaixo (o `beql` copia a 1ª instrução). Com
+  `case K: default:` o mwcc tira o teste e deixa só o `li` morto; com corpos iguais separados ele funde ou dobra as
+  constantes. Com um `case 0:` a mais no mesmo grupo o teste de K fica e o de 0 some. Era a família "outros builds
+  do mwcc" de `st_fld_setup_items` e as "~100 ordens de case" de `fld_chr_tex`.
+- **`if/else` que era `switch` com `default`** (`st_fld_setup_items`: cases 14, 26 e 27; `fbm_draw_marks`): quando o
+  desvio condicional vai para o 1º corpo e o outro caminho sai por `b` (`beql x,K,A+4; b B+4`), a fonte é
+  `switch (x) { case K: A; break; default: B; break; }`, mesmo com A e B iguais (case 27). Um `if (n > 0 && n < 4)
+  ... else ...` com `blezl; slti v0; bnezl; b; nop` é `switch (n) { case 1 ... 3: ...; break; default: ... }`.
+  `fbag_draw`: `switch (b->state) { case 0: case 12: return list; }` e o idioma por `switch (cfg_get_language())
+  { case 1: default: en; break; case 0: jp; break; }` (o `li v1,1` morto).
+- **Locais não inicializados copiados da pilha no prólogo** (`st_chr_dn_find`, `lw v0,92(sp); sw v0,60(sp)` e
+  `lw s7,76(sp)` antes de qualquer store): é uma **struct local** só preenchida em alguns caminhos (`struct { int
+  level, ..., id; } c;` gravada num `switch (mode)` de dois cases). O mwcc decompõe os campos em registradores e
+  carrega o valor inicial de cada um do slot da struct; a ordem dos campos é a dos deslocamentos de pilha.
+- **Ponteiro de saída que é índice** (`st_mail_view_list`): `st_mail_view[n].m.id = ...` com `n++` no fim, em vez de
+  `v = st_mail_view; ... v++`. O ponteiro passa a ser da redução de força, criado depois do de `st_mail_list[i]`, e
+  fica com o `$s` mais baixo. Sintoma: ponteiro de escrita e deslocamento `i * K` com `$s` trocados que nenhuma
+  ordem de declaração move. O id passado a `st_text_at` precisou de variável própria (`text = st_mail_find(...)[9]`).
+- **Calcular na própria variável** (rodada 31, de novo): `y0 = y + 0.5f * sh; y0 += 0.23f * sh;` (`fld_sprite_quad`:
+  a ordem de criação das constantes float 0,23 / -0,5 / 0,5 sai daí), `u = face / 9; face = face % 9;`
+  (`pda_draw_mail_item`: `face` fica no registrador do argumento).
+- **Gêmea já batendo no mesmo módulo** (`fcal_draw_tabs` = `pda_draw_tabs` de `f_pdapage.c`): helper inline do
+  destaque, `unsigned char alpha` com `alpha -= (unsigned char)(...)`, `step <= (int)(i * 2 + 2u)`. Os `move v0,sN`
+  em cadeia que pareciam `opt_propagation off` vinham dessa forma; a pragma não era necessária.
+- **Expressão por extenso em vez de local** (`fbm_draw_marks`): o deslocamento `0.5f * (float)((n - 1) * size)`
+  dentro da chamada (o mwcc iça); contador próprio no laço de contagem, `x` próprio na 2ª fileira, `p++, i++`.
+- **Tamanho errado esconde o fim da função**: `asm_try.sh` compara só o tamanho compilado. `fbag_draw`
+  ("28 bytes a menos"), `fcal_draw_tabs` e `st_chr_dn_find` tinham o rascunho mais curto que o original; conferir o
+  tamanho pelo `@asm`/símbolo seguinte antes de ler a contagem de palavras.
+- Ao promover função com `switch` denso, o `@rodata` tem de cobrir as tabelas (`s_story.c`: até 0x0881C484).
+- Sem forma (testado): `fld_bg_draw_sky` (18: na ordem natural dos stores dá 26; o original carrega 136 e 272 junto
+  do uso e só o 480 é içado; laço, helper inline, cópia de campo, tipos de constante, 17 pragmas), `st_chr_step_value`
+  (10: ~3300 variantes de identidade/tipo/helper), `tut_script_preload_faces` (6: 1760 formas de laço/condição,
+  `done` enum piora), `tut_event_hook` (15: 36 formas da cópia), `op_bgm` (4), `fld_chr_draw_sprite` (2: `case 0:
+  case 2: default:` não muda), `fbm_icon`/`fld_digits` (2), `st_scr_find_es`/`st_pl_card_bit_set` (2).
+- Scripts (`build/tmp/fA/`): `var.py` (variantes de uma função em paralelo, sem editar o fonte; ~50 por segundo),
+  `vs.py` (o mesmo com nota de ESTRUTURA, sem registradores), `vshow.py`/`vshape.py` (diff lado a lado / estrutural
+  de uma variante), `decl.py` (ordens aleatórias de declaração), `prag.py` (varredura de pragmas), `mcheck.sh`
+  (config + check só do módulo, 2 s).

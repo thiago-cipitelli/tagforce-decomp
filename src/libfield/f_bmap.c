@@ -1,5 +1,5 @@
 // @range 0x08818FFC-0x0881BA90
-// @asm 0x0881B268-0x0881B608
+// @asm 0x0881B59C-0x0881B608
 // @rodata 0x08838B90-0x0883904C
 // @data 0x0883C8B0-0x0883C9C8
 /* The campus map (field_bm, bm_*.ehp): the island with its 14 places, the cursor moving between them
@@ -1175,7 +1175,8 @@ void *fbm_draw_pic(void *list)
     return fld_draw_cell1(list, 0x173, 0xB6, p->x, p->y, 0x66, 0x53);
 }
 
-#ifdef NON_MATCHING /* lógica conferida. ~155 palavras (808 B contra 820): o original guarda field_bm na pilha, tem as cópias mortas "li s4,18" e "b; nop" (padrão do case) e outra alocação de registradores */
+/* the event marks of each map point, centred above it: up to 3 in one row, more in two rows. n as a switch with
+   a range, the row offset written in full in the call and the 2nd row's x in its own variable (round 32) */
 void *fbm_draw_marks(void *list)
 {
     int j;
@@ -1192,55 +1193,64 @@ void *fbm_draw_marks(void *list)
     FieldBm *m = &field_bm;
     int size;
     const FieldBmPt *p;
+    unsigned int b;
+    int x2;
 
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = gim_set_texture(list, m->parts);
     list = dl_blend_func(list, 0, 2, 3, 0, 0);
     list = dl_disable(list, 4);
-    for (i = 0, p = fbm_pos; (int)i < 14; i++, p++) {
+    for (i = 0, p = fbm_pos; (int)i < 14; p++, i++) {
         j = 0;
         if (m->blocked & (1 << i))
             continue;
-        size = i == m->cur ? 0x17 : 0x12;
+        if (i == m->cur)
+            size = 0x17;
+        else
+            size = 0x12;
         n = 0;
-        for (k = 0; (int)k < 7; k++) {
-            if (m->marks[i] & (1 << k))
+        for (b = 0; (int)b < 7; b++) {
+            if (m->marks[i] & (1 << b))
                 n++;
         }
         if (n == 0)
             continue;
-        if (n > 0 && n < 4) {
-            off = 0.5f * (float)((n - 1) * size);
+        switch (n) {
+        case 1 ... 3:
             for (k = 0, x = 0; (int)k < 7; k++) {
                 if (m->marks[i] & (1 << k)) {
-                    list = fbm_icon(list, k, p->x + (int)((float)(x - 4) - off), p->y + 8, size, size);
+                    list = fbm_icon(list, k, p->x + (int)((float)(x - 4) - 0.5f * (float)((n - 1) * size)), p->y + 8, size, size);
                     x += size - 1;
                     j++;
                 }
             }
-        } else {
+            break;
+        default:
             half = (int)ceilf_vfpu(0.5f * n);
             off = 0.5f * (float)((half - 1) * size);
             hs = 0.5f * (float)size;
             base = -4.0f - off;
-            for (k = 0, x = 0; (int)k < 7; k++) {
+            for (k = 0, x2 = 0; (int)k < 7; k++) {
                 if (m->marks[i] & (1 << k)) {
                     if (j < half) {
-                        dx = (int)((float)(x - 4) - off);
+                        dx = (int)((float)(x2 - 4) - off);
                         dy = 8;
                     } else {
                         dx = (int)(base + (hs + (float)((size - 1) * (j - half))));
                         dy = size + 6;
                     }
                     list = fbm_icon(list, k, p->x + dx, p->y + dy, size, size);
-                    x += size - 1;
+                    x2 += size - 1;
                     j++;
                 }
             }
+            break;
         }
     }
     return list;
 }
+
+#ifdef NON_MATCHING
 
 /* fbm_icon: the stack argument of fld_draw_cell is stored one instruction earlier */
 void *fbm_icon(void *list, int i, int x, int y, int w, int h)

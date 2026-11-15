@@ -1,5 +1,4 @@
 // @range 0x08822898-0x08824028
-// @asm 0x088234E4-0x08823764
 // @data 0x0883D504-0x0883D530
 /* Pieces of the PDA pages: calendar cells and their marks, the date text of a mail, the scroll
    bar and its arrows, a mail of the list and its header, the gauge of a mail and the input of the top
@@ -224,11 +223,11 @@ void *pda_draw_scrollbar(void *list, int x, int y, int h, int pos, int shown, in
 void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int sel);
 
 /* a mail of the list: frame, sender face, unread and important marks, header */
-#ifdef NON_MATCHING /* 13 palavras: o índice da face fica em t1 (o original usa t0, que vira o argumento u); ordem das decls, 0x1C8 + ..., variável separada para o 199 e laço com ponteiro não resolvem */
 void *pda_draw_mail_item(void *list, int x, int y, FieldPdaMail *m, int sel)
 {
     int i;
     int face;
+    int u;
 
     if (field_pda->gim == 0)
         return list;
@@ -249,7 +248,9 @@ void *pda_draw_mail_item(void *list, int x, int y, FieldPdaMail *m, int sel)
                 break;
             }
         }
-        list = draw_sprite(list, x + 7, y + 7, 0, face / 9 * 0x1C + 0x1C8, face % 9 * 0x1C, 0, 0);
+        u = face / 9;
+        face = face % 9;
+        list = draw_sprite(list, x + 7, y + 7, 0, u * 0x1C + 0x1C8, face * 0x1C, 0, 0);
         if (m->unread && (*gfx_get_state() >> 3 & 1)) {
             list = draw_set_offsets(list, 0x16, 0x0A, 0x16, 0x0A);
             list = draw_sprite(list, x + 5, y + 0x23, 0, 0xD7, 0x10, 0, 0);
@@ -262,7 +263,6 @@ void *pda_draw_mail_item(void *list, int x, int y, FieldPdaMail *m, int sel)
     }
     return pda_draw_mail_head(list, x + 0x28, y + 4, 0x9E, m, sel);
 }
-#endif
 
 /* header of a mail: subject, sender and date */
 void *pda_draw_mail_head(void *list, int x, int y, int w, FieldPdaMail *m, int sel)

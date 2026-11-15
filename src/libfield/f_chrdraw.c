@@ -1,8 +1,6 @@
 // @range 0x08805DF4-0x08806FC4
 // @rodata 0x08834DB4-0x08834E3C
 // @asm 0x08806200-0x08806390
-// @asm 0x08806CE0-0x08806DF0
-// @asm 0x08806E6C-0x08806ED4
 /* Drawing of the SD characters: the 3D model, the sprite sheets (sd_*_sla.gim) as billboards under
    an orthographic projection, the flat sprite; the vertex quad of a sprite cell and the kind of
    drawing each chara id uses. The large draw callbacks are still in asm. */
@@ -460,18 +458,24 @@ void *fld_chr_draw_flat(void *list, FieldChr *c)
     return list;
 }
 
-#ifdef NON_MATCHING /* 17 palavras (55 antes): os u/v por extenso em cada vértice e y1 declarado antes de y0; falta a ordem de criação das constantes (o original materializa 0,23, -0,5 e 0,5 nessa ordem) e os registradores de float que dependem dela */
 /* quad of the sprite cell (u, v, w, h) of a tw x th sheet centered on x and standing on y */
 void fld_sprite_quad(float x, FieldVtx *q, int tw, int th, int u, int v, int w, int h, float y,
                      unsigned int color)
 {
-    float sw = w / 64.0f;
-    float sh = h / 64.0f;
-    float y1 = y + -0.5f * sh;
-    float y0 = y + 0.5f * sh + 0.23f * sh;
-    float x1 = x + -0.5f * sw;
-    float x0 = x + 0.5f * sw;
+    float sw;
+    float sh;
+    float y0;
+    float y1;
+    float x1;
+    float x0;
 
+    sw = w / 64.0f;
+    sh = h / 64.0f;
+    y0 = y + 0.5f * sh;
+    y0 += 0.23f * sh;
+    y1 = y + -0.5f * sh;
+    x1 = x + -0.5f * sw;
+    x0 = x + 0.5f * sw;
     q[0].u = (float)(u + w) / tw;
     q[0].v = (float)v / th;
     q[0].x = x0;
@@ -497,7 +501,6 @@ void fld_sprite_quad(float x, FieldVtx *q, int tw, int th, int u, int v, int w, 
     q[1].z = 0.0f;
     q[0].z = 0.0f;
 }
-#endif
 
 /* 0 model, 1 sprite sheet, 2 flat sprite */
 int fld_chr_kind(int id)
@@ -520,7 +523,7 @@ int fld_chr_kind(int id)
     return r;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: o original testa 3, 2, 1 (o r = 3 do case 2 reaproveita o li v0,3 do teste do case 3); aqui o teste de 1 vem antes do de 2. Melhor das 24 ordens de case e das variantes com default: case 1: e return */
+/* 'case 0: case 1: default:' keeps the test of 1 (the idiom of st_fld_setup_items) */
 int fld_chr_tex(int id)
 {
     CharmapPos p;
@@ -528,12 +531,13 @@ int fld_chr_tex(int id)
 
     if (charmap_lookup2(id, &p) != 0) {
         switch (p.b) {
+        case 0:
+        case 1:
+        default:
+            r = 2;
+            break;
         case 2:
             r = 3;
-            break;
-        default:
-        case 1:
-            r = 2;
             break;
         case 3:
             r = 4;
@@ -544,7 +548,6 @@ int fld_chr_tex(int id)
     }
     return r;
 }
-#endif
 
 int fld_chr_size(int id)
 {

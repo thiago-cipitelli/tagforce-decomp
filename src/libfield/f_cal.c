@@ -1,5 +1,4 @@
 // @range 0x0881EDC8-0x0881FFEC
-// @asm 0x0881FCEC-0x0881FFEC
 // @rodata 0x088392E0-0x08839344
 /* The calendar of the field (field_pda, on the heap): opening, the slide in and out of the page,
    the per-state input and the frame, title bar and month tabs of the page. The pages themselves
@@ -407,19 +406,27 @@ void *func_0881FBCC(void *list, int x, int y, unsigned short *text)
 
 #define FCAL_XY(x, y) ((unsigned short)(x) | (unsigned short)(y) << 16)
 
+/* the highlight of the cursor's tab (as pda_tab_hl of f_pdapage.c: the value-returning inline helper gives the
+   original's bne + b) */
+static inline int fcal_tab_hl(FieldPda *p, int hl)
+{
+    if (p->leaving && (p->wait >> 1 & 1) == 1)
+        return hl;
+    return 1;
+}
+
 /* the month tabs; step < 12 while they unfold one after the other */
-#ifdef NON_MATCHING /* same shape; mwcc keeps step in $fp but spills unfolding/last differently */
 void *fcal_draw_tabs(void *list, int x, int y, int step)
 {
     int unfolding = 0;
-    int last = 5;
-    int cur;
-    int ty;
-    int i;
     unsigned short *text = 0;
-    int alpha;
+    int last = 5;
     int lit;
+    int i;
+    int cur;
     int d;
+    int ty;
+    unsigned char alpha;
 
     if (step < 12) {
         unfolding = 1;
@@ -434,26 +441,24 @@ void *fcal_draw_tabs(void *list, int x, int y, int step)
         lit = 0;
         cur = 0;
         if (!unfolding && field_pda->tab == i) {
-            if (!field_pda->leaving || field_pda->blink != 1)
-                lit = 1;
+            lit = fcal_tab_hl(field_pda, lit);
             cur = 1;
         }
         if (lit) {
-            list = pda_draw_tab(list, FCAL_XY(x, ty), FCAL_XY(0x16E, fcal_tab_v[i] * 24), 0xFF,
+            list = pda_draw_tab(list, FCAL_XY(x, y + 0x11 + i * 32), FCAL_XY(0x16E, fcal_tab_v[i] * 24), 0xFF,
                                  table_get_entry(fld_gim_get(5), fcal_tab_text[i]), 1, 1);
         } else {
             text = table_get_entry(fld_gim_get(5), fcal_tab_text[i]);
-            if (unfolding && i == last && i * 2 + 2 >= step) {
-                d = i * 2 + 2 - step;
+            if (unfolding && i == last && step <= (int)(i * 2 + 2u)) {
+                d = i * 2 + 2u - step;
                 if (d != 0) {
                     ty -= d * 32 / 2;
                     text = 0;
                 }
-                alpha = 0xFF - ((d + 1) * 0x60 & 0xFF) & 0xFF;
+                alpha -= (unsigned char)((d + 1) * 0x60);
             }
             list = pda_draw_tab(list, FCAL_XY(x, ty), FCAL_XY(0x16E, fcal_tab_v[i] * 24), alpha, text, 0, cur);
         }
     }
     return list;
 }
-#endif

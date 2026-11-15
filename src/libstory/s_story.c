@@ -1,6 +1,5 @@
 // @range 0x0880C9E4-0x0880DE58
-// @asm 0x0880D9A0-0x0880DE58
-// @rodata 0x0881C29C-0x0881C3F0
+// @rodata 0x0881C29C-0x0881C484
 /* The story mode (story_ctx): start (save areas handed to every subsystem, new game per story mode
    or resume after a sub-scene: duel, lesson, shop...), the per-frame dispatch of the story states
    (field, sub-screen modules, staff roll, ending save), the scene left at the end, and the first
@@ -765,7 +764,6 @@ void st_fld_setup_objs(void)
         sys_frame_wait();
 }
 
-#ifdef NON_MATCHING /* o original mantém blocos mortos e corpos iguais duplicados (cases 2, 14, 26 e 27) */
 /* field command 10: where the player appears in the room (by the room it came from) */
 void st_fld_setup_items(void)
 {
@@ -792,6 +790,7 @@ void st_fld_setup_items(void)
                 x = 8; z = 0x19; dir = 1;
             } else {
                 switch (st_free_state1()) {
+                case 0:
                 case 1:
                 default:
                     x = 0xB; z = 2; dir = 1;
@@ -843,10 +842,13 @@ void st_fld_setup_items(void)
             if (st_req_get_8() && dir == 6)
                 dir = 0xE;
             z = 6;
-            if (dir != z) {
-                x = 4; z = x; dir = 0;
-            } else {
+            switch (dir) {
+            case 6:
                 x = 0xB; dir = 3;
+                break;
+            default:
+                x = 4; z = x; dir = 0;
+                break;
             }
             break;
         case 15: x = 0x12; z = 2; dir = 3; break;
@@ -861,17 +863,23 @@ void st_fld_setup_items(void)
         case 24: x = 0x23; z = 0x2F; dir = 5; break;
         case 25: x = 0x10; z = 2; dir = 3; break;
         case 26:
-            if (st_pl_room_prev_get() == 0x1B) {
+            switch (st_pl_room_prev_get()) {
+            case 0x1B:
                 x = 10; z = 2; dir = 1;
-            } else {
+                break;
+            default:
                 x = 0x3E; z = 0x36; dir = 3;
+                break;
             }
             break;
         case 27:
-            if (st_pl_room_prev_get() == 0x1A) {
+            switch (st_pl_room_prev_get()) {
+            case 0x1A:
                 x = 0x37; z = 0x20; dir = 3;
-            } else {
+                break;
+            default:
                 x = 0x37; z = 0x20; dir = 3;
+                break;
             }
             break;
         }
@@ -884,4 +892,3 @@ void st_fld_setup_items(void)
     while (!fld_cmd_poll(10, &res))
         sys_frame_wait();
 }
-#endif
