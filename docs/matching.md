@@ -3702,8 +3702,9 @@ Scripts (em `build/tmp/lA/`): `show.py` (diff alinhado de UMA variante de um arq
 (`duel_088C6BC8`), `c*.py` (`duel_0880C15C`), `v*.py` (`duel_0883D798`), `w*.py` (`duel_0883449C`).
 ## Rodada 34 (`lC`): cópia apagada na cabeça do laço, alias de `const` no escalonador, callee `static` que mantém v0, arquivos que são uma unidade só
 
-Terceira passada nas 16 entradas de BOOT, libfield, libstory e libtutorial: 7 batendo (`st_scr_find_es`,
-`st_pl_card_bit_set`, `fbm_icon`, `fld_digits`, `font_layout_end`, `tut_event_hook`; `wsprintf` já batia). Nenhuma
+Terceira passada nas 16 entradas de BOOT, libfield, libstory e libtutorial: 8 batendo (`st_scr_find_es`,
+`st_pl_card_bit_set`, `fbm_icon`, `fld_digits`, `font_layout_end`, `tut_event_hook`, `fld_bg_draw_sky`; `wsprintf` já
+batia). Nenhuma
 era ordem de declaração. Mecanismos novos:
 
 - **Cópia `p = e` que vira movimento de um registrador para ele mesmo** (`st_scr_find_es`, `st_pl_card_bit_set`, 2 -> 0;
@@ -3744,13 +3745,13 @@ era ordem de declaração. Mecanismos novos:
   `font_glyph_vertices` com cast `(unsigned int)c->c`, que reproduz o load de `c->c` antes dos outros argumentos).
   Quando um callee "de outro arquivo" precisa ser `static` para o chamador bater, os arquivos entre os dois são
   uma unidade só: testar concatenando-os numa cópia (`cat a.c b.c > build/tmp/x.c` + `mwcc_check.py`).
-- Pista para `fld_bg_draw_sky` (18, não fechado): com `#pragma schedule off` a ordem natural dos stores dá a
-  coloração do original (cores em `v0`/`a0`, 136 e 272 em `v0` no ponto do uso). Com o escalonador ligado o mwcc
-  puxa TODOS os `li` do bloco para o intervalo depois de um load antes de colorir; no original os `li` de 136 e
-  272 não foram puxados para o intervalo de `top`/`mid` (o de 480 foi, e o de 272 foi para o intervalo de `bot`),
-  como se as fileiras 2 e 3 não estivessem no bloco básico dos loads de cima. Separadores sem código (rótulo,
-  bloco, `do {} while (0)`), helpers inline por vértice/fileira, variável `y`, `volatile` e 230 pragmas não criam
-  essa fronteira.
+- **`fld_bg_draw_sky` (18 -> 0, segunda perna, com o achado de `const` do `lB`)**: `field_bg_sky` declarada
+  `const` (só esta função a lê), stores na ordem natural (vértice a vértice: cor, x, y, z) e `mid = c[1]` como
+  instrução antes da 2ª fileira (não no inicializador). Com a tabela `const` as cargas das cores podem cruzar os
+  stores dos vértices, o escalonador usa `mid`/`bot` para preencher os intervalos de load e os `li` de 136 e 272
+  ficam junto do uso (antes eram puxados para cima e mudavam a coloração). A "ordem dos stores achada por busca
+  gulosa" (rodada 27) era o sintoma, não a causa. Ao tirar o `@asm`, as funções de `f_bgdraw.c` tiveram de voltar
+  à ordem de endereço (`fld_bg_draw_models/objs/shadow` estavam antes de `fld_bg_doors_update`).
 - Sem forma (testado nesta rodada): `msgbox_open` (o 2 do teste só deixa de ser compartilhado se o 4º argumento
   não for o literal 2; `flag != 1 ? type : 3` chega a 5 palavras com o tamanho certo, mas carrega `type`),
   `tut_script_preload_faces` (480 formas de laço x tipo x incremento: o `sltu` de `done` é criado antes do
