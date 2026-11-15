@@ -1,7 +1,6 @@
 // @range 0x0881BA64-0x0881E0CC
 // @data 0x0882F370-0x0882F384
 // @rodata 0x0882B2D4-0x0882B344
-// @asm 0x0881C0E0-0x0881C474
 /* End of the free duel setup: the password lobby (cards picked with libselect_card), the duel info
    panel, the vs CPU entry, the option list drawing, the character pick (libcharalist) and the entry
    message. */
@@ -285,7 +284,6 @@ void tfd_lobby_draw(void)
 
 /* input of the lobby: the five cards (two rows), then the buttons; returns the card chosen,
    1 to start, -2 to leave, -1 otherwise */
-#ifdef NON_MATCHING /* o original guarda cópias mortas após cada b??l (como cardinfo_draw); com Title *const t o resto bate */
 int tfd_lobby_handler(void)
 {
     Title *const t = &title;
@@ -336,10 +334,15 @@ int tfd_lobby_handler(void)
         }
     } else if (t->u87a == 0) {
         if (trig & region_pick_value(0)) {
-            if (t->u86c == 2)
-                t->u87a = 1;
-            else if (t->u86c == 1)
+            /* `case 1: return 1;` compared right after the li v0,1 of the dispatch: the branch goes straight
+               to the epilogue and turns on the dead copies after each b (no-cleanup mode) */
+            switch (t->u86c) {
+            case 1:
                 return 1;
+            case 2:
+                t->u87a = 1;
+                break;
+            }
         } else if (trig & region_pick_value(1)) {
             t->u87a = 1;
         } else if (rep & 0x20) {
@@ -365,7 +368,6 @@ int tfd_lobby_handler(void)
     }
     return -1;
 }
-#endif
 
 void *tfd_lobby_draw2(void *list)
 {
