@@ -59,7 +59,6 @@ int duel_088172F0(unsigned int p, int z);
 extern int duel_atk_zone;              /* 0x08913F2C */
 extern unsigned int duel_atk_tp;       /* 0x08913F14 */
 extern int duel_atk_tz;                /* 0x08913F30 */
-extern unsigned int duel_w_08913CF4;
 extern int duel_w_08913EDC[5];
 
 typedef struct DuelAiView {            /* 0x08913CF4, see ai_0880B448.c */
@@ -69,6 +68,9 @@ typedef struct DuelAiView {            /* 0x08913CF4, see ai_0880B448.c */
     int unk1d0[6];
     int dmg[5];                        /* +0x1E8 = duel_w_08913EDC */
 } DuelAiView;
+
+/* a struct on purpose (a store to a member does not make the mwcc reload the bitfields of a) */
+extern DuelAiView duel_w_08913CF4;
 extern DuelAct *duel_w_089147DC;       /* one past the card being resolved */
 
 extern unsigned int duel_turn_player;
@@ -628,14 +630,12 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
     int v;
     unsigned int f;
     DuelStats st;
-    unsigned int w;
 
     if (mask == 0) {
         return 1;
     }
-    w = ((unsigned char *)a)[2];
-    p = w & 1;
-    duel_w_08913CF4 = p ^ a->opp;
+    p = a->player;
+    duel_w_08913CF4.player = p ^ a->opp;
     switch (id) {
     case 0x14B2:
     case 0x1243:
@@ -812,8 +812,8 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
         }
         break;
     case 0x1690:
-        if (duel_turn_player != p && IN_MASK(p, w << 26 >> 27)) {
-            TARGET(p, w << 26 >> 27);
+        if (duel_turn_player != p && IN_MASK(p, a->zone)) {
+            TARGET(p, a->zone);
         }
         z = duel_08815950(a, p, 1, 1, -1);
         if (z >= 0) {
@@ -1006,7 +1006,7 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
         break;
     case 0x16CE:
         for (z = 0; z < 5; z++) {
-            if (IN_MASK(a->player, z) && (unsigned int)((DuelAiView *)&duel_w_08913CF4)->dmg[z] > 1 && duel_field_def(a->player, z) != 0) {
+            if (IN_MASK(a->player, z) && (unsigned int)duel_w_08913CF4.dmg[z] > 1 && duel_field_def(a->player, z) != 0) {
                 TARGET(a->player, z);
             }
         }
@@ -1072,7 +1072,7 @@ void duel_08818C34(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p,
     int z;
     int b;
 
-    duel_w_08913CF4 = p;
+    duel_w_08913CF4.player = p;
     duel_ai_player = p;
     switch (id) {
     case 0x1927:
@@ -1296,7 +1296,7 @@ void duel_0881956C(unsigned int p, int id, int (*fn)(unsigned int q, int z, int 
     int c;
     unsigned int q;
 
-    duel_w_08913CF4 = p;
+    duel_w_08913CF4.player = p;
     duel_ai_player = p;
     mask = duel_088194D0(fn);
     switch (id) {
@@ -1447,7 +1447,7 @@ void duel_08819B94(unsigned int p)
     int id2;
     int id3;
 
-    duel_w_08913CF4 = p;
+    duel_w_08913CF4.player = p;
     for (i = 0; i < duel.players[p & 1].n_hand; i++) {
         id = duel.players[p & 1].hand[i].id;
         switch (id) {

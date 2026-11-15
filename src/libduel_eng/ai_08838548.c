@@ -178,10 +178,12 @@ int duel_08838980(unsigned int p)
 
 #define FIELDQ(T, f, q, z) (*(T *)((char *)&duel.players[0].field[0].f + ((q) & 1) * 0xFAC + (z) * 20))
 
-#ifdef NON_MATCHING /* 32 palavras (eram 552): no caso 2 q e q & 0xFF trocam s0/s2 (a 2ª definição de q vira outro web); no caso 3
-   o original carrega duel_atk_zone antes de formar pl = &duel + ofs no corpo 0x18AB, e o | final do laço tem os operandos
-   trocados. Rodada 24: pl = &duel.players[(int)q & 1] no 2º laço (quebra a CSE da base com o 1º), case 0x154C: f = 1;
-   caindo em case 0x1954: f = 1; break; (dois corpos iguais), ponteiro s->field[0] andando no laço 5..9, !duel_atk_w28 */
+#ifdef NON_MATCHING /* 28 palavras (eram 552): no caso 2 q e q & 0xFF trocam s0/s2 (o original deixa o 1 - p em s0, o mesmo
+   registrador do q do topo, e q & 0xFF e o contador do 2º laço em s2); no caso 3 o original carrega duel_atk_zone antes de
+   formar pl = &duel + ofs no corpo 0x18AB, e o | final do laço tem os operandos trocados. Rodada 24: pl = &duel.players[(int)q & 1]
+   no 2º laço (quebra a CSE da base com o 1º), case 0x154C: f = 1; caindo em case 0x1954: f = 1; break; (dois corpos iguais),
+   ponteiro s->field[0] andando no laço 5..9, !duel_atk_w28. Rodada 32: z contador dos dois laços e f a flag (32 -> 28); sem
+   efeito: ordem das declarações (24), q de bloco, q & 0xFF em variável, 12 formas de definir q, 12 formas do | final */
 int duel_08838A84(unsigned int p)
 {
     unsigned int q = duel_atk_tp;
@@ -207,26 +209,26 @@ int duel_08838A84(unsigned int p)
                 duel_088C87A8(p, duel_atk_zone, (q & 0xFF) | (z & 0xFF) << 8, 7, 0);
             }
         }
-        z = 0;
+        f = 0;
         if (duel_slot_has_effect(q, 0xB, 0x195F) && duel_count_monsters_fn(q, card_is_in_group_1a6f) &&
             !duel_slot_ref_immune(p, duel_atk_zone, 1)) {
             duel_088C44E4(q, 0x195F);
             duel_088C89BC(q, 0xB, 0x195F, 0);
-            z = 1;
+            f = 1;
         }
         if (duel_atk_w28 == 0) {
             DuelPlayer *pl = &duel.players[(int)q & 1];
 
-            for (id = 0; id <= 4; id++) {
-                if (duel_slot_e8170(q, id, 0x19A8) && pl->field[id].pos == 0 &&
-                    !duel_slot_has_effect(q, id, 0xFB6)) {
-                    duel_088C4448(q, id, CARD_UID(pl->field[id].card));
-                    duel_088C87A8(q, id, 0xFB6, 2, 0);
-                    z = 1;
+            for (z = 0; z <= 4; z++) {
+                if (duel_slot_e8170(q, z, 0x19A8) && pl->field[z].pos == 0 &&
+                    !duel_slot_has_effect(q, z, 0xFB6)) {
+                    duel_088C4448(q, z, CARD_UID(pl->field[z].card));
+                    duel_088C87A8(q, z, 0xFB6, 2, 0);
+                    f = 1;
                 }
             }
         }
-        if (z) {
+        if (f) {
             duel_cmd((p ? 0x8000 : 0) | 0x20, duel_atk_zone, 0, 0);
             return 0;
         }

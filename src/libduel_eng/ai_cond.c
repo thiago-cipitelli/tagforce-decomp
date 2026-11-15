@@ -1,5 +1,4 @@
 // @range 0x0881E0A0-0x08820618
-// @asm 0x0881E27C-0x0881E348
 /* Conditions the computer player checks before activating a card (one per card). */
 #include "duel.h"
 #include "card_db.h"
@@ -119,25 +118,24 @@ int duel_ai_0881E254(DuelAct *a)
     return duel_hand_count_level(a->player, 5) > 0;
 }
 
-#ifdef NON_MATCHING /* cópia morta depois de `b` (bnezl; b; lw ra) nos testes atk < lp e atk <= 1000; não-corrigível conhecido. Lógica conferida */
 int duel_ai_0881E27C(DuelAct *a)
 {
     unsigned int m = duel_0884E4A0(a);
     int z = duel_088159C8(1 - a->player, m, duel_088171C8);
     int atk;
-    int r;
 
     if (z >= 0) {
         atk = duel_field_base_atk(1 - a->player, z) / 2;
-        r = 1;
-        if (atk < duel.players[(1 - a->player) & 1].lp && atk <= 0x3E8) {
-            r = 0;
+        /* dois retornos de 1 com o 1 do `1 - player` ainda em v0 (modo sem limpeza); `lp <= atk` dá o slt at */
+        if (duel.players[(1 - a->player) & 1].lp <= atk) {
+            return 1;
         }
-        return r;
+        if (atk > 0x3E8) {
+            return 1;
+        }
     }
     return 0;
 }
-#endif
 
 int duel_ai_0881E348(DuelAct *a, int b)
 {
