@@ -4,9 +4,11 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-11-15, após a rodada 33 (6 agentes Fable, segunda passada no skip: 25 funções batendo; menu de
-depuração escrito do zero e batendo; ByteMatch): 94,9% do código batendo, 97,6% fuzzy, 10698/11039 funções (BOOT
-80,6%/83,8%, libduel_eng 96,6%/99,9%, libduel_draw 95,1%/99,8%; 13 módulos a 100%). Skip com 41 entradas. **Fila vazia**: todo
+Estado em 2026-11-15, após a rodada 34 (4 agentes Fable: terceira passada no skip, 17 funções batendo; trilha GCC
+aberta, 128 funções do SDK do BOOT vindas do fonte original do newlib 1.12.0/libgcc compilado pelo psp-gcc 1.7.1 da
+Sony, ver `docs/build.md` "Trilha GCC"; ByteMatch): 96,1% do código batendo, 98,0% fuzzy, 10751/11041 funções (BOOT
+84,1%/86,8%, libduel_eng 97,1%/99,9%, libduel_draw 97,3%/99,8%; 14 módulos a 100%, libselect_card entrou). Skip com
+23 entradas. O resto do BOOT é SDK que depende de uma revisão mais nova do psp-gcc (a que emite `ins rd,zero`), não encontrada. **Fila vazia**: todo
 `@asm` restante está em `docs/matching_skip.tsv` com o motivo (toda função tem
 C que compila), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
