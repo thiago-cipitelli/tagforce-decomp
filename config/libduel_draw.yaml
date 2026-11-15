@@ -174,8 +174,6 @@ segments:
       - [0x5EAC0, c, dd_ui_sprites]
       - [0x5EE2C, c, dd_help_text]
       - [0x5F354, c, dd_ui_panels]
-      - [0x5F4CC, asm, dd_ui_panels_asm_0886346C]
-      - [0x5F794, c, dd_ui_panels]
       - [0x5F9F8, c, dd_help_scene]
       - [0x60A34, c, dd_list_input]
       - [0x60BE0, c, dd_help_launch]

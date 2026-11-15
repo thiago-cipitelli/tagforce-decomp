@@ -1,34 +1,34 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-14 (rodada 31) (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-14 (rodada 32) (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 91,7% | 97,3% | 10614 / 11039 |
+| total | 93,4% | 97,4% | 10673 / 11039 |
 | BOOT | 79,2% | 83,8% | 1909 / 2208 |
-| libduel_eng | 92,0% | 99,9% | 3391 / 3429 |
+| libduel_eng | 94,6% | 99,9% | 3411 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
 | libpassword | 100,0% | 100,0% | 33 / 33 |
 | libtutoriallist | 100,0% | 100,0% | 26 / 26 |
 | libduelrecord | 100,0% | 100,0% | 27 / 27 |
-| libduel_mgr | 94,0% | 99,9% | 155 / 158 |
-| libselect_card | 97,5% | 99,9% | 204 / 207 |
+| libduel_mgr | 95,0% | 99,9% | 156 / 158 |
+| libselect_card | 99,3% | 99,9% | 206 / 207 |
 | libcardalbum | 100,0% | 100,0% | 68 / 68 |
 | libcharalist | 100,0% | 100,0% | 50 / 50 |
 | libconv_machine | 100,0% | 100,0% | 47 / 47 |
-| liblimitlist | 88,0% | 99,8% | 59 / 62 |
+| liblimitlist | 100,0% | 100,0% | 62 / 62 |
 | librecipe_viewer | 100,0% | 100,0% | 69 / 69 |
-| libdeck | 97,9% | 99,9% | 325 / 328 |
-| libdeck_swap | 98,1% | 100,0% | 202 / 204 |
-| libdeck_tutorial | 98,4% | 100,0% | 291 / 293 |
-| libshop | 94,6% | 100,0% | 217 / 223 |
-| libtitle | 93,9% | 99,6% | 426 / 434 |
+| libdeck | 100,0% | 100,0% | 328 / 328 |
+| libdeck_swap | 100,0% | 100,0% | 204 / 204 |
+| libdeck_tutorial | 100,0% | 100,0% | 293 / 293 |
+| libshop | 97,0% | 100,0% | 219 / 223 |
+| libtitle | 95,0% | 99,8% | 428 / 434 |
 | libtutorial | 95,8% | 99,9% | 205 / 207 |
-| libfield | 95,6% | 99,8% | 636 / 652 |
-| libstory | 96,5% | 99,7% | 669 / 676 |
-| libduel_draw | 91,5% | 98,4% | 1576 / 1609 |
+| libfield | 97,4% | 100,0% | 642 / 652 |
+| libstory | 99,3% | 99,9% | 672 / 676 |
+| libduel_draw | 92,7% | 98,6% | 1589 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -154,7 +154,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`ai_08804000.c`](../src/libduel_eng/ai_08804000.c) | 0x08804000-0x088070A8 | 18 | 3 | IA: passos da fase principal do computador (invocação, posição de ataque/defesa, tabela duel_ai_phases) |
-| [`ai_088070A8.c`](../src/libduel_eng/ai_088070A8.c) | 0x088070A8-0x08809B50 | 20 | 1 | IA: escolha de alvos e de cartas a jogar na fase principal |
+| [`ai_088070A8.c`](../src/libduel_eng/ai_088070A8.c) | 0x088070A8-0x08809B50 | 21 | 0 | IA: escolha de alvos e de cartas a jogar na fase principal |
 | [`ai_util.c`](../src/libduel_eng/ai_util.c) | 0x08809B50-0x0880B448 | 22 | 5 | ajudantes da IA: escolher cartas para um diálogo, comparar os monstros mais fortes dos dois jogadores, melhor alvo de ataque, cartas que a IA prefere, contagens por tipo na mão e no cemitério |
 | [`ai_0880B448.c`](../src/libduel_eng/ai_0880B448.c) | 0x0880B448-0x0880FDF4 | 22 | 7 | IA: avaliação de ataques e salvamento/restauração de duel_special, ordenação por prioridade |
 | [`ai_cond3.c`](../src/libduel_eng/ai_cond3.c) | 0x0880FDF4-0x08810370 | 6 | 5 | mais condições da IA por carta: ATK do mais forte contra os LP do oponente, fase e turno, monstros por posição |
@@ -162,19 +162,19 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ai_08811BDC.c`](../src/libduel_eng/ai_08811BDC.c) | 0x08811BDC-0x088137BC | 0 | 2 | condições do jogador do computador para cartas de batalha (switch de 60 casos para os tipos 18/19; tipo 20: a mudança de ATK/DEF decide a batalha?) |
 | [`ai_cond5.c`](../src/libduel_eng/ai_cond5.c) | 0x088137BC-0x08814EC8 | 26 | 6 | condições da IA contra a carta sendo ativada: alvos no campo, tipo e dono da carta, monstros e cartas especiais, LP |
 | [`ai_cond6.c`](../src/libduel_eng/ai_cond6.c) | 0x08814EC8-0x08815E90 | 8 | 4 | escolha da carta a ativar pelas tabelas de cartas e condições da IA, zonas embaralhadas por máscara com a de maior ATK/DEF, carta da mão por pontuação |
-| [`ai_08815E90.c`](../src/libduel_eng/ai_08815E90.c) | 0x08815E90-0x08819F94 | 16 | 11 | IA: escolha de alvos por carta (seletor de 5,8 KB) e contagens por posição |
+| [`ai_08815E90.c`](../src/libduel_eng/ai_08815E90.c) | 0x08815E90-0x08819F94 | 26 | 1 | IA: escolha de alvos por carta (seletor de 5,8 KB) e contagens por posição |
 | [`ai_cond2.c`](../src/libduel_eng/ai_cond2.c) | 0x08819F94-0x0881C118 | 57 | 6 | condições da IA: alvos do descritor, cartas com o mesmo nome, contadores por zona, bits de posição dos monstros, PV contra o dano previsto, magia de campo, monstros da mão invocáveis por tributo |
 | [`ai_cond1.c`](../src/libduel_eng/ai_cond1.c) | 0x0881C118-0x0881D0D8 | 12 | 6 | condições da IA: número de monstros, alvos com ATK alto, ATK/DEF do monstro escolhido contra o maior do oponente, tabela de cartas que a IA invoca do cemitério |
 | [`ai_cond0.c`](../src/libduel_eng/ai_cond0.c) | 0x0881D0D8-0x0881E0A0 | 22 | 3 | mais condições da IA por carta: mão e cemitério sem cartas proibidas, PV, nível e ATK do monstro escolhido |
-| [`ai_cond.c`](../src/libduel_eng/ai_cond.c) | 0x0881E0A0-0x08820618 | 74 | 4 | condições que o jogador do computador verifica antes de ativar cada carta: PV do oponente, contagens no campo, na mão e no cemitério, alvos aceitos pelo descritor |
-| [`ai_08820618.c`](../src/libduel_eng/ai_08820618.c) | 0x08820618-0x08827618 | 34 | 6 | IA: escolha da carta a ativar (tabelas de cartas no campo e na mão), passos de ataque, registro de ataque/invocação (DuelAtkRec) |
+| [`ai_cond.c`](../src/libduel_eng/ai_cond.c) | 0x0881E0A0-0x08820618 | 78 | 0 | condições que o jogador do computador verifica antes de ativar cada carta: PV do oponente, contagens no campo, na mão e no cemitério, alvos aceitos pelo descritor |
+| [`ai_08820618.c`](../src/libduel_eng/ai_08820618.c) | 0x08820618-0x08827618 | 39 | 1 | IA: escolha da carta a ativar (tabelas de cartas no campo e na mão), passos de ataque, registro de ataque/invocação (DuelAtkRec) |
 | [`ai_08827618.c`](../src/libduel_eng/ai_08827618.c) | 0x08827618-0x08827DA4 | 9 | 0 | IA: preparação do registro de invocação |
 | [`ai_08827DA4.c`](../src/libduel_eng/ai_08827DA4.c) | 0x08827DA4-0x0882926C | 0 | 2 | IA: opções de invocação da mão e verificação de invocação especial por carta |
 | [`ai_0882926C.c`](../src/libduel_eng/ai_0882926C.c) | 0x0882926C-0x0882A23C | 6 | 0 | IA: verificações de oferendas (tributáveis por zona) |
 | [`ai_0882A23C.c`](../src/libduel_eng/ai_0882A23C.c) | 0x0882A23C-0x0882AFA4 | 7 | 3 | filtros de zona das oferendas e duel_summon_init; tabela duel_ritual_ids |
 | [`ai_0882AFA4.c`](../src/libduel_eng/ai_0882AFA4.c) | 0x0882AFA4-0x0882CAC0 | 11 | 0 | duel_summon_tributes e máquinas de passos de invocação por carta |
 | [`ai_0882CAC0.c`](../src/libduel_eng/ai_0882CAC0.c) | 0x0882CAC0-0x0882D398 | 7 | 0 | mais máquinas de passos de invocação; tabela duel_ritual_ids2 |
-| [`ai_0882D398.c`](../src/libduel_eng/ai_0882D398.c) | 0x0882D398-0x0882EE74 | 7 | 3 | invocações por atributo, invocações sem oferendas, materiais nomeados |
+| [`ai_0882D398.c`](../src/libduel_eng/ai_0882D398.c) | 0x0882D398-0x0882EE74 | 10 | 0 | invocações por atributo, invocações sem oferendas, materiais nomeados |
 | [`ai_0882EE74.c`](../src/libduel_eng/ai_0882EE74.c) | 0x0882EE74-0x0882FF4C | 5 | 1 | filtros de 0x19A3/0x19A4/0x19C8 e duel_summon_run (despacho por id de carta) |
 | [`ai_0882FF4C.c`](../src/libduel_eng/ai_0882FF4C.c) | 0x0882FF4C-0x08830E94 | 11 | 3 | perguntas de evento e seus filtros de zona |
 | [`ai_08830E94.c`](../src/libduel_eng/ai_08830E94.c) | 0x08830E94-0x088324F0 | 5 | 3 | mais perguntas de evento e duel_ev_run |
@@ -193,7 +193,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ai_088420F4.c`](../src/libduel_eng/ai_088420F4.c) | 0x088420F4-0x08842C24 | 0 | 1 | máquina de passos da fase de espera do computador (cartas 0xFEE/0x150E/0x1A9C/..., contadores, tabelas de checagem) |
 | [`ai_08842C24.c`](../src/libduel_eng/ai_08842C24.c) | 0x08842C24-0x08843858 | 6 | 1 | IA: máquinas de passos com tabela de saltos (duel_0884356C) |
 | [`ai_08843858.c`](../src/libduel_eng/ai_08843858.c) | 0x08843858-0x08844024 | 16 | 1 | IA: condições e escolhas do computador |
-| [`ai_08844024.c`](../src/libduel_eng/ai_08844024.c) | 0x08844024-0x0884451C | 26 | 1 | IA: condições curtas por carta |
+| [`ai_08844024.c`](../src/libduel_eng/ai_08844024.c) | 0x08844024-0x0884451C | 27 | 0 | IA: condições curtas por carta |
 | [`ai_0884451C.c`](../src/libduel_eng/ai_0884451C.c) | 0x0884451C-0x08844C2C | 21 | 0 | IA: condições curtas por carta |
 | [`ai_08844C2C.c`](../src/libduel_eng/ai_08844C2C.c) | 0x08844C2C-0x088451E8 | 13 | 1 | IA: máquinas de passos de escolha |
 | [`ai_088451E8.c`](../src/libduel_eng/ai_088451E8.c) | 0x088451E8-0x08846498 | 0 | 1 | máquina de passos da fase final: custos de manutenção (pagar LP, tributo), prompts sim/não, efeitos de fim de turno |
@@ -232,19 +232,19 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ai_08862E24.c`](../src/libduel_eng/ai_08862E24.c) | 0x08862E24-0x08863284 | 8 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
 | [`ai_08863284.c`](../src/libduel_eng/ai_08863284.c) | 0x08863284-0x08864044 | 11 | 1 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
 | [`ai_08864044.c`](../src/libduel_eng/ai_08864044.c) | 0x08864044-0x08864DF0 | 8 | 0 | IA: filtros de alvo `(DuelAct *a, unsigned p, int z)` e handlers do computador pelo contador `duel_w_08914904` |
-| [`effects_q.c`](../src/libduel_eng/effects_q.c) | 0x08864DF0-0x08865F2C | 24 | 5 | callbacks de descritores de efeito em 0x08864DF0: passos com contador, máscaras de zonas, valores da zona, escolhas na mão |
+| [`effects_q.c`](../src/libduel_eng/effects_q.c) | 0x08864DF0-0x08865F2C | 29 | 0 | callbacks de descritores de efeito em 0x08864DF0: passos com contador, máscaras de zonas, valores da zona, escolhas na mão |
 | [`effects_08865F2C.c`](../src/libduel_eng/effects_08865F2C.c) | 0x08865F2C-0x08867F54 | 27 | 2 | handlers com passos em duel_w_08914904 (carta da mão, ATK/DEF, marcação de cartas do campo, escolha por atributo) |
 | [`effects_08867F54.c`](../src/libduel_eng/effects_08867F54.c) | 0x08867F54-0x08869190 | 13 | 2 | handlers de compra, escolha de cartas do campo e da mão, pagamento de PV |
 | [`effects_08869190.c`](../src/libduel_eng/effects_08869190.c) | 0x08869190-0x0886AAB4 | 11 | 1 | handlers de efeito e duel_act_resolve_6a230 |
 | [`effects_0886AAB4.c`](../src/libduel_eng/effects_0886AAB4.c) | 0x0886AAB4-0x0886CB44 | 9 | 3 | handlers de efeito com listas de ids finais |
 | [`act_cond.c`](../src/libduel_eng/act_cond.c) | 0x0886CB44-0x0886F23C | 48 | 3 | condições de ativação das cartas sobre o `DuelAct`: descartar da mão, zonas livres, fase e turno, tributos, cartas nas pilhas, carta especial como alvo, armadilhas como alvo da corrente, contadores e posição na zona, carta especial e mão do oponente, cartas no deck |
-| [`act_cond2.c`](../src/libduel_eng/act_cond2.c) | 0x0886F23C-0x0887DB24 | 397 | 32 | mais condições: cemitério e mão, monstros na mão, alvos de uma corrente, cartas que voltam ao cemitério ou ao deck, monstros virados, tributos, cartas especiais, alvos virados para cima de um grupo, carta especial do oponente, descartes de custo, mão e campo cheios, LP baixo, buscas na mão, nível do monstro especial, cartas do oponente mandadas ao cemitério, zonas de magia livres, contadores exigidos na zona, entrada na fase de batalha, somas de contadores, cinco cartas no cemitério, diferença de LP, cartas exigidas no campo, zona F, alvos no cemitério, magia de campo, diferença de 7000 LP, DEF do monstro especial, alvos de ataque do monstro especial, alvos da corrente na zona, maior ATK na mão, bits de estado da zona, monstros de defesa do tipo 0x12, atributos 3 a 6 no campo, cópias no cemitério, atributos dos monstros oferecíveis, cartas na zona F, atributos da carta que causou a ação, nomes no cemitério e na mão, tipo da carta que causou a ação, cartas nomeadas no cemitério, bits 16 e 17 do jogador, cartas 0x19A3/0x19A4, zona de origem pelo valor da zona, nível das cartas da corrente, diferença de 8000 LP, imunidade da zona a 0x1A77, zonas de magia livres do oponente |
-| [`effects_p.c`](../src/libduel_eng/effects_p.c) | 0x0887DB24-0x0888146C | 16 | 12 | Card effect handlers (DuelAct *a): what a's card does when it resolves |
+| [`act_cond2.c`](../src/libduel_eng/act_cond2.c) | 0x0886F23C-0x0887DB24 | 429 | 0 | mais condições: cemitério e mão, monstros na mão, alvos de uma corrente, cartas que voltam ao cemitério ou ao deck, monstros virados, tributos, cartas especiais, alvos virados para cima de um grupo, carta especial do oponente, descartes de custo, mão e campo cheios, LP baixo, buscas na mão, nível do monstro especial, cartas do oponente mandadas ao cemitério, zonas de magia livres, contadores exigidos na zona, entrada na fase de batalha, somas de contadores, cinco cartas no cemitério, diferença de LP, cartas exigidas no campo, zona F, alvos no cemitério, magia de campo, diferença de 7000 LP, DEF do monstro especial, alvos de ataque do monstro especial, alvos da corrente na zona, maior ATK na mão, bits de estado da zona, monstros de defesa do tipo 0x12, atributos 3 a 6 no campo, cópias no cemitério, atributos dos monstros oferecíveis, cartas na zona F, atributos da carta que causou a ação, nomes no cemitério e na mão, tipo da carta que causou a ação, cartas nomeadas no cemitério, bits 16 e 17 do jogador, cartas 0x19A3/0x19A4, zona de origem pelo valor da zona, nível das cartas da corrente, diferença de 8000 LP, imunidade da zona a 0x1A77, zonas de magia livres do oponente |
+| [`effects_p.c`](../src/libduel_eng/effects_p.c) | 0x0887DB24-0x0888146C | 29 | 0 | Card effect handlers (DuelAct *a): what a's card does when it resolves |
 | [`effects_r.c`](../src/libduel_eng/effects_r.c) | 0x0888146C-0x08883114 | 24 | 4 | handlers de efeito depois de effects_p: passos por duel_step, alvos e máscaras de zonas, trocas de controle, contadores de turno, compras e descartes |
 | [`effects_s.c`](../src/libduel_eng/effects_s.c) | 0x08883114-0x08884118 | 11 | 1 | handlers: virar e destruir pela DEF, cartas viradas para baixo reveladas, trocas de zona de magia, metade do ATK como dano |
 | [`effects_t.c`](../src/libduel_eng/effects_t.c) | 0x08884118-0x08884F18 | 8 | 5 | handlers: invocação especial da mão, comandos de virar, ATK/DEF originais guardados na zona, descarte de cartas da mão |
 | [`effects_u.c`](../src/libduel_eng/effects_u.c) | 0x08884F18-0x08885B70 | 7 | 2 | handlers: cartas de mesmo nome mandadas de todas as pilhas, fichas invocadas por tabela, mãos devolvidas e recompradas, metade do ATK como dano, ataque forçado |
-| [`effects_v.c`](../src/libduel_eng/effects_v.c) | 0x08885B70-0x08886984 | 10 | 1 | handlers: maior ou menor ATK/DEF entre os alvos, três alvos de uma vez, cartas do cemitério devolvidas, carta escolhida na mão do oponente, máscaras de zonas do oponente |
+| [`effects_v.c`](../src/libduel_eng/effects_v.c) | 0x08885B70-0x08886984 | 11 | 0 | handlers: maior ou menor ATK/DEF entre os alvos, três alvos de uma vez, cartas do cemitério devolvidas, carta escolhida na mão do oponente, máscaras de zonas do oponente |
 | [`effects_w.c`](../src/libduel_eng/effects_w.c) | 0x08886984-0x08887618 | 16 | 2 | handlers: zonas com um efeito destruídas, cartas viradas para cima todas de uma vez, invocação pela carta especial do turno, descarte e recompra |
 | [`effects_x.c`](../src/libduel_eng/effects_x.c) | 0x08887618-0x08889BE4 | 13 | 7 | handlers: troca de controle e de alvo, cartas reveladas da mão do oponente, invocações especiais do deck, da mão e do cemitério com zonas livres por jogador, dano e PV pelo número de cartas no cemitério ou viradas; tabelas de salto no `@data` |
 | [`effects_y.c`](../src/libduel_eng/effects_y.c) | 0x08889BE4-0x0888B904 | 22 | 0 | handlers: invocações do deck por jogador alternado, cartas do cemitério e da zona F de volta ao campo, troca de zona com a carta especial, dano igual ao ATK do alvo, máscaras de zonas por tipo de carta |
@@ -259,7 +259,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`effects_zh.c`](../src/libduel_eng/effects_zh.c) | 0x08894158-0x08895C8C | 28 | 1 | handlers: escolha de tipo de carta da mão (dano 700 / destruir a carta especial), descarte do topo do cemitério, contadores por zona, máquinas com tabela de saltos (0x7B-0x80), aposta entre jogadores, recarga da mão até 4, invocação de token por id (0x12A0-0x1A37), adivinhação 0/1, carta da zona D por nome |
 | [`effects_zi.c`](../src/libduel_eng/effects_zi.c) | 0x08895C8C-0x088966D8 | 8 | 0 | handlers: carta virada para o dono com troca de alvo, invocação múltipla pelo nível (0x157A/0x1978), dano/destruição por w[2], carta do topo do deck revelada (0x159D) |
 | [`effects_088966D8.c`](../src/libduel_eng/effects_088966D8.c) | 0x088966D8-0x08898B10 | 22 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
-| [`effects_08898B10.c`](../src/libduel_eng/effects_08898B10.c) | 0x08898B10-0x0889A75C | 22 | 3 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
+| [`effects_08898B10.c`](../src/libduel_eng/effects_08898B10.c) | 0x08898B10-0x0889A75C | 25 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_0889A75C.c`](../src/libduel_eng/effects_0889A75C.c) | 0x0889A75C-0x0889C150 | 22 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_0889C150.c`](../src/libduel_eng/effects_0889C150.c) | 0x0889C150-0x0889CD38 | 10 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_0889CD38.c`](../src/libduel_eng/effects_0889CD38.c) | 0x0889CD38-0x088A1904 | 64 | 0 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
@@ -267,7 +267,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`effects_088A3430.c`](../src/libduel_eng/effects_088A3430.c) | 0x088A3430-0x088A49F8 | 17 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088A49F8.c`](../src/libduel_eng/effects_088A49F8.c) | 0x088A49F8-0x088A6464 | 26 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088A6464.c`](../src/libduel_eng/effects_088A6464.c) | 0x088A6464-0x088A67D8 | 2 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
-| [`effects_088A67D8.c`](../src/libduel_eng/effects_088A67D8.c) | 0x088A67D8-0x088A8B94 | 11 | 3 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
+| [`effects_088A67D8.c`](../src/libduel_eng/effects_088A67D8.c) | 0x088A67D8-0x088A8B94 | 13 | 1 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`effects_088A8B94.c`](../src/libduel_eng/effects_088A8B94.c) | 0x088A8B94-0x088AF390 | 77 | 7 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`effects_088AF390.c`](../src/libduel_eng/effects_088AF390.c) | 0x088AF390-0x088AFD5C | 11 | 0 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088AFD5C.c`](../src/libduel_eng/effects_088AFD5C.c) | 0x088AFD5C-0x088B08B8 | 4 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
@@ -280,7 +280,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`effects_088B7D94.c`](../src/libduel_eng/effects_088B7D94.c) | 0x088B7D94-0x088B9CC8 | 35 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088B9CC8.c`](../src/libduel_eng/effects_088B9CC8.c) | 0x088B9CC8-0x088BB8C0 | 28 | 2 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
 | [`effects_088BB8C0.c`](../src/libduel_eng/effects_088BB8C0.c) | 0x088BB8C0-0x088BC9E0 | 17 | 1 | handlers de efeito / callbacks de candidatos (trabalho paralelo de 4 agentes, 2026-10-21) |
-| [`effects_088BC9E0.c`](../src/libduel_eng/effects_088BC9E0.c) | 0x088BC9E0-0x088C004C | 49 | 4 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
+| [`effects_088BC9E0.c`](../src/libduel_eng/effects_088BC9E0.c) | 0x088BC9E0-0x088C004C | 53 | 0 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`effects_088C004C.c`](../src/libduel_eng/effects_088C004C.c) | 0x088C004C-0x088C134C | 12 | 0 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`effects_088C134C.c`](../src/libduel_eng/effects_088C134C.c) | 0x088C134C-0x088C2F80 | 21 | 0 | handlers de efeito / callbacks de candidatos (agentes paralelos, 2026-10-21) |
 | [`duel_checks.c`](../src/libduel_eng/duel_checks.c) | 0x088C2F80-0x088C4448 | 13 | 4 | verificações de estado entre os passos: cartas contínuas cuja condição acabou são destruídas ou perdem o efeito |
@@ -294,25 +294,25 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`hand_add.c`](../src/libduel_eng/hand_add.c) | 0x088CAF24-0x088CB400 | 2 | 1 | cartas do cemitério / zona 0xF / cemitério do oponente para a mão (comando 0x3F, revelação, evento 0x1A) |
 | [`duel_moves.c`](../src/libduel_eng/duel_moves.c) | 0x088CB400-0x088CC178 | 14 | 2 | comandos de movimento entre pilhas e campo 0x33/0x3F/0x41, ataques 0x29, embaralhar zonas 0x49, carta saindo de uma zona 0x43 |
 | [`duel_counters.c`](../src/libduel_eng/duel_counters.c) | 0x088CC178-0x088CC8EC | 8 | 0 | comandos de valores e contadores numa carta 0x3A-0x3C e as cartas que reagem a eles |
-| [`leave_field.c`](../src/libduel_eng/leave_field.c) | 0x088CC8EC-0x088D13CC | 2 | 5 | saída do campo: gatilhos, alcance de uma ação, marcação recursiva das zonas que saem juntas, envio a uma pilha, duel_act_apply |
+| [`leave_field.c`](../src/libduel_eng/leave_field.c) | 0x088CC8EC-0x088D13CC | 7 | 0 | saída do campo: gatilhos, alcance de uma ação, marcação recursiva das zonas que saem juntas, envio a uma pilha, duel_act_apply |
 | [`act_apply.c`](../src/libduel_eng/act_apply.c) | 0x088D13CC-0x088D1DF4 | 29 | 1 | wrappers de duel_act_apply 0x088D1094: um efeito do tipo 0xB, 0xD, 0xE ou 0xF numa máscara de zonas, teste de uma zona, carta de ação montada na pilha com `= {0}` |
-| [`battle_088D1DF4.c`](../src/libduel_eng/battle_088D1DF4.c) | 0x088D1DF4-0x088D28F8 | 1 | 4 | montagem de eventos de batalha (DuelActX campo a campo) |
+| [`battle_088D1DF4.c`](../src/libduel_eng/battle_088D1DF4.c) | 0x088D1DF4-0x088D28F8 | 5 | 0 | montagem de eventos de batalha (DuelActX campo a campo) |
 | [`req_088D28F8.c`](../src/libduel_eng/req_088D28F8.c) | 0x088D28F8-0x088D6DE8 | 20 | 18 | fila de pedidos do duelo: duel_cmd (despacho com jtbl), duel_req_dispatch, ganho/perda de PV |
-| [`req_effect.c`](../src/libduel_eng/req_effect.c) | 0x088D6DE8-0x088DA5EC | 5 | 11 | pedidos que mexem nas entradas de efeito e nos valores de uma zona: adicionar, mudar, liberar, ordem de ativação, valor, contadores, virar uma carta, mudar a posição, trocar duas zonas, mover para outra zona ou lugar, mover de qualquer lugar a uma pilha |
-| [`req_step.c`](../src/libduel_eng/req_step.c) | 0x088DA5EC-0x088DEB2C | 47 | 10 | pedidos que o motor executa um passo por quadro, `duel_req` 0x08914A30: log de entradas, mensagens, cemitério e mão, invocar e baixar da mão, pedidos que só repassam ao host, mudança de fase, fim de turno, próximo turno, comprar, mandar do deck ao cemitério, efeito e contador numa zona, pôr uma carta num lugar, anunciar, ativar e apontar cartas, banir, mandar a uma pilha, deck (embaralhar, inverter, devolver uma carta), bits de modo, de jogador e de slot; localizações de 16 bits nas mensagens ao host |
+| [`req_effect.c`](../src/libduel_eng/req_effect.c) | 0x088D6DE8-0x088DA5EC | 15 | 1 | pedidos que mexem nas entradas de efeito e nos valores de uma zona: adicionar, mudar, liberar, ordem de ativação, valor, contadores, virar uma carta, mudar a posição, trocar duas zonas, mover para outra zona ou lugar, mover de qualquer lugar a uma pilha |
+| [`req_step.c`](../src/libduel_eng/req_step.c) | 0x088DA5EC-0x088DEB2C | 57 | 1 | pedidos que o motor executa um passo por quadro, `duel_req` 0x08914A30: log de entradas, mensagens, cemitério e mão, invocar e baixar da mão, pedidos que só repassam ao host, mudança de fase, fim de turno, próximo turno, comprar, mandar do deck ao cemitério, efeito e contador numa zona, pôr uma carta num lugar, anunciar, ativar e apontar cartas, banir, mandar a uma pilha, deck (embaralhar, inverter, devolver uma carta), bits de modo, de jogador e de slot; localizações de 16 bits nas mensagens ao host |
 | [`rules_check.c`](../src/libduel_eng/rules_check.c) | 0x088DEB2C-0x088DFFC0 | 21 | 2 | carta, id e uid, posição, face e contagem por zona vistas pelas regras, bits de modo, de jogador e de slot, pagar custo, cartas que proíbem ativar, invocar ou baixar, bloqueios dos dois jogadores, quem deve responder |
 | [`effect_mod.c`](../src/libduel_eng/effect_mod.c) | 0x088DFFC0-0x088E0890 | 1 | 10 | alocar/liberar entradas de efeito, adicionar e remover por fonte, tipo ou carta |
-| [`effect_scan.c`](../src/libduel_eng/effect_scan.c) | 0x088E0890-0x088E1FE0 | 20 | 6 | contagem regressiva das entradas temporárias, limpeza no fim do turno e ao sair de uma zona, troca da zona de origem, contagens e buscas das entradas que uma carta pôs numa zona, zona que uma carta afeta |
+| [`effect_scan.c`](../src/libduel_eng/effect_scan.c) | 0x088E0890-0x088E1FE0 | 26 | 0 | contagem regressiva das entradas temporárias, limpeza no fim do turno e ao sair de uma zona, troca da zona de origem, contagens e buscas das entradas que uma carta pôs numa zona, zona que uma carta afeta |
 | [`effect_list.c`](../src/libduel_eng/effect_list.c) | 0x088E1FE0-0x088E2964 | 26 | 0 | listas de efeitos das zonas, das cartas especiais e da lista de cartas: buscar, contar, somar, percorrer |
-| [`effect_live.c`](../src/libduel_eng/effect_live.c) | 0x088E2964-0x088E5800 | 9 | 2 | entrada de efeito ainda em vigor, contagem de bits, cartas usáveis por zona, `switch` por id da carta ativada: se tem alvo, o que espera antes de resolver, quantas escolhas, quem pode responder, de que lado vão as cartas ao cemitério |
+| [`effect_live.c`](../src/libduel_eng/effect_live.c) | 0x088E2964-0x088E5800 | 11 | 0 | entrada de efeito ainda em vigor, contagem de bits, cartas usáveis por zona, `switch` por id da carta ativada: se tem alvo, o que espera antes de resolver, quantas escolhas, quem pode responder, de que lado vão as cartas ao cemitério |
 | [`card_place.c`](../src/libduel_eng/card_place.c) | 0x088E5800-0x088E5F84 | 11 | 3 | alvos de uma ativação, cópia e troca de cartas, colocar uma carta numa zona de monstro ou de magia/armadilha |
 | [`card_find.c`](../src/libduel_eng/card_find.c) | 0x088E5F84-0x088E6998 | 18 | 1 | localização de um uid no campo, nas pilhas e nas cartas especiais, índice de um uid em cada pilha, valores guardados na zona |
 | [`piles.c`](../src/libduel_eng/piles.c) | 0x088E6998-0x088E7518 | 16 | 1 | carta de uma zona vista pelas regras, deck e zona C: empilhar, embaralhar, buscar, tirar, comprar, contagens |
 | [`deck_setup.c`](../src/libduel_eng/deck_setup.c) | 0x088E7518-0x088E80CC | 6 | 1 | deck pela receita com uids, lista de cartas do duelo, troca das pilhas salvas, tirar e pôr uma carta numa zona |
-| [`field_active.c`](../src/libduel_eng/field_active.c) | 0x088E80CC-0x088E8CF4 | 6 | 4 | cópias ativas de uma carta, zonas desativadas, cartas especiais fora das zonas |
+| [`field_active.c`](../src/libduel_eng/field_active.c) | 0x088E80CC-0x088E8CF4 | 10 | 0 | cópias ativas de uma carta, zonas desativadas, cartas especiais fora das zonas |
 | [`field_find.c`](../src/libduel_eng/field_find.c) | 0x088E8CF4-0x088E94E4 | 8 | 2 | cópias de uma carta no campo por id ou nome, ordem de ativação mínima |
 | [`field_count.c`](../src/libduel_eng/field_count.c) | 0x088E94E4-0x088EA23C | 19 | 1 | contagens no campo por tipo, atributo, nome, zonas livres |
-| [`tribute.c`](../src/libduel_eng/tribute.c) | 0x088EA23C-0x088EAC0C | 8 | 1 | zonas livres na ordem de colocação, monstros que podem ser oferecidos em tributo, tributo duplo, contagens de tributos |
+| [`tribute.c`](../src/libduel_eng/tribute.c) | 0x088EA23C-0x088EAC0C | 9 | 0 | zonas livres na ordem de colocação, monstros que podem ser oferecidos em tributo, tributo duplo, contagens de tributos |
 | [`field_st.c`](../src/libduel_eng/field_st.c) | 0x088EAC0C-0x088EB710 | 17 | 0 | cartas no campo por face, zonas de magia/armadilha livres e escolha de zona, contagens no cemitério por tipo, mesmo nome no campo |
 | [`protect.c`](../src/libduel_eng/protect.c) | 0x088EB710-0x088EBF44 | 4 | 0 | proteção por 0x1368 com o mesmo nome, verificações antes de agir com um monstro e código de motivo em duel_err |
 | [`attack.c`](../src/libduel_eng/attack.c) | 0x088EBF44-0x088EC5D8 | 3 | 0 | restrições de ataque por carta, estado e efeitos, pode atacar e tem algum alvo |
@@ -328,7 +328,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`field_stats.c`](../src/libduel_eng/field_stats.c) | 0x088F2D70-0x088F5D54 | 0 | 1 | duel_field_stats: ATK/DEF efetivos (efeito próprio de ~70 cartas, bônus de cartas e magias de campo, equipamentos, metades/dobros, inversão 0x1257) |
 | [`stat_reason.c`](../src/libduel_eng/stat_reason.c) | 0x088F5D54-0x088F6380 | 6 | 0 | motivo de cada carta que altera um monstro, marcadores de todos os slots, acessores de ATK/DEF; 6, com tabela de salto no `@data` |
 | [`field_props.c`](../src/libduel_eng/field_props.c) | 0x088F6380-0x088F71D8 | 7 | 0 | nível, tipo e espécie efetivos do monstro, máscara de espécies |
-| [`msg.c`](../src/libduel_eng/msg.c) | 0x088F71D8-0x088F7EB4 | 3 | 1 | mensagens do motor para a apresentação com contagem das pendentes |
+| [`msg.c`](../src/libduel_eng/msg.c) | 0x088F71D8-0x088F7EB4 | 4 | 0 | mensagens do motor para a apresentação com contagem das pendentes |
 | [`effects_a.c`](../src/libduel_eng/effects_a.c) | 0x088F7EB4-0x088F85D4 | 11 | 0 | estado das mensagens, classe de cada comando, primeiros handlers de efeito de carta |
 | [`effects_b.c`](../src/libduel_eng/effects_b.c) | 0x088F85D4-0x088F9024 | 4 | 1 | handlers |
 | [`effects_c.c`](../src/libduel_eng/effects_c.c) | 0x088F9024-0x088F9668 | 2 | 1 | handlers |
@@ -347,7 +347,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`duel_net.c`](../src/libduel_eng/duel_net.c) | 0x088FE160-0x088FE638 | 10 | 1 | duelo on-line: mensagens de duelo pelos registros do netsync do BOOT, máscara de destino por classe, espera de todos os jogadores, acessores do estado do duelo |
 | [`duel_api.c`](../src/libduel_eng/duel_api.c) | 0x088FE638-0x088FF0DC | 71 | 2 | acessores exportados à libduel_draw: LP, contagens e uids por zona, campos dos slots, jogador da vez, fase, tipo de jogador, `DuelSetup` em 0x089139F0 com os decks; jogador de cada lado no duelo em dupla, log de entradas, callback do host |
 | [`duel_text.c`](../src/libduel_eng/duel_text.c) | 0x088FF0DC-0x088FF3FC | 7 | 0 | memset/memcpy do módulo, wcscpy/wcscat aceitando id de texto do diálogo, número decimal em UCS-2, substituição de %s/%d |
-| [`duel_result.c`](../src/libduel_eng/duel_result.c) | 0x088FF3FC-0x08900C94 | 5 | 2 | resultado de uma série de duelos em dupla, estatísticas do deck para as recompensas, marcas de uma vez no save, atualização dos 40 recordes de duelo, cálculo dos 82 bônus do duelo |
+| [`duel_result.c`](../src/libduel_eng/duel_result.c) | 0x088FF3FC-0x08900C94 | 7 | 0 | resultado de uma série de duelos em dupla, estatísticas do deck para as recompensas, marcas de uma vez no save, atualização dos 40 recordes de duelo, cálculo dos 82 bônus do duelo |
 | [`duel_finish.c`](../src/libduel_eng/duel_finish.c) | 0x08900C94-0x08901BA0 | 3 | 2 | fim do duelo: resultados, 118 títulos, tabela de personagens com busca binária |
 
 ## libhtml_view (5 arquivos, 16 funções batendo, 0 em asm)
@@ -401,7 +401,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`dmgr_event.c`](../src/libduel_mgr/dmgr_event.c) | 0x08805FF8-0x08808A20 | 27 | 4 | fila de eventos de apresentação do duelo (cut-ins de personagem por carta-assinatura, música pelo humor dos LP, troca de turno e de parceiro, fim do duelo), despacho do callback do motor e reprodução quadro a quadro |
 | [`dmgr_janken.c`](../src/libduel_mgr/dmgr_janken.c) | 0x08808A20-0x0880C8E8 | 18 | 8 | menu de início do duelo: pedra-papel-tesoura para o primeiro turno (local ou ad hoc), jogar primeiro ou segundo, troca de decks dos parceiros pela rede, desenho |
 | [`dmgr_partner.c`](../src/libduel_mgr/dmgr_partner.c) | 0x0880C8E8-0x0880F9C0 | 21 | 17 | painel de parceiros e adversários (rostos, nomes, decks, animações EHF), tabela de rostos por personagem, utilitários de texto e sprite |
-| [`dmgr_result.c`](../src/libduel_mgr/dmgr_result.c) | 0x0880F9C0-0x08815888 | 9 | 31 | tela de resultado (bônus, recordes e títulos em páginas com rolagem, pagamento em dinheiro, placar da série, diálogos de revanche e de espera da rede) |
+| [`dmgr_result.c`](../src/libduel_mgr/dmgr_result.c) | 0x0880F9C0-0x08815888 | 40 | 0 | tela de resultado (bônus, recordes e títulos em páginas com rolagem, pagamento em dinheiro, placar da série, diálogos de revanche e de espera da rede) |
 
 ## libselect_card (15 arquivos, 123 funções batendo, 84 em asm)
 
@@ -417,11 +417,11 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`sc_info.c`](../src/libselect_card/sc_info.c) | 0x0880D54C-0x0880E64C | 12 | 0 | faixa de informação da carta, ícones, botão com legenda, sombra do painel, valor da ordenação, abertura do menu de ações |
 | [`sc_action.c`](../src/libselect_card/sc_action.c) | 0x0880E64C-0x0880FFCC | 10 | 12 | menu de ações e submenus (marca, informação, limpar/restaurar, layout, marca de novidade) |
 | [`sc_sort.c`](../src/libselect_card/sc_sort.c) | 0x0880FFCC-0x08810BF4 | 6 | 3 | menu de ordenação ao vivo, ícones de ordem/direção |
-| [`sc_filter.c`](../src/libselect_card/sc_filter.c) | 0x08810BF4-0x088119C8 | 3 | 10 | ordenação estável pelas nove chaves, valores das chaves, filtro da marca, busca incremental com histórico, filtros por tipo/atributo/raça |
+| [`sc_filter.c`](../src/libselect_card/sc_filter.c) | 0x08810BF4-0x088119C8 | 13 | 0 | ordenação estável pelas nove chaves, valores das chaves, filtro da marca, busca incremental com histórico, filtros por tipo/atributo/raça |
 | [`sc_match.c`](../src/libselect_card/sc_match.c) | 0x088119C8-0x088121D0 | 3 | 4 | filtros restantes e busca de texto (Horspool) em nome/texto normalizados |
 | [`sc_fmenu.c`](../src/libselect_card/sc_fmenu.c) | 0x088121D0-0x08813CF4 | 7 | 8 | menu de filtro (grade de valores por página), ícones/legendas dos valores, abertura da janela de palavra |
 | [`sc_word.c`](../src/libselect_card/sc_word.c) | 0x08813CF4-0x08815168 | 5 | 6 | busca por palavra (teclado do sistema, histórico, barra de progresso) |
-| [`sc_move.c`](../src/libselect_card/sc_move.c) | 0x08815168-0x08816DD4 | 4 | 10 | atualização do teclado do sistema, mover carta entre painéis com voo em curva e desfazer, popup de mensagens e confirmação de saída |
+| [`sc_move.c`](../src/libselect_card/sc_move.c) | 0x08815168-0x08816DD4 | 14 | 0 | atualização do teclado do sistema, mover carta entre painéis com voo em curva e desfazer, popup de mensagens e confirmação de saída |
 
 ## libcardalbum (7 arquivos, 67 funções batendo, 1 em asm)
 
@@ -462,8 +462,8 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ll_scroll.c`](../src/liblimitlist/ll_scroll.c) | 0x08805948-0x08805A00 | 2 | 0 | rolagem do texto pelo analógico |
 | [`ll_res.c`](../src/liblimitlist/ll_res.c) | 0x08805A00-0x088060C4 | 9 | 0 | packs deck/all e limitlist.ehp assíncronos, tabelas id->recurso (qsort/bsearch), leitor CIP, lista de cartas |
 | [`ll_main.c`](../src/liblimitlist/ll_main.c) | 0x088060C4-0x08806490 | 4 | 0 | entrada, init (heap de 5 MB), máquina de estados, liberação em passos |
-| [`ll_screen.c`](../src/liblimitlist/ll_screen.c) | 0x08806490-0x0880740C | 6 | 2 | desenho da tela: fundo, abas com tamanhos, cabeçalho, linhas ou grade, contadores deck/parceiro/posse |
-| [`ll_list.c`](../src/liblimitlist/ll_list.c) | 0x0880740C-0x08808934 | 11 | 2 | montagem das listas, cursor lista/grade com paginação, abas, ficha da carta, verificação dos decks |
+| [`ll_screen.c`](../src/liblimitlist/ll_screen.c) | 0x08806490-0x0880740C | 8 | 0 | desenho da tela: fundo, abas com tamanhos, cabeçalho, linhas ou grade, contadores deck/parceiro/posse |
+| [`ll_list.c`](../src/liblimitlist/ll_list.c) | 0x0880740C-0x08808934 | 13 | 0 | montagem das listas, cursor lista/grade com paginação, abas, ficha da carta, verificação dos decks |
 | [`ll_menu.c`](../src/liblimitlist/ll_menu.c) | 0x08808934-0x08809538 | 9 | 0 | menus de ajuda, aviso de carta ilegal, listas (oficial/limpar/dados extras) |
 
 ## librecipe_viewer (7 arquivos, 50 funções batendo, 19 em asm)
@@ -499,14 +499,14 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`t_lang.c`](../src/libtitle/t_lang.c) | 0x0880EB20-0x0880F438 | 6 | 0 | seleção de idioma (estado 19), recarga do pacote e do banco de cartas |
 | [`t_osk.c`](../src/libtitle/t_osk.c) | 0x0880F438-0x0880F900 | 0 | 2 | teclado na tela (SceUtility OSK), mesmo código da librecipe_viewer |
 | [`t_name.c`](../src/libtitle/t_name.c) | 0x0880F900-0x088106D8 | 14 | 0 | novo jogo (estado 8: nome, confirmação, gravação) e title_prompt |
-| [`t_panel.c`](../src/libtitle/t_panel.c) | 0x088106D8-0x08813088 | 23 | 3 | caixa de células com rolagem, abas, janela com abas, quadros de nove peças, cursor piscante, caixas prontas e ajudas |
+| [`t_panel.c`](../src/libtitle/t_panel.c) | 0x088106D8-0x08813088 | 24 | 3 | caixa de células com rolagem, abas, janela com abas, quadros de nove peças, cursor piscante, caixas prontas e ajudas |
 | [`t_ext.c`](../src/libtitle/t_ext.c) | 0x08813088-0x08813AC4 | 8 | 0 | cartas de dados extras (estado 6): .YGC do Memory Stick, carta nova recebida em três cópias |
 | [`t_freeduel.c`](../src/libtitle/t_freeduel.c) | 0x08813AC4-0x0881494C | 8 | 0 | free duel: listas de jogadores e decks, painel de opções, despacho das sub-telas, eventos da rede ad hoc |
 | [`t_fdnet.c`](../src/libtitle/t_fdnet.c) | 0x0881494C-0x088162CC | 9 | 1 | free duel ad hoc: pacotes de jogador, máquina de troca de decks, GameState do duelo em rede, prontidão e assentos |
-| [`t_fdvscpu.c`](../src/libtitle/t_fdvscpu.c) | 0x088162CC-0x08818A88 | 23 | 2 | free duel: despacho do desenho, duelo vs CPU, configuração do duelo (cursor), regulamento e grade de jogadores |
+| [`t_fdvscpu.c`](../src/libtitle/t_fdvscpu.c) | 0x088162CC-0x08818A88 | 23 | 1 | free duel: despacho do desenho, duelo vs CPU, configuração do duelo (cursor), regulamento e grade de jogadores |
 | [`t_fdduelist.c`](../src/libtitle/t_fdduelist.c) | 0x08818A88-0x088195B4 | 6 | 0 | free duel: escolha de duelista |
 | [`t_fdadhoc.c`](../src/libtitle/t_fdadhoc.c) | 0x088195B4-0x0881BA64 | 9 | 1 | free duel: topo do modo ad hoc (painéis, handlers, desenho) |
-| [`t_fdlobby.c`](../src/libtitle/t_fdlobby.c) | 0x0881BA64-0x0881E0CC | 31 | 1 | free duel: lobby da senha (cartas via libselect_card), info do duelo, entrada vs CPU, lista de opções |
+| [`t_fdlobby.c`](../src/libtitle/t_fdlobby.c) | 0x0881BA64-0x0881E0CC | 32 | 0 | free duel: lobby da senha (cartas via libselect_card), info do duelo, entrada vs CPU, lista de opções |
 | [`t_fddraw.c`](../src/libtitle/t_fddraw.c) | 0x0881E0CC-0x0881F02C | 9 | 1 | free duel: títulos das caixas, ícones, escolha de personagem (libcharalist), mensagem de entrada |
 | [`t_partner.c`](../src/libtitle/t_partner.c) | 0x0881F02C-0x08821D3C | 22 | 17 | painel de parceiros/adversários (cópia do dmgr_partner.c com quatro funções a mais) |
 | [`t_duel.c`](../src/libtitle/t_duel.c) | 0x08821D3C-0x08824DA8 | 39 | 0 | duelo contra o computador (estado 12, item 1 do menu): regras (tag, troca de deck, LP, tempo), parceiro, adversários, personagem pela libcharalist |
@@ -518,7 +518,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`dk_lists.c`](../src/libdeck/dk_lists.c) | 0x08804000-0x088060B0 | 21 | 2 | listas de cartas do editor (principal, side, extra, baú, view do extra, alugadas ao parceiro): montagem a partir do sysstate, inclusão/remoção, ordem visível, totais, gravar/carregar deck |
-| [`dk_move.c`](../src/libdeck/dk_move.c) | 0x088060B0-0x0880931C | 16 | 1 | mover carta entre listas: janela de destino, voo em curva, desfazer, limites de cópias/proibidas, posição dos espaços |
+| [`dk_move.c`](../src/libdeck/dk_move.c) | 0x088060B0-0x0880931C | 17 | 0 | mover carta entre listas: janela de destino, voo em curva, desfazer, limites de cópias/proibidas, posição dos espaços |
 | [`dk_input.c`](../src/libdeck/dk_input.c) | 0x0880931C-0x0880A694 | 4 | 8 | entrada da tela de listas: despacho pelo estado, teclas de mover/ação/aba/layout, L/R, cursores, rolagem analógica, moldura de foco |
 | [`dk_mode.c`](../src/libdeck/dk_mode.c) | 0x0880A694-0x0880B874 | 7 | 3 | verificação do deck antes de gravar, popup de mensagens, troca de layout dos painéis, abas, animação do fundo |
 | [`dk_main.c`](../src/libdeck/dk_main.c) | 0x0880B874-0x0880BD30 | 7 | 0 | entrada do módulo, thread da cena (init, laço, fade, gravação), saída, callbacks de desenho |
@@ -533,10 +533,10 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`dk_fmenu.c`](../src/libdeck/dk_fmenu.c) | 0x08812510-0x08813268 | 6 | 2 | janela de valores do filtro, ícones dos valores, marca e rótulo |
 | [`dk_action.c`](../src/libdeck/dk_action.c) | 0x08813268-0x08815280 | 25 | 1 | menu de ações da carta e submenus (info, favorito, ordenar/filtrar/buscar, operações do deck, layout, novidade) |
 | [`dk_parts.c`](../src/libdeck/dk_parts.c) | 0x08815280-0x08817D18 | 28 | 0 | peças de desenho comuns (dígitos, molduras, ícones, ATK/DEF, imagem, contadores, barra de rolagem, ajuda dos botões) |
-| [`dk_filter.c`](../src/libdeck/dk_filter.c) | 0x08817D18-0x088192C8 | 10 | 10 | filtros e ordenação das listas (busca incremental, filtros por tipo/raça/nível/limite/gênero, Horspool, ordenação estável por 9 chaves) |
+| [`dk_filter.c`](../src/libdeck/dk_filter.c) | 0x08817D18-0x088192C8 | 20 | 0 | filtros e ordenação das listas (busca incremental, filtros por tipo/raça/nível/limite/gênero, Horspool, ordenação estável por 9 chaves) |
 | [`dk_word.c`](../src/libdeck/dk_word.c) | 0x088192C8-0x0881A69C | 9 | 2 | busca por palavra (janela com histórico, teclado do sistema, barra de progresso) |
 | [`dk_osk.c`](../src/libdeck/dk_osk.c) | 0x0881A69C-0x0881AB64 | 2 | 0 | teclado do sistema (SceUtilityOsk) para o nome do deck |
-| [`dk_help_ui.c`](../src/libdeck/dk_help_ui.c) | 0x0881AB64-0x0881D918 | 72 | 2 | widgets da ajuda: barra de botões, lista rolável por callbacks, tópicos, páginas, painel de texto com imagem, sprites em nove/três partes |
+| [`dk_help_ui.c`](../src/libdeck/dk_help_ui.c) | 0x0881AB64-0x0881D918 | 74 | 0 | widgets da ajuda: barra de botões, lista rolável por callbacks, tópicos, páginas, painel de texto com imagem, sprites em nove/três partes |
 | [`dk_help.c`](../src/libdeck/dk_help.c) | 0x0881D918-0x0881E870 | 17 | 1 | tela de ajuda (duelo e editor): abertura por id, estados com fade, imagem da página lida de help/ |
 
 ## libshop (17 arquivos, 187 funções batendo, 36 em asm)
@@ -545,7 +545,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 |---|---|---|---|---|
 | [`shop_main.c`](../src/libshop/shop_main.c) | 0x08804000-0x088052F8 | 27 | 1 | entradas da cena (init/update/draw/term), recursos por id (bsearch), número, 2D, prateleira |
 | [`shop_gfx.c`](../src/libshop/shop_gfx.c) | 0x088052F8-0x08805AB4 | 8 | 0 | camadas 3D da loja e das cartas, estado do GE, seleção, espera do pack do deck, compra gravada |
-| [`shop_state.c`](../src/libshop/shop_state.c) | 0x08805AB4-0x08807CAC | 6 | 5 | máquina de estados da loja, código secreto, entrada principal e da prateleira, passos da compra |
+| [`shop_state.c`](../src/libshop/shop_state.c) | 0x08805AB4-0x08807CAC | 11 | 0 | máquina de estados da loja, código secreto, entrada principal e da prateleira, passos da compra |
 | [`shop_clerk.c`](../src/libshop/shop_clerk.c) | 0x08807CAC-0x08808B44 | 13 | 0 | modelos, a vendedora (carga, deslize, piscar, fala, voz) |
 | [`shop_msgwin.c`](../src/libshop/shop_msgwin.c) | 0x08808B44-0x08809D2C | 17 | 3 | janela de mensagens com texto digitado |
 | [`shop_points.c`](../src/libshop/shop_points.c) | 0x08809D2C-0x0880A960 | 16 | 0 | contador de DP |
@@ -554,7 +554,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`shop_list.c`](../src/libshop/shop_list.c) | 0x0880D298-0x0880EF74 | 9 | 4 | lista das cartas compradas (linhas, contadores, cursor, balão da chave) |
 | [`shop_parts.c`](../src/libshop/shop_parts.c) | 0x0880EF74-0x088117B8 | 26 | 0 | peças de UI (mesma fonte de sc_parts da libselect_card) |
 | [`shop_open.c`](../src/libshop/shop_open.c) | 0x088117B8-0x08812C60 | 6 | 6 | abertura dos packs comprados, cartas somadas à lista |
-| [`shop_anim.c`](../src/libshop/shop_anim.c) | 0x08812C60-0x08813808 | 5 | 1 | animação do pack aberto e curvas das cartas |
+| [`shop_anim.c`](../src/libshop/shop_anim.c) | 0x08812C60-0x08813808 | 6 | 0 | animação do pack aberto e curvas das cartas |
 | [`shop_detail.c`](../src/libshop/shop_detail.c) | 0x08813808-0x08813FF4 | 9 | 0 | menu de uma carta comprada |
 | [`shop_sort.c`](../src/libshop/shop_sort.c) | 0x08813FF4-0x08814BE8 | 8 | 1 | diálogo de ordenação (chaves e direção, reordenação ao vivo) |
 | [`shop_dialog.c`](../src/libshop/shop_dialog.c) | 0x08814BE8-0x08814F58 | 3 | 0 | diálogos sim/não (sair, comprar, abrir a lista) |
@@ -576,8 +576,8 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ds_input.c`](../src/libdeck_swap/ds_input.c) | 0x08809804-0x0880AB28 | 4 | 8 | despacho da entrada, estados de ajuda, cursores, páginas, grupos, rolagem, foco |
 | [`ds_sortmenu.c`](../src/libdeck_swap/ds_sortmenu.c) | 0x0880AB28-0x0880B750 | 8 | 1 | menu de ordenação |
 | [`ds_sort.c`](../src/libdeck_swap/ds_sort.c) | 0x0880B750-0x0880BE1C | 4 | 1 | ordenação estável, valor da chave |
-| [`ds_move.c`](../src/libdeck_swap/ds_move.c) | 0x0880BE1C-0x0880D23C | 3 | 8 | mover carta entre principal e extra (voo em curva, desfazer), posição das vagas |
-| [`ds_filter.c`](../src/libdeck_swap/ds_filter.c) | 0x0880D23C-0x0880DFFC | 9 | 5 | busca incremental, filtros, busca Horspool |
+| [`ds_move.c`](../src/libdeck_swap/ds_move.c) | 0x0880BE1C-0x0880D23C | 11 | 0 | mover carta entre principal e extra (voo em curva, desfazer), posição das vagas |
+| [`ds_filter.c`](../src/libdeck_swap/ds_filter.c) | 0x0880D23C-0x0880DFFC | 14 | 0 | busca incremental, filtros, busca Horspool |
 | [`ds_word.c`](../src/libdeck_swap/ds_word.c) | 0x0880DFFC-0x0880F3E0 | 9 | 2 | janela da busca por palavra |
 | [`ds_fmenu.c`](../src/libdeck_swap/ds_fmenu.c) | 0x0880F3E0-0x08810D64 | 11 | 3 | menu de filtro e valores |
 | [`ds_action.c`](../src/libdeck_swap/ds_action.c) | 0x08810D64-0x08812510 | 20 | 0 | menu de ações e submenus |
@@ -609,10 +609,10 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`dt_edraw.c`](../src/libdeck_tutorial/dt_edraw.c) | 0x08805BE4-0x08808C6C | 29 | 0 | desenho do editor (linhas, grade, contadores, informação) |
 | [`dt_parts.c`](../src/libdeck_tutorial/dt_parts.c) | 0x08808C6C-0x0880B704 | 28 | 0 | cópia de sc_parts.c (ícones, dígitos, figura da carta) |
 | [`dt_lists.c`](../src/libdeck_tutorial/dt_lists.c) | 0x0880B704-0x0880CDC8 | 18 | 1 | listas de cartas (cópia de dk_lists.c) |
-| [`dt_move.c`](../src/libdeck_tutorial/dt_move.c) | 0x0880CDC8-0x088100AC | 16 | 1 | mover/desfazer carta (dk_move.c) mais o contador de metas da lição |
+| [`dt_move.c`](../src/libdeck_tutorial/dt_move.c) | 0x0880CDC8-0x088100AC | 17 | 0 | mover/desfazer carta (dk_move.c) mais o contador de metas da lição |
 | [`dt_input.c`](../src/libdeck_tutorial/dt_input.c) | 0x088100AC-0x08811BB8 | 8 | 8 | entrada do editor, cursores, verificação do deck, popup |
 | [`dt_fmenu.c`](../src/libdeck_tutorial/dt_fmenu.c) | 0x08811BB8-0x088135A8 | 11 | 3 | menu de filtro, com entrada da lição e trava de itens |
-| [`dt_filter.c`](../src/libdeck_tutorial/dt_filter.c) | 0x088135A8-0x08814460 | 10 | 5 | filtros, busca de texto Horspool |
+| [`dt_filter.c`](../src/libdeck_tutorial/dt_filter.c) | 0x088135A8-0x08814460 | 15 | 0 | filtros, busca de texto Horspool |
 | [`dt_mode.c`](../src/libdeck_tutorial/dt_mode.c) | 0x08814460-0x08814D44 | 4 | 2 | layouts dos painéis, abas, animação do fundo (sem lista do parceiro) |
 | [`dt_action.c`](../src/libdeck_tutorial/dt_action.c) | 0x08814D44-0x08816C34 | 24 | 1 | menu de ações da carta (sem renomear, sem páginas de ajuda) |
 | [`dt_pane.c`](../src/libdeck_tutorial/dt_pane.c) | 0x08816C34-0x088175FC | 7 | 4 | painéis, troca de aba, histórico de desfazer |
@@ -629,7 +629,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`f_main.c`](../src/libfield/f_main.c) | 0x08804000-0x088044D8 | 10 | 0 | entrada do módulo, thread da cena 5 (sala escolhida por menu, sequência de comandos de campo), exit, init, sala → bg |
 | [`f_bustup.c`](../src/libfield/f_bustup.c) | 0x088044D8-0x08805220 | 23 | 0 | retratos bust-up (até 3, corpo e boca EHF): fades, piscar, fala, comandos load/open/anim/close/unload |
 | [`f_chr.c`](../src/libfield/f_chr.c) | 0x08805220-0x08805DF4 | 13 | 3 | personagens SD do mapa: setup por tipo, contadores de animação, registro de desenho, oito direções, colisão (asm) |
-| [`f_chrdraw.c`](../src/libfield/f_chrdraw.c) | 0x08805DF4-0x08806FC4 | 3 | 9 | desenho dos personagens SD (modelo, folha de sprites, sprite plano em asm), projeção ortográfica, tipo de desenho por chara |
+| [`f_chrdraw.c`](../src/libfield/f_chrdraw.c) | 0x08805DF4-0x08806FC4 | 11 | 1 | desenho dos personagens SD (modelo, folha de sprites, sprite plano em asm), projeção ortográfica, tipo de desenho por chara |
 | [`f_bg.c`](../src/libfield/f_bg.c) | 0x08806FC4-0x08807844 | 12 | 1 | sala: modelos, portas, células marcadas, área do jogador com crossfade, mapa de células |
 | [`f_map.c`](../src/libfield/f_map.c) | 0x08807844-0x08808214 | 8 | 0 | mapa de células: posição/célula, células marcadas, portas, hall especial (andável e altura em asm) |
 | [`f_bgdraw.c`](../src/libfield/f_bgdraw.c) | 0x08808214-0x08809C40 | 11 | 9 | carga e desenho da sala: modelos por área, sombras por stencil, objetos, máscara de malhas, gancho das portas, som das portas |
@@ -650,13 +650,13 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`f_talk.c`](../src/libfield/f_talk.c) | 0x08817218-0x08817AA4 | 13 | 1 | comandos de fala e escolha (field_talk): fala de um slot na janela de mensagens (fechando no fim), lista numerada de escolhas centrada, R esconde a janela |
 | [`f_money.c`](../src/libfield/f_money.c) | 0x08817AA4-0x08818724 | 17 | 1 | contador de dinheiro do HUD (field_money): ícone e valor entrando, quantia ganha ou gasta que aparece e voa até o contador, rolagem do valor com dígitos baixos aleatórios, sprites dos dígitos |
 | [`f_cam.c`](../src/libfield/f_cam.c) | 0x08818724-0x08818FFC | 18 | 0 | câmera, luz e estado do GE do campo (field_cam): câmera seguindo o jogador, luz da hora do dia, comando de tremor, quad de tela cheia |
-| [`f_bmap.c`](../src/libfield/f_bmap.c) | 0x08818FFC-0x0881BA90 | 25 | 6 | mapa do campus (field_bm): ilha com 14 lugares, cursor pelo d-pad ou pelo analógico (lugar mais próximo num cone de 45/60/75 graus), marcas das pessoas a encontrar, lista das salas da academia, salvar no mapa, fades; setup, abertura do comando, entrada, marcas, ícone e cursor em asm |
+| [`f_bmap.c`](../src/libfield/f_bmap.c) | 0x08818FFC-0x0881BA90 | 30 | 1 | mapa do campus (field_bm): ilha com 14 lugares, cursor pelo d-pad ou pelo analógico (lugar mais próximo num cone de 45/60/75 graus), marcas das pessoas a encontrar, lista das salas da academia, salvar no mapa, fades; setup, abertura do comando, entrada, marcas, ícone e cursor em asm |
 | [`f_partner.c`](../src/libfield/f_partner.c) | 0x0881BA90-0x0881C240 | 9 | 2 | parceiro que anda atrás do jogador (field_partner): segue a posição do quadro anterior (velocidade dobrada correndo), desvia dos NPCs próximos, marca as células, começa na primeira célula andável em volta do jogador; update e posicionamento em asm |
 | [`f_shadow.c`](../src/libfield/f_shadow.c) | 0x0881C240-0x0881CE68 | 14 | 1 | lista de desenho do campo (field_draw) ordenada por profundidade, sombras em stencil (cilindro de 12 lados iluminado por field_shadow) e atributos das células da sala (fld_map_attr/fld_cell_mark) |
-| [`f_bag.c`](../src/libfield/f_bag.c) | 0x0881CE68-0x0881EDC8 | 26 | 2 | janela da bolsa (field_bag): abas de itens e cartas trocadas com L/R, ajuda da entrada sob o cursor na janela de mensagem, menu de escolher/descartar carta |
-| [`f_cal.c`](../src/libfield/f_cal.c) | 0x0881EDC8-0x0881FFEC | 10 | 1 | PDA (field_pda, no heap): abertura, deslize da página, estados, moldura, linhas, título, caixa de nota e abas |
+| [`f_bag.c`](../src/libfield/f_bag.c) | 0x0881CE68-0x0881EDC8 | 28 | 0 | janela da bolsa (field_bag): abas de itens e cartas trocadas com L/R, ajuda da entrada sob o cursor na janela de mensagem, menu de escolher/descartar carta |
+| [`f_cal.c`](../src/libfield/f_cal.c) | 0x0881EDC8-0x0881FFEC | 11 | 0 | PDA (field_pda, no heap): abertura, deslize da página, estados, moldura, linhas, título, caixa de nota e abas |
 | [`f_pdapage.c`](../src/libfield/f_pdapage.c) | 0x0881FFEC-0x08822898 | 13 | 0 | páginas do PDA: status do jogador (dias, duelos V/D/E, aproveitamento, cartas), opções, títulos das páginas, calendário do mês, lista de e-mails e e-mail aberto; moldura 9-slice, cursor, medidor e número alinhado à direita |
-| [`f_pdaparts.c`](../src/libfield/f_pdaparts.c) | 0x08822898-0x08824028 | 8 | 2 | peças das páginas do PDA: célula e marca do calendário, texto da data (ja/en), seta e barra de rolagem, item e cabeçalho de e-mail, barra de progresso, máscara do texto selecionado, entrada da barra de páginas |
+| [`f_pdaparts.c`](../src/libfield/f_pdaparts.c) | 0x08822898-0x08824028 | 10 | 0 | peças das páginas do PDA: célula e marca do calendário, texto da data (ja/en), seta e barra de rolagem, item e cabeçalho de e-mail, barra de progresso, máscara do texto selecionado, entrada da barra de páginas |
 | [`f_pdamenu.c`](../src/libfield/f_pdamenu.c) | 0x08824028-0x08825F7C | 19 | 3 | lógica das páginas do PDA: opções (cfg/volumes), escolha de duas opções, registro de eventos e leitor com rolagem e voz, calendário, arquivos do pdapack (capa, event_name, option_msg_%c) e capa 3D |
 | [`f_get.c`](../src/libfield/f_get.c) | 0x08825F7C-0x08826BB0 | 15 | 0 | mensagem 'você obteve': item com ícone, ou carta girando em 3D (face renderizada na VRAM por hook do modelo) que abre o visualizador de cartas |
 | [`f_fx.c`](../src/libfield/f_fx.c) | 0x08826BB0-0x088274B4 | 10 | 0 | balões de emoção sobre os personagens (pool de 32), ícone animado ou sprite do chamador, de frente para a câmera |
@@ -677,14 +677,14 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`s_main.c`](../src/libstory/s_main.c) | 0x08804000-0x08804270 | 7 | 0 | entrada do módulo, thread da cena (init de todos os subsistemas, laço da história, term e saída) |
-| [`s_chr.c`](../src/libstory/s_chr.c) | 0x08804270-0x088062FC | 92 | 13 | personagens da história (150): tabelas de script Scr<i>_G/Step/Deck/DH/DN/Sche/ES/EI/EL, estado salvo (nível, afinidade, flags, posição, visual, deck), condições e a atualização diária que escolhe visual, lugar e deck |
+| [`s_chr.c`](../src/libstory/s_chr.c) | 0x08804270-0x088062FC | 103 | 2 | personagens da história (150): tabelas de script Scr<i>_G/Step/Deck/DH/DN/Sche/ES/EI/EL, estado salvo (nível, afinidade, flags, posição, visual, deck), condições e a atualização diária que escolhe visual, lugar e deck |
 | [`s_player.c`](../src/libstory/s_player.c) | 0x088062FC-0x08806A18 | 48 | 3 | estado do jogador na história: sala atual/anterior e posição, ids de eventos, pontos (0..999), contagem dos 20 itens e 50 cartas, bits de cartas já obtidas |
 | [`s_vm.c`](../src/libstory/s_vm.c) | 0x08806A18-0x088075F4 | 11 | 1 | interpretador de script da história: estado story_vm (script, pc, status, textos da escolha), início do script pendente, laço de despacho dos 165 opcodes 0xC351-0xC3F5 |
 | [`s_vmcond.c`](../src/libstory/s_vmcond.c) | 0x088075F4-0x08808E68 | 43 | 1 | instruções 0xC351-0xC37E: falas, janela de escolha (comando 0x14 do campo), desvio aleatório e blocos condicionais que pulam até o marcador op+0x23 |
 | [`s_vmops.c`](../src/libstory/s_vmops.c) | 0x08808E68-0x0880B3E4 | 86 | 3 | instruções 0xC3A0-0xC3F5 (inventário, dinheiro, pontos, flags, comandos do campo, montagem de duelo, som, personagens no mapa, parceiro) e auxiliares do interpretador |
 | [`s_cal.c`](../src/libstory/s_cal.c) | 0x0880B3E4-0x0880C728 | 52 | 4 | calendário da história (mês 1..8 = maio..dezembro, dia, 73 períodos de 15 min a partir de 5:45; dia da semana, dias restantes), flags da história e flag2, capítulo por data e tabelas de texto/ramificação |
 | [`s_res.c`](../src/libstory/s_res.c) | 0x0880C728-0x0880C9E4 | 7 | 0 | heaps da cena, leitura de um EHP inteiro esperando quadro a quadro e extração de membro gzip de um EHP |
-| [`s_story.c`](../src/libstory/s_story.c) | 0x0880C9E4-0x0880DE58 | 11 | 1 | modo história: início (áreas do save entregues aos subsistemas, novo jogo ou retorno de sub-cena), despacho por quadro de ~0x35 estados, saída, avanço de data e hora, comandos de campo 0/3/10 |
+| [`s_story.c`](../src/libstory/s_story.c) | 0x0880C9E4-0x0880DE58 | 12 | 0 | modo história: início (áreas do save entregues aos subsistemas, novo jogo ou retorno de sub-cena), despacho por quadro de ~0x35 estados, saída, avanço de data e hora, comandos de campo 0/3/10 |
 | [`s_fldset.c`](../src/libstory/s_fldset.c) | 0x0880DE58-0x0880EC38 | 9 | 2 | montagem do campo pela história (personagens da sala com rotas e multidão dos dias de evento, parceiro, eventos, itens, flag noturna, ligações das salas, fade) |
 | [`s_mode.c`](../src/libstory/s_mode.c) | 0x0880EC38-0x0880FBE4 | 10 | 0 | estados do modo história em volta do campo (abrir o campo, mapa de salas, passeio livre e o despacho do resultado, resultado dos menus do script, checagem do final) |
 | [`s_modtab.c`](../src/libstory/s_modtab.c) | 0x0880FBE4-0x08810520 | 27 | 0 | tabela dos 12 PRX que a história carrega (libfield, libshop e sub-telas), troca de módulo e callbacks init/update/term de cada um |
@@ -692,7 +692,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`s_sv.c`](../src/libstory/s_sv.c) | 0x08810AE4-0x08810D24 | 23 | 0 | variáveis da história no save (capítulo 0..199, posição alternativa, tipo de multidão) e tabelas de scripts ES/EI/EL com busca por id |
 | [`s_idmap.c`](../src/libstory/s_idmap.c) | 0x08810D24-0x08812728 | 16 | 0 | remapeamentos de ids dos scripts para índices das tabelas do BOOT (personagens, registros, itens, slots de deck) e sala↔bg do campo, em switches densos |
 | [`s_msg.c`](../src/libstory/s_msg.c) | 0x08812728-0x088132FC | 12 | 0 | pacotes de texto da história (script/st0N_t01_brain.ehp e pacote do idioma; rota e3/ residual), tabelas entregues a cada subsistema e mensagens por personagem/evento sob demanda |
-| [`s_mail.c`](../src/libstory/s_mail.c) | 0x088132FC-0x088138AC | 12 | 1 | e-mails do PDA (100 registros com bitfields no save, tabela MailESM, textos MailEL/MailEI, recebimento via fld_cmd 0x12, lista e anexos) |
+| [`s_mail.c`](../src/libstory/s_mail.c) | 0x088132FC-0x088138AC | 13 | 0 | e-mails do PDA (100 registros com bitfields no save, tabela MailESM, textos MailEL/MailEI, recebimento via fld_cmd 0x12, lista e anexos) |
 | [`s_evlist.c`](../src/libstory/s_evlist.c) | 0x088138AC-0x08813C84 | 9 | 0 | eventos de mapa da história: tabela filtrada por data, nível e flags, mais os 128 bits de eventos já vistos |
 | [`s_talk.c`](../src/libstory/s_talk.c) | 0x08813C84-0x088156A4 | 22 | 1 | diálogos: janela de mensagem e bust-ups dos falantes pelos comandos 0xE/0xF/0x10/0x13/0x14 do libfield; expansão das tags do texto ($Mnnnn, 《Cnnn?v》, 《PLAYER》) |
 | [`s_pickup.c`](../src/libstory/s_pickup.c) | 0x088156A4-0x08815B54 | 10 | 0 | itens no mapa (tabela filtrada por lugar, data, nível e flags; bits de itens já pegos por rota) |
@@ -717,22 +717,22 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`dd_field.c`](../src/libduel_draw/dd_field.c) | 0x0880720C-0x08807CD4 | 14 | 0 | fundo 3D com dois slots e troca por magia de campo |
 | [`dd_fieldcam.c`](../src/libduel_draw/dd_fieldcam.c) | 0x08807CD4-0x08808D10 | 7 | 1 | câmera, neblina e luzes do campo (trilhas ou padrão), efeitos de magia de campo |
 | [`dd_info.c`](../src/libduel_draw/dd_info.c) | 0x08808D10-0x08809B1C | 14 | 2 | painel de informação da carta (um ou dois, deslizante, valores no campo) |
-| [`dd_cobj.c`](../src/libduel_draw/dd_cobj.c) | 0x08809B1C-0x0880A8E0 | 5 | 6 | objetos 3D das cartas: listas, decks, movimento entre posições |
+| [`dd_cobj.c`](../src/libduel_draw/dd_cobj.c) | 0x08809B1C-0x0880A8E0 | 11 | 0 | objetos 3D das cartas: listas, decks, movimento entre posições |
 | [`dd_slot.c`](../src/libduel_draw/dd_slot.c) | 0x0880A8E0-0x0880C48C | 6 | 1 | posição/rotação de cada zona, buscas nas listas, reconstrução a partir do motor |
-| [`dd_cobj2.c`](../src/libduel_draw/dd_cobj2.c) | 0x0880C48C-0x0880D31C | 15 | 10 | estados/ligações dos objetos, altura de pilha, contadores, pilha de destaques |
+| [`dd_cobj2.c`](../src/libduel_draw/dd_cobj2.c) | 0x0880C48C-0x0880D31C | 26 | 0 | estados/ligações dos objetos, altura de pilha, contadores, pilha de destaques |
 | [`dd_hand.c`](../src/libduel_draw/dd_hand.c) | 0x0880D31C-0x0880E45C | 0 | 3 | init do pool e layout das duas mãos |
-| [`dd_board.c`](../src/libduel_draw/dd_board.c) | 0x0880E45C-0x0880FCFC | 8 | 6 | desenho do campo, pilhas com contagem, cartas com textura |
+| [`dd_board.c`](../src/libduel_draw/dd_board.c) | 0x0880E45C-0x0880FCFC | 14 | 0 | desenho do campo, pilhas com contagem, cartas com textura |
 | [`dd_cmove.c`](../src/libduel_draw/dd_cmove.c) | 0x0880FCFC-0x08810758 | 8 | 2 | listas, alocador, movimento com arco e som, lista por zona, duração por opção de velocidade |
-| [`dd_counter.c`](../src/libduel_draw/dd_counter.c) | 0x08810758-0x08811718 | 3 | 4 | ATK/DEF animados, marcador de seleção |
+| [`dd_counter.c`](../src/libduel_draw/dd_counter.c) | 0x08810758-0x08811718 | 7 | 0 | ATK/DEF animados, marcador de seleção |
 | [`dd_lp.c`](../src/libduel_draw/dd_lp.c) | 0x08811718-0x0881299C | 0 | 0 | painel de LP e fase (contagem, turno, cartas do deck, série, animação das fases) |
 | [`dd_face.c`](../src/libduel_draw/dd_face.c) | 0x0881299C-0x0881351C | 0 | 6 | retratos dos duelistas, botão do pad, tabela de sprites |
 | [`dd_chr.c`](../src/libduel_draw/dd_chr.c) | 0x0881351C-0x088143A4 | 15 | 10 | personagens do duelo: modelo do pack do cut-in, animações TGMT gzip, voz, ossos, máscara das partes |
 | [`dd_disc_hook.c`](../src/libduel_draw/dd_disc_hook.c) | 0x088143A4-0x08814DFC | 16 | 3 | ganchos dos modelos do disco e do campo (textura da carta na VRAM, material de duel_disc_02, callback por osso, tabelas de ossos e poses) |
 | [`dd_field_cursor.c`](../src/libduel_draw/dd_field_cursor.c) | 0x08814DFC-0x08815678 | 7 | 0 | cursor do campo: posição empacotada jogador/zona/índice, grade 7x7, movimento pelo direcional, salvar/restaurar |
-| [`dd_cursor_model.c`](../src/libduel_draw/dd_cursor_model.c) | 0x08815678-0x08816FD0 | 18 | 0 | cursor 3D: pose seguindo a carta, modelo field_cursor00/01/02, seta e ícones das ações, primeiro alvo e ciclo entre alvos |
+| [`dd_cursor_model.c`](../src/libduel_draw/dd_cursor_model.c) | 0x08815678-0x08816FD0 | 11 | 0 | cursor 3D: pose seguindo a carta, modelo field_cursor00/01/02, seta e ícones das ações, primeiro alvo e ciclo entre alvos |
 | [`dd_cutin.c`](../src/libduel_draw/dd_cutin.c) | 0x08816FD0-0x088175E4 | 7 | 0 | tocador de cut-in EHF em tela cheia (fila de um pedido, legenda, laço, velocidade da configuração) |
 | [`dd_event.c`](../src/libduel_draw/dd_event.c) | 0x088175E4-0x0881794C | 4 | 1 | despacho dos eventos de duelo (tabela ordenada de 72 comandos e o formato dos argumentos) |
-| [`dd_event_cmd.c`](../src/libduel_draw/dd_event_cmd.c) | 0x0881794C-0x08819A70 | 53 | 12 | tratadores dos eventos 1..73 (banners, ataque, virada, movimentos, mensagens, escolhas) |
+| [`dd_event_cmd.c`](../src/libduel_draw/dd_event_cmd.c) | 0x0881794C-0x08819A70 | 65 | 0 | tratadores dos eventos 1..73 (banners, ataque, virada, movimentos, mensagens, escolhas) |
 | [`dd_voice.c`](../src/libduel_draw/dd_voice.c) | 0x08819A70-0x08819C04 | 7 | 0 | exports do comentário e dos sons por estado do duelo |
 | [`dd_card_select.c`](../src/libduel_draw/dd_card_select.c) | 0x08819C04-0x0881CA2C | 15 | 28 | janela da lista de cartas dos prompts (escolha de N, ordenação, filtro, opções) |
 | [`dd_scene_mode.c`](../src/libduel_draw/dd_scene_mode.c) | 0x0881CA2C-0x0881DF94 | 42 | 14 | pilha de modos de entrada da cena (campo, lista, janela, números, ficha da carta), heaps, textos, pad de replay, câmera de animação |
@@ -740,8 +740,8 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`dd_card_fx.c`](../src/libduel_draw/dd_card_fx.c) | 0x0881EBA0-0x0881F0A8 | 3 | 6 | popups de carta/texto que esperam câmera e comentário, brilho das cartas |
 | [`dd_card_fx2.c`](../src/libduel_draw/dd_card_fx2.c) | 0x0881F0A8-0x08820138 | 16 | 12 | feixes de invocação, marcas de alvo, contadores de dano e ATK/DEF, destruição, trava do cursor |
 | [`dd_field_events.c`](../src/libduel_draw/dd_field_events.c) | 0x08820138-0x08820F88 | 27 | 1 | efeitos de campo dirigidos por eventos (LP, embaralhar, tarefas de espera, ângulos) |
-| [`dd_action_menu.c`](../src/libduel_draw/dd_action_menu.c) | 0x08820F88-0x08822B0C | 31 | 1 | janela de ação sobre a posição, janelas de mensagem 0-2 e seus ganchos |
-| [`dd_field_marks.c`](../src/libduel_draw/dd_field_marks.c) | 0x08822B0C-0x0882308C | 2 | 3 | marcadores sobre as posições do campo |
+| [`dd_action_menu.c`](../src/libduel_draw/dd_action_menu.c) | 0x08820F88-0x08822B0C | 32 | 0 | janela de ação sobre a posição, janelas de mensagem 0-2 e seus ganchos |
+| [`dd_field_marks.c`](../src/libduel_draw/dd_field_marks.c) | 0x08822B0C-0x0882308C | 5 | 0 | marcadores sobre as posições do campo |
 | [`dd_chain_menu.c`](../src/libduel_draw/dd_chain_menu.c) | 0x0882308C-0x08823674 | 8 | 1 | janela das ações da carta sob o cursor |
 | [`dd_prompt_win.c`](../src/libduel_draw/dd_prompt_win.c) | 0x08823674-0x08825088 | 27 | 0 | janelas de prompt das mensagens 3-10 |
 | [`dd_msg_win.c`](../src/libduel_draw/dd_msg_win.c) | 0x08825088-0x08825DDC | 30 | 2 | janela de mensagem compartilhada, textos formatados, buffers |
@@ -821,7 +821,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`dd_help_index.c`](../src/libduel_draw/dd_help_index.c) | 0x088621A0-0x08862A60 | 16 | 0 | índice da ajuda |
 | [`dd_ui_sprites.c`](../src/libduel_draw/dd_ui_sprites.c) | 0x08862A60-0x08862DCC | 3 | 1 | sprites e moldura nine-patch |
 | [`dd_help_text.c`](../src/libduel_draw/dd_help_text.c) | 0x08862DCC-0x088632F4 | 8 | 1 | página de texto da ajuda com figura e rolagem |
-| [`dd_ui_panels.c`](../src/libduel_draw/dd_ui_panels.c) | 0x088632F4-0x08863998 | 9 | 1 | painéis com pulso/piscar e barra de rolagem |
+| [`dd_ui_panels.c`](../src/libduel_draw/dd_ui_panels.c) | 0x088632F4-0x08863998 | 10 | 0 | painéis com pulso/piscar e barra de rolagem |
 | [`dd_help_scene.c`](../src/libduel_draw/dd_help_scene.c) | 0x08863998-0x088649D4 | 14 | 5 | tela de ajuda duelo/deck (window01.gim, help/*.gim, guia de botões) |
 | [`dd_list_input.c`](../src/libduel_draw/dd_list_input.c) | 0x088649D4-0x08864B80 | 6 | 0 | entrada do widget de lista |
 | [`dd_help_launch.c`](../src/libduel_draw/dd_help_launch.c) | 0x08864B80-0x08865060 | 9 | 0 | abertura da ajuda a partir do duelo |

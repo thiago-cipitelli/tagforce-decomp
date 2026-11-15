@@ -1,5 +1,4 @@
 // @range 0x088632F4-0x08863998
-// @asm 0x0886346C-0x08863734
 /* Panels and scrollbar of the duel windows: a nine-patch panel (pulsing or flashing variants for
    the cursor) and the vertical scrollbar with its track, thumb and blinking arrows. */
 #include "dd_duelui.h"
@@ -49,21 +48,20 @@ void *ui_panel_flash(void *dl, void *gim, int x, int y, int w, int h, unsigned i
 }
 
 /* scrollbar of h pixels: pos (<= 0) is the scroll of a content of size total seen through view */
-#ifdef NON_MATCHING /* 52 palavras: top antes da 1ª chamada e bottom antes de ui_track já dão os 9 $s do original, mas permutados (orig: h s0, view s1, y s2, x s3, range s4, thumb s5, gim s6, bottom s7, top s8); gêmea de dk_help_scrollbar (libdeck) */
 void *ui_scrollbar(void *dl, void *gim, int x, int y, int h, int pos, int total, int view, int active)
 {
-    int range = ALLEGREX_MAX(view, total);
-    int thumb = (float)(h - 12) * ((float)view / (float)range);
     float frac;
+    int thumb;
+    int range;
     int top;
-    int bottom;
-    int up, down;
-    unsigned int alpha;
 
+    range = ALLEGREX_MAX(view, total);
+    thumb = (float)(h - 12) * ((float)view / (float)range);
     if (pos == 0 || range == view)
         frac = 0.0f;
     else
         frac = (float)-pos / (float)(range - view);
+    /* same shape as dk_help_scrollbar (libdeck): top is a variable only for the thumb */
     top = y + 6;
     dl = dl_ambient_color(dl, 0xFFFFFFFF);
     dl = dl_blend_func(dl, 0, 2, 3, 0, 0);
@@ -71,14 +69,14 @@ void *ui_scrollbar(void *dl, void *gim, int x, int y, int h, int pos, int total,
     dl = dl_set_tex_filter(dl, 0, 0);
     dl = dl_enable(dl, 9);
     dl = gim_set_texture(dl, gim);
-    bottom = y + h - 6;
-    dl = ui_track(dl, x, top, h - 12);
-    dl = ui_track_caps(dl, x + 1, y, x + 1, bottom);
-    dl = ui_thumb(dl, x + 2, (float)top + frac * ((float)(y + h - thumb - 6) - (float)top), thumb, active);
+    dl = ui_track(dl, x, y + 6, h - 12);
+    dl = ui_track_caps(dl, x + 1, y, x + 1, (y + h) - 6);
+    dl = ui_thumb(dl, x + 2, (float)top + frac * ((float)((y + h) - thumb - 6) - (float)top), thumb, active);
     if (active) {
-        up = 0;
-        down = 0;
-        alpha = fabsf_vfpu(255.0f * ((float)(int)(*gfx_get_state() % 30 - 15) / 15.0f));
+        int up = 0;
+        int down = 0;
+        unsigned int alpha = fabsf_vfpu((float)(int)(*gfx_get_state() % 30 - 15) / 15.0f * 255.0f);
+
         dl = dl_ambient_color(dl, alpha << 24 | 0xFFFFFF);
         if (range == view) {
             up = 0;
@@ -92,13 +90,10 @@ void *ui_scrollbar(void *dl, void *gim, int x, int y, int h, int pos, int total,
         if (up)
             dl = ui_arrow_up(dl, x + 1, y);
         if (down)
-            dl = ui_arrow_down(dl, x + 1, bottom);
+            dl = ui_arrow_down(dl, x + 1, (y + h) - 6);
     }
     return dl;
 }
-#else
-void *ui_scrollbar(void *dl, void *gim, int x, int y, int h, int pos, int total, int view, int active);
-#endif
 
 /* vertical bar of three pieces: top, stretched middle (h1), bottom */
 void *ui_bar3(void *dl, int x, int y, int u0, int v0, int w0, int h0, int u1, int v1, int w1, int th1, int h1, int u2, int v2, int w2, int h2)
