@@ -1,5 +1,4 @@
 // @range 0x08817DD4-0x08818554
-// @asm 0x08818368-0x08818554
 // @data 0x088204F4-0x08820504
 /* Sorting of the bought list: the sort value of a line for each of the thirteen keys, a stable
    qsort in either direction, and the value shown in the list row for the current key. */
@@ -171,7 +170,6 @@ int shop_sort_value(ShopItem *it, unsigned short key)
 }
 
 
-#ifdef NON_MATCHING /* 20 palavras (488 bytes contra 492): o original deixa o default do switch interno (v = -2) num bloco próprio antes do epílogo, com b; nop; aqui o li v0,-2 vai para o atraso do b. Testados goto para um bloco comum, default primeiro, return -2 */
 /* value shown in the list row for the sort key, -2 = none */
 int shop_item_key(ShopItem *it, unsigned short key)
 {
@@ -202,11 +200,13 @@ int shop_item_key(ShopItem *it, unsigned short key)
         switch (card_get_attribute_icon(it->id)) {
         case 7:
         case 8:
-            if (key != 12) {
-                v = -2;
-            } else {
+            switch (key) {
+            case 12:
                 v = card_get_prop5_hi(it->id);
                 v = v == 0 ? 7 : v;
+                break;
+            default:
+                goto none;      /* the one v = -2 block, at the end of the switch below */
             }
             break;
         default:
@@ -229,6 +229,7 @@ int shop_item_key(ShopItem *it, unsigned short key)
                 v = card_get_kind(it->id);
                 break;
             default:
+            none:
                 v = -2;
                 break;
             }
@@ -238,4 +239,3 @@ int shop_item_key(ShopItem *it, unsigned short key)
     }
     return v;
 }
-#endif
