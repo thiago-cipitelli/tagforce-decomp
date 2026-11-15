@@ -610,8 +610,9 @@ int duel_08817550(unsigned int p, int i)
     return duel_list_card_level(p, CARD_UID(duel.players[p & 1].hand[i]));
 }
 
-#ifdef NON_MATCHING /* 441 palavras (eram 1274; estrutura igual): a coloração de a/id/mask/b é s1/s2/s0/s3 no original e s2/s0/s1/s3
-   aqui; ordem/tipo das declarações, parâmetros, K&R, contadores dos laços (busca aleatória) não mudam. Rodada 24: ordem dos
+#ifdef NON_MATCHING /* 406 palavras (eram 1274; estrutura igual): a coloração de a/id/mask/b é s1/s2/s0/s3 no original e
+   s2/s1/s0/s3 aqui (rodada 33: mask declarado por último vai para s0, 441 -> 406; falta só a troca a/id). Sem efeito: K&R
+   com as 6 ordens da lista de declarações, cópia dos parâmetros em locais, usos a mais de a, tipos. Rodada 24: ordem dos
    case = ordem dos corpos no asm (sw.py), w = byte 2 de a para o a->zone do caso 0x1690, p reatribuído + q = p no caso 0x10D3,
    v = atk < v ? v : atk (máximo em ternário), duel_phase unsigned, (unsigned)(kind - 0x12) < 2 */
 #define TARGET(q, z) do { duel_088A8D40(a, (q), (z)); return 1; } while (0)
@@ -620,7 +621,6 @@ int duel_08817550(unsigned int p, int i)
 /* The computer picks the targets of its card a (b: the card it answers, if any); id selects the strategy. */
 int duel_08817598(DuelAct *a, DuelAct *b, int id)
 {
-    unsigned int mask = duel_0884E4A0(a);
     unsigned int p;
     unsigned int q;
     unsigned int t;
@@ -630,6 +630,7 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
     int v;
     unsigned int f;
     DuelStats st;
+    unsigned int mask = duel_0884E4A0(a);
 
     if (mask == 0) {
         return 1;
