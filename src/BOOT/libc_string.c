@@ -5,6 +5,8 @@
 // @gcc 0x08810D14-0x08810D1C nl_sscanf
 // @gcc 0x08810D1C-0x08810D9C nl_sscanf
 // @gcc 0x08810D9C-0x08810E24 nl_sscanf
+// @gcc 0x08810E24-0x08810E9C nl_stdio
+// @gcc 0x08810E9C-0x08810F28 nl_stdio
 // @gcc 0x08810FA0-0x08810FD0 nl_stdio
 // @gcc 0x08810FD0-0x0881106C libc_strcasecmp
 // @gcc 0x0881106C-0x08811118 libc_strcat
@@ -179,43 +181,7 @@ int _sscanf_r(void *r, const char *str, const char *fmt, ...)
 #endif
 
 /* stdio.c __sread: keeps the file offset (__SOFF) up to date */
-#ifdef __MWERKS__
-asm int libc_sread(LibcFile *fp, char *buf, int n)
-{
-    addiu sp, sp, -16
-    sw s2, 8(sp)
-    move s2, a0
-    sw ra, 12(sp)
-    sw s1, 4(sp)
-    move s1, a2
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a1
-    lh a1, 14(s2)
-    move a0, v0
-    move a2, s0
-    jal _read_r
-    move a3, s1
-    bltz v0, @68
-    move v1, v0
-    lw v0, 80(s2)
-    addu v0, v0, v1
-    sw v0, 80(s2)
-@4c:
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    move v0, v1
-    jr ra
-    addiu sp, sp, 16
-@68:
-    lhu v0, 12(s2)
-    ins v0, zero, 0xc, 0x1
-    j @4c
-    sh v0, 12(s2)
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_stdio.c */
 int libc_sread(LibcFile *fp, char *buf, int n)
 {
     int ret = _read_r(heap_get_current(), fp->file, buf, n);
@@ -230,48 +196,7 @@ int libc_sread(LibcFile *fp, char *buf, int n)
 #endif
 
 /* stdio.c __swrite: append streams seek to the end first */
-#ifdef __MWERKS__
-asm int libc_swrite(LibcFile *fp, const char *buf, int n)
-{
-    addiu sp, sp, -16
-    sw s2, 8(sp)
-    move s2, a2
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    sw ra, 12(sp)
-    lhu v1, 12(a0)
-    andi v0, v1, 0x100
-    bnez v0, @68
-    move s0, a0
-@2c:
-    move v0, v1
-    ins v0, zero, 0xc, 0x1
-    jal heap_get_current
-    sh v0, 12(s0)
-    lh a1, 14(s0)
-    move a2, s1
-    move a3, s2
-    jal _write_r
-    move a0, v0
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@68:
-    jal heap_get_current
-    nop
-    lh a1, 14(s0)
-    move a0, v0
-    move a2, zero
-    jal _lseek_r
-    addiu a3, zero, 2
-    j @2c
-    lhu v1, 12(s0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_stdio.c */
 int libc_swrite(LibcFile *fp, const char *buf, int n)
 {
     if (fp->flags & 0x100) {

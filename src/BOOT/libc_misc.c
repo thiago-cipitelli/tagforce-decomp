@@ -9,7 +9,7 @@
 // @asm 0x088106E0-0x08810854
 // @gcc 0x08810854-0x08810904 nl_reent
 // @gcc 0x08810904-0x08810940 nl_refill
-// @asm 0x08810940-0x08810ADC
+// @gcc 0x08810940-0x08810ADC nl_refill
 // @gcc 0x08810ADC-0x08810B38
 // @gcc 0x08810B38-0x08810BA8 nl_snprintf
 /* newlib (GCC) of the Sony SDK libc, in link order: _printf_r, printf, qsort (Bentley-McIlroy),
@@ -483,6 +483,7 @@ void libc_smakebuf(LibcFile *fp);
 int libc_fwalk(void *r, int (*fn)(LibcFile *));
 
 /* refill.c __srefill: EOF (-1) at end of file or error */
+#ifndef __MWERKS__ /* PSP: nl_refill.c */
 int libc_srefill(LibcFile *fp)
 {
     if (*(int *)((char *)heap_get_current() + 0x38) == 0) {
@@ -535,6 +536,7 @@ int libc_srefill(LibcFile *fp)
     }
     return 0;
 }
+#endif
 
 unsigned int _sbrk(int incr);
 

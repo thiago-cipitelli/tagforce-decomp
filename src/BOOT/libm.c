@@ -9,7 +9,7 @@
 // @asm 0x08809BB4-0x08809E50
 // @gcc 0x08809E70-0x08809F38 nl_sf_cos
 // @gcc 0x08809F38-0x08809F4C libm_sf_fabs
-// @asm 0x08809F4C-0x0880A028
+// @gcc 0x08809F4C-0x0880A028 nl_sf_floor
 // @asm 0x0880A03C-0x0880A154
 // @gcc 0x0880A154-0x0880A220 libm_sf_sin
 // @asm 0x0880A220-0x0880A340
@@ -545,6 +545,7 @@ float libm_cosf(float x)
 #endif
 
 #ifdef NON_MATCHING /* GCC: constants loaded through %hi/%lo */
+#ifndef __MWERKS__ /* PSP: nl_sf_floor.c */
 float libm_floorf(float x)
 {
     int i0, j0;
@@ -583,6 +584,7 @@ float libm_floorf(float x)
     SET_FLOAT_WORD(x, i0);
     return x;
 }
+#endif
 #endif
 
 #ifdef __MWERKS__
