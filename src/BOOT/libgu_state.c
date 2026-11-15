@@ -2,21 +2,17 @@
 // @asm 0x08805EC4-0x08806300
 // @gcc 0x08806300-0x08806378
 // @asm 0x08806378-0x08806460
-// @gcc 0x08806460-0x088064BC
-// @asm 0x088064BC-0x08806564
-// @gcc 0x08806564-0x0880661C
+// @gcc 0x08806460-0x0880661C
 // @asm 0x0880661C-0x0880665C
 // @gcc 0x0880665C-0x088066B4
 // @asm 0x088066B4-0x088066F4
-// @gcc 0x088066F4-0x088067E4
-// @asm 0x088067E4-0x088068EC
+// @gcc 0x088066F4-0x08806850
+// @asm 0x08806850-0x088068EC
 // @gcc 0x088068EC-0x088069C8
 // @asm 0x088069C8-0x088069F0
-// @gcc 0x088069F0-0x08806A1C
-// @asm 0x08806A1C-0x08806A74
-// @gcc 0x08806A74-0x08806B1C
-// @asm 0x08806B1C-0x08806BE0
-// @gcc 0x08806BE0-0x08806C68
+// @gcc 0x088069F0-0x08806B1C
+// @asm 0x08806B1C-0x08806B9C
+// @gcc 0x08806B9C-0x08806C68
 // @asm 0x08806C68-0x08806D84
 // @gcc 0x08806D84-0x08806E08
 // @asm 0x08806E08-0x08806E48
@@ -178,10 +174,15 @@ void gu_set_param_494(int flags)
 /* sceGuViewport: OFFSETX/Y scale and center (float24) */
 void gu_Viewport(int cx, int cy, int width, int height)
 {
-    GU_PUSH(GU_F24((float)(width / 2)) | 0x42000000);
-    GU_PUSH(GU_F24((float)(-height / 2)) | 0x43000000);
-    GU_PUSH(GU_F24((float)cx) | 0x45000000);
-    GU_PUSH(GU_F24((float)cy) | 0x46000000);
+    unsigned int a = GU_F24((float)(width / 2)) | 0x42000000;
+    unsigned int b = GU_F24((float)(-height / 2)) | 0x43000000;
+    unsigned int c = GU_F24((float)cx) | 0x45000000;
+    unsigned int d = GU_F24((float)cy) | 0x46000000;
+
+    GU_PUSH(a);
+    GU_PUSH(b);
+    GU_PUSH(c);
+    GU_PUSH(d);
 }
 
 void gu_DepthRange(int near, int far)
@@ -260,10 +261,15 @@ void sceGuLightMode(int mode)
 /* LCA/LLA/LQA of light n */
 void sceGuLightAtt(float atten0, float atten1, float atten2, int light)
 {
+    unsigned int a, b, c;
+
     light *= 3;
-    GU_PUSH((unsigned int)(light + 0x7B) << 24 | GU_F24(atten0));
-    GU_PUSH((unsigned int)(light + 0x7C) << 24 | GU_F24(atten1));
-    GU_PUSH((unsigned int)(light + 0x7D) << 24 | GU_F24(atten2));
+    a = (unsigned int)(light + 0x7B) << 24 | GU_F24(atten0);
+    b = (unsigned int)(light + 0x7C) << 24 | GU_F24(atten1);
+    c = (unsigned int)(light + 0x7D) << 24 | GU_F24(atten2);
+    GU_PUSH(a);
+    GU_PUSH(b);
+    GU_PUSH(c);
 }
 
 /* SPOTEXP, SPOTCUT and the three LDX/LDY/LDZ direction words of light n */
@@ -319,11 +325,10 @@ void sceGuTexLevelMode(float bias, int mode)
     extern const float gu_texlevel_scale; /* 0x088EB114 16.0 */
     int b = (int)(bias * gu_texlevel_scale);
 
-    if (b < -128) {
-        b = -128;
-    }
     if (b > 127) {
         b = 127;
+    } else if (b < -128) {
+        b = -128;
     }
     GU_PUSH((b & 0xFF) << 16 | mode | 0xC8000000);
 }
@@ -374,8 +379,11 @@ void sceGuTexImage(int mipmap, int width, int height, int tbw, const void *tbp)
 
 void sceGuTexOffset(float u, float v)
 {
-    GU_PUSH(GU_F24(u) | 0x4A000000);
-    GU_PUSH(GU_F24(v) | 0x4B000000);
+    unsigned int a = GU_F24(u) | 0x4A000000;
+    unsigned int b = GU_F24(v) | 0x4B000000;
+
+    GU_PUSH(a);
+    GU_PUSH(b);
 }
 
 void sceGuTexFlush(void)
