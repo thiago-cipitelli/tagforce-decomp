@@ -1,5 +1,4 @@
 // @range 0x0880C238-0x0880D298
-// @asm 0x0880C83C-0x0880C904
 /* 2D layers of the shop: the counter (clerk, points, total spent, message window, the pack menu
    with completion, price and cards per pack), the shelf with the 48 pack icons in four rows, the
    blinking cursor, and the sold out / price tags of the pack under the cursor. */
@@ -142,7 +141,6 @@ unsigned int *shop_menu_draw(unsigned int *list, int x, int y)
     return font_text_clear();
 }
 
-#ifdef NON_MATCHING /* a chamada do cursor no original fica com o atraso vazio (move a0 antes do jal); o mwcc põe o move no atraso */
 void shop_draw_shelf(void)
 {
     unsigned int *list;
@@ -152,8 +150,13 @@ void shop_draw_shelf(void)
     list = shop_shelf_bg(list);
     list = shop_shelf_icons(list);
     list = shop_shelf_pegs(list);
-    if (shop.state < 2 || shop.state >= 6)
+    switch (shop.state) {
+    case 2 ... 5:
+        break;
+    default:
         list = shop_shelf_cursor(list, shop.pack);
+        break;
+    }
     if (shop_pack_can_buy(shop.pack) == 0) {
         list = shop_shelf_closed(list);
     } else {
@@ -162,7 +165,6 @@ void shop_draw_shelf(void)
     }
     dl_set_list(list);
 }
-#endif
 
 unsigned int *shop_shelf_bg(unsigned int *list)
 {
