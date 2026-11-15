@@ -1,6 +1,5 @@
 // @range 0x088D6DE8-0x088DA5EC
 // @asm 0x088D7EA4-0x088D8354
-// @asm 0x088D8AB8-0x088D8B1C
 /* Requests that change effect entries and slot values directly (the effect half of the request steps
    in req_step.c), and the requests that show a card, flip a card of the hand/deck/extra deck and send
    a card from a zone or from the special slots to another pile. */
@@ -656,16 +655,16 @@ void duel_req_effect_add(void)
     duel_busy_0891523C = 0;
 }
 
-#ifdef NON_MATCHING /* 4 palavras: o original carrega duel_req.id antes de arg (v1/v0 trocados); nenhuma ordem de locais/forma testada reproduz */
+/* Set effect entry arg >> 8 of zone arg & 0xFF. Only id is a local, and the player is a ternary: the
+   original loads id first and turns it into 0/1 in the delay slot of the call. */
 void duel_req_effect_set(void)
 {
     unsigned int id = duel_req.id;
-    unsigned int arg = duel_req.arg;
-    duel_effect_set((id & 0x8000) != 0, arg & 0xFF, arg >> 8 & 0xFF, *(unsigned short *)&duel_req.loc, duel_req.w);
+
+    duel_effect_set((id & 0x8000) ? 1 : 0, duel_req.arg & 0xFF, duel_req.arg >> 8 & 0xFF, *(unsigned short *)&duel_req.loc, duel_req.w);
     duel_host_call(0x24, 0, 0, 0);
     duel_busy_0891523C = 0;
 }
-#endif
 
 /* Free entries of zone arg & 0xFF by card (arg >> 8 below 6), by source, or by kind (w >> 8). */
 void duel_req_effect_free(void)

@@ -1,5 +1,4 @@
 // @range 0x088D1DF4-0x088D28F8
-// @asm 0x088D1F1C-0x088D2288
 /* Results of a battle: destroying or moving the cards that fought (duel_special.slot[i]: 0 attacker,
    1 target) and the commands to the presentation. */
 #include "duel.h"
@@ -79,7 +78,6 @@ void duel_088D1DF4(DuelCard *c, struct DuelActX x)
     }
 }
 
-#ifdef NON_MATCHING /* 8 palavras: lógica conferida; o original antecipa a carga de a->player para o delay slot antes de card_is_attribute9 e troca a0/v0 no laço de zeragem de x */
 /* The card that fought (i) is destroyed by a's effect. */
 int duel_088D1F1C(DuelAct *a, int i)
 {
@@ -88,10 +86,6 @@ int duel_088D1F1C(DuelAct *a, int i)
     DuelSlot *s;
     int id;
     int uid;
-    int grave;
-    unsigned int f;
-    int opp;
-    struct DuelActX1 x;
 
     BATTLE_PZ(i, q, z);
     s = &duel_special.slot[i];
@@ -101,19 +95,10 @@ int duel_088D1F1C(DuelAct *a, int i)
         return 0;
     }
     if (id != 0) {
-        f = 2;
-        grave = !((duel_088DFCC8(uid) != 0 ^ 1) || card_is_attribute9(id) != 0);
-        opp = a->player != q;
-        {
-            int n = 4;
-            unsigned char *d = (unsigned char *)&x;
-
-            if (d) {
-                do {
-                    *d++ = 0;
-                } while (--n);
-            }
-        }
+        unsigned int f = 2;
+        int grave = !((duel_088DFCC8(uid) != 0 ^ 1) || card_is_attribute9(id) != 0);
+        int opp = a->player != q;
+        struct DuelActX1 x = { 0 };
         if (id == 0x16F8 && duel_spec_act_ok(&duel_special.act[duel_special.player[0] ^ i]) != 0) {
             grave = 0;
         }
@@ -143,7 +128,6 @@ int duel_088D1F1C(DuelAct *a, int i)
     }
     return 0;
 }
-#endif
 
 /* The card that fought (i) is returned to the hand by a's effect (f: command flags). */
 int duel_088D2288(DuelAct *a, int i, unsigned int f)

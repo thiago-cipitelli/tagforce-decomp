@@ -3276,3 +3276,46 @@ Bateram `fld_sprite_quad`, `pda_draw_mail_item`, `fbag_draw`, `fcal_draw_tabs`, 
   `vs.py` (o mesmo com nota de ESTRUTURA, sem registradores), `vshow.py`/`vshape.py` (diff lado a lado / estrutural
   de uma variante), `decl.py` (ordens aleatórias de declaração), `prag.py` (varredura de pragmas), `mcheck.sh`
   (config + check só do módulo, 2 s).
+## Rodada 32 (`eC`): reteste do skip de libduel_eng (arquivos de regras e requisições)
+
+Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era ordem de declarações sozinha:
+
+- **Callee `static` do mesmo arquivo** (`duel_msg_poll`, 642 -> 0, antes "não-corrigível: o original lê o `$v0` que
+  sobra de `duel_msg_count` e não carrega `$a1`"): com `duel_msg_count` `static`, o mwcc sabe quais registradores ela
+  não toca e mantém vivos, através do `jal`, o `size` em `v0` (sem `$s`) e o `0` em `a1` (reaproveitado como 2º
+  argumento da chamada seguinte). Sintoma: valor lido de `v0`/`a1` depois de uma chamada a função do MESMO arquivo, ou
+  argumento constante que "falta". Antes de classificar como bug do original, tornar `static` o callee local.
+- **Helper `static inline` com `return` em cada `case`** (`duel_count_tributes`, 144 -> 0): o `ok` de cada monstro
+  sai de `trib_ok_()` com `return ok;` no fim de cada `case`; isso dá os `b; nop` sem preencher, o `xor` morto e a
+  cópia morta depois do `blezl` (modo sem limpeza) de uma vez. Com `break` e um só `return` não muda nada.
+- **`T x = { 0 };` dentro do bloco, com os outros locais do bloco inicializados na declaração** (`duel_088D1F1C`,
+  8 -> 0): `if (id != 0) { unsigned int f = 2; int grave = ...; int opp = ...; struct DuelActX1 x = { 0 }; ...`.
+  O laço de bytes escrito à mão trocava `a0/v0` e a carga de `a->player`; `x = { 0 }` no escopo da função zera no
+  início da função (203 palavras): tem de ser no bloco.
+- **Resultado de chamada por um temporário próprio, um por chamada** (`duel_bonus_calc`, 36 -> 0): `t =
+  game_state2_get(); r = (DuelResults *)t;` e `u = sysstate2_get_ptr_51c(); rec = (unsigned char *)u;` (`void *t,
+  *u`). Sem eles `r` não se move e `rec` fica sempre um registrador abaixo de `k` (tabela ordem -> registradores com
+  `build/tmp/eC/regs.py`: 24 resultados para 120 ordens = um par amarrado). Com os dois, a ordem `b, t, u, i, k, rec`
+  bate. Quando a tabela mostra duas variáveis sempre adjacentes, uma delas precisa de outra identidade.
+- **Contador reaproveitado** (`duel_req_end_turn`, 15 -> 0): o laço do cemitério usa o `z` (int, com `(unsigned
+  int)z <`) do primeiro par de laços e só o da zona F tem contador próprio; `t1/t2/t3` deixam de girar. O inverso
+  (`duel_find_effect_card`, 2 -> 0): o 2º laço tem ponteiro e bit próprios (`t`, `c`) e só o contador `i` é comum,
+  com `s, i, b` na ordem do `for`. Testar as 2^n combinações {variável comum, própria} por laço x ordem.
+- **Só um dos campos num local** (`duel_req_effect_set`, 4 -> 0): `unsigned int id = duel_req.id;` e
+  `duel_effect_set((id & 0x8000) ? 1 : 0, duel_req.arg & 0xFF, duel_req.arg >> 8 & 0xFF, ...)`: o ternário atrasa o
+  `sltu` para o delay slot e `arg` sem local inverte `v0/v1`.
+- **Ordem das atribuições do topo com um campo de `f` por último** (`duel_088CC8EC`, 20 -> 0, só o prólogo):
+  `p` primeiro, depois `id`, `owner`, `uid`, `z`, `destroyed`, e `by_effect = (f & 0x80000) != 0` DEPOIS de
+  `special`. A busca anterior não movia `by_effect` para fora do grupo dos campos de `x`.
+- **Argumento global lido antes do `&&`** (`duel_08850F44`, passo 4): `rt = duel_chain.res_target; if (z < 5 &&
+  f(a, rt, &loc))` põe o `lui` antes do `slti` e a carga no delay slot, e o `beqzl` + `li 14` vai para o 2º teste.
+  Faltam 4 instruções (`andi 0xff` do jogador nos gatilhos da mão; `build/tmp/eC/adiff.py` alinha funções de tamanho
+  diferente e lista só os trechos que diferem).
+- `lnot_()` (`static inline int lnot_(int x) { return !x; }`) reproduz os booleanos materializados `sltu; xori;
+  beqz` de `duel_088C6BC8` sem os blocos `{ int u = !ban; if (u) ... }`, mas não muda os registradores.
+- Sem forma: `duel_req_mill` (9: o 2º campo lido fica sempre em `s3` e `p` em `s5`, qualquer que seja a variável;
+  5040 ordens x tipos, máscaras/casts, ponteiro da carta, bloco para `c`), `duel_088C6BC8` (54: `grave` como local sai
+  da classe de `ban`/`p`/`c` e vai para a de `id`/`o`; como parâmetro fica abaixo de `p`), `duel_field_controller`
+  (102: nenhuma ordem, escopo, `zo` local com `ZOFF` ou forma do laço mexe no bloco {base,cur,p} x {ef,src,q}),
+  `duel_piles_swap` (126: `s = &t; u = s->uid` é dobrado, 106 com tamanho errado), `duel_req_swap_zones` (246, 7
+  instruções a menos: o original usa `s8` para `(bz & 0xFF) << 8` e derrama `bo`; um local `bh` não reproduz).

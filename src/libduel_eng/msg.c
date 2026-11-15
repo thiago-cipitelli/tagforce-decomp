@@ -1,5 +1,5 @@
 // @range 0x088F71D8-0x088F7EB4
-// @asm 0x088F7418-0x088F7EB4
+// @data 0x08911F40-0x08911FC0
 /* Messages between the two consoles of a link duel: a command with optional argument and
    payload, the count of commands still waiting for an answer, and duel_msg_poll, which reads
    the next command from the other console and applies it to the local state. */
@@ -38,7 +38,7 @@ extern DuelMsgState duel_msg_state;
 void duel_memcpy(void *dst, void *src, int n);
 void duel_msg_post(unsigned short *buf, int size);
 void duel_msg_send(unsigned short cmd, int arg, void *data, int len);
-void duel_msg_count(int cmd, int inc);
+static void duel_msg_count(int cmd, int inc);
 
 void duel_msg_send3(unsigned short cmd, unsigned short a, unsigned short b, unsigned short c)
 {
@@ -52,7 +52,7 @@ void duel_msg_send3(unsigned short cmd, unsigned short a, unsigned short b, unsi
 }
 
 /* Commands that wait for an answer change the pending count. */
-void duel_msg_count(int cmd, int inc)
+static void duel_msg_count(int cmd, int inc)
 {
     switch (cmd) {
     case 2:
@@ -138,8 +138,7 @@ int card_is_monster(int id);
 void duel_0884DBAC(DuelAct *a, int i);
 int duel_0886B1F4(DuelAct *a);
 
-#ifdef NON_MATCHING /* forma igual; não-corrigível: o original não carrega $a1 antes de duel_msg_send3(3, 0, 0, 0) e não guarda
-                      o retorno de duel_net_recv: o `size < 0x18` do case 0x19 lê o $v0 que sobra de duel_msg_count (void) */
+/* duel_msg_count is static: the original keeps the size in $v0 and the 0 in $a1 across the call to it. */
 /* Reads one command from the other console and applies it. Returns 0 when the link is over. */
 int duel_msg_poll(void)
 {
@@ -153,7 +152,7 @@ int duel_msg_poll(void)
         return 1;
     }
     duel_msg_buf[0] = 0;
-    size = duel_net_recv(duel_msg_buf); /* the original reads it back as the $v0 left by duel_msg_count */
+    size = duel_net_recv(duel_msg_buf);
     if (size == 0) {
         if (!duel_net_sysvar() || duel_msg_done()) {
             duel_net_end = 1;
@@ -327,4 +326,3 @@ int duel_msg_poll(void)
         return 0;
     }
 }
-#endif

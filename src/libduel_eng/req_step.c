@@ -1,6 +1,5 @@
 // @range 0x088DA5EC-0x088DEB2C
 // @asm 0x088DC4E0-0x088DCA4C
-// @asm 0x088DD038-0x088DD1A4
 /* Steps of the requests the engine carries out one per frame (duel_req, duel_req_step): input log, messages,
    graveyard and hand moves, summoning and setting a card from the hand. */
 #include "duel.h"
@@ -1018,16 +1017,13 @@ void duel_req_wait_5(void)
     }
 }
 
-#ifdef NON_MATCHING /* 15 palavras: o original usa o ponteiro do jogador (t3) como ponteiro do laço da zona F e uma cópia
-                       (t2) no do cemitério; pl explícito, ordem dos contadores e contador único não reproduzem */
 /* End of turn: clear the high flags of every zone and of the mode, mark the graveyard and zone F
-   cards as old, count down the timed effects. */
+   cards as old, count down the timed effects. The graveyard loop reuses z as its counter (registers). */
 void duel_req_end_turn(void)
 {
     unsigned int p;
     int z;
     unsigned int i;
-    unsigned int j;
 
     duel_host_call(0x48, (duel_req.id & 0x8000) != 0, 0, 0);
     for (p = 0; (int)p < 2; p++) {
@@ -1037,17 +1033,16 @@ void duel_req_end_turn(void)
     }
     duel.mode &= 0xFFFF;
     for (p = 0; (int)p < 2; p++) {
-        for (i = 0; i < duel.players[p & 1].n_grave; i++) {
-            duel.players[p & 1].grave[i].b20 = 1;
+        for (z = 0; z < duel.players[p & 1].n_grave; z++) {
+            duel.players[p & 1].grave[z].b20 = 1;
         }
-        for (j = 0; j < duel.players[p & 1].n_f; j++) {
-            duel.players[p & 1].zone_f[j].b20 = 1;
+        for (i = 0; i < duel.players[p & 1].n_f; i++) {
+            duel.players[p & 1].zone_f[i].b20 = 1;
         }
     }
     duel_effects_tick();
     duel_busy_0891523C = 0;
 }
-#endif
 
 void duel_req_wait_frames(void)
 {

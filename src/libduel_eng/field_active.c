@@ -1,5 +1,4 @@
 // @range 0x088E80CC-0x088E8CF4
-// @asm 0x088E83C8-0x088E8624
 /* Active copies of a card on the field (face up, not negated, zone enabled), including the two
    cards held outside the zones in the special mode. */
 #include "duel.h"
@@ -80,9 +79,6 @@ int duel_spec_act_ok(DuelSpecAct *a)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 2 palavras: com o ponteiro de slot explícito (como em duel_count_monster_active) só falta a ordem
-                       de `i = 0` e `b = p << 4` antes do 1º laço (ordens do for, das declarações e contadores
-                       próprios testados) */
 /* Active copies of card id of player p, zone skip excluded. */
 int duel_find_effect_card(unsigned int p, int id, int skip)
 {
@@ -90,18 +86,20 @@ int duel_find_effect_card(unsigned int p, int id, int skip)
     int i;
     DuelPlayer *s;
     unsigned int b;
+    DuelPlayer *t;                     /* the spell loop has its own slot pointer and bit (registers) */
+    unsigned int c;
 
     if (card_is_monster(id) != 0) {
-        for (s = &duel.players[p & 1], b = p << 4, i = 0; i <= 4;
+        for (s = &duel.players[p & 1], i = 0, b = p << 4; i <= 4;
              s = (DuelPlayer *)((char *)s + sizeof(DuelSlot)), i++, b++) {
             if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&s->field[0]) && !(duel.zone_off & 1 << b)) {
                 n++;
             }
         }
     } else if (card_get_prop5_hi(id) != 2) {
-        for (i = 5, s = (DuelPlayer *)((char *)&duel.players[p & 1] + 5 * sizeof(DuelSlot)), b = (p << 4) + 5; i < 10;
-             s = (DuelPlayer *)((char *)s + sizeof(DuelSlot)), i++, b++) {
-            if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&s->field[0]) && !(duel.zone_off & 1 << b)) {
+        for (i = 5, t = (DuelPlayer *)((char *)&duel.players[p & 1] + 5 * sizeof(DuelSlot)), c = (p << 4) + 5; i < 10;
+             t = (DuelPlayer *)((char *)t + sizeof(DuelSlot)), i++, c++) {
+            if (id == field_get_card(p, i) && i != skip && SLOT_ACTIVE(&t->field[0]) && !(duel.zone_off & 1 << c)) {
                 n++;
             }
         }
@@ -111,7 +109,6 @@ int duel_find_effect_card(unsigned int p, int id, int skip)
     }
     return n;
 }
-#endif
 
 /* Active copies of card id on both fields. */
 int duel_count_active(int id)
