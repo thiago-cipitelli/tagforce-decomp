@@ -1,5 +1,4 @@
 // @range 0x08814D94-0x08815FD8
-// @asm 0x08815984-0x08815AA8
 // @rodata 0x08838AC4-0x08838AE0
 /* Sprite digits and strings of digits of the HUD, the icons of the day parts and the hands of the
    clock (rotated quads, still in asm). */
@@ -117,13 +116,12 @@ void fld_hud_draw_free(void)
 {
 }
 
-void *fld_digit(float scale, void *list, int x, int y, int z, int u, int v, int w, int h, int frame)
+void *fld_digit(void *list, int x, int y, int z, int u, int v, int w, int h, int frame, float scale)
 {
     list = draw_set_offsets(list, w, h, (int)(w * scale), (int)(h * scale));
     return draw_sprite(list, x, y, z, u + w * frame, v, 0, 0);
 }
 
-#ifdef NON_MATCHING /* só a ordem de um move de argumento (a3) e do sw do dígito na pilha difere */
 void *fld_digits(void *list, char *s, int x, int y, int z, int u, int v, int w, int h, int gap,
                  float scale)
 {
@@ -134,12 +132,11 @@ void *fld_digits(void *list, char *s, int x, int y, int z, int u, int v, int w, 
     if (i >= 0) {
         step = gap + w * scale;
         do {
-            list = fld_digit(scale, list, (int)(x - step * (n - i)), y, z, u, v, w, h, s[i] - '0');
+            list = fld_digit(list, (int)(x - step * (n - i)), y, z, u, v, w, h, s[i] - '0', scale);
         } while (--i >= 0);
     }
     return list;
 }
-#endif
 
 void *fld_day_icon(void *list, int n, int x, int y, int z)
 {
@@ -162,7 +159,7 @@ void *fld_day_icon(void *list, int n, int x, int y, int z)
         n -= 4;
         break;
     }
-    return fld_digit(1.0f, list, x, y, z, u, v, 64, 16, n);
+    return fld_digit(list, x, y, z, u, v, 64, 16, n, 1.0f);
 }
 
 void *fld_clock_hands(void *list, int x, int y, int z, int h, int m)
