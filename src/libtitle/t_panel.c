@@ -1,11 +1,13 @@
 // @range 0x088106D8-0x08813088
 // @asm 0x0881103C-0x08811658
-// @asm 0x08811A8C-0x08811FBC
-// @rodata 0x0882AED0-0x0882AEE8
+// @rodata 0x0882AEA0-0x0882AEE8
 /* The title's panel widgets: a framed box of cells with a scrollbar (TBox), tabs (TTab), the tabbed
    window combining them with a system list (TPanel), the nine-piece frames drawn from title_sprites2,
    the blinking cursor frame, and preset boxes and help windows used by the duel setup screens. */
 #include "libtitle.h"
+
+/* first piece of a nine-piece frame in title_sprites2 (an enum: the original converts it at every use) */
+typedef enum TFrameKind { TFK_WINDOW = 30, TFK_BOX = 40, TFK_BAR = 70, TFK_73 = 73, TFK_75 = 75, TFK_84 = 84, TFK_93 = 93, TFK_102 = 102 } TFrameKind;
 int title_get_ticks(void);
 
 void tbox_init(TBox *b);
@@ -18,7 +20,7 @@ void *tframe_box(void *list, unsigned int color, int x, int y, int w, int h, int
 void *tframe_cursor(void *list, unsigned int color, int x, int y, int w, int h);
 void tframe_cursor_mode(int mode);
 void *tframe_bar(void *list, int sel, unsigned int color, int x, int y, int w, int h);
-void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kind, int style,
+void *tframe(void *list, unsigned int color, int x, int y, int w, int h, TFrameKind kind, int style,
              int mode);
 void *tframe_window(void *list, unsigned int color, int x, int y, int w, int h);
 void *tframe_tab(void *list, unsigned int color, short x, short y);
@@ -486,25 +488,32 @@ void *tframe_bar(void *list, int sel, unsigned int color, int x, int y, int w, i
         return tframe(list, color, x, y, w, h, 70, 0, 0);
 }
 
-#ifdef NON_MATCHING /* 190 palavras: lógica conferida; o switch (kind) do original tem os case em ordem inversa e switch (mode) de um case só; falta o ponteiro de indução de title_sprites2[i] (com o índice comum o mwcc reaproveita kind * 22 e o quadro cresce 16 bytes) e a alocação dos $s */
 /* nine-piece frame from title_sprites2[kind..]; style selects the texture row, mode 1 the shadow */
-void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kind, int style,
+void *tframe(void *list, unsigned int color, int x, int y, int w, int h, TFrameKind kind, int style,
              int mode)
 {
+    short px;
+    short pw;
+    short ph;
     int pass;
-    TSpr16 s;
-    int passes = 1;
     int n = 9;
+    short y1;
+    short py;
+    short tw;
+    short y2;
     int last = 2;
+    int passes = 1;
+    short x2;
+    short th;
+    short u;
+    short x1;
+    short v;
+    TSpr16 s;
     short du = 0;
     short dv = 0;
-    short x1, x2, y1, y2;
-    short cw, ch;
-    short px, py, pw, ph;
-    short u, v;
-    int uv;
+    short ch;
+    short cw;
     int i;
-
     switch (kind) {
     case 75:
     case 84:
@@ -531,8 +540,8 @@ void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kin
         mode = 0;
         break;
     case 70:
-        du = style * 14;
         mode = 0;
+        du = style * 14;
         n = 3;
         break;
     default:
@@ -558,47 +567,49 @@ void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kin
     list = tmenu_gfx_setup(list, 0);
     list = dl_color(list, color);
     list = gim_set_texture(list, ehp_find(title_pack(), title_sprite_gim(title_sprites2, kind), 0));
-    for (pass = 0, uv = 0; pass < passes; uv += 32, pass++) {
+    for (pass = 0; pass < passes; pass++) {
         if (pass != 0 && kind == 102)
-            dv = uv;
+            dv = pass << 5;
         for (i = kind; i < kind + n; i++) {
-            s = *(TSpr16 *)((char *)title_sprites2 + i * sizeof(TSpr16));
+            s = title_sprites2[i];
             u = s.u + du;
             v = s.v + dv;
-            pw = s.tw;
-            ph = s.th;
+            tw = s.tw;
+            th = s.th;
             px = x;
             py = y;
+            pw = tw;
+            ph = th;
             switch (i - kind) {
             case 1:
-                pw = cw;
                 px = x1;
+                pw = cw;
                 break;
             case 2:
                 px = x2;
                 break;
             case 3:
-                ph = ch;
                 py = y1;
+                ph = ch;
                 break;
             case 4:
-                pw = cw;
-                ph = ch;
                 px = x1;
                 py = y1;
+                pw = cw;
+                ph = ch;
                 break;
             case 5:
-                ph = ch;
                 px = x2;
                 py = y1;
+                ph = ch;
                 break;
             case 6:
                 py = y2;
                 break;
             case 7:
-                pw = cw;
                 px = x1;
                 py = y2;
+                pw = cw;
                 break;
             case 8:
                 px = x2;
@@ -608,22 +619,21 @@ void *tframe(void *list, unsigned int color, int x, int y, int w, int h, int kin
                 px = x2;
                 break;
             case 10:
-                ph = ch;
                 px = x2;
                 py = y1;
+                ph = ch;
                 break;
             case 11:
                 px = x2;
                 py = y2;
                 break;
             }
-            list = draw_set_offsets(list, s.tw, s.th, pw, ph);
+            list = draw_set_offsets(list, tw, th, pw, ph);
             list = draw_sprite(list, px, py, 0, u, v, s.a, s.b);
         }
     }
     return list;
 }
-#endif
 
 void *tframe_window(void *list, unsigned int color, int x, int y, int w, int h)
 {
