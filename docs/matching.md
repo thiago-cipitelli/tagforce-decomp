@@ -3827,3 +3827,10 @@ Nenhuma era ordem de declaração. Mecanismos novos:
     fica em 41; o `add.s` de `cx` sai sempre tarde, no original 6 instruções depois do `mul.s`.
 - Scripts em `build/tmp/lB/`: `fb.py` (variantes do corpo de uma função; `AD=1`/`AD=2` dá o diff alinhado),
   `dump.py` (asm de uma variante), `prom.py` (tira o `@asm` e marca o símbolo), `pat.py`, `t/` (testes soltos).
+### Rodada 34 (lG), segunda parte: newlib 1.12.0 inteiro
+
+- **Achado:** o newlib do SDK é o **1.12.0** compilado com `__DYNAMIC_REENT__`. Compilar o `libc/` e o `libm/` inteiros do 1.12.0 com o `cc1` do 1.7.1 (`-O2 -G0 -mext`) e procurar cada função no `.text` do BOOT dá 197 funções idênticas; a versão errada (1.13.0) escondia `fflush`, `__sfp`, `__sfvwrite`, `_fwalk`, `__swsetup`, `sscanf`, `snprintf`, `vfprintf`/`vfscanf`.
+- **Convertidas:** 128 funções do BOOT saem hoje de C pelo GCC do SDK (127 a 100% no objdiff; a outra é o bloco frio `strtod_r_tail`). BOOT sem bater: 292 → 258 (contagem local do objdiff; inclui dois pedaços de padding que viraram `func_0880E270` e `func_0880BF2C`). Novas desde a primeira parte: `fflush`, `libc_std`, `libc_sfp`, `libc_cleanup`, `libc_fwalk`, `_sscanf_r`, `_wctomb_r`, `_mprec_log10`, `__errno`; o resto trocou `asm` do mwcc por fonte original (stdio, stdlib, search, string, mprec, fp-bit float).
+- **Mecânica:** `build/tmp/lG/mknl.py dir/base` (cópia local) compila o objeto, acha quais funções batem (relocações mascaradas, nomes das chamadas coerentes), deduz `@rodata`/`@bss`, gera `src/BOOT/nl_<base>.c` e edita o arquivo do mwcc (`#ifndef __MWERKS__` no C do port, faixas `@gcc`).
+- **O que sobra na libc** é quase só a diferença `ins rd,zero` (lista em `docs/build.md`, "Trilha GCC"): funções a 1-5 palavras (`__sread`, `__sbprintf`, `__srefill`, `fread`, `ungetc`) e as grandes (`_malloc_r`, `_dtoa_r`, `_vfprintf_r`, `__svfscanf_r`, `_strtod_r`).
+

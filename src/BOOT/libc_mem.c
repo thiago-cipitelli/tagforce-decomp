@@ -1,4 +1,5 @@
 // @range 0x0880DC98-0x0880E700
+// @gcc 0x0880DC98-0x0880DD1C libc_memcmp
 // @gcc 0x0880E1F8-0x0880E270
 // @asm 0x0880E270-0x0880E520
 /* newlib (GCC) of the Sony SDK libc: memcmp, memcpy, memmove, memset, the interrupt-disabling
@@ -14,62 +15,6 @@ void *_malloc_r(void *r, size_t n);
 extern const char libc_locale_c2[];    /* 0x08873C14 "C" */
 
 /* newlib memcmp (word compare when both are aligned) */
-#ifdef __MWERKS__
-asm int memcmp2(const void *a, const void *b, size_t n)
-{
-    sltiu v0, a2, 4
-    bnezl v0, @44
-    addiu a2, a2, -1
-    or v0, a0, a1
-    andi v0, v0, 0x3
-    bnezl v0, @44
-    addiu a2, a2, -1
-@1c:
-    lw v1, 0(a0)
-    lw v0, 0(a1)
-    bnel v1, v0, @44
-    addiu a2, a2, -1
-    addiu a2, a2, -4
-    sltiu v0, a2, 4
-    addiu a0, a0, 4
-    beqz v0, @1c
-    addiu a1, a1, 4
-    addiu a2, a2, -1
-@44:
-    addiu v0, zero, -1
-    beq a2, v0, @7c
-    move a3, zero
-    addiu t0, zero, -1
-    lbu v1, 0(a0)
-@58:
-    lbu v0, 0(a1)
-    addiu a2, a2, -1
-    addiu a0, a0, 1
-    addiu a1, a1, 1
-    bne v1, v0, @7c
-    subu a3, v1, v0
-    bnel a2, t0, @58
-    lbu v1, 0(a0)
-    move a3, zero
-@7c:
-    jr ra
-    move v0, a3
-}
-#else
-int memcmp2(const void *a, const void *b, size_t n)
-{
-    const unsigned char *p = a;
-    const unsigned char *q = b;
-
-    for (; n != 0; n--, p++, q++) {
-        if (*p != *q) {
-            return *p - *q;
-        }
-    }
-    return 0;
-}
-#endif
-
 /* newlib memcpy (16/4-byte blocks when aligned) */
 #ifdef __MWERKS__
 asm void *memcpy(void *d, const void *s, size_t n)

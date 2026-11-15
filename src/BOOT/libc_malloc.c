@@ -1,9 +1,18 @@
 // @range 0x0880CDD4-0x0880DC98
 // @asm 0x0880CDD4-0x0880CDFC
+// @gcc 0x0880CDFC-0x0880CE24 nl_iswspace
 // @asm 0x0880CE24-0x0880CEB8
 // @gcc 0x0880CEB8-0x0880CED0
 // @gcc 0x0880CF34-0x0880CF9C
+// @gcc 0x0880CF9C-0x0880D104 nl_makebuf
+// @gcc 0x0880D104-0x0880D144 nl_malign
+// @gcc 0x0880D2CC-0x0880D2FC nl_malloc
+// @gcc 0x0880D2FC-0x0880D32C nl_malloc
 // @asm 0x0880D32C-0x0880DA9C
+// @gcc 0x0880DA9C-0x0880DB10 nl_mbrtowc
+// @gcc 0x0880DB10-0x0880DB70 nl_mbrtowc
+// @gcc 0x0880DB70-0x0880DBB0 nl_mbtowc_r
+// @gcc 0x0880DBB0-0x0880DC98 libc_memchr
 /* newlib (GCC) of the Sony SDK libc, in link order: __getreent, isspace, the "C" locale
    (setlocale/localeconv), _lseek_r, __smakebuf_r, the dlmalloc entry points (memalign, malloc,
    free, malloc_extend_top, _malloc_r), the ASCII mbrtowc/mbtowc and memchr. The port's allocator
@@ -62,21 +71,8 @@ void *heap_get_current(void)
 #endif
 
 /* ctype isspace over the newlib _ctype_ table (bit 8 = _S) */
-#ifdef __MWERKS__
-asm int libc_isspace(unsigned int c)
-{
-    la v0, libc_ctype
-    addu v1, a0, v0
-    sltiu a0, a0, 256
-    beqz a0, @20
-    move v0, zero
-    lbu v0, 0(v1)
-    andi v0, v0, 0x8
-@20:
-    jr ra
-    nop
-}
-#else
+int libc_isspace(unsigned int c);
+#ifndef __MWERKS__ /* PSP: nl_iswspace.c */
 int libc_isspace(unsigned int c)
 {
     return c < 256 ? libc_ctype[c] & 8 : 0;
@@ -158,108 +154,8 @@ extern int libc_errno;                 /* 0x08E35A34 */
 
 /* makebuf.c __smakebuf_r: a 1 KB buffer (or the 1-byte one when unbuffered / out of memory);
    regular files using __sseek get __SOPT, ttys get line buffering */
-#ifdef __MWERKS__
-asm void libc_smakebuf(LibcFile *fp)
-{
-    addiu sp, sp, -96
-    sw s0, 64(sp)
-    sw ra, 80(sp)
-    sw s3, 76(sp)
-    sw s2, 72(sp)
-    sw s1, 68(sp)
-    lhu v1, 12(a0)
-    andi v0, v1, 0x2
-    beqz v0, @58
-    move s0, a0
-    addiu v1, a0, 67
-    addiu v0, zero, 1
-    sw v0, 20(a0)
-    sw v1, 16(a0)
-    sw v1, 0(a0)
-@3c:
-    lw ra, 80(sp)
-@40:
-    lw s3, 76(sp)
-    lw s2, 72(sp)
-    lw s1, 68(sp)
-    lw s0, 64(sp)
-    jr ra
-    addiu sp, sp, 96
-@58:
-    lh v0, 14(a0)
-    bltz v0, @15c
-    ori v0, v1, 0x800
-    jal heap_get_current
-    nop
-    lh a1, 14(s0)
-    move a0, v0
-    jal _fstat_r
-    move a2, sp
-    bltz v0, @154
-    ori a0, zero, 0x8000
-    lw v0, 4(sp)
-    addiu s2, zero, 1024
-    andi v0, v0, 0xf000
-    xori v1, v0, 0x2000
-    beq v0, a0, @134
-    sltiu s3, v1, 1
-    lhu v0, 12(s0)
-@a0:
-    ori v0, v0, 0x800
-@a4:
-    jal heap_get_current
-    sh v0, 12(s0)
-    move a0, v0
-    jal _malloc_r
-    addiu a1, zero, 1024
-    beqz v0, @110
-    move s1, v0
-    jal heap_get_current
-    nop
-    lhu a0, 12(s0)
-    la v1, libc_cleanup_r
-    ori a0, a0, 0x80
-    sw v1, 60(v0)
-    sh a0, 12(s0)
-    sw s1, 16(s0)
-    sw s2, 20(s0)
-    beqz s3, @3c
-    sw s1, 0(s0)
-    jal _isatty
-    lh a0, 14(s0)
-    beqz v0, @40
-    lw ra, 80(sp)
-    lhu v0, 12(s0)
-    ori v0, v0, 0x1
-    j @40
-    sh v0, 12(s0)
-@110:
-    lhu v0, 12(s0)
-    addiu a0, s0, 67
-    addiu v1, zero, 1
-    ori v0, v0, 0x2
-    sw v1, 20(s0)
-    sh v0, 12(s0)
-    sw a0, 16(s0)
-    j @3c
-    sw a0, 0(s0)
-@134:
-    lw v1, 40(s0)
-    la v0, libc_sseek
-    bne v1, v0, @a0
-    lhu v0, 12(s0)
-    sw s2, 76(s0)
-    j @a4
-    ori v0, v0, 0x400
-@154:
-    lhu v1, 12(s0)
-    ori v0, v1, 0x800
-@15c:
-    move s3, zero
-    j @a4
-    addiu s2, zero, 1024
-}
-#else
+void libc_smakebuf(LibcFile *fp);
+#ifndef __MWERKS__ /* PSP: nl_makebuf.c */
 void libc_smakebuf(LibcFile *fp)
 {
     unsigned int st[0x58 / 4];
@@ -305,27 +201,8 @@ void libc_smakebuf(LibcFile *fp)
 #endif
 
 /* memalign (exported as heap_malloc_cur) */
-#ifdef __MWERKS__
-asm void *heap_malloc_cur(size_t align, size_t n)
-{
-    addiu sp, sp, -16
-    sw ra, 8(sp)
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a1, s0
-    jal _memalign_r
-    move a2, s1
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+void *heap_malloc_cur(size_t align, size_t n);
+#ifndef __MWERKS__ /* PSP: nl_malign.c */
 void *heap_malloc_cur(size_t align, size_t n)
 {
     return _memalign_r(heap_get_current(), align, n);
@@ -453,46 +330,16 @@ void *_memalign_r(void *r, size_t align, size_t n)
 }
 #endif
 
-#ifdef __MWERKS__
-asm void *malloc(size_t n)
-{
-    addiu sp, sp, -16
-    sw ra, 4(sp)
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    jal _malloc_r
-    move a1, s0
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+void *malloc(size_t n);
+#ifndef __MWERKS__ /* PSP: nl_malloc.c */
 void *malloc(size_t n)
 {
     return _malloc_r(heap_get_current(), n);
 }
 #endif
 
-#ifdef __MWERKS__
-asm void free(void *p)
-{
-    addiu sp, sp, -16
-    sw ra, 4(sp)
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    jal _free_r
-    move a1, s0
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+void free(void *p);
+#ifndef __MWERKS__ /* PSP: nl_malloc.c */
 void free(void *p)
 {
     _free_r(heap_get_current(), p);
@@ -512,43 +359,7 @@ void *_malloc_r(void *r, size_t n)
 #endif
 
 /* _mbrtowc_r: ASCII only; EILSEQ (138) and a reset state when the conversion fails */
-#ifdef __MWERKS__
-asm int _mbrtowc_r(int *r, int *pwc, const char *s, size_t n, int *ps)
-{
-    addiu sp, sp, -16
-    sw s1, 4(sp)
-    move s1, a0
-    sw s0, 0(sp)
-    move s0, t0
-    beqz a2, @60
-    sw ra, 8(sp)
-@1c:
-    jal _mbtowc_r
-    nop
-    move v1, v0
-    move a0, v0
-    addiu v0, zero, -1
-    beq v1, v0, @50
-    addiu v0, zero, 138
-@38:
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    move v0, a0
-    jr ra
-    addiu sp, sp, 16
-@50:
-    sw zero, 0(s0)
-    addiu a0, zero, -1
-    j @38
-    sw v0, 0(s1)
-@60:
-    la a2, libc_empty_str
-    move a1, zero
-    j @1c
-    addiu a3, zero, 1
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_mbrtowc.c */
 int _mbrtowc_r(int *r, int *pwc, const char *s, size_t n, int *ps)
 {
     int ret;
@@ -567,35 +378,8 @@ int _mbrtowc_r(int *r, int *pwc, const char *s, size_t n, int *ps)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int mbrtowc(int *pwc, const char *s, size_t n, int *ps)
-{
-    addiu sp, sp, -32
-    sw ra, 16(sp)
-    sw s3, 12(sp)
-    move s3, a3
-    sw s2, 8(sp)
-    move s2, a2
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a1, s0
-    move a2, s1
-    move a3, s2
-    jal _mbrtowc_r
-    move t0, s3
-    lw ra, 16(sp)
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+int mbrtowc(int *pwc, const char *s, size_t n, int *ps);
+#ifndef __MWERKS__ /* PSP: nl_mbrtowc.c */
 int mbrtowc(int *pwc, const char *s, size_t n, int *ps)
 {
     return _mbrtowc_r(heap_get_current(), pwc, s, n, ps);
@@ -603,28 +387,7 @@ int mbrtowc(int *pwc, const char *s, size_t n, int *ps)
 #endif
 
 /* __ascii_mbtowc: one byte per character; -2 for an empty input */
-#ifdef __MWERKS__
-asm int _mbtowc_r(void *r, int *pwc, const char *s, size_t n, void *state)
-{
-    sltiu a3, a3, 1
-    sltu v0, zero, a2
-    addiu sp, sp, -16
-    and v0, v0, a3
-    addiu v1, zero, -2
-    bnez v0, @34
-    movz a1, sp, a1
-    beqz a2, @34
-    move v1, zero
-    lbu v0, 0(a2)
-    sw v0, 0(a1)
-    lbu v1, 0(a2)
-    sltu v1, zero, v1
-@34:
-    move v0, v1
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_mbtowc_r.c */
 int _mbtowc_r(void *r, int *pwc, const char *s, size_t n, void *state)
 {
     int dummy;
@@ -643,87 +406,3 @@ int _mbtowc_r(void *r, int *pwc, const char *s, size_t n, void *state)
 }
 #endif
 
-#ifdef __MWERKS__
-asm void *memchr(const void *s, int c, size_t n)
-{
-    sltiu a3, a2, 4
-    bnez a3, @ac
-    andi a1, a1, 0xff
-    andi v0, a0, 0x3
-    bnezl v0, @b0
-    addiu a2, a2, -1
-    move t1, a0
-    move t2, zero
-    move a0, zero
-@24:
-    addiu a0, a0, 1
-    sll v0, t2, 0x8
-    sltiu v1, a0, 4
-    bnez v1, @24
-    addu t2, v0, a1
-    bnezl a3, @ac
-    move a0, t1
-    lui t4, 0xfefe
-    lui t3, 0x8080
-    ori t4, t4, 0xfeff
-    ori t3, t3, 0x8080
-@50:
-    lw v0, 0(t1)
-    xor v0, v0, t2
-    nor v1, zero, v0
-    addu v0, v0, t4
-    and v0, v0, v1
-    and v0, v0, t3
-    beqzl v0, @9c
-    addiu a2, a2, -4
-    move a0, t1
-    move t0, zero
-    lbu v0, 0(a0)
-@7c:
-    addiu t0, t0, 1
-    move v1, a0
-    sltiu a3, t0, 4
-    beq v0, a1, @e0
-    addiu a0, a0, 1
-    bnezl a3, @7c
-    lbu v0, 0(a0)
-    addiu a2, a2, -4
-@9c:
-    sltiu v0, a2, 4
-    beqz v0, @50
-    addiu t1, t1, 4
-    move a0, t1
-@ac:
-    addiu a2, a2, -1
-@b0:
-    addiu v0, zero, -1
-    beq a2, v0, @e0
-    move v1, zero
-    addiu a3, zero, -1
-    lbu v0, 0(a0)
-@c4:
-    move v1, a0
-    addiu a2, a2, -1
-    beq v0, a1, @e0
-    addiu a0, a0, 1
-    bnel a2, a3, @c4
-    lbu v0, 0(a0)
-    move v1, zero
-@e0:
-    jr ra
-    move v0, v1
-}
-#else
-void *memchr(const void *s, int c, size_t n)
-{
-    const unsigned char *p = s;
-
-    while (n-- != 0) {
-        if (*p == (unsigned char)c) {
-            return (void *)p;
-        }
-        p++;
-    }
-    return 0;
-}
-#endif

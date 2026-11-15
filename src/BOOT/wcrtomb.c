@@ -1,5 +1,11 @@
 // @range 0x0881635C-0x08816B1C
-// @asm 0x08816694-0x08816AB4
+// @gcc 0x0881635C-0x088163D0 nl_vsprintf
+// @gcc 0x088163D0-0x08816420 nl_vsprintf
+// @gcc 0x08816420-0x0881648C nl_wcrtomb
+// @gcc 0x0881648C-0x088164DC nl_wcrtomb
+// @gcc 0x088164DC-0x08816634 nl_wcsrtombs
+// @gcc 0x08816634-0x08816694 nl_wcsrtombs
+// @gcc 0x08816694-0x08816AB4 nl_wctomb_r
 // @gcc 0x08816AB4-0x08816B1C
 /* newlib vsprintf, the wide to multibyte conversions (wcrtomb, wcsrtombs, wctomb with the C-UTF-8,
    C-SJIS, C-EUCJP and C-JIS locales) and _write_r, compiled with GCC. The ones without data
@@ -22,40 +28,8 @@ int strcmp(const char *a, const char *b);
 int func_088047B8(int fd, const void *buf, unsigned int n); /* _write */
 #endif
 
-#ifdef __MWERKS__
-asm int vsprintf(char *str, const char *fmt, va_list ap)
-{
-    addiu sp, sp, -112
-    addiu v0, zero, 520
-    lui v1, 0x7fff
-    ori v1, v1, 0xffff
-    sh v0, 12(sp)
-    addiu v0, zero, -1
-    sw ra, 104(sp)
-    sw v1, 20(sp)
-    sw v1, 8(sp)
-    sw s1, 100(sp)
-    move s1, a2
-    sw s0, 96(sp)
-    move s0, a1
-    sw a0, 16(sp)
-    sw a0, 0(sp)
-    jal heap_get_current
-    sh v0, 14(sp)
-    move a0, v0
-    move a2, s0
-    move a3, s1
-    jal _vfprintf_r
-    move a1, sp
-    lw v1, 0(sp)
-    lw ra, 104(sp)
-    lw s1, 100(sp)
-    lw s0, 96(sp)
-    sb zero, 0(v1)
-    jr ra
-    addiu sp, sp, 112
-}
-#else
+int vsprintf(char *str, const char *fmt, va_list ap);
+#ifndef __MWERKS__ /* PSP: nl_vsprintf.c */
 int vsprintf(char *str, const char *fmt, va_list ap)
 {
     NlFile f;
@@ -71,31 +45,8 @@ int vsprintf(char *str, const char *fmt, va_list ap)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int _vsprintf_r(NlReent *ptr, char *str, const char *fmt, va_list ap)
-{
-    addiu sp, sp, -112
-    addiu v0, zero, 520
-    lui v1, 0x7fff
-    move t0, a1
-    ori v1, v1, 0xffff
-    sh v0, 12(sp)
-    move a1, sp
-    addiu v0, zero, -1
-    sw ra, 96(sp)
-    sw v1, 20(sp)
-    sw v1, 8(sp)
-    sw t0, 16(sp)
-    sh v0, 14(sp)
-    jal _vfprintf_r
-    sw t0, 0(sp)
-    lw v1, 0(sp)
-    lw ra, 96(sp)
-    sb zero, 0(v1)
-    jr ra
-    addiu sp, sp, 112
-}
-#else
+int _vsprintf_r(NlReent *ptr, char *str, const char *fmt, va_list ap);
+#ifndef __MWERKS__ /* PSP: nl_vsprintf.c */
 int _vsprintf_r(NlReent *ptr, char *str, const char *fmt, va_list ap)
 {
     NlFile f;
@@ -113,42 +64,7 @@ int _vsprintf_r(NlReent *ptr, char *str, const char *fmt, va_list ap)
 
 /* Multibyte form of wc (s == 0: of L'\0' into a scratch buffer, i.e. the reset sequence); -1 with
    errno EILSEQ for an invalid character. */
-#ifdef __MWERKS__
-asm int _wcrtomb_r(NlReent *r, char *s, int wc, NlMbState *ps)
-{
-    addiu sp, sp, -32
-    sw s1, 20(sp)
-    move s1, a0
-    sw s0, 16(sp)
-    move s0, a3
-    beqz a1, L_08816480
-    sw ra, 24(sp)
-L_0881643C:
-    jal _wctomb_r
-    nop
-    move v1, v0
-    move a0, v0
-    addiu v0, zero, -1
-    beq v1, v0, L_08816470
-    addiu v0, zero, 138
-L_08816458:
-    lw ra, 24(sp)
-    lw s1, 20(sp)
-    lw s0, 16(sp)
-    move v0, a0
-    jr ra
-    addiu sp, sp, 32
-L_08816470:
-    sw zero, 0(s0)
-    addiu a0, zero, -1
-    j L_08816458
-    sw v0, 0(s1)
-L_08816480:
-    move a1, sp
-    j L_0881643C
-    move a2, zero
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_wcrtomb.c */
 int _wcrtomb_r(NlReent *r, char *s, int wc, NlMbState *ps)
 {
     char buf[10];
@@ -167,31 +83,8 @@ int _wcrtomb_r(NlReent *r, char *s, int wc, NlMbState *ps)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int wcrtomb(char *s, int wc, NlMbState *ps)
-{
-    addiu sp, sp, -16
-    sw ra, 12(sp)
-    sw s2, 8(sp)
-    move s2, a2
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a1, s0
-    move a2, s1
-    jal _wcrtomb_r
-    move a3, s2
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+int wcrtomb(char *s, int wc, NlMbState *ps);
+#ifndef __MWERKS__ /* PSP: nl_wcrtomb.c */
 int wcrtomb(char *s, int wc, NlMbState *ps)
 {
     return _wcrtomb_r(nl_getreent(), s, wc, ps);
@@ -201,109 +94,7 @@ int wcrtomb(char *s, int wc, NlMbState *ps)
 /* Converts the wide string *src into at most len bytes at dst (dst == 0: only counts); *src advances
    per converted character and becomes 0 after the terminator. Returns the byte count without the
    terminator, or -1 (EILSEQ). As in the original a character that exactly fills len is not taken. */
-#ifdef __MWERKS__
-asm unsigned int _wcsrtombs_r(NlReent *r, char *dst, const int **src, unsigned int len, NlMbState *ps)
-{
-    addiu sp, sp, -80
-    sw s8, 64(sp)
-    addiu v0, zero, -1
-    move s8, a1
-    sw s7, 60(sp)
-    move s7, a2
-    sw s6, 56(sp)
-    move s6, zero
-    sw s2, 40(sp)
-    move s2, t0
-    sw s1, 36(sp)
-    move s1, a3
-    movz s1, v0, a1
-    sw s0, 32(sp)
-    move s0, a1
-    sw ra, 68(sp)
-    sw s5, 52(sp)
-    sw s4, 48(sp)
-    sw s3, 44(sp)
-    sw a0, 16(sp)
-    beqz s1, L_088165C8
-    lw s3, 0(a2)
-    lw a2, 0(s3)
-L_08816538:
-    lw a0, 16(sp)
-    move a1, sp
-    move a3, s2
-    lw s4, 0(s2)
-    jal _wcrtomb_r
-    lw s5, 4(s2)
-    move a1, v0
-    addiu v0, zero, -1
-    beq a1, v0, L_08816620
-    subu v0, s1, a1
-    sltu v0, v0, s6
-    xori v0, v0, 0x1
-    sltu v1, a1, s1
-    and v0, v0, v1
-    beqzl v0, L_08816614
-    sw s4, 0(s2)
-    beqz s8, L_088165B0
-    addu s6, s6, a1
-    blez a1, L_088165A4
-    move a0, zero
-L_08816588:
-    addu v0, sp, a0
-    lbu v1, 0(v0)
-    addiu a0, a0, 1
-    slt v0, a0, a1
-    sb v1, 0(s0)
-    bnez v0, L_08816588
-    addiu s0, s0, 1
-L_088165A4:
-    lw v0, 0(s7)
-    addiu v0, v0, 4
-    sw v0, 0(s7)
-L_088165B0:
-    lw v0, 0(s3)
-    beqz v0, L_08816600
-    addiu s3, s3, 4
-L_088165BC:
-    sltu v0, s6, s1
-    bnezl v0, L_08816538
-    lw a2, 0(s3)
-L_088165C8:
-    move v1, s6
-L_088165CC:
-    lw ra, 68(sp)
-    lw s8, 64(sp)
-    lw s7, 60(sp)
-    lw s6, 56(sp)
-    lw s5, 52(sp)
-    lw s4, 48(sp)
-    lw s3, 44(sp)
-    lw s2, 40(sp)
-    lw s1, 36(sp)
-    lw s0, 32(sp)
-    move v0, v1
-    jr ra
-    addiu sp, sp, 80
-L_08816600:
-    bnezl s8, L_08816608
-    sw zero, 0(s7)
-L_08816608:
-    addiu v1, s6, -1
-L_0881660C:
-    j L_088165CC
-    sw zero, 0(s2)
-L_08816614:
-    move s1, zero
-    j L_088165BC
-    sw s5, 4(s2)
-L_08816620:
-    lw a0, 16(sp)
-    addiu v0, zero, 138
-    addiu v1, zero, -1
-    j L_0881660C
-    sw v0, 0(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_wcsrtombs.c */
 unsigned int _wcsrtombs_r(NlReent *r, char *dst, const int **src, unsigned int len, NlMbState *ps)
 {
     char *ptr = dst;
@@ -351,35 +142,8 @@ unsigned int _wcsrtombs_r(NlReent *r, char *dst, const int **src, unsigned int l
 }
 #endif
 
-#ifdef __MWERKS__
-asm unsigned int wcsrtombs(char *dst, const int **src, unsigned int len, NlMbState *ps)
-{
-    addiu sp, sp, -32
-    sw ra, 16(sp)
-    sw s3, 12(sp)
-    move s3, a3
-    sw s2, 8(sp)
-    move s2, a2
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a1, s0
-    move a2, s1
-    move a3, s2
-    jal _wcsrtombs_r
-    move t0, s3
-    lw ra, 16(sp)
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+unsigned int wcsrtombs(char *dst, const int **src, unsigned int len, NlMbState *ps);
+#ifndef __MWERKS__ /* PSP: nl_wcsrtombs.c */
 unsigned int wcsrtombs(char *dst, const int **src, unsigned int len, NlMbState *ps)
 {
     return _wcsrtombs_r(nl_getreent(), dst, src, len, ps);
@@ -387,6 +151,7 @@ unsigned int wcsrtombs(char *dst, const int **src, unsigned int len, NlMbState *
 #endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: __lc_ctype and the locale names by lui/lo */
+#ifndef __MWERKS__ /* PSP: nl_wctomb_r.c */
 int _wctomb_r(NlReent *r, char *s, int wchar, NlMbState *state)
 {
     if (strlen(D_088EB5A8) <= 1) {
@@ -503,5 +268,6 @@ int _wctomb_r(NlReent *r, char *s, int wchar, NlMbState *state)
     *s = (char)wchar;
     return 1;
 }
+#endif
 
 #endif

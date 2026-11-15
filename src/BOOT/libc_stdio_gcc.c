@@ -26,11 +26,14 @@ int libc_cleanup_r(void *r);
 int _fstat(int fd, void *st);
 extern int libc_errno;                 /* 0x08E35A34 */
 
+#ifndef __mips__ /* PSP: nl_findfp.c */
 int libc_cleanup_r(void *r)
 {
     return libc_fwalk(r, fflush);
 }
+#endif
 
+#ifndef __mips__ /* PSP: nl_findfp.c */
 void libc_sinit(char *r)
 {
     *(int (**)(void *))(r + 0x3C) = libc_cleanup_r;
@@ -42,6 +45,7 @@ void libc_sinit(char *r)
     libc_std(*(LibcFile **)(r + 8), 9, 1, r);
     libc_std(*(LibcFile **)(r + 0xC), 10, 2, r);
 }
+#endif
 
 int _fstat_r(int *r, int fd, void *st)
 {

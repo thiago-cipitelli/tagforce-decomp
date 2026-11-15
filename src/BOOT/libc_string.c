@@ -1,6 +1,18 @@
 // @range 0x08810BA8-0x088126E8
-// @asm 0x08810D9C-0x08810E24
+// @gcc 0x08810BA8-0x08810C2C nl_snprintf
+// @gcc 0x08810C2C-0x08810C94 nl_sprintf
+// @gcc 0x08810C94-0x08810D14 nl_sprintf
+// @gcc 0x08810D14-0x08810D1C nl_sscanf
+// @gcc 0x08810D1C-0x08810D9C nl_sscanf
+// @gcc 0x08810D9C-0x08810E24 nl_sscanf
+// @gcc 0x08810FA0-0x08810FD0 nl_stdio
 // @gcc 0x08810FD0-0x0881106C libc_strcasecmp
+// @gcc 0x0881106C-0x08811118 libc_strcat
+// @gcc 0x08811118-0x08811218 libc_strchr
+// @gcc 0x0881128C-0x08811324 libc_strcpy
+// @gcc 0x0881133C-0x08811458 nl_strncmp
+// @gcc 0x088115E0-0x08811648 libc_strrchr
+// @gcc 0x08811648-0x088116A4 libc_strstr
 // @asm 0x088116A4-0x088126E8
 /* newlib (GCC) of the Sony SDK libc, in link order: snprintf/_sprintf_r/sprintf and
    sscanf/_sscanf_r over string streams, stdio.c (__sread/__swrite/__sseek/__sclose), strcasecmp,
@@ -56,45 +68,8 @@ static void libc_strstream(LibcFile *f, char *buf, int size)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int snprintf(char *buf, size_t size, const char *fmt, ...)
-{
-    addiu v1, a1, -1
-    addiu sp, sp, -144
-    movz v1, zero, a1
-    addiu v0, zero, 520
-    sw s1, 100(sp)
-    move s1, a2
-    sw s0, 96(sp)
-    move s0, a1
-    sw a3, 124(sp)
-    sw a0, 16(sp)
-    sw a0, 0(sp)
-    sw ra, 104(sp)
-    sw t0, 128(sp)
-    sw t1, 132(sp)
-    sw t2, 136(sp)
-    sw t3, 140(sp)
-    sh v0, 12(sp)
-    sw v1, 20(sp)
-    jal heap_get_current
-    sw v1, 8(sp)
-    move a0, v0
-    move a1, sp
-    move a2, s1
-    jal _vfprintf_r
-    addiu a3, sp, 124
-    beqz s0, @74
-    lw ra, 104(sp)
-    lw v1, 0(sp)
-    sb zero, 0(v1)
-@74:
-    lw s1, 100(sp)
-    lw s0, 96(sp)
-    jr ra
-    addiu sp, sp, 144
-}
-#else
+int snprintf(char *buf, size_t size, const char *fmt, ...);
+#ifndef __MWERKS__ /* PSP: nl_snprintf.c */
 int snprintf(char *buf, size_t size, const char *fmt, ...)
 {
     LibcFile f;
@@ -113,37 +88,8 @@ int snprintf(char *buf, size_t size, const char *fmt, ...)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int _sprintf_r(void *r, char *buf, const char *fmt, ...)
-{
-    addiu sp, sp, -144
-    addiu v0, zero, 520
-    lui v1, 0x7fff
-    move t4, a1
-    ori v1, v1, 0xffff
-    sw a3, 124(sp)
-    move a1, sp
-    addiu a3, sp, 124
-    sh v0, 12(sp)
-    addiu v0, zero, -1
-    sw ra, 96(sp)
-    sw v1, 20(sp)
-    sw v1, 8(sp)
-    sw t0, 128(sp)
-    sw t1, 132(sp)
-    sw t2, 136(sp)
-    sw t3, 140(sp)
-    sw t4, 16(sp)
-    sh v0, 14(sp)
-    jal _vfprintf_r
-    sw t4, 0(sp)
-    lw v1, 0(sp)
-    lw ra, 96(sp)
-    sb zero, 0(v1)
-    jr ra
-    addiu sp, sp, 144
-}
-#else
+int _sprintf_r(void *r, char *buf, const char *fmt, ...);
+#ifndef __MWERKS__ /* PSP: nl_sprintf.c */
 int _sprintf_r(void *r, char *buf, const char *fmt, ...)
 {
     LibcFile f;
@@ -159,43 +105,8 @@ int _sprintf_r(void *r, char *buf, const char *fmt, ...)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int sprintf(char *buf, const char *fmt, ...)
-{
-    addiu sp, sp, -144
-    addiu v0, zero, 520
-    lui v1, 0x7fff
-    ori v1, v1, 0xffff
-    sh v0, 12(sp)
-    addiu v0, zero, -1
-    sw ra, 100(sp)
-    sw v1, 20(sp)
-    sw v1, 8(sp)
-    sw s0, 96(sp)
-    move s0, a1
-    sw t0, 128(sp)
-    sw t1, 132(sp)
-    sw t2, 136(sp)
-    sw t3, 140(sp)
-    sw a2, 120(sp)
-    sw a3, 124(sp)
-    sw a0, 16(sp)
-    sw a0, 0(sp)
-    jal heap_get_current
-    sh v0, 14(sp)
-    move a0, v0
-    move a2, s0
-    move a1, sp
-    jal _vfprintf_r
-    addiu a3, sp, 120
-    lw v1, 0(sp)
-    lw ra, 100(sp)
-    lw s0, 96(sp)
-    sb zero, 0(v1)
-    jr ra
-    addiu sp, sp, 144
-}
-#else
+int sprintf(char *buf, const char *fmt, ...);
+#ifndef __MWERKS__ /* PSP: nl_sprintf.c */
 int sprintf(char *buf, const char *fmt, ...)
 {
     LibcFile f;
@@ -212,55 +123,15 @@ int sprintf(char *buf, const char *fmt, ...)
 #endif
 
 /* the read hook of sscanf's stream: nothing beyond the string */
-#ifdef __MWERKS__
-asm int libc_sread_eof(void *cookie, char *buf, int n)
-{
-    jr ra
-    move v0, zero
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_sscanf.c */
 int libc_sread_eof(void *cookie, char *buf, int n)
 {
     return 0;
 }
 #endif
 
-#ifdef __MWERKS__
-asm int sscanf(const char *str, const char *fmt, ...)
-{
-    addiu sp, sp, -144
-    addiu v0, zero, 4
-    sw ra, 100(sp)
-    sw a2, 120(sp)
-    sw a3, 124(sp)
-    sw t0, 128(sp)
-    sw t1, 132(sp)
-    sw t2, 136(sp)
-    sw t3, 140(sp)
-    sw a0, 16(sp)
-    sw a0, 0(sp)
-    sw s0, 96(sp)
-    move s0, a1
-    jal strlen
-    sh v0, 12(sp)
-    la v1, libc_sread_eof
-    sw v1, 32(sp)
-    sw v0, 20(sp)
-    sw v0, 4(sp)
-    sw zero, 48(sp)
-    jal heap_get_current
-    sw zero, 68(sp)
-    move a0, v0
-    move a2, s0
-    move a1, sp
-    jal __svfscanf_r
-    addiu a3, sp, 120
-    lw ra, 100(sp)
-    lw s0, 96(sp)
-    jr ra
-    addiu sp, sp, 144
-}
-#else
+int sscanf(const char *str, const char *fmt, ...);
+#ifndef __MWERKS__ /* PSP: nl_sscanf.c */
 int sscanf(const char *str, const char *fmt, ...)
 {
     LibcFile f;
@@ -283,6 +154,8 @@ int sscanf(const char *str, const char *fmt, ...)
 #endif
 
 #ifdef NON_MATCHING /* GCC: the read hook through %hi/%lo */
+int _sscanf_r(void *r, const char *str, const char *fmt, ...);
+#ifndef __MWERKS__ /* PSP: nl_sscanf.c */
 int _sscanf_r(void *r, const char *str, const char *fmt, ...)
 {
     LibcFile f;
@@ -302,6 +175,7 @@ int _sscanf_r(void *r, const char *str, const char *fmt, ...)
     va_end(ap);
     return n;
 }
+#endif
 #endif
 
 /* stdio.c __sread: keeps the file offset (__SOFF) up to date */
@@ -459,23 +333,8 @@ int libc_sseek(LibcFile *fp, int off, int whence)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int libc_sclose(LibcFile *fp)
-{
-    addiu sp, sp, -16
-    sw s0, 0(sp)
-    sw ra, 4(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    jal _close_r
-    lh a1, 14(s0)
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+int libc_sclose(LibcFile *fp);
+#ifndef __MWERKS__ /* PSP: nl_stdio.c */
 int libc_sclose(LibcFile *fp)
 {
     return _close_r(heap_get_current(), fp->file);
@@ -483,151 +342,6 @@ int libc_sclose(LibcFile *fp)
 #endif
 
 /* strcasecmp (stricmp) is libc_strcasecmp.c: newlib's source, compiled by the SDK's GCC (`@gcc` range above) */
-
-#ifdef __MWERKS__
-asm char *strcat(char *d, const char *s)
-{
-    addiu sp, sp, -16
-    andi v0, a0, 0x3
-    sw s0, 0(sp)
-    move s0, a0
-    bnez v0, @74
-    sw ra, 4(sp)
-    lw v0, 0(a0)
-    lui v1, 0xfefe
-    ori v1, v1, 0xfeff
-    addu v1, v0, v1
-    lui a0, 0x8080
-    nor v0, zero, v0
-    ori a0, a0, 0x8080
-    and v1, v1, v0
-    and v1, v1, a0
-    bnez v1, @74
-    move a0, s0
-    lui a3, 0xfefe
-    lui a2, 0x8080
-    ori a3, a3, 0xfeff
-    ori a2, a2, 0x8080
-    addiu a0, a0, 4
-@58:
-    lw v0, 0(a0)
-    nor v1, zero, v0
-    addu v0, v0, a3
-    and v0, v0, v1
-    and v0, v0, a2
-    beqzl v0, @58
-    addiu a0, a0, 4
-@74:
-    lb v0, 0(a0)
-    beqz v0, @90
-    nop
-    addiu a0, a0, 1
-@84:
-    lb v0, 0(a0)
-    bnezl v0, @84
-    addiu a0, a0, 1
-@90:
-    jal strcpy
-    nop
-    move v0, s0
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
-char *strcat(char *d, const char *s)
-{
-    strcpy(d + strlen(d), s);
-    return d;
-}
-#endif
-
-#ifdef __MWERKS__
-asm char *libc_strchr(const char *s, int c)
-{
-    andi v0, a0, 0x3
-    move a2, a0
-    bnez v0, @b8
-    andi a3, a1, 0xff
-    move t2, zero
-    move a1, zero
-@18:
-    addiu a1, a1, 1
-    sll v0, t2, 0x8
-    sltiu v1, a1, 4
-    bnez v1, @18
-    or t2, v0, a3
-    lw a0, 0(a2)
-    lui t0, 0xfefe
-    ori t0, t0, 0xfeff
-    addu v0, a0, t0
-    nor v1, zero, a0
-    lui a1, 0x8080
-    and v0, v0, v1
-    ori a1, a1, 0x8080
-    and v0, v0, a1
-    bnez v0, @b4
-    xor v0, a0, t2
-    addu v1, v0, t0
-    nor v0, zero, v0
-    and v1, v1, v0
-    and v1, v1, a1
-    bnez v1, @b8
-    move a0, a2
-    lui t1, 0xfefe
-    ori t1, t1, 0xfeff
-    move t0, a1
-    addiu a2, a2, 4
-@80:
-    lw a0, 0(a2)
-    xor v1, a0, t2
-    addu v0, a0, t1
-    nor a0, zero, a0
-    nor a1, zero, v1
-    and v0, v0, a0
-    addu v1, v1, t1
-    and v1, v1, a1
-    and v0, v0, t0
-    bnez v0, @b4
-    and v1, v1, t0
-    beqzl v1, @80
-    addiu a2, a2, 4
-@b4:
-    move a0, a2
-@b8:
-    lbu v1, 0(a0)
-    andi v0, v1, 0xff
-    beqz v0, @f0
-    andi v1, v1, 0xff
-    beq v0, a3, @f4
-    xor v1, v1, a3
-    addiu a0, a0, 1
-@d4:
-    lbu v1, 0(a0)
-    andi v0, v1, 0xff
-    beqzl v0, @f0
-    andi v1, v1, 0xff
-    bnel v0, a3, @d4
-    addiu a0, a0, 1
-    andi v1, v1, 0xff
-@f0:
-    xor v1, v1, a3
-@f4:
-    move v0, zero
-    jr ra
-    movz v0, a0, v1
-}
-#else
-char *libc_strchr(const char *s, int c)
-{
-    c &= 0xFF;
-    while (*(const unsigned char *)s != 0 && *(const unsigned char *)s != c) {
-        s++;
-    }
-    return *(const unsigned char *)s == c ? (char *)s : 0;
-}
-#endif
 
 #ifdef __MWERKS__
 asm int strcmp(const char *a, const char *b)
@@ -679,62 +393,6 @@ int strcmp(const char *a, const char *b)
 #endif
 
 #ifdef __MWERKS__
-asm char *strcpy(char *d, const char *s)
-{
-    or v0, a1, a0
-    andi v0, v0, 0x3
-    move t2, a0
-    bnez v0, @7c
-    move v1, a0
-    lw a3, 0(a1)
-    lui v0, 0xfefe
-    ori v0, v0, 0xfeff
-    addu v0, a3, v0
-    nor a0, zero, a3
-    lui v1, 0x8080
-    and v0, v0, a0
-    ori v1, v1, 0x8080
-    and v0, v0, v1
-    bnez v0, @78
-    move a2, t2
-    lui t1, 0xfefe
-    move a0, a3
-    ori t1, t1, 0xfeff
-    move t0, v1
-@50:
-    sw a0, 0(a2)
-    addiu a1, a1, 4
-    lw v0, 0(a1)
-    addu v1, v0, t1
-    move a0, v0
-    nor v0, zero, v0
-    and v1, v1, v0
-    and v1, v1, t0
-    beqz v1, @50
-    addiu a2, a2, 4
-@78:
-    move v1, a2
-@7c:
-    lbu v0, 0(a1)
-    addiu a1, a1, 1
-    sb v0, 0(v1)
-    bnez v0, @7c
-    addiu v1, v1, 1
-    jr ra
-    move v0, t2
-}
-#else
-char *strcpy(char *d, const char *s)
-{
-    char *p = d;
-
-    while ((*p++ = *s++) != 0) {
-    }
-    return d;
-}
-#endif
-
-#ifdef __MWERKS__
 asm size_t strlen(const char *s)
 {
     addiu v0, a0, 1
@@ -758,93 +416,8 @@ size_t strlen(const char *s)
 #endif
 
 /* strncmp (historical name memcmp) */
-#ifdef __MWERKS__
-asm int memcmp(const char *a, const char *b, size_t n)
-{
-    beqz a2, @70
-    move v0, zero
-    or v0, a0, a1
-    andi v0, v0, 0x3
-    bnez v0, @44
-    move v0, a2
-    sltiu v0, a2, 4
-    move a3, a0
-    bnez v0, @38
-    move t0, a1
-    lw v1, 0(a0)
-    lw v0, 0(a1)
-    beq v1, v0, @c4
-    lui t1, 0xfefe
-@38:
-    move a0, a3
-@3c:
-    move a1, t0
-    move v0, a2
-@44:
-    beqz v0, @b8
-    addiu a2, a2, -1
-    lbu a3, 0(a0)
-    lbu t0, 0(a1)
-    seb v1, a3
-    seb v0, t0
-    beq v1, v0, @78
-    move t1, a3
-@64:
-    andi v1, a3, 0xff
-@68:
-    andi v0, t0, 0xff
-    subu v0, v1, v0
-@70:
-    jr ra
-    nop
-@78:
-    addiu a0, a0, 1
-    addiu a1, a1, 1
-    beqz a2, @b0
-    seb v0, t1
-    beqz v0, @b0
-    addiu a2, a2, -1
-    lbu a3, 0(a0)
-    lbu t0, 0(a1)
-    seb v1, a3
-    seb v0, t0
-    beq v1, v0, @78
-    move t1, a3
-    j @68
-    andi v1, a3, 0xff
-@b0:
-    jr ra
-    move v0, zero
-@b8:
-    lbu a3, 0(a0)
-    j @64
-    lbu t0, 0(a1)
-@c4:
-    lui a1, 0x8080
-    ori t1, t1, 0xfeff
-    ori a1, a1, 0x8080
-    addiu a2, a2, -4
-@d4:
-    beqz a2, @b0
-    sltiu a0, a2, 4
-    lw v0, 0(a3)
-    addiu t0, t0, 4
-    nor v1, zero, v0
-    addu v0, v0, t1
-    and v0, v0, v1
-    and v0, v0, a1
-    bnez v0, @b0
-    addiu a3, a3, 4
-    bnezl a0, @3c
-    move a0, a3
-    lw v1, 0(a3)
-    lw v0, 0(t0)
-    beql v1, v0, @d4
-    addiu a2, a2, -4
-    j @3c
-    move a0, a3
-}
-#else
+int memcmp(const char *a, const char *b, size_t n);
+#ifndef __MWERKS__ /* PSP: nl_strncmp.c */
 int memcmp(const char *a, const char *b, size_t n)
 {
     if (n == 0) {
@@ -997,108 +570,6 @@ char *strncpy(char *d, const char *s, size_t n)
 #endif
 
 /* strrchr (historical name strrchr_str) */
-#ifdef __MWERKS__
-asm char *strrchr_str(const char *s, int c)
-{
-    addiu sp, sp, -16
-    sw s1, 4(sp)
-    move v0, a0
-    move s1, a1
-    sw s0, 0(sp)
-    move s0, zero
-    beqz a1, @58
-    sw ra, 8(sp)
-@20:
-    move a0, v0
-    jal libc_strchr
-    move a1, s1
-    beqzl v0, @44
-    move v0, s0
-    move s0, v0
-    j @20
-    addiu v0, v0, 1
-@40:
-    move v0, s0
-@44:
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@58:
-    jal libc_strchr
-    nop
-    j @40
-    move s0, v0
-}
-#else
-char *strrchr_str(const char *s, int c)
-{
-    const char *last = 0;
-
-    if (c == 0) {
-        return libc_strchr(s, 0);
-    }
-    while ((s = libc_strchr(s, c)) != 0) {
-        last = s;
-        s++;
-    }
-    return (char *)last;
-}
-#endif
-
-#ifdef __MWERKS__
-asm char *strstr(const char *s, const char *find)
-{
-    lb v0, 0(a0)
-    bnez v0, @1c
-    move a2, zero
-    lb v0, 0(a1)
-    movn a0, zero, v0
-    jr ra
-    move v0, a0
-@1c:
-    addu v0, a1, a2
-@20:
-    lb v1, 0(v0)
-    addu a3, a0, a2
-    move v0, a0
-    beqz v1, @54
-    addiu a2, a2, 1
-    lb v0, 0(a3)
-    beq v1, v0, @20
-    addu v0, a1, a2
-    addiu a0, a0, 1
-    lb v0, 0(a0)
-    bnezl v0, @1c
-    move a2, zero
-    move v0, zero
-@54:
-    jr ra
-    nop
-}
-#else
-char *strstr(const char *s, const char *find)
-{
-    if (*s == 0) {
-        return *find != 0 ? 0 : (char *)s;
-    }
-    do {
-        int i;
-
-        for (i = 0;; i++) {
-            if (find[i] == 0) {
-                return (char *)s;
-            }
-            if (find[i] != s[i]) {
-                break;
-            }
-        }
-    } while (*++s != 0);
-    return 0;
-}
-#endif
-
 #ifdef NON_MATCHING /* GCC: jump table and tables through %hi/%lo */
 /* newlib _strtod_r (gdtoa: _Bfree, __lshift, __ulp, __d2b and the soft-double helpers); was taken for a
    string-stream vfprintf before the port's prototype check (strtod and vfscanf call it with (reent, s, end)) */

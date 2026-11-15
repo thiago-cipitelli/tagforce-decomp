@@ -1,5 +1,9 @@
 // @range 0x088151B8-0x0881635C
+// @gcc 0x088151B8-0x08815234 nl_vfscanf
+// @gcc 0x08815234-0x08815284 nl_vfscanf
+// @gcc 0x08815284-0x088152A0 nl_vfscanf
 // @asm 0x088152A0-0x08816284
+// @gcc 0x08816284-0x0881635C nl_vfscanf
 /* newlib vfscanf (stdio/vfscanf.c, 1.1x: %lc/%ls through _mbrtowc_r, exact float scanning with
    leading-zero compensation), compiled with GCC. The entry points and __sccl are whole `asm`
    functions; __svfscanf_r (jump tables, _ctype_ and constants through split lui/addiu pairs) stays in
@@ -25,44 +29,8 @@ unsigned long long _strtoull_r(NlReent *r, const char *s, char **end, int base);
 int ungetc(int c, NlFile *fp);
 #endif
 
-#ifdef __MWERKS__
-asm int vfscanf(NlFile *fp, const char *fmt, va_list ap)
-{
-    addiu sp, sp, -16
-    sw s2, 8(sp)
-    move s2, a2
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    sw ra, 12(sp)
-    jal heap_get_current
-    move s0, a0
-    lw v1, 56(v0)
-    beqz v1, L_0881521C
-    nop
-L_088151E8:
-    jal heap_get_current
-    nop
-    move a0, v0
-    move a1, s0
-    move a2, s1
-    jal __svfscanf_r
-    move a3, s2
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-L_0881521C:
-    jal heap_get_current
-    nop
-    jal libc_sinit
-    move a0, v0
-    j L_088151E8
-    nop
-}
-#else
+int vfscanf(NlFile *fp, const char *fmt, va_list ap);
+#ifndef __MWERKS__ /* PSP: nl_vfscanf.c */
 int vfscanf(NlFile *fp, const char *fmt, va_list ap)
 {
     if (nl_getreent()->sdidinit == 0) {
@@ -72,49 +40,16 @@ int vfscanf(NlFile *fp, const char *fmt, va_list ap)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int __svfscanf(NlFile *fp, const char *fmt, va_list ap)
-{
-    addiu sp, sp, -16
-    sw ra, 12(sp)
-    sw s2, 8(sp)
-    move s2, a2
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a1, s0
-    move a2, s1
-    jal __svfscanf_r
-    move a3, s2
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+int __svfscanf(NlFile *fp, const char *fmt, va_list ap);
+#ifndef __MWERKS__ /* PSP: nl_vfscanf.c */
 int __svfscanf(NlFile *fp, const char *fmt, va_list ap)
 {
     return __svfscanf_r(nl_getreent(), fp, fmt, ap);
 }
 #endif
 
-#ifdef __MWERKS__
-asm int _vfscanf_r(NlReent *data, NlFile *fp, const char *fmt, va_list ap)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal __svfscanf_r
-    nop
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+int _vfscanf_r(NlReent *data, NlFile *fp, const char *fmt, va_list ap);
+#ifndef __MWERKS__ /* PSP: nl_vfscanf.c */
 int _vfscanf_r(NlReent *data, NlFile *fp, const char *fmt, va_list ap)
 {
     return __svfscanf_r(data, fp, fmt, ap);
@@ -756,75 +691,7 @@ match_failure:
 
 /* Builds the %[ scanset table (1 = member) from the class after '[' ('^' negates, a-b ranges, a
    leading ']' is a member); returns the format position after the closing ']'. */
-#ifdef __MWERKS__
-asm const char *nl_sccl(char *tab, const char *fmt)
-{
-    lb a2, 0(a1)
-    addiu v0, zero, 94
-    addiu a1, a1, 1
-    beq a2, v0, L_0881634C
-    move t0, zero
-L_08816298:
-    move a3, zero
-L_0881629C:
-    addu v1, a0, a3
-    addiu a3, a3, 1
-    slti v0, a3, 256
-    bnez v0, L_0881629C
-    sb t0, 0(v1)
-    beqz a2, L_08816334
-    addiu v0, a1, -1
-    addiu v0, zero, 1
-    subu t0, v0, t0
-    addiu t1, zero, 45
-    addiu t2, zero, 93
-L_088162C8:
-    addu v0, a0, a2
-    sb t0, 0(v0)
-    lb a3, 0(a1)
-L_088162D4:
-    bne a3, t1, L_08816318
-    addiu a1, a1, 1
-    lb a3, 0(a1)
-    xori v0, a3, 0x5d
-    sltiu v0, v0, 1
-    slt v1, a3, a2
-    or v0, v0, v1
-    bnezl v0, L_088162C8
-    addiu a2, zero, 45
-    addiu a1, a1, 1
-L_088162FC:
-    addiu a2, a2, 1
-    addu v0, a0, a2
-    slt v1, a2, a3
-    bnez v1, L_088162FC
-    sb t0, 0(v0)
-    j L_088162D4
-    lb a3, 0(a1)
-L_08816318:
-    slti v0, a3, 46
-    beqz v0, L_0881633C
-    nop
-    beqz a3, L_08816334
-    addiu v0, a1, -1
-L_0881632C:
-    j L_088162C8
-    move a2, a3
-L_08816334:
-    jr ra
-    nop
-L_0881633C:
-    bne a3, t2, L_0881632C
-    move v0, a1
-    j L_08816334
-    nop
-L_0881634C:
-    lb a2, 0(a1)
-    addiu t0, zero, 1
-    j L_08816298
-    addiu a1, a1, 1
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_vfscanf.c */
 const char *nl_sccl(char *tab, const char *fmt)
 {
     int c;

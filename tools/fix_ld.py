@@ -84,6 +84,15 @@ for l in sorted(data_lines, key=key):
         ro = [r for r in ro_lines if f"/{m.group(1)}.c.o(.rodata)" in r]
         merged += ro
         ro_lines = [r for r in ro_lines if r not in ro]
+# a GCC object is often a whole upstream source of which only some functions are linked (the others stay in the
+# mwcc file): its data sections enter the link only where the file declares them (@rodata/@data/@bss)
+def _gcc_decl(nm, tag):
+    return any(l.startswith(f"// @{tag} ") for l in open(f"src/{module}/{nm}.c").readlines()[:20])
+def _keep(l):
+    m = re.search(r"/(\w+)\.c\.o\(\.(rodata|data|bss)[ )]", l)
+    return not (m and is_gcc(m.group(1)) and not _gcc_decl(m.group(1), m.group(2)))
+merged = [l for l in merged if _keep(l)]
+ro_lines = [l for l in ro_lines if _keep(l)]
 new = text[:ds] + text[ds:de].splitlines()[0] + "\n" + "\n".join(merged) + "\n        " + text[de:rs] + text[rs:re_].splitlines()[0] + "\n" + "\n".join(ro_lines) + ("\n        " if ro_lines else "        ") + text[re_:]
 # static C functions still called from asm (an asm-kept function of the same file): the asm needs a
 # global name, so define it at the function's address; `type:data alias` names a second C view of a global
@@ -100,5 +109,6 @@ if module != "BOOT":
     provides += [f"PROVIDE({n} = 0);" for n in var_import_names("build/elf", "symbols", module)]
 if provides:
     new = new.rstrip("\n") + "\n" + "\n".join(provides) + "\n"
+new = "\n".join(l for l in new.split("\n") if ".c.o(.bss)" not in l or _keep(l))
 open(ld, "w").write(new)
 print(f"fix_ld: {len(merged)} data entries ordered, {len(ro_lines)} rodata entries left")

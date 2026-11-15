@@ -3,7 +3,11 @@
 // @gcc 0x088091A0-0x088092C0 libm_kf_cos
 // @gcc 0x088092C0-0x08809A80 libm_kf_rem_pio2
 // @asm 0x08809A80-0x08809B54
+// @gcc 0x08809B54-0x08809B88 nl_s_isinf
+// @gcc 0x08809B88-0x08809BAC nl_s_isnan
+// @gcc 0x08809BAC-0x08809BB4 nl_s_matherr
 // @asm 0x08809BB4-0x08809E50
+// @gcc 0x08809E70-0x08809F38 nl_sf_cos
 // @gcc 0x08809F38-0x08809F4C libm_sf_fabs
 // @asm 0x08809F4C-0x0880A028
 // @asm 0x0880A03C-0x0880A154
@@ -11,6 +15,7 @@
 // @asm 0x0880A220-0x0880A340
 // @gcc 0x0880A340-0x0880A484 libm_wf_atan2
 // @gcc 0x0880A484-0x0880A5B4 libm_wf_sqrt
+// @gcc 0x0880A5B4-0x0880A5C0 nl_abs
 /* newlib libm (fdlibm float code, GCC) of the Sony SDK libc: the __ieee754_ and __kernel_ cores,
    sinf/cosf/atanf/asinf/atan2f/sqrtf with their SVID error wrappers and a few bit helpers. The
    functions that load their polynomial constants through %hi/%lo stay in the split asm; their C
@@ -416,24 +421,8 @@ float __kernel_sinf(float x, float y, int iy)
 #endif
 
 /* 1 when the double (lo, hi words) is an infinity */
-#ifdef __MWERKS__
-asm int __isinfd(unsigned int lo, unsigned int hi)
-{
-    negu v0, a0
-    or v0, v0, a0
-    srl v0, v0, 0x1f
-    ext v1, a1, 0x0, 0x1f
-    or v1, v1, v0
-    lui a0, 0x7ff0
-    subu v1, a0, v1
-    negu v0, v1
-    or v1, v1, v0
-    srl v1, v1, 0x1f
-    addiu v0, zero, 1
-    jr ra
-    subu v0, v0, v1
-}
-#else
+int __isinfd(unsigned int lo, unsigned int hi);
+#ifndef __MWERKS__ /* PSP: nl_s_isinf.c */
 int __isinfd(unsigned int lo, unsigned int hi)
 {
     unsigned int v = (hi & 0x7FFFFFFF) | ((lo | -lo) >> 31);
@@ -443,20 +432,8 @@ int __isinfd(unsigned int lo, unsigned int hi)
 #endif
 
 /* 1 when the double (lo, hi words) is a NaN */
-#ifdef __MWERKS__
-asm int __isnand(unsigned int lo, unsigned int hi)
-{
-    negu v1, a0
-    or v1, v1, a0
-    srl v1, v1, 0x1f
-    ext v0, a1, 0x0, 0x1f
-    or v0, v0, v1
-    lui a0, 0x7ff0
-    subu v0, a0, v0
-    jr ra
-    srl v0, v0, 0x1f
-}
-#else
+int __isnand(unsigned int lo, unsigned int hi);
+#ifndef __MWERKS__ /* PSP: nl_s_isnan.c */
 int __isnand(unsigned int lo, unsigned int hi)
 {
     unsigned int v = (hi & 0x7FFFFFFF) | ((lo | -lo) >> 31);
@@ -466,13 +443,7 @@ int __isnand(unsigned int lo, unsigned int hi)
 #endif
 
 /* SVID matherr: no handler */
-#ifdef __MWERKS__
-asm int matherr(void *exc)
-{
-    jr ra
-    move v0, zero
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_s_matherr.c */
 int matherr(void *exc)
 {
     return 0;
@@ -566,69 +537,7 @@ float libm_copysignf(float x, float y)
 #endif
 
 /* newlib cosf */
-#ifdef __MWERKS__
-asm float libm_cosf(float x)
-{
-    mfc1 a0, $f12
-    lui v0, 0x3f49
-    ori v0, v0, 0xfd8
-    ext v1, a0, 0x0, 0x1f
-    addiu sp, sp, -32
-    slt v0, v0, v1
-    mtc1 zero, $f13
-    beqz v0, @a0
-    sw ra, 16(sp)
-    lui v0, 0x7f7f
-    ori v0, v0, 0xffff
-    slt v0, v0, v1
-    beqz v0, @48
-    nop
-    sub.s $f0, $f12, $f12
-@3c:
-    lw ra, 16(sp)
-@40:
-    jr ra
-    addiu sp, sp, 32
-@48:
-    jal __ieee754_rem_pio2f
-    move a0, sp
-    andi v1, v0, 0x3
-    addiu v0, zero, 1
-    beq v1, v0, @b0
-    slti v0, v1, 2
-    bnez v0, @94
-    addiu v0, zero, 2
-    beq v1, v0, @84
-    lwc1 $f12, 0(sp)
-@70:
-    lwc1 $f13, 4(sp)
-    jal __kernel_sinf
-    addiu a0, zero, 1
-    j @40
-    lw ra, 16(sp)
-@84:
-    jal __kernel_cosf
-    lwc1 $f13, 4(sp)
-    j @3c
-    neg.s $f0, $f0
-@94:
-    bnez v1, @70
-    lwc1 $f12, 0(sp)
-    lwc1 $f13, 4(sp)
-@a0:
-    jal __kernel_cosf
-    nop
-    j @40
-    lw ra, 16(sp)
-@b0:
-    lwc1 $f12, 0(sp)
-    lwc1 $f13, 4(sp)
-    jal __kernel_sinf
-    addiu a0, zero, 1
-    j @3c
-    neg.s $f0, $f0
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_sf_cos.c */
 float libm_cosf(float x)
 {
     return cosf(x);
@@ -788,14 +697,7 @@ float libm_asinf(float x)
 
 #endif
 
-#ifdef __MWERKS__
-asm int int_abs(int x)
-{
-    negu v1, a0
-    jr ra
-    max v0, a0, v1
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_abs.c */
 int int_abs(int x)
 {
     return x < 0 ? -x : x;
