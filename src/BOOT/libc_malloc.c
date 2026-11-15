@@ -4,6 +4,7 @@
 // @gcc 0x0880CEB8-0x0880CED0
 // @gcc 0x0880CF34-0x0880CF9C
 // @asm 0x0880D32C-0x0880DA9C
+// @gcc 0x0880DBB0-0x0880DC98 libc_memchr
 /* newlib (GCC) of the Sony SDK libc, in link order: __getreent, isspace, the "C" locale
    (setlocale/localeconv), _lseek_r, __smakebuf_r, the dlmalloc entry points (memalign, malloc,
    free, malloc_extend_top, _malloc_r), the ASCII mbrtowc/mbtowc and memchr. The port's allocator
@@ -643,87 +644,3 @@ int _mbtowc_r(void *r, int *pwc, const char *s, size_t n, void *state)
 }
 #endif
 
-#ifdef __MWERKS__
-asm void *memchr(const void *s, int c, size_t n)
-{
-    sltiu a3, a2, 4
-    bnez a3, @ac
-    andi a1, a1, 0xff
-    andi v0, a0, 0x3
-    bnezl v0, @b0
-    addiu a2, a2, -1
-    move t1, a0
-    move t2, zero
-    move a0, zero
-@24:
-    addiu a0, a0, 1
-    sll v0, t2, 0x8
-    sltiu v1, a0, 4
-    bnez v1, @24
-    addu t2, v0, a1
-    bnezl a3, @ac
-    move a0, t1
-    lui t4, 0xfefe
-    lui t3, 0x8080
-    ori t4, t4, 0xfeff
-    ori t3, t3, 0x8080
-@50:
-    lw v0, 0(t1)
-    xor v0, v0, t2
-    nor v1, zero, v0
-    addu v0, v0, t4
-    and v0, v0, v1
-    and v0, v0, t3
-    beqzl v0, @9c
-    addiu a2, a2, -4
-    move a0, t1
-    move t0, zero
-    lbu v0, 0(a0)
-@7c:
-    addiu t0, t0, 1
-    move v1, a0
-    sltiu a3, t0, 4
-    beq v0, a1, @e0
-    addiu a0, a0, 1
-    bnezl a3, @7c
-    lbu v0, 0(a0)
-    addiu a2, a2, -4
-@9c:
-    sltiu v0, a2, 4
-    beqz v0, @50
-    addiu t1, t1, 4
-    move a0, t1
-@ac:
-    addiu a2, a2, -1
-@b0:
-    addiu v0, zero, -1
-    beq a2, v0, @e0
-    move v1, zero
-    addiu a3, zero, -1
-    lbu v0, 0(a0)
-@c4:
-    move v1, a0
-    addiu a2, a2, -1
-    beq v0, a1, @e0
-    addiu a0, a0, 1
-    bnel a2, a3, @c4
-    lbu v0, 0(a0)
-    move v1, zero
-@e0:
-    jr ra
-    move v0, v1
-}
-#else
-void *memchr(const void *s, int c, size_t n)
-{
-    const unsigned char *p = s;
-
-    while (n-- != 0) {
-        if (*p == (unsigned char)c) {
-            return (void *)p;
-        }
-        p++;
-    }
-    return 0;
-}
-#endif
