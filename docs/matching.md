@@ -3375,3 +3375,69 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
   de ponteiro, temporários, cabeça sorteada), `dmgr_jk_pick` (25: `v0` evitado depois do `lb peer[2]`), `tpt_sprite`
   / `dmgr_pt_sprite` (127: o original deixa `x` em `s8` e derrama `p`, `y` e `&spr[i]`; aqui `x` e `y` perdem até
   para o temporário, mesmo com `p` volatile).
+
+## Rodada 33 (`iA`): segunda passada no skip de libduel_draw/libduel_mgr (6 funções batendo)
+
+Bateram `dd_fx32_s3_update` (12), `dd_orbs_update` (16), `dmgr_pt_sprite` (127), `dmgr_jk_pick` (25) e, com ela,
+`dmgr_jk_reveal` (já tinha 0 e esperava a vizinha); `dd_fx_shatter_update` foi de 639 para 41. Em nenhuma a causa
+era ordem de declaração; os mecanismos, do mais geral para o mais específico:
+
+- **Variável que não existe no original (a expressão é repetida e o temporário é do CSE)**. Sinal: posições de pilha
+  ou `$f`/`$s` trocados que nenhuma ordem de declaração move. Um local com nome é criado na ordem das declarações;
+  o temporário do CSE é criado quando o mwcc acha a SEGUNDA ocorrência, na ordem em que as redundâncias aparecem.
+  - `dd_fx_shatter_update`: sem `alpha`/`tint`; `dl_ambient_light(list, (unsigned)(255.0f * fade) << 24 | 0xFFFFFF)`
+    escrito nas 3 chamadas e a expressão do tint nas 2 (macros `DD_SHATTER_ALPHA`/`DD_SHATTER_TINT`). O tint ganha o
+    slot 116 e o alfa o 112 (a 2ª ocorrência do tint vem antes da 2ª do alfa), abaixo do ponteiro de indução do 1º
+    laço de desenho (120). Com locais, o alfa (declarado antes) ficava em 120.
+  - `dd_orbs_update`: sem a variável `one`; `1.0f` literal nos três usos (`k = 1.0f + k * 3.0f`, `k = 1.0f`,
+    `(1.0f - dist)`). O mwcc guarda a CONSTANTE num `$f` salvo (dois `mtc1 v0,$f20`, um em cada ramo do `if`) e ela é
+    colorida depois dos locais. Sinal: constante float num `$f20+` carregada mais de uma vez.
+- **O inverso: valor intermediário em variável própria**. `dd_fx32_s3_update`: `fj = j; z0 = (fj + -1.0f) * 700.0f *
+  0.2f; ... tv + fj * 0.25f` (e não `j` convertido duas vezes nem o `z` do segundo laço). A ordem de içamento das
+  constantes do laço (`700` antes de `-1`) e os `$f17-$f19` do laço seguinte saem dessas duas identidades; nenhuma
+  forma da expressão muda a ordem (22 testadas). Achado por busca curta: para cada papel do laço (conversão do
+  contador, resultado, parcela) tentar {expressão, variável nova, cada variável float já existente}.
+- **Um contador por laço, também para laços que não se aninham**. `dd_orbs_update`: os três laços `for (i...)`
+  seguidos eram `i`, `i2`, `i3` (o contador derramado de cada um tem slot próprio: 92 e 88 no original; com um `i` só
+  os slots do contador e do ponteiro de indução saem trocados). `dd_fx_shatter_update`: `i3/j3/k3` nos DOIS laços de
+  desenho (a 2ª passada reusa os da 1ª: com `k` próprio na 2ª, `k` e `list` trocam de `$s`) e `i6/i7/i8` nos laços
+  das faíscas (contador em `$s3`, ponteiro em `$s2`). Só os contadores da montagem dos cacos são `i/j/k`.
+  Com isso `fx` volta a `$s7` e `step` a `$s0` (o contador da 1ª passada toma `$s8`).
+- **`(arr + K)[i]` em vez de `arr[K + i]`** (`(sh->tri + 2)[k]`): o original tem uma variável de indução para o
+  elemento (`addiu t1,s3,120` com `s3` andando de 60 em 60); `tri[2 + k]` gera base + `k * 60` sem indução e um
+  registrador a mais vivo no laço (o que derramava o ponteiro da linha).
+- **Bloco do local até o último uso**: `DdShatterTint c` vive num bloco que vai até o fim da 2ª passada (o tint é
+  recalculado lá); declarado no nível da função fica 24 bytes acima na pilha.
+- **Parâmetro modificado no lugar** (`dmgr_pt_sprite`, 127 -> 0; vale para a gêmea `tpt_sprite`): `x += w; y += 9;
+  u = (i - 0xE) * 0xC + 0x79; ... draw_sprite(list, x, y, 0, u, 0xC0, 0, 0);` em vez de `v = x + w` e `(short)(y +
+  9)` no argumento. Com as duas definições novas `x` e `y` ganham custo e o mwcc derrama `p` (2 usos) e não `x`:
+  é isso o "x em s8, p na pilha" do motivo antigo. Sinal: `lh v1,62(sp); move s2,v1` (o parâmetro derramado relido
+  para um `$s` que acabou de ficar livre) = o parâmetro tem uma segunda definição adiante.
+- **Mais uma `static` escondida** (`dmgr_jk_pick`, 25 -> 0): "o original evita `v0` depois do `lb` de `peer[2]`"
+  era `dmgr_jk_cards_hover`, chamada logo depois do laço, ser `static` (como `dmgr_jk_cards_move`). Antes de
+  procurar forma numa função que "evita um registrador", marcar `static` cada função do mesmo arquivo que ela
+  chama, uma por vez (`tv.py` com duas substituições: protótipo e definição). As duas tabelas de salto entraram no
+  `@rodata` do arquivo.
+- Sem forma (medições novas):
+  - `dd_fx_shatter_update` (41, todas no laço que monta os cacos): no laço de fora a constante `0.4921875` fica em
+    `a0` e `14.67` em `v1` (aqui `a1`/`a0`); no de dentro o original agenda `15.5 * j` e a soma de `-23.25` antes
+    dos primeiros stores, o que troca `$f1`/`$f2` entre `u0 + du` e `-u0`. Sem efeito: as 26 posições da instrução
+    de `cx`, `cx` em duas instruções, `(float)i`/`(float)j` em variável, cada local do bloco como expressão (15
+    isolados + 200 subconjuntos), as 20 ordens das instruções do laço de fora.
+  - `dd_burst2_update` (16): `n1 = -sa; sa = sa + y; flame[0].y = sa; ... flame[2].y = n1 + y` acerta a metade de
+    `sa` (o original nega antes de somar e soma `y` só no uso), mas com `flame[1].u = 0.2f` no lugar natural o
+    escalonamento das constantes sobe para 23; 240 formas aleatórias de `ca`/`sa` x posição não passam de 14.
+  - `dd_zone_rebuild` (24): a carga de `dd_pile_zones[k]` antes do unlink (7 posições), dentro do store
+    (`o->home.zone = zone = ...`) e unlink/add_tail/set em helpers inline não reproduzem a ordem `prev, next, zone`.
+  - `dd_info_stats` (4), `lps_glyph` (2), `dd_disc_tex_hook` (2), `dd_chr_attach_mtx` (90): temporários locais para
+    as cópias (8 formas), 23 formas de fluxo com e sem helper inline, 17 formas de `return 0` separados/aninhados,
+    cópia de `id` em 10 tipos (`unsigned`, `long`, `short`, `volatile`, `register`, `const`): nada muda o resultado
+    para melhor. Cada função do mesmo arquivo chamada por elas foi testada como `static` (`build/tmp/iA/st.py`:
+    `dd_burst_kind`, `dd_disc_material`, `dd_chr_bone_mtx`, `dd_chr_cb_pos`, `opt_tex`, `opt_text_left`, `opt_row`):
+    sem efeito.
+  - `opt_draw` (229): não retomada além da leitura (gêmea de `tcfg_draw`, com o agente jA).
+- Scripts em `build/tmp/iA/`: `tv.py`/`sbs.sh` (os de dA apontados para este worktree; `sbm.sh` para libduel_mgr),
+  `sh.py` (parte `dd_fx_shatter_update` em trechos por laço e troca nomes por trecho), `shr.py` (busca aleatória de
+  contador próprio x ordem de declaração), `fm.py` (mapa de características de uma variante: registrador de uma
+  constante, posição de uma instrução), `shmap.sh` (slots de pilha usados), `st.py` (cada callee do mesmo arquivo
+  como `static`), `orbr.py`, `b2.py`/`b2r.py`, `pt.py`.
