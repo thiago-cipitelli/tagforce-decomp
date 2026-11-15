@@ -1,14 +1,24 @@
 // @range 0x088087F8-0x0880A5C0
-// @asm 0x088087F8-0x08809B54
+// @asm 0x088087F8-0x088091A0
+// @gcc 0x088091A0-0x088092C0 libm_kf_cos
+// @gcc 0x088092C0-0x08809A80 libm_kf_rem_pio2
+// @asm 0x08809A80-0x08809B54
 // @asm 0x08809BB4-0x08809E50
+// @gcc 0x08809F38-0x08809F4C libm_sf_fabs
 // @asm 0x08809F4C-0x0880A028
 // @asm 0x0880A03C-0x0880A154
-// @asm 0x0880A220-0x0880A5B4
+// @gcc 0x0880A154-0x0880A220 libm_sf_sin
+// @asm 0x0880A220-0x0880A340
+// @gcc 0x0880A340-0x0880A484 libm_wf_atan2
+// @gcc 0x0880A484-0x0880A5B4 libm_wf_sqrt
 /* newlib libm (fdlibm float code, GCC) of the Sony SDK libc: the __ieee754_ and __kernel_ cores,
    sinf/cosf/atanf/asinf/atan2f/sqrtf with their SVID error wrappers and a few bit helpers. The
    functions that load their polynomial constants through %hi/%lo stay in the split asm; their C
    under NON_MATCHING is the fdlibm source, checked against the asm (see below). The names carry
-   a libm_ prefix where the plain one belongs to the VFPU versions (see vfpu_math.c). */
+   a libm_ prefix where the plain one belongs to the VFPU versions (see vfpu_math.c).
+   The `@gcc` ranges are the functions that already come out of the newlib source with the SDK's GCC (libm_kf_cos.c,
+   libm_kf_rem_pio2.c, libm_sf_fabs.c, libm_sf_sin.c, libm_wf_atan2.c, libm_wf_sqrt.c; docs/build.md, "Trilha GCC");
+   what is left here needs a later revision of that compiler (it clears bit fields with `ins`). */
 
 #ifndef __MWERKS__
 #include <math.h>
@@ -372,34 +382,6 @@ float __ieee754_sqrtf(float x)
 }
 
 /* cos(x + y) for |x| <= pi/4 */
-float __kernel_cosf(float x, float y)
-{
-    float a, hz, z, r, qx;
-    int ix;
-
-    GET_FLOAT_WORD(ix, x);
-    ix &= 0x7FFFFFFF;
-    if (ix < 0x32000000) { /* |x| < 2**-27 */
-        if ((int)x == 0) {
-            return 1.0f;
-        }
-    }
-    z = x * x;
-    r = z * (4.1666667908e-02f + z * (-1.3888889225e-03f + z * (2.4801587642e-05f +
-        z * (-2.7557314297e-07f + z * (2.0875723372e-09f + z * -1.1359647598e-11f)))));
-    if (ix < 0x3E99999A) { /* |x| < 0.3 */
-        return 1.0f - (0.5f * z - (z * r - x * y));
-    }
-    if (ix > 0x3F480000) { /* |x| > 0.78125 */
-        qx = 0.28125f;
-    } else {
-        SET_FLOAT_WORD(qx, ix - 0x01000000); /* x/4 */
-    }
-    hz = 0.5f * z - qx;
-    a = 1.0f - qx;
-    return a - (hz - (z * r - x * y));
-}
-
 static const int libm_init_jk[3] = { 4, 7, 9 };
 
 /* pi/2 in 8-bit pieces */
@@ -408,195 +390,6 @@ static const float libm_PIo2[11] = {
     7.38964445e-13f, 5.38458167e-15f, 5.6378513e-18f, 8.30092288e-20f, 3.27563523e-22f,
     6.33310156e-25f,
 };
-
-int __kernel_rem_pio2f(float *x, float *y, int e0, int nx, int prec, const int *ipio2)
-{
-    int jz, jx, jv, jp, jk, carry, n, iq[20], i, j, k, m, q0, ih;
-    float z, fw, f[20], fq[20], q[20];
-
-    jk = libm_init_jk[prec];
-    jp = jk;
-
-    jx = nx - 1;
-    jv = (e0 - 3) / 8;
-    if (jv < 0) {
-        jv = 0;
-    }
-    q0 = e0 - 8 * (jv + 1);
-
-    /* f[0..jx+jk] = ipio2[jv-jx..jv+jk] */
-    j = jv - jx;
-    m = jx + jk;
-    for (i = 0; i <= m; i++, j++) {
-        f[i] = j < 0 ? 0.0f : (float)ipio2[j];
-    }
-    for (i = 0; i <= jk; i++) {
-        for (j = 0, fw = 0.0f; j <= jx; j++) {
-            fw += x[j] * f[jx + i - j];
-        }
-        q[i] = fw;
-    }
-
-    jz = jk;
-recompute:
-    /* distill q[] into iq[] reversingly */
-    for (i = 0, j = jz, z = q[jz]; j > 0; i++, j--) {
-        fw = (float)(int)(0.00390625f * z);
-        iq[i] = (int)(z - 256.0f * fw);
-        z = q[j - 1] + fw;
-    }
-
-    z = libm_scalbnf(z, q0);
-    z -= 8.0f * libm_floorf(z * 0.125f); /* trim off integer >= 8 */
-    n = (int)z;
-    z -= (float)n;
-    ih = 0;
-    if (q0 > 0) { /* need iq[jz-1] to determine n */
-        i = iq[jz - 1] >> (8 - q0);
-        n += i;
-        iq[jz - 1] -= i << (8 - q0);
-        ih = iq[jz - 1] >> (7 - q0);
-    } else if (q0 == 0) {
-        ih = iq[jz - 1] >> 7;
-    } else if (z >= 0.5f) {
-        ih = 2;
-    }
-
-    if (ih > 0) { /* q > 0.5 */
-        n += 1;
-        carry = 0;
-        for (i = 0; i < jz; i++) { /* 1 - q */
-            j = iq[i];
-            if (carry == 0) {
-                if (j != 0) {
-                    carry = 1;
-                    iq[i] = 0x100 - j;
-                }
-            } else {
-                iq[i] = 0xFF - j;
-            }
-        }
-        if (q0 > 0) {
-            switch (q0) {
-            case 1:
-                iq[jz - 1] &= 0x7F;
-                break;
-            case 2:
-                iq[jz - 1] &= 0x3F;
-                break;
-            }
-        }
-        if (ih == 2) {
-            z = 1.0f - z;
-            if (carry != 0) {
-                z -= libm_scalbnf(1.0f, q0);
-            }
-        }
-    }
-
-    if (z == 0.0f) { /* recomputation needed? */
-        j = 0;
-        for (i = jz - 1; i >= jk; i--) {
-            j |= iq[i];
-        }
-        if (j == 0) {
-            for (k = 1; iq[jk - k] == 0; k++) {
-            }
-            for (i = jz + 1; i <= jz + k; i++) { /* add q[jz+1] to q[jz+k] */
-                f[jx + i] = (float)ipio2[jv + i];
-                for (j = 0, fw = 0.0f; j <= jx; j++) {
-                    fw += x[j] * f[jx + i - j];
-                }
-                q[i] = fw;
-            }
-            jz += k;
-            goto recompute;
-        }
-    }
-
-    /* chop off zero terms */
-    if (z == 0.0f) {
-        jz -= 1;
-        q0 -= 8;
-        while (iq[jz] == 0) {
-            jz--;
-            q0 -= 8;
-        }
-    } else { /* break z into 8 bits */
-        z = libm_scalbnf(z, -q0);
-        if (z >= 256.0f) {
-            fw = (float)(int)(0.00390625f * z);
-            iq[jz] = (int)(z - 256.0f * fw);
-            jz += 1;
-            q0 += 8;
-            iq[jz] = (int)fw;
-        } else {
-            iq[jz] = (int)z;
-        }
-    }
-
-    fw = libm_scalbnf(1.0f, q0);
-    for (i = jz; i >= 0; i--) {
-        q[i] = fw * (float)iq[i];
-        fw *= 0.00390625f;
-    }
-
-    /* PIo2[0..jp] * q[jz..0] */
-    for (i = jz; i >= 0; i--) {
-        for (fw = 0.0f, k = 0; k <= jp && k <= jz - i; k++) {
-            fw += libm_PIo2[k] * q[i + k];
-        }
-        fq[jz - i] = fw;
-    }
-
-    /* compress fq[] into y[] */
-    switch (prec) {
-    case 0:
-        fw = 0.0f;
-        for (i = jz; i >= 0; i--) {
-            fw += fq[i];
-        }
-        y[0] = ih == 0 ? fw : -fw;
-        break;
-    case 1:
-    case 2:
-        fw = 0.0f;
-        for (i = jz; i >= 0; i--) {
-            fw += fq[i];
-        }
-        y[0] = ih == 0 ? fw : -fw;
-        fw = fq[0] - fw;
-        for (i = 1; i <= jz; i++) {
-            fw += fq[i];
-        }
-        y[1] = ih == 0 ? fw : -fw;
-        break;
-    case 3:
-        for (i = jz; i > 0; i--) {
-            fw = fq[i - 1] + fq[i];
-            fq[i] += fq[i - 1] - fw;
-            fq[i - 1] = fw;
-        }
-        for (i = jz; i > 1; i--) {
-            fw = fq[i - 1] + fq[i];
-            fq[i] += fq[i - 1] - fw;
-            fq[i - 1] = fw;
-        }
-        for (fw = 0.0f, i = jz; i >= 2; i--) {
-            fw += fq[i];
-        }
-        if (ih == 0) {
-            y[0] = fq[0];
-            y[1] = fq[1];
-            y[2] = fw;
-        } else {
-            y[0] = -fq[0];
-            y[1] = -fq[1];
-            y[2] = -fw;
-        }
-    }
-    return n & 7;
-}
 
 /* sin(x + y) for |x| <= pi/4 (iy = 0: y is 0) */
 float __kernel_sinf(float x, float y, int iy)
@@ -842,22 +635,6 @@ float libm_cosf(float x)
 }
 #endif
 
-#ifdef __MWERKS__
-asm float libm_fabsf(float x)
-{
-    mfc1 v0, $f12
-    ext v0, v0, 0x0, 0x1f
-    mtc1 v0, $f0
-    jr ra
-    nop
-}
-#else
-float libm_fabsf(float x)
-{
-    return fabsf(x);
-}
-#endif
-
 #ifdef NON_MATCHING /* GCC: constants loaded through %hi/%lo */
 float libm_floorf(float x)
 {
@@ -962,76 +739,6 @@ float libm_scalbnf(float x, int n)
 #endif
 
 /* newlib sinf */
-#ifdef __MWERKS__
-asm float msl_sinf(float x)
-{
-    mfc1 a0, $f12
-    lui v0, 0x3f49
-    ori v0, v0, 0xfd8
-    ext v1, a0, 0x0, 0x1f
-    addiu sp, sp, -32
-    slt v0, v0, v1
-    sw ra, 16(sp)
-    mtc1 zero, $f13
-    beqz v0, @a8
-    move a0, zero
-    lui v0, 0x7f7f
-    ori v0, v0, 0xffff
-    slt v0, v0, v1
-    beqz v0, @4c
-    nop
-    sub.s $f0, $f12, $f12
-@40:
-    lw ra, 16(sp)
-@44:
-    jr ra
-    addiu sp, sp, 32
-@4c:
-    jal __ieee754_rem_pio2f
-    move a0, sp
-    andi v1, v0, 0x3
-    addiu v0, zero, 1
-    beq v1, v0, @b8
-    slti v0, v1, 2
-    bnez v0, @98
-    addiu v0, zero, 2
-    beq v1, v0, @84
-    lwc1 $f12, 0(sp)
-@74:
-    jal __kernel_cosf
-    lwc1 $f13, 4(sp)
-    j @40
-    neg.s $f0, $f0
-@84:
-    lwc1 $f13, 4(sp)
-    jal __kernel_sinf
-    addiu a0, zero, 1
-    j @40
-    neg.s $f0, $f0
-@98:
-    bnez v1, @74
-    lwc1 $f12, 0(sp)
-    lwc1 $f13, 4(sp)
-    addiu a0, zero, 1
-@a8:
-    jal __kernel_sinf
-    nop
-    j @44
-    lw ra, 16(sp)
-@b8:
-    lwc1 $f12, 0(sp)
-    jal __kernel_cosf
-    lwc1 $f13, 4(sp)
-    j @44
-    lw ra, 16(sp)
-}
-#else
-float msl_sinf(float x)
-{
-    return sinf(x);
-}
-#endif
-
 #ifdef NON_MATCHING /* GCC: constants loaded through %hi/%lo */
 /* newlib wf_*.c wrappers: __fdlib_version is _LIB_VERSION (0x08873880, = 1 _XOPEN_; -1 _IEEE_
    returns the core result untouched, 2 _POSIX_ sets errno without asking matherr). A domain error
@@ -1079,48 +786,6 @@ float libm_asinf(float x)
     return z;
 }
 
-float atan2f(float y, float x)
-{
-    float z = __ieee754_atan2f(y, x);
-    struct libm_exception exc;
-
-    if (__fdlib_version == -1 || libm_isnanf(x) || libm_isnanf(y)) {
-        return z;
-    }
-    if (x == 0.0f && y == 0.0f) {
-        exc.type = 1;
-        exc.name = "atan2f";
-        exc.err = 0;
-        exc.arg1 = (double)y;
-        exc.arg2 = (double)x;
-        exc.retval = 0.0;
-        return libm_domain_error(&exc);
-    }
-    return z;
-}
-
-float libm_sqrtf(float x)
-{
-    float z = __ieee754_sqrtf(x);
-    struct libm_exception exc;
-
-    if (__fdlib_version == -1 || libm_isnanf(x)) {
-        return z;
-    }
-    if (x < 0.0f) {
-        exc.type = 1;
-        exc.name = "sqrtf";
-        exc.err = 0;
-        exc.arg1 = exc.arg2 = (double)x;
-        if (__fdlib_version == 0) {
-            exc.retval = 0.0;
-        } else {
-            exc.retval = 0.0 / 0.0; /* the NaN 0x7FF8000000000000 of .rodata */
-        }
-        return libm_domain_error(&exc);
-    }
-    return z;
-}
 #endif
 
 #ifdef __MWERKS__

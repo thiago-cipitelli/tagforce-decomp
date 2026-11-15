@@ -29,9 +29,10 @@ for cf in sorted(glob.glob(f"src/{m}/*.c")):
         # `// @asm 0xA-0xB`: functions inside the range that stay in asm (tools/fix_ld.py interleaves
         # the C object's per-function sections around them)
         asm = sorted((int(x.group(1), 16), int(x.group(2), 16)) for x in re.finditer(r"//\s*@asm\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src))
-        # `// @gcc 0xA-0xB`: functions of this range that live in the companion file <name>_gcc.c, compiled by the
-        # SDK's GCC (`// @cc gcc` in its header, no @range of its own; docs/build.md, "Trilha GCC")
-        asm += [(int(x.group(1), 16), int(x.group(2), 16), cname + "_gcc") for x in re.finditer(r"//\s*@gcc\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src)]
+        # `// @gcc 0xA-0xB NAME`: the functions of this range live in src/<m>/NAME.c (default <this file>_gcc.c),
+        # compiled by the SDK's GCC (`// @cc gcc` in its header, no @range of its own; it may have @rodata/@data;
+        # docs/build.md, "Trilha GCC")
+        asm += [(int(x.group(1), 16), int(x.group(2), 16), x.group(3) or cname + "_gcc") for x in re.finditer(r"//\s*@gcc\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)(?:[ \t]+(\w+))?", src)]
         asm.sort()
         cur = a
         for x, y, *own in asm:

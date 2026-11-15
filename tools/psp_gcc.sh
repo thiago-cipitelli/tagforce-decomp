@@ -15,11 +15,23 @@ while [ $# -gt 0 ]; do
   case "$1" in
     -c) IN=$2; shift;; -o) OUT=$2; shift;;
     -i|-I) FLAGS="$FLAGS -I$2"; shift;;
-    -D*|-I*|-U*) FLAGS="$FLAGS $1";;
+    -D*|-I*|-U*|-f*) FLAGS="$FLAGS $1";;
   esac; shift
 done
 # extra flags of this file: the rest of its `// @cc gcc` line
 FLAGS="$FLAGS $(sed -n 's|^// @cc gcc||p;20q' "$IN")"
 S=${OUT%.o}.s
 rm -f "$OUT"
-"$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT"
+"$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT" || exit 1
+[ -f "$OUT" ] || exit 1
+# The original link kept every constant of .rodata.cst4/.cst8/.str1.4 (no merging across objects): clear SHF_MERGE and
+# SHF_STRINGS so psp-ld leaves the sections as they are.
+python3 - "$OUT" <<'PY'
+import struct, sys
+d = bytearray(open(sys.argv[1], "rb").read())
+shoff, = struct.unpack_from("<I", d, 0x20); shnum, = struct.unpack_from("<H", d, 0x30)
+for i in range(shnum):
+    o = shoff + i * 40 + 8
+    struct.pack_into("<I", d, o, struct.unpack_from("<I", d, o)[0] & ~0x30)
+open(sys.argv[1], "wb").write(d)
+PY
