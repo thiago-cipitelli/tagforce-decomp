@@ -32,8 +32,11 @@ void duel_mark_attacked(unsigned int p, int z)
     }
 }
 
-#ifdef NON_MATCHING /* 102 palavras (eram 227): forma igual; os $s de {base, cur, p} e {ef, src, &slot} saem trocados
-                      em bloco (s0-s2 <-> s3-s5); ordem/escopo das declarações e forma do laço não mudam nada */
+#ifdef NON_MATCHING /* 101 palavras (eram 227): forma igual; os $s de {base, cur, p} e {ef, src, &slot} saem trocados
+                      em bloco (s0-s2 <-> s3-s5); ordem/escopo das declarações e forma do laço não mudam nada.
+                      Rodada 33: id & 0xFFFF no argumento de card_get_type do case 10 (o andi do delay slot);
+                      sem efeito: corpo num inline, laço com goto/do-while, ef/src no escopo da função em 30
+                      ordens, p como cópia local do parâmetro (p fica sempre em $s5, o original tem $s2) */
 /* Player controlling monster z of player p: its owner, flipped by bit 0 of the flags, then by the
    control-changing effects in its list (unless arg, which only counts the permanent ones). */
 unsigned int duel_field_controller(unsigned int p, int z, int arg)
@@ -112,7 +115,7 @@ unsigned int duel_field_controller(unsigned int p, int z, int arg)
                 if (pl->field[zz].card.id == 0 || pl->field[zz].faceup == 0 || pl->field[zz].flags >> 5 & 1) {
                     break;
                 }
-                if ((int)(imm & ((p != q) + 1)) > 0 && card_get_type((unsigned short)pl->field[zz].card.id) != 0x17) {
+                if ((int)(imm & ((p != q) + 1)) > 0 && card_get_type(pl->field[zz].card.id & 0xFFFF) != 0x17) {
                     break;
                 }
                 switch (pl->field[zz].card.id) {
