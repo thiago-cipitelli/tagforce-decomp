@@ -1,5 +1,4 @@
 // @range 0x0880C8E8-0x0880F9C0
-// @asm 0x0880EF5C-0x0880F274
 // @data 0x0881A774-0x0881B9B0
 // @rodata 0x08819FF8-0x0881A0D0
 /* Partner / versus panel of the start menu: who plays with and against whom (faces, names, decks),
@@ -1188,7 +1187,7 @@ DmgrSpr dmgr_pt_sprites[24] = {
     { 0, 0, { 231, 230, 24, 10 } }, { 0, 0, { 141, 241, 115, 15 } }, { 9, 0, { 0, 0, 64, 64 } },
 };
 
-#ifdef NON_MATCHING /* lógica conferida com o asm (cópias dos modelos na pilha, gfx_setup(list, 0)). 133 palavras: o original guarda x em s8 e derrama p (+56, relido em p->mode e p->pack), y (+62) e o ponteiro &sprs.s[i].file (+52); o mwcc dá s8 a p e derrama x (+62) e y (+60). switch (dmgr_pt->mode) derrama p como o original (106 palavras) mas lê o global em vez de p. Testados (rodada 22): register, ponteiro/local para o file, int sx, ordem de p */
+/* draws sprite i of the panel sheet (negative size/uv = the table's); the deck slots 14-17 get their digit */
 unsigned int *dmgr_pt_sprite(unsigned int *list, int i, short x, short y, short w, short h, short u, short v,
                              short tw, short th)
 {
@@ -1231,15 +1230,15 @@ unsigned int *dmgr_pt_sprite(unsigned int *list, int i, short x, short y, short 
     case 0xF:
     case 0x10:
     case 0x11:
-        v = x + w;
+        x += w;
+        y += 9;
         u = (i - 0xE) * 0xC + 0x79;
         list = draw_set_offsets(list, 0xC, 0x17, 0xC, 0x17);
-        list = draw_sprite(list, v, (short)(y + 9), 0, u, 0xC0, 0, 0);
+        list = draw_sprite(list, x, y, 0, u, 0xC0, 0, 0);
         break;
     }
     return list;
 }
-#endif
 
 void dmgr_anim_stop(DmgrAnim *a)
 {
