@@ -1,5 +1,4 @@
 // @range 0x0880D454-0x0880EB20
-// @asm 0x0880D454-0x0880E0B4
 // @data 0x0882E44C-0x0882E7F0
 /* Drawing of the options screen (tcfg): the framed groups of rows, each row's label and its control
    (volume meter, left/right value with arrows, on/off check), and the option_msg_X.bin texts. */
@@ -25,25 +24,6 @@ void *tcfg_gfx(void *list, void *gim);
 void *tcfg_text(void *list, int x, int y, int w, int id, int center);
 void *tcfg_label(void *list, int x, int y, int w, int id);
 
-/* templates of tcfg_draw (kept in asm) */
-char tcfg_gims[2][64] = { "m_menu_panel01.gim", "menu_opt01.gim" };
-char tcfg_gims_alt[2][64] = { "m_menu_panel02.gim", "menu_opt02.gim" };
-TCfgSpr tcfg_spr[27] = {
-    { 0, 0, 6, 24 }, { 6, 0, 1, 24 }, { 17, 0, 3, 24 },
-    { 0, 0, 6, 24 }, { 6, 0, 1, 24 }, { 17, 0, 3, 24 },
-    { 0, 10, 6, 1 }, { 6, 10, 1, 1 }, { 17, 10, 3, 1 },
-    { 0, 0, 4, 14 }, { 4, 0, 1, 14 }, { 31, 0, 1, 14 },
-    { 10, 12, 1, 1 }, { 48, 0, 8, 12 }, { 56, 0, 8, 12 },
-    { 32, 16, 6, 12 }, { 38, 16, 6, 12 }, { 32, 0, 4, 4 },
-    { 38, 0, 1, 4 }, { 40, 0, 5, 4 }, { 32, 6, 4, 1 },
-    { 38, 6, 1, 1 }, { 40, 6, 5, 1 }, { 32, 8, 4, 5 },
-    { 38, 8, 1, 5 }, { 40, 8, 5, 5 }, { 48, 12, 16, 14 },
-};
-int tcfg_group_style[4] = { 8, 9, 10, 11 };
-unsigned char tcfg_group_tab[4] = { 0, 0, 0, 1 };
-short tcfg_group_rows[4] = { 1, 1, 4, 5 };
-
-#ifdef NON_MATCHING /* 5 palavras (eram 229; rodada 33): found é unsigned char e é zerado ANTES de cur = c->step (os dois li 1 e o move s6,zero no delay slot); gy = top * 17 + 34 + g * 6; u/v da barra do cursor em variáveis antes de x/y; x antes de rw no case 1 da moldura e da aba; na aba, u e a base gx + 4 são int de bloco (tu, bx). Falta a ordem dos argumentos do último draw_set_offsets: o original faz seh a1, seh a2, move a3,a1, move t0,a2 e a0 no delay slot; o nosso seh a2, seh a1, a0, a3 e t0 no delay slot (temporários int, tw/th, outras variáveis e chamada aninhada testados) */
 void *tcfg_draw(void *list)
 {
     int piece;
@@ -283,7 +263,9 @@ void *tcfg_draw(void *list)
     rw = spr[26].w;
     rh = spr[26].h;
     list = tcfg_gfx(list, c->gim2);
-    list = draw_set_offsets(list, rw, rh, rw, rh);
+    /* the two pairs written as different conversions: mwcc does not merge them, extends each of the first pair
+       and copies the result into the second (seh a1; seh a2; move a3,a1; move t0,a2) */
+    list = draw_set_offsets(list, (short)(long)rw, (short)(long)rh, (short)(rw << 16 >> 16), (short)(rh << 16 >> 16));
     list = draw_sprite(list, 12, 250, 0, u, v, 0, 0);
     k = c->step + 19;
     switch (c->step) {
@@ -301,7 +283,6 @@ void *tcfg_draw(void *list)
     c->active = 0;
     return list;
 }
-#endif
 
 /* templates of the row controls */
 TCfgSpr tcfg_meter_spr[2] = { { 32, 16, 6, 12 }, { 38, 16, 6, 12 } };

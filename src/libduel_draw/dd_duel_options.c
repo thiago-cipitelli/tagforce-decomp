@@ -1,6 +1,5 @@
 // @range 0x088682AC-0x0886A3F4
 // @rodata 0x08872B98-0x08872BE0
-// @asm 0x08868B30-0x08869790
 // @data 0x0887CBD0-0x0887CF74
 /* Duel options window (m_menu_panel / menu_opt textures, option_msg_<lang>.bin captions): four
    groups of rows (auto-advance, speed, volumes, display mode, flags), edited with the d-pad;
@@ -51,26 +50,6 @@ extern Options *options;               /* 0x08C5B9B8 */
 extern int opt_prev_mode;              /* 0x08C5B9BC */
 extern int opt_state;                  /* 0x08C5B9C0 */
 
-char opt_gims_a[2][0x40] = { "m_menu_panel01.gim", "menu_opt01.gim" };
-char opt_gims_b[2][0x40] = { "m_menu_panel02.gim", "menu_opt02.gim" };
-OptRect opt_rects[27] = {
-    { 0, 0, 6, 24 }, { 6, 0, 1, 24 }, { 17, 0, 3, 24 }, { 0, 0, 6, 24 }, { 6, 0, 1, 24 }, { 17, 0, 3, 24 },
-    { 0, 10, 6, 1 }, { 6, 10, 1, 1 }, { 17, 10, 3, 1 }, { 0, 0, 4, 14 }, { 4, 0, 1, 14 }, { 31, 0, 1, 14 },
-    { 10, 12, 1, 1 }, { 48, 0, 8, 12 }, { 56, 0, 8, 12 }, { 32, 16, 6, 12 }, { 38, 16, 6, 12 }, { 32, 0, 4, 4 },
-    { 38, 0, 1, 4 }, { 40, 0, 5, 4 }, { 32, 6, 4, 1 }, { 38, 6, 1, 1 }, { 40, 6, 5, 1 }, { 32, 8, 4, 5 },
-    { 38, 8, 1, 5 }, { 40, 8, 5, 5 }, { 48, 12, 16, 14 },
-};
-/* per group: title icon, title color row, number of rows (read one by one by opt_draw) */
-int opt_group_icon[4] = { 8, 9, 10, 11 };
-unsigned char opt_group_c[4] = { 0, 0, 0, 1 };
-short opt_group_rows[4] = { 1, 1, 4, 5 };
-OptRect opt_gauge[2] = { { 32, 16, 6, 12 }, { 38, 16, 6, 12 } };
-OptRect opt_arrows[2] = { { 48, 0, 8, 12 }, { 56, 0, 8, 12 } };
-OptRect opt_switch[2] = { { 0, 32, 32, 13 }, { 0, 48, 32, 13 } };
-char opt_msg_files[6][0x40] = {
-    "option_msg_j.bin", "option_msg_e.bin", "option_msg_g.bin",
-    "option_msg_f.bin", "option_msg_i.bin", "option_msg_s.bin",
-};
 
 int cfg_is_mode1(void);
 unsigned int cfg_get_byte0_bits4_5(void);
@@ -323,7 +302,6 @@ int opt_update(void)
     return 1;
 }
 
-#ifdef NON_MATCHING /* gerado de tcfg_draw (libtitle, mesmo código): ver o comentário lá */
 /* the window: per group a frame of three by three pieces, a title strip, the cursor and the rows;
    at the bottom a nine-piece help box and the help line of the current row */
 void *opt_draw(void *list)
@@ -565,7 +543,9 @@ void *opt_draw(void *list)
     rw = spr[26].w;
     rh = spr[26].h;
     list = opt_tex(list, c->opt_gim);
-    list = draw_set_offsets(list, rw, rh, rw, rh);
+    /* the two pairs written as different conversions: mwcc does not merge them, extends each of the first pair
+       and copies the result into the second (seh a1; seh a2; move a3,a1; move t0,a2) */
+    list = draw_set_offsets(list, (short)(long)rw, (short)(long)rh, (short)(rw << 16 >> 16), (short)(rh << 16 >> 16));
     list = draw_sprite(list, 12, 250, 0, u, v, 0, 0);
     k = c->cursor + 19;
     switch (c->cursor) {
@@ -583,9 +563,15 @@ void *opt_draw(void *list)
     c->drawn = 0;
     return list;
 }
-#else
-void *opt_draw(void *list);
-#endif
+
+/* templates of the row controls and the caption files (after opt_draw's own templates in .data) */
+OptRect opt_gauge[2] = { { 32, 16, 6, 12 }, { 38, 16, 6, 12 } };
+OptRect opt_arrows[2] = { { 48, 0, 8, 12 }, { 56, 0, 8, 12 } };
+OptRect opt_switch[2] = { { 0, 32, 32, 13 }, { 0, 48, 32, 13 } };
+char opt_msg_files[6][0x40] = {
+    "option_msg_j.bin", "option_msg_e.bin", "option_msg_g.bin",
+    "option_msg_f.bin", "option_msg_i.bin", "option_msg_s.bin",
+};
 
 /* one row: caption, then its control (gauge, arrows with a value caption, or an on/off switch) */
 void *opt_row(void *list, Options *c, int group, int row, unsigned char sel, int x, int y, int w, int h)
