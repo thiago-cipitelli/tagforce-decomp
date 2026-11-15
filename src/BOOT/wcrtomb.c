@@ -1,6 +1,6 @@
 // @range 0x0881635C-0x08816B1C
 // @asm 0x08816694-0x08816AB4
-// @asm 0x08816AB4-0x08816B1C
+// @gcc 0x08816AB4-0x08816B1C
 /* newlib vsprintf, the wide to multibyte conversions (wcrtomb, wcsrtombs, wctomb with the C-UTF-8,
    C-SJIS, C-EUCJP and C-JIS locales) and _write_r, compiled with GCC. The ones without data
    references are whole `asm` functions; _wctomb_r (reads __lc_ctype, D_088EB5A8) and _write_r (the
@@ -504,14 +504,4 @@ int _wctomb_r(NlReent *r, char *s, int wchar, NlMbState *state)
     return 1;
 }
 
-int _write_r(NlReent *ptr, int fd, const void *buf, unsigned int cnt)
-{
-    int ret;
-
-    D_08E35A34 = 0;
-    if ((ret = func_088047B8(fd, buf, cnt)) == -1 && D_08E35A34 != 0) {
-        ptr->err = D_08E35A34;
-    }
-    return ret;
-}
 #endif

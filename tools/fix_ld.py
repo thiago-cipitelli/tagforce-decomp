@@ -34,9 +34,15 @@ c_count = {}
 for k, (off, typ, nm) in enumerate(subs):
     if typ != "c": continue
     c_count[nm] = c_count.get(nm, 0) + 1
-if any(n > 1 for n in c_count.values()):
+# a GCC object (`// @cc gcc`) emits its functions in source order, which is not always the address order (libgcc2.c):
+# always place it function by function
+def is_gcc(nm):
+    p = f"src/{module}/{nm}.c"
+    return _os.path.exists(p) and any(l.startswith("// @cc gcc") for l in open(p).readlines()[:20])
+per_func = {n for n, c in c_count.items() if c > 1 or is_gcc(n)}
+if per_func:
     for k, (off, typ, nm) in enumerate(subs):
-        if typ != "c" or c_count[nm] < 2: continue
+        if typ != "c" or nm not in per_func: continue
         lo = seg_vram + off - seg_off
         hi = seg_vram + (subs[k + 1][0] - seg_off) if k + 1 < len(subs) else 1 << 32
         names = [funcs[a] for a in sorted(funcs) if lo <= a < hi]
@@ -45,7 +51,7 @@ if any(n > 1 for n in c_count.values()):
         if not mm: raise SystemExit(f"fix_ld: {nm}.c.o(.text) not found for subsegment {k}")
         repl = "\n".join(f"{mm.group(1)}{mm.group(2)}(.text.{f});" for f in names)
         text = text[:mm.start()] + repl + text[mm.end():]
-    print(f"fix_ld: expanded per-function sections for {[n for n, c in c_count.items() if c > 1]}")
+    print(f"fix_ld: expanded per-function sections for {sorted(per_func)}")
 # every other C object: take all its renamed function sections at once
 text = re.sub(r"(\S+\.c\.o)\(\.text\);", r"\1(.text .text.*);", text)
 def block(name):
@@ -66,7 +72,8 @@ has_rodata_range = {m.group(1) for m in re.finditer(r"/(\w+)__rodata\.c\.o\(\.da
 for l in sorted(data_lines, key=key):
     rm = re.search(r"/(\w+)__rodata\.c\.o\(\.data\)", l)
     if rm:  # @rodata placeholder -> the real object's .rodata at this position
-        merged.append(l.replace(f"{rm.group(1)}__rodata.c.o(.data)", f"{rm.group(1)}.c.o(.rodata)"))
+        # `.rodata.*`: a GCC object (`// @cc gcc`) also has .rodata.cst4/.rodata.str1.4, linked right after its .rodata
+        merged.append(l.replace(f"{rm.group(1)}__rodata.c.o(.data)", f"{rm.group(1)}.c.o(.rodata .rodata.*)"))
         ro_lines = [r for r in ro_lines if f"/{rm.group(1)}.c.o(.rodata)" not in r]
         continue
     merged.append(l)

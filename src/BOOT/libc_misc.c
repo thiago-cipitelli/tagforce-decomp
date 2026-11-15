@@ -1,7 +1,9 @@
 // @range 0x0880F60C-0x08810BA8
-// @asm 0x08810038-0x088105F8
+// @gcc 0x08810038-0x088100A0
+// @asm 0x088100A0-0x088105F8
 // @asm 0x088106E0-0x08810854
-// @asm 0x08810940-0x08810B38
+// @asm 0x08810940-0x08810ADC
+// @gcc 0x08810ADC-0x08810B38
 /* newlib (GCC) of the Sony SDK libc, in link order: _printf_r, printf, qsort (Bentley-McIlroy),
    srand/rand (the 64-bit LCG of newlib), _read_r, _realloc_r, reent.c (cleanup_glue,
    _reclaim_reent, _wrapup_reent), refill.c (lflush, __srefill), _sbrk_r and _snprintf_r. Functions
@@ -981,18 +983,6 @@ int rand_next(void)
 int _read(int fd, void *buf, int n);
 extern int libc_errno;                 /* 0x08E35A34 */
 
-int _read_r(int *r, int fd, void *buf, int n)
-{
-    int ret;
-
-    libc_errno = 0;
-    ret = _read(fd, buf, n);
-    if (ret == -1 && libc_errno != 0) {
-        *r = libc_errno;
-    }
-    return ret;
-}
-
 void *_realloc_r(void *r, void *p, size_t n)
 {
     return platform_realloc(p, n);
@@ -1342,17 +1332,6 @@ int libc_srefill(LibcFile *fp)
 
 unsigned int _sbrk(int incr);
 
-void *_sbrk_r(int *r, int incr)
-{
-    int ret;
-
-    libc_errno = 0;
-    ret = (int)_sbrk(incr);
-    if (ret == -1 && libc_errno != 0) {
-        *r = libc_errno;
-    }
-    return (void *)ret;
-}
 #endif
 
 /* _snprintf_r: a string stream (__SWR | __SSTR) over buf, NUL-terminated when size > 0 */

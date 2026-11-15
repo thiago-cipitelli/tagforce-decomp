@@ -29,9 +29,15 @@ for cf in sorted(glob.glob(f"src/{m}/*.c")):
         # `// @asm 0xA-0xB`: functions inside the range that stay in asm (tools/fix_ld.py interleaves
         # the C object's per-function sections around them)
         asm = sorted((int(x.group(1), 16), int(x.group(2), 16)) for x in re.finditer(r"//\s*@asm\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src))
+        # `// @gcc 0xA-0xB NAME`: the functions of this range live in src/<m>/NAME.c (default <this file>_gcc.c),
+        # compiled by the SDK's GCC (`// @cc gcc` in its header, no @range of its own; it may have @rodata/@data;
+        # docs/build.md, "Trilha GCC")
+        asm += [(int(x.group(1), 16), int(x.group(2), 16), x.group(3) or cname + "_gcc") for x in re.finditer(r"//\s*@gcc\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)(?:[ \t]+(\w+))?", src)]
+        asm.sort()
         cur = a
-        for x, y in asm:
-            ranges.append((cur, x, cname)); ranges.append((x, y, f"{cname}_asm_{x:08X}")); cur = y
+        for x, y, *own in asm:
+            ranges.append((cur, x, cname))
+            ranges.append((x, y, own[0] if own else f"{cname}_asm_{x:08X}")); cur = y
         if cur < b:  # an @asm range that ends the file leaves no trailing C segment
             ranges.append((cur, b, cname))
     for md in re.finditer(r"//\s*@data\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src):

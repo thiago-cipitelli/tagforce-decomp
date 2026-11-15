@@ -1,6 +1,6 @@
 // @range 0x08810BA8-0x088126E8
 // @asm 0x08810D9C-0x08810E24
-// @asm 0x08810FD0-0x0881106C
+// @gcc 0x08810FD0-0x0881106C libc_strcasecmp
 // @asm 0x088116A4-0x088126E8
 /* newlib (GCC) of the Sony SDK libc, in link order: snprintf/_sprintf_r/sprintf and
    sscanf/_sscanf_r over string streams, stdio.c (__sread/__swrite/__sseek/__sclose), strcasecmp,
@@ -482,29 +482,7 @@ int libc_sclose(LibcFile *fp)
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC: the ctype table through %hi/%lo */
-/* strcasecmp through the ctype table (bit 1 = upper case), with signed chars */
-int stricmp(const char *a, const char *b)
-{
-    for (;;) {
-        int c = (signed char)*a++;
-        int d = (signed char)*b++;
-
-        if (c >= 'A' && c <= 'Z') {
-            c += 32;
-        }
-        if (d >= 'A' && d <= 'Z') {
-            d += 32;
-        }
-        if (c != d) {
-            return c - d;
-        }
-        if (c == 0) {
-            return 0;
-        }
-    }
-}
-#endif
+/* strcasecmp (stricmp) is libc_strcasecmp.c: newlib's source, compiled by the SDK's GCC (`@gcc` range above) */
 
 #ifdef __MWERKS__
 asm char *strcat(char *d, const char *s)

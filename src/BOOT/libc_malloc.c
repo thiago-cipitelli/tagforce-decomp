@@ -1,7 +1,8 @@
 // @range 0x0880CDD4-0x0880DC98
 // @asm 0x0880CDD4-0x0880CDFC
-// @asm 0x0880CE24-0x0880CED0
-// @asm 0x0880CF34-0x0880CF9C
+// @asm 0x0880CE24-0x0880CEB8
+// @gcc 0x0880CEB8-0x0880CED0
+// @gcc 0x0880CF34-0x0880CF9C
 // @asm 0x0880D32C-0x0880DA9C
 /* newlib (GCC) of the Sony SDK libc, in link order: __getreent, isspace, the "C" locale
    (setlocale/localeconv), _lseek_r, __smakebuf_r, the dlmalloc entry points (memalign, malloc,
@@ -100,15 +101,6 @@ char *_setlocale_r(char *r, int category, const char *locale)
     return libc_locale_c;
 }
 
-int libc_locale_charset(void)
-{
-    return libc_charset;
-}
-
-void *_localeconv_r(void *r)
-{
-    return libc_lconv;
-}
 #endif
 
 #ifdef __MWERKS__
@@ -162,17 +154,6 @@ void *localeconv(void)
 int _lseek(int fd, int offset, int whence);
 extern int libc_errno;                 /* 0x08E35A34 */
 
-int _lseek_r(int *r, int fd, int offset, int whence)
-{
-    int ret;
-
-    libc_errno = 0;
-    ret = _lseek(fd, offset, whence);
-    if (ret == -1 && libc_errno != 0) {
-        *r = libc_errno;
-    }
-    return ret;
-}
 #endif
 
 /* makebuf.c __smakebuf_r: a 1 KB buffer (or the 1-byte one when unbuffered / out of memory);

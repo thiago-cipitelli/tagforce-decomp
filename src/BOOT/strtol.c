@@ -1,14 +1,43 @@
 // @range 0x088126E8-0x08813108
 // @asm 0x088126E8-0x088126F8
-// @asm 0x08812784-0x08812948
-// @asm 0x08812998-0x08812E14
-// @asm 0x08812E64-0x08813108
-/* newlib string to number conversions (stdlib/strtol.c, strtoul.c, strtoll.c, strtoull.c, strtod.c
-   wrappers), compiled with GCC. The wrappers fetch the reentrancy structure (heap_get_current is
-   newlib's __getreent) and are whole `asm` functions; the _r workers read the ctype table _ctype_
-   (D_088739F0) through a split lui/addiu pair, which mwcc's inline assembler cannot relocate, so they
-   stay in asm with their C under NON_MATCHING. Outside the PSP build the C is used as is (the errno
-   of the reentrancy structure is its first word). */
+// @cc gcc
+/* newlib string to number conversions (stdlib/strtod.c wrappers, strtol.c, strtoll_r.c, strtoul.c, strtoull_r.c)
+   of the Sony SDK libc. Compiled by the SDK's GCC (tools/psp_gcc.sh; docs/build.md, "Trilha GCC"): the functions
+   below are the newlib 1.13.0 sources and match byte for byte. The SDK's newlib fetches the reentrancy structure
+   through __getreent (heap_get_current), and its errno is the structure's first word. */
+
+/*-
+ * Copyright (c) 1990 The Regents of the University of California.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by the University of
+ *	California, Berkeley and its contributors.
+ * 4. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
 typedef struct Reent {
     int err;                           /* _errno */
@@ -16,390 +45,316 @@ typedef struct Reent {
 
 Reent *heap_get_current(void);
 double _strtod_r(Reent *r, const char *s, char **end);
-float __truncdfsf2(double d);
-long _strtol_r(Reent *r, const char *s, char **end, int base);
-unsigned long _strtoul_r(Reent *r, const char *s, char **end, int base);
+long _strtol_r(Reent *rptr, const char *nptr, char **endptr, int base);
+long long _strtoll_r(Reent *rptr, const char *nptr, char **endptr, int base);
+unsigned long _strtoul_r(Reent *rptr, const char *nptr, char **endptr, int base);
+unsigned long long _strtoull_r(Reent *rptr, const char *nptr, char **endptr, int base);
 
-#if !defined(__MWERKS__) || defined(NON_MATCHING)
 #define ERANGE 34
-/* the _ctype_ classes the workers test: space, digit, upper, lower */
-#define C_SPACE(c) ((c) == ' ' || ((c) >= '\t' && (c) <= '\r'))
-#define C_DIGIT(c) ((c) >= '0' && (c) <= '9')
-#define C_UPPER(c) ((c) >= 'A' && (c) <= 'Z')
-#define C_LOWER(c) ((c) >= 'a' && (c) <= 'z')
+#define LONG_MAX 2147483647L
+#define LONG_MIN (-LONG_MAX - 1L)
+#define ULONG_MAX 0xFFFFFFFFUL
+#define LONG_LONG_MAX 9223372036854775807LL
+#define LONG_LONG_MIN (-LONG_LONG_MAX - 1LL)
+#define ULONG_LONG_MAX 0xFFFFFFFFFFFFFFFFULL
+
+#ifdef __mips__
+/* newlib <ctype.h>: (_ctype_ + 1)[c] & class; libc_ctype is _ctype_ + 1 */
+extern const char libc_ctype[];
+#define isalpha(c) (libc_ctype[(unsigned)(c)] & (01 | 02))
+#define isupper(c) (libc_ctype[(unsigned)(c)] & 01)
+#define isdigit(c) (libc_ctype[(unsigned)(c)] & 04)
+#define isspace(c) (libc_ctype[(unsigned)(c)] & 010)
+#else
+/* PC port: the same classes without the PSP table */
+#define isspace(c) ((c) == ' ' || ((c) >= '\t' && (c) <= '\r'))
+#define isdigit(c) ((c) >= '0' && (c) <= '9')
+#define isupper(c) ((c) >= 'A' && (c) <= 'Z')
+#define isalpha(c) (isupper(c) || ((c) >= 'a' && (c) <= 'z'))
 #endif
 
 /* 0x088126E8: a cold block of _strtod_r placed here by GCC (it bumps a local and jumps back into
    the function with an absolute `j`); not callable on its own, so it stays in asm and has no C. */
 
-#ifdef __MWERKS__
-asm double strtod(const char *s, char **end)
-{
-    addiu sp, sp, -16
-    sw ra, 8(sp)
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a1, s0
-    jal _strtod_r
-    move a2, s1
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
 double strtod(const char *s, char **end)
 {
     return _strtod_r(heap_get_current(), s, end);
 }
-#endif
 
-#ifdef __MWERKS__
-asm float strtof(const char *s, char **end)
-{
-    addiu sp, sp, -16
-    sw ra, 8(sp)
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a2, s1
-    jal _strtod_r
-    move a1, s0
-    move a0, v0
-    jal __truncdfsf2
-    move a1, v1
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
 float strtof(const char *s, char **end)
 {
     return (float)_strtod_r(heap_get_current(), s, end);
 }
-#endif
 
-#if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: _ctype_ through a split lui/addiu */
-long _strtol_r(Reent *r, const char *nptr, char **end, int base)
+long _strtol_r(Reent *rptr, const char *nptr, char **endptr, int base)
 {
-    const char *s = nptr;
-    unsigned long acc;
-    unsigned long cutoff;
-    int c;
-    int neg = 0;
-    int any;
-    int cutlim;
+	register const char *s = nptr;
+	register unsigned long acc;
+	register int c;
+	register unsigned long cutoff;
+	register int neg = 0, any, cutlim;
 
-    do {
-        c = *s++;
-    } while (C_SPACE(c));
-    if (c == '-') {
-        neg = 1;
-        c = *s++;
-    } else if (c == '+') {
-        c = *s++;
-    }
-    if ((base == 0 || base == 16) && c == '0' && (*s == 'x' || *s == 'X')) {
-        c = s[1];
-        s += 2;
-        base = 16;
-    }
-    if (base == 0) {
-        base = c == '0' ? 8 : 10;
-    }
-    cutoff = neg ? 0x80000000UL : 0x7FFFFFFFUL;
-    cutlim = (int)(cutoff % (unsigned long)base);
-    cutoff /= (unsigned long)base;
-    for (acc = 0, any = 0;; c = *s++) {
-        if (C_DIGIT(c)) {
-            c -= '0';
-        } else if (C_UPPER(c)) {
-            c -= 'A' - 10;
-        } else if (C_LOWER(c)) {
-            c -= 'a' - 10;
-        } else {
-            break;
-        }
-        if (c >= base) {
-            break;
-        }
-        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim)) {
-            any = -1;
-        } else {
-            any = 1;
-            acc = acc * base + c;
-        }
-    }
-    if (neg) {
-        acc = -acc;
-    }
-    if (any < 0) {
-        r->err = ERANGE;
-        acc = neg ? 0x80000000UL : 0x7FFFFFFFUL;
-    }
-    if (end != 0) {
-        *end = (char *)(any ? s - 1 : nptr);
-    }
-    return (long)acc;
+	/*
+	 * Skip white space and pick up leading +/- sign if any.
+	 * If base is 0, allow 0x for hex and 0 for octal, else
+	 * assume decimal; if base is already 16, allow 0x.
+	 */
+	do {
+		c = *s++;
+	} while (isspace(c));
+	if (c == '-') {
+		neg = 1;
+		c = *s++;
+	} else if (c == '+')
+		c = *s++;
+	if ((base == 0 || base == 16) &&
+	    c == '0' && (*s == 'x' || *s == 'X')) {
+		c = s[1];
+		s += 2;
+		base = 16;
+	}
+	if (base == 0)
+		base = c == '0' ? 8 : 10;
+
+	/*
+	 * Compute the cutoff value between legal numbers and illegal
+	 * numbers.  That is the largest legal value, divided by the
+	 * base.  An input number that is greater than this value, if
+	 * followed by a legal input character, is too big.  One that
+	 * is equal to this value may be valid or not; the limit
+	 * between valid and invalid numbers is then based on the last
+	 * digit.  For instance, if the range for longs is
+	 * [-2147483648..2147483647] and the input base is 10,
+	 * cutoff will be set to 214748364 and cutlim to either
+	 * 7 (neg==0) or 8 (neg==1), meaning that if we have accumulated
+	 * a value > 214748364, or equal but the next digit is > 7 (or 8),
+	 * the number is too big, and we will return a range error.
+	 *
+	 * Set any if any `digits' consumed; make it negative to indicate
+	 * overflow.
+	 */
+	cutoff = neg ? -(unsigned long)LONG_MIN : LONG_MAX;
+	cutlim = cutoff % (unsigned long)base;
+	cutoff /= (unsigned long)base;
+	for (acc = 0, any = 0;; c = *s++) {
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c))
+			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		else
+			break;
+		if (c >= base)
+			break;
+               if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
+			any = -1;
+		else {
+			any = 1;
+			acc *= base;
+			acc += c;
+		}
+	}
+	if (any < 0) {
+		acc = neg ? LONG_MIN : LONG_MAX;
+		rptr->err = ERANGE;
+	} else if (neg)
+		acc = -acc;
+	if (endptr != 0)
+		*endptr = (char *) (any ? s - 1 : nptr);
+	return (acc);
 }
-#endif
-
-#ifdef __MWERKS__
-asm long strtol(const char *s, char **end, int base)
+long strtol(const char *s, char **ptr, int base)
 {
-    addiu sp, sp, -16
-    sw ra, 12(sp)
-    sw s2, 8(sp)
-    move s2, a2
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a1, s0
-    move a2, s1
-    jal _strtol_r
-    move a3, s2
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
-long strtol(const char *s, char **end, int base)
-{
-    return _strtol_r(heap_get_current(), s, end, base);
-}
-#endif
-
-#if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: _ctype_ through a split lui/addiu */
-long long _strtoll_r(Reent *r, const char *nptr, char **end, int base)
-{
-    const char *s = nptr;
-    unsigned long long acc;
-    unsigned long long cutoff;
-    int c;
-    int neg = 0;
-    int any;
-    int cutlim;
-
-    do {
-        c = *s++;
-    } while (C_SPACE(c));
-    if (c == '-') {
-        neg = 1;
-        c = *s++;
-    } else if (c == '+') {
-        c = *s++;
-    }
-    if ((base == 0 || base == 16) && c == '0' && (*s == 'x' || *s == 'X')) {
-        c = s[1];
-        s += 2;
-        base = 16;
-    }
-    if (base == 0) {
-        base = c == '0' ? 8 : 10;
-    }
-    cutoff = neg ? 0x8000000000000000ULL : 0x7FFFFFFFFFFFFFFFULL;
-    cutlim = (int)(cutoff % (unsigned long long)(long long)base);
-    cutoff /= (unsigned long long)(long long)base;
-    for (acc = 0, any = 0;; c = *s++) {
-        if (C_DIGIT(c)) {
-            c -= '0';
-        } else if (C_UPPER(c)) {
-            c -= 'A' - 10;
-        } else if (C_LOWER(c)) {
-            c -= 'a' - 10;
-        } else {
-            break;
-        }
-        if (c >= base) {
-            break;
-        }
-        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim)) {
-            any = -1;
-        } else {
-            any = 1;
-            acc = acc * base + c;
-        }
-    }
-    if (any < 0) {
-        acc = neg ? 0x8000000000000000ULL : 0x7FFFFFFFFFFFFFFFULL;
-        r->err = ERANGE;
-    } else if (neg) {
-        acc = -acc;
-    }
-    if (end != 0) {
-        *end = (char *)(any ? s - 1 : nptr);
-    }
-    return (long long)acc;
+    return _strtol_r(heap_get_current(), s, ptr, base);
 }
 
-unsigned long _strtoul_r(Reent *r, const char *nptr, char **end, int base)
+long long _strtoll_r(Reent *rptr, const char *nptr, char **endptr, int base)
 {
-    const char *s = nptr;
-    unsigned long acc;
-    unsigned long cutoff;
-    int c;
-    int neg = 0;
-    int any;
-    int cutlim;
+	register const char *s = nptr;
+	register unsigned long long acc;
+	register int c;
+	register unsigned long long cutoff;
+	register int neg = 0, any, cutlim;
 
-    do {
-        c = *s++;
-    } while (C_SPACE(c));
-    if (c == '-') {
-        neg = 1;
-        c = *s++;
-    } else if (c == '+') {
-        c = *s++;
-    }
-    if ((base == 0 || base == 16) && c == '0' && (*s == 'x' || *s == 'X')) {
-        c = s[1];
-        s += 2;
-        base = 16;
-    }
-    if (base == 0) {
-        base = c == '0' ? 8 : 10;
-    }
-    cutoff = 0xFFFFFFFFUL / (unsigned long)base;
-    cutlim = (int)(0xFFFFFFFFUL % (unsigned long)base);
-    for (acc = 0, any = 0;; c = *s++) {
-        if (C_DIGIT(c)) {
-            c -= '0';
-        } else if (C_UPPER(c)) {
-            c -= 'A' - 10;
-        } else if (C_LOWER(c)) {
-            c -= 'a' - 10;
-        } else {
-            break;
-        }
-        if (c >= base) {
-            break;
-        }
-        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim)) {
-            any = -1;
-        } else {
-            any = 1;
-            acc = acc * base + c;
-        }
-    }
-    if (any < 0) {
-        acc = 0xFFFFFFFFUL;
-        r->err = ERANGE;
-    } else if (neg) {
-        acc = -acc;
-    }
-    if (end != 0) {
-        *end = (char *)(any ? s - 1 : nptr);
-    }
-    return acc;
+	/*
+	 * Skip white space and pick up leading +/- sign if any.
+	 * If base is 0, allow 0x for hex and 0 for octal, else
+	 * assume decimal; if base is already 16, allow 0x.
+	 */
+	do {
+		c = *s++;
+	} while (isspace(c));
+	if (c == '-') {
+		neg = 1;
+		c = *s++;
+	} else if (c == '+')
+		c = *s++;
+	if ((base == 0 || base == 16) &&
+	    c == '0' && (*s == 'x' || *s == 'X')) {
+		c = s[1];
+		s += 2;
+		base = 16;
+	}
+	if (base == 0)
+		base = c == '0' ? 8 : 10;
+
+	/*
+	 * Compute the cutoff value between legal numbers and illegal
+	 * numbers.  That is the largest legal value, divided by the
+	 * base.  An input number that is greater than this value, if
+	 * followed by a legal input character, is too big.  One that
+	 * is equal to this value may be valid or not; the limit
+	 * between valid and invalid numbers is then based on the last
+	 * digit.  For instance, if the range for longs is
+	 * [-2147483648..2147483647] and the input base is 10,
+	 * cutoff will be set to 214748364 and cutlim to either
+	 * 7 (neg==0) or 8 (neg==1), meaning that if we have accumulated
+	 * a value > 214748364, or equal but the next digit is > 7 (or 8),
+	 * the number is too big, and we will return a range error.
+	 *
+	 * Set any if any `digits' consumed; make it negative to indicate
+	 * overflow.
+	 */
+	cutoff = neg ? -(unsigned long long)LONG_LONG_MIN : LONG_LONG_MAX;
+	cutlim = cutoff % (unsigned long long)base;
+	cutoff /= (unsigned long long)base;
+	for (acc = 0, any = 0;; c = *s++) {
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c))
+			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		else
+			break;
+		if (c >= base)
+			break;
+               if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
+			any = -1;
+		else {
+			any = 1;
+			acc *= base;
+			acc += c;
+		}
+	}
+	if (any < 0) {
+		acc = neg ? LONG_LONG_MIN : LONG_LONG_MAX;
+		rptr->err = ERANGE;
+	} else if (neg)
+		acc = -acc;
+	if (endptr != 0)
+		*endptr = (char *) (any ? s - 1 : nptr);
+	return (acc);
 }
-#endif
-
-#ifdef __MWERKS__
-asm unsigned long strtoul(const char *s, char **end, int base)
+unsigned long _strtoul_r(Reent *rptr, const char *nptr, char **endptr, int base)
 {
-    addiu sp, sp, -16
-    sw ra, 12(sp)
-    sw s2, 8(sp)
-    move s2, a2
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a1, s0
-    move a2, s1
-    jal _strtoul_r
-    move a3, s2
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
-unsigned long strtoul(const char *s, char **end, int base)
-{
-    return _strtoul_r(heap_get_current(), s, end, base);
-}
-#endif
+	register const char *s = nptr;
+	register unsigned long acc;
+	register int c;
+	register unsigned long cutoff;
+	register int neg = 0, any, cutlim;
 
-#if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: _ctype_ through a split lui/addiu */
-unsigned long long _strtoull_r(Reent *r, const char *nptr, char **end, int base)
-{
-    const char *s = nptr;
-    unsigned long long acc;
-    unsigned long long cutoff;
-    int c;
-    int neg = 0;
-    int any;
-    int cutlim;
-
-    do {
-        c = *s++;
-    } while (C_SPACE(c));
-    if (c == '-') {
-        neg = 1;
-        c = *s++;
-    } else if (c == '+') {
-        c = *s++;
-    }
-    if ((base == 0 || base == 16) && c == '0' && (*s == 'x' || *s == 'X')) {
-        c = s[1];
-        s += 2;
-        base = 16;
-    }
-    if (base == 0) {
-        base = c == '0' ? 8 : 10;
-    }
-    cutoff = 0xFFFFFFFFFFFFFFFFULL / (unsigned long long)(long long)base;
-    cutlim = (int)(0xFFFFFFFFFFFFFFFFULL % (unsigned long long)(long long)base);
-    for (acc = 0, any = 0;; c = *s++) {
-        if (C_DIGIT(c)) {
-            c -= '0';
-        } else if (C_UPPER(c)) {
-            c -= 'A' - 10;
-        } else if (C_LOWER(c)) {
-            c -= 'a' - 10;
-        } else {
-            break;
-        }
-        if (c >= base) {
-            break;
-        }
-        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim)) {
-            any = -1;
-        } else {
-            any = 1;
-            acc = acc * base + c;
-        }
-    }
-    if (any < 0) {
-        acc = 0xFFFFFFFFFFFFFFFFULL;
-        r->err = ERANGE;
-    } else if (neg) {
-        acc = -acc;
-    }
-    if (end != 0) {
-        *end = (char *)(any ? s - 1 : nptr);
-    }
-    return acc;
+	/*
+	 * See strtol for comments as to the logic used.
+	 */
+	do {
+		c = *s++;
+	} while (isspace(c));
+	if (c == '-') {
+		neg = 1;
+		c = *s++;
+	} else if (c == '+')
+		c = *s++;
+	if ((base == 0 || base == 16) &&
+	    c == '0' && (*s == 'x' || *s == 'X')) {
+		c = s[1];
+		s += 2;
+		base = 16;
+	}
+	if (base == 0)
+		base = c == '0' ? 8 : 10;
+	cutoff = (unsigned long)ULONG_MAX / (unsigned long)base;
+	cutlim = (unsigned long)ULONG_MAX % (unsigned long)base;
+	for (acc = 0, any = 0;; c = *s++) {
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c))
+			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		else
+			break;
+		if (c >= base)
+			break;
+               if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
+			any = -1;
+		else {
+			any = 1;
+			acc *= base;
+			acc += c;
+		}
+	}
+	if (any < 0) {
+		acc = ULONG_MAX;
+		rptr->err = ERANGE;
+	} else if (neg)
+		acc = -acc;
+	if (endptr != 0)
+		*endptr = (char *) (any ? s - 1 : nptr);
+	return (acc);
 }
-#endif
+unsigned long strtoul(const char *s, char **ptr, int base)
+{
+    return _strtoul_r(heap_get_current(), s, ptr, base);
+}
+
+unsigned long long _strtoull_r(Reent *rptr, const char *nptr, char **endptr, int base)
+{
+	register const char *s = nptr;
+	register unsigned long long acc;
+	register int c;
+	register unsigned long long cutoff;
+	register int neg = 0, any, cutlim;
+
+	/*
+	 * See strtol for comments as to the logic used.
+	 */
+	do {
+		c = *s++;
+	} while (isspace(c));
+	if (c == '-') {
+		neg = 1;
+		c = *s++;
+	} else if (c == '+')
+		c = *s++;
+	if ((base == 0 || base == 16) &&
+	    c == '0' && (*s == 'x' || *s == 'X')) {
+		c = s[1];
+		s += 2;
+		base = 16;
+	}
+	if (base == 0)
+		base = c == '0' ? 8 : 10;
+	cutoff = (unsigned long long)ULONG_LONG_MAX / (unsigned long long)base;
+	cutlim = (unsigned long long)ULONG_LONG_MAX % (unsigned long long)base;
+	for (acc = 0, any = 0;; c = *s++) {
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c))
+			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		else
+			break;
+		if (c >= base)
+			break;
+               if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
+			any = -1;
+		else {
+			any = 1;
+			acc *= base;
+			acc += c;
+		}
+	}
+	if (any < 0) {
+		acc = ULONG_LONG_MAX;
+		rptr->err = ERANGE;
+	} else if (neg)
+		acc = -acc;
+	if (endptr != 0)
+		*endptr = (char *) (any ? s - 1 : nptr);
+	return (acc);
+}
