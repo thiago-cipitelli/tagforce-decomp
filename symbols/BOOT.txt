@@ -976,7 +976,7 @@ sysvar_set_a90 = 0x0883E10C; // type:func matched src/BOOT/main.c export inferre
 sysvar_get_a90 = 0x0883E118; // type:func export matched src/BOOT/main.c nid:61F58750
 sysvar_set_a8c = 0x0883E124; // type:func matched src/BOOT/main.c export inferred (v) set to 1 after cfg changes sets DAT_08a66a8c [?] nid:D7F13632
 sysvar_get_a8c = 0x0883E130; // type:func export matched src/BOOT/main.c nid:91376D2D
-stat_event_record = 0x0883E13C; // type:func asm (@asm in src/BOOT/main.c, C under NON_MATCHING) export inferred (card_id, kind) remaps special ids to counters in sysstate nid:78C5A02E
+stat_event_record = 0x0883E13C; // type:func matched src/BOOT/main.c
 sysstate_set_byte_3e38 = 0x0883E3A4; // type:func matched src/BOOT/main.c export inferred (i) = 1 nid:2EAB8C00
 gfx_overlay_enable = 0x0883E3D4; // type:func matched src/BOOT/main.c export inferred nid:13A4081A
 newgame_init = 0x0883E670; // type:func matched src/BOOT/save.c export inferred 592B: zero sysstate2 (0xfca4), name, inventory, recipes nid:4433B331

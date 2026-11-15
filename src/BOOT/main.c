@@ -1,5 +1,4 @@
 // @range 0x0883DD58-0x0883E670
-// @asm 0x0883E13C-0x0883E3A4
 // @data 0x088EE0D8-0x088EE2F4
 /* BOOT entry after the C runtime: init order, the frame loop, soft reset, the loading overlay and
    small accessors of the game globals. stat_event_record stays in asm (`@asm`). */
@@ -213,16 +212,23 @@ int sysvar_get_a90(void) { return g_game.var_a90; }
 void sysvar_set_a8c(int v) { g_game.var_a8c = v; }
 int sysvar_get_a8c(void) { return g_game.var_a8c; }
 
-#ifdef NON_MATCHING
-/* Some cards map to fixed event slots, others to `kind`-relative ones. Functionally equivalent to
-   0x0883E13C; the original keeps 264 bytes of dead per-case blocks that mwccpsp will not reproduce
-   from any C form tried (see docs/build.md), so the matching build keeps the asm (`@asm`). */
+/* Some cards map to fixed event slots, others to `kind`-relative ones. O original guarda os 22 blocos mortos dos
+   case (modo sem limpeza): o gatilho sem código é a chamada, sem uso do resultado, de um static inline com
+   `if (s == 0) return 0;` como único conteúdo do case 0x18c8 (rodada 35, ver docs/matching.md). */
+static inline int stat_save_ok(SysSave *s)
+{
+    if (s == 0) {
+        return 0;
+    }
+    return 1;
+}
+
 void stat_event_record(int card_id, int kind)
 {
     SysSave *s = sysstate_get();
 
     switch (card_id) {
-    case 0x18c8: break;
+    case 0x18c8: stat_save_ok(s); break;
     case 0x1956: kind += 2; break;
     case 0x1943: kind += 4; break;
     case 0x19ef: kind += 6; break;
@@ -249,7 +255,6 @@ void stat_event_record(int card_id, int kind)
     }
     s->event_seen[kind] = 1;
 }
-#endif
 
 void sysstate_set_byte_3e38(int i)
 {
