@@ -3375,3 +3375,43 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
   de ponteiro, temporários, cabeça sorteada), `dmgr_jk_pick` (25: `v0` evitado depois do `lb peer[2]`), `tpt_sprite`
   / `dmgr_pt_sprite` (127: o original deixa `x` em `s8` e derrama `p`, `y` e `&spr[i]`; aqui `x` e `y` perdem até
   para o temporário, mesmo com `p` volatile).
+
+## Rodada 33 (`hB`): as 7 entradas de libduel_eng fora dos `ai_*.c` (2 batendo)
+
+- **Duas conversões iguais são unidas e dobradas; duas de forma diferente não** (`duel_08850F44`, 4 instruções -> 0):
+  o original tem `andi v0,s1,0xff` duas vezes (antes do `& 1` do índice do dono e antes do `<< 31` do evento), sem
+  registrador comum. Com `(unsigned char)ph` nos dois lugares o mwcc une as duas (CSE) e, como `ph = a->player` tem
+  uma só definição, dobra a máscara; com `(unsigned char)(unsigned short)ph` num e `(unsigned char)ph` no outro as
+  árvores são diferentes, não há CSE e os dois `andi 0xff` ficam (cada um no seu temporário). O mesmo cast duplo nos
+  DOIS lugares volta a dobrar. Vale para qualquer `andi 0xff/0xffff` "redundante" repetido sem `$s`: escrever as
+  ocorrências com formas diferentes. Não serviu: variável com duas definições (o CSE vai para um `$s`), cópia
+  `unsigned char`, helper inline com parâmetro `unsigned char` (idem, um `$s`), `volatile` (derrama na pilha).
+- **"Só registradores, nenhuma ordem de declaração muda nada" = teia (web) faltando numa variável** (`duel_088A6F00`,
+  101 -> 0): os nomes não importam (trocar `k` pelo parâmetro `b`, blocos, contadores próprios: tudo igual), o que
+  importa é que valor mora em que variável. Três passos, nesta ordem:
+  1. os globais 0x089149E8..0x08914A04, 0x089147E4/E8 e `duel_step` como CAMPOS de `duel_chain` (`unk698`..`unk6ac`,
+     `ids[]`, `uids_head`, `uids`, `card_step`, acrescentados em `duel.h` no lugar do pad) dispensam o
+     `volatile` de `CHAIN_F8` e acertam a ordem `sh`/`lw` (101 -> 89). Um struct de sobreposição com cast
+     (`((struct X *)&duel_chain)->f`) NÃO serve: o mwcc une a base e o código encolhe; têm de ser campos de verdade;
+  2. um temporário anônimo que atravessa uma chamada (o bit `owner` do `CARD_UID(*f())`, que chama `f` duas vezes)
+     pertencia a uma variável: `y = CARD_UID(*duel_0884C7CC()); duel_chain.unk69c = y;` moveu TODOS os `$s` para o
+     lugar (87 -> 13). Testar cada local da função como destino (`k`, `id`, `x`, `y`): só um serve;
+  3. valor num registrador de argumento (`a0`) com os `lui` dos dois globais adiantados = a mesma variável recebe o
+     global seguinte e vai como argumento: `y = duel_chain.unk698; if (duel_088A6B5C(p, y) == 0)` (7 -> 0); índice
+     de vetor que sai de uma chamada num local (`k = duel_c_find_uid(...); &...zone_c[k]`) troca `a1/v1` (13 -> 7).
+  Ordem das cargas de argumentos globais (`a1` antes de `a2` ou o contrário) é o TIPO: o argumento que precisa de
+  conversão implícita (unsigned -> int do protótipo) é carregado primeiro. Varrer int/unsigned dos globais
+  (`duel_w_08919654` é unsigned) e, onde o protótipo unificado atrapalha, ler o global com o tipo do parâmetro
+  (`*(int *)&duel_w_0891964C`) em vez de mudar o protótipo.
+- `card_get_type(pl->field[zz].card.id & 0xFFFF)` dá o `andi a0,a0,0xffff` no delay slot quando o id já está em
+  `a0` do teste anterior (`duel_field_controller`, 102 -> 101); `(unsigned short)` é dobrado.
+- Sem forma (ver o comentário de cada `NON_MATCHING`): `duel_req_mill` (9; `p` sempre em `$s5`: busca conjunta
+  ordem x inicializador x tipos, 150 amostras, a melhor é a atual; corpo ou só o cálculo de `banish` num inline; id
+  num temporário; segundo papel para `n/id/uid/how/show` em 7 pontos), `duel_088C6BC8` (54), `duel_field_controller`
+  (101), `duel_piles_swap` (126; o original lê `n_hand` do 1º laço de restauração pelo endereço do store anterior e
+  os outros dois laços por `pl + 16/24`; ponteiro explícito encolhe a função) e `duel_req_swap_zones` (246; o
+  original reaproveita os `$s` de `bz/az/bp` para `fa/fb/fl`, guarda `(bz & 0xFF) << 8` em `$s8` e derrama `bo` e o
+  deslocamento do jogador B; variável `bh` e reaproveitar `bz/az/bp` à mão não mudam o derrame).
+- Scripts (em `build/tmp/hB/`): `fv.py` (variantes aplicadas só dentro da função, com mapa variável -> `$s` por
+  regex: `RX = [(nome, regex)]` no arquivo de variantes), `ad.py` (diff alinhado, com variante opcional), `sbs.sh`
+  (lado a lado sem as diferenças só de `$s`), `mrand.py` (busca aleatória do cabeçalho de `duel_req_mill`).

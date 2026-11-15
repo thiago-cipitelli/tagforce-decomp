@@ -1,5 +1,4 @@
 // @range 0x08850F44-0x08853340
-// @asm 0x08850F44-0x08853340
 /* Resolution of the last link of the chain (duel_chain.acts[unk480 - 1]), step duel_w_089148F4:
    announce, costs, targets still legal (and the cards that negate the link because of its target),
    the card's own step machine (duel_0884EC10), then the cards that react to the resolution. */
@@ -66,11 +65,10 @@ int card_get_prop5_hi(int);
 int duel_hand_count_name(unsigned int p, unsigned short id);
 int duel_hand_find_name(unsigned int p, int id);
 
-#ifdef NON_MATCHING /* refeito do asm bloco a bloco (rodada 25); rodada 32: o z < 5 do passo 4 bate com o índice do alvo
-   lido num local antes do teste. Faltam só 4 instruções: o andi 0xff do jogador antes do & 1 e do << 31 nos dois
-   gatilhos da mão do passo 7 (família de duel_088862DC; o mwcc dobra (unsigned char)ph & 1; tipos de ph, cópia
-   unsigned char, helpers inline com parâmetro unsigned char e formas da atribuição testados); o resto da contagem
-   de asm_try é o deslocamento (build/tmp/eC/adiff.py alinha) */
+/* refeito do asm bloco a bloco (rodada 25); rodada 32: o z < 5 do passo 4 bate com o índice do alvo lido num local
+   antes do teste; rodada 33: nos dois gatilhos da mão do passo 7 o jogador do evento é
+   (unsigned char)(unsigned short)ph e o do índice do dono (unsigned char)ph: as duas conversões com formas
+   diferentes não são unidas nem dobradas e dão os quatro andi 0xff do original */
 
 #define SLOT(p, z) (&duel.players[(p) & 1].field[z])
 
@@ -463,14 +461,14 @@ int duel_08850F44(void)
             if (card_get_prop5_hi(a->id) == 1 && prev != 0 && prev->player != a->player && prev->b4_1 &&
                 !(duel_w_08917DB4 & 1) && duel_hand_count_name(a->player, 0x190A)) {
                 ph = a->player;
-                duel_0884F30C(((unsigned char)ph << 31 & 0x80000000) | 0x50190A,
+                duel_0884F30C(((unsigned char)(unsigned short)ph << 31 & 0x80000000) | 0x50190A,
                               duel.players[(unsigned char)ph & 1].hand[duel_hand_find_name(ph, 0x190A)].owner +
                               (duel.players[ph & 1].hand[duel_hand_find_name(ph, 0x190A)].uid_hi << 1), prev->id);
             }
             if (card_get_prop5_hi(a->id) == 1 && !a->b4_1 && !(duel_w_08917DB4 & 1) &&
                 duel_hand_count_name(a->player, 0x1A28)) {
                 ph = a->player;
-                duel_0884F30C(((unsigned char)ph << 31 & 0x80000000) | 0x501A28,
+                duel_0884F30C(((unsigned char)(unsigned short)ph << 31 & 0x80000000) | 0x501A28,
                               duel.players[(unsigned char)ph & 1].hand[duel_hand_find_name(ph, 0x190A)].owner +
                               (duel.players[ph & 1].hand[duel_hand_find_name(ph, 0x190A)].uid_hi << 1), 0);
             }
@@ -543,4 +541,3 @@ int duel_08850F44(void)
     duel_chain.unk5a0 = 0;
     return 1;
 }
-#endif

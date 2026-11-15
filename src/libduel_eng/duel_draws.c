@@ -712,7 +712,11 @@ int duel_d_find_name(unsigned int, int);
 /* 54 palavras (2026-11-09), só registradores: o parâmetro i (não usado) é o "grave" do original (75 -> 54, c volta
    a s2); falta a rotação p/ban/grave (original s3/s4/s5, aqui s4/s5/s3): 720 ordens das declarações, tipos de
    ban/i/p, cópia de p num local e grave = 0 em outras posições não mudam nada. Resolveram a forma: !ban materializado num bloco,
-   (unsigned short) no 3º argumento de duel_088C77D4, (unsigned int)q << 31, (x & 0xF) << 8 | ev.zone */
+   (unsigned short) no 3º argumento de duel_088C77D4, (unsigned int)q << 31, (x & 0xF) << 8 | ev.zone.
+   Rodada 33: ev = { 0 } num bloco no lugar do laço de bytes (mesmo código). O original tem cinco variáveis na
+   classe alta (f s8, z s7, x s6, grave s5, ban s4) e aqui só quatro: grave como local cai para $s0 e como
+   parâmetro fica entre p e c; tipos (enum, char, short), lnot_(), forma dos && (120 combinações de if aninhado),
+   q/k reaproveitando ban e ordem K&R dos parâmetros não mudam o mapa */
 /* card c (index i) of zone z of p banished or sent to the graveyard (x: by the opponent's effect), with the
    triggers of the cards that watch it */
 void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
@@ -723,7 +727,6 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
     int ban;
     int k;
     int q;
-    DuelMoveEv ev;
 
     id = c->id;
     o = (int)c->owner;
@@ -740,15 +743,8 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
     }
     f = 0;
     {
-        char *d = (char *)&ev;
-        int n = 4;
+    DuelMoveEv ev = { 0 };
 
-        if (d) {
-            do {
-                *d++ = 0;
-            } while (--n);
-        }
-    }
     ev.uid = CARD_UID(*c);
     ev.player = p;
     ev.b10 = 1;
@@ -875,6 +871,7 @@ void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
 #endif
     }
     duel_088AFD5C(0x1E, ev);
+    }
 }
 #endif
 
