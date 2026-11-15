@@ -291,7 +291,7 @@ Bateram assim `popup_place`, `dd_hl_push`, `dd_hl_pop` (`DdLoc z = { 0 };`), `dd
 comum (CSE entre campos, outra coloração): não use. Família ainda em asm com esse padrão (RMW de `lhu` em local
 da pilha no original): `dd_cobj_goto`, `dd_cobj_to_top` (inicializador completo de `DdLoc` + campo de 2 bits
 gravado à parte), `dd_mark_move`, `dd_ev_11`, `dd_board_piles`, `dd_board_cards`, `dd_board_card_draw`,
-`debug_menu_update`, `shop_list_row` (o trecho dos contadores já bate) e várias `duel_req_*` de libduel_eng.
+`shop_list_row` (o trecho dos contadores já bate) e várias `duel_req_*` de libduel_eng.
 
 **Cópias de struct (`dt_draw_hint2/3`)**: o mwcc 219 decompõe toda cópia de struct campo a campo (com RMW de
 `lhu` se o tipo tiver bitfields); o original decompõe as primeiras e copia a última em bloco (`lwc1` + `lh`).
@@ -3375,3 +3375,24 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
   de ponteiro, temporários, cabeça sorteada), `dmgr_jk_pick` (25: `v0` evitado depois do `lb peer[2]`), `tpt_sprite`
   / `dmgr_pt_sprite` (127: o original deixa `x` em `s8` e derrama `p`, `y` e `&spr[i]`; aqui `x` e `y` perdem até
   para o temporário, mesmo com `p` volatile).
+
+## Rodada 33 (`kA`): `debug_menu_draw` e `debug_menu_update` (libduel_draw) escritas do zero, batendo
+
+As duas últimas funções sem C nenhum. Escritas a partir do asm e batendo na primeira hora; o que decidiu:
+
+- **Texto UTF-16 = arrays `static unsigned short s[] = { 'M', 'R', 'K', 0 };`**: o `wchar_t` do mwccpsp tem 32 bits
+  (`L"Ab"` sai `41 00 00 00 62 00 00 00`), então o original não usava `L""`. Os arrays saem no `.data` na ordem de
+  definição (aqui antes do template `int step[4]` da função), o que dá a ordem do original mesmo quando ela não é
+  a de uso ("Undo" antes de "FildMagic").
+- **Macro x `static inline` pelo momento em que o argumento é lido**: o bloco de destaque repetido 6 vezes relê
+  `m->sel` DEPOIS das chamadas (`lw` logo antes do `draw_sprite`) = macro (o inline avalia o argumento antes e
+  o guarda em `$s`). Já o envio para `zone_cmd` é `static inline` recebendo `m`: o local dele fica ABAIXO dos
+  locais da função na pilha e o global `debug_target` é lido por endereço absoluto dentro dele, enquanto a função
+  o tem em `$s1`.
+- `DdPos arg = { side, zone, index, m->face, m->pos };` (inicializador com valores) dá o laço `sb zero` + RMW
+  `lhu/sh` mesmo com todos os campos; campo de 10 bits copiado para um de 8 = `sll 16; ext 22,8`.
+- `x >= K` dá `slti v0,x,K`; `x > K-1` dá `slti at,x,K` (os dois aparecem na mesma função).
+- `if (A) { ... return; } switch ...` faz cada `b` do primeiro bloco saltar para o `b` do `return`; o original
+  salta direto para o epílogo: `if (A) { ... } else { switch ... }`.
+- `(unsigned int)x << 6` no argumento impede a redução de força do `x << 6` do laço dos dígitos.
+- `switch` com faixas (`case 0 ... 4:`, `case 5 ... 9: case 10:`) = árvore `beql 10; slti 5; slti 10; bltz; slti 5`.

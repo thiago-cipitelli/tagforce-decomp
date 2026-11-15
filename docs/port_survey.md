@@ -194,9 +194,10 @@ display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescr
 5. ~~Gráficos~~ (feito, seção 6: interpretador da GE), depois fonte (`sceFont*`), save/OSK, som de verdade (SAS,
    Atrac3+ por libavcodec); rede e vídeo como stubs.
 
-Pendência achada na rodada 27: `debug_menu_draw` e `debug_menu_update` (libduel_draw, `dd_debug_menu.c`) não
-têm C nenhum, só `@asm` (menu de debug inacessível no jogo de varejo). Se o port precisar dele, escrever do zero;
-os protótipos do `#ifdef NON_MATCHING` do arquivo não batem com a tabela de chamadas de `dd_scene_mode.c`.
+Pendência da rodada 27 resolvida na rodada 33: `debug_menu_draw` e `debug_menu_update` (libduel_draw,
+`dd_debug_menu.c`, menu de debug inacessível no jogo de varejo) têm C batendo, com os protótipos da tabela de
+`dd_scene_mode.c` (`unsigned int *debug_menu_draw(unsigned int *list)`, `void debug_menu_update(void)`). Os dois
+stubs vazios de `platform/pc/missing.c` passam a duplicar essas definições e devem sair (o arquivo fica sem função).
 
 ## 4. Passo 4a: todos os módulos num executável de 32 bits (feito em 2026-11-14)
 
