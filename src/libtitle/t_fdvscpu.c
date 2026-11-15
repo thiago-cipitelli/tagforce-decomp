@@ -932,7 +932,10 @@ void tfd_regulation_handler(void)
     }
 }
 
-#ifdef NON_MATCHING /* o original mantém a constante 1 em $a0 (lim = 1 e o teste n < 1 com slt); o mwcc a propaga (li a3,1 / blez) */
+/* the 1 of the minimum number of decks lives in a register in the original: an enum-typed local is not propagated */
+typedef enum TfdOne { TFD_ZERO, TFD_ONE } TfdOne;
+
+#ifdef NON_MATCHING /* 2 palavras (eram 64): o 1 fica em $a0 com uma variável de tipo enum (lim = one, one <= n); falta o bne do i != 9 para o return 0 final, que o original não converte em likely (bne; nop contra bnel; move v0,zero), a mesma família de shop_result_input */
 /* lim stays whatever the caller left in $a3 unless the kind sets it (the original reads an uninitialized value) */
 int tfd_regulation_select(int i, int unused1, int unused2, int lim)
 {
@@ -940,11 +943,12 @@ int tfd_regulation_select(int i, int unused1, int unused2, int lim)
     TFdList *l = &d->list;
     int n = 0;
     int k;
+    TfdOne one = TFD_ONE;
 
     if (d->opts.kind == 0)
-        lim = 1;
+        lim = one;
     else if (d->opts.kind == 2)
-        lim = 1;
+        lim = one;
     for (k = 0; k < 8; k++) {
         if (title.duel.list.deck[k].kind != 0)
             n++;
@@ -960,7 +964,7 @@ int tfd_regulation_select(int i, int unused1, int unused2, int lim)
             return 0;
         }
     } else if (i == 9) {
-        if (n >= 1) {
+        if (one <= n) {
             se_play(0x6213);
             tfd_evt_handler(7, 0);
             title.duel.list.n = n;
