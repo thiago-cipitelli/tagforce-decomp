@@ -3376,7 +3376,7 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
   / `dmgr_pt_sprite` (127: o original deixa `x` em `s8` e derrama `p`, `y` e `&spr[i]`; aqui `x` e `y` perdem até
   para o temporário, mesmo com `p` volatile).
 
-## Rodada 33 (`gA`): segundo passe no skip do BOOT (5 de 14 batendo)
+## Rodada 33 (`gA`): segundo passe no skip do BOOT (7 de 14 batendo)
 
 - **Estado da unidade de tradução sem função vizinha que o explique: função `static` descartada pelo linker**
   (`wsprintf`, 276 -> 0). O sintoma era o da rodada 31 (`cB`): o original nunca usa `a2`/`a3` como temporários
@@ -3423,3 +3423,10 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
   na linha de comando, `static`/`inline`/K&R na definição, e uma função anterior (emitida ou `static`) com o gatilho
   (o modo não vaza entre funções). As duas são recursivas; `inline` na definição faz o mwcc expandir a recursão um
   nível (0x21C bytes em `gim_walk`), não é isso.
+- **Operandos de `addu`/`bne` trocados (o original põe o temporário primeiro, o mwcc o termo de vida longa)**: o
+  temporário era uma VARIÁVEL do fonte. `snd_group_cmd` (1 -> 0): `if ((int)val < 0 || (id = cur->id & mask, id ==
+  val))` com `unsigned int id` (atribuição dentro da condição, com vírgula; `(id = ...) == val` e a atribuição numa
+  instrução antes do `if` não servem). `netsync_transfer` (1 -> 0): `p = peer_get(i) + 4; done = x->size * i;
+  memcpy(x->dst + (done + ((chunk - 1) << 7)), p, 0x80);` reaproveitando `done` e `p` (uma variável nova ganha um
+  `$s` e aumenta o quadro; a atribuição tem de vir DEPOIS da chamada que produz a origem). Estavam no skip desde as
+  rodadas 9/10 como "ordem dos operandos, sem forma".
