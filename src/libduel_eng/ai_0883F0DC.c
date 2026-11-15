@@ -111,24 +111,32 @@ int duel_0883F2CC(unsigned int p)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 79 palavras (eram 231): casos 5 e 8 com um return 0 por ramo e o teste != 0 primeiro; caso 3
-   com o ponteiro do jogador pl (indução de pl->field[z]) e (unsigned int)z << 16 sem redução de força. Falta a
-   coloração: o original tem p em s0, ofs em s1, prot em s2, b24 em s3 (o nosso p s1, ofs s2, b24 s0, prot s3);
-   a ordem das declarações não muda nada (busca aleatória), prot com || e sem ofs pioram */
+#ifdef NON_MATCHING /* 23 palavras (eram 231): casos 5 e 8 com um return 0 por ramo e o teste != 0 primeiro; caso 3
+   com o ponteiro do jogador pl (indução de pl->field[z]) e (unsigned int)z << 16 sem redução de força. Rodada 33: v
+   como int (e não unsigned) põe p em s0 e ofs em s1 (79 -> 23); um contador por laço não muda. Falta: prot em s2 e b24 em
+   s3 no original (aqui trocados, e com eles o ponteiro do 1º laço e o invariante (p << 31) | 0x200000 do caso 3); sem
+   efeito: 400 sorteios de ordem x declaração/instrução x identidade dos contadores, tipos e 12 formas de prot/b24,
+   temporário nomeado no | do caso 0, ev/m explícitos no caso 3 */
 #define PFO(T, f) (*(T *)((char *)&duel.players[0].f + ofs))
 int duel_0883F3A0(void)
 {
-    unsigned int p = duel_turn_player;
-    int ofs = (p & 1) * 0xFAC;
-    unsigned int f = PFO(unsigned int, flags);
-    unsigned int b24 = f >> 24 & 1;
-    int prot = (f & 1) != 0;
     unsigned int q;
-    int i;
+    unsigned int p;
     int n;
-    unsigned int v;
+    int ofs;
+    int v;
+    int j;
+    unsigned int b24;
+    int m;
+    unsigned int prot;
     int z;
+    unsigned int f;
 
+    p = duel_turn_player;
+    ofs = (p & 1) * 0xFAC;
+    f = PFO(unsigned int, flags);
+    b24 = f >> 24 & 1;
+    prot = (f & 1) != 0;
     if (!prot)
         prot = b24 != 0;
     switch (duel_w_08919600) {
@@ -152,13 +160,13 @@ int duel_0883F3A0(void)
         if (PFO(unsigned int, n_hand) == 0 && duel_find_effect_card(p, 0x1911, -1) != 0) {
             duel_088C77D4(p, 0x1911, 1, 0);
         }
-        for (i = 0; i < 2; i++) {
-            q = p ^ !i;
+        for (j = 0; j < 2; j++) {
+            q = p ^ !j;
             if (duel_slot_has_effect(q, 0xB, 0x1504) != 0) {
                 duel_088C44E4(1 - q, 0x1504);
                 duel_088C7BA4();
-                for (n = duel.players[q & 1].n_hand - 1; n >= 0; n--) {
-                    duel_088CAB04(q, n, 1);
+                for (z = duel.players[q & 1].n_hand - 1; z >= 0; z--) {
+                    duel_088CAB04(q, z, 1);
                 }
                 duel_088C7CF0();
             }
@@ -182,21 +190,21 @@ int duel_0883F3A0(void)
         if (PFO(int, n_d) != 0) {
             DuelPlayer *pl = (DuelPlayer *)((char *)duel.players + ofs);
 
-            for (z = 0; z <= 4; z++) {
-                if (duel_slot_e8170(p, z, 0x14C4) != 0) {
-                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | ((unsigned int)z << 16 & 0x1F0000) | 0x14C4,
-                                  CARD_UID(pl->field[z].card), 0);
+            for (m = 0; m <= 4; m++) {
+                if (duel_slot_e8170(p, m, 0x14C4) != 0) {
+                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | ((unsigned int)m << 16 & 0x1F0000) | 0x14C4,
+                                  CARD_UID(pl->field[m].card), 0);
                 }
             }
-            for (z = 0; z <= 4; z++) {
-                if (duel_slot_e8170(p, z, 0x1A97) != 0) {
-                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | ((unsigned int)z << 16 & 0x1F0000) | 0x1A97,
-                                  CARD_UID(pl->field[z].card), 0);
+            for (n = 0; n <= 4; n++) {
+                if (duel_slot_e8170(p, n, 0x1A97) != 0) {
+                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | ((unsigned int)n << 16 & 0x1F0000) | 0x1A97,
+                                  CARD_UID(pl->field[n].card), 0);
                 }
             }
-            for (n = PFO(unsigned int, n_grave) - 1; n >= 0; n--) {
-                if (pl->grave[n].id == 0x1984) {
-                    duel_0884F30C((p << 31 & 0x80000000) | 0x4E1984, CARD_UID(pl->grave[n]), 0);
+            for (m = PFO(unsigned int, n_grave) - 1; m >= 0; m--) {
+                if (pl->grave[m].id == 0x1984) {
+                    duel_0884F30C((p << 31 & 0x80000000) | 0x4E1984, CARD_UID(pl->grave[m]), 0);
                 }
             }
         }

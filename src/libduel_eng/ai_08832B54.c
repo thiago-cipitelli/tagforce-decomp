@@ -666,7 +666,13 @@ int duel_0883447C(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* agendamento do valor de bits do duel_0884F398 (p != duel_ai_player) e da soma z não reproduzido */
+#ifdef NON_MATCHING /* 5 palavras: a soma z sai depois do mult de (p & 1) (no original, logo após as duas cargas).
+   Rodada 33: a palavra do evento montada num helper inline (p como int) acerta o ramo do duel_0884F398 (20 -> 5) */
+static inline unsigned int duel_ai_ev_word(int p, int opp, int k, int z, unsigned int id)
+{
+    return (p << 31 & 0x80000000) | (opp << 24 & 0x1000000) | (k << 21 & 0xE00000) | (z << 16 & 0x1F0000) | id;
+}
+
 void duel_0883449C(int a)
 {
     unsigned int p = duel_w_0891964C;
@@ -686,8 +692,7 @@ void duel_0883449C(int a)
                       (unsigned short)duel_w_0891962C, a);
         *f = v;
     } else {
-        duel_0884F398((unsigned short)duel_w_08919628 | ((p << 31 & 0x80000000) | ((p != duel_ai_player) << 24 & 0x1000000) | (k << 21 & 0xE00000) | (z << 16 & 0x1F0000)),
-                      (unsigned short)duel_w_0891962C);
+        duel_0884F398(duel_ai_ev_word(p, p != duel_ai_player, k, z, (unsigned short)duel_w_08919628), (unsigned short)duel_w_0891962C);
         *f = v;
     }
     duel_w_08919638 = 0;

@@ -1,6 +1,5 @@
 // @range 0x08839360-0x0883F0DC
 // @data 0x08907C3C-0x08907C90
-// @asm 0x0883BB00-0x0883D798
 // @asm 0x0883D798-0x0883E63C
 /* Battle: step machines of the damage step (duel_w_08919610) with the cards that act on the attacker and the target. */
 #include "duel.h"
@@ -772,9 +771,6 @@ int duel_0883B4A8(unsigned int p)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 25 palavras, só pilha: ocard e oon trocam de slot (0x44/0x50). Não mudam: ordem e tipo das
-   declarações, nomes, register, if/ternário, oon = 0 antecipado. O | dos laços de efeitos resolveu com o id relido
-   por duel.players[sp & 1].field[sz] (CSE com o endereço de slot) depois do resto da palavra (rodada 8) */
 /* destruction event word: uid, player, zone, kind 0xE (0xF: not by battle [?], 0xD: with 0x1797) */
 #define ACT_X_INIT(x, s, p, q)                                  \
     do {                                                        \
@@ -796,16 +792,18 @@ int duel_0883B4A8(unsigned int p)
         (x).s_zone2 = 0xE;                                      \
     } while (0)
 
-/* p: attacking player; destruction of the monsters that lost the battle */
+/* p: attacking player; destruction of the monsters that lost the battle.
+   Stack slots of ocard/oon (round 33): ocard by if/else, oon as the value of the && and `both` declared before the
+   card pointers; with the ternary and `oon = 0; if (...) oon = 1;` the two slots come out swapped. */
 int duel_0883BB00(unsigned int p)
 {
     unsigned int tp = duel_atk_tp;
     DuelSpecAct *a = &duel_special.act[p];
     DuelSpecAct *o = &duel_special.act[1 - p];
+    unsigned int both;                 /* players whose 0x1797 applies */
     DuelCard *acard;                   /* the attacker (its copy when it left the field) */
     DuelCard *ocard;
     int adead;                         /* destroyed by the battle */
-    unsigned int both;                 /* players whose 0x1797 applies */
     int oon;                           /* still the same card face up on the field */
     int odead;
     int aon;
@@ -830,7 +828,11 @@ int duel_0883BB00(unsigned int p)
     } else {
         acard = &duel.players[p & 1].field[a->unk4].card;
     }
-    ocard = o->pad14[6] != 0 ? &duel_special.slot[1].card : &duel.players[tp & 1].field[o->unk4].card;
+    if (o->pad14[6] != 0) {
+        ocard = &duel_special.slot[1].card;
+    } else {
+        ocard = &duel.players[tp & 1].field[o->unk4].card;
+    }
     adead = 0;
     if ((!a->pad14[7] && a->pad14[6] != 0) != 0 && duel_special.slot[0].card.id != 0) {
         adead = 1;
@@ -843,10 +845,7 @@ int duel_0883BB00(unsigned int p)
     if (a->uid == CARD_UID(duel.players[p & 1].field[a->unk4].card) && duel.players[p & 1].field[a->unk4].faceup != 0) {
         aon = 1;
     }
-    oon = 0;
-    if (o->uid == CARD_UID(duel.players[tp & 1].field[o->unk4].card) && duel.players[tp & 1].field[o->unk4].faceup != 0) {
-        oon = 1;
-    }
+    oon = o->uid == CARD_UID(duel.players[tp & 1].field[o->unk4].card) && duel.players[tp & 1].field[o->unk4].faceup != 0;
     if (duel_atk_direct != 0) {
         return 1;
     }
@@ -1260,7 +1259,6 @@ int duel_0883BB00(unsigned int p)
     }
     return 1;
 }
-#endif
 
 #ifdef NON_MATCHING /* 1 palavra: no evento 0x143E o original faz sll de i (s0), aqui sai do andi de i & 1 reaproveitado
    (sem o & 1 a ordem de avaliação do | inverte: 26 palavras). Rodada 8, sem efeito: i copiado para outra variável,
