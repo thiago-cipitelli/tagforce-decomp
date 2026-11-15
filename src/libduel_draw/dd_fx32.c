@@ -1,6 +1,5 @@
 // @range 0x0883B62C-0x08842824
 // @rodata 0x088707FC-0x08870820
-// @asm 0x0883E6F8-0x0883EF6C
 /* Effects 32-37 and 52-53: nine styles of full-screen burst picked by dd_fx_table.arg0 (style 0-8),
    each a task with its own particles, drawn through a stencil mask of the field except for effect 33,
    and the shared helpers (timings, depth state, the mask). */
@@ -886,7 +885,6 @@ int dd_fx32_s3_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 12 palavras: no laço do rastro o -1,0 é içado antes do 700 (no original, depois do -80) e f17-f19 rodados; ordem de declaração e forma de (j + -1.0f) * 700.0f * 0.2f não mudam */
 int dd_fx32_s3_update(int phase, DdFx32S3 *d)
 {
     DdFxSlot *s = d->slot;
@@ -908,6 +906,8 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
     float hw;
     float hh;
     float tv2;
+    float fj;
+    float z0;
     int i;
     int j;
     int i3;
@@ -933,19 +933,20 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
             /* the head of the tail, opaque */
             for (j = 0; j < 2; j++) {
                 v = d->tail_v[i][j];
-                z = (j + -1.0f) * 700.0f * 0.2f;
+                fj = j;
+                z0 = (fj + -1.0f) * 700.0f * 0.2f;
                 v[0].u = tu;
-                v[0].v = tv + j * 0.25f;
+                v[0].v = tv + fj * 0.25f;
                 v[0].color = 0xFF9B9BFF;
                 v[0].x = -hw;
                 v[0].y = 0.0f;
-                v[0].z = z;
+                v[0].z = z0;
                 v[1].u = tu + cw;
-                v[1].v = tv + j * 0.25f;
+                v[1].v = tv + fj * 0.25f;
                 v[1].color = 0xFF9B9BFF;
                 v[1].x = hw;
                 v[1].y = 0.0f;
-                v[1].z = z;
+                v[1].z = z0;
             }
             /* the rest fades out over 1400 units */
             for (j = 2; j < 9; j++) {
@@ -1045,7 +1046,6 @@ int dd_fx32_s3_update(int phase, DdFx32S3 *d)
     }
     return d->t < d->end ? 2 : 4;
 }
-#endif
 
 /* ---- style 4: a red tube of light, red and white spinning sparks and a wobbling screen ---- */
 
