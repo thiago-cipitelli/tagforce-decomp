@@ -3630,3 +3630,61 @@ era ordem de declaração; os mecanismos, do mais geral para o mais específico:
 - `movie_main_loop` (2 -> 0) com o mecanismo do agente jA (um bloco dá a cópia likely a UM desvio só): um único
   `out: return r;` alcançado pelas três saídas (`goto out` na saída do input e na saída normal, `fail:` caindo nele).
   Em `efs_run` o mesmo (rótulo único para os três `return 0` e/ou os dois `return -1`) piora: 20-31 alinhadas.
+
+## Rodada 34 (`lA`): as 13 entradas de libduel_eng do skip (1 batendo, 1 melhor) e um modelo do alocador de `$s`
+
+`duel_0883D798` (1 -> 0) bate; `duel_0883F3A0` 23 -> 17. Mecanismos novos:
+
+- **Atribuição dentro da expressão separa dois usos do mesmo valor** (`duel_0883D798`): o original faz `sll v1,s0,31`
+  (bit 31 direto do contador) e `andi v1,s0,1` para o índice do jogador. Com `(i & 1) << 31` o mwcc reaproveita o
+  `andi` (CSE); com `i << 31` puro a ordem de avaliação do `|` inverte (26 palavras). `((unsigned int)(q = i) << 31 &
+  0x80000000) | ...` com o índice ainda `i & 1` mantém a ordem e tira o CSE (`q` é um local sem outro uso; a cópia é
+  fundida com `i`). Vale também `(q = i) & 1` no índice com `q << 31` no evento.
+- **`a || b` no lugar de `x = a; if (!x) x = b;`** (`duel_0883F3A0`): mesmo código (`sltu; bnez; sltu`), mas `prot`
+  e `b24` trocam de `$s` (o valor passa a nascer num temporário, criado depois de `b24`).
+- **Leitura `volatile` não dobra o deslocamento do campo na relocação** (`duel_0880C15C`): acerta a ordem das cargas
+  (20 -> 1), mas sai `lw 36(v1)` com a base pura em vez de `lw 0(v1)` com `sym+0x24`. Onde o original tem o
+  deslocamento dobrado, `volatile` não serve.
+
+### Modelo do alocador (experimentos sintéticos em `build/tmp/lA/syn/`)
+
+Função de teste: N locais `int x = gx;`, uma chamada, depois `f0(x)` para cada um (`gen.py`, `k.py`, `s.py`).
+Resultado (registrador por local, na ordem de declaração a, b, c...):
+
+    N=4: s3 s2 s1 s0        N=5: s1 s0 s4 s3 s2        N=6: s3 s2 s1 s0 s5 s4
+    N=7: s5 s4 s3 s2 s1 s0 s6    N=8: s6..s0 s7    N=9: s6..s0 s7 s8
+
+Isso se explica por um Chaitin com **limiar de grau 7** (observado; grau = interferências com TODOS os registradores
+virtuais vivos, inclusive os temporários de `lui`/`andi` criados enquanto a variável está viva):
+
+1. passadas em ordem de índice (locais na ordem de DECLARAÇÃO, depois temporários na ordem de criação): quem tem
+   grau < 7 é empilhado e os vizinhos perdem um grau na hora;
+2. se ninguém serve, escolhe-se um candidato a derrame: o de MENOR custo (menos usos), empate = MAIOR índice
+   (`s.py`: com 9 locais iguais saem i e h; dando 4 usos a h, sai g no lugar dele);
+3. desempilha-se dando o `$s` livre mais baixo: o último empilhado fica com `s0`.
+
+Consequências que já apareciam como regras soltas: variável de vida curta/poucos usos fica com o `$s` mais alto;
+quem é definido por último (interfere com menos temporários) sobe; "a ordem das declarações não muda nada" quer
+dizer que a variável é candidata (passo 2) ou que o valor mora num temporário (índice = ordem das INSTRUÇÕES, não
+das declarações). Como ler um mapa: os `$s` altos são os candidatos na ordem em que foram escolhidos; os baixos são
+a passada final em ordem de índice invertida.
+
+O que muda o índice ou o custo sem mudar o código:
+
+- local com definição única por carga (`n = duel_req.arg`) segue a ordem das instruções; local com várias definições
+  (`banish`) ou definido por comparação (`p = (x & K) != 0`) segue a ordem das declarações;
+- valor que vem de um **inline que devolve `unsigned`** (`p = req_player()`) passa para depois dos locais da função
+  (em `duel_req_mill` troca `p`/`banish`); devolvendo `int` não muda;
+- número de usos DE MÁQUINA: usos que o mwcc dobra (`n + n - n`, `(void)n`, store duplicado) não contam. Em
+  `duel_req_mill`, `n` com 1 uso vira o primeiro candidato (`s6`), com 2 fica na passada final, com 3 sobe para o
+  lugar do original; em `duel_088C6BC8` um uso a menos de `grave` o torna candidato.
+
+Não fechou: em `duel_req_mill`, `duel_088C6BC8` e `duel_field_controller` o original tem **um candidato a mais** que o
+build 219 com código de máquina idêntico (5 escolhidos contra 4; em `duel_field_controller` os CSE `ofs`/`z*20` são
+escolhidos antes da passada de `p`/`cur`/`base`). Com o mesmo código o grafo deveria ser o mesmo; ou há uma diferença
+de fonte que some depois da coloração, ou é diferença de versão do compilador (2.4.1.01 x 3.0.1 b219) no limiar.
+Vale um experimento dirigido antes de novas buscas de ordem nessas três.
+
+Scripts (em `build/tmp/lA/`): `show.py` (diff alinhado de UMA variante de um arquivo de variantes do `eC/v.py` ou
+`hB/fv.py`), `syn/` (harness sintético), `m*.py` (`duel_req_mill`), `f*.py` (`duel_0883F3A0`), `g*.py`
+(`duel_088C6BC8`), `c*.py` (`duel_0880C15C`), `v*.py` (`duel_0883D798`), `w*.py` (`duel_0883449C`).
