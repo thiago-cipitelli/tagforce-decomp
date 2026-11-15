@@ -229,7 +229,7 @@ void *tbox_draw(void *list, TBox *b)
     return list;
 }
 
-#ifdef NON_MATCHING /* 34 palavras (rodada 28: o `if (!sel) show = 0` do case 1 é `if (sel) show = 1; else show = 0;`, then que some e else no atraso do beqzl); restam registradores e seh da largura de cada peça no laço */
+#ifdef NON_MATCHING /* 33 palavras (rodada 28: o `if (!sel) show = 0` do case 1 é `if (sel) show = 1; else show = 0;`; rodada 32: o callback recebe i como unsigned short, sem andi); restam registradores e seh da largura de cada peça no laço (pw short e a ordem x, y, h, u, v, w, pw das atribuições alinham mais instruções, 23 alinhadas contra 40, mas mudam o tamanho) */
 /* one tab: three pieces, coloured by the selection, then its label callback */
 void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
 {
@@ -307,7 +307,7 @@ void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
             list = draw_sprite(list, px, py, 0, u, v, s.a, s.b);
         }
         if (t->draw)
-            list = ((void *(*)(void *, int, int, int, int, int))t->draw)(list, i, t->x, t->y, t->w, t->h);
+            list = ((void *(*)(void *, unsigned short, int, int, int, int))t->draw)(list, i, t->x, t->y, t->w, t->h);
     }
     return list;
 }
