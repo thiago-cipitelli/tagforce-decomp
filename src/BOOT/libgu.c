@@ -6,9 +6,7 @@
 // @asm 0x08805754-0x088057C0
 // @gcc 0x088057C0-0x08805854
 // @asm 0x08805854-0x088058FC
-// @gcc 0x088058FC-0x08805914
-// @asm 0x08805914-0x08805950
-// @gcc 0x08805950-0x08805960
+// @gcc 0x088058FC-0x08805960
 // @asm 0x08805960-0x088059D4
 // @gcc 0x088059D4-0x08805A1C
 // @asm 0x08805A1C-0x08805ACC
@@ -535,7 +533,11 @@ int sceGuCheckList(void)
 unsigned int *gu_get_list(int *left)
 {
     if (left != 0) {
-        *left = gu.list->arg - ((char *)gu.list->cur - (char *)gu.list->start);
+        GuList *l = gu.list;
+        char *start = (char *)l->start;
+        char *cur = (char *)l->cur;
+
+        *left = l->arg - (cur - start);
     }
     return gu.list->cur;
 }

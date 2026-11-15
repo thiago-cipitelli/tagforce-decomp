@@ -1,13 +1,13 @@
 // @range 0x08805EC4-0x08807070
-// @asm 0x08805EC4-0x0880631C
-// @gcc 0x0880631C-0x08806378
+// @asm 0x08805EC4-0x08806300
+// @gcc 0x08806300-0x08806378
 // @asm 0x08806378-0x08806460
 // @gcc 0x08806460-0x088064BC
 // @asm 0x088064BC-0x08806564
 // @gcc 0x08806564-0x0880661C
 // @asm 0x0880661C-0x0880665C
-// @gcc 0x0880665C-0x08806688
-// @asm 0x08806688-0x088066F4
+// @gcc 0x0880665C-0x088066B4
+// @asm 0x088066B4-0x088066F4
 // @gcc 0x088066F4-0x088067E4
 // @asm 0x088067E4-0x088068EC
 // @gcc 0x088068EC-0x088069C8
@@ -16,9 +16,7 @@
 // @asm 0x08806A1C-0x08806A74
 // @gcc 0x08806A74-0x08806B1C
 // @asm 0x08806B1C-0x08806BE0
-// @gcc 0x08806BE0-0x08806C00
-// @asm 0x08806C00-0x08806C2C
-// @gcc 0x08806C2C-0x08806C68
+// @gcc 0x08806BE0-0x08806C68
 // @asm 0x08806C68-0x08806D84
 // @gcc 0x08806D84-0x08806E08
 // @asm 0x08806E08-0x08806E48
@@ -122,10 +120,10 @@ void gu_sprite_size(int uw, int vh, int xw, int yh)
 {
     GuList *l = gu.list;
 
-    l->pad38[3] = yh;
     l->pad38[0] = uw;
     l->pad38[1] = vh;
     l->pad38[2] = xw;
+    l->pad38[3] = yh;
 }
 
 /* one textured sprite at (x, y, z) from (u, v); flip bit 0 mirrors u, bit 1 v; rot 1-3 */
@@ -222,7 +220,9 @@ void sceGuMaterial(int mode, unsigned int color)
 
 void sceGuColor(unsigned int color)
 {
-    gu_ctx_material(gu.list, 7, color);
+    GuList *l = gu.list;
+
+    gu_ctx_material(l, 7, color);
 }
 
 /* MATERIALAMBIENT + MATERIALALPHA */
@@ -385,7 +385,9 @@ void sceGuTexFlush(void)
 
 void sceGuTexSlope(float slope)
 {
-    GU_PUSH(GU_F24(slope) | 0xD0000000);
+    unsigned int w = GU_F24(slope) | 0xD0000000;
+
+    GU_PUSH(w);
 }
 
 void sceGuClutMode(int cpsm, int shift, int mask, int a3)

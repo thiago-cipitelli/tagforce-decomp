@@ -1,6 +1,5 @@
 // @range 0x0881F6E4-0x0881FFB0
-// @gcc 0x0881F914-0x0881F94C
-// @gcc 0x0881F980-0x0881F9F0
+// @gcc 0x0881F914-0x0881F9F0
 /* Sony's libdeflt: gzip container (RFC 1952) and raw deflate decoder (RFC 1951). The gzip helpers are
    GCC-compiled C and the decoder is hand-written (one routine with local subroutines called through
    jal/bltzal and the fixed-code tables at D_08874F00), so all of them stay whole `asm` functions here;
@@ -504,32 +503,20 @@ const void *gzip_get_data(const void *buf);
 #endif
 
 /* 1 when buf starts with the gzip magic 1F 8B */
-#ifdef __MWERKS__
-asm int is_gzip(const void *buf)
-{
-    lbu v0, 0(a0)
-    addiu a2, zero, 31
-    beq v0, a2, L_0881F968
-    addiu a1, zero, 1
-    move a1, zero
-L_0881F960:
-    jr ra
-    move v0, a1
-L_0881F968:
-    lbu a2, 1(a0)
-    addiu a0, zero, 139
-    bnel a2, a0, L_0881F960
-    move a1, zero
-    j L_0881F960
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: gzip_gcc.c */
 int is_gzip(const void *buf)
 {
     const unsigned char *h = buf;
 
-    return h[0] == 0x1F && h[1] == 0x8B;
+    if (h[0] == 0x1F) {
+        if (h[1] == 0x8B) {
+            return 1;
+        }
+    }
+    return 0;
 }
+#else
+int is_gzip(const void *buf);
 #endif
 
 /* FNAME of the header, 0 when absent or on a bad header */

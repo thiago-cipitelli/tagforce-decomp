@@ -1,7 +1,11 @@
 // @range 0x088634EC-0x08865260
 // @asm 0x088634EC-0x08863A6C
 // @gcc 0x08863A6C-0x08863AA0
-// @asm 0x08863AA0-0x08864100
+// @asm 0x08863AA0-0x08863F38
+// @gcc 0x08863F38-0x08863F88
+// @asm 0x08863F88-0x08864024
+// @gcc 0x08864024-0x088640A8
+// @asm 0x088640A8-0x08864100
 // @gcc 0x08864100-0x08864254
 // @asm 0x08864254-0x08865260
 /* libwave (SDK sample library, "SceWaveMain"): 8 software channels of VAG ADPCM or 16-bit PCM
@@ -70,6 +74,11 @@ void wave_ch_decode_vag(int ch, unsigned char *pcm);
 void wave_ch_copy_pcm(int ch, unsigned char *pcm);
 void wave_ch_mix(int ch, short *out, short *pcm);
 int wave_ch_is_playing(unsigned int ch);
+#if defined(__mips__) && !defined(__MWERKS__)
+/* separate objects of the library: the SDK's GCC (-O3) must not inline them into their callers; declared before
+   the definitions (GCC 3.3 drops a function whose noinline comes after its body) */
+int wave_init(int prio) __attribute__((noinline));
+#endif
 
 #if defined(__MWERKS__) || defined(__mips__) /* PSP (mwcc and the SDK's GCC, libwave_gcc.c): the original objects */
 extern int D_08C1E780;                 /* 0 none, 1 initialised, 3 thread running */
@@ -467,9 +476,9 @@ int wave_exit(void)
     sceAudioChRelease(wave_hw_ch[0]);
     sceAudioChRelease(wave_hw_ch[1]);
     sceAudioChRelease(wave_hw_ch[2]);
+    wave_vag_ptr = 0;
     wave_pcm_ptr = 0;
     wave_state = 0;
-    wave_vag_ptr = 0;
     return 0;
 }
 

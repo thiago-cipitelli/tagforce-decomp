@@ -1,8 +1,10 @@
 // @range 0x08807070-0x088087F8
 // @gcc 0x08807070-0x0880712C
 // @asm 0x0880712C-0x08807338
+// @gcc 0x08807DD0-0x08807DFC
 // @asm 0x08807E90-0x08807F94
 // @gcc 0x08807F94-0x08807FD8
+// @gcc 0x08808058-0x08808084
 // @gcc 0x08808100-0x08808130
 // @asm 0x08808130-0x0880874C
 // @gcc 0x0880874C-0x08808790
@@ -1072,28 +1074,17 @@ void gu_ctx_material(GuList *l, int mode, unsigned int color)
 #endif
 
 /* FFACE: 0 = clockwise -> 1 */
-#ifdef __MWERKS__
-asm void gu_ctx_front_face(GuList *l, int order)
-{
-    lui v0, 0x9b00
-    bnez a1, @20
-    ori v1, v0, 0x1
-    lw v0, 8(a0)
-@10:
-    sw v1, 0(v0)
-    addiu v1, v0, 4
-    jr ra
-    sw v1, 8(a0)
-@20:
-    lw v0, 8(a0)
-    j @10
-    lui v1, 0x9b00
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_front_face(GuList *l, int order)
 {
-    ctx_push(l, order == 0 ? 0x9B000001 : 0x9B000000);
+    if (order == 0) {
+        ctx_push(l, 0x9B000001);
+    } else {
+        ctx_push(l, 0x9B000000);
+    }
 }
+#else
+void gu_ctx_front_face(GuList *l, int order);
 #endif
 
 /* LXP/LYP/LZP of the light position and LTYPE (components, type: 8 -> 2, 6 -> 1, else 0) */
@@ -1252,28 +1243,17 @@ void gu_ctx_scissor(GuList *l, int x, int y, int w, int h)
 #endif
 
 /* SHADE: smooth (non-zero) -> 1 */
-#ifdef __MWERKS__
-asm void gu_ctx_shade_model(GuList *l, int mode)
-{
-    lui v0, 0x5000
-    bnez a1, @24
-    ori v1, v0, 0x1
-    lw v0, 8(a0)
-    lui v1, 0x5000
-@14:
-    sw v1, 0(v0)
-    addiu v1, v0, 4
-    jr ra
-    sw v1, 8(a0)
-@24:
-    j @14
-    lw v0, 8(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_shade_model(GuList *l, int mode)
 {
-    ctx_push(l, mode == 0 ? 0x50000000 : 0x50000001);
+    if (mode == 0) {
+        ctx_push(l, 0x50000000);
+    } else {
+        ctx_push(l, 0x50000001);
+    }
 }
+#else
+void gu_ctx_shade_model(GuList *l, int mode);
 #endif
 
 /* GE signal handler: records the signal id (ring of 16), calls the user callback, sets the event */
