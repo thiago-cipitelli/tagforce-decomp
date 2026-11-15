@@ -1,7 +1,6 @@
 // @range 0x08805DF4-0x08806FC4
 // @rodata 0x08834DB4-0x08834E3C
 // @asm 0x08806200-0x08806390
-// @asm 0x08806E6C-0x08806ED4
 /* Drawing of the SD characters: the 3D model, the sprite sheets (sd_*_sla.gim) as billboards under
    an orthographic projection, the flat sprite; the vertex quad of a sprite cell and the kind of
    drawing each chara id uses. The large draw callbacks are still in asm. */
@@ -524,7 +523,7 @@ int fld_chr_kind(int id)
     return r;
 }
 
-#ifdef NON_MATCHING /* 6 palavras: o original testa 3, 2, 1 (o r = 3 do case 2 reaproveita o li v0,3 do teste do case 3); aqui o teste de 1 vem antes do de 2. Melhor das 24 ordens de case e das variantes com default: case 1: e return */
+/* 'case 0: case 1: default:' keeps the test of 1 (the idiom of st_fld_setup_items) */
 int fld_chr_tex(int id)
 {
     CharmapPos p;
@@ -532,12 +531,13 @@ int fld_chr_tex(int id)
 
     if (charmap_lookup2(id, &p) != 0) {
         switch (p.b) {
+        case 0:
+        case 1:
+        default:
+            r = 2;
+            break;
         case 2:
             r = 3;
-            break;
-        default:
-        case 1:
-            r = 2;
             break;
         case 3:
             r = 4;
@@ -548,7 +548,6 @@ int fld_chr_tex(int id)
     }
     return r;
 }
-#endif
 
 int fld_chr_size(int id)
 {
