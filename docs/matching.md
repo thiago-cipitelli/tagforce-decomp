@@ -3415,3 +3415,43 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
 - Scripts (em `build/tmp/hB/`): `fv.py` (variantes aplicadas só dentro da função, com mapa variável -> `$s` por
   regex: `RX = [(nome, regex)]` no arquivo de variantes), `ad.py` (diff alinhado, com variante opcional), `sbs.sh`
   (lado a lado sem as diferenças só de `$s`), `mrand.py` (busca aleatória do cabeçalho de `duel_req_mill`).
+
+## Rodada 33 (`hA`): as 10 entradas de `ai_*.c` de libduel_eng (2 batendo, 5 melhores)
+
+`duel_08838A84` (28 -> 0) e `duel_0883BB00` (25 -> 0) batem; `duel_0883449C` 20 -> 5, `duel_0883F3A0` 79 -> 23,
+`duel_08817598` 441 -> 406, `duel_088451E8` distância alinhada 145 -> 106. Mecanismos novos:
+
+- **Valor derivado numa variável PRÓPRIA, não numa já existente** (`duel_08838A84`, 28 -> 5): o `1 - p` do caso 2
+  estava em `q` (que no topo guarda `duel_atk_tp`); com `unsigned int o` declarado antes de `z` e `o = 1 - p;` o
+  `1 - p` fica em `s0` e `o & 0xFF` em `s2` como no original. É o inverso do "reaproveitar a variável" da rodada 32:
+  testar as duas direções para cada valor (aqui 128 combinações de contador/flag/variável, só essa mexe).
+- **Atribuição dentro do argumento decide a ordem das cargas** (`duel_08838A84`, 5 -> 1): o original carrega
+  `duel_atk_zone` (2º argumento) antes de formar `pl = &duel + ofs`; `duel_088C4448(p, duel_atk_zone, CARD_UID((pl =
+  &duel.players[p & 1])->field[duel_atk_zone].card));` e a chamada seguinte com `pl->`. Com `pl` inicializado
+  antes da chamada, ou sem `pl`, a base sai primeiro.
+- **Palavra de evento (`p << 31 & 0x80000000 | ...`) em instruções x numa expressão**: a ordem dos operandos do `or`
+  final e o agendamento mudam conforme o `|` é feito na expressão da chamada ou numa instrução própria.
+  `e = m | (z << 16 & 0x1F0000); e |= id & 0xFFFF; f(e, ...)` dá `or a0,v1,v0` (`duel_08838A84`, 1 -> 0; as 13
+  árvores da expressão única dão `or a0,v0,v1`). Em `duel_0883449C` o que acerta o ramo com `(p != duel_ai_player)
+  << 24` é um **helper `static inline` com `p` como `int`** (`duel_ai_ev_word(int p, int opp, int k, int z, unsigned
+  id)`, 20 -> 5): o `p << 31` sai antes da carga de `duel_ai_player` e vai para o delay slot do `beqzl`. 240
+  árvores do `|` com `p << 31` num local não mudam nada (o local é propagado).
+- **Slots de pilha de dois locais derramados trocados = forma das DEFINIÇÕES, depois a ordem** (`duel_0883BB00`):
+  nenhuma ordem de declaração mexia com `ocard = c ? A : B;` e `oon = 0; if (X && Y) oon = 1;`. Com `ocard` por
+  `if/else` e `oon = X && Y;` (mesmo código gerado) `oon` vai para o slot certo, e só então a ordem das declarações
+  passa a ter efeito: `both` declarado antes dos ponteiros de carta fecha (25 -> 14 -> 0).
+- **`int` x `unsigned int` de um local que só recebe o retorno de uma chamada** (`duel_0883F3A0`, 79 -> 23): `v`
+  (`(int)v >= 0` no fonte) como `int` põe `p` em `s0` e `ofs` em `s1`. Varredura barata: `build/tmp/hA/vtype.py`
+  troca o sinal de cada local, um por vez.
+- Local com inicializador declarado POR ÚLTIMO (`mask = duel_0884E4A0(a)` em `duel_08817598`): vai para `s0`.
+- Sem efeito nestas entradas: os globais 0x08919600..0x08919658 e `duel_ai_player` como campos de `Duel` (testado com
+  campos de verdade em `duel.h`, nas 7 funções que os usam: mesmo código, não foi commitado); enum no contador do
+  laço 0x143E de `duel_0883D798` (cria o teste de entrada); em `duel_ai_sum_088239EC`, como gatilho do modo sem
+  limpeza: helper inline com `return` por `case` para o `ok`, `return 1` depois do `switch`, `default` primeiro,
+  `break`/`goto` para um `return 1` comum, caso 9 embrulhado em `if (f() == 0) { ... } return 0;`, `switch` de um
+  `case` só para 0x14D5, cada `case` com `break` e um `return 0` comum.
+- `duel_088451E8`: o original derrama `me` (3 usos) desde o início e mantém em `$s` o ponteiro `&duel.players[me]` do
+  caso 200; o 219 faz o contrário. `pl`/`ofs` explícitos, `p & 1` por extenso e tipos de `me` não invertem a escolha.
+- Scripts (em `build/tmp/hA/`): `hrand.py` (variantes para o `var.py` da `eA`: ordem das declarações x inicializador
+  ou instrução x troca de sinal, vetores mantidos no lugar; `METRIC=lcs` para funções deslocadas), `vtype.py`,
+  `fld.py` (define os globais internos de `Duel` como campos só em volta de uma função), `t.sh`.
