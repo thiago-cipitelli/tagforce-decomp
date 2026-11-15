@@ -1,5 +1,4 @@
 // @range 0x088420B4-0x088433F0
-// @asm 0x08842724-0x08843114
 /* UCS-2 text formatting: wsprintf (%s %c %d %x %X %f with flags, width, precision and `*`),
    number-to-text helpers, Latin-1/Latin Extended-A case mapping, and the indexed string table. */
 #include "psp.h"
@@ -126,11 +125,16 @@ int wfmt_float_digits(float f, unsigned short *buf, int prec)
     return i;
 }
 
-#ifdef NON_MATCHING
-/* Forma igual ao original (buf[64], switch nas flags e na conversão, fmt copiado num local, `if (sign)`):
-   os $s e o quadro (0x100) batem; faltam ~276 palavras só de temporários: o original nunca usa a2/a3
-   como temporários (o contador dos laços de preenchimento fica em t0, pad em v0, sign em t1), o mwcc
-   usa a2/a3 primeiro. Ordem de declarações não muda isso (hill-climb). */
+#ifdef __MWERKS__
+/* Estado da unidade de tradução (docs/matching.md, rodadas 31 e 33): o original compilou wsprintf depois de
+   alguma função com aritmética de double (ou multiplicação de 64 bits) na mesma unidade; sem isso o mwcc dá
+   a2/a3 aos temporários de wsprintf em vez de t0/t1/t2 (276 palavras). Nenhuma função vizinha do binário tem essa
+   aritmética: era uma função que o linker original descartou (sem referência). Aqui ela vai para `.init`, seção
+   que o linker script não coloca para este objeto (cai no /DISCARD/), e por isso não ocupa espaço no módulo. */
+static double wfmt_tu_state(double x, double y) __attribute__((section(".init")));
+static double wfmt_tu_state(double x, double y) { return x * y; }
+#endif
+
 int wsprintf(unsigned short *out, const unsigned short *format, ...)
 {
     unsigned short buf[64];
@@ -141,10 +145,10 @@ int wsprintf(unsigned short *out, const unsigned short *format, ...)
     const unsigned short *fmt;
     int kind;
     unsigned short *s;
+    int pad;
     unsigned short sign;
     unsigned short c;
     int n;
-    int pad;
     int zero_pad;
     int len;
     unsigned short flag;
@@ -280,7 +284,6 @@ int wsprintf(unsigned short *out, const unsigned short *format, ...)
     out[n] = 0;
     return n;
 }
-#endif
 
 unsigned short *wtext_from_int(int v, unsigned short *out)
 {

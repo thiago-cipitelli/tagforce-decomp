@@ -224,8 +224,6 @@ segments:
       - [0x3CE24, c, deck]
       - [0x3DC30, c, wstr]
       - [0x3E114, c, wfmt]
-      - [0x3E784, asm, wfmt_asm_08842724]
-      - [0x3F174, c, wfmt]
       - [0x3F450, c, menu]
       - [0x3F660, asm, menu_asm_08843600]
       - [0x3F978, c, menu]
