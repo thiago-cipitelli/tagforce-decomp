@@ -3112,3 +3112,49 @@ Quatro entradas antigas do skip batendo (`snd_obj_begin` 43, `snd_streams_decode
   `double dummy_(double x, double y) { return x * y; }` numa cópia do arquivo e medir; se bater, a função pertence
   à unidade do arquivo anterior. `__extendsfdf2`/`__truncdfsf2` sozinhos e chamadas comuns não disparam.
 - Não resolvido: `dl_enable` (2 palavras, ordem dos dois `addiu -1`; 40 formas novas, nenhuma abaixo de 2).
+## Rodada 32 (`eA`): `ai_*` de libduel_eng, alias de stores e identidade de variáveis
+
+Cinco entradas do skip batendo (`duel_08807C7C` 154, `duel_088441D0` 12, `duel_0882E0A8` 9, `duel_ai_0881E27C` 6) e
+`ai_088070A8.c`, `ai_0882D398.c`, `ai_08844024.c` e `ai_cond.c` sem `@asm`.
+
+- **Store em global escalar invalida as leituras por ponteiro; store em membro de struct (ou elemento de array) não**
+  (`duel_08807C7C`). Com `extern unsigned int g; g = p;` o mwcc relê `a->player`/`a->zone` (`lbu 2(a)`) em cada `case`
+  depois do store; com `extern struct { unsigned int player; ... } g; g.player = p;` o byte lido antes do store fica
+  num registrador através do `switch`, como no original. O rascunho imitava isso com um local `w = ((unsigned char
+  *)a)[2]` (o "idioma da rodada 24") e `pl = w & 1`, que acerta a estrutura e erra a cor de todos os temporários; com
+  o global declarado como a struct que ele é (`DuelAiView duel_w_08913CF4`) o fonte natural (`p = a->player ^ a->opp;`,
+  `duel.players[a->player & 1].field[a->zone]`) dá 154 -> 7. Sintoma no asm: um byte/halfword de bitfield carregado
+  uma vez, mantido num `$a`/`$v` depois de um `sw` em global, e o `andi 1` do índice refeito sobre o campo já extraído
+  (`andi a1,a2,1` ... `andi v1,a1,1`: o `& 1` sobre um bitfield não é dobrado, sobre `w & 1` escrito à mão é).
+  Vale para qualquer entrada do skip com "relê o campo depois de gravar um global" ou com um local que guarda o byte
+  de um bitfield: conferir se o global gravado é um escalar no nosso `extern` e membro de struct no original
+  (ainda escalares: `duel_w_08913CF4` em `ai_08804000.c`, `ai_08830E94.c`, `ai_08842C24.c`, `ai_cond6.c`, `ai_util.c`).
+- **Contador de laço = outra variável da função** (`duel_08807C7C`, 7 -> 0): `i` (só desse laço) ficava abaixo do
+  ponteiro de indução; com `z` (contador de outro `case`) como contador, o contador sobe um `$s`. É o inverso do
+  "um contador por laço" da rodada 30: testar as duas direções.
+- **Cadeia de cópias de um resultado de chamada** (`duel_0882E0A8`): `card = field_get_card(p, zz); id = card; if
+  (card == 0) return 0; ... { int want = id; for (...) if (ids[k] == want) ... }` troca `s0`/`s1` entre a zona e a
+  carta. Só `t = f(); id = t;` ou só a cópia de bloco não bastam (7 e 9 palavras); a ordem das declarações não importa.
+- **Invariante içado em registrador trocado = escrever o laço já rotacionado** (`duel_088441D0`): `z = g; if (z < 10) {
+  q = 1 - p; do { ... } while ((z = ++g) < 10); }` com `q` declarado antes de `z`. Com `for` e `1 - p` por extenso (ou
+  `q = 1 - p` dentro do laço) o temporário içado fica sempre abaixo de `z`; com `q = 1 - p;` antes do `for` a cor
+  acerta mas a conta sai antes do teste.
+- **Modo sem limpeza com `return K` e `K` já em `v0` por uma constante** (`duel_ai_0881E27C`): `if (lp <= atk) return
+  1; if (atk > 1000) return 1;` dentro do `if (z >= 0)`, com o `li v0,1` do `1 - player` ainda vivo: os dois `return 1`
+  são vazios e o primeiro vira `bnezl; b fim; lw ra`. `lp <= atk` (e não `atk >= lp`) dá o `slt at`.
+- `duel_ai_sum_088239EC`: o `default` é `return 1` de verdade. Sem ele o mwcc tira o `v0` das constantes do despacho
+  (passo em `a0`, constantes em `v1/a2/a1`); com ele o despacho bate e o `b epílogo` sai sem `li` (o 1 do teste do
+  `case 1` já está em `v0`). O modo sem limpeza continua desligado: `default` antes de cada `case` e `return;` sem
+  valor não ligam, e o original não tem desvio condicional para o epílogo.
+- Ferramentas (em `build/tmp/eA/`): `var.py SRC FUNC VARIANTES.py` compila em paralelo as variantes geradas por uma
+  função Python sobre o texto da função (`METRIC=lcs` troca a contagem posicional pela distância alinhada, `NAME=`
+  escolhe a variante mostrada), `lcs.py SRC FUNC --show N` dá a distância alinhada com os operandos relocados
+  mascarados (a medida certa quando o código está deslocado: 818 palavras eram 204 instruções), `dis.sh FUNC [CTX]`
+  mostra original e compilado lado a lado só nas palavras que o `mwcc_check` acusa, `promote.py SRC FUNC` promove.
+- Sem forma: `duel_0883D798` (1: `sll v1,s0,31`; 500 formas da palavra do evento, do índice e do contador),
+  `duel_0880C15C` (20: ordem `(1 - p) * 220` / `tz * 44`; 250 formas do índice, ponteiro de linha, locais),
+  `duel_0883449C` (20: agendamento; 120 árvores do `|`, `p & 1` em variável, formas de `f` e de `z`),
+  `duel_0883F3A0` (79: `p` em `s0` no original; 240 ordens de declaração com atribuição separada, `b24`/`f` por
+  extenso, `p` vindo de outra variável), `duel_08817598` (441: `id` em `s2` no original e em `s0` aqui; cópia de `id`
+  e de `mask` por outra variável), `duel_08846584` (264: contador próprio em cada laço, `ap` por extenso),
+  `duel_0883BB00` (25: slots de pilha), `duel_088451E8` (distância alinhada 145: `me` na pilha desde o início).
