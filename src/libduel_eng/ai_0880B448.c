@@ -1,5 +1,4 @@
 // @range 0x0880B448-0x0880FDF4
-// @asm 0x0880C15C-0x0880C50C
 /* Computer player: values it declares for cards that ask for a monster type, an attribute or a
    number. */
 #include "duel.h"
@@ -391,11 +390,6 @@ unsigned int duel_0880BD00(unsigned int p, int id, unsigned short x)
     return r;
 }
 
-#ifdef NON_MATCHING /* no caso 0x19C2 o original calcula (1 - p) * 0xDC antes de tz * 0x2C ao indexar duel_w_08913CF4.st; a ordem dos índices não se reproduz.
-   Rodada 34: ler a máscara por volatile (`*(volatile unsigned int *)&duel_w_08913CF4.st[1 - p][tz].mask`) dá a ordem
-   do original (20 -> 1 palavra), mas a carga volatile não dobra o deslocamento do campo no endereço (`lw 36(v1)` em
-   vez de `lw 0(v1)` com o +0x24 na relocação), então não foi adotado; sem efeito: (m = máscara) dentro do &,
-   instruções separadas, ponteiro para a linha st[1 - p], vista plana de palavras, operandos do & trocados */
 /* Does the effect of the monster at (p, z) work well against the opponent's monster in zone tz? */
 int duel_0880C15C(unsigned int p, int z, int tz)
 {
@@ -417,11 +411,11 @@ int duel_0880C15C(unsigned int p, int z, int tz)
         return duel.players[(1 - p) & 1].field[tz].pos;
     case 0x19C2:
         return duel.players[(1 - p) & 1].field[tz].faceup != 0 &&
-               (duel.players[p & 1].field[z].link & duel_w_08913CF4.st[1 - p][tz].mask) != 0;
+               (duel.players[p & 1].field[z].link & (int)duel_w_08913CF4.st[1 - p][tz].mask) != 0; /* the (int) makes mwcc build the
+               st index before the player product, as the original does */
     }
     return 0;
 }
-#endif
 
 /* Highest ATK the computer knows of p's monsters (except skip); only those that can attack if check. */
 int duel_0880C50C(unsigned int p, int skip, int check)

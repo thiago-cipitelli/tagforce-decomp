@@ -1,5 +1,5 @@
 // @range 0x0883F0DC-0x088400B0
-// @asm 0x0883F3A0-0x0883FA64
+// @rodata 0x08907C90-0x08907CB4
 /* Duel events run by the computer player: step tables and card checks. */
 #include "duel.h"
 
@@ -117,23 +117,15 @@ int duel_0883F2CC(unsigned int p)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 17 palavras (eram 231): casos 5 e 8 com um return 0 por ramo e o teste != 0 primeiro; caso 3
-   com o ponteiro do jogador pl (indução de pl->field[z]) e (unsigned int)z << 16 sem redução de força. Rodada 33: v
-   como int (e não unsigned) põe p em s0 e ofs em s1 (79 -> 23); um contador por laço não muda. Falta: prot em s2 e b24 em
-   s3 no original (aqui trocados, e com eles o ponteiro do 1º laço e o invariante (p << 31) | 0x200000 do caso 3); sem
-   efeito: 400 sorteios de ordem x declaração/instrução x identidade dos contadores, tipos e 12 formas de prot/b24,
-   temporário nomeado no | do caso 0, ev/m explícitos no caso 3.
-   Rodada 34: `prot = (f & 1) != 0 || b24 != 0;` (mesmo código do if) acerta prot em s2 e b24 em s3 (23 -> 17).
-   Sobram os dois laços de campo do caso 3: o original dá s2 ao ponteiro do 1º laço e ao CONTADOR do 2º, e s5 ao
-   contador do 1º e ao ponteiro do 2º (aqui contador s5 e ponteiro s3 nos dois, invariante em s2 em vez de s3).
-   O mesmo contador nos dois laços, ou o do 2º declarado no bloco depois de pl, dá esse cruzamento mas desloca
-   p/ofs/prot (72); 300 sorteios de ordem x contadores x contadores de bloco não passam de 17 */
+/* Shape notes (mwcc): v is int; prot as one `||`; the two field loops of case 3 share the counter m, and the
+   player pointer is written out at each use (PLO) instead of living in a local: with a `pl` variable, or with a
+   counter per loop, the loop counters/pointers and the invariant event word land in other registers. */
 #define PFO(T, f) (*(T *)((char *)&duel.players[0].f + ofs))
+#define PLO ((DuelPlayer *)((char *)duel.players + ofs))
 int duel_0883F3A0(void)
 {
     unsigned int q;
     unsigned int p;
-    int n;
     int ofs;
     int v;
     int j;
@@ -197,23 +189,21 @@ int duel_0883F3A0(void)
         duel_w_08919600++;
     case 3:
         if (PFO(int, n_d) != 0) {
-            DuelPlayer *pl = (DuelPlayer *)((char *)duel.players + ofs);
-
             for (m = 0; m <= 4; m++) {
                 if (duel_slot_e8170(p, m, 0x14C4) != 0) {
                     duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | ((unsigned int)m << 16 & 0x1F0000) | 0x14C4,
-                                  CARD_UID(pl->field[m].card), 0);
+                                  CARD_UID(PLO->field[m].card), 0);
                 }
             }
-            for (n = 0; n <= 4; n++) {
-                if (duel_slot_e8170(p, n, 0x1A97) != 0) {
-                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | ((unsigned int)n << 16 & 0x1F0000) | 0x1A97,
-                                  CARD_UID(pl->field[n].card), 0);
+            for (m = 0; m <= 4; m++) {
+                if (duel_slot_e8170(p, m, 0x1A97) != 0) {
+                    duel_0884F30C((p << 31 & 0x80000000) | 0x200000 | ((unsigned int)m << 16 & 0x1F0000) | 0x1A97,
+                                  CARD_UID(PLO->field[m].card), 0);
                 }
             }
             for (m = PFO(unsigned int, n_grave) - 1; m >= 0; m--) {
-                if (pl->grave[m].id == 0x1984) {
-                    duel_0884F30C((p << 31 & 0x80000000) | 0x4E1984, CARD_UID(pl->grave[m]), 0);
+                if (PLO->grave[m].id == 0x1984) {
+                    duel_0884F30C((p << 31 & 0x80000000) | 0x4E1984, CARD_UID(PLO->grave[m]), 0);
                 }
             }
         }
@@ -260,7 +250,6 @@ int duel_0883F3A0(void)
     }
     return 1;
 }
-#endif
 
 int duel_0883FA64(unsigned int p, int id)
 {
