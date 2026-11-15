@@ -1,5 +1,4 @@
 // @range 0x08820618-0x08827618
-// @asm 0x088239EC-0x08824798
 // @data 0x08907898-0x08907908
 /* The computer player's choice of a card to activate (second part): the tables of cards checked
    on the field and in the hand, and the step machine that goes through them. */
@@ -1131,11 +1130,9 @@ int duel_field_atk(unsigned int p, int z);
 void duel_088328C8(unsigned int p, unsigned short a, unsigned int x, unsigned int y);
 int duel_ai_sum_088239EC(void);
 
-#ifdef NON_MATCHING /* o original deixa cópias mortas depois de beql/b nos ?: de duel_cmd (modo sem limpeza; nenhum desvio
-   condicional vai direto ao epílogo no original, gatilho desconhecido como em efs_run/gim_walk). Rodada 32: o default é
-   `return 1` de verdade (com ele o despacho bate: passo em v1, constantes em v0, e o `b epílogo` sem li porque o 1 do teste
-   do case 1 já está em v0); distância alinhada 204 -> 175 instruções (build/tmp/eA/lcs.py). Sem efeito no modo: default
-   antes de cada case, `return;` sem valor no default */
+/* Shape notes (mwcc): `ok = a->atk_id == a->id && !(...)` in case 0x190A is what turns on the no-cleanup mode of the
+   whole function (dead copies after the ?: of duel_cmd); duel_h_08914A1A / duel_b_08914A1D are read as a->atk_id /
+   a->count and the ids passed on are the fields, not the constants of the case; the default is a real `return 1`. */
 /* Steps of a summon (or of the activation of a card from the hand) [?]. */
 int duel_ai_sum_088239EC(void)
 {
@@ -1178,11 +1175,15 @@ int duel_ai_sum_088239EC(void)
             }
         }
         if (a->b5) {
-            duel_cmd((a->player != duel_08821C3C(a->atk_id) ? 0x8000 : 0) | 0x60, a->id, a->kind,
+            duel_cmd(((a->player ^ duel_08821C3C(a->atk_id)) ? 0x8000 : 0) | 0x60, a->id, a->kind,
                      ((a->h18 & 1) != 0) + 5);
         }
-        if (a->id == 0x14D5 && (duel_h_08914A18 & 0x20)) {
-            duel_088328C8(a->player, 0xFFFF, 1, 1);
+        switch (a->id) {
+        case 0x14D5:
+            if (duel_h_08914A18 & 0x20) {
+                duel_088328C8(a->player, 0xFFFF, 1, 1);
+            }
+            break;
         }
         duel_ai_atk_step++;
         return 0;
@@ -1191,13 +1192,13 @@ int duel_ai_sum_088239EC(void)
             duel_cmd((a->player ? 0x8000 : 0) | 0x48, (unsigned char)(a->b5 | a->kind << 1 | a->zone << 4) << 8, a->id, 0);
         } else {
             if (a->id == 0x1578) {
-                duel_088C77D4(a->player, 0x1578, 1, 0);
+                duel_088C77D4(a->player, a->id, 1, 0);
             }
             duel_cmd(0x2D, a->player | a->zone << 8, a->uid, a->b5 | a->kind << 8);
             if (a->h18 & 1) {
                 switch (a->id) {
                 case 0x13A6:
-                    duel_088C87A8(a->player, a->zone, 0x13A6, 5, 0);
+                    duel_088C87A8(a->player, a->zone, a->id, 5, 0);
                     break;
                 case 0x1472:
                 case 0x1636:
@@ -1207,7 +1208,7 @@ int duel_ai_sum_088239EC(void)
                     duel_088C7E68(a->player, a->zone, 9, 1);
                     break;
                 case 0x18FB:
-                    duel_088CC178(a->player, a->zone, duel_w_08914A00 >= 0x10000 ? 0xFFFF : duel_w_08914A00);
+                    duel_088CC178(a->player, a->zone, duel_w_08914A00 > 0xFFFF ? 0xFFFF : duel_w_08914A00);
                     break;
                 case 0x1A4E:
                     duel_088CC178(a->player, a->zone, duel_w_089149F0);
@@ -1257,7 +1258,7 @@ int duel_ai_sum_088239EC(void)
             }
             break;
         case 0x151E:
-            duel_088C87A8(a->player, a->zone, 0x151E, 1, 1);
+            duel_088C87A8(a->player, a->zone, a->atk_id, 1, 1);
             break;
         case 0x1481:
         case 0x156A:
@@ -1283,18 +1284,16 @@ int duel_ai_sum_088239EC(void)
             duel_088CC178(a->player, a->zone, 1);
             break;
         case 0x18FE:
-            duel_088C87A8(a->player, a->zone, 0x18FE, 3, 0);
+            duel_088C87A8(a->player, a->zone, a->atk_id, 3, 0);
             duel_088C77D4(a->player, a->atk_id, 1, duel_field_base_atk(a->player, a->zone));
             break;
         case 0x1A31:
             v = duel_field_atk(a->player, a->zone) / 2;
-            if ((int)v > 0xFFFF) {
-                v = 0xFFFF;
-            }
+            v = (int)v > 0xFFFF ? 0xFFFF : v;
             duel_088C87A8(a->player, a->zone, a->atk_id, 2, v);
             break;
         case 0x1A65:
-            duel_088C87A8(a->player, a->zone, 0x1A65, ((duel_turn_player != a->player) + 1) * 16 | 2, 0);
+            duel_088C87A8(a->player, a->zone, a->atk_id, (unsigned char)((duel_turn_player != a->player) + 1) << 4 | 2, 0);
             break;
         }
         if (duel_slot_faceup_live(a->player, a->zone) != 0) {
@@ -1327,20 +1326,17 @@ int duel_ai_sum_088239EC(void)
             case 0x185C:
             case 0x1A28:
             case 0x1A92:
-                ok = duel_h_08914A1A == a->id;
+                ok = a->atk_id == a->id;
                 break;
             case 0x190A:
-                ok = 0;
-                if (duel_h_08914A1A == 0x190A) {
-                    ok = (duel_h_08914A18 & 0x20) == 0;
-                }
+                ok = a->atk_id == a->id && !((duel_h_08914A18 & 0x20) != 0);
                 break;
             case 0x19EF:
             case 0x1A4E:
                 ok = (duel_h_08914A18 & 1) != 0;
                 break;
             case 0x1A05:
-                ok = duel_h_08914A1A == 0x1A0C;
+                ok = a->atk_id == 0x1A0C;
                 break;
             }
             if (ok) {
@@ -1351,7 +1347,7 @@ int duel_ai_sum_088239EC(void)
                 ev.uid = CARD_UID(duel.players[a->player & 1].field[a->zone].card);
                 ev.b16 = 0;
                 ev.b17 = (duel_h_08914A18 & 1) > 0;
-                ev.b18 = duel_b_08914A1D;
+                ev.b18 = a->count;
                 duel_0884F30C((unsigned short)a->id | ((a->player << 31 & 0x80000000 | 0x10200000) | a->zone << 16 & 0x1F0000),
                               ev.uid, *(unsigned int *)&ev);
             }
@@ -1362,7 +1358,6 @@ int duel_ai_sum_088239EC(void)
         return 1;
     }
 }
-#endif
 
 int card_is_group_c(int id);
 void duel_088C78E0(unsigned int p);
