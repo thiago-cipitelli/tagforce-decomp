@@ -3859,3 +3859,61 @@ Nenhuma era ordem de declaração. Mecanismos novos:
 - **Mecânica:** `build/tmp/lG/mknl.py dir/base` (cópia local) compila o objeto, acha quais funções batem (relocações mascaradas, nomes das chamadas coerentes), deduz `@rodata`/`@bss`, gera `src/BOOT/nl_<base>.c` e edita o arquivo do mwcc (`#ifndef __MWERKS__` no C do port, faixas `@gcc`).
 - **O que sobra na libc** é quase só a diferença `ins rd,zero` (lista em `docs/build.md`, "Trilha GCC"): funções a 1-5 palavras (`__sread`, `__sbprintf`, `__srefill`, `fread`, `ungetc`) e as grandes (`_malloc_r`, `_dtoa_r`, `_vfprintf_r`, `__svfscanf_r`, `_strtod_r`).
 
+## Rodada 35 (`mA`): quarta passada nas 11 entradas de libduel_eng (3 batendo, 1 melhor)
+
+`duel_0880C15C` (20 -> 0), `duel_0883F3A0` (17 -> 0) e `duel_08817598` (406 -> 0) batem; `duel_088451E8` 101 -> 86
+alinhadas. Em nenhuma a causa era ordem de declaração. Mecanismos novos:
+
+- **Cópia local de um PARÂMETRO com cast redundante, declarada tarde** (`duel_08817598`, 406 -> 109): "a/id trocados,
+  K&R e cópias dos parâmetros sem efeito" era `DuelAct *a = (DuelAct *)a_;` declarado logo antes de `mask`. Sem o
+  cast (`a = a_`) a cópia é propagada e o nó continua sendo o do parâmetro (índice 0); com o cast redundante a cópia
+  sobrevive até a coloração e a variável do corpo passa a ter o índice da DECLARAÇÃO local (aqui a penúltima: `a`
+  em `s1`, `id` em `s2`). É o "cast redundante mantém a cópia viva" da rodada 22 aplicado a parâmetros: em toda
+  entrada "parâmetro X sempre em `$sN`, nenhuma ordem muda", testar a cópia com cast em cada posição da lista.
+- **Cópia que o mwcc não funde: ler a origem pelo endereço** (`duel_08817598`, caso 0x10D3): o original tem
+  `andi a1,a0,1; move s2,a1` (p fica em `a1`, o registrador do argumento de `TARGET(p, ...)`, e `q` em `s2`); com
+  `q = p` o 219 funde os dois em `s2`. `q = *(unsigned int *)&p;` mantém o `move` e deixa `p` em `a1`, sem nenhum
+  acesso à pilha. Efeito colateral que confirma a forma: `p` passa a ter um slot de pilha reservado (endereço
+  tomado), e declará-lo DEPOIS de `DuelStats st` põe o slot abaixo de `st` (`st` em sp+36 como no original; antes
+  sp+32). Sinal: 4 bytes de quadro "sem dono" abaixo de um local de pilha + uma cópia `move sX,aY` que o 219 funde.
+- **Contador próprio só para UM laço, com sinal** (`duel_08817598`, 36 -> 0): depois dos dois itens acima sobravam
+  as rotações de `$s` em dois casos. Busca de identidade por caso (para cada papel do caso: contador, acumulador,
+  temporário, cada local já existente da função + um novo): o 1º laço do caso 0x1913 conta em `i` (o 2º em `z`) e o
+  laço do caso 0x1889 num `int k` só dele, declarado antes de `m`. Um contador `unsigned` reaproveitado (`t`)
+  acerta os registradores e troca `slti` por `sltiu`: é o sinal de que o contador é uma variável a mais.
+- **`(int)` num operando `unsigned` de `&` muda a ordem de avaliação** (`duel_0880C15C`): `link & (int)st[1 -
+  p][tz].mask` faz o mwcc montar primeiro o índice de `st` e deixar o `andi/mult` do jogador para depois (era o
+  efeito do `volatile` da rodada 34, mas com o deslocamento do campo dobrado na relocação). `-O2,p` mostra a ordem
+  antes do escalonador: com o cast a carga da máscara sai logo depois do endereço dela; sem ele fica adiada para
+  depois da carga de `link`. Trocar os operandos sem cast não muda nada; `(int)` no outro operando piora.
+- **Local que não existe + contador compartilhado, juntos** (`duel_0883F3A0`): os dois laços de campo do caso 3
+  usam o MESMO contador `m` e o ponteiro do jogador não é variável: `((DuelPlayer *)((char *)duel.players +
+  ofs))->field[m]` escrito em cada uso (macro `PLO`). Cada mudança sozinha piora (contador único com `pl`: 72
+  palavras, `pl` sempre no `$s` mais baixo, em qualquer escopo/posição; sem `pl` com dois contadores: 19). Ler o
+  mapa variável -> `$s` das variantes mostrou que só `pl` estava fora do lugar: um local que toma o `$s` mais baixo
+  em qualquer ordem é candidato a não existir.
+- Formas pequenas em `duel_088451E8`: `lp <= f(id)` / `lp > n * 2` (o `slt` em `$at`), `f(p) <= 0` em vez de
+  `!(f(p) > 0)`, e `duel_w_0891964C` declarado `unsigned int` (ordem das cargas dos argumentos de
+  `duel_088D1AC8`/`duel_088CC284`).
+- Sem forma (medições novas):
+  - `duel_0883449C` (5): o original soma `z` antes do `li 4012; mult` e o 219 depois, como em todas as funções
+    irmãs que batem (`duel_summon_tributes`: 12 ocorrências da MESMA sequência com o `addu` depois do `mult`). Os
+    registradores (`a0/v0` contra `a1/a0`) mostram que a ordem já difere antes da coloração. `-O2,p` dá a soma
+    primeiro; é o escalonador do `-O4` que adianta o `mult`. Sem efeito: 400 sorteios de tipo/cast de p, z e dos
+    termos, 16 formas de aritmética de ponteiro, `volatile` nas cargas, `ofs`/`q` em variável, soma em duas
+    instruções, helper inline, fronteiras de bloco sem código (`do/while (0)`, rótulo, `switch (0)`), cadeias mais
+    longas em `z`.
+  - `duel_088451E8` (86 alinhadas): com um uso a menos de `me` o mwcc derrama `me` em 60(sp) como o original, mas
+    continua derramando a base do caso 200; 400 sorteios de contador por laço x ordem não derramam `me`.
+  - `duel_088C6BC8` (54), `duel_field_controller` (101), `duel_req_mill` (9): a cópia com cast redundante move `p`
+    (em `duel_088C6BC8`, `p` vai para qualquer `$s` de 0 a 4 conforme a posição), mas `ban` continua candidato em
+    `s5` e o bloco `{p, cur, base}` continua acima de `{ef, src}`; em `duel_field_controller` um local `o = z *
+    sizeof(DuelSlot)` com `ZOFF/ZOSLOT` (as formas dobradas do original são essas) é propagado em 184 ordens; em
+    `duel_req_mill` casts nas cargas de `n`/`p` e leitura de `n` pelo endereço não mexem no mapa.
+  - `duel_req_swap_zones` (79 alinhadas): a forma natural (`&duel.players[ap & 1].field[az]`) gera o mesmo código
+    do rascunho com `ZOSLOT`; o original mantém os dois produtos em `$s` e refaz só a soma depois do 1º `memcpy`.
+  - `duel_08846584`, `duel_ai_sum_088239EC`: só leitura.
+- Scripts em `build/tmp/mA/`: `t.py` (arquivo de variantes -> palavras, distância alinhada e mapa por regex `RX`;
+  `XF="-O2,p"` acrescenta flags, útil para ver a ordem antes do escalonador), `q*.py` (`duel_08817598`), `f*.py`
+  (`duel_0883F3A0`), `c*.py` (`duel_0880C15C`), `w*.py` (`duel_0883449C`), `h*.py` (`duel_088451E8`), `g*.py`
+  (`duel_088C6BC8`), `fc*.py` (`duel_field_controller`), `m*.py` (`duel_req_mill`), `s1.py` (`duel_req_swap_zones`).
