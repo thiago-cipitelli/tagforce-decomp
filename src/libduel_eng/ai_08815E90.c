@@ -1,5 +1,4 @@
 // @range 0x08815E90-0x08819F94
-// @asm 0x08817598-0x08818C34
 /* Computer player: picking one of its cards (zone mask bit player * 16 + zone) to send away. */
 #include "duel.h"
 #include "card_db.h"
@@ -610,19 +609,18 @@ int duel_08817550(unsigned int p, int i)
     return duel_list_card_level(p, CARD_UID(duel.players[p & 1].hand[i]));
 }
 
-#ifdef NON_MATCHING /* 406 palavras (eram 1274; estrutura igual): a coloração de a/id/mask/b é s1/s2/s0/s3 no original e
-   s2/s1/s0/s3 aqui (rodada 33: mask declarado por último vai para s0, 441 -> 406; falta só a troca a/id). Sem efeito: K&R
-   com as 6 ordens da lista de declarações, cópia dos parâmetros em locais, usos a mais de a, tipos. Rodada 24: ordem dos
-   case = ordem dos corpos no asm (sw.py), w = byte 2 de a para o a->zone do caso 0x1690, p reatribuído + q = p no caso 0x10D3,
-   v = atk < v ? v : atk (máximo em ternário), duel_phase unsigned, (unsigned)(kind - 0x12) < 2 */
+/* Shape notes (mwcc), all needed for the register map of the original: `a` is a local copy of the first parameter
+   made with a redundant cast and declared right before mask (takes s1, id s2); p is declared after st and read once
+   through its address (case 0x10D3), so the copy q is not merged with it and p owns the stack slot below st; the
+   first loop of case 0x1913 counts in i, the loop of case 0x1889 in its own k. */
 #define TARGET(q, z) do { duel_088A8D40(a, (q), (z)); return 1; } while (0)
 #define IN_MASK(q, z) (mask & 1 << ((z) + (q) * 16))
 
 /* The computer picks the targets of its card a (b: the card it answers, if any); id selects the strategy. */
-int duel_08817598(DuelAct *a, DuelAct *b, int id)
+int duel_08817598(DuelAct *a_, DuelAct *b, int id)
 {
-    unsigned int p;
     unsigned int q;
+    int k;                             /* own counter of the loop of case 0x1889 */
     unsigned int t;
     unsigned int m;
     int z;
@@ -630,6 +628,8 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
     int v;
     unsigned int f;
     DuelStats st;
+    unsigned int p;                    /* after st: its address is taken (case 0x10D3), so it owns the slot below st */
+    DuelAct *a = (DuelAct *)a_;        /* own local, declared here, WITH the redundant cast: takes s1 as in the original */
     unsigned int mask = duel_0884E4A0(a);
 
     if (mask == 0) {
@@ -665,10 +665,10 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
     case 0x13E3:
         /* a monster of the opponent (or own for some), by duel_0880A54C */
         p = a->player;
-        q = p;
+        q = *(unsigned int *)&p;       /* a copy mwcc does not merge with p: p stays in a1 (the argument of TARGET), q in s2 */
         switch (a->id) {
         case 0x1237:
-            if (duel.players[(1 - p) & 1].lp < duel.players[p & 1].lp) {
+            if (duel.players[p & 1].lp > duel.players[(1 - p) & 1].lp) {
                 q = 1 - p;
             }
             break;
@@ -869,12 +869,12 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
         break;
     case 0x1889:
         m = 0;
-        for (z = 0; z <= 10; z++) {
-            if (IN_MASK(a->player, z)) {
-                f = duel.players[a->player & 1].field[z].flags;
+        for (k = 0; k <= 10; k++) {
+            if (IN_MASK(a->player, k)) {
+                f = duel.players[a->player & 1].field[k].flags;
                 if ((f >> 22 & 1) + (f >> 23 & 1) != 0 &&
-                    card_attribute_icon_in_2_3(duel.players[a->player & 1].field[z].card.id) == 0) {
-                    m |= 1 << (z + a->player * 16);
+                    card_attribute_icon_in_2_3(duel.players[a->player & 1].field[k].card.id) == 0) {
+                    m |= 1 << (k + a->player * 16);
                 }
             }
         }
@@ -923,9 +923,9 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
     case 0x1913:
         /* a monster of the opponent this one beats in battle */
         v = 0;
-        for (z = 0; z < 5; z++) {
-            if (duel.players[a->player & 1].field[z].card.id != 0 && duel.players[a->player & 1].field[z].pos == 0) {
-                v = duel_field_atk(a->player, z) < v ? v : duel_field_atk(a->player, z);
+        for (i = 0; i < 5; i++) {
+            if (duel.players[a->player & 1].field[i].card.id != 0 && duel.players[a->player & 1].field[i].pos == 0) {
+                v = duel_field_atk(a->player, i) < v ? v : duel_field_atk(a->player, i);
             }
         }
         if (v == 0) {
@@ -938,10 +938,10 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
                 duel_0880546C(q, z, &st);
                 q = 1 - a->player;
                 if (duel.players[q & 1].field[z].pos == 0) {
-                    if (v <= st.atk && st.def < v) {
+                    if (st.atk >= v && v > st.def) {
                         TARGET(q, z);
                     }
-                } else if (v <= st.def && st.atk < v) {
+                } else if (st.def >= v && v > st.atk) {
                     TARGET(q, z);
                 }
             }
@@ -1063,7 +1063,6 @@ int duel_08817598(DuelAct *a, DuelAct *b, int id)
 }
 #undef TARGET
 #undef IN_MASK
-#endif
 
 /* The computer chooses a card on the field for the effect fn of card id it is resolving. */
 void duel_08818C34(unsigned int p, int id, int (*fn)(DuelAct *a, unsigned int p, int z))

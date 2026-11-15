@@ -36,8 +36,6 @@ segments:
       - [0xF81C, c, ai_cond5]
       - [0x10F28, c, ai_cond6]
       - [0x11EF0, c, ai_08815E90]
-      - [0x135F8, asm, ai_08815E90_asm_08817598]
-      - [0x14C94, c, ai_08815E90]
       - [0x15FF4, c, ai_cond2]
       - [0x18178, c, ai_cond1]
       - [0x19138, c, ai_cond0]

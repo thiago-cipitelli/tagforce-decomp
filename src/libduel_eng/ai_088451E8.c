@@ -10,7 +10,7 @@ extern unsigned int duel_w_08919600;   /* step */
 extern unsigned int duel_w_08919604;   /* table index / player offset */
 extern unsigned int duel_w_08919608;   /* zone index */
 extern int duel_w_08919624;            /* answer of the yes/no prompt */
-extern int duel_w_0891964C;            /* zone picked by duel_08835978: player */
+extern unsigned int duel_w_0891964C;   /* zone picked by duel_08835978: player */
 extern int duel_w_08919650;
 extern int duel_w_08919654;
 extern int duel_w_089147D8;
@@ -56,12 +56,16 @@ void duel_088C7CF0(void);
 unsigned int duel_card_locate(unsigned int);
 void duel_088C44E4(unsigned int p, int id);
 
-#ifdef NON_MATCHING /* 1164 palavras posicionais, distância alinhada 106 instruções (era 145; rodada 33: ordem das
-   declarações por sorteio, build/tmp/hA/hrand.py com METRIC=lcs). O que falta: o original guarda `me` na pilha (60(sp)) desde o
+#ifdef NON_MATCHING /* 1164 palavras posicionais, distância alinhada 86 instruções (era 145; rodada 33: ordem das
+   declarações por sorteio, build/tmp/hA/hrand.py com METRIC=lcs; rodada 35: `lp <= f()` e `lp > n * 2` dão o slt em
+   $at, duel_w_0891964C unsigned acerta a ordem das cargas dos argumentos, `f(p) <= 0`). O que falta: o original guarda `me` na pilha (60(sp)) desde o
    início e deixa em $s o ponteiro &duel.players[me] do caso 200; aqui `me` fica em s4 e é esse ponteiro que vai para 60(sp).
    Sem efeito: pl explícito no caso 200, ofs = me * 0xFAC explícito, p & 1 por extenso (recalcula o produto em cada caso),
    tipos de me (int, const, register, enum; u8/u16 aumentam o código). A chamada duel_088D1438(p, z, 0, id) do caso 0x1AA9
-   tem o move a2,zero no delay slot no original */
+   tem o move a2,zero no delay slot no original.
+   Rodada 35: com um uso a menos de `me` (`(p & 1) | 0x16` no 1º duel_cmd do caso 200) o mwcc derrama `me` em 60(sp)
+   como o original, mas continua derramando também a base do caso 200 (56(sp)) e refaz o andi dentro do laço; um
+   contador por laço (casos 101/102/200) x ordem das declarações, 400 sorteios: `me` nunca é derramado */
 /* returns 0 while the step machine has work left */
 int duel_088451E8(void)
 {
@@ -177,7 +181,7 @@ int duel_088451E8(void)
                     if (q == p) {
                         duel_088C4448(p, z, CARD_UID(duel.players[me].field[z].card));
                         lp = duel.players[me].lp;
-                        if (duel_08845070(id) >= lp) {
+                        if (lp <= duel_08845070(id)) {
                             r = 1;
                         } else {
                             duel_w_08919600 = 110;
@@ -229,7 +233,7 @@ int duel_088451E8(void)
                 if (duel_count_active(0x169F) == 0) {
                     duel_088C4448(p, z, CARD_UID(duel.players[me].field[z].card));
                     lp = duel.players[me].lp;
-                    if (duel_08845070(id) >= lp) {
+                    if (lp <= duel_08845070(id)) {
                         r = 1;
                     } else {
                         n = duel_08845070(id);
@@ -237,7 +241,7 @@ int duel_088451E8(void)
                         if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, p) != 0 && n < duel.players[(1 - p) & 1].lp) {
                             duel_088C4564(1 - p, n);
                         }
-                        if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, 1 - p) != 0 && n * 2 < duel.players[me].lp) {
+                        if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, 1 - p) != 0 && duel.players[me].lp > n * 2) {
                             duel_088C4564(p, n);
                         }
                     }
@@ -261,7 +265,7 @@ int duel_088451E8(void)
                 duel_w_08919624 = !(duel.players[me].lp < 6001);
                 break;
             case 0x1360:
-                duel_w_08919624 = !(duel_08809F2C(p) > 0);
+                duel_w_08919624 = duel_08809F2C(p) <= 0;
                 break;
             case 0x1639:
                 duel_w_08919624 = duel_08809F2C(p) < 0;
