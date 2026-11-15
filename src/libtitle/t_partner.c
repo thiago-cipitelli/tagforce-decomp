@@ -1,5 +1,4 @@
 // @range 0x0881F02C-0x08821D3C
-// @asm 0x088216FC-0x08821A14
 // @data 0x0882F398-0x08830140
 // @rodata 0x0882B40C-0x0882B4E4
 /* Partner / versus panel of the duel setup (the same code as libduel_mgr's dmgr_partner.c, with a
@@ -1148,24 +1147,6 @@ void *tpt_gfx_setup(void *list, int unused) /* tpt_sprite passes 0 */
     return dl_color(list, 0xFFFFFFFF);
 }
 
-#ifndef NON_MATCHING /* the templates of tpt_sprite's local tables, named for the asm */
-char tpt_gims[10][0x40] = {
-    "d_menu01.gim", "d_menu01_j.gim", "d_menu01_e.gim", "d_menu01_g.gim", "d_menu01_f.gim",
-    "d_menu01_i.gim", "d_menu01_s.gim", "dmenu_recipe.gim", "recipe_panel.gim", "mdl_bup01.gim",
-};
-TPtSpr tpt_sprites[24] = {
-    { 0, 0, { 0, 0, 71, 71 } }, { 0, 0, { 72, 0, 71, 71 } }, { 0, 0, { 0, 72, 148, 23 } },
-    { 0, 0, { 0, 96, 148, 23 } }, { 0, 0, { 121, 169, 132, 23 } }, { 0, 0, { 149, 0, 78, 13 } },
-    { 0, 0, { 149, 15, 78, 13 } }, { 0, 0, { 149, 30, 78, 13 } }, { 0, 0, { 149, 45, 78, 13 } },
-    { 0, 0, { 148, 60, 60, 13 } }, { 0, 0, { 149, 72, 59, 13 } }, { 0, 0, { 149, 85, 59, 13 } },
-    { 0, 0, { 121, 192, 135, 38 } }, { 0, 0, { 120, 128, 120, 32 } }, { 0, 0, { 0, 128, 120, 32 } },
-    { 0, 0, { 0, 160, 120, 32 } }, { 0, 0, { 0, 192, 120, 32 } }, { 0, 0, { 0, 224, 120, 32 } },
-    { 0, 0, { 156, 230, 24, 10 } }, { 0, 0, { 181, 230, 24, 10 } }, { 0, 0, { 206, 230, 24, 10 } },
-    { 0, 0, { 231, 230, 24, 10 } }, { 0, 0, { 141, 241, 115, 15 } }, { 9, 0, { 0, 0, 64, 64 } },
-};
-#endif
-
-#ifdef NON_MATCHING /* 127 palavras: o original guarda tpt na pilha e x em $s8; o mwcc faz o contrário (x e y na pilha) */
 void *tpt_sprite(void *list, int i, short x, short y, short w, short h, short u, short v,
                              short tw, short th)
 {
@@ -1220,15 +1201,15 @@ void *tpt_sprite(void *list, int i, short x, short y, short w, short h, short u,
     case 0xF:
     case 0x10:
     case 0x11:
-        v = x + w;
+        x += w;
+        y += 9;
         u = (i - 0xE) * 0xC + 0x79;
         list = draw_set_offsets(list, 0xC, 0x17, 0xC, 0x17);
-        list = draw_sprite(list, v, (short)(y + 9), 0, u, 0xC0, 0, 0);
+        list = draw_sprite(list, x, y, 0, u, 0xC0, 0, 0);
         break;
     }
     return list;
 }
-#endif
 
 void tanim_stop(TAnim *a)
 {

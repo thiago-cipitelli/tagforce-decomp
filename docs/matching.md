@@ -3540,3 +3540,37 @@ era ordem de declaração; os mecanismos, do mais geral para o mais específico:
   contador próprio x ordem de declaração), `fm.py` (mapa de características de uma variante: registrador de uma
   constante, posição de uma instrução), `shmap.sh` (slots de pilha usados), `st.py` (cada callee do mesmo arquivo
   como `static`), `orbr.py`, `b2.py`/`b2r.py`, `pt.py`.
+## Rodada 33 (`jA`): um bloco dá a cópia do `likely` a um desvio só; enum de parâmetro; operação em 16 bits na própria variável
+
+8 das 20 entradas de libtitle/libshop/libfield/libstory batendo (`tframe`, `ttab_draw`, `tpt_sprite`,
+`tfd_regulation_select`, `shop_result_input`, `shop_item_key`, `fld_chr_draw_sprite`, `op_bgm`) e `tcfg_draw` 229 -> 5.
+
+- **Um bloco só entrega a cópia da sua 1ª instrução a UM desvio** (a conversão `bne X; nop` -> `bnel X+4; <cópia>`).
+  Era a família "`bne; nop` / `b; nop` contra `bnel; move v0,zero`" (dada como "outro modo do compilador" nas
+  rodadas 23-32). Sinal: dois desvios para o MESMO bloco de uma instrução, um com a cópia no delay slot (alvo +4) e o
+  outro com `nop` (alvo no bloco). Quando o nosso build copia nos dois, o rascunho tem DOIS blocos onde o original
+  tem um: tirar o `return 0;` / `v = K;` duplicado e fazer os dois caminhos chegarem ao mesmo.
+  - `tfd_regulation_select`: o `return 0;` interno não existe (o `if` cai no `return 0` final).
+  - `shop_result_input`: `break;` no `case 0` em vez de `return 0;`.
+  - `shop_item_key`: `switch (key) { case 12: ...; break; default: goto none; }` com `none:` no `default` do
+    `switch` de baixo (um `v = -2` só; o `beql; b` é o `switch` de um `case`).
+  - `fld_chr_draw_sprite`: `case 0: case 2: case 3: default: frame = 0; break;` (um corpo; com o `case 0:` os testes
+    de 3 e 2 ficam, o 3 leva a cópia e o 2 desvia para o corpo logo abaixo).
+  - `op_bgm`: o valor passa por um local (`a = script.a; if (a == 0) a = -2; id = a;`): uma gravação só, alcançada
+    pelos dois caminhos (`bnezl; sw` + `li; sw; b; nop`).
+  Não explicou `st_scr_find_es` / `st_pl_card_bit_set` (desvio de entrada para a cabeça do laço sem cópia).
+- **Parâmetro `enum`** (`tframe`, 169 -> 0): `move a1,t2` antes do `switch`, `move v1,s6` repetido na multiplicação
+  do índice e `move a0,s6; slt` nas comparações = conversão de enum em cada uso. Com `TFrameKind kind` o mwcc não
+  reaproveita `kind * 22` no índice `title_sprites2[i]` (o ponteiro de indução fica na pilha, como no original).
+- **`x += campo` na própria variável `short`** em vez de `px = x + campo` (`ttab_draw`, 33 -> 0): a soma em 16 bits
+  usa os operandos sem `seh` e só normaliza o resultado. `v = s.v; v += (short)(cap << 5);` idem. Em contexto `int`
+  o mesmo valor pede um local `int` de bloco (`tcfg_draw`: `int tu = spr[..].u; int bx = gx + 4; x = bx + tu;`).
+- `tw = s.tw; th = s.th;` em locais quando o original guarda o campo cru num `$v/$a` e o usa duas vezes (`seh a1,v1`
+  + `move a3,v1`); variável de laço que é indução do mwcc (`dv = pass << 5`, não um `uv += 32` à mão).
+- `found` de 1 byte (`unsigned char`) zerado ANTES da leitura seguinte: dois `li 1` içados em registradores
+  distintos e o `move sN,zero` no delay slot do `jal` (`tcfg_draw`).
+- Ordem das atribuições num `case` muda o temporário (`mode = 0;` antes de `du = style * 14;`: a expressão sai em
+  `a1` porque `v1` já está ocupado).
+- `tpt_sprite` = forma de `dmgr_pt_sprite` (iA): `x += w; y += 9;` nos próprios parâmetros.
+- Scripts em `build/tmp/jA/`: `t.py` (palavras + diff alinhado de uma variante), `asm.py`, `perm.py` (ordem de
+  declarações), `promote.py` (tira `@asm`/`#ifdef`, marca o símbolo, config + check do módulo).

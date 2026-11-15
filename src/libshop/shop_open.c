@@ -1,5 +1,5 @@
 // @range 0x088117B8-0x08812C60
-// @asm 0x0881189C-0x08811E40
+// @rodata 0x0881C284-0x0881C29C
 // @data 0x088203A0-0x08820410
 /* Opening the bought packs one after the other: the pack model flies in and turns, it bursts, the
    cards fly out and turn over one by one (names drawn under them, gold for the rare ones), and the
@@ -105,7 +105,6 @@ void shop_open_start(void)
     fade_start(1, 0xFF000000, 16);
 }
 
-#ifdef NON_MATCHING /* 2 palavras: no fim do then do passo 1 (depois de se_play) o original deixa b; nop e o nosso preenche o atraso com o move v0,zero do alvo (testados break, goto, return 0, sem else). Chegaram aqui: speed int com += 2, Vec4 todos no topo da função na ordem da pilha, ponteiro da carta por volta, id int e protótipo u16 de shop_open_cards_done */
 /* the opening, step by step; 1 once START (skip) was pressed or all packs are open */
 int shop_result_input(void)
 {
@@ -135,7 +134,7 @@ int shop_result_input(void)
         shop_open->step++;
         shop_open->timer = 0;
         se_play(0x6268);
-        return 0;
+        break;
     case 1:
         shop_open->timer += speed;
         if (shop_open->timer >= 24) {
@@ -208,7 +207,6 @@ int shop_result_input(void)
     return 0;
 }
 
-#endif
 
 /* the 3D pack and cards, the names of the cards shown and the "skip" hint; the names loop is a guarded
    do/while (k = 0 in the delay slot of the guard, off = 0 inside it) */

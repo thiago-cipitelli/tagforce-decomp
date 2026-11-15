@@ -43,7 +43,7 @@ int tcfg_group_style[4] = { 8, 9, 10, 11 };
 unsigned char tcfg_group_tab[4] = { 0, 0, 0, 1 };
 short tcfg_group_rows[4] = { 1, 1, 4, 5 };
 
-#ifdef NON_MATCHING /* 3168 B como o original e mesma forma (229 palavras; contador próprio `piece` no laço da moldura: 283 -> 229): x/y/rw/rh inicializados (os switch sem default os deixam vivos), índices sem sinal nos laços da aba e da caixa de ajuda (com índice afim o mwcc reduz o endereço a um ponteiro e deixa de içar spr[0].w etc. do laço dos grupos), switch (step) no fim; faltam: o original tem dois `li 1` içados (sel_row = 1 e found = 1 em registradores distintos; o mwcc 219 junta), found = 0 no delay slot do 1º cfg_get_language, a cópia de rows[] em pares lh/lh/sh/sh e spills dos campos de spr[] içados no laço da aba */
+#ifdef NON_MATCHING /* 5 palavras (eram 229; rodada 33): found é unsigned char e é zerado ANTES de cur = c->step (os dois li 1 e o move s6,zero no delay slot); gy = top * 17 + 34 + g * 6; u/v da barra do cursor em variáveis antes de x/y; x antes de rw no case 1 da moldura e da aba; na aba, u e a base gx + 4 são int de bloco (tu, bx). Falta a ordem dos argumentos do último draw_set_offsets: o original faz seh a1, seh a2, move a3,a1, move t0,a2 e a0 no delay slot; o nosso seh a2, seh a1, a0, a3 e t0 no delay slot (temporários int, tw/th, outras variáveis e chamada aninhada testados) */
 void *tcfg_draw(void *list)
 {
     int piece;
@@ -73,8 +73,8 @@ void *tcfg_draw(void *list)
     short n = 0;
     short top[4];
     short rows[4] = { 1, 1, 4, 5 };
+    unsigned char found = 0;
     unsigned char cur = c->step;
-    int found = 0;
     short gx[4];
     short gy[4];
     int g, i, k;
@@ -130,9 +130,9 @@ void *tcfg_draw(void *list)
         else
             top[g] = top[g - 1] + rows[g - 1];
         gx[g] = 131;
-        gy[g] = g * 6 + top[g] * 17 + 34;
+        gy[g] = top[g] * 17 + 34 + g * 6;
         if (cfg_get_language() != 0)
-            gy[g] = g * 6 + top[g] * 17 + 42;
+            gy[g] = top[g] * 17 + 42 + g * 6;
     }
     for (; first < 4; first++) {
         pieces = rows[first] == 1 ? 3 : 9;
@@ -148,8 +148,8 @@ void *tcfg_draw(void *list)
                 x = spr[piece].u + 131;
                 break;
             case 1:
-                rw = 218 - (spr[0].w + spr[2].w);
                 x = spr[piece].u + 131;
+                rw = 218 - (spr[0].w + spr[2].w);
                 break;
             case 2:
                 rw = spr[piece].w;
@@ -177,17 +177,21 @@ void *tcfg_draw(void *list)
         if (rows[first] > 1) {
             y = gy[first] + 4;
             for (i = 0; i < 3; i++) {
-                u = spr[(unsigned int)(9 + i)].u;
+                int tu = spr[(unsigned int)(9 + i)].u;
+                int bx;
+
                 v = tab[first] * 16 + spr[(unsigned int)(9 + i)].v;
                 list = tcfg_gfx(list, c->gim2);
                 switch (i % 3) {
                 case 0:
                     rw = spr[(unsigned int)(9 + i)].w;
-                    x = gx[first] + 4 + u;
+                    bx = gx[first] + 4;
+                    x = bx + tu;
                     break;
                 case 1:
+                    bx = gx[first] + 4;
+                    x = bx + tu;
                     rw = 209 - (spr[9].w + spr[11].w);
-                    x = gx[first] + 4 + u;
                     break;
                 case 2:
                     rw = spr[(unsigned int)(9 + i)].w;
@@ -196,18 +200,20 @@ void *tcfg_draw(void *list)
                 }
                 rh = spr[(unsigned int)(9 + i)].h;
                 list = draw_set_offsets(list, spr[(unsigned int)(9 + i)].w, spr[(unsigned int)(9 + i)].h, rw, rh);
-                list = draw_sprite(list, x, y, 0, u, v, 0, 0);
+                list = draw_sprite(list, x, y, 0, (short)tu, v, 0, 0);
             }
         }
         /* cursor bar */
         if (c->active && first == sel_group) {
+            u = spr[12].u;
+            v = spr[12].v;
             x = gx[first] + 4;
             y = gy[first] + 4 + sel_row * 17;
             rw = 209;
             rh = 14;
             list = tcfg_gfx(list, c->gim);
             list = draw_set_offsets(list, spr[12].w, spr[12].h, rw, rh);
-            list = draw_sprite(list, x, y, 0, spr[12].u, spr[12].v, 0, 0);
+            list = draw_sprite(list, x, y, 0, u, v, 0, 0);
         }
         for (i = 0; i < rows[first]; i++) {
             if (first == sel_group && i == sel_row)
