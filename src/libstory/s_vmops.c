@@ -1,5 +1,4 @@
 // @range 0x08808E68-0x0880B3E4
-// @asm 0x088097F4-0x088098DC
 // @data 0x0881C0E0-0x0881C16C
 /* Script instructions 0xC3A0..0xC3F5 (inventory, money, flags, field commands, duel setup, sound,
    characters on the map, partner) and the helpers of the interpreter: block skipping, comparisons
@@ -374,7 +373,6 @@ void op_field_9(void)
     st_fld_setup(9, CMD.a);
 }
 
-#ifdef NON_MATCHING /* o id lido do script sai com bnezl e o store no delay slot no original */
 void op_bgm(void)
 {
     StoryVm *const vm = &story_vm;
@@ -382,12 +380,14 @@ void op_bgm(void)
     char res[4];
 
     switch (CMD.b) {
-    case 1:
-        if (vm->script[vm->pc].a != 0)
-            id = vm->script[vm->pc].a;
-        else
-            id = -2;
+    case 1: {
+        int a = vm->script[vm->pc].a;
+
+        if (a == 0)
+            a = -2;
+        id = a;         /* one store, reached from both paths */
         break;
+    }
     case 2:
         id = -1;
         break;
@@ -397,7 +397,6 @@ void op_bgm(void)
             sys_frame_wait();
     }
 }
-#endif
 
 void op_fade(int mode)
 {
