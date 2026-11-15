@@ -1,5 +1,4 @@
 // @range 0x088EA23C-0x088EAC0C
-// @asm 0x088EA784-0x088EAA1C
 /* Free monster zones in placement order, and the monsters that can be tributed. */
 #include "duel.h"
 #include "card_db.h"
@@ -138,7 +137,48 @@ int duel_double_tribute(unsigned int p, int id, unsigned int q, int z)
     return 0;
 }
 
-#ifdef NON_MATCHING /* same flow; mwcc keeps copies of the first instruction of two blocks it also put in delay slots */
+/* Whether monster z of player q can be offered for card id (inlined: the return in each case is what puts
+   duel_count_tributes in the no-cleanup mode of the original, with its unfilled b; nop). */
+static inline int trib_ok_(unsigned int p, int id, int flag, int q, int z)
+{
+    int ok = 1;
+
+    switch (id) {
+    case 0x164A:
+    case 0x164B:
+    case 0x164C:
+    case 0x164D:
+    case 0x164E:
+    case 0x164F:
+        if (flag != 0) {
+            int s;
+
+            ok = 0;
+            for (s = 5; s < 10; s++) {
+                if (duel.players[p & 1].field[s].card.id == card_id_remap_164a(id) &&
+                    duel.players[p & 1].field[s].faceup != 0 && duel_st_affects(q, z, p, s) == 0) {
+                    ok = 1;
+                }
+            }
+        }
+        return ok;
+    case 0x194C:
+        ok = q == p || duel.players[q & 1].field[z].faceup != 0;
+        if (ok) {
+            ok = duel_field_atk(q, z) >= 2000;
+        }
+        return ok;
+    case 0x1A40:
+        ok = q == p || duel.players[q & 1].field[z].faceup != 0;
+        if (ok) {
+            ok = duel_field_attr_is(q, z, card_get_kind(id)) != 0;
+        }
+        return ok;
+    
+    }
+    return ok;
+}
+
 /* Tributes player p can offer for card id. */
 int duel_count_tributes(unsigned int p, int id, int flag)
 {
@@ -152,41 +192,7 @@ int duel_count_tributes(unsigned int p, int id, int flag)
     for (q = 0; q < 2; q++) {
         for (z = 0; z < 5; z++) {
             if (duel.players[q & 1].field[z].card.id != 0 && duel_can_tribute(p, q, z)) {
-                int ok = 1;
-
-                switch (id) {
-                case 0x164A:
-                case 0x164B:
-                case 0x164C:
-                case 0x164D:
-                case 0x164E:
-                case 0x164F:
-                    if (flag != 0) {
-                        int s;
-
-                        ok = 0;
-                        for (s = 5; s < 10; s++) {
-                            if (duel.players[p & 1].field[s].card.id == card_id_remap_164a(id) &&
-                                duel.players[p & 1].field[s].faceup != 0 && duel_st_affects(q, z, p, s) == 0) {
-                                ok = 1;
-                            }
-                        }
-                    }
-                    break;
-                case 0x194C:
-                    ok = q == p || duel.players[q & 1].field[z].faceup != 0;
-                    if (ok) {
-                        ok = duel_field_atk(q, z) >= 2000;
-                    }
-                    break;
-                case 0x1A40:
-                    ok = q == p || duel.players[q & 1].field[z].faceup != 0;
-                    if (ok) {
-                        ok = duel_field_attr_is(q, z, card_get_kind(id)) != 0;
-                    }
-                    break;
-                }
-                if (ok) {
+                if (trib_ok_(p, id, flag, q, z)) {
                     n += duel_double_tribute(p, id, q, z) + 1;
                 }
             }
@@ -194,7 +200,6 @@ int duel_count_tributes(unsigned int p, int id, int flag)
     }
     return n;
 }
-#endif
 
 /* Tributable monsters for player p, the card at `except` (player | zone << 8) excluded. */
 int duel_count_tributable_except(unsigned int p, unsigned int except)

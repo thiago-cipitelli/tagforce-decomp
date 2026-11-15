@@ -239,8 +239,6 @@ segments:
       - [0xE4D54, c, field_find]
       - [0xE5544, c, field_count]
       - [0xE629C, c, tribute]
-      - [0xE67E4, asm, tribute_asm_088EA784]
-      - [0xE6A7C, c, tribute]
       - [0xE6C6C, c, field_st]
       - [0xE7770, c, protect]
       - [0xE7FA4, c, attack]
