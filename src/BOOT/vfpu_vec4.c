@@ -1,4 +1,6 @@
 // @range 0x0881B244-0x0881B974
+// @gcc 0x0881B244-0x0881B270
+// @gcc 0x0881B298-0x0881B2B0
 /* sceVfpuVector4* of Sony's libvfpu: 16-byte aligned vectors loaded whole (lv.q/sv.q). The *XYZ
    variants (vec3_*_w, vec4_*_xyz) work on x, y, z and keep the w of their first vector argument.
    GCC/VFPU code kept as `asm` functions for the PSP build; under `#else` is the portable C. */
@@ -37,17 +39,7 @@ static float min1(float a, float b)
 #endif
 
 /* sceVfpuVector4Set */
-#ifdef __MWERKS__
-asm ScePspFVector4 *vec4_set(ScePspFVector4 *out, float x, float y, float z, float w)
-{
-    move v0, a0
-    swc1 $f12, 0(a0)
-    swc1 $f13, 4(a0)
-    swc1 $f14, 8(a0)
-    jr ra
-    swc1 $f15, 12(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_vec4_gcc.c */
 ScePspFVector4 *vec4_set(ScePspFVector4 *out, float x, float y, float z, float w)
 {
     out->x = x;
@@ -56,19 +48,12 @@ ScePspFVector4 *vec4_set(ScePspFVector4 *out, float x, float y, float z, float w
     out->w = w;
     return out;
 }
+#else
+ScePspFVector4 *vec4_set(ScePspFVector4 *out, float x, float y, float z, float w);
 #endif
 
 /* sceVfpuVector4SetXYZ: w untouched */
-#ifdef __MWERKS__
-asm ScePspFVector4 *vec4_set_xyz(ScePspFVector4 *out, float x, float y, float z)
-{
-    move v0, a0
-    swc1 $f12, 0(a0)
-    swc1 $f13, 4(a0)
-    jr ra
-    swc1 $f14, 8(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_vec4_gcc.c */
 ScePspFVector4 *vec4_set_xyz(ScePspFVector4 *out, float x, float y, float z)
 {
     out->x = x;
@@ -76,6 +61,8 @@ ScePspFVector4 *vec4_set_xyz(ScePspFVector4 *out, float x, float y, float z)
     out->z = z;
     return out;
 }
+#else
+ScePspFVector4 *vec4_set_xyz(ScePspFVector4 *out, float x, float y, float z);
 #endif
 
 /* sceVfpuVector4Copy */
@@ -102,17 +89,7 @@ ScePspFVector4 *vec4_copy(ScePspFVector4 *out, const ScePspFVector4 *v)
 #endif
 
 /* sceVfpuVector4PositiveZero */
-#ifdef __MWERKS__
-asm ScePspFVector4 *vec4_zero(ScePspFVector4 *out)
-{
-    move v0, a0
-    sw zero, 0(a0)
-    sw zero, 4(a0)
-    sw zero, 8(a0)
-    jr ra
-    sw zero, 12(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_vec4_gcc.c */
 ScePspFVector4 *vec4_zero(ScePspFVector4 *out)
 {
     out->x = 0.0f;
@@ -121,6 +98,8 @@ ScePspFVector4 *vec4_zero(ScePspFVector4 *out)
     out->w = 0.0f;
     return out;
 }
+#else
+ScePspFVector4 *vec4_zero(ScePspFVector4 *out);
 #endif
 
 /* sceVfpuVector4NegativeZero */

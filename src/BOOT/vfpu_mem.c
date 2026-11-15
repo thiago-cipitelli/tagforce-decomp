@@ -1,4 +1,5 @@
 // @range 0x0881EB0C-0x0881F6E4
+// @gcc 0x0881F560-0x0881F5AC
 /* VFPU block memory routines (copy/move/fill through quad stores to the uncached mirror, 64-byte
    cache lines created without a fetch) and the VFPU register context: the whole register file, the
    prefix/condition control registers and the random generator state saved, restored and reset.
@@ -822,30 +823,7 @@ int vfpu_ctx_load(VfpuContext *ctx)
 #endif
 
 /* Generator seed into st[8] (the vfpu_ctx_init values); returns 0. */
-#ifdef __MWERKS__
-asm int vfpu_rng_init(unsigned int *st)
-{
-    lui a2, 0x3f80
-    lui a3, 0x3f80
-    lui t0, 0x3f80
-    lui v0, 0x3f80
-    lui t1, 0x3f80
-    ori v1, v0, 0x8
-    ori t4, a2, 0x1
-    ori t3, a3, 0x2
-    ori t2, t0, 0x4
-    move v0, zero
-    sw t1, 28(a0)
-    sw t4, 0(a0)
-    sw t3, 4(a0)
-    sw t2, 8(a0)
-    sw v1, 12(a0)
-    sw t1, 16(a0)
-    sw t1, 20(a0)
-    jr ra
-    sw t1, 24(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mem_gcc.c */
 int vfpu_rng_init(unsigned int *st)
 {
     st[0] = 0x3F800001;
@@ -858,6 +836,8 @@ int vfpu_rng_init(unsigned int *st)
     st[7] = 0x3F800000;
     return 0;
 }
+#else
+int vfpu_rng_init(unsigned int *st);
 #endif
 
 /* Generator state ($136-$143) into st[8]; returns 0. */

@@ -1,4 +1,10 @@
 // @range 0x0881B974-0x0881C4E4
+// @gcc 0x0881B994-0x0881B9EC
+// @gcc 0x0881BA5C-0x0881BAD8
+// @gcc 0x0881BB64-0x0881BB74
+// @gcc 0x0881BC34-0x0881BC80
+// @gcc 0x0881C150-0x0881C168
+// @gcc 0x0881C400-0x0881C444
 /* sceVfpuMatrix2*, sceVfpuMatrix3* and the start of sceVfpuMatrix4* of Sony's libvfpu. Matrices are
    column-major and products are the usual ones: mul(out, a, b) = a b, transform(out, m, v) = m v, and
    the rotations give R m (R alone when m is NULL), with angles in radians. GCC/VFPU code kept as `asm`
@@ -76,52 +82,26 @@ ScePspFMatrix2 *mat2_identity(ScePspFMatrix2 *out)
 #endif
 
 /* sceVfpuMatrix2Zero */
-#ifdef __MWERKS__
-asm ScePspFMatrix2 *mat2_zero(ScePspFMatrix2 *out)
-{
-    addiu sp, sp, -16
-    sw s0, 0(sp)
-    sw ra, 4(sp)
-    jal vec2_zero
-    move s0, a0
-    jal vec2_zero
-    addiu a0, s0, 8
-    move v0, s0
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mat_gcc.c */
 ScePspFMatrix2 *mat2_zero(ScePspFMatrix2 *out)
 {
     vec2_zero(&out->x);
     vec2_zero(&out->y);
     return out;
 }
+#else
+ScePspFMatrix2 *mat2_zero(ScePspFMatrix2 *out);
 #endif
 
 /* sceVfpuMatrix2Copy */
-#ifdef __MWERKS__
-asm ScePspFMatrix2 *mat2_copy(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
-{
-    lw a3, 0(a1)
-    move v0, a0
-    sw a3, 0(a0)
-    lw a2, 4(a1)
-    sw a2, 4(a0)
-    lw v1, 8(a1)
-    sw v1, 8(a0)
-    lw a2, 12(a1)
-    jr ra
-    sw a2, 12(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mat_gcc.c */
 ScePspFMatrix2 *mat2_copy(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
 {
     *out = *m;
     return out;
 }
+#else
+ScePspFMatrix2 *mat2_copy(ScePspFMatrix2 *out, const ScePspFMatrix2 *m);
 #endif
 
 /* sceVfpuMatrix2Transform: m v */
@@ -187,56 +167,19 @@ ScePspFMatrix2 *mat2_mul(ScePspFMatrix2 *out, const ScePspFMatrix2 *a, const Sce
 #endif
 
 /* sceVfpuMatrix2Scale */
-#ifdef __MWERKS__
-asm ScePspFMatrix2 *mat2_scale(ScePspFMatrix2 *out, const ScePspFMatrix2 *m, float s)
-{
-    addiu sp, sp, -32
-    sw s0, 0(sp)
-    move s0, a1
-    sw ra, 8(sp)
-    sw s1, 4(sp)
-    move s1, a0
-    swc1 $f20, 16(sp)
-    jal vec2_scale
-    mov.s $f20, $f12
-    addiu v0, s0, 8
-    addiu a0, s1, 8
-    mov.s $f12, $f20
-    jal vec2_scale
-    move a1, v0
-    move v0, s1
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    lwc1 $f20, 16(sp)
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mat_gcc.c */
 ScePspFMatrix2 *mat2_scale(ScePspFMatrix2 *out, const ScePspFMatrix2 *m, float s)
 {
     vec2_scale(&out->x, &m->x, s);
     vec2_scale(&out->y, &m->y, s);
     return out;
 }
+#else
+ScePspFMatrix2 *mat2_scale(ScePspFMatrix2 *out, const ScePspFMatrix2 *m, float s);
 #endif
 
 /* sceVfpuMatrix2Transpose */
-#ifdef __MWERKS__
-asm ScePspFMatrix2 *mat2_transpose(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
-{
-    lwc1 $f3, 4(a1)
-    lwc1 $f1, 8(a1)
-    lwc1 $f4, 12(a1)
-    lwc1 $f2, 0(a1)
-    move v0, a0
-    swc1 $f1, 4(a0)
-    swc1 $f2, 0(a0)
-    swc1 $f3, 8(a0)
-    jr ra
-    swc1 $f4, 12(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mat_gcc.c */
 ScePspFMatrix2 *mat2_transpose(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
 {
     float xy = m->x.y;
@@ -248,6 +191,8 @@ ScePspFMatrix2 *mat2_transpose(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
     out->y.y = m->y.y;
     return out;
 }
+#else
+ScePspFMatrix2 *mat2_transpose(ScePspFMatrix2 *out, const ScePspFMatrix2 *m);
 #endif
 
 /* sceVfpuMatrix2RotZ */
@@ -330,19 +275,13 @@ int mat2_is_identity(const ScePspFMatrix2 *m)
 #endif
 
 /* sceVfpuMatrix2Trace */
-#ifdef __MWERKS__
-asm float mat2_trace(const ScePspFMatrix2 *m)
-{
-    lwc1 $f3, 12(a0)
-    lwc1 $f2, 0(a0)
-    jr ra
-    add.s $f0, $f2, $f3
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mat_gcc.c */
 float mat2_trace(const ScePspFMatrix2 *m)
 {
     return m->x.x + m->y.y;
 }
+#else
+float mat2_trace(const ScePspFMatrix2 *m);
 #endif
 
 /* sceVfpuMatrix2Determinant */
@@ -457,36 +396,14 @@ ScePspFMatrix3 *mat3_zero(ScePspFMatrix3 *out)
 #endif
 
 /* sceVfpuMatrix3Copy */
-#ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_copy(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
-{
-    move t1, a0
-    move a2, a1
-    move a3, a0
-    addiu t0, a1, 32
-@10:
-    lw v1, 0(a2)
-    lw a0, 4(a2)
-    lw a1, 8(a2)
-    lw t2, 12(a2)
-    sw v1, 0(a3)
-    addiu a2, a2, 16
-    addiu a3, a3, 16
-    sw a0, -12(a3)
-    sw a1, -8(a3)
-    bne a2, t0, @10
-    sw t2, -4(a3)
-    lw v0, 0(a2)
-    sw v0, 0(a3)
-    jr ra
-    move v0, t1
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mat_gcc.c */
 ScePspFMatrix3 *mat3_copy(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
 {
     *out = *m;
     return out;
 }
+#else
+ScePspFMatrix3 *mat3_copy(ScePspFMatrix3 *out, const ScePspFMatrix3 *m);
 #endif
 
 /* sceVfpuMatrix3Transform: m v */
@@ -974,21 +891,13 @@ int mat3_is_identity(const ScePspFMatrix3 *m)
 #endif
 
 /* sceVfpuMatrix3Trace */
-#ifdef __MWERKS__
-asm float mat3_trace(const ScePspFMatrix3 *m)
-{
-    lwc1 $f0, 16(a0)
-    lwc1 $f2, 0(a0)
-    lwc1 $f4, 32(a0)
-    add.s $f3, $f2, $f0
-    jr ra
-    add.s $f0, $f3, $f4
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mat_gcc.c */
 float mat3_trace(const ScePspFMatrix3 *m)
 {
     return m->x.x + m->y.y + m->z.z;
 }
+#else
+float mat3_trace(const ScePspFMatrix3 *m);
 #endif
 
 /* sceVfpuMatrix3Determinant: x . (y x z) */
@@ -1284,34 +1193,14 @@ ScePspFMatrix4 *mat4_zero(ScePspFMatrix4 *out)
 #endif
 
 /* sceVfpuMatrix4Copy */
-#ifdef __MWERKS__
-asm ScePspFMatrix4 *mat4_copy(ScePspFMatrix4 *out, const ScePspFMatrix4 *m)
-{
-    move t1, a0
-    move a2, a1
-    move a3, a0
-    addiu t0, a1, 64
-@10:
-    lw v1, 0(a2)
-    lw a0, 4(a2)
-    lw a1, 8(a2)
-    lw t2, 12(a2)
-    sw v1, 0(a3)
-    addiu a2, a2, 16
-    addiu a3, a3, 16
-    sw a0, -12(a3)
-    sw a1, -8(a3)
-    bne a2, t0, @10
-    sw t2, -4(a3)
-    jr ra
-    move v0, t1
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mat_gcc.c */
 ScePspFMatrix4 *mat4_copy(ScePspFMatrix4 *out, const ScePspFMatrix4 *m)
 {
     *out = *m;
     return out;
 }
+#else
+ScePspFMatrix4 *mat4_copy(ScePspFMatrix4 *out, const ScePspFMatrix4 *m);
 #endif
 
 /* sceVfpuMatrix4SetTransfer: the w column (translation) = v */

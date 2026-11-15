@@ -1,5 +1,6 @@
 // @range 0x08813390-0x088151B8
 // @gcc 0x08813390-0x088133DC nl_vfprintf
+// @gcc 0x088133DC-0x08813484 nl_vfprintf
 // @gcc 0x08813484-0x08813500 nl_vfprintf
 // @asm 0x08813500-0x08814F18
 // @gcc 0x08814F18-0x088150E0 nl_vfprintf
@@ -65,55 +66,7 @@ int nl_sprint(NlFile *fp, NlUio *uio)
 #endif
 
 /* vfprintf on an unbuffered file through a temporary 1 KB buffered copy of it */
-#ifdef __MWERKS__
-asm int nl_sbprintf(NlFile *fp, const char *fmt, va_list ap)
-{
-    addiu sp, sp, -1136
-    sw s1, 1124(sp)
-    addiu v1, sp, 96
-    addiu a3, zero, 1024
-    sw s0, 1120(sp)
-    move s1, a0
-    sw ra, 1128(sp)
-    lhu v0, 12(a0)
-    lhu t0, 14(a0)
-    lw t1, 28(a0)
-    lw t2, 36(a0)
-    ins v0, zero, 0x1, 0x1
-    move a0, sp
-    sh v0, 12(sp)
-    sh t0, 14(sp)
-    sw t1, 28(sp)
-    sw t2, 36(sp)
-    sw v1, 16(sp)
-    sw a3, 20(sp)
-    sw v1, 0(sp)
-    sw a3, 8(sp)
-    jal vfprintf
-    sw zero, 24(sp)
-    move s0, v0
-    bltz v0, L_08813454
-    move a0, sp
-    jal fflush
-    nop
-    addiu v1, zero, -1
-    movn s0, v1, v0
-L_08813454:
-    lhu v1, 12(sp)
-    andi v1, v1, 0x40
-    beqz v1, L_08813470
-    move v0, s0
-    lhu v1, 12(s1)
-    ori v1, v1, 0x40
-    sh v1, 12(s1)
-L_08813470:
-    lw ra, 1128(sp)
-    lw s1, 1124(sp)
-    lw s0, 1120(sp)
-    jr ra
-    addiu sp, sp, 1136
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_vfprintf.c */
 int nl_sbprintf(NlFile *fp, const char *fmt, va_list ap)
 {
     NlFile fake;

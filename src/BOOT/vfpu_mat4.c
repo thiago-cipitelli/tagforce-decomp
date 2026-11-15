@@ -1,4 +1,5 @@
 // @range 0x0881C4E4-0x0881CD50
+// @gcc 0x0881C8D4-0x0881C8F4
 /* VFPU matrix library, second half (the first half, from mat4_identity, lives before 0x0881C4E4):
    products, transforms, rotations, determinant, inverse and the helpers built on them. Matrices are
    column-major as in the VFPU (m[4 * col + row]); each function is hand-written VFPU code (the SDK's
@@ -562,23 +563,13 @@ int mat4_is_identity(Mat4 *m)
 }
 #endif
 
-#ifdef __MWERKS__
-asm float mat4_trace(Mat4 *m)
-{
-    lwc1 $f0, 20(a0)
-    lwc1 $f2, 0(a0)
-    lwc1 $f5, 40(a0)
-    lwc1 $f4, 60(a0)
-    add.s $f3, $f2, $f0
-    add.s $f1, $f3, $f5
-    jr ra
-    add.s $f0, $f1, $f4
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_mat4_gcc.c */
 float mat4_trace(Mat4 *m)
 {
     return m->m[0] + m->m[5] + m->m[10] + m->m[15];
 }
+#else
+float mat4_trace(Mat4 *m);
 #endif
 
 #ifdef __MWERKS__

@@ -1,7 +1,15 @@
 // @range 0x08807070-0x088087F8
+// @gcc 0x08807070-0x0880712C
 // @asm 0x0880712C-0x08807338
+// @gcc 0x08807DD0-0x08807DFC
 // @asm 0x08807E90-0x08807F94
-// @asm 0x08808130-0x08808790
+// @gcc 0x08807F94-0x08807FD8
+// @gcc 0x08808058-0x08808084
+// @gcc 0x08808100-0x08808130
+// @asm 0x08808130-0x0880823C
+// @gcc 0x0880823C-0x08808294
+// @asm 0x08808294-0x088086F0
+// @gcc 0x088086F0-0x08808790
 /* libgu of the Sony SDK (GCC), context level: the builders that write into a given GuList (state
    enables, matrices, sprites, clear, depth range, lights, ...), the GE signal/finish handlers, the
    context reset, the stall update and the sceGuDebugPrint/Flush text overlay. The builders do not
@@ -39,62 +47,7 @@ static unsigned int ctx_f24(float f)
 
 /* SIGNAL (1), END/FINISH variants: 1 = signal + END, 2 = signal (wait) + END, 3 = signal, JUMP-like
    pair and END */
-#ifdef __MWERKS__
-asm void gu_ctx_finish(GuList *l, int mode, unsigned int arg)
-{
-    move t0, a0
-    andi a2, a2, 0xffff
-    lui v0, 0xe02
-    addiu a0, zero, 2
-    slti a3, a1, 3
-    beq a1, a0, @9c
-    or v1, a2, v0
-    beqzl a3, @5c
-    addiu a0, zero, 3
-    addiu v1, zero, 1
-    beql a1, v1, @38
-    lw t1, 8(t0)
-    jr ra
-    nop
-@38:
-    lui t3, 0xe01
-    or t2, a2, t3
-    addiu a1, t1, 4
-    addiu a3, a1, 4
-    lui a2, 0xc00
-    sw t2, 0(t1)
-    sw a3, 8(t0)
-    jr ra
-    sw a2, 0(a1)
-@5c:
-    beq a1, a0, @6c
-    lui a3, 0xc00
-    jr ra
-    nop
-@6c:
-    lw a0, 8(t0)
-    lui a1, 0xe03
-    or v1, a2, a1
-    addiu t7, a0, 4
-    addiu t9, t7, 12
-    lui t8, 0xf00
-    sw v1, 0(a0)
-    sw t9, 8(t0)
-    sw t8, 4(t7)
-    sw a3, 8(t7)
-    jr ra
-    sw a3, 0(t7)
-@9c:
-    lw t6, 8(t0)
-    addiu t4, t6, 4
-    addiu t5, t4, 4
-    sw t5, 8(t0)
-    lui t0, 0xc00
-    sw v1, 0(t6)
-    jr ra
-    sw t0, 0(t4)
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_finish(GuList *l, int mode, unsigned int arg)
 {
     arg &= 0xFFFF;
@@ -115,6 +68,8 @@ void gu_ctx_finish(GuList *l, int mode, unsigned int arg)
         break;
     }
 }
+#else
+void gu_ctx_finish(GuList *l, int mode, unsigned int arg);
 #endif
 
 #ifdef NON_MATCHING /* GCC: jump table */
@@ -1121,28 +1076,17 @@ void gu_ctx_material(GuList *l, int mode, unsigned int color)
 #endif
 
 /* FFACE: 0 = clockwise -> 1 */
-#ifdef __MWERKS__
-asm void gu_ctx_front_face(GuList *l, int order)
-{
-    lui v0, 0x9b00
-    bnez a1, @20
-    ori v1, v0, 0x1
-    lw v0, 8(a0)
-@10:
-    sw v1, 0(v0)
-    addiu v1, v0, 4
-    jr ra
-    sw v1, 8(a0)
-@20:
-    lw v0, 8(a0)
-    j @10
-    lui v1, 0x9b00
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_front_face(GuList *l, int order)
 {
-    ctx_push(l, order == 0 ? 0x9B000001 : 0x9B000000);
+    if (order == 0) {
+        ctx_push(l, 0x9B000001);
+    } else {
+        ctx_push(l, 0x9B000000);
+    }
 }
+#else
+void gu_ctx_front_face(GuList *l, int order);
 #endif
 
 /* LXP/LYP/LZP of the light position and LTYPE (components, type: 8 -> 2, 6 -> 1, else 0) */
@@ -1231,34 +1175,15 @@ void gu_ctx_light_color(GuList *l, int light, int component, unsigned int color)
 #endif
 
 /* TMODE (maxmips, a2, swizzle), TPSM, TFLUSH */
-#ifdef __MWERKS__
-asm void gu_ctx_tex_mode(GuList *l, int tpsm, int maxmips, int a2, int swizzle)
-{
-    lw t2, 8(a0)
-    sll t6, a2, 0x10
-    sll t7, a3, 0x8
-    or t5, t6, t7
-    addiu a2, t2, 4
-    or t3, t5, t0
-    lui t4, 0xc200
-    lui t1, 0xc300
-    or a3, t3, t4
-    or t0, a1, t1
-    addiu v0, a2, 8
-    lui v1, 0xcb00
-    sw a3, 0(t2)
-    sw v0, 8(a0)
-    sw t0, 0(a2)
-    jr ra
-    sw v1, 4(a2)
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_tex_mode(GuList *l, int tpsm, int maxmips, int a2, int swizzle)
 {
     ctx_push(l, maxmips << 16 | a2 << 8 | swizzle | 0xC2000000);
     ctx_push(l, tpsm | 0xC3000000);
     ctx_push(l, 0xCB000000);
 }
+#else
+void gu_ctx_tex_mode(GuList *l, int tpsm, int maxmips, int a2, int swizzle);
 #endif
 
 /* sceGuScissor(x, y, w, h): kept in the context, emitted only while the scissor test is on */
@@ -1320,28 +1245,17 @@ void gu_ctx_scissor(GuList *l, int x, int y, int w, int h)
 #endif
 
 /* SHADE: smooth (non-zero) -> 1 */
-#ifdef __MWERKS__
-asm void gu_ctx_shade_model(GuList *l, int mode)
-{
-    lui v0, 0x5000
-    bnez a1, @24
-    ori v1, v0, 0x1
-    lw v0, 8(a0)
-    lui v1, 0x5000
-@14:
-    sw v1, 0(v0)
-    addiu v1, v0, 4
-    jr ra
-    sw v1, 8(a0)
-@24:
-    j @14
-    lw v0, 8(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_shade_model(GuList *l, int mode)
 {
-    ctx_push(l, mode == 0 ? 0x50000000 : 0x50000001);
+    if (mode == 0) {
+        ctx_push(l, 0x50000000);
+    } else {
+        ctx_push(l, 0x50000001);
+    }
 }
+#else
+void gu_ctx_shade_model(GuList *l, int mode);
 #endif
 
 /* GE signal handler: records the signal id (ring of 16), calls the user callback, sets the event */
@@ -1398,25 +1312,7 @@ void gu_signal_handler(int id, void *arg)
 #endif
 
 /* GE finish handler: the user finish callback */
-#ifdef __MWERKS__
-asm void gu_finish_handler(int id, void *arg)
-{
-    lw v0, 4(a1)
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    bnez v0, @20
-    andi a0, a0, 0xffff
-    lw ra, 0(sp)
-@18:
-    jr ra
-    addiu sp, sp, 16
-@20:
-    jalr ra, v0
-    nop
-    j @18
-    lw ra, 0(sp)
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_finish_handler(int id, void *arg)
 {
     GuCallbacks *c = arg;
@@ -1425,6 +1321,8 @@ void gu_finish_handler(int id, void *arg)
         c->finish(id & 0xFFFF);
     }
 }
+#else
+void gu_finish_handler(int id, void *arg);
 #endif
 
 #ifdef NON_MATCHING /* GCC: libgu globals through %hi/%lo */
@@ -1481,14 +1379,14 @@ void gu_init_contexts(void)
 /* moves the GE stall address to the write position of the main list */
 int gu_update_stall(void)
 {
-    if (gu.cid != 0 || gu.list->obj_depth != 0) {
-        return 0;
-    }
-    {
+    if (gu.cid == 0 && gu.list->obj_depth == 0) {
         int r = sceGeListUpdateStallAddr(gu.ge_list, gu.list->cur);
 
-        return r < 0 ? r : 0;
+        if (r < 0) {
+            return r;
+        }
     }
+    return 0;
 }
 
 /* sceGuDebugPrint/Flush: up to 1024 characters per buffer, drawn with the 8x8 font at 0x08872FF0
@@ -1624,7 +1522,7 @@ void gu_debug_set_draw(int psm, unsigned int fbp, int fbw)
 }
 
 /* starts the overlay without printing */
-int gu_debug_open(void)
+void gu_debug_open(void)
 {
     gu_debug_edram = (unsigned int)sceGeEdramGetAddr();
     gu_debug_buf = 0;

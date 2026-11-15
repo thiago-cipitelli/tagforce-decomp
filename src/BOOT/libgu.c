@@ -1,8 +1,16 @@
 // @range 0x08804A0C-0x08805EC4
-// @asm 0x08804A0C-0x08805838
-// @asm 0x08805854-0x088059F4
-// @asm 0x08805A10-0x08805ACC
-// @asm 0x08805AE8-0x08805EC4
+// @asm 0x08804A0C-0x0880541C
+// @gcc 0x0880541C-0x088054C8
+// @asm 0x088054C8-0x08805690
+// @gcc 0x08805690-0x08805754
+// @asm 0x08805754-0x088057C0
+// @gcc 0x088057C0-0x08805854
+// @asm 0x08805854-0x088058FC
+// @gcc 0x088058FC-0x08805A1C
+// @asm 0x08805A1C-0x08805ACC
+// @gcc 0x08805ACC-0x08805B54
+// @asm 0x08805B54-0x08805D28
+// @gcc 0x08805D28-0x08805EC4
 /* libgu of the Sony SDK (GCC; names from the export NIDs): display-list contexts, frame/draw/depth
    buffers, the state bits and the first state commands. Nearly every function reaches the libgu
    globals through %hi/%lo, so they stay in the split asm and the C below is under NON_MATCHING;
@@ -25,12 +33,20 @@ int sceGeContinue(void);
 #include "libgu.h"
 
 
+#if defined(__mips__) && !defined(__MWERKS__) /* the SDK's GCC (libgu_gcc.c): the original objects, by address */
+extern GuCallbacks gu_cb;
+extern void (*gu_swap_pre)(void);
+extern void (*gu_swap_post)(void);
+extern void (*gu_disp_hook)(int psm, int w, int h);
+extern void (*gu_draw_hook)(int psm, unsigned int fbp, int fbw);
+#else
 GuSettings gu;
 GuCallbacks gu_cb;
 void (*gu_swap_pre)(void);             /* 0x088F1248 */
 void (*gu_swap_post)(void);            /* 0x088F124C */
 void (*gu_disp_hook)(int psm, int w, int h);       /* 0x088F1250 */
 void (*gu_draw_hook)(int psm, unsigned int fbp, int fbw); /* 0x088F1254 */
+#endif
 
 void gu_init_contexts(void);
 int sceGeSetCallback(void *cb);
@@ -469,22 +485,13 @@ int sceGuTerm(void)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int sceGuFinish(void)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal sceGuFinishId
-    move a0, zero
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_gcc.c */
 int sceGuFinish(void)
 {
     return sceGuFinishId(0);
 }
+#else
+int sceGuFinish(void);
 #endif
 
 #ifdef NON_MATCHING /* GCC: libgu globals through %hi/%lo */
@@ -524,7 +531,11 @@ int sceGuCheckList(void)
 unsigned int *gu_get_list(int *left)
 {
     if (left != 0) {
-        *left = gu.list->arg - ((char *)gu.list->cur - (char *)gu.list->start);
+        GuList *l = gu.list;
+        char *start = (char *)l->start;
+        char *cur = (char *)l->cur;
+
+        *left = l->arg - (cur - start);
     }
     return gu.list->cur;
 }
@@ -537,7 +548,7 @@ void gu_set_list(unsigned int *cur)
 /* SIGNAL behavior/value through the context, then stall update */
 void sceGuSignal(int behavior, int signal)
 {
-    gu_ctx_finish(gu.list, behavior, signal);
+    gu_ctx_finish(gu.list, behavior, signal & 0xFFFF);
     gu_update_stall();
 }
 
@@ -546,12 +557,15 @@ void *sceGuSetCallback(int which, void (*cb)(int))
 {
     void (*old)(int) = 0;
 
-    if (which == 1) {
+    switch (which) {
+    case 1:
         old = gu_cb.signal;
         gu_cb.signal = cb;
-    } else if (which == 4) {
+        break;
+    case 4:
         old = gu_cb.finish;
         gu_cb.finish = cb;
+        break;
     }
     return (void *)old;
 }
@@ -562,22 +576,13 @@ int sceGuBreak(int mode)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int sceGuContinue(void)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal sceGeContinue
-    nop
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_gcc.c */
 int sceGuContinue(void)
 {
     return sceGeContinue();
 }
+#else
+int sceGuContinue(void);
 #endif
 
 #ifdef NON_MATCHING /* GCC: libgu globals through %hi/%lo */
@@ -614,22 +619,13 @@ int sceGuSync(int mode, int what)
 #endif
 
 /* stall-address update of the GE list */
-#ifdef __MWERKS__
-asm void gu_flush(void)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal gu_update_stall
-    nop
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_gcc.c */
 void gu_flush(void)
 {
     gu_update_stall();
 }
+#else
+void gu_flush(void);
 #endif
 
 #ifdef NON_MATCHING /* GCC: libgu globals through %hi/%lo */
@@ -638,10 +634,10 @@ int sceGuDisplay(int on)
 {
     int old;
 
-    if (on) {
-        sceDisplaySetFrameBuf((void *)(gu.edram + gu.disp_fbp), gu.fbw, gu.psm, 1);
-    } else {
+    if (!on) {
         sceDisplaySetFrameBuf(0, 0, 0, 1);
+    } else {
+        sceDisplaySetFrameBuf((void *)(gu.edram + gu.disp_fbp), gu.fbw, gu.psm, 1);
     }
     old = gu.display_on;
     gu.display_on = on;
@@ -695,14 +691,18 @@ void gu_DepthBuffer(unsigned int zbp, int zbw)
 /* sceGuEnable */
 void gu_Enable(int state)
 {
-    gu_ctx_state(gu.list, state, 1);
+    GuList *l = gu.list;
+
+    gu_ctx_state(l, state, 1);
     gu.states |= 1 << state;
 }
 
 /* sceGuDisable */
 void gu_Disable(int state)
 {
-    gu_ctx_state(gu.list, state, 0);
+    GuList *l = gu.list;
+
+    gu_ctx_state(l, state, 0);
     gu.states &= ~(1 << state);
 }
 

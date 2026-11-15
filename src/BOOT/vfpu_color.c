@@ -1,5 +1,6 @@
 // @range 0x0881D214-0x0881D8A8
 // @asm 0x0881D214-0x0881D2C8
+// @gcc 0x0881D2C8-0x0881D2F4
 // @asm 0x0881D48C-0x0881D4E8
 // @asm 0x0881D7DC-0x0881D804
 // @asm 0x0881D870-0x0881D8A8
@@ -80,17 +81,7 @@ unsigned short color_to_565(Vec4 *c)
 }
 #endif
 
-#ifdef __MWERKS__
-asm Vec4 *color_set(Vec4 *out, float r, float g, float b, float a)
-{
-    move v0, a0
-    swc1 $f12, 0(a0)
-    swc1 $f13, 4(a0)
-    swc1 $f14, 8(a0)
-    jr ra
-    swc1 $f15, 12(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_color_gcc.c */
 Vec4 *color_set(Vec4 *out, float r, float g, float b, float a)
 {
     out->x = r;
@@ -99,18 +90,11 @@ Vec4 *color_set(Vec4 *out, float r, float g, float b, float a)
     out->w = a;
     return out;
 }
+#else
+Vec4 *color_set(Vec4 *out, float r, float g, float b, float a);
 #endif
 
-#ifdef __MWERKS__
-asm Vec4 *color_set_rgb(Vec4 *out, float r, float g, float b)
-{
-    move v0, a0
-    swc1 $f12, 0(a0)
-    swc1 $f13, 4(a0)
-    jr ra
-    swc1 $f14, 8(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_color_gcc.c */
 Vec4 *color_set_rgb(Vec4 *out, float r, float g, float b)
 {
     out->x = r;
@@ -118,6 +102,8 @@ Vec4 *color_set_rgb(Vec4 *out, float r, float g, float b)
     out->z = b;
     return out;
 }
+#else
+Vec4 *color_set_rgb(Vec4 *out, float r, float g, float b);
 #endif
 
 #ifdef __MWERKS__

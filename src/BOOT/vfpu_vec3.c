@@ -1,4 +1,7 @@
 // @range 0x0881AB1C-0x0881B244
+// @gcc 0x0881AB1C-0x0881AB30
+// @gcc 0x0881AB50-0x0881AB64
+// @gcc 0x0881AC1C-0x0881AC48
 /* sceVfpuVector3* of Sony's libvfpu: 12-byte vectors, loaded and stored a float at a time (lv.s/sv.s)
    because they are not 16-byte aligned. GCC/VFPU code kept as `asm` functions for the PSP build;
    under `#else` is the portable C. */
@@ -27,16 +30,7 @@ static float sgn(float x)
 #endif
 
 /* sceVfpuVector3Set */
-#ifdef __MWERKS__
-asm ScePspFVector3 *vec3_set(ScePspFVector3 *out, float x, float y, float z)
-{
-    move v0, a0
-    swc1 $f12, 0(a0)
-    swc1 $f13, 4(a0)
-    jr ra
-    swc1 $f14, 8(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_vec3_gcc.c */
 ScePspFVector3 *vec3_set(ScePspFVector3 *out, float x, float y, float z)
 {
     out->x = x;
@@ -44,6 +38,8 @@ ScePspFVector3 *vec3_set(ScePspFVector3 *out, float x, float y, float z)
     out->z = z;
     return out;
 }
+#else
+ScePspFVector3 *vec3_set(ScePspFVector3 *out, float x, float y, float z);
 #endif
 
 /* sceVfpuVector3Copy */
@@ -68,16 +64,7 @@ ScePspFVector3 *vec3_copy(ScePspFVector3 *out, const ScePspFVector3 *v)
 #endif
 
 /* sceVfpuVector3PositiveZero */
-#ifdef __MWERKS__
-asm ScePspFVector3 *vec3_zero(ScePspFVector3 *out)
-{
-    move v0, a0
-    sw zero, 0(a0)
-    sw zero, 4(a0)
-    jr ra
-    sw zero, 8(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_vec3_gcc.c */
 ScePspFVector3 *vec3_zero(ScePspFVector3 *out)
 {
     out->x = 0.0f;
@@ -85,6 +72,8 @@ ScePspFVector3 *vec3_zero(ScePspFVector3 *out)
     out->z = 0.0f;
     return out;
 }
+#else
+ScePspFVector3 *vec3_zero(ScePspFVector3 *out);
 #endif
 
 /* sceVfpuVector3NegativeZero */
@@ -209,22 +198,7 @@ ScePspIVector3 *vec3_floor(ScePspIVector3 *out, const ScePspFVector3 *v)
 #endif
 
 /* sceVfpuVector3FromIVector */
-#ifdef __MWERKS__
-asm ScePspFVector3 *vec3_from_ivec(ScePspFVector3 *out, const ScePspIVector3 *v)
-{
-    lwc1 $f1, 8(a1)
-    lwc1 $f2, 0(a1)
-    lwc1 $f3, 4(a1)
-    cvt.s.w $f4, $f1
-    cvt.s.w $f0, $f2
-    cvt.s.w $f1, $f3
-    move v0, a0
-    swc1 $f4, 8(a0)
-    swc1 $f0, 0(a0)
-    jr ra
-    swc1 $f1, 4(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_vec3_gcc.c */
 ScePspFVector3 *vec3_from_ivec(ScePspFVector3 *out, const ScePspIVector3 *v)
 {
     out->x = (float)v->x;
@@ -232,6 +206,8 @@ ScePspFVector3 *vec3_from_ivec(ScePspFVector3 *out, const ScePspIVector3 *v)
     out->z = (float)v->z;
     return out;
 }
+#else
+ScePspFVector3 *vec3_from_ivec(ScePspFVector3 *out, const ScePspIVector3 *v);
 #endif
 
 /* sceVfpuVector3Add */

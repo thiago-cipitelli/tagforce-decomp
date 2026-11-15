@@ -1,5 +1,6 @@
 // @range 0x0881DE88-0x0881EB0C
 // @asm 0x0881DE88-0x0881E510
+// @gcc 0x0881E524-0x0881E54C
 // @asm 0x0881E6F4-0x0881E8F0
 /* VFPU quaternions (x, y, z, w with w the scalar part; vqmul is the Hamilton product). Euler angles
    are radians in a vector (x, y, z); the _zyx/_xyz/_yxz suffix is the product order of the axis
@@ -195,26 +196,14 @@ Vec4 *quat_identity(Vec4 *out)
 }
 #endif
 
-#ifdef __MWERKS__
-asm Vec4 *quat_copy(Vec4 *out, Vec4 *q)
-{
-    lw a3, 0(a1)
-    move v0, a0
-    sw a3, 0(a0)
-    lw a2, 4(a1)
-    sw a2, 4(a0)
-    lw v1, 8(a1)
-    sw v1, 8(a0)
-    lw a2, 12(a1)
-    jr ra
-    sw a2, 12(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: vfpu_quat_gcc.c */
 Vec4 *quat_copy(Vec4 *out, Vec4 *q)
 {
     *out = *q;
     return out;
 }
+#else
+Vec4 *quat_copy(Vec4 *out, Vec4 *q);
 #endif
 
 /* Rotation matrix of the unit quaternion q (translation 0). */

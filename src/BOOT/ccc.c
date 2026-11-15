@@ -1,9 +1,13 @@
 // @range 0x08818E64-0x08819BEC
-// @asm 0x08818E74-0x08819394
+// @gcc 0x08818E64-0x08818EE0
+// @asm 0x08818EE0-0x08819394
 // @asm 0x08819464-0x08819758
 // @asm 0x08819758-0x08819868
-// @asm 0x08819924-0x08819968
-// @asm 0x08819B94-0x08819BEC
+// @gcc 0x08819924-0x08819984
+// @gcc 0x08819A08-0x08819A44
+// @gcc 0x08819AE0-0x08819B94
+// @asm 0x08819B94-0x08819BCC
+// @gcc 0x08819BCC-0x08819BEC
 /* Sony's libccc (sceCcc*, character code conversion): UTF-8, UTF-16 and Shift JIS strings, the JIS
    X 0208/0213 code they decode to (bit 15 = plane 2) and the per-encoding error characters
    substituted for invalid input. JIS <-> UCS-2 mapping uses two tables installed by
@@ -24,6 +28,12 @@ unsigned int ccc_decode_utf8(const u8 **s);
 void ccc_encode_utf8(u8 **d, unsigned int c);
 unsigned int ccc_decode_sjis(const u8 **s);
 void ccc_encode_sjis(u8 **d, unsigned int jis);
+#if defined(__mips__) && !defined(__MWERKS__)
+/* separate objects of the library: the SDK's GCC (-O3) must not inline them into their callers; declared before
+   the definitions (GCC 3.3 drops a function whose noinline comes after its body) */
+unsigned int ccc_decode_utf16(const u16 **s) __attribute__((noinline));
+unsigned int ccc_decode_utf8(const u8 **s) __attribute__((noinline));
+#endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING)
 extern u16 D_088F97C0;                 /* error character for Shift JIS output (a JIS code) */
@@ -38,28 +48,20 @@ extern const u16 *D_088F97D0;          /* UCS-2 -> JIS table */
 #define JIS_VALID(row, col, plane) ((row) - 0x21 < 94 && (col) >= 0x21 && (col) < 0x7F \
     && (!(plane) || !((row) == 0x22 || (row) == 0x26 || (row) == 0x27 || (row) - 0x29 < 3 || (row) - 0x30 < 62)))
 
-#ifdef __MWERKS__
-asm void func_08818E64(void)
-{
-    jr ra
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 void func_08818E64(void)
 {
 }
+#else
+void func_08818E64(void);
 #endif
 
-#ifdef __MWERKS__
-asm void func_08818E6C(void)
-{
-    jr ra
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 void func_08818E6C(void)
 {
 }
+#else
+void func_08818E6C(void);
 #endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: error characters through split lui/lo */
@@ -605,34 +607,26 @@ unsigned int ccc_set_error_char_utf16(unsigned int c)
 #endif
 
 /* sceCccIsValidUCS4: below 2^31 */
-#ifdef __MWERKS__
-asm int ccc_is_valid_ucs4(unsigned int c)
-{
-    nor v1, zero, a0
-    jr ra
-    srl v0, v1, 0x1f
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int ccc_is_valid_ucs4(unsigned int c)
 {
     return c < 0x80000000;
 }
+#else
+int ccc_is_valid_ucs4(unsigned int c);
 #endif
 
 /* sceCccIsValidUCS2 */
-#ifdef __MWERKS__
-asm int ccc_is_valid_ucs2(unsigned int c)
-{
-    ori a1, zero, 0xffff
-    sltu v1, a1, a0
-    jr ra
-    sltiu v0, v1, 1
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int ccc_is_valid_ucs2(unsigned int c)
 {
-    return c <= 0xFFFF;
+    if (c > 0xFFFF) {
+        return 0;
+    }
+    return 1;
 }
+#else
+int ccc_is_valid_ucs2(unsigned int c);
 #endif
 
 /* sceCccIsValidJIS */
@@ -686,43 +680,29 @@ int ccc_is_valid_jis(unsigned int c)
 #endif
 
 /* sceCccIsValidUTF8: any value below 2^31 can be encoded */
-#ifdef __MWERKS__
-asm int ccc_is_valid_utf8(unsigned int c)
-{
-    nor v1, zero, a0
-    jr ra
-    srl v0, v1, 0x1f
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int ccc_is_valid_utf8(unsigned int c)
 {
     return c < 0x80000000;
 }
+#else
+int ccc_is_valid_utf8(unsigned int c);
 #endif
 
 /* sceCccIsValidUTF16: up to 0x10FFFF, surrogates excluded */
-#ifdef __MWERKS__
-asm int ccc_is_valid_utf16(unsigned int c)
-{
-    lui v1, 0x10
-    lui t0, 0xffff
-    ori a3, v1, 0xffff
-    ori a1, t0, 0x2800
-    addu a2, a0, a1
-    sltu a1, a3, a0
-    sltiu v1, a2, 2048
-    bnez a1, L_08819A3C
-    move a0, zero
-    sltiu a0, v1, 1
-L_08819A3C:
-    jr ra
-    move v0, a0
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int ccc_is_valid_utf16(unsigned int c)
 {
-    return c <= 0x10FFFF && !(c - 0xD800 < 0x800);
+    if (c > 0x10FFFF) {
+        return 0;
+    }
+    if (c - 0xD800 < 0x800) {
+        return 0;
+    }
+    return 1;
 }
+#else
+int ccc_is_valid_utf16(unsigned int c);
 #endif
 
 /* sceCccIsValidSJIS: ASCII, half-width kana (0xA0-0xDF) or a valid JIS code */
@@ -783,28 +763,7 @@ int ccc_is_valid_sjis(unsigned int c)
 #endif
 
 /* sceCccStrlenUTF16: characters before the terminator */
-#ifdef __MWERKS__
-asm int ccc_strlen_utf16(const u16 *s)
-{
-    addiu sp, sp, -32
-    sw s0, 16(sp)
-    move s0, zero
-    sw ra, 20(sp)
-    sw a0, 0(sp)
-L_08819AF4:
-    jal ccc_decode_utf16
-    move a0, sp
-    beqz v0, L_08819B0C
-    move v0, s0
-    j L_08819AF4
-    addiu s0, s0, 1
-L_08819B0C:
-    lw ra, 20(sp)
-    lw s0, 16(sp)
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int ccc_strlen_utf16(const u16 *s)
 {
     int n = 0;
@@ -814,31 +773,12 @@ int ccc_strlen_utf16(const u16 *s)
     }
     return n;
 }
+#else
+int ccc_strlen_utf16(const u16 *s);
 #endif
 
 /* sceCccStrlenUTF8 */
-#ifdef __MWERKS__
-asm int ccc_strlen_utf8(const u8 *s)
-{
-    addiu sp, sp, -32
-    sw s0, 16(sp)
-    move s0, zero
-    sw ra, 20(sp)
-    sw a0, 0(sp)
-L_08819B30:
-    jal ccc_decode_utf8
-    move a0, sp
-    beqz v0, L_08819B48
-    move v0, s0
-    j L_08819B30
-    addiu s0, s0, 1
-L_08819B48:
-    lw ra, 20(sp)
-    lw s0, 16(sp)
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int ccc_strlen_utf8(const u8 *s)
 {
     int n = 0;
@@ -848,31 +788,12 @@ int ccc_strlen_utf8(const u8 *s)
     }
     return n;
 }
+#else
+int ccc_strlen_utf8(const u8 *s);
 #endif
 
 /* sceCccStrlenSJIS */
-#ifdef __MWERKS__
-asm int ccc_strlen_sjis(const u8 *s)
-{
-    addiu sp, sp, -32
-    sw s0, 16(sp)
-    move s0, zero
-    sw ra, 20(sp)
-    sw a0, 0(sp)
-L_08819B6C:
-    jal ccc_decode_sjis
-    move a0, sp
-    beqz v0, L_08819B84
-    move v0, s0
-    j L_08819B6C
-    addiu s0, s0, 1
-L_08819B84:
-    lw ra, 20(sp)
-    lw s0, 16(sp)
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int ccc_strlen_sjis(const u8 *s)
 {
     int n = 0;
@@ -882,6 +803,8 @@ int ccc_strlen_sjis(const u8 *s)
     }
     return n;
 }
+#else
+int ccc_strlen_sjis(const u8 *s);
 #endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: the tables through split lui/lo */
