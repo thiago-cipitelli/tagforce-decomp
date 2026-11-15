@@ -182,6 +182,9 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
     int k;
     DdShard *sh;
     DdShatterSpark *sp;
+    int i3;
+    int j3;
+    int k3;
     float bb[18] __attribute__((aligned(16)));
 
     dd_mtx_billboard_view(bb);
@@ -309,16 +312,16 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
         list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
         tint = (unsigned int)(255.0f * dark) | ((unsigned int)(220.0f * dark) << 8 | (c.a << 24 | (unsigned int)(130.0f * dark) << 16));
         list = dl_color(list, tint);
-        for (i = 0; i < 6; i++) {
-            for (j = 0; j < 4; j++) {
-                sh = &fx->shard[i][j];
-                for (k = 0; k < 2; k++) {
-                    vec3_scale(d, sh->vel[k], e);
-                    vec3_add(sh->pos[k], sh->pos0[k], d);
+        for (i3 = 0; i3 < 6; i3++) {
+            for (j3 = 0; j3 < 4; j3++) {
+                sh = &fx->shard[i3][j3];
+                for (k3 = 0; k3 < 2; k3++) {
+                    vec3_scale(d, sh->vel[k3], e);
+                    vec3_add(sh->pos[k3], sh->pos0[k3], d);
                     mtx_push();
-                    mtx_translate(sh->pos[k]);
-                    mtx_rotate_zyx(sh->rot[k]);
-                    list = draw_array(list, 3, 0x183, 3, 0, sh->tri[k]);
+                    mtx_translate(sh->pos[k3]);
+                    mtx_rotate_zyx(sh->rot[k3]);
+                    list = draw_array(list, 3, 0x183, 3, 0, sh->tri[k3]);
                     mtx_pop();
                 }
             }
@@ -335,7 +338,7 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
                 mtx_push();
                 mtx_translate(sh->pos[k]);
                 mtx_rotate_zyx(sh->rot[k]);
-                list = draw_array(list, 3, 0x183, 3, 0, sh->tri[2 + k]);
+                list = draw_array(list, 3, 0x183, 3, 0, (sh->tri + 2)[k]);
                 mtx_pop();
                 vec3_add(sh->rot[k], sh->rot[k], sh->spin[k]);
             }
