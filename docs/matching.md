@@ -3375,3 +3375,51 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
   de ponteiro, temporários, cabeça sorteada), `dmgr_jk_pick` (25: `v0` evitado depois do `lb peer[2]`), `tpt_sprite`
   / `dmgr_pt_sprite` (127: o original deixa `x` em `s8` e derrama `p`, `y` e `&spr[i]`; aqui `x` e `y` perdem até
   para o temporário, mesmo com `p` volatile).
+
+## Rodada 33 (`gA`): segundo passe no skip do BOOT (5 de 14 batendo)
+
+- **Estado da unidade de tradução sem função vizinha que o explique: função `static` descartada pelo linker**
+  (`wsprintf`, 276 -> 0). O sintoma era o da rodada 31 (`cB`): o original nunca usa `a2`/`a3` como temporários
+  (`t0`/`t1`/`t2` no lugar). Colar `double dummy_(double x, double y) { return x * y; }` antes da função derruba 293
+  -> 186 palavras alinhadas, e `pad` declarado antes de `sign` fecha o resto. O que liga o estado, medido com funções
+  de teste: qualquer função ANTERIOR do arquivo que gere chamada de runtime de `double` (`__muldf3`, `__adddf3`,
+  `_dpflt`/comparação) ou multiplicação de 64 bits (`(long long)a * b`, `(unsigned long long)a * b`, inclusive só a
+  metade alta). Não ligam: `__extendsfdf2`/`__truncdfsf2`/`__fixdfsi`/`__floatsidf` sozinhos, soma/deslocamento/
+  comparação de `long long`, divisão, float, varargs, chamadas com 8+ argumentos, protótipos, globais `double`,
+  `static inline` sem uso (não é compilada), `f *= 10.0` (o mwcc estreita para `mul.s`). Nenhuma função do binário
+  entre 0x0881A000 e 0x08870000 perto de `wsprintf` chama esses helpers, logo a função que ligava o estado não está
+  no módulo: o linker original (dead-strip) a removeu. Reprodução sem mexer em ferramentas, sob `__MWERKS__`:
+  `static double wfmt_tu_state(double x, double y) __attribute__((section(".init")));` + a definição. Uma `static`
+  sem uso É emitida pelo mwcc (seção `.text` própria, 8 bytes) e deslocaria o módulo; em `.init` (o atributo só
+  aceita nomes de seção que o compilador conhece, e tem de vir numa declaração separada, depois dos parâmetros) ela
+  cai no `/DISCARD/ *(*)` do linker script, porque o script só coloca `.text .text.* .data .rodata .bss` de cada
+  objeto. `asm_try.sh`/`check_file.py` não veem a função extra: só o `make check` mostra se ela desloca algo.
+  Vale retestar no skip toda entrada cujo motivo seja "temporários um registrador acima" / "`a2`/`a3` no lugar de
+  `t0`" com o dummy colado antes (`build/tmp/gA/tu3.py` roda uma bateria de 33 dummies por função e lista só os que
+  mudam a contagem alinhada; nas outras 13 entradas do BOOT nenhum muda nada).
+- **Resultado de chamada por um temporário do MESMO tipo estreito** (`font_word_width`, 25 -> 0): `c` (`unsigned
+  short`) definido direto de `wtext_next_char(...)` ficava sempre no `$s` mais baixo; `ch = wtext_next_char(...); c =
+  ch;` com `unsigned short ch` o devolve à ordem das declarações (com `ch` `int`/`unsigned int`, ou passando por
+  `slot`, não muda nada: 25-26). Depois disso a busca conjunta (ordem das declarações x inicializador ou instrução
+  x ordem das instruções, `build/tmp/gA/f2.py`) acha a ordem em 150 amostras. É a "identidade" das rodadas 31/32 com
+  a condição nova de o temporário ter o tipo do destino.
+- **Endereço de campo com aritmética inteira muda a ordem dos argumentos** (`cardlist_draw_at`, 3 -> 0):
+  `(CardStats *)((int)v + 0xD8)` no lugar de `&v->shown_cmp` faz o mwcc calcular esse argumento ANTES dos `move` dos
+  outros (ele deixa de ser "endereço simples", que o mwcc emite por último e põe no atraso do `jal`). As formas com
+  `char *`, `&(&v->shown)[1]`, `&v[0].shown_cmp`, `volatile` e a variável local não mudam. Sob `__MWERKS__`; o port
+  fica com `&v->shown_cmp`.
+- **Busca conjunta de FORMA x ordem das instruções** (`dl_enable`, 2 -> 0, 40 formas manuais antes): sorteando ao
+  mesmo tempo a forma de cada valor (uma expressão só / duas instruções / temporário próprio / `--`) e a ordem das
+  instruções respeitando as dependências (`build/tmp/gA/d1.py`), 2 de 500 amostras batem: `sx` lido antes de `sy`,
+  `right = sx + c->scissor_w; x = right - 1;` (temporário próprio para a borda) e `y` numa expressão só. Ao promover,
+  o `@rodata` de `dl.c` teve de crescer para cobrir a jump table de 22 entradas (0x0887539C).
+- **`if` aninhado no lugar de `switch` conserta o atraso do `jal` do ramo `default`** (`msgbox_open`, 10 -> 8
+  alinhadas): `if (type != 2) { if (type != 1) A else B } else C` dá o `move a1` no atraso do `jal` de `A` (com o
+  `switch`, o argumento vem do bloco de despacho e o mwcc deixa `nop`). O que sobra é o 2 do teste em `a3` junto com
+  o do 4º argumento (`type - 2 != 0` / `type ^ 2` separam, mas trocam a instrução do teste).
+- Sem efeito em `efs_run`/`gim_walk` (modo sem limpeza): os gatilhos da rodada 32 (`return A && B` em helper, helper
+  void com `||`/`else return`, `case 0: case K: default:`, `switch` com o `case` do retorno primeiro), todos os ~190
+  pragmas booleanos do compilador (lista tirada das strings do `mwccpsp.exe`, `build/tmp/gA/ps.py`), `-inline`/`-opt`
+  na linha de comando, `static`/`inline`/K&R na definição, e uma função anterior (emitida ou `static`) com o gatilho
+  (o modo não vaza entre funções). As duas são recursivas; `inline` na definição faz o mwcc expandir a recursão um
+  nível (0x21C bytes em `gim_walk`), não é isso.
