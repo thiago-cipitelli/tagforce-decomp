@@ -1,5 +1,6 @@
 // @range 0x0880A5C0-0x0880C040
 // @gcc 0x0880A5C0-0x0880A694
+// @gcc 0x0880A694-0x0880A764 nl_bsearch
 // @gcc 0x0880A820-0x0880A87C
 // @asm 0x0880AAC4-0x0880BF10
 /* newlib (GCC) of the Sony SDK libc: atexit, bsearch, _calloc_r, _close_r, the quorem and _dtoa_r
@@ -40,68 +41,8 @@ void sceKernelCpuResumeIntr(int flags);
 /* registers fn in the thread's atexit list (blocks of 32) */
 #endif
 
-#ifdef __MWERKS__
-asm void *bsearch(const void *key, const void *base, size_t n, size_t size, int (*cmp)(const void *, const void *))
-{
-    sltiu v0, a3, 1
-    sltiu v1, a2, 1
-    addiu sp, sp, -48
-    or v1, v1, v0
-    sw s7, 28(sp)
-    move v0, zero
-    move s7, a3
-    sw s6, 24(sp)
-    move s6, a0
-    sw s5, 20(sp)
-    move s5, a1
-    sw s4, 16(sp)
-    move s4, t0
-    sw s3, 12(sp)
-    move s3, zero
-    sw s2, 8(sp)
-    move s2, a2
-    sw ra, 32(sp)
-    sw s1, 4(sp)
-    bnez v1, @9c
-    sw s0, 0(sp)
-    beqz a2, @a0
-    lw ra, 32(sp)
-    addu v0, s3, s2
-@60:
-    srl s0, v0, 0x1
-    mult s0, s7
-    move a0, s6
-    mflo v1
-    addu s1, s5, v1
-    jalr ra, s4
-    move a1, s1
-    bltzl v0, @8c
-    move s2, s0
-    blez v0, @c8
-    addiu s3, s0, 1
-@8c:
-    sltu v0, s3, s2
-    bnez v0, @60
-    addu v0, s3, s2
-    move v0, zero
-@9c:
-    lw ra, 32(sp)
-@a0:
-    lw s7, 28(sp)
-    lw s6, 24(sp)
-    lw s5, 20(sp)
-    lw s4, 16(sp)
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 48
-@c8:
-    j @9c
-    move v0, s1
-}
-#else
+void *bsearch(const void *key, const void *base, size_t n, size_t size, int (*cmp)(const void *, const void *));
+#ifndef __MWERKS__ /* PSP: nl_bsearch.c */
 void *bsearch(const void *key, const void *base, size_t n, size_t size, int (*cmp)(const void *, const void *))
 {
     size_t lo = 0;

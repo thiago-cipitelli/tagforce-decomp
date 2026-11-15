@@ -3,6 +3,8 @@
 // @gcc 0x088091A0-0x088092C0 libm_kf_cos
 // @gcc 0x088092C0-0x08809A80 libm_kf_rem_pio2
 // @asm 0x08809A80-0x08809B54
+// @gcc 0x08809B54-0x08809B88 nl_s_isinf
+// @gcc 0x08809B88-0x08809BAC nl_s_isnan
 // @asm 0x08809BB4-0x08809E50
 // @gcc 0x08809F38-0x08809F4C libm_sf_fabs
 // @asm 0x08809F4C-0x0880A028
@@ -416,24 +418,8 @@ float __kernel_sinf(float x, float y, int iy)
 #endif
 
 /* 1 when the double (lo, hi words) is an infinity */
-#ifdef __MWERKS__
-asm int __isinfd(unsigned int lo, unsigned int hi)
-{
-    negu v0, a0
-    or v0, v0, a0
-    srl v0, v0, 0x1f
-    ext v1, a1, 0x0, 0x1f
-    or v1, v1, v0
-    lui a0, 0x7ff0
-    subu v1, a0, v1
-    negu v0, v1
-    or v1, v1, v0
-    srl v1, v1, 0x1f
-    addiu v0, zero, 1
-    jr ra
-    subu v0, v0, v1
-}
-#else
+int __isinfd(unsigned int lo, unsigned int hi);
+#ifndef __MWERKS__ /* PSP: nl_s_isinf.c */
 int __isinfd(unsigned int lo, unsigned int hi)
 {
     unsigned int v = (hi & 0x7FFFFFFF) | ((lo | -lo) >> 31);
@@ -443,20 +429,8 @@ int __isinfd(unsigned int lo, unsigned int hi)
 #endif
 
 /* 1 when the double (lo, hi words) is a NaN */
-#ifdef __MWERKS__
-asm int __isnand(unsigned int lo, unsigned int hi)
-{
-    negu v1, a0
-    or v1, v1, a0
-    srl v1, v1, 0x1f
-    ext v0, a1, 0x0, 0x1f
-    or v0, v0, v1
-    lui a0, 0x7ff0
-    subu v0, a0, v0
-    jr ra
-    srl v0, v0, 0x1f
-}
-#else
+int __isnand(unsigned int lo, unsigned int hi);
+#ifndef __MWERKS__ /* PSP: nl_s_isnan.c */
 int __isnand(unsigned int lo, unsigned int hi)
 {
     unsigned int v = (hi & 0x7FFFFFFF) | ((lo | -lo) >> 31);

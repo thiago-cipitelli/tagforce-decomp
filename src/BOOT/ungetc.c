@@ -1,4 +1,5 @@
 // @range 0x08813108-0x08813390
+// @gcc 0x08813108-0x088131F8 nl_ungetc
 /* newlib ungetc (stdio/ungetc.c) with its buffer growth helper, compiled with GCC and kept as whole
    `asm` functions; the C below is the newlib code, used outside the PSP build. */
 #include "libc.h"
@@ -6,74 +7,8 @@
 
 /* Grows the ungetc buffer: the 3-byte ubuf moves to a malloc'd BUFSIZ block (pushed bytes at its
    end), a malloc'd one doubles with its contents moved to the upper half. 0, or -1 without memory. */
-#ifdef __MWERKS__
-asm int nl_submore(NlFile *fp)
-{
-    addiu sp, sp, -32
-    sw s2, 8(sp)
-    addiu v0, a0, 64
-    sw ra, 20(sp)
-    sw s4, 16(sp)
-    sw s3, 12(sp)
-    sw s1, 4(sp)
-    sw s0, 0(sp)
-    lw v1, 48(a0)
-    beq v1, v0, L_088131A0
-    move s2, a0
-    jal heap_get_current
-    lw s3, 52(a0)
-    lw a1, 48(s2)
-    sll s4, s3, 0x1
-    move a0, v0
-    jal _realloc_r
-    move a2, s4
-    move s1, v0
-    beqz s1, L_08813180
-    addiu v0, zero, -1
-    addu s0, s1, s3
-    move a2, s3
-    move a0, s0
-    jal memcpy
-    move a1, s1
-    sw s4, 52(s2)
-    move v0, zero
-    sw s0, 0(s2)
-    sw s1, 48(s2)
-L_08813180:
-    lw ra, 20(sp)
-    lw s4, 16(sp)
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 32
-L_088131A0:
-    jal heap_get_current
-    nop
-    move a0, v0
-    jal _malloc_r
-    addiu a1, zero, 1024
-    move s1, v0
-    beqz s1, L_08813180
-    addiu v0, zero, -1
-    addiu v0, zero, 1024
-    sw v0, 52(s2)
-    addiu s3, zero, 2
-    sw s1, 48(s2)
-    addiu s1, s1, 1021
-L_088131D4:
-    addu v0, s3, s2
-    lbu a0, 64(v0)
-    addu v1, s1, s3
-    addiu s3, s3, -1
-    bgez s3, L_088131D4
-    sb a0, 0(v1)
-    move v0, zero
-    j L_08813180
-    sw s1, 0(s2)
-}
-#else
+int nl_submore(NlFile *fp);
+#ifndef __MWERKS__ /* PSP: nl_ungetc.c */
 int nl_submore(NlFile *fp)
 {
     unsigned char *p;

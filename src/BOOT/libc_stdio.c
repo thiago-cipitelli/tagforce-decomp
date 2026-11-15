@@ -1,12 +1,15 @@
 // @range 0x0880C040-0x0880CDD4
-// @asm 0x0880C040-0x0880C194
-// @asm 0x0880C208-0x0880C2EC
-// @gcc 0x0880C2EC-0x0880C30C
-// @asm 0x0880C30C-0x0880C330
-// @gcc 0x0880C330-0x0880C3B4
+// @gcc 0x0880C040-0x0880C13C nl_fflush
+// @gcc 0x0880C13C-0x0880C194 nl_findfp
+// @gcc 0x0880C194-0x0880C208 nl_findfp
+// @gcc 0x0880C208-0x0880C2EC nl_findfp
+// @gcc 0x0880C2EC-0x0880C30C nl_findfp
+// @gcc 0x0880C30C-0x0880C330 nl_findfp
+// @gcc 0x0880C330-0x0880C3B4 nl_findfp
 // @asm 0x0880C4D0-0x0880C888
 // @gcc 0x0880C888-0x0880C8EC
-// @asm 0x0880CCCC-0x0880CDD4
+// @gcc 0x0880C8EC-0x0880CCCC nl_fvwrite
+// @gcc 0x0880CCCC-0x0880CDD4 nl_fwalk
 /* newlib (GCC) of the Sony SDK libc, stdio and malloc pieces in link order: fflush, findfp.c
    (std, __sfmoreglue, __sfp, _cleanup_r, _cleanup, __sinit), fread, freer.c (_free_r,
    _malloc_trim_r), _fstat_r, __sfvwrite_r and _fwalk. The FILE streams call their
@@ -69,6 +72,7 @@ int libc_sseek(void *cookie, int off, int whence);
 int libc_sclose(void *cookie);
 
 /* flushes one stream (or all of them for NULL) */
+#ifndef __MWERKS__ /* PSP: nl_fflush.c */
 int fflush(LibcFile *fp)
 {
     unsigned char *p;
@@ -102,8 +106,11 @@ int fflush(LibcFile *fp)
     }
     return 0;
 }
+#endif
 
 /* findfp.c std(): an unbuffered stream on fd file */
+void libc_std(LibcFile *fp, int flags, int file, void *r);
+#ifndef __MWERKS__ /* PSP: nl_findfp.c */
 void libc_std(LibcFile *fp, int flags, int file, void *r)
 {
     fp->close = libc_sclose;
@@ -121,43 +128,11 @@ void libc_std(LibcFile *fp, int flags, int file, void *r)
     fp->cookie = fp;
 }
 #endif
+#endif
 
 /* findfp.c __sfmoreglue: a glue block with n cleared streams */
-#ifdef __MWERKS__
-asm LibcGlue *libc_sfmoreglue(void *r, int n)
-{
-    addiu sp, sp, -16
-    sw s0, 0(sp)
-    addiu s0, zero, 92
-    mult a1, s0
-    sw s2, 8(sp)
-    move s2, a1
-    sw s1, 4(sp)
-    mflo s0
-    sw ra, 12(sp)
-    jal _malloc_r
-    addiu a1, s0, 12
-    addiu v1, v0, 12
-    move s1, v0
-    move a0, v1
-    move a2, s0
-    move a1, zero
-    beqz s1, @5c
-    move v0, zero
-    sw s2, 4(s1)
-    sw zero, 0(s1)
-    jal memset
-    sw v1, 8(s1)
-    move v0, s1
-@5c:
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+LibcGlue *libc_sfmoreglue(void *r, int n);
+#ifndef __MWERKS__ /* PSP: nl_findfp.c */
 LibcGlue *libc_sfmoreglue(void *r, int n)
 {
     LibcGlue *g = _malloc_r(r, sizeof(LibcGlue) + n * sizeof(LibcFile));
@@ -175,6 +150,8 @@ LibcGlue *libc_sfmoreglue(void *r, int n)
 
 #ifdef NON_MATCHING /* GCC: _global_impure_ptr through %hi/%lo */
 /* findfp.c __sfp: a free stream, growing the list by 4 when full; ENOMEM (12) on failure */
+LibcFile *libc_sfp(int *r);
+#ifndef __MWERKS__ /* PSP: nl_findfp.c */
 LibcFile *libc_sfp(int *r)
 {
     LibcGlue *g;
@@ -208,11 +185,15 @@ LibcFile *libc_sfp(int *r)
     *r = 12;
     return 0;
 }
+#endif
 
+void libc_cleanup(void);
+#ifndef __MWERKS__ /* PSP: nl_findfp.c */
 void libc_cleanup(void)
 {
     libc_cleanup_r(libc_global_reent);
 }
+#endif
 
 /* findfp.c __sinit: stdin (read), stdout (write, line buffered), stderr (unbuffered) */
 #endif
@@ -351,294 +332,8 @@ extern int libc_errno;                 /* 0x08E35A34 */
 /* fvwrite.c __sfvwrite_r: writes uio to fp, through its buffer (string streams grow it when
    __SMBF), or straight to the hook for unbuffered streams; line-buffered streams flush at each
    newline */
-#ifdef __MWERKS__
-asm int libc_sfvwrite(LibcFile *fp, LibcUio *uio)
-{
-    addiu sp, sp, -48
-    sw s5, 20(sp)
-    move v1, zero
-    move s5, a1
-    sw s2, 8(sp)
-    sw ra, 32(sp)
-    sw s7, 28(sp)
-    sw s6, 24(sp)
-    sw s4, 16(sp)
-    sw s3, 12(sp)
-    sw s1, 4(sp)
-    sw s0, 0(sp)
-    lw s1, 8(a1)
-    beqz s1, @d8
-    move s2, a0
-    lhu v1, 12(a0)
-    andi v0, v1, 0x8
-    beqz v0, @58
-    nop
-    lw v0, 16(a0)
-    bnezl v0, @70
-    andi a0, v1, 0xffff
-@58:
-    jal nl_swsetup
-    nop
-    bnez v0, @d8
-    addiu v1, zero, -1
-    lhu v1, 12(s2)
-    andi a0, v1, 0xffff
-@70:
-    andi v0, a0, 0x2
-    lw s3, 0(s5)
-    beqz v0, @11c
-    move s1, zero
-@80:
-    bnezl s1, @9c
-    lw v0, 36(s2)
-@88:
-    lw s1, 4(s3)
-    lw s4, 0(s3)
-    beqz s1, @88
-    addiu s3, s3, 8
-    lw v0, 36(s2)
-@9c:
-    lw a0, 28(s2)
-    sltiu v1, s1, 1025
-    addiu a2, zero, 1024
-    movn a2, s1, v1
-    jalr ra, v0
-    move a1, s4
-    blez v0, @108
-    move s0, v0
-    lw v0, 8(s5)
-    addu s4, s4, s0
-    subu s1, s1, s0
-    subu v0, v0, s0
-    bnez v0, @80
-    sw v0, 8(s5)
-@d4:
-    move v1, zero
-@d8:
-    lw ra, 32(sp)
-    lw s7, 28(sp)
-    lw s6, 24(sp)
-    lw s5, 20(sp)
-    lw s4, 16(sp)
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    move v0, v1
-    jr ra
-    addiu sp, sp, 48
-@108:
-    lhu v0, 12(s2)
-@10c:
-    addiu v1, zero, -1
-    ori v0, v0, 0x40
-    j @d8
-    sh v0, 12(s2)
-@11c:
-    andi v0, a0, 0x1
-    bnez v0, @298
-    move s7, zero
-@128:
-    lw s1, 4(s3)
-@12c:
-    lw s4, 0(s3)
-    beqz s1, @128
-    addiu s3, s3, 8
-@138:
-    andi v1, v1, 0xffff
-    andi v0, v1, 0x200
-    beqz v0, @200
-    lw s0, 8(s2)
-    sltu v0, s0, s1
-    beqz v0, @164
-    sltu v0, s1, s0
-    andi v0, v1, 0x80
-    bnezl v0, @1bc
-    lw v1, 16(s2)
-@160:
-    sltu v0, s1, s0
-@164:
-    lw a0, 0(s2)
-    movn s0, s1, v0
-    move a2, s0
-    jal mem_move
-    move a1, s4
-    lw v1, 8(s2)
-    lw v0, 0(s2)
-    subu v1, v1, s0
-    addu v0, v0, s0
-    move s0, s1
-@18c:
-    sw v1, 8(s2)
-    sw v0, 0(s2)
-@194:
-    lw v0, 8(s5)
-@198:
-    addu s4, s4, s0
-    subu s1, s1, s0
-    subu v0, v0, s0
-    beqz v0, @d4
-    sw v0, 8(s5)
-    bnez s1, @138
-    lhu v1, 12(s2)
-    j @12c
-    lw s1, 4(s3)
-@1bc:
-    lw v0, 0(s2)
-    jal heap_get_current
-    subu s0, v0, v1
-    lw a1, 16(s2)
-    addu s6, s0, s1
-    move a0, v0
-    jal _realloc_r
-    move a2, s6
-    beqz v0, @108
-    move v1, v0
-    addu v0, v0, s0
-    sw v0, 0(s2)
-    move s0, s1
-    sw s6, 20(s2)
-    sw v1, 16(s2)
-    j @160
-    sw s1, 8(s2)
-@200:
-    lw a0, 0(s2)
-    lw v0, 16(s2)
-    sltu v1, s0, s1
-    sltu v0, v0, a0
-    and v0, v0, v1
-    bnez v0, @26c
-    move a1, s4
-    lw s0, 20(s2)
-    sltu v0, s1, s0
-    bnez v0, @24c
-    move a2, s0
-    lw v0, 36(s2)
-    lw a0, 28(s2)
-    jalr ra, v0
-    move a1, s4
-    bgtz v0, @194
-    move s0, v0
-    j @10c
-    lhu v0, 12(s2)
-@24c:
-    jal mem_move
-    move a2, s1
-    lw v1, 8(s2)
-    lw v0, 0(s2)
-    move s0, s1
-    subu v1, v1, s1
-    j @18c
-    addu v0, v0, s1
-@26c:
-    jal mem_move
-    move a2, s0
-    lw v1, 0(s2)
-    move a0, s2
-    addu v1, v1, s0
-    jal fflush
-    sw v1, 0(s2)
-    beqzl v0, @198
-    lw v0, 8(s5)
-    j @10c
-    lhu v0, 12(s2)
-@298:
-    bnez s1, @2b4
-    nop
-    move s7, zero
-@2a4:
-    lw s1, 4(s3)
-    lw s4, 0(s3)
-    beqz s1, @2a4
-    addiu s3, s3, 8
-@2b4:
-    beqz s7, @3b8
-    move a0, s4
-@2bc:
-    lw a0, 8(s2)
-    lw t0, 20(s2)
-    lw a3, 0(s2)
-    lw v1, 16(s2)
-    sltu v0, s1, s6
-    move a1, s1
-    movz a1, s6, v0
-    addu s0, a0, t0
-    sltu v1, v1, a3
-    slt v0, s0, a1
-    and v1, v1, v0
-    bnez v1, @384
-    slt v0, a1, t0
-    bnez v0, @358
-    move s0, a1
-    lw v0, 36(s2)
-    lw a0, 28(s2)
-    move a2, t0
-    jalr ra, v0
-    move a1, s4
-    blez v0, @108
-    move s0, v0
-@314:
-    subu s6, s6, s0
-@318:
-    beqz s6, @340
-    nop
-    lw v0, 8(s5)
-@324:
-    addu s4, s4, s0
-    subu s1, s1, s0
-    subu v0, v0, s0
-    bnez v0, @298
-    sw v0, 8(s5)
-    j @d8
-    move v1, zero
-@340:
-    jal fflush
-    move a0, s2
-    bnez v0, @108
-    move s7, zero
-    j @324
-    lw v0, 8(s5)
-@358:
-    move a0, a3
-    move a1, s4
-    jal mem_move
-    move a2, s0
-    lw v1, 8(s2)
-    lw v0, 0(s2)
-    subu v1, v1, s0
-    addu v0, v0, s0
-    sw v1, 8(s2)
-    j @314
-    sw v0, 0(s2)
-@384:
-    move a0, a3
-    move a1, s4
-    jal mem_move
-    move a2, s0
-    lw v1, 0(s2)
-    move a0, s2
-    addu v1, v1, s0
-    jal fflush
-    sw v1, 0(s2)
-    beqz v0, @318
-    subu s6, s6, s0
-    j @10c
-    lhu v0, 12(s2)
-@3b8:
-    addiu a1, zero, 10
-    jal memchr
-    move a2, s1
-    subu v1, v0, s4
-    beqz v0, @3d8
-    addiu s6, v1, 1
-@3d0:
-    j @2bc
-    addiu s7, zero, 1
-@3d8:
-    j @3d0
-    addiu s6, s1, 1
-}
-#else
+int libc_sfvwrite(LibcFile *fp, LibcUio *uio);
+#ifndef __MWERKS__ /* PSP: nl_fvwrite.c */
 int libc_sfvwrite(LibcFile *fp, LibcUio *uio)
 {
     LibcIov *iov = uio->iov;
@@ -793,6 +488,7 @@ static int libc_fwalk_list(char *r, int (*fn)(LibcFile *))
     return ret;
 }
 
+#ifndef __MWERKS__ /* PSP: nl_fwalk.c */
 int libc_fwalk(void *r, int (*fn)(LibcFile *))
 {
     int ret = 0;
@@ -802,4 +498,5 @@ int libc_fwalk(void *r, int (*fn)(LibcFile *))
     }
     return ret | libc_fwalk_list(libc_global_reent, fn);
 }
+#endif
 #endif

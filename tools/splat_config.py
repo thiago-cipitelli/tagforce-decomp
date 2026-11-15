@@ -36,7 +36,7 @@ for cf in sorted(glob.glob(f"src/{m}/*.c")):
         asm.sort()
         cur = a
         for x, y, *own in asm:
-            if x > cur or cur == a:  # no empty piece between two adjacent holes (fix_ld would hand it the next hole's functions)
+            if x > cur or (cur == a and not own):  # no empty piece before a @gcc hole (fix_ld would hand it the hole's functions)
                 ranges.append((cur, x, cname))
             ranges.append((x, y, own[0] if own else f"{cname}_asm_{x:08X}")); cur = y
         if cur < b:  # an @asm range that ends the file leaves no trailing C segment

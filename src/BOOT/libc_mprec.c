@@ -114,6 +114,7 @@ LibcBigint *__multadd(char *r, LibcBigint *b, int m, int a)
 #endif
 
 /* the decimal string s (nd digits, the first nd0 before the point, first 9 already in y9) */
+LibcBigint *__s2b(char *r, const char *s, int nd0, int nd, unsigned int y9);
 #ifndef __MWERKS__ /* PSP: libc_mprec_gcc.c */
 LibcBigint *__s2b(char *r, const char *s, int nd0, int nd, unsigned int y9)
 {
@@ -356,6 +357,7 @@ LibcBigint *__multiply(char *r, LibcBigint *a, LibcBigint *b)
 #endif
 
 /* b * 5^k; the 5^(4 * 2^n) factors are cached in a chain from 625 */
+LibcBigint *__pow5mult(char *r, LibcBigint *b, int k);
 #ifndef __MWERKS__ /* PSP: libc_mprec_gcc.c */
 LibcBigint *__pow5mult(char *r, LibcBigint *b, int k)
 {
@@ -399,6 +401,7 @@ LibcBigint *__pow5mult(char *r, LibcBigint *b, int k)
 #endif
 
 /* b << k */
+LibcBigint *__lshift(char *r, LibcBigint *b, int k);
 #ifndef __MWERKS__ /* PSP: libc_mprec_gcc.c */
 LibcBigint *__lshift(char *r, LibcBigint *b, int k)
 {
@@ -475,6 +478,7 @@ int libc_bigint_cmp(LibcBigint *a, LibcBigint *b)
 #endif
 
 /* |a - b| with the sign in ->sign */
+LibcBigint *__mdiff(char *r, LibcBigint *a, LibcBigint *b);
 #ifndef __MWERKS__ /* PSP: libc_mprec_gcc.c */
 LibcBigint *__mdiff(char *r, LibcBigint *a, LibcBigint *b)
 {
@@ -541,6 +545,7 @@ LibcBigint *__mdiff(char *r, LibcBigint *a, LibcBigint *b)
 #endif
 
 /* one unit in the last place of x */
+double __ulp(double x);
 #ifndef __MWERKS__ /* PSP: libc_mprec_gcc.c */
 double __ulp(double x)
 {
@@ -745,6 +750,7 @@ LibcBigint *__d2b(char *r, double dd, int *e, int *bits)
 #endif
 
 /* a / b as doubles */
+double __ratio(LibcBigint *a, LibcBigint *b);
 #ifndef __MWERKS__ /* PSP: libc_mprec_gcc.c */
 double __ratio(LibcBigint *a, LibcBigint *b)
 {

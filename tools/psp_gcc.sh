@@ -19,10 +19,13 @@ while [ $# -gt 0 ]; do
   esac; shift
 done
 # extra flags of this file: the rest of its `// @cc gcc` line
-FLAGS="$FLAGS $(sed -n 's|^// @cc gcc||p;20q' "$IN")"
+MARK=$(sed -n 's|^// @cc gcc||p;20q' "$IN")
+# newlib sources (include/newlib-*) take stddef.h, stdarg.h, limits.h and float.h from the compiler's own directory,
+# ahead of the project's include/ (whose stdarg.h is the mwcc one)
+SYS=; case "$MARK" in *include/newlib-*) SYS="-I$(dirname "$CC1")/include";; esac
 S=${OUT%.o}.s
 rm -f "$OUT"
-"$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT" || exit 1
+"$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT" || exit 1
 [ -f "$OUT" ] || exit 1
 # The original link kept every constant of .rodata.cst4/.cst8/.str1.4 (no merging across objects): clear SHF_MERGE and
 # SHF_STRINGS so psp-ld leaves the sections as they are.

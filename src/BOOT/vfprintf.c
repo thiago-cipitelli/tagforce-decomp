@@ -1,5 +1,9 @@
 // @range 0x08813390-0x088151B8
+// @gcc 0x08813390-0x088133DC nl_vfprintf
+// @gcc 0x08813484-0x08813500 nl_vfprintf
 // @asm 0x08813500-0x08814F18
+// @gcc 0x08814F18-0x088150E0 nl_vfprintf
+// @gcc 0x088150E0-0x088151B8 nl_vfprintf
 /* newlib vfprintf (stdio/vfprintf.c, 1.1x: no positional arguments, %lc/%ls through the wide
    character conversions), compiled with GCC. Output goes through an iovec list of at most 8 entries
    flushed by __sfvwrite; unbuffered files are printed through a 1 KB stack buffer (__sbprintf).
@@ -43,32 +47,8 @@ void *func_0880DBB0(const void *s, int c, unsigned int n); /* memchr */
 #define F_FPT 0x100
 
 /* Writes and empties the pending iovecs; 0 or the __sfvwrite error. */
-#ifdef __MWERKS__
-asm int nl_sprint(NlFile *fp, NlUio *uio)
-{
-    addiu sp, sp, -16
-    sw s0, 0(sp)
-    move v1, zero
-    sw ra, 4(sp)
-    lw v0, 8(a1)
-    bnez v0, L_088133C4
-    move s0, a1
-    sw zero, 4(a1)
-L_088133B0:
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    move v0, v1
-    jr ra
-    addiu sp, sp, 16
-L_088133C4:
-    jal libc_sfvwrite
-    nop
-    sw zero, 4(s0)
-    move v1, v0
-    j L_088133B0
-    sw zero, 8(s0)
-}
-#else
+int nl_sprint(NlFile *fp, NlUio *uio);
+#ifndef __MWERKS__ /* PSP: nl_vfprintf.c */
 int nl_sprint(NlFile *fp, NlUio *uio)
 {
     int err;
@@ -158,44 +138,7 @@ int nl_sbprintf(NlFile *fp, const char *fmt, va_list ap)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int vfprintf(NlFile *fp, const char *fmt, va_list ap)
-{
-    addiu sp, sp, -16
-    sw s2, 8(sp)
-    move s2, a2
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    sw ra, 12(sp)
-    jal heap_get_current
-    move s0, a0
-    lw v1, 56(v0)
-    beqz v1, L_088134E8
-    nop
-L_088134B4:
-    jal heap_get_current
-    nop
-    move a0, v0
-    move a1, s0
-    move a2, s1
-    jal _vfprintf_r
-    move a3, s2
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-L_088134E8:
-    jal heap_get_current
-    nop
-    jal libc_sinit
-    move a0, v0
-    j L_088134B4
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_vfprintf.c */
 int vfprintf(NlFile *fp, const char *fmt, va_list ap)
 {
     if (nl_getreent()->sdidinit == 0) {
@@ -727,136 +670,7 @@ error:
 
 /* Digits of value for %e (ndigits + 1 significant), %f (ndigits after the point) or %g, through
    _dtoa_r; zero-padded to the requested precision except for %g without '#'. */
-#ifdef __MWERKS__
-asm char *nl_cvt(NlReent *data, double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *length)
-{
-    addiu sp, sp, -80
-    sw s5, 52(sp)
-    addiu v0, zero, 102
-    lw s5, 80(sp)
-    sw s8, 64(sp)
-    move s8, t1
-    sw s7, 60(sp)
-    move s7, a0
-    sw s6, 56(sp)
-    move s6, t3
-    sw s4, 48(sp)
-    move s4, t0
-    sw s3, 44(sp)
-    move s3, a3
-    sw s2, 40(sp)
-    move s2, a2
-    sw s1, 36(sp)
-    addiu s1, zero, 3
-    sw s0, 32(sp)
-    move s0, t2
-    beq s5, v0, L_08814F8C
-    sw ra, 68(sp)
-    xori v1, s5, 0x65
-    xori v0, s5, 0x45
-    sltiu v1, v1, 1
-    sltiu v0, v0, 1
-    or v1, v1, v0
-    addu s4, t0, v1
-    addiu s1, zero, 2
-L_08814F8C:
-    bltz s3, L_088150C4
-    move a0, s2
-    sb zero, 0(s0)
-L_08814F98:
-    move t0, s1
-    addiu v0, sp, 16
-    move a0, s7
-    move a2, s2
-    move a3, s3
-    move t1, s4
-    move t2, s6
-    addiu t3, sp, 20
-    jal _dtoa_r
-    sw v0, 0(sp)
-    move s1, v0
-    xori v1, s5, 0x67
-    xori v0, s5, 0x47
-    sltu v1, zero, v1
-    sltu v0, zero, v0
-    and v1, v1, v0
-    bnez v1, L_08814FF0
-    addiu v0, zero, 102
-    andi v0, s8, 0x1
-    beqz v0, L_08815040
-    lw v1, 16(sp)
-    addiu v0, zero, 102
-L_08814FF0:
-    beq s5, v0, L_08815080
-    addu s0, s1, s4
-L_08814FF8:
-    move a0, s2
-    move a2, zero
-    move a3, zero
-    jal __eqdf2
-    move a1, s3
-    lw v1, 16(sp)
-    movz v1, s0, v0
-    sltu v0, v1, s0
-    sw v1, 16(sp)
-    beqz v0, L_08815040
-    move a0, v1
-    addiu a1, zero, 48
-L_08815028:
-    addiu v1, a0, 1
-    sltu v0, v1, s0
-    sb a1, 0(a0)
-    move a0, v1
-    bnez v0, L_08815028
-    sw v1, 16(sp)
-L_08815040:
-    lw v0, 84(sp)
-    subu v1, v1, s1
-    lw ra, 68(sp)
-    sw v1, 0(v0)
-    move v0, s1
-    lw s8, 64(sp)
-    lw s7, 60(sp)
-    lw s6, 56(sp)
-    lw s5, 52(sp)
-    lw s4, 48(sp)
-    lw s3, 44(sp)
-    lw s2, 40(sp)
-    lw s1, 36(sp)
-    lw s0, 32(sp)
-    jr ra
-    addiu sp, sp, 80
-L_08815080:
-    lb v1, 0(s1)
-    addiu v0, zero, 48
-    beql v1, v0, L_0881509C
-    move a0, s2
-L_08815090:
-    lw v0, 0(s6)
-L_08815094:
-    j L_08814FF8
-    addu s0, s0, v0
-L_0881509C:
-    move a2, zero
-    move a3, zero
-    jal __nedf2
-    move a1, s3
-    beqzl v0, L_08815094
-    lw v0, 0(s6)
-    addiu v0, zero, 1
-    subu v0, v0, s4
-    j L_08815090
-    sw v0, 0(s6)
-L_088150C4:
-    jal __negdf2
-    move a1, s3
-    move s2, v0
-    move s3, v1
-    addiu v0, zero, 45
-    j L_08814F98
-    sb v0, 0(s0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_vfprintf.c */
 char *nl_cvt(NlReent *data, double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *length)
 {
     int mode;
@@ -901,71 +715,7 @@ char *nl_cvt(NlReent *data, double value, int ndigits, int flags, char *sign, in
 #endif
 
 /* "e+NN": the exponent letter, sign and at least two digits; returns the length */
-#ifdef __MWERKS__
-asm int nl_exponent(char *p0, int exp, int fmtch)
-{
-    addiu sp, sp, -48
-    move t1, a0
-    bltz a1, L_088151A4
-    sb a2, 0(a0)
-    addiu v0, zero, 43
-    sb v0, 1(a0)
-    addiu a3, a0, 2
-L_088150FC:
-    addiu a2, sp, 40
-    slti v0, a1, 10
-    bnez v0, L_08815188
-    move t2, a2
-    lui t0, 0x6666
-    ori t0, t0, 0x6667
-L_08815114:
-    mult a1, t0
-    sra a0, a1, 0x1f
-    addiu a2, a2, -1
-    mfhi v1
-    sra v1, v1, 0x2
-    subu v1, v1, a0
-    sll v0, v1, 0x2
-    addu v0, v0, v1
-    sll v0, v0, 0x1
-    subu v0, a1, v0
-    addiu v0, v0, 48
-    move a1, v1
-    slti v1, v1, 10
-    beqz v1, L_08815114
-    sb v0, 0(a2)
-    addiu a2, a2, -1
-    addiu v0, a1, 48
-    sltu v1, a2, t2
-    beqz v1, L_0881517C
-    sb v0, 0(a2)
-L_08815164:
-    lbu v0, 0(a2)
-    addiu a2, a2, 1
-    sltu v1, a2, t2
-    sb v0, 0(a3)
-    bnez v1, L_08815164
-    addiu a3, a3, 1
-L_0881517C:
-    subu v0, a3, t1
-    jr ra
-    addiu sp, sp, 48
-L_08815188:
-    addiu v0, zero, 48
-    sb v0, 0(a3)
-    addiu v1, a1, 48
-    addiu a3, a3, 1
-    sb v1, 0(a3)
-    j L_0881517C
-    addiu a3, a3, 1
-L_088151A4:
-    addiu v0, zero, 45
-    negu a1, a1
-    addiu a3, a0, 2
-    j L_088150FC
-    sb v0, 1(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_vfprintf.c */
 int nl_exponent(char *p0, int exp, int fmtch)
 {
     char *p = p0;
