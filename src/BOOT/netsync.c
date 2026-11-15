@@ -1,5 +1,4 @@
 // @range 0x0886E0A4-0x0886ED2C
-// @asm 0x0886E988-0x0886EBA0
 /* Ad hoc state exchange over one PDP port (0x315): every player owns a 0x100-byte record;
    the local record is sent to the other PSP and the received one copied into peer_records.
    In queued mode (netsync_mode) packets go through a ring of 32 heap copies, one per 5 frames.
@@ -328,7 +327,8 @@ void netsync_transfer_setup(unsigned char *dst, unsigned char *src, int size)
     x->ready = 0;
 }
 
-#ifdef NON_MATCHING /* one addu with its operands swapped */
+/* Forma que bate (rodada 33): origem em `p` e o produto size * i numa variável que já existe (`done`) antes da
+   soma; com a expressão direta o mwcc põe o termo invariante como primeiro operando do addu. */
 /* Exported: one step of the chunked transfer; returns 1 when every player has every chunk. */
 int netsync_transfer(void)
 {
@@ -376,7 +376,9 @@ int netsync_transfer(void)
             chunk = peer_self_byte2();
             if (chunk != 0) {
                 for (i = 0; i < peer_count_get(); i++) {
-                    memcpy(x->dst + (((chunk - 1) << 7) + x->size * i), peer_get(i) + 4, 0x80);
+                    p = peer_get(i) + 4;
+                    done = x->size * i;
+                    memcpy(x->dst + (done + ((chunk - 1) << 7)), p, 0x80);
                 }
             }
             local_record_set1(2);
@@ -384,7 +386,6 @@ int netsync_transfer(void)
     }
     return 0;
 }
-#endif
 
 /* Which side the local player is on: 1 for slots 1 and 3, 0 for 0 and 2, 2 when absent. */
 int netsync_local_side(void)
