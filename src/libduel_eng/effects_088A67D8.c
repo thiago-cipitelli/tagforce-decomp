@@ -261,7 +261,12 @@ int duel_088A6E5C(DuelAct *a, int b)
     return 1;
 }
 
-#ifdef NON_MATCHING /* registradores: p em $s0 e a em $s1 (original: $s1/$s2, temporários em $s0) */
+#ifdef NON_MATCHING /* 101 palavras (eram 115), só registradores: o original tem k (os três trechos: uid do 0x7C, contador e
+   uid do case 100) e os temporários em $s0, p em $s1, a em $s2, x em $s3, y em $s4; aqui p/a/x/y ficam um abaixo e o
+   uid de k vai para $s4. Rodada 32: a ordem das declarações não muda NADA (5040 ordens, todas iguais); o ponteiro da
+   carta da mão/cemitério por extenso (sem o local c) acertou os temporários desses ramos (115 -> 101). Sem efeito:
+   tipos de k/id/x/y, cast no lugar das máscaras de loc, contador próprio, sinal dos globais 0x0891964C..54, if no
+   lugar do switch de a->id. Falta também a ordem `move a2,y; move a0,p` das chamadas do ramo da mão. */
 int duel_088A6F00(DuelAct *a, int b)
 {
     unsigned short buf[256];
@@ -271,7 +276,6 @@ int duel_088A6F00(DuelAct *a, int b)
     int id;
     int x;
     int y;
-    DuelCard *c;
 
     switch (duel_step) {
     case 0x80:
@@ -367,24 +371,21 @@ int duel_088A6F00(DuelAct *a, int b)
                 duel_088C1618(p);
                 switch (a->id) {
                 case 0x149C:
-                    c = &duel.players[p & 1].hand[x];
-                    duel_088CACF0(p, c, y);
+                    duel_088CACF0(p, &duel.players[p & 1].hand[x], y);
                     break;
                 default:
-                    c = &duel.players[p & 1].hand[x];
-                    duel_088CAE24(p, c, y);
+                    duel_088CAE24(p, &duel.players[p & 1].hand[x], y);
                     break;
                 }
                 if (duel_w_089149E8 == 0x18FB) {
-                    duel_w_08914A00 += card_get_atk(c->id);
+                    duel_w_08914A00 += card_get_atk(duel.players[p & 1].hand[x].id);
                 }
             } else if (y == 0xE) {
                 id = loc >> 16 & 0xFFFF;
                 duel_cmd((p ? 0x8000 : 0) | 0x4C, 0xE, duel_w_089149F8, k);
-                c = &duel.players[p & 1].grave[id];
-                duel_088CB44C(p, c, 0x10);
+                duel_088CB44C(p, &duel.players[p & 1].grave[id], 0x10);
                 if (duel_w_089149E8 == 0x18FB) {
-                    duel_w_08914A00 += card_get_atk(c->id);
+                    duel_w_08914A00 += card_get_atk(duel.players[p & 1].grave[id].id);
                 }
             } else {
                 y += loc >> 16 & 0xFFFF;

@@ -3112,3 +3112,35 @@ Quatro entradas antigas do skip batendo (`snd_obj_begin` 43, `snd_streams_decode
   `double dummy_(double x, double y) { return x * y; }` numa cópia do arquivo e medir; se bater, a função pertence
   à unidade do arquivo anterior. `__extendsfdf2`/`__truncdfsf2` sozinhos e chamadas comuns não disparam.
 - Não resolvido: `dl_enable` (2 palavras, ordem dos dois `addiu -1`; 40 formas novas, nenhuma abaixo de 2).
+## Rodada 32 (`eB`): reteste do skip de libduel_eng (`effects_*`, `effect_*`, `act_*`), 8 de 9 batendo
+
+Nenhuma das oito saiu por ordem de declaração; em `duel_088A6F00` as 5040 ordens das 7 declarações dão o MESMO código.
+- **`return A && B;` liga o modo sem limpeza em função que devolve valor** (`duel_act_e3920`, 99 -> 0): o `case` era
+  `return a[-1].zone >= 5 && a[-1].zone <= 10;` (sem local). Sinal no asm: `bnez x,epílogo; move v0,zero` seguido de
+  `beqz at,epílogo; nop` e `li v0,1; b epílogo; nop`. Com `z` num local, ou `if (z < 5) return 0; if (z > 10) return
+  0; return 1;`, o modo não liga. É um gatilho "natural" para as entradas do skip com cópias mortas em função que
+  devolve valor: procurar um teste de faixa cujos dois desvios vão direto ao epílogo com o 0 já em `v0`.
+- **Máscara x cast decide se o local é variável ou temporário** (`duel_slot_e1390`, 12 -> 0): `sp = src & 0xFF`
+  deixava `sp` sempre no `$s` mais alto (432 variantes de ordem, tipo e forma); `sp = (unsigned char)src; sz =
+  (unsigned char)(src >> 8);` o devolve à ordem das declarações. Sintoma: um `$s` que nenhuma ordem move e que é
+  definido por `andi`/`ext` de um valor recém-carregado.
+- **Usar a variável como argumento de chamada antes do laço** (`duel_08871674`, 9 -> 0): `p = a->player; if
+  (duel_count_monsters(p) == 0) return 0; i = 0; p = a->player;` põe `p` abaixo do ponteiro de indução. Também bate
+  `p = duel_count_monsters(a->player); if (p == 0) return 0;` (o resultado da chamada na mesma variável).
+- **O argumento é o campo, não a constante do `case`** (`duel_0887F8E4`, 132 -> 0): `duel_slot_has_effect(p, 11,
+  a->id)` e `duel_grave_count_id(p, a->id)` dentro de `case 0x17D6:`/`case 0x1888:`. O sinal é o valor do `switch`
+  num registrador de argumento (`a2`) durante todo o despacho e `move a1,a2` antes do `jal`. Depois, `n = a->w[2] == 1
+  ? 1 : 2;` dá o `bnel` para a instrução seguinte com o `li` no atraso.
+- **`default: return 1;` sem `li`** (`duel_08865C10`, 51 -> 0): o original "sem retorno no default" devolvia o `v0 = 1`
+  do último teste do `switch`; escrito como `return 1`, o mwcc reaproveita o registrador (`b fim; nop`) e passa a
+  carregar o valor do `switch` antes do `move s0,a0`. Um `b fim; nop` logo depois da cadeia de testes com `v0` igual
+  a uma das constantes testadas é um `return K`, não um retorno vazio.
+- `DuelAct x = { 0 };` **num bloco depois das chamadas** (`duel_088995A0`, 13 -> 0): a regra da rodada 31 (cB) também
+  vale no libduel_eng; o bloco põe a zeragem no lugar certo.
+- `(unsigned char)p & 1` com `p` `unsigned int` dá o `andi 0xff` antes do `& 1` (`duel_088862DC`, 4 -> 0), e
+  `(DuelPlayer *)((unsigned int)&duel.players[...] + zone * sizeof(DuelSlot))` inverte os operandos do `addu` em
+  relação ao `ZSLOT`. Um índice usado dos dois lados de um teste é um local atribuído antes dele (`duel_088BD4E0`).
+- Sem forma: `duel_088A6F00` (115 -> 101; o ponteiro da carta por extenso, sem o local `c`, acerta os temporários dos
+  ramos da mão e do cemitério; `k` continua no `$s` mais alto em vez de `$s0`).
+- Scripts (em `build/tmp/eB/`): `var.py`/`pvar.py` (variantes de uma função numa CÓPIA do arquivo, em série ou em
+  paralelo: 5040 variantes em 2,5 min), `rmap.py` (mapa variável -> `$s` por regex), `fdis.py`, `sbs.sh` (lado a lado).
