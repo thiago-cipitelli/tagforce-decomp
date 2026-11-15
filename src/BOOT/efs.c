@@ -888,20 +888,8 @@ void efs_resolve(EfsCmd *cmd, EfsNode *node)
     }
 }
 
-int efs_cmd_cmp(const void *a, const void *b)
-{
-    return ((EfsCmdDef *)a)->id - ((EfsCmdDef *)b)->id;
-}
-
-/* Unknown commands: skip their children when drawing. */
-unsigned int efs_cmd_none(void *mem, EhfNode *node, EfsCmd *cmd, int phase)
-{
-    switch (phase) {
-    case 5:
-        return 1;
-    }
-    return 0;
-}
+int efs_cmd_cmp(const void *a, const void *b);
+unsigned int efs_cmd_none(void *mem, EhfNode *node, EfsCmd *cmd, int phase);
 
 /* Handler of a command id (the table is sorted on first use). */
 void *efs_cmd_lookup(unsigned int id)
@@ -936,6 +924,21 @@ void *efs_cmd_lookup(unsigned int id)
         mid = (lo + hi) / 2;
     }
     return efs_cmd_none;
+}
+
+int efs_cmd_cmp(const void *a, const void *b)
+{
+    return ((EfsCmdDef *)a)->id - ((EfsCmdDef *)b)->id;
+}
+
+/* Unknown commands: skip their children when drawing. */
+unsigned int efs_cmd_none(void *mem, EhfNode *node, EfsCmd *cmd, int phase)
+{
+    switch (phase) {
+    case 5:
+        return 1;
+    }
+    return 0;
 }
 
 int efs_stub_init(void)
