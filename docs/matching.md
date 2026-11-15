@@ -3376,7 +3376,7 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
   / `dmgr_pt_sprite` (127: o original deixa `x` em `s8` e derrama `p`, `y` e `&spr[i]`; aqui `x` e `y` perdem até
   para o temporário, mesmo com `p` volatile).
 
-## Rodada 33 (`gA`): segundo passe no skip do BOOT (7 de 14 batendo)
+## Rodada 33 (`gA`): segundo passe no skip do BOOT (8 de 14 batendo)
 
 - **Estado da unidade de tradução sem função vizinha que o explique: função `static` descartada pelo linker**
   (`wsprintf`, 276 -> 0). O sintoma era o da rodada 31 (`cB`): o original nunca usa `a2`/`a3` como temporários
@@ -3430,3 +3430,6 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
   memcpy(x->dst + (done + ((chunk - 1) << 7)), p, 0x80);` reaproveitando `done` e `p` (uma variável nova ganha um
   `$s` e aumenta o quadro; a atribuição tem de vir DEPOIS da chamada que produz a origem). Estavam no skip desde as
   rodadas 9/10 como "ordem dos operandos, sem forma".
+- `movie_main_loop` (2 -> 0) com o mecanismo do agente jA (um bloco dá a cópia likely a UM desvio só): um único
+  `out: return r;` alcançado pelas três saídas (`goto out` na saída do input e na saída normal, `fail:` caindo nele).
+  Em `efs_run` o mesmo (rótulo único para os três `return 0` e/ou os dois `return -1`) piora: 20-31 alinhadas.

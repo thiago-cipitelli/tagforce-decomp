@@ -1,7 +1,6 @@
 // @range 0x0885133C-0x08853A2C
 // @data 0x088EF098-0x088EF28C
 // @bss 0x08BE8ED4-0x08BE8EFC
-// @asm 0x08851D10-0x08851F4C
 /* PMF movie player (Sony PSMF sample code): movie_run() builds the sceMpeg ring buffer and decoder
    in the block set by movie_set_memory, starts the display/read/sound threads and runs the decode
    loop until the stream ends or the user skips. Control flow between threads uses two event flags
@@ -366,7 +365,8 @@ int ctrl_abort(MovieCtrl *c)
 
 /* Decode loop of the main thread. Returns 0 at the end of the stream, 1 when skipped, <0 on error. */
 
-#ifdef NON_MATCHING /* 2 palavras (eram 52): com #pragma opt_lifetimes off o original dá s0 a r e s1..s5 a ctrl, vid, reader, au, mpeg (uma variável por registrador); resta o `b; nop` da volta normal para o `move v0,s0` compartilhado com `fail:` (o mwcc põe a cópia no delay slot; goto, helper inline com return por saída e cópia de r não mudam) */
+/* Bate com #pragma opt_lifetimes off (uma variável por registrador) e um único bloco `return r` (rótulo `out`)
+   alcançado pelas três saídas: com `return r` repetido o mwcc copiava o `move v0,s0` para os dois `b`. */
 #ifdef __MWERKS__
 #pragma opt_lifetimes off
 #endif
@@ -394,7 +394,7 @@ int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *r
             if (r != 0) {
                 sceMpeg_4571CC64(mpeg);
                 ctrl_abort(ctrl);
-                return r;
+                goto out;
             }
         }
         if (pmf_reader_is_paused(reader) == 1 && packets << 2 == sceMpegRingbufferAvailableSize(rb))
@@ -421,14 +421,14 @@ int movie_main_loop(void *mpeg, void *rb, int packets, MovieAu *au, PmfReader *r
         ctrl_wait_vblank2(ctrl);
     } while (r != 0);
     ctrl_abort(ctrl);
-    return r;
+    goto out;
 fail:
     ctrl_abort(ctrl);
+out:
     return r;
 }
 #ifdef __MWERKS__
 #pragma opt_lifetimes reset
-#endif
 #endif
 
 /* Reads the first 2 KB to get the stream offset and size, then rewinds. */

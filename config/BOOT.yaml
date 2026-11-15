@@ -239,8 +239,6 @@ segments:
       - [0x4AA98, c, card_groups]
       - [0x4CAD0, c, pmf_umd]
       - [0x4D39C, c, movie]
-      - [0x4DD70, asm, movie_asm_08851D10]
-      - [0x4DFAC, c, movie]
       - [0x4FA8C, c, cip]
       - [0x50980, c, cardlist]
       - [0x550A4, c, modmgr]
