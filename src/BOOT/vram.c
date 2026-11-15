@@ -1,5 +1,4 @@
 // @range 0x08835F48-0x088362E8
-// @asm 0x088361B8-0x088362E8
 // @rodata 0x0887536C-0x08875390
 /* VRAM texture area after the framebuffers (0x158000 bytes of EDRAM): a bump allocator, upload
    of a GIM image frame into it (recorded in the GIM in place of its signature), and a walk over
@@ -148,9 +147,17 @@ void gim_check(Gim *g)
     gim_walk(root, g, (GimBlock *)((char *)root + g->root.size));
 }
 
-#ifdef NON_MATCHING /* idêntico a menos da cópia morta (lw v0,12(s0)) do destino do case 0xFF depois do b: é o modo
-   sem limpeza (um gatilho artificial `if (r == 0 || end == 0) return r;` com r em v0 a repõe), sem gatilho sem código
-   conhecido. `#pragma opt_common_subs off` reproduz as releituras de child/size sem o volatile. */
+/* O tratamento por tipo saiu na compilação, mas a chamada (sem uso do resultado) de um `static inline` com
+   `if (b == 0) return 0; return 1;` não gera código e deixa a função no modo sem limpeza: a cópia morta
+   `lw v0,12(s0)` do destino do case 0xFF fica depois do `b` (rodada 35). As releituras de child/size são volatile. */
+static inline int gim_block_ok(GimBlock *b)
+{
+    if (b == 0) {
+        return 0;
+    }
+    return 1;
+}
+
 /* Visits every block; the file info block (0xFF) holds three aligned strings. */
 int gim_walk(GimBlock *start, Gim *g, GimBlock *end)
 {
@@ -165,8 +172,10 @@ int gim_walk(GimBlock *start, Gim *g, GimBlock *end)
         case 3:
         case 4:
         case 5:
+            gim_block_ok(b);
             break;
         case 6:
+            gim_block_ok(b);
             break;
         case 0xFF:
             s = (char *)b + b->data;
@@ -184,4 +193,3 @@ int gim_walk(GimBlock *start, Gim *g, GimBlock *end)
     } while (!(b >= end));
     return 1;
 }
-#endif

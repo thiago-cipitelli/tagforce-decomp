@@ -1,5 +1,4 @@
 // @range 0x088106D8-0x08813088
-// @asm 0x08811300-0x08811658
 // @rodata 0x0882AEA0-0x0882AEE8
 /* The title's panel widgets: a framed box of cells with a scrollbar (TBox), tabs (TTab), the tabbed
    window combining them with a system list (TPanel), the nine-piece frames drawn from title_sprites2,
@@ -313,7 +312,8 @@ void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
     return list;
 }
 
-#ifdef NON_MATCHING /* 8 palavras (eram 24): os argumentos de tframe_cursor passam por ix/iy/iw/ih (as variáveis short, nessa ordem); falta só i/iy trocados (s0/s1) no laço de b->draw (ordem das declarações, das atribuições, contador ou y próprios e y int não mudam) */
+/* os argumentos de tframe_cursor passam por ix/iy/iw/ih (as variáveis short, nessa ordem); o y do laço de
+   b->draw é o `int x` do laço das abas (com iy, i e iy saíam trocados em s0/s1; rodada 35) */
 /* the two-column layout of the panel (f0 == 2) */
 void *tpanel_draw_split(void *list, TPanel *p)
 {
@@ -376,17 +376,16 @@ void *tpanel_draw_split(void *list, TPanel *p)
     }
     if (b->draw) {
         ix = b->ix;
-        iy = b->iy;
+        x = b->iy;
         iw = b->iw;
         ih = b->ih;
         for (i = 0; i < b->n; i++) {
-            list = b->draw(list, (unsigned short)i, ix, iy, iw, ih);
-            iy += b->ih;
+            list = b->draw(list, (unsigned short)i, ix, (short)x, iw, ih);
+            x = (short)(x + b->ih);
         }
     }
     return list;
 }
-#endif
 
 /* L/R change the tab, the list takes the rest; -1 while running (see topt_update) */
 int tpanel_update(TPanel *p)

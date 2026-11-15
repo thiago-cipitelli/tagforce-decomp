@@ -3917,3 +3917,49 @@ alinhadas. Em nenhuma a causa era ordem de declaração. Mecanismos novos:
   `XF="-O2,p"` acrescenta flags, útil para ver a ordem antes do escalonador), `q*.py` (`duel_08817598`), `f*.py`
   (`duel_0883F3A0`), `c*.py` (`duel_0880C15C`), `w*.py` (`duel_0883449C`), `h*.py` (`duel_088451E8`), `g*.py`
   (`duel_088C6BC8`), `fc*.py` (`duel_field_controller`), `m*.py` (`duel_req_mill`), `s1.py` (`duel_req_swap_zones`).
+## Rodada 35 (`mB`): gatilho sem código do modo sem limpeza, bloco que segura o escalonador, y do laço num `int` de outro laço
+
+Quarta passada nas 12 entradas fora de libduel_eng: 4 batendo (`gim_walk`, `efs_run`, `tut_script_preload_faces`,
+`tpanel_draw_split`). Mecanismos novos:
+
+- **Gatilho SEM CÓDIGO do modo sem limpeza em função que devolve valor** (`efs_run`, 17 palavras mortas -> 0;
+  `gim_walk`, 1 -> 0; procurado desde a rodada 30). A chamada, sem uso do resultado, de um `static inline` cujo
+  corpo tem um `if (...) return ...;` (`static inline int ok(T *p) { if (p == 0) return 0; return 1; }`; a versão
+  `void` com `if (p == 0) return;` também serve; `return p != 0;` e o ternário NÃO) não gera instrução nenhuma,
+  mas liga o modo quando é o ÚNICO conteúdo do bloco alvo de um desvio condicional que já existe:
+  - o corpo de um `case` vazio (`case 6: gim_block_ok(b); break;` em `gim_walk`: o "tratamento por tipo" que saiu
+    na compilação);
+  - um `else` acrescentado a um `if (...) { return x; }` no fim do corpo de um laço (`cmd = cmd->next; if (cmd ==
+    0) { return size; } else { efs_cmd_ok(cmd); }` em `efs_run`: vale para a função inteira, as 9 cópias mortas
+    dos outros `case` aparecem).
+  Não liga: a chamada solta no meio de um bloco com código, no início de um `case` com corpo, num `if` novo de um
+  braço só (some inteiro), num `default`. Um `if/else` novo com a chamada nos dois braços liga, mas deixa o
+  `beqz; nop` do teste. Varredura barata: inserir a chamada em cada posição e olhar o TAMANHO compilado
+  (`build/tmp/mB/gen_ef5.py`: um `else` em cada `if` sem `else`).
+  `build/tmp/mB/dead.py MODULE [lo hi]` lista as funções do ELF ORIGINAL com instruções inalcançáveis (as que
+  estão no modo) e `dead2.py` diz quais têm desvio condicional para o epílogo (o gatilho conhecido). No BOOT só
+  `efs_run`, `gim_walk` e `stat_event_record` não tinham; a última (main.c, 22 blocos mortos) é candidata ao
+  mesmo gatilho.
+- **Sem `@asm` no arquivo, a ordem das funções volta a ser a do fonte**: com `@asm` o `fix_ld` coloca cada função
+  pelo endereço de `symbols/`; ao tirar o último `@asm` de `efs.c` o `make check` quebrou porque `efs_cmd_cmp` e
+  `efs_cmd_none` estavam antes de `efs_cmd_lookup` (o `check_file` dá 26/26). Conferir a ordem ao promover a
+  última função em asm de um arquivo.
+- **Um `else return;` fecha o bloco e o escalonador não cruza** (`tut_script_preload_faces`, 6 -> 0): o original
+  não sobe o `sltu` do teste do laço para o atraso da carga de `tut_pc++` porque o incremento está no fim do
+  `then` de `if (cmd == 0x67 && a == 0x17) { ...; tut_pc++; } else return;` e o teste do `while` fica noutro
+  bloco. Com os dois `if (...) return;` no topo e o incremento no corpo, tudo é um bloco só. Sinal: uma instrução
+  sem dependência que o 219 usa para preencher o atraso de um `lw` e o original deixa depois do `sw`.
+  `#pragma schedule off` (é `schedule`, não `scheduling`) mostra a ordem antes do escalonador.
+- **Variável `short` de um laço que era o `int` de outro laço** (`tpanel_draw_split`, 8 -> 0): o y do laço de
+  `b->draw` é o `int x` do laço das abas (`x = b->iy; ... (short)x ...; x = (short)(x + b->ih);`), não `iy`.
+  Mesmo código, `i`/y trocam de `$s`. Achado por busca conjunta (identidade de cada papel entre os locais
+  existentes x ordem das declarações x ordem das atribuições, `build/tmp/mB/gen_tpl.py`, 4 de 760 amostras).
+- Sem forma: `st_chr_step_value` (10; a ordem `k, level, t` acerta a posição do `lbu` e desloca os registradores,
+  `level, k, t` o contrário; `-`/struct/inline/cast redundante sem efeito), `snd_group_release_all` (12; o
+  parâmetro é sempre o último da fila: cópia com cast, `*(int *)&free`, inline, laço com indução própria),
+  `msgbox_open` (1 instrução: com `flag != 1 ? (type & 2) : 3` tudo bate menos o `andi a3,s2,2` no lugar do `li
+  a3,2`; toda forma que dobra para 2 volta a compartilhar o 2 do teste), `dd_chr_attach_mtx` (redefinir `id`,
+  enum, `*(int *)&id` aumenta o quadro), `dd_info_stats` (struct `DuelStats` no lugar do vetor: 7),
+  `font_glyph_cache` (500 amostras com cast redundante/cópia de `img`/contador reaproveitado: 52),
+  `menu_layout` (700 amostras de identidade x ordem x forma dos laços: 67), `dd_fx_shatter_update` (só a bateria
+  de estado da unidade: sem efeito). A bateria de funções anteriores (`tu.py`) não muda nenhuma das 6 dos gmodules.
