@@ -1,5 +1,4 @@
 // @range 0x08818FFC-0x0881BA90
-// @asm 0x0881B59C-0x0881B608
 // @rodata 0x08838B90-0x0883904C
 // @data 0x0883C8B0-0x0883C9C8
 /* The campus map (field_bm, bm_*.ehp): the island with its 14 places, the cursor moving between them
@@ -1250,19 +1249,24 @@ void *fbm_draw_marks(void *list)
     return list;
 }
 
-#ifdef NON_MATCHING
+/* The icon table as fbm_icon sees it: NOT const. With the const declaration mwcc knows the store of the stack
+   argument cannot alias the loads of p->x / p->y and schedules it one instruction later (the original function
+   was compiled with a non-const declaration of the table; `type:data alias` in symbols/). */
+#ifdef __MWERKS__
+extern FieldBmPt fbm_icons_rw[8];
+#else
+#define fbm_icons_rw fbm_icons
+#endif
 
-/* fbm_icon: the stack argument of fld_draw_cell is stored one instruction earlier */
 void *fbm_icon(void *list, int i, int x, int y, int w, int h)
 {
     FieldBm *m = &field_bm;
-    const FieldBmPt *p = &fbm_icons[i];
+    const FieldBmPt *p = &fbm_icons_rw[i];
 
     if (i == 4 && m->alt != 0)
-        p = &fbm_icons[7];
+        p = &fbm_icons_rw[7];
     return fld_draw_cell(list, x, y, p->x, p->y, 0x17, 0x17, w, h);
 }
-#endif
 
 void *fbm_draw_arrows(void *list)
 {

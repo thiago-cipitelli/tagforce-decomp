@@ -145,7 +145,7 @@ void *fld_hud_clock_face(void *list, int dx1, int dx2, int dx3)
     return list;
 }
 
-void *fld_digit(float scale, void *list, int x, int y, int z, int u, int v, int w, int h, int frame);
+void *fld_digit(void *list, int x, int y, int z, int u, int v, int w, int h, int frame, float scale);
 extern const char str_02d[];                   /* 0x0883C828 "%02d" */
 extern const char str_d[];
 void *fld_digits(void *list, char *s, int x, int y, int z, int u, int v, int w, int h, int gap,
@@ -178,8 +178,8 @@ void *fld_hud_clock_time(void *list)
     list = gim_set_texture(list, h->gim0);
     list = fld_draw_cell1(list, s->pos.x + (float)cx, 40.0f + s->pos.y, 81, 0, 6, 16);
     if (st->w[3] != 0)
-        list = fld_digit(1.0f, list, s->pos.x + (float)ax, 40.0f + s->pos.y, 0, 27, 0, 27, 16,
-                         *(int *)st->w[3] >= 12);
+        list = fld_digit(list, s->pos.x + (float)ax, 40.0f + s->pos.y, 0, 27, 0, 27, 16,
+                         *(int *)st->w[3] >= 12, 1.0f);
     if (st->w[3] != 0) {
         sprintf(buf, str_d, *(int *)st->w[3] % 12);
         list = fld_digits(list, buf, s->pos.x + (float)hx, 40.0f + s->pos.y, 0, 87, 0, 12, 16, -1, 1.0f);
@@ -369,7 +369,7 @@ void fld_hud_move_update(void)
 
 extern const unsigned char field_move_digits[10][2]; /* 0x088389C0 big digit cells (u, v), 40 x 48 */
 extern const FieldHudCell field_move_minus;     /* 0x088389D4 */
-void *fld_digit(float scale, void *list, int x, int y, int z, int u, int v, int w, int h, int frame);
+void *fld_digit(void *list, int x, int y, int z, int u, int v, int w, int h, int frame, float scale);
 
 /* the step count of the HUD (move.arg, scaled by move.s): its plate, a minus when negative and the
    big digits */
@@ -396,9 +396,9 @@ void *fld_hud_move_draw(void *list)
         list = gim_set_texture(list, gim);
         if (m->arg < 0) {
             sprintf(buf, str_d, -m->arg);
-            list = fld_digit(m->s, list, m->pos.x - (float)(field_move_minus.w - 2) * m->s,
+            list = fld_digit(list, m->pos.x - (float)(field_move_minus.w - 2) * m->s,
                              m->pos.y - 0.5f * ((float)field_move_minus.h * m->s), 0, field_move_minus.u,
-                             field_move_minus.v, field_move_minus.w, field_move_minus.h, 0);
+                             field_move_minus.v, field_move_minus.w, field_move_minus.h, 0, m->s);
         } else {
             sprintf(buf, str_d, m->arg);
         }
@@ -407,9 +407,9 @@ void *fld_hud_move_draw(void *list)
             float k = 38.0f;
             int dx = (int)(m->s * k);
 
-            list = fld_digit(m->s, list, m->pos.x + (float)(dx * i),
+            list = fld_digit(list, m->pos.x + (float)(dx * i),
                              m->pos.y - 0.5f * (48.0f * m->s), 0, field_move_digits[d][0], field_move_digits[d][1],
-                             40, 48, 0);
+                             40, 48, 0, m->s);
         }
         return list;
     }

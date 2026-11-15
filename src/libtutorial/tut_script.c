@@ -1,5 +1,4 @@
 // @range 0x08807E24-0x08809A5C
-// @asm 0x08808518-0x088088CC
 // @asm 0x08809944-0x08809A5C
 // @rodata 0x0880F884-0x0880F938
 // @data 0x0880FAA8-0x0880FAC0
@@ -149,7 +148,7 @@ void tut_script_load(int lesson);
 void tut_event_hook(void);
 void tut_script_preload_faces(void);
 void tut_act_clear(void);
-void tut_ev_clear(void);
+static void tut_ev_clear(void);
 void tut_set_answer_flag(unsigned short v);
 void tut_set_allow(int on);
 void tut_replay_event(void);
@@ -285,7 +284,9 @@ void tut_act_reject_cb(void)
         tut_act_reject();
 }
 
-void tut_ev_clear(void)
+/* static: tut_event_hook keeps v0 untouched around its calls, which mwcc only does for a static callee
+   of the same file whose register use it already knows */
+static void tut_ev_clear(void)
 {
     tut_ev_kind = 0;
 }
@@ -442,10 +443,6 @@ int tut_action_filter(int player, int zone, int index, int kind)
 
 /* duel event sink installed with duel_host_cb_set: events the script waits for are held back and
    replayed later (tut_replay_event), the others go on to libduel_mgr */
-#ifdef NON_MATCHING
-/* 15 palavras, só registradores: na cópia tut_ev_saved = ev do case 2 o original usa $a0 para a
-   palavra inteira e $v1 para os lui (e slti $v1 no teste de arg[1]); aqui $v1/$v0. Struct
-   assign, cópia por ponteiro, função inline, cast e forma do teste de 0x1000 dão o mesmo */
 void tut_event_hook(void)
 {
     TutWait *w = &tut_wait;
@@ -551,7 +548,6 @@ void tut_event_hook(void)
         tut_ev_saved = ev;
     }
 }
-#endif
 
 /* libduel_draw asks before a card is picked from the hand (code = player | zone << 1 | index << 6) */
 int tut_card_filter(unsigned short code)

@@ -3700,3 +3700,65 @@ Vale um experimento dirigido antes de novas buscas de ordem nessas três.
 Scripts (em `build/tmp/lA/`): `show.py` (diff alinhado de UMA variante de um arquivo de variantes do `eC/v.py` ou
 `hB/fv.py`), `syn/` (harness sintético), `m*.py` (`duel_req_mill`), `f*.py` (`duel_0883F3A0`), `g*.py`
 (`duel_088C6BC8`), `c*.py` (`duel_0880C15C`), `v*.py` (`duel_0883D798`), `w*.py` (`duel_0883449C`).
+## Rodada 34 (`lC`): cópia apagada na cabeça do laço, alias de `const` no escalonador, callee `static` que mantém v0, arquivos que são uma unidade só
+
+Terceira passada nas 16 entradas de BOOT, libfield, libstory e libtutorial: 7 batendo (`st_scr_find_es`,
+`st_pl_card_bit_set`, `fbm_icon`, `fld_digits`, `font_layout_end`, `tut_event_hook`; `wsprintf` já batia). Nenhuma
+era ordem de declaração. Mecanismos novos:
+
+- **Cópia `p = e` que vira movimento de um registrador para ele mesmo** (`st_scr_find_es`, `st_pl_card_bit_set`, 2 -> 0;
+  estavam em "não-corrigíveis: destino é a cabeça de um laço" desde a rodada 7). Sintoma: desvio de entrada `bnez
+  X; nop` para a cabeça de um laço não rotacionado (`while (1)`/`goto`), onde o mwcc 219 sempre dá `bnezl X+4` com a
+  cópia da 1ª instrução. No original a variável do laço NÃO é a que foi testada antes: `e = ST_CHR(i)->es; if (e ==
+  0) return 0; for (p = e;; p += 5)` e `m = n;` depois do `if (n == 0 || n >= 51) return;`. A cópia fica no mesmo
+  registrador (o mwcc só a apaga no fim), mas ocupa o início do bloco na hora da conversão em likely, então o
+  desvio de entrada não recebe cópia nenhuma. Vale para qualquer "`bXX; nop` que o nosso build faz likely" cujo
+  alvo começa onde uma variável poderia ter sido copiada para outra.
+- **O escalonador usa alias: `const` no objeto global muda a posição de um store** (`fbm_icon`, 2 -> 0). Com a
+  tabela declarada `const`, o mwcc sabe que o `sw` do argumento de pilha não pode alterar os `lw` de `p->x`/`p->y`
+  e o emite uma instrução depois; com a tabela não-`const` o `sw` tem de vir antes dos loads e sobe. O que conta é
+  o `const` da DECLARAÇÃO DO OBJETO (ponteiro `const`, cast, `volatile`, tipo dos campos: nada muda). O original
+  enxergava `fbm_icons` sem `const` (a tabela está em `.rodata`, logo era definida `const` em outro lugar).
+  Reprodução: `extern FieldBmPt fbm_icons_rw[8];` sob `__MWERKS__` + `fbm_icons_rw = 0x...; // type:data alias` em
+  `symbols/` (no port, `#define fbm_icons_rw fbm_icons`). Sintoma a procurar: 2 palavras, um `sw`/`sh` trocado de
+  lugar com um `move`/`li` vizinho, função que lê uma tabela `const` global. Sonda rápida: compilar a função num
+  arquivo solto com a tabela `extern` com e sem `const` (`build/tmp/lC/probe.py`).
+- **Posição do parâmetro `float` no protótipo do callee** (`fld_digits`, 2 -> 0; mesma família "ordem do `sw` do
+  argumento de pilha"): `fld_digit(list, x, y, z, u, v, w, h, frame, float scale)`, não `(float scale, list, ...)`.
+  O float vai em `$f12` em qualquer posição, mas a ordem em que o mwcc avalia os argumentos segue o protótipo;
+  qualquer posição a partir da 5ª bate, ficou a última (como em `fld_digits`). Os outros chamadores continuam
+  batendo.
+- **Callee `static` do mesmo arquivo mantém `v0` vivo através da chamada** (`tut_event_hook`, 15 -> 0;
+  `font_layout_end`, 2 -> 0). O mwcc trata `v0` como vivo na saída de toda função (inclusive `void`): num trecho de
+  onde se chega ao fim sem passar por uma chamada que estrague `v0`, ele não usa `v0` para temporários. Uma chamada
+  a função `static` já compilada no arquivo, que não toca em `v0`, NÃO conta como definição. Sintoma: o original usa
+  `v1/a0` (ou `a0/a1`) onde o nosso usa `v0/v1` em temporários ANTES de uma chamada a uma função do próprio módulo
+  que não devolve valor; conferir com `raw_asm.sh` se o corpo do callee nunca escreve `v0` e marcá-lo `static`
+  (`tut_ev_clear`; em `symbols/`, `type:func static, matched ...`). É o mesmo conhecimento de registradores que
+  mantém `$t`/`$a` vivos (rodadas 8/32), agora visto pelo lado de `v0`.
+- **Quatro arquivos do BOOT eram uma unidade de tradução** (`font.c` + `font_text.c` + `font_flags.c` +
+  `font_tags.c`, agora só `src/BOOT/font.c`, 0x08845AC0-0x0884A9B4). `font_layout_end` (ex-`font_tags.c`) só bate
+  com `font_glyph_vertices` (ex-`font.c`) `static` e definida antes no mesmo arquivo; como as faixas de `.text` e
+  de `.data` dos quatro são contíguas, a fusão não mexe em mais nada (72/72 funções, `make check` MATCH). Os
+  protótipos locais divergentes entre os arquivos tiveram de ser unificados (`wc_is_lower(int)`; o slot passado a
+  `font_glyph_vertices` com cast `(unsigned int)c->c`, que reproduz o load de `c->c` antes dos outros argumentos).
+  Quando um callee "de outro arquivo" precisa ser `static` para o chamador bater, os arquivos entre os dois são
+  uma unidade só: testar concatenando-os numa cópia (`cat a.c b.c > build/tmp/x.c` + `mwcc_check.py`).
+- Pista para `fld_bg_draw_sky` (18, não fechado): com `#pragma schedule off` a ordem natural dos stores dá a
+  coloração do original (cores em `v0`/`a0`, 136 e 272 em `v0` no ponto do uso). Com o escalonador ligado o mwcc
+  puxa TODOS os `li` do bloco para o intervalo depois de um load antes de colorir; no original os `li` de 136 e
+  272 não foram puxados para o intervalo de `top`/`mid` (o de 480 foi, e o de 272 foi para o intervalo de `bot`),
+  como se as fileiras 2 e 3 não estivessem no bloco básico dos loads de cima. Separadores sem código (rótulo,
+  bloco, `do {} while (0)`), helpers inline por vértice/fileira, variável `y`, `volatile` e 230 pragmas não criam
+  essa fronteira.
+- Sem forma (testado nesta rodada): `msgbox_open` (o 2 do teste só deixa de ser compartilhado se o 4º argumento
+  não for o literal 2; `flag != 1 ? type : 3` chega a 5 palavras com o tamanho certo, mas carrega `type`),
+  `tut_script_preload_faces` (480 formas de laço x tipo x incremento: o `sltu` de `done` é criado antes do
+  incremento de `tut_pc`), `snd_group_release_all` (144 formas de identidade; callee `static` não muda),
+  `menu_layout` (o original colore as constantes do desenrolamento antes de `j`; 20 formas de `j`/contadores),
+  `font_glyph_cache` (a fusão dos arquivos e `font_glyph_find` `static` não mudam a troca f/font), `gim_walk`
+  (blocos inalcançáveis antes do `case 0xFF`, helpers inline do corpo e do `switch`), `st_chr_step_value`,
+  `efs_run`.
+- Scripts em `build/tmp/lC/`: `var.py` (variantes em paralelo), `t.py` (substituições -> palavras), `sbs.py`
+  (desmonte lado a lado original | compilado, com substituições), `probe.py` + `cc.sh` (função solta num arquivo de
+  teste, lista de instruções), `promote.py`.

@@ -1,5 +1,4 @@
 // @range 0x088062FC-0x08806A18
-// @asm 0x08806928-0x088069B0
 /* Story player state (save data): room and position, the current event ids, the point counters,
    the counts of the 20 items and 50 cards held, and the bit set of cards ever obtained. */
 #include "libstory.h"
@@ -341,27 +340,28 @@ int st_pl_x158_get(void)
     return st_pl->x158;
 }
 
-#ifdef NON_MATCHING /* o desvio para o laço sai bnezl com a primeira instrução no delay slot; o original tem bnez + nop */
+/* `m = n` antes do laço (cópia de um registrador para ele mesmo): o desvio de entrada fica bnez + nop */
 void st_pl_card_bit_set(unsigned int n, int on)
 {
     unsigned int *bits = st_pl_bits;
     int w = 0;
+    unsigned int m;
 
     if (n == 0 || n >= 51)
         return;
+    m = n;
 loop:
-    if (n > 32) {
-        n -= 32;
+    if (m > 32) {
+        m -= 32;
         w++;
         goto loop;
     }
     bits += w;
     if (on)
-        *bits |= 1 << (n - 1);
+        *bits |= 1 << (m - 1);
     else
-        *bits &= ~(1 << (n - 1));
+        *bits &= ~(1 << (m - 1));
 }
-#endif
 
 int st_pl_card_bits_all(void)
 {
