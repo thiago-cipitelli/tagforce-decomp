@@ -1,6 +1,5 @@
 // @range 0x08804270-0x088062FC
 // @asm 0x088044EC-0x08804570
-// @asm 0x088048C8-0x08804908
 /* Story characters (150): the script tables of each one (Scr<i>_G/Step/Deck/DH/DN/Sche/...), their
    saved state (level, affinity, flags, position, look, deck in use), the conditions of the tables
    (date, level, flags, weekday, daytime) and the daily update that picks look, place and deck. */
@@ -276,20 +275,19 @@ unsigned short *st_scr_get_es(int i)
     return ST_CHR(i)->es;
 }
 
-#ifdef NON_MATCHING /* o desvio para o laço sai bnezl com a primeira instrução no delay slot; o original tem bnez + nop */
+/* a cópia `p = e` (movimento de um registrador para ele mesmo, apagado no fim) ocupa o início da cabeça do laço:
+   o desvio de entrada não recebe a cópia do lhu e fica bnez + nop */
 unsigned short *st_scr_find_es(int i, unsigned int key)
 {
-    unsigned short *p = ST_CHR(i)->es;
+    unsigned short *e = ST_CHR(i)->es;
+    unsigned short *p;
 
-    if (p == 0)
+    if (e == 0)
         return 0;
-    while (1) {
+    for (p = e;; p += 5)
         if (*p == key)
             return p;
-        p += 5;
-    }
 }
-#endif
 
 void st_scr_set_ei(int i, void *p)
 {
