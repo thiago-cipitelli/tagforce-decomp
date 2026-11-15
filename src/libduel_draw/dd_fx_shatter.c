@@ -143,9 +143,11 @@ static float dd_rand_sgn(DdRandSeed *r, float s)
 #define DD_SHATTER_TINT(c, dark) ((unsigned int)(255.0f * (dark)) | ((unsigned int)(220.0f * (dark)) << 8 | \
                                   ((c).a << 24 | (unsigned int)(130.0f * (dark)) << 16)))
 
-#ifdef NON_MATCHING /* 1196 x 1192 instruções, 60 linhas de estrutura (rodada 27): sorteios certos (DD_RAND6); faltam
-   registradores $s (fx em $s7 e step em $s0 no original, aqui $s8/$s1; o contador da 1a passada de desenho em $s8 e
-   não na pilha), o par de slots 112/120 e tri[2 + k] como variável de indução nos laços de desenho */
+#ifdef NON_MATCHING /* 41 palavras (rodada 33; eram 639), todas no laço que monta os cacos: no laço de fora a constante
+   0,4921875 fica em a0 e a 14,67 em v1 (aqui a1/a0), e no de dentro o original agenda 15.5 * j e a soma de -23.25
+   antes dos primeiros stores (aqui depois), o que troca $f1/$f2 entre u0 + du e -u0. Testados sem efeito: posição da
+   instrução de cx (26), cx em duas instruções, (float)i / (float)j em variável, cada local como expressão, ordem das
+   instruções do laço de fora */
 int dd_fx_shatter_update(int state, DdFxShatter *fx)
 {
     DdRandSeed *r;
