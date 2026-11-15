@@ -1,7 +1,6 @@
 // @range 0x08817D18-0x088192C8
 // @data 0x0882313C-0x08823178
 // @rodata 0x0882266C-0x08822688
-// @asm 0x08817FF8-0x0881815C
 /* Filtering and sorting a list's visible order: the "new"-mark reset, the incremental text search
    with its word history, the filters (kind, type, race, level ranges, spell/trap kinds, limit,
    genre/new/alternate picture), the text match (Boyer-Moore-Horspool over the normalised name and
@@ -119,14 +118,14 @@ unsigned short dk_search_step(DkList *l)
 }
 
 
-#ifdef NON_MATCHING /* 8 palavras: len e o ponteiro do histórico com $s0/$s2 trocados (ponteiro explícito como em dt/sc_search_finish; ordens de declaração, tipos, inicializadores mortos, bloco e o parâmetro l como ponteiro testados) */
 /* the matches become the visible order; the word goes on top of the history */
 void dk_search_finish(DkList *l)
 {
     int i;
-    DkWordsView *v;
+    unsigned int n;
     int k;
     int len;
+    DkWordsView *v;
 
     if (dk_search.out != 0) {
         memcpy(l->order, dk_search.out, dk_search.n << 1);
@@ -135,7 +134,8 @@ void dk_search_finish(DkList *l)
         dk_search.out = 0;
     }
     l->filter = 8;
-    len = wcslen(dk_search.word);
+    n = wcslen(dk_search.word);
+    len = n;
     k = 7;
     for (i = 0, v = (DkWordsView *)&dk_deck; i < 8; i++, v = (DkWordsView *)((char *)v + 64)) {
         if (v->words[0][0] == 0) {
@@ -151,7 +151,6 @@ void dk_search_finish(DkList *l)
         wcscpy(DK_WORDS[k], DK_WORDS[k - 1]);
     wcscpy(DK_WORDS[0], dk_search.word);
 }
-#endif
 
 DkFilterFn dk_filters[9] = {
     0, (DkFilterFn)dk_filter_kind, (DkFilterFn)dk_filter_type, (DkFilterFn)dk_filter_race,

@@ -1,5 +1,4 @@
 // @range 0x08805AB4-0x08807CAC
-// @asm 0x088061F8-0x08806634
 // @rodata 0x0881C0E8-0x0881C140
 // @data 0x0881C900-0x0881C970
 /* Main state machine of the shop: the shelf with the 48 pack kinds (two rows of packs per kind, the
@@ -279,7 +278,6 @@ int shop_main_input(void)
     return 0;
 }
 
-#ifdef NON_MATCHING /* o original testa o resultado de shop_pack_can_buy com 1 e depois 2 (beql) e põe os corpos na mesma ordem, com um bloco de junção; nem switch nem if/else reproduzem */
 /* on the shelf: choose the pack kind, buy, leave */
 void shop_shelf_input(void)
 {
@@ -290,7 +288,12 @@ void shop_shelf_input(void)
 
     if (shop.back || (pad->b.trig & region_pick_value(0))) {
         r = shop_pack_can_buy(shop.pack);
+        /* the original tests 1 and then 2 with the bodies in that same order and a plain return between them:
+           case 2 leaves the switch for the code after it (a return that is a branch target, so the dead copies
+           after each b appear) */
         switch (r) {
+        case 2:
+            goto two;
         case 1:
             if (shop_clerk.alt == 0)
                 shop_msg_set(table_get_entry(shop_str_get(0xC001), 0x1D), 0);
@@ -298,29 +301,30 @@ void shop_shelf_input(void)
                 shop_msg_set(table_get_entry(shop_str_get(0xC001), 0x1E), 0);
             se_play(0x6215);
             break;
-        case 2:
-            if (shop.back) {
-                shop.back = 0;
-            } else {
-                shop_clerk_voice(2);
-                se_play(0x6213);
-            }
-            shop.timer = 0;
-            shop.state = 2;
-            memset(shop.lift, 0, sizeof(shop.lift));
-            if (shop.stock[shop.pack] == 0)
-                shop.stock[shop.pack] = 0xAA;
-            r = shop.stock[shop.pack];
-            n = r & 0xF;
-            if (n > 0) {
-                shop.cur = n - 1;
-                shop.rot = 26.0f;
-            } else {
-                shop.cur = (r >> 4 & 0xF) - 1 | 0x80;
-                shop.rot = -26.0f;
-            }
-            break;
         }
+        return;
+    two:
+        if (shop.back) {
+            shop.back = 0;
+        } else {
+            shop_clerk_voice(2);
+            se_play(0x6213);
+        }
+        shop.timer = 0;
+        shop.state = 2;
+        memset(shop.lift, 0, sizeof(shop.lift));
+        if (shop.stock[shop.pack] == 0)
+            shop.stock[shop.pack] = 0xAA;
+        r = shop.stock[shop.pack];
+        n = r & 0xF;
+        if (n > 0) {
+            shop.cur = n - 1;
+            shop.rot = 26.0f;
+        } else {
+            shop.cur = (r >> 4 & 0xF) - 1 | 0x80;
+            shop.rot = -26.0f;
+        }
+        return;
     } else if (pad->b.trig & region_pick_value(1)) {
         if (shop_bought_total() > 0) {
             shop_stock_save();
@@ -333,6 +337,7 @@ void shop_shelf_input(void)
             shop_dialog_open(1, 0);
             se_play(0x621A);
         }
+        return;
     } else {
         if (pad->b.rep & 0x10)
             shop.pack = (shop.pack + 36) % 48;
@@ -354,7 +359,6 @@ void shop_shelf_input(void)
             shop_pack_msg_refresh();
     }
 }
-#endif
 
 /* in front of the shelf of one kind: pick the pack to buy */
 void shop_pick_input(void)

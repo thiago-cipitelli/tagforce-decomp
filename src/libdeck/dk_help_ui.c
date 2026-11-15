@@ -1,5 +1,4 @@
 // @range 0x0881AB64-0x0881D918
-// @asm 0x0881D3EC-0x0881D6B4
 // @rodata 0x08822688-0x088226C0
 /* Help viewer widgets: the button bar at the bottom, a generic scrolling list of rows of varying
    height (DkPager: input, layout, clipped drawing through callbacks), the topic list, the page list
@@ -1164,22 +1163,22 @@ void *dk_help_box_flash(void *list, void *gim, int x, int y, int w, int h, unsig
     return dk_help_box(list, gim, x, y, w, h, color);
 }
 
-#ifdef NON_MATCHING /* 52 palavras (eram 174): top antes da primeira chamada e bottom = y + h; end = bottom - 6 antes do track dão os nove $s; falta a atribuição (original: h s0, view s1, y s2, x s3, max s4, thumb s5, gim s6, end s7, top s8; nosso: max s0, thumb s1, view s2, h s3, y s4, x s5, top s6, gim/bottom s7, end s8). Ordem das declarações não muda nada */
 /* vertical scroll bar: track of height h at (x, y), thumb sized view/total, blinking arrows */
 void *dk_help_scrollbar(void *list, void *gim, int x, int y, int h, int scroll, int total, int view, int arrows)
 {
-    int max = ALLEGREX_MAX(view, total);
-    int thumb = (float)(h - 12) * ((float)view / (float)max);
-    int top;
-    int bottom;
-    int end;
-
     float pos;
+    int thumb;
+    int max;
+    int top;
 
+    max = ALLEGREX_MAX(view, total);
+    thumb = (float)(h - 12) * ((float)view / (float)max);
     if (scroll == 0 || max == view)
         pos = 0.0f;
     else
         pos = (float)-scroll / (float)(max - view);
+    /* top is a variable only for the thumb; the track takes y + 6 and the arrows (y + h) - 6 written out:
+       that is what gives top the highest register and leaves the other eight in the order of the original */
     top = y + 6;
     list = dl_ambient_color(list, 0xFFFFFFFF);
     list = dl_blend_func(list, 0, 2, 3, 0, 0);
@@ -1187,11 +1186,9 @@ void *dk_help_scrollbar(void *list, void *gim, int x, int y, int h, int scroll, 
     list = dl_set_tex_filter(list, 0, 0);
     list = dl_enable(list, 9);
     list = gim_set_texture(list, gim);
-    bottom = y + h;
-    end = bottom - 6;
-    list = dk_help_scroll_track(list, x, top, h - 12);
-    list = dk_help_scroll_arrows(list, x + 1, y, x + 1, end);
-    list = dk_help_scroll_thumb(list, x + 2, (float)top + pos * ((float)(bottom - thumb - 6) - (float)top), thumb, arrows);
+    list = dk_help_scroll_track(list, x, y + 6, h - 12);
+    list = dk_help_scroll_arrows(list, x + 1, y, x + 1, (y + h) - 6);
+    list = dk_help_scroll_thumb(list, x + 2, (float)top + pos * ((float)((y + h) - thumb - 6) - (float)top), thumb, arrows);
     if (arrows) {
         int up = 0;
         int down = 0;
@@ -1210,11 +1207,10 @@ void *dk_help_scrollbar(void *list, void *gim, int x, int y, int h, int scroll, 
         if (up)
             list = dk_help_scroll_up(list, x + 1, y);
         if (down)
-            list = dk_help_scroll_down(list, x + 1, end);
+            list = dk_help_scroll_down(list, x + 1, (y + h) - 6);
     }
     return list;
 }
-#endif
 
 /* three-piece vertical strip: (u0, v0) w0 x h0 cap, (u1, v1) w1 x th1 stretched to h1, (u2, v2) w2 x h2 cap */
 void *dk_help_slice3(void *list, int x, int y, int u0, int v0, int w0, int h0, int u1, int v1, int w1, int th1, int h1, int u2, int v2, int w2, int h2)

@@ -1,6 +1,5 @@
 // @range 0x0880D23C-0x0880DFFC
 // @rodata 0x08819CA0-0x08819CBC
-// @asm 0x0880D3F8-0x0880D55C
 // @data 0x0881A1F8-0x0881A224
 /* The incremental text search of a pane and its word history, the card filters (kind, type, race,
    level ranges, spell/trap kinds, limit, genre/new/alternate picture) and the text match: a
@@ -71,14 +70,20 @@ unsigned short ds_search_step(DsList *l)
     return ds_search.pos * 1000 / ds_search.total;
 }
 
-#ifdef NON_MATCHING /* 8 palavras: len e o ponteiro do histórico com $s0/$s2 trocados (ponteiro explícito como em dt/sc_search_finish; ordens de declaração, tipos, inicializadores mortos, bloco e o parâmetro l como ponteiro testados) */
+/* the search word history seen from the base of ds (the loop walks the base, words at +0x6C) */
+typedef struct DsWordsView {
+    unsigned char pad[0x6C];
+    unsigned short words[8][32];
+} DsWordsView;
+
 /* the matches become the visible order; the word goes on top of the history */
 void ds_search_finish(DsList *l)
 {
     int i;
-    unsigned short *w;
+    unsigned int n;
     int k;
     int len;
+    DsWordsView *v;
 
     if (ds_search.out != 0) {
         memcpy(l->order, ds_search.out, ds_search.n << 1);
@@ -87,14 +92,15 @@ void ds_search_finish(DsList *l)
         ds_search.out = 0;
     }
     l->filter = 8;
-    len = wcslen(ds_search.word);
+    n = wcslen(ds_search.word);
+    len = n;
     k = 7;
-    for (i = 0, w = ds.words[0]; i < 8; i++, w += 32) {
-        if (w[0] == 0) {
+    for (i = 0, v = (DsWordsView *)&ds; i < 8; i++, v = (DsWordsView *)((char *)v + 64)) {
+        if (v->words[0][0] == 0) {
             k = i;
             break;
         }
-        if (len == wcslen(w) && wcscmp(w, ds_search.word) == 0) {
+        if (len == wcslen(v->words[0]) && wcscmp(v->words[0], ds_search.word) == 0) {
             k = i;
             break;
         }
@@ -103,7 +109,6 @@ void ds_search_finish(DsList *l)
         wcscpy(ds.words[k], ds.words[k - 1]);
     wcscpy(ds.words[0], ds_search.word);
 }
-#endif
 
 DsFilterFn ds_filters[9] = {
     0, (DsFilterFn)ds_filter_kind, (DsFilterFn)ds_filter_type, (DsFilterFn)ds_filter_race,

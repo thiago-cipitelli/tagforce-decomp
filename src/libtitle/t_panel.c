@@ -1,5 +1,4 @@
 // @range 0x088106D8-0x08813088
-// @asm 0x088108A0-0x08810ADC
 // @asm 0x0881103C-0x08811658
 // @asm 0x08811A8C-0x08811FBC
 // @rodata 0x0882AED0-0x0882AEE8
@@ -76,11 +75,10 @@ void ttab_init(TTab *t)
     t->draw = 0;
 }
 
-#ifdef NON_MATCHING /* 2 palavras: o original põe o li s0,1 do ternário no delay slot do beqz e o move s3 (t) antes; o mwcc inverte */
 void tpanel_init(TPanel *p, void *heap)
 {
-    TTab *t;
-    TBox *b;
+    TTab *t = p->tab;
+    TBox *b = &p->box;
     int i;
     int n;
 
@@ -92,8 +90,6 @@ void tpanel_init(TPanel *p, void *heap)
     p->h = 218;
     p->cur = 0;
     p->n = 2;
-    b = &p->box;
-    t = p->tab;
     n = p->n ? p->n : 1;
     for (i = 0; i < 4; i++, t++) {
         ttab_init(t);
@@ -125,7 +121,6 @@ void tpanel_init(TPanel *p, void *heap)
         b->h = 0;
     tpanel_list_init(p, heap);
 }
-#endif
 
 /* the system list of the panel */
 void tpanel_list_init(TPanel *p, void *heap)
@@ -234,7 +229,7 @@ void *tbox_draw(void *list, TBox *b)
     return list;
 }
 
-#ifdef NON_MATCHING /* 34 palavras (rodada 28: o `if (!sel) show = 0` do case 1 é `if (sel) show = 1; else show = 0;`, then que some e else no atraso do beqzl); restam registradores e seh da largura de cada peça no laço */
+#ifdef NON_MATCHING /* 33 palavras (rodada 28: o `if (!sel) show = 0` do case 1 é `if (sel) show = 1; else show = 0;`; rodada 32: o callback recebe i como unsigned short, sem andi); restam registradores e seh da largura de cada peça no laço (pw short e a ordem x, y, h, u, v, w, pw das atribuições alinham mais instruções, 23 alinhadas contra 40, mas mudam o tamanho) */
 /* one tab: three pieces, coloured by the selection, then its label callback */
 void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
 {
@@ -312,13 +307,13 @@ void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
             list = draw_sprite(list, px, py, 0, u, v, s.a, s.b);
         }
         if (t->draw)
-            list = ((void *(*)(void *, int, int, int, int, int))t->draw)(list, i, t->x, t->y, t->w, t->h);
+            list = ((void *(*)(void *, unsigned short, int, int, int, int))t->draw)(list, i, t->x, t->y, t->w, t->h);
     }
     return list;
 }
 #endif
 
-#ifdef NON_MATCHING /* 24 palavras (de 114: contador próprio `tab` declarado primeiro no laço das abas, tframe_tab com protótipo int no bloco, y da barra do cursor sem variável); faltam a ordem das cargas dos argumentos de tframe_cursor (o original calcula iy - 1 antes de ix - 1) e i/iy trocados (s0/s1) no laço de b->draw */
+#ifdef NON_MATCHING /* 8 palavras (eram 24): os argumentos de tframe_cursor passam por ix/iy/iw/ih (as variáveis short, nessa ordem); falta só i/iy trocados (s0/s1) no laço de b->draw (ordem das declarações, das atribuições, contador ou y próprios e y int não mudam) */
 /* the two-column layout of the panel (f0 == 2) */
 void *tpanel_draw_split(void *list, TPanel *p)
 {
@@ -366,8 +361,11 @@ void *tpanel_draw_split(void *list, TPanel *p)
     }
     if (!b->no_cursor) {
         list = tframe_bar(list, 1, 0xFFFFFFFF, b->ix + 23, (short)(b->iy + sel * (b->ih + 1)) + 4, 88, 14);
-        list = tframe_cursor(list, b->color, (short)(b->ix - 1), (short)(b->iy - 1 + sel * (b->ih + 1)),
-                             (short)(b->iw + 2), (short)(b->ih + 2));
+        ix = b->ix - 1;
+        iy = b->iy - 1 + sel * (b->ih + 1);
+        iw = b->iw + 2;
+        ih = b->ih + 2;
+        list = tframe_cursor(list, b->color, ix, iy, iw, ih);
     }
     if (!b->no_scroll) {
         sx = b->x + b->w - 12;

@@ -3319,3 +3319,58 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
   (102: nenhuma ordem, escopo, `zo` local com `ZOFF` ou forma do laço mexe no bloco {base,cur,p} x {ef,src,q}),
   `duel_piles_swap` (126: `s = &t; u = s->uid` é dobrado, 106 com tamanho errado), `duel_req_swap_zones` (246, 7
   instruções a menos: o original usa `s8` para `(bz & 0xFF) << 8` e derrama `bo`; um local `bh` não reproduz).
+## Rodada 32 (`mA`): reteste do skip dos menus (libtitle, libshop, libdeck*, libselect_card, liblimitlist, libduel_mgr)
+
+20 das 29 entradas batendo; em nenhuma a causa era ordem de declaração pura. Famílias, da mais barata de testar:
+
+- **Variável de tipo enum não é dobrada nem convertida em `slti/xori`** (`dk/dt_flight_undo`, `ds/sc_input_move`,
+  no skip desde a rodada 9): `DkSide side; if (src < 3) side = DK_SIDE_LEFT; else side = DK_SIDE_RIGHT;` mantém o
+  `slti at; beqzl at; li v0,1; move v0,zero` do original; com `int` toda forma (if/else, `?:`, helper, `switch`, laço)
+  vira `slti/xori`. O mesmo tipo segura uma constante num registrador: `TfdOne one = TFD_ONE; lim = one; if (one <= n)`
+  (`tfd_regulation_select`, 64 -> 2: o `li a0,1` + `move a3,a0` + `slt at,s0,a0`). Testar enum sempre que o original
+  deixa de fazer uma simplificação óbvia com 0/1 ou com uma constante pequena.
+- **Variável só no uso que precisa dela, expressão por extenso nos outros** (`dk_help_scrollbar`, 52 -> 0, gêmea de
+  `ui_scrollbar`): `top = y + 6;` antes da 1ª chamada, MAS `scroll_track(list, x, y + 6, h - 12)` por extenso e `top`
+  só no polegar (`(float)top + pos * ((float)((y + h) - thumb - 6) - (float)top)`); `end` não é variável:
+  `(y + h) - 6` por extenso nas setas e na seta de baixo (o CSE cria o `s7` e o `h += y` do original); `max`/`thumb`
+  atribuídos em instruções, declarações `pos, thumb, max, top`. Com `top` variável em todos os usos os nove `$s`
+  giram, em qualquer ordem de declaração. O caminho: busca aleatória de mutações estruturais pontuada pelo diff
+  ALINHADO (`build/tmp/mA/sbr.py`), que mostrou "todos os registradores certos menos `top`" com `top` por extenso,
+  e depois variável x expressão por uso (`sb5.py`, 280 formas).
+- **Resultado de chamada por uma variável `unsigned` antes do `int`** (`*_search_finish` x4, 8 -> 0):
+  `unsigned int n; n = wcslen(word); len = n;` com as declarações `i, n, k, len, v`. É a "identidade" da rodada 31
+  com outro tipo: o `len` definido direto do `jal` ficava sempre no `$s` mais baixo.
+- **Inicializador na declaração x atribuição em instrução** decide a ordem das cargas e os temporários:
+  `tpanel_init` (2 -> 0: `TTab *t = p->tab; TBox *b = &p->box;` no topo, antes das gravações pelo parâmetro),
+  `ll_move_list` (22 -> 0) e `ll_move_grid` (6 -> 0: tudo em instruções, `changed = 0` logo depois de `t`, `dx`/`dy`
+  por último). As buscas antigas permutavam só declarações OU só atribuições; a que resolve sorteia as três coisas
+  juntas (ordem das declarações x inicializador-ou-instrução por variável x ordem das instruções, respeitando as
+  dependências): `build/tmp/mA/ds_rand.py MODULE FUNC "1ª linha do corpo" N seed`, 1500-4000 amostras, e depois
+  busca local em volta do melhor (`lg5.py`).
+- **Cast redundante segura a carga** (`shop_open_layout`, 2 -> 0): `(float)o->card_mid.x + 2.0f` e
+  `(float)o->card_up.z + 2.0f` nos argumentos (sem os locais `volatile` do rascunho) dão as três cargas antes das
+  somas e `z` antes de `x`.
+- **Cópia para uma variável nova depois do uso que mata o valor** (`ll_draw_row`, 3 -> 0): `race(dl, x | yy, ...);
+  xb = x;` (`unsigned int xb`) e as chamadas seguintes com `(unsigned short)(xb + K)`: o `or a1,s0,s4` sai antes
+  dos `move` porque o `x` mascarado morre ali.
+- **Gatilhos do modo sem limpeza em função que devolve valor, confirmados em mais três**: `if (page < 0 || page >=
+  4) return list;` numa cadeia só (`dmgr_res_summary_row`, 98 -> 0); `switch (u86c) { case 1: return 1; case 2:
+  ...; break; }` com o `case` do retorno ANTES no fonte, sinal `li v0,1; beql v1,v0,epílogo` (`tfd_lobby_handler`,
+  171 -> 0). Em função `void`: testes na ordem 1, 2 com os corpos na mesma ordem = o `case` de cima sai do `switch`
+  para o código que vem depois de um `return` (`switch (r) { case 2: goto two; case 1: ...; break; } return; two:
+  ...; return;`, `shop_shelf_input`, 161 -> 0); e um `b` para um bloco que é só outro `b` (sem encadear) pede um
+  `return;` explícito no fim daquele ramo.
+- Argumentos calculados em temporário e só depois convertidos (`addiu a0,a0,-1; seh a2,a0`) = atribuições às
+  variáveis `short` já existentes antes da chamada (`ix = b->ix - 1; ...; tframe_cursor(list, color, ix, iy, iw,
+  ih)`, `tpanel_draw_split` 24 -> 8).
+- **Ferramenta**: `build/tmp/mA/ad.py` alinha original x compilado por instrução (difflib, números mascarados), de
+  modo que uma instrução a mais não conta 200 palavras; serve para ordenar variantes de TAMANHO diferente. Ele
+  ignora o alvo dos desvios: a palavra final é sempre a do `asm_try.sh` (em `shop_shelf_input` sobrava 1 desvio).
+- Sem forma: `shop_result_input` (2), `shop_item_key` (20) e `tfd_regulation_select` (2) são a mesma família: um
+  desvio para o bloco FINAL de uma instrução (`move v0,zero` / `li v0,-2`) que o original não copia para o atraso
+  (`b; nop`, `bne; nop`) e o nosso copia; não é o modo sem limpeza (nenhum gatilho liga: `default: return`, `return`
+  por `case`, `||`, helper inline do `switch` inteiro, enum no retorno). `shop_draw_shelf` (`jal; nop` com o `move
+  a0,s0` antes: 16 formas de fronteira de bloco), `sc_draw_counts` (o `lhu` de `d[i]` depois do `sh r.x`: 10 tipos
+  de ponteiro, temporários, cabeça sorteada), `dmgr_jk_pick` (25: `v0` evitado depois do `lb peer[2]`), `tpt_sprite`
+  / `dmgr_pt_sprite` (127: o original deixa `x` em `s8` e derrama `p`, `y` e `&spr[i]`; aqui `x` e `y` perdem até
+  para o temporário, mesmo com `p` volatile).

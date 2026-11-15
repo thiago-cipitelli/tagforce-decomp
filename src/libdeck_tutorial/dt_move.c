@@ -1,5 +1,4 @@
 // @range 0x0880CDC8-0x088100AC
-// @asm 0x0880D96C-0x0880DE54
 // @rodata 0x08820F9C-0x08820FF0
 /* Moving a card between the lists (Circle in the deck editor, undo with Triangle): the destination
    window offering the lists the card can go to (main, side, extra, trunk) with the full ones greyed
@@ -253,7 +252,9 @@ static inline int dt_tab_side(int tab)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 2 palavras (eram 5): o lado (src >= 3); com switch (src < 3) sai o beqzl + li 1 no atraso + move zero do original, mas o teste vai para v0 (slti v0) e o original faz slti at (desvio direto de um if; todo if/else 0/1 vira slti/xori); o slot_pos recebe k (não o pos u16 relido) */
+/* pane of a list; the enum type is what keeps the 0/1 if/else as a branch (an int becomes slti/xori) */
+typedef enum DtSide { DT_SIDE_LEFT, DT_SIDE_RIGHT } DtSide;
+
 /* Triangle: takes the last move back (the card flies from where it landed to its old list) */
 int dt_flight_undo(void)
 {
@@ -262,7 +263,7 @@ int dt_flight_undo(void)
     int i;
     int k;
     int found;
-    int side;
+    DtSide side;
 
     if (dt_hist_pop(&h) == 0)
         return 0;
@@ -278,14 +279,10 @@ int dt_flight_undo(void)
             dt_flight->src = 4;
         if (dt_flight->dst[0] == 2)
             dt_flight->dst[0] = 4;
-        switch (dt_flight->src < 3) {
-        case 0:
-            side = 1;
-            break;
-        default:
-            side = 0;
-            break;
-        }
+        if (dt_flight->src < 3)
+            side = DT_SIDE_LEFT;
+        else
+            side = DT_SIDE_RIGHT;
         dt_flight->side = side;
         dt_flight->dside = (dt_flight->side + 1) & 1;
     } else {
@@ -340,7 +337,6 @@ int dt_flight_undo(void)
     dt_flight_take();
     return 1;
 }
-#endif
 
 /* moves the card under the cursor straight to its first destination (no window); 0 when it cannot */
 int dt_flight_quick(void)
