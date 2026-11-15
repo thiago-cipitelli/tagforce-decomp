@@ -43,7 +43,7 @@ int tcfg_group_style[4] = { 8, 9, 10, 11 };
 unsigned char tcfg_group_tab[4] = { 0, 0, 0, 1 };
 short tcfg_group_rows[4] = { 1, 1, 4, 5 };
 
-#ifdef NON_MATCHING /* rodada 33: 229 -> 7 instruções no diff alinhado (3176 B contra 3168: 332 palavras posicionais). O que resolveu: found é unsigned char e é zerado ANTES de cur = c->step (os dois li 1 e o move s6,zero no delay slot); gy = top * 17 + 34 + g * 6; u/v da barra do cursor em variáveis antes de x/y; x antes de rw no case 1 da moldura e da aba. Faltam: dois seh v1,v1 depois do gx[first] + 4 da aba (o original soma u sem normalizar; com a expressão única o mwcc faz seh de u) e a ordem dos move de argumento do último draw_set_offsets (a3/t0 antes de a0) */
+#ifdef NON_MATCHING /* 5 palavras (eram 229; rodada 33): found é unsigned char e é zerado ANTES de cur = c->step (os dois li 1 e o move s6,zero no delay slot); gy = top * 17 + 34 + g * 6; u/v da barra do cursor em variáveis antes de x/y; x antes de rw no case 1 da moldura e da aba; na aba, u e a base gx + 4 são int de bloco (tu, bx). Falta a ordem dos argumentos do último draw_set_offsets: o original faz seh a1, seh a2, move a3,a1, move t0,a2 e a0 no delay slot; o nosso seh a2, seh a1, a0, a3 e t0 no delay slot (temporários int, tw/th, outras variáveis e chamada aninhada testados) */
 void *tcfg_draw(void *list)
 {
     int piece;
@@ -177,18 +177,20 @@ void *tcfg_draw(void *list)
         if (rows[first] > 1) {
             y = gy[first] + 4;
             for (i = 0; i < 3; i++) {
-                u = spr[(unsigned int)(9 + i)].u;
+                int tu = spr[(unsigned int)(9 + i)].u;
+                int bx;
+
                 v = tab[first] * 16 + spr[(unsigned int)(9 + i)].v;
                 list = tcfg_gfx(list, c->gim2);
                 switch (i % 3) {
                 case 0:
                     rw = spr[(unsigned int)(9 + i)].w;
-                    x = gx[first] + 4;
-                    x += u;
+                    bx = gx[first] + 4;
+                    x = bx + tu;
                     break;
                 case 1:
-                    x = gx[first] + 4;
-                    x += u;
+                    bx = gx[first] + 4;
+                    x = bx + tu;
                     rw = 209 - (spr[9].w + spr[11].w);
                     break;
                 case 2:
@@ -198,7 +200,7 @@ void *tcfg_draw(void *list)
                 }
                 rh = spr[(unsigned int)(9 + i)].h;
                 list = draw_set_offsets(list, spr[(unsigned int)(9 + i)].w, spr[(unsigned int)(9 + i)].h, rw, rh);
-                list = draw_sprite(list, x, y, 0, u, v, 0, 0);
+                list = draw_sprite(list, x, y, 0, (short)tu, v, 0, 0);
             }
         }
         /* cursor bar */
