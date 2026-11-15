@@ -1,7 +1,6 @@
 // @range 0x0880F9C0-0x08815888
 // @data 0x0881B9B0-0x0881BC88
 // @rodata 0x0881A0D0-0x0881A14C
-// @asm 0x08812A98-0x08812D74
 /* Result screen after a duel: bonus points, records and titles earned (three scrolling pages over a
    summary), the money paid out, the series score of a match and the continue / net wait dialogs. */
 #include "allegrex.h"
@@ -1304,7 +1303,6 @@ unsigned int *dmgr_res_page_summary(unsigned int *list, int x)
 
 unsigned short dmgr_res_page_text[4] = { 4, 5, 6, 7 };
 
-#ifdef NON_MATCHING /* 98 palavras: com os return antecipados (page < 0, page >= 4) o fluxo é o do original; faltam as cópias mortas depois de b (move a0 no alvo dos bnezl) */
 unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
 {
     void *g;
@@ -1326,12 +1324,9 @@ unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
     list = draw_sprite(list, x + 0x157, y, 0, 0x1C, 0, 0, 0);
     list = draw_set_offsets(list, 1, 0x10, 0x47, 0x10);
     list = draw_sprite(list, x + 0x110, y, 0, 0x1B, 0, 0, 0);
-    if (page < 0) {
+    /* one chain with list still in v0: this is what turns on the dead copies after each b (no-cleanup mode) */
+    if (page < 0 || page >= 4)
         return list;
-    }
-    if (page >= 4) {
-        return list;
-    }
 
     {
         font_text_set(list);
@@ -1349,7 +1344,6 @@ unsigned int *dmgr_res_summary_row(unsigned int *list, int x, int y, int page)
     }
     return list;
 }
-#endif
 
 /* the scrolling list of a page between x + 0x17 and the right edge (written out in each page) */
 #define DMGR_RES_PAGE_LIST(list, x, t, row)                                                                \
