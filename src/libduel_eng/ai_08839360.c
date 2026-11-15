@@ -1,6 +1,5 @@
 // @range 0x08839360-0x0883F0DC
 // @data 0x08907C3C-0x08907C90
-// @asm 0x0883D798-0x0883E63C
 /* Battle: step machines of the damage step (duel_w_08919610) with the cards that act on the attacker and the target. */
 #include "duel.h"
 
@@ -1260,9 +1259,6 @@ int duel_0883BB00(unsigned int p)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 1 palavra: no evento 0x143E o original faz sll de i (s0), aqui sai do andi de i & 1 reaproveitado
-   (sem o & 1 a ordem de avaliação do | inverte: 26 palavras). Rodada 8, sem efeito: i copiado para outra variável,
-   q unsigned, i % 2, & 3, ponteiro local, uid em local, todas as associações do | */
 /* p: attacking player; end of the damage step: cards that act after the battle */
 int duel_0883D798(unsigned int p)
 {
@@ -1395,7 +1391,7 @@ int duel_0883D798(unsigned int p)
         /* 0x143E in a field spell zone */
         for (i = 0; i < 2; i++) {
             if (duel_slot_e8170(i, 10, 0x143E) != 0) {
-                duel_0884F30C(((unsigned int)(i & 1) << 31 & 0x80000000) | ((i != duel_turn_player) << 24 & 0x1000000) | 0x2A143E,
+                duel_0884F30C(((unsigned int)(q = i) << 31 & 0x80000000) | ((i != duel_turn_player) << 24 & 0x1000000) | 0x2A143E,
                               CARD_UID(duel.players[i & 1].field[10].card), 0);
             }
         }
@@ -1464,7 +1460,6 @@ int duel_0883D798(unsigned int p)
     duel_w_08919610 = 0;
     return 0;
 }
-#endif
 
 /* p: attacking player; after the battle: flips, moved cards, then the end of the battle step */
 int duel_0883E63C(unsigned int p)

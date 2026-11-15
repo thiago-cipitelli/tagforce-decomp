@@ -391,7 +391,11 @@ unsigned int duel_0880BD00(unsigned int p, int id, unsigned short x)
     return r;
 }
 
-#ifdef NON_MATCHING /* no caso 0x19C2 o original calcula (1 - p) * 0xDC antes de tz * 0x2C ao indexar duel_w_08913CF4.st; a ordem dos índices não se reproduz */
+#ifdef NON_MATCHING /* no caso 0x19C2 o original calcula (1 - p) * 0xDC antes de tz * 0x2C ao indexar duel_w_08913CF4.st; a ordem dos índices não se reproduz.
+   Rodada 34: ler a máscara por volatile (`*(volatile unsigned int *)&duel_w_08913CF4.st[1 - p][tz].mask`) dá a ordem
+   do original (20 -> 1 palavra), mas a carga volatile não dobra o deslocamento do campo no endereço (`lw 36(v1)` em
+   vez de `lw 0(v1)` com o +0x24 na relocação), então não foi adotado; sem efeito: (m = máscara) dentro do &,
+   instruções separadas, ponteiro para a linha st[1 - p], vista plana de palavras, operandos do & trocados */
 /* Does the effect of the monster at (p, z) work well against the opponent's monster in zone tz? */
 int duel_0880C15C(unsigned int p, int z, int tz)
 {

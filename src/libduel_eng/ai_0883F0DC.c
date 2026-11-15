@@ -117,12 +117,17 @@ int duel_0883F2CC(unsigned int p)
     return 1;
 }
 
-#ifdef NON_MATCHING /* 23 palavras (eram 231): casos 5 e 8 com um return 0 por ramo e o teste != 0 primeiro; caso 3
+#ifdef NON_MATCHING /* 17 palavras (eram 231): casos 5 e 8 com um return 0 por ramo e o teste != 0 primeiro; caso 3
    com o ponteiro do jogador pl (indução de pl->field[z]) e (unsigned int)z << 16 sem redução de força. Rodada 33: v
    como int (e não unsigned) põe p em s0 e ofs em s1 (79 -> 23); um contador por laço não muda. Falta: prot em s2 e b24 em
    s3 no original (aqui trocados, e com eles o ponteiro do 1º laço e o invariante (p << 31) | 0x200000 do caso 3); sem
    efeito: 400 sorteios de ordem x declaração/instrução x identidade dos contadores, tipos e 12 formas de prot/b24,
-   temporário nomeado no | do caso 0, ev/m explícitos no caso 3 */
+   temporário nomeado no | do caso 0, ev/m explícitos no caso 3.
+   Rodada 34: `prot = (f & 1) != 0 || b24 != 0;` (mesmo código do if) acerta prot em s2 e b24 em s3 (23 -> 17).
+   Sobram os dois laços de campo do caso 3: o original dá s2 ao ponteiro do 1º laço e ao CONTADOR do 2º, e s5 ao
+   contador do 1º e ao ponteiro do 2º (aqui contador s5 e ponteiro s3 nos dois, invariante em s2 em vez de s3).
+   O mesmo contador nos dois laços, ou o do 2º declarado no bloco depois de pl, dá esse cruzamento mas desloca
+   p/ofs/prot (72); 300 sorteios de ordem x contadores x contadores de bloco não passam de 17 */
 #define PFO(T, f) (*(T *)((char *)&duel.players[0].f + ofs))
 int duel_0883F3A0(void)
 {
@@ -142,9 +147,7 @@ int duel_0883F3A0(void)
     ofs = (p & 1) * 0xFAC;
     f = PFO(unsigned int, flags);
     b24 = f >> 24 & 1;
-    prot = (f & 1) != 0;
-    if (!prot)
-        prot = b24 != 0;
+    prot = (f & 1) != 0 || b24 != 0;
     switch (duel_w_08919600) {
     case 0:
         if (prot | duel_slot_has_effect(p, 0xB, 0x14FF) | duel_slot_has_effect(p, 0xB, 0x1548)) {

@@ -716,7 +716,10 @@ int duel_d_find_name(unsigned int, int);
    Rodada 33: ev = { 0 } num bloco no lugar do laço de bytes (mesmo código). O original tem cinco variáveis na
    classe alta (f s8, z s7, x s6, grave s5, ban s4) e aqui só quatro: grave como local cai para $s0 e como
    parâmetro fica entre p e c; tipos (enum, char, short), lnot_(), forma dos && (120 combinações de if aninhado),
-   q/k reaproveitando ban e ordem K&R dos parâmetros não mudam o mapa */
+   q/k reaproveitando ban e ordem K&R dos parâmetros não mudam o mapa.
+   Rodada 34 (modelo do alocador em docs/matching.md): aqui o mwcc escolhe 4 candidatos (f, z, x, ban) e empilha o
+   resto por índice (p, i, c, id, o); o original escolhe 5 (f, z, x, grave, ban). grave como local com um uso a
+   menos vira candidato, mas então x deixa de ser (f, z, grave, ban; x cai para s2): são sempre 4 */
 /* card c (index i) of zone z of p banished or sent to the graveyard (x: by the opponent's effect), with the
    triggers of the cards that watch it */
 void duel_088C6BC8(unsigned int p, int z, int i, DuelCard *c, int x)
