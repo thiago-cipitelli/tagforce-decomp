@@ -1,6 +1,5 @@
 // @range 0x08805DF4-0x08806FC4
 // @rodata 0x08834DB4-0x08834E3C
-// @asm 0x08806200-0x08806390
 /* Drawing of the SD characters: the 3D model, the sprite sheets (sd_*_sla.gim) as billboards under
    an orthographic projection, the flat sprite; the vertex quad of a sprite cell and the kind of
    drawing each chara id uses. The large draw callbacks are still in asm. */
@@ -162,7 +161,6 @@ void fld_chr_model_quads(int which, FieldVtx *q, int dir, int anim, int frame)
     q[0].z = 0.0f;
 }
 
-#ifdef NON_MATCHING /* C novo, conferido com o asm. 2 palavras: o teste do case 2 sai beq/nop para o corpo do default no original, beql com cópia aqui (ordens dos case e default fundido testados) */
 /* character drawn from its two sprite sheets: tex[1] first, then tex[0] over it, each a billboard
    quad under the orthographic projection; frames from the charmap entry; then its effect */
 void *fld_chr_draw_sprite(void *list, FieldChr *c)
@@ -174,12 +172,9 @@ void *fld_chr_draw_sprite(void *list, FieldChr *c)
 
     if (charmap_lookup2(c->id, &p) != 0) {
         switch (p.b) {
+        case 0:         /* one body: the tests of 3 and 2 stay, 3 takes the likely copy, 2 branches to the body */
         case 2:
-            frame = 0;
-            break;
         case 3:
-            frame = 0;
-            break;
         default:
             frame = 0;
             break;
@@ -209,7 +204,6 @@ void *fld_chr_draw_sprite(void *list, FieldChr *c)
         list = fld_fx_draw(list, (void *)c->fx);
     return list;
 }
-#endif
 
 extern int field_chr_sprite_cells[5][7][2];     /* 0x08834C14 sheet cell (u, v) by facing: idle, 6 walk frames */
 extern signed char field_chr_sprite_dy[][5][7]; /* 0x08834D30 vertical offset by size, facing and frame */
