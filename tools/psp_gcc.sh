@@ -4,7 +4,8 @@
 # original as `addu`). Both come from decomp.me's compiler collection (tools/setup_toolchain.sh; 32-bit Linux binaries).
 # usage: tools/psp_gcc.sh [-DNAME...] [-I dir...] -c in.c -o out.o     (docs/build.md, "Trilha GCC")
 # Flags found by matching newlib/libgcc functions of BOOT: -O2 -G0 -mext. One section per function, as the linker
-# script expects (.text.<function>). `// @cc gcc -fexceptions -fnon-call-exceptions`: flags after the marker are added (libgcc builds
+# script expects (.text.<function>). The Sony libraries (libgu, libsas, libwave, libccc...) were built with -O3: `// @cc gcc -O3`.
+# `// @cc gcc -fexceptions -fnon-call-exceptions`: flags after the marker are added (libgcc builds
 # its division functions with those two).
 HERE=$(cd "$(dirname "$0")" && pwd)
 CC1=$(ls "$HERE"/ext/psp-gcc-1.7.1/lib/gcc-lib/psp/*/cc1 2>/dev/null)
@@ -25,7 +26,17 @@ MARK=$(sed -n 's|^// @cc gcc||p;20q' "$IN")
 SYS=; case "$MARK" in *include/newlib-*) SYS="-I$(dirname "$CC1")/include";; esac
 S=${OUT%.o}.s
 rm -f "$OUT"
-"$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT" || exit 1
+# The game's SDK came from a later revision of this compiler; tools/psp_gcc_peep.py rewrites the assembly of cc1 to
+# what that revision emits (field-clearing AND -> `ins rd,$0`, unused static const dropped). It reads the RTL that
+# -dP writes before each instruction; the names of the unused statics come from a second cc1 run (-Dconst= -Wunused-variable). `-nopeep` on the marker line turns it off for the file.
+PEEP=1; case " $MARK " in *" -nopeep "*) PEEP=0; MARK=$(echo " $MARK " | sed 's/ -nopeep / /');; esac
+if [ $PEEP = 1 ]; then
+  "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w -dP $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S.cc1" \
+    && UNUSED=$("$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -Dconst= -Wunused-variable $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o /dev/null 2>&1 | sed -n "s/.*warning: \`\(.*\)' defined but not used\$/\1/p") \
+    && python3 "$HERE/psp_gcc_peep.py" "$S.cc1" "$S" $UNUSED && rm -f "$S.cc1" && "$AS" "$S" -o "$OUT" || exit 1
+else
+  "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT" || exit 1
+fi
 [ -f "$OUT" ] || exit 1
 # The original link kept every constant of .rodata.cst4/.cst8/.str1.4 (no merging across objects): clear SHF_MERGE and
 # SHF_STRINGS so psp-ld leaves the sections as they are.
