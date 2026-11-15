@@ -197,7 +197,7 @@ display lists da GE (como o PPSSPP; cobre `sceGu` e `dl.c` de uma vez) ou reescr
 Pendência da rodada 27 resolvida na rodada 33: `debug_menu_draw` e `debug_menu_update` (libduel_draw,
 `dd_debug_menu.c`, menu de debug inacessível no jogo de varejo) têm C batendo, com os protótipos da tabela de
 `dd_scene_mode.c` (`unsigned int *debug_menu_draw(unsigned int *list)`, `void debug_menu_update(void)`). Os dois
-stubs vazios de `platform/pc/missing.c` passam a duplicar essas definições e devem sair (o arquivo fica sem função).
+stubs vazios de `platform/pc/missing.c` duplicavam essas definições; o arquivo foi removido (2026-11-15).
 
 ## 4. Passo 4a: todos os módulos num executável de 32 bits (feito em 2026-11-14)
 
@@ -216,7 +216,7 @@ Nada em `src/`, `include/` ou `symbols/` mudou: o matching não é afetado. Eram
 | módulo | `ld -r` de objetos + dados → `build/host/mod/<m>.o` |
 | repetidos entre módulos | ficam no BOOT; em cada gmodule viram `<m>_nome` (`objcopy --redefine-sym`; quem importa de um gmodule segue a linha `import:<lib>`): `module_entry` (13), `module_start` (8 + BOOT), `res_get` (libdeck_swap, libpassword, libselect_card), `voice_start` (libduel_draw contra BOOT). Tabela gerada em `platform/pc/modules.c` (`host_mod_syms`: módulo, nome original, endereço) para o carregador de gmodules do PC |
 | firmware | `platform/pc/stubs.c` (`tools/host_stubs.py`, `--selftest` compila): 294 `sce*`/NIDs de todos os `symbols/*.txt` (não só do BOOT); 98 com o protótipo do `include/psp.h`, o resto `int nome()`; cada um loga o nome uma vez e retorna 0 |
-| resto do `platform/pc` | `libc.c`: `platform_malloc/free/realloc/memalign` (sobre `__libc_*` da glibc), `libc_init/fini` vazios, `libc_thread_reent` → 0; `missing.c`: `debug_menu_draw/update` vazios |
+| resto do `platform/pc` | `libc.c`: `platform_malloc/free/realloc/memalign` (sobre `__libc_*` da glibc), `libc_init/fini` vazios, `libc_thread_reent` → 0; `missing.c` removido em 2026-11-15 (o menu de debug tem C) |
 
 Log por módulo (weak, globalize, estatística dos dados) em `build/host/host_link.log`; saída do `ld` em
 `build/host/link.log`.
