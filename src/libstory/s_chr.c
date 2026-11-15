@@ -1,7 +1,6 @@
 // @range 0x08804270-0x088062FC
 // @asm 0x088044EC-0x08804570
 // @asm 0x088048C8-0x08804908
-// @asm 0x08805974-0x08805B68
 /* Story characters (150): the script tables of each one (Scr<i>_G/Step/Deck/DH/DN/Sche/...), their
    saved state (level, affinity, flags, position, look, deck in use), the conditions of the tables
    (date, level, flags, weekday, daytime) and the daily update that picks look, place and deck. */
@@ -887,49 +886,53 @@ int st_cond_affinity(int i, unsigned int v)
 }
 
 /* first DH (mode 2) or DN (mode 3) entry whose conditions hold; its first word is the look id */
-#ifdef NON_MATCHING /* o original lê locais não inicializados da pilha e mantém mode em 72(sp); layout de pilha não reproduzido */
+/* the conditions live in a local struct that only modes 2 and 3 fill (the original copies its uninitialised
+   stack slots into registers in the prologue): callers always pass 2 or 3 */
 int st_chr_dn_find(int i, int mode)
 {
     unsigned short *dh = ST_CHR(i)->dh;
     unsigned short *dn = ST_CHR(i)->dn;
-    unsigned int level, daytime, flag, partner, day, affinity;
-    unsigned int bit, fmode, id;
+    struct {
+        int level, daytime, flag, partner, bit, fmode, day, affinity, id;
+    } c;
 
     sdate_check(0);
     for (;;) {
-        if (mode == 3) {
-            level = dn[1];
-            daytime = dn[2];
-            bit = dn[5];
-            flag = dn[3];
-            partner = dn[4];
-            fmode = dn[6];
-            id = dn[0];
-            day = dn[7];
-            affinity = dn[8];
-        } else if (mode == 2) {
-            level = dh[1];
-            daytime = dh[2];
-            bit = dh[5];
-            flag = dh[3];
-            partner = dh[4];
-            fmode = dh[6];
-            id = dh[0];
-            day = dh[7];
-            affinity = dh[8];
+        switch (mode) {
+        case 2:
+            c.level = dh[1];
+            c.daytime = dh[2];
+            c.bit = dh[5];
+            c.flag = dh[3];
+            c.partner = dh[4];
+            c.fmode = dh[6];
+            c.id = dh[0];
+            c.day = dh[7];
+            c.affinity = dh[8];
+            break;
+        case 3:
+            c.level = dn[1];
+            c.daytime = dn[2];
+            c.bit = dn[5];
+            c.flag = dn[3];
+            c.partner = dn[4];
+            c.fmode = dn[6];
+            c.id = dn[0];
+            c.day = dn[7];
+            c.affinity = dn[8];
+            break;
         }
-        if ((level == 0 || st_chr_level_is(i, level))
-            && (daytime == 0 || st_cond_daytime(daytime))
-            && (flag == 0 || story_flag_get(flag))
-            && (partner == 0 || st_cond_partner_flag(partner, bit, fmode))
-            && (day == 0 || st_cond_day(day))
-            && (affinity == 0 || st_cond_affinity(i, affinity)))
-            return id;
+        if ((c.level == 0 || st_chr_level_is(i, c.level))
+            && (c.daytime == 0 || st_cond_daytime(c.daytime))
+            && (c.flag == 0 || story_flag_get(c.flag))
+            && (c.partner == 0 || st_cond_partner_flag(c.partner, c.bit, c.fmode))
+            && (c.day == 0 || st_cond_day(c.day))
+            && (c.affinity == 0 || st_cond_affinity(i, c.affinity)))
+            return c.id;
         dh += 9;
         dn += 9;
     }
 }
-#endif
 
 int st_chr_dn_pick(int i)
 {
