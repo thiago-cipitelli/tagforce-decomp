@@ -542,6 +542,27 @@ void sceVfpuVector3Add(...) { /* equivalente em C para o port */ }
 - Funções falsas do Ghidra (corpo de `case` de jump table separado) precisam ficar dentro do `@asm` da função mãe, senão o link falha no rótulo da jtbl.
 - Renomear um `ehsys_*`/`func_*` quebra os `.c` que o chamam pelo nome antigo: `grep` em `src/` antes, ou corrija por endereço depois de um merge.
 
+## Trilha GCC: código do SDK compilado pelo GCC da Sony
+
+O SDK linkado no BOOT saiu do `psp-gcc` da Sony, um GCC 3.3.x com o patch `allegrex` (não do GCC 4 do pspdev). A prova é o próprio binário: 202 funções do `libc.a`, 9 do `libm.a` e 23 do `libgcc.a` que vêm no `psp-gcc 1.7.1` (`GCC 3.3.3+allegrex-2.2.2-psp-1.7.1`, coleção de compiladores do decomp.me) aparecem byte a byte no `.text` do BOOT, relocações à parte.
+
+- **Compilador do pipeline:** `tools/psp_gcc.sh` roda o `cc1` do psp-gcc 1.7.1 e o `psp-as` do psp-gcc 1.3.1 (o `psp-as` moderno codifica `move` como `or`; o original usa `addu`). Os dois vêm de `tools/setup_toolchain.sh` (binários Linux de 32 bits, em `tools/ext/`, gitignored).
+- **Flags:** `-O2 -G0 -mext` (o `-mext` liga `ext`/`ins`; `__kernel_cosf` só bate com ele), mais `-ffunction-sections` para o linker script colocar função por função. Flags por arquivo vão na linha do marcador: a libm do newlib precisa de `-fno-builtin` (a original chama `fabsf` em vez de emitir `abs.s`) e as divisões da libgcc de `-fexceptions -fnon-call-exceptions` (é como o `mklibgcc` compila `LIB2_DIVMOD_FUNCS`; sem elas `__udivdi3` sai 14 palavras menor).
+- **Marcadores:**
+  - `// @cc gcc [flags]` nas primeiras 20 linhas: `tools/mwcc.sh` manda o arquivo para `tools/psp_gcc.sh`, então `make`, `check_file.py`, `objdiff_gen.py` e os demais seguem o marcador sem mudança.
+  - `// @gcc 0xA-0xB [nome]` num arquivo do mwcc: as funções dessa faixa moram em `src/<m>/<nome>.c` (padrão `<arquivo>_gcc.c`), que tem `// @cc gcc` e nenhum `@range`. A faixa tem de terminar no fim da última função (o que sobra de padding continua `@asm`).
+  - `// @rodata` num arquivo GCC cobre `.rodata` e `.rodata.*` (`.rodata.cst4`, `.cst8`, `.str1.4`), que o link original deixou juntos, por objeto. O `psp_gcc.sh` tira `SHF_MERGE`/`SHF_STRINGS` do objeto, senão o `psp-ld` funde as constantes de todos os objetos.
+  - O `fix_ld.py` sempre coloca um objeto GCC função por função (o GCC emite na ordem do fonte, que nem sempre é a dos endereços).
+- **Fonte:** onde o fonte é público, o arquivo é o fonte: `include/gcc-3.3.3/` tem `libgcc2.c`, `fp-bit.c` e seus headers sem alteração (mais um `tconfig.h` com os valores do alvo), e os `libm_*.c`/`strtol.c`/`libc_strcasecmp.c` trazem o texto do newlib 1.13.0 com um cabeçalho local (`src/BOOT/fdlibm.h`). O ramo `#ifdef __mips__` é o do PSP; o `#else` guarda o C do port quando ele precisa ser outro (libgcc, fp-bit).
+- **Um arquivo por objeto original** quando o objeto tem dados: as constantes de cada `.o` ficam juntas no `.data` do BOOT, então dois objetos com `.rodata` não cabem na mesma unidade de tradução. `build/tmp/lG/gccdata.py` (cópia local) deduz o endereço das seções a partir dos pares HI16/LO16 de uma função que já bate.
+- **Ordem dentro da unidade importa:** o GCC 3.3 muda o layout da chamada quando já viu o corpo da função chamada. Em `fpbit_df.c` o `__fpcmp_parts_d` é compilado numa segunda inclusão do `fp-bit.c`, depois das comparações, como se fossem objetos separados.
+- **Limite conhecido (o que falta):** o GCC do jogo é uma revisão posterior do mesmo psp-gcc. Diferenças vistas, sempre as mesmas:
+  1. máscara que zera um campo de bits sai como `ins rd, zero, pos, n` no original (`x & 0x7fffffff` → `mfc1 a1; ins a1,zero,31,1`; `x & 0xffffff` → `ins a1,zero,24,8`). O 1.7.1 emite `ext` para máscara baixa e `lui/ori/and` para as outras; o padrão `ins %0,$0` existe no `cc1` do 1.7.1, mas só casa com atribuição de zero a bitfield.
+  2. deslocamentos de 64 bits em linha (`__pack_d`, `__unpack_d`), onde o 1.7.1 chama a libgcc.
+  3. `static const` que o fonte não usa não é emitido (o `one` de `sf_cos.c`); o 1.7.1 emite, e `-fno-keep-static-consts` não muda isso. Por essa razão `sf_cos.c` ficou fora, embora o código bata.
+  Isso bloqueia toda a libgu (o comando GE é `cmd << 24 | (arg & 0xffffff)`), libwave/libsas/libccc/libdeflt, e na libm `floorf`, `scalbnf`, `atanf`, `__ieee754_*`, `__kernel_sinf` (2 palavras), `asinf`. Uma versão posterior do psp-gcc da Sony (SDK 2.x/3.x) não está em fonte pública nenhuma que eu tenha achado; com ela, basta trocar o caminho em `tools/psp_gcc.sh`.
+- **Como testar uma função:** `tools/mwcc.sh -c arquivo.c -o x.o` e comparar com o ELF (o `check_file.py` segue o marcador); `make MODULE=BOOT check` é o teste real, porque só ele vê o `.rodata` no lugar.
+
 ## Análise via Ghidra e REA (opcional)
 
 - Export headless (alimenta `tools/decomp_view.py`): `$GHIDRA/support/analyzeHeadless build/ghidra tf -import build/elf/<m>.elf -scriptPath tools/ghidra -postScript ExportDecomp.java symbols/<m>.txt build/decomp/<m> -deleteProject` (Ghidra 12.1.3 com ghidra-allegrex v21.4 em `Ghidra/Extensions/`). Gera um `.c` por função e `index.tsv` (endereço, nome, tamanho, callees, callers, strings).
@@ -558,4 +579,4 @@ void sceVfpuVector3Add(...) { /* equivalente em C para o port */ }
 
 - `.bss`: os globais do C continuam `extern` (definidos pelo asm de `.bss`), salvo nos arquivos com `// @bss`: `splat_config.py` divide o segmento `bss` em `bss_N` (asm) e um subsegmento `.bss` com o nome do arquivo, que o splat liga naquela posição (ver `docs/matching.md`, "`static` em `.bss`").
 - `include/` só tem o que o `ehfile` usa; crescer por subsistema.
-- BOOT: todo o `.text` em C. Faltam as ~400 funções em `@asm`; na parte do SDK compilada com GCC, quase todas porque carregam dados por `lui r` + `lw/lwc1 x(r)` (ver "Código GCC como funções `asm` do mwcc").
+- BOOT: todo o `.text` em C. Faltam as ~400 funções em `@asm`; na parte do SDK compilada com GCC, quase todas porque carregam dados por `lui r` + `lw/lwc1 x(r)` (ver "Código GCC como funções `asm` do mwcc"). Desde a rodada 34 essas funções podem sair de C pelo GCC do SDK (ver "Trilha GCC").
