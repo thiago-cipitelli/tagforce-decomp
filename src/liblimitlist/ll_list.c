@@ -1,5 +1,5 @@
 // @range 0x0880740C-0x08808934
-// @asm 0x08808030-0x08808418
+// @asm 0x088081C8-0x08808418
 // @data 0x0880D634-0x0880D63C
 /* The three lists (forbidden, limited, semi-limited) built from the card database, list/grid
    cursor movement with paging, tab switching, the card info state and the deck check run when
@@ -249,20 +249,23 @@ void ll_set_tab_anim(int tab)
         ehf_set_anim(e, tab, tab + 1);
 }
 
-#ifdef NON_MATCHING /* forma igual (o clamp do topo como `top + c > 0 ? top + c : 0` dá o blezl); só a ordem dos loads iniciais (top, rep, count, cur) e os temporários t* diferem */
 /* cursor of the name list (7 rows), wrapping at both ends */
 void ll_move_list(PadBits *pad)
 {
-    unsigned int rep = pad->rep;
-    unsigned int t = ll.tab;
-    int top = ll.top[t];
-    int cur = ll.cursor[t];
-    int count = ll.count[t];
-
-    int changed = 0;
-    int d = 0;
     int c;
+    int count;
+    int cur;
+    int top;
+    int d;
+    unsigned int t;
+    unsigned int rep = pad->rep;
+    int changed = 0;
 
+    t = ll.tab;
+    top = ll.top[t];
+    cur = ll.cursor[t];
+    count = ll.count[t];
+    d = 0;
     if (rep & 0x40)
         d++;
     if (rep & 0x10)
@@ -299,7 +302,6 @@ void ll_move_list(PadBits *pad)
     if (changed)
         se_play(0x6212);
 }
-#endif
 
 #ifdef NON_MATCHING /* forma igual (clamp `top + row > 0 ? top + row : 0`, `rows > 6`, col antes de row); só sobra a troca t3/t4 entre t*2 (com dy) e changed no prólogo */
 /* cursor of the picture grid (11 x 6), wrapping at both ends */
