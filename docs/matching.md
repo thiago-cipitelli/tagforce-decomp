@@ -3378,7 +3378,7 @@ Nove entradas antigas batendo, uma a 4 instruções. Em nenhuma a causa era orde
 
 ## Rodada 33 (`jA`): um bloco dá a cópia do `likely` a um desvio só; enum de parâmetro; operação em 16 bits na própria variável
 
-9 das 20 entradas de libtitle/libshop/libfield/libstory batendo (`tframe`, `ttab_draw`, `tpt_sprite`,
+8 das 20 entradas de libtitle/libshop/libfield/libstory batendo (`tframe`, `ttab_draw`, `tpt_sprite`,
 `tfd_regulation_select`, `shop_result_input`, `shop_item_key`, `fld_chr_draw_sprite`, `op_bgm`) e `tcfg_draw` 229 -> 5.
 
 - **Um bloco só entrega a cópia da sua 1ª instrução a UM desvio** (a conversão `bne X; nop` -> `bnel X+4; <cópia>`).
