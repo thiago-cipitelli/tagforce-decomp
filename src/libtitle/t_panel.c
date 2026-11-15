@@ -313,7 +313,7 @@ void *ttab_draw(void *list, TTab *t, unsigned short i, int a, int sel)
 }
 #endif
 
-#ifdef NON_MATCHING /* 24 palavras (de 114: contador próprio `tab` declarado primeiro no laço das abas, tframe_tab com protótipo int no bloco, y da barra do cursor sem variável); faltam a ordem das cargas dos argumentos de tframe_cursor (o original calcula iy - 1 antes de ix - 1) e i/iy trocados (s0/s1) no laço de b->draw */
+#ifdef NON_MATCHING /* 8 palavras (eram 24): os argumentos de tframe_cursor passam por ix/iy/iw/ih (as variáveis short, nessa ordem); falta só i/iy trocados (s0/s1) no laço de b->draw (ordem das declarações, das atribuições, contador ou y próprios e y int não mudam) */
 /* the two-column layout of the panel (f0 == 2) */
 void *tpanel_draw_split(void *list, TPanel *p)
 {
@@ -361,8 +361,11 @@ void *tpanel_draw_split(void *list, TPanel *p)
     }
     if (!b->no_cursor) {
         list = tframe_bar(list, 1, 0xFFFFFFFF, b->ix + 23, (short)(b->iy + sel * (b->ih + 1)) + 4, 88, 14);
-        list = tframe_cursor(list, b->color, (short)(b->ix - 1), (short)(b->iy - 1 + sel * (b->ih + 1)),
-                             (short)(b->iw + 2), (short)(b->ih + 2));
+        ix = b->ix - 1;
+        iy = b->iy - 1 + sel * (b->ih + 1);
+        iw = b->iw + 2;
+        ih = b->ih + 2;
+        list = tframe_cursor(list, b->color, ix, iy, iw, ih);
     }
     if (!b->no_scroll) {
         sx = b->x + b->w - 12;
