@@ -3,6 +3,8 @@
 // @gcc 0x0880A694-0x0880A764 nl_bsearch
 // @gcc 0x0880A820-0x0880A87C
 // @asm 0x0880AAC4-0x0880BF10
+// @gcc 0x0880BF10-0x0880BF2C nl_errno
+// @asm 0x0880BF2C-0x0880BF40
 /* newlib (GCC) of the Sony SDK libc: atexit, bsearch, _calloc_r, _close_r, the quorem and _dtoa_r
    of dtoa.c, __errno and exit. The reentrancy struct of the calling thread comes from
    libc_get_thread_module (newlib's _REENT). Functions that reach globals through %hi/%lo stay in
@@ -458,23 +460,7 @@ char *_dtoa_r(void *r, double d, int mode, int ndigits, int *decpt, int *sign, c
 #endif
 
 /* newlib __errno: errno is the first word of the current reent struct */
-#ifdef __MWERKS__
-asm int *__errno(void)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal heap_get_current
-    nop
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-    nop
-    nop
-    nop
-    nop
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_errno.c */
 int *__errno(void)
 {
     return heap_get_current();

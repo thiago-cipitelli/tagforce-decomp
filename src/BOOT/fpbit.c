@@ -1,4 +1,5 @@
 // @range 0x08817784-0x08817D70
+// @gcc 0x08817978-0x088179F4 fpbit_sf
 /* libgcc software floating point (fp-bit.c, the GCC 3/4 generation: QUIET_NAN 0x100000 for single,
    denormals supported) for the soft-float GCC code in BOOT: the single-precision objects (pack, unpack, make,
    float to double) and the double pack/unpack. Numbers are unpacked into class/sign/exponent/fraction with guard
@@ -288,23 +289,7 @@ void __unpack_f(const float *src, FpF *dst)
 }
 #endif
 
-#ifdef __MWERKS__
-asm float __make_fp(int class, unsigned int sign, int exp, unsigned int frac)
-{
-    addiu sp, sp, -32
-    move v0, a0
-    move a0, sp
-    sw ra, 16(sp)
-    sw v0, 0(sp)
-    sw a1, 4(sp)
-    sw a2, 8(sp)
-    jal __pack_f
-    sw a3, 12(sp)
-    lw ra, 16(sp)
-    jr ra
-    addiu sp, sp, 32
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpbit_sf.c */
 float __make_fp(int class, unsigned int sign, int exp, unsigned int frac)
 {
     FpF in;
@@ -317,30 +302,7 @@ float __make_fp(int class, unsigned int sign, int exp, unsigned int frac)
 }
 #endif
 
-#ifdef __MWERKS__
-asm double __extendsfdf2(float a)
-{
-    addiu sp, sp, -48
-    addiu a0, sp, 16
-    move a1, sp
-    sw ra, 32(sp)
-    jal __unpack_f
-    swc1 $f12, 16(sp)
-    move t1, zero
-    lw t0, 12(sp)
-    lw a0, 0(sp)
-    lw a1, 4(sp)
-    lw a2, 8(sp)
-    srl v0, t0, 0x2
-    sll t1, t1, 0x1e
-    or t1, t1, v0
-    jal __make_dp
-    sll t0, t0, 0x1e
-    lw ra, 32(sp)
-    jr ra
-    addiu sp, sp, 48
-}
-#else
+#ifndef __MWERKS__ /* PSP: fpbit_sf.c */
 double __extendsfdf2(float a)
 {
     return (double)a;
