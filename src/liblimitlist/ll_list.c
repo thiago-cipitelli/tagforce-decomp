@@ -1,5 +1,4 @@
 // @range 0x0880740C-0x08808934
-// @asm 0x088081C8-0x08808418
 // @data 0x0880D634-0x0880D63C
 /* The three lists (forbidden, limited, semi-limited) built from the card database, list/grid
    cursor movement with paging, tab switching, the card info state and the deck check run when
@@ -303,25 +302,31 @@ void ll_move_list(PadBits *pad)
         se_play(0x6212);
 }
 
-#ifdef NON_MATCHING /* forma igual (clamp `top + row > 0 ? top + row : 0`, `rows > 6`, col antes de row); só sobra a troca t3/t4 entre t*2 (com dy) e changed no prólogo */
 /* cursor of the picture grid (11 x 6), wrapping at both ends */
 void ll_move_grid(PadBits *pad)
 {
-    unsigned int t = ll.tab;
-    unsigned int rep = pad->rep;
-    int cur = ll.cursor[t];
-    int col = cur % 11;
-    int row = cur / 11;
-    int top = (ll.top[t] + 10) / 11;
-    int rows = (ll.count[t] + 10) / 11;
+    int row;
+    unsigned int t;
+    int top;
     int dx;
     int dy;
+    int cur;
+    int rows;
     int c;
+    int col;
     int changed;
+    unsigned int rep;
 
-    dy = 0;
-    dx = 0;
+    rep = pad->rep;
+    t = ll.tab;
     changed = 0;
+    cur = ll.cursor[t];
+    col = cur % 11;
+    row = cur / 11;
+    top = (ll.top[t] + 10) / 11;
+    rows = (ll.count[t] + 10) / 11;
+    dx = 0;
+    dy = 0;
     if (rep & 0x40)
         dy++;
     if (rep & 0x10)
@@ -365,7 +370,6 @@ void ll_move_grid(PadBits *pad)
     if (changed)
         se_play(0x6212);
 }
-#endif
 
 void ll_update_cursor(void)
 {

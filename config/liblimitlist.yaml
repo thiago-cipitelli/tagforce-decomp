@@ -33,8 +33,6 @@ segments:
       - [0x2124, c, ll_main]
       - [0x24F0, c, ll_screen]
       - [0x346C, c, ll_list]
-      - [0x4228, asm, ll_list_asm_088081C8]
-      - [0x4478, c, ll_list]
       - [0x4994, c, ll_menu]
       - [0x5598, asm, sceStub_text]
       - [0x7C80, bin, lib_ent_top]
