@@ -388,9 +388,15 @@ void duel_req_move_zone(void)
 #ifdef NON_MATCHING /* reescrito com ZOSLOT/ZOFF e zo num local (era 264 palavras com tamanho errado); 7 instruções a
                       menos que o original: o original não reaproveita o endereço da zona A do teste (recalcula sa depois
                       do 1º memcpy) e guarda bo e o deslocamento do jogador B na pilha; nenhuma forma testada de sa ou do
-                      teste desfaz o CSE */
+                      teste desfaz o CSE.
+   Rodada 34: fa/fb/fl como `struct { unsigned short w; }` (ficam em registrador, mas reservam os 12 bytes de pilha
+   que o original tem abaixo dos derrames: quadro de 96 bytes e tmp em sp+76 como no original) e as máscaras dos
+   flags antes de fb/fa/fl: distância alinhada 118 -> 86. Falta o mesmo de antes: o endereço da zona A do teste
+   fica em $s (o original o refaz depois do 1º memcpy e derrama bo); 81 pares de formas (teste x sa), (q = ap),
+   sb antes do teste e const/objetos separados não desfazem o CSE */
 /* Swap the cards of zones arg and loc (player | zone << 8): exchange the slots, hide the ids while
    the host animates the swap, then put them back. */
+typedef struct ZS { unsigned short w; } ZS; /* packed player | zone << 8 */
 void duel_req_swap_zones(void)
 {
     unsigned int a;
@@ -404,9 +410,9 @@ void duel_req_swap_zones(void)
     DuelSlot *sb;
     DuelLoc la;
     DuelLoc lb;
-    unsigned int fa;
-    unsigned int fb;
-    unsigned int fl;
+    ZS fa;
+    ZS fb;
+    ZS fl;
     unsigned int ao;
     unsigned int bo;
 
@@ -433,14 +439,14 @@ void duel_req_swap_zones(void)
         sa = ZOSLOT(ap, ao);
         duel_memcpy(sb, sa, sizeof(DuelSlot));
         duel_memcpy(sa, &tmp, sizeof(DuelSlot));
-        fa = (ap & 0xFF) | (az & 0xFF) << 8;
         ZOFF(ap, ao, unsigned int, flags) &= ~0x200000;
         ZOFF(bp, bo, unsigned int, flags) &= ~0x200000;
-        fb = (bp + 2 & 0xFF) | (bz & 0xFF) << 8;
-        duel_effects_move_src(fa, fb);
-        fl = (bp & 0xFF) | (bz & 0xFF) << 8;
-        duel_effects_move_src(fl, fa);
-        duel_effects_move_src(fb, fl);
+        fb.w = (bp + 2 & 0xFF) | (bz & 0xFF) << 8;
+        fa.w = (ap & 0xFF) | (az & 0xFF) << 8;
+        fl.w = (bp & 0xFF) | (bz & 0xFF) << 8;
+        duel_effects_move_src(fa.w, fb.w);
+        duel_effects_move_src(fl.w, fa.w);
+        duel_effects_move_src(fb.w, fl.w);
         duel_req.w = sa->card.id;
         duel_card_tmp.id = sb->card.id;
         sa->card.id = 0;
