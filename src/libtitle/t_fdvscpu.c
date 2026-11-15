@@ -1,6 +1,5 @@
 // @range 0x088162CC-0x08818A88
 // @rodata 0x0882AFD8-0x0882B118
-// @asm 0x08817F98-0x088180AC
 /* Free duel: drawing dispatch, the vs CPU screens, the cursor and regulation sub-screens. */
 #include "libtitle.h"
 int inv_get_bit7_default1(unsigned short id);
@@ -935,7 +934,6 @@ void tfd_regulation_handler(void)
 /* the 1 of the minimum number of decks lives in a register in the original: an enum-typed local is not propagated */
 typedef enum TfdOne { TFD_ZERO, TFD_ONE } TfdOne;
 
-#ifdef NON_MATCHING /* 2 palavras (eram 64): o 1 fica em $a0 com uma variável de tipo enum (lim = one, one <= n); falta o bne do i != 9 para o return 0 final, que o original não converte em likely (bne; nop contra bnel; move v0,zero), a mesma família de shop_result_input */
 /* lim stays whatever the caller left in $a3 unless the kind sets it (the original reads an uninitialized value) */
 int tfd_regulation_select(int i, int unused1, int unused2, int lim)
 {
@@ -961,7 +959,6 @@ int tfd_regulation_select(int i, int unused1, int unused2, int lim)
                 tfd_evt_handler(6, i);
                 return 1;
             }
-            return 0;
         }
     } else if (i == 9) {
         if (one <= n) {
@@ -974,7 +971,6 @@ int tfd_regulation_select(int i, int unused1, int unused2, int lim)
     }
     return 0;
 }
-#endif
 
 /* the player grid of the regulation screen (2 columns) and the duel start button below it */
 int tfd_regulation_input(void)
