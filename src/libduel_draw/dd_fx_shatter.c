@@ -137,6 +137,12 @@ static float dd_rand_sgn(DdRandSeed *r, float s)
 #define DD_RAND_SGN(r, s) dd_rand_sgn(r, s)
 #endif
 
+/* the original repeats both colour expressions at every use (no local): mwcc's common-subexpression temporaries
+   are what puts them in the stack slots 112/116, below the row pointer of the first draw pass */
+#define DD_SHATTER_ALPHA(fade) ((unsigned int)(255.0f * (fade)) << 24 | 0xFFFFFF)
+#define DD_SHATTER_TINT(c, dark) ((unsigned int)(255.0f * (dark)) | ((unsigned int)(220.0f * (dark)) << 8 | \
+                                  ((c).a << 24 | (unsigned int)(130.0f * (dark)) << 16)))
+
 #ifdef NON_MATCHING /* 1196 x 1192 instruções, 60 linhas de estrutura (rodada 27): sorteios certos (DD_RAND6); faltam
    registradores $s (fx em $s7 e step em $s0 no original, aqui $s8/$s1; o contador da 1a passada de desenho em $s8 e
    não na pilha), o par de slots 112/120 e tri[2 + k] como variável de indução nos laços de desenho */
@@ -146,8 +152,6 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
     int step = dd_anim_step();
     float ofs[3];
     unsigned int *list;
-    unsigned int alpha;
-    unsigned int tint;
     float v0;
     float xa;
     float za;
@@ -168,7 +172,6 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
     float du;
     float dv;
     float u0;
-    float u1;
     float nu0;
     float nu1;
     float a;
@@ -185,6 +188,9 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
     int i3;
     int j3;
     int k3;
+    int i6;
+    int i7;
+    int i8;
     float bb[18] __attribute__((aligned(16)));
 
     dd_mtx_billboard_view(bb);
@@ -213,18 +219,17 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
                 sh = &fx->shard[i][j];
                 du = 0.24609375f;
                 u0 = du * j - 0.4921875f;
-                u1 = u0 + du;
                 fx->shard[i][j].tri[0][0].u = u0;  fx->shard[i][j].tri[0][0].v = v0;
                 fx->shard[i][j].tri[0][0].x = xa;  fx->shard[i][j].tri[0][0].y = 0.0f; fx->shard[i][j].tri[0][0].z = za;
                 fx->shard[i][j].tri[0][1].u = u0;  fx->shard[i][j].tri[0][1].v = v1;
                 fx->shard[i][j].tri[0][1].x = xa;  fx->shard[i][j].tri[0][1].y = 0.0f; fx->shard[i][j].tri[0][1].z = hh + oz;
-                fx->shard[i][j].tri[0][2].u = u1;  fx->shard[i][j].tri[0][2].v = v0;
+                fx->shard[i][j].tri[0][2].u = u0 + du;  fx->shard[i][j].tri[0][2].v = v0;
                 fx->shard[i][j].tri[0][2].x = hw + ox; fx->shard[i][j].tri[0][2].y = 0.0f; fx->shard[i][j].tri[0][2].z = za;
                 fx->shard[i][j].tri[1][0].u = u0;  fx->shard[i][j].tri[1][0].v = v1;
                 fx->shard[i][j].tri[1][0].x = xb;  fx->shard[i][j].tri[1][0].y = 0.0f; fx->shard[i][j].tri[1][0].z = hh - oz;
-                fx->shard[i][j].tri[1][1].u = u1;  fx->shard[i][j].tri[1][1].v = v1;
+                fx->shard[i][j].tri[1][1].u = u0 + du;  fx->shard[i][j].tri[1][1].v = v1;
                 fx->shard[i][j].tri[1][1].x = hw - ox; fx->shard[i][j].tri[1][1].y = 0.0f; fx->shard[i][j].tri[1][1].z = hh - oz;
-                fx->shard[i][j].tri[1][2].u = u1;  fx->shard[i][j].tri[1][2].v = v0;
+                fx->shard[i][j].tri[1][2].u = u0 + du;  fx->shard[i][j].tri[1][2].v = v0;
                 fx->shard[i][j].tri[1][2].x = hw - ox; fx->shard[i][j].tri[1][2].y = 0.0f; fx->shard[i][j].tri[1][2].z = zb;
                 nu0 = -u0;
                 nu1 = nu0 - du;
@@ -305,13 +310,11 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
         e = dd_ease_sin(fx->frame, 24, 1);
         dark = 0.7f * (1.0f - dd_ease_sin(fx->frame, 24, 1));
         c = *(DdShatterTint *)dd_fx_shatter_tint;
-        alpha = (unsigned int)(255.0f * fade) << 24 | 0xFFFFFF;
-        list = dl_ambient_light(list, alpha);
+        list = dl_ambient_light(list, DD_SHATTER_ALPHA(fade));
         list = dd_tex_card(list, fx->card, 1);
         list = dd_tex_enable_uv(list, 1, 1, 1, 4, 0, 1, 1, 0.5f, 0.5f, 1.0f + fx->t / 64.0f, 1.0f + fx->t / 64.0f);
         list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
-        tint = (unsigned int)(255.0f * dark) | ((unsigned int)(220.0f * dark) << 8 | (c.a << 24 | (unsigned int)(130.0f * dark) << 16));
-        list = dl_color(list, tint);
+        list = dl_color(list, DD_SHATTER_TINT(c, dark));
         for (i3 = 0; i3 < 6; i3++) {
             for (j3 = 0; j3 < 4; j3++) {
                 sh = &fx->shard[i3][j3];
@@ -326,23 +329,23 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
                 }
             }
         }
-    }
     list = dd_tex_card(list, -1, 1);
     list = dd_tex_enable_uv(list, 1, 1, 1, 4, 0, 1, 1, 0.5f, 0.5f, 1.0f + fx->t / 64.0f, 1.0f + fx->t / 64.0f);
     list = dd_blend_enable(list, 1, 0, 2, 3, 0, 0);
-    list = dl_color(list, tint);
-    for (i = 0; i < 6; i++) {
-        for (j = 0; j < 4; j++) {
-            sh = &fx->shard[i][j];
-            for (k = 0; k < 2; k++) {
+    list = dl_color(list, DD_SHATTER_TINT(c, dark));
+    for (i3 = 0; i3 < 6; i3++) {
+        for (j3 = 0; j3 < 4; j3++) {
+            sh = &fx->shard[i3][j3];
+            for (k3 = 0; k3 < 2; k3++) {
                 mtx_push();
-                mtx_translate(sh->pos[k]);
-                mtx_rotate_zyx(sh->rot[k]);
-                list = draw_array(list, 3, 0x183, 3, 0, (sh->tri + 2)[k]);
+                mtx_translate(sh->pos[k3]);
+                mtx_rotate_zyx(sh->rot[k3]);
+                list = draw_array(list, 3, 0x183, 3, 0, (sh->tri + 2)[k3]);
                 mtx_pop();
-                vec3_add(sh->rot[k], sh->rot[k], sh->spin[k]);
+                vec3_add(sh->rot[k3], sh->rot[k3], sh->spin[k3]);
             }
         }
+    }
     }
     mtx_pop();
     list = dl_disable(list, 5);
@@ -375,7 +378,7 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
     mtx_translate(fx->pos);
     mtx_scale3(fx->scale);
     mtx_mult(bb);
-    list = dl_ambient_light(list, alpha);
+    list = dl_ambient_light(list, DD_SHATTER_ALPHA(fade));
     list = draw_array(list, 5, 0x19F, 6, 0, fx->flash);
     mtx_pop();
     dl_set_list(list);
@@ -388,9 +391,9 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
 
         mat3_identity(m3);
         mat3_from_euler(m3, m3, fx->rot);
-        for (i = 0; i < 16; i++) {
-            sp = &fx->spark[i];
-            a = 6.2831855f * i / 16.0f;
+        for (i6 = 0; i6 < 16; i6++) {
+            sp = &fx->spark[i6];
+            a = 6.2831855f * i6 / 16.0f;
             sa = sinf(a);
             ca = cosf(a);
             r = &rand3_seeds[rand3_slot];
@@ -416,13 +419,13 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
         }
         w = 20.0f;
         du = 0.5f;
-        for (i = 0; i < 4; i++) {
-            tu = du * (i % 2);
-            tv = du * (i / 2);
-            fx->spark_uv[i][0].u = tu;      fx->spark_uv[i][0].v = tv;      fx->spark_uv[i][0].x = -w;
-            fx->spark_uv[i][0].y = w;       fx->spark_uv[i][0].z = 0.0f;
-            fx->spark_uv[i][1].u = tu + du; fx->spark_uv[i][1].v = tv + du; fx->spark_uv[i][1].x = w;
-            fx->spark_uv[i][1].y = -w;      fx->spark_uv[i][1].z = 0.0f;
+        for (i7 = 0; i7 < 4; i7++) {
+            tu = du * (i7 % 2);
+            tv = du * (i7 / 2);
+            fx->spark_uv[i7][0].u = tu;      fx->spark_uv[i7][0].v = tv;      fx->spark_uv[i7][0].x = -w;
+            fx->spark_uv[i7][0].y = w;       fx->spark_uv[i7][0].z = 0.0f;
+            fx->spark_uv[i7][1].u = tu + du; fx->spark_uv[i7][1].v = tv + du; fx->spark_uv[i7][1].x = w;
+            fx->spark_uv[i7][1].y = -w;      fx->spark_uv[i7][1].z = 0.0f;
         }
     }
     list = dl_select_layer(4, 0);
@@ -438,11 +441,11 @@ int dd_fx_shatter_update(int state, DdFxShatter *fx)
     mtx_translate(ofs);
     mtx_scale3(fx->scale);
     e = dd_ease_sin(fx->frame, 24, 1);
-    list = dl_ambient_light(list, alpha);
-    for (i = 0; i < 16; i++) {
+    list = dl_ambient_light(list, DD_SHATTER_ALPHA(fade));
+    for (i8 = 0; i8 < 16; i8++) {
         float p[3];
 
-        sp = &fx->spark[i];
+        sp = &fx->spark[i8];
         vec3_scale(p, sp->dir, e);
         vec3_add(p, p, sp->base);
         mtx_push();
