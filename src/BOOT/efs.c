@@ -1,5 +1,4 @@
 // @range 0x0882923C-0x0882AD90
-// @asm 0x0882A538-0x0882A99C
 // @data 0x088ED758-0x088ED770
 /* EFS effects: .efs files hold trees of commands (the EHF command handlers) under named roots.
    Loading relocates a file and binds every command id to its handler; an instance of a root gets
@@ -686,10 +685,18 @@ int efs_set_args(void **dst, char *fmt, int *src)
     return n;
 }
 
-#ifdef NON_MATCHING /* idêntico ao original a menos de 17 palavras de código morto: o original está no modo sem
-   limpeza depois da conversão para likely (cópias mortas das entradas dos case, dos `addu` e dos `lw s0,4(s0); b; nop`
-   de continuação dos laços, `b` sobre o `else` morto). Com um gatilho artificial (`case 0: return 1;` antes do
-   `case 1`, retorno vazio porque v0 já vale 1) o resto bate palavra por palavra; falta um gatilho sem código. */
+/* O original está no modo sem limpeza depois da conversão para likely (cópias mortas das entradas dos case, dos
+   `addu` e dos `lw s0,4(s0); b; nop` de continuação dos laços, `b` sobre o `else` morto) sem nenhum desvio
+   condicional para o epílogo. Gatilho sem código (rodada 35): um `else` só com a chamada, sem uso do resultado, de
+   um `static inline` com `if (p == 0) return 0; return 1;` no fim do laço da fase 1. */
+static inline int efs_cmd_ok(EfsCmd *cmd)
+{
+    if (cmd == 0) {
+        return 0;
+    }
+    return 1;
+}
+
 /* Runs a command list with its memory: phase 1 returns the memory size, 2 lays it out, 4 frees,
    5 draws (handler flags: 1 skip children, 2 pop the matrix, 8 pop the projection too, 0x80000000
    call again with 6 after the children); other phases are messages for node->msg. */
@@ -725,6 +732,8 @@ unsigned int efs_run(EfsMem *mem, EfsNode *node, EfsCmd *cmd, int phase)
             cmd = cmd->next;
             if (cmd == 0) {
                 return size;
+            } else {
+                efs_cmd_ok(cmd);
             }
         }
     }
@@ -818,7 +827,6 @@ unsigned int efs_run(EfsMem *mem, EfsNode *node, EfsCmd *cmd, int phase)
         }
     }
 }
-#endif
 
 /* Instance memory: argument words and format kept after the commands' memory when given. */
 int efs_inst_init(EfsInst *inst, EfsRef *r, char *fmt, void *args)
