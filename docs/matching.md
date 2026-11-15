@@ -3630,3 +3630,67 @@ era ordem de declaração; os mecanismos, do mais geral para o mais específico:
 - `movie_main_loop` (2 -> 0) com o mecanismo do agente jA (um bloco dá a cópia likely a UM desvio só): um único
   `out: return r;` alcançado pelas três saídas (`goto out` na saída do input e na saída normal, `fail:` caindo nele).
   Em `efs_run` o mesmo (rótulo único para os três `return 0` e/ou os dois `return -1`) piora: 20-31 alinhadas.
+## Rodada 34 (`lB`): bloco vazio que segura o likely, `case A ... B`, proveniência de ponteiro e `const` no escalonador
+
+Terceira passada nas 12 entradas de libduel_draw, libtitle, libshop e libselect_card: 9 batendo (`lps_glyph`,
+`dd_disc_tex_hook`, `tcfg_draw`, `opt_draw`, `shop_draw_shelf`, `sc_draw_counts`, `dd_zone_rebuild`,
+`dd_burst2_update`; mais nada em `dd_info_stats`, `tpanel_draw_split`, `dd_chr_attach_mtx`, `dd_fx_shatter_update`).
+Nenhuma era ordem de declaração. Mecanismos novos:
+
+- **Cópias que o mwcc funde deixam um bloco vazio, e o desvio para ele não vira likely** (`lps_glyph`, 2 -> 0). O
+  original tinha `beq; nop` onde o 219 fazia `beql` + cópia. Os valores padrão moram em variáveis próprias (`qu`,
+  `qv`, definidas no `if` da região) e o caminho que não calcula nada os copia: `if (c != '?') { ...; u = uv[d][0];
+  v = uv[d][1]; } else { u = qu; v = qv; }`. As cópias somem na coloração (mesmo registrador), mas na hora da
+  conversão em likely o bloco do `else` ainda tem instruções, então o desvio não ganha a cópia do bloco seguinte.
+  É a mesma causa da "cópia apagada na cabeça do laço" do `lC`, fora de laço. Sinal: `bXX; nop` para um bloco
+  alcançado também por queda, em função com valores padrão atribuídos antes.
+- **Dois `return 0` no original onde o rascunho tinha um** (`dd_disc_tex_hook`, 2 -> 0; o inverso do "um bloco só"
+  do `jA`): dois `bnezl` + `move v0,zero` direto para o epílogo e um terceiro `move v0,zero; b; nop` = o primeiro
+  teste tem o seu próprio `return 0` (num `else` no fim) e os outros dois dividem um: `else if (strcmp(...) == 0) {
+  if (A || B) return 0; ...; return 1; } else return 0;`. O `b; nop` sem preenchimento é o bloco dividido pela
+  conversão em likely (a 1ª instrução foi para o desvio); contar quantos desvios levam cópia diz quantos blocos há.
+- **Teste de faixa escrito como `switch` com `case A ... B:`** (`shop_draw_shelf`, 24 -> 0): `slti 2; bnez; slti 6;
+  bnez` sai igual com `if (x < 2 || x >= 6)`, mas só o `switch (x) { case 2 ... 5: break; default: f(); break; }`
+  deixa o atraso do `jal` do corpo vazio (`move a0,s0; jal; nop`). Sinal: `jal; nop` com o `move` do argumento logo
+  antes, depois de dois testes `slti` encadeados. (O `pat.py` lista as ocorrências de `move a0,sN; jal; nop` de um
+  módulo com a função e o estado dela: serve para achar exemplos já batendo.)
+- **Duas conversões de formas diferentes para o mesmo valor em argumentos** (`tcfg_draw`/`opt_draw`, 5 -> 0;
+  extensão do achado do `hB`): `draw_set_offsets(list, (short)(long)rw, (short)(long)rh, (short)(rw << 16 >> 16),
+  (short)(rh << 16 >> 16))` com `rw`/`rh` `short`. As quatro saem como expressões (na ordem dos argumentos, antes
+  do `move a0`), e só depois o mwcc percebe que a 3ª e a 4ª repetem a 1ª e a 2ª (`seh a1; seh a2; move a3,a1; move
+  t0,a2`). Com `rw, rh, rw, rh` o CSE cria os temporários antes e os `move` saem como argumentos simples (depois de
+  `a0`). Ao promover as duas, os templates dos arrays locais passam a sair da função: as globais que os nomeavam
+  (`tcfg_gims`..., `opt_gims_a`...) foram removidas e, em `dd_duel_options.c`, os templates seguintes foram para
+  depois de `opt_draw` (ordem do `.data`).
+- **O mwcc sabe para onde um ponteiro aponta: uma tabela `[3][2]` x três arrays separados** (`sc_draw_counts`,
+  21 -> 0; "volatile em 64 combinações" desde a rodada 23). Com `d = sc_count_digits[k]` (linhas da MESMA tabela) o
+  mwcc sabe que `d[i]` não pode ser `r.x` e sobe a carga para antes do `sh`; com `d = sc_count_digits_a / _b / _c`
+  (três objetos) ele desiste, trata `d[i]` como possível alias do store e mantém `sh r.x` antes do `lhu`, e a carga
+  de `sc.list[i].total` sobe sozinha (sem `volatile`). Mesmo layout de memória. Achado com um arquivo de teste
+  solto (`build/tmp/lB/t/al2.c` + `run.sh`: 8 formas de escolher o ponteiro, só a de objetos separados inverte).
+  Sinal: carga por ponteiro que o original deixa DEPOIS de um store e o 219 sobe; ponteiro escolhido num `switch`.
+- **`const` no objeto global** (`dd_zone_rebuild`, 24 -> 0; o mesmo achado do `lC`, no sentido contrário): com
+  `extern const int dd_pile_zones[5]` a carga `zone = dd_pile_zones[k]` é escalonada antes dos stores do
+  unlink/add_tail (não pode ser alterada por eles). Em toda entrada "o original carrega X antes/depois dos stores",
+  testar `const` na declaração do objeto lido antes de qualquer outra coisa.
+- **Valor intermediário em variável própria, em dois passos** (`dd_burst2_update`, 16 -> 0): `nx = -ca; ny = -sa;`
+  antes das bordas do vértice 0 e `nx = nx + x; ny = ny + y;` depois dele, com `flame[2].x = nx`. O rascunho
+  reaproveitava `ca`/`sa` e adiantava um store para imitar o escalonamento; com a ordem natural dos 18 stores a
+  busca de (forma x posição) das duas contas (`b2.py`, 2401 variantes em 55 s) acha dezenas de formas que batem,
+  todas com variável própria negada antes e somada depois. Buscas exaustivas pequenas são baratas: 700 a 3000
+  compilações por minuto com `vt.sweep`.
+- Sem forma:
+  - `dd_info_stats` (4): 720 ordens sem `volatile`, 46656 combinações de (posição da carga x posição do store x
+    `volatile`) e 8192 de tipo de leitura não passam de 4. O original tem `L1 L4 L2 S1 L6 S4 L5 S6 L7 S2 S5 S7`; o
+    219 dá `LLL SSS LLL SSS` (escalonador: o mais antigo pronto, latência de 3 para a carga). Só `si[2]` e `si[6]`
+    trocados.
+  - `tpanel_draw_split` (8): `iy` fica sempre em `s0` e `i` em `s1` (original ao contrário); 3000 amostras de
+    (variável da função ou do bloco, por bloco) x ordem, formas do laço, do incremento e identidade de `i`/`iy`
+    com outras variáveis não mexem; `i` de bloco vai para `s6`.
+  - `dd_chr_attach_mtx` (90 por uma instrução): só `k = (int)(short)id` mantém a cópia (como `seh`); 26 formas de
+    cópia "sem efeito" (`+ 0U`, enum, `long long`, parâmetro a mais), segunda definição da cópia, helper inline da
+    parte da tabela e callees `static` são todos propagados.
+  - `dd_fx_shatter_update` (41): `cx` em uma ou duas instruções em todas as posições do bloco (3255 variantes)
+    fica em 41; o `add.s` de `cx` sai sempre tarde, no original 6 instruções depois do `mul.s`.
+- Scripts em `build/tmp/lB/`: `fb.py` (variantes do corpo de uma função; `AD=1`/`AD=2` dá o diff alinhado),
+  `dump.py` (asm de uma variante), `prom.py` (tira o `@asm` e marca o símbolo), `pat.py`, `t/` (testes soltos).
