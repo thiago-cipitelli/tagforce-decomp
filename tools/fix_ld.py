@@ -66,7 +66,8 @@ has_rodata_range = {m.group(1) for m in re.finditer(r"/(\w+)__rodata\.c\.o\(\.da
 for l in sorted(data_lines, key=key):
     rm = re.search(r"/(\w+)__rodata\.c\.o\(\.data\)", l)
     if rm:  # @rodata placeholder -> the real object's .rodata at this position
-        merged.append(l.replace(f"{rm.group(1)}__rodata.c.o(.data)", f"{rm.group(1)}.c.o(.rodata)"))
+        # `.rodata.*`: a GCC object (`// @cc gcc`) also has .rodata.cst4/.rodata.str1.4, linked right after its .rodata
+        merged.append(l.replace(f"{rm.group(1)}__rodata.c.o(.data)", f"{rm.group(1)}.c.o(.rodata .rodata.*)"))
         ro_lines = [r for r in ro_lines if f"/{rm.group(1)}.c.o(.rodata)" not in r]
         continue
     merged.append(l)
