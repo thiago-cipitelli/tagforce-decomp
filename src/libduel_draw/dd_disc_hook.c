@@ -1,5 +1,4 @@
 // @range 0x088143A4-0x08814DFC
-// @asm 0x088143D4-0x088145B0
 // @bss 0x08C54634-0x08C5463C
 // @data 0x088755B8-0x08875770
 // @rodata 0x0886FF0C-0x08870014
@@ -74,7 +73,6 @@ DdHookAnim *dd_hook_anim(DdHookObj *o)
 }
 
 /* texture hook: the disc's card slots get the card picture rendered at VRAM+0x160000 */
-#ifdef NON_MATCHING /* 2 palavras: o teste de x158 sai por bnez em vez de bnezl direto ao epílogo (forma do || com return já tentada) */
 int dd_disc_tex_hook(unsigned int **plist, int *mdl, int mesh, int part, int *arg)
 {
     DdTexMat *m = *(DdTexMat **)(mdl[3] + mesh * 0xA4 + part * 0x20 + 0x1C);
@@ -87,12 +85,13 @@ int dd_disc_tex_hook(unsigned int **plist, int *mdl, int mesh, int part, int *ar
         st = (int *)st[0x150 / 4];
     } else if (strcmp(dd_str_0000, m->name) == 0) {
         st = (int *)-1;
-    } else if (strcmp(dd_str_disc02, m->name) != 0 || st[0x158 / 4] != 0 || st[8 / 4] == 0) {
-        return 0;
-    } else {
+    } else if (strcmp(dd_str_disc02, m->name) == 0) {
+        if (st[0x158 / 4] != 0 || st[8 / 4] == 0)
+            return 0;
         *plist = dd_disc_material(*plist, m, (void *)st[8 / 4]);
         return 1;
-    }
+    } else
+        return 0;
     list = gfx_set_draw_target(*plist, 0x160000, -1, 0x80, 0x100, 3);
     list = dl_disable(list, 1);
     list = card_draw(list, 0, 0, (int)st);
@@ -107,7 +106,6 @@ int dd_disc_tex_hook(unsigned int **plist, int *mdl, int mesh, int part, int *ar
     *plist = dl_tex_wrap(list, 0, 0);
     return 1;
 }
-#endif
 
 /* bone hook: forwards the bone matrix (or identity) to the object's callback */
 void dd_hook_bone(int bone, void *arg, int *ctx)

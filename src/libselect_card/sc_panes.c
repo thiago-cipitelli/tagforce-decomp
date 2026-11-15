@@ -1,5 +1,4 @@
 // @range 0x08808040-0x088099CC
-// @asm 0x08808694-0x088088B4
 // @data 0x0881AE28-0x0881AE58
 /* The two card panes: header icons (sort, direction, filter and its count, the "new" mark), the
    scroll bars, the copy counts of the tabs, and the cards themselves, as a grid of pictures or as
@@ -158,9 +157,11 @@ void *sc_draw_headers(void *list)
 }
 
 /* digits of the copy count on each tab */
-unsigned short sc_count_digits[3][2] = { { 4, 1 }, { 6, 2 }, { 6, 1 } };
+/* three separate arrays (not one [3][2] table): mwcc then cannot tell what d points to and keeps the store of r.x before the read of d[i] */
+unsigned short sc_count_digits_a[2] = { 4, 1 };
+unsigned short sc_count_digits_b[2] = { 6, 2 };
+unsigned short sc_count_digits_c[2] = { 6, 1 };
 
-#ifdef NON_MATCHING /* 21 palavras: o original carrega d[i] só depois de gravar r.x (total já sai antes com a leitura volatile); aqui o mwcc sobe d[i] (volatile em d[i] e em r.x, short *, ordem das linhas x/r.x não resolvem). O 1º painel do modo duplo é um laço de uma volta (for (i = 0; i < 1; i++)), desenrolado pelo mwcc com o ponteiro de sc.list já em $s */
 /* the total of copies on the tab buttons of each pane */
 void *sc_draw_counts(void *list)
 {
@@ -174,15 +175,15 @@ void *sc_draw_counts(void *list)
 
     switch (sc.kind) {
     case 0:
-        d = sc_count_digits[0];
+        d = sc_count_digits_a;
         n = 2;
         break;
     case 1:
-        d = sc_count_digits[1];
+        d = sc_count_digits_b;
         n = 2;
         break;
     case 2:
-        d = sc_count_digits[2];
+        d = sc_count_digits_c;
         n = 2;
         break;
     default:
@@ -193,14 +194,14 @@ void *sc_draw_counts(void *list)
             x = sc_tab_rect(i, sel, &r);
             x += p->lay.x;
             r.x += p->lay.x;
-            list = sc_draw_count(list, x, &r, d[i], *(volatile int *)&sc.list[i].total);
+            list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         }
     } else {
         for (i = 0; i < 1; i++) {
             x = sc_tab_rect(i, sel, &r);
             x += p->lay.x;
             r.x += p->lay.x;
-            list = sc_draw_count(list, x, &r, d[i], *(volatile int *)&sc.list[i].total);
+            list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         }
         p = &scv.pane[1];
         sel = p->list->tab;
@@ -208,13 +209,11 @@ void *sc_draw_counts(void *list)
             x = sc_tab_rect(i, sel, &r);
             x += p->lay.x;
             r.x += p->lay.x;
-            list = sc_draw_count(list, x, &r, d[i], *(volatile int *)&sc.list[i].total);
+            list = sc_draw_count(list, x, &r, d[i], sc.list[i].total);
         }
     }
     return list;
 }
-
-#endif
 
 void *sc_draw_count(void *list, unsigned short x, ScRect *r, unsigned short ndig, int value)
 {

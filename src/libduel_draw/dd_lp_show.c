@@ -1,5 +1,4 @@
 // @range 0x08858224-0x088587EC
-// @asm 0x08858614-0x088586F0
 // @rodata 0x08870DF0-0x08870E90
 /* LP display object of the duel (continues dd_lp_panel.c): the panel with the LP of both
    players as text ('?' hidden, padded), drawn digit by digit from the number texture. */
@@ -150,37 +149,34 @@ void *lps_digits(void *dl, DdLpShow *s, int top)
     return dl;
 }
 
-#ifdef NON_MATCHING /* só o teste de '?' sai beql em vez de beq */
+/* one character of the LP text; '?' keeps the region's default glyph */
 void *lps_glyph(void *dl, int x, int y, char c)
 {
     const int (*uv)[2];
     int u, v, d;
+    int qu, qv;
 
     if (region_get() == 0) {
         uv = lp_glyph_uv_j;
-        u = 111;
-        v = 40;
+        qu = 111;
+        qv = 40;
     } else {
         uv = lp_glyph_uv;
-        u = 200;
-        v = 37;
+        qu = 200;
+        qv = 37;
     }
-    switch (c) {
-    case '?':
-        break;
-    default:
+    if (c != '?') {
         if (c < '0' || c >= '9' + 1)
             return dl;
         d = ALLEGREX_MIN(ALLEGREX_MAX(c - '0', 0), 9);
         u = uv[d][0];
         v = uv[d][1];
-        break;
+    } else {
+        u = qu;
+        v = qv;
     }
     return draw_sprite(dl, x, y, 0, u, v, 0, 0);
 }
-#else
-void *lps_glyph(void *dl, int x, int y, char c);
-#endif
 
 void *lps_back_2d(void *dl, DdLpShow *s)
 {

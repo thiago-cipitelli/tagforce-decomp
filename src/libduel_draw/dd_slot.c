@@ -1,6 +1,5 @@
 // @range 0x0880A8E0-0x0880C48C
 // @data 0x08874BB0-0x08874E10
-// @asm 0x0880BB70-0x0880BEB0
 /* Where a card sits on the field: position and rotation of each zone (by player, face up, defense
    position, stack height), the lookups in the zone lists and the rebuild of the lists from the
    duel engine (card uids) after the engine moves cards around. */
@@ -225,9 +224,8 @@ void dd_zone_sync(int player, int zone)
         dd_zone_rebuild(player, 0);
 }
 
-extern int dd_pile_zones[5];           /* 0x08874E10 13, 12, 11, 14, 15 */
+extern const int dd_pile_zones[5];     /* const: its loads are scheduled across the list stores; 0x08874E10 13, 12, 11, 14, 15 */
 
-#ifdef NON_MATCHING /* 24 palavras: escalonamento do unlink/add_tail inline (a zona carregada depois de o->next/o->prev) */
 /* rebuilds the piles of a player from the engine's lists, reusing the objects by uid; the unlink and
    add_tail are inline here. Reads tmp.uid when every pile was empty (as the original). */
 void dd_zone_rebuild(int player, int redraw)
@@ -309,7 +307,6 @@ void dd_zone_rebuild(int player, int redraw)
             dd_hand_layout1(0, 1);
     }
 }
-#endif
 
 /* builds every card object from the engine's state (after a load) */
 void dd_cobjs_rebuild(void)

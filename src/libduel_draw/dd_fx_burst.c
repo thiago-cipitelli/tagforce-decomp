@@ -1,5 +1,4 @@
 // @range 0x08844024-0x08846348
-// @asm 0x08845168-0x08846348
 /* Effects 78-81: a burst of light on the card model, fixed where the model's node was when it starts:
    a glow, petals, a ring and motes thrown outward; kinds 13-18 and 40 get the purple variant with
    flame tongues swirling around it. */
@@ -340,9 +339,6 @@ int dd_burst2_start(DdFxSlot *s, int a, int b)
     return task;
 }
 
-#ifdef NON_MATCHING /* 16 palavras (rodada 27; eram 23): só a ordem do bloco das bordas da língua de fogo (-ca + x e
-                      -sa + y saem antes da cor no original, com -sa num $f próprio); flame[1].u = 0.2f gravado antes
-                      de flame[0].x tirou 7 (busca gulosa de uma linha); o resto bate */
 int dd_burst2_update(int phase, DdBurst2Fx *d)
 {
     DdFxSlot *s = d->slot;
@@ -382,6 +378,7 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
     int i8;
     ScePspFMatrix4 bill __attribute__((aligned(16)));
 
+    float nx, ny;
     dd_mtx_push_saved();
     if (phase == 1) {
         dd_burst_kind(s->type, s->sub, s->id, &d->grow_end, &d->end);
@@ -425,12 +422,14 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
             d->flame[i1][0].u = 0.0f;
             d->flame[i1][0].v = fr;
             d->flame[i1][0].color = 0x7A2EFF;
-            d->flame[i1][1].u = 0.2f;
+            nx = -ca;
+            ny = -sa;
             d->flame[i1][0].x = ca + x;
             d->flame[i1][0].y = sa + y;
             d->flame[i1][0].z = 0.0f;
-            ca = -ca + x;
-            sa = -sa + y;
+            nx = nx + x;
+            ny = ny + y;
+            d->flame[i1][1].u = 0.2f;
             d->flame[i1][1].v = fr;
             d->flame[i1][1].color = (unsigned int)((1.0f - fr) * 255.0f) << 24 | 0x7A2EFF;
             d->flame[i1][1].x = x;
@@ -439,8 +438,8 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
             d->flame[i1][2].u = 0.4f;
             d->flame[i1][2].v = fr;
             d->flame[i1][2].color = 0x7A2EFF;
-            d->flame[i1][2].x = ca;
-            d->flame[i1][2].y = sa;
+            d->flame[i1][2].x = nx;
+            d->flame[i1][2].y = ny;
             d->flame[i1][2].z = 0.0f;
             d->flame_idx[i1 * 2] = i1 * 3;
             d->flame_idx[i1 * 2 + 1] = i1 * 3 + 1;
@@ -633,4 +632,3 @@ int dd_burst2_update(int phase, DdBurst2Fx *d)
     }
     return d->t < d->end ? 2 : 4;
 }
-#endif
