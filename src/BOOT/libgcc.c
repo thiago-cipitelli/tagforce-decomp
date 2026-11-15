@@ -1,16 +1,23 @@
 // @range 0x08816C3C-0x08817784
-// @asm 0x08816C64-0x08817784
-/* libgcc 64-bit integer helpers (libgcc2.c) called by GCC-compiled code in BOOT: multiply, and
-   unsigned divide and modulo (the udivmoddi4 normalisation algorithm, inlined twice). __muldi3 is
-   a whole `asm` function; __udivdi3 and __umoddi3 count leading zeros through __clz_tab
-   (D_08874490) loaded by a split lui/addiu, so they stay in asm with their C under NON_MATCHING.
-   Outside the PSP build the C versions compute the same values with 32-bit operations
-   only: a 32-bit host compiler would turn a 64-bit `/` back into a call to these very functions. */
+// @cc gcc -fexceptions -fnon-call-exceptions
+/* libgcc 64-bit integer helpers called by GCC-compiled code in BOOT: multiply, and unsigned divide and modulo (the
+   udivmoddi4 normalisation algorithm, inlined twice). On the PSP they are GCC 3.3.3's libgcc2.c itself
+   (include/gcc-3.3.3/), compiled by the SDK's GCC with the flags libgcc's build gives the division functions
+   (tools/psp_gcc.sh; docs/build.md, "Trilha GCC"), and match byte for byte. Outside the PSP build the C versions below
+   compute the same values with 32-bit operations only: a 32-bit host compiler would turn a 64-bit `/` back into a
+   call to these very functions. */
 
+#ifdef __mips__
+#define IN_LIBGCC2
+#define __clz_tab D_08874490          /* the table of _clz.o, in BOOT's .data */
+#define L_muldi3
+#define L_udivdi3
+#define L_umoddi3
+#include "gcc-3.3.3/libgcc2.c"
+#else
 typedef unsigned long long UDItype;
 typedef long long DItype;
 
-#if !defined(__MWERKS__) || defined(NON_MATCHING)
 /* restoring shift-subtract division; division by zero gives quotient ~0 and remainder n */
 static UDItype udivmod(UDItype n, UDItype d, UDItype *rem)
 {
@@ -36,23 +43,7 @@ static UDItype udivmod(UDItype n, UDItype d, UDItype *rem)
     }
     return q;
 }
-#endif
 
-#ifdef __MWERKS__
-asm DItype __muldi3(DItype a, DItype b)
-{
-    mult a1, a2
-    mflo t2
-    multu a0, a2
-    mfhi t1
-    mflo v0
-    mult a0, a3
-    mflo a0
-    addu a0, a0, t2
-    jr ra
-    addu v1, a0, t1
-}
-#else
 DItype __muldi3(DItype a, DItype b)
 {
     unsigned int al = (unsigned int)a;
@@ -70,9 +61,7 @@ DItype __muldi3(DItype a, DItype b)
     hi += ah * bl + al * bh;
     return (DItype)(((UDItype)hi << 32) | lo);
 }
-#endif
 
-#if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: __clz_tab through a split lui/addiu */
 UDItype __udivdi3(UDItype n, UDItype d)
 {
     return udivmod(n, d, 0);
