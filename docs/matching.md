@@ -3114,7 +3114,7 @@ Quatro entradas antigas do skip batendo (`snd_obj_begin` 43, `snd_streams_decode
 - Não resolvido: `dl_enable` (2 palavras, ordem dos dois `addiu -1`; 40 formas novas, nenhuma abaixo de 2).
 ## Rodada 32 (`eA`): `ai_*` de libduel_eng, alias de stores e identidade de variáveis
 
-Cinco entradas do skip batendo (`duel_08807C7C` 154, `duel_088441D0` 12, `duel_0882E0A8` 9, `duel_ai_0881E27C` 6) e
+Quatro entradas do skip batendo (`duel_08807C7C` 154, `duel_088441D0` 12, `duel_0882E0A8` 9, `duel_ai_0881E27C` 6) e
 `ai_088070A8.c`, `ai_0882D398.c`, `ai_08844024.c` e `ai_cond.c` sem `@asm`.
 
 - **Store em global escalar invalida as leituras por ponteiro; store em membro de struct (ou elemento de array) não**
