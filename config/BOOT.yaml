@@ -257,8 +257,6 @@ segments:
       - [0x39768, c, ehf_cam]
       - [0x39DB8, c, main]
       - [0x3A6D0, c, save]
-      - [0x3ADDC, asm, save_asm_0883ED7C]
-      - [0x3AE6C, c, save]
       - [0x3B3A0, c, inv]
       - [0x3C4D8, c, cfg]
       - [0x3CAD8, asm, cfg_asm_08840A78]

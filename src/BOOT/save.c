@@ -1,5 +1,4 @@
 // @range 0x0883E670-0x0883F340
-// @asm 0x0883ED7C-0x0883EE0C
 /* Save state ("sysstate"): new game defaults, checksum, player name, day counter, money and the
    duel record counters. Continues the game.c unit (main.c, main2.c). */
 #include "psp.h"
@@ -193,8 +192,7 @@ int day_advance(int delta)
     return s->day - day;
 }
 
-#ifdef NON_MATCHING
-int day_calc(int which) /* kept in asm: case-2 block layout never matched */
+int day_calc(int which)
 {
     SysSave *s = sysstate_get();
     int t = day_threshold(s->day + 1);
@@ -207,11 +205,11 @@ int day_calc(int which) /* kept in asm: case-2 block layout never matched */
     case 2:
         if (t == 0)
             return 0;
-        return t - s->day_progress;
+        t -= s->day_progress; /* na própria variável: o subu vai para o atraso do b (rodada 35) */
+        return t;
     }
     return 0;
 }
-#endif
 
 int sysstate_get_u32_54(int i)
 {

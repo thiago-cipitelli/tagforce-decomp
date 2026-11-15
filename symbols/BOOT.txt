@@ -989,7 +989,7 @@ sysstate_set_name = 0x0883EA60; // type:func export matched src/BOOT/save.c memc
 sysstate_get_name = 0x0883EA94; // type:func export matched src/BOOT/save.c nid:1BFCC25C
 day_next = 0x0883ECB8; // type:func export matched src/BOOT/save.c day+1 nid:61AE6357
 day_advance = 0x0883ECDC; // type:func matched src/BOOT/save.c export inferred (delta) day counter +0x4c (99 = end), +0x50 progress nid:FCE56269
-day_calc = 0x0883ED7C; // type:func asm (@asm in src/BOOT/save.c, C under NON_MATCHING) export inferred (which) via FUN_0883eab4(day+1) [?] nid:65D67BBA
+day_calc = 0x0883ED7C; // type:func matched src/BOOT/save.c
 sysstate_get_u32_54 = 0x0883EE0C; // type:func matched src/BOOT/save.c export inferred (i) nid:02D2A1D5
 money_add = 0x0883EE3C; // type:func matched src/BOOT/save.c export inferred (delta) clamp 0..999999999 at sysstate+0x54 nid:53CF9AFD
 duel_records_get = 0x0883EEC8; // type:func export matched src/BOOT/save.c sysstate+0xEA4 nid:DDA84199
