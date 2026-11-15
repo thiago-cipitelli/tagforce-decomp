@@ -192,7 +192,13 @@ typedef struct DuelChain {             /* 0x08914350 */
     struct DuelActX srcs[16];          /* +0x5F8 source card of each pending entry [?] */
     unsigned char pad638[0x684 - 0x638];
     int unk684;                        /* +0x684 duel_w_089149D4 */
-    unsigned char pad688[0x6B0 - 0x688]; /* +0x6A0 count of ids (duel_w_089149F0), +0x6A8 index (duel_w_089149F8) */
+    unsigned char pad688[0x698 - 0x688];
+    int unk698;                        /* +0x698 duel_w_089149E8 */
+    int unk69c;                        /* +0x69C duel_w_089149EC */
+    int unk6a0;                        /* +0x6A0 count of ids (duel_w_089149F0) */
+    int unk6a4;                        /* +0x6A4 duel_w_089149F4 */
+    unsigned int unk6a8;               /* +0x6A8 index (duel_w_089149F8) */
+    int unk6ac;                        /* +0x6AC duel_w_089149FC */
     int ids[3];                        /* +0x6B0 materials asked by the summon (duel_0882E1B8) */
 } DuelChain;
 
