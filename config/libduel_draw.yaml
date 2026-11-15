@@ -155,8 +155,6 @@ segments:
       - [0x51B70, c, dd_lp_panel]
       - [0x53160, c, dd_lp_digits]
       - [0x54284, c, dd_lp_show]
-      - [0x54674, asm, dd_lp_show_asm_08858614]
-      - [0x54750, c, dd_lp_show]
       - [0x5484C, c, dd_caption_box]
       - [0x54A5C, c, dd_debug_menu]
       - [0x55D20, c, dd_zone_cmd]
