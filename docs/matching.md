@@ -3112,3 +3112,44 @@ Quatro entradas antigas do skip batendo (`snd_obj_begin` 43, `snd_streams_decode
   `double dummy_(double x, double y) { return x * y; }` numa cópia do arquivo e medir; se bater, a função pertence
   à unidade do arquivo anterior. `__extendsfdf2`/`__truncdfsf2` sozinhos e chamadas comuns não disparam.
 - Não resolvido: `dl_enable` (2 palavras, ordem dos dois `addiu -1`; 40 formas novas, nenhuma abaixo de 2).
+## Rodada 32 (`dA`): o teste de entrada mantido é um contador `enum` (libduel_draw, 12 funções batendo)
+
+- **Família "laço interno com o teste de entrada mantido" resolvida** (no skip desde a rodada 9, 10 funções): o contador
+  do laço é de tipo **enum**. Com `DdZone z;` (`typedef enum DdZone {...} DdZone;` em `libduel_draw.h`) e
+  `for (z = 0; z <= 4; z++)`, o mwcc 219 não dobra o teste de entrada do laço rotacionado mesmo com `z = 0`
+  conhecido (`move s0,zero; slti at,s0,5; beqzl at,saída` antes do corpo) e não reduz o índice a ponteiro; com `int`
+  (ou `long`, `register`, struct de um `int`, união, ponteiro) o teste some sempre. O contador externo (`p`) é `int`.
+  A forma do teste do fim continua valendo: `z <= 4` dá `slti at`, `z < 16` dá `slti v0`. Sintoma para reconhecer em
+  qualquer módulo: teste de entrada `slti at,sX,K; beqzl` logo depois de `move sX,zero`, com o laço de fora sem teste.
+  Bateram assim `dd_cobjs_counters`, `dd_cobjs_busy`, `dd_cobjs_update`, `dd_zone_anim_busy`, `dd_zone_anim_update`,
+  `dd_counter_tick`, `func_08822B90`, `func_08822C2C`, `func_08822520`, `dd_board_cards` e `dd_cursor_cycle`.
+  A cópia de um parâmetro para variável enum continua sendo propagada (não serve para `dd_chr_attach_mtx`), e um
+  flag enum não separa dois `li 1` içados (`opt_draw`).
+- **`sltu v0,zero,v0; xori v0,v0,1; bnezl` no teste de saída de um laço** = condição inteira usada direto como
+  verdade, sem comparação: `if (f(p, z, i) & ~0x402) { found = 1; goto out; }` ou `if (g(o)) return 1;`. Com
+  `!= 0` escrito (`if ((f() & m) != 0)`) sai `beqzl v0`. Vale para float (`if (za->t < za->dur) return 1;`).
+- **Demais formas desta rodada:**
+  - `dd_zone_anim_busy`: `DdCobjs *b = &dd_cobjs;` + `za = &b->za[p][z]` (base em registrador, `+0x16908` somado depois).
+  - `dd_counter_tick`: `if (!(za->t >= za->dur))` (`c.nge.s; bc1fl`), não `za->t < za->dur`.
+  - `func_08822C2C`: `(t + 32)[z] != kind` dá `bne v1,s3` (valor carregado primeiro); `t[z + 32] != kind` e
+    `kind != t[z + 32]` dão os dois `bne s3,v1` (a ordem do fonte não muda a dos operandos). `kind` é `int`
+    (`(unsigned char)row[z]` na carga, `(unsigned char)kind == 7` no teste) e o parâmetro de `func_08822E30` também.
+  - `dd_board_cards` (283 -> 0): teste de lista vazia separado (`o = head->next; if (o == head) continue; for (i = 0;
+    o != head; ...)` dá os dois testes `o == head`); `*(short *)&cur2 = *(short *)&t; ... cur2.idx` deixa o DdLoc
+    inteiro em registrador (`lh s0`; `andi 0xffff; sll 16; srl 22`); `DdLoc cur; DdLoc cur2;` no nível da função
+    (depois de `drawn`) e os `DdLoc t` nos blocos acertam as posições 160/156/152/148.
+  - `dd_ev_47` (7 -> 0, identidade de variáveis da rodada 31): `int n = *(int *)(eng + 0x480); DdChainLink *h =
+    (DdChainLink *)(eng + 0x300); ... n--; h += n;` em vez da expressão única (o resultado fica no registrador de `n`).
+- Sem forma (medições novas): `ui_scrollbar` (52: com `h += y; bottom = h - 6;` depois de `ui_track`, como o
+  original faz em `s0`, sobram 8 `$s` e 174 palavras, porque `dl` herda o registrador de `top` e `bottom` o de `gim`; o
+  original dá `s8`/`s7` próprios a `top`/`bottom` e `dl` herda o de `thumb`; 400 formas aleatórias de ordem x forma x
+  variável própria para `dl` e 57 de variável x expressão não saem de 52), `dd_info_stats` (4: as 5040 ordens das sete
+  cópias sem `volatile` dão no mínimo 7; cópia em pares de `int` dá 10), `lps_glyph` (2: seis ordens de `switch` com
+  faixa `'0' ... '9'`, `default` primeiro, `if/else`, `goto`), `dd_disc_tex_hook` (2: `return 0` separados dão 10),
+  `dd_chr_attach_mtx` (90: cópia em enum, segunda atribuição morta, `id = b->bone` no fim e helpers inline do 1º laço
+  não mantêm o `move a3,a2`; só uma 2ª definição viva de `k` muda o código, e para pior), `opt_draw` (229: 49
+  combinações de tipo de `found` x `sel_row` e flag enum não separam os dois `li 1`).
+- Scripts em `build/tmp/dA/`: `tv.py` (variantes por substituição, sem tocar o fonte, 8 em paralelo), `sbs.sh` (diff
+  lado a lado com desvios relativos, aceita o arquivo de uma variante), `promote.py` (tira o `@asm`, o
+  `#ifdef NON_MATCHING`/`#endif` e marca `matched`), `sb.py` (busca aleatória de formas de `ui_scrollbar`),
+  `t.sh`/`sig.sh` (compila um `.c` de rascunho; `x/a2.c` é a sonda que achou o enum).

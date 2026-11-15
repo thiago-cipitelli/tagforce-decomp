@@ -1,14 +1,13 @@
 // @range 0x08815678-0x08816FD0
 // @asm 0x088157A0-0x08815BC8
 // @asm 0x08815BC8-0x08815D3C
-// @asm 0x08815D3C-0x08815E74
 // @asm 0x08816064-0x08816180
 // @asm 0x08816180-0x08816240
 // @asm 0x0881665C-0x08816964
 // @asm 0x08816964-0x08816CD8
 // @asm 0x08816DCC-0x08816FD0
 // @data 0x088757D4-0x08875AC4
-// @rodata 0x0887005C-0x08870074
+// @rodata 0x08870030-0x08870074
 /* The 3D field cursor: its pose follows the card under the cursor location, the cursor model
    (field_cursor00/01/02.iff, lit when the location can act), the arrow sprite and the icons of
    the actions available on the location; also the jump to the first selectable card and the
@@ -267,7 +266,6 @@ void dd_cursor_first_target(void)
 #endif
 
 /* square button: cycles the cursor */
-#ifdef NON_MATCHING /* 32 palavras (rodada 32): o teste de entrada do laço de zonas sai com o contador enum (DdZone); falta só o booleano materializado (sltu; xori; bnezl) do teste do alvo, que o mwcc gera para `if (c) { found = 1; break; }` e `if (c) return 1;` mas não para o goto que sai dos três laços (helper inline com return: 70) */
 void dd_cursor_cycle(void)
 {
     int player;
@@ -300,7 +298,7 @@ void dd_cursor_cycle(void)
                 else
                     n = 1;
                 for (i = 0; i < n; i++) {
-                    if ((dv_08835AEC(player, zone, i) & ~0x402) != 0) {
+                    if (dv_08835AEC(player, zone, i) & ~0x402) {
                         found = 1;
                         goto out;
                     }
@@ -315,7 +313,6 @@ void dd_cursor_cycle(void)
         break;
     }
 }
-#endif
 
 /* draws the cursor model of a location */
 unsigned int *dd_cursor_draw_model(unsigned int *list, DdLoc loc, int locked)

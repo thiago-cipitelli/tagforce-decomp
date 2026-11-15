@@ -1,6 +1,5 @@
 // @range 0x0881794C-0x08819A70
 // @rodata 0x088700A8-0x088700F8
-// @asm 0x08818FB0-0x0881917C
 /* The duel-event handlers 1..73 of the dispatcher table (dd_event.c): cut-ins (duel start/end,
    phase and turn banners, attack, flip), card moves and stat changes on the field, message windows
    and prompts. The player numbers of the engine are turned into screen sides by dv_player_to_side. */
@@ -777,7 +776,6 @@ typedef struct DdChainLink { /* chain link of the engine (dv_chain() + 0x300), 0
 } DdChainLink;
 
 /* 47: a face-down card is flipped (cut-in when requested by event 46) */
-#ifdef NON_MATCHING /* 7 palavras: com a soma inteira (base + 0x300 materializada) a forma bate; falta só a coloração do bloco (n em v1 e base em a1 no original; locais n/l testados) */
 int dd_ev_47(int player, int zone, int idx)
 {
     char *eng = dv_chain();
@@ -815,7 +813,6 @@ int dd_ev_47(int player, int zone, int idx)
     }
     return 1;
 }
-#endif
 
 int dd_ev_48(void)
 {
