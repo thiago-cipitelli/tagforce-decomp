@@ -130,7 +130,7 @@ segments:
       - [0xCC08, c, libc_string]
       - [0xCDFC, asm, libc_string_asm_08810D9C]
       - [0xCE84, c, libc_string]
-      - [0xD030, asm, libc_string_asm_08810FD0]
+      - [0xD030, c, libc_strcasecmp]
       - [0xD0CC, c, libc_string]
       - [0xD704, asm, libc_string_asm_088116A4]
       - [0xE748, c, strtol]
