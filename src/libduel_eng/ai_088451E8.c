@@ -1,5 +1,5 @@
 // @range 0x088451E8-0x08846498
-// @asm 0x088451E8-0x08846498
+// @rodata 0x08907F54-0x08907F70
 /* Computer player: step machine of the end phase (check tables, cards that pay or keep a cost, end-of-turn effects). */
 #include "duel.h"
 
@@ -56,16 +56,9 @@ void duel_088C7CF0(void);
 unsigned int duel_card_locate(unsigned int);
 void duel_088C44E4(unsigned int p, int id);
 
-#ifdef NON_MATCHING /* 1164 palavras posicionais, distância alinhada 86 instruções (era 145; rodada 33: ordem das
-   declarações por sorteio, build/tmp/hA/hrand.py com METRIC=lcs; rodada 35: `lp <= f()` e `lp > n * 2` dão o slt em
-   $at, duel_w_0891964C unsigned acerta a ordem das cargas dos argumentos, `f(p) <= 0`). O que falta: o original guarda `me` na pilha (60(sp)) desde o
-   início e deixa em $s o ponteiro &duel.players[me] do caso 200; aqui `me` fica em s4 e é esse ponteiro que vai para 60(sp).
-   Sem efeito: pl explícito no caso 200, ofs = me * 0xFAC explícito, p & 1 por extenso (recalcula o produto em cada caso),
-   tipos de me (int, const, register, enum; u8/u16 aumentam o código). A chamada duel_088D1438(p, z, 0, id) do caso 0x1AA9
-   tem o move a2,zero no delay slot no original.
-   Rodada 35: com um uso a menos de `me` (`(p & 1) | 0x16` no 1º duel_cmd do caso 200) o mwcc derrama `me` em 60(sp)
-   como o original, mas continua derramando também a base do caso 200 (56(sp)) e refaz o andi dentro do laço; um
-   contador por laço (casos 101/102/200) x ordem das declarações, 400 sorteios: `me` nunca é derramado */
+/* Rodada 36: `me` derramado como no original quando o `me | 0x16` e o n_hand do 0x12C8 não fazem CSE com os do
+   caso 200 (`(int)me | 0x16`, jogador lido por `((DuelPlayer *)&duel)[me]`); o caso 102 guarda o id num unsigned
+   (`uid`); `(int)` no id passado a duel_088D1438 põe o move a2,zero no atraso do jal. */
 /* returns 0 while the step machine has work left */
 int duel_088451E8(void)
 {
@@ -213,16 +206,16 @@ int duel_088451E8(void)
             if (duel.players[me].field[z].card.id == 0 || duel.players[me].field[z].faceup == 0) {
                 continue;
             }
-            id = field_get_card(p, z);
+            uid = field_get_card(p, z);
             r = 0;
-            if (card_is_monster(id)) {
+            if (card_is_monster(uid)) {
                 if (z >= 5) {
                     continue;
                 }
             } else if (z < 5) {
                 continue;
             }
-            switch (id) {
+            switch (uid) {
             case 0x168C:
             case 0x168D:
             case 0x168E:
@@ -233,10 +226,10 @@ int duel_088451E8(void)
                 if (duel_count_active(0x169F) == 0) {
                     duel_088C4448(p, z, CARD_UID(duel.players[me].field[z].card));
                     lp = duel.players[me].lp;
-                    if (lp <= duel_08845070(id)) {
+                    if (lp <= duel_08845070(uid)) {
                         r = 1;
                     } else {
-                        n = duel_08845070(id);
+                        n = duel_08845070(uid);
                         duel_088C4564(p, n);
                         if (duel_slot_e12e0(p, duel_w_08919608, 0x16A2, p) != 0 && n < duel.players[(1 - p) & 1].lp) {
                             duel_088C4564(1 - p, n);
@@ -414,7 +407,7 @@ int duel_088451E8(void)
                 duel_088CC1D0(p, z, 1);
                 if (!skip && duel_slot_value_1909(p, z) + 1 == 3) {
                     duel_088C4448(p, z, CARD_UID(duel.players[me].field[z].card));
-                    duel_088D1438(p, z, 0, duel.players[me].field[z].card.id);
+                    duel_088D1438(p, z, 0, (int)duel.players[me].field[z].card.id);
                 }
                 break;
             case 0x1A7E:
@@ -438,7 +431,7 @@ int duel_088451E8(void)
                         if ((unsigned char)((loc & 0xFFFF) >> 8) == 0xF) {
                             duel_088C44E4(p, 0x12C8);
                             duel_cmd(0x3F, ((unsigned char)loc & 1) | 0x1E | (uid & 0x3FF) << 6,
-                                     me | 0x16 | (duel.players[me].n_hand & 0x3FF) << 6, 0);
+                                     (int)me | 0x16 | (((DuelPlayer *)&duel)[me].n_hand & 0x3FF) << 6, 0);
                         }
                     }
                 }
@@ -449,4 +442,3 @@ int duel_088451E8(void)
     }
     return 1;
 }
-#endif
