@@ -2,7 +2,7 @@
 // @asm 0x088087F8-0x088091A0
 // @gcc 0x088091A0-0x088092C0 libm_kf_cos
 // @gcc 0x088092C0-0x08809A80 libm_kf_rem_pio2
-// @asm 0x08809A80-0x08809B54
+// @gcc 0x08809A80-0x08809B54 libm_kf_sin
 // @gcc 0x08809B54-0x08809B88 nl_s_isinf
 // @gcc 0x08809B88-0x08809BAC nl_s_isnan
 // @gcc 0x08809BAC-0x08809BB4 nl_s_matherr
@@ -22,7 +22,7 @@
    under NON_MATCHING is the fdlibm source, checked against the asm (see below). The names carry
    a libm_ prefix where the plain one belongs to the VFPU versions (see vfpu_math.c).
    The `@gcc` ranges are the functions that already come out of the newlib source with the SDK's GCC (libm_kf_cos.c,
-   libm_kf_rem_pio2.c, libm_sf_fabs.c, libm_sf_sin.c, libm_wf_atan2.c, libm_wf_sqrt.c; docs/build.md, "Trilha GCC");
+   libm_kf_rem_pio2.c, libm_kf_sin.c, libm_sf_fabs.c, libm_sf_sin.c, libm_wf_atan2.c, libm_wf_sqrt.c; docs/build.md, "Trilha GCC");
    what is left here needs a later revision of that compiler (it clears bit fields with `ins`). */
 
 #ifndef __MWERKS__

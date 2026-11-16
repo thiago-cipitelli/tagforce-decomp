@@ -39,7 +39,12 @@ for k, (off, typ, nm) in enumerate(subs):
 def is_gcc(nm):
     p = f"src/{module}/{nm}.c"
     return _os.path.exists(p) and any(l.startswith("// @cc gcc") for l in open(p).readlines()[:20])
-per_func = {n for n, c in c_count.items() if c > 1 or is_gcc(n)}
+# ... unless it is built as one section (`-fno-function-sections` on its marker: an object with aligned labels, whose
+# alignment counts from the object's start, libc_reent.c): then it is linked whole, as `obj(.text .text.*)`
+def is_whole(nm):
+    p = f"src/{module}/{nm}.c"
+    return is_gcc(nm) and any(l.startswith("// @cc gcc") and "-fno-function-sections" in l for l in open(p).readlines()[:20])
+per_func = {n for n, c in c_count.items() if (c > 1 or is_gcc(n)) and not is_whole(n)}
 if per_func:
     for k, (off, typ, nm) in enumerate(subs):
         if typ != "c" or nm not in per_func: continue
