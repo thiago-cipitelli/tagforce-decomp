@@ -9,8 +9,8 @@
 // @gcc 0x088058FC-0x08805A1C
 // @asm 0x08805A1C-0x08805ACC
 // @gcc 0x08805ACC-0x08805B54
-// @asm 0x08805B54-0x08805D28
-// @gcc 0x08805D28-0x08805EC4
+// @asm 0x08805B54-0x08805CD4
+// @gcc 0x08805CD4-0x08805EC4
 /* libgu of the Sony SDK (GCC; names from the export NIDs): display-list contexts, frame/draw/depth
    buffers, the state bits and the first state commands. Nearly every function reaches the libgu
    globals through %hi/%lo, so they stay in the split asm and the C below is under NON_MATCHING;
@@ -684,8 +684,8 @@ void gu_DepthBuffer(unsigned int zbp, int zbw)
 {
     gu_push((zbp & 0xFFFFFF) | 0x9E000000);
     gu_push((((zbp & 0xFFFFFFF) >> 24) << 16) | zbw | 0x9F000000);
-    gu.depth_w = zbw;
     gu.depth_fbp = zbp;
+    gu.depth_w = zbw;
 }
 
 /* sceGuEnable */

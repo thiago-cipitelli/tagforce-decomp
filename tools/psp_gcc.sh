@@ -31,9 +31,9 @@ rm -f "$OUT"
 # -dP writes before each instruction; the names of the unused statics come from a second cc1 run (-Dconst= -Wunused-variable). `-nopeep` on the marker line turns it off for the file.
 PEEP=1; case " $MARK " in *" -nopeep "*) PEEP=0; MARK=$(echo " $MARK " | sed 's/ -nopeep / /');; esac
 if [ $PEEP = 1 ]; then
-  "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w -dP $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S.cc1" \
+  "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w -dP -dS -dR -fsched-verbose=6 -dumpbase "$S" $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S.cc1" \
     && UNUSED=$("$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -Dconst= -Wunused-variable $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o /dev/null 2>&1 | sed -n "s/.*warning: \`\(.*\)' defined but not used\$/\1/p") \
-    && python3 "$HERE/psp_gcc_peep.py" "$S.cc1" "$S" $UNUSED && rm -f "$S.cc1" && "$AS" "$S" -o "$OUT" || exit 1
+    && python3 "$HERE/psp_gcc_peep.py" --sched "$S.30.sched2" "$S.cc1" "$S" $UNUSED && rm -f "$S.cc1" "$S".*.sched* && "$AS" "$S" -o "$OUT" || exit 1
 else
   "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT" || exit 1
 fi

@@ -25,12 +25,21 @@ of cc1 1.7.1 (run with -dP, so every instruction carries its RTL, REG_DEAD notes
      about an unused `static const`, and the assembly cannot tell it from a constant that was propagated away,
      which the original does keep: the C1..C6 of kf_cos.c).
 
+  E. (--sched DUMP) the blocks where A-C changed the number of instructions are scheduled again: the later
+     revision's AND is one insn up to reload, which adds the copy, and sched2 places the copy and the `ins` apart.
+     resched() replays GCC 3.3's list scheduler with the dependences, priorities, costs and units of cc1's own
+     sched2 dump (-dR -fsched-verbose=6), and the dbr pass as "the insn just before a branch fills its slot". A
+     block is only reordered when the replay of the unchanged block gives cc1's order. The tied copy of rule A
+     keeps the count and is not rescheduled (its effect on -frename-registers is not modelled).
+
 A rewrite that would change the number of instructions inside a `.set noreorder` pair (branch + delay slot) is not
 done. What the pass cannot do is in docs/build.md: the later revision allocates registers and schedules around the
 two-instruction form, and that is beyond a peephole.
 
 `// @cc gcc -nopeep` on the marker line of a file turns the pass off for it (tools/psp_gcc.sh).
 --check runs the sanity check."""
+import collections
+import os
 import re
 import sys
 
@@ -46,6 +55,12 @@ def run_of(mask):
     pos = (x & -x).bit_length() - 1
     y = (x >> pos) + 1
     return (pos, y.bit_length() - 1) if y & (y - 1) == 0 else None
+
+
+def uid_of(line):
+    """insn UID that cc1 -dP writes after an instruction (`\t # 17\tpattern\t[length = 4]`), '' if none"""
+    m = re.search(r'\s#\s+(\d+[abm]?)(?=\s|$)(?!.*\s#\s+\d)', line)
+    return m.group(1) if m else ''
 
 
 def dead(rtl, reg):
@@ -111,6 +126,7 @@ def peep(text, unused=()):
                         tie = None
                 m = INSN.match(l)
                 op, args, tail = m.group(1), [a.strip() for a in m.group(2).split(',')], m.group(3)
+        mtag = False
         if op == 'ext' and len(args) == 4 and args[2] == '0' and int(args[3]) > 16:
             rd, rs, n = args[0], args[1], int(args[3])
             ps = re.search(r'\(set \(reg[/\w]*:\w+ \d+ \w+ \[(\d+)\]\)[\s#]+\(zero_extract:\w+ \(reg[/\w]*:\w+ \d+ \w+ \[(\d+)\]\)', rtl)
@@ -118,6 +134,7 @@ def peep(text, unused=()):
                 if not noreorder:
                     new = ['\tmove\t%s,%s' % (rd, rs), '\tins\t%s,$0,%d,%d' % (rd, n, 32 - n)]
                     if rs in fword:
+                        mtag = True
                         f, at = fword[rs]
                         new[0] = '\tmfc1\t%s,%s' % (rd, f)
                         between = [x for x in out[at + 1:] if x is not None and INSN.match(x)]
@@ -146,7 +163,7 @@ def peep(text, unused=()):
                 low = val & (val + 1) == 0
                 if r and not low and val > 0xFFFF and (rt == rd or dead(rtl, rt[1:])) and (rd == rs or not noreorder):
                     for i in idx:
-                        out[i] = None
+                        out[i] = '\t#gone ' + uid_of(out[i])
                     new = ([] if rd == rs else ['\tmove\t%s,%s' % (rd, rs)]) + ['\tins\t%s,$0,%d,%d' % (rd, r[0], r[1])]
                     break
         # constants in registers (rule C)
@@ -178,6 +195,16 @@ def peep(text, unused=()):
         if new is None:
             out.append(l)
         else:
+            # tag the lines for resched(): `# U` same count, `# Ua`/`# Ub` the copy and the ins of insn U
+            u = uid_of(l)
+            if not u:
+                pass
+            elif mtag:
+                new = [x + '\t # %sm' % u for x in new]
+            elif len(new) == 2:
+                new = [new[0] + '\t # %sa' % u, new[1] + '\t # %sb' % u]
+            else:
+                new = [new[0] + '\t # %s' % u]
             out.extend(new)
         rtl = ''
     return drop_unused_objects('\n'.join(x for x in out if x is not None), unused)
@@ -211,9 +238,284 @@ def drop_unused_objects(text, names):
     return '\n'.join(l for n, l in enumerate(L) if n not in kill)
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# E. Rescheduling. The later revision makes the field-clearing AND a two-address insn: before reload it is one insn
+# (register allocation is the one of cc1 1.7.1's `ext`), reload adds the copy (`move rd,rs`) when rs stays live,
+# and sched2 then schedules the copy and the `ins` as two insns. cc1 1.7.1 scheduled one. resched() replays sched2
+# (GCC 3.3 haifa list scheduler) on every block where rules A-C changed the instruction count, with the dependence
+# graph, priorities, costs and units cc1 wrote to its sched2 dump (-dR -fsched-verbose), and reorders the block.
+# A block is only touched when replaying the unchanged graph gives exactly the order cc1 chose, and the delay slots
+# of the block were filled by the insn just before each branch (the dbr pass is replayed that way).
+
+def parse_sched2(text):
+    """[(function, rows, order, luids)] per block scheduled after reload; rows[uid] = prio, cost, unit, code, succs"""
+    B = []
+    fn = cur = None
+    for l in text.split('\n'):
+        m = re.match(r';; Function (\S+)', l)
+        if m:
+            fn = m.group(1)
+            continue
+        if '-- basic block' in l:
+            cur = (fn, {}, [], []) if 'after reload' in l else None
+            if cur:
+                B.append(cur)
+            continue
+        if cur is None:
+            continue
+        m = re.match(r';;\s+(\d+)\s+(-?\d+)\s+\d+\s+\d+\s+(\d+)\s+(\d+)\s+\d+ -\s*(\d+)\s+(\w+)\s*:(.*)', l)
+        if m:
+            u = m.group(1)
+            cur[1][u] = dict(code=int(m.group(2)), prio=int(m.group(3)), cost=int(m.group(4)), bmax=int(m.group(5)),
+                             unit=m.group(6), succs=m.group(7).split())
+            cur[3].append(u)
+            continue
+        m = re.search(r'--> scheduling insn <<<(\d+)>>>', l)
+        if m:
+            cur[2].append(m.group(1))
+    return B
+
+
+STORE = re.compile(r's(b|h|w|wc1|dc1|wl|wr)$')
+
+
+def list_schedule(rows, luids, kinds, prio, maxblk, op):
+    """haifa-sched of GCC 3.3, one issue per cycle, function units with the blockage of their last insn"""
+    luid = {u: i for i, u in enumerate(luids)}
+    succ = {u: [s for s in rows[u]['succs'] if s in luid] for u in luids}
+
+    def cost(a, b):
+        if rows[a]['code'] < 0 or rows[b]['code'] < 0 or kinds.get((a, b), 'TRUE') != 'TRUE':
+            return 0  # a USE costs nothing; anti and output dependences cost nothing on MIPS
+        return rows[a]['cost']
+    depc = collections.Counter(s for u in luids for s in succ[u])
+    tick = collections.Counter()
+    ready = [u for u in luids if not depc[u]]
+    queue = collections.defaultdict(list)
+    clock, last, order, utick, ulast = -1, None, [], {}, {}
+
+    def klass(u):
+        if last is None or u not in succ[last] or cost(last, u) == 1:
+            return 3
+        return 1 if kinds.get((last, u), 'TRUE') == 'TRUE' else 2
+    while len(order) < len(luids):
+        clock += 1
+        ready += queue.pop(clock, [])
+        if not ready:
+            if not queue:
+                return None
+            clock = min(queue)
+            ready += queue.pop(clock)
+        ready.sort(key=lambda u: (prio[u], klass(u), len(succ[u]), -luid[u]))
+        issued = False
+        while ready and not issued:
+            u = ready.pop()
+            un = rows[u]['unit']
+            if un != 'none' and un in utick:
+                t = utick[un]
+                if t > clock:
+                    t += (3 if STORE.match(op.get(ulast[un], '')) else max(1, rows[ulast[un]]['cost'] - rows[u]['cost'] + 1)) - maxblk[un]
+                    if t > clock:
+                        queue[t].append(u)
+                        continue
+            if un != 'none':
+                utick[un], ulast[un] = clock + maxblk[un], u
+            order.append(u)
+            last, issued = u, rows[u]['code'] >= 0
+            for s in succ[u]:
+                tick[s] = max(tick[s], clock + cost(u, s))
+                depc[s] -= 1
+                if not depc[s]:
+                    if tick[s] - clock < 1:
+                        ready.insert(0, s)
+                    else:
+                        queue[tick[s]].append(s)
+    return order
+
+
+def formula_prio(rows, luids, kinds):
+    luid = set(luids)
+    P = {}
+
+    def pr(u):
+        if u not in P:
+            ss = [s for s in rows[u]['succs'] if s in luid]
+            c = lambda s: 0 if rows[u]['code'] < 0 or rows[s]['code'] < 0 or kinds.get((u, s), 'TRUE') != 'TRUE' else rows[u]['cost']
+            P[u] = max(c(s) + pr(s) for s in ss) if ss else max(rows[u]['cost'], 0) if rows[u]['code'] >= 0 else 0
+        return P[u]
+    for u in luids:
+        pr(u)
+    return P
+
+
+BRANCH = re.compile(r'(b\w*|j|jr|jal|jalr)$')
+
+
+def regs(args):
+    return set(re.findall(r'\$(?:\d+|sp|fp|f\d+)', ','.join(args)))
+
+
+def resched(text, dump):
+    debug = os.environ.get('PEEP_DEBUG')
+    B = parse_sched2(dump)
+    L = text.split('\n')
+    maxblk = collections.defaultdict(int)
+    for b in B:
+        for r in b[1].values():
+            maxblk[r['unit']] = max(maxblk[r['unit']], r['bmax'])
+    funcs = {}   # name -> (start, end) line range
+    for i, l in enumerate(L):
+        m = re.match(r'\t\.ent\t(\S+)', l)
+        if m:
+            funcs[m.group(1)] = [i, None] if m.group(1) not in funcs else None
+        m = re.match(r'\t\.end\t(\S+)', l)
+        if m and funcs.get(m.group(1)):
+            funcs[m.group(1)][1] = i
+    for fn, rows, order, luids in B:
+        if not funcs.get(fn) or not order:
+            continue
+        a, z = funcs[fn]
+        units = {}   # tag -> line index
+        kinds = {}
+        op = {}
+        args = {}
+        rtl = []
+        gone = set()
+        for i in range(a, z):
+            l = L[i]
+            if l is None:
+                continue
+            if l.startswith(' #'):
+                rtl.append(l[2:])
+                continue
+            m = re.match(r'\t#gone (\d+)$', l)
+            if m:
+                gone.add(m.group(1))
+                continue
+            m = INSN.match(l)
+            if m and not l.startswith('\t.'):
+                u = uid_of(l)
+                if u:
+                    units[u] = i
+                    op[u], args[u] = m.group(1), [x.strip() for x in m.group(2).split(',')]
+                    r = ' '.join(x.strip() for x in rtl)
+                    ml = re.search(r'\} (\(insn_list.*?|\(nil\)) *(\(expr_list|\(nil\)|$)', r)
+                    if ml and re.match(r'\((?:insn|jump_insn|call_insn)\S* %s ' % u, r):
+                        for k, p in re.findall(r'insn_list(?::REG_DEP_(\w+))? (\d+)', ml.group(1)):
+                            kinds[(p, u)] = k or 'TRUE'
+                rtl = []
+            elif l.strip() and not l.startswith('\t.set') and not l.startswith('\t#'):
+                rtl = []
+        split = [u for u in luids if u + 'a' in units]
+        dropped = [u for u in luids if u in gone]
+        if not split and not dropped or any(u + 'm' in units for u in luids):
+            continue
+        # the block as it is in the text: every insn of the dump present, nothing else in between
+        def tags(u):
+            return [u + 'a', u + 'b'] if u in split else [] if u in dropped or rows[u]['code'] < 0 else [u]
+        want = [t for u in luids for t in tags(u)]
+        if any(t not in units for t in want):
+            if debug: sys.stderr.write('resched %s %s: skip 1 %s\n' % (fn, luids[0], [t for t in want if t not in units]))
+            continue
+        idx = sorted(units[t] for t in want)
+        lo, hi = idx[0], idx[-1]
+        while L[hi + 1] in ('\t.set\tmacro', '\t.set\treorder'):
+            hi += 1
+        if any(L[i] is None for i in range(lo, hi + 1)) \
+                or any(INSN.match(L[i]) and not L[i].startswith('\t.') and uid_of(L[i]) not in want for i in range(lo, hi + 1)) \
+                or any(re.match(r'^\$?\w+:$', L[i]) for i in range(lo + 1, hi + 1)):
+            if debug: sys.stderr.write('resched %s %s: skip 2\n' % (fn, luids[0]))
+            continue
+        # text order -> order before dbr: each filled delay slot came from just before its branch
+        seq = [uid_of(L[i]) for i in range(lo, hi + 1) if INSN.match(L[i]) and not L[i].startswith('\t.')]
+        noreo = set()
+        nr = False
+        for i in range(lo, hi + 1):
+            s = L[i].strip()
+            if s == '.set\tnoreorder':
+                nr = True
+            elif s == '.set\treorder':
+                nr = False
+            elif INSN.match(L[i]) and not L[i].startswith('\t.') and nr:
+                noreo.add(uid_of(L[i]))
+        pre = []
+        slots = {}   # branch -> slot
+        k = 0
+        while k < len(seq):
+            t = seq[k]
+            if t in noreo and BRANCH.match(op[t]) and k + 1 < len(seq) and seq[k + 1] in noreo:
+                pre += [seq[k + 1], t]
+                slots[t] = seq[k + 1]
+                k += 2
+            else:
+                pre.append(t)
+                k += 1
+        if any(t in noreo and t not in slots and t not in slots.values() for t in seq):
+            if debug: sys.stderr.write('resched %s %s: skip 3\n' % (fn, luids[0]))
+            continue
+        if pre != [t for u in order for t in tags(u)]:
+            if debug: sys.stderr.write('resched %s %s: skip 4\n' % (fn, luids[0]))
+            continue
+        P0 = formula_prio(rows, luids, kinds)
+        if list_schedule(rows, luids, kinds, {u: rows[u]['prio'] for u in luids}, maxblk, op) != order:
+            if debug: sys.stderr.write('resched %s %s: skip 5\n' % (fn, luids[0]))
+            continue
+        # the graph of the later revision: U -> Ua (copy) + Ub (ins), dropped constants removed
+        rows2 = {}
+        kinds2 = dict(kinds)
+        luids2 = []
+        for u in luids:
+            if u in dropped:
+                if debug: sys.stderr.write('resched %s %s: skip 6\n' % (fn, luids[0]))
+                continue
+            r = dict(rows[u], succs=[t for s in rows[u]['succs'] if s not in dropped for t in ([s + 'a'] if s in split else [s])])
+            if u in split:
+                last = luids[-1]
+                rows2[u + 'a'] = dict(r, succs=[u + 'b'] + [s for s in r['succs'] if kinds.get((u, s.rstrip('a')), 'TRUE') == 'ANTI' or s == last])
+                rows2[u + 'b'] = dict(r, succs=[s for s in r['succs'] if kinds.get((u, s.rstrip('a')), 'TRUE') != 'ANTI' or s == last])
+                for s in r['succs']:
+                    kinds2[(u + 'a', s)] = kinds2[(u + 'b', s)] = kinds.get((u, s.rstrip('a')), 'TRUE')
+                kinds2[(u + 'a', u + 'b')] = 'TRUE'
+                luids2 += [u + 'a', u + 'b']
+            else:
+                rows2[u] = r
+                luids2.append(u)
+            for s in rows[u]['succs']:
+                if s in split:
+                    kinds2[(u, s + 'a')] = kinds.get((u, s), 'TRUE')
+        P1 = formula_prio(rows2, luids2, kinds2)
+        prio = {t: rows[t.rstrip('ab')]['prio'] + P1[t] - P0[t.rstrip('ab')] for t in luids2}
+        for t in luids2:
+            op.setdefault(t, op.get(t.rstrip('ab'), ''))
+        new = list_schedule(rows2, luids2, kinds2, prio, maxblk, op)
+        if new is None:
+            if debug: sys.stderr.write('resched %s %s: skip 7\n' % (fn, luids[0]))
+            continue
+        new = [t for t in new if t in units]
+        # dbr: a branch whose slot was filled takes the insn just before it, when that one can go there
+        out = []
+        ok = True
+        for t in new:
+            if t in slots:
+                if not out or BRANCH.match(op[out[-1]]) or '[length = 4]' not in L[units[out[-1]]] and not re.search(r' # \d+[ab]$', L[units[out[-1]]]) \
+                        or regs(args[out[-1]][:1]) & (regs(args[t]) | {'$31'}):
+                    ok = False
+                    break
+                s = out.pop()
+                out += ['.set\tnoreorder', '.set\tnomacro', t, s, '.set\tmacro', '.set\treorder']
+            else:
+                out.append(t)
+        if not ok:
+            if debug: sys.stderr.write('resched %s %s: skip 8\n' % (fn, luids[0]))
+            continue
+        body = ['\t' + t if t.startswith('.set') else L[units[t]] for t in out]
+        L[lo:hi + 1] = body + [None] * (hi + 1 - lo - len(body))
+    return '\n'.join(x for x in L if x is not None)
+
+
 def check():
     def code(s, *u):
-        return [l for l in peep(s, *u).split('\n') if l.startswith('\t') and not l.startswith('\t.')]
+        return [re.sub(r'\t #.*', '', l) for l in peep(s, *u).split('\n') if l.startswith('\t') and not l.startswith('\t.') and not l.startswith('\t#')]
     assert run_of(0xFFFFEFFF) == (12, 1) and run_of(0x00FFFFFF) == (24, 8) and run_of(0xFFFFFFF0) == (0, 4)
     assert run_of(0xFF00FF00) is None and run_of(0xFFFFFFFF) is None
     # A: source live -> move + ins; source dead -> unchanged
@@ -255,6 +557,11 @@ if __name__ == '__main__':
     if sys.argv[1:] == ['--check']:
         check()
     elif len(sys.argv) >= 3:
-        open(sys.argv[2], 'w').write(peep(open(sys.argv[1]).read(), sys.argv[3:]))
+        a = sys.argv[1:]
+        dump = None
+        if a[0] == '--sched':
+            dump, a = open(a[1]).read(), a[2:]
+        t = peep(open(a[0]).read(), a[2:])
+        open(a[1], 'w').write(resched(t, dump) if dump else t)
     else:
         sys.exit(__doc__)
