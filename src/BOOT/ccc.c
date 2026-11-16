@@ -115,20 +115,23 @@ void ccc_encode_utf16(u16 **d, unsigned int c)
 unsigned int ccc_decode_utf8(const u8 **s)
 {
     const u8 *p = *s;
-    unsigned int c = *p++;
+    u8 b = *p++;
+    unsigned int c;
 
-    if (c & 0x80) {
-        if ((u8)(c - 0xC2) < 51) {
+    if (b & 0x80) {
+        if (!((u8)(b - 0xC2) < 51)) {
+            c = D_088F97C4;
+        } else {
             unsigned int k = 0x40;
 
-            c &= 0x7F;
+            c = b & 0x7F;
             do {
                 c = ((c & (k - 1)) << 6) | (*p++ & 0x3F);
                 k <<= 5;
             } while (c >= k);
-        } else {
-            c = D_088F97C4;
         }
+    } else {
+        c = b;
     }
     *s = p;
     return c;
