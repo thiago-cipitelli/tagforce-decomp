@@ -755,57 +755,62 @@ static void copy_bytes(unsigned char *dst, const unsigned char *src, unsigned in
 /* next VAG block of a channel into pcm (28 mono samples), following the loop mode */
 void wave_ch_decode_vag(int ch, unsigned char *pcm)
 {
-    WaveCh *c = &wave_ch[ch];
-    const unsigned char *data = c->data;
+    const unsigned char *data = wave_ch[ch].data;
     unsigned int i;
     int r;
 
-    for (i = 0; i < 0x70; i++) {
-        pcm[i] = 0;
+    {
+        unsigned char *p = pcm;
+
+        for (i = 0; i < 0x70; i++) {
+            *p++ = 0;
+        }
     }
-    switch (c->flags & 0xFF) {
+    switch (wave_ch[ch].flags & 0xFF) {
     case 0:
-        if (c->pos + 16 <= c->size) {
-            copy_bytes(wave_vag_ptr, data + c->pos, 16);
-            c->pos += 16;
-            vag_decode_block((short *)pcm, wave_vag_ptr, &c->hist1, &c->hist2);
+        if (wave_ch[ch].pos + 16 <= wave_ch[ch].size) {
+            copy_bytes(wave_vag_ptr, data + wave_ch[ch].pos, 16);
+            wave_ch[ch].pos += 16;
+            vag_decode_block((short *)pcm, wave_vag_ptr, &wave_ch[ch].hist1, &wave_ch[ch].hist2);
             return;
         }
-        c->playing = 0;
-        c->pos = 0;
+        wave_ch[ch].playing = 0;
+        wave_ch[ch].pos = 0;
         return;
     case 1:
-        if (c->size < 16) {
+        if (wave_ch[ch].size < 16) {
             return;
         }
-        if (c->size < c->pos + 16) {
-            c->pos = c->loop_start;
+        if (wave_ch[ch].pos + 16 <= wave_ch[ch].size) {
+            copy_bytes(wave_vag_ptr, data + wave_ch[ch].pos, 16);
+        } else {
+            wave_ch[ch].pos = wave_ch[ch].loop_start;
+            copy_bytes(wave_vag_ptr, data + wave_ch[ch].pos, 16);
         }
-        copy_bytes(wave_vag_ptr, data + c->pos, 16);
         break;
     case 2:
-        if (c->size < 16) {
+        if (wave_ch[ch].size < 16) {
             return;
         }
-        if (c->size < c->pos + 16) {
-            c->playing = 0;
-            c->pos = 0;
+        if (wave_ch[ch].size < wave_ch[ch].pos + 16) {
+            wave_ch[ch].playing = 0;
+            wave_ch[ch].pos = 0;
             return;
         }
-        copy_bytes(wave_vag_ptr, data + c->pos, 16);
+        copy_bytes(wave_vag_ptr, data + wave_ch[ch].pos, 16);
         break;
     default:
         return;
     }
-    r = vag_decode_block((short *)pcm, wave_vag_ptr, &c->hist1, &c->hist2);
+    r = vag_decode_block((short *)pcm, wave_vag_ptr, &wave_ch[ch].hist1, &wave_ch[ch].hist2);
     if (r == 3) {
-        c->loop_end = c->pos;
-        c->pos = c->loop_start;
+        wave_ch[ch].loop_end = wave_ch[ch].pos;
+        wave_ch[ch].pos = wave_ch[ch].loop_start;
     } else if (r == 6) {
-        c->loop_start = c->pos;
-        c->pos += 16;
+        wave_ch[ch].loop_start = wave_ch[ch].pos;
+        wave_ch[ch].pos += 16;
     } else {
-        c->pos += 16;
+        wave_ch[ch].pos += 16;
     }
 }
 
