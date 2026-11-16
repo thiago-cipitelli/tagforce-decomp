@@ -4027,3 +4027,38 @@ derramado e desloca todo o mapa de `$s`.
   `duel_08846584` (as 253 diferenças são todas renomeação de registradores; callee `duel_08846498` `static` na
   mesma unidade não muda nada). Scripts em `build/tmp/oD/` (`t.py` = `mA_r35/t.py` com o diretório trocado,
   `v_*.py` arquivos de variantes, `dump.sh` desmonte de uma função compilada com flags extras).
+
+## Rodada 37 (`pA`): oito `@asm` escondidos de libduel_draw (7 batendo) e `tools/asm_status.py`
+
+As 7 funções de `dd_cursor_model.c` e `dd_cursor_move` eram `// @asm` com C sob `NON_MATCHING`, mas `symbols/`
+dizia `matched`, então nenhuma rodada as viu. `python3 tools/asm_status.py [módulo]` (sanity: `--test`) lista
+função `matched` dentro de um `// @asm` e função `asm` que nenhum `// @asm` cobre; sai com 1 se achar algo. Achou
+também `strtod_r_tail` (BOOT, bloco frio de `strtod_r` no arquivo GCC), agora `asm`.
+
+Batem `dd_cursor_update`, `dd_cursor_first_target`, `dd_cursor_nearest_slot`, `dd_cursor_nearest_hand`,
+`dd_cursor_draw_icons`, `dd_cursor_next_target` e `dd_cursor_move`; `dd_cursor_draw_arrow` 162 -> 28. O que resolveu:
+
+- **Globais que eram templates de inicializador local** (`dd_cursor_zone_order`, `dd_cursor_icons_up/down`,
+  `dd_cursor_rot0`): com a função em C o mwcc gera o template no mesmo lugar do `.data`; o global some do C. O
+  template herda o alinhamento do TIPO, não do atributo do local: `float rot[4] __attribute__((aligned(16))) =
+  {...}` sai alinhado a 4 e desloca o `.data`; `DdVec4A rot = {...}` (struct alinhada) sai alinhado a 16.
+- **Quadro 16 bytes maior / vetor do bloco no topo**: matrizes `float m[16] __attribute__((aligned(16)))` (e
+  `pos`/`rot` de 4 floats). Com elas o vetor `= { 0 }` do bloco fica acima das matrizes como no original.
+- **Posição de tela por struct local** (`DdVec4A scr; scr.x = 480.0f * res[12] / res[15]; scr.y = ...; scr.x +=
+  2122.0f; scr.y += 2044.0f; ...`): o mwcc decompõe a struct em registradores e acerta a ordem mul/div/add do
+  original, que a macro numa expressão só não dá.
+- **`l = cur; l.zone = 0xB;`** dá o `lhu/and/or/sh` do campo `player` lido do registrador que guarda `cur`;
+  `l.player = cur.player` dá `lbu/sb` relido da pilha.
+- `DdLoc t = { player, zone, idx };` (inicializador com valores) dá o laço de zero + `lhu/sh` por campo;
+  `c->cur.idx += step;` e não `c->cur.idx = c->cur.idx + (unsigned short)step;` (ordem dos operandos);
+  `switch` com `default: return;` como primeiro rótulo dá o `b; nop` morto antes do corpo; `DdZone zone` mantém o
+  teste de entrada do laço de zonas (rodada 32); `if (n <= 0) {A} else {B; return;}` com os testes invertidos
+  (`if (zone != 0xD)`, `if (cur.player != 0)`) quando o original põe o caso curto primeiro.
+- Bug de lógica corrigido em `dd_cursor_update`: `!((char *)card)[0x8D] >> 5 & 1` é `(!x >> 5) & 1`, sempre 0;
+  o original testa o bit 5 (`((signed char *)card)[0x8D] << 26 >> 31`).
+
+`dd_cursor_draw_arrow` (28 palavras): `list`/`raised` ficam em `s4/s5` e `dx`/`dy` em `s0/s1`; no original é o
+contrário (`dx`/`dy` são os candidatos do alocador). Ordem de declaração (5000 ordens), ordem das atribuições,
+`if/else` e ternários não trocam. Scripts em `build/tmp/pA/` (`t.py` variantes, `rs.py` busca de ordem com
+`FIX=1` para manter as linhas com inicializador, `ad.py` diff alinhado, `apply.py` promove e acerta `symbols/`).
+

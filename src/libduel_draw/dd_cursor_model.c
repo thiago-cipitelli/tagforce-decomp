@@ -1,13 +1,7 @@
 // @range 0x08815678-0x08816FD0
-// @asm 0x088157A0-0x08815BC8
-// @asm 0x08815BC8-0x08815D3C
-// @asm 0x08816064-0x08816180
-// @asm 0x08816180-0x08816240
 // @asm 0x0881665C-0x08816964
-// @asm 0x08816964-0x08816CD8
-// @asm 0x08816DCC-0x08816FD0
 // @data 0x088757D4-0x08875AC4
-// @rodata 0x08870030-0x08870074
+// @rodata 0x08870014-0x08870074
 /* The 3D field cursor: its pose follows the card under the cursor location, the cursor model
    (field_cursor00/01/02.iff, lit when the location can act), the arrow sprite and the icons of
    the actions available on the location; also the jump to the first selectable card and the
@@ -55,13 +49,6 @@ DdCurUv dd_cursor_uv[32] = {
     { 64, 32, 0, 32 },
     { 64, 64, 0, 64 },
     { 64, 64, 0, 64 },
-};
-
-/* used by the functions kept in asm */
-DdVec4 dd_cursor_rot0 __attribute__((aligned(16))) = { 0.0f, 0.0f, 0.0f, 1.0f };
-int dd_cursor_zone_order[2][16] = {
-    { 11, 12, 5, 6, 7, 8, 9, 13, 10, 0, 1, 2, 3, 4, 14, 15 },
-    { 15, 10, 0, 1, 2, 3, 4, 14, 12, 5, 6, 7, 8, 9, 13, 11 },
 };
 
 int dd_zone_count(int player, int zone);
@@ -140,18 +127,19 @@ void dd_cursor_draw(void)
 }
 
 /* follows the card under the cursor and notifies the listeners when the location changed */
-#ifdef NON_MATCHING /* muitos bitfields; alocação de registradores */
 void dd_cursor_update(void)
 {
     DdCursor *c = &dd_cursor;
-    float pos[4] = { 0 };
-    float rot[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-    int player, zone, idx, n;
+    float pos[4] __attribute__((aligned(16))) = { 0 };
     int arg;
+    int player;
+    int zone;
+    DdLoc2 l;
+    int idx;
     int *card;
     int i;
-    DdLoc2 l;
-    DdLoc t = { 0 };
+    DdVec4A rot = { 0.0f, 0.0f, 0.0f, 1.0f };
+    int n;
 
     if (dd_cursor.cur.zone == 0xB) {
         n = dd_zone_count(c->cur.player, 0xB);
@@ -163,7 +151,7 @@ void dd_cursor_update(void)
             card = dd_cobj_at(c->cur.player, c->cur.zone, c->cur.idx);
             if (card != 0) {
                 *(DdVec4 *)pos = *(DdVec4 *)(card + 4);
-                *(DdVec4 *)rot = *(DdVec4 *)(card + 16);
+                *(DdVec4 *)&rot = *(DdVec4 *)(card + 16);
             }
         }
     }
@@ -173,70 +161,70 @@ void dd_cursor_update(void)
         l.idx = c->cur.idx;
         l.b14 = 0;
         l.b15 = 0;
-        dd_slot_xform(pos, rot, l);
+        dd_slot_xform(pos, &rot.x, l);
         pos[1] = 0.0f;
     }
     *(DdVec4 *)c->pos = *(DdVec4 *)pos;
-    *(DdVec4 *)c->rot = *(DdVec4 *)rot;
-    if (c->dirty == 0)
-        return;
-    player = c->cur.player;
-    zone = c->cur.zone;
-    arg = 0;
-    idx = c->cur.idx;
-    switch (zone) {
-    case 0xE:
-        idx = dv_n_grave(player) - 1;
-        break;
-    case 0xF:
-        idx = dv_n_f(player) - 1;
-        break;
-    case 0xD:
-        idx = 0;
-        break;
-    case 0xC:
-        idx = 0;
-        break;
-    }
-    if (idx < 0)
-        idx = 0;
-    card = dd_cobj_at(player, zone, idx);
-    if (card != 0) {
-        if (dd_0880702C() == 0) {
-            t.player = player;
-            t.zone = zone;
-            t.idx = idx;
-            if (dd_loc_visible(t) == 0 && !((char *)card)[0x8D] >> 5 & 1) {
-                dd_info_select_uid(0);
-                goto notify;
-            }
+    *(DdVec4 *)c->rot = *(DdVec4 *)&rot;
+    if (c->dirty != 0) {
+        arg = 0;
+        player = c->cur.player;
+        zone = c->cur.zone;
+        idx = c->cur.idx;
+        switch (zone) {
+        case 0xE:
+            idx = dv_n_grave(player) - 1;
+            break;
+        case 0xF:
+            idx = dv_n_f(player) - 1;
+            break;
+        case 0xD:
+            idx = 0;
+            break;
+        case 0xC:
+            idx = 0;
+            break;
         }
-        dd_info_select_uid(card[0x88 / 4]);
-        arg = card[0x88 / 4];
-    }
+        if (idx < 0)
+            idx = 0;
+        card = dd_cobj_at(player, zone, idx);
+        if (card != 0) {
+            if (dd_0880702C() == 0) {
+                DdLoc t = { player, zone, idx };
+
+                if (dd_loc_visible(t) == 0 && !(((signed char *)card)[0x8D] << 26 >> 31))
+                    goto hidden;
+            }
+            dd_info_select_uid(card[0x88 / 4]);
+            arg = card[0x88 / 4];
+            goto notify;
+hidden:
+            dd_info_select_uid(0);
+        }
 notify:
-    for (i = 0; i < 16; i++) {
-        if (c->listeners[i] != 0)
-            c->listeners[i](c->cur, arg);
+        for (i = 0; i < 16; i++) {
+            if (c->listeners[i] != 0)
+                c->listeners[i](c->cur, arg);
+        }
     }
     c->dirty = 0;
 }
-#endif
 
 /* the first selectable location of the battle phase */
-#ifdef NON_MATCHING /* alocação de registradores */
 void dd_cursor_first_target(void)
 {
     int order[2][16] = {
         { 11, 12, 5, 6, 7, 8, 9, 13, 10, 0, 1, 2, 3, 4, 14, 15 },
         { 15, 10, 0, 1, 2, 3, 4, 14, 12, 5, 6, 7, 8, 9, 13, 11 },
     };
-    int player, k, zone, n, i;
+    int player, k, n, i, zone;
     unsigned int f;
 
     if (dv_must_answer(0) == 0)
         return;
     switch (dv_08835924()) {
+    default:
+        return;
     case 4:
     case 5:
     case 6:
@@ -263,7 +251,6 @@ void dd_cursor_first_target(void)
         break;
     }
 }
-#endif
 
 /* square button: cycles the cursor */
 void dd_cursor_cycle(void)
@@ -387,21 +374,19 @@ void dd_cursor_unlisten(DdCursorCb cb)
 }
 
 /* the monster slot (5..9) closest to pos */
-#ifdef NON_MATCHING /* alocação de registradores */
 int dd_cursor_nearest_slot(int player, DdCursor *c)
 {
     float best = 1e16f;
-    float pos[4];
-    float rot[4];
-    int i, k;
+    int i, k = 0;
     float d;
     DdLoc2 l;
+    float pos[4] __attribute__((aligned(16)));
+    float rot[4] __attribute__((aligned(16)));
 
     l.player = player;
     l.idx = 0;
     l.b14 = 0;
     l.b15 = 0;
-    k = 0;
     for (i = 0; i < 5; i++) {
         l.zone = i + 5;
         dd_slot_xform(pos, rot, l);
@@ -413,21 +398,17 @@ int dd_cursor_nearest_slot(int player, DdCursor *c)
     }
     return k + 5;
 }
-#endif
 
 /* the hand card closest to pos */
-#ifdef NON_MATCHING /* alocação de registradores (s0..s4) */
 int dd_cursor_nearest_hand(int player, DdCursor *c)
 {
-    float best;
+    int k = -1;
+    float best = 1e16f;
     int n;
     int i;
-    int k;
     int *card;
     float d;
 
-    best = 1e16f;
-    k = -1;
     n = dd_zone_count(player, 0xB);
     for (i = 0; i < n; i++) {
         card = dd_cobj_at(player, 0xB, i);
@@ -441,7 +422,6 @@ int dd_cursor_nearest_hand(int player, DdCursor *c)
     }
     return k;
 }
-#endif
 
 int dd_cursor_alpha_hook(unsigned int **plist, void *mdl, int mesh, int part, int after)
 {
@@ -540,36 +520,39 @@ unsigned int *dd_cursor_draw_locked(unsigned int *list)
     return dd_cursor_draw_arrow(list, dd_cursor.cur, 1, 1);
 }
 
-/* screen position of the current model matrix origin */
-#define DD_SCREEN_X(m) ((480.0f * (m)[12]) / (m)[15] + 2122.0f - 1808.0f)
-#define DD_SCREEN_Y(m) ((-272.0f * (m)[13]) / (m)[15] + 2044.0f - 1912.0f)
-
 /* the arrow sprite over the location (blinks with bit blink_bit of the frame counter) */
-DdVec3 dd_cursor_icons_up = { 0.0f, 0.0f, -60.0f };
-DdVec3 dd_cursor_icons_down = { 0.0f, 0.0f, 60.0f };
 
-#ifdef NON_MATCHING /* cadeia de testes vira teste de faixa; quadro 16 bytes menor */
+#ifdef NON_MATCHING /* 28 palavras: list/raised e dx/dy trocam de $s (candidatos a derrame do alocador) */
 unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, int blink_bit)
 {
-    float model[16];
-    float view[16];
-    float proj[16];
-    float res[16];
-    float sx, sy;
-    int zone;
-    int k;
+    float model[16] __attribute__((aligned(16)));
+    float view[16] __attribute__((aligned(16)));
+    int du;
     DdCurUv *uv;
-    int dx, dy, du;
+    float sx;
+    float proj[16] __attribute__((aligned(16)));
+    float res[16] __attribute__((aligned(16)));
+    int k;
+    DdVec4A scr;
+    int dy;
+    float sy;
     void *gim;
+    int dx;
 
     mtx_set_mode(2);
     mtx_push();
-    zone = loc.zone;
-    if (zone == 0xF || zone == 0xC || zone == 0xE || zone == 0xD) {
+    k = loc.zone;
+    switch (k) {
+    case 0xD:
+    case 0xE:
+    case 0xC:
+    case 0xF:
+    {
         float ofs[3] = { 0 };
 
-        ofs[1] = dd_stack_y(dd_zone_count(loc.player, zone));
+        ofs[1] = dd_stack_y(dd_zone_count(loc.player, k));
         mtx_translate(ofs);
+    }
     }
     mtx_set_mode(2);
     mtx_get34(model);
@@ -580,14 +563,20 @@ unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, in
     mat4_mul(res, view, model);
     mat4_mul(res, proj, res);
     mtx_set_mode(2);
-    sx = DD_SCREEN_X(res);
-    sy = DD_SCREEN_Y(res);
+    scr.x = 480.0f * res[12] / res[15];
+    scr.y = -272.0f * res[13] / res[15];
+    scr.x += 2122.0f;
+    scr.y += 2044.0f;
+    scr.x -= 1808.0f;
+    scr.y -= 1912.0f;
+    sx = scr.x;
+    sy = scr.y;
     mtx_set_mode(2);
     mtx_pop();
-    k = zone + loc.player * 16;
-    dx = 0;
-    dy = -0xB;
     du = 0;
+    dy = -0xB;
+    dx = 0;
+    k = k + loc.player * 16;
     uv = &dd_cursor_uv[k];
     if (k == 0xB) {
         dx = -6;
@@ -612,20 +601,17 @@ unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, in
 #endif
 
 /* the icons of the actions possible on the location (up to 13, centered over it) */
-#ifdef NON_MATCHING /* quadro e alocação */
 unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
 {
-    float pos[3];
-    float ofs[3];
-    float a[3] = { 0.0f, 0.0f, -60.0f };
-    float b[3] = { 0.0f, 0.0f, 60.0f };
-    float model[16];
-    float view[16];
-    float proj[16];
-    float res[16];
     int icons[13];
+    float pos[3];
+    float model[16] __attribute__((aligned(16)));
+    float view[16] __attribute__((aligned(16)));
+    float proj[16] __attribute__((aligned(16)));
+    float res[16] __attribute__((aligned(16)));
+    DdVec4A scr;
     int deck = 0;
-    float sx, sy;
+    float sy, sx;
     unsigned int f;
     int n, i, x, y;
 
@@ -634,17 +620,21 @@ unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
     mtx_get34(model);
     if (model[14] >= 0.0f) {
         if (loc.zone == 0xD) {
-            float z[3] = { 0 };
-
             deck = 1;
-            *(DdVec3 *)pos = *(DdVec3 *)z;
+            {
+                float z[3] = { 0 };
+
+                *(DdVec3 *)pos = *(DdVec3 *)z;
+            }
         } else {
-            *(DdVec3 *)ofs = *(DdVec3 *)a;
-            *(DdVec3 *)pos = *(DdVec3 *)ofs;
+            float up[3] = { 0.0f, 0.0f, -60.0f };
+
+            *(DdVec3 *)pos = *(DdVec3 *)up;
         }
     } else {
-        *(DdVec3 *)ofs = *(DdVec3 *)b;
-        *(DdVec3 *)pos = *(DdVec3 *)ofs;
+        float down[3] = { 0.0f, 0.0f, 60.0f };
+
+        *(DdVec3 *)pos = *(DdVec3 *)down;
     }
     mtx_translate(pos);
     mtx_set_mode(2);
@@ -655,8 +645,14 @@ unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
     mtx_get34(proj);
     mat4_mul(res, view, model);
     mat4_mul(res, proj, res);
-    sx = DD_SCREEN_X(res);
-    sy = DD_SCREEN_Y(res);
+    scr.x = 480.0f * res[12] / res[15];
+    scr.y = -272.0f * res[13] / res[15];
+    scr.x += 2122.0f;
+    scr.y += 2044.0f;
+    scr.x -= 1808.0f;
+    scr.y -= 1912.0f;
+    sx = scr.x;
+    sy = scr.y;
     mtx_set_mode(2);
     mtx_pop();
     if (deck) {
@@ -682,7 +678,6 @@ unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
     }
     return dl_enable(list, 1);
 }
-#endif
 
 /* jumps between the hand and the field */
 void dd_cursor_hand_toggle(void)
@@ -703,13 +698,15 @@ void dd_cursor_hand_toggle(void)
 }
 
 /* the next selectable location after the current one (wrapping to the first) */
-#ifdef NON_MATCHING /* teste do laço no topo */
 void dd_cursor_next_target(void)
 {
     DdCursor *c = &dd_cursor;
     int have = 0;
     int passed = 0;
-    int player, zone, n, i;
+    int player;
+    DdZone zone;
+    int i;
+    int n;
     DdLoc l;
 
     se_play(0x6212);
@@ -742,4 +739,3 @@ void dd_cursor_next_target(void)
 done:
     dd_cursor_set(l.player, l.zone, l.idx, 0);
 }
-#endif
