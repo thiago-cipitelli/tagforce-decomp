@@ -3,9 +3,9 @@
 // @asm 0x08818F54-0x08818FD0
 // @gcc 0x08818FD0-0x0881908C
 // @asm 0x0881908C-0x08819394
-// @asm 0x08819464-0x08819758
-// @asm 0x08819758-0x08819868
-// @gcc 0x08819924-0x08819984
+// @gcc 0x08819394-0x08819574
+// @asm 0x08819574-0x08819660
+// @gcc 0x08819660-0x08819984
 // @gcc 0x08819A08-0x08819A44
 // @gcc 0x08819AE0-0x08819BEC
 /* Sony's libccc (sceCcc*, character code conversion): UTF-8, UTF-16 and Shift JIS strings, the JIS
@@ -33,6 +33,10 @@ void ccc_encode_sjis(u8 **d, unsigned int jis);
    the definitions (GCC 3.3 drops a function whose noinline comes after its body) */
 unsigned int ccc_decode_utf16(const u16 **s) __attribute__((noinline));
 unsigned int ccc_decode_utf8(const u8 **s) __attribute__((noinline));
+void ccc_encode_utf16(u16 **d, unsigned int c) __attribute__((noinline));
+void ccc_encode_utf8(u8 **d, unsigned int c) __attribute__((noinline));
+unsigned int ccc_decode_sjis(const u8 **s) __attribute__((noinline));
+void ccc_encode_sjis(u8 **d, unsigned int jis) __attribute__((noinline));
 #endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING)
@@ -251,100 +255,67 @@ void ccc_encode_sjis(u8 **d, unsigned int jis)
 #endif
 
 /* sceCccUTF8toUTF16 */
-#ifdef __MWERKS__
-asm int str_to_wide(u16 *dst, unsigned int size, const u8 *src)
-{
-    addiu sp, sp, -64
-    sw s1, 36(sp)
-    move s1, a1
-    sltiu a1, a1, 2
-    sw s3, 44(sp)
-    move v1, zero
-    addiu s1, s1, -2
-    sw s2, 40(sp)
-    addiu s3, zero, -1
-    move s2, zero
-    sw s0, 32(sp)
-    move s0, a0
-    sw ra, 48(sp)
-    beqz a1, L_088193F0
-    sw a2, 20(sp)
-L_088193D0:
-    lw ra, 48(sp)
-    lw s3, 44(sp)
-    lw s2, 40(sp)
-    lw s1, 36(sp)
-    lw s0, 32(sp)
-    move v0, v1
-    jr ra
-    addiu sp, sp, 64
-L_088193F0:
-    jal ccc_decode_utf8
-    addiu a0, sp, 20
-    beqz v0, L_08819458
-    move a1, v0
-    addiu a0, sp, 16
-    jal ccc_encode_utf16
-    sw sp, 16(sp)
-    lw v1, 16(sp)
-    subu a0, v1, sp
-    sra v1, a0, 0x1
-    sll a0, v1, 0x1
-    sltu a1, s1, a0
-    bnez a1, L_08819458
-    subu s1, s1, a0
-    addiu v1, v1, -1
-    beq v1, s3, L_08819450
-    move a0, sp
-    addiu a1, zero, -1
-L_08819438:
-    lhu a2, 0(a0)
-    addiu v1, v1, -1
-    addiu a0, a0, 2
-    sh a2, 0(s0)
-    bne v1, a1, L_08819438
-    addiu s0, s0, 2
-L_08819450:
-    j L_088193F0
-    addiu s2, s2, 1
-L_08819458:
-    sh zero, 0(s0)
-    j L_088193D0
-    move v1, s2
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int str_to_wide(u16 *dst, unsigned int size, const u8 *src)
 {
     int n = 0;
-    unsigned int room = size - 2;
     unsigned int c;
 
     if (size < 2) {
-        return 0;
+        return n;
     }
+    size -= 2;
     while ((c = ccc_decode_utf8(&src)) != 0) {
         u16 tmp[8];
         u16 *q = tmp;
         int k;
-        int i;
 
         ccc_encode_utf16(&q, c);
         k = q - tmp;
-        if (room < (unsigned int)(k * 2)) {
+        if (size < (unsigned int)(k * 2)) {
             break;
         }
-        room -= k * 2;
-        for (i = 0; i < k; i++) {
-            *dst++ = tmp[i];
+        size -= k * 2;
+        {
+            u16 *t = tmp;
+
+            while (k--) {
+                *dst++ = *t++;
+            }
         }
         n++;
     }
     *dst = 0;
     return n;
 }
+#else
+int str_to_wide(u16 *dst, unsigned int size, const u8 *src);
 #endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: tables and error characters by lui/lo */
+/* sceCccUCStoJIS and sceCccJIStoUCS (ccc_ucs_to_jis, ccc_jis_to_ucs below), which the SDK's GCC expands inside the
+   string converters */
+static inline unsigned int ccc_ucs_to_jis_inl(unsigned int ucs, unsigned int def)
+{
+    unsigned int j;
+
+    def &= 0xFFFF;
+    if (ucs <= 0xFFFF) {
+        j = D_088F97D0[ucs];
+        if (j) {
+            return j;
+        }
+    }
+    return def;
+}
+
+static inline unsigned int ccc_jis_to_ucs_inl(unsigned int jis, unsigned int def)
+{
+    unsigned int u = D_088F97CC[jis & 0xFFFF];
+
+    return u ? u : def;
+}
+
 /* sceCccUTF8toSJIS */
 int ccc_utf8_to_sjis(u8 *dst, unsigned int size, const u8 *src)
 {
@@ -359,16 +330,11 @@ int ccc_utf8_to_sjis(u8 *dst, unsigned int size, const u8 *src)
     while ((c = ccc_decode_utf8(&src)) != 0) {
         u8 tmp[16];
         u8 *q = tmp;
-        unsigned int jis = c <= 0xFFFF ? D_088F97D0[c] : 0;
+        u16 jis = ccc_ucs_to_jis_inl(c, D_088F97C0);
         unsigned int k;
-        unsigned int i;
 
         if (jis == 0) {
-            jis = D_088F97C0;
-        }
-        if (jis == 0) {
-            *dst = 0;
-            return n;
+            break;
         }
         ccc_encode_sjis(&q, jis);
         k = q - tmp;
@@ -376,8 +342,12 @@ int ccc_utf8_to_sjis(u8 *dst, unsigned int size, const u8 *src)
             break;
         }
         room -= k;
-        for (i = 0; i < k; i++) {
-            *dst++ = tmp[i];
+        {
+            u8 *t = tmp;
+
+            while (k--) {
+                *dst++ = *t++;
+            }
         }
         n++;
     }
@@ -392,16 +362,16 @@ int ccc_sjis_to_utf8(u8 *dst, unsigned int size, const u8 *src)
     unsigned int room;
     unsigned int jis;
     unsigned int u;
+    unsigned int def;
+    u8 tmp[16];
+    u8 *q;
 
     if (size == 0) {
         return 0;
     }
     room = size - 1;
-    while ((jis = ccc_decode_sjis(&src)) != 0 && ((u = D_088F97CC[jis]) != 0 || (u = D_088F97C4) != 0)) {
-        u8 tmp[16];
-        u8 *q = tmp;
+    while ((jis = ccc_decode_sjis(&src)) != 0 && (q = tmp, def = D_088F97C4, u = D_088F97CC[jis], u = u ? u : def) != 0) {
         unsigned int k;
-        unsigned int i;
 
         ccc_encode_utf8(&q, u);
         k = q - tmp;
@@ -409,8 +379,12 @@ int ccc_sjis_to_utf8(u8 *dst, unsigned int size, const u8 *src)
             break;
         }
         room -= k;
-        for (i = 0; i < k; i++) {
-            *dst++ = tmp[i];
+        {
+            u8 *t = tmp;
+
+            while (k--) {
+                *dst++ = *t++;
+            }
         }
         n++;
     }
@@ -431,21 +405,22 @@ int mbs_to_wcs(u16 *dst, unsigned int size, const u8 *src)
     while ((jis = ccc_decode_sjis(&src)) != 0) {
         u16 tmp[8];
         u16 *q = tmp;
+        unsigned int def = D_088F97C8;
         unsigned int u = D_088F97CC[jis];
         int k;
-        int i;
 
-        if (u == 0) {
-            u = D_088F97C8;
-        }
-        ccc_encode_utf16(&q, u);
+        ccc_encode_utf16(&q, u ? u : def);
         k = q - tmp;
         if (size < (unsigned int)(k * 2)) {
             break;
         }
         size -= k * 2;
-        for (i = 0; i < k; i++) {
-            *dst++ = tmp[i];
+        {
+            u16 *t = tmp;
+
+            while (k--) {
+                *dst++ = *t++;
+            }
         }
         n++;
     }
@@ -467,16 +442,11 @@ int ccc_utf16_to_sjis(u8 *dst, unsigned int size, const u16 *src)
     while ((u = ccc_decode_utf16(&src)) != 0) {
         u8 tmp[16];
         u8 *q = tmp;
-        u16 jis = u <= 0xFFFF ? D_088F97D0[u] : 0;
+        u16 jis = ccc_ucs_to_jis_inl(u, D_088F97C0);
         unsigned int k;
-        unsigned int i;
 
         if (jis == 0) {
-            jis = D_088F97C0;
-        }
-        if (jis == 0) {
-            *dst = 0;
-            return n;
+            break;
         }
         ccc_encode_sjis(&q, jis);
         k = q - tmp;
@@ -484,8 +454,12 @@ int ccc_utf16_to_sjis(u8 *dst, unsigned int size, const u16 *src)
             break;
         }
         room -= k;
-        for (i = 0; i < k; i++) {
-            *dst++ = tmp[i];
+        {
+            u8 *t = tmp;
+
+            while (k--) {
+                *dst++ = *t++;
+            }
         }
         n++;
     }
@@ -495,63 +469,7 @@ int ccc_utf16_to_sjis(u8 *dst, unsigned int size, const u16 *src)
 #endif
 
 /* sceCccUTF16toUTF8 */
-#ifdef __MWERKS__
-asm int wcs_to_utf8(u8 *dst, unsigned int size, const u16 *src)
-{
-    addiu sp, sp, -64
-    sw s3, 44(sp)
-    move v0, zero
-    addiu s3, zero, -1
-    sw s2, 40(sp)
-    move s2, zero
-    sw s1, 36(sp)
-    addiu s1, a1, -1
-    sw s0, 32(sp)
-    move s0, a0
-    sw ra, 48(sp)
-    bnez a1, L_088198B8
-    sw a2, 20(sp)
-L_0881989C:
-    lw ra, 48(sp)
-    lw s3, 44(sp)
-    lw s2, 40(sp)
-    lw s1, 36(sp)
-    lw s0, 32(sp)
-    jr ra
-    addiu sp, sp, 64
-L_088198B8:
-    jal ccc_decode_utf16
-    addiu a0, sp, 20
-    beqz v0, L_08819918
-    move a1, v0
-    addiu a0, sp, 16
-    jal ccc_encode_utf8
-    sw sp, 16(sp)
-    lw v1, 16(sp)
-    subu a0, v1, sp
-    sltu v0, s1, a0
-    bnez v0, L_08819918
-    subu s1, s1, a0
-    addiu a0, a0, -1
-    beq a0, s3, L_08819910
-    move v1, sp
-    addiu a1, zero, -1
-L_088198F8:
-    lbu a2, 0(v1)
-    addiu a0, a0, -1
-    addiu v1, v1, 1
-    sb a2, 0(s0)
-    bne a0, a1, L_088198F8
-    addiu s0, s0, 1
-L_08819910:
-    j L_088198B8
-    addiu s2, s2, 1
-L_08819918:
-    sb zero, 0(s0)
-    j L_0881989C
-    move v0, s2
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int wcs_to_utf8(u8 *dst, unsigned int size, const u16 *src)
 {
     int n = 0;
@@ -565,7 +483,6 @@ int wcs_to_utf8(u8 *dst, unsigned int size, const u16 *src)
         u8 tmp[16];
         u8 *q = tmp;
         unsigned int k;
-        unsigned int i;
 
         ccc_encode_utf8(&q, u);
         k = q - tmp;
@@ -573,14 +490,20 @@ int wcs_to_utf8(u8 *dst, unsigned int size, const u16 *src)
             break;
         }
         room -= k;
-        for (i = 0; i < k; i++) {
-            *dst++ = tmp[i];
+        {
+            u8 *t = tmp;
+
+            while (k--) {
+                *dst++ = *t++;
+            }
         }
         n++;
     }
     *dst = 0;
     return n;
 }
+#else
+int wcs_to_utf8(u8 *dst, unsigned int size, const u16 *src);
 #endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: the globals through split lui/lo */
