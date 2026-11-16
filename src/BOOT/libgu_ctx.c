@@ -1501,7 +1501,6 @@ void gu_debug_open(void)
     gu_set_display_hooks(sceGuDebugFlush, gu_debug_swap, (void (*)(int, int, int))gu_debug_set_disp,
                          gu_debug_set_draw);
     gu_debug_init = 1;
-    return 1;
 }
 #endif
 
