@@ -1,7 +1,7 @@
 // @range 0x08804000-0x08804A0C
-// @asm 0x08804000-0x08804364
-// @gcc 0x08804364-0x08804394
-// @asm 0x0880455C-0x08804714
+// @gcc 0x08804000-0x08804394
+// @gcc 0x0880442C-0x08804624
+// @asm 0x08804624-0x08804714
 // @gcc 0x08804714-0x08804A0C
 /* crt0 and the newlib system-call layer of the Sony SDK libc (GCC). module_start starts the
    "user_main" thread, which splits the argument block into argv, sets up the thread's reentrancy
@@ -32,16 +32,34 @@ int ModuleMgrForUser_8F2DF740(int, int, int, int, int);
 int main(int argc, char **argv);
 void exit(int status);
 
-extern int crt0_heap_kb;               /* 0x088EB9C4 sce_newlib_heap_kb_size */
+/* the sce_newlib_* settings and some libc hooks are weak in the SDK: crt0 tests their address */
+#ifdef __GNUC__
+#define CRT0_WEAK __attribute__((weak))
+#else
+#define CRT0_WEAK
+#endif
+
+#if defined(__mips__) && !defined(__MWERKS__)
+/* GCC track: crt0's string literals are referenced at their place in its .rodata (0x08872B00), which the GCC
+   object does not bring into the link; init/fini are the SDK's _init/_fini (names in symbols/BOOT.txt) */
+extern char crt0_str_user_main[], crt0_str_C[], crt0_str_exit[], crt0_str_not_main[], crt0_str_user_sbrk[];
+#define CRT0_S(name, lit) name
+#define libc_init func_08818E64
+#define libc_fini func_08818E6C
+#else
+#define CRT0_S(name, lit) lit
+#endif
+
+extern int crt0_heap_kb CRT0_WEAK;     /* 0x088EB9C4 sce_newlib_heap_kb_size */
 extern unsigned int sbrk_cur;          /* 0x088F0CC0 */
 
 #ifdef NON_MATCHING /* GCC: loads the weak sce_newlib_* globals through %hi/%lo */
 int user_main(SceSize args, void *argp);
 
-extern char crt0_thread_name[];       /* 0x088EB9C8 "user_main" */
-extern int crt0_thread_prio;           /* 0x088EB9D8 */
-extern int crt0_stack_kb;              /* 0x088EB9D4 */
-extern unsigned int crt0_thread_attr;  /* 0x088EB9DC */
+extern char crt0_thread_name[] CRT0_WEAK;       /* 0x088EB9C8 "user_main" */
+extern int crt0_thread_prio CRT0_WEAK;           /* 0x088EB9D8 */
+extern int crt0_stack_kb CRT0_WEAK;              /* 0x088EB9D4 */
+extern unsigned int crt0_thread_attr CRT0_WEAK;  /* 0x088EB9DC */
 extern void (*crt0_init_hook)(void);   /* 0x08872B44 weak */
 extern unsigned int crt0_sbrk_base;    /* 0x088F0CC4 */
 extern unsigned int crt0_sbrk_end;     /* 0x088F0CC8 */
@@ -49,46 +67,92 @@ extern SceUID crt0_sbrk_block;         /* 0x088F0CCC */
 
 int module_start(SceSize args, void *argp)
 {
+    const char *name;
+    int prio;
+    int stack;
+    unsigned int attr;
     SceUID th;
 
     sceKernelSetCompiledSdkVersion(0x02080010);
     SysMemUserForUser_F77D77CB(0x00030306);
-    th = sceKernelCreateThread(crt0_thread_name, user_main, crt0_thread_prio, crt0_stack_kb << 10,
-                               crt0_thread_attr | 0x80000000, 0);
+    if (&crt0_thread_name != 0) {
+        name = crt0_thread_name;
+    } else {
+        name = CRT0_S(crt0_str_user_main, "user_main");
+    }
+    prio = 32;
+    if (&crt0_thread_prio != 0) {
+        prio = crt0_thread_prio;
+    }
+    stack = 0x40000;
+    if (&crt0_stack_kb != 0) {
+        stack = crt0_stack_kb << 10;
+    }
+    if (&crt0_thread_attr != 0) {
+        attr = crt0_thread_attr | 0x80000000;
+    } else {
+        attr = 0x80000000;
+    }
+    th = sceKernelCreateThread(name, user_main, prio, stack, attr, 0);
     sceKernelStartThread(th, args, argp);
     return 0;
 }
 
-void libc_init_reent(void *r);
+void libc_init_reent(void *r) CRT0_WEAK;
 int libc_set_module_reent(SceUID mod, void *r);
 int atexit(void (*fn)(void));
 unsigned int _sbrk(int incr);
 void libc_fini(void);
 void libc_init(void);
+extern int crt0_heap_lazy CRT0_WEAK;   /* a setting the game does not define: _sbrk(0) makes the heap at start */
+
+#if defined(__mips__) && !defined(__MWERKS__)
+#include <sys/reent.h>
+
+#include "sdk_reent.h"
+#define CRT0_REENT_INIT(var) SDK_REENT_INIT_PTR(var, CRT0_S(crt0_str_C, "C"))
+#else
+#define CRT0_REENT_INIT(r) libc_init_reent(r)
+struct _reent;
+#endif
 
 /* argv from the NUL-separated argument block (at most 20 entries), the thread's reent struct,
    then main() and exit(). */
 int user_main(SceSize args, void *argp)
 {
     char *argv[20];
-    char reent[0x37C];
-    char *p = argp;
-    int argc = 0;
+    char reent[0x380];
+    char *r = reent;
+    char *p;
+    int argc;
 
-    _sbrk(0);
-    if ((int)args > 0) {
-        do {
-            argv[argc++] = p;
-            p += strlen(p) + 1;
-        } while (argc < 20 && p - (char *)argp < (int)args);
+    if (&crt0_heap_lazy == 0 || crt0_heap_lazy == 0) {
+        _sbrk(0);
+    }
+    for (argc = 0, p = argp; argc < 20 && p - (char *)argp < (int)args; argc++) {
+        argv[argc] = p;
+        p += strlen(p) + 1;
     }
     argv[argc] = 0;
-    libc_init_reent(reent);
-    if (libc_set_module_reent(sceKernelGetModuleIdByAddress(module_start), reent) >= 0) {
-        atexit(libc_fini);
-        libc_init();
-        exit(main(argc, argv));
+    if (libc_init_reent != 0) {
+        libc_init_reent(r);
+        if (libc_set_module_reent(sceKernelGetModuleIdByAddress(module_start), r) < 0) {
+            goto out;
+        }
+    } else {
+        CRT0_REENT_INIT(((struct _reent *)r));
     }
+#if defined(__mips__) && !defined(__MWERKS__)
+    {
+        register void **k0 __asm__("$26");
+
+        k0[1] = r;                     /* the thread-local reent pointer that __getreent reads */
+    }
+#endif
+    atexit(libc_fini);
+    libc_init();
+    exit(main(argc, argv));
+out:
     sceKernelExitThread(1);
     return 1;
 }
@@ -194,133 +258,62 @@ static int libc_fd(int fd)
 #endif
 
 /* newlib _lseek; SEEK_SET/CUR/END are the same values on the PSP. -9 (EBADF) for a bad fd. */
-#ifdef __MWERKS__
-asm int _lseek(int fd, int offset, int whence)
-{
-    addiu sp, sp, -16
-    addiu v1, zero, 1
-    sw s2, 8(sp)
-    move s2, a1
-    sw s0, 0(sp)
-    move s0, a2
-    sw ra, 12(sp)
-    beq a0, v1, @120
-    sw s1, 4(sp)
-    slti v1, a0, 2
-    bnez v1, @108
-    addiu a1, zero, 2
-    beq a0, a1, @f8
-    nop
-@38:
-    bltz a0, @98
-    addiu v0, zero, -9
-    addiu a2, zero, 1
-    beq s0, a2, @64
-    addiu s1, zero, 1
-    slti a3, s0, 2
-    bnez a3, @e8
-    addiu t0, zero, 2
-    beq s0, t0, @64
-    addiu s1, zero, 2
-    move s1, s0
-@64:
-    addiu t1, zero, 1
-    beq a0, t1, @d8
-    slti t2, a0, 2
-    bnez t2, @c0
-    addiu t3, zero, 2
-    beq a0, t3, @b0
-    nop
-    move v0, a0
-@84:
-    move a2, s2
-@88:
-    sra a3, s2, 0x1f
-    move a0, v0
-    jal sceIoLseek
-    move t0, s1
-@98:
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@b0:
-    jal sceKernelStderr
-    nop
-    j @88
-    move a2, s2
-@c0:
-    bnezl a0, @84
-    move v0, a0
-    jal sceKernelStdin
-    nop
-    j @88
-    move a2, s2
-@d8:
-    jal sceKernelStdout
-    nop
-    j @88
-    move a2, s2
-@e8:
-    beqz s0, @64
-    move s1, zero
-    j @64
-    move s1, s0
-@f8:
-    jal sceKernelStderr
-    nop
-    j @38
-    move a0, v0
-@108:
-    bnez a0, @38
-    nop
-    jal sceKernelStdin
-    nop
-    j @38
-    move a0, v0
-@120:
-    jal sceKernelStdout
-    nop
-    j @38
-    move a0, v0
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 int _lseek(int fd, int offset, int whence)
 {
-    int kfd = libc_fd(fd);
+    int w;
 
-    if (kfd < 0) {
+    fd = libc_fd(fd);
+    if (fd < 0) {
         return -9;
     }
-    return sceIoLseek(libc_fd(fd), (SceOff)offset, whence);
+    switch (whence) {
+    case 0:
+        w = 0;
+        break;
+    case 1:
+        w = 1;
+        break;
+    case 2:
+        w = 2;
+        break;
+    default:
+        w = whence;
+        break;
+    }
+    return sceIoLseek(libc_fd(fd), offset, w);
 }
+#else
+int _lseek(int fd, int offset, int whence);
 #endif
 
 #ifdef NON_MATCHING /* GCC: loads globals through %hi/%lo */
-SceUID libc_get_thread_module(void);
+SceUID libc_get_thread_module(void) CRT0_WEAK;
 SceUID heap_get_current(void);
+#if !(defined(__mips__) && !defined(__MWERKS__)) /* else newlib's, from <sys/reent.h> */
 void _reclaim_reent(SceUID mod);
+#endif
 SceUID libc_module_of(SceUID mod);
 
 /* newlib _exit: only the main thread may call it; unloads a sub-module or exits the game. */
 void _exit(int status)
 {
-    SceUID cur = libc_get_thread_module();
-    SceUID mod;
-    int res;
+    if (&libc_get_thread_module != 0) {
+        SceUID cur = libc_get_thread_module();
+        SceUID mod;
+        int res;
 
-    if (cur != heap_get_current()) {
-        sceKernelPrintf("libc:%s: should be called from main thread\n", "_exit");
-        sceKernelExitThread(status);
-    }
-    _reclaim_reent(cur);
-    mod = libc_module_of(cur);
-    if (ModuleMgrForUser_F0A26395() != mod) {
-        sceKernelStopModule(mod, 0, 0, &res, 0);
-        sceKernelUnloadModule(mod);
-        sceKernelExitThread(status);
+        if (cur != heap_get_current()) {
+            sceKernelPrintf(CRT0_S(crt0_str_not_main, "libc:%s: should be called from main thread\n"), CRT0_S(crt0_str_exit, "_exit"));
+            sceKernelExitThread(status);
+        }
+        _reclaim_reent(cur);
+        mod = libc_module_of(cur);
+        if (ModuleMgrForUser_F0A26395() != mod) {
+            sceKernelStopModule(mod, 0, 0, &res, 0);
+            sceKernelUnloadModule(mod);
+            sceKernelExitThread(status);
+        }
     }
     ModuleMgrForUser_8F2DF740(1, 0, 0, 0, 0);
 }
@@ -334,16 +327,23 @@ unsigned int _sbrk(int incr)
     if (crt0_sbrk_base == 0) {
         int size;
 
-        if (crt0_heap_kb == 0) {
-            return 0xFFFFFFFF;
+        size = 0x10000;
+        if (&crt0_heap_kb != 0) {
+            size = crt0_heap_kb << 10;
+            if (crt0_heap_kb == 0) {
+                return 0xFFFFFFFF;
+            }
         }
-        size = crt0_heap_kb * 1024;
         if (size != 0) {
-            crt0_sbrk_block = sceKernelAllocPartitionMemory(2, "UserSbrk", 3, size, (void *)0x1000);
-            if (crt0_sbrk_block > 0) {
-                sbrk_cur = (unsigned int)sceKernelGetBlockHeadAddr(crt0_sbrk_block);
-                crt0_sbrk_end = sbrk_cur + size;
-                crt0_sbrk_base = sbrk_cur;
+            SceUID b = sceKernelAllocPartitionMemory(2, CRT0_S(crt0_str_user_sbrk, "UserSbrk"), 3, size, (void *)0x1000);
+
+            crt0_sbrk_block = b;
+            if (b > 0) {
+                unsigned int h = (unsigned int)sceKernelGetBlockHeadAddr(b);
+
+                crt0_sbrk_end = h + size;
+                sbrk_cur = h;
+                crt0_sbrk_base = h;
             }
         }
     }
@@ -351,8 +351,11 @@ unsigned int _sbrk(int incr)
         return 0xFFFFFFFF;
     }
     old = sbrk_cur;
-    next = sbrk_cur + incr;
-    if (next < crt0_sbrk_base || next > crt0_sbrk_end) {
+    next = old + incr;
+    if (next < crt0_sbrk_base) {
+        return 0xFFFFFFFF;
+    }
+    if (next > crt0_sbrk_end) {
         return 0xFFFFFFFF;
     }
     sbrk_cur = next;

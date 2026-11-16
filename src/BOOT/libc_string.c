@@ -13,6 +13,7 @@
 // @gcc 0x08811118-0x08811218 libc_strchr
 // @gcc 0x0881128C-0x08811324 libc_strcpy
 // @gcc 0x0881133C-0x08811458 nl_strncmp
+// @gcc 0x08811458-0x088115E0 nl_strncpy
 // @gcc 0x088115E0-0x08811648 libc_strrchr
 // @gcc 0x08811648-0x088116A4 libc_strstr
 // @asm 0x088116A4-0x088126E8
@@ -356,127 +357,7 @@ int memcmp(const char *a, const char *b, size_t n)
 }
 #endif
 
-#ifdef __MWERKS__
-asm char *strncpy(char *d, const char *s, size_t n)
-{
-    sltiu v0, a2, 4
-    bnez v0, @58
-    move v1, a0
-    andi t2, a2, 0x3
-    subu a2, a2, t2
-@14:
-    lbu v0, 0(a1)
-    lbu a3, 1(a1)
-    lbu t0, 2(a1)
-    lbu t1, 3(a1)
-    addiu a2, a2, -4
-    sb v0, 0(v1)
-    beqz v0, @17c
-    addiu a1, a1, 4
-    beqz a3, @170
-    sb a3, 1(v1)
-    beqz t0, @164
-    sb t0, 2(v1)
-    beqz t1, @a8
-    sb t1, 3(v1)
-    bnez a2, @14
-    addiu v1, v1, 4
-    move a2, t2
-@58:
-    addu a2, v1, a2
-    beq v1, a2, @80
-    nop
-    lbu v0, 0(a1)
-@68:
-    addiu a1, a1, 1
-    sb v0, 0(v1)
-    beqz v0, @88
-    addiu v1, v1, 1
-    bnel v1, a2, @68
-    lbu v0, 0(a1)
-@80:
-    jr ra
-    move v0, a0
-@88:
-    beq v1, a2, @80
-    nop
-    sb zero, 0(v1)
-@94:
-    addiu v1, v1, 1
-    bnel v1, a2, @94
-    sb zero, 0(v1)
-    j @80
-    nop
-@a8:
-    addu a2, a2, t2
-    beqz a2, @dc
-    addiu v1, v1, 4
-    andi v0, v1, 0x3
-    beqz v0, @e0
-    sltiu v0, a2, 16
-    sb zero, 0(v1)
-@c4:
-    addiu a2, a2, -1
-    addiu v1, v1, 1
-    beqz a2, @dc
-    andi v0, v1, 0x3
-    bnezl v0, @c4
-    sb zero, 0(v1)
-@dc:
-    sltiu v0, a2, 16
-@e0:
-    bnez v0, @10c
-    sltiu v0, a2, 8
-@e8:
-    addiu a2, a2, -16
-    addiu v1, v1, 16
-    sltiu v0, a2, 16
-    sw zero, -16(v1)
-    sw zero, -12(v1)
-    sw zero, -8(v1)
-    beqz v0, @e8
-    sw zero, -4(v1)
-    sltiu v0, a2, 8
-@10c:
-    bnez v0, @128
-    sltiu v0, a2, 4
-    sw zero, 0(v1)
-    addiu a2, a2, -8
-    sw zero, 4(v1)
-    addiu v1, v1, 8
-    sltiu v0, a2, 4
-@128:
-    bnez v0, @140
-    sltiu v0, a2, 2
-    sw zero, 0(v1)
-    addiu a2, a2, -4
-    addiu v1, v1, 4
-    sltiu v0, a2, 2
-@140:
-    bnez v0, @154
-    nop
-    sh zero, 0(v1)
-    addiu a2, a2, -2
-    addiu v1, v1, 2
-@154:
-    bnezl a2, @80
-    sb zero, 0(v1)
-    j @80
-    nop
-@164:
-    addiu a2, a2, 1
-    j @a8
-    addiu v1, v1, -1
-@170:
-    addiu a2, a2, 1
-    j @164
-    addiu v1, v1, -1
-@17c:
-    addiu a2, a2, 1
-    j @170
-    addiu v1, v1, -1
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_strncpy.c */
 char *strncpy(char *d, const char *s, size_t n)
 {
     char *p = d;
@@ -492,6 +373,8 @@ char *strncpy(char *d, const char *s, size_t n)
     }
     return d;
 }
+#else
+char *strncpy(char *d, const char *s, size_t n);
 #endif
 
 /* strrchr (historical name strrchr_str) */
