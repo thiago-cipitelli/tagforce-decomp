@@ -3,9 +3,7 @@
 // @asm 0x08818F54-0x08818FD0
 // @gcc 0x08818FD0-0x0881908C
 // @asm 0x0881908C-0x08819394
-// @gcc 0x08819394-0x08819574
-// @asm 0x08819574-0x08819660
-// @gcc 0x08819660-0x08819984
+// @gcc 0x08819394-0x08819984
 // @gcc 0x08819A08-0x08819A44
 // @gcc 0x08819AE0-0x08819BEC
 /* Sony's libccc (sceCcc*, character code conversion): UTF-8, UTF-16 and Shift JIS strings, the JIS
@@ -361,18 +359,22 @@ int ccc_sjis_to_utf8(u8 *dst, unsigned int size, const u8 *src)
     int n = 0;
     unsigned int room;
     unsigned int jis;
-    unsigned int u;
-    unsigned int def;
-    u8 tmp[16];
-    u8 *q;
 
     if (size == 0) {
         return 0;
     }
     room = size - 1;
-    while ((jis = ccc_decode_sjis(&src)) != 0 && (q = tmp, def = D_088F97C4, u = D_088F97CC[jis], u = u ? u : def) != 0) {
+    while ((jis = ccc_decode_sjis(&src)) != 0) {
+        u8 tmp[16];
+        u8 *q = tmp;
+        unsigned int def = D_088F97C4;
+        unsigned int u = D_088F97CC[jis];
         unsigned int k;
 
+        u = u ? u : def;
+        if (u == 0) {
+            break;
+        }
         ccc_encode_utf8(&q, u);
         k = q - tmp;
         if (room < k) {
