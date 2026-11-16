@@ -1,7 +1,6 @@
 // @range 0x08815678-0x08816FD0
 // @asm 0x088157A0-0x08815BC8
 // @asm 0x0881665C-0x08816964
-// @asm 0x08816964-0x08816CD8
 // @data 0x088757D4-0x08875AC4
 // @rodata 0x08870014-0x08870074
 /* The 3D field cursor: its pose follows the card under the cursor location, the cursor model
@@ -525,13 +524,7 @@ unsigned int *dd_cursor_draw_locked(unsigned int *list)
     return dd_cursor_draw_arrow(list, dd_cursor.cur, 1, 1);
 }
 
-/* screen position of the current model matrix origin */
-#define DD_SCREEN_X(m) ((480.0f * (m)[12]) / (m)[15] + 2122.0f - 1808.0f)
-#define DD_SCREEN_Y(m) ((-272.0f * (m)[13]) / (m)[15] + 2044.0f - 1912.0f)
-
 /* the arrow sprite over the location (blinks with bit blink_bit of the frame counter) */
-DdVec3 dd_cursor_icons_up = { 0.0f, 0.0f, -60.0f };
-DdVec3 dd_cursor_icons_down = { 0.0f, 0.0f, 60.0f };
 
 #ifdef NON_MATCHING /* 28 palavras: list/raised e dx/dy trocam de $s (candidatos a derrame do alocador) */
 unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, int blink_bit)
@@ -612,20 +605,17 @@ unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, in
 #endif
 
 /* the icons of the actions possible on the location (up to 13, centered over it) */
-#ifdef NON_MATCHING /* quadro e alocação */
 unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
 {
-    float pos[3];
-    float ofs[3];
-    float a[3] = { 0.0f, 0.0f, -60.0f };
-    float b[3] = { 0.0f, 0.0f, 60.0f };
-    float model[16];
-    float view[16];
-    float proj[16];
-    float res[16];
     int icons[13];
+    float pos[3];
+    float model[16] __attribute__((aligned(16)));
+    float view[16] __attribute__((aligned(16)));
+    float proj[16] __attribute__((aligned(16)));
+    float res[16] __attribute__((aligned(16)));
+    DdVec4A scr;
     int deck = 0;
-    float sx, sy;
+    float sy, sx;
     unsigned int f;
     int n, i, x, y;
 
@@ -634,17 +624,21 @@ unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
     mtx_get34(model);
     if (model[14] >= 0.0f) {
         if (loc.zone == 0xD) {
-            float z[3] = { 0 };
-
             deck = 1;
-            *(DdVec3 *)pos = *(DdVec3 *)z;
+            {
+                float z[3] = { 0 };
+
+                *(DdVec3 *)pos = *(DdVec3 *)z;
+            }
         } else {
-            *(DdVec3 *)ofs = *(DdVec3 *)a;
-            *(DdVec3 *)pos = *(DdVec3 *)ofs;
+            float up[3] = { 0.0f, 0.0f, -60.0f };
+
+            *(DdVec3 *)pos = *(DdVec3 *)up;
         }
     } else {
-        *(DdVec3 *)ofs = *(DdVec3 *)b;
-        *(DdVec3 *)pos = *(DdVec3 *)ofs;
+        float down[3] = { 0.0f, 0.0f, 60.0f };
+
+        *(DdVec3 *)pos = *(DdVec3 *)down;
     }
     mtx_translate(pos);
     mtx_set_mode(2);
@@ -655,8 +649,14 @@ unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
     mtx_get34(proj);
     mat4_mul(res, view, model);
     mat4_mul(res, proj, res);
-    sx = DD_SCREEN_X(res);
-    sy = DD_SCREEN_Y(res);
+    scr.x = 480.0f * res[12] / res[15];
+    scr.y = -272.0f * res[13] / res[15];
+    scr.x += 2122.0f;
+    scr.y += 2044.0f;
+    scr.x -= 1808.0f;
+    scr.y -= 1912.0f;
+    sx = scr.x;
+    sy = scr.y;
     mtx_set_mode(2);
     mtx_pop();
     if (deck) {
@@ -682,7 +682,6 @@ unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
     }
     return dl_enable(list, 1);
 }
-#endif
 
 /* jumps between the hand and the field */
 void dd_cursor_hand_toggle(void)
