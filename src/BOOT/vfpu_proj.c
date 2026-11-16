@@ -1,11 +1,11 @@
 // @range 0x0881D8A8-0x0881DE88
 // @asm 0x0881D8A8-0x0881DA34
-// @gcc 0x0881DC60-0x0881DD14
-// @asm 0x0881DD14-0x0881DE00
+// @gcc 0x0881DC60-0x0881DE00
 /* VFPU camera and projection matrices: planar shadow onto n . p = 1, view (look-at), perspective,
    ortho, frustum, and the point projections. Column-major (m[4 * col + row]); functions with an
-   output matrix return it. Hand-written VFPU code kept as whole `asm` functions; the two compiled C
-   functions that load float constants from .rodata (GCC) stay in asm with their C under NON_MATCHING.
+   output matrix return it. Hand-written VFPU code kept as whole `asm` functions; the functions the SDK
+   compiled with GCC come from C (vfpu_proj_gcc.c). The port C of the VFPU functions is left out of that GCC
+   object (`#elif !defined(__mips__)`), so its literal pool is exactly the original's (`@rodata`).
    Outside the PSP build each one has a C equivalent. */
 
 typedef struct Vec4 {
@@ -52,7 +52,7 @@ static void cross3(float *r, const float *a, const float *b)
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC: 1.0f and -1.0f come from the .rodata pool (D_088EB1C8) */
+#ifdef NON_MATCHING /* GCC (vfpu_proj_gcc.c, does not match yet); 1.0f and -1.0f open the literal pool */
 /* Projection onto the plane a*x + b*y + c*z = 1 from the light `l`: a point light when `point` is
    set, else a direction. */
 Mat4 *mat4_shadow_plane(Mat4 *out, Vec4 *l, int point, float a, float b, float c)
@@ -148,7 +148,7 @@ asm Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up)
 {
     float x[3];
@@ -177,6 +177,8 @@ Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up)
     m[15] = 1.0f;
     return out;
 }
+#else
+Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up);
 #endif
 
 /* Perspective projection (fovy in radians), as gluPerspective. */
@@ -217,7 +219,7 @@ asm Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, floa
     jr ra
     addiu sp, sp, 16
 }
-#else
+#elif !defined(__mips__)
 Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, float far)
 {
     float ct = cosf(fovy * 0.5f) / sinf(fovy * 0.5f);
@@ -230,6 +232,8 @@ Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, float fa
     out->m[14] = 2.0f * far * near / (near - far);
     return out;
 }
+#else
+Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, float far);
 #endif
 
 /* Orthographic projection, as glOrtho. */
@@ -272,7 +276,7 @@ asm Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top
     jr ra
     addiu sp, sp, 32
 }
-#else
+#elif !defined(__mips__)
 Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top, float near, float far)
 {
     memset(out, 0, sizeof(*out));
@@ -285,6 +289,8 @@ Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top, fl
     out->m[15] = 1.0f;
     return out;
 }
+#else
+Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top, float near, float far);
 #endif
 
 /* Perspective frustum, as glFrustum. */
@@ -328,7 +334,7 @@ asm Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float t
     jr ra
     addiu sp, sp, 32
 }
-#else
+#elif !defined(__mips__)
 Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, float near, float far)
 {
     memset(out, 0, sizeof(*out));
@@ -341,6 +347,8 @@ Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, 
     out->m[14] = 2.0f * near * far / (near - far);
     return out;
 }
+#else
+Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, float near, float far);
 #endif
 
 /* View matrix from a position, a view direction and an up vector: the inverse of the camera matrix
@@ -364,24 +372,24 @@ Mat4 *mat4_look_at(Mat4 *out, Vec4 *pos, Vec4 *dir, Vec4 *up)
 Mat4 *mat4_look_at(Mat4 *out, Vec4 *pos, Vec4 *dir, Vec4 *up);
 #endif
 
-#ifdef NON_MATCHING /* GCC: 1.0f comes from the .rodata pool (D_088EB1D0) */
+#ifdef NON_MATCHING /* PSP: vfpu_proj_gcc.c */
 /* Perspective with explicit depth mapping: out = T * P with P (x, y, z, 1) = (s x, s y, 1, z) and
    T = scale (sx, sy, A) + translation (tx, ty, B), A = far * near * (zmax - zmin) / (far - near),
    B = (zmin * far - zmax * near) / (far - near). */
 Mat4 *mat4_perspective_ex(Mat4 *out, float s, float sx, float sy, float tx, float ty, float zmin, float zmax, float near, float far)
 {
     Mat4 t;
-    float a = far * near * (zmax - zmin) / (far - near);
     float b = (zmin * far - zmax * near) / (far - near);
+    float a = far * near * (zmax - zmin) / (far - near);
 
     mat4_identity(out);
-    out->m[5] = s;
-    out->m[11] = 1.0f;
     out->m[14] = 1.0f;
+    out->m[11] = 1.0f;
     out->m[0] = s;
+    out->m[5] = s;
     out->m[10] = 0.0f;
-    mat4_identity(&t);
     out->m[15] = 0.0f;
+    mat4_identity(&t);
     t.m[0] = sx;
     t.m[5] = sy;
     t.m[10] = a;
@@ -410,7 +418,7 @@ asm Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v)
 {
     float p[4];
@@ -426,6 +434,8 @@ Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v)
     out->w = p[3];
     return out;
 }
+#else
+Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v);
 #endif
 
 /* Projects n points (n >= 1) and stores x, y, z / w as 12.4 fixed point (rounded to nearest) in
@@ -457,7 +467,7 @@ L_0881DE44:
     jr ra
     move v0, zero
 }
-#else
+#elif !defined(__mips__)
 int mat4_project_s16(short *out, int stride, Mat4 *m, Vec4 *v, int n)
 {
     do {
@@ -475,4 +485,6 @@ int mat4_project_s16(short *out, int stride, Mat4 *m, Vec4 *v, int n)
     } while (--n != 0);
     return 0;
 }
+#else
+int mat4_project_s16(short *out, int stride, Mat4 *m, Vec4 *v, int n);
 #endif
