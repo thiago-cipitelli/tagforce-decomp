@@ -1,6 +1,6 @@
 // @range 0x08818E64-0x08819BEC
-// @gcc 0x08818E64-0x08818EE0
-// @asm 0x08818EE0-0x08818FD0
+// @gcc 0x08818E64-0x08818F54
+// @asm 0x08818F54-0x08818FD0
 // @gcc 0x08818FD0-0x0881908C
 // @asm 0x0881908C-0x08819394
 // @asm 0x08819464-0x08819758
@@ -82,13 +82,23 @@ unsigned int ccc_decode_utf16(const u16 **s)
     return r;
 }
 
+/* sceCccIsValidUTF16's test, which the SDK's GCC inlines into ccc_encode_utf16 */
+static inline int utf16_ok(unsigned int c)
+{
+    if (c > 0x10FFFF) {
+        return 0;
+    }
+    if (c - 0xD800 < 0x800) {
+        return 0;
+    }
+    return 1;
+}
+
 void ccc_encode_utf16(u16 **d, unsigned int c)
 {
     u16 *p = *d;
 
-    if (c > 0x10FFFF) {
-        c = D_088F97C8;
-    } else if (c - 0xD800 < 0x800) {
+    if (!utf16_ok(c)) {
         c = D_088F97C8;
     }
     if (c < 0x10000) {

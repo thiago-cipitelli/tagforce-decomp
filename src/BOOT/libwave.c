@@ -1,13 +1,14 @@
 // @range 0x088634EC-0x08865260
-// @asm 0x088634EC-0x08863944
+// @gcc 0x088634EC-0x08863854
+// @asm 0x08863854-0x08863944
 // @gcc 0x08863944-0x08863A00
 // @asm 0x08863A00-0x08863A6C
 // @gcc 0x08863A6C-0x08863D04
 // @asm 0x08863D04-0x08863D90
 // @gcc 0x08863D90-0x088640A8
 // @asm 0x088640A8-0x08864100
-// @gcc 0x08864100-0x08864254
-// @asm 0x08864254-0x08865260
+// @gcc 0x08864100-0x088642F8
+// @asm 0x088642F8-0x08865260
 /* libwave (SDK sample library, "SceWaveMain"): 8 software channels of VAG ADPCM or 16-bit PCM
    (mono or stereo, one-shot, looping, or streamed through a callback) mixed by a thread into one
    448-sample stereo hardware channel, plus 4 directly driven hardware channels (wave_set_sample,
@@ -92,8 +93,7 @@ extern WaveThreadArg D_08C1FAC8;
 extern unsigned char *D_08C1FAD4;
 extern unsigned char *D_08C1FAD8;
 extern int D_08C1FADC[4];
-extern const signed char D_088EAFB8[5];
-extern const signed char D_088EAFBD[5];
+extern const signed char D_088EAFB8[2][5]; /* VAG predictor coefficients */
 #define wave_state D_08C1E780
 #define wave_stop_req D_08C1E784
 #define wave_pcm_buf D_08C1E788
@@ -105,8 +105,7 @@ extern const signed char D_088EAFBD[5];
 #define wave_vag_ptr D_08C1FAD4
 #define wave_pcm_ptr D_08C1FAD8
 #define wave_hw_ch D_08C1FADC
-#define vag_coef0 D_088EAFB8
-#define vag_coef1 D_088EAFBD
+#define vag_coef D_088EAFB8
 #else
 static int wave_state;
 static volatile int wave_stop_req;
@@ -119,26 +118,27 @@ static WaveThreadArg wave_thread_arg;
 static unsigned char *wave_vag_ptr;
 static unsigned char *wave_pcm_ptr;
 static int wave_hw_ch[4];
-static const signed char vag_coef0[5] = { 0, 60, 115, 98, 122 };
-static const signed char vag_coef1[5] = { 0, 0, -52, -55, -60 };
+static const signed char vag_coef[2][5] = { { 0, 60, 115, 98, 122 }, { 0, 0, -52, -55, -60 } };
 #endif
 
 /* Reserves the mixed channel (448 stereo samples) and three hardware channels (256 samples). */
 int sceWaveInit_wrap(void)
 {
     unsigned int i;
-    int ch;
+    unsigned char *p;
 
     if (wave_state != 0) {
         return (int)0x80440001;
     }
     wave_pcm_ptr = wave_pcm_buf;
     wave_vag_ptr = wave_vag_buf;
+    p = (unsigned char *)wave_ch;
     for (i = 0; i < sizeof(wave_ch); i++) {
-        ((unsigned char *)wave_ch)[i] = 0;
+        *p++ = 0;
     }
+    p = (unsigned char *)wave_shadow;
     for (i = 0; i < sizeof(wave_shadow); i++) {
-        ((unsigned char *)wave_shadow)[i] = 0;
+        *p++ = 0;
     }
     wave_thread_arg.main_ch = sceAudioChReserve(-1, 0x1C0, 0);
     if (wave_thread_arg.main_ch < 0) {
@@ -146,25 +146,24 @@ int sceWaveInit_wrap(void)
     }
     wave_hw_ch[0] = sceAudioChReserve(-1, 0x100, 0);
     if (wave_hw_ch[0] < 0) {
-        ch = wave_thread_arg.main_ch;
-    } else {
-        wave_hw_ch[1] = sceAudioChReserve(-1, 0x100, 0);
-        if (wave_hw_ch[1] < 0) {
-            sceAudioChRelease(wave_thread_arg.main_ch);
-            ch = wave_hw_ch[0];
-        } else {
-            wave_hw_ch[2] = sceAudioChReserve(-1, 0x100, 0);
-            if (wave_hw_ch[2] >= 0) {
-                wave_state = 1;
-                return 0;
-            }
-            sceAudioChRelease(wave_thread_arg.main_ch);
-            sceAudioChRelease(wave_hw_ch[0]);
-            ch = wave_hw_ch[1];
-        }
+        sceAudioChRelease(wave_thread_arg.main_ch);
+        return (int)0x80440001;
     }
-    sceAudioChRelease(ch);
-    return (int)0x80440001;
+    wave_hw_ch[1] = sceAudioChReserve(-1, 0x100, 0);
+    if (wave_hw_ch[1] < 0) {
+        sceAudioChRelease(wave_thread_arg.main_ch);
+        sceAudioChRelease(wave_hw_ch[0]);
+        return (int)0x80440001;
+    }
+    wave_hw_ch[2] = sceAudioChReserve(-1, 0x100, 0);
+    if (wave_hw_ch[2] < 0) {
+        sceAudioChRelease(wave_thread_arg.main_ch);
+        sceAudioChRelease(wave_hw_ch[0]);
+        sceAudioChRelease(wave_hw_ch[1]);
+        return (int)0x80440001;
+    }
+    wave_state = 1;
+    return 0;
 }
 
 /* Sets a channel's sound: VAG or PCM data and size (flags as WaveCh.flags), or a callback stream
@@ -182,38 +181,55 @@ int wave_ch_set_data(unsigned int ch, const unsigned char *data, unsigned int si
     if (wave_ch_is_playing(ch) != 0) {
         return (int)0x80440009;
     }
-    c = &wave_ch[ch];
-    if (flags & 0x400) {
-        if (data != 0) {
-            return (int)0x80440006;
-        }
-        if (size != 0) {
-            return (int)0x80440007;
-        }
-    } else {
+    if (!(flags & 0x400)) {
         if (data == 0) {
             return (int)0x80440006;
         }
         if (size == 0) {
             return (int)0x80440007;
         }
+        c = &wave_ch[ch];
+        c->data = data;
+        c->size = size;
+        c->pos = 0;
+        c->playing = 0;
+        c->vol_l = 4096;
+        c->flags = flags;
+        c->vol_r = 4096;
+        c->fade_len = 112;
+        c->hist1 = 0;
+        c->hist2 = 0;
+        c->unk28 = 0;
+        c->unk2c = 0;
+        c->unk24 = 0;
+        c->loop_start = 0;
+        c->loop_end = 0;
+        c->fade_count = 0;
+    } else {
+        if (data != 0) {
+            return (int)0x80440006;
+        }
+        if (size != 0) {
+            return (int)0x80440007;
+        }
+        c = &wave_ch[ch];
+        c->data = 0;
+        c->size = 0;
+        c->pos = 0;
+        c->playing = 0;
+        c->vol_l = 4096;
+        c->flags = flags;
+        c->vol_r = 4096;
+        c->fade_len = 112;
+        c->hist1 = 0;
+        c->hist2 = 0;
+        c->unk28 = 0;
+        c->unk2c = 0;
+        c->unk24 = 0;
+        c->loop_start = 0;
+        c->loop_end = 0;
+        c->fade_count = 0;
     }
-    c->data = data;
-    c->size = size;
-    c->flags = flags;
-    c->vol_r = 4096;
-    c->fade_len = 112;
-    c->fade_count = 0;
-    c->pos = 0;
-    c->playing = 0;
-    c->vol_l = 4096;
-    c->hist1 = 0;
-    c->hist2 = 0;
-    c->unk28 = 0;
-    c->unk2c = 0;
-    c->unk24 = 0;
-    c->loop_start = 0;
-    c->loop_end = 0;
     return 0;
 }
 
@@ -223,11 +239,14 @@ int wave_ch_set_volume(unsigned int ch, unsigned int l, unsigned int r)
     if (ch >= 8) {
         return (int)0x80440005;
     }
-    if (l >= 128 || r >= 128) {
+    if (l >= 128) {
         return (int)0x8044000A;
     }
-    wave_ch[ch].vol_r = (int)(r << 12) / 127;
+    if (r >= 128) {
+        return (int)0x8044000A;
+    }
     wave_ch[ch].vol_l = (int)(l << 12) / 127;
+    wave_ch[ch].vol_r = (int)(r << 12) / 127;
     return 0;
 }
 
@@ -620,17 +639,17 @@ int wave_thread(unsigned int args, void *argp)
     int idx = 0;
 
     while (wave_stop_req == 0) {
-        unsigned char *buf = wave_mix_buf + idx * 0x700;
+        int off = idx * 0x700;
 
-        if (wave_mix_block(buf) == 0) {
+        if (wave_mix_block(wave_mix_buf + off) == 0) {
             sceKernelDelayThread(10000);
         } else {
             int i;
 
             for (i = 1; i < 16; i++) {
-                wave_mix_block(buf + i * 0x70);
+                wave_mix_block(wave_mix_buf + off + i * 0x70);
             }
-            sceAudioOutputBlocking(a->main_ch, 0x8000, buf);
+            sceAudioOutputBlocking(a->main_ch, 0x8000, wave_mix_buf + off);
             idx = (idx + 1) % 2;
         }
     }
@@ -689,8 +708,8 @@ int vag_decode_block(short *out, const unsigned char *in, int *hist1, int *hist2
     int shift = in[0] & 0xF;
     int pred = in[0] >> 4;
     int flags = in[1];
-    int c0 = vag_coef0[pred];
-    int c1 = vag_coef1[pred];
+    int c0 = vag_coef[0][pred];
+    int c1 = vag_coef[1][pred];
     int s1 = *hist1;
     int s2 = *hist2;
     int i;
