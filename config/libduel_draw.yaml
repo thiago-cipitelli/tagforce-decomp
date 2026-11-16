@@ -58,7 +58,6 @@ segments:
       - [0x126BC, asm, dd_cursor_model_asm_0881665C]
       - [0x129C4, asm, dd_cursor_model_asm_08816964]
       - [0x12D38, c, dd_cursor_model]
-      - [0x12E2C, asm, dd_cursor_model_asm_08816DCC]
       - [0x13030, c, dd_cutin]
       - [0x13644, c, dd_event]
       - [0x139AC, c, dd_event_cmd]

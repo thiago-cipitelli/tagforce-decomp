@@ -2,7 +2,6 @@
 // @asm 0x088157A0-0x08815BC8
 // @asm 0x0881665C-0x08816964
 // @asm 0x08816964-0x08816CD8
-// @asm 0x08816DCC-0x08816FD0
 // @data 0x088757D4-0x08875AC4
 // @rodata 0x08870014-0x08870074
 /* The 3D field cursor: its pose follows the card under the cursor location, the cursor model
@@ -689,13 +688,15 @@ void dd_cursor_hand_toggle(void)
 }
 
 /* the next selectable location after the current one (wrapping to the first) */
-#ifdef NON_MATCHING /* teste do laço no topo */
 void dd_cursor_next_target(void)
 {
     DdCursor *c = &dd_cursor;
     int have = 0;
     int passed = 0;
-    int player, zone, n, i;
+    int player;
+    DdZone zone;
+    int i;
+    int n;
     DdLoc l;
 
     se_play(0x6212);
@@ -728,4 +729,3 @@ void dd_cursor_next_target(void)
 done:
     dd_cursor_set(l.player, l.zone, l.idx, 0);
 }
-#endif
