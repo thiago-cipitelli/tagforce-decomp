@@ -6,6 +6,7 @@ extern int libc_charset;               /* 0x088EB5A4 */
 extern char libc_lconv[];              /* 0x08873B7C */
 int _lseek(int fd, int offset, int whence);
 extern int libc_errno;                 /* 0x08E35A34 */
+#ifdef __mips__ /* the PC port has its own (libc_malloc.c) */
 extern void *libc_global_reent;        /* 0x088EB598 _global_impure_ptr */
 
 /* newlib __getreent as the Sony SDK has it: the thread's reent struct is the word at k0 + 4 (the thread-local
@@ -37,6 +38,7 @@ char *_setlocale_r(char *p, int category, const char *locale)
     }
     return libc_locale_c;
 }
+#endif
 
 int libc_locale_charset(void)
 {
