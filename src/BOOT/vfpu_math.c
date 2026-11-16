@@ -193,9 +193,11 @@ float atanf(float x)
         s = -1;
     }
     if (x >= 1.0f) {
-        return (1.57079637f - atan01(1.0f / x)) * (float)s;
+        x = 1.57079637f - atan01(1.0f / x);
+    } else {
+        x = atan01(x);
     }
-    return atan01(x) * (float)s;
+    return x * (float)s;
 }
 
 /* asin(|x|) as atan(sqrt(x^2 / (1 - x^2))). */
