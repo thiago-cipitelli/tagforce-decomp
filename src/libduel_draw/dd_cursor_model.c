@@ -1,11 +1,10 @@
 // @range 0x08815678-0x08816FD0
 // @asm 0x088157A0-0x08815BC8
-// @asm 0x08815BC8-0x08815D3C
 // @asm 0x0881665C-0x08816964
 // @asm 0x08816964-0x08816CD8
 // @asm 0x08816DCC-0x08816FD0
 // @data 0x088757D4-0x08875AC4
-// @rodata 0x08870030-0x08870074
+// @rodata 0x08870014-0x08870074
 /* The 3D field cursor: its pose follows the card under the cursor location, the cursor model
    (field_cursor00/01/02.iff, lit when the location can act), the arrow sprite and the icons of
    the actions available on the location; also the jump to the first selectable card and the
@@ -57,10 +56,6 @@ DdCurUv dd_cursor_uv[32] = {
 
 /* used by the functions kept in asm */
 DdVec4 dd_cursor_rot0 __attribute__((aligned(16))) = { 0.0f, 0.0f, 0.0f, 1.0f };
-int dd_cursor_zone_order[2][16] = {
-    { 11, 12, 5, 6, 7, 8, 9, 13, 10, 0, 1, 2, 3, 4, 14, 15 },
-    { 15, 10, 0, 1, 2, 3, 4, 14, 12, 5, 6, 7, 8, 9, 13, 11 },
-};
 
 int dd_zone_count(int player, int zone);
 void *dd_cobj_at(int player, int zone, int idx);
@@ -222,19 +217,20 @@ notify:
 #endif
 
 /* the first selectable location of the battle phase */
-#ifdef NON_MATCHING /* alocação de registradores */
 void dd_cursor_first_target(void)
 {
     int order[2][16] = {
         { 11, 12, 5, 6, 7, 8, 9, 13, 10, 0, 1, 2, 3, 4, 14, 15 },
         { 15, 10, 0, 1, 2, 3, 4, 14, 12, 5, 6, 7, 8, 9, 13, 11 },
     };
-    int player, k, zone, n, i;
+    int player, k, n, i, zone;
     unsigned int f;
 
     if (dv_must_answer(0) == 0)
         return;
     switch (dv_08835924()) {
+    default:
+        return;
     case 4:
     case 5:
     case 6:
@@ -261,7 +257,6 @@ void dd_cursor_first_target(void)
         break;
     }
 }
-#endif
 
 /* square button: cycles the cursor */
 void dd_cursor_cycle(void)
