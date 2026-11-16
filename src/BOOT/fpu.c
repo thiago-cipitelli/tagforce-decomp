@@ -1,14 +1,14 @@
 // @range 0x08819BEC-0x08819F0C
 // @gcc 0x08819C10-0x08819C18
 // @gcc 0x08819C38-0x08819C78
-// @asm 0x08819C88-0x08819C9C
+// @gcc 0x08819C88-0x08819C9C
 // @gcc 0x08819CA4-0x08819CB4
 // @gcc 0x08819CE4-0x08819CFC
 // @gcc 0x08819D60-0x08819D6C
 /* Sony's libfpu (sceFpu*): single precision helpers on the Allegrex FPU and on the IEEE bit
    patterns (signs, zero/denormal/infinity tests, NaN constructors) plus the FCR31 accessors.
-   Hand-written or inline-asm code kept as whole `asm` functions; sceFpuRsqrt loads 1.0f from the
-   .rodata pool (D_088EB11C) through a split lui/lwc1 and stays in asm with its C under NON_MATCHING.
+   Hand-written or inline-asm code kept as whole `asm` functions; sceFpuRsqrt comes from fpu_gcc.c
+   (`-fno-math-errno`), whose one-word pool is the original's (`@rodata 0x088EB11C`).
    Outside the PSP build the C versions work on the same bit patterns; FCR31 is emulated by a
    variable (only the rounding mode bits matter, and the C code always rounds to nearest). */
 
@@ -170,12 +170,14 @@ int fpu_round(float x)
 }
 #endif
 
-#if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: 1.0f from the .rodata pool (D_088EB11C) */
 /* sceFpuRsqrt */
+#ifndef __MWERKS__ /* PSP: fpu_gcc.c */
 float fpu_rsqrt(float x)
 {
     return 1.0f / sqrtf(x);
 }
+#else
+float fpu_rsqrt(float x);
 #endif
 
 /* sceFpuSqrt */
