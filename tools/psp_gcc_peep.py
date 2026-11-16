@@ -213,14 +213,23 @@ def peep(text, unused=()):
 
 
 ULW = re.compile(r'^\s*(ulw|usw)\s+\$(\d+),(-?\d+)\(\$(\d+)\)(.*)$')
+LWL = re.compile(r'^\s*(lwl|lwr|swl|swr)\s+\$(\w+),(-?\d+)\(\$(\w+)\)(.*)$')
+REGNO = {'zero': 0, 'at': 1, 'gp': 28, 'sp': 29, 'fp': 30, 'ra': 31}
+regno = lambda r: int(r) if r.isdigit() else REGNO[r]
+LWL_OP = {'lwl': 0x22, 'lwr': 0x26, 'swl': 0x2A, 'swr': 0x2E}
 
 
 def unaligned(text):
     """Rule F. `ulw`/`usw` (newlib's machine/mips memcpy): Sony's assembler expands them to `lwl rt,o+3(b)` +
     `lwr rt,o(b)` (`swl`/`swr`); psp-as 1.3.1 refuses lwl/lwr on the allegrex and expands to byte accesses, so
-    the pair is written as .word."""
+    the pair is written as .word. Plain lwl/lwr/swl/swr that cc1 emits (unaligned struct copies) likewise."""
     out = []
     for l in text.split('\n'):
+        m = LWL.match(l)   # unaligned struct copies cc1 emits itself (gzip header/trailer)
+        if m:
+            w = LWL_OP[m.group(1)] << 26 | regno(m.group(4)) << 21 | regno(m.group(2)) << 16 | (int(m.group(3)) & 0xFFFF)
+            out.append('\t.word\t0x%08x\t# %s $%s,%s($%s)%s' % (w, m.group(1), m.group(2), m.group(3), m.group(4), m.group(5)))
+            continue
         m = ULW.match(l)
         if m:
             hi, lo = (0x22, 0x26) if m.group(1) == 'ulw' else (0x2A, 0x2E)
@@ -575,6 +584,7 @@ def check():
     assert 'one' not in r and 'two:' in r and '.word\t2' in r and '.word\t1' not in r, r
     # F: ulw/usw
     w = lambda t: re.findall(r'\.word\t(0x\w+)', peep(t))
+    assert w('\tlwl\t$2,3($5)\n') == ['0x88a20003'] and w('\tswr\t$2,4($3)\n') == ['0xb8620004'] and w('\tswl\t$3,7($sp)\n') == ['0xaba30007']
     assert w('\tulw\t$2,0($5)\n') == ['0x88a20003', '0x98a20000'] and w('\tusw\t$2,4($3)\n') == ['0xa8620007', '0xb8620004']
     print('psp_gcc_peep.py: sanity check OK')
 

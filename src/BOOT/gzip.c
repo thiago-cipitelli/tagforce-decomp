@@ -1,5 +1,6 @@
 // @range 0x0881F6E4-0x0881FFB0
-// @gcc 0x0881F914-0x0881F9F0
+// @gcc 0x0881F6E4-0x0881F9F0
+#include "libc.h"
 /* Sony's libdeflt: gzip container (RFC 1952) and raw deflate decoder (RFC 1951). The gzip helpers are
    GCC-compiled C and the decoder is hand-written (one routine with local subroutines called through
    jal/bltzal and the fixed-code tables at D_08874F00), so all of them stay whole `asm` functions here;
@@ -222,73 +223,12 @@ static int inf_fixed(Inflate *s, Huffman *lit, Huffman *dist)
 /* Decompresses the gzip file at src into dst (at most dst_len bytes); returns the size (checked
    against the trailer's ISIZE) or an error. *crc32 (if crc32 != 0) receives the trailer's CRC-32,
    which is not verified. */
-#ifdef __MWERKS__
-asm int gzip_decompress(void *dst, unsigned int dst_len, const void *src, unsigned int *crc32)
-{
-    addiu sp, sp, -64
-    sw s2, 40(sp)
-    move s2, a0
-    move a0, a2
-    sw s3, 44(sp)
-    move s3, a3
-    sw s1, 36(sp)
-    move s1, a1
-    sw s0, 32(sp)
-    sw ra, 48(sp)
-    jal gzip_get_data
-    move s0, a2
-    lui v1, 0x8000
-    beqz v0, L_0881F7A0
-    ori t0, v1, 0x108
-    lbu t2, 2(s0)
-    move a2, v0
-    addiu t1, zero, 8
-    lui v0, 0x8000
-    move a0, s2
-    move a1, s1
-    addiu a3, sp, 16
-    bne t2, t1, L_0881F7A0
-    ori t0, v0, 0x4
-    jal deflate_decompress
-    nop
-    move a0, v0
-    bltz v0, L_0881F7A0
-    move t0, v0
-    lw t3, 16(sp)
-    lui v1, 0x8000
-    ori t0, v1, 0x108
-    lwl v1, 3(t3)
-    lwr v1, 0(t3)
-    lwl a1, 7(t3)
-    lwr a1, 4(t3)
-    swl v1, 3(sp)
-    swr v1, 0(sp)
-    swl a1, 7(sp)
-    swr a1, 4(sp)
-    lw a1, 4(sp)
-    bne v0, a1, L_0881F7A4
-    lw ra, 48(sp)
-    beqz s3, L_0881F79C
-    lw a2, 0(sp)
-    sw a2, 0(s3)
-L_0881F79C:
-    move t0, a0
-L_0881F7A0:
-    lw ra, 48(sp)
-L_0881F7A4:
-    lw s3, 44(sp)
-    lw s2, 40(sp)
-    lw s1, 36(sp)
-    lw s0, 32(sp)
-    move v0, t0
-    jr ra
-    addiu sp, sp, 64
-}
-#else
+#ifndef __MWERKS__ /* PSP: gzip_gcc.c */
 int gzip_decompress(void *dst, unsigned int dst_len, const void *src, unsigned int *crc32)
 {
     const unsigned char *data = gzip_get_data(src);
     const unsigned char *tail;
+    struct { unsigned int crc, size; } t;
     int n;
 
     if (data == 0) {
@@ -301,136 +241,33 @@ int gzip_decompress(void *dst, unsigned int dst_len, const void *src, unsigned i
     if (n < 0) {
         return n;
     }
-    if ((unsigned int)n != (tail[4] | tail[5] << 8 | tail[6] << 16 | (unsigned int)tail[7] << 24)) {
+    memcpy(&t, tail, 8); /* CRC32 and ISIZE, little-endian (as on the PSP and the PC targets) */
+    if ((unsigned int)n != t.size) {
         return (int)DEFLT_ERR_DATA;
     }
     if (crc32 != 0) {
-        *crc32 = tail[0] | tail[1] << 8 | tail[2] << 16 | (unsigned int)tail[3] << 24;
+        *crc32 = t.crc;
     }
     return n;
 }
+#else
+int gzip_decompress(void *dst, unsigned int dst_len, const void *src, unsigned int *crc32);
 #endif
 
 /* Parses the gzip header at buf: each non-null output receives the FEXTRA field (pointing at its
    XLEN; as in the original the skip adds XLEN without the 2 XLEN bytes), the FNAME and FCOMMENT
    strings, the FHCRC value and the start of the compressed data. Returns 0 or an error. */
-#ifdef __MWERKS__
-asm int gzip_get_info(const void *buf, const void **extra, const char **name, const char **comment,
-                      unsigned short *crc16, const void **data)
-{
-    addiu sp, sp, -16
-    beqz a1, L_0881F7D0
-    addiu t2, a0, 10
-    sw zero, 0(a1)
-L_0881F7D0:
-    bnezl a2, L_0881F7D8
-    sw zero, 0(a2)
-L_0881F7D8:
-    bnezl a3, L_0881F7E0
-    sw zero, 0(a3)
-L_0881F7E0:
-    bnezl t0, L_0881F7E8
-    sh zero, 0(t0)
-L_0881F7E8:
-    bnezl t1, L_0881F7F0
-    sw zero, 0(t1)
-L_0881F7F0:
-    lui v1, 0x8000
-    beqz a0, L_0881F850
-    ori v0, v1, 0x103
-    lwl v0, 3(a0)
-    lwr v0, 0(a0)
-    lwl v1, 7(a0)
-    lwr v1, 4(a0)
-    lb t3, 8(a0)
-    lb t4, 9(a0)
-    swl v0, 3(sp)
-    swr v0, 0(sp)
-    swl v1, 7(sp)
-    swr v1, 4(sp)
-    sb t3, 8(sp)
-    sb t4, 9(sp)
-    addiu t3, zero, 31
-    lbu v0, 0(sp)
-    bne v0, t3, L_0881F848
-    lbu t5, 1(sp)
-    addiu t4, zero, 139
-    beq t5, t4, L_0881F858
-    lbu t3, 3(sp)
-L_0881F848:
-    lui v1, 0x8000
-    ori v0, v1, 0x108
-L_0881F850:
-    jr ra
-    addiu sp, sp, 16
-L_0881F858:
-    andi t6, t3, 0x4
-    beqzl t6, L_0881F884
-    andi a1, t3, 0x8
-    lbu t8, 1(t2)
-    lbu t7, 10(a0)
-    sll a0, t8, 0x8
-    beqz a1, L_0881F87C
-    or v1, t7, a0
-    sw t2, 0(a1)
-L_0881F87C:
-    addu t2, t2, v1
-    andi a1, t3, 0x8
-L_0881F884:
-    beqz a1, L_0881F8B0
-    andi t4, t3, 0x10
-    bnezl a2, L_0881F894
-    sw t2, 0(a2)
-L_0881F894:
-    lbu a2, 0(t2)
-    beqz a2, L_0881F8AC
-    addiu t2, t2, 1
-L_0881F8A0:
-    lbu t9, 0(t2)
-    bnez t9, L_0881F8A0
-    addiu t2, t2, 1
-L_0881F8AC:
-    andi t4, t3, 0x10
-L_0881F8B0:
-    beqz t4, L_0881F8DC
-    andi v1, t3, 0x2
-    bnezl a3, L_0881F8C0
-    sw t2, 0(a3)
-L_0881F8C0:
-    lbu a3, 0(t2)
-    beqz a3, L_0881F8D8
-    addiu t2, t2, 1
-L_0881F8CC:
-    lbu t5, 0(t2)
-    bnez t5, L_0881F8CC
-    addiu t2, t2, 1
-L_0881F8D8:
-    andi v1, t3, 0x2
-L_0881F8DC:
-    beqz v1, L_0881F904
-    nop
-    beqzl t0, L_0881F904
-    addiu t2, t2, 2
-    lbu a0, 1(t2)
-    lbu t6, 0(t2)
-    sll t7, a0, 0x8
-    or t3, t6, t7
-    sh t3, 0(t0)
-    addiu t2, t2, 2
-L_0881F904:
-    bnezl t1, L_0881F90C
-    sw t2, 0(t1)
-L_0881F90C:
-    j L_0881F850
-    move v0, zero
-}
-#else
+#ifndef __MWERKS__ /* PSP: gzip_gcc.c */
+/* the fixed 10-byte member header, copied to the stack before it is read (RFC 1952) */
+typedef struct { unsigned char id[2], cm, flg, mtime[4]; char xfl, os; } GzHdr;
+
 int gzip_get_info(const void *buf, const void **extra, const char **name, const char **comment,
                   unsigned short *crc16, const void **data)
 {
     const unsigned char *h = buf;
-    const unsigned char *p;
+    const unsigned char *p = h + 10;
     unsigned char flags;
+    GzHdr hd;
 
     if (extra != 0) {
         *extra = 0;
@@ -450,11 +287,11 @@ int gzip_get_info(const void *buf, const void **extra, const char **name, const 
     if (h == 0) {
         return (int)DEFLT_ERR_NULL;
     }
-    if (h[0] != 0x1F || h[1] != 0x8B) {
+    memcpy(&hd, h, 10);
+    if (hd.id[0] != 0x1F || hd.id[1] != 0x8B) {
         return (int)DEFLT_ERR_DATA;
     }
-    flags = h[3];
-    p = h + 10;
+    flags = hd.flg;
     if (flags & 4) {
         unsigned int xlen = p[0] | p[1] << 8;
 
@@ -467,15 +304,19 @@ int gzip_get_info(const void *buf, const void **extra, const char **name, const 
         if (name != 0) {
             *name = (const char *)p;
         }
-        while (*p++ != 0) {
+        while (*p != 0) {
+            p++;
         }
+        p++;
     }
     if (flags & 0x10) {
         if (comment != 0) {
             *comment = (const char *)p;
         }
-        while (*p++ != 0) {
+        while (*p != 0) {
+            p++;
         }
+        p++;
     }
     if (flags & 2) {
         if (crc16 != 0) {
@@ -488,6 +329,9 @@ int gzip_get_info(const void *buf, const void **extra, const char **name, const 
     }
     return 0;
 }
+#else
+int gzip_get_info(const void *buf, const void **extra, const char **name, const char **comment,
+                  unsigned short *crc16, const void **data);
 #endif
 
 /* start of the compressed data, 0 on a bad header */
