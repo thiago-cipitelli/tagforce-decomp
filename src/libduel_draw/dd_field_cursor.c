@@ -1,5 +1,4 @@
 // @range 0x08814DFC-0x08815678
-// @asm 0x08814E38-0x088153E4
 // @data 0x08875770-0x088757D4
 /* The field cursor: a packed location (player, zone, index) over a 7x7 grid of the field zones
    (hand row, monster/spell rows, deck, grave, ...), moved with the d-pad; zone 11 (the hand) walks
@@ -33,7 +32,6 @@ void dd_cursor_init(void)
 }
 
 /* d-pad: 0x10 up, 0x40 down, 0x80 left, 0x20 right */
-#ifdef NON_MATCHING /* mesma forma, alocação de registradores diferente (s4/s5, dr/dc) */
 void dd_cursor_move(int key)
 {
     DdCursor *c = &dd_cursor;
@@ -50,8 +48,8 @@ void dd_cursor_move(int key)
 
     if (dd_cursor.locked)
         return;
-    zone = cur.zone;
     c->dirty = 1;
+    zone = cur.zone;
     switch (zone) {
     case 0xB:
         step = 0;
@@ -79,7 +77,7 @@ void dd_cursor_move(int key)
         se_play(0x6212);
         if (cur.idx == 0 && step < 0)
             c->cur.idx = dd_zone_count(c->cur.player, 0xB);
-        c->cur.idx = c->cur.idx + (unsigned short)step;
+        c->cur.idx += step;
         idx = c->cur.idx;
         if (idx >= dd_zone_count(c->cur.player, 0xB))
             c->cur.idx = 0;
@@ -117,11 +115,11 @@ void dd_cursor_move(int key)
         dr = 1;
         break;
     }
-    row = c->row;
     col = c->col;
+    row = c->row;
     r = row + dr;
     if (r < 0 || r >= 7) {
-        l.player = cur.player;
+        l = cur;
         l.zone = 0xB;
         c->col = 2;
     } else {
@@ -137,57 +135,53 @@ void dd_cursor_move(int key)
         c->row += dr;
     } else if (l.zone == 0xB) {
         idx = l.player;
-        if (dd_zone_count(idx, 0xB) > 0) {
-            if (zone == 0xD) {
-                if (cur.player == 0) {
-                    if (key == 0x20)
-                        idx = 0;
-                    else
-                        idx = dd_zone_count(idx, 0xB) - 1;
-                } else if (key == 0x80) {
-                    idx = 0;
-                } else {
-                    idx = dd_zone_count(idx, 0xB) - 1;
-                }
-            } else {
-                idx = dd_cursor_nearest_hand(c->cur.player, c);
-            }
-            c->cur.zone = dd_cursor_grid[c->row][c->col].zone;
-            c->cur.idx = idx;
-            se_play(0x6212);
-            return;
-        }
-        if (zone == 0xD) {
-            if (key == 0x80) {
-                if (cur.player == 0) {
-                    c->col = 5;
-                    c->row = 5;
-                } else {
+        if (dd_zone_count(idx, 0xB) <= 0) {
+            if (zone != 0xD) {
+                c->col = col;
+                c->row = row;
+            } else if (key == 0x80) {
+                if (cur.player != 0) {
                     c->col = 6;
                     c->row = 1;
+                } else {
+                    c->col = 5;
+                    c->row = 5;
                 }
             } else if (key == 0x20) {
-                if (cur.player == 0) {
-                    c->col = 0;
-                    c->row = 5;
-                } else {
+                if (cur.player != 0) {
                     c->col = 1;
                     c->row = 1;
+                } else {
+                    c->col = 0;
+                    c->row = 5;
                 }
             } else {
                 c->col = col;
                 c->row = row;
             }
         } else {
-            c->col = col;
-            c->row = row;
+            if (zone != 0xD) {
+                idx = dd_cursor_nearest_hand(c->cur.player, c);
+            } else if (cur.player == 0) {
+                if (key == 0x20)
+                    idx = 0;
+                else
+                    idx = dd_zone_count(idx, 0xB) - 1;
+            } else if (key == 0x80) {
+                idx = 0;
+            } else {
+                idx = dd_zone_count(idx, 0xB) - 1;
+            }
+            c->cur.zone = dd_cursor_grid[c->row][c->col].zone;
+            c->cur.idx = idx;
+            se_play(0x6212);
+            return;
         }
     }
 done:
     se_play(0x6212);
     c->cur = dd_cursor_grid[c->row][c->col];
 }
-#endif
 
 /* puts the cursor on (player, zone, idx); save != 0 keeps the previous location for restore */
 void dd_cursor_set(int player, int zone, int idx, int save)

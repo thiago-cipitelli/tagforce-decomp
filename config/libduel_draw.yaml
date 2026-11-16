@@ -50,8 +50,6 @@ segments:
       - [0xFF7C, c, dd_chr]
       - [0x10404, c, dd_disc_hook]
       - [0x10E5C, c, dd_field_cursor]
-      - [0x10E98, asm, dd_field_cursor_asm_08814E38]
-      - [0x11444, c, dd_field_cursor]
       - [0x116D8, c, dd_cursor_model]
       - [0x126BC, asm, dd_cursor_model_asm_0881665C]
       - [0x129C4, c, dd_cursor_model]
