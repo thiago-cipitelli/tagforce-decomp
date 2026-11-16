@@ -1,13 +1,16 @@
 // @range 0x0881DE88-0x0881EB0C
-// @asm 0x0881DE88-0x0881E510
+// @gcc 0x0881DE88-0x0881E0FC
+// @asm 0x0881E0FC-0x0881E510
 // @gcc 0x0881E524-0x0881E54C
 // @asm 0x0881E6F4-0x0881E8F0
 /* VFPU quaternions (x, y, z, w with w the scalar part; vqmul is the Hamilton product). Euler angles
    are radians in a vector (x, y, z); the _zyx/_xyz/_yxz suffix is the product order of the axis
    rotations (zyx: q = qz * qy * qx). Hand-written VFPU code kept as whole `asm` functions; the
-   compiled C ones that load float constants from .rodata (GCC: matrix to quaternion, quaternion to
-   Euler angles, squad) stay in asm with their C under NON_MATCHING. Functions with an output return
-   it. Outside the PSP build each one has a C equivalent. */
+   compiled C ones that load float constants from .rodata (GCC) come from vfpu_quat_gcc.c (matrix to
+   quaternion) or stay in asm with their C under NON_MATCHING (quaternion to Euler angles, squad). The
+   port C of the VFPU functions is left out of the GCC object (`#elif !defined(__mips__)`), so its
+   literal pool is exactly the original's (`@rodata`). Functions with an output return it. Outside the
+   PSP build each one has a C equivalent. */
 
 typedef struct Vec4 {
     float x, y, z, w;
@@ -25,7 +28,7 @@ float asinf(float x);
 float atan2f(float y, float x);
 #endif
 
-#ifndef __MWERKS__
+#if !defined(__MWERKS__) && !defined(__mips__)
 #include <math.h>
 
 static void qmul(float *r, const float *a, const float *b)
@@ -70,46 +73,62 @@ static Vec4 *from_euler(Vec4 *out, Vec4 *v, int a0, int a1, int a2)
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC: constants from the .rodata pool (D_088EB1D4) */
-/* Quaternion of the rotation part of m (Shoemake: trace or largest diagonal element). */
+/* Quaternion of the rotation part of m (Shoemake: trace or largest diagonal element); the result is built in
+   locals and stored at the end (m and out may be the same memory). */
+#ifndef __MWERKS__ /* PSP: vfpu_quat_gcc.c */
 Vec4 *mat3_to_quat(Vec4 *out, Mat4 *m)
 {
     float *e = m->m;
     float t = e[0] + e[5] + e[10] + 1.0f;
-    float s;
     float k;
+    float x, y, z, w;
 
     if (0.01f < t) {
-        s = sqrtf(t) * 0.5f;
-        k = 0.25f / s;
-        out->x = (e[6] - e[9]) * k;
-        out->y = (e[8] - e[2]) * k;
-        out->z = (e[1] - e[4]) * k;
-        out->w = s;
-    } else if (e[5] < e[0] && e[10] < e[0]) {
-        s = sqrtf(e[0] + 1.0f - e[5] - e[10]) * 0.5f;
-        k = 0.25f / s;
-        out->x = s;
-        out->y = (e[4] + e[1]) * k;
-        out->z = (e[8] + e[2]) * k;
-        out->w = (e[6] - e[9]) * k;
-    } else if (!(e[5] < e[0]) && e[10] < e[5]) {
-        s = sqrtf(e[5] + 1.0f - e[10] - e[0]) * 0.5f;
-        k = 0.25f / s;
-        out->x = (e[4] + e[1]) * k;
-        out->y = s;
-        out->z = (e[9] + e[6]) * k;
-        out->w = (e[8] - e[2]) * k;
+        w = sqrtf(t) * 0.5f;
+        k = 0.25f / w;
+        x = (e[6] - e[9]) * k;
+        y = (e[8] - e[2]) * k;
+        z = (e[1] - e[4]) * k;
+    } else if (e[5] < e[0]) {
+        if (e[10] < e[0]) {
+            x = sqrtf(e[0] + 1.0f - e[5] - e[10]) * 0.5f;
+            k = 0.25f / x;
+            y = (e[4] + e[1]) * k;
+            z = (e[8] + e[2]) * k;
+            w = (e[6] - e[9]) * k;
+        } else {
+            z = sqrtf(e[10] + 1.0f - e[0] - e[5]) * 0.5f;
+            k = 0.25f / z;
+            x = (e[8] + e[2]) * k;
+            y = (e[9] + e[6]) * k;
+            w = (e[1] - e[4]) * k;
+        }
     } else {
-        s = sqrtf(e[10] + 1.0f - e[0] - e[5]) * 0.5f;
-        k = 0.25f / s;
-        out->x = (e[8] + e[2]) * k;
-        out->y = (e[9] + e[6]) * k;
-        out->z = s;
-        out->w = (e[1] - e[4]) * k;
+        if (e[10] < e[5]) {
+            y = sqrtf(e[5] + 1.0f - e[10] - e[0]) * 0.5f;
+            k = 0.25f / y;
+            x = (e[4] + e[1]) * k;
+            z = (e[9] + e[6]) * k;
+            w = (e[8] - e[2]) * k;
+        } else {
+            z = sqrtf(e[10] + 1.0f - e[0] - e[5]) * 0.5f;
+            k = 0.25f / z;
+            x = (e[8] + e[2]) * k;
+            y = (e[9] + e[6]) * k;
+            w = (e[1] - e[4]) * k;
+        }
     }
+    out->x = x;
+    out->y = y;
+    out->z = z;
+    out->w = w;
     return out;
 }
+#else
+Vec4 *mat3_to_quat(Vec4 *out, Mat4 *m);
+#endif
+
+#ifdef NON_MATCHING /* GCC: constants from the .rodata pool (D_088EB1E4...) */
 
 /* Euler angles of q for q = qz * qy * qx; near the poles (|sin y| > 0.99995) z is 0. w = 0. */
 Vec4 *quat_to_euler_zyx(Vec4 *out, Vec4 *q)
@@ -118,17 +137,35 @@ Vec4 *quat_to_euler_zyx(Vec4 *out, Vec4 *q)
     float y = q->y;
     float z = q->z;
     float w = q->w;
-    float sy = -(2.0f * z * x - 2.0f * w * y);
+    float w2 = w + w;
+    float z2 = z + z;
+    float sy = -(z2 * x - w2 * y);
+    float rx, ry, rz;
 
     if (sy <= 0.99995f && -0.99995f <= sy) {
-        out->x = atan2f(2.0f * y * z + 2.0f * w * x, 1.0f - 2.0f * x * x - 2.0f * y * y);
-        out->y = asinf(sy);
-        out->z = atan2f(2.0f * x * y + 2.0f * w * z, 1.0f - 2.0f * y * y - 2.0f * z * z);
+        float x2 = x + x;
+        float y2 = y + y;
+        float ya = y2 * z + w2 * x;
+        float yb = 1.0f - x2 * x - y2 * y;
+        float za = x2 * y + w2 * z;
+        float zb = 1.0f - y2 * y - z2 * z;
+
+        rx = atan2f(ya, yb);
+        ry = asinf(sy);
+        rz = atan2f(za, zb);
     } else {
-        out->x = atan2f(-(2.0f * y * z - 2.0f * w * x), 1.0f - 2.0f * x * x - 2.0f * z * z);
-        out->y = asinf(sy);
-        out->z = 0.0f;
+        float y2 = y + y;
+        float x2 = x + x;
+        float ya = -(y2 * z - w2 * x);
+        float yb = 1.0f - x2 * x - z2 * z;
+
+        rx = atan2f(ya, yb);
+        ry = asinf(sy);
+        rz = 0.0f;
     }
+    out->x = rx;
+    out->y = ry;
+    out->z = rz;
     out->w = 0.0f;
     return out;
 }
@@ -140,17 +177,35 @@ Vec4 *quat_to_euler_xyz(Vec4 *out, Vec4 *q)
     float y = q->y;
     float z = q->z;
     float w = q->w;
-    float sy = 2.0f * z * x + 2.0f * w * y;
+    float w2 = w + w;
+    float z2 = z + z;
+    float sy = z2 * x + w2 * y;
+    float rx, ry, rz;
 
     if (sy <= 0.99995f && -0.99995f <= sy) {
-        out->x = atan2f(-(2.0f * y * z - 2.0f * w * x), 1.0f - 2.0f * x * x - 2.0f * y * y);
-        out->y = asinf(sy);
-        out->z = atan2f(-(2.0f * x * y - 2.0f * w * z), 1.0f - 2.0f * y * y - 2.0f * z * z);
+        float y2 = y + y;
+        float x2 = x + x;
+        float ya = -(y2 * z - w2 * x);
+        float yb = 1.0f - x2 * x - y2 * y;
+        float za = -(x2 * y - w2 * z);
+        float zb = 1.0f - y2 * y - z2 * z;
+
+        rx = atan2f(ya, yb);
+        ry = asinf(sy);
+        rz = atan2f(za, zb);
     } else {
-        out->x = atan2f(2.0f * y * z + 2.0f * w * x, 1.0f - 2.0f * x * x - 2.0f * z * z);
-        out->y = asinf(sy);
-        out->z = 0.0f;
+        float x2 = x + x;
+        float y2 = y + y;
+        float ya = y2 * z + w2 * x;
+        float yb = 1.0f - x2 * x - z2 * z;
+
+        rx = atan2f(ya, yb);
+        ry = asinf(sy);
+        rz = 0.0f;
     }
+    out->x = rx;
+    out->y = ry;
+    out->z = rz;
     out->w = 0.0f;
     return out;
 }
@@ -204,13 +259,15 @@ asm Vec4 *quat_identity(Vec4 *out)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_identity(Vec4 *out)
 {
     out->x = out->y = out->z = 0.0f;
     out->w = 1.0f;
     return out;
 }
+#else
+Vec4 *quat_identity(Vec4 *out);
 #endif
 
 #ifndef __MWERKS__ /* PSP: vfpu_quat_gcc.c */
@@ -253,7 +310,7 @@ asm Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q)
 {
     float x = q->x;
@@ -276,6 +333,8 @@ Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q)
     m[15] = 1.0f;
     return out;
 }
+#else
+Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q);
 #endif
 
 /* out = q * v * conj(q) (v rotated by the unit quaternion q, v as a quaternion) */
@@ -293,7 +352,7 @@ asm Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v)
 {
     float c[4];
@@ -311,6 +370,8 @@ Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v)
     out->w = r[3];
     return out;
 }
+#else
+Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v);
 #endif
 
 #ifdef __MWERKS__
@@ -324,7 +385,7 @@ asm Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = a->x + b->x;
@@ -333,6 +394,8 @@ Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = a->w + b->w;
     return out;
 }
+#else
+Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 #ifdef __MWERKS__
@@ -346,7 +409,7 @@ asm Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = a->x - b->x;
@@ -355,6 +418,8 @@ Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = a->w - b->w;
     return out;
 }
+#else
+Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 /* out = a * b */
@@ -369,7 +434,7 @@ asm Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     float r[4];
@@ -381,6 +446,8 @@ Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = r[3];
     return out;
 }
+#else
+Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 #ifdef __MWERKS__
@@ -395,11 +462,13 @@ asm float quat_dot(Vec4 *a, Vec4 *b)
     jr ra
     addiu sp, sp, 16
 }
-#else
+#elif !defined(__mips__)
 float quat_dot(Vec4 *a, Vec4 *b)
 {
     return a->x * b->x + a->y * b->y + a->z * b->z + a->w * b->w;
 }
+#else
+float quat_dot(Vec4 *a, Vec4 *b);
 #endif
 
 /* Spherical interpolation along the shorter arc (b negated when dot(a, b) < 0); linear (not
@@ -453,7 +522,7 @@ L_0881E6E8:
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_slerp(Vec4 *out, Vec4 *a, Vec4 *b, float t)
 {
     float d = a->x * b->x + a->y * b->y + a->z * b->z + a->w * b->w;
@@ -481,6 +550,8 @@ Vec4 *quat_slerp(Vec4 *out, Vec4 *a, Vec4 *b, float t)
     out->w = a->w * ka + b->w * kb;
     return out;
 }
+#else
+Vec4 *quat_slerp(Vec4 *out, Vec4 *a, Vec4 *b, float t);
 #endif
 
 #ifdef NON_MATCHING /* GCC: 1.0f comes from the .rodata pool (D_088EB208); quat_slerp is inlined */
@@ -509,7 +580,7 @@ asm Vec4 *quat_normalize(Vec4 *out, Vec4 *q)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_normalize(Vec4 *out, Vec4 *q)
 {
     float k = 1.0f / sqrtf(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
@@ -520,6 +591,8 @@ Vec4 *quat_normalize(Vec4 *out, Vec4 *q)
     out->w = q->w * k;
     return out;
 }
+#else
+Vec4 *quat_normalize(Vec4 *out, Vec4 *q);
 #endif
 
 /* (-x, -y, -z, w) */
@@ -533,7 +606,7 @@ asm Vec4 *quat_conj(Vec4 *out, Vec4 *q)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_conj(Vec4 *out, Vec4 *q)
 {
     out->x = -q->x;
@@ -542,6 +615,8 @@ Vec4 *quat_conj(Vec4 *out, Vec4 *q)
     out->w = q->w;
     return out;
 }
+#else
+Vec4 *quat_conj(Vec4 *out, Vec4 *q);
 #endif
 
 /* conj(q) / |q|^2 */
@@ -558,7 +633,7 @@ asm Vec4 *quat_inverse(Vec4 *out, Vec4 *q)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_inverse(Vec4 *out, Vec4 *q)
 {
     float k = 1.0f / (q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
@@ -569,6 +644,8 @@ Vec4 *quat_inverse(Vec4 *out, Vec4 *q)
     out->w = q->w * k;
     return out;
 }
+#else
+Vec4 *quat_inverse(Vec4 *out, Vec4 *q);
 #endif
 
 /* Logarithm: (v / |v|) * angle, w = 0, with v = q.xyz. As in the original the angle is computed as
@@ -605,7 +682,7 @@ L_0881E9A0:
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_log(Vec4 *out, Vec4 *q)
 {
     float l = sqrtf(q->x * q->x + q->y * q->y + q->z * q->z);
@@ -623,6 +700,8 @@ Vec4 *quat_log(Vec4 *out, Vec4 *q)
     out->w = 0.0f;
     return out;
 }
+#else
+Vec4 *quat_log(Vec4 *out, Vec4 *q);
 #endif
 
 /* Exponential of the pure quaternion v: (v / |v| * sin |v|, cos |v|); v = 0 gives (0, 0, 0, 1). */
@@ -647,7 +726,7 @@ asm Vec4 *quat_exp(Vec4 *out, Vec4 *v)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_exp(Vec4 *out, Vec4 *v)
 {
     float l = sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
@@ -659,6 +738,8 @@ Vec4 *quat_exp(Vec4 *out, Vec4 *v)
     out->w = cosf(l);
     return out;
 }
+#else
+Vec4 *quat_exp(Vec4 *out, Vec4 *v);
 #endif
 
 #ifdef __MWERKS__
@@ -683,11 +764,13 @@ asm Vec4 *quat_from_euler_zyx(Vec4 *out, Vec4 *v)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_from_euler_zyx(Vec4 *out, Vec4 *v)
 {
     return from_euler(out, v, 2, 1, 0);
 }
+#else
+Vec4 *quat_from_euler_zyx(Vec4 *out, Vec4 *v);
 #endif
 
 #ifdef __MWERKS__
@@ -712,11 +795,13 @@ asm Vec4 *quat_from_euler_xyz(Vec4 *out, Vec4 *v)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_from_euler_xyz(Vec4 *out, Vec4 *v)
 {
     return from_euler(out, v, 0, 1, 2);
 }
+#else
+Vec4 *quat_from_euler_xyz(Vec4 *out, Vec4 *v);
 #endif
 
 #ifdef __MWERKS__
@@ -741,11 +826,13 @@ asm Vec4 *quat_from_euler_yxz(Vec4 *out, Vec4 *v)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_from_euler_yxz(Vec4 *out, Vec4 *v)
 {
     return from_euler(out, v, 1, 0, 2);
 }
+#else
+Vec4 *quat_from_euler_yxz(Vec4 *out, Vec4 *v);
 #endif
 
 /* Rotation by `angle` radians about `axis` (normalized by its 4-component length, w included). */
@@ -768,7 +855,7 @@ asm Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle)
 {
     float k = sinf(angle * 0.5f) / sqrtf(axis->x * axis->x + axis->y * axis->y + axis->z * axis->z + axis->w * axis->w);
@@ -779,4 +866,6 @@ Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle)
     out->w = cosf(angle * 0.5f);
     return out;
 }
+#else
+Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle);
 #endif
