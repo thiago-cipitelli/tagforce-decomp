@@ -1,10 +1,10 @@
 // @range 0x08804A0C-0x08805EC4
 // @asm 0x08804A0C-0x088050BC
 // @gcc 0x088050BC-0x08805160
-// @asm 0x08805160-0x0880541C
-// @gcc 0x0880541C-0x08805754
-// @asm 0x08805754-0x088057C0
-// @gcc 0x088057C0-0x08805854
+// @asm 0x08805160-0x0880523C
+// @gcc 0x0880523C-0x08805304
+// @asm 0x08805304-0x0880541C
+// @gcc 0x0880541C-0x08805854
 // @asm 0x08805854-0x088058FC
 // @gcc 0x088058FC-0x08805A1C
 // @asm 0x08805A1C-0x08805ACC
@@ -33,19 +33,21 @@ int sceGeContinue(void);
 #include "libgu.h"
 
 
+/* gu_set_display_hooks: around the buffer swap, and on the display and draw buffer changes */
+typedef struct GuHooks {               /* 0x088F1248 */
+    void (*swap_pre)(void);
+    void (*swap_post)(void);
+    void (*disp)(int psm, int w, int h);
+    void (*draw)(int psm, unsigned int fbp, int fbw);
+} GuHooks;
+
 #if defined(__mips__) && !defined(__MWERKS__) /* the SDK's GCC (libgu_gcc.c): the original objects, by address */
 extern GuCallbacks gu_cb;
-extern void (*gu_swap_pre)(void);
-extern void (*gu_swap_post)(void);
-extern void (*gu_disp_hook)(int psm, int w, int h);
-extern void (*gu_draw_hook)(int psm, unsigned int fbp, int fbw);
+extern GuHooks gu_hooks;
 #else
 GuSettings gu;
 GuCallbacks gu_cb;
-void (*gu_swap_pre)(void);             /* 0x088F1248 */
-void (*gu_swap_post)(void);            /* 0x088F124C */
-void (*gu_disp_hook)(int psm, int w, int h);       /* 0x088F1250 */
-void (*gu_draw_hook)(int psm, unsigned int fbp, int fbw); /* 0x088F1254 */
+GuHooks gu_hooks;
 #endif
 
 void gu_init_contexts(void);
@@ -318,8 +320,8 @@ int sceGuSendList(int mode, const void *list, int a2, int a3, int a4)
 /* display mode and (when the display is on) the displayed frame buffer */
 void gu_set_display_mode(int psm, int width, int height, unsigned int dispbp, int fbw)
 {
-    if (gu_disp_hook != 0) {
-        gu_disp_hook(psm, width, height);
+    if (gu_hooks.disp != 0) {
+        gu_hooks.disp(psm, width, height);
     }
     gu.psm = psm;
     gu.fbw = fbw;
@@ -337,8 +339,8 @@ unsigned int sceGuSwapBuffers(void)
 {
     unsigned int t;
 
-    if (gu_swap_pre != 0) {
-        gu_swap_pre();
+    if (gu_hooks.swap_pre != 0) {
+        gu_hooks.swap_pre();
     }
     t = gu.disp_fbp;
     gu.disp_fbp = gu.draw_fbp;
@@ -346,11 +348,11 @@ unsigned int sceGuSwapBuffers(void)
     if (gu.display_on == 1) {
         sceDisplaySetFrameBuf((void *)(gu.edram + gu.disp_fbp), gu.fbw, gu.psm, 0);
     }
-    if (gu_swap_post != 0) {
-        gu_swap_post();
+    if (gu_hooks.swap_post != 0) {
+        gu_hooks.swap_post();
     }
-    if (gu_draw_hook != 0) {
-        gu_draw_hook(gu.psm, gu.draw_fbp, gu.fbw);
+    if (gu_hooks.draw != 0) {
+        gu_hooks.draw(gu.psm, gu.draw_fbp, gu.fbw);
     }
     return gu.draw_fbp;
 }
@@ -360,8 +362,8 @@ void gu_DrawBuffer(int psm, unsigned int fbp, int fbw)
 {
     int i;
 
-    if (gu_draw_hook != 0) {
-        gu_draw_hook(psm, fbp, fbw);
+    if (gu_hooks.draw != 0) {
+        gu_hooks.draw(psm, fbp, fbw);
     }
     gu_push(psm | 0xD2000000);
     gu_push((fbp & 0xFFFFFF) | 0x9C000000);
@@ -472,10 +474,10 @@ void sceGuTexScale(float u, float v)
 void gu_set_display_hooks(void (*pre)(void), void (*post)(void), void (*disp)(int, int, int),
                           void (*draw)(int, unsigned int, int))
 {
-    gu_swap_pre = pre;
-    gu_swap_post = post;
-    gu_disp_hook = disp;
-    gu_draw_hook = draw;
+    gu_hooks.swap_pre = pre;
+    gu_hooks.swap_post = post;
+    gu_hooks.disp = disp;
+    gu_hooks.draw = draw;
     disp(gu.psm, gu.width, gu.height);
     draw(gu.psm, gu.draw_fbp, gu.fbw);
 }
@@ -673,8 +675,8 @@ void gu_draw_buffer_cur(int psm, unsigned int fbp, int fbw)
 {
     GuList *l = gu.list;
 
-    if (gu_draw_hook != 0) {
-        gu_draw_hook(psm, fbp, fbw);
+    if (gu_hooks.draw != 0) {
+        gu_hooks.draw(psm, fbp, fbw);
     }
     l->fbp_psm = psm;
     l->disp_w = gu.width;
