@@ -68,12 +68,18 @@ def key(l):
     nm = nm.replace(".data", "")
     return order.get(nm, 10**9)
 merged = []
-has_rodata_range = {m.group(1) for m in re.finditer(r"/(\w+)__rodata\.c\.o\(\.data\)", text)}
+has_rodata_range = {m.group(1) for m in re.finditer(r"/(\w+?)__rodata\d*\.c\.o\(\.data\)", text)}
+def rodata_secs(nm, k):
+    """sections of the k-th `// @rodata 0xA-0xB SECTION...` marker of src/<module>/<nm>.c"""
+    ms = [x for x in re.findall(r"^//\s*@rodata\s+0x[0-9A-Fa-f]+-0x[0-9A-Fa-f]+([ \t]+\.[\w. \t]*)?$", open(f"src/{module}/{nm}.c").read(), re.M) if x.strip()]
+    return " ".join(ms[k - 1].split())
 for l in sorted(data_lines, key=key):
-    rm = re.search(r"/(\w+)__rodata\.c\.o\(\.data\)", l)
+    rm = re.search(r"/(\w+?)__rodata(\d*)\.c\.o\(\.data\)", l)
     if rm:  # @rodata placeholder -> the real object's .rodata at this position
-        # `.rodata.*`: a GCC object (`// @cc gcc`) also has .rodata.cst4/.rodata.str1.4, linked right after its .rodata
-        merged.append(l.replace(f"{rm.group(1)}__rodata.c.o(.data)", f"{rm.group(1)}.c.o(.rodata .rodata.*)"))
+        # `.rodata.*`: a GCC object (`// @cc gcc`) also has .rodata.cst4/.rodata.str1.4, linked right after its .rodata,
+        # unless the marker names the sections (`// @rodata 0xA-0xB .rodata`, `... .rodata.cst4`)
+        secs = rodata_secs(rm.group(1), int(rm.group(2))) if rm.group(2) else ".rodata .rodata.*"
+        merged.append(l.replace(f"{rm.group(1)}__rodata{rm.group(2)}.c.o(.data)", f"{rm.group(1)}.c.o({secs})"))
         ro_lines = [r for r in ro_lines if f"/{rm.group(1)}.c.o(.rodata)" not in r]
         continue
     merged.append(l)

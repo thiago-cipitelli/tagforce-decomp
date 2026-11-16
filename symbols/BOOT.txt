@@ -1560,6 +1560,7 @@ gu_debug_edram = 0x088F9668; // type:data SDK library data, the name its C (GCC 
 gu_debug_init = 0x088F165C; // type:data SDK library data, the name its C (GCC track) links against
 gu = 0x088F0D10; // type:data libgu settings (GuSettings; gu.list at +0x48): the name the C of libgu*_gcc.c links against
 gu_hooks = 0x088F1248; // type:data libgu display hooks (GuHooks: swap_pre, swap_post, disp, draw; gu_set_display_hooks): the name the C of libgu_gcc.c links against
+gu_ge_stack = 0x088F1258; // type:data libgu GE stacks (32 x 32 bytes) of gu_list_arg (PspGeListArgs at 0x08872EF0)
 msd_buffer = 0x08E1FD80; // type:data size:0x4
 snd_group_cmd = 0x08860C88; // type:func matched src/BOOT/snd_play.c
 snd_stop_fade = 0x08860A54; // type:func matched src/BOOT/snd_play.c

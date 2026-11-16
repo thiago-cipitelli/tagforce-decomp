@@ -71,15 +71,30 @@ void sceGuTexScale(float u, float v);
 void sceGuSpecular(float power);
 void gu_update_stall_list(void);
 
-extern const char gu_init_list[];      /* 0x08872B78 */
-extern int gu_list_arg[];              /* 0x08872EF0 */
-extern const int gu_dither_default[16];/* 0x08872F10 */
+extern const char gu_init_list[];      /* 0x08874FE8 */
+#if defined(__mips__) && !defined(__MWERKS__)
+extern unsigned int gu_ge_stack[256];  /* 0x088F1258 */
+#else
+static unsigned int gu_ge_stack[256];
+#endif
 extern unsigned int gu_break_param[];  /* 0x088F0CD0 */
 
 static void gu_push(unsigned int w)
 {
     *gu.list->cur++ = w;
 }
+
+/* The object's .rodata (0x08872EF0-0x08872F78) in the order the SDK's GCC emits it: this, the event flag name of
+   sceGuInit, the dither matrix, the jump tables of sceGuFinishId and sceGuSync; its .rodata.cst4 (the 1.0f of
+   sceGuStart) is at 0x088EB110. Not linked yet: sceGuFinishId does not match, and its jump table would point into
+   a discarded section (docs/build.md, "Trilha GCC", round 36). */
+/* sceGeListEnQueue argument of the GE list (PspGeListArgs: size, context, stack count, stacks) */
+const struct {
+    int size;
+    void *context;
+    int nstacks;
+    unsigned int *stacks;
+} gu_list_arg = { 16, 0, 32, gu_ge_stack };
 
 int sceGuInit(void)
 {
@@ -126,6 +141,12 @@ int sceGuInit(void)
     return 0;
 }
 
+/* the 4x4 dither matrix of the first sceGuStart */
+#ifdef __GNUC__
+__attribute__((aligned(8)))
+#endif
+const int gu_dither_default[16] = { -4, 0, -3, 1, 2, -2, 3, -1, -3, 1, -4, 0, 3, -1, 2, -2 };
+
 /* Opens context cid on list (cid 0 is the GE list, 3/4 call lists, the others are built
    uncached and cleared to the next 64 bytes). */
 int sceGuStart(int cid, void *list, int arg)
@@ -168,7 +189,7 @@ int sceGuStart(int cid, void *list, int arg)
         int r;
 
         gu_cb.signal_count = 0;
-        r = sceGeListEnQueue(l->start, l->cur, gu.ge_cb, gu_list_arg);
+        r = sceGeListEnQueue(l->start, l->cur, gu.ge_cb, (void *)&gu_list_arg);
         if (r < 0) {
             return r;
         }

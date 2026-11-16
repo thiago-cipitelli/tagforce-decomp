@@ -46,8 +46,15 @@ for cf in sorted(glob.glob(f"src/{m}/*.c")):
     # `// @rodata 0xA-0xB`: the object's .rodata (jump tables, const arrays). The original linker put all
     # .rodata inputs before all .data inputs inside .data, so it lands far from the file's literals; it is
     # emitted as a `.data` subsegment named <file>__rodata and tools/fix_ld.py rewrites the linker line.
-    for md in re.finditer(r"//\s*@rodata\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src):
-        dranges.append((int(md.group(1), 16), int(md.group(2), 16), os.path.basename(cf)[:-2] + "__rodata"))
+    # `// @rodata 0xA-0xB SECTION...` (GCC objects): only those sections of the object at this address, so its
+    # .rodata and its .rodata.cst4 can each have their own range; the k-th such marker is <file>__rodata<k>.
+    k = 0
+    for md in re.finditer(r"//\s*@rodata\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)([ \t]+\.[\w. \t]*)?$", src, re.M):
+        suffix = ""
+        if md.group(3) and md.group(3).strip():
+            k += 1
+            suffix = str(k)
+        dranges.append((int(md.group(1), 16), int(md.group(2), 16), os.path.basename(cf)[:-2] + "__rodata" + suffix))
     # `// @bss 0xA-0xB`: the object's own .bss (file/function statics) placed at its original address;
     # the bss is split around it like .data (tools/fix_ld.py drops the auto-listed `obj(.bss)` line)
     for md in re.finditer(r"//\s*@bss\s+0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)", src):
