@@ -2,15 +2,14 @@
 // @gcc 0x08813390-0x088133DC nl_vfprintf
 // @gcc 0x088133DC-0x08813484 nl_vfprintf
 // @gcc 0x08813484-0x08813500 nl_vfprintf
-// @asm 0x08813500-0x08814F18
+// @gcc 0x08813500-0x08814F18 nl_vfprintf
 // @gcc 0x08814F18-0x088150E0 nl_vfprintf
 // @gcc 0x088150E0-0x088151B8 nl_vfprintf
 /* newlib vfprintf (stdio/vfprintf.c, 1.1x: no positional arguments, %lc/%ls through the wide
    character conversions), compiled with GCC. Output goes through an iovec list of at most 8 entries
    flushed by __sfvwrite; unbuffered files are printed through a 1 KB stack buffer (__sbprintf).
-   Floating point uses _dtoa_r through cvt(). The helpers are whole `asm` functions; _vfprintf_r
-   (jump table and string constants through split lui/addiu pairs) stays in asm with its newlib C
-   under NON_MATCHING. Outside the PSP build the C is used. */
+   Floating point uses _dtoa_r through cvt(). On the PSP all of them come from the newlib
+   source (nl_vfprintf.c, `@gcc` ranges); the C here is the port's. */
 #include "libc.h"
 #include "nl_stdio.h"
 #include "stdarg.h"
