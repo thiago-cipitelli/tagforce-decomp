@@ -1,13 +1,13 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-15 (rodada 34) (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-16 (rodada 35) (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 96,1% | 98,0% | 10751 / 11041 |
-| BOOT | 84,1% | 86,8% | 1953 / 2210 |
-| libduel_eng | 97,1% | 99,9% | 3417 / 3429 |
+| total | 96,9% | 98,2% | 10865 / 11041 |
+| BOOT | 86,2% | 88,2% | 2061 / 2210 |
+| libduel_eng | 98,2% | 100,0% | 3421 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
 | libpassword | 100,0% | 100,0% | 33 / 33 |
@@ -24,8 +24,8 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-15 (
 | libdeck_swap | 100,0% | 100,0% | 204 / 204 |
 | libdeck_tutorial | 100,0% | 100,0% | 293 / 293 |
 | libshop | 99,5% | 100,0% | 222 / 223 |
-| libtitle | 99,4% | 100,0% | 433 / 434 |
-| libtutorial | 99,0% | 99,9% | 206 / 207 |
+| libtitle | 100,0% | 100,0% | 434 / 434 |
+| libtutorial | 100,0% | 100,0% | 207 / 207 |
 | libfield | 98,2% | 100,0% | 646 / 652 |
 | libstory | 99,8% | 100,0% | 675 / 676 |
 | libduel_draw | 97,3% | 99,8% | 1598 / 1609 |
@@ -37,15 +37,19 @@ Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#if
 
 Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que falta são as funções em `@asm` (C sob `NON_MATCHING`), listadas por arquivo nas seções abaixo. Desde 2026-11-15 (rodada 33) o menu de depuração (`src/libduel_draw/dd_debug_menu.c`) também tem C e bate: não há função sem C.
 
-## BOOT (162 arquivos, 1616 funções batendo, 236 em asm)
+## BOOT (181 arquivos, 1725 funções batendo, 127 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
-| [`crt0.c`](../src/BOOT/crt0.c) | 0x08804000-0x08804A0C | 23 | 6 | crt0 e camada de syscalls do newlib (GCC, funções `asm` com C portável sob `#else`): module_start, threads de entrada, `_exit`, sbrk, stubs de arquivo |
-| [`libgu.c`](../src/BOOT/libgu.c) | 0x08804A0C-0x08805EC4 | 3 | 40 | libgu do SDK (sceGu*, nomes pelos NIDs): listas de exibição, sinais, chamadas, estado, buffers de tela e desenho |
-| [`libgu_state.c`](../src/BOOT/libgu_state.c) | 0x08805EC4-0x08807070 | 0 | 57 | libgu: comandos de estado do GE (desenho de arrays/bezier/spline, sprites, cópia de imagem, clear, luzes, material, textura, CLUT, névoa, testes, blend, matrizes de osso) |
-| [`libgu_ctx.c`](../src/BOOT/libgu_ctx.c) | 0x08807070-0x088087F8 | 17 | 10 | libgu: contextos de lista, inicialização, sceGuDebugPrint/Flush, vblank_handler_set |
-| [`libm.c`](../src/BOOT/libm.c) | 0x088087F8-0x0880A5C0 | 2 | 9 | libm float do newlib (fdlibm): kernels de sin/cos/tan, atan2f, sqrtf e wrappers SVID, abs |
+| [`crt0.c`](../src/BOOT/crt0.c) | 0x08804000-0x08804A0C | 2 | 4 | crt0 e camada de syscalls do newlib (GCC, funções `asm` com C portável sob `#else`): module_start, threads de entrada, `_exit`, sbrk, stubs de arquivo |
+| [`crt0_gcc.c`](../src/BOOT/crt0_gcc.c) | 0x08804364-0x08804A04+ | 23 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libgu.c`](../src/BOOT/libgu.c) | 0x08804A0C-0x08805EC4 | 0 | 20 | libgu do SDK (sceGu*, nomes pelos NIDs): listas de exibição, sinais, chamadas, estado, buffers de tela e desenho |
+| [`libgu_gcc.c`](../src/BOOT/libgu_gcc.c) | 0x0880541C-0x08805E98+ | 23 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libgu_state.c`](../src/BOOT/libgu_state.c) | 0x08805EC4-0x08807070 | 0 | 17 | libgu: comandos de estado do GE (desenho de arrays/bezier/spline, sprites, cópia de imagem, clear, luzes, material, textura, CLUT, névoa, testes, blend, matrizes de osso) |
+| [`libgu_state_gcc.c`](../src/BOOT/libgu_state_gcc.c) | 0x08806300-0x08807034+ | 40 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libgu_ctx.c`](../src/BOOT/libgu_ctx.c) | 0x08807070-0x088087F8 | 12 | 5 | libgu: contextos de lista, inicialização, sceGuDebugPrint/Flush, vblank_handler_set |
+| [`libgu_ctx_gcc.c`](../src/BOOT/libgu_ctx_gcc.c) | 0x08807070-0x0880877C+ | 10 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libm.c`](../src/BOOT/libm.c) | 0x088087F8-0x0880A5C0 | 2 | 8 | libm float do newlib (fdlibm): kernels de sin/cos/tan, atan2f, sqrtf e wrappers SVID, abs |
 | [`libm_kf_cos.c`](../src/BOOT/libm_kf_cos.c) | 0x088091A0-0x088091A0+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libm_kf_rem_pio2.c`](../src/BOOT/libm_kf_rem_pio2.c) | 0x088092C0-0x088092C0+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_s_isinf.c`](../src/BOOT/nl_s_isinf.c) | 0x08809B54-0x08809B54+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
@@ -53,6 +57,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`nl_s_matherr.c`](../src/BOOT/nl_s_matherr.c) | 0x08809BAC-0x08809BAC+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_sf_cos.c`](../src/BOOT/nl_sf_cos.c) | 0x08809E70-0x08809E70+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libm_sf_fabs.c`](../src/BOOT/libm_sf_fabs.c) | 0x08809F38-0x08809F38+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`nl_sf_floor.c`](../src/BOOT/nl_sf_floor.c) | 0x08809F4C-0x08809F4C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libm_sf_sin.c`](../src/BOOT/libm_sf_sin.c) | 0x0880A154-0x0880A154+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libm_wf_atan2.c`](../src/BOOT/libm_wf_atan2.c) | 0x0880A340-0x0880A340+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libm_wf_sqrt.c`](../src/BOOT/libm_wf_sqrt.c) | 0x0880A484-0x0880A484+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
@@ -81,18 +86,18 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`libc_mem_gcc.c`](../src/BOOT/libc_mem_gcc.c) | 0x0880E1F8-0x0880E234+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_mprec.c`](../src/BOOT/libc_mprec.c) | 0x0880E700-0x0880F60C | 2 | 0 | newlib mprec: Balloc, multadd, hi0bits/lo0bits, i2b, mult, pow5mult, lshift, cmp, diff, ulp, b2d/d2b, ratio |
 | [`libc_mprec_gcc.c`](../src/BOOT/libc_mprec_gcc.c) | 0x0880E700-0x0880F56C+ | 15 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libc_misc.c`](../src/BOOT/libc_misc.c) | 0x0880F60C-0x08810BA8 | 2 | 3 | newlib: printf, qsort, rand/srand, `__srefill`, `_snprintf_r`, funções de reent.c |
+| [`libc_misc.c`](../src/BOOT/libc_misc.c) | 0x0880F60C-0x08810BA8 | 2 | 2 | newlib: printf, qsort, rand/srand, `__srefill`, `_snprintf_r`, funções de reent.c |
 | [`nl_printf.c`](../src/BOOT/nl_printf.c) | 0x0880F60C-0x0880F64C+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_qsort.c`](../src/BOOT/nl_qsort.c) | 0x0880F69C-0x0880F69C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_rand.c`](../src/BOOT/nl_rand.c) | 0x0880FF70-0x0880FF70+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_misc_gcc.c`](../src/BOOT/libc_misc_gcc.c) | 0x08810038-0x08810ADC+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_reent.c`](../src/BOOT/nl_reent.c) | 0x088105F8-0x08810854+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`nl_refill.c`](../src/BOOT/nl_refill.c) | 0x08810904-0x08810904+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`nl_refill.c`](../src/BOOT/nl_refill.c) | 0x08810904-0x08810940+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_snprintf.c`](../src/BOOT/nl_snprintf.c) | 0x08810B38-0x08810BA8+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libc_string.c`](../src/BOOT/libc_string.c) | 0x08810BA8-0x088126E8 | 6 | 1 | newlib: strcat/strchr/strcmp/strcpy/strlen/strncmp/strncpy/strstr e strtok |
+| [`libc_string.c`](../src/BOOT/libc_string.c) | 0x08810BA8-0x088126E8 | 4 | 1 | newlib: strcat/strchr/strcmp/strcpy/strlen/strncmp/strncpy/strstr e strtok |
 | [`nl_sprintf.c`](../src/BOOT/nl_sprintf.c) | 0x08810C2C-0x08810C94+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_sscanf.c`](../src/BOOT/nl_sscanf.c) | 0x08810D14-0x08810D9C+ | 3 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`nl_stdio.c`](../src/BOOT/nl_stdio.c) | 0x08810FA0-0x08810FA0+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`nl_stdio.c`](../src/BOOT/nl_stdio.c) | 0x08810E24-0x08810FA0+ | 3 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_strcasecmp.c`](../src/BOOT/libc_strcasecmp.c) | 0x08810FD0-0x08810FD0+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_strcat.c`](../src/BOOT/libc_strcat.c) | 0x0881106C-0x0881106C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_strchr.c`](../src/BOOT/libc_strchr.c) | 0x08811118-0x08811118+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
@@ -103,8 +108,8 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`strtol.c`](../src/BOOT/strtol.c) | 0x088126E8-0x08813108 | 9 | 0 | newlib strtod/strtof/strtol/strtoul e os `_r` para long, long long e unsigned |
 | [`nl_ungetc.c`](../src/BOOT/nl_ungetc.c) | 0x08813108-0x08813108+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`ungetc.c`](../src/BOOT/ungetc.c) | 0x08813108-0x08813390 | 1 | 0 | newlib ungetc, `__submore` |
-| [`nl_vfprintf.c`](../src/BOOT/nl_vfprintf.c) | 0x08813390-0x088150E0+ | 4 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfprintf.c`](../src/BOOT/vfprintf.c) | 0x08813390-0x088151B8 | 1 | 1 | newlib `__sprint`, `__sbprintf`, vfprintf, cvt, exponent; `_vfprintf_r` em asm |
+| [`nl_vfprintf.c`](../src/BOOT/nl_vfprintf.c) | 0x08813390-0x088150E0+ | 5 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfprintf.c`](../src/BOOT/vfprintf.c) | 0x08813390-0x088151B8 | 0 | 1 | newlib `__sprint`, `__sbprintf`, vfprintf, cvt, exponent; `_vfprintf_r` em asm |
 | [`nl_vfscanf.c`](../src/BOOT/nl_vfscanf.c) | 0x088151B8-0x08816284+ | 4 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`vfscanf.c`](../src/BOOT/vfscanf.c) | 0x088151B8-0x0881635C | 0 | 1 | newlib vfscanf e `__sccl`; `__svfscanf_r` transcrito do asm |
 | [`nl_vsprintf.c`](../src/BOOT/nl_vsprintf.c) | 0x0881635C-0x088163D0+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
@@ -119,19 +124,31 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`fpbit.c`](../src/BOOT/fpbit.c) | 0x08817784-0x08817D70 | 4 | 0 | libgcc fp-bit: pack/unpack, soma/subtração, comparações, conversões, negação |
 | [`fpbit_sf.c`](../src/BOOT/fpbit_sf.c) | 0x08817978-0x088179A8+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`fpbit_df.c`](../src/BOOT/fpbit_df.c) | 0x08817D70-0x08818E64 | 17 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`ccc.c`](../src/BOOT/ccc.c) | 0x08818E64-0x08819BEC | 13 | 16 | libccc da Sony (sceCcc*): codificação UTF-8/UTF-16/SJIS, validação, strlen, caracteres de erro, tabelas |
-| [`fpu.c`](../src/BOOT/fpu.c) | 0x08819BEC-0x08819F0C | 35 | 1 | libfpu da Sony (sceFpu*): arredondamento, max/min, fmod/frac, testes de sinal/zero/denormal/inf, NaN, FCR31 |
-| [`vfpu_math.c`](../src/BOOT/vfpu_math.c) | 0x08819F0C-0x0881AB1C | 33 | 8 | libvfpu (funções `asm` com C portável): isinf_sign, sceFpuSin/Cos/Atan/Asin/Acos, Vector2 |
-| [`vfpu_vec3.c`](../src/BOOT/vfpu_vec3.c) | 0x0881AB1C-0x0881B244 | 35 | 0 | libvfpu: sceVfpuVector3* |
-| [`vfpu_vec4.c`](../src/BOOT/vfpu_vec4.c) | 0x0881B244-0x0881B974 | 47 | 0 | libvfpu: sceVfpuVector4* |
-| [`vfpu_mat.c`](../src/BOOT/vfpu_mat.c) | 0x0881B974-0x0881C4E4 | 36 | 0 | libvfpu: Matrix2, Matrix3 e as primeiras de Matrix4 |
-| [`vfpu_mat4.c`](../src/BOOT/vfpu_mat4.c) | 0x0881C4E4-0x0881CD50 | 17 | 0 | libvfpu: produto de matrizes 4x4, transformações, rotações, traço, determinante, adjunta, inversa, sombra, ortonormalização |
+| [`ccc.c`](../src/BOOT/ccc.c) | 0x08818E64-0x08819BEC | 4 | 10 | libccc da Sony (sceCcc*): codificação UTF-8/UTF-16/SJIS, validação, strlen, caracteres de erro, tabelas |
+| [`ccc_gcc.c`](../src/BOOT/ccc_gcc.c) | 0x08818E64-0x08819BCC+ | 15 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`fpu.c`](../src/BOOT/fpu.c) | 0x08819BEC-0x08819F0C | 27 | 1 | libfpu da Sony (sceFpu*): arredondamento, max/min, fmod/frac, testes de sinal/zero/denormal/inf, NaN, FCR31 |
+| [`fpu_gcc.c`](../src/BOOT/fpu_gcc.c) | 0x08819C10-0x08819D60+ | 8 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_math.c`](../src/BOOT/vfpu_math.c) | 0x08819F0C-0x0881AB1C | 19 | 8 | libvfpu (funções `asm` com C portável): isinf_sign, sceFpuSin/Cos/Atan/Asin/Acos, Vector2 |
+| [`vfpu_math_gcc.c`](../src/BOOT/vfpu_math_gcc.c) | 0x0881A590-0x0881A914+ | 14 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_vec3.c`](../src/BOOT/vfpu_vec3.c) | 0x0881AB1C-0x0881B244 | 32 | 0 | libvfpu: sceVfpuVector3* |
+| [`vfpu_vec3_gcc.c`](../src/BOOT/vfpu_vec3_gcc.c) | 0x0881AB1C-0x0881AC1C+ | 3 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_vec4.c`](../src/BOOT/vfpu_vec4.c) | 0x0881B244-0x0881B974 | 44 | 0 | libvfpu: sceVfpuVector4* |
+| [`vfpu_vec4_gcc.c`](../src/BOOT/vfpu_vec4_gcc.c) | 0x0881B244-0x0881B298+ | 3 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_mat.c`](../src/BOOT/vfpu_mat.c) | 0x0881B974-0x0881C4E4 | 28 | 0 | libvfpu: Matrix2, Matrix3 e as primeiras de Matrix4 |
+| [`vfpu_mat_gcc.c`](../src/BOOT/vfpu_mat_gcc.c) | 0x0881B994-0x0881C400+ | 8 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_mat4.c`](../src/BOOT/vfpu_mat4.c) | 0x0881C4E4-0x0881CD50 | 16 | 0 | libvfpu: produto de matrizes 4x4, transformações, rotações, traço, determinante, adjunta, inversa, sombra, ortonormalização |
+| [`vfpu_mat4_gcc.c`](../src/BOOT/vfpu_mat4_gcc.c) | 0x0881C8D4-0x0881C8D4+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`vfpu_scalar.c`](../src/BOOT/vfpu_scalar.c) | 0x0881CD50-0x0881D214 | 22 | 0 | libvfpu: sceVfpuScalar* (trig, exp/log, pow, arredondamento) |
-| [`vfpu_color.c`](../src/BOOT/vfpu_color.c) | 0x0881D214-0x0881D8A8 | 34 | 4 | libvfpu: sceVfpuColor* (conversões 8888/4444/5551/565) e sceVfpuRand* |
-| [`vfpu_proj.c`](../src/BOOT/vfpu_proj.c) | 0x0881D8A8-0x0881DE88 | 7 | 2 | libvfpu: view, perspectiva, ortho, frustum, look_at, projeção de pontos |
-| [`vfpu_quat.c`](../src/BOOT/vfpu_quat.c) | 0x0881DE88-0x0881EB0C | 18 | 5 | libvfpu: quatérnios, slerp, log/exp, Euler zyx/xyz/yxz |
-| [`vfpu_mem.c`](../src/BOOT/vfpu_mem.c) | 0x0881EB0C-0x0881F6E4 | 10 | 0 | libvfpu: memcpy/memmove/memset pela VFPU, contexto de registradores, estado do gerador aleatório |
-| [`gzip.c`](../src/BOOT/gzip.c) | 0x0881F6E4-0x0881FFB0 | 7 | 0 | libdeflt: cabeçalho gzip e o decodificador deflate escrito à mão (C portável: inflate completo) |
+| [`vfpu_color.c`](../src/BOOT/vfpu_color.c) | 0x0881D214-0x0881D8A8 | 32 | 4 | libvfpu: sceVfpuColor* (conversões 8888/4444/5551/565) e sceVfpuRand* |
+| [`vfpu_color_gcc.c`](../src/BOOT/vfpu_color_gcc.c) | 0x0881D2C8-0x0881D2E0+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_proj.c`](../src/BOOT/vfpu_proj.c) | 0x0881D8A8-0x0881DE88 | 6 | 2 | libvfpu: view, perspectiva, ortho, frustum, look_at, projeção de pontos |
+| [`vfpu_proj_gcc.c`](../src/BOOT/vfpu_proj_gcc.c) | 0x0881DC60-0x0881DC60+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_quat.c`](../src/BOOT/vfpu_quat.c) | 0x0881DE88-0x0881EB0C | 17 | 5 | libvfpu: quatérnios, slerp, log/exp, Euler zyx/xyz/yxz |
+| [`vfpu_quat_gcc.c`](../src/BOOT/vfpu_quat_gcc.c) | 0x0881E524-0x0881E524+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_mem.c`](../src/BOOT/vfpu_mem.c) | 0x0881EB0C-0x0881F6E4 | 9 | 0 | libvfpu: memcpy/memmove/memset pela VFPU, contexto de registradores, estado do gerador aleatório |
+| [`vfpu_mem_gcc.c`](../src/BOOT/vfpu_mem_gcc.c) | 0x0881F560-0x0881F560+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`gzip.c`](../src/BOOT/gzip.c) | 0x0881F6E4-0x0881FFB0 | 3 | 0 | libdeflt: cabeçalho gzip e o decodificador deflate escrito à mão (C portável: inflate completo) |
+| [`gzip_gcc.c`](../src/BOOT/gzip_gcc.c) | 0x0881F914-0x0881F9B8+ | 4 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`postfx.c`](../src/BOOT/postfx.c) | 0x0881FFB0-0x08820ED4 | 11 | 0 | efeitos de tela cheia por texturas de trabalho na VRAM: redução, cópia escurecida, blends aditivos de cópias deslocadas e limiar por CLUT |
 | [`ehf_args.c`](../src/BOOT/ehf_args.c) | 0x08820ED4-0x08822F84 | 1 | 0 | `ehf_cmd_args`: conversão dos argumentos dos comandos EHF por letra de destino (n o p q / O P Q N inteiros, f g h i / G H I F floats, r palavra crua) e de origem (F N f n V I v i), por macros |
 | [`ehf_cmd.c`](../src/BOOT/ehf_cmd.c) | 0x08822F84-0x08823BD0 | 19 | 0 | handlers dos comandos EHF: janelas e laços de quadros, palavras GE cruas, transformações, matrizes por mensagem, esferas de visibilidade, billboards, matriz de osso, escala, tremor aleatório, rastros em anel de uma ou duas trilhas suavizados por spline cíclica, interpolação de chaves, callbacks |
@@ -143,7 +160,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`particle2.c`](../src/BOOT/particle2.c) | 0x08827030-0x08827D98 | 7 | 0 | geradores em anel, tetraédrico, casca esférica e cone, posições levadas ao espaço do modelo, velocidades constante e radial, movimento, aceleração e arrasto |
 | [`particle3.c`](../src/BOOT/particle3.c) | 0x08827D98-0x08828590 | 10 | 0 | geradores em anel, tetraédrico, casca esférica e cone, posições levadas ao espaço do modelo, velocidades constante e radial, movimento, aceleração e arrasto |
 | [`ptcl_draw.c`](../src/BOOT/ptcl_draw.c) | 0x08828590-0x0882923C | 8 | 0 | partículas desenhadas como quads de faixa de triângulos no espaço da câmera, cor fixa ou por chaves de idade, textura, tamanho e uv do sprite |
-| [`efs.c`](../src/BOOT/efs.c) | 0x0882923C-0x0882AD90 | 25 | 1 | efeitos .efs: carga com relocação por bytecode, raízes nomeadas com busca binária, 0x300 instâncias em lista circular no heap de efeitos, interpretador de árvores de comandos por fase, argumentos por formato, comandos de instância aninhada |
+| [`efs.c`](../src/BOOT/efs.c) | 0x0882923C-0x0882AD90 | 26 | 0 | efeitos .efs: carga com relocação por bytecode, raízes nomeadas com busca binária, 0x300 instâncias em lista circular no heap de efeitos, interpretador de árvores de comandos por fase, argumentos por formato, comandos de instância aninhada |
 | [`camera.c`](../src/BOOT/camera.c) | 0x0882AD90-0x0882B65C | 18 | 0 | câmera com look-at e as quatro luzes do GE com bits de ativação reemitidos na lista |
 | [`tms.c`](../src/BOOT/tms.c) | 0x0882B65C-0x0882C428 | 12 | 0 | geometria TGMS: relocação, materiais com quatro camadas de textura, hooks de textura e desenho, callbacks de mapa de ambiente, prims com cache de oito matrizes de osso, culling pela caixa |
 | [`model.c`](../src/BOOT/model.c) | 0x0882C428-0x0882D208 | 20 | 0 | modelos: geometria TGMS com matrizes de osso e de skin, animações TGMT com cross-fade, buffers de animação descomprimida, animação de material TGMA, cópias de materiais e texturas, duas passadas de desenho com stencil e contorno |
@@ -154,7 +171,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ehp.c`](../src/BOOT/ehp.c) | 0x08833420-0x0883451C | 10 | 0 | pacotes EHP: busca binária por nome ou ponteiro, relocação por extensão com ptrs.txt, TGMA/TGMT, TMS, EHF e GIM, handlers registrados, carga síncrona e assíncrona, tabela de pacotes montados, projeção 2D |
 | [`gfx.c`](../src/BOOT/gfx.c) | 0x0883451C-0x08835650 | 6 | 0 | inicialização do GE/libgu, fim de quadro com limite de 30 fps e callback de flip, alvos de desenho, capturas BMP/TGA para host0:, rastreador do estado do GE com a lista de valores padrão |
 | [`gim.c`](../src/BOOT/gim.c) | 0x08835650-0x08835F48 | 1 | 0 | texturas GIM: busca de blocos na árvore, modo e imagem de um quadro ou célula, CLUT da paleta, imagem residente na VRAM no lugar da assinatura PSP, troca de textura fora da lista de desenho |
-| [`vram.c`](../src/BOOT/vram.c) | 0x08835F48-0x088362E8 | 1 | 1 | área de texturas na VRAM depois dos framebuffers: alocador linear, envio de um quadro de GIM para a VRAM, percurso dos blocos do GIM |
+| [`vram.c`](../src/BOOT/vram.c) | 0x08835F48-0x088362E8 | 2 | 0 | área de texturas na VRAM depois dos framebuffers: alocador linear, envio de um quadro de GIM para a VRAM, percurso dos blocos do GIM |
 | [`mtx.c`](../src/BOOT/mtx.c) | 0x088362E8-0x088370A4 | 30 | 0 | pilhas de matrizes por tipo do GE com a matriz corrente em M300 da VFPU: init, emissão/flush das sujas para a lista, salvar/restaurar estado, identidade, rotações, translação, escala, perspectiva, ortho, look-at, push/pop; blocos `asm` VFPU no C com equivalente em C para o port |
 | [`draw.c`](../src/BOOT/draw.c) | 0x088370A4-0x08837B28 | 1 | 0 | primitivas dentro da lista ou imediatas fechando e reabrindo a sublista, teste de esfera contra o frustum, flags de matriz suja |
 | [`heap.c`](../src/BOOT/heap.c) | 0x08837B28-0x088390C4 | 8 | 0 | heap HOGE: tabela ordenada de fronteiras com bit de livre, guardada num bloco do próprio heap e dobrada quando enche, alocação best fit com divisão pelo topo, liberação com fusão, compactação |
@@ -163,8 +180,8 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`dl.c`](../src/BOOT/dl.c) | 0x08839F50-0x0883CEB0 | 79 | 0 | listas de comandos do GE: heap em duas metades com tabela de 16 camadas encadeadas por JUMP, troca de camada, e uma função por estado ou primitiva do GE montando as palavras no stack e empurrando com dl_push: enable/disable, matrizes, luzes, material, textura, CLUT, névoa, scissor, testes, blend, dither, sprite, clear, cópia de imagem; SysConf com os campos reais |
 | [`sys.c`](../src/BOOT/sys.c) | 0x0883CEB0-0x0883D708 | 12 | 0 | System glue: display defaults, the "ehscript" scene thread (one gmodule at a time, cooperative with BOOT's main loop), init order and the per-scene state stack |
 | [`ehf_cam.c`](../src/BOOT/ehf_cam.c) | 0x0883D708-0x0883DD58 | 5 | 0 | comandos EHF de câmera perspectiva/orto/look-at e animação de material TGMA |
-| [`main.c`](../src/BOOT/main.c) | 0x0883DD58-0x0883E670 | 22 | 1 | BOOT entry after the C runtime: init order, the frame loop, soft reset, the loading overlay and small accessors of the game globals |
-| [`save.c`](../src/BOOT/save.c) | 0x0883E670-0x0883F340 | 14 | 1 | Save state ("sysstate"): new game defaults, checksum, player name, day counter, money and the duel record counters |
+| [`main.c`](../src/BOOT/main.c) | 0x0883DD58-0x0883E670 | 23 | 0 | BOOT entry after the C runtime: init order, the frame loop, soft reset, the loading overlay and small accessors of the game globals |
+| [`save.c`](../src/BOOT/save.c) | 0x0883E670-0x0883F340 | 15 | 0 | Save state ("sysstate"): new game defaults, checksum, player name, day counter, money and the duel record counters |
 | [`inv.c`](../src/BOOT/inv.c) | 0x0883F340-0x08840478 | 17 | 0 | Card inventory records (one 4-byte bitfield per card index), the current deck, tag partner slots and the player name inside the save state |
 | [`cfg.c`](../src/BOOT/cfg.c) | 0x08840478-0x08840DC4 | 28 | 1 | Save-state flag records, options bitfields and the session game state (player slots filled from recipes / saved decks) |
 | [`deck.c`](../src/BOOT/deck.c) | 0x08840DC4-0x08841BD0 | 26 | 0 | Stage progress, per-character deck slots, deck/recipe comparison, request flags, region and language, and the language-dependent name/message packs |
@@ -192,8 +209,10 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`snd_core.c`](../src/BOOT/snd_core.c) | 0x08860DA4-0x088615D0 | 19 | 0 | máscara de vozes SAS, volumes por canal, medidor de nível para lip sync, reverb |
 | [`snd_obj.c`](../src/BOOT/snd_obj.c) | 0x088615D0-0x08862C5C | 26 | 1 | handles do pool de objetos de som, busca por id, ordem de início, slots do som atual, carga de grupos pelos callbacks ou VPL, curva de distância e modelo 3D com pan e Doppler, faders, volumes SAS por objeto |
 | [`snd_rand.c`](../src/BOOT/snd_rand.c) | 0x08862C5C-0x08862D28 | 3 | 0 | gerador aleatório da biblioteca de som |
-| [`libsas.c`](../src/BOOT/libsas.c) | 0x08862D28-0x088634EC | 1 | 23 | libsas: wrappers sceSas* das syscalls `__sceSas*` |
-| [`libwave.c`](../src/BOOT/libwave.c) | 0x088634EC-0x08865260 | 1 | 30 | libwave: 8 canais VAG/PCM em software misturados pela thread SceWaveMain, 4 canais de hardware, fades |
+| [`libsas.c`](../src/BOOT/libsas.c) | 0x08862D28-0x088634EC | 0 | 0 | libsas: wrappers sceSas* das syscalls `__sceSas*` |
+| [`libsas_gcc.c`](../src/BOOT/libsas_gcc.c) | 0x08862D28-0x088634C4+ | 24 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libwave.c`](../src/BOOT/libwave.c) | 0x088634EC-0x08865260 | 0 | 23 | libwave: 8 canais VAG/PCM em software misturados pela thread SceWaveMain, 4 canais de hardware, fades |
+| [`libwave_gcc.c`](../src/BOOT/libwave_gcc.c) | 0x08863A6C-0x08864218+ | 8 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`sndapi.c`](../src/BOOT/sndapi.c) | 0x08865260-0x08866068 | 59 | 0 | API de som exportada aos gmodules: BGM/SE, callbacks de leitura/heap da biblioteca de som, tabelas de voz por personagem, filas de voz por jogador, movie_play, caminhos de save-data |
 | [`savedata.c`](../src/BOOT/savedata.c) | 0x08866068-0x088668C0 | 10 | 0 | bloco de parâmetros do sceUtilitySavedata, textos SFO, ícones de msd.ehp, chave, inícios por modo |
 | [`msd.c`](../src/BOOT/msd.c) | 0x088668C0-0x08868DC8 | 10 | 0 | máquinas de estado de save-data por operação: novo jogo, verificação, autoload, carregar, salvar, apagar; carga de msd.ehp e despacho por quadro |
@@ -204,25 +223,25 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`extdata.c`](../src/BOOT/extdata.c) | 0x0886CF50-0x0886E0A4 | 11 | 0 | arquivos YGTF .YGC/.YGR/.YGL da pasta do save: listagem, leitura, verificação e desembaralhamento |
 | [`netsync.c`](../src/BOOT/netsync.c) | 0x0886E0A4-0x0886ED2C | 29 | 0 | troca de registros de 0x100 bytes por jogador via PDP ad hoc, fila de pacotes, transferência em blocos de 0x80, lado do jogador local |
 
-## libduel_eng (196 arquivos, 3414 funções batendo, 12 em asm)
+## libduel_eng (196 arquivos, 3419 funções batendo, 8 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`ai_08804000.c`](../src/libduel_eng/ai_08804000.c) | 0x08804000-0x088070A8 | 21 | 0 | IA: passos da fase principal do computador (invocação, posição de ataque/defesa, tabela duel_ai_phases) |
 | [`ai_088070A8.c`](../src/libduel_eng/ai_088070A8.c) | 0x088070A8-0x08809B50 | 21 | 0 | IA: escolha de alvos e de cartas a jogar na fase principal |
 | [`ai_util.c`](../src/libduel_eng/ai_util.c) | 0x08809B50-0x0880B448 | 27 | 0 | ajudantes da IA: escolher cartas para um diálogo, comparar os monstros mais fortes dos dois jogadores, melhor alvo de ataque, cartas que a IA prefere, contagens por tipo na mão e no cemitério |
-| [`ai_0880B448.c`](../src/libduel_eng/ai_0880B448.c) | 0x0880B448-0x0880FDF4 | 28 | 1 | IA: avaliação de ataques e salvamento/restauração de duel_special, ordenação por prioridade |
+| [`ai_0880B448.c`](../src/libduel_eng/ai_0880B448.c) | 0x0880B448-0x0880FDF4 | 29 | 0 | IA: avaliação de ataques e salvamento/restauração de duel_special, ordenação por prioridade |
 | [`ai_cond3.c`](../src/libduel_eng/ai_cond3.c) | 0x0880FDF4-0x08810370 | 11 | 0 | mais condições da IA por carta: ATK do mais forte contra os LP do oponente, fase e turno, monstros por posição |
 | [`ai_cond4.c`](../src/libduel_eng/ai_cond4.c) | 0x08810370-0x08811BDC | 39 | 0 | condições da IA: LP contra o ATK mais forte, monstros e cartas especiais no campo, cartas da corrente, mão e cemitério, fase e turno |
 | [`ai_08811BDC.c`](../src/libduel_eng/ai_08811BDC.c) | 0x08811BDC-0x088137BC | 2 | 0 | condições do jogador do computador para cartas de batalha (switch de 60 casos para os tipos 18/19; tipo 20: a mudança de ATK/DEF decide a batalha?) |
 | [`ai_cond5.c`](../src/libduel_eng/ai_cond5.c) | 0x088137BC-0x08814EC8 | 32 | 0 | condições da IA contra a carta sendo ativada: alvos no campo, tipo e dono da carta, monstros e cartas especiais, LP |
 | [`ai_cond6.c`](../src/libduel_eng/ai_cond6.c) | 0x08814EC8-0x08815E90 | 12 | 0 | escolha da carta a ativar pelas tabelas de cartas e condições da IA, zonas embaralhadas por máscara com a de maior ATK/DEF, carta da mão por pontuação |
-| [`ai_08815E90.c`](../src/libduel_eng/ai_08815E90.c) | 0x08815E90-0x08819F94 | 26 | 1 | IA: escolha de alvos por carta (seletor de 5,8 KB) e contagens por posição |
+| [`ai_08815E90.c`](../src/libduel_eng/ai_08815E90.c) | 0x08815E90-0x08819F94 | 27 | 0 | IA: escolha de alvos por carta (seletor de 5,8 KB) e contagens por posição |
 | [`ai_cond2.c`](../src/libduel_eng/ai_cond2.c) | 0x08819F94-0x0881C118 | 63 | 0 | condições da IA: alvos do descritor, cartas com o mesmo nome, contadores por zona, bits de posição dos monstros, PV contra o dano previsto, magia de campo, monstros da mão invocáveis por tributo |
 | [`ai_cond1.c`](../src/libduel_eng/ai_cond1.c) | 0x0881C118-0x0881D0D8 | 18 | 0 | condições da IA: número de monstros, alvos com ATK alto, ATK/DEF do monstro escolhido contra o maior do oponente, tabela de cartas que a IA invoca do cemitério |
 | [`ai_cond0.c`](../src/libduel_eng/ai_cond0.c) | 0x0881D0D8-0x0881E0A0 | 25 | 0 | mais condições da IA por carta: mão e cemitério sem cartas proibidas, PV, nível e ATK do monstro escolhido |
 | [`ai_cond.c`](../src/libduel_eng/ai_cond.c) | 0x0881E0A0-0x08820618 | 78 | 0 | condições que o jogador do computador verifica antes de ativar cada carta: PV do oponente, contagens no campo, na mão e no cemitério, alvos aceitos pelo descritor |
-| [`ai_08820618.c`](../src/libduel_eng/ai_08820618.c) | 0x08820618-0x08827618 | 39 | 1 | IA: escolha da carta a ativar (tabelas de cartas no campo e na mão), passos de ataque, registro de ataque/invocação (DuelAtkRec) |
+| [`ai_08820618.c`](../src/libduel_eng/ai_08820618.c) | 0x08820618-0x08827618 | 40 | 0 | IA: escolha da carta a ativar (tabelas de cartas no campo e na mão), passos de ataque, registro de ataque/invocação (DuelAtkRec) |
 | [`ai_08827618.c`](../src/libduel_eng/ai_08827618.c) | 0x08827618-0x08827DA4 | 9 | 0 | IA: preparação do registro de invocação |
 | [`ai_08827DA4.c`](../src/libduel_eng/ai_08827DA4.c) | 0x08827DA4-0x0882926C | 2 | 0 | IA: opções de invocação da mão e verificação de invocação especial por carta |
 | [`ai_0882926C.c`](../src/libduel_eng/ai_0882926C.c) | 0x0882926C-0x0882A23C | 6 | 0 | IA: verificações de oferendas (tributáveis por zona) |
@@ -241,7 +260,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ai_08837500.c`](../src/libduel_eng/ai_08837500.c) | 0x08837500-0x08838548 | 3 | 0 | IA: máquinas de passos da batalha (atacante, depois alvo) |
 | [`ai_08838548.c`](../src/libduel_eng/ai_08838548.c) | 0x08838548-0x08839360 | 4 | 0 | IA: efeitos na declaração de ataque |
 | [`ai_08839360.c`](../src/libduel_eng/ai_08839360.c) | 0x08839360-0x0883F0DC | 7 | 0 | máquinas de passos do passo de dano: início, cartas atacante/alvo, eventos de dano, destruição e envio ao cemitério, efeitos pós-batalha |
-| [`ai_0883F0DC.c`](../src/libduel_eng/ai_0883F0DC.c) | 0x0883F0DC-0x088400B0 | 21 | 1 | IA: avaliação de jogadas por zona e contador de passos em registrador |
+| [`ai_0883F0DC.c`](../src/libduel_eng/ai_0883F0DC.c) | 0x0883F0DC-0x088400B0 | 22 | 0 | IA: avaliação de jogadas por zona e contador de passos em registrador |
 | [`ai_088400B0.c`](../src/libduel_eng/ai_088400B0.c) | 0x088400B0-0x08840B5C | 13 | 0 | IA: checagens de cartas do campo e da mão para a jogada do computador |
 | [`ai_08840B5C.c`](../src/libduel_eng/ai_08840B5C.c) | 0x08840B5C-0x088415C4 | 29 | 0 | IA: condições por carta e stubs de chamada final |
 | [`ai_088415C4.c`](../src/libduel_eng/ai_088415C4.c) | 0x088415C4-0x088420F4 | 21 | 0 | IA: escolha de alvos e máscaras de zonas |
@@ -260,7 +279,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`duel_start.c`](../src/libduel_eng/duel_start.c) | 0x0884B094-0x0884C718 | 11 | 0 | início do duelo: reset, início normal, tutorial/puzzle lidos de texto (EquipAct, CardIn*, PlayerLP, Phase, TurnPlayer) |
 | [`duel_pick.c`](../src/libduel_eng/duel_pick.c) | 0x0884C718-0x0884D050 | 22 | 0 | lista de cartas que um diálogo oferece, `DuelPick` em 0x0891524C com zona e número de cada carta em bitfield, flags de exibição, gerador aleatório LCG do duelo, tamanho das pilhas, Exodia e cartas de vitória especial |
 | [`duel_end.c`](../src/libduel_eng/duel_end.c) | 0x0884D050-0x0884E228 | 19 | 0 | fim do duelo: motivo de vitória de cada jogador em +0x20..+0x2C do `DuelPlayer`, apresentação do fim, reprodução do log de entradas, passos finais por tabela, contadores e flags do registro do duelo em 0x08913C1C, pedido de desistência |
-| [`card_desc.c`](../src/libduel_eng/card_desc.c) | 0x0884E228-0x0884F038 | 24 | 0 | descritores de efeito das cartas: quatro tabelas de 0x18 bytes ordenadas por id conforme o tipo da ação, busca binária `static` cujos chamadores guardam argumentos em t-regs, chamada dos handlers de condição, alvo e resolução, máscara e contagens das zonas aceitas pelo alvo |
+| [`card_desc.c`](../src/libduel_eng/card_desc.c) | 0x0884E228-0x0884F038 | 25 | 0 | descritores de efeito das cartas: quatro tabelas de 0x18 bytes ordenadas por id conforme o tipo da ação, busca binária `static` cujos chamadores guardam argumentos em t-regs, chamada dos handlers de condição, alvo e resolução, máscara e contagens das zonas aceitas pelo alvo |
 | [`ai_0884F038.c`](../src/libduel_eng/ai_0884F038.c) | 0x0884F038-0x08850164 | 11 | 0 | IA: resolução de mensagens e escolhas da corrente |
 | [`ai_08850164.c`](../src/libduel_eng/ai_08850164.c) | 0x08850164-0x08850F44 | 1 | 0 | máquina de passos da resolução da corrente (em asm) |
 | [`chain_resolve.c`](../src/libduel_eng/chain_resolve.c) | 0x08850F44-0x08853340 | 1 | 0 | resolução do último elo da corrente: anúncio, custos, alvos ainda legais, passos da carta, reações |
@@ -533,7 +552,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`rv_menu.c`](../src/librecipe_viewer/rv_menu.c) | 0x08809274-0x0880A248 | 9 | 4 | cartas por linha, entrada sob o cursor, revelação, menus de confirmação/opções, teclado na tela |
 | [`rv_main.c`](../src/librecipe_viewer/rv_main.c) | 0x0880A248-0x0880A99C | 4 | 0 | entrada, init (listas, heap de 4 MB), update com resultado, liberação |
 
-## libtitle (30 arquivos, 433 funções batendo, 1 em asm)
+## libtitle (30 arquivos, 434 funções batendo, 0 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -554,7 +573,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`t_lang.c`](../src/libtitle/t_lang.c) | 0x0880EB20-0x0880F438 | 6 | 0 | seleção de idioma (estado 19), recarga do pacote e do banco de cartas |
 | [`t_osk.c`](../src/libtitle/t_osk.c) | 0x0880F438-0x0880F900 | 2 | 0 | teclado na tela (SceUtility OSK), mesmo código da librecipe_viewer |
 | [`t_name.c`](../src/libtitle/t_name.c) | 0x0880F900-0x088106D8 | 14 | 0 | novo jogo (estado 8: nome, confirmação, gravação) e title_prompt |
-| [`t_panel.c`](../src/libtitle/t_panel.c) | 0x088106D8-0x08813088 | 26 | 1 | caixa de células com rolagem, abas, janela com abas, quadros de nove peças, cursor piscante, caixas prontas e ajudas |
+| [`t_panel.c`](../src/libtitle/t_panel.c) | 0x088106D8-0x08813088 | 27 | 0 | caixa de células com rolagem, abas, janela com abas, quadros de nove peças, cursor piscante, caixas prontas e ajudas |
 | [`t_ext.c`](../src/libtitle/t_ext.c) | 0x08813088-0x08813AC4 | 8 | 0 | cartas de dados extras (estado 6): .YGC do Memory Stick, carta nova recebida em três cópias |
 | [`t_freeduel.c`](../src/libtitle/t_freeduel.c) | 0x08813AC4-0x0881494C | 8 | 0 | free duel: listas de jogadores e decks, painel de opções, despacho das sub-telas, eventos da rede ad hoc |
 | [`t_fdnet.c`](../src/libtitle/t_fdnet.c) | 0x0881494C-0x088162CC | 8 | 0 | free duel ad hoc: pacotes de jogador, máquina de troca de decks, GameState do duelo em rede, prontidão e assentos |
@@ -641,7 +660,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ds_osk.c`](../src/libdeck_swap/ds_osk.c) | 0x08815318-0x088157E0 | 2 | 0 | teclado do sistema |
 | [`ds_scene.c`](../src/libdeck_swap/ds_scene.c) | 0x088157E0-0x08815ED4 | 7 | 0 | exports (init/update) e popups |
 
-## libtutorial (9 arquivos, 205 funções batendo, 1 em asm)
+## libtutorial (9 arquivos, 207 funções batendo, 0 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -651,7 +670,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`tut_window.c`](../src/libtutorial/tut_window.c) | 0x088056E0-0x08806BC0 | 25 | 0 | janelas de mensagem |
 | [`tut_sprite.c`](../src/libtutorial/tut_sprite.c) | 0x08806BC0-0x08807A10 | 26 | 0 | sprites, destaques, pausa |
 | [`tut_arrow.c`](../src/libtutorial/tut_arrow.c) | 0x08807A10-0x08807E24 | 8 | 0 | setas |
-| [`tut_script.c`](../src/libtutorial/tut_script.c) | 0x08807E24-0x08809A5C | 48 | 1 | script da lição, montagem do duelo (%02d_field_set.txt), filtro de ações, gancho de eventos, sim/não |
+| [`tut_script.c`](../src/libtutorial/tut_script.c) | 0x08807E24-0x08809A5C | 50 | 0 | script da lição, montagem do duelo (%02d_field_set.txt), filtro de ações, gancho de eventos, sim/não |
 | [`tut_text.c`](../src/libtutorial/tut_text.c) | 0x08809A5C-0x0880AC6C | 23 | 0 | caixa de fala (texto digitado, páginas, ícone piscando) |
 | [`tut_face.c`](../src/libtutorial/tut_face.c) | 0x0880AC6C-0x0880B284 | 6 | 0 | animação dos rostos (bust-up) |
 
