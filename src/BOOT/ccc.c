@@ -1,8 +1,8 @@
 // @range 0x08818E64-0x08819BEC
 // @gcc 0x08818E64-0x08818F54
 // @asm 0x08818F54-0x08818FD0
-// @gcc 0x08818FD0-0x0881908C
-// @asm 0x0881908C-0x08819394
+// @gcc 0x08818FD0-0x08819208
+// @asm 0x08819208-0x08819394
 // @gcc 0x08819394-0x08819A44
 // @gcc 0x08819AE0-0x08819BEC
 /* Sony's libccc (sceCcc*, character code conversion): UTF-8, UTF-16 and Shift JIS strings, the JIS
@@ -169,49 +169,56 @@ void ccc_encode_utf8(u8 **d, unsigned int c)
 unsigned int ccc_decode_sjis(const u8 **s)
 {
     const u8 *p = *s;
-    unsigned int c = *p++;
-    unsigned int plane = 0;
-    int row = 0;
-    unsigned int col = 0;
+    u8 c = *p++;
+    u8 k = c - 0xA0;
+    unsigned int r;
 
-    if (c < 0x80 || c - 0xA0 < 0x40 || c > 0xFC) {
-        *s = p;
-        return c;
-    }
-    if (c - 0x81 < 0x1F) {
-        row = c * 2 - 0x101;
-    } else if (c - 0xE0 < 0x10) {
-        row = c * 2 - 0x181;
-    } else if (c - 0xF0 < 0x0D) {
-        row = c >= 0xF4 ? c * 2 - 0x19B : c * 2 - 0x1D9;
-        plane = 1;
-    }
-    if (row != 0) {
-        unsigned int c2 = *p++;
+    if (c < 0x80 || k < 0x40 || c > 0xFC) {
+        r = c;
+    } else {
+        unsigned int plane = 0;
+        int row = 0;
+        unsigned int col = 0;
 
-        if (c2 - 0x40 < 0x3F) {
-            col = c2 - 0x3F;
-        } else if (c2 - 0x80 < 0x1F) {
-            col = c2 - 0x40;
-        } else if (c2 - 0x9F < 0x5E) {
-            col = c2 - 0x9E;
-            row++;
-        }
-        if (plane) {
-            if (row == 7) {
-                row = 1;
-            } else if (row == 11) {
-                row = 5;
-            } else if (row == 0x4D) {
-                row = 15;
+        if ((u8)(c - 0x81) < 0x1F) {
+            row = c * 2 - 0x101;
+        } else if ((u8)(c - 0xE0) < 0x10) {
+            row = c * 2 - 0x181;
+        } else if ((u8)(c - 0xF0) < 0x0D) {
+            row = c * 2 - 0x1D9;
+            if (c >= 0xF4) {
+                row = c * 2 - 0x19B;
             }
+            plane = 1;
+        }
+        if (row != 0) {
+            c = *p++;
+            if ((u8)(c - 0x40) < 0x3F) {
+                col = c - 0x3F;
+            } else if ((u8)(c + 0x80) < 0x1F) {
+                col = c - 0x40;
+            } else if ((u8)(c - 0x9F) < 0x5E) {
+                col = c - 0x9E;
+                row++;
+            }
+            if (plane) {
+                if (row == 7) {
+                    row = 1;
+                } else if (row == 11) {
+                    row = 5;
+                } else if (row == 0x4D) {
+                    row = 15;
+                }
+            }
+        }
+        if (row == 0 || col == 0) {
+            r = D_088F97C0;
+        } else {
+            r = (plane << 15 | (row + 0x20) << 8 | (col + 0x20)) & 0xFFFF;
         }
     }
     *s = p;
-    if (row == 0 || col == 0) {
-        return D_088F97C0;
-    }
-    return (plane << 15 | (row + 0x20) << 8 | (col + 0x20)) & 0xFFFF;
+    return r;
 }
 
 /* sceCccIsValidJIS (ccc_is_valid_jis below), which the SDK's GCC expands inside ccc_encode_sjis */
