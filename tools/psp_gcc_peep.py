@@ -38,6 +38,9 @@ A rewrite that would change the number of instructions inside a `.set noreorder`
 done. What the pass cannot do is in docs/build.md: the later revision allocates registers and schedules around the
 two-instruction form, and that is beyond a peephole.
 
+Since round 37 tools/psp_gcc.sh preloads tools/psp_gcc_insand.so, which gives cc1 the later revision's `ins` itself;
+in that mode (PSP_GCC_INSAND=1, the default) only rules D and F run. Rules A-C/E are the fallback for PSP_GCC_INSAND=0.
+
 `// @cc gcc -nopeep` on the marker line of a file turns the pass off for it (tools/psp_gcc.sh).
 --check runs the sanity check."""
 import collections
