@@ -1,7 +1,6 @@
 // @range 0x08819F0C-0x0881AB1C
 // @asm 0x08819F30-0x0881A440
-// @gcc 0x0881A440-0x0881A4A0
-// @asm 0x0881A4A0-0x0881A520
+// @gcc 0x0881A440-0x0881A520
 // @gcc 0x0881A590-0x0881A5A0
 // @gcc 0x0881A5B8-0x0881A5C8
 // @gcc 0x0881A65C-0x0881A7B4
@@ -216,11 +215,21 @@ float acosf(float x)
     return atanf(sqrtf((1.0f - x2) / x2));
 }
 
-/* sceVfpuVector2SignFloat: -1, 0 or 1 per component (0 for a NaN). */
+/* sceVfpuVector2SignFloat: -1, 0 or 1 per component (0 for a NaN); one store per branch, as in the original. */
 ScePspFVector2 *vec2_sign_float(ScePspFVector2 *out, const ScePspFVector2 *v)
 {
-    out->x = v->x < 0.0f ? -1.0f : v->x > 0.0f ? 1.0f : 0.0f;
-    out->y = v->y < 0.0f ? -1.0f : v->y > 0.0f ? 1.0f : 0.0f;
+    if (v->x < 0.0f)
+        out->x = -1.0f;
+    else if (v->x > 0.0f)
+        out->x = 1.0f;
+    else
+        out->x = 0.0f;
+    if (v->y < 0.0f)
+        out->y = -1.0f;
+    else if (v->y > 0.0f)
+        out->y = 1.0f;
+    else
+        out->y = 0.0f;
     return out;
 }
 #endif
