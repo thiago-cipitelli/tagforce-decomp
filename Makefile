@@ -51,7 +51,7 @@ build/%.c.o: %.c
 
 # GCC-track objects (// @cc gcc) also depend on the GCC wrapper/peephole, and a <lib>_gcc.c on the <lib>.c it includes
 GCC_SRCS := $(shell grep -l '@cc gcc' $(C_SRCS) /dev/null 2>/dev/null)
-$(GCC_SRCS:%.c=build/%.c.o): tools/psp_gcc.sh tools/psp_gcc_peep.py
+$(GCC_SRCS:%.c=build/%.c.o): tools/psp_gcc.sh tools/psp_gcc_peep.py $(wildcard tools/ext/psp_gcc_insand.so)
 $(foreach s,$(filter %_gcc.c,$(GCC_SRCS)),$(if $(wildcard $(s:_gcc.c=.c)),$(eval build/$(s).o: $(s:_gcc.c=.c))))
 
 build/%.bin.o: %.bin

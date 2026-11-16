@@ -20,6 +20,14 @@ for v in 1.3.1 1.7.1; do
   get https://github.com/decompme/compilers/releases/download/compilers/psp-gcc-$v.tar.gz "$EXT/psp-gcc-$v.tar.gz"
   [ -d "$EXT/psp-gcc-$v/lib" ] || { mkdir -p "$EXT/psp-gcc-$v"; tar xzf "$EXT/psp-gcc-$v.tar.gz" -C "$EXT/psp-gcc-$v"; }
 done
+# tools/psp_gcc_insand.c: preloaded into that cc1, it adds the later revision's field-clearing `ins` (32-bit .so,
+# needs gcc -m32 and 32-bit glibc; the addresses come from the symbols of cc1)
+CC1=$(ls "$EXT"/psp-gcc-1.7.1/lib/gcc-lib/psp/*/cc1)
+if [ ! -e "$EXT/psp_gcc_insand.so" ] || [ tools/psp_gcc_insand.c -nt "$EXT/psp_gcc_insand.so" ]; then
+  D=; for s in register_operand insn_data target_flags recog const_int_operand; do
+    D="$D -DADDR_$s=0x$(nm "$CC1" | awk -v s=$s '$3 == s { print $1 }')"; done
+  gcc -m32 -O2 -shared -fPIC $D tools/psp_gcc_insand.c -o "$EXT/psp_gcc_insand.so"
+fi
 get https://github.com/encounter/objdiff/releases/download/v3.8.2/objdiff-cli-linux-x86_64 "$EXT/objdiff-cli"
 chmod +x "$EXT/objdiff-cli"
 
@@ -36,6 +44,10 @@ printf 'int f(void) { return 0; }\n' > build.tmp.c
 MWCIncludes=include tools/mwcc.sh -O4,p -sdatathreshold 0 -c build.tmp.c -o build.tmp.o >/dev/null
 printf '// @cc gcc\nint f(void) { return 0; }\n' > build.tmp.c
 tools/mwcc.sh -c build.tmp.c -o build.tmp.o
+# psp_gcc_insand sanity check: `a & 0xffffff` must come out as `ins rd,$0,24,8` (cc1 1.7.1 alone emits `ext`)
+printf '// @cc gcc\nunsigned f(unsigned a) { return a & 0xffffff; }\n' > build.tmp.c
+tools/mwcc.sh -c build.tmp.c -o build.tmp.o
+grep -q 'ins	$2,$0,24,8' build.tmp.s || { echo "psp_gcc_insand.so: no ins in build.tmp.s" >&2; exit 1; }
 rm -f build.tmp.c build.tmp.o build.tmp.s
 "$PSPDEV/bin/psp-as" --version | head -1
 echo "toolchain ok"

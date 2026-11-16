@@ -38,6 +38,9 @@ A rewrite that would change the number of instructions inside a `.set noreorder`
 done. What the pass cannot do is in docs/build.md: the later revision allocates registers and schedules around the
 two-instruction form, and that is beyond a peephole.
 
+Since round 37 tools/psp_gcc.sh preloads tools/psp_gcc_insand.so, which gives cc1 the later revision's `ins` itself;
+in that mode (PSP_GCC_INSAND=1, the default) only rules D and F run. Rules A-C/E are the fallback for PSP_GCC_INSAND=0.
+
 `// @cc gcc -nopeep` on the marker line of a file turns the pass off for it (tools/psp_gcc.sh).
 --check runs the sanity check."""
 import collections
@@ -597,7 +600,11 @@ if __name__ == '__main__':
         dump = None
         if a[0] == '--sched':
             dump, a = open(a[1]).read(), a[2:]
-        t = peep(open(a[0]).read(), a[2:])
+        if os.environ.get('PSP_GCC_INSAND') == '1':
+            # cc1 already emits the later revision's `ins` (tools/psp_gcc_insand.c): only rules D and F
+            t, dump = unaligned(drop_unused_objects(open(a[0]).read(), a[2:])), None
+        else:
+            t = peep(open(a[0]).read(), a[2:])
         open(a[1], 'w').write(resched(t, dump) if dump else t)
     else:
         sys.exit(__doc__)

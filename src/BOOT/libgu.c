@@ -1,16 +1,14 @@
 // @range 0x08804A0C-0x08805EC4
-// @asm 0x08804A0C-0x088050BC
-// @gcc 0x088050BC-0x08805160
+// @asm 0x08804A0C-0x08805008
+// @gcc 0x08805008-0x08805160
 // @asm 0x08805160-0x0880523C
 // @gcc 0x0880523C-0x08805304
 // @asm 0x08805304-0x0880541C
-// @gcc 0x0880541C-0x08805854
-// @asm 0x08805854-0x088058FC
-// @gcc 0x088058FC-0x08805A1C
-// @asm 0x08805A1C-0x08805ACC
+// @gcc 0x0880541C-0x08805A60
+// @asm 0x08805A60-0x08805ACC
 // @gcc 0x08805ACC-0x08805B54
-// @asm 0x08805B54-0x08805CD4
-// @gcc 0x08805CD4-0x08805EC4
+// @asm 0x08805B54-0x08805C84
+// @gcc 0x08805C84-0x08805EC4
 /* libgu of the Sony SDK (GCC; names from the export NIDs): display-list contexts, frame/draw/depth
    buffers, the state bits and the first state commands. Nearly every function reaches the libgu
    globals through %hi/%lo, so they stay in the split asm and the C below is under NON_MATCHING;
@@ -535,9 +533,9 @@ void *sceGuGetMemory(int size)
     unsigned int next = (unsigned int)p + ((size + 3) & ~3) + 8;
 
     gu.list->cur = (unsigned int *)next;
-    p[0] = (((next & 0xFFFFFFF) >> 24) << 16) | 0x10000000;
-    p[1] = (next & 0xFFFFFF) | 0x08000000;
-    return p + 2;
+    *p++ = (((next & 0xFFFFFFF) >> 24) << 16) | 0x10000000;
+    *p++ = (next & 0xFFFFFF) | 0x08000000;
+    return p;
 }
 
 /* aligned block in the list: BASE/JUMP written at the old position (it overlaps the block when
@@ -548,9 +546,9 @@ void *gu_get_memory_aligned(int align, int size)
     unsigned int p = (((unsigned int)cur - 1) | (align - 1)) + 1;
     unsigned int next = p + ((size + 3) & ~3);
 
+    cur[0] = (((next >> 24) & 0xF) << 16) | 0x10000000;
     cur[1] = (next & 0xFFFFFF) | 0x08000000;
     gu.list->cur = (unsigned int *)next;
-    cur[0] = (((next >> 24) & 0xF) << 16) | 0x10000000;
     return (void *)p;
 }
 
@@ -629,10 +627,10 @@ unsigned int *gu_jump(unsigned int addr)
 {
     unsigned int *p = gu.list->cur;
 
-    gu.list->cur = p + 2;
-    p[0] = ((addr >> 24) & 0xF) << 16 | 0x10000000;
-    p[1] = (addr & 0xFFFFFF) | 0x08000000;
-    return p + 2;
+    *p++ = ((addr >> 24) & 0xF) << 16 | 0x10000000;
+    gu.list->cur = p + 1;
+    *p = (addr & 0xFFFFFF) | 0x08000000;
+    return p + 1;
 }
 
 /* 0: draw sync; 3: GE list sync; 4: send list sync */

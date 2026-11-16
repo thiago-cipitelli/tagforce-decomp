@@ -1,17 +1,14 @@
 // @range 0x08805EC4-0x08807070
-// @asm 0x08805EC4-0x08806300
-// @gcc 0x08806300-0x08806378
+// @gcc 0x08805EC4-0x08806378
 // @asm 0x08806378-0x08806460
 // @gcc 0x08806460-0x08806850
 // @asm 0x08806850-0x088068EC
-// @gcc 0x088068EC-0x088069C8
-// @asm 0x088069C8-0x088069F0
-// @gcc 0x088069F0-0x08806B1C
+// @gcc 0x088068EC-0x08806B1C
 // @asm 0x08806B1C-0x08806B9C
 // @gcc 0x08806B9C-0x08806CB8
-// @asm 0x08806CB8-0x08806D84
-// @gcc 0x08806D84-0x08806F14
-// @asm 0x08806F14-0x08807034
+// @asm 0x08806CB8-0x08806D3C
+// @gcc 0x08806D3C-0x08806F6C
+// @asm 0x08806F6C-0x08807034
 // @gcc 0x08807034-0x08807070
 /* libgu of the Sony SDK (GCC; names from the export NIDs): primitives, lighting, texture,
    blending and the other state commands. Every function reaches the current context through the
@@ -37,24 +34,24 @@ void gu_ctx_tex_mode(GuList *l, int tpsm, int maxmips, int a2, int swizzle);
 void gu_ctx_scissor(GuList *l, int x0, int y0, int x1, int y1);
 
 /* relative BASE + address command pair (VADDR 0x01 / IADDR 0x02) */
-static void gu_addr(unsigned int cmd, const void *p)
+static void gu_addr(GuList *l, unsigned int cmd, const void *p)
 {
     unsigned int a = (unsigned int)p;
 
-    GU_PUSH((((a & 0xFFFFFFF) >> 24) << 16) | 0x10000000);
-    GU_PUSH((a & 0xFFFFFF) | cmd);
+    LPUSH((((a & 0xFFFFFFF) >> 24) << 16) | 0x10000000);
+    LPUSH((a & 0xFFFFFF) | cmd);
 }
 
-static void gu_vertex_setup(int vtype, const void *indices, const void *vertices)
+static void gu_vertex_setup(GuList *l, int vtype, const void *indices, const void *vertices)
 {
     if (vtype != 0) {
-        GU_PUSH((vtype & 0xFFFFFF) | 0x12000000);
+        LPUSH((vtype & 0xFFFFFF) | 0x12000000);
     }
     if (indices != 0) {
-        gu_addr(0x02000000, indices);
+        gu_addr(l, 0x02000000, indices);
     }
     if (vertices != 0) {
-        gu_addr(0x01000000, vertices);
+        gu_addr(l, 0x01000000, vertices);
     }
 }
 
@@ -64,44 +61,57 @@ void sceGuBeginObject(int vtype, int count, const void *indices, const void *ver
     GuList *l = gu.list;
     unsigned int *p;
 
-    gu_vertex_setup(vtype, indices, vertices);
+    gu_vertex_setup(l, vtype, indices, vertices);
     p = l->cur;
-    p[0] = count | 0x07000000;
-    l->cur = p + 3;
-    l->obj_stack[l->obj_depth++] = p + 1;
-    p[1] = 0x10000000;
-    p[2] = 0x09000000;
+    *p++ = count | 0x07000000;
+    l->obj_stack[l->obj_depth++] = p;
+    p[0] = 0x10000000;
+    p[1] = 0x09000000;
+    l->cur = p + 2;
 }
 
 void sceGuDrawArray(int prim, int vtype, int count, const void *indices, const void *vertices)
 {
-    gu_vertex_setup(vtype, indices, vertices);
-    GU_PUSH((prim & 7) << 16 | count | 0x04000000);
+    GuList *l = gu.list;
+
+    gu_vertex_setup(l, vtype, indices, vertices);
+    LPUSH((prim & 7) << 16 | count | 0x04000000);
     gu_update_stall();
 }
 
 /* n PRIM commands of the same vertices */
 void sceGuDrawArrayN(int prim, int vtype, int count, int n, const void *indices, const void *vertices)
 {
-    gu_vertex_setup(vtype, indices, vertices);
-    while (n-- > 0) {
-        GU_PUSH((prim & 7) << 16 | count | 0x04000000);
+    GuList *l = gu.list;
+
+    gu_vertex_setup(l, vtype, indices, vertices);
+    if (n > 0) {
+        unsigned int *p = l->cur;
+
+        do {
+            *p++ = (prim & 7) << 16 | count | 0x04000000;
+        } while (--n);
+        l->cur = p;
     }
     gu_update_stall();
 }
 
 void sceGuDrawBezier(int vtype, int ucount, int vcount, const void *indices, const void *vertices)
 {
-    gu_vertex_setup(vtype, indices, vertices);
-    GU_PUSH(vcount << 8 | ucount | 0x05000000);
+    GuList *l = gu.list;
+
+    gu_vertex_setup(l, vtype, indices, vertices);
+    LPUSH(vcount << 8 | ucount | 0x05000000);
     gu_update_stall();
 }
 
 void sceGuDrawSpline(int vtype, int ucount, int vcount, int uedge, int vedge, const void *indices,
                      const void *vertices)
 {
-    gu_vertex_setup(vtype, indices, vertices);
-    GU_PUSH(vedge << 18 | uedge << 16 | vcount << 8 | ucount | 0x06000000);
+    GuList *l = gu.list;
+
+    gu_vertex_setup(l, vtype, indices, vertices);
+    LPUSH(vedge << 18 | uedge << 16 | vcount << 8 | ucount | 0x06000000);
     gu_update_stall();
 }
 
