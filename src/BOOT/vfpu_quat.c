@@ -162,17 +162,34 @@ Vec4 *quat_to_euler_yxz(Vec4 *out, Vec4 *q)
     float y = q->y;
     float z = q->z;
     float w = q->w;
-    float sx = -(2.0f * y * z - 2.0f * w * x);
+    float w2 = w + w;
+    float y2 = y + y;
+    float sx = -(y2 * z - w2 * x);
+    float rx, ry, rz;
 
     if (sx <= 0.99995f && -0.99995f <= sx) {
-        out->x = asinf(sx);
-        out->y = atan2f(2.0f * z * x + 2.0f * w * y, 1.0f - 2.0f * x * x - 2.0f * y * y);
-        out->z = atan2f(2.0f * x * y + 2.0f * w * z, 1.0f - 2.0f * x * x - 2.0f * z * z);
+        float x2 = x + x;
+        float z2 = z + z;
+        float ya = z2 * x + w2 * y;
+        float yb = 1.0f - x2 * x - y2 * y;
+        float za = x2 * y + w2 * z;
+        float zb = 1.0f - x2 * x - z2 * z;
+
+        rx = asinf(sx);
+        ry = atan2f(ya, yb);
+        rz = atan2f(za, zb);
     } else {
-        out->x = asinf(sx);
-        out->y = atan2f(-(2.0f * z * x - 2.0f * w * y), 1.0f - 2.0f * y * y - 2.0f * z * z);
-        out->z = 0.0f;
+        float z2 = z + z;
+        float ya = -(z2 * x - w2 * y);
+        float yb = 1.0f - y2 * y - z2 * z;
+
+        rx = asinf(sx);
+        ry = atan2f(ya, yb);
+        rz = 0.0f;
     }
+    out->x = rx;
+    out->y = ry;
+    out->z = rz;
     out->w = 0.0f;
     return out;
 }
