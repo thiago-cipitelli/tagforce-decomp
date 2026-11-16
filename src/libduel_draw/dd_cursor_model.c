@@ -1,8 +1,6 @@
 // @range 0x08815678-0x08816FD0
 // @asm 0x088157A0-0x08815BC8
 // @asm 0x08815BC8-0x08815D3C
-// @asm 0x08816064-0x08816180
-// @asm 0x08816180-0x08816240
 // @asm 0x0881665C-0x08816964
 // @asm 0x08816964-0x08816CD8
 // @asm 0x08816DCC-0x08816FD0
@@ -387,21 +385,19 @@ void dd_cursor_unlisten(DdCursorCb cb)
 }
 
 /* the monster slot (5..9) closest to pos */
-#ifdef NON_MATCHING /* alocação de registradores */
 int dd_cursor_nearest_slot(int player, DdCursor *c)
 {
     float best = 1e16f;
-    float pos[4];
-    float rot[4];
-    int i, k;
+    int i, k = 0;
     float d;
     DdLoc2 l;
+    float pos[4] __attribute__((aligned(16)));
+    float rot[4] __attribute__((aligned(16)));
 
     l.player = player;
     l.idx = 0;
     l.b14 = 0;
     l.b15 = 0;
-    k = 0;
     for (i = 0; i < 5; i++) {
         l.zone = i + 5;
         dd_slot_xform(pos, rot, l);
@@ -413,21 +409,17 @@ int dd_cursor_nearest_slot(int player, DdCursor *c)
     }
     return k + 5;
 }
-#endif
 
 /* the hand card closest to pos */
-#ifdef NON_MATCHING /* alocação de registradores (s0..s4) */
 int dd_cursor_nearest_hand(int player, DdCursor *c)
 {
-    float best;
+    int k = -1;
+    float best = 1e16f;
     int n;
     int i;
-    int k;
     int *card;
     float d;
 
-    best = 1e16f;
-    k = -1;
     n = dd_zone_count(player, 0xB);
     for (i = 0; i < n; i++) {
         card = dd_cobj_at(player, 0xB, i);
@@ -441,7 +433,6 @@ int dd_cursor_nearest_hand(int player, DdCursor *c)
     }
     return k;
 }
-#endif
 
 int dd_cursor_alpha_hook(unsigned int **plist, void *mdl, int mesh, int part, int after)
 {
