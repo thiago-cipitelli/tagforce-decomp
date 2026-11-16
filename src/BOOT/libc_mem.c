@@ -3,7 +3,8 @@
 // @gcc 0x0880DD1C-0x0880DE28 nl_memcpy
 // @asm 0x0880DE28-0x0880DE40
 // @gcc 0x0880E1F8-0x0880E270
-// @asm 0x0880E270-0x0880E520
+// @asm 0x0880E270-0x0880E280
+// @gcc 0x0880E280-0x0880E700 libc_reent
 /* newlib (GCC) of the Sony SDK libc: memcmp, memcpy, memmove, memset, the interrupt-disabling
    malloc lock, and the Sony layer that keeps one reentrancy struct per module (a hash of 32 slots
    by module id, chained in 0x104-byte blocks) plus _REENT_INIT. The lock and the module table use
@@ -347,7 +348,7 @@ void *memset(void *d, int c, size_t n)
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC: globals through %hi/%lo */
+#ifdef NON_MATCHING /* PSP: libc_reent.c (GCC) */
 typedef struct LibcReentTable {        /* 0x088F96BC */
     struct LibcReentTable *next;
     void *reent[32];                   /* +0x04 */
@@ -444,132 +445,7 @@ int libc_module_of(char *r)
 
 /* newlib _REENT_INIT_PTR: std streams inside the struct, "C" locale, rand48 seed, and the
    stream area cleared */
-#ifdef __MWERKS__
-asm void libc_init_reent(char *r)
-{
-    addiu sp, sp, -16
-    sw s0, 0(sp)
-    move s0, a0
-    addiu v1, s0, 800
-    addiu a0, a0, 616
-    sw ra, 4(sp)
-    addiu v0, s0, 708
-    addiu a1, zero, 24
-    sw v1, 12(s0)
-    sw zero, 0(s0)
-    sw a0, 4(s0)
-    sw zero, 16(s0)
-    sw v0, 8(s0)
-    addiu v0, s0, 20
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-@60:
-    addiu a1, a1, -1
-    sb zero, 0(v0)
-    bgez a1, @60
-    addiu v0, v0, 1
-    la v0, libc_locale_c2
-    sw v0, 52(s0)
-    addiu a2, s0, 124
-    move a1, zero
-    sw zero, 48(s0)
-    sw zero, 56(s0)
-    sw zero, 60(s0)
-    sw zero, 64(s0)
-    sw zero, 68(s0)
-    sw zero, 72(s0)
-    sw zero, 76(s0)
-    sw zero, 80(s0)
-    sw zero, 84(s0)
-    sw zero, 88(s0)
-    sw zero, 92(s0)
-    sb zero, 96(s0)
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-@e0:
-    addu v1, a2, a1
-    addiu a1, a1, 1
-    sltiu v0, a1, 36
-    bnez v0, @e0
-    sb zero, 0(v1)
-    addiu v1, zero, 0
-    addiu v0, zero, 1
-    sw v0, 168(s0)
-    sw v1, 172(s0)
-    addiu v0, zero, 13070
-    addiu v1, zero, 4660
-    sh v0, 176(s0)
-    addiu v0, zero, -21555
-    move a1, zero
-    sh v0, 178(s0)
-    addiu v0, zero, -6547
-    addiu a2, zero, 276
-    sh v1, 180(s0)
-    addiu v1, zero, -8468
-    sh v0, 182(s0)
-    addiu v0, zero, 5
-    sh v1, 184(s0)
-    addiu v1, zero, 11
-    sh v1, 188(s0)
-    sh v0, 186(s0)
-    sw zero, 160(s0)
-    sw zero, 192(s0)
-    sw zero, 196(s0)
-    sw zero, 200(s0)
-    sw zero, 204(s0)
-    sw zero, 208(s0)
-    sw zero, 212(s0)
-    sw zero, 252(s0)
-    sw zero, 256(s0)
-    sw zero, 260(s0)
-    sw zero, 264(s0)
-    sw zero, 268(s0)
-    sw zero, 272(s0)
-    sw zero, 276(s0)
-    sw zero, 280(s0)
-    sw zero, 284(s0)
-    sw zero, 288(s0)
-    sb zero, 216(s0)
-    sb zero, 224(s0)
-    sw zero, 248(s0)
-    sw zero, 328(s0)
-    sw zero, 332(s0)
-    sw zero, 336(s0)
-    sw zero, 340(s0)
-    sw zero, 596(s0)
-    sw zero, 468(s0)
-    sw zero, 600(s0)
-    sw zero, 604(s0)
-    sw zero, 608(s0)
-    jal memset
-    sw zero, 612(s0)
-    sw zero, 892(s0)
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-    nop
-    nop
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: libc_reent.c */
 void libc_init_reent(char *r)
 {
     int i;
@@ -623,4 +499,6 @@ void libc_init_reent(char *r)
     memset(r + 616, 0, 276);
     *(int *)(r + 0x37C) = 0;
 }
+#else
+void libc_init_reent(char *r);
 #endif
