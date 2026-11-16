@@ -1,13 +1,12 @@
 // @range 0x0881D214-0x0881D8A8
-// @asm 0x0881D214-0x0881D2C8
-// @gcc 0x0881D2C8-0x0881D2F4
-// @asm 0x0881D48C-0x0881D4E8
-// @asm 0x0881D7DC-0x0881D804
-// @asm 0x0881D870-0x0881D8A8
+// @gcc 0x0881D214-0x0881D2F4
+// @gcc 0x0881D48C-0x0881D4E8
+// @gcc 0x0881D7DC-0x0881D804
+// @gcc 0x0881D870-0x0881D8A8
 /* VFPU colors (four floats r, g, b, a in [0, 1]; the _rgb variants leave alpha as in the first
    operand) and the VFPU random generator. Hand-written VFPU code kept as whole `asm` functions; the
-   four functions that load float constants from .rodata are compiled C (GCC: constant pool loads that
-   mwcc's inline assembler cannot relocate) and stay in asm with their C under NON_MATCHING.
+   functions the SDK compiled with GCC come from C (vfpu_color_gcc.c). The port C of the VFPU functions is left
+   out of that GCC object (`#elif !defined(__mips__)`), so its literal pool is exactly the original's (`@rodata`).
    Functions with an output color return it. Outside the PSP build each one has a C equivalent; the
    random generator state (VFPU control registers 136-143) is the C array vfpu_rcx. */
 
@@ -18,7 +17,7 @@ typedef struct Vec4 {
 int vfpu_rng_save(unsigned int *st);
 int vfpu_rng_load(unsigned int *st);
 
-#ifndef __MWERKS__
+#if !defined(__MWERKS__) && !defined(__mips__)
 #include <math.h>
 
 /* VFPU random generator: the hardware algorithm is unknown, a xorshift128 stands in for it. */
@@ -45,6 +44,15 @@ static float sat(float x)
 {
     return x < 0.0f ? 0.0f : x > 1.0f ? 1.0f : x;
 }
+#elif !defined(__MWERKS__)
+/* the SDK's GCC: vrndf1 into S000, read back through the stack */
+static inline float vfpu_rndf1(void)
+{
+    float r;
+
+    __asm__ ("vrndf1.s S000\n\tsv.s S000, %0" : "=m"(r));
+    return r;
+}
 #elif defined(NON_MATCHING)
 static asm float vfpu_rndf1(void)
 {
@@ -57,23 +65,29 @@ static asm float vfpu_rndf1(void)
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC: the scales come from the .rodata pool (D_088EB1B0) */
+#ifdef NON_MATCHING /* PSP: vfpu_color_gcc.c */
 /* RGB565 (r in the low bits); alpha ignored, negative channels give 0 */
 unsigned short color_to_565(Vec4 *c)
 {
-    int r = 0;
-    int g = 0;
-    int b = 0;
+    int r;
+    int g;
+    int b;
 
-    if (!(c->x < 0.0f)) {
+    if (c->x < 0.0f) {
+        r = 0;
+    } else {
         r = (int)(c->x * 31.0f);
         r = r < 31 ? r : 31;
     }
-    if (!(c->y < 0.0f)) {
+    if (c->y < 0.0f) {
+        g = 0;
+    } else {
         g = (int)(c->y * 63.0f);
         g = g < 63 ? g : 63;
     }
-    if (!(c->z < 0.0f)) {
+    if (c->z < 0.0f) {
+        b = 0;
+    } else {
         b = (int)(c->z * 31.0f);
         b = b < 31 ? b : 31;
     }
@@ -120,12 +134,14 @@ asm Vec4 *color_copy(Vec4 *out, Vec4 *c)
     jr ra
     swc1 $f4, 12(a0)
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_copy(Vec4 *out, Vec4 *c)
 {
     *out = *c;
     return out;
 }
+#else
+Vec4 *color_copy(Vec4 *out, Vec4 *c);
 #endif
 
 #ifdef __MWERKS__
@@ -138,12 +154,14 @@ asm Vec4 *color_zero(Vec4 *out)
     jr ra
     sw zero, 12(a0)
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_zero(Vec4 *out)
 {
     out->x = out->y = out->z = out->w = 0.0f;
     return out;
 }
+#else
+Vec4 *color_zero(Vec4 *out);
 #endif
 
 /* RGBA8888 (r in the low byte), channels clamped to [0, 1] */
@@ -160,7 +178,7 @@ asm unsigned int color_pack(Vec4 *c)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 unsigned int color_pack(Vec4 *c)
 {
     unsigned int r = (unsigned int)(sat(c->x) * 255.0f);
@@ -170,6 +188,8 @@ unsigned int color_pack(Vec4 *c)
 
     return a << 24 | b << 16 | g << 8 | r;
 }
+#else
+unsigned int color_pack(Vec4 *c);
 #endif
 
 /* RGBA4444 (r in the low nibble), channels clamped to [0, 1] */
@@ -191,7 +211,7 @@ asm unsigned short color_to_4444(Vec4 *c)
     jr ra
     andi v0, v1, 0xffff
 }
-#else
+#elif !defined(__mips__)
 unsigned short color_to_4444(Vec4 *c)
 {
     unsigned int r = (unsigned int)(sat(c->x) * 15.0f);
@@ -201,6 +221,8 @@ unsigned short color_to_4444(Vec4 *c)
 
     return (unsigned short)(a << 12 | b << 8 | g << 4 | r);
 }
+#else
+unsigned short color_to_4444(Vec4 *c);
 #endif
 
 /* RGBA5551: rgb clamped to [0, 1]; the alpha bit is set when c->w > alpha_ref */
@@ -227,7 +249,7 @@ L_0881D3CC:
     jr ra
     andi v0, v1, 0xffff
 }
-#else
+#elif !defined(__mips__)
 unsigned short color_to_5551(Vec4 *c, float alpha_ref)
 {
     unsigned int r = (unsigned int)(sat(c->x) * 31.0f);
@@ -236,6 +258,8 @@ unsigned short color_to_5551(Vec4 *c, float alpha_ref)
 
     return (unsigned short)((c->w <= alpha_ref ? 0 : 0x8000) | b << 10 | g << 5 | r);
 }
+#else
+unsigned short color_to_5551(Vec4 *c, float alpha_ref);
 #endif
 
 /* from RGBA8888 (r in the low byte) */
@@ -250,7 +274,7 @@ asm Vec4 *color_unpack(Vec4 *out, unsigned int rgba)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_unpack(Vec4 *out, unsigned int rgba)
 {
     out->x = (float)(rgba & 0xFF) / 255.0f;
@@ -259,6 +283,8 @@ Vec4 *color_unpack(Vec4 *out, unsigned int rgba)
     out->w = (float)(rgba >> 24) / 255.0f;
     return out;
 }
+#else
+Vec4 *color_unpack(Vec4 *out, unsigned int rgba);
 #endif
 
 #ifdef __MWERKS__
@@ -283,7 +309,7 @@ asm Vec4 *color_from_4444(Vec4 *out, unsigned short c)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_from_4444(Vec4 *out, unsigned short c)
 {
     out->x = (float)(c & 0xF) * (1.0f / 15.0f);
@@ -292,6 +318,8 @@ Vec4 *color_from_4444(Vec4 *out, unsigned short c)
     out->w = (float)(c >> 12 & 0xF) * (1.0f / 15.0f);
     return out;
 }
+#else
+Vec4 *color_from_4444(Vec4 *out, unsigned short c);
 #endif
 
 /* from RGBA5551: alpha is `alpha` when the alpha bit is set, else 0 */
@@ -319,7 +347,7 @@ asm Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha)
 {
     out->x = (float)(c & 0x1F) * (1.0f / 31.0f);
@@ -328,17 +356,19 @@ Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha)
     out->w = (c & 0x8000) ? alpha : 0.0f;
     return out;
 }
+#else
+Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha);
 #endif
 
-#ifdef NON_MATCHING /* GCC: the scales come from the .rodata pool (D_088EB1B8) */
+#ifdef NON_MATCHING /* PSP: vfpu_color_gcc.c */
 /* from RGB565 with the given alpha. As in the original, green is read from bits 1-6 and the scales
    are 1/15 for red and blue and 1/31 for green. */
 Vec4 *color_from_565(Vec4 *out, unsigned short c, float alpha)
 {
-    out->w = alpha;
-    out->z = (float)(c >> 11) * 0.0666666701f;
     out->x = (float)(c & 0x1F) * 0.0666666701f;
     out->y = (float)(c >> 1 & 0x3F) * 0.0322580636f;
+    out->z = (float)(c >> 11) * 0.0666666701f;
+    out->w = alpha;
     return out;
 }
 #endif
@@ -354,7 +384,7 @@ asm Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = a->x + b->x;
@@ -363,6 +393,8 @@ Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = a->w + b->w;
     return out;
 }
+#else
+Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 #ifdef __MWERKS__
@@ -376,7 +408,7 @@ asm Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = a->x + b->x;
@@ -385,6 +417,8 @@ Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = a->w;
     return out;
 }
+#else
+Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 #ifdef __MWERKS__
@@ -398,7 +432,7 @@ asm Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = a->x - b->x;
@@ -407,6 +441,8 @@ Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = a->w - b->w;
     return out;
 }
+#else
+Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 #ifdef __MWERKS__
@@ -420,7 +456,7 @@ asm Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = a->x - b->x;
@@ -429,6 +465,8 @@ Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = a->w;
     return out;
 }
+#else
+Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 #ifdef __MWERKS__
@@ -442,7 +480,7 @@ asm Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = a->x * b->x;
@@ -451,6 +489,8 @@ Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = a->w * b->w;
     return out;
 }
+#else
+Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 #ifdef __MWERKS__
@@ -464,7 +504,7 @@ asm Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = a->x * b->x;
@@ -473,6 +513,8 @@ Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = a->w;
     return out;
 }
+#else
+Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 /* out = 1 - c */
@@ -486,7 +528,7 @@ asm Vec4 *color_neg(Vec4 *out, Vec4 *c)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_neg(Vec4 *out, Vec4 *c)
 {
     out->x = 1.0f - c->x;
@@ -495,6 +537,8 @@ Vec4 *color_neg(Vec4 *out, Vec4 *c)
     out->w = 1.0f - c->w;
     return out;
 }
+#else
+Vec4 *color_neg(Vec4 *out, Vec4 *c);
 #endif
 
 #ifdef __MWERKS__
@@ -507,7 +551,7 @@ asm Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c)
 {
     out->x = 1.0f - c->x;
@@ -516,6 +560,8 @@ Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c)
     out->w = c->w;
     return out;
 }
+#else
+Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c);
 #endif
 
 /* out = a + (b - a) * t */
@@ -534,7 +580,7 @@ asm Vec4 *vec4_lerp2(Vec4 *out, Vec4 *a, Vec4 *b, float t)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *vec4_lerp2(Vec4 *out, Vec4 *a, Vec4 *b, float t)
 {
     out->x = a->x + (b->x - a->x) * t;
@@ -543,6 +589,8 @@ Vec4 *vec4_lerp2(Vec4 *out, Vec4 *a, Vec4 *b, float t)
     out->w = a->w + (b->w - a->w) * t;
     return out;
 }
+#else
+Vec4 *vec4_lerp2(Vec4 *out, Vec4 *a, Vec4 *b, float t);
 #endif
 
 #ifdef __MWERKS__
@@ -560,7 +608,7 @@ asm Vec4 *color_lerp_rgb(Vec4 *out, Vec4 *a, Vec4 *b, float t)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_lerp_rgb(Vec4 *out, Vec4 *a, Vec4 *b, float t)
 {
     out->x = a->x + (b->x - a->x) * t;
@@ -569,6 +617,8 @@ Vec4 *color_lerp_rgb(Vec4 *out, Vec4 *a, Vec4 *b, float t)
     out->w = a->w;
     return out;
 }
+#else
+Vec4 *color_lerp_rgb(Vec4 *out, Vec4 *a, Vec4 *b, float t);
 #endif
 
 #ifdef __MWERKS__
@@ -583,7 +633,7 @@ asm Vec4 *color_scale(Vec4 *out, Vec4 *c, float s)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_scale(Vec4 *out, Vec4 *c, float s)
 {
     out->x = c->x * s;
@@ -592,6 +642,8 @@ Vec4 *color_scale(Vec4 *out, Vec4 *c, float s)
     out->w = c->w * s;
     return out;
 }
+#else
+Vec4 *color_scale(Vec4 *out, Vec4 *c, float s);
 #endif
 
 #ifdef __MWERKS__
@@ -606,7 +658,7 @@ asm Vec4 *color_scale_rgb(Vec4 *out, Vec4 *c, float s)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_scale_rgb(Vec4 *out, Vec4 *c, float s)
 {
     out->x = c->x * s;
@@ -615,6 +667,8 @@ Vec4 *color_scale_rgb(Vec4 *out, Vec4 *c, float s)
     out->w = c->w;
     return out;
 }
+#else
+Vec4 *color_scale_rgb(Vec4 *out, Vec4 *c, float s);
 #endif
 
 /* each channel clamped to [lo, hi] */
@@ -635,7 +689,7 @@ asm Vec4 *color_clamp(Vec4 *out, Vec4 *c, float lo, float hi)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_clamp(Vec4 *out, Vec4 *c, float lo, float hi)
 {
     out->x = fminf(fmaxf(c->x, lo), hi);
@@ -644,6 +698,8 @@ Vec4 *color_clamp(Vec4 *out, Vec4 *c, float lo, float hi)
     out->w = fminf(fmaxf(c->w, lo), hi);
     return out;
 }
+#else
+Vec4 *color_clamp(Vec4 *out, Vec4 *c, float lo, float hi);
 #endif
 
 #ifdef __MWERKS__
@@ -663,7 +719,7 @@ asm Vec4 *color_clamp_rgb(Vec4 *out, Vec4 *c, float lo, float hi)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_clamp_rgb(Vec4 *out, Vec4 *c, float lo, float hi)
 {
     out->x = fminf(fmaxf(c->x, lo), hi);
@@ -672,6 +728,8 @@ Vec4 *color_clamp_rgb(Vec4 *out, Vec4 *c, float lo, float hi)
     out->w = c->w;
     return out;
 }
+#else
+Vec4 *color_clamp_rgb(Vec4 *out, Vec4 *c, float lo, float hi);
 #endif
 
 #ifdef __MWERKS__
@@ -685,7 +743,7 @@ asm Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = fmaxf(a->x, b->x);
@@ -694,6 +752,8 @@ Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = fmaxf(a->w, b->w);
     return out;
 }
+#else
+Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 /* Note: the original computes vmin.q C000, C000, C010, i.e. min(<stale C000>, a), never reading b
@@ -709,7 +769,7 @@ asm Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b)
 {
     out->x = fminf(a->x, b->x);
@@ -718,6 +778,8 @@ Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b)
     out->w = fminf(a->w, b->w);
     return out;
 }
+#else
+Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b);
 #endif
 
 #ifdef __MWERKS__
@@ -733,11 +795,13 @@ L_0881D710:
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 int color_equal(Vec4 *a, Vec4 *b)
 {
     return a->x == b->x && a->y == b->y && a->z == b->z && a->w == b->w;
 }
+#else
+int color_equal(Vec4 *a, Vec4 *b);
 #endif
 
 /* 1 when every channel is +0.0 or -0.0 (bit test) */
@@ -755,13 +819,15 @@ asm int color_is_zero(Vec4 *c)
     jr ra
     sltiu v0, v1, 1
 }
-#else
+#elif !defined(__mips__)
 int color_is_zero(Vec4 *c)
 {
     unsigned int *w = (unsigned int *)c;
 
     return ((w[0] | w[1] | w[2] | w[3]) & 0x7FFFFFFF) == 0;
 }
+#else
+int color_is_zero(Vec4 *c);
 #endif
 
 /* out = c / max(channels), clamped to [0, 1]. The scale is 0 when the second value of the vsrt4/vsrt3
@@ -783,7 +849,7 @@ asm Vec4 *color_normalize(Vec4 *out, Vec4 *c)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_normalize(Vec4 *out, Vec4 *c)
 {
     float m = fmaxf(fmaxf(c->x, c->w), fmaxf(c->y, c->z));
@@ -795,6 +861,8 @@ Vec4 *color_normalize(Vec4 *out, Vec4 *c)
     out->w = sat(c->w * k);
     return out;
 }
+#else
+Vec4 *color_normalize(Vec4 *out, Vec4 *c);
 #endif
 
 /* rgb / max(r, g, b, 0) clamped to [0, 1] (0 when the maximum is <= 0); alpha kept */
@@ -816,7 +884,7 @@ asm Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c)
 {
     float m = fmaxf(fmaxf(c->x, c->y), fmaxf(c->z, 0.0f));
@@ -828,6 +896,8 @@ Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c)
     out->w = c->w;
     return out;
 }
+#else
+Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c);
 #endif
 
 /* Next vrndf1 value in [1, 2) without advancing the generator (state saved and restored around it). */
@@ -847,7 +917,7 @@ asm float vrand_peekf(void)
     jr ra
     addiu sp, sp, 64
 }
-#else
+#elif !defined(__mips__)
 float vrand_peekf(void)
 {
     unsigned int st[8];
@@ -858,9 +928,11 @@ float vrand_peekf(void)
     vfpu_rng_load(st);
     return r;
 }
+#else
+float vrand_peekf(void);
 #endif
 
-#ifdef NON_MATCHING /* GCC: 1.0f comes from the .rodata pool (D_088EB1C0) */
+#ifdef NON_MATCHING /* PSP: vfpu_color_gcc.c */
 /* uniform in [0, max) */
 float vrand_float(float max)
 {
@@ -883,11 +955,13 @@ asm float vrand_pi(void)
     jr ra
     addiu sp, sp, 16
 }
-#else
+#elif !defined(__mips__)
 float vrand_pi(void)
 {
     return (vfpu_rndf1() - 1.0f) * 3.14159265f;
 }
+#else
+float vrand_pi(void);
 #endif
 
 /* uniform in [0, 2/pi) (VFPU_2_PI, as in the original) */
@@ -905,11 +979,13 @@ asm float vrand_2_pi(void)
     jr ra
     addiu sp, sp, 16
 }
-#else
+#elif !defined(__mips__)
 float vrand_2_pi(void)
 {
     return (vfpu_rndf1() - 1.0f) * 0.636619772f;
 }
+#else
+float vrand_2_pi(void);
 #endif
 
 /* four channels uniform in [0, 1) */
@@ -924,7 +1000,7 @@ asm Vec4 *vrand_color(Vec4 *out)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 Vec4 *vrand_color(Vec4 *out)
 {
     out->x = vfpu_rndf1() - 1.0f;
@@ -933,9 +1009,11 @@ Vec4 *vrand_color(Vec4 *out)
     out->w = vfpu_rndf1() - 1.0f;
     return out;
 }
+#else
+Vec4 *vrand_color(Vec4 *out);
 #endif
 
-#ifdef NON_MATCHING /* GCC: 1.0f comes from the .rodata pool (D_088EB1C4) */
+#ifdef NON_MATCHING /* PSP: vfpu_color_gcc.c */
 /* uniform integer in [0, n) */
 int vrand_int(int n)
 {
