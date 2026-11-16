@@ -29,13 +29,21 @@ rm -f "$OUT"
 # The game's SDK came from a later revision of this compiler; tools/psp_gcc_peep.py rewrites the assembly of cc1 to
 # what that revision emits (field-clearing AND -> `ins rd,$0`, unused static const dropped). It reads the RTL that
 # -dP writes before each instruction; the names of the unused statics come from a second cc1 run (-Dconst= -Wunused-variable). `-nopeep` on the marker line turns it off for the file.
+# cc1 runs with tools/ext/psp_gcc_insand.so preloaded (rodada 37), which recognizes `x & M` (M = ones with one run
+# of zeros) as one insn `ins x,$0,pos,n` tied to its source, before register allocation, as the later revision does;
+# the peephole then only applies rules D and F. PSP_GCC_INSAND=0: plain cc1 1.7.1 and the peephole's rules A-C/E.
+PRE=; export PSP_GCC_INSAND=${PSP_GCC_INSAND:-1}
+if [ "$PSP_GCC_INSAND" = 1 ]; then
+  PRE="$HERE/ext/psp_gcc_insand.so"
+  [ -f "$PRE" ] || { echo "psp_gcc.sh: run tools/setup_toolchain.sh (psp_gcc_insand.so missing)" >&2; exit 1; }
+fi
 PEEP=1; case " $MARK " in *" -nopeep "*) PEEP=0; MARK=$(echo " $MARK " | sed 's/ -nopeep / /');; esac
 if [ $PEEP = 1 ]; then
-  "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w -dP -dS -dR -fsched-verbose=6 -dumpbase "$S" $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S.cc1" \
+  LD_PRELOAD=$PRE "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w -dP -dS -dR -fsched-verbose=6 -dumpbase "$S" $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S.cc1" \
     && UNUSED=$("$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -Dconst= -Wunused-variable $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o /dev/null 2>&1 | sed -n "s/.*warning: \`\(.*\)' defined but not used\$/\1/p") \
     && python3 "$HERE/psp_gcc_peep.py" --sched "$S.30.sched2" "$S.cc1" "$S" $UNUSED && rm -f "$S.cc1" "$S".*.sched* && "$AS" "$S" -o "$OUT" || exit 1
 else
-  "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT" || exit 1
+  LD_PRELOAD=$PRE "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT" || exit 1
 fi
 [ -f "$OUT" ] || exit 1
 # The original link kept every constant of .rodata.cst4/.cst8/.str1.4 (no merging across objects): clear SHF_MERGE and

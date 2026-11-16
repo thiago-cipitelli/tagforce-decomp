@@ -4,14 +4,12 @@
 // @asm 0x08806378-0x08806460
 // @gcc 0x08806460-0x08806850
 // @asm 0x08806850-0x088068EC
-// @gcc 0x088068EC-0x088069C8
-// @asm 0x088069C8-0x088069F0
-// @gcc 0x088069F0-0x08806B1C
+// @gcc 0x088068EC-0x08806B1C
 // @asm 0x08806B1C-0x08806B9C
 // @gcc 0x08806B9C-0x08806CB8
-// @asm 0x08806CB8-0x08806D84
-// @gcc 0x08806D84-0x08806F14
-// @asm 0x08806F14-0x08807034
+// @asm 0x08806CB8-0x08806D3C
+// @gcc 0x08806D3C-0x08806F6C
+// @asm 0x08806F6C-0x08807034
 // @gcc 0x08807034-0x08807070
 /* libgu of the Sony SDK (GCC; names from the export NIDs): primitives, lighting, texture,
    blending and the other state commands. Every function reaches the current context through the

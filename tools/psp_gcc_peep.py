@@ -597,7 +597,11 @@ if __name__ == '__main__':
         dump = None
         if a[0] == '--sched':
             dump, a = open(a[1]).read(), a[2:]
-        t = peep(open(a[0]).read(), a[2:])
+        if os.environ.get('PSP_GCC_INSAND') == '1':
+            # cc1 already emits the later revision's `ins` (tools/psp_gcc_insand.c): only rules D and F
+            t, dump = unaligned(drop_unused_objects(open(a[0]).read(), a[2:])), None
+        else:
+            t = peep(open(a[0]).read(), a[2:])
         open(a[1], 'w').write(resched(t, dump) if dump else t)
     else:
         sys.exit(__doc__)

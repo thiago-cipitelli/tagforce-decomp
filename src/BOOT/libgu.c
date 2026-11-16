@@ -1,6 +1,6 @@
 // @range 0x08804A0C-0x08805EC4
-// @asm 0x08804A0C-0x088050BC
-// @gcc 0x088050BC-0x08805160
+// @asm 0x08804A0C-0x08805008
+// @gcc 0x08805008-0x08805160
 // @asm 0x08805160-0x0880523C
 // @gcc 0x0880523C-0x08805304
 // @asm 0x08805304-0x0880541C
@@ -9,8 +9,8 @@
 // @gcc 0x088058FC-0x08805A1C
 // @asm 0x08805A1C-0x08805ACC
 // @gcc 0x08805ACC-0x08805B54
-// @asm 0x08805B54-0x08805CD4
-// @gcc 0x08805CD4-0x08805EC4
+// @asm 0x08805B54-0x08805C84
+// @gcc 0x08805C84-0x08805EC4
 /* libgu of the Sony SDK (GCC; names from the export NIDs): display-list contexts, frame/draw/depth
    buffers, the state bits and the first state commands. Nearly every function reaches the libgu
    globals through %hi/%lo, so they stay in the split asm and the C below is under NON_MATCHING;

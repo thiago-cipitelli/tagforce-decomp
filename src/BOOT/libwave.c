@@ -1,7 +1,5 @@
 // @range 0x088634EC-0x08865260
-// @gcc 0x088634EC-0x088640A8
-// @asm 0x088640A8-0x08864100
-// @gcc 0x08864100-0x088642F8
+// @gcc 0x088634EC-0x088642F8
 // @asm 0x088642F8-0x08865260
 /* libwave (SDK sample library, "SceWaveMain"): 8 software channels of VAG ADPCM or 16-bit PCM
    (mono or stereo, one-shot, looping, or streamed through a callback) mixed by a thread into one
