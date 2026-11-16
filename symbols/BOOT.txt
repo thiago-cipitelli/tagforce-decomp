@@ -976,7 +976,7 @@ sysvar_set_a90 = 0x0883E10C; // type:func matched src/BOOT/main.c export inferre
 sysvar_get_a90 = 0x0883E118; // type:func export matched src/BOOT/main.c nid:61F58750
 sysvar_set_a8c = 0x0883E124; // type:func matched src/BOOT/main.c export inferred (v) set to 1 after cfg changes sets DAT_08a66a8c [?] nid:D7F13632
 sysvar_get_a8c = 0x0883E130; // type:func export matched src/BOOT/main.c nid:91376D2D
-stat_event_record = 0x0883E13C; // type:func asm (@asm in src/BOOT/main.c, C under NON_MATCHING) export inferred (card_id, kind) remaps special ids to counters in sysstate nid:78C5A02E
+stat_event_record = 0x0883E13C; // type:func matched src/BOOT/main.c
 sysstate_set_byte_3e38 = 0x0883E3A4; // type:func matched src/BOOT/main.c export inferred (i) = 1 nid:2EAB8C00
 gfx_overlay_enable = 0x0883E3D4; // type:func matched src/BOOT/main.c export inferred nid:13A4081A
 newgame_init = 0x0883E670; // type:func matched src/BOOT/save.c export inferred 592B: zero sysstate2 (0xfca4), name, inventory, recipes nid:4433B331
@@ -989,7 +989,7 @@ sysstate_set_name = 0x0883EA60; // type:func export matched src/BOOT/save.c memc
 sysstate_get_name = 0x0883EA94; // type:func export matched src/BOOT/save.c nid:1BFCC25C
 day_next = 0x0883ECB8; // type:func export matched src/BOOT/save.c day+1 nid:61AE6357
 day_advance = 0x0883ECDC; // type:func matched src/BOOT/save.c export inferred (delta) day counter +0x4c (99 = end), +0x50 progress nid:FCE56269
-day_calc = 0x0883ED7C; // type:func asm (@asm in src/BOOT/save.c, C under NON_MATCHING) export inferred (which) via FUN_0883eab4(day+1) [?] nid:65D67BBA
+day_calc = 0x0883ED7C; // type:func matched src/BOOT/save.c
 sysstate_get_u32_54 = 0x0883EE0C; // type:func matched src/BOOT/save.c export inferred (i) nid:02D2A1D5
 money_add = 0x0883EE3C; // type:func matched src/BOOT/save.c export inferred (delta) clamp 0..999999999 at sysstate+0x54 nid:53CF9AFD
 duel_records_get = 0x0883EEC8; // type:func export matched src/BOOT/save.c sysstate+0xEA4 nid:DDA84199

@@ -3985,3 +3985,10 @@ Quarta passada nas 12 entradas fora de libduel_eng: 4 batendo (`gim_walk`, `efs_
 - `duel_0883449C`: `#pragma schedule off` dá `lw, lw, addu, andi, li, mult`; o original (`lw, andi, lw, addu | li,
   mult`) é o que sairia com um fim de bloco entre a soma/`p & 1` e o produto. A chamada do inline sem código solta
   entre as duas instruções não segura o bloco (12 formas); não há desvio ali para pendurar um `else`.
+- Segunda perna: `stat_event_record` (main.c, 616 B com 22 blocos mortos) bate na primeira com o mesmo gatilho no
+  `case 0x18c8` vazio (`case 0x18c8: stat_save_ok(s); break;`); `day_calc` (save.c, 14 -> 0) já estava no modo e
+  só faltava `t -= s->day_progress; return t;` na própria variável (o `subu` vai para o atraso do `b`). A varredura
+  do `dead.py` nos outros módulos (menos libduel_eng) não acha mais nenhuma função em `@asm` no modo. `menu.c` e
+  `msgbox.c` não são uma unidade com os vizinhos para efeito destas duas: `wfmt.c + menu.c` e `net_ctl.c +
+  msgbox.c` concatenados, a bateria de funções anteriores e os callees `static` (todos definidos DEPOIS dos
+  chamadores) deixam `menu_layout` em 67 e `msgbox_open` em 36 por posição.
