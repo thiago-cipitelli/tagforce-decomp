@@ -53,8 +53,6 @@ segments:
       - [0x10E98, asm, dd_field_cursor_asm_08814E38]
       - [0x11444, c, dd_field_cursor]
       - [0x116D8, c, dd_cursor_model]
-      - [0x11800, asm, dd_cursor_model_asm_088157A0]
-      - [0x11C28, c, dd_cursor_model]
       - [0x126BC, asm, dd_cursor_model_asm_0881665C]
       - [0x129C4, c, dd_cursor_model]
       - [0x13030, c, dd_cutin]

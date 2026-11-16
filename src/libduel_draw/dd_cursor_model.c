@@ -1,5 +1,4 @@
 // @range 0x08815678-0x08816FD0
-// @asm 0x088157A0-0x08815BC8
 // @asm 0x0881665C-0x08816964
 // @data 0x088757D4-0x08875AC4
 // @rodata 0x08870014-0x08870074
@@ -51,9 +50,6 @@ DdCurUv dd_cursor_uv[32] = {
     { 64, 64, 0, 64 },
     { 64, 64, 0, 64 },
 };
-
-/* used by the functions kept in asm */
-DdVec4 dd_cursor_rot0 __attribute__((aligned(16))) = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 int dd_zone_count(int player, int zone);
 void *dd_cobj_at(int player, int zone, int idx);
@@ -131,18 +127,19 @@ void dd_cursor_draw(void)
 }
 
 /* follows the card under the cursor and notifies the listeners when the location changed */
-#ifdef NON_MATCHING /* muitos bitfields; alocação de registradores */
 void dd_cursor_update(void)
 {
     DdCursor *c = &dd_cursor;
-    float pos[4] = { 0 };
-    float rot[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-    int player, zone, idx, n;
+    float pos[4] __attribute__((aligned(16))) = { 0 };
     int arg;
+    int player;
+    int zone;
+    DdLoc2 l;
+    int idx;
     int *card;
     int i;
-    DdLoc2 l;
-    DdLoc t = { 0 };
+    DdVec4A rot = { 0.0f, 0.0f, 0.0f, 1.0f };
+    int n;
 
     if (dd_cursor.cur.zone == 0xB) {
         n = dd_zone_count(c->cur.player, 0xB);
@@ -154,7 +151,7 @@ void dd_cursor_update(void)
             card = dd_cobj_at(c->cur.player, c->cur.zone, c->cur.idx);
             if (card != 0) {
                 *(DdVec4 *)pos = *(DdVec4 *)(card + 4);
-                *(DdVec4 *)rot = *(DdVec4 *)(card + 16);
+                *(DdVec4 *)&rot = *(DdVec4 *)(card + 16);
             }
         }
     }
@@ -164,55 +161,54 @@ void dd_cursor_update(void)
         l.idx = c->cur.idx;
         l.b14 = 0;
         l.b15 = 0;
-        dd_slot_xform(pos, rot, l);
+        dd_slot_xform(pos, &rot.x, l);
         pos[1] = 0.0f;
     }
     *(DdVec4 *)c->pos = *(DdVec4 *)pos;
-    *(DdVec4 *)c->rot = *(DdVec4 *)rot;
-    if (c->dirty == 0)
-        return;
-    player = c->cur.player;
-    zone = c->cur.zone;
-    arg = 0;
-    idx = c->cur.idx;
-    switch (zone) {
-    case 0xE:
-        idx = dv_n_grave(player) - 1;
-        break;
-    case 0xF:
-        idx = dv_n_f(player) - 1;
-        break;
-    case 0xD:
-        idx = 0;
-        break;
-    case 0xC:
-        idx = 0;
-        break;
-    }
-    if (idx < 0)
-        idx = 0;
-    card = dd_cobj_at(player, zone, idx);
-    if (card != 0) {
-        if (dd_0880702C() == 0) {
-            t.player = player;
-            t.zone = zone;
-            t.idx = idx;
-            if (dd_loc_visible(t) == 0 && !((char *)card)[0x8D] >> 5 & 1) {
-                dd_info_select_uid(0);
-                goto notify;
-            }
+    *(DdVec4 *)c->rot = *(DdVec4 *)&rot;
+    if (c->dirty != 0) {
+        arg = 0;
+        player = c->cur.player;
+        zone = c->cur.zone;
+        idx = c->cur.idx;
+        switch (zone) {
+        case 0xE:
+            idx = dv_n_grave(player) - 1;
+            break;
+        case 0xF:
+            idx = dv_n_f(player) - 1;
+            break;
+        case 0xD:
+            idx = 0;
+            break;
+        case 0xC:
+            idx = 0;
+            break;
         }
-        dd_info_select_uid(card[0x88 / 4]);
-        arg = card[0x88 / 4];
-    }
+        if (idx < 0)
+            idx = 0;
+        card = dd_cobj_at(player, zone, idx);
+        if (card != 0) {
+            if (dd_0880702C() == 0) {
+                DdLoc t = { player, zone, idx };
+
+                if (dd_loc_visible(t) == 0 && !(((signed char *)card)[0x8D] << 26 >> 31))
+                    goto hidden;
+            }
+            dd_info_select_uid(card[0x88 / 4]);
+            arg = card[0x88 / 4];
+            goto notify;
+hidden:
+            dd_info_select_uid(0);
+        }
 notify:
-    for (i = 0; i < 16; i++) {
-        if (c->listeners[i] != 0)
-            c->listeners[i](c->cur, arg);
+        for (i = 0; i < 16; i++) {
+            if (c->listeners[i] != 0)
+                c->listeners[i](c->cur, arg);
+        }
     }
     c->dirty = 0;
 }
-#endif
 
 /* the first selectable location of the battle phase */
 void dd_cursor_first_target(void)
