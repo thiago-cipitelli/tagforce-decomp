@@ -1,8 +1,8 @@
 // @range 0x08804A0C-0x08805EC4
-// @asm 0x08804A0C-0x0880541C
-// @gcc 0x0880541C-0x088054C8
-// @asm 0x088054C8-0x08805690
-// @gcc 0x08805690-0x08805754
+// @asm 0x08804A0C-0x088050BC
+// @gcc 0x088050BC-0x08805160
+// @asm 0x08805160-0x0880541C
+// @gcc 0x0880541C-0x08805754
 // @asm 0x08805754-0x088057C0
 // @gcc 0x088057C0-0x08805854
 // @asm 0x08805854-0x088058FC
@@ -114,8 +114,7 @@ int sceGuInit(void)
     if (r < 0) {
         sceKernelDeleteEventFlag(gu_cb.event_flag);
         sceGeUnsetCallback(gu.ge_cb);
-        gu.ge_cb = -1;
-        gu_cb.event_flag = -1;
+        gu.ge_cb = gu_cb.event_flag = -1;
         return r;
     }
     gu.ge_list = r;
@@ -201,6 +200,7 @@ int sceGuFinishId(unsigned int id)
     int size;
     int flags;
     int prev;
+    unsigned int fid = id & 0xFFFF;
 
     if (l->obj_depth != 0) {
         return 0x80000021;
@@ -209,9 +209,12 @@ int sceGuFinishId(unsigned int id)
     case 0: {
         int r;
 
-        gu_push((id & 0xFFFF) | 0x0F000000);
+        gu_push(fid | 0x0F000000);
         gu_push(0x0C000000);
-        gu_update_stall();
+        r = gu_update_stall();
+        if (r < 0) {
+            return r;
+        }
         break;
     }
     case 1:
@@ -225,18 +228,22 @@ int sceGuFinishId(unsigned int id)
         break;
     case 2:
     case 4:
-        gu_push((id & 0xFFFF) | 0x0F000000);
+        gu_push(fid | 0x0F000000);
         gu_push(0x0C000000);
         break;
     default:
         return 0x80000107;
     }
-    size = (char *)l->cur - (char *)l->start;
+    size = (char *)gu.list->cur - (char *)gu.list->start;
     flags = sceKernelCpuSuspendIntr();
     prev = gu.lists[gu.cid].next;
     gu.lists[gu.cid].next = -1;
-    gu.list = prev < 0 ? 0 : &gu.lists[prev];
     gu.cid = prev;
+    if (prev < 0) {
+        gu.list = 0;
+    } else {
+        gu.list = &gu.lists[prev];
+    }
     sceKernelCpuResumeIntr(flags);
     return size;
 }
@@ -271,9 +278,14 @@ int sceGuCallList(const void *list)
     unsigned int p = (unsigned int)list;
 
     if (gu.call_mode == 1) {
+        int r;
+
         gu_push(((p & 0xFFFFFFF) >> 16) | 0x0E110000);
         gu_push((p & 0xFFFF) | 0x0C000000);
-        gu_update_stall();
+        r = gu_update_stall();
+        if (r < 0) {
+            return r;
+        }
     } else {
         gu_push((((p & 0xFFFFFFF) >> 24) << 16) | 0x10000000);
         gu_push((p & 0xFFFFFF) | 0x0A000000);
@@ -286,11 +298,11 @@ int sceGuSendList(int mode, const void *list, int a2, int a3, int a4)
     int arg[4];
     int r;
 
+    gu_cb.signal_count = 0;
     arg[0] = 16;
     arg[1] = a2;
     arg[2] = a3;
     arg[3] = a4;
-    gu_cb.signal_count = 0;
     if (mode == 1) {
         r = sceGeListEnQueueHead(list, 0, gu.ge_cb, arg);
     } else {
@@ -389,12 +401,10 @@ void sceGuSetAllStatus(unsigned int status)
 /* DITH0..3: a 4x4 matrix of 4-bit values */
 void sceGuSetDither(const int *m)
 {
-    int i;
-
-    for (i = 0; i < 4; i++) {
-        gu_push((m[i * 4 + 3] & 0xF) << 12 | (m[i * 4 + 2] & 0xF) << 8 | (m[i * 4 + 1] & 0xF) << 4 |
-                (m[i * 4] & 0xF) | (0xE2000000 + (i << 24)));
-    }
+    gu_push((m[3] & 0xF) << 12 | (m[2] & 0xF) << 8 | (m[1] & 0xF) << 4 | (m[0] & 0xF) | 0xE2000000);
+    gu_push((m[7] & 0xF) << 12 | (m[6] & 0xF) << 8 | (m[5] & 0xF) << 4 | (m[4] & 0xF) | 0xE3000000);
+    gu_push((m[11] & 0xF) << 12 | (m[10] & 0xF) << 8 | (m[9] & 0xF) << 4 | (m[8] & 0xF) | 0xE4000000);
+    gu_push((m[15] & 0xF) << 12 | (m[14] & 0xF) << 8 | (m[13] & 0xF) << 4 | (m[12] & 0xF) | 0xE5000000);
 }
 
 /* closes the innermost sceGuBeginObject: patches its BASE/BJUMP to the current position */
@@ -411,8 +421,8 @@ int sceGuEndObject(void)
     cur = (unsigned int)l->cur;
     p = l->obj_stack[i];
     l->obj_depth = i;
-    p[1] = (cur & 0xFFFFFF) | 0x09000000;
     p[0] = (((cur & 0xFFFFFFF) >> 24) << 16) | 0x10000000;
+    p[1] = (cur & 0xFFFFFF) | 0x09000000;
     if (gu.cid == 0) {
         int r = sceGeListUpdateStallAddr(gu.ge_list, (void *)cur);
 
@@ -613,6 +623,8 @@ int sceGuSync(int mode, int what)
     case 4:
         return sceGeListSync(gu.send_list, what);
     default:
+    case 1:
+    case 2:
         return 0;
     }
 }
