@@ -26,11 +26,10 @@ segments:
     bss_size: 0x544DC0
     subalign: null
     subsegments:
-      - [0x60, c, crt0]
-      - [0x60, asm, crt0_asm_08804000]
-      - [0x3C4, c, crt0_gcc]
+      - [0x60, c, crt0_gcc]
       - [0x3F4, c, crt0]
-      - [0x5BC, asm, crt0_asm_0880455C]
+      - [0x48C, c, crt0_gcc]
+      - [0x684, asm, crt0_asm_08804624]
       - [0x774, c, crt0_gcc]
       - [0xA6C, c, libgu]
       - [0xA6C, asm, libgu_asm_08804A0C]
@@ -123,10 +122,9 @@ segments:
       - [0x88E8, c, libc_stdio_gcc]
       - [0x894C, c, nl_fvwrite]
       - [0x8D2C, c, nl_fwalk]
-      - [0x8E34, c, libc_malloc]
-      - [0x8E34, asm, libc_malloc_asm_0880CDD4]
+      - [0x8E34, c, libc_malloc_gcc]
       - [0x8E5C, c, nl_iswspace]
-      - [0x8E84, asm, libc_malloc_asm_0880CE24]
+      - [0x8E84, c, libc_malloc_gcc]
       - [0x8F18, c, libc_malloc_gcc]
       - [0x8F30, c, libc_malloc]
       - [0x8F94, c, libc_malloc_gcc]
