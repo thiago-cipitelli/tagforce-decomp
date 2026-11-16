@@ -29,54 +29,83 @@ def unit_of(name, c_units):
     return None
 
 
+def spell(name, a):
+    return f"{name}+0x{a:X}" if a > 0 else f"{name}-0x{-a:X}" if a < 0 else name
+
+
 def base_refs(obj, addr):
-    """References of `obj` to undefined symbols with a known address: ({address: {"sym+0xoff"}}, {names used}).
-    REL addends are read from the instructions (HI16 paired with the next LO16 of the same symbol)."""
+    """References of `obj` to symbols with a known address: ({address: {"sym+0xoff"}}, {names used},
+    {vram of a HI16/LO16 inside a named function: ("sym+0xoff", address)}). REL addends are read from the
+    instructions (HI16 paired with the next LO16 of the same symbol)."""
     b = open(obj, "rb").read()
     shoff, shentsize, shnum = struct.unpack_from("<I10xHH", b, 0x20)
     sh = [struct.unpack_from("<10I", b, shoff + i * shentsize) for i in range(shnum)]
-    refs, names = {}, set()
+    refs, names, sites = {}, set(), {}
+    symtab = next(h for h in sh if h[1] == 2)  # SHT_SYMTAB: function starts by section, for the per-site map
+    funcs = {}
+    for i in range(symtab[5] // 16):
+        name_off, value, _, info, _, shndx = struct.unpack_from("<IIIBBH", b, symtab[4] + i * 16)
+        name = b[sh[symtab[6]][4] + name_off:b.index(b"\0", sh[symtab[6]][4] + name_off)].decode()
+        if info & 0xF == 2 and name in addr:  # STT_FUNC
+            funcs.setdefault(shndx, []).append((value, addr[name]))
     for _, typ, _, _, off, size, link, info, _, _ in sh:
         if typ != 9:  # SHT_REL
             continue
         symtab, strtab, tgt = sh[link], sh[sh[link][6]], sh[info][4]
-        pending = {}
+        pending, sec = {}, sorted(funcs.get(info, []))
         for r_off, r_info in struct.iter_unpack("<II", b[off:off + size]):
             name_off, _, _, _, shndx = struct.unpack_from("<IIIBxH", b, symtab[4] + (r_info >> 8) * 16)
             name = b[strtab[4] + name_off:b.index(b"\0", strtab[4] + name_off)].decode()
-            if shndx or name not in addr:  # defined in the object, or no known address
+            if name not in addr:  # no known address (defined symbols too: interior D_ labels of the target)
                 continue
             names.add(name)
             word, kind = struct.unpack_from("<I", b, tgt + r_off)[0], r_info & 0xFF
             if kind == 5:  # R_MIPS_HI16
-                pending.setdefault(name, []).append(word & 0xFFFF)
+                pending.setdefault(name, []).append((word & 0xFFFF, r_off))
                 continue
             if kind == 6:  # R_MIPS_LO16
                 lo = (word & 0xFFFF) - ((word & 0x8000) << 1)
-                addends = [(h << 16) + lo for h in pending.pop(name, [])] or [lo]
+                his = pending.pop(name, [])
+                addends = [(h << 16) + lo for h, _ in his] or [lo]
+                for (_, o), a in zip(his + [(0, r_off)], addends + addends[-1:]):
+                    fn = [(v, va) for v, va in sec if v <= o]
+                    if fn:
+                        sites[fn[-1][1] + o - fn[-1][0]] = (spell(name, a), (addr[name] + a) & 0xFFFFFFFF)
             elif kind == 2:  # R_MIPS_32
                 addends = [word]
             else:
                 continue
             for a in addends:
                 if a and addr[name]:
-                    refs.setdefault((addr[name] + a) & 0xFFFFFFFF, set()).add(f"{name}+0x{a:X}")
-    return refs, names
+                    refs.setdefault((addr[name] + a) & 0xFFFFFFFF, set()).add(spell(name, a))
+    return refs, names, sites
 
 
 def align_refs(files, obj, addr):
     """Rewrite target asm references (`D_08B0B688`, a named field inside a struct) to the `sym+off` spelling
-    the base object uses for the same address, so objdiff sees equal relocations. Names the base uses stay."""
-    refs, names = base_refs(obj, addr)
+    the base object uses for the same address, so objdiff sees equal relocations. An instruction at the same
+    place of the same function takes the base's spelling there (a unit may use both `duel_atk_direct` and
+    `duel_special+0x8`); elsewhere the spelling is taken when unique, and names the base uses stay."""
+    refs, names, sites = base_refs(obj, addr)
+
+    def at(n):
+        return int(n[2:], 16) if re.fullmatch(r"D_[0-9A-F]{8}", n) else addr.get(n)
 
     def sub(g):
         n = g.group(0)
-        a = int(n[2:], 16) if re.fullmatch(r"D_[0-9A-F]{8}", n) else addr.get(n)
-        r = refs.get(a, ())
+        r = refs.get(at(n), ())
         return next(iter(r)) if len(r) == 1 and n not in names else n
+
+    def line(g):
+        site = sites.get(int(g.group(1), 16))
+        ref = re.compile(r"(?<=%hi\()\w+(?=\))|(?<=%lo\()\w+(?=\))")
+        if site:
+            return ref.sub(lambda r: site[0] if at(r.group(0)) == site[1] else sub(r), g.group(0))
+        return ref.sub(sub, g.group(0))
     for f in files:
         s = open(f).read()
-        t = re.sub(r"(?<=%hi\()\w+|(?<=%lo\()\w+|(?<=\.word )\w+", sub, s)
+        t = re.sub(r"^\s*/\* [0-9A-F]+ ([0-9A-F]{8}) [0-9A-F]{8} \*/.*$", line, s, flags=re.M)
+        t = re.sub(r"(?<=\.word )\w+", sub, t)
         if t != s:
             open(f, "w").write(t)
 
