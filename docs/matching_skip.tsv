@@ -14,3 +14,7 @@ st_chr_step_value	libstory	10 palavras: registradores de level/tabela; 288 orden
 dd_fx_shatter_update	libduel_draw	41 palavras, todas no laço que monta os estilhaços: constantes 0.4921875/14.67 em a0/v1 e escalonamento de 15.5 * j (rodada 33)
 duel_08846584	libduel_eng	253 palavras com estrutura idêntica: ap e o ponteiro de st trocados, permutação add/n/h na parte do atacante; 840 amostras (rodada 35)
 dd_cursor_draw_arrow	libduel_draw	28 palavras: list/raised trocam com dx/dy; 5000 ordens de declaração, ordem de instruções, if/else e pragmas sem efeito (rodada 37)
+sceGuFinishId	BOOT	GCC: com o gancho do ins a sequência é idêntica, só o -frename-registers escolhe outros nomes (47 palavras); segura o .rodata da libgu e com ele sceGuInit/sceGuSync (rodada 37)
+_strtod_r	BOOT	GCC: strtod.c igual no newlib 1.11-1.13; constante em v0 em vez de a0 deixa um nop no delay slot; ~15 flags testadas (rodada 37)
+_dtoa_r	BOOT	GCC: o original lê o dígito duas vezes (lb, depois lbu), o 1.7.1 junta num lbu + seb (CSE); quorem com dois move trocados (rodada 37)
+wave_thread	BOOT	GCC: 46 palavras, off em s0 copiado para s2 no original; 5 variantes de fonte (rodada 37)

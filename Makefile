@@ -29,7 +29,7 @@ all:
 check: all
 	python3 tools/compare_sections.py $(TARGET) $(OUT)
 
-$(LD_SCRIPT): config/$(MODULE).yaml
+$(LD_SCRIPT): config/$(MODULE).yaml tools/fix_ld.py
 	python3 tools/splat_symbols.py $(MODULE) > build/$(MODULE).syms.txt
 	rm -rf asm/$(MODULE)
 	$(SPLAT) split $<
