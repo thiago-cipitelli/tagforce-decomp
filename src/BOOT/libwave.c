@@ -13,9 +13,8 @@
    (mono or stereo, one-shot, looping, or streamed through a callback) mixed by a thread into one
    448-sample stereo hardware channel, plus 4 directly driven hardware channels (wave_set_sample,
    wave_audio_write...). Channel changes while playing (restart, stop, fade) go through a shadow copy
-   applied after a 112-sample fade. Compiled with GCC; everything reads the library state in bss
-   (0x08C1E780-0x08C1FAE8) through split lui/lo pairs, so it stays in asm with its C under
-   NON_MATCHING, except wave_ch_stop_all, a whole `asm` function. Error codes 0x8044xxxx. Outside the
+   applied after a 112-sample fade. Compiled with the SDK's GCC (-O3): the `@gcc` ranges come from
+   libwave_gcc.c (this C); the rest stays in asm with its C under NON_MATCHING. Error codes 0x8044xxxx. Outside the
    PSP build the C is used with its own state; sceAudio/sceKernel come from the platform layer. */
 
 int wave_ch_stop(unsigned int ch);
@@ -747,7 +746,7 @@ static void copy_bytes(unsigned char *dst, const unsigned char *src, unsigned in
     unsigned int i;
 
     for (i = 0; i < n; i++) {
-        dst[i] = src[i];
+        *dst++ = *src++;
     }
 }
 
@@ -808,53 +807,84 @@ void wave_ch_decode_vag(int ch, unsigned char *pcm)
     }
 }
 
+/* wave_ch_copy_pcm, once per block size (0x38 mono, 0x70 stereo): the SDK's GCC expands the two helpers in place for
+   each constant, so the original has four copies of the code */
+#if defined(__mips__) && !defined(__MWERKS__)
+#define WAVE_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define WAVE_ALWAYS_INLINE
+#endif
+static inline void wave_pcm_once(int ch, unsigned char *pcm, const unsigned char *data, int blk) WAVE_ALWAYS_INLINE;
+static inline void wave_pcm_once(int ch, unsigned char *pcm, const unsigned char *data, int blk)
+{
+    unsigned int i;
+
+    if (wave_ch[ch].size >= wave_ch[ch].pos + blk) {
+        copy_bytes(pcm, data + wave_ch[ch].pos, blk);
+        wave_ch[ch].pos += blk;
+        return;
+    }
+    {
+        unsigned char *p = pcm;
+
+        for (i = 0; i < 0x70; i++) {
+            *p++ = 0;
+        }
+    }
+    copy_bytes(pcm, data + wave_ch[ch].pos, wave_ch[ch].size - wave_ch[ch].pos);
+    wave_ch[ch].pos = 0;
+    wave_ch[ch].playing = 0;
+}
+
+static inline void wave_pcm_loop(int ch, unsigned char *pcm, const unsigned char *data, int blk) WAVE_ALWAYS_INLINE;
+static inline void wave_pcm_loop(int ch, unsigned char *pcm, const unsigned char *data, int blk)
+{
+    if (wave_ch[ch].size >= blk) {
+        unsigned int rem = wave_ch[ch].size - wave_ch[ch].pos;
+
+        if (wave_ch[ch].pos + blk < wave_ch[ch].size) {
+            copy_bytes(pcm, data + wave_ch[ch].pos, blk);
+            wave_ch[ch].pos += blk;
+            return;
+        }
+        copy_bytes(pcm, data + wave_ch[ch].pos, rem);
+        wave_ch[ch].pos = 0;
+        copy_bytes(pcm + rem, data, blk - rem);
+        wave_ch[ch].pos = blk - rem;
+    } else {
+        unsigned int done = wave_ch[ch].size - wave_ch[ch].pos;
+        int need = blk - done;
+
+        copy_bytes(pcm, data + wave_ch[ch].pos, done);
+        wave_ch[ch].pos = 0;
+        while (need > wave_ch[ch].size) {
+            copy_bytes(pcm + done, data, wave_ch[ch].size);
+            need -= wave_ch[ch].size;
+            done += wave_ch[ch].size;
+        }
+        copy_bytes(pcm + done, data, need);
+        wave_ch[ch].pos += need;
+    }
+}
+
 /* next PCM block of a channel into pcm: 0x38 bytes (28 mono samples) or 0x70 (28 stereo) */
 void wave_ch_copy_pcm(int ch, unsigned char *pcm)
 {
-    WaveCh *c = &wave_ch[ch];
-    const unsigned char *data = c->data;
-    int blk = (c->flags & 0x200) ? 0x70 : 0x38;
-    unsigned int i;
+    const unsigned char *data = wave_ch[ch].data;
+    unsigned int flags = wave_ch[ch].flags;
 
-    if ((c->flags & 1) == 0) {
-        if (c->size < c->pos + blk) {
-            for (i = 0; i < 0x70; i++) {
-                pcm[i] = 0;
-            }
-            copy_bytes(pcm, data + c->pos, c->size - c->pos);
-            c->playing = 0;
-            c->pos = 0;
-            return;
+    if ((flags & 1) == 0) {
+        if (!(flags & 0x200)) {
+            wave_pcm_once(ch, pcm, data, 0x38);
+        } else {
+            wave_pcm_once(ch, pcm, data, 0x70);
         }
-        copy_bytes(pcm, data + c->pos, blk);
-        c->pos += blk;
-        return;
-    }
-    if (c->size >= blk) {
-        unsigned int rem = c->size - c->pos;
-
-        if (c->pos + blk < c->size) {
-            copy_bytes(pcm, data + c->pos, blk);
-            c->pos += blk;
-            return;
-        }
-        copy_bytes(pcm, data + c->pos, rem);
-        c->pos = 0;
-        copy_bytes(pcm + rem, data, blk - rem);
-        c->pos = blk - rem;
     } else {
-        unsigned int done = c->size - c->pos;
-        int need = blk - done;
-
-        copy_bytes(pcm, data + c->pos, done);
-        c->pos = 0;
-        while (need > c->size) {
-            copy_bytes(pcm + done, data, c->size);
-            need -= c->size;
-            done += c->size;
+        if (!(flags & 0x200)) {
+            wave_pcm_loop(ch, pcm, data, 0x38);
+        } else {
+            wave_pcm_loop(ch, pcm, data, 0x70);
         }
-        copy_bytes(pcm + done, data, need);
-        c->pos += need;
     }
 }
 
