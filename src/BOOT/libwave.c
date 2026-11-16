@@ -1,20 +1,20 @@
 // @range 0x088634EC-0x08865260
-// @asm 0x088634EC-0x08863A6C
-// @gcc 0x08863A6C-0x08863AA0
-// @asm 0x08863AA0-0x08863F38
-// @gcc 0x08863F38-0x08863F88
-// @asm 0x08863F88-0x08864024
-// @gcc 0x08864024-0x088640A8
+// @gcc 0x088634EC-0x08863854
+// @asm 0x08863854-0x08863944
+// @gcc 0x08863944-0x08863A00
+// @asm 0x08863A00-0x08863A6C
+// @gcc 0x08863A6C-0x08863D04
+// @asm 0x08863D04-0x08863D90
+// @gcc 0x08863D90-0x088640A8
 // @asm 0x088640A8-0x08864100
-// @gcc 0x08864100-0x08864254
-// @asm 0x08864254-0x08865260
+// @gcc 0x08864100-0x088642F8
+// @asm 0x088642F8-0x08865260
 /* libwave (SDK sample library, "SceWaveMain"): 8 software channels of VAG ADPCM or 16-bit PCM
    (mono or stereo, one-shot, looping, or streamed through a callback) mixed by a thread into one
    448-sample stereo hardware channel, plus 4 directly driven hardware channels (wave_set_sample,
    wave_audio_write...). Channel changes while playing (restart, stop, fade) go through a shadow copy
-   applied after a 112-sample fade. Compiled with GCC; everything reads the library state in bss
-   (0x08C1E780-0x08C1FAE8) through split lui/lo pairs, so it stays in asm with its C under
-   NON_MATCHING, except wave_ch_stop_all, a whole `asm` function. Error codes 0x8044xxxx. Outside the
+   applied after a 112-sample fade. Compiled with the SDK's GCC (-O3): the `@gcc` ranges come from
+   libwave_gcc.c (this C); the rest stays in asm with its C under NON_MATCHING. Error codes 0x8044xxxx. Outside the
    PSP build the C is used with its own state; sceAudio/sceKernel come from the platform layer. */
 
 int wave_ch_stop(unsigned int ch);
@@ -81,8 +81,8 @@ int wave_init(int prio) __attribute__((noinline));
 #endif
 
 #if defined(__MWERKS__) || defined(__mips__) /* PSP (mwcc and the SDK's GCC, libwave_gcc.c): the original objects */
-extern int D_08C1E780;                 /* 0 none, 1 initialised, 3 thread running */
-extern int D_08C1E784;                 /* thread stop request */
+extern volatile int D_08C1E780;                /* 0 none, 1 initialised, 3 thread running */
+extern volatile int D_08C1E784;                /* thread stop request */
 extern unsigned char D_08C1E788[];     /* decoded block, 0x70 bytes */
 extern unsigned char D_08C1E7F8[];     /* one VAG block, 16 bytes */
 extern unsigned char D_08C1E808[];     /* two 0x700-byte mix buffers */
@@ -92,8 +92,7 @@ extern WaveThreadArg D_08C1FAC8;
 extern unsigned char *D_08C1FAD4;
 extern unsigned char *D_08C1FAD8;
 extern int D_08C1FADC[4];
-extern const signed char D_088EAFB8[5];
-extern const signed char D_088EAFBD[5];
+extern const signed char D_088EAFB8[2][5]; /* VAG predictor coefficients */
 #define wave_state D_08C1E780
 #define wave_stop_req D_08C1E784
 #define wave_pcm_buf D_08C1E788
@@ -105,8 +104,7 @@ extern const signed char D_088EAFBD[5];
 #define wave_vag_ptr D_08C1FAD4
 #define wave_pcm_ptr D_08C1FAD8
 #define wave_hw_ch D_08C1FADC
-#define vag_coef0 D_088EAFB8
-#define vag_coef1 D_088EAFBD
+#define vag_coef D_088EAFB8
 #else
 static int wave_state;
 static volatile int wave_stop_req;
@@ -119,26 +117,27 @@ static WaveThreadArg wave_thread_arg;
 static unsigned char *wave_vag_ptr;
 static unsigned char *wave_pcm_ptr;
 static int wave_hw_ch[4];
-static const signed char vag_coef0[5] = { 0, 60, 115, 98, 122 };
-static const signed char vag_coef1[5] = { 0, 0, -52, -55, -60 };
+static const signed char vag_coef[2][5] = { { 0, 60, 115, 98, 122 }, { 0, 0, -52, -55, -60 } };
 #endif
 
 /* Reserves the mixed channel (448 stereo samples) and three hardware channels (256 samples). */
 int sceWaveInit_wrap(void)
 {
     unsigned int i;
-    int ch;
+    unsigned char *p;
 
     if (wave_state != 0) {
         return (int)0x80440001;
     }
     wave_pcm_ptr = wave_pcm_buf;
     wave_vag_ptr = wave_vag_buf;
+    p = (unsigned char *)wave_ch;
     for (i = 0; i < sizeof(wave_ch); i++) {
-        ((unsigned char *)wave_ch)[i] = 0;
+        *p++ = 0;
     }
+    p = (unsigned char *)wave_shadow;
     for (i = 0; i < sizeof(wave_shadow); i++) {
-        ((unsigned char *)wave_shadow)[i] = 0;
+        *p++ = 0;
     }
     wave_thread_arg.main_ch = sceAudioChReserve(-1, 0x1C0, 0);
     if (wave_thread_arg.main_ch < 0) {
@@ -146,25 +145,24 @@ int sceWaveInit_wrap(void)
     }
     wave_hw_ch[0] = sceAudioChReserve(-1, 0x100, 0);
     if (wave_hw_ch[0] < 0) {
-        ch = wave_thread_arg.main_ch;
-    } else {
-        wave_hw_ch[1] = sceAudioChReserve(-1, 0x100, 0);
-        if (wave_hw_ch[1] < 0) {
-            sceAudioChRelease(wave_thread_arg.main_ch);
-            ch = wave_hw_ch[0];
-        } else {
-            wave_hw_ch[2] = sceAudioChReserve(-1, 0x100, 0);
-            if (wave_hw_ch[2] >= 0) {
-                wave_state = 1;
-                return 0;
-            }
-            sceAudioChRelease(wave_thread_arg.main_ch);
-            sceAudioChRelease(wave_hw_ch[0]);
-            ch = wave_hw_ch[1];
-        }
+        sceAudioChRelease(wave_thread_arg.main_ch);
+        return (int)0x80440001;
     }
-    sceAudioChRelease(ch);
-    return (int)0x80440001;
+    wave_hw_ch[1] = sceAudioChReserve(-1, 0x100, 0);
+    if (wave_hw_ch[1] < 0) {
+        sceAudioChRelease(wave_thread_arg.main_ch);
+        sceAudioChRelease(wave_hw_ch[0]);
+        return (int)0x80440001;
+    }
+    wave_hw_ch[2] = sceAudioChReserve(-1, 0x100, 0);
+    if (wave_hw_ch[2] < 0) {
+        sceAudioChRelease(wave_thread_arg.main_ch);
+        sceAudioChRelease(wave_hw_ch[0]);
+        sceAudioChRelease(wave_hw_ch[1]);
+        return (int)0x80440001;
+    }
+    wave_state = 1;
+    return 0;
 }
 
 /* Sets a channel's sound: VAG or PCM data and size (flags as WaveCh.flags), or a callback stream
@@ -182,38 +180,55 @@ int wave_ch_set_data(unsigned int ch, const unsigned char *data, unsigned int si
     if (wave_ch_is_playing(ch) != 0) {
         return (int)0x80440009;
     }
-    c = &wave_ch[ch];
-    if (flags & 0x400) {
-        if (data != 0) {
-            return (int)0x80440006;
-        }
-        if (size != 0) {
-            return (int)0x80440007;
-        }
-    } else {
+    if (!(flags & 0x400)) {
         if (data == 0) {
             return (int)0x80440006;
         }
         if (size == 0) {
             return (int)0x80440007;
         }
+        c = &wave_ch[ch];
+        c->data = data;
+        c->size = size;
+        c->pos = 0;
+        c->playing = 0;
+        c->vol_l = 4096;
+        c->flags = flags;
+        c->vol_r = 4096;
+        c->fade_len = 112;
+        c->hist1 = 0;
+        c->hist2 = 0;
+        c->unk28 = 0;
+        c->unk2c = 0;
+        c->unk24 = 0;
+        c->loop_start = 0;
+        c->loop_end = 0;
+        c->fade_count = 0;
+    } else {
+        if (data != 0) {
+            return (int)0x80440006;
+        }
+        if (size != 0) {
+            return (int)0x80440007;
+        }
+        c = &wave_ch[ch];
+        c->data = 0;
+        c->size = 0;
+        c->pos = 0;
+        c->playing = 0;
+        c->vol_l = 4096;
+        c->flags = flags;
+        c->vol_r = 4096;
+        c->fade_len = 112;
+        c->hist1 = 0;
+        c->hist2 = 0;
+        c->unk28 = 0;
+        c->unk2c = 0;
+        c->unk24 = 0;
+        c->loop_start = 0;
+        c->loop_end = 0;
+        c->fade_count = 0;
     }
-    c->data = data;
-    c->size = size;
-    c->flags = flags;
-    c->vol_r = 4096;
-    c->fade_len = 112;
-    c->fade_count = 0;
-    c->pos = 0;
-    c->playing = 0;
-    c->vol_l = 4096;
-    c->hist1 = 0;
-    c->hist2 = 0;
-    c->unk28 = 0;
-    c->unk2c = 0;
-    c->unk24 = 0;
-    c->loop_start = 0;
-    c->loop_end = 0;
     return 0;
 }
 
@@ -223,11 +238,14 @@ int wave_ch_set_volume(unsigned int ch, unsigned int l, unsigned int r)
     if (ch >= 8) {
         return (int)0x80440005;
     }
-    if (l >= 128 || r >= 128) {
+    if (l >= 128) {
         return (int)0x8044000A;
     }
-    wave_ch[ch].vol_r = (int)(r << 12) / 127;
+    if (r >= 128) {
+        return (int)0x8044000A;
+    }
     wave_ch[ch].vol_l = (int)(l << 12) / 127;
+    wave_ch[ch].vol_r = (int)(r << 12) / 127;
     return 0;
 }
 
@@ -239,7 +257,10 @@ int wave_ch_get_volume(unsigned int ch, int *l, int *r)
     if (ch >= 8) {
         return (int)0x80440005;
     }
-    if (l == 0 || r == 0) {
+    if (l == 0) {
+        return (int)0x8044000A;
+    }
+    if (r == 0) {
         return (int)0x8044000A;
     }
     v = wave_ch[ch].vol_l;
@@ -255,11 +276,14 @@ int wave_ch_set_volume_raw(unsigned int ch, unsigned int l, unsigned int r)
     if (ch >= 8) {
         return (int)0x80440005;
     }
-    if (l > 4096 || r > 4096) {
+    if (l > 4096) {
         return (int)0x8044000A;
     }
-    wave_ch[ch].vol_r = r;
+    if (r > 4096) {
+        return (int)0x8044000A;
+    }
     wave_ch[ch].vol_l = l;
+    wave_ch[ch].vol_r = r;
     return 0;
 }
 
@@ -268,7 +292,10 @@ int wave_ch_get_volume_raw(unsigned int ch, int *l, int *r)
     if (ch >= 8) {
         return (int)0x80440005;
     }
-    if (l == 0 || r == 0) {
+    if (l == 0) {
+        return (int)0x8044000A;
+    }
+    if (r == 0) {
         return (int)0x8044000A;
     }
     *l = wave_ch[ch].vol_l;
@@ -304,49 +331,42 @@ int wave_ch_is_playing(unsigned int ch)
     return wave_ch[ch].playing;
 }
 
-/* (re)starts a channel from the beginning; a playing one fades out into the restart */
-static int wave_ch_play_common(unsigned int ch, int vl, int vr)
-{
-    WaveCh *c = &wave_ch[ch];
-
-    if (c->data == 0 && !(c->flags & 0x400)) {
-        return (int)0x80440006;
-    }
-    if (c->playing) {
-        WaveCh *s = &wave_shadow[ch];
-
-        s->playing = 1;
-        s->unk2c = 0;
-        s->pos = 0;
-        s->hist1 = 0;
-        s->hist2 = 0;
-        c->flags |= 0x110000;
-        s->vol_l = vl;
-        s->vol_r = vr;
-        s->unk28 = 0;
-    } else {
-        c->playing = 1;
-        c->unk2c = 0;
-        c->pos = 0;
-        c->hist1 = 0;
-        c->hist2 = 0;
-        c->unk28 = 0;
-        c->vol_l = vl;
-        c->vol_r = vr;
-    }
-    return 0;
-}
-
-/* volumes 0..127 */
+/* (re)start a channel from the beginning; a playing one fades out into the restart. volumes 0..127 */
 int wave_ch_play(unsigned int ch, unsigned int l, unsigned int r)
 {
     if (ch >= 8) {
         return (int)0x80440005;
     }
-    if (l >= 128 || r >= 128) {
+    if (l >= 128) {
         return (int)0x8044000A;
     }
-    return wave_ch_play_common(ch, (int)(l << 12) / 127, (int)(r << 12) / 127);
+    if (r >= 128) {
+        return (int)0x8044000A;
+    }
+    if (wave_ch[ch].data == 0 && !(wave_ch[ch].flags & 0x400)) {
+        return (int)0x80440006;
+    }
+    if (wave_ch[ch].playing) {
+        wave_shadow[ch].vol_l = (int)(l << 12) / 127;
+        wave_shadow[ch].vol_r = (int)(r << 12) / 127;
+        wave_shadow[ch].unk2c = 0;
+        wave_ch[ch].flags |= 0x110000;
+        wave_shadow[ch].pos = 0;
+        wave_shadow[ch].hist1 = 0;
+        wave_shadow[ch].hist2 = 0;
+        wave_shadow[ch].unk28 = 0;
+        wave_shadow[ch].playing = 1;
+    } else {
+        wave_ch[ch].playing = 1;
+        wave_ch[ch].vol_l = (int)(l << 12) / 127;
+        wave_ch[ch].vol_r = (int)(r << 12) / 127;
+        wave_ch[ch].pos = 0;
+        wave_ch[ch].hist1 = 0;
+        wave_ch[ch].hist2 = 0;
+        wave_ch[ch].unk28 = 0;
+        wave_ch[ch].unk2c = 0;
+    }
+    return 0;
 }
 
 /* volumes 0..4096 */
@@ -355,10 +375,36 @@ int wave_ch_play_raw(unsigned int ch, unsigned int l, unsigned int r)
     if (ch >= 8) {
         return (int)0x80440005;
     }
-    if (l > 4096 || r > 4096) {
+    if (l > 4096) {
         return (int)0x8044000A;
     }
-    return wave_ch_play_common(ch, l, r);
+    if (r > 4096) {
+        return (int)0x8044000A;
+    }
+    if (wave_ch[ch].data == 0 && !(wave_ch[ch].flags & 0x400)) {
+        return (int)0x80440006;
+    }
+    if (wave_ch[ch].playing) {
+        wave_shadow[ch].vol_l = l;
+        wave_shadow[ch].vol_r = r;
+        wave_shadow[ch].unk2c = 0;
+        wave_ch[ch].flags |= 0x110000;
+        wave_shadow[ch].pos = 0;
+        wave_shadow[ch].hist1 = 0;
+        wave_shadow[ch].hist2 = 0;
+        wave_shadow[ch].unk28 = 0;
+        wave_shadow[ch].playing = 1;
+    } else {
+        wave_ch[ch].playing = 1;
+        wave_ch[ch].vol_l = l;
+        wave_ch[ch].vol_r = r;
+        wave_ch[ch].pos = 0;
+        wave_ch[ch].hist1 = 0;
+        wave_ch[ch].hist2 = 0;
+        wave_ch[ch].unk28 = 0;
+        wave_ch[ch].unk2c = 0;
+    }
+    return 0;
 }
 
 /* stops a channel; a playing one fades out first */
@@ -393,10 +439,15 @@ int wave_ch_stop(unsigned int ch)
 /* hardware channel hw (0-3): samples per output, 64..65472 in steps of 64 */
 int wave_set_sample(unsigned int hw, unsigned int samples)
 {
+    int ret;
+
     if (hw >= 4) {
         return (int)0x80440010;
     }
-    if (samples - 0x40 >= 0xFF81 || (samples & 0x3F) != 0) {
+    if (samples - 0x40 > 0xFF80) {
+        return (int)0x80440011;
+    }
+    if ((samples & 0x3F) != 0) {
         return (int)0x80440011;
     }
     return sceAudioSetChannelDataLen(wave_hw_ch[hw], samples);
@@ -407,7 +458,10 @@ int wave_set_volume(unsigned int hw, unsigned int l, unsigned int r)
     if (hw >= 4) {
         return (int)0x80440010;
     }
-    if (l > 0x8000 || r > 0x8000) {
+    if (l > 0x8000) {
+        return (int)0x8044000A;
+    }
+    if (r > 0x8000) {
         return (int)0x8044000A;
     }
     return sceAudioChangeChannelVolume(wave_hw_ch[hw], l, r);
@@ -418,7 +472,10 @@ int wave_audio_output(unsigned int hw, unsigned int l, unsigned int r, void *buf
     if (hw >= 4) {
         return (int)0x80440010;
     }
-    if (l > 0x8000 || r > 0x8000) {
+    if (l > 0x8000) {
+        return (int)0x8044000A;
+    }
+    if (r > 0x8000) {
         return (int)0x8044000A;
     }
     return sceAudioOutputPanned(wave_hw_ch[hw], l, r, buf);
@@ -429,7 +486,10 @@ int wave_audio_write(unsigned int hw, unsigned int l, unsigned int r, void *buf)
     if (hw >= 4) {
         return (int)0x80440010;
     }
-    if (l > 0x8000 || r > 0x8000) {
+    if (l > 0x8000) {
+        return (int)0x8044000A;
+    }
+    if (r > 0x8000) {
         return (int)0x8044000A;
     }
     return sceAudioOutputPannedBlocking(wave_hw_ch[hw], l, r, buf);
@@ -578,17 +638,17 @@ int wave_thread(unsigned int args, void *argp)
     int idx = 0;
 
     while (wave_stop_req == 0) {
-        unsigned char *buf = wave_mix_buf + idx * 0x700;
+        int off = idx * 0x700;
 
-        if (wave_mix_block(buf) == 0) {
+        if (wave_mix_block(wave_mix_buf + off) == 0) {
             sceKernelDelayThread(10000);
         } else {
             int i;
 
             for (i = 1; i < 16; i++) {
-                wave_mix_block(buf + i * 0x70);
+                wave_mix_block(wave_mix_buf + off + i * 0x70);
             }
-            sceAudioOutputBlocking(a->main_ch, 0x8000, buf);
+            sceAudioOutputBlocking(a->main_ch, 0x8000, wave_mix_buf + off);
             idx = (idx + 1) % 2;
         }
     }
@@ -647,8 +707,8 @@ int vag_decode_block(short *out, const unsigned char *in, int *hist1, int *hist2
     int shift = in[0] & 0xF;
     int pred = in[0] >> 4;
     int flags = in[1];
-    int c0 = vag_coef0[pred];
-    int c1 = vag_coef1[pred];
+    int c0 = vag_coef[0][pred];
+    int c1 = vag_coef[1][pred];
     int s1 = *hist1;
     int s2 = *hist2;
     int i;
@@ -686,7 +746,7 @@ static void copy_bytes(unsigned char *dst, const unsigned char *src, unsigned in
     unsigned int i;
 
     for (i = 0; i < n; i++) {
-        dst[i] = src[i];
+        *dst++ = *src++;
     }
 }
 
@@ -747,53 +807,84 @@ void wave_ch_decode_vag(int ch, unsigned char *pcm)
     }
 }
 
+/* wave_ch_copy_pcm, once per block size (0x38 mono, 0x70 stereo): the SDK's GCC expands the two helpers in place for
+   each constant, so the original has four copies of the code */
+#if defined(__mips__) && !defined(__MWERKS__)
+#define WAVE_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define WAVE_ALWAYS_INLINE
+#endif
+static inline void wave_pcm_once(int ch, unsigned char *pcm, const unsigned char *data, int blk) WAVE_ALWAYS_INLINE;
+static inline void wave_pcm_once(int ch, unsigned char *pcm, const unsigned char *data, int blk)
+{
+    unsigned int i;
+
+    if (wave_ch[ch].size >= wave_ch[ch].pos + blk) {
+        copy_bytes(pcm, data + wave_ch[ch].pos, blk);
+        wave_ch[ch].pos += blk;
+        return;
+    }
+    {
+        unsigned char *p = pcm;
+
+        for (i = 0; i < 0x70; i++) {
+            *p++ = 0;
+        }
+    }
+    copy_bytes(pcm, data + wave_ch[ch].pos, wave_ch[ch].size - wave_ch[ch].pos);
+    wave_ch[ch].pos = 0;
+    wave_ch[ch].playing = 0;
+}
+
+static inline void wave_pcm_loop(int ch, unsigned char *pcm, const unsigned char *data, int blk) WAVE_ALWAYS_INLINE;
+static inline void wave_pcm_loop(int ch, unsigned char *pcm, const unsigned char *data, int blk)
+{
+    if (wave_ch[ch].size >= blk) {
+        unsigned int rem = wave_ch[ch].size - wave_ch[ch].pos;
+
+        if (wave_ch[ch].pos + blk < wave_ch[ch].size) {
+            copy_bytes(pcm, data + wave_ch[ch].pos, blk);
+            wave_ch[ch].pos += blk;
+            return;
+        }
+        copy_bytes(pcm, data + wave_ch[ch].pos, rem);
+        wave_ch[ch].pos = 0;
+        copy_bytes(pcm + rem, data, blk - rem);
+        wave_ch[ch].pos = blk - rem;
+    } else {
+        unsigned int done = wave_ch[ch].size - wave_ch[ch].pos;
+        int need = blk - done;
+
+        copy_bytes(pcm, data + wave_ch[ch].pos, done);
+        wave_ch[ch].pos = 0;
+        while (need > wave_ch[ch].size) {
+            copy_bytes(pcm + done, data, wave_ch[ch].size);
+            need -= wave_ch[ch].size;
+            done += wave_ch[ch].size;
+        }
+        copy_bytes(pcm + done, data, need);
+        wave_ch[ch].pos += need;
+    }
+}
+
 /* next PCM block of a channel into pcm: 0x38 bytes (28 mono samples) or 0x70 (28 stereo) */
 void wave_ch_copy_pcm(int ch, unsigned char *pcm)
 {
-    WaveCh *c = &wave_ch[ch];
-    const unsigned char *data = c->data;
-    int blk = (c->flags & 0x200) ? 0x70 : 0x38;
-    unsigned int i;
+    const unsigned char *data = wave_ch[ch].data;
+    unsigned int flags = wave_ch[ch].flags;
 
-    if ((c->flags & 1) == 0) {
-        if (c->size < c->pos + blk) {
-            for (i = 0; i < 0x70; i++) {
-                pcm[i] = 0;
-            }
-            copy_bytes(pcm, data + c->pos, c->size - c->pos);
-            c->playing = 0;
-            c->pos = 0;
-            return;
+    if ((flags & 1) == 0) {
+        if (!(flags & 0x200)) {
+            wave_pcm_once(ch, pcm, data, 0x38);
+        } else {
+            wave_pcm_once(ch, pcm, data, 0x70);
         }
-        copy_bytes(pcm, data + c->pos, blk);
-        c->pos += blk;
-        return;
-    }
-    if (c->size >= blk) {
-        unsigned int rem = c->size - c->pos;
-
-        if (c->pos + blk < c->size) {
-            copy_bytes(pcm, data + c->pos, blk);
-            c->pos += blk;
-            return;
-        }
-        copy_bytes(pcm, data + c->pos, rem);
-        c->pos = 0;
-        copy_bytes(pcm + rem, data, blk - rem);
-        c->pos = blk - rem;
     } else {
-        unsigned int done = c->size - c->pos;
-        int need = blk - done;
-
-        copy_bytes(pcm, data + c->pos, done);
-        c->pos = 0;
-        while (need > c->size) {
-            copy_bytes(pcm + done, data, c->size);
-            need -= c->size;
-            done += c->size;
+        if (!(flags & 0x200)) {
+            wave_pcm_loop(ch, pcm, data, 0x38);
+        } else {
+            wave_pcm_loop(ch, pcm, data, 0x70);
         }
-        copy_bytes(pcm + done, data, need);
-        c->pos += need;
     }
 }
 
