@@ -6,7 +6,7 @@
 // @gcc 0x0880C2EC-0x0880C30C nl_findfp
 // @gcc 0x0880C30C-0x0880C330 nl_findfp
 // @gcc 0x0880C330-0x0880C3B4 nl_findfp
-// @asm 0x0880C4D0-0x0880C888
+// @gcc 0x0880C4D0-0x0880C888 nl_freer
 // @gcc 0x0880C888-0x0880C8EC
 // @gcc 0x0880C8EC-0x0880CCCC nl_fvwrite
 // @gcc 0x0880CCCC-0x0880CDD4 nl_fwalk
@@ -312,7 +312,7 @@ size_t fread(void *buf, size_t size, size_t count, LibcFile *fp)
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC: dlmalloc state through %hi/%lo */
+#ifdef NON_MATCHING /* PSP: nl_freer.c (newlib mallocr.c, DEFINE_FREE) */
 /* the port's allocator is platform_malloc (see libc_malloc.c) */
 void _free_r(void *r, void *p)
 {
