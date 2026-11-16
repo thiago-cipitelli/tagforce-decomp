@@ -1,7 +1,6 @@
 # Funções que não batem por limitação conhecida (docs/matching.md, "Não-corrigíveis"). Uma por linha:
 # função<TAB>módulo<TAB>motivo. tools/asm_queue.py tira estas da fila; acrescente as que você confirmar.
 duel_req_mill	libduel_eng	9 palavras: p/n em registradores trocados; 1680 ordens de declaração (rodada 8)
-duel_req_swap_zones	libduel_eng	distância alinhada 86: quadro já igual (fa/fb/fl como struct de u16); o 219 ainda reaproveita o endereço da zona A que o original recalcula depois do memcpy (rodada 34)
 dd_chr_attach_mtx	libduel_draw	90 palavras por uma instrução: cópia move a3,a2 de id que o mwcc propaga (rodada 11)
 dd_info_stats	libduel_draw	4 palavras: leituras volatile de si[2]/si[5]/si[7]; ~800 combinações sem passar de 4 (rodada 27)
 font_glyph_cache	BOOT	55 palavras: f e font trocam s1/s5 (ordem de alocação); code é u16 de verdade; ~1500 variantes de ordem, tipo e identidade testadas (rodada 30)
@@ -14,4 +13,3 @@ duel_field_controller	libduel_eng	101 palavras: blocos {p, cur, base} e {ef, src
 st_chr_step_value	libstory	10 palavras: registradores de level/tabela; 288 ordens × tipos (rodada 23)
 dd_fx_shatter_update	libduel_draw	41 palavras, todas no laço que monta os estilhaços: constantes 0.4921875/14.67 em a0/v1 e escalonamento de 15.5 * j (rodada 33)
 duel_08846584	libduel_eng	253 palavras com estrutura idêntica: ap e o ponteiro de st trocados, permutação add/n/h na parte do atacante; 840 amostras (rodada 35)
-duel_088451E8	libduel_eng	distância alinhada 86: o original derrama me desde o início e mantém &duel.players[me] num $s; uma leitura a menos de me já o derrama, mas também derrama a base do case 200 (rodada 35)
