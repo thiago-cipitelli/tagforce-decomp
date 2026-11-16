@@ -3,8 +3,7 @@
 // @asm 0x08818F54-0x08818FD0
 // @gcc 0x08818FD0-0x0881908C
 // @asm 0x0881908C-0x08819394
-// @gcc 0x08819394-0x08819984
-// @gcc 0x08819A08-0x08819A44
+// @gcc 0x08819394-0x08819A44
 // @gcc 0x08819AE0-0x08819BEC
 /* Sony's libccc (sceCcc*, character code conversion): UTF-8, UTF-16 and Shift JIS strings, the JIS
    X 0208/0213 code they decode to (bit 15 = plane 2) and the per-encoding error characters
@@ -215,20 +214,38 @@ unsigned int ccc_decode_sjis(const u8 **s)
     return (plane << 15 | (row + 0x20) << 8 | (col + 0x20)) & 0xFFFF;
 }
 
+/* sceCccIsValidJIS (ccc_is_valid_jis below), which the SDK's GCC expands inside ccc_encode_sjis */
+static inline int ccc_is_valid_jis_inl(unsigned int c)
+{
+    unsigned int row;
+    unsigned int col;
+    unsigned int plane;
+
+    c &= 0xFFFF;
+    plane = c >> 15;
+    row = (c >> 8) & 0x7F;
+    col = c & 0x7F;
+    if (row - 0x21 >= 94 || col < 0x21 || col >= 0x7F) {
+        return 0;
+    }
+    if (plane) {
+        if (row == 0x22 || row == 0x26 || row == 0x27 || row - 0x29 < 3 || row - 0x30 < 62) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 void ccc_encode_sjis(u8 **d, unsigned int jis)
 {
     u8 *p = *d;
     unsigned int c = jis & 0xFFFF;
 
-    if (!(c < 0x80 || (u16)(c - 0xA0) < 0x40)) {
-        unsigned int row = (c >> 8) & 0x7F;
-        unsigned int col = c & 0x7F;
-
-        if (!JIS_VALID(row, col, c >> 15)) {
-            c = D_088F97C0;
-        }
+    if ((u16)(c - 0xA0) < 0x40 || c < 0x80) {
+    } else if (!ccc_is_valid_jis_inl(c)) {
+        c = D_088F97C0;
     }
-    if (c < 0x80 || (u16)(c - 0xA0) < 0x40 || c - 0xFD < 3) {
+    if ((u16)(c - 0xA0) < 0x40 || c < 0x80 || c - 0xFD < 3) {
         *p = (u8)c;
     } else {
         unsigned int row = (c >> 8) & 0x7F;
@@ -242,10 +259,10 @@ void ccc_encode_sjis(u8 **d, unsigned int jis)
         } else {
             *p++ = (u8)((row + 379) >> 1);
         }
-        if (r & 1) {
-            *p = (u8)(t < 64 ? t + 63 : t + 64);
-        } else {
+        if (!(r & 1)) {
             *p = (u8)(t - 98);
+        } else {
+            *p = (u8)(t < 64 ? t + 63 : t + 64);
         }
     }
     *d = p + 1;
@@ -568,53 +585,29 @@ int ccc_is_valid_ucs2(unsigned int c);
 #endif
 
 /* sceCccIsValidJIS */
-#ifdef __MWERKS__
-asm int ccc_is_valid_jis(unsigned int c)
-{
-    andi t0, a0, 0xffff
-    ext a2, t0, 0x8, 0x7
-    addiu a3, a2, -33
-    sltiu v1, a3, 94
-    andi a1, t0, 0x7f
-    xori t1, v1, 0x1
-    sltiu t2, a1, 33
-    or a3, t1, t2
-    bnez a3, L_088199F8
-    srl a0, t0, 0xf
-    sltiu t3, a1, 127
-    beqz t3, L_088199F8
-    nop
-    beqz a0, L_08819A00
-    xori t5, a2, 0x26
-    xori v0, a2, 0x22
-    sltiu a1, v0, 1
-    sltiu t4, t5, 1
-    or a0, a1, t4
-    bnez a0, L_088199F8
-    addiu t6, zero, 39
-    beq a2, t6, L_088199F8
-    addiu t8, a2, -41
-    sltiu t7, t8, 3
-    bnez t7, L_088199F8
-    addiu t9, a2, -48
-    sltiu a2, t9, 62
-    beqz a2, L_08819A00
-    nop
-L_088199F8:
-    jr ra
-    move v0, zero
-L_08819A00:
-    jr ra
-    addiu v0, zero, 1
-}
-#else
+#ifndef __MWERKS__ /* PSP: ccc_gcc.c */
 int ccc_is_valid_jis(unsigned int c)
 {
-    unsigned int row = (c >> 8) & 0x7F;
-    unsigned int col = c & 0x7F;
+    unsigned int row;
+    unsigned int col;
+    unsigned int plane;
 
-    return JIS_VALID(row, col, (c & 0xFFFF) >> 15);
+    c &= 0xFFFF;
+    plane = c >> 15;
+    row = (c >> 8) & 0x7F;
+    col = c & 0x7F;
+    if (row - 0x21 >= 94 || col < 0x21 || col >= 0x7F) {
+        return 0;
+    }
+    if (plane) {
+        if (row == 0x22 || row == 0x26 || row == 0x27 || row - 0x29 < 3 || row - 0x30 < 62) {
+            return 0;
+        }
+    }
+    return 1;
 }
+#else
+int ccc_is_valid_jis(unsigned int c);
 #endif
 
 /* sceCccIsValidUTF8: any value below 2^31 can be encoded */
