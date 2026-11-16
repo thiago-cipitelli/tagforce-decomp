@@ -32,6 +32,8 @@ of cc1 1.7.1 (run with -dP, so every instruction carries its RTL, REG_DEAD notes
      block is only reordered when the replay of the unchanged block gives cc1's order. The tied copy of rule A
      keeps the count and is not rescheduled (its effect on -frename-registers is not modelled).
 
+  F. `ulw`/`usw` become the `.word` of Sony's lwl/lwr (swl/swr) pair (psp-as 1.3.1 rejects lwl/lwr on allegrex).
+
 A rewrite that would change the number of instructions inside a `.set noreorder` pair (branch + delay slot) is not
 done. What the pass cannot do is in docs/build.md: the later revision allocates registers and schedules around the
 two-instruction form, and that is beyond a peephole.
@@ -207,7 +209,28 @@ def peep(text, unused=()):
                 new = [new[0] + '\t # %s' % u]
             out.extend(new)
         rtl = ''
-    return drop_unused_objects('\n'.join(x for x in out if x is not None), unused)
+    return unaligned(drop_unused_objects('\n'.join(x for x in out if x is not None), unused))
+
+
+ULW = re.compile(r'^\s*(ulw|usw)\s+\$(\d+),(-?\d+)\(\$(\d+)\)(.*)$')
+
+
+def unaligned(text):
+    """Rule F. `ulw`/`usw` (newlib's machine/mips memcpy): Sony's assembler expands them to `lwl rt,o+3(b)` +
+    `lwr rt,o(b)` (`swl`/`swr`); psp-as 1.3.1 refuses lwl/lwr on the allegrex and expands to byte accesses, so
+    the pair is written as .word."""
+    out = []
+    for l in text.split('\n'):
+        m = ULW.match(l)
+        if m:
+            hi, lo = (0x22, 0x26) if m.group(1) == 'ulw' else (0x2A, 0x2E)
+            rt, o, b = int(m.group(2)), int(m.group(3)), int(m.group(4))
+            enc = lambda op, off: (op << 26) | (b << 21) | (rt << 16) | (off & 0xFFFF)
+            out += ['\t.word\t0x%08x\t# %sl $%d,%d($%d)%s' % (enc(hi, o + 3), m.group(1)[1], rt, o + 3, b, m.group(5)),
+                    '\t.word\t0x%08x\t# %sr $%d,%d($%d)' % (enc(lo, o), m.group(1)[1], rt, o, b)]
+        else:
+            out.append(l)
+    return '\n'.join(out)
 
 
 DATA = re.compile(r'^\t\.(word|half|byte|ascii|asciz|space|float|double|dword|align)\b')
@@ -550,6 +573,9 @@ def check():
     r = peep(d, ['one', 'two'])
     assert peep(d) == d
     assert 'one' not in r and 'two:' in r and '.word\t2' in r and '.word\t1' not in r, r
+    # F: ulw/usw
+    w = lambda t: re.findall(r'\.word\t(0x\w+)', peep(t))
+    assert w('\tulw\t$2,0($5)\n') == ['0x88a20003', '0x98a20000'] and w('\tusw\t$2,4($3)\n') == ['0xa8620007', '0xb8620004']
     print('psp_gcc_peep.py: sanity check OK')
 
 

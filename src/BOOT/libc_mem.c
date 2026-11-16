@@ -1,5 +1,7 @@
 // @range 0x0880DC98-0x0880E700
 // @gcc 0x0880DC98-0x0880DD1C libc_memcmp
+// @gcc 0x0880DD1C-0x0880DE28 nl_memcpy
+// @asm 0x0880DE28-0x0880DE40
 // @gcc 0x0880E1F8-0x0880E270
 // @asm 0x0880E270-0x0880E520
 /* newlib (GCC) of the Sony SDK libc: memcmp, memcpy, memmove, memset, the interrupt-disabling
@@ -16,93 +18,8 @@ extern const char libc_locale_c2[];    /* 0x08873C14 "C" */
 
 /* newlib memcmp (word compare when both are aligned) */
 /* newlib memcpy (16/4-byte blocks when aligned) */
-#ifdef __MWERKS__
-asm void *memcpy(void *d, const void *s, size_t n)
-{
-    or v0, a1, a0
-    andi v0, v0, 0x3
-    bnez v0, @a4
-    move t2, a0
-    srl t0, a2, 0x4
-    move t1, a1
-    andi a2, a2, 0xf
-    beqz t0, @54
-    move a3, a0
-@24:
-    lw v0, 0(t1)
-    lw v1, 4(t1)
-    lw a0, 8(t1)
-    lw a1, 12(t1)
-    addiu t0, t0, -1
-    sw v0, 0(a3)
-    addiu t1, t1, 16
-    sw v1, 4(a3)
-    sw a0, 8(a3)
-    sw a1, 12(a3)
-    bnez t0, @24
-    addiu a3, a3, 16
-@54:
-    srl t0, a2, 0x2
-    beqz t0, @78
-    andi a2, a2, 0x3
-@60:
-    lw v0, 0(t1)
-    addiu t0, t0, -1
-    addiu t1, t1, 4
-    sw v0, 0(a3)
-    bnez t0, @60
-    addiu a3, a3, 4
-@78:
-    move v1, a3
-    blez a2, @9c
-    move a1, t1
-@84:
-    lbu v0, 0(a1)
-    addiu a2, a2, -1
-    addiu a1, a1, 1
-    sb v0, 0(v1)
-    bgtz a2, @84
-    addiu v1, v1, 1
-@9c:
-    jr ra
-    move v0, t2
-@a4:
-    sra v0, a2, 0x1f
-    srl v0, v0, 0x1e
-    addu v0, a2, v0
-    sra t0, v0, 0x2
-    sll v1, t0, 0x2
-    subu a2, a2, v1
-    beqz t0, @e4
-    move v1, a0
-@c4:
-    addiu t0, t0, -1
-    lwl v0, 3(a1)
-    lwr v0, 0(a1)
-    addiu a1, a1, 4
-    swl v0, 3(v1)
-    swr v0, 0(v1)
-    bnez t0, @c4
-    addiu v1, v1, 4
-@e4:
-    blez a2, @9c
-    nop
-@ec:
-    lbu v0, 0(a1)
-    addiu a2, a2, -1
-    addiu a1, a1, 1
-    sb v0, 0(v1)
-    bgtz a2, @ec
-    addiu v1, v1, 1
-    j @9c
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-}
+#ifdef __MWERKS__ /* nl_memcpy.c (GCC track) */
+void *memcpy(void *d, const void *s, size_t n);
 #else
 void *memcpy(void *d, const void *s, size_t n)
 {
