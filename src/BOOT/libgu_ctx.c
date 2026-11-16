@@ -1,6 +1,7 @@
 // @range 0x08807070-0x088087F8
 // @gcc 0x08807070-0x0880712C
 // @asm 0x0880712C-0x08807338
+// @gcc 0x08807C6C-0x08807CDC
 // @gcc 0x08807DD0-0x08807DFC
 // @asm 0x08807E90-0x08807F94
 // @gcc 0x08807F94-0x08807FD8
@@ -922,52 +923,23 @@ void gu_ctx_depth_offset(GuList *l, int offset)
 #endif
 
 /* PATCHPRIM: points (2) -> 1... GU_POINTS 0, lines 2, triangles 4 */
-#ifdef __MWERKS__
-asm void gu_ctx_patch_prim(GuList *l, int prim)
-{
-    lui v0, 0x3700
-    addiu a3, zero, 2
-    ori a2, v0, 0x1
-    beq a1, a3, @5c
-    slti v1, a1, 3
-    beqz v1, @40
-    addiu v1, zero, 4
-    lui a2, 0x3700
-    bnez a1, @38
-    ori v1, a2, 0x2
-    lw t4, 8(a0)
-    addiu t3, t4, 4
-    sw v1, 0(t4)
-    sw t3, 8(a0)
-@38:
-    jr ra
-    nop
-@40:
-    bne a1, v1, @38
-    lui t0, 0x3700
-    lw a3, 8(a0)
-    addiu a1, a3, 4
-    sw t0, 0(a3)
-    jr ra
-    sw a1, 8(a0)
-@5c:
-    lw t2, 8(a0)
-    addiu t1, t2, 4
-    sw a2, 0(t2)
-    jr ra
-    sw t1, 8(a0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_patch_prim(GuList *l, int prim)
 {
-    if (prim == 2) {
-        ctx_push(l, 0x37000001);
-    } else if (prim == 0) {
-        ctx_push(l, 0x37000002);
-    } else if (prim == 4) {
+    switch (prim) {
+    case 4:
         ctx_push(l, 0x37000000);
+        break;
+    case 2:
+        ctx_push(l, 0x37000001);
+        break;
+    case 0:
+        ctx_push(l, 0x37000002);
+        break;
     }
 }
+#else
+void gu_ctx_patch_prim(GuList *l, int prim);
 #endif
 
 /* EMISSIVE, DIFFUSE, AMBIENT + ALPHA, SPECULAR */

@@ -56,6 +56,8 @@ segments:
       - [0x30D0, c, libgu_ctx_gcc]
       - [0x318C, asm, libgu_ctx_asm_0880712C]
       - [0x3398, c, libgu_ctx]
+      - [0x3CCC, c, libgu_ctx_gcc]
+      - [0x3D3C, c, libgu_ctx]
       - [0x3E30, c, libgu_ctx_gcc]
       - [0x3E5C, c, libgu_ctx]
       - [0x3EF0, asm, libgu_ctx_asm_08807E90]
