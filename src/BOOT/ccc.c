@@ -1,13 +1,13 @@
 // @range 0x08818E64-0x08819BEC
-// @gcc 0x08818E64-0x08818EE0
-// @asm 0x08818EE0-0x08819394
+// @gcc 0x08818E64-0x08818F54
+// @asm 0x08818F54-0x08818FD0
+// @gcc 0x08818FD0-0x0881908C
+// @asm 0x0881908C-0x08819394
 // @asm 0x08819464-0x08819758
 // @asm 0x08819758-0x08819868
 // @gcc 0x08819924-0x08819984
 // @gcc 0x08819A08-0x08819A44
-// @gcc 0x08819AE0-0x08819B94
-// @asm 0x08819B94-0x08819BCC
-// @gcc 0x08819BCC-0x08819BEC
+// @gcc 0x08819AE0-0x08819BEC
 /* Sony's libccc (sceCcc*, character code conversion): UTF-8, UTF-16 and Shift JIS strings, the JIS
    X 0208/0213 code they decode to (bit 15 = plane 2) and the per-encoding error characters
    substituted for invalid input. JIS <-> UCS-2 mapping uses two tables installed by
@@ -82,18 +82,31 @@ unsigned int ccc_decode_utf16(const u16 **s)
     return r;
 }
 
+/* sceCccIsValidUTF16's test, which the SDK's GCC inlines into ccc_encode_utf16 */
+static inline int utf16_ok(unsigned int c)
+{
+    if (c > 0x10FFFF) {
+        return 0;
+    }
+    if (c - 0xD800 < 0x800) {
+        return 0;
+    }
+    return 1;
+}
+
 void ccc_encode_utf16(u16 **d, unsigned int c)
 {
     u16 *p = *d;
 
-    if (c > 0x10FFFF || c - 0xD800 < 0x800) {
+    if (!utf16_ok(c)) {
         c = D_088F97C8;
     }
     if (c < 0x10000) {
         *p = (u16)c;
     } else {
-        *p++ = (u16)(((c - 0x10000) >> 10) + 0xD800);
-        *p = (u16)(((c - 0x10000) & 0x3FF) + 0xDC00);
+        c -= 0x10000;
+        *p++ = (u16)((c >> 10) + 0xD800);
+        *p = (u16)((c & 0x3FF) + 0xDC00);
     }
     *d = p + 1;
 }
@@ -141,9 +154,9 @@ void ccc_encode_utf8(u8 **d, unsigned int c)
                 n++;
             } while (c >= lim);
         }
-        mask = ((1u << (7 - n)) - 1) & 0xFF;
         q = p = p + n + 1;
-        while (n-- > 0) {
+        mask = ((1u << (7 - n)) - 1) & 0xFF;
+        while (n--) {
             *--q = (u8)((c & 0x3F) | 0x80);
             c >>= 6;
         }
@@ -813,11 +826,14 @@ unsigned int ccc_ucs_to_jis(unsigned int ucs, unsigned int def)
 {
     unsigned int j;
 
-    if (ucs > 0xFFFF) {
-        return def & 0xFFFF;
+    def &= 0xFFFF;
+    if (ucs <= 0xFFFF) {
+        j = D_088F97D0[ucs];
+        if (j) {
+            return j;
+        }
     }
-    j = D_088F97D0[ucs];
-    return j ? j : (def & 0xFFFF);
+    return def;
 }
 
 /* sceCccJIStoUCS: def when unmapped */

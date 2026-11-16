@@ -3988,3 +3988,42 @@ Quarta passada nas 12 entradas fora de libduel_eng: 4 batendo (`gim_walk`, `efs_
   `msgbox.c` não são uma unidade com os vizinhos para efeito destas duas: `wfmt.c + menu.c` e `net_ctl.c +
   msgbox.c` concatenados, a bateria de funções anteriores e os callees `static` (todos definidos DEPOIS dos
   chamadores) deixam `menu_layout` em 67 e `msgbox_open` em 36 por posição.
+
+## Rodada 36 (`oD`): CSE que o original não fez (derrame e endereço refeito)
+
+Quinta passada no skip: `duel_088451E8` (86 alinhadas -> 0) e `duel_req_swap_zones` (86 -> 0) batem. As duas eram
+"o original derrama X / refaz um endereço que o 219 guarda", e a causa era a mesma: um valor que o 219 une por CSE
+entre dois usos distantes e que no original eram árvores DIFERENTES. O CSE estica a vida do valor, muda quem é
+derramado e desloca todo o mapa de `$s`.
+
+- **Sinal**: o original refaz `lui/addiu base; addu prod; addu ofs` (ou um `me | 0x16`) mais adiante, onde o 219
+  reaproveita um registrador ou uma recarga da pilha; ou o original derrama uma variável e o 219 derrama um endereço.
+  Ler no original QUAIS partes do endereço vêm de `$s` (o produto do jogador, o deslocamento da zona) e quais são
+  recalculadas: a parte recalculada é a que tinha outra forma no fonte.
+- **Base com outra árvore, mesmo endereço**: `((DuelPlayer *)&duel)[me]` em vez de `duel.players[me]` (os jogadores
+  estão no início de `Duel`). O produto `me * 0xFAC` continua unido (fica no `$s`), a soma base + produto não.
+  `duel_088451E8`: o `n_hand` do bloco 0x12C8; `duel_req_swap_zones`: `sa` depois do 1º `memcpy`. `(int)me | 0x16`
+  separa a expressão do `me | 0x16` do caso 200 (com isso `me` passa a ser derramado em 60(sp) como no original).
+  `[(int)me]` / `[(unsigned int)me]` também separam, mas refazem o produto (`mult` a mais).
+- **Forma natural num lugar, macro no outro**: em `duel_req_swap_zones` o teste usa `ZOSLOT(bp, bo)->card.id` e
+  `sb = &duel.players[bp & 1].field[bz];` vem DEPOIS do teste: o ponteiro do slot não é unido com o do teste (só a
+  soma), e `addiu sb,soma,48` sai no atraso do `bnezl` como no original. Os campos do caso 1 na forma natural
+  (`duel.players[ap & 1].field[az].pos`) dão a ordem produto-antes-do-deslocamento que `ZOFF` invertia.
+- **Valor calculado logo antes da chamada que o usa primeiro**: `fl = ...` entre a 1ª e a 2ª `duel_effects_move_src`
+  (o original o monta depois da 1ª chamada); com `fa/fb/fl` `unsigned int` os 12 bytes "sem dono" do quadro (rodada
+  34, `struct { unsigned short w; }`) deixam de ser necessários: eram efeito do CSE, não locais.
+- Menores: o id do caso 102 num `unsigned` já declarado (`uid`, `loc` ou `e` servem; `k`, declarado depois, não),
+  `(int)` no campo de bits passado como 4º argumento (`duel_088D1438(p, z, 0, (int)...card.id)`) põe o `move
+  a2,zero` no atraso do `jal`. Ao promover `duel_088451E8` faltou a `// @rodata` da tabela de saltos
+  (0x08907F54-0x08907F70, dentro de um blob `data`): o `make check` acusa a `.text` inteira a partir de +0x184.
+- Sem forma (testado nesta rodada): `dd_info_stats` (ponteiro de struct, cópias em locais), `duel_0883449C`
+  (corpo num inline com p/z de parâmetro: a soma sai antes do `mult` só quando z é avaliado antes de p; pragmas
+  `schedule`/`opt_*`; base `((DuelPlayer *)&duel)`), `msgbox_open` (o 2 do teste continua em `a3` com variável
+  de bloco, if/else, `switch` em todas as ordens, casts), `st_chr_step_value` (192 ordens x tipos x atribuição, sem
+  `level`/sem `t`, ponteiro do save, pares em struct), `snd_group_release_all` (cópia de `free` com cast em 3
+  posições, contador = `which`, dummies de unidade), `duel_req_mill` (785 cópias com/sem cast de cada local em cada
+  posição e cada `case`: o mwcc propaga cópias de locais, só as de parâmetros ficam), `duel_field_controller` (cópia
+  de p/z com cast: p vai de s5 para s3/s4, nunca s2), `dd_fx_shatter_update` (cx antes dos stores piora: 41 -> 64),
+  `duel_08846584` (as 253 diferenças são todas renomeação de registradores; callee `duel_08846498` `static` na
+  mesma unidade não muda nada). Scripts em `build/tmp/oD/` (`t.py` = `mA_r35/t.py` com o diretório trocado,
+  `v_*.py` arquivos de variantes, `dump.sh` desmonte de uma função compilada com flags extras).

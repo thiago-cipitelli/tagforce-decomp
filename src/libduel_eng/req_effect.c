@@ -1,5 +1,4 @@
 // @range 0x088D6DE8-0x088DA5EC
-// @asm 0x088D7EA4-0x088D8354
 /* Requests that change effect entries and slot values directly (the effect half of the request steps
    in req_step.c), and the requests that show a card, flip a card of the hand/deck/extra deck and send
    a card from a zone or from the special slots to another pile. */
@@ -385,18 +384,10 @@ void duel_req_move_zone(void)
 }
 
 
-#ifdef NON_MATCHING /* reescrito com ZOSLOT/ZOFF e zo num local (era 264 palavras com tamanho errado); 7 instruções a
-                      menos que o original: o original não reaproveita o endereço da zona A do teste (recalcula sa depois
-                      do 1º memcpy) e guarda bo e o deslocamento do jogador B na pilha; nenhuma forma testada de sa ou do
-                      teste desfaz o CSE.
-   Rodada 34: fa/fb/fl como `struct { unsigned short w; }` (ficam em registrador, mas reservam os 12 bytes de pilha
-   que o original tem abaixo dos derrames: quadro de 96 bytes e tmp em sp+76 como no original) e as máscaras dos
-   flags antes de fb/fa/fl: distância alinhada 118 -> 86. Falta o mesmo de antes: o endereço da zona A do teste
-   fica em $s (o original o refaz depois do 1º memcpy e derrama bo); 81 pares de formas (teste x sa), (q = ap),
-   sb antes do teste e const/objetos separados não desfazem o CSE */
+/* Rodada 36: sa refeito depois do 1º memcpy porque a base vem de `((DuelPlayer *)&duel)[ap & 1]` (sem CSE com o
+   teste da zona A), sb na forma natural depois do teste, fl calculado entre as chamadas, fa/fb/fl unsigned int. */
 /* Swap the cards of zones arg and loc (player | zone << 8): exchange the slots, hide the ids while
    the host animates the swap, then put them back. */
-typedef struct ZS { unsigned short w; } ZS; /* packed player | zone << 8 */
 void duel_req_swap_zones(void)
 {
     unsigned int a;
@@ -406,13 +397,13 @@ void duel_req_swap_zones(void)
     unsigned int bp;
     int bz;
     DuelSlot tmp;
-    DuelSlot *sa;
     DuelSlot *sb;
+    DuelSlot *sa;
     DuelLoc la;
     DuelLoc lb;
-    ZS fa;
-    ZS fb;
-    ZS fl;
+    unsigned int fa;
+    unsigned int fb;
+    unsigned int fl;
     unsigned int ao;
     unsigned int bo;
 
@@ -434,19 +425,19 @@ void duel_req_swap_zones(void)
             duel_busy_0891523C = 0;
             return;
         }
-        sb = ZOSLOT(bp, bo);
+        sb = &duel.players[bp & 1].field[bz];
         duel_memcpy(&tmp, sb, sizeof(DuelSlot));
-        sa = ZOSLOT(ap, ao);
+        sa = (((DuelPlayer *)((ao) + (unsigned int)&((DuelPlayer *)&duel)[(ap) & 1]))->field);
         duel_memcpy(sb, sa, sizeof(DuelSlot));
         duel_memcpy(sa, &tmp, sizeof(DuelSlot));
         ZOFF(ap, ao, unsigned int, flags) &= ~0x200000;
         ZOFF(bp, bo, unsigned int, flags) &= ~0x200000;
-        fb.w = (bp + 2 & 0xFF) | (bz & 0xFF) << 8;
-        fa.w = (ap & 0xFF) | (az & 0xFF) << 8;
-        fl.w = (bp & 0xFF) | (bz & 0xFF) << 8;
-        duel_effects_move_src(fa.w, fb.w);
-        duel_effects_move_src(fl.w, fa.w);
-        duel_effects_move_src(fb.w, fl.w);
+        fb = (bp + 2 & 0xFF) | (bz & 0xFF) << 8;
+        fa = (unsigned char)ap | (az & 0xFF) << 8;
+        duel_effects_move_src(fa, fb);
+        fl = (bp & 0xFF) | (bz & 0xFF) << 8;
+        duel_effects_move_src(fl, fa);
+        duel_effects_move_src(fb, fl);
         duel_req.w = sa->card.id;
         duel_card_tmp.id = sb->card.id;
         sa->card.id = 0;
@@ -460,13 +451,13 @@ void duel_req_swap_zones(void)
         la.player = ap;
         la.zone = az;
         la.idx = 0;
-        la.b15 = ZOFF(ap, az * sizeof(DuelSlot), unsigned short, pos);
-        la.b14 = ZOFF(ap, az * sizeof(DuelSlot), unsigned short, faceup);
+        la.b15 = duel.players[ap & 1].field[az].pos;
+        la.b14 = duel.players[ap & 1].field[az].faceup;
         lb.player = bp;
         lb.zone = bz;
         lb.idx = 0;
-        lb.b15 = ZOFF(bp, bz * sizeof(DuelSlot), unsigned short, pos);
-        lb.b14 = ZOFF(bp, bz * sizeof(DuelSlot), unsigned short, faceup);
+        lb.b15 = duel.players[bp & 1].field[bz].pos;
+        lb.b14 = duel.players[bp & 1].field[bz].faceup;
         duel_host_call(0x19, 0, *(unsigned short *)&la, *(unsigned short *)&lb);
         duel_req_step++;
         return;
@@ -477,7 +468,6 @@ void duel_req_swap_zones(void)
     }
     duel_busy_0891523C = 0;
 }
-#endif
 
 /* Change the position of the monster in zone arg (w: by an effect; loc: also flip it). */
 void duel_req_change_pos(void)
