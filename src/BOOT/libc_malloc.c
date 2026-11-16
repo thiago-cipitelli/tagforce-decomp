@@ -8,7 +8,8 @@
 // @gcc 0x0880D104-0x0880D144 nl_malign
 // @gcc 0x0880D2CC-0x0880D2FC nl_malloc
 // @gcc 0x0880D2FC-0x0880D32C nl_malloc
-// @asm 0x0880D32C-0x0880DA9C
+// @gcc 0x0880D32C-0x0880D554 nl_mallocr
+// @gcc 0x0880D554-0x0880DA9C nl_mallocr
 // @gcc 0x0880DA9C-0x0880DB10 nl_mbrtowc
 // @gcc 0x0880DB10-0x0880DB70 nl_mbrtowc
 // @gcc 0x0880DB70-0x0880DBB0 nl_mbtowc_r
@@ -346,7 +347,7 @@ void free(void *p)
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC: dlmalloc state through %hi/%lo */
+#ifndef __MWERKS__ /* PSP: nl_mallocr.c */
 /* dlmalloc's sbrk growth of the top chunk is the platform allocator's business in the port */
 void libc_malloc_extend_top(void *r, size_t n)
 {

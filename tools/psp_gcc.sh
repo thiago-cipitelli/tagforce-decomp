@@ -55,7 +55,8 @@ shoff, = struct.unpack_from("<I", d, 0x20); shnum, = struct.unpack_from("<H", d,
 for i in range(shnum):
     o = shoff + i * 40 + 8
     struct.pack_into("<I", d, o, struct.unpack_from("<I", d, o)[0] & ~0x30)
-# Every function the object defines becomes a weak definition: only the functions of the `@gcc` ranges are linked
+# Every function and global variable the object defines becomes a weak definition (variables: rodada 37, the state of
+# nl_mallocr.c stays in the asm data under its symbols/BOOT.txt name): only the functions of the `@gcc` ranges are linked
 # from it, the others are defined by the mwcc file (asm) and must win. `#pragma weak` in the source does the same,
 # but at -O3 a weak function is not inlined, which changes the code of its callers.
 for i in range(shnum):
@@ -63,6 +64,6 @@ for i in range(shnum):
     if typ == 2:
         for j in range(off, off + size, 16):
             info = d[j + 12]; shndx, = struct.unpack_from("<H", d, j + 14)
-            if info == 0x12 and shndx: d[j + 12] = 0x22
+            if info in (0x11, 0x12) and shndx: d[j + 12] = info + 0x10
 open(sys.argv[1], "wb").write(d)
 PY
