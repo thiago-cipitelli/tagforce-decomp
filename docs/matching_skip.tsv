@@ -13,3 +13,4 @@ duel_field_controller	libduel_eng	101 palavras: blocos {p, cur, base} e {ef, src
 st_chr_step_value	libstory	10 palavras: registradores de level/tabela; 288 ordens × tipos (rodada 23)
 dd_fx_shatter_update	libduel_draw	41 palavras, todas no laço que monta os estilhaços: constantes 0.4921875/14.67 em a0/v1 e escalonamento de 15.5 * j (rodada 33)
 duel_08846584	libduel_eng	253 palavras com estrutura idêntica: ap e o ponteiro de st trocados, permutação add/n/h na parte do atacante; 840 amostras (rodada 35)
+dd_cursor_draw_arrow	libduel_draw	28 palavras: list/raised trocam com dx/dy; 5000 ordens de declaração, ordem de instruções, if/else e pragmas sem efeito (rodada 37)
