@@ -6,12 +6,20 @@
 
 /* PSP address spaces: physical (cache bits cleared) and the uncached mirror. On the host a pointer is just a
    pointer (the EDRAM is a buffer of platform/pc), so both are the identity there. */
-#ifdef __MWERKS__
+#if defined(__mips__) && !defined(__MWERKS__)
+/* the SDK's GCC (libgu*_gcc.c): the forms that give the original's `ext p,0,29` and `li 0x40000000; ins p,0,29` */
+#define PSP_PHYS(p) ((unsigned int)(p) << 3 >> 3)
+#define PSP_UNCACHED(p) ((unsigned int)(p) | 0x40000000)
+#define PSP_UNCACHED_PHYS(p) __builtin_allegrex_ins(0x40000000, (unsigned int)(p), 0, 29)
+#elif defined(__MWERKS__)
 #define PSP_PHYS(p) ((unsigned int)(p) & 0x1FFFFFFF)
 #define PSP_UNCACHED(p) ((unsigned int)(p) | 0x40000000)
 #else
 #define PSP_PHYS(p) ((unsigned int)(p))
 #define PSP_UNCACHED(p) ((unsigned int)(p))
+#endif
+#ifndef PSP_UNCACHED_PHYS
+#define PSP_UNCACHED_PHYS(p) PSP_UNCACHED(PSP_PHYS(p))
 #endif
 
 typedef struct GuList {                /* 0x088F0D5C + i * 0xFC, one per context (0..4) */

@@ -1,14 +1,9 @@
 // @range 0x08804A0C-0x08805EC4
-// @asm 0x08804A0C-0x08805008
-// @gcc 0x08805008-0x08805160
-// @asm 0x08805160-0x0880523C
-// @gcc 0x0880523C-0x08805304
-// @asm 0x08805304-0x0880541C
-// @gcc 0x0880541C-0x08805A60
+// @gcc 0x08804A0C-0x08804DB0
+// @asm 0x08804DB0-0x08804F54
+// @gcc 0x08804F54-0x08805A60
 // @asm 0x08805A60-0x08805ACC
-// @gcc 0x08805ACC-0x08805B54
-// @asm 0x08805B54-0x08805C84
-// @gcc 0x08805C84-0x08805EC4
+// @gcc 0x08805ACC-0x08805EC4
 /* libgu of the Sony SDK (GCC; names from the export NIDs): display-list contexts, frame/draw/depth
    buffers, the state bits and the first state commands. Nearly every function reaches the libgu
    globals through %hi/%lo, so they stay in the split asm and the C below is under NON_MATCHING;
@@ -49,6 +44,10 @@ GuHooks gu_hooks;
 #endif
 
 void gu_init_contexts(void);
+#ifdef __GNUC__
+/* reached by jal from sceGuDispBuffer: a separate function in the library, not inlined */
+void gu_set_display_mode(int psm, int width, int height, unsigned int dispbp, int fbw) __attribute__((noinline));
+#endif
 int sceGeSetCallback(void *cb);
 int sceGeUnsetCallback(int cbid);
 int sceGeListEnQueue(const void *list, void *stall, int cbid, void *arg);
@@ -69,7 +68,7 @@ void sceGuTexScale(float u, float v);
 void sceGuSpecular(float power);
 void gu_update_stall_list(void);
 
-extern const char gu_init_list[];      /* 0x08874FE8 */
+extern const unsigned int gu_ge_init_list[]; /* 0x08872B78, the GE init list of the library (.data); gfx.c has its own gu_init_list */
 #if defined(__mips__) && !defined(__MWERKS__)
 extern unsigned int gu_ge_stack[256];  /* 0x088F1258 */
 #else
@@ -82,17 +81,27 @@ static void gu_push(unsigned int w)
     *gu.list->cur++ = w;
 }
 
-/* The object's .rodata (0x08872EF0-0x08872F78) in the order the SDK's GCC emits it: this, the event flag name of
-   sceGuInit, the dither matrix, the jump tables of sceGuFinishId and sceGuSync; its .rodata.cst4 (the 1.0f of
-   sceGuStart) is at 0x088EB110. Not linked yet: sceGuFinishId does not match, and its jump table would point into
-   a discarded section (docs/build.md, "Trilha GCC", round 36). */
-/* sceGeListEnQueue argument of the GE list (PspGeListArgs: size, context, stack count, stacks) */
-const struct {
+/* The object's .rodata (0x08872EF0-0x08872F78): this, the event flag name of sceGuInit, the dither matrix, the
+   jump tables of sceGuFinishId and sceGuSync; its .rodata.cst4 (the 1.0f of sceGuStart, linked by libgu_gcc.c) is
+   at 0x088EB110. The SDK's GCC reads the first three at their original addresses (GU_RODATA): the jump table of
+   sceGuFinishId, which does not match, keeps the .rodata itself out of the link (docs/build.md, "Trilha GCC").
+   With the definitions below in this order the object's .rodata comes out identical (round 36). */
+typedef struct GuListArg {             /* sceGeListEnQueue argument (PspGeListArgs: size, context, stack count, stacks) */
     int size;
     void *context;
     int nstacks;
     unsigned int *stacks;
-} gu_list_arg = { 16, 0, 32, gu_ge_stack };
+} GuListArg;
+#if defined(__mips__) && !defined(__MWERKS__)
+#define GU_RODATA 1
+#define GU_S(name, lit) name
+extern const GuListArg gu_list_arg;    /* 0x08872EF0 */
+extern const char gu_signal_name[];    /* 0x08872F00 "SceGuSignal" */
+extern const int gu_dither_default[16]; /* 0x08872F10 */
+#else
+#define GU_S(name, lit) lit
+const GuListArg gu_list_arg = { 16, 0, 32, gu_ge_stack };
+#endif
 
 int sceGuInit(void)
 {
@@ -109,7 +118,7 @@ int sceGuInit(void)
     }
     gu.edram = (unsigned int)sceGeEdramGetAddr();
     gu_init_contexts();
-    r = sceKernelCreateEventFlag("SceGuSignal", 0x200, 1, 0);
+    r = sceKernelCreateEventFlag(GU_S(gu_signal_name, "SceGuSignal"), 0x200, 1, 0);
     if (r < 0) {
         return r;
     }
@@ -125,7 +134,7 @@ int sceGuInit(void)
         return r;
     }
     gu.ge_cb = r;
-    r = sceGeListEnQueue(gu_init_list, 0, -1, 0);
+    r = sceGeListEnQueue(gu_ge_init_list, 0, -1, 0);
     if (r < 0) {
         sceKernelDeleteEventFlag(gu_cb.event_flag);
         sceGeUnsetCallback(gu.ge_cb);
@@ -140,18 +149,18 @@ int sceGuInit(void)
 }
 
 /* the 4x4 dither matrix of the first sceGuStart */
+#ifndef GU_RODATA
 #ifdef __GNUC__
 __attribute__((aligned(8)))
 #endif
 const int gu_dither_default[16] = { -4, 0, -3, 1, 2, -2, 3, -1, -3, 1, -4, 0, 3, -1, 2, -2 };
+#endif
 
 /* Opens context cid on list (cid 0 is the GE list, 3/4 call lists, the others are built
    uncached and cleared to the next 64 bytes). */
 int sceGuStart(int cid, void *list, int arg)
 {
-    GuList *l;
     int flags;
-    unsigned int p = PSP_PHYS(list);
 
     if (!gu.initialized) {
         gu.list = 0;
@@ -163,22 +172,32 @@ int sceGuStart(int cid, void *list, int arg)
         gu.list = 0;
         return 0x80000021;
     }
-    gu.list = l = &gu.lists[cid];
-    l->next = gu.cid;
+    gu.lists[cid].next = gu.cid;
+    gu.list = &gu.lists[cid];
     gu.cid = cid;
     sceKernelCpuResumeIntr(flags);
     if (cid - 3U < 2) {
-        l->arg = arg;
-        l->cur = (unsigned int *)p;
-        l->start = (unsigned int *)p;
+        gu.list->start = (unsigned int *)PSP_PHYS(list);
+        gu.list->cur = (unsigned int *)PSP_PHYS(list);
+        gu.list->arg = arg;
     } else {
-        l->arg = arg;
-        l->cur = (unsigned int *)PSP_UNCACHED(p);
-        l->start = (unsigned int *)PSP_UNCACHED(p);
-        if (((unsigned int)list << 1) >> 31 == 0) {
+        gu.list->start = (unsigned int *)PSP_UNCACHED_PHYS(list);
+        gu.list->cur = (unsigned int *)PSP_UNCACHED_PHYS(list);
+        gu.list->arg = arg;
+        if (((unsigned int)list >> 30 & 1) == 0) {
             flags = sceKernelCpuSuspendIntr();
-            while ((unsigned int)l->cur & 0x3F) {
-                *l->cur++ = 0;
+#ifdef __mips__
+            __builtin_allegrex_cache(0x1B, list);
+#endif
+            for (;;) {
+                GuList *l = gu.list;
+                unsigned int *p = l->cur;
+
+                if (((unsigned int)p & 0x3F) == 0) {
+                    break;
+                }
+                l->cur = p + 1;
+                *p = 0;
             }
             sceKernelCpuResumeIntr(flags);
         }
@@ -187,7 +206,7 @@ int sceGuStart(int cid, void *list, int arg)
         int r;
 
         gu_cb.signal_count = 0;
-        r = sceGeListEnQueue(l->start, l->cur, gu.ge_cb, (void *)&gu_list_arg);
+        r = sceGeListEnQueue(gu.list->start, gu.list->cur, gu.ge_cb, (void *)&gu_list_arg);
         if (r < 0) {
             return r;
         }
@@ -201,15 +220,22 @@ int sceGuStart(int cid, void *list, int arg)
         sceGuTexScale(1.0f, 1.0f);
         gu.started = 1;
     }
-    if (gu.cid != 0 || gu.fbw == 0) {
-        return 0;
+    if (gu.cid == 0 && gu.fbw != 0) {
+        int psm = gu.psm;
+        int w = gu.width;
+        int h = gu.height;
+        unsigned int w0, w1, w2;
+
+        gu.list->fbp_psm = psm;
+        gu.list->disp_w = w;
+        gu.list->disp_h = h;
+        w1 = (gu.draw_fbp & 0xFFFFFF) | 0x9C000000;
+        w0 = gu.psm | 0xD2000000;
+        w2 = ((gu.draw_fbp >> 24) & 0xF) << 16 | gu.fbw | 0x9D000000;
+        gu_push(w0);
+        gu_push(w1);
+        gu_push(w2);
     }
-    l->fbp_psm = gu.psm;
-    l->disp_w = gu.width;
-    l->disp_h = gu.height;
-    gu_push(gu.psm | 0xD2000000);
-    gu_push((gu.draw_fbp & 0xFFFFFF) | 0x9C000000);
-    gu_push((((gu.draw_fbp & 0xFFFFFFF) >> 24) << 16) | gu.fbw | 0x9D000000);
     return 0;
 }
 
@@ -238,6 +264,11 @@ int sceGuFinishId(unsigned int id)
         }
         break;
     }
+    case 2:
+    case 4:
+        gu_push(fid | 0x0F000000);
+        gu_push(0x0C000000);
+        break;
     case 1:
     case 3:
         if (gu.call_mode == 1) {
@@ -246,11 +277,6 @@ int sceGuFinishId(unsigned int id)
         } else {
             gu_push(0x0B000000);
         }
-        break;
-    case 2:
-    case 4:
-        gu_push(fid | 0x0F000000);
-        gu_push(0x0C000000);
         break;
     default:
         return 0x80000107;
@@ -270,18 +296,22 @@ int sceGuFinishId(unsigned int id)
 }
 
 /* Waits until the GE has raised signal id (or 16 signals arrived). */
-int sceGuWaitSignal(short id)
+int gu_wait_signal(unsigned short id)
 {
     int r;
 
     for (;;) {
-        int i;
+        int i = 0;
 
-        for (i = 0; i < gu_cb.signal_count && i < 16; i++) {
-            if (gu_cb.signals[i] == id) {
+        do {
+            if (i >= gu_cb.signal_count) {
+                break;
+            }
+            if ((unsigned short)gu_cb.signals[i] == id) {
                 return 0;
             }
-        }
+            i++;
+        } while (i < 16);
         r = sceKernelWaitEventFlag(gu_cb.event_flag, 1, 0, 0, 0);
         if (r < 0) {
             return r;
@@ -342,12 +372,15 @@ void gu_set_display_mode(int psm, int width, int height, unsigned int dispbp, in
     if (gu_hooks.disp != 0) {
         gu_hooks.disp(psm, width, height);
     }
-    gu.psm = psm;
-    gu.fbw = fbw;
-    gu.disp_fbp = dispbp;
     gu.width = width;
     gu.height = height;
-    sceDisplaySetMode(0, width, height);
+    gu.disp_fbp = dispbp;
+    gu.psm = psm;
+    if (gu.fbw == 0) {
+        gu.fbw = fbw;
+    }
+    gu.fbw = fbw;
+    sceDisplaySetMode(0, gu.width, gu.height);
     if (gu.display_on == 1) {
         sceDisplaySetFrameBuf((void *)(gu.edram + gu.disp_fbp), fbw, psm, 1);
     }
@@ -380,17 +413,25 @@ unsigned int sceGuSwapBuffers(void)
 void gu_DrawBuffer(int psm, unsigned int fbp, int fbw)
 {
     int i;
+    unsigned int w0, w1, w2;
 
     if (gu_hooks.draw != 0) {
         gu_hooks.draw(psm, fbp, fbw);
     }
-    gu_push(psm | 0xD2000000);
-    gu_push((fbp & 0xFFFFFF) | 0x9C000000);
-    gu_push((((fbp & 0xFFFFFFF) >> 24) << 16) | fbw | 0x9D000000);
+    w1 = (fbp & 0xFFFFFF) | 0x9C000000;
+    w0 = psm | 0xD2000000;
+    w2 = ((fbp >> 24) & 0xF) << 16 | fbw | 0x9D000000;
+    gu_push(w0);
+    gu_push(w1);
+    gu_push(w2);
     for (i = 0; i < 5; i++) {
-        gu.lists[i].fbp_psm = psm;
-        gu.lists[i].disp_w = gu.width;
-        gu.lists[i].disp_h = gu.height;
+        GuList *l = &gu.lists[i];
+        int w = gu.width;
+        int h = gu.height;
+
+        l->disp_w = w;
+        l->disp_h = h;
+        l->fbp_psm = psm;
     }
     gu.psm = psm;
     gu.draw_fbp = fbp;
@@ -683,26 +724,39 @@ void sceGuDispBuffer(int width, int height, unsigned int dispbp, int fbw)
 
     gu_set_display_mode(gu.psm, width, height, dispbp, fbw);
     for (i = 0; i < 5; i++) {
-        gu.lists[i].fbp_psm = gu.psm;
-        gu.lists[i].disp_w = gu.width;
-        gu.lists[i].disp_h = gu.height;
+        GuList *l = &gu.lists[i];
+        int psm = gu.psm;
+        int w = gu.width;
+        int h = gu.height;
+
+        l->fbp_psm = psm;
+        l->disp_w = w;
+        l->disp_h = h;
     }
 }
 
 /* sceGuDrawBuffer for the current context only */
 void gu_draw_buffer_cur(int psm, unsigned int fbp, int fbw)
 {
-    GuList *l = gu.list;
+    GuList *l;
+    int w, h;
+    unsigned int w0, w1, w2;
 
     if (gu_hooks.draw != 0) {
         gu_hooks.draw(psm, fbp, fbw);
     }
+    l = gu.list;
+    w = gu.width;
+    h = gu.height;
     l->fbp_psm = psm;
-    l->disp_w = gu.width;
-    l->disp_h = gu.height;
-    gu_push(psm | 0xD2000000);
-    gu_push((fbp & 0xFFFFFF) | 0x9C000000);
-    gu_push((((fbp & 0xFFFFFFF) >> 24) << 16) | fbw | 0x9D000000);
+    l->disp_w = w;
+    l->disp_h = h;
+    w1 = (fbp & 0xFFFFFF) | 0x9C000000;
+    w0 = psm | 0xD2000000;
+    w2 = ((fbp >> 24) & 0xF) << 16 | fbw | 0x9D000000;
+    gu_push(w0);
+    gu_push(w1);
+    gu_push(w2);
 }
 
 void sceGuDrawBufferList(int psm, unsigned int fbp, int fbw)
