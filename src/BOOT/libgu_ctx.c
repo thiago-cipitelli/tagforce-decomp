@@ -1,7 +1,7 @@
 // @range 0x08807070-0x088087F8
 // @gcc 0x08807070-0x0880712C
 // @asm 0x0880712C-0x08807338
-// @gcc 0x08807C6C-0x08807CDC
+// @gcc 0x08807C6C-0x08807D40
 // @gcc 0x08807DD0-0x08807DFC
 // @gcc 0x08807E90-0x08807FD8
 // @gcc 0x08808058-0x08808084
@@ -1007,36 +1007,9 @@ void gu_ctx_patch_prim(GuList *l, int prim);
 
 /* EMISSIVE, DIFFUSE, AMBIENT + ALPHA, SPECULAR */
 #ifdef __MWERKS__
-asm void gu_ctx_model_color(GuList *l, unsigned int emissive, unsigned int ambient, unsigned int diffuse,
-                        unsigned int specular)
-{
-    lw t3, 8(a0)
-    ins a1, zero, 0x18, 0x8
-    lui t2, 0x5400
-    or t1, a1, t2
-    srl t7, a2, 0x18
-    addiu t2, t3, 4
-    ins a3, zero, 0x18, 0x8
-    ins a2, zero, 0x18, 0x8
-    ins t0, zero, 0x18, 0x8
-    lui t9, 0x5600
-    lui t8, 0x5500
-    lui a1, 0x5800
-    lui v0, 0x5700
-    sw t1, 0(t3)
-    or t6, a3, t9
-    or t5, a2, t8
-    or t4, t7, a1
-    or t3, t0, v0
-    addiu v1, t2, 16
-    sw v1, 8(a0)
-    sw t6, 0(t2)
-    sw t5, 4(t2)
-    sw t4, 8(t2)
-    jr ra
-    sw t3, 12(t2)
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
+void gu_ctx_model_color(GuList *l, unsigned int emissive, unsigned int ambient, unsigned int diffuse,
+                        unsigned int specular);
+#else /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_model_color(GuList *l, unsigned int emissive, unsigned int ambient, unsigned int diffuse,
                         unsigned int specular)
 {
