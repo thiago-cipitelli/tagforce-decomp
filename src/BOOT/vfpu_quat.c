@@ -2,12 +2,13 @@
 // @gcc 0x0881DE88-0x0881E0FC
 // @asm 0x0881E0FC-0x0881E510
 // @gcc 0x0881E524-0x0881E54C
-// @asm 0x0881E6F4-0x0881E8F0
+// @gcc 0x0881E64C-0x0881E8F0
 /* VFPU quaternions (x, y, z, w with w the scalar part; vqmul is the Hamilton product). Euler angles
    are radians in a vector (x, y, z); the _zyx/_xyz/_yxz suffix is the product order of the axis
    rotations (zyx: q = qz * qy * qx). Hand-written VFPU code kept as whole `asm` functions; the
    compiled C ones that load float constants from .rodata (GCC) come from vfpu_quat_gcc.c (matrix to
-   quaternion) or stay in asm with their C under NON_MATCHING (quaternion to Euler angles, squad). The
+   quaternion; slerp, a C function around one asm statement, and squad, which inlines it three times) or stay in
+   asm with their C under NON_MATCHING (quaternion to Euler angles). The
    port C of the VFPU functions is left out of the GCC object (`#elif !defined(__mips__)`), so its
    literal pool is exactly the original's (`@rodata`). Functions with an output return it. Outside the
    PSP build each one has a C equivalent. */
@@ -479,54 +480,7 @@ float quat_dot(Vec4 *a, Vec4 *b);
 /* Spherical interpolation along the shorter arc (b negated when dot(a, b) < 0); linear (not
    normalized) when dot(a, b) >= 0.998047, a when sin(angle) < 5e-5. */
 #ifdef __MWERKS__
-asm Vec4 *quat_slerp(Vec4 *out, Vec4 *a, Vec4 *b, float t)
-{
-    move v0, a0
-    mfc1 t0, $f12
-    mtv t0, S031
-    lv.q C010, 0(a1)
-    lv.q C020, 0(a2)
-    vcst.s S001, VFPU_SQRT1_2
-    .word 0xDE000E03  /* vpfxd [-1:1],m,m,m */
-    vdot.q S000, C010, C020
-    vfim.s S002, 0.998047
-    vcmp.s GE, S000, S002
-    bvt 0, L_0881E6DC
-    vocp.s S030, S031
-    vpfxs |X|, Y, Z, W
-    vcmp.s LT, S000, S001
-    vpfxs |X|, Y, Z, W
-    vasin.s S032, S000
-    bvtl 0, L_0881E6A4
-    vocp.s S032, S032
-    vmul.s S001, S000, S000
-    vocp.s S001, S001
-    vsqrt.s S001, S001
-    vasin.s S032, S001
-L_0881E6A4:
-    vzero.s S001
-    lui at, 0x3851
-    ori at, at, 0xb717
-    mtv at, S002
-    vscl.p C030, C030, S032
-    vcmp.s LT, S000, S001
-    vsin.t C030, C030
-    vpfxs -X, -Y, -Z, -W
-    vcmovt.q C020, C020, 0
-    vcmp.s LT, S032, S002
-    vrcp.s S032, S032
-    vscl.p C030, C030, S032
-    bvtl 0, L_0881E6E8
-    vmov.q C000, C010
-L_0881E6DC:
-    vscl.q C000, C010, S030
-    vscl.q C030, C020, S031
-    vadd.q C000, C000, C030
-L_0881E6E8:
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_slerp(Vec4 *out, Vec4 *a, Vec4 *b, float t);
 #elif !defined(__mips__)
 Vec4 *quat_slerp(Vec4 *out, Vec4 *a, Vec4 *b, float t)
 {
@@ -556,16 +510,68 @@ Vec4 *quat_slerp(Vec4 *out, Vec4 *a, Vec4 *b, float t)
     return out;
 }
 #else
-Vec4 *quat_slerp(Vec4 *out, Vec4 *a, Vec4 *b, float t);
+/* the SDK's C: one asm statement (operands in memory, so quat_squad's inlined copies address its stack temporaries
+   directly) */
+Vec4 *quat_slerp(Vec4 *out, Vec4 *a, Vec4 *b, float t)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        ".set noat\n"
+        "mfc1 $8, %3\n"
+        "mtv $8, S031\n"
+        "lv.q C010, %1\n"
+        "lv.q C020, %2\n"
+        "vcst.s S001, VFPU_SQRT1_2\n"
+        ".word 0xDE000E03\n" /* vpfxd [-1:1],m,m,m */
+        "vdot.q S000, C010, C020\n"
+        "vfim.s S002, 0.998047\n"
+        "vcmp.s GE, S000, S002\n"
+        "bvt 0, 2f\n"
+        "vocp.s S030, S031\n"
+        "vpfxs |X|, Y, Z, W\n"
+        "vcmp.s LT, S000, S001\n"
+        "vpfxs |X|, Y, Z, W\n"
+        "vasin.s S032, S000\n"
+        "bvtl 0, 1f\n"
+        "vocp.s S032, S032\n"
+        "vmul.s S001, S000, S000\n"
+        "vocp.s S001, S001\n"
+        "vsqrt.s S001, S001\n"
+        "vasin.s S032, S001\n"
+        "1:\n"
+        "vzero.s S001\n"
+        "lui $1, 0x3851\n"
+        "ori $1, $1, 0xb717\n"
+        "mtv $1, S002\n"
+        "vscl.p C030, C030, S032\n"
+        "vcmp.s LT, S000, S001\n"
+        "vsin.t C030, C030\n"
+        "vpfxs -X, -Y, -Z, -W\n"
+        "vcmovt.q C020, C020, 0\n"
+        "vcmp.s LT, S032, S002\n"
+        "vrcp.s S032, S032\n"
+        "vscl.p C030, C030, S032\n"
+        "bvtl 0, 3f\n"
+        "vmov.q C000, C010\n"
+        "2:\n"
+        "vscl.q C000, C010, S030\n"
+        "vscl.q C030, C020, S031\n"
+        "vadd.q C000, C000, C030\n"
+        "3:\n"
+        "sv.q C000, %0\n"
+        ".set pop\n"
+        : "=m" (*out) : "m" (*a), "m" (*b), "f" (t) : "$8");
+    return out;
+}
 #endif
 
-#ifdef NON_MATCHING /* GCC: 1.0f comes from the .rodata pool (D_088EB208); quat_slerp is inlined */
+#ifdef NON_MATCHING /* GCC (vfpu_quat_gcc.c): quat_slerp inlined three times, 1.0f from the pool */
 /* squad: slerp(slerp(p, q, t), slerp(a, b, t), 2t(1 - t)) */
 Vec4 *quat_squad(Vec4 *out, Vec4 *p, Vec4 *q, Vec4 *a, Vec4 *b, float t)
 {
     Vec4 u;
     Vec4 v;
-
     quat_slerp(&u, p, q, t);
     quat_slerp(&v, a, b, t);
     return quat_slerp(out, &u, &v, 2.0f * t * (1.0f - t));

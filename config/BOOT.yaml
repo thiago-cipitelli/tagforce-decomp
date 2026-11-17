@@ -271,7 +271,7 @@ segments:
       - [0x1A570, c, vfpu_quat]
       - [0x1A584, c, vfpu_quat_gcc]
       - [0x1A5AC, c, vfpu_quat]
-      - [0x1A754, asm, vfpu_quat_asm_0881E6F4]
+      - [0x1A6AC, c, vfpu_quat_gcc]
       - [0x1A950, c, vfpu_quat]
       - [0x1AB6C, c, vfpu_mem]
       - [0x1B5C0, c, vfpu_mem_gcc]
