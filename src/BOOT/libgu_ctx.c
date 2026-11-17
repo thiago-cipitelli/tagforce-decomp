@@ -1475,40 +1475,52 @@ void sceGuDebugPrint(int x, int y, unsigned int color, const char *str)
 {
     int n;
     GuDebugChar *c;
-    int cx = x;
-    unsigned int r = (color & 0xFF);
-    unsigned int g = (color >> 8) & 0xFF;
-    unsigned int b = (color >> 16) & 0xFF;
-    unsigned int a = color >> 24;
+    int cx;
+    int cy;
+    int r, g, b, a;
+    int ch;
 
     gu_debug_start();
     n = gu_debug_count[gu_debug_buf];
+    c = gu_debug_chars[gu_debug_buf];
     if (n >= 1024) {
         return;
     }
-    c = &gu_debug_chars[gu_debug_buf][n];
+    c += n;
+    cx = x;
+    cy = y;
+    r = color & 0xFF;
+    g = color << 16 >> 24;
+    b = (color >> 16) & 0xFF;
+    a = color >> 24;
     if (gu_debug_psm == 0) {
         color = (b >> 3) << 11 | (g >> 2) << 5 | r >> 3;
     } else if (gu_debug_psm == 1) {
         color = (a >> 7) << 15 | (b >> 3) << 10 | (g >> 3) << 5 | r >> 3;
     } else if (gu_debug_psm == 2) {
-        color = (a >> 4) << 12 | (b >> 4) << 8 | (g & 0xF0) | r >> 4;
+        color = (a >> 4) << 12 | (b >> 4) << 8 | (g & ~0xF) | r >> 4;
     }
-    for (; *str != 0; str++) {
-        if (*str == '\n') {
-            y += 8;
+    ch = *str;
+    while (ch != 0) {
+        if (ch == '\n') {
             cx = x;
-            continue;
+    cy = y;
+            cy += 8;
+            str++;
+        } else {
+            n++;
+            c->x = cx;
+            str++;
+            cx += 8;
+            c->ch = ch - 0x20;
+            c->y = cy;
+            c->color = color;
+            c++;
+            if (n >= 1024) {
+                break;
+            }
         }
-        c->x = cx;
-        c->y = y;
-        c->color = color;
-        c->ch = *str - 0x20;
-        c++;
-        cx += 8;
-        if (++n >= 1024) {
-            break;
-        }
+        ch = *str;
     }
     gu_debug_count[gu_debug_buf] = n;
 }
@@ -1522,26 +1534,47 @@ void sceGuDebugFlush(void)
     n = gu_debug_count[gu_debug_buf];
     c = gu_debug_chars[gu_debug_buf];
     for (; n != 0; n--, c++) {
+        int x = c->x;
+        int y = c->y;
+        const unsigned int *glyph;
+        unsigned int color;
+        unsigned int bits;
+        unsigned int mask;
         int row;
 
-        if (c->y + 7 >= gu_debug_h || c->y < 0 || c->x + 7 >= gu_debug_w || c->x < 0) {
+        if (y + 7 >= gu_debug_h || y < 0 || x + 7 >= gu_debug_w || x < 0) {
             continue;
         }
+        /* the 8 rows of a glyph are two little-endian words, one bit per pixel */
+        glyph = (const unsigned int *)&gu_debug_font[c->ch * 8];
+        color = c->color;
         for (row = 0; row < 8; row++) {
-            unsigned int bits = gu_debug_font[c->ch * 8 + row];
+            int pos = x + (y + row) * gu_debug_fbw;
+            unsigned int p16 = gu_debug_edram + pos * 2 + gu_debug_fbp;
+            unsigned int p32 = gu_debug_edram + pos * 4 + gu_debug_fbp;
             int col;
-            int pos = c->x + (c->y + row) * gu_debug_fbw;
 
+            if (row == 0) {
+                bits = glyph[0];
+                mask = 1;
+            } else if (row == 4) {
+                bits = glyph[1];
+                mask = 1;
+            }
             for (col = 0; col < 8; col++) {
-                if (bits & (1 << col)) {
-                    if (gu_debug_psm == 3) {
-                        *(unsigned int *)PSP_UNCACHED(PSP_PHYS(gu_debug_edram + gu_debug_fbp + (pos + col) * 4)) =
-                            c->color;
-                    } else {
-                        *(unsigned short *)PSP_UNCACHED(PSP_PHYS(gu_debug_edram + gu_debug_fbp + (pos + col) * 2)) =
-                            (unsigned short)c->color;
+                if (gu_debug_psm == 3) {
+                    if (bits & mask) {
+                        unsigned short *q = (unsigned short *)PSP_UNCACHED_PHYS(p32);
+
+                        q[1] = (int)color >> 16;
+                        q[0] = color;
                     }
+                } else if (bits & mask) {
+                    *(unsigned short *)PSP_UNCACHED_PHYS(p16) = color;
                 }
+                mask <<= 1;
+                p16 += 2;
+                p32 += 4;
             }
         }
     }
