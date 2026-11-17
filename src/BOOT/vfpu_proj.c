@@ -1,7 +1,7 @@
 // @range 0x0881D8A8-0x0881DE88
 // @asm 0x0881D8A8-0x0881DA34
 // @gcc 0x0881DA34-0x0881DAC0
-// @gcc 0x0881DC60-0x0881DE30
+// @gcc 0x0881DC60-0x0881DE88
 /* VFPU camera and projection matrices: planar shadow onto n . p = 1, view (look-at), perspective,
    ortho, frustum, and the point projections. Column-major (m[4 * col + row]); functions with an
    output matrix return it. Hand-written VFPU code kept as whole `asm` functions; the functions the SDK
@@ -456,32 +456,7 @@ Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v)
 /* Projects n points (n >= 1) and stores x, y, z / w as 12.4 fixed point (rounded to nearest) in
    three shorts, `stride` bytes apart. */
 #ifdef __MWERKS__
-asm int mat4_project_s16(short *out, int stride, Mat4 *m, Vec4 *v, int n)
-{
-    move v1, t0
-    lv.q C000, 0(a2)
-    lv.q C010, 16(a2)
-    lv.q C020, 32(a2)
-    lv.q C030, 48(a2)
-L_0881DE44:
-    lv.q C100, 0(a3)
-    addiu a3, a3, 16
-    vtfm4.q C200, E000, C100
-    vrcp.s S203, S203
-    vscl.t C200, C200, S203
-    vf2in.t C200, C200, 4
-    mfv t0, S200
-    mfv t1, S201
-    mfv t2, S202
-    addiu v1, v1, -1
-    sh t0, 0(a0)
-    sh t1, 2(a0)
-    sh t2, 4(a0)
-    bne zero, v1, L_0881DE44
-    addu a0, a0, a1
-    jr ra
-    move v0, zero
-}
+int mat4_project_s16(short *out, int stride, Mat4 *m, Vec4 *v, int n);
 #elif !defined(__mips__)
 int mat4_project_s16(short *out, int stride, Mat4 *m, Vec4 *v, int n)
 {
@@ -501,5 +476,36 @@ int mat4_project_s16(short *out, int stride, Mat4 *m, Vec4 *v, int n)
     return 0;
 }
 #else
-int mat4_project_s16(short *out, int stride, Mat4 *m, Vec4 *v, int n);
+int mat4_project_s16(short *out, int stride, Mat4 *m, Vec4 *v, int n)
+{
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "move $3, %2\n"
+        "lv.q C000, 0(%4)\n"
+        "lv.q C010, 16(%4)\n"
+        "lv.q C020, 32(%4)\n"
+        "lv.q C030, 48(%4)\n"
+        "1:\n"
+        "lv.q C100, 0(%1)\n"
+        "addiu %1, %1, 16\n"
+        "vtfm4.q C200, E000, C100\n"
+        "vrcp.s S203, S203\n"
+        "vscl.t C200, C200, S203\n"
+        "vf2in.t C200, C200, 4\n"
+        "mfv %2, S200\n"
+        "mfv $9, S201\n"
+        "mfv $10, S202\n"
+        "addiu $3, $3, -1\n"
+        "sh %2, 0(%0)\n"
+        "sh $9, 2(%0)\n"
+        "sh $10, 4(%0)\n"
+        "bne $0, $3, 1b\n"
+        "addu %0, %0, %3\n"
+        ".set pop\n"
+        : "+r" (out), "+r" (v), "+r" (n)
+        : "r" (stride), "r" (m)
+        : "memory", "$9", "$10", "$3");
+    return 0;
+}
 #endif

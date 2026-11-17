@@ -1,5 +1,5 @@
 // @range 0x0881EB0C-0x0881F6E4
-// @gcc 0x0881F560-0x0881F5AC
+// @gcc 0x0881F378-0x0881F63C
 /* VFPU block memory routines (copy/move/fill through quad stores to the uncached mirror, 64-byte
    cache lines created without a fetch) and the VFPU register context: the whole register file, the
    prefix/condition control registers and the random generator state saved, restored and reset.
@@ -672,71 +672,8 @@ int vfpu_ctx_init(VfpuContext *ctx)
 
 /* returns 0 */
 #ifdef __MWERKS__
-asm int vfpu_ctx_save(VfpuContext *ctx)
-{
-    sv.q C000, 0(a0)
-    sv.q C010, 16(a0)
-    sv.q C020, 32(a0)
-    sv.q C030, 48(a0)
-    sv.q C100, 64(a0)
-    sv.q C110, 80(a0)
-    sv.q C120, 96(a0)
-    sv.q C130, 112(a0)
-    sv.q C200, 128(a0)
-    sv.q C210, 144(a0)
-    sv.q C220, 160(a0)
-    sv.q C230, 176(a0)
-    sv.q C300, 192(a0)
-    sv.q C310, 208(a0)
-    sv.q C320, 224(a0)
-    sv.q C330, 240(a0)
-    sv.q C400, 256(a0)
-    sv.q C410, 272(a0)
-    sv.q C420, 288(a0)
-    sv.q C430, 304(a0)
-    sv.q C500, 320(a0)
-    sv.q C510, 336(a0)
-    sv.q C520, 352(a0)
-    sv.q C530, 368(a0)
-    sv.q C600, 384(a0)
-    sv.q C610, 400(a0)
-    sv.q C620, 416(a0)
-    sv.q C630, 432(a0)
-    sv.q C700, 448(a0)
-    sv.q C710, 464(a0)
-    sv.q C720, 480(a0)
-    sv.q C730, 496(a0)
-    addiu v1, a0, 512
-    mfvc t0, $128
-    mfvc t1, $129
-    mfvc t2, $130
-    mfvc t3, $131
-    sw t0, 0(v1)
-    sw t1, 4(v1)
-    sw t2, 8(v1)
-    sw t3, 12(v1)
-    mfvc t0, $132
-    sw t0, 16(v1)
-    mfvc t0, $136
-    sw t0, 544(a0)
-    mfvc t0, $137
-    sw t0, 548(a0)
-    mfvc t0, $138
-    sw t0, 552(a0)
-    mfvc t0, $139
-    sw t0, 556(a0)
-    mfvc t0, $140
-    sw t0, 560(a0)
-    mfvc t0, $141
-    sw t0, 564(a0)
-    mfvc t0, $142
-    sw t0, 568(a0)
-    mfvc t0, $143
-    sw t0, 572(a0)
-    jr ra
-    move v0, zero
-}
-#else
+int vfpu_ctx_save(VfpuContext *ctx);
+#elif !defined(__mips__)
 int vfpu_ctx_save(VfpuContext *ctx)
 {
     memcpy(ctx->regs, vfpu_cur.regs, sizeof(ctx->regs));
@@ -744,80 +681,159 @@ int vfpu_ctx_save(VfpuContext *ctx)
     memcpy(ctx->rcx, vfpu_rcx, sizeof(ctx->rcx));
     return 0;
 }
+#else
+int vfpu_ctx_save(VfpuContext *ctx)
+{
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "sv.q C000, 0(%0)\n"
+        "sv.q C010, 16(%0)\n"
+        "sv.q C020, 32(%0)\n"
+        "sv.q C030, 48(%0)\n"
+        "sv.q C100, 64(%0)\n"
+        "sv.q C110, 80(%0)\n"
+        "sv.q C120, 96(%0)\n"
+        "sv.q C130, 112(%0)\n"
+        "sv.q C200, 128(%0)\n"
+        "sv.q C210, 144(%0)\n"
+        "sv.q C220, 160(%0)\n"
+        "sv.q C230, 176(%0)\n"
+        "sv.q C300, 192(%0)\n"
+        "sv.q C310, 208(%0)\n"
+        "sv.q C320, 224(%0)\n"
+        "sv.q C330, 240(%0)\n"
+        "sv.q C400, 256(%0)\n"
+        "sv.q C410, 272(%0)\n"
+        "sv.q C420, 288(%0)\n"
+        "sv.q C430, 304(%0)\n"
+        "sv.q C500, 320(%0)\n"
+        "sv.q C510, 336(%0)\n"
+        "sv.q C520, 352(%0)\n"
+        "sv.q C530, 368(%0)\n"
+        "sv.q C600, 384(%0)\n"
+        "sv.q C610, 400(%0)\n"
+        "sv.q C620, 416(%0)\n"
+        "sv.q C630, 432(%0)\n"
+        "sv.q C700, 448(%0)\n"
+        "sv.q C710, 464(%0)\n"
+        "sv.q C720, 480(%0)\n"
+        "sv.q C730, 496(%0)\n"
+        "addiu $3, %0, 512\n"
+        "mfvc $8, $128\n"
+        "mfvc $9, $129\n"
+        "mfvc $10, $130\n"
+        "mfvc $11, $131\n"
+        "sw $8, 0($3)\n"
+        "sw $9, 4($3)\n"
+        "sw $10, 8($3)\n"
+        "sw $11, 12($3)\n"
+        "mfvc $8, $132\n"
+        "sw $8, 16($3)\n"
+        "mfvc $8, $136\n"
+        "sw $8, 544(%0)\n"
+        "mfvc $8, $137\n"
+        "sw $8, 548(%0)\n"
+        "mfvc $8, $138\n"
+        "sw $8, 552(%0)\n"
+        "mfvc $8, $139\n"
+        "sw $8, 556(%0)\n"
+        "mfvc $8, $140\n"
+        "sw $8, 560(%0)\n"
+        "mfvc $8, $141\n"
+        "sw $8, 564(%0)\n"
+        "mfvc $8, $142\n"
+        "sw $8, 568(%0)\n"
+        "mfvc $8, $143\n"
+        "sw $8, 572(%0)\n"
+        ".set pop\n"
+        : 
+        : "r" (ctx)
+        : "memory", "$8", "$9", "$10", "$11", "$3");
+    return 0;
+}
 #endif
 
 /* returns 0 */
 #ifdef __MWERKS__
-asm int vfpu_ctx_load(VfpuContext *ctx)
-{
-    lv.q C000, 0(a0)
-    lv.q C010, 16(a0)
-    lv.q C020, 32(a0)
-    lv.q C030, 48(a0)
-    lv.q C100, 64(a0)
-    lv.q C110, 80(a0)
-    lv.q C120, 96(a0)
-    lv.q C130, 112(a0)
-    lv.q C200, 128(a0)
-    lv.q C210, 144(a0)
-    lv.q C220, 160(a0)
-    lv.q C230, 176(a0)
-    lv.q C300, 192(a0)
-    lv.q C310, 208(a0)
-    lv.q C320, 224(a0)
-    lv.q C330, 240(a0)
-    lv.q C400, 256(a0)
-    lv.q C410, 272(a0)
-    lv.q C420, 288(a0)
-    lv.q C430, 304(a0)
-    lv.q C500, 320(a0)
-    lv.q C510, 336(a0)
-    lv.q C520, 352(a0)
-    lv.q C530, 368(a0)
-    lv.q C600, 384(a0)
-    lv.q C610, 400(a0)
-    lv.q C620, 416(a0)
-    lv.q C630, 432(a0)
-    lv.q C700, 448(a0)
-    lv.q C710, 464(a0)
-    lv.q C720, 480(a0)
-    lv.q C730, 496(a0)
-    addiu v1, a0, 512
-    lw t0, 0(v1)
-    lw t1, 4(v1)
-    lw t2, 8(v1)
-    lw t3, 12(v1)
-    mtvc t0, $128
-    mtvc t1, $129
-    mtvc t2, $130
-    mtvc t3, $131
-    lw t0, 16(v1)
-    mtvc t0, $132
-    lw t0, 544(a0)
-    mtvc t0, $136
-    lw t0, 548(a0)
-    mtvc t0, $137
-    lw t0, 552(a0)
-    mtvc t0, $138
-    lw t0, 556(a0)
-    mtvc t0, $139
-    lw t0, 560(a0)
-    mtvc t0, $140
-    lw t0, 564(a0)
-    mtvc t0, $141
-    lw t0, 568(a0)
-    mtvc t0, $142
-    lw t0, 572(a0)
-    mtvc t0, $143
-    jr ra
-    move v0, zero
-}
-#else
+int vfpu_ctx_load(VfpuContext *ctx);
+#elif !defined(__mips__)
 int vfpu_ctx_load(VfpuContext *ctx)
 {
     memcpy(vfpu_cur.regs, ctx->regs, sizeof(ctx->regs));
     memcpy(vfpu_cur.ctrl, ctx->ctrl, sizeof(ctx->ctrl));
     memcpy(vfpu_rcx, ctx->rcx, sizeof(ctx->rcx));
+    return 0;
+}
+#else
+int vfpu_ctx_load(VfpuContext *ctx)
+{
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%0)\n"
+        "lv.q C010, 16(%0)\n"
+        "lv.q C020, 32(%0)\n"
+        "lv.q C030, 48(%0)\n"
+        "lv.q C100, 64(%0)\n"
+        "lv.q C110, 80(%0)\n"
+        "lv.q C120, 96(%0)\n"
+        "lv.q C130, 112(%0)\n"
+        "lv.q C200, 128(%0)\n"
+        "lv.q C210, 144(%0)\n"
+        "lv.q C220, 160(%0)\n"
+        "lv.q C230, 176(%0)\n"
+        "lv.q C300, 192(%0)\n"
+        "lv.q C310, 208(%0)\n"
+        "lv.q C320, 224(%0)\n"
+        "lv.q C330, 240(%0)\n"
+        "lv.q C400, 256(%0)\n"
+        "lv.q C410, 272(%0)\n"
+        "lv.q C420, 288(%0)\n"
+        "lv.q C430, 304(%0)\n"
+        "lv.q C500, 320(%0)\n"
+        "lv.q C510, 336(%0)\n"
+        "lv.q C520, 352(%0)\n"
+        "lv.q C530, 368(%0)\n"
+        "lv.q C600, 384(%0)\n"
+        "lv.q C610, 400(%0)\n"
+        "lv.q C620, 416(%0)\n"
+        "lv.q C630, 432(%0)\n"
+        "lv.q C700, 448(%0)\n"
+        "lv.q C710, 464(%0)\n"
+        "lv.q C720, 480(%0)\n"
+        "lv.q C730, 496(%0)\n"
+        "addiu $3, %0, 512\n"
+        "lw $8, 0($3)\n"
+        "lw $9, 4($3)\n"
+        "lw $10, 8($3)\n"
+        "lw $11, 12($3)\n"
+        "mtvc $8, $128\n"
+        "mtvc $9, $129\n"
+        "mtvc $10, $130\n"
+        "mtvc $11, $131\n"
+        "lw $8, 16($3)\n"
+        "mtvc $8, $132\n"
+        "lw $8, 544(%0)\n"
+        "mtvc $8, $136\n"
+        "lw $8, 548(%0)\n"
+        "mtvc $8, $137\n"
+        "lw $8, 552(%0)\n"
+        "mtvc $8, $138\n"
+        "lw $8, 556(%0)\n"
+        "mtvc $8, $139\n"
+        "lw $8, 560(%0)\n"
+        "mtvc $8, $140\n"
+        "lw $8, 564(%0)\n"
+        "mtvc $8, $141\n"
+        "lw $8, 568(%0)\n"
+        "mtvc $8, $142\n"
+        "lw $8, 572(%0)\n"
+        "mtvc $8, $143\n"
+        ".set pop\n"
+        : 
+        : "r" (ctx)
+        : "memory", "$8", "$9", "$10", "$11", "$3");
     return 0;
 }
 #endif
@@ -842,62 +858,78 @@ int vfpu_rng_init(unsigned int *st);
 
 /* Generator state ($136-$143) into st[8]; returns 0. */
 #ifdef __MWERKS__
-asm int vfpu_rng_save(unsigned int *st)
+int vfpu_rng_save(unsigned int *st);
+#elif !defined(__mips__)
+int vfpu_rng_save(unsigned int *st)
 {
-    mfvc t0, $136
-    sw t0, 0(a0)
-    mfvc t0, $137
-    sw t0, 4(a0)
-    mfvc t0, $138
-    sw t0, 8(a0)
-    mfvc t0, $139
-    sw t0, 12(a0)
-    mfvc t0, $140
-    sw t0, 16(a0)
-    mfvc t0, $141
-    sw t0, 20(a0)
-    mfvc t0, $142
-    sw t0, 24(a0)
-    mfvc t0, $143
-    sw t0, 28(a0)
-    jr ra
-    move v0, zero
+    memcpy(st, vfpu_rcx, sizeof(vfpu_rcx));
+    return 0;
 }
 #else
 int vfpu_rng_save(unsigned int *st)
 {
-    memcpy(st, vfpu_rcx, sizeof(vfpu_rcx));
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "mfvc $8, $136\n"
+        "sw $8, 0(%0)\n"
+        "mfvc $8, $137\n"
+        "sw $8, 4(%0)\n"
+        "mfvc $8, $138\n"
+        "sw $8, 8(%0)\n"
+        "mfvc $8, $139\n"
+        "sw $8, 12(%0)\n"
+        "mfvc $8, $140\n"
+        "sw $8, 16(%0)\n"
+        "mfvc $8, $141\n"
+        "sw $8, 20(%0)\n"
+        "mfvc $8, $142\n"
+        "sw $8, 24(%0)\n"
+        "mfvc $8, $143\n"
+        "sw $8, 28(%0)\n"
+        ".set pop\n"
+        : 
+        : "r" (st)
+        : "memory", "$8");
     return 0;
 }
 #endif
 
 /* returns 0 */
 #ifdef __MWERKS__
-asm int vfpu_rng_load(unsigned int *st)
+int vfpu_rng_load(unsigned int *st);
+#elif !defined(__mips__)
+int vfpu_rng_load(unsigned int *st)
 {
-    lw t0, 0(a0)
-    mtvc t0, $136
-    lw t0, 4(a0)
-    mtvc t0, $137
-    lw t0, 8(a0)
-    mtvc t0, $138
-    lw t0, 12(a0)
-    mtvc t0, $139
-    lw t0, 16(a0)
-    mtvc t0, $140
-    lw t0, 20(a0)
-    mtvc t0, $141
-    lw t0, 24(a0)
-    mtvc t0, $142
-    lw t0, 28(a0)
-    mtvc t0, $143
-    jr ra
-    move v0, zero
+    memcpy(vfpu_rcx, st, sizeof(vfpu_rcx));
+    return 0;
 }
 #else
 int vfpu_rng_load(unsigned int *st)
 {
-    memcpy(vfpu_rcx, st, sizeof(vfpu_rcx));
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "lw $8, 0(%0)\n"
+        "mtvc $8, $136\n"
+        "lw $8, 4(%0)\n"
+        "mtvc $8, $137\n"
+        "lw $8, 8(%0)\n"
+        "mtvc $8, $138\n"
+        "lw $8, 12(%0)\n"
+        "mtvc $8, $139\n"
+        "lw $8, 16(%0)\n"
+        "mtvc $8, $140\n"
+        "lw $8, 20(%0)\n"
+        "mtvc $8, $141\n"
+        "lw $8, 24(%0)\n"
+        "mtvc $8, $142\n"
+        "lw $8, 28(%0)\n"
+        "mtvc $8, $143\n"
+        ".set pop\n"
+        : 
+        : "r" (st)
+        : "memory", "$8");
     return 0;
 }
 #endif
