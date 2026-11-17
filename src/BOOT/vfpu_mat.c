@@ -1,7 +1,6 @@
 // @range 0x0881B974-0x0881C4E4
-// @gcc 0x0881B974-0x0881BB2C
-// @gcc 0x0881BB64-0x0881BF7C
-// @gcc 0x0881C150-0x0881C260
+// @gcc 0x0881B974-0x0881BF7C
+// @gcc 0x0881C0E8-0x0881C260
 // @gcc 0x0881C348-0x0881C4E4
 /* sceVfpuMatrix2*, sceVfpuMatrix3* and the start of sceVfpuMatrix4* of Sony's libvfpu. Matrices are
    column-major and products are the usual ones: mul(out, a, b) = a b, transform(out, m, v) = m v, and
@@ -267,26 +266,8 @@ ScePspFMatrix2 *mat2_rot_z(ScePspFMatrix2 *out, const ScePspFMatrix2 *m, float a
 
 /* sceVfpuMatrix2IsUnit: compares the bits (so -0 is not zero) */
 #ifdef __MWERKS__
-asm int mat2_is_identity(const ScePspFMatrix2 *m)
-{
-    lw v1, 0(a0)
-    lui a2, 0x3f80
-    beq v1, a2, @18
-    move a1, zero
-@10:
-    jr ra
-    move v0, a1
-@18:
-    lw a2, 12(a0)
-    bne a2, v1, @10
-    nop
-    lw a1, 4(a0)
-    lw v0, 8(a0)
-    or a0, a1, v0
-    j @10
-    sltiu a1, a0, 1
-}
-#else
+int mat2_is_identity(const ScePspFMatrix2 *m);
+#elif !defined(__mips__)
 int mat2_is_identity(const ScePspFMatrix2 *m)
 {
     int d = float_bits(m->x.x);
@@ -295,6 +276,17 @@ int mat2_is_identity(const ScePspFMatrix2 *m)
         return 0;
     }
     return (float_bits(m->x.y) | float_bits(m->y.x)) == 0;
+}
+#else
+int mat2_is_identity(const ScePspFMatrix2 *m)
+{
+    const unsigned int *p = (const unsigned int *)m;
+    int r = 0;
+
+    if (p[0] == 0x3F800000 && p[3] == p[0]) {
+        r = (p[1] | p[2]) == 0;
+    }
+    return r;
 }
 #endif
 
@@ -934,38 +926,8 @@ ScePspFMatrix3 *mat3_from_euler(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, co
 
 /* sceVfpuMatrix3IsUnit: compares the bits (so -0 is not zero) */
 #ifdef __MWERKS__
-asm int mat3_is_identity(const ScePspFMatrix3 *m)
-{
-    lw v1, 0(a0)
-    lui a1, 0x3f80
-    move a3, a0
-    beq v1, a1, @1c
-    move a0, zero
-@14:
-    jr ra
-    move v0, a0
-@1c:
-    lw a1, 16(a3)
-    bne a1, v1, @14
-    nop
-    lw v1, 32(a3)
-    bne v1, a1, @14
-    nop
-    lw t5, 4(a3)
-    lw v0, 8(a3)
-    lw t4, 12(a3)
-    lw t3, 20(a3)
-    lw t1, 24(a3)
-    or a2, t5, v0
-    lw t0, 28(a3)
-    or t2, a2, t4
-    or a3, t2, t3
-    or a0, a3, t1
-    or a1, a0, t0
-    j @14
-    sltiu a0, a1, 1
-}
-#else
+int mat3_is_identity(const ScePspFMatrix3 *m);
+#elif !defined(__mips__)
 int mat3_is_identity(const ScePspFMatrix3 *m)
 {
     int d = float_bits(m->x.x);
@@ -975,6 +937,17 @@ int mat3_is_identity(const ScePspFMatrix3 *m)
     }
     return (float_bits(m->x.y) | float_bits(m->x.z) | float_bits(m->y.x) | float_bits(m->y.z) |
             float_bits(m->z.x) | float_bits(m->z.y)) == 0;
+}
+#else
+int mat3_is_identity(const ScePspFMatrix3 *m)
+{
+    const unsigned int *p = (const unsigned int *)m;
+    int r = 0;
+
+    if (p[0] == 0x3F800000 && p[4] == p[0] && p[8] == p[4]) {
+        r = (p[1] | p[2] | p[3] | p[5] | p[6] | p[7]) == 0;
+    }
+    return r;
 }
 #endif
 

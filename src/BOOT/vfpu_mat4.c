@@ -1,6 +1,6 @@
 // @range 0x0881C4E4-0x0881CD50
 // @gcc 0x0881C4E4-0x0881C730
-// @gcc 0x0881C8D4-0x0881CD50
+// @gcc 0x0881C830-0x0881CD50
 /* VFPU matrix library, second half (the first half, from mat4_identity, lives before 0x0881C4E4):
    products, transforms, rotations, determinant, inverse and the helpers built on them. Matrices are
    column-major as in the VFPU (m[4 * col + row]); each function is hand-written VFPU code (the SDK's
@@ -556,53 +556,8 @@ Mat4 *mat4_rotate_xyz(Mat4 *out, Mat4 *m, Vec4 *v)
 
 /* 1 when m is exactly the identity (bit compare: -0.0 is not 0) */
 #ifdef __MWERKS__
-asm int mat4_is_identity(Mat4 *m)
-{
-    lw v1, 0(a0)
-    lui a1, 0x3f80
-    move t0, a0
-    beq v1, a1, L_0881C84C
-    move a0, zero
-L_0881C844:
-    jr ra
-    move v0, a0
-L_0881C84C:
-    lw v0, 20(t0)
-    bne v0, v1, L_0881C844
-    nop
-    lw v1, 40(t0)
-    bne v1, v0, L_0881C844
-    nop
-    lw a1, 60(t0)
-    bne a1, v1, L_0881C844
-    nop
-    lw a0, 4(t0)
-    lw v0, 8(t0)
-    lw t4, 12(t0)
-    lw t2, 16(t0)
-    or t3, a0, v0
-    lw v1, 24(t0)
-    or a2, t3, t4
-    lw a3, 28(t0)
-    or t1, a2, t2
-    lw t9, 32(t0)
-    or a1, t1, v1
-    lw t7, 36(t0)
-    or t8, a1, a3
-    lw t5, 44(t0)
-    or t6, t8, t9
-    lw t3, 48(t0)
-    or t4, t6, t7
-    lw t2, 52(t0)
-    or a0, t4, t5
-    lw t1, 56(t0)
-    or v1, a0, t3
-    or a3, v1, t2
-    or a2, a3, t1
-    j L_0881C844
-    sltiu a0, a2, 1
-}
-#else
+int mat4_is_identity(Mat4 *m);
+#elif !defined(__mips__)
 int mat4_is_identity(Mat4 *m)
 {
     unsigned int *w = (unsigned int *)m->m;
@@ -618,6 +573,17 @@ int mat4_is_identity(Mat4 *m)
         }
     }
     return other == 0;
+}
+#else
+int mat4_is_identity(Mat4 *m)
+{
+    const unsigned int *p = (const unsigned int *)m;
+    int r = 0;
+
+    if (p[0] == 0x3F800000 && p[5] == p[0] && p[10] == p[5] && p[15] == p[10]) {
+        r = (p[1] | p[2] | p[3] | p[4] | p[6] | p[7] | p[8] | p[9] | p[11] | p[12] | p[13] | p[14]) == 0;
+    }
+    return r;
 }
 #endif
 

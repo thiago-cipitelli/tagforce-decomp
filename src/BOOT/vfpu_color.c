@@ -1,7 +1,5 @@
 // @range 0x0881D214-0x0881D8A8
-// @gcc 0x0881D214-0x0881D358
-// @gcc 0x0881D3D8-0x0881D3F4
-// @gcc 0x0881D48C-0x0881D7AC
+// @gcc 0x0881D214-0x0881D7AC
 // @gcc 0x0881D7DC-0x0881D8A8
 /* VFPU colors (four floats r, g, b, a in [0, 1]; the _rgb variants leave alpha as in the first
    operand) and the VFPU random generator. Hand-written VFPU code kept as whole `asm` functions; the
@@ -196,23 +194,7 @@ unsigned int color_pack(Vec4 *c)
 
 /* RGBA4444 (r in the low nibble), channels clamped to [0, 1] */
 #ifdef __MWERKS__
-asm unsigned short color_to_4444(Vec4 *c)
-{
-    lv.q C000, 0(a0)
-    vsat0.q C000, C000
-    viim.s S010, 15
-    vscl.q C000, C000, S010
-    vf2iz.q C000, C000, 0
-    mfv v1, S000
-    mfv t0, S001
-    mfv t1, S002
-    mfv t2, S003
-    ins v1, t0, 0x4, 0x4
-    ins v1, t1, 0x8, 0x4
-    ins v1, t2, 0xc, 0x4
-    jr ra
-    andi v0, v1, 0xffff
-}
+unsigned short color_to_4444(Vec4 *c);
 #elif !defined(__mips__)
 unsigned short color_to_4444(Vec4 *c)
 {
@@ -224,33 +206,36 @@ unsigned short color_to_4444(Vec4 *c)
     return (unsigned short)(a << 12 | b << 8 | g << 4 | r);
 }
 #else
-unsigned short color_to_4444(Vec4 *c);
+unsigned short color_to_4444(Vec4 *c)
+{
+    unsigned int r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%1)\n"
+        "vsat0.q C000, C000\n"
+        "viim.s S010, 15\n"
+        "vscl.q C000, C000, S010\n"
+        "vf2iz.q C000, C000, 0\n"
+        "mfv %0, S000\n"
+        "mfv $8, S001\n"
+        "mfv $9, S002\n"
+        "mfv $10, S003\n"
+        "ins %0, $8, 0x4, 0x4\n"
+        "ins %0, $9, 0x8, 0x4\n"
+        "ins %0, $10, 0xc, 0x4\n"
+        ".set pop\n"
+        : "=&r" (r)
+        : "r" (c)
+        : "memory", "$8", "$9", "$10");
+    return r;
+}
 #endif
 
 /* RGBA5551: rgb clamped to [0, 1]; the alpha bit is set when c->w > alpha_ref */
 #ifdef __MWERKS__
-asm unsigned short color_to_5551(Vec4 *c, float alpha_ref)
-{
-    lwc1 $f1, 12(a0)
-    lv.q C000, 0(a0)
-    vsat0.q C000, C000
-    viim.s S010, 31
-    vscl.t C000, C000, S010
-    vf2iz.t C000, C000, 0
-    mfv v1, S000
-    mfv t0, S001
-    mfv t1, S002
-    c.le.s $f1, $f12
-    ins v1, t0, 0x5, 0x5
-    ins v1, t1, 0xa, 0x5
-    ori t0, zero, 0x8000
-    bc1tl L_0881D3CC
-    move t0, zero
-L_0881D3CC:
-    or v1, v1, t0
-    jr ra
-    andi v0, v1, 0xffff
-}
+unsigned short color_to_5551(Vec4 *c, float alpha_ref);
 #elif !defined(__mips__)
 unsigned short color_to_5551(Vec4 *c, float alpha_ref)
 {
@@ -261,7 +246,36 @@ unsigned short color_to_5551(Vec4 *c, float alpha_ref)
     return (unsigned short)((c->w <= alpha_ref ? 0 : 0x8000) | b << 10 | g << 5 | r);
 }
 #else
-unsigned short color_to_5551(Vec4 *c, float alpha_ref);
+unsigned short color_to_5551(Vec4 *c, float alpha_ref)
+{
+    unsigned int r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lwc1 $f1, 12(%1)\n"
+        "lv.q C000, 0(%1)\n"
+        "vsat0.q C000, C000\n"
+        "viim.s S010, 31\n"
+        "vscl.t C000, C000, S010\n"
+        "vf2iz.t C000, C000, 0\n"
+        "mfv %0, S000\n"
+        "mfv $8, S001\n"
+        "mfv $9, S002\n"
+        "c.le.s $f1, %2\n"
+        "ins %0, $8, 0x5, 0x5\n"
+        "ins %0, $9, 0xa, 0x5\n"
+        "ori $8, $0, 0x8000\n"
+        "bc1tl 1f\n"
+        "move $8, $0\n"
+        "1:\n"
+        "or %0, %0, $8\n"
+        ".set pop\n"
+        : "=&r" (r)
+        : "r" (c), "f" (alpha_ref)
+        : "memory", "$8", "$9", "$f1");
+    return r;
+}
 #endif
 
 /* from RGBA8888 (r in the low byte) */
@@ -295,27 +309,7 @@ Vec4 *color_unpack(Vec4 *out, unsigned int rgba)
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_from_4444(Vec4 *out, unsigned short c)
-{
-    andi v1, a1, 0xffff
-    move v0, a0
-    ext t0, v1, 0x0, 0x4
-    ext t1, v1, 0x4, 0x4
-    ext t2, v1, 0x8, 0x4
-    ext t3, v1, 0xc, 0x4
-    lui at, 0x3d88
-    ori at, at, 0x8889
-    mtv at, S010
-    mtv t0, S000
-    mtv t1, S001
-    mtv t2, S002
-    mtv t3, S003
-    vi2f.q C000, C000, 0
-    vscl.q C000, C000, S010
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_from_4444(Vec4 *out, unsigned short c);
 #elif !defined(__mips__)
 Vec4 *color_from_4444(Vec4 *out, unsigned short c)
 {
@@ -326,34 +320,37 @@ Vec4 *color_from_4444(Vec4 *out, unsigned short c)
     return out;
 }
 #else
-Vec4 *color_from_4444(Vec4 *out, unsigned short c);
+Vec4 *color_from_4444(Vec4 *out, unsigned short c)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        ".set noat\n"
+        "ext $8, %2, 0x0, 0x4\n"
+        "ext $9, %2, 0x4, 0x4\n"
+        "ext $10, %2, 0x8, 0x4\n"
+        "ext $11, %2, 0xc, 0x4\n"
+        "lui $1, 0x3d88\n"
+        "ori $1, $1, 0x8889\n"
+        "mtv $1, S010\n"
+        "mtv $8, S000\n"
+        "mtv $9, S001\n"
+        "mtv $10, S002\n"
+        "mtv $11, S003\n"
+        "vi2f.q C000, C000, 0\n"
+        "vscl.q C000, C000, S010\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (c)
+        : "memory", "$1", "$8", "$9", "$10", "$11");
+    return out;
+}
 #endif
 
 /* from RGBA5551: alpha is `alpha` when the alpha bit is set, else 0 */
 #ifdef __MWERKS__
-asm Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha)
-{
-    andi v1, a1, 0xffff
-    move v0, a0
-    ext t0, v1, 0x0, 0x5
-    ext t1, v1, 0x5, 0x5
-    ext t2, v1, 0xa, 0x5
-    lui at, 0x3d04
-    ori at, at, 0x2108
-    mtv at, S010
-    mtv t0, S000
-    mtv t1, S001
-    mtv t2, S002
-    vi2f.q C000, C000, 0
-    vscl.q C000, C000, S010
-    mfc1 t1, $f12
-    andi t0, v1, 0x8000
-    movz t1, zero, t0
-    sv.q C000, 0(a0)
-    sw t1, 12(a0)
-    jr ra
-    nop
-}
+Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha);
 #elif !defined(__mips__)
 Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha)
 {
@@ -364,7 +361,34 @@ Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha)
     return out;
 }
 #else
-Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha);
+Vec4 *color_from_5551(Vec4 *out, unsigned short c, float alpha)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        ".set noat\n"
+        "ext $8, %2, 0x0, 0x5\n"
+        "ext $9, %2, 0x5, 0x5\n"
+        "ext $10, %2, 0xa, 0x5\n"
+        "lui $1, 0x3d04\n"
+        "ori $1, $1, 0x2108\n"
+        "mtv $1, S010\n"
+        "mtv $8, S000\n"
+        "mtv $9, S001\n"
+        "mtv $10, S002\n"
+        "vi2f.q C000, C000, 0\n"
+        "vscl.q C000, C000, S010\n"
+        "mfc1 $9, %3\n"
+        "andi $8, %2, 0x8000\n"
+        "movz $9, $0, $8\n"
+        "sv.q C000, 0(%1)\n"
+        "sw $9, 12(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (c), "f" (alpha)
+        : "memory", "$1", "$8", "$9", "$10");
+    return out;
+}
 #endif
 
 #ifdef NON_MATCHING /* PSP: vfpu_color_gcc.c */

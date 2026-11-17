@@ -1,8 +1,6 @@
 // @range 0x08819F0C-0x0881AB1C
 // @asm 0x08819F30-0x0881A440
-// @gcc 0x0881A440-0x0881A520
-// @gcc 0x0881A590-0x0881A864
-// @gcc 0x0881A8AC-0x0881AB1C
+// @gcc 0x0881A440-0x0881AB1C
 /* FPU trig routines (sceFpuSin/Cos/Atan/Acos) and the 2D part of Sony's libvfpu (sceVfpuVector2*).
    All of it was compiled with GCC or written in VFPU assembly, so the PSP build carries the original
    instructions as `asm` functions; under `#elif !defined(__mips__)` is the portable C for the PC port.
@@ -234,43 +232,7 @@ ScePspFVector2 *vec2_sign_float(ScePspFVector2 *out, const ScePspFVector2 *v)
 
 /* sceVfpuVector2SignInt */
 #ifdef __MWERKS__
-asm ScePspIVector2 *vec2_sign_int(ScePspIVector2 *out, const ScePspFVector2 *v)
-{
-    lwc1 $f0, 0(a1)
-    mtc1 zero, $f1
-    c.lt.s $f0, $f1
-    nop
-    bc1f @58
-    addiu v0, zero, -1
-@18:
-    sw v0, 0(a0)
-@1c:
-    lwc1 $f0, 4(a1)
-    mtc1 zero, $f1
-    c.lt.s $f0, $f1
-    nop
-    bc1f @40
-    addiu v0, zero, -1
-@34:
-    sw v0, 4(a0)
-@38:
-    jr ra
-    move v0, a0
-@40:
-    c.lt.s $f1, $f0
-    nop
-    bc1fl @38
-    sw zero, 4(a0)
-    j @34
-    addiu v0, zero, 1
-@58:
-    c.lt.s $f1, $f0
-    nop
-    bc1fl @1c
-    sw zero, 0(a0)
-    j @18
-    addiu v0, zero, 1
-}
+ScePspIVector2 *vec2_sign_int(ScePspIVector2 *out, const ScePspFVector2 *v);
 #elif !defined(__mips__)
 ScePspIVector2 *vec2_sign_int(ScePspIVector2 *out, const ScePspFVector2 *v)
 {
@@ -279,7 +241,24 @@ ScePspIVector2 *vec2_sign_int(ScePspIVector2 *out, const ScePspFVector2 *v)
     return out;
 }
 #else
-ScePspIVector2 *vec2_sign_int(ScePspIVector2 *out, const ScePspFVector2 *v);
+ScePspIVector2 *vec2_sign_int(ScePspIVector2 *out, const ScePspFVector2 *v)
+{
+    if (v->x < 0.0f) {
+        out->x = -1;
+    } else if (0.0f < v->x) {
+        out->x = 1;
+    } else {
+        out->x = 0;
+    }
+    if (v->y < 0.0f) {
+        out->y = -1;
+    } else if (0.0f < v->y) {
+        out->y = 1;
+    } else {
+        out->y = 0;
+    }
+    return out;
+}
 #endif
 
 /* sceVfpuVector2Set */
@@ -669,29 +648,7 @@ ScePspFVector2 *vec2_clamp(ScePspFVector2 *out, const ScePspFVector2 *v, float l
 
 /* sceVfpuVector2Max */
 #ifdef __MWERKS__
-asm ScePspFVector2 *vec2_max(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
-{
-    lwc1 $f3, 0(a1)
-    lwc1 $f1, 0(a2)
-    move v0, a0
-    c.lt.s $f1, $f3
-    nop
-    bc1t @20
-    mov.s $f2, $f3
-    mov.s $f2, $f1
-@20:
-    lwc1 $f3, 4(a1)
-    lwc1 $f1, 4(a2)
-    swc1 $f2, 0(v0)
-    c.lt.s $f1, $f3
-    nop
-    bc1t @40
-    mov.s $f2, $f3
-    mov.s $f2, $f1
-@40:
-    jr ra
-    swc1 $f2, 4(v0)
-}
+ScePspFVector2 *vec2_max(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b);
 #elif !defined(__mips__)
 ScePspFVector2 *vec2_max(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
 {
@@ -700,7 +657,12 @@ ScePspFVector2 *vec2_max(ScePspFVector2 *out, const ScePspFVector2 *a, const Sce
     return out;
 }
 #else
-ScePspFVector2 *vec2_max(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b);
+ScePspFVector2 *vec2_max(ScePspFVector2 *out, const ScePspFVector2 *a, const ScePspFVector2 *b)
+{
+    out->x = a->x > b->x ? a->x : b->x;
+    out->y = a->y > b->y ? a->y : b->y;
+    return out;
+}
 #endif
 
 /* sceVfpuVector2Min */
