@@ -1,6 +1,5 @@
 // @range 0x088615D0-0x08862C5C
 // @data 0x088F0428-0x088F04AC
-// @asm 0x08861CA0-0x08861D60
 /* Sound library, object side (continued): handles of the object pool, lookup by sound id, start
    order of sounds of a class, the 4 slots of the current sound, group data loading through the
    read/alloc callbacks or the VPL, the 3D model (distance curve, pan from the angle, Doppler pitch),
@@ -376,20 +375,19 @@ int snd_group_release(unsigned int g, int free)
 }
 
 /* -0x107 groups of the second set, -0x106 the first set, -0x105 all. */
-#ifdef NON_MATCHING /* the loop counter and `free` land in each other's s registers */
 int snd_group_release_all(int which, int free)
 {
-    unsigned int n;
     unsigned int i;
+    unsigned int n;
 
     switch (which) {
     case -0x105:
-        n = snd_n_groups;
         i = 0;
+        n = snd_n_groups;
         break;
     case -0x106:
-        n = snd_bank->n_groups_a;
         i = 0;
+        n = snd_bank->n_groups_a;
         break;
     case -0x107:
         i = snd_bank->n_groups_a;
@@ -403,7 +401,6 @@ int snd_group_release_all(int which, int free)
     }
     return 1;
 }
-#endif
 
 /* Read callback result: 0 done, -1 failed to start, -2 failed. */
 void snd_group_read_done(void *name, int result)
