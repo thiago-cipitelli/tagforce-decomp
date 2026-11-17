@@ -1,8 +1,7 @@
 // @range 0x0881C4E4-0x0881CD50
 // @gcc 0x0881C4E4-0x0881C54C
 // @gcc 0x0881C584-0x0881C61C
-// @gcc 0x0881C8D4-0x0881C8F4
-// @gcc 0x0881C9C8-0x0881CD50
+// @gcc 0x0881C8D4-0x0881CD50
 /* VFPU matrix library, second half (the first half, from mat4_identity, lives before 0x0881C4E4):
    products, transforms, rotations, determinant, inverse and the helpers built on them. Matrices are
    column-major as in the VFPU (m[4 * col + row]); each function is hand-written VFPU code (the SDK's
@@ -611,68 +610,76 @@ float mat4_trace(Mat4 *m);
 #endif
 
 #ifdef __MWERKS__
-asm float mat4_determinant(Mat4 *m)
-{
-    addiu sp, sp, -16
-    lv.q C000, 0(a0)
-    lv.q C010, 16(a0)
-    lv.q C020, 32(a0)
-    lv.q C030, 48(a0)
-    vpfxs X, Z, Y, W
-    vpfxt Y, X, Z, W
-    vmul.t C100, C011, C021
-    vpfxs X, Z, Y, W
-    vpfxt Y, X, Z, W
-    vmul.t C110, C001, C021
-    vpfxs X, Z, Y, W
-    vpfxt Y, X, Z, W
-    vmul.t C120, C001, C011
-    vpfxs X, Z, Y, W
-    vpfxt Y, X, Z, W
-    vmul.t C130, C001, C011
-    vpfxs Z, Y, X, W
-    vpfxt Y, X, Z, W
-    vmul.t C200, C011, C021
-    vpfxs Z, Y, X, W
-    vpfxt Y, X, Z, W
-    vmul.t C210, C001, C021
-    vpfxs Z, Y, X, W
-    vpfxt Y, X, Z, W
-    vmul.t C220, C001, C011
-    vpfxs Z, Y, X, W
-    vpfxt Y, X, Z, W
-    vmul.t C230, C001, C011
-    vpfxt Z, Y, X, W
-    vdot.t S100, C100, C031
-    vpfxt Z, Y, X, W
-    vdot.t S110, C110, C031
-    vpfxt Z, Y, X, W
-    vdot.t S120, C120, C031
-    vpfxt Z, Y, X, W
-    vdot.t S130, C130, C021
-    vpfxt X, Z, Y, W
-    vdot.t S200, C200, C031
-    vpfxt X, Z, Y, W
-    vdot.t S210, C210, C031
-    vpfxt X, Z, Y, W
-    vdot.t S220, C220, C031
-    vpfxt X, Z, Y, W
-    vdot.t S230, C230, C021
-    vsub.q R100, R100, R200
-    vmul.q R101, R000, R100
-    vpfxs X, -Y, Z, -W
-    vfad.q S000, R101
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+float mat4_determinant(Mat4 *m);
+#elif !defined(__mips__)
 float mat4_determinant(Mat4 *m)
 {
     float o[16];
 
     return adjugate(o, m->m);
+}
+#else
+float mat4_determinant(Mat4 *m)
+{
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%1)\n"
+        "lv.q C010, 16(%1)\n"
+        "lv.q C020, 32(%1)\n"
+        "lv.q C030, 48(%1)\n"
+        "vpfxs X, Z, Y, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C100, C011, C021\n"
+        "vpfxs X, Z, Y, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C110, C001, C021\n"
+        "vpfxs X, Z, Y, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C120, C001, C011\n"
+        "vpfxs X, Z, Y, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C130, C001, C011\n"
+        "vpfxs Z, Y, X, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C200, C011, C021\n"
+        "vpfxs Z, Y, X, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C210, C001, C021\n"
+        "vpfxs Z, Y, X, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C220, C001, C011\n"
+        "vpfxs Z, Y, X, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C230, C001, C011\n"
+        "vpfxt Z, Y, X, W\n"
+        "vdot.t S100, C100, C031\n"
+        "vpfxt Z, Y, X, W\n"
+        "vdot.t S110, C110, C031\n"
+        "vpfxt Z, Y, X, W\n"
+        "vdot.t S120, C120, C031\n"
+        "vpfxt Z, Y, X, W\n"
+        "vdot.t S130, C130, C021\n"
+        "vpfxt X, Z, Y, W\n"
+        "vdot.t S200, C200, C031\n"
+        "vpfxt X, Z, Y, W\n"
+        "vdot.t S210, C210, C031\n"
+        "vpfxt X, Z, Y, W\n"
+        "vdot.t S220, C220, C031\n"
+        "vpfxt X, Z, Y, W\n"
+        "vdot.t S230, C230, C021\n"
+        "vsub.q R100, R100, R200\n"
+        "vmul.q R101, R000, R100\n"
+        "vpfxs X, -Y, Z, -W\n"
+        "vfad.q S000, R101\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (m)
+        : "memory");
+    return r;
 }
 #endif
 

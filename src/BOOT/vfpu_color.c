@@ -4,8 +4,7 @@
 // @gcc 0x0881D48C-0x0881D5C0
 // @gcc 0x0881D6C0-0x0881D6F8
 // @gcc 0x0881D740-0x0881D7AC
-// @gcc 0x0881D7DC-0x0881D804
-// @gcc 0x0881D854-0x0881D8A8
+// @gcc 0x0881D7DC-0x0881D8A8
 /* VFPU colors (four floats r, g, b, a in [0, 1]; the _rgb variants leave alpha as in the first
    operand) and the VFPU random generator. Hand-written VFPU code kept as whole `asm` functions; the
    functions the SDK compiled with GCC come from C (vfpu_color_gcc.c). The port C of the VFPU functions is left
@@ -1010,50 +1009,62 @@ float vrand_float(float max)
 
 /* uniform in [0, pi) */
 #ifdef __MWERKS__
-asm float vrand_pi(void)
-{
-    addiu sp, sp, -16
-    vrndf1.s S000
-    vcst.s S001, VFPU_PI
-    vpfxt 1, Y, Z, W
-    vsub.s S000, S000, S000
-    vmul.s S000, S000, S001
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
+float vrand_pi(void);
 #elif !defined(__mips__)
 float vrand_pi(void)
 {
     return (vfpu_rndf1() - 1.0f) * 3.14159265f;
 }
 #else
-float vrand_pi(void);
+float vrand_pi(void)
+{
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "vrndf1.s S000\n"
+        "vcst.s S001, VFPU_PI\n"
+        "vpfxt 1, Y, Z, W\n"
+        "vsub.s S000, S000, S000\n"
+        "vmul.s S000, S000, S001\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : 
+        : "memory");
+    return r;
+}
 #endif
 
 /* uniform in [0, 2/pi) (VFPU_2_PI, as in the original) */
 #ifdef __MWERKS__
-asm float vrand_2_pi(void)
-{
-    addiu sp, sp, -16
-    vrndf1.s S000
-    vcst.s S001, VFPU_2_PI
-    vpfxt 1, Y, Z, W
-    vsub.s S000, S000, S000
-    vmul.s S000, S000, S001
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
+float vrand_2_pi(void);
 #elif !defined(__mips__)
 float vrand_2_pi(void)
 {
     return (vfpu_rndf1() - 1.0f) * 0.636619772f;
 }
 #else
-float vrand_2_pi(void);
+float vrand_2_pi(void)
+{
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "vrndf1.s S000\n"
+        "vcst.s S001, VFPU_2_PI\n"
+        "vpfxt 1, Y, Z, W\n"
+        "vsub.s S000, S000, S000\n"
+        "vmul.s S000, S000, S001\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : 
+        : "memory");
+    return r;
+}
 #endif
 
 /* four channels uniform in [0, 1) */

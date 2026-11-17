@@ -1,10 +1,9 @@
 // @range 0x0881B974-0x0881C4E4
 // @gcc 0x0881B974-0x0881BAD8
-// @gcc 0x0881BB64-0x0881BB74
+// @gcc 0x0881BB64-0x0881BB9C
 // @gcc 0x0881BBCC-0x0881BD48
 // @gcc 0x0881BDA8-0x0881BDFC
-// @gcc 0x0881C150-0x0881C168
-// @gcc 0x0881C1C4-0x0881C260
+// @gcc 0x0881C150-0x0881C260
 // @gcc 0x0881C348-0x0881C444
 // @gcc 0x0881C494-0x0881C4E4
 /* sceVfpuMatrix2*, sceVfpuMatrix3* and the start of sceVfpuMatrix4* of Sony's libvfpu. Matrices are
@@ -309,23 +308,31 @@ float mat2_trace(const ScePspFMatrix2 *m);
 
 /* sceVfpuMatrix2Determinant */
 #ifdef __MWERKS__
-asm float mat2_determinant(const ScePspFMatrix2 *m)
+float mat2_determinant(const ScePspFMatrix2 *m);
+#elif !defined(__mips__)
+float mat2_determinant(const ScePspFMatrix2 *m)
 {
-    addiu sp, sp, -16
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    lv.s S010, 8(a0)
-    lv.s S011, 12(a0)
-    vdet.p S000, C000, C010
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return m->x.x * m->y.y - m->x.y * m->y.x;
 }
 #else
 float mat2_determinant(const ScePspFMatrix2 *m)
 {
-    return m->x.x * m->y.y - m->x.y * m->y.x;
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "lv.s S010, 8(%1)\n"
+        "lv.s S011, 12(%1)\n"
+        "vdet.p S000, C000, C010\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (m)
+        : "memory");
+    return r;
 }
 #endif
 
@@ -960,39 +967,47 @@ float mat3_trace(const ScePspFMatrix3 *m);
 
 /* sceVfpuMatrix3Determinant: x . (y x z) */
 #ifdef __MWERKS__
-asm float mat3_determinant(const ScePspFMatrix3 *m)
-{
-    addiu sp, sp, -16
-    lv.s S100, 0(a0)
-    lv.s S101, 4(a0)
-    lv.s S102, 8(a0)
-    lv.s S110, 12(a0)
-    lv.s S111, 16(a0)
-    lv.s S112, 20(a0)
-    lv.s S120, 24(a0)
-    lv.s S121, 28(a0)
-    lv.s S122, 32(a0)
-    vpfxs y, z, x, w
-    vpfxt z, x, y, w
-    vmul.t C000, C110, C120
-    vpfxs z, x, y, w
-    vpfxt y, z, x, w
-    vmul.t C010, C100, C110
-    vdot.t S000, C100, C000
-    vdot.t S010, C010, C120
-    vsub.s S000, S000, S010
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+float mat3_determinant(const ScePspFMatrix3 *m);
+#elif !defined(__mips__)
 float mat3_determinant(const ScePspFMatrix3 *m)
 {
     ScePspFVector3 c;
 
     cross3(&c, &m->y, &m->z);
     return m->x.x * c.x + m->x.y * c.y + m->x.z * c.z;
+}
+#else
+float mat3_determinant(const ScePspFMatrix3 *m)
+{
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, 0(%1)\n"
+        "lv.s S101, 4(%1)\n"
+        "lv.s S102, 8(%1)\n"
+        "lv.s S110, 12(%1)\n"
+        "lv.s S111, 16(%1)\n"
+        "lv.s S112, 20(%1)\n"
+        "lv.s S120, 24(%1)\n"
+        "lv.s S121, 28(%1)\n"
+        "lv.s S122, 32(%1)\n"
+        "vpfxs y, z, x, w\n"
+        "vpfxt z, x, y, w\n"
+        "vmul.t C000, C110, C120\n"
+        "vpfxs z, x, y, w\n"
+        "vpfxt y, z, x, w\n"
+        "vmul.t C010, C100, C110\n"
+        "vdot.t S000, C100, C000\n"
+        "vdot.t S010, C010, C120\n"
+        "vsub.s S000, S000, S010\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (m)
+        : "memory");
+    return r;
 }
 #endif
 

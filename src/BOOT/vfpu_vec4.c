@@ -2,10 +2,8 @@
 // @gcc 0x0881B244-0x0881B270
 // @gcc 0x0881B298-0x0881B2B0
 // @gcc 0x0881B2CC-0x0881B428
-// @gcc 0x0881B660-0x0881B698
-// @gcc 0x0881B6D8-0x0881B6F8
-// @gcc 0x0881B778-0x0881B844
-// @gcc 0x0881B88C-0x0881B904
+// @gcc 0x0881B660-0x0881B730
+// @gcc 0x0881B778-0x0881B904
 /* sceVfpuVector4* of Sony's libvfpu: 16-byte aligned vectors loaded whole (lv.q/sv.q). The *XYZ
    variants (vec3_*_w, vec4_*_xyz) work on x, y, z and keep the w of their first vector argument.
    GCC/VFPU code kept as `asm` functions for the PSP build; under `#else` is the portable C. */
@@ -891,41 +889,57 @@ ScePspFVector4 *vec4_min(ScePspFVector4 *out, const ScePspFVector4 *a, const Sce
 
 /* sceVfpuVector4InnerProduct */
 #ifdef __MWERKS__
-asm float vec4_dot(const ScePspFVector4 *a, const ScePspFVector4 *b)
+float vec4_dot(const ScePspFVector4 *a, const ScePspFVector4 *b);
+#elif !defined(__mips__)
+float vec4_dot(const ScePspFVector4 *a, const ScePspFVector4 *b)
 {
-    addiu sp, sp, -16
-    lv.q C010, 0(a0)
-    lv.q C020, 0(a1)
-    vdot.q S000, C010, C020
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return a->x * b->x + a->y * b->y + a->z * b->z + a->w * b->w;
 }
 #else
 float vec4_dot(const ScePspFVector4 *a, const ScePspFVector4 *b)
 {
-    return a->x * b->x + a->y * b->y + a->z * b->z + a->w * b->w;
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%1)\n"
+        "lv.q C020, 0(%2)\n"
+        "vdot.q S000, C010, C020\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
 }
 #endif
 
 /* sceVfpuVector4InnerProductXYZ */
 #ifdef __MWERKS__
-asm float vec3_dot2(const ScePspFVector4 *a, const ScePspFVector4 *b)
+float vec3_dot2(const ScePspFVector4 *a, const ScePspFVector4 *b);
+#elif !defined(__mips__)
+float vec3_dot2(const ScePspFVector4 *a, const ScePspFVector4 *b)
 {
-    addiu sp, sp, -16
-    lv.q C010, 0(a0)
-    lv.q C020, 0(a1)
-    vdot.t S000, C010, C020
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return a->x * b->x + a->y * b->y + a->z * b->z;
 }
 #else
 float vec3_dot2(const ScePspFVector4 *a, const ScePspFVector4 *b)
 {
-    return a->x * b->x + a->y * b->y + a->z * b->z;
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%1)\n"
+        "lv.q C020, 0(%2)\n"
+        "vdot.t S000, C010, C020\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
 }
 #endif
 
@@ -966,39 +980,55 @@ ScePspFVector4 *vec3_cross(ScePspFVector4 *out, const ScePspFVector4 *a, const S
 
 /* sceVfpuVector4Funnel: sum of the components */
 #ifdef __MWERKS__
-asm float vec4_funnel(const ScePspFVector4 *v)
+float vec4_funnel(const ScePspFVector4 *v);
+#elif !defined(__mips__)
+float vec4_funnel(const ScePspFVector4 *v)
 {
-    addiu sp, sp, -16
-    lv.q C000, 0(a0)
-    vfad.q S000, C000
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return v->x + v->y + v->z + v->w;
 }
 #else
 float vec4_funnel(const ScePspFVector4 *v)
 {
-    return v->x + v->y + v->z + v->w;
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%1)\n"
+        "vfad.q S000, C000\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (v)
+        : "memory");
+    return r;
 }
 #endif
 
 /* sceVfpuVector4Average */
 #ifdef __MWERKS__
-asm float vec4_average(const ScePspFVector4 *v)
+float vec4_average(const ScePspFVector4 *v);
+#elif !defined(__mips__)
+float vec4_average(const ScePspFVector4 *v)
 {
-    addiu sp, sp, -16
-    lv.q C000, 0(a0)
-    vavg.q S000, C000
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return (v->x + v->y + v->z + v->w) * 0.25f;
 }
 #else
 float vec4_average(const ScePspFVector4 *v)
 {
-    return (v->x + v->y + v->z + v->w) * 0.25f;
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%1)\n"
+        "vavg.q S000, C000\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (v)
+        : "memory");
+    return r;
 }
 #endif
 
@@ -1221,40 +1251,36 @@ ScePspFVector4 *vec4_normalize_phase(ScePspFVector4 *out, const ScePspFVector4 *
 
 /* sceVfpuVector4LengthXYZ */
 #ifdef __MWERKS__
-asm float vec4_length_xyz(const ScePspFVector4 *v)
+float vec4_length_xyz(const ScePspFVector4 *v);
+#elif !defined(__mips__)
+float vec4_length_xyz(const ScePspFVector4 *v)
 {
-    addiu sp, sp, -16
-    lv.q C000, 0(a0)
-    vdot.t S010, C000, C000
-    vsqrt.s S010, S010
-    sv.s S010, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
 }
 #else
 float vec4_length_xyz(const ScePspFVector4 *v)
 {
-    return sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%1)\n"
+        "vdot.t S010, C000, C000\n"
+        "vsqrt.s S010, S010\n"
+        "sv.s S010, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (v)
+        : "memory");
+    return r;
 }
 #endif
 
 /* sceVfpuVector4DistanceXYZ */
 #ifdef __MWERKS__
-asm float vec4_distance_xyz(const ScePspFVector4 *a, const ScePspFVector4 *b)
-{
-    addiu sp, sp, -16
-    lv.q C000, 0(a0)
-    lv.q C010, 0(a1)
-    vsub.t C000, C000, C010
-    vdot.t S010, C000, C000
-    vsqrt.s S010, S010
-    sv.s S010, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+float vec4_distance_xyz(const ScePspFVector4 *a, const ScePspFVector4 *b);
+#elif !defined(__mips__)
 float vec4_distance_xyz(const ScePspFVector4 *a, const ScePspFVector4 *b)
 {
     float x = a->x - b->x;
@@ -1262,6 +1288,26 @@ float vec4_distance_xyz(const ScePspFVector4 *a, const ScePspFVector4 *b)
     float z = a->z - b->z;
 
     return sqrtf(x * x + y * y + z * z);
+}
+#else
+float vec4_distance_xyz(const ScePspFVector4 *a, const ScePspFVector4 *b)
+{
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%1)\n"
+        "lv.q C010, 0(%2)\n"
+        "vsub.t C000, C000, C010\n"
+        "vdot.t S010, C000, C000\n"
+        "vsqrt.s S010, S010\n"
+        "sv.s S010, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
 }
 #endif
 

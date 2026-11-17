@@ -5,8 +5,7 @@
 // @gcc 0x0881A5B8-0x0881A5C8
 // @gcc 0x0881A5DC-0x0881A7B4
 // @gcc 0x0881A8AC-0x0881A940
-// @gcc 0x0881A980-0x0881A9B8
-// @gcc 0x0881AA0C-0x0881AAA0
+// @gcc 0x0881A980-0x0881AAA0
 /* FPU trig routines (sceFpuSin/Cos/Atan/Acos) and the 2D part of Sony's libvfpu (sceVfpuVector2*).
    All of it was compiled with GCC or written in VFPU assembly, so the PSP build carries the original
    instructions as `asm` functions; under `#elif !defined(__mips__)` is the portable C for the PC port.
@@ -826,44 +825,36 @@ ScePspFVector2 *vec2_normalize(ScePspFVector2 *out, const ScePspFVector2 *v)
 
 /* sceVfpuVector2Length */
 #ifdef __MWERKS__
-asm float vec2_length(const ScePspFVector2 *v)
-{
-    addiu sp, sp, -16
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    vdot.p S000, C000, C000
-    vsqrt.s S000, S000
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
+float vec2_length(const ScePspFVector2 *v);
 #elif !defined(__mips__)
 float vec2_length(const ScePspFVector2 *v)
 {
     return sqrtf(v->x * v->x + v->y * v->y);
 }
 #else
-float vec2_length(const ScePspFVector2 *v);
+float vec2_length(const ScePspFVector2 *v)
+{
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "vdot.p S000, C000, C000\n"
+        "vsqrt.s S000, S000\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (v)
+        : "memory");
+    return r;
+}
 #endif
 
 /* sceVfpuVector2Distance */
 #ifdef __MWERKS__
-asm float vec2_distance(const ScePspFVector2 *a, const ScePspFVector2 *b)
-{
-    addiu sp, sp, -16
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    lv.s S010, 0(a1)
-    lv.s S011, 4(a1)
-    vsub.p C000, C000, C010
-    vdot.p S000, C000, C000
-    vsqrt.s S000, S000
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
+float vec2_distance(const ScePspFVector2 *a, const ScePspFVector2 *b);
 #elif !defined(__mips__)
 float vec2_distance(const ScePspFVector2 *a, const ScePspFVector2 *b)
 {
@@ -873,7 +864,27 @@ float vec2_distance(const ScePspFVector2 *a, const ScePspFVector2 *b)
     return sqrtf(x * x + y * y);
 }
 #else
-float vec2_distance(const ScePspFVector2 *a, const ScePspFVector2 *b);
+float vec2_distance(const ScePspFVector2 *a, const ScePspFVector2 *b)
+{
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "lv.s S010, 0(%2)\n"
+        "lv.s S011, 4(%2)\n"
+        "vsub.p C000, C000, C010\n"
+        "vdot.p S000, C000, C000\n"
+        "vsqrt.s S000, S000\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
+}
 #endif
 
 /* n if dot(i, nref) < 0, else -n */

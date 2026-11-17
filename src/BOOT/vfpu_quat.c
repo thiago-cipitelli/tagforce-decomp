@@ -1,8 +1,7 @@
 // @range 0x0881DE88-0x0881EB0C
 // @gcc 0x0881DE88-0x0881E0FC
 // @asm 0x0881E0FC-0x0881E510
-// @gcc 0x0881E510-0x0881E62C
-// @gcc 0x0881E64C-0x0881EAD0
+// @gcc 0x0881E510-0x0881EAD0
 /* VFPU quaternions (x, y, z, w with w the scalar part; vqmul is the Hamilton product). Euler angles
    are radians in a vector (x, y, z); the _zyx/_xyz/_yxz suffix is the product order of the axis
    rotations (zyx: q = qz * qy * qx). Hand-written VFPU code kept as whole `asm` functions; the
@@ -487,24 +486,30 @@ Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b)
 #endif
 
 #ifdef __MWERKS__
-asm float quat_dot(Vec4 *a, Vec4 *b)
-{
-    addiu sp, sp, -16
-    lv.q C010, 0(a0)
-    lv.q C020, 0(a1)
-    vdot.q S000, C010, C020
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
+float quat_dot(Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 float quat_dot(Vec4 *a, Vec4 *b)
 {
     return a->x * b->x + a->y * b->y + a->z * b->z + a->w * b->w;
 }
 #else
-float quat_dot(Vec4 *a, Vec4 *b);
+float quat_dot(Vec4 *a, Vec4 *b)
+{
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%1)\n"
+        "lv.q C020, 0(%2)\n"
+        "vdot.q S000, C010, C020\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
+}
 #endif
 
 /* Spherical interpolation along the shorter arc (b negated when dot(a, b) < 0); linear (not

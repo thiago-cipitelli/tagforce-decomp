@@ -2,10 +2,8 @@
 // @gcc 0x0881AB1C-0x0881AB30
 // @gcc 0x0881AB50-0x0881AB64
 // @gcc 0x0881AB7C-0x0881AD18
-// @gcc 0x0881AEB4-0x0881AF1C
-// @gcc 0x0881AF4C-0x0881AF80
-// @gcc 0x0881B018-0x0881B0AC
-// @gcc 0x0881B10C-0x0881B1BC
+// @gcc 0x0881AEB4-0x0881AFC8
+// @gcc 0x0881B018-0x0881B1BC
 /* sceVfpuVector3* of Sony's libvfpu: 12-byte vectors, loaded and stored a float at a time (lv.s/sv.s)
    because they are not 16-byte aligned. GCC/VFPU code kept as `asm` functions for the PSP build;
    under `#else` is the portable C. */
@@ -660,25 +658,33 @@ ScePspFVector3 *vec3_min(ScePspFVector3 *out, const ScePspFVector3 *a, const Sce
 
 /* sceVfpuVector3InnerProduct */
 #ifdef __MWERKS__
-asm float vec3_dot(const ScePspFVector3 *a, const ScePspFVector3 *b)
+float vec3_dot(const ScePspFVector3 *a, const ScePspFVector3 *b);
+#elif !defined(__mips__)
+float vec3_dot(const ScePspFVector3 *a, const ScePspFVector3 *b)
 {
-    addiu sp, sp, -16
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    lv.s S002, 8(a0)
-    lv.s S010, 0(a1)
-    lv.s S011, 4(a1)
-    lv.s S012, 8(a1)
-    vdot.t S000, C000, C010
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return a->x * b->x + a->y * b->y + a->z * b->z;
 }
 #else
 float vec3_dot(const ScePspFVector3 *a, const ScePspFVector3 *b)
 {
-    return a->x * b->x + a->y * b->y + a->z * b->z;
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "lv.s S002, 8(%1)\n"
+        "lv.s S010, 0(%2)\n"
+        "lv.s S011, 4(%2)\n"
+        "lv.s S012, 8(%2)\n"
+        "vdot.t S000, C000, C010\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
 }
 #endif
 
@@ -723,43 +729,59 @@ ScePspFVector3 *vec3_cross_nw(ScePspFVector3 *out, const ScePspFVector3 *a, cons
 
 /* sceVfpuVector3Funnel: sum of the components */
 #ifdef __MWERKS__
-asm float vec3_funnel(const ScePspFVector3 *v)
+float vec3_funnel(const ScePspFVector3 *v);
+#elif !defined(__mips__)
+float vec3_funnel(const ScePspFVector3 *v)
 {
-    addiu sp, sp, -16
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    lv.s S002, 8(a0)
-    vfad.t S000, C000
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return v->x + v->y + v->z;
 }
 #else
 float vec3_funnel(const ScePspFVector3 *v)
 {
-    return v->x + v->y + v->z;
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "lv.s S002, 8(%1)\n"
+        "vfad.t S000, C000\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (v)
+        : "memory");
+    return r;
 }
 #endif
 
 /* sceVfpuVector3Average */
 #ifdef __MWERKS__
-asm float vec3_average(const ScePspFVector3 *v)
+float vec3_average(const ScePspFVector3 *v);
+#elif !defined(__mips__)
+float vec3_average(const ScePspFVector3 *v)
 {
-    addiu sp, sp, -16
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    lv.s S002, 8(a0)
-    vavg.t S000, C000
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return (v->x + v->y + v->z) / 3.0f;
 }
 #else
 float vec3_average(const ScePspFVector3 *v)
 {
-    return (v->x + v->y + v->z) / 3.0f;
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "lv.s S002, 8(%1)\n"
+        "vavg.t S000, C000\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (v)
+        : "memory");
+    return r;
 }
 #endif
 
@@ -915,46 +937,38 @@ ScePspFVector3 *vec3_normalize(ScePspFVector3 *out, const ScePspFVector3 *v)
 
 /* sceVfpuVector3Length */
 #ifdef __MWERKS__
-asm float vec3_length(const ScePspFVector3 *v)
+float vec3_length(const ScePspFVector3 *v);
+#elif !defined(__mips__)
+float vec3_length(const ScePspFVector3 *v)
 {
-    addiu sp, sp, -16
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    lv.s S002, 8(a0)
-    vdot.t S000, C000, C000
-    vsqrt.s S000, S000
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
+    return sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
 }
 #else
 float vec3_length(const ScePspFVector3 *v)
 {
-    return sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "lv.s S002, 8(%1)\n"
+        "vdot.t S000, C000, C000\n"
+        "vsqrt.s S000, S000\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (v)
+        : "memory");
+    return r;
 }
 #endif
 
 /* sceVfpuVector3Distance */
 #ifdef __MWERKS__
-asm float vec3_distance(const ScePspFVector3 *a, const ScePspFVector3 *b)
-{
-    addiu sp, sp, -16
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    lv.s S002, 8(a0)
-    lv.s S010, 0(a1)
-    lv.s S011, 4(a1)
-    lv.s S012, 8(a1)
-    vsub.t C000, C000, C010
-    vdot.t S000, C000, C000
-    vsqrt.s S000, S000
-    sv.s S000, 0(sp)
-    lwc1 $f0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+float vec3_distance(const ScePspFVector3 *a, const ScePspFVector3 *b);
+#elif !defined(__mips__)
 float vec3_distance(const ScePspFVector3 *a, const ScePspFVector3 *b)
 {
     float x = a->x - b->x;
@@ -962,6 +976,30 @@ float vec3_distance(const ScePspFVector3 *a, const ScePspFVector3 *b)
     float z = a->z - b->z;
 
     return sqrtf(x * x + y * y + z * z);
+}
+#else
+float vec3_distance(const ScePspFVector3 *a, const ScePspFVector3 *b)
+{
+    float r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "lv.s S002, 8(%1)\n"
+        "lv.s S010, 0(%2)\n"
+        "lv.s S011, 4(%2)\n"
+        "lv.s S012, 8(%2)\n"
+        "vsub.t C000, C000, C010\n"
+        "vdot.t S000, C000, C000\n"
+        "vsqrt.s S000, S000\n"
+        "sv.s S000, %0\n"
+        ".set pop\n"
+        : "=m" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
 }
 #endif
 
