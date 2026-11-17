@@ -1,7 +1,7 @@
 # Funções que não batem por limitação conhecida (docs/matching.md, "Não-corrigíveis"). Uma por linha:
 # função<TAB>módulo<TAB>motivo. tools/asm_queue.py tira estas da fila; acrescente as que você confirmar.
 duel_req_mill	libduel_eng	9 palavras: p/n em registradores trocados; 1680 ordens de declaração (rodada 8)
-dd_chr_attach_mtx	libduel_draw	90 palavras por uma instrução: cópia move a3,a2 de id que o mwcc propaga (rodada 11)
+dd_chr_attach_mtx	libduel_draw	20 palavras: só falta a cópia move a3,a2 de id; cast redundante no laço deu o tamanho; ~100k candidatos do tools/permute.py (rodada 39)
 dd_info_stats	libduel_draw	4 palavras: leituras volatile de si[2]/si[5]/si[7]; ~800 combinações sem passar de 4 (rodada 27)
 font_glyph_cache	BOOT	55 palavras: f e font trocam s1/s5 (ordem de alocação); code é u16 de verdade; ~1500 variantes de ordem, tipo e identidade testadas (rodada 30)
 menu_layout	BOOT	67 palavras: coloração dos temporários (item do 1º laço em a1 em vez de t0, constantes do desenrolamento um registrador acima); nenhuma forma de busca, deslocamento, cópia ou pragma muda (rodada 30)
@@ -13,7 +13,6 @@ duel_field_controller	libduel_eng	101 palavras: blocos {p, cur, base} e {ef, src
 st_chr_step_value	libstory	10 palavras: registradores de level/tabela; 288 ordens × tipos (rodada 23)
 dd_fx_shatter_update	libduel_draw	41 palavras, todas no laço que monta os estilhaços: constantes 0.4921875/14.67 em a0/v1 e escalonamento de 15.5 * j (rodada 33)
 duel_08846584	libduel_eng	253 palavras com estrutura idêntica: ap e o ponteiro de st trocados, permutação add/n/h na parte do atacante; 840 amostras (rodada 35)
-dd_cursor_draw_arrow	libduel_draw	28 palavras: list/raised trocam com dx/dy; 5000 ordens de declaração, ordem de instruções, if/else e pragmas sem efeito (rodada 37)
 sceGuFinishId	BOOT	GCC: com o gancho do ins a sequência é idêntica, só o -frename-registers escolhe outros nomes (47 palavras); segura o .rodata da libgu e com ele sceGuInit/sceGuSync (rodada 37)
 _strtod_r	BOOT	GCC: strtod.c igual no newlib 1.11-1.13; constante em v0 em vez de a0 deixa um nop no delay slot; ~15 flags testadas (rodada 37)
 _dtoa_r	BOOT	GCC: o original lê o dígito duas vezes (lb, depois lbu), o 1.7.1 junta num lbu + seb (CSE); quorem com dois move trocados (rodada 37)
