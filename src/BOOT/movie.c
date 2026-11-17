@@ -14,7 +14,7 @@ long long sceIoLseek(SceUID fd, long long offset, int whence);
 
 int dbg_printf(const char *fmt, ...);
 int memcmp2(const void *a, const void *b, unsigned int n);
-void vblank_handler_set(int sub, void *handler, void *arg);
+int vblank_handler_set(int sub, void *handler, void *arg);   /* returns the register/enable or release result (BOOT libgu_ctx.c) */
 int sceWaveInit_wrap(void);
 int wave_set_sample(int ch, int samples);
 int wave_exit(void);
