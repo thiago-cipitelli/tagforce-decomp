@@ -152,7 +152,7 @@ segments:
       - [0xCDFC, c, nl_sscanf]
       - [0xCE84, c, nl_stdio]
       - [0xCEFC, c, nl_stdio]
-      - [0xCF88, c, libc_string]
+      - [0xCF88, c, nl_stdio]
       - [0xD000, c, nl_stdio]
       - [0xD030, c, libc_strcasecmp]
       - [0xD0CC, c, libc_strcat]

@@ -7,6 +7,7 @@
 // @gcc 0x08810D9C-0x08810E24 nl_sscanf
 // @gcc 0x08810E24-0x08810E9C nl_stdio
 // @gcc 0x08810E9C-0x08810F28 nl_stdio
+// @gcc 0x08810F28-0x08810FA0 nl_stdio
 // @gcc 0x08810FA0-0x08810FD0 nl_stdio
 // @gcc 0x08810FD0-0x0881106C libc_strcasecmp
 // @gcc 0x0881106C-0x08811118 libc_strcat
@@ -210,43 +211,7 @@ int libc_swrite(LibcFile *fp, const char *buf, int n)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int libc_sseek(LibcFile *fp, int off, int whence)
-{
-    addiu sp, sp, -16
-    sw s2, 8(sp)
-    move s2, a0
-    sw ra, 12(sp)
-    sw s1, 4(sp)
-    move s1, a2
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a1
-    lh a1, 14(s2)
-    move a0, v0
-    move a2, s0
-    jal _lseek_r
-    move a3, s1
-    move v1, v0
-    addiu v0, zero, -1
-    beq v1, v0, @70
-    lhu v0, 12(s2)
-    sw v1, 80(s2)
-    ori v0, v0, 0x1000
-@50:
-    sh v0, 12(s2)
-    move v0, v1
-    lw ra, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@70:
-    j @50
-    ins v0, zero, 0xc, 0x1
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_stdio.c */
 int libc_sseek(LibcFile *fp, int off, int whence)
 {
     int ret = _lseek_r(heap_get_current(), fp->file, off, whence);
