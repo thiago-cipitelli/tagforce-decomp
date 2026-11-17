@@ -1,16 +1,19 @@
 // @range 0x088087F8-0x0880A5C0
-// @asm 0x088087F8-0x088091A0
+// @gcc 0x088087F8-0x08808AE0 nl_ef_asin
+// @gcc 0x08808AE0-0x08808D2C nl_ef_atan2
+// @gcc 0x08808D2C-0x0880907C nl_ef_rem_pio2
+// @gcc 0x0880907C-0x088091A0 nl_ef_sqrt
 // @gcc 0x088091A0-0x088092C0 libm_kf_cos
 // @gcc 0x088092C0-0x08809A80 libm_kf_rem_pio2
 // @gcc 0x08809A80-0x08809B54 libm_kf_sin
 // @gcc 0x08809B54-0x08809B88 nl_s_isinf
 // @gcc 0x08809B88-0x08809BAC nl_s_isnan
 // @gcc 0x08809BAC-0x08809BB4 nl_s_matherr
-// @asm 0x08809BB4-0x08809E50
+// @gcc 0x08809BB4-0x08809E50 nl_sf_atan
 // @gcc 0x08809E70-0x08809F38 nl_sf_cos
 // @gcc 0x08809F38-0x08809F4C libm_sf_fabs
 // @gcc 0x08809F4C-0x0880A028 nl_sf_floor
-// @asm 0x0880A03C-0x0880A154
+// @gcc 0x0880A03C-0x0880A154 nl_sf_scalbn
 // @gcc 0x0880A154-0x0880A220 libm_sf_sin
 // @asm 0x0880A220-0x0880A340
 // @gcc 0x0880A340-0x0880A484 libm_wf_atan2
@@ -22,8 +25,9 @@
    under NON_MATCHING is the fdlibm source, checked against the asm (see below). The names carry
    a libm_ prefix where the plain one belongs to the VFPU versions (see vfpu_math.c).
    The `@gcc` ranges are the functions that already come out of the newlib source with the SDK's GCC (libm_kf_cos.c,
-   libm_kf_rem_pio2.c, libm_kf_sin.c, libm_sf_fabs.c, libm_sf_sin.c, libm_wf_atan2.c, libm_wf_sqrt.c; docs/build.md, "Trilha GCC");
-   what is left here needs a later revision of that compiler (it clears bit fields with `ins`). */
+   libm_kf_rem_pio2.c, libm_kf_sin.c, libm_sf_fabs.c, libm_sf_sin.c, libm_wf_atan2.c, libm_wf_sqrt.c and the nl_*.c of
+   newlib 1.12.0; docs/build.md, "Trilha GCC"); what is left here (libm_asinf) differs only by one delay slot that the
+   SDK's assembler left empty. */
 
 #ifndef __MWERKS__
 #include <math.h>

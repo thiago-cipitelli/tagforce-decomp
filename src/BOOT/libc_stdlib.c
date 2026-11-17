@@ -5,6 +5,7 @@
 // @asm 0x0880AAC4-0x0880BF10
 // @gcc 0x0880BF10-0x0880BF2C nl_errno
 // @asm 0x0880BF2C-0x0880BF40
+// @gcc 0x0880BF40-0x0880C040 nl_exit
 /* newlib (GCC) of the Sony SDK libc: atexit, bsearch, _calloc_r, _close_r, the quorem and _dtoa_r
    of dtoa.c, __errno and exit. The reentrancy struct of the calling thread comes from
    libc_get_thread_module (newlib's _REENT). Functions that reach globals through %hi/%lo stay in
@@ -469,81 +470,8 @@ int *__errno(void)
 
 /* runs the atexit handlers in reverse order (with their argument when registered by on_exit),
    then _exit */
-#ifdef __MWERKS__
-asm void exit(int status)
-{
-    addiu sp, sp, -48
-    sw s6, 24(sp)
-    move s6, a0
-    sw s5, 20(sp)
-    sw ra, 32(sp)
-    sw s7, 28(sp)
-    sw s4, 16(sp)
-    sw s3, 12(sp)
-    sw s2, 8(sp)
-    sw s1, 4(sp)
-    jal libc_get_thread_module
-    sw s0, 0(sp)
-    lw s5, 328(v0)
-    beqz s5, @dc
-    addiu s7, zero, 1
-    lw v0, 4(s5)
-@40:
-    move s3, zero
-    addiu s4, s5, 136
-    addiu s0, v0, -1
-    sllv v1, s7, s0
-    slti v0, s0, 0
-    bltz s0, @b4
-    movz s3, v1, v0
-    sll v1, s0, 0x2
-    addu v0, v1, s5
-    addiu s1, v0, 8
-    move s2, v1
-    nop
-    nop
-    nop
-    nop
-    nop
-@80:
-    lw v0, 128(s4)
-    addu a1, s2, s4
-    and v0, v0, s3
-    beqz v0, @c8
-    move a0, s6
-    lw v0, 0(s1)
-    jalr ra, v0
-    lw a1, 0(a1)
-    addiu s0, s0, -1
-    addiu s2, s2, -4
-@a8:
-    addiu s1, s1, -4
-    bgez s0, @80
-    sra s3, s3, 0x1
-@b4:
-    lw s5, 0(s5)
-    bnezl s5, @40
-    lw v0, 4(s5)
-    j @dc
-    nop
-@c8:
-    lw v0, 0(s1)
-    jalr ra, v0
-    addiu s0, s0, -1
-    j @a8
-    addiu s2, s2, -4
-@dc:
-    jal _exit
-    move a0, s6
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-}
-#else
+void exit(int status);
+#ifndef __MWERKS__ /* PSP: nl_exit.c */
 void exit(int status)
 {
     char *r = libc_get_thread_module();

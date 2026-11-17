@@ -6,7 +6,8 @@
 // @gcc 0x08810038-0x088100A0
 // @gcc 0x088100A0-0x088105F8 nl_reallocr
 // @gcc 0x088105F8-0x0881064C nl_reent
-// @asm 0x088106E0-0x08810854
+// @gcc 0x0881064C-0x088106E0 nl_reent
+// @gcc 0x088106E0-0x08810854 nl_reent
 // @gcc 0x08810854-0x08810904 nl_reent
 // @gcc 0x08810904-0x08810940 nl_refill
 // @gcc 0x08810940-0x08810ADC nl_refill
@@ -312,54 +313,8 @@ void libc_cleanup_glue(void *r, void *glue)
 #endif
 
 /* frees the malloc'ed buffers (__SMBF) of r's streams */
-#ifdef __MWERKS__
-asm void libc_free_stream_bufs(char *r)
-{
-    addiu sp, sp, -32
-    sw s2, 8(sp)
-    addiu s2, a0, 604
-    sw s3, 12(sp)
-    move s3, a0
-    sw ra, 16(sp)
-    sw s1, 4(sp)
-    beqz s2, @68
-    sw s0, 0(sp)
-    lw s1, 4(s2)
-@28:
-    addiu s1, s1, -1
-    bltz s1, @5c
-    lw s0, 8(s2)
-@34:
-    lhu v0, 12(s0)
-    andi v0, v0, 0x80
-    beqz v0, @54
-    addiu s1, s1, -1
-    lw v0, 16(s0)
-    move a0, s3
-    bnez v0, @84
-    move a1, v0
-@54:
-    bgez s1, @34
-    addiu s0, s0, 92
-@5c:
-    lw s2, 0(s2)
-    bnezl s2, @28
-    lw s1, 4(s2)
-@68:
-    lw ra, 16(sp)
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 32
-@84:
-    jal _free_r
-    nop
-    j @54
-    sw zero, 16(s0)
-}
-#else
+void libc_free_stream_bufs(char *r);
+#ifndef __MWERKS__ /* PSP: nl_reent.c */
 void libc_free_stream_bufs(char *r)
 {
     char *g;
