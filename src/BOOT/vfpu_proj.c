@@ -58,49 +58,53 @@ static void cross3(float *r, const float *a, const float *b)
 Mat4 *mat4_shadow_plane(Mat4 *out, Vec4 *l, int point, float a, float b, float c)
 {
     float *m = out->m;
+    float lx, ly, lz;
     float d;
+    float k;
 
     if (point) {
-        float k;
-
-        d = a * l->x + b * l->y + c * l->z;
+        lx = l->x;
+        ly = l->y;
+        lz = l->z;
+        d = a * lx + b * ly + c * lz;
         k = 1.0f - d;
-        m[0] = a * l->x + k;
-        m[1] = a * l->y;
-        m[2] = a * l->z;
+        m[0] = a * lx + k;
+        m[4] = b * lx;
+        m[8] = c * lx;
+        m[12] = -lx;
+        m[1] = a * ly;
+        m[5] = b * ly + k;
+        m[9] = c * ly;
+        m[13] = -ly;
+        m[2] = a * lz;
+        m[6] = b * lz;
+        m[10] = c * lz + k;
+        m[14] = -lz;
         m[3] = a;
-        m[4] = b * l->x;
-        m[5] = b * l->y + k;
-        m[6] = b * l->z;
         m[7] = b;
-        m[8] = c * l->x;
-        m[9] = c * l->y;
-        m[10] = c * l->z + k;
         m[11] = c;
-        m[12] = -l->x;
-        m[13] = -l->y;
-        m[14] = -l->z;
         m[15] = k - 1.0f;
     } else {
-        float k;
-
-        d = a * l->x + b * l->y + c * l->z;
+        lx = l->x;
+        ly = l->y;
+        lz = l->z;
+        d = a * lx + b * ly + c * lz;
         k = -1.0f / d;
         m[3] = 0.0f;
         m[7] = 0.0f;
         m[11] = 0.0f;
-        m[0] = k * (a * l->x - d);
-        m[4] = k * (b * l->x);
-        m[8] = k * (c * l->x);
-        m[12] = k * -l->x;
-        m[1] = k * (a * l->y);
-        m[5] = k * (b * l->y - d);
-        m[9] = k * (c * l->y);
-        m[13] = k * -l->y;
-        m[2] = k * (a * l->z);
-        m[6] = k * (b * l->z);
-        m[10] = k * (c * l->z - d);
-        m[14] = k * -l->z;
+        m[0] = k * (a * lx - d);
+        m[4] = k * (b * lx);
+        m[8] = k * (c * lx);
+        m[12] = k * -lx;
+        m[1] = k * (a * ly);
+        m[5] = k * (b * ly - d);
+        m[9] = k * (c * ly);
+        m[13] = k * -ly;
+        m[2] = k * (a * lz);
+        m[6] = k * (b * lz);
+        m[10] = k * (c * lz - d);
+        m[14] = k * -lz;
         m[15] = k * -d;
     }
     return out;

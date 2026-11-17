@@ -661,11 +661,13 @@ int wave_thread(unsigned int args, void *argp)
 int wave_mix_block(unsigned char *out)
 {
     unsigned int i;
+    unsigned char *p;
     int active = 0;
     int ch;
 
+    p = out;
     for (i = 0; i < 0x70; i++) {
-        out[i] = 0;
+        *p++ = 0;
     }
     for (ch = 0; ch < 8; ch++) {
         WaveCh *c = &wave_ch[ch];
@@ -683,14 +685,15 @@ int wave_mix_block(unsigned char *out)
                 wave_ch_copy_pcm(ch, wave_pcm_ptr);
             }
         } else if (c->cb != 0) {
+            p = wave_pcm_ptr;
             for (i = 0; i < 0x70; i++) {
-                wave_pcm_ptr[i] = 0;
+                *p++ = 0;
             }
             if ((c->flags & 0x100) == 0) {
                 if (c->cb(ch, wave_vag_ptr, 0x10, c->cb_arg) != 0) {
                     c->playing = 0;
                 }
-                vag_decode_block((short *)wave_pcm_ptr, wave_vag_ptr, &c->hist1, &c->hist2);
+                vag_decode_block((short *)wave_pcm_ptr, wave_vag_ptr, &wave_ch[ch].hist1, &wave_ch[ch].hist2);
             } else if (c->cb(ch, wave_pcm_ptr, 0x70, c->cb_arg) != 0) {
                 c->playing = 0;
             }
@@ -704,37 +707,42 @@ int wave_mix_block(unsigned char *out)
    the block flags (7 = end marker, nothing decoded). */
 int vag_decode_block(short *out, const unsigned char *in, int *hist1, int *hist2)
 {
-    int shift = in[0] & 0xF;
-    int pred = in[0] >> 4;
+    int h = in[0];
+    int shift = h & 0xF;
+    int pred = h >> 4;
     int flags = in[1];
     int c0 = vag_coef[0][pred];
     int c1 = vag_coef[1][pred];
     int s1 = *hist1;
     int s2 = *hist2;
     int i;
+    int n = 2;
 
     if (flags == 7) {
         return 7;
     }
-    for (i = 2; i < 16; i++) {
-        int b = (signed char)in[i];
+    for (i = 0; i < 14; i++) {
+        int b = (signed char)in[n++];
+        int d0, d1;
 
-        s2 = (((b << 28) >> (shift + 10)) + s1 * c0 + s2 * c1) >> 6;
-        if (s2 > 0x7FFF) {
-            s2 = 0x7FFF;
+        d0 = (((b << 28) >> (shift + 10)) + (s1 * c0 + s2 * c1)) >> 6;
+        if (d0 > 0x7FFF) {
+            d0 = 0x7FFF;
         }
-        if (s2 < -0x8000) {
-            s2 = -0x8000;
+        if (d0 < -0x8000) {
+            d0 = -0x8000;
         }
-        *out++ = (short)s2;
-        s1 = (((b & ~0xF) << (14 - shift)) + s2 * c0 + s1 * c1) >> 6;
-        if (s1 > 0x7FFF) {
-            s1 = 0x7FFF;
+        *out++ = (short)d0;
+        d1 = (((b & ~0xF) << (14 - shift)) + (d0 * c0 + s1 * c1)) >> 6;
+        if (d1 > 0x7FFF) {
+            d1 = 0x7FFF;
         }
-        if (s1 < -0x8000) {
-            s1 = -0x8000;
+        if (d1 < -0x8000) {
+            d1 = -0x8000;
         }
-        *out++ = (short)s1;
+        *out++ = (short)d1;
+        s2 = d0;
+        s1 = d1;
     }
     *hist1 = s1;
     *hist2 = s2;
