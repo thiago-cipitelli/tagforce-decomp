@@ -241,10 +241,238 @@ L_0881EDC0:
     j L_0881EBEC
     nop
 }
-#else
+#elif !defined(__mips__)
 void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
 {
     return memcpy(dst, src, n);
+}
+#else
+void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
+{
+    /* the SDK's GCC: C around one asm per alignment of src; 36 words left, all register names: the original
+       keeps 0x40000000 in t1 and the uncached pointer (and the tail byte) in t2, regrename gives the reverse here
+       (every order of the cases tested) */
+    unsigned char *d = dst;
+    const unsigned char *s = src;
+    unsigned int u;
+
+    while (n != 0 && ((unsigned int)d & 0x3F) != 0) {
+        *d++ = *s++;
+        n--;
+    }
+    if (n == 0)
+        return dst;
+    if (n >= 64) {
+        u = __builtin_allegrex_ins(0x40000000, (unsigned int)d, 0, 29);
+        switch ((unsigned int)s & 0xF) {
+        case 0:
+            __asm__ volatile (
+                ".set push\n"
+                ".set noreorder\n"
+                "1:\n"
+                "srl $8, %2, 0x7\n"
+                "beqz $8, 3f\n"
+                "nop\n"
+                "2:\n"
+                "cache 0x1b, 0(%0)\n"
+                "lv.q C000, 0(%1)\n"
+                "lv.q C010, 16(%1)\n"
+                "lv.q C020, 32(%1)\n"
+                "lv.q C030, 48(%1)\n"
+                "lv.q C100, 64(%1)\n"
+                "lv.q C110, 80(%1)\n"
+                "lv.q C120, 96(%1)\n"
+                "lv.q C130, 112(%1)\n"
+                "cache 0x1b, 64(%0)\n"
+                "addiu %0, %0, 128\n"
+                "addiu %1, %1, 128\n"
+                "addiu %2, %2, -128\n"
+                "srl $8, %2, 0x7\n"
+                "sync\n"
+                "sv.q C000, 0(%3), wb\n"
+                "sv.q C010, 16(%3), wb\n"
+                "sv.q C020, 32(%3), wb\n"
+                "sv.q C030, 48(%3), wb\n"
+                "sv.q C100, 64(%3), wb\n"
+                "sv.q C110, 80(%3), wb\n"
+                "sv.q C120, 96(%3), wb\n"
+                "sv.q C130, 112(%3), wb\n"
+                "addiu %3, %3, 128\n"
+                "bnez $8, 2b\n"
+                "vnop\n"
+                "srl $8, %2, 0x6\n"
+                "beqz $8, 4f\n"
+                "nop\n"
+                "3:\n"
+                "cache 0x1b, 0(%0)\n"
+                "lv.q C000, 0(%1)\n"
+                "lv.q C010, 16(%1)\n"
+                "lv.q C020, 32(%1)\n"
+                "lv.q C030, 48(%1)\n"
+                "addiu %0, %0, 64\n"
+                "addiu %1, %1, 64\n"
+                "addiu %2, %2, -64\n"
+                "sync\n"
+                "sv.q C000, 0(%3), wb\n"
+                "sv.q C010, 16(%3), wb\n"
+                "sv.q C020, 32(%3), wb\n"
+                "sv.q C030, 48(%3), wb\n"
+                "4:\n"
+                "vflush\n"
+                "vnop\n"
+                ".set pop\n"
+                : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
+                :
+                : "$8", "memory");
+            break;
+        case 12:
+            __asm__ volatile (
+                ".set push\n"
+                ".set noreorder\n"
+                "1:\n"
+                "cache 0x1b, 0(%0)\n"
+                "lv.s S000, 0(%1)\n"
+                "lv.q C100, 4(%1)\n"
+                "lv.q C110, 20(%1)\n"
+                "lv.q C120, 36(%1)\n"
+                "lv.q C130, 52(%1)\n"
+                "vmmov.t E001, E100\n"
+                "vmov.t R010, R103\n"
+                "vmov.t C031, C130\n"
+                "addiu %0, %0, 64\n"
+                "addiu %1, %1, 64\n"
+                "addiu %2, %2, -64\n"
+                "srl $8, %2, 0x6\n"
+                "sync\n"
+                "sv.q C000, 0(%3), wb\n"
+                "sv.q C010, 16(%3), wb\n"
+                "sv.q C020, 32(%3), wb\n"
+                "sv.q C030, 48(%3), wb\n"
+                "addiu %3, %3, 64\n"
+                "bnez $8, 1b\n"
+                "vnop\n"
+                "vflush\n"
+                "vnop\n"
+                ".set pop\n"
+                : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
+                :
+                : "$8", "memory");
+            break;
+        case 8:
+            __asm__ volatile (
+                ".set push\n"
+                ".set noreorder\n"
+                "1:\n"
+                "cache 0x1b, 0(%0)\n"
+                "lv.s S000, 0(%1)\n"
+                "lv.s S001, 4(%1)\n"
+                "lv.q C100, 8(%1)\n"
+                "lv.q C110, 24(%1)\n"
+                "lv.q C120, 40(%1)\n"
+                "lv.q C130, 56(%1)\n"
+                "vmmov.p E002, E100\n"
+                "vmov.p C010, C102\n"
+                "vmov.p C020, C112\n"
+                "vmov.p C022, C120\n"
+                "vmov.p C030, C122\n"
+                "vmov.p C032, C130\n"
+                "addiu %0, %0, 64\n"
+                "addiu %1, %1, 64\n"
+                "addiu %2, %2, -64\n"
+                "srl $8, %2, 0x6\n"
+                "sync\n"
+                "sv.q C000, 0(%3), wb\n"
+                "sv.q C010, 16(%3), wb\n"
+                "sv.q C020, 32(%3), wb\n"
+                "sv.q C030, 48(%3), wb\n"
+                "addiu %3, %3, 64\n"
+                "bnez $8, 1b\n"
+                "vnop\n"
+                "vflush\n"
+                "vnop\n"
+                ".set pop\n"
+                : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
+                :
+                : "$8", "memory");
+            break;
+        case 4:
+            __asm__ volatile (
+                ".set push\n"
+                ".set noreorder\n"
+                "1:\n"
+                "addiu %2, %2, -64\n"
+                "cache 0x1b, 0(%0)\n"
+                "lv.q C100, -4(%1)\n"
+                "lv.q C110, 12(%1)\n"
+                "lv.q C120, 28(%1)\n"
+                "lv.q C130, 44(%1)\n"
+                "lv.s S033, 60(%1)\n"
+                "vmmov.t E000, E101\n"
+                "vmov.t R003, R110\n"
+                "vmov.t C030, C131\n"
+                "addiu %0, %0, 64\n"
+                "addiu %1, %1, 64\n"
+                "srl $8, %2, 0x6\n"
+                "sync\n"
+                "sv.q C000, 0(%3), wb\n"
+                "sv.q C010, 16(%3), wb\n"
+                "sv.q C020, 32(%3), wb\n"
+                "sv.q C030, 48(%3), wb\n"
+                "addiu %3, %3, 64\n"
+                "bnez $8, 1b\n"
+                "vnop\n"
+                "vflush\n"
+                "vnop\n"
+                ".set pop\n"
+                : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
+                :
+                : "$8", "memory");
+            break;
+        default:
+            __asm__ volatile (
+                ".set push\n"
+                ".set noreorder\n"
+                "1:\n"
+                "cache 0x1b, 0(%0)\n"
+                "addiu %0, %0, 64\n"
+                "addiu %2, %2, -64\n"
+                "sync\n"
+                "2:\n"
+                "lwr $8,0(%1)\n"
+                "lwl $8,3(%1)\n"
+                "mtv $8, S000\n"
+                "lwr $8,4(%1)\n"
+                "lwl $8,7(%1)\n"
+                "mtv $8, S001\n"
+                "lwr $8,8(%1)\n"
+                "lwl $8,11(%1)\n"
+                "mtv $8, S002\n"
+                "lwr $8,12(%1)\n"
+                "lwl $8,15(%1)\n"
+                "mtv $8, S003\n"
+                "addiu %1, %1, 16\n"
+                "sv.q C000, 0(%3), wb\n"
+                "addiu %3, %3, 16\n"
+                "andi $8, %3, 0x3f\n"
+                "bnez $8, 2b\n"
+                "vnop\n"
+                "srl $8, %2, 0x6\n"
+                "bnez $8, 1b\n"
+                "nop\n"
+                "vflush\n"
+                "vnop\n"
+                ".set pop\n"
+                : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
+                :
+                : "$8", "memory");
+            break;
+        }
+    }
+    while (n != 0) {
+        *d++ = *s++;
+        n--;
+    }
+    return dst;
 }
 #endif
 
