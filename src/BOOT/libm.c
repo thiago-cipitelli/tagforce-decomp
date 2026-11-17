@@ -10,9 +10,11 @@
 // @gcc 0x08809B88-0x08809BAC nl_s_isnan
 // @gcc 0x08809BAC-0x08809BB4 nl_s_matherr
 // @gcc 0x08809BB4-0x08809E50 nl_sf_atan
+// @gcc 0x08809E50-0x08809E70 nl_sf_copysign
 // @gcc 0x08809E70-0x08809F38 nl_sf_cos
 // @gcc 0x08809F38-0x08809F4C libm_sf_fabs
 // @gcc 0x08809F4C-0x0880A028 nl_sf_floor
+// @gcc 0x0880A028-0x0880A03C nl_sf_isnan
 // @gcc 0x0880A03C-0x0880A154 nl_sf_scalbn
 // @gcc 0x0880A154-0x0880A220 libm_sf_sin
 // @gcc 0x0880A220-0x0880A340 nl_wf_asin
@@ -514,19 +516,7 @@ float libm_atanf(float x)
 }
 #endif
 
-#ifdef __MWERKS__
-asm float libm_copysignf(float x, float y)
-{
-    mfc1 v1, $f12
-    mfc1 v0, $f13
-    ins v1, zero, 0x1f, 0x1
-    ins v0, zero, 0x0, 0x1f
-    or v1, v1, v0
-    mtc1 v1, $f0
-    jr ra
-    nop
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_sf_copysign.c */
 float libm_copysignf(float x, float y)
 {
     libm_bits a;
@@ -590,16 +580,7 @@ float libm_floorf(float x)
 #endif
 #endif
 
-#ifdef __MWERKS__
-asm int libm_isnanf(float x)
-{
-    mfc1 v1, $f12
-    lui v0, 0x7f80
-    ins v1, zero, 0x1f, 0x1
-    jr ra
-    slt v0, v0, v1
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_sf_isnan.c */
 int libm_isnanf(float x)
 {
     libm_bits b;

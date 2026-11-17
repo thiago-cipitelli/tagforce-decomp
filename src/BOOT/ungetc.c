@@ -1,5 +1,5 @@
 // @range 0x08813108-0x08813390
-// @gcc 0x08813108-0x088131F8 nl_ungetc
+// @gcc 0x08813108-0x08813390 nl_ungetc
 /* newlib ungetc (stdio/ungetc.c) with its buffer growth helper, compiled with GCC and kept as whole
    `asm` functions; the C below is the newlib code, used outside the PSP build. */
 #include "libc.h"
@@ -41,126 +41,7 @@ int nl_submore(NlFile *fp)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int ungetc(int c, NlFile *fp)
-{
-    addiu sp, sp, -16
-    addiu v0, zero, -1
-    sw s1, 4(sp)
-    addiu a3, zero, -1
-    move s1, a0
-    sw s0, 0(sp)
-    move s0, a1
-    beq a0, v0, L_088132AC
-    sw ra, 8(sp)
-    jal heap_get_current
-    nop
-    lw v1, 56(v0)
-    beqz v1, L_08813378
-    nop
-    lhu v0, 12(s0)
-L_08813234:
-    ins v0, zero, 0x5, 0x1
-    andi a0, v0, 0xffdf
-    andi v1, a0, 0x4
-    bnez v1, L_0881326C
-    sh v0, 12(s0)
-    andi v0, a0, 0x10
-    beqz v0, L_088132AC
-    addiu a3, zero, -1
-    andi v0, a0, 0x8
-    bnez v0, L_08813350
-    nop
-L_08813260:
-    lhu v0, 12(s0)
-    ori v0, v0, 0x4
-    sh v0, 12(s0)
-L_0881326C:
-    lw v0, 48(s0)
-    beqz v0, L_088132DC
-    andi s1, s1, 0xff
-    lw v0, 4(s0)
-    lw v1, 52(s0)
-    slt v0, v0, v1
-    beqz v0, L_088132C4
-    nop
-L_0881328C:
-    lw v1, 0(s0)
-    move a3, s1
-    addiu v0, v1, -1
-    sw v0, 0(s0)
-    sb s1, -1(v1)
-    lw v0, 4(s0)
-    addiu v0, v0, 1
-    sw v0, 4(s0)
-L_088132AC:
-    lw ra, 8(sp)
-L_088132B0:
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    move v0, a3
-    jr ra
-    addiu sp, sp, 16
-L_088132C4:
-    jal nl_submore
-    move a0, s0
-    beqz v0, L_0881328C
-    addiu a3, zero, -1
-    j L_088132B0
-    lw ra, 8(sp)
-L_088132DC:
-    lw v0, 16(s0)
-    beqz v0, L_08813300
-    lw a2, 0(s0)
-    sltu v0, v0, a2
-    beqzl v0, L_08813304
-    lw v1, 4(s0)
-    lbu v0, -1(a2)
-    beql v0, s1, L_08813338
-    lw v0, 4(s0)
-L_08813300:
-    lw v1, 4(s0)
-L_08813304:
-    addiu v0, zero, 1
-    addiu a0, s0, 64
-    addiu a1, s0, 66
-    sw v0, 4(s0)
-    addiu v0, zero, 3
-    move a3, s1
-    sw v1, 60(s0)
-    sw a2, 56(s0)
-    sw a0, 48(s0)
-    sw v0, 52(s0)
-    sw a1, 0(s0)
-    j L_088132AC
-    sb s1, 66(s0)
-L_08813338:
-    addiu v1, a2, -1
-    move a3, s1
-    addiu v0, v0, 1
-    sw v0, 4(s0)
-    j L_088132AC
-    sw v1, 0(s0)
-L_08813350:
-    jal fflush
-    move a0, s0
-    bnez v0, L_088132AC
-    addiu a3, zero, -1
-    lhu v0, 12(s0)
-    sw zero, 8(s0)
-    ins v0, zero, 0x3, 0x1
-    sh v0, 12(s0)
-    j L_08813260
-    sw zero, 24(s0)
-L_08813378:
-    jal heap_get_current
-    nop
-    jal libc_sinit
-    move a0, v0
-    j L_08813234
-    lhu v0, 12(s0)
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_ungetc.c */
 int ungetc(int c, NlFile *fp)
 {
     if (c == -1) {
