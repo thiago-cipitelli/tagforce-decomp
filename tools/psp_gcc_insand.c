@@ -21,6 +21,13 @@
    entries stay queued). `*p++ = *fp->_p++` then stores fp->_p before the byte, as __svfscanf_r of the original.
    The call to expand_expr in that branch (after gen_reg_rtx) is redirected to rhs_expand(). PSP_GCC_RHSQ=0 turns it off.
 
+   Fourth change (rodada 42): in a basic block reached from a jump table, the later revision's regrename does not
+   reuse a register that is live on entry to the block unless it is also live on entry to the function (an incoming
+   argument): sceGuFinishId keeps `fid` (a3) out of the case 0 block, gu_ctx_light_color reuses its arguments a1/a3.
+   Fitted on the GCC files of BOOT (no other rule found without regressions); emulated by dropping, before
+   regrename_optimize, the REG_DEAD notes of those registers in those blocks up to their first set, so they stay
+   in regrename's live set for the whole block (regrename rebuilds the notes at its end). PSP_GCC_RRTJ=0 turns it off.
+
    Built by tools/setup_toolchain.sh (addresses from nm of cc1 as -DADDR_*), used by tools/psp_gcc.sh.  */
 #include <stdint.h>
 #include <stdio.h>
@@ -123,6 +130,73 @@ static void *rhs_expand(void *exp, void *target, int mode, int modifier)
     return r;
 }
 
+/* GCC 3.3 basic_block_def / edge_def (i386): head 0, end 4, pred 16, global_live_at_start 32, next_bb 52;
+   edge: pred_next 0, src 8. insn: NEXT_INSN fld[2], PATTERN fld[5], REG_NOTES fld[8]; note kind = mode */
+#define BB_F(b, o) (*(void **)((char *)(b) + (o)))
+#define FLD(x, i) ((x)->fld[i])
+enum { C_EXPR_LIST = 3, C_INSN = 42, C_JUMP_INSN = 43, C_CALL_INSN = 44, C_REG = 71, REG_DEAD_K = 1, NHARD = 176 };
+static char *entry_exit_blocks = A(ADDR_entry_exit_blocks);   /* ENTRY_BLOCK_PTR, then EXIT_BLOCK_PTR (80 bytes each) */
+static int (*bitmap_bit_p_f)(void *, int) = A(ADDR_bitmap_bit_p);
+static int (*tablejump_p_f)(rtx, rtx *, rtx *) = A(ADDR_tablejump_p);
+static void (*regrename_orig)(void);
+
+static int sets_reg(rtx x, int r)
+{
+    /* SET/CLOBBER of (reg r), also inside PARALLEL; conservative: any SET_DEST reg r */
+    int i, n;
+
+    if (x->code == C_SET || x->code == 59 /* CLOBBER */) {
+        rtx d = XEXP(x, 0);
+        return d->code == C_REG && (int)(intptr_t)FLD(d, 0) == r;
+    }
+    if (x->code == 49 /* PARALLEL */) {
+        n = *(int *)FLD(x, 0);     /* rtvec: num_elem, elem[] */
+        for (i = 0; i < n; i++)
+            if (sets_reg(((rtx *)((int *)FLD(x, 0) + 1))[i], r))
+                return 1;
+    }
+    return 0;
+}
+
+static void my_regrename(void)
+{
+    char *entry = entry_exit_blocks, *exit_ = entry_exit_blocks + 80, *b, *first = BB_F(entry, 52);
+    int r;
+
+    for (b = first; b && b != exit_; b = BB_F(b, 52)) {
+        char *e;
+        int tj = 0;
+
+        for (e = BB_F(b, 16); e; e = *(char **)e)
+            if (BB_F(e, 8) != entry && tablejump_p_f(BB_F(BB_F(e, 8), 4), 0, 0))
+                tj = 1;
+        if (!tj)
+            continue;
+        for (r = 1; r < 32; r++) {
+            rtx insn, *pn;
+
+            if (!bitmap_bit_p_f(BB_F(b, 32), r) || bitmap_bit_p_f(BB_F(first, 32), r))
+                continue;
+            for (insn = BB_F(b, 0); ; insn = (rtx)FLD(insn, 2)) {
+                if (insn->code == C_INSN || insn->code == C_JUMP_INSN || insn->code == C_CALL_INSN) {
+                    for (pn = (rtx *)&FLD(insn, 8); *pn; ) {
+                        rtx n = *pn, x = XEXP(n, 0);
+                        if (n->mode == REG_DEAD_K && x->code == C_REG && (int)(intptr_t)FLD(x, 0) == r) {
+                            *pn = XEXP(n, 1);
+                        } else
+                            pn = (rtx *)&n->fld[1];
+                    }
+                    if (sets_reg((rtx)FLD(insn, 5), r))
+                        break;
+                }
+                if (insn == BB_F(b, 4))
+                    break;
+            }
+        }
+    }
+    regrename_orig();
+}
+
 static void writable(void *a, size_t n)
 {
     long pg = sysconf(_SC_PAGESIZE);
@@ -178,6 +252,9 @@ __attribute__((constructor)) static void init(void)
     insn_data[DONOR].n_alternatives = 1;
     insn_data[DONOR].output_format = 3;   /* INSN_OUTPUT_FORMAT_FUNCTION */
     recog_orig = patch(A(ADDR_recog), my_recog);
+    e = getenv("PSP_GCC_RRTJ");
+    if (!e || atoi(e))
+        regrename_orig = patch(A(ADDR_regrename_optimize), my_regrename);
     e = getenv("PSP_GCC_RHSQ");
     if (!e || atoi(e)) {
         /* store_expr, queued_subexp_p (target) branch: call expand_expr (exp, gen_reg_rtx (...), ...) */

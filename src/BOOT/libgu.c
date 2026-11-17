@@ -1,9 +1,5 @@
 // @range 0x08804A0C-0x08805EC4
-// @gcc 0x08804A0C-0x08804DB0
-// @asm 0x08804DB0-0x08804F54
-// @gcc 0x08804F54-0x08805A60
-// @asm 0x08805A60-0x08805ACC
-// @gcc 0x08805ACC-0x08805EC4
+// @gcc 0x08804A0C-0x08805EC4
 /* libgu of the Sony SDK (GCC; names from the export NIDs): display-list contexts, frame/draw/depth
    buffers, the state bits and the first state commands. Nearly every function reaches the libgu
    globals through %hi/%lo, so they stay in the split asm and the C below is under NON_MATCHING;
@@ -82,26 +78,16 @@ static void gu_push(unsigned int w)
 }
 
 /* The object's .rodata (0x08872EF0-0x08872F78): this, the event flag name of sceGuInit, the dither matrix, the
-   jump tables of sceGuFinishId and sceGuSync; its .rodata.cst4 (the 1.0f of sceGuStart, linked by libgu_gcc.c) is
-   at 0x088EB110. The SDK's GCC reads the first three at their original addresses (GU_RODATA): the jump table of
-   sceGuFinishId, which does not match, keeps the .rodata itself out of the link (docs/build.md, "Trilha GCC").
-   With the definitions below in this order the object's .rodata comes out identical (round 36). */
+   jump tables of sceGuFinishId and sceGuSync; its .rodata.cst4 (the 1.0f of sceGuStart) is at 0x088EB110. Both
+   are linked from libgu_gcc.c (round 42: sceGuFinishId matches). With the definitions below in this order the
+   object's .rodata comes out identical (round 36). */
 typedef struct GuListArg {             /* sceGeListEnQueue argument (PspGeListArgs: size, context, stack count, stacks) */
     int size;
     void *context;
     int nstacks;
     unsigned int *stacks;
 } GuListArg;
-#if defined(__mips__) && !defined(__MWERKS__)
-#define GU_RODATA 1
-#define GU_S(name, lit) name
-extern const GuListArg gu_list_arg;    /* 0x08872EF0 */
-extern const char gu_signal_name[];    /* 0x08872F00 "SceGuSignal" */
-extern const int gu_dither_default[16]; /* 0x08872F10 */
-#else
-#define GU_S(name, lit) lit
 const GuListArg gu_list_arg = { 16, 0, 32, gu_ge_stack };
-#endif
 
 int sceGuInit(void)
 {
@@ -118,7 +104,7 @@ int sceGuInit(void)
     }
     gu.edram = (unsigned int)sceGeEdramGetAddr();
     gu_init_contexts();
-    r = sceKernelCreateEventFlag(GU_S(gu_signal_name, "SceGuSignal"), 0x200, 1, 0);
+    r = sceKernelCreateEventFlag("SceGuSignal", 0x200, 1, 0);
     if (r < 0) {
         return r;
     }
@@ -149,12 +135,10 @@ int sceGuInit(void)
 }
 
 /* the 4x4 dither matrix of the first sceGuStart */
-#ifndef GU_RODATA
 #ifdef __GNUC__
 __attribute__((aligned(8)))
 #endif
 const int gu_dither_default[16] = { -4, 0, -3, 1, 2, -2, 3, -1, -3, 1, -4, 0, 3, -1, 2, -2 };
-#endif
 
 /* Opens context cid on list (cid 0 is the GE list, 3/4 call lists, the others are built
    uncached and cleared to the next 64 bytes). */
