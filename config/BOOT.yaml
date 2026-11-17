@@ -349,6 +349,8 @@ segments:
       - [0x5ED88, c, libsas_gcc]
       - [0x5F54C, c, libwave_gcc]
       - [0x60358, asm, libwave_asm_088642F8]
+      - [0x60470, c, libwave_gcc]
+      - [0x60658, asm, libwave_asm_088645F8]
       - [0x612C0, c, sndapi]
       - [0x620C8, c, savedata]
       - [0x62920, c, msd]

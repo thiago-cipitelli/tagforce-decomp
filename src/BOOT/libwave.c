@@ -1,6 +1,8 @@
 // @range 0x088634EC-0x08865260
 // @gcc 0x088634EC-0x088642F8
-// @asm 0x088642F8-0x08865260
+// @asm 0x088642F8-0x08864410
+// @gcc 0x08864410-0x088645F8
+// @asm 0x088645F8-0x08865260
 /* libwave (SDK sample library, "SceWaveMain"): 8 software channels of VAG ADPCM or 16-bit PCM
    (mono or stereo, one-shot, looping, or streamed through a callback) mixed by a thread into one
    448-sample stereo hardware channel, plus 4 directly driven hardware channels (wave_set_sample,
@@ -689,13 +691,13 @@ int wave_mix_block(unsigned char *out)
             for (i = 0; i < 0x70; i++) {
                 *p++ = 0;
             }
-            if ((c->flags & 0x100) == 0) {
-                if (c->cb(ch, wave_vag_ptr, 0x10, c->cb_arg) != 0) {
-                    c->playing = 0;
+            if ((wave_ch[ch].flags & 0x100) == 0) {
+                if (wave_ch[ch].cb(ch, wave_vag_ptr, 0x10, wave_ch[ch].cb_arg) != 0) {
+                    wave_ch[ch].playing = 0;
                 }
                 vag_decode_block((short *)wave_pcm_ptr, wave_vag_ptr, &wave_ch[ch].hist1, &wave_ch[ch].hist2);
-            } else if (c->cb(ch, wave_pcm_ptr, 0x70, c->cb_arg) != 0) {
-                c->playing = 0;
+            } else if (wave_ch[ch].cb(ch, wave_pcm_ptr, 0x70, wave_ch[ch].cb_arg) != 0) {
+                wave_ch[ch].playing = 0;
             }
         }
         wave_ch_mix(ch, (short *)out, (short *)wave_pcm_ptr);
