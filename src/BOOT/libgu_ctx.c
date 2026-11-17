@@ -1,15 +1,13 @@
 // @range 0x08807070-0x088087F8
 // @gcc 0x08807070-0x0880712C
 // @asm 0x0880712C-0x08807338
-// @gcc 0x08807C6C-0x08807D40
-// @gcc 0x08807DD0-0x08807DFC
-// @gcc 0x08807E90-0x08807FD8
-// @gcc 0x08808058-0x08808084
-// @gcc 0x08808100-0x08808130
+// @gcc 0x08807338-0x0880763C
+// @gcc 0x08807C6C-0x08807FD8
+// @gcc 0x08808058-0x08808130
 // @asm 0x08808130-0x0880823C
 // @gcc 0x0880823C-0x08808294
 // @asm 0x08808294-0x088086F0
-// @gcc 0x088086F0-0x08808790
+// @gcc 0x088086F0-0x088087F8
 /* libgu of the Sony SDK (GCC), context level: the builders that write into a given GuList (state
    enables, matrices, sprites, clear, depth range, lights, ...), the GE signal/finish handlers, the
    context reset, the stall update and the sceGuDebugPrint/Flush text overlay. The builders do not
@@ -24,6 +22,12 @@ int sceKernelSetEventFlag(int evf, unsigned int bits);
 static void ctx_push(GuList *l, unsigned int w)
 {
     *l->cur++ = w;
+}
+
+/* command with a 24-bit argument (the SDK's sendCommandi) */
+static void ctx_cmd(GuList *l, unsigned int cmd, unsigned int arg)
+{
+    ctx_push(l, cmd << 24 | (arg & 0xFFFFFF));
 }
 
 /* BASE + 24-bit address command */
@@ -180,209 +184,8 @@ void gu_ctx_state(GuList *l, int state, int on)
 /* GU_PROJECTION (0, 4x4) / GU_VIEW (2) / GU_MODEL (1) / GU_TEXTURE (3): index command then the
    float24 elements (4x3 for all but the projection) */
 #ifdef __MWERKS__
-asm void gu_ctx_matrix(GuList *l, int type, const float *m)
-{
-    addiu v1, zero, 1
-    beq a1, v1, @25c
-    slti v1, a1, 2
-    bnez v1, @178
-    addiu a3, zero, 2
-    beq a1, a3, @d0
-    addiu t0, zero, 3
-    beql a1, t0, @2c
-    lw v0, 8(a0)
-    jr ra
-    nop
-@2c:
-    lui t0, 0x4000
-    sw t0, 0(v0)
-    lui t0, 0x4100
-    lui t1, 0x4100
-    lui t2, 0x4100
-    lwr t0, 1(a2)
-    lwr t1, 5(a2)
-    lwr t2, 9(a2)
-    sw t0, 4(v0)
-    sw t1, 8(v0)
-    sw t2, 12(v0)
-    lui t0, 0x4100
-    lui t1, 0x4100
-    lui t2, 0x4100
-    lwr t0, 17(a2)
-    lwr t1, 21(a2)
-    lwr t2, 25(a2)
-    sw t0, 16(v0)
-    sw t1, 20(v0)
-    sw t2, 24(v0)
-    lui t0, 0x4100
-    lui t1, 0x4100
-    lui t2, 0x4100
-    lwr t0, 33(a2)
-    lwr t1, 37(a2)
-    lwr t2, 41(a2)
-    sw t0, 28(v0)
-    sw t1, 32(v0)
-    sw t2, 36(v0)
-    lui t0, 0x4100
-    lui t1, 0x4100
-    lui t2, 0x4100
-    lwr t0, 49(a2)
-    lwr t1, 53(a2)
-    lwr t2, 57(a2)
-    sw t0, 40(v0)
-    sw t1, 44(v0)
-    sw t2, 48(v0)
-    addiu v0, v0, 52
-@c8:
-    jr ra
-    sw v0, 8(a0)
-@d0:
-    lw v0, 8(a0)
-    lui t0, 0x3a00
-    sw t0, 0(v0)
-    lui t0, 0x3b00
-    lui t1, 0x3b00
-    lui t2, 0x3b00
-    lwr t0, 1(a2)
-    lwr t1, 5(a2)
-    lwr t2, 9(a2)
-    sw t0, 4(v0)
-    sw t1, 8(v0)
-    sw t2, 12(v0)
-    lui t0, 0x3b00
-    lui t1, 0x3b00
-    lui t2, 0x3b00
-    lwr t0, 17(a2)
-    lwr t1, 21(a2)
-    lwr t2, 25(a2)
-    sw t0, 16(v0)
-    sw t1, 20(v0)
-    sw t2, 24(v0)
-    lui t0, 0x3b00
-    lui t1, 0x3b00
-    lui t2, 0x3b00
-    lwr t0, 33(a2)
-    lwr t1, 37(a2)
-    lwr t2, 41(a2)
-    sw t0, 28(v0)
-    sw t1, 32(v0)
-    sw t2, 36(v0)
-    lui t0, 0x3b00
-    lui t1, 0x3b00
-    lui t2, 0x3b00
-    lwr t0, 49(a2)
-    lwr t1, 53(a2)
-    lwr t2, 57(a2)
-    sw t0, 40(v0)
-    sw t1, 44(v0)
-    sw t2, 48(v0)
-    addiu v0, v0, 52
-    j @c8
-    nop
-@178:
-    beqzl a1, @188
-    lw v0, 8(a0)
-    jr ra
-    nop
-@188:
-    lui t0, 0x3e00
-    sw t0, 0(v0)
-    lui t0, 0x3f00
-    lui t1, 0x3f00
-    lui t2, 0x3f00
-    lui t3, 0x3f00
-    lwr t0, 1(a2)
-    lwr t1, 5(a2)
-    lwr t2, 9(a2)
-    lwr t3, 13(a2)
-    sw t0, 4(v0)
-    sw t1, 8(v0)
-    sw t2, 12(v0)
-    sw t3, 16(v0)
-    lui t0, 0x3f00
-    lui t1, 0x3f00
-    lui t2, 0x3f00
-    lui t3, 0x3f00
-    lwr t0, 17(a2)
-    lwr t1, 21(a2)
-    lwr t2, 25(a2)
-    lwr t3, 29(a2)
-    sw t0, 20(v0)
-    sw t1, 24(v0)
-    sw t2, 28(v0)
-    sw t3, 32(v0)
-    lui t0, 0x3f00
-    lui t1, 0x3f00
-    lui t2, 0x3f00
-    lui t3, 0x3f00
-    lwr t0, 33(a2)
-    lwr t1, 37(a2)
-    lwr t2, 41(a2)
-    lwr t3, 45(a2)
-    sw t0, 36(v0)
-    sw t1, 40(v0)
-    sw t2, 44(v0)
-    sw t3, 48(v0)
-    lui t0, 0x3f00
-    lui t1, 0x3f00
-    lui t2, 0x3f00
-    lui t3, 0x3f00
-    lwr t0, 49(a2)
-    lwr t1, 53(a2)
-    lwr t2, 57(a2)
-    lwr t3, 61(a2)
-    sw t0, 52(v0)
-    sw t1, 56(v0)
-    sw t2, 60(v0)
-    sw t3, 64(v0)
-    addiu v0, v0, 68
-    j @c8
-    nop
-@25c:
-    lw v0, 8(a0)
-    lui t0, 0x3c00
-    sw t0, 0(v0)
-    lui t0, 0x3d00
-    lui t1, 0x3d00
-    lui t2, 0x3d00
-    lwr t0, 1(a2)
-    lwr t1, 5(a2)
-    lwr t2, 9(a2)
-    sw t0, 4(v0)
-    sw t1, 8(v0)
-    sw t2, 12(v0)
-    lui t0, 0x3d00
-    lui t1, 0x3d00
-    lui t2, 0x3d00
-    lwr t0, 17(a2)
-    lwr t1, 21(a2)
-    lwr t2, 25(a2)
-    sw t0, 16(v0)
-    sw t1, 20(v0)
-    sw t2, 24(v0)
-    lui t0, 0x3d00
-    lui t1, 0x3d00
-    lui t2, 0x3d00
-    lwr t0, 33(a2)
-    lwr t1, 37(a2)
-    lwr t2, 41(a2)
-    sw t0, 28(v0)
-    sw t1, 32(v0)
-    sw t2, 36(v0)
-    lui t0, 0x3d00
-    lui t1, 0x3d00
-    lui t2, 0x3d00
-    lwr t0, 49(a2)
-    lwr t1, 53(a2)
-    lwr t2, 57(a2)
-    sw t0, 40(v0)
-    sw t1, 44(v0)
-    sw t2, 48(v0)
-    addiu v0, v0, 52
-    j @c8
-    nop
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
+void gu_ctx_matrix(GuList *l, int type, const float *m);
+#elif !defined(__mips__) /* the port */
 void gu_ctx_matrix(GuList *l, int type, const float *m)
 {
     static const unsigned int idx[4] = { 0x3E000000, 0x3C000000, 0x3A000000, 0x40000000 };
@@ -398,6 +201,62 @@ void gu_ctx_matrix(GuList *l, int type, const float *m)
             ctx_push(l, ctx_f24(m[i * 4 + j]) | (idx[type] + 0x01000000));
         }
     }
+}
+#else /* PSP: libgu_ctx_gcc.c. The SDK writes each case as inline asm: per element `lui t,cmd; lwr t,1(m)` puts the
+         three high bytes of the float under the command byte (float24), as the C above computes. */
+void gu_ctx_matrix(GuList *l, int type, const float *m)
+{
+    unsigned int *p;
+
+    switch (type) {
+    case 0:
+        p = l->cur;
+        __asm__ volatile(".set push\n.set noreorder\n"
+                         "lui $8,0x3e00\nsw $8,0(%0)\n"
+                         "lui $8,0x3f00\nlui $9,0x3f00\nlui $10,0x3f00\nlui $11,0x3f00\nlwr $8,1(%1)\nlwr $9,5(%1)\nlwr $10,9(%1)\nlwr $11,13(%1)\nsw $8,4(%0)\nsw $9,8(%0)\nsw $10,12(%0)\nsw $11,16(%0)\n"
+                         "lui $8,0x3f00\nlui $9,0x3f00\nlui $10,0x3f00\nlui $11,0x3f00\nlwr $8,17(%1)\nlwr $9,21(%1)\nlwr $10,25(%1)\nlwr $11,29(%1)\nsw $8,20(%0)\nsw $9,24(%0)\nsw $10,28(%0)\nsw $11,32(%0)\n"
+                         "lui $8,0x3f00\nlui $9,0x3f00\nlui $10,0x3f00\nlui $11,0x3f00\nlwr $8,33(%1)\nlwr $9,37(%1)\nlwr $10,41(%1)\nlwr $11,45(%1)\nsw $8,36(%0)\nsw $9,40(%0)\nsw $10,44(%0)\nsw $11,48(%0)\n"
+                         "lui $8,0x3f00\nlui $9,0x3f00\nlui $10,0x3f00\nlui $11,0x3f00\nlwr $8,49(%1)\nlwr $9,53(%1)\nlwr $10,57(%1)\nlwr $11,61(%1)\nsw $8,52(%0)\nsw $9,56(%0)\nsw $10,60(%0)\nsw $11,64(%0)\n"
+                         "addiu %0,%0,68\n.set pop"
+                         : "+r"(p) : "r"(m) : "$8", "$9", "$10", "$11", "memory");
+        break;
+    case 1:
+        p = l->cur;
+        __asm__ volatile(".set push\n.set noreorder\n"
+                         "lui $8,0x3c00\nsw $8,0(%0)\n"
+                         "lui $8,0x3d00\nlui $9,0x3d00\nlui $10,0x3d00\nlwr $8,1(%1)\nlwr $9,5(%1)\nlwr $10,9(%1)\nsw $8,4(%0)\nsw $9,8(%0)\nsw $10,12(%0)\n"
+                         "lui $8,0x3d00\nlui $9,0x3d00\nlui $10,0x3d00\nlwr $8,17(%1)\nlwr $9,21(%1)\nlwr $10,25(%1)\nsw $8,16(%0)\nsw $9,20(%0)\nsw $10,24(%0)\n"
+                         "lui $8,0x3d00\nlui $9,0x3d00\nlui $10,0x3d00\nlwr $8,33(%1)\nlwr $9,37(%1)\nlwr $10,41(%1)\nsw $8,28(%0)\nsw $9,32(%0)\nsw $10,36(%0)\n"
+                         "lui $8,0x3d00\nlui $9,0x3d00\nlui $10,0x3d00\nlwr $8,49(%1)\nlwr $9,53(%1)\nlwr $10,57(%1)\nsw $8,40(%0)\nsw $9,44(%0)\nsw $10,48(%0)\n"
+                         "addiu %0,%0,52\n.set pop"
+                         : "+r"(p) : "r"(m) : "$8", "$9", "$10", "memory");
+        break;
+    case 2:
+        p = l->cur;
+        __asm__ volatile(".set push\n.set noreorder\n"
+                         "lui $8,0x3a00\nsw $8,0(%0)\n"
+                         "lui $8,0x3b00\nlui $9,0x3b00\nlui $10,0x3b00\nlwr $8,1(%1)\nlwr $9,5(%1)\nlwr $10,9(%1)\nsw $8,4(%0)\nsw $9,8(%0)\nsw $10,12(%0)\n"
+                         "lui $8,0x3b00\nlui $9,0x3b00\nlui $10,0x3b00\nlwr $8,17(%1)\nlwr $9,21(%1)\nlwr $10,25(%1)\nsw $8,16(%0)\nsw $9,20(%0)\nsw $10,24(%0)\n"
+                         "lui $8,0x3b00\nlui $9,0x3b00\nlui $10,0x3b00\nlwr $8,33(%1)\nlwr $9,37(%1)\nlwr $10,41(%1)\nsw $8,28(%0)\nsw $9,32(%0)\nsw $10,36(%0)\n"
+                         "lui $8,0x3b00\nlui $9,0x3b00\nlui $10,0x3b00\nlwr $8,49(%1)\nlwr $9,53(%1)\nlwr $10,57(%1)\nsw $8,40(%0)\nsw $9,44(%0)\nsw $10,48(%0)\n"
+                         "addiu %0,%0,52\n.set pop"
+                         : "+r"(p) : "r"(m) : "$8", "$9", "$10", "memory");
+        break;
+    case 3:
+        p = l->cur;
+        __asm__ volatile(".set push\n.set noreorder\n"
+                         "lui $8,0x4000\nsw $8,0(%0)\n"
+                         "lui $8,0x4100\nlui $9,0x4100\nlui $10,0x4100\nlwr $8,1(%1)\nlwr $9,5(%1)\nlwr $10,9(%1)\nsw $8,4(%0)\nsw $9,8(%0)\nsw $10,12(%0)\n"
+                         "lui $8,0x4100\nlui $9,0x4100\nlui $10,0x4100\nlwr $8,17(%1)\nlwr $9,21(%1)\nlwr $10,25(%1)\nsw $8,16(%0)\nsw $9,20(%0)\nsw $10,24(%0)\n"
+                         "lui $8,0x4100\nlui $9,0x4100\nlui $10,0x4100\nlwr $8,33(%1)\nlwr $9,37(%1)\nlwr $10,41(%1)\nsw $8,28(%0)\nsw $9,32(%0)\nsw $10,36(%0)\n"
+                         "lui $8,0x4100\nlui $9,0x4100\nlui $10,0x4100\nlwr $8,49(%1)\nlwr $9,53(%1)\nlwr $10,57(%1)\nsw $8,40(%0)\nsw $9,44(%0)\nsw $10,48(%0)\n"
+                         "addiu %0,%0,52\n.set pop"
+                         : "+r"(p) : "r"(m) : "$8", "$9", "$10", "memory");
+        break;
+    default:
+        return;
+    }
+    l->cur = p;
 }
 #endif
 
@@ -1022,65 +881,22 @@ void gu_ctx_model_color(GuList *l, unsigned int emissive, unsigned int ambient, 
 #endif
 
 /* material colors selected by mode bits 0 (ambient + alpha), 1 (diffuse), 2 (specular) */
-#ifdef __MWERKS__
-asm void gu_ctx_material(GuList *l, int mode, unsigned int color)
-{
-    move t5, a2
-    ins t5, zero, 0x18, 0x8
-    srl a3, a2, 0x18
-    andi t4, a1, 0x1
-    move t0, a0
-    lui t7, 0x5600
-    lui a0, 0x5500
-    lui v1, 0x5700
-    lui v0, 0x5800
-    andi t3, a1, 0x4
-    andi t2, a1, 0x2
-    or t1, t5, a0
-    or a2, t5, v1
-    or a0, t5, t7
-    beqz t4, @58
-    or a1, a3, v0
-    lw t8, 8(t0)
-    sw t1, 0(t8)
-    addiu t1, t8, 4
-    addiu t4, t1, 4
-    sw t4, 8(t0)
-    sw a1, 0(t1)
-@58:
-    beqz t2, @70
-    nop
-    lw t9, 8(t0)
-    addiu t2, t9, 4
-    sw a0, 0(t9)
-    sw t2, 8(t0)
-@70:
-    beqz t3, @88
-    nop
-    lw t3, 8(t0)
-    sw a2, 0(t3)
-    addiu a2, t3, 4
-    sw a2, 8(t0)
-@88:
-    jr ra
-    nop
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_material(GuList *l, int mode, unsigned int color)
 {
-    unsigned int c = color & 0xFFFFFF;
-
     if (mode & 1) {
-        ctx_push(l, c | 0x55000000);
-        ctx_push(l, color >> 24 | 0x58000000);
+        ctx_cmd(l, 0x55, color & 0xFFFFFF);
+        ctx_cmd(l, 0x58, color >> 24);
     }
     if (mode & 2) {
-        ctx_push(l, c | 0x56000000);
+        ctx_cmd(l, 0x56, color & 0xFFFFFF);
     }
     if (mode & 4) {
-        ctx_push(l, c | 0x57000000);
+        ctx_cmd(l, 0x57, color & 0xFFFFFF);
     }
 }
+#else
+void gu_ctx_material(GuList *l, int mode, unsigned int color);
 #endif
 
 /* FFACE: 0 = clockwise -> 1 */
@@ -1098,59 +914,29 @@ void gu_ctx_front_face(GuList *l, int order);
 #endif
 
 /* LXP/LYP/LZP of the light position and LTYPE (components, type: 8 -> 2, 6 -> 1, else 0) */
-#ifdef __MWERKS__
-asm void gu_ctx_light(GuList *l, int light, int type, int components, const float *pos)
-{
-    sll t5, a1, 0x1
-    addu t3, t5, a1
-    addiu t4, a1, 95
-    addiu v1, t3, 100
-    addiu t1, t3, 101
-    sll t2, t4, 0x18
-    addiu t7, t3, 99
-    sll v0, a2, 0x8
-    sll t3, v1, 0x18
-    addiu v1, zero, 8
-    sll t4, t1, 0x18
-    or a2, t2, v0
-    xori t6, a3, 0x6
-    sll t5, t7, 0x18
-    move t1, a0
-    beq a3, v1, @48
-    addiu t2, zero, 2
-    sltiu t2, t6, 1
-@48:
-    lw t8, 4(t0)
-    lw t7, 8(t1)
-    lw a1, 0(t0)
-    lw a0, 8(t0)
-    srl a3, t8, 0x8
-    srl t6, a1, 0x8
-    or t8, t3, a3
-    srl v1, a0, 0x8
-    addiu a3, t7, 4
-    or t0, a2, t2
-    addiu t9, a3, 12
-    or t2, t5, t6
-    or t6, t4, v1
-    sw t2, 0(t7)
-    sw t9, 8(t1)
-    sw t8, 0(a3)
-    sw t6, 4(a3)
-    jr ra
-    sw t0, 8(a3)
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_light(GuList *l, int light, int type, int components, const float *pos)
 {
-    int k = light * 3;
-    unsigned int t = components == 8 ? 2 : components == 6;
+    unsigned int w0, w1, w2, w3;
+    int k;
+    unsigned int t;
 
-    ctx_push(l, (unsigned int)(k + 0x63) << 24 | ctx_f24(pos[0]));
-    ctx_push(l, (unsigned int)(k + 0x64) << 24 | ctx_f24(pos[1]));
-    ctx_push(l, (unsigned int)(k + 0x65) << 24 | ctx_f24(pos[2]));
-    ctx_push(l, (unsigned int)(light + 0x5F) << 24 | type << 8 | t);
+    t = 2;
+    if (components != 8) {
+        t = components == 6;
+    }
+    k = light * 3;
+    w0 = (unsigned int)(k + 0x63) << 24 | ctx_f24(pos[0]);
+    w1 = (unsigned int)(k + 0x64) << 24 | ctx_f24(pos[1]);
+    w2 = (unsigned int)(k + 0x65) << 24 | ctx_f24(pos[2]);
+    w3 = (unsigned int)(light + 0x5F) << 24 | type << 8 | t;
+    ctx_push(l, w0);
+    ctx_push(l, w1);
+    ctx_push(l, w2);
+    ctx_push(l, w3);
 }
+#else
+void gu_ctx_light(GuList *l, int light, int type, int components, const float *pos);
 #endif
 
 #ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c (its jump table is the object's .rodata); the case order is the one that
@@ -1267,56 +1053,22 @@ void gu_ctx_shade_model(GuList *l, int mode);
 #endif
 
 /* GE signal handler: records the signal id (ring of 16), calls the user callback, sets the event */
-#ifdef __MWERKS__
-asm void gu_signal_handler(int id, void *arg)
-{
-    addiu sp, sp, -16
-    sw s0, 0(sp)
-    move s0, a1
-    move a3, a0
-    sw ra, 4(sp)
-    andi t1, a3, 0xffff
-    lw t2, 40(a1)
-    lw a2, 0(a1)
-    sra t4, t2, 0x1f
-    srl t3, t4, 0x1c
-    addu a1, t2, t3
-    ins a1, zero, 0x0, 0x4
-    subu a0, t2, a1
-    sll v0, a0, 0x1
-    addu t0, v0, s0
-    addiu a3, t2, 1
-    move a0, t1
-    sh t1, 8(t0)
-    bnez a2, @6c
-    sw a3, 40(s0)
-    lw a0, 44(s0)
-@54:
-    jal sceKernelSetEventFlag
-    addiu a1, zero, 1
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@6c:
-    jalr ra, a2
-    nop
-    j @54
-    lw a0, 44(s0)
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_signal_handler(int id, void *arg)
 {
     GuCallbacks *c = arg;
+    int sid = id & 0xFFFF;
     int n = c->signal_count;
 
-    c->signals[n % 16] = (short)id;
+    c->signals[n % 16] = sid;
     c->signal_count = n + 1;
     if (c->signal != 0) {
-        c->signal(id & 0xFFFF);
+        c->signal(sid);
     }
     sceKernelSetEventFlag(c->event_flag, 1);
 }
+#else
+void gu_signal_handler(int id, void *arg);
 #endif
 
 /* GE finish handler: the user finish callback */
@@ -1588,46 +1340,21 @@ int sceKernelReleaseSubIntrHandler(int intno, int no);
 int sceKernelEnableSubIntr(int intno, int no);
 
 /* installs handler as VBLANK sub-interrupt handler number no (removes it when handler is NULL) */
-#ifdef __MWERKS__
-asm void vblank_handler_set(int no, void *handler, void *arg)
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
+int vblank_handler_set(int no, void *handler, void *arg)
 {
-    addiu sp, sp, -16
-    move v1, a1
-    sw s0, 0(sp)
-    move a1, a0
-    move s0, a0
-    move a3, a2
-    sw ra, 4(sp)
-    addiu a0, zero, 30
-    beqz v1, @54
-    move a2, v1
-    jal sceKernelRegisterSubIntrHandler
-    nop
-    move a1, s0
-    bltz v0, @44
-    addiu a0, zero, 30
-    jal sceKernelEnableSubIntr
-    nop
-@44:
-    lw ra, 4(sp)
-@48:
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@54:
-    move a1, s0
-    jal sceKernelReleaseSubIntrHandler
-    addiu a0, zero, 30
-    j @48
-    lw ra, 4(sp)
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
-void vblank_handler_set(int no, void *handler, void *arg)
-{
-    if (handler == 0) {
-        sceKernelReleaseSubIntrHandler(30, no);
-    } else if (sceKernelRegisterSubIntrHandler(30, no, handler, arg) >= 0) {
-        sceKernelEnableSubIntr(30, no);
+    int ret;
+
+    if (handler != 0) {
+        ret = sceKernelRegisterSubIntrHandler(30, no, handler, arg);
+        if (ret >= 0) {
+            ret = sceKernelEnableSubIntr(30, no);
+        }
+    } else {
+        ret = sceKernelReleaseSubIntrHandler(30, no);
     }
+    return ret;
 }
+#else
+int vblank_handler_set(int no, void *handler, void *arg);
 #endif

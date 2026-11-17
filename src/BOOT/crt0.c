@@ -1,6 +1,5 @@
 // @range 0x08804000-0x08804A0C
-// @gcc 0x08804000-0x08804394
-// @gcc 0x0880442C-0x08804624
+// @gcc 0x08804000-0x08804624
 // @asm 0x08804624-0x08804714
 // @gcc 0x08804714-0x08804A0C
 /* crt0 and the newlib system-call layer of the Sony SDK libc (GCC). module_start starts the
@@ -169,56 +168,12 @@ int crt0_run_init(void)
 
 /* newlib _open: O_RDONLY/O_WRONLY/O_RDWR -> PSP_O_RDONLY(1)/WRONLY(2)/RDWR(3), O_APPEND(8) ->
    0x100, O_CREAT/O_TRUNC/O_EXCL (0x200/0x400/0x800) as is, O_NONBLOCK(0x4000) -> 4. */
-#ifdef __MWERKS__
-asm SceUID _open(const char *name, int flags)
-{
-    addiu sp, sp, -48
-    move t5, a1
-    andi v1, a1, 0x3
-    addiu a1, zero, 1
-    sw ra, 0(sp)
-    move t4, zero
-    sw a2, 24(sp)
-    sw a3, 28(sp)
-    sw t0, 32(sp)
-    sw t1, 36(sp)
-    sw t2, 40(sp)
-    beq v1, a1, @90
-    sw t3, 44(sp)
-    beqzl v1, @48
-    addiu t4, zero, 1
-    addiu a1, zero, 2
-    beql v1, a1, @48
-    addiu t4, zero, 3
-@48:
-    andi t8, t5, 0x8
-    ori t7, t4, 0x100
-    andi t6, t5, 0x200
-    movn t4, t7, t8
-    andi t3, t5, 0x400
-    or t0, t6, t4
-    andi t1, t5, 0x800
-    or v0, t3, t0
-    or v1, t1, v0
-    andi t2, t5, 0x4000
-    ori a3, v1, 0x4
-    movn v1, a3, t2
-    addiu a2, zero, 420
-    jal sceIoOpen
-    move a1, v1
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 48
-@90:
-    j @48
-    addiu t4, zero, 2
-}
-#else
+#ifndef __MWERKS__ /* PSP: crt0_gcc.c */
 SceUID _open(const char *name, int flags, ...)
 {
     int f = 0;
 
-    switch (flags & 3) {
+    switch ((unsigned int)flags & 3) {
     case 0:
         f = 1;
         break;
@@ -232,14 +187,22 @@ SceUID _open(const char *name, int flags, ...)
     if (flags & 8) {
         f |= 0x100;
     }
-    f |= flags & 0x800;
-    f |= flags & 0x400;
-    f |= flags & 0x200;
+    if (flags & 0x200) {
+        f |= 0x200;
+    }
+    if (flags & 0x400) {
+        f |= 0x400;
+    }
+    if (flags & 0x800) {
+        f |= 0x800;
+    }
     if (flags & 0x4000) {
         f |= 4;
     }
     return sceIoOpen(name, f, 0x1A4);
 }
+#else
+SceUID _open(const char *name, int flags);
 #endif
 
 #ifndef __MWERKS__
