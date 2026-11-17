@@ -2,8 +2,7 @@
 // @asm 0x08819F30-0x0881A440
 // @gcc 0x0881A440-0x0881A520
 // @gcc 0x0881A590-0x0881A864
-// @gcc 0x0881A8AC-0x0881A940
-// @gcc 0x0881A968-0x0881AB1C
+// @gcc 0x0881A8AC-0x0881AB1C
 /* FPU trig routines (sceFpuSin/Cos/Atan/Acos) and the 2D part of Sony's libvfpu (sceVfpuVector2*).
    All of it was compiled with GCC or written in VFPU assembly, so the PSP build carries the original
    instructions as `asm` functions; under `#elif !defined(__mips__)` is the portable C for the PC port.
@@ -746,27 +745,35 @@ float vec2_average(const ScePspFVector2 *v)
 
 /* sceVfpuVector2IsEqual */
 #ifdef __MWERKS__
-asm int vec2_is_equal(const ScePspFVector2 *a, const ScePspFVector2 *b)
-{
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    lv.s S010, 0(a1)
-    lv.s S011, 4(a1)
-    move v0, zero
-    vcmp.p eq, C000, C010
-    bvtl 5, @20
-    addiu v0, zero, 1
-@20:
-    jr ra
-    nop
-}
+int vec2_is_equal(const ScePspFVector2 *a, const ScePspFVector2 *b);
 #elif !defined(__mips__)
 int vec2_is_equal(const ScePspFVector2 *a, const ScePspFVector2 *b)
 {
     return a->x == b->x && a->y == b->y;
 }
 #else
-int vec2_is_equal(const ScePspFVector2 *a, const ScePspFVector2 *b);
+int vec2_is_equal(const ScePspFVector2 *a, const ScePspFVector2 *b)
+{
+    int r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "lv.s S010, 0(%2)\n"
+        "lv.s S011, 4(%2)\n"
+        "move %0, $0\n"
+        "vcmp.p eq, C000, C010\n"
+        "bvtl 5, 1f\n"
+        "addiu %0, $0, 1\n"
+        "1:\n"
+        ".set pop\n"
+        : "=&r" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
+}
 #endif
 
 /* sceVfpuVector2IsZero: both components +0 or -0 */

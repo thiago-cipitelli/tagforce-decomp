@@ -1,6 +1,5 @@
 // @range 0x0881AB1C-0x0881B244
-// @gcc 0x0881AB1C-0x0881AFC8
-// @gcc 0x0881AFF8-0x0881B244
+// @gcc 0x0881AB1C-0x0881B244
 /* sceVfpuVector3* of Sony's libvfpu: 12-byte vectors, loaded and stored a float at a time (lv.s/sv.s)
    because they are not 16-byte aligned. GCC/VFPU code kept as `asm` functions for the PSP build;
    under `#else` is the portable C. */
@@ -806,26 +805,36 @@ float vec3_average(const ScePspFVector3 *v)
 
 /* sceVfpuVector3IsEqual */
 #ifdef __MWERKS__
-asm int vec3_is_equal(const ScePspFVector3 *a, const ScePspFVector3 *b)
+int vec3_is_equal(const ScePspFVector3 *a, const ScePspFVector3 *b);
+#elif !defined(__mips__)
+int vec3_is_equal(const ScePspFVector3 *a, const ScePspFVector3 *b)
 {
-    lv.s S000, 0(a0)
-    lv.s S001, 4(a0)
-    lv.s S002, 8(a0)
-    lv.s S010, 0(a1)
-    lv.s S011, 4(a1)
-    lv.s S012, 8(a1)
-    move v0, zero
-    vcmp.t eq, C000, C010
-    bvtl 5, @28
-    addiu v0, zero, 1
-@28:
-    jr ra
-    nop
+    return a->x == b->x && a->y == b->y && a->z == b->z;
 }
 #else
 int vec3_is_equal(const ScePspFVector3 *a, const ScePspFVector3 *b)
 {
-    return a->x == b->x && a->y == b->y && a->z == b->z;
+    int r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%1)\n"
+        "lv.s S001, 4(%1)\n"
+        "lv.s S002, 8(%1)\n"
+        "lv.s S010, 0(%2)\n"
+        "lv.s S011, 4(%2)\n"
+        "lv.s S012, 8(%2)\n"
+        "move %0, $0\n"
+        "vcmp.t eq, C000, C010\n"
+        "bvtl 5, 1f\n"
+        "addiu %0, $0, 1\n"
+        "1:\n"
+        ".set pop\n"
+        : "=&r" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
 }
 #endif
 

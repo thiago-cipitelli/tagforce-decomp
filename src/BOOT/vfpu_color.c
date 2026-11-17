@@ -1,8 +1,7 @@
 // @range 0x0881D214-0x0881D8A8
-// @gcc 0x0881D214-0x0881D334
+// @gcc 0x0881D214-0x0881D358
 // @gcc 0x0881D3D8-0x0881D3F4
-// @gcc 0x0881D48C-0x0881D6F8
-// @gcc 0x0881D718-0x0881D7AC
+// @gcc 0x0881D48C-0x0881D7AC
 // @gcc 0x0881D7DC-0x0881D8A8
 /* VFPU colors (four floats r, g, b, a in [0, 1]; the _rgb variants leave alpha as in the first
    operand) and the VFPU random generator. Hand-written VFPU code kept as whole `asm` functions; the
@@ -161,18 +160,7 @@ Vec4 *color_zero(Vec4 *out)
 
 /* RGBA8888 (r in the low byte), channels clamped to [0, 1] */
 #ifdef __MWERKS__
-asm unsigned int color_pack(Vec4 *c)
-{
-    lv.q C000, 0(a0)
-    vsat0.q C000, C000
-    viim.s S010, 255
-    vscl.q C000, C000, S010
-    vf2iz.q C000, C000, 23
-    vi2uc.q S000, C000
-    mfv v0, S000
-    jr ra
-    nop
-}
+unsigned int color_pack(Vec4 *c);
 #elif !defined(__mips__)
 unsigned int color_pack(Vec4 *c)
 {
@@ -184,7 +172,26 @@ unsigned int color_pack(Vec4 *c)
     return a << 24 | b << 16 | g << 8 | r;
 }
 #else
-unsigned int color_pack(Vec4 *c);
+unsigned int color_pack(Vec4 *c)
+{
+    unsigned int r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%1)\n"
+        "vsat0.q C000, C000\n"
+        "viim.s S010, 255\n"
+        "vscl.q C000, C000, S010\n"
+        "vf2iz.q C000, C000, 23\n"
+        "vi2uc.q S000, C000\n"
+        "mfv %0, S000\n"
+        ".set pop\n"
+        : "=&r" (r)
+        : "r" (c)
+        : "memory");
+    return r;
+}
 #endif
 
 /* RGBA4444 (r in the low nibble), channels clamped to [0, 1] */
@@ -863,25 +870,33 @@ Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b)
 #endif
 
 #ifdef __MWERKS__
-asm int color_equal(Vec4 *a, Vec4 *b)
-{
-    lv.q C000, 0(a0)
-    lv.q C010, 0(a1)
-    move v0, zero
-    vcmp.q EQ, C000, C010
-    bvtl 5, L_0881D710
-    addiu v0, zero, 1
-L_0881D710:
-    jr ra
-    nop
-}
+int color_equal(Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 int color_equal(Vec4 *a, Vec4 *b)
 {
     return a->x == b->x && a->y == b->y && a->z == b->z && a->w == b->w;
 }
 #else
-int color_equal(Vec4 *a, Vec4 *b);
+int color_equal(Vec4 *a, Vec4 *b)
+{
+    int r;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%1)\n"
+        "lv.q C010, 0(%2)\n"
+        "move %0, $0\n"
+        "vcmp.q EQ, C000, C010\n"
+        "bvtl 5, 1f\n"
+        "addiu %0, $0, 1\n"
+        "1:\n"
+        ".set pop\n"
+        : "=&r" (r)
+        : "r" (a), "r" (b)
+        : "memory");
+    return r;
+}
 #endif
 
 /* 1 when every channel is +0.0 or -0.0 (bit test) */
