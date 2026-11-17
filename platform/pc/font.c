@@ -235,3 +235,35 @@ int sceFontGetCharGlyphImage_Clip(int font, unsigned int code, SceFontGlyphImage
     (void)ch;
     return sceFontGetCharGlyphImage(font, code, img);
 }
+
+/* window.c's on-screen keyboard line: s (ASCII) rasterised white on transparent into a w x h RGBA buffer (row 0 on
+   top), left-aligned with a 6 px margin, vertically centred. Uses the face loaded above, at its current size. */
+void host_text_bitmap(const char *s, unsigned char *rgba, int w, int h)
+{
+    int pen = 6, base;
+
+    memset(rgba, 0, (size_t)w * h * 4);
+    if (!font_ready())
+        return;
+    base = (h + (int)(face->size->metrics.ascender >> 6) + (int)(face->size->metrics.descender >> 6)) / 2;
+    for (; *s; s++) {
+        FT_Bitmap *b;
+        int x, y;
+
+        if (!load_glyph((unsigned char)*s, 1))
+            continue;
+        b = &face->glyph->bitmap;
+        for (y = 0; y < (int)b->rows; y++)
+            for (x = 0; x < (int)b->width; x++) {
+                int px = pen + face->glyph->bitmap_left + x, py = base - face->glyph->bitmap_top + y;
+                unsigned char a = b->buffer[y * b->pitch + x];
+
+                if (px >= 0 && px < w && py >= 0 && py < h && a) {
+                    unsigned char *d = rgba + (py * w + px) * 4;
+                    d[0] = d[1] = d[2] = 255;
+                    d[3] = a;
+                }
+            }
+        pen += (int)(face->glyph->advance.x >> 6);
+    }
+}

@@ -278,3 +278,16 @@ int sceUtilityOskGetStatus(void)
 }
 int sceUtilityOskUpdate(int n) { (void)n; return 0; }
 int sceUtilityOskShutdownStart(void) { osk_status = FINISHED; return 0; }
+
+/* id 1 = the PSP's nickname (UTF-8): BOOT/save.c copies it as the default player name of a new game, so the generated
+   stub, which left the buffer untouched, gave stack garbage (two boxes and a letter). TAGFORCE_NICK overrides "Player". */
+int sceUtilityGetSystemParamString(int id, char *out, int size)
+{
+    const char *nick = getenv("TAGFORCE_NICK");
+
+    if (id == 1 && out && size > 0)
+        snprintf(out, size, "%s", nick && *nick ? nick : "Player");
+    else
+        fprintf(stderr, "utility: GetSystemParamString %d not implemented\n", id);
+    return 0;
+}

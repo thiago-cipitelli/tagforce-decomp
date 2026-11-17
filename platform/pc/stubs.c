@@ -214,12 +214,6 @@ int sceUtilityLoadNetModule(int module)
     return 0;
 }
 
-int sceUtilityGetSystemParamString()
-{
-    STUB();
-    return 0;
-}
-
 int sceUtilityNetconfInitStart()
 {
     STUB();

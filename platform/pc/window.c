@@ -261,6 +261,60 @@ unsigned int host_buttons(void)
     return buttons | scripted();
 }
 
+/* the on-screen keyboard is not drawn (utility.c types into text[]): while typing, a bar with the text is drawn over
+   the middle of the game picture (the game itself dims the screen and waits), PSP rows 116..156 */
+void host_text_bitmap(const char *s, unsigned char *rgba, int w, int h);   /* font.c */
+
+enum { OW = 480, OH = 40, OTOP = 116 };
+
+static void text_overlay(int x, int y, int w, int h)
+{
+    static GLuint tex, fbo;
+    static unsigned char buf[OW * OH * 4];
+    char line[160];
+    GLint read, bound, unit, row, pbo, align;
+    int i;
+
+    snprintf(line, sizeof line, "Name: %s_      (Enter = OK, Esc = cancel)", text);
+    host_text_bitmap(line, buf, OW, OH);
+    for (i = 0; i < OW * OH; i++) {   /* white text over an opaque dark bar (a blit does not blend) */
+        unsigned char *p = buf + i * 4;
+        int a = p[3], bg = 40;
+        p[0] = p[1] = p[2] = (unsigned char)(bg + (255 - bg) * a / 255);
+        p[3] = 255;
+    }
+    /* ge.c keeps its own texture/unpack state: save it and put it back */
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &unit);
+    glActiveTexture(GL_TEXTURE0);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &bound);
+    glGetIntegerv(GL_UNPACK_ROW_LENGTH, &row);
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);
+    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &pbo);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read);
+    if (!tex) {
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, OW, OH, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+    }
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, OW, OH, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+    glBlitFramebuffer(0, 0, OW, OH, x, y + h - OTOP * h / 272, x + w, y + h - (OTOP + OH) * h / 272,
+                      GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)read);
+    glBindTexture(GL_TEXTURE_2D, (GLuint)bound);
+    glActiveTexture((GLenum)unit);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, row);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, align);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, (GLuint)pbo);
+}
+
 /* shows the 480x272 top-left of the bound read framebuffer (GL rows = PSP rows), fitted to the window's real size
    with the 30:17 aspect kept and black bars around */
 void host_present(void)
@@ -281,6 +335,8 @@ void host_present(void)
         glClear(GL_COLOR_BUFFER_BIT);
         glBlitFramebuffer(0, 0, 480, 272, x, y + h, x + w, y, GL_COLOR_BUFFER_BIT,
                           w % 480 || h % 272 ? GL_LINEAR : GL_NEAREST);
+        if (text_on)
+            text_overlay(x, y, w, h);
         if (sc)
             glEnable(GL_SCISSOR_TEST);
     }
