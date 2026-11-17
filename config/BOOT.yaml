@@ -101,7 +101,7 @@ segments:
       - [0x6B24, asm, libc_stdlib_asm_0880AAC4]
       - [0x7F70, c, nl_errno]
       - [0x7F8C, asm, libc_stdlib_asm_0880BF2C]
-      - [0x7FA0, c, libc_stdlib]
+      - [0x7FA0, c, nl_exit]
       - [0x80A0, c, nl_fflush]
       - [0x819C, c, nl_findfp]
       - [0x81F4, c, nl_findfp]
