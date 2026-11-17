@@ -1,8 +1,7 @@
 // @range 0x08807070-0x088087F8
 // @gcc 0x08807070-0x0880712C
 // @asm 0x0880712C-0x08807338
-// @gcc 0x08807C6C-0x08807D40
-// @gcc 0x08807DD0-0x08807FD8
+// @gcc 0x08807C6C-0x08807FD8
 // @gcc 0x08808058-0x08808130
 // @asm 0x08808130-0x0880823C
 // @gcc 0x0880823C-0x08808294
@@ -22,6 +21,12 @@ int sceKernelSetEventFlag(int evf, unsigned int bits);
 static void ctx_push(GuList *l, unsigned int w)
 {
     *l->cur++ = w;
+}
+
+/* command with a 24-bit argument (the SDK's sendCommandi) */
+static void ctx_cmd(GuList *l, unsigned int cmd, unsigned int arg)
+{
+    ctx_push(l, cmd << 24 | (arg & 0xFFFFFF));
 }
 
 /* BASE + 24-bit address command */
@@ -1020,65 +1025,22 @@ void gu_ctx_model_color(GuList *l, unsigned int emissive, unsigned int ambient, 
 #endif
 
 /* material colors selected by mode bits 0 (ambient + alpha), 1 (diffuse), 2 (specular) */
-#ifdef __MWERKS__
-asm void gu_ctx_material(GuList *l, int mode, unsigned int color)
-{
-    move t5, a2
-    ins t5, zero, 0x18, 0x8
-    srl a3, a2, 0x18
-    andi t4, a1, 0x1
-    move t0, a0
-    lui t7, 0x5600
-    lui a0, 0x5500
-    lui v1, 0x5700
-    lui v0, 0x5800
-    andi t3, a1, 0x4
-    andi t2, a1, 0x2
-    or t1, t5, a0
-    or a2, t5, v1
-    or a0, t5, t7
-    beqz t4, @58
-    or a1, a3, v0
-    lw t8, 8(t0)
-    sw t1, 0(t8)
-    addiu t1, t8, 4
-    addiu t4, t1, 4
-    sw t4, 8(t0)
-    sw a1, 0(t1)
-@58:
-    beqz t2, @70
-    nop
-    lw t9, 8(t0)
-    addiu t2, t9, 4
-    sw a0, 0(t9)
-    sw t2, 8(t0)
-@70:
-    beqz t3, @88
-    nop
-    lw t3, 8(t0)
-    sw a2, 0(t3)
-    addiu a2, t3, 4
-    sw a2, 8(t0)
-@88:
-    jr ra
-    nop
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_material(GuList *l, int mode, unsigned int color)
 {
-    unsigned int c = color & 0xFFFFFF;
-
     if (mode & 1) {
-        ctx_push(l, c | 0x55000000);
-        ctx_push(l, color >> 24 | 0x58000000);
+        ctx_cmd(l, 0x55, color & 0xFFFFFF);
+        ctx_cmd(l, 0x58, color >> 24);
     }
     if (mode & 2) {
-        ctx_push(l, c | 0x56000000);
+        ctx_cmd(l, 0x56, color & 0xFFFFFF);
     }
     if (mode & 4) {
-        ctx_push(l, c | 0x57000000);
+        ctx_cmd(l, 0x57, color & 0xFFFFFF);
     }
 }
+#else
+void gu_ctx_material(GuList *l, int mode, unsigned int color);
 #endif
 
 /* FFACE: 0 = clockwise -> 1 */

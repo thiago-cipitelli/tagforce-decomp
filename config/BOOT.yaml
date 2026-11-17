@@ -43,8 +43,6 @@ segments:
       - [0x318C, asm, libgu_ctx_asm_0880712C]
       - [0x3398, c, libgu_ctx]
       - [0x3CCC, c, libgu_ctx_gcc]
-      - [0x3DA0, c, libgu_ctx]
-      - [0x3E30, c, libgu_ctx_gcc]
       - [0x4038, c, libgu_ctx]
       - [0x40B8, c, libgu_ctx_gcc]
       - [0x4190, asm, libgu_ctx_asm_08808130]
