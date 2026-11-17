@@ -300,15 +300,19 @@ int libc_quorem(LibcBigint *b, LibcBigint *S)
     if (libc_bigint_cmp(b, S) >= 0) {
         q++;
         borrow = 0;
+        carry = 0;
         bx = b->x;
         sx = S->x;
         do {
             unsigned int si = *sx++;
-            int y = (int)(*bx & 0xFFFF) - (int)(si & 0xFFFF) + borrow;
+            unsigned int ys = (si & 0xFFFF) + carry;
+            unsigned int zs = (si >> 16) + (ys >> 16);
+            int y = (int)(*bx & 0xFFFF) - (int)(ys & 0xFFFF) + borrow;
             int z;
 
+            carry = zs >> 16;
             borrow = y >> 16;
-            z = (int)(*bx >> 16) - (int)(si >> 16) + borrow;
+            z = (int)(*bx >> 16) - (int)(zs & 0xFFFF) + borrow;
             borrow = z >> 16;
             *bx++ = (unsigned int)(z & 0xFFFF) << 16 | (y & 0xFFFF);
         } while (sx <= sxe);

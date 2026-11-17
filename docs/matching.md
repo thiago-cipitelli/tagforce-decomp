@@ -4094,3 +4094,28 @@ Resultados nas 14 entradas mwcc do skip (25 min cada, mais 25 a partir da melhor
   `menu_layout` (67), `duel_08846584` (253; só ~28 mil candidatos, arquivo maior).
 - Lição: o cast redundante para o próprio tipo num USO (não só na cópia de parâmetro da rodada 35) é o que mais
   mexeu; nas duas funções que andaram foi a primeira mudança encontrada (dezenas de candidatos).
+
+## Rodada 41 (`tB`): `tools/permute.py` no GCC do SDK
+
+`permute.py` passa a pontuar funções da trilha GCC: dado o `_gcc.c` (`permute.py src/BOOT/vfpu_mem_gcc.c
+vfpu_memset`), a função é a ÚLTIMA definição dela no `.c` incluído (o ramo `#else` do GCC; um `_gcc.c` sem
+`#include` é editado ele mesmo), compilada por `tools/psp_gcc.sh`; a pontuação aplica as relocações cujo alvo tem
+endereço conhecido (`symbols/BOOT.txt`, `D_XXXXXXXX`, a própria seção) e mascara as outras. Mutações novas
+(também valem no mwcc): troca de dois comandos vizinhos independentes (locais/memória/chamadas checados), `if/else`
+de atribuição <-> ternário, ordem de dois grupos `case` que terminam em `break`/`return`, `(int)` no operando de
+`switch` ou num operando `int/short/char` de comparação. O cast redundante não é aplicado a operandos de `asm`
+(viraria lvalue de cast). Cada candidato custa 0,2-0,6 s (cc1 + peephole), ~3-20 mil candidatos em 25 min com `-j 3`.
+
+Resultados (25 min, `-j 3`):
+- `vfpu_memset` **bate** (3 -> 0 em 38 candidatos): cópias tardias `unsigned int len = n;` e `void *p = dst;`
+  (depois do `__builtin_allegrex_ins`) como operandos do asm: a cópia de `dst` para `v0` volta para antes do `ins`.
+  Mesma família da cópia tardia de parâmetro da rodada 35.
+- `libc_quorem`: não tinha ramo GCC. Com o `quorem` do newlib (Storeinc com dois `unsigned short`, que pela regra de
+  aliasing deixa `*bxe` num registrador, e `carry` também no segundo laço) vai de 123 para 103 palavras, 78 pelo
+  permutador; sobra só alocação de registradores (`t4/t5` contra `t5/t6`). O rascunho do port não tinha o `carry`
+  do segundo laço: erro de lógica corrigido em `libc_stdlib.c`.
+- Sem efeito: `wrap_angle` (6: o original calcula em `$f3` e faz `mov.s $f0,$f3` no slot do `jr`), `sinf` (9, só
+  `$f0`/`$f2`), `vfpu_reset` (18; só 68 candidatos, quase tudo asm), `vfpu_memcpy` (36, nomes do regrename),
+  `quat_to_euler_xyz` (33), `wave_thread` (46: falta a cópia `move s2,s0` de `off`, o resto é deslocamento),
+  `vag_decode_block` 37 -> 32 (não aplicado: só posicional). Parecem diferenças da revisão do compilador
+  (alocação), não de forma do fonte.
