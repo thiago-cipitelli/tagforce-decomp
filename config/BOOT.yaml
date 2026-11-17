@@ -213,7 +213,6 @@ segments:
       - [0x1A570, c, vfpu_quat_gcc]
       - [0x1AB6C, c, vfpu_mem]
       - [0x1B33C, c, vfpu_mem_gcc]
-      - [0x1B69C, c, vfpu_mem]
       - [0x1B744, c, gzip_gcc]
       - [0x1BA50, c, gzip]
       - [0x1C010, c, postfx]

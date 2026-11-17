@@ -1,5 +1,5 @@
 // @range 0x0881EB0C-0x0881F6E4
-// @gcc 0x0881F2DC-0x0881F63C
+// @gcc 0x0881F2DC-0x0881F6E4
 /* VFPU block memory routines (copy/move/fill through quad stores to the uncached mirror, 64-byte
    cache lines created without a fetch) and the VFPU register context: the whole register file, the
    prefix/condition control registers and the random generator state saved, restored and reset.
@@ -1127,57 +1127,7 @@ int vfpu_rng_load(unsigned int *st)
 
 /* memset; returns dst */
 #ifdef __MWERKS__
-asm void *vfpu_memset(void *dst, int c, unsigned int n)
-{
-    lui t0, 0x4000
-    move v0, a0
-    move v1, t0
-    ins v1, a0, 0x0, 0x1d
-    ins a1, a1, 0x8, 0x8
-    ins a1, a1, 0x10, 0x10
-    mtv a1, S000
-    vpfxs X, X, X, X
-    vmov.q C000, C000
-L_0881F660:
-    andi t0, a0, 0x3f
-    beqz t0, L_0881F684
-    nop
-    beqz a2, L_0881F6D4
-    addiu a2, a2, -1
-    sb a1, 0(a0)
-    addiu a0, a0, 1
-    j L_0881F660
-    addiu v1, v1, 1
-L_0881F684:
-    sltiu t0, a2, 64
-    bnez t0, L_0881F6C0
-    nop
-L_0881F690:
-    cache 0x1b, 0(a0)
-    addiu a0, a0, 64
-    addiu a2, a2, -64
-    sltiu t0, a2, 64
-    sync
-    sv.q C000, 0(v1), wb
-    sv.q C000, 16(v1), wb
-    sv.q C000, 32(v1), wb
-    sv.q C000, 48(v1), wb
-    addiu v1, v1, 64
-    beqz t0, L_0881F690
-    vnop
-L_0881F6C0:
-    beqz a2, L_0881F6D4
-L_0881F6C4:
-    addiu a2, a2, -1
-    sb a1, 0(a0)
-    bnez a2, L_0881F6C4
-    addiu a0, a0, 1
-L_0881F6D4:
-    vflush
-    vnop
-    jr ra
-    nop
-}
+void *vfpu_memset(void *dst, int c, unsigned int n);
 #elif !defined(__mips__)
 void *vfpu_memset(void *dst, int c, unsigned int n)
 {
@@ -1186,10 +1136,12 @@ void *vfpu_memset(void *dst, int c, unsigned int n)
 #else
 void *vfpu_memset(void *dst, int c, unsigned int n)
 {
-    /* the SDK's GCC: 3 words left (the original copies dst to v0 before `move v1,t0; ins`, the sched2 of cc1
-       1.7.1 after them: the copy has priority 1 against 2) */
+    /* the SDK's GCC; the late copies of n and dst (tools/permute.py, rodada 41) put the copy of dst to v0
+       before `move v1,t0; ins`, as in the original */
+    unsigned int len = n;
     void *r = dst;
     unsigned int u = __builtin_allegrex_ins(0x40000000, (unsigned int)dst, 0, 29);
+    void *p = dst;
 
     __asm__ volatile (
         ".set push\n"
@@ -1237,7 +1189,7 @@ void *vfpu_memset(void *dst, int c, unsigned int n)
         "vflush\n"
         "vnop\n"
         ".set pop\n"
-        : "+r" (dst), "+r" (c), "+r" (n), "+r" (u)
+        : "+r" (p), "+r" (c), "+r" (len), "+r" (u)
         :
         : "$8", "memory");
     return r;

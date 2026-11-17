@@ -10,17 +10,24 @@ pool and applies 1-3 random mutations. Mutations (perm_decls/perm_stmts already 
   single-use initialised local, redundant cast of a scalar local/parameter to its own type, a[i] <-> *(a + i),
   p->f <-> (*p).f, &a[i] -> a + i, for <-> while, while -> if/do-while, split/merge declaration and initialiser,
   swap adjacent declarations, late copy of a parameter with a redundant cast (round 35), if (a && b) -> nested if,
-  if/else swapped with the condition negated, x++ / ++x / x += 1 / x = x + 1.
+  if/else swapped with the condition negated, x++ / ++x / x += 1 / x = x + 1; round 41 (aimed at the SDK's GCC):
+  swap of two adjacent independent statements, if/else assignment <-> ternary, order of two case groups that end in
+  break/return, (int) on a switch operand or on an int/short/char operand of a comparison.
+SDK GCC code (docs/build.md, "Trilha GCC"): pass the `_gcc.c` file. The function is then the LAST definition of FUNC
+in the file it #includes (the `#else` GCC branch; a _gcc.c without #include is edited itself), compiled with
+tools/psp_gcc.sh; the score applies the relocations whose target address is known (symbols/<m>.txt, D_XXXXXXXX)
+and masks the others.
 The search never edits the source: best variants go to build/tmp/permute/<FUNC>/ (score_N.c = the function text,
 log.txt); porting one back and checking its logic is manual. __typeof__ in a variant must become a real type.
 
 usage: MODULE=<m> permute.py src/<m>/f.c FUNC [--minutes 30] [-j 4] [--seed N] [--start score_N.c]
+       permute.py src/BOOT/f_gcc.c FUNC ...
        permute.py --selftest
 """
 import argparse, os, random, re, struct, subprocess, sys, threading, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mwcc_check import object_function, BASE, SEG, R_MIPS_26, R_MIPS_HI16, R_MIPS_LO16, R_MIPS_GPREL16
+from mwcc_check import object_function, elf_sections, BASE, SEG, R_MIPS_26, R_MIPS_HI16, R_MIPS_LO16, R_MIPS_GPREL16
 
 # ---------------------------------------------------------------- tokens
 TOK = re.compile(r"""(?P<ws>(?:\s|/\*.*?\*/|//[^\n]*|^\#[^\n]*)+)|(?P<t>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|
@@ -430,7 +437,8 @@ def m_cast(toks, ctx, r):
     c = [i for i, x in enumerate(toks) if x[1] in ty and toks[i - 1][1] not in (".", "->", "&", "++", "--", "*")
          and toks[i + 1][1] not in ASSIGN and toks[i + 1][1] not in ("++", "--", "[", "(", ",", ";") and not
          (is_type_start(toks[i - 1][1], ctx) or toks[i - 1][1] == "*" and is_type_start(toks[i - 2][1], ctx))]
-    c = [i for i in c if not any(d["start"] <= i < d.get("eq", d["start"]) + 1 for d in decls_in(toks, ctx))]
+    c = [i for i in c if not any(d["start"] <= i < d.get("eq", d["start"]) + 1 for d in decls_in(toks, ctx))
+         and not (toks[i - 1][1] == "(" and toks[i - 2][1][:1] == '"')]   # an asm operand: a cast would be an lvalue
     if not c: return None
     i = r.choice(c)
     return toks[:i] + [[toks[i][0], "("]] + T(["(", ty[toks[i][1]], ")", toks[i][1], ")"]) + toks[i + 1:]
@@ -647,8 +655,164 @@ def m_incr(toks, ctx, r):
     return toks[:a] + f + toks[b:]
 
 
+# ---------------------------------------------------------------- mutations for the SDK's GCC (round 41)
+def stmt_list(toks, b):
+    """statements of the block opened at toks[b] -> [(start, end)]"""
+    out, k, e = [], b + 1, match_fwd(toks, b)
+    while k < e:
+        if toks[k][1] in ("case", "default"):
+            while toks[k][1] != ":": k += 1
+            k += 1; continue
+        if isid(toks[k][1]) and toks[k + 1][1] == ":": k += 2; continue  # label
+        j = body_of(toks, k); out.append((k, j)); k = j + 1
+    return out
+
+
+def effects(toks, a, b, ctx):
+    """(names written, names read, writes memory, reads memory, calls) of toks[a:b+1]"""
+    w, rd, wm, rm, call = set(), set(), False, False, False
+    local = set(ctx.params) | {d["name"] for d in decls_in(toks, ctx) if d["name"] and "static" not in d["base"]}
+    for k in range(a, b + 1):
+        t = toks[k][1]
+        if t == "(" and k > 0 and isid(toks[k - 1][1]) and toks[k - 1][1] not in CTRL: call = True
+        if t in ("->", "[") or (t == "*" and not is_binary(toks, k, ctx)): rm = True
+        if isid(t) and t not in local and toks[k - 1][1] not in (".", "->") and toks[k + 1][1] != "(" \
+                and not is_type_start(t, ctx):
+            rm = True   # a global: memory
+            if toks[k + 1][1] in ASSIGN or toks[k + 1][1] in ("++", "--") or toks[k - 1][1] in ("++", "--"): wm = True
+        if isid(t) and toks[k - 1][1] not in (".", "->"):
+            nxt = toks[k + 1][1]
+            if nxt in ASSIGN or nxt in ("++", "--") or toks[k - 1][1] in ("++", "--", "&"): w.add(t)
+            if nxt != "=": rd.add(t)
+        if t in ASSIGN or t in ("++", "--"):
+            j = k - 1 if t not in ("++", "--") or not isid(toks[k + 1][1]) else k + 1
+            if toks[j][1] in ("]", ")") or toks[j - 1][1] in (".", "->") or toks[j - 1][1] == "*": wm = True
+    return w, rd, wm, rm, call
+
+
+def m_swap(toks, ctx, r):
+    """swap two adjacent statements of a block that do not depend on each other"""
+    c = []
+    for b in [i for i, x in enumerate(toks) if x[1] == "{"]:
+        try:
+            L = stmt_list(toks, b)
+        except (TypeError, IndexError):
+            continue
+        for (a1, e1), (a2, e2) in zip(L, L[1:]):
+            if e1 + 1 != a2 or is_type_start(toks[a1][1], ctx) or is_type_start(toks[a2][1], ctx): continue
+            if any(toks[k][1] in ("return", "break", "continue", "goto", "case", "default") for k in range(a1, e2 + 1)): continue
+            c.append((a1, e1, a2, e2))
+    r.shuffle(c)
+    for a1, e1, a2, e2 in c[:6]:
+        A = effects(toks, a1, e1, ctx); B = effects(toks, a2, e2, ctx)
+        if A[0] & (B[0] | B[1]) or B[0] & A[1]: continue
+        if (A[2] or A[4]) and (B[2] or B[3] or B[4]) or (B[2] or B[4]) and (A[3] or A[4]): continue
+        X = [list(y) for y in toks[a1:e1 + 1]]; Y = [list(y) for y in toks[a2:e2 + 1]]
+        X[0][0], Y[0][0] = Y[0][0], X[0][0]
+        return toks[:a1] + Y + X + toks[e2 + 1:]
+    return None
+
+
+def m_ternary(toks, ctx, r):
+    """if (C) x = A; else x = B;  <->  x = C ? A : B;"""
+    c = []
+    for i, x in enumerate(toks):
+        if x[1] == "if":
+            h = match_fwd(toks, i + 1); k = h + 1; br = toks[k][1] == "{"
+            k += br
+            if not isid(toks[k][1]) or toks[k + 1][1] != "=": continue
+            e = body_of(toks, k)
+            if br and toks[e + 1][1] != "}": continue
+            e1 = e + br
+            if toks[e1 + 1][1] != "else": continue
+            k2 = e1 + 2; br2 = toks[k2][1] == "{"; k2 += br2
+            if toks[k2][1] != toks[k][1] or toks[k2 + 1][1] != "=": continue
+            f = body_of(toks, k2)
+            if br2 and toks[f + 1][1] != "}": continue
+            c.append(("tern", i, h, k, e, k2, f, f + br2))
+        elif x[1] == "?" :
+            sb = stmt_bounds(toks, i)
+            if not sb or not isid(toks[sb[0]][1]) or toks[sb[0] + 1][1] != "=": continue
+            s0, e = sb; d, q = 0, None
+            for k in range(s0 + 2, e):
+                t = toks[k][1]
+                if t in "([": d += 1
+                elif t in ")]": d -= 1
+                elif d == 0 and t == "?":
+                    if k != i: q = None; break
+                elif d == 0 and t == ":": q = k
+            if q is not None: c.append(("if", s0, i, q, e))
+    if not c: return None
+    m = r.choice(c)
+    if m[0] == "tern":
+        _, i, h, k, e, k2, f, end = m
+        out = [[toks[i][0], toks[k][1]]] + T(["=", "("]) + [list(y) for y in toks[i + 2:h]] + T([")", "?", "("]) + \
+            [list(y) for y in toks[k + 2:e]] + T([")", ":", "("]) + [list(y) for y in toks[k2 + 2:f]] + T([")", ";"])
+        return toks[:i] + out + toks[end + 1:]
+    _, s0, i, q, e = m
+    v = toks[s0][1]
+    out = [[toks[s0][0], "if"]] + T(["("]) + [list(y) for y in toks[s0 + 2:i]] + T([")", v, "="]) + \
+        [list(y) for y in toks[i + 1:q]] + T([";", "else", v, "="]) + [list(y) for y in toks[q + 1:e]] + T([";"])
+    return toks[:s0] + out + toks[e + 1:]
+
+
+def m_switch(toks, ctx, r):
+    """swap two adjacent case groups of a switch that both end in break/return/goto/continue"""
+    c = []
+    for i, x in enumerate(toks):
+        if x[1] != "switch": continue
+        b = match_fwd(toks, i + 1) + 1
+        if toks[b][1] != "{": continue
+        e = match_fwd(toks, b); labels = []; k = b + 1
+        while k < e:
+            t = toks[k][1]
+            if t in ("case", "default") and (k == b + 1 or toks[k - 1][1] in (";", "}", ":")):
+                labels.append(k)
+                while toks[k][1] != ":": k += 1
+                k += 1; continue
+            if t in "([{": k = match_fwd(toks, k)
+            k += 1
+        groups = []
+        for j, l in enumerate(labels):
+            g = labels[j + 1] if j + 1 < len(labels) else e
+            if groups and groups[-1][1] == l and toks[l - 1][1] == ":": groups[-1] = (groups[-1][0], g); continue
+            groups.append((l, g))
+        def ends(a, g):
+            k = g - 1
+            if toks[k][1] == "}": k = k - 1
+            st = stmt_bounds(toks, k) if toks[k][1] == ";" else None
+            return st and toks[st[0]][1] in ("break", "return", "goto", "continue")
+        for (a1, g1), (a2, g2) in zip(groups, groups[1:]):
+            if g1 == a2 and ends(a1, g1) and ends(a2, g2): c.append((a1, a2, g2))
+    if not c: return None
+    a1, a2, g2 = r.choice(c)
+    X = [list(y) for y in toks[a1:a2]]; Y = [list(y) for y in toks[a2:g2]]
+    X[0][0], Y[0][0] = Y[0][0], X[0][0]
+    return toks[:a1] + Y + X + toks[g2:]
+
+
+def m_intcast(toks, ctx, r):
+    """(int) on a switch operand or on an int/short/char operand of a comparison"""
+    ty = scalar_types(toks, ctx)
+    small = {"int", "short", "char", "signed char", "unsigned char", "unsigned short", "signed short", "signed int"}
+    c = [("sw", i) for i, x in enumerate(toks) if x[1] == "switch" and toks[i + 2][1] != "("]
+    for i, x in enumerate(toks):
+        if x[1] in ("<", ">", "<=", ">=", "==", "!=") and is_binary(toks, i, ctx):
+            for k in (i - 1, i + 1):
+                if toks[k][1] in ty and ty[toks[k][1]] in small and toks[k - 1][1] not in (".", "->", ")") \
+                        and toks[k + 1][1] not in ("[", "(", ".", "->", "++", "--"):
+                    c.append(("cmp", k))
+    if not c: return None
+    k, i = r.choice(c)
+    if k == "sw":
+        j = match_fwd(toks, i + 1)
+        return toks[:i + 2] + T(["(", "int", ")", "("]) + [list(y) for y in toks[i + 2:j]] + T([")"]) + toks[j:]
+    return toks[:i] + [[toks[i][0], "("]] + T(["int", ")", toks[i][1]]) + toks[i + 1:]
+
+
 MUTATIONS = [(m_commute, 3), (m_compound, 1), (m_shift, 1), (m_not, 1), (m_temp, 2), (m_untemp, 1), (m_cast, 3),
-             (m_index, 2), (m_loop, 1), (m_decl, 3), (m_if, 1), (m_incr, 1)]
+             (m_index, 2), (m_loop, 1), (m_decl, 3), (m_if, 1), (m_incr, 1),
+             (m_swap, 3), (m_ternary, 1), (m_switch, 1), (m_intcast, 1)]
 
 
 def mutate(toks, ctx, r, n):
@@ -707,22 +871,103 @@ def orig_size(module, addr):
     return nxt - addr
 
 
+def gcc_function(obj, func, addr, known):
+    """GCC object (tools/psp_gcc.sh: .text.<func>, REL against named or section symbols) -> (words, masks): relocations
+    against a symbol of known address (symbols/<m>.txt, D_XXXXXXXX, the function's own section) are applied as the
+    linker would, the others masked (R_MIPS_26: target field, HI16/LO16: low half)."""
+    d = open(obj, "rb").read()
+    by, secs = elf_sections(d)
+    st, strs = by[".symtab"], by[".strtab"]
+    syms = []
+    for i in range(st[5] // 16):
+        n, v, sz, info, oth, sh = struct.unpack_from("<IIIBBH", d, st[4] + i * 16)
+        syms.append((d[strs[4] + n:d.index(b"\0", strs[4] + n)].decode(), v, sz, info, sh))
+    f = next((x for x in syms if x[0] == func and x[3] & 15 == 2 and x[4]), None)
+    if f is None: raise SystemExit("%s: not found in %s" % (func, obj))
+    _, v, sz, _, sh = f
+    n = sz // 4
+    ws = list(struct.unpack_from("<%dI" % n, d, secs[sh][4] + v)); mk = [0] * n
+    def sym_addr(si):
+        nm, sv, _, info, ssh = syms[si]
+        if info & 15 == 3: return addr - v + sv if ssh == sh else None   # section symbol
+        if nm in known: return known[nm]
+        m = re.match(r"D_([0-9A-F]{8})$", nm)
+        return int(m.group(1), 16) if m else None
+    sx = lambda x: x - 0x10000 if x & 0x8000 else x
+    rl = []
+    for r in secs:
+        if r[1] == 9 and r[7] == sh:
+            for j in range(r[4], r[4] + r[5], 8):
+                off, inf = struct.unpack_from("<II", d, j)
+                if v <= off < v + sz: rl.append(((off - v) // 4, inf & 0xFF, inf >> 8))
+    his = {}
+    for i, ty, si in sorted(rl):
+        sa = sym_addr(si)
+        if ty == R_MIPS_26:
+            if sa is None: mk[i] = 0x3FFFFFF
+            else: ws[i] = (ws[i] & 0xFC000000) | (((sa >> 2) + (ws[i] & 0x3FFFFFF)) & 0x3FFFFFF)
+        elif ty == R_MIPS_HI16: his.setdefault(si, []).append(i); mk[i] = 0xFFFF
+        elif ty == R_MIPS_LO16:
+            if sa is None: mk[i] = 0xFFFF; continue
+            for h in his.pop(si, []):
+                full = (sa + ((ws[h] & 0xFFFF) << 16) + sx(ws[i] & 0xFFFF)) & 0xFFFFFFFF
+                ws[h] = (ws[h] & 0xFFFF0000) | (((full + 0x8000) >> 16) & 0xFFFF); mk[h] = 0
+            ws[i] = (ws[i] & 0xFFFF0000) | ((sa + sx(ws[i] & 0xFFFF)) & 0xFFFF)
+        else: mk[i] = 0xFFFF
+    return ws, mk
+
+
 class Scorer:
+    """path = src/<m>/x.c (mwccpsp) or src/<m>/x_gcc.c (the SDK's GCC, tools/psp_gcc.sh): then the function is the
+    last definition of FUNC in the file the _gcc.c includes (the `#else` GCC branch), and the score applies the
+    relocations whose target is known (gcc_function)."""
     def __init__(self, module, path, func, workdir):
         self.module, self.func, self.dir = module, func, workdir
-        sym = re.search(r"^%s = (0x[0-9A-Fa-f]+);" % func, open("symbols/%s.txt" % module).read(), re.M)
-        self.addr = int(sym.group(1), 16)
+        syms = open("symbols/%s.txt" % module).read()
+        self.known = {m.group(1): int(m.group(2), 16) for m in re.finditer(r"^(\w+) = (0x[0-9A-Fa-f]+);", syms, re.M)}
+        self.addr = self.known[func]
         self.size = orig_size(module, self.addr)
         o = self.addr - BASE + SEG
         self.want = open("build/elf/%s.elf" % module, "rb").read()[o:o + self.size]
+        self.gcc = None
+        if path.endswith("_gcc.c"):
+            self.gcc = open(path).read()
+            inc = re.search(r'^#include "(\w+\.c)"', self.gcc, re.M)   # none: the C is in the _gcc.c itself
+            self.inc = inc and inc.group(1)
+            if self.inc: path = os.path.join(os.path.dirname(path), self.inc)
         self.text = open(path).read()
-        self.a, self.b, self.params = find_func(self.text, func)
+        if self.gcc:
+            off = [m.start() for m in re.finditer(r"^[A-Za-z_][^;{}()\n]*\b%s\s*\(([^;{]*)\)\s*\{" % re.escape(func), self.text, re.M)]
+            self.a, self.b, self.params = find_func(self.text[off[-1]:] if off else self.text, func)
+            off = off[-1] if off else 0
+            self.a += off; self.b += off
+        else:
+            self.a, self.b, self.params = find_func(self.text, func)
+        self.srcdir = os.path.dirname(path)
         self.flags = ["-O4,p", "-sdatathreshold", "0", "-i", "include", "-i", os.path.dirname(path), "-DNON_MATCHING"]
 
     def score(self, ftext, slot):
         src = os.path.join(self.dir, "w%02d.c" % slot); obj = src[:-2] + ".o"
         open(src, "w").write(self.text[:self.a] + ftext + self.text[self.b:])
         if os.path.exists(obj): os.remove(obj)
+        if self.gcc:
+            g = src
+            if self.inc:
+                g = src[:-2] + "_gcc.c"; obj = g[:-2] + ".o"
+                open(g, "w").write(self.gcc.replace('#include "%s"' % self.inc, '#include "%s"' % os.path.basename(src)))
+                if os.path.exists(obj): os.remove(obj)
+            r = subprocess.run(["tools/psp_gcc.sh", "-I", "include", "-I", self.srcdir, "-c", g, "-o", obj], capture_output=True, text=True)
+            if r.returncode or not os.path.exists(obj): return None
+            try:
+                ws, mk = gcc_function(obj, self.func, self.addr, self.known)
+            except SystemExit:
+                return None
+            d = 0
+            for k in range(max(len(ws), self.size // 4)):
+                if k >= len(ws): d += struct.unpack_from("<I", self.want, 4 * k)[0] != 0; continue
+                if k >= self.size // 4: d += 1; continue
+                d += (ws[k] & ~mk[k]) != (struct.unpack_from("<I", self.want, 4 * k)[0] & ~mk[k])
+            return d
         r = subprocess.run(["tools/mwcc.sh", *self.flags, "-c", src, "-o", obj], capture_output=True, text=True)
         if r.returncode or not os.path.exists(obj): return None
         try:
@@ -802,7 +1047,21 @@ def selftest():
     }
     while (m != 0)
         m--;
-    return s + m;
+    i = 7;
+    m = m + 1;
+    switch (n) {
+    case 1:
+        s = 2;
+        break;
+    case 2:
+        s = 3;
+        break;
+    }
+    if (n < 3)
+        i = 1;
+    else
+        i = 2;
+    return s + m + i;
 }"""
     t = lex(src)
     assert render(t) == src
@@ -824,13 +1083,17 @@ def selftest():
         assert outs, name + " never applied"
     want = {"m_commute": "q->b + p->a[i]", "m_compound": "s = s +", "m_shift": "n << 2", "m_not": "(m == 0)",
             "m_temp": "__typeof__", "m_untemp": "((Foo*)( p))->b", "m_cast": "((int) s)", "m_index": "(*p).a",
-            "m_loop": "while ( i < n)", "m_decl": "n_pc = ( int) n", "m_if": "else", "m_incr": "i += 1"}
+            "m_loop": "while ( i < n)", "m_decl": "n_pc = ( int) n", "m_if": "else", "m_incr": "i += 1",
+            "m_swap": "m = m + 1; i = 7;", "m_ternary": "i = (n < 3) ? (1) : (2);", "m_switch": "case 2: s = 3; break; case 1:",
+            "m_intcast": "switch ((int) (n))"}
     for name, w in want.items():
         assert any(w.replace(" ", "") in re.sub(r"\s", "", o) for o in seen[name]), (name, w, sorted(seen[name])[:3])
     # the scorer must report 0 for a function that already matches (needs the toolchain and build/elf)
     if os.path.exists("build/elf/BOOT.elf"):
         wd = os.path.join("build", "tmp", "permute", "_selftest"); os.makedirs(wd, exist_ok=True)
         sc = Scorer("BOOT", "src/BOOT/anim.c", "anim_eval", wd)
+        assert sc.score(sc.text[sc.a:sc.b], 0) == 0
+        sc = Scorer("BOOT", "src/BOOT/vfpu_mem_gcc.c", "vfpu_ctx_init", wd)   # the SDK's GCC
         assert sc.score(sc.text[sc.a:sc.b], 0) == 0
     print("permute.py: ok")
 
