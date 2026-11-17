@@ -1493,6 +1493,8 @@ void sceGuDebugPrint(int x, int y, unsigned int color, const char *str)
     g = color << 16 >> 24;
     b = (color >> 16) & 0xFF;
     a = color >> 24;
+    /* still 53 words off in GCC: the original shares the tail `| (g >> k) << 5 | r >> 3` of PSM 0 and 1 (cross-jumping
+       with equal registers) */
     if (gu_debug_psm == 0) {
         color = (b >> 3) << 11 | (g >> 2) << 5 | r >> 3;
     } else if (gu_debug_psm == 1) {
@@ -1500,11 +1502,10 @@ void sceGuDebugPrint(int x, int y, unsigned int color, const char *str)
     } else if (gu_debug_psm == 2) {
         color = (a >> 4) << 12 | (b >> 4) << 8 | (g & ~0xF) | r >> 4;
     }
-    ch = *str;
-    while (ch != 0) {
+    while (*str != 0) {
+        ch = *str;
         if (ch == '\n') {
             cx = x;
-    cy = y;
             cy += 8;
             str++;
         } else {
@@ -1520,7 +1521,6 @@ void sceGuDebugPrint(int x, int y, unsigned int color, const char *str)
                 break;
             }
         }
-        ch = *str;
     }
     gu_debug_count[gu_debug_buf] = n;
 }
