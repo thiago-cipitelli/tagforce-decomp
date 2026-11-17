@@ -4,7 +4,7 @@ Desde 2026-10-30 todo o `.text` de todos os módulos está em C. O que falta par
 mantidas como `// @asm A-B`, com o C equivalente sob `#ifdef NON_MATCHING`. Este arquivo é o ponto de partida
 de cada sessão dessa etapa: leia só ele (e o trecho de `docs/build.md` que ele indicar), não o repositório inteiro.
 
-Estado em 2026-11-18, após a rodada 40 (2 agentes Opus, trilha GCC): fp-bit (`LARGEST_EXPONENT_IS_NORMAL` no tconfig.h), `fread`, sobras da libvfpu, libgu_ctx (`gu_ctx_matrix` etc.), `_open`. ByteMatch: 98,4% do código, 99,3% fuzzy, 10984/11042 funções (BOOT 93,6%); restam 15 funções `asm` inteiras no BOOT e 23 com C que não bate. Skip com 27 entradas. **Fila vazia**: todo
+Estado em 2026-11-18, após a rodada 41 (2 agentes Opus): gancho do cc1 para a fila de pós-incremento do store_expr (`__svfscanf_r`), `#pragma weak` removido dos arquivos GCC (`__d2b`), `tools/permute.py` com modo GCC (`vfpu_memset`). ByteMatch: 98,6% do código, 99,5% fuzzy, 10985/11042 funções (BOOT 94,5%/96,4%; 19 módulos a 100%); 13 funções `asm` inteiras no BOOT, 23 com C que não bate. Skip com 28 entradas, todas alocação de registradores/regrename ou escalonamento (o mecanismo de cada família está em `docs/build.md` "Trilha GCC" e nas seções das rodadas). **Fila vazia**: todo
 `@asm` restante está em `docs/matching_skip.tsv` com o motivo (toda função tem
 C que compila), fora o SDK do BOOT (inclusive arquivos com um só `@asm` cobrindo
 o `@range` inteiro), as de `docs/matching_skip.tsv` e as marcadas `matched` em `symbols/`.
