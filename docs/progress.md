@@ -1,12 +1,12 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-17 (rodada 38) (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-18 (rodada 39) (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 98,4% | 99,2% | 10979 / 11042 |
-| BOOT | 93,2% | 94,4% | 2158 / 2211 |
+| total | 98,4% | 99,3% | 10984 / 11042 |
+| BOOT | 93,6% | 95,6% | 2162 / 2211 |
 | libduel_eng | 98,8% | 100,0% | 3424 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
@@ -28,7 +28,7 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-17 (
 | libtutorial | 100,0% | 100,0% | 207 / 207 |
 | libfield | 100,0% | 100,0% | 652 / 652 |
 | libstory | 99,8% | 100,0% | 675 / 676 |
-| libduel_draw | 98,4% | 100,0% | 1605 / 1609 |
+| libduel_draw | 98,6% | 100,0% | 1606 / 1609 |
 
 Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#ifdef NON_MATCHING`
 (rascunho funcional, ainda não idêntico byte a byte).
@@ -37,7 +37,7 @@ Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#if
 
 Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que falta são as funções em `@asm` (C sob `NON_MATCHING`), listadas por arquivo nas seções abaixo. Desde 2026-11-15 (rodada 33) o menu de depuração (`src/libduel_draw/dd_debug_menu.c`) também tem C e bate: não há função sem C.
 
-## BOOT (196 arquivos, 1817 funções batendo, 35 em asm)
+## BOOT (205 arquivos, 1821 funções batendo, 30 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -45,11 +45,11 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`crt0_gcc.c`](../src/BOOT/crt0_gcc.c) | 0x08804000-0x08804A04+ | 27 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libgu.c`](../src/BOOT/libgu.c) | 0x08804A0C-0x08805EC4 | 0 | 2 | libgu do SDK (sceGu*, nomes pelos NIDs): listas de exibição, sinais, chamadas, estado, buffers de tela e desenho |
 | [`libgu_gcc.c`](../src/BOOT/libgu_gcc.c) | 0x08804A0C-0x08805E98+ | 41 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libgu_state.c`](../src/BOOT/libgu_state.c) | 0x08805EC4-0x08807070 | 0 | 2 | libgu: comandos de estado do GE (desenho de arrays/bezier/spline, sprites, cópia de imagem, clear, luzes, material, textura, CLUT, névoa, testes, blend, matrizes de osso) |
-| [`libgu_state_gcc.c`](../src/BOOT/libgu_state_gcc.c) | 0x08805EC4-0x08807034+ | 55 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libgu_ctx.c`](../src/BOOT/libgu_ctx.c) | 0x08807070-0x088087F8 | 11 | 4 | libgu: contextos de lista, inicialização, sceGuDebugPrint/Flush, vblank_handler_set |
-| [`libgu_ctx_gcc.c`](../src/BOOT/libgu_ctx_gcc.c) | 0x08807070-0x0880877C+ | 12 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libm.c`](../src/BOOT/libm.c) | 0x088087F8-0x0880A5C0 | 2 | 0 | libm float do newlib (fdlibm): kernels de sin/cos/tan, atan2f, sqrtf e wrappers SVID, abs |
+| [`libgu_state.c`](../src/BOOT/libgu_state.c) | 0x08805EC4-0x08807070 | 0 | 1 | libgu: comandos de estado do GE (desenho de arrays/bezier/spline, sprites, cópia de imagem, clear, luzes, material, textura, CLUT, névoa, testes, blend, matrizes de osso) |
+| [`libgu_state_gcc.c`](../src/BOOT/libgu_state_gcc.c) | 0x08805EC4-0x08807034+ | 56 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libgu_ctx.c`](../src/BOOT/libgu_ctx.c) | 0x08807070-0x088087F8 | 10 | 4 | libgu: contextos de lista, inicialização, sceGuDebugPrint/Flush, vblank_handler_set |
+| [`libgu_ctx_gcc.c`](../src/BOOT/libgu_ctx_gcc.c) | 0x08807070-0x0880877C+ | 13 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libm.c`](../src/BOOT/libm.c) | 0x088087F8-0x0880A5C0 | 0 | 0 | libm float do newlib (fdlibm): kernels de sin/cos/tan, atan2f, sqrtf e wrappers SVID, abs |
 | [`nl_ef_asin.c`](../src/BOOT/nl_ef_asin.c) | 0x088087F8-0x088087F8+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_ef_atan2.c`](../src/BOOT/nl_ef_atan2.c) | 0x08808AE0-0x08808AE0+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_ef_rem_pio2.c`](../src/BOOT/nl_ef_rem_pio2.c) | 0x08808D2C-0x08808D2C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
@@ -61,18 +61,21 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`nl_s_isnan.c`](../src/BOOT/nl_s_isnan.c) | 0x08809B88-0x08809B88+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_s_matherr.c`](../src/BOOT/nl_s_matherr.c) | 0x08809BAC-0x08809BAC+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_sf_atan.c`](../src/BOOT/nl_sf_atan.c) | 0x08809BB4-0x08809BB4+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`nl_sf_copysign.c`](../src/BOOT/nl_sf_copysign.c) | 0x08809E50-0x08809E50+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_sf_cos.c`](../src/BOOT/nl_sf_cos.c) | 0x08809E70-0x08809E70+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libm_sf_fabs.c`](../src/BOOT/libm_sf_fabs.c) | 0x08809F38-0x08809F38+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_sf_floor.c`](../src/BOOT/nl_sf_floor.c) | 0x08809F4C-0x08809F4C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`nl_sf_isnan.c`](../src/BOOT/nl_sf_isnan.c) | 0x0880A028-0x0880A028+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_sf_scalbn.c`](../src/BOOT/nl_sf_scalbn.c) | 0x0880A03C-0x0880A03C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libm_sf_sin.c`](../src/BOOT/libm_sf_sin.c) | 0x0880A154-0x0880A154+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_wf_asin.c`](../src/BOOT/nl_wf_asin.c) | 0x0880A220-0x0880A220+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libm_wf_atan2.c`](../src/BOOT/libm_wf_atan2.c) | 0x0880A340-0x0880A340+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libm_wf_sqrt.c`](../src/BOOT/libm_wf_sqrt.c) | 0x0880A484-0x0880A484+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_abs.c`](../src/BOOT/nl_abs.c) | 0x0880A5B4-0x0880A5B4+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libc_stdlib.c`](../src/BOOT/libc_stdlib.c) | 0x0880A5C0-0x0880C040 | 2 | 1 | newlib: atexit, bsearch, `_calloc_r`, quorem/`_dtoa_r`, `__errno`, exit |
+| [`libc_stdlib.c`](../src/BOOT/libc_stdlib.c) | 0x0880A5C0-0x0880C040 | 1 | 1 | newlib: atexit, bsearch, `_calloc_r`, quorem/`_dtoa_r`, `__errno`, exit |
 | [`libc_stdlib_gcc.c`](../src/BOOT/libc_stdlib_gcc.c) | 0x0880A5C0-0x0880A820+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_bsearch.c`](../src/BOOT/nl_bsearch.c) | 0x0880A694-0x0880A694+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`nl_callocr.c`](../src/BOOT/nl_callocr.c) | 0x0880A764-0x0880A764+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_errno.c`](../src/BOOT/nl_errno.c) | 0x0880BF10-0x0880BF10+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_exit.c`](../src/BOOT/nl_exit.c) | 0x0880BF40-0x0880BF40+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_stdio.c`](../src/BOOT/libc_stdio.c) | 0x0880C040-0x0880CDD4 | 1 | 0 | newlib stdio: fflush, `__sinit`, findfp, fvwrite |
@@ -82,23 +85,25 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`libc_stdio_gcc.c`](../src/BOOT/libc_stdio_gcc.c) | 0x0880C888-0x0880C888+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_fvwrite.c`](../src/BOOT/nl_fvwrite.c) | 0x0880C8EC-0x0880C8EC+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_fwalk.c`](../src/BOOT/nl_fwalk.c) | 0x0880CCCC-0x0880CCCC+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libc_malloc.c`](../src/BOOT/libc_malloc.c) | 0x0880CDD4-0x0880DC98 | 3 | 0 | newlib dlmalloc: `_malloc_r`, `_free_r`, smakebuf, trim, memalign |
-| [`libc_malloc_gcc.c`](../src/BOOT/libc_malloc_gcc.c) | 0x0880CDD4-0x0880CF34+ | 5 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libc_malloc.c`](../src/BOOT/libc_malloc.c) | 0x0880CDD4-0x0880DC98 | 0 | 0 | newlib dlmalloc: `_malloc_r`, `_free_r`, smakebuf, trim, memalign |
+| [`libc_malloc_gcc.c`](../src/BOOT/libc_malloc_gcc.c) | 0x0880CDD4-0x0880CF34+ | 7 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_iswspace.c`](../src/BOOT/nl_iswspace.c) | 0x0880CDFC-0x0880CDFC+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_makebuf.c`](../src/BOOT/nl_makebuf.c) | 0x0880CF9C-0x0880CF9C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_malign.c`](../src/BOOT/nl_malign.c) | 0x0880D104-0x0880D104+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`nl_memalignr.c`](../src/BOOT/nl_memalignr.c) | 0x0880D144-0x0880D144+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_malloc.c`](../src/BOOT/nl_malloc.c) | 0x0880D2CC-0x0880D2FC+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_mallocr.c`](../src/BOOT/nl_mallocr.c) | 0x0880D32C-0x0880D554+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_mbrtowc.c`](../src/BOOT/nl_mbrtowc.c) | 0x0880DA9C-0x0880DB10+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_mbtowc_r.c`](../src/BOOT/nl_mbtowc_r.c) | 0x0880DB70-0x0880DB70+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_memchr.c`](../src/BOOT/libc_memchr.c) | 0x0880DBB0-0x0880DBB0+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libc_mem.c`](../src/BOOT/libc_mem.c) | 0x0880DC98-0x0880E700 | 2 | 0 | newlib: memchr/memcpy/memmove/memset e afins |
+| [`libc_mem.c`](../src/BOOT/libc_mem.c) | 0x0880DC98-0x0880E700 | 0 | 0 | newlib: memchr/memcpy/memmove/memset e afins |
 | [`libc_memcmp.c`](../src/BOOT/libc_memcmp.c) | 0x0880DC98-0x0880DC98+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_memcpy.c`](../src/BOOT/nl_memcpy.c) | 0x0880DD1C-0x0880DD1C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libc_mem_gcc.c`](../src/BOOT/libc_mem_gcc.c) | 0x0880E1F8-0x0880E234+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libc_mem_gcc.c`](../src/BOOT/libc_mem_gcc.c) | 0x0880DE40-0x0880E234+ | 3 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libc_memset_gcc.c`](../src/BOOT/libc_memset_gcc.c) | 0x0880E140-0x0880E140+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_reent.c`](../src/BOOT/libc_reent.c) | 0x0880E280-0x0880E520+ | 4 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libc_mprec.c`](../src/BOOT/libc_mprec.c) | 0x0880E700-0x0880F60C | 2 | 0 | newlib mprec: Balloc, multadd, hi0bits/lo0bits, i2b, mult, pow5mult, lshift, cmp, diff, ulp, b2d/d2b, ratio |
-| [`libc_mprec_gcc.c`](../src/BOOT/libc_mprec_gcc.c) | 0x0880E700-0x0880F56C+ | 15 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libc_mprec.c`](../src/BOOT/libc_mprec.c) | 0x0880E700-0x0880F60C | 1 | 0 | newlib mprec: Balloc, multadd, hi0bits/lo0bits, i2b, mult, pow5mult, lshift, cmp, diff, ulp, b2d/d2b, ratio |
+| [`libc_mprec_gcc.c`](../src/BOOT/libc_mprec_gcc.c) | 0x0880E700-0x0880F56C+ | 16 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_misc.c`](../src/BOOT/libc_misc.c) | 0x0880F60C-0x08810BA8 | 0 | 0 | newlib: printf, qsort, rand/srand, `__srefill`, `_snprintf_r`, funções de reent.c |
 | [`nl_printf.c`](../src/BOOT/nl_printf.c) | 0x0880F60C-0x0880F64C+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_qsort.c`](../src/BOOT/nl_qsort.c) | 0x0880F69C-0x0880F69C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
@@ -108,21 +113,24 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`nl_reent.c`](../src/BOOT/nl_reent.c) | 0x088105F8-0x08810854+ | 4 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_refill.c`](../src/BOOT/nl_refill.c) | 0x08810904-0x08810940+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_snprintf.c`](../src/BOOT/nl_snprintf.c) | 0x08810B38-0x08810BA8+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libc_string.c`](../src/BOOT/libc_string.c) | 0x08810BA8-0x088126E8 | 3 | 1 | newlib: strcat/strchr/strcmp/strcpy/strlen/strncmp/strncpy/strstr e strtok |
+| [`libc_string.c`](../src/BOOT/libc_string.c) | 0x08810BA8-0x088126F8 | 0 | 0 | newlib: strcat/strchr/strcmp/strcpy/strlen/strncmp/strncpy/strstr e strtok |
 | [`nl_sprintf.c`](../src/BOOT/nl_sprintf.c) | 0x08810C2C-0x08810C94+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_sscanf.c`](../src/BOOT/nl_sscanf.c) | 0x08810D14-0x08810D9C+ | 3 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`nl_stdio.c`](../src/BOOT/nl_stdio.c) | 0x08810E24-0x08810FA0+ | 3 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`nl_stdio.c`](../src/BOOT/nl_stdio.c) | 0x08810E24-0x08810FA0+ | 4 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_strcasecmp.c`](../src/BOOT/libc_strcasecmp.c) | 0x08810FD0-0x08810FD0+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_strcat.c`](../src/BOOT/libc_strcat.c) | 0x0881106C-0x0881106C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_strchr.c`](../src/BOOT/libc_strchr.c) | 0x08811118-0x08811118+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libc_strcmp_gcc.c`](../src/BOOT/libc_strcmp_gcc.c) | 0x08811218-0x08811218+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_strcpy.c`](../src/BOOT/libc_strcpy.c) | 0x0881128C-0x0881128C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libc_strlen_gcc.c`](../src/BOOT/libc_strlen_gcc.c) | 0x08811324-0x08811324+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_strncmp.c`](../src/BOOT/nl_strncmp.c) | 0x0881133C-0x0881133C+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`nl_strncpy.c`](../src/BOOT/nl_strncpy.c) | 0x08811458-0x08811458+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_strrchr.c`](../src/BOOT/libc_strrchr.c) | 0x088115E0-0x088115E0+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libc_strstr.c`](../src/BOOT/libc_strstr.c) | 0x08811648-0x08811648+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`strtol.c`](../src/BOOT/strtol.c) | 0x088126E8-0x08813108 | 8 | 1 | newlib strtod/strtof/strtol/strtoul e os `_r` para long, long long e unsigned |
-| [`nl_ungetc.c`](../src/BOOT/nl_ungetc.c) | 0x08813108-0x08813108+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`ungetc.c`](../src/BOOT/ungetc.c) | 0x08813108-0x08813390 | 1 | 0 | newlib ungetc, `__submore` |
+| [`nl_strtod.c`](../src/BOOT/nl_strtod.c) | 0x088116A4-0x088116A4+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`strtol.c`](../src/BOOT/strtol.c) | 0x088126F8-0x08813108 | 8 | 0 | newlib strtod/strtof/strtol/strtoul e os `_r` para long, long long e unsigned |
+| [`nl_ungetc.c`](../src/BOOT/nl_ungetc.c) | 0x08813108-0x088131F8+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`ungetc.c`](../src/BOOT/ungetc.c) | 0x08813108-0x08813390 | 0 | 0 | newlib ungetc, `__submore` |
 | [`nl_vfprintf.c`](../src/BOOT/nl_vfprintf.c) | 0x08813390-0x088150E0+ | 6 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`vfprintf.c`](../src/BOOT/vfprintf.c) | 0x08813390-0x088151B8 | 0 | 0 | newlib `__sprint`, `__sbprintf`, vfprintf, cvt, exponent; `_vfprintf_r` em asm |
 | [`nl_vfscanf.c`](../src/BOOT/nl_vfscanf.c) | 0x088151B8-0x08816284+ | 4 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
@@ -141,27 +149,28 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`fpbit_df.c`](../src/BOOT/fpbit_df.c) | 0x08817D70-0x08818E64 | 17 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`ccc.c`](../src/BOOT/ccc.c) | 0x08818E64-0x08819BEC | 1 | 2 | libccc da Sony (sceCcc*): codificação UTF-8/UTF-16/SJIS, validação, strlen, caracteres de erro, tabelas |
 | [`ccc_gcc.c`](../src/BOOT/ccc_gcc.c) | 0x08818E64-0x08819BCC+ | 26 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`fpu.c`](../src/BOOT/fpu.c) | 0x08819BEC-0x08819F0C | 27 | 0 | libfpu da Sony (sceFpu*): arredondamento, max/min, fmod/frac, testes de sinal/zero/denormal/inf, NaN, FCR31 |
-| [`fpu_gcc.c`](../src/BOOT/fpu_gcc.c) | 0x08819C10-0x08819D60+ | 9 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_math.c`](../src/BOOT/vfpu_math.c) | 0x08819F0C-0x0881AB1C | 19 | 4 | libvfpu (funções `asm` com C portável): isinf_sign, sceFpuSin/Cos/Atan/Asin/Acos, Vector2 |
-| [`vfpu_math_gcc.c`](../src/BOOT/vfpu_math_gcc.c) | 0x0881A440-0x0881A924+ | 18 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_vec3.c`](../src/BOOT/vfpu_vec3.c) | 0x0881AB1C-0x0881B244 | 32 | 0 | libvfpu: sceVfpuVector3* |
-| [`vfpu_vec3_gcc.c`](../src/BOOT/vfpu_vec3_gcc.c) | 0x0881AB1C-0x0881AC1C+ | 3 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_vec4.c`](../src/BOOT/vfpu_vec4.c) | 0x0881B244-0x0881B974 | 44 | 0 | libvfpu: sceVfpuVector4* |
-| [`vfpu_vec4_gcc.c`](../src/BOOT/vfpu_vec4_gcc.c) | 0x0881B244-0x0881B298+ | 3 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_mat.c`](../src/BOOT/vfpu_mat.c) | 0x0881B974-0x0881C4E4 | 28 | 0 | libvfpu: Matrix2, Matrix3 e as primeiras de Matrix4 |
-| [`vfpu_mat_gcc.c`](../src/BOOT/vfpu_mat_gcc.c) | 0x0881B994-0x0881C400+ | 8 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_mat4.c`](../src/BOOT/vfpu_mat4.c) | 0x0881C4E4-0x0881CD50 | 16 | 0 | libvfpu: produto de matrizes 4x4, transformações, rotações, traço, determinante, adjunta, inversa, sombra, ortonormalização |
-| [`vfpu_mat4_gcc.c`](../src/BOOT/vfpu_mat4_gcc.c) | 0x0881C8D4-0x0881C8D4+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_scalar.c`](../src/BOOT/vfpu_scalar.c) | 0x0881CD50-0x0881D214 | 22 | 0 | libvfpu: sceVfpuScalar* (trig, exp/log, pow, arredondamento) |
-| [`vfpu_color.c`](../src/BOOT/vfpu_color.c) | 0x0881D214-0x0881D8A8 | 32 | 0 | libvfpu: sceVfpuColor* (conversões 8888/4444/5551/565) e sceVfpuRand* |
-| [`vfpu_color_gcc.c`](../src/BOOT/vfpu_color_gcc.c) | 0x0881D214-0x0881D870+ | 6 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_proj.c`](../src/BOOT/vfpu_proj.c) | 0x0881D8A8-0x0881DE88 | 6 | 1 | libvfpu: view, perspectiva, ortho, frustum, look_at, projeção de pontos |
-| [`vfpu_proj_gcc.c`](../src/BOOT/vfpu_proj_gcc.c) | 0x0881DC60-0x0881DD14+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_quat.c`](../src/BOOT/vfpu_quat.c) | 0x0881DE88-0x0881EB0C | 17 | 4 | libvfpu: quatérnios, slerp, log/exp, Euler zyx/xyz/yxz |
-| [`vfpu_quat_gcc.c`](../src/BOOT/vfpu_quat_gcc.c) | 0x0881DE88-0x0881E524+ | 2 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_mem.c`](../src/BOOT/vfpu_mem.c) | 0x0881EB0C-0x0881F6E4 | 9 | 0 | libvfpu: memcpy/memmove/memset pela VFPU, contexto de registradores, estado do gerador aleatório |
-| [`vfpu_mem_gcc.c`](../src/BOOT/vfpu_mem_gcc.c) | 0x0881F560-0x0881F560+ | 1 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`fpu.c`](../src/BOOT/fpu.c) | 0x08819BEC-0x08819F0C | 0 | 0 | libfpu da Sony (sceFpu*): arredondamento, max/min, fmod/frac, testes de sinal/zero/denormal/inf, NaN, FCR31 |
+| [`fpu_gcc.c`](../src/BOOT/fpu_gcc.c) | 0x08819BEC-0x08819EDC+ | 36 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_math.c`](../src/BOOT/vfpu_math.c) | 0x08819F0C-0x0881AB1C | 1 | 4 | libvfpu (funções `asm` com C portável): isinf_sign, sceFpuSin/Cos/Atan/Asin/Acos, Vector2 |
+| [`vfpu_math_gcc.c`](../src/BOOT/vfpu_math_gcc.c) | 0x0881A440-0x0881AAA0+ | 36 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_vec3.c`](../src/BOOT/vfpu_vec3.c) | 0x0881AB1C-0x0881B244 | 0 | 0 | libvfpu: sceVfpuVector3* |
+| [`vfpu_vec3_gcc.c`](../src/BOOT/vfpu_vec3_gcc.c) | 0x0881AB1C-0x0881B1BC+ | 35 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_vec4.c`](../src/BOOT/vfpu_vec4.c) | 0x0881B244-0x0881B974 | 0 | 0 | libvfpu: sceVfpuVector4* |
+| [`vfpu_vec4_gcc.c`](../src/BOOT/vfpu_vec4_gcc.c) | 0x0881B244-0x0881B904+ | 47 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_mat.c`](../src/BOOT/vfpu_mat.c) | 0x0881B974-0x0881C4E4 | 2 | 0 | libvfpu: Matrix2, Matrix3 e as primeiras de Matrix4 |
+| [`vfpu_mat_gcc.c`](../src/BOOT/vfpu_mat_gcc.c) | 0x0881B974-0x0881C4BC+ | 34 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_mat4.c`](../src/BOOT/vfpu_mat4.c) | 0x0881C4E4-0x0881CD50 | 1 | 0 | libvfpu: produto de matrizes 4x4, transformações, rotações, traço, determinante, adjunta, inversa, sombra, ortonormalização |
+| [`vfpu_mat4_gcc.c`](../src/BOOT/vfpu_mat4_gcc.c) | 0x0881C4E4-0x0881CCFC+ | 16 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_scalar.c`](../src/BOOT/vfpu_scalar.c) | 0x0881CD50-0x0881D214 | 0 | 0 | libvfpu: sceVfpuScalar* (trig, exp/log, pow, arredondamento) |
+| [`vfpu_scalar_gcc.c`](../src/BOOT/vfpu_scalar_gcc.c) | 0x0881CD50-0x0881D1F0+ | 22 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_color.c`](../src/BOOT/vfpu_color.c) | 0x0881D214-0x0881D8A8 | 1 | 0 | libvfpu: sceVfpuColor* (conversões 8888/4444/5551/565) e sceVfpuRand* |
+| [`vfpu_color_gcc.c`](../src/BOOT/vfpu_color_gcc.c) | 0x0881D214-0x0881D870+ | 37 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_proj.c`](../src/BOOT/vfpu_proj.c) | 0x0881D8A8-0x0881DE88 | 3 | 1 | libvfpu: view, perspectiva, ortho, frustum, look_at, projeção de pontos |
+| [`vfpu_proj_gcc.c`](../src/BOOT/vfpu_proj_gcc.c) | 0x0881DA34-0x0881DE30+ | 5 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_quat.c`](../src/BOOT/vfpu_quat.c) | 0x0881DE88-0x0881EB0C | 0 | 3 | libvfpu: quatérnios, slerp, log/exp, Euler zyx/xyz/yxz |
+| [`vfpu_quat_gcc.c`](../src/BOOT/vfpu_quat_gcc.c) | 0x0881DE88-0x0881EAD0+ | 20 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_mem.c`](../src/BOOT/vfpu_mem.c) | 0x0881EB0C-0x0881F6E4 | 5 | 0 | libvfpu: memcpy/memmove/memset pela VFPU, contexto de registradores, estado do gerador aleatório |
+| [`vfpu_mem_gcc.c`](../src/BOOT/vfpu_mem_gcc.c) | 0x0881F378-0x0881F5F4+ | 5 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`gzip.c`](../src/BOOT/gzip.c) | 0x0881F6E4-0x0881FFB0 | 1 | 0 | libdeflt: cabeçalho gzip e o decodificador deflate escrito à mão (C portável: inflate completo) |
 | [`gzip_gcc.c`](../src/BOOT/gzip_gcc.c) | 0x0881F6E4-0x0881F9B8+ | 6 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`postfx.c`](../src/BOOT/postfx.c) | 0x0881FFB0-0x08820ED4 | 11 | 0 | efeitos de tela cheia por texturas de trabalho na VRAM: redução, cópia escurecida, blends aditivos de cópias deslocadas e limiar por CLUT |
@@ -226,8 +235,8 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`snd_rand.c`](../src/BOOT/snd_rand.c) | 0x08862C5C-0x08862D28 | 3 | 0 | gerador aleatório da biblioteca de som |
 | [`libsas.c`](../src/BOOT/libsas.c) | 0x08862D28-0x088634EC | 0 | 0 | libsas: wrappers sceSas* das syscalls `__sceSas*` |
 | [`libsas_gcc.c`](../src/BOOT/libsas_gcc.c) | 0x08862D28-0x088634C4+ | 24 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libwave.c`](../src/BOOT/libwave.c) | 0x088634EC-0x08865260 | 0 | 6 | libwave: 8 canais VAG/PCM em software misturados pela thread SceWaveMain, 4 canais de hardware, fades |
-| [`libwave_gcc.c`](../src/BOOT/libwave_gcc.c) | 0x088634EC-0x08864254+ | 25 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libwave.c`](../src/BOOT/libwave.c) | 0x088634EC-0x08865260 | 0 | 5 | libwave: 8 canais VAG/PCM em software misturados pela thread SceWaveMain, 4 canais de hardware, fades |
+| [`libwave_gcc.c`](../src/BOOT/libwave_gcc.c) | 0x088634EC-0x08864410+ | 26 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`sndapi.c`](../src/BOOT/sndapi.c) | 0x08865260-0x08866068 | 59 | 0 | API de som exportada aos gmodules: BGM/SE, callbacks de leitura/heap da biblioteca de som, tabelas de voz por personagem, filas de voz por jogador, movie_play, caminhos de save-data |
 | [`savedata.c`](../src/BOOT/savedata.c) | 0x08866068-0x088668C0 | 10 | 0 | bloco de parâmetros do sceUtilitySavedata, textos SFO, ícones de msd.ehp, chave, inícios por modo |
 | [`msd.c`](../src/BOOT/msd.c) | 0x088668C0-0x08868DC8 | 10 | 0 | máquinas de estado de save-data por operação: novo jogo, verificação, autoload, carregar, salvar, apagar; carga de msd.ehp e despacho por quadro |
@@ -792,7 +801,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`s_bu.c`](../src/libstory/s_bu.c) | 0x088177C4-0x08817930 | 4 | 0 | retratos (bust-up) pedidos ao campo (carga pelo comando 12, descarga pelo 13) |
 | [`s_snd.c`](../src/libstory/s_snd.c) | 0x08817930-0x08817E64 | 16 | 0 | música e sons (bgm da sala por dia/noite/duelo, tocar/parar/esperar, efeito de variação de pontos) |
 
-## libduel_draw (125 arquivos, 1604 funções batendo, 5 em asm)
+## libduel_draw (125 arquivos, 1605 funções batendo, 4 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
@@ -816,7 +825,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`dd_chr.c`](../src/libduel_draw/dd_chr.c) | 0x0881351C-0x088143A4 | 24 | 1 | personagens do duelo: modelo do pack do cut-in, animações TGMT gzip, voz, ossos, máscara das partes |
 | [`dd_disc_hook.c`](../src/libduel_draw/dd_disc_hook.c) | 0x088143A4-0x08814DFC | 19 | 0 | ganchos dos modelos do disco e do campo (textura da carta na VRAM, material de duel_disc_02, callback por osso, tabelas de ossos e poses) |
 | [`dd_field_cursor.c`](../src/libduel_draw/dd_field_cursor.c) | 0x08814DFC-0x08815678 | 7 | 0 | cursor do campo: posição empacotada jogador/zona/índice, grade 7x7, movimento pelo direcional, salvar/restaurar |
-| [`dd_cursor_model.c`](../src/libduel_draw/dd_cursor_model.c) | 0x08815678-0x08816FD0 | 17 | 1 | cursor 3D: pose seguindo a carta, modelo field_cursor00/01/02, seta e ícones das ações, primeiro alvo e ciclo entre alvos |
+| [`dd_cursor_model.c`](../src/libduel_draw/dd_cursor_model.c) | 0x08815678-0x08816FD0 | 18 | 0 | cursor 3D: pose seguindo a carta, modelo field_cursor00/01/02, seta e ícones das ações, primeiro alvo e ciclo entre alvos |
 | [`dd_cutin.c`](../src/libduel_draw/dd_cutin.c) | 0x08816FD0-0x088175E4 | 7 | 0 | tocador de cut-in EHF em tela cheia (fila de um pedido, legenda, laço, velocidade da configuração) |
 | [`dd_event.c`](../src/libduel_draw/dd_event.c) | 0x088175E4-0x0881794C | 5 | 0 | despacho dos eventos de duelo (tabela ordenada de 72 comandos e o formato dos argumentos) |
 | [`dd_event_cmd.c`](../src/libduel_draw/dd_event_cmd.c) | 0x0881794C-0x08819A70 | 65 | 0 | tratadores dos eventos 1..73 (banners, ataque, virada, movimentos, mensagens, escolhas) |
