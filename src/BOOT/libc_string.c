@@ -1,4 +1,4 @@
-// @range 0x08810BA8-0x088126E8
+// @range 0x08810BA8-0x088126F8
 // @gcc 0x08810BA8-0x08810C2C nl_snprintf
 // @gcc 0x08810C2C-0x08810C94 nl_sprintf
 // @gcc 0x08810C94-0x08810D14 nl_sprintf
@@ -16,7 +16,7 @@
 // @gcc 0x08811458-0x088115E0 nl_strncpy
 // @gcc 0x088115E0-0x08811648 libc_strrchr
 // @gcc 0x08811648-0x088116A4 libc_strstr
-// @asm 0x088116A4-0x088126E8
+// @gcc 0x088116A4-0x088126F8 nl_strtod
 /* newlib (GCC) of the Sony SDK libc, in link order: snprintf/_sprintf_r/sprintf and
    sscanf/_sscanf_r over string streams, stdio.c (__sread/__swrite/__sseek/__sclose), strcasecmp,
    strcat, strchr, strcmp, strcpy, strlen, strncmp, strncpy, strrchr, strstr and the string-stream
@@ -378,7 +378,7 @@ char *strncpy(char *d, const char *s, size_t n);
 #endif
 
 /* strrchr (historical name strrchr_str) */
-#ifdef NON_MATCHING /* GCC: jump table and tables through %hi/%lo */
+#ifndef __MWERKS__ /* PSP: nl_strtod.c */
 /* newlib _strtod_r (gdtoa: _Bfree, __lshift, __ulp, __d2b and the soft-double helpers); was taken for a
    string-stream vfprintf before the port's prototype check (strtod and vfscanf call it with (reent, s, end)) */
 double _strtod_r(void *r, const char *s, char **end)
@@ -389,4 +389,6 @@ double _strtod_r(void *r, const char *s, char **end)
     }
     return 0.0;
 }
+#else
+double _strtod_r(void *r, const char *s, char **end);
 #endif

@@ -9,6 +9,13 @@
    insn_data entry (rotrdi3: TARGET_64BIT only, never used here, same operand layout set/op/op) gets the new
    operands, constraints and output.  Only active with -mext.
 
+   Second change (rodada 39): the later revision hoists more loop invariants. loop.c moves an invariant when
+   threshold * savings * lifetime >= insns in the loop, threshold = (has_call ? 1 : 2) * (1 + n_non_fixed_regs);
+   cc1 1.7.1 has n_non_fixed_regs = 64, the game's compiler behaves as if it were 100..256 (192 = 64 + the 128 VFPU
+   registers, if that revision made them allocatable). Hoisted constants that do not get a hard register are
+   rematerialized by reload in its round-robin spill register, which is the -1 in a0 instead of v0 of _strtod_r and
+   __svfscanf_r. rest_of_compilation() is wrapped to set n_non_fixed_regs (PSP_GCC_NNF=n overrides, 64 = cc1 1.7.1).
+
    Built by tools/setup_toolchain.sh (addresses from nm of cc1 as -DADDR_*), used by tools/psp_gcc.sh.  */
 #include <stdint.h>
 #include <stdio.h>
@@ -78,6 +85,16 @@ static int my_recog(rtx x, rtx insn, int *pnum_clobbers)
 static struct insn_operand_data ops[3] = {
     { 0, "=d", SImode, 0, 0 }, { 0, "0", SImode, 0, 0 }, { 0, "", SImode, 0, 0 } };
 
+static int *n_non_fixed_regs = A(ADDR_n_non_fixed_regs);
+static void (*roc_orig)(void *);
+static int nnf = 192;
+
+static void my_rest_of_compilation(void *decl)
+{
+    *n_non_fixed_regs = nnf;
+    roc_orig(decl);
+}
+
 static void writable(void *a, size_t n)
 {
     long pg = sysconf(_SC_PAGESIZE);
@@ -89,13 +106,35 @@ static void writable(void *a, size_t n)
     }
 }
 
+/* jump from function R to FN; returns a trampoline that calls the original R. R must start with
+   push %ebp; mov %esp,%ebp; push %edi; push %esi; push %ebx: 6 bytes that move as they are */
+static void *patch(unsigned char *r, void *fn)
+{
+    static const unsigned char prologue[6] = { 0x55, 0x89, 0xE5, 0x57, 0x56, 0x53 };
+    unsigned char *t;
+
+    if (memcmp(r, prologue, 6)) {
+        fprintf(stderr, "psp_gcc_insand: not the cc1 of psp-gcc 1.7.1\n");
+        exit(1);
+    }
+    t = mmap(0, 16, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    memcpy(t, r, 6);                       /* trampoline: the prologue, then jmp r+6 */
+    t[6] = 0xE9;
+    *(int32_t *)(t + 7) = (int32_t)((uintptr_t)(r + 6) - (uintptr_t)(t + 11));
+    writable(r, 5);
+    r[0] = 0xE9;                           /* r: jmp fn */
+    *(int32_t *)(r + 1) = (int32_t)((uintptr_t)fn - (uintptr_t)(r + 5));
+    return t;
+}
+
 __attribute__((constructor)) static void init(void)
 {
-    /* recog starts with push %ebp; mov %esp,%ebp; push %edi; push %esi; push %ebx: 6 bytes that move as they are */
-    static const unsigned char prologue[6] = { 0x55, 0x89, 0xE5, 0x57, 0x56, 0x53 };
-    unsigned char *r = A(ADDR_recog), *t;
+    const char *e = getenv("PSP_GCC_NNF");
 
-    if (memcmp(r, prologue, 6) || strcmp(insn_data[DONOR].name, "rotrdi3")) {
+    if (e)
+        nnf = atoi(e);
+    roc_orig = patch(A(ADDR_rest_of_compilation), my_rest_of_compilation);
+    if (strcmp(insn_data[DONOR].name, "rotrdi3")) {
         fprintf(stderr, "psp_gcc_insand: not the cc1 of psp-gcc 1.7.1\n");
         exit(1);
     }
@@ -110,12 +149,5 @@ __attribute__((constructor)) static void init(void)
     insn_data[DONOR].n_dups = 0;
     insn_data[DONOR].n_alternatives = 1;
     insn_data[DONOR].output_format = 3;   /* INSN_OUTPUT_FORMAT_FUNCTION */
-    t = mmap(0, 16, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    memcpy(t, r, 6);                       /* trampoline: the prologue, then jmp recog+6 */
-    t[6] = 0xE9;
-    *(int32_t *)(t + 7) = (int32_t)((uintptr_t)(r + 6) - (uintptr_t)(t + 11));
-    recog_orig = (void *)t;
-    writable(r, 5);
-    r[0] = 0xE9;                           /* recog: jmp my_recog */
-    *(int32_t *)(r + 1) = (int32_t)((uintptr_t)my_recog - (uintptr_t)(r + 5));
+    recog_orig = patch(A(ADDR_recog), my_recog);
 }
