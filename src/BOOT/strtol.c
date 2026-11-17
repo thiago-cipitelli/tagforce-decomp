@@ -1,5 +1,4 @@
-// @range 0x088126E8-0x08813108
-// @asm 0x088126E8-0x088126F8
+// @range 0x088126F8-0x08813108
 // @cc gcc
 /* newlib string to number conversions (stdlib/strtod.c wrappers, strtol.c, strtoll_r.c, strtoul.c, strtoull_r.c)
    of the Sony SDK libc. Compiled by the SDK's GCC (tools/psp_gcc.sh; docs/build.md, "Trilha GCC"): the functions
@@ -72,9 +71,6 @@ extern const char libc_ctype[];
 #define isupper(c) ((c) >= 'A' && (c) <= 'Z')
 #define isalpha(c) (isupper(c) || ((c) >= 'a' && (c) <= 'z'))
 #endif
-
-/* 0x088126E8: a cold block of _strtod_r placed here by GCC (it bumps a local and jumps back into
-   the function with an absolute `j`); not callable on its own, so it stays in asm and has no C. */
 
 double strtod(const char *s, char **end)
 {

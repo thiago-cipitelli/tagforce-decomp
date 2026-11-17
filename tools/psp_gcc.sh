@@ -34,7 +34,7 @@ rm -f "$OUT"
 # the peephole then only applies rules D, F and G (G, rodada 38: the nop Sony's assembler leaves after a 64-bit store). PSP_GCC_INSAND=0: plain cc1 1.7.1 and the peephole's rules A-C/E.
 PRE=; export PSP_GCC_INSAND=${PSP_GCC_INSAND:-1}
 if [ "$PSP_GCC_INSAND" = 1 ]; then
-  PRE="$HERE/ext/psp_gcc_insand.so"
+  PRE=${PSP_GCC_SO:-$HERE/ext/psp_gcc_insand.so}
   [ -f "$PRE" ] || { echo "psp_gcc.sh: run tools/setup_toolchain.sh (psp_gcc_insand.so missing)" >&2; exit 1; }
 fi
 PEEP=1; case " $MARK " in *" -nopeep "*) PEEP=0; MARK=$(echo " $MARK " | sed 's/ -nopeep / /');; esac
