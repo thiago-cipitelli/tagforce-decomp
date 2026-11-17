@@ -1,6 +1,7 @@
 // @range 0x08807070-0x088087F8
 // @gcc 0x08807070-0x0880712C
 // @asm 0x0880712C-0x08807338
+// @gcc 0x08807338-0x0880763C
 // @gcc 0x08807C6C-0x08807FD8
 // @gcc 0x08808058-0x08808130
 // @asm 0x08808130-0x0880823C
@@ -183,209 +184,8 @@ void gu_ctx_state(GuList *l, int state, int on)
 /* GU_PROJECTION (0, 4x4) / GU_VIEW (2) / GU_MODEL (1) / GU_TEXTURE (3): index command then the
    float24 elements (4x3 for all but the projection) */
 #ifdef __MWERKS__
-asm void gu_ctx_matrix(GuList *l, int type, const float *m)
-{
-    addiu v1, zero, 1
-    beq a1, v1, @25c
-    slti v1, a1, 2
-    bnez v1, @178
-    addiu a3, zero, 2
-    beq a1, a3, @d0
-    addiu t0, zero, 3
-    beql a1, t0, @2c
-    lw v0, 8(a0)
-    jr ra
-    nop
-@2c:
-    lui t0, 0x4000
-    sw t0, 0(v0)
-    lui t0, 0x4100
-    lui t1, 0x4100
-    lui t2, 0x4100
-    lwr t0, 1(a2)
-    lwr t1, 5(a2)
-    lwr t2, 9(a2)
-    sw t0, 4(v0)
-    sw t1, 8(v0)
-    sw t2, 12(v0)
-    lui t0, 0x4100
-    lui t1, 0x4100
-    lui t2, 0x4100
-    lwr t0, 17(a2)
-    lwr t1, 21(a2)
-    lwr t2, 25(a2)
-    sw t0, 16(v0)
-    sw t1, 20(v0)
-    sw t2, 24(v0)
-    lui t0, 0x4100
-    lui t1, 0x4100
-    lui t2, 0x4100
-    lwr t0, 33(a2)
-    lwr t1, 37(a2)
-    lwr t2, 41(a2)
-    sw t0, 28(v0)
-    sw t1, 32(v0)
-    sw t2, 36(v0)
-    lui t0, 0x4100
-    lui t1, 0x4100
-    lui t2, 0x4100
-    lwr t0, 49(a2)
-    lwr t1, 53(a2)
-    lwr t2, 57(a2)
-    sw t0, 40(v0)
-    sw t1, 44(v0)
-    sw t2, 48(v0)
-    addiu v0, v0, 52
-@c8:
-    jr ra
-    sw v0, 8(a0)
-@d0:
-    lw v0, 8(a0)
-    lui t0, 0x3a00
-    sw t0, 0(v0)
-    lui t0, 0x3b00
-    lui t1, 0x3b00
-    lui t2, 0x3b00
-    lwr t0, 1(a2)
-    lwr t1, 5(a2)
-    lwr t2, 9(a2)
-    sw t0, 4(v0)
-    sw t1, 8(v0)
-    sw t2, 12(v0)
-    lui t0, 0x3b00
-    lui t1, 0x3b00
-    lui t2, 0x3b00
-    lwr t0, 17(a2)
-    lwr t1, 21(a2)
-    lwr t2, 25(a2)
-    sw t0, 16(v0)
-    sw t1, 20(v0)
-    sw t2, 24(v0)
-    lui t0, 0x3b00
-    lui t1, 0x3b00
-    lui t2, 0x3b00
-    lwr t0, 33(a2)
-    lwr t1, 37(a2)
-    lwr t2, 41(a2)
-    sw t0, 28(v0)
-    sw t1, 32(v0)
-    sw t2, 36(v0)
-    lui t0, 0x3b00
-    lui t1, 0x3b00
-    lui t2, 0x3b00
-    lwr t0, 49(a2)
-    lwr t1, 53(a2)
-    lwr t2, 57(a2)
-    sw t0, 40(v0)
-    sw t1, 44(v0)
-    sw t2, 48(v0)
-    addiu v0, v0, 52
-    j @c8
-    nop
-@178:
-    beqzl a1, @188
-    lw v0, 8(a0)
-    jr ra
-    nop
-@188:
-    lui t0, 0x3e00
-    sw t0, 0(v0)
-    lui t0, 0x3f00
-    lui t1, 0x3f00
-    lui t2, 0x3f00
-    lui t3, 0x3f00
-    lwr t0, 1(a2)
-    lwr t1, 5(a2)
-    lwr t2, 9(a2)
-    lwr t3, 13(a2)
-    sw t0, 4(v0)
-    sw t1, 8(v0)
-    sw t2, 12(v0)
-    sw t3, 16(v0)
-    lui t0, 0x3f00
-    lui t1, 0x3f00
-    lui t2, 0x3f00
-    lui t3, 0x3f00
-    lwr t0, 17(a2)
-    lwr t1, 21(a2)
-    lwr t2, 25(a2)
-    lwr t3, 29(a2)
-    sw t0, 20(v0)
-    sw t1, 24(v0)
-    sw t2, 28(v0)
-    sw t3, 32(v0)
-    lui t0, 0x3f00
-    lui t1, 0x3f00
-    lui t2, 0x3f00
-    lui t3, 0x3f00
-    lwr t0, 33(a2)
-    lwr t1, 37(a2)
-    lwr t2, 41(a2)
-    lwr t3, 45(a2)
-    sw t0, 36(v0)
-    sw t1, 40(v0)
-    sw t2, 44(v0)
-    sw t3, 48(v0)
-    lui t0, 0x3f00
-    lui t1, 0x3f00
-    lui t2, 0x3f00
-    lui t3, 0x3f00
-    lwr t0, 49(a2)
-    lwr t1, 53(a2)
-    lwr t2, 57(a2)
-    lwr t3, 61(a2)
-    sw t0, 52(v0)
-    sw t1, 56(v0)
-    sw t2, 60(v0)
-    sw t3, 64(v0)
-    addiu v0, v0, 68
-    j @c8
-    nop
-@25c:
-    lw v0, 8(a0)
-    lui t0, 0x3c00
-    sw t0, 0(v0)
-    lui t0, 0x3d00
-    lui t1, 0x3d00
-    lui t2, 0x3d00
-    lwr t0, 1(a2)
-    lwr t1, 5(a2)
-    lwr t2, 9(a2)
-    sw t0, 4(v0)
-    sw t1, 8(v0)
-    sw t2, 12(v0)
-    lui t0, 0x3d00
-    lui t1, 0x3d00
-    lui t2, 0x3d00
-    lwr t0, 17(a2)
-    lwr t1, 21(a2)
-    lwr t2, 25(a2)
-    sw t0, 16(v0)
-    sw t1, 20(v0)
-    sw t2, 24(v0)
-    lui t0, 0x3d00
-    lui t1, 0x3d00
-    lui t2, 0x3d00
-    lwr t0, 33(a2)
-    lwr t1, 37(a2)
-    lwr t2, 41(a2)
-    sw t0, 28(v0)
-    sw t1, 32(v0)
-    sw t2, 36(v0)
-    lui t0, 0x3d00
-    lui t1, 0x3d00
-    lui t2, 0x3d00
-    lwr t0, 49(a2)
-    lwr t1, 53(a2)
-    lwr t2, 57(a2)
-    sw t0, 40(v0)
-    sw t1, 44(v0)
-    sw t2, 48(v0)
-    addiu v0, v0, 52
-    j @c8
-    nop
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
+void gu_ctx_matrix(GuList *l, int type, const float *m);
+#elif !defined(__mips__) /* the port */
 void gu_ctx_matrix(GuList *l, int type, const float *m)
 {
     static const unsigned int idx[4] = { 0x3E000000, 0x3C000000, 0x3A000000, 0x40000000 };
@@ -401,6 +201,62 @@ void gu_ctx_matrix(GuList *l, int type, const float *m)
             ctx_push(l, ctx_f24(m[i * 4 + j]) | (idx[type] + 0x01000000));
         }
     }
+}
+#else /* PSP: libgu_ctx_gcc.c. The SDK writes each case as inline asm: per element `lui t,cmd; lwr t,1(m)` puts the
+         three high bytes of the float under the command byte (float24), as the C above computes. */
+void gu_ctx_matrix(GuList *l, int type, const float *m)
+{
+    unsigned int *p;
+
+    switch (type) {
+    case 0:
+        p = l->cur;
+        __asm__ volatile(".set push\n.set noreorder\n"
+                         "lui $8,0x3e00\nsw $8,0(%0)\n"
+                         "lui $8,0x3f00\nlui $9,0x3f00\nlui $10,0x3f00\nlui $11,0x3f00\nlwr $8,1(%1)\nlwr $9,5(%1)\nlwr $10,9(%1)\nlwr $11,13(%1)\nsw $8,4(%0)\nsw $9,8(%0)\nsw $10,12(%0)\nsw $11,16(%0)\n"
+                         "lui $8,0x3f00\nlui $9,0x3f00\nlui $10,0x3f00\nlui $11,0x3f00\nlwr $8,17(%1)\nlwr $9,21(%1)\nlwr $10,25(%1)\nlwr $11,29(%1)\nsw $8,20(%0)\nsw $9,24(%0)\nsw $10,28(%0)\nsw $11,32(%0)\n"
+                         "lui $8,0x3f00\nlui $9,0x3f00\nlui $10,0x3f00\nlui $11,0x3f00\nlwr $8,33(%1)\nlwr $9,37(%1)\nlwr $10,41(%1)\nlwr $11,45(%1)\nsw $8,36(%0)\nsw $9,40(%0)\nsw $10,44(%0)\nsw $11,48(%0)\n"
+                         "lui $8,0x3f00\nlui $9,0x3f00\nlui $10,0x3f00\nlui $11,0x3f00\nlwr $8,49(%1)\nlwr $9,53(%1)\nlwr $10,57(%1)\nlwr $11,61(%1)\nsw $8,52(%0)\nsw $9,56(%0)\nsw $10,60(%0)\nsw $11,64(%0)\n"
+                         "addiu %0,%0,68\n.set pop"
+                         : "+r"(p) : "r"(m) : "$8", "$9", "$10", "$11", "memory");
+        break;
+    case 1:
+        p = l->cur;
+        __asm__ volatile(".set push\n.set noreorder\n"
+                         "lui $8,0x3c00\nsw $8,0(%0)\n"
+                         "lui $8,0x3d00\nlui $9,0x3d00\nlui $10,0x3d00\nlwr $8,1(%1)\nlwr $9,5(%1)\nlwr $10,9(%1)\nsw $8,4(%0)\nsw $9,8(%0)\nsw $10,12(%0)\n"
+                         "lui $8,0x3d00\nlui $9,0x3d00\nlui $10,0x3d00\nlwr $8,17(%1)\nlwr $9,21(%1)\nlwr $10,25(%1)\nsw $8,16(%0)\nsw $9,20(%0)\nsw $10,24(%0)\n"
+                         "lui $8,0x3d00\nlui $9,0x3d00\nlui $10,0x3d00\nlwr $8,33(%1)\nlwr $9,37(%1)\nlwr $10,41(%1)\nsw $8,28(%0)\nsw $9,32(%0)\nsw $10,36(%0)\n"
+                         "lui $8,0x3d00\nlui $9,0x3d00\nlui $10,0x3d00\nlwr $8,49(%1)\nlwr $9,53(%1)\nlwr $10,57(%1)\nsw $8,40(%0)\nsw $9,44(%0)\nsw $10,48(%0)\n"
+                         "addiu %0,%0,52\n.set pop"
+                         : "+r"(p) : "r"(m) : "$8", "$9", "$10", "memory");
+        break;
+    case 2:
+        p = l->cur;
+        __asm__ volatile(".set push\n.set noreorder\n"
+                         "lui $8,0x3a00\nsw $8,0(%0)\n"
+                         "lui $8,0x3b00\nlui $9,0x3b00\nlui $10,0x3b00\nlwr $8,1(%1)\nlwr $9,5(%1)\nlwr $10,9(%1)\nsw $8,4(%0)\nsw $9,8(%0)\nsw $10,12(%0)\n"
+                         "lui $8,0x3b00\nlui $9,0x3b00\nlui $10,0x3b00\nlwr $8,17(%1)\nlwr $9,21(%1)\nlwr $10,25(%1)\nsw $8,16(%0)\nsw $9,20(%0)\nsw $10,24(%0)\n"
+                         "lui $8,0x3b00\nlui $9,0x3b00\nlui $10,0x3b00\nlwr $8,33(%1)\nlwr $9,37(%1)\nlwr $10,41(%1)\nsw $8,28(%0)\nsw $9,32(%0)\nsw $10,36(%0)\n"
+                         "lui $8,0x3b00\nlui $9,0x3b00\nlui $10,0x3b00\nlwr $8,49(%1)\nlwr $9,53(%1)\nlwr $10,57(%1)\nsw $8,40(%0)\nsw $9,44(%0)\nsw $10,48(%0)\n"
+                         "addiu %0,%0,52\n.set pop"
+                         : "+r"(p) : "r"(m) : "$8", "$9", "$10", "memory");
+        break;
+    case 3:
+        p = l->cur;
+        __asm__ volatile(".set push\n.set noreorder\n"
+                         "lui $8,0x4000\nsw $8,0(%0)\n"
+                         "lui $8,0x4100\nlui $9,0x4100\nlui $10,0x4100\nlwr $8,1(%1)\nlwr $9,5(%1)\nlwr $10,9(%1)\nsw $8,4(%0)\nsw $9,8(%0)\nsw $10,12(%0)\n"
+                         "lui $8,0x4100\nlui $9,0x4100\nlui $10,0x4100\nlwr $8,17(%1)\nlwr $9,21(%1)\nlwr $10,25(%1)\nsw $8,16(%0)\nsw $9,20(%0)\nsw $10,24(%0)\n"
+                         "lui $8,0x4100\nlui $9,0x4100\nlui $10,0x4100\nlwr $8,33(%1)\nlwr $9,37(%1)\nlwr $10,41(%1)\nsw $8,28(%0)\nsw $9,32(%0)\nsw $10,36(%0)\n"
+                         "lui $8,0x4100\nlui $9,0x4100\nlui $10,0x4100\nlwr $8,49(%1)\nlwr $9,53(%1)\nlwr $10,57(%1)\nsw $8,40(%0)\nsw $9,44(%0)\nsw $10,48(%0)\n"
+                         "addiu %0,%0,52\n.set pop"
+                         : "+r"(p) : "r"(m) : "$8", "$9", "$10", "memory");
+        break;
+    default:
+        return;
+    }
+    l->cur = p;
 }
 #endif
 
