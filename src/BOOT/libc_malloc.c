@@ -6,6 +6,7 @@
 // @gcc 0x0880CF34-0x0880CF9C
 // @gcc 0x0880CF9C-0x0880D104 nl_makebuf
 // @gcc 0x0880D104-0x0880D144 nl_malign
+// @gcc 0x0880D144-0x0880D2CC nl_memalignr
 // @gcc 0x0880D2CC-0x0880D2FC nl_malloc
 // @gcc 0x0880D2FC-0x0880D32C nl_malloc
 // @gcc 0x0880D32C-0x0880D554 nl_mallocr
@@ -211,117 +212,7 @@ void *heap_malloc_cur(size_t align, size_t n)
 #endif
 
 /* dlmalloc _memalign_r */
-#ifdef __MWERKS__
-asm void *_memalign_r(void *r, size_t align, size_t n)
-{
-    addiu sp, sp, -32
-    sltiu v0, a1, 17
-    sw s4, 16(sp)
-    move s4, a0
-    sw s0, 0(sp)
-    move s0, a1
-    move a1, a2
-    sw ra, 20(sp)
-    sw s3, 12(sp)
-    sw s2, 8(sp)
-    bnez v0, @178
-    sw s1, 4(sp)
-    addiu v0, a1, 19
-    addiu a2, zero, 16
-    sltiu v1, v0, 31
-    move s3, a2
-    ins v0, zero, 0x0, 0x4
-    movz s3, v0, v1
-    sltu a1, s3, a1
-    srl v1, s3, 0x1f
-    sltiu v0, s0, 16
-    or v1, v1, a1
-    movn s0, a2, v0
-    bnez v1, @12c
-    move v0, zero
-    addu a1, s3, s0
-    jal _malloc_r
-    addiu a1, a1, 16
-    move s1, v0
-    beqz s1, @12c
-    move v0, zero
-    jal __malloc_lock
-    move a0, s4
-    divu s1, s0
-    beqzl s0, @90
-    .word 0x000001CD /* break 0x0,0x7 */
-@90:
-    mfhi v0
-    beqz v0, @108
-    addiu s2, s1, -8
-    addu v0, s1, s0
-    addiu v0, v0, -1
-    negu v1, s0
-    and v0, v0, v1
-    addiu a3, v0, -8
-    subu t0, a3, s2
-    slti v0, t0, 16
-    beqz v0, @c8
-    lw a2, 4(s2)
-    addu a3, a3, s0
-    subu t0, a3, s2
-@c8:
-    move a1, s1
-    move a0, s4
-    ins a2, zero, 0x0, 0x2
-    subu a2, a2, t0
-    ori v0, a2, 0x1
-    sw v0, 4(a3)
-    addu a2, a3, a2
-    lw v0, 4(a2)
-    ori v0, v0, 0x1
-    sw v0, 4(a2)
-    lw v1, 4(s2)
-    andi v1, v1, 0x1
-    or v1, v1, t0
-    sw v1, 4(s2)
-    jal _free_r
-    move s2, a3
-@108:
-    lw v0, 4(s2)
-    ins v0, zero, 0x0, 0x2
-    subu v0, v0, s3
-    slti v1, v0, 16
-    beqz v1, @14c
-    ori v0, v0, 0x1
-@120:
-    jal __malloc_unlock
-    move a0, s4
-    addiu v0, s2, 8
-@12c:
-    lw ra, 20(sp)
-@130:
-    lw s4, 16(sp)
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 32
-@14c:
-    addu a1, s2, s3
-    sw v0, 4(a1)
-    move a0, s4
-    addiu a1, a1, 8
-    lw v0, 4(s2)
-    andi v0, v0, 0x1
-    or v0, v0, s3
-    jal _free_r
-    sw v0, 4(s2)
-    j @120
-    nop
-@178:
-    jal _malloc_r
-    nop
-    j @130
-    lw ra, 20(sp)
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_memalignr.c */
 void *_memalign_r(void *r, size_t align, size_t n)
 {
     if (align <= 16) {

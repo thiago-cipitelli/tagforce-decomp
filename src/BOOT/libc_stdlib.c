@@ -1,6 +1,7 @@
 // @range 0x0880A5C0-0x0880C040
 // @gcc 0x0880A5C0-0x0880A694
 // @gcc 0x0880A694-0x0880A764 nl_bsearch
+// @gcc 0x0880A764-0x0880A820 nl_callocr
 // @gcc 0x0880A820-0x0880A87C
 // @asm 0x0880AAC4-0x0880BF10
 // @gcc 0x0880BF10-0x0880BF2C nl_errno
@@ -73,61 +74,7 @@ void *bsearch(const void *key, const void *base, size_t n, size_t size, int (*cm
 #endif
 
 /* newlib _calloc_r: the block is cleared over its usable size */
-#ifdef __MWERKS__
-asm void *_calloc_r(void *r, size_t n, size_t size)
-{
-    mult a1, a2
-    addiu sp, sp, -16
-    sw s0, 0(sp)
-    mflo a1
-    sw ra, 4(sp)
-    jal _malloc_r
-    nop
-    move s0, v0
-    beqz s0, @9c
-    move v0, zero
-    lw v0, -4(s0)
-    move a0, s0
-    move a1, zero
-    ins v0, zero, 0x0, 0x2
-    addiu v1, v0, -4
-    sltiu v0, v1, 37
-    move a3, s0
-    move a2, v1
-    beqz v0, @ac
-    sltiu t0, v1, 20
-    bnez t0, @88
-    sltiu a0, v1, 28
-    sltiu v0, v1, 36
-    sw zero, 0(s0)
-    addiu a3, s0, 8
-    bnez a0, @88
-    sw zero, 4(s0)
-    sw zero, 8(s0)
-    addiu a3, s0, 16
-    bnez v0, @88
-    sw zero, 12(s0)
-    sw zero, 16(s0)
-    addiu a3, s0, 24
-    sw zero, 20(s0)
-@88:
-    sw zero, 0(a3)
-    addiu a3, a3, 4
-    sw zero, 4(a3)
-    sw zero, 0(a3)
-    move v0, s0
-@9c:
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@ac:
-    jal memset
-    nop
-    j @9c
-    move v0, s0
-}
-#else
+#ifndef __MWERKS__ /* PSP: nl_callocr.c */
 void *_calloc_r(void *r, size_t n, size_t size)
 {
     char *p = _malloc_r(r, n * size);
