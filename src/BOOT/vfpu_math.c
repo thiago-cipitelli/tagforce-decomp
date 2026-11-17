@@ -1,4 +1,5 @@
 // @range 0x08819F0C-0x0881AB1C
+// @gcc 0x08819F0C-0x08819F30
 // @asm 0x08819F30-0x0881A440
 // @gcc 0x0881A440-0x0881AB1C
 /* FPU trig routines (sceFpuSin/Cos/Atan/Acos) and the 2D part of Sony's libvfpu (sceVfpuVector2*).
@@ -30,18 +31,7 @@ static float rsq0(float d)
 
 /* +-1 (by the sign bit) when x is an infinity or a NaN, 0 when it is finite. */
 #ifdef __MWERKS__
-asm int isinf_sign(float x)
-{
-    mfc1 v0, $f12
-    sll t0, v0, 0x1
-    sra v0, v0, 0x1e
-    srl t0, t0, 0x18
-    ori v0, v0, 0x1
-    sltiu t0, t0, 255
-    movn v0, zero, t0
-    jr ra
-    nop
-}
+int isinf_sign(float x);
 #elif !defined(__mips__)
 int isinf_sign(float x)
 {
@@ -57,7 +47,26 @@ int isinf_sign(float x)
     return (u.i >> 30) | 1;
 }
 #else
-int isinf_sign(float x);
+int isinf_sign(float x)
+{
+    int r;
+
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "mfc1 %0, %1\n"
+        "sll $8, %0, 1\n"
+        "sra %0, %0, 30\n"
+        "srl $8, $8, 24\n"
+        "ori %0, %0, 1\n"
+        "sltiu $8, $8, 255\n"
+        "movn %0, $0, $8\n"
+        ".set pop\n"
+        : "=&r" (r)
+        : "f" (x)
+        : "$8");
+    return r;
+}
 #endif
 
 #ifdef NON_MATCHING /* GCC: literal pool loaded through $v1 */

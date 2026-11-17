@@ -12,5 +12,6 @@
 #define LONG_DOUBLE_TYPE_SIZE 64
 #define GCOV_TYPE_SIZE 64
 #define ROUND_TOWARDS_ZERO 0
+#define LARGEST_EXPONENT_IS_NORMAL(SIZE) 0
 #define inhibit_libc
 #endif

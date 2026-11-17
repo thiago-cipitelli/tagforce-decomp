@@ -1,7 +1,5 @@
 // @range 0x0881B974-0x0881C4E4
-// @gcc 0x0881B974-0x0881BF7C
-// @gcc 0x0881C0E8-0x0881C260
-// @gcc 0x0881C348-0x0881C4E4
+// @gcc 0x0881B974-0x0881C4E4
 /* sceVfpuMatrix2*, sceVfpuMatrix3* and the start of sceVfpuMatrix4* of Sony's libvfpu. Matrices are
    column-major and products are the usual ones: mul(out, a, b) = a b, transform(out, m, v) = m v, and
    the rotations give R m (R alone when m is NULL), with angles in radians. GCC/VFPU code kept as `asm`
@@ -815,112 +813,14 @@ ScePspFMatrix3 *mat3_rot_x(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float a
 
 /* sceVfpuMatrix3Rot: Rx(angles->x) Ry(angles->y) Rz(angles->z) m (m may be NULL) */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_from_euler(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, const ScePspFVector3 *angles)
-{
-    lwc1 $f2, 8(a2)
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f2, 0(sp)
-    lv.s S100, 0(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vrot.t C000, S100, [c, s, 0]
-    vrot.t C010, S100, [-s, c, 0]
-    vidt.q C020
-    beqzl a1, @58
-    vmmov.t E200, E000
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S102, 8(a1)
-    lv.s S110, 12(a1)
-    lv.s S111, 16(a1)
-    lv.s S112, 20(a1)
-    lv.s S120, 24(a1)
-    lv.s S121, 28(a1)
-    lv.s S122, 32(a1)
-    vmmul.t E200, E100, E000
-@58:
-    sv.s S200, 0(a0)
-    sv.s S201, 4(a0)
-    sv.s S202, 8(a0)
-    sv.s S210, 12(a0)
-    sv.s S211, 16(a0)
-    sv.s S212, 20(a0)
-    sv.s S220, 24(a0)
-    sv.s S221, 28(a0)
-    sv.s S222, 32(a0)
-    lwc1 $f1, 4(a2)
-    swc1 $f1, 4(sp)
-    lv.s S100, 4(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vrot.t C000, S100, [c, 0, -s]
-    vidt.q C010
-    vrot.t C020, S100, [s, 0, c]
-    beqzl a0, @cc
-    vmmov.t E200, E000
-    lv.s S100, 0(a0)
-    lv.s S101, 4(a0)
-    lv.s S102, 8(a0)
-    lv.s S110, 12(a0)
-    lv.s S111, 16(a0)
-    lv.s S112, 20(a0)
-    lv.s S120, 24(a0)
-    lv.s S121, 28(a0)
-    lv.s S122, 32(a0)
-    vmmul.t E200, E100, E000
-@cc:
-    sv.s S200, 0(a0)
-    sv.s S201, 4(a0)
-    sv.s S202, 8(a0)
-    sv.s S210, 12(a0)
-    sv.s S211, 16(a0)
-    sv.s S212, 20(a0)
-    sv.s S220, 24(a0)
-    sv.s S221, 28(a0)
-    sv.s S222, 32(a0)
-    lwc1 $f1, 0(a2)
-    swc1 $f1, 8(sp)
-    lv.s S100, 8(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vidt.q C000
-    vrot.t C010, S100, [0, c, s]
-    vrot.t C020, S100, [0, -s, c]
-    beqzl a0, @140
-    vmmov.t E200, E000
-    lv.s S100, 0(a0)
-    lv.s S101, 4(a0)
-    lv.s S102, 8(a0)
-    lv.s S110, 12(a0)
-    lv.s S111, 16(a0)
-    lv.s S112, 20(a0)
-    lv.s S120, 24(a0)
-    lv.s S121, 28(a0)
-    lv.s S122, 32(a0)
-    vmmul.t E200, E100, E000
-@140:
-    sv.s S200, 0(a0)
-    sv.s S201, 4(a0)
-    sv.s S202, 8(a0)
-    sv.s S210, 12(a0)
-    sv.s S211, 16(a0)
-    sv.s S212, 20(a0)
-    sv.s S220, 24(a0)
-    sv.s S221, 28(a0)
-    sv.s S222, 32(a0)
-    jr ra
-    addiu sp, sp, 16
-}
+ScePspFMatrix3 *mat3_from_euler(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, const ScePspFVector3 *angles);
 #else
 ScePspFMatrix3 *mat3_from_euler(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, const ScePspFVector3 *angles)
 {
-    float x = angles->x;
-    float y = angles->y;
-
     mat3_rot_z(out, m, angles->z);
-    mat3_rot_y(out, out, y);
-    return mat3_rot_x(out, out, x);
+    mat3_rot_y(out, out, angles->y);
+    mat3_rot_x(out, out, angles->x);
+    return out;
 }
 #endif
 
@@ -1084,70 +984,8 @@ ScePspFMatrix3 *mat3_adjoint(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
 /* adjoint / det; returns NULL (out untouched) for a singular m. The determinant goes to *det if det
    is not NULL. */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_inverse(ScePspFMatrix3 *out, float *det, const ScePspFMatrix3 *m)
-{
-    addiu sp, sp, -16
-    move v0, a0
-    lv.s S100, 0(a2)
-    lv.s S101, 4(a2)
-    lv.s S102, 8(a2)
-    lv.s S110, 12(a2)
-    lv.s S111, 16(a2)
-    lv.s S112, 20(a2)
-    lv.s S120, 24(a2)
-    lv.s S121, 28(a2)
-    lv.s S122, 32(a2)
-    vpfxs y, z, x, w
-    vpfxt z, x, y, w
-    vmul.t C000, C110, C120
-    vpfxs z, x, y, w
-    vpfxt y, z, x, w
-    vmul.t C010, C100, C110
-    vdot.t S000, C100, C000
-    vdot.t S010, C010, C120
-    vsub.s S000, S000, S010
-    vcmp.s ez, S000, S000
-    sv.s S000, 0(sp)
-    bvtl 0, @d4
-    move v0, zero
-    vrcp.s S030, S000
-    vpfxt 0, z, -y, w
-    vdot.t S000, R101, R102
-    vpfxt -z, 0, x, w
-    vdot.t S001, R101, R102
-    vpfxt y, -x, 0, w
-    vdot.t S002, R101, R102
-    vpfxt 0, -z, y, w
-    vdot.t S010, R100, R102
-    vpfxt z, 0, -x, w
-    vdot.t S011, R100, R102
-    vpfxt -y, x, 0, w
-    vdot.t S012, R100, R102
-    vpfxt 0, z, -y, w
-    vdot.t S020, R100, R101
-    vpfxt -z, 0, x, w
-    vdot.t S021, R100, R101
-    vpfxt y, -x, 0, w
-    vdot.t S022, R100, R101
-    vmscl.t E000, E000, S030
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S002, 8(a0)
-    sv.s S010, 12(a0)
-    sv.s S011, 16(a0)
-    sv.s S012, 20(a0)
-    sv.s S020, 24(a0)
-    sv.s S021, 28(a0)
-    sv.s S022, 32(a0)
-@d4:
-    beqz a1, @e0
-    lwc1 $f1, 0(sp)
-    swc1 $f1, 0(a1)
-@e0:
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+ScePspFMatrix3 *mat3_inverse(ScePspFMatrix3 *out, float *det, const ScePspFMatrix3 *m);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_inverse(ScePspFMatrix3 *out, float *det, const ScePspFMatrix3 *m)
 {
     float d = mat3_determinant(m);
@@ -1159,6 +997,76 @@ ScePspFMatrix3 *mat3_inverse(ScePspFMatrix3 *out, float *det, const ScePspFMatri
         mat3_adjoint(&a, m);
         r = mat3_scale(out, &a, 1.0f / d);
     }
+    if (det != 0) {
+        *det = d;
+    }
+    return r;
+}
+#else
+ScePspFMatrix3 *mat3_inverse(ScePspFMatrix3 *out, float *det, const ScePspFMatrix3 *m)
+{
+    ScePspFMatrix3 *r;
+    float d;
+
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, 0(%3)\n"
+        "lv.s S101, 4(%3)\n"
+        "lv.s S102, 8(%3)\n"
+        "lv.s S110, 12(%3)\n"
+        "lv.s S111, 16(%3)\n"
+        "lv.s S112, 20(%3)\n"
+        "lv.s S120, 24(%3)\n"
+        "lv.s S121, 28(%3)\n"
+        "lv.s S122, 32(%3)\n"
+        "vpfxs y, z, x, w\n"
+        "vpfxt z, x, y, w\n"
+        "vmul.t C000, C110, C120\n"
+        "vpfxs z, x, y, w\n"
+        "vpfxt y, z, x, w\n"
+        "vmul.t C010, C100, C110\n"
+        "vdot.t S000, C100, C000\n"
+        "vdot.t S010, C010, C120\n"
+        "vsub.s S000, S000, S010\n"
+        "vcmp.s ez, S000, S000\n"
+        "sv.s S000, %1\n"
+        "bvtl 0, 1f\n"
+        "move %0, $0\n"
+        "vrcp.s S030, S000\n"
+        "vpfxt 0, z, -y, w\n"
+        "vdot.t S000, R101, R102\n"
+        "vpfxt -z, 0, x, w\n"
+        "vdot.t S001, R101, R102\n"
+        "vpfxt y, -x, 0, w\n"
+        "vdot.t S002, R101, R102\n"
+        "vpfxt 0, -z, y, w\n"
+        "vdot.t S010, R100, R102\n"
+        "vpfxt z, 0, -x, w\n"
+        "vdot.t S011, R100, R102\n"
+        "vpfxt -y, x, 0, w\n"
+        "vdot.t S012, R100, R102\n"
+        "vpfxt 0, z, -y, w\n"
+        "vdot.t S020, R100, R101\n"
+        "vpfxt -z, 0, x, w\n"
+        "vdot.t S021, R100, R101\n"
+        "vpfxt y, -x, 0, w\n"
+        "vdot.t S022, R100, R101\n"
+        "vmscl.t E000, E000, S030\n"
+        "sv.s S000, 0(%4)\n"
+        "sv.s S001, 4(%4)\n"
+        "sv.s S002, 8(%4)\n"
+        "sv.s S010, 12(%4)\n"
+        "sv.s S011, 16(%4)\n"
+        "sv.s S012, 20(%4)\n"
+        "sv.s S020, 24(%4)\n"
+        "sv.s S021, 28(%4)\n"
+        "sv.s S022, 32(%4)\n"
+        "1:\n"
+        ".set pop\n"
+        : "=r" (r), "=m" (d), "=m" (*out)
+        : "r" (m), "r" (out), "0" (out)
+        : "memory");
     if (det != 0) {
         *det = d;
     }

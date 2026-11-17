@@ -7,7 +7,7 @@
    docs/build.md, "Trilha GCC"), and every function matches byte for byte. libgcc builds one object per function
    (FINE_GRAINED_LIBRARIES + L_<name>); here they share a translation unit, and __fpcmp_parts_d has to come after
    the comparison functions: GCC lays their call out differently once it has seen the callee's body. pack_d and
-   unpack_d are in fpbit.c. Outside the PSP build the internal routines are the fp-bit C below and the arithmetic
+   unpack_d are fpbit_pkd.c. Outside the PSP build the internal routines are the fp-bit C below and the arithmetic
    is the host's (same IEEE results). */
 
 #ifdef __mips__

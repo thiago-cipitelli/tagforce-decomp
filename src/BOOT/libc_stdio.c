@@ -6,6 +6,7 @@
 // @gcc 0x0880C2EC-0x0880C30C nl_findfp
 // @gcc 0x0880C30C-0x0880C330 nl_findfp
 // @gcc 0x0880C330-0x0880C3B4 nl_findfp
+// @gcc 0x0880C3B4-0x0880C4D0 nl_fread
 // @gcc 0x0880C4D0-0x0880C888 nl_freer
 // @gcc 0x0880C888-0x0880C8EC
 // @gcc 0x0880C8EC-0x0880CCCC nl_fvwrite
@@ -200,88 +201,7 @@ void libc_cleanup(void)
 
 /* fread: from the buffer, refilling with __srefill */
 #ifdef __MWERKS__
-asm size_t fread(void *buf, size_t size, size_t count, LibcFile *fp)
-{
-    mult a2, a1
-    addiu sp, sp, -32
-    sw s2, 8(sp)
-    mflo s2
-    sw s5, 20(sp)
-    move s5, a2
-    move a2, zero
-    sw s4, 16(sp)
-    move s4, a1
-    sw s1, 4(sp)
-    move s1, a3
-    sw ra, 28(sp)
-    sw s6, 24(sp)
-    sw s3, 12(sp)
-    beqz s2, @d0
-    sw s0, 0(sp)
-    lw a2, 4(a3)
-    bltzl a2, @114
-    sw zero, 4(a3)
-@4c:
-    sltu v0, a2, s2
-    move s0, a2
-    move s3, a0
-    beqz v0, @a4
-    move s6, s2
-    lw a1, 0(s1)
-@64:
-    move a0, s3
-    jal memcpy
-    move a2, s0
-    lw v1, 0(s1)
-    move a0, s1
-    subu s2, s2, s0
-    addu v1, v1, s0
-    sw v1, 0(s1)
-    jal libc_srefill
-    addu s3, s3, s0
-    bnez v0, @fc
-    subu v0, s6, s2
-    lw s0, 4(s1)
-    sltu v0, s0, s2
-    bnezl v0, @64
-    lw a1, 0(s1)
-@a4:
-    lw a1, 0(s1)
-    move a2, s2
-    jal memcpy
-    move a0, s3
-    lw v1, 4(s1)
-    lw v0, 0(s1)
-    move a2, s5
-    subu v1, v1, s2
-    addu v0, v0, s2
-    sw v0, 0(s1)
-    sw v1, 4(s1)
-@d0:
-    lw ra, 28(sp)
-@d4:
-    lw s6, 24(sp)
-    lw s5, 20(sp)
-    lw s4, 16(sp)
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    move v0, a2
-    jr ra
-    addiu sp, sp, 32
-@fc:
-    divu v0, s4
-    beqzl s4, @108
-    .word 0x000001CD /* break 0x0,0x7 */
-@108:
-    mflo a2
-    j @d4
-    lw ra, 28(sp)
-@114:
-    j @4c
-    move a2, zero
-}
+size_t fread(void *buf, size_t size, size_t count, LibcFile *fp);
 #else
 size_t fread(void *buf, size_t size, size_t count, LibcFile *fp)
 {

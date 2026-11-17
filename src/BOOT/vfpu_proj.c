@@ -1,7 +1,6 @@
 // @range 0x0881D8A8-0x0881DE88
 // @asm 0x0881D8A8-0x0881DA34
-// @gcc 0x0881DA34-0x0881DAC0
-// @gcc 0x0881DC60-0x0881DE88
+// @gcc 0x0881DA34-0x0881DE88
 /* VFPU camera and projection matrices: planar shadow onto n . p = 1, view (look-at), perspective,
    ortho, frustum, and the point projections. Column-major (m[4 * col + row]); functions with an
    output matrix return it. Hand-written VFPU code kept as whole `asm` functions; the functions the SDK
@@ -193,42 +192,7 @@ Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up)
 
 /* Perspective projection (fovy in radians), as gluPerspective. */
 #ifdef __MWERKS__
-asm Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, float far)
-{
-    addiu sp, sp, -16
-    swc1 $f12, 0(sp)
-    move v0, a0
-    swc1 $f13, 4(sp)
-    swc1 $f14, 8(sp)
-    swc1 $f15, 12(sp)
-    vmzero.q E100
-    vcst.s S010, VFPU_1_PI
-    lv.s S000, 0(sp)
-    lv.s S001, 4(sp)
-    lv.s S002, 8(sp)
-    lv.s S003, 12(sp)
-    vmul.s S000, S000, S010
-    vrcp.s S001, S001
-    vsub.s S010, S002, S003
-    vadd.s S011, S002, S003
-    vmul.s S012, S002, S003
-    vrot.p C020, S000, [c, s]
-    vrcp.s S021, S021
-    vrcp.s S010, S010
-    vmul.s S122, S010, S011
-    vmul.s S013, S012, S010
-    vadd.s S132, S013, S013
-    vmul.s S111, S020, S021
-    vmul.s S100, S111, S001
-    vfim.s S123, -1.0
-    vzero.s S133
-    sv.q C100, 0(a0)
-    sv.q C110, 16(a0)
-    sv.q C120, 32(a0)
-    sv.q C130, 48(a0)
-    jr ra
-    addiu sp, sp, 16
-}
+Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, float far);
 #elif !defined(__mips__)
 Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, float far)
 {
@@ -243,49 +207,47 @@ Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, float fa
     return out;
 }
 #else
-Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, float far);
+Mat4 *mat4_perspective(Mat4 *out, float fovy, float aspect, float near, float far)
+{
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "vmzero.q E100\n"
+        "vcst.s S010, VFPU_1_PI\n"
+        "lv.s S000, %2\n"
+        "lv.s S001, %3\n"
+        "lv.s S002, %4\n"
+        "lv.s S003, %5\n"
+        "vmul.s S000, S000, S010\n"
+        "vrcp.s S001, S001\n"
+        "vsub.s S010, S002, S003\n"
+        "vadd.s S011, S002, S003\n"
+        "vmul.s S012, S002, S003\n"
+        "vrot.p C020, S000, [c, s]\n"
+        "vrcp.s S021, S021\n"
+        "vrcp.s S010, S010\n"
+        "vmul.s S122, S010, S011\n"
+        "vmul.s S013, S012, S010\n"
+        "vadd.s S132, S013, S013\n"
+        "vmul.s S111, S020, S021\n"
+        "vmul.s S100, S111, S001\n"
+        "vfim.s S123, -1.0\n"
+        "vzero.s S133\n"
+        "sv.q C100, 0(%1)\n"
+        "sv.q C110, 16(%1)\n"
+        "sv.q C120, 32(%1)\n"
+        "sv.q C130, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "m" (fovy), "m" (aspect), "m" (near), "m" (far)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Orthographic projection, as glOrtho. */
 #ifdef __MWERKS__
-asm Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top, float near, float far)
-{
-    addiu sp, sp, -32
-    swc1 $f12, 0(sp)
-    move v0, a0
-    swc1 $f13, 4(sp)
-    swc1 $f14, 8(sp)
-    swc1 $f15, 12(sp)
-    swc1 $f16, 16(sp)
-    swc1 $f17, 20(sp)
-    vmidt.q E100
-    lv.s S000, 0(sp)
-    lv.s S001, 4(sp)
-    lv.s S002, 8(sp)
-    lv.s S003, 12(sp)
-    lv.s S010, 16(sp)
-    lv.s S011, 20(sp)
-    vfim.s S012, 2.0
-    vbfy1.q C000, C000
-    vbfy1.p C010, C010
-    vrcp.s S001, S001
-    vrcp.s S003, S003
-    vrcp.s S011, S011
-    vpfxs -X, Y, Z, W
-    vmul.s S100, S012, S001
-    vpfxs -X, Y, Z, W
-    vmul.s S111, S012, S003
-    vmul.s S122, S012, S011
-    vmul.s S130, S000, S001
-    vmul.s S131, S002, S003
-    vmul.s S132, S010, S011
-    sv.q C100, 0(a0)
-    sv.q C110, 16(a0)
-    sv.q C120, 32(a0)
-    sv.q C130, 48(a0)
-    jr ra
-    addiu sp, sp, 32
-}
+Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top, float near, float far);
 #elif !defined(__mips__)
 Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top, float near, float far)
 {
@@ -300,50 +262,47 @@ Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top, fl
     return out;
 }
 #else
-Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top, float near, float far);
+Mat4 *mat4_ortho(Mat4 *out, float left, float right, float bottom, float top, float near, float far)
+{
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "vmidt.q E100\n"
+        "lv.s S000, %2\n"
+        "lv.s S001, %3\n"
+        "lv.s S002, %4\n"
+        "lv.s S003, %5\n"
+        "lv.s S010, %6\n"
+        "lv.s S011, %7\n"
+        "vfim.s S012, 2.0\n"
+        "vbfy1.q C000, C000\n"
+        "vbfy1.p C010, C010\n"
+        "vrcp.s S001, S001\n"
+        "vrcp.s S003, S003\n"
+        "vrcp.s S011, S011\n"
+        "vpfxs -X, Y, Z, W\n"
+        "vmul.s S100, S012, S001\n"
+        "vpfxs -X, Y, Z, W\n"
+        "vmul.s S111, S012, S003\n"
+        "vmul.s S122, S012, S011\n"
+        "vmul.s S130, S000, S001\n"
+        "vmul.s S131, S002, S003\n"
+        "vmul.s S132, S010, S011\n"
+        "sv.q C100, 0(%1)\n"
+        "sv.q C110, 16(%1)\n"
+        "sv.q C120, 32(%1)\n"
+        "sv.q C130, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "m" (left), "m" (right), "m" (bottom), "m" (top), "m" (near), "m" (far)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Perspective frustum, as glFrustum. */
 #ifdef __MWERKS__
-asm Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, float near, float far)
-{
-    addiu sp, sp, -32
-    swc1 $f12, 0(sp)
-    move v0, a0
-    swc1 $f13, 4(sp)
-    swc1 $f14, 8(sp)
-    swc1 $f15, 12(sp)
-    swc1 $f16, 16(sp)
-    swc1 $f17, 20(sp)
-    vmzero.q E100
-    lv.s S000, 4(sp)
-    lv.s S001, 0(sp)
-    lv.s S002, 12(sp)
-    lv.s S003, 8(sp)
-    lv.s S010, 16(sp)
-    lv.s S011, 20(sp)
-    vadd.s S012, S010, S010
-    vmul.s S013, S010, S011
-    vbfy1.q C000, C000
-    vbfy1.p C010, C010
-    vadd.s S013, S013, S013
-    vrcp.s S001, S001
-    vrcp.s S003, S003
-    vrcp.s S011, S011
-    vmul.s S100, S012, S001
-    vmul.s S111, S012, S003
-    vmul.s S120, S000, S001
-    vmul.s S121, S002, S003
-    vmul.s S122, S010, S011
-    vfim.s S123, -1.0
-    vmul.s S132, S013, S011
-    sv.q C100, 0(a0)
-    sv.q C110, 16(a0)
-    sv.q C120, 32(a0)
-    sv.q C130, 48(a0)
-    jr ra
-    addiu sp, sp, 32
-}
+Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, float near, float far);
 #elif !defined(__mips__)
 Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, float near, float far)
 {
@@ -358,7 +317,43 @@ Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, 
     return out;
 }
 #else
-Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, float near, float far);
+Mat4 *mat4_frustum(Mat4 *out, float left, float right, float bottom, float top, float near, float far)
+{
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "vmzero.q E100\n"
+        "lv.s S000, %3\n"
+        "lv.s S001, %2\n"
+        "lv.s S002, %5\n"
+        "lv.s S003, %4\n"
+        "lv.s S010, %6\n"
+        "lv.s S011, %7\n"
+        "vadd.s S012, S010, S010\n"
+        "vmul.s S013, S010, S011\n"
+        "vbfy1.q C000, C000\n"
+        "vbfy1.p C010, C010\n"
+        "vadd.s S013, S013, S013\n"
+        "vrcp.s S001, S001\n"
+        "vrcp.s S003, S003\n"
+        "vrcp.s S011, S011\n"
+        "vmul.s S100, S012, S001\n"
+        "vmul.s S111, S012, S003\n"
+        "vmul.s S120, S000, S001\n"
+        "vmul.s S121, S002, S003\n"
+        "vmul.s S122, S010, S011\n"
+        "vfim.s S123, -1.0\n"
+        "vmul.s S132, S013, S011\n"
+        "sv.q C100, 0(%1)\n"
+        "sv.q C110, 16(%1)\n"
+        "sv.q C120, 32(%1)\n"
+        "sv.q C130, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "m" (left), "m" (right), "m" (bottom), "m" (top), "m" (near), "m" (far)
+        : "memory");
+    return out;
+}
 #endif
 
 /* View matrix from a position, a view direction and an up vector: the inverse of the camera matrix
