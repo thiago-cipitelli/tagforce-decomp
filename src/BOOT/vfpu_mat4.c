@@ -1,6 +1,5 @@
 // @range 0x0881C4E4-0x0881CD50
-// @gcc 0x0881C4E4-0x0881C54C
-// @gcc 0x0881C584-0x0881C61C
+// @gcc 0x0881C4E4-0x0881C730
 // @gcc 0x0881C8D4-0x0881CD50
 /* VFPU matrix library, second half (the first half, from mat4_identity, lives before 0x0881C4E4):
    products, transforms, rotations, determinant, inverse and the helpers built on them. Matrices are
@@ -193,24 +192,8 @@ Mat4 *mat4_mul(Mat4 *out, Mat4 *a, Mat4 *b)
 
 /* out = m * s (every element) */
 #ifdef __MWERKS__
-asm Mat4 *mat4_scale(Mat4 *out, Mat4 *m, float s)
-{
-    move v0, a0
-    mfc1 t0, $f12
-    mtv t0, S200
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    vmscl.q E000, E100, S200
-    sv.q C000, 0(a0)
-    sv.q C010, 16(a0)
-    sv.q C020, 32(a0)
-    sv.q C030, 48(a0)
-    jr ra
-    nop
-}
-#else
+Mat4 *mat4_scale(Mat4 *out, Mat4 *m, float s);
+#elif !defined(__mips__)
 Mat4 *mat4_scale(Mat4 *out, Mat4 *m, float s)
 {
     int i;
@@ -218,6 +201,29 @@ Mat4 *mat4_scale(Mat4 *out, Mat4 *m, float s)
     for (i = 0; i < 16; i++) {
         out->m[i] = m->m[i] * s;
     }
+    return out;
+}
+#else
+Mat4 *mat4_scale(Mat4 *out, Mat4 *m, float s)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "mfc1 $8, %3\n"
+        "mtv $8, S200\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C130, 48(%2)\n"
+        "vmscl.q E000, E100, S200\n"
+        "sv.q C000, 0(%1)\n"
+        "sv.q C010, 16(%1)\n"
+        "sv.q C020, 32(%1)\n"
+        "sv.q C030, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "f" (s)
+        : "memory", "$8");
     return out;
 }
 #endif
@@ -346,109 +352,124 @@ Mat4 *mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v)
 
 /* out = rotation_z(a) * m; m == 0 gives the rotation alone */
 #ifdef __MWERKS__
-asm Mat4 *mat4_mul_rot_z(Mat4 *out, Mat4 *m, float a)
+Mat4 *mat4_mul_rot_z(Mat4 *out, Mat4 *m, float a);
+#elif !defined(__mips__)
+Mat4 *mat4_mul_rot_z(Mat4 *out, Mat4 *m, float a)
 {
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f12, 0(sp)
-    lv.s S100, 0(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vrot.q C000, S100, [c, s, 0, 0]
-    vrot.q C010, S100, [-s, c, 0, 0]
-    vidt.q C020
-    vidt.q C030
-    beqzl a1, L_0881C660
-    vmmov.q E200, E000
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    vmmul.q E200, E100, E000
-L_0881C660:
-    sv.q C200, 0(a0)
-    sv.q C210, 16(a0)
-    sv.q C220, 32(a0)
-    sv.q C230, 48(a0)
-    jr ra
-    addiu sp, sp, 16
+    return rotate_axis(out, m, a, 2);
 }
 #else
 Mat4 *mat4_mul_rot_z(Mat4 *out, Mat4 *m, float a)
 {
-    return rotate_axis(out, m, a, 2);
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, %3\n"
+        "vcst.s S101, VFPU_2_PI\n"
+        "vmul.s S100, S100, S101\n"
+        "vrot.q C000, S100, [c, s, 0, 0]\n"
+        "vrot.q C010, S100, [-s, c, 0, 0]\n"
+        "vidt.q C020\n"
+        "vidt.q C030\n"
+        "beqzl %2, 1f\n"
+        "vmmov.q E200, E000\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C130, 48(%2)\n"
+        "vmmul.q E200, E100, E000\n"
+        "1:\n"
+        "sv.q C200, 0(%1)\n"
+        "sv.q C210, 16(%1)\n"
+        "sv.q C220, 32(%1)\n"
+        "sv.q C230, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "m" (a)
+        : "memory");
+    return out;
 }
 #endif
 
 /* out = rotation_y(a) * m; m == 0 gives the rotation alone */
 #ifdef __MWERKS__
-asm Mat4 *mat4_mul_rot_y(Mat4 *out, Mat4 *m, float a)
+Mat4 *mat4_mul_rot_y(Mat4 *out, Mat4 *m, float a);
+#elif !defined(__mips__)
+Mat4 *mat4_mul_rot_y(Mat4 *out, Mat4 *m, float a)
 {
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f12, 0(sp)
-    lv.s S100, 0(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vrot.q C000, S100, [c, 0, -s, 0]
-    vidt.q C010
-    vrot.q C020, S100, [s, 0, c, 0]
-    vidt.q C030
-    beqzl a1, L_0881C6BC
-    vmmov.q E200, E000
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    vmmul.q E200, E100, E000
-L_0881C6BC:
-    sv.q C200, 0(a0)
-    sv.q C210, 16(a0)
-    sv.q C220, 32(a0)
-    sv.q C230, 48(a0)
-    jr ra
-    addiu sp, sp, 16
+    return rotate_axis(out, m, a, 1);
 }
 #else
 Mat4 *mat4_mul_rot_y(Mat4 *out, Mat4 *m, float a)
 {
-    return rotate_axis(out, m, a, 1);
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, %3\n"
+        "vcst.s S101, VFPU_2_PI\n"
+        "vmul.s S100, S100, S101\n"
+        "vrot.q C000, S100, [c, 0, -s, 0]\n"
+        "vidt.q C010\n"
+        "vrot.q C020, S100, [s, 0, c, 0]\n"
+        "vidt.q C030\n"
+        "beqzl %2, 1f\n"
+        "vmmov.q E200, E000\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C130, 48(%2)\n"
+        "vmmul.q E200, E100, E000\n"
+        "1:\n"
+        "sv.q C200, 0(%1)\n"
+        "sv.q C210, 16(%1)\n"
+        "sv.q C220, 32(%1)\n"
+        "sv.q C230, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "m" (a)
+        : "memory");
+    return out;
 }
 #endif
 
 /* out = rotation_x(a) * m; m == 0 gives the rotation alone */
 #ifdef __MWERKS__
-asm Mat4 *mat4_mul_rot_x(Mat4 *out, Mat4 *m, float a)
+Mat4 *mat4_mul_rot_x(Mat4 *out, Mat4 *m, float a);
+#elif !defined(__mips__)
+Mat4 *mat4_mul_rot_x(Mat4 *out, Mat4 *m, float a)
 {
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f12, 0(sp)
-    lv.s S100, 0(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vidt.q C000
-    vrot.q C010, S100, [0, c, s, 0]
-    vrot.q C020, S100, [0, -s, c, 0]
-    vidt.q C030
-    beqzl a1, L_0881C718
-    vmmov.q E200, E000
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    vmmul.q E200, E100, E000
-L_0881C718:
-    sv.q C200, 0(a0)
-    sv.q C210, 16(a0)
-    sv.q C220, 32(a0)
-    sv.q C230, 48(a0)
-    jr ra
-    addiu sp, sp, 16
+    return rotate_axis(out, m, a, 0);
 }
 #else
 Mat4 *mat4_mul_rot_x(Mat4 *out, Mat4 *m, float a)
 {
-    return rotate_axis(out, m, a, 0);
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, %3\n"
+        "vcst.s S101, VFPU_2_PI\n"
+        "vmul.s S100, S100, S101\n"
+        "vidt.q C000\n"
+        "vrot.q C010, S100, [0, c, s, 0]\n"
+        "vrot.q C020, S100, [0, -s, c, 0]\n"
+        "vidt.q C030\n"
+        "beqzl %2, 1f\n"
+        "vmmov.q E200, E000\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C130, 48(%2)\n"
+        "vmmul.q E200, E100, E000\n"
+        "1:\n"
+        "sv.q C200, 0(%1)\n"
+        "sv.q C210, 16(%1)\n"
+        "sv.q C220, 32(%1)\n"
+        "sv.q C230, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "m" (a)
+        : "memory");
+    return out;
 }
 #endif
 

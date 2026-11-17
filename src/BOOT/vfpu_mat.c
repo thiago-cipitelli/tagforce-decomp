@@ -1,8 +1,7 @@
 // @range 0x0881B974-0x0881C4E4
-// @gcc 0x0881B974-0x0881BAD8
+// @gcc 0x0881B974-0x0881BB2C
 // @gcc 0x0881BB64-0x0881BB9C
-// @gcc 0x0881BBCC-0x0881BD48
-// @gcc 0x0881BDA8-0x0881BDFC
+// @gcc 0x0881BBCC-0x0881BF7C
 // @gcc 0x0881C150-0x0881C260
 // @gcc 0x0881C348-0x0881C444
 // @gcc 0x0881C494-0x0881C4E4
@@ -219,32 +218,8 @@ ScePspFMatrix2 *mat2_transpose(ScePspFMatrix2 *out, const ScePspFMatrix2 *m);
 
 /* sceVfpuMatrix2RotZ */
 #ifdef __MWERKS__
-asm ScePspFMatrix2 *mat2_rot_z(ScePspFMatrix2 *out, const ScePspFMatrix2 *m, float angle)
-{
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f12, 0(sp)
-    lv.s S100, 0(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vrot.p C000, S100, [c, s]
-    vrot.p C010, S100, [-s, c]
-    beqzl a1, @3c
-    vmmov.p E200, E000
-    lv.s S020, 0(a1)
-    lv.s S021, 4(a1)
-    lv.s S030, 8(a1)
-    lv.s S031, 12(a1)
-    vmmul.p E200, E100, E000
-@3c:
-    sv.s S200, 0(a0)
-    sv.s S201, 4(a0)
-    sv.s S210, 8(a0)
-    sv.s S211, 12(a0)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+ScePspFMatrix2 *mat2_rot_z(ScePspFMatrix2 *out, const ScePspFMatrix2 *m, float angle);
+#elif !defined(__mips__)
 ScePspFMatrix2 *mat2_rot_z(ScePspFMatrix2 *out, const ScePspFMatrix2 *m, float angle)
 {
     ScePspFMatrix2 r;
@@ -260,6 +235,35 @@ ScePspFMatrix2 *mat2_rot_z(ScePspFMatrix2 *out, const ScePspFMatrix2 *m, float a
         return out;
     }
     return mat2_mul(out, &r, m);
+}
+#else
+ScePspFMatrix2 *mat2_rot_z(ScePspFMatrix2 *out, const ScePspFMatrix2 *m, float angle)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, %3\n"
+        "vcst.s S101, VFPU_2_PI\n"
+        "vmul.s S100, S100, S101\n"
+        "vrot.p C000, S100, [c, s]\n"
+        "vrot.p C010, S100, [-s, c]\n"
+        "beqzl %2, 1f\n"
+        "vmmov.p E200, E000\n"
+        "lv.s S020, 0(%2)\n"
+        "lv.s S021, 4(%2)\n"
+        "lv.s S030, 8(%2)\n"
+        "lv.s S031, 12(%2)\n"
+        "vmmul.p E200, E100, E000\n"
+        "1:\n"
+        "sv.s S200, 0(%1)\n"
+        "sv.s S201, 4(%1)\n"
+        "sv.s S210, 8(%1)\n"
+        "sv.s S211, 12(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "m" (angle)
+        : "memory");
+    return out;
 }
 #endif
 
@@ -547,39 +551,46 @@ ScePspFMatrix3 *mat3_mul(ScePspFMatrix3 *out, const ScePspFMatrix3 *a, const Sce
 
 /* sceVfpuMatrix3Scale */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_scale(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float s)
-{
-    move v0, a0
-    mfc1 t0, $f12
-    mtv t0, S200
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S102, 8(a1)
-    lv.s S110, 12(a1)
-    lv.s S111, 16(a1)
-    lv.s S112, 20(a1)
-    lv.s S120, 24(a1)
-    lv.s S121, 28(a1)
-    lv.s S122, 32(a1)
-    vmscl.t E000, E100, S200
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S002, 8(a0)
-    sv.s S010, 12(a0)
-    sv.s S011, 16(a0)
-    sv.s S012, 20(a0)
-    sv.s S020, 24(a0)
-    sv.s S021, 28(a0)
-    sv.s S022, 32(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix3 *mat3_scale(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float s);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_scale(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float s)
 {
     vec3_scale(&out->x, &m->x, s);
     vec3_scale(&out->y, &m->y, s);
     vec3_scale(&out->z, &m->z, s);
+    return out;
+}
+#else
+ScePspFMatrix3 *mat3_scale(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float s)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "mfc1 $8, %3\n"
+        "mtv $8, S200\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S102, 8(%2)\n"
+        "lv.s S110, 12(%2)\n"
+        "lv.s S111, 16(%2)\n"
+        "lv.s S112, 20(%2)\n"
+        "lv.s S120, 24(%2)\n"
+        "lv.s S121, 28(%2)\n"
+        "lv.s S122, 32(%2)\n"
+        "vmscl.t E000, E100, S200\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        "sv.s S002, 8(%1)\n"
+        "sv.s S010, 12(%1)\n"
+        "sv.s S011, 16(%1)\n"
+        "sv.s S012, 20(%1)\n"
+        "sv.s S020, 24(%1)\n"
+        "sv.s S021, 28(%1)\n"
+        "sv.s S022, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "f" (s)
+        : "memory", "$8");
     return out;
 }
 #endif
@@ -638,43 +649,8 @@ ScePspFMatrix3 *mat3_transpose(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
 
 /* sceVfpuMatrix3RotZ */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_rot_z(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle)
-{
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f12, 0(sp)
-    lv.s S100, 0(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vrot.t C000, S100, [c, s, 0]
-    vrot.t C010, S100, [-s, c, 0]
-    vidt.q C020
-    beqzl a1, @54
-    vmmov.t E200, E000
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S102, 8(a1)
-    lv.s S110, 12(a1)
-    lv.s S111, 16(a1)
-    lv.s S112, 20(a1)
-    lv.s S120, 24(a1)
-    lv.s S121, 28(a1)
-    lv.s S122, 32(a1)
-    vmmul.t E200, E100, E000
-@54:
-    sv.s S200, 0(a0)
-    sv.s S201, 4(a0)
-    sv.s S202, 8(a0)
-    sv.s S210, 12(a0)
-    sv.s S211, 16(a0)
-    sv.s S212, 20(a0)
-    sv.s S220, 24(a0)
-    sv.s S221, 28(a0)
-    sv.s S222, 32(a0)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+ScePspFMatrix3 *mat3_rot_z(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_rot_z(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle)
 {
     ScePspFMatrix3 r;
@@ -688,47 +664,52 @@ ScePspFMatrix3 *mat3_rot_z(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float a
     r.y.y = c;
     return mat3_rot_apply(out, m, &r);
 }
+#else
+ScePspFMatrix3 *mat3_rot_z(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, %3\n"
+        "vcst.s S101, VFPU_2_PI\n"
+        "vmul.s S100, S100, S101\n"
+        "vrot.t C000, S100, [c, s, 0]\n"
+        "vrot.t C010, S100, [-s, c, 0]\n"
+        "vidt.q C020\n"
+        "beqzl %2, 1f\n"
+        "vmmov.t E200, E000\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S102, 8(%2)\n"
+        "lv.s S110, 12(%2)\n"
+        "lv.s S111, 16(%2)\n"
+        "lv.s S112, 20(%2)\n"
+        "lv.s S120, 24(%2)\n"
+        "lv.s S121, 28(%2)\n"
+        "lv.s S122, 32(%2)\n"
+        "vmmul.t E200, E100, E000\n"
+        "1:\n"
+        "sv.s S200, 0(%1)\n"
+        "sv.s S201, 4(%1)\n"
+        "sv.s S202, 8(%1)\n"
+        "sv.s S210, 12(%1)\n"
+        "sv.s S211, 16(%1)\n"
+        "sv.s S212, 20(%1)\n"
+        "sv.s S220, 24(%1)\n"
+        "sv.s S221, 28(%1)\n"
+        "sv.s S222, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "m" (angle)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuMatrix3RotY */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_rot_y(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle)
-{
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f12, 0(sp)
-    lv.s S100, 0(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vrot.t C000, S100, [c, 0, -s]
-    vidt.q C010
-    vrot.t C020, S100, [s, 0, c]
-    beqzl a1, @54
-    vmmov.t E200, E000
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S102, 8(a1)
-    lv.s S110, 12(a1)
-    lv.s S111, 16(a1)
-    lv.s S112, 20(a1)
-    lv.s S120, 24(a1)
-    lv.s S121, 28(a1)
-    lv.s S122, 32(a1)
-    vmmul.t E200, E100, E000
-@54:
-    sv.s S200, 0(a0)
-    sv.s S201, 4(a0)
-    sv.s S202, 8(a0)
-    sv.s S210, 12(a0)
-    sv.s S211, 16(a0)
-    sv.s S212, 20(a0)
-    sv.s S220, 24(a0)
-    sv.s S221, 28(a0)
-    sv.s S222, 32(a0)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+ScePspFMatrix3 *mat3_rot_y(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_rot_y(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle)
 {
     ScePspFMatrix3 r;
@@ -742,47 +723,52 @@ ScePspFMatrix3 *mat3_rot_y(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float a
     r.z.z = c;
     return mat3_rot_apply(out, m, &r);
 }
+#else
+ScePspFMatrix3 *mat3_rot_y(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, %3\n"
+        "vcst.s S101, VFPU_2_PI\n"
+        "vmul.s S100, S100, S101\n"
+        "vrot.t C000, S100, [c, 0, -s]\n"
+        "vidt.q C010\n"
+        "vrot.t C020, S100, [s, 0, c]\n"
+        "beqzl %2, 1f\n"
+        "vmmov.t E200, E000\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S102, 8(%2)\n"
+        "lv.s S110, 12(%2)\n"
+        "lv.s S111, 16(%2)\n"
+        "lv.s S112, 20(%2)\n"
+        "lv.s S120, 24(%2)\n"
+        "lv.s S121, 28(%2)\n"
+        "lv.s S122, 32(%2)\n"
+        "vmmul.t E200, E100, E000\n"
+        "1:\n"
+        "sv.s S200, 0(%1)\n"
+        "sv.s S201, 4(%1)\n"
+        "sv.s S202, 8(%1)\n"
+        "sv.s S210, 12(%1)\n"
+        "sv.s S211, 16(%1)\n"
+        "sv.s S212, 20(%1)\n"
+        "sv.s S220, 24(%1)\n"
+        "sv.s S221, 28(%1)\n"
+        "sv.s S222, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "m" (angle)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuMatrix3RotX */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_rot_x(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle)
-{
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f12, 0(sp)
-    lv.s S100, 0(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vidt.q C000
-    vrot.t C010, S100, [0, c, s]
-    vrot.t C020, S100, [0, -s, c]
-    beqzl a1, @54
-    vmmov.t E200, E000
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S102, 8(a1)
-    lv.s S110, 12(a1)
-    lv.s S111, 16(a1)
-    lv.s S112, 20(a1)
-    lv.s S120, 24(a1)
-    lv.s S121, 28(a1)
-    lv.s S122, 32(a1)
-    vmmul.t E200, E100, E000
-@54:
-    sv.s S200, 0(a0)
-    sv.s S201, 4(a0)
-    sv.s S202, 8(a0)
-    sv.s S210, 12(a0)
-    sv.s S211, 16(a0)
-    sv.s S212, 20(a0)
-    sv.s S220, 24(a0)
-    sv.s S221, 28(a0)
-    sv.s S222, 32(a0)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+ScePspFMatrix3 *mat3_rot_x(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_rot_x(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle)
 {
     ScePspFMatrix3 r;
@@ -795,6 +781,46 @@ ScePspFMatrix3 *mat3_rot_x(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float a
     r.z.y = -s;
     r.z.z = c;
     return mat3_rot_apply(out, m, &r);
+}
+#else
+ScePspFMatrix3 *mat3_rot_x(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float angle)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, %3\n"
+        "vcst.s S101, VFPU_2_PI\n"
+        "vmul.s S100, S100, S101\n"
+        "vidt.q C000\n"
+        "vrot.t C010, S100, [0, c, s]\n"
+        "vrot.t C020, S100, [0, -s, c]\n"
+        "beqzl %2, 1f\n"
+        "vmmov.t E200, E000\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S102, 8(%2)\n"
+        "lv.s S110, 12(%2)\n"
+        "lv.s S111, 16(%2)\n"
+        "lv.s S112, 20(%2)\n"
+        "lv.s S120, 24(%2)\n"
+        "lv.s S121, 28(%2)\n"
+        "lv.s S122, 32(%2)\n"
+        "vmmul.t E200, E100, E000\n"
+        "1:\n"
+        "sv.s S200, 0(%1)\n"
+        "sv.s S201, 4(%1)\n"
+        "sv.s S202, 8(%1)\n"
+        "sv.s S210, 12(%1)\n"
+        "sv.s S211, 16(%1)\n"
+        "sv.s S212, 20(%1)\n"
+        "sv.s S220, 24(%1)\n"
+        "sv.s S221, 28(%1)\n"
+        "sv.s S222, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "m" (angle)
+        : "memory");
+    return out;
 }
 #endif
 

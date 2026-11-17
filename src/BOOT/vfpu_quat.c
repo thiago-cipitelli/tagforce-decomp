@@ -1,7 +1,7 @@
 // @range 0x0881DE88-0x0881EB0C
 // @gcc 0x0881DE88-0x0881E0FC
 // @asm 0x0881E0FC-0x0881E510
-// @gcc 0x0881E510-0x0881EAD0
+// @gcc 0x0881E510-0x0881EB0C
 /* VFPU quaternions (x, y, z, w with w the scalar part; vqmul is the Hamilton product). Euler angles
    are radians in a vector (x, y, z); the _zyx/_xyz/_yxz suffix is the product order of the axis
    rotations (zyx: q = qz * qy * qx). Hand-written VFPU code kept as whole `asm` functions; the
@@ -923,24 +923,7 @@ Vec4 *quat_from_euler_yxz(Vec4 *out, Vec4 *v)
 
 /* Rotation by `angle` radians about `axis` (normalized by its 4-component length, w included). */
 #ifdef __MWERKS__
-asm Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    mfc1 t0, $f12
-    vdot.q S010, C000, C000
-    vcst.s S020, VFPU_1_PI
-    mtv t0, S021
-    vmul.s S020, S020, S021
-    vcos.s S003, S020
-    vsin.s S020, S020
-    vrsq.s S010, S010
-    vmul.s S010, S010, S020
-    vscl.t C000, C000, S010
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle);
 #elif !defined(__mips__)
 Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle)
 {
@@ -953,5 +936,27 @@ Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle)
     return out;
 }
 #else
-Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle);
+Vec4 *quat_from_axis_angle(Vec4 *out, Vec4 *axis, float angle)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "mfc1 $8, %3\n"
+        "vdot.q S010, C000, C000\n"
+        "vcst.s S020, VFPU_1_PI\n"
+        "mtv $8, S021\n"
+        "vmul.s S020, S020, S021\n"
+        "vcos.s S003, S020\n"
+        "vsin.s S020, S020\n"
+        "vrsq.s S010, S010\n"
+        "vmul.s S010, S010, S020\n"
+        "vscl.t C000, C000, S010\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (axis), "f" (angle)
+        : "memory", "$8");
+    return out;
+}
 #endif

@@ -3,9 +3,9 @@
 // @gcc 0x0881A440-0x0881A520
 // @gcc 0x0881A590-0x0881A5A0
 // @gcc 0x0881A5B8-0x0881A5C8
-// @gcc 0x0881A5DC-0x0881A7B4
+// @gcc 0x0881A5DC-0x0881A864
 // @gcc 0x0881A8AC-0x0881A940
-// @gcc 0x0881A980-0x0881AAA0
+// @gcc 0x0881A980-0x0881AB1C
 /* FPU trig routines (sceFpuSin/Cos/Atan/Acos) and the 2D part of Sony's libvfpu (sceVfpuVector2*).
    All of it was compiled with GCC or written in VFPU assembly, so the PSP build carries the original
    instructions as `asm` functions; under `#elif !defined(__mips__)` is the portable C for the PC port.
@@ -578,39 +578,8 @@ ScePspFVector2 *vec2_scale(ScePspFVector2 *out, const ScePspFVector2 *v, float s
 /* Cubic Hermite: the basis (2,-3,0,1) (1,-2,1,0) (1,-1,0,0) (-2,3,0,0) comes from constant prefixes and
    multiplies (t^3, t^2, t, 1) with vtfm4. */
 #ifdef __MWERKS__
-asm ScePspFVector2 *vec2_hermite(ScePspFVector2 *out, const ScePspFVector2 *p0, const ScePspFVector2 *v0,
-                             const ScePspFVector2 *p1, const ScePspFVector2 *v1, float t)
-{
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f12, 0(sp)
-    lv.s S000, 0(a1)
-    lv.s S001, 4(a1)
-    lv.s S010, 0(a2)
-    lv.s S011, 4(a2)
-    lv.s S020, 0(t0)
-    lv.s S021, 4(t0)
-    lv.s S030, 0(a3)
-    lv.s S031, 4(a3)
-    lv.s S202, 0(sp)
-    vone.s S203
-    vmul.s S201, S202, S202
-    vpfxs 2, 1, 1, -2
-    vmov.q C100, C100
-    vpfxs -3, -2, -1, 3
-    vmov.q C110, C110
-    vmul.s S200, S201, S202
-    vpfxs 0, 1, 0, 0
-    vmov.q C120, C120
-    vpfxs 1, 0, 0, 0
-    vmov.q C130, C130
-    vtfm4.q C210, E100, C200
-    vtfm4.q C220, E000, C210
-    sv.s S220, 0(a0)
-    sv.s S221, 4(a0)
-    jr ra
-    addiu sp, sp, 16
-}
+ScePspFVector2 *vec2_hermite(ScePspFVector2 *out, const ScePspFVector2 *p0, const ScePspFVector2 *v0,
+                             const ScePspFVector2 *p1, const ScePspFVector2 *v1, float t);
 #elif !defined(__mips__)
 ScePspFVector2 *vec2_hermite(ScePspFVector2 *out, const ScePspFVector2 *p0, const ScePspFVector2 *v0,
                              const ScePspFVector2 *p1, const ScePspFVector2 *v1, float t)
@@ -628,29 +597,46 @@ ScePspFVector2 *vec2_hermite(ScePspFVector2 *out, const ScePspFVector2 *p0, cons
 }
 #else
 ScePspFVector2 *vec2_hermite(ScePspFVector2 *out, const ScePspFVector2 *p0, const ScePspFVector2 *v0,
-                             const ScePspFVector2 *p1, const ScePspFVector2 *v1, float t);
+                             const ScePspFVector2 *p1, const ScePspFVector2 *v1, float t)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%2)\n"
+        "lv.s S001, 4(%2)\n"
+        "lv.s S010, 0(%3)\n"
+        "lv.s S011, 4(%3)\n"
+        "lv.s S020, 0(%5)\n"
+        "lv.s S021, 4(%5)\n"
+        "lv.s S030, 0(%4)\n"
+        "lv.s S031, 4(%4)\n"
+        "lv.s S202, %6\n"
+        "vone.s S203\n"
+        "vmul.s S201, S202, S202\n"
+        "vpfxs 2, 1, 1, -2\n"
+        "vmov.q C100, C100\n"
+        "vpfxs -3, -2, -1, 3\n"
+        "vmov.q C110, C110\n"
+        "vmul.s S200, S201, S202\n"
+        "vpfxs 0, 1, 0, 0\n"
+        "vmov.q C120, C120\n"
+        "vpfxs 1, 0, 0, 0\n"
+        "vmov.q C130, C130\n"
+        "vtfm4.q C210, E100, C200\n"
+        "vtfm4.q C220, E000, C210\n"
+        "sv.s S220, 0(%1)\n"
+        "sv.s S221, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (p0), "r" (v0), "r" (p1), "r" (v1), "m" (t)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuVector2Clamp: min(max(v, lo), hi) */
 #ifdef __MWERKS__
-asm ScePspFVector2 *vec2_clamp(ScePspFVector2 *out, const ScePspFVector2 *v, float lo, float hi)
-{
-    move v0, a0
-    mfc1 t0, $f12
-    mfc1 t1, $f13
-    mtv t0, S010
-    mtv t1, S011
-    lv.s S000, 0(a1)
-    lv.s S001, 4(a1)
-    vpfxt x, x, z, w
-    vmax.p C000, C000, C010
-    vpfxt y, y, z, w
-    vmin.p C000, C000, C010
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    nop
-}
+ScePspFVector2 *vec2_clamp(ScePspFVector2 *out, const ScePspFVector2 *v, float lo, float hi);
 #elif !defined(__mips__)
 ScePspFVector2 *vec2_clamp(ScePspFVector2 *out, const ScePspFVector2 *v, float lo, float hi)
 {
@@ -662,7 +648,29 @@ ScePspFVector2 *vec2_clamp(ScePspFVector2 *out, const ScePspFVector2 *v, float l
     return out;
 }
 #else
-ScePspFVector2 *vec2_clamp(ScePspFVector2 *out, const ScePspFVector2 *v, float lo, float hi);
+ScePspFVector2 *vec2_clamp(ScePspFVector2 *out, const ScePspFVector2 *v, float lo, float hi)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "mfc1 $8, %3\n"
+        "mfc1 $9, %4\n"
+        "mtv $8, S010\n"
+        "mtv $9, S011\n"
+        "lv.s S000, 0(%2)\n"
+        "lv.s S001, 4(%2)\n"
+        "vpfxt x, x, z, w\n"
+        "vmax.p C000, C000, C010\n"
+        "vpfxt y, y, z, w\n"
+        "vmin.p C000, C000, C010\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v), "f" (lo), "f" (hi)
+        : "memory", "$8", "$9");
+    return out;
+}
 #endif
 
 /* sceVfpuVector2Max */
@@ -979,40 +987,7 @@ ScePspFVector2 *vec2_reflect(ScePspFVector2 *out, const ScePspFVector2 *v, const
 /* normalize(eta v + (eta dot(v, n) - eta^2) n), zero when that is not finite. The original computes
    sqrt(1 - eta^2 (1 - dot^2)) but never uses it (it subtracts eta^2 where the root should go). */
 #ifdef __MWERKS__
-asm ScePspFVector2 *vec2_refract(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n, float eta)
-{
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f12, 0(sp)
-    lv.s S010, 0(a1)
-    lv.s S011, 4(a1)
-    lv.s S020, 0(a2)
-    lv.s S021, 4(a2)
-    lv.s S030, 0(sp)
-    vdot.p S031, C010, C020
-    vscl.p C010, C010, S030
-    vmul.s S032, S030, S030
-    vmul.s S033, S031, S031
-    vmul.s S031, S031, S030
-    vocp.s S033, S033
-    vmul.s S033, S032, S033
-    vocp.s S033, S033
-    vsqrt.s S033, S033
-    vsub.s S031, S031, S032
-    vscl.p C020, C020, S031
-    vadd.p C000, C010, C020
-    vdot.p S033, C000, C000
-    vcmp.p es, C000, C000
-    vrsq.s S033, S033
-    vpfxd [-1:1], [-1:1], m, m
-    vscl.p C000, C000, S033
-    vpfxs 0, 0, z, w
-    vcmovt.p C000, C000, 4
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    addiu sp, sp, 16
-}
+ScePspFVector2 *vec2_refract(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n, float eta);
 #elif !defined(__mips__)
 ScePspFVector2 *vec2_refract(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n, float eta)
 {
@@ -1032,5 +1007,41 @@ ScePspFVector2 *vec2_refract(ScePspFVector2 *out, const ScePspFVector2 *v, const
     return out;
 }
 #else
-ScePspFVector2 *vec2_refract(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n, float eta);
+ScePspFVector2 *vec2_refract(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n, float eta)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S010, 0(%2)\n"
+        "lv.s S011, 4(%2)\n"
+        "lv.s S020, 0(%3)\n"
+        "lv.s S021, 4(%3)\n"
+        "lv.s S030, %4\n"
+        "vdot.p S031, C010, C020\n"
+        "vscl.p C010, C010, S030\n"
+        "vmul.s S032, S030, S030\n"
+        "vmul.s S033, S031, S031\n"
+        "vmul.s S031, S031, S030\n"
+        "vocp.s S033, S033\n"
+        "vmul.s S033, S032, S033\n"
+        "vocp.s S033, S033\n"
+        "vsqrt.s S033, S033\n"
+        "vsub.s S031, S031, S032\n"
+        "vscl.p C020, C020, S031\n"
+        "vadd.p C000, C010, C020\n"
+        "vdot.p S033, C000, C000\n"
+        "vcmp.p es, C000, C000\n"
+        "vrsq.s S033, S033\n"
+        "vpfxd [-1:1], [-1:1], m, m\n"
+        "vscl.p C000, C000, S033\n"
+        "vpfxs 0, 0, z, w\n"
+        "vcmovt.p C000, C000, 4\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v), "r" (n), "m" (eta)
+        : "memory");
+    return out;
+}
 #endif
