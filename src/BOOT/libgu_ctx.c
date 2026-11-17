@@ -2,14 +2,12 @@
 // @gcc 0x08807070-0x0880712C
 // @asm 0x0880712C-0x08807338
 // @gcc 0x08807C6C-0x08807D40
-// @gcc 0x08807DD0-0x08807DFC
-// @gcc 0x08807E90-0x08807FD8
-// @gcc 0x08808058-0x08808084
-// @gcc 0x08808100-0x08808130
+// @gcc 0x08807DD0-0x08807FD8
+// @gcc 0x08808058-0x08808130
 // @asm 0x08808130-0x0880823C
 // @gcc 0x0880823C-0x08808294
 // @asm 0x08808294-0x088086F0
-// @gcc 0x088086F0-0x08808790
+// @gcc 0x088086F0-0x088087F8
 /* libgu of the Sony SDK (GCC), context level: the builders that write into a given GuList (state
    enables, matrices, sprites, clear, depth range, lights, ...), the GE signal/finish handlers, the
    context reset, the stall update and the sceGuDebugPrint/Flush text overlay. The builders do not
@@ -1098,59 +1096,29 @@ void gu_ctx_front_face(GuList *l, int order);
 #endif
 
 /* LXP/LYP/LZP of the light position and LTYPE (components, type: 8 -> 2, 6 -> 1, else 0) */
-#ifdef __MWERKS__
-asm void gu_ctx_light(GuList *l, int light, int type, int components, const float *pos)
-{
-    sll t5, a1, 0x1
-    addu t3, t5, a1
-    addiu t4, a1, 95
-    addiu v1, t3, 100
-    addiu t1, t3, 101
-    sll t2, t4, 0x18
-    addiu t7, t3, 99
-    sll v0, a2, 0x8
-    sll t3, v1, 0x18
-    addiu v1, zero, 8
-    sll t4, t1, 0x18
-    or a2, t2, v0
-    xori t6, a3, 0x6
-    sll t5, t7, 0x18
-    move t1, a0
-    beq a3, v1, @48
-    addiu t2, zero, 2
-    sltiu t2, t6, 1
-@48:
-    lw t8, 4(t0)
-    lw t7, 8(t1)
-    lw a1, 0(t0)
-    lw a0, 8(t0)
-    srl a3, t8, 0x8
-    srl t6, a1, 0x8
-    or t8, t3, a3
-    srl v1, a0, 0x8
-    addiu a3, t7, 4
-    or t0, a2, t2
-    addiu t9, a3, 12
-    or t2, t5, t6
-    or t6, t4, v1
-    sw t2, 0(t7)
-    sw t9, 8(t1)
-    sw t8, 0(a3)
-    sw t6, 4(a3)
-    jr ra
-    sw t0, 8(a3)
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_ctx_light(GuList *l, int light, int type, int components, const float *pos)
 {
-    int k = light * 3;
-    unsigned int t = components == 8 ? 2 : components == 6;
+    unsigned int w0, w1, w2, w3;
+    int k;
+    unsigned int t;
 
-    ctx_push(l, (unsigned int)(k + 0x63) << 24 | ctx_f24(pos[0]));
-    ctx_push(l, (unsigned int)(k + 0x64) << 24 | ctx_f24(pos[1]));
-    ctx_push(l, (unsigned int)(k + 0x65) << 24 | ctx_f24(pos[2]));
-    ctx_push(l, (unsigned int)(light + 0x5F) << 24 | type << 8 | t);
+    t = 2;
+    if (components != 8) {
+        t = components == 6;
+    }
+    k = light * 3;
+    w0 = (unsigned int)(k + 0x63) << 24 | ctx_f24(pos[0]);
+    w1 = (unsigned int)(k + 0x64) << 24 | ctx_f24(pos[1]);
+    w2 = (unsigned int)(k + 0x65) << 24 | ctx_f24(pos[2]);
+    w3 = (unsigned int)(light + 0x5F) << 24 | type << 8 | t;
+    ctx_push(l, w0);
+    ctx_push(l, w1);
+    ctx_push(l, w2);
+    ctx_push(l, w3);
 }
+#else
+void gu_ctx_light(GuList *l, int light, int type, int components, const float *pos);
 #endif
 
 #ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c (its jump table is the object's .rodata); the case order is the one that
@@ -1267,56 +1235,22 @@ void gu_ctx_shade_model(GuList *l, int mode);
 #endif
 
 /* GE signal handler: records the signal id (ring of 16), calls the user callback, sets the event */
-#ifdef __MWERKS__
-asm void gu_signal_handler(int id, void *arg)
-{
-    addiu sp, sp, -16
-    sw s0, 0(sp)
-    move s0, a1
-    move a3, a0
-    sw ra, 4(sp)
-    andi t1, a3, 0xffff
-    lw t2, 40(a1)
-    lw a2, 0(a1)
-    sra t4, t2, 0x1f
-    srl t3, t4, 0x1c
-    addu a1, t2, t3
-    ins a1, zero, 0x0, 0x4
-    subu a0, t2, a1
-    sll v0, a0, 0x1
-    addu t0, v0, s0
-    addiu a3, t2, 1
-    move a0, t1
-    sh t1, 8(t0)
-    bnez a2, @6c
-    sw a3, 40(s0)
-    lw a0, 44(s0)
-@54:
-    jal sceKernelSetEventFlag
-    addiu a1, zero, 1
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@6c:
-    jalr ra, a2
-    nop
-    j @54
-    lw a0, 44(s0)
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
 void gu_signal_handler(int id, void *arg)
 {
     GuCallbacks *c = arg;
+    int sid = id & 0xFFFF;
     int n = c->signal_count;
 
-    c->signals[n % 16] = (short)id;
+    c->signals[n % 16] = sid;
     c->signal_count = n + 1;
     if (c->signal != 0) {
-        c->signal(id & 0xFFFF);
+        c->signal(sid);
     }
     sceKernelSetEventFlag(c->event_flag, 1);
 }
+#else
+void gu_signal_handler(int id, void *arg);
 #endif
 
 /* GE finish handler: the user finish callback */
@@ -1588,46 +1522,21 @@ int sceKernelReleaseSubIntrHandler(int intno, int no);
 int sceKernelEnableSubIntr(int intno, int no);
 
 /* installs handler as VBLANK sub-interrupt handler number no (removes it when handler is NULL) */
-#ifdef __MWERKS__
-asm void vblank_handler_set(int no, void *handler, void *arg)
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c */
+int vblank_handler_set(int no, void *handler, void *arg)
 {
-    addiu sp, sp, -16
-    move v1, a1
-    sw s0, 0(sp)
-    move a1, a0
-    move s0, a0
-    move a3, a2
-    sw ra, 4(sp)
-    addiu a0, zero, 30
-    beqz v1, @54
-    move a2, v1
-    jal sceKernelRegisterSubIntrHandler
-    nop
-    move a1, s0
-    bltz v0, @44
-    addiu a0, zero, 30
-    jal sceKernelEnableSubIntr
-    nop
-@44:
-    lw ra, 4(sp)
-@48:
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-@54:
-    move a1, s0
-    jal sceKernelReleaseSubIntrHandler
-    addiu a0, zero, 30
-    j @48
-    lw ra, 4(sp)
-}
-#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
-void vblank_handler_set(int no, void *handler, void *arg)
-{
-    if (handler == 0) {
-        sceKernelReleaseSubIntrHandler(30, no);
-    } else if (sceKernelRegisterSubIntrHandler(30, no, handler, arg) >= 0) {
-        sceKernelEnableSubIntr(30, no);
+    int ret;
+
+    if (handler != 0) {
+        ret = sceKernelRegisterSubIntrHandler(30, no, handler, arg);
+        if (ret >= 0) {
+            ret = sceKernelEnableSubIntr(30, no);
+        }
+    } else {
+        ret = sceKernelReleaseSubIntrHandler(30, no);
     }
+    return ret;
 }
+#else
+int vblank_handler_set(int no, void *handler, void *arg);
 #endif
