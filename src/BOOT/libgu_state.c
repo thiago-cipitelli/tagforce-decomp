@@ -509,6 +509,26 @@ void sceGuBlendFunc(int op, int src, int dest, unsigned int srcfix, unsigned int
 }
 
 /* a 0xFF000000 word, BOFS = index * 12, then the 4x3 part of the matrix (float24) */
+#if defined(__mips__) && !defined(__MWERKS__)
+/* PSP (C under NON_MATCHING; 2 words off: the original schedules `sll` before `lui gu` and `lui 0xFF00` before
+   the load of l->cur, round 42). The SDK writes the words as inline asm, like gu_ctx_matrix: per element
+   `lui t,0x2B00; lwr t,1(m)` puts the three high bytes of the float under the command byte (float24). */
+void sceGuBoneMatrix(int index, const float *m)
+{
+    GuList *l = gu.list;
+    unsigned int *p = l->cur;
+
+    __asm__ volatile(".set push\n.set noreorder\n"
+                     "sw %2,0(%0)\nsw %1,4(%0)\n"
+                     "lui $8,0x2b00\nlui $9,0x2b00\nlui $10,0x2b00\nlwr $8,1(%3)\nlwr $9,5(%3)\nlwr $10,9(%3)\nsw $8,8(%0)\nsw $9,12(%0)\nsw $10,16(%0)\n"
+                     "lui $8,0x2b00\nlui $9,0x2b00\nlui $10,0x2b00\nlwr $8,17(%3)\nlwr $9,21(%3)\nlwr $10,25(%3)\nsw $8,20(%0)\nsw $9,24(%0)\nsw $10,28(%0)\n"
+                     "lui $8,0x2b00\nlui $9,0x2b00\nlui $10,0x2b00\nlwr $8,33(%3)\nlwr $9,37(%3)\nlwr $10,41(%3)\nsw $8,32(%0)\nsw $9,36(%0)\nsw $10,40(%0)\n"
+                     "lui $8,0x2b00\nlui $9,0x2b00\nlui $10,0x2b00\nlwr $8,49(%3)\nlwr $9,53(%3)\nlwr $10,57(%3)\nsw $8,44(%0)\nsw $9,48(%0)\nsw $10,52(%0)\n"
+                     "addiu %0,%0,56\n.set pop"
+                     : "+r"(p) : "r"(index * 12 | 0x2A000000), "r"(0xFF000000), "r"(m) : "$8", "$9", "$10", "memory");
+    l->cur = p;
+}
+#else
 void sceGuBoneMatrix(int index, const float *m)
 {
     int i;
@@ -521,6 +541,7 @@ void sceGuBoneMatrix(int index, const float *m)
         GU_PUSH(GU_F24(m[i * 4 + 2]) | 0x2B000000);
     }
 }
+#endif
 
 void sceGuMorphWeight(int index, float weight)
 {
