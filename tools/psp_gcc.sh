@@ -33,7 +33,8 @@ rm -f "$OUT"
 # of zeros) as one insn `ins x,$0,pos,n` tied to its source, before register allocation, as the later revision does;
 # the peephole then only applies rules D, F and G (G, rodada 38: the nop Sony's assembler leaves after a 64-bit store). PSP_GCC_INSAND=0: plain cc1 1.7.1 and the peephole's rules A-C/E.
 # The same .so sets n_non_fixed_regs = 192 (rodada 39: the later revision hoists more loop invariants; PSP_GCC_NNF=64 is
-# cc1 1.7.1). PSP_GCC_SO=path preloads another build of the hook (experiments).
+# cc1 1.7.1). Rodada 41: increments queued by the value of `*p++ = value` are emitted before the store (PSP_GCC_RHSQ=0: off).
+# PSP_GCC_SO=path preloads another build of the hook (experiments).
 PRE=; export PSP_GCC_INSAND=${PSP_GCC_INSAND:-1}
 if [ "$PSP_GCC_INSAND" = 1 ]; then
   PRE=${PSP_GCC_SO:-$HERE/ext/psp_gcc_insand.so}

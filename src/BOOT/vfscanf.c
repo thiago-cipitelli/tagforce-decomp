@@ -1,13 +1,9 @@
 // @range 0x088151B8-0x0881635C
-// @gcc 0x088151B8-0x08815234 nl_vfscanf
-// @gcc 0x08815234-0x08815284 nl_vfscanf
-// @gcc 0x08815284-0x088152A0 nl_vfscanf
-// @asm 0x088152A0-0x08816284
-// @gcc 0x08816284-0x0881635C nl_vfscanf
+// @gcc 0x088151B8-0x0881635C nl_vfscanf
 /* newlib vfscanf (stdio/vfscanf.c, 1.1x: %lc/%ls through _mbrtowc_r, exact float scanning with
-   leading-zero compensation), compiled with GCC. The entry points and __sccl are whole `asm`
-   functions; __svfscanf_r (jump tables, _ctype_ and constants through split lui/addiu pairs) stays in
-   asm with the newlib C under NON_MATCHING. Outside the PSP build the C is used. */
+   leading-zero compensation). On the PSP the whole object is newlib's source compiled by the SDK's GCC
+   (nl_vfscanf.c; __svfscanf_r since round 41, with the queued-increment change of tools/psp_gcc_insand.c).
+   Outside the PSP build the C here is used. */
 #include "libc.h"
 #include "nl_stdio.h"
 #include "stdarg.h"
@@ -56,7 +52,7 @@ int _vfscanf_r(NlReent *data, NlFile *fp, const char *fmt, va_list ap)
 }
 #endif
 
-#if !defined(__MWERKS__) || defined(NON_MATCHING) /* GCC: jump tables, _ctype_, constants by lui/addiu */
+#if !defined(__MWERKS__) || defined(NON_MATCHING) /* PSP: nl_vfscanf.c */
 #define S_LONG 0x01
 #define S_LONGDBL 0x02
 #define S_SHORT 0x04

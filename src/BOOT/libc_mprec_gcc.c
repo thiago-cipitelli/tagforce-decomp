@@ -2,10 +2,10 @@
 // @rodata 0x08873C18-0x08873D50
 /* newlib 1.13.0 libc/stdlib/mprec.c (the multi-precision integers of dtoa/strtod) compiled by the SDK's GCC
    (tools/psp_gcc.sh; docs/build.md, "Trilha GCC"): the source is include/newlib-1.13.0/mprec.c, unchanged, and every
-   function matches byte for byte except __d2b (one delay slot the later revision fills: `sll v1,s0,2` under the
-   `beqz s3`), which stays in libc_mprec.c (__hi0bits matches with the `ins` hook since round 37). It is compiled here as
-   well, weak and never linked (its section is not in the linker script), because GCC lays out a call differently once it has seen the callee's body. The `@gcc` lines
-   of libc_mprec.c give the ranges; the tables (p05, __mprec_tens, __mprec_bigtens, __mprec_tinytens) are this
+   function matches byte for byte (__hi0bits with the `ins` hook since round 37). No `#pragma weak`: __hi0bits must bind
+   locally so that GCC marks it const (mark_constant_function), and a const call does not trigger the "call" branch
+   heuristic in __d2b (round 41: with it, the `beqz s3` slot is filled from the fallthrough instead of the target).
+   The `@gcc` line of libc_mprec.c gives the range; the tables (p05, __mprec_tens, __mprec_bigtens, __mprec_tinytens) are this
    object's .rodata. The PC port uses the C of libc_mprec.c. */
 
 #ifdef __mips__
@@ -23,9 +23,6 @@
 #define _b2d __b2d
 #define _d2b __d2b
 #define _ratio __ratio
-
-#pragma weak __hi0bits
-#pragma weak __d2b
 
 #include "newlib-1.13.0/mprec.c"
 #endif
