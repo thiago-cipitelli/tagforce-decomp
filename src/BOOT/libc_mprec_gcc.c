@@ -2,9 +2,9 @@
 // @rodata 0x08873C18-0x08873D50
 /* newlib 1.13.0 libc/stdlib/mprec.c (the multi-precision integers of dtoa/strtod) compiled by the SDK's GCC
    (tools/psp_gcc.sh; docs/build.md, "Trilha GCC"): the source is include/newlib-1.13.0/mprec.c, unchanged, and every
-   function matches byte for byte except __hi0bits and __d2b, which need a later revision of that compiler (masks as
-   `ins`) and stay in libc_mprec.c. Those two are compiled here as well, weak and never linked (their sections are not
-   in the linker script), because GCC lays out a call differently once it has seen the callee's body. The `@gcc` lines
+   function matches byte for byte except __d2b (one delay slot the later revision fills: `sll v1,s0,2` under the
+   `beqz s3`), which stays in libc_mprec.c (__hi0bits matches with the `ins` hook since round 37). It is compiled here as
+   well, weak and never linked (its section is not in the linker script), because GCC lays out a call differently once it has seen the callee's body. The `@gcc` lines
    of libc_mprec.c give the ranges; the tables (p05, __mprec_tens, __mprec_bigtens, __mprec_tinytens) are this
    object's .rodata. The PC port uses the C of libc_mprec.c. */
 

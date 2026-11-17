@@ -125,8 +125,6 @@ segments:
       - [0xA2D0, asm, libc_mem_asm_0880E270]
       - [0xA2E0, c, libc_reent]
       - [0xA760, c, libc_mprec_gcc]
-      - [0xAA74, c, libc_mprec]
-      - [0xAAFC, c, libc_mprec_gcc]
       - [0xB3C8, c, libc_mprec]
       - [0xB52C, c, libc_mprec_gcc]
       - [0xB66C, c, nl_printf]

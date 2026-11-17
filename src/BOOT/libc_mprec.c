@@ -1,6 +1,5 @@
 // @range 0x0880E700-0x0880F60C
-// @gcc 0x0880E700-0x0880EA14
-// @gcc 0x0880EA9C-0x0880F368
+// @gcc 0x0880E700-0x0880F368
 // @gcc 0x0880F4CC-0x0880F60C
 /* newlib mprec.c (GCC): the multi-precision integers of dtoa/strtod. Bigints come from a per-reent
    freelist of power-of-two sizes (+0x4C of the reent) and the powers 5^(4 * 2^k) are cached at
@@ -147,50 +146,7 @@ LibcBigint *__s2b(char *r, const char *s, int nd0, int nd, unsigned int y9)
 }
 #endif
 
-#ifdef __MWERKS__
-asm int __hi0bits(unsigned int x)
-{
-    move v0, a0
-    ins v0, zero, 0x0, 0x10
-    bnez v0, @18
-    move v1, zero
-    addiu v1, zero, 16
-    sll a0, a0, 0x10
-@18:
-    move v0, a0
-    ins v0, zero, 0x0, 0x18
-    bnez v0, @34
-    move v0, a0
-    addiu v1, v1, 8
-    sll a0, a0, 0x8
-    move v0, a0
-@34:
-    ins v0, zero, 0x0, 0x1c
-    bnez v0, @4c
-    move v0, a0
-    addiu v1, v1, 4
-    sll a0, a0, 0x4
-    move v0, a0
-@4c:
-    ins v0, zero, 0x0, 0x1e
-    bnez v0, @60
-    nop
-    addiu v1, v1, 2
-    sll a0, a0, 0x2
-@60:
-    bltzl a0, @80
-    move a0, v1
-    lui v0, 0x4000
-    and v0, a0, v0
-    addiu v1, v1, 1
-    beqz v0, @80
-    addiu a0, zero, 32
-    move a0, v1
-@80:
-    jr ra
-    move v0, a0
-}
-#else
+#ifndef __MWERKS__ /* PSP: libc_mprec_gcc.c */
 int __hi0bits(unsigned int x)
 {
     int k = 0;
