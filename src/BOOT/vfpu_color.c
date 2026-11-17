@@ -1,8 +1,8 @@
 // @range 0x0881D214-0x0881D8A8
-// @gcc 0x0881D214-0x0881D2F4
+// @gcc 0x0881D214-0x0881D334
 // @gcc 0x0881D3D8-0x0881D3F4
 // @gcc 0x0881D48C-0x0881D6F8
-// @gcc 0x0881D740-0x0881D7AC
+// @gcc 0x0881D718-0x0881D7AC
 // @gcc 0x0881D7DC-0x0881D8A8
 /* VFPU colors (four floats r, g, b, a in [0, 1]; the _rgb variants leave alpha as in the first
    operand) and the VFPU random generator. Hand-written VFPU code kept as whole `asm` functions; the
@@ -122,19 +122,7 @@ Vec4 *color_set_rgb(Vec4 *out, float r, float g, float b);
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_copy(Vec4 *out, Vec4 *c)
-{
-    lwc1 $f4, 12(a1)
-    lwc1 $f1, 0(a1)
-    lwc1 $f2, 4(a1)
-    lwc1 $f3, 8(a1)
-    move v0, a0
-    swc1 $f1, 0(a0)
-    swc1 $f2, 4(a0)
-    swc1 $f3, 8(a0)
-    jr ra
-    swc1 $f4, 12(a0)
-}
+Vec4 *color_copy(Vec4 *out, Vec4 *c);
 #elif !defined(__mips__)
 Vec4 *color_copy(Vec4 *out, Vec4 *c)
 {
@@ -142,19 +130,18 @@ Vec4 *color_copy(Vec4 *out, Vec4 *c)
     return out;
 }
 #else
-Vec4 *color_copy(Vec4 *out, Vec4 *c);
+Vec4 *color_copy(Vec4 *out, Vec4 *c)
+{
+    out->x = c->x;
+    out->y = c->y;
+    out->z = c->z;
+    out->w = c->w;
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_zero(Vec4 *out)
-{
-    move v0, a0
-    sw zero, 0(a0)
-    sw zero, 4(a0)
-    sw zero, 8(a0)
-    jr ra
-    sw zero, 12(a0)
-}
+Vec4 *color_zero(Vec4 *out);
 #elif !defined(__mips__)
 Vec4 *color_zero(Vec4 *out)
 {
@@ -162,7 +149,14 @@ Vec4 *color_zero(Vec4 *out)
     return out;
 }
 #else
-Vec4 *color_zero(Vec4 *out);
+Vec4 *color_zero(Vec4 *out)
+{
+    out->x = 0.0f;
+    out->y = 0.0f;
+    out->z = 0.0f;
+    out->w = 0.0f;
+    return out;
+}
 #endif
 
 /* RGBA8888 (r in the low byte), channels clamped to [0, 1] */
@@ -892,19 +886,7 @@ int color_equal(Vec4 *a, Vec4 *b);
 
 /* 1 when every channel is +0.0 or -0.0 (bit test) */
 #ifdef __MWERKS__
-asm int color_is_zero(Vec4 *c)
-{
-    lw v0, 4(a0)
-    lw a1, 0(a0)
-    lw t0, 8(a0)
-    lw a3, 12(a0)
-    or a2, a1, v0
-    or a0, a2, t0
-    or v1, a0, a3
-    ins v1, zero, 0x1f, 0x1
-    jr ra
-    sltiu v0, v1, 1
-}
+int color_is_zero(Vec4 *c);
 #elif !defined(__mips__)
 int color_is_zero(Vec4 *c)
 {
@@ -913,7 +895,12 @@ int color_is_zero(Vec4 *c)
     return ((w[0] | w[1] | w[2] | w[3]) & 0x7FFFFFFF) == 0;
 }
 #else
-int color_is_zero(Vec4 *c);
+int color_is_zero(Vec4 *c)
+{
+    const unsigned int *p = (const unsigned int *)c;
+
+    return ((p[0] | p[1] | p[2] | p[3]) & 0x7FFFFFFF) == 0;
+}
 #endif
 
 /* out = c / max(channels), clamped to [0, 1]. The scale is 0 when the second value of the vsrt4/vsrt3

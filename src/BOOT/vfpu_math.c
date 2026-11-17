@@ -1,11 +1,9 @@
 // @range 0x08819F0C-0x0881AB1C
 // @asm 0x08819F30-0x0881A440
 // @gcc 0x0881A440-0x0881A520
-// @gcc 0x0881A590-0x0881A5A0
-// @gcc 0x0881A5B8-0x0881A5C8
-// @gcc 0x0881A5DC-0x0881A864
+// @gcc 0x0881A590-0x0881A864
 // @gcc 0x0881A8AC-0x0881A940
-// @gcc 0x0881A980-0x0881AB1C
+// @gcc 0x0881A968-0x0881AB1C
 /* FPU trig routines (sceFpuSin/Cos/Atan/Acos) and the 2D part of Sony's libvfpu (sceVfpuVector2*).
    All of it was compiled with GCC or written in VFPU assembly, so the PSP build carries the original
    instructions as `asm` functions; under `#elif !defined(__mips__)` is the portable C for the PC port.
@@ -299,15 +297,7 @@ ScePspFVector2 *vec2_set(ScePspFVector2 *out, float x, float y);
 
 /* sceVfpuVector2Copy */
 #ifdef __MWERKS__
-asm ScePspFVector2 *vec2_copy(ScePspFVector2 *out, const ScePspFVector2 *v)
-{
-    lwc1 $f1, 4(a1)
-    lwc1 $f2, 0(a1)
-    move v0, a0
-    swc1 $f1, 4(a0)
-    jr ra
-    swc1 $f2, 0(a0)
-}
+ScePspFVector2 *vec2_copy(ScePspFVector2 *out, const ScePspFVector2 *v);
 #elif !defined(__mips__)
 ScePspFVector2 *vec2_copy(ScePspFVector2 *out, const ScePspFVector2 *v)
 {
@@ -315,7 +305,12 @@ ScePspFVector2 *vec2_copy(ScePspFVector2 *out, const ScePspFVector2 *v)
     return out;
 }
 #else
-ScePspFVector2 *vec2_copy(ScePspFVector2 *out, const ScePspFVector2 *v);
+ScePspFVector2 *vec2_copy(ScePspFVector2 *out, const ScePspFVector2 *v)
+{
+    out->x = v->x;
+    out->y = v->y;
+    return out;
+}
 #endif
 
 /* sceVfpuVector2PositiveZero */
@@ -332,14 +327,7 @@ ScePspFVector2 *vec2_zero(ScePspFVector2 *out);
 
 /* sceVfpuVector2NegativeZero */
 #ifdef __MWERKS__
-asm ScePspFVector2 *vec2_neg_zero(ScePspFVector2 *out)
-{
-    lui a1, 0x8000
-    move v0, a0
-    sw a1, 4(a0)
-    jr ra
-    sw a1, 0(a0)
-}
+ScePspFVector2 *vec2_neg_zero(ScePspFVector2 *out);
 #elif !defined(__mips__)
 ScePspFVector2 *vec2_neg_zero(ScePspFVector2 *out)
 {
@@ -348,7 +336,14 @@ ScePspFVector2 *vec2_neg_zero(ScePspFVector2 *out)
     return out;
 }
 #else
-ScePspFVector2 *vec2_neg_zero(ScePspFVector2 *out);
+ScePspFVector2 *vec2_neg_zero(ScePspFVector2 *out)
+{
+    unsigned int *p = (unsigned int *)out;
+
+    p[0] = 0x80000000;
+    p[1] = 0x80000000;
+    return out;
+}
 #endif
 
 /* sceVfpuVector2Ceil: the SDK uses vf2id here, which rounds down [?] (and vf2iu in Floor). */
@@ -776,22 +771,19 @@ int vec2_is_equal(const ScePspFVector2 *a, const ScePspFVector2 *b);
 
 /* sceVfpuVector2IsZero: both components +0 or -0 */
 #ifdef __MWERKS__
-asm int vec2_is_zero(const ScePspFVector2 *v)
-{
-    lw v0, 4(a0)
-    lw a1, 0(a0)
-    or a0, a1, v0
-    ins a0, zero, 0x1f, 0x1
-    jr ra
-    sltiu v0, a0, 1
-}
+int vec2_is_zero(const ScePspFVector2 *v);
 #elif !defined(__mips__)
 int vec2_is_zero(const ScePspFVector2 *v)
 {
     return v->x == 0.0f && v->y == 0.0f;
 }
 #else
-int vec2_is_zero(const ScePspFVector2 *v);
+int vec2_is_zero(const ScePspFVector2 *v)
+{
+    const unsigned int *p = (const unsigned int *)v;
+
+    return ((p[0] | p[1]) & 0x7FFFFFFF) == 0;
+}
 #endif
 
 /* sceVfpuVector2Normalize: 0 for a zero vector, components saturated to [-1, 1] */

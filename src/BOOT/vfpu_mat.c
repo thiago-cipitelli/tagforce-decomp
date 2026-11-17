@@ -1,10 +1,8 @@
 // @range 0x0881B974-0x0881C4E4
 // @gcc 0x0881B974-0x0881BB2C
-// @gcc 0x0881BB64-0x0881BB9C
-// @gcc 0x0881BBCC-0x0881BF7C
+// @gcc 0x0881BB64-0x0881BF7C
 // @gcc 0x0881C150-0x0881C260
-// @gcc 0x0881C348-0x0881C444
-// @gcc 0x0881C494-0x0881C4E4
+// @gcc 0x0881C348-0x0881C4E4
 /* sceVfpuMatrix2*, sceVfpuMatrix3* and the start of sceVfpuMatrix4* of Sony's libvfpu. Matrices are
    column-major and products are the usual ones: mul(out, a, b) = a b, transform(out, m, v) = m v, and
    the rotations give R m (R alone when m is NULL), with angles in radians. GCC/VFPU code kept as `asm`
@@ -342,20 +340,19 @@ float mat2_determinant(const ScePspFMatrix2 *m)
 
 /* sceVfpuMatrix2Adjoint */
 #ifdef __MWERKS__
-asm ScePspFMatrix2 *mat2_adjoint(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
+ScePspFMatrix2 *mat2_adjoint(ScePspFMatrix2 *out, const ScePspFMatrix2 *m);
+#elif !defined(__mips__)
+ScePspFMatrix2 *mat2_adjoint(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
 {
-    lwc1 $f0, 4(a1)
-    lwc1 $f2, 8(a1)
-    lwc1 $f6, 12(a1)
-    neg.s $f3, $f0
-    neg.s $f5, $f2
-    lwc1 $f4, 0(a1)
-    move v0, a0
-    swc1 $f6, 0(a0)
-    swc1 $f5, 4(a0)
-    swc1 $f3, 8(a0)
-    jr ra
-    swc1 $f4, 12(a0)
+    float xx = m->x.x;
+    float xy = m->x.y;
+    float yx = m->y.x;
+
+    out->x.x = m->y.y;
+    out->x.y = -yx;
+    out->y.x = -xy;
+    out->y.y = xx;
+    return out;
 }
 #else
 ScePspFMatrix2 *mat2_adjoint(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
@@ -365,8 +362,8 @@ ScePspFMatrix2 *mat2_adjoint(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
     float yx = m->y.x;
 
     out->x.x = m->y.y;
-    out->x.y = -xy;
-    out->y.x = -yx;
+    out->x.y = -yx;
+    out->y.x = -xy;
     out->y.y = xx;
     return out;
 }
@@ -1332,46 +1329,40 @@ ScePspFMatrix4 *mat4_copy(ScePspFMatrix4 *out, const ScePspFMatrix4 *m);
 
 /* sceVfpuMatrix4SetTransfer: the w column (translation) = v */
 #ifdef __MWERKS__
-asm ScePspFMatrix4 *mat4_set_transfer(ScePspFMatrix4 *m, const ScePspFVector4 *v)
+ScePspFMatrix4 *mat4_set_transfer(ScePspFMatrix4 *m, const ScePspFVector4 *v);
+#elif !defined(__mips__)
+ScePspFMatrix4 *mat4_set_transfer(ScePspFMatrix4 *m, const ScePspFVector4 *v)
 {
-    lwc1 $f4, 12(a1)
-    lwc1 $f1, 0(a1)
-    lwc1 $f2, 4(a1)
-    lwc1 $f3, 8(a1)
-    move v0, a0
-    swc1 $f1, 48(a0)
-    swc1 $f2, 52(a0)
-    swc1 $f3, 56(a0)
-    jr ra
-    swc1 $f4, 60(a0)
+    m->w = *v;
+    return m;
 }
 #else
 ScePspFMatrix4 *mat4_set_transfer(ScePspFMatrix4 *m, const ScePspFVector4 *v)
 {
-    m->w = *v;
+    m->w.x = v->x;
+    m->w.y = v->y;
+    m->w.z = v->z;
+    m->w.w = v->w;
     return m;
 }
 #endif
 
 /* sceVfpuMatrix4GetTransfer */
 #ifdef __MWERKS__
-asm ScePspFVector4 *mat4_get_transfer(ScePspFVector4 *out, const ScePspFMatrix4 *m)
+ScePspFVector4 *mat4_get_transfer(ScePspFVector4 *out, const ScePspFMatrix4 *m);
+#elif !defined(__mips__)
+ScePspFVector4 *mat4_get_transfer(ScePspFVector4 *out, const ScePspFMatrix4 *m)
 {
-    lwc1 $f4, 60(a1)
-    lwc1 $f1, 48(a1)
-    lwc1 $f2, 52(a1)
-    lwc1 $f3, 56(a1)
-    move v0, a0
-    swc1 $f1, 0(a0)
-    swc1 $f2, 4(a0)
-    swc1 $f3, 8(a0)
-    jr ra
-    swc1 $f4, 12(a0)
+    *out = m->w;
+    return out;
 }
 #else
 ScePspFVector4 *mat4_get_transfer(ScePspFVector4 *out, const ScePspFMatrix4 *m)
 {
-    *out = m->w;
+    out->x = m->w.x;
+    out->y = m->w.y;
+    out->z = m->w.z;
+    out->w = m->w.w;
     return out;
 }
 #endif

@@ -1,9 +1,6 @@
 // @range 0x0881AB1C-0x0881B244
-// @gcc 0x0881AB1C-0x0881AB30
-// @gcc 0x0881AB50-0x0881AB64
-// @gcc 0x0881AB7C-0x0881AD18
-// @gcc 0x0881AD74-0x0881AFC8
-// @gcc 0x0881B018-0x0881B244
+// @gcc 0x0881AB1C-0x0881AFC8
+// @gcc 0x0881AFF8-0x0881B244
 /* sceVfpuVector3* of Sony's libvfpu: 12-byte vectors, loaded and stored a float at a time (lv.s/sv.s)
    because they are not 16-byte aligned. GCC/VFPU code kept as `asm` functions for the PSP build;
    under `#else` is the portable C. */
@@ -46,21 +43,19 @@ ScePspFVector3 *vec3_set(ScePspFVector3 *out, float x, float y, float z);
 
 /* sceVfpuVector3Copy */
 #ifdef __MWERKS__
-asm ScePspFVector3 *vec3_copy(ScePspFVector3 *out, const ScePspFVector3 *v)
+ScePspFVector3 *vec3_copy(ScePspFVector3 *out, const ScePspFVector3 *v);
+#elif !defined(__mips__)
+ScePspFVector3 *vec3_copy(ScePspFVector3 *out, const ScePspFVector3 *v)
 {
-    lwc1 $f3, 8(a1)
-    lwc1 $f1, 0(a1)
-    lwc1 $f2, 4(a1)
-    move v0, a0
-    swc1 $f1, 0(a0)
-    swc1 $f2, 4(a0)
-    jr ra
-    swc1 $f3, 8(a0)
+    *out = *v;
+    return out;
 }
 #else
 ScePspFVector3 *vec3_copy(ScePspFVector3 *out, const ScePspFVector3 *v)
 {
-    *out = *v;
+    out->x = v->x;
+    out->y = v->y;
+    out->z = v->z;
     return out;
 }
 #endif
@@ -80,21 +75,23 @@ ScePspFVector3 *vec3_zero(ScePspFVector3 *out);
 
 /* sceVfpuVector3NegativeZero */
 #ifdef __MWERKS__
-asm ScePspFVector3 *vec3_neg_zero(ScePspFVector3 *out)
-{
-    lui a1, 0x8000
-    move v0, a0
-    sw a1, 8(a0)
-    sw a1, 0(a0)
-    jr ra
-    sw a1, 4(a0)
-}
-#else
+ScePspFVector3 *vec3_neg_zero(ScePspFVector3 *out);
+#elif !defined(__mips__)
 ScePspFVector3 *vec3_neg_zero(ScePspFVector3 *out)
 {
     out->x = -0.0f;
     out->y = -0.0f;
     out->z = -0.0f;
+    return out;
+}
+#else
+ScePspFVector3 *vec3_neg_zero(ScePspFVector3 *out)
+{
+    unsigned int *p = (unsigned int *)out;
+
+    p[0] = 0x80000000;
+    p[1] = 0x80000000;
+    p[2] = 0x80000000;
     return out;
 }
 #endif
@@ -382,22 +379,8 @@ ScePspFVector3 *vec3_div(ScePspFVector3 *out, const ScePspFVector3 *a, const Sce
 
 /* sceVfpuVector3Neg (flips the sign bits) */
 #ifdef __MWERKS__
-asm ScePspFVector3 *vec3_neg(ScePspFVector3 *out, const ScePspFVector3 *v)
-{
-    lw t2, 0(a1)
-    lui a2, 0x8000
-    move v0, a0
-    xor v1, t2, a2
-    sw v1, 0(a0)
-    lw t1, 4(a1)
-    xor a3, t1, a2
-    sw a3, 4(a0)
-    lw t0, 8(a1)
-    xor v1, t0, a2
-    jr ra
-    sw v1, 8(a0)
-}
-#else
+ScePspFVector3 *vec3_neg(ScePspFVector3 *out, const ScePspFVector3 *v);
+#elif !defined(__mips__)
 ScePspFVector3 *vec3_neg(ScePspFVector3 *out, const ScePspFVector3 *v)
 {
     out->x = -v->x;
@@ -405,30 +388,39 @@ ScePspFVector3 *vec3_neg(ScePspFVector3 *out, const ScePspFVector3 *v)
     out->z = -v->z;
     return out;
 }
+#else
+ScePspFVector3 *vec3_neg(ScePspFVector3 *out, const ScePspFVector3 *v)
+{
+    unsigned int *p = (unsigned int *)out;
+    const unsigned int *q = (const unsigned int *)v;
+
+    p[0] = q[0] ^ 0x80000000;
+    p[1] = q[1] ^ 0x80000000;
+    p[2] = q[2] ^ 0x80000000;
+    return out;
+}
 #endif
 
 /* sceVfpuVector3Abs (clears the sign bits) */
 #ifdef __MWERKS__
-asm ScePspFVector3 *vec3_abs(ScePspFVector3 *out, const ScePspFVector3 *v)
-{
-    lw v1, 0(a1)
-    move v0, a0
-    ins v1, zero, 0x1f, 0x1
-    sw v1, 0(a0)
-    lw a2, 4(a1)
-    ins a2, zero, 0x1f, 0x1
-    sw a2, 4(a0)
-    lw v1, 8(a1)
-    ins v1, zero, 0x1f, 0x1
-    jr ra
-    sw v1, 8(a0)
-}
-#else
+ScePspFVector3 *vec3_abs(ScePspFVector3 *out, const ScePspFVector3 *v);
+#elif !defined(__mips__)
 ScePspFVector3 *vec3_abs(ScePspFVector3 *out, const ScePspFVector3 *v)
 {
     out->x = fabsf(v->x);
     out->y = fabsf(v->y);
     out->z = fabsf(v->z);
+    return out;
+}
+#else
+ScePspFVector3 *vec3_abs(ScePspFVector3 *out, const ScePspFVector3 *v)
+{
+    unsigned int *p = (unsigned int *)out;
+    const unsigned int *q = (const unsigned int *)v;
+
+    p[0] = q[0] & 0x7FFFFFFF;
+    p[1] = q[1] & 0x7FFFFFFF;
+    p[2] = q[2] & 0x7FFFFFFF;
     return out;
 }
 #endif
@@ -839,21 +831,18 @@ int vec3_is_equal(const ScePspFVector3 *a, const ScePspFVector3 *b)
 
 /* sceVfpuVector3IsZero: every component +0 or -0 */
 #ifdef __MWERKS__
-asm int vec3_is_zero(const ScePspFVector3 *v)
+int vec3_is_zero(const ScePspFVector3 *v);
+#elif !defined(__mips__)
+int vec3_is_zero(const ScePspFVector3 *v)
 {
-    lw v0, 4(a0)
-    lw a1, 0(a0)
-    lw a2, 8(a0)
-    or a0, a1, v0
-    or v1, a0, a2
-    ins v1, zero, 0x1f, 0x1
-    jr ra
-    sltiu v0, v1, 1
+    return v->x == 0.0f && v->y == 0.0f && v->z == 0.0f;
 }
 #else
 int vec3_is_zero(const ScePspFVector3 *v)
 {
-    return v->x == 0.0f && v->y == 0.0f && v->z == 0.0f;
+    const unsigned int *p = (const unsigned int *)v;
+
+    return ((p[0] | p[1] | p[2]) & 0x7FFFFFFF) == 0;
 }
 #endif
 
