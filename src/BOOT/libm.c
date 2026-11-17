@@ -15,7 +15,7 @@
 // @gcc 0x08809F4C-0x0880A028 nl_sf_floor
 // @gcc 0x0880A03C-0x0880A154 nl_sf_scalbn
 // @gcc 0x0880A154-0x0880A220 libm_sf_sin
-// @asm 0x0880A220-0x0880A340
+// @gcc 0x0880A220-0x0880A340 nl_wf_asin
 // @gcc 0x0880A340-0x0880A484 libm_wf_atan2
 // @gcc 0x0880A484-0x0880A5B4 libm_wf_sqrt
 // @gcc 0x0880A5B4-0x0880A5C0 nl_abs
@@ -26,8 +26,7 @@
    a libm_ prefix where the plain one belongs to the VFPU versions (see vfpu_math.c).
    The `@gcc` ranges are the functions that already come out of the newlib source with the SDK's GCC (libm_kf_cos.c,
    libm_kf_rem_pio2.c, libm_kf_sin.c, libm_sf_fabs.c, libm_sf_sin.c, libm_wf_atan2.c, libm_wf_sqrt.c and the nl_*.c of
-   newlib 1.12.0; docs/build.md, "Trilha GCC"); what is left here (libm_asinf) differs only by one delay slot that the
-   SDK's assembler left empty. */
+   newlib 1.12.0; docs/build.md, "Trilha GCC"); libm_asinf needs rule G of tools/psp_gcc_peep.py (rodada 38). */
 
 #ifndef __MWERKS__
 #include <math.h>

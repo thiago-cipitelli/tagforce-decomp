@@ -3,6 +3,7 @@
 // @gcc 0x0880F64C-0x0880F69C nl_printf
 // @gcc 0x0880F69C-0x0880FF70 nl_qsort
 // @gcc 0x0880FF70-0x0880FFA8 nl_rand
+// @gcc 0x0880FFA8-0x08810038 nl_rand
 // @gcc 0x08810038-0x088100A0
 // @gcc 0x088100A0-0x088105F8 nl_reallocr
 // @gcc 0x088105F8-0x0881064C nl_reent
@@ -236,47 +237,8 @@ void srand(unsigned int seed)
 #endif
 
 /* newlib rand: next = next * 6364136223846793005 + 1, returns bits 32-62 */
-#ifdef __MWERKS__
-asm int rand_next(void)
-{
-    addiu sp, sp, -16
-    sw ra, 4(sp)
-    jal heap_get_current
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, v0
-    lw a2, 168(v0)
-    lw a3, 172(v0)
-    lui a0, 0x4c95
-    ori a0, a0, 0x7f2d
-    lui a1, 0x5851
-    ori a1, a1, 0xf42d
-    mult a2, a1
-    mflo t0
-    multu a2, a0
-    mfhi v1
-    mflo v0
-    mult a3, a0
-    addu t0, t0, v1
-    addiu v0, v0, 1
-    sltiu a2, v0, 1
-    mflo a0
-    addu v1, t0, a0
-    addu v1, v1, a2
-    sw v0, 168(s0)
-    sw v1, 172(s0)
-    jal heap_get_current
-    nop
-    lw v1, 172(v0)
-    lw v0, 168(v0)
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    srl v0, v1, 0x0
-    ins v0, zero, 0x1f, 0x1
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+int rand_next(void);
+#ifndef __MWERKS__ /* PSP: nl_rand.c */
 int rand_next(void)
 {
     char *r = heap_get_current();
