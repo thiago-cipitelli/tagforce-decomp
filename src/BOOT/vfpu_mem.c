@@ -1,5 +1,5 @@
 // @range 0x0881EB0C-0x0881F6E4
-// @gcc 0x0881F378-0x0881F63C
+// @gcc 0x0881F2DC-0x0881F63C
 /* VFPU block memory routines (copy/move/fill through quad stores to the uncached mirror, 64-byte
    cache lines created without a fetch) and the VFPU register context: the whole register file, the
    prefix/condition control registers and the random generator state saved, restored and reset.
@@ -586,86 +586,39 @@ L_0881F164:
     jr ra
     addiu sp, sp, 576
 }
-#else
-int vfpu_ctx_init(VfpuContext *ctx);
-int vfpu_ctx_load(VfpuContext *ctx);
-
-int vfpu_reset(void)
-{
-    VfpuContext ctx;
-
-    vfpu_ctx_init(&ctx);
-    return vfpu_ctx_load(&ctx);
-}
-#endif
+#endif /* other builds: after vfpu_ctx_load, which the SDK's GCC inlines into it */
 
 /* Default context: every register NaN (0x7F800001), identity prefixes, all condition bits set and
    the generator seed; returns 0. */
 #ifdef __MWERKS__
-asm int vfpu_ctx_init(VfpuContext *ctx)
-{
-    lui v0, 0x7f80
-    move t2, a0
-    ori v1, v0, 0x1
-    move v0, a0
-    addiu a0, zero, 31
-L_0881F2F0:
-    addiu a0, a0, -1
-    sw v1, 0(v0)
-    sw v1, 4(v0)
-    sw v1, 8(v0)
-    sw v1, 12(v0)
-    bgez a0, L_0881F2F0
-    addiu v0, v0, 16
-    lui a2, 0x3f80
-    lui a3, 0x3f80
-    lui t0, 0x3f80
-    lui t7, 0x3f80
-    addiu t3, t2, 544
-    lui a0, 0x3f80
-    addiu t6, zero, 228
-    ori v1, a2, 0x1
-    ori t5, a3, 0x2
-    ori t4, t0, 0x4
-    ori a1, t7, 0x8
-    addiu t1, zero, 63
-    move v0, zero
-    sw v1, 544(t2)
-    sw t6, 516(t2)
-    sw t1, 524(t2)
-    sw t6, 512(t2)
-    sw zero, 520(t2)
-    sw zero, 528(t2)
-    sw a0, 28(t3)
-    sw t5, 4(t3)
-    sw t4, 8(t3)
-    sw a1, 12(t3)
-    sw a0, 16(t3)
-    sw a0, 20(t3)
-    jr ra
-    sw a0, 24(t3)
-}
+int vfpu_ctx_init(VfpuContext *ctx);
 #else
 int vfpu_ctx_init(VfpuContext *ctx)
 {
+    unsigned int *r;
     int i;
 
-    for (i = 0; i < 128; i++) {
-        ctx->regs[i] = 0x7F800001;
+    /* the SDK's GCC: four words per pass, the counter reversed (unused) */
+    for (i = 0; i < 32; i++) {
+        ctx->regs[4 * i] = 0x7F800001;
+        ctx->regs[4 * i + 1] = 0x7F800001;
+        ctx->regs[4 * i + 2] = 0x7F800001;
+        ctx->regs[4 * i + 3] = 0x7F800001;
     }
     ctx->ctrl[0] = 0xE4;
     ctx->ctrl[1] = 0xE4;
     ctx->ctrl[2] = 0;
     ctx->ctrl[3] = 0x3F;
     ctx->ctrl[4] = 0;
-    ctx->rcx[0] = 0x3F800001;
-    ctx->rcx[1] = 0x3F800002;
-    ctx->rcx[2] = 0x3F800004;
-    ctx->rcx[3] = 0x3F800008;
-    ctx->rcx[4] = 0x3F800000;
-    ctx->rcx[5] = 0x3F800000;
-    ctx->rcx[6] = 0x3F800000;
-    ctx->rcx[7] = 0x3F800000;
+    r = ctx->rcx;
+    r[0] = 0x3F800001;
+    r[1] = 0x3F800002;
+    r[2] = 0x3F800004;
+    r[3] = 0x3F800008;
+    r[4] = 0x3F800000;
+    r[5] = 0x3F800000;
+    r[6] = 0x3F800000;
+    r[7] = 0x3F800000;
     return 0;
 }
 #endif
@@ -838,6 +791,16 @@ int vfpu_ctx_load(VfpuContext *ctx)
 }
 #endif
 
+#ifndef __MWERKS__
+int vfpu_reset(void)
+{
+    VfpuContext ctx;
+
+    vfpu_ctx_init(&ctx);
+    return vfpu_ctx_load(&ctx);
+}
+#endif
+
 /* Generator seed into st[8] (the vfpu_ctx_init values); returns 0. */
 #ifndef __MWERKS__ /* PSP: vfpu_mem_gcc.c */
 int vfpu_rng_init(unsigned int *st)
@@ -987,9 +950,68 @@ L_0881F6D4:
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__)
 void *vfpu_memset(void *dst, int c, unsigned int n)
 {
     return memset(dst, c, n);
+}
+#else
+void *vfpu_memset(void *dst, int c, unsigned int n)
+{
+    /* the SDK's GCC: 3 words left (the original copies dst to v0 before `move v1,t0; ins`, the sched2 of cc1
+       1.7.1 after them: the copy has priority 1 against 2) */
+    void *r = dst;
+    unsigned int u = __builtin_allegrex_ins(0x40000000, (unsigned int)dst, 0, 29);
+
+    __asm__ volatile (
+        ".set push\n"
+        ".set noreorder\n"
+        "ins %1, %1, 8, 8\n"
+        "ins %1, %1, 16, 16\n"
+        "mtv %1, S000\n"
+        "vpfxs X, X, X, X\n"
+        "vmov.q C000, C000\n"
+        "1:\n"
+        "andi $8, %0, 0x3f\n"
+        "beqz $8, 2f\n"
+        "nop\n"
+        "beqz %2, 5f\n"
+        "addiu %2, %2, -1\n"
+        "sb %1, 0(%0)\n"
+        "addiu %0, %0, 1\n"
+        "j 1b\n"
+        "addiu %3, %3, 1\n"
+        "2:\n"
+        "sltiu $8, %2, 64\n"
+        "bnez $8, 4f\n"
+        "nop\n"
+        "3:\n"
+        "cache 0x1b, 0(%0)\n"
+        "addiu %0, %0, 64\n"
+        "addiu %2, %2, -64\n"
+        "sltiu $8, %2, 64\n"
+        "sync\n"
+        "sv.q C000, 0(%3), wb\n"
+        "sv.q C000, 16(%3), wb\n"
+        "sv.q C000, 32(%3), wb\n"
+        "sv.q C000, 48(%3), wb\n"
+        "addiu %3, %3, 64\n"
+        "beqz $8, 3b\n"
+        "vnop\n"
+        "4:\n"
+        "beqz %2, 5f\n"
+        "6:\n"
+        "addiu %2, %2, -1\n"
+        "sb %1, 0(%0)\n"
+        "bnez %2, 6b\n"
+        "addiu %0, %0, 1\n"
+        "5:\n"
+        "vflush\n"
+        "vnop\n"
+        ".set pop\n"
+        : "+r" (dst), "+r" (c), "+r" (n), "+r" (u)
+        :
+        : "$8", "memory");
+    return r;
 }
 #endif

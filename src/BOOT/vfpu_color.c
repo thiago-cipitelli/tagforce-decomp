@@ -1,6 +1,5 @@
 // @range 0x0881D214-0x0881D8A8
-// @gcc 0x0881D214-0x0881D7AC
-// @gcc 0x0881D7DC-0x0881D8A8
+// @gcc 0x0881D214-0x0881D8A8
 /* VFPU colors (four floats r, g, b, a in [0, 1]; the _rgb variants leave alpha as in the first
    operand) and the VFPU random generator. Hand-written VFPU code kept as whole `asm` functions; the
    functions the SDK compiled with GCC come from C (vfpu_color_gcc.c). The port C of the VFPU functions is left
@@ -1024,21 +1023,7 @@ Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c)
 
 /* Next vrndf1 value in [1, 2) without advancing the generator (state saved and restored around it). */
 #ifdef __MWERKS__
-asm float vrand_peekf(void)
-{
-    addiu sp, sp, -64
-    sw ra, 48(sp)
-    jal vfpu_rng_save
-    move a0, sp
-    vrndf1.s S000
-    sv.s S000, 32(sp)
-    jal vfpu_rng_load
-    move a0, sp
-    lwc1 $f0, 32(sp)
-    lw ra, 48(sp)
-    jr ra
-    addiu sp, sp, 64
-}
+float vrand_peekf(void);
 #elif !defined(__mips__)
 float vrand_peekf(void)
 {
@@ -1051,7 +1036,16 @@ float vrand_peekf(void)
     return r;
 }
 #else
-float vrand_peekf(void);
+float vrand_peekf(void)
+{
+    unsigned int st[8];
+    float r;
+
+    vfpu_rng_save(st);
+    __asm__ volatile ("vrndf1.s S000\n\tsv.s S000, %0" : "=m" (r));
+    vfpu_rng_load(st);
+    return r;
+}
 #endif
 
 #ifdef NON_MATCHING /* PSP: vfpu_color_gcc.c */

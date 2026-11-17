@@ -1,6 +1,5 @@
 // @range 0x0881C4E4-0x0881CD50
-// @gcc 0x0881C4E4-0x0881C730
-// @gcc 0x0881C830-0x0881CD50
+// @gcc 0x0881C4E4-0x0881CD50
 /* VFPU matrix library, second half (the first half, from mat4_identity, lives before 0x0881C4E4):
    products, transforms, rotations, determinant, inverse and the helpers built on them. Matrices are
    column-major as in the VFPU (m[4 * col + row]); each function is hand-written VFPU code (the SDK's
@@ -475,82 +474,14 @@ Mat4 *mat4_mul_rot_x(Mat4 *out, Mat4 *m, float a)
 
 /* out = rot_x(v.x) * rot_y(v.y) * rot_z(v.z) * m (z applied first); m == 0 starts from identity */
 #ifdef __MWERKS__
-asm Mat4 *mat4_rotate_xyz(Mat4 *out, Mat4 *m, Vec4 *v)
-{
-    lwc1 $f2, 8(a2)
-    addiu sp, sp, -16
-    move v0, a0
-    swc1 $f2, 0(sp)
-    lv.s S100, 0(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vrot.q C000, S100, [c, s, 0, 0]
-    vrot.q C010, S100, [-s, c, 0, 0]
-    vidt.q C020
-    vidt.q C030
-    beqzl a1, L_0881C778
-    vmmov.q E200, E000
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    vmmul.q E200, E100, E000
-L_0881C778:
-    sv.q C200, 0(a0)
-    sv.q C210, 16(a0)
-    sv.q C220, 32(a0)
-    sv.q C230, 48(a0)
-    lwc1 $f1, 4(a2)
-    swc1 $f1, 4(sp)
-    lv.s S100, 4(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vrot.q C000, S100, [c, 0, -s, 0]
-    vidt.q C010
-    vrot.q C020, S100, [s, 0, c, 0]
-    vidt.q C030
-    beqzl a0, L_0881C7C8
-    vmmov.q E200, E000
-    lv.q C100, 0(a0)
-    lv.q C110, 16(a0)
-    lv.q C120, 32(a0)
-    lv.q C130, 48(a0)
-    vmmul.q E200, E100, E000
-L_0881C7C8:
-    sv.q C200, 0(a0)
-    sv.q C210, 16(a0)
-    sv.q C220, 32(a0)
-    sv.q C230, 48(a0)
-    lwc1 $f1, 0(a2)
-    swc1 $f1, 8(sp)
-    lv.s S100, 8(sp)
-    vcst.s S101, VFPU_2_PI
-    vmul.s S100, S100, S101
-    vidt.q C000
-    vrot.q C010, S100, [0, c, s, 0]
-    vrot.q C020, S100, [0, -s, c, 0]
-    vidt.q C030
-    beqzl a0, L_0881C818
-    vmmov.q E200, E000
-    lv.q C100, 0(a0)
-    lv.q C110, 16(a0)
-    lv.q C120, 32(a0)
-    lv.q C130, 48(a0)
-    vmmul.q E200, E100, E000
-L_0881C818:
-    sv.q C200, 0(a0)
-    sv.q C210, 16(a0)
-    sv.q C220, 32(a0)
-    sv.q C230, 48(a0)
-    jr ra
-    addiu sp, sp, 16
-}
+Mat4 *mat4_rotate_xyz(Mat4 *out, Mat4 *m, Vec4 *v);
 #else
 Mat4 *mat4_rotate_xyz(Mat4 *out, Mat4 *m, Vec4 *v)
 {
-    rotate_axis(out, m, v->z, 2);
-    rotate_axis(out, out, v->y, 1);
-    return rotate_axis(out, out, v->x, 0);
+    mat4_mul_rot_z(out, m, v->z);
+    mat4_mul_rot_y(out, out, v->y);
+    mat4_mul_rot_x(out, out, v->x);
+    return out;
 }
 #endif
 
