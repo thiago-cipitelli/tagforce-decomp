@@ -16,6 +16,11 @@
    rematerialized by reload in its round-robin spill register, which is the -1 in a0 instead of v0 of _strtod_r and
    __svfscanf_r. rest_of_compilation() is wrapped to set n_non_fixed_regs (PSP_GCC_NNF=n overrides, 64 = cc1 1.7.1).
 
+   Third change (rodada 41): in store_expr, when the target has a queued post-increment (`*p++ = ...`), the
+   increments queued while expanding the value are emitted right after it, before the store (the target's own
+   entries stay queued). `*p++ = *fp->_p++` then stores fp->_p before the byte, as __svfscanf_r of the original.
+   The call to expand_expr in that branch (after gen_reg_rtx) is redirected to rhs_expand(). PSP_GCC_RHSQ=0 turns it off.
+
    Built by tools/setup_toolchain.sh (addresses from nm of cc1 as -DADDR_*), used by tools/psp_gcc.sh.  */
 #include <stdint.h>
 #include <stdio.h>
@@ -95,6 +100,29 @@ static void my_rest_of_compilation(void *decl)
     roc_orig(decl);
 }
 
+static void *(*expand_expr_f)(void *, void *, int, int) = A(ADDR_expand_expr);
+static void (*emit_queue_f)(void) = A(ADDR_emit_queue);
+static void ***cfun_p = A(ADDR_cfun);
+#define PENDING (*(rtx *)((char *)(*cfun_p)[2] + 24))        /* cfun->expr->x_pending_chain */
+#define QNEXT(q) (*(rtx *)((char *)(q) + 4 + 4 * 4))          /* QUEUED_NEXT: XEXP (q, 4) */
+
+static void *rhs_expand(void *exp, void *target, int mode, int modifier)
+{
+    rtx saved = PENDING, r = expand_expr_f(exp, target, mode, modifier), q;
+
+    if (PENDING != saved) {
+        for (q = PENDING; q && QNEXT(q) != saved; q = QNEXT(q))
+            ;
+        if (q) {                /* only the entries added by the value */
+            QNEXT(q) = 0;
+            emit_queue_f();
+            PENDING = saved;
+        } else                  /* the value flushed the older ones itself */
+            emit_queue_f();
+    }
+    return r;
+}
+
 static void writable(void *a, size_t n)
 {
     long pg = sysconf(_SC_PAGESIZE);
@@ -150,4 +178,15 @@ __attribute__((constructor)) static void init(void)
     insn_data[DONOR].n_alternatives = 1;
     insn_data[DONOR].output_format = 3;   /* INSN_OUTPUT_FORMAT_FUNCTION */
     recog_orig = patch(A(ADDR_recog), my_recog);
+    e = getenv("PSP_GCC_RHSQ");
+    if (!e || atoi(e)) {
+        /* store_expr, queued_subexp_p (target) branch: call expand_expr (exp, gen_reg_rtx (...), ...) */
+        unsigned char *c = A(ADDR_store_expr + 0x4AE);
+        if (c[0] != 0xE8 || (uintptr_t)(c + 5) + *(int32_t *)(c + 1) != (uintptr_t)expand_expr_f) {
+            fprintf(stderr, "psp_gcc_insand: not the cc1 of psp-gcc 1.7.1 (store_expr)\n");
+            exit(1);
+        }
+        writable(c, 5);
+        *(int32_t *)(c + 1) = (int32_t)((uintptr_t)rhs_expand - (uintptr_t)(c + 5));
+    }
 }
