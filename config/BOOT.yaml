@@ -27,8 +27,6 @@ segments:
     subalign: null
     subsegments:
       - [0x60, c, crt0_gcc]
-      - [0x3F4, c, crt0]
-      - [0x48C, c, crt0_gcc]
       - [0x684, asm, crt0_asm_08804624]
       - [0x774, c, crt0_gcc]
       - [0xA6C, c, libgu_gcc]
