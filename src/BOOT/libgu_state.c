@@ -1,13 +1,7 @@
 // @range 0x08805EC4-0x08807070
-// @gcc 0x08805EC4-0x08806378
-// @asm 0x08806378-0x08806460
-// @gcc 0x08806460-0x08806850
+// @gcc 0x08805EC4-0x08806850
 // @asm 0x08806850-0x088068EC
-// @gcc 0x088068EC-0x08806B1C
-// @asm 0x08806B1C-0x08806B9C
-// @gcc 0x08806B9C-0x08806CB8
-// @asm 0x08806CB8-0x08806D3C
-// @gcc 0x08806D3C-0x08806F6C
+// @gcc 0x088068EC-0x08806F6C
 // @asm 0x08806F6C-0x08807034
 // @gcc 0x08807034-0x08807070
 /* libgu of the Sony SDK (GCC; names from the export NIDs): primitives, lighting, texture,
@@ -138,20 +132,21 @@ void gu_draw_sprite(int x, int y, int z, int u, int v, int flip, int rot)
 void sceGuCopyImage(int psm, int sx, int sy, int width, int height, int srcw, void *src, int dx,
                     int dy, int destw, void *dest)
 {
-    unsigned int s = (unsigned int)src;
-    unsigned int d = (unsigned int)dest;
+    GuList *l = gu.list;
+    int fmt;
 
     if (((sx + width) | (dx + width)) & 0xFFFFFC00) {
         return;
     }
-    GU_PUSH((s & 0xFFFFFF) | 0xB2000000);
-    GU_PUSH((((s & 0xFFFFFFF) >> 24) << 16) | srcw | 0xB3000000);
-    GU_PUSH(sy << 10 | sx | 0xEB000000);
-    GU_PUSH((d & 0xFFFFFF) | 0xB4000000);
-    GU_PUSH((((d & 0xFFFFFFF) >> 24) << 16) | destw | 0xB5000000);
-    GU_PUSH(dy << 10 | dx | 0xEC000000);
-    GU_PUSH((height - 1) << 10 | (width - 1) | 0xEE000000);
-    GU_PUSH((psm == 3) | 0xEA000000);
+    fmt = psm == 3;
+    LPUSH(((unsigned int)src & 0xFFFFFF) | 0xB2000000);
+    LPUSH((((unsigned int)src >> 24) & 0xF) << 16 | srcw | 0xB3000000);
+    LPUSH(sy << 10 | sx | 0xEB000000);
+    LPUSH(((unsigned int)dest & 0xFFFFFF) | 0xB4000000);
+    LPUSH((((unsigned int)dest >> 24) & 0xF) << 16 | destw | 0xB5000000);
+    LPUSH(dy << 10 | dx | 0xEC000000);
+    LPUSH((height - 1) << 10 | (width - 1) | 0xEE000000);
+    LPUSH(fmt | 0xEA000000);
 }
 
 /* sceGuClearColor/Stencil/Depth only record the value for sceGuClear */
@@ -279,13 +274,21 @@ void sceGuLightAtt(float atten0, float atten1, float atten2, int light)
 /* SPOTEXP, SPOTCUT and the three LDX/LDY/LDZ direction words of light n */
 void sceGuLightSpot(float exponent, float cutoff, int light, const float *direction)
 {
-    int k = light * 3;
+    GuList *l = gu.list;
+    int k;
+    unsigned int w0, w1, w2, w3, w4;
 
-    GU_PUSH((unsigned int)(light + 0x87) << 24 | GU_F24(exponent));
-    GU_PUSH((unsigned int)(light + 0x8B) << 24 | GU_F24(cutoff));
-    GU_PUSH((unsigned int)(k + 0x6F) << 24 | GU_F24(direction[0]));
-    GU_PUSH((unsigned int)(k + 0x70) << 24 | GU_F24(direction[1]));
-    GU_PUSH((unsigned int)(k + 0x71) << 24 | GU_F24(direction[2]));
+    w1 = (unsigned int)(light + 0x8B) << 24 | GU_F24(cutoff);
+    k = light * 3;
+    w0 = (unsigned int)(light + 0x87) << 24 | GU_F24(exponent);
+    w2 = (unsigned int)(k + 0x6F) << 24 | ((const unsigned int *)direction)[0] >> 8;
+    w3 = (unsigned int)(k + 0x70) << 24 | ((const unsigned int *)direction)[1] >> 8;
+    w4 = (unsigned int)(k + 0x71) << 24 | ((const unsigned int *)direction)[2] >> 8;
+    LPUSH(w0);
+    LPUSH(w1);
+    LPUSH(w2);
+    LPUSH(w3);
+    LPUSH(w4);
 }
 
 void sceGuLightColor(int light, int component, unsigned int color)
@@ -360,25 +363,37 @@ void sceGuTexSync(void)
     GU_PUSH(0xCC000000);
 }
 
-static int gu_log2(int v)
+/* floor(log2(v)) as the GE wants it: 31 - clz(v), so 0 gives -1 (the library uses clz) */
+static int gu_log2(unsigned int v)
 {
-    int n = 0;
+#if defined(__mips__) && !defined(__MWERKS__)
+    return 31 - __builtin_allegrex_clz(v);
+#else
+    int n = -1;
 
-    while ((1 << (n + 1)) <= v) {
+    while (v != 0) {
+        v >>= 1;
         n++;
     }
     return n;
+#endif
 }
 
 /* TBP/TBW/TSIZE of mip level n, then TFLUSH */
 void sceGuTexImage(int mipmap, int width, int height, int tbw, const void *tbp)
 {
+    GuList *l = gu.list;
     unsigned int p = (unsigned int)tbp;
+    unsigned int w0 = (unsigned int)(mipmap + 0xA0) << 24 | (p & 0xFFFFFF);
+    unsigned int w1 = (unsigned int)(mipmap + 0xA8) << 24 | ((p >> 24) & 0xF) << 16 | tbw;
+    int lw = gu_log2(width);
+    int lh = gu_log2(height);
+    unsigned int w2 = (unsigned int)(mipmap + 0xB8) << 24 | lh << 8 | lw;
 
-    GU_PUSH((unsigned int)(mipmap + 0xA0) << 24 | (p & 0xFFFFFF));
-    GU_PUSH((unsigned int)(mipmap + 0xA8) << 24 | (((p & 0xFFFFFFF) >> 24) << 16) | tbw);
-    GU_PUSH((unsigned int)(mipmap + 0xB8) << 24 | gu_log2(height) << 8 | gu_log2(width));
-    GU_PUSH(0xCB000000);
+    LPUSH(w0);
+    LPUSH(w1);
+    LPUSH(w2);
+    LPUSH(0xCB000000);
 }
 
 void sceGuTexOffset(float u, float v)
@@ -420,15 +435,22 @@ void sceGuClutLoad(int num_blocks, const void *cbp)
 void sceGuFog(float near, float far, unsigned int color)
 {
     extern const float gu_one;         /* 0x088EB118 1.0 */
+    GuList *l = gu.list;
     float d = far - near;
-    float k = 0.0f;
+    float k;
+    unsigned int w0, w1, w2;
 
     if (d > 0.0f || d < 0.0f) {
         k = gu_one / d;
+    } else {
+        k = 0.0f;
     }
-    GU_PUSH((color & 0xFFFFFF) | 0xCF000000);
-    GU_PUSH(GU_F24(far) | 0xCD000000);
-    GU_PUSH(GU_F24(k) | 0xCE000000);
+    w0 = (color & 0xFFFFFF) | 0xCF000000;
+    w1 = GU_F24(far) | 0xCD000000;
+    w2 = GU_F24(k) | 0xCE000000;
+    LPUSH(w0);
+    LPUSH(w1);
+    LPUSH(w2);
 }
 
 void sceGuColorFunc(int func, unsigned int color, unsigned int mask)

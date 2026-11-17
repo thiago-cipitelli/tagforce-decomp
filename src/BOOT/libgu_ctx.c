@@ -1370,11 +1370,12 @@ void gu_set_display_hooks(void (*pre)(void), void (*post)(void), void (*disp)(in
 void gu_init_contexts(void)
 {
     int i;
+    GuList *l;
 
-    gu.width = 480;
-    gu.cid = -1;
+    gu.psm = 1;
     gu.started = 0;
     gu.fbw = 480;
+    gu.width = 480;
     gu.draw_fbp = 0;
     gu.disp_fbp = 0;
     gu.depth_fbp = 0;
@@ -1383,12 +1384,10 @@ void gu_init_contexts(void)
     gu.call_mode = 0;
     gu.list = 0;
     gu.states = 0;
-    gu.psm = 1;
     gu.height = 272;
-    for (i = 0; i < 5; i++) {
-        GuList *l = &gu.lists[i];
-        int k;
-
+    gu.cid = -1;
+    l = gu.lists;
+    for (i = 0; i < 5; i++, l++) {
         l->pad0 = 4;
         l->obj_depth = 0;
         l->pad10[0] = 100;
@@ -1397,15 +1396,26 @@ void gu_init_contexts(void)
         l->disp_w = 480;
         l->disp_h = 272;
         l->scissor_on = 0;
-        for (k = 0; k < 4; k++) {
-            l->scissor[k] = 0;
-        }
-        for (k = 0; k < 15; k++) {
-            l->pad38[k] = 0;
-        }
-        l->pad38[6] = 0xFFFF;
+        l->scissor[0] = 0;
+        l->scissor[1] = 0;
+        l->scissor[2] = 0;
+        l->scissor[3] = 0;
+        l->pad38[7] = 0;
         l->pad38[8] = 1;
-        l->next = -1;
+        l->pad38[9] = 0;
+        l->pad38[0] = 0;
+        l->pad38[1] = 0;
+        l->pad38[2] = 0;
+        l->pad38[3] = 0;
+        l->pad38[4] = 0;
+        l->pad38[5] = 0;
+        l->pad38[6] = 0xFFFF;
+        l->pad38[10] = 0;
+        l->pad38[12] = 0;
+        l->pad38[11] = 0;
+        l->pad38[13] = 0;
+        l->pad38[14] = 0;
+        gu.lists[i].next = -1;
     }
     gu_cb.signal = 0;
     gu_cb.finish = 0;
