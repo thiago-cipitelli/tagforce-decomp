@@ -51,8 +51,6 @@ segments:
       - [0x10404, c, dd_disc_hook]
       - [0x10E5C, c, dd_field_cursor]
       - [0x116D8, c, dd_cursor_model]
-      - [0x126BC, asm, dd_cursor_model_asm_0881665C]
-      - [0x129C4, c, dd_cursor_model]
       - [0x13030, c, dd_cutin]
       - [0x13644, c, dd_event]
       - [0x139AC, c, dd_event_cmd]

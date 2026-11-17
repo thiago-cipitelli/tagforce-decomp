@@ -1,5 +1,4 @@
 // @range 0x08815678-0x08816FD0
-// @asm 0x0881665C-0x08816964
 // @data 0x088757D4-0x08875AC4
 // @rodata 0x08870014-0x08870074
 /* The 3D field cursor: its pose follows the card under the cursor location, the cursor model
@@ -522,27 +521,26 @@ unsigned int *dd_cursor_draw_locked(unsigned int *list)
 
 /* the arrow sprite over the location (blinks with bit blink_bit of the frame counter) */
 
-#ifdef NON_MATCHING /* 28 palavras: list/raised e dx/dy trocam de $s (candidatos a derrame do alocador) */
 unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, int blink_bit)
 {
     float model[16] __attribute__((aligned(16)));
     float view[16] __attribute__((aligned(16)));
-    int du;
     DdCurUv *uv;
+    int dx;
+    int dy;
+    int du;
     float sx;
     float proj[16] __attribute__((aligned(16)));
     float res[16] __attribute__((aligned(16)));
     int k;
     DdVec4A scr;
-    int dy;
     float sy;
     void *gim;
-    int dx;
 
     mtx_set_mode(2);
     mtx_push();
     k = loc.zone;
-    switch (k) {
+    switch ((int)k) {
     case 0xD:
     case 0xE:
     case 0xC:
@@ -550,7 +548,7 @@ unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, in
     {
         float ofs[3] = { 0 };
 
-        ofs[1] = dd_stack_y(dd_zone_count(loc.player, k));
+        ofs[1] = dd_stack_y(dd_zone_count(loc.player, (int)k));
         mtx_translate(ofs);
     }
     }
@@ -573,9 +571,9 @@ unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, in
     sy = scr.y;
     mtx_set_mode(2);
     mtx_pop();
-    du = 0;
-    dy = -0xB;
     dx = 0;
+    dy = -0xB;
+    du = 0;
     k = k + loc.player * 16;
     uv = &dd_cursor_uv[k];
     if (k == 0xB) {
@@ -598,7 +596,6 @@ unsigned int *dd_cursor_draw_arrow(unsigned int *list, DdLoc loc, int raised, in
     list = draw_sprite(list, (int)(sx + (float)dx), (int)(sy + (float)dy), 0x7FFF, uv->u + du, uv->v, 0, 0);
     return dl_enable(list, 0);
 }
-#endif
 
 /* the icons of the actions possible on the location (up to 13, centered over it) */
 unsigned int *dd_cursor_draw_icons(unsigned int *list, DdLoc loc)
