@@ -1,7 +1,5 @@
 // @range 0x08805EC4-0x08807070
-// @gcc 0x08805EC4-0x08806850
-// @asm 0x08806850-0x088068EC
-// @gcc 0x088068EC-0x08806F6C
+// @gcc 0x08805EC4-0x08806F6C
 // @asm 0x08806F6C-0x08807034
 // @gcc 0x08807034-0x08807070
 /* libgu of the Sony SDK (GCC; names from the export NIDs): primitives, lighting, texture,
@@ -278,12 +276,12 @@ void sceGuLightSpot(float exponent, float cutoff, int light, const float *direct
     int k;
     unsigned int w0, w1, w2, w3, w4;
 
+    w0 = (unsigned int)(light + 0x87) << 24 | GU_F24(exponent);
     w1 = (unsigned int)(light + 0x8B) << 24 | GU_F24(cutoff);
     k = light * 3;
-    w0 = (unsigned int)(light + 0x87) << 24 | GU_F24(exponent);
-    w2 = (unsigned int)(k + 0x6F) << 24 | ((const unsigned int *)direction)[0] >> 8;
-    w3 = (unsigned int)(k + 0x70) << 24 | ((const unsigned int *)direction)[1] >> 8;
-    w4 = (unsigned int)(k + 0x71) << 24 | ((const unsigned int *)direction)[2] >> 8;
+    w2 = (unsigned int)(k + 0x6F) << 24 | GU_F24(direction[0]);
+    w3 = (unsigned int)(k + 0x70) << 24 | GU_F24(direction[1]);
+    w4 = (unsigned int)(k + 0x71) << 24 | GU_F24(direction[2]);
     LPUSH(w0);
     LPUSH(w1);
     LPUSH(w2);

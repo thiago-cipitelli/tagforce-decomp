@@ -772,7 +772,7 @@ void wave_ch_decode_vag(int ch, unsigned char *pcm)
             *p++ = 0;
         }
     }
-    switch (wave_ch[ch].flags & 0xFF) {
+    switch ((int)(wave_ch[ch].flags & 0xFF)) {
     case 0:
         if (wave_ch[ch].pos + 16 <= wave_ch[ch].size) {
             copy_bytes(wave_vag_ptr, data + wave_ch[ch].pos, 16);
@@ -917,9 +917,7 @@ void wave_ch_mix(int ch, short *out, short *pcm)
         int vl;
         int vr;
 
-        if ((flags & 0x100000) == 0) {
-            c->fade_vol = 127;
-        } else {
+        if (flags & 0x100000) {
             int len = c->fade_len;
 
             c->fade_vol = ((len - c->fade_count) * 127) / len;
@@ -928,10 +926,12 @@ void wave_ch_mix(int ch, short *out, short *pcm)
             }
             c->fade_count++;
             if (c->fade_count >= len) {
-                c->flags = flags & ~0x100000;
+                flags &= ~0x100000;
+                c->flags = flags;
                 c->fade_count = 0;
                 if (flags & 0x10000) {
-                    c->flags = flags & ~0x110000;
+                    flags &= ~0x10000;
+                    c->flags = flags;
                     c->playing = s->playing;
                     c->pos = s->pos;
                     c->vol_l = s->vol_l;
@@ -941,7 +941,8 @@ void wave_ch_mix(int ch, short *out, short *pcm)
                     c->unk28 = s->unk28;
                     c->unk2c = s->unk2c;
                 } else if (flags & 0x20000) {
-                    c->flags = flags & ~0x120000;
+                    flags &= ~0x20000;
+                    c->flags = flags;
                     c->playing = s->playing;
                     c->pos = s->pos;
                     c->hist1 = s->hist1;
@@ -949,23 +950,28 @@ void wave_ch_mix(int ch, short *out, short *pcm)
                     c->unk28 = s->unk28;
                     c->unk2c = s->unk2c;
                 } else if (flags & 0x40000) {
-                    c->flags = flags & ~0x140000;
+                    flags &= ~0x40000;
+                    c->flags = flags;
                     c->playing = s->playing;
                 }
             }
-        }
-        vl = (c->vol_l * c->fade_vol) / 127;
-        vr = (c->vol_r * c->fade_vol) / 127;
-        if ((c->flags & 0x100) && (c->flags & 0x200)) {
-            l = vl * pcm[i * 2];
-            r = vr * pcm[i * 2 + 1];
         } else {
-            r = vr * *mono;
-            l = vl * *mono;
+            c->fade_vol = 127;
+        }
+        if (!(wave_ch[ch].flags & 0x100) || !(wave_ch[ch].flags & 0x200)) {
+            vr = (wave_ch[ch].vol_r * wave_ch[ch].fade_vol) / 127;
+            vl = (wave_ch[ch].vol_l * wave_ch[ch].fade_vol) / 127;
+            r = (vr * *mono) / 4096;
+            l = (vl * *mono) / 4096;
+        } else {
+            vl = (wave_ch[ch].vol_l * wave_ch[ch].fade_vol) / 127;
+            vr = (wave_ch[ch].vol_r * wave_ch[ch].fade_vol) / 127;
+            l = (vl * pcm[i * 2]) / 4096;
+            r = (vr * pcm[i * 2 + 1]) / 4096;
         }
         mono++;
-        l = out[i * 2] + l / 4096;
-        r = out[i * 2 + 1] + r / 4096;
+        l = out[i * 2] + l;
+        r = out[i * 2 + 1] + r;
         if (l > 0x7FFE) {
             l = 0x7FFF;
         }
