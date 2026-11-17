@@ -221,7 +221,7 @@ def peep(text, unused=()):
 
 
 ULW = re.compile(r'^\s*(ulw|usw)\s+\$(\d+),(-?\d+)\(\$(\d+)\)(.*)$')
-LWL = re.compile(r'^\s*(lwl|lwr|swl|swr)\s+\$(\w+),(-?\d+)\(\$(\w+)\)(.*)$')
+LWL = re.compile(r'^\s*(lwl|lwr|swl|swr)\s+\$(\w+),\s*(-?\d+)\(\s*\$(\w+)\s*\)(.*)$')
 REGNO = {'zero': 0, 'at': 1, 'gp': 28, 'sp': 29, 'fp': 30, 'ra': 31}
 regno = lambda r: int(r) if r.isdigit() else REGNO[r]
 LWL_OP = {'lwl': 0x22, 'lwr': 0x26, 'swl': 0x2A, 'swr': 0x2E}
@@ -620,6 +620,7 @@ def check():
     # F: ulw/usw
     w = lambda t: re.findall(r'\.word\t(0x\w+)', peep(t))
     assert w('\tlwl\t$2,3($5)\n') == ['0x88a20003'] and w('\tswr\t$2,4($3)\n') == ['0xb8620004'] and w('\tswl\t$3,7($sp)\n') == ['0xaba30007']
+    assert w('\tlwr $8, 0($5)\n') == ['0x98a80000']   # hand-written asm: spaces after the commas
     assert w('\tulw\t$2,0($5)\n') == ['0x88a20003', '0x98a20000'] and w('\tusw\t$2,4($3)\n') == ['0xa8620007', '0xb8620004']
     # G: two-word store before an unfilled branch/jal keeps the nop; a `j`, a single sw or a filled slot are left alone
     st = '\tsw\t$4,24($sp)\t # 64\tmovdf_internal2/5\t[length = 16]\n\tsw\t$5,28($sp)\n'
