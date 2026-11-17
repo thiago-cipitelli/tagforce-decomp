@@ -103,8 +103,6 @@ segments:
       - [0x8E5C, c, nl_iswspace]
       - [0x8E84, c, libc_malloc_gcc]
       - [0x8F18, c, libc_malloc_gcc]
-      - [0x8F30, c, libc_malloc]
-      - [0x8F94, c, libc_malloc_gcc]
       - [0x8FFC, c, nl_makebuf]
       - [0x9164, c, nl_malign]
       - [0x91A4, c, nl_memalignr]

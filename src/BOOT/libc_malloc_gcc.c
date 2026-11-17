@@ -50,6 +50,20 @@ void *_localeconv_r(void *r)
     return libc_lconv;
 }
 
+#ifdef __mips__
+void *heap_get_current(void);
+
+char *setlocale(int category, const char *locale)
+{
+    return _setlocale_r(heap_get_current(), category, locale);
+}
+
+void *localeconv(void)
+{
+    return _localeconv_r(heap_get_current());
+}
+#endif
+
 int _lseek_r(int *r, int fd, int offset, int whence)
 {
     int ret;

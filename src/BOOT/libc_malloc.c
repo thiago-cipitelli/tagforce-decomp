@@ -2,8 +2,7 @@
 // @gcc 0x0880CDD4-0x0880CDFC
 // @gcc 0x0880CDFC-0x0880CE24 nl_iswspace
 // @gcc 0x0880CE24-0x0880CEB8
-// @gcc 0x0880CEB8-0x0880CED0
-// @gcc 0x0880CF34-0x0880CF9C
+// @gcc 0x0880CEB8-0x0880CF9C
 // @gcc 0x0880CF9C-0x0880D104 nl_makebuf
 // @gcc 0x0880D104-0x0880D144 nl_malign
 // @gcc 0x0880D144-0x0880D2CC nl_memalignr
@@ -101,47 +100,14 @@ char *_setlocale_r(char *r, int category, const char *locale)
 
 #endif
 
-#ifdef __MWERKS__
-asm char *setlocale(int category, const char *locale)
-{
-    addiu sp, sp, -16
-    sw ra, 8(sp)
-    sw s1, 4(sp)
-    move s1, a1
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, a0
-    move a0, v0
-    move a1, s0
-    jal _setlocale_r
-    move a2, s1
-    lw ra, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: libc_malloc_gcc.c */
 char *setlocale(int category, const char *locale)
 {
     return _setlocale_r(heap_get_current(), category, locale);
 }
 #endif
 
-#ifdef __MWERKS__
-asm void *localeconv(void)
-{
-    addiu sp, sp, -16
-    sw ra, 0(sp)
-    jal heap_get_current
-    nop
-    jal _localeconv_r
-    move a0, v0
-    lw ra, 0(sp)
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+#ifndef __MWERKS__ /* PSP: libc_malloc_gcc.c */
 void *localeconv(void)
 {
     return _localeconv_r(heap_get_current());
