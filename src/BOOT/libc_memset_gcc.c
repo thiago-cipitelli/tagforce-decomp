@@ -5,6 +5,7 @@
    range is in libc_mem.c, whose plain C the PC port uses. */
 #include "libc.h"
 
+#ifdef __mips__
 #define wordtype long
 #define LBLOCKSIZE (sizeof(wordtype))
 #define UNALIGNED(X)   ((long)(X) & (LBLOCKSIZE - 1))
@@ -64,3 +65,4 @@ void *memset(void *m, int c, size_t n)
 
   return m;
 }
+#endif

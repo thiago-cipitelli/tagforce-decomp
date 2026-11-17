@@ -11,6 +11,7 @@
    one lwl/swl (backward) or lwr/swr (forward); tools/psp_gcc_peep.py (rule F) writes the unaligned accesses as the
    lwl/lwr (swl/swr) words of Sony's assembler. The backward helper returns its own destination, so memmove of an
    overlapping range returns dst + len (no caller reads it). The PC port uses the plain C of libc_mem.c. */
+#ifdef __mips__
 #define wordtype long
 #define BIGBLOCKSIZE    (sizeof (wordtype) << 2)
 #define LITTLEBLOCKSIZE (sizeof (wordtype))
@@ -173,6 +174,7 @@ void *mem_move(void *dst0, const void *src0, size_t len0)
     }
     return mem_move_fwd(dst0, src0, len0);
 }
+#endif
 
 
 int sceKernelCpuSuspendIntr(void);
