@@ -34,6 +34,11 @@ of cc1 1.7.1 (run with -dP, so every instruction carries its RTL, REG_DEAD notes
 
   F. `ulw`/`usw` become the `.word` of Sony's lwl/lwr (swl/swr) pair (psp-as 1.3.1 rejects lwl/lwr on allegrex).
 
+  G. Sony's assembler does not move the second `sw` of a two-word store (movdi/movdf to memory, `sw; sw` from one
+     insn) into the delay slot of the unfilled conditional branch or `jal` right after it; psp-as 1.3.1 does. Such a
+     branch (cc1's `[length = 8]`, in `.set reorder`) is written with its own `nop` under `.set noreorder` (rand,
+     the asinf wrapper of libm; after a `j` the original does swap: _fpadd_parts; rodada 38).
+
 A rewrite that would change the number of instructions inside a `.set noreorder` pair (branch + delay slot) is not
 done. What the pass cannot do is in docs/build.md: the later revision allocates registers and schedules around the
 two-instruction form, and that is beyond a peephole.
@@ -242,6 +247,33 @@ def unaligned(text):
                     '\t.word\t0x%08x\t# %sr $%d,%d($%d)' % (enc(lo, o), m.group(1)[1], rt, o, b)]
         else:
             out.append(l)
+    return '\n'.join(out)
+
+
+STORE2 = re.compile(r'# \d+\s+mov(di|df)\w*/\d+\s+\[length = 16\]')
+SLOT8 = re.compile(r'# \d+\s+\S+\s+\[length = 8\]')
+
+
+def store_pair_slot(text):
+    """Rule G (see the docstring): an unfilled b*/jal right after the second word of a two-word store keeps its nop."""
+    out, pair = [], 0
+    for l in text.split('\n'):
+        m = INSN.match(l)
+        if m:
+            op = m.group(1)
+            if op == 'sw' and STORE2.search(l):
+                pair = 2
+            elif pair == 2 and op == 'sw' and '#' not in l:
+                pair = 1
+            elif pair == 1 and (op[0] == 'b' or op == 'jal') and SLOT8.search(l):
+                out += ['\t.set\tnoreorder', l, '\tnop', '\t.set\treorder']
+                pair = 0
+                continue
+            else:
+                pair = 0
+        elif l.startswith('\t.set\tnoreorder') or re.match(r'^\S+:', l):
+            pair = 0
+        out.append(l)
     return '\n'.join(out)
 
 
@@ -589,6 +621,14 @@ def check():
     w = lambda t: re.findall(r'\.word\t(0x\w+)', peep(t))
     assert w('\tlwl\t$2,3($5)\n') == ['0x88a20003'] and w('\tswr\t$2,4($3)\n') == ['0xb8620004'] and w('\tswl\t$3,7($sp)\n') == ['0xaba30007']
     assert w('\tulw\t$2,0($5)\n') == ['0x88a20003', '0x98a20000'] and w('\tusw\t$2,4($3)\n') == ['0xa8620007', '0xb8620004']
+    # G: two-word store before an unfilled branch/jal keeps the nop; a `j`, a single sw or a filled slot are left alone
+    st = '\tsw\t$4,24($sp)\t # 64\tmovdf_internal2/5\t[length = 16]\n\tsw\t$5,28($sp)\n'
+    br = '\tbeq\t$16,$2,$L11\t # 70\tbranch_equality\t[length = 8]\n'
+    assert store_pair_slot(st + br).split('\n')[2:6] == ['\t.set\tnoreorder', br[:-1], '\tnop', '\t.set\treorder']
+    assert store_pair_slot(st + '\tjal\tf\t # 9\tcall_value_internal1\t[length = 8]\n').count('\tnop') == 1
+    for t in (st + '\tj\t$L3\t # 7\tjump\t[length = 8]\n', st.split('\n')[1] + '\n' + br,
+              st + br.replace('length = 8', 'length = 4'), st.replace('movdf_internal2/5', 'movsi_internal/6') + br):
+        assert store_pair_slot(t) == t, t
     print('psp_gcc_peep.py: sanity check OK')
 
 
@@ -605,6 +645,6 @@ if __name__ == '__main__':
             t, dump = unaligned(drop_unused_objects(open(a[0]).read(), a[2:])), None
         else:
             t = peep(open(a[0]).read(), a[2:])
-        open(a[1], 'w').write(resched(t, dump) if dump else t)
+        open(a[1], 'w').write(store_pair_slot(resched(t, dump) if dump else t))
     else:
         sys.exit(__doc__)

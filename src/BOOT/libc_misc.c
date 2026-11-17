@@ -3,10 +3,12 @@
 // @gcc 0x0880F64C-0x0880F69C nl_printf
 // @gcc 0x0880F69C-0x0880FF70 nl_qsort
 // @gcc 0x0880FF70-0x0880FFA8 nl_rand
+// @gcc 0x0880FFA8-0x08810038 nl_rand
 // @gcc 0x08810038-0x088100A0
 // @gcc 0x088100A0-0x088105F8 nl_reallocr
 // @gcc 0x088105F8-0x0881064C nl_reent
-// @asm 0x088106E0-0x08810854
+// @gcc 0x0881064C-0x088106E0 nl_reent
+// @gcc 0x088106E0-0x08810854 nl_reent
 // @gcc 0x08810854-0x08810904 nl_reent
 // @gcc 0x08810904-0x08810940 nl_refill
 // @gcc 0x08810940-0x08810ADC nl_refill
@@ -235,47 +237,8 @@ void srand(unsigned int seed)
 #endif
 
 /* newlib rand: next = next * 6364136223846793005 + 1, returns bits 32-62 */
-#ifdef __MWERKS__
-asm int rand_next(void)
-{
-    addiu sp, sp, -16
-    sw ra, 4(sp)
-    jal heap_get_current
-    sw s0, 0(sp)
-    jal heap_get_current
-    move s0, v0
-    lw a2, 168(v0)
-    lw a3, 172(v0)
-    lui a0, 0x4c95
-    ori a0, a0, 0x7f2d
-    lui a1, 0x5851
-    ori a1, a1, 0xf42d
-    mult a2, a1
-    mflo t0
-    multu a2, a0
-    mfhi v1
-    mflo v0
-    mult a3, a0
-    addu t0, t0, v1
-    addiu v0, v0, 1
-    sltiu a2, v0, 1
-    mflo a0
-    addu v1, t0, a0
-    addu v1, v1, a2
-    sw v0, 168(s0)
-    sw v1, 172(s0)
-    jal heap_get_current
-    nop
-    lw v1, 172(v0)
-    lw v0, 168(v0)
-    lw ra, 4(sp)
-    lw s0, 0(sp)
-    srl v0, v1, 0x0
-    ins v0, zero, 0x1f, 0x1
-    jr ra
-    addiu sp, sp, 16
-}
-#else
+int rand_next(void);
+#ifndef __MWERKS__ /* PSP: nl_rand.c */
 int rand_next(void)
 {
     char *r = heap_get_current();
@@ -312,54 +275,8 @@ void libc_cleanup_glue(void *r, void *glue)
 #endif
 
 /* frees the malloc'ed buffers (__SMBF) of r's streams */
-#ifdef __MWERKS__
-asm void libc_free_stream_bufs(char *r)
-{
-    addiu sp, sp, -32
-    sw s2, 8(sp)
-    addiu s2, a0, 604
-    sw s3, 12(sp)
-    move s3, a0
-    sw ra, 16(sp)
-    sw s1, 4(sp)
-    beqz s2, @68
-    sw s0, 0(sp)
-    lw s1, 4(s2)
-@28:
-    addiu s1, s1, -1
-    bltz s1, @5c
-    lw s0, 8(s2)
-@34:
-    lhu v0, 12(s0)
-    andi v0, v0, 0x80
-    beqz v0, @54
-    addiu s1, s1, -1
-    lw v0, 16(s0)
-    move a0, s3
-    bnez v0, @84
-    move a1, v0
-@54:
-    bgez s1, @34
-    addiu s0, s0, 92
-@5c:
-    lw s2, 0(s2)
-    bnezl s2, @28
-    lw s1, 4(s2)
-@68:
-    lw ra, 16(sp)
-    lw s3, 12(sp)
-    lw s2, 8(sp)
-    lw s1, 4(sp)
-    lw s0, 0(sp)
-    jr ra
-    addiu sp, sp, 32
-@84:
-    jal _free_r
-    nop
-    j @54
-    sw zero, 16(s0)
-}
-#else
+void libc_free_stream_bufs(char *r);
+#ifndef __MWERKS__ /* PSP: nl_reent.c */
 void libc_free_stream_bufs(char *r)
 {
     char *g;

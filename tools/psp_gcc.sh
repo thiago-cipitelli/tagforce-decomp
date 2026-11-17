@@ -31,7 +31,7 @@ rm -f "$OUT"
 # -dP writes before each instruction; the names of the unused statics come from a second cc1 run (-Dconst= -Wunused-variable). `-nopeep` on the marker line turns it off for the file.
 # cc1 runs with tools/ext/psp_gcc_insand.so preloaded (rodada 37), which recognizes `x & M` (M = ones with one run
 # of zeros) as one insn `ins x,$0,pos,n` tied to its source, before register allocation, as the later revision does;
-# the peephole then only applies rules D and F. PSP_GCC_INSAND=0: plain cc1 1.7.1 and the peephole's rules A-C/E.
+# the peephole then only applies rules D, F and G (G, rodada 38: the nop Sony's assembler leaves after a 64-bit store). PSP_GCC_INSAND=0: plain cc1 1.7.1 and the peephole's rules A-C/E.
 PRE=; export PSP_GCC_INSAND=${PSP_GCC_INSAND:-1}
 if [ "$PSP_GCC_INSAND" = 1 ]; then
   PRE="$HERE/ext/psp_gcc_insand.so"
