@@ -1,11 +1,9 @@
 // @range 0x0880E700-0x0880F60C
-// @gcc 0x0880E700-0x0880F368
-// @gcc 0x0880F4CC-0x0880F60C
+// @gcc 0x0880E700-0x0880F60C
 /* newlib mprec.c (GCC): the multi-precision integers of dtoa/strtod. Bigints come from a per-reent
    freelist of power-of-two sizes (+0x4C of the reent) and the powers 5^(4 * 2^k) are cached at
    +0x48. On the PSP the functions are newlib's own source compiled by the SDK's GCC (libc_mprec_gcc.c, the
-   `@gcc` ranges), except __hi0bits and __d2b, kept here as the original instructions: they need a later
-   revision of that compiler. The C here is the PC port's and follows newlib's mprec.c (16-bit halves, as built
+   `@gcc` range). The C here is the PC port's and follows newlib's mprec.c (16-bit halves, as built
    without long long). */
 #include "libc.h"
 
@@ -562,107 +560,7 @@ double __b2d(LibcBigint *a, int *e)
 #endif
 
 /* the Bigint of d's mantissa; *e = binary exponent, *bits = significant bits */
-#ifdef __MWERKS__
-asm LibcBigint *__d2b(char *r, double dd, int *e, int *bits)
-{
-    addiu sp, sp, -48
-    sw s1, 20(sp)
-    addiu a1, zero, 1
-    move s1, a3
-    sw s6, 40(sp)
-    move s6, t1
-    sw s5, 36(sp)
-    move s5, t0
-    sw s4, 32(sp)
-    sw s3, 28(sp)
-    sw s2, 24(sp)
-    sw s0, 16(sp)
-    sw ra, 44(sp)
-    jal _Balloc
-    move s0, a2
-    move v1, s1
-    ext s1, s1, 0x0, 0x1f
-    ins v1, zero, 0x14, 0xc
-    srl s3, s1, 0x14
-    move s2, v0
-    sw v1, 4(sp)
-    beqz s3, @68
-    addiu s4, v0, 20
-    lui v0, 0x10
-    or v0, v1, v0
-    sw v0, 4(sp)
-@68:
-    beqz s0, @13c
-    move a0, sp
-    jal __lo0bits
-    sw s0, 0(sp)
-    beqz v0, @130
-    move a1, v0
-    lw v1, 4(sp)
-    negu a0, v0
-    lw v0, 0(sp)
-    sllv v1, v1, a0
-    or v0, v0, v1
-    sw v0, 20(s2)
-    lw v1, 4(sp)
-    srlv v1, v1, a1
-    sw v1, 4(sp)
-@a4:
-    lw a0, 4(sp)
-    addiu v1, zero, 2
-    addiu v0, zero, 1
-    movz v1, v0, a0
-    move s0, v1
-    sw a0, 4(s4)
-    sw v1, 16(s2)
-@c0:
-    beqz s3, @10c
-    sll v1, s0, 0x2
-    addu v0, s3, a1
-    addiu v1, zero, 53
-    subu v1, v1, a1
-    addiu v0, v0, -1075
-    sw v0, 0(s5)
-    sw v1, 0(s6)
-@e0:
-    move v0, s2
-    lw ra, 44(sp)
-    lw s6, 40(sp)
-    lw s5, 36(sp)
-    lw s4, 32(sp)
-    lw s3, 28(sp)
-    lw s2, 24(sp)
-    lw s1, 20(sp)
-    lw s0, 16(sp)
-    jr ra
-    addiu sp, sp, 48
-@10c:
-    addu v1, v1, s4
-    addiu v0, a1, -1074
-    sw v0, 0(s5)
-    sll s0, s0, 0x5
-    jal __hi0bits
-    lw a0, -4(v1)
-    subu s0, s0, v0
-    j @e0
-    sw s0, 0(s6)
-@130:
-    lw v0, 0(sp)
-    j @a4
-    sw v0, 20(s2)
-@13c:
-    jal __lo0bits
-    addiu a0, sp, 4
-    move a1, v0
-    addiu v0, zero, 1
-    sw v0, 16(s2)
-    addiu s0, zero, 1
-    addiu a1, a1, 32
-    lw v0, 4(sp)
-    j @c0
-    sw v0, 20(s2)
-}
-#else
+#ifndef __MWERKS__ /* PSP: libc_mprec_gcc.c */
 LibcBigint *__d2b(char *r, double dd, int *e, int *bits)
 {
     LibcBigint *b = _Balloc(r, 1);
