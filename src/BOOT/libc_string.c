@@ -11,7 +11,9 @@
 // @gcc 0x08810FD0-0x0881106C libc_strcasecmp
 // @gcc 0x0881106C-0x08811118 libc_strcat
 // @gcc 0x08811118-0x08811218 libc_strchr
+// @gcc 0x08811218-0x0881128C libc_strcmp_gcc
 // @gcc 0x0881128C-0x08811324 libc_strcpy
+// @gcc 0x08811324-0x0881133C libc_strlen_gcc
 // @gcc 0x0881133C-0x08811458 nl_strncmp
 // @gcc 0x08811458-0x088115E0 nl_strncpy
 // @gcc 0x088115E0-0x08811648 libc_strrchr
@@ -269,45 +271,8 @@ int libc_sclose(LibcFile *fp)
 
 /* strcasecmp (stricmp) is libc_strcasecmp.c: newlib's source, compiled by the SDK's GCC (`@gcc` range above) */
 
-#ifdef __MWERKS__
-asm int strcmp(const char *a, const char *b)
-{
-    or v0, a0, a1
-    andi v0, v0, 0x1
-    bnez v0, @4c
-    lbu a2, 0(a0)
-@10:
-    lbu a3, 0(a1)
-    beqz a2, @40
-    addiu a0, a0, 2
-    bne a2, a3, @40
-    lbu v0, -1(a0)
-    lbu v1, 1(a1)
-    beqz v0, @38
-    addiu a1, a1, 2
-    beq v0, v1, @10
-    lbu a2, 0(a0)
-@38:
-    jr ra
-    subu v0, v0, v1
-@40:
-    jr ra
-    subu v0, a2, a3
-@48:
-    lbu a2, 0(a0)
-@4c:
-    lbu a3, 0(a1)
-    addiu a0, a0, 1
-    sltu v1, zero, a2
-    xor v0, a2, a3
-    sltiu v0, v0, 1
-    and v1, v1, v0
-    bnez v1, @48
-    addiu a1, a1, 1
-    j @40
-    nop
-}
-#else
+/* PSP: libc_strcmp_gcc.c (newlib machine/mips) */
+#ifndef __MWERKS__
 int strcmp(const char *a, const char *b)
 {
     while (*a != 0 && *a == *b) {
@@ -318,18 +283,8 @@ int strcmp(const char *a, const char *b)
 }
 #endif
 
-#ifdef __MWERKS__
-asm size_t strlen(const char *s)
-{
-    addiu v0, a0, 1
-@4:
-    lbu v1, 0(a0)
-    bnez v1, @4
-    addiu a0, a0, 1
-    jr ra
-    subu v0, a0, v0
-}
-#else
+/* PSP: libc_strlen_gcc.c (newlib machine/mips) */
+#ifndef __MWERKS__
 size_t strlen(const char *s)
 {
     const char *p = s;
