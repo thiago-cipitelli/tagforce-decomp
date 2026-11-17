@@ -3,8 +3,7 @@
 // @asm 0x0880712C-0x08807338
 // @gcc 0x08807C6C-0x08807CDC
 // @gcc 0x08807DD0-0x08807DFC
-// @asm 0x08807E90-0x08807F94
-// @gcc 0x08807F94-0x08807FD8
+// @gcc 0x08807E90-0x08807FD8
 // @gcc 0x08808058-0x08808084
 // @gcc 0x08808100-0x08808130
 // @asm 0x08808130-0x0880823C
@@ -73,43 +72,107 @@ void gu_ctx_finish(GuList *l, int mode, unsigned int arg)
 void gu_ctx_finish(GuList *l, int mode, unsigned int arg);
 #endif
 
-#ifdef NON_MATCHING /* GCC: jump table */
-/* the enable command of each GU_* state (0..20); 2 = scissor test (SCISSOR1/2 from the context or
+/* Not in the SDK's GCC object (libgu_ctx_gcc.c): its jump table would come first in the object's .rodata, and the
+   code still differs in register allocation (the context pointer in a3 instead of t0: global allocation, not
+   regrename; case order, parameter types and a local copy do not move it), so the table stays in the asm data and
+   the object's .rodata is only the table of gu_ctx_light_color. */
+#if defined(NON_MATCHING) && (!defined(__mips__) || defined(__MWERKS__))
+/* the enable command of each GU_* state (0..20, a jump table); 2 = scissor test (SCISSOR1/2 from the context or
    the whole display), 21 = color doubling (TFUNC bit 16) */
 void gu_ctx_state(GuList *l, int state, int on)
 {
-    static const unsigned int cmd[21] = {
-        0x22000000, 0x23000000, 0, 0x24000000, 0x21000000, 0x1D000000, 0x20000000, 0x1F000000,
-        0x1C000000, 0x1E000000, 0x17000000, 0x18000000, 0x19000000, 0x1A000000, 0x1B000000,
-        0x25000000, 0x26000000, 0x27000000, 0x28000000, 0x51000000, 0x38000000,
-    };
-
-    if (state == 2) {
+    switch (state) {
+    case 0:
+        ctx_push(l, on | 0x22000000);
+        break;
+    case 1:
+        ctx_push(l, on | 0x23000000);
+        break;
+    case 2: {
+        unsigned int *p;
         unsigned int a;
         unsigned int b;
 
-        if (on == 0) {
-            l->scissor_on = 0;
-            a = 0;
-            b = (l->disp_h - 1) << 10 | (l->disp_w - 1);
-        } else {
-            l->scissor_on = 1;
+        if (on) {
+            p = l->cur;
             a = l->scissor[1] << 10 | l->scissor[0];
             b = l->scissor[3] << 10 | l->scissor[2];
+            l->scissor_on = 1;
+            *p++ = a | 0xD4000000;
+        } else {
+            p = l->cur;
+            b = (l->disp_h - 1) << 10 | (l->disp_w - 1);
+            l->scissor_on = 0;
+            *p++ = 0xD4000000;
         }
-        ctx_push(l, a | 0xD4000000);
-        ctx_push(l, b | 0xD5000000);
-        ctx_push(l, 0x15000000);
-        ctx_push(l, b | 0x16000000);
-        return;
+        p[0] = b | 0xD5000000;
+        p[1] = 0x15000000;
+        p[2] = b | 0x16000000;
+        l->cur = p + 3;
+        break;
     }
-    if (state == 21) {
-        l->pad38[10] = on != 0;
+    case 3:
+        ctx_push(l, on | 0x24000000);
+        break;
+    case 4:
+        ctx_push(l, on | 0x21000000);
+        break;
+    case 5:
+        ctx_push(l, on | 0x1D000000);
+        break;
+    case 6:
+        ctx_push(l, on | 0x20000000);
+        break;
+    case 7:
+        ctx_push(l, on | 0x1F000000);
+        break;
+    case 8:
+        ctx_push(l, on | 0x1C000000);
+        break;
+    case 9:
+        ctx_push(l, on | 0x1E000000);
+        break;
+    case 10:
+        ctx_push(l, on | 0x17000000);
+        break;
+    case 11:
+        ctx_push(l, on | 0x18000000);
+        break;
+    case 12:
+        ctx_push(l, on | 0x19000000);
+        break;
+    case 13:
+        ctx_push(l, on | 0x1A000000);
+        break;
+    case 14:
+        ctx_push(l, on | 0x1B000000);
+        break;
+    case 15:
+        ctx_push(l, on | 0x25000000);
+        break;
+    case 16:
+        ctx_push(l, on | 0x26000000);
+        break;
+    case 17:
+        ctx_push(l, on | 0x27000000);
+        break;
+    case 18:
+        ctx_push(l, on | 0x28000000);
+        break;
+    case 19:
+        ctx_push(l, on | 0x51000000);
+        break;
+    case 20:
+        ctx_push(l, on | 0x38000000);
+        break;
+    case 21:
+        if (on) {
+            l->pad38[10] = 1;
+        } else {
+            l->pad38[10] = 0;
+        }
         ctx_push(l, l->pad38[10] << 16 | l->pad38[12] << 8 | l->pad38[11] | 0xC9000000);
-        return;
-    }
-    if (state >= 0 && state < 21) {
-        ctx_push(l, on | cmd[state]);
+        break;
     }
 }
 #endif
@@ -319,7 +382,7 @@ asm void gu_ctx_matrix(GuList *l, int type, const float *m)
     j @c8
     nop
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_ctx_matrix(GuList *l, int type, const float *m)
 {
     static const unsigned int idx[4] = { 0x3E000000, 0x3C000000, 0x3A000000, 0x40000000 };
@@ -448,7 +511,7 @@ asm void gu_ctx_sprite(GuList *l, int x, int y, int z, int u, int v, int flip, i
     j @d4
     sh t2, 6(t8)
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_ctx_sprite(GuList *l, int x, int y, int z, int u, int v, int flip, int rot)
 {
     unsigned int *p = l->cur;
@@ -728,7 +791,7 @@ asm void gu_ctx_clear(GuList *l, int flags)
     j @280
     or t3, t3, v0
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_ctx_clear(GuList *l, int flags)
 {
     unsigned int color = l->pad38[4];
@@ -840,7 +903,7 @@ asm void gu_ctx_depth_range(GuList *l, int near, int far)
     jr ra
     sw t3, 8(t2)
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_ctx_depth_range(GuList *l, int near, int far)
 {
     float z = (float)((near + far) / 2);
@@ -905,7 +968,7 @@ asm void gu_ctx_depth_offset(GuList *l, int offset)
     jr ra
     sw t0, 8(a3)
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_ctx_depth_offset(GuList *l, int offset)
 {
     int near = l->pad38[7];
@@ -973,7 +1036,7 @@ asm void gu_ctx_model_color(GuList *l, unsigned int emissive, unsigned int ambie
     jr ra
     sw t3, 12(t2)
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_ctx_model_color(GuList *l, unsigned int emissive, unsigned int ambient, unsigned int diffuse,
                         unsigned int specular)
 {
@@ -1029,7 +1092,7 @@ asm void gu_ctx_material(GuList *l, int mode, unsigned int color)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_ctx_material(GuList *l, int mode, unsigned int color)
 {
     unsigned int c = color & 0xFFFFFF;
@@ -1104,7 +1167,7 @@ asm void gu_ctx_light(GuList *l, int light, int type, int components, const floa
     jr ra
     sw t0, 8(a3)
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_ctx_light(GuList *l, int light, int type, int components, const float *pos)
 {
     int k = light * 3;
@@ -1117,33 +1180,33 @@ void gu_ctx_light(GuList *l, int light, int type, int components, const float *p
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC: jump table */
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c (its jump table is the object's .rodata); the case order is the one that
+   gives the original's registers (regrename) */
 /* ALC/DLC/SLC of light n by component (1 ambient, 2 diffuse, 4 specular, 3 and 6 two at once) */
 void gu_ctx_light_color(GuList *l, int light, int component, unsigned int color)
 {
-    unsigned int c = color & 0xFFFFFF;
-    unsigned int k = light * 3;
-
     switch (component) {
     case 1:
-        ctx_push(l, (k + 0x8F) << 24 | c);
+        ctx_push(l, (light * 3 + 0x8F) << 24 | (color & 0xFFFFFF));
         break;
     case 2:
-        ctx_push(l, (k + 0x90) << 24 | c);
-        break;
-    case 3:
-        ctx_push(l, (k + 0x8F) << 24 | c);
-        ctx_push(l, (k + 0x90) << 24 | c);
+        ctx_push(l, (light * 3 + 0x90) << 24 | (color & 0xFFFFFF));
         break;
     case 4:
-        ctx_push(l, (k + 0x91) << 24 | c);
+        ctx_push(l, (light * 3 + 0x91) << 24 | (color & 0xFFFFFF));
+        break;
+    case 3:
+        ctx_push(l, (light * 3 + 0x8F) << 24 | (color & 0xFFFFFF));
+        ctx_push(l, (light * 3 + 0x90) << 24 | (color & 0xFFFFFF));
         break;
     case 6:
-        ctx_push(l, (k + 0x90) << 24 | c);
-        ctx_push(l, (k + 0x91) << 24 | c);
+        ctx_push(l, (light * 3 + 0x90) << 24 | (color & 0xFFFFFF));
+        ctx_push(l, (light * 3 + 0x91) << 24 | (color & 0xFFFFFF));
         break;
     }
 }
+#else
+void gu_ctx_light_color(GuList *l, int light, int component, unsigned int color);
 #endif
 
 /* TMODE (maxmips, a2, swizzle), TPSM, TFLUSH */
@@ -1196,7 +1259,7 @@ asm void gu_ctx_scissor(GuList *l, int x, int y, int w, int h)
     jr ra
     nop
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_ctx_scissor(GuList *l, int x, int y, int w, int h)
 {
     int x1 = x + w - 1;
@@ -1268,7 +1331,7 @@ asm void gu_signal_handler(int id, void *arg)
     j @54
     lw a0, 44(s0)
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void gu_signal_handler(int id, void *arg)
 {
     GuCallbacks *c = arg;
@@ -1542,7 +1605,7 @@ asm void vblank_handler_set(int no, void *handler, void *arg)
     j @48
     lw ra, 4(sp)
 }
-#else
+#elif !defined(__mips__) /* the port (the SDK's GCC sees only the prototype) */
 void vblank_handler_set(int no, void *handler, void *arg)
 {
     if (handler == 0) {
