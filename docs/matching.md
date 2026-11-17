@@ -87,6 +87,8 @@ Permutadores (quando a forma já está certa e só registradores ou posições d
   consecutivas (até 6) e deixa no arquivo a primeira que bate. É o primeiro a tentar: a **ordem das instruções**
   decide registradores e posições de pilha mais vezes que a das declarações (`fmoney_number`, 2026-10-30: 24
   ordens das 4 atribuições de um `case`, a 21ª bateu).
+- `MODULE=<m> python3 tools/permute.py src/<m>/<f>.c <func> --minutes 25 -j 4` (rodada 39): permutador aleatório de
+  reescritas que preservam a semântica (ver "Rodada 39 (rB)"); não edita o fonte, grava `build/tmp/permute/<func>/`.
 - `tools/perm_decls.py` (todas as ordens de declarações num só TU; `--alts` para variantes de corpo) e
   `MODULE=<m> python3 tools/perm_locals.py <f> <func> --apply` (lento: no máximo 5 declarações).
 
@@ -4062,3 +4064,33 @@ contrário (`dx`/`dy` são os candidatos do alocador). Ordem de declaração (50
 `if/else` e ternários não trocam. Scripts em `build/tmp/pA/` (`t.py` variantes, `rs.py` busca de ordem com
 `FIX=1` para manter as linhas com inicializador, `ad.py` diff alinhado, `apply.py` promove e acerta `symbols/`).
 
+
+## Rodada 39 (`rB`): `tools/permute.py`, permutador aleatório de expressões
+
+`tools/permute.py` (só stdlib, `--selftest`) aplica ao rascunho `NON_MATCHING` de UMA função reescritas que
+preservam a semântica e que `perm_decls`/`perm_stmts` não fazem: comutar operandos (`+ * & | ^ == !=`, `<`
+virado em `>`), `a += b` <-> `a = a + b`, `x * 2^k` <-> `x << k` / `x + x`, `!x` <-> `x == 0`, `if (x)` <->
+`if (x != 0)`, temporário para uma subexpressão (`{ __typeof__(e) t = e; ... }`) e o inverso (substituir um local
+de uso único), cast redundante de um local/parâmetro escalar para o próprio tipo, `a[i]` <-> `*(a + i)`, `p->f` <->
+`(*p).f`, `for` <-> `while`, `while` -> `if/do-while`, separar/juntar declaração e inicializador, trocar declarações
+vizinhas, cópia tardia de parâmetro com cast (rodada 35), `if (a && b)` -> `if` aninhado, `if/else` invertido,
+formas de `x++`. Compila o arquivo inteiro (mwcc ~0,1 s) e pontua por palavras diferentes como o `mwcc_check`
+(o padding de alinhamento depois da função não conta). Mantém um conjunto dos 32 melhores (empates entram, para
+andar no platô) e grava `score_N.c` (texto da função) e `log.txt`; `--start score_N.c` continua de uma variante.
+~100 mil candidatos em 25 min com `-j 4`. Fluxo: rodar; reduzir a variante às mudanças que importam (aplicar uma
+diferença por vez e manter só as que não pioram); limpar (`((int) k)` -> `(int)k`, `__typeof__` -> o tipo); seguir
+com `perm_stmts`/ordem das declarações, porque uma mudança de forma reabre buscas que já estavam esgotadas.
+
+Resultados nas 14 entradas mwcc do skip (25 min cada, mais 25 a partir da melhor nas que mexeram):
+- `dd_cursor_draw_arrow` **bate** (28 -> 5 pelo permutador -> 0): `switch ((int)k)` e `dd_zone_count(loc.player,
+  (int)k)` com `k` já `int` (cast redundante no uso: o mwcc deixa de propagar o valor e a teia de `k` muda), mais
+  as declarações `uv, dx, dy, du` juntas (5 -> 2) e `dx = 0; dy = -0xB; du = 0;` nessa ordem (`perm_stmts`, 2 -> 0).
+- `dd_chr_attach_mtx` 90 -> 20: `((DdChrBone *)e)->id == id` no laço (cast redundante no ponteiro de laço) dá o
+  tamanho certo e acerta quase todo o corpo; sobra o `move a3,a2` antes do `jal`.
+- Melhoras pequenas não aplicadas (só posicionais): `font_glyph_cache` 55 -> 52 (laço `for` como `while`),
+  `duel_field_controller` 101 -> 100, `msgbox_open` 36 -> 35 (if/else invertido).
+- Sem efeito (~90-130 mil candidatos cada): `dd_info_stats` (4), `duel_0883449C` (5), `duel_req_mill` (9),
+  `st_chr_step_value` (10), `snd_group_release_all` (12), `dd_fx_shatter_update` (41), `duel_088C6BC8` (54),
+  `menu_layout` (67), `duel_08846584` (253; só ~28 mil candidatos, arquivo maior).
+- Lição: o cast redundante para o próprio tipo num USO (não só na cópia de parâmetro da rodada 35) é o que mais
+  mexeu; nas duas funções que andaram foi a primeira mudança encontrada (dezenas de candidatos).

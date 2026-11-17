@@ -326,7 +326,7 @@ void dd_chr_bone_mtx(DdChr *c, DdMtx *out, int bone)
     model_get_bone(c->model, out, dd_chr_cb_bone(c, bone));
 }
 
-#ifdef NON_MATCHING /* 90 palavras: o original copia id para a3 (move a3,a2) e usa a cópia depois do primeiro laço; um local k é propagado pelo mwcc */
+#ifdef NON_MATCHING /* 20 palavras (rodada 39; eram 90): o cast redundante em ((DdChrBone *)e)->id acerta o tamanho; falta o move a3,a2 (cópia de id) antes do jal e o laço com beqz em vez de bnezl */
 /* matrix of attach point `id` (bones below 0x24, the named points from the table above) */
 void dd_chr_attach_mtx(DdChr *c, DdMtx *out, int id)
 {
@@ -346,7 +346,7 @@ void dd_chr_attach_mtx(DdChr *c, DdMtx *out, int id)
     }
     if (c->bones) {
         for (e = c->bones; e->id != 0; e++) {
-            if (e->id == id) {
+            if (((DdChrBone *)e)->id == id) {
                 b = e;
                 break;
             }
