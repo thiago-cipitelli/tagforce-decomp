@@ -1,8 +1,11 @@
 // @range 0x0881D214-0x0881D8A8
 // @gcc 0x0881D214-0x0881D2F4
-// @gcc 0x0881D48C-0x0881D4E8
+// @gcc 0x0881D3D8-0x0881D3F4
+// @gcc 0x0881D48C-0x0881D5C0
+// @gcc 0x0881D6C0-0x0881D6F8
+// @gcc 0x0881D740-0x0881D7AC
 // @gcc 0x0881D7DC-0x0881D804
-// @gcc 0x0881D870-0x0881D8A8
+// @gcc 0x0881D854-0x0881D8A8
 /* VFPU colors (four floats r, g, b, a in [0, 1]; the _rgb variants leave alpha as in the first
    operand) and the VFPU random generator. Hand-written VFPU code kept as whole `asm` functions; the
    functions the SDK compiled with GCC come from C (vfpu_color_gcc.c). The port C of the VFPU functions is left
@@ -264,16 +267,7 @@ unsigned short color_to_5551(Vec4 *c, float alpha_ref);
 
 /* from RGBA8888 (r in the low byte) */
 #ifdef __MWERKS__
-asm Vec4 *color_unpack(Vec4 *out, unsigned int rgba)
-{
-    move v0, a0
-    mtv a1, S010
-    vuc2ifs.s C000, S010
-    vi2f.q C000, C000, 31
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_unpack(Vec4 *out, unsigned int rgba);
 #elif !defined(__mips__)
 Vec4 *color_unpack(Vec4 *out, unsigned int rgba)
 {
@@ -284,7 +278,21 @@ Vec4 *color_unpack(Vec4 *out, unsigned int rgba)
     return out;
 }
 #else
-Vec4 *color_unpack(Vec4 *out, unsigned int rgba);
+Vec4 *color_unpack(Vec4 *out, unsigned int rgba)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "mtv %2, S010\n"
+        ".word 0xD0380100 /* vuc2ifs.s C000, S010 */\n"
+        "vi2f.q C000, C000, 31\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (rgba)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
@@ -374,16 +382,7 @@ Vec4 *color_from_565(Vec4 *out, unsigned short c, float alpha)
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    lv.q C020, 0(a2)
-    vadd.q C000, C010, C020
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -394,20 +393,25 @@ Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *color_add(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "lv.q C020, 0(%3)\n"
+        "vadd.q C000, C010, C020\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    lv.q C010, 0(a2)
-    vadd.t C000, C000, C010
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -418,20 +422,25 @@ Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *color_add_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "lv.q C010, 0(%3)\n"
+        "vadd.t C000, C000, C010\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    lv.q C020, 0(a2)
-    vsub.q C000, C010, C020
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -442,20 +451,25 @@ Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *color_sub(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "lv.q C020, 0(%3)\n"
+        "vsub.q C000, C010, C020\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    lv.q C010, 0(a2)
-    vsub.t C000, C000, C010
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -466,20 +480,25 @@ Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *color_sub_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "lv.q C010, 0(%3)\n"
+        "vsub.t C000, C000, C010\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    lv.q C020, 0(a2)
-    vmul.q C000, C010, C020
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -490,20 +509,25 @@ Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *color_mul(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "lv.q C020, 0(%3)\n"
+        "vmul.q C000, C010, C020\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    lv.q C010, 0(a2)
-    vmul.t C000, C000, C010
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -514,20 +538,26 @@ Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *color_mul_rgb(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "lv.q C010, 0(%3)\n"
+        "vmul.t C000, C000, C010\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 /* out = 1 - c */
 #ifdef __MWERKS__
-asm Vec4 *color_neg(Vec4 *out, Vec4 *c)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    vocp.q C000, C000
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_neg(Vec4 *out, Vec4 *c);
 #elif !defined(__mips__)
 Vec4 *color_neg(Vec4 *out, Vec4 *c)
 {
@@ -538,19 +568,24 @@ Vec4 *color_neg(Vec4 *out, Vec4 *c)
     return out;
 }
 #else
-Vec4 *color_neg(Vec4 *out, Vec4 *c);
+Vec4 *color_neg(Vec4 *out, Vec4 *c)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "vocp.q C000, C000\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (c)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    vocp.t C000, C000
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c);
 #elif !defined(__mips__)
 Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c)
 {
@@ -561,7 +596,20 @@ Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c)
     return out;
 }
 #else
-Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c);
+Vec4 *color_neg_rgb(Vec4 *out, Vec4 *c)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "vocp.t C000, C000\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (c)
+        : "memory");
+    return out;
+}
 #endif
 
 /* out = a + (b - a) * t */
@@ -733,16 +781,7 @@ Vec4 *color_clamp_rgb(Vec4 *out, Vec4 *c, float lo, float hi);
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    lv.q C020, 0(a2)
-    vmax.q C000, C010, C020
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -753,22 +792,27 @@ Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *color_max(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "lv.q C020, 0(%3)\n"
+        "vmax.q C000, C010, C020\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Note: the original computes vmin.q C000, C000, C010, i.e. min(<stale C000>, a), never reading b
    (it loads a and b into C010 and C020); the C version gives the intended min(a, b). */
 #ifdef __MWERKS__
-asm Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    lv.q C020, 0(a2)
-    vmin.q C000, C000, C010
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -779,7 +823,21 @@ Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *color_min(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "lv.q C020, 0(%3)\n"
+        "vmin.q C000, C000, C010\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
@@ -833,22 +891,7 @@ int color_is_zero(Vec4 *c);
 /* out = c / max(channels), clamped to [0, 1]. The scale is 0 when the second value of the vsrt4/vsrt3
    sort, min(max(r, a), max(g, b)), is <= 0. */
 #ifdef __MWERKS__
-asm Vec4 *color_normalize(Vec4 *out, Vec4 *c)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    vsrt4.q C010, C000
-    vzero.s S020
-    vsrt3.q C010, C010
-    vcmp.s LE, S011, S020
-    vrcp.s S010, S010
-    vcmovt.s S010, S020, 0
-    .word 0xDE000055  /* vpfxd [0:1],[0:1],[0:1],[0:1] */
-    vscl.q C000, C000, S010
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_normalize(Vec4 *out, Vec4 *c);
 #elif !defined(__mips__)
 Vec4 *color_normalize(Vec4 *out, Vec4 *c)
 {
@@ -862,28 +905,32 @@ Vec4 *color_normalize(Vec4 *out, Vec4 *c)
     return out;
 }
 #else
-Vec4 *color_normalize(Vec4 *out, Vec4 *c);
+Vec4 *color_normalize(Vec4 *out, Vec4 *c)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "vsrt4.q C010, C000\n"
+        "vzero.s S020\n"
+        "vsrt3.q C010, C010\n"
+        "vcmp.s LE, S011, S020\n"
+        "vrcp.s S010, S010\n"
+        "vcmovt.s S010, S020, 0\n"
+        ".word 0xDE000055  /* vpfxd [0:1],[0:1],[0:1],[0:1] */\n"
+        "vscl.q C000, C000, S010\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (c)
+        : "memory");
+    return out;
+}
 #endif
 
 /* rgb / max(r, g, b, 0) clamped to [0, 1] (0 when the maximum is <= 0); alpha kept */
 #ifdef __MWERKS__
-asm Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    vzero.s S003
-    vsrt4.q C010, C000
-    vzero.s S020
-    vsrt3.q C010, C010
-    vcmp.s LE, S010, S020
-    vrcp.s S010, S010
-    vcmovt.s S010, S020, 0
-    .word 0xDE000815  /* vpfxd [0:1],[0:1],[0:1],m */
-    vscl.t C000, C000, S010
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c);
 #elif !defined(__mips__)
 Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c)
 {
@@ -897,7 +944,28 @@ Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c)
     return out;
 }
 #else
-Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c);
+Vec4 *color_normalize_rgb(Vec4 *out, Vec4 *c)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "vzero.s S003\n"
+        "vsrt4.q C010, C000\n"
+        "vzero.s S020\n"
+        "vsrt3.q C010, C010\n"
+        "vcmp.s LE, S010, S020\n"
+        "vrcp.s S010, S010\n"
+        "vcmovt.s S010, S020, 0\n"
+        ".word 0xDE000815  /* vpfxd [0:1],[0:1],[0:1],m */\n"
+        "vscl.t C000, C000, S010\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (c)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Next vrndf1 value in [1, 2) without advancing the generator (state saved and restored around it). */
@@ -990,16 +1058,7 @@ float vrand_2_pi(void);
 
 /* four channels uniform in [0, 1) */
 #ifdef __MWERKS__
-asm Vec4 *vrand_color(Vec4 *out)
-{
-    move v0, a0
-    vrndf1.q C000
-    vpfxt 1, 1, 1, 1
-    vsub.q C000, C000, C000
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *vrand_color(Vec4 *out);
 #elif !defined(__mips__)
 Vec4 *vrand_color(Vec4 *out)
 {
@@ -1010,7 +1069,21 @@ Vec4 *vrand_color(Vec4 *out)
     return out;
 }
 #else
-Vec4 *vrand_color(Vec4 *out);
+Vec4 *vrand_color(Vec4 *out)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "vrndf1.q C000\n"
+        "vpfxt 1, 1, 1, 1\n"
+        "vsub.q C000, C000, C000\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef NON_MATCHING /* PSP: vfpu_color_gcc.c */

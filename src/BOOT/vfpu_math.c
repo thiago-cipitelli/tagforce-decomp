@@ -3,8 +3,10 @@
 // @gcc 0x0881A440-0x0881A520
 // @gcc 0x0881A590-0x0881A5A0
 // @gcc 0x0881A5B8-0x0881A5C8
-// @gcc 0x0881A65C-0x0881A7B4
+// @gcc 0x0881A5DC-0x0881A7B4
 // @gcc 0x0881A8AC-0x0881A940
+// @gcc 0x0881A980-0x0881A9B8
+// @gcc 0x0881AA0C-0x0881AAA0
 /* FPU trig routines (sceFpuSin/Cos/Atan/Acos) and the 2D part of Sony's libvfpu (sceVfpuVector2*).
    All of it was compiled with GCC or written in VFPU assembly, so the PSP build carries the original
    instructions as `asm` functions; under `#elif !defined(__mips__)` is the portable C for the PC port.
@@ -352,17 +354,7 @@ ScePspFVector2 *vec2_neg_zero(ScePspFVector2 *out);
 
 /* sceVfpuVector2Ceil: the SDK uses vf2id here, which rounds down [?] (and vf2iu in Floor). */
 #ifdef __MWERKS__
-asm ScePspIVector2 *vec2_ceil(ScePspIVector2 *out, const ScePspFVector2 *v)
-{
-    move v0, a0
-    lv.s S000, 0(a1)
-    lv.s S001, 4(a1)
-    vf2id.p C000, C000, 0
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    nop
-}
+ScePspIVector2 *vec2_ceil(ScePspIVector2 *out, const ScePspFVector2 *v);
 #elif !defined(__mips__)
 ScePspIVector2 *vec2_ceil(ScePspIVector2 *out, const ScePspFVector2 *v)
 {
@@ -371,22 +363,27 @@ ScePspIVector2 *vec2_ceil(ScePspIVector2 *out, const ScePspFVector2 *v)
     return out;
 }
 #else
-ScePspIVector2 *vec2_ceil(ScePspIVector2 *out, const ScePspFVector2 *v);
+ScePspIVector2 *vec2_ceil(ScePspIVector2 *out, const ScePspFVector2 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%2)\n"
+        "lv.s S001, 4(%2)\n"
+        "vf2id.p C000, C000, 0\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuVector2Trunc (vf2iz) */
 #ifdef __MWERKS__
-asm ScePspIVector2 *vec2_trunc(ScePspIVector2 *out, const ScePspFVector2 *v)
-{
-    move v0, a0
-    lv.s S000, 0(a1)
-    lv.s S001, 4(a1)
-    vf2iz.p C000, C000, 0
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    nop
-}
+ScePspIVector2 *vec2_trunc(ScePspIVector2 *out, const ScePspFVector2 *v);
 #elif !defined(__mips__)
 ScePspIVector2 *vec2_trunc(ScePspIVector2 *out, const ScePspFVector2 *v)
 {
@@ -395,22 +392,27 @@ ScePspIVector2 *vec2_trunc(ScePspIVector2 *out, const ScePspFVector2 *v)
     return out;
 }
 #else
-ScePspIVector2 *vec2_trunc(ScePspIVector2 *out, const ScePspFVector2 *v);
+ScePspIVector2 *vec2_trunc(ScePspIVector2 *out, const ScePspFVector2 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%2)\n"
+        "lv.s S001, 4(%2)\n"
+        "vf2iz.p C000, C000, 0\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuVector2Round (vf2in: nearest, ties to even) */
 #ifdef __MWERKS__
-asm ScePspIVector2 *vec2_round(ScePspIVector2 *out, const ScePspFVector2 *v)
-{
-    move v0, a0
-    lv.s S000, 0(a1)
-    lv.s S001, 4(a1)
-    vf2in.p C000, C000, 0
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    nop
-}
+ScePspIVector2 *vec2_round(ScePspIVector2 *out, const ScePspFVector2 *v);
 #elif !defined(__mips__)
 ScePspIVector2 *vec2_round(ScePspIVector2 *out, const ScePspFVector2 *v)
 {
@@ -419,22 +421,27 @@ ScePspIVector2 *vec2_round(ScePspIVector2 *out, const ScePspFVector2 *v)
     return out;
 }
 #else
-ScePspIVector2 *vec2_round(ScePspIVector2 *out, const ScePspFVector2 *v);
+ScePspIVector2 *vec2_round(ScePspIVector2 *out, const ScePspFVector2 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%2)\n"
+        "lv.s S001, 4(%2)\n"
+        "vf2in.p C000, C000, 0\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuVector2Floor: vf2iu, rounds up [?] (see vec2_ceil). */
 #ifdef __MWERKS__
-asm ScePspIVector2 *vec2_floor(ScePspIVector2 *out, const ScePspFVector2 *v)
-{
-    move v0, a0
-    lv.s S000, 0(a1)
-    lv.s S001, 4(a1)
-    vf2iu.p C000, C000, 0
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    nop
-}
+ScePspIVector2 *vec2_floor(ScePspIVector2 *out, const ScePspFVector2 *v);
 #elif !defined(__mips__)
 ScePspIVector2 *vec2_floor(ScePspIVector2 *out, const ScePspFVector2 *v)
 {
@@ -443,7 +450,22 @@ ScePspIVector2 *vec2_floor(ScePspIVector2 *out, const ScePspFVector2 *v)
     return out;
 }
 #else
-ScePspIVector2 *vec2_floor(ScePspIVector2 *out, const ScePspFVector2 *v);
+ScePspIVector2 *vec2_floor(ScePspIVector2 *out, const ScePspFVector2 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%2)\n"
+        "lv.s S001, 4(%2)\n"
+        "vf2iu.p C000, C000, 0\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuVector2FromIVector */
@@ -767,23 +789,7 @@ int vec2_is_zero(const ScePspFVector2 *v);
 
 /* sceVfpuVector2Normalize: 0 for a zero vector, components saturated to [-1, 1] */
 #ifdef __MWERKS__
-asm ScePspFVector2 *vec2_normalize(ScePspFVector2 *out, const ScePspFVector2 *v)
-{
-    move v0, a0
-    lv.s S000, 0(a1)
-    lv.s S001, 4(a1)
-    vdot.p S010, C000, C000
-    vzero.s S011
-    vcmp.s ez, S010, S010
-    vrsq.s S010, S010
-    vcmovt.s S010, S011, 0
-    vpfxd [-1:1], [-1:1], m, m
-    vscl.p C000, C000, S010
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    nop
-}
+ScePspFVector2 *vec2_normalize(ScePspFVector2 *out, const ScePspFVector2 *v);
 #elif !defined(__mips__)
 ScePspFVector2 *vec2_normalize(ScePspFVector2 *out, const ScePspFVector2 *v)
 {
@@ -794,7 +800,28 @@ ScePspFVector2 *vec2_normalize(ScePspFVector2 *out, const ScePspFVector2 *v)
     return out;
 }
 #else
-ScePspFVector2 *vec2_normalize(ScePspFVector2 *out, const ScePspFVector2 *v);
+ScePspFVector2 *vec2_normalize(ScePspFVector2 *out, const ScePspFVector2 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S000, 0(%2)\n"
+        "lv.s S001, 4(%2)\n"
+        "vdot.p S010, C000, C000\n"
+        "vzero.s S011\n"
+        "vcmp.s ez, S010, S010\n"
+        "vrsq.s S010, S010\n"
+        "vcmovt.s S010, S011, 0\n"
+        "vpfxd [-1:1], [-1:1], m, m\n"
+        "vscl.p C000, C000, S010\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuVector2Length */
@@ -851,26 +878,8 @@ float vec2_distance(const ScePspFVector2 *a, const ScePspFVector2 *b);
 
 /* n if dot(i, nref) < 0, else -n */
 #ifdef __MWERKS__
-asm ScePspFVector2 *vec2_faceforward(ScePspFVector2 *out, const ScePspFVector2 *n, const ScePspFVector2 *i,
-                                 const ScePspFVector2 *nref)
-{
-    move v0, a0
-    lv.s S010, 0(a2)
-    lv.s S011, 4(a2)
-    lv.s S020, 0(a3)
-    lv.s S021, 4(a3)
-    vdot.p S030, C010, C020
-    lv.s S000, 0(a1)
-    lv.s S001, 4(a1)
-    vpfxt 0, y, z, w
-    vcmp.s lt, S030, S030
-    vpfxs -x, -y, z, w
-    vcmovf.p C000, C000, 0
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    nop
-}
+ScePspFVector2 *vec2_faceforward(ScePspFVector2 *out, const ScePspFVector2 *n, const ScePspFVector2 *i,
+                                 const ScePspFVector2 *nref);
 #elif !defined(__mips__)
 ScePspFVector2 *vec2_faceforward(ScePspFVector2 *out, const ScePspFVector2 *n, const ScePspFVector2 *i,
                                  const ScePspFVector2 *nref)
@@ -883,35 +892,35 @@ ScePspFVector2 *vec2_faceforward(ScePspFVector2 *out, const ScePspFVector2 *n, c
 }
 #else
 ScePspFVector2 *vec2_faceforward(ScePspFVector2 *out, const ScePspFVector2 *n, const ScePspFVector2 *i,
-                                 const ScePspFVector2 *nref);
+                                 const ScePspFVector2 *nref)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S010, 0(%3)\n"
+        "lv.s S011, 4(%3)\n"
+        "lv.s S020, 0(%4)\n"
+        "lv.s S021, 4(%4)\n"
+        "vdot.p S030, C010, C020\n"
+        "lv.s S000, 0(%2)\n"
+        "lv.s S001, 4(%2)\n"
+        "vpfxt 0, y, z, w\n"
+        "vcmp.s lt, S030, S030\n"
+        "vpfxs -x, -y, z, w\n"
+        "vcmovf.p C000, C000, 0\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (n), "r" (i), "r" (nref)
+        : "memory");
+    return out;
+}
 #endif
 
 /* normalize(v - 2 dot(v, n) n) */
 #ifdef __MWERKS__
-asm ScePspFVector2 *vec2_reflect(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n)
-{
-    move v0, a0
-    lv.s S010, 0(a1)
-    lv.s S011, 4(a1)
-    lv.s S020, 0(a2)
-    lv.s S021, 4(a2)
-    vdot.p S031, C010, C020
-    vfim.s S030, -2.0
-    vmul.s S032, S030, S031
-    vscl.p C020, C020, S032
-    vadd.p C000, C010, C020
-    vdot.p S033, C000, C000
-    vcmp.s ez, S033, S033
-    vrsq.s S033, S033
-    vpfxs 0, y, z, w
-    vcmovt.s S033, S033, 0
-    vpfxd [-1:1], [-1:1], m, m
-    vscl.p C000, C000, S033
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    nop
-}
+ScePspFVector2 *vec2_reflect(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n);
 #elif !defined(__mips__)
 ScePspFVector2 *vec2_reflect(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n)
 {
@@ -925,7 +934,35 @@ ScePspFVector2 *vec2_reflect(ScePspFVector2 *out, const ScePspFVector2 *v, const
     return out;
 }
 #else
-ScePspFVector2 *vec2_reflect(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n);
+ScePspFVector2 *vec2_reflect(ScePspFVector2 *out, const ScePspFVector2 *v, const ScePspFVector2 *n)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S010, 0(%2)\n"
+        "lv.s S011, 4(%2)\n"
+        "lv.s S020, 0(%3)\n"
+        "lv.s S021, 4(%3)\n"
+        "vdot.p S031, C010, C020\n"
+        "vfim.s S030, -2.0\n"
+        "vmul.s S032, S030, S031\n"
+        "vscl.p C020, C020, S032\n"
+        "vadd.p C000, C010, C020\n"
+        "vdot.p S033, C000, C000\n"
+        "vcmp.s ez, S033, S033\n"
+        "vrsq.s S033, S033\n"
+        "vpfxs 0, y, z, w\n"
+        "vcmovt.s S033, S033, 0\n"
+        "vpfxd [-1:1], [-1:1], m, m\n"
+        "vscl.p C000, C000, S033\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v), "r" (n)
+        : "memory");
+    return out;
+}
 #endif
 
 /* normalize(eta v + (eta dot(v, n) - eta^2) n), zero when that is not finite. The original computes

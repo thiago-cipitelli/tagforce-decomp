@@ -1,10 +1,12 @@
 // @range 0x0881B974-0x0881C4E4
-// @gcc 0x0881B994-0x0881B9EC
-// @gcc 0x0881BA5C-0x0881BAD8
+// @gcc 0x0881B974-0x0881BAD8
 // @gcc 0x0881BB64-0x0881BB74
-// @gcc 0x0881BC34-0x0881BC80
+// @gcc 0x0881BBCC-0x0881BD48
+// @gcc 0x0881BDA8-0x0881BDFC
 // @gcc 0x0881C150-0x0881C168
-// @gcc 0x0881C400-0x0881C444
+// @gcc 0x0881C1C4-0x0881C260
+// @gcc 0x0881C348-0x0881C444
+// @gcc 0x0881C494-0x0881C4E4
 /* sceVfpuMatrix2*, sceVfpuMatrix3* and the start of sceVfpuMatrix4* of Sony's libvfpu. Matrices are
    column-major and products are the usual ones: mul(out, a, b) = a b, transform(out, m, v) = m v, and
    the rotations give R m (R alone when m is NULL), with angles in radians. GCC/VFPU code kept as `asm`
@@ -59,24 +61,31 @@ static ScePspFMatrix3 *mat3_rot_apply(ScePspFMatrix3 *out, const ScePspFMatrix3 
 
 /* sceVfpuMatrix2Unit */
 #ifdef __MWERKS__
-asm ScePspFMatrix2 *mat2_identity(ScePspFMatrix2 *out)
-{
-    move v0, a0
-    vmidt.p E000
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S010, 8(a0)
-    sv.s S011, 12(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix2 *mat2_identity(ScePspFMatrix2 *out);
+#elif !defined(__mips__)
 ScePspFMatrix2 *mat2_identity(ScePspFMatrix2 *out)
 {
     out->x.x = 1.0f;
     out->x.y = 0.0f;
     out->y.x = 0.0f;
     out->y.y = 1.0f;
+    return out;
+}
+#else
+ScePspFMatrix2 *mat2_identity(ScePspFMatrix2 *out)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "vmidt.p E000\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        "sv.s S010, 8(%1)\n"
+        "sv.s S011, 12(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out)
+        : "memory");
     return out;
 }
 #endif
@@ -106,22 +115,8 @@ ScePspFMatrix2 *mat2_copy(ScePspFMatrix2 *out, const ScePspFMatrix2 *m);
 
 /* sceVfpuMatrix2Transform: m v */
 #ifdef __MWERKS__
-asm ScePspFVector2 *mat2_transform(ScePspFVector2 *out, const ScePspFMatrix2 *m, const ScePspFVector2 *v)
-{
-    move v0, a0
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S110, 8(a1)
-    lv.s S111, 12(a1)
-    lv.s S200, 0(a2)
-    lv.s S201, 4(a2)
-    vtfm2.p C000, E100, C200
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFVector2 *mat2_transform(ScePspFVector2 *out, const ScePspFMatrix2 *m, const ScePspFVector2 *v);
+#elif !defined(__mips__)
 ScePspFVector2 *mat2_transform(ScePspFVector2 *out, const ScePspFMatrix2 *m, const ScePspFVector2 *v)
 {
     float x = m->x.x * v->x + m->y.x * v->y;
@@ -131,30 +126,33 @@ ScePspFVector2 *mat2_transform(ScePspFVector2 *out, const ScePspFMatrix2 *m, con
     out->y = y;
     return out;
 }
+#else
+ScePspFVector2 *mat2_transform(ScePspFVector2 *out, const ScePspFMatrix2 *m, const ScePspFVector2 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S110, 8(%2)\n"
+        "lv.s S111, 12(%2)\n"
+        "lv.s S200, 0(%3)\n"
+        "lv.s S201, 4(%3)\n"
+        "vtfm2.p C000, E100, C200\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuMatrix2Mul: a b */
 #ifdef __MWERKS__
-asm ScePspFMatrix2 *mat2_mul(ScePspFMatrix2 *out, const ScePspFMatrix2 *a, const ScePspFMatrix2 *b)
-{
-    move v0, a0
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S110, 8(a1)
-    lv.s S111, 12(a1)
-    lv.s S200, 0(a2)
-    lv.s S201, 4(a2)
-    lv.s S210, 8(a2)
-    lv.s S211, 12(a2)
-    vmmul.p E000, E200, E100
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S010, 8(a0)
-    sv.s S011, 12(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix2 *mat2_mul(ScePspFMatrix2 *out, const ScePspFMatrix2 *a, const ScePspFMatrix2 *b);
+#elif !defined(__mips__)
 ScePspFMatrix2 *mat2_mul(ScePspFMatrix2 *out, const ScePspFMatrix2 *a, const ScePspFMatrix2 *b)
 {
     ScePspFMatrix2 r;
@@ -162,6 +160,31 @@ ScePspFMatrix2 *mat2_mul(ScePspFMatrix2 *out, const ScePspFMatrix2 *a, const Sce
     mat2_transform(&r.x, a, &b->x);
     mat2_transform(&r.y, a, &b->y);
     *out = r;
+    return out;
+}
+#else
+ScePspFMatrix2 *mat2_mul(ScePspFMatrix2 *out, const ScePspFMatrix2 *a, const ScePspFMatrix2 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S110, 8(%2)\n"
+        "lv.s S111, 12(%2)\n"
+        "lv.s S200, 0(%3)\n"
+        "lv.s S201, 4(%3)\n"
+        "lv.s S210, 8(%3)\n"
+        "lv.s S211, 12(%3)\n"
+        "vmmul.p E000, E200, E100\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        "sv.s S010, 8(%1)\n"
+        "sv.s S011, 12(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
     return out;
 }
 #endif
@@ -340,23 +363,8 @@ ScePspFMatrix2 *mat2_adjoint(ScePspFMatrix2 *out, const ScePspFMatrix2 *m)
 
 /* sceVfpuMatrix3Unit */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_identity(ScePspFMatrix3 *out)
-{
-    move v0, a0
-    vmidt.t E000
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S002, 8(a0)
-    sv.s S010, 12(a0)
-    sv.s S011, 16(a0)
-    sv.s S012, 20(a0)
-    sv.s S020, 24(a0)
-    sv.s S021, 28(a0)
-    sv.s S022, 32(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix3 *mat3_identity(ScePspFMatrix3 *out);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_identity(ScePspFMatrix3 *out)
 {
     mat3_zero(out);
@@ -365,32 +373,61 @@ ScePspFMatrix3 *mat3_identity(ScePspFMatrix3 *out)
     out->z.z = 1.0f;
     return out;
 }
+#else
+ScePspFMatrix3 *mat3_identity(ScePspFMatrix3 *out)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "vmidt.t E000\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        "sv.s S002, 8(%1)\n"
+        "sv.s S010, 12(%1)\n"
+        "sv.s S011, 16(%1)\n"
+        "sv.s S012, 20(%1)\n"
+        "sv.s S020, 24(%1)\n"
+        "sv.s S021, 28(%1)\n"
+        "sv.s S022, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuMatrix3Zero */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_zero(ScePspFMatrix3 *out)
-{
-    move v0, a0
-    vmzero.t E000
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S002, 8(a0)
-    sv.s S010, 12(a0)
-    sv.s S011, 16(a0)
-    sv.s S012, 20(a0)
-    sv.s S020, 24(a0)
-    sv.s S021, 28(a0)
-    sv.s S022, 32(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix3 *mat3_zero(ScePspFMatrix3 *out);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_zero(ScePspFMatrix3 *out)
 {
     vec3_zero(&out->x);
     vec3_zero(&out->y);
     vec3_zero(&out->z);
+    return out;
+}
+#else
+ScePspFMatrix3 *mat3_zero(ScePspFMatrix3 *out)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "vmzero.t E000\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        "sv.s S002, 8(%1)\n"
+        "sv.s S010, 12(%1)\n"
+        "sv.s S011, 16(%1)\n"
+        "sv.s S012, 20(%1)\n"
+        "sv.s S020, 24(%1)\n"
+        "sv.s S021, 28(%1)\n"
+        "sv.s S022, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out)
+        : "memory");
     return out;
 }
 #endif
@@ -408,73 +445,47 @@ ScePspFMatrix3 *mat3_copy(ScePspFMatrix3 *out, const ScePspFMatrix3 *m);
 
 /* sceVfpuMatrix3Transform: m v */
 #ifdef __MWERKS__
-asm ScePspFVector3 *mat3_transform_vec3(ScePspFVector3 *out, const ScePspFMatrix3 *m, const ScePspFVector3 *v)
+ScePspFVector3 *mat3_transform_vec3(ScePspFVector3 *out, const ScePspFMatrix3 *m, const ScePspFVector3 *v);
+#elif !defined(__mips__)
+ScePspFVector3 *mat3_transform_vec3(ScePspFVector3 *out, const ScePspFMatrix3 *m, const ScePspFVector3 *v)
 {
-    move v0, a0
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S102, 8(a1)
-    lv.s S110, 12(a1)
-    lv.s S111, 16(a1)
-    lv.s S112, 20(a1)
-    lv.s S120, 24(a1)
-    lv.s S121, 28(a1)
-    lv.s S122, 32(a1)
-    lv.s S200, 0(a2)
-    lv.s S201, 4(a2)
-    lv.s S202, 8(a2)
-    vtfm3.t C000, E100, C200
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S002, 8(a0)
-    jr ra
-    nop
+    *out = mat3_apply(m, v);
+    return out;
 }
 #else
 ScePspFVector3 *mat3_transform_vec3(ScePspFVector3 *out, const ScePspFMatrix3 *m, const ScePspFVector3 *v)
 {
-    *out = mat3_apply(m, v);
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S102, 8(%2)\n"
+        "lv.s S110, 12(%2)\n"
+        "lv.s S111, 16(%2)\n"
+        "lv.s S112, 20(%2)\n"
+        "lv.s S120, 24(%2)\n"
+        "lv.s S121, 28(%2)\n"
+        "lv.s S122, 32(%2)\n"
+        "lv.s S200, 0(%3)\n"
+        "lv.s S201, 4(%3)\n"
+        "lv.s S202, 8(%3)\n"
+        "vtfm3.t C000, E100, C200\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        "sv.s S002, 8(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "r" (v)
+        : "memory");
     return out;
 }
 #endif
 
 /* sceVfpuMatrix3Mul: a b */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_mul(ScePspFMatrix3 *out, const ScePspFMatrix3 *a, const ScePspFMatrix3 *b)
-{
-    move v0, a0
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S102, 8(a1)
-    lv.s S110, 12(a1)
-    lv.s S111, 16(a1)
-    lv.s S112, 20(a1)
-    lv.s S120, 24(a1)
-    lv.s S121, 28(a1)
-    lv.s S122, 32(a1)
-    lv.s S200, 0(a2)
-    lv.s S201, 4(a2)
-    lv.s S202, 8(a2)
-    lv.s S210, 12(a2)
-    lv.s S211, 16(a2)
-    lv.s S212, 20(a2)
-    lv.s S220, 24(a2)
-    lv.s S221, 28(a2)
-    lv.s S222, 32(a2)
-    vmmul.t E000, E200, E100
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S002, 8(a0)
-    sv.s S010, 12(a0)
-    sv.s S011, 16(a0)
-    sv.s S012, 20(a0)
-    sv.s S020, 24(a0)
-    sv.s S021, 28(a0)
-    sv.s S022, 32(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix3 *mat3_mul(ScePspFMatrix3 *out, const ScePspFMatrix3 *a, const ScePspFMatrix3 *b);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_mul(ScePspFMatrix3 *out, const ScePspFMatrix3 *a, const ScePspFMatrix3 *b)
 {
     ScePspFMatrix3 r;
@@ -483,6 +494,46 @@ ScePspFMatrix3 *mat3_mul(ScePspFMatrix3 *out, const ScePspFMatrix3 *a, const Sce
     r.y = mat3_apply(a, &b->y);
     r.z = mat3_apply(a, &b->z);
     *out = r;
+    return out;
+}
+#else
+ScePspFMatrix3 *mat3_mul(ScePspFMatrix3 *out, const ScePspFMatrix3 *a, const ScePspFMatrix3 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S102, 8(%2)\n"
+        "lv.s S110, 12(%2)\n"
+        "lv.s S111, 16(%2)\n"
+        "lv.s S112, 20(%2)\n"
+        "lv.s S120, 24(%2)\n"
+        "lv.s S121, 28(%2)\n"
+        "lv.s S122, 32(%2)\n"
+        "lv.s S200, 0(%3)\n"
+        "lv.s S201, 4(%3)\n"
+        "lv.s S202, 8(%3)\n"
+        "lv.s S210, 12(%3)\n"
+        "lv.s S211, 16(%3)\n"
+        "lv.s S212, 20(%3)\n"
+        "lv.s S220, 24(%3)\n"
+        "lv.s S221, 28(%3)\n"
+        "lv.s S222, 32(%3)\n"
+        "vmmul.t E000, E200, E100\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        "sv.s S002, 8(%1)\n"
+        "sv.s S010, 12(%1)\n"
+        "sv.s S011, 16(%1)\n"
+        "sv.s S012, 20(%1)\n"
+        "sv.s S020, 24(%1)\n"
+        "sv.s S021, 28(%1)\n"
+        "sv.s S022, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
     return out;
 }
 #endif
@@ -528,31 +579,8 @@ ScePspFMatrix3 *mat3_scale(ScePspFMatrix3 *out, const ScePspFMatrix3 *m, float s
 
 /* sceVfpuMatrix3Transpose */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_transpose(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
-{
-    move v0, a0
-    lw t0, 0(a1)
-    lw t1, 4(a1)
-    lw t2, 8(a1)
-    lw t3, 12(a1)
-    lw t4, 16(a1)
-    lw t5, 20(a1)
-    lw t6, 24(a1)
-    lw t7, 28(a1)
-    lw t8, 32(a1)
-    sw t0, 0(a0)
-    sw t3, 4(a0)
-    sw t6, 8(a0)
-    sw t1, 12(a0)
-    sw t4, 16(a0)
-    sw t7, 20(a0)
-    sw t2, 24(a0)
-    sw t5, 28(a0)
-    sw t8, 32(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix3 *mat3_transpose(ScePspFMatrix3 *out, const ScePspFMatrix3 *m);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_transpose(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
 {
     ScePspFMatrix3 r;
@@ -567,6 +595,36 @@ ScePspFMatrix3 *mat3_transpose(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
     r.z.y = m->y.z;
     r.z.z = m->z.z;
     *out = r;
+    return out;
+}
+#else
+ScePspFMatrix3 *mat3_transpose(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lw $8, 0(%2)\n"
+        "lw $9, 4(%2)\n"
+        "lw $10, 8(%2)\n"
+        "lw $11, 12(%2)\n"
+        "lw $12, 16(%2)\n"
+        "lw $13, 20(%2)\n"
+        "lw $14, 24(%2)\n"
+        "lw $15, 28(%2)\n"
+        "lw $24, 32(%2)\n"
+        "sw $8, 0(%1)\n"
+        "sw $11, 4(%1)\n"
+        "sw $14, 8(%1)\n"
+        "sw $9, 12(%1)\n"
+        "sw $12, 16(%1)\n"
+        "sw $15, 20(%1)\n"
+        "sw $10, 24(%1)\n"
+        "sw $13, 28(%1)\n"
+        "sw $24, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m)
+        : "memory", "$8", "$9", "$10", "$11", "$12", "$13", "$14", "$15", "$24");
     return out;
 }
 #endif
@@ -940,49 +998,8 @@ float mat3_determinant(const ScePspFMatrix3 *m)
 
 /* sceVfpuMatrix3Adjoint: the adjugate, whose rows are y x z, z x x and x x y */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_adjoint(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
-{
-    move v0, a0
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S102, 8(a1)
-    lv.s S110, 12(a1)
-    lv.s S111, 16(a1)
-    lv.s S112, 20(a1)
-    lv.s S120, 24(a1)
-    lv.s S121, 28(a1)
-    lv.s S122, 32(a1)
-    vpfxt 0, z, -y, w
-    vdot.t S000, R101, R102
-    vpfxt -z, 0, x, w
-    vdot.t S001, R101, R102
-    vpfxt y, -x, 0, w
-    vdot.t S002, R101, R102
-    vpfxt 0, -z, y, w
-    vdot.t S010, R100, R102
-    vpfxt z, 0, -x, w
-    vdot.t S011, R100, R102
-    vpfxt -y, x, 0, w
-    vdot.t S012, R100, R102
-    vpfxt 0, z, -y, w
-    vdot.t S020, R100, R101
-    vpfxt -z, 0, x, w
-    vdot.t S021, R100, R101
-    vpfxt y, -x, 0, w
-    vdot.t S022, R100, R101
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S002, 8(a0)
-    sv.s S010, 12(a0)
-    sv.s S011, 16(a0)
-    sv.s S012, 20(a0)
-    sv.s S020, 24(a0)
-    sv.s S021, 28(a0)
-    sv.s S022, 32(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix3 *mat3_adjoint(ScePspFMatrix3 *out, const ScePspFMatrix3 *m);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_adjoint(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
 {
     ScePspFVector3 a;
@@ -1001,6 +1018,54 @@ ScePspFMatrix3 *mat3_adjoint(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
     out->z.x = a.z;
     out->z.y = b.z;
     out->z.z = c.z;
+    return out;
+}
+#else
+ScePspFMatrix3 *mat3_adjoint(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S102, 8(%2)\n"
+        "lv.s S110, 12(%2)\n"
+        "lv.s S111, 16(%2)\n"
+        "lv.s S112, 20(%2)\n"
+        "lv.s S120, 24(%2)\n"
+        "lv.s S121, 28(%2)\n"
+        "lv.s S122, 32(%2)\n"
+        "vpfxt 0, z, -y, w\n"
+        "vdot.t S000, R101, R102\n"
+        "vpfxt -z, 0, x, w\n"
+        "vdot.t S001, R101, R102\n"
+        "vpfxt y, -x, 0, w\n"
+        "vdot.t S002, R101, R102\n"
+        "vpfxt 0, -z, y, w\n"
+        "vdot.t S010, R100, R102\n"
+        "vpfxt z, 0, -x, w\n"
+        "vdot.t S011, R100, R102\n"
+        "vpfxt -y, x, 0, w\n"
+        "vdot.t S012, R100, R102\n"
+        "vpfxt 0, z, -y, w\n"
+        "vdot.t S020, R100, R101\n"
+        "vpfxt -z, 0, x, w\n"
+        "vdot.t S021, R100, R101\n"
+        "vpfxt y, -x, 0, w\n"
+        "vdot.t S022, R100, R101\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        "sv.s S002, 8(%1)\n"
+        "sv.s S010, 12(%1)\n"
+        "sv.s S011, 16(%1)\n"
+        "sv.s S012, 20(%1)\n"
+        "sv.s S020, 24(%1)\n"
+        "sv.s S021, 28(%1)\n"
+        "sv.s S022, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m)
+        : "memory");
     return out;
 }
 #endif
@@ -1094,40 +1159,8 @@ ScePspFMatrix3 *mat3_inverse(ScePspFMatrix3 *out, float *det, const ScePspFMatri
    original never loads its y' register (it stores whatever C010 holds, normalized); normalize(y) is
    the evident intent. */
 #ifdef __MWERKS__
-asm ScePspFMatrix3 *mat3_normalize(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
-{
-    move v0, a0
-    lv.s S100, 0(a1)
-    lv.s S101, 4(a1)
-    lv.s S102, 8(a1)
-    lv.s S110, 12(a1)
-    lv.s S111, 16(a1)
-    lv.s S112, 20(a1)
-    lv.s S120, 24(a1)
-    lv.s S121, 28(a1)
-    lv.s S122, 32(a1)
-    vcrsp.t C020, C100, C110
-    vcrsp.t C000, C110, C020
-    vdot.t S100, C000, C000
-    vdot.t S101, C010, C010
-    vdot.t S102, C020, C020
-    vrsq.t C110, C100
-    vscl.t C000, C000, S110
-    vscl.t C010, C010, S111
-    vscl.t C020, C020, S112
-    sv.s S000, 0(a0)
-    sv.s S001, 4(a0)
-    sv.s S002, 8(a0)
-    sv.s S010, 12(a0)
-    sv.s S011, 16(a0)
-    sv.s S012, 20(a0)
-    sv.s S020, 24(a0)
-    sv.s S021, 28(a0)
-    sv.s S022, 32(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix3 *mat3_normalize(ScePspFMatrix3 *out, const ScePspFMatrix3 *m);
+#elif !defined(__mips__)
 ScePspFMatrix3 *mat3_normalize(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
 {
     ScePspFVector3 x;
@@ -1141,22 +1174,51 @@ ScePspFMatrix3 *mat3_normalize(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
     vec3_scale(&out->z, &z, 1.0f / sqrtf(vec3_dot(&z, &z)));
     return out;
 }
+#else
+ScePspFMatrix3 *mat3_normalize(ScePspFMatrix3 *out, const ScePspFMatrix3 *m)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.s S100, 0(%2)\n"
+        "lv.s S101, 4(%2)\n"
+        "lv.s S102, 8(%2)\n"
+        "lv.s S110, 12(%2)\n"
+        "lv.s S111, 16(%2)\n"
+        "lv.s S112, 20(%2)\n"
+        "lv.s S120, 24(%2)\n"
+        "lv.s S121, 28(%2)\n"
+        "lv.s S122, 32(%2)\n"
+        "vcrsp.t C020, C100, C110\n"
+        "vcrsp.t C000, C110, C020\n"
+        "vdot.t S100, C000, C000\n"
+        "vdot.t S101, C010, C010\n"
+        "vdot.t S102, C020, C020\n"
+        "vrsq.t C110, C100\n"
+        "vscl.t C000, C000, S110\n"
+        "vscl.t C010, C010, S111\n"
+        "vscl.t C020, C020, S112\n"
+        "sv.s S000, 0(%1)\n"
+        "sv.s S001, 4(%1)\n"
+        "sv.s S002, 8(%1)\n"
+        "sv.s S010, 12(%1)\n"
+        "sv.s S011, 16(%1)\n"
+        "sv.s S012, 20(%1)\n"
+        "sv.s S020, 24(%1)\n"
+        "sv.s S021, 28(%1)\n"
+        "sv.s S022, 32(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuMatrix4Unit */
 #ifdef __MWERKS__
-asm ScePspFMatrix4 *mat4_identity(ScePspFMatrix4 *out)
-{
-    move v0, a0
-    vmidt.q E000
-    sv.q C000, 0(a0)
-    sv.q C010, 16(a0)
-    sv.q C020, 32(a0)
-    sv.q C030, 48(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix4 *mat4_identity(ScePspFMatrix4 *out);
+#elif !defined(__mips__)
 ScePspFMatrix4 *mat4_identity(ScePspFMatrix4 *out)
 {
     mat4_zero(out);
@@ -1166,28 +1228,52 @@ ScePspFMatrix4 *mat4_identity(ScePspFMatrix4 *out)
     out->w.w = 1.0f;
     return out;
 }
+#else
+ScePspFMatrix4 *mat4_identity(ScePspFMatrix4 *out)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "vmidt.q E000\n"
+        "sv.q C000, 0(%1)\n"
+        "sv.q C010, 16(%1)\n"
+        "sv.q C020, 32(%1)\n"
+        "sv.q C030, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuMatrix4Zero */
 #ifdef __MWERKS__
-asm ScePspFMatrix4 *mat4_zero(ScePspFMatrix4 *out)
-{
-    move v0, a0
-    vmzero.q E000
-    sv.q C000, 0(a0)
-    sv.q C010, 16(a0)
-    sv.q C020, 32(a0)
-    sv.q C030, 48(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFMatrix4 *mat4_zero(ScePspFMatrix4 *out);
+#elif !defined(__mips__)
 ScePspFMatrix4 *mat4_zero(ScePspFMatrix4 *out)
 {
     vec4_zero(&out->x);
     vec4_zero(&out->y);
     vec4_zero(&out->z);
     vec4_zero(&out->w);
+    return out;
+}
+#else
+ScePspFMatrix4 *mat4_zero(ScePspFMatrix4 *out)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "vmzero.q E000\n"
+        "sv.q C000, 0(%1)\n"
+        "sv.q C010, 16(%1)\n"
+        "sv.q C020, 32(%1)\n"
+        "sv.q C030, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out)
+        : "memory");
     return out;
 }
 #endif
@@ -1251,20 +1337,8 @@ ScePspFVector4 *mat4_get_transfer(ScePspFVector4 *out, const ScePspFMatrix4 *m)
 
 /* sceVfpuMatrix4Transform: m v */
 #ifdef __MWERKS__
-asm ScePspFVector4 *mat4_transform_vec4(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v)
-{
-    move v0, a0
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    lv.q C200, 0(a2)
-    vtfm4.q C000, E100, C200
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFVector4 *mat4_transform_vec4(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v);
+#elif !defined(__mips__)
 ScePspFVector4 *mat4_transform_vec4(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v)
 {
     ScePspFVector4 r;
@@ -1276,24 +1350,31 @@ ScePspFVector4 *mat4_transform_vec4(ScePspFVector4 *out, const ScePspFMatrix4 *m
     *out = r;
     return out;
 }
+#else
+ScePspFVector4 *mat4_transform_vec4(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C130, 48(%2)\n"
+        "lv.q C200, 0(%3)\n"
+        "vtfm4.q C000, E100, C200\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* sceVfpuMatrix4TransformXYZ: the 3x3 part of m times v.xyz; w = v->w */
 #ifdef __MWERKS__
-asm ScePspFVector4 *mat4_transform_xyz(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v)
-{
-    move v0, a0
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C200, 0(a2)
-    vmov.s S003, S203
-    vtfm3.t C000, E100, C200
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
-#else
+ScePspFVector4 *mat4_transform_xyz(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v);
+#elif !defined(__mips__)
 ScePspFVector4 *mat4_transform_xyz(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v)
 {
     ScePspFVector4 r;
@@ -1303,6 +1384,25 @@ ScePspFVector4 *mat4_transform_xyz(ScePspFVector4 *out, const ScePspFMatrix4 *m,
     r.z = m->x.z * v->x + m->y.z * v->y + m->z.z * v->z;
     r.w = v->w;
     *out = r;
+    return out;
+}
+#else
+ScePspFVector4 *mat4_transform_xyz(ScePspFVector4 *out, const ScePspFMatrix4 *m, const ScePspFVector4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C200, 0(%3)\n"
+        "vmov.s S003, S203\n"
+        "vtfm3.t C000, E100, C200\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "r" (v)
+        : "memory");
     return out;
 }
 #endif

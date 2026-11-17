@@ -1,8 +1,8 @@
 // @range 0x0881DE88-0x0881EB0C
 // @gcc 0x0881DE88-0x0881E0FC
 // @asm 0x0881E0FC-0x0881E510
-// @gcc 0x0881E524-0x0881E54C
-// @gcc 0x0881E64C-0x0881E8F0
+// @gcc 0x0881E510-0x0881E62C
+// @gcc 0x0881E64C-0x0881EAD0
 /* VFPU quaternions (x, y, z, w with w the scalar part; vqmul is the Hamilton product). Euler angles
    are radians in a vector (x, y, z); the _zyx/_xyz/_yxz suffix is the product order of the axis
    rotations (zyx: q = qz * qy * qx). Hand-written VFPU code kept as whole `asm` functions; the
@@ -257,14 +257,7 @@ Vec4 *quat_to_euler_yxz(Vec4 *out, Vec4 *q)
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *quat_identity(Vec4 *out)
-{
-    move v0, a0
-    vidt.q C030
-    sv.q C030, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_identity(Vec4 *out);
 #elif !defined(__mips__)
 Vec4 *quat_identity(Vec4 *out)
 {
@@ -273,7 +266,19 @@ Vec4 *quat_identity(Vec4 *out)
     return out;
 }
 #else
-Vec4 *quat_identity(Vec4 *out);
+Vec4 *quat_identity(Vec4 *out)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "vidt.q C030\n"
+        "sv.q C030, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifndef __MWERKS__ /* PSP: vfpu_quat_gcc.c */
@@ -288,34 +293,7 @@ Vec4 *quat_copy(Vec4 *out, Vec4 *q);
 
 /* Rotation matrix of the unit quaternion q (translation 0). */
 #ifdef __MWERKS__
-asm Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q)
-{
-    move v0, a0
-    lv.q C130, 0(a1)
-    vpfxs W, Z, -Y, -X
-    vmov.q C100, C130
-    vpfxs -Z, W, X, -Y
-    vmov.q C110, C130
-    vpfxs Y, -X, W, -Z
-    vmov.q C120, C130
-    vpfxs W, Z, -Y, X
-    vmov.q C200, C130
-    vpfxs -Z, W, X, Y
-    vmov.q C210, C130
-    vpfxs Y, -X, W, Z
-    vmov.q C220, C130
-    vpfxs -X, -Y, -Z, W
-    vmov.q C230, C130
-    vmmul.q E000, E200, E100
-    vidt.q R003
-    vidt.q C030
-    sv.q C000, 0(a0)
-    sv.q C010, 16(a0)
-    sv.q C020, 32(a0)
-    sv.q C030, 48(a0)
-    jr ra
-    nop
-}
+Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q);
 #elif !defined(__mips__)
 Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q)
 {
@@ -340,24 +318,44 @@ Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q)
     return out;
 }
 #else
-Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q);
+Mat4 *quat_to_mat4(Mat4 *out, Vec4 *q)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C130, 0(%2)\n"
+        "vpfxs W, Z, -Y, -X\n"
+        "vmov.q C100, C130\n"
+        "vpfxs -Z, W, X, -Y\n"
+        "vmov.q C110, C130\n"
+        "vpfxs Y, -X, W, -Z\n"
+        "vmov.q C120, C130\n"
+        "vpfxs W, Z, -Y, X\n"
+        "vmov.q C200, C130\n"
+        "vpfxs -Z, W, X, Y\n"
+        "vmov.q C210, C130\n"
+        "vpfxs Y, -X, W, Z\n"
+        "vmov.q C220, C130\n"
+        "vpfxs -X, -Y, -Z, W\n"
+        "vmov.q C230, C130\n"
+        "vmmul.q E000, E200, E100\n"
+        "vidt.q R003\n"
+        "vidt.q C030\n"
+        "sv.q C000, 0(%1)\n"
+        "sv.q C010, 16(%1)\n"
+        "sv.q C020, 32(%1)\n"
+        "sv.q C030, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (q)
+        : "memory");
+    return out;
+}
 #endif
 
 /* out = q * v * conj(q) (v rotated by the unit quaternion q, v as a quaternion) */
 #ifdef __MWERKS__
-asm Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v)
-{
-    move v0, a0
-    lv.q C100, 0(a1)
-    lv.q C200, 0(a2)
-    vpfxs -X, -Y, -Z, W
-    vmov.q C110, C100
-    vqmul.q C120, C100, C200
-    vqmul.q C000, C120, C110
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v);
 #elif !defined(__mips__)
 Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v)
 {
@@ -377,20 +375,28 @@ Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v)
     return out;
 }
 #else
-Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v);
+Vec4 *quat_rotate(Vec4 *out, Vec4 *q, Vec4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C200, 0(%3)\n"
+        "vpfxs -X, -Y, -Z, W\n"
+        "vmov.q C110, C100\n"
+        "vqmul.q C120, C100, C200\n"
+        "vqmul.q C000, C120, C110\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (q), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    lv.q C020, 0(a2)
-    vadd.q C000, C010, C020
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -401,20 +407,25 @@ Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *quat_add(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "lv.q C020, 0(%3)\n"
+        "vadd.q C000, C010, C020\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    lv.q C020, 0(a2)
-    vsub.q C000, C010, C020
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -425,21 +436,26 @@ Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *quat_sub(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "lv.q C020, 0(%3)\n"
+        "vsub.q C000, C010, C020\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 /* out = a * b */
 #ifdef __MWERKS__
-asm Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    lv.q C020, 0(a2)
-    vqmul.q C000, C010, C020
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b);
 #elif !defined(__mips__)
 Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b)
 {
@@ -453,7 +469,21 @@ Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b)
     return out;
 }
 #else
-Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b);
+Vec4 *quat_mul(Vec4 *out, Vec4 *a, Vec4 *b)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "lv.q C020, 0(%3)\n"
+        "vqmul.q C000, C010, C020\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
@@ -580,17 +610,7 @@ Vec4 *quat_squad(Vec4 *out, Vec4 *p, Vec4 *q, Vec4 *a, Vec4 *b, float t)
 
 /* q / |q| */
 #ifdef __MWERKS__
-asm Vec4 *quat_normalize(Vec4 *out, Vec4 *q)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    vdot.q S010, C000, C000
-    vrsq.s S010, S010
-    vscl.q C000, C000, S010
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_normalize(Vec4 *out, Vec4 *q);
 #elif !defined(__mips__)
 Vec4 *quat_normalize(Vec4 *out, Vec4 *q)
 {
@@ -603,20 +623,27 @@ Vec4 *quat_normalize(Vec4 *out, Vec4 *q)
     return out;
 }
 #else
-Vec4 *quat_normalize(Vec4 *out, Vec4 *q);
+Vec4 *quat_normalize(Vec4 *out, Vec4 *q)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "vdot.q S010, C000, C000\n"
+        "vrsq.s S010, S010\n"
+        "vscl.q C000, C000, S010\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (q)
+        : "memory");
+    return out;
+}
 #endif
 
 /* (-x, -y, -z, w) */
 #ifdef __MWERKS__
-asm Vec4 *quat_conj(Vec4 *out, Vec4 *q)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    vneg.t C000, C000
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_conj(Vec4 *out, Vec4 *q);
 #elif !defined(__mips__)
 Vec4 *quat_conj(Vec4 *out, Vec4 *q)
 {
@@ -627,23 +654,25 @@ Vec4 *quat_conj(Vec4 *out, Vec4 *q)
     return out;
 }
 #else
-Vec4 *quat_conj(Vec4 *out, Vec4 *q);
+Vec4 *quat_conj(Vec4 *out, Vec4 *q)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "vneg.t C000, C000\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (q)
+        : "memory");
+    return out;
+}
 #endif
 
 /* conj(q) / |q|^2 */
 #ifdef __MWERKS__
-asm Vec4 *quat_inverse(Vec4 *out, Vec4 *q)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    vdot.q S020, C010, C010
-    vrcp.s S020, S020
-    vpfxs -X, -Y, -Z, W
-    vscl.q C000, C010, S020
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_inverse(Vec4 *out, Vec4 *q);
 #elif !defined(__mips__)
 Vec4 *quat_inverse(Vec4 *out, Vec4 *q)
 {
@@ -656,43 +685,29 @@ Vec4 *quat_inverse(Vec4 *out, Vec4 *q)
     return out;
 }
 #else
-Vec4 *quat_inverse(Vec4 *out, Vec4 *q);
+Vec4 *quat_inverse(Vec4 *out, Vec4 *q)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "vdot.q S020, C010, C010\n"
+        "vrcp.s S020, S020\n"
+        "vpfxs -X, -Y, -Z, W\n"
+        "vscl.q C000, C010, S020\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (q)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Logarithm: (v / |v|) * angle, w = 0, with v = q.xyz. As in the original the angle is computed as
    acos(w / |v|) (asin of sqrt(1 - c^2) when c = w / |v| >= sqrt(1/2)); a zero v gives (0, 0, 0, 0). */
 #ifdef __MWERKS__
-asm Vec4 *quat_log(Vec4 *out, Vec4 *q)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    vdot.t S000, C010, C010
-    vsqrt.s S000, S000
-    vcmp.s EZ, S000, S000
-    bvtl 0, L_0881E9A0
-    vone.s S000
-    vrcp.s S000, S000
-    vmul.s S001, S013, S000
-    vcst.s S002, VFPU_SQRT1_2
-    vcmp.s LT, S001, S002
-    vasin.s S002, S001
-    vmul.s S003, S001, S001
-    vcst.s S001, VFPU_PI_2
-    vmul.s S000, S000, S001
-    bvtl 0, L_0881E99C
-    vocp.s S003, S002
-    vocp.s S003, S003
-    vsqrt.s S003, S003
-    vasin.s S003, S003
-L_0881E99C:
-    vmul.s S000, S003, S000
-L_0881E9A0:
-    vzero.s S003
-    vscl.t C000, C010, S000
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_log(Vec4 *out, Vec4 *q);
 #elif !defined(__mips__)
 Vec4 *quat_log(Vec4 *out, Vec4 *q)
 {
@@ -712,31 +727,47 @@ Vec4 *quat_log(Vec4 *out, Vec4 *q)
     return out;
 }
 #else
-Vec4 *quat_log(Vec4 *out, Vec4 *q);
+Vec4 *quat_log(Vec4 *out, Vec4 *q)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "vdot.t S000, C010, C010\n"
+        "vsqrt.s S000, S000\n"
+        "vcmp.s EZ, S000, S000\n"
+        "bvtl 0, L_0881E9A0\n"
+        "vone.s S000\n"
+        "vrcp.s S000, S000\n"
+        "vmul.s S001, S013, S000\n"
+        "vcst.s S002, VFPU_SQRT1_2\n"
+        "vcmp.s LT, S001, S002\n"
+        "vasin.s S002, S001\n"
+        "vmul.s S003, S001, S001\n"
+        "vcst.s S001, VFPU_PI_2\n"
+        "vmul.s S000, S000, S001\n"
+        "bvtl 0, L_0881E99C\n"
+        "vocp.s S003, S002\n"
+        "vocp.s S003, S003\n"
+        "vsqrt.s S003, S003\n"
+        "vasin.s S003, S003\n"
+        "L_0881E99C:\n"
+        "vmul.s S000, S003, S000\n"
+        "L_0881E9A0:\n"
+        "vzero.s S003\n"
+        "vscl.t C000, C010, S000\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (q)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Exponential of the pure quaternion v: (v / |v| * sin |v|, cos |v|); v = 0 gives (0, 0, 0, 1). */
 #ifdef __MWERKS__
-asm Vec4 *quat_exp(Vec4 *out, Vec4 *v)
-{
-    move v0, a0
-    lv.q C010, 0(a1)
-    vdot.t S000, C010, C010
-    vsqrt.s S000, S000
-    vcst.s S001, VFPU_2_PI
-    vcmp.s EZ, S000, S000
-    vrcp.s S002, S000
-    vmul.s S000, S000, S001
-    vsin.s S001, S000
-    vcos.s S003, S000
-    vmul.s S000, S001, S002
-    vzero.s S001
-    vcmovt.s S000, S001, 0
-    vscl.t C000, C010, S000
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_exp(Vec4 *out, Vec4 *v);
 #elif !defined(__mips__)
 Vec4 *quat_exp(Vec4 *out, Vec4 *v)
 {
@@ -750,100 +781,139 @@ Vec4 *quat_exp(Vec4 *out, Vec4 *v)
     return out;
 }
 #else
-Vec4 *quat_exp(Vec4 *out, Vec4 *v);
+Vec4 *quat_exp(Vec4 *out, Vec4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C010, 0(%2)\n"
+        "vdot.t S000, C010, C010\n"
+        "vsqrt.s S000, S000\n"
+        "vcst.s S001, VFPU_2_PI\n"
+        "vcmp.s EZ, S000, S000\n"
+        "vrcp.s S002, S000\n"
+        "vmul.s S000, S000, S001\n"
+        "vsin.s S001, S000\n"
+        "vcos.s S003, S000\n"
+        "vmul.s S000, S001, S002\n"
+        "vzero.s S001\n"
+        "vcmovt.s S000, S001, 0\n"
+        "vscl.t C000, C010, S000\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *quat_from_euler_zyx(Vec4 *out, Vec4 *v)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    vcst.s S010, VFPU_1_PI
-    vscl.t C000, C000, S010
-    vcos.t C010, C000
-    vsin.t C000, C000
-    vcrs.t C020, C010, C010
-    vcrs.t C030, C000, C000
-    vmul.s S003, S020, S010
-    vmul.s S013, S030, S000
-    vmul.t C020, C020, C000
-    vmul.t C030, C030, C010
-    vadd.s S003, S003, S013
-    vpfxt -X, Y, -Z, W
-    vadd.t C000, C020, C030
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_from_euler_zyx(Vec4 *out, Vec4 *v);
 #elif !defined(__mips__)
 Vec4 *quat_from_euler_zyx(Vec4 *out, Vec4 *v)
 {
     return from_euler(out, v, 2, 1, 0);
 }
 #else
-Vec4 *quat_from_euler_zyx(Vec4 *out, Vec4 *v);
+Vec4 *quat_from_euler_zyx(Vec4 *out, Vec4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "vcst.s S010, VFPU_1_PI\n"
+        "vscl.t C000, C000, S010\n"
+        "vcos.t C010, C000\n"
+        "vsin.t C000, C000\n"
+        "vcrs.t C020, C010, C010\n"
+        "vcrs.t C030, C000, C000\n"
+        "vmul.s S003, S020, S010\n"
+        "vmul.s S013, S030, S000\n"
+        "vmul.t C020, C020, C000\n"
+        "vmul.t C030, C030, C010\n"
+        "vadd.s S003, S003, S013\n"
+        "vpfxt -X, Y, -Z, W\n"
+        "vadd.t C000, C020, C030\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *quat_from_euler_xyz(Vec4 *out, Vec4 *v)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    vcst.s S010, VFPU_1_PI
-    vscl.t C000, C000, S010
-    vcos.t C010, C000
-    vsin.t C000, C000
-    vcrs.t C020, C010, C010
-    vcrs.t C030, C000, C000
-    vmul.s S003, S020, S010
-    vmul.s S013, S030, S000
-    vmul.t C020, C020, C000
-    vmul.t C030, C030, C010
-    vsub.s S003, S003, S013
-    vpfxt X, -Y, Z, W
-    vadd.t C000, C020, C030
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_from_euler_xyz(Vec4 *out, Vec4 *v);
 #elif !defined(__mips__)
 Vec4 *quat_from_euler_xyz(Vec4 *out, Vec4 *v)
 {
     return from_euler(out, v, 0, 1, 2);
 }
 #else
-Vec4 *quat_from_euler_xyz(Vec4 *out, Vec4 *v);
+Vec4 *quat_from_euler_xyz(Vec4 *out, Vec4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "vcst.s S010, VFPU_1_PI\n"
+        "vscl.t C000, C000, S010\n"
+        "vcos.t C010, C000\n"
+        "vsin.t C000, C000\n"
+        "vcrs.t C020, C010, C010\n"
+        "vcrs.t C030, C000, C000\n"
+        "vmul.s S003, S020, S010\n"
+        "vmul.s S013, S030, S000\n"
+        "vmul.t C020, C020, C000\n"
+        "vmul.t C030, C030, C010\n"
+        "vsub.s S003, S003, S013\n"
+        "vpfxt X, -Y, Z, W\n"
+        "vadd.t C000, C020, C030\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 #ifdef __MWERKS__
-asm Vec4 *quat_from_euler_yxz(Vec4 *out, Vec4 *v)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    vcst.s S010, VFPU_1_PI
-    vscl.t C000, C000, S010
-    vcos.t C010, C000
-    vsin.t C000, C000
-    vcrs.t C020, C010, C010
-    vcrs.t C030, C000, C000
-    vmul.s S003, S020, S010
-    vmul.s S013, S030, S000
-    vmul.t C020, C020, C000
-    vmul.t C030, C030, C010
-    vadd.s S003, S003, S013
-    vpfxt X, -Y, -Z, W
-    vadd.t C000, C020, C030
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *quat_from_euler_yxz(Vec4 *out, Vec4 *v);
 #elif !defined(__mips__)
 Vec4 *quat_from_euler_yxz(Vec4 *out, Vec4 *v)
 {
     return from_euler(out, v, 1, 0, 2);
 }
 #else
-Vec4 *quat_from_euler_yxz(Vec4 *out, Vec4 *v);
+Vec4 *quat_from_euler_yxz(Vec4 *out, Vec4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "vcst.s S010, VFPU_1_PI\n"
+        "vscl.t C000, C000, S010\n"
+        "vcos.t C010, C000\n"
+        "vsin.t C000, C000\n"
+        "vcrs.t C020, C010, C010\n"
+        "vcrs.t C030, C000, C000\n"
+        "vmul.s S003, S020, S010\n"
+        "vmul.s S013, S030, S000\n"
+        "vmul.t C020, C020, C000\n"
+        "vmul.t C030, C030, C010\n"
+        "vadd.s S003, S003, S013\n"
+        "vpfxt X, -Y, -Z, W\n"
+        "vadd.t C000, C020, C030\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Rotation by `angle` radians about `axis` (normalized by its 4-component length, w included). */

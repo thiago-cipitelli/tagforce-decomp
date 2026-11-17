@@ -1,6 +1,7 @@
 // @range 0x0881D8A8-0x0881DE88
 // @asm 0x0881D8A8-0x0881DA34
-// @gcc 0x0881DC60-0x0881DE00
+// @gcc 0x0881DA34-0x0881DAC0
+// @gcc 0x0881DC60-0x0881DE30
 /* VFPU camera and projection matrices: planar shadow onto n . p = 1, view (look-at), perspective,
    ortho, frustum, and the point projections. Column-major (m[4 * col + row]); functions with an
    output matrix return it. Hand-written VFPU code kept as whole `asm` functions; the functions the SDK
@@ -114,44 +115,7 @@ Mat4 *mat4_shadow_plane(Mat4 *out, Vec4 *l, int point, float a, float b, float c
 /* View matrix of a camera at `eye` looking at `target`: rows x = unit(up cross z), y = z cross x,
    z = unit(eye - target), translation -R * eye. */
 #ifdef __MWERKS__
-asm Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    lv.q C010, 0(a2)
-    lv.q C020, 0(a3)
-    vsub.q R102, C000, C010
-    vdot.t S200, R102, R102
-    vzero.s S203
-    vcmp.s EZ, S200, S200
-    vrsq.s S200, S200
-    vcmovt.s S200, S203, 0
-    .word 0xDE00083F  /* vpfxd [-1:1],[-1:1],[-1:1],m */
-    vscl.t R102, R102, S200
-    vcrsp.t R100, C020, R102
-    vcrsp.t R101, R102, R100
-    vdot.t S200, R100, R100
-    vdot.t S201, R101, R101
-    vcmp.p EZ, C200, C200
-    vrsq.p C200, C200
-    vcmovt.s S200, S203, 0
-    vcmovt.s S201, S203, 1
-    .word 0xDE00083F  /* vpfxd [-1:1],[-1:1],[-1:1],m */
-    vscl.t R100, R100, S200
-    .word 0xDE00083F  /* vpfxd [-1:1],[-1:1],[-1:1],m */
-    vscl.t R101, R101, S201
-    vidt.q R103
-    vzero.t C130
-    vneg.t C000, C000
-    vhtfm4.q C010, E100, C000
-    vmov.t C130, C010
-    sv.q C100, 0(a0)
-    sv.q C110, 16(a0)
-    sv.q C120, 32(a0)
-    sv.q C130, 48(a0)
-    jr ra
-    nop
-}
+Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up);
 #elif !defined(__mips__)
 Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up)
 {
@@ -182,7 +146,49 @@ Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up)
     return out;
 }
 #else
-Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up);
+Mat4 *mat4_view(Mat4 *out, Vec4 *eye, Vec4 *target, Vec4 *up)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "lv.q C010, 0(%3)\n"
+        "lv.q C020, 0(%4)\n"
+        "vsub.q R102, C000, C010\n"
+        "vdot.t S200, R102, R102\n"
+        "vzero.s S203\n"
+        "vcmp.s EZ, S200, S200\n"
+        "vrsq.s S200, S200\n"
+        "vcmovt.s S200, S203, 0\n"
+        ".word 0xDE00083F  /* vpfxd [-1:1],[-1:1],[-1:1],m */\n"
+        "vscl.t R102, R102, S200\n"
+        "vcrsp.t R100, C020, R102\n"
+        "vcrsp.t R101, R102, R100\n"
+        "vdot.t S200, R100, R100\n"
+        "vdot.t S201, R101, R101\n"
+        "vcmp.p EZ, C200, C200\n"
+        "vrsq.p C200, C200\n"
+        "vcmovt.s S200, S203, 0\n"
+        "vcmovt.s S201, S203, 1\n"
+        ".word 0xDE00083F  /* vpfxd [-1:1],[-1:1],[-1:1],m */\n"
+        "vscl.t R100, R100, S200\n"
+        ".word 0xDE00083F  /* vpfxd [-1:1],[-1:1],[-1:1],m */\n"
+        "vscl.t R101, R101, S201\n"
+        "vidt.q R103\n"
+        "vzero.t C130\n"
+        "vneg.t C000, C000\n"
+        "vhtfm4.q C010, E100, C000\n"
+        "vmov.t C130, C010\n"
+        "sv.q C100, 0(%1)\n"
+        "sv.q C110, 16(%1)\n"
+        "sv.q C120, 32(%1)\n"
+        "sv.q C130, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (eye), "r" (target), "r" (up)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Perspective projection (fovy in radians), as gluPerspective. */
@@ -407,21 +413,7 @@ Mat4 *mat4_perspective_ex(Mat4 *out, float s, float sx, float sy, float tx, floa
 
 /* out = (p.xyz / p.w, 1 / p.w) with p = m * v */
 #ifdef __MWERKS__
-asm Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v)
-{
-    move v0, a0
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    lv.q C200, 0(a2)
-    vtfm4.q C000, E100, C200
-    vrcp.s S003, S003
-    vscl.t C000, C000, S003
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
+Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v);
 #elif !defined(__mips__)
 Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v)
 {
@@ -439,7 +431,26 @@ Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v)
     return out;
 }
 #else
-Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v);
+Vec4 *mat4_project(Vec4 *out, Mat4 *m, Vec4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C130, 48(%2)\n"
+        "lv.q C200, 0(%3)\n"
+        "vtfm4.q C000, E100, C200\n"
+        "vrcp.s S003, S003\n"
+        "vscl.t C000, C000, S003\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Projects n points (n >= 1) and stores x, y, z / w as 12.4 fixed point (rounded to nearest) in

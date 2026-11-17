@@ -1,5 +1,8 @@
 // @range 0x0881C4E4-0x0881CD50
+// @gcc 0x0881C4E4-0x0881C54C
+// @gcc 0x0881C584-0x0881C61C
 // @gcc 0x0881C8D4-0x0881C8F4
+// @gcc 0x0881C9C8-0x0881CD50
 /* VFPU matrix library, second half (the first half, from mat4_identity, lives before 0x0881C4E4):
    products, transforms, rotations, determinant, inverse and the helpers built on them. Matrices are
    column-major as in the VFPU (m[4 * col + row]); each function is hand-written VFPU code (the SDK's
@@ -113,20 +116,8 @@ static void cross3(float *r, const float *a, const float *b)
 
 /* out = m * (v.xyz, 1) */
 #ifdef __MWERKS__
-asm Vec4 *mat4_transform_point(Vec4 *out, Mat4 *m, Vec4 *v)
-{
-    move v0, a0
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    lv.q C200, 0(a2)
-    vhtfm4.q C000, E100, C200
-    sv.q C000, 0(a0)
-    jr ra
-    nop
-}
-#else
+Vec4 *mat4_transform_point(Vec4 *out, Mat4 *m, Vec4 *v);
+#elif !defined(__mips__)
 Vec4 *mat4_transform_point(Vec4 *out, Mat4 *m, Vec4 *v)
 {
     float x = v->x;
@@ -144,33 +135,59 @@ Vec4 *mat4_transform_point(Vec4 *out, Mat4 *m, Vec4 *v)
     out->w = r[3];
     return out;
 }
+#else
+Vec4 *mat4_transform_point(Vec4 *out, Mat4 *m, Vec4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C130, 48(%2)\n"
+        "lv.q C200, 0(%3)\n"
+        "vhtfm4.q C000, E100, C200\n"
+        "sv.q C000, 0(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "r" (v)
+        : "memory");
+    return out;
+}
 #endif
 
 /* out = a * b */
 #ifdef __MWERKS__
-asm Mat4 *mat4_mul(Mat4 *out, Mat4 *a, Mat4 *b)
+Mat4 *mat4_mul(Mat4 *out, Mat4 *a, Mat4 *b);
+#elif !defined(__mips__)
+Mat4 *mat4_mul(Mat4 *out, Mat4 *a, Mat4 *b)
 {
-    move v0, a0
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    lv.q C200, 0(a2)
-    lv.q C210, 16(a2)
-    lv.q C220, 32(a2)
-    lv.q C230, 48(a2)
-    vmmul.q E000, E200, E100
-    sv.q C000, 0(a0)
-    sv.q C010, 16(a0)
-    sv.q C020, 32(a0)
-    sv.q C030, 48(a0)
-    jr ra
-    nop
+    mul4(out, a, b);
+    return out;
 }
 #else
 Mat4 *mat4_mul(Mat4 *out, Mat4 *a, Mat4 *b)
 {
-    mul4(out, a, b);
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C130, 48(%2)\n"
+        "lv.q C200, 0(%3)\n"
+        "lv.q C210, 16(%3)\n"
+        "lv.q C220, 32(%3)\n"
+        "lv.q C230, 48(%3)\n"
+        "vmmul.q E000, E200, E100\n"
+        "sv.q C000, 0(%1)\n"
+        "sv.q C010, 16(%1)\n"
+        "sv.q C020, 32(%1)\n"
+        "sv.q C030, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (a), "r" (b)
+        : "memory");
     return out;
 }
 #endif
@@ -207,21 +224,8 @@ Mat4 *mat4_scale(Mat4 *out, Mat4 *m, float s)
 #endif
 
 #ifdef __MWERKS__
-asm Mat4 *mat4_transpose(Mat4 *out, Mat4 *m)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    lv.q C010, 16(a1)
-    lv.q C020, 32(a1)
-    lv.q C030, 48(a1)
-    sv.q R000, 0(a0)
-    sv.q R001, 16(a0)
-    sv.q R002, 32(a0)
-    sv.q R003, 48(a0)
-    jr ra
-    nop
-}
-#else
+Mat4 *mat4_transpose(Mat4 *out, Mat4 *m);
+#elif !defined(__mips__)
 Mat4 *mat4_transpose(Mat4 *out, Mat4 *m)
 {
     Mat4 t;
@@ -236,29 +240,33 @@ Mat4 *mat4_transpose(Mat4 *out, Mat4 *m)
     *out = t;
     return out;
 }
+#else
+Mat4 *mat4_transpose(Mat4 *out, Mat4 *m)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "lv.q C010, 16(%2)\n"
+        "lv.q C020, 32(%2)\n"
+        "lv.q C030, 48(%2)\n"
+        "sv.q R000, 0(%1)\n"
+        "sv.q R001, 16(%1)\n"
+        "sv.q R002, 32(%1)\n"
+        "sv.q R003, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Inverse of a rigid transform (orthonormal rotation R, translation t): R^T and -R^T * t; the
    rotation columns get w = 0 and the last column keeps m's w. */
 #ifdef __MWERKS__
-asm Mat4 *mat4_inverse_ortho(Mat4 *out, Mat4 *m)
-{
-    move v0, a0
-    lv.q C100, 0(a1)
-    lv.q C110, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C000, 48(a1)
-    vzero.t C130
-    vtfm3.t C010, M100, C000
-    sv.q R100, 0(a0)
-    sv.q R101, 16(a0)
-    vneg.t C000, C010
-    sv.q R102, 32(a0)
-    sv.q C000, 48(a0)
-    jr ra
-    nop
-}
-#else
+Mat4 *mat4_inverse_ortho(Mat4 *out, Mat4 *m);
+#elif !defined(__mips__)
 Mat4 *mat4_inverse_ortho(Mat4 *out, Mat4 *m)
 {
     Mat4 t;
@@ -276,33 +284,63 @@ Mat4 *mat4_inverse_ortho(Mat4 *out, Mat4 *m)
     *out = t;
     return out;
 }
+#else
+Mat4 *mat4_inverse_ortho(Mat4 *out, Mat4 *m)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C110, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C000, 48(%2)\n"
+        "vzero.t C130\n"
+        "vtfm3.t C010, M100, C000\n"
+        "sv.q R100, 0(%1)\n"
+        "sv.q R101, 16(%1)\n"
+        "vneg.t C000, C010\n"
+        "sv.q R102, 32(%1)\n"
+        "sv.q C000, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m)
+        : "memory");
+    return out;
+}
 #endif
 
 /* out = m with v.xyz added to its translation (translate(v) * m for an affine m) */
 #ifdef __MWERKS__
-asm Mat4 *mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    lv.q C010, 16(a1)
-    lv.q C020, 32(a1)
-    lv.q C030, 48(a1)
-    lv.q C100, 0(a2)
-    vadd.t C100, C100, C030
-    sv.q C000, 0(a0)
-    sv.q C010, 16(a0)
-    sv.q C020, 32(a0)
-    sv.q C100, 48(a0)
-    jr ra
-    nop
-}
-#else
+Mat4 *mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v);
+#elif !defined(__mips__)
 Mat4 *mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v)
 {
     *out = *m;
     out->m[12] += v->x;
     out->m[13] += v->y;
     out->m[14] += v->z;
+    return out;
+}
+#else
+Mat4 *mat4_translate(Mat4 *out, Mat4 *m, Vec4 *v)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "lv.q C010, 16(%2)\n"
+        "lv.q C020, 32(%2)\n"
+        "lv.q C030, 48(%2)\n"
+        "lv.q C100, 0(%3)\n"
+        "vadd.t C100, C100, C030\n"
+        "sv.q C000, 0(%1)\n"
+        "sv.q C010, 16(%1)\n"
+        "sv.q C020, 32(%1)\n"
+        "sv.q C100, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m), "r" (v)
+        : "memory");
     return out;
 }
 #endif
@@ -640,73 +678,8 @@ float mat4_determinant(Mat4 *m)
 
 /* out = adjugate of m (m * out = det(m) * I) */
 #ifdef __MWERKS__
-asm Mat4 *mat4_adjugate(Mat4 *out, Mat4 *m)
-{
-    move v0, a0
-    lv.q C000, 0(a1)
-    lv.q C010, 16(a1)
-    lv.q C020, 32(a1)
-    lv.q C030, 48(a1)
-    vpfxs 0, Z, Y, Y
-    vpfxt 0, W, W, Z
-    vmul.q C100, C020, C030
-    vpfxs X, 0, W, Z
-    vpfxt Y, 0, X, X
-    vmul.q C110, C020, C030
-    vpfxs 0, Z, Y, Y
-    vpfxt 0, W, W, Z
-    vmul.q C120, C030, C020
-    vpfxs X, 0, W, Z
-    vpfxt Y, 0, X, X
-    vmul.q C130, C030, C020
-    vsub.q C100, C100, C120
-    vsub.q C110, C110, C130
-    vmov.p R122, R100
-    vmov.p R123, C110
-    vpfxs X, -Y, Z, W
-    vmov.t R110, C101
-    vpfxs X, -Y, Z, W
-    vmov.p R121, C112
-    vtfm4.q R200, E100, C010
-    vtfm4.q R201, E100, C000
-    vpfxs 0, Z, Y, Y
-    vpfxt 0, W, W, Z
-    vmul.q C100, C000, C010
-    vpfxs X, 0, W, Z
-    vpfxt Y, 0, X, X
-    vmul.q C110, C000, C010
-    vpfxs 0, Z, Y, Y
-    vpfxt 0, W, W, Z
-    vmul.q C120, C010, C000
-    vpfxs X, 0, W, Z
-    vpfxt Y, 0, X, X
-    vmul.q C130, C010, C000
-    vsub.q C100, C100, C120
-    vsub.q C110, C110, C130
-    vmov.p R122, R100
-    vmov.p R123, C110
-    vpfxs X, -Y, Z, W
-    vmov.t R110, C101
-    vpfxs X, -Y, Z, W
-    vmov.p R121, C112
-    vtfm4.q R202, E100, C030
-    vtfm4.q R203, E100, C020
-    .word 0xDE000500  /* vpfxd m,,m, */
-    vneg.q C200, C200
-    .word 0xDE000A00  /* vpfxd ,m,,m */
-    vneg.q C210, C210
-    .word 0xDE000500  /* vpfxd m,,m, */
-    vneg.q C220, C220
-    .word 0xDE000A00  /* vpfxd ,m,,m */
-    vneg.q C230, C230
-    sv.q C200, 0(a0)
-    sv.q C210, 16(a0)
-    sv.q C220, 32(a0)
-    sv.q C230, 48(a0)
-    jr ra
-    nop
-}
-#else
+Mat4 *mat4_adjugate(Mat4 *out, Mat4 *m);
+#elif !defined(__mips__)
 Mat4 *mat4_adjugate(Mat4 *out, Mat4 *m)
 {
     float o[16];
@@ -715,132 +688,84 @@ Mat4 *mat4_adjugate(Mat4 *out, Mat4 *m)
     memcpy(out->m, o, sizeof(o));
     return out;
 }
+#else
+Mat4 *mat4_adjugate(Mat4 *out, Mat4 *m)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%2)\n"
+        "lv.q C010, 16(%2)\n"
+        "lv.q C020, 32(%2)\n"
+        "lv.q C030, 48(%2)\n"
+        "vpfxs 0, Z, Y, Y\n"
+        "vpfxt 0, W, W, Z\n"
+        "vmul.q C100, C020, C030\n"
+        "vpfxs X, 0, W, Z\n"
+        "vpfxt Y, 0, X, X\n"
+        "vmul.q C110, C020, C030\n"
+        "vpfxs 0, Z, Y, Y\n"
+        "vpfxt 0, W, W, Z\n"
+        "vmul.q C120, C030, C020\n"
+        "vpfxs X, 0, W, Z\n"
+        "vpfxt Y, 0, X, X\n"
+        "vmul.q C130, C030, C020\n"
+        "vsub.q C100, C100, C120\n"
+        "vsub.q C110, C110, C130\n"
+        "vmov.p R122, R100\n"
+        "vmov.p R123, C110\n"
+        "vpfxs X, -Y, Z, W\n"
+        "vmov.t R110, C101\n"
+        "vpfxs X, -Y, Z, W\n"
+        "vmov.p R121, C112\n"
+        "vtfm4.q R200, E100, C010\n"
+        "vtfm4.q R201, E100, C000\n"
+        "vpfxs 0, Z, Y, Y\n"
+        "vpfxt 0, W, W, Z\n"
+        "vmul.q C100, C000, C010\n"
+        "vpfxs X, 0, W, Z\n"
+        "vpfxt Y, 0, X, X\n"
+        "vmul.q C110, C000, C010\n"
+        "vpfxs 0, Z, Y, Y\n"
+        "vpfxt 0, W, W, Z\n"
+        "vmul.q C120, C010, C000\n"
+        "vpfxs X, 0, W, Z\n"
+        "vpfxt Y, 0, X, X\n"
+        "vmul.q C130, C010, C000\n"
+        "vsub.q C100, C100, C120\n"
+        "vsub.q C110, C110, C130\n"
+        "vmov.p R122, R100\n"
+        "vmov.p R123, C110\n"
+        "vpfxs X, -Y, Z, W\n"
+        "vmov.t R110, C101\n"
+        "vpfxs X, -Y, Z, W\n"
+        "vmov.p R121, C112\n"
+        "vtfm4.q R202, E100, C030\n"
+        "vtfm4.q R203, E100, C020\n"
+        ".word 0xDE000500  /* vpfxd m,,m, */\n"
+        "vneg.q C200, C200\n"
+        ".word 0xDE000A00  /* vpfxd ,m,,m */\n"
+        "vneg.q C210, C210\n"
+        ".word 0xDE000500  /* vpfxd m,,m, */\n"
+        "vneg.q C220, C220\n"
+        ".word 0xDE000A00  /* vpfxd ,m,,m */\n"
+        "vneg.q C230, C230\n"
+        "sv.q C200, 0(%1)\n"
+        "sv.q C210, 16(%1)\n"
+        "sv.q C220, 32(%1)\n"
+        "sv.q C230, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m)
+        : "memory");
+    return out;
+}
 #endif
 
 /* out = inverse of m; *det (if det != 0) receives the determinant. A singular m leaves out as is. */
 #ifdef __MWERKS__
-asm Mat4 *mat4_invert(Mat4 *out, float *det, Mat4 *m)
-{
-    move v0, a0
-    lv.q C000, 0(a2)
-    lv.q C010, 16(a2)
-    lv.q C020, 32(a2)
-    lv.q C030, 48(a2)
-    vpfxs X, Z, Y, W
-    vpfxt Y, X, Z, W
-    vmul.t C100, C011, C021
-    vpfxs X, Z, Y, W
-    vpfxt Y, X, Z, W
-    vmul.t C110, C001, C021
-    vpfxs X, Z, Y, W
-    vpfxt Y, X, Z, W
-    vmul.t C120, C001, C011
-    vpfxs X, Z, Y, W
-    vpfxt Y, X, Z, W
-    vmul.t C130, C001, C011
-    vpfxs Z, Y, X, W
-    vpfxt Y, X, Z, W
-    vmul.t C200, C011, C021
-    vpfxs Z, Y, X, W
-    vpfxt Y, X, Z, W
-    vmul.t C210, C001, C021
-    vpfxs Z, Y, X, W
-    vpfxt Y, X, Z, W
-    vmul.t C220, C001, C011
-    vpfxs Z, Y, X, W
-    vpfxt Y, X, Z, W
-    vmul.t C230, C001, C011
-    vpfxt Z, Y, X, W
-    vdot.t S100, C100, C031
-    vpfxt Z, Y, X, W
-    vdot.t S110, C110, C031
-    vpfxt Z, Y, X, W
-    vdot.t S120, C120, C031
-    vpfxt Z, Y, X, W
-    vdot.t S130, C130, C021
-    vpfxt X, Z, Y, W
-    vdot.t S200, C200, C031
-    vpfxt X, Z, Y, W
-    vdot.t S210, C210, C031
-    vpfxt X, Z, Y, W
-    vdot.t S220, C220, C031
-    vpfxt X, Z, Y, W
-    vdot.t S230, C230, C021
-    vsub.q R100, R100, R200
-    vmul.q R101, R000, R100
-    vpfxs X, -Y, Z, -W
-    vfad.q S200, R101
-    vcmp.s EZ, S200, S200
-    mfv t0, S200
-    bvt 0, L_0881CC84
-    nop
-    vpfxs 0, Z, Y, Y
-    vpfxt 0, W, W, Z
-    vmul.q C100, C020, C030
-    vpfxs X, 0, W, Z
-    vpfxt Y, 0, X, X
-    vmul.q C110, C020, C030
-    vpfxs 0, Z, Y, Y
-    vpfxt 0, W, W, Z
-    vmul.q C120, C030, C020
-    vpfxs X, 0, W, Z
-    vpfxt Y, 0, X, X
-    vmul.q C130, C030, C020
-    vsub.q C100, C100, C120
-    vsub.q C110, C110, C130
-    vmov.p R122, R100
-    vmov.p R123, C110
-    vpfxs X, -Y, Z, W
-    vmov.t R110, C101
-    vpfxs X, -Y, Z, W
-    vmov.p R121, C112
-    vtfm4.q R200, E100, C010
-    vtfm4.q R201, E100, C000
-    vpfxs 0, Z, Y, Y
-    vpfxt 0, W, W, Z
-    vmul.q C100, C000, C010
-    vpfxs X, 0, W, Z
-    vpfxt Y, 0, X, X
-    vmul.q C110, C000, C010
-    vpfxs 0, Z, Y, Y
-    vpfxt 0, W, W, Z
-    vmul.q C120, C010, C000
-    vpfxs X, 0, W, Z
-    vpfxt Y, 0, X, X
-    vmul.q C130, C010, C000
-    vsub.q C100, C100, C120
-    vsub.q C110, C110, C130
-    vmov.p R122, R100
-    vmov.p R123, C110
-    vpfxs X, -Y, Z, W
-    vmov.t R110, C101
-    vpfxs X, -Y, Z, W
-    vmov.p R121, C112
-    vtfm4.q R202, E100, C030
-    vtfm4.q R203, E100, C020
-    .word 0xDE000500  /* vpfxd m,,m, */
-    vneg.q C200, C200
-    .word 0xDE000A00  /* vpfxd ,m,,m */
-    vneg.q C210, C210
-    .word 0xDE000500  /* vpfxd m,,m, */
-    vneg.q C220, C220
-    .word 0xDE000A00  /* vpfxd ,m,,m */
-    vneg.q C230, C230
-    mtv t0, S000
-    vrcp.s S000, S000
-    vmscl.q E200, E200, S000
-    sv.q C200, 0(a0)
-    sv.q C210, 16(a0)
-    sv.q C220, 32(a0)
-    sv.q C230, 48(a0)
-L_0881CC84:
-    bnezl a1, L_0881CC8C
-    sw t0, 0(a1)
-L_0881CC8C:
-    jr ra
-    nop
-}
-#else
+Mat4 *mat4_invert(Mat4 *out, float *det, Mat4 *m);
+#elif !defined(__mips__)
 Mat4 *mat4_invert(Mat4 *out, float *det, Mat4 *m)
 {
     float o[16];
@@ -857,41 +782,140 @@ Mat4 *mat4_invert(Mat4 *out, float *det, Mat4 *m)
     }
     return out;
 }
+#else
+Mat4 *mat4_invert(Mat4 *out, float *det, Mat4 *m)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C000, 0(%3)\n"
+        "lv.q C010, 16(%3)\n"
+        "lv.q C020, 32(%3)\n"
+        "lv.q C030, 48(%3)\n"
+        "vpfxs X, Z, Y, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C100, C011, C021\n"
+        "vpfxs X, Z, Y, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C110, C001, C021\n"
+        "vpfxs X, Z, Y, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C120, C001, C011\n"
+        "vpfxs X, Z, Y, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C130, C001, C011\n"
+        "vpfxs Z, Y, X, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C200, C011, C021\n"
+        "vpfxs Z, Y, X, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C210, C001, C021\n"
+        "vpfxs Z, Y, X, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C220, C001, C011\n"
+        "vpfxs Z, Y, X, W\n"
+        "vpfxt Y, X, Z, W\n"
+        "vmul.t C230, C001, C011\n"
+        "vpfxt Z, Y, X, W\n"
+        "vdot.t S100, C100, C031\n"
+        "vpfxt Z, Y, X, W\n"
+        "vdot.t S110, C110, C031\n"
+        "vpfxt Z, Y, X, W\n"
+        "vdot.t S120, C120, C031\n"
+        "vpfxt Z, Y, X, W\n"
+        "vdot.t S130, C130, C021\n"
+        "vpfxt X, Z, Y, W\n"
+        "vdot.t S200, C200, C031\n"
+        "vpfxt X, Z, Y, W\n"
+        "vdot.t S210, C210, C031\n"
+        "vpfxt X, Z, Y, W\n"
+        "vdot.t S220, C220, C031\n"
+        "vpfxt X, Z, Y, W\n"
+        "vdot.t S230, C230, C021\n"
+        "vsub.q R100, R100, R200\n"
+        "vmul.q R101, R000, R100\n"
+        "vpfxs X, -Y, Z, -W\n"
+        "vfad.q S200, R101\n"
+        "vcmp.s EZ, S200, S200\n"
+        "mfv $8, S200\n"
+        "bvt 0, L_0881CC84\n"
+        "nop\n"
+        "vpfxs 0, Z, Y, Y\n"
+        "vpfxt 0, W, W, Z\n"
+        "vmul.q C100, C020, C030\n"
+        "vpfxs X, 0, W, Z\n"
+        "vpfxt Y, 0, X, X\n"
+        "vmul.q C110, C020, C030\n"
+        "vpfxs 0, Z, Y, Y\n"
+        "vpfxt 0, W, W, Z\n"
+        "vmul.q C120, C030, C020\n"
+        "vpfxs X, 0, W, Z\n"
+        "vpfxt Y, 0, X, X\n"
+        "vmul.q C130, C030, C020\n"
+        "vsub.q C100, C100, C120\n"
+        "vsub.q C110, C110, C130\n"
+        "vmov.p R122, R100\n"
+        "vmov.p R123, C110\n"
+        "vpfxs X, -Y, Z, W\n"
+        "vmov.t R110, C101\n"
+        "vpfxs X, -Y, Z, W\n"
+        "vmov.p R121, C112\n"
+        "vtfm4.q R200, E100, C010\n"
+        "vtfm4.q R201, E100, C000\n"
+        "vpfxs 0, Z, Y, Y\n"
+        "vpfxt 0, W, W, Z\n"
+        "vmul.q C100, C000, C010\n"
+        "vpfxs X, 0, W, Z\n"
+        "vpfxt Y, 0, X, X\n"
+        "vmul.q C110, C000, C010\n"
+        "vpfxs 0, Z, Y, Y\n"
+        "vpfxt 0, W, W, Z\n"
+        "vmul.q C120, C010, C000\n"
+        "vpfxs X, 0, W, Z\n"
+        "vpfxt Y, 0, X, X\n"
+        "vmul.q C130, C010, C000\n"
+        "vsub.q C100, C100, C120\n"
+        "vsub.q C110, C110, C130\n"
+        "vmov.p R122, R100\n"
+        "vmov.p R123, C110\n"
+        "vpfxs X, -Y, Z, W\n"
+        "vmov.t R110, C101\n"
+        "vpfxs X, -Y, Z, W\n"
+        "vmov.p R121, C112\n"
+        "vtfm4.q R202, E100, C030\n"
+        "vtfm4.q R203, E100, C020\n"
+        ".word 0xDE000500  /* vpfxd m,,m, */\n"
+        "vneg.q C200, C200\n"
+        ".word 0xDE000A00  /* vpfxd ,m,,m */\n"
+        "vneg.q C210, C210\n"
+        ".word 0xDE000500  /* vpfxd m,,m, */\n"
+        "vneg.q C220, C220\n"
+        ".word 0xDE000A00  /* vpfxd ,m,,m */\n"
+        "vneg.q C230, C230\n"
+        "mtv $8, S000\n"
+        "vrcp.s S000, S000\n"
+        "vmscl.q E200, E200, S000\n"
+        "sv.q C200, 0(%1)\n"
+        "sv.q C210, 16(%1)\n"
+        "sv.q C220, 32(%1)\n"
+        "sv.q C230, 48(%1)\n"
+        "L_0881CC84:\n"
+        "bnezl %2, L_0881CC8C\n"
+        "sw $8, 0(%2)\n"
+        "L_0881CC8C:\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (det), "r" (m)
+        : "memory", "$8");
+    return out;
+}
 #endif
 
 /* Planar shadow projection: with the plane normalized by the length of its xyz (n = plane / |plane.xyz|,
    clamped to [-1, 1]; a zero normal gives n = 0), out = dot(light, n) * I - light * n^T. */
 #ifdef __MWERKS__
-asm Mat4 *mat4_shadow(Mat4 *out, Vec4 *light, Vec4 *plane)
-{
-    move v0, a0
-    lv.q C100, 0(a1)
-    lv.q C200, 0(a2)
-    vdot.t S210, C200, C200
-    vzero.s S211
-    vcmp.s EZ, S210, S210
-    vrsq.s S210, S210
-    vcmovt.s S210, S211, 0
-    .word 0xDE0000FF  /* vpfxd [-1:1],[-1:1],[-1:1],[-1:1] */
-    vscl.q C200, C200, S210
-    vdot.q S110, C100, C200
-    vneg.q C210, C200
-    vscl.q C000, C100, S210
-    vscl.q C010, C100, S211
-    vscl.q C020, C100, S212
-    vscl.q C030, C100, S213
-    vadd.s S000, S000, S110
-    vadd.s S011, S011, S110
-    vadd.s S022, S022, S110
-    vadd.s S033, S033, S110
-    sv.q C000, 0(a0)
-    sv.q C010, 16(a0)
-    sv.q C020, 32(a0)
-    sv.q C030, 48(a0)
-    jr ra
-    nop
-}
-#else
+Mat4 *mat4_shadow(Mat4 *out, Vec4 *light, Vec4 *plane);
+#elif !defined(__mips__)
 Mat4 *mat4_shadow(Mat4 *out, Vec4 *light, Vec4 *plane)
 {
     float *l = &light->x;
@@ -914,36 +938,48 @@ Mat4 *mat4_shadow(Mat4 *out, Vec4 *light, Vec4 *plane)
     }
     return out;
 }
+#else
+Mat4 *mat4_shadow(Mat4 *out, Vec4 *light, Vec4 *plane)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C200, 0(%3)\n"
+        "vdot.t S210, C200, C200\n"
+        "vzero.s S211\n"
+        "vcmp.s EZ, S210, S210\n"
+        "vrsq.s S210, S210\n"
+        "vcmovt.s S210, S211, 0\n"
+        ".word 0xDE0000FF  /* vpfxd [-1:1],[-1:1],[-1:1],[-1:1] */\n"
+        "vscl.q C200, C200, S210\n"
+        "vdot.q S110, C100, C200\n"
+        "vneg.q C210, C200\n"
+        "vscl.q C000, C100, S210\n"
+        "vscl.q C010, C100, S211\n"
+        "vscl.q C020, C100, S212\n"
+        "vscl.q C030, C100, S213\n"
+        "vadd.s S000, S000, S110\n"
+        "vadd.s S011, S011, S110\n"
+        "vadd.s S022, S022, S110\n"
+        "vadd.s S033, S033, S110\n"
+        "sv.q C000, 0(%1)\n"
+        "sv.q C010, 16(%1)\n"
+        "sv.q C020, 32(%1)\n"
+        "sv.q C030, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (light), "r" (plane)
+        : "memory");
+    return out;
+}
 #endif
 
 /* Re-orthonormalizes the rotation part of m around its y axis: z = normalize(x cross y),
    x = normalize(y cross z), y = normalize(y); w of the three columns = 0, translation kept. */
 #ifdef __MWERKS__
-asm Mat4 *mat4_orthonormalize(Mat4 *out, Mat4 *m)
-{
-    move v0, a0
-    lv.q C100, 0(a1)
-    lv.q C010, 16(a1)
-    lv.q C120, 32(a1)
-    lv.q C130, 48(a1)
-    vzero.t R003
-    vcrsp.t C020, C100, C010
-    vcrsp.t C000, C010, C020
-    vdot.t S100, C000, C000
-    vdot.t S101, C010, C010
-    vdot.t S102, C020, C020
-    vrsq.t C110, C100
-    vscl.t C000, C000, S110
-    vscl.t C010, C010, S111
-    vscl.t C020, C020, S112
-    sv.q C000, 0(a0)
-    sv.q C010, 16(a0)
-    sv.q C020, 32(a0)
-    sv.q C130, 48(a0)
-    jr ra
-    nop
-}
-#else
+Mat4 *mat4_orthonormalize(Mat4 *out, Mat4 *m);
+#elif !defined(__mips__)
 Mat4 *mat4_orthonormalize(Mat4 *out, Mat4 *m)
 {
     Mat4 t;
@@ -962,6 +998,36 @@ Mat4 *mat4_orthonormalize(Mat4 *out, Mat4 *m)
     t.m[14] = m->m[14];
     t.m[15] = m->m[15];
     *out = t;
+    return out;
+}
+#else
+Mat4 *mat4_orthonormalize(Mat4 *out, Mat4 *m)
+{
+    __asm__ (
+        ".set push\n"
+        ".set noreorder\n"
+        "lv.q C100, 0(%2)\n"
+        "lv.q C010, 16(%2)\n"
+        "lv.q C120, 32(%2)\n"
+        "lv.q C130, 48(%2)\n"
+        "vzero.t R003\n"
+        "vcrsp.t C020, C100, C010\n"
+        "vcrsp.t C000, C010, C020\n"
+        "vdot.t S100, C000, C000\n"
+        "vdot.t S101, C010, C010\n"
+        "vdot.t S102, C020, C020\n"
+        "vrsq.t C110, C100\n"
+        "vscl.t C000, C000, S110\n"
+        "vscl.t C010, C010, S111\n"
+        "vscl.t C020, C020, S112\n"
+        "sv.q C000, 0(%1)\n"
+        "sv.q C010, 16(%1)\n"
+        "sv.q C020, 32(%1)\n"
+        "sv.q C130, 48(%1)\n"
+        ".set pop\n"
+        : "=m" (*out)
+        : "r" (out), "r" (m)
+        : "memory");
     return out;
 }
 #endif
