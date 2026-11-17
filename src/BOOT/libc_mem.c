@@ -3,6 +3,7 @@
 // @gcc 0x0880DD1C-0x0880DE28 nl_memcpy
 // @asm 0x0880DE28-0x0880DE40
 // @gcc 0x0880DE40-0x0880E140
+// @gcc 0x0880E140-0x0880E1F8 libc_memset_gcc
 // @gcc 0x0880E1F8-0x0880E270
 // @asm 0x0880E270-0x0880E280
 // @gcc 0x0880E280-0x0880E700 libc_reent
@@ -58,67 +59,9 @@ void *mem_move(void *d, const void *s, size_t n)
 }
 #endif
 
-/* newlib memset */
-#ifdef __MWERKS__
-asm void *memset(void *d, int c, size_t n)
-{
-    sltiu v0, a2, 16
-    bnez v0, @98
-    move v1, a0
-    andi a3, a0, 0x3
-    beqzl a3, @40
-    andi a1, a1, 0xff
-    sltiu v0, a3, 4
-    beqz v0, @3c
-    addiu a3, a3, 1
-@24:
-    sltiu v0, a3, 4
-    sb a1, 0(v1)
-    addiu a2, a2, -1
-    addiu v1, v1, 1
-    bnez v0, @24
-    addiu a3, a3, 1
-@3c:
-    andi a1, a1, 0xff
-@40:
-    move a3, v1
-    beqz a1, @5c
-    move t0, a1
-    sll v0, a1, 0x8
-    or t0, a1, v0
-    sll v1, t0, 0x10
-    or t0, t0, v1
-@5c:
-    srl v0, a2, 0x3
-    beqz v0, @7c
-    andi a2, a2, 0x7
-@68:
-    addiu v0, v0, -1
-    sw t0, 0(a3)
-    sw t0, 4(a3)
-    bnez v0, @68
-    addiu a3, a3, 8
-@7c:
-    sltiu v0, a2, 4
-    bnez v0, @98
-    move v1, a3
-    sw t0, 0(a3)
-    addiu a2, a2, -4
-    addiu a3, a3, 4
-    move v1, a3
-@98:
-    beqz a2, @b0
-    nop
-@a0:
-    addiu a2, a2, -1
-    sb a1, 0(v1)
-    bnez a2, @a0
-    addiu v1, v1, 1
-@b0:
-    jr ra
-    move v0, a0
-}
-#else
+/* newlib memset: the SDK's is newlib's machine/mips memset.c, compiled by GCC (libc_memset_gcc.c); the port uses
+   this plain C */
+#ifndef __MWERKS__
 void *memset(void *d, int c, size_t n)
 {
     unsigned char *p = d;
