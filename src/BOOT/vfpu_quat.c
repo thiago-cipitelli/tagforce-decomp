@@ -27,6 +27,11 @@ float sqrtf(float x);
 float asinf(float x);
 float atan2f(float y, float x);
 #endif
+#if defined(__mips__) && !defined(__MWERKS__)
+/* the libm wrappers have other names in BOOT (fdlibm.h): sqrtf stays the builtin (sqrt.s inline, the call only for
+   a NaN result), its call goes to libm_sqrtf */
+__asm__("sqrtf = libm_sqrtf\n\tasinf = libm_asinf");
+#endif
 
 #if !defined(__MWERKS__) && !defined(__mips__)
 #include <math.h>
