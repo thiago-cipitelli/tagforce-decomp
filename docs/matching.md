@@ -4119,3 +4119,15 @@ Resultados (25 min, `-j 3`):
   `quat_to_euler_xyz` (33), `wave_thread` (46: falta a cópia `move s2,s0` de `off`, o resto é deslocamento),
   `vag_decode_block` 37 -> 32 (não aplicado: só posicional). Parecem diferenças da revisão do compilador
   (alocação), não de forma do fonte.
+
+## Rodada 42 (`uE`): ordem das atribuições dentro dos `case` e cópia do valor do argumento
+
+- **`$s` de contador e parâmetro trocados por ORDEM DE ATRIBUIÇÃO nos `case`** (`snd_group_release_all`, 12 -> 0;
+  achado pelo `permute.py`): `free` e `i` trocavam `s0/s1` com qualquer ordem de declaração ou cópia de `free`. O que
+  bate é declarar `i` antes de `n` **e** atribuir `i = 0;` antes de `n = ...;` em cada `case` (como no `case`
+  que carrega os dois). Só uma das duas mudanças dá 15 palavras. Em funções onde as variáveis recebem valor em vários
+  ramos, testar a ordem das atribuições em cada ramo junto com a ordem das declarações.
+- **Constante do teste compartilhada com o argumento** (`msgbox_open`, 36 -> 2): com `msgbox_open_buttons(..., flag
+  != 1 ? 2 : 3)` no argumento, ou `init = 2; if (flag == 1) init = 3;`, o mwcc carrega o 2 do `type != 2` direto em
+  `a3` e não repete o `li a3,2`. `init = flag != 1 ? 2 : 3;` num comando à parte com o teste escrito `type - 2 != 0`
+  reproduz o resto (sobra o `li v0,2; beql` do teste, que vira `addiu; beqzl`).

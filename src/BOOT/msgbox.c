@@ -32,27 +32,29 @@ void msgbox_open_buttons(void *heap, unsigned short *text, int buttons, int init
 int msgbox_update_plain(void **dl);
 int msgbox_update_buttons(void **dl);
 
-#ifdef NON_MATCHING /* 8 palavras alinhadas (36 por posição; com o switch eram 10 alinhadas, 11 por posição): o original carrega o 2 do teste em v0 (`li v0,2; beql s2,v0` com o `li v0,1`
-   do ramo no atraso) e depois `li a3,3` / `li a3,2`; o mwcc junta o 2 do teste com o do 4º argumento em a3. O if
-   aninhado (em vez do switch) acerta o atraso do jal de msgbox_open_plain. Sem efeito no 2: enum (tipo, flag, init),
-   tipos estreitos, helpers inline, switch aninhado em flag, 2U/2L; `type - 2 != 0` separa mas troca a instrução. */
+#ifdef NON_MATCHING /* 2 palavras (rodada 42): o original faz `li v0,2; beql s2,v0` no teste do tipo; com `type != 2` o
+   mwcc junta esse 2 com o 2 do 4º argumento em a3 (36 palavras). `type - 2 != 0` mais `init = flag != 1 ? 2 : 3;`
+   num comando à parte deixa tudo igual menos o teste (`addiu v0,s2,-2; beqzl v0`). Sem efeito no 2 do teste: 2U,
+   2L, (short), helpers inline do teste e do valor, switch em todas as ordens de case, `two` local, enum, tipos. */
 int msgbox_open(unsigned short *text, void *heap, int type, int flag)
 {
     MsgBox *m = &msgbox;
+    int init;
 
     if (msgbox_active != 0) {
         return 0;
     }
     memset(m, 0, 0x1E8);
     m->kind = msgbox_kind(type);
-    if (type != 2) {
+    if (type - 2 != 0) {
         if (type != 1) {
             msgbox_open_plain(heap, text);
         } else {
             msgbox_open_buttons(heap, text, 1, 0);
         }
     } else {
-        msgbox_open_buttons(heap, text, 3, flag != 1 ? 2 : 3);
+        init = flag != 1 ? 2 : 3;
+        msgbox_open_buttons(heap, text, 3, init);
     }
     msgbox_active = 1;
     se_play(0x621A);
