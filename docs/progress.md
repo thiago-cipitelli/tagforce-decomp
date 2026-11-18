@@ -5,8 +5,8 @@ atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-18 (
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 98,7% | 99,6% | 10992 / 11042 |
-| BOOT | 95,1% | 97,0% | 2170 / 2211 |
+| total | 98,8% | 99,6% | 10996 / 11036 |
+| BOOT | 96,2% | 97,1% | 2174 / 2205 |
 | libduel_eng | 98,8% | 100,0% | 3424 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
