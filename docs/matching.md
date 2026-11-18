@@ -4161,3 +4161,29 @@ Oito entradas mwcc do skip (`dd_info_stats`, `duel_0883449C`, `duel_req_mill`, `
   simplificação, não em ordem de programa.
 - `tools/permute.py` com as mutações da rodada 41 (troca de comandos vizinhos, ternário, ordem de grupos de `case`,
   `(int)` em operandos): `duel_08846584` 10424 candidatos (253), `duel_0883449C` 34274 (5), `dd_info_stats` 30456 (4): nada.
+
+## Rodada 43 (`vE`): as cinco menores sobras do mwcc
+
+Nenhuma das cinco bateu (`msgbox_open` 2, `dd_info_stats` 4, `duel_0883449C` 5, `duel_req_mill` 9,
+`st_chr_step_value` 10). O que fica registrado para não repetir:
+
+- **`msgbox_open`: o 2 do teste é reaproveitado por QUALQUER definição de `init` dominada pelo teste.** Com
+  `type != 2` o 219 põe o 2 num registrador e o usa no ramo `flag != 1` do `init`: em `a3` com `init` int, em `v1`
+  (seguido de `andi a3,v1,0xff`) com `init` char/short. Vale para `if/else`, ternário, `init = 2; if (...) init = 3`,
+  `goto` para um rótulo, `switch` em todas as ordens (o `case` também gera o `li` antes da coloração) e blocos
+  antes do teste ligados por `goto`. Não muda: tipo do 4º parâmetro de `msgbox_open_buttons` (int/char/short/
+  unsigned, protótipo e definição), tipo de `init`, `type ^ 2` (= 2 palavras, igual a `type - 2 != 0`). A forma
+  `init = flag != 1 ? type : 3;` com `type != 2` acerta o teste (5 palavras), mas o φ vai para `s2` (o `type`
+  morto) e sai `move a3,s2` em vez de `li a3,2`; o permutador partindo dela (78739 candidatos) não sai de 5.
+- **`dd_info_stats`: leituras E escritas voláteis não fixam a ordem das escritas.** Todas as 5040 ordens das sete
+  cópias com {} e {2,5,7} voláteis e os 128 subconjuntos voláteis das 6 melhores: mínimo 4 (a forma atual). As
+  cargas na ordem do original (`L1 L4 L2 S1 L6 S4 L5 S6 ...`, por locais `a..e` e leituras voláteis) saem na ordem
+  certa, mas `v0/a0` giram e as escritas de `def`/`kind` trocam mesmo com `((volatile DdCardStats *)&st)->campo`:
+  2048 combinações de cargas x escritas voláteis, mínimo 6.
+- `duel_0883449C`: as 120 ordens de declaração com `z` atribuído antes de `p` ficam todas em 18 (o `addu` sobe,
+  `p`/`z` trocam de `$s`); `z` por um local intermediário (`z0`/`z1`) ou por leituras voláteis: 5.
+- `duel_req_mill`: formas do `case 0` (`(duel_req_count = n) == 0`, reler `duel_req_count`, `!n` com `break`) não
+  mexem no par `p`/`n` (9).
+- `st_chr_step_value`: leitura volátil do `level`/`step`, `level` sem local (32), ponteiro `s` para o save (18),
+  índices de array (`st_chr_save[i]`, 21), `i * 152`, laço `for`/`while`/ponteiro e as 108 ordens de declaração x
+  atribuição x tipo: mínimo 10; permutador (47159 candidatos): 10.
