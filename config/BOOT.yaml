@@ -195,8 +195,6 @@ segments:
       - [0x19274, c, vfpu_color_gcc]
       - [0x19908, c, vfpu_proj_gcc]
       - [0x19EE8, c, vfpu_quat_gcc]
-      - [0x1A15C, asm, vfpu_quat_asm_0881E0FC]
-      - [0x1A570, c, vfpu_quat_gcc]
       - [0x1AB6C, c, vfpu_mem]
       - [0x1B33C, c, vfpu_mem_gcc]
       - [0x1B744, c, gzip_gcc]
