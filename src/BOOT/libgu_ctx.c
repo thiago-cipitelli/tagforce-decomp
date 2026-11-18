@@ -1266,52 +1266,59 @@ void sceGuDebugFlush(void)
 {
     int n;
     GuDebugChar *c;
+    unsigned int bits;
+    unsigned int mask;
 
     gu_debug_start();
     n = gu_debug_count[gu_debug_buf];
     c = gu_debug_chars[gu_debug_buf];
+    if (n == 0) {
+        return; /* the count stays as it is */
+    }
+    bits = 0;
+    mask = 0;
     for (; n != 0; n--, c++) {
         int x = c->x;
         int y = c->y;
         const unsigned int *glyph;
         unsigned int color;
-        unsigned int bits;
-        unsigned int mask;
         int row;
 
-        if (y + 7 >= gu_debug_h || y < 0 || x + 7 >= gu_debug_w || x < 0) {
-            continue;
-        }
-        /* the 8 rows of a glyph are two little-endian words, one bit per pixel */
-        glyph = (const unsigned int *)&gu_debug_font[c->ch * 8];
-        color = c->color;
-        for (row = 0; row < 8; row++) {
-            int pos = x + (y + row) * gu_debug_fbw;
-            unsigned int p16 = gu_debug_edram + pos * 2 + gu_debug_fbp;
-            unsigned int p32 = gu_debug_edram + pos * 4 + gu_debug_fbp;
-            int col;
+        if (y + 7 < gu_debug_h && x + 7 < gu_debug_w && y >= 0 && x >= 0) {
+            /* the 8 rows of a glyph are two little-endian words, one bit per pixel */
+            glyph = (const unsigned int *)&gu_debug_font[c->ch * 8];
+            color = c->color;
+            for (row = 0; row < 8; row++) {
+                int pos;
+                unsigned int p16;
+                unsigned int p32;
+                int col;
 
-            if (row == 0) {
-                bits = glyph[0];
-                mask = 1;
-            } else if (row == 4) {
-                bits = glyph[1];
-                mask = 1;
-            }
-            for (col = 0; col < 8; col++) {
-                if (gu_debug_psm == 3) {
-                    if (bits & mask) {
-                        unsigned short *q = (unsigned short *)PSP_UNCACHED_PHYS(p32);
-
-                        q[1] = (int)color >> 16;
-                        q[0] = color;
-                    }
-                } else if (bits & mask) {
-                    *(unsigned short *)PSP_UNCACHED_PHYS(p16) = color;
+                if (row == 0) {
+                    bits = glyph[0];
+                    mask = 1;
+                } else if (row == 4) {
+                    bits = glyph[1];
+                    mask = 1;
                 }
-                mask <<= 1;
-                p16 += 2;
-                p32 += 4;
+                pos = x + (y + row) * gu_debug_fbw;
+                p16 = pos * 2 + gu_debug_edram + gu_debug_fbp;
+                p32 = pos * 4 + gu_debug_edram + gu_debug_fbp;
+                for (col = 0; col < 8; col++) {
+                    if (gu_debug_psm == 3) {
+                        if (bits & mask) {
+                            unsigned short *q = (unsigned short *)PSP_UNCACHED_PHYS(p32);
+
+                            q[0] = color;
+                            q[1] = (int)color >> 16;
+                        }
+                    } else if (bits & mask) {
+                        *(unsigned short *)PSP_UNCACHED_PHYS(p16) = color;
+                    }
+                    mask <<= 1;
+                    p32 += 4;
+                    p16 += 2;
+                }
             }
         }
     }
