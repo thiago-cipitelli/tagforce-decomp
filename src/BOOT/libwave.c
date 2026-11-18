@@ -823,67 +823,10 @@ void wave_ch_decode_vag(int ch, unsigned char *pcm)
     }
 }
 
-/* wave_ch_copy_pcm, once per block size (0x38 mono, 0x70 stereo): the SDK's GCC expands the two helpers in place for
-   each constant, so the original has four copies of the code */
-#if defined(__mips__) && !defined(__MWERKS__)
-#define WAVE_ALWAYS_INLINE __attribute__((always_inline))
-#else
-#define WAVE_ALWAYS_INLINE
-#endif
-static inline void wave_pcm_once(int ch, unsigned char *pcm, const unsigned char *data, int blk) WAVE_ALWAYS_INLINE;
-static inline void wave_pcm_once(int ch, unsigned char *pcm, const unsigned char *data, int blk)
-{
-    unsigned int i;
-
-    if (wave_ch[ch].size >= wave_ch[ch].pos + blk) {
-        copy_bytes(pcm, data + wave_ch[ch].pos, blk);
-        wave_ch[ch].pos += blk;
-        return;
-    }
-    {
-        unsigned char *p = pcm;
-
-        for (i = 0; i < 0x70; i++) {
-            *p++ = 0;
-        }
-    }
-    copy_bytes(pcm, data + wave_ch[ch].pos, wave_ch[ch].size - wave_ch[ch].pos);
-    wave_ch[ch].pos = 0;
-    wave_ch[ch].playing = 0;
-}
-
-static inline void wave_pcm_loop(int ch, unsigned char *pcm, const unsigned char *data, int blk) WAVE_ALWAYS_INLINE;
-static inline void wave_pcm_loop(int ch, unsigned char *pcm, const unsigned char *data, int blk)
-{
-    if (wave_ch[ch].size >= blk) {
-        unsigned int rem = wave_ch[ch].size - wave_ch[ch].pos;
-
-        if (wave_ch[ch].pos + blk < wave_ch[ch].size) {
-            copy_bytes(pcm, data + wave_ch[ch].pos, blk);
-            wave_ch[ch].pos += blk;
-            return;
-        }
-        copy_bytes(pcm, data + wave_ch[ch].pos, rem);
-        wave_ch[ch].pos = 0;
-        copy_bytes(pcm + rem, data, blk - rem);
-        wave_ch[ch].pos = blk - rem;
-    } else {
-        unsigned int done = wave_ch[ch].size - wave_ch[ch].pos;
-        int need = blk - done;
-
-        copy_bytes(pcm, data + wave_ch[ch].pos, done);
-        wave_ch[ch].pos = 0;
-        while (need > wave_ch[ch].size) {
-            copy_bytes(pcm + done, data, wave_ch[ch].size);
-            need -= wave_ch[ch].size;
-            done += wave_ch[ch].size;
-        }
-        copy_bytes(pcm + done, data, need);
-        wave_ch[ch].pos += need;
-    }
-}
-
-/* next PCM block of a channel into pcm: 0x38 bytes (28 mono samples) or 0x70 (28 stereo) */
+/* next PCM block of a channel into pcm: 0x38 bytes (28 mono samples) or 0x70 (28 stereo). The four cases are written
+   out with literal block sizes (an inline helper with a `blk` parameter keeps 56/112 in a register the original does
+   not have), and the looping case's last copy sits inside the `for (;;)`, which keeps the loop's channel pointer for
+   the final `pos += need` as the original does (rodada 43) */
 void wave_ch_copy_pcm(int ch, unsigned char *pcm)
 {
     const unsigned char *data = wave_ch[ch].data;
@@ -891,15 +834,105 @@ void wave_ch_copy_pcm(int ch, unsigned char *pcm)
 
     if ((flags & 1) == 0) {
         if (!(flags & 0x200)) {
-            wave_pcm_once(ch, pcm, data, 0x38);
+            if (wave_ch[ch].size >= wave_ch[ch].pos + 0x38) {
+                copy_bytes(pcm, data + wave_ch[ch].pos, 0x38);
+                wave_ch[ch].pos += 0x38;
+                return;
+            }
+            {
+                unsigned char *p = pcm;
+                unsigned int i;
+                for (i = 0; i < 0x70; i++) {
+                    *p++ = 0;
+                }
+            }
+            {
+                int n = wave_ch[ch].size - wave_ch[ch].pos;
+
+                copy_bytes(pcm, data + wave_ch[ch].pos, n);
+            }
+            wave_ch[ch].pos = 0;
+            wave_ch[ch].playing = 0;
+            return;
         } else {
-            wave_pcm_once(ch, pcm, data, 0x70);
+            if (wave_ch[ch].size >= wave_ch[ch].pos + 0x70) {
+                copy_bytes(pcm, data + wave_ch[ch].pos, 0x70);
+                wave_ch[ch].pos += 0x70;
+                return;
+            }
+            {
+                unsigned char *p = pcm;
+                unsigned int i;
+                for (i = 0; i < 0x70; i++) {
+                    *p++ = 0;
+                }
+            }
+            copy_bytes(pcm, data + wave_ch[ch].pos, wave_ch[ch].size - wave_ch[ch].pos);
+            wave_ch[ch].pos = 0;
+            wave_ch[ch].playing = 0;
+            return;
         }
     } else {
         if (!(flags & 0x200)) {
-            wave_pcm_loop(ch, pcm, data, 0x38);
+            if (wave_ch[ch].size >= 0x38) {
+                unsigned int rem = wave_ch[ch].size - wave_ch[ch].pos;
+                if (wave_ch[ch].pos + 0x38 < wave_ch[ch].size) {
+                    copy_bytes(pcm, data + wave_ch[ch].pos, 0x38);
+                    wave_ch[ch].pos += 0x38;
+                    return;
+                }
+                copy_bytes(pcm, data + wave_ch[ch].pos, rem);
+                wave_ch[ch].pos = 0;
+                copy_bytes(pcm + rem, data, 0x38 - rem);
+                wave_ch[ch].pos = 0x38 - rem;
+            } else {
+                unsigned int done = wave_ch[ch].size - wave_ch[ch].pos;
+                int need;
+                copy_bytes(pcm, data + wave_ch[ch].pos, done);
+                need = 0x38 - done;
+                wave_ch[ch].pos = 0;
+                for (;;) {
+                    if (need <= wave_ch[ch].size) {
+                        copy_bytes(pcm + done, data, need);
+                        wave_ch[ch].pos += need;
+                        return;
+                    }
+                    copy_bytes(pcm + done, data, wave_ch[ch].size);
+                    done += wave_ch[ch].size;
+                    need -= wave_ch[ch].size;
+                }
+            }
+            return;
         } else {
-            wave_pcm_loop(ch, pcm, data, 0x70);
+            if (wave_ch[ch].size >= 0x70) {
+                unsigned int rem = wave_ch[ch].size - wave_ch[ch].pos;
+                if (wave_ch[ch].pos + 0x70 < wave_ch[ch].size) {
+                    copy_bytes(pcm, data + wave_ch[ch].pos, 0x70);
+                    wave_ch[ch].pos += 0x70;
+                    return;
+                }
+                copy_bytes(pcm, data + wave_ch[ch].pos, rem);
+                wave_ch[ch].pos = 0;
+                copy_bytes(pcm + rem, data, 0x70 - rem);
+                wave_ch[ch].pos = 0x70 - rem;
+            } else {
+                unsigned int done = wave_ch[ch].size - wave_ch[ch].pos;
+                int need;
+                copy_bytes(pcm, data + wave_ch[ch].pos, done);
+                need = 0x70 - done;
+                wave_ch[ch].pos = 0;
+                for (;;) {
+                    if (need <= wave_ch[ch].size) {
+                        copy_bytes(pcm + done, data, need);
+                        wave_ch[ch].pos += need;
+                        return;
+                    }
+                    copy_bytes(pcm + done, data, wave_ch[ch].size);
+                    done += wave_ch[ch].size;
+                    need -= wave_ch[ch].size;
+                }
+            }
+            return;
         }
     }
 }
