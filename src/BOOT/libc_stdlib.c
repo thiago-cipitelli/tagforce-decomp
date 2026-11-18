@@ -3,12 +3,12 @@
 // @gcc 0x0880A694-0x0880A764 nl_bsearch
 // @gcc 0x0880A764-0x0880A820 nl_callocr
 // @gcc 0x0880A820-0x0880A87C
-// @asm 0x0880AAC4-0x0880BF10
+// @gcc 0x0880AAC4-0x0880BF10 nl_dtoa
 // @gcc 0x0880BF10-0x0880BF2C nl_errno
 // @asm 0x0880BF2C-0x0880BF40
 // @gcc 0x0880BF40-0x0880C040 nl_exit
 /* newlib (GCC) of the Sony SDK libc: atexit, bsearch, _calloc_r, _close_r, the quorem and _dtoa_r
-   of dtoa.c, __errno and exit. The reentrancy struct of the calling thread comes from
+   of dtoa.c, __errno and exit (_dtoa_r: newlib's dtoa.c through nl_dtoa.c). The reentrancy struct of the calling thread comes from
    libc_get_thread_module (newlib's _REENT). Functions that reach globals through %hi/%lo stay in
    the split asm (C under NON_MATCHING); the rest are the original instructions as `asm`
    functions with the portable C under `#else`. */
@@ -329,7 +329,7 @@ int libc_quorem(LibcBigint *b, LibcBigint *S)
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC: constant tables through %hi/%lo */
+#ifndef __MWERKS__ /* PSP: nl_dtoa.c */
 int snprintf(char *buf, size_t n, const char *fmt, ...);
 char *strchr(const char *s, int c);
 int atoi(const char *s);

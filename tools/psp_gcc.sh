@@ -41,6 +41,10 @@ if [ "$PSP_GCC_INSAND" = 1 ]; then
   [ -f "$PRE" ] || { echo "psp_gcc.sh: run tools/setup_toolchain.sh (psp_gcc_insand.so missing)" >&2; exit 1; }
 fi
 PEEP=1; case " $MARK " in *" -nopeep "*) PEEP=0; MARK=$(echo " $MARK " | sed 's/ -nopeep / /');; esac
+# `-strsec` on the marker (rodada 43): string literals go to .rodata.str1.4 instead of .rdata, as GCC 3.4's
+# default_elf_select_section does (cc1 3.3 of MIPS puts them in .rdata): the original dtoa.c object has its strings
+# before .rodata.cst8 and its jump table (.rdata) after it. Applied to the assembly before `as`.
+STRSEC=0; case " $MARK " in *" -strsec "*) STRSEC=1; MARK=$(echo " $MARK " | sed 's/ -strsec / /');; esac
 if [ $PEEP = 1 ]; then
   LD_PRELOAD=$PRE "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w -dP -dS -dR -fsched-verbose=6 -dumpbase "$S" $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S.cc1" \
     && UNUSED=$("$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -Dconst= -Wunused-variable $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o /dev/null 2>&1 | sed -n "s/.*warning: \`\(.*\)' defined but not used\$/\1/p") \
@@ -49,6 +53,22 @@ else
   LD_PRELOAD=$PRE "$CC1" -quiet -D__GNUC__=3 -D__GNUC_MINOR__=3 -D__GNUC_PATCHLEVEL__=3 -O2 -G0 -mext -ffunction-sections -w $MARK $SYS $FLAGS -Iinclude -I"$(dirname "$IN")" "$IN" -o "$S" && "$AS" "$S" -o "$OUT" || exit 1
 fi
 [ -f "$OUT" ] || exit 1
+if [ $STRSEC = 1 ]; then
+  python3 - "$S" <<'PY' && "$AS" "$S" -o "$OUT" || exit 1
+import re, sys
+# an .rdata block holding only labels, .align and .ascii (string literals) -> .rodata.str1.4
+lines = open(sys.argv[1]).read().split("\n")
+out = []; i = 0
+while i < len(lines):
+    if lines[i].strip() == ".rdata":
+        j = i + 1
+        while j < len(lines) and re.match(r"\s*(\$LC\d+:|\.align\s+\d+|\.ascii\s.*)$", lines[j]): j += 1
+        if j > i + 1 and any(".ascii" in l for l in lines[i + 1:j]):
+            out.append('\t.section\t.rodata.str1.4,"aMS",@progbits,1'); i += 1; continue
+    out.append(lines[i]); i += 1
+open(sys.argv[1], "w").write("\n".join(out))
+PY
+fi
 # The original link kept every constant of .rodata.cst4/.cst8/.str1.4 (no merging across objects): clear SHF_MERGE and
 # SHF_STRINGS so psp-ld leaves the sections as they are.
 python3 - "$OUT" <<'PY'

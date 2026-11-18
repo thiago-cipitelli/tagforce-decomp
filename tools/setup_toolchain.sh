@@ -24,7 +24,7 @@ done
 # needs gcc -m32 and 32-bit glibc; the addresses come from the symbols of cc1)
 CC1=$(ls "$EXT"/psp-gcc-1.7.1/lib/gcc-lib/psp/*/cc1)
 if [ ! -e "$EXT/psp_gcc_insand.so" ] || [ tools/psp_gcc_insand.c -nt "$EXT/psp_gcc_insand.so" ]; then
-  D=; for s in register_operand insn_data target_flags recog const_int_operand n_non_fixed_regs rest_of_compilation expand_expr emit_queue cfun store_expr bypass_block entry_exit_blocks bitmap_bit_p tablejump_p regrename_optimize; do
+  D=; for s in register_operand insn_data target_flags recog const_int_operand n_non_fixed_regs rest_of_compilation expand_expr emit_queue cfun store_expr bypass_block entry_exit_blocks bitmap_bit_p tablejump_p regrename_optimize expand_increment expand_assignment; do
     D="$D -DADDR_$s=0x$(nm "$CC1" | awk -v s=$s '$3 == s { print $1 }')"; done
   gcc -m32 -O2 -shared -fPIC $D tools/psp_gcc_insand.c -o "$EXT/psp_gcc_insand.so"
 fi

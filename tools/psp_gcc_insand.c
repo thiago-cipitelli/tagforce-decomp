@@ -35,6 +35,14 @@
    regrename_optimize, the REG_DEAD notes of those registers in those blocks up to their first set, so they stay
    in regrename's live set for the whole block (regrename rebuilds the notes at its end). PSP_GCC_RRTJ=0 turns it off.
 
+   Sixth change (rodada 43): an increment that expand_increment cannot do with one insn (`++*s` of a char, a
+   promoted or narrow subreg) is expanded as an assignment `x = x + 1`; the later revision emits the increment
+   queue before that assignment, so the post-increment of its address (`++*s++`) comes before the load and the
+   store. In _dtoa_r (roundoff/bump_up: `while (*--s == '9') ...; ++*s++;`) the load of `*s` then reads a new
+   value of s, GCSE's PRE no longer merges it with the `lb` of the loop test (original: `lb`, then `lbu`) and the
+   store of s comes before the `sb`. The one call to expand_assignment in expand_increment is redirected to
+   inc_assign(). PSP_GCC_INCQ=0 turns it off.
+
    Built by tools/setup_toolchain.sh (addresses from nm of cc1 as -DADDR_*), used by tools/psp_gcc.sh.  */
 #include <stdint.h>
 #include <stdio.h>
@@ -303,6 +311,14 @@ static int my_bypass_block(void *bb, rtx setcc, rtx jump)
     return r;
 }
 
+static void *(*expand_assignment_f)(void *, void *, int, int) = A(ADDR_expand_assignment);
+
+static void *inc_assign(void *to, void *from, int want_value, int suggest_reg)
+{
+    emit_queue_f();
+    return expand_assignment_f(to, from, want_value, suggest_reg);
+}
+
 __attribute__((constructor)) static void init(void)
 {
     const char *e = getenv("PSP_GCC_NNF");
@@ -339,6 +355,18 @@ __attribute__((constructor)) static void init(void)
         }
         writable(c, 5);
         *(int32_t *)(c + 1) = (int32_t)((uintptr_t)rhs_expand - (uintptr_t)(c + 5));
+    }
+    e = getenv("PSP_GCC_INCQ");
+    if (!e || atoi(e)) {
+        /* expand_increment, branch `op0_is_copy || (!post && !single_insn) || bad_subreg`:
+           temp = expand_assignment (incremented, newexp, ! post && ! ignore , 0); */
+        unsigned char *c = A(ADDR_expand_increment + 0x1BE);
+        if (c[0] != 0xE8 || (uintptr_t)(c + 5) + *(int32_t *)(c + 1) != (uintptr_t)expand_assignment_f) {
+            fprintf(stderr, "psp_gcc_insand: not the cc1 of psp-gcc 1.7.1 (expand_increment)\n");
+            exit(1);
+        }
+        writable(c, 5);
+        *(int32_t *)(c + 1) = (int32_t)((uintptr_t)inc_assign - (uintptr_t)(c + 5));
     }
     e = getenv("PSP_GCC_BYPASS");
     if (!e || atoi(e))
