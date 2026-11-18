@@ -1,14 +1,18 @@
 // @range 0x08819F0C-0x0881AB1C
 // @gcc 0x08819F0C-0x08819F30
-// @asm 0x08819F30-0x0881A440
-// @gcc 0x0881A440-0x0881AB1C
+// @asm 0x08819F30-0x08819F54
+// @gcc 0x08819F54-0x0881A088
+// @asm 0x0881A088-0x0881A1BC
+// @gcc 0x0881A1BC-0x0881AB1C
 /* FPU trig routines (sceFpuSin/Cos/Atan/Acos) and the 2D part of Sony's libvfpu (sceVfpuVector2*).
    All of it was compiled with GCC or written in VFPU assembly, so the PSP build carries the original
    instructions as `asm` functions; under `#elif !defined(__mips__)` is the portable C for the PC port.
    The GCC functions come from C (vfpu_math_gcc.c, `-fno-math-errno`: sqrt.s without the errno call);
    the port C of the VFPU ones is left out of that object, so its literal pool is the original's
-   (`@rodata`). wrap_angle, sinf, cosf and atanf do not match yet (split asm, C under NON_MATCHING),
-   but their pools already do, so their constants are written in the order of the original pool. */
+   (`@rodata`). wrap_angle and cosf do not match yet (split asm, C under NON_MATCHING), but their pools
+   already do, so their constants are written in the order of the original pool. A temporary of one branch
+   is declared in that branch (sinf, cosf, atan01): a variable set in two branches is one global pseudo
+   for GCC and moves the $f registers of the whole function (docs/build.md, rodada 42). */
 #include "vfpu.h"
 
 #if !defined(__MWERKS__) && !defined(__mips__)
@@ -118,9 +122,10 @@ float sinf(float x)
         x = pi - x;
     }
     if (x > 0.917345047f) {
-        t = half_pi - x;
-        t = t * t;
-        return (((t * -0.00137198542f + 0.0416631512f) * t + -0.499999791f) * t + 1.0f) * (float)s;
+        float u = half_pi - x;
+
+        u = u * u;
+        return (((u * -0.00137198542f + 0.0416631512f) * u + -0.499999791f) * u + 1.0f) * (float)s;
     }
     t = x * x;
     return (((t * -0.000194188775f + 0.00833132491f) * t + -0.166666389f) * t * x + x) * (float)s;
@@ -156,9 +161,10 @@ float cosf(float x)
         s = -s;
     }
     if (x > 0.653451264f) {
-        x = half_pi - x;
-        t = x * x;
-        return (((t * -0.000194188775f + 0.00833132491f) * t + -0.166666389f) * t * x + x) * (float)s;
+        float v = half_pi - x;
+        float u = v * v;
+
+        return (((u * -0.000194188775f + 0.00833132491f) * u + -0.166666389f) * u * v + v) * (float)s;
     }
     one = 1.0f;
     t = x * x;
@@ -168,20 +174,23 @@ float cosf(float x)
 /* atan on [0, 1]: polynomial below tan(pi/16)-ish, otherwise shifted by pi/8 or pi/4. */
 static float atan01(float x)
 {
-    float t;
-
     if (x < 0.198899999f) {
-        t = x * x;
+        float t = x * x;
+
         return x * (((t * -0.140000001f + 0.200000003f) * t + -0.333333313f) * t + 1.0f);
     }
     if (x < 0.668106019f) {
-        x = (x - 0.414213568f) / (x * 0.414213568f + 1.0f);
-        t = x * x;
-        return x * (((t * -0.140000001f + 0.200000003f) * t + -0.333333313f) * t + 1.0f) + 0.392699093f;
+        float y = (x - 0.414213568f) / (x * 0.414213568f + 1.0f);
+        float t = y * y;
+
+        return y * (((t * -0.140000001f + 0.200000003f) * t + -0.333333313f) * t + 1.0f) + 0.392699093f;
     }
-    x = (x - 1.0f) / (x + 1.0f);
-    t = x * x;
-    return x * (((t * -0.140000001f + 0.200000003f) * t + -0.333333313f) * t + 1.0f) + 0.785398185f;
+    {
+        float y = (x - 1.0f) / (x + 1.0f);
+        float t = y * y;
+
+        return y * (((t * -0.140000001f + 0.200000003f) * t + -0.333333313f) * t + 1.0f) + 0.785398185f;
+    }
 }
 
 /* sceFpuAtan: |x| >= 1 goes through pi/2 - atan(1/|x|). */
