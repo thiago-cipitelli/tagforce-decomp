@@ -709,16 +709,17 @@ int wave_mix_block(unsigned char *out)
    the block flags (7 = end marker, nothing decoded). */
 int vag_decode_block(short *out, const unsigned char *in, int *hist1, int *hist2)
 {
+    int flags = in[1];
     int h = in[0];
+    int s1 = *hist1;
     int shift = h & 0xF;
     int pred = h >> 4;
-    int flags = in[1];
     int c0 = vag_coef[0][pred];
     int c1 = vag_coef[1][pred];
-    int s1 = *hist1;
     int s2 = *hist2;
     int i;
     int n = 2;
+    int k = 0;
 
     if (flags == 7) {
         return 7;
@@ -734,7 +735,7 @@ int vag_decode_block(short *out, const unsigned char *in, int *hist1, int *hist2
         if (d0 < -0x8000) {
             d0 = -0x8000;
         }
-        *out++ = (short)d0;
+        out[k++] = (short)d0;
         d1 = (((b & ~0xF) << (14 - shift)) + (d0 * c0 + s1 * c1)) >> 6;
         if (d1 > 0x7FFF) {
             d1 = 0x7FFF;
@@ -742,7 +743,7 @@ int vag_decode_block(short *out, const unsigned char *in, int *hist1, int *hist2
         if (d1 < -0x8000) {
             d1 = -0x8000;
         }
-        *out++ = (short)d1;
+        out[k++] = (short)d1;
         s2 = d0;
         s1 = d1;
     }
@@ -782,8 +783,8 @@ void wave_ch_decode_vag(int ch, unsigned char *pcm)
             vag_decode_block((short *)pcm, wave_vag_ptr, &wave_ch[ch].hist1, &wave_ch[ch].hist2);
             return;
         }
-        wave_ch[ch].playing = 0;
         wave_ch[ch].pos = 0;
+        wave_ch[ch].playing = 0;
         return;
     case 1:
         if (wave_ch[ch].size < 16) {
@@ -800,13 +801,13 @@ void wave_ch_decode_vag(int ch, unsigned char *pcm)
         if (wave_ch[ch].size < 16) {
             return;
         }
-        if (wave_ch[ch].size < wave_ch[ch].pos + 16) {
-            wave_ch[ch].playing = 0;
-            wave_ch[ch].pos = 0;
-            return;
+        if (wave_ch[ch].pos + 16 <= wave_ch[ch].size) {
+            copy_bytes(wave_vag_ptr, data + wave_ch[ch].pos, 16);
+            break;
         }
-        copy_bytes(wave_vag_ptr, data + wave_ch[ch].pos, 16);
-        break;
+        wave_ch[ch].pos = 0;
+        wave_ch[ch].playing = 0;
+        return;
     default:
         return;
     }
@@ -907,64 +908,62 @@ void wave_ch_copy_pcm(int ch, unsigned char *pcm)
    the pending shadow state (restart, stop or fade stop) is applied */
 void wave_ch_mix(int ch, short *out, short *pcm)
 {
-    WaveCh *c = &wave_ch[ch];
-    WaveCh *s = &wave_shadow[ch];
     short *mono = pcm;
     int i;
 
     for (i = 0; i < 28; i++) {
-        unsigned int flags = c->flags;
         int l;
         int r;
         int vl;
         int vr;
+        unsigned int m;                /* one variable for the three shadow bits: the SDK's GCC keeps them unhoisted (lui+and) */
+        int fv;                        /* set in both branches, so 127 is not hoisted out of the loop either */
 
-        if (flags & 0x100000) {
-            int len = c->fade_len;
+        if (wave_ch[ch].flags & 0x100000) {
+            int len = wave_ch[ch].fade_len;
 
-            c->fade_vol = ((len - c->fade_count) * 127) / len;
-            if (c->fade_vol < 0) {
-                c->fade_vol = 0;
+            fv = ((len - wave_ch[ch].fade_count) * 127) / len;
+            wave_ch[ch].fade_vol = fv;
+            if (wave_ch[ch].fade_vol < 0) {
+                wave_ch[ch].fade_vol = 0;
             }
-            c->fade_count++;
-            if (c->fade_count >= len) {
-                flags &= ~0x100000;
-                c->flags = flags;
-                c->fade_count = 0;
-                if (flags & 0x10000) {
-                    flags &= ~0x10000;
-                    c->flags = flags;
-                    c->playing = s->playing;
-                    c->pos = s->pos;
-                    c->vol_l = s->vol_l;
-                    c->vol_r = s->vol_r;
-                    c->hist1 = s->hist1;
-                    c->hist2 = s->hist2;
-                    c->unk28 = s->unk28;
-                    c->unk2c = s->unk2c;
-                } else if (flags & 0x20000) {
-                    flags &= ~0x20000;
-                    c->flags = flags;
-                    c->playing = s->playing;
-                    c->pos = s->pos;
-                    c->hist1 = s->hist1;
-                    c->hist2 = s->hist2;
-                    c->unk28 = s->unk28;
-                    c->unk2c = s->unk2c;
-                } else if (flags & 0x40000) {
-                    flags &= ~0x40000;
-                    c->flags = flags;
-                    c->playing = s->playing;
+            wave_ch[ch].fade_count++;
+            if (wave_ch[ch].fade_count >= len) {
+                wave_ch[ch].flags &= ~0x100000;
+                wave_ch[ch].fade_count = 0;
+                m = 0x10000;
+                if (wave_ch[ch].flags & m) {
+                    wave_ch[ch].flags &= ~m;
+                    wave_ch[ch].playing = wave_shadow[ch].playing;
+                    wave_ch[ch].pos = wave_shadow[ch].pos;
+                    wave_ch[ch].vol_l = wave_shadow[ch].vol_l;
+                    wave_ch[ch].vol_r = wave_shadow[ch].vol_r;
+                    wave_ch[ch].hist1 = wave_shadow[ch].hist1;
+                    wave_ch[ch].hist2 = wave_shadow[ch].hist2;
+                    wave_ch[ch].unk28 = wave_shadow[ch].unk28;
+                    wave_ch[ch].unk2c = wave_shadow[ch].unk2c;
+                } else if (m = 0x20000, wave_ch[ch].flags & m) {
+                    wave_ch[ch].flags &= ~m;
+                    wave_ch[ch].playing = wave_shadow[ch].playing;
+                    wave_ch[ch].pos = wave_shadow[ch].pos;
+                    wave_ch[ch].hist1 = wave_shadow[ch].hist1;
+                    wave_ch[ch].hist2 = wave_shadow[ch].hist2;
+                    wave_ch[ch].unk28 = wave_shadow[ch].unk28;
+                    wave_ch[ch].unk2c = wave_shadow[ch].unk2c;
+                } else if (m = 0x40000, wave_ch[ch].flags & m) {
+                    wave_ch[ch].flags &= ~m;
+                    wave_ch[ch].playing = wave_shadow[ch].playing;
                 }
             }
         } else {
-            c->fade_vol = 127;
+            fv = 127;
+            wave_ch[ch].fade_vol = fv;
         }
         if (!(wave_ch[ch].flags & 0x100) || !(wave_ch[ch].flags & 0x200)) {
-            vr = (wave_ch[ch].vol_r * wave_ch[ch].fade_vol) / 127;
             vl = (wave_ch[ch].vol_l * wave_ch[ch].fade_vol) / 127;
-            r = (vr * *mono) / 4096;
+            vr = (wave_ch[ch].vol_r * wave_ch[ch].fade_vol) / 127;
             l = (vl * *mono) / 4096;
+            r = (vr * *mono) / 4096;
         } else {
             vl = (wave_ch[ch].vol_l * wave_ch[ch].fade_vol) / 127;
             vr = (wave_ch[ch].vol_r * wave_ch[ch].fade_vol) / 127;
