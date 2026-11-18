@@ -4149,4 +4149,4 @@ Oito entradas mwcc do skip (`dd_info_stats`, `duel_0883449C`, `duel_req_mill`, `
   "menor registro livre" na ordem `L1 L4 L2 S1 L6 S4 L5 S6 L7 S2 S5 S7`, mas o 219 colore por pilha de
   simplificação, não em ordem de programa.
 - `tools/permute.py` com as mutações da rodada 41 (troca de comandos vizinhos, ternário, ordem de grupos de `case`,
-  `(int)` em operandos): `duel_08846584` 10424 candidatos sem passar de 253.
+  `(int)` em operandos): `duel_08846584` 10424 candidatos (253), `duel_0883449C` 34274 (5), `dd_info_stats` 30456 (4): nada.
