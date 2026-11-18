@@ -266,8 +266,6 @@ segments:
       - [0x5BB08, c, snd_play]
       - [0x5CE04, c, snd_core]
       - [0x5D630, c, snd_obj]
-      - [0x5DD00, asm, snd_obj_asm_08861CA0]
-      - [0x5DDC0, c, snd_obj]
       - [0x5ECBC, c, snd_rand]
       - [0x5ED88, c, libsas_gcc]
       - [0x5F54C, c, libwave_gcc]
