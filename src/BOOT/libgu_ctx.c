@@ -1,12 +1,10 @@
 // @range 0x08807070-0x088087F8
-// @gcc 0x08807070-0x0880712C
-// @asm 0x0880712C-0x08807338
-// @gcc 0x08807338-0x0880763C
+// @gcc 0x08807070-0x0880763C
 // @gcc 0x08807C6C-0x08807FD8
 // @gcc 0x08808058-0x08808130
 // @asm 0x08808130-0x0880823C
-// @gcc 0x0880823C-0x08808294
-// @asm 0x08808294-0x088086F0
+// @gcc 0x0880823C-0x0880847C
+// @asm 0x0880847C-0x088086F0
 // @gcc 0x088086F0-0x088087F8
 /* libgu of the Sony SDK (GCC), context level: the builders that write into a given GuList (state
    enables, matrices, sprites, clear, depth range, lights, ...), the GE signal/finish handlers, the
@@ -76,11 +74,7 @@ void gu_ctx_finish(GuList *l, int mode, unsigned int arg)
 void gu_ctx_finish(GuList *l, int mode, unsigned int arg);
 #endif
 
-/* Not in the SDK's GCC object (libgu_ctx_gcc.c): its jump table would come first in the object's .rodata, and the
-   code still differs in register allocation (the context pointer in a3 instead of t0: global allocation, not
-   regrename; case order, parameter types and a local copy do not move it), so the table stays in the asm data and
-   the object's .rodata is only the table of gu_ctx_light_color. */
-#if defined(NON_MATCHING) && (!defined(__mips__) || defined(__MWERKS__))
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c (its jump table opens the object's .rodata) */
 /* the enable command of each GU_* state (0..20, a jump table); 2 = scissor test (SCISSOR1/2 from the context or
    the whole display), 21 = color doubling (TFUNC bit 16) */
 void gu_ctx_state(GuList *l, int state, int on)
@@ -92,29 +86,32 @@ void gu_ctx_state(GuList *l, int state, int on)
     case 1:
         ctx_push(l, on | 0x23000000);
         break;
-    case 2: {
-        unsigned int *p;
-        unsigned int a;
-        unsigned int b;
-
+    case 2:
+        /* each branch writes the four words; the SDK's GCC merges the common tail (cross-jumping after reload),
+           and the block-local pointers keep the context pointer out of a3 */
         if (on) {
-            p = l->cur;
-            a = l->scissor[1] << 10 | l->scissor[0];
-            b = l->scissor[3] << 10 | l->scissor[2];
+            unsigned int *p = l->cur;
+            unsigned int a = l->scissor[1] << 10 | l->scissor[0];
+            unsigned int b = l->scissor[3] << 10 | l->scissor[2];
             l->scissor_on = 1;
             *p++ = a | 0xD4000000;
+            p[0] = b | 0xD5000000;
+            p[1] = 0x15000000;
+            p[2] = b | 0x16000000;
+            l->cur = p + 3;
         } else {
-            p = l->cur;
-            b = (l->disp_h - 1) << 10 | (l->disp_w - 1);
+            unsigned int *p = l->cur;
+            unsigned int h = l->disp_h - 1;
+            unsigned int w = l->disp_w - 1;
+            unsigned int b = h << 10 | w;
             l->scissor_on = 0;
             *p++ = 0xD4000000;
+            p[0] = b | 0xD5000000;
+            p[1] = 0x15000000;
+            p[2] = b | 0x16000000;
+            l->cur = p + 3;
         }
-        p[0] = b | 0xD5000000;
-        p[1] = 0x15000000;
-        p[2] = b | 0x16000000;
-        l->cur = p + 3;
         break;
-    }
     case 3:
         ctx_push(l, on | 0x24000000);
         break;
@@ -175,7 +172,11 @@ void gu_ctx_state(GuList *l, int state, int on)
         } else {
             l->pad38[10] = 0;
         }
-        ctx_push(l, l->pad38[10] << 16 | l->pad38[12] << 8 | l->pad38[11] | 0xC9000000);
+        {
+            unsigned int tcc = l->pad38[12] << 8;
+
+            ctx_push(l, l->pad38[10] << 16 | tcc | l->pad38[11] | 0xC9000000); /* TFUNC: 2x, tcc, tfx */
+        }
         break;
     }
 }
@@ -1218,14 +1219,25 @@ void sceGuDebugPrint(int x, int y, unsigned int color, const char *str)
     g = color << 16 >> 24;
     b = (color >> 16) & 0xFF;
     a = color >> 24;
-    /* still 53 words off in GCC: the original shares the tail `| (g >> k) << 5 | r >> 3` of PSM 0 and 1 (cross-jumping
-       with equal registers) */
+    /* each format shifts the components in place: the SDK's GCC then shares the tail `| g << 5 | r` of PSM 0 and 1
+       and `| r` of PSM 2 (cross-jumping after reload) */
     if (gu_debug_psm == 0) {
-        color = (b >> 3) << 11 | (g >> 2) << 5 | r >> 3;
+        r >>= 3;
+        g >>= 2;
+        b >>= 3;
+        color = b << 11 | g << 5 | r;
     } else if (gu_debug_psm == 1) {
-        color = (a >> 7) << 15 | (b >> 3) << 10 | (g >> 3) << 5 | r >> 3;
+        r >>= 3;
+        g >>= 3;
+        b >>= 3;
+        a >>= 7;
+        color = a << 15 | b << 10 | g << 5 | r;
     } else if (gu_debug_psm == 2) {
-        color = (a >> 4) << 12 | (b >> 4) << 8 | (g & ~0xF) | r >> 4;
+        r >>= 4;
+        g >>= 4;
+        b >>= 4;
+        a >>= 4;
+        color = a << 12 | b << 8 | g << 4 | r;
     }
     while (*str != 0) {
         ch = *str;
@@ -1254,52 +1266,59 @@ void sceGuDebugFlush(void)
 {
     int n;
     GuDebugChar *c;
+    unsigned int bits;
+    unsigned int mask;
 
     gu_debug_start();
     n = gu_debug_count[gu_debug_buf];
     c = gu_debug_chars[gu_debug_buf];
+    if (n == 0) {
+        return; /* the count stays as it is */
+    }
+    bits = 0;
+    mask = 0;
     for (; n != 0; n--, c++) {
         int x = c->x;
         int y = c->y;
         const unsigned int *glyph;
         unsigned int color;
-        unsigned int bits;
-        unsigned int mask;
         int row;
 
-        if (y + 7 >= gu_debug_h || y < 0 || x + 7 >= gu_debug_w || x < 0) {
-            continue;
-        }
-        /* the 8 rows of a glyph are two little-endian words, one bit per pixel */
-        glyph = (const unsigned int *)&gu_debug_font[c->ch * 8];
-        color = c->color;
-        for (row = 0; row < 8; row++) {
-            int pos = x + (y + row) * gu_debug_fbw;
-            unsigned int p16 = gu_debug_edram + pos * 2 + gu_debug_fbp;
-            unsigned int p32 = gu_debug_edram + pos * 4 + gu_debug_fbp;
-            int col;
+        if (y + 7 < gu_debug_h && x + 7 < gu_debug_w && y >= 0 && x >= 0) {
+            /* the 8 rows of a glyph are two little-endian words, one bit per pixel */
+            glyph = (const unsigned int *)&gu_debug_font[c->ch * 8];
+            color = c->color;
+            for (row = 0; row < 8; row++) {
+                int pos;
+                unsigned int p16;
+                unsigned int p32;
+                int col;
 
-            if (row == 0) {
-                bits = glyph[0];
-                mask = 1;
-            } else if (row == 4) {
-                bits = glyph[1];
-                mask = 1;
-            }
-            for (col = 0; col < 8; col++) {
-                if (gu_debug_psm == 3) {
-                    if (bits & mask) {
-                        unsigned short *q = (unsigned short *)PSP_UNCACHED_PHYS(p32);
-
-                        q[1] = (int)color >> 16;
-                        q[0] = color;
-                    }
-                } else if (bits & mask) {
-                    *(unsigned short *)PSP_UNCACHED_PHYS(p16) = color;
+                if (row == 0) {
+                    bits = glyph[0];
+                    mask = 1;
+                } else if (row == 4) {
+                    bits = glyph[1];
+                    mask = 1;
                 }
-                mask <<= 1;
-                p16 += 2;
-                p32 += 4;
+                pos = x + (y + row) * gu_debug_fbw;
+                p16 = pos * 2 + gu_debug_edram + gu_debug_fbp;
+                p32 = pos * 4 + gu_debug_edram + gu_debug_fbp;
+                for (col = 0; col < 8; col++) {
+                    if (gu_debug_psm == 3) {
+                        if (bits & mask) {
+                            unsigned short *q = (unsigned short *)PSP_UNCACHED_PHYS(p32);
+
+                            q[0] = color;
+                            q[1] = (int)color >> 16;
+                        }
+                    } else if (bits & mask) {
+                        *(unsigned short *)PSP_UNCACHED_PHYS(p16) = color;
+                    }
+                    mask <<= 1;
+                    p32 += 4;
+                    p16 += 2;
+                }
             }
         }
     }
