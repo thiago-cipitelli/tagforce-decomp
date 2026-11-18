@@ -1,4 +1,5 @@
 // @range 0x0881EB0C-0x0881F6E4
+// @gcc 0x0881EB0C-0x0881EE24
 // @gcc 0x0881F2DC-0x0881F6E4
 /* VFPU block memory routines (copy/move/fill through quad stores to the uncached mirror, 64-byte
    cache lines created without a fetch) and the VFPU register context: the whole register file, the
@@ -25,222 +26,7 @@ static VfpuContext vfpu_cur;           /* emulated register file */
 
 /* memcpy; returns dst */
 #ifdef __MWERKS__
-asm void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
-{
-    beqz a2, L_0881EC0C
-    move a3, a0
-    andi v1, a0, 0x3f
-    beqz v1, L_0881EB44
-    nop
-    lbu v1, 0(a1)
-L_0881EB24:
-    addiu a2, a2, -1
-    addiu a1, a1, 1
-    sb v1, 0(a3)
-    addiu a3, a3, 1
-    beqz a2, L_0881EC0C
-    andi v0, a3, 0x3f
-    bnezl v0, L_0881EB24
-    lbu v1, 0(a1)
-L_0881EB44:
-    beqz a2, L_0881EC0C
-    nop
-    sltiu t0, a2, 64
-    bnez t0, L_0881EBF4
-    lui t1, 0x4000
-    andi t0, a1, 0xf
-    addiu v0, zero, 4
-    move t2, t1
-    ins t2, a3, 0x0, 0x1d
-    beq t0, v0, L_0881EDC0
-    sltiu t3, t0, 5
-    beqz t3, L_0881ECD8
-    addiu t4, zero, 8
-    beqz t0, L_0881EC14
-    nop
-L_0881EB80:
-    cache 0x1b, 0(a3)
-    addiu a3, a3, 64
-    addiu a2, a2, -64
-    sync
-L_0881EB90:
-    lwr t0, 0(a1)
-    lwl t0, 3(a1)
-    mtv t0, S000
-    lwr t0, 4(a1)
-    lwl t0, 7(a1)
-    mtv t0, S001
-    lwr t0, 8(a1)
-    lwl t0, 11(a1)
-    mtv t0, S002
-    lwr t0, 12(a1)
-    lwl t0, 15(a1)
-    mtv t0, S003
-    addiu a1, a1, 16
-    sv.q C000, 0(t2), wb
-    addiu t2, t2, 16
-    andi t0, t2, 0x3f
-    bnez t0, L_0881EB90
-    vnop
-    srl t0, a2, 0x6
-    bnez t0, L_0881EB80
-    nop
-    vflush
-    vnop
-L_0881EBEC:
-    beqz a2, L_0881EC0C
-    nop
-L_0881EBF4:
-    lbu t2, 0(a1)
-    addiu a2, a2, -1
-    addiu a1, a1, 1
-    sb t2, 0(a3)
-    bnez a2, L_0881EBF4
-    addiu a3, a3, 1
-L_0881EC0C:
-    jr ra
-    move v0, a0
-L_0881EC14:
-    srl t0, a2, 0x7
-    beqz t0, L_0881EC94
-    nop
-L_0881EC20:
-    cache 0x1b, 0(a3)
-    lv.q C000, 0(a1)
-    lv.q C010, 16(a1)
-    lv.q C020, 32(a1)
-    lv.q C030, 48(a1)
-    lv.q C100, 64(a1)
-    lv.q C110, 80(a1)
-    lv.q C120, 96(a1)
-    lv.q C130, 112(a1)
-    cache 0x1b, 64(a3)
-    addiu a3, a3, 128
-    addiu a1, a1, 128
-    addiu a2, a2, -128
-    srl t0, a2, 0x7
-    sync
-    sv.q C000, 0(t2), wb
-    sv.q C010, 16(t2), wb
-    sv.q C020, 32(t2), wb
-    sv.q C030, 48(t2), wb
-    sv.q C100, 64(t2), wb
-    sv.q C110, 80(t2), wb
-    sv.q C120, 96(t2), wb
-    sv.q C130, 112(t2), wb
-    addiu t2, t2, 128
-    bnez t0, L_0881EC20
-    vnop
-    srl t0, a2, 0x6
-    beqz t0, L_0881ECC8
-    nop
-L_0881EC94:
-    cache 0x1b, 0(a3)
-    lv.q C000, 0(a1)
-    lv.q C010, 16(a1)
-    lv.q C020, 32(a1)
-    lv.q C030, 48(a1)
-    addiu a3, a3, 64
-    addiu a1, a1, 64
-    addiu a2, a2, -64
-    sync
-    sv.q C000, 0(t2), wb
-    sv.q C010, 16(t2), wb
-    sv.q C020, 32(t2), wb
-    sv.q C030, 48(t2), wb
-L_0881ECC8:
-    vflush
-    vnop
-    j L_0881EBEC
-    nop
-L_0881ECD8:
-    beq t0, t4, L_0881ED4C
-    addiu t5, zero, 12
-    bne t0, t5, L_0881EB80
-    nop
-L_0881ECE8:
-    cache 0x1b, 0(a3)
-    lv.s S000, 0(a1)
-    lv.q C100, 4(a1)
-    lv.q C110, 20(a1)
-    lv.q C120, 36(a1)
-    lv.q C130, 52(a1)
-    vmmov.t E001, E100
-    vmov.t R010, R103
-    vmov.t C031, C130
-    addiu a3, a3, 64
-    addiu a1, a1, 64
-    addiu a2, a2, -64
-    srl t0, a2, 0x6
-    sync
-    sv.q C000, 0(t2), wb
-    sv.q C010, 16(t2), wb
-    sv.q C020, 32(t2), wb
-    sv.q C030, 48(t2), wb
-    addiu t2, t2, 64
-    bnez t0, L_0881ECE8
-    vnop
-    vflush
-    vnop
-    j L_0881EBEC
-    nop
-L_0881ED4C:
-    cache 0x1b, 0(a3)
-    lv.s S000, 0(a1)
-    lv.s S001, 4(a1)
-    lv.q C100, 8(a1)
-    lv.q C110, 24(a1)
-    lv.q C120, 40(a1)
-    lv.q C130, 56(a1)
-    vmmov.p E002, E100
-    vmov.p C010, C102
-    vmov.p C020, C112
-    vmov.p C022, C120
-    vmov.p C030, C122
-    vmov.p C032, C130
-    addiu a3, a3, 64
-    addiu a1, a1, 64
-    addiu a2, a2, -64
-    srl t0, a2, 0x6
-    sync
-    sv.q C000, 0(t2), wb
-    sv.q C010, 16(t2), wb
-    sv.q C020, 32(t2), wb
-    sv.q C030, 48(t2), wb
-    addiu t2, t2, 64
-    bnez t0, L_0881ED4C
-    vnop
-    vflush
-    vnop
-    j L_0881EBEC
-    nop
-L_0881EDC0:
-    addiu a2, a2, -64
-    cache 0x1b, 0(a3)
-    lv.q C100, -4(a1)
-    lv.q C110, 12(a1)
-    lv.q C120, 28(a1)
-    lv.q C130, 44(a1)
-    lv.s S033, 60(a1)
-    vmmov.t E000, E101
-    vmov.t R003, R110
-    vmov.t C030, C131
-    addiu a3, a3, 64
-    addiu a1, a1, 64
-    srl t0, a2, 0x6
-    sync
-    sv.q C000, 0(t2), wb
-    sv.q C010, 16(t2), wb
-    sv.q C020, 32(t2), wb
-    sv.q C030, 48(t2), wb
-    addiu t2, t2, 64
-    bnez t0, L_0881EDC0
-    vnop
-    vflush
-    vnop
-    j L_0881EBEC
-    nop
-}
+void *vfpu_memcpy(void *dst, const void *src, unsigned int n);
 #elif !defined(__mips__)
 void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
 {
@@ -249,9 +35,9 @@ void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
 #else
 void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
 {
-    /* the SDK's GCC: C around one asm per alignment of src; 36 words left, all register names: the original
-       keeps 0x40000000 in t1 and the uncached pointer (and the tail byte) in t2, regrename gives the reverse here
-       (every order of the cases tested) */
+    /* the SDK's GCC: C around one asm per alignment of src. The asms also clobber $9: without it global_alloc
+       puts the uncached pointer in t1 and regrename the 0x40000000 in t2, the reverse of the original
+       (docs/build.md, rodada 43) */
     unsigned char *d = dst;
     const unsigned char *s = src;
     unsigned int u;
@@ -323,7 +109,7 @@ void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
                 ".set pop\n"
                 : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
                 :
-                : "$8", "memory");
+                : "$8", "$9", "memory");
             break;
         case 12:
             __asm__ volatile (
@@ -356,7 +142,7 @@ void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
                 ".set pop\n"
                 : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
                 :
-                : "$8", "memory");
+                : "$8", "$9", "memory");
             break;
         case 8:
             __asm__ volatile (
@@ -393,7 +179,7 @@ void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
                 ".set pop\n"
                 : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
                 :
-                : "$8", "memory");
+                : "$8", "$9", "memory");
             break;
         case 4:
             __asm__ volatile (
@@ -426,7 +212,7 @@ void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
                 ".set pop\n"
                 : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
                 :
-                : "$8", "memory");
+                : "$8", "$9", "memory");
             break;
         default:
             __asm__ volatile (
@@ -464,7 +250,7 @@ void *vfpu_memcpy(void *dst, const void *src, unsigned int n)
                 ".set pop\n"
                 : "+r" (d), "+r" (s), "+r" (n), "+r" (u)
                 :
-                : "$8", "memory");
+                : "$8", "$9", "memory");
             break;
         }
     }

@@ -163,8 +163,10 @@ float cosf(float x)
     if (x > 0.653451264f) {
         float v = half_pi - x;
         float u = v * v;
+        /* the product in its own variable, u first: pi then lands in $f4 as in the original (rodada 43) */
+        float w = u * ((u * -0.000194188775f + 0.00833132491f) * u + -0.166666389f) * v;
 
-        return (((u * -0.000194188775f + 0.00833132491f) * u + -0.166666389f) * u * v + v) * (float)s;
+        return (float)s * (w + v);
     }
     one = 1.0f;
     t = x * x;
