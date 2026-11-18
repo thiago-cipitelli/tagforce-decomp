@@ -24,7 +24,7 @@ void ccc_encode_utf16(u16 **d, unsigned int c);
 unsigned int ccc_decode_utf8(const u8 **s);
 void ccc_encode_utf8(u8 **d, unsigned int c);
 unsigned int ccc_decode_sjis(const u8 **s);
-void ccc_encode_sjis(u8 **d, unsigned int jis);
+void ccc_encode_sjis(u8 **d, u16 jis);
 #if defined(__mips__) && !defined(__MWERKS__)
 /* separate objects of the library: the SDK's GCC (-O3) must not inline them into their callers; declared before
    the definitions (GCC 3.3 drops a function whose noinline comes after its body) */
@@ -33,7 +33,7 @@ unsigned int ccc_decode_utf8(const u8 **s) __attribute__((noinline));
 void ccc_encode_utf16(u16 **d, unsigned int c) __attribute__((noinline));
 void ccc_encode_utf8(u8 **d, unsigned int c) __attribute__((noinline));
 unsigned int ccc_decode_sjis(const u8 **s) __attribute__((noinline));
-void ccc_encode_sjis(u8 **d, unsigned int jis) __attribute__((noinline));
+void ccc_encode_sjis(u8 **d, u16 jis) __attribute__((noinline));
 #endif
 
 #if !defined(__MWERKS__) || defined(NON_MATCHING)
@@ -224,14 +224,14 @@ unsigned int ccc_decode_sjis(const u8 **s)
     return r;
 }
 
-/* sceCccIsValidJIS (ccc_is_valid_jis below), which the SDK's GCC expands inside ccc_encode_sjis */
-static inline int ccc_is_valid_jis_inl(unsigned int c)
+/* sceCccIsValidJIS (ccc_is_valid_jis below), which the SDK's GCC expands inside ccc_encode_sjis; the code is a
+   u16 (sceCccJISCS), so the expanded copy has no mask of its own */
+static inline int ccc_is_valid_jis_inl(u16 c)
 {
     unsigned int row;
     unsigned int col;
     unsigned int plane;
 
-    c &= 0xFFFF;
     plane = c >> 15;
     row = (c >> 8) & 0x7F;
     col = c & 0x7F;
@@ -246,23 +246,23 @@ static inline int ccc_is_valid_jis_inl(unsigned int c)
     return 1;
 }
 
-void ccc_encode_sjis(u8 **d, unsigned int jis)
+/* the code is a u16 (sceCccJISCS): the original zero-extends it on entry and works on it in place */
+void ccc_encode_sjis(u8 **d, u16 jis)
 {
     u8 *p = *d;
-    unsigned int c = jis & 0xFFFF;
 
-    if ((u16)(c - 0xA0) < 0x40 || c < 0x80) {
-    } else if (!ccc_is_valid_jis_inl(c)) {
-        c = D_088F97C0;
+    if ((u16)(jis - 0xA0) < 0x40 || jis < 0x80) {
+    } else if (!ccc_is_valid_jis_inl(jis)) {
+        jis = D_088F97C0;
     }
-    if ((u16)(c - 0xA0) < 0x40 || c < 0x80 || c - 0xFD < 3) {
-        *p = (u8)c;
+    if ((u16)(jis - 0xA0) < 0x40 || jis < 0x80 || (unsigned int)jis - 0xFD < 3) {
+        *p = (u8)jis;
     } else {
-        unsigned int row = (c >> 8) & 0x7F;
+        unsigned int row = (jis >> 8) & 0x7F;
         unsigned int r = row - 0x20;
-        unsigned int t = (c & 0x7F) - 0x20;
+        unsigned int t = (jis & 0x7F) - 0x20;
 
-        if (!(c >> 15)) {
+        if (!(jis >> 15)) {
             *p++ = (u8)(r < 63 ? (row + 225) >> 1 : (row + 353) >> 1);
         } else if (r < 16) {
             *p++ = (u8)(((row + 447) >> 1) - 3 * (r >> 3));

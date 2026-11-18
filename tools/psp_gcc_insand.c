@@ -21,6 +21,13 @@
    entries stay queued). `*p++ = *fp->_p++` then stores fp->_p before the byte, as __svfscanf_r of the original.
    The call to expand_expr in that branch (after gen_reg_rtx) is redirected to rhs_expand(). PSP_GCC_RHSQ=0 turns it off.
 
+   Fourth change (rodada 42): GCSE's jump bypassing (bypass_block) does not redirect a predecessor edge whose source
+   block has several predecessors and holds only the constant set and its jump (`retval = 0; goto test` shared by
+   the `return 0`s of an inlined function). ccc_encode_sjis keeps the 0/1 result of the inlined sceCccIsValidJIS in v0
+   and tests it, as the original; the bypasses of ccc_encode_utf16, ccc_decode_sjis, _vfprintf_r and __svfscanf_r
+   (source blocks with one predecessor, or with more work) stay. The edges are taken out of the block's predecessor
+   list for the call and put back in their order. PSP_GCC_BYPASS=0 turns it off.
+
    Built by tools/setup_toolchain.sh (addresses from nm of cc1 as -DADDR_*), used by tools/psp_gcc.sh.  */
 #include <stdint.h>
 #include <stdio.h>
@@ -155,6 +162,74 @@ static void *patch(unsigned char *r, void *fn)
     return t;
 }
 
+/* basic_block_def / edge_def of GCC 3.3 (basic-block.h): bb->head 0, end 4, pred 16, index 44; edge->pred_next 0,
+   src 8 */
+#define BB_HEAD(b) (*(rtx *)(b))
+#define BB_END(b) (*(rtx *)((char *)(b) + 4))
+#define BB_PRED(b) (*(char **)((char *)(b) + 16))
+#define E_PNEXT(e) (*(char **)(e))
+#define E_SRC(e) (*(char **)((char *)(e) + 8))
+#define NEXT_INSN(i) ((rtx)(i)->fld[2])
+enum { C_INSN = 42, C_JUMP_INSN = 43, C_CALL_INSN = 44 };
+
+static int (*bypass_block_orig)(void *, rtx, rtx);
+
+static int set_and_jump_join(char *b)
+{
+    rtx i;
+    int n = 0, np = 0;
+    char *e;
+
+    for (e = BB_PRED(b); e; e = E_PNEXT(e))
+        np++;
+    if (np < 2)
+        return 0;
+    for (i = BB_HEAD(b); ; i = NEXT_INSN(i)) {
+        if (i->code == C_INSN || i->code == C_JUMP_INSN || i->code == C_CALL_INSN)
+            n++;
+        if (i == BB_END(b))
+            break;
+    }
+    return n <= 2;
+}
+
+static int my_bypass_block(void *bb, rtx setcc, rtx jump)
+{
+    char *all[256], *keep[256], **pp, *e;
+    char hidden[256];
+    int n = 0, nh = 0, k = 0, i, j, r;
+
+    for (e = BB_PRED(bb); e && n < 256; e = E_PNEXT(e)) {
+        hidden[n] = set_and_jump_join(E_SRC(e));
+        nh += hidden[n];
+        all[n++] = e;
+    }
+    if (e || !nh)
+        return bypass_block_orig(bb, setcc, jump);
+    for (pp = &BB_PRED(bb), i = 0; i < n; i++)
+        if (!hidden[i]) {
+            *pp = all[i];
+            pp = &E_PNEXT(all[i]);
+        }
+    *pp = 0;
+    r = bypass_block_orig(bb, setcc, jump);
+    /* bypassing only removes edges from this list: put the hidden ones back, everything in the old order */
+    for (e = BB_PRED(bb); e; e = E_PNEXT(e))
+        keep[k++] = e;
+    for (pp = &BB_PRED(bb), i = 0; i < n; i++) {
+        int in = hidden[i];
+
+        for (j = 0; !in && j < k; j++)
+            in = keep[j] == all[i];
+        if (in) {
+            *pp = all[i];
+            pp = &E_PNEXT(all[i]);
+        }
+    }
+    *pp = 0;
+    return r;
+}
+
 __attribute__((constructor)) static void init(void)
 {
     const char *e = getenv("PSP_GCC_NNF");
@@ -189,4 +264,7 @@ __attribute__((constructor)) static void init(void)
         writable(c, 5);
         *(int32_t *)(c + 1) = (int32_t)((uintptr_t)rhs_expand - (uintptr_t)(c + 5));
     }
+    e = getenv("PSP_GCC_BYPASS");
+    if (!e || atoi(e))
+        bypass_block_orig = patch(A(ADDR_bypass_block), my_bypass_block);
 }
