@@ -1,12 +1,12 @@
 # Progresso da decompilação
 
 Gerado a partir dos cabeçalhos `@range` de `src/` e das marcas `matched`/`asm` em `symbols/`;
-atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-18 (rodada 41) (`python3 tools/bytematch.py`).
+atualizar ao fechar um arquivo. Números do relatório ByteMatch de 2026-11-18 (rodada 42) (`python3 tools/bytematch.py`).
 
 | Módulo | Código batendo | Fuzzy | Funções batendo |
 |---|---|---|---|
-| total | 98,6% | 99,5% | 10985 / 11042 |
-| BOOT | 94,5% | 96,4% | 2163 / 2211 |
+| total | 98,7% | 99,6% | 10992 / 11042 |
+| BOOT | 95,1% | 97,0% | 2170 / 2211 |
 | libduel_eng | 98,8% | 100,0% | 3424 / 3429 |
 | libhtml_view | 100,0% | 100,0% | 16 / 16 |
 | liblabo | 100,0% | 100,0% | 13 / 13 |
@@ -37,14 +37,14 @@ Funções "em asm" ficam no `.c` como `// @asm A-B` com o C equivalente sob `#if
 
 Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que falta são as funções em `@asm` (C sob `NON_MATCHING`), listadas por arquivo nas seções abaixo. Desde 2026-11-15 (rodada 33) o menu de depuração (`src/libduel_draw/dd_debug_menu.c`) também tem C e bate: não há função sem C.
 
-## BOOT (208 arquivos, 1822 funções batendo, 29 em asm)
+## BOOT (208 arquivos, 1831 funções batendo, 20 em asm)
 
 | Arquivo | Faixa | Batendo | Asm | Conteúdo |
 |---|---|---|---|---|
 | [`crt0.c`](../src/BOOT/crt0.c) | 0x08804000-0x08804A0C | 0 | 1 | crt0 e camada de syscalls do newlib (GCC, funções `asm` com C portável sob `#else`): module_start, threads de entrada, `_exit`, sbrk, stubs de arquivo |
 | [`crt0_gcc.c`](../src/BOOT/crt0_gcc.c) | 0x08804000-0x08804A04+ | 28 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`libgu.c`](../src/BOOT/libgu.c) | 0x08804A0C-0x08805EC4 | 0 | 2 | libgu do SDK (sceGu*, nomes pelos NIDs): listas de exibição, sinais, chamadas, estado, buffers de tela e desenho |
-| [`libgu_gcc.c`](../src/BOOT/libgu_gcc.c) | 0x08804A0C-0x08805E98+ | 41 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`libgu.c`](../src/BOOT/libgu.c) | 0x08804A0C-0x08805EC4 | 0 | 0 | libgu do SDK (sceGu*, nomes pelos NIDs): listas de exibição, sinais, chamadas, estado, buffers de tela e desenho |
+| [`libgu_gcc.c`](../src/BOOT/libgu_gcc.c) | 0x08804A0C-0x08805E98+ | 43 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libgu_state.c`](../src/BOOT/libgu_state.c) | 0x08805EC4-0x08807070 | 0 | 1 | libgu: comandos de estado do GE (desenho de arrays/bezier/spline, sprites, cópia de imagem, clear, luzes, material, textura, CLUT, névoa, testes, blend, matrizes de osso) |
 | [`libgu_state_gcc.c`](../src/BOOT/libgu_state_gcc.c) | 0x08805EC4-0x08807034+ | 56 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`libgu_ctx.c`](../src/BOOT/libgu_ctx.c) | 0x08807070-0x088087F8 | 5 | 4 | libgu: contextos de lista, inicialização, sceGuDebugPrint/Flush, vblank_handler_set |
@@ -154,8 +154,8 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`ccc_gcc.c`](../src/BOOT/ccc_gcc.c) | 0x08818E64-0x08819BCC+ | 26 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`fpu.c`](../src/BOOT/fpu.c) | 0x08819BEC-0x08819F0C | 0 | 0 | libfpu da Sony (sceFpu*): arredondamento, max/min, fmod/frac, testes de sinal/zero/denormal/inf, NaN, FCR31 |
 | [`fpu_gcc.c`](../src/BOOT/fpu_gcc.c) | 0x08819BEC-0x08819EDC+ | 36 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_math.c`](../src/BOOT/vfpu_math.c) | 0x08819F0C-0x0881AB1C | 0 | 4 | libvfpu (funções `asm` com C portável): isinf_sign, sceFpuSin/Cos/Atan/Asin/Acos, Vector2 |
-| [`vfpu_math_gcc.c`](../src/BOOT/vfpu_math_gcc.c) | 0x08819F0C-0x0881AAA0+ | 37 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_math.c`](../src/BOOT/vfpu_math.c) | 0x08819F0C-0x0881AB1C | 0 | 2 | libvfpu (funções `asm` com C portável): isinf_sign, sceFpuSin/Cos/Atan/Asin/Acos, Vector2 |
+| [`vfpu_math_gcc.c`](../src/BOOT/vfpu_math_gcc.c) | 0x08819F0C-0x0881AAA0+ | 39 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`vfpu_vec3.c`](../src/BOOT/vfpu_vec3.c) | 0x0881AB1C-0x0881B244 | 0 | 0 | libvfpu: sceVfpuVector3* |
 | [`vfpu_vec3_gcc.c`](../src/BOOT/vfpu_vec3_gcc.c) | 0x0881AB1C-0x0881B1BC+ | 35 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`vfpu_vec4.c`](../src/BOOT/vfpu_vec4.c) | 0x0881B244-0x0881B974 | 0 | 0 | libvfpu: sceVfpuVector4* |
@@ -168,10 +168,10 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`vfpu_scalar_gcc.c`](../src/BOOT/vfpu_scalar_gcc.c) | 0x0881CD50-0x0881D1F0+ | 22 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`vfpu_color.c`](../src/BOOT/vfpu_color.c) | 0x0881D214-0x0881D8A8 | 0 | 0 | libvfpu: sceVfpuColor* (conversões 8888/4444/5551/565) e sceVfpuRand* |
 | [`vfpu_color_gcc.c`](../src/BOOT/vfpu_color_gcc.c) | 0x0881D214-0x0881D870+ | 38 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_proj.c`](../src/BOOT/vfpu_proj.c) | 0x0881D8A8-0x0881DE88 | 0 | 1 | libvfpu: view, perspectiva, ortho, frustum, look_at, projeção de pontos |
-| [`vfpu_proj_gcc.c`](../src/BOOT/vfpu_proj_gcc.c) | 0x0881DA34-0x0881DE30+ | 8 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
-| [`vfpu_quat.c`](../src/BOOT/vfpu_quat.c) | 0x0881DE88-0x0881EB0C | 0 | 3 | libvfpu: quatérnios, slerp, log/exp, Euler zyx/xyz/yxz |
-| [`vfpu_quat_gcc.c`](../src/BOOT/vfpu_quat_gcc.c) | 0x0881DE88-0x0881EAD0+ | 20 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_proj.c`](../src/BOOT/vfpu_proj.c) | 0x0881D8A8-0x0881DE88 | 0 | 0 | libvfpu: view, perspectiva, ortho, frustum, look_at, projeção de pontos |
+| [`vfpu_proj_gcc.c`](../src/BOOT/vfpu_proj_gcc.c) | 0x0881D8A8-0x0881DE30+ | 9 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
+| [`vfpu_quat.c`](../src/BOOT/vfpu_quat.c) | 0x0881DE88-0x0881EB0C | 0 | 0 | libvfpu: quatérnios, slerp, log/exp, Euler zyx/xyz/yxz |
+| [`vfpu_quat_gcc.c`](../src/BOOT/vfpu_quat_gcc.c) | 0x0881DE88-0x0881EAD0+ | 23 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`vfpu_mem.c`](../src/BOOT/vfpu_mem.c) | 0x0881EB0C-0x0881F6E4 | 3 | 0 | libvfpu: memcpy/memmove/memset pela VFPU, contexto de registradores, estado do gerador aleatório |
 | [`vfpu_mem_gcc.c`](../src/BOOT/vfpu_mem_gcc.c) | 0x0881F2DC-0x0881F63C+ | 7 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
 | [`gzip.c`](../src/BOOT/gzip.c) | 0x0881F6E4-0x0881FFB0 | 1 | 0 | libdeflt: cabeçalho gzip e o decodificador deflate escrito à mão (C portável: inflate completo) |
@@ -234,7 +234,7 @@ Nenhum (2026-10-30): todo o `.text` de todos os módulos está em `.c`. O que fa
 | [`snd_alloc.c`](../src/BOOT/snd_alloc.c) | 0x0885F05C-0x0885FAA8 | 3 | 0 | histórico de variantes sorteadas, escolha do slot de objeto de um som novo, início das vozes SAS com pitch aleatório e envelope ou do stream Atrac; tabelas de pitch em C, as 3 funções em asm |
 | [`snd_play.c`](../src/BOOT/snd_play.c) | 0x0885FAA8-0x08860DA4 | 18 | 0 | reset/anexação de objetos, início de som com variantes aleatórias e sequenciais, slots de BGM com suspensão, voz, parada com fade e callback, ducking, parada por grupo ou classe |
 | [`snd_core.c`](../src/BOOT/snd_core.c) | 0x08860DA4-0x088615D0 | 19 | 0 | máscara de vozes SAS, volumes por canal, medidor de nível para lip sync, reverb |
-| [`snd_obj.c`](../src/BOOT/snd_obj.c) | 0x088615D0-0x08862C5C | 26 | 1 | handles do pool de objetos de som, busca por id, ordem de início, slots do som atual, carga de grupos pelos callbacks ou VPL, curva de distância e modelo 3D com pan e Doppler, faders, volumes SAS por objeto |
+| [`snd_obj.c`](../src/BOOT/snd_obj.c) | 0x088615D0-0x08862C5C | 27 | 0 | handles do pool de objetos de som, busca por id, ordem de início, slots do som atual, carga de grupos pelos callbacks ou VPL, curva de distância e modelo 3D com pan e Doppler, faders, volumes SAS por objeto |
 | [`snd_rand.c`](../src/BOOT/snd_rand.c) | 0x08862C5C-0x08862D28 | 3 | 0 | gerador aleatório da biblioteca de som |
 | [`libsas.c`](../src/BOOT/libsas.c) | 0x08862D28-0x088634EC | 0 | 0 | libsas: wrappers sceSas* das syscalls `__sceSas*` |
 | [`libsas_gcc.c`](../src/BOOT/libsas_gcc.c) | 0x08862D28-0x088634C4+ | 24 | 0 | trilha GCC: fonte original (newlib/libgcc) compilado pelo psp-gcc da Sony |
