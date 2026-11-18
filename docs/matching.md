@@ -4131,3 +4131,33 @@ Resultados (25 min, `-j 3`):
   != 1 ? 2 : 3)` no argumento, ou `init = 2; if (flag == 1) init = 3;`, o mwcc carrega o 2 do `type != 2` direto em
   `a3` e não repete o `li a3,2`. `init = flag != 1 ? 2 : 3;` num comando à parte com o teste escrito `type - 2 != 0`
   reproduz o resto (sobra o `li v0,2; beql` do teste, que vira `addiu; beqzl`).
+## Rodada 42 (`uF`): pragmas escondidos do mwccpsp, a cópia `move a3,a2` e o `li` preso por WAR
+
+Oito entradas mwcc do skip (`dd_info_stats`, `duel_0883449C`, `duel_req_mill`, `dd_chr_attach_mtx`,
+`dd_fx_shatter_update`, `duel_088C6BC8`, `duel_field_controller`, `duel_08846584`): nenhuma bateu. O que é novo:
+
+- **Todos os pragmas de otimização do executável** (`strings mwccpsp.exe`: ~70 `opt_*` não documentados, como
+  `opt_scalarizeliveranges`, `opt_repositioncode`, `opt_defineargorder`, `opt_marknonregtemps`, `opt_serializeassignments`,
+  mais `peephole`, `schedule`, `tailcall`, `conditional_move`, `no_branch_likely`, `global_optimizer`), `on` e `off`
+  antes da função: nenhum baixa `dd_info_stats`, `duel_0883449C`, `duel_req_mill`, `dd_chr_attach_mtx` ou
+  `dd_fx_shatter_update`. Vários derrubam o compilador (erro interno). `#pragma dumpir`/`opt_alwaysdumpopts` não
+  geram nada no build de release (as strings "After register coloring" etc. são de um dump desligado). Script:
+  `build/tmp/uF/prag.sh MODULE SRC FUNC "LINHA DO CABEÇALHO"`.
+- **`dd_chr_attach_mtx`**: o `move a3,a2` do original é a PRIMEIRA instrução do bloco depois do `if (id < 0x24) {
+  ...; return; }`, levada para o atraso do `beqz` (o desvio vai para alvo+4). O 1º laço usa `a2` (o parâmetro) e
+  todo o resto usa `a3`: são duas teias do mesmo valor, a segunda nascendo no começo do `else`. Sem o cast
+  redundante do laço (90 palavras) a diferença é SÓ essa cópia e o nome do registrador depois dela. Não saem a
+  cópia: local `k = id` (com/sem cast, em 10 posições), tipos do parâmetro (enum, long, K&R, const, register),
+  4º argumento na chamada, `dd_chr_bone_mtx` `static`, partes num inline (4 cortes), formas da comparação do laço
+  (`e->id - id == 0` muda o laço, não a cópia), `no_branch_likely`.
+- **`duel_0883449C`**: o `li v0,4012` depois do `addu` no original não é escolha do escalonador: a carga de
+  `duel_w_08919654` está em `v0`, e o `li v0` não pode subir antes do `addu` que a lê (WAR). É coloração: no
+  original as cargas de `z` não interferem com a constante. Com `z` calculado ANTES de `p` (ordem das instruções) o
+  219 já põe o `addu` antes do `li` (18 palavras: `p`/`z` trocam de `$s` e as cargas seguem a ordem do fonte);
+  `z` por extenso (sem variável), as formas do endereço e `duel_w_*` como campos de `Duel` não mexem.
+- `dd_info_stats` com a struct de 11 campos (`DuelStats`) no lugar de `si[11]`: ~140 das 5040 ordens das sete
+  cópias, nenhuma abaixo de 7. A coloração do original (`si1 v0, si4 v1, si2 a0, si6 v0`) é exatamente a de
+  "menor registro livre" na ordem `L1 L4 L2 S1 L6 S4 L5 S6 L7 S2 S5 S7`, mas o 219 colore por pilha de
+  simplificação, não em ordem de programa.
+- `tools/permute.py` com as mutações da rodada 41 (troca de comandos vizinhos, ternário, ordem de grupos de `case`,
+  `(int)` em operandos): `duel_08846584` 10424 candidatos (253), `duel_0883449C` 34274 (5), `dd_info_stats` 30456 (4): nada.
