@@ -3,8 +3,8 @@
 // @gcc 0x08807C6C-0x08807FD8
 // @gcc 0x08808058-0x08808130
 // @asm 0x08808130-0x0880823C
-// @gcc 0x0880823C-0x08808294
-// @asm 0x08808294-0x088086F0
+// @gcc 0x0880823C-0x0880847C
+// @asm 0x0880847C-0x088086F0
 // @gcc 0x088086F0-0x088087F8
 /* libgu of the Sony SDK (GCC), context level: the builders that write into a given GuList (state
    enables, matrices, sprites, clear, depth range, lights, ...), the GE signal/finish handlers, the
@@ -1219,14 +1219,25 @@ void sceGuDebugPrint(int x, int y, unsigned int color, const char *str)
     g = color << 16 >> 24;
     b = (color >> 16) & 0xFF;
     a = color >> 24;
-    /* still 53 words off in GCC: the original shares the tail `| (g >> k) << 5 | r >> 3` of PSM 0 and 1 (cross-jumping
-       with equal registers) */
+    /* each format shifts the components in place: the SDK's GCC then shares the tail `| g << 5 | r` of PSM 0 and 1
+       and `| r` of PSM 2 (cross-jumping after reload) */
     if (gu_debug_psm == 0) {
-        color = (b >> 3) << 11 | (g >> 2) << 5 | r >> 3;
+        r >>= 3;
+        g >>= 2;
+        b >>= 3;
+        color = b << 11 | g << 5 | r;
     } else if (gu_debug_psm == 1) {
-        color = (a >> 7) << 15 | (b >> 3) << 10 | (g >> 3) << 5 | r >> 3;
+        r >>= 3;
+        g >>= 3;
+        b >>= 3;
+        a >>= 7;
+        color = a << 15 | b << 10 | g << 5 | r;
     } else if (gu_debug_psm == 2) {
-        color = (a >> 4) << 12 | (b >> 4) << 8 | (g & ~0xF) | r >> 4;
+        r >>= 4;
+        g >>= 4;
+        b >>= 4;
+        a >>= 4;
+        color = a << 12 | b << 8 | g << 4 | r;
     }
     while (*str != 0) {
         ch = *str;

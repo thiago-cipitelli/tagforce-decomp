@@ -40,7 +40,7 @@ segments:
       - [0x40B8, c, libgu_ctx_gcc]
       - [0x4190, asm, libgu_ctx_asm_08808130]
       - [0x429C, c, libgu_ctx_gcc]
-      - [0x42F4, asm, libgu_ctx_asm_08808294]
+      - [0x44DC, asm, libgu_ctx_asm_0880847C]
       - [0x4750, c, libgu_ctx_gcc]
       - [0x4858, c, nl_ef_asin]
       - [0x4B40, c, nl_ef_atan2]
