@@ -1,6 +1,5 @@
 // @range 0x0881D8A8-0x0881DE88
-// @asm 0x0881D8A8-0x0881DA34
-// @gcc 0x0881DA34-0x0881DE88
+// @gcc 0x0881D8A8-0x0881DE88
 /* VFPU camera and projection matrices: planar shadow onto n . p = 1, view (look-at), perspective,
    ortho, frustum, and the point projections. Column-major (m[4 * col + row]); functions with an
    output matrix return it. Hand-written VFPU code kept as whole `asm` functions; the functions the SDK
@@ -52,17 +51,21 @@ static void cross3(float *r, const float *a, const float *b)
 }
 #endif
 
-#ifdef NON_MATCHING /* GCC (vfpu_proj_gcc.c, does not match yet); 1.0f and -1.0f open the literal pool */
+#ifndef __MWERKS__ /* PSP: vfpu_proj_gcc.c; 1.0f and -1.0f open the literal pool */
 /* Projection onto the plane a*x + b*y + c*z = 1 from the light `l`: a point light when `point` is
-   set, else a direction. */
+   set, else a direction. The light's coordinates, d and k are declared in each branch: as separate
+   variables they are local to one basic block each (local-alloc, low $f registers), and a, b get
+   $f16/$f15 as in the original; one set of function-level variables made them global pseudos and
+   pushed a to $f20 (docs/build.md, rodada 42). */
 Mat4 *mat4_shadow_plane(Mat4 *out, Vec4 *l, int point, float a, float b, float c)
 {
     float *m = out->m;
-    float lx, ly, lz;
-    float d;
-    float k;
 
     if (point) {
+        float lx, ly, lz;
+        float d;
+        float k;
+
         lx = l->x;
         ly = l->y;
         lz = l->z;
@@ -85,6 +88,10 @@ Mat4 *mat4_shadow_plane(Mat4 *out, Vec4 *l, int point, float a, float b, float c
         m[11] = c;
         m[15] = k - 1.0f;
     } else {
+        float lx, ly, lz;
+        float d;
+        float k;
+
         lx = l->x;
         ly = l->y;
         lz = l->z;
@@ -109,6 +116,8 @@ Mat4 *mat4_shadow_plane(Mat4 *out, Vec4 *l, int point, float a, float b, float c
     }
     return out;
 }
+#else
+Mat4 *mat4_shadow_plane(Mat4 *out, Vec4 *l, int point, float a, float b, float c);
 #endif
 
 /* View matrix of a camera at `eye` looking at `target`: rows x = unit(up cross z), y = z cross x,

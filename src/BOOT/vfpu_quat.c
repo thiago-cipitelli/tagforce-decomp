@@ -1,13 +1,11 @@
 // @range 0x0881DE88-0x0881EB0C
-// @gcc 0x0881DE88-0x0881E0FC
-// @asm 0x0881E0FC-0x0881E510
-// @gcc 0x0881E510-0x0881EB0C
+// @gcc 0x0881DE88-0x0881EB0C
 /* VFPU quaternions (x, y, z, w with w the scalar part; vqmul is the Hamilton product). Euler angles
    are radians in a vector (x, y, z); the _zyx/_xyz/_yxz suffix is the product order of the axis
    rotations (zyx: q = qz * qy * qx). Hand-written VFPU code kept as whole `asm` functions; the
    compiled C ones that load float constants from .rodata (GCC) come from vfpu_quat_gcc.c (matrix to
-   quaternion; slerp, a C function around one asm statement, and squad, which inlines it three times) or stay in
-   asm with their C under NON_MATCHING (quaternion to Euler angles). The
+   quaternion; slerp, a C function around one asm statement, and squad, which inlines it three times; quaternion
+   to Euler angles). The
    port C of the VFPU functions is left out of the GCC object (`#elif !defined(__mips__)`), so its
    literal pool is exactly the original's (`@rodata`). Functions with an output return it. Outside the
    PSP build each one has a C equivalent. */
@@ -133,7 +131,8 @@ Vec4 *mat3_to_quat(Vec4 *out, Mat4 *m)
 Vec4 *mat3_to_quat(Vec4 *out, Mat4 *m);
 #endif
 
-#ifdef NON_MATCHING /* GCC: constants from the .rodata pool (D_088EB1E4...) */
+#ifndef __MWERKS__ /* PSP: vfpu_quat_gcc.c. ya and yb are set in both branches: one variable each at function level,
+   as in the original (a global pseudo; per-branch locals move the $f registers, docs/build.md rodada 42) */
 
 /* Euler angles of q for q = qz * qy * qx; near the poles (|sin y| > 0.99995) z is 0. w = 0. */
 Vec4 *quat_to_euler_zyx(Vec4 *out, Vec4 *q)
@@ -145,13 +144,14 @@ Vec4 *quat_to_euler_zyx(Vec4 *out, Vec4 *q)
     float w2 = w + w;
     float z2 = z + z;
     float sy = -(z2 * x - w2 * y);
+    float ya, yb;
     float rx, ry, rz;
 
     if (sy <= 0.99995f && -0.99995f <= sy) {
         float x2 = x + x;
         float y2 = y + y;
-        float ya = y2 * z + w2 * x;
-        float yb = 1.0f - x2 * x - y2 * y;
+        ya = y2 * z + w2 * x;
+        yb = 1.0f - x2 * x - y2 * y;
         float za = x2 * y + w2 * z;
         float zb = 1.0f - y2 * y - z2 * z;
 
@@ -161,8 +161,8 @@ Vec4 *quat_to_euler_zyx(Vec4 *out, Vec4 *q)
     } else {
         float y2 = y + y;
         float x2 = x + x;
-        float ya = -(y2 * z - w2 * x);
-        float yb = 1.0f - x2 * x - z2 * z;
+        ya = -(y2 * z - w2 * x);
+        yb = 1.0f - x2 * x - z2 * z;
 
         rx = atan2f(ya, yb);
         ry = asinf(sy);
@@ -185,13 +185,14 @@ Vec4 *quat_to_euler_xyz(Vec4 *out, Vec4 *q)
     float w2 = w + w;
     float z2 = z + z;
     float sy = z2 * x + w2 * y;
+    float ya, yb;
     float rx, ry, rz;
 
     if (sy <= 0.99995f && -0.99995f <= sy) {
         float y2 = y + y;
         float x2 = x + x;
-        float ya = -(y2 * z - w2 * x);
-        float yb = 1.0f - x2 * x - y2 * y;
+        ya = -(y2 * z - w2 * x);
+        yb = 1.0f - x2 * x - y2 * y;
         float za = -(x2 * y - w2 * z);
         float zb = 1.0f - y2 * y - z2 * z;
 
@@ -201,8 +202,8 @@ Vec4 *quat_to_euler_xyz(Vec4 *out, Vec4 *q)
     } else {
         float x2 = x + x;
         float y2 = y + y;
-        float ya = y2 * z + w2 * x;
-        float yb = 1.0f - x2 * x - z2 * z;
+        ya = y2 * z + w2 * x;
+        yb = 1.0f - x2 * x - z2 * z;
 
         rx = atan2f(ya, yb);
         ry = asinf(sy);
@@ -225,13 +226,14 @@ Vec4 *quat_to_euler_yxz(Vec4 *out, Vec4 *q)
     float w2 = w + w;
     float y2 = y + y;
     float sx = -(y2 * z - w2 * x);
+    float ya, yb;
     float rx, ry, rz;
 
     if (sx <= 0.99995f && -0.99995f <= sx) {
         float x2 = x + x;
         float z2 = z + z;
-        float ya = z2 * x + w2 * y;
-        float yb = 1.0f - x2 * x - y2 * y;
+        ya = z2 * x + w2 * y;
+        yb = 1.0f - x2 * x - y2 * y;
         float za = x2 * y + w2 * z;
         float zb = 1.0f - x2 * x - z2 * z;
 
@@ -240,8 +242,8 @@ Vec4 *quat_to_euler_yxz(Vec4 *out, Vec4 *q)
         rz = atan2f(za, zb);
     } else {
         float z2 = z + z;
-        float ya = -(z2 * x - w2 * y);
-        float yb = 1.0f - y2 * y - z2 * z;
+        ya = -(z2 * x - w2 * y);
+        yb = 1.0f - y2 * y - z2 * z;
 
         rx = asinf(sx);
         ry = atan2f(ya, yb);
@@ -253,6 +255,10 @@ Vec4 *quat_to_euler_yxz(Vec4 *out, Vec4 *q)
     out->w = 0.0f;
     return out;
 }
+#else
+Vec4 *quat_to_euler_zyx(Vec4 *out, Vec4 *q);
+Vec4 *quat_to_euler_xyz(Vec4 *out, Vec4 *q);
+Vec4 *quat_to_euler_yxz(Vec4 *out, Vec4 *q);
 #endif
 
 #ifdef __MWERKS__
