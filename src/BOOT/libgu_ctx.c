@@ -1,7 +1,5 @@
 // @range 0x08807070-0x088087F8
-// @gcc 0x08807070-0x0880712C
-// @asm 0x0880712C-0x08807338
-// @gcc 0x08807338-0x0880763C
+// @gcc 0x08807070-0x0880763C
 // @gcc 0x08807C6C-0x08807FD8
 // @gcc 0x08808058-0x08808130
 // @asm 0x08808130-0x0880823C
@@ -76,11 +74,7 @@ void gu_ctx_finish(GuList *l, int mode, unsigned int arg)
 void gu_ctx_finish(GuList *l, int mode, unsigned int arg);
 #endif
 
-/* Not in the SDK's GCC object (libgu_ctx_gcc.c): its jump table would come first in the object's .rodata, and the
-   code still differs in register allocation (the context pointer in a3 instead of t0: global allocation, not
-   regrename; case order, parameter types and a local copy do not move it), so the table stays in the asm data and
-   the object's .rodata is only the table of gu_ctx_light_color. */
-#if defined(NON_MATCHING) && (!defined(__mips__) || defined(__MWERKS__))
+#ifndef __MWERKS__ /* PSP: libgu_ctx_gcc.c (its jump table opens the object's .rodata) */
 /* the enable command of each GU_* state (0..20, a jump table); 2 = scissor test (SCISSOR1/2 from the context or
    the whole display), 21 = color doubling (TFUNC bit 16) */
 void gu_ctx_state(GuList *l, int state, int on)
@@ -92,29 +86,32 @@ void gu_ctx_state(GuList *l, int state, int on)
     case 1:
         ctx_push(l, on | 0x23000000);
         break;
-    case 2: {
-        unsigned int *p;
-        unsigned int a;
-        unsigned int b;
-
+    case 2:
+        /* each branch writes the four words; the SDK's GCC merges the common tail (cross-jumping after reload),
+           and the block-local pointers keep the context pointer out of a3 */
         if (on) {
-            p = l->cur;
-            a = l->scissor[1] << 10 | l->scissor[0];
-            b = l->scissor[3] << 10 | l->scissor[2];
+            unsigned int *p = l->cur;
+            unsigned int a = l->scissor[1] << 10 | l->scissor[0];
+            unsigned int b = l->scissor[3] << 10 | l->scissor[2];
             l->scissor_on = 1;
             *p++ = a | 0xD4000000;
+            p[0] = b | 0xD5000000;
+            p[1] = 0x15000000;
+            p[2] = b | 0x16000000;
+            l->cur = p + 3;
         } else {
-            p = l->cur;
-            b = (l->disp_h - 1) << 10 | (l->disp_w - 1);
+            unsigned int *p = l->cur;
+            unsigned int h = l->disp_h - 1;
+            unsigned int w = l->disp_w - 1;
+            unsigned int b = h << 10 | w;
             l->scissor_on = 0;
             *p++ = 0xD4000000;
+            p[0] = b | 0xD5000000;
+            p[1] = 0x15000000;
+            p[2] = b | 0x16000000;
+            l->cur = p + 3;
         }
-        p[0] = b | 0xD5000000;
-        p[1] = 0x15000000;
-        p[2] = b | 0x16000000;
-        l->cur = p + 3;
         break;
-    }
     case 3:
         ctx_push(l, on | 0x24000000);
         break;
@@ -175,7 +172,11 @@ void gu_ctx_state(GuList *l, int state, int on)
         } else {
             l->pad38[10] = 0;
         }
-        ctx_push(l, l->pad38[10] << 16 | l->pad38[12] << 8 | l->pad38[11] | 0xC9000000);
+        {
+            unsigned int tcc = l->pad38[12] << 8;
+
+            ctx_push(l, l->pad38[10] << 16 | tcc | l->pad38[11] | 0xC9000000); /* TFUNC: 2x, tcc, tfx */
+        }
         break;
     }
 }
