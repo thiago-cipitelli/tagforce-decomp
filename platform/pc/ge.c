@@ -51,7 +51,12 @@ static float bone[96], world[12], view[12], proj[16], tgen[12], morphw[8];
 static int bonei, worldi, viewi, proji, tgeni;
 static u8 *vaddr, *iaddr;
 static u32 offset_addr, cur_pc;
-static u8 clut[1024];
+static u8 clut[2048];
+static u32 clut_last, clut_max;         /* bytes of the last CLUT load and of the largest (texmod.c's CLUT hash) */
+static u32 draw_maxv;                   /* largest through-mode v of the current draw (texmod.c) */
+unsigned texmod_find(u32 addr, const u8 *p, u32 fmt, u32 w, u32 h, u32 bufw_reg, u32 low, u32 maxv,
+                     unsigned (*upload)(const void *rgba, int w, int h));
+u32 texmod_clut_hash(const u8 *clut, u32 n);
 static int gl_on;                       /* 1: draw with GL; 0: only follow the lists */
 unsigned int frame_no;                  /* presented frames (window.c: scripted pad) */
 static unsigned int trace_frame = ~0u;  /* TAGFORCE_GE_TRACE */
@@ -263,7 +268,7 @@ static Fbo *fbo_at(u32 off, int *x, int *y)
 typedef struct {
     u32 addr, fmt, tw, th, bufw, swz, clutkey, hash;
     unsigned int checked, used;
-    GLuint id;
+    GLuint id, rep;   /* rep: the texture of a mod that replaces this one (texmod.c), else 0 */
 } Tex;
 
 #define NTEX 1024
@@ -365,6 +370,16 @@ static void dxt_decode(const u8 *src, u32 fmt, u32 tw, u32 th, u32 rowbytes)
         }
 }
 
+static GLuint tex_upload(const void *rgba, int w, int h)
+{
+    GLuint id;
+
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
+    return id;
+}
+
 /* GL texture for the current TEXADDR0..; *xf: scale and offset of the normalized coordinates */
 static GLuint tex_get(float *xf)
 {
@@ -417,12 +432,12 @@ static GLuint tex_get(float *xf)
     }
     if (t && t->checked == frame_no) {
         t->used = frame_no;
-        return t->id;
+        return t->rep ? t->rep : t->id;
     }
     h = hash(src, bytes);
     if (t && t->hash == h) {
         t->checked = t->used = frame_no;
-        return t->id;
+        return t->rep ? t->rep : t->id;
     }
     if (!t) {
         t = lru;
@@ -438,6 +453,17 @@ static GLuint tex_get(float *xf)
     }
     t->hash = h;
     t->checked = t->used = frame_no;
+    {   /* mods: PPSSPP's key = dimension, xor the CLUT hash for the CLUT formats */
+        u32 low = reg[0xB8] & 0xF0F;
+        if (fmt >= 4 && fmt <= 7) {
+            u32 m = reg[0xC5], base = (m >> 16 & 31) << 4, n = clut_last + base * ((m & 3) == 3 ? 4 : 2);
+            low ^= texmod_clut_hash(clut, n < clut_max ? n : clut_max) ^ (0xC5000000 | m);   /* ^ gstate.clutformat */
+        }
+        t->rep = texmod_find(a, src, fmt, tw, th, reg[0xA8] & 0xFFFF, low,
+                              swz && fmt == 4 ? 0 : draw_maxv, tex_upload);   /* swizzled CLUT4: all 512 rows */
+        if (t->rep)
+            return t->rep;
+    }
     if (!texbuf) {
         texbuf = malloc(1024 * 1024 * 4);
         swzbuf = malloc(1024 * 1024 * 4);
@@ -719,6 +745,7 @@ static void prim(u32 d)
 
     if (!count)
         return;
+    draw_maxv = 0;
     if (!gl_on)
         goto advance;
     if (trace_frame == frame_no) {   /* TAGFORCE_GE_TRACE=<frame>: one line per draw of that frame */
@@ -772,6 +799,8 @@ static void prim(u32 d)
             o->pos[3] = 1;
             o->uv[0] = v.uv[0] / tw;
             o->uv[1] = v.uv[1] / th;
+            if (v.uv[1] > draw_maxv)
+                draw_maxv = (u32)v.uv[1];
             o->uv[2] = 1;
             memcpy(o->c0, v.col, 16);
         } else {
@@ -1202,7 +1231,12 @@ static int exec(GeList *l)
         case 0x41: if (tgeni < 12) tgen[tgeni++] = f24(d); break;
         case 0xC4: {
             u32 n = (d & 0x3F) * 32;
-            memcpy(clut, host_addr((reg[0xB0] & 0xFFFFF0) | (reg[0xB1] & 0xFF0000) << 8), n);
+            if (n) {
+                memcpy(clut, host_addr((reg[0xB0] & 0xFFFFF0) | (reg[0xB1] & 0xFF0000) << 8), n);
+                clut_last = n;
+                if (n > clut_max)
+                    clut_max = n;
+            }
             break;
         }
         case 0xEA: transfer(d); break;
