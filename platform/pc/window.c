@@ -212,7 +212,7 @@ void host_pump(void)
         else if (ev.type == ConfigureNotify)
             win_w = ev.xconfigure.width, win_h = ev.xconfigure.height;
         else if (ev.type == ClientMessage && (Atom)ev.xclient.data.l[0] == wm_delete)
-            exit(0);
+            _Exit(0);   /* not exit(): the game's newlib defines exit/_exit, and its _exit is the PSP's (SIGILL) */
     }
 }
 
@@ -315,7 +315,9 @@ static void text_overlay(int x, int y, int w, int h)
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, (GLuint)pbo);
 }
 
-/* shows the 480x272 top-left of the bound read framebuffer (GL rows = PSP rows), fitted to the window's real size
+extern int ge_rs;   /* ge.c: render scale of the FBOs */
+
+/* shows the 480x272 (times ge_rs) top-left of the bound read framebuffer (GL rows = PSP rows), fitted to the window's real size
    with the 30:17 aspect kept and black bars around */
 void host_present(void)
 {
@@ -333,8 +335,8 @@ void host_present(void)
         glColorMask(1, 1, 1, 1);      /* ge.c sets the mask again on every draw */
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
-        glBlitFramebuffer(0, 0, 480, 272, x, y + h, x + w, y, GL_COLOR_BUFFER_BIT,
-                          w % 480 || h % 272 ? GL_LINEAR : GL_NEAREST);
+        glBlitFramebuffer(0, 0, 480 * ge_rs, 272 * ge_rs, x, y + h, x + w, y, GL_COLOR_BUFFER_BIT,
+                          w != 480 * ge_rs || h != 272 * ge_rs ? GL_LINEAR : GL_NEAREST);
         if (text_on)
             text_overlay(x, y, w, h);
         if (sc)

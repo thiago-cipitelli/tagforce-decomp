@@ -106,6 +106,11 @@ typedef struct {
 
 #define NFBO 32
 static Fbo fbos[NFBO];
+/* render scale: every FBO is rs times the PSP's size (sharper 3D and HD texture mods); w/h/maxy and everything the
+   game sees (EDRAM, transfers, the CPU's view of a frame buffer) stay at the PSP's size. TAGFORCE_RENDER_SCALE,
+   default TAGFORCE_SCALE (the window size), 1..8 */
+int ge_rs = 1;
+static GLuint tmp_fbo, tmp_tex;   /* PSP-size copy of a scaled FBO, for the CPU's reads and writes */
 static int nfbo;
 static GLuint prog, vao, vbo;
 static GLint u_tex_on, u_func, u_tcc, u_dbl, u_env, u_fog_on, u_fogc, u_atest, u_aref, u_amask, u_uvxf;
@@ -169,6 +174,14 @@ static void gl_setup(void)
     if (tried)
         return;
     tried = 1;
+    {
+        const char *e = getenv("TAGFORCE_RENDER_SCALE");
+        if (!e || atoi(e) < 1)
+            e = getenv("TAGFORCE_SCALE");
+        ge_rs = e && atoi(e) > 0 ? atoi(e) : 2;
+        if (ge_rs > 8)
+            ge_rs = 8;
+    }
     if (getenv("TAGFORCE_GE_TRACE"))
         trace_frame = atoi(getenv("TAGFORCE_GE_TRACE"));
     if (getenv("TAGFORCE_GE_SKIP_VT"))
@@ -226,10 +239,10 @@ static Fbo *fbo_get(u32 fbp, u32 fbw)
     f->h = 512;
     glGenTextures(1, &f->tex);
     glBindTexture(GL_TEXTURE_2D, f->tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, f->w, f->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, f->w * ge_rs, f->h * ge_rs, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     glGenRenderbuffers(1, &f->rb);
     glBindRenderbuffer(GL_RENDERBUFFER, f->rb);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, f->w, f->h);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, f->w * ge_rs, f->h * ge_rs);
     glGenFramebuffers(1, &f->fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, f->fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, f->tex, 0);
@@ -242,6 +255,51 @@ static Fbo *fbo_get(u32 fbp, u32 fbw)
     glClearDepth(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     return f;
+}
+
+static void tmp_setup(void)
+{
+    if (tmp_fbo)
+        return;
+    glGenTextures(1, &tmp_tex);
+    glBindTexture(GL_TEXTURE_2D, tmp_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1024, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glGenFramebuffers(1, &tmp_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, tmp_fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex, 0);
+}
+
+/* binds as the read frame buffer rows fy..fy+h-1 of f at the PSP's size (row y at y) for glReadPixels.
+   ponytail: GL_LINEAR averages 2x2 texels only, so above 2x the CPU's copy aliases; a mip/box pass if it shows */
+static void fb_read_bind(Fbo *f, int fy, int h)
+{
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, f->fbo);
+    if (ge_rs == 1)
+        return;
+    tmp_setup();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tmp_fbo);
+    glDisable(GL_SCISSOR_TEST);   /* the next draw sets it again */
+    glBlitFramebuffer(0, fy * ge_rs, f->w * ge_rs, (fy + h) * ge_rs, 0, fy, f->w, fy + h, GL_COLOR_BUFFER_BIT,
+                      GL_LINEAR);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, tmp_fbo);
+}
+
+/* rows fy..fy+h-1 of f <- PSP memory (f->fbw pixels per row) */
+static void fb_write(Fbo *f, int fy, int h, const u8 *src)
+{
+    if (ge_rs > 1)
+        tmp_setup();
+    glBindTexture(GL_TEXTURE_2D, ge_rs == 1 ? f->tex : tmp_tex);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, f->fbw);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, fy, f->w, h, GL_RGBA, GL_UNSIGNED_BYTE, src);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    if (ge_rs == 1)
+        return;
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, tmp_fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, f->fbo);
+    glDisable(GL_SCISSOR_TEST);
+    glBlitFramebuffer(0, fy, f->w, fy + h, 0, fy * ge_rs, f->w * ge_rs, (fy + h) * ge_rs, GL_COLOR_BUFFER_BIT,
+                      GL_NEAREST);
 }
 
 /* the frame buffer whose memory holds EDRAM offset off (32-bit pixels); 0 if none */
@@ -938,11 +996,11 @@ static void prim(u32 d)
         int sx1 = s1 & 0x3FF, sy1 = s1 >> 10 & 0x3FF, sx2 = s2 & 0x3FF, sy2 = s2 >> 10 & 0x3FF;
 
         glBindFramebuffer(GL_FRAMEBUFFER, fb->fbo);
-        glViewport(0, 0, fb->w, fb->h);
+        glViewport(0, 0, fb->w * ge_rs, fb->h * ge_rs);
         glEnable(GL_SCISSOR_TEST);
         if (sx2 < sx1 || sy2 < sy1)
             goto advance;
-        glScissor(sx1, sy1, sx2 - sx1 + 1, sy2 - sy1 + 1);
+        glScissor(sx1 * ge_rs, sy1 * ge_rs, (sx2 - sx1 + 1) * ge_rs, (sy2 - sy1 + 1) * ge_rs);
         if (sy2 > fb->maxy)
             fb->maxy = sy2 < fb->h ? sy2 : fb->h - 1;
         if (clear) {
@@ -1088,7 +1146,7 @@ static void transfer(u32 d)
         if (bpp != 4) {
             log_once(8, "16-bit transfer from a frame buffer");
         } else {   /* frame buffer memory <- FBO, whole rows */
-            glBindFramebuffer(GL_FRAMEBUFFER, f->fbo);
+            fb_read_bind(f, fy, h);
             glReadPixels(0, fy, f->w, h, GL_RGBA, GL_UNSIGNED_BYTE, edram + f->fbp + fy * f->fbw * 4);
         }
     }
@@ -1098,11 +1156,7 @@ static void transfer(u32 d)
         if (bpp != 4) {
             log_once(9, "16-bit transfer to a frame buffer");
         } else {   /* FBO <- frame buffer memory, whole rows */
-            glBindTexture(GL_TEXTURE_2D, f->tex);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, f->fbw);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, fy, f->w, h, GL_RGBA, GL_UNSIGNED_BYTE,
-                            edram + f->fbp + fy * f->fbw * 4);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+            fb_write(f, fy, h, edram + f->fbp + fy * f->fbw * 4);
         }
     }
 }
@@ -1365,9 +1419,11 @@ static void dump(Fbo *f)
     snprintf(name, sizeof name, pat, frame_no);
     if (!(o = fopen(name, "wb")))
         return;
-    if (f)
+    if (f) {
+        fb_read_bind(f, 0, 272);
         glReadPixels(0, 0, 480, 272, GL_RGBA, GL_UNSIGNED_BYTE, px);
-    else
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, f->fbo);   /* host_present shows it next */
+    } else
         memset(px, 0, sizeof px);
     fprintf(o, "P6\n480 272\n255\n");
     for (y = 0; y < 272; y++)
@@ -1404,10 +1460,7 @@ int sceDisplaySetFrameBuf(void *top, int bufw, int fmt, int sync)
             log_once(15, "CPU-written frame buffer not in 8888");
         } else {
             f = fbo_get((u32)top & 0x1FFFFF, bufw);
-            glBindTexture(GL_TEXTURE_2D, f->tex);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, bufw);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, f->w, 272, GL_RGBA, GL_UNSIGNED_BYTE, edram + f->fbp);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+            fb_write(f, 0, 272, edram + f->fbp);
         }
     }
     if (top && in_edram((u32)top))

@@ -58,3 +58,75 @@ const HostModSym host_mod_syms[] = {
     {"libtutoriallist", "module_entry", libtutoriallist_module_entry},
     {0, 0, 0}
 };
+
+typedef struct { const char *module; char *data, *data_end, *bss, *bss_end; } HostModData;
+extern char __start_hmd_libcardalbum[] __attribute__((weak)), __stop_hmd_libcardalbum[] __attribute__((weak));
+extern char __start_hmb_libcardalbum[] __attribute__((weak)), __stop_hmb_libcardalbum[] __attribute__((weak));
+extern char __start_hmd_libcharalist[] __attribute__((weak)), __stop_hmd_libcharalist[] __attribute__((weak));
+extern char __start_hmb_libcharalist[] __attribute__((weak)), __stop_hmb_libcharalist[] __attribute__((weak));
+extern char __start_hmd_libconv_machine[] __attribute__((weak)), __stop_hmd_libconv_machine[] __attribute__((weak));
+extern char __start_hmb_libconv_machine[] __attribute__((weak)), __stop_hmb_libconv_machine[] __attribute__((weak));
+extern char __start_hmd_libdeck[] __attribute__((weak)), __stop_hmd_libdeck[] __attribute__((weak));
+extern char __start_hmb_libdeck[] __attribute__((weak)), __stop_hmb_libdeck[] __attribute__((weak));
+extern char __start_hmd_libdeck_swap[] __attribute__((weak)), __stop_hmd_libdeck_swap[] __attribute__((weak));
+extern char __start_hmb_libdeck_swap[] __attribute__((weak)), __stop_hmb_libdeck_swap[] __attribute__((weak));
+extern char __start_hmd_libdeck_tutorial[] __attribute__((weak)), __stop_hmd_libdeck_tutorial[] __attribute__((weak));
+extern char __start_hmb_libdeck_tutorial[] __attribute__((weak)), __stop_hmb_libdeck_tutorial[] __attribute__((weak));
+extern char __start_hmd_libduel_draw[] __attribute__((weak)), __stop_hmd_libduel_draw[] __attribute__((weak));
+extern char __start_hmb_libduel_draw[] __attribute__((weak)), __stop_hmb_libduel_draw[] __attribute__((weak));
+extern char __start_hmd_libduel_eng[] __attribute__((weak)), __stop_hmd_libduel_eng[] __attribute__((weak));
+extern char __start_hmb_libduel_eng[] __attribute__((weak)), __stop_hmb_libduel_eng[] __attribute__((weak));
+extern char __start_hmd_libduel_mgr[] __attribute__((weak)), __stop_hmd_libduel_mgr[] __attribute__((weak));
+extern char __start_hmb_libduel_mgr[] __attribute__((weak)), __stop_hmb_libduel_mgr[] __attribute__((weak));
+extern char __start_hmd_libduelrecord[] __attribute__((weak)), __stop_hmd_libduelrecord[] __attribute__((weak));
+extern char __start_hmb_libduelrecord[] __attribute__((weak)), __stop_hmb_libduelrecord[] __attribute__((weak));
+extern char __start_hmd_libfield[] __attribute__((weak)), __stop_hmd_libfield[] __attribute__((weak));
+extern char __start_hmb_libfield[] __attribute__((weak)), __stop_hmb_libfield[] __attribute__((weak));
+extern char __start_hmd_libhtml_view[] __attribute__((weak)), __stop_hmd_libhtml_view[] __attribute__((weak));
+extern char __start_hmb_libhtml_view[] __attribute__((weak)), __stop_hmb_libhtml_view[] __attribute__((weak));
+extern char __start_hmd_liblabo[] __attribute__((weak)), __stop_hmd_liblabo[] __attribute__((weak));
+extern char __start_hmb_liblabo[] __attribute__((weak)), __stop_hmb_liblabo[] __attribute__((weak));
+extern char __start_hmd_liblimitlist[] __attribute__((weak)), __stop_hmd_liblimitlist[] __attribute__((weak));
+extern char __start_hmb_liblimitlist[] __attribute__((weak)), __stop_hmb_liblimitlist[] __attribute__((weak));
+extern char __start_hmd_libpassword[] __attribute__((weak)), __stop_hmd_libpassword[] __attribute__((weak));
+extern char __start_hmb_libpassword[] __attribute__((weak)), __stop_hmb_libpassword[] __attribute__((weak));
+extern char __start_hmd_librecipe_viewer[] __attribute__((weak)), __stop_hmd_librecipe_viewer[] __attribute__((weak));
+extern char __start_hmb_librecipe_viewer[] __attribute__((weak)), __stop_hmb_librecipe_viewer[] __attribute__((weak));
+extern char __start_hmd_libselect_card[] __attribute__((weak)), __stop_hmd_libselect_card[] __attribute__((weak));
+extern char __start_hmb_libselect_card[] __attribute__((weak)), __stop_hmb_libselect_card[] __attribute__((weak));
+extern char __start_hmd_libshop[] __attribute__((weak)), __stop_hmd_libshop[] __attribute__((weak));
+extern char __start_hmb_libshop[] __attribute__((weak)), __stop_hmb_libshop[] __attribute__((weak));
+extern char __start_hmd_libstory[] __attribute__((weak)), __stop_hmd_libstory[] __attribute__((weak));
+extern char __start_hmb_libstory[] __attribute__((weak)), __stop_hmb_libstory[] __attribute__((weak));
+extern char __start_hmd_libtitle[] __attribute__((weak)), __stop_hmd_libtitle[] __attribute__((weak));
+extern char __start_hmb_libtitle[] __attribute__((weak)), __stop_hmb_libtitle[] __attribute__((weak));
+extern char __start_hmd_libtutorial[] __attribute__((weak)), __stop_hmd_libtutorial[] __attribute__((weak));
+extern char __start_hmb_libtutorial[] __attribute__((weak)), __stop_hmb_libtutorial[] __attribute__((weak));
+extern char __start_hmd_libtutoriallist[] __attribute__((weak)), __stop_hmd_libtutoriallist[] __attribute__((weak));
+extern char __start_hmb_libtutoriallist[] __attribute__((weak)), __stop_hmb_libtutoriallist[] __attribute__((weak));
+
+const HostModData host_mod_data[] = {
+    {"libcardalbum", __start_hmd_libcardalbum, __stop_hmd_libcardalbum, __start_hmb_libcardalbum, __stop_hmb_libcardalbum},
+    {"libcharalist", __start_hmd_libcharalist, __stop_hmd_libcharalist, __start_hmb_libcharalist, __stop_hmb_libcharalist},
+    {"libconv_machine", __start_hmd_libconv_machine, __stop_hmd_libconv_machine, __start_hmb_libconv_machine, __stop_hmb_libconv_machine},
+    {"libdeck", __start_hmd_libdeck, __stop_hmd_libdeck, __start_hmb_libdeck, __stop_hmb_libdeck},
+    {"libdeck_swap", __start_hmd_libdeck_swap, __stop_hmd_libdeck_swap, __start_hmb_libdeck_swap, __stop_hmb_libdeck_swap},
+    {"libdeck_tutorial", __start_hmd_libdeck_tutorial, __stop_hmd_libdeck_tutorial, __start_hmb_libdeck_tutorial, __stop_hmb_libdeck_tutorial},
+    {"libduel_draw", __start_hmd_libduel_draw, __stop_hmd_libduel_draw, __start_hmb_libduel_draw, __stop_hmb_libduel_draw},
+    {"libduel_eng", __start_hmd_libduel_eng, __stop_hmd_libduel_eng, __start_hmb_libduel_eng, __stop_hmb_libduel_eng},
+    {"libduel_mgr", __start_hmd_libduel_mgr, __stop_hmd_libduel_mgr, __start_hmb_libduel_mgr, __stop_hmb_libduel_mgr},
+    {"libduelrecord", __start_hmd_libduelrecord, __stop_hmd_libduelrecord, __start_hmb_libduelrecord, __stop_hmb_libduelrecord},
+    {"libfield", __start_hmd_libfield, __stop_hmd_libfield, __start_hmb_libfield, __stop_hmb_libfield},
+    {"libhtml_view", __start_hmd_libhtml_view, __stop_hmd_libhtml_view, __start_hmb_libhtml_view, __stop_hmb_libhtml_view},
+    {"liblabo", __start_hmd_liblabo, __stop_hmd_liblabo, __start_hmb_liblabo, __stop_hmb_liblabo},
+    {"liblimitlist", __start_hmd_liblimitlist, __stop_hmd_liblimitlist, __start_hmb_liblimitlist, __stop_hmb_liblimitlist},
+    {"libpassword", __start_hmd_libpassword, __stop_hmd_libpassword, __start_hmb_libpassword, __stop_hmb_libpassword},
+    {"librecipe_viewer", __start_hmd_librecipe_viewer, __stop_hmd_librecipe_viewer, __start_hmb_librecipe_viewer, __stop_hmb_librecipe_viewer},
+    {"libselect_card", __start_hmd_libselect_card, __stop_hmd_libselect_card, __start_hmb_libselect_card, __stop_hmb_libselect_card},
+    {"libshop", __start_hmd_libshop, __stop_hmd_libshop, __start_hmb_libshop, __stop_hmb_libshop},
+    {"libstory", __start_hmd_libstory, __stop_hmd_libstory, __start_hmb_libstory, __stop_hmb_libstory},
+    {"libtitle", __start_hmd_libtitle, __stop_hmd_libtitle, __start_hmb_libtitle, __stop_hmb_libtitle},
+    {"libtutorial", __start_hmd_libtutorial, __stop_hmd_libtutorial, __start_hmb_libtutorial, __stop_hmb_libtutorial},
+    {"libtutoriallist", __start_hmd_libtutoriallist, __stop_hmd_libtutoriallist, __start_hmb_libtutoriallist, __stop_hmb_libtutoriallist},
+    {0, 0, 0, 0, 0}
+};

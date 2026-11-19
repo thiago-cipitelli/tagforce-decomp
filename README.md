@@ -90,6 +90,7 @@ Saves go to `~/.local/share/tagforce/ms0` (the PSP memory stick). Environment va
 | `TAGFORCE_ROOT` | current directory | folder with the extracted disc (`PSP_GAME/` inside) |
 | `TAGFORCE_SAVE` | `~/.local/share/tagforce/ms0` | save folder |
 | `TAGFORCE_SCALE` | `2` | window size per PSP pixel (`3` = 1440×816) |
+| `TAGFORCE_RENDER_SCALE` | `TAGFORCE_SCALE` | internal resolution per PSP pixel (`4` = 1920×1088): sharper 3D, and needed to see HD texture mods |
 | `TAGFORCE_MODS` | `mods` | folder with the [mods](#mods-optional) |
 | `TAGFORCE_AUDIO` | default ALSA device | ALSA device name, or `0` for no sound |
 | `TAGFORCE_TTF` | Liberation Sans, then DejaVu Sans | font file for the in-game text |
@@ -122,13 +123,19 @@ python3 tools/mod_houses.py ~/Downloads/"GXTagForce1-Houses Pack" Ra    # or Obe
 
 It writes `mods/houses/`. Run it again with another house to switch.
 
-**HD texture packs** for Tag Force 1: copy (or symlink) the pack's `ULUS10136` folder into `mods/` under any
-name. If you also use the houses mod, list it first in `mods/mods.txt` so it wins over the pack's own portraits:
+**HD textures** (the *Tag Force 1 HD* pack: cards, portraits, backgrounds, menus). Point the tool at the
+unzipped pack and pick the card art, `official` (TCG) or `anime`:
 
+```sh
+python3 tools/mod_hd.py ~/Downloads/"TAG FORCE 1 HD" official    # or anime
 ```
-houses
-hd
-```
+
+It writes `mods/hd/` with links to the pack's images (add `--copy` to copy the 1.5 GB instead, so you can delete
+the download), and puts `hd` last in `mods/mods.txt`, so the houses mod still wins over the pack's own portraits.
+Other packs in PPSSPP's format: copy their `ULUS10136` folder into `mods/` and list it in `mods/mods.txt`.
+
+HD textures only show at a higher internal resolution: on a 1080p screen play with
+`TAGFORCE_RENDER_SCALE=4 TAGFORCE_ROOT=extracted build/host/tagforce` (4 = 1920×1088).
 
 `TAGFORCE_TEXMOD_LOG=1` prints each replaced texture and the name of each texture with no replacement (the name
 a new pack would use).
